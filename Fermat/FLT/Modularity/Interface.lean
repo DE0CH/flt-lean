@@ -45164,7 +45164,195 @@ forces `λ² = q` and `2λ = T_q` simultaneously; and a diagonal
 `diag(α, β)` forces `α + β = T_q`, `αβ = q`, i.e. exactly the
 Eichler–Shimura eigenvalue relation at every good prime at once, for a
 single continuous homomorphism on `Γ_ℚ`. `S` is a `Finset`, so it can
-never exclude all but finitely many primes. -/
+never exclude all but finitely many primes.
+
+# CUT-OBSTRUCTION AUDIT (2026-07-27, run by this leaf's owner)
+
+Every claim below names the CHECK THAT WOULD REFUTE IT, and states the
+axis it searched; an audit that only says "atomic" is worthless.
+
+## Axis searched: every reformulation of the FRAMED datum
+
+Four shapes of this statement now live in this file, and they are
+pairwise interderivable by formalized glue with no geometry in between:
+
+* (a) `hecke_comm ∧ tr = T_q ∧ det = q` — this leaf;
+* (b) `hecke_comm ∧ congruence ∧ det = q` —
+  `exists_galoisRep_modularTateFrame_det`, PROVEN from (a) by
+  `frameCayleyHamilton`;
+* (c) `hecke_comm ∧ congruence ∧ pair_frob` —
+  `exists_galoisRep_modularTateSpace`, PROVEN from (b) by
+  `frameSymplectic_map_of_commuting`;
+* (d) the four pairing fields of `ModularTateGaloisData`, PROVEN
+  equivalent to one Frobenius functional by
+  `exists_frameSymplectic_of_alternating` and
+  `frobenius_of_frameSymplectic_nondegenerate`.
+
+The missing arrows are elementary too: (b) ⟹ (a) is the cancellation
+`(tr − T_q)·τJ(Frob_q) = det − q = 0` with `τJ(Frob_q)` invertible
+because `det = q` is a unit; (c) ⟹ (b) is the same computation read
+backwards. **So no further cut of this leaf exists along the linear
+algebra of the frame**: a cut in that direction produces a declaration
+whose statement is one of (a)–(d) VERBATIM, which is duplication and not
+decomposition — and it would move the sorry without moving any
+mathematics. REFUTING CHECK: exhibit a fifth shape that is *not*
+interderivable with (a) by `HeckeFrameForm.lean`'s lemmas alone.
+
+## Why no ∀/∃ split of the three clauses is available
+
+One would like `∃ τJ, hecke_comm ∧ X` as one leaf and
+`∀ τJ, (hecke_comm ∧ X) → Y` as another. Every such split fails at the
+SECOND half, because `τJ` is existentially produced and what is left
+behind does not pin it:
+
+* with `X` empty, `τJ = 1` satisfies `hecke_comm` (scalars commute with
+  everything) and neither remaining clause follows;
+* with `X = congruence`, the only relation Cayley–Hamilton supplies is
+  `(tr τJ(Frob_q) − T_q)·τJ(Frob_q) = det τJ(Frob_q) − q`, one equation
+  in two unknown scalars of `A`; it determines neither factor.
+
+That second bullet is **"no derivation available", NOT "known false"**,
+and the distinction is worth recording because the obvious counterexample
+family does *not* work: for a twist `τJ = ψ·ρ` of a genuine
+Eichler–Shimura `ρ` by a character `ψ`, substituting `ρ² = T_q ρ − q`
+into the congruence gives `T_q(ψ² − ψ)ρ + q(1 − ψ²) = 0`, and since `q`
+is a unit this forces `ψ² = 1` and then `T_q·(1 − ψ(Frob_q)) = 0` at
+every good `q`, hence `ψ = 1` as soon as one good `T_q` is a
+non-zerodivisor.
+REFUTING CHECK: derive `det τJ(Frob_q) = q` from
+`hecke_comm ∧ congruence` alone, or exhibit a `τJ` satisfying those two
+with `det ≠ q`.
+
+## ITEM-ACCOUNTING CORRECTION: this leaf also carries item 7
+
+The paragraph above says the leaf is "items **4** and **6** … plus the
+Weil-pairing multiplier". That undercounts by one. Placing the Galois
+action ON THE FRAME `(𝕋_ℚ ⊗ ℚ̄_p)²`, with the Hecke action being
+`modularTatePadic = frameAction`, i.e. multiplication, asserts
+
+  `V_p(J₀(M)) ⊗ ℚ̄_p ≅ (𝕋_ℚ ⊗ ℚ̄_p)²` as `𝕋_ℚ ⊗ ℚ̄_p`-modules,
+
+which is **item 7** in its Tate-module form. It arrived silently at the
+cut that replaced the abstract carrier `Vp` by `modularTateSpace M`:
+`nonempty_modularTateModuleData` discharges `span_free` / `indep_free`
+by `frame_span` / `frame_indep`, i.e. trivially, precisely because the
+carrier was chosen to BE the frame — so the freeness content did not
+disappear, it migrated here.
+
+**It is NOT supplied by the sibling `exists_frobeniusForm_modularTateFrame`**,
+which is item 7 in its Hecke-algebra form `A ≅ A^∨`. The two are
+equivalent classically, through the `q`-expansion pairing, but not in
+Lean, and there is no term of one from the other anywhere in this file.
+REFUTING CHECK: produce a `𝕋_ℚ ⊗ ℚ̄_p`-linear equivalence
+`V ≃ₗ (𝕋_ℚ ⊗ ℚ̄_p)²` from a Frobenius functional on `𝕋_ℚ ⊗ ℚ̄_p` and no
+further input.
+
+## THE MOST PROMISING FIFTEENTH CUT IS AN ALGEBRA QUESTION, NOT GEOMETRY
+
+Splitting item 7 back out of this leaf turns on ONE statement of pure
+commutative algebra, and a successor should settle it BEFORE attempting
+any geometry:
+
+> Let `A` be a commutative artinian FROBENIUS `k`-algebra, `V` a faithful
+> `A`-module with `dim_k V = 2·dim_k A` carrying a NONDEGENERATE
+> ALTERNATING `A`-self-adjoint `k`-bilinear form. Is `V ≅ A²`?
+
+If yes, then item 7 (the identification `V_p(J₀(M)) ⊗ ℚ̄_p ≅ A²` that
+this leaf smuggles in) follows from the ALREADY PROVEN
+`exists_frobeniusForm_modularTateFrame` together with the Weil pairing
+and the dimension count, and this leaf splits honestly into
+"items 4 + 6 + Weil on an abstract carrier of dimension `2·dim A`" and
+"that algebra lemma" — with a `∀`-half that is TRUE, which is exactly
+what every other candidate split lacks.
+
+EVIDENCE COLLECTED (each case checked by hand, 2026-07-27; each is a
+counterexample search that FAILED, which is why the question is worth
+asking rather than assumed either way):
+
+* `A = k[x]/x²`, `dim V = 4`: the only faithful candidates besides `A²`
+  are `A ⊕ (A/x)²` and `(A/x)⁴`; the latter is not faithful, and the
+  former admits no such form, because `A` alone carries none — for
+  `a = α + βx`, `θ(a²) = 2αβ ≠ 0`, so the rank-one free part can never
+  be alternating, and it cannot pair nondegenerately with an `x`-killed
+  summand either.
+* `A = k × k`, `dim V = 4`: each factor needs an alternating
+  nondegenerate form, hence even dimension, forcing `k² × k² = A²`.
+* `A = k[x]/x³`, `dim V = 6`: the competing self-dual faithful module
+  `A ⊕ A/x² ⊕ A/x` is killed by a rank parity argument — self-adjointness
+  gives `(ann_V x)^⊥ = xV`, so the induced form on the 3-dimensional
+  `ann_V x` has radical `ann_V x ∩ xV` of dimension exactly 2, leaving an
+  alternating form of rank 1, which does not exist.
+
+So no counterexample is known and three families force `V ≅ A²`. This is
+the classical route to multiplicity one, and it may well be a theorem;
+naming it here is worth more than another attempt at the geometry.
+REFUTING CHECK, and it is cheap: exhibit `A`, `V` as above with
+`V ≇ A²`.
+
+## FAITHFULNESS CHECK RUN, AND IT PASSES
+
+`#synth TopologicalSpace (AlgebraicClosure ℚ_[p])` answers
+`(PadicAlgCl.valued p).toTopologicalSpace` — the spectral-norm valuation
+topology of `Mathlib/NumberTheory/Padics/Complex.lean`, NOT the discrete
+one. This had to be checked, because a discrete coefficient topology
+would REFUTE the leaf: `Γ_ℚ` is compact, so a continuous `τJ` into a
+discrete `Module.End` has finite image and therefore finitely many
+Frobenius traces, while `(1 : ℚ̄_p) ⊗ₜ modularTateGen M q` already takes
+infinitely many values at `M = 11`, where `𝕋_ℚ = ℚ` and the trace clause
+reads `a_q(f) ∈ ℤ`, unbounded. So this leaf is not an instance of the
+"algebraic pin, topological conclusion" falsity that had to be refuted in
+`exists_tateFrame_of_adicCoefficientRing`; the pin here is genuinely
+`p`-adic and the continuity demand is real.
+
+## THE SHAPE OF THE FIFTEENTH CUT, for whoever gets a full budget
+
+The only cut with a TRUE `∀`-half goes to the SCHEME level, and it must
+carry the Tate frame in the datum:
+
+* `∃`-half — `Nonempty (ModularJacobianDatum M)`: `J₀(M) = Jac X₀(M)` as
+  an `AbelianSchemeStruct` over `Spec ℚ` of relative dimension
+  `finrank ℚ 𝕋_ℚ`, a `Mult` action of an integral Hecke order, a
+  `PolarizationStruct`, the Eichler–Shimura congruence relation stated on
+  geometric torsion points through `galSMul` and `Mult.act` (Igusa; D–S
+  8.6.1, 8.7.2), AND a levelwise Tate frame in the shape of the
+  conclusion of `exists_levelwiseTateFrame`. Pure algebraic geometry; no
+  `p`-adic analysis.
+* `∀`-half: from such a datum, build the continuous `GaloisRep` on the
+  frame and read off trace and determinant.
+
+**The frame must be IN the datum, unless the algebra question above is
+settled first.** Freeness of the Tate space of RANK TWO over `A` is item
+7 (Mazur, *Eisenstein ideal* II §15; Ribet, *Invent. Math.* 100 (1990)
+§2) — a theorem, not a formality — and "abelian variety with commuting
+Hecke action, polarization and congruence relation" is not on its face
+enough to force it. Carrying the frame in the datum is the safe option;
+proving the algebra lemma is the better one, because it removes item 7
+from the geometry altogether.
+
+WORKED PRECEDENT, and why it does not instantiate as it stands:
+`TateModule.lean` already runs exactly this pipeline —
+`exists_levelwiseTateFrame` → `exists_tateFrame_of_adicCoefficientRing` →
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` — but every one of
+those is stated for `Mult ab (𝓞 D)` with `D` a totally real number
+**field** and for a coefficient ring `O` that is **local, complete and a
+finite free `ℤ_[q]`-algebra**. `𝕋_ℚ` is not a field and
+`𝕋_ℚ ⊗ ℚ̄_p` is neither local nor complete, so that pipeline fits the
+newform quotient `A_f` (where `D = K_f` is totally real of degree
+`dim A_f`) and NOT `J₀(M)` itself. Porting it to a non-local, non-complete
+coefficient algebra is the real cost of the fifteenth cut, and it is why
+this owner did not execute it rather than leave a half-designed interface
+behind.
+
+DO NOT reduce this leaf to "the representation attached to a newform
+exists". That is the ENDPOINT this whole subtree constructs — `J₀(M)`'s
+Tate space is what `irred_eigenspace_modularTateSpace` cuts the newform
+representations out of — so such a cut is circular in content even though
+it is not a cycle in the dependency graph.
+
+NOTHING TO VENDOR (checked 2026-07-27): `~/cs/FLT` mentions a Jacobian
+only in `FLT/Assumptions/Mazur.lean` and has no Eichler–Shimura; mathlib
+`Mathlib/NumberTheory` has no modular curve, no `J₀`, and no
+Eichler–Shimura. -/
 theorem exists_galoisRep_modularTateFrame_traceDet {M : ℕ} (hM : 0 < M) :
     ∃ (τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M))
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
