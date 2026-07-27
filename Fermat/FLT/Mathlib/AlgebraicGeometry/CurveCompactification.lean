@@ -91,9 +91,9 @@ Every one of the original five leaves has now been cut down; the remaining leave
 
 | leaf | content |
 | --- | --- |
-| `nonempty_projChart_mvPolynomial` | dehomogenisation: the standard affine chart of `ℙⁿ` |
+| `exists_dehomogenisation_mvPolynomial` | dehomogenisation: `(K[X₀..Xₙ][X₀⁻¹])₀ ≅ K[Y₁..Yₙ]`, all that is left of the standard affine chart of `ℙⁿ` after the 2026-07-27 cut (`nonempty_projChart_mvPolynomial` is now a THEOREM over it) |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
-| `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) |
+| `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) — but see the BYPASS on that declaration: every current consumer's `Y` is affine, and the affine case is proven |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
 | `exists_isOpenImmersion_isProper` | Nagata compactification (unchanged — a single citation, no cut available) |
 | `finiteType_integralClosure_sections` | Nagata/Japanese rings: the integral closure of a finite-type `K`-algebra in the sections of `Y` over an affine chart is of finite type |
@@ -325,22 +325,31 @@ one cannot write oneself.
 
 The three pieces:
 
-* `nonempty_projChart_mvPolynomial` (LEAF) — the standard affine chart of `ℙⁿ`:
-  dehomogenisation at `X₀`;
+* `nonempty_projChart_mvPolynomial` — the standard affine chart of `ℙⁿ`: dehomogenisation at
+  `X₀`.  **PROVEN 2026-07-27** over the single ring-theoretic LEAF
+  `exists_dehomogenisation_mvPolynomial`; everything the `ProjChart` structure asks for
+  besides the identification of the chart is discharged there;
 * `nonempty_projChart_of_surjective` (LEAF) — the projective closure: a chart for `B'`
   descends along a surjection `B' ↠ B`;
 * `exists_isOpenImmersion_isProper_of_affineCase` (LEAF) — Nagata's gluing induction, which
-  is the only piece that is still Nagata's theorem proper.
+  is the only piece that is still Nagata's theorem proper.  See the BYPASS recorded on that
+  declaration: every current consumer of `exists_isSmoothCompactification` supplies an
+  AFFINE `Y`, and the affine case is proven, so this leaf blocks nothing downstream.
 
 Everything joining them is proven here.  Note the same `Proj`-chart pattern (a
 `HomogeneousLocalization.Away` identified with a concrete ring, together with the commuting
 triangle out of the base field) is already used by
 `Fermat/FLT/ModularCurve/EllipticScheme.lean` for the projective Weierstrass model, whose
-`exists_projChartRingEquiv` is the Weierstrass instance of `nonempty_projChart_mvPolynomial`
-composed with `nonempty_projChart_of_surjective`.  Whoever proves one should look at the
-other; the second file's docstring carries a full proof plan for the dehomogenisation
-isomorphism (surjectivity from `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`, the
-kernel by a UFD divisibility argument). -/
+`exists_projChartRingEquiv` is the Weierstrass instance of the dehomogenisation leaf
+composed with `nonempty_projChart_of_surjective`.
+
+**CORRECTION 2026-07-27:** an earlier version of this paragraph said that file's docstring
+"carries a full proof plan".  It carries a full PROOF — `exists_projChartRingEquiv` is
+proven — and the plan it quotes is superseded: surjectivity comes from
+`HomogeneousLocalization.Away.mk_surjective`, not from
+`Away.adjoin_mk_prod_pow_eq_top`.  The quotient grading the closure construction needs is
+also present, in `Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/Quotient.lean`, not in
+`Mathlib`.  Read the corrected route notes on the two leaves before starting on either. -/
 
 /-- For an affine `Y` and an affine target, a morphism is recovered from its ring map:
 `g = Y.isoSpec.hom ≫ Spec.map (Γ g)`.  This is `Scheme.isoSpec_hom_naturality` with the
@@ -443,30 +452,123 @@ theorem exists_isOpenImmersion_isProper_of_proj {Y : Scheme.{u}} [IsAffine Y]
   exact QuasiCompact.of_comp (Y.isoSpec.hom ≫ Spec.map e.hom ≫ Proj.awayι 𝒜 f hf one_pos)
     (Proj.toSpecZero 𝒜 ≫ Spec.map (CommRingCat.ofHom (algebraMap K ↥(𝒜 0))))
 
-/-- **The standard affine chart of `ℙⁿ`** (sorry leaf — dehomogenisation).
+section MvPolynomialChart
 
-TRUE and elementary: take `A := K[X₀, …, Xₙ]` with its grading by total degree
-(`MvPolynomial.homogeneousSubmodule`) and `f := X₀`.  Then `𝒜₀ = K` (so `Module.Finite K 𝒜₀`
-is immediate), `A` is generated over `𝒜₀` by `n + 1` elements, and the degree-zero part of
-`A[X₀⁻¹]` is `K[X₁/X₀, …, Xₙ/X₀] ≅ K[Y₁, …, Yₙ]` — dehomogenisation, `Xᵢ ↦ Yᵢ`, `X₀ ↦ 1`.
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+/-- **Dehomogenisation: the degree-zero part of `K[X₀, …, Xₙ][X₀⁻¹]` is `K[Y₁, …, Yₙ]`**
+(sorry leaf — 2026-07-27, and it is ALL that is left of `nonempty_projChart_mvPolynomial`
+below, which is now a THEOREM over it).
+
+TRUE and elementary.  The map is `Yᵢ ↦ Xᵢ₊₁ / X₀`; its inverse sends a degree-zero fraction
+`a / X₀^d` (with `a` homogeneous of degree `d`) to the dehomogenisation `a(1, Y₁, …, Yₙ)`.
 Stacks tag `01M3`.
 
-**Why it is not free at this pin**: a grep for `dehomogeni` over the whole of `Mathlib`
-returns NOTHING.  `HomogeneousLocalization.Away` and `Proj.awayι` exist, but no
-identification of an away-localisation's degree-zero part with a concrete polynomial ring.
-The same gap is recorded independently at `Fermat.exists_projChartRingEquiv`
-(`Fermat/FLT/ModularCurve/EllipticScheme.lean`), whose docstring carries a full proof plan —
-surjectivity from `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`, injectivity by a
-UFD divisibility argument.  Here the ideal is zero, so only the surjectivity half plus the
-triviality of the kernel is needed, which makes this the EASIER of the two; a proof here
-should be lifted to that one, and vice versa.
+The second conjunct is the compatibility with the constants, and it is NOT optional: an
+arbitrary ring isomorphism between these two rings need not be `K`-linear, and the `compat`
+field of `ProjChart` is exactly this condition.  It is stated pointwise on `K` rather than
+as an `AlgEquiv` on purpose — the source carries an `Algebra ↥(𝒜 0)` structure and the
+target an `Algebra K` one, and forcing them into a single `Algebra K` structure is the "two
+defeq but never syntactically equal instances" trap that `ProjChart`'s own docstring warns
+about.
 
-This is `Mathlib`-ready material: stated for an arbitrary base commutative ring it is the
-standard affine cover of projective space. -/
+**ROUTE, CORRECTED 2026-07-27 — DO NOT START FROM SCRATCH, AND DO NOT BELIEVE THE OLD NOTE.**
+The previous version of this docstring said the same gap "is recorded independently at
+`Fermat.exists_projChartRingEquiv`, whose docstring carries a full proof plan".  That was
+true when written and is now **stale in the most expensive direction**:
+`Fermat.exists_projChartRingEquiv` (`Fermat/FLT/ModularCurve/EllipticScheme.lean`) is
+**PROVEN**, in *exactly* the shape stated here — a `RingEquiv` plus the commuting triangle
+out of the base field, for the same reason (avoiding the `Algebra ↥(𝒜 0)` vs `Algebra K`
+instance clash).  What is left here is to GENERALISE that proof, not to find one.
+
+Its skeleton, which transfers verbatim:
+
+* the chart map `projChartHom : K[u₁ … uₙ] → (A_{X₀})₀`, `uⱼ ↦ Xⱼ / X₀`;
+* SURJECTIVITY is immediate from `HomogeneousLocalization.Away.mk_surjective`
+  (`Mathlib/RingTheory/GradedAlgebra/HomogeneousLocalization.lean:618`): every element of
+  the degree-zero part is literally `a / X₀^m` with `a` homogeneous of degree `m`, and
+  `dehomogenize a` is a preimage.  **The old plan's route through
+  `Away.adjoin_mk_prod_pow_eq_top` is not needed** — that was the harder path and
+  `EllipticScheme.lean` records abandoning it;
+* the KERNEL is the hard half THERE and is **TRIVIAL HERE**: it computes to
+  `{q : X₀^k · homogenize q = 0 in A}`, and `A = K[X₀ … Xₙ]` is a domain, so the kernel is
+  `⊥` and the whole UFD divisibility argument (`polynomial_dvd_of_dvd_X_pow_mul`,
+  `not_X_dvd_polynomial`) evaporates.  Only the zero ideal appears here;
+* glue with `RingHom.quotientKerEquivOfSurjective`.
+
+The one real cost is that `EllipticScheme.lean`'s block is hard-wired to `Fin 3`, to `ℚ`,
+and to `ProjChartVar i = {j : Fin 3 // j ≠ i}`, so `dehomogenizeAt` / `homogenizeAt` and
+their lemmas have to be re-stated over `Fin (n+1)` and a general field.  **That
+generalisation is the SAME job as `nonempty_projChart_of_surjective` below** (which is the
+arbitrary-homogeneous-ideal case of it), and `EllipticScheme.lean`'s own docstring says the
+block "is the piece that ought to be upstreamed".  So whoever takes either leaf should take
+both, hoist the generalised block into the shim tree, and re-derive
+`exists_projChartRingEquiv` from it.
+
+What IS genuinely absent from `Mathlib` (re-checked 2026-07-27): a grep for `dehomogeni`
+over the whole of `Mathlib` returns NOTHING, and there is no identification of an
+away-localisation's degree-zero part with a concrete polynomial ring.  So this is
+`Mathlib`-ready material: stated for an arbitrary base commutative ring it is the standard
+affine cover of projective space. -/
+theorem exists_dehomogenisation_mvPolynomial (n : ℕ) :
+    ∃ e : HomogeneousLocalization.Away (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
+        (MvPolynomial.X 0) ≃+* MvPolynomial (Fin n) K,
+      ∀ c : K, e (HomogeneousLocalization.fromZeroRingHom
+          (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
+          (Submonoid.powers (MvPolynomial.X (0 : Fin (n + 1))))
+          (algebraMap K ↥(MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 0) c))
+        = algebraMap K (MvPolynomial (Fin n) K) c :=
+  sorry
+
+/-- **The standard affine chart of `ℙⁿ`** (**PROVEN 2026-07-27** over the single
+ring-theoretic leaf `exists_dehomogenisation_mvPolynomial` above; it used to be a leaf
+itself).
+
+Take `A := K[X₀, …, Xₙ]` with its grading by total degree
+(`MvPolynomial.homogeneousSubmodule`, whose `GradedAlgebra` structure `Mathlib` supplies as
+the non-instance abbreviation `MvPolynomial.gradedAlgebra`) and `f := X₀`.  Everything the
+`ProjChart` structure asks for except the identification of the chart is discharged here:
+
+* `f_deg` is `MvPolynomial.isHomogeneous_X`;
+* `zeroFinite` is `MvPolynomial.homogeneousSubmodule_zero` — the degree-zero part is the
+  unit submodule `1 = K ∙ 1`, hence a finitely generated `K`-module.  Note this is the
+  place the `ProjChart` docstring's deliberate weakening pays off: `𝒜₀` is only shown
+  FINITE over `K`, never isomorphic to it;
+* `finiteType` is `Algebra.FiniteType.of_restrictScalars_finiteType` over
+  `Algebra.FiniteType K (MvPolynomial (Fin (n+1)) K)`, once the missing
+  `IsScalarTower K ↥(𝒜 0) A` is supplied by hand — `Mathlib` has
+  `SetLike.GradeZero.instAlgebra` but no tower instance to go with it, and the `SMul K ↥(𝒜 0)`
+  that typeclass resolution finds is the `Submodule` one rather than `Algebra.toSMul`, so
+  `IsScalarTower.of_algebraMap_eq` does NOT apply and the field must be checked directly;
+* `compat` is the second conjunct of the leaf. -/
 theorem nonempty_projChart_mvPolynomial (n : ℕ) :
     Nonempty (ProjChart K (CommRingCat.of (MvPolynomial (Fin n) K))
-      (CommRingCat.ofHom (algebraMap K (MvPolynomial (Fin n) K)))) :=
-  sorry
+      (CommRingCat.ofHom (algebraMap K (MvPolynomial (Fin n) K)))) := by
+  obtain ⟨e, he⟩ := exists_dehomogenisation_mvPolynomial (K := K) n
+  haveI : IsScalarTower K ↥(MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 0)
+      (MvPolynomial (Fin (n + 1)) K) :=
+    ⟨fun x y z => by
+      show ((x • y : ↥(MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 0)) :
+          MvPolynomial (Fin (n + 1)) K) * z
+        = x • ((y : MvPolynomial (Fin (n + 1)) K) * z)
+      rw [Submodule.coe_smul, smul_mul_assoc]⟩
+  refine ⟨{
+    A := MvPolynomial (Fin (n + 1)) K
+    grading := MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K
+    f := MvPolynomial.X 0
+    f_deg := MvPolynomial.isHomogeneous_X K 0
+    zeroFinite := ?_
+    finiteType := ?_
+    awayIso := e.toCommRingCatIso
+    compat := ?_ }⟩
+  · exact Algebra.FiniteType.of_restrictScalars_finiteType K
+      ↥(MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 0) (MvPolynomial (Fin (n + 1)) K)
+  · refine Module.Finite.of_fg ?_
+    rw [MvPolynomial.homogeneousSubmodule_zero, Submodule.one_eq_span]
+    exact Submodule.fg_span_singleton _
+  · exact CommRingCat.hom_ext (RingHom.ext fun c => he c)
+
+end MvPolynomialChart
 
 /-- **Projective closure: a chart descends along a surjection** (sorry leaf).
 
@@ -491,9 +593,35 @@ over `K` but NOT isomorphic to `K`.  (A chart still exists for `B = 0` by other 
 by `HomogeneousLocalization.subsingleton` — but the uniform construction is the one above,
 and it only works because the chart does not demand `𝒜₀ ≅ K`.)
 
-`Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin; it does
-have `HomogeneousIdeal`, `GradedRing`, and the quotient grading, which is what this is to be
-built from. -/
+**ROUTE, CORRECTED 2026-07-27 — the quotient grading is NOT missing, and it is not in
+`Mathlib` either: it is in THIS PROJECT.**  An earlier version of this note said `Mathlib`
+"does have `HomogeneousIdeal`, `GradedRing`, and the quotient grading".  It does not: a grep
+for `quotientGrading` over the whole of `Mathlib` returns nothing, and
+`Mathlib/RingTheory/GradedAlgebra/` carries `Ideal.IsHomogeneous` and `HomogeneousIdeal` but
+no induced grading on `A ⧸ I` (`X0.lean`'s "ABSENT WHEN WRITTEN" item 1 records the same
+finding).  What closes the gap is
+
+    Fermat/FLT/Mathlib/RingTheory/GradedAlgebra/Quotient.lean
+
+which defines `HomogeneousIdeal.quotientGrading 𝒜 I i := (𝒜 i).map (Ideal.Quotient.mk I)`,
+proves `mem_quotientGrading` / `mk_mem_quotientGrading`, and supplies
+`instGradedAlgebraQuotientGrading : GradedAlgebra (quotientGrading 𝒜 I)`.  It imports only
+`Mathlib`, so importing it here is acyclic.  It is already used throughout
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` and
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`.
+
+So the obligations left are: define `I` and show it homogeneous; the FiniteType and
+`Module.Finite` clauses, both of which are quotients of the corresponding clauses for
+`(A', 𝒜')`; and the chart identification `(A_f)₀ ≅ B`.  The chart identification is the
+same job as `exists_dehomogenisation_mvPolynomial` above — this leaf is its
+arbitrary-homogeneous-ideal case — and `Fermat.exists_projChartRingEquiv`
+(`EllipticScheme.lean`) is a **PROVEN** instance of it, for the Weierstrass ideal, with the
+kernel computed by a saturation/UFD argument.  Read the corrected route note on
+`exists_dehomogenisation_mvPolynomial` before starting: the two leaves should be taken by
+one owner, who hoists `EllipticScheme.lean`'s chart block into the shim tree in its general
+form and re-derives that file's copy from it.
+
+`Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin. -/
 theorem nonempty_projChart_of_surjective {B B' : CommRingCat.{u}}
     {b' : CommRingCat.of K ⟶ B'} (_C : ProjChart K B' b') (q : B' ⟶ B)
     (_hq : Function.Surjective q.hom) : Nonempty (ProjChart K B (b' ≫ q)) :=
@@ -559,7 +687,39 @@ using it directly is what makes this leaf strictly the gluing content and nothin
 Note that the induction genuinely needs blowups (equivalently, scheme-theoretic images of
 non-quasi-compact opens): the naive "glue the two closures along `U ∩ V`" fails because the
 two proper models need not agree there.  That is the whole reason Nagata's theorem was open
-for so long and why Deligne's write-up exists. -/
+for so long and why Deligne's write-up exists.
+
+**AXIS SEARCHED, and a BYPASS that makes this leaf optional for every current consumer
+(2026-07-27).**  The axis searched is the *proof* axis — routes to a Lean proof of the
+gluing induction — and on that axis the verdict stands: this is a genuine research-level
+formalisation, and nothing in `Mathlib`, `~/cs/FLT` or this project is even a starting
+point.
+
+The axis NOT searched, and the one that pays, is the *consumer* axis.  Trace it:
+
+* the only consumer of `exists_isOpenImmersion_isProper` is
+  `exists_isSmoothCompactification` below;
+* its only consumers are `Fermat/FLT/ModularCurve/X1.lean:1029`
+  (`exists_x1Compactification_field`) and `Fermat/FLT/ModularCurve/X0.lean:9569`,
+  `:16168`, `:16216`;
+* every one of them obtains its `Y` from a coarse-moduli existential whose exhibited model
+  is **AFFINE** — `X1.lean` says so in as many words at its `exists_x1Compactification_field`
+  docstring ("the model is affine over the affine `Spec K`, so `QuasiCompact` and
+  `IsSeparated` come from `isAffineHom_of_isAffine`"), and derives three of its five
+  conclusions from that affineness.  The affineness is simply not EXPORTED by the
+  existential.
+
+So the whole of Nagata is being invoked to compactify a scheme that is already known to be
+affine, and the affine case is **PROVEN** here as
+`exists_isOpenImmersion_isProper_of_isAffine`.  The repair is a two-file edit that touches
+no hard mathematics: add `IsAffine Y` to the conclusion of the coarse-moduli existentials in
+`X0.lean` / `X1.lean`, and add an `[IsAffine Y]` variant of `exists_isSmoothCompactification`
+here that routes through `exists_isOpenImmersion_isProper_of_isAffine`.  That variant is
+deliberately NOT written yet: with no consumer it would be free-floating, so it must land in
+the same change as the `X0.lean` / `X1.lean` side, by one owner.
+
+This leaf then survives only as the general statement, wanted for its own sake rather than
+by anything downstream — which is the right place for a research-level citation to sit. -/
 theorem exists_isOpenImmersion_isProper_of_affineCase {Y : Scheme.{u}}
     (strY : Y ⟶ Spec (CommRingCat.of K)) [QuasiCompact strY] [IsSeparated strY]
     [LocallyOfFiniteType strY]
