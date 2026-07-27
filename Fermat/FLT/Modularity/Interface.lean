@@ -23888,9 +23888,50 @@ theorem sum_decompVal_add_neg_eq_mul_card {m : ℕ} [NeZero m] (D : Finset (ZMod
   rw [hbneg, ← Finset.sum_add_distrib, Finset.sum_congr rfl hterm, Finset.sum_const, smul_eq_mul,
     mul_comm]
 
+/-- **`ℓ` IS UNRAMIFIED IN `ℚ(ζ_p)` WHEN `ℓ ∤ p`, IN THE FORM
+`(ℓ : 𝓞 CF) ∉ q²`** (PROVEN 2026-07-27; pure mathlib, no new
+mathematics).
+
+This is the only input to `natCard_mem_pow_decompCard` below that is
+not already in this file, and it is exactly `e(q/ℓ) = 1` transcribed
+into membership form. The chain:
+
+* `IsCyclotomicExtension.Rat.ramificationIdx_eq_of_not_dvd` gives
+  `Ideal.ramificationIdx q ℤ = 1` (mathlib's `Module.length`-flavoured
+  ramification index) for `ℓ ∤ p` — this is where unramifiedness of the
+  `p`-th cyclotomic field away from `p` enters, and it is proven in the
+  pin from the separability of `Φ_p mod ℓ`;
+* `Ideal.ramificationIdx'_eq_ramificationIdx` identifies it with the
+  classical `ramificationIdx' (ℓ) q = sSup {n | (ℓ)ᵉ ≤ qⁿ}` (`𝓞 CF` is
+  Dedekind, `ℤ` a domain, `(ℓ) ≠ ⊥`);
+* `Ideal.ramificationIdx'_ne_one_iff` then says precisely that
+  `(ℓ) ≤ q²` would force `ramificationIdx' ≠ 1`.
+
+Stated with `ℓ` and the `LiesOver` instance as HYPOTHESES rather than
+existentially, exactly like `card_decompFilter_eq_inertiaDeg` above, so
+that the consumer can instantiate at `ℓ := absNorm (under ℤ q)` where
+`Int.liesOver_span_absNorm` supplies the instance definitionally. -/
+theorem intCast_not_mem_sq_of_not_dvd (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (ℓ : ℕ) [Fact (Nat.Prime ℓ)]
+    (q : Ideal (𝓞 CF)) [q.IsPrime] [q.LiesOver (Ideal.span {(ℓ : ℤ)})]
+    (hnd : ¬ ℓ ∣ p) :
+    (ℓ : 𝓞 CF) ∉ q ^ 2 := by
+  have hspan : (Ideal.span {(ℓ : ℤ)}) ≠ ⊥ := by
+    simp [(Fact.out : Nat.Prime ℓ).ne_zero]
+  have hle : Ideal.map (algebraMap ℤ (𝓞 CF)) (Ideal.span {(ℓ : ℤ)}) ≤ q :=
+    Ideal.map_le_of_le_comap (q.over_def (Ideal.span {(ℓ : ℤ)})).le
+  have hram : Ideal.ramificationIdx' (Ideal.span {(ℓ : ℤ)}) q = 1 := by
+    rw [Ideal.ramificationIdx'_eq_ramificationIdx _ _ hspan]
+    exact IsCyclotomicExtension.Rat.ramificationIdx_eq_of_not_dvd ℓ CF q hnd
+  intro hmem2
+  refine (Ideal.ramificationIdx'_ne_one_iff hle).mpr ?_ hram
+  rw [Ideal.map_span]
+  refine Ideal.span_le.mpr ?_
+  simpa using hmem2
+
 /-- **`v_q(#(𝓞 CF ⧸ q)) = #D`: THE RESIDUE CARDINALITY HAS `q`-VALUATION
-THE ORDER OF THE DECOMPOSITION GROUP** (SORRY LEAF, cut 2026-07-27 out
-of `exists_gaussSumPow_of_jacobiSum` below).
+THE ORDER OF THE DECOMPOSITION GROUP** (PROVEN 2026-07-27; cut
+2026-07-27 out of `exists_gaussSumPow_of_jacobiSum` below).
 
 `#(𝓞 CF ⧸ q) = ℓ^f`, where `ℓ` is the rational prime under `q` and `f`
 the residue degree. The decomposition group
@@ -23901,17 +23942,40 @@ ramified ONLY at `p`, so `e = 1`; hence `#D = f` and
 
 **This is pure algebraic number theory — no Gauss sums, no Jacobi sums,
 no Stickelberger.** It is separated from the Gauss-sum leaf below
-precisely so that it can be attacked from mathlib's ramification API
-(`Ideal.ramificationIdx`, `Ideal.inertiaDeg`, the `IsGalois` sum
-formula, and `IsCyclotomicExtension`'s discriminant/ramification
-results) by an owner who never has to look at a character.
+precisely so that it could be attacked from mathlib's ramification API
+by an owner who never has to look at a character.
+
+**THE PROOF, as carried out.** Set `ℓ := absNorm (under ℤ q)`, the
+rational prime under `q` (`Nat.absNorm_under_prime`), so that
+`Int.liesOver_span_absNorm` supplies `q.LiesOver (ℓ)` as an INSTANCE
+and `Int.absNorm_under_mem` gives `(ℓ : 𝓞 CF) ∈ q`. Then `ℓ ≠ p`,
+since `ℓ ∣ p` between primes forces `ℓ = p` and hence
+`(p : 𝓞 CF) ∈ q`, against `hpq`. Three ingredients then close it, none
+of which mentions a valuation:
+
+* `card_decompFilter_eq_inertiaDeg` above rewrites the EXPONENT `#D` as
+  `inertiaDeg q ℤ =: f` (this is where `galEquivZMod_stabilizer` and
+  `ℓ ∤ p` are consumed);
+* `Ideal.pow_inertiaDeg` + `Ideal.absNorm_apply` +
+  `Submodule.cardQuot_apply` rewrite `#(𝓞 CF ⧸ q)` as `ℓ ^ f`, so both
+  halves become statements about `(ℓ : 𝓞 CF) ^ f`;
+* the LOWER half is then `Ideal.pow_mem_pow` applied to
+  `(ℓ : 𝓞 CF) ∈ q`, and the UPPER half is
+  `pow_not_mem_pow_succ_of_exact_val` above at `n = 1`, `k = f`, whose
+  `∉ q^{n+1}` hypothesis is exactly `intCast_not_mem_sq_of_not_dvd`,
+  i.e. `e = 1`.
+
+So the only genuinely arithmetic input is the unramifiedness of `ℓ ∤ p`
+in `ℚ(ζ_p)`, isolated in the helper above; everything else is
+bookkeeping.
 
 **FAITHFULNESS.** `hpq` is load-bearing and cannot be dropped: at
 `ℓ = p` the prime `q = (1 − ζ_p)` is totally ramified, `e = p − 1`,
 `f = 1`, `#D = p − 1`, while `v_q(#(𝓞 CF ⧸ q)) = v_q(p) = p − 1`. That
-happens to agree here, but the intermediate claim `e = 1` does not, and
-the Gauss-sum theory below is empty at `ℓ = p` anyway (`χ` cannot have
-order `p`). -/
+happens to agree here, but the intermediate claim `e = 1` does not (and
+`card_decompFilter_eq_inertiaDeg`, which identifies `#D` with `f`, is
+outright false there), and the Gauss-sum theory below is empty at
+`ℓ = p` anyway (`χ` cannot have order `p`). -/
 theorem natCard_mem_pow_decompCard (CF : Type) [Field CF] [NumberField CF]
     [IsCyclotomicExtension {p} ℚ CF]
     {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
@@ -23919,8 +23983,31 @@ theorem natCard_mem_pow_decompCard (CF : Type) [Field CF] [NumberField CF]
     ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ∈ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
           Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card ∧
       ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ∉ q ^ ((Finset.univ.filter (fun u : (ZMod p)ˣ =>
-          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card + 1) :=
-  sorry
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card + 1) := by
+  haveI := hq
+  haveI : NeZero q := ⟨hq0⟩
+  have hlprime : (Ideal.absNorm (Ideal.under ℤ q)).Prime := Nat.absNorm_under_prime q
+  haveI : Fact (Nat.Prime (Ideal.absNorm (Ideal.under ℤ q))) := ⟨hlprime⟩
+  have hnd : ¬ (Ideal.absNorm (Ideal.under ℤ q)) ∣ p := by
+    intro hdvd
+    have heq : Ideal.absNorm (Ideal.under ℤ q) = p :=
+      (Nat.prime_dvd_prime_iff_eq hlprime hp.out).mp hdvd
+    exact hpq (heq ▸ Int.absNorm_under_mem q)
+  have hmem : ((Ideal.absNorm (Ideal.under ℤ q) : ℕ) : 𝓞 CF) ∈ q := by
+    simpa using Int.absNorm_under_mem q
+  have hmem1 : ((Ideal.absNorm (Ideal.under ℤ q) : ℕ) : 𝓞 CF) ∈ q ^ 1 := by
+    simpa using hmem
+  have hnot2 : ((Ideal.absNorm (Ideal.under ℤ q) : ℕ) : 𝓞 CF) ∉ q ^ (1 + 1) := by
+    simpa using intCast_not_mem_sq_of_not_dvd CF (Ideal.absNorm (Ideal.under ℤ q)) q hnd
+  have hcard : (Nat.card (𝓞 CF ⧸ q))
+      = (Ideal.absNorm (Ideal.under ℤ q)) ^ (Ideal.inertiaDeg q ℤ) := by
+    rw [Ideal.pow_inertiaDeg, Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  rw [card_decompFilter_eq_inertiaDeg CF (Ideal.absNorm (Ideal.under ℤ q)) q hnd, hcard]
+  push_cast
+  refine ⟨Ideal.pow_mem_pow hmem _, ?_⟩
+  have hup := pow_not_mem_pow_succ_of_exact_val hq hq0 hmem1 hnot2
+    (k := Ideal.inertiaDeg q ℤ)
+  simpa using hup
 
 /-- **STICKELBERGER FOR GAUSS SUMS — THE LOWER BOUND ONLY** (SORRY LEAF,
 cut 2026-07-27 out of `exists_gaussSumPow_of_jacobiSum` below, which is
