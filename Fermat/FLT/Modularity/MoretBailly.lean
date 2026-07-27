@@ -23441,7 +23441,7 @@ is UNSATISFIABLE (`|𝔽₃ˣ| = 2`), which is the counterexample that refuted
 the original statement of the consuming node.
 
 HOW IT IS PROVED (2026-07-27), and where the remaining mathematics went.
-Take `d = -1` and `x` a root of `X ^ 2 + 1`; the quadratic character `e` is
+Take `d = -3` and `x` a root of `X ^ 2 + 3`; the quadratic character `e` is
 `exists_quadraticChar_of_sq_eq`, its ODDNESS at the real place is
 `map_realConj_ne_of_sq_eq_neg`, a complex-conjugation INVOLUTION `c₀`
 outside `ker e` is `exists_realConjInvolution_of_neg`, and the index-two
@@ -23476,17 +23476,33 @@ need NOT be unramified, so Nakagawa–Horie is not on the critical path.
 
 FAITHFULNESS. The conclusion is a statement about `Γ_ℚ` and `kpˣ` alone;
 it mentions no representation, so it cannot be discharged vacuously by a
-degenerate two-dimensional object. It is not vacuous in `d` either: `d < 0`
-is what forces `e` to be `-1` at complex conjugation, and `x ^ 2 = d`
-together with `e g = 1 ↔ g x = x` pins `ker e` to be `Γ_{ℚ(√d)}` rather
-than an arbitrary index-two subgroup. -/
+degenerate two-dimensional object. It is not vacuous in the quadratic field
+either: `-3 < 0` is what forces `e` to be `-1` at complex conjugation, and
+`x ^ 2 = -3` together with `e g = 1 ↔ g x = x` pins `ker e` to be
+`Γ_{ℚ(√-3)}` rather than an arbitrary index-two subgroup.
+
+**THE IMAGINARY QUADRATIC FIELD IS PINNED TO `ℚ(√-3)` (2026-07-27), and that
+is not a cosmetic choice.** The statement used to existentially quantify a
+negative rational `d`, and the proof took `d = -1`. Every downstream input of
+`d` is generic in it — `exists_quadraticChar_of_sq_eq`,
+`exists_anticyclotomicChar_of_quadraticChar`,
+`exists_realConjInvolution_of_neg`, `map_realConj_ne_of_sq_eq_neg` and
+`exists_quadraticExtension_trivial_of_isTotallyReal` all take `(d, hd, x, hx)`
+as parameters — so the change costs nothing here. What it BUYS is the
+determinant: the representation built from `(ν, e)` has
+`det (dihedralMat (ν g) (e g)) = e g` by `dihedralMat_det`, so
+`det ρbarp = e`, and the COUPLING AUDIT of
+`exists_twistedHilbertBlumenthalDescent_of_split` shows the descent leaf
+entails `det ρbarp = χ̄_3`. Since `χ̄_3` is the quadratic character of
+`ℚ(ζ_3) = ℚ(√-3)`, the coupling holds for `d = -3` and FAILS for every other
+`d` — in particular for the `d = -1` this proof used to take. So this is the
+producing half of Taylor's `ε⁻¹ det R ≡ ψ⁻¹`, and `ℚ(√-3)` is where it lives. -/
 theorem exists_anticyclotomicDihedralCocycle (kp : Type u) [Field kp] [Finite kp]
     (h3 : (3 : kp) = 0) (hcard : 3 < Nat.card kp) :
-    ∃ (d : ℚ) (x : AlgebraicClosure ℚ)
+    ∃ (x : AlgebraicClosure ℚ)
       (ν : Field.absoluteGaloisGroup ℚ → kpˣ)
       (e : Field.absoluteGaloisGroup ℚ →* ℤˣ),
-      d < 0 ∧
-      x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d ∧
+      x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) (-3 : ℚ) ∧
       (∀ g h, ν (g * h) = ν g * ν h ^ ((e g : ℤ))) ∧
       (∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | ν g = ν g₀ ∧ e g = e g₀}) ∧
       (∀ g, e g = 1 ↔ g x = x) ∧
@@ -23495,11 +23511,11 @@ theorem exists_anticyclotomicDihedralCocycle (kp : Type u) [Field kp] [Finite kp
       (∃ g, e g = 1 ∧ ν g ^ (4 : ℕ) ≠ 1) := by
   classical
   haveI : Fintype kp := Fintype.ofFinite kp
-  -- the imaginary quadratic field `ℚ(i)`, and its quadratic character
+  -- the imaginary quadratic field `ℚ(√-3) = ℚ(ζ_3)`, and its quadratic character
   obtain ⟨x, hx⟩ : ∃ x : AlgebraicClosure ℚ,
-      x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) (-1 : ℚ) :=
+      x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) (-3 : ℚ) :=
     IsAlgClosed.exists_pow_nat_eq _ two_pos
-  obtain ⟨e, he, heopen⟩ := exists_quadraticChar_of_sq_eq (-1) (by norm_num) x hx
+  obtain ⟨e, he, heopen⟩ := exists_quadraticChar_of_sq_eq (-3) (by norm_num) x hx
   -- a unit of `kp` of order `> 4`, which is where `3 < Nat.card kp` is spent
   have h3dvd : 3 ∣ Nat.card kp := by
     have h1 : (3 : ℕ) • (1 : kp) = 0 := by
@@ -23518,15 +23534,15 @@ theorem exists_anticyclotomicDihedralCocycle (kp : Type u) [Field kp] [Finite kp
   have hζ : 4 < orderOf ζ := by rw [hζord, Nat.card_units]; omega
   -- the class field theory, the involution, and the index-two induction
   obtain ⟨χ, hmul, hanti, hopen, g₁, hg₁, hg₁4⟩ :=
-    exists_anticyclotomicChar_of_quadraticChar ζ hζ (-1) (by norm_num) x hx e he
-  obtain ⟨c₀, hc₀, hc₀2⟩ := exists_realConjInvolution_of_neg (-1) (by norm_num) x hx e he
+    exists_anticyclotomicChar_of_quadraticChar ζ hζ (-3) (by norm_num) x hx e he
+  obtain ⟨c₀, hc₀, hc₀2⟩ := exists_realConjInvolution_of_neg (-3) (by norm_num) x hx e he
   obtain ⟨ν, hcoc, hνopen, hνeq⟩ :=
     exists_dihedralCocycle_of_anticyclotomicChar e χ c₀ hc₀ hc₀2 hmul hanti hopen
-  refine ⟨-1, x, ν, e, by norm_num, hx, hcoc, ?_, he, ?_, ⟨g₁, hg₁, ?_⟩⟩
+  refine ⟨x, ν, e, hx, hcoc, ?_, he, ?_, ⟨g₁, hg₁, ?_⟩⟩
   · intro g₀
     exact (hνopen g₀).inter (heopen g₀)
   · intro σ hσ
-    have hne := map_realConj_ne_of_sq_eq_neg (-1) (by norm_num) x hx σ hσ
+    have hne := map_realConj_ne_of_sq_eq_neg (-3) (by norm_num) x hx σ hσ
     rcases Int.units_eq_one_or (e (Field.absoluteGaloisGroup.map
         (algebraMap ℚ (ULift.{u} ℝ)) σ)) with h | h
     · exact absurd ((he _).mp h) hne
@@ -24037,13 +24053,35 @@ Galois-theoretic bookkeeping forced by the fact that
 embeddings of algebraic closures and is therefore not functorial on the
 nose. Note also that the Nakagawa–Horie input is NOT needed: nothing
 requires `χ` unramified, so ray class characters of one fixed `M` suffice.
--/
+
+**THIRD CONJUNCT ADDED 2026-07-27 — THE DETERMINANT.** The COUPLING AUDIT of
+`exists_twistedHilbertBlumenthalDescent_of_split` shows the descent leaf
+entails `det ρbarp = χ̄_3`, and nothing supplied it; this node is where `ρbarp`
+is CHOSEN, so this is where it has to be produced. The conjunct says `det ρbarp`
+is the quadratic character of `ℚ(√-3)`, which is exactly `χ̄_3` since
+`ℚ(ζ_3) = ℚ(√-3)`. It costs this proof nothing at all: `dihedralMat_det` already
+computes `det (dihedralMat (ν g) (e g)) = e g`, and the sibling
+`exists_anticyclotomicDihedralCocycle` now pins its imaginary quadratic field to
+`ℚ(√-3)` (it used to take `ℚ(i)`, and every input of that field is generic in
+it — see that node's docstring).
+
+WHY IT IS PHRASED WITH A SQUARE ROOT OF `-3` RATHER THAN WITH `χ̄_3` ITSELF:
+`cycCharModN` is defined several hundred lines BELOW this declaration, so the
+mod-`3` cyclotomic character is not yet in scope here. The translation into
+`det ρbarp = χ̄_3` — and from there into the `IsStandardLevelModule` the descent
+leaf now demands — is
+`exists_dihedralOddGaloisRep_standardLevel_of_charThree` below, over
+`fixes_sqrtNegThree_iff_cycCharModN`. -/
 theorem exists_dihedralOddGaloisRep_of_charThree
     (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp]
     [DiscreteTopology kp] (h3 : (3 : kp) = 0) (hcard : 3 < Nat.card kp) :
     ∃ ρbarp : GaloisRep ℚ kp (Fin 2 → kp),
       (∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
         ρbarp.det (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) ∧
+      (∃ x : AlgebraicClosure ℚ,
+        x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) (-3 : ℚ) ∧
+        ∀ τ : Field.absoluteGaloisGroup ℚ,
+          (τ x = x → ρbarp.det τ = 1) ∧ (τ x ≠ x → ρbarp.det τ = -1)) ∧
       ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
         (_ : NumberField.IsTotallyReal F),
         (ρbarp.map (algebraMap ℚ F)).IsIrreducible ∧
@@ -24051,7 +24089,7 @@ theorem exists_dihedralOddGaloisRep_of_charThree
           Module.finrank F L = 2 ∧
           ¬ ((ρbarp.map (algebraMap ℚ F)).map (algebraMap F L)).IsIrreducible := by
   classical
-  obtain ⟨d, x, ν, e, hd, hxsq, hcoc, hopen, hker, hodd, g₀, hg₀e, hg₀ord⟩ :=
+  obtain ⟨x, ν, e, hxsq, hcoc, hopen, hker, hodd, g₀, hg₀e, hg₀ord⟩ :=
     exists_anticyclotomicDihedralCocycle kp h3 hcard
   haveI : IsTopologicalRing kp := inferInstance
   -- the matrix family
@@ -24081,12 +24119,25 @@ theorem exists_dihedralOddGaloisRep_of_charThree
         exact ⟨congrArg Prod.fst this, congrArg Prod.snd this⟩
       · rintro ⟨h1, h2⟩; rw [h1, h2]
     rw [hset]; exact hopen g₁
-  refine ⟨framedGaloisRepOfMatrix N hN1 hNmul hNopen, ?_, ?_⟩
+  -- the determinant of the matrix family is the quadratic character `e`
+  have hdetPos : ∀ τ : Field.absoluteGaloisGroup ℚ, e τ = 1 →
+      (framedGaloisRepOfMatrix N hN1 hNmul hNopen).det τ = 1 := by
+    intro τ hτ
+    rw [GaloisRep.det_apply, apply_framedGaloisRepOfMatrix, LinearMap.det_toLin',
+      hNdef, hτ, dihedralMat_det, if_pos rfl]
+  have hdetNeg : ∀ τ : Field.absoluteGaloisGroup ℚ, e τ = -1 →
+      (framedGaloisRepOfMatrix N hN1 hNmul hNopen).det τ = -1 := by
+    intro τ hτ
+    rw [GaloisRep.det_apply, apply_framedGaloisRepOfMatrix, LinearMap.det_toLin',
+      hNdef, hτ, dihedralMat_det, if_neg (by decide)]
+  refine ⟨framedGaloisRepOfMatrix N hN1 hNmul hNopen, ?_, ⟨x, hxsq, ?_⟩, ?_⟩
   · -- ODDNESS
     intro σ hσ
-    have hc : e (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1 := hodd σ hσ
-    rw [GaloisRep.det_apply, apply_framedGaloisRepOfMatrix, LinearMap.det_toLin',
-      hNdef, hc, dihedralMat_det, if_neg (by decide)]
+    exact hdetNeg _ (hodd σ hσ)
+  · -- THE DETERMINANT IS THE QUADRATIC CHARACTER OF `ℚ(√-3)`
+    intro τ
+    refine ⟨fun hfix => hdetPos τ ((hker τ).mpr hfix), fun hmov => hdetNeg τ ?_⟩
+    exact (Int.units_eq_one_or (e τ)).resolve_left (fun hcon => hmov ((hker τ).mp hcon))
   · -- DIHEDRAL over every totally real base
     -- inverse formula for the cocycle at an element of the kernel of `e`
     have hνinv : ∀ g, e g = 1 → ν g⁻¹ = (ν g)⁻¹ := by
@@ -24149,7 +24200,7 @@ theorem exists_dihedralOddGaloisRep_of_charThree
       · rw [hR, hγc, hNdef, hec, dihedralMat_neg]
     · -- REDUCIBLE over a quadratic extension
       obtain ⟨L, iL, iAlg, hrank, hL⟩ :=
-        exists_quadraticExtension_trivial_of_isTotallyReal d hd x hxsq e hker F
+        exists_quadraticExtension_trivial_of_isTotallyReal (-3 : ℚ) (by norm_num) x hxsq e hker F
       refine ⟨L, iL, iAlg, hrank, ?_⟩
       apply not_isIrreducible_finTwo_of_forall_diag
       intro g
@@ -24641,6 +24692,87 @@ lemma galRoot_eq_pow_cycCharModN (n : ℕ) [NeZero n] {F : Type u} [Field F] [Al
     (Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) σ z).symm
   rw [map_pow, hlift, hτz, map_pow, ← pow_mul, ← pow_mul, Nat.mul_comm]
 
+/-- **A square root of `-3` detects the mod-`3` cyclotomic character** (PROVEN
+2026-07-27): `g ∈ Γ_ℚ` fixes a square root of `-3` in `ℚᵃˡᵍ` exactly when
+`χ̄_3 (g) = 1`.
+
+This is the classical identity `ℚ(ζ_3) = ℚ(√-3)` in the only form this
+development needs it. It is what converts the determinant conjunct of
+`exists_dihedralOddGaloisRep_of_charThree` — stated there with a square root of
+`-3`, because `cycCharModN` is not yet in scope at that point in the file — into
+`det ρbarp = χ̄_3`, hence into an `IsStandardLevelModule`; see
+`exists_dihedralOddGaloisRep_standardLevel_of_charThree` below.
+
+PROOF. A primitive cube root of unity `z` satisfies `z² + z + 1 = 0`, so
+`y = 2z + 1` has `y² = -3`; any square root of `-3` is `±y`, and `g` fixes `y`
+iff it fixes `-y`, so it suffices to treat `y`. Now `g y = 2 (g z) + 1`, and
+`g z = z ^ (χ̄_3 g).val` by `modularCyclotomicCharacter.spec`. The two values of
+a unit of `ZMod 3` give `g z = z` (so `g y = y`) and `g z = z²` — which would
+force `z (z − 1) = 0`, impossible for a primitive cube root. -/
+lemma fixes_sqrtNegThree_iff_cycCharModN (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) (-3 : ℚ))
+    (g : Field.absoluteGaloisGroup ℚ) :
+    g x = x ↔ cycCharModN 3 g = 1 := by
+  classical
+  haveI : CharZero (AlgebraicClosure ℚ) :=
+    charZero_of_injective_algebraMap (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+  obtain ⟨z, hz⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) 3
+  have hz1 : z ≠ 1 := hz.ne_one (by norm_num)
+  have hz0 : z ≠ 0 := hz.ne_zero (by norm_num)
+  -- `z² + z + 1 = 0`
+  have hzq : z ^ 2 + z + 1 = 0 := by
+    have hfac : (z - 1) * (z ^ 2 + z + 1) = 0 := by
+      linear_combination (hz.pow_eq_one : z ^ 3 = 1)
+    exact (mul_eq_zero.mp hfac).resolve_left (sub_ne_zero.mpr hz1)
+  -- `y = 2z + 1` is a square root of `-3`
+  have hcast : algebraMap ℚ (AlgebraicClosure ℚ) (-3 : ℚ) = -3 := by
+    rw [show (-3 : ℚ) = ((-3 : ℤ) : ℚ) by norm_num, map_intCast]
+    push_cast
+    ring
+  have hy : (2 * z + 1) ^ 2 = (-3 : AlgebraicClosure ℚ) := by linear_combination 4 * hzq
+  -- every square root of `-3` is `± y`
+  have hxy : x = 2 * z + 1 ∨ x = -(2 * z + 1) := by
+    rw [hcast] at hx
+    have hfac : (x - (2 * z + 1)) * (x + (2 * z + 1)) = 0 := by linear_combination hx - hy
+    rcases mul_eq_zero.mp hfac with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (eq_neg_of_add_eq_zero_left h)
+  have hred : (g x = x) ↔ (g (2 * z + 1) = 2 * z + 1) := by
+    rcases hxy with h | h
+    · rw [h]
+    · rw [h, map_neg, neg_inj]
+  have hgy : g (2 * z + 1) = 2 * g z + 1 := by
+    rw [map_add, map_mul, map_one, map_ofNat]
+  have hred2 : (g (2 * z + 1) = 2 * z + 1) ↔ (g z = z) := by
+    rw [hgy]
+    constructor
+    · intro h
+      have h2 : (2 : AlgebraicClosure ℚ) * (g z - z) = 0 := by linear_combination h
+      rcases mul_eq_zero.mp h2 with h3 | h3
+      · exact absurd h3 (by norm_num)
+      · exact sub_eq_zero.mp h3
+    · intro h; rw [h]
+  -- the cyclotomic character computes `g z`
+  have hzu : (hz.toRootsOfUnity : (AlgebraicClosure ℚ)ˣ)
+      ∈ rootsOfUnity 3 (AlgebraicClosure ℚ) := hz.toRootsOfUnity.2
+  have hspec := modularCyclotomicCharacter.spec (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) 3)
+    (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ) (AlgebraicClosure ℚ) g) hzu
+  have hgz : g z = z ^ (((cycCharModN 3 g : (ZMod 3)ˣ) : ZMod 3)).val := by
+    simpa [hz.val_toRootsOfUnity_coe, cycCharModN] using hspec
+  have hunit : ∀ u : (ZMod 3)ˣ, u = 1 ∨ u = -1 := by decide
+  rw [hred, hred2, hgz]
+  constructor
+  · intro h
+    refine (hunit (cycCharModN 3 g)).resolve_right fun hu => ?_
+    have hcv : (((cycCharModN 3 g : (ZMod 3)ˣ) : ZMod 3)).val = 2 := by rw [hu]; decide
+    rw [hcv] at h
+    have hfac : z * (z - 1) = 0 := by linear_combination h
+    exact (mul_eq_zero.mp hfac).elim hz0 fun h1 => hz1 (sub_eq_zero.mp h1)
+  · intro h
+    have hcv : (((cycCharModN 3 g : (ZMod 3)ˣ) : ZMod 3)).val = 1 := by rw [h]; decide
+    rw [hcv, pow_one]
+
 /-! ### The standard rank-two module -/
 
 /-- The alternating form `det (v, w)` on `kI²`. -/
@@ -24676,6 +24808,26 @@ lemma det2_diagEnd {kI : Type u} [Field kI] (a : kI) (v w : Fin 2 → kI) :
     det2 (diagEnd a v) (diagEnd a w) = a * det2 v w := by
   simp only [det2, diagEnd_apply_zero, diagEnd_apply_one]
   ring
+
+/-- `det2` transforms by the determinant under EVERY endomorphism of `kI²`, not
+just under `diagEnd`. This is what lets the standard pairing be attached to any
+rank-two representation whose determinant is the cyclotomic character, rather
+than only to the diagonal `stdRep`. -/
+lemma det2_end {kI : Type u} [Field kI] (M : Module.End kI (Fin 2 → kI))
+    (v w : Fin 2 → kI) :
+    det2 (M v) (M w) = LinearMap.det M * det2 v w := by
+  classical
+  rw [← LinearMap.toMatrix'_mulVec M v, ← LinearMap.toMatrix'_mulVec M w,
+    ← LinearMap.det_toMatrix' M]
+  simp only [det2, Matrix.mulVec_apply_eq_sum, Fin.sum_univ_two, Matrix.det_fin_two]
+  ring
+
+lemma det_diagEnd {kI : Type u} [Field kI] (a : kI) : LinearMap.det (diagEnd a) = a := by
+  have h := det2_end (diagEnd a) ![1, 0] ![0, 1]
+  rw [det2_diagEnd] at h
+  have h1 : det2 (![1, 0] : Fin 2 → kI) ![0, 1] = 1 := by simp [det2]
+  rw [h1, mul_one, mul_one] at h
+  exact h.symm
 
 lemma det2_add_left {kI : Type u} [Field kI] (u v w : Fin 2 → kI) :
     det2 (u + v) w = det2 u w + det2 v w := by
@@ -24818,16 +24970,22 @@ counterexample that makes the statement false without it. It is used
 twice, and both uses are essential rather than bookkeeping: it produces
 the ring map `ZMod n → kI` carrying the determinant character, and it is
 what puts the values of `φ_F` inside `μ_n(Fᵃˡᵍ)` rather than merely inside
-`(Fᵃˡᵍ)ˣ`. -/
-theorem exists_standardLevelModule (n : ℕ) (hn : 1 < n)
-    (kI : Type u) [Field kI] [Finite kI] [TopologicalSpace kI] [DiscreteTopology kI]
-    (hchar : (n : kI) = 0) :
-    ∃ (ρ : GaloisRep ℚ kI (Fin 2 → kI))
-      (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+`(Fᵃˡᵍ)ˣ`.
+
+GENERALISED 2026-07-27 over `exists_standardLevelModule_of_det` below: the
+construction never uses that `ρ` is DIAGONAL, only that `det ρ = χ̄_n`, so this
+node is now a one-line instance of that lemma at `ρ = stdRep`. The general form
+is what supplies `hstdp` for the DIHEDRAL `ρbarp` of
+`exists_dihedralOddGaloisRep_of_charThree`, which is not diagonal and cannot be. -/
+theorem exists_standardLevelModule_of_det (n : ℕ) [NeZero n]
+    {kI : Type u} [Field kI] [Finite kI] [TopologicalSpace kI] [DiscreteTopology kI]
+    (hchar : (n : kI) = 0) (ρ : GaloisRep ℚ kI (Fin 2 → kI))
+    (hdet : ∀ τ : Field.absoluteGaloisGroup ℚ,
+      ρ.det τ = zmodCastOf hchar ((cycCharModN n τ : (ZMod n)ˣ) : ZMod n)) :
+    ∃ (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
         rootsOfUnity n (AlgebraicClosure F)),
       IsStandardLevelModule n ρ Λ := by
-  haveI : NeZero n := ⟨by omega⟩
-  refine ⟨stdRep n hchar, fun F _ _ => stdPairing n hchar F, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨fun F _ _ => stdPairing n hchar F, ?_, ?_, ?_, ?_, ?_⟩
   · intro F _ _ u v w
     refine Subtype.ext ?_
     show levelChar n hchar F (Multiplicative.ofAdd (det2 (u + v) w)) =
@@ -24854,18 +25012,90 @@ theorem exists_standardLevelModule (n : ℕ) (hn : 1 < n)
   · intro F _ _ σ v w
     rw [galRoot_eq_pow_cycCharModN n σ (stdPairing n hchar F v w)]
     refine Subtype.ext ?_
-    have hd : det2 (stdRep n hchar (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
-        (stdRep n hchar (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w) =
+    have hd : det2 (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
+        (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w) =
         ((cycCharModN n (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) :
           (ZMod n)ˣ) : ZMod n).val • det2 v w := by
-      rw [stdRep_apply, det2_diagEnd, zmodCastOf_apply, nsmul_eq_mul]
+      rw [det2_end, ← GaloisRep.det_apply, hdet, zmodCastOf_apply, nsmul_eq_mul]
     show levelChar n hchar F (Multiplicative.ofAdd
-        (det2 (stdRep n hchar (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
-          (stdRep n hchar (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w))) =
+        (det2 (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
+          (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w))) =
       (levelChar n hchar F (Multiplicative.ofAdd (det2 v w))) ^
         ((cycCharModN n (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) :
           (ZMod n)ˣ) : ZMod n).val
     rw [hd, ofAdd_nsmul, map_pow]
+
+open CategoryTheory in
+/-- **LEAF A1 — the standard level module exists** (PROVEN 2026-07-27): the
+instance of `exists_standardLevelModule_of_det` at the diagonal `stdRep`, whose
+determinant is `χ̄_n` by `det_diagEnd`. -/
+theorem exists_standardLevelModule (n : ℕ) (hn : 1 < n)
+    (kI : Type u) [Field kI] [Finite kI] [TopologicalSpace kI] [DiscreteTopology kI]
+    (hchar : (n : kI) = 0) :
+    ∃ (ρ : GaloisRep ℚ kI (Fin 2 → kI))
+      (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+        rootsOfUnity n (AlgebraicClosure F)),
+      IsStandardLevelModule n ρ Λ := by
+  haveI : NeZero n := ⟨by omega⟩
+  obtain ⟨Λ, hΛ⟩ :=
+    exists_standardLevelModule_of_det n hchar (stdRep n hchar) fun τ => by
+      rw [GaloisRep.det_apply, stdRep_apply, det_diagEnd]
+  exact ⟨stdRep n hchar, Λ, hΛ⟩
+
+open CategoryTheory in
+/-- **The dihedral `ρbarp` CARRIES A STANDARD LEVEL MODULE at `3`** (PROVEN
+2026-07-27): `exists_dihedralOddGaloisRep_of_charThree` strengthened by the
+determinant coupling the DESCENT leaf needs.
+
+WHY THIS EXISTS AS A SEPARATE DECLARATION. The COUPLING AUDIT of
+`exists_twistedHilbertBlumenthalDescent_of_split` shows that leaf entails
+`det ρbarp = χ̄_p` and that nothing supplied it, so the descent chain now carries
+`hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp` — the same object leaf A1
+produces for `ρ₀p`, and (by the MODULE/GEOMETRY cut docstring) exactly the
+cyclotomic-determinant condition in the vocabulary this file can express it. The
+place it has to be DISCHARGED is
+`exists_twistedHilbertBlumenthalModuliTwist_of_five_le`, where `ρbarp` is
+chosen; this node is that discharge.
+
+It is not folded into `exists_dihedralOddGaloisRep_of_charThree` itself only
+because of DECLARATION ORDER: that leaf sits several hundred lines above
+`IsStandardLevelModule`, `cycCharModN` and `zmodCastOf`, so it cannot mention
+them. It therefore states its determinant in the equivalent square-root form,
+and the translation happens here through
+`fixes_sqrtNegThree_iff_cycCharModN`.
+
+THE MATHEMATICS, in one line: `det (dihedralMat a s) = s`, so `det ρbarp` is the
+quadratic character of the imaginary quadratic field of the ring-class
+construction; `χ̄_3` is the quadratic character of `ℚ(ζ_3) = ℚ(√-3)`; so the
+coupling holds exactly when that field is `ℚ(√-3)`, which is why
+`exists_anticyclotomicDihedralCocycle` is now pinned there. -/
+theorem exists_dihedralOddGaloisRep_standardLevel_of_charThree
+    (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp]
+    [DiscreteTopology kp] (h3 : (3 : kp) = 0) (hcard : 3 < Nat.card kp) :
+    ∃ ρbarp : GaloisRep ℚ kp (Fin 2 → kp),
+      (∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+        ρbarp.det (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) ∧
+      (∃ (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+        rootsOfUnity 3 (AlgebraicClosure F)), IsStandardLevelModule 3 ρbarp Λp) ∧
+      ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
+        (_ : NumberField.IsTotallyReal F),
+        (ρbarp.map (algebraMap ℚ F)).IsIrreducible ∧
+        ∃ (L : Type u) (_ : Field L) (_ : Algebra F L),
+          Module.finrank F L = 2 ∧
+          ¬ ((ρbarp.map (algebraMap ℚ F)).map (algebraMap F L)).IsIrreducible := by
+  obtain ⟨ρbarp, hodd, ⟨x, hxsq, hdet⟩, hdih⟩ :=
+    exists_dihedralOddGaloisRep_of_charThree kp h3 hcard
+  refine ⟨ρbarp, hodd, ?_, hdih⟩
+  have h3' : ((3 : ℕ) : kp) = 0 := by exact_mod_cast h3
+  refine exists_standardLevelModule_of_det 3 h3' ρbarp fun τ => ?_
+  have hunit : ∀ u : (ZMod 3)ˣ, u = 1 ∨ u = -1 := by decide
+  by_cases hτ : τ x = x
+  · rw [(hdet τ).1 hτ, (fixes_sqrtNegThree_iff_cycCharModN x hxsq τ).mp hτ,
+      Units.val_one, map_one]
+  · have hne : cycCharModN 3 τ ≠ 1 := fun hc =>
+      hτ ((fixes_sqrtNegThree_iff_cycCharModN x hxsq τ).mpr hc)
+    rw [(hdet τ).2 hτ, (hunit (cycCharModN 3 τ)).resolve_left hne,
+      Units.val_neg, Units.val_one, map_neg, map_one]
 
 /-- **The residue characteristic of `λ` is visible in `k`** (PROVEN glue):
 if `n ∈ I` and `k` is isomorphic to `𝒪_D ⧸ I`, then `n = 0` in `k`.
@@ -25439,21 +25669,43 @@ counterexample to a descent leaf whose conclusion named the given `X₀`; it
 does not touch this one. The check that would refute this paragraph is a
 one-line one: look for `X₀` from `hsplit` in the conclusion.
 
-WHAT THE PROVER ACTUALLY HAS TO DO, since the hypothesis is deliberately not
-maximal (see the SPLIT/DESCENT section docstring): build the `Γ`-action on
-`X₀` — for which leaf A's fineness clause, being stated at field points only,
-is NOT by itself enough, so the descent will need either a functorial
-strengthening of leaf A or a direct construction — then descend, then read
-the level structures and the archimedean point off Lemma 4.4. The
-translation into the seam is already done and is not this leaf's problem.
-READ THE TWO AUDITS BELOW FIRST: the first says this leaf cannot be closed
-as stated, and the second says the sentence just written names the wrong
-object.
+WHAT THE PROVER ACTUALLY HAS TO DO. Twist `X₀` by the 1-COCYCLE
+`σ ↦ (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)` for the `Γ_ℚ`-action on
+`X₀ ⊗ ℚ̄` by `ρ₀`-conjugation, then descend, then read the level structures
+and the archimedean point off Lemma 4.4. The translation into the seam is
+already done and is not this leaf's problem. `hstdp` (see the COUPLING AUDIT)
+is what puts the cocycle inside the pairing-preserving subgroup at `𝔭`, and
+`IsHardlyRamified.det` does the same at `λ`.
 
-COUPLING AUDIT (2026-07-27) — THIS LEAF ENTAILS `det ρbarp = χ̄_p`, AND NO
-HYPOTHESIS OF IT SUPPLIES THAT. It is therefore DIRECTLY UNATTACKABLE: not
-false, but provable only through the module's collapse. Do not spend a task
-attempting it before the repair below has landed.
+**DO NOT follow the advice this paragraph used to give — "build the `Γ`-action
+on `X₀`" NAMES THE WRONG OBJECT and a prover following it literally will state
+something false.** See the `Γ`-ACTION AUDIT below: no such action exists over
+`ℚ`, the action lives on `X₀ ⊗ ℚ̄`, and the twisting datum is a cocycle, not a
+homomorphism.
+
+COUPLING AUDIT (2026-07-27) — THIS LEAF ENTAILS `det ρbarp = χ̄_p`, AND UNTIL
+THE REPAIR BELOW LANDED NO HYPOTHESIS OF IT SUPPLIED THAT, which made it
+DIRECTLY UNATTACKABLE: not false, but provable only through the module's
+collapse.
+
+**REPAIR PERFORMED 2026-07-27 — `hstdp` IS NOW A HYPOTHESIS OF THIS LEAF, AND
+THE AUDIT IS SPENT.** The paragraph below that reads "THE SIGNATURE BELOW IS
+DELIBERATELY LEFT UNCHANGED" is HISTORY: the signature now carries
+`hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp`, threaded through
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split` and
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum` and discharged in
+`exists_twistedHilbertBlumenthalModuliTwist_of_five_le` by
+`exists_dihedralOddGaloisRep_standardLevel_of_charThree` (PROVEN). The rest of
+this audit is retained because it is the DERIVATION of why the hypothesis is
+needed, and a future editor who removes `hstdp` re-breaks the leaf.
+
+The discharge cost one further pin, recorded here because it is invisible from
+this declaration: `det (dihedralMat a s) = s`, so the dihedral `ρbarp`'s
+determinant IS the quadratic character of the imaginary quadratic field of the
+ring-class construction, and it equals `χ̄_3` only for `ℚ(ζ_3) = ℚ(√-3)`.
+`exists_anticyclotomicDihedralCocycle` used to take `ℚ(i)` and is now pinned to
+`ℚ(√-3)`; every input of that field was generic in it, so the change cost
+nothing beyond two `norm_num`s.
 
 THE DERIVATION, entirely from this leaf's own conclusion:
 
@@ -25517,22 +25769,40 @@ the Weil-pairing normalization survives the twist only as a coupling that
 here". That is half right: the coupling is PRODUCED there and CONSUMED
 here, and the DESCENT/SEAM cut kept only the producing half.
 
-THE REPAIR, AND WHY IT IS NOT PERFORMED HERE. Add to this leaf the
-hypothesis in the vocabulary this file already has for exactly this
-condition, namely `hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp` — the
+THE REPAIR, AS PERFORMED (2026-07-27; this paragraph used to end "THE
+SIGNATURE BELOW IS DELIBERATELY LEFT UNCHANGED", and that is no longer true).
+The leaf now carries the hypothesis in the vocabulary this file already had for
+exactly this condition, `hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp` — the
 `galRoot`-equivariance clause of `IsStandardLevelModule` composed with its
 nondegeneracy clause IS `det ρbarp = χ̄_p`, as the MODULE/GEOMETRY cut
 docstring above states, and it is the same object leaf A1 produces for
-`ρ₀p`. It must then be threaded through the two PROVEN assemblies above
+`ρ₀p`. It is threaded through the two PROVEN assemblies above
 (`exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split` and
 `exists_twistedHilbertBlumenthalModuliTwist_of_datum`) to
-`exists_twistedHilbertBlumenthalModuliTwist_of_five_le`, where it has to be
-discharged by the leaf that CHOOSES `ρbarp`,
-`exists_dihedralOddGaloisRep_of_charThree` — whose witness
-`dihedralMat (ν ·) (e ·)` has an unpinned determinant `ν`, so that leaf's
-conclusion has to be strengthened too. That leaf is PROVEN and belongs to
-another owner, so the repair is a CUT-LEVEL one and is reported rather than
-made: THE SIGNATURE BELOW IS DELIBERATELY LEFT UNCHANGED.
+`exists_twistedHilbertBlumenthalModuliTwist_of_five_le`, where it is
+DISCHARGED — not assumed — by the leaf that CHOOSES `ρbarp`.
+
+The discharge is real and it moved two other declarations. The audit above said
+the dihedral witness `dihedralMat (ν ·) (e ·)` "has an unpinned determinant `ν`";
+that is the one place the audit was imprecise, and correcting it is what made
+the discharge cheap. `dihedralMat_det` gives `det (dihedralMat a s) = s`, so the
+determinant does not involve `ν` at all — it is the SIGN character `e`, i.e. the
+quadratic character of the imaginary quadratic field `M` of the ring-class
+construction. So `det ρbarp = χ̄_3` iff `M = ℚ(ζ_3) = ℚ(√-3)`. Accordingly:
+
+* `exists_anticyclotomicDihedralCocycle` is pinned from `ℚ(i)` to `ℚ(√-3)`
+  (every input of that field was already generic in it, so this cost two
+  `norm_num`s and nothing else);
+* `exists_dihedralOddGaloisRep_of_charThree` gains a determinant conjunct,
+  phrased with a square root of `-3` because `cycCharModN` is not in scope that
+  early in the file;
+* `exists_standardLevelModule` is generalised to
+  `exists_standardLevelModule_of_det`, which attaches the standard pairing to
+  ANY rank-two `ρ` with `det ρ = χ̄_n` rather than only to the diagonal
+  `stdRep` — the construction never used diagonality, only `det2_end`;
+* `fixes_sqrtNegThree_iff_cycCharModN` and
+  `exists_dihedralOddGaloisRep_standardLevel_of_charThree` are the two new
+  declarations that join those halves.
 
 THE CHECK THAT WOULD REFUTE THIS AUDIT: exhibit a hypothesis of this leaf
 that is NOT invariant under `ρbarp ↦ ρbarp ⊗ μ` with `μ² ≠ 1`; or exhibit
@@ -25598,6 +25868,8 @@ theorem exists_twistedHilbertBlumenthalDescent_of_split
     {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp]
     [DiscreteTopology kp] (ρbarp : GaloisRep ℚ kp (Fin 2 → kp))
     (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (hstdp : ∃ (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F)), IsStandardLevelModule p ρbarp Λp)
     (hdih : ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F),
       (ρbarp.map (algebraMap ℚ F)).IsIrreducible ∧
@@ -25628,6 +25900,12 @@ touch this one. The check that would refute this paragraph is a one-line
 one: look for `X₀` from `hsplit` in the conclusion. (VERIFIED 2026-07-27
 while performing the DESCENT/SEAM cut: the two conclusions are literally
 identical text, and neither mentions `hsplit`.)
+
+`hstdp` (added 2026-07-27) is passed straight through to B1 and consumed
+nowhere here; it is the determinant coupling `det ρbarp = χ̄_p` that the
+COUPLING AUDIT on `exists_twistedHilbertBlumenthalDescent_of_split` shows the
+descent leaf entails. It is one more extra hypothesis, so the FAITHFULNESS
+paragraph above covers it unchanged.
 
 WHAT THIS ASSEMBLY DOES, now that leaf B1 carries the geometry. Everything
 here is translation, and it is worth listing because it is exactly what a
@@ -25670,6 +25948,8 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split
     {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp]
     [DiscreteTopology kp] (ρbarp : GaloisRep ℚ kp (Fin 2 → kp))
     (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (hstdp : ∃ (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F)), IsStandardLevelModule p ρbarp Λp)
     (hdih : ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F),
       (ρbarp.map (algebraMap ℚ F)).IsIrreducible ∧
@@ -25694,7 +25974,7 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split
         HasRationalPoint fX (ULift.{u} ℝ)) := by
   obtain ⟨X, fX, A, fA, ab, m, hsm, hsep, hlft, hqc, hrel, hform, hlev, hreal⟩ :=
     exists_twistedHilbertBlumenthalDescent_of_split hℓodd hℓ5 hW hρbar hirr D p hp hpℓ
-      lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hdih hsplit
+      lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hstdp hdih hsplit
   refine ⟨X, fX, A, fA, ab, hsm, hsep, hlft, hqc, ?_, hform, hreal⟩
   refine ⟨D, inferInstance, inferInstance, inferInstance, m, p, lam, frp,
     hp, hpℓ, hlam, hfrp, hlamℓ, hfrpp, hrel, ?_⟩
@@ -25993,7 +26273,15 @@ STATED, not constructed: `HasSplitHilbertBlumenthalModuli` carries it
 producing them is part of Rapoport's leaf. Anyone auditing the claim
 "unblocked on vocabulary" should check that specific point: the vocabulary
 suffices to STATE the normalization as bundled data, and does not suffice
-to WRITE a canonical normalized level module. -/
+to WRITE a canonical normalized level module.
+
+AUDIT UPDATE V (2026-07-27) — this node now takes
+`hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp` and passes it through. That
+is the determinant coupling `det ρbarp = χ̄_p`, which the COUPLING AUDIT on
+`exists_twistedHilbertBlumenthalDescent_of_split` shows that leaf entails and
+which nothing used to supply. It is DISCHARGED one level up, in
+`exists_twistedHilbertBlumenthalModuliTwist_of_five_le`, where `ρbarp` is
+chosen — so no new obligation reaches any consumer of that node. -/
 theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -26014,6 +26302,8 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum
     {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp]
     [DiscreteTopology kp] (ρbarp : GaloisRep ℚ kp (Fin 2 → kp))
     (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (hstdp : ∃ (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F)), IsStandardLevelModule p ρbarp Λp)
     (hdih : ∀ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F),
       (ρbarp.map (algebraMap ℚ F)).IsIrreducible ∧
@@ -26036,7 +26326,7 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum
       (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
         HasRationalPoint fX (ULift.{u} ℝ)) :=
   exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split hℓodd hℓ5 hW hρbar hirr
-    D p hp hpℓ lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hdih
+    D p hp hpℓ lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hstdp hdih
     (exists_splitHilbertBlumenthalModuli hp hpℓ D lam frp hlam hfrp hlamℓ hfrpp hne
       k kp hres hresp)
 
@@ -26098,6 +26388,18 @@ discharged by the independent moduli construction — never through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. All three
 leaves inherit the guard.
 
+UPDATE 2026-07-27 — THE DETERMINANT COUPLING IS DISCHARGED HERE. The COUPLING
+AUDIT on `exists_twistedHilbertBlumenthalDescent_of_split` showed the descent
+leaf entails `det ρbarp = χ̄_3` with nothing supplying it; that leaf and the two
+assemblies above it now carry
+`hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp`, and THIS node is where it is
+discharged, because this is where `ρbarp` is chosen. The second of the three
+leaves listed above is accordingly
+`exists_dihedralOddGaloisRep_standardLevel_of_charThree` (PROVEN) rather than
+`exists_dihedralOddGaloisRep_of_charThree` directly — it is that leaf plus the
+determinant, translated out of the square-root form the early declaration order
+forces on it.
+
 SOUNDNESS AUDIT (both ways): (i) direct — this is Taylor §4
 pp. 759–762 with the archimedean argument of Lemma 4.5 factored out;
 (ii) collapse — the hypothesis package (an irreducible hardly ramified
@@ -26141,11 +26443,12 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_five_le
   obtain ⟨D, iDfield, iDnf, iDtr, lam, frp, kp, ikpfield, ikpfin, ikptop, ikpdisc,
     hlam, hfrp, hne, hlamℓ, hfrp3, hres, hresp, h3, hcard3⟩ :=
     exists_totallyRealCoefficientDatum_of_residueField ℓ hℓ5 k
-  obtain ⟨ρbarp, hoddp, hdih⟩ := exists_dihedralOddGaloisRep_of_charThree kp h3 hcard3
+  obtain ⟨ρbarp, hoddp, hstdp, hdih⟩ :=
+    exists_dihedralOddGaloisRep_standardLevel_of_charThree kp h3 hcard3
   obtain ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hmod, hform₀, himp⟩ :=
     exists_twistedHilbertBlumenthalModuliTwist_of_datum hℓodd hℓ5 hW hρbar hirr
       D 3 Nat.prime_three (by omega) lam frp hlam hfrp hlamℓ hfrp3 hne hres ρbarp
-      hresp hdih
+      hresp hstdp hdih
   exact ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hmod, hform₀,
     D, iDfield, iDnf, iDtr, lam, frp, kp, ikpfield, ikpfin, ikptop, ikpdisc, ρbarp,
     hres, hresp, hne, hoddp, himp⟩
