@@ -26754,27 +26754,183 @@ below makes that mechanical rather than asserted.
   RATIONAL number `jmZ yZ` outright, and the only assertion left in it is
   that this rational number lies in `R`.  That is
   `exists_x0GenericJIntegral` — Igusa's `q`-integrality of `j` at good
-  reduction, and the first genuine leaf.
+  reduction, and the first genuine residue (now a THEOREM; see the cut
+  recorded below).
 * `jmSp` is then constrained only by `jmSp_pre`, i.e. only on the image of
   `RelPoint.pre (SpecLoc.special toF) _`, and that image is NOT all of
   `RelPoint ystr (SpecLoc.special toF)`.  What `jmSp_pre` asserts is
   exactly that `toF ∘ jmZ` DESCENDS along `RelPoint.pre (SpecLoc.special
   toF) _` — two integral sections with the same reduction have `j`'s with
-  the same reduction.  That is `exists_x0SpecialJ`, the second leaf.
+  the same reduction.  That is `exists_x0SpecialJ`, the second residue
+  (now a THEOREM; see the cut recorded below).
 
 Neither leaf mentions `X`, `X'` or the compactification, and neither
 mentions the other's data.  Both are quantified over the same `(ι, hι)`
 as the assembly, so if the geometric comparison should be unavailable
 they go vacuous together rather than false — the safe direction, exactly
-as the bundled leaf's docstring recorded. -/
+as the bundled leaf's docstring recorded.
 
-/-- **The `j`-invariant of an integral point is INTEGRAL** (sorry leaf —
-Igusa, and the one genuinely modular residue of the integral `j`).
+**CUT OF 2026-07-27: the two leaves are now THEOREMS over ONE leaf, the
+integral `j`-LINE.**  The analysis above is correct and is what made the
+next step visible.  Both residues are statements about the SAME missing
+object — an integral model of the `j`-line over `ℤ_(q)` together with the
+degeneracy map to it — and once that object is *stated* (it need not be
+constructed) they are both consequences, one of them purely formal:
+
+* `jLineZ R = Spec R[X]` with its structure map `jLineZStr` is the
+  integral `j`-line, defined exactly as `jLine = Spec ℚ[X]` is defined
+  above for the generic one, and for the same anti-tautology reason:
+  fixing the target to the honest affine line with the honest coordinate
+  `jLineZCoord` is what stops the new leaf from being a repackaging;
+* `IsX0IntegralJLine` is the datum "the model `𝒴 ⟶ Spec ℤ_(q)` carries a
+  morphism to `jLineZ` over the base which is `hj.jm` on the generic
+  fibre";
+* `exists_x0GenericJIntegral` is then `jLineZCoord` of the section — an
+  element of `R` BY CONSTRUCTION, which is exactly where Igusa's
+  integrality has gone — together with `jLineZCoord_pre` along
+  `SpecLoc.generic`;
+* `exists_x0SpecialJ` is `jLineZCoord_pre` along `SpecLoc.special`, i.e.
+  **pure functoriality**.  This is the promised gain: the descent that
+  "cannot be discharged by choice" is free once `j` is a MORPHISM rather
+  than a family of values, and `hjmZ` is consumed exactly to identify the
+  given `jmZ` with `jLineZCoord`, using injectivity of `R ↪ ℚ`.
+
+So the frontier here is ONE leaf, `exists_x0IntegralJLine`, and it is
+strictly stronger than the two it replaces — which is the direction that
+keeps the cut faithful.
+
+**What the cut does NOT fix**, stated so that nobody reads more into it:
+`IsJMapOn.jm` is pinned only by `classify_jm`, which is existential, so
+`gen_eq` inherits whatever under-determination `jm` has.  That is not a
+regression — `exists_x0GenericJIntegral` had exactly the same exposure —
+but it means the honest reading of the new leaf is the conditional one:
+for a `jm` that IS the genuine `j`-map, the integral `j`-line exists over
+it.  Sharpening `IsJMapOn` is a separate, upstream repair. -/
+
+/-- **The integral `j`-line `𝔸¹_{ℤ_(q)} = Spec R[X]`** (a definition).
+
+The integral companion of `jLine = Spec ℚ[X]` above, and presented the
+same way and for the same reason: were the target of the integral
+`j`-map left abstract, `IsX0IntegralJLine` below would be satisfiable by
+taking it to be `𝒴` itself with the identity, and the leaf would be a
+restatement rather than a reduction.  Fixing it to `Spec R[X]` with the
+honest coordinate `jLineZCoord` is what makes the two residues below
+follow. -/
+noncomputable abbrev jLineZ (R : Subring ℚ) : Scheme.{0} :=
+  Spec (CommRingCat.of (Polynomial R))
+
+/-- **The structure morphism `𝔸¹_{ℤ_(q)} ⟶ Spec ℤ_(q)`**, `Spec` of
+`R ↪ R[X]`. -/
+noncomputable def jLineZStr (R : Subring ℚ) : jLineZ R ⟶ SpecLoc R :=
+  Spec.map (CommRingCat.ofHom (algebraMap R (Polynomial R)))
+
+/-- **The coordinate of a relative point of the integral `j`-line over an
+affine base** (PROVEN).
+
+Verbatim `jLineCoord` with `ℚ[X]` replaced by `R[X]`: `Spec` is fully
+faithful, so a morphism `Spec A ⟶ jLineZ R` is a ring map `R[X] ⟶ A`,
+and its value at `X` is the coordinate.
+
+**This is where the `q`-integrality of `j` lives.**  At `A = R` the
+coordinate is an element of `R = ℤ_(q)` because the polynomial ring is
+over `R`; nothing has to be proved about denominators.  The content has
+not vanished — it has moved into the hypothesis that the model carries a
+morphism to `jLineZ R` at all, which is `exists_x0IntegralJLine`. -/
+noncomputable def jLineZCoord {A : Type} [CommRing A] {R : Subring ℚ}
+    {g : Spec (CommRingCat.of A) ⟶ SpecLoc R} (x : RelPoint (jLineZStr R) g) : A :=
+  (Spec.preimage x.1).hom Polynomial.X
+
+/-- **The integral coordinate is natural** (PROVEN): precomposing a
+relative point with a morphism of affine bases applies the corresponding
+ring map to the coordinate.
+
+Proved exactly as `jLineCoord_pre` is, by `Spec.preimage_comp`.  Applied
+at `SpecLoc.generic R` it says the generic value of an integral point is
+its integral value viewed in `ℚ`; applied at `SpecLoc.special toF` it
+says the special value is its reduction — which is the whole of
+`exists_x0SpecialJ`. -/
+theorem jLineZCoord_pre {A B : Type} [CommRing A] [CommRing B] {R : Subring ℚ}
+    {g : Spec (CommRingCat.of A) ⟶ SpecLoc R}
+    (h : Spec (CommRingCat.of B) ⟶ Spec (CommRingCat.of A))
+    {g' : Spec (CommRingCat.of B) ⟶ SpecLoc R} (hg : h ≫ g = g')
+    (x : RelPoint (jLineZStr R) g) :
+    jLineZCoord (RelPoint.pre h hg x) = (Spec.preimage h).hom (jLineZCoord x) := by
+  simp [jLineZCoord, RelPoint.pre]
+
+/-- **The integral `j`-line of a model of `Y_0(N)`**: a morphism from the
+integral open model to `𝔸¹_{ℤ_(q)}` over the base, restricting on the
+generic fibre to the `j`-map the consumers use.
+
+This is the single datum the two residues of `IsX0IntegralJ` need, and it
+is deliberately a MORPHISM rather than a family of values — that is the
+difference that makes `exists_x0SpecialJ` formal, since a morphism
+automatically has the same value on two sections with the same
+reduction, whereas a family of values does not.
+
+`comm` is not consumed by either residue below; it is carried because
+without it `jmap` need not be a morphism over `Spec ℤ_(q)` at all, and
+the datum would then say nothing about the model.  `gen_eq` is what pins
+`jmap` to be the genuine `j` rather than an arbitrary map to the line —
+compare `IsJLine.jt_weierstrass`, which plays the same role for the
+generic `j`-line. -/
+structure IsX0IntegralJLine (R : Subring ℚ) {Y YZ : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (ystr : YZ ⟶ SpecLoc R) (jm : RelPoint strY (𝟙 SpecQ) → ℚ)
+    (gi : IsFibreIdent (SpecLoc.generic R) ystr strY) where
+  /-- the `j`-map of the integral model -/
+  jmap : YZ ⟶ jLineZ R
+  /-- it is a morphism over the base -/
+  comm : jmap ≫ jLineZStr R = ystr
+  /-- on the generic fibre it is the `j`-map the consumers use -/
+  gen_eq : ∀ y : RelPoint strY (𝟙 SpecQ),
+    jm y = jLineZCoord (RelPoint.post jmap comm
+      (gi.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y))
+
+/-- **The integral model of `Y_0(N)` carries an integral `j`-line**
+(sorry leaf — Igusa, and the SINGLE residue of the integral `j` after
+the cut of 2026-07-27).
+
+TRUE for `q ∤ N`.  This is the classical statement: `X_0(N)` has good
+reduction at `q ∤ N` (Igusa; Deligne–Rapoport; Katz–Mazur ch. 8), the
+`j`-line `Y_0(1) ≅ 𝔸¹` has an integral model over `ℤ[1/N]`, and the
+degeneracy map `Y_0(N) ⟶ Y_0(1)` extends to a morphism of integral
+models.  `gen_eq` says that morphism restricts on the generic fibre to
+the `j`-map already carried by `hj`.
+
+**IRREDUCIBLE at this pin ALONG THE INTEGRAL-MODEL AXIS, and the CHECK
+THAT WOULD REFUTE THAT**: the survey recorded in
+`exists_x0CurveModel_of_base` found no integral model of a modular curve
+in mathlib, `~/cs/FLT` or this project.  Producing one — even just
+`Y_0(1)` over `ℤ_(q)` together with the degeneracy map from `𝒴` —
+refutes it.  Note the axis: what is missing is the INTEGRAL model, not
+the `j`-invariant itself, which is `exists_jLine`'s business over `ℚ` and
+is a different leaf with a different obstruction.
+
+`_hbase` is load-bearing in the intended proof (it is what makes `R` the
+valuation ring `ℤ_(q)`), and `_hqN` for the usual reason — at `q ∣ N` the
+model is not smooth and `j` acquires a pole, so no such morphism to the
+affine line exists.  Every hypothesis is underscored only because the
+proof is a `sorry`. -/
+theorem exists_x0IntegralJLine (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
+    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (_hbase : IsReductionBase q R toF)
+    {Y X X' XZ YZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX) (hj : IsJMapOn N hc)
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (ι : Y ≅ Limits.pullback ystr (SpecLoc.generic R))
+    (hι : ι.hom ≫ IsFibreIdent.openSection cm.genIdent cm.model.comm = hX.j) :
+    Nonempty (IsX0IntegralJLine R ystr hj.jm (cm.genericOpen hX ι hι)) :=
+  sorry
+
+/-- **The `j`-invariant of an integral point is INTEGRAL** (PROVEN
+2026-07-27 over `exists_x0IntegralJLine`; was a sorry leaf — Igusa).
 
 TRUE for `q ∤ N`.  Read off the statement: `yZ` is a section of the
 integral open model `𝒴 ⟶ Spec ℤ_(q)`, its generic fibre is a rational
 point of `Y = Y_0(N)` under the comparison `(ι, hι)`, and `hj.jm` of that
-point is a rational number; the leaf asserts that this rational number
+point is a rational number; the theorem asserts that this rational number
 lies in `R = ℤ_(q)`, i.e. that `v_q(j) ≥ 0` at a point with good
 reduction.
 
@@ -26782,24 +26938,18 @@ The classical statement is Igusa's: `X_0(N)` has good reduction at
 `q ∤ N` and the `j`-line `Y_0(1) ≅ 𝔸¹` has an integral model over
 `ℤ[1/N]`, so the degeneracy map `Y_0(N) ⟶ Y_0(1)` is a morphism of
 integral models and `j` of an integral point is a regular function
-evaluated at a section, hence an element of `ℤ_(q)`.
+evaluated at a section, hence an element of `ℤ_(q)`.  That sentence is
+now exactly the statement of `exists_x0IntegralJLine`, and what remains
+here is the *evaluation*: `jLineZCoord` of the postcomposed section is an
+element of `R` by construction, and `jLineZCoord_pre` along
+`SpecLoc.generic R` identifies its image in `ℚ` with `hj.jm` of the
+generic point, using `gen_eq`.
 
-**IRREDUCIBLE at this pin ALONG THE INTEGRAL-MODEL AXIS, and the CHECK
-THAT WOULD REFUTE THAT**: it needs the `j`-line over `ℤ_(q)`, and the
-survey recorded in `exists_x0CurveModel_of_base` found no integral model
-of a modular curve in mathlib, `~/cs/FLT` or this project.  Producing one
-— even just `Y_0(1)` over `ℤ_(q)` together with the degeneracy map from
-`𝒴` — refutes it.  Nothing here is blocked by Yoneda; the Yoneda axis of
-this cluster is closed.
-
-`_hbase` is load-bearing in the intended proof (it is what makes `R` the
-valuation ring `ℤ_(q)`, so that "regular at the closed point" is
-`v_q ≥ 0`), and `_hqN` is load-bearing for the usual reason — at `q ∣ N`
-the model is not smooth and `j` acquires a pole.  Every hypothesis is
-underscored only because the proof is a `sorry`. -/
-theorem exists_x0GenericJIntegral (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
-    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
-    (_hbase : IsReductionBase q R toF)
+So the integrality is no longer asserted — it is the type of
+`jLineZCoord` at the base `R`. -/
+theorem exists_x0GenericJIntegral (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
     {Y X X' XZ YZ : Scheme.{0}}
     {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
     {hc : IsCoarseModuliY0 N strY}
@@ -26813,11 +26963,15 @@ theorem exists_x0GenericJIntegral (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
         ((jmZ yZ : R) : ℚ)
           = hj.jm (((cm.genericOpen hX ι hι).toEquiv (𝟙 SpecQ) (SpecLoc.generic R)
               (Category.id_comp _)).symm
-              (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)) :=
-  sorry
+              (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)) := by
+  obtain ⟨jl⟩ := exists_x0IntegralJLine N q hN hq hqN R toF hbase hX hj cm ι hι
+  refine ⟨fun yZ => jLineZCoord (RelPoint.post jl.jmap jl.comm yZ), fun yZ => ?_⟩
+  rw [jl.gen_eq, Equiv.apply_symm_apply, RelPoint.post_pre, jLineZCoord_pre]
+  simp [SpecLoc.generic]
 
 /-- **The `j`-invariant of the REDUCTION is the reduction of the
-`j`-invariant** (sorry leaf — the descent half of the integral `j`).
+`j`-invariant** (PROVEN 2026-07-27 over `exists_x0IntegralJLine`; was a
+sorry leaf — the descent half of the integral `j`).
 
 TRUE for `q ∤ N`.  This is `jmSp` together with `jmSp_pre`, stated as
 what they actually assert: that `toF ∘ jmZ` factors through
@@ -26825,25 +26979,29 @@ what they actually assert: that `toF ∘ jmZ` factors through
 form to attack — two integral sections of `𝒴` that agree on the special
 fibre have `j`-invariants congruent mod `q`.
 
-**Why this is not formal, and why it is a SEPARATE leaf from
-`exists_x0GenericJIntegral`.**  `RelPoint.pre (SpecLoc.special toF) _` is
-composition with a CLOSED immersion, which is a monomorphism and
-therefore says nothing about injectivity in this direction: distinct
-sections `Spec ℤ_(q) ⟶ 𝒴` may well agree over `Spec 𝔽_q`.  So no
-function `jmSp` can be manufactured by choice, and the content is genuine
-descent: `j` is a regular function on the integral model, so its value on
-a section depends on the section only through its reduction, modulo `q`.
-That is a statement about the same integral `j`-line as the leaf above —
-but it is the FUNCTORIALITY of that map rather than its existence, and a
-construction of the `j`-line discharges the two differently.
+**Why this was not formal AS A LEAF, and what discharged it.**
+`RelPoint.pre (SpecLoc.special toF) _` is composition with a CLOSED
+immersion, which is a monomorphism and therefore says nothing about
+injectivity in this direction: distinct sections `Spec ℤ_(q) ⟶ 𝒴` may
+well agree over `Spec 𝔽_q`.  So no function `jmSp` can be manufactured by
+choice, and the content is genuine descent — which is exactly why it goes
+away once `j` is presented as a MORPHISM to the integral `j`-line rather
+than as a family of values: `jmSp` is then `jLineZCoord` of the
+postcomposed special-fibre point, defined on ALL of
+`RelPoint ystr (SpecLoc.special toF)` and not merely on the image, and
+the compatibility is `jLineZCoord_pre`.  The observation above is
+therefore still correct and is the reason the cut had to go through
+`exists_x0IntegralJLine` rather than through a second value-level leaf.
 
 `hjmZ` pins `jmZ` as the genuine `j` rather than an arbitrary
 `R`-valued function; without it the statement would be FALSE, since an
-arbitrary function on integral sections need not descend.  It is
-therefore NOT underscored even though the `sorry` does not read it. -/
-theorem exists_x0SpecialJ (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
-    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
-    (_hbase : IsReductionBase q R toF)
+arbitrary function on integral sections need not descend.  It is now
+CONSUMED, and consumed at exactly that point: it identifies the given
+`jmZ` with `jLineZCoord` of the integral section, using that `R ↪ ℚ` is
+injective. -/
+theorem exists_x0SpecialJ (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
     {Y X X' XZ YZ : Scheme.{0}}
     {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
     {hc : IsCoarseModuliY0 N strY}
@@ -26860,11 +27018,22 @@ theorem exists_x0SpecialJ (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
             (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ))) :
     ∃ jmSp : RelPoint ystr (SpecLoc.special toF) → ZMod q,
       ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
-        jmSp (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) yZ) = toF (jmZ yZ) :=
-  sorry
+        jmSp (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) yZ) = toF (jmZ yZ) := by
+  obtain ⟨jl⟩ := exists_x0IntegralJLine N q hN hq hqN R toF hbase hX hj cm ι hι
+  refine ⟨fun yS => jLineZCoord (RelPoint.post jl.jmap jl.comm yS), fun yZ => ?_⟩
+  have hZ : jmZ yZ = jLineZCoord (RelPoint.post jl.jmap jl.comm yZ) := by
+    have h1 := hjmZ yZ
+    rw [jl.gen_eq, Equiv.apply_symm_apply, RelPoint.post_pre, jLineZCoord_pre] at h1
+    simp only [SpecLoc.generic, Spec.preimage_map, CommRingCat.hom_ofHom] at h1
+    exact Subtype.ext h1
+  rw [hZ]
+  simp only [RelPoint.post_pre, jLineZCoord_pre, SpecLoc.special, Spec.preimage_map,
+    CommRingCat.hom_ofHom]
 
 /-- **The integral `j`-invariant exists on the model** (PROVEN over the
-two leaves above, was a sorry node until 2026-07-27).
+two residues above, was a sorry node until 2026-07-27; those two are
+themselves PROVEN over the single leaf `exists_x0IntegralJLine` as of the
+same day).
 
 TRUE for `q ∤ N`.  This is the SECOND of the two statements the old
 `exists_x0JGenericOpen_of_curveModel` bundled; it is now an assembly, and
@@ -26875,7 +27044,8 @@ to carry no content:
   since that field's argument runs over an EQUIVALENCE;
 * `jm_gen` is then `Equiv.symm_apply_apply`;
 * `jmGen_pre` is `exists_x0GenericJIntegral` read backwards;
-* `jmZ`, `jmSp` and `jmSp_pre` come from the two leaves.
+* `jmZ`, `jmSp` and `jmSp_pre` come from the two residues, and hence —
+  after the cut of 2026-07-27 — from `exists_x0IntegralJLine` alone.
 
 `ι` and `hι` are hypotheses rather than a second existential because the
 `gi` this is stated over must be the genuine generic-fibre

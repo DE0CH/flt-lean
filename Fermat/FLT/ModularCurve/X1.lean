@@ -368,7 +368,7 @@ open in them has been split along the theories it needed:
 | `geometricallyConnected_of_gamma1GITPresentation` | Deligne–Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]` | any `K`, `char K ∤ N` |
 | `nonempty_cuspLocusX1` | the cusp locus of `X_1(N)` (Deligne–Rapoport VI.6) | `ℚ` |
 | `exists_gamma1Datum_of_relPoint` | fineness at `N ≥ 4` / Lang | `𝔽_ℓ` |
-| `isEmpty_gamma1Datum_finiteField` | `#E(𝔽_ℓ) ≤ 2ℓ + 1` — NO modular curves | `𝔽_ℓ` |
+| `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann–Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cusp_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
 | `exists_injective_reduction_of_rankZeroJacobian` | Abel–Jacobi, Mordell–Weil, formal groups | `ℚ → 𝔽_ℓ` |
 | `nonempty_gamma1Datum_of_ratPoint` | Galois descent of a rational point to a section | `ℚ` |
@@ -1376,9 +1376,194 @@ theorem exists_gamma1Datum_of_relPoint (N ℓ : ℕ) (_hN : 4 ≤ N) {Y : Scheme
     Nonempty (Gamma1Datum N (SpecF ℓ)) :=
   sorry
 
+/-! #### The crude Weierstrass point count, and the one thing it needs from geometry
+
+The two halves of "`#E(𝔽_ℓ) ≤ 2ℓ + 1` beats `N`" are separated here, and
+the separation is the whole content of this sub-subsection: the COUNT is
+elementary and is proved below outright, while the passage from a
+`Gamma1Datum` to a plane cubic is a genuine piece of missing geometry and
+is the single remaining leaf.
+
+The count is stated for an arbitrary `WeierstrassCurve.Affine F` over a
+finite field — no ellipticity, no Hasse bound, no `j`-invariant.  Its
+proof is the classical one and nothing more: the fibre of the
+`x`-coordinate over each of the `#F` values of `x` has at most two points,
+because two affine points with the same `x` have `y`-coordinates related
+by `Affine.Y_eq_of_X_eq`, and the point at infinity contributes the
+`+ 1`.  Note that the `+ 1` is SHARP in the sense that matters — the
+consumer's hypothesis is `2ℓ + 1 < N`, so a bound of `2ℓ + 2`, which is
+what one gets by fibring the WHOLE of `Point` over `Option F`, would not
+suffice; the point at infinity is therefore split off first. -/
+
+/-- **The `x`-coordinate of an affine point, extended by junk at
+infinity** (PROVEN, a definition).
+
+Used only to fibre `Point` over the base field inside
+`natCard_weierstrassPoint_le`.  The junk value at `zero` is harmless
+there because `zero` is removed from the `Finset` before the fibration. -/
+def weierstrassXCoord {F : Type*} [Field F] (W : WeierstrassCurve.Affine F) :
+    W.Point → F
+  | .zero => 0
+  | .some x _ _ => x
+
+/-- **The `y`-coordinate of an affine point, extended by junk at
+infinity** (PROVEN, a definition).  Companion of `weierstrassXCoord`;
+it is the map along which each `x`-fibre is shown to have at most two
+elements. -/
+def weierstrassYCoord {F : Type*} [Field F] (W : WeierstrassCurve.Affine F) :
+    W.Point → F
+  | .zero => 0
+  | .some _ y _ => y
+
+/-- **A point of a Weierstrass curve is determined by its affine
+coordinates** (PROVEN, a definition): the encoding whose injectivity
+below supplies finiteness of `Point` over a finite field.
+
+`Nonsingular` is a `Prop`, so the two constructor arguments `x` and `y`
+determine the constructor application outright. -/
+def weierstrassPointEnc {F : Type*} [Field F] (W : WeierstrassCurve.Affine F) :
+    W.Point → Option (F × F)
+  | .zero => none
+  | .some x y _ => some (x, y)
+
+/-- **`weierstrassPointEnc` is injective** (PROVEN).
+
+This is what makes `Point` finite over a finite field without any appeal
+to properness or to a scheme-theoretic finiteness statement. -/
+theorem weierstrassPointEnc_injective {F : Type*} [Field F] (W : WeierstrassCurve.Affine F) :
+    Function.Injective (weierstrassPointEnc W) := by
+  rintro (_ | ⟨x, y, h⟩) (_ | ⟨x', y', h'⟩) hEq
+  · rfl
+  · simp [weierstrassPointEnc] at hEq
+  · simp [weierstrassPointEnc] at hEq
+  · simp only [weierstrassPointEnc, Option.some.injEq, Prod.mk.injEq] at hEq
+    obtain ⟨rfl, rfl⟩ := hEq
+    rfl
+
+/-- **The crude Weierstrass point count `#W(F) ≤ 2·#F + 1`** (PROVEN
+2026-07-27, for an ARBITRARY Weierstrass curve over an arbitrary finite
+field).
+
+No ellipticity, no Hasse bound, no `√ℓ`: for each of the `#F` values of
+`x` the defining equation is a monic quadratic in `y`, so it has at most
+two roots, and `Affine.Y_eq_of_X_eq` is exactly that statement in
+mathlib's vocabulary (`y₁ = y₂ ∨ y₁ = W.negY x y₂`).  Adding the point at
+infinity gives `2·#F + 1`.
+
+Deliberately stated for `WeierstrassCurve.Affine F` and not for an
+elliptic curve: singular Weierstrass curves satisfy it too, the proof
+never looks at `Δ`, and the weaker hypothesis is what lets
+`isEmpty_gamma1Datum_finiteField`'s leaf below get away with producing
+any plane cubic at all.
+
+This is NOT `hasse_bound_natCard_affine_point` (`MazurTorsion.lean`,
+which is an open leaf with its own owner) and does not depend on it: the
+Hasse bound `|ℓ + 1 - #E(𝔽_ℓ)| ≤ 2√ℓ` is strictly sharper and strictly
+harder, and nothing in the `Γ₁` cluster needs it. -/
+theorem natCard_weierstrassPoint_le {F : Type*} [Field F] [Fintype F] [DecidableEq F]
+    (W : WeierstrassCurve.Affine F) :
+    Nat.card W.Point ≤ 2 * Fintype.card F + 1 := by
+  classical
+  letI : Fintype W.Point :=
+    Fintype.ofInjective (weierstrassPointEnc W) (weierstrassPointEnc_injective W)
+  have hfib : ∀ b : F,
+      (Finset.filter (fun P => weierstrassXCoord W P = b)
+        (Finset.univ.erase (WeierstrassCurve.Affine.Point.zero : W.Point))).card ≤ 2 := by
+    intro b
+    rcases Finset.eq_empty_or_nonempty
+        (Finset.filter (fun P => weierstrassXCoord W P = b)
+          (Finset.univ.erase (WeierstrassCurve.Affine.Point.zero : W.Point)))
+        with he | ⟨P₀, hP₀⟩
+    · simp [he]
+    · simp only [Finset.mem_filter, Finset.mem_erase] at hP₀
+      obtain ⟨⟨hne, -⟩, hxb⟩ := hP₀
+      cases P₀ with
+      | zero => exact absurd rfl hne
+      | some x y h =>
+        simp only [weierstrassXCoord] at hxb
+        subst hxb
+        refine le_trans (Finset.card_le_card_of_injOn (weierstrassYCoord W)
+          (t := ({y, W.negY x y} : Finset F)) ?_ ?_) ?_
+        · intro P hP
+          simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_erase] at hP
+          obtain ⟨⟨hPne, -⟩, hxP⟩ := hP
+          cases P with
+          | zero => exact absurd rfl hPne
+          | some x' y' h' =>
+            simp only [weierstrassXCoord] at hxP
+            subst hxP
+            simp only [weierstrassYCoord, Finset.mem_coe, Finset.mem_insert,
+              Finset.mem_singleton]
+            exact WeierstrassCurve.Affine.Y_eq_of_X_eq h'.left h.left rfl
+        · intro P hP Q hQ hPQ
+          simp only [Finset.mem_coe, Finset.mem_filter, Finset.mem_erase] at hP hQ
+          obtain ⟨⟨hPne, -⟩, hxP⟩ := hP
+          obtain ⟨⟨hQne, -⟩, hxQ⟩ := hQ
+          cases P with
+          | zero => exact absurd rfl hPne
+          | some x₁ y₁ h₁ =>
+            cases Q with
+            | zero => exact absurd rfl hQne
+            | some x₂ y₂ h₂ =>
+              simp only [weierstrassXCoord] at hxP hxQ
+              simp only [weierstrassYCoord] at hPQ
+              subst hxP; subst hxQ; subst hPQ; rfl
+        · exact (Finset.card_insert_le _ _).trans (by simp)
+  have hmain : (Finset.univ.erase (WeierstrassCurve.Affine.Point.zero : W.Point)).card
+      ≤ 2 * Fintype.card F := by
+    refine le_trans (Finset.card_le_mul_card_image_of_maps_to (f := weierstrassXCoord W)
+      (t := (Finset.univ : Finset F)) (fun a _ => Finset.mem_univ _) 2 (fun b _ => hfib b)) ?_
+    simp
+  have hpos : 0 < Fintype.card W.Point := Fintype.card_pos_iff.mpr ⟨.zero⟩
+  have hcard : (Finset.univ.erase (WeierstrassCurve.Affine.Point.zero : W.Point)).card
+      = Fintype.card W.Point - 1 := by
+    rw [Finset.card_erase_of_mem (Finset.mem_univ _)]
+    rfl
+  rw [Nat.card_eq_fintype_card]
+  omega
+
+/-- **A `Γ₁(N)`-datum over `𝔽_ℓ` gives a plane cubic over `𝔽_ℓ` carrying
+a rational point of exact order `N`** (sorry leaf — the ONE piece of
+geometry the `𝔽_ℓ` point count needs, and the converse direction of
+`exists_ellipticScheme_of_weierstrass`).
+
+TRUE.  An abelian scheme of relative dimension one over `Spec 𝔽_ℓ` with a
+zero section IS an elliptic curve over `𝔽_ℓ`, hence has a Weierstrass
+model `W` with `W(𝔽_ℓ) ≃+ RelPoint d.f (𝟙 (SpecF ℓ))`; the level
+structure `d.pt` is a section of `d.f`, i.e. an `𝔽_ℓ`-rational point, and
+its order is `N` by `d.pt.geom_order` — which is stated on GEOMETRIC
+fibres, so the passage also uses that
+`RelPoint d.f (𝟙 _) → RelPoint d.f t` is an injective group homomorphism
+for `t : Spec 𝔽̄_ℓ ⟶ Spec 𝔽_ℓ` (a faithfully flat base change is an
+epimorphism of schemes, so composition with `t` is injective on
+sections).
+
+**WHY THIS IS THE WHOLE REMAINING CONTENT.**  `X0.lean` builds
+`exists_ellipticScheme_of_weierstrass`, which goes from a plane cubic to
+an abelian scheme; the direction needed here is the CONVERSE — a
+Weierstrass presentation of a given abelian scheme — and it exists
+nowhere in this tree, in mathlib, or in `~/cs/FLT`.  Classically it is
+Riemann–Roch on the genus-one curve `E`: `ℒ(3·O)` is three-dimensional
+and a basis `1, x, y` embeds `E` as a plane cubic in Weierstrass form.
+The arithmetic that used to be bundled with it is now
+`natCard_weierstrassPoint_le` above and is PROVEN, so a successor here
+faces geometry only.
+
+`W.IsElliptic` is asked for even though the count above does not use it,
+because it is TRUE of the genuine model and asking for less would let the
+leaf be discharged by a degenerate cubic that carries none of the
+geometry.  `[Fact ℓ.Prime]` rather than `ℓ.Prime` because the statement
+mentions `WeierstrassCurve (ZMod ℓ)`, whose `Field` instance — and hence
+the group law on `Point` — is only available under the `Fact`. -/
+theorem exists_weierstrassPointOfOrder_of_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
+    (_d : Gamma1Datum N (SpecF ℓ)) :
+    ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧
+      ∃ P : W.toAffine.Point, addOrderOf P = N :=
+  sorry
+
 /-- **There is no `Γ₁(N)`-datum over `𝔽_ℓ` once `N` exceeds the crude
-point bound `2ℓ + 1`** (sorry leaf — the elementary arithmetic half of
-the `𝔽_ℓ` point count, and the one that needs NO modular curves).
+point bound `2ℓ + 1`** (PROVEN 2026-07-27 over
+`exists_weierstrassPointOfOrder_of_gamma1Datum`; was a sorry leaf).
 
 TRUE, and this is the finding that reshapes the level-`25` budget: a
 `Γ₁(N)`-datum over `𝔽_ℓ` is an elliptic curve `E/𝔽_ℓ` together with an
@@ -1391,20 +1576,40 @@ Hasse, no Eichler–Shimura, no Hecke operators.**  Corroborated
 numerically: `G₂₅ mod 3` vanishes on `𝔽_3 × 𝔽_3` only at `(0, 0)`, which
 has `b = 0`.
 
-WHAT REMAINS is not the arithmetic but the passage from the scheme-level
-datum to a Weierstrass model: `Gamma1Datum N (SpecF ℓ)` presents `E` as
-an abelian scheme of relative dimension one over `Spec 𝔽_ℓ` with a
-section, and a bound on its `𝔽_ℓ`-points needs that presented as a plane
-cubic.  That is the `Γ₁`-side use of the converse of
-`exists_ellipticScheme_of_weierstrass` (`X0.lean`), which goes the other
-way; the direction needed here does not exist in this tree.
+WHAT REMAINED, when this was a leaf, was not the arithmetic but the
+passage from the scheme-level datum to a Weierstrass model — and that is
+now isolated as `exists_weierstrassPointOfOrder_of_gamma1Datum` above,
+which is the only `sorry` this theorem consumes.  The arithmetic half is
+`natCard_weierstrassPoint_le` and is PROVEN outright.  So the two
+sentences of the old docstring have become two declarations, and the
+budget assertion above is now mechanically checked: the count really does
+cost nothing beyond `Affine.Y_eq_of_X_eq`.
+
+The assembly is three steps and no more: the leaf gives `(W, P)` with
+`addOrderOf P = N`; `Point` is finite because `weierstrassPointEnc` is
+injective; and `addOrderOf_le_card` together with
+`natCard_weierstrassPoint_le` and `ZMod.card` gives
+`N ≤ 2ℓ + 1`, against the hypothesis.  Note it is `addOrderOf_le_card`
+and not divisibility that is used — `N ∣ #E(𝔽_ℓ)` is true and would also
+do, but the inequality needs strictly less.
 
 Note the statement is about `Gamma1Datum` alone — no compactification, no
 coarse space, no cusp.  That is deliberate: it is the half a successor
 can attack with elliptic-curve theory and nothing else. -/
-theorem isEmpty_gamma1Datum_finiteField (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hN : 2 * ℓ + 1 < N) :
-    IsEmpty (Gamma1Datum N (SpecF ℓ)) :=
-  sorry
+theorem isEmpty_gamma1Datum_finiteField (N ℓ : ℕ) (hℓ : ℓ.Prime) (hN : 2 * ℓ + 1 < N) :
+    IsEmpty (Gamma1Datum N (SpecF ℓ)) := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI : NeZero ℓ := ⟨hℓ.pos.ne'⟩
+  refine ⟨fun d => ?_⟩
+  obtain ⟨W, -, P, hP⟩ := exists_weierstrassPointOfOrder_of_gamma1Datum N ℓ d
+  haveI : Finite W.toAffine.Point :=
+    Finite.of_injective (weierstrassPointEnc W.toAffine)
+      (weierstrassPointEnc_injective W.toAffine)
+  have h1 : addOrderOf P ≤ Nat.card W.toAffine.Point := addOrderOf_le_card
+  have h2 : Nat.card W.toAffine.Point ≤ 2 * Fintype.card (ZMod ℓ) + 1 :=
+    natCard_weierstrassPoint_le W.toAffine
+  rw [ZMod.card] at h2
+  omega
 
 /-- **`Y_1(N)` has no `𝔽_ℓ`-point once `2ℓ + 1 < N`** (PROVEN 2026-07-27,
 by joining the two halves above).
@@ -1540,8 +1745,12 @@ one still carries modular content:
   whatsoever;
 * `exists_gamma1Datum_of_relPoint` (fineness/Lang) and
   `isEmpty_gamma1Datum_finiteField` (the crude bound `#E(𝔽_ℓ) ≤ 2ℓ + 1`)
-  — half 1, now two OPEN leaves, neither of which mentions a modular
-  curve;
+  — half 1, neither of which mentions a modular curve.  The second is
+  PROVEN as of 2026-07-27: its arithmetic is
+  `natCard_weierstrassPoint_le`, proved outright, and what is left open
+  under it is the single geometric leaf
+  `exists_weierstrassPointOfOrder_of_gamma1Datum` (a Weierstrass
+  presentation of an abelian scheme of relative dimension one);
 * `card_cusp_x1_finiteField` — half 2, the cusp count on the special
   fibre.  STILL OPEN, and the only one of the four that is
   Deligne–Rapoport.
