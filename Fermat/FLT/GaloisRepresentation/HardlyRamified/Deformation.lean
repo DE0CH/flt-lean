@@ -65,7 +65,10 @@ them without a human. Do not re-wrap it.
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `exists_ringHom_matrix_quotient_of_finite`
-- `exists_conj_entries_mem_of_single_mem`
+- `exists_peirceGenerators_of_single_mem` — CLOSED 2026-07-26, and with it
+  `exists_conj_entries_mem_of_single_mem` and
+  `exists_conj_entries_mem_of_basis_repr_mem`: Carayol's step 2c is now
+  entirely sorry-free
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_framedGaloisRep_baseChange_traceSubring`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
@@ -253,8 +256,9 @@ the surjectivity and minimality strata of the minimal presentation,
   `span_range_eq_top_of_irreducible_of_commutant`, the basis extraction
   `exists_basis_of_span_range_eq_top`, the Nakayama lift and the
   trace-form nondegeneracy (`trace_single_mul`, `det_traceGram_ne_zero`);
-  the second over the single leaf
-  `exists_conj_entries_mem_of_single_mem` (the Peirce/grading core), with
+  the second is now COMPLETE (2026-07-26): its former single leaf
+  `exists_conj_entries_mem_of_single_mem` (the Peirce/grading core) was
+  re-cut into `exists_peirceGenerators_of_single_mem` and then PROVEN, with
   the `𝔪`-adic Newton iteration `exists_isIdempotentElem_mem_of_sq_sub_mem`
   and the idempotent conjugation `exists_conj_eq_single_of_mul_self` both
   PROVEN, and the construction of the `C`-order, its closedness, the
@@ -343,6 +347,14 @@ public import Mathlib.RingTheory.HopkinsLevitzki
 public import Mathlib.RingTheory.Artinian.Ring
 public import Mathlib.RingTheory.Ideal.Quotient.Noetherian
 public import Mathlib.LinearAlgebra.Pi
+-- Continuous (profinite) group cohomology in ALL degrees, with functoriality
+-- along a continuous group homomorphism: `continuousCohomology n X` for
+-- `X : TopRep k G`, and `ContinuousCohomology.map φ f n`. This is the import
+-- that supplies item (1) of the machinery audit on
+-- `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; it is
+-- `public` because `Sha2` — and hence the statements of the two arithmetic
+-- leaves that replaced that node — mention `continuousCohomology`.
+public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functoriality
 -- proof-only: `globalFrob` (the Frobenius transport of
 -- `charpoly_baseChange_conj`'s consumers) — Family-free, see the module
 -- docstring.
@@ -486,6 +498,15 @@ import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.LinearAlgebra.TensorProduct.Pi
 import Mathlib.LinearAlgebra.Dimension.Constructions
+-- proof-only: the Nakayama/residue-field rank count behind the Peirce
+-- corner analysis of Carayol's step 2c
+-- (`exists_span_eq_top_of_pi_basis`, `exists_peirceCornerGenerator`) —
+-- `IsLocalRing.subsingleton_tensorProduct`,
+-- `IsLocalRing.map_tensorProduct_mk_eq_top`, `Module.Basis.baseChange`
+-- and `finrank_eq_one_iff_of_nonzero`.
+import Mathlib.RingTheory.LocalRing.Module
+import Mathlib.LinearAlgebra.TensorProduct.Basis
+import Mathlib.LinearAlgebra.FiniteDimensional.Basic
 -- `Subgroup.FiniteIndex` and `LinearMap.charpoly`: both appear in the
 -- exposed statements of the potential-modularity pair
 -- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
@@ -12194,12 +12215,276 @@ theorem mem_iff_smul_single_mem {B : Type*} [CommRing B]
     rw [hsingle]
     exact hM i j
 
+open scoped TensorProduct in
+/-- **A finite product of modules over a LOCAL ring, free with basis indexed
+by the index type itself and with every factor nonzero, has CYCLIC factors**
+(PROVEN 2026-07-26 — the module-theoretic engine of the Peirce corner
+analysis below; pure commutative algebra, nothing matrix-specific).
+
+The proof is the residue-field rank count plus Nakayama, in exactly the form
+`IsLocalRing.map_tensorProduct_mk_eq_top` packages it. Base-changing the
+basis gives `dim_k (k ⊗ ∏ᵢ Nᵢ) = |ι|`; `TensorProduct.piRight` splits that as
+`∑ᵢ dim_k (k ⊗ Nᵢ)`; each summand is nonzero by
+`IsLocalRing.subsingleton_tensorProduct` (this is where `Nontrivial (N i)`
+and finiteness of each `N i` are consumed), so each is exactly `1`; and a
+one-dimensional `k ⊗ Nᵢ` has a generator of the form `1 ⊗ a`, which by
+Nakayama generates `Nᵢ` itself.
+
+Note the hypothesis is a basis indexed by `ι` — i.e. the free rank equals the
+NUMBER OF FACTORS. That is the whole content: it is what forces every factor
+to have residual dimension exactly one, and it is why the Peirce argument
+needs `A'` to be `C`-free of rank `4` rather than merely finite. -/
+theorem exists_span_eq_top_of_pi_basis
+    {C : Type*} [CommRing C] [IsLocalRing C]
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {N : ι → Type*} [∀ i, AddCommGroup (N i)] [∀ i, Module C (N i)]
+    (b : Module.Basis ι C ((i : ι) → N i))
+    (hne : ∀ i, Nontrivial (N i)) (i : ι) :
+    ∃ a : N i, Submodule.span C {a} = ⊤ := by
+  classical
+  haveI hfin : Module.Finite C ((i : ι) → N i) := Module.Finite.of_basis b
+  haveI hfini : ∀ j, Module.Finite C (N j) := fun j =>
+    Module.Finite.of_surjective (LinearMap.proj j (R := C) (φ := N))
+      (fun x => ⟨Pi.single j x, by simp⟩)
+  set k := IsLocalRing.ResidueField C with hk
+  haveI : ∀ j, Module.Finite k (k ⊗[C] N j) := fun j => Module.Finite.base_change _ _ _
+  have hrank : Module.finrank k (k ⊗[C] ((j : ι) → N j)) = Fintype.card ι := by
+    rw [Module.finrank_eq_card_basis (b.baseChange k)]
+  have he : (k ⊗[C] ((j : ι) → N j)) ≃ₗ[k] ((j : ι) → k ⊗[C] N j) :=
+    TensorProduct.piRight C k k N
+  have h2 : Module.finrank k ((j : ι) → k ⊗[C] N j) = Fintype.card ι := by
+    rw [← he.finrank_eq]; exact hrank
+  rw [Module.finrank_pi_fintype] at h2
+  have hpos : ∀ j, 1 ≤ Module.finrank k (k ⊗[C] N j) := by
+    intro j
+    haveI : Nontrivial (k ⊗[C] N j) := by
+      rw [← not_subsingleton_iff_nontrivial, IsLocalRing.subsingleton_tensorProduct]
+      rw [not_subsingleton_iff_nontrivial]
+      exact hne j
+    exact Module.finrank_pos
+  have hone : ∀ j, Module.finrank k (k ⊗[C] N j) = 1 := by
+    intro j
+    by_contra hcon
+    have hp := hpos j
+    have h3 : 2 ≤ Module.finrank k (k ⊗[C] N j) := by omega
+    have hlt : ∑ _x : ι, (1 : ℕ) < ∑ x : ι, Module.finrank k (k ⊗[C] N x) :=
+      Finset.sum_lt_sum (fun x _ => hpos x) ⟨j, Finset.mem_univ j, by omega⟩
+    simp only [Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_one] at hlt
+    rw [h2] at hlt
+    exact lt_irrefl _ hlt
+  have hne1 : Nontrivial (k ⊗[C] N i) := by
+    rw [← not_subsingleton_iff_nontrivial, IsLocalRing.subsingleton_tensorProduct]
+    rw [not_subsingleton_iff_nontrivial]
+    exact hne i
+  obtain ⟨v, hv⟩ := exists_ne (0 : k ⊗[C] N i)
+  obtain ⟨a, ha⟩ : ∃ a : N i, (TensorProduct.mk C k (N i) 1) a = v :=
+    TensorProduct.mk_surjective C (N i) k Ideal.Quotient.mk_surjective v
+  refine ⟨a, ?_⟩
+  rw [← IsLocalRing.map_tensorProduct_mk_eq_top]
+  rw [Submodule.map_span]
+  have himg : (TensorProduct.mk C k (N i) 1) '' {a} = {v} := by
+    rw [Set.image_singleton, ha]
+  rw [himg]
+  rw [← Submodule.restrictScalars_span C k Ideal.Quotient.mk_surjective {v}]
+  have hspan : Submodule.span k {v} = ⊤ :=
+    (finrank_eq_one_iff_of_nonzero v hv).mp (hone i)
+  rw [hspan]
+  rfl
+
+open scoped Matrix in
+/-- **Each PEIRCE CORNER of a rank-`4` `C`-order in `M₂(B)` is a principal
+`C`-module generated by a UNIT of `B`** (PROVEN 2026-07-26 — steps 1 and 2 of
+Carayol's step 2c, in the coordinate form the file uses).
+
+`A` is the `C`-order, presented through `hA` as `{M | ∀ n, b.repr M n ∈ C}`
+so that no subring structure is needed here; `hpeirce` is the PROVEN
+`mem_iff_smul_single_mem` above, supplied as a hypothesis so that this lemma
+stays pure module theory. Writing `Iᵢⱼ = {x : B | x·Eᵢⱼ ∈ A}`, the four `Iᵢⱼ`
+assemble into a `C`-module isomorphic to `A` (that is `hpeirce`), and `A` is
+`C`-free of rank `4` on `b` (that is `hA`); so
+`exists_span_eq_top_of_pi_basis` applies verbatim with `ι = Fin 2 × Fin 2`.
+
+Nonvanishing of each corner — the remaining hypothesis of that lemma — comes
+from `hb`: expanding `Eᵢⱼ` in the `B`-basis `b` and reading off the `(i,j)`
+entry gives `1 = ∑ₙ (b.repr Eᵢⱼ n)·(bₙ)ᵢⱼ`, so some `(bₙ)ᵢⱼ` lies outside
+`𝔪_B`; it lies in `Iᵢⱼ` by `hpeirce`, and being a unit it is nonzero. The
+same element makes the generator `a` a unit, since `a` divides it.
+
+**The projectivity detour recorded in the older plan is NOT used**: no
+`Module.free_of_flat_of_isLocalRing`, no projective modules, no rank
+bookkeeping over a possibly non-domain `C`. Cyclic — which is all the
+conjugation step needs — comes straight out of Nakayama. -/
+theorem exists_peirceCornerGenerator
+    {B : Type*} [CommRing B] [IsLocalRing B]
+    (C : Subring B) [IsLocalRing C]
+    (A : Submodule C (Matrix (Fin 2) (Fin 2) B))
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hb : ∀ n, b n ∈ A)
+    (hA : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ ∀ n, b.repr M n ∈ C)
+    (hpeirce : ∀ M : Matrix (Fin 2) (Fin 2) B,
+      M ∈ A ↔ ∀ i j : Fin 2,
+        (M i j) • (Matrix.single i j 1 : Matrix (Fin 2) (Fin 2) B) ∈ A)
+    (p : Fin 2 × Fin 2) :
+    ∃ a : B, IsUnit a ∧ ∀ x : B,
+      x • (Matrix.single p.1 p.2 1 : Matrix (Fin 2) (Fin 2) B) ∈ A ↔
+        ∃ c : C, x = (c : B) * a := by
+  classical
+  -- entrywise expansion of a sum of corners
+  have hentry : ∀ (f : Fin 2 × Fin 2 → B) (i j : Fin 2),
+      (∑ q : Fin 2 × Fin 2,
+          f q • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B)) i j = f (i, j) := by
+    intro f i j
+    simp only [Matrix.sum_apply, Matrix.smul_apply, Matrix.single, Fintype.sum_prod_type,
+      smul_eq_mul, Matrix.of_apply]
+    fin_cases i <;> fin_cases j <;> simp
+  have hsum : ∀ N : Matrix (Fin 2) (Fin 2) B,
+      ∑ q : Fin 2 × Fin 2,
+        (N q.1 q.2) • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) = N := by
+    intro N; ext i j; exact hentry (fun q => N q.1 q.2) i j
+  -- the four corner submodules
+  set I : Fin 2 × Fin 2 → Submodule C B := fun q =>
+    { carrier := {x : B | x • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) ∈ A}
+      zero_mem' := by simp
+      add_mem' := by
+        intro x y hx hy
+        simp only [Set.mem_setOf_eq, add_smul]
+        exact A.add_mem hx hy
+      smul_mem' := by
+        intro c x hx
+        simp only [Set.mem_setOf_eq, smul_assoc]
+        exact A.smul_mem c hx } with hIdef
+  have hAmem : ∀ (M : Matrix (Fin 2) (Fin 2) B), M ∈ A → ∀ q : Fin 2 × Fin 2,
+      M q.1 q.2 ∈ I q := fun M hM q => (hpeirce M).mp hM q.1 q.2
+  -- the element of `A` assembled from prescribed corners
+  set F : ((q : Fin 2 × Fin 2) → I q) → Matrix (Fin 2) (Fin 2) B := fun x =>
+    ∑ q : Fin 2 × Fin 2,
+      ((x q : B)) • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) with hFdef
+  have hFmem : ∀ x, F x ∈ A := fun x => Submodule.sum_mem _ fun q _ => (x q).2
+  have hFadd : ∀ x y, F (x + y) = F x + F y := by
+    intro x y
+    simp only [hFdef]
+    rw [← Finset.sum_add_distrib]
+    exact Finset.sum_congr rfl fun q _ => by rw [← add_smul]; rfl
+  have hFsmul : ∀ (c : C) x, F (c • x) = (c : B) • F x := by
+    intro c x
+    simp only [hFdef]
+    rw [Finset.smul_sum]
+    exact Finset.sum_congr rfl fun q _ => by rw [smul_smul]; rfl
+  have hFentry : ∀ x (q : Fin 2 × Fin 2), F x q.1 q.2 = (x q : B) := by
+    intro x q
+    have hq := hentry (fun q => (x q : B)) q.1 q.2
+    simp only [hFdef]
+    rw [hq]
+  -- the product of the corners is `C`-free of rank `4`
+  let φ : ((q : Fin 2 × Fin 2) → I q) ≃ₗ[C] (Fin 4 → C) :=
+    { toFun := fun x n => ⟨b.repr (F x) n, (hA _).mp (hFmem x) n⟩
+      map_add' := by
+        intro x y
+        funext n
+        apply Subtype.ext
+        show (b.repr (F (x + y))) n = (b.repr (F x)) n + (b.repr (F y)) n
+        rw [hFadd, map_add]
+        simp
+      map_smul' := by
+        intro c x
+        funext n
+        apply Subtype.ext
+        show (b.repr (F (c • x))) n = (c : B) * (b.repr (F x)) n
+        rw [hFsmul, map_smul]
+        simp
+      invFun := fun c q =>
+        ⟨(∑ n : Fin 4, ((c n : B)) • b n) q.1 q.2,
+          hAmem _ ((hA _).mpr (by
+            intro m
+            rw [b.repr_sum_self]
+            exact (c m).2)) q⟩
+      left_inv := by
+        intro x
+        funext q
+        apply Subtype.ext
+        show (∑ n : Fin 4, ((b.repr (F x) n : B)) • b n) q.1 q.2 = (x q : B)
+        rw [b.sum_repr]
+        exact hFentry x q
+      right_inv := by
+        intro c
+        funext n
+        apply Subtype.ext
+        show (b.repr (∑ q : Fin 2 × Fin 2,
+            (((∑ m : Fin 4, ((c m : B)) • b m) q.1 q.2))
+              • (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B))) n = (c n : B)
+        rw [hsum, b.repr_sum_self] }
+  have e4 : Fin 4 ≃ (Fin 2 × Fin 2) :=
+    (Fintype.equivFinOfCardEq (α := Fin 2 × Fin 2) (by simp)).symm
+  have hbasis : Module.Basis (Fin 2 × Fin 2) C ((q : Fin 2 × Fin 2) → I q) :=
+    (Module.Basis.ofEquivFun φ).reindex e4
+  -- every corner contains an element outside the maximal ideal
+  have hunit : ∀ q : Fin 2 × Fin 2,
+      ∃ n : Fin 4, (b n) q.1 q.2 ∉ IsLocalRing.maximalIdeal B := by
+    intro q
+    by_contra hcon
+    push Not at hcon
+    have hE : (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B) q.1 q.2 = 1 := by
+      simp [Matrix.single]
+    have hrepr := b.sum_repr (Matrix.single q.1 q.2 1 : Matrix (Fin 2) (Fin 2) B)
+    have h1 : (1 : B)
+        = ∑ n : Fin 4, (b.repr (Matrix.single q.1 q.2 1
+            : Matrix (Fin 2) (Fin 2) B) n) * ((b n) q.1 q.2) := by
+      conv_lhs => rw [← hE, ← hrepr]
+      simp [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
+    have hone : (1 : B) ∈ IsLocalRing.maximalIdeal B := by
+      rw [h1]
+      exact Ideal.sum_mem _ fun n _ => Ideal.mul_mem_left _ _ (hcon n)
+    exact (IsLocalRing.maximalIdeal.isMaximal B).ne_top
+      (Ideal.eq_top_iff_one _ |>.mpr hone)
+  have hnt : ∀ q : Fin 2 × Fin 2, Nontrivial (I q) := by
+    intro q
+    obtain ⟨n, hn⟩ := hunit q
+    refine ⟨⟨⟨(b n) q.1 q.2, hAmem (b n) (hb n) q⟩, 0, ?_⟩⟩
+    intro hzero
+    exact hn (by rw [show (b n) q.1 q.2 = (0 : B) from congrArg Subtype.val hzero]; simp)
+  -- Nakayama: each corner is cyclic
+  obtain ⟨a₀, ha₀⟩ := exists_span_eq_top_of_pi_basis hbasis hnt p
+  refine ⟨(a₀ : B), ?_, ?_⟩
+  · obtain ⟨n, hn⟩ := hunit p
+    have hmem : (⟨(b n) p.1 p.2, hAmem (b n) (hb n) p⟩ : I p) ∈ Submodule.span C {a₀} := by
+      rw [ha₀]; trivial
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
+    have hval : (c : B) * (a₀ : B) = (b n) p.1 p.2 := congrArg Subtype.val hc
+    have hu : IsUnit ((b n) p.1 p.2) := by
+      rwa [← IsLocalRing.notMem_maximalIdeal]
+    rw [← hval] at hu
+    exact isUnit_of_mul_isUnit_right hu
+  · intro x
+    constructor
+    · intro hx
+      have hmem : (⟨x, hx⟩ : I p) ∈ Submodule.span C {a₀} := by rw [ha₀]; trivial
+      obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
+      exact ⟨c, (congrArg Subtype.val hc).symm⟩
+    · rintro ⟨c, rfl⟩
+      exact (I p).smul_mem c a₀.2
+
 open scoped Matrix in
 /-- **The PEIRCE CORNERS of a `C`-order containing `E₁₁` are principal, with
-unit off-diagonal generators** (sorry leaf, cut 2026-07-26 out of
+unit off-diagonal generators** (**PROVEN 2026-07-26**; cut 2026-07-26 out of
 `exists_conj_entries_mem_of_single_mem` below — steps 1–4 of that leaf's
 grading argument; PURE MODULE THEORY, no matrices beyond the four corners
 and no topology beyond `hclosed`).
+
+PROOF, as carried out: steps 1 and 2 are the new
+`exists_peirceCornerGenerator` above, which runs the residue-field rank count
+of `exists_span_eq_top_of_pi_basis` on the four corners and returns each
+`Iᵢⱼ = C·aᵢⱼ` with `aᵢⱼ` a unit of `B`. Step 3 is the local `hdiag` below:
+`1 ∈ Iᵢᵢ` gives `1 = c·aᵢᵢ` with `c ∈ C`, so `c` is a unit of `B`, hence a
+unit of `C` by the PROVEN `isUnit_of_isClosed_of_notMem_maximalIdeal` — the
+ONLY place `hclosed` and the finiteness of the residue field are consumed —
+whence `aᵢᵢ = c⁻¹ ∈ C` and `Iᵢᵢ = C`. Step 4 is then one line: the product
+`(a₀₁·E₀₁)(a₁₀·E₁₀) = (a₀₁a₁₀)·E₀₀` lies in the SUBRING `Asub` (which has
+the same carrier as the submodule `A`), so `a₀₁a₁₀ ∈ I₀₀ = C`.
+
+`hcompl` and `hres` are genuinely UNUSED here — they are inherited from
+`exists_conj_entries_mem_of_single_mem`'s package, where `hres` is consumed
+by the idempotent-lifting reduction and `hcompl` upstream of it. They are
+kept so the two halves share one signature, exactly as the note below says.
 
 The hypotheses are verbatim those of `exists_conj_entries_mem_of_single_mem`,
 so that the two halves can be redistributed freely. Write
@@ -12280,8 +12565,119 @@ theorem exists_peirceGenerators_of_single_mem
         x ∈ C) ∧
       (∀ x : B, (∀ n : Fin 4,
           b.repr (x • (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
-        x ∈ C) :=
-  sorry
+        x ∈ C) := by
+  classical
+  haveI hCloc : IsLocalRing C := isLocalRing_of_isClosed_subring hadic hclosed
+  -- the `C`-order, as a subring and as a `C`-submodule with the SAME carrier
+  set Asub : Subring (Matrix (Fin 2) (Fin 2) B) :=
+    { carrier := {M | ∀ i, b.repr M i ∈ C}
+      zero_mem' := by intro i; simp
+      one_mem' := fun i => hrepr 1 S.one_mem i
+      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
+      neg_mem' := fun {x} hx i => by simpa using C.neg_mem (hx i)
+      mul_mem' := by
+        intro x y hx hy n
+        have hxy : x * y = ∑ i, ∑ j, (b.repr x i * b.repr y j) • (b i * b j) := by
+          conv_lhs => rw [← b.sum_repr x, ← b.sum_repr y]
+          rw [Finset.sum_mul]
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [Finset.mul_sum]
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [smul_mul_assoc, mul_smul_comm, smul_smul]
+        rw [hxy]
+        simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
+          Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+        refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
+        exact C.mul_mem (C.mul_mem (hx i) (hy j))
+          (hrepr _ (S.mul_mem (hbS i) (hbS j)) n) } with hAsubdef
+  set A : Submodule C (Matrix (Fin 2) (Fin 2) B) :=
+    { carrier := {M | ∀ i, b.repr M i ∈ C}
+      zero_mem' := by intro i; simp
+      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
+      smul_mem' := fun c x hx i => by
+        simpa [Subring.smul_def] using C.mul_mem c.2 (hx i) } with hAdef
+  have hAmemiff : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ ∀ n, b.repr M n ∈ C :=
+    fun _ => Iff.rfl
+  have hAAsub : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ M ∈ Asub := fun _ => Iff.rfl
+  have hbA : ∀ n, b n ∈ A := fun n => hrepr (b n) (hbS n)
+  have hE00 : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := hone
+  have hpeirce : ∀ M : Matrix (Fin 2) (Fin 2) B,
+      M ∈ A ↔ ∀ i j : Fin 2,
+        (M i j) • (Matrix.single i j 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
+    intro M
+    exact mem_iff_smul_single_mem Asub hE00 M
+  obtain ⟨a01, hu01, hI01⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (0, 1)
+  obtain ⟨a10, hu10, hI10⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (1, 0)
+  obtain ⟨a00, hu00, hI00⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (0, 0)
+  obtain ⟨a11, hu11, hI11⟩ := exists_peirceCornerGenerator C A b hbA hAmemiff hpeirce (1, 1)
+  -- `E₂₂ = 1 − E₁₁ ∈ A`
+  have hE11 : (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
+    have h1 : (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)
+        = 1 - Matrix.single 0 0 1 := by
+      ext p q
+      fin_cases p <;> fin_cases q <;> simp [Matrix.single]
+    rw [h1]
+    exact A.sub_mem (fun i => hrepr 1 S.one_mem i) hE00
+  -- STEP 3: a diagonal corner containing `1` is exactly `C`
+  have hdiag : ∀ (i : Fin 2) (a : B),
+      (∀ x : B, x • (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A ↔
+        ∃ c : C, x = (c : B) * a) →
+      (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A →
+      a ∈ C ∧ ∀ x : B,
+        (x • (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A ↔ x ∈ C) := by
+    intro i a hchar hmem
+    have h1mem : (1 : B) • (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
+      rw [one_smul]; exact hmem
+    obtain ⟨c, hc⟩ := (hchar 1).mp h1mem
+    have hcu : IsUnit c := by
+      refine isUnit_of_isClosed_of_notMem_maximalIdeal hadic hclosed c ?_
+      intro hcm
+      have hone' : (1 : B) ∈ IsLocalRing.maximalIdeal B := by
+        rw [hc]
+        exact Ideal.mul_mem_right _ _ hcm
+      exact (IsLocalRing.maximalIdeal.isMaximal B).ne_top
+        (Ideal.eq_top_iff_one _ |>.mpr hone')
+    obtain ⟨cu, hcu'⟩ := hcu
+    have haC : a ∈ C := by
+      have hinv : (((cu⁻¹ : Cˣ) : C) : B) * (((cu : Cˣ) : C) : B) = 1 := by
+        exact_mod_cast congrArg (fun z : C => (z : B)) cu.inv_mul
+      have hval : a = (((cu⁻¹ : Cˣ) : C) : B) := by
+        calc a = 1 * a := (one_mul a).symm
+        _ = ((((cu⁻¹ : Cˣ) : C) : B) * (((cu : Cˣ) : C) : B)) * a := by rw [hinv]
+        _ = (((cu⁻¹ : Cˣ) : C) : B) * ((((cu : Cˣ) : C) : B) * a) := by ring
+        _ = (((cu⁻¹ : Cˣ) : C) : B) * 1 := by rw [hcu', ← hc]
+        _ = (((cu⁻¹ : Cˣ) : C) : B) := by ring
+      rw [hval]
+      exact ((cu⁻¹ : Cˣ) : C).2
+    refine ⟨haC, fun x => ⟨?_, ?_⟩⟩
+    · intro hx
+      obtain ⟨c', hc'⟩ := (hchar x).mp hx
+      rw [hc']
+      exact C.mul_mem c'.2 haC
+    · intro hx
+      refine (hchar x).mpr ⟨⟨x, hx⟩ * c, ?_⟩
+      have hxc : ((⟨x, hx⟩ * c : C) : B) * a = x * ((c : B) * a) := by
+        push_cast; ring
+      rw [hxc, ← hc, mul_one]
+  obtain ⟨ha00C, hI00'⟩ := hdiag 0 a00 hI00 hE00
+  obtain ⟨ha11C, hI11'⟩ := hdiag 1 a11 hI11 hE11
+  -- STEP 4: `a₀₁·a₁₀ ∈ I₀₀ = C`
+  have hprod : (a01 * a10) ∈ C := by
+    refine (hI00' (a01 * a10)).mp ?_
+    have hx01 : a01 • (Matrix.single 0 1 1 : Matrix (Fin 2) (Fin 2) B) ∈ A :=
+      (hI01 a01).mpr ⟨1, by simp⟩
+    have hx10 : a10 • (Matrix.single 1 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A :=
+      (hI10 a10).mpr ⟨1, by simp⟩
+    have hmul : (a01 • (Matrix.single 0 1 1 : Matrix (Fin 2) (Fin 2) B))
+        * (a10 • (Matrix.single 1 0 1 : Matrix (Fin 2) (Fin 2) B))
+        = (a01 * a10) • (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) := by
+      ext p q
+      fin_cases p <;> fin_cases q <;>
+        simp [Matrix.single, Matrix.mul_apply, mul_comm]
+    rw [hAAsub] at hx01 hx10 ⊢
+    rw [← hmul]
+    exact Asub.mul_mem hx01 hx10
+  exact ⟨a01, a10, hu01, hprod, hI01, hI10, hI00', hI11'⟩
 
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2c: a `C`-order CONTAINING `E₁₁` is
@@ -17965,7 +18361,300 @@ theorem exists_fin_le_span_sup_smul_of_rank_le {S : Type*} [CommRing S]
     rintro _ ⟨i, rfl⟩
     exact Ideal.subset_span ⟨Fin.castLE hng i, by simp [Fin.castLE]⟩
 
-/-- **Böckle's bound on the minimal relation space** (sorry node — the
+/-! ### `ad⁰ ρbar` and the Tate–Šafarevič group `Ш²_S(ad⁰)`
+
+Added 2026-07-26 to carry out the recut prescribed by the machinery audit
+on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below.
+
+**The audit's item (1) is NOT missing.** It said continuous cochain
+cohomology "stops at `H⁰`" in mathlib and had to be vendored from
+`~/cs/FLT` under a pin-drift audit. That is stale: OUR pin
+(`a3364faec42918fcd84a03a255b50570129f9ead`) already carries the whole
+theory, sorry-free, in
+`Mathlib/RepresentationTheory/Continuous/{Basic,TopRep}.lean` and
+`Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`:
+`continuousCohomology n X : TopModuleCat k` for `X : TopRep k G` and every
+`n : ℕ` (the homology of `TopRep.homogeneousCochains`), together with
+functoriality `ContinuousCohomology.map (φ : H →ₜ* G) (f : res φ X ⟶ Y) n`
+along a continuous group homomorphism. Only `LowDegree.lean` — which
+computes `H⁰` explicitly — stops at `H⁰`; the theory does not. So item (1)
+costs one `public import`, not a vendoring project, and items (2) and (3)
+are the short definitions below rather than a development.
+
+Note `ContRepresentation k G M` is by definition just a monoid homomorphism
+`G →* (M →L[k] M)`: continuity of the ACTION is not part of the datum (it is
+the cochains `C(G, C(G, …))` that are continuous). So `AdZero.rep` below
+needs no continuity input from `ρbar`, and continuity of `ρbar` is not
+silently consumed here. -/
+
+variable (k V) in
+/-- **The adjoint module `ad⁰`** — the trace-zero endomorphisms of `V`, as a
+type of its own so that the discrete topology can be installed on it without
+colliding with the `moduleTopology` that `GaloisRep` puts on
+`Module.End k V`. Over the finite residue field `k` this is the module
+Böckle's bound and the Greenberg–Wiles formula are stated for; `Module.rank`
+of it is `3` when `rank k V = 2`, though nothing below needs that. -/
+def AdZero : Type _ := ↥(LinearMap.ker (LinearMap.trace k V))
+
+namespace AdZero
+
+noncomputable instance : AddCommGroup (AdZero k V) :=
+  inferInstanceAs (AddCommGroup ↥(LinearMap.ker (LinearMap.trace k V)))
+
+noncomputable instance : Module k (AdZero k V) :=
+  inferInstanceAs (Module k ↥(LinearMap.ker (LinearMap.trace k V)))
+
+instance : TopologicalSpace (AdZero k V) := ⊥
+
+instance : DiscreteTopology (AdZero k V) := ⟨rfl⟩
+
+instance : IsTopologicalAddGroup (AdZero k V) where
+  continuous_add := continuous_of_discreteTopology
+  continuous_neg := continuous_of_discreteTopology
+
+instance : ContinuousSMul k (AdZero k V) := ⟨continuous_of_discreteTopology⟩
+
+variable (k V) in
+/-- The underlying endomorphism of a trace-zero endomorphism. -/
+noncomputable def toEnd : AdZero k V →ₗ[k] Module.End k V :=
+  (LinearMap.ker (LinearMap.trace k V)).subtype
+
+lemma toEnd_injective : Function.Injective (toEnd k V) :=
+  Submodule.injective_subtype _
+
+@[ext]
+lemma ext {x y : AdZero k V} (h : toEnd k V x = toEnd k V y) : x = y := toEnd_injective h
+
+/-- Conjugation by a unit preserves trace-zero endomorphisms: `tr (a f b) = tr f`
+whenever `b * a = 1`, by `trace_mul_comm`. -/
+lemma conj_mem (a b : Module.End k V) (hab : b * a = 1) (f : Module.End k V)
+    (hf : f ∈ LinearMap.ker (LinearMap.trace k V)) :
+    a * f * b ∈ LinearMap.ker (LinearMap.trace k V) := by
+  rw [LinearMap.mem_ker] at hf ⊢
+  rw [LinearMap.trace_mul_comm, ← mul_assoc, hab, one_mul]
+  exact hf
+
+/-- The `k`-linear conjugation map `f ↦ a * f * b` on trace-zero endomorphisms. -/
+noncomputable def conjₗ (a b : Module.End k V) (hab : b * a = 1) :
+    AdZero k V →ₗ[k] AdZero k V :=
+  LinearMap.restrict
+    ((LinearMap.mulLeft k a).comp (LinearMap.mulRight k b))
+    (fun f hf => by simpa [mul_assoc] using conj_mem a b hab f hf)
+
+/-- The conjugation map as a continuous linear map — everything in sight is
+discrete, so continuity is free. -/
+noncomputable def conjL (a b : Module.End k V) (hab : b * a = 1) :
+    AdZero k V →L[k] AdZero k V :=
+  ⟨conjₗ a b hab, continuous_of_discreteTopology⟩
+
+@[simp]
+lemma toEnd_conjL (a b : Module.End k V) (hab : b * a = 1) (x : AdZero k V) :
+    toEnd k V (conjL a b hab x) = a * toEnd k V x * b :=
+  (mul_assoc a (toEnd k V x) b).symm
+
+/-- **`ad⁰ ρbar`** — the adjoint representation of `Γ ℚ` on the trace-zero
+endomorphisms of `V`, `σ ↦ (f ↦ ρbar σ ∘ f ∘ ρbar σ⁻¹)`. This is item (2) of
+the machinery audit below. -/
+noncomputable def rep (ρbar : GaloisRep ℚ k V) :
+    ContRepresentation k (Field.absoluteGaloisGroup ℚ) (AdZero k V) where
+  toMonoidHom :=
+  { toFun := fun σ => conjL (ρbar σ) (ρbar σ⁻¹)
+      (by rw [← map_mul, inv_mul_cancel, map_one])
+    map_one' := by
+      refine ContinuousLinearMap.ext fun x => AdZero.ext ?_
+      rw [toEnd_conjL, one_apply_eq_self, inv_one, map_one, one_mul, mul_one]
+    map_mul' := fun σ τ => by
+      refine ContinuousLinearMap.ext fun x => AdZero.ext ?_
+      rw [toEnd_conjL, mul_apply_eq_comp, toEnd_conjL, toEnd_conjL,
+        map_mul, mul_inv_rev, map_mul]
+      simp only [mul_assoc] }
+
+end AdZero
+
+/-- `ad⁰ ρbar` as an object of `TopRep k (Γ ℚ)`, so that
+`continuousCohomology n (adZeroTopRep ρbar)` is its continuous cohomology. -/
+noncomputable def adZeroTopRep (ρbar : GaloisRep ℚ k V) :
+    TopRep k (Field.absoluteGaloisGroup ℚ) :=
+  TopRep.of (AdZero.rep ρbar)
+
+/-- The decomposition map `Γ ℚ_v →ₜ* Γ ℚ` at a finite place `v`, i.e. the
+continuous group homomorphism induced by `ℚ → ℚ_v`. Item (3) of the audit;
+this repository already knows it to be continuous, and `GaloisRep.toLocal`
+is built from the same map. -/
+noncomputable def decompHom (v : IsDedekindDomain.HeightOneSpectrum
+    (NumberField.RingOfIntegers ℚ)) :
+    Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) →ₜ*
+      Field.absoluteGaloisGroup ℚ :=
+  Field.absoluteGaloisGroup.map
+    (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+
+/-- `ad⁰ ρbar` restricted to the decomposition group at `v`. -/
+noncomputable def adZeroLocal (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  TopRep.res (decompHom v).toMonoidHom (adZeroTopRep ρbar)
+
+/-- The localisation map `H²(ℚ, ad⁰) → H²(ℚ_v, ad⁰)`. -/
+noncomputable def locRes (ρbar : GaloisRep ℚ k V)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    continuousCohomology 2 (adZeroTopRep ρbar) ⟶
+      continuousCohomology 2 (adZeroLocal ρbar v) :=
+  ContinuousCohomology.map (decompHom v)
+    (CategoryTheory.CategoryStruct.id (adZeroLocal ρbar v)) 2
+
+/-- **`Ш²_S(ad⁰)`** — the Tate–Šafarevič group in degree `2`: the classes in
+`H²(ℚ, ad⁰)` that die in `H²(ℚ_v, ad⁰)` for every `v ∈ S`. Written as the
+INTERSECTION of the kernels rather than the kernel of the map into
+`⨁_{v ∈ S}`, which is the same submodule and avoids building the product
+object. -/
+noncomputable def Sha2 (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Submodule k (continuousCohomology 2 (adZeroTopRep ρbar)) :=
+  ⨅ v ∈ S, LinearMap.ker (locRes ρbar v).hom.toLinearMap
+
+variable (ℓ) in
+/-- The FINITE places of the hardly ramified problem: those above `2` and
+above `ℓ`. The archimedean place is deliberately absent — `#ad⁰` is a power
+of the odd prime `ℓ` and `Gal(ℂ/ℝ)` has order `2`, so `H²(ℝ, ad⁰) = 0` and
+`∞` imposes no condition; see the audit below. -/
+def hardlyRamifiedPlaces :
+    Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+  {v | v.asIdeal = Ideal.span {(2 : NumberField.RingOfIntegers ℚ)} ∨
+    v.asIdeal = Ideal.span {(ℓ : NumberField.RingOfIntegers ℚ)}}
+
+/-- **Böckle's obstruction bound** (sorry node, item (4)+(5) of the machinery
+audit on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below;
+cut out 2026-07-26 together with `rank_sha2_le_of_minimal_mvPowerSeries_presentation`,
+which together replace the single monolithic node that used to carry the
+whole audit):
+
+for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
+weakly universal, trace-generated hardly ramified deformation ring, the minimal
+relation space `ker φ/(𝔪_S · ker φ)` is bounded by `Ш²_S(ad⁰)`.
+
+**Why the bound is threaded through a natural number `n` rather than stated as
+`rank relationSpace ≤ rank Ш²`.** The two ranks live in DIFFERENT universes —
+the relation space is a subquotient of `MvPowerSeries (Fin g) Λ` with
+`Λ : Type u`, while `Ш²` is a submodule of a `TopModuleCat k` object built from
+`V : Type v` — so a direct `≤` between the two `Cardinal`s would need
+`Cardinal.lift` on both sides. Quantifying over a natural bound `n` avoids the
+lift entirely, is universe-polymorphic on both sides through `Nat.cast`, and is
+exactly the form the consumer needs. It is also (weakly) the SAFER direction:
+`rank relationSpace ≤ lift (rank Ш²)` implies this statement, so assuming this
+form assumes no more than Böckle's theorem gives.
+
+This is the half of the classical `r ≤ g` that consumes weak universality:
+obstruction theory realises the relations of a minimal presentation inside the
+`Ш²` of the adjoint module, given that the four hardly ramified local
+conditions (tame at `2`, flat at `ℓ`, unramified outside `S`, fixed
+determinant) are liftable. References: Böckle, *Presentations of universal
+deformation rings*; Mazur, *Deforming Galois representations*, §1.6–1.7;
+Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §2.6–2.7.
+
+**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF.** This leaf carries
+the same hypothesis package as
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below, which is
+the package this development ultimately refutes; so the EXPOSURE AUDIT AND
+CIRCULARITY GUARD in that node's docstring applies here VERBATIM and is not
+repeated. In particular the BANNED INPUTS clause binds: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) nor
+`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
+— nor anything proven over them — may be used to discharge this leaf, since
+their intended proofs run through modularity lifting, which is proven over
+the very bound this leaf supplies. A green build and an honest
+`#print axioms` would BOTH survive such a discharge; only a human reading
+catches it. (This note was added when the monolithic node was recut,
+2026-07-26: the recut moved the arithmetic content here, and a guard that
+stayed only on the consumer would have stopped guarding anything.) -/
+theorem rank_relationSpace_le_of_rank_sha2_le
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R),
+        Function.Surjective φ →
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        ∀ n : ℕ,
+        Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (n : Cardinal) →
+        Module.rank (MvPowerSeries (Fin g) Λ ⧸
+              IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ))
+            (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) ≤
+          (n : Cardinal) :=
+  sorry
+
+/-- **`dim_k Ш²_S(ad⁰) ≤ g`** (sorry node, items (6)+(7) of the machinery audit
+on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; cut out
+2026-07-26 together with `rank_relationSpace_le_of_rank_sha2_le` above):
+
+for a minimal presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` — minimality being exactly
+what identifies `g` with the mod-`ℓ` tangent dimension
+`dim_k H¹_{HR}(G_{ℚ,S}, ad⁰ ρbar)` of the deformation functor — the
+Tate–Šafarevič group `Ш²_S(ad⁰)` has dimension at most `g`.
+
+The argument is local Tate duality and the Poitou–Tate nine-term sequence,
+giving `Ш²_S(ad⁰) ≅ Ш¹_S(ad⁰(1))^∨`, followed by the Greenberg–Wiles Euler
+characteristic formula
+
+`dim H¹_L − dim H¹_{L^⊥} = h⁰(ℚ, ad⁰) − h⁰(ℚ, ad⁰(1)) + Σ_{v ∈ S} (dim L_v − h⁰(ℚ_v, ad⁰))`
+
+with the local computations `0` at `2`, `+1` at `ℓ` and `−1` at `∞`, and the
+tangent-space identification `dim_k H¹_L = g`, which is where weak universality
+enters. Absolute irreducibility (`hirr`) kills `h⁰(ℚ, ad⁰)`; oddness (`hℓOdd`,
+and `ρbar` odd) is what makes the archimedean term `−1`.
+
+References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, ch. VIII
+(Poitou–Tate); Washington's article in Cornell–Silverman–Stevens (the
+Greenberg–Wiles formula); Darmon–Diamond–Taylor, §2.6–2.7.
+
+**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF**, exactly as for
+`rank_relationSpace_le_of_rank_sha2_le` above: see the EXPOSURE AUDIT AND
+CIRCULARITY GUARD on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
+below, whose BANNED INPUTS clause forbids discharging this leaf from
+`not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`not_isIrreducible_of_isHardlyRamified_of_odd`, or anything proven over them.
+`hℓ5 : 5 ≤ ℓ` also keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`,
+hard-wired to the prime `3`) inapplicable, so that route stays closed
+mathematically rather than merely by import scope. -/
+theorem rank_sha2_le_of_minimal_mvPowerSeries_presentation
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R),
+        Function.Surjective φ →
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal) :=
+  sorry
+
+/-- **Böckle's bound on the minimal relation space** (**PROVEN 2026-07-26**
+over the two arithmetic leaves `rank_relationSpace_le_of_rank_sha2_le` and
+`rank_sha2_le_of_minimal_mvPowerSeries_presentation` immediately above — NOT a
+sorry node any more, see STATUS below; formerly the single node carrying the
 IRREDUCIBLY ARITHMETIC core of the presentation stratum, cut out
 2026-07-26 from
 `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation` below
@@ -17984,6 +18673,36 @@ compares that with the tangent dimension `dim_k H¹_L = g`; the consumer
 below converts the dimension bound into `g` honest relations by
 choosing a basis, and Nakayama then upgrades "spans modulo `𝔪_S`" to
 "generates".
+
+**STATUS 2026-07-26 (LATER THE SAME DAY): THIS NODE IS NO LONGER A LEAF, AND
+ITEM (1) BELOW IS STALE.** It is now PROVEN, by `le_trans` through the two
+arithmetic leaves cut out above:
+`rank_relationSpace_le_of_rank_sha2_le` (Böckle's obstruction bound, items
+(4)+(5)) and `rank_sha2_le_of_minimal_mvPowerSeries_presentation`
+(Poitou–Tate plus Greenberg–Wiles, items (6)+(7)). The audit below is kept
+because it is the map of what those two leaves still need — but read it with
+these two corrections:
+
+* **Item (1) is NOT missing and does NOT need vendoring.** Our own mathlib
+  pin already carries continuous cochain cohomology in ALL degrees, with
+  functoriality, sorry-free:
+  `Mathlib/RepresentationTheory/Continuous/{Basic,TopRep}.lean` and
+  `Mathlib/RepresentationTheory/Homological/ContCohomology/{Basic,Functoriality,LowDegree}.lean`
+  give `continuousCohomology n X : TopModuleCat k` for `X : TopRep k G` and
+  `ContinuousCohomology.map (φ : H →ₜ* G) (f : res φ X ⟶ Y) n`. Only
+  `LowDegree.lean` stops at `H⁰`; the theory does not. The claim that mathlib
+  "stops at `H⁰`" came from reading that one file. Cost: one `public import`.
+* **Items (2) and (3) are DONE**, as `AdZero.rep` / `adZeroTopRep` (the
+  adjoint module) and `decompHom` / `locRes` / `Sha2` (restriction to the
+  places and the Tate–Šafarevič group) above — short definitions, not a
+  development, once (1) is in scope. What items (2)–(3) do NOT yet supply is
+  the FINITENESS of `Hⁱ_cont(Γ ℚ, ad⁰)`; neither of the two leaves above
+  assumes it, so it is an obligation of whoever proves them, not a gap in the
+  statements.
+
+So the genuinely open arithmetic is items (4)–(7), and it now sits on two
+separately ownable leaves rather than one monolith. Everything below is
+retained verbatim as the reference for them.
 
 **MACHINERY AUDIT (2026-07-26, moved here from the consumer and
 extended): this leaf needs a Galois-cohomology theory that neither this
@@ -18011,18 +18730,20 @@ conjugation, `dim_k M = 3` — the fixed-determinant module, since
 1. **Continuous cochain cohomology** `Hⁱ_cont(G, M)` for a profinite
    `G` acting continuously on a finite discrete `k`-module, `i ≤ 2`, as
    `k`-vector spaces, with functoriality in `G` along a continuous
-   group homomorphism. Mathlib has only
-   `Mathlib/RepresentationTheory/Homological/ContCohomology`, which
-   stops at `H⁰`; the abstract `GroupCohomology/LowDegree` is the
-   discrete theory and does not apply to `Γ ℚ`. NOTHING downstream can
-   be stated before this exists — it is the piece to build first.
-   **VENDORABLE (found 2026-07-26):** the reference project `~/cs/FLT`
-   has a sorry-free construction of exactly this in
-   `FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/`
-   (`Basic.lean`, `CupProduct.lean`; the homogeneous-cochain complex
-   `TopRep.homogeneousCochains` of a `TopRep k G`, in ALL degrees, with
-   `cohomologyIsoQuot`). Its mathlib pin has drifted from ours, so it
-   needs a pin-drift audit rather than verbatim copying.
+   group homomorphism. **DONE — and it was never missing.** See the STATUS
+   note above: our own mathlib pin has the full theory in every degree with
+   functoriality, in `Mathlib/RepresentationTheory/Continuous/` and
+   `Mathlib/RepresentationTheory/Homological/ContCohomology/`, and it is
+   in scope here through the `public import` added at the top of this
+   module. (The superseded text read: "Mathlib has only
+   `.../ContCohomology`, which stops at `H⁰` … NOTHING downstream can be
+   stated before this exists … VENDORABLE from `~/cs/FLT` under a pin-drift
+   audit." Only `ContCohomology/LowDegree.lean` stops at `H⁰` — that is the
+   file that COMPUTES `H⁰`, not the extent of the theory. The vendoring
+   route is unnecessary; `~/cs/FLT`'s copy is itself built on top of the
+   same upstream mathlib modules we already have.) The abstract
+   `GroupCohomology/LowDegree` remains the discrete theory and still does
+   not apply to `Γ ℚ`.
 2. **The adjoint module** `ad⁰ ρbar` as such a continuous
    representation of `Γ ℚ`, and finiteness of `Hⁱ_cont(Γ ℚ, ad⁰)` in
    the restricted-ramification setting.
@@ -18142,7 +18863,12 @@ theorem rank_relationSpace_le_of_minimal_mvPowerSeries_presentation
               (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
                 (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) ≤
           (g : Cardinal) :=
-  sorry
+  by
+  intro Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
+  exact rank_relationSpace_le_of_rank_sha2_le hℓOdd hdim hℓ5 h hirr D hw ht
+    Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin g
+    (rank_sha2_le_of_minimal_mvPowerSeries_presentation hℓOdd hdim hℓ5 h hirr D hw ht
+      Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin)
 
 /-- **Böckle relation-count leaf** (PROVEN 2026-07-26 over the single
 arithmetic leaf `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
