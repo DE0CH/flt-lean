@@ -330,14 +330,6 @@ import Fermat.FLT.ModularCurve.EllipticScheme
 -- turns `Y_0(N)` into `X_0(N)`; see `exists_compactificationY0` and
 -- `exists_x0Compactification` below.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
--- `AbelianSchemeStruct.mulByNat` (the morphism `[n] : E ⟶ E`),
--- `AbelianSchemeStruct.zeroSection`, and the two Yoneda bridges
--- `nsmul_val` / `zero_val` that turn `n • x` and `0` on relative points into
--- COMPOSITES with those fixed morphisms.  They are what makes the torsion
--- subscheme `C[n]` formable here (`CyclicSubgroupOfOrder.torsionScheme`); see
--- the note at `exists_torsionSubscheme` correcting the earlier claim that this
--- module "does NOT help".
-public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
@@ -5281,7 +5273,7 @@ theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ
     haveI : IsEmpty Y := isEmpty_of_isCoarseModuliY0_zero hc
     haveI : SmoothOfRelativeDimension 1 strY := ⟨fun x => isEmptyElim x⟩
     exact ⟨Y, strY, ⟨{ j := 𝟙 Y
-                       over := Category.id_comp strY
+                       «over» := Category.id_comp strY
                        isOpenImmersion := inferInstance
                        isDominant := inferInstance
                        proper := inferInstance
@@ -5291,7 +5283,7 @@ theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ
     obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := ℚ) strY
     haveI := hX.smooth
     exact ⟨X, strX, ⟨{ j := j
-                       over := hX.comm
+                       «over» := hX.comm
                        isOpenImmersion := hX.isOpenImmersion
                        isDominant := hX.isDominant
                        proper := hX.isProper
