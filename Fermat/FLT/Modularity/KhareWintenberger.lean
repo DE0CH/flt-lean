@@ -8692,6 +8692,24 @@ Routes for a successor, cheapest first:
 * via standard-smooth presentations (`Algebra.StandardSmooth`), which at this
   pin is the concrete form smoothness takes locally.
 
+NEAREST TEMPLATE IN MATHLIB, found 2026-07-27 by grepping every file that
+mentions both `IsReduced` and `Smooth`/`Etale`:
+`Algebra.FormallyUnramified.isReduced_of_field` in
+`Mathlib/RingTheory/Unramified/Field.lean:124` proves exactly the analogous
+statement for FORMALLY UNRAMIFIED algebras over a field. It is not our
+statement — smooth is not unramified — but it is the only place in mathlib
+where reducedness of an algebra is deduced from a formal-lifting hypothesis, so
+it is the file to read first.
+
+WHAT IS **NOT** THERE, so a successor does not re-search it: the only three
+files in mathlib mentioning both `IsReduced` and `Smooth` are
+`AlgebraicGeometry/Group/Smooth.lean`, `AlgebraicGeometry/Morphisms/Smooth.lean`
+and `AlgebraicGeometry/Normalization.lean`. The first proves the CONVERSE
+(Cartier: a reduced locally-finite-type group scheme over an algebraically
+closed field is smooth), and in the second `IsReduced` occurs only as a
+hypothesis. There is no `[Smooth f] [IsReduced Y] : IsReduced X` instance and no
+ring-level counterpart.
+
 This is stated over `ℚ` only because that is where it is used; nothing in it is
 special to `ℚ` beyond `k` being a field (perfectness is not even needed —
 smooth always implies geometrically regular). -/
@@ -8737,7 +8755,18 @@ steps 1–2 (the reduction to the domain-with-finite-fraction-field case); step 
 is `NoetherNormalization.lean` and step 4 is
 `Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`, both PRESENT. The
 audit's conclusion "there is no Nagata/Japanese theory in mathlib" stands; its
-implicit conclusion that no foothold exists does not. -/
+implicit conclusion that no foothold exists does not.
+
+**`[IsReduced B]` IS LOAD-BEARING — do not try to drop it.** Explicit
+counterexample, so that nobody spends a cycle looking for a proof that avoids
+LEAF B-i: take `k` any field, `A = k`, `B = k[x][ε]/(ε²)`. Then `B` is a
+finite-type `A`-algebra, every nilpotent is integral over `A` (if `y² = 0` then
+`y` is a root of `T²`), so the whole nilradical `k[x]·ε` lies in
+`integralClosure A B`; but `k[x]·ε` is infinite-dimensional over `k = A`, so
+`integralClosure A B` is NOT a finite `A`-module. (`B_red = k[x]` has
+`integralClosure k k[x] = k`, which is finite — the failure is entirely in the
+nilradical.) So reducedness of `C` is not decoration here, and LEAF B-i is on
+the critical path rather than being a convenience. -/
 theorem module_finite_integralClosure_of_finiteType
     (k A B : Type u) [Field k] [CharZero k] [CommRing A] [CommRing B]
     [Algebra k A] [Algebra k B] [Algebra A B] [IsScalarTower k A B]
