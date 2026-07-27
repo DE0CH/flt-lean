@@ -10708,31 +10708,136 @@ theorem isPGroup_three_inertia_pow_two
     (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)) hpos hmem
   rwa [pow_one] at hle
 
+/-- **IN A DVR, AN `n`-TH ROOT FORCES THE EXPONENT UP** (PROVEN
+2026-07-27 — the arithmetic half of leaf (Y-1-b), stated abstractly so
+that no `ℚ₃ᵥ`-specific instance enters).  If `α^n = x` and the principal
+ideal `(x)` is `𝔪^c` with `c > 0`, then `n ≤ c`.
+PROOF: `α ≠ 0`, so `(α) = 𝔪^m` for some `m`
+(`IsDiscreteValuationRing.ideal_eq_span_pow_irreducible` plus
+`Irreducible.maximalIdeal_eq`); then `(x) = (α)^n = 𝔪^(m·n)`, and the
+exponent of a power of `𝔪` is unique by
+`IsDiscreteValuationRing.coheight_pow_maximalIdeal`, so `m·n = c`.
+Finally `c > 0` forces `m ≥ 1`, whence `n ≤ m·n = c`.
+This is `v(x) = n·v(α) ≥ n` written without ever naming a valuation. -/
+theorem le_of_pow_eq_of_span_eq_maximalIdeal_pow
+    {R : Type*} [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    {α x : R} {n c : ℕ} (hn : 0 < n) (hx0 : x ≠ 0) (hαn : α ^ n = x)
+    (hspan : Ideal.span {x} = IsLocalRing.maximalIdeal R ^ c) (hc : 0 < c) :
+    n ≤ c := by
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hα0 : α ≠ 0 := by
+    intro h
+    exact hx0 (by rw [← hαn, h, zero_pow hn.ne'])
+  have hspanα : Ideal.span {α} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hα0
+  obtain ⟨m, hm⟩ := IsDiscreteValuationRing.ideal_eq_span_pow_irreducible hspanα hϖ
+  have hmpow : Ideal.span {α} = IsLocalRing.maximalIdeal R ^ m := by
+    rw [hm, ← Ideal.span_singleton_pow, hϖ.maximalIdeal_eq]
+  have hxpow : Ideal.span {x} = IsLocalRing.maximalIdeal R ^ (m * n) := by
+    rw [← hαn, ← Ideal.span_singleton_pow, hmpow, ← pow_mul]
+  have hmn : m * n = c := by
+    have hco := congrArg Order.coheight (hxpow.symm.trans hspan)
+    rw [IsDiscreteValuationRing.coheight_pow_maximalIdeal,
+      IsDiscreteValuationRing.coheight_pow_maximalIdeal] at hco
+    exact Nat.cast_injective hco
+  have hm1 : 1 ≤ m := by
+    rcases Nat.eq_zero_or_pos m with h0 | h1
+    · rw [h0, zero_mul] at hmn; omega
+    · exact h1
+  calc n = 1 * n := (one_mul n).symm
+    _ ≤ m * n := Nat.mul_le_mul_right n hm1
+    _ = c := hmn
+
+/-- **THE DEGREE OF THE SPLITTING FIELD OF `X^n − a` DIVIDES `n·φ(n)`**
+(sorry node, created 2026-07-27 — leaf (Y-1-b-i), the ONLY remaining
+gap under `exists_isGalois_not_dvd_card_inertia_lt_card_inertia`, and
+deliberately stated as PURE FIELD THEORY over an arbitrary
+characteristic-zero base: no local field, no valuation, no `ℚ₃ᵥ`).
+INTENDED PROOF (Kummer + cyclotomic, the classical
+`Gal ↪ μ_n ⋊ (ℤ/n)ˣ`).  `X^n − a` is separable, so `E` contains `n`
+distinct roots; their ratios exhaust `μ_n`, so `E` contains a primitive
+`n`-th root of unity `ζ`.  Put `F' := F(ζ)`.  Then
+* `[F' : F] ∣ φ(n)`: `F'/F` is Galois and `IsPrimitiveRoot.autToPow`
+  embeds `Gal(F'/F) ↪ (ZMod n)ˣ`, which has order `φ(n)`
+  (`ZMod.card_units_eq_totient`), so Lagrange applies.
+* `[E : F'] ∣ n`: fix a root `α`; every root is `ζ^i·α`, so `E = F'(α)`
+  and `σ ↦ σα/α` is an injective homomorphism `Gal(E/F') ↪ μ_n`
+  (a homomorphism because `ζ ∈ F'` is fixed, injective because a `σ`
+  fixing `α` fixes `F'(α) = E`).
+* multiply with `Module.finrank_mul_finrank`.
+WHY MATHLIB'S KUMMER API DOES NOT DISCHARGE THIS, checked 2026-07-27
+(and this is the load-bearing observation — the grep that would refute
+it is `grep -n "autEquivRootsOfUnity\|autEquivZmod\|finrank_of_isSplittingField"
+.lake/packages/mathlib/Mathlib/FieldTheory/KummerExtension.lean`):
+`Mathlib/FieldTheory/KummerExtension.lean` has exactly the wanted
+conclusion in `autEquivRootsOfUnity : Gal(L/K) ≃* rootsOfUnity n K` and
+`finrank_of_isSplittingField_X_pow_sub_C : finrank K L = n`, but BOTH
+carry the hypothesis `H : Irreducible (X ^ n - C a)` **and** require the
+base to already contain `μ_n`.  Here `X^n − 3` over `ℚ₃ᵥ` is reducible
+in general and `ℚ₃ᵥ` contains only `μ_2`, so neither applies; the two
+bullets above have to be built by hand.  `IsPrimitiveRoot.autToPow` and
+`IsPrimitiveRoot.autToPow_injective` DO apply to the first bullet as
+they stand.
+NOT VACUOUS, and note the bound is sharp: at `F = ℚ`, `n = 3`, `a = 2`
+the splitting field of `X³ − 2` has degree `6 = 3·φ(3)`. -/
+theorem finrank_dvd_of_isSplittingField_X_pow_sub_C
+    {F : Type*} [Field F] [CharZero F] {E : Type*} [Field E] [Algebra F E]
+    {n : ℕ} (hn : 0 < n) {a : F} (ha : a ≠ 0)
+    (hsf : Polynomial.IsSplittingField F E (Polynomial.X ^ n - Polynomial.C a)) :
+    Module.finrank F E ∣ n * n.totient := by
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **A GALOIS EXTENSION OF `ℚ₃ᵥ` WITH RAMIFICATION INDEX PRIME TO `3`
-AND ARBITRARILY LARGE** (sorry node, created 2026-07-26 — leaf (Y-1-b),
+AND ARBITRARILY LARGE** (PROVEN 2026-07-27 over the single new leaf
+`finrank_dvd_of_isSplittingField_X_pow_sub_C` above — leaf (Y-1-b),
 the arithmetic half of the tameness criterion).  For every `d` there is
 a finite Galois `K'/ℚ₃ᵥ` with `3 ∤ #G_0` and `#G_0 > d`.
 Recall `#G_0 = e_{K'/ℚ₃ᵥ}` — in this development that is not a
 definition but the PROVEN `span_three_eq_maximalIdeal_pow_card_inertia`,
 which says `(3) = 𝔪_{K'}^{#G_0}` — so the two conjuncts read
 `3 ∤ e` and `e > d`, i.e. `K'/ℚ₃ᵥ` is tamely AND deeply ramified.
-WITNESS, simpler than the one previously recorded on the consumer.  Fix
-ANY `n` prime to `3` with `n > d` — `n := 3d + 1` will do, and needs no
-appeal to the size of a residue field — and take `K'` the splitting
-field of `X^n − 3` over `ℚ₃ᵥ`, i.e. `K' = ℚ₃ᵥ(ζ_n, 3^{1/n})`.  It is
+WITNESS AS ACTUALLY USED — `n := 2^(d+1)`, NOT the `n := 3d + 1` that
+this docstring recorded when the leaf was cut.  `K'` is still the
+splitting field of `X^n − 3` over `ℚ₃ᵥ`, i.e. `ℚ₃ᵥ(ζ_n, 3^{1/n})`,
 Galois because a splitting field in characteristic `0` is normal and
 separable (the ratios of the roots supply `μ_n` automatically, so no
-separate adjunction of `ζ_n` has to be arranged).  `X^n − 3` is
-Eisenstein at `3`, so `ℚ₃ᵥ(3^{1/n})/ℚ₃ᵥ` is totally ramified of degree
-`n`; `ℚ₃ᵥ(ζ_n)/ℚ₃ᵥ` is unramified since `3 ∤ n`; hence
-`e_{K'/ℚ₃ᵥ} = n`, prime to `3` and `> d`.
-The earlier recorded witness `q = 3^f`, `K' = ℚ₃ᵥ(ζ_{q−1}, 3^{1/(q−1)})`
-is also correct, but the restriction to `n` of the shape `3^f − 1` is
-not needed: it only arranges that `μ_n` already lies in the unramified
-subfield, which the splitting-field description makes automatic. -/
+separate adjunction of `ζ_n` has to be arranged).  The restriction to a
+POWER OF TWO is what makes the proof cheap, and the reason is the next
+paragraph.
+WHY THE RECORDED ROUTE WAS ABANDONED, and this is the load-bearing
+change.  The old plan computed `e_{K'/ℚ₃ᵥ} = n` EXACTLY: `X^n − 3` is
+Eisenstein at `3` so `ℚ₃ᵥ(3^{1/n})/ℚ₃ᵥ` is totally ramified of degree
+`n`, while `ℚ₃ᵥ(ζ_n)/ℚ₃ᵥ` is unramified because `3 ∤ n`.  Both halves
+of that are TRUE and both are UNAVAILABLE: a sweep on 2026-07-27 of
+mathlib, of this project and of `~/cs/FLT` found **no** theorem
+relating `IsEisensteinAt` to `ramificationIdx` anywhere, and **no**
+unramifiedness result for cyclotomic extensions of local fields
+(`IsTamelyRamified`, `IsTotallyRamified` do not exist as names at all).
+The refuting grep is
+`grep -rn "IsEisensteinAt" .lake/packages/mathlib/Mathlib | grep -i ramif`.
+So the exact value of `e` is out of reach without building two whole
+theories.
+WHAT REPLACES IT: only an INEQUALITY and a DIVISIBILITY are needed, and
+neither needs the unramified half.
+* `n ≤ #G_0`, i.e. `e ≥ n`, comes from the root `α` alone:
+  `α^n = 3` and `(3) = 𝔪^(#G_0)`
+  (`span_three_eq_maximalIdeal_pow_card_inertia`) give
+  `#G_0 = n·v(α) ≥ n` in the DVR `𝒪_{K'}` — that is
+  `le_of_pow_eq_of_span_eq_maximalIdeal_pow` above.  Eisenstein is
+  never invoked; irreducibility of `X^n − 3` is not needed either.
+* `3 ∤ #G_0` comes from **LAGRANGE**, not from computing `e`:
+  `G_0 ≤ Gal(K'/ℚ₃ᵥ)`, so `#G_0 ∣ [K' : ℚ₃ᵥ]`, and it is enough that
+  the WHOLE degree be prime to `3`.  Since `[K' : ℚ₃ᵥ] ∣ n·φ(n)`
+  (leaf `finrank_dvd_of_isSplittingField_X_pow_sub_C`) and
+  `n·φ(n) = 2^(d+1)·2^d = 2^(2d+1)` for `n = 2^(d+1)`, the degree is a
+  power of `2`.  This is why `n` must be a `2`-power rather than merely
+  prime to `3`: it makes `φ(n)` a `2`-power too, so BOTH the Kummer and
+  the cyclotomic factor of the degree avoid `3` — and it is also what
+  removes any need to know which of the two factors carries the
+  ramification. -/
 theorem exists_isGalois_not_dvd_card_inertia_lt_card_inertia (d : ℕ) :
     ∃ (K' : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ K')
       (_ : IsGalois ℚ₃ᵥ K'),
@@ -10740,7 +10845,96 @@ theorem exists_isGalois_not_dvd_card_inertia_lt_card_inertia (d : ℕ) :
         (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K'))) ∧
       d < Nat.card ((IsLocalRing.maximalIdeal
         (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K')) := by
-  sorry
+  classical
+  haveI : CharZero ℚ₃ᵥ :=
+    charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  set n : ℕ := 2 ^ (d + 1) with hndef
+  have hnpos : 0 < n := pow_pos (by norm_num) _
+  have hnne : n ≠ 0 := hnpos.ne'
+  have hdn : d < n := by
+    rw [hndef]
+    exact lt_of_lt_of_le d.lt_two_pow_self
+      (Nat.pow_le_pow_right (by norm_num) (Nat.le_succ d))
+  set f : Polynomial ℚ₃ᵥ := Polynomial.X ^ n - Polynomial.C 3 with hfdef
+  have hfmonic : f.Monic := Polynomial.monic_X_pow_sub_C _ hnne
+  have hfdeg : f.natDegree = n := by
+    rw [hfdef]; exact Polynomial.natDegree_X_pow_sub_C
+  have hfdegne : f.degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hfmonic.ne_zero, hfdeg]
+    exact_mod_cast hnne
+  set K' : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ :=
+    IntermediateField.adjoin ℚ₃ᵥ (f.rootSet ℚ₃ᵥᵃˡᵍ) with hK'def
+  haveI hsf : Polynomial.IsSplittingField ℚ₃ᵥ K' f :=
+    IntermediateField.adjoin_rootSet_isSplittingField (IsAlgClosed.splits _)
+  haveI hfd : FiniteDimensional ℚ₃ᵥ K' :=
+    Polynomial.IsSplittingField.finiteDimensional K' f
+  haveI hnorm : Normal ℚ₃ᵥ K' := Normal.of_isSplittingField f
+  haveI hsep : Algebra.IsSeparable ℚ₃ᵥ K' :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgal : IsGalois ℚ₃ᵥ K' := ⟨⟩
+  refine ⟨K', hfd, hgal, ?_, ?_⟩
+  · -- `3 ∤ #G_0`, by LAGRANGE from `3 ∤ [K' : ℚ₃ᵥ]`
+    intro hdvd
+    have hsub : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K')) ∣
+        Nat.card (K' ≃ₐ[ℚ₃ᵥ] K') := Subgroup.card_subgroup_dvd_card _
+    have hcard : Nat.card (K' ≃ₐ[ℚ₃ᵥ] K') = Module.finrank ℚ₃ᵥ K' :=
+      IsGalois.card_aut_eq_finrank ℚ₃ᵥ K'
+    have h3ne : (3 : ℚ₃ᵥ) ≠ 0 := by norm_num
+    have hleaf : Module.finrank ℚ₃ᵥ K' ∣ n * n.totient :=
+      finrank_dvd_of_isSplittingField_X_pow_sub_C hnpos h3ne hsf
+    have htot : n * n.totient = 2 ^ (2 * d + 1) := by
+      rw [hndef, Nat.totient_prime_pow Nat.prime_two (Nat.succ_pos d),
+        Nat.succ_sub_one, show (2 : ℕ) - 1 = 1 from rfl, mul_one, ← pow_add]
+      congr 1
+      omega
+    have h3pow : (3 : ℕ) ∣ 2 ^ (2 * d + 1) := by
+      refine dvd_trans hdvd ?_
+      rw [← htot]
+      exact dvd_trans (hcard ▸ hsub) hleaf
+    have hcontra := Nat.Prime.dvd_of_dvd_pow Nat.prime_three h3pow
+    omega
+  · -- `d < n ≤ #G_0`, from a root `α` of `X^n − 3`
+    refine lt_of_lt_of_le hdn ?_
+    obtain ⟨β, hβ⟩ := IsAlgClosed.exists_aeval_eq_zero ℚ₃ᵥᵃˡᵍ f hfdegne
+    have hβmem : β ∈ f.rootSet ℚ₃ᵥᵃˡᵍ :=
+      Polynomial.mem_rootSet.mpr ⟨hfmonic.ne_zero, hβ⟩
+    have hβK' : β ∈ K' := IntermediateField.subset_adjoin _ _ hβmem
+    have hβn : β ^ n = (3 : ℚ₃ᵥᵃˡᵍ) := by
+      rw [hfdef] at hβ
+      simp only [map_sub, map_pow, Polynomial.aeval_X,
+        map_ofNat, sub_eq_zero] at hβ
+      exact hβ
+    set α₀ : K' := ⟨β, hβK'⟩ with hα₀def
+    have hα₀coe : algebraMap (↥K') ℚ₃ᵥᵃˡᵍ α₀ = β := rfl
+    have hα₀n : α₀ ^ n = (3 : K') := by
+      apply (algebraMap (↥K') ℚ₃ᵥᵃˡᵍ).injective
+      rw [map_pow, map_ofNat, hα₀coe]
+      exact hβn
+    have hint : IsIntegral 𝒪₃ᵥ α₀ := by
+      refine ⟨Polynomial.X ^ n - Polynomial.C (3 : 𝒪₃ᵥ),
+        Polynomial.monic_X_pow_sub_C _ hnne, ?_⟩
+      have heval : Polynomial.eval₂ (algebraMap 𝒪₃ᵥ ↥K') α₀
+          (Polynomial.X ^ n - Polynomial.C (3 : 𝒪₃ᵥ)) = α₀ ^ n - 3 := by
+        rw [Polynomial.eval₂_sub, Polynomial.eval₂_X_pow, Polynomial.eval₂_C,
+          map_ofNat]
+      rw [heval, hα₀n, sub_self]
+    haveI hfr : IsFractionRing (IntegralClosure 𝒪₃ᵥ K') ↥K' :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ ↥K'
+        (IntegralClosure 𝒪₃ᵥ K')
+    set α : IntegralClosure 𝒪₃ᵥ K' := ⟨α₀, hint⟩ with hαdef
+    have hαcoe : algebraMap (IntegralClosure 𝒪₃ᵥ K') ↥K' α = α₀ := rfl
+    have hαn : α ^ n = (3 : IntegralClosure 𝒪₃ᵥ K') := by
+      apply IsFractionRing.injective (IntegralClosure 𝒪₃ᵥ K') ↥K'
+      rw [map_pow, map_ofNat, hαcoe]
+      exact hα₀n
+    have h3ne0 : (3 : IntegralClosure 𝒪₃ᵥ K') ≠ 0 := by
+      intro h0
+      have h2 := congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ K') K') h0
+      rw [map_ofNat, map_zero] at h2
+      exact (by norm_num : (3 : K') ≠ 0) h2
+    exact le_of_pow_eq_of_span_eq_maximalIdeal_pow hnpos h3ne0 hαn
+      (span_three_eq_maximalIdeal_pow_card_inertia K') Nat.card_pos
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
