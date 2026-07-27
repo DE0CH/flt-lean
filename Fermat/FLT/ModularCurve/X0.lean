@@ -8495,30 +8495,35 @@ isomorphic over `SpecQ` (that is `gamma0Atlas_isIso` below).  So
 
 **Which of the four are modular.**  `isAffine` is NOT: it is
 `exists_gamma0GITPresentation` read for what it already says, since that
-leaf's coarse space is literally `Spec (A^G)`.  It is proven below.  The
-other three remain open, with distinct citations:
+leaf's coarse space is literally `Spec (A^G)`.  It is proven below.  All
+four per-atlas statements are now PROVEN; the three that are not free
+have been relocated onto `Gamma0GITPresentation`, where the coarse space
+is an explicit `Spec B` and the remaining work is commutative algebra:
 
-* `isDomain_of_gamma0Atlas` — `Γ_0(N)\ℍ` is irreducible, so
+* `isDomain_of_gamma0GITPresentation` — `Γ_0(N)\ℍ` is irreducible, so
   `𝔐([Γ₀(N)], [Γ(n)]) = Spec A` is an integral scheme and `A^G ⊆ A` is a
   domain.  This one becomes a ONE-LINE consequence of
   `Function.Injective.isDomain` applied to
   `Gamma0GITPresentation.injective_algebraMap` **as soon as the GIT
   presentation carries `IsDomain A`**; folding that in belongs with the
-  owner of `Gamma0GITPresentation`, not here.
-* `smoothOfRelativeDimension_of_gamma0Atlas` — Deligne–Rapoport III.1,
-  Katz–Mazur 8.2 (and 8.2.1 for the `ℤ[1/N]`-smoothness that specialises
-  to this): the coarse space of a smooth Deligne–Mumford stack of
-  dimension one is normal, and a normal curve over a perfect field is
-  smooth.
-* `geometricallyConnected_of_gamma0Atlas` — Deligne–Rapoport IV.5.5, or
-  Shimura 6.6: `Γ_0(N)\ℍ` is connected and the moduli problem is defined
-  over `ℚ`, so `ℚ` is algebraically closed in the function field.
+  owner of `Gamma0GITPresentation`, not here — and it must be folded in
+  as a FIELD, because the per-presentation statement `IsDomain A` is
+  FALSE (counterexample in the section comment below).
+* `smoothOfRelativeDimension_of_gamma0GITPresentation` —
+  Deligne–Rapoport III.1, Katz–Mazur 8.2 (and 8.2.1 for the
+  `ℤ[1/N]`-smoothness that specialises to this): the coarse space of a
+  smooth Deligne–Mumford stack of dimension one is normal, and a normal
+  curve over a perfect field is smooth.
+* `geometricallyConnected_of_gamma0GITPresentation` — Deligne–Rapoport
+  IV.5.5, or Shimura 6.6: `Γ_0(N)\ℍ` is connected and the moduli problem
+  is defined over `ℚ`, so `ℚ` is algebraically closed in the function
+  field.
 
-All three carry `hN : 0 < N`, and it is load-bearing for the first and
-third: at `N = 0` every coarse space is initial hence EMPTY
-(`isEmpty_of_gamma0Datum_zero` forces the base of a `Γ₀(0)`-datum to be
-empty), so `Γ(Y, ⊤)` is the zero ring — not a domain — and `Y` is not
-connected. -/
+Two of the three carry a load-bearing `hN : 0 < N`: at `N = 0` every
+coarse space is initial hence EMPTY (`isEmpty_of_gamma0Datum_zero` forces
+the base of a `Γ₀(0)`-datum to be empty), so the global sections are the
+zero ring — not a domain — and the space is not connected.  Smoothness
+holds vacuously at `N = 0`, so there `hN` is underscored. -/
 
 /-- **Any two atlases of the same level have isomorphic coarse spaces
 over `ℚ`** (PROVEN 2026-07-27).
@@ -8554,86 +8559,321 @@ theorem isAffine_of_gamma0Atlas {N : ℕ} (hN : 0 < N) (A : Gamma0Atlas N) :
     infer_instance
   exact IsAffine.of_isIso u
 
-/-- **The ring of global functions of the coarse space is a DOMAIN**
-(sorry leaf — the integrality half of Katz–Mazur (8.1.1)).
+/-! #### The three geometric leaves, moved onto the affine GIT model
 
-TRUE and classical: `Γ_0(N)\ℍ` is irreducible, so the rigidified moduli
-scheme `𝔐([Γ₀(N)], [Γ(n)]) = Spec A` is integral over `ℚ`, hence `A` is a
-domain, and the coarse space is `Spec (A^G)` with `A^G ⊆ A` a subring.
+Until 2026-07-27 the three statements below were bare `sorry`s of the
+shape `∀ A : Gamma0Atlas N, …`.  In that shape almost nothing can be done
+with them: a `Gamma0Atlas` presents its coarse space by a universal
+property and by nothing else, and no geometry can be read off a universal
+property.
 
-**This is the cheapest of the three open leaves, and it is not really
+What is done here is to move each of the three onto
+`Gamma0GITPresentation`, where the coarse space is literally
+`Spec (CommRingCat.of B)` with `B = A^G` — so that a prover has a RING to
+work with — and to prove the three consumers from the relocated leaves.
+The move is an equivalence and costs the tree nothing, because
+
+* every atlas is isomorphic over `SpecQ` to `P.toGamma0Atlas` for the
+  presentation `P` that `exists_gamma0GITPresentation` supplies
+  (`gamma0Atlas_isIso`), and
+* each of the three properties transports along such an isomorphism —
+  `isDomain_globalSections_transport`,
+  `smoothOfRelativeDimension_transport` and
+  `geometricallyConnected_transport` below, all PROVEN.
+
+So the per-presentation forms are equivalent to the per-atlas forms in
+both directions, and in particular they are exactly as junk-proof: a
+presentation's coarse space is pinned up to canonical isomorphism by the
+atlas it carries.  No new existence assertion is introduced —
+`exists_gamma0GITPresentation` is already a THEOREM, so the leaves below
+are stated `∀ P`, not `∃ P`, and nothing is asserted twice.
+
+**FALSITY AUDIT — the ONE statement in this family that is not pinned,
+and must therefore never be stated as a per-presentation lemma.**
+`IsDomain A` — integrality of the RIGIDIFIED moduli scheme — is FALSE for
+a general `P : Gamma0GITPresentation N`, though it is true for the
+Katz–Mazur presentation.  *Counterexample*: from any presentation `P₀`
+build `P` with
+
+* `A := A₀ × A₀` and `G := G₀ × ZMod 2`, acting diagonally through `G₀`
+  and by the factor swap through `ZMod 2`;
+* `dM :=` the pullback of `dM₀` along `Spec (diag)`, `diag : A₀ → A₀ × A₀`;
+* every other field taken from `P₀` unchanged.
+
+Then `A^G = A₀^{G₀} = B₀`, so `B`, `str`, `classify`, `classify_natural`
+and the coarse space are untouched.  `classify_dM` holds because
+`classify` is natural and `Spec (diag) ≫ (classify₀ …)` is
+`Spec (algebraMap B₀ (A₀ × A₀))`.  `cover` holds by composing `P₀`'s
+rigidifying map with `Spec (pr₁) : Spec A₀ ⟶ Spec (A₀ × A₀)`, along which
+`dM` pulls back to `dM₀` (`pr₁ ∘ diag = id`).  `dM_equivariant` holds
+because `τ_σ ∘ diag = diag ∘ (g · )` for `σ = (g, ε)` — the swap is
+invisible to the diagonal — so `dM` itself is the required `d₁`.  Yet
+`A₀ × A₀` is not a domain.
+
+Consequence for the owner of `Gamma0GITPresentation`: folding integrality
+in as a **FIELD** `[isDomain_A : IsDomain A]` is sound, because a field
+only makes the structure harder to inhabit and cannot be refuted by a
+junk witness; stating it as a *theorem* about an arbitrary presentation is
+not sound, and no proof of such a theorem can exist.  That is why the
+first leaf below asks for `IsDomain B` — which IS pinned, hence true —
+rather than `IsDomain A`, while its intended proof still runs through the
+field. -/
+
+/-- **`IsDomain Γ(·, ⊤)` transports along an isomorphism of schemes**
+(PROVEN 2026-07-27).
+
+An isomorphism `u : Y ⟶ Y'` induces an isomorphism `u.appTop` of global
+sections, whose inverse is `(inv u).appTop` by functoriality
+(`Scheme.Hom.comp_appTop`); a ring isomorphism carries `IsDomain` back
+along itself. -/
+theorem isDomain_globalSections_transport {Y Y' : Scheme.{0}} (u : Y ⟶ Y') [IsIso u]
+    (h : IsDomain Γ(Y', ⊤)) : IsDomain Γ(Y, ⊤) := by
+  haveI := h
+  haveI : IsIso (Scheme.Hom.appTop u) :=
+    ⟨Scheme.Hom.appTop (inv u), by rw [← Scheme.Hom.comp_appTop]; simp,
+      by rw [← Scheme.Hom.comp_appTop]; simp⟩
+  exact MulEquiv.isDomain Γ(Y', ⊤)
+    (asIso (Scheme.Hom.appTop u)).symm.commRingCatIsoToRingEquiv.toMulEquiv
+
+/-- **`SmoothOfRelativeDimension 1` transports along an isomorphism over
+the base** (PROVEN 2026-07-27).
+
+An isomorphism is an open immersion, hence smooth of relative dimension
+`0`, and relative dimensions add under composition: `0 + 1 = 1`.  This is
+the single-property form of the fourth clause of
+`isSmoothCurve_transport`, extracted because the three leaves below need
+the clauses one at a time. -/
+theorem smoothOfRelativeDimension_transport {Y Y' : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strY' : Y' ⟶ SpecQ}
+    (u : Y ⟶ Y') [IsIso u] (hu : u ≫ strY' = strY)
+    (h : SmoothOfRelativeDimension 1 strY') : SmoothOfRelativeDimension 1 strY := by
+  haveI := h
+  subst hu
+  exact inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (u ≫ strY'))
+
+/-- **`GeometricallyConnected` transports along an isomorphism over the
+base** (PROVEN 2026-07-27) — it is stable under base change, hence
+respects isomorphisms on the left. -/
+theorem geometricallyConnected_transport {Y Y' : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strY' : Y' ⟶ SpecQ}
+    (u : Y ⟶ Y') [IsIso u] (hu : u ≫ strY' = strY)
+    (h : GeometricallyConnected strY') : GeometricallyConnected strY := by
+  subst hu
+  exact MorphismProperty.RespectsIso.precomp (P := @GeometricallyConnected) u strY' h
+
+/-- **The ring of invariants of a GIT presentation is a DOMAIN** (sorry
+leaf, relocated here 2026-07-27 from `isDomain_of_gamma0Atlas`) — the
+integrality half of Katz–Mazur (8.1.1).
+
+TRUE and pinned: `Γ_0(N)\ℍ` is irreducible, so the coarse space is an
+integral scheme, and here it is literally `Spec B`; by
+`gamma0Atlas_isIso` every presentation's `Spec B` is isomorphic to the
+Katz–Mazur one, so no junk presentation can refute this even though a
+junk presentation can and does refute `IsDomain A` (see the FALSITY AUDIT
+in the section comment above).
+
+**This is the cheapest of the three open leaves and it is barely
 modular.**  The only genuinely new input is `IsDomain A` for the
-rigidified moduli scheme; once `Gamma0GITPresentation` carries that,
-`Function.Injective.isDomain` applied to
-`Gamma0GITPresentation.injective_algebraMap` gives `IsDomain B`, and
-transport of `IsDomain Γ(·, ⊤)` along `gamma0Atlas_isIso` (a scheme
-isomorphism induces a ring isomorphism on global sections) finishes it.
+rigidified moduli scheme.  Once `Gamma0GITPresentation` carries that as a
+field, this leaf is ONE LINE:
+
+    Function.Injective.isDomain (algebraMap P.B P.A) P.injective_algebraMap
+
+— `B` is a subring of `A` by `injective_algebraMap`, and a subring of a
+domain is a domain.  Everything downstream of this point is already
+proven: `isDomain_of_gamma0Atlas` below converts `IsDomain B` into
+`IsDomain Γ(A.Y, ⊤)` for an arbitrary atlas, through
+`Scheme.ΓSpecIso` and `isDomain_globalSections_transport`.
+
 Strengthening `Gamma0GITPresentation` belongs with that structure's
 owner, which is why the leaf is stated here rather than folded in.
 
 `hN` is REQUIRED: at `N = 0` a `Γ₀(0)`-datum forces its base to be empty
-(`isEmpty_of_gamma0Datum_zero`), every coarse space is initial, and
-`Γ(∅, ⊤)` is the zero ring, which is not `Nontrivial`. -/
+(`isEmpty_of_gamma0Datum_zero`), every coarse space is initial, and the
+global sections of `∅` form the zero ring, which is not `Nontrivial`. -/
+theorem isDomain_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    letI := P.commRing_B; IsDomain P.B :=
+  sorry
+
+/-- **The ring of global functions of the coarse space is a DOMAIN**
+(PROVEN 2026-07-27 over `isDomain_of_gamma0GITPresentation`).
+
+Take the Katz–Mazur presentation `P`; its coarse space is
+`Spec (CommRingCat.of B)`, whose global sections are `B` by
+`Scheme.ΓSpecIso`, and `B` is a domain by the leaf.  Any atlas is
+isomorphic to `P.toGamma0Atlas` over `SpecQ` (`gamma0Atlas_isIso`), and
+`isDomain_globalSections_transport` carries the conclusion across. -/
 theorem isDomain_of_gamma0Atlas {N : ℕ} (hN : 0 < N) (A : Gamma0Atlas N) :
-    IsDomain Γ(A.Y, ⊤) :=
+    IsDomain Γ(A.Y, ⊤) := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  letI := P.commRing_B
+  haveI : IsDomain P.B := isDomain_of_gamma0GITPresentation hN P
+  obtain ⟨u, hu, -⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
+  haveI := hu
+  refine isDomain_globalSections_transport u ?_
+  show IsDomain Γ(Spec (CommRingCat.of P.B), ⊤)
+  exact MulEquiv.isDomain P.B
+    (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
+
+/-- **The coarse space of a GIT presentation is smooth of relative
+dimension `1` over `ℚ`** (sorry leaf, relocated here 2026-07-27 from
+`smoothOfRelativeDimension_of_gamma0Atlas`) — Deligne–Rapoport III.1,
+Katz–Mazur 8.2.
+
+TRUE and classical, and one of the two genuinely modular inputs left
+below `X_0(N)`.  The stack-theoretic argument is: `𝔐([Γ₀(N)])` is a
+smooth Deligne–Mumford stack of dimension one over `ℚ`, its coarse space
+is therefore normal, and a normal curve over a perfect field is smooth
+(Katz–Mazur 8.2.1 proves the stronger `ℤ[1/N]`-smoothness, which
+specialises to this).
+
+## Why the statement is worth having at THIS model rather than at an atlas
+
+Here `str` is a morphism out of the affine `Spec (CommRingCat.of B)`, so
+the whole statement is about the ring `B = A^G` and the argument can be
+run in commutative algebra:
+
+1. `A` is a smooth `ℚ`-algebra of dimension one and a domain, hence a
+   Dedekind domain (regular of dimension one);
+2. `A` is integral over `B` because `G` is finite and
+   `Algebra.IsInvariant B A G` holds, so `dim B = dim A = 1`, and `B` is
+   of finite type over `ℚ` (Noether's theorem on invariants);
+3. invariants of an integrally closed domain under a group are integrally
+   closed, so `B` is a normal Noetherian domain of dimension one, i.e.
+   Dedekind, i.e. regular;
+4. regular + finite type over a PERFECT field (char `0`) ⟹ smooth.
+
+## What blocks it in the pin, checked 2026-07-27
+
+Step 4 has **nothing to cite**.  Mathlib's entire
+`SmoothOfRelativeDimension` API lives in
+`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` and consists of:
+`SmoothOfRelativeDimension.smooth`, additivity of the dimension under
+composition, stability under base change, "open immersions are smooth of
+relative dimension `0`", and the
+`HasRingHomProperty (@SmoothOfRelativeDimension n)
+(Locally (IsStandardSmoothOfRelativeDimension n))` instance.  There is no
+lemma relating it to regularity, normality or Krull dimension in either
+direction.  *The check that would refute this*:
+`grep -rn "SmoothOfRelativeDimension" .lake/packages/mathlib/Mathlib/` —
+if it returns anything dimension-theoretic, step 4 is citable and this
+leaf is a short proof away.
+
+So the two honest routes are: build the "regular curve over a perfect
+field is smooth" bridge (mathlib-facing, reusable, and also wanted by
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`), or
+go through `HasRingHomProperty.Spec_iff` and exhibit
+`Locally (IsStandardSmoothOfRelativeDimension 1)` for `ℚ → B` directly.
+
+`hN` is NOT load-bearing here and is underscored: at `N = 0` the coarse
+space is empty and `SmoothOfRelativeDimension` quantifies over its
+points, so the statement holds vacuously.  It is kept in the signature
+only to match its two siblings. -/
+theorem smoothOfRelativeDimension_of_gamma0GITPresentation {N : ℕ} (_hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    SmoothOfRelativeDimension 1 P.str :=
   sorry
 
 /-- **The coarse space is smooth of relative dimension `1` over `ℚ`**
-(sorry leaf — Deligne–Rapoport III.1, Katz–Mazur 8.2).
-
-TRUE and classical, and this is one of the two genuinely modular inputs
-left below `X_0(N)`.  The argument is: `𝔐([Γ₀(N)])` is a smooth
-Deligne–Mumford stack of dimension one over `ℚ`, its coarse space is
-therefore normal, and a normal curve over a perfect field is smooth
-(Katz–Mazur 8.2.1 proves the stronger `ℤ[1/N]`-smoothness, which
-specialises to this).  At the level of the GIT presentation the same
-argument reads: `A` is a smooth `ℚ`-algebra of dimension one, invariants
-of a normal domain under a finite group are normal, and a normal
-finite-type algebra of dimension one over a field of characteristic zero
-is smooth.
-
-By `gamma0Atlas_isIso` the statement does not depend on which atlas is
-used, so a proof may exhibit any single model — in particular the
-Katz–Mazur one supplied by `exists_gamma0GITPresentation`. -/
+(PROVEN 2026-07-27 over `smoothOfRelativeDimension_of_gamma0GITPresentation`
+by transport along `gamma0Atlas_isIso`). -/
 theorem smoothOfRelativeDimension_of_gamma0Atlas {N : ℕ} (hN : 0 < N)
     (A : Gamma0Atlas N) :
-    SmoothOfRelativeDimension 1 A.str :=
-  sorry
+    SmoothOfRelativeDimension 1 A.str := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  obtain ⟨u, hu, hus⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
+  haveI := hu
+  exact smoothOfRelativeDimension_transport u hus
+    (smoothOfRelativeDimension_of_gamma0GITPresentation hN P)
 
-/-- **The coarse space is geometrically connected over `ℚ`** (sorry leaf
-— Deligne–Rapoport IV.5.5, or Shimura 6.6).
+/-- **The coarse space of a GIT presentation is geometrically connected
+over `ℚ`** (sorry leaf, relocated here 2026-07-27 from
+`geometricallyConnected_of_gamma0Atlas`) — Deligne–Rapoport IV.5.5, or
+Shimura 6.6.
 
 TRUE and classical, and the second of the two genuinely modular inputs.
 Connectedness over `ℂ` is the connectedness of `Γ_0(N)\ℍ` (a quotient of
 the connected `ℍ`); what upgrades it to *geometric* connectedness over
 `ℚ` is that the `Γ₀(N)`-moduli problem is defined over `ℚ`, so `ℚ` is
-algebraically closed in the function field of the coarse space.  Note
-this is exactly where the rigidified moduli scheme cannot be used
-directly: `𝔐([Γ₀(N)], [Γ(n)])` is *not* geometrically connected over `ℚ`
-for `n ≥ 3` — its geometric components are permuted by
-`Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing — and connectedness is
-recovered only after quotienting by the full `G = GL₂(ℤ/n)`.
+algebraically closed in the function field of the coarse space.
+
+**The rigidified moduli scheme cannot be used directly**, and this is the
+one place in this family where that matters: `𝔐([Γ₀(N)], [Γ(n)])` is
+*not* geometrically connected over `ℚ` for `n ≥ 3` — its geometric
+components are permuted by `Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing — and
+connectedness is recovered only after quotienting by the full
+`G = GL₂(ℤ/n)`.  So the leaf must be stated about `str` (the coarse
+space), never about `strM`.
+
+## What the statement unfolds to at this model
+
+`GeometricallyConnected` is `geometrically (ConnectedSpace ·)`
+(`GeometricallyConnected.eq_geometrically`), i.e. for every field `K`,
+every `Spec K ⟶ SpecQ` and every pullback square over them, the pullback
+is a connected space.  Since `str` is a morphism out of an affine scheme,
+`AlgebraicGeometry.pullbackSpecIso` identifies that pullback with
+`Spec (CommRingCat.of (B ⊗[ℚ] K))`, so the obligation is exactly
+
+> `B ⊗[ℚ] K` has no nontrivial idempotents, for every field extension
+> `K/ℚ`,
+
+which is the algebraic form of "`ℚ` is algebraically closed in
+`Frac B`" — `Frac B / ℚ` is a regular field extension, `ℚ` being perfect.
+That is the q-expansion-principle content of Deligne–Rapoport IV.5.5.
+
+## What blocks it in the pin, checked 2026-07-27
+
+Two things, and both are worth knowing before a prover is sent here.
+
+1. **Mathlib has no way to CONSTRUCT a `GeometricallyConnected`.**  The
+   string occurs 31 times in the whole of mathlib, all of them in
+   `Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`, and every
+   one is either a consequence of the class or a stability property
+   (base change, restriction, fibres, composition).  There is no
+   sufficient criterion at all.  *The check that would refute this*:
+   `grep -rln "GeometricallyConnected" .lake/packages/mathlib/Mathlib/`
+   returning a second file.
+2. **The usual cheap criterion is unavailable MATHEMATICALLY, not just
+   formally.**  "Connected + a `k`-rational point ⟹ geometrically
+   connected" (EGA IV 4.5.13) cannot be used: `Y_0(N)(ℚ)` is empty for
+   most `N`, and stating that emptiness is the entire purpose of this
+   module.  A prover must go through the function field, not through a
+   point.
 
 `hN` is REQUIRED: at `N = 0` the coarse space is empty, and
-`GeometricallyConnected` carries nonemptiness through `ConnectedSpace`.
+`GeometricallyConnected` carries nonemptiness through `ConnectedSpace`. -/
+theorem geometricallyConnected_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    GeometricallyConnected P.str :=
+  sorry
 
-By `gamma0Atlas_isIso` the statement does not depend on which atlas is
-used. -/
+/-- **The coarse space is geometrically connected over `ℚ`** (PROVEN
+2026-07-27 over `geometricallyConnected_of_gamma0GITPresentation` by
+transport along `gamma0Atlas_isIso`). -/
 theorem geometricallyConnected_of_gamma0Atlas {N : ℕ} (hN : 0 < N)
     (A : Gamma0Atlas N) :
-    GeometricallyConnected A.str :=
-  sorry
+    GeometricallyConnected A.str := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  obtain ⟨u, hu, hus⟩ := gamma0Atlas_isIso A P.toGamma0Atlas
+  haveI := hu
+  exact geometricallyConnected_transport u hus
+    (geometricallyConnected_of_gamma0GITPresentation hN P)
 
 /-- **Existence of the affine integral Katz–Mazur model of `Y_0(N)` for
 `N ≥ 1`** (PROVEN 2026-07-27 — formerly a sorry leaf that re-asserted the
 entire Katz–Mazur construction).
 
 The atlas half is `exists_gamma0Atlas`, already a THEOREM; the four
-geometric fields are the four per-atlas statements above, of which
-`isAffine_of_gamma0Atlas` is proven and three remain open.  See the
-section comment above for why stating them per-atlas is equivalent to
-stating them for the Katz–Mazur model, and for the citation attached to
-each. -/
+geometric fields are the four per-atlas statements above, and since
+2026-07-27 all four are PROVEN — `isAffine_of_gamma0Atlas` outright, and
+the other three by transport from the GIT model, where the three
+remaining leaves now live
+(`isDomain_of_gamma0GITPresentation`,
+`smoothOfRelativeDimension_of_gamma0GITPresentation`,
+`geometricallyConnected_of_gamma0GITPresentation`).  See the section
+comment above for why stating them per-atlas is equivalent to stating
+them for the Katz–Mazur model, and for the citation attached to each. -/
 theorem exists_gamma0AffineModel (N : ℕ) (hN : 0 < N) :
     Nonempty (Gamma0AffineModel N) :=
   (exists_gamma0Atlas N hN).map fun A =>
