@@ -16,6 +16,10 @@ public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.FieldTheory.Perfect
+-- The shared "smooth curve over a field ⟺ DVR local rings" node, and the extension theorem
+-- built on it.  `smoothOfRelativeDimension_one_fromNormalization` below consumes the
+-- backward direction; `Fermat/FLT/ModularCurve/X0.lean` consumes the forward one.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 
 /-!
 # Smooth compactification of a smooth curve over a field
@@ -56,7 +60,9 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
    (`locallyOfFiniteType_fromNormalization`, PROVEN over the affine-local ring statement
    `finiteType_integralClosure_sections`, LEAF); finite ⟹ proper, so `X` is proper over `K`;
 4. `X` is normal of dimension one over a perfect field, hence smooth
-   (`smoothOfRelativeDimension_one_fromNormalization`, LEAF);
+   (`smoothOfRelativeDimension_one_fromNormalization`, PROVEN over the normality statement
+   `isDiscreteValuationRing_stalk_normalization`, LEAF, and the shared DVR node in
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`);
 5. the complement of a dense open in an irreducible noetherian curve is finite — proven
    here from the one-dimensionality of `X` (`topologicalKrullDim_normalization_le_one`,
    PROVEN over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` and
@@ -80,7 +86,26 @@ Every one of the original five leaves has now been cut down; the remaining leave
 | `finiteType_integralClosure_sections` | Nagata/Japanese rings: the integral closure of a finite-type `K`-algebra in the sections of `Y` over an affine chart is of finite type |
 | `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
 | `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
-| `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
+| `isDiscreteValuationRing_stalk_normalization` | the relative normalization is NORMAL, hence its local rings in dimension one are DVRs |
+
+## Third decomposition pass, 2026-07-27: the DVR node is shared with `X0.lean`
+
+`smoothOfRelativeDimension_one_fromNormalization` — the leaf the table above used to call
+"the deepest" — is **PROVEN**.  It split along the seam that the "IRREDUCIBLE at this pin"
+verdict on it had missed: `Mathlib` *does* have `IsRegularLocalRing`
+(`Mathlib/RingTheory/RegularLocalRing/Defs.lean`) and *does* have
+`IsLocalRing.finrank_CotangentSpace_eq_one_iff` identifying regularity with
+`IsDiscreteValuationRing` in dimension one.  So what is missing is not "a notion of
+regularity" but two separate things, and only one of them lives here:
+
+* *normality of the relative normalization* — `isDiscreteValuationRing_stalk_normalization`
+  above, genuinely absent from `Mathlib`, which records `IsIntegralHom f.fromNormalization`
+  but nothing about the stalks being integrally closed;
+* *regular ⟹ smooth over a perfect field* — `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`
+  in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, which is **shared** with
+  `Fermat/FLT/ModularCurve/X0.lean`: that file needs the same equivalence in the *forward*
+  direction (it has smoothness and wants DVRs, to run the valuative criterion at the cusps),
+  and both directions now live in one module with one owner.
 
 ## Second decomposition pass, 2026-07-27
 
@@ -683,36 +708,89 @@ theorem isFinite_fromNormalization {Y P : Scheme.{u}}
   haveI := locallyOfFiniteType_fromNormalization strP i
   (IsFinite.iff_isIntegralHom_and_locallyOfFiniteType _).mpr ⟨inferInstance, inferInstance⟩
 
-/-- **The normalization of a curve over a perfect field is a smooth curve** (sorry leaf).
+/-- **The local rings of the normalized model are discrete valuation rings** (sorry leaf —
+the normality half of the old `smoothOfRelativeDimension_one_fromNormalization`).
+
+TRUE and classical: the relative normalization `X` of `P` in the integral scheme `Y` is
+NORMAL — that is what "normalization" means, and it is the one thing `Mathlib`'s
+`Scheme.Hom.normalization` does not record — and it has the same function field as `Y`, hence
+dimension one.  A noetherian normal local domain of dimension one is a discrete valuation
+ring (Serre's criterion in dimension one; equivalently
+`IsDiscreteValuationRing.TFAE` item 3, `IsIntegrallyClosed` together with a unique nonzero
+prime, which is what dimension one supplies).
+
+`¬ IsField` is exactly the exclusion of the generic point, where the stalk is the function
+field: see the discussion on
+`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`.
+
+**What is genuinely missing at this pin, and what is not.**  `IsDiscreteValuationRing.TFAE`
+and `IsRegularLocalRing` are both present (`Mathlib/RingTheory/DiscreteValuationRing/TFAE.lean`,
+`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), so the local ring theory is available; what
+`Mathlib` does not have is (a) any statement that the stalks of `f.normalization` are
+integrally closed, and (b) any notion of a normal scheme to phrase it with.  So a prover's
+first move is to compute a stalk of `i.normalization` through
+`Scheme.Hom.normalizationOpenCover` / `normalizationDiagramMap` — over an affine `U ∋` the
+image, `Γ(X, ·)` is `integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)`, whose localizations are
+integrally closed by `IsIntegralClosure.isIntegrallyClosed_of_isLocalization`-style transport
+— and only then apply the TFAE.
+
+`hY` is what pins the dimension to one; without it the same construction applies in every
+dimension and no local ring need be a DVR. -/
+theorem isDiscreteValuationRing_stalk_normalization {Y P : Scheme.{u}}
+    {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
+    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
+    (_hY : SmoothOfRelativeDimension 1 (i ≫ strP)) (x : i.normalization)
+    (_hx : ¬ IsField (i.normalization.presheaf.stalk x)) :
+    IsDiscreteValuationRing (i.normalization.presheaf.stalk x) :=
+  sorry
+
+/-- **The normalization of a curve over a perfect field is a smooth curve** (PROVEN
+2026-07-27 over `isDiscreteValuationRing_stalk_normalization` and the shared DVR node
+`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`).
 
 TRUE and classical, in three steps: the relative normalization `X` of `P` in the integral
 scheme `Y` is normal and integral, and has the same function field as `Y`, hence the same
 dimension `1`; a noetherian normal local domain of dimension one is a discrete valuation
-ring, so `X` is regular (Serre's criterion in dimension one, or just
-`IsIntegrallyClosed` + noetherian + dimension one ⟹ `IsDedekindDomain`); and over a
-**perfect** field regular is equivalent to smooth (Stacks `056S`), the relative dimension
-being `1` because `X` is a curve.
+ring, so `X` is regular; and over a **perfect** field regular is equivalent to smooth
+(Stacks `056S`), the relative dimension being `1` because `X` is a curve.
+
+**The old "IRREDUCIBLE at this pin" verdict is RETIRED, and it was wrong on a checkable
+point.**  It read: "`Mathlib` has no notion of a normal scheme, no dimension theory for
+schemes beyond `coheight`, and no regular-implies-smooth-over-a-perfect-field statement."
+The first and third clauses are right; the implicit claim that regularity itself is
+unavailable is not — `IsRegularLocalRing` is at this pin, with
+`IsLocalRing.finrank_CotangentSpace_eq_one_iff` linking it to `IsDiscreteValuationRing` in
+dimension one.  That is what makes the cut below possible: the statement splits cleanly into
+*normality of the normalization* (leaf above, and genuinely absent) and *regular ⟹ smooth
+over a perfect field* (the shared node), rather than being one indivisible citation.
 
 `PerfectField K` is load-bearing and the statement is FALSE without it: over an imperfect
 field `k` of characteristic `p` the curve `y^p = t x^p + t` (`t ∈ k ∖ k^p`) is regular but
 not smooth, and it is its own normalization.  `ℚ` is perfect, so the modular application
 is unaffected.
 
-`hY` — that `Y` itself is a smooth curve — is what pins the dimension to `1`; without it
-the same construction applies in every dimension and the relative dimension in the
-conclusion is unconstrained.  Note that smoothness of `Y` is used ONLY through its
-dimension: the normalization forgets everything else about `Y`, which is exactly why the
-same leaf serves a merely *normal* `Y`.
-
-IRREDUCIBLE at this pin, and it is the deepest of the four: `Mathlib` has no notion of a
-normal scheme, no dimension theory for schemes beyond `coheight`, and no
-regular-implies-smooth-over-a-perfect-field statement. -/
+`hY` — that `Y` itself is a smooth curve — is what pins the dimension to `1`; it enters the
+proof twice, once through the DVR leaf and once as the dense smooth open
+`i.toNormalization` that fixes the relative dimension at `1` rather than `0`.  Zariski's Main
+Theorem is what makes `i.toNormalization` an open immersion, and dominance is free by
+construction — so the "dense open which is already a smooth curve" that the shared node asks
+for is exactly `Y` itself. -/
 theorem smoothOfRelativeDimension_one_fromNormalization [PerfectField K] {Y P : Scheme.{u}}
     {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
     (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
-    (_hY : SmoothOfRelativeDimension 1 (i ≫ strP)) :
-    SmoothOfRelativeDimension 1 (i.fromNormalization ≫ strP) :=
-  sorry
+    (hY : SmoothOfRelativeDimension 1 (i ≫ strP)) :
+    SmoothOfRelativeDimension 1 (i.fromNormalization ≫ strP) := by
+  haveI : IsFinite i.fromNormalization := isFinite_fromNormalization strP i
+  haveI : IsIntegral i.normalization := inferInstance
+  haveI : LocallyOfFiniteType (i.fromNormalization ≫ strP) := inferInstance
+  have hsm : SmoothOfRelativeDimension 1 (i.toNormalization ≫ i.fromNormalization ≫ strP) := by
+    rw [← Category.assoc, Scheme.Hom.toNormalization_fromNormalization]
+    exact hY
+  exact smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk
+    (i.fromNormalization ≫ strP) i.toNormalization hsm
+    (fun x hx => isDiscreteValuationRing_stalk_normalization i hY x hx)
 
 /-- **A smooth curve over a field is one-dimensional** (sorry leaf — the dimension half of the
 old `topologicalKrullDim_normalization_le_one`).
