@@ -91,7 +91,6 @@ Every one of the original five leaves has now been cut down; the remaining leave
 
 | leaf | content |
 | --- | --- |
-| `exists_dehomogenisation_mvPolynomial` | dehomogenisation: `(K[X₀..Xₙ][X₀⁻¹])₀ ≅ K[Y₁..Yₙ]`, all that is left of the standard affine chart of `ℙⁿ` after the 2026-07-27 cut (`nonempty_projChart_mvPolynomial` is now a THEOREM over it) |
 | `nonempty_projChart_of_surjective` | the projective closure of an affine variety |
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) — but see the BYPASS on that declaration: every current consumer's `Y` is affine, and the affine case is proven |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
@@ -326,9 +325,8 @@ one cannot write oneself.
 The three pieces:
 
 * `nonempty_projChart_mvPolynomial` — the standard affine chart of `ℙⁿ`: dehomogenisation at
-  `X₀`.  **PROVEN 2026-07-27** over the single ring-theoretic LEAF
-  `exists_dehomogenisation_mvPolynomial`; everything the `ProjChart` structure asks for
-  besides the identification of the chart is discharged there;
+  `X₀`.  **PROVEN 2026-07-27, and sorry-free**: first cut down to the single ring-theoretic
+  statement `exists_dehomogenisation_mvPolynomial`, which was then proven too;
 * `nonempty_projChart_of_surjective` (LEAF) — the projective closure: a chart for `B'`
   descends along a surjection `B' ↠ B`;
 * `exists_isOpenImmersion_isProper_of_affineCase` (LEAF) — Nagata's gluing induction, which
@@ -456,13 +454,85 @@ section MvPolynomialChart
 
 attribute [local instance] MvPolynomial.gradedAlgebra
 
-/-- **Dehomogenisation: the degree-zero part of `K[X₀, …, Xₙ][X₀⁻¹]` is `K[Y₁, …, Yₙ]`**
-(sorry leaf — 2026-07-27, and it is ALL that is left of `nonempty_projChart_mvPolynomial`
-below, which is now a THEOREM over it).
+open _root_.MvPolynomial
 
-TRUE and elementary.  The map is `Yᵢ ↦ Xᵢ₊₁ / X₀`; its inverse sends a degree-zero fraction
-`a / X₀^d` (with `a` homogeneous of degree `d`) to the dehomogenisation `a(1, Y₁, …, Yₙ)`.
-Stacks tag `01M3`.
+/-- Scaling all the variables of a homogeneous polynomial of degree `m` multiplies its value
+by the `m`-th power of the scaling factor. -/
+theorem eval₂Hom_mul_left_of_isHomogeneous {σ : Type*} {S L : Type*} [CommSemiring S]
+    [CommSemiring L] (c : S →+* L) (u : L) (g : σ → L) {a : MvPolynomial σ S} {m : ℕ}
+    (ha : a.IsHomogeneous m) :
+    eval₂Hom c (fun i => u * g i) a = u ^ m * eval₂Hom c g a := by
+  simp only [coe_eval₂Hom, eval₂_eq, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  have hdeg : ∑ i ∈ d.support, d i = m := by
+    have h := ha (mem_support_iff.mp hd)
+    simpa [Finsupp.weight, Finsupp.linearCombination, Finsupp.sum] using h
+  rw [Finset.prod_congr rfl (fun i _ => mul_pow u (g i) (d i)), Finset.prod_mul_distrib,
+    Finset.prod_pow_eq_pow_sum, hdeg]
+  ring
+
+section Dehomogenisation
+
+variable (n : ℕ)
+
+/-- `Xᵢ ↦ Yᵢ₋₁`, `X₀ ↦ 1`. -/
+noncomputable def mvPolynomialDehom : MvPolynomial (Fin (n + 1)) K →+* MvPolynomial (Fin n) K :=
+  eval₂Hom C (Fin.cases (motive := fun _ => MvPolynomial (Fin n) K) 1 fun i => X i)
+
+theorem X_zero_mem_homogeneousSubmodule : (X 0 : MvPolynomial (Fin (n + 1)) K) ∈
+    MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 1 := isHomogeneous_X K 0
+
+theorem X_succ_mem_homogeneousSubmodule (i : Fin n) : (X i.succ : MvPolynomial (Fin (n + 1)) K) ∈
+    MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K (1 • 1) := by
+  simpa using isHomogeneous_X K i.succ
+
+/-- The structure map `K → (A_{X₀})₀`. -/
+noncomputable def mvPolynomialProjChartBase : K →+*
+    HomogeneousLocalization.Away (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
+      (MvPolynomial.X 0) :=
+  (HomogeneousLocalization.fromZeroRingHom (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
+    (Submonoid.powers (MvPolynomial.X (0 : Fin (n + 1))))).comp
+      (algebraMap K ↥(MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 0))
+
+/-- `Yᵢ ↦ Xᵢ₊₁ / X₀`. -/
+noncomputable def mvPolynomialProjChartHom : MvPolynomial (Fin n) K →+*
+    HomogeneousLocalization.Away (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
+      (MvPolynomial.X 0) :=
+  eval₂Hom (mvPolynomialProjChartBase n) fun i =>
+    HomogeneousLocalization.Away.mk _ (X_zero_mem_homogeneousSubmodule n) 1 (X i.succ) (X_succ_mem_homogeneousSubmodule n i)
+
+end Dehomogenisation
+
+/-- **Dehomogenisation: the degree-zero part of `K[X₀, …, Xₙ][X₀⁻¹]` is `K[Y₁, …, Yₙ]`**
+(**PROVEN 2026-07-27, sorry-free**; it was the last leaf of
+`nonempty_projChart_mvPolynomial` below, which is a THEOREM over it).
+
+The map is `Yᵢ ↦ Xᵢ₊₁ / X₀` (`mvPolynomialProjChartHom`); its inverse sends a degree-zero
+fraction `a / X₀^d` (with `a` homogeneous of degree `d`) to the dehomogenisation
+`a(1, Y₁, …, Yₙ)` (`mvPolynomialDehom`).  Stacks tag `01M3`.
+
+## How it is proved
+
+Everything is compared inside the ordinary localisation `L = A[X₀⁻¹]`, using that
+`HomogeneousLocalization.val : (A_{X₀})₀ → L` is an injective ring hom (it is the
+`algebraMap` of `HomogeneousLocalization.homogeneousLocalizationAlgebra`).
+
+* *Injectivity* is a left inverse: `X₀ ↦ 1` makes every power of `X₀` a unit in
+  `K[Y₁ … Yₙ]`, so `mvPolynomialDehom` extends over the localisation by
+  `IsLocalization.lift`, and the composite fixes each `Yᵢ` and each constant.
+* *Surjectivity* needs no generation argument: `HomogeneousLocalization.Away.mk_surjective`
+  writes any element as `a / X₀^m` with `a` homogeneous of degree `m`, and the preimage is
+  `mvPolynomialDehom a`.  The verification is the one place homogeneity is used, and it is
+  isolated as `eval₂Hom_mul_left_of_isHomogeneous` below: `val ∘ hom ∘ dehom` and
+  "divide every variable by `X₀`" are two ring homs out of `A` agreeing on the generators,
+  hence equal, and scaling every variable of a degree-`m` homogeneous polynomial by
+  `u = 1/X₀` multiplies its value by `u^m`.  So the composite sends `a` to
+  `a / X₀^m`, which is exactly `val` of the element we started from.
+
+Note what the argument does NOT need: no `Proj`, no scheme theory, no UFD divisibility, and
+no `Away.adjoin_mk_prod_pow_eq_top`.  The kernel computation that is the hard half of
+`Fermat.exists_projChartRingEquiv` (`ModularCurve/EllipticScheme.lean`) is absent here
+because the ideal is zero.
 
 The second conjunct is the compatibility with the constants, and it is NOT optional: an
 arbitrary ring isomorphism between these two rings need not be `K`-linear, and the `compat`
@@ -472,38 +542,21 @@ target an `Algebra K` one, and forcing them into a single `Algebra K` structure 
 defeq but never syntactically equal instances" trap that `ProjChart`'s own docstring warns
 about.
 
-**ROUTE, CORRECTED 2026-07-27 — DO NOT START FROM SCRATCH, AND DO NOT BELIEVE THE OLD NOTE.**
-The previous version of this docstring said the same gap "is recorded independently at
+**MESSAGE FOR `nonempty_projChart_of_surjective` BELOW, AND A CORRECTED STALE NOTE.**  An
+earlier version of this docstring said the gap "is recorded independently at
 `Fermat.exists_projChartRingEquiv`, whose docstring carries a full proof plan".  That was
-true when written and is now **stale in the most expensive direction**:
-`Fermat.exists_projChartRingEquiv` (`Fermat/FLT/ModularCurve/EllipticScheme.lean`) is
-**PROVEN**, in *exactly* the shape stated here — a `RingEquiv` plus the commuting triangle
-out of the base field, for the same reason (avoiding the `Algebra ↥(𝒜 0)` vs `Algebra K`
-instance clash).  What is left here is to GENERALISE that proof, not to find one.
+stale in the most expensive direction: `Fermat.exists_projChartRingEquiv`
+(`Fermat/FLT/ModularCurve/EllipticScheme.lean`) is **PROVEN**, in exactly the shape stated
+here — a `RingEquiv` plus the commuting triangle out of the base field, for the same reason
+(avoiding the `Algebra ↥(𝒜 0)` vs `Algebra K` instance clash).  Its plan is also
+superseded: surjectivity is `Away.mk_surjective`, not `Away.adjoin_mk_prod_pow_eq_top`.
 
-Its skeleton, which transfers verbatim:
-
-* the chart map `projChartHom : K[u₁ … uₙ] → (A_{X₀})₀`, `uⱼ ↦ Xⱼ / X₀`;
-* SURJECTIVITY is immediate from `HomogeneousLocalization.Away.mk_surjective`
-  (`Mathlib/RingTheory/GradedAlgebra/HomogeneousLocalization.lean:618`): every element of
-  the degree-zero part is literally `a / X₀^m` with `a` homogeneous of degree `m`, and
-  `dehomogenize a` is a preimage.  **The old plan's route through
-  `Away.adjoin_mk_prod_pow_eq_top` is not needed** — that was the harder path and
-  `EllipticScheme.lean` records abandoning it;
-* the KERNEL is the hard half THERE and is **TRIVIAL HERE**: it computes to
-  `{q : X₀^k · homogenize q = 0 in A}`, and `A = K[X₀ … Xₙ]` is a domain, so the kernel is
-  `⊥` and the whole UFD divisibility argument (`polynomial_dvd_of_dvd_X_pow_mul`,
-  `not_X_dvd_polynomial`) evaporates.  Only the zero ideal appears here;
-* glue with `RingHom.quotientKerEquivOfSurjective`.
-
-The one real cost is that `EllipticScheme.lean`'s block is hard-wired to `Fin 3`, to `ℚ`,
-and to `ProjChartVar i = {j : Fin 3 // j ≠ i}`, so `dehomogenizeAt` / `homogenizeAt` and
-their lemmas have to be re-stated over `Fin (n+1)` and a general field.  **That
-generalisation is the SAME job as `nonempty_projChart_of_surjective` below** (which is the
-arbitrary-homogeneous-ideal case of it), and `EllipticScheme.lean`'s own docstring says the
-block "is the piece that ought to be upstreamed".  So whoever takes either leaf should take
-both, hoist the generalised block into the shim tree, and re-derive
-`exists_projChartRingEquiv` from it.
+The general case — an arbitrary homogeneous ideal in place of the zero one — is
+`nonempty_projChart_of_surjective` below, and what it adds over this proof is exactly the
+KERNEL: there the chart map is not injective and its kernel is the saturation of the ideal,
+which is what `EllipticScheme.lean` computes for the Weierstrass ideal by a UFD divisibility
+argument.  The rest of the argument above transfers verbatim, including
+`eval₂Hom_mul_left_of_isHomogeneous`, which is stated for an arbitrary target ring.
 
 What IS genuinely absent from `Mathlib` (re-checked 2026-07-27): a grep for `dehomogeni`
 over the whole of `Mathlib` returns NOTHING, and there is no identification of an
@@ -517,11 +570,127 @@ theorem exists_dehomogenisation_mvPolynomial (n : ℕ) :
           (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
           (Submonoid.powers (MvPolynomial.X (0 : Fin (n + 1))))
           (algebraMap K ↥(MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 0) c))
-        = algebraMap K (MvPolynomial (Fin n) K) c :=
-  sorry
+        = algebraMap K (MvPolynomial (Fin n) K) c := by
+  classical
+  have hunit : ∀ y : Submonoid.powers (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K),
+      IsUnit (mvPolynomialDehom (K := K) n (y : MvPolynomial (Fin (n + 1)) K)) := by
+    rintro ⟨_, k, rfl⟩
+    simp [mvPolynomialDehom, map_pow]
+  set L := Localization.Away (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K) with hL
+  set D : L →+* MvPolynomial (Fin n) K := IsLocalization.lift hunit with hD
+  set V : HomogeneousLocalization.Away (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
+      (X (0 : Fin (n + 1))) →+* L := algebraMap _ _ with hV
+  set u : L := IsLocalization.mk' L 1
+    (⟨X (0 : Fin (n + 1)), Submonoid.mem_powers _⟩ :
+      Submonoid.powers (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K)) with hu
+  have hu1 : u * algebraMap (MvPolynomial (Fin (n + 1)) K) L (X (0 : Fin (n + 1))) = 1 := by
+    rw [hu]
+    exact (IsLocalization.mk'_spec L (1 : MvPolynomial (Fin (n + 1)) K)
+      (⟨X (0 : Fin (n + 1)), Submonoid.mem_powers _⟩ :
+        Submonoid.powers (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K))).trans (map_one _)
+  have hDalg : ∀ a : MvPolynomial (Fin (n + 1)) K,
+      D (algebraMap _ L a) = mvPolynomialDehom (K := K) n a := fun a => IsLocalization.lift_eq hunit a
+  -- `D` inverts a fraction with a power of `X₀` in the denominator
+  have hDmk : ∀ (a : MvPolynomial (Fin (n + 1)) K) (k : ℕ)
+      (hk : (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K) ^ k ∈
+        Submonoid.powers (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K)),
+      D (IsLocalization.mk' L a ⟨_, hk⟩) = mvPolynomialDehom (K := K) n a := by
+    intro a k hk
+    have h := congrArg D (IsLocalization.mk'_spec L a (⟨_, hk⟩ :
+      Submonoid.powers (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K)))
+    rw [map_mul, hDalg, hDalg] at h
+    simpa [mvPolynomialDehom, map_pow] using h
+  -- `hom` has a left inverse, hence is injective
+  have hleft : (D.comp V).comp (mvPolynomialProjChartHom (K := K) n) = RingHom.id (MvPolynomial (Fin n) K) := by
+    refine MvPolynomial.ringHom_ext (fun r => ?_) (fun i => ?_)
+    · show D (V (mvPolynomialProjChartHom (K := K) n (C r))) = C r
+      rw [mvPolynomialProjChartHom, eval₂Hom_C]
+      show D ((mvPolynomialProjChartBase (K := K) n r).val) = C r
+      rw [mvPolynomialProjChartBase]
+      show D ((HomogeneousLocalization.mk ⟨0, _, 1, _⟩).val) = C r
+      rw [HomogeneousLocalization.val_mk]
+      show D (Localization.mk (C r) 1) = C r
+      rw [Localization.mk_one_eq_algebraMap, hDalg]
+      simp [mvPolynomialDehom]
+    · show D (V (mvPolynomialProjChartHom (K := K) n (X i))) = X i
+      rw [mvPolynomialProjChartHom, eval₂Hom_X']
+      show D ((HomogeneousLocalization.Away.mk _ (X_zero_mem_homogeneousSubmodule n) 1 (X i.succ) (X_succ_mem_homogeneousSubmodule n i)).val) = X i
+      rw [HomogeneousLocalization.Away.val_mk, Localization.mk_eq_mk']
+      rw [hDmk (X i.succ) 1]
+      simp [mvPolynomialDehom]
+  -- the composite `V ∘ hom ∘ mvPolynomialDehom` is "divide every variable by `X₀`"
+  have hcomp : (V.comp (mvPolynomialProjChartHom (K := K) n)).comp (mvPolynomialDehom (K := K) n)
+      = eval₂Hom ((algebraMap (MvPolynomial (Fin (n + 1)) K) L).comp C)
+        (fun j => u * algebraMap (MvPolynomial (Fin (n + 1)) K) L (X j)) := by
+    refine MvPolynomial.ringHom_ext (fun r => ?_) (fun j => ?_)
+    · show V (mvPolynomialProjChartHom (K := K) n (mvPolynomialDehom (K := K) n (C r))) = _
+      rw [eval₂Hom_C]
+      have : mvPolynomialDehom (K := K) n (C r) = C r := by simp [mvPolynomialDehom]
+      rw [this, mvPolynomialProjChartHom, eval₂Hom_C]
+      show (mvPolynomialProjChartBase (K := K) n r).val = _
+      rw [mvPolynomialProjChartBase]
+      show (HomogeneousLocalization.mk ⟨0, _, 1, _⟩).val = _
+      rw [HomogeneousLocalization.val_mk]
+      show Localization.mk (C r) 1 = _
+      rw [Localization.mk_one_eq_algebraMap]
+      rfl
+    · rw [RingHom.comp_apply, eval₂Hom_X']
+      refine Fin.cases ?_ ?_ j
+      · have h0 : mvPolynomialDehom (K := K) n (X (0 : Fin (n + 1))) = 1 := by simp [mvPolynomialDehom]
+        rw [h0, map_one]
+        exact hu1.symm
+      · intro i
+        have hs : mvPolynomialDehom (K := K) n (X i.succ) = X i := by simp [mvPolynomialDehom]
+        rw [hs, RingHom.comp_apply, mvPolynomialProjChartHom, eval₂Hom_X']
+        show (HomogeneousLocalization.Away.mk _ (X_zero_mem_homogeneousSubmodule n) 1 (X i.succ) (X_succ_mem_homogeneousSubmodule n i)).val = _
+        rw [HomogeneousLocalization.Away.val_mk, Localization.mk_eq_mk', hu, mul_comm,
+          ← IsLocalization.mk'_eq_mul_mk'_one]
+        exact congrArg (IsLocalization.mk' L (X i.succ)) (Subtype.ext (pow_one _))
+  -- the identity ring hom, written as an `eval₂Hom`
+  have hid : eval₂Hom ((algebraMap (MvPolynomial (Fin (n + 1)) K) L).comp C)
+      (fun j => algebraMap (MvPolynomial (Fin (n + 1)) K) L (X j))
+        = algebraMap (MvPolynomial (Fin (n + 1)) K) L :=
+    MvPolynomial.ringHom_ext (fun r => by simp) (fun j => by simp)
+  -- surjectivity
+  have hsurj : Function.Surjective (mvPolynomialProjChartHom (K := K) n) := by
+    intro z
+    obtain ⟨m, a, ha, rfl⟩ :=
+      HomogeneousLocalization.Away.mk_surjective
+        (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K) (X_zero_mem_homogeneousSubmodule n) z
+    have ha' : a.IsHomogeneous m := by simpa using ha
+    refine ⟨mvPolynomialDehom (K := K) n a, HomogeneousLocalization.val_injective _ ?_⟩
+    have h1 := RingHom.congr_fun hcomp a
+    rw [RingHom.comp_apply, RingHom.comp_apply] at h1
+    rw [eval₂Hom_mul_left_of_isHomogeneous _ u _ ha', hid] at h1
+    have h2 : u ^ m = IsLocalization.mk' L 1
+        (⟨X (0 : Fin (n + 1)) ^ m, ⟨m, rfl⟩⟩ :
+          Submonoid.powers (X (0 : Fin (n + 1)) : MvPolynomial (Fin (n + 1)) K)) := by
+      rw [IsLocalization.eq_mk'_iff_mul_eq]
+      show u ^ m * algebraMap (MvPolynomial (Fin (n + 1)) K) L
+        (X (0 : Fin (n + 1)) ^ m) = algebraMap (MvPolynomial (Fin (n + 1)) K) L 1
+      rw [map_pow, ← mul_pow, hu1, one_pow, map_one]
+    rw [h2, mul_comm, ← IsLocalization.mk'_eq_mul_mk'_one] at h1
+    show (mvPolynomialProjChartHom (K := K) n (mvPolynomialDehom (K := K) n a)).val = _
+    rw [HomogeneousLocalization.Away.val_mk, Localization.mk_eq_mk']
+    exact h1
+  -- injectivity, from the left inverse
+  have hinj : Function.Injective (mvPolynomialProjChartHom (K := K) n) := by
+    refine Function.LeftInverse.injective (g := fun z => (D.comp V) z) fun x => ?_
+    exact RingHom.congr_fun hleft x
+  refine ⟨(RingEquiv.ofBijective (mvPolynomialProjChartHom (K := K) n) ⟨hinj, hsurj⟩).symm, fun c => ?_⟩
+  have hc : mvPolynomialProjChartHom (K := K) n (C c) = HomogeneousLocalization.fromZeroRingHom
+      (MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K)
+      (Submonoid.powers (MvPolynomial.X (0 : Fin (n + 1))))
+      (algebraMap K ↥(MvPolynomial.homogeneousSubmodule (Fin (n + 1)) K 0) c) := by
+    rw [mvPolynomialProjChartHom, eval₂Hom_C]
+    rfl
+  rw [← hc]
+  show (RingEquiv.ofBijective (mvPolynomialProjChartHom (K := K) n) ⟨hinj, hsurj⟩).symm
+      ((RingEquiv.ofBijective (mvPolynomialProjChartHom (K := K) n) ⟨hinj, hsurj⟩) (C c)) = _
+  rw [RingEquiv.symm_apply_apply, MvPolynomial.algebraMap_eq]
 
-/-- **The standard affine chart of `ℙⁿ`** (**PROVEN 2026-07-27** over the single
-ring-theoretic leaf `exists_dehomogenisation_mvPolynomial` above; it used to be a leaf
+/-- **The standard affine chart of `ℙⁿ`** (**PROVEN 2026-07-27, sorry-free**, over
+`exists_dehomogenisation_mvPolynomial` above, which is proven too; it used to be a leaf
 itself).
 
 Take `A := K[X₀, …, Xₙ]` with its grading by total degree
