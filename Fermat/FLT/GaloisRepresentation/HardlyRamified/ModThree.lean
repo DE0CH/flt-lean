@@ -42370,7 +42370,25 @@ the divisor-group Artin map, `A = ker φ ⊓ I_F(mm)`, `P` the narrow ray,
 `N` the norm subgroup; the four bullets above are then the standard
 statements. Not vacuous: `hidx₂` is false for a modulus that is too coarse
 (the `ℚ(i)`, `mm = (2)` computation above), `hφd` is false for a `φ`
-unrelated to `c`, and `hd` pins `d` to be the true divisor map. -/
+unrelated to `c`, and `hd` pins `d` to be the true divisor map.
+
+**SUPPORT CLAUSE ADDED 2026-07-27 (third conjunct):**
+`∀ w, w.asIdeal ∣ mm → IsRamifiedCharRayClass F χ w`. The `mm` built here
+is the ramified RADICAL, and `exists_radical_isRamifiedChar_ray_class`
+characterises it by an IFF; this node used to export only the `mpr`
+direction (`hmmram`, ramified ⟹ divides) and threw the `mp` direction
+away. Exporting it is two lines and no new mathematics, and it is
+Childress 5.2.1(ii)'s "the ideal `m` can be chosen so that it is
+divisible only by the ramified primes". It is threaded from here through
+`exists_artinIdealGroup_relIndex_ray_class`,
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` and
+`exists_conductor_artinSymbol_span_eq_one_ray_class`, and the matching
+clause on the sorried
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
+is what closes
+`exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class`.
+Note `hmmram` and the new clause are NOT redundant of each other: under
+`hunr` the former is vacuous while the latter forces `mm = ⊤`. -/
 theorem exists_artinDivisorPackage_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -42390,6 +42408,8 @@ theorem exists_artinDivisorPackage_ray_class
           χ (a * Field.absoluteGaloisGroup.map
             (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
             ≠ 1) → w.asIdeal ∣ mm) ∧
+      (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w.asIdeal ∣ mm → IsRamifiedCharRayClass F χ w) ∧
       ∃ φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ,
       ∃ d : NumberField.RingOfIntegers F → Multiplicative
@@ -42427,6 +42447,13 @@ theorem exists_artinDivisorPackage_ray_class
           (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
           ≠ 1) → w.asIdeal ∣ mm :=
     fun w hw => (hmmiff w).mpr hw
+  -- The SAME iff in the other direction: `mm` is the ramified RADICAL, so its
+  -- prime divisors are exactly the ramified places.  This is Childress
+  -- 5.2.1(ii)'s "divisible only by the ramified primes", and it is free here.
+  have hmmsupp : ∀ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F),
+      w.asIdeal ∣ mm → IsRamifiedCharRayClass F χ w :=
+    fun w hw => (hmmiff w).mp hw
   -- `hord` makes every value of `χ` a root of unity, hence a unit.
   have hu : ∀ a : Γ F, IsUnit (χ a) := fun a => IsUnit.of_pow_eq_one (hord a) hℓk
   have hmem : ∀ a : Γ F, (hu a).unit ∈ rootsOfUnity (ℓ ^ k) (Dickson.K 3) := by
@@ -42477,8 +42504,8 @@ theorem exists_artinDivisorPackage_ray_class
             (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))})).relIndex Im :=
     artinDivisorNormIndex_le_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul
       hcfrob mm hmm hmmram φ d Im (φ.ker ⊓ Im) _ _ hd rfl hφv hφd hIm rfl rfl
-  exact ⟨mm, hmm, hmmram, φ, d, Im, φ.ker ⊓ Im, _, _, hd, rfl, hφv, hφd, hIm, rfl, rfl,
-    hidx₁, hidx₂⟩
+  exact ⟨mm, hmm, hmmram, hmmsupp, φ, d, Im, φ.ker ⊓ Im, _, _, hd, rfl, hφv, hφd, hIm,
+    rfl, rfl, hidx₁, hidx₂⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **CHILDRESS PROPOSITION 5.2.2 — the crux: the Artin kernel is
@@ -42790,6 +42817,8 @@ theorem exists_artinIdealGroup_relIndex_ray_class
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
         c' (Ideal.span {δ}) = 1) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
       ∃ Im A P N : Subgroup (Multiplicative
         (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)),
       ∃ d : NumberField.RingOfIntegers F → Multiplicative
@@ -42803,7 +42832,8 @@ theorem exists_artinIdealGroup_relIndex_ray_class
             d δ ∈ P ∧ (d δ ∈ A → c (Ideal.span {δ}) = 1) := by
   classical
   -- (A3b-1): the package pins `φ`, `d`, `Im`, `A`, `P`, `N` and supplies the counting.
-  obtain ⟨mm, hmm, hmmram, φ, d, Im, A, P, N, hd, hA, hφv, hφd, hIm, hP, hN, hidx₁, hidx₂⟩ :=
+  obtain ⟨mm, hmm, hmmram, hmmsupp, φ, d, Im, A, P, N, hd, hA, hφv, hφd, hIm, hP, hN,
+      hidx₁, hidx₂⟩ :=
     exists_artinDivisorPackage_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul hcfrob
   -- (A3b-2): Childress Prop 5.2.2, the only consumer of `hartin` and `hcycl`.
   have hcrux : A ≤ P ⊔ N :=
@@ -42864,7 +42894,7 @@ theorem exists_artinIdealGroup_relIndex_ray_class
     push_cast
     rw [hφv v, zpow_natCast, pow_orderOf_eq_one]
   have hNA : N ≤ A := by rw [hA]; exact le_inf hNker hNIm
-  refine ⟨mm, hmm, Im, A, P, N, d, hcrux, sup_le hPIm hNIm, hNA, hidx₁, hidx₂, ?_⟩
+  refine ⟨mm, hmm, hmmsupp, Im, A, P, N, d, hcrux, sup_le hPIm hNIm, hNA, hidx₁, hidx₂, ?_⟩
   intro δ hδ0 hδpos hδmem
   refine ⟨?_, ?_⟩
   · rw [hP]
@@ -43035,6 +43065,8 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
         c' (Ideal.span {δ}) = 1) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
       ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
@@ -43049,12 +43081,12 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
   -- cyclotomic base case `hcycl` at `E`, NOT at `F`) together with the
   -- Global Cyclic Norm Index Equality (`A.relIndex Im ≤ (P ⊔ N).relIndex Im`)
   -- and the surjectivity of the Artin map (`A.relIndex Im ≠ 0`, Chebotarev).
-  obtain ⟨mm, hmm, Im, A, P, N, d, hAPN, hPNIm, _hNA, hAidx, hidx, hd⟩ :=
+  obtain ⟨mm, hmm, hmmsupp, Im, A, P, N, d, hAPN, hPNIm, _hNA, hAidx, hidx, hd⟩ :=
     exists_artinIdealGroup_relIndex_ray_class F χ hmul V hVopen hVker hunr ℓ hℓ hℓ3 k
       hord c hcmul hcfrob
       (fun p S => exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S)
       hcycl
-  refine ⟨mm, hmm, ?_⟩
+  refine ⟨mm, hmm, hmmsupp, ?_⟩
   intro δ hδ0 hδpos hδcong
   -- pure counting: `ker A ⊆ P⁺·N ⊆ I_F(mm)` with `[I_F(mm) : ker A]` finite and
   -- at most `[I_F(mm) : P⁺·N]` forces `P⁺·N = ker A`
@@ -43213,6 +43245,8 @@ theorem exists_conductor_artinSymbol_span_eq_one_ray_class
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       c v.asIdeal = χ (globalFrob v)) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
       ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
@@ -46374,7 +46408,7 @@ theorem artinSymbol_span_eq_one_of_pos_primePow_ray_class
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ)) :
     c (Ideal.span {γ}) = 1 := by
   -- (A) reciprocity for SOME nonzero modulus `mm`
-  obtain ⟨mm, hmm, hray⟩ :=
+  obtain ⟨mm, hmm, -, hray⟩ :=
     exists_conductor_artinSymbol_span_eq_one_ray_class F χ hmul V hVopen hVker hunr
       ℓ hℓ hℓ3 k hord c hcmul hcfrob
   -- (B) the conductor of an everywhere-finite-unramified character is `(1)`,
