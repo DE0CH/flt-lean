@@ -19880,7 +19880,19 @@ Together with `RelPoint.pre` it is everything needed to say that a
 morphism of abelian schemes is a homomorphism, which is what
 `IsAdditiveOn` below does.  The development had no such notion before
 2026-07-27 — `grep` for `RelPoint.post` and `IsAdditiveOn` returned
-nothing in this project, in mathlib and in `~/cs/FLT`. -/
+nothing in this project, in mathlib and in `~/cs/FLT`.
+
+The companion of `RelPoint.pre`, and the operation `pre` cannot express:
+`pre` moves the TEST object `T`, this moves the TARGET.  The `169` chain
+far below uses it in two further shapes — the Atkin–Lehner involution
+`w : X ⟶ X` acting on `X(T)`, and the inclusion `A ⟶ J` of an abelian
+subvariety read on points.
+
+INTEGRATION NOTE (2026-07-27): two branches defined this independently on
+the same day, this one at `Scheme.{0}` and one in the `169` chain at
+`Scheme.{u}`; the second was deleted at integration.  Every use site is at
+universe `0` (the `169` chain is all `⟶ SpecQ`), so nothing needed the
+polymorphic form, and no call site names an implicit argument. -/
 def RelPoint.post {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
     (hu : u ≫ bf = af) {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint af g) :
     RelPoint bf g :=
@@ -25404,21 +25416,6 @@ def HasRankZeroAbelianImage {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
         (hg : h ≫ g = g') (x : RelPoint strX g),
       c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) ∧
     Finite (RelPoint astr (𝟙 SpecQ)) ∧ Function.Injective (c SpecQ (𝟙 SpecQ))
-
-/-- **Postcomposition of a relative point along a morphism over the base.**
-
-The companion of `RelPoint.pre`, and the operation `pre` cannot express:
-`pre` moves the TEST object `T`, this moves the TARGET.  A morphism
-`u : A ⟶ B` over `S` carries `T`-points of `A` to `T`-points of `B` over
-the SAME base point `g`, by `x ↦ x ≫ u`.
-
-Both uses below are of that shape and neither is a `pre`: the
-Atkin–Lehner involution `w : X ⟶ X` acting on `X(T)`, and the inclusion
-`A ⟶ J` of an abelian subvariety read on points. -/
-def RelPoint.post {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S} (u : A ⟶ B)
-    (hu : u ≫ f' = f) {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g) :
-    RelPoint f' g :=
-  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
 
 /-- **The Atkin–Lehner involution `w_169` and its Prym, an abelian
 subvariety of `J_0(169)` with finite `ℚ`-points** (sorry node, introduced

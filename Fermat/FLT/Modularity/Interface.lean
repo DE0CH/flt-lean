@@ -45388,7 +45388,7 @@ the `T_q`, `q ∤ M`.  Then:
 So the ONLY surviving content is per-block cyclicity, and that is cut once more:
 `exists_degeneracyBlock_heckeGoodEigenspace` says a nonzero block is spanned by
 the degeneracy translates `V_d f`, `d ∣ M/N`, of a single form at a divisor
-level `N`, while the DESCENT `U_q ∘ V_{qd} = V_d` (`heckeOp_degeneracyOp_of_dvd`,
+level `N`, while the DESCENT `U_q ∘ V_{qd} = V_d` (`heckeOp_degeneracyOp_mul_left`,
 `degeneracyOp_mem_heckeOrbitSpan`) — the computation the previous docstring
 described in prose — is PROVEN here and shows that `V_{M/N} f` generates the
 block.  Nothing below uses a modular curve, a tensor product, or `ℚ̄_p`. -/
@@ -45689,8 +45689,14 @@ computation.  At `q ∣ M` the Hecke formula is `a_m(U_q f) = a_{qm}(f)`
 `qd ∣ qm ↔ d ∣ m` and `0` otherwise — which is `a_m(V_d u)`.
 
 This is the engine of the oldform block: it says `U_q` moves one step DOWN the
-chain `V_{q^r} f, V_{q^{r-1}} f, …, V_1 f = f`. -/
-theorem heckeOp_degeneracyOp_of_dvd {N M d q : ℕ} (hM : 0 < M) (hd : 0 < d)
+chain `V_{q^r} f, V_{q^{r-1}} f, …, V_1 f = f`.
+
+RENAMED AT INTEGRATION (2026-07-27, was `heckeOp_degeneracyOp_of_dvd`): two
+branches landed different theorems under that one name on the same day, and
+the other one — `U_p ∘ V_d = V_d ∘ U_p` for `p ∤ d`, at line 35527 — got there
+first and has its own consumers.  `_mul_left` names the shape that
+distinguishes this one: the degeneracy index is `q * d`, not `d`. -/
+theorem heckeOp_degeneracyOp_mul_left {N M d q : ℕ} (hM : 0 < M) (hd : 0 < d)
     (hq : q.Prime) (hqM : q ∣ M) (hdvd : q * d * N ∣ M)
     (u : CuspForm (Gamma0GL N) 2) :
     heckeOp M q (degeneracyOp N M (q * d) u) = degeneracyOp N M d u := by
@@ -45713,7 +45719,7 @@ span of the DEEPEST one, `V_{M/N} f`.
 This is the "block is cyclic with generator `f((M/N)z)`" half of the classical
 argument, and it is entirely elementary: strong induction on the cofactor
 `(M/N)/d`, stepping down by one prime at a time through
-`heckeOp_degeneracyOp_of_dvd`.  Note it needs no hypothesis on `f` whatever —
+`heckeOp_degeneracyOp_mul_left`.  Note it needs no hypothesis on `f` whatever —
 newness, normalization and the eigensystem are all irrelevant here, which is
 exactly why they are isolated in the single remaining leaf. -/
 theorem degeneracyOp_mem_heckeOrbitSpan {N M : ℕ} (hN : 0 < N) (hM : 0 < M)
@@ -45752,7 +45758,7 @@ theorem degeneracyOp_mem_heckeOrbitSpan {N M : ℕ} (hN : 0 < N) (hM : 0 < M)
       dvd_trans (dvd_trans (dvd_mul_left q d) hdvdMN) (Nat.div_dvd_of_dvd hNM)
     have hstep : heckeOp M q (degeneracyOp N M (d * q) f) = degeneracyOp N M d f := by
       rw [mul_comm d q]
-      exact heckeOp_degeneracyOp_of_dvd hM hd0 hq hqM hqdN f
+      exact heckeOp_degeneracyOp_mul_left hM hd0 hq hqM hqdN f
     rw [← hstep]
     exact heckeOrbitSpan_stable _ (heckeOp_mem_modularHeckeAlgebraQ hq) hmem
 
@@ -45857,7 +45863,7 @@ proof above rather than of a plan, and its one unrealized step is exactly
 `exists_degeneracyBlock_heckeGoodEigenspace`.  The separation of the blocks
 ("the blocks are separated by the `T_n` with `(n,M) = 1`") is `sepFactor` /
 `sepOp`; the block cyclicity computation ("the iterates of `U_q` on `f(q^r z)`
-run through a basis") is `heckeOp_degeneracyOp_of_dvd` and
+run through a basis") is `heckeOp_degeneracyOp_mul_left` and
 `degeneracyOp_mem_heckeOrbitSpan`; "a sum of the block generators is a cyclic
 vector" is the assembly below.  What is NOT proven here is that the blocks are
 what Atkin–Lehner says they are, which is the leaf.  By Atkin–Lehner,
