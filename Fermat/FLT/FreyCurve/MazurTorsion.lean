@@ -6137,14 +6137,33 @@ step contributing one letter of the normal form:
       y² = x(x² + (γ² − 2δ²)x + δ⁴),
       c₄ = 16(γ⁴ − 4γ²δ² + δ⁴),   Δ = 16 δ⁸ γ²(γ − 2δ)(γ + 2δ).
 
-* `C[8]` stable is what forces `β` itself to be a square `δ²`: the quartic
-  halving `(β, βγ)` splits into two rational quadratics
+* `C[8]` stable gives the second halving condition.  **CORRECTED 2026-07-27
+  — the previous version of this bullet said it "forces `β` itself to be a
+  square `δ²`", and that is not so, in two separate ways.**  (i) The square
+  class of `β` is an INVARIANT: a `VariableChange` over `ℚ` scales `a₂` by
+  `u⁻²`, a square, so no change of variables can move `β` between square
+  classes, and no hypothesis can "force" it into the trivial one.  (ii) The
+  quartic halving `(β, βγ)` is
 
-      x² − 2δ(δ − γ)x + δ⁴   and   x² − 2δ(δ + γ)x + δ⁴
+      (x² − b)² − 4β x(x² + a x + b) = (x² − p x + b)(x² − q x + b),
+      p, q = 2β ± 2μ,     μ² = β(a + 2β),
 
-  exactly when `δ = √β` is rational (their discriminants are `16βγ²`), and
-  `C[8]` is one of the two.  Replacing `δ` by `−δ` swaps them, so the sign
-  of `δ` may be normalised.  The weight-`0` invariant `r = γ/δ` is the
+  which is rational as soon as `μ` is — `δ = √β` is NOT needed.  (The
+  discriminant of each factor is `4μ(μ ± 2β)`, i.e. `4δ²γ(γ ∓ 2δ)` in the
+  `β = δ², μ = δγ` coordinates; the old note's `16βγ²` is wrong.)  What
+  `C[8]`-stability actually gives is that the Galois-stable pair
+  `{x(2 • g), x(6 • g)}` — stable because `λ` is odd, so
+  `2λ ∈ {2,6,10,14} mod 16` — has product `b` (adding `(0,0)` is
+  `x ↦ b/x`, and `10 • g = 2 • g + (0,0)`), hence rational sum `2β ± 2μ`,
+  hence `μ ∈ ℚ`: **`β` and `a + 2β` lie in the SAME square class**, neither
+  necessarily trivial.  The passage to the displayed model is therefore a
+  quadratic TWIST, by `d = β`, which is harmless because only `j` is being
+  compared: it sends `(a, b) = (a, β²)` to `(aβ, β⁴)`, i.e. to
+  `chainModel μ β`, so `δ = β` and `γ = μ` with no square roots taken
+  anywhere.  See `exists_chainModel_of_ratTwoTorsion` below, where this is
+  the leaf `exists_chainModel_chain_of_halvingParams`.  Replacing `δ` by
+  `−δ` swaps the two factors, so the sign of `δ` may be normalised.  The
+  weight-`0` invariant `r = γ/δ` is the
   `X_0(8)` Hauptmodul: `j = 256(r⁴ − 4r² + 1)³/(r²(r² − 4))`, of degree
   `12 = [SL₂(ℤ) : Γ_0(8)]` ✓.
 * `C` itself stable is, finally, the single condition
@@ -6938,14 +6957,79 @@ says the `16`-chain sits over that one.  See the section note above,
 where it is also shown that `hx` forces `8 • h = (0, 0)` on its own, so
 no second tie is needed.
 
-**WHAT AN ATTACK LOOKS LIKE.**  This is where `X_0(16) → X_0(8)` being a
-degree-`2` cover has to be used.  Concretely: the two cyclic
-`8`-subgroups of `chainModel γ δ` above `⟨4 • h⟩` are cut out by the
-quadratics `x² − 2δ(δ − γ)x + δ⁴` and `x² − 2δ(δ + γ)x + δ⁴`, and the
-further halving that produces `C = ⟨h⟩` from `C[8]` is solvable over `ℚ`
-exactly when `γ/(2δ)` is a square.  `WeierstrassCurve.exists_quotient_isogeny`
-(PROVEN, later in this file) is the tool if an attack prefers to run the
-chain through the isogenous curves rather than through coordinates. -/
+**WHAT AN ATTACK LOOKS LIKE — AN EXPLICIT ROUTE, worked out and validated
+2026-07-27.**  Do NOT try to use "`X_0(16) → X_0(8)` is a degree-`2` cover"
+directly; that is the statement to be proved, not a tool.  Instead push the
+chain through the FIRST `2`-isogeny, where the obstruction becomes a single
+visible square root.  Everything below is homogeneous of weight `0` in
+`r = γ/δ`, so take `δ = 1` and restore `r` at the end.
+
+*Step (a) — the quotient by `C[2]`, and it acquires FULL rational
+`2`-torsion.*  Let `φ : E → E' = E/⟨(0,0)⟩` be the `2`-isogeny, so
+`E' : Y² = X(X² − 2aX + (a² − 4b))` with `a = γ² − 2`, `b = 1`, i.e.
+`a² − 4b = γ²(γ² − 4)`.  Then `φ(4 • h) = (γ², 0)` — the computation is
+`x(φ(x,y)) = y²/x²`, and at `(1, γ)` that is `γ²/1`.  Translating that
+rational `2`-torsion point to the origin (`X ↦ X + γ²`) gives
+
+      E'' : y² = x(x + 4)(x + γ²),
+
+whose `2`-torsion `{0, −4, −γ²}` is entirely rational.  (The constant term
+of the translate vanishes identically — verified — and `Δ ≠ 0` is
+`γ ≠ 0, ±2`, which are exactly the cusps already visible in `chainModel_Δ`.)
+
+*Step (b) — `E''` always has a rational point of order `4`, so this step
+carries no information.*  On `y² = x(x² + a''x + b'')` with
+`a'' = γ² + 4`, `b'' = 4γ²`, halving `(0,0)` needs `x² = b''`, i.e.
+`x = ±2γ`; and `y² = 2γ(2γ + 4)(2γ + γ²) = 4γ²(γ + 2)²` is a square on the
+nose, so `(2γ, 2γ(γ + 2))` and `(−2γ, 2γ(γ − 2))` are RATIONAL points of
+order `4`.  `φ(2 • h)` is one of them.  (Confirmed numerically: `E''` has
+`E''(ℚ)_tors ⊇ ℤ/4 × ℤ/2` for every `γ` tested, whether or not `E` has a
+`16`-isogeny.)
+
+*Step (c) — the halving that does carry the information.*  `φ(h)` has order
+`8` and doubles to `φ(2 • h)`.  Halving `(x₀, y₀)` on `y² = x(x² + a''x + b'')`
+splits the quartic into `x² − px + b''` with
+
+      p = 2x₀ ± 2y₀/√x₀,
+
+and stability of `⟨φ(h)⟩` makes the relevant `p` RATIONAL (same argument as
+at level `8`: the two order-`8` `x`-coordinates are a Galois-stable pair with
+product `b''`).  At `(x₀, y₀) = (2γ, 2γ(γ + 2))`,
+
+      y₀/√x₀ = 2γ(γ + 2)/√(2γ) = (γ + 2)·√(2γ),
+      p = 4γ ± 2(γ + 2)√(2γ),
+
+so `p ∈ ℚ` forces `√(2γ) ∈ ℚ`, i.e. **`2γ` is a rational square**.  Writing
+`2γ = (2v)²` gives `γ = 2v²`, which restored to weight `0` is
+`γ/δ = 2v²`, i.e. the conclusion `γ² = 4v⁴δ²`.  The `±` is the deck
+involution `v ↦ −v`, which is why the conclusion is sign-free.
+
+*FAITHFULNESS AND NON-VACUITY, checked with PARI/GP (untrusted searcher;
+the identities above are `ring`).*  For `chainModel γ 1` the isogeny-degree
+set of `E` and the squareness of `2γ` agree exactly, in both directions:
+
+      γ = 18  isog(E) = {1,2,4,8,16}   isog(E'') = {1,2,4,8}   2γ = 36 = 6²
+      γ = 1/2 isog(E) = {1,2,4,8,16}   isog(E'') = {1,2,4,8}   2γ = 1 = 1²
+      γ = 8   isog(E) = {1,2,4,8,16}   isog(E'') = {1,2,4,8}   2γ = 16 = 4²
+      γ = 50  isog(E) = {1,2,4,8,16}   isog(E'') = {1,2,4,8}   2γ = 100 = 10²
+      γ = 1   isog(E) = {1,2,4,8}      isog(E'') = {1,2,4}     2γ = 2   ✗
+      γ = 3   isog(E) = {1,2,4,8}      isog(E'') = {1,2,4}     2γ = 6   ✗
+      γ = 4   isog(E) = {1,2,4,8}      isog(E'') = {1,2,4}     2γ = 8   ✗
+      γ = 5   isog(E) = {1,2,4,8}      isog(E'') = {1,2,4}     2γ = 10  ✗
+
+So the leaf is TRUE, non-vacuous, and its hypothesis is not idle: the four
+negative controls satisfy everything except the `16`-chain and fail the
+conclusion.  (`γ = 2` is a cusp, `Δ = 0`.)
+
+*TOOLS.*  `WeierstrassCurve.exists_quotient_isogeny` (PROVEN, later in this
+file) supplies `E'`; `MazurLevel16.twoTorsionModel` and its `_c₄` / `_Δ`
+(PROVEN, above) are the model bookkeeping; `exists_rat_of_galois_fixed`
+(PROVEN, above) descends the Galois-fixed `p`; and the halving-quartic
+factorization is the `linear_combination (4 * x ^ 2) * hμ` recorded in the
+section note above `twoTorsionModel`.  The genuinely new work is
+transporting the `16`-chain along `φ` and along the translation, which is
+the same class of plumbing as
+`exists_twoTorsionChain_of_variableChange` above. -/
 theorem exists_sq_of_chainModel_stable (γ δ : ℚ) (hδ : δ ≠ 0)
     (h : ((chainModel γ δ)⁄(AlgebraicClosure ℚ)).Point)
     (hh : addOrderOf h = 16)
