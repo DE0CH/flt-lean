@@ -33050,7 +33050,188 @@ theorem setIntegral_eq_of_smulDomain_of_invariant
     integral_iUnion_ae (fun c => (hsVm c).nullMeasurableSet) hsVd (by rwa [← hVunion])]
   exact tsum_congr hterm
 
-/-- **THE Γ'-COSET TILING OF THE HECKE DOUBLE COSET** (sorry leaf — cut
+section GammaPrimeTiling
+
+open _root_.Matrix.SpecialLinearGroup _root_.CongruenceSubgroup _root_.ConjAct
+
+/-- **CONJUGATION BY `α = heckeRep q 0 = [1, 0; 0, q]`, INVERSE-FREE** (PROVEN
+2026-07-27): `α · [a, q b; c, d] = [a, b; q c, d] · α`.  Conjugation by `α`
+divides the upper-right entry by `q` and multiplies the lower-left by `q`; this
+is the equational form of that, stated so that no rational inverse ever appears
+and both directions (`α ρ α⁻¹` and `α⁻¹ ρ α`) are instances of the SAME lemma —
+read left-to-right it computes `α ρ α⁻¹` from `ρ = x`, read right-to-left it
+computes `α⁻¹ σ α` from `σ = y`. -/
+theorem heckeRep_zero_mul_mapGL_comm {q : ℕ} (hq0 : (q : ℝ) ≠ 0) {a b c d : ℤ}
+    {x y : SL(2, ℤ)}
+    (hx : (x : Matrix (Fin 2) (Fin 2) ℤ) = !![a, (q : ℤ) * b; c, d])
+    (hy : (y : Matrix (Fin 2) (Fin 2) ℤ) = !![a, b; (q : ℤ) * c, d]) :
+    heckeRep q 0 * mapGL ℝ x = mapGL ℝ y * heckeRep q 0 := by
+  ext i k
+  fin_cases i <;> fin_cases k <;>
+    · simp [heckeRep_coe hq0, mapGL_coe_matrix,
+        Matrix.SpecialLinearGroup.map_apply_coe, RingHom.mapMatrix_apply,
+        Int.coe_castRingHom, Matrix.map_apply, Matrix.mul_apply, Fin.sum_univ_two, hx, hy]
+      try push_cast
+      try ring
+
+/-- **A COSET ENUMERATION TURNS A `Γ`-DOMAIN INTO A `G`-DOMAIN** (PROVEN
+2026-07-27): if `D` is a domain for `Γ` in the hand-rolled `hcov`/`hdisj` sense
+used throughout this section, and `r : ι → Γ` is a FINITE family which
+enumerates `Γ/G` — every `γ ∈ Γ` has `r o * γ ∈ G` for some `o` (surjectivity),
+and `r p * (r o)⁻¹ ∈ G` forces `o = p` (injectivity) — then
+
+  `U = ⋃ o, r o • D`
+
+is a domain for `G`, of finite volume, and its tiles are pairwise a.e.
+disjoint (so the integral over `U` is the finite sum of the tile integrals).
+
+WHY.  Covering: given `τ`, `hcov` supplies `γ ∈ Γ` with `γ • τ ∈ D`; picking `o`
+with `ρ = r o * γ ∈ G` gives `ρ • τ ∈ r o • D ⊆ U`.  Disjointness: `(γ • U) ∩ U`
+decomposes into the pieces `(γ • r o • D) ∩ (r p • D) = r p • (((r p)⁻¹ γ r o) • D ∩ D)`,
+each of which is null by `hdisj` unless `(r p)⁻¹ γ r o = ±1`; and that equality
+forces `r p * (r o)⁻¹ = ±γ ∈ G`, hence `o = p` by injectivity, hence `γ = ±1`.
+The SAME computation at `γ = 1` gives the pairwise tile disjointness.
+
+`-1 ∈ G` is what makes the `±1` exclusions cost nothing — see
+`setIntegral_eq_of_smulDomain_of_invariant` above for why they cannot be
+dropped (`-1` acts trivially on `ℍ`, so no honest `IsFundamentalDomain`
+exists). -/
+theorem smulDomain_of_cosetReps {Γ G : Subgroup (GL (Fin 2) ℝ)} (hGΓ : G ≤ Γ)
+    (hneg : (-1 : GL (Fin 2) ℝ) ∈ G)
+    {D : Set ℍ} (hDmeas : MeasurableSet D) (hDvol : volume D ≠ ⊤)
+    (hcov : ∀ τ : ℍ, ∃ γ ∈ Γ, γ • τ ∈ D)
+    (hdisj : ∀ γ ∈ Γ, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
+    {ι : Type} [Fintype ι] (r : ι → GL (Fin 2) ℝ) (hrΓ : ∀ o, r o ∈ Γ)
+    (hfind : ∀ γ ∈ Γ, ∃ o, r o * γ ∈ G)
+    (hinj : ∀ o p : ι, r p * (r o)⁻¹ ∈ G → o = p) :
+    MeasurableSet (⋃ o, r o • D) ∧ volume (⋃ o, r o • D) ≠ ⊤ ∧
+      (∀ τ : ℍ, ∃ γ ∈ G, γ • τ ∈ ⋃ o, r o • D) ∧
+      (∀ γ ∈ G, γ ≠ 1 → γ ≠ -1 →
+        volume ((γ • (⋃ o, r o • D)) ∩ (⋃ o, r o • D)) = 0) ∧
+      Pairwise (Function.onFun (AEDisjoint volume) (fun o => r o • D)) := by
+  classical
+  have hsm : ∀ (h : GL (Fin 2) ℝ) (S : Set ℍ), MeasurableSet S → MeasurableSet (h • S) := by
+    intro h S hS
+    rw [← Set.image_smul]
+    exact (measurableEmbedding_const_smul h).measurableSet_image.mpr hS
+  have hnegmem : ∀ x ∈ G, -x ∈ G := by
+    intro x hx
+    have hmm := mul_mem hneg hx
+    rwa [neg_one_mul] at hmm
+  have hkey0 : ∀ (o p : ι) (γ : GL (Fin 2) ℝ),
+      (γ • (r o • D)) ∩ (r p • D) = r p • ((((r p)⁻¹ * (γ * r o)) • D) ∩ D) := by
+    intro o p γ
+    rw [smul_smul, Set.smul_set_inter, smul_smul, ← mul_assoc, mul_inv_cancel, one_mul]
+  have hpm : ∀ (o p : ι) (γ : GL (Fin 2) ℝ), γ ∈ G →
+      ((r p)⁻¹ * (γ * r o) = 1 ∨ (r p)⁻¹ * (γ * r o) = -1) →
+      o = p ∧ (γ = 1 ∨ γ = -1) := by
+    intro o p γ hγ hcase
+    have hrp : r p * ((r p)⁻¹ * (γ * r o)) = γ * r o := by group
+    rcases hcase with h | h
+    · rw [h, mul_one] at hrp
+      have hg : r p * (r o)⁻¹ = γ := by rw [hrp]; group
+      have hop := hinj o p (by rw [hg]; exact hγ)
+      subst hop
+      refine ⟨rfl, Or.inl ?_⟩
+      have h1 : γ * r o = 1 * r o := by rw [one_mul]; exact hrp.symm
+      exact mul_right_cancel h1
+    · rw [h, mul_neg_one] at hrp
+      have hg : -(r p * (r o)⁻¹) = γ := by rw [← neg_mul, hrp]; group
+      have hg2 : r p * (r o)⁻¹ = -γ := by rw [← hg, neg_neg]
+      have hop := hinj o p (by rw [hg2]; exact hnegmem γ hγ)
+      subst hop
+      refine ⟨rfl, Or.inr ?_⟩
+      have h1 : γ * r o = (-1 : GL (Fin 2) ℝ) * r o := by
+        rw [neg_one_mul]; exact hrp.symm
+      exact mul_right_cancel h1
+  have hmain : ∀ (o p : ι) (γ : GL (Fin 2) ℝ), γ ∈ G → γ ≠ 1 → γ ≠ -1 →
+      volume ((γ • (r o • D)) ∩ (r p • D)) = 0 := by
+    intro o p γ hγ h1 h2
+    rw [hkey0, measure_smul]
+    refine hdisj _ (mul_mem (inv_mem (hrΓ p)) (mul_mem (hGΓ hγ) (hrΓ o))) ?_ ?_
+    · intro he
+      rcases (hpm o p γ hγ (Or.inl he)).2 with h | h
+      · exact h1 h
+      · exact h2 h
+    · intro he
+      rcases (hpm o p γ hγ (Or.inr he)).2 with h | h
+      · exact h1 h
+      · exact h2 h
+  refine ⟨MeasurableSet.iUnion fun o => hsm _ _ hDmeas, ?_, ?_, ?_, ?_⟩
+  · refine ne_of_lt (lt_of_le_of_lt (measure_iUnion_le _) ?_)
+    rw [tsum_fintype]
+    refine ENNReal.sum_lt_top.mpr fun o _ => ?_
+    rw [measure_smul]
+    exact hDvol.lt_top
+  · intro τ
+    obtain ⟨γ, hγΓ, hmem⟩ := hcov τ
+    obtain ⟨o, ho⟩ := hfind γ hγΓ
+    refine ⟨r o * γ, ho, ?_⟩
+    rw [Set.mem_iUnion]
+    refine ⟨o, ?_⟩
+    rw [← smul_smul]
+    exact Set.smul_mem_smul_set hmem
+  · intro γ hγ h1 h2
+    rw [Set.smul_set_iUnion, Set.iUnion_inter]
+    refine measure_iUnion_null fun o => ?_
+    rw [Set.inter_iUnion]
+    exact measure_iUnion_null fun p => hmain o p γ hγ h1 h2
+  · intro o p hop
+    show volume ((r o • D) ∩ (r p • D)) = 0
+    have h0 := hkey0 o p 1
+    rw [one_smul] at h0
+    rw [h0, measure_smul]
+    refine hdisj _ (mul_mem (inv_mem (hrΓ p)) (by rw [one_mul]; exact hrΓ o)) ?_ ?_
+    · intro he; exact hop (hpm o p 1 (one_mem G) (Or.inl he)).1
+    · intro he; exact hop (hpm o p 1 (one_mem G) (Or.inr he)).1
+
+/-- **A `G`-DOMAIN TRANSPORTS ALONG ANY ELEMENT NORMALIZING `G`** (PROVEN
+2026-07-27): if `η G η⁻¹ ⊆ G` and `η⁻¹ G η ⊆ G`, then `η • U` is a `G`-domain
+whenever `U` is.  Covering transports by applying `hUcov` at `η⁻¹ • τ` and
+conjugating; disjointness by
+`(γ • η • U) ∩ (η • U) = η • (((η⁻¹ γ η) • U) ∩ U)` and invariance of the
+measure under the `GL₂⁺`-action.  Both inclusions are needed and neither
+follows from the other by finiteness.
+
+(The normalising element is called `etaW` in the Lean text, not `η`: this
+section is under `open scoped ModularForm`, where `η` is mathlib's RESERVED
+notation for the Dedekind eta function, and a binder named `η` is a PARSE
+error here even though it is fine elsewhere in this file.  The prose keeps
+`η`, which is what the surrounding docstrings use.) -/
+theorem smulDomain_smul_of_normalizes {G : Subgroup (GL (Fin 2) ℝ)} {U : Set ℍ}
+    {etaW : GL (Fin 2) ℝ}
+    (hn : ∀ γ ∈ G, etaW * γ * etaW⁻¹ ∈ G) (hn' : ∀ γ ∈ G, etaW⁻¹ * γ * etaW ∈ G)
+    (hUcov : ∀ τ : ℍ, ∃ γ ∈ G, γ • τ ∈ U)
+    (hUdisj : ∀ γ ∈ G, γ ≠ 1 → γ ≠ -1 → volume ((γ • U) ∩ U) = 0) :
+    (∀ τ : ℍ, ∃ γ ∈ G, γ • τ ∈ etaW • U) ∧
+      (∀ γ ∈ G, γ ≠ 1 → γ ≠ -1 → volume ((γ • (etaW • U)) ∩ (etaW • U)) = 0) := by
+  constructor
+  · intro τ
+    obtain ⟨γ, hγ, hmem⟩ := hUcov (etaW⁻¹ • τ)
+    refine ⟨etaW * γ * etaW⁻¹, hn γ hγ, ?_⟩
+    have hrw : (etaW * γ * etaW⁻¹) • τ = etaW • (γ • (etaW⁻¹ • τ)) := by
+      rw [smul_smul, smul_smul, mul_assoc]
+    rw [hrw]
+    exact Set.smul_mem_smul_set hmem
+  · intro γ hγ h1 h2
+    have hkey : (γ • (etaW • U)) ∩ (etaW • U) = etaW • (((etaW⁻¹ * γ * etaW) • U) ∩ U) := by
+      rw [smul_smul, Set.smul_set_inter, smul_smul, ← mul_assoc, ← mul_assoc,
+        mul_inv_cancel, one_mul]
+    rw [hkey, measure_smul]
+    refine hUdisj _ (hn' γ hγ) ?_ ?_
+    · intro he
+      refine h1 ?_
+      have hb : γ = etaW * (etaW⁻¹ * γ * etaW) * etaW⁻¹ := by group
+      rw [he, mul_one, mul_inv_cancel] at hb
+      exact hb
+    · intro he
+      refine h2 ?_
+      have hb : γ = etaW * (etaW⁻¹ * γ * etaW) * etaW⁻¹ := by group
+      rw [he, mul_neg_one, neg_mul, mul_inv_cancel] at hb
+      exact hb
+
+/-- **THE Γ'-COSET TILING OF THE HECKE DOUBLE COSET** (PROVEN 2026-07-27 over
+`smulDomain_of_cosetReps` and `smulDomain_smul_of_normalizes` above; cut
 2026-07-27 out of `setIntegral_heckeRep_unfold` below, which is PROVEN over it
 and over `setIntegral_eq_of_smulDomain_of_invariant` above): the two families
 of `q + 1` translates of `D` occurring in the unfolding identity are both
@@ -33122,7 +33303,13 @@ the countable group `SL(2, ℤ)`.
 FAITHFULNESS.  Every hypothesis of the consumer is present, and `hqM` is
 LOAD-BEARING: without `qu − Mv = 1` there is no `W`, `α' ∉ Γ₀(M)αΓ₀(M)`, and
 the unfolding identity is FALSE (at `q ∣ M` the operator `U_q` is genuinely
-non-self-adjoint). -/
+non-self-adjoint).
+
+NOTE ON SPELLING: `η` is written `etaW` in the proof below.  This section is
+under `open scoped ModularForm`, where `η` is mathlib's reserved notation for
+the Dedekind eta function, so a binder named `η` is a PARSE error here — even
+though `η` is used freely as an identifier earlier in this same file, outside
+that `open scoped`. -/
 theorem exists_gammaPrimeTiling {M : ℕ} (hM : 0 < M)
     {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
     (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
@@ -33147,8 +33334,409 @@ theorem exists_gammaPrimeTiling {M : ℕ} (hM : 0 < M)
               ∫ τ in (heckeRep q 0 * Matrix.SpecialLinearGroup.mapGL ℝ (heckeTMat j)) • D,
               petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ)
           + ∫ τ in (heckeRepInf q) • D,
-              petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ :=
-  sorry
+              petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ := by
+  classical
+  haveI : NeZero M := ⟨hM.ne'⟩
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  haveI hFact : Fact q.Prime := ⟨hq⟩
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hqpos : (0 : ℤ) < q := by exact_mod_cast hq.pos
+  have hsm : ∀ (h : GL (Fin 2) ℝ) (S : Set ℍ), MeasurableSet S → MeasurableSet (h • S) := by
+    intro h S hS
+    rw [← Set.image_smul]
+    exact (measurableEmbedding_const_smul h).measurableSet_image.mpr hS
+  -- `qu − Mv = 1`, solvable exactly because `q ∤ M`: THIS is where `hqM` enters.
+  obtain ⟨u, v, huv⟩ : ∃ u v : ℤ, u * q - v * M = 1 := by
+    have hcop : Nat.Coprime q M := (hq.coprime_iff_not_dvd).mpr hqM
+    have hb := Nat.gcd_eq_gcd_ab q M
+    rw [hcop] at hb
+    refine ⟨Nat.gcdA q M, -(Nat.gcdB q M), ?_⟩
+    push_cast at hb
+    linarith [hb]
+  set W : SL(2, ℤ) := ⟨!![u * q, v; (M : ℤ), 1], by
+    rw [Matrix.det_fin_two_of]; linarith [huv]⟩ with hW
+  set Dz : SL(2, ℤ) := ⟨!![u, v; (M : ℤ), (q : ℤ)], by
+    rw [Matrix.det_fin_two_of]; linarith [huv]⟩ with hDz
+  have hWmem : W ∈ Gamma0 M := by
+    rw [CongruenceSubgroup.Gamma0_mem]
+    show (((M : ℤ)) : ZMod M) = 0
+    push_cast
+    exact ZMod.natCast_self M
+  have hDzmem : Dz ∈ Gamma0 M := by
+    rw [CongruenceSubgroup.Gamma0_mem]
+    show (((M : ℤ)) : ZMod M) = 0
+    push_cast
+    exact ZMod.natCast_self M
+  have hWinv : W⁻¹ = ⟨!![1, -v; -(M : ℤ), u * q], by
+      rw [Matrix.det_fin_two_of]; linarith [huv]⟩ := by
+    rw [Matrix.SpecialLinearGroup.SL2_inv_expl]
+    ext i k
+    fin_cases i <;> fin_cases k <;> simp [hW]
+  -- `α W = D₀ α'`.
+  have hkey : heckeRep q 0 * mapGL ℝ W = mapGL ℝ Dz * heckeRepInf q := by
+    ext i k
+    fin_cases i <;> fin_cases k <;>
+      · simp [heckeRep_coe hq0, heckeRepInf_coe hq0, hW, hDz, mapGL_coe_matrix,
+          Matrix.mul_apply, Fin.sum_univ_two]
+        try ring
+  have hqv : ¬ (q : ℤ) ∣ v := by
+    intro hdv
+    have h9 : (q : ℤ) ∣ u * q := ⟨u, mul_comm _ _⟩
+    have h10 : (q : ℤ) ∣ v * M := hdv.mul_right _
+    have h11 := dvd_sub h9 h10
+    rw [huv] at h11
+    exact absurd (Int.le_of_dvd one_pos h11) (by exact_mod_cast hq.one_lt.not_ge)
+  -- `Γ' = Γ₀(M) ∩ α⁻¹Γ₀(M)α`, with its divisibility description.
+  set Gp : Subgroup (GL (Fin 2) ℝ) :=
+    Gamma0GL M ⊓ (toConjAct (heckeRep q 0)⁻¹ • Gamma0GL M) with hGp
+  have hGpiff : ∀ ρ : SL(2, ℤ), ρ ∈ Gamma0 M → (mapGL ℝ ρ ∈ Gp ↔ (q : ℤ) ∣ ρ 0 1) := by
+    intro ρ hρ
+    rw [hGp, Subgroup.mem_inf]
+    constructor
+    · rintro ⟨-, h2⟩
+      exact (heckeRep_conj_mem_iff hq hρ).mp (mem_conjAct_inv_smul_iff.mp h2)
+    · intro h
+      exact ⟨mem_Gamma0GL_iff.mpr ⟨ρ, hρ, rfl⟩,
+        mem_conjAct_inv_smul_iff.mpr ((heckeRep_conj_mem_iff hq hρ).mpr h)⟩
+  have hGpΓ : Gp ≤ Gamma0GL M := by rw [hGp]; exact inf_le_left
+  have hGpconj : ∀ γ ∈ Gp, heckeRep q 0 * γ * (heckeRep q 0)⁻¹ ∈ Gamma0GL M := by
+    intro γ hγ
+    rw [hGp, Subgroup.mem_inf] at hγ
+    exact mem_conjAct_inv_smul_iff.mp hγ.2
+  -- `-1 ∈ Γ'`: this is why the `±1` exclusions cost nothing.
+  have hnegdet : Matrix.det !![(-1 : ℤ), 0; 0, -1] = 1 := by
+    rw [Matrix.det_fin_two_of]; ring
+  have hnegSL : mapGL ℝ (⟨!![(-1 : ℤ), 0; 0, -1], hnegdet⟩ : SL(2, ℤ))
+      = (-1 : GL (Fin 2) ℝ) := by
+    ext i k
+    fin_cases i <;> fin_cases k <;>
+      simp [mapGL_coe_matrix, Matrix.SpecialLinearGroup.map_apply_coe,
+        RingHom.mapMatrix_apply, Int.coe_castRingHom, Matrix.map_apply]
+  have hnegGp : (-1 : GL (Fin 2) ℝ) ∈ Gp := by
+    rw [← hnegSL]
+    refine (hGpiff _ ?_).mpr ?_
+    · rw [CongruenceSubgroup.Gamma0_mem]
+      show (((0 : ℤ)) : ZMod M) = 0
+      simp
+    · show (q : ℤ) ∣ (0 : ℤ)
+      exact dvd_zero _
+  -- the coset representatives `γ_j⁻¹ = T^j`, `γ_∞⁻¹ = W`
+  obtain ⟨r, hrnone, hrsome⟩ : ∃ r : Option (Fin q) → GL (Fin 2) ℝ,
+      r none = mapGL ℝ W ∧
+        ∀ j : Fin q, r (some j) = mapGL ℝ (heckeTMat ((j : ℕ) : ℤ)) :=
+    ⟨fun o => Option.elim o (mapGL ℝ W) (fun j => mapGL ℝ (heckeTMat ((j : ℕ) : ℤ))),
+      rfl, fun _ => rfl⟩
+  have hrΓ : ∀ o, r o ∈ Gamma0GL M := by
+    rintro (_ | j)
+    · rw [hrnone]; exact mem_Gamma0GL_iff.mpr ⟨W, hWmem, rfl⟩
+    · rw [hrsome]; exact mem_Gamma0GL_iff.mpr ⟨_, heckeTMat_mem_Gamma0 M _, rfl⟩
+  -- SURJECTIVITY of the enumeration (the `hfind`/`hsurj` case split).
+  have hfind : ∀ γ ∈ Gamma0GL M, ∃ o, r o * γ ∈ Gp := by
+    intro γ hγ
+    obtain ⟨δ, hδ, hδeq⟩ := mem_Gamma0GL_iff.mp hγ
+    by_cases hqd : (q : ℤ) ∣ δ 1 1
+    · refine ⟨none, ?_⟩
+      have hmul : r none * γ = mapGL ℝ (W * δ) := by rw [map_mul, hδeq, hrnone]
+      rw [hmul]
+      refine (hGpiff _ (mul_mem hWmem hδ)).mpr ?_
+      have hval : (W * δ) 0 1 = u * q * δ 0 1 + v * δ 1 1 := by
+        rw [SL2_mul_apply_zero_one]; simp [hW]
+      rw [hval]
+      exact dvd_add ⟨u * δ 0 1, by ring⟩ (hqd.mul_left v)
+    · have hdbar : ((δ 1 1 : ℤ) : ZMod q) ≠ 0 := by
+        rwa [Ne, ZMod.intCast_zmod_eq_zero_iff_dvd]
+      refine ⟨some ⟨(-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val,
+        ZMod.val_lt _⟩, ?_⟩
+      have hmul : r (some ⟨(-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val,
+            ZMod.val_lt _⟩) * γ
+          = mapGL ℝ (heckeTMat
+              (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ) := by
+        rw [map_mul, hδeq, hrsome]
+      rw [hmul]
+      refine (hGpiff _ (mul_mem (heckeTMat_mem_Gamma0 M _) hδ)).mpr ?_
+      have hval : (heckeTMat
+            (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ) 0 1
+          = δ 0 1 +
+            (((-((δ 0 1 : ℤ) : ZMod q) * ((δ 1 1 : ℤ) : ZMod q)⁻¹).val : ℕ) : ℤ) * δ 1 1 := by
+        rw [SL2_mul_apply_zero_one]
+        simp [heckeTMat]
+      rw [hval, ← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      push_cast
+      rw [ZMod.natCast_val, ZMod.cast_id]
+      field_simp
+      ring
+  -- INJECTIVITY of the enumeration (`hEinj`/`hmix`: `q ∤ (j − k)` and `q ∤ v`).
+  have hinj : ∀ o p : Option (Fin q), r p * (r o)⁻¹ ∈ Gp → o = p := by
+    rintro (_ | j) (_ | k) h
+    · rfl
+    · exfalso
+      have hmul : r (some k) * (r none)⁻¹ = mapGL ℝ (heckeTMat ((k : ℕ) : ℤ) * W⁻¹) := by
+        rw [map_mul, map_inv, hrsome, hrnone]
+      rw [hmul] at h
+      have hd := (hGpiff _ (mul_mem (heckeTMat_mem_Gamma0 M _) (inv_mem hWmem))).mp h
+      have hval : (heckeTMat ((k : ℕ) : ℤ) * W⁻¹) 0 1 = -v + ((k : ℕ) : ℤ) * (u * q) := by
+        rw [hWinv, SL2_mul_apply_zero_one]
+        simp [heckeTMat]
+      rw [hval] at hd
+      refine hqv ?_
+      have h7 : (q : ℤ) ∣ ((k : ℕ) : ℤ) * (u * q) := ⟨((k : ℕ) : ℤ) * u, by ring⟩
+      have h8 := dvd_sub h7 hd
+      have h9 : ((k : ℕ) : ℤ) * (u * q) - (-v + ((k : ℕ) : ℤ) * (u * q)) = v := by ring
+      rwa [h9] at h8
+    · exfalso
+      have hmul : r none * (r (some j))⁻¹ = mapGL ℝ (W * (heckeTMat ((j : ℕ) : ℤ))⁻¹) := by
+        rw [map_mul, map_inv, hrsome, hrnone]
+      rw [hmul] at h
+      have hd := (hGpiff _ (mul_mem hWmem (inv_mem (heckeTMat_mem_Gamma0 M _)))).mp h
+      have hval : (W * (heckeTMat ((j : ℕ) : ℤ))⁻¹) 0 1
+          = u * q * (-((j : ℕ) : ℤ)) + v := by
+        rw [heckeTMat_inv, SL2_mul_apply_zero_one]
+        simp [hW, heckeTMat]
+      rw [hval] at hd
+      refine hqv ?_
+      have h7 : (q : ℤ) ∣ u * q * (-((j : ℕ) : ℤ)) := ⟨u * (-((j : ℕ) : ℤ)), by ring⟩
+      have h8 := dvd_sub hd h7
+      have h9 : u * q * (-((j : ℕ) : ℤ)) + v - u * q * (-((j : ℕ) : ℤ)) = v := by ring
+      rwa [h9] at h8
+    · have hmul : r (some k) * (r (some j))⁻¹
+          = mapGL ℝ (heckeTMat (((k : ℕ) : ℤ) - ((j : ℕ) : ℤ))) := by
+        rw [hrsome, hrsome, ← map_inv, ← map_mul, heckeTMat_inv, heckeTMat_mul,
+          ← sub_eq_add_neg]
+      rw [hmul] at h
+      have hd := (hGpiff _ (heckeTMat_mem_Gamma0 M _)).mp h
+      have hd' : (q : ℤ) ∣ ((k : ℕ) : ℤ) - ((j : ℕ) : ℤ) := by simpa [heckeTMat] using hd
+      obtain ⟨t, ht⟩ := hd'
+      have hjq : ((j : ℕ) : ℤ) < q := by exact_mod_cast j.isLt
+      have hkq : ((k : ℕ) : ℤ) < q := by exact_mod_cast k.isLt
+      have hj0 : (0 : ℤ) ≤ ((j : ℕ) : ℤ) := Int.natCast_nonneg _
+      have hk0 : (0 : ℤ) ≤ ((k : ℕ) : ℤ) := Int.natCast_nonneg _
+      have h1 : t < 1 := by
+        by_contra hcon
+        have hcon' : (1 : ℤ) ≤ t := not_lt.mp hcon
+        have h2 : (q : ℤ) * 1 ≤ q * t := mul_le_mul_of_nonneg_left hcon' hqpos.le
+        linarith
+      have h3 : -1 < t := by
+        by_contra hcon
+        have hcon' : t ≤ -1 := not_lt.mp hcon
+        have h4 : (q : ℤ) * t ≤ q * (-1) := mul_le_mul_of_nonneg_left hcon' hqpos.le
+        linarith
+      have ht0 : t = 0 := by omega
+      rw [ht0, mul_zero] at ht
+      have hjk : ((j : ℕ) : ℤ) = ((k : ℕ) : ℤ) := by linarith
+      exact congrArg some (Fin.ext (by exact_mod_cast hjk))
+  -- entries of a `Γ'`-element: `ρ = [a, qb; Mc, d]`.
+  have hentries : ∀ γ ∈ Gp, ∃ (ρ : SL(2, ℤ)) (a b c d : ℤ),
+      mapGL ℝ ρ = γ ∧ ρ ∈ Gamma0 M ∧
+      (ρ : Matrix (Fin 2) (Fin 2) ℤ) = !![a, (q : ℤ) * b; (M : ℤ) * c, d] := by
+    intro γ hγ
+    obtain ⟨ρ, hρ, hρeq⟩ := mem_Gamma0GL_iff.mp (hGpΓ hγ)
+    have hb : (q : ℤ) ∣ ρ 0 1 := (hGpiff ρ hρ).mp (by rw [hρeq]; exact hγ)
+    have hc : ((M : ℤ)) ∣ ρ 1 0 := by
+      have hg := hρ
+      rw [CongruenceSubgroup.Gamma0_mem] at hg
+      rwa [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+    obtain ⟨b, hbe⟩ := hb
+    obtain ⟨c, hce⟩ := hc
+    refine ⟨ρ, ρ 0 0, b, c, ρ 1 1, hρeq, hρ, ?_⟩
+    conv_lhs => rw [Matrix.eta_fin_two (ρ : Matrix (Fin 2) (Fin 2) ℤ)]
+    rw [hbe, hce]
+  -- `η = W α` NORMALIZES `Γ'` — both inclusions, each inverse-free.
+  set etaW : GL (Fin 2) ℝ := mapGL ℝ W * heckeRep q 0 with hetaW
+  have hN1 : ∀ γ ∈ Gp, etaW * γ * etaW⁻¹ ∈ Gp := by
+    intro γ hγ
+    obtain ⟨ρ, a, b, c, d, hρeq, hρmem, hρmat⟩ := hentries γ hγ
+    have hdetρ : a * d - (q : ℤ) * b * ((M : ℤ) * c) = 1 := by
+      have h2 := ρ.2
+      rw [hρmat, Matrix.det_fin_two_of] at h2
+      exact h2
+    have hdetε : Matrix.det !![a, b; (q : ℤ) * ((M : ℤ) * c), d] = 1 := by
+      rw [Matrix.det_fin_two_of]; linear_combination hdetρ
+    set ε : SL(2, ℤ) := ⟨!![a, b; (q : ℤ) * ((M : ℤ) * c), d], hdetε⟩ with hε
+    have hαρ : heckeRep q 0 * mapGL ℝ ρ = mapGL ℝ ε * heckeRep q 0 :=
+      heckeRep_zero_mul_mapGL_comm hq0 hρmat (by rw [hε])
+    have hεmem : ε ∈ Gamma0 M := by
+      rw [CongruenceSubgroup.Gamma0_mem, hε]
+      show (((q : ℤ) * ((M : ℤ) * c) : ℤ) : ZMod M) = 0
+      push_cast
+      simp
+    have hconj : etaW * γ * etaW⁻¹ = mapGL ℝ (W * ε * W⁻¹) := by
+      rw [map_mul, map_mul, map_inv, hetaW, ← hρeq]
+      calc mapGL ℝ W * heckeRep q 0 * mapGL ℝ ρ * (mapGL ℝ W * heckeRep q 0)⁻¹
+          = mapGL ℝ W * (heckeRep q 0 * mapGL ℝ ρ) * (heckeRep q 0)⁻¹ * (mapGL ℝ W)⁻¹ := by
+            rw [mul_inv_rev]; group
+        _ = mapGL ℝ W * (mapGL ℝ ε * heckeRep q 0) * (heckeRep q 0)⁻¹ * (mapGL ℝ W)⁻¹ := by
+            rw [hαρ]
+        _ = mapGL ℝ W * mapGL ℝ ε * (mapGL ℝ W)⁻¹ := by group
+    rw [hconj]
+    refine (hGpiff _ (mul_mem (mul_mem hWmem hεmem) (inv_mem hWmem))).mpr ?_
+    have hval : (W * ε * W⁻¹) 0 1
+        = (q : ℤ) * (-(u * v * a) - v ^ 2 * ((M : ℤ) * c) + u ^ 2 * q * b + u * v * d) := by
+      simp [Matrix.SpecialLinearGroup.coe_mul, hW, hε, Matrix.mul_apply,
+        Fin.sum_univ_two]
+      ring
+    rw [hval]
+    exact dvd_mul_right _ _
+  have hN2 : ∀ γ ∈ Gp, etaW⁻¹ * γ * etaW ∈ Gp := by
+    intro γ hγ
+    obtain ⟨ρ, a, b, c, d, hρeq, hρmem, hρmat⟩ := hentries γ hγ
+    set kk : ℤ := -(u * M * a) + u ^ 2 * q * ((M : ℤ) * c) - (M : ℤ) ^ 2 * b + u * M * d
+      with hkk
+    set ε₂ : SL(2, ℤ) := W⁻¹ * ρ * W with hε₂
+    have hε₂mem : ε₂ ∈ Gamma0 M := mul_mem (mul_mem (inv_mem hWmem) hρmem) hWmem
+    have hε₂10 : (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 = (q : ℤ) * kk := by
+      rw [hε₂, hkk]
+      simp [Matrix.SpecialLinearGroup.coe_mul, hW, hρmat, Matrix.mul_apply,
+        Fin.sum_univ_two]
+      ring
+    have hdet2 : (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 0 * (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 1 1
+        - (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * ((q : ℤ) * kk) = 1 := by
+      have h2 := ε₂.2
+      rw [Matrix.det_fin_two] at h2
+      rw [← hε₂10]
+      exact h2
+    have hdet3 : Matrix.det !![(ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 0,
+        (q : ℤ) * (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 1;
+        kk, (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 1 1] = 1 := by
+      rw [Matrix.det_fin_two_of]; linear_combination hdet2
+    set ρ'' : SL(2, ℤ) := ⟨!![(ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 0,
+      (q : ℤ) * (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 1;
+      kk, (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 1 1], hdet3⟩ with hρ''
+    have hε₂mat : (ε₂ : Matrix (Fin 2) (Fin 2) ℤ)
+        = !![(ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 0, (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 1;
+            (q : ℤ) * kk, (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 1 1] := by
+      conv_lhs => rw [Matrix.eta_fin_two (ε₂ : Matrix (Fin 2) (Fin 2) ℤ)]
+      rw [hε₂10]
+    have hαρ'' : heckeRep q 0 * mapGL ℝ ρ'' = mapGL ℝ ε₂ * heckeRep q 0 :=
+      heckeRep_zero_mul_mapGL_comm hq0 (by rw [hρ'']) hε₂mat
+    have hmapε₂ : mapGL ℝ ε₂ = (mapGL ℝ W)⁻¹ * mapGL ℝ ρ * mapGL ℝ W := by
+      rw [hε₂, map_mul, map_mul, map_inv]
+    have hconj : etaW⁻¹ * γ * etaW = mapGL ℝ ρ'' := by
+      have h1 : heckeRep q 0 * (etaW⁻¹ * γ * etaW) = mapGL ℝ ε₂ * heckeRep q 0 := by
+        rw [hmapε₂, hetaW, ← hρeq]
+        group
+      rw [← hαρ''] at h1
+      exact mul_left_cancel h1
+    have hMkk : ((M : ℤ)) ∣ kk := by
+      rw [hkk]
+      exact ⟨-(u * a) + u ^ 2 * q * c - (M : ℤ) * b + u * d, by ring⟩
+    rw [hconj]
+    refine (hGpiff _ ?_).mpr ?_
+    · rw [CongruenceSubgroup.Gamma0_mem, hρ'']
+      show ((kk : ℤ) : ZMod M) = 0
+      exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mpr hMkk
+    · rw [hρ'']
+      show (q : ℤ) ∣ (q : ℤ) * (ε₂ : Matrix (Fin 2) (Fin 2) ℤ) 0 1
+      exact dvd_mul_right _ _
+  obtain ⟨hUm, hUvol, hUcov, hUdisj, hUpw⟩ :=
+    smulDomain_of_cosetReps hGpΓ hnegGp hDmeas hDvol hcov hdisj r hrΓ hfind hinj
+  obtain ⟨hVcov, hVdisj⟩ := smulDomain_smul_of_normalizes hN1 hN2 hUcov hUdisj
+  have hint : ∀ E : Set ℍ, volume E ≠ ⊤ →
+      IntegrableOn (petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0)) E volume := by
+    intro E hE
+    have h := peterssonIntegrableOn_slash hM hE f g
+      (by simp : (0 : ℝ) < (1 : GL (Fin 2) ℝ).det.val) (det_heckeRep_pos hq 0)
+    rwa [SlashAction.slash_one (2 : ℤ) ⇑g] at h
+  have hadditive : ∀ s : Option (Fin q) → Set ℍ, (∀ o, MeasurableSet (s o)) →
+      Pairwise (Function.onFun (AEDisjoint volume) s) →
+      IntegrableOn (petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0)) (⋃ o, s o) volume →
+      (∫ τ in ⋃ o, s o, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        = ∑ o, ∫ τ in s o, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ := by
+    intro s hm hd hi
+    rw [integral_iUnion_ae (fun o => (hm o).nullMeasurableSet) hd hi, tsum_fintype]
+  have hWΓ : mapGL ℝ W ∈ Gamma0GL M := mem_Gamma0GL_iff.mpr ⟨W, hWmem, rfl⟩
+  -- `H ∘ W = L`, in the form `f∣(αW) = f∣α'`.
+  have hslashW : (⇑f ∣[(2 : ℤ)] (heckeRep q 0 * mapGL ℝ W)) = ⇑f ∣[(2 : ℤ)] heckeRepInf q := by
+    rw [hkey, SlashAction.slash_mul,
+      SlashInvariantFormClass.slash_action_eq f (mapGL ℝ Dz)
+        (mem_Gamma0GL_iff.mpr ⟨Dz, hDzmem, rfl⟩)]
+  have hWmove : ∀ S : Set ℍ,
+      (∫ τ in (mapGL ℝ W) • S, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        = ∫ τ in S, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ := by
+    intro S
+    rw [← setIntegral_petersson_slash_mul_right f g (heckeRep q 0) hWΓ S, hslashW]
+  -- `W D₀ ∈ Γ'` (lower-left `M(u+1)`, upper-right `vq(u+1)`).
+  have hWDzGp : mapGL ℝ (W * Dz) ∈ Gp := by
+    refine (hGpiff _ (mul_mem hWmem hDzmem)).mpr ?_
+    have hval : (W * Dz) 0 1 = (q : ℤ) * (v * (u + 1)) := by
+      rw [SL2_mul_apply_zero_one]
+      simp [hW, hDz]
+      ring
+    rw [hval]
+    exact dvd_mul_right _ _
+  have hWDzΓ : mapGL ℝ (W * Dz) ∈ Gamma0GL M := hGpΓ hWDzGp
+  have hslashWDz : (⇑f ∣[(2 : ℤ)] (heckeRep q 0 * mapGL ℝ (W * Dz)))
+      = ⇑f ∣[(2 : ℤ)] heckeRep q 0 := by
+    have hc := hGpconj _ hWDzGp
+    have hrw : heckeRep q 0 * mapGL ℝ (W * Dz)
+        = heckeRep q 0 * mapGL ℝ (W * Dz) * (heckeRep q 0)⁻¹ * heckeRep q 0 := by group
+    rw [hrw, SlashAction.slash_mul, SlashInvariantFormClass.slash_action_eq f _ hc]
+  have hWDzmove : ∀ S : Set ℍ,
+      (∫ τ in (mapGL ℝ (W * Dz)) • S, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        = ∫ τ in S, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ := by
+    intro S
+    rw [← setIntegral_petersson_slash_mul_right f g (heckeRep q 0) hWDzΓ S, hslashWDz]
+  have hVeq : etaW • (⋃ o, r o • D) = ⋃ o, (etaW * r o) • D := by
+    rw [Set.smul_set_iUnion]
+    exact Set.iUnion_congr fun o => by rw [smul_smul]
+  have hVpw : Pairwise (Function.onFun (AEDisjoint volume) (fun o => (etaW * r o) • D)) := by
+    intro o p hop
+    show volume (((etaW * r o) • D) ∩ ((etaW * r p) • D)) = 0
+    have hrw : ((etaW * r o) • D) ∩ ((etaW * r p) • D) = etaW • ((r o • D) ∩ (r p • D)) := by
+      rw [Set.smul_set_inter, smul_smul, smul_smul]
+    rw [hrw, measure_smul]
+    exact hUpw hop
+  have hVm : MeasurableSet (etaW • (⋃ o, r o • D)) := hsm _ _ hUm
+  have hVvol : volume (etaW • (⋃ o, r o • D)) ≠ ⊤ := by rw [measure_smul]; exact hUvol
+  have htilenone : etaW * r none = mapGL ℝ (W * Dz) * heckeRepInf q := by
+    rw [hrnone, hetaW, mul_assoc, hkey, ← mul_assoc, ← map_mul]
+  have htilesome : ∀ j : Fin q,
+      etaW * r (some j) = mapGL ℝ W * (heckeRep q 0 * mapGL ℝ (heckeTMat ((j : ℕ) : ℤ))) := by
+    intro j
+    rw [hrsome, hetaW, mul_assoc]
+  refine ⟨Gp, ⋃ o, r o • D, etaW • (⋃ o, r o • D), ?_, ?_, hUm, hUvol, hUcov, hUdisj,
+    hVm, hVvol, hVcov, hVdisj, ?_, ?_⟩
+  · haveI hcountSL : Countable SL(2, ℤ) := by
+      have hinjc : Function.Injective
+          (fun A : SL(2, ℤ) => (fun i j => (A : Matrix (Fin 2) (Fin 2) ℤ) i j :
+            Fin 2 → Fin 2 → ℤ)) := by
+        intro A B hAB
+        refine Subtype.ext ?_
+        ext i k
+        exact congrFun (congrFun hAB i) k
+      exact hinjc.countable
+    have hc : (Gamma0GL M : Set (GL (Fin 2) ℝ)).Countable := by
+      refine Set.Countable.mono (fun x hx => ?_)
+        (Set.countable_range (fun δ : SL(2, ℤ) => mapGL ℝ δ))
+      obtain ⟨δ, -, hδ⟩ := mem_Gamma0GL_iff.mp hx
+      exact ⟨δ, hδ⟩
+    exact (Set.Countable.mono (fun x hx => hGpΓ hx) hc).to_subtype
+  · intro γ hγ
+    exact ⟨hGpΓ hγ, hGpconj γ hγ⟩
+  · rw [hadditive _ (fun o => hsm _ _ hDmeas) hUpw (hint _ hUvol), Fintype.sum_option,
+      hrnone, hWmove D]
+    have hsum : (∑ j : Fin q,
+          ∫ τ in r (some j) • D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        = ∑ j ∈ Finset.range q, ∫ τ in (mapGL ℝ (heckeTMat (j : ℤ))) • D,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ := by
+      rw [← Fin.sum_univ_eq_sum_range]
+      exact Finset.sum_congr rfl fun j _ => by rw [hrsome]
+    rw [hsum]
+    exact add_comm _ _
+  · rw [hVeq, hadditive _ (fun o => hsm _ _ hDmeas) hVpw
+      (by rw [← hVeq]; exact hint _ hVvol), Fintype.sum_option, htilenone, ← smul_smul,
+      hWDzmove]
+    have hsum : (∑ j : Fin q,
+          ∫ τ in (etaW * r (some j)) • D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q 0) τ)
+        = ∑ j ∈ Finset.range q,
+            ∫ τ in (heckeRep q 0 * mapGL ℝ (heckeTMat (j : ℤ))) • D,
+              petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ := by
+      rw [← Fin.sum_univ_eq_sum_range]
+      refine Finset.sum_congr rfl fun j _ => ?_
+      rw [htilesome, ← smul_smul, hWmove]
+    rw [hsum]
+    exact add_comm _ _
+
+end GammaPrimeTiling
 
 /-- **THE α-TILING IDENTITY** (PROVEN 2026-07-27 over
 `setIntegral_eq_of_smulDomain_of_invariant` and `exists_gammaPrimeTiling`
@@ -33228,7 +33816,7 @@ theorem setIntegral_alphaTiling {M : ℕ} (hM : 0 < M)
 
 /-- **THE UNFOLDING IDENTITY** (PROVEN 2026-07-27 over `setIntegral_alphaTiling`
 above, itself proven over `setIntegral_eq_of_smulDomain_of_invariant` and the
-single surviving leaf `exists_gammaPrimeTiling`; cut 2026-07-27 out of
+coset tiling `exists_gammaPrimeTiling`, which is now PROVEN too; cut 2026-07-27 out of
 `peterssonSelfAdjoint_of_gamma0FundamentalDomain` below, which is PROVEN over
 it and over `peterssonIntegrableOn_slash`): ALL of the remaining content of
 Diamond–Shurman Theorem 5.5.3, and the only place the fundamental-domain
@@ -33335,11 +33923,13 @@ The four steps, as actually realised in the proof below:
 3. (PROVEN, `slash_two_of_coe_eq_smul_one`) at weight `2` scalars act trivially,
    so `α⁻¹` is the INTEGRAL adjugate `α' = det(α)·α⁻¹ = heckeRepInf q`
    (`slash_heckeRep_zero_inv`, `slash_heckeRepInf_inv`).
-4. (LEAF, `exists_gammaPrimeTiling`) the group theory and the finite
-   additivity: `U` and `η • U` are `Γ'`-domains and the two tilings compute the
-   two sides.  See that leaf's docstring for the explicit witnesses — `Γ'`, the
-   Bézout matrices `W`, `D₀`, the normalising `η = Wα` and its conjugation
-   formula — all of which are recorded there in full.
+4. (PROVEN 2026-07-27, `exists_gammaPrimeTiling`) the group theory and the
+   finite additivity: `U` and `η • U` are `Γ'`-domains and the two tilings
+   compute the two sides.  See that node's docstring for the explicit
+   witnesses — `Γ'`, the Bézout matrices `W`, `D₀`, the normalising `η = Wα`
+   and its conjugation formula — all of which are recorded there in full, and
+   the two general lemmas `smulDomain_of_cosetReps` /
+   `smulDomain_smul_of_normalizes` above it, which carry the tiling argument.
 
 The arithmetic input `α' ∈ ΓαΓ` is `qu − Mv = 1`, solvable exactly at `q ∤ M`
 — which is where `hqM` enters and why the identity fails at `q ∣ M`. -/
@@ -33536,9 +34126,10 @@ property `exists_mem_gamma0Domain` and the a.e.-disjointness
 `volume_smul_inter_gamma0Domain_eq_zero` (PROVEN 2026-07-27).
 
 CURRENT LEAF INVENTORY BELOW THIS NODE (2026-07-27, updated).  The whole
-subtree is now proven except for the SINGLE leaf `exists_gammaPrimeTiling`
-(the coset tiling, which is where `hcov`, `hdisj` and `q ∤ M` are consumed).
-`setIntegral_heckeRep_unfold` itself is now PROVEN, over that leaf and over
+subtree is now PROVEN — `exists_gammaPrimeTiling` (the coset tiling, which is
+where `hcov`, `hdisj` and `q ∤ M` are consumed) closed 2026-07-27 over the two
+general lemmas `smulDomain_of_cosetReps` and `smulDomain_smul_of_normalizes`.
+`setIntegral_heckeRep_unfold` itself is PROVEN, over that node and over
 the general two-domain comparison
 `setIntegral_eq_of_smulDomain_of_invariant` (also PROVEN — the
 measure-theoretic core, which sidesteps
@@ -33548,7 +34139,7 @@ pieces over `Γ'/±` rather than over `Γ'`).  Its sibling
 equals `|g|·y` at another point, so the constant from
 `CuspFormClass.petersson_bounded_left` is reused verbatim).  The geometry,
 the measurability of the domain (`measurableSet_gamma0Domain`) and ALL of the
-weight-2 analysis are done.  What remains at `exists_gammaPrimeTiling` is
+weight-2 analysis are done.  What `exists_gammaPrimeTiling` supplied is
 pure group theory (`Γ' = Γ₀(M) ∩ Γ⁰(q)`, the Bézout matrices, and that
 `η = Wα` normalizes `Γ'`) plus finite additivity over the tiles.
 
