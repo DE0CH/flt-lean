@@ -28409,7 +28409,73 @@ theorem exists_mem_gamma0Domain (M : ℕ) (τ : ℍ) :
   rw [hact, mul_smul]
   exact Set.mem_iUnion.mpr ⟨c, Set.smul_mem_smul_set hg⟩
 
-/-- **A.E.-DISJOINTNESS OF THE `Γ₀(M)` DOMAIN** (sorry leaf — cut 2026-07-26
+/-- **A VERTICAL LINE IN `ℂ` IS LEBESGUE-NULL** (PROVEN 2026-07-27):
+`volume {z : ℂ | z.re = c} = 0`.
+
+Transport by `Complex.volume_preserving_equiv_real_prod` — the same route
+`lintegral_strip_lt_top` above takes — turns the line into `{c} ×ˢ univ` in
+`ℝ × ℝ`, whose product measure is `0 * ⊤ = 0`.  (`Measure.addHaar_submodule`
+applied to `LinearMap.ker Complex.reLm`, plus a translation, is an equally
+short alternative; the transport route is used here because the
+`measurableEquivRealProd` machinery is already in scope.) -/
+theorem volume_complex_re_eq_zero (c : ℝ) : volume {z : ℂ | z.re = c} = 0 := by
+  have h : {z : ℂ | z.re = c}
+      = Complex.measurableEquivRealProd ⁻¹' (({c} : Set ℝ) ×ˢ (Set.univ : Set ℝ)) := by
+    ext z
+    simp [Complex.measurableEquivRealProd]
+  rw [h, Complex.volume_preserving_equiv_real_prod.measure_preimage
+      ((measurableSet_singleton c).prod MeasurableSet.univ).nullMeasurableSet,
+    Measure.volume_eq_prod, Measure.prod_prod]
+  simp
+
+/-- **THE BOUNDARY OF THE MODULAR DOMAIN IS NULL** (PROVEN 2026-07-27 — this
+was recorded as "THE ONE MISSING FACT" of the a.e.-disjointness leaf below, and
+it is the only measure-theoretic input that leaf needs):
+`volume (𝒟 \ 𝒟ᵒ) = 0` for the invariant measure `dx dy / y²` on `ℍ`.
+
+`𝒟 = {1 ≤ normSq z, |re z| ≤ 1/2}` and `𝒟ᵒ` is the same with both
+inequalities strict, so a point of `𝒟 \ 𝒟ᵒ` has `normSq z = 1` or
+`|re z| = 1/2` — i.e. its image in `ℂ` lies on the unit circle or on one of the
+two vertical lines `re = ±1/2`.  The circle is null by
+`Measure.addHaar_sphere` and the lines by `volume_complex_re_eq_zero`, and
+`UpperHalfPlane.volume_eq_lintegral` (the same bridge
+`volume_modularFd_ne_top` uses) turns a null image in `ℂ` into a null set in
+`ℍ` through `setLIntegral_measure_zero`: the density `1/y²` is irrelevant once
+the underlying planar set is null. -/
+theorem volume_modularFd_sdiff_fdo_eq_zero :
+    volume (ModularGroup.fd \ ModularGroup.fdo) = 0 := by
+  rw [UpperHalfPlane.volume_eq_lintegral]
+  refine setLIntegral_measure_zero _ _ ?_
+  have hsub : ((↑) '' (ModularGroup.fd \ ModularGroup.fdo) : Set ℂ) ⊆
+      Metric.sphere (0 : ℂ) 1 ∪ ({z : ℂ | z.re = 1/2} ∪ {z : ℂ | z.re = -(1/2)}) := by
+    rintro _ ⟨z, ⟨hz, hzo⟩, rfl⟩
+    obtain ⟨hz1, hz2⟩ := hz
+    rw [ModularGroup.fdo, Set.mem_setOf_eq, not_and_or, not_lt, not_lt] at hzo
+    rcases hzo with hno | hre
+    · left
+      have hns : Complex.normSq (z : ℂ) = 1 := le_antisymm hno hz1
+      have h2 : ‖(z : ℂ)‖ ^ 2 = 1 := by rw [← Complex.normSq_eq_norm_sq]; exact hns
+      have hnorm : ‖(z : ℂ)‖ = 1 := by nlinarith [norm_nonneg ((z : ℂ))]
+      simpa [Metric.mem_sphere] using hnorm
+    · right
+      have habs : |(z : ℂ).re| = 1/2 := le_antisymm hz2 hre
+      rcases (abs_eq (by norm_num : (0:ℝ) ≤ 1/2)).mp habs with h | h
+      · exact Or.inl h
+      · exact Or.inr h
+  refine measure_mono_null hsub ?_
+  rw [measure_union_null_iff, measure_union_null_iff]
+  exact ⟨Measure.addHaar_sphere volume _ _, volume_complex_re_eq_zero _,
+    volume_complex_re_eq_zero _⟩
+
+/-- `x ∈ g⁻¹ • s ↔ g • x ∈ s` for the `SL(2,ℤ)`-action on `ℍ`, in the exact
+shape the coset bookkeeping below consumes. -/
+theorem mem_inv_smul_set_upperHalfPlane_iff (g : SL(2, ℤ)) (s : Set ℍ) (x : ℍ) :
+    x ∈ g⁻¹ • s ↔ g • x ∈ s := by
+  constructor
+  · rintro ⟨y, hy, rfl⟩; simpa using hy
+  · intro hx; exact ⟨g • x, hx, by simp⟩
+
+/-- **A.E.-DISJOINTNESS OF THE `Γ₀(M)` DOMAIN** (PROVEN 2026-07-27 — cut 2026-07-26
 out of `exists_peterssonDomain` below, together with
 `peterssonSelfAdjoint_of_gamma0FundamentalDomain`): distinct `Γ₀(M)`-translates
 of `gamma0Domain M` meet in a null set, once the two elements acting trivially
@@ -28439,19 +28505,90 @@ then `γ_c h⁻¹ γ_c⁻¹ = ±1`, i.e. `h = ±1` — excluded.  So the interse
 contained in `⋃_{c'} γ_{c'}⁻¹ (𝒟 \ 𝒟ᵒ)`, a finite union of translates of the
 BOUNDARY of `𝒟`.
 
-THE ONE MISSING FACT is therefore `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the
-modular domain is null.  `ModularGroup.fdo_eq_interior_fd` and
-`ModularGroup.isClosed_fd` identify `𝒟 \ 𝒟ᵒ` with `frontier 𝒟`; the boundary is
-contained in the union of the vertical lines `re z = ±1/2` and the unit circle
-`|z| = 1`, each of which is null for planar Lebesgue measure (and hence, being
-a set of the same null sets, for `volume` on `ℍ` — the density is finite and
-strictly positive there).  `volume_modularFd_ne_top` above is the model for how
-to move between `volume` on `ℍ` and Lebesgue measure on `ℂ`
-(`UpperHalfPlane.volume_eq_lintegral`). -/
+THE ONE MISSING FACT was `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the modular
+domain is null — and it is now PROVEN just above as
+`volume_modularFd_sdiff_fdo_eq_zero`: the boundary is contained in the union of
+the vertical lines `re z = ±1/2` and the unit circle `|z| = 1`, each null for
+planar Lebesgue measure, and `UpperHalfPlane.volume_eq_lintegral` moves that to
+`volume` on `ℍ`.  With it the leaf closes, and the proof below is exactly the
+plan above.
+
+ON THE `±1` BOOKKEEPING, which is the one place care is needed.  `ε = ±1` is
+CENTRAL in `SL(2,ℤ)` (`Matrix.SpecialLinearGroup.instHasDistribNeg` gives
+`(-1) * x = -x = x * (-1)`) and lies in `Γ₀(M)` (`-I` has lower-left entry `0`).
+Both facts are used twice: to turn `γ_c h⁻¹ γ_{c'}⁻¹ = ε` into
+`γ_{c'}⁻¹ γ_c = h ε ∈ Γ₀(M)`, hence `c = c'` by `QuotientGroup.eq`; and then to
+collapse `γ_c h⁻¹ γ_c⁻¹ = ε` to `h⁻¹ = ε`, i.e. `h = ε ∈ {1, -1}` — the excluded
+case.  Handling `ε = 1` and `ε = -1` uniformly through those three properties
+(`ε ∈ Γ₀(M)`, centrality, `ε² = 1`) is what keeps the two branches from
+duplicating. -/
 theorem volume_smul_inter_gamma0Domain_eq_zero {M : ℕ} (hM : 0 < M)
     {γ : GL (Fin 2) ℝ} (hγ : γ ∈ Gamma0GL M) (h1 : γ ≠ 1) (h2 : γ ≠ -1) :
-    volume ((γ • gamma0Domain M) ∩ gamma0Domain M) = 0 :=
-  sorry
+    volume ((γ • gamma0Domain M) ∩ gamma0Domain M) = 0 := by
+  classical
+  haveI : NeZero M := ⟨hM.ne'⟩
+  haveI : Countable (SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) := Finite.to_countable
+  have hmapneg : Matrix.SpecialLinearGroup.mapGL ℝ (-1 : SL(2, ℤ)) = (-1 : GL (Fin 2) ℝ) := by
+    ext i j
+    simp [Matrix.SpecialLinearGroup.mapGL_coe_matrix]
+  have hnegmem : (-1 : SL(2, ℤ)) ∈ CongruenceSubgroup.Gamma0 M := by
+    rw [CongruenceSubgroup.Gamma0_mem]
+    simp [Matrix.SpecialLinearGroup.coe_neg]
+  obtain ⟨h, hhmem, rfl⟩ := hγ
+  have hh1 : h ≠ 1 := fun he => h1 (by rw [he, map_one])
+  have hh2 : h ≠ -1 := fun he => h2 (by rw [he, hmapneg])
+  have hsub : ((Matrix.SpecialLinearGroup.mapGL ℝ h) • gamma0Domain M) ∩ gamma0Domain M
+      ⊆ ⋃ c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M,
+          (gamma0Rep M c)⁻¹ • (ModularGroup.fd \ ModularGroup.fdo) := by
+    rintro z ⟨hzL, hzR⟩
+    obtain ⟨c', hzc'⟩ := Set.mem_iUnion.mp hzR
+    have hw : (gamma0Rep M c') • z ∈ ModularGroup.fd :=
+      (mem_inv_smul_set_upperHalfPlane_iff _ _ _).mp hzc'
+    refine Set.mem_iUnion.mpr
+      ⟨c', (mem_inv_smul_set_upperHalfPlane_iff _ _ _).mpr ⟨hw, ?_⟩⟩
+    intro hwo
+    have hzL' : (Matrix.SpecialLinearGroup.mapGL ℝ h)⁻¹ • z ∈ gamma0Domain M :=
+      Set.mem_smul_set_iff_inv_smul_mem.mp hzL
+    obtain ⟨c, hzc⟩ := Set.mem_iUnion.mp hzL'
+    have hv : (gamma0Rep M c) • ((Matrix.SpecialLinearGroup.mapGL ℝ h)⁻¹ • z)
+        ∈ ModularGroup.fd := (mem_inv_smul_set_upperHalfPlane_iff _ _ _).mp hzc
+    have hgw : (gamma0Rep M c * h⁻¹ * (gamma0Rep M c')⁻¹) • ((gamma0Rep M c') • z)
+        ∈ ModularGroup.fd := by
+      have hrw : (gamma0Rep M c * h⁻¹ * (gamma0Rep M c')⁻¹) • ((gamma0Rep M c') • z)
+          = (gamma0Rep M c) • (h⁻¹ • z) := by
+        rw [mul_smul, mul_smul, inv_smul_smul]
+      rw [hrw]
+      have hact : (h⁻¹ : SL(2, ℤ)) • z = (Matrix.SpecialLinearGroup.mapGL ℝ h)⁻¹ • z := by
+        rw [← map_inv]; rfl
+      rw [hact]; exact hv
+    obtain ⟨ε, hεne, hεmem, hεcent, hεsq, hεinv, hgeq⟩ :
+        ∃ ε : SL(2, ℤ), h ≠ ε ∧ ε ∈ CongruenceSubgroup.Gamma0 M ∧
+          (∀ x : SL(2, ℤ), ε * x = x * ε) ∧ ε * ε = 1 ∧ ε⁻¹ = ε ∧
+          gamma0Rep M c * h⁻¹ * (gamma0Rep M c')⁻¹ = ε := by
+      rcases ModularGroup.eq_one_or_neg_one_of_mem_fdo_mem_fd hwo hgw with hg | hg
+      · exact ⟨1, hh1, one_mem _, fun x => by rw [one_mul, mul_one], one_mul 1, inv_one, hg⟩
+      · refine ⟨-1, hh2, hnegmem, fun x => by rw [neg_one_mul, mul_neg_one], ?_, ?_, hg⟩
+        · rw [neg_mul_neg, one_mul]
+        · exact inv_eq_of_mul_eq_one_right (by rw [neg_mul_neg, one_mul])
+    have hkey : gamma0Rep M c * h⁻¹ = ε * gamma0Rep M c' := by
+      rw [← hgeq]; group
+    have hc'eq : gamma0Rep M c' = ε * gamma0Rep M c * h⁻¹ := by
+      rw [mul_assoc, hkey, ← mul_assoc, hεsq, one_mul]
+    have hcc : c' = c := by
+      rw [← gamma0Rep_spec M c', ← gamma0Rep_spec M c, QuotientGroup.eq]
+      have hprod : (gamma0Rep M c')⁻¹ * gamma0Rep M c = h * ε := by
+        rw [hc'eq, mul_inv_rev, mul_inv_rev, inv_inv, hεinv, mul_assoc, mul_assoc,
+          hεcent (gamma0Rep M c), ← mul_assoc ((gamma0Rep M c)⁻¹), inv_mul_cancel, one_mul]
+      rw [hprod]
+      exact mul_mem hhmem hεmem
+    subst hcc
+    rw [hεcent] at hkey
+    have hinv : h⁻¹ = ε := mul_left_cancel hkey
+    exact hεne (by rw [← inv_inv h, hinv, hεinv])
+  refine measure_mono_null hsub ?_
+  refine measure_iUnion_null (fun c => ?_)
+  rw [volume_smul_specialLinearGroup]
+  exact volume_modularFd_sdiff_fdo_eq_zero
 
 /-- **SELF-ADJOINTNESS OF THE GOOD HECKE OPERATORS OVER A `Γ₀(M)` FUNDAMENTAL
 DOMAIN** (sorry leaf — cut 2026-07-26 out of `exists_peterssonDomain` below;
