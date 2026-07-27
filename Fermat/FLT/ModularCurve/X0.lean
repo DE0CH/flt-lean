@@ -19210,51 +19210,413 @@ theorem sqzSum_sqzBase (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (b :
   simp only [sqzBase]
   rw [← Category.assoc, ← Spec.map_comp, ← Category.assoc, ← Spec.map_comp, sqzDiag_comp_sqzSum]
 
-/-- **`Spec (R ×_{S'} R)` is the pushout `Spec R ⊔_{Spec S'} Spec R`** (SORRY
-LEAF — the ONE geometric input of the `R`-module structure on the kernel of
-reduction, and the only remaining gap in the `q ≠ ℓ` half of
-`neronKernel_torsionFree`).
+/-! #### `Spec (R ×_{S'} R)` is the pushout `Spec R ⊔_{Spec S'} Spec R`
 
-TRUE.  `φ` is surjective with nilpotent kernel, so `Spec.map φ` is a
-homeomorphism onto `Spec R`, and both `Spec.map (sqzFst φ)` and
-`Spec.map (sqzSnd φ)` are homeomorphisms onto `Spec (R ×_{S'} R)`.  The square
+This block proves the pushout property of `Spec (R ×_{S'} R)` for an ARBITRARY
+scheme target.  Everything below is PROVEN except the single leaf
+`exists_hom_sqzRing` (the existence half); see its docstring for the route.
 
-    Spec S' ⟶ Spec R
-       ↓          ↓
-    Spec R  ⟶ Spec (R ×_{S'} R)
+The affine-target case is `existsUnique_hom_sqzRing_affine` — `Spec.homEquiv`
+plus `sqzPair` and `sqz_hom_ext`, no new mathematics.  The affine-LOCAL step is
+`exists_sqzAwayIso`: localisation commutes with the fibre product,
+`(R ×_{S'} R)_{(g,g)} ≅ R_g ×_{S'_{φ g}} R_g`, because localisation is exact.
+Uniqueness for an arbitrary target (`hom_ext_sqzRing`) then follows by covering
+`Spec (R ×_{S'} R)` by basic opens landing in affine charts of `Z`. -/
 
-is therefore a pushout of schemes: this is the affine case of Ferrand's gluing
-theorem, and for a NILPOTENT thickening it needs none of Ferrand's work.
+/-- **The pushout property for an AFFINE target** (PROVEN).  By the `Γ ⊣ Spec`
+adjunction (`Spec.map_surjective` / `Spec.map_inj`) this is exactly the
+universal property of `R ×_{S'} R` as a fibre product of RINGS: existence is
+`sqzPair`, uniqueness is `sqz_hom_ext`.  No Ferrand theorem is involved, and no
+hypothesis on `φ` is needed. -/
+theorem existsUnique_hom_sqzRing_affine (φ : R ⟶ S') {C : CommRingCat.{u}}
+    (u v : Spec R ⟶ Spec C) (huv : Spec.map φ ≫ u = Spec.map φ ≫ v) :
+    ∃! w : Spec (sqzRing φ) ⟶ Spec C,
+      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v := by
+  obtain ⟨a, rfl⟩ := Spec.map_surjective u
+  obtain ⟨b, rfl⟩ := Spec.map_surjective v
+  rw [← Spec.map_comp, ← Spec.map_comp, Spec.map_inj] at huv
+  refine ⟨Spec.map (sqzPair φ a b huv), ⟨?_, ?_⟩, ?_⟩
+  · rw [← Spec.map_comp, sqzPair_fst]
+  · rw [← Spec.map_comp, sqzPair_snd]
+  · rintro w ⟨h1, h2⟩
+    obtain ⟨c, rfl⟩ := Spec.map_surjective w
+    rw [← Spec.map_comp, Spec.map_inj] at h1 h2
+    rw [Spec.map_inj]
+    exact sqz_hom_ext (h1.trans (sqzPair_fst φ a b huv).symm)
+      (h2.trans (sqzPair_snd φ a b huv).symm)
 
-WHAT IS PROVEN HERE AND WHAT IS NOT, so the successor does not re-survey it.
+/-- The localisation of `φ` away from `g`, i.e. `φ_g : R_g ⟶ S'_{φ g}`. -/
+noncomputable def sqzAway (φ : R ⟶ S') (g : R) :
+    CommRingCat.of (Localization.Away g) ⟶ CommRingCat.of (Localization.Away (φ.hom g)) :=
+  CommRingCat.ofHom (Localization.awayMap φ.hom g)
 
-* The AFFINE-TARGET case (`Z = Spec C`) is immediate from what is already in
-  this file and needs no new mathematics: `Spec.homEquiv` turns
-  `Spec (R ×_{S'} R) ⟶ Spec C` into `C ⟶ R ×_{S'} R`, existence is `sqzPair`
-  (PROVEN above) and uniqueness is `sqz_hom_ext` (PROVEN above).  That is
-  reduction (1) of the route: for an affine target the pushout is free by the
-  `Γ ⊣ Spec` adjunction, with no Ferrand theorem involved.  It is NOT stated as
-  a separate declaration here only because a proven brick standing in front of
-  a sorried consumer is free-floating; state it inside the proof when you write
-  it.
-* What is genuinely left is the AFFINE-LOCAL REDUCTION, i.e. reduction (2):
-  `hker` forces `u` and `v` to have the same underlying continuous map (their
-  composites with the surjection `Spec.map φ` agree), so one may cover
-  `Spec R` by basic opens `D(g)` whose common image lies in an affine chart of
-  `Z`, apply the affine case over each `R_g`, and glue by the uniqueness half.
-  The one ring-theoretic input is that localisation commutes with this fibre
-  product — `(R ×_{S'} R)_{(g,g)} ≅ R_g ×_{S'_{φ g}} R_g`, which holds because
-  localisation is exact — so that the pieces are again of the same shape.
+/-- The first projection localised away from `(g, g)`, i.e.
+`(R ×_{S'} R)_{(g,g)} ⟶ R_g`.  It typechecks because
+`sqzFst φ ((g, g)) = g` holds by `rfl`. -/
+noncomputable def sqzFstAway (φ : R ⟶ S') (g : R) :
+    CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)) ⟶
+      CommRingCat.of (Localization.Away g) :=
+  CommRingCat.ofHom (IsLocalization.Away.lift
+    (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzFst φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g))
 
-THE CHECK THAT WOULD REFUTE THIS VERDICT: a scheme-level pushout along a closed
-immersion, or a `Scheme.IsPushout`/Ferrand API, appearing in the pin; nothing
-under `Mathlib/AlgebraicGeometry/` provides one as of 2026-07-27. -/
+/-- The second projection localised away from `(g, g)`. -/
+noncomputable def sqzSndAway (φ : R ⟶ S') (g : R) :
+    CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)) ⟶
+      CommRingCat.of (Localization.Away g) :=
+  CommRingCat.ofHom (IsLocalization.Away.lift
+    (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzSnd φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g))
+
+theorem sqzAway_naturality (φ : R ⟶ S') (g : R) :
+    CommRingCat.ofHom (algebraMap R (Localization.Away g)) ≫ sqzAway φ g =
+      φ ≫ CommRingCat.ofHom (algebraMap S' (Localization.Away (φ.hom g))) := by
+  ext x
+  simp [sqzAway, Localization.awayMap, IsLocalization.Away.map]
+
+theorem sqzFstAway_naturality (φ : R ⟶ S') (g : R) :
+    CommRingCat.ofHom (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        sqzFstAway φ g = sqzFst φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)) := by
+  ext x
+  exact IsLocalization.Away.lift_eq (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzFst φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g) x
+
+theorem sqzSndAway_naturality (φ : R ⟶ S') (g : R) :
+    CommRingCat.ofHom (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        sqzSndAway φ g = sqzSnd φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)) := by
+  ext x
+  exact IsLocalization.Away.lift_eq (S := Localization.Away ((sqzDiag φ).hom g))
+    (g := (algebraMap R (Localization.Away g)).comp (sqzSnd φ).hom) ((sqzDiag φ).hom g)
+    (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g) x
+
+/-- The comparison map `R ×_{S'} R ⟶ R_g ×_{S'_{φ g}} R_g`. -/
+noncomputable def sqzToAway (φ : R ⟶ S') (g : R) : sqzRing φ ⟶ sqzRing (sqzAway φ g) :=
+  sqzPair (sqzAway φ g)
+    (sqzFst φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+    (sqzSnd φ ≫ CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+    (by rw [Category.assoc, Category.assoc, sqzAway_naturality, ← Category.assoc,
+      ← Category.assoc, sqzFst_comp_base])
+
+/-- **Localisation commutes with the fibre product** (PROVEN):
+`(R ×_{S'} R)_{(g,g)} ≅ R_g ×_{S'_{φ g}} R_g`, compatibly with both
+projections.  This is the one ring-theoretic input of the affine-local
+reduction, and it holds because localisation is exact: the comparison map
+`sqzToAway` exhibits `R_g ×_{S'_{φ g}} R_g` as `IsLocalization.Away (g, g)`
+over `R ×_{S'} R`. -/
+theorem exists_sqzAwayIso (φ : R ⟶ S') (g : R) :
+    ∃ e : CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)) ≅ sqzRing (sqzAway φ g),
+      e.hom ≫ sqzFst (sqzAway φ g) = sqzFstAway φ g ∧
+      e.hom ≫ sqzSnd (sqzAway φ g) = sqzSndAway φ g := by
+  letI : Algebra (sqzRing φ) (sqzRing (sqzAway φ g)) := (sqzToAway φ g).hom.toAlgebra
+  have halg : ∀ x : sqzRing φ, (algebraMap (sqzRing φ) (sqzRing (sqzAway φ g)) x).1
+      = (algebraMap R (Localization.Away g) (x.1).1,
+        algebraMap R (Localization.Away g) (x.1).2) := fun _ => rfl
+  haveI : IsLocalization.Away ((sqzDiag φ).hom g) (sqzRing (sqzAway φ g)) := by
+    refine IsLocalization.Away.mk _ ?_ ?_ ?_
+    · have h : algebraMap (sqzRing φ) (sqzRing (sqzAway φ g)) ((sqzDiag φ).hom g)
+          = (sqzDiag (sqzAway φ g)).hom (algebraMap R (Localization.Away g) g) := rfl
+      rw [h]
+      exact (IsLocalization.Away.algebraMap_isUnit (S := Localization.Away g) g).map
+        (sqzDiag (sqzAway φ g)).hom
+    · intro z
+      obtain ⟨n, a, ha⟩ := IsLocalization.Away.surj (S := Localization.Away g) g (z.1).1
+      obtain ⟨m, b, hb⟩ := IsLocalization.Away.surj (S := Localization.Away g) g (z.1).2
+      have ha' : (z.1).1 * algebraMap R (Localization.Away g) g ^ (n + m)
+          = algebraMap R (Localization.Away g) (a * g ^ m) := by
+        rw [pow_add, ← mul_assoc, ha, map_mul, map_pow]
+      have hb' : (z.1).2 * algebraMap R (Localization.Away g) g ^ (n + m)
+          = algebraMap R (Localization.Away g) (b * g ^ n) := by
+        rw [pow_add, mul_comm (_ ^ n), ← mul_assoc, hb, map_mul, map_pow]
+      have key : algebraMap S' (Localization.Away (φ.hom g)) (φ.hom (a * g ^ m))
+          = algebraMap S' (Localization.Away (φ.hom g)) (φ.hom (b * g ^ n)) := by
+        have e1 := congrArg (sqzAway φ g).hom ha'
+        have e2 := congrArg (sqzAway φ g).hom hb'
+        rw [map_mul, map_pow] at e1 e2
+        have hnat : ∀ x : R, (sqzAway φ g).hom (algebraMap R (Localization.Away g) x)
+            = algebraMap S' (Localization.Away (φ.hom g)) (φ.hom x) := fun x =>
+          congrArg (fun k => (CommRingCat.Hom.hom k) x) (sqzAway_naturality φ g)
+        rw [hnat, hnat] at e1
+        rw [hnat, hnat] at e2
+        rw [← e1, ← e2, sqzMem (sqzAway φ g) z]
+      obtain ⟨k, hk⟩ := IsLocalization.Away.exists_of_eq
+        (S := Localization.Away (φ.hom g)) (φ.hom g) key
+      refine ⟨n + m + k, ⟨(g ^ k * (a * g ^ m), g ^ k * (b * g ^ n)), ?_⟩, ?_⟩
+      · show φ.hom (g ^ k * (a * g ^ m)) = φ.hom (g ^ k * (b * g ^ n))
+        rw [map_mul, map_pow, hk, ← map_pow, ← map_mul]
+      · refine Subtype.ext (Prod.ext ?_ ?_)
+        · show (z.1).1 * (algebraMap R (Localization.Away g) g) ^ (n + m + k)
+            = algebraMap R (Localization.Away g) (g ^ k * (a * g ^ m))
+          rw [pow_add, ← mul_assoc, ha', mul_comm, ← map_pow, ← map_mul]
+        · show (z.1).2 * (algebraMap R (Localization.Away g) g) ^ (n + m + k)
+            = algebraMap R (Localization.Away g) (g ^ k * (b * g ^ n))
+          rw [pow_add, ← mul_assoc, hb', mul_comm, ← map_pow, ← map_mul]
+    · intro x y hxy
+      have h1 : algebraMap R (Localization.Away g) (x.1).1
+          = algebraMap R (Localization.Away g) (y.1).1 := by
+        have := congrArg (fun t : sqzRing (sqzAway φ g) => (t.1).1) hxy
+        simpa [halg] using this
+      have h2 : algebraMap R (Localization.Away g) (x.1).2
+          = algebraMap R (Localization.Away g) (y.1).2 := by
+        have := congrArg (fun t : sqzRing (sqzAway φ g) => (t.1).2) hxy
+        simpa [halg] using this
+      obtain ⟨k, hk⟩ := IsLocalization.Away.exists_of_eq (S := Localization.Away g) g h1
+      obtain ⟨l, hl⟩ := IsLocalization.Away.exists_of_eq (S := Localization.Away g) g h2
+      refine ⟨k + l, Subtype.ext (Prod.ext ?_ ?_)⟩
+      · show g ^ (k + l) * (x.1).1 = g ^ (k + l) * (y.1).1
+        rw [pow_add, mul_comm (g ^ k), mul_assoc, hk, ← mul_assoc]
+      · show g ^ (k + l) * (x.1).2 = g ^ (k + l) * (y.1).2
+        rw [pow_add, mul_assoc, hl, ← mul_assoc]
+  set E := IsLocalization.algEquiv (Submonoid.powers ((sqzDiag φ).hom g))
+    (Localization.Away ((sqzDiag φ).hom g)) (sqzRing (sqzAway φ g)) with hE
+  refine ⟨{ hom := CommRingCat.ofHom E.toRingEquiv.toRingHom
+            inv := CommRingCat.ofHom E.symm.toRingEquiv.toRingHom
+            hom_inv_id := by ext x; exact E.symm_apply_apply x
+            inv_hom_id := by ext x; exact E.apply_symm_apply x }, ?_, ?_⟩
+  · refine CommRingCat.hom_ext (IsLocalization.ringHom_ext
+      (Submonoid.powers ((sqzDiag φ).hom g)) (RingHom.ext fun x => ?_))
+    show (sqzFst (sqzAway φ g)).hom (E (algebraMap _ _ x))
+        = (sqzFstAway φ g).hom (algebraMap _ _ x)
+    rw [E.commutes]
+    exact (congrArg (fun k => (CommRingCat.Hom.hom k) x) (sqzFstAway_naturality φ g)).symm
+  · refine CommRingCat.hom_ext (IsLocalization.ringHom_ext
+      (Submonoid.powers ((sqzDiag φ).hom g)) (RingHom.ext fun x => ?_))
+    show (sqzSnd (sqzAway φ g)).hom (E (algebraMap _ _ x))
+        = (sqzSndAway φ g).hom (algebraMap _ _ x)
+    rw [E.commutes]
+    exact (congrArg (fun k => (CommRingCat.Hom.hom k) x) (sqzSndAway_naturality φ g)).symm
+
+/-- **The pushout property on a basic open, for an AFFINE target** (PROVEN):
+`existsUnique_hom_sqzRing_affine` at `φ_g`, transported along the isomorphism
+`exists_sqzAwayIso`. -/
+theorem existsUnique_hom_sqzRing_away (φ : R ⟶ S') (g : R) {C : CommRingCat.{u}}
+    (u v : Spec (CommRingCat.of (Localization.Away g)) ⟶ Spec C)
+    (huv : Spec.map (sqzAway φ g) ≫ u = Spec.map (sqzAway φ g) ≫ v) :
+    ∃! w : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g))) ⟶ Spec C,
+      Spec.map (sqzFstAway φ g) ≫ w = u ∧ Spec.map (sqzSndAway φ g) ≫ w = v := by
+  obtain ⟨e, he1, he2⟩ := exists_sqzAwayIso φ g
+  obtain ⟨w, ⟨hw1, hw2⟩, hwu⟩ := existsUnique_hom_sqzRing_affine (sqzAway φ g) u v huv
+  have hfst : Spec.map (sqzFstAway φ g) ≫ Spec.map e.inv = Spec.map (sqzFst (sqzAway φ g)) := by
+    rw [← Spec.map_comp, ← he1, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  have hsnd : Spec.map (sqzSndAway φ g) ≫ Spec.map e.inv = Spec.map (sqzSnd (sqzAway φ g)) := by
+    rw [← Spec.map_comp, ← he2, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  refine ⟨Spec.map e.inv ≫ w, ⟨?_, ?_⟩, ?_⟩
+  · rw [← Category.assoc, hfst, hw1]
+  · rw [← Category.assoc, hsnd, hw2]
+  · rintro y ⟨hy1, hy2⟩
+    have hy : Spec.map e.hom ≫ y = w := by
+      refine hwu _ ⟨?_, ?_⟩
+      · rw [← Category.assoc, ← Spec.map_comp, he1, hy1]
+      · rw [← Category.assoc, ← Spec.map_comp, he2, hy2]
+    rw [← hy, ← Category.assoc, ← Spec.map_comp, e.hom_inv_id, Spec.map_id, Category.id_comp]
+
+/-- `Spec` of a surjective ring map whose kernel is square-zero is surjective on
+points: the kernel lies in every prime. -/
+theorem specMap_base_surjective {A₀ B₀ : CommRingCat.{u}} (ψ : A₀ ⟶ B₀)
+    (hψ : Function.Surjective ψ.hom) (hnil : ∀ a : A₀, ψ.hom a = 0 → a ^ 2 = 0) :
+    Function.Surjective (Spec.map ψ).base := by
+  have h : Function.Surjective (PrimeSpectrum.comap ψ.hom) := by
+    intro p
+    have hsub : (RingHom.ker ψ.hom : Set A₀) ⊆ p.asIdeal := fun a ha =>
+      p.isPrime.mem_of_pow_mem 2 (by rw [hnil a ha]; exact Ideal.zero_mem _)
+    have hz : p ∈ PrimeSpectrum.zeroLocus (RingHom.ker ψ.hom : Set A₀) :=
+      (PrimeSpectrum.mem_zeroLocus _ _).mpr hsub
+    rw [← range_comap_of_surjective _ ψ.hom hψ] at hz
+    exact hz
+  exact h
+
+/-- **Every basic open of `Spec (R ×_{S'} R)` is a basic open at a DIAGONAL
+element** (PROVEN): `t` and `(t₁, t₁)` differ by an element of the square-zero
+ideal `ker (sqzFst φ)`, hence lie in exactly the same primes.  This is what
+makes the basic opens `D((g, g))` a basis, so that `exists_sqzAwayIso` applies
+to every member of a refining cover. -/
+theorem basicOpen_sqz (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (t : sqzRing φ) :
+    PrimeSpectrum.basicOpen t
+      = PrimeSpectrum.basicOpen ((sqzDiag φ).hom ((sqzFst φ).hom t)) := by
+  have hm : t - (sqzDiag φ).hom ((sqzFst φ).hom t) ∈ RingHom.ker (sqzFst φ).hom := by
+    show (sqzFst φ).hom _ = 0
+    rw [map_sub]
+    exact sub_self _
+  have h2 : (t - (sqzDiag φ).hom ((sqzFst φ).hom t))
+      * (t - (sqzDiag φ).hom ((sqzFst φ).hom t)) ∈ RingHom.ker (sqzFst φ).hom ^ 2 := by
+    rw [pow_two]; exact Ideal.mul_mem_mul hm hm
+  rw [sqzKer_sq φ hsq, Ideal.mem_bot] at h2
+  ext p
+  have hnp : t - (sqzDiag φ).hom ((sqzFst φ).hom t) ∈ p.asIdeal :=
+    p.isPrime.mem_of_pow_mem 2 (by rw [pow_two, h2]; exact Ideal.zero_mem _)
+  constructor
+  · intro h hc
+    exact h (by simpa using p.asIdeal.add_mem hc hnp)
+  · intro h hc
+    exact h (by simpa using p.asIdeal.sub_mem hc hnp)
+
+/-- The two localised projections become equal after `φ_g` — a pure ring
+identity, which is why the affine-local step needs no hypothesis transported
+from `huv`. -/
+theorem sqzFstAway_comp_sqzAway (φ : R ⟶ S') (g : R) :
+    sqzFstAway φ g ≫ sqzAway φ g = sqzSndAway φ g ≫ sqzAway φ g := by
+  have key : CommRingCat.ofHom
+        (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        (sqzFstAway φ g ≫ sqzAway φ g)
+      = CommRingCat.ofHom
+        (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) ≫
+        (sqzSndAway φ g ≫ sqzAway φ g) := by
+    rw [← Category.assoc, ← Category.assoc, sqzFstAway_naturality, sqzSndAway_naturality,
+      Category.assoc, Category.assoc, sqzAway_naturality, ← Category.assoc, ← Category.assoc,
+      sqzFst_comp_base]
+  exact CommRingCat.hom_ext (IsLocalization.ringHom_ext
+    (Submonoid.powers ((sqzDiag φ).hom g))
+    (RingHom.ext fun x => congrArg (fun k => (CommRingCat.Hom.hom k) x) key))
+
+/-- **UNIQUENESS in the pushout property, for an ARBITRARY scheme target**
+(PROVEN — this is the whole affine-local reduction, reduction (2) of the route,
+for the uniqueness half).
+
+`sqzFst φ` is surjective with square-zero kernel, so `Spec.map (sqzFst φ)` is
+surjective on points and `w`, `w'` already have the same underlying map.  Cover
+`Spec (R ×_{S'} R)` by basic opens; by `basicOpen_sqz` every basic open is
+`D((g, g))`, which is `Spec ((R ×_{S'} R)_{(g,g)})`, and shrinking it inside
+`w ⁻¹ V` for an affine open `V ∋ w x` lets both restrictions factor through
+`Spec Γ(Z, V)`.  There `existsUnique_hom_sqzRing_away` applies. -/
+theorem hom_ext_sqzRing (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥)
+    {Z : Scheme.{u}} {w w' : Spec (sqzRing φ) ⟶ Z}
+    (h1 : Spec.map (sqzFst φ) ≫ w = Spec.map (sqzFst φ) ≫ w')
+    (h2 : Spec.map (sqzSnd φ) ≫ w = Spec.map (sqzSnd φ) ≫ w') : w = w' := by
+  have hsurj : Function.Surjective (Spec.map (sqzFst φ)).base := by
+    refine specMap_base_surjective _ (sqzFst_surjective φ) fun a ha => ?_
+    have hh : a * a ∈ RingHom.ker (sqzFst φ).hom ^ 2 := by
+      rw [pow_two]
+      exact Ideal.mul_mem_mul (RingHom.mem_ker.mpr ha) (RingHom.mem_ker.mpr ha)
+    rw [sqzKer_sq φ hsq, Ideal.mem_bot] at hh
+    rw [pow_two]; exact hh
+  have hbase : ∀ x, w.base x = w'.base x := by
+    intro x
+    obtain ⟨y, rfl⟩ := hsurj x
+    exact congrArg (fun k : Spec R ⟶ Z => k.base y) h1
+  refine Scheme.hom_ext_of_forall w w' fun x => ?_
+  obtain ⟨V, hVaff, hxV, -⟩ := (TopologicalSpace.Opens.isBasis_iff_nbhd.mp Z.isBasis_affineOpens)
+    (show w.base x ∈ (⊤ : Z.Opens) from trivial)
+  have hVa : IsAffineOpen V := hVaff
+  obtain ⟨-, ⟨t, rfl⟩, hxt, htV⟩ :=
+    (TopologicalSpace.Opens.isBasis_iff_nbhd.mp
+      (PrimeSpectrum.isBasis_basic_opens (R := sqzRing φ)))
+      (show x ∈ w ⁻¹ᵁ V from hxV)
+  set g : R := (sqzFst φ).hom t
+  have hbo : PrimeSpectrum.basicOpen t = PrimeSpectrum.basicOpen ((sqzDiag φ).hom g) :=
+    basicOpen_sqz φ hsq t
+  refine ⟨PrimeSpectrum.basicOpen ((sqzDiag φ).hom g), hbo ▸ hxt, ?_⟩
+  set algD := CommRingCat.ofHom
+    (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g))) with halgD
+  have hrange := PrimeSpectrum.localization_away_comap_range
+    (Localization.Away ((sqzDiag φ).hom g)) ((sqzDiag φ).hom g)
+  have hmemV : ∀ y, w.base ((Spec.map algD).base y) ∈ V := by
+    intro y
+    have hy : (Spec.map algD).base y ∈ Set.range (PrimeSpectrum.comap
+        (algebraMap (sqzRing φ) (Localization.Away ((sqzDiag φ).hom g)))) := ⟨y, rfl⟩
+    rw [hrange] at hy
+    refine htV ?_
+    rw [hbo]
+    exact hy
+  have hsubw : Set.range (Spec.map algD ≫ w).base ⊆ Set.range hVa.fromSpec.base := by
+    rw [hVa.range_fromSpec]
+    rintro _ ⟨y, rfl⟩
+    exact hmemV y
+  have hsubw' : Set.range (Spec.map algD ≫ w').base ⊆ Set.range hVa.fromSpec.base := by
+    rw [hVa.range_fromSpec]
+    rintro _ ⟨y, rfl⟩
+    show w'.base ((Spec.map algD).base y) ∈ V
+    rw [← hbase]
+    exact hmemV y
+  set a := IsOpenImmersion.lift hVa.fromSpec (Spec.map algD ≫ w) hsubw
+  set a' := IsOpenImmersion.lift hVa.fromSpec (Spec.map algD ≫ w') hsubw'
+  have hfac : a ≫ hVa.fromSpec = Spec.map algD ≫ w := IsOpenImmersion.lift_fac _ _ _
+  have hfac' : a' ≫ hVa.fromSpec = Spec.map algD ≫ w' := IsOpenImmersion.lift_fac _ _ _
+  have hcompat : ∀ (b : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)))
+        ⟶ Spec Γ(Z, V)),
+      Spec.map (sqzAway φ g) ≫ (Spec.map (sqzFstAway φ g) ≫ b)
+        = Spec.map (sqzAway φ g) ≫ (Spec.map (sqzSndAway φ g) ≫ b) := by
+    intro b
+    rw [← Category.assoc, ← Category.assoc, ← Spec.map_comp, ← Spec.map_comp,
+      sqzFstAway_comp_sqzAway]
+  have hpre : ∀ (c : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)))
+        ⟶ Spec Γ(Z, V)) (y : Spec (sqzRing φ) ⟶ Z), c ≫ hVa.fromSpec = Spec.map algD ≫ y →
+      Spec.map (sqzFstAway φ g) ≫ c ≫ hVa.fromSpec
+        = Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+          ≫ Spec.map (sqzFst φ) ≫ y := by
+    intro c y hc
+    rw [hc, ← Category.assoc, ← Spec.map_comp, halgD, sqzFstAway_naturality, Spec.map_comp,
+      Category.assoc]
+  have hpre2 : ∀ (c : Spec (CommRingCat.of (Localization.Away ((sqzDiag φ).hom g)))
+        ⟶ Spec Γ(Z, V)) (y : Spec (sqzRing φ) ⟶ Z), c ≫ hVa.fromSpec = Spec.map algD ≫ y →
+      Spec.map (sqzSndAway φ g) ≫ c ≫ hVa.fromSpec
+        = Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away g)))
+          ≫ Spec.map (sqzSnd φ) ≫ y := by
+    intro c y hc
+    rw [hc, ← Category.assoc, ← Spec.map_comp, halgD, sqzSndAway_naturality, Spec.map_comp,
+      Category.assoc]
+  have haa' : a = a' := by
+    refine (existsUnique_hom_sqzRing_away φ g (Spec.map (sqzFstAway φ g) ≫ a)
+      (Spec.map (sqzSndAway φ g) ≫ a) (hcompat a)).unique ⟨rfl, rfl⟩ ⟨?_, ?_⟩
+    · refine (cancel_mono hVa.fromSpec).1 ?_
+      rw [Category.assoc, Category.assoc, hpre a' w' hfac', hpre a w hfac, h1]
+    · refine (cancel_mono hVa.fromSpec).1 ?_
+      rw [Category.assoc, Category.assoc, hpre2 a' w' hfac', hpre2 a w hfac, h2]
+  have hkey : Spec.map algD ≫ w = Spec.map algD ≫ w' := by
+    rw [← hfac, ← hfac', haa']
+  rw [← basicOpenIsoSpecAway_hom_SpecMap ((sqzDiag φ).hom g), Category.assoc, Category.assoc]
+  exact congrArg _ hkey
+
+/-- **EXISTENCE of the amalgamated morphism** (SORRY LEAF — the ONLY remaining
+gap in the pushout property, and the last geometric input of the `R`-module
+structure on the kernel of reduction).
+
+TRUE, and the route is the mirror image of `hom_ext_sqzRing`, which is PROVEN
+just above and supplies everything except the gluing step.
+
+* `Spec.map (sqzDiag φ) : Spec (R ×_{S'} R) ⟶ Spec R` is a retraction of both
+  `Spec.map (sqzFst φ)` and `Spec.map (sqzSnd φ)` (`sqzDiag_fst`,
+  `sqzDiag_snd`), so it is surjective on points; and `Spec.map φ` is surjective
+  by `specMap_base_surjective`, so `u` and `v` already have the same underlying
+  map and one affine chart `V ∋ u y` serves both.
+* Choose, for each point, `g : R` with the basic open `D((g, g))` inside the
+  preimage of `V`; `basicOpen_sqz` says these already exhaust the basic opens,
+  so they cover.  On each, `existsUnique_hom_sqzRing_away` (with `C := Γ(Z, V)`)
+  produces `w_g : Spec ((R ×_{S'} R)_{(g,g)}) ⟶ Spec Γ(Z, V)`, and composing
+  with `IsAffineOpen.fromSpec` gives a morphism to `Z`.
+* Glue with `AlgebraicGeometry.Scheme.Cover.glueMorphisms`.  The compatibility
+  hypothesis is over `pullback` of two cover maps; since
+  `D((g,g)) ⊓ D((h,h)) = D((gh, gh))` (because `sqzDiag` is a ring map), that
+  pullback is again a basic open of the same shape, so the hypothesis is an
+  instance of uniqueness there.  Getting it in the form
+  `hom_ext_sqzRing` wants needs `RingHom.ker (sqzAway φ g) ^ 2 = ⊥`, which is
+  the localisation of `hsq` and is the one small lemma still to write.
+* Finally `Spec.map (sqzFst φ) ≫ w = u` is checked on the cover `{D(g)}` of
+  `Spec R`, using `sqzFstAway_naturality`.
+
+WHAT WOULD REFUTE THE VERDICT: a counterexample to the affine case, which is
+`existsUnique_hom_sqzRing_affine` and is proven; so the statement is not in
+doubt, only the Lean gluing. -/
+theorem exists_hom_sqzRing (φ : R ⟶ S') (hφ : Function.Surjective φ)
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {Z : Scheme.{u}} (u v : Spec R ⟶ Z)
+    (huv : Spec.map φ ≫ u = Spec.map φ ≫ v) :
+    ∃ w : Spec (sqzRing φ) ⟶ Z,
+      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v :=
+  sorry
+
+/-- **`Spec (R ×_{S'} R)` is the pushout `Spec R ⊔_{Spec S'} Spec R`** for an
+arbitrary scheme target: existence is `exists_hom_sqzRing` (the one remaining
+leaf), uniqueness is `hom_ext_sqzRing` (PROVEN). -/
 theorem existsUnique_hom_sqzRing (φ : R ⟶ S') (hφ : Function.Surjective φ)
     (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {Z : Scheme.{u}} (u v : Spec R ⟶ Z)
     (huv : Spec.map φ ≫ u = Spec.map φ ≫ v) :
     ∃! w : Spec (sqzRing φ) ⟶ Z,
-      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v :=
-  sorry
+      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v := by
+  obtain ⟨w, hw1, hw2⟩ := exists_hom_sqzRing φ hφ hsq u v huv
+  refine ⟨w, ⟨hw1, hw2⟩, ?_⟩
+  rintro y ⟨hy1, hy2⟩
+  exact hom_ext_sqzRing φ hsq (hy1.trans hw1.symm) (hy2.trans hw2.symm)
 
 /-- **The amalgamation, read on relative points** (PROVEN over the leaf above).
 
