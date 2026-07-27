@@ -14432,6 +14432,528 @@ abbrev AbelianSchemeStruct.KerPre {A S : Scheme.{u}} {f : A ⟶ S}
     (b : Spec R ⟶ S) : Type u :=
   {c : RelPoint f b // RelPoint.pre (Spec.map φ) rfl c = ab.zero (Spec.map φ ≫ b)}
 
+/-! ### The trivial square-zero extension `R ×_{S'} R`
+
+Everything in this block is elementary commutative algebra, and it exists for
+one reason: it is the source of the `R`-action on the kernel of reduction
+(`exists_smul_kerPre_of_squareZero` below).
+
+Write `I := ker φ`, with `I² = 0`.  The ring `D := R ×_{S'} R` of pairs
+agreeing mod `I` is, via `(a₁, a₂) ↦ (a₁, a₂ - a₁)`, the trivial square-zero
+extension `R ⊕ I`.  On it,
+
+    μ_r : (a₁, a₂) ↦ (a₁, a₁ + r (a₂ - a₁))
+
+is a ring endomorphism — this is where `I² = 0` is used, and it is the ONLY
+source of the scalar action.  `Spec D` is the pushout
+`Spec R ⊔_{Spec S'} Spec R`, so a kernel element `c` (an `R`-point agreeing
+with the zero section mod `I`) amalgamates with the zero section into a single
+`D`-point, `μ_r` acts on it, and the second projection reads off `r · c`.
+
+The additivity of `r ↦ μ_r` — the one module axiom that is NOT a ring
+identity — comes from the second copy of the same construction, at
+`D ×_R D = R ⊕ I ⊕ I`: see `sqzSum` and `sqzScal_pre_add`. -/
+
+section SquareZeroTrivialExtension
+
+variable {R S' : CommRingCat.{u}}
+
+/-- **Two elements of a square-zero ideal multiply to zero** (PROVEN). -/
+theorem sqz_mul_eq_zero {φ : R ⟶ S'} (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {a b : R}
+    (ha : φ.hom a = 0) (hb : φ.hom b = 0) : a * b = 0 := by
+  have h : a * b ∈ RingHom.ker φ.hom ^ 2 := by
+    rw [pow_two]; exact Ideal.mul_mem_mul ha hb
+  rw [hsq] at h
+  simpa using h
+
+/-- **The trivial square-zero extension `R ×_{S'} R`**, as the equalizer of the
+two projections `R × R ⟶ S'`. -/
+def sqzRing (φ : R ⟶ S') : CommRingCat.{u} :=
+  CommRingCat.of
+    (RingHom.eqLocus (φ.hom.comp (RingHom.fst ↑R ↑R)) (φ.hom.comp (RingHom.snd ↑R ↑R)))
+
+theorem sqzMem (φ : R ⟶ S') (x : sqzRing φ) : φ.hom (x.1).1 = φ.hom (x.1).2 := x.2
+
+/-- First projection `R ×_{S'} R ⟶ R`. -/
+def sqzFst (φ : R ⟶ S') : sqzRing φ ⟶ R :=
+  CommRingCat.ofHom ((RingHom.fst ↑R ↑R).comp (Subring.subtype _))
+
+/-- Second projection `R ×_{S'} R ⟶ R`. -/
+def sqzSnd (φ : R ⟶ S') : sqzRing φ ⟶ R :=
+  CommRingCat.ofHom ((RingHom.snd ↑R ↑R).comp (Subring.subtype _))
+
+/-- Two maps into `sqzRing φ` agreeing after both projections are equal (PROVEN). -/
+theorem sqz_hom_ext {T : CommRingCat.{u}} {φ : R ⟶ S'} {g h : T ⟶ sqzRing φ}
+    (h1 : g ≫ sqzFst φ = h ≫ sqzFst φ) (h2 : g ≫ sqzSnd φ = h ≫ sqzSnd φ) : g = h := by
+  ext t
+  refine Subtype.ext (Prod.ext ?_ ?_)
+  · exact congrArg (fun k => (CommRingCat.Hom.hom k) t) h1
+  · exact congrArg (fun k => (CommRingCat.Hom.hom k) t) h2
+
+/-- The diagonal `R ⟶ R ×_{S'} R`; it is a section of both projections. -/
+def sqzDiag (φ : R ⟶ S') : R ⟶ sqzRing φ :=
+  CommRingCat.ofHom
+    { toFun := fun a => ⟨(a, a), rfl⟩
+      map_one' := rfl
+      map_mul' := fun _ _ => rfl
+      map_zero' := rfl
+      map_add' := fun _ _ => rfl }
+
+theorem sqzDiag_fst (φ : R ⟶ S') : sqzDiag φ ≫ sqzFst φ = 𝟙 R := rfl
+
+theorem sqzDiag_snd (φ : R ⟶ S') : sqzDiag φ ≫ sqzSnd φ = 𝟙 R := rfl
+
+theorem sqzFst_comp_base (φ : R ⟶ S') : sqzFst φ ≫ φ = sqzSnd φ ≫ φ := by
+  ext x; exact x.2
+
+/-- **The universal property of `R ×_{S'} R` as a fibre product of RINGS**
+(PROVEN).  This is reduction (1) of the route recorded at
+`exists_smul_kerPre_of_squareZero`: for an AFFINE target the pushout
+`Spec R ⊔_{Spec S'} Spec R` is free by the `Γ ⊣ Spec` adjunction, and no
+Ferrand theorem is needed. -/
+def sqzPair (φ : R ⟶ S') {T : CommRingCat.{u}} (g₁ g₂ : T ⟶ R) (h : g₁ ≫ φ = g₂ ≫ φ) :
+    T ⟶ sqzRing φ :=
+  CommRingCat.ofHom
+    { toFun := fun t => ⟨(g₁.hom t, g₂.hom t), congrArg (fun k => (CommRingCat.Hom.hom k) t) h⟩
+      map_one' := by refine Subtype.ext (Prod.ext ?_ ?_) <;> simp
+      map_mul' := fun _ _ => by refine Subtype.ext (Prod.ext ?_ ?_) <;> simp
+      map_zero' := by refine Subtype.ext (Prod.ext ?_ ?_) <;> simp
+      map_add' := fun _ _ => by refine Subtype.ext (Prod.ext ?_ ?_) <;> simp }
+
+@[simp] theorem sqzPair_fst (φ : R ⟶ S') {T : CommRingCat.{u}} (g₁ g₂ : T ⟶ R)
+    (h : g₁ ≫ φ = g₂ ≫ φ) : sqzPair φ g₁ g₂ h ≫ sqzFst φ = g₁ := rfl
+
+@[simp] theorem sqzPair_snd (φ : R ⟶ S') {T : CommRingCat.{u}} (g₁ g₂ : T ⟶ R)
+    (h : g₁ ≫ φ = g₂ ≫ φ) : sqzPair φ g₁ g₂ h ≫ sqzSnd φ = g₂ := rfl
+
+/-- **Multiplication by `r` on the `I`-part** (PROVEN): the `R`-algebra
+endomorphism `μ_r : (a₁, a₂) ↦ (a₁, a₁ + r (a₂ - a₁))` of `R ×_{S'} R`.
+
+Multiplicativity is exactly where `I² = 0` enters: the discrepancy is
+`(r - r²) (a₂ - a₁) (b₂ - b₁)` and both differences lie in `I`. -/
+def sqzScal (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (r : R) :
+    sqzRing φ ⟶ sqzRing φ :=
+  CommRingCat.ofHom
+    { toFun := fun x => ⟨((x.1).1, (x.1).1 + r * ((x.1).2 - (x.1).1)), by
+        show φ.hom _ = φ.hom _
+        simp [map_add, map_mul, map_sub, ← sqzMem φ x]⟩
+      map_one' := by refine Subtype.ext (Prod.ext rfl ?_); show (1 : R) + r * (1 - 1) = 1; ring
+      map_mul' := fun x y => by
+        refine Subtype.ext (Prod.ext rfl ?_)
+        show (x.1).1 * (y.1).1 + r * ((x.1).2 * (y.1).2 - (x.1).1 * (y.1).1)
+          = ((x.1).1 + r * ((x.1).2 - (x.1).1)) * ((y.1).1 + r * ((y.1).2 - (y.1).1))
+        have hx : φ.hom ((x.1).2 - (x.1).1) = 0 := by
+          rw [map_sub, ← sqzMem φ x, sub_self]
+        have hy : φ.hom ((y.1).2 - (y.1).1) = 0 := by
+          rw [map_sub, ← sqzMem φ y, sub_self]
+        have h0 := sqz_mul_eq_zero hsq hx hy
+        linear_combination (r - r ^ 2) * h0
+      map_zero' := by refine Subtype.ext (Prod.ext rfl ?_); show (0 : R) + r * (0 - 0) = 0; ring
+      map_add' := fun x y => by
+        refine Subtype.ext (Prod.ext rfl ?_)
+        show (x.1).1 + (y.1).1 + r * ((x.1).2 + (y.1).2 - ((x.1).1 + (y.1).1))
+          = ((x.1).1 + r * ((x.1).2 - (x.1).1)) + ((y.1).1 + r * ((y.1).2 - (y.1).1))
+        ring }
+
+theorem sqzScal_comp_fst (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (r : R) :
+    sqzScal φ hsq r ≫ sqzFst φ = sqzFst φ := rfl
+
+theorem sqzDiag_comp_sqzScal (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (r : R) :
+    sqzDiag φ ≫ sqzScal φ hsq r = sqzDiag φ := by
+  ext a
+  refine Subtype.ext (Prod.ext rfl ?_)
+  show a + r * (a - a) = a
+  ring
+
+theorem sqzScal_one (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) :
+    sqzScal φ hsq 1 = 𝟙 (sqzRing φ) := by
+  ext x
+  refine Subtype.ext (Prod.ext rfl ?_)
+  show (x.1).1 + 1 * ((x.1).2 - (x.1).1) = (x.1).2
+  ring
+
+theorem sqzScal_zero (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) :
+    sqzScal φ hsq 0 = sqzFst φ ≫ sqzDiag φ := by
+  ext x
+  refine Subtype.ext (Prod.ext rfl ?_)
+  show (x.1).1 + 0 * ((x.1).2 - (x.1).1) = (x.1).1
+  ring
+
+theorem sqzScal_comp (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (r r' : R) :
+    sqzScal φ hsq r' ≫ sqzScal φ hsq r = sqzScal φ hsq (r * r') := by
+  ext x
+  refine Subtype.ext (Prod.ext rfl ?_)
+  show (x.1).1 + r * (((x.1).1 + r' * ((x.1).2 - (x.1).1)) - (x.1).1)
+    = (x.1).1 + r * r' * ((x.1).2 - (x.1).1)
+  ring
+
+/-- `ker (sqzFst φ)` is square-zero when `ker φ` is (PROVEN).  This is what
+lets the whole construction be applied a SECOND time, at `D ×_R D`. -/
+theorem sqzKer_sq (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) :
+    RingHom.ker (sqzFst φ).hom ^ 2 = ⊥ := by
+  rw [pow_two, eq_bot_iff]
+  refine Ideal.mul_le.mpr fun a ha b hb => ?_
+  have ha1 : (a.1).1 = 0 := ha
+  have hb1 : (b.1).1 = 0 := hb
+  have ha2 : φ.hom (a.1).2 = 0 := by rw [← sqzMem φ a, ha1, map_zero]
+  have hb2 : φ.hom (b.1).2 = 0 := by rw [← sqzMem φ b, hb1, map_zero]
+  refine Ideal.mem_bot.mpr (Subtype.ext (Prod.ext ?_ ?_))
+  · show (a.1).1 * (b.1).1 = 0
+    rw [ha1, zero_mul]
+  · show (a.1).2 * (b.1).2 = 0
+    exact sqz_mul_eq_zero hsq ha2 hb2
+
+theorem sqzFst_surjective (φ : R ⟶ S') : Function.Surjective (sqzFst φ) :=
+  fun a => ⟨⟨(a, a), rfl⟩, rfl⟩
+
+/-- **Adding the two deformations** (PROVEN): `((a, x), (a, y)) ↦ (a, x + y - a)`,
+a ring map `(R ×_{S'} R) ×_R (R ×_{S'} R) ⟶ R ×_{S'} R`.
+
+In the `R ⊕ I ⊕ I` presentation this is `(a, u, v) ↦ (a, u + v)`, and it is a
+ring map for the same reason `sqzScal` is: the discrepancy is `u v' + v u'`,
+which lies in `I² = 0`.  It is the ONLY input beyond ring identities that the
+additivity of the scalar action needs. -/
+def sqzSum (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) :
+    sqzRing (sqzFst φ) ⟶ sqzRing φ :=
+  CommRingCat.ofHom
+    { toFun := fun y => ⟨((((y.1).1).1).1,
+        (((y.1).1).1).2 + (((y.1).2).1).2 - (((y.1).1).1).1), by
+        have hy : ((((y.1).2).1).1) = ((((y.1).1).1).1) := (sqzMem (sqzFst φ) y).symm
+        show φ.hom _ = φ.hom _
+        simp [map_add, map_sub, ← sqzMem φ (y.1).1, ← sqzMem φ (y.1).2, hy]⟩
+      map_one' := by refine Subtype.ext (Prod.ext rfl ?_); show (1 : R) + 1 - 1 = 1; ring
+      map_mul' := fun y z => by
+        refine Subtype.ext (Prod.ext rfl ?_)
+        have hy : ((((y.1).2).1).1) = ((((y.1).1).1).1) := (sqzMem (sqzFst φ) y).symm
+        have hz : ((((z.1).2).1).1) = ((((z.1).1).1).1) := (sqzMem (sqzFst φ) z).symm
+        show (((y.1).1).1).2 * (((z.1).1).1).2 + (((y.1).2).1).2 * (((z.1).2).1).2
+              - (((y.1).1).1).1 * (((z.1).1).1).1
+          = ((((y.1).1).1).2 + (((y.1).2).1).2 - (((y.1).1).1).1)
+            * ((((z.1).1).1).2 + (((z.1).2).1).2 - (((z.1).1).1).1)
+        have hu : φ.hom ((((y.1).1).1).2 - (((y.1).1).1).1) = 0 := by
+          rw [map_sub, ← sqzMem φ (y.1).1, sub_self]
+        have hv : φ.hom ((((y.1).2).1).2 - (((y.1).1).1).1) = 0 := by
+          rw [map_sub, ← hy, ← sqzMem φ (y.1).2, sub_self]
+        have hu' : φ.hom ((((z.1).1).1).2 - (((z.1).1).1).1) = 0 := by
+          rw [map_sub, ← sqzMem φ (z.1).1, sub_self]
+        have hv' : φ.hom ((((z.1).2).1).2 - (((z.1).1).1).1) = 0 := by
+          rw [map_sub, ← hz, ← sqzMem φ (z.1).2, sub_self]
+        have h1 := sqz_mul_eq_zero hsq hu hv'
+        have h2 := sqz_mul_eq_zero hsq hv hu'
+        linear_combination -h1 - h2
+      map_zero' := by refine Subtype.ext (Prod.ext rfl ?_); show (0 : R) + 0 - 0 = 0; ring
+      map_add' := fun y z => by
+        refine Subtype.ext (Prod.ext rfl ?_)
+        show (((y.1).1).1).2 + (((z.1).1).1).2 + ((((y.1).2).1).2 + (((z.1).2).1).2)
+              - ((((y.1).1).1).1 + (((z.1).1).1).1)
+          = ((((y.1).1).1).2 + (((y.1).2).1).2 - (((y.1).1).1).1)
+            + ((((z.1).1).1).2 + (((z.1).2).1).2 - (((z.1).1).1).1)
+        ring }
+
+theorem sqzDiag_comp_sqzSum (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) :
+    sqzDiag φ ≫ sqzDiag (sqzFst φ) ≫ sqzSum φ hsq = sqzDiag φ := by
+  ext a
+  refine Subtype.ext (Prod.ext rfl ?_)
+  show a + a - a = a
+  ring
+
+/-- `μ_s` and `μ_{s'}` amalgamated into a map `D ⟶ D ×_R D`. -/
+def sqzScalPair (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (s s' : R) :
+    sqzRing φ ⟶ sqzRing (sqzFst φ) :=
+  sqzPair (sqzFst φ) (sqzScal φ hsq s) (sqzScal φ hsq s')
+    (by rw [sqzScal_comp_fst, sqzScal_comp_fst])
+
+theorem sqzScalPair_fst (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (s s' : R) :
+    sqzScalPair φ hsq s s' ≫ sqzFst (sqzFst φ) = sqzScal φ hsq s :=
+  sqzPair_fst _ _ _ _
+
+theorem sqzScalPair_snd (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (s s' : R) :
+    sqzScalPair φ hsq s s' ≫ sqzSnd (sqzFst φ) = sqzScal φ hsq s' :=
+  sqzPair_snd _ _ _ _
+
+/-- **The scalar maps add** (PROVEN, at the level of RINGS): `μ_s` and `μ_{s'}`
+amalgamate into `D ×_R D`, and `sqzSum` reads off `μ_{s + s'}`. -/
+theorem sqzScalPair_sum (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (s s' : R) :
+    sqzScalPair φ hsq s s' ≫ sqzSum φ hsq = sqzScal φ hsq (s + s') := by
+  ext x
+  refine Subtype.ext (Prod.ext rfl ?_)
+  show (x.1).1 + s * ((x.1).2 - (x.1).1) + ((x.1).1 + s' * ((x.1).2 - (x.1).1)) - (x.1).1
+    = (x.1).1 + (s + s') * ((x.1).2 - (x.1).1)
+  ring
+
+theorem sqzDiag_comp_sqzScalPair (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (s s' : R) :
+    sqzDiag φ ≫ sqzScalPair φ hsq s s' = sqzDiag φ ≫ sqzDiag (sqzFst φ) := by
+  refine sqz_hom_ext ?_ ?_
+  · rw [Category.assoc, Category.assoc, sqzScalPair_fst, sqzDiag_comp_sqzScal,
+      sqzDiag_fst, Category.comp_id]
+  · rw [Category.assoc, Category.assoc, sqzScalPair_snd, sqzDiag_comp_sqzScal,
+      sqzDiag_snd, Category.comp_id]
+
+end SquareZeroTrivialExtension
+
+/-! ### Relative points over `Spec (R ×_{S'} R)` -/
+
+section SquareZeroRelPoint
+
+variable {A S : Scheme.{u}} {f : A ⟶ S} {R S' : CommRingCat.{u}}
+
+/-- The base point of `Spec (R ×_{S'} R)` induced by `b`, along the diagonal. -/
+noncomputable def sqzBase (φ : R ⟶ S') (b : Spec R ⟶ S) : Spec (sqzRing φ) ⟶ S :=
+  Spec.map (sqzDiag φ) ≫ b
+
+theorem sqzFst_sqzBase (φ : R ⟶ S') (b : Spec R ⟶ S) :
+    Spec.map (sqzFst φ) ≫ sqzBase φ b = b := by
+  rw [sqzBase, ← Category.assoc, ← Spec.map_comp, sqzDiag_fst, Spec.map_id, Category.id_comp]
+
+theorem sqzSnd_sqzBase (φ : R ⟶ S') (b : Spec R ⟶ S) :
+    Spec.map (sqzSnd φ) ≫ sqzBase φ b = b := by
+  rw [sqzBase, ← Category.assoc, ← Spec.map_comp, sqzDiag_snd, Spec.map_id, Category.id_comp]
+
+theorem sqzScal_sqzBase (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (b : Spec R ⟶ S) (r : R) :
+    Spec.map (sqzScal φ hsq r) ≫ sqzBase φ b = sqzBase φ b := by
+  rw [sqzBase, ← Category.assoc, ← Spec.map_comp, sqzDiag_comp_sqzScal]
+
+theorem sqzScalPair_sqzBase (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (b : Spec R ⟶ S)
+    (s s' : R) :
+    Spec.map (sqzScalPair φ hsq s s') ≫ sqzBase φ b = sqzBase (sqzFst φ) (sqzBase φ b) := by
+  simp only [sqzBase]
+  rw [← Category.assoc, ← Spec.map_comp, sqzDiag_comp_sqzScalPair, Spec.map_comp, Category.assoc]
+
+theorem sqzSum_sqzBase (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) (b : Spec R ⟶ S) :
+    Spec.map (sqzSum φ hsq) ≫ sqzBase (sqzFst φ) (sqzBase φ b) = sqzBase φ b := by
+  simp only [sqzBase]
+  rw [← Category.assoc, ← Spec.map_comp, ← Category.assoc, ← Spec.map_comp, sqzDiag_comp_sqzSum]
+
+/-- **`Spec (R ×_{S'} R)` is the pushout `Spec R ⊔_{Spec S'} Spec R`** (SORRY
+LEAF — the ONE geometric input of the `R`-module structure on the kernel of
+reduction, and the only remaining gap in the `q ≠ ℓ` half of
+`neronKernel_torsionFree`).
+
+TRUE.  `φ` is surjective with nilpotent kernel, so `Spec.map φ` is a
+homeomorphism onto `Spec R`, and both `Spec.map (sqzFst φ)` and
+`Spec.map (sqzSnd φ)` are homeomorphisms onto `Spec (R ×_{S'} R)`.  The square
+
+    Spec S' ⟶ Spec R
+       ↓          ↓
+    Spec R  ⟶ Spec (R ×_{S'} R)
+
+is therefore a pushout of schemes: this is the affine case of Ferrand's gluing
+theorem, and for a NILPOTENT thickening it needs none of Ferrand's work.
+
+WHAT IS PROVEN HERE AND WHAT IS NOT, so the successor does not re-survey it.
+
+* The AFFINE-TARGET case (`Z = Spec C`) is immediate from what is already in
+  this file and needs no new mathematics: `Spec.homEquiv` turns
+  `Spec (R ×_{S'} R) ⟶ Spec C` into `C ⟶ R ×_{S'} R`, existence is `sqzPair`
+  (PROVEN above) and uniqueness is `sqz_hom_ext` (PROVEN above).  That is
+  reduction (1) of the route: for an affine target the pushout is free by the
+  `Γ ⊣ Spec` adjunction, with no Ferrand theorem involved.  It is NOT stated as
+  a separate declaration here only because a proven brick standing in front of
+  a sorried consumer is free-floating; state it inside the proof when you write
+  it.
+* What is genuinely left is the AFFINE-LOCAL REDUCTION, i.e. reduction (2):
+  `hker` forces `u` and `v` to have the same underlying continuous map (their
+  composites with the surjection `Spec.map φ` agree), so one may cover
+  `Spec R` by basic opens `D(g)` whose common image lies in an affine chart of
+  `Z`, apply the affine case over each `R_g`, and glue by the uniqueness half.
+  The one ring-theoretic input is that localisation commutes with this fibre
+  product — `(R ×_{S'} R)_{(g,g)} ≅ R_g ×_{S'_{φ g}} R_g`, which holds because
+  localisation is exact — so that the pieces are again of the same shape.
+
+THE CHECK THAT WOULD REFUTE THIS VERDICT: a scheme-level pushout along a closed
+immersion, or a `Scheme.IsPushout`/Ferrand API, appearing in the pin; nothing
+under `Mathlib/AlgebraicGeometry/` provides one as of 2026-07-27. -/
+theorem existsUnique_hom_sqzRing (φ : R ⟶ S') (hφ : Function.Surjective φ)
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {Z : Scheme.{u}} (u v : Spec R ⟶ Z)
+    (huv : Spec.map φ ≫ u = Spec.map φ ≫ v) :
+    ∃! w : Spec (sqzRing φ) ⟶ Z,
+      Spec.map (sqzFst φ) ≫ w = u ∧ Spec.map (sqzSnd φ) ≫ w = v :=
+  sorry
+
+/-- **The amalgamation, read on relative points** (PROVEN over the leaf above).
+
+The extra content beyond `existsUnique_hom_sqzRing` is that the amalgamated
+morphism lies over the right base point, and that is settled by the SAME
+uniqueness statement applied with `Z := S`. -/
+theorem existsUnique_relPoint_sqz (φ : R ⟶ S') (hφ : Function.Surjective φ)
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {b : Spec R ⟶ S} (u v : RelPoint f b)
+    (huv : Spec.map φ ≫ u.1 = Spec.map φ ≫ v.1) :
+    ∃! w : RelPoint f (sqzBase φ b),
+      RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) w = u ∧
+      RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b) w = v := by
+  obtain ⟨w, ⟨hw1, hw2⟩, hwu⟩ := existsUnique_hom_sqzRing φ hφ hsq u.1 v.1 huv
+  have hwf : w ≫ f = sqzBase φ b := by
+    obtain ⟨z, -, hzu⟩ := existsUnique_hom_sqzRing φ hφ hsq b b rfl
+    rw [hzu (w ≫ f) ⟨by rw [← Category.assoc, hw1, u.2], by rw [← Category.assoc, hw2, v.2]⟩,
+      hzu (sqzBase φ b) ⟨sqzFst_sqzBase φ b, sqzSnd_sqzBase φ b⟩]
+  refine ⟨⟨w, hwf⟩, ⟨Subtype.ext hw1, Subtype.ext hw2⟩, ?_⟩
+  rintro ⟨y, hy⟩ ⟨h1, h2⟩
+  exact Subtype.ext (hwu y ⟨congrArg Subtype.val h1, congrArg Subtype.val h2⟩)
+
+variable (ab : AbelianSchemeStruct f)
+
+/-- `μ_s` preserves the kernel of reduction along the first projection (PROVEN). -/
+theorem sqzScal_pre_ker (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {b : Spec R ⟶ S} (s : R)
+    {w : RelPoint f (sqzBase φ b)}
+    (hw : RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) w = ab.zero b) :
+    RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b)
+        (RelPoint.pre (Spec.map (sqzScal φ hsq s)) (sqzScal_sqzBase φ hsq b s) w)
+      = ab.zero b := by
+  have hwv : Spec.map (sqzFst φ) ≫ w.1 = (ab.zero b).1 := congrArg Subtype.val hw
+  refine Subtype.ext ?_
+  show Spec.map (sqzFst φ) ≫ Spec.map (sqzScal φ hsq s) ≫ w.1 = (ab.zero b).1
+  rw [← Category.assoc, ← Spec.map_comp, sqzScal_comp_fst, hwv]
+
+/-- `μ_1` is the identity (PROVEN). -/
+theorem sqzScal_pre_one (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {b : Spec R ⟶ S}
+    (w : RelPoint f (sqzBase φ b)) :
+    RelPoint.pre (Spec.map (sqzScal φ hsq 1)) (sqzScal_sqzBase φ hsq b 1) w = w := by
+  refine Subtype.ext ?_
+  show Spec.map (sqzScal φ hsq 1) ≫ w.1 = w.1
+  rw [sqzScal_one, Spec.map_id, Category.id_comp]
+
+/-- `μ_r ∘ μ_{r'} = μ_{r r'}` (PROVEN). -/
+theorem sqzScal_pre_comp (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {b : Spec R ⟶ S}
+    (r r' : R) (w : RelPoint f (sqzBase φ b)) :
+    RelPoint.pre (Spec.map (sqzScal φ hsq r)) (sqzScal_sqzBase φ hsq b r)
+        (RelPoint.pre (Spec.map (sqzScal φ hsq r')) (sqzScal_sqzBase φ hsq b r') w)
+      = RelPoint.pre (Spec.map (sqzScal φ hsq (r * r'))) (sqzScal_sqzBase φ hsq b (r * r')) w := by
+  refine Subtype.ext ?_
+  show Spec.map (sqzScal φ hsq r) ≫ Spec.map (sqzScal φ hsq r') ≫ w.1
+    = Spec.map (sqzScal φ hsq (r * r')) ≫ w.1
+  rw [← Category.assoc, ← Spec.map_comp, sqzScal_comp]
+
+/-- `μ_0` kills the kernel (PROVEN): `μ_0 = Δ ∘ p₁`, and the kernel is where
+`p₁` is the zero section. -/
+theorem sqzScal_pre_zero (φ : R ⟶ S') (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {b : Spec R ⟶ S}
+    {w : RelPoint f (sqzBase φ b)}
+    (hw : RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) w = ab.zero b) :
+    RelPoint.pre (Spec.map (sqzScal φ hsq 0)) (sqzScal_sqzBase φ hsq b 0) w
+      = ab.zero (sqzBase φ b) := by
+  have hwv : Spec.map (sqzFst φ) ≫ w.1 = (ab.zero b).1 := congrArg Subtype.val hw
+  have hzv : Spec.map (sqzDiag φ) ≫ (ab.zero b).1 = (ab.zero (sqzBase φ b)).1 :=
+    congrArg Subtype.val (ab.pre_zero (Spec.map (sqzDiag φ))
+      (rfl : Spec.map (sqzDiag φ) ≫ b = sqzBase φ b))
+  refine Subtype.ext ?_
+  show Spec.map (sqzScal φ hsq 0) ≫ w.1 = (ab.zero (sqzBase φ b)).1
+  rw [sqzScal_zero, Spec.map_comp, Category.assoc, hwv, hzv]
+
+/-- **The scalar maps add on the kernel** (PROVEN over the amalgamation leaf):
+`μ_{r+r'} w = μ_r w + μ_{r'} w`.
+
+This is the one module axiom that is NOT a ring identity — `μ_{r+r'}` is not
+`μ_r + μ_{r'}` as a map of rings, since that is not a ring map at all — and it
+is the single place where the group law of the abelian scheme is used.
+
+The argument.  `μ_r` and `μ_{r'}` amalgamate into `sqzScalPair : D ⟶ D ×_R D`,
+and `sqzSum` recovers `μ_{r+r'}` from it.  Applying the amalgamation for the
+square-zero surjection `p₁ : D ↠ R` (whose kernel is square-zero,
+`sqzKer_sq`), the `(D ×_R D)`-point built from `w` is determined by its two
+projections, which are `μ_r w` and `μ_{r'} w`.  The two "one-sided" points
+`sqzScalPair 1 0` and `sqzScalPair 0 1` have projections `(μ_r w, 0)` and
+`(0, μ_{r'} w)`, so their SUM has the same two projections and is therefore the
+same point.  Pushing that identity down along `sqzSum` — which is additive,
+because `RelPoint.pre` is (`ab.pre_add`) — gives the claim, since
+`sqzScalPair s s' ≫ sqzSum = μ_{s+s'}` and `μ_{1+0} = μ_{0+1} = id`. -/
+theorem sqzScal_pre_add (φ : R ⟶ S')
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥) {b : Spec R ⟶ S} (r r' : R)
+    {w : RelPoint f (sqzBase φ b)}
+    (hw : RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) w = ab.zero b) :
+    RelPoint.pre (Spec.map (sqzScal φ hsq (r + r'))) (sqzScal_sqzBase φ hsq b (r + r')) w
+      = ab.add (RelPoint.pre (Spec.map (sqzScal φ hsq r)) (sqzScal_sqzBase φ hsq b r) w)
+          (RelPoint.pre (Spec.map (sqzScal φ hsq r')) (sqzScal_sqzBase φ hsq b r') w) := by
+  classical
+  set u := RelPoint.pre (Spec.map (sqzScal φ hsq r)) (sqzScal_sqzBase φ hsq b r) w with hudef
+  set v := RelPoint.pre (Spec.map (sqzScal φ hsq r')) (sqzScal_sqzBase φ hsq b r') w with hvdef
+  have huk : RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) u = ab.zero b :=
+    sqzScal_pre_ker ab φ hsq r hw
+  have hvk : RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) v = ab.zero b :=
+    sqzScal_pre_ker ab φ hsq r' hw
+  have hukv : Spec.map (sqzFst φ) ≫ u.1 = (ab.zero b).1 := congrArg Subtype.val huk
+  have hvkv : Spec.map (sqzFst φ) ≫ v.1 = (ab.zero b).1 := congrArg Subtype.val hvk
+  obtain ⟨W₀, -, hWu⟩ := existsUnique_relPoint_sqz (f := f) (sqzFst φ) (sqzFst_surjective φ)
+    (sqzKer_sq φ hsq) u v (by rw [hukv, hvkv])
+  have hWmain : RelPoint.pre (Spec.map (sqzScalPair φ hsq r r'))
+      (sqzScalPair_sqzBase φ hsq b r r') w = W₀ := by
+    refine hWu _ ⟨Subtype.ext ?_, Subtype.ext ?_⟩
+    · show Spec.map (sqzFst (sqzFst φ)) ≫ Spec.map (sqzScalPair φ hsq r r') ≫ w.1
+        = Spec.map (sqzScal φ hsq r) ≫ w.1
+      rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_fst]
+    · show Spec.map (sqzSnd (sqzFst φ)) ≫ Spec.map (sqzScalPair φ hsq r r') ≫ w.1
+        = Spec.map (sqzScal φ hsq r') ≫ w.1
+      rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_snd]
+  set W₁ := RelPoint.pre (Spec.map (sqzScalPair φ hsq 1 0))
+    (sqzScalPair_sqzBase φ hsq b 1 0) u with hW₁def
+  set W₂ := RelPoint.pre (Spec.map (sqzScalPair φ hsq 0 1))
+    (sqzScalPair_sqzBase φ hsq b 0 1) v with hW₂def
+  have hW₁f : RelPoint.pre (Spec.map (sqzFst (sqzFst φ)))
+      (sqzFst_sqzBase (sqzFst φ) (sqzBase φ b)) W₁ = u := by
+    refine Subtype.ext ?_
+    show Spec.map (sqzFst (sqzFst φ)) ≫ Spec.map (sqzScalPair φ hsq 1 0) ≫ u.1 = u.1
+    rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_fst, sqzScal_one, Spec.map_id,
+      Category.id_comp]
+  have hW₁s : RelPoint.pre (Spec.map (sqzSnd (sqzFst φ)))
+      (sqzSnd_sqzBase (sqzFst φ) (sqzBase φ b)) W₁ = ab.zero (sqzBase φ b) := by
+    have h0 := sqzScal_pre_zero ab φ hsq huk
+    refine Subtype.ext ?_
+    show Spec.map (sqzSnd (sqzFst φ)) ≫ Spec.map (sqzScalPair φ hsq 1 0) ≫ u.1 = _
+    rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_snd]
+    exact congrArg Subtype.val h0
+  have hW₂f : RelPoint.pre (Spec.map (sqzFst (sqzFst φ)))
+      (sqzFst_sqzBase (sqzFst φ) (sqzBase φ b)) W₂ = ab.zero (sqzBase φ b) := by
+    have h0 := sqzScal_pre_zero ab φ hsq hvk
+    refine Subtype.ext ?_
+    show Spec.map (sqzFst (sqzFst φ)) ≫ Spec.map (sqzScalPair φ hsq 0 1) ≫ v.1 = _
+    rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_fst]
+    exact congrArg Subtype.val h0
+  have hW₂s : RelPoint.pre (Spec.map (sqzSnd (sqzFst φ)))
+      (sqzSnd_sqzBase (sqzFst φ) (sqzBase φ b)) W₂ = v := by
+    refine Subtype.ext ?_
+    show Spec.map (sqzSnd (sqzFst φ)) ≫ Spec.map (sqzScalPair φ hsq 0 1) ≫ v.1 = v.1
+    rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_snd, sqzScal_one, Spec.map_id,
+      Category.id_comp]
+  have hWadd : ab.add W₁ W₂ = W₀ := by
+    refine hWu _ ⟨?_, ?_⟩
+    · rw [ab.pre_add, hW₁f, hW₂f, ab.add_comm, ab.zero_add]
+    · rw [ab.pre_add, hW₁s, hW₂s, ab.zero_add]
+  have hkey : RelPoint.pre (Spec.map (sqzSum φ hsq)) (sqzSum_sqzBase φ hsq b) W₀
+      = RelPoint.pre (Spec.map (sqzScal φ hsq (r + r'))) (sqzScal_sqzBase φ hsq b (r + r')) w := by
+    rw [← hWmain]
+    refine Subtype.ext ?_
+    show Spec.map (sqzSum φ hsq) ≫ Spec.map (sqzScalPair φ hsq r r') ≫ w.1
+      = Spec.map (sqzScal φ hsq (r + r')) ≫ w.1
+    rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_sum]
+  have hkey₁ : RelPoint.pre (Spec.map (sqzSum φ hsq)) (sqzSum_sqzBase φ hsq b) W₁ = u := by
+    refine Subtype.ext ?_
+    show Spec.map (sqzSum φ hsq) ≫ Spec.map (sqzScalPair φ hsq 1 0) ≫ u.1 = u.1
+    rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_sum, add_zero, sqzScal_one, Spec.map_id,
+      Category.id_comp]
+  have hkey₂ : RelPoint.pre (Spec.map (sqzSum φ hsq)) (sqzSum_sqzBase φ hsq b) W₂ = v := by
+    refine Subtype.ext ?_
+    show Spec.map (sqzSum φ hsq) ≫ Spec.map (sqzScalPair φ hsq 0 1) ≫ v.1 = v.1
+    rw [← Category.assoc, ← Spec.map_comp, sqzScalPair_sum, zero_add, sqzScal_one, Spec.map_id,
+      Category.id_comp]
+  rw [← hkey, ← hWadd, ab.pre_add, hkey₁, hkey₂]
+
+/-- The second projection of a kernel point is again a kernel point (PROVEN).
+This is where `p₁ ≫ φ = p₂ ≫ φ` — the defining equation of the fibre product —
+is consumed. -/
+theorem sqzSnd_pre_mem_kerPre (φ : R ⟶ S') {b : Spec R ⟶ S}
+    {x : RelPoint f (sqzBase φ b)}
+    (hx : RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) x = ab.zero b) :
+    RelPoint.pre (Spec.map φ) rfl
+        (RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b) x)
+      = ab.zero (Spec.map φ ≫ b) := by
+  have hxv : Spec.map (sqzFst φ) ≫ x.1 = (ab.zero b).1 := congrArg Subtype.val hx
+  have hzv : Spec.map φ ≫ (ab.zero b).1 = (ab.zero (Spec.map φ ≫ b)).1 :=
+    congrArg Subtype.val (ab.pre_zero (Spec.map φ) rfl)
+  refine Subtype.ext ?_
+  show Spec.map φ ≫ Spec.map (sqzSnd φ) ≫ x.1 = (ab.zero (Spec.map φ ≫ b)).1
+  rw [← Category.assoc, ← Spec.map_comp, ← sqzFst_comp_base, Spec.map_comp, Category.assoc,
+    hxv, hzv]
+
+end SquareZeroRelPoint
+
 /-- **The kernel of `A(R) ⟶ A(R/I)` along a square-zero extension is an
 `R`-MODULE** (sorry node — the whole deformation-theoretic content of the
 `q ≠ ℓ` half of `neronKernel_torsionFree`, and now the only thing left in it).
@@ -14455,58 +14977,55 @@ that matters is not the precise identification but its consequence: the
 kernel is an `R`-MODULE, not merely an abelian group (the `R`-action factors
 through `R/I` because `I² = 0`).
 
-STATE OF THE PIN, checked rather than assumed (2026-07-27), and this is what
-makes the leaf expensive:
+STATUS (2026-07-27): **PROVEN**, over the single geometric leaf
+`existsUnique_hom_sqzRing` above — the statement that `Spec (R ×_{S'} R)` is
+the pushout `Spec R ⊔_{Spec S'} Spec R`.  No Kähler differentials, no
+scheme-level `FormallySmooth`, and no Ferrand theorem occur anywhere in this
+proof; see the note below for why the earlier survey of the pin, which
+recorded all three as blockers, was searching the wrong axis.
 
-* Mathlib has the AFFINE-ALGEBRA half in `Mathlib/RingTheory/Smooth/Kaehler.lean`
-  — `derivationOfSectionOfKerSqZero` (the difference of two sections of a
-  square-zero extension IS a derivation), `retractionOfSectionOfKerSqZero`,
-  `retractionKerToTensorEquivSection`, `tensorKaehlerQuotKerSqEquiv`.
-* There is **no scheme-level Kähler differential module at all**: nothing
-  under `Mathlib/AlgebraicGeometry/` mentions `KaehlerDifferential` or
-  `Cotangent` except `Morphisms/FormallyUnramified.lean` and
-  `Morphisms/Etale.lean`, and neither builds `Ω_{X/Y}`.
-* There is **no scheme-level `FormallySmooth` class** — `Morphisms/Smooth.lean`
-  has `Smooth`, `SmoothOfRelativeDimension` and a `smoothLocus`, but formal
-  smoothness appears only through `f.stalkMap x` at the ring level, so the
-  infinitesimal lifting property is not available as a scheme-level API the
-  way `FormallyUnramified.of_hom_ext` is for unramifiedness.
-* `Fermat/FLT/GroupScheme/HopfKaehler.lean` has the AFFINE group-scheme
-  version; `~/cs/FLT` has no abelian-scheme development at all.
+THE CONSTRUCTION.  Write `D := R ×_{S'} R` (`sqzRing φ`), the trivial
+square-zero extension `R ⊕ I` with `I := ker φ`.  A kernel element `c` and the
+zero section are two `R`-points of `A` agreeing mod `I`, so the pushout
+property amalgamates them into a single `D`-point `W c` with
+`p₁ ∘ W c = 0` and `p₂ ∘ W c = c` (`existsUnique_relPoint_sqz`).  The scalar
+action is then read off as
 
-THE ROUTE, recorded so the successor does not have to rediscover it.  The
-construction of `smul` needs the trivial square-zero extension, which is the
-ring `R ×_{S'} R` (pairs agreeing mod `I`); via `(a, x) ↦ (a, a + x)` it is
-`R ⊕ I` with `I² = 0`, and there `μ_r : (a, x) ↦ (a, r x)` IS an `R`-algebra
-endomorphism — that endomorphism is the whole source of the scalar action.
-To feed a kernel element into it one needs a map `Spec (R ×_{S'} R) ⟶ A`
-built from the two `R`-points `c` and `ab.zero b`, i.e. the Ferrand pushout
-`Spec R ⊔_{Spec S'} Spec R`, which is ABSENT from the pin.
+    r · c := p₂ ∘ μ_r ∘ W c,
 
-Two reductions make that affordable, and neither is in the docstring this
-replaces:
+where `μ_r : (a₁, a₂) ↦ (a₁, a₁ + r (a₂ - a₁))` is the `R`-algebra
+endomorphism `sqzScal` of `D` — a ring map precisely because `I² = 0`.
+The four axioms come out as:
 
-1. **For an AFFINE target the pushout is free.**  `Hom(Spec D, X)` for
-   affine `X` is `Hom(Γ(X), D)` by the `Γ ⊣ Spec` adjunction, so the
-   universal property of `R ×_{S'} R` as a fibre product of RINGS is
-   already the universal property needed.  No Ferrand theorem is required.
-2. **One may assume the kernel element factors through an affine open of
-   `A`.**  Equality of morphisms is local on the source, and `Spec S' ⟶ Spec R`
-   is a homeomorphism (its ideal is square-zero, hence nilpotent), so
-   `hker` forces `c` and `(ab.zero b).1` to have the SAME underlying
-   continuous map.  Cover `Spec R` by basic opens `D(g)` whose image under
-   that common map lies in an affine chart of `A`; `RelPoint.pre` along
-   `Spec R_g ⟶ Spec R` is a group homomorphism (`ab.pre_add`, `ab.pre_zero`),
-   localisation is exact so `ker φ_g` is still square-zero, and `q` stays a
-   unit.  So the statement descends to the affine case.
+* `one_smul` from `μ_1 = id` (`sqzScal_one`);
+* `mul_smul` from `μ_{r'} ≫ μ_r = μ_{r r'}` (`sqzScal_comp`), together with
+  the UNIQUENESS half of the amalgamation, which identifies `W (r' · c)`
+  with `μ_{r'} ∘ W c`;
+* `smul_add` from additivity of `W` — again by uniqueness — and of
+  `RelPoint.pre` (`ab.pre_add`);
+* `add_smul` from `sqzScal_pre_add`, the one step that is not a ring
+  identity; it runs the same amalgamation a SECOND time, at
+  `D ×_R D = R ⊕ I ⊕ I`.
 
-THE CHECK THAT WOULD REFUTE THIS VERDICT: a scheme-level `FormallySmooth`
-class with the lifting property phrased on `Spec R`-points, in the style of
-`FormallyUnramified.of_hom_ext`, would collapse step 2; and any scheme-level
-`Ω_{X/Y}` would make the direct torsor argument available. -/
+WHY THE EARLIER SURVEY WAS LOOKING IN THE WRONG PLACE.  It recorded that
+mathlib has the affine-algebra half in `Mathlib/RingTheory/Smooth/Kaehler.lean`
+and nothing at the scheme level: no `Ω_{X/Y}`, no scheme-level
+`FormallySmooth`, no Ferrand pushout — all still true, and all irrelevant.
+The identification of the kernel with `Hom(e^* Ω_{A/S} ⊗ R/I, I)` is a
+THEOREM about the module structure, not a prerequisite for having one: the
+`D`-point construction above produces the action directly, and the group law
+of `A` supplies additivity.  Smoothness of `f` is not used either — the
+statement is true for any commutative group scheme presented by its functor of
+points, because the amalgamation, not a lifting criterion, is what does the
+work.
+
+That is the general lesson from this leaf a third time: an irreducibility
+verdict is only as wide as the axis searched.  The axis that had NOT been
+searched here was "state the pushout and use it", as opposed to "build the
+scheme-level cotangent module first". -/
 theorem exists_smul_kerPre_of_squareZero {A S : Scheme.{u}} {f : A ⟶ S}
     (ab : AbelianSchemeStruct f) {R S' : CommRingCat.{u}} (φ : R ⟶ S')
-    (_hφ : Function.Surjective φ) (_hsq : RingHom.ker φ.hom ^ 2 = ⊥)
+    (hφ : Function.Surjective φ) (hsq : RingHom.ker φ.hom ^ 2 = ⊥)
     (b : Spec R ⟶ S) :
     ∃ smul : R → ab.KerPre φ b → ab.KerPre φ b,
       (∀ x, (smul 1 x).1 = x.1) ∧
@@ -14515,8 +15034,58 @@ theorem exists_smul_kerPre_of_squareZero {A S : Scheme.{u}} {f : A ⟶ S}
       (∀ (r r' : R) (x : ab.KerPre φ b),
         (smul (r + r') x).1 = ab.add (smul r x).1 (smul r' x).1) ∧
       (∀ (r : R) (x y z : ab.KerPre φ b), z.1 = ab.add x.1 y.1 →
-        (smul r z).1 = ab.add (smul r x).1 (smul r y).1) :=
-  sorry
+        (smul r z).1 = ab.add (smul r x).1 (smul r y).1) := by
+  classical
+  -- amalgamate the zero section with a kernel element over `Spec (R ×_{S'} R)`
+  have hamal : ∀ c : ab.KerPre φ b, ∃! w : RelPoint f (sqzBase φ b),
+      RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) w = ab.zero b ∧
+      RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b) w = c.1 := by
+    intro c
+    refine existsUnique_relPoint_sqz φ hφ hsq (ab.zero b) c.1 ?_
+    have h1 : Spec.map φ ≫ (ab.zero b).1 = (ab.zero (Spec.map φ ≫ b)).1 :=
+      congrArg Subtype.val (ab.pre_zero (Spec.map φ) rfl)
+    have h2 : Spec.map φ ≫ (c.1).1 = (ab.zero (Spec.map φ ≫ b)).1 :=
+      congrArg Subtype.val c.2
+    rw [h1, h2]
+  choose W hWp hWu using hamal
+  have hW1 : ∀ c, RelPoint.pre (Spec.map (sqzFst φ)) (sqzFst_sqzBase φ b) (W c) = ab.zero b :=
+    fun c => (hWp c).1
+  have hW2 : ∀ c, RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b) (W c) = c.1 :=
+    fun c => (hWp c).2
+  refine ⟨fun r c => ⟨RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b)
+      (RelPoint.pre (Spec.map (sqzScal φ hsq r)) (sqzScal_sqzBase φ hsq b r) (W c)),
+    sqzSnd_pre_mem_kerPre ab φ (sqzScal_pre_ker ab φ hsq r (hW1 c))⟩, ?_, ?_, ?_, ?_⟩
+  · -- `one_smul`: `μ_1` is the identity
+    intro x
+    show RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b)
+      (RelPoint.pre (Spec.map (sqzScal φ hsq 1)) (sqzScal_sqzBase φ hsq b 1) (W x)) = x.1
+    rw [sqzScal_pre_one, hW2]
+  · -- `mul_smul`: uniqueness identifies `W (r' · x)` with `μ_{r'} ∘ W x`
+    intro r r' x
+    have hWx : RelPoint.pre (Spec.map (sqzScal φ hsq r')) (sqzScal_sqzBase φ hsq b r') (W x)
+        = W ⟨RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b)
+              (RelPoint.pre (Spec.map (sqzScal φ hsq r')) (sqzScal_sqzBase φ hsq b r') (W x)),
+            sqzSnd_pre_mem_kerPre ab φ (sqzScal_pre_ker ab φ hsq r' (hW1 x))⟩ :=
+      hWu _ _ ⟨sqzScal_pre_ker ab φ hsq r' (hW1 x), rfl⟩
+    show RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b)
+        (RelPoint.pre (Spec.map (sqzScal φ hsq (r * r'))) (sqzScal_sqzBase φ hsq b (r * r'))
+          (W x)) = _
+    rw [← sqzScal_pre_comp, hWx]
+  · -- `add_smul`: the one step that is not a ring identity
+    intro r r' x
+    show RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b)
+        (RelPoint.pre (Spec.map (sqzScal φ hsq (r + r'))) (sqzScal_sqzBase φ hsq b (r + r'))
+          (W x)) = _
+    rw [sqzScal_pre_add ab φ hsq r r' (hW1 x), ab.pre_add]
+  · -- `smul_add`: `W` is additive by uniqueness, and `RelPoint.pre` is additive
+    intro r x y z hz
+    have hWz : ab.add (W x) (W y) = W z := by
+      refine hWu _ _ ⟨?_, ?_⟩
+      · rw [ab.pre_add, hW1, hW1, ab.zero_add]
+      · rw [ab.pre_add, hW2, hW2, ← hz]
+    show RelPoint.pre (Spec.map (sqzSnd φ)) (sqzSnd_sqzBase φ b)
+        (RelPoint.pre (Spec.map (sqzScal φ hsq r)) (sqzScal_sqzBase φ hsq b r) (W z)) = _
+    rw [← hWz, ab.pre_add, ab.pre_add]
 
 /-- **The kernel of `A(R) ⟶ A(R/I)` along a SQUARE-ZERO extension has no
 `q`-torsion when `q` is a unit of `R`** (PROVEN, over the single leaf
