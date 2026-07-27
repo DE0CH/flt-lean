@@ -840,6 +840,13 @@ it goes stale; all re-run against the pin on 2026-07-27):
   (`LocalRing/Module.lean:248`) is the local criterion itself in the
   finitely-*presented* case: `𝔪 ⊗ M → M` injective plus `FinitePresentation`
   gives `Free`.
+  **STILL TRUE OF MATHLIB, NO LONGER TRUE OF THIS FILE (2026-07-27):** the
+  Noetherian local criterion `flat_of_rTensor_injective_of_flat_quotientMap`
+  (Stacks 10.99.10) is now PROVEN below, over a single homological leaf.  Its
+  Noetherian content — Artin–Rees + Krull, which is what the "ideally
+  separated" hazard in the next bullet is really about — is written out; see the
+  section note "10.99.10 CUT".  A sweep that concludes "the local criterion is
+  missing" should say *missing from the pin*, not *missing here*.
 
 **ROUTE AUDIT, 2026-07-27 — a CORRECTION to the sentence that used to end
 that bullet.**  It read: "The gap is precisely that a stalk is essentially,
@@ -1009,8 +1016,11 @@ is two, along the source's own seam `00R7 = approximation + 00MP`:
   the APPROXIMATION half.  Open.  Whoever proves it takes the filtered-system
   decision, and should record what they pinned.
 * `flat_of_rTensor_injective_of_flat_quotientMap` — **10.99.10**, the local
-  criterion of flatness in the Noetherian setting.  Open, and the only thing
-  standing between this development and 00MP.
+  criterion of flatness in the Noetherian setting.  **PROVEN 2026-07-27**; it
+  was itself cut in two along Matsumura 22.3's own seam, and what remains under
+  it is the single leaf `lTensor_subtype_injective_of_pow_le` — the HOMOLOGICAL
+  half, which needs no Noetherian hypothesis at all.  See the section note
+  "10.99.10 CUT" below.
 
 and 00MP itself (`flat_of_flat_of_flat_quotientMap_noetherian`) is PROVEN
 here, because its OTHER half is proven outright:
@@ -1030,6 +1040,15 @@ ideal" written without Tor, and that is enough to prove the whole step.  The
 audit itself flags this lemma as "an ingredient a naive survey misses"; it was
 right, and the ingredient was sufficient.  What is genuinely missing is only
 the local criterion (10.99.10) and the approximation.
+
+**AND A SECOND CORRECTION, 2026-07-27, to the sentence immediately above.**  The
+local criterion is no longer missing either: it is PROVEN below, and its own
+Noetherian content (Artin–Rees + Krull) is written out.  What is missing under
+it is one purely homological leaf, `lTensor_subtype_injective_of_pow_le`, which
+carries none of the hypotheses that made this route look expensive — no
+Noetherian, no finiteness, no locality.  So of the three items in the original
+survey — Tor, the local criterion, Noetherian approximation — only the third
+remains, plus the `I`-adic induction inside that one leaf.
 
 **AXIS SEARCHED.**  Cuts of 00R7 along the Stacks proof's own structure.  Not
 searched: whether a *different* proof of 00R7 exists that avoids approximation
@@ -1170,8 +1189,211 @@ theorem rTensor_map_subtype_injective_of_flat {R B A : Type u}
   rw [(Module.Flat.iff_rTensor_injective'.mp inferInstance I).eq_iff' (map_zero _) |>.mp hw]
   exact map_zero _
 
-/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (SORRY
-LEAF, cut out of `flat_of_flat_of_flat_quotientMap_noetherian` on 2026-07-27).
+/-! ### 10.99.10 CUT — the Noetherian half is Artin–Rees + Krull, and it is PROVEN
+
+**SECTION NOTE for the three declarations that follow and for the local criterion
+itself** (2026-07-27).  Stacks **10.99.10** — the local criterion of flatness in
+the Noetherian setting — was left ATOMIC when 00R7 was cut, with a docstring
+saying only that `grep -rin "local criterion"` over the pin is empty and that the
+textbook route is "Matsumura 22.3 via the `I`-adic filtration and Artin–Rees".
+That is right, and it hides a clean seam that the classical proof itself uses.
+
+**THE SEAM.**  Matsumura 22.3 / Stacks 10.99.6–10.99.7 prove the criterion in two
+independent halves:
+
+1. *(Homological, and it needs NO finiteness, NO Noetherian hypothesis and NO
+   locality.)*  `Tor₁^B(B/I, A) = 0` together with flatness of `A/IA` over `B/I`
+   propagates up the `I`-adic filtration: for every `n`, `Tor₁^B(B/Iⁿ, A) = 0`
+   and `A/IⁿA` is flat over `B/Iⁿ`.
+2. *(Noetherian, and it is where every hypothesis of the leaf is consumed.)*
+   Artin–Rees plus Krull's intersection theorem turn (1) into flatness: for a
+   finitely generated ideal `𝔞 ⊆ B`, an element of `ker(A ⊗_B 𝔞 → A)` lies in
+   `Iⁿ·(A ⊗_B 𝔞)` for every `n`, and the intersection of those is zero because
+   `A ⊗_B 𝔞` is a FINITE `A`-module and `I·A ⊆ 𝔪_A`.
+
+Half (2) is proven below in full; half (1) is the single remaining leaf
+`lTensor_subtype_injective_of_pow_le`.  Both halves are stated with `B`-modules
+only — no quotient rings occur in any statement — which is the design decision
+recorded in that leaf's docstring.
+
+**WHAT MATHLIB SUPPLIES, checked 2026-07-27.**  `Ideal.exists_pow_inf_eq_pow_smul`
+(**Artin–Rees**, `Mathlib/RingTheory/Filtration.lean:387`) and
+`Ideal.iInf_pow_smul_eq_bot_of_isLocalRing` (**Krull's intersection theorem** for
+a finite module over a Noetherian local ring, same file).  Both arrive in this
+file's cone already.  `Module.Finite.base_change`
+(`Mathlib/RingTheory/TensorProduct/Finite.lean:82`) supplies
+`Module.Finite A (A ⊗[B] ↥𝔞)`, which is what makes Krull applicable — and it is
+exactly the "ideally separated" hypothesis of Matsumura 22.3, discharged rather
+than assumed.  This is why the section note above is right that
+`IsNoetherianRing` must not be dropped: without it neither Artin–Rees nor Krull
+is available, and half (2) is FALSE for a general local ring.
+
+**ORIENTATION.**  Everything below is written with `lTensor` (`A ⊗_B N`) rather
+than `rTensor` (`N ⊗_B A`), because the `A`-module structure on `A ⊗[B] N` is a
+global instance (`TensorProduct.leftModule`) whereas the one on `N ⊗[B] A` is
+only available through `Algebra.TensorProduct.rightAlgebra`, which mathlib
+declares as a *local* instance.  Krull's theorem is applied over `A`, so the
+`A`-module structure has to be the ambient one.  `_htor` is stated with `rTensor`
+because that is the shape `rTensor_map_subtype_injective_of_flat` produces; the
+two are interchangeable by `LinearMap.lTensor_inj_iff_rTensor_inj`, and the leaf
+below takes the `rTensor` form verbatim so that the consumer needs no bridge.
+-/
+
+/-- `a ⊗ₜ m` with `m ∈ K • ⊤` lies in `(K·A) • ⊤`.
+
+The `B`-action of an ideal `K` on `M` is absorbed, along `M → A ⊗[B] M`, by the
+`A`-action of the extended ideal `K·A` on `A ⊗[B] M`.  This is the step that
+converts the Artin–Rees bound (a statement about `B`-ideals) into a statement
+about the `A`-submodule filtration on which Krull's intersection theorem is run,
+and it is the only place where the scalar tower `B → A → A ⊗[B] M` is used. -/
+lemma tmul_mem_map_smul_top {B A : Type u} [CommRing B] [CommRing A] [Algebra B A]
+    {M : Type u} [AddCommGroup M] [Module B M] (K : Ideal B) (a : A) (m : M)
+    (hm : m ∈ K • (⊤ : Submodule B M)) :
+    a ⊗ₜ[B] m ∈ (K.map (algebraMap B A)) • (⊤ : Submodule A (A ⊗[B] M)) := by
+  refine Submodule.smul_induction_on (p := fun m => a ⊗ₜ[B] m ∈
+    (K.map (algebraMap B A)) • (⊤ : Submodule A (A ⊗[B] M))) hm ?_ ?_
+  · intro r hr x _
+    rw [TensorProduct.tmul_smul, ← IsScalarTower.algebraMap_smul A r]
+    exact Submodule.smul_mem_smul (Ideal.mem_map_of_mem _ hr) Submodule.mem_top
+  · intro x y hx hy
+    rw [TensorProduct.tmul_add]
+    exact Submodule.add_mem _ hx hy
+
+/-- **THE HOMOLOGICAL HALF OF THE LOCAL CRITERION** (SORRY LEAF, cut out of
+`flat_of_rTensor_injective_of_flat_quotientMap` on 2026-07-27; read the section
+note above first).
+
+*Let `B → A` be a ring map and `I ⊆ B` an ideal, `J = I·A`.  Assume
+`Tor₁^B(B/I, A) = 0` and that `A/J` is flat over `B/I`.  Then for every `n : ℕ`
+and every ideal `𝔠 ⊆ B` with `Iⁿ ⊆ 𝔠`, the multiplication map `A ⊗_B 𝔠 → A` is
+injective.*
+
+**WHAT THIS SAYS IN CLASSICAL TERMS — it is Stacks 10.99.6 / Matsumura 22.3's
+step (2) ⟹ (3), packed into one quantifier.**  The ideals `𝔠 ⊇ Iⁿ` are exactly
+the preimages of the ideals of `B/Iⁿ`, so the conclusion is the conjunction of
+
+* `Tor₁^B(B/Iⁿ, A) = 0`  — the case `𝔠 = Iⁿ`; and
+* `A/IⁿA` is FLAT over `B/Iⁿ`  — the remaining `𝔠`, via
+  `A ⊗_B (𝔠/Iⁿ) ≅ (A/IⁿA) ⊗_{B/Iⁿ} (𝔠/Iⁿ)`.
+
+At `n = 1` it is exactly the two hypotheses again, so the leaf is an induction
+starting from its own hypotheses, not a strengthening of them.
+
+**WHY IT IS STATED THIS WAY AND NOT WITH QUOTIENT RINGS.**  The classical form
+("`A/IⁿA` is flat over `B/Iⁿ` for every `n`") forces its CONSUMER to cross the
+change-of-rings identification `A ⊗_B N ≅ (A/IⁿA) ⊗_{B/Iⁿ} N` for `B/Iⁿ`-modules
+`N`, which is a base-change cancellation that mathlib states only through
+`TensorProduct.AlgebraTensorModule` and that would have to be carried through the
+Artin–Rees argument.  In the `∀ 𝔠 ⊇ Iⁿ` form the identification is part of the
+PROOF of this leaf and never appears downstream; the two forms are equivalent by
+the diagram chase on `0 → Iⁿ → 𝔠 → 𝔠/Iⁿ → 0` tensored with `A`.  Nothing is
+weakened: the equivalence is an equivalence, in both directions.
+
+**NO NOETHERIAN, NO FINITENESS, NO LOCALITY.**  The statement carries none of the
+four hypotheses that the consumer needs (`IsNoetherianRing B`, `IsNoetherianRing
+A`, `IsLocalRing`, `IsLocalHom`), because half (1) of the classical proof uses
+none of them.  A prover who finds a use for them should say so — it would mean
+the seam is in the wrong place.
+
+**WHAT PROVING IT COSTS.**  Induction on `n`.
+
+* `n = 0`: `I⁰ = ⊤` forces `𝔠 = ⊤`, and `A ⊗_B B → A` is an isomorphism.
+* `n = 1`: the chase above.  From `0 → I → 𝔠 → 𝔠/I → 0` one gets the exact
+  `A ⊗ I → A ⊗ 𝔠 → A ⊗ (𝔠/I) → 0`; an `x` killed in `A` dies in `A/IA`, hence in
+  `A ⊗ (𝔠/I) ≅ (A/IA) ⊗_{B/I} (𝔠/I)` by `_hquot`, hence comes from `A ⊗ I`,
+  hence is `0` by `_htor`.
+* `n → n+1`: the graded step of 10.99.6.  The content is that
+  `Iⁿ/Iⁿ⁺¹ ⊗_{B/I} A/IA → IⁿA/Iⁿ⁺¹A` is an isomorphism, proved from the `n = 1`
+  data by Nakayama; that identification is what upgrades `A/IⁿA` flat over
+  `B/Iⁿ` to `A/Iⁿ⁺¹A` flat over `B/Iⁿ⁺¹`.
+
+The only piece of infrastructure that is not already in this file's cone is the
+change-of-rings isomorphism `A ⊗_B N ≅ (A/I^nA) ⊗_{B/I^n} N`; mathlib's
+`Mathlib.RingTheory.TensorProduct.Quotient` (already imported here) and
+`TensorProduct.AlgebraTensorModule.cancelBaseChange` are the intended route.
+
+**READ `section LocalCriterionOfFlatness` FURTHER DOWN THIS FILE BEFORE
+STARTING — it is the SAME theorem at a principal ideal, and it already carries a
+worked Lean attack.**  `flat_quotientMap_pow_of_flat_quotientMap` there is
+precisely this leaf specialised to `I = (t)` with `t` a nonzerodivisor on both
+rings (in that case `Tor₁^B(B/(t), A) = 0` is exactly regularity of `φ t` on
+`A`, which is why it appears as a hypothesis rather than as a `Tor` statement),
+and it is open with the same owner-less status.  More usefully,
+`mem_baseChange_sup_of_flat_quotientMap_pow`'s docstring works out the
+change-of-rings chase in Lean-level detail — the two `TensorProduct.lift`s `F`
+and `G`, why a kernel must NOT be computed directly, and the `Module Rₙ Q`
+instance hazard.  That plan transfers to a general `I` verbatim.
+
+**So these two leaves should have ONE owner**: a proof of this leaf specialises
+to `flat_quotientMap_pow_of_flat_quotientMap`, and the principal case is
+strictly easier to attack first because `(t)/(t^n)` is nilpotent in `B/(t^n)`,
+which is the case of the local criterion that needs no separatedness. -/
+theorem lTensor_subtype_injective_of_pow_le {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
+    (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
+    (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
+    (_hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ).Flat)
+    (n : ℕ) {𝔠 : Ideal B} (_h : I ^ n ≤ 𝔠) :
+    Function.Injective (LinearMap.lTensor A 𝔠.subtype) :=
+  sorry
+
+/-- **PROVEN** — the form of the leaf above that the Artin–Rees descent actually
+consumes: for EVERY ideal `𝔞` (no containment hypothesis), an element of
+`ker(A ⊗_B 𝔞 → A)` already comes from `A ⊗_B (𝔞 ∩ Iⁿ)`.
+
+The reduction to the leaf is the second isomorphism theorem.  Write `L = Iⁿ` and
+`𝔠 = 𝔞 + L ⊇ L`.  Then
+
+* `x ∈ ker(A ⊗ 𝔞 → A)` pushes to an element of `A ⊗ 𝔠` still killed in `A`, so it
+  is `0` there by the leaf at `𝔠`;
+* `↥𝔞 ↠ ↥𝔠 / L` is surjective with kernel `𝔞 ∩ L` (mathlib's
+  `LinearMap.subToSupQuotient`, surjective by
+  `LinearMap.quotientInfEquivSupQuotient_surjective`), so right-exactness of
+  `A ⊗_B -` identifies `ker(A ⊗ 𝔞 → A ⊗ (𝔠/L))` with the image of `A ⊗ (𝔞 ∩ L)`;
+* and the first bullet says exactly that `x` is in that kernel, because
+  `↥𝔞 → ↥𝔠/L` factors through `↥𝔠`.
+
+Note the second isomorphism theorem is used only through its SURJECTIVITY half,
+so the `⊤ ⊓ _` shape of `LinearMap.quotientInfEquivSupQuotient`'s domain never
+has to be normalised. -/
+theorem ker_lTensor_subtype_le_range_lTensor_comap_pow {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
+    (hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
+    (htor : Function.Injective (LinearMap.rTensor A I.subtype))
+    (hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) hIJ).Flat)
+    (n : ℕ) (𝔞 : Ideal B) :
+    LinearMap.ker (LinearMap.lTensor A 𝔞.subtype) ≤
+      LinearMap.range (LinearMap.lTensor A
+        (Submodule.comap 𝔞.subtype (I ^ n)).subtype) := by
+  set L : Ideal B := I ^ n
+  set N : Submodule B ↥𝔞 := Submodule.comap 𝔞.subtype L with hNdef
+  have hker : LinearMap.ker (LinearMap.subToSupQuotient 𝔞 L) = N := by
+    ext y
+    simp [LinearMap.subToSupQuotient, hNdef]
+  have hex : Function.Exact N.subtype (LinearMap.subToSupQuotient 𝔞 L) := by
+    rw [LinearMap.exact_iff, hker, Submodule.range_subtype]
+  have hsurj : Function.Surjective (LinearMap.subToSupQuotient 𝔞 L) := by
+    intro z
+    obtain ⟨w, hw⟩ := LinearMap.quotientInfEquivSupQuotient_surjective 𝔞 L z
+    obtain ⟨v, rfl⟩ := Submodule.mkQ_surjective _ w
+    exact ⟨v, hw⟩
+  have hexT := _root_.lTensor_exact A hex hsurj
+  intro x hx
+  refine (hexT x).mp ?_
+  have h1 : LinearMap.lTensor A (Submodule.inclusion (le_sup_left : 𝔞 ≤ 𝔞 ⊔ L)) x = 0 := by
+    refine (injective_iff_map_eq_zero _).mp
+      (lTensor_subtype_injective_of_pow_le hIJ htor hquot n (𝔠 := 𝔞 ⊔ L) le_sup_right) _ ?_
+    rw [← LinearMap.comp_apply, ← LinearMap.lTensor_comp]
+    exact LinearMap.mem_ker.mp hx
+  show LinearMap.lTensor A
+    ((Submodule.comap (𝔞 ⊔ L).subtype L).mkQ.comp
+      (Submodule.inclusion (le_sup_left : 𝔞 ≤ 𝔞 ⊔ L))) x = 0
+  rw [LinearMap.lTensor_comp, LinearMap.comp_apply, h1, map_zero]
+
+/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (**PROVEN**
+2026-07-27 over the single leaf `lTensor_subtype_injective_of_pow_le`; the
+section note "10.99.10 CUT" above is the design decision that produced it.  Cut
+out of `flat_of_flat_of_flat_quotientMap_noetherian` on 2026-07-27).
 
 *Let `B → A` be a local homomorphism of NOETHERIAN local rings and `I ⊆ 𝔪_B`
 an ideal, `J = I·A`.  If `Tor₁^B(B/I, A) = 0` and `A/J` is flat over `B/I`,
@@ -1197,11 +1419,29 @@ type because `J` occurs inside `A ⧸ J`, and the consumer supplies `J` as
 `Ideal.map_map`, but only propositionally, and a dependent rewrite there is
 gratuitous friction.
 
-**WHAT PROVING IT COSTS.**  `grep -rin "local criterion" .lake/packages/mathlib`
-returns nothing, re-run 2026-07-27, so this is genuinely new.  Its own Stacks
-proof cites Nakayama (10.20.1), 10.99.7 and 10.39.15; the standard textbook
-route is Matsumura 22.3 via the `I`-adic filtration and Artin–Rees.  Note that
-mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
+**THE PROOF, now written**, is half (2) of the section note above: Artin–Rees
+plus Krull, over the leaf `lTensor_subtype_injective_of_pow_le`.  For a finitely
+generated ideal `𝔞 ⊆ B` and `x ∈ ker(A ⊗_B 𝔞 → A)`, fix `n`; Artin–Rees
+(`Ideal.exists_pow_inf_eq_pow_smul`) gives `k` with `𝔞 ∩ I^{n+k} ⊆ Iⁿ·𝔞`, the
+leaf (through `ker_lTensor_subtype_le_range_lTensor_comap_pow` at `n+k`) puts `x`
+in the image of `A ⊗_B (𝔞 ∩ I^{n+k})`, and `tmul_mem_map_smul_top` then places it
+in `(I·A)ⁿ · (A ⊗_B 𝔞)`.  As `n` was arbitrary and `A ⊗_B 𝔞` is a finite
+`A`-module (`Module.Finite.base_change`, using `IsNoetherianRing B` for
+`Module.Finite B ↥𝔞`) with `I·A ≠ ⊤` (using `_hI` and `IsLocalHom`), Krull's
+intersection theorem `Ideal.iInf_pow_smul_eq_bot_of_isLocalRing` gives `x = 0`.
+
+**WHERE EACH HYPOTHESIS IS CONSUMED**, since the note above warns against
+dropping any of them: `IsNoetherianRing B` for Artin–Rees and for finiteness of
+`𝔞`; `IsNoetherianRing A` + `IsLocalRing A` for Krull; `_hI` + `IsLocalHom` for
+`I·A ≠ ⊤`, which is what makes the Krull filtration separating and is the
+formal content of "`A` is `I`-adically ideally separated"; `_htor` and `_hquot`
+only through the leaf.  `IsLocalRing B` is used nowhere in this proof — it is
+kept because the consumer has it and because dropping it from a leaf's signature
+is a restatement, not a simplification.
+
+**WHAT WAS MISSING FROM THE PIN.**  `grep -rin "local criterion"
+.lake/packages/mathlib` returns nothing, re-run 2026-07-27, so this is genuinely
+new.  Note that mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
 (`Mathlib/RingTheory/LocalRing/Module.lean:248`) is the NON-Noetherian
 criterion for a finitely presented MODULE, and does not apply: `A` is not a
 finite `B`-module here. -/
@@ -1215,8 +1455,46 @@ theorem flat_of_rTensor_injective_of_flat_quotientMap {B A : Type u}
     (hIJ : I ≤ J.comap (algebraMap B A))
     (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
     (_hquot : (Ideal.quotientMap J (algebraMap B A) hIJ).Flat) :
-    Module.Flat B A :=
-  sorry
+    Module.Flat B A := by
+  subst _hJ
+  have hmapne : I.map (algebraMap B A) ≠ ⊤ := by
+    refine ne_top_of_le_ne_top (IsLocalRing.maximalIdeal.isMaximal A).ne_top ?_
+    exact (Ideal.map_mono _hI).trans (IsLocalRing.map_maximalIdeal_le (algebraMap B A))
+  rw [Module.Flat.iff_lTensor_injective]
+  intro 𝔞 h𝔞
+  haveI : Module.Finite B ↥𝔞 := Module.Finite.iff_fg.mpr h𝔞
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  have hKrull : (⨅ i : ℕ, (I.map (algebraMap B A)) ^ i •
+      (⊤ : Submodule A (A ⊗[B] ↥𝔞))) = ⊥ :=
+    Ideal.iInf_pow_smul_eq_bot_of_isLocalRing _ hmapne
+  have hx' : x ∈ (⨅ i : ℕ, (I.map (algebraMap B A)) ^ i •
+      (⊤ : Submodule A (A ⊗[B] ↥𝔞))) := by
+    rw [Submodule.mem_iInf]
+    intro n
+    obtain ⟨k, hk⟩ := Ideal.exists_pow_inf_eq_pow_smul I (M := B) 𝔞
+    have hAR : 𝔞 ⊓ I ^ (n + k) ≤ I ^ n • 𝔞 := by
+      have h := hk (n + k) (Nat.le_add_left k n)
+      rw [Nat.add_sub_cancel] at h
+      have htop : ∀ m : ℕ, (I ^ m) • (⊤ : Submodule B B) = I ^ m := by
+        intro m; rw [smul_eq_mul, ← Ideal.one_eq_top, mul_one]
+      rw [htop, htop] at h
+      rw [inf_comm, h]
+      exact Submodule.smul_mono le_rfl inf_le_right
+    obtain ⟨y, hy⟩ := ker_lTensor_subtype_le_range_lTensor_comap_pow hIJ _htor _hquot
+      (n + k) 𝔞 (LinearMap.mem_ker.mpr hx)
+    rw [← hy]
+    clear hy hx
+    induction y with
+    | zero => simp
+    | add z w hz hw => rw [map_add]; exact Submodule.add_mem _ hz hw
+    | tmul a m =>
+        rw [LinearMap.lTensor_tmul, ← Ideal.map_pow]
+        refine tmul_mem_map_smul_top (I ^ n) a _ ?_
+        rw [Submodule.mem_smul_top_iff]
+        exact hAR ⟨(m : ↥𝔞).2, m.2⟩
+  rw [hKrull] at hx'
+  simpa using hx'
 
 /-- **Stacks 00MP** = Algebra Lemma 10.99.15, at `M = S' = A` (**PROVEN**
 2026-07-27 over `rTensor_map_subtype_injective_of_flat` and the local
@@ -1382,8 +1660,10 @@ needs no new definitions, and leaves 00MP with a written consumer.  The note
 also REFUTES the cheap subring realisation of the system, so nobody has to
 rediscover that it is false.  The residue of 00R7 is now exactly two open
 leaves — `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian`
-(the approximation) and `flat_of_rTensor_injective_of_flat_quotientMap`
-(the local criterion 10.99.10) — and 00MP's other half is PROVEN. -/
+(the approximation) and `lTensor_subtype_injective_of_pow_le` (the homological
+half of the local criterion 10.99.10, which was itself PROVEN 2026-07-27 down to
+that one leaf; see the section note "10.99.10 CUT") — and 00MP's other half is
+PROVEN. -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
