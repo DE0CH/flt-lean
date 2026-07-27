@@ -18525,10 +18525,282 @@ theorem rank_le_of_exists_injective_dual
   refine Cardinal.lift_le.{w}.mp (hinj.trans ?_)
   simpa using Cardinal.lift_le.{u}.mpr hW
 
-/-- **Böckle's obstruction injection** (sorry node, items (4)+(5) of the
-machinery audit on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation`
-below; cut out of `rank_relationSpace_le_of_rank_sha2_le` on 2026-07-27, which
-is now PROVEN over it):
+/-- **Minimality kills a section: the derivation argument** (PROVEN 2026-07-27;
+pure commutative algebra, no Galois representations and no cohomology).
+
+Let `S` be a local ring, `φ : S ↠ A` a ring map whose kernel is MINIMAL in the
+sense `ker φ ≤ 𝔪_S² ⊔ (n)` for a natural number `n` lying in `𝔪_S`, and let
+`K ⊆ S` be an ideal with `𝔪_S · ker φ ≤ K`. If the induced surjection
+`S ⧸ K ↠ A` admits a ring-theoretic SECTION `s`, then `ker φ ≤ K`.
+
+**This is the half of Böckle's injectivity argument that does not mention
+obstruction theory**, isolated here so that the remaining leaf carries only
+arithmetic. In the application `K` is the ideal cut out by a functional `ψ` on
+the relation space `ker φ/(𝔪_S · ker φ)`, so `ker φ ≤ K` says exactly `ψ = 0`;
+the section is what weak universality plus trace generation produce out of a
+lift of `D.ρ` along the small extension `0 → k → S ⧸ K → A → 0`.
+
+**The proof is the classical derivation computation.** Put
+`θ x := (x mod K) - s (φ x)`. Then:
+
+* `θ` lands in `ker φ · (S ⧸ K)` — because `s a` is represented by SOME
+  preimage of `a` (this is the exact content of the section hypothesis `hs`,
+  and it is why the hypothesis is phrased that way rather than through
+  `Ideal.Quotient.lift`);
+* `𝔪_S` annihilates that image, since `𝔪_S · ker φ ≤ K`. Hence also
+  `θ x · θ y = 0`, so `θ` is a DERIVATION:
+  `θ (x y) = x·θ y + y·θ x`;
+* `θ` is additive, and `θ (n) = 0` for free — a ring hom preserves `Nat.cast`,
+  so no `ℤ_ℓ`-algebra compatibility of `s` is needed anywhere;
+* therefore `θ` vanishes on `𝔪_S²` (each product `x y` with `x, y ∈ 𝔪_S` gives
+  two terms each killed by `𝔪_S`) and on `(n)` (as `n ∈ 𝔪_S`), hence on
+  `𝔪_S² ⊔ (n) ⊇ ker φ` by minimality;
+* on `ker φ` itself `θ j = (j mod K)`, since `φ j = 0`. So `j ∈ K`.
+
+Note what is NOT hypothesised: `K ≤ ker φ` is never used (the statement is
+true and slightly stronger without it), `A` need not be local, and `S` need
+not be Noetherian, complete or a power series ring. -/
+theorem ker_le_of_exists_section_of_ker_le_sq_sup
+    {S : Type*} [CommRing S] [IsLocalRing S] {A : Type*} [CommRing A]
+    (φ : S →+* A) (n : ℕ)
+    (hn : (n : S) ∈ IsLocalRing.maximalIdeal S)
+    (hmin : RingHom.ker φ ≤ IsLocalRing.maximalIdeal S ^ 2 ⊔ Ideal.span {(n : S)})
+    {K : Ideal S}
+    (hKm : IsLocalRing.maximalIdeal S * RingHom.ker φ ≤ K)
+    (s : A →+* S ⧸ K)
+    (hs : ∀ a : A, ∃ x : S, φ x = a ∧ s a = Ideal.Quotient.mk K x) :
+    RingHom.ker φ ≤ K := by
+  have hJm : RingHom.ker φ ≤ IsLocalRing.maximalIdeal S :=
+    hmin.trans (sup_le (Ideal.pow_le_self (by norm_num))
+      (by rw [Ideal.span_le]; simpa using hn))
+  set θ : S → S ⧸ K := fun x => Ideal.Quotient.mk K x - s (φ x) with hθ
+  have hmem : ∀ x : S, ∃ j ∈ RingHom.ker φ, θ x = Ideal.Quotient.mk K j := by
+    intro x
+    obtain ⟨y, hy, hsy⟩ := hs (φ x)
+    refine ⟨x - y, ?_, ?_⟩
+    · simp [RingHom.mem_ker, hy]
+    · simp [hθ, hsy, map_sub]
+  have hkill : ∀ x ∈ IsLocalRing.maximalIdeal S, ∀ y : S,
+      Ideal.Quotient.mk K x * θ y = 0 := by
+    intro x hx y
+    obtain ⟨j, hj, hjy⟩ := hmem y
+    rw [hjy, ← map_mul]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr (hKm (Ideal.mul_mem_mul hx hj))
+  have hprod : ∀ x y : S, θ x * θ y = 0 := by
+    intro x y
+    obtain ⟨i, hi, hix⟩ := hmem x
+    rw [hix]
+    exact hkill i (hJm hi) y
+  have hadd : ∀ x y : S, θ (x + y) = θ x + θ y := by
+    intro x y
+    simp only [hθ, map_add]
+    ring
+  have hderiv : ∀ x y : S,
+      θ (x * y) = Ideal.Quotient.mk K x * θ y + Ideal.Quotient.mk K y * θ x := by
+    intro x y
+    have h0 := hprod x y
+    simp only [hθ, map_mul] at h0 ⊢
+    linear_combination -h0
+  have hnat : θ (n : S) = 0 := by
+    simp [hθ]
+  have hsq : ∀ a ∈ IsLocalRing.maximalIdeal S ^ 2, θ a = 0 := by
+    intro a ha
+    rw [pow_two] at ha
+    refine Submodule.mul_induction_on ha ?_ ?_
+    · intro x hx y hy
+      rw [hderiv, hkill x hx y, hkill y hy x, add_zero]
+    · intro x y hx hy
+      rw [hadd, hx, hy, add_zero]
+  have hspan : ∀ b ∈ Ideal.span ({(n : S)} : Set S), θ b = 0 := by
+    intro b hb
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hb
+    rw [hderiv, hnat, mul_zero, zero_add, hkill _ hn c]
+  intro j hj
+  have hzero : θ j = 0 := by
+    obtain ⟨a, ha, b, hb, rfl⟩ := Submodule.mem_sup.mp (hmin hj)
+    rw [hadd, hsq a ha, hspan b hb, add_zero]
+  have hφj : φ j = 0 := hj
+  have hmk : Ideal.Quotient.mk K j = 0 := by
+    simpa [hθ, hφj] using hzero
+  exact Ideal.Quotient.eq_zero_iff_mem.mp hmk
+
+/-- **Böckle's obstruction homomorphism, with its lifting criterion** (sorry
+node, cut out of `exists_injective_dual_relationSpace_to_sha2` below on
+2026-07-27, which is now PROVEN over it together with
+`ker_le_of_exists_section_of_ker_le_sq_sup` above; it carries items (4)+(5) of
+the machinery audit on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below):
+
+for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
+weakly universal, trace-generated hardly ramified deformation ring, there is a
+`k`-LINEAR map
+
+`ob : (ker φ/𝔪_S·ker φ)^∨ → Ш²_S(ad⁰)`
+
+whose vanishing at `ψ` is witnessed by an ideal `K = K_ψ` — the annihilator of
+`ψ` inside `ker φ`, pinned by the `↔` in the statement — for which the
+surjection `S ⧸ K_ψ ↠ D.R` admits a ring-theoretic section.
+
+**What each conjunct is.** `K ≤ ker φ` and `𝔪_S · ker φ ≤ K` say `K_ψ` sits
+between `𝔪_S·ker φ` and `ker φ`, so `S ⧸ K_ψ ↠ D.R` is a SMALL extension —
+its kernel `ker φ/K_ψ` is killed by `𝔪_S` and squares to zero. The `↔`
+identifies `K_ψ` as exactly `{j ∈ ker φ : ψ(j̄) = 0}`, which is what makes the
+statement Böckle's rather than a weaker existential: for `ψ ≠ 0` the kernel is
+the `k`-line `ker φ/K_ψ ≅ k`. The section is phrased as "`s a` is represented
+by some `φ`-preimage of `a`" rather than through `Ideal.Quotient.lift`, which
+says the same thing without carrying the lift's proof obligation inside the
+existential.
+
+**Why the DUAL, and why that is the literature statement rather than a
+convenience.** Obstruction theory produces no map out of the relation space; it
+produces a map out of its dual. Given a functional
+`ψ : ker φ/𝔪_S·ker φ → k`, push the tautological small extension
+
+`0 → ker φ/𝔪_S·ker φ → S/𝔪_S·ker φ → D.R → 0`
+
+out along `ψ` to a small extension `0 → k → E_ψ → D.R → 0` with square-zero
+kernel `k`. The obstruction to lifting the deformation `D.ρ` from `D.R` to
+`E_ψ` is a class `ob(ψ) ∈ H²(G_{ℚ,S}, ad⁰ ρbar)`, and `ψ ↦ ob(ψ)` is
+`k`-linear because pushout is. So the natural arrow is
+`(ker φ/𝔪_S·ker φ)^∨ → H²`, and the rank bound on the relation space itself is
+recovered downstream from `dim W ≤ dim W^∨` (`rank_le_rank_dual` above), which
+holds with no finiteness hypothesis. Writing the leaf the other way round —
+an injection OUT of the relation space — would be a strictly different and
+unjustified statement.
+
+**The pushout is a QUOTIENT OF `S`, which is why no new ring construction
+appears in the statement.** `E_ψ` is usually built as `(S/𝔪_S·ker φ ⊕ k)`
+modulo the graph of `−ψ`; but that ring is canonically `S ⧸ K_ψ` for
+`K_ψ = {j ∈ ker φ : ψ(j̄) = 0}`, an ideal of `S` because `ψ` is semilinear over
+`S ↠ S/𝔪_S ≅ k`. Stating the leaf through `K_ψ` therefore costs nothing and
+keeps the whole cut inside ordinary ideal theory.
+
+**The two halves this leaf asserts.**
+
+* *The obstruction map and its criterion* — the construction of `ob`, its
+  `k`-linearity, and the implication `ob(ψ) = 0 ⟹ D.ρ lifts to E_ψ`. The lift
+  makes `E_ψ` a hardly ramified deformation, so weak universality (`hw`)
+  supplies a compatible `D.R → E_ψ`, and trace generation (`ht`) forces its
+  composite with `E_ψ ↠ D.R` to be the identity — i.e. makes it the SECTION
+  this statement asks for. That last step is where `ht` is consumed: without
+  it the compatible map need not be unique, hence need not split.
+* *Landing in `Ш²`* is the local half: for `v ∈ S = {v ∣ 2, v ∣ ℓ}` the
+  restriction `loc_v(ob(ψ))` is the obstruction to lifting the LOCAL
+  deformation at `v`, which vanishes because each of the four hardly ramified
+  local conditions (tame at `2`, flat at `ℓ`, unramified outside `S`, fixed
+  determinant) is liftable along a small extension. The archimedean place
+  imposes nothing (`H²(ℝ, ad⁰) = 0` for `ℓ` odd), which is why
+  `hardlyRamifiedPlaces` is finite-only.
+
+**The `k`-module structure on the relation space** is not an extra choice: it
+is `residueRingEquivOfSurjective (D.π ∘ φ)`, i.e. the identification of
+`S ⧸ 𝔪_S` with `k` forced by the surjection `S ↠ D.R ↠ k`. Stating the leaf
+over `k` rather than over `S ⧸ 𝔪_S` is what makes it literally Böckle's
+statement, since `Ш²_S(ad⁰)` is a `k`-vector space.
+
+**MACHINERY AUDIT — what is missing, and the check that would refute each
+item** (surveyed 2026-07-27 across `Fermat/`, our mathlib pin and `~/cs/FLT`;
+this is the reason the leaf is stated rather than proven, and it is a survey
+of the whole tree, not of one file):
+
+1. *No small-extension API anywhere.* Nothing in `Fermat/` or `~/cs/FLT`
+   defines a small/square-zero extension of local rings together with the
+   lifting problem for a representation along it; mathlib has only generic
+   `I ^ 2 = ⊥` algebra (`RingTheory/Derivation/ToSquareZero.lean`,
+   `TrivSqZeroExt`) and the formal-smoothness lifting criteria. REFUTED BY:
+   `grep -rn "SmallExtension\|IsSmallExtension" Fermat/ ~/cs/FLT/FLT/` finding
+   a definition.
+2. *No obstruction class exists as a formal object.* Every `obstruction` hit
+   in the tree is docstring prose. REFUTED BY: a `def` whose value lies in
+   `continuousCohomology 2 _`.
+3. *No inhomogeneous cochains in our pin.* `continuousCohomology` is genuinely
+   computed (`Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`),
+   but through the HOMOGENEOUS resolution `C(G, C(G, …, X))` — there is no
+   `C(Gⁿ, X)` description, which is what one writes an explicit 2-cocycle
+   `c(σ,τ) = ρ̃(σ)ρ̃(τ)ρ̃(στ)⁻¹` in. Basic.lean's own TODO records this.
+   REFUTED BY: an inhomogeneous-cochain equivalence appearing in the pin.
+4. *No long exact sequence, no connecting map, no cup product* for continuous
+   cohomology in our pin; `~/cs/FLT` carries a richer private copy
+   (`FLT/Mathlib/…/ContCohomology/{Basic,CupProduct}.lean`, notably
+   `cohomologyIsoQuot`) which is the natural vendoring target and needs a
+   pin-drift audit. REFUTED BY: `ls` of the pin's `ContCohomology/` showing
+   more than `Basic`, `Functoriality`, `LowDegree`.
+5. *Liftability of the four hardly ramified local conditions along a small
+   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
+   being preserved under a square-zero surjection.
+
+Items 1–3 are the binding ones: 4 and 5 can be *stated* and cut further once
+1–3 exist, per the standing rule that stating a theory is not proving it.
+
+References: Böckle, *Presentations of universal deformation rings*; Mazur,
+*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII.
+
+**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF.** This leaf carries
+the same hypothesis package as
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below, which is
+the package this development ultimately refutes; so the EXPOSURE AUDIT AND
+CIRCULARITY GUARD in that node's docstring applies here VERBATIM and is not
+repeated. In particular the BANNED INPUTS clause binds: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) nor
+`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
+— nor anything proven over them — may be used to discharge this leaf, since
+their intended proofs run through modularity lifting, which is proven over the
+very bound this leaf supplies. A green build and an honest `#print axioms`
+would BOTH survive such a discharge; only a human reading catches it. (The
+guard has now been moved TWICE for the same reason — off
+`rank_relationSpace_le_of_rank_sha2_le` when that was proven on 2026-07-27,
+and off `exists_injective_dual_relationSpace_to_sha2` when THAT was proven
+later the same day. A guard left on a proven consumer guards nothing; it
+belongs on whichever declaration still contains the `sorry`.) -/
+theorem exists_obstructionHom_relationSpace_sha2
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ ob : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)),
+          ∀ ψ, ob ψ = 0 →
+            ∃ K : Ideal (MvPowerSeries (Fin g) Λ),
+              K ≤ RingHom.ker φ ∧
+              IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) *
+                  RingHom.ker φ ≤ K ∧
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) ∧
+              ∃ s : D.R →+* (MvPowerSeries (Fin g) Λ ⧸ K),
+                ∀ a : D.R, ∃ x : MvPowerSeries (Fin g) Λ,
+                  φ x = a ∧ s a = Ideal.Quotient.mk K x :=
+  sorry
+
+/-- **Böckle's obstruction injection** (PROVEN 2026-07-27 over the single
+arithmetic leaf `exists_obstructionHom_relationSpace_sha2` above, which carries
+items (4)+(5) of the machinery audit on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below; this node
+was itself cut out of `rank_relationSpace_le_of_rank_sha2_le` on 2026-07-27,
+which is now PROVEN over it):
 
 for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
 weakly universal, trace-generated hardly ramified deformation ring, the `k`-DUAL
@@ -18552,48 +18824,49 @@ holds with no finiteness hypothesis. Writing the leaf the other way round —
 an injection OUT of the relation space — would be a strictly different and
 unjustified statement.
 
-**The two halves this leaf asserts.**
-
-* *Injectivity* is where weak universality and minimality enter. If
-  `ob(ψ) = 0` the deformation lifts to `E_ψ`, so `hw` supplies a compatible
-  `D.R → E_ψ` splitting `E_ψ ↠ D.R`; the splitting lifts `φ` to a `Λ`-algebra
-  map `S → E_ψ` killing `𝔪_S·ker φ`, and minimality of the presentation
-  (`ker φ ≤ 𝔪_S² ⊔ (ℓ)`) forces `ψ = 0`. Trace generation (`ht`) is what makes
-  the compatible map unique, hence canonical enough to be a splitting.
-* *Landing in `Ш²`* is the local half: for `v ∈ S = {v ∣ 2, v ∣ ℓ}` the
-  restriction `loc_v(ob(ψ))` is the obstruction to lifting the LOCAL
-  deformation at `v`, which vanishes because each of the four hardly ramified
-  local conditions (tame at `2`, flat at `ℓ`, unramified outside `S`, fixed
-  determinant) is liftable along a small extension. The archimedean place
-  imposes nothing (`H²(ℝ, ad⁰) = 0` for `ℓ` odd), which is why
-  `hardlyRamifiedPlaces` is finite-only.
-
 **The `k`-module structure on the relation space** is not an extra choice: it
 is `residueRingEquivOfSurjective (D.π ∘ φ)`, i.e. the identification of
 `S ⧸ 𝔪_S` with `k` forced by the surjection `S ↠ D.R ↠ k`. Stating the leaf
 over `k` rather than over `S ⧸ 𝔪_S` is what makes it literally Böckle's
 statement, since `Ш²_S(ad⁰)` is a `k`-vector space.
 
+**What the proof below contributes, and what it defers.** The injection is the
+obstruction map itself, so `f` IS the `ob` supplied by
+`exists_obstructionHom_relationSpace_sha2` above; the content proven here is
+its INJECTIVITY, which is exactly the classical minimality argument and which
+splits cleanly off the arithmetic:
+
+* `ob` is `k`-linear, so injectivity is the single implication
+  `ob(ψ) = 0 ⟹ ψ = 0` (`injective_iff_map_eq_zero`);
+* `ob(ψ) = 0` yields, from the leaf, the small extension `S ⧸ K_ψ ↠ D.R`
+  together with a ring-theoretic SECTION of it. That is the entire arithmetic
+  input: obstruction theory to produce `ob`, weak universality to lift `D.ρ`
+  along the extension, trace generation to make the resulting map a section;
+* `ker_le_of_exists_section_of_ker_le_sq_sup` above then converts the section
+  into `ker φ ≤ K_ψ` by the derivation argument, using MINIMALITY
+  (`ker φ ≤ 𝔪_S² ⊔ (ℓ)`) and nothing else — no cohomology, no deformation
+  theory, not even `ℤ_ℓ`-compatibility of the section, since a ring hom
+  preserves `Nat.cast` for free;
+* `ker φ ≤ K_ψ` is `ψ = 0`, because the leaf pins `K_ψ` as the annihilator of
+  `ψ` inside `ker φ` and `Submodule.Quotient.mk` is surjective onto the
+  relation space.
+
+So minimality is consumed HERE and weak universality plus trace generation are
+consumed in the leaf. The only step that needs `(ℓ : S) ∈ 𝔪_S` is the
+derivation argument's treatment of the `(ℓ)` summand of the minimality bound,
+and that comes from `hΛ` through `mem_maximalIdeal_mvPowerSeries_iff` above.
+
 References: Böckle, *Presentations of universal deformation rings*; Mazur,
 *Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
 *Fermat's Last Theorem*, §2.6–2.7.
 
-**CIRCULARITY GUARD — INHERITED, AND IT BINDS THIS LEAF.** This leaf carries
-the same hypothesis package as
-`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below, which is
-the package this development ultimately refutes; so the EXPOSURE AUDIT AND
-CIRCULARITY GUARD in that node's docstring applies here VERBATIM and is not
-repeated. In particular the BANNED INPUTS clause binds: neither
-`not_isIrreducible_of_isHardlyRamified_of_five_le`
-(`Modularity/KhareWintenberger.lean`) nor
-`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
-— nor anything proven over them — may be used to discharge this leaf, since
-their intended proofs run through modularity lifting, which is proven over the
-very bound this leaf supplies. A green build and an honest `#print axioms`
-would BOTH survive such a discharge; only a human reading catches it. (The
-guard was moved here when `rank_relationSpace_le_of_rank_sha2_le` was proven
-over this leaf, 2026-07-27: a guard left only on a now-proven consumer would
-have stopped guarding anything.) -/
+**CIRCULARITY GUARD — MOVED, NOT DROPPED.** The guard that used to sit on this
+node now sits on `exists_obstructionHom_relationSpace_sha2` above, which is
+where the arithmetic went; see it for the BANNED INPUTS clause (neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le` nor
+`not_isIrreducible_of_isHardlyRamified_of_odd`, nor anything proven over them,
+may be used). Nothing in the proof below touches either: it is pure ideal
+theory over the leaf. -/
 theorem exists_injective_dual_relationSpace_to_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -18622,8 +18895,30 @@ theorem exists_injective_dual_relationSpace_to_sha2
               (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
                 (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
             ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)),
-          Function.Injective f :=
-  sorry
+          Function.Injective f := by
+  letI := D.commRing
+  letI := D.algebra
+  intro Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
+  letI : Module k (↥(RingHom.ker φ) ⧸
+      (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+        (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+    Module.compHom _
+      (residueRingEquivOfSurjective (D.π.comp φ)
+        (D.π_surjective.comp hsurj)).symm.toRingHom
+  obtain ⟨ob, hob⟩ := exists_obstructionHom_relationSpace_sha2 hℓOdd hdim hℓ5 h hirr D hw ht
+    Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
+  refine ⟨ob, (injective_iff_map_eq_zero ob).mpr fun ψ hψ => ?_⟩
+  obtain ⟨K, _hKle, hKm, hKiff, s, hs⟩ := hob ψ hψ
+  have hℓS : ((ℓ : ℕ) : MvPowerSeries (Fin g) Λ) ∈
+      IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) := by
+    rw [mem_maximalIdeal_mvPowerSeries_iff, map_natCast, hΛ]
+    exact Ideal.mem_span_singleton_self _
+  have hle : RingHom.ker φ ≤ K :=
+    ker_le_of_exists_section_of_ker_le_sq_sup φ ℓ hℓS hmin hKm s hs
+  refine LinearMap.ext fun w => ?_
+  obtain ⟨j, rfl⟩ := Submodule.Quotient.mk_surjective _ w
+  rw [LinearMap.zero_apply]
+  exact (hKiff j).mp (hle j.2)
 
 /-- **Böckle's obstruction bound** (PROVEN 2026-07-27 over the single leaf
 `exists_injective_dual_relationSpace_to_sha2` above, which carries items (4)+(5)
