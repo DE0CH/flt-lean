@@ -10612,6 +10612,484 @@ theorem isolatedJInvariants_disjoint {p q : ℕ} (hp : p ∈ isolatedIsogenyPrim
       | (norm_num at hjq; done)
       | (rcases hjp with rfl | rfl | rfl <;> norm_num at hjq)
 
+/-! ### Certificates for the genus-zero remainder at `q ∈ {2, 3}`
+
+Everything in this section serves
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall` below, which
+closes `12` of that node's `30` explicit checks.  The route is the one the
+parent node's ROUTE CORRECTION recommends — the kernel-polynomial criterion —
+specialised to the two levels at which the kernel polynomial is a single
+rational number:
+
+* at `q = 2` a `Γ_ℚ`-stable subgroup of order `2` is pointwise fixed, so its
+  abscissa is rational and the `2`-division cubic `Ψ₂Sq` has a rational root;
+* at `q = 3` a stable subgroup of order `3` is `{0, g, −g}`, so Galois can only
+  send `g` to `±g`, which have the SAME abscissa — again rational — and `Ψ₃`
+  has a rational root.
+
+Both are then killed uniformly in the twist by normalising on the
+`j`-invariant.  Writing `u = 12x + b₂` turns the two division polynomials into
+`u³ − 3c₄u − 2c₆` and `u⁴ − 6c₄u² − 8c₆u − 3c₄²` (exact identities, the second
+consuming `b_relation`), and substituting `u = (c₆/c₄)w` together with the
+`j`-relation `(j − 1728)c₄³ = j c₆²` clears `c₄` and `c₆` completely:
+
+    q = 2 :  (j − 1728) w³ − 3j w − 2j = 0
+    q = 3 :  (j − 1728)² w⁴ − 6j(j − 1728) w² − 8j(j − 1728) w − 3j² = 0
+
+This is exactly the twist-invariance the parent node needs: `hj` pins `E` only
+up to quadratic twist, and a twist by `d` scales `u ↦ du`, `c₄ ↦ d²c₄`,
+`c₆ ↦ d³c₆`, leaving `w` — and hence the two displayed polynomials — fixed.
+`c₄ ≠ 0` and `c₆ ≠ 0` are where `j ∉ {0, 1728}` is consumed, and every entry
+of `isolatedJInvariants` is strictly negative.
+
+The twelve resulting rational-root questions are settled by a mod-`ℓ`
+certificate: homogenise, reduce the coefficients modulo a prime `ℓ` at which
+the binary form has no nontrivial zero, and use `w.num.natAbs.Coprime w.den`.
+The witness primes are `5, 5, 7, 7, 23, 23` (cubic) and `5, 5, 7, 7, 17, 17`
+(quartic); each `decide` is a `ℓ²`-element check.
+
+**These certificates were FOUND in PARI/GP and are VERIFIED here** — the
+CAS was used only to search for the witness primes.  Independent
+corroboration that the twelve statements are true: `factor` over `ℚ`
+reports all twelve polynomials irreducible, and the criteria were
+cross-checked against `elldivpol(e, 2)` and `elldivpol(e, 3)` on eleven
+sample curves, agreeing on the rational-root count in every non-degenerate
+case (`j = 1728` degenerates the quartic, `j = 0` both).
+-/
+
+section MazurGenusZeroCertificates
+
+open _root_.Polynomial _root_.WeierstrassCurve
+
+namespace MazurGenusZero
+
+theorem num_den_zero {ℓ : ℕ} (hℓ : Nat.Prime ℓ) (w : ℚ)
+    (h1 : ((w.num : ℤ) : ZMod ℓ) = 0) (h2 : ((w.den : ℕ) : ZMod ℓ) = 0) : False := by
+  haveI : NeZero ℓ := ⟨hℓ.ne_zero⟩
+  have hdn : (ℓ : ℤ) ∣ w.num := (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp h1
+  have hdd : ℓ ∣ w.den := (ZMod.natCast_eq_zero_iff _ _).mp h2
+  have h1' : ℓ ∣ w.num.natAbs := by
+    have h := Int.natAbs_dvd_natAbs.mpr hdn
+    simpa using h
+  have hone : ℓ ∣ 1 := by
+    have h := Nat.dvd_gcd h1' hdd
+    rwa [w.reduced] at h
+  exact hℓ.one_lt.ne' (Nat.dvd_one.mp hone)
+
+theorem no_rat_root_cubic {A B C D : ℤ} {ℓ : ℕ} (hℓ : Nat.Prime ℓ)
+    (h : ∀ a b : ZMod ℓ, (A : ZMod ℓ) * a ^ 3 + (B : ZMod ℓ) * a ^ 2 * b
+        + (C : ZMod ℓ) * a * b ^ 2 + (D : ZMod ℓ) * b ^ 3 = 0 → a = 0 ∧ b = 0)
+    (w : ℚ) (hw : (A : ℚ) * w ^ 3 + (B : ℚ) * w ^ 2 + (C : ℚ) * w + (D : ℚ) = 0) :
+    False := by
+  have hd : ((w.den : ℕ) : ℚ) ≠ 0 := by exact_mod_cast w.den_ne_zero
+  have hnum : (w.num : ℚ) = w * ((w.den : ℕ) : ℚ) := (div_eq_iff hd).mp (Rat.num_div_den w)
+  have hkey : A * w.num ^ 3 + B * w.num ^ 2 * (w.den : ℤ) + C * w.num * (w.den : ℤ) ^ 2
+      + D * (w.den : ℤ) ^ 3 = 0 := by
+    have hq : (A : ℚ) * (w.num : ℚ) ^ 3 + (B : ℚ) * (w.num : ℚ) ^ 2 * ((w.den : ℕ) : ℚ)
+        + (C : ℚ) * (w.num : ℚ) * ((w.den : ℕ) : ℚ) ^ 2
+        + (D : ℚ) * ((w.den : ℕ) : ℚ) ^ 3 = 0 := by
+      rw [hnum]
+      linear_combination ((w.den : ℕ) : ℚ) ^ 3 * hw
+    exact_mod_cast hq
+  have hmod : (A : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 3
+      + (B : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 2 * ((w.den : ℕ) : ZMod ℓ)
+      + (C : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 2
+      + (D : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 3 = 0 := by
+    have hc := congrArg (fun z : ℤ => (z : ZMod ℓ)) hkey
+    push_cast at hc
+    linear_combination hc
+  obtain ⟨h1, h2⟩ := h _ _ hmod
+  exact num_den_zero hℓ w h1 h2
+
+theorem no_rat_root_quartic {A B C D E : ℤ} {ℓ : ℕ} (hℓ : Nat.Prime ℓ)
+    (h : ∀ a b : ZMod ℓ, (A : ZMod ℓ) * a ^ 4 + (B : ZMod ℓ) * a ^ 3 * b
+        + (C : ZMod ℓ) * a ^ 2 * b ^ 2 + (D : ZMod ℓ) * a * b ^ 3
+        + (E : ZMod ℓ) * b ^ 4 = 0 → a = 0 ∧ b = 0)
+    (w : ℚ) (hw : (A : ℚ) * w ^ 4 + (B : ℚ) * w ^ 3 + (C : ℚ) * w ^ 2 + (D : ℚ) * w
+      + (E : ℚ) = 0) :
+    False := by
+  have hd : ((w.den : ℕ) : ℚ) ≠ 0 := by exact_mod_cast w.den_ne_zero
+  have hnum : (w.num : ℚ) = w * ((w.den : ℕ) : ℚ) := (div_eq_iff hd).mp (Rat.num_div_den w)
+  have hkey : A * w.num ^ 4 + B * w.num ^ 3 * (w.den : ℤ) + C * w.num ^ 2 * (w.den : ℤ) ^ 2
+      + D * w.num * (w.den : ℤ) ^ 3 + E * (w.den : ℤ) ^ 4 = 0 := by
+    have hq : (A : ℚ) * (w.num : ℚ) ^ 4 + (B : ℚ) * (w.num : ℚ) ^ 3 * ((w.den : ℕ) : ℚ)
+        + (C : ℚ) * (w.num : ℚ) ^ 2 * ((w.den : ℕ) : ℚ) ^ 2
+        + (D : ℚ) * (w.num : ℚ) * ((w.den : ℕ) : ℚ) ^ 3
+        + (E : ℚ) * ((w.den : ℕ) : ℚ) ^ 4 = 0 := by
+      rw [hnum]
+      linear_combination ((w.den : ℕ) : ℚ) ^ 4 * hw
+    exact_mod_cast hq
+  have hmod : (A : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 4
+      + (B : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 3 * ((w.den : ℕ) : ZMod ℓ)
+      + (C : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) ^ 2 * ((w.den : ℕ) : ZMod ℓ) ^ 2
+      + (D : ZMod ℓ) * ((w.num : ℤ) : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 3
+      + (E : ZMod ℓ) * ((w.den : ℕ) : ZMod ℓ) ^ 4 = 0 := by
+    have hc := congrArg (fun z : ℤ => (z : ZMod ℓ)) hkey
+    push_cast at hc
+    linear_combination hc
+  obtain ⟨h1, h2⟩ := h _ _ hmod
+  exact num_den_zero hℓ w h1 h2
+
+/-! ### The `c₄`, `c₆`, `j` relations over `ℚ` -/
+
+theorem j_mul_Δ (E : WeierstrassCurve ℚ) [E.IsElliptic] : E.j * E.Δ = E.c₄ ^ 3 := by
+  have h : ((E.Δ' : ℚˣ) : ℚ) = E.Δ := E.coe_Δ'
+  have hinv : ((E.Δ'⁻¹ : ℚˣ) : ℚ) * ((E.Δ' : ℚˣ) : ℚ) = 1 := by
+    rw [← Units.val_mul, inv_mul_cancel, Units.val_one]
+  rw [WeierstrassCurve.j, ← h]
+  linear_combination E.c₄ ^ 3 * hinv
+
+theorem j_c₄_c₆ (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    (E.j - 1728) * E.c₄ ^ 3 - E.j * E.c₆ ^ 2 = 0 := by
+  have h1 : E.j * E.Δ = E.c₄ ^ 3 := j_mul_Δ E
+  have h2 : 1728 * E.Δ = E.c₄ ^ 3 - E.c₆ ^ 2 := E.c_relation
+  linear_combination (1728 : ℚ) * h1 - E.j * h2
+
+theorem c₆_ne_zero (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj0 : E.j ≠ 0)
+    (hj1728 : E.j ≠ 1728) : E.c₆ ≠ 0 := by
+  intro hc6
+  have hc4 : E.c₄ ≠ 0 := fun h => hj0 (E.j_eq_zero h)
+  have h := j_c₄_c₆ E
+  rw [hc6] at h
+  have : (E.j - 1728) * E.c₄ ^ 3 = 0 := by linear_combination h
+  rcases mul_eq_zero.mp this with h' | h'
+  · exact hj1728 (by linarith)
+  · exact hc4 (pow_eq_zero_iff (n := 3) (by norm_num) |>.mp h')
+
+/-! ### From a rational root of the division polynomial to a `j`-normalised root -/
+
+theorem exists_rat_root_two (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj0 : E.j ≠ 0)
+    (hj1728 : E.j ≠ 1728) (x : ℚ) (hx : E.Ψ₂Sq.eval x = 0) :
+    ∃ w : ℚ, (E.j - 1728) * w ^ 3 - 3 * E.j * w - 2 * E.j = 0 := by
+  have hc6 : E.c₆ ≠ 0 := c₆_ne_zero E hj0 hj1728
+  have hx' : 4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆ = 0 := by
+    simpa [WeierstrassCurve.Ψ₂Sq] using hx
+  set u : ℚ := 12 * x + E.b₂ with hudef
+  have hu : u ^ 3 - 3 * E.c₄ * u - 2 * E.c₆ = 0 := by
+    simp only [hudef, WeierstrassCurve.c₄, WeierstrassCurve.c₆]
+    linear_combination (432 : ℚ) * hx'
+  refine ⟨u * E.c₄ / E.c₆, ?_⟩
+  set w : ℚ := u * E.c₄ / E.c₆ with hwdef
+  have hwc : w * E.c₆ = u * E.c₄ := by rw [hwdef]; field_simp
+  have hP := j_c₄_c₆ E
+  have hmain : ((E.j - 1728) * w ^ 3 - 3 * E.j * w - 2 * E.j) * E.c₆ ^ 3 = 0 := by
+    calc ((E.j - 1728) * w ^ 3 - 3 * E.j * w - 2 * E.j) * E.c₆ ^ 3
+        = (E.j - 1728) * (w * E.c₆) ^ 3 - 3 * E.j * (w * E.c₆) * E.c₆ ^ 2
+            - 2 * E.j * E.c₆ ^ 3 := by ring
+      _ = (E.j - 1728) * (u * E.c₄) ^ 3 - 3 * E.j * (u * E.c₄) * E.c₆ ^ 2
+            - 2 * E.j * E.c₆ ^ 3 := by rw [hwc]
+      _ = u ^ 3 * ((E.j - 1728) * E.c₄ ^ 3 - E.j * E.c₆ ^ 2)
+            + E.j * E.c₆ ^ 2 * (u ^ 3 - 3 * E.c₄ * u - 2 * E.c₆) := by ring
+      _ = 0 := by rw [hP, hu]; ring
+  rcases mul_eq_zero.mp hmain with h | h
+  · exact h
+  · exact absurd (pow_eq_zero_iff (n := 3) (by norm_num) |>.mp h) hc6
+
+theorem exists_rat_root_three (E : WeierstrassCurve ℚ) [E.IsElliptic] (hj0 : E.j ≠ 0)
+    (hj1728 : E.j ≠ 1728) (x : ℚ) (hx : E.Ψ₃.eval x = 0) :
+    ∃ w : ℚ, (E.j - 1728) ^ 2 * w ^ 4 - 6 * E.j * (E.j - 1728) * w ^ 2
+      - 8 * E.j * (E.j - 1728) * w - 3 * E.j ^ 2 = 0 := by
+  have hc6 : E.c₆ ≠ 0 := c₆_ne_zero E hj0 hj1728
+  have hx' : 3 * x ^ 4 + E.b₂ * x ^ 3 + 3 * E.b₄ * x ^ 2 + 3 * E.b₆ * x + E.b₈ = 0 := by
+    simpa [WeierstrassCurve.Ψ₃] using hx
+  have hb : 4 * E.b₈ = E.b₂ * E.b₆ - E.b₄ ^ 2 := E.b_relation
+  set u : ℚ := 12 * x + E.b₂ with hudef
+  have hu : u ^ 4 - 6 * E.c₄ * u ^ 2 - 8 * E.c₆ * u - 3 * E.c₄ ^ 2 = 0 := by
+    simp only [hudef, WeierstrassCurve.c₄, WeierstrassCurve.c₆]
+    linear_combination (6912 : ℚ) * hx' - (1728 : ℚ) * hb
+  refine ⟨u * E.c₄ / E.c₆, ?_⟩
+  set w : ℚ := u * E.c₄ / E.c₆ with hwdef
+  have hwc : w * E.c₆ = u * E.c₄ := by rw [hwdef]; field_simp
+  have hP := j_c₄_c₆ E
+  have hmain : ((E.j - 1728) ^ 2 * w ^ 4 - 6 * E.j * (E.j - 1728) * w ^ 2
+      - 8 * E.j * (E.j - 1728) * w - 3 * E.j ^ 2) * E.c₆ ^ 4 = 0 := by
+    calc ((E.j - 1728) ^ 2 * w ^ 4 - 6 * E.j * (E.j - 1728) * w ^ 2
+            - 8 * E.j * (E.j - 1728) * w - 3 * E.j ^ 2) * E.c₆ ^ 4
+        = (E.j - 1728) ^ 2 * (w * E.c₆) ^ 4
+            - 6 * E.j * (E.j - 1728) * (w * E.c₆) ^ 2 * E.c₆ ^ 2
+            - 8 * E.j * (E.j - 1728) * (w * E.c₆) * E.c₆ ^ 3
+            - 3 * E.j ^ 2 * E.c₆ ^ 4 := by ring
+      _ = (E.j - 1728) ^ 2 * (u * E.c₄) ^ 4
+            - 6 * E.j * (E.j - 1728) * (u * E.c₄) ^ 2 * E.c₆ ^ 2
+            - 8 * E.j * (E.j - 1728) * (u * E.c₄) * E.c₆ ^ 3
+            - 3 * E.j ^ 2 * E.c₆ ^ 4 := by rw [hwc]
+      _ = E.j * (E.j - 1728) * E.c₄ * E.c₆ ^ 2
+              * (u ^ 4 - 6 * E.c₄ * u ^ 2 - 8 * E.c₆ * u - 3 * E.c₄ ^ 2)
+            + ((E.j - 1728) * E.c₄ * u ^ 4 + 3 * E.j * E.c₆ ^ 2)
+              * ((E.j - 1728) * E.c₄ ^ 3 - E.j * E.c₆ ^ 2) := by ring
+      _ = 0 := by rw [hP, hu]; ring
+  rcases mul_eq_zero.mp hmain with h | h
+  · exact h
+  · exact absurd (pow_eq_zero_iff (n := 4) (by norm_num) |>.mp h) hc6
+
+
+
+/-! ### Galois descent for a stable subgroup of order `2` or `3` -/
+
+theorem zsmul_cases {A : Type*} [AddGroup A] {g : A} {q : ℕ} (hq : q = 2 ∨ q = 3)
+    (hg : addOrderOf g = q) (k : ℤ) : k • g = 0 ∨ k • g = g ∨ k • g = -g := by
+  have hqg : ((q : ℕ) : ℤ) • g = 0 := by
+    rw [natCast_zsmul, ← hg]
+    exact addOrderOf_nsmul_eq_zero g
+  rcases hq with rfl | rfl
+  · have h2 : (2 : ℤ) • g = 0 := by exact_mod_cast hqg
+    obtain ⟨m, hm | hm⟩ := Int.even_or_odd' k
+    · left; rw [hm, mul_comm, mul_zsmul, h2, smul_zero]
+    · right; left
+      rw [hm, add_zsmul, mul_comm, mul_zsmul, h2, smul_zero, zero_add, one_zsmul]
+  · have h3 : (3 : ℤ) • g = 0 := by exact_mod_cast hqg
+    have hneg : (2 : ℤ) • g = -g := by
+      have h : (2 : ℤ) • g + g = 0 := by
+        have h' : (3 : ℤ) • g = (2 : ℤ) • g + g := by
+          rw [show (3 : ℤ) = 2 + 1 by norm_num, add_zsmul, one_zsmul]
+        rw [← h', h3]
+      exact add_eq_zero_iff_eq_neg.mp h
+    obtain ⟨m, r, hr, hk⟩ : ∃ m r : ℤ, (r = 0 ∨ r = 1 ∨ r = 2) ∧ k = 3 * m + r :=
+      ⟨k / 3, k % 3, by omega, by omega⟩
+    rw [hk, add_zsmul, mul_comm, mul_zsmul, h3, smul_zero, zero_add]
+    rcases hr with rfl | rfl | rfl
+    · left; simp
+    · right; left; simp
+    · right; right; exact hneg
+
+/-- A `Γ_F`-fixed element of `AlgebraicClosure F` is rational.  Stated for a
+VARIABLE base field because at the literal `F = ℚ` the two `Algebra ℚ ℚ̄`
+instances form a diamond and `IsAlgClosure ℚ ℚ̄` fails to synthesise; compare
+the note on `exists_absoluteGaloisGroup_ringHom` in `X0.lean`. -/
+theorem mem_range_of_fixed {F : Type} [Field F] [CharZero F] (x : AlgebraicClosure F)
+    (h : ∀ σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F, σ x = x) :
+    ∃ x₀ : F, algebraMap F (AlgebraicClosure F) x₀ = x :=
+  (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr h
+
+/-- Descent of a root of the division polynomial along a field extension. -/
+theorem eval_ΨSq_descend {F K : Type} [Field F] [Field K] [Algebra F K]
+    (E : WeierstrassCurve F) (n : ℤ) (x₀ : F)
+    (h : ((E⁄K).ΨSq n).eval (algebraMap F K x₀) = 0) :
+    (E.ΨSq n).eval x₀ = 0 := by
+  have hmap : (E⁄K).ΨSq n = (E.ΨSq n).map (algebraMap F K) := by
+    rw [← WeierstrassCurve.map_ΨSq]; rfl
+  rw [hmap, Polynomial.eval_map, Polynomial.eval₂_at_apply] at h
+  exact (map_eq_zero_iff _ (algebraMap F K).injective).mp h
+
+theorem exists_rat_abscissa {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ}
+    (hq : q = 2 ∨ q = 3)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    ∃ x₀ : ℚ, (E.ΨSq (q : ℤ)).eval x₀ = 0 := by
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic)
+  have hq2 : 2 ≤ q := by rcases hq with rfl | rfl <;> norm_num
+  have hgne : g ≠ 0 := by
+    intro h
+    rw [h, addOrderOf_zero] at hg
+    omega
+  obtain ⟨x, y, hns, rfl⟩ : ∃ (x y : AlgebraicClosure ℚ)
+      (hns : ((E⁄(AlgebraicClosure ℚ)).toAffine).Nonsingular x y),
+      g = Affine.Point.some x y hns := by
+    rcases g with _ | ⟨x, y, h⟩
+    · exact absurd rfl hgne
+    · exact ⟨x, y, h, rfl⟩
+  have hfix : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, σ x = x := by
+    intro σ
+    have hmem := hstable σ _ (AddSubgroup.mem_zmultiples _)
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+    rcases zsmul_cases hq hg k with h0 | h1 | h2
+    · exfalso
+      have hz := hk.symm.trans h0
+      exact hgne (Affine.Point.map_injective _
+        (hz.trans (Affine.Point.map_zero _).symm))
+    · have heq := hk.symm.trans h1
+      rw [Affine.Point.map_some] at heq
+      exact (Affine.Point.some.inj heq).left
+    · have heq := hk.symm.trans h2
+      rw [Affine.Point.map_some, Affine.Point.neg_some] at heq
+      exact (Affine.Point.some.inj heq).left
+  have hqZ : (q : ℤ) ≠ 0 := by
+    have h0 : q ≠ 0 := by omega
+    exact_mod_cast h0
+  have htors : ((q : ℤ)) •
+      (Affine.Point.some x y hns : (E⁄(AlgebraicClosure ℚ)).Point) = 0 := by
+    rw [← addOrderOf_dvd_iff_zsmul_eq_zero, hg]
+  have hΨ : ((E⁄(AlgebraicClosure ℚ)).ΨSq (q : ℤ)).eval x = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff (E⁄(AlgebraicClosure ℚ)) hqZ hns :
+      (((q : ℤ)) • (Affine.Point.some x y hns : (E⁄(AlgebraicClosure ℚ)).Point) = 0) ↔
+        (((E⁄(AlgebraicClosure ℚ)).ΨSq (q : ℤ)).eval x = 0)).mp htors
+  obtain ⟨x₀, rfl⟩ := mem_range_of_fixed (F := ℚ) x hfix
+  exact ⟨x₀, eval_ΨSq_descend E (q : ℤ) x₀ hΨ⟩
+
+/-! ### The twelve explicit checks at `q = 2` and `q = 3` -/
+
+/-- The six non-CM entries of Mazur's table have no rational `2`-torsion. -/
+theorem no_rat_root_two_of_mem_nonCM {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    (hj0 : E.j ≠ 0) (hj1728 : E.j ≠ 1728)
+    (hj : E.j = -121 ∨ E.j = -24729001 ∨ E.j = -882216989 / 131072
+      ∨ E.j = -297756989 / 2 ∨ E.j = -9317 ∨ E.j = -162677523113838677)
+    (x : ℚ) (hx : E.Ψ₂Sq.eval x = 0) : False := by
+  obtain ⟨w, hw⟩ := exists_rat_root_two E hj0 hj1728 x hx
+  rcases hj with h | h | h | h | h | h <;> rw [h] at hw
+  · exact no_rat_root_cubic (A := (-1849)) (B := 0) (C := 363) (D := 242)
+      (ℓ := 5) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-24730729)) (B := 0) (C := 74187003) (D := 49458002)
+      (ℓ := 5) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-1108709405)) (B := 0) (C := 2646650967) (D := 1764433978)
+      (ℓ := 7) (by decide) (by decide) w (by push_cast; linear_combination (131072 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-297760445)) (B := 0) (C := 893270967) (D := 595513978)
+      (ℓ := 7) (by decide) (by decide) w (by push_cast; linear_combination (2 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-11045)) (B := 0) (C := 27951) (D := 18634)
+      (ℓ := 23) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-162677523113840405)) (B := 0) (C := 488032569341516031) (D := 325355046227677354)
+      (ℓ := 23) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
+
+/-- The six non-CM entries of Mazur's table have no rational `3`-isogeny. -/
+theorem no_rat_root_three_of_mem_nonCM {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    (hj0 : E.j ≠ 0) (hj1728 : E.j ≠ 1728)
+    (hj : E.j = -121 ∨ E.j = -24729001 ∨ E.j = -882216989 / 131072
+      ∨ E.j = -297756989 / 2 ∨ E.j = -9317 ∨ E.j = -162677523113838677)
+    (x : ℚ) (hx : E.Ψ₃.eval x = 0) : False := by
+  obtain ⟨w, hw⟩ := exists_rat_root_three E hj0 hj1728 x hx
+  rcases hj with h | h | h | h | h | h <;> rw [h] at hw
+  · exact no_rat_root_quartic (A := 3418801) (B := 0) (C := (-1342374)) (D := (-1789832))
+      (E := (-43923)) (ℓ := 5) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 611608956871441) (B := 0) (C := (-3669397333030374)) (D := (-4892529777373832))
+      (E := (-1834570471374003)) (ℓ := 5) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 1229236544735454025) (B := 0) (C := (-5868733637730489270)) (D := (-7824978183640652360))
+      (E := (-2334920447040678363)) (ℓ := 7) (by decide) (by decide) w
+      (by push_cast; linear_combination (17179869184 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 88661282606598025) (B := 0) (C := (-531961521279000630)) (D := (-709282028372000840))
+      (E := (-265977673495038363)) (ℓ := 7) (by decide) (by decide) w
+      (by push_cast; linear_combination (4 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 121992025) (B := 0) (C := (-617437590)) (D := (-823250120))
+      (E := (-260419467)) (ℓ := 17) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 26463976526454079218393267810564025) (B := 0) (C := (-158783859158722788669799962566065110)) (D := (-211711812211630384893066616754753480))
+      (E := (-79391929579360551014620159143330987)) (ℓ := 17) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
+
+end MazurGenusZero
+
+end MazurGenusZeroCertificates
+
+/-- **The genus-zero remainder at the two smallest levels** (PROVEN
+2026-07-27): `12` of the `30` explicit checks of
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZero`, namely `q ∈ {2, 3}`
+against all six non-CM entries of Mazur's table.
+
+See the section above for the argument.  In one sentence: at `q ≤ 3` a
+`Γ_ℚ`-stable subgroup is `{0, ±g}`, so the abscissa of `g` is `Γ_ℚ`-fixed
+hence rational, so the `q`-division polynomial has a rational root; and after
+normalising `x` on the `j`-invariant that is a rational root of an explicit
+integer cubic (resp. quartic) which has none, by a mod-`ℓ` certificate.
+
+**Why this does not extend to `q ∈ {5, 7, 13}`** — the remaining `18`
+checks, left to `..._genusZeroLarge`.  There `⟨g⟩ ∖ 0` has `q − 1 ≥ 4`
+elements and `(q−1)/2 ≥ 2` distinct abscissae, which Galois may PERMUTE; the
+kernel polynomial `∏(X − x(i ⬝ g))` is then rational of degree `2, 3, 6` and
+what has to be excluded is a rational FACTOR of `Ψ_q` of that degree, not a
+rational ROOT.  No mod-`ℓ` root certificate sees that, and `Ψ₁₃` has degree
+`84`. -/
+theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall {p q : ℕ}
+    (hp : p ∈ isolatedIsogenyPrimes) (hq : q = 2 ∨ q = 3)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    False := by
+  have hj6 : E.j = -121 ∨ E.j = -24729001 ∨ E.j = -882216989 / 131072
+      ∨ E.j = -297756989 / 2 ∨ E.j = -9317 ∨ E.j = -162677523113838677 := by
+    fin_cases hp <;>
+      simp only [isolatedJInvariants, isolatedCMJInvariants, Finset.mem_sdiff,
+        Finset.mem_insert, Finset.mem_singleton] at hj <;>
+      norm_num at hj ⊢ <;> tauto
+  have hj0 : E.j ≠ 0 := by rcases hj6 with h | h | h | h | h | h <;> rw [h] <;> norm_num
+  have hj1728 : E.j ≠ 1728 := by
+    rcases hj6 with h | h | h | h | h | h <;> rw [h] <;> norm_num
+  obtain ⟨x₀, hx₀⟩ := MazurGenusZero.exists_rat_abscissa hq g hg hstable
+  rcases hq with rfl | rfl
+  · have hc : ((2 : ℕ) : ℤ) = 2 := by norm_num
+    rw [hc, WeierstrassCurve.ΨSq_two] at hx₀
+    exact MazurGenusZero.no_rat_root_two_of_mem_nonCM hj0 hj1728 hj6 x₀ hx₀
+  · have hc : ((3 : ℕ) : ℤ) = 3 := by norm_num
+    rw [hc, WeierstrassCurve.ΨSq_three, Polynomial.eval_pow,
+      pow_eq_zero_iff (two_ne_zero)] at hx₀
+    exact MazurGenusZero.no_rat_root_three_of_mem_nonCM hj0 hj1728 hj6 x₀ hx₀
+
+/-- **The genus-zero remainder at the three largest levels** (sorry leaf, cut
+2026-07-27 out of `not_stable_of_mem_isolatedNonCMJInvariants_genusZero`): the
+`18` checks `q ∈ {5, 7, 13}` × the six non-CM entries of Mazur's table that
+survive `..._genusZeroSmall`.
+
+## WHY THIS IS THE CUT, AND WHY IT IS NOT `q ≤ 3` WITH A BIGGER `q`
+
+At `q ≤ 3` the subgroup `⟨g⟩` has ONE abscissa: `⟨g⟩ ∖ 0` is `{g}` or
+`{g, −g}`, and `x(−g) = x(g)`.  So Galois cannot move it, `x(g) ∈ ℚ` by
+descent, and the whole question collapses to a rational root of a degree-`3`
+or degree-`4` polynomial in the `j`-normalised variable — which is what the
+CERTIFICATES section proves does not exist.
+
+At `q ≥ 5` that collapse fails and nothing weaker replaces it.  `⟨g⟩ ∖ 0` has
+`(q − 1)/2 = 2, 3, 6` distinct abscissae, Galois PERMUTES them, and only the
+symmetric functions descend.  What a stable `⟨g⟩` gives is therefore the
+kernel polynomial `f = ∏_{i=1}^{(q−1)/2} (X − x(i ⬝ g)) ∈ ℚ[X]` — a rational
+FACTOR of `Ψ_q` of degree `2, 3, 6`, not a rational ROOT.  A mod-`ℓ` root
+certificate is blind to that, so the technique that closes the twelve small
+checks does not extend by any amount of arithmetic.
+
+## WHAT PROVING IT NEEDS
+
+1. **The converse of `exists_point_of_isKernelPolynomial`** — the descent
+   *stable subgroup ⟹ certificate*.  The forward direction
+   (`WeierstrassCurve.IsKernelPolynomial` ⟹ stable subgroup) is PROVEN in
+   `Fermat/FLT/EllipticCurve/KernelPolynomial.lean`; the converse asks that
+   `∏(X − x(i ⬝ g))`, manifestly `Γ_ℚ`-stable as a set of roots, descends to
+   `ℚ[X]`.  `InfiniteGalois.mem_range_algebraMap_iff_fixed` is the descent
+   step, and `MazurGenusZero.mem_range_of_fixed` above is the `q ≤ 3` case of
+   exactly this, stated over a variable base field (which is what it takes to
+   dodge the `Algebra ℚ ℚ̄` diamond).  This is ONE uniform piece of work, not
+   `18`.
+2. **Non-existence of a rational factor of `Ψ_q` of degree `(q−1)/2`**, for
+   each of the six `j`-values normalised as in the CERTIFICATES section.
+   This is the genuinely hard half.  `Ψ₅`, `Ψ₇`, `Ψ₁₃` have degrees `12`,
+   `24`, `84`; a mod-`ℓ` certificate for "no factor of degree `d`" needs the
+   FACTORISATION of `Ψ_q mod ℓ`, and there is no `decide`-shaped route to a
+   degree-`84` factorisation in Lean.
+
+**A ROUTE WORTH PRICING BEFORE ATTACKING (2) HEAD-ON.**  A rational cyclic
+`q`-isogeny gives a rational root `j'` of the modular polynomial
+`Φ_q(E.j, Y)`, of degree `q + 1 = 6, 8, 14` — small enough for the same
+mod-`ℓ` rational-root certificate used above, and uniform across the six
+`j`-values.  What it costs is `Φ_q` itself: the coefficients of `Φ₁₃` are
+astronomical, so this trades a factorisation problem for a very large
+constant table plus the statement "a rational `q`-isogeny forces
+`Φ_q(j, j') = 0`".  Neither exists at this pin.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` whose
+`j`-invariant is one of the six tabulated non-singular values and which
+carries a rational cyclic isogeny of degree `5`, `7` or `13`.  PARI/GP
+`ellisomat` on `ellinit(ellfromj(j))` reports isogeny class size `2` with
+degree multiset `{1, p}` at every one of the six, so no such curve is
+expected; and the one-prime Frobenius sieve tabulated on the parent node
+gives an explicit `(ℓ, a_ℓ)` witness for each of these `18` checks, with the
+negative control at `q = p` finding no witness below `2000`. -/
+theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge {p q : ℕ}
+    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q = 5 ∨ q = 7 ∨ q = 13)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (_hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
 /-- **The genus-zero remainder of the non-CM half** (sorry node,
 introduced 2026-07-27; this is what is left of the `66` checks): for the
 six non-singular entries of `isolatedJInvariants p`, `E` has no rational
@@ -10724,21 +11202,44 @@ Using `_hqm` is NOT circular by contrast — it is Mazur's PRIME-degree
 theorem, an independent input that this file already carries as
 `y0HasNoRationalPoint_prime`, and it is what makes the check finite.
 
-IRREDUCIBLE at this pin, but now for a much smaller reason than before:
-`E[q]` as a Galois module in the form the descent needs does not exist
-here, for `q ≤ 13` rather than for all `q`. -/
+**STATUS 2026-07-27: `12` of the `30` checks are now PROVEN and this node
+is an ASSEMBLY, not a leaf.**  `_hqm` and `_hqi` pin `q ∈ {2, 3, 5, 7, 13}`;
+the two smallest levels are discharged by
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall` (see the
+CERTIFICATES section above), and the remaining `18` checks — `q ∈ {5, 7, 13}`
+against the six `j`-values — are the leaf
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge`.  The
+IRREDUCIBILITY verdict this paragraph used to carry ("`E[q]` as a Galois
+module in the form the descent needs does not exist here, for `q ≤ 13`") was
+scoped to the wrong axis: it is true for `q ≥ 5`, where the abscissae of
+`⟨g⟩ ∖ 0` are permuted by Galois, and FALSE for `q ≤ 3`, where `⟨g⟩ = {0, ±g}`
+has a single abscissa and no Galois-module theory is needed at all. -/
 theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZero {p q : ℕ}
-    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime)
-    (_hqm : q ∈ mazurIsogenyPrimes) (_hqi : q ∉ isolatedIsogenyPrimes)
+    (hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime)
+    (hqm : q ∈ mazurIsogenyPrimes) (hqi : q ∉ isolatedIsogenyPrimes)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (_hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
-    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+    (hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  have hq5 : q = 2 ∨ q = 3 ∨ q = 5 ∨ q = 7 ∨ q = 13 := by
+    simp only [mazurIsogenyPrimes, Finset.mem_insert, Finset.mem_singleton] at hqm
+    simp only [isolatedIsogenyPrimes, Finset.mem_insert, Finset.mem_singleton] at hqi
+    omega
+  rcases hq5 with h | h | h | h | h
+  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall hp (Or.inl h) E hj g hg
+      hstable
+  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall hp (Or.inr h) E hj g hg
+      hstable
+  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge hp (Or.inl h) E hj g hg
+      hstable
+  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge hp (Or.inr (Or.inl h)) E hj
+      g hg hstable
+  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge hp (Or.inr (Or.inr h)) E hj
+      g hg hstable
 
 /-- **The non-CM half of the second-isogeny theorem** (PROVEN 2026-07-27
 by decomposition; introduced as a single leaf earlier the same day): for
