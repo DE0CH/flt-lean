@@ -165,6 +165,10 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.RingTheory.UniqueFactorizationDomain.Multiplicity
+public import Mathlib.NumberTheory.NumberField.ClassNumber
+public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+public import Mathlib.RingTheory.Polynomial.Eisenstein.IsIntegral
+public import Mathlib.RingTheory.Localization.NormTrace
 
 @[expose] public section
 
@@ -962,24 +966,493 @@ theorem irreducible_gEl : Irreducible gEl :=
 /-- `uD` is a unit (PROVEN): `N(uD) = 1`. -/
 theorem isUnit_uD : IsUnit uD := isUnit_of_norm_isUnit (by decide)
 
-/-- **LEAF 1 (sorry leaf, 2026-07-27): `ℤ[s]` is a principal ideal ring**, i.e.
-`h(K) = 1` together with `𝓞_K = ℤ[s]`.
+section RingOfIntegers
 
-Route, with the mathlib lemma named: identify `ℤ[s]` with `𝓞_K` for
-`K = ℚ[X]/(X³ − 2X² + 2)` (the power basis `1, s, s²` is an integral basis —
-index `1`, which needs the Eisenstein-at-`2` argument, see the section
-docstring), then apply
-`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`: at
-`finrank = 3`, `nrComplexPlaces = 1` its hypothesis is
-`|discr K| < (2·(π/4)·(3³/3!))² = (2.25π)² ≈ 49.96`, and `|discr K| = 44`.
-`Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean` is the worked precedent
-for discharging exactly this inequality.
+open scoped NumberField
+open _root_.Module
+
+/-! ### `ℤ[s] = 𝓞_K` for `K = ℚ(s)`, and `h(K) = 1` (PROVEN 2026-07-27)
+
+Everything from here to `isPrincipalIdealRing_zs` is the proof that `ℤ[s]` is the
+full ring of integers of `K = ℚ(s)` and that its class number is `1`.  The route
+is the one the old leaf docstring predicted, carried out:
+
+* `K` is built as the fraction field of `ℤ[s]` itself, so `ℤ[s] ⊆ K` is free and
+  `1, s, s²` is visibly a `ℤ`-basis; `Basis.localizationLocalization` turns it
+  into a `ℚ`-basis of `K` and `Algebra.discr_localizationLocalization` transports
+  the discriminant, which is computed **inside `ℤ[s]`** from the trace form
+  `Tr(a + bs + cs²) = 3a + 2b + 4c`: `det ![![3,2,4],![2,4,2],![4,2,0]] = −44`.
+* `Algebra.discr_mul_isIntegral_mem_adjoin` gives `−44 · z ∈ ℤ[s]` for every
+  algebraic integer `z`, and since `X³ − 2X² + 2` **is Eisenstein at `2`**,
+  `mem_adjoin_of_smul_prime_pow_smul_of_minpoly_isEisensteinAt` strips the `2²`,
+  leaving `11 · z ∈ ℤ[s]`.
+* The prime `11` is killed by hand, and this is the one step the old docstring did
+  not spell out.  `11 ∣ Tr(x·s^j)` for `j = 0, 1, 2` (because `Tr(z·s^j) ∈ ℤ`)
+  cuts `𝓞_K/ℤ[s]` down to the single `𝔽₁₁`-line spanned by
+  `x₀/11 = (4 + 3s + s²)/11`; the group `𝓞_K/ℤ[s]` is `11`-torsion, so if it is
+  nonzero it *contains* `x₀/11`.  But `N(x₀) = 242 = 2·11²`, so
+  `N(x₀/11) = 242/1331 ∉ ℤ` — contradiction.  Hence `𝓞_K = ℤ[s]`, `disc K = −44`,
+  and `2·nrComplexPlaces ≤ finrank = 3` makes Minkowski's bound
+  `(2·(π/4)^r₂·(27/6))² ≥ (2.25π)² > 44` (only `pi_gt_three` is needed).
+
+The correction recorded in the section docstring above is the load-bearing point:
+`−44 = −2²·11` is **not** squarefree, so "the discriminants agree" is a
+conclusion, not an input, and the Eisenstein argument at `2` is genuinely needed. -/
+
+
+/-! ## Coordinate scaffolding -/
+
+@[simp] theorem zsmul_a (m : ℤ) (x : ZS) : (m • x).a = m * x.a := by
+  rw [zsmul_eq_mul]; simp
+@[simp] theorem zsmul_b (m : ℤ) (x : ZS) : (m • x).b = m * x.b := by
+  rw [zsmul_eq_mul]; simp
+@[simp] theorem zsmul_c (m : ℤ) (x : ZS) : (m • x).c = m * x.c := by
+  rw [zsmul_eq_mul]; simp
+
+theorem sEl_pow_two : sEl ^ 2 = ⟨0, 0, 1⟩ := by decide
+theorem sEl_pow_three : sEl ^ 3 = ⟨-2, 0, 2⟩ := by decide
+theorem sEl_pow_four : sEl ^ 4 = ⟨-4, -2, 4⟩ := by decide
+
+instance : CharZero ZS := ⟨fun m n h => by
+  have := congrArg ZS.a h
+  simpa using this⟩
+
+/-- The `ℤ`-linear coordinate isomorphism `ℤ[s] ≃ ℤ³`. -/
+def coordEquiv : ZS ≃ₗ[ℤ] (Fin 3 → ℤ) where
+  toFun x := ![x.a, x.b, x.c]
+  invFun v := ⟨v 0, v 1, v 2⟩
+  map_add' x y := by ext i; fin_cases i <;> simp
+  map_smul' m x := by ext i; fin_cases i <;> simp
+  left_inv x := by cases x; rfl
+  right_inv v := by ext i; fin_cases i <;> simp
+
+/-- The `ℤ`-basis `1, s, s²` of `ℤ[s]`. -/
+noncomputable def basisZS : Basis (Fin 3) ℤ ZS := Basis.ofEquivFun coordEquiv
+
+@[simp] theorem basisZS_repr (x : ZS) (i : Fin 3) :
+    basisZS.repr x i = ![x.a, x.b, x.c] i :=
+  Basis.ofEquivFun_repr_apply coordEquiv x i
+
+theorem basisZS_apply (i : Fin 3) : basisZS i = sEl ^ (i : ℕ) := by
+  refine (Basis.apply_eq_iff (b := basisZS)).mpr ?_
+  ext j
+  fin_cases i <;> fin_cases j <;>
+    simp <;> decide
+
+theorem basisZS_zero : basisZS 0 = ⟨1, 0, 0⟩ := by rw [basisZS_apply]; decide
+theorem basisZS_one : basisZS 1 = ⟨0, 1, 0⟩ := by rw [basisZS_apply]; decide
+theorem basisZS_two : basisZS 2 = ⟨0, 0, 1⟩ := by rw [basisZS_apply]; decide
+
+/-! ## The trace and discriminant of `ℤ[s]` over `ℤ` -/
+
+instance : Module.Finite ℤ ZS := Module.Finite.of_basis basisZS
+instance : Module.Free ℤ ZS := Module.Free.of_basis basisZS
+
+theorem trace_eq (x : ZS) : Algebra.trace ℤ ZS x = 3 * x.a + 2 * x.b + 4 * x.c := by
+  classical
+  rw [Algebra.trace_eq_matrix_trace basisZS]
+  simp only [Matrix.trace, Matrix.diag_apply, Fin.sum_univ_three,
+    Algebra.leftMulMatrix_eq_repr_mul, basisZS_repr, basisZS_zero, basisZS_one, basisZS_two,
+    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons, mul_a, mul_b, mul_c]
+  ring
+
+theorem discr_basisZS : Algebra.discr ℤ basisZS = -44 := by
+  classical
+  rw [Algebra.discr_def, Matrix.det_fin_three]
+  simp only [Algebra.traceMatrix_apply, Algebra.traceForm_apply, trace_eq,
+    basisZS_zero, basisZS_one, basisZS_two, mul_a, mul_b, mul_c]
+  norm_num
+
+/-! ## The cubic field `K = ℚ(s)` -/
+
+/-- The cubic field `K = ℚ(s)`, realised as the fraction field of `ℤ[s]`.
+
+This is a `def`, not an `abbrev`, on purpose: `FractionRing` carries both an
+`OreLocalization`-flavoured `CommRing`/`Algebra ℤ` structure and the one coming
+from its `Field` instance, and although the two are definitionally equal they are
+never syntactically equal, so mathlib's `𝓞 K` API (stated through `Field.toCommRing`
+and `Ring.toIntAlgebra`) does not match a goal elaborated through the
+`OreLocalization` path.  Sealing the definition means the instances below are the
+only ones instance search can see. -/
+def KK : Type := FractionRing ZS
+
+noncomputable instance instFieldKK : Field KK := inferInstanceAs (Field (FractionRing ZS))
+noncomputable instance instAlgZSKK : Algebra ZS KK := inferInstanceAs (Algebra ZS (FractionRing ZS))
+instance instIFRKK : IsFractionRing ZS KK := inferInstanceAs (IsFractionRing ZS (FractionRing ZS))
+
+instance instSTZSKK : IsScalarTower ℤ ZS KK :=
+  IsScalarTower.of_algebraMap_eq fun n => by simp [eq_intCast]
+
+instance instCZKK : CharZero KK :=
+  charZero_of_injective_algebraMap (IsFractionRing.injective ZS KK)
+
+theorem algebraMap_ne_zero {x : ZS} (hx : x ≠ 0) : algebraMap ZS KK x ≠ 0 :=
+  fun h => hx (IsFractionRing.injective ZS KK (by rw [map_zero]; exact h))
+
+instance isLocalization_KK :
+    IsLocalization (Algebra.algebraMapSubmonoid ZS (nonZeroDivisors ℤ)) KK := by
+  rw [isLocalization_iff]
+  refine ⟨?_, ?_, ?_⟩
+  · rintro ⟨y, m, hm, rfl⟩
+    have hm0 : m ≠ 0 := nonZeroDivisors.coe_ne_zero ⟨m, hm⟩
+    refine isUnit_iff_ne_zero.mpr (algebraMap_ne_zero fun h => hm0 ?_)
+    have h2 := congrArg ZS.a h
+    simpa [eq_intCast] using h2
+  · intro z
+    obtain ⟨⟨x, s, hs⟩, hxs⟩ := IsLocalization.surj (nonZeroDivisors ZS) z
+    have hs0 : s ≠ 0 := nonZeroDivisors.coe_ne_zero ⟨s, hs⟩
+    have hN : N s ≠ 0 := fun h => hs0 (norm_eq_zero h)
+    refine ⟨⟨x * adj s, ⟨algebraMap ℤ ZS (N s), ⟨N s, ?_, rfl⟩⟩⟩, ?_⟩
+    · simpa using hN
+    · have hms : (algebraMap ℤ ZS (N s)) = s * adj s := (mul_adj s).symm
+      simp only [hms, map_mul, ← mul_assoc]
+      rw [hxs]
+  · intro x y h
+    exact ⟨1, by rw [IsFractionRing.injective ZS KK h]⟩
+
+instance instSTQ : @IsScalarTower ℤ ℚ KK Algebra.toSMul Algebra.toSMul Algebra.toSMul :=
+  IsScalarTower.of_algebraMap_eq fun n => by
+    simp [eq_intCast, map_intCast]
+
+/-- The `ℚ`-basis `1, s, s²` of `K`. -/
+noncomputable def basisKK : Basis (Fin 3) ℚ KK :=
+  basisZS.localizationLocalization ℚ (nonZeroDivisors ℤ) KK
+
+theorem discr_basisKK : Algebra.discr ℚ basisKK = -44 := by
+  rw [basisKK, Algebra.discr_localizationLocalization ℤ (nonZeroDivisors ℤ) KK basisZS,
+    discr_basisZS]
+  norm_num
+
+/-- The generator `s ∈ K`. -/
+noncomputable def thetaK : KK := algebraMap ZS KK sEl
+
+theorem basisKK_apply (i : Fin 3) : basisKK i = thetaK ^ (i : ℕ) := by
+  rw [basisKK, Basis.localizationLocalization_apply, basisZS_apply, thetaK, map_pow]
+
+/-- The power basis `1, s, s²` of `K` over `ℚ`. -/
+noncomputable def pbKK : PowerBasis ℚ KK where
+  gen := thetaK
+  dim := 3
+  basis := basisKK
+  basis_eq_pow := basisKK_apply
+
+instance : FiniteDimensional ℚ KK := Module.Finite.of_basis basisKK
+
+instance : NumberField KK where
+  to_charZero := inferInstance
+  to_finiteDimensional := inferInstance
+
+theorem finrank_KK : Module.finrank ℚ KK = 3 := by
+  rw [Module.finrank_eq_card_basis basisKK]; simp
+
+/-! ## The minimal polynomial `X³ − 2X² + 2`, Eisenstein at `2` -/
+
+/-- `X³ − 2X² + 2 ∈ ℤ[X]`. -/
+noncomputable def minPolyZ : Polynomial ℤ :=
+  Polynomial.X ^ 3 - Polynomial.C 2 * Polynomial.X ^ 2 + Polynomial.C 2
+
+theorem minPolyZ_monic : minPolyZ.Monic := by
+  unfold minPolyZ; monicity!
+
+theorem minPolyZ_natDegree : minPolyZ.natDegree = 3 := by
+  unfold minPolyZ; compute_degree!
+
+@[simp] theorem minPolyZ_coeff_zero : minPolyZ.coeff 0 = 2 := by simp [minPolyZ]
+@[simp] theorem minPolyZ_coeff_one : minPolyZ.coeff 1 = 0 := by simp [minPolyZ]
+@[simp] theorem minPolyZ_coeff_two : minPolyZ.coeff 2 = -2 := by simp [minPolyZ]
+
+theorem minPolyZ_eisenstein :
+    minPolyZ.IsEisensteinAt (Submodule.span ℤ {(2 : ℤ)}) where
+  leading := by
+    rw [minPolyZ_monic.leadingCoeff, ← Ideal.span, Ideal.mem_span_singleton]
+    decide
+  mem := by
+    intro n hn
+    rw [minPolyZ_natDegree] at hn
+    rw [← Ideal.span, Ideal.mem_span_singleton]
+    interval_cases n <;> simp
+  notMem := by
+    rw [minPolyZ_coeff_zero, ← Ideal.span, Ideal.span_singleton_pow,
+      Ideal.mem_span_singleton]
+    decide
+
+theorem sEl_relation : sEl ^ 3 - 2 * sEl ^ 2 + 2 = 0 := by decide
+
+theorem aeval_thetaK : Polynomial.aeval thetaK minPolyZ = 0 := by
+  have h : (Polynomial.aeval sEl) minPolyZ = 0 := by
+    simp only [minPolyZ, map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C]
+    simpa using sEl_relation
+  have hth : thetaK = algebraMap ZS KK sEl := rfl
+  rw [hth, Polynomial.aeval_algebraMap_apply, h, map_zero]
+
+theorem isIntegral_thetaK : IsIntegral ℤ thetaK := ⟨minPolyZ, minPolyZ_monic, by
+  simpa [Polynomial.aeval_def] using aeval_thetaK⟩
+
+theorem minPolyZ_irreducible : Irreducible minPolyZ :=
+  minPolyZ_eisenstein.irreducible
+    (Ideal.span_singleton_prime (by decide) |>.mpr Int.prime_two)
+    minPolyZ_monic.isPrimitive (by rw [minPolyZ_natDegree]; decide)
+
+theorem minpoly_rat_thetaK : minpoly ℚ thetaK = minPolyZ.map (algebraMap ℤ ℚ) := by
+  refine (minpoly.eq_of_irreducible_of_monic ?_ ?_ (minPolyZ_monic.map _)).symm
+  · exact (Polynomial.IsPrimitive.Int.irreducible_iff_irreducible_map_cast
+      minPolyZ_monic.isPrimitive).mp minPolyZ_irreducible
+  · rw [Polynomial.aeval_map_algebraMap]
+    exact aeval_thetaK
+
+theorem minpoly_int_thetaK : minpoly ℤ thetaK = minPolyZ := by
+  have h := minpoly.isIntegrallyClosed_eq_field_fractions' (K := ℚ) (S := KK)
+    isIntegral_thetaK
+  rw [minpoly_rat_thetaK] at h
+  exact (Polynomial.map_injective (algebraMap ℤ ℚ) (algebraMap ℤ ℚ).injective_int h.symm)
+
+theorem minpoly_eisenstein :
+    (minpoly ℤ thetaK).IsEisensteinAt (Submodule.span ℤ {(2 : ℤ)}) := by
+  rw [minpoly_int_thetaK]; exact minPolyZ_eisenstein
+
+/-! ## `ℤ[s]` as a subring of `K` -/
+
+instance : Algebra.IsIntegral ℤ ZS := Algebra.IsIntegral.of_finite ℤ ZS
+
+theorem isIntegral_algebraMap_ZS (u : ZS) : IsIntegral ℤ (algebraMap ZS KK u) :=
+  (Algebra.IsIntegral.isIntegral (R := ℤ) u).map (IsScalarTower.toAlgHom ℤ ZS KK)
+
+theorem eq_intCast_add (x : ZS) :
+    x = (x.a : ZS) + (x.b : ZS) * sEl + (x.c : ZS) * sEl ^ 2 := by
+  rw [sEl_pow_two]; ext <;> simp [sEl]
+
+theorem algebraMap_eq (x : ZS) :
+    algebraMap ZS KK x = (x.a : KK) + (x.b : KK) * thetaK + (x.c : KK) * thetaK ^ 2 := by
+  conv_lhs => rw [eq_intCast_add x]
+  simp only [map_add, map_mul, map_pow, map_intCast, thetaK]
+
+theorem mem_adjoin_thetaK_iff {z : KK} :
+    z ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) ↔ ∃ y : ZS, algebraMap ZS KK y = z := by
+  constructor
+  · intro hz
+    have hle : Algebra.adjoin ℤ ({thetaK} : Set KK) ≤
+        (IsScalarTower.toAlgHom ℤ ZS KK).range := by
+      refine Algebra.adjoin_le ?_
+      rintro _ rfl
+      exact ⟨sEl, rfl⟩
+    exact hle hz
+  · rintro ⟨y, rfl⟩
+    have hθ : thetaK ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) :=
+      Algebra.subset_adjoin rfl
+    rw [algebraMap_eq]
+    exact Subalgebra.add_mem _
+      (Subalgebra.add_mem _ (Subalgebra.intCast_mem _ _)
+        (Subalgebra.mul_mem _ (Subalgebra.intCast_mem _ _) hθ))
+      (Subalgebra.mul_mem _ (Subalgebra.intCast_mem _ _) (Subalgebra.pow_mem _ hθ _))
+
+/-! ## The discriminant multiplier and the Eisenstein descent at `2` -/
+
+set_option backward.isDefEq.respectTransparency false in
+theorem mul44_mem {z : KK} (hz : IsIntegral ℤ z) :
+    (-44 : KK) * z ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) := by
+  have H := Algebra.discr_mul_isIntegral_mem_adjoin (R := ℤ) ℚ
+    (B := pbKK) isIntegral_thetaK hz
+  rw [Algebra.smul_def, show Algebra.discr ℚ pbKK.basis = -44 from discr_basisKK,
+    show pbKK.gen = thetaK from rfl,
+    show (algebraMap ℚ KK) (-44 : ℚ) = (-44 : KK) by simp] at H
+  exact H
+
+theorem isIntegral_intCast (m : ℤ) : IsIntegral ℤ ((m : ℤ) : KK) := by
+  rw [show ((m : ℤ) : KK) = algebraMap ℤ KK m by simp]
+  exact isIntegral_algebraMap
+
+set_option backward.isDefEq.respectTransparency false in
+theorem mul11_mem {z : KK} (hz : IsIntegral ℤ z) :
+    (11 : KK) * z ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) := by
+  have h11 : IsIntegral ℤ ((-11 : KK) * z) := by
+    have h1 : (-11 : KK) = ((-11 : ℤ) : KK) := by push_cast; ring
+    rw [h1]
+    exact (isIntegral_intCast (-11)).mul hz
+  have hm : (-11 : KK) * z ∈ Algebra.adjoin ℤ ({pbKK.gen} : Set KK) := by
+    refine mem_adjoin_of_smul_prime_pow_smul_of_minpoly_isEisensteinAt
+      (B := pbKK) (n := 2) (p := (2 : ℤ)) Int.prime_two isIntegral_thetaK h11 ?_
+      minpoly_eisenstein
+    rw [Algebra.smul_def, show pbKK.gen = thetaK from rfl,
+      show (algebraMap ℤ KK ((2 : ℤ) ^ 2)) * ((-11 : KK) * z) = (-44 : KK) * z by
+        simp only [map_pow, map_ofNat]; ring]
+    exact mul44_mem hz
+  rw [show pbKK.gen = thetaK from rfl] at hm
+  have hneg := Subalgebra.neg_mem _ hm
+  rw [show -((-11 : KK) * z) = (11 : KK) * z by ring] at hneg
+  exact hneg
+
+/-! ## Trace and norm through the localization -/
+
+theorem trace_algebraMap (w : ZS) :
+    Algebra.trace ℚ KK (algebraMap ZS KK w) = ((Algebra.trace ℤ ZS w : ℤ) : ℚ) := by
+  rw [Algebra.trace_localization ℤ (nonZeroDivisors ℤ)]; simp
+
+theorem norm_algebraMap_ZS (w : ZS) :
+    Algebra.norm ℚ (algebraMap ZS KK w) = ((Algebra.norm ℤ w : ℤ) : ℚ) := by
+  rw [Algebra.norm_localization ℤ (nonZeroDivisors ℤ)]; simp
+
+theorem norm_eq (x : ZS) : Algebra.norm ℤ x = N x := by
+  classical
+  rw [Algebra.norm_eq_matrix_det basisZS, Matrix.det_fin_three]
+  simp only [Algebra.leftMulMatrix_eq_repr_mul, basisZS_repr, basisZS_zero, basisZS_one,
+    basisZS_two, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons, mul_a, mul_b, mul_c, N]
+  ring
+
+theorem eleven_dvd_trace {z : KK} (hz : IsIntegral ℤ z) {x : ZS}
+    (hx : algebraMap ZS KK x = (11 : KK) * z) (u : ZS) :
+    (11 : ℤ) ∣ Algebra.trace ℤ ZS (x * u) := by
+  have hint : IsIntegral ℤ (z * algebraMap ZS KK u) := hz.mul (isIntegral_algebraMap_ZS u)
+  obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp (Algebra.isIntegral_trace
+    (R := ℤ) (L := ℚ) (F := KK) hint)
+  refine ⟨m, ?_⟩
+  have key : ((Algebra.trace ℤ ZS (x * u) : ℤ) : ℚ) = 11 * ((m : ℤ) : ℚ) := by
+    rw [← trace_algebraMap, map_mul, hx, mul_assoc,
+      show ((11 : KK) * (z * algebraMap ZS KK u))
+          = ((11 : ℚ) • (z * algebraMap ZS KK u)) by rw [Algebra.smul_def]; norm_num,
+      map_smul, ← hm]
+    simp
+  exact_mod_cast key
+
+/-! ## Killing the prime `11`: `𝓞_K = ℤ[s]` -/
+
+/-- `x₀ = 4 + 3s + s²`, of norm `242 = 2·11²`. -/
+def x0El : ZS := ⟨4, 3, 1⟩
+
+theorem N_x0El : N x0El = 242 := by decide
+
+theorem exists_mem_ZS {z : KK} (hz : IsIntegral ℤ z) : ∃ y : ZS, algebraMap ZS KK y = z := by
+  obtain ⟨x, hx⟩ := mem_adjoin_thetaK_iff.mp (mul11_mem hz)
+  have h1 : (11 : ℤ) ∣ 3 * x.a + 2 * x.b + 4 * x.c := by
+    have h := eleven_dvd_trace hz hx 1
+    rwa [mul_one, trace_eq] at h
+  have h3 : (11 : ℤ) ∣ 4 * x.a + 2 * x.b := by
+    have h := eleven_dvd_trace hz hx ⟨0, 0, 1⟩
+    rw [trace_eq] at h
+    obtain ⟨k, hk⟩ := h
+    simp only [mul_a, mul_b, mul_c] at hk
+    exact ⟨k, by linarith⟩
+  obtain ⟨p, hp⟩ : (11 : ℤ) ∣ x.a - 4 * x.c := by omega
+  obtain ⟨q, hq⟩ : (11 : ℤ) ∣ x.b - 3 * x.c := by omega
+  by_cases hc : (11 : ℤ) ∣ x.c
+  · obtain ⟨r, hr⟩ := hc
+    refine ⟨⟨4 * r + p, 3 * r + q, r⟩, ?_⟩
+    have hxeq : x = ((11 : ℤ) : ZS) * (⟨4 * r + p, 3 * r + q, r⟩ : ZS) := by
+      ext <;>
+        simp only [mul_a, mul_b, mul_c, intCast_a, intCast_b, intCast_c] <;>
+        ring_nf <;> omega
+    have h11 : (11 : KK) * algebraMap ZS KK (⟨4 * r + p, 3 * r + q, r⟩ : ZS) = 11 * z := by
+      rw [← hx, hxeq, map_mul, map_intCast]
+      norm_num
+    exact mul_left_cancel₀ (by norm_num : (11 : KK) ≠ 0) h11
+  · exfalso
+    obtain ⟨t, k, ht⟩ : ∃ t k : ℤ, x.c * t = 1 + 11 * k := by
+      have hgcd : Int.gcd 11 x.c = 1 := by
+        have hg11 : Int.gcd 11 x.c ∣ 11 := Nat.gcd_dvd_left _ _
+        rcases (by decide : Nat.Prime 11).eq_one_or_self_of_dvd _ hg11 with h | h
+        · exact h
+        · exact absurd (by
+            have hd := Int.gcd_dvd_right (a := (11 : ℤ)) (b := x.c)
+            rw [h] at hd; exact_mod_cast hd) hc
+      obtain ⟨u, v, huv⟩ := Int.isCoprime_iff_gcd_eq_one.mpr hgcd
+      exact ⟨v, -u, by linarith⟩
+    have hxd : x = (x.c : ZS) * x0El + ((11 : ℤ) : ZS) * (⟨p, q, 0⟩ : ZS) := by
+      ext <;>
+        simp only [x0El, mul_a, mul_b, mul_c, add_a, add_b, add_c,
+          intCast_a, intCast_b, intCast_c] <;>
+        ring_nf <;> omega
+    have hw : (11 : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))
+        = (x.c : KK) * algebraMap ZS KK x0El := by
+      have hxx := hx
+      rw [hxd, map_add, map_mul, map_mul, map_intCast, map_intCast] at hxx
+      push_cast at hxx ⊢
+      linear_combination -hxx
+    have hvint : IsIntegral ℤ ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))
+        - (k : KK) * algebraMap ZS KK x0El) :=
+      ((isIntegral_intCast t).mul (hz.sub (isIntegral_algebraMap_ZS _))).sub
+        ((isIntegral_intCast k).mul (isIntegral_algebraMap_ZS _))
+    have hv : (11 : KK) * ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))
+        - (k : KK) * algebraMap ZS KK x0El) = algebraMap ZS KK x0El := by
+      have hct : (x.c : KK) * (t : KK) = 1 + 11 * (k : KK) := by
+        have : ((x.c * t : ℤ) : KK) = ((1 + 11 * k : ℤ) : KK) := by rw [ht]
+        push_cast at this
+        linear_combination this
+      have h2 : (11 : KK) * ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS)))
+          = ((x.c : KK) * (t : KK)) * algebraMap ZS KK x0El := by
+        rw [show (11 : KK) * ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS)))
+            = (t : KK) * ((11 : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))) by ring, hw]
+        ring
+      rw [hct] at h2
+      linear_combination h2
+    obtain ⟨n, hn⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+      (Algebra.isIntegral_norm (K := ℚ) hvint)
+    have hnorm := congrArg (Algebra.norm ℚ) hv
+    rw [map_mul, norm_algebraMap_ZS, norm_eq, N_x0El,
+      show (11 : KK) = algebraMap ℚ KK 11 by simp, Algebra.norm_algebraMap,
+      finrank_KK, ← hn] at hnorm
+    rw [eq_intCast] at hnorm
+    have hcast : ((1331 * n : ℤ) : ℚ) = ((242 : ℤ) : ℚ) := by
+      push_cast; linear_combination hnorm
+    have h1331 : (1331 : ℤ) * n = 242 := by exact_mod_cast hcast
+    omega
+
+/-! ## `ℤ[s] = 𝓞_K`, the discriminant of `K`, and Minkowski -/
+
+instance isIntegralClosure_ZS : IsIntegralClosure ZS ℤ KK where
+  algebraMap_injective := IsFractionRing.injective ZS KK
+  isIntegral_iff := fun {_} =>
+    ⟨fun h => exists_mem_ZS h, fun ⟨y, hy⟩ => hy ▸ isIntegral_algebraMap_ZS y⟩
+
+/-- **`𝓞_K = ℤ[s]`**. -/
+noncomputable def ringOfIntegersEquivZS : ZS ≃ₐ[ℤ] 𝓞 KK :=
+  IsIntegralClosure.equiv ℤ ZS KK (𝓞 KK)
+
+theorem discr_KK : NumberField.discr KK = -44 := by
+  have hb : (⇑(basisZS.map ringOfIntegersEquivZS.toLinearEquiv))
+      = ⇑ringOfIntegersEquivZS ∘ ⇑basisZS := by
+    funext i; simp
+  rw [← NumberField.discr_eq_discr KK (basisZS.map ringOfIntegersEquivZS.toLinearEquiv), hb,
+    ← Algebra.discr_eq_discr_of_algEquiv basisZS ringOfIntegersEquivZS, discr_basisZS]
+
+theorem nrComplexPlaces_le : NumberField.InfinitePlace.nrComplexPlaces KK ≤ 1 := by
+  have h := NumberField.InfinitePlace.card_add_two_mul_card_eq_rank KK
+  rw [finrank_KK] at h
+  omega
+
+theorem isPrincipalIdealRing_OKK : IsPrincipalIdealRing (𝓞 KK) := by
+  apply _root_.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt
+  rw [discr_KK, finrank_KK]
+  rcases Nat.le_one_iff_eq_zero_or_eq_one.mp nrComplexPlaces_le with h | h <;> rw [h]
+  · norm_num [Nat.factorial]
+  · norm_num [Nat.factorial]
+    nlinarith [Real.pi_gt_three]
+
+theorem isPrincipalIdealRing_of_ringEquiv {A B : Type*} [CommRing A] [CommRing B]
+    (e : A ≃+* B) [IsPrincipalIdealRing B] : IsPrincipalIdealRing A := by
+  refine ⟨fun I => ?_⟩
+  obtain ⟨b, hb⟩ := (IsPrincipalIdealRing.principal (I.map (e : A →+* B))).principal
+  refine ⟨e.symm b, ?_⟩
+  have h1 : (I.map (e : A →+* B)).map (e.symm : B →+* A) = I := by
+    rw [Ideal.map_map]
+    convert Ideal.map_id I
+    ext x; simp
+  rw [← h1, hb, Ideal.map_span]
+  simp
+
+end RingOfIntegers
+
+/-- **`ℤ[s]` is a principal ideal ring** (PROVEN 2026-07-27), i.e. `𝓞_K = ℤ[s]`
+together with `h(K) = 1`.  See the section above for the proof; it goes through
+`RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt` with `|disc K| = 44` against
+the Minkowski bound `(2·(π/4)^{r₂}·(3³/3!))² ≥ (2.25π)² ≈ 49.96`.
 
 Consumed below only through `WfDvdMonoid`, `UniqueFactorizationMonoid` and
-Bézout, so any route to a PID discharges it — including a Euclidean structure:
-`ℤ[s]` is norm-Euclidean, discriminant `−44` being on the classical list of
-norm-Euclidean complex cubic fields. -/
-theorem isPrincipalIdealRing_zs : IsPrincipalIdealRing ZS := sorry
+Bézout. -/
+theorem isPrincipalIdealRing_zs : IsPrincipalIdealRing ZS :=
+  haveI := isPrincipalIdealRing_OKK
+  isPrincipalIdealRing_of_ringEquiv ringOfIntegersEquivZS.toRingEquiv
 
 instance : IsPrincipalIdealRing ZS := isPrincipalIdealRing_zs
 
