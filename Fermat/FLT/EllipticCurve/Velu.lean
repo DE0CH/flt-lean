@@ -10165,15 +10165,21 @@ theorem velu_map_add_of_notMem_of_subgroup (S : Finset W.Point) (hS : IsPointSub
     exact W.velu_coordX_add_eq_addX_of_subgroup S hS hA hB hAB
   exact velu_map_add_of_coordX_of_subgroup W S hS hz hX hP hQ hPQ
 
-/-- **LEAF: the Vélu map is additive, at EVERY kernel order.**
+/-- **PROVEN (2026-07-27): the Vélu map is additive, at EVERY kernel order.**
 
-The parity-free form of `velu_map_add`. The reduction above it is formal and
-parity-free once its inputs are — `veluMapAll_neg`, additivity up to sign, and the
-kernel cases — so the real content is the parity-free forms of `velu_coord_ne_neg`
-(which routes through `velu_xNum_sub_eq_prod`, hence through `veluH_factor`) and of
-the `addX` identity still open at `velu_map_add_of_notMem`. Whoever closes this
-should expect to close that odd-order leaf on the way, and should coordinate with
-its owner. -/
+The parity-free form of `velu_map_add`. This is no longer a leaf: the whole route
+closed and this declaration is now a pure assembly over the four kernel cases plus
+`velu_map_add_of_notMem_of_subgroup`. Axiom audit: `[propext, Classical.choice,
+Quot.sound]`, and `Velu.lean` emits **no** `declaration uses 'sorry'` warning at any
+line.
+
+Historical note, kept because the route is the interesting part: the reduction here
+is formal and parity-free once its inputs are — `veluMapAll_neg`, additivity up to
+sign, and the kernel cases — so the real content was the parity-free forms of
+`velu_coord_ne_neg` (routing through `velu_xNum_sub_eq_prod`, hence through
+`veluH_factor`) and of the `addX` identity. Both landed, along with
+`velu_norm_line_eq_poly` and the parity-free `velu_curve_Δ_ne_zero`, so the
+odd-order coordination this docstring used to ask for is discharged. -/
 theorem velu_map_add_of_subgroup (S : Finset W.Point) (hS : IsPointSubgroup S)
     (P Q : W.Point) :
     haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic_of_subgroup S hS
