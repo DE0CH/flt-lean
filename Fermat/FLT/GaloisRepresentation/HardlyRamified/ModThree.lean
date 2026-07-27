@@ -13136,22 +13136,52 @@ theorem exists_smul_eq_zero_h1Cotangent_of_isLocalization
   simpa only [smul_zero] using hc'
 
 /-- **`H¹(L_{S/R}) = 0` from a TORSION-FREE CONORMAL MODULE plus generic-fibre
-vanishing** (PROVEN 2026-07-27).  `H¹(L_{S/R})` is by definition a SUBMODULE of
-the conormal module `I/I²` of the canonical presentation
-(`Algebra.H1Cotangent R S = LinearMap.ker (Generators.self R S).cotangentComplex`).
+vanishing, FOR AN ARBITRARY PRESENTATION `P`** (PROVEN 2026-07-27; GENERALIZED
+from the canonical presentation to an arbitrary one 2026-07-27).
+
+`H¹` of the presentation `P` is by definition a SUBMODULE of the conormal module
+`I/I²` of `P` (`P.toExtension.H1Cotangent = LinearMap.ker P.cotangentComplex`),
+and `H¹` is presentation-INDEPENDENT (`Algebra.Generators.equivH1Cotangent`).
 The previous lemma makes every class `R`-torsion; `R`-flatness of `I/I²` makes
 `I/I²` torsion-free (`Module.Flat.isSMulRegular_of_nonZeroDivisors`).  A torsion
 element of a torsion-free module is zero.
 
+**WHY THE GENERALIZATION IN `P` IS LOAD-BEARING AND NOT COSMETIC** (2026-07-27).
+Stated only for `Algebra.Generators.self` — the presentation of `S` by the
+polynomial ring on ALL of `S` — this lemma forces its supplier to control the
+conormal module of that one enormous presentation.  But the classical theorem
+that supplies conormal projectivity (local complete intersection) produces a
+FINITE presentation, and transporting projectivity of `I/I²` from one
+presentation to another is **not available at this pin**: mathlib proves
+presentation-independence for `H1Cotangent` only
+(`Extension.H1Cotangent.map_eq`, `Generators.H1Cotangent.equiv`,
+`Extension.H1Cotangent.equivOfFormallySmooth`), and there is NO comparison of
+`Cotangent` itself.  The raw material for one exists — the chain homotopy
+`Extension.Cotangent.map_sub_map` / `Extension.Hom.sub` — but the consequence
+(homotopy equivalence of the two-term complexes, hence a Schanuel-type
+`P.Cotangent ⊕ Q.CotangentSpace ≅ Q.Cotangent ⊕ P.CotangentSpace`) is nowhere
+drawn.  Quantifying over `P` here deletes that entire missing chapter from the
+critical path: the supplier may now hand over ANY presentation it can build.
+
+THE CHECK THAT WOULD REFUTE THAT CLAIM: exhibit, at this pin, a lemma relating
+`P.toExtension.Cotangent` and `Q.toExtension.Cotangent` for two `Generators` of
+the same algebra.  AXIS SEARCHED: all of `Mathlib/RingTheory/Extension/`,
+`Mathlib/RingTheory/Kaehler/` (including `JacobiZariski`, which compares a
+TOWER `R → S → T`, not two presentations of one `S`), `Mathlib/RingTheory/Smooth/`
+and `Mathlib/RingTheory/Etale/`; the only `Cotangent.map` bijectivity statement
+in mathlib is `Cotangent.map_toInfinitesimal_bijective`, which relates `P` to its
+own square-zero truncation.
+
 Both hypotheses are LOAD-BEARING, and there is an explicit witness for each —
 see the FALSITY note on the special-fibre route in
-`projective_cotangent_of_hopf_package` below. -/
+`exists_generators_projective_cotangent_of_hopf_package` below. -/
 theorem subsingleton_h1Cotangent_of_flat_cotangent
     {R S T : Type*} [CommRing R] [IsDomain R] [CommRing S] [CommRing T]
     [Algebra R S] [Algebra S T] [Algebra R T] [IsScalarTower R S T]
     [IsLocalization (Algebra.algebraMapSubmonoid S (nonZeroDivisors R)) T]
     [Subsingleton (Algebra.H1Cotangent R T)]
-    [Module.Flat R (Algebra.Generators.self R S).toExtension.Cotangent] :
+    {ι : Type*} (P : Algebra.Generators R S ι)
+    [Module.Flat R P.toExtension.Cotangent] :
     Subsingleton (Algebra.H1Cotangent R S) := by
   constructor
   intro x y
@@ -13161,13 +13191,21 @@ theorem subsingleton_h1Cotangent_of_flat_cotangent
     exists_smul_eq_zero_h1Cotangent_of_isLocalization (T := T)
       (Algebra.algebraMapSubmonoid S (nonZeroDivisors R)) z
   obtain ⟨r, hr, rfl⟩ := hm
-  have hreg : IsSMulRegular (Algebra.Generators.self R S).toExtension.Cotangent r :=
+  have hreg : IsSMulRegular P.toExtension.Cotangent r :=
     Module.Flat.isSMulRegular_of_nonZeroDivisors hr
-  apply Algebra.Extension.h1Cotangentι_ext
-  apply hreg
-  have hsm : (algebraMap R S r) • z = r • z := by rw [algebraMap_smul]
-  rw [hsm] at hz
-  simpa using congrArg Subtype.val hz
+  set w : P.toExtension.H1Cotangent := P.equivH1Cotangent.symm z with hwdef
+  have hzw : P.equivH1Cotangent w = z := by
+    rw [hwdef]; exact P.equivH1Cotangent.apply_symm_apply z
+  have hwz : (algebraMap R S r) • w = 0 := by
+    apply P.equivH1Cotangent.injective
+    rw [map_smul, hzw, hz, map_zero]
+  have hw0 : w = 0 := by
+    apply Algebra.Extension.h1Cotangentι_ext
+    apply hreg
+    have hsm : (algebraMap R S r) • w = r • w := by rw [algebraMap_smul]
+    rw [hsm] at hwz
+    simpa using congrArg Subtype.val hwz
+  rw [← hzw, hw0, map_zero]
 
 attribute [local instance] Algebra.TensorProduct.rightAlgebra in
 /-- **The packaged reduction: LCI (conormal projectivity) + étale generic fibre
@@ -13176,9 +13214,11 @@ half of clause (1) of `IsFontaineAlgebra`).
 
 Let `R` be a domain with fraction field `K` and `S` a FLAT `R`-algebra whose
 generic fibre `K ⊗[R] S` is formally étale over `K`.  If the conormal module of
-the canonical presentation is `S`-PROJECTIVE — which is precisely the classical
+SOME presentation `P` is `S`-PROJECTIVE — which is precisely the classical
 local-complete-intersection condition, see
-`projective_cotangent_of_hopf_package` — then `H¹(L_{S/R})` vanishes.
+`exists_generators_projective_cotangent_of_hopf_package` — then `H¹(L_{S/R})`
+vanishes.  As in the previous lemma the presentation is a PARAMETER, not fixed to
+`Algebra.Generators.self`; see the note there for why that is load-bearing.
 
 The three steps: `K ⊗[R] S` is a localization of `S` at the image of `R⁰`
 (`IsLocalization.tensorRight`, which is stated under mathlib's LOCAL instance
@@ -13192,32 +13232,69 @@ theorem subsingleton_h1Cotangent_of_projective_cotangent
     [IsFractionRing R K]
     (S : Type*) [CommRing S] [Algebra R S] [Module.Flat R S]
     [Algebra.FormallyEtale K (K ⊗[R] S)]
-    [Module.Projective S (Algebra.Generators.self R S).toExtension.Cotangent] :
+    {ι : Type*} (P : Algebra.Generators R S ι)
+    [Module.Projective S P.toExtension.Cotangent] :
     Subsingleton (Algebra.H1Cotangent R S) := by
   haveI : Algebra.FormallyEtale R K :=
     Algebra.FormallyEtale.of_isLocalization (M := nonZeroDivisors R)
   haveI : Algebra.FormallyEtale R (K ⊗[R] S) :=
     Algebra.FormallyEtale.comp R K (K ⊗[R] S)
-  haveI : Module.Flat S (Algebra.Generators.self R S).toExtension.Cotangent :=
+  haveI : Module.Flat S P.toExtension.Cotangent :=
     Module.Flat.of_projective
-  haveI : Module.Flat R (Algebra.Generators.self R S).toExtension.Cotangent :=
+  haveI : Module.Flat R P.toExtension.Cotangent :=
     Module.Flat.trans R S _
-  exact subsingleton_h1Cotangent_of_flat_cotangent (T := K ⊗[R] S)
+  exact subsingleton_h1Cotangent_of_flat_cotangent (T := K ⊗[R] S) P
 
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **THE LCI CORE: the conormal module of a finite flat Hopf order is
-PROJECTIVE** (SORRY LEAF, cut 2026-07-27 out of
-`subsingleton_h1Cotangent_of_hopf_package`, which is now PROVEN over this leaf
-alone via `subsingleton_h1Cotangent_of_projective_cotangent`).
+/-- **THE LCI CORE: a finite flat Hopf order admits a FINITE presentation whose
+conormal module is PROJECTIVE** (SORRY LEAF, cut 2026-07-27 out of
+`subsingleton_h1Cotangent_of_hopf_package`, which is PROVEN over this leaf alone
+via `subsingleton_h1Cotangent_of_projective_cotangent`; RESTATED 2026-07-27 from
+the canonical presentation to an existential over finite presentations — see
+RESTATEMENT below, which is the substantive change).
 
-`I/I²` for the canonical presentation `𝒪₃ᵥ[x_g : g ∈ G] ↠ G` is a projective
-`G`-module.  This IS the classical local-complete-intersection statement in
-conormal form: `A = P/I` is LCI over the base exactly when `I/I²` is projective
-and `H¹` vanishes (Quillen; Stacks 09Q9), and in the present situation — `G`
-flat over `𝒪₃ᵥ` with étale generic fibre — the `H¹` half is FREE, supplied by
-the reduction lemma above.  So this leaf is equivalent to "G is LCI over `𝒪₃ᵥ`"
-and is strictly STRONGER than the theorem it feeds.
+There are `n` and a presentation `𝒪₃ᵥ[x_1,…,x_n] ↠ G` whose conormal module
+`I/I²` is a projective `G`-module.  This IS the classical
+local-complete-intersection statement in conormal form: `A = P/I` is LCI over the
+base exactly when `I/I²` is projective and `H¹` vanishes (Quillen; Stacks 09Q9),
+and in the present situation — `G` flat over `𝒪₃ᵥ` with étale generic fibre —
+the `H¹` half is FREE, supplied by the reduction lemma above.  So this leaf is
+equivalent to "G is LCI over `𝒪₃ᵥ`" and is strictly STRONGER than the theorem it
+feeds.
+
+**RESTATEMENT 2026-07-27: `Generators.self` ⟶ `∃ n, Generators 𝒪₃ᵥ G (Fin n)`.**
+The leaf previously demanded projectivity of the conormal module of the CANONICAL
+presentation `𝒪₃ᵥ[x_g : g ∈ G] ↠ G`.  That is true, but it is not what any proof
+of the classical theorem produces: Raynaud's argument produces a FINITE
+presentation.  Getting from one to the other needs presentation-independence of
+`Cotangent`, which **does not exist at this pin in any form** — mathlib proves it
+for `H1Cotangent` only.  See the note on
+`subsingleton_h1Cotangent_of_flat_cotangent` for the exact search and the check
+that would refute that claim.  Restating the leaf existentially therefore removes
+an entire missing chapter (homotopy invariance of the naive cotangent complex,
+i.e. a Schanuel-type `P.Cotangent ⊕ Q.CotangentSpace ≅ Q.Cotangent ⊕ P.CotangentSpace`)
+from the critical path, at zero mathematical cost — the two reduction lemmas
+above were generalized to accept an arbitrary presentation, which is all that was
+needed.  Nothing else in the development referred to the old form.
+
+**CIRCULARITY AUDIT — WHY THE LEAF MUST ASK FOR PROJECTIVITY OVER `G`, AND MUST
+NOT BE WEAKENED TO `𝒪₃ᵥ`-FLATNESS** (2026-07-27; the tempting weakening is a
+disguised restatement of the goal, and would have looked like progress).
+`subsingleton_h1Cotangent_of_flat_cotangent` only needs
+`Module.Flat 𝒪₃ᵥ P.toExtension.Cotangent`, so it is tempting to state the leaf in
+that visibly weaker form.  **That form is EQUIVALENT to the conclusion, for every
+presentation `P` simultaneously, and so is not a reduction at all.**  Proof:
+`H¹_P ⊆ Cotangent_P` with quotient embedding into `CotangentSpace_P`
+(`Extension.exact_cotangentComplex_toKaehler`), and `CotangentSpace_P` is `G`-FREE
+(`Generators.cotangentSpaceBasis`), hence `𝒪₃ᵥ`-torsion-free since `G` is
+`𝒪₃ᵥ`-flat; so the `𝒪₃ᵥ`-torsion submodule of `Cotangent_P` is contained in
+`H¹_P`.  Conversely every class of `H¹_P` is `𝒪₃ᵥ`-torsion, by
+`exists_smul_eq_zero_h1Cotangent_of_isLocalization` and the étale generic fibre.
+Hence `torsion(Cotangent_P) = H¹_P ≅ H¹(L_{G/𝒪₃ᵥ})` exactly, and "`Cotangent_P` is
+`𝒪₃ᵥ`-flat" says precisely "`H¹(L_{G/𝒪₃ᵥ}) = 0`".  Projectivity over `G` is
+strictly stronger and is genuinely different content — it is the LCI condition,
+and it is where the GROUP structure has to enter.
 
 WHY IT IS TRUE.  A finite flat commutative group scheme over any base is a local
 complete intersection: embed `G` in the smooth affine `GL(G)` by the regular
@@ -13246,18 +13323,62 @@ the ÉTALE GENERIC FIBRE, not from the special fibre.  That is exactly the shape
 the reduction lemma above exploits, and it is why the hypothesis
 `[Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]` is load-bearing rather than decorative.
 
+**SCOPE CORRECTION TO THE FALSITY NOTE — IT REFUTES A ROUTE TO `H¹`, NOT A ROUTE
+TO THIS LEAF, AND THE DIFFERENCE DECIDES WHERE A SUCCESSOR SHOULD LOOK**
+(2026-07-27).  The note above is correct and its counterexample is real, but it
+was subsequently propagated in the wider form "the special fibre is useless here,
+`ConnectedEtale.lean` is not consumed on this branch" — and in that form it is
+too wide, because it was written when this leaf still had to deliver the `H¹`
+vanishing itself.  Since the cut now separates the two halves, note what the
+counterexample does and does not show.  It shows that `H¹(L) = 0` **cannot** be
+obtained from the closed fibre, since `μ₃ ⊗ 𝔽₃ = 𝔽₃[y]/(y³)` has `H¹(L) ≠ 0`.
+It does **not** touch THIS leaf, whose conclusion is projectivity of `I/I²`,
+i.e. LCI — and the note itself concedes "that reduction is sound for LCI".
+Indeed `μ₃`, the very counterexample, satisfies this leaf on the nose: `𝔽₃[y]/(y³)`
+is a complete intersection, the presentation lifts to `𝒪₃ᵥ[x] ↠ 𝒪₃ᵥ[x]/(x³-1)`,
+and `I/I²` is `G`-FREE of rank 1.  So the closed-fibre route (a
+Demazure–Gabriel/Borel structure theorem for finite commutative Hopf algebras
+over `𝔽₃`, then Nakayama plus `𝒪₃ᵥ`-flatness to lift the presentation, then
+Koszul regularity to make `I/I²` free) is a LIVE candidate for this leaf and
+should not be skipped on the strength of the note above.  It is not thereby
+cheap: Borel's structure theorem is absent from the pin, and so is every
+regular-sequence-to-conormal-module lemma (see the axis search below).
+
 THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite flat commutative Hopf
-`𝒪₃ᵥ`-algebra with étale generic fibre whose conormal module has a
-non-projective summand — equivalently, one whose minimal presentation needs
-strictly more relations than generators.  Since `H¹` vanishes here, `I/I²`
+`𝒪₃ᵥ`-algebra with étale generic fibre such that EVERY finite presentation of it
+has non-projective conormal module — equivalently, one whose minimal presentation
+needs strictly more relations than generators.  Since `H¹` vanishes here, `I/I²`
 injects into a free module, so any refutation must produce a non-projective
 submodule of a free `G`-module, and `G` is a finite product of complete local
-rings; this is the concrete form the search should take. -/
-theorem projective_cotangent_of_hopf_package
+rings; this is the concrete form the search should take.  Note the Hopf
+hypothesis is genuinely load-bearing and a refutation must respect it: dropping
+it makes the statement FALSE, and the witness is the order
+`S = 𝒪₃ᵥ + 3·𝒪₃ᵥ³ = 𝒪₃ᵥ[e,f]/(e²-3e, f²-3f, ef)` inside the étale algebra
+`𝒪₃ᵥ³` — finite flat over `𝒪₃ᵥ` with étale generic fibre, embedding dimension
+`3` against Krull dimension `1`, hence needing three relations on two generators
+and not a complete intersection.  So no argument for this leaf can avoid using
+the comultiplication.
+
+AXIS SEARCHED, and what is missing at this pin (2026-07-27, greps over
+`Mathlib/RingTheory/{Extension,Kaehler,Smooth,Etale,Regular}/` and over
+`~/cs/FLT`): (i) there is NO Koszul complex, NO `IsCompleteIntersection`
+predicate, and NO lemma taking a regular sequence to freeness of `I/I²` or to
+vanishing of `H1Cotangent` — `RingTheory/Regular/RegularSequence.lean` still
+carries "TODO: Koszul regular sequences" — so even GIVEN a complete-intersection
+presentation, the step to this leaf's conclusion has to be built; (ii) there is
+no interaction whatsoever between `HopfAlgebra` and
+`Kaehler`/`Cotangent`/`Smooth`/`Etale` in mathlib; (iii) `~/cs/FLT` has zero
+occurrences of `H1Cotangent`, `Extension.Cotangent`, `IsStandardSmooth` or
+`CompleteIntersection`.  The usable building blocks are
+`Extension.cotangentEquiv : S ⊗[P.Ring] P.ker ≃ₗ[S] P.Cotangent`,
+`Extension.Cotangent.span_eq_top_of_span_eq_ker`, `Cotangent.mk_eq_zero_iff`,
+and `Generators.exists_presentation_of_free_cotangent` (Stacks 07CF). -/
+theorem exists_generators_projective_cotangent_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
-    Module.Projective G (Algebra.Generators.self 𝒪₃ᵥ G).toExtension.Cotangent :=
+    ∃ (n : ℕ) (P : Algebra.Generators 𝒪₃ᵥ G (Fin n)),
+      Module.Projective G P.toExtension.Cotangent :=
   sorry
 
 set_option backward.isDefEq.respectTransparency false in
@@ -13265,7 +13386,7 @@ set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **A finite flat Hopf order over `𝒪₃ᵥ` is a LOCAL COMPLETE
 INTERSECTION** (PROVEN 2026-07-27 over the single leaf
-`projective_cotangent_of_hopf_package`; cut 2026-07-26 out of
+`exists_generators_projective_cotangent_of_hopf_package`; cut 2026-07-26 out of
 `isFontaineAlgebra_of_hopf_package`, which is now PROVEN over this leaf
 and its sibling `exists_kaehler_linearEquiv_baseChange_of_hopf_package`;
 this is the SUBSTANTIAL half of the two).
@@ -13298,18 +13419,27 @@ here, since `G` is finite flat over `𝒪₃ᵥ` and NOT smooth (already
 property of the underlying scheme, independent of the exponent.
 
 STATUS 2026-07-27 — PROVEN, over the single leaf
-`projective_cotangent_of_hopf_package`.  The homological half is DONE and the
-paragraph above needs two corrections, both of which cost real time to find:
+`exists_generators_projective_cotangent_of_hopf_package`.  The homological half
+is DONE and the paragraph above needs two corrections, both of which cost real
+time to find:
 
-*The route recorded here on 2026-07-26 — reduce LCI to the special fibre and
-finish with Demazure–Gabriel over `𝔽₃` — CANNOT WORK, and the counterexample is
-`μ₃` itself.*  Over `𝔽₃`, `μ₃` is `𝔽₃[y]/(y³)`, a complete intersection whose
+*`H¹(L) = 0` CANNOT be obtained from the special fibre, and the counterexample
+is `μ₃` itself.*  Over `𝔽₃`, `μ₃` is `𝔽₃[y]/(y³)`, a complete intersection whose
 `H¹(L)` is nevertheless `≅ 𝔽₃[y]/(y³) ≠ 0`, because `d(y³) = 3y²dy = 0` in
 characteristic `3`.  So `H¹(L) = 0` is STRICTLY STRONGER than LCI over a field,
 and no argument routed through the closed fibre can deliver it.  The full
-computation is in the FALSITY NOTE on `projective_cotangent_of_hopf_package`.
-`ConnectedEtale.lean` is therefore NOT consumed here, and a successor should not
-go looking for the connected–étale splitting on this branch.
+computation is in the FALSITY NOTE on
+`exists_generators_projective_cotangent_of_hopf_package`.
+
+**SCOPE CORRECTION 2026-07-27**: an earlier version of this paragraph continued
+"`ConnectedEtale.lean` is therefore NOT consumed here, and a successor should not
+go looking for the connected–étale splitting on this branch."  **That inference
+is too wide and has been withdrawn.**  What `μ₃` refutes is the special-fibre
+route to the `H¹` VANISHING; it says nothing against the special-fibre route to
+LCI, which is the only thing the remaining leaf now asks for — and `μ₃` in fact
+SATISFIES that leaf, its closed-fibre complete intersection lifting to
+`𝒪₃ᵥ[x] ↠ 𝒪₃ᵥ[x]/(x³-1)` with `I/I²` free of rank 1.  A successor at the leaf may
+legitimately go through the closed fibre; see the SCOPE CORRECTION there.
 
 *What actually makes the vanishing true is the ÉTALE GENERIC FIBRE, and that
 half is now proven outright.*  `ℚ₃ᵥ ⊗ G` is the localization of `G` at the
@@ -13328,9 +13458,10 @@ theorem subsingleton_h1Cotangent_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
-    Subsingleton (Algebra.H1Cotangent 𝒪₃ᵥ G) :=
-  haveI := projective_cotangent_of_hopf_package G
-  subsingleton_h1Cotangent_of_projective_cotangent (K := ℚ₃ᵥ) G
+    Subsingleton (Algebra.H1Cotangent 𝒪₃ᵥ G) := by
+  obtain ⟨n, P, hP⟩ := exists_generators_projective_cotangent_of_hopf_package G
+  haveI := hP
+  exact subsingleton_h1Cotangent_of_projective_cotangent (K := ℚ₃ᵥ) G P
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
