@@ -1752,11 +1752,12 @@ characteristic three with MORE THAN THREE ELEMENTS; the discharge is
 any `Ind` machinery by writing the anticyclotomic index-two induction as
 an explicit dihedral cocycle. REFUTED as originally stated and repaired
 2026-07-26, the cardinality bound being the repair. The only class field
-theory left in it is `exists_ringClassZModChar_of_inertPrime` (2026-07-27
-— the existence, at a GIVEN inert auxiliary prime `p`, of the ring class field of
-conductor `p` of `M = ℚ(√d)`, i.e. an anticyclotomic ray-class character of order
-`(p+1)/24`; the selection of `p` is PROVEN in `exists_auxiliaryPrime_of_neg`, the
-descent to a prescribed order `n` in
+theory left in it is `nonempty_ringClassArtinData_of_inertPrime` (2026-07-27
+— the existence, at a GIVEN inert auxiliary prime `p`, of the ARTIN MAP of the
+ring class field of conductor `p` of `M = ℚ(√d)`; the `ZMod` encoding is PROVEN
+in `exists_ringClassZModChar_of_inertPrime` over the group-theoretic
+`exists_zmodChar_of_dvd_exponent`, the selection of `p` in
+`exists_auxiliaryPrime_of_neg`, the descent to a prescribed order `n` in
 `exists_anticyclotomicZModChar_of_inertPrime`, and the profinite bookkeeping in
 `exists_anticyclotomicZModChar_of_quadraticChar`, so only class field theory is
 left) — whose docstring records what has to be built; the
@@ -21518,10 +21519,269 @@ theorem exists_auxiliaryPrime_of_neg (N : ℕ) (hN : 0 < N) (m : ℤ) (hm : m < 
       jacobiSym.at_neg_one hbodd, hJk, mul_one, ZMod.χ₄_nat_three_mod_four hb3]
   exact (legendreSym.eq_neg_one_iff p).mp hleg
 
-/-- **THE CLASS FIELD THEORY LEAF, IN ITS `n`-FREE FORM: THE RING CLASS FIELD OF
+/-- **A FINITE ABELIAN GROUP ADMITS A `ZMod K`-VALUED CHARACTER HITTING THE
+GENERATOR `1` WHENEVER `K` DIVIDES ITS EXPONENT** (PROVEN 2026-07-27; pure
+finite group theory, no arithmetic).
+
+This is the CHARACTER-THEORETIC half of the ring class field leaf below, and it
+is what lets that leaf be stated over an abstract ring class group rather than
+over a `ZMod`. Read it as: *a `ZMod K`-valued character of `A` that is onto
+exists exactly when `K ∣ exp A`.*
+
+**Why `K ∣ orderOf a` for a SINGLE `a` is not enough to hit `1` AT `a`, and why
+the statement is therefore phrased with an unnamed witness `b`.** The obvious
+sharpening — "if `K ∣ orderOf a` then some `χ` has `χ a = ofAdd 1`" — is FALSE:
+take `A = ZMod 4` (multiplicatively), `a = 2`, `K = 2`. Every hom
+`ZMod 4 →+ ZMod 2` is `x ↦ c x`, so it sends `2` to `0`, never to `1`. The
+character `⟨a⟩ → ZMod K` that one wants simply does not EXTEND, because
+`ZMod K` is not a divisible (injective) `ℤ`-module. What survives is the
+statement below, and it is the one consumers need: some element of `A` is
+carried to the generator.
+
+**HOW IT IS PROVED.** Let `N = exp A`. A finite commutative monoid has an
+element of order exactly its exponent (`Monoid.exists_orderOf_eq_exponent`), so
+pick `g` with `orderOf g = N` and let `S = ⟨g⟩`. Now the extension problem is
+solved in the coefficient monoid `M = Multiplicative (ZMod N)` — NOT in
+`Multiplicative (ZMod K)`, which is exactly where the naive route fails: `M`
+carries a primitive `N`-th root of unity, namely `ofAdd 1`, and its unit group
+is cyclic, so `HasEnoughRootsOfUnity M (exp A)` holds and mathlib's
+`MonoidHom.restrict_surjective` extends the character `S →* Mˣ` sending `g` to
+`toUnits (ofAdd 1)` to a character `Φ : A →* Mˣ`. Composing with
+`ZMod.castHom : ZMod N →+* ZMod K` (legitimate because `K ∣ N`) lands in
+`ZMod K` and carries `Φ g = ofAdd 1` to `ofAdd 1`. The witness is `b = g`. -/
+theorem exists_zmodChar_of_dvd_exponent {A : Type*} [CommGroup A] [Finite A] {K : ℕ}
+    (hK : K ∣ Monoid.exponent A) :
+    ∃ (χ : A →* Multiplicative (ZMod K)) (b : A), χ b = Multiplicative.ofAdd 1 := by
+  classical
+  have hex : Monoid.ExponentExists A := Monoid.ExponentExists.of_finite
+  obtain ⟨g, hg⟩ := Monoid.exists_orderOf_eq_exponent hex
+  set N := Monoid.exponent A with hNdef
+  set S : Subgroup A := Subgroup.zpowers g with hS
+  set gS : S := ⟨g, Subgroup.mem_zpowers g⟩ with hgS
+  have hgen : ∀ x : S, x ∈ Subgroup.zpowers gS := by
+    rintro ⟨x, hx⟩
+    obtain ⟨k, rfl⟩ := Subgroup.mem_zpowers_iff.mp hx
+    exact ⟨k, by ext; rfl⟩
+  have h1 : orderOf (S.subtype gS) = orderOf gS :=
+    orderOf_injective S.subtype Subtype.val_injective gS
+  have horder : orderOf gS = N := by rw [← h1]; exact hg
+  have hprim : IsPrimitiveRoot (Multiplicative.ofAdd (1 : ZMod N)) N := by
+    rw [IsPrimitiveRoot.iff_orderOf, orderOf_ofAdd_eq_addOrderOf]
+    exact ZMod.addOrderOf_one N
+  haveI : IsCyclic (Multiplicative (ZMod N))ˣ :=
+    isCyclic_of_surjective (toUnits (G := Multiplicative (ZMod N))).toMonoidHom
+      (toUnits (G := Multiplicative (ZMod N))).surjective
+  haveI : HasEnoughRootsOfUnity (Multiplicative (ZMod N)) N := ⟨⟨_, hprim⟩, inferInstance⟩
+  have hdvd : orderOf (toUnits (Multiplicative.ofAdd (1 : ZMod N))) ∣ orderOf gS := by
+    rw [horder, MulEquiv.orderOf_eq, orderOf_ofAdd_eq_addOrderOf, ZMod.addOrderOf_one N]
+  set χ₀ : S →* (Multiplicative (ZMod N))ˣ := monoidHomOfForallMemZpowers hgen hdvd with hχ₀
+  obtain ⟨Φ, hΦ⟩ := MonoidHom.restrict_surjective (M := Multiplicative (ZMod N)) S χ₀
+  refine ⟨((AddMonoidHom.toMultiplicative (ZMod.castHom hK (ZMod K)).toAddMonoidHom).comp
+    (toUnits (G := Multiplicative (ZMod N))).symm.toMonoidHom).comp Φ, g, ?_⟩
+  have hΦg : Φ g = χ₀ gS := DFunLike.congr_fun hΦ gS
+  simp only [MonoidHom.coe_comp, Function.comp_apply, hΦg, hχ₀,
+    monoidHomOfForallMemZpowers_apply_gen, MulEquiv.coe_toMonoidHom,
+    MulEquiv.symm_apply_apply]
+  simp only [AddMonoidHom.toMultiplicative]
+  have h2 : (ZMod.castHom hK (ZMod K)) (1 : ZMod N) = 1 := map_one _
+  simpa using h2
+
+/-- **THE ARTIN MAP ONTO THE RING CLASS GROUP OF CONDUCTOR `p`, PACKAGED**
+(introduced 2026-07-27 to cut `exists_ringClassZModChar_of_inertPrime` below).
+
+This is the CLASS FIELD THEORY INPUT of the anticyclotomic character
+construction, and NOTHING ELSE: it is the sentence *"the Artin map of the ring
+class field of conductor `p` exists, complex conjugation inverts the ring class
+group, and that group has an element of order divisible by `K`"*, with every
+`ZMod`-encoding and every character-theoretic manoeuvre removed. The encoding is
+supplied downstream by `exists_zmodChar_of_dvd_exponent` above.
+
+**WHY A STRUCTURE AND NOT AN `∃`.** The ring class group is produced, not given,
+so its type is existentially quantified — and an `∃ (Cl : Type) (_ : CommGroup
+Cl), …` binder is NOT an instance binder, so `orderOf` and `Monoid.exponent`
+would not elaborate inside the body. Bundling the instances as `[…]` FIELDS
+makes them local instances for the later fields and, via the `attribute
+[instance]` line below, for every consumer.
+
+**WHAT A PROVER MUST SUPPLY**, reading the fields in order:
+
+* `Cl` — the ring class group `Cl(𝒪_p)` of the order `𝒪_p = ℤ + p 𝒪_M` of
+  conductor `p` in `M = ℚ(√m)`, a FINITE abelian group;
+* `art` — the Artin map `Γ_ℚ → Cl`. It is meaningful only on `Γ_M = ker e`, and
+  every field below constrains it only at arguments that lie in `Γ_M` (note
+  `g * h ∈ Γ_M` when `g ∈ Γ_M, h ∈ H ≤ Γ_M`, and `c g c⁻¹ ∈ Γ_M` because `Γ_M`
+  is normal). Off `Γ_M` it may be junk — `fun _ => 1` will do;
+* `H` — the fixing subgroup of the ring class field, OPEN because that field is
+  a FINITE extension;
+* `art_mul`, `art_coset` — `art` is a homomorphism on `Γ_M` factoring through
+  `Γ_M / H`;
+* `art_conj` — **complex conjugation inverts the ring class group.** This is
+  free from the ideal-theoretic side: `𝔞 𝔞̄ = (N𝔞)` is principal, so
+  `[𝔞]^c = [𝔞]⁻¹`. It is the reason no `ψ / ψ^c` correction step is ever needed;
+* `art_surjOn` — the Artin map is ONTO `Cl` (Artin reciprocity);
+* `exists_orderOf_dvd` — `Cl` has an element of order divisible by `K`. At
+  `K = (p+1)/24` this is exactly the norm-one subgroup: at an inert `p` the
+  conductor part of `Cl(𝒪_p)` is `μ_{p+1}(𝔽_{p²}) / μ_w`, cyclic of order
+  `(p+1)/w` with `w = #𝒪_M^ˣ ∈ {2,4,6}`, and `w ∣ 24` with `24 ∣ p+1` gives
+  `(p+1)/24 ∣ (p+1)/w`. **A SUBGROUP suffices — no character extension is
+  required of the prover**, which is precisely the obligation this cut moves out
+  of the class field theory and into `exists_zmodChar_of_dvd_exponent`. -/
+structure RingClassArtinData (e : Field.absoluteGaloisGroup ℚ →* ℤˣ) (K : ℕ) where
+  /-- the ring class group of conductor `p` -/
+  Cl : Type
+  [commGroup : CommGroup Cl]
+  [finite : Finite Cl]
+  /-- the Artin map; constrained only at arguments lying in `Γ_M = ker e` -/
+  art : Field.absoluteGaloisGroup ℚ → Cl
+  /-- the fixing subgroup of the ring class field -/
+  H : Subgroup (Field.absoluteGaloisGroup ℚ)
+  /-- the ring class field is a FINITE extension, so its fixing subgroup is open -/
+  isOpen_H : IsOpen (H : Set (Field.absoluteGaloisGroup ℚ))
+  /-- the ring class field contains `M`, i.e. `H ≤ Γ_M` -/
+  H_le_ker : ∀ h ∈ H, e h = 1
+  /-- `art` factors through `Γ_M / H` -/
+  art_coset : ∀ g h, e g = 1 → h ∈ H → art (g * h) = art g
+  /-- `art` is a homomorphism on `Γ_M` -/
+  art_mul : ∀ g h, e g = 1 → e h = 1 → art (g * h) = art g * art h
+  /-- complex conjugation inverts the ring class group -/
+  art_conj : ∀ c g, e c = -1 → e g = 1 → art (c * g * c⁻¹) = (art g)⁻¹
+  /-- Artin reciprocity: the Artin map is onto -/
+  art_surjOn : ∀ a : Cl, ∃ g, e g = 1 ∧ art g = a
+  /-- the norm-one subgroup contributes an element of order divisible by `K` -/
+  exists_orderOf_dvd : ∃ a : Cl, K ∣ orderOf a
+
+attribute [instance] RingClassArtinData.commGroup RingClassArtinData.finite
+
+/-- **THE CLASS FIELD THEORY LEAF: THE ARTIN MAP OF THE RING CLASS FIELD OF
 CONDUCTOR `p` AT AN INERT PRIME** (sorry node; cut 2026-07-27 out of
-`exists_anticyclotomicZModChar_of_inertPrime` just below, which is now PROVEN
-over it — see the DECOMPOSED note at the end of this docstring).
+`exists_ringClassZModChar_of_inertPrime` just below, which is now PROVEN over it
+together with the group-theoretic `exists_zmodChar_of_dvd_exponent` above).
+
+**THIS IS NOW THE ONLY CLASS-FIELD-THEORETIC CONTENT anywhere under
+`exists_dihedralOddGaloisRep_of_charThree`.** Everything that used to sit in
+front of it — the arithmetic selection of `p`, the profinite bookkeeping, the
+`n`-divisibility, the `ZMod` encoding and the character extension — is proven
+elsewhere. What is left is Artin reciprocity for the ring class field, in its
+EXISTENCE direction, and nothing else.
+
+WHAT IT SAYS. Let `e` cut out `M = ℚ(√d)` inside `Γ_ℚ`, so `ker e = Γ_M`. Write
+`m = d.num · d.den`, an INTEGER with `m < 0` and `ℚ(√d) = ℚ(√m)`. Given a prime
+`p > 24 |m|` with `24 ∣ p + 1` and `m` a non-square mod `p` — hence `p` odd,
+`p ∤ m`, and `p` INERT in `M` — the ring class field of conductor `p` exists,
+in the packaged sense of `RingClassArtinData` above: a finite abelian ring class
+group, an Artin map onto it that is defined on `Γ_M`, factors through an OPEN
+subgroup `H ≤ Γ_M`, is inverted by complex conjugation, and whose target has an
+element of order divisible by `(p+1)/24`.
+
+WHY `(p + 1) / 24` IS THE RIGHT CONSTANT, and why it costs nothing. The ring
+class field of conductor `p` at an inert `p` has degree `h(M) · (p+1)/w` over
+`ℚ`, where `w = #𝒪_M^ˣ ∈ {2, 4, 6}`; its anticyclotomic cyclic piece has order
+`(p+1)/w`. Every possible `w` DIVIDES `24`, and `24 ∣ p + 1` is a hypothesis, so
+`(p+1)/24 ∣ (p+1)/w`. Stating the order clause at `(p+1)/24` therefore loses
+nothing and REMOVES `w` — the one quantity in the roadmap that requires a case
+split on `d = -1`, `d = -3`, and everything else — from the statement entirely.
+The prover may of course produce the sharper `(p+1)/w` and reduce.
+**`24 ∣ p + 1` IS LOAD-BEARING** in exactly one place: it is what makes
+`(p+1)/24` an honest integer with `(p+1)/24 ∣ (p+1)/w`. Without it the division
+truncates and the divisibility fails.
+
+HOW IT IS TO BE PROVED. At an inert `p` the residue ring is `𝒪_M/p ≅ 𝔽_{p²}`,
+complex conjugation acts on `(𝒪_M/p)ˣ` as the Frobenius `y ↦ y^p`, and the
+norm-one subgroup `{y : y^{p+1} = 1}` is cyclic of order `p + 1` with
+conjugation acting on it by INVERSION (`y^p = y⁻¹` there). The roots of unity
+`μ_w = 𝒪_M^ˣ` sit inside it, so its image in `Cl(𝒪_p)` is cyclic of order
+`(p+1)/w` — that is `exists_orderOf_dvd`. Artin reciprocity `Γ_M ↠ Cl(𝒪_p)` —
+the CFT EXISTENCE theorem, which is the whole content — supplies `art`.
+
+**ANTICYCLOTOMY IS FREE ONCE THE RING CLASS GROUP IS IN HAND**, and this is
+worth knowing before attacking the leaf: complex conjugation inverts the whole
+ring class group, because `𝔞 𝔞̄ = (N𝔞)` is principal, so `[𝔞]^c = [𝔞]⁻¹`. Hence
+EVERY quotient of it is anticyclotomic on the nose and no `ψ / ψ^c` correction
+step is needed. Do not spend a cycle building one.
+
+**NO ELEMENTARY ROUTE EXISTS** (audited 2026-07-27, and this is not a gesture).
+Over the CM field `M(ζ_n)` the minus part of the units is only roots of unity,
+which is precisely why Kummer theory cannot produce anticyclotomic extensions
+and CFT is genuinely required. Do not spend a cycle on a Kummer-theoretic
+attack.
+
+MISSING MACHINERY, and the grep that would refute this claim. There is no ray
+class group, no Artin map, no idele class group and no reciprocity in mathlib,
+in this tree, or in `~/cs/FLT`:
+`grep -rn 'RayClassGroup\|rayClassGroup\|ArtinMap\|artinMap\|idele\|reciprocity'
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` returns prose only. AXIS SEARCHED:
+the *existence* direction of CFT — constructions that PRODUCE a Galois
+character or an abelian extension out of ideal-theoretic data. AXIS NOT
+SEARCHED: complex multiplication (the ring class field of conductor `p` is
+`M(j(𝒪_p))`), which is a second, independent route to the same object and is
+equally absent from all three trees.
+
+**THE ONE NEAR MISS: `ModThree.lean`'s `_ray_class` cluster. RE-AUDITED
+2026-07-27, AND ONE OF THE TWO STANDING REASONS WAS FALSE.** The earlier audit
+gave two independent reasons that cluster does not help. The first stands; the
+second does not, and it is corrected here because it was the one that said the
+route is permanently closed.
+
+* **STANDS — the cluster runs the OPPOSITE WAY.** Every statement in it
+  (`exists_artinPackage_ray_class`, `exists_artinAuxiliaryField_ray_class`,
+  `exists_artinDivisorPackage_ray_class`, `artinDivisorKernel_le_sup_ray_class`,
+  `exists_globalFrob_generator_ray_class`, …) takes a GIVEN Galois character
+  `χ : Γ F → Dickson.K 3` as a HYPOTHESIS and produces ideal-theoretic data
+  from it — a modulus `mm`, an Artin symbol `c : Ideal (𝓞 F) → Dickson.K 3`
+  pinned by `c v.asIdeal = χ (globalFrob v)`, a divisor map `φ` into
+  `(Dickson.K 3)ˣ`, and the RECIPROCITY inequality
+  `A.relIndex Im ≤ (P ⊔ N).relIndex Im` saying the Artin kernel is at most the
+  ray group. That is Artin RECIPROCITY (Childress ch. 5), not the EXISTENCE
+  theorem: nothing in it constructs a Galois character, a field extension or a
+  reciprocity isomorphism out of ideal data. Its "auxiliary field" is only ever
+  an open `Subgroup (Γ F)` determined BY `χ`. Independently, the coefficient
+  type is hard-coded to `Dickson.K 3` throughout, so even a direction-correct
+  statement there would need generalising before this leaf could use it. The
+  check that would refute this: find a declaration in
+  `Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean` whose
+  CONCLUSION has a Galois group or a `Γ F → _` character as its codomain and
+  whose HYPOTHESES do not already contain one.
+* **FALSE, and corrected — `ModThree` IS in this module's import cone.** The
+  standing note said "`ModThree` is NOT in `KhareWintenberger`'s import cone
+  (22 `Fermat.*` modules, `ModThree` not among them) and cannot be, because
+  `KhareWintenberger`'s header CIRCULARITY GUARD forbids it". Recomputed
+  2026-07-27: the cone is **264** `Fermat.*` modules and `ModThree` IS among
+  them, reached by the chain's own
+  `import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic`, which in
+  turn `public import`s `ModThree`. Verified beyond the import graph by a
+  minimal two-way reproduction: a module whose ONLY import is `Threeadic`
+  resolves `GaloisRepresentation.IsHardlyRamified.exists_globalFrob_generator_ray_class`
+  and `…exists_artinAuxiliaryField_ray_class` in a proof body. (The import is
+  plain rather than `public`, so those names are available in PROOF BODIES but
+  not in signature position here; promoting it to `public import` is the
+  one-line fix if a signature ever needs them.) The circularity guard forbids
+  `Family.lean`, `Lift.lean` and `Modularity/Interface.lean` — not `ModThree`.
+  **Consequence: if the EXISTENCE direction is ever built in `ModThree` or a
+  sibling module, this leaf can consume it directly.** The route is blocked by
+  mathematics, not by module structure.
+
+The standing simplification is carried forward: NOTHING here requires the
+character to be unramified, so ray class characters of the one field `M`
+suffice and the Nakagawa–Horie/Yamamoto theorem is NOT on the critical path.
+References: Neukirch ch. VI, Childress *Class Field Theory*, Cox *Primes of the
+Form x² + ny²* ch. 8 (ring class fields). -/
+theorem nonempty_ringClassArtinData_of_inertPrime
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (p : ℕ) (hp : p.Prime)
+    (hpgt : 24 * (d.num * (d.den : ℤ)).natAbs < p)
+    (hp24 : 24 ∣ (p + 1))
+    (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
+    Nonempty (RingClassArtinData e ((p + 1) / 24)) :=
+  sorry
+
+/-- **THE `n`-FREE RING CLASS CHARACTER OF CONDUCTOR `p` AT AN INERT PRIME**
+(**PROVEN 2026-07-27** over `nonempty_ringClassArtinData_of_inertPrime` and
+`exists_zmodChar_of_dvd_exponent` above; cut 2026-07-27 out of
+`exists_anticyclotomicZModChar_of_inertPrime` just below, which is PROVEN over
+it — see the DECOMPOSED note at the end of this docstring).
 
 WHAT CHANGED, and why the cut is worth its declaration. The consumer's
 statement carried the prescribed order `n` all the way down into the class field
@@ -21558,14 +21818,25 @@ fixing subgroup of a cyclic anticyclotomic extension of `M` of degree exactly
 
 Values of `ψ` off `Γ_M` are unconstrained and never read.
 
-HOW IT IS TO BE PROVED. At an inert `p` the residue ring is `𝒪_M/p ≅ 𝔽_{p²}`,
-complex conjugation acts on `(𝒪_M/p)ˣ` as the Frobenius `y ↦ y^p`, and the
-norm-one subgroup `{y : y^{p+1} = 1}` is cyclic of order `p + 1` with
-conjugation acting on it by INVERSION (`y^p = y⁻¹` there). The roots of unity
-`μ_w = 𝒪_M^ˣ` sit inside it, so its image in the ray class group `Cl_p(M)` is
-cyclic of order `(p+1)/w`. Artin reciprocity `Γ_M ↠ Cl_p(M)` — the CFT
-EXISTENCE theorem, which is the whole content — pulls a character of that cyclic
-quotient back to `Γ_M`.
+HOW IT IS PROVED (2026-07-27), i.e. what the cut above left behind. Two steps,
+both of them free of arithmetic:
+
+* `nonempty_ringClassArtinData_of_inertPrime` supplies the ring class group
+  `Cl`, the Artin map `art` onto it, the open `H`, the conjugation-inverts
+  clause, and an element `a` with `(p+1)/24 ∣ orderOf a`;
+* `orderOf a ∣ Monoid.exponent Cl`, so `exists_zmodChar_of_dvd_exponent` turns
+  `Cl` into a `ZMod ((p+1)/24)`-valued character `χ` hitting `ofAdd 1` at some
+  `b : Cl`, and `art_surjOn` produces `g₁ ∈ Γ_M` with `art g₁ = b`. Then
+  `ψ = toAdd ∘ χ ∘ art` is additive (`map_mul`), anticyclotomic (`map_inv`),
+  constant on `H`-cosets and takes the value `1` at `g₁`.
+
+**THE CHARACTER EXTENSION IS THE POINT OF THE CUT.** The obligation that moved
+out of the class field theory is not bookkeeping: a finite abelian `Cl` with an
+element of order divisible by `K` does NOT generally admit a `ZMod K`-character
+that is nonzero AT that element (`Cl = ZMod 4`, `a = 2`, `K = 2` refutes it),
+and the repair goes through the exponent and a coefficient monoid with enough
+roots of unity. See `exists_zmodChar_of_dvd_exponent` above. A prover of the
+class field theory now supplies a SUBGROUP of the right order and nothing more.
 
 **ANTICYCLOTOMY IS FREE ONCE THE RING CLASS GROUP IS IN HAND**, and this is
 worth knowing before attacking the leaf: complex conjugation inverts the whole
@@ -21577,63 +21848,13 @@ step is needed. Do not spend a cycle building one.
 `(p+1)/24` an honest integer with `(p+1)/24 ∣ (p+1)/w`. Without it the division
 truncates and the divisibility fails.
 
-**NO ELEMENTARY ROUTE EXISTS** (audited 2026-07-27, and this is not a gesture).
-Over the CM field `M(ζ_n)` the minus part of the units is only roots of unity,
-which is precisely why Kummer theory cannot produce anticyclotomic extensions
-and CFT is genuinely required. Do not spend a cycle on a Kummer-theoretic
-attack.
-
-MISSING MACHINERY, and the grep that would refute this claim. There is no ray
-class group, no Artin map, no idele class group and no reciprocity in mathlib,
-in this tree, or in `~/cs/FLT`:
-`grep -rn 'RayClassGroup\|rayClassGroup\|ArtinMap\|artinMap\|idele\|reciprocity'
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` returns prose only. AXIS SEARCHED:
-the *existence* direction of CFT — constructions that PRODUCE a Galois
-character or an abelian extension out of ideal-theoretic data.
-
-**THE ONE NEAR MISS: `ModThree.lean`'s `_ray_class` cluster. RE-AUDITED
-2026-07-27, AND ONE OF THE TWO STANDING REASONS WAS FALSE.** The earlier audit
-gave two independent reasons that cluster does not help. The first stands; the
-second does not, and it is corrected here because it was the one that said the
-route is permanently closed.
-
-* **STANDS — the cluster runs the OPPOSITE WAY.** Every statement in it
-  (`exists_artinPackage_ray_class`, `exists_artinAuxiliaryField_ray_class`,
-  `exists_artinDivisorPackage_ray_class`, `artinDivisorKernel_le_sup_ray_class`,
-  `exists_globalFrob_generator_ray_class`, …) takes a GIVEN Galois character
-  `χ : Γ F → Dickson.K 3` as a HYPOTHESIS and produces ideal-theoretic data
-  from it — a modulus `mm`, an Artin symbol `c : Ideal (𝓞 F) → Dickson.K 3`
-  pinned by `c v.asIdeal = χ (globalFrob v)`, a divisor map `φ` into
-  `(Dickson.K 3)ˣ`, and the RECIPROCITY inequality
-  `A.relIndex Im ≤ (P ⊔ N).relIndex Im` saying the Artin kernel is at most the
-  ray group. That is Artin RECIPROCITY (Childress ch. 5), not the EXISTENCE
-  theorem: nothing in it constructs a Galois character, a field extension or a
-  reciprocity isomorphism out of ideal data. Its "auxiliary field" is only ever
-  an open `Subgroup (Γ F)` determined BY `χ`. Independently, the coefficient
-  type is hard-coded to `Dickson.K 3` throughout, so even a direction-correct
-  statement there would need generalising before a `ZMod`-valued consumer could
-  use it. The check that would refute this: find a declaration in
-  `Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean` whose
-  CONCLUSION has a Galois group or a `Γ F → _` character as its codomain and
-  whose HYPOTHESES do not already contain one.
-* **FALSE, and corrected — `ModThree` IS in this module's import cone.** The
-  standing note said "`ModThree` is NOT in `KhareWintenberger`'s import cone
-  (22 `Fermat.*` modules, `ModThree` not among them) and cannot be, because
-  `KhareWintenberger`'s header CIRCULARITY GUARD forbids it". Recomputed
-  2026-07-27: the cone is **264** `Fermat.*` modules and `ModThree` IS among
-  them, reached by `KhareWintenberger`'s own
-  `import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic` (line 330),
-  which in turn `public import`s `ModThree`. Verified beyond the import graph by
-  a minimal two-way reproduction: a module whose ONLY import is `Threeadic`
-  resolves `GaloisRepresentation.IsHardlyRamified.exists_globalFrob_generator_ray_class`
-  and `…exists_artinAuxiliaryField_ray_class` in a proof body. (The import is
-  plain rather than `public`, so those names are available in PROOF BODIES but
-  not in signature position here; promoting line 330 to `public import` is the
-  one-line fix if a signature ever needs them.) The circularity guard forbids
-  `Family.lean`, `Lift.lean` and `Modularity/Interface.lean` — not `ModThree`.
-  **Consequence: if the EXISTENCE direction is ever built in `ModThree` or a
-  sibling module, this leaf can consume it directly.** The route is blocked by
-  mathematics, not by module structure.
+**THE STANDING AUDITS HAVE MOVED, and this is where to look for them.** The
+refutation of the Kummer-theoretic route, the MISSING-MACHINERY grep, and the
+re-audit of `ModThree.lean`'s `_ray_class` cluster (one of whose two standing
+reasons was FALSE and is corrected there) all now live on
+`nonempty_ringClassArtinData_of_inertPrime` above, which is where the class
+field theory obligation actually sits after the 2026-07-27 cut. Nothing was
+retracted; it was relocated to the leaf it constrains.
 
 The standing simplification is carried forward: NOTHING here requires `ψ` to be
 unramified, so ray class characters of the one field `M` suffice and the
@@ -21641,11 +21862,15 @@ Nakagawa–Horie/Yamamoto theorem is NOT on the critical path.
 References: Neukirch ch. VI, Childress *Class Field Theory*, Cox *Primes of the
 Form x² + ny²* ch. 8 (ring class fields).
 
-DECOMPOSED 2026-07-27: this is the sole sorried half of
-`exists_anticyclotomicZModChar_of_inertPrime` just below; the other half —
-`n ∣ (p+1)/24` from `24 n |m| ∣ p + 1`, `24 |m| < p` from `24 n |m| < p`, and
-the transport of additivity, anticyclotomy, coset-constancy and the value `1`
-along `ZMod.castHom` — is PROVEN there. -/
+DECOMPOSED 2026-07-27 (second cut, same day). This declaration is now **PROVEN**
+over two pieces: the class field theory leaf
+`nonempty_ringClassArtinData_of_inertPrime` and the group-theoretic
+`exists_zmodChar_of_dvd_exponent`, both immediately above. Downwards, it remains
+the sole sorried half of `exists_anticyclotomicZModChar_of_inertPrime` just
+below; that declaration's other half — `n ∣ (p+1)/24` from `24 n |m| ∣ p + 1`,
+`24 |m| < p` from `24 n |m| < p`, and the transport of additivity,
+anticyclotomy, coset-constancy and the value `1` along `ZMod.castHom` — is
+PROVEN there. -/
 theorem exists_ringClassZModChar_of_inertPrime
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
     (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
@@ -21662,8 +21887,29 @@ theorem exists_ringClassZModChar_of_inertPrime
       (∀ g h, e g = 1 → h ∈ H → ψ (g * h) = ψ g) ∧
       (∀ g h, e g = 1 → e h = 1 → ψ (g * h) = ψ g + ψ h) ∧
       (∀ c g, e c = -1 → e g = 1 → ψ (c * g * c⁻¹) = - ψ g) ∧
-      (∃ g, e g = 1 ∧ ψ g = 1) :=
-  sorry
+      (∃ g, e g = 1 ∧ ψ g = 1) := by
+  obtain ⟨D⟩ :=
+    nonempty_ringClassArtinData_of_inertPrime d hd x hx e he p hp hpgt hp24 hpns
+  obtain ⟨a, ha⟩ := D.exists_orderOf_dvd
+  obtain ⟨χ, b, hb⟩ :=
+    exists_zmodChar_of_dvd_exponent (ha.trans (Monoid.order_dvd_exponent a))
+  obtain ⟨g₁, hg₁, hg₁'⟩ := D.art_surjOn b
+  refine ⟨fun g => Multiplicative.toAdd (χ (D.art g)), D.H, D.isOpen_H, D.H_le_ker,
+    ?_, ?_, ?_, ⟨g₁, hg₁, ?_⟩⟩
+  · intro g h hg hh
+    dsimp only
+    rw [D.art_coset g h hg hh]
+  · intro g h hg hh
+    dsimp only
+    rw [D.art_mul g h hg hh, map_mul]
+    rfl
+  · intro c g hc hg
+    dsimp only
+    rw [D.art_conj c g hc hg, map_inv]
+    rfl
+  · dsimp only
+    rw [hg₁', hb]
+    rfl
 
 /-- **THE CLASS FIELD THEORY LEAF: an ANTICYCLOTOMIC RAY-CLASS CHARACTER of an
 imaginary quadratic field, of ANY PRESCRIBED ORDER `n`, AT A GIVEN INERT
@@ -21673,9 +21919,12 @@ AUXILIARY PRIME** (**PROVEN 2026-07-27** over the `n`-free ring class field leaf
 the auxiliary prime and the profinite bookkeeping are DISCHARGED elsewhere —
 `exists_auxiliaryPrime_of_neg` above proves the arithmetic selection of `p`, and
 `exists_anticyclotomicZModChar_of_quadraticChar` below derives local constancy
-from the open subgroup produced here. `exists_ringClassZModChar_of_inertPrime`
-above is now the ONLY class-field-theoretic content anywhere under
-`exists_dihedralOddGaloisRep_of_charThree`).
+from the open subgroup produced here. Since 2026-07-27
+`nonempty_ringClassArtinData_of_inertPrime` above is the ONLY
+class-field-theoretic content anywhere under
+`exists_dihedralOddGaloisRep_of_charThree`; the `ZMod`-encoded
+`exists_ringClassZModChar_of_inertPrime` between it and this declaration is
+PROVEN).
 
 WHAT THE PRIME HYPOTHESES GIVE YOU, so that no arithmetic selection remains.
 Write `m = d.num · d.den`, an INTEGER with `m < 0` and `ℚ(√d) = ℚ(√m)` (because
@@ -21739,7 +21988,7 @@ so its image in the ray class group `Cl_p(M)` is cyclic of order `(p+1)/w`, and
 `n` divides that. Artin reciprocity `Γ_M ↠ Cl_p(M)` — the CFT EXISTENCE
 theorem, which is the whole content — then pulls a character of that cyclic
 quotient back to `Γ_M`. **That paragraph now describes
-`exists_ringClassZModChar_of_inertPrime`, not this declaration**, and the
+`nonempty_ringClassArtinData_of_inertPrime`, not this declaration**, and the
 MISSING-MACHINERY audit, the re-audit of `ModThree.lean`'s `_ray_class` cluster
 (one of whose two standing reasons was FALSE and is corrected there), and the
 refutation of the Kummer-theoretic route all live in that leaf's docstring. Note
@@ -21813,8 +22062,9 @@ ANY PRESCRIBED ORDER `n`, with `ZMod n` coefficients** (PROVEN 2026-07-27 over
 the two declarations above: the auxiliary prime
 `exists_auxiliaryPrime_of_neg` — Dirichlet plus a Jacobi-symbol computation, both
 elementary — and `exists_anticyclotomicZModChar_of_inertPrime`, itself PROVEN
-the same day over the single remaining class-field-theoretic leaf
-`exists_ringClassZModChar_of_inertPrime`).
+the same day over `exists_ringClassZModChar_of_inertPrime`, itself PROVEN over
+the single remaining class-field-theoretic leaf
+`nonempty_ringClassArtinData_of_inertPrime`).
 
 WHAT IS DISCHARGED HERE, and it is exactly the two things that are NOT class
 field theory:
@@ -22086,9 +22336,11 @@ order `n`, stated with `ZMod n` coefficients so that no consumer's
 coefficient group leaks into the arithmetic — and THAT is now PROVEN too, over
 `exists_auxiliaryPrime_of_neg` (the Dirichlet/Jacobi-symbol selection of an
 inert auxiliary prime, elementary and PROVEN) and the single residual leaf
-`exists_ringClassZModChar_of_inertPrime` (the leaf was decomposed further on
-2026-07-27: `exists_anticyclotomicZModChar_of_inertPrime` is PROVEN over it, and
-the residual leaf is `n`-free). That is a RAY CLASS character,
+`nonempty_ringClassArtinData_of_inertPrime` (the leaf was decomposed twice on
+2026-07-27: `exists_anticyclotomicZModChar_of_inertPrime` is PROVEN over the
+`n`-free `exists_ringClassZModChar_of_inertPrime`, which is in turn PROVEN over
+this residual leaf and `exists_zmodChar_of_dvd_exponent`). That is a RAY CLASS
+character,
 and its docstring records what has to be built (the ray class group of an
 imaginary quadratic field and Artin reciprocity onto it — absent from
 mathlib, from this tree and from `~/cs/FLT`; `ModThree.lean`'s `_ray_class`
@@ -22646,8 +22898,9 @@ turn PROVEN the same day over
 `ZMod n` coefficients and prescribed order `n`), which was itself PROVEN on
 2026-07-27 over `exists_auxiliaryPrime_of_neg` (elementary, PROVEN) and the
 single residual class-field-theoretic leaf
-`exists_ringClassZModChar_of_inertPrime` (reached through
-`exists_anticyclotomicZModChar_of_inertPrime`, PROVEN over it 2026-07-27) — whose
+`nonempty_ringClassArtinData_of_inertPrime` (reached through
+`exists_anticyclotomicZModChar_of_inertPrime` and
+`exists_ringClassZModChar_of_inertPrime`, both PROVEN 2026-07-27) — whose
 docstring records what has to be built (the ray class group of an
 imaginary quadratic field and the Artin map onto it; NOTHING of the kind
 exists in mathlib, in this tree, or in `~/cs/FLT`, re-confirmed
