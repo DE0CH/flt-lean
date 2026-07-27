@@ -305,6 +305,14 @@ public import Fermat.FLT.Modularity.AbelianScheme
 -- `proj` nor `projToSpec`, which is exactly what makes a non-public import
 -- sufficient.
 import Fermat.FLT.ModularCurve.EllipticScheme
+-- `AbelianSchemeStruct.mulByNat` (the morphism `[n] : E ⟶ E`),
+-- `AbelianSchemeStruct.zeroSection`, and the two Yoneda bridges
+-- `nsmul_val` / `zero_val` that turn `n • x` and `0` on relative points into
+-- COMPOSITES with those fixed morphisms.  They are what makes the torsion
+-- subscheme `C[n]` formable here (`CyclicSubgroupOfOrder.torsionScheme`); see
+-- the note at `exists_torsionSubscheme` correcting the earlier claim that this
+-- module "does NOT help".
+public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
@@ -3927,18 +3935,229 @@ theorem mem_zmultiples_of_mem_nsmul_div {G : Type*} [AddCommGroup G] {M N : ℕ}
   exact AddSubgroup.mem_zmultiples_iff.mpr
     ⟨j * ((N / M : ℕ) : ℤ), by rw [← natCast_zsmul y (N / M), smul_smul]⟩
 
-/-- **The `M`-torsion of a cyclic subgroup scheme is again cut out by a
-closed subscheme, finite over the base** (sorry node).
+/-! #### The torsion subscheme `C[n]`, and why it IS formable here
 
-TRUE: `C` is finite flat over `T` with cyclic geometric fibres, hence a
-finite flat commutative group scheme, so multiplication by `M` is an
-endomorphism of `C` over `T` and `C[M]` is the fibre product of
-`[M] : C ⟶ C` with the zero section `T ⟶ C`.  The zero section of a
-scheme finite — hence separated — over `T` is a closed immersion, closed
-immersions are stable under base change, and closed immersions compose;
-so `C[M] ⟶ C ⟶ E` is a closed immersion and `C[M] ⟶ T` is finite.  On
-relative points, membership of `C[M]` is membership of `C` together with
-`M • x = 0`, which is what the characterisation below records.
+**This section retires the "IRREDUCIBLE at this mathlib pin" verdict that
+`exists_torsionSubscheme` carried until 2026-07-27.**  That verdict said
+the functor-of-points presentation "carries the group law on `RelPoint`
+rather than as a morphism `E ×_T E ⟶ E`, so `[M] : C ⟶ C` is not
+available as a morphism of schemes and the fibre product cannot be
+formed".  Both halves are wrong, and the refuting check is one `grep`:
+
+* `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` already carries
+  `AbelianSchemeStruct.mulByNat n : E ⟶ E` — the morphism `[n]` — with
+  `nsmul_val : (n • x).1 = x.1 ≫ mulByNat n`, and
+  `AbelianSchemeStruct.zeroSection : T ⟶ E` with
+  `zero_val : (ab.zero g).1 = g ≫ zeroSection`.  All PROVEN.
+* No morphism `E ×_T E ⟶ E` is needed to get them.  `mulByNat` is
+  obtained by Yoneda at the TAUTOLOGICAL relative point `RelPoint.self f`
+  — a single point of a single test object — and naturality (`pre_nsmul`)
+  then makes `n • x` a composite with it at every base at once.  The
+  fibre-product-free route is the whole design of that module.
+
+Two stale notes elsewhere in this file are corrected by the same check
+and should be read with this section: the audit at
+`exists_ellipticScheme_of_weierstrass` records `AbelianSchemeIsogeny.lean`
+as "not on `main` at all" and as containing only CONSUMERS of an
+`AbelianSchemeStruct`.  It is on `main`, and `mulByNat` / `zeroSection` /
+`nsmul_val` / `zero_val` are producers of exactly the interface this node
+needed.  (The claim that the file supplies no *construction* of an
+`AbelianSchemeStruct` remains true; that is a different claim.)
+
+With those in hand the torsion subscheme is the plain fibre product
+
+    C[n] := C ×_{ι ≫ [n], E, e} T ,
+
+`torsionι n : C[n] ⟶ C ⟶ E` its inclusion.  The zero section `e` is a
+closed immersion because it is a section of the SEPARATED (indeed proper)
+morphism `f`; closed immersions are stable under base change and compose,
+so `torsionι n` is a closed immersion and `torsionι n ≫ f` is finite.
+Everything in this section is PROVEN except `flat_torsionι`, which is
+FALSE as stated — see its FALSITY AUDIT. -/
+
+/-- **The zero section of an abelian scheme is a closed immersion**
+(PROVEN).  It is a section of `f`, and `f` is proper hence separated, so
+`IsClosedImmersion.of_comp` applies to `e ≫ f = 𝟙 T`. -/
+theorem AbelianSchemeStruct.isClosedImmersion_zeroSection {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) : IsClosedImmersion ab.zeroSection := by
+  haveI := ab.proper
+  haveI : IsSeparated f := inferInstance
+  haveI : IsClosedImmersion (ab.zeroSection ≫ f) := by
+    rw [ab.zeroSection_comp]; infer_instance
+  exact IsClosedImmersion.of_comp _ f
+
+/-- **The `n`-torsion subscheme `C[n]` of a cyclic subgroup scheme**: the
+fibre product of `ι ≫ [n] : C ⟶ E` with the zero section `T ⟶ E`.  By
+`nsmul_val` and `zero_val` its relative points are exactly the relative
+points of `C` killed by `n` (`liesIn_torsionι_iff`). -/
+@[reducible] noncomputable def CyclicSubgroupOfOrder.torsionScheme {E T : Scheme.{u}}
+    {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
+    (n : ℕ) : Scheme.{u} :=
+  Limits.pullback (c.ι ≫ ab.mulByNat n) ab.zeroSection
+
+/-- **The inclusion `C[n] ⟶ E`.** -/
+noncomputable def CyclicSubgroupOfOrder.torsionι {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
+    c.torsionScheme n ⟶ E :=
+  Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection ≫ c.ι
+
+/-- **`C[n] ⟶ E` is a closed immersion** (PROVEN): the first projection is
+the base change of the zero section, which is a closed immersion, and
+closed immersions compose with `ι`. -/
+theorem CyclicSubgroupOfOrder.isClosedImmersion_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
+    IsClosedImmersion (c.torsionι n) := by
+  haveI := ab.isClosedImmersion_zeroSection
+  haveI := c.isClosedImmersion
+  show IsClosedImmersion
+    (Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection ≫ c.ι)
+  infer_instance
+
+/-- **`C[n] ⟶ T` is finite** (PROVEN): a closed immersion is finite, and
+`C ⟶ T` is finite by hypothesis. -/
+theorem CyclicSubgroupOfOrder.isFinite_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
+    IsFinite (c.torsionι n ≫ f) := by
+  haveI := ab.isClosedImmersion_zeroSection
+  haveI := c.isFinite
+  show IsFinite
+    ((Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection ≫ c.ι) ≫ f)
+  rw [Category.assoc]
+  infer_instance
+
+/-- **The relative points of `C[n]` are exactly those of `C` killed by
+`n`** (PROVEN), at every base at once.
+
+This is the whole functor-of-points content of the node, and it is where
+`nsmul_val` and `zero_val` are used: `n • x = 0` unwinds to
+`x.1 ≫ [n] = g ≫ e`, which is precisely the datum a map into the fibre
+product `C[n]` is built from. -/
+theorem CyclicSubgroupOfOrder.liesIn_torsionι_iff {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ)
+    {T' : Scheme.{u}} {g : T' ⟶ T} (x : RelPoint f g) :
+    letI := ab.addCommGroup g
+    RelPoint.LiesIn (c.torsionι n) x ↔ (RelPoint.LiesIn c.ι x ∧ n • x = 0) := by
+  letI := ab.addCommGroup g
+  have hval : (n • x).1 = x.1 ≫ ab.mulByNat n := ab.nsmul_val n x
+  have hzg : (ab.zero g).1 = g ≫ ab.zeroSection := ab.zero_val g
+  constructor
+  · rintro ⟨w, hw⟩
+    have hy : (w ≫ Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection) ≫ c.ι = x.1 := by
+      rw [Category.assoc]; exact hw
+    have hkey : (n • x).1
+        = (w ≫ Limits.pullback.snd (c.ι ≫ ab.mulByNat n) ab.zeroSection) ≫ ab.zeroSection := by
+      rw [hval, ← hy]
+      simp only [Category.assoc]
+      rw [Limits.pullback.condition]
+    have hsnd : w ≫ Limits.pullback.snd (c.ι ≫ ab.mulByNat n) ab.zeroSection = g := by
+      have h1 := congrArg (fun m => m ≫ f) hkey
+      simp only [Category.assoc, ab.zeroSection_comp, Category.comp_id] at h1
+      rw [← h1]
+      exact (n • x).2
+    refine ⟨⟨_, hy⟩, ?_⟩
+    show n • x = ab.zero g
+    apply Subtype.ext
+    rw [hkey, hsnd, hzg]
+  · rintro ⟨⟨y, hy⟩, hz⟩
+    have heq : y ≫ (c.ι ≫ ab.mulByNat n) = g ≫ ab.zeroSection := by
+      rw [← Category.assoc, hy, ← hval]
+      show (n • x).1 = _
+      rw [show (n • x) = ab.zero g from hz, hzg]
+    refine ⟨Limits.pullback.lift y g heq, ?_⟩
+    show (Limits.pullback.lift y g heq
+      ≫ Limits.pullback.fst (c.ι ≫ ab.mulByNat n) ab.zeroSection) ≫ c.ι = x.1
+    rw [Limits.pullback.lift_fst, hy]
+
+/-- **`C[n]` is flat over the base** (sorry leaf).
+
+**FALSITY AUDIT (2026-07-27, with an explicit counterexample). THIS
+STATEMENT IS FALSE AS STATED.  Do not dispatch a prover at it; it needs a
+CUT-LEVEL repair, described at the end.**
+
+The counterexample lives in characteristic `p`, where `geom_cyclic` — a
+condition on the SET of geometric points — does not pin the RANK of `C`,
+so `C` may carry an arbitrary infinitesimal part invisible to it.
+
+> Let `k = 𝔽̄_p` (`p ≥ 5`), `R = k[[t]]`, `T = Spec R`.
+> * `E₁ / R` = a constant ORDINARY elliptic curve, and `P ∈ E₁[p](k)` a
+>   point of order `p`; so `(ℤ/p)_T ⊆ E₁` is a constant étale subgroup
+>   scheme.
+> * `E₂ / R` = a Legendre family specialised so that the generic fibre is
+>   ORDINARY and the closed fibre is SUPERSINGULAR (the supersingular
+>   locus of the `λ`-line is a nonempty finite set, so such an `R`-curve
+>   exists).
+> * `A = E₁ ×_R E₂`, an abelian scheme over `T` of relative dimension 2;
+>   `C = (ℤ/p)_T × ker F²_{E₂} ⊆ A`, where `F` is relative Frobenius.
+>
+> `C ⟶ T` is finite and FLAT of rank `p·p² = p³` (a product of two finite
+> flat group schemes), `C ⟶ A` is a closed immersion, and `C` is a
+> subgroup functor, so `zero_liesIn` / `add_liesIn` / `neg_liesIn` hold.
+> Its geometric fibres are `ℤ/p × {0} ≅ ℤ/p` at BOTH points, because
+> `ker F²` is infinitesimal and so has a single geometric point in every
+> fibre.  Hence `c : CyclicSubgroupOfOrder ab p` with `N = p`.
+>
+> Now take `n = p` (note `p ∣ N` and `N ≠ 0`, so no hypothesis available
+> at `ofDvd` excludes this either).  `C[p] = (ℤ/p) × ker([p] on ker F²)`,
+> and `ker F²` is `μ_{p²}` at the ordinary generic fibre but is `E₂[p]` at
+> the supersingular closed fibre.  So
+> `ker([p] on ker F²)` is `μ_p` (rank `p`) generically and `E₂[p]`
+> (rank `p²`) specially: the rank of `C[p] ⟶ T` JUMPS from `p²` to `p³`.
+> A finite module over the DVR `R` of jumping rank is not flat, so
+> `C[p] ⟶ T` is NOT flat.
+
+The refutation transfers to `exists_torsionSubscheme` itself, not merely
+to this particular `C[n]`: the last conjunct there determines the
+subfunctor of `h_E` represented by `ι'` completely, and `ι'` is a
+monomorphism, so by Yoneda any `C'` satisfying it is canonically
+isomorphic over `E` to `torsionScheme M` (apply the ↔ to the two
+tautological points and use that `ι'` and `torsionι M` are monos to see
+the two factorisations are mutually inverse — a fifteen-line argument, not
+formalised here).  Flatness is invariant under isomorphism, so no other
+choice of `C'` can rescue the conjunct.
+
+WHERE THE DEFECT REALLY IS.  `CyclicSubgroupOfOrder.geom_cyclic` pins the
+CARDINALITY of the geometric fibres; Katz–Mazur **(6.7.1)** pin the RANK
+of the finite locally free group scheme (and cyclicity as a divisor
+condition).  The two agree exactly when `C ⟶ T` is étale — which the
+field's own docstring notes is automatic over a `ℚ`-scheme, where `N` is
+invertible and Cartier's theorem applies, and which is the only case this
+development ever evaluates.  Over a general base they come apart, and
+this leaf is where they come apart.
+
+THE REPAIR IS AT CUT LEVEL, and it is a choice between:
+
+1. restrict the base: add a hypothesis making `T` a `ℚ`-scheme (or, more
+   sharply, `[IsEtale (c.ι ≫ f)]`) to `exists_torsionSubscheme`,
+   `CyclicSubgroupOfOrder.ofTorsion`, `ofDvd` and `Gamma0Datum.ofDvd`.
+   With `C ⟶ T` étale the leaf becomes TRUE and provable: the diagonal of
+   an unramified morphism is an open immersion, so `C[n]`, being the
+   equaliser of two `T`-morphisms `C ⇉ C`, is open as well as closed in
+   `C`, hence étale over `T`, hence flat;
+2. strengthen `CyclicSubgroupOfOrder` itself, replacing or supplementing
+   `geom_cyclic` with the Katz–Mazur rank condition.
+
+Route 1 is far cheaper and matches every actual use (the twelve level
+nodes all work over `ℚ`); route 2 changes an interface several owners
+build on.  Either way it is not a repair to be made inside this leaf. -/
+theorem CyclicSubgroupOfOrder.flat_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (n : ℕ) :
+    AlgebraicGeometry.Flat (c.torsionι n ≫ f) :=
+  sorry
+
+/-- **The `M`-torsion of a cyclic subgroup scheme is again cut out by a
+closed subscheme, finite over the base** (PROVEN 2026-07-27 over the one
+remaining leaf `CyclicSubgroupOfOrder.flat_torsionι`).
+
+`C[M]` is `CyclicSubgroupOfOrder.torsionScheme M`, the fibre product of
+`ι ≫ [M] : C ⟶ E` with the zero section `T ⟶ E`; see the section
+docstring above for why `[M]` IS available as a morphism (it is
+`AbelianSchemeStruct.mulByNat`, and no group law `E ×_T E ⟶ E` is needed
+to build it).  Three of the four conjuncts are discharged here:
+
+* `IsClosedImmersion` — `isClosedImmersion_torsionι`;
+* `IsFinite` — `isFinite_torsionι`;
+* the relative-point characterisation — `liesIn_torsionι_iff`, which is
+  `nsmul_val` and `zero_val` read at the fibre square.
 
 This holds for EVERY `M`, with no divisibility hypothesis and no
 constraint relating `M` to `N`: for `M = 0` the condition `0 • x = 0` is
@@ -3948,25 +4167,21 @@ arithmetic that `M ∣ N` buys is entirely group-theoretic and is
 discharged in `CyclicSubgroupOfOrder.ofTorsion` below, so this node
 carries only the geometry.
 
-IRREDUCIBLE at this mathlib pin for the same reason as
-`nonempty_gamma0Datum_of_stable`: the functor-of-points presentation used
-here carries the group law on `RelPoint` rather than as a morphism
-`E ×_T E ⟶ E`, so `[M] : C ⟶ C` is not available as a morphism of
-schemes and the fibre product cannot be formed.  Supplying it needs the
-group law as a morphism, which is the same missing theory.
+**FLATNESS IS PART OF THIS LEAF** (added at integration, 2026-07-26).
+`CyclicSubgroupOfOrder` acquired a `flat` field — that field is what makes
+the structure Katz–Mazur's finite *locally free* `[Γ₀(N)]` rather than a
+strictly larger moduli problem; see the field's own docstring for the
+`Spec ℚ[ε]` counterexample.  It is threaded through `ofTorsion`'s `hflat`
+argument to `ofDvd`.
 
-**FLATNESS IS PART OF THIS LEAF** (added at integration, 2026-07-26, and
-it is not decoration).  `CyclicSubgroupOfOrder` acquired a `flat` field —
-that field is what makes the structure Katz–Mazur's finite *locally free*
-`[Γ₀(N)]` rather than a strictly larger moduli problem; see the field's
-own docstring for the `Spec ℚ[ε]` counterexample.  This leaf and
-`CyclicSubgroupOfOrder.ofDvd` were written independently, against the
-structure BEFORE and AFTER that field existed, so they merged cleanly and
-then could not build: `ofTorsion` had no flatness to put in the field.
-Carrying it here is the right place — `C[M]` is a torsion subscheme of an
-already-flat `C`, so whatever construction discharges this leaf produces
-flatness along with finiteness, and no separate argument is needed.  It
-is threaded through `ofTorsion`'s `hflat` argument to `ofDvd`. -/
+**AND FLATNESS IS WHERE THIS STATEMENT IS FALSE.**  The earlier claim in
+this docstring — "`C[M]` is a torsion subscheme of an already-flat `C`, so
+whatever construction discharges this leaf produces flatness along with
+finiteness, and no separate argument is needed" — is WRONG: a closed
+subscheme of a flat scheme is not flat, and in characteristic `p` the rank
+of `C[M]` genuinely jumps.  The counterexample, and the two candidate
+cut-level repairs, are in the FALSITY AUDIT of
+`CyclicSubgroupOfOrder.flat_torsionι`.  Read that before working here. -/
 theorem exists_torsionSubscheme {E T : Scheme.{u}} {f : E ⟶ T}
     {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (M : ℕ) :
     ∃ (C' : Scheme.{u}) (ι' : C' ⟶ E), IsClosedImmersion ι' ∧ IsFinite (ι' ≫ f) ∧
@@ -3974,7 +4189,8 @@ theorem exists_torsionSubscheme {E T : Scheme.{u}} {f : E ⟶ T}
       ∀ (T' : Scheme.{u}) (g : T' ⟶ T) (x : RelPoint f g),
         letI := ab.addCommGroup g
         RelPoint.LiesIn ι' x ↔ (RelPoint.LiesIn c.ι x ∧ M • x = 0) :=
-  sorry
+  ⟨c.torsionScheme M, c.torsionι M, c.isClosedImmersion_torsionι M, c.isFinite_torsionι M,
+    c.flat_torsionι M, fun _ _ x => c.liesIn_torsionι_iff M x⟩
 
 /-- **A torsion subscheme of a cyclic subgroup scheme of order `N` is a
 cyclic subgroup scheme of order `M`, for `M ∣ N`** (PROVEN).
