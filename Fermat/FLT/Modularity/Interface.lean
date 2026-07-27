@@ -39219,10 +39219,9 @@ theorem sub_mul_eq_add_pow_of_rec (A : ℕ → ℂ) (α β : ℂ) (h0 : A 0 = 1)
 
 /-- **The analytic half of the Riemann hypothesis for curves: a
 point-count bound on ALL the power sums pins every Frobenius eigenvalue
-inside the disc of radius `√q`** (sorry node, FIFTEENTH decomposition
-2026-07-27 — one of the two residues of
-`exists_const_norm_qCoeff_frobPowerSum_le` below, which is now PROVEN
-over it).
+inside the disc of radius `√q`** (PROVEN 2026-07-27, axiom-clean — one of
+the two residues of `exists_const_norm_qCoeff_frobPowerSum_le` below,
+which is PROVEN over it).
 
 STATEMENT. Given finitely many complex numbers `γ₀, …, γ_{n−1}` and a
 constant `B` with `‖Σₖ γₖ^s‖ ≤ B·q^{s/2}` for EVERY `s ≥ 1`, each
@@ -39265,6 +39264,33 @@ this pin: let `R = maxₖ ‖γₖ‖` and suppose `R > √q`. Write the maximal
 contradicting `B·q^{s/2}` since `R > √q`. Both routes are elementary and
 neither needs any algebraic geometry.
 
+THE ROUTE ACTUALLY TAKEN is the first one, in a form that needs NEITHER
+analytic continuation NOR any residue/multiplicity bookkeeping — worth
+recording, because both of those are what make the classical write-up
+look expensive in Lean.
+
+Let `k₀` maximise `‖γₖ‖ =: R` and suppose `R > √q`; put `ρ = √q/R < 1`.
+For `t ∈ (0,1)` evaluate at `x = t/γ_{k₀}`, so `‖γₖ·x‖ ≤ t < 1` for EVERY
+`k` (this is the only place maximality is used). Writing `wₖ = γₖ·x`,
+`Σ_{s ≥ 1} pₛ·x^s = Σₖ wₖ/(1 − wₖ)` as a genuine `HasSum` — a finite sum
+of geometric series, so no interchange theorem is needed. Then:
+
+* UPPER, and *uniform in `t`*: `‖Σₖ wₖ/(1−wₖ)‖ ≤ Σ_{s≥1} B·(ρt)^s
+  = B·ρt/(1−ρt) ≤ B·ρ/(1−ρ) =: C`, since `ρt ≤ ρ < 1`. Uniformity is the
+  substitute for continuity at the boundary point: no limit is taken, so
+  no analytic continuation is required.
+* LOWER: `Re(w/(1−w)) ≥ −1/2` for `‖w‖ < 1` (Herglotz — `w/(1−w) + 1/2
+  = (1+w)/(2(1−w))` has real part `(1−‖w‖²)/(2‖1−w‖²) ≥ 0`). The `k₀`
+  term is `w_{k₀} = t`, contributing exactly `t/(1−t)`; every other term
+  contributes `≥ −1/2` with NO information about it. So the real part is
+  `≥ t/(1−t) − (n−1)/2`.
+
+Since `Re ≤ ‖·‖`, `t/(1−t) ≤ C + (n−1)/2` for all `t ∈ (0,1)`, which
+fails at `t = (M+1)/(M+2)` with `M = max(C + (n−1)/2, 0)`. Contradiction.
+The Herglotz half is what replaces "poles at distinct `γₖ` cannot
+cancel": it makes the non-maximal terms harmless one by one instead of
+requiring a residue computation.
+
 WHAT IS *NOT* CLAIMED. Only `≤ √q`, not `= √q`. Equality is recovered by
 the consumer from the product relation `γ_i·γ_j = q`, which pins both
 factors once each is bounded above — that is a one-line argument and
@@ -39272,8 +39298,140 @@ belongs there, not here. -/
 theorem norm_le_sqrt_of_forall_norm_sum_pow_le {q : ℕ} (hq : 0 < q) {n : ℕ}
     (γ : Fin n → ℂ) (B : ℝ)
     (h : ∀ s : ℕ, 0 < s → ‖∑ k, γ k ^ s‖ ≤ B * Real.sqrt q ^ s) :
-    ∀ k, ‖γ k‖ ≤ Real.sqrt q :=
-  sorry
+    ∀ k, ‖γ k‖ ≤ Real.sqrt q := by
+  -- **Herglotz bound**: `Re (z/(1−z)) ≥ −1/2` on the open unit disc, because
+  -- `z/(1−z) + 1/2 = (1+z)/(2(1−z))` has real part `(1−‖z‖²)/(2‖1−z‖²) ≥ 0`.
+  -- This is what makes the NON-maximal terms of the generating function
+  -- harmless without any information about them.
+  have herg : ∀ z : ℂ, ‖z‖ < 1 → -(1 / 2 : ℝ) ≤ (z * (1 - z)⁻¹).re := by
+    intro z hz
+    have hne : (1 : ℂ) - z ≠ 0 := by
+      intro hh
+      rw [sub_eq_zero] at hh
+      rw [← hh, norm_one] at hz
+      exact lt_irrefl 1 hz
+    have hN : Complex.normSq (1 - z) = (1 - z.re) ^ 2 + z.im ^ 2 := by
+      rw [Complex.normSq_apply, Complex.sub_re, Complex.sub_im, Complex.one_re, Complex.one_im]
+      ring
+    have hNpos : 0 < (1 - z.re) ^ 2 + z.im ^ 2 := by
+      rw [← hN]; exact Complex.normSq_pos.mpr hne
+    have hz2 : z.re ^ 2 + z.im ^ 2 < 1 := by
+      have h1 : ‖z‖ ^ 2 < 1 := by nlinarith [norm_nonneg z]
+      have h2 : Complex.normSq z = ‖z‖ ^ 2 := Complex.normSq_eq_norm_sq z
+      rw [Complex.normSq_apply] at h2
+      nlinarith
+    have hfe : (z * (1 - z)⁻¹).re
+        = (z.re * (1 - z.re) - z.im * z.im) / ((1 - z.re) ^ 2 + z.im ^ 2) := by
+      rw [← div_eq_mul_inv, Complex.div_re, hN, Complex.sub_re, Complex.sub_im,
+        Complex.one_re, Complex.one_im]
+      ring
+    rw [hfe, le_div_iff₀ hNpos]
+    nlinarith
+  rcases Nat.eq_zero_or_pos n with hn | hn
+  · subst hn; exact fun k => absurd k.isLt (by omega)
+  -- reduce to the index of maximal modulus
+  obtain ⟨k₀, -, hk₀⟩ :=
+    Finset.exists_max_image (Finset.univ : Finset (Fin n)) (fun k => ‖γ k‖)
+      ⟨⟨0, hn⟩, Finset.mem_univ _⟩
+  have hmax : ∀ k, ‖γ k‖ ≤ ‖γ k₀‖ := fun k => hk₀ k (Finset.mem_univ _)
+  suffices hgoal : ‖γ k₀‖ ≤ Real.sqrt q from fun k => (hmax k).trans hgoal
+  by_contra hcon
+  rw [not_le] at hcon
+  have hsq0 : 0 < Real.sqrt q := Real.sqrt_pos.mpr (by exact_mod_cast hq)
+  set Rm : ℝ := ‖γ k₀‖ with hRdef
+  have hR0 : 0 < Rm := lt_trans hsq0 hcon
+  have hγ0 : γ k₀ ≠ 0 := by rw [← norm_pos_iff]; exact hR0
+  have hB : 0 ≤ B := by
+    have h1 := h 1 one_pos
+    simp only [pow_one] at h1
+    have h2 : (0 : ℝ) ≤ B * Real.sqrt q := le_trans (norm_nonneg _) h1
+    nlinarith
+  -- `rr = √q / Rm < 1` is the ratio the hypothesis controls
+  set rr : ℝ := Real.sqrt q / Rm with hρdef
+  have hρ0 : 0 ≤ rr := div_nonneg hsq0.le hR0.le
+  have hρ1 : rr < 1 := (div_lt_one hR0).mpr hcon
+  -- `Cu` bounds the generating function on the whole radius, UNIFORMLY in `tv`
+  set Cu : ℝ := B * rr / (1 - rr) with hCdef
+  have hC0 : 0 ≤ Cu := div_nonneg (mul_nonneg hB hρ0) (by linarith)
+  set Mu : ℝ := max (Cu + ((n : ℝ) - 1) / 2) 0 with hMdef
+  have hM0 : 0 ≤ Mu := le_max_right _ _
+  have hMge : Cu + ((n : ℝ) - 1) / 2 ≤ Mu := le_max_left _ _
+  set tv : ℝ := (Mu + 1) / (Mu + 2) with htdef
+  have ht0 : 0 < tv := by rw [htdef]; positivity
+  have ht1 : tv < 1 := by rw [htdef, div_lt_one (by linarith)]; linarith
+  have hne1t : (1 : ℝ) - tv ≠ 0 := ne_of_gt (by linarith)
+  have htt : tv / (1 - tv) = Mu + 1 := by
+    rw [div_eq_iff hne1t, htdef]
+    field_simp
+    ring
+  -- evaluate at `xv = tv/γ_{k₀}`, just inside the disc `‖x‖ < 1/Rm`
+  set xv : ℂ := (tv : ℂ) * (γ k₀)⁻¹ with hxdef
+  have hxnorm : ‖xv‖ = tv / Rm := by
+    rw [hxdef, norm_mul, norm_inv, Complex.norm_real, Real.norm_eq_abs, abs_of_pos ht0,
+      div_eq_mul_inv]
+  set wv : Fin n → ℂ := fun k => γ k * xv with hwdef
+  have hwn : ∀ k, ‖wv k‖ ≤ tv := by
+    intro k
+    have hk : ‖wv k‖ = ‖γ k‖ * (tv / Rm) := by rw [hwdef, norm_mul, hxnorm]
+    rw [hk]
+    calc ‖γ k‖ * (tv / Rm) ≤ Rm * (tv / Rm) :=
+          mul_le_mul_of_nonneg_right (hmax k) (by positivity)
+      _ = tv := by field_simp
+  have hwlt : ∀ k, ‖wv k‖ < 1 := fun k => lt_of_le_of_lt (hwn k) ht1
+  have hw0 : wv k₀ = (tv : ℂ) := by rw [hwdef, hxdef]; field_simp
+  -- the generating function `Σ_{s ≥ 1} p_s·xv^s = Σ_k wv_k/(1 − wv_k)`
+  have hHSk : ∀ k, HasSum (fun s : ℕ => wv k ^ (s + 1)) (wv k * (1 - wv k)⁻¹) := by
+    intro k
+    exact ((hasSum_geometric_of_norm_lt_one (hwlt k)).mul_left (wv k)).congr_fun
+      (fun s => by ring)
+  have hHS : HasSum (fun s : ℕ => ∑ k, wv k ^ (s + 1)) (∑ k, wv k * (1 - wv k)⁻¹) :=
+    hasSum_sum (fun k _ => hHSk k)
+  -- UPPER bound: the hypothesis dominates it by a geometric series of ratio `rr·tv < 1`
+  have hρt0 : 0 ≤ rr * tv := mul_nonneg hρ0 ht0.le
+  have hρt1 : rr * tv < 1 := by nlinarith
+  have hgeom : HasSum (fun s : ℕ => B * (rr * tv) ^ (s + 1)) (B * (rr * tv) / (1 - rr * tv)) := by
+    rw [div_eq_mul_inv]
+    exact ((hasSum_geometric_of_lt_one hρt0 hρt1).mul_left (B * (rr * tv))).congr_fun
+      (fun s => by ring)
+  have hcoef : ∀ s : ℕ, ‖∑ k, wv k ^ (s + 1)‖ ≤ B * (rr * tv) ^ (s + 1) := by
+    intro s
+    have hfac : (∑ k, wv k ^ (s + 1)) = (∑ k, γ k ^ (s + 1)) * xv ^ (s + 1) := by
+      rw [Finset.sum_mul]
+      exact Finset.sum_congr rfl (fun k _ => by rw [hwdef, mul_pow])
+    rw [hfac, norm_mul, norm_pow, hxnorm]
+    have hh := h (s + 1) (Nat.succ_pos s)
+    have hnn : (0 : ℝ) ≤ (tv / Rm) ^ (s + 1) := by positivity
+    calc ‖∑ k, γ k ^ (s + 1)‖ * (tv / Rm) ^ (s + 1)
+        ≤ (B * Real.sqrt q ^ (s + 1)) * (tv / Rm) ^ (s + 1) :=
+          mul_le_mul_of_nonneg_right hh hnn
+      _ = B * (rr * tv) ^ (s + 1) := by
+          rw [hρdef, mul_assoc, ← mul_pow,
+            show Real.sqrt q * (tv / Rm) = Real.sqrt q / Rm * tv from by ring]
+  have hnormG : ‖∑ k, wv k * (1 - wv k)⁻¹‖ ≤ B * (rr * tv) / (1 - rr * tv) :=
+    hHS.norm_le_of_bounded hgeom hcoef
+  have hCbound : B * (rr * tv) / (1 - rr * tv) ≤ Cu := by
+    rw [hCdef, div_le_div_iff₀ (by linarith) (by linarith)]
+    nlinarith [mul_nonneg (mul_nonneg hB hρ0) (sub_nonneg.mpr ht1.le)]
+  -- LOWER bound: the `k₀` term contributes `tv/(1−tv)`, unbounded as `tv → 1⁻`,
+  -- while every other term is `≥ −1/2` by Herglotz.
+  have hterm0 : (wv k₀ * (1 - wv k₀)⁻¹).re = tv / (1 - tv) := by
+    have hcast : (tv : ℂ) * (1 - (tv : ℂ))⁻¹ = ((tv / (1 - tv) : ℝ) : ℂ) := by
+      push_cast
+      rw [div_eq_mul_inv]
+    rw [hw0, hcast, Complex.ofReal_re]
+  have hsingle : (wv k₀ * (1 - wv k₀)⁻¹).re + 1 / 2
+      ≤ ∑ k, ((wv k * (1 - wv k)⁻¹).re + 1 / 2) :=
+    Finset.single_le_sum (f := fun k => (wv k * (1 - wv k)⁻¹).re + 1 / 2)
+      (fun k _ => by linarith [herg (wv k) (hwlt k)]) (Finset.mem_univ k₀)
+  have hsplit : ∑ k, ((wv k * (1 - wv k)⁻¹).re + 1 / 2)
+      = (∑ k, wv k * (1 - wv k)⁻¹).re + (n : ℝ) / 2 := by
+    rw [Finset.sum_add_distrib, Complex.re_sum, Finset.sum_const, Finset.card_univ,
+      Fintype.card_fin, nsmul_eq_mul]
+    ring
+  have hre_le : (∑ k, wv k * (1 - wv k)⁻¹).re ≤ ‖∑ k, wv k * (1 - wv k)⁻¹‖ :=
+    Complex.re_le_norm _
+  rw [hterm0, htt, hsplit] at hsingle
+  linarith
 
 /-- **Eichler–Shimura in point-count shape: the Frobenius eigenvalues of
 a modular curve with good reduction, two of them attached to a given
