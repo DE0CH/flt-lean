@@ -52340,6 +52340,83 @@ theorem mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one
     simpa using hrep
   rwa [Ideal.Quotient.eq_zero_iff_mem] at hzero
 
+omit [Algebra ℤ_[p] R] [IsDomain R] [Module.Finite ℤ_[p] R]
+  [IsModuleTopology ℤ_[p] R] in
+/-- **The level-`k` kernel drives the off-diagonal entry into `𝔪 ^ k`,
+THROUGH AN UNRAMIFIED TWIST** (PROVEN 2026-07-27 — the linear-algebra
+half of the KUMMER-COCYCLE CUT, restated for the TWISTED toric shape
+that the geometry actually delivers; see the FALSITY AUDIT in the leaf
+below for why the untwisted form of the hypothesis is not available).
+
+WHAT IT SAYS, and how it differs from
+`mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one` just above. That
+lemma consumes the UNTWISTED toric shape `b 1 ↦ b 1 + c · b 0`; this
+one consumes `b 1 ↦ u · (b 1 + c · b 0)` for a unit `u` of the
+coefficient ring — the shape `ρ_{f,𝔭}|_{G_p} ≅ (χ c, ∗ ; 0, c)` with
+`c` unramified that Tilouine's toric-reduction computation produces,
+and which the untwisted form silently sets to `c = 1`. The conclusion
+is the same: if `σ` acts trivially on `ρ ⊗ R ⧸ 𝔪 ^ k`, then
+`c ∈ 𝔪 ^ k`.
+
+WHY THE TWIST COSTS NOTHING HERE, which is the whole reason the
+consumers below are unaffected by the repair. Reading the coefficient
+of `b 0` in the base-changed basis gives `u · c ≡ 0 mod 𝔪 ^ k`, and
+`u` is a UNIT, so its class is a unit of `R ⧸ 𝔪 ^ k` and cancels. An
+unramified twist is invisible to the level-`k` kernel for exactly this
+reason — which is why the defect the audit below records is confined
+to the leaf's own statement and does not propagate to the tower.
+
+`Module.Free R V` remains load-bearing, for the same reason as in the
+untwisted lemma: in a non-free module a nonzero scalar can kill a
+vector, and the argument reads a basis coefficient. -/
+theorem mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one_of_unitSmul
+    {b : Module.Basis (Fin 2) R V} {c : R} {u : Rˣ}
+    {σ : Field.absoluteGaloisGroup ℚᵖᵥ}
+    (hσc : ρ.toLocal 𝔭ᵥ σ (b 1) = (u : R) • (b 1 + c • b 0))
+    {k : ℕ}
+    (hσ : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R))).toLocal 𝔭ᵥ σ = 1) :
+    c ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) := by
+  classical
+  set I : Ideal R := (IsLocalRing.maximalIdeal R ^ k : Ideal R) with hI
+  -- the trivial base-changed action, applied to `1 ⊗ₜ b 1`
+  have happ : (ρ.baseChange (R ⧸ I)).toLocal 𝔭ᵥ σ
+      ((1 : R ⧸ I) ⊗ₜ[R] b 1) = (1 : R ⧸ I) ⊗ₜ[R] b 1 := by
+    rw [hσ]; rfl
+  rw [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul] at happ
+  rw [GaloisRep.toLocal_apply] at hσc
+  rw [hσc] at happ
+  -- expand `1 ⊗ₜ (u • (b 1 + c • b 0))` in the base-changed basis
+  have hexp : (1 : R ⧸ I) ⊗ₜ[R] ((u : R) • (b 1 + c • b 0)) =
+      (Ideal.Quotient.mk I (u : R)) ⊗ₜ[R] (b 1) +
+      (Ideal.Quotient.mk I ((u : R) * c)) ⊗ₜ[R] (b 0) := by
+    rw [smul_add, TensorProduct.tmul_add]
+    congr 1
+    · rw [TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+      congr 1
+      rw [Algebra.smul_def, mul_one]
+      rfl
+    · rw [smul_smul, TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+      congr 1
+      rw [Algebra.smul_def, mul_one]
+      rfl
+  rw [hexp] at happ
+  -- read off the coefficient at index `0` of the base-changed basis
+  have hrep := congrArg
+    (fun y => (Algebra.TensorProduct.basis (R ⧸ I) b).repr y 0) happ
+  simp only [map_add, Algebra.TensorProduct.basis_repr_tmul, Module.Basis.repr_self,
+    Finsupp.smul_apply, Finsupp.mapRange_apply, Finsupp.single_apply,
+    Finsupp.add_apply, smul_eq_mul] at hrep
+  norm_num at hrep
+  -- `u` is a unit, so its class is a unit and can be cancelled
+  have hzero : Ideal.Quotient.mk I c = 0 := by
+    have hu : IsUnit (Ideal.Quotient.mk I (u : R)) := u.isUnit.map _
+    obtain ⟨w, hw⟩ := hu
+    have hmul : (Ideal.Quotient.mk I (u : R)) * (Ideal.Quotient.mk I c) = 0 := by
+      rw [← map_mul]; exact hrep
+    rw [← hw] at hmul
+    exact (Units.mul_right_eq_zero w).mp hmul
+  rwa [Ideal.Quotient.eq_zero_iff_mem] at hzero
+
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AS A TORIC
 BASIS TOGETHER WITH ITS KUMMER COCYCLE** (sorry leaf — THE residual
@@ -52352,12 +52429,14 @@ models of `X₀(Mp)`).
 
 WHAT IT ASSERTS, and it is the shape the missing geometry actually
 delivers. There are a Tate parameter `q` with `v(q) < 1`, a `ℤ_p`-valued
-function `c` on `G_{ℚ_p}`, and an `R`-basis `b` of `V`, such that
+function `c` on `G_{ℚ_p}`, a UNIT-valued function `ψ` on `G_{ℚ_p}`, and
+an `R`-basis `b` of `V`, such that
 
 1. `ρ|_{G_p}` moves the second basis vector by
-   `b 1 ↦ b 1 + c(σ) · b 0` — the TORIC shape: `R · b 0` is the
-   multiplicative (character-group) line, the quotient is étale, and
-   `c` is the extension class; and
+   `b 1 ↦ ψ(σ) · (b 1 + c(σ) · b 0)` — the TORIC shape UP TO A TWIST:
+   `R · b 0` is the multiplicative (character-group) line, the quotient
+   is étale and carries the character `ψ`, and `c` is the extension
+   class; and
 2. `c` IS the Kummer cocycle of `q`: whenever `p ^ n ∣ c(σ)`, some
    `p ^ n`-th root of `q` is fixed by `σ`.
 
@@ -52368,7 +52447,87 @@ run, not assumed). Clause 2 alone is satisfiable by junk — take
 on `G_p`. It is their CONJUNCTION that carries the arithmetic, and it
 is not vacuous: `c ≡ 0` would force every `σ` to fix a `p ^ n`-th root
 of `q` for every `n`, hence `q ∈ (ℚᵖᵥˣ) ^ (p ^ n)` for all `n`, hence
-`v(q) = 1` — contradicting `v(q) < 1`.
+`v(q) = 1` — contradicting `v(q) < 1`. The twist `ψ` does not disturb
+this: it is a unit, so `c ≡ 0` is unaffected by it.
+
+**FALSITY AUDIT (2026-07-27 — the leaf WAS FALSE AS STATED, on two
+independent counts, and this is the repair. Both counterexamples are
+explicit and were checked numerically with PARI/GP.)** The previous
+statement asked for `p ∣ M` and for the UNTWISTED shape
+`b 1 ↦ b 1 + c(σ) · b 0`. Both are refuted, and — this is the point
+that makes the audit cheap to check — **both are refuted by the
+CITATION THIS VERY CHAIN RESTS ON**, spelled out in the CITATIONS
+block of `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+below, which reads (verbatim) "the local shape
+`ρ_{f,𝔭}|_{G_p} ≅ (χ c, ∗ ; 0, c)` with `c` unramified" for `p ∥ M₀`,
+and "AUTOMORPHIC HALF, `p² ∣ M₀` — the local type is ramified principal
+series or supercuspidal … not even semistable" otherwise. The two
+defects are exactly the two things that citation says and this leaf did
+not.
+
+*DEFECT 1 — `p ∣ M` is too weak; the toric picture needs `p ∥ M`.*
+Take `p = 5`, `E = X₀(11)` (conductor `11`, `a₅ = 1`, so GOOD ORDINARY
+at `5`), and let `g` be the weight-2 newform attached to the quadratic
+twist `E ⊗ χ₅`. PARI/GP: that twist has conductor `275 = 5² · 11`, with
+`elllocalred` at `5` returning conductor exponent `2` (additive, Kodaira
+II). So `M = 275`, `p ∣ M`, and `g` is `p`-new — `M / p = 55`, and the
+only newform of a level dividing `55` is `11a`, whose `a₂ = -2` differs
+from the twist's `a₂ = +2` since `χ₅(2) = -1`. Every hypothesis of this
+leaf is satisfiable there (`τ = ρ_{g,5}` is irreducible, `E ⊗ χ₅` being
+non-CM; `det τ = χ_cyc` because `χ₅² = 1`). But
+`ρ|_{G_5} = ρ_{E,5}|_{G_5} ⊗ χ₅` has ÉTALE QUOTIENT CHARACTER `α·χ₅`
+with `α` unramified and `χ₅` ramified quadratic, so the quotient
+character is RAMIFIED and in particular `≠ 1`; and the sub-character
+`χ_cyc α^{-1} χ₅` is not trivial either, since `χ_cyc|_{I₅}` has
+infinite image while `α^{-1}χ₅|_{I₅}` has image of order `≤ 2`. So NO
+`R`-basis gives the conclusion's shape, twisted or not. The same
+argument kills the supercuspidal case (e.g. `27a` at `p = 3`, where
+`ρ|_{G_3}` is irreducible and there is no stable line at all).
+
+*DEFECT 2 — even at `p ∥ M`, only SPLIT multiplicative reduction gives
+the UNTWISTED shape.* Take `p = 7` and `E = 21a1` (conductor `21 = 3·7`,
+so `7 ∥ M`). PARI/GP gives `a₇ = -1`, i.e. NON-SPLIT multiplicative
+reduction at `7`. Then `ρ|_{G_7} = T_7(E_q) ⊗ ψ` with `ψ` the
+UNRAMIFIED QUADRATIC character, and `ψ ≠ 1` at Frobenius. The extension
+is non-split (nonzero monodromy), so `R · b 0` is the UNIQUE stable
+line and the étale quotient character is `ψ ≠ 1`; the untwisted clause 1
+demands that quotient character be trivial, so it fails. No change of
+basis repairs it, because the quotient character is intrinsic. This is
+the standing trap recorded in `CLAUDE.md` — an unramified twist is
+invisible to INERTIA, and clause 1 quantifies over the whole
+DECOMPOSITION group, so the twist is visible and breaks it.
+
+*WHY THE PREVIOUS SOUNDNESS NOTE MISSED IT.* It named exactly one
+witness, `p = 11`, `M = 11`, `E = X₀(11)`, which is `p ∥ M` AND SPLIT
+(`a₁₁ = 1`) — the single configuration in which both defects are
+invisible. A one-witness soundness check certifies non-vacuity, never
+faithfulness.
+
+*THE REPAIR, and what it costs downstream.* `hpM2 : ¬ p ^ 2 ∣ M` is now
+a hypothesis, and clause 1 carries the twist `ψ`. Defect 2 costs the
+consumers NOTHING — an unramified twist is invisible to the level-`k`
+kernel, which is the content of
+`mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one_of_unitSmul` above,
+so the twisted hypothesis discharges the untwisted conclusion the tower
+consumes. Defect 1 DOES cost: `hpM2` is threaded up the whole
+Tate-parameter chain to
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`,
+which now case-splits and sends the `p² ∣ M` branch to the new leaf
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew_of_sq_dvd`.
+That split was previously argued AGAINST, in that node's own ROUTE
+AUDIT ("splitting the leaf along `ord_p M` would duplicate one citation
+behind a formal `by_cases` carrying no mathematical content"). The
+audit was CORRECT WHEN WRITTEN — the two local cases were then two
+instances of one citation inside one leaf. It is stale now precisely
+because the twelve cuts since have decomposed the `p ∥ M₀` half into
+the Tate-parameter chain, and that chain is FALSE on the `p² ∣ M₀`
+half. The split is now forced by faithfulness, not cosmetic.
+
+*WHAT THE REPAIR IS DELIBERATELY NOT.* `ψ` is a bare function into
+`Rˣ`, not an unramified character and not a homomorphism. The truth is
+stronger (`ψ` is unramified quadratic), but this leaf is an OBLIGATION,
+so the weaker form is the safe one: it asks the missing geometry for no
+more than the consumers use.
 
 WHY `Valued.v q < 1` AND NOT `≠ 1` (preserved verbatim from the
 predecessor; this records a real strength difference, not a typo).
@@ -52428,10 +52587,14 @@ equivalence from `Fin 2 → AlgebraicClosure ℚ_[p]` onto
 `AlgebraicClosure ℚ_[p]`, so `V` is free of rank exactly `2` over `R`
 already.
 
-SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
-weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
-`v_p(q) = 1 ≠ 0`, so the `p ^ n`-th roots of `q` generate a genuinely
-ramified extension and the statement is not vacuous.
+SOUNDNESS: `p = 11`, `M = 11`, the weight-2 newform of level `11`,
+`E = X₀(11)`. This witness satisfies the NEW hypothesis `hpM2` too
+(`11² ∤ 11`), and it is SPLIT multiplicative (`a₁₁ = 1`), so `ψ ≡ 1`
+there and the twisted clause 1 specialises to the untwisted one. Its
+Tate parameter has `v_p(q) = 1 ≠ 0`, so the `p ^ n`-th roots of `q`
+generate a genuinely ramified extension and the statement is not
+vacuous. See the FALSITY AUDIT above for why this witness alone was NOT
+enough, and for the two configurations that refuted the previous form.
 
 INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
 are passed down unchanged: they are exactly what the cited automorphic
@@ -52439,7 +52602,8 @@ theory assumes about its coefficient ring. -/
 theorem exists_toricKummerCocycle_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
     (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
       ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
@@ -52470,10 +52634,12 @@ theorem exists_toricKummerCocycle_of_weightTwoEigenform_pNew
     (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
     (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
     ∃ (q : (ℚᵖᵥ)ˣ) (c : Field.absoluteGaloisGroup ℚᵖᵥ → ℤ_[p])
+        (ψ : Field.absoluteGaloisGroup ℚᵖᵥ → Rˣ)
         (b : Module.Basis (Fin 2) R V),
       (Valued.v (q : ℚᵖᵥ) : WithZero (Multiplicative ℤ)) < 1 ∧
       (∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
-        ρ.toLocal 𝔭ᵥ σ (b 1) = b 1 + algebraMap ℤ_[p] R (c σ) • b 0) ∧
+        ρ.toLocal 𝔭ᵥ σ (b 1) =
+          (ψ σ : R) • (b 1 + algebraMap ℤ_[p] R (c σ) • b 0)) ∧
       (∀ (n : ℕ) (σ : Field.absoluteGaloisGroup ℚᵖᵥ), (p : ℤ_[p]) ^ n ∣ c σ →
         ∃ r : AlgebraicClosure ℚᵖᵥ,
           r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
@@ -52499,11 +52665,25 @@ is PROVEN, as a three-step assembly:
 1. `exists_toricKummerCocycle_of_weightTwoEigenform_pNew` (sorry leaf,
    just above) — THE GEOMETRY, and now nothing but the geometry: a Tate
    parameter `q` with `v(q) < 1`, an `R`-basis in which `ρ|_{G_p}` has
-   the TORIC shape `b 1 ↦ b 1 + c(σ) · b 0`, and the statement that the
-   off-diagonal `c` is the `ℤ_p`-valued Kummer cocycle of `q`.
-2. `mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one` (PROVEN, above)
-   — the level-`k` kernel drives `c(σ)` into `𝔪 ^ k`. Pure linear
-   algebra over a free module; no geometry, no `CharP`.
+   the TORIC shape `b 1 ↦ ψ(σ) · (b 1 + c(σ) · b 0)` up to a unit twist
+   `ψ`, and the statement that the off-diagonal `c` is the
+   `ℤ_p`-valued Kummer cocycle of `q`.
+2. `mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one_of_unitSmul`
+   (PROVEN, above) — the level-`k` kernel drives `c(σ)` into `𝔪 ^ k`.
+   Pure linear algebra over a free module; no geometry, no `CharP`.
+
+   FAITHFULNESS REPAIR (2026-07-27). Step 2 previously used the
+   UNTWISTED `mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one`, and
+   the leaf above accordingly asked for the untwisted toric shape —
+   which is FALSE whenever the multiplicative reduction at `p` is
+   NON-SPLIT, the étale quotient character then being the nontrivial
+   unramified quadratic character (`p = 7`, `E = 21a1`, `a₇ = -1`;
+   see the FALSITY AUDIT above). The twist costs this node nothing,
+   because `ψ(σ)` is a UNIT and is therefore invisible to the level-`k`
+   kernel — which is exactly what the twisted lemma proves. The new
+   hypothesis `hpM2 : ¬ p ^ 2 ∣ M`, by contrast, is threaded all the
+   way up to `exists_level_not_hasFlatProlongationAt_…`, where it
+   forces a genuine case split.
 3. `padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow` (PROVEN, above) —
    `𝔪 ^ k` to `p ^ n`, the ONLY step that uses the exact-exponent
    hypothesis, over the DVR structure of `ℤ_p`.
@@ -52580,7 +52760,8 @@ theory assumes about its coefficient ring. -/
 theorem exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
     (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
       ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
@@ -52619,14 +52800,16 @@ theorem exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew
               r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
               (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) r =
                 r * algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ^ b := by
-  -- the GEOMETRY: a Tate parameter, a toric basis, and its Kummer cocycle
-  obtain ⟨q, c, bas, hq, hbas, hkum⟩ :=
-    exists_toricKummerCocycle_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ
+  -- the GEOMETRY: a Tate parameter, a toric basis up to an unramified
+  -- twist, and its Kummer cocycle
+  obtain ⟨q, c, ψ, bas, hq, hbas, hkum⟩ :=
+    exists_toricKummerCocycle_of_weightTwoEigenform_pNew hpodd hM hpM hpM2 hg hpnew κ
       hτ hirr e he hdet hpne hpmem hkfin hlat
   refine ⟨q, hq, fun k n hchar σ hσ => ?_⟩
-  -- the level-`k` kernel drives the cocycle value into `𝔪 ^ k` …
+  -- the level-`k` kernel drives the cocycle value into `𝔪 ^ k` — the twist
+  -- `ψ σ` is a UNIT, hence invisible to the level-`k` kernel …
   have hc : algebraMap ℤ_[p] R (c σ) ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) :=
-    mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one (hbas σ) hσ
+    mem_maximalIdeal_pow_of_toLocal_baseChange_eq_one_of_unitSmul (hbas σ) hσ
   -- … and the exact-exponent hypothesis turns that into `p ^ n ∣ c σ`
   obtain ⟨r, hrpow, hrfix⟩ :=
     hkum n σ (padicPow_dvd_of_algebraMap_mem_maximalIdeal_pow hchar hc)
@@ -52744,7 +52927,8 @@ the cited automorphic theory assumes about its coefficient ring. -/
 theorem exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
     (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
       ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
@@ -52791,7 +52975,7 @@ theorem exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew
     charZero_of_injective_algebraMap ((algebraMap ℚ ℚᵖᵥ).injective)
   -- the KUMMER half: the geometry, for ONE `p ^ n`-th root of `q`
   obtain ⟨q, hq, hroot⟩ :=
-    exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew hpodd hM hpM hg
+    exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew hpodd hM hpM hpM2 hg
       hpnew κ hτ hirr e he hdet hpne hpmem hkfin hlat
   refine ⟨q, hq, fun k n hchar σ hσ P hP => ?_⟩
   obtain ⟨r, b, hrpow, hrσ⟩ := hroot k n hchar σ hσ
@@ -52917,7 +53101,8 @@ of `τ`" a statement about a genuine lattice. -/
 theorem exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
     (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
       ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
@@ -52961,7 +53146,7 @@ theorem exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew
   -- the automorphic-to-Galois bridge, in the form the `p`-adic geometry
   -- produces it: a statement about the torsion of the toric curve `E_q`
   obtain ⟨q, hq, htor⟩ :=
-    exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew hpodd hM hpM hg
+    exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew hpodd hM hpM hpM2 hg
       hpnew κ hτ hirr e he hdet hpne hpmem hkfin hlat
   refine ⟨q, ne_of_lt hq, fun k n hchar r hr σ hσ => ?_⟩
   -- and Tate's uniformisation turns that into the Kummer class of `q`
@@ -53095,7 +53280,8 @@ no piece of it has been proven here. -/
 theorem exists_tateParameter_atLevel_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
     (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
       ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
@@ -53136,7 +53322,7 @@ theorem exists_tateParameter_atLevel_of_weightTwoEigenform_pNew
   -- the automorphic-to-Galois bridge, in the form Tate's uniformisation
   -- produces it: a class statement modulo `q ^ ℤ`
   obtain ⟨q, hq, hclass⟩ :=
-    exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ hτ
+    exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew hpodd hM hpM hpM2 hg hpnew κ hτ
       hirr e he hdet hpne hpmem hkfin hlat
   refine ⟨q, hq, fun k n hchar => ?_⟩
   -- the `p ^ n`-th root itself exists because `ℚ̄_p` is algebraically closed;
@@ -53246,7 +53432,8 @@ cited automorphic theory consumes them. -/
 theorem exists_tateParameter_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
-    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : ¬ p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
     (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
       ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
@@ -53288,7 +53475,7 @@ theorem exists_tateParameter_of_weightTwoEigenform_pNew
   -- inside the field cut out at every level whose EXACT characteristic is
   -- a power of `p`
   obtain ⟨q, hq, hlev⟩ :=
-    exists_tateParameter_atLevel_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ hτ
+    exists_tateParameter_atLevel_of_weightTwoEigenform_pNew hpodd hM hpM hpM2 hg hpnew κ hτ
       hirr e he hdet hpne hpmem hkfin hlat
   refine ⟨q, hq, fun n₀ => ?_⟩
   -- the tower bookkeeping: a level whose exact characteristic is `p ^ n`
@@ -53297,6 +53484,109 @@ theorem exists_tateParameter_of_weightTwoEigenform_pNew
     exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero hpne n₀
   haveI := hchar
   exact ⟨k, n, hn, CharP.cast_eq_zero _ _, hlev k n hchar⟩
+
+include hpodd in
+/-- **Serre's flat-level criterion for a `p`-new eigensystem, IN THE
+DEEP-LEVEL CASE `p² ∣ M`** (sorry leaf, NEW 2026-07-27 — the second
+half of the local–global citation, split off by the FALSITY AUDIT of
+`exists_toricKummerCocycle_of_weightTwoEigenform_pNew` above; Saito,
+*Modular forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997)).
+
+WHY THIS LEAF EXISTS, and why it is not a duplicated citation. The
+consumer below cites local–global compatibility at `p` in TWO
+mathematically different regimes, which its own CITATIONS block already
+distinguishes:
+
+* `p ∥ M₀` — the local type is an unramified twist of Steinberg, the
+  abelian variety has purely TORIC reduction, and the argument runs
+  through a Tate parameter `q` with `v_p(q) ≠ 0` whose `p ^ n`-th roots
+  are très ramifiée. That regime is the Tate-parameter chain above,
+  which the twelve cuts of 2026-07-26/27 decomposed down to the single
+  geometric leaf `exists_toricKummerCocycle_…`.
+* `p² ∣ M₀` — the local type is a ramified principal series or
+  supercuspidal, of conductor exponent `ord_p M₀ ≥ 2`. There is NO Tate
+  parameter and NO toric reduction; the Weil–Deligne parameter is not
+  even semistable, so a fortiori not Barsotti–Tate, and flatness at
+  every level is contradicted directly rather than through a Kummer
+  class.
+
+Until 2026-07-27 both regimes were carried by ONE leaf, and the
+consumer's ROUTE AUDIT argued explicitly against splitting them
+("splitting the leaf along `ord_p M` would duplicate one citation
+behind a formal `by_cases` carrying no mathematical content"). **That
+audit was correct when written and is now stale**, for a reason
+external to it: the `p ∥ M₀` half has since been decomposed into the
+Tate-parameter chain, and that chain is FALSE on the `p² ∣ M₀` half —
+see DEFECT 1 of the FALSITY AUDIT above, with its explicit
+counterexample (`p = 5`, `M = 275`, the quadratic twist of `X₀(11)` by
+`χ₅`, whose `ρ|_{G_5}` has a RAMIFIED étale quotient character and
+therefore no toric basis at all). So the `by_cases` is no longer formal:
+the two branches now rest on genuinely different arguments, and one of
+them was silently asserting the other's conclusion.
+
+WHAT IS MISSING HERE, stated so the next owner can act on it. Only the
+Saito half: that for a `p`-new eigenform of level `M` with `p² ∣ M` the
+local Weil–Deligne parameter at `p` has conductor exponent `≥ 2`, hence
+is not semistable, hence `ρ|_{G_p}` is not Barsotti–Tate and admits no
+finite flat prolongation at every level. NOTE that this leaf needs NO
+Tate curve, NO Deligne–Rapoport model and NO toric reduction — it is
+strictly the "not even semistable" sentence of the citation — so it is
+NOT gated on the modular-curve geometry that gates its sibling, and the
+two should not be dispatched as one task.
+
+WHY THE CONCLUSION IS "SOME LEVEL", not "every level". Unchanged from
+the sibling: at a SINGLE finite level flatness can be compatible with a
+ramified local type for cardinality reasons, so the content lives in the
+tower; `hkfin` is what keeps every level finite.
+
+SOUNDNESS: non-vacuously satisfiable — `p = 5`, `M = 275`, `g` the
+weight-2 newform attached to the quadratic twist of `X₀(11)` by `χ₅`
+(conductor `275 = 5² · 11`, verified with PARI/GP), which is `5`-new
+because the only newform of a level dividing `55` is `11a` and its
+`a₂ = -2` differs from the twist's `a₂ = +2`. There `ρ` is not flat at
+`5`, the curve having additive reduction there.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged from the consumer, exactly as for the
+sibling. -/
+theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew_of_sq_dvd
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) (hpM2 : p ^ 2 ∣ M)
+    {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ k : ℕ,
+      ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
+        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
 
 include hpodd in
 /-- **Serre's flat-level criterion for a `p`-new eigensystem: SOME FINITE
@@ -53599,9 +53889,16 @@ theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
     ∃ k : ℕ,
       ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
         (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
-  -- the Tate parameter of the toric reduction at `p`
+  -- THE DICHOTOMY of the citation, made formal 2026-07-27: the two local
+  -- regimes rest on genuinely different arguments, and only `p ∥ M` has a
+  -- Tate parameter (see the FALSITY AUDIT at `exists_toricKummerCocycle_…`)
+  by_cases hpM2 : p ^ 2 ∣ M
+  · -- `p² ∣ M`: ramified principal series or supercuspidal, not semistable
+    exact exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew_of_sq_dvd
+      hpodd hM hpM hpM2 hg hpnew κ hτ hirr e he hdet hpne hpmem hkfin hlat
+  -- `p ∥ M`: the Tate parameter of the toric reduction at `p`
   obtain ⟨q, hq, hlev⟩ :=
-    exists_tateParameter_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ hτ
+    exists_tateParameter_of_weightTwoEigenform_pNew hpodd hM hpM hpM2 hg hpnew κ hτ
       hirr e he hdet hpne hpmem hkfin hlat
   -- `v_p(q) ≠ 0`, so `q` is très ramifiée at every large enough exponent
   obtain ⟨n₀, hn₀⟩ :=
@@ -53890,7 +54187,22 @@ stay inside this ONE leaf: `p ∥ M₀` (Steinberg) and `p² ∣ M₀`
 (ramified principal series or supercuspidal) are two instances of the
 SAME cited local–global compatibility theorem, so splitting the leaf
 along `ord_p M` would duplicate one citation behind a formal
-`by_cases` carrying no mathematical content. What the cut does buy,
+`by_cases` carrying no mathematical content.
+
+**SUPERSEDED 2026-07-27 — the paragraph immediately above was correct
+when written and is now STALE, and it is kept only so the reasoning can
+be audited.** The `p ∥ M₀` half has since been decomposed into the
+Tate-parameter chain above, and that chain is FALSE on the `p² ∣ M₀`
+half: there is no toric reduction, no Tate parameter, and
+`ρ|_{G_p}` need not even be reducible. See the FALSITY AUDIT of
+`exists_toricKummerCocycle_of_weightTwoEigenform_pNew`, with its
+explicit counterexample. So `exists_level_not_hasFlatProlongationAt_…`
+below now DOES `by_cases` on `p ^ 2 ∣ M`, sending the deep-level branch
+to the new leaf `…_of_sq_dvd`, and that `by_cases` carries real
+mathematical content: the two branches rest on different arguments and
+the decomposition applies to only one of them.
+
+What the cut does buy,
 formally, is everything else: the dichotomy, the newform descent, the
 `p`-adic embedding transport, the charpoly bookkeeping and the
 `p`-newness derivation from minimality are all PROVEN in the assembly
