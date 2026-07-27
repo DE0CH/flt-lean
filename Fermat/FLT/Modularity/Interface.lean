@@ -29284,7 +29284,73 @@ theorem exists_mem_gamma0Domain (M : ℕ) (τ : ℍ) :
   rw [hact, mul_smul]
   exact Set.mem_iUnion.mpr ⟨c, Set.smul_mem_smul_set hg⟩
 
-/-- **A.E.-DISJOINTNESS OF THE `Γ₀(M)` DOMAIN** (sorry leaf — cut 2026-07-26
+/-- **A VERTICAL LINE IN `ℂ` IS LEBESGUE-NULL** (PROVEN 2026-07-27):
+`volume {z : ℂ | z.re = c} = 0`.
+
+Transport by `Complex.volume_preserving_equiv_real_prod` — the same route
+`lintegral_strip_lt_top` above takes — turns the line into `{c} ×ˢ univ` in
+`ℝ × ℝ`, whose product measure is `0 * ⊤ = 0`.  (`Measure.addHaar_submodule`
+applied to `LinearMap.ker Complex.reLm`, plus a translation, is an equally
+short alternative; the transport route is used here because the
+`measurableEquivRealProd` machinery is already in scope.) -/
+theorem volume_complex_re_eq_zero (c : ℝ) : volume {z : ℂ | z.re = c} = 0 := by
+  have h : {z : ℂ | z.re = c}
+      = Complex.measurableEquivRealProd ⁻¹' (({c} : Set ℝ) ×ˢ (Set.univ : Set ℝ)) := by
+    ext z
+    simp [Complex.measurableEquivRealProd]
+  rw [h, Complex.volume_preserving_equiv_real_prod.measure_preimage
+      ((measurableSet_singleton c).prod MeasurableSet.univ).nullMeasurableSet,
+    Measure.volume_eq_prod, Measure.prod_prod]
+  simp
+
+/-- **THE BOUNDARY OF THE MODULAR DOMAIN IS NULL** (PROVEN 2026-07-27 — this
+was recorded as "THE ONE MISSING FACT" of the a.e.-disjointness leaf below, and
+it is the only measure-theoretic input that leaf needs):
+`volume (𝒟 \ 𝒟ᵒ) = 0` for the invariant measure `dx dy / y²` on `ℍ`.
+
+`𝒟 = {1 ≤ normSq z, |re z| ≤ 1/2}` and `𝒟ᵒ` is the same with both
+inequalities strict, so a point of `𝒟 \ 𝒟ᵒ` has `normSq z = 1` or
+`|re z| = 1/2` — i.e. its image in `ℂ` lies on the unit circle or on one of the
+two vertical lines `re = ±1/2`.  The circle is null by
+`Measure.addHaar_sphere` and the lines by `volume_complex_re_eq_zero`, and
+`UpperHalfPlane.volume_eq_lintegral` (the same bridge
+`volume_modularFd_ne_top` uses) turns a null image in `ℂ` into a null set in
+`ℍ` through `setLIntegral_measure_zero`: the density `1/y²` is irrelevant once
+the underlying planar set is null. -/
+theorem volume_modularFd_sdiff_fdo_eq_zero :
+    volume (ModularGroup.fd \ ModularGroup.fdo) = 0 := by
+  rw [UpperHalfPlane.volume_eq_lintegral]
+  refine setLIntegral_measure_zero _ _ ?_
+  have hsub : ((↑) '' (ModularGroup.fd \ ModularGroup.fdo) : Set ℂ) ⊆
+      Metric.sphere (0 : ℂ) 1 ∪ ({z : ℂ | z.re = 1/2} ∪ {z : ℂ | z.re = -(1/2)}) := by
+    rintro _ ⟨z, ⟨hz, hzo⟩, rfl⟩
+    obtain ⟨hz1, hz2⟩ := hz
+    rw [ModularGroup.fdo, Set.mem_setOf_eq, not_and_or, not_lt, not_lt] at hzo
+    rcases hzo with hno | hre
+    · left
+      have hns : Complex.normSq (z : ℂ) = 1 := le_antisymm hno hz1
+      have h2 : ‖(z : ℂ)‖ ^ 2 = 1 := by rw [← Complex.normSq_eq_norm_sq]; exact hns
+      have hnorm : ‖(z : ℂ)‖ = 1 := by nlinarith [norm_nonneg ((z : ℂ))]
+      simpa [Metric.mem_sphere] using hnorm
+    · right
+      have habs : |(z : ℂ).re| = 1/2 := le_antisymm hz2 hre
+      rcases (abs_eq (by norm_num : (0:ℝ) ≤ 1/2)).mp habs with h | h
+      · exact Or.inl h
+      · exact Or.inr h
+  refine measure_mono_null hsub ?_
+  rw [measure_union_null_iff, measure_union_null_iff]
+  exact ⟨Measure.addHaar_sphere volume _ _, volume_complex_re_eq_zero _,
+    volume_complex_re_eq_zero _⟩
+
+/-- `x ∈ g⁻¹ • s ↔ g • x ∈ s` for the `SL(2,ℤ)`-action on `ℍ`, in the exact
+shape the coset bookkeeping below consumes. -/
+theorem mem_inv_smul_set_upperHalfPlane_iff (g : SL(2, ℤ)) (s : Set ℍ) (x : ℍ) :
+    x ∈ g⁻¹ • s ↔ g • x ∈ s := by
+  constructor
+  · rintro ⟨y, hy, rfl⟩; simpa using hy
+  · intro hx; exact ⟨g • x, hx, by simp⟩
+
+/-- **A.E.-DISJOINTNESS OF THE `Γ₀(M)` DOMAIN** (PROVEN 2026-07-27 — cut 2026-07-26
 out of `exists_peterssonDomain` below, together with
 `peterssonSelfAdjoint_of_gamma0FundamentalDomain`): distinct `Γ₀(M)`-translates
 of `gamma0Domain M` meet in a null set, once the two elements acting trivially
@@ -29314,22 +29380,279 @@ then `γ_c h⁻¹ γ_c⁻¹ = ±1`, i.e. `h = ±1` — excluded.  So the interse
 contained in `⋃_{c'} γ_{c'}⁻¹ (𝒟 \ 𝒟ᵒ)`, a finite union of translates of the
 BOUNDARY of `𝒟`.
 
-THE ONE MISSING FACT is therefore `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the
-modular domain is null.  `ModularGroup.fdo_eq_interior_fd` and
-`ModularGroup.isClosed_fd` identify `𝒟 \ 𝒟ᵒ` with `frontier 𝒟`; the boundary is
-contained in the union of the vertical lines `re z = ±1/2` and the unit circle
-`|z| = 1`, each of which is null for planar Lebesgue measure (and hence, being
-a set of the same null sets, for `volume` on `ℍ` — the density is finite and
-strictly positive there).  `volume_modularFd_ne_top` above is the model for how
-to move between `volume` on `ℍ` and Lebesgue measure on `ℂ`
-(`UpperHalfPlane.volume_eq_lintegral`). -/
+THE ONE MISSING FACT was `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the modular
+domain is null — and it is now PROVEN just above as
+`volume_modularFd_sdiff_fdo_eq_zero`: the boundary is contained in the union of
+the vertical lines `re z = ±1/2` and the unit circle `|z| = 1`, each null for
+planar Lebesgue measure, and `UpperHalfPlane.volume_eq_lintegral` moves that to
+`volume` on `ℍ`.  With it the leaf closes, and the proof below is exactly the
+plan above.
+
+ON THE `±1` BOOKKEEPING, which is the one place care is needed.  `ε = ±1` is
+CENTRAL in `SL(2,ℤ)` (`Matrix.SpecialLinearGroup.instHasDistribNeg` gives
+`(-1) * x = -x = x * (-1)`) and lies in `Γ₀(M)` (`-I` has lower-left entry `0`).
+Both facts are used twice: to turn `γ_c h⁻¹ γ_{c'}⁻¹ = ε` into
+`γ_{c'}⁻¹ γ_c = h ε ∈ Γ₀(M)`, hence `c = c'` by `QuotientGroup.eq`; and then to
+collapse `γ_c h⁻¹ γ_c⁻¹ = ε` to `h⁻¹ = ε`, i.e. `h = ε ∈ {1, -1}` — the excluded
+case.  Handling `ε = 1` and `ε = -1` uniformly through those three properties
+(`ε ∈ Γ₀(M)`, centrality, `ε² = 1`) is what keeps the two branches from
+duplicating. -/
 theorem volume_smul_inter_gamma0Domain_eq_zero {M : ℕ} (hM : 0 < M)
     {γ : GL (Fin 2) ℝ} (hγ : γ ∈ Gamma0GL M) (h1 : γ ≠ 1) (h2 : γ ≠ -1) :
-    volume ((γ • gamma0Domain M) ∩ gamma0Domain M) = 0 :=
+    volume ((γ • gamma0Domain M) ∩ gamma0Domain M) = 0 := by
+  classical
+  haveI : NeZero M := ⟨hM.ne'⟩
+  haveI : Countable (SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) := Finite.to_countable
+  have hmapneg : Matrix.SpecialLinearGroup.mapGL ℝ (-1 : SL(2, ℤ)) = (-1 : GL (Fin 2) ℝ) := by
+    ext i j
+    simp [Matrix.SpecialLinearGroup.mapGL_coe_matrix]
+  have hnegmem : (-1 : SL(2, ℤ)) ∈ CongruenceSubgroup.Gamma0 M := by
+    rw [CongruenceSubgroup.Gamma0_mem]
+    simp [Matrix.SpecialLinearGroup.coe_neg]
+  obtain ⟨h, hhmem, rfl⟩ := hγ
+  have hh1 : h ≠ 1 := fun he => h1 (by rw [he, map_one])
+  have hh2 : h ≠ -1 := fun he => h2 (by rw [he, hmapneg])
+  have hsub : ((Matrix.SpecialLinearGroup.mapGL ℝ h) • gamma0Domain M) ∩ gamma0Domain M
+      ⊆ ⋃ c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M,
+          (gamma0Rep M c)⁻¹ • (ModularGroup.fd \ ModularGroup.fdo) := by
+    rintro z ⟨hzL, hzR⟩
+    obtain ⟨c', hzc'⟩ := Set.mem_iUnion.mp hzR
+    have hw : (gamma0Rep M c') • z ∈ ModularGroup.fd :=
+      (mem_inv_smul_set_upperHalfPlane_iff _ _ _).mp hzc'
+    refine Set.mem_iUnion.mpr
+      ⟨c', (mem_inv_smul_set_upperHalfPlane_iff _ _ _).mpr ⟨hw, ?_⟩⟩
+    intro hwo
+    have hzL' : (Matrix.SpecialLinearGroup.mapGL ℝ h)⁻¹ • z ∈ gamma0Domain M :=
+      Set.mem_smul_set_iff_inv_smul_mem.mp hzL
+    obtain ⟨c, hzc⟩ := Set.mem_iUnion.mp hzL'
+    have hv : (gamma0Rep M c) • ((Matrix.SpecialLinearGroup.mapGL ℝ h)⁻¹ • z)
+        ∈ ModularGroup.fd := (mem_inv_smul_set_upperHalfPlane_iff _ _ _).mp hzc
+    have hgw : (gamma0Rep M c * h⁻¹ * (gamma0Rep M c')⁻¹) • ((gamma0Rep M c') • z)
+        ∈ ModularGroup.fd := by
+      have hrw : (gamma0Rep M c * h⁻¹ * (gamma0Rep M c')⁻¹) • ((gamma0Rep M c') • z)
+          = (gamma0Rep M c) • (h⁻¹ • z) := by
+        rw [mul_smul, mul_smul, inv_smul_smul]
+      rw [hrw]
+      have hact : (h⁻¹ : SL(2, ℤ)) • z = (Matrix.SpecialLinearGroup.mapGL ℝ h)⁻¹ • z := by
+        rw [← map_inv]; rfl
+      rw [hact]; exact hv
+    obtain ⟨ε, hεne, hεmem, hεcent, hεsq, hεinv, hgeq⟩ :
+        ∃ ε : SL(2, ℤ), h ≠ ε ∧ ε ∈ CongruenceSubgroup.Gamma0 M ∧
+          (∀ x : SL(2, ℤ), ε * x = x * ε) ∧ ε * ε = 1 ∧ ε⁻¹ = ε ∧
+          gamma0Rep M c * h⁻¹ * (gamma0Rep M c')⁻¹ = ε := by
+      rcases ModularGroup.eq_one_or_neg_one_of_mem_fdo_mem_fd hwo hgw with hg | hg
+      · exact ⟨1, hh1, one_mem _, fun x => by rw [one_mul, mul_one], one_mul 1, inv_one, hg⟩
+      · refine ⟨-1, hh2, hnegmem, fun x => by rw [neg_one_mul, mul_neg_one], ?_, ?_, hg⟩
+        · rw [neg_mul_neg, one_mul]
+        · exact inv_eq_of_mul_eq_one_right (by rw [neg_mul_neg, one_mul])
+    have hkey : gamma0Rep M c * h⁻¹ = ε * gamma0Rep M c' := by
+      rw [← hgeq]; group
+    have hc'eq : gamma0Rep M c' = ε * gamma0Rep M c * h⁻¹ := by
+      rw [mul_assoc, hkey, ← mul_assoc, hεsq, one_mul]
+    have hcc : c' = c := by
+      rw [← gamma0Rep_spec M c', ← gamma0Rep_spec M c, QuotientGroup.eq]
+      have hprod : (gamma0Rep M c')⁻¹ * gamma0Rep M c = h * ε := by
+        rw [hc'eq, mul_inv_rev, mul_inv_rev, inv_inv, hεinv, mul_assoc, mul_assoc,
+          hεcent (gamma0Rep M c), ← mul_assoc ((gamma0Rep M c)⁻¹), inv_mul_cancel, one_mul]
+      rw [hprod]
+      exact mul_mem hhmem hεmem
+    subst hcc
+    rw [hεcent] at hkey
+    have hinv : h⁻¹ = ε := mul_left_cancel hkey
+    exact hεne (by rw [← inv_inv h, hinv, hεinv])
+  refine measure_mono_null hsub ?_
+  refine measure_iUnion_null (fun c => ?_)
+  rw [volume_smul_specialLinearGroup]
+  exact volume_modularFd_sdiff_fdo_eq_zero
+
+section PeterssonSlashAdjoint
+
+open scoped _root_.ModularForm
+
+/-! ### The weight-2 analytic core of Diamond–Shurman 5.5.2–5.5.3
+
+The three lemmas here are the whole ANALYTIC input to the double-coset
+unfolding, and they are unconditional: no fundamental-domain hypothesis, no
+good-prime hypothesis, no cusp-form structure.  What is left after them is
+purely the combinatorics of the coset tiling, isolated as
+`setIntegral_heckeRep_unfold` below. -/
+
+/-- **THE WEIGHT-2 DEGENERATION OF `petersson_slash`** (PROVEN 2026-07-27).
+At `k = 2` the determinant factor of the pin's full `GL₂⁺` transformation law
+is `|det γ|^{k-2} = |det γ|⁰ = 1`, and `σ γ = id` because `det γ > 0`.  So the
+law collapses to `petersson 2 (f∣γ) (f'∣γ) τ = petersson 2 f f' (γ • τ)` — the
+single identity the whole unfolding runs on, and weight `2` is exactly the
+weight at which it is free of determinant bookkeeping. -/
+theorem petersson_slash_two (f f' : ℍ → ℂ) {g : GL (Fin 2) ℝ}
+    (hg : 0 < g.det.val) (τ : ℍ) :
+    petersson (2 : ℤ) (f ∣[(2 : ℤ)] g) (f' ∣[(2 : ℤ)] g) τ
+      = petersson (2 : ℤ) f f' (g • τ) := by
+  rw [petersson_slash]
+  simp only [sub_self, zpow_zero, one_mul, σ, if_pos hg, ContinuousAlgEquiv.refl_apply]
+
+/-- **CHANGE OF VARIABLES FOR THE INVARIANT MEASURE** (PROVEN 2026-07-27):
+`∫_{γ D} F = ∫_D F ∘ γ` for every `γ ∈ GL(2,ℝ)` and every set `D`.
+
+This is the pin's `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume` in integral
+form, obtained from `measurePreserving_smul` through
+`MeasurePreserving.setIntegral_image_emb`.  No measurability hypothesis on `D`
+is needed because the action is by measurable equivalences. -/
+theorem setIntegral_smul_set_upperHalfPlane (g : GL (Fin 2) ℝ) (F : ℍ → ℂ)
+    (D : Set ℍ) :
+    (∫ τ in g • D, F τ) = ∫ τ in D, F (g • τ) := by
+  rw [← Set.image_smul]
+  exact (measurePreserving_smul g (volume : Measure ℍ)).setIntegral_image_emb
+    (measurableEmbedding_const_smul g) F D
+
+/-- **THE ADJOINT IDENTITY FOR A SINGLE SLASH** (PROVEN 2026-07-27;
+Diamond–Shurman *A First Course in Modular Forms* Proposition 5.5.2): moving a
+slash across the Petersson integrand replaces it by the inverse slash on the
+other argument, at the cost of moving the domain:
+
+  `∫_D petersson 2 (F∣δ) F' = ∫_{δ D} petersson 2 F (F'∣δ⁻¹)`.
+
+Proof: put `G = F'∣δ⁻¹`, so `G∣δ = F'` by `SlashAction.slash_mul` and
+`SlashAction.slash_one`; then `petersson_slash_two` reads
+`petersson 2 (F∣δ) F' τ = petersson 2 F G (δ • τ)` pointwise, and
+`setIntegral_smul_set_upperHalfPlane` turns `∫_D (·) ∘ δ` into `∫_{δ D} (·)`.
+
+Note this is UNCONDITIONAL on `D` — it is a change of variables, not a
+fundamental-domain statement.  At weight `2` scalars act trivially
+(`F∣(cI) = c^{k-2} F = F`), so `δ⁻¹` may freely be replaced by the INTEGRAL
+matrix `det(δ)·δ⁻¹`, which is how the `α' = det(α)α⁻¹` of the textbook
+argument appears. -/
+theorem setIntegral_petersson_slash_adjoint (F F' : ℍ → ℂ) {δ : GL (Fin 2) ℝ}
+    (hδ : 0 < δ.det.val) (D : Set ℍ) :
+    (∫ τ in D, petersson (2 : ℤ) (F ∣[(2 : ℤ)] δ) F' τ)
+      = ∫ τ in δ • D, petersson (2 : ℤ) F (F' ∣[(2 : ℤ)] δ⁻¹) τ := by
+  have hback : (F' ∣[(2 : ℤ)] δ⁻¹) ∣[(2 : ℤ)] δ = F' := by
+    rw [← SlashAction.slash_mul, inv_mul_cancel, SlashAction.slash_one]
+  have hfun : (fun τ : ℍ => petersson (2 : ℤ) (F ∣[(2 : ℤ)] δ) F' τ)
+      = fun τ : ℍ => petersson (2 : ℤ) F (F' ∣[(2 : ℤ)] δ⁻¹) (δ • τ) := by
+    funext τ
+    rw [← petersson_slash_two F (F' ∣[(2 : ℤ)] δ⁻¹) hδ τ, hback]
+  rw [setIntegral_smul_set_upperHalfPlane, hfun]
+
+/-- The finite Hecke representative `[1, j; 0, q]` has determinant `q > 0`. -/
+theorem det_heckeRep_pos {q : ℕ} (hq : q.Prime) (j : ℕ) :
+    0 < (heckeRep q j).det.val := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hq' : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq0)
+  unfold heckeRep
+  rw [dif_pos hq0]
+  simpa [Matrix.GeneralLinearGroup.val_det_apply, Matrix.det_fin_two_of] using hq'
+
+/-- The extra Hecke representative `[q, 0; 0, 1]` has determinant `q > 0`. -/
+theorem det_heckeRepInf_pos {q : ℕ} (hq : q.Prime) :
+    0 < (heckeRepInf q).det.val := by
+  have hq0 : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hq' : (0 : ℝ) < q := lt_of_le_of_ne (Nat.cast_nonneg q) (Ne.symm hq0)
+  unfold heckeRepInf
+  rw [dif_pos hq0]
+  simpa [Matrix.GeneralLinearGroup.val_det_apply, Matrix.det_fin_two_of] using hq'
+
+/-- **INTEGRABILITY OF THE SLASHED PETERSSON INTEGRAND** (sorry leaf — cut
+2026-07-27 out of `peterssonSelfAdjoint_of_gamma0FundamentalDomain` below,
+which is PROVEN over it and over `setIntegral_heckeRep_unfold`): the
+generalisation of `peterssonIntegrableOn` above from a pair of cusp forms to a
+pair of `GL₂⁺`-TRANSLATES of cusp forms.  It is what lets the integral of the
+Hecke slash-sum be split term by term.
+
+WHY IT IS TRUE, and why it is a boundedness statement and nothing more.
+`peterssonIntegrableOn` needs only two things — continuity, and a GLOBAL bound
+on the integrand — and both survive slashing.  Continuity: a slash is a
+continuous function times a precomposition with the (continuous) Möbius
+action.  Boundedness is the substantive half, and it is an exact identity
+rather than an estimate: for `δ` of positive determinant,
+
+  `|(g∣[2]δ)(τ)| · Im τ = |g(δ • τ)| · Im (δ • τ)`,
+
+because `(g∣[2]δ)(τ) = det(δ)·j(δ,τ)^{-2}·g(δ • τ)` while
+`Im (δ • τ) = det(δ)·Im τ / |j(δ,τ)|²` (`UpperHalfPlane.im_smul_eq_div_normSq`).
+So the slashed quantity `|g∣δ| · y` is the UNSLASHED quantity `|g| · y`
+evaluated at another point of `ℍ`, hence bounded by the SAME constant that
+`CuspFormClass.petersson_bounded_left` supplies for `g` itself — no new
+analysis, and in particular no cusp condition for the conjugated group is
+needed.  The integrand is the product of two such factors, so
+`Measure.integrableOn_of_bounded` applies verbatim as in
+`peterssonIntegrableOn`.
+
+The lemma is stated with a slash in BOTH slots, with `δ = 1` (and
+`SlashAction.slash_one`) recovering the one-sided cases; that is what makes a
+single leaf cover all four uses in the assembly below. -/
+theorem peterssonIntegrableOn_slash {M : ℕ} (hM : 0 < M) {D : Set ℍ}
+    (hD : volume D ≠ ⊤) (f g : CuspForm (Gamma0GL M) 2)
+    {δ₁ δ₂ : GL (Fin 2) ℝ} (hδ₁ : 0 < δ₁.det.val) (hδ₂ : 0 < δ₂.det.val) :
+    IntegrableOn
+      (petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ₁) (⇑f ∣[(2 : ℤ)] δ₂)) D volume :=
+  sorry
+
+/-- **THE UNFOLDING IDENTITY** (sorry leaf — cut 2026-07-27 out of
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain` below, which is PROVEN over
+it and over `peterssonIntegrableOn_slash`): ALL of the remaining content of
+Diamond–Shurman Theorem 5.5.3, and the only place the fundamental-domain
+hypotheses `hcov`/`hdisj` and the good-prime hypothesis `hqM` are consumed.
+
+The analytic reduction is DONE: the assembly below expands `T_q` into its
+`q + 1` explicit representatives, splits the integral, and applies
+`setIntegral_petersson_slash_adjoint` to each right-hand term.  What survives
+is exactly this: the SAME `q + 1` integrands, integrated over `D` on the left
+and over the TRANSLATES `δ • D` on the right.
+
+WHY IT IS TRUE (D–S §5.5, and this is the classical argument in the shape the
+statement now has).  Write `Γ = Γ₀(M)`, `α = [1,0;0,q]`, `Γ' = Γ ∩ α⁻¹Γα`, and
+`Γ = ⊔_i Γ'γ_i`, so that the `q + 1` representatives are `δ_i = αγ_i` and
+`petersson 2 g (f∣α)` is `Γ'`-invariant.  Then `⊔_i γ_i D` is a fundamental
+domain for `Γ'`, and both sides compute the integral of that `Γ'`-invariant
+function over it — the left side by summing translates of `D`, the right side
+by summing over the `δ • D`.  The passage between the two families of
+representatives is `α' = det(α)·α⁻¹ = [q,0;0,1]` together with `α' ∈ ΓαΓ`,
+which holds because `qu − Mv = 1` is solvable EXACTLY when `q ∤ M`
+(`α' = γ₁ α γ₂` with `γ₁ = [q,v;M,u]`, `γ₂ = [uq,−v;−M,1]`, both of
+determinant `1` with lower-left divisible by `M`).  Classically: the diamond
+operator `⟨q⟩` is the identity at weight 2 with trivial character.
+
+WHAT THE PIN ALREADY SUPPLIES FOR THIS, which is more than the earlier audit
+recorded.  The coset enumeration this argument needs is ALREADY CARRIED OUT in
+this file, inside the proof of `exists_cuspForm_heckeTransform` (§HeckeStability
+above): `heckeRep_conj_mem_iff` is the divisibility criterion `α ρ α⁻¹ ∈ Γ₀(N)
+↔ q ∣ ρ₀₁`, `heckeConj_isFiniteRelIndex` gives finiteness of
+`Γ₀(N) ⧸ (Γ₀(N) ∩ α⁻¹Γ₀(N)α)`, and the `have`s `hcrit`/`hEval`/`hEinj`/`hfind`
+there enumerate that coset space by the `q` translations `[1,j;0,1]`.  A prover
+attacking this leaf should HOIST those `have`s to top-level lemmas rather than
+redo them — that is the single largest piece of reusable work available here.
+
+WHAT IS GENUINELY MISSING is the measure-theoretic half: `⊔_i γ_i D` is a
+`Γ'`-fundamental domain, and the integral of a `Γ'`-invariant function over it
+is the sum of the integrals over the `γ_i D`.  Note this CANNOT be phrased
+through `MeasureTheory.IsFundamentalDomain` — `−1` acts trivially on `ℍ`, so
+that class is unsatisfiable here for any set of positive measure (see the
+discussion on `volume_smul_inter_gamma0Domain_eq_zero` above), which is why
+`hcov`/`hdisj` appear as hand-rolled conjuncts.
+
+FAITHFULNESS.  This leaf is EQUIVALENT to the consumer given
+`peterssonIntegrableOn_slash`: the assembly below derives the consumer from it
+by proven equalities only, so it can be neither weaker nor stronger, and it
+carries every hypothesis of the consumer.  In particular `hqM` is
+LOAD-BEARING and the identity is FALSE at `q ∣ M`. -/
+theorem setIntegral_heckeRep_unfold {M : ℕ} (hM : 0 < M)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤)
+    (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
+    (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
+    ((∑ j ∈ Finset.range q,
+        ∫ τ in D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q j) τ)
+        + ∫ τ in D, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ)
+      = (∑ j ∈ Finset.range q, ∫ τ in (heckeRep q j) • D,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (heckeRep q j)⁻¹) τ)
+        + ∫ τ in (heckeRepInf q) • D,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (heckeRepInf q)⁻¹) τ :=
   sorry
 
 /-- **SELF-ADJOINTNESS OF THE GOOD HECKE OPERATORS OVER A `Γ₀(M)` FUNDAMENTAL
-DOMAIN** (sorry leaf — cut 2026-07-26 out of `exists_peterssonDomain` below;
+DOMAIN** (PROVEN 2026-07-27 over the two leaves `peterssonIntegrableOn_slash`
+and `setIntegral_heckeRep_unfold` above; cut 2026-07-26 out of
+`exists_peterssonDomain` below;
 Diamond–Shurman *A First Course in Modular Forms* §5.5, Theorem 5.5.3, and
 Shimura, *Introduction to the arithmetic theory of automorphic functions*, for
 the double-coset computation): over ANY set `D` of finite volume that covers
@@ -29399,27 +29722,98 @@ theorem peterssonSelfAdjoint_of_gamma0FundamentalDomain {M : ℕ} (hM : 0 < M)
     (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
     (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
-      = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ :=
-  sorry
+      = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ := by
+  classical
+  have hone : ∀ F : ℍ → ℂ, F ∣[(2 : ℤ)] (1 : GL (Fin 2) ℝ) = F := fun F =>
+    SlashAction.slash_one (2 : ℤ) F
+  have hdet1 : (0 : ℝ) < (1 : GL (Fin 2) ℝ).det.val := by simp
+  -- Expand `T_q` into its `q + 1` explicit representatives, pointwise on each
+  -- side.  `petersson` is additive in its second slot outright, and in its
+  -- first slot because `conj` is additive.
+  have hLpt : (fun τ : ℍ => petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
+      = fun τ : ℍ =>
+        (∑ j ∈ Finset.range q, petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q j) τ)
+          + petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ := by
+    funext τ
+    rw [heckeOp_coe hM hq f]
+    simp only [heckeTransform, if_neg hqM, petersson, Pi.add_apply, Finset.sum_apply,
+      Finset.sum_mul, mul_add, add_mul, Finset.mul_sum]
+  have hRpt : (fun τ : ℍ => petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ)
+      = fun τ : ℍ =>
+        (∑ j ∈ Finset.range q, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q j) ⇑f τ)
+          + petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRepInf q) ⇑f τ := by
+    funext τ
+    rw [heckeOp_coe hM hq g]
+    simp only [heckeTransform, if_neg hqM, petersson, Pi.add_apply, Finset.sum_apply,
+      map_add, map_sum, Finset.sum_mul, add_mul]
+  rw [hLpt, hRpt]
+  -- Every term is integrable, so the two integrals split.
+  have hintL : ∀ j ∈ Finset.range q,
+      IntegrableOn (fun τ : ℍ => petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRep q j) τ)
+        D volume := by
+    intro j _
+    have h := peterssonIntegrableOn_slash hM hDvol f g hdet1 (det_heckeRep_pos hq j)
+    rwa [hone ⇑g] at h
+  have hintLinf : IntegrableOn
+      (fun τ : ℍ => petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] heckeRepInf q) τ) D volume := by
+    have h := peterssonIntegrableOn_slash hM hDvol f g hdet1 (det_heckeRepInf_pos hq)
+    rwa [hone ⇑g] at h
+  have hintR : ∀ j ∈ Finset.range q,
+      IntegrableOn (fun τ : ℍ => petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q j) ⇑f τ)
+        D volume := by
+    intro j _
+    have h := peterssonIntegrableOn_slash hM hDvol f g (det_heckeRep_pos hq j) hdet1
+    rwa [hone ⇑f] at h
+  have hintRinf : IntegrableOn
+      (fun τ : ℍ => petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRepInf q) ⇑f τ) D volume := by
+    have h := peterssonIntegrableOn_slash hM hDvol f g (det_heckeRepInf_pos hq) hdet1
+    rwa [hone ⇑f] at h
+  rw [integral_add (integrable_finsetSum _ hintL) hintLinf,
+    integral_add (integrable_finsetSum _ hintR) hintRinf,
+    integral_finsetSum _ hintL, integral_finsetSum _ hintR]
+  -- Move each slash on the right across the pairing (D–S 5.5.2).
+  have hadjj : ∀ j ∈ Finset.range q,
+      (∫ τ in D, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRep q j) ⇑f τ)
+        = ∫ τ in (heckeRep q j) • D,
+            petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (heckeRep q j)⁻¹) τ :=
+    fun j _ => setIntegral_petersson_slash_adjoint _ _ (det_heckeRep_pos hq j) D
+  have hadjinf : (∫ τ in D, petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] heckeRepInf q) ⇑f τ)
+      = ∫ τ in (heckeRepInf q) • D,
+          petersson (2 : ℤ) ⇑g (⇑f ∣[(2 : ℤ)] (heckeRepInf q)⁻¹) τ :=
+    setIntegral_petersson_slash_adjoint _ _ (det_heckeRepInf_pos hq) D
+  rw [Finset.sum_congr rfl hadjj, hadjinf]
+  -- What remains is exactly the coset tiling.
+  exact setIntegral_heckeRep_unfold hM hDvol hcov hdisj hq hqM f g
 
-/-- **THE PETERSSON DOMAIN** (PROVEN 2026-07-26 over the two leaves
-`volume_smul_inter_gamma0Domain_eq_zero` and
-`peterssonSelfAdjoint_of_gamma0FundamentalDomain` above; cut 2026-07-26 out of
+end PeterssonSlashAdjoint
+
+/-- **THE PETERSSON DOMAIN** (PROVEN 2026-07-26; cut 2026-07-26 out of
 `exists_peterssonProduct_selfAdjoint_heckeOp` below, which is PROVEN over it;
 Diamond–Shurman §5.4–§5.5, Theorem 5.5.3): there is a set `D ⊆ ℍ` of FINITE
 invariant volume, containing a nonempty open set, over which the Petersson
 integrand pairs the good Hecke operators `T_q`, `q ∤ M`, self-adjointly.
 
 The witness is `gamma0Domain M`, the union of the `[SL(2,ℤ) : Γ₀(M)]` translates
-of mathlib's standard domain `𝒟`.  Of the three conjuncts, the first two are now
-PROVEN (`volume_gamma0Domain_ne_top`, over the new `volume_modularFd_ne_top`,
-and `exists_open_subset_gamma0Domain`); the third is the analytic leaf, applied
-through the covering property `exists_mem_gamma0Domain` (PROVEN) and the
-geometric leaf `volume_smul_inter_gamma0Domain_eq_zero`.
+of mathlib's standard domain `𝒟`.  ALL THREE conjuncts are now proven here:
+finite volume by `volume_gamma0Domain_ne_top` (over `volume_modularFd_ne_top`),
+interior by `exists_open_subset_gamma0Domain`, and self-adjointness by
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain` applied through the covering
+property `exists_mem_gamma0Domain` and the a.e.-disjointness
+`volume_smul_inter_gamma0Domain_eq_zero` (PROVEN 2026-07-27).
+
+CURRENT LEAF INVENTORY BELOW THIS NODE (2026-07-27).  The whole subtree is now
+proven except for the two leaves cut out of
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain`:
+`peterssonIntegrableOn_slash` (a boundedness statement — `|g∣δ|·y` equals
+`|g|·y` at another point, so the constant from
+`CuspFormClass.petersson_bounded_left` is reused verbatim) and
+`setIntegral_heckeRep_unfold` (the coset tiling, which is where `hcov`,
+`hdisj` and `q ∤ M` are consumed).  The geometry and ALL of the weight-2
+analysis are done.
 
 Everything ELSE that the Petersson product needs — integrability, additivity,
 homogeneity, conjugate symmetry and DEFINITENESS — is proven below from the
-first two conjuncts, so the third is all that is left of the analysis.
+first two conjuncts.
 
 `~/cs/FLT` does NOT help: its only inner-product material,
 `AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
