@@ -10743,6 +10743,29 @@ degrees are recorded, but nothing here says the Galois action on the
 `IsX0Compactification.CuspIndexing` for why the hard half is not an
 obligation of this development.
 
+**`ratPoint`, and why the UPPER bound needs it** (added 2026-07-27, with
+`card_le_numRationalCusps`).  `cover` is a statement about underlying
+SETS: it says the images of the `κ d` exhaust `(Set.range j.base)ᶜ`, and
+that is all `nonempty_cuspIndexing_of_cuspLocus` consumes.  It is
+strictly too weak for the converse — a bound on the number of rational
+cusps — because a rational point of `X` supported at the image point of
+`κ d` need not factor through `κ d` at all as far as `cover` knows, and
+the residue field of that point of `X` is not pinned to `K d`, so `d`
+need not even lie in `rationalCuspDivisors N`.  `ratPoint` is exactly the
+missing clause: evaluated on `ℚ`-points, `X ∖ Y` really IS
+`∐_{d ∣ N} Spec (K d)`.  It is a consequence of the Deligne–Rapoport
+identification and not an extra assumption on top of it — `Spec ℚ` is
+reduced, so a `ℚ`-point of `X` landing in the closed set `X ∖ Y` factors
+through the reduced induced subscheme, which is that coproduct.
+
+Note the hypothesis is `h.IsCusp x` rather than
+`x.1.base P ∈ (Set.range j.base)ᶜ`; the two are equivalent over `Spec ℚ`
+(a one-point base, so `AlgebraicGeometry.IsOpenImmersion.lift` factors
+the section through `Y` as soon as its image point lies in
+`Set.range j.base` — the argument `exists_relSectionAlong_of_special`
+runs over a local base), and `IsCusp` is the form every consumer here
+already has.
+
 Stated over `Spec ℚ` rather than over the general base of
 `IsX0Compactification`, for the same reason `CuspIndexing` is: residue
 fields change under base change, so `φ(gcd(d, N/d))` would be the wrong
@@ -10771,6 +10794,16 @@ structure IsX0Compactification.CuspLocus {N : ℕ} {X Y : Scheme.{0}}
   /-- cusps above distinct divisors are disjoint -/
   disj : ∀ d d' : N.divisors, d ≠ d' →
     Disjoint (Set.range (κ d).base) (Set.range (κ d').base)
+  /-- **the `ℚ`-POINTS of the cusp locus**: a `ℚ`-rational point of `X`
+  that is not the image of a `ℚ`-rational point of `Y` factors through
+  one of the `Spec (K d)`, i.e. it is `Spec` of a `ℚ`-algebra map
+  `K d → ℚ` followed by `κ d`.  This is the `ℚ`-point half of the same
+  identification `cover` records on underlying sets, and it is what makes
+  the cusp count an UPPER bound as well as a lower one; see
+  `IsX0Compactification.CuspLocus.card_le_numRationalCusps`. -/
+  ratPoint : ∀ x : RelPoint strX (𝟙 SpecQ), h.IsCusp x →
+    ∃ (d : N.divisors) (f : K d →ₐ[ℚ] ℚ),
+      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ κ d = x.1
 
 attribute [instance] IsX0Compactification.CuspLocus.isField
   IsX0Compactification.CuspLocus.isAlgebra
@@ -10838,6 +10871,127 @@ theorem nonempty_cuspIndexing_of_cuspLocus {N : ℕ} {X Y : Scheme.{0}}
     exact Set.disjoint_left.mp
       (C.disj ⟨d, (hmem d hd).1⟩ ⟨d', (hmem d' hd').1⟩
         (fun hh => hne (congrArg Subtype.val hh))) ⟨_, rfl⟩ ⟨_, hp.symm⟩
+
+/-- **A field admitting a `k`-algebra map back to `k` has degree one over
+`k`** (PROVEN 2026-07-27).
+
+The converse of `exists_specSection_of_finrank_eq_one`, and the arithmetic
+behind the UPPER cusp bound: `f` is injective (its source is a field) and
+surjective (`f ∘ algebraMap = id`), hence an isomorphism.
+
+Stated over a VARIABLE base field and instantiated at `ℚ`, deliberately:
+at the concrete base the `Rat`-specific `Algebra ℚ ℚ` instance path is a
+recurring source of `isDefEq` failures on terms that print identically. -/
+theorem finrank_eq_one_of_algHom_to_base {k A : Type} [Field k] [Field A] [Algebra k A]
+    (f : A →ₐ[k] k) : Module.finrank k A = 1 := by
+  have hinj : Function.Injective f := f.toRingHom.injective
+  have hsurj : Function.Surjective f := fun q => ⟨algebraMap k A q, by simp⟩
+  have e : A ≃ₐ[k] k := AlgEquiv.ofBijective f ⟨hinj, hsurj⟩
+  rw [e.toLinearEquiv.finrank_eq, Module.finrank_self]
+
+/-- **A field has at most one `k`-algebra map back to `k`** (PROVEN
+2026-07-27).
+
+`f` is bijective by `finrank_eq_one_of_algHom_to_base`'s argument, so
+`algebraMap k A` is its two-sided inverse and every element of `A` is
+`algebraMap k A (f a)`; any second algebra map is then forced by
+`AlgHom.commutes`.
+
+This is what makes the cusp above a rational divisor UNIQUE, hence the
+cusp-counting map injective. -/
+theorem algHom_to_base_unique {k A : Type} [Field k] [Field A] [Algebra k A]
+    (f g : A →ₐ[k] k) : f = g := by
+  have hinj : Function.Injective f := f.toRingHom.injective
+  ext a
+  have hba : algebraMap k A (f a) = a := hinj (by simp)
+  rw [← hba, g.commutes, f.commutes]
+
+/-- **The divisor under a rational cusp carries a rational cusp** (PROVEN
+2026-07-27).
+
+A `ℚ`-algebra map `K d → ℚ` forces `finrank ℚ (K d) = 1`, so `degree`
+gives `φ(gcd(d, N/d)) = 1` and `d` lies in `rationalCuspDivisors N`. -/
+theorem IsX0Compactification.CuspLocus.mem_rationalCuspDivisors {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {h : IsX0Compactification N strX strY j} (C : h.CuspLocus) {d : N.divisors}
+    (f : C.K d →ₐ[ℚ] ℚ) : (d : ℕ) ∈ rationalCuspDivisors N := by
+  show (d : ℕ) ∈ N.divisors.filter fun d => Nat.totient (Nat.gcd d (N / d)) = 1
+  refine Finset.mem_filter.mpr ⟨d.2, ?_⟩
+  rw [← C.degree d]
+  exact finrank_eq_one_of_algHom_to_base f
+
+/-- **Two rational cusps above the same divisor are equal** (PROVEN
+2026-07-27).
+
+`algHom_to_base_unique` collapses the two algebra maps, after which both
+points are the same composite. -/
+theorem IsX0Compactification.CuspLocus.eq_of_index {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {h : IsX0Compactification N strX strY j} (C : h.CuspLocus) {d d' : N.divisors}
+    (hdd : d = d') {x x' : RelPoint strX (𝟙 SpecQ)}
+    {f : C.K d →ₐ[ℚ] ℚ} {f' : C.K d' →ₐ[ℚ] ℚ}
+    (hx : Spec.map (CommRingCat.ofHom f.toRingHom) ≫ C.κ d = x.1)
+    (hx' : Spec.map (CommRingCat.ofHom f'.toRingHom) ≫ C.κ d' = x'.1) : x = x' := by
+  subst hdd
+  rw [algHom_to_base_unique f' f] at hx'
+  exact Subtype.ext (hx.symm.trans hx')
+
+/-- **THE UPPER BOUND: `X_0(N)` has at most `numRationalCusps N` rational
+cusps** (PROVEN 2026-07-27 over `nonempty_cuspLocus`).
+
+The converse of `nonempty_cuspIndexing_of_cuspLocus`, and it rests on
+exactly the same leaf — which is the point of proving it here.  Both
+directions are the cuspidal part of the Deligne–Rapoport model (Ogg;
+Deligne–Rapoport VI.6; Diamond–Im §9.3), so after this the two are
+discharged TOGETHER by `nonempty_cuspLocus` and nothing else is open on
+either side.
+
+The counting map sends a rational cusp `x` to the divisor `d` supplied by
+`ratPoint`.  It lands in `rationalCuspDivisors N`
+(`mem_rationalCuspDivisors`) and is injective (`eq_of_index`), so
+`s.card ≤ (rationalCuspDivisors N).card = numRationalCusps N`.
+
+**Why this is not obtainable from `CuspIndexing` by adding a `surj`
+field**, which was the route this leaf was dispatched with.  Adding
+
+    surj : ∀ x, h.IsCusp x → ∃ d, ∃ hd, cusp d hd = x
+
+to `IsX0Compactification.CuspIndexing` does discharge the bound in three
+lines — but it breaks `nonempty_cuspIndexing` at `N = 0`, where
+`rationalCuspDivisors 0 = ∅` makes `surj` say that `X` has NO rational
+cusp at all, which the structure's other fields do not give (the `N = 0`
+branch there is currently vacuous precisely because every field is
+quantified over an empty index set).  It would also have to be proven
+from `CuspLocus` anyway, and `cover` is too weak for it — see the
+`ratPoint` note on `IsX0Compactification.CuspLocus`.  Routing the upper
+bound through `CuspLocus` directly costs the same new clause, leaves
+`CuspIndexing` and its `N = 0` case untouched, and introduces no new
+sorry. -/
+theorem IsX0Compactification.CuspLocus.card_le_numRationalCusps {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {h : IsX0Compactification N strX strY j} (C : h.CuspLocus)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) (hs : ∀ x ∈ s, h.IsCusp x) :
+    s.card ≤ numRationalCusps N := by
+  classical
+  have key : ∀ (x : RelPoint strX (𝟙 SpecQ)) (_ : x ∈ s),
+      ∃ (d : N.divisors) (f : C.K d →ₐ[ℚ] ℚ),
+        Spec.map (CommRingCat.ofHom f.toRingHom) ≫ C.κ d = x.1 :=
+    fun x hx => C.ratPoint x (hs x hx)
+  choose dd ff hff using key
+  have hinj : Function.Injective
+      (fun x : {x // x ∈ s} => ((dd x.1 x.2 : N.divisors) : ℕ)) := by
+    rintro ⟨x, hx⟩ ⟨x', hx'⟩ heq
+    exact Subtype.ext (C.eq_of_index (Subtype.ext heq) (hff x hx) (hff x' hx'))
+  have hsub : (s.attach.image fun x : {x // x ∈ s} => ((dd x.1 x.2 : N.divisors) : ℕ))
+      ⊆ rationalCuspDivisors N := by
+    intro e he
+    obtain ⟨x, -, rfl⟩ := Finset.mem_image.mp he
+    exact C.mem_rationalCuspDivisors (ff x.1 x.2)
+  calc s.card = s.attach.card := Finset.card_attach.symm
+    _ = (s.attach.image fun x : {x // x ∈ s} => ((dd x.1 x.2 : N.divisors) : ℕ)).card :=
+        (Finset.card_image_of_injective _ hinj).symm
+    _ ≤ (rationalCuspDivisors N).card := Finset.card_le_card hsub
+    _ = numRationalCusps N := (numRationalCusps_eq_card N).symm
 
 /-- **The cusp locus of `X_0(N)` exists: `X ∖ Y` is `∐_{d ∣ N} Spec
 ℚ(ζ_{gcd(d, N/d)})`** (sorry node).
@@ -10956,6 +11110,17 @@ which is how Deligne–Rapoport states it — the rational points come out by
 `exists_specSection_of_finrank_eq_one`, pure algebra.  So a successor
 should NOT go and build descent for this leaf.  What remains is the
 uniformisation and the `ℚ`-structure, and nothing else.
+
+**This leaf now carries BOTH directions of the cusp count** (2026-07-27).
+`CuspLocus` gained the field `ratPoint`, which is the `ℚ`-point form of
+the same identification `cover` records on underlying sets; with it,
+`IsX0Compactification.CuspLocus.card_le_numRationalCusps` proves the
+matching UPPER bound, so `nonempty_cuspIndexing_of_ne_zero` (the lower
+bound) and `MazurIsogenyPrimeJ.card_le_numRationalCusps_of_isCusp` (the
+upper) are now both discharged HERE and nowhere else.  No extra
+mathematics is asked for: `Spec ℚ` is reduced, so a `ℚ`-point of `X`
+landing in the closed cusp locus factors through its reduced structure,
+which is the coproduct `∐_{d ∣ N} Spec (K d)` this structure records.
 
 `hN : N ≠ 0` is carried because every construction of a cusp needs it
 (`Nat.divisors 0 = ∅`, so there is nothing to index at `N = 0`), and
