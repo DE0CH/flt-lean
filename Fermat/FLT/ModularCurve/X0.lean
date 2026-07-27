@@ -11158,7 +11158,10 @@ by composing base changes (`IsBaseChangeOf.comp`, proven earlier in this file).
   elliptic scheme have the same `j`.
 * `isWeierstrassModel_map_of_isBaseChangeOf` — the productive half of
   step (ii): a base change of a model is a model of the base-changed
-  datum.  Pure scheme theory, no `j`.
+  datum.  Pure scheme theory, no `j`.  **PROVEN 2026-07-27**, over the
+  new pushout lemma `isPushout_weierstrassCoordinateRing` (the affine
+  Weierstrass curve base-changes) plus two applications of
+  `IsPullback.of_bot`; see its own docstring.
 * `exists_isBaseChangeOf_cancel` — the converse of `IsBaseChangeOf.comp`.
   Shared with `exists_jTransformation_of_affine`, whose docstring
   records its `h₁ = 𝟙` case as the step it is missing; proving it
@@ -11366,6 +11369,218 @@ theorem weierstrassModel_j_unique {R : Type} [CommRing R] {A : Scheme.{0}}
     W.j = W'.j :=
   sorry
 
+/-! #### The affine Weierstrass curve base-changes: `S[W.map φ] = S ⊗_R R[W]`
+
+The one piece of algebra behind `isWeierstrassModel_map_of_isBaseChangeOf`
+below, and the reason that leaf is not a one-liner: the leaf needs
+`Spec S[W.map φ]` to BE the pullback of `Spec R[W] ⟶ Spec R` along
+`Spec φ`, i.e. the ring square
+
+    R  ⟶  R[W]
+    ↓        ↓
+    S  ⟶  S[W.map φ]
+
+to be a PUSHOUT in `CommRingCat`.  `Mathlib` has
+`AdjoinRoot.tensorAlgEquiv` (adjoining a root commutes with base change),
+but it is stated with the coefficient ring *literally* a tensor product
+`T ⊗[R] S`, and `W.toAffine.CoordinateRing = AdjoinRoot W.polynomial`
+has coefficient ring `R[X]` — so using it would need `S ⊗[R] R[X] ≅ S[X]`
+and a transport of the whole equivalence along it.  It is shorter, and
+much more robust, to verify the universal property directly: a ring map
+out of `AdjoinRoot q` is `AdjoinRoot.lift` of a map on coefficients
+together with the image of the root, and two such maps agreeing on `S`,
+on `X` and on `Y` are equal by `Polynomial.ringHom_ext` twice.  That is
+what the four declarations below do; nothing here is specific to
+Weierstrass equations beyond `map_polynomial`.
+-/
+
+/-- **The base-change map on affine coordinate rings**,
+`R[W] →+* S[W.map φ]`; `Mathlib`'s
+`WeierstrassCurve.Affine.CoordinateRing.map` under a shorter name. -/
+noncomputable abbrev weierstrassCoordMap {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    W.toAffine.CoordinateRing →+* (W.map φ).toAffine.CoordinateRing :=
+  WeierstrassCurve.Affine.CoordinateRing.map W.toAffine φ
+
+/-- `weierstrassCoordMap` is a map of `R`-algebras into `S[W.map φ]`
+(PROVEN). -/
+theorem weierstrassCoordMap_algebraMap {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) (r : R) :
+    weierstrassCoordMap W φ (algebraMap R W.toAffine.CoordinateRing r)
+      = algebraMap S (W.map φ).toAffine.CoordinateRing (φ r) := by
+  rw [show algebraMap R W.toAffine.CoordinateRing r
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine
+          (Polynomial.C (Polynomial.C r)) from rfl, weierstrassCoordMap,
+    WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+  rfl
+
+/-- `weierstrassCoordMap` sends the class of `Y` to the class of `Y`
+(PROVEN). -/
+theorem weierstrassCoordMap_root {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    weierstrassCoordMap W φ (AdjoinRoot.root W.toAffine.polynomial)
+      = AdjoinRoot.root (W.map φ).toAffine.polynomial := by
+  rw [show AdjoinRoot.root W.toAffine.polynomial
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine Polynomial.X from rfl,
+    weierstrassCoordMap, WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+
+/-- `weierstrassCoordMap` sends the class of `X` to the class of `X`
+(PROVEN). -/
+theorem weierstrassCoordMap_ofX {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    weierstrassCoordMap W φ (AdjoinRoot.of W.toAffine.polynomial Polynomial.X)
+      = AdjoinRoot.of (W.map φ).toAffine.polynomial Polynomial.X := by
+  rw [show AdjoinRoot.of W.toAffine.polynomial Polynomial.X
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine
+          (Polynomial.C Polynomial.X) from rfl,
+    weierstrassCoordMap, WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  simp
+
+section WeierstrassCoordDesc
+
+variable {R S U : Type} [CommRing R] [CommRing S] [CommRing U]
+  (W : WeierstrassCurve R) (φ : R →+* S)
+  (u : S →+* U) (v : W.toAffine.CoordinateRing →+* U)
+
+/-- The coefficient map `S[X] →+* U` out of which the descent map is
+built: it sends `X` to the image of the `x`-coordinate under `v` and the
+constants through `u`. -/
+noncomputable def weierstrassCoordDescAux : Polynomial S →+* U :=
+  Polynomial.eval₂RingHom u (v (AdjoinRoot.of W.toAffine.polynomial Polynomial.X))
+
+/-- The coefficient map is compatible with `φ` (PROVEN): after
+restricting along `φ` it is `v` on `R[X]`. -/
+theorem weierstrassCoordDescAux_comp
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    (weierstrassCoordDescAux W u v).comp (Polynomial.mapRingHom φ)
+      = v.comp (AdjoinRoot.of W.toAffine.polynomial) := by
+  have hw' : ∀ r : R, u (φ r)
+      = v (AdjoinRoot.of W.toAffine.polynomial (Polynomial.C r)) := hw
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · simpa [weierstrassCoordDescAux] using hw' a
+  · simp [weierstrassCoordDescAux]
+
+/-- The image of the base-changed Weierstrass polynomial vanishes
+(PROVEN) — the side condition of `AdjoinRoot.lift`. -/
+theorem weierstrassCoordDescAux_eval
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    Polynomial.eval₂ (weierstrassCoordDescAux W u v)
+      (v (AdjoinRoot.root W.toAffine.polynomial)) (W.map φ).toAffine.polynomial = 0 := by
+  have h0 : Polynomial.eval₂ (AdjoinRoot.of W.toAffine.polynomial)
+      (AdjoinRoot.root W.toAffine.polynomial) W.toAffine.polynomial = 0 := by
+    rw [← AdjoinRoot.algebraMap_eq, ← Polynomial.aeval_def, AdjoinRoot.aeval_eq,
+      AdjoinRoot.mk_self]
+  rw [show (W.map φ).toAffine.polynomial
+      = Polynomial.map (Polynomial.mapRingHom φ) W.toAffine.polynomial from
+      W.toAffine.map_polynomial φ, Polynomial.eval₂_map,
+    weierstrassCoordDescAux_comp W φ u v hw, ← Polynomial.hom_eval₂, h0, map_zero]
+
+/-- **The descent map** `S[W.map φ] →+* U` determined by `u` on `S` and
+`v` on `R[W]`. -/
+noncomputable def weierstrassCoordDesc
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) :
+    (W.map φ).toAffine.CoordinateRing →+* U :=
+  AdjoinRoot.lift (weierstrassCoordDescAux W u v)
+    (v (AdjoinRoot.root W.toAffine.polynomial)) (weierstrassCoordDescAux_eval W φ u v hw)
+
+/-- The descent map restricts to `u` on `S` (PROVEN). -/
+theorem weierstrassCoordDesc_left
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r)) (s : S) :
+    weierstrassCoordDesc W φ u v hw
+        (algebraMap S (W.map φ).toAffine.CoordinateRing s) = u s := by
+  rw [show algebraMap S (W.map φ).toAffine.CoordinateRing s
+      = AdjoinRoot.of (W.map φ).toAffine.polynomial (Polynomial.C s) from rfl,
+    weierstrassCoordDesc, AdjoinRoot.lift_of]
+  simp [weierstrassCoordDescAux]
+
+/-- The descent map restricts to `v` on `R[W]` (PROVEN). -/
+theorem weierstrassCoordDesc_right
+    (hw : ∀ r : R, u (φ r) = v (algebraMap R W.toAffine.CoordinateRing r))
+    (a : W.toAffine.CoordinateRing) :
+    weierstrassCoordDesc W φ u v hw (weierstrassCoordMap W φ a) = v a := by
+  obtain ⟨p, rfl⟩ := AdjoinRoot.mk_surjective (g := W.toAffine.polynomial) a
+  rw [show AdjoinRoot.mk W.toAffine.polynomial p
+      = WeierstrassCurve.Affine.CoordinateRing.mk W.toAffine p from rfl, weierstrassCoordMap,
+    WeierstrassCurve.Affine.CoordinateRing.map_mk]
+  rw [show WeierstrassCurve.Affine.CoordinateRing.mk (W.toAffine.map φ)
+      (Polynomial.map (Polynomial.mapRingHom φ) p)
+      = AdjoinRoot.mk (W.map φ).toAffine.polynomial
+          (Polynomial.map (Polynomial.mapRingHom φ) p) from rfl,
+    weierstrassCoordDesc, AdjoinRoot.lift_mk, Polynomial.eval₂_map,
+    weierstrassCoordDescAux_comp W φ u v hw, ← Polynomial.hom_eval₂,
+    ← AdjoinRoot.algebraMap_eq, ← Polynomial.aeval_def, AdjoinRoot.aeval_eq]
+
+end WeierstrassCoordDesc
+
+/-- **A ring map out of `S[W.map φ]` is determined by its restrictions to
+`S` and to `R[W]`** (PROVEN).
+
+`AdjoinRoot.mk` is surjective, so it is enough to compare on
+`S[X][Y]`; `Polynomial.ringHom_ext` reduces that to the constants and `Y`,
+and a second application reduces the constants to `S` and `X`. -/
+theorem weierstrassCoord_hom_ext {R S U : Type} [CommRing R] [CommRing S] [CommRing U]
+    (W : WeierstrassCurve R) (φ : R →+* S)
+    {m n : (W.map φ).toAffine.CoordinateRing →+* U}
+    (h1 : ∀ s : S, m (algebraMap S (W.map φ).toAffine.CoordinateRing s)
+      = n (algebraMap S (W.map φ).toAffine.CoordinateRing s))
+    (h2 : ∀ a : W.toAffine.CoordinateRing,
+      m (weierstrassCoordMap W φ a) = n (weierstrassCoordMap W φ a)) :
+    m = n := by
+  refine RingHom.ext fun b => ?_
+  obtain ⟨p, rfl⟩ := AdjoinRoot.mk_surjective (g := (W.map φ).toAffine.polynomial) b
+  have key : m.comp (AdjoinRoot.mk (W.map φ).toAffine.polynomial)
+      = n.comp (AdjoinRoot.mk (W.map φ).toAffine.polynomial) := by
+    refine Polynomial.ringHom_ext (fun a => ?_) ?_
+    · have hC : (m.comp (AdjoinRoot.of (W.map φ).toAffine.polynomial))
+          = (n.comp (AdjoinRoot.of (W.map φ).toAffine.polynomial)) := by
+        refine Polynomial.ringHom_ext (fun s => h1 s) ?_
+        have := h2 (AdjoinRoot.of W.toAffine.polynomial Polynomial.X)
+        rwa [weierstrassCoordMap_ofX] at this
+      exact congrArg (fun f => (f : Polynomial S →+* U) a) hC
+    · have := h2 (AdjoinRoot.root W.toAffine.polynomial)
+      rwa [weierstrassCoordMap_root] at this
+  exact congrArg (fun f => (f : Polynomial (Polynomial S) →+* U) p) key
+
+open _root_.CategoryTheory.Limits in
+/-- **The affine coordinate ring of a Weierstrass curve base-changes**
+(PROVEN): `S[W.map φ]` is the pushout of `R[W] ← R → S`.
+
+Proved from the universal property directly — see the subsection
+docstring for why the `AdjoinRoot.tensorAlgEquiv` route is longer here.
+`weierstrassCoordDesc` is the descent map, `weierstrassCoordDesc_left` /
+`_right` are the two factorisations, and `weierstrassCoord_hom_ext` is
+uniqueness. -/
+theorem isPushout_weierstrassCoordinateRing {R S : Type} [CommRing R] [CommRing S]
+    (W : WeierstrassCurve R) (φ : R →+* S) :
+    IsPushout (CommRingCat.ofHom φ)
+      (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
+      (CommRingCat.ofHom (algebraMap S (W.map φ).toAffine.CoordinateRing))
+      (CommRingCat.ofHom (weierstrassCoordMap W φ)) := by
+  have w : CommRingCat.ofHom φ ≫
+      CommRingCat.ofHom (algebraMap S (W.map φ).toAffine.CoordinateRing)
+      = CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing) ≫
+        CommRingCat.ofHom (weierstrassCoordMap W φ) := by
+    ext r
+    exact (weierstrassCoordMap_algebraMap W φ r).symm
+  have hcond : ∀ s : PushoutCocone (CommRingCat.ofHom φ)
+      (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing)),
+      ∀ r : R, s.inl.hom (φ r) = s.inr.hom (algebraMap R W.toAffine.CoordinateRing r) :=
+    fun s r => congrArg (fun f => (CommRingCat.Hom.hom f) r) s.condition
+  refine IsPushout.of_isColimit (PushoutCocone.IsColimit.mk w
+    (fun s => CommRingCat.ofHom (weierstrassCoordDesc W φ s.inl.hom s.inr.hom (hcond s)))
+    (fun s => ?_) (fun s => ?_) (fun s m h₁ h₂ => ?_))
+  · exact CommRingCat.hom_ext (RingHom.ext fun x =>
+      weierstrassCoordDesc_left W φ s.inl.hom s.inr.hom (hcond s) x)
+  · exact CommRingCat.hom_ext (RingHom.ext fun x =>
+      weierstrassCoordDesc_right W φ s.inl.hom s.inr.hom (hcond s) x)
+  · refine CommRingCat.hom_ext (weierstrassCoord_hom_ext W φ (fun x => ?_) (fun a => ?_))
+    · exact (congrArg (fun f => (CommRingCat.Hom.hom f) x) h₁).trans
+        (weierstrassCoordDesc_left W φ s.inl.hom s.inr.hom (hcond s) x).symm
+    · exact (congrArg (fun f => (CommRingCat.Hom.hom f) a) h₂).trans
+        (weierstrassCoordDesc_right W φ s.inl.hom s.inr.hom (hcond s) a).symm
+
 /-- **A base change of a Weierstrass model is a Weierstrass model of the
 base-changed datum** (sorry leaf, the productive half of step (ii)).
 
@@ -11396,14 +11611,78 @@ WILL ALSO NEED" note on `exists_jValueOnAffine_of_localModels`.
 
 NOT VACUOUS: the conclusion is `IsWeierstrassModel`, which is an
 existence-of-open-immersion statement with a range condition, not an
-equation that could hold degenerately. -/
+equation that could hold degenerately.
+
+**PROVEN 2026-07-27**, and the three bullets above are exactly the three
+steps of the proof, with one correction to the plan: the first bullet's
+`AlgebraicGeometry.pullbackSpecIso` route is NOT what is used.  Rather
+than exhibit `S[W.map φ]` as a tensor product and transport, the square
+of rings is shown to be a PUSHOUT directly
+(`isPushout_weierstrassCoordinateRing`, subsection above), and
+`AlgebraicGeometry.isPullback_SpecMap_of_isPushout` turns that into the
+cartesian square
+
+    Spec S[W.map φ] ⟶ Spec R[W]
+           ↓                ↓
+       Spec S      ⟶     Spec R
+
+The model `ι'` is then `hb.isPullback.lift`, the top square
+`Spec S[W.map φ] → Spec R[W]` over `d'.E → d.E` is cartesian by
+`IsPullback.of_bot` (the outer rectangle being the square just named),
+and `IsOpenImmersion` transfers along it by
+`MorphismProperty.IsStableUnderBaseChange`.  The zero-section square is
+cartesian by the SAME pasting argument, its outer rectangle being
+cartesian because both vertical composites are `𝟙`; the two range
+identities then come from one lemma,
+`AlgebraicGeometry.range_base_of_isPullback`, applied to those two
+squares, and complements pass through `Set.preimage_compl`. -/
 theorem isWeierstrassModel_map_of_isBaseChangeOf {R S : Type} [CommRing R] [CommRing S]
     (φ : R →+* S) {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
     {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))}
     (hb : IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d)
     (W : WeierstrassCurve R) (hW : IsWeierstrassModel d.ab W) :
-    IsWeierstrassModel d'.ab (W.map φ) :=
-  sorry
+    IsWeierstrassModel d'.ab (W.map φ) := by
+  obtain ⟨ι, hoi, hcomp, hrange⟩ := hW
+  set sφ := Spec.map (CommRingCat.ofHom φ) with hsφ
+  set ψ : weierstrassAffine (W.map φ) ⟶ weierstrassAffine W :=
+    Spec.map (CommRingCat.ofHom (weierstrassCoordMap W φ)) with hψ
+  -- the coordinate-ring square is cartesian
+  have hA : IsPullback (weierstrassAffineStr (W.map φ)) ψ sφ (weierstrassAffineStr W) :=
+    _root_.AlgebraicGeometry.isPullback_SpecMap_of_isPushout _ _ _ _
+      (isPushout_weierstrassCoordinateRing W φ)
+  -- the model over `S`, as the map into the base change induced by the two projections
+  have hw : weierstrassAffineStr (W.map φ) ≫ sφ = (ψ ≫ ι) ≫ d.f := by
+    rw [Category.assoc, hcomp]; exact hA.w
+  set ι' : weierstrassAffine (W.map φ) ⟶ d'.E :=
+    hb.isPullback.lift (weierstrassAffineStr (W.map φ)) (ψ ≫ ι) hw with hι'
+  have hfst : ι' ≫ d'.f = weierstrassAffineStr (W.map φ) := hb.isPullback.lift_fst _ _ _
+  have hsnd : ι' ≫ hb.map = ψ ≫ ι := hb.isPullback.lift_snd _ _ _
+  -- the model square is cartesian
+  have hC : IsPullback ψ ι' ι hb.map := by
+    refine IsPullback.of_bot ?_ hsnd.symm hb.isPullback.flip
+    rw [hfst, hcomp]
+    exact hA.flip
+  -- the zero-section square is cartesian
+  have hz' : (d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).1 ≫ hb.map
+      = sφ ≫ (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).1 := by
+    have hzc : ∀ {g g' : Spec (CommRingCat.of S) ⟶ Spec (CommRingCat.of R)}, g = g' →
+        (d.ab.zero g).1 = (d.ab.zero g').1 := by rintro g g' rfl; rfl
+    have h1 := congrArg Subtype.val (hb.map_zero (𝟙 (Spec (CommRingCat.of S))))
+    have h2 := congrArg Subtype.val
+      (d.ab.pre_zero sφ (g := 𝟙 (Spec (CommRingCat.of R))) (Category.comp_id sφ))
+    simp only [RelPoint.along, RelPoint.pre] at h1 h2
+    rw [h1, hzc (Category.id_comp sφ)]
+    exact h2.symm
+  have hZ : IsPullback sφ (d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).1
+      (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).1 hb.map := by
+    refine IsPullback.of_bot ?_ hz'.symm hb.isPullback.flip
+    rw [(d'.ab.zero (𝟙 (Spec (CommRingCat.of S)))).2,
+      (d.ab.zero (𝟙 (Spec (CommRingCat.of R)))).2]
+    exact IsPullback.of_vert_isIso ⟨by rw [Category.comp_id, Category.id_comp]⟩
+  refine ⟨ι', ?_, hfst, ?_⟩
+  · exact MorphismProperty.IsStableUnderBaseChange.of_isPullback (P := @IsOpenImmersion) hC hoi
+  · rw [_root_.AlgebraicGeometry.range_base_of_isPullback hC.flip, hrange, Set.preimage_compl,
+      ← _root_.AlgebraicGeometry.range_base_of_isPullback hZ.flip]
 
 /-- **Base changes cancel** (PROVEN 2026-07-27; formerly a sorry leaf) —
 the exact converse of `IsBaseChangeOf.comp`.
@@ -11548,9 +11827,11 @@ the line bundle `ω = f_* Ω¹_{E/T}` and the classical formulas for
 `exists_weierstrassModel_localization`, which carries the irreducibility
 verdict; the well-definedness and functoriality of `j` are
 `weierstrassModel_j_unique`,
-`isWeierstrassModel_map_of_isBaseChangeOf` and
-`exists_isBaseChangeOf_cancel`; the gluing of the local values is
-`exists_jValueOnAffine_of_localModels`.
+`isWeierstrassModel_map_of_isBaseChangeOf` (PROVEN 2026-07-27) and
+`exists_isBaseChangeOf_cancel` (PROVEN); the gluing of the local values
+is `exists_jValueOnAffine_of_localModels`.  So of the five leaves of the
+cut, two remain open here — step (i) and `weierstrassModel_j_unique` —
+plus the gluing.
 
 HOW IT IS PROVEN, and what the assembly contributes.  The gluing leaf
 returns, for every affine base, a UNIQUE point of the `j`-line satisfying
