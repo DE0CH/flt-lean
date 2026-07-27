@@ -343,6 +343,10 @@ import Fermat.FLT.ModularCurve.EllipticScheme
 -- turns `Y_0(N)` into `X_0(N)`; see `exists_compactificationY0` and
 -- `exists_x0Compactification` below.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
+-- `f_*𝒪_X = 𝒪_S` for a proper flat morphism with geometrically connected fibres,
+-- and the RIGIDITY LEMMA over it; this is what makes `isAdditiveOn_of_post_zero`
+-- below a theorem rather than a leaf.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.ProperPushforward
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
@@ -16836,13 +16840,26 @@ of 2026-07-27, each over leaves cut out of it:
   (formation of the Jacobian commutes with base change, in Albanese
   form) and the SAME rigidity leaf `isAdditiveOn_of_post_zero`.
 
-So this block has exactly three open leaves — `exists_albaneseOfCurve`,
-`isAdditiveOn_of_post_zero`, `universal_jacobianBaseChangeAj` — and they
-are not independent: all three are gated on coherent pushforward
-(`f_*𝒪 = 𝒪` for a proper flat morphism with geometrically connected
-fibres), which has zero hits in this project, in mathlib at our pin and
-in `~/cs/FLT`.  That single missing input is the whole remaining
-obstruction of the Jacobian half.
+The three leaves this block had on 2026-07-27 were `exists_albaneseOfCurve`,
+`isAdditiveOn_of_post_zero` and `universal_jacobianBaseChangeAj`, and they
+were correctly diagnosed as NOT independent: all three are gated on
+coherent pushforward (`f_*𝒪 = 𝒪` for a proper flat morphism with
+geometrically connected fibres), which had zero hits in this project, in
+mathlib at our pin and in `~/cs/FLT`.
+
+**That input now EXISTS AS A STATEMENT**, in the shim tree, at
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`:
+`HasUniversallyTrivialPushforward` with
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` (LEAF) and its
+smooth specialization (PROVEN), together with the RIGIDITY LEMMA
+`exists_comp_snd_eq_of_slice_const` (LEAF) and the two-axis corollary
+`eq_comp_of_rigidity_axes` (PROVEN over it).  Consequence:
+**`isAdditiveOn_of_post_zero` is now PROVEN** over that shim, so this
+block's remaining leaves are `exists_albaneseOfCurve` and
+`universal_jacobianBaseChangeAj`, and the shared missing mathematics has
+moved out of this modular-curve file into a reusable, named, general
+statement about schemes — which is where the other two should now be
+pointed as well.
 
 None of them mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
 the Jacobian half of a Néron datum is a statement about smooth proper
@@ -16883,9 +16900,9 @@ def IsAdditiveOn {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
       = abB.add (RelPoint.post u hu x) (RelPoint.post u hu y)
 
 /-- **RELATIVE RIGIDITY: an `S`-morphism of abelian schemes carrying the
-origin to the origin is a homomorphism** (sorry node — Mumford,
-*Abelian Varieties* §4 Cor. 1; BLR *Néron Models* 8.4 in the relative
-case).
+origin to the origin is a homomorphism** (PROVEN 2026-07-27 over the
+rigidity lemma — Mumford, *Abelian Varieties* §4 Cor. 1; BLR *Néron
+Models* 8.4 in the relative case).
 
 TRUE over an ARBITRARY base, and this is the classical statement, not a
 weakening of it: no connectedness of `S`, no field, no noetherian
@@ -16911,33 +16928,176 @@ can be proven ONCE and consumed more than once:
   audit is not repaired here — that leaf has its own owner — but the
   input it asked for now exists by name.
 
-**AXIS SEARCHED AND REJECTED (2026-07-27), stated because an
-irreducibility verdict is only as wide as the axis its author
-searched.**  The natural finer cut is the RIGIDITY LEMMA itself: state
-that a natural `φ : RelPoint af g → RelPoint af g → RelPoint bf g`
-vanishing on both axes (`φ x 0 = 0` and `φ 0 y = 0`) vanishes
-identically, then obtain this leaf by feeding it the three-term
-expression `φ x y := u(x+y) − u(x) − u(y)`.  That glue is writable here
-— roughly 100 lines of functor-of-points group algebra, needing only
-`pre_add`, `pre_zero` and a derived `pre_neg` — and it was REJECTED
-because NEITHER half becomes attackable: the rigidity lemma is blocked
-on `p_*𝒪_A = 𝒪_S`, i.e. on coherent cohomology of schemes and
-cohomology-and-base-change, which have zero hits in this project, in
-mathlib at our pin and in `~/cs/FLT` (the same second blocker recorded
-on `exists_jacobianFibreIdent`).  THE CHECK THAT WOULD REFUTE THIS: land
-`f_*𝒪_X = 𝒪_S` for a proper flat morphism with geometrically connected
-fibres.  Then the rigidity lemma becomes attackable and the split should
-be made.
+**THE AXIS THAT THE 2026-07-27 AUDIT RECORDED AS REJECTED HAS NOW BEEN
+TAKEN, AND IT WORKED.**  That audit named the finer cut — state the
+RIGIDITY LEMMA, then feed it `φ x y := u(x+y) − u(x) − u(y)` — and
+rejected it because "NEITHER half becomes attackable", the rigidity
+lemma being blocked on `p_*𝒪_A = 𝒪_S`.  It also, correctly, named the
+check that would refute its own verdict: *land `f_*𝒪_X = 𝒪_S` for a
+proper flat morphism with geometrically connected fibres*.  That check
+has been run.  `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`
+now carries
 
-WHAT IS *NOT* BLOCKING IT: this leaf does not need the Picard scheme, and
-it does not need any modular curve.  It is independent of
-`exists_albaneseOfCurve` and can be proven first. -/
+* `HasUniversallyTrivialPushforward` — `𝒪_S ≅ f_*𝒪_X`, universally;
+* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — LEAF, the
+  classical theorem (Hartshorne III.12, Mumford *AV* §5, Stacks 0E6R);
+* `geometricallyReduced_of_smooth` — LEAF, small and separate;
+* `hasUniversallyTrivialPushforward_of_isProper_of_smooth` — PROVEN over
+  those two, and it is the form an `AbelianSchemeStruct` can supply,
+  since its fields are `proper`, `smooth`, `connected`;
+* `exists_comp_snd_eq_of_slice_const` — LEAF, the RIGIDITY LEMMA;
+* `eq_comp_of_rigidity_axes` — PROVEN over it: a morphism
+  `A ×_S A ⟶ B` vanishing on both axes vanishes.
+
+and the ~100 lines of functor-of-points group algebra the audit
+described are written out below.  The `pre_neg` it predicted would be
+needed is derived inline from `neg_add`, `pre_add` and `pre_zero`.
+
+**THE YONEDA STEP, which is what makes the two presentations meet.**
+`Φ` below is the three-term difference evaluated at the UNIVERSAL pair
+`(pullback.fst, pullback.snd)` on `A ×_S A`; naturality then computes
+the difference at an arbitrary pair `(x, y)` as `RelPoint.pre` of `Φ`
+along `pullback.lift x.1 y.1`.  So a single morphism `Φ.1 : A ×_S A ⟶ B`
+carries the whole functor-of-points statement, the two axis hypotheses
+become two equations of morphisms, and rigidity applies to it directly.
+
+WHAT WAS *NOT* BLOCKING IT, and is still true: this does not need the
+Picard scheme and does not need any modular curve.  It is independent of
+`exists_albaneseOfCurve`. -/
 theorem isAdditiveOn_of_post_zero {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
     (abA : AbelianSchemeStruct af) (abB : AbelianSchemeStruct bf)
     {u : A ⟶ B} (hu : u ≫ bf = af)
     (h0 : RelPoint.post u hu (abA.zero (𝟙 S)) = abB.zero (𝟙 S)) :
-    IsAdditiveOn abA abB u hu :=
-  sorry
+    IsAdditiveOn abA abB u hu := by
+  haveI := abA.proper
+  haveI := abA.smooth
+  haveI := abA.connected
+  haveI := abB.proper
+  -- naturality of negation, derived from `neg_add` and the two naturality fields
+  have pre_neg : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint bf g),
+      RelPoint.pre h hg (abB.neg x) = abB.neg (RelPoint.pre h hg x) := by
+    intro T' T h g g' hg x
+    letI : AddCommGroup (RelPoint bf g') := abB.addCommGroup g'
+    have key : RelPoint.pre h hg (abB.neg x) + RelPoint.pre h hg x = 0 := by
+      show abB.add (RelPoint.pre h hg (abB.neg x)) (RelPoint.pre h hg x) = abB.zero g'
+      rw [← abB.pre_add, abB.neg_add, abB.pre_zero]
+    exact add_eq_zero_iff_eq_neg.mp key
+  -- naturality of `RelPoint.post` in the test scheme.  This is `RelPoint.post_pre`,
+  -- which is declared BELOW in this file (Lean's declaration order), so it is
+  -- restated here; both sides are `h ≫ x.1 ≫ u`, associated differently.
+  have post_pre : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint af g),
+      RelPoint.post u hu (RelPoint.pre h hg x)
+        = RelPoint.pre h hg (RelPoint.post u hu x) := by
+    intro T' T h g g' hg x
+    exact Subtype.ext (Category.assoc _ _ _)
+  -- the zero section, read at an arbitrary base point
+  have zeroA : ∀ {T : Scheme.{0}} (g : T ⟶ S),
+      (abA.zero g).1 = g ≫ (abA.zero (𝟙 S)).1 := by
+    intro T g
+    exact congrArg Subtype.val (abA.pre_zero g (Category.comp_id g)).symm
+  have zeroB : ∀ {T : Scheme.{0}} (g : T ⟶ S),
+      (abB.zero g).1 = g ≫ (abB.zero (𝟙 S)).1 := by
+    intro T g
+    exact congrArg Subtype.val (abB.pre_zero g (Category.comp_id g)).symm
+  -- `u` carries the zero section to the zero section at EVERY base point
+  have post_zero : ∀ {T : Scheme.{0}} (g : T ⟶ S),
+      RelPoint.post u hu (abA.zero g) = abB.zero g := by
+    intro T g
+    rw [← abA.pre_zero g (Category.comp_id g), post_pre, h0, abB.pre_zero]
+  set e : S ⟶ A := (abA.zero (𝟙 S)).1 with he_def
+  have he : e ≫ af = 𝟙 S := (abA.zero (𝟙 S)).2
+  set z : S ⟶ B := (abB.zero (𝟙 S)).1 with hz_def
+  -- the universal pair of points on `A ×_S A`
+  set PP : Limits.pullback af af ⟶ S := Limits.pullback.fst af af ≫ af with hPP
+  let U₁ : RelPoint af PP := ⟨Limits.pullback.fst af af, rfl⟩
+  let U₂ : RelPoint af PP := ⟨Limits.pullback.snd af af, Limits.pullback.condition.symm⟩
+  -- the three-term difference `u(x+y) - u(x) - u(y)`, at the universal pair
+  set Φ : RelPoint bf PP :=
+    abB.add (RelPoint.post u hu (abA.add U₁ U₂))
+      (abB.neg (abB.add (RelPoint.post u hu U₁) (RelPoint.post u hu U₂))) with hΦ
+  -- naturality of `Φ`: it is the value of the three-term expression at ANY pair
+  have hΦnat : ∀ {T : Scheme.{0}} {g : T ⟶ S} (w : T ⟶ Limits.pullback af af)
+      (hw : w ≫ PP = g),
+      RelPoint.pre w hw Φ =
+        abB.add (RelPoint.post u hu (abA.add (RelPoint.pre w hw U₁) (RelPoint.pre w hw U₂)))
+          (abB.neg (abB.add (RelPoint.post u hu (RelPoint.pre w hw U₁))
+            (RelPoint.post u hu (RelPoint.pre w hw U₂)))) := by
+    intro T g w hw
+    rw [hΦ, abB.pre_add, pre_neg, abB.pre_add, ← post_pre, ← post_pre,
+      ← post_pre, ← abA.pre_add]
+  -- the two axis inclusions
+  have hw₁ : sliceIncl af af e he ≫ PP = af := by
+    rw [hPP, ← Category.assoc, sliceIncl_fst, Category.id_comp]
+  have hlift₂ : (af ≫ e) ≫ af = 𝟙 A ≫ af := by
+    rw [Category.id_comp, Category.assoc, he, Category.comp_id]
+  have hw₂ : Limits.pullback.lift (af ≫ e) (𝟙 A) hlift₂ ≫ PP = af := by
+    rw [hPP, ← Category.assoc, Limits.pullback.lift_fst, Category.assoc, he, Category.comp_id]
+  -- the restriction of `Φ` to the first axis vanishes
+  have hax₁ : sliceIncl af af e he ≫ Φ.1 = af ≫ z := by
+    have h1 : RelPoint.pre (sliceIncl af af e he) hw₁ U₁ = ⟨𝟙 A, Category.id_comp af⟩ :=
+      Subtype.ext (sliceIncl_fst af af e he)
+    have h2 : RelPoint.pre (sliceIncl af af e he) hw₁ U₂ = abA.zero af :=
+      Subtype.ext (by rw [zeroA af]; exact sliceIncl_snd af af e he)
+    have hval : RelPoint.pre (sliceIncl af af e he) hw₁ Φ = abB.zero af := by
+      rw [hΦnat, h1, h2, post_zero]
+      letI : AddCommGroup (RelPoint bf af) := abB.addCommGroup af
+      letI : AddCommGroup (RelPoint af af) := abA.addCommGroup af
+      show RelPoint.post u hu (abA.add (⟨𝟙 A, Category.id_comp af⟩ : RelPoint af af) 0)
+            + -(RelPoint.post u hu (⟨𝟙 A, Category.id_comp af⟩ : RelPoint af af) + 0) = 0
+      show RelPoint.post u hu ((⟨𝟙 A, Category.id_comp af⟩ : RelPoint af af) + 0)
+            + -(RelPoint.post u hu (⟨𝟙 A, Category.id_comp af⟩ : RelPoint af af) + 0) = 0
+      rw [add_zero, add_zero, add_neg_cancel]
+    calc sliceIncl af af e he ≫ Φ.1
+        = (RelPoint.pre (sliceIncl af af e he) hw₁ Φ).1 := rfl
+      _ = (abB.zero af).1 := congrArg Subtype.val hval
+      _ = af ≫ z := zeroB af
+  -- and so does its restriction to the second axis
+  have hax₂ : Limits.pullback.lift (af ≫ e) (𝟙 A) hlift₂ ≫ Φ.1 = af ≫ z := by
+    have h1 : RelPoint.pre (Limits.pullback.lift (af ≫ e) (𝟙 A) hlift₂) hw₂ U₁
+        = abA.zero af :=
+      Subtype.ext (by rw [zeroA af]; exact Limits.pullback.lift_fst _ _ _)
+    have h2 : RelPoint.pre (Limits.pullback.lift (af ≫ e) (𝟙 A) hlift₂) hw₂ U₂
+        = ⟨𝟙 A, Category.id_comp af⟩ :=
+      Subtype.ext (Limits.pullback.lift_snd _ _ _)
+    have hval : RelPoint.pre (Limits.pullback.lift (af ≫ e) (𝟙 A) hlift₂) hw₂ Φ
+        = abB.zero af := by
+      rw [hΦnat, h1, h2, post_zero]
+      letI : AddCommGroup (RelPoint bf af) := abB.addCommGroup af
+      letI : AddCommGroup (RelPoint af af) := abA.addCommGroup af
+      show RelPoint.post u hu ((0 : RelPoint af af) + ⟨𝟙 A, Category.id_comp af⟩)
+            + -((0 : RelPoint bf af) + RelPoint.post u hu
+                (⟨𝟙 A, Category.id_comp af⟩ : RelPoint af af)) = 0
+      rw [zero_add, zero_add, add_neg_cancel]
+    calc Limits.pullback.lift (af ≫ e) (𝟙 A) hlift₂ ≫ Φ.1
+        = (RelPoint.pre (Limits.pullback.lift (af ≫ e) (𝟙 A) hlift₂) hw₂ Φ).1 := rfl
+      _ = (abB.zero af).1 := congrArg Subtype.val hval
+      _ = af ≫ z := zeroB af
+  -- RIGIDITY: a morphism vanishing on both axes vanishes
+  have hrig : Φ.1 = Limits.pullback.fst af af ≫ af ≫ z :=
+    eq_comp_of_rigidity_axes
+      (hasUniversallyTrivialPushforward_of_isProper_of_smooth af) e he z Φ.2 hax₁ hax₂
+  -- transport back to an arbitrary pair of relative points
+  intro T g x y
+  have hw : Limits.pullback.lift x.1 y.1 (by rw [x.2, y.2]) ≫ PP = g := by
+    rw [hPP, ← Category.assoc, Limits.pullback.lift_fst]
+    exact x.2
+  have h1 : RelPoint.pre (Limits.pullback.lift x.1 y.1 (by rw [x.2, y.2])) hw U₁ = x :=
+    Subtype.ext (Limits.pullback.lift_fst _ _ _)
+  have h2 : RelPoint.pre (Limits.pullback.lift x.1 y.1 (by rw [x.2, y.2])) hw U₂ = y :=
+    Subtype.ext (Limits.pullback.lift_snd _ _ _)
+  have hzero : RelPoint.pre (Limits.pullback.lift x.1 y.1 (by rw [x.2, y.2])) hw Φ
+      = abB.zero g := by
+    refine Subtype.ext ?_
+    show Limits.pullback.lift x.1 y.1 (by rw [x.2, y.2]) ≫ Φ.1 = (abB.zero g).1
+    rw [hrig, zeroB g, ← Category.assoc, ← Category.assoc, Limits.pullback.lift_fst, x.2]
+  rw [hΦnat, h1, h2] at hzero
+  letI : AddCommGroup (RelPoint bf g) := abB.addCommGroup g
+  have hsub : RelPoint.post u hu (abA.add x y)
+      - abB.add (RelPoint.post u hu x) (RelPoint.post u hu y) = 0 := by
+    rw [sub_eq_add_neg]; exact hzero
+  exact sub_eq_zero.mp hsub
 
 /-- **`ab` is the ALBANESE of the pointed curve `(strX, o)`** — the same
 datum as `IsJacobianOf`, with initiality split into the two halves it is
@@ -17368,13 +17528,49 @@ section instead of by a cohomological contraction.  This file already
 contains `section_eq_of_formallyUnramified` — a rigidity statement of
 exactly that flavour, for SECTIONS of a separated formally unramified
 morphism over a connected base, PROVEN outright with no cohomology at
-all.  Whether it can be made to bite here is open: its hypothesis is
-unramifiedness of the target morphism, and `A ⟶ S` is smooth of
-positive relative dimension, so it does not apply directly — but the
-difference `u(x+y) − u(x) − u(y)` is a map into `B`, and it is the
-SOURCE, not the target, whose properness is used in the classical proof.
-That is the first thing to try before accepting the coherent-sheaf
-verdict as final. -/
+all.
+
+**THE ETALE AXIS WAS SEARCHED (2026-07-27) AND IT DOES NOT WORK.  Here
+is exactly where it dies, so that nobody spends a second cycle on it.**
+
+Transplant the argument.  Rigidity says two `S`-morphisms
+`α, β : A ×_S A ⟶ B` — namely `u(x+y)` and `u(x) + u(y)` — agreeing on
+the two axes are equal.  Their equalizer is the base change of the
+DIAGONAL `Δ_{B/S}` along `(α, β)`, exactly as in
+`section_eq_of_formallyUnramified`, whose whole engine is that `Δ` is
+simultaneously a closed and an open immersion:
+
+* the CLOSED half survives, and it is the half one hopes for, since it
+  needs only separatedness of `B ⟶ S`, which `abB.proper` supplies;
+* the OPEN half is where it dies.  `Δ_{B/S}` is an open immersion iff
+  `Ω_{B/S} = 0` (that is mathlib's
+  `FormallyUnramified.isOpenImmersion_diagonal`, and for a morphism
+  locally of finite type the converse holds too).  For an abelian scheme
+  of relative dimension `g`, `Ω_{B/S}` is locally free of rank `g`, so
+  `Δ_{B/S}` is an open immersion **only when `g = 0`**.  There is no
+  second property to make the equalizer clopen, and the connectedness
+  argument has nothing to bite on.
+
+Properness of the SOURCE — the thing the classical proof really uses —
+does not rescue it.  The equalizer `E ⊆ A ×_S A` is a closed subscheme
+containing both axes, and a closed subscheme of an abelian surface
+containing the two axes need not be the whole surface (the union of the
+axes is one).  So no topological argument closes the gap.
+
+Sharpening the étale axis to the INFINITESIMAL one lands back on the
+coherent statement rather than avoiding it.  Two morphisms agreeing on a
+closed subscheme and differing over a square-zero ideal `I` differ by an
+element of `Hom(α^*Ω_{B/S}, I) = H⁰(A ×_S A, α^*T_{B/S} ⊗ I)`; for an
+abelian scheme the tangent bundle is trivialised by translation, so
+`α^*T_{B/S} = 𝒪 ⊗_{𝒪_S} Lie(B/S)` and that group is
+`H⁰(A ×_S A, 𝒪) ⊗ Lie(B/S) ⊗ I`.  It collapses to the constant part —
+which the axis hypotheses already kill — **precisely when
+`p_*𝒪 = 𝒪`**.  So the infinitesimal route needs the same input.
+
+CONCLUSION, and it is a positive one: the coherent-sheaf verdict stands,
+and the input has therefore been written down where it belongs, as
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`.
+`isAdditiveOn_of_post_zero` is PROVEN over it. -/
 
 /-! #### The base change of a Jacobian, as a Jacobian
 
@@ -17588,7 +17784,28 @@ proof of rigidity that avoids it — see the note "Rigidity is NOT
 restated here" above, which records that this file's own
 `section_eq_of_formallyUnramified` is a cohomology-free rigidity
 statement of that flavour and is the first thing a successor should try
-to push. -/
+to push.
+
+**UPDATE 2026-07-27 — that check has been run, and the paragraph above
+is now HALF stale.  Read this before dispatching at anything here.**
+
+* The étale/infinitesimal route was searched and it does NOT work; the
+  note "Rigidity is NOT restated here" above now records exactly where
+  it dies (`Δ_{B/S}` is an open immersion iff `Ω_{B/S} = 0`, false for
+  relative dimension `≥ 1`; and sharpening to the infinitesimal
+  comparison lands back on `p_*𝒪 = 𝒪`).
+* Coherent pushforward has been WRITTEN DOWN as a named statement, in
+  the shim tree, at
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`
+  (`HasUniversallyTrivialPushforward`,
+  `hasUniversallyTrivialPushforward_of_isProper_of_flat` and the
+  rigidity lemma `exists_comp_snd_eq_of_slice_const`, all LEAVES, with
+  the smooth specialization and the two-axis corollary PROVEN over
+  them).
+* Consequently **`isAdditiveOn_of_post_zero` is no longer a leaf — it is
+  PROVEN**.  `universal_jacobianBaseChangeAj` remains open, and it
+  should now be pointed at the SAME shim rather than at a private
+  restatement of cohomology and base change. -/
 theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
     {C C' J J' : Scheme.{0}} {f : C ⟶ S} {f' : C' ⟶ S'}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
