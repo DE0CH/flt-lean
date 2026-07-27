@@ -2223,7 +2223,7 @@ carries automorphic content.  Keeping them apart is what lets
 `exists_heckeEigensystem_of_congruentSeed` ask for exactly the Hecke
 eigenvalue and nothing else — the same trace/determinant split this
 module already makes at every stage of the solvable descent tower
-(`exists_heckeTrace_of_prime_cyclic_step`).
+(`heckeSystemDescendsTo_of_prime_cyclic_step`).
 
 REPLACES `exists_heckeField_of_eigensystem` (deleted 2026-07-26).  That
 node had to CONSTRUCT the Hecke field and the `E`-valued functions by
@@ -4519,7 +4519,7 @@ formally so, for all three.
 
 DESCENT-CLOSURE OF `E` — AN OBLIGATION ON THIS NODE'S HECKE BLOCK
 (2026-07-26; the corresponding obligation was reported upward by the
-owner of `exists_heckeTrace_of_prime_cyclic_step_of_inert` and is now
+owner of `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` and is now
 recorded on the carrier). The coefficient field `E` this node hands to
 the carrier must be closed under the SOLVABLE DESCENT, not merely the
 Hecke field of the newform over `F`: the descent leaves conclude that
@@ -5104,8 +5104,9 @@ def HeckeSystemDescendsTo {ℓ : ℕ} [Fact ℓ.Prime]
 
 -- `HeckeSystemDescendsToRaw` — the OLD, automorphy-free, fixed-`Wit.E` shape of
 -- the descended Hecke system — stood here as transition scaffolding for the
--- 2026-07-27 cut-level repair, as the sole hypothesis of
--- `exists_heckeTrace_of_prime_cyclic_step`.  It was RETIRED on 2026-07-27 once
+-- 2026-07-27 cut-level repair, as the sole hypothesis of the trace-only route
+-- (`exists_heckeTrace_of_prime_cyclic_step`, itself deleted 2026-07-27 as
+-- free-floating).  It was RETIRED on 2026-07-27 once
 -- that node and the two inert leaves beneath it were restated over the
 -- EXISTENTIAL coefficient field: the predicate had no producer, and a dead
 -- predicate left in place is how a refuted shape acquires new consumers.  The
@@ -5554,7 +5555,7 @@ theorem via the Blasius/Carayol realization of a Hilbert newform of
 parallel weight `2` in the `H¹` of a quaternionic Shimura variety,
 together with the Weil conjectures for that variety").  It is now an
 assembly of two named leaves, exactly mirroring the trace/determinant
-split that `exists_heckeTrace_of_prime_cyclic_step` makes further down
+split that `heckeSystemDescendsTo_of_prime_cyclic_step` makes further down
 this module:
 
 * `weilBound_heckeF_of_witness` — the IRREDUCIBLE classical content,
@@ -5615,7 +5616,7 @@ representation with `ℓ ≥ 5`) is classically unsatisfiable — the headline
 of this module — so the statement is classically true for every package.
 Route (ii) is a soundness justification only, NOT an available Lean
 discharge: see the ROUTE AUDIT on
-`exists_heckeTrace_of_prime_cyclic_step_of_inert`, whose chain shows the
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`, whose chain shows the
 headline CONSUMES this subtree, so `absurd hirr …` is circular here.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
@@ -6346,7 +6347,7 @@ with residue degree `1` then `Nv = Nw`, so this lemma identifies the two
 Frobenius characteristic polynomials and the descended system over `L`
 (the hypothesis `hC` of the prime cyclic step) already answers at `w`.
 The residual automorphic citation
-`exists_heckeTrace_of_prime_cyclic_step_of_inert` is thereby confined to
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` is thereby confined to
 the places of `M` whose residue cardinality is realized by NO good place
 of `L` — classically the INERT places.  It is the same style of
 sharpening as the trace/determinant split one level up: peel off the half
@@ -6541,9 +6542,10 @@ the linear one are the whole point of stating the citation this way.**
 
 WHY THIS IS THE RIGHT SORRIED LEAF, AND WHAT IT BUYS (read with the
 INFORMATION AUDIT on the consumer, which this refines).  The consumer
-`exists_heckeTrace_of_prime_cyclic_step_of_inert` asserts outright that
-`ιO(coeff 1) ∈ Set.range ψM`, for the descended coefficient field `EM`
-this leaf produces (it was `Set.range ψℓ` before the 2026-07-27
+`exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert` asserts
+outright that the descended eigenvalue satisfies
+`ψM (aM w) = −ιO(coeff 1)`, over the descended coefficient field `EM`
+this leaf produces (the field was fixed at `Wit.E` before the 2026-07-27
 existential-coefficient-field restatement).  **That is not what
 Arthur–Clozel proves.**
 AC delivers descent only up to the `η`-torsor, and a reader checking the
@@ -6645,7 +6647,8 @@ object asserting automorphy of the `L`-eigensystem — or a hypothesis that
 (2) THE `ζ` IS FORMALLY VACUOUS: this leaf and the UNTWISTED statement
 are EQUIVALENT, not merely "interderivable away from `ℓ`".  Forward: take
 `ζ w = 1`, as the HONEST ACCOUNTING above records.  Backward: the PROVEN
-body of the consumer `exists_heckeTrace_of_prime_cyclic_step_of_inert`
+body of the consumer
+`exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert`
 immediately below derives `ζ w ∈ Set.range ψM` from
 `ζ w ^ 2 · ψM (δ w) = ιO(coeff 0) = Nw`, for BOTH parities of `p`, using
 no hypothesis this leaf does not already carry.  Consequence: the
@@ -6866,6 +6869,129 @@ CHECK THAT REFUTES (7): show `Wit.E` is constrained to contain the
 descended Hecke fields — which is exactly the check that refutes (6), and
 fails for the same reason.
 
+(8) THE RAMANUJAN CLAUSE, ADDED 2026-07-27 (SEVENTH OWNER), AND WHAT IT
+COSTS.  The conclusion now also carries, on the UNTWISTED coefficient
+`a w` and for EVERY complex embedding `φ : EM →+* ℂ`, the archimedean
+bound `‖φ (a w)‖ ≤ 2 √(Nw)`.  Three things to know about it.
+
+*What it buys.*  It makes this leaf the SINGLE Arthur–Clozel citation of
+the descent route.  Before the addition there were TWO sorried leaves
+stating the same Thm 4.2(d) — this one in `η`-torsor form, and
+`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert` in
+torsor form WITH the Ramanujan clause — and the cuspidal consumer was
+proven over the second.  With the clause here, the second is redundant
+and was DELETED (2026-07-27); the consumer
+`exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert` is now
+proven over this leaf directly.  The transfer is exact: that node's
+witness is `−(e · a w)` where `ψM e = ζ w`, and `ψM (e ^ p) = ζ w ^ p = 1
+= ψM 1` forces `e ^ p = 1` by injectivity of `ψM` (a ring hom out of a
+field), so `φ (e) ^ p = 1` and `‖φ e‖ = 1` for EVERY `φ` — the bound
+transfers unchanged, with no hypothesis of that node consumed.
+
+*Why it costs the citation nothing.*  Thm 4.2(d) returns a CUSPIDAL `π`,
+and the Ramanujan–Petersson bound for a cuspidal Hilbert newform of
+parallel weight `2` (Blasius, following Brylinski–Labesse and Carayol) is
+part of the same classical package that supplies the descent itself.  So
+route (i) delivers the bound together with the eigenvalue rather than in
+addition to it, and route (ii) — the arithmetic package
+(`hρ`, `hρbar`, `hirr`, `ℓ ≥ 5`) being classically unsatisfiable — covers
+it for every carrier exactly as it covers the rest of the conclusion.
+Note finding (1) above: route (i) is in any case unavailable at every
+step of the tower but the base, so the leaf's truth already rests on
+route (ii) alone and the added clause does not change that.
+
+*SCOPE OF THE ADDED CLAUSE, stated so nobody over-reads it.*  `PL` here
+is an ARBITRARY polynomial function, so on route (i) the added bound is
+supported only when `PL` is the genuine cuspidal `L`-eigensystem — which
+is what the sole call site supplies
+(`exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert`
+instantiates `PL v = X² − C (aL v)·X + C (Nv)` from a
+`HeckeSystemDescendsTo` datum, whose `a` carries the bound).  The edit
+that would make route (i) support it for arbitrary `PL` is a single extra
+binder,
+
+  `(hPLcusp : ∀ v ∉ SL, ∀ φ : EL →+* ℂ,`
+  `   ‖φ ((PL v).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm v.asIdeal))`,
+
+threaded from the `h2L` field of `HeckeSystemDescendsTo` at that call
+site.  It was deliberately NOT made, because it weakens a citation whose
+truth does not depend on it and because the arithmetic hypothesis package
+is retained VERBATIM to keep route (ii) available; a future owner who
+wants the stronger form has the whole edit written out above.
+
+CHECK THAT REFUTES (8): exhibit an instantiation of the arithmetic
+package (`hρ` hardly ramified with `ℓ ≥ 5`, `ρbar` hardly ramified and
+irreducible, `hπ` a reduction) — i.e. refute the module headline.  Any
+such instantiation refutes the whole leaf, added clause or not; there is
+no instantiation refuting only the clause.
+
+THE CLASSICAL ARGUMENT, IN THREE MOVES — the joints of the literature
+argument, in order (inherited 2026-07-27 from the deleted trace pair
+`exists_heckeTrace_of_prime_cyclic_step{,_of_inert}`, whose docstrings
+carried it; both were fully PROVEN but had lost every application to the
+2026-07-27 reroute through the cuspidal side, so they were deleted as
+free-floating and their unique content moved here):
+
+* *Cyclic ascent (base change).*  `Gal(L/M) ≅ D/C` is cyclic of order
+  `p`; Langlands' cyclic base change `BC_{L/M}` is defined on the
+  cuspidal spectrum of `GL(2)/M` and characterized by the Arthur–Clozel
+  twisted character identity.  The descended system over `L` is, through
+  Carayol local–global compatibility, the eigensystem of a Hilbert
+  newform `f_L` over `L`.
+* *`Gal(L/M)`-invariance.*  `f_L`'s Galois representation is `ρ|_{G_L}` —
+  the restriction to `G_L` of the representation `ρ|_{G_M}` of the LARGER
+  group `G_M` — hence visibly `Gal(L/M)`-invariant: for `σ ∈ Gal(L/M)`,
+  `f_L^σ` has the same Frobenius eigenvalues as `f_L` at almost all
+  places, so `f_L^σ = f_L` by strong multiplicity one.
+* *Cyclic descent (the twisted character identity).*  A
+  `Gal(L/M)`-invariant cuspidal automorphic representation of `GL(2)/L`
+  is in the image of base change from `GL(2)/M`, and its fibre is a
+  torsor under the characters of `Gal(L/M)`.  So there is a Hilbert
+  newform `f_M` over `M` with `BC_{L/M}(f_M) = f_L`; its `ℓ`-adic
+  representation restricted to `G_L` agrees with `ρ|_{G_L}`, hence
+  differs from `ρ|_{G_M}` by a twist by a character of `Gal(L/M)` — of
+  order dividing `p`, so with values `p`-th roots of unity.
+
+WHY PRIME DEGREE IS THE SHARPEST JOINT: the twisted trace formula of
+Langlands/Arthur–Clozel is run for a cyclic extension of PRIME degree —
+that is the case in which the character identity
+`Θ_{BC(π)}(g × σ) = Θ_π(N g)` is proved and in which the fibre of base
+change is a torsor under the (order-`p`) character group of `Gal(L/M)`.
+The general cyclic case is not a separate theorem but the composition of
+prime steps, and the general solvable case the composition of cyclic
+ones.  This module carries both compositions formally
+(`exists_intermediate_of_isCyclic_quotient` for cyclic → prime,
+`exists_cyclicRefinement_of_isSolvable` for solvable → cyclic), so this
+node is the ONLY remaining citation on the descent route: below it lie
+the trace formula and the twisted character identity, not further
+group-theoretic bookkeeping.
+
+FULL LITERATURE: Langlands 1980 and Arthur–Clozel 1989 as above;
+Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and change of
+weight*, Ann. of Math. 179 (2014), §5.3 (this descent per Brauer piece,
+verbatim); Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Invent. Math. 178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986).
+
+PIN AUDIT (2026-07-24/25, inherited): no automorphic-representation
+vocabulary exists on this pin, and the reference project's
+`cyclic_base_change` (`~/cs/FLT`,
+`FLT/GaloisRepresentation/Automorphic.lean`) is itself a sorried
+statement phrased through an `IsAutomorphic` predicate on quaternionic
+forms — vocabulary this project does not have.  Nothing is vendorable, on
+this pin or after a pin-drift audit.
+
+ROUTE AUDIT (2026-07-24, inherited, load-bearing): discharge by vacuity —
+`absurd hirr (not_isIrreducible_of_isHardlyRamified_of_five_le …)`, the
+route the interface leaves of `Modularity/Interface.lean` take — is NOT
+available here: the headline CONSUMES this node (headline ←
+`exists_threeadic_compatible_member_of_five_le` ←
+`exists_heckeField_system_of_witness` ←
+`exists_descended_heckeSystem_of_solvable` ←
+`heckeSystemDescendsTo_of_cyclic_step` ←
+`heckeSystemDescendsTo_of_prime_cyclic_step` ←
+`exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert` ← this
+leaf), so the vacuity route would be circular.
+
 PLACEMENT: this leaf lives in this module rather than a new one because
 it quantifies over `PotentialModularityWitness`, `IsHardlyRamified` and
 `GaloisRep.charFrob`, all declared above; a separate module would have
@@ -6919,834 +7045,6 @@ theorem exists_baseChangeDescentData_of_prime_cyclic_step_of_inert
           Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
             w).coeff 1) = ζ w * ψM (a w) ∧
           Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
-            w).coeff 0) = ζ w ^ 2 * ψM (δ w) :=
-  sorry
-
-/-- **The TRACE of one PRIME-degree cyclic step of solvable base change,
-at the NON-SPLIT places** (**PROVEN 2026-07-26, THIRD OWNER**, over the
-stated literature citation
-`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` immediately
-above — read that leaf's docstring for the reference, Arthur–Clozel
-Ch. 3 Thm 4.2(d), and for the argument that removes the base-change
-twist; this node used to be a bare `sorry` standing for Langlands 1980 /
-Arthur–Clozel 1989): the statement of
-`exists_heckeTrace_of_prime_cyclic_step` (see that node's docstring for
-the classical three moves, the literature and the PIN, SOUNDNESS,
-VACUITY, ROUTE and CIRCULARITY audits, all of which apply verbatim),
-restricted to the places of `M = F^D` whose residue cardinality is
-realized by NO good place of `L = F^C`.
-
-**RESTATED 2026-07-27 OVER THE EXISTENTIAL COEFFICIENT FIELD, together
-with the citation below it and the parent above it.**  The `L`-side
-eigensystem is given over an arbitrary number field `EL` with
-`ψL : EL → ℚ̄_ℓ`, and the conclusion asserts membership in
-`Set.range ψM` for an EXISTENTIALLY quantified number field `EM` carrying
-`ψM : EM → ℚ̄_ℓ` and `ιM : EL →+* EM` with `ψM ∘ ιM = ψL` — i.e. the
-descended trace is algebraic and lies in a Hecke field CONTAINING the
-`L`-side one, not in `ψℓ(Wit.E)`.  The old fixed-`Wit.E` form is refuted
-for an arbitrary carrier by the Dickson field-growth argument recorded in
-the citation's docstring (findings (6) and (7) there); this is a repair,
-not a weakening.  The proof is unchanged apart from carrying `EM`/`ψM`
-through: the `p`-th-root-of-unity elimination of the base-change twist
-`ζ w` happens inside `EM`, where the cyclotomic determinant places
-`ζ w ^ 2 = ψM (Nw / δ w)`.
-
-TWO DIFFERENCES from the parent node, both deliberate:
-
-* the descended system over `L` is taken UNFOLDED — as the coefficient
-  field `EL` with `ψL`, the bad set `SL`, the polynomials `PL` and the
-  match `hPL`, rather than as `HeckeSystemDescendsTo Wit C` — because
-  that is what the citation actually consumes: the Hilbert newform `f_L`
-  over `L` whose eigensystem those polynomials are;
-* the conclusion is asked only at places `w` with
-  `∀ v ∉ SL, Nv ≠ Nw`.  The complementary places are discharged
-  FORMALLY in the parent, with no automorphic input, by
-  `charFrob_baseChange_eq_of_absNorm_eq` (`charFrob` depends only on the
-  residue cardinality): if some good place `v` of `L` has `Nv = Nw` then
-  `(ρ|_{G_M}).charFrob w = (ρ|_{G_L}).charFrob v` and `hPL` already
-  answers.  In particular every place of `M` SPLIT in `L/M` (any place
-  above it in `L` has residue degree `1`, hence equal norm) is off this
-  node's plate, so what remains is the INERT half of the prime cyclic
-  step.
-
-The hypothesis package is retained VERBATIM (`hℓ5`, `hZinj`, `hρ`,
-`hρbar`, `hirr`, `hπ`, and the group-theoretic data `hCD`, `hnormal`,
-`hp`, `hcard`), so route (ii) of the parent's soundness audit — the
-observation that the arithmetic package is CLASSICALLY UNSATISFIABLE —
-remains available here exactly as it was there.  The sharpening is of the
-CONCLUSION only; no arithmetic hypothesis was weakened, and none was
-added.  Route (ii) is a SOUNDNESS justification (it is why the statement
-is true), NOT an available Lean discharge: see the ROUTE AUDIT below,
-which is the point on which this node is most easily misread.
-
-SOUNDNESS: the conclusion is a restriction of the parent's conclusion to
-a subset of the places, so this node is implied by the classical theorem
-and is a strictly weaker statement; it is discharged classically by the
-same three moves (cyclic ascent, `Gal(L/M)`-invariance, cyclic descent by
-the Arthur–Clozel character identity), which do not distinguish the
-split and inert places.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
-
-────────────────────────────────────────────────────────────────────
-ROUTE AUDIT (2026-07-26, re-verified for THIS node, call site by call
-site rather than from docstrings).  COLLAPSE IS NOT AVAILABLE.
-
-Every link below is an actual application in a proof term in this
-module, not a docstring claim:
-
-  `not_isIrreducible_of_isHardlyRamified_of_five_le`
-    ← `exists_threeadic_compatible_member_of_five_le`   (pillar β)
-    ← `exists_heckeField_system_of_witness`
-    ← `exists_descended_heckeSystem_of_solvable`
-    ← `heckeSystemDescendsTo_of_cyclic_step`
-    ← `heckeSystemDescendsTo_of_prime_cyclic_step`
-    ← `exists_heckeTrace_of_prime_cyclic_step`
-    ← THIS NODE.
-
-So `absurd hirr (not_isIrreducible_of_isHardlyRamified_of_five_le …)` —
-the route ~40 leaves of this development legitimately take — is CIRCULAR
-here.  It is also mechanically impossible: the dichotomy, and every
-intermediate link of the chain above, is declared FAR BELOW this node in
-the same module, so none of them is in scope at all.  (A line count stood
-here and is deliberately gone: it drifted by ~800 lines in a day, which is
-exactly how docstring prose in this file goes stale.  Locate the links by
-NAME.)  The two other copies of
-the dichotomy are excluded as well: `IsHardlyRamified.mod_three_reducible`
-is the `p = 3` half and says nothing at `ℓ ≥ 5`, and `Reducible.lean`'s B5
-routes through `Family.lean`, which the inherited circularity guard above
-forbids.  Anyone who "discharges" this node quickly has almost certainly
-re-derived one of those three and should re-read this paragraph.
-
-────────────────────────────────────────────────────────────────────
-PLACE-AXIS SHARPNESS (2026-07-26).  THE SPLIT/INERT CUT IS ALREADY
-SHARP: THE BASE FIELD `F` DISCHARGES NOTHING FURTHER.
-
-The obvious next sharpening is to peel off, in addition, every place `w`
-of `M` whose residue cardinality is realized by a good place of the base
-field `F` — using `Wit.modularF` in place of `hPL`, with the same
-residue-cardinality lemma `charFrob_baseChange_eq_of_absNorm_eq`.  That
-set is empty beyond what `hPL` already covers, so the sharpening is a
-no-op.  Proof: `F/ℚ` is Galois, so every place of `F` over `q` has the
-same residue degree `f_F = ord(Frob_q)`.  If some place `u` of `F` has
-`Nu = Nw = q^{f_M(w)}` then `f_M(w) = f_F`; picking any place `u'` of `F`
-ABOVE `w` gives `f_F = f(u'/w)·f_M(w) = f(u'/w)·f_F`, hence
-`f(u'/w) = 1`; hence the place `v' = u' ∩ L` has `f(v'/w) ∣ f(u'/w) = 1`,
-so `Nv' = Nw`.  Only finitely many places carry any one norm
-(`Ring.HasFiniteQuotients.finite_absNorm_heightOneSpectrum_le`), so
-`v' ∉ SL` as soon as `Nw > max {Nv : v ∈ SL}`, and `hPL` already answers
-at `w`.  Contrapositive, worth stating: this node's hypothesis
-(`Nw` not realized in `L`) already implies `Nw` is not realized in `F`.
-
-Related, and also verified: this node's hypothesis FORCES `w` to be
-unramified and inert in `L/M`.  The place `v` of `L` above `w` has
-`Nv = Nw^{f(v/w)}` with `e(v/w)·f(v/w) = p`; `f(v/w) = 1` would give
-`Nv = Nw`, excluded; so `f(v/w) = p` and `e(v/w) = 1`.  The node's name
-is therefore accurate and not merely suggestive.
-
-────────────────────────────────────────────────────────────────────
-WHAT IS FORMALLY DERIVABLE AT AN INERT PLACE, AND WHY THE REMAINDER IS
-ATOMIC (2026-07-26 — an independent re-derivation of the analysis that
-led the author of the cut to REJECT the three-leaf automorphic
-build-out; do not re-cut along that seam).
-
-Write `A = ρ|_{G_M}(Frob_w)`, `s = tr A`, and note `det A = Nw ∈ ℚ` by
-the PROVEN `charFrob_baseChange_coeff_zero_eq_absNorm`.  The unique place
-`v` of `L` over the (inert, by the previous paragraph) place `w` has
-`Nv = Nw^p` and `Frob_v = Frob_w^p`, so
-`(ρ|_{G_L}).charFrob v = charpoly(A^p) = X² − D_p(s, Nw)·X + Nw^p`,
-where `D_p` is the Dickson polynomial expressing `α^p + β^p` in the
-elementary symmetric functions `e₁ = s`, `e₂ = Nw`.  Hence `hPL` at `v`
-yields exactly
-
-    `D_p(s, Nw) ∈ Set.range ψℓ`   and   `Nw ∈ ℚ ⊆ Set.range ψℓ`,
-
-i.e. **`s` is a root of an explicit degree-`p` polynomial with
-coefficients in `E`** — and that is ALL that is formally derivable here.
-The `p` roots are `ζ^j α + ζ^{−j} β` (`ζ^p = 1`): precisely the fibre of
-cyclic base change, a torsor under the order-`p` character group of
-`Gal(L/M)`.  Selecting the `E`-rational root is the whole of the
-citation, and nothing in this module distinguishes it; any cut along that
-seam needs `μ_p ⊆ Set.range ψℓ`, which is FALSE for an abstract carrier
-(`E = ℚ`, `p = 5`) and whose own collapse route is circular by the ROUTE
-AUDIT above.  Such a leaf would have neither a classical nor a collapse
-route — strictly worse than this node.  The weakening that IS derivable,
-"`ιO (coeff 1)` is algebraic of degree `≤ p` over `Set.range ψℓ`", is not
-a shape the consumer `heckeSystemDescendsTo_of_prime_cyclic_step` can
-use.
-
-Two further cuts were examined and rejected on the same ground: an
-interface structure carrying `bad`/`a`/`ζ`/`carayol` fields (a rename
-with a one-line assembly, not a decomposition), and the `SL`-free
-restatement of the place hypothesis, `∀ v, Nv ≠ Nw` in place of
-`∀ v ∉ SL, Nv ≠ Nw`.  The latter LOOKS like a strengthening of the
-hypothesis but is interderivable with it — `S` is existentially
-quantified, and only finitely many places of `M` have norm at most
-`max {Nv : v ∈ SL}` — so it removes no burden and was deliberately not
-made.
-
-────────────────────────────────────────────────────────────────────
-INFORMATION AUDIT (2026-07-26, SECOND OWNER — an independent
-re-derivation which CLOSES THE `F`-AXIS COMPLETELY and thereby makes
-the atomicity claim above airtight rather than merely argued).
-
-RESULT: `D_p(s, Nw) ∈ Set.range ψℓ` together with `Nw ∈ ℚ` is not just
-what one derivation happens to yield — it is the ENTIRE information
-about `s = tr ρ|_{G_M}(Frob_w)` contained in the hypothesis package.
-Three axes, all now closed:
-
-* *The `L`-axis.*  By the PROVEN
-  `charFrob_baseChange_eq_of_absNorm_eq`, `charFrob` depends only on
-  the residue cardinality, so a place `v' ∉ SL` of `L` constrains `s`
-  only through `Nv'`.  This node's hypothesis kills `Nv' = Nw`; the
-  place `v` above `w` has `Nv = Nw^p` and yields `D_p(s, Nw)`; any
-  other `v'` with `Nv' = Nw^p` yields the SAME polynomial.  Every
-  remaining `v'` speaks about a different residue cardinality, hence
-  about a different Frobenius, hence not about `s` at all.
-
-* *The `F`-axis, sharper than the previous section.*  PLACE-AXIS
-  SHARPNESS above showed only that the `Nu = Nw` sharpening is a no-op.
-  In fact `Wit.modularF` contributes NOTHING WHATEVER at the places of
-  `F` above `w`, and the reason is a divisibility rather than a
-  finiteness estimate.  `M ⊆ L ⊆ F`, so every place `u` of `F` above
-  `w` lies above the place `v` of `L` above `w`, whence
-  `f(u/w) = f(u/v)·f(v/w) = f(u/v)·p`.  Writing `d = f(u/w) = p·e`,
-  `N = Nw` and `α, β` for the eigenvalues,
-
-      `α^d + β^d = (α^p)^e + (β^p)^e = D_e(α^p + β^p, N^p)
-                 = D_e(D_p(s, N), N^p)`,
-
-  a polynomial with RATIONAL coefficients in the datum `hPL` already
-  supplies.  So `modularF` at `u` is a formal consequence of the
-  `L`-axis datum, not an independent constraint — for EVERY place of
-  `F` above `w`, not merely for those of equal norm.
-
-* *Why that divisibility is the whole story.*  The one shape that WOULD
-  close this node is a second Dickson relation of degree COPRIME to
-  `p`: if `D_d(s, N) ∈ E` and `D_p(s, N) ∈ E` with `gcd(d, p) = 1`,
-  then the base-change torsor selects the `E`-rational root, because a
-  `σ` moving `s` multiplies `α` by a primitive `p`-th root of unity `ζ`
-  and then `D_d` moves by `ζ^d ≠ 1`.  The bullet above says such a `d`
-  NEVER ARISES in this tower: `p ∣ f(u/w)` at every place above `w`.
-
-  Coprimality is moreover genuinely load-bearing and not merely
-  convenient — the two Dickson relations ALONE, without the torsor, do
-  not suffice.  Explicit counterexample (verified numerically), with
-  `E = ℚ`, `p = 3`, `d = 2`, `N = 5`: take `α = √5·ζ₁₂` and
-  `β = √5·ζ₁₂⁻¹`, so `αβ = 5` and `s = α + β = √15 ∉ ℚ`, while
-  `α² + β² = 5·(ζ₁₂² + ζ₁₂⁻²) = 5 ∈ ℚ` and
-  `α³ + β³ = 5^{3/2}·(ζ₁₂³ + ζ₁₂⁻³) = 0 ∈ ℚ`.  Determinant rational,
-  both Dickson values rational, `gcd(2,3) = 1`, trace irrational — so
-  there is NO purely algebraic implication
-  `(D_d(s,N), D_p(s,N), N ∈ E) ⟹ s ∈ E`.  What fails is exactly the
-  torsor hypothesis: the `σ` with `√15 ↦ −√15` sends `α ↦ −β`, i.e. it
-  twists by a SECOND root of unity, which is not a shape cyclic base
-  change of degree `3` can produce.  Anyone who tries to close this node
-  by assembling Dickson relations should read this paragraph first.
-
-Conclusion: the residual content is precisely the selection of the
-`E`-rational root of `D_p(X, Nw) − c`, and that selection IS the
-Arthur–Clozel character identity.  The two cuts the author of the cut
-rejected on grounds of taste (an information-carrying interface, and a
-place-axis refinement) are now excluded on grounds of information: there
-is nothing left in the package to cut along.
-
-────────────────────────────────────────────────────────────────────
-WHERE THE RESIDUAL BURDEN REALLY SITS — A CARRIER-LEVEL OBLIGATION THAT
-`PotentialModularityWitness` DOES NOT RECORD (2026-07-26, reported
-upwards rather than repaired here).
-
-The fibre of cyclic base change is a torsor under the characters of
-`Gal(L/M)`, so `ρ|_{G_M}` is itself attached to a member `f'` of that
-fibre — there is no residual twist to control, and the traces asked for
-here are literally the Hecke eigenvalues of `f'`.  The whole content of
-this node is therefore the FIELD-THEORETIC normalization
-
-    Hecke field of the descended form `f'`  ↪  `E`,  compatibly with `ψℓ`.
-
-Classically the Hecke field can GROW on the way down: `E` is pinned by
-the structure only through `modularF`/`matchF₃`, i.e. as a field carrying
-the eigensystem over `F`, and the eigenvalues over `F` at a place `u` of
-residue degree `d` over `w` are `α^d + β^d`, which generate a subfield of
-`ℚ(α + β)` that is in general PROPER.  The statement of this node is
-nevertheless true — the package is classically unsatisfiable (route (ii))
-— but on the classical route (i) it is true only for a carrier whose `E`
-was chosen large enough for the entire descent, e.g. the compositum of
-the Hecke fields of all descended forms in the Brauer decomposition
-(a finite compositum, hence still a number field).  That is a legitimate
-choice and the producing leaf
-`exists_potentialModularityWitness_of_five_le` must be understood as
-making it, but `PotentialModularityWitness` records no such field and its
-docstring calls `E` simply "the Hecke field of the attached Hilbert
-newform" over `F`.  Whoever proves the witness-production leaf needs to
-know this.
-
-REPAIRED 2026-07-26 (second owner), and it turned out NOT to be a
-cut-level change: the structure never asserted that `heckeF` GENERATES
-`E`, so `E` may be replaced by any finite extension without touching a
-single consumer — `ψℓ` and `ψ₃` extend because `ℚ̄_ℓ` and `ℚ̄_3` are
-algebraically closed of characteristic zero, and `modularF`/`matchF₃`
-are preserved by functoriality of `Polynomial.map`.  The obligation was
-therefore a MISDESCRIPTION rather than a missing field, and the repair
-is the DESCENT-CLOSURE note now carried by the
-`PotentialModularityWitness` docstring, by its `E` field, and by
-`exists_potentialModularityWitness_of_five_le`.  Route (i) is thereby
-available at this node for the intended carrier, and route (ii) remains
-available for every carrier; the citation's own content is unchanged.
-
-────────────────────────────────────────────────────────────────────
-UPSTREAM NOTE — THE `R = 𝕋` REPAIR DOES NOT REACH THIS NODE (recorded
-2026-07-26, third owner; a note, NOT a fourth audit).
-
-`exists_heckeEigensystem_of_congruentSeed` is being repaired from a
-formally empty package (`badF := ∅`, eigenvalues read off the
-characteristic polynomial) into a genuine `R = 𝕋` citation outputting a
-number field, an embedding into `ℚ̄_ℓ`, a bad set containing the places
-over `ℓ`, and the TRACE only.  That leaf reaches this one along exactly
-one path — `exists_heckePackage_of_seed`, then
-`exists_potentialModularityWitness_of_five_le`, i.e. it supplies the
-carrier's Hecke block over `F`, `Wit.modularF`.  And the `F`-axis bullet
-of the INFORMATION AUDIT above closes that path OUTRIGHT: at every place
-`u` of `F` above `w` one has `p ∣ f(u/w)`, so `modularF` at `u` is the
-formal consequence `D_e(D_p(s, Nw), Nw^p)` of the `hPL` datum this node
-already receives.  A redundant constraint does not stop being redundant
-when its supplier gets stronger, so the repair changes nothing here and
-the terminality argument stands unmodified.  Do not re-open this node on
-the strength of that repair.
-
-THIRD OWNER, 2026-07-26 — THE NODE IS NOW PROVEN, AND ONE CLAIM OF THE
-INFORMATION AUDIT ABOVE IS REFUTED.
-
-Everything above about the PLACE axis and the `F` axis stands.  What was
-wrong was the last step of the atomicity argument: the audit identified
-the residual content as *"the selection of the `E`-rational root of
-`D_p(X, Nw) − c`"* and concluded that any cut along it would need
-`μ_p ⊆ Set.range ψℓ`, which is false for an abstract carrier.  Correct
-for THAT seam — the `p` competing Dickson roots `ζ^j α + ζ^{−j} β` all
-have determinant `Nw`, so the determinant separates none of them, and
-only the roots of unity themselves are left to appeal to.
-
-But the root-selection seam is not the only seam, and it is not the one
-the literature theorem is stated along.  Arthur–Clozel's descent
-(Ch. 3 Thm 4.2(d)) delivers the fibre `{π ⊗ η^j}`, a torsor under the
-CHARACTER group of `Gal(L/M)` — and character twists, unlike Dickson
-conjugates, MOVE THE DETERMINANT: `det(ρ_π ⊗ η^j) = η^{2j}·det ρ_π`.
-Cutting there gives the citation leaf above, whose conclusion carries a
-`p`-th root of unity `ζ w` acting on the charpoly coefficient in degree
-`i` by `ζ w ^ (2 − i)`, and the twist is then killed by material this
-module already PROVES:
-
-* `charFrob_baseChange_coeff_zero_eq_absNorm` puts the constant
-  coefficient at `Nw ∈ ℚ`, so `ζ w ^ 2 · ψℓ (δ w) = Nw` forces
-  `ζ w ^ 2 ∈ Set.range ψℓ` — with no appeal to roots of unity at all;
-* a `p`-th root of unity whose SQUARE lies in a subfield lies in that
-  subfield: for `p = 2`, `ζ ^ 2 = 1` gives `ζ = ±1`; for `p` odd,
-  `ζ = ζ ^ (p+1) = (ζ ^ 2) ^ ((p+1)/2)`.
-
-Hence `ζ w ∈ Set.range ψℓ` and the linear coefficient
-`ζ w · ψℓ (a w)` lands in `Set.range ψℓ`.  So `μ_p ⊆ Set.range ψℓ` is
-NOT needed on this seam; what is needed is only that the SQUARE of the
-twist is forced into `E`, and the rational determinant of a hardly
-ramified `ρ` supplies exactly that, for free.
-
-What this cut is and is not.  It is a FAITHFULNESS cut, not a reduction
-in logical strength: away from `ℓ` the citation leaf and this node are
-interderivable (take `ζ w = 1`), and the `sorry` count is unchanged.  Its
-value is that the sorried statement is now the one a reader can check
-line by line against Ch. 3 Thm 4.2(d), rather than one that silently
-absorbs the selection of the untwisted member of the fibre — and that
-selection, which is arithmetic rather than automorphic, is now a checked
-Lean proof.  The INFORMATION AUDIT's own framing anticipated this without
-seeing it: it noted that the residual burden is "the FIELD-THEORETIC
-normalization" and that "there is no residual twist to control", but
-recorded no reason why; the reason is the determinant, and it is
-formalizable. -/
-theorem exists_heckeTrace_of_prime_cyclic_step_of_inert
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
-    (Wit : PotentialModularityWitness ℓ O ρ)
-    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
-    (hnormal : (C.subgroupOf D).Normal)
-    (p : ℕ) (hp : p.Prime)
-    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
-    (EL : Type u) [Field EL] [NumberField EL]
-    (ψL : EL →+* AlgebraicClosure ℚ_[ℓ])
-    (SL : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
-      (IntermediateField.fixedField C))))
-    (PL : HeightOneSpectrum (NumberField.RingOfIntegers
-      (IntermediateField.fixedField C)) → Polynomial EL)
-    (hPL : ∀ v ∉ SL,
-      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
-        v).map Wit.ιO = (PL v).map ψL) :
-    ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
-      (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ιM : EL →+* EM),
-      (∀ x : EL, ψM (ιM x) = ψL x) ∧
-      ∃ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
-          (IntermediateField.fixedField D))),
-        ∀ w ∉ S,
-          (∀ v ∉ SL, Ideal.absNorm v.asIdeal ≠ Ideal.absNorm w.asIdeal) →
-          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
-            w).coeff 1) ∈ Set.range ψM := by
-  classical
-  -- the literature citation: Arthur–Clozel descent, up to the `η`-torsor.  It
-  -- returns the descended data over a Hecke field `EM ⊇ EL`; the field GROWS
-  -- (Dickson), so `EM` is existential here exactly as it is there.
-  obtain ⟨EM, _, _, ψM, ιM, hψι, S₀, a, δ, ζ, hdata⟩ :=
-    exists_baseChangeDescentData_of_prime_cyclic_step_of_inert hℓodd hℓ5
-      hZinj hrank hρ hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard
-      EL ψL SL PL hPL
-  -- the finitely many places over `ℓ`, where `ρ` is ramified and the
-  -- cyclotomic-determinant lemma does not apply
-  obtain ⟨Sℓ, hSℓ⟩ := exists_finset_forall_natCast_notMem_asIdeal
-    (IntermediateField.fixedField D) ℓ (Fact.out : ℓ.Prime).ne_zero
-  refine ⟨EM, inferInstance, inferInstance, ψM, ιM, hψι, S₀ ∪ Sℓ,
-    fun w hw hinert => ?_⟩
-  simp only [Finset.mem_union, not_or] at hw
-  obtain ⟨hw₀, hwℓ⟩ := hw
-  obtain ⟨hζp, hcoeff1, hcoeff0⟩ := hdata w hw₀ hinert
-  -- the constant coefficient is the rational integer `Nw` (cyclotomic determinant)
-  have hdet : ((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
-      w).coeff 0 = (Ideal.absNorm w.asIdeal : O) :=
-    charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ _ w (hSℓ w hwℓ)
-  have hNw : (Ideal.absNorm w.asIdeal : EM) ≠ 0 :=
-    Nat.cast_ne_zero.mpr fun h => w.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
-  have hNψ : ψM ((Ideal.absNorm w.asIdeal : EM)) = ζ w ^ 2 * ψM (δ w) := by
-    rw [← hcoeff0, hdet, map_natCast, map_natCast]
-  have hδne : ψM (δ w) ≠ 0 := by
-    intro h
-    rw [h, mul_zero] at hNψ
-    exact (map_ne_zero_iff _ ψM.injective).mpr hNw hNψ
-  -- the SQUARE of the base-change twist is therefore forced into `ψM(EM)`
-  have hζsq : ζ w ^ 2 = ψM ((Ideal.absNorm w.asIdeal : EM) / δ w) := by
-    rw [map_div₀, hNψ, mul_div_assoc, div_self hδne, mul_one]
-  -- and a `p`-th root of unity whose square lies in a subfield lies in it
-  have hζ : ∃ e : EM, ψM e = ζ w := by
-    rcases hp.eq_two_or_odd' with hp2 | hpodd
-    · rw [hp2] at hζp
-      have h1 : (ζ w - 1) * (ζ w + 1) = 0 := by linear_combination hζp
-      rcases mul_eq_zero.mp h1 with h | h
-      · exact ⟨1, by rw [map_one]; linear_combination -h⟩
-      · exact ⟨-1, by rw [map_neg, map_one]; linear_combination -h⟩
-    · obtain ⟨m, hm⟩ := hpodd
-      refine ⟨((Ideal.absNorm w.asIdeal : EM) / δ w) ^ (m + 1), ?_⟩
-      rw [map_pow, ← hζsq, ← pow_mul]
-      have h2 : 2 * (m + 1) = p + 1 := by omega
-      rw [h2, pow_succ, hζp, one_mul]
-  obtain ⟨e, he⟩ := hζ
-  exact ⟨e * a w, by rw [map_mul, he, hcoeff1]⟩
-
-/-- **The TRACE of one PRIME-degree cyclic step of solvable base change**
-(PROVEN 2026-07-26 over the split/inert cut below — was itself the
-terminal literature citation of the `ℓ`-adic solvable descent, Langlands
-1980, Arthur–Clozel 1989): if the eigensystem of `ρ`
-descends to the fixed field `L = F^C`, and `C ≤ D` is normal with
-quotient `D/C` of PRIME order `p` (equivalently: `L/M` is a cyclic Galois
-extension of degree `p`, where `M = F^D`), then away from a finite set of
-places `w` of `M` the LINEAR coefficient of the Frobenius characteristic
-polynomial of `ρ|_{G_M}` — i.e. `−a_w`, the Hecke eigenvalue of the
-descended Hilbert newform — is algebraic and lies in a number field
-containing the carrier's Hecke field `E`, read through an embedding into
-`ℚ̄_ℓ` extending `ψℓ`.
-
-**RESTATED 2026-07-27 OVER THE EXISTENTIAL COEFFICIENT FIELD, AND
-RECONNECTED TO `HeckeSystemDescendsTo`.**  Two changes, both forced by the
-2026-07-27 cut-level repair of `HeckeSystemDescendsTo`:
-
-* the HYPOTHESIS is now `HeckeSystemDescendsTo Wit C` itself.  It used to
-  be the transition scaffold `HeckeSystemDescendsToRaw` — the pre-repair,
-  automorphy-free, fixed-`Wit.E` predicate — which had no producer left
-  and has now been RETIRED.  Only the eigensystem clause of
-  `HeckeSystemDescendsTo` is consumed here; its cuspidality and
-  `Gal(L/M)`-invariance clauses are the input of the repaired citation
-  `exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert`, not of
-  this trace-only route;
-* the CONCLUSION existentially quantifies the descended coefficient field:
-  a number field `EM` with `ψM : EM → ℚ̄_ℓ` and `ι : Wit.E →+* EM`
-  satisfying `ψM ∘ ι = ψℓ`, and the trace lies in `Set.range ψM`.  It used
-  to demand `Set.range Wit.ψℓ`, which the Dickson field-growth argument
-  refutes for an arbitrary carrier: at an inert `w` the descended
-  eigenvalue is a ROOT of `a_W = D_p(a_w, Nw)`, hence of degree up to `p`
-  over the previous Hecke field, and no a-priori bound pins it back (the
-  explicit counterexample `E = ℚ`, `p = 3`, `ℓ = 11`, `Nw = 9`, `x = 3√3`,
-  `c = 0` is recorded on the citation below).  So this is a repair of a
-  statement that was FALSE for a general carrier, not a weakening of a
-  provable one.
-
-The `Wit.E`-rationality that the downstream Brauer gluing genuinely needs
-— all pieces read in ONE field — is the separately named obligation
-`heckeField_descentClosed_of_witness`, which is where that content now
-lives.
-
-TRACE-ONLY SHARPENING (2026-07-25).  This node used to be the FULL
-statement `HeckeSystemDescendsTo Wit C → HeckeSystemDescendsTo Wit D`.
-That is strictly more than the literature theorem is needed for: a
-rank-`2` Frobenius characteristic polynomial is `X² − tr·X + det`, and
-for a hardly ramified `ρ` the DETERMINANT is the `ℓ`-adic cyclotomic
-character, whose value at a Frobenius at `w ∤ ℓ` is the rational integer
-`Nw` — so the constant coefficient descends to `ℚ ⊆ E` with NO
-automorphic input at all (`charFrob_baseChange_coeff_zero_eq_absNorm`,
-proven earlier in this module over the pure algebraic-number-theory leaf
-`cyclotomicCharacter_adicArithFrob_base_eq_absNorm`).  Only the TRACE
-carries automorphic content, and only the trace is asked for here; the
-consumer `heckeSystemDescendsTo_of_prime_cyclic_step` below reassembles
-the polynomial formally.  This is the same trace/determinant split this
-module already makes at the base field `F`
-(`exists_heckeEigensystem_of_congruentSeed`, which asks for the TRACE
-datum only, +
-`charFrob_map_eq_heckePolynomial_of_heckeTrace` over
-`charFrob_baseChange_coeff_zero_eq_absNorm`), now made at every stage of
-the descent tower.
-
-RANGE FORM (why this is the sharp statement, mirroring the base-field
-citation `exists_heckeEigensystem_of_congruentSeed`): stating the conclusion as
-`… ∈ Set.range ψM` rather than as the existence of a function
-`a : places → EM` removes the choice-theoretic packaging from the citation
-— the packaging is discharged formally in the consumer — and leaves
-exactly the mathematical assertion "the descended Hecke eigenvalues are
-algebraic and lie in the descended Hecke field".
-
-VACUITY AUDIT (2026-07-25, RE-CHECKED 2026-07-27 AGAINST THE EXISTENTIAL
-COEFFICIENT FIELD): this node is NOT vacuous.  `EM` is existential but is
-constrained to be a NUMBER FIELD, so `Set.range ψM` is algebraic over `ℚ`
-inside `ℚ̄_ℓ` while the trace is an a priori arbitrary `ℚ̄_ℓ`-value; no
-junk witness discharges it — exactly as for its base-field cousin
-`exists_heckeEigensystem_of_congruentSeed`, and exactly unlike a statement
-whose target is a finite field.  (Dropping `NumberField EM` WOULD make it
-vacuous — `EM := ℚ̄_ℓ`, `ψM := id` — which is why that instance binder is
-load-bearing and must not be relaxed.)
-
-WHY PRIME DEGREE IS THE SHARPEST JOINT (2026-07-25): the twisted trace
-formula of Langlands/Arthur–Clozel is run for a cyclic extension of
-PRIME degree — that is the case in which the character identity
-`Θ_{BC(π)}(g × σ) = Θ_π(N g)` is proved and in which the fibre of base
-change is a torsor under the (order-`p`) character group of
-`Gal(L/M)`. The general cyclic case is not a separate theorem but the
-composition of prime steps, and the general solvable case the
-composition of cyclic ones. This module now carries both compositions
-formally (`exists_intermediate_of_isCyclic_quotient` for cyclic → prime,
-`exists_cyclicRefinement_of_isSolvable` for solvable → cyclic), so this
-node is the only remaining citation on the descent route: below it lie
-the trace formula and the twisted character identity, not further
-group-theoretic bookkeeping.
-
-Classically, in three moves — the joints of the literature argument, in
-order:
-
-* *Cyclic ascent (base change).* `Gal(L/M) ≅ D/C` is cyclic of order
-  `p`; Langlands' cyclic base change `BC_{L/M}` is defined on the
-  cuspidal spectrum of `GL(2)/M` and characterized by the Arthur–Clozel
-  twisted character identity. The descended system over `L`
-  (hypothesis `hC`) is, through Carayol local–global compatibility, the
-  eigensystem of a Hilbert newform `f_L` over `L`.
-* *`Gal(L/M)`-invariance.* `f_L`'s Galois representation is `ρ|_{G_L}` —
-  the restriction to `G_L` of the representation `ρ|_{G_M}` of the
-  LARGER group `G_M` — hence visibly `Gal(L/M)`-invariant: for
-  `σ ∈ Gal(L/M)`, `f_L^σ` has the same Frobenius eigenvalues as `f_L` at
-  almost all places, so `f_L^σ = f_L` by strong multiplicity one.
-* *Cyclic descent (the twisted character identity).* A
-  `Gal(L/M)`-invariant cuspidal automorphic representation of `GL(2)/L`
-  is in the image of base change from `GL(2)/M`, and its fibre is a
-  torsor under the characters of `Gal(L/M)` (Langlands, *Base Change for
-  GL(2)*, Ann. of Math. Studies 96 (1980), Ch. 2 and Thm 4.2;
-  Arthur–Clozel, *Simple Algebras, Base Change, and the Advanced Theory
-  of the Trace Formula*, Ann. of Math. Studies 120 (1989), Ch. 3 Thm 4.2
-  and Ch. 1 §6 for the identity `Θ_{BC(π)}(g × σ) = Θ_π(N g)` that
-  defines and characterizes the transfer). So there is a Hilbert newform
-  `f_M` over `M` with `BC_{L/M}(f_M) = f_L`; its `ℓ`-adic representation
-  restricted to `G_L` agrees with `ρ|_{G_L}`, hence differs from
-  `ρ|_{G_M}` by a twist by a character of `Gal(L/M)` — of order dividing
-  `p`, so with values `p`-th roots of unity.
-
-Carayol's local–global compatibility over `M` then identifies the
-Frobenius TRACES of the (twisted) `f_M`-system with Hecke eigenvalues;
-those eigenvalues, enlarged by the twisting-character values, lie in the
-carrier's `E`, which is, per the consumers' docstrings, the Hecke field
-OF THE DESCENDED system, the normalization that absorbs exactly these
-enlargements. The finite exceptional set collects the places of `M`
-below the bad set of the `L`-system, the places over `2`, `3`, `ℓ`, and
-the places ramified in `L/M`.
-
-Literature: Langlands 1980 and Arthur–Clozel 1989 as above;
-Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and change of
-weight*, Ann. of Math. 179 (2014), §5.3 (this descent per Brauer piece,
-verbatim); Khare–Wintenberger, *Serre's modularity conjecture (I)*,
-Invent. Math. 178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986).
-
-ASSEMBLY (2026-07-26) — THE SPLIT/INERT CUT.  This node is now PROVEN,
-over two leaves that divide the places of `M` by whether the descended
-system over `L` already answers at them:
-
-* `charFrob_baseChange_eq_of_absNorm_eq` (PURE ALGEBRAIC NUMBER THEORY,
-  no automorphic input): for a hardly ramified `ρ`, `charFrob` depends
-  only on the RESIDUE CARDINALITY of the place, away from `2` and `ℓ`.
-  So if some place `v` of `L` outside the `L`-system's bad set has
-  `Nv = Nw`, then `(ρ|_{G_M}).charFrob w = (ρ|_{G_L}).charFrob v`, and
-  the hypothesis `hC` — read coefficientwise in degree `1` through
-  `Polynomial.coeff_map` — puts the trace at `w` in `Set.range ψℓ` with
-  no automorphic input at all.  Every place of `M` SPLIT in `L/M` is of
-  this kind (a place of `L` above it has residue degree `1`, hence equal
-  norm), so the split half of the prime cyclic step is discharged
-  formally here.
-* `exists_heckeTrace_of_prime_cyclic_step_of_inert` (PROVEN 2026-07-26
-  over the automorphic citation, see next bullet): the same statement at
-  the remaining places — those whose residue cardinality is realized by
-  no good place of `L`, classically the INERT ones.  Its hypothesis
-  package is this node's, verbatim, with `hC` unfolded into the
-  `L`-system `(SL, PL, hPL)` that the citation actually consumes.
-* `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` (THE
-  residual automorphic citation, and the only `sorry` left on the
-  descent route): Arthur–Clozel Ch. 3 Thm 4.2(d), stated in the shape the
-  reference actually delivers — descent up to the torsor of characters of
-  `Gal(L/M)`.  The twist is removed formally by the rationality of the
-  determinant; see that leaf's docstring.
-
-The finite bad set is the union of the citation's own set with the
-places over `2` and over `ℓ` (finite by
-`exists_finset_forall_natCast_notMem_asIdeal`), where the
-residue-cardinality lemma does not apply because `ρ` is ramified there.
-This is the same style of sharpening as the trace/determinant split
-recorded above — peel off the half that is pure algebraic number theory
-— applied now to the PLACES rather than to the coefficients.
-
-PIN AUDIT (2026-07-24/25): no automorphic-representation vocabulary
-exists on this pin, and the reference project's `cyclic_base_change`
-(`~/cs/FLT`, `FLT/GaloisRepresentation/Automorphic.lean`) is itself a
-sorried statement phrased through an `IsAutomorphic` predicate on
-quaternionic forms — vocabulary this project does not have (see the
-`HeckeSystemDescendsTo` docstring). Nothing is vendorable, on this pin
-or after a pin-drift audit.  That is why the split/inert cut above is a
-cut of the CONCLUSION and not a reduction to library automorphic
-material: the automorphic content survives, undiminished, in the inert
-half.
-
-SOUNDNESS AUDIT (both ways, 2026-07-24/25): (i) direct — for the carrier
-produced by the inhabitation leaf and a system produced by the chain
-this is the argument above, with the Hecke-field enlargements landing in
-`E` by the carrier's normalization; for an abstract carrier the
-abstract-quantification caveat of pillar β applies (in particular
-nothing formal ties the twisting-character values into `E`; that
-identification is part of the citation), and (ii) collapse — the
-hypothesis package (an irreducible hardly ramified mod-`ℓ`
-representation, `ℓ ≥ 5`) is classically unsatisfiable (headline below),
-so the statement is classically true for every package. The full
-hypothesis package of the general cyclic step is retained verbatim here
-PRECISELY to keep route (ii) available: the prime-degree sharpening and
-the trace-only sharpening are sharpenings of the group-theoretic and of
-the linear-algebraic hypothesis respectively, never a weakening of the
-arithmetic one.
-
-ROUTE AUDIT (2026-07-24): discharge by vacuity — `absurd hirr
-(not_isIrreducible_of_isHardlyRamified_of_five_le …)`, the route the
-interface leaves of `Modularity/Interface.lean` take — is NOT available
-here: the headline consumes this node (headline ←
-`exists_threeadic_compatible_member_of_five_le` ←
-`exists_heckeField_system_of_witness` ←
-`exists_descended_heckeSystem_of_solvable` ←
-`heckeSystemDescendsTo_of_cyclic_step` ←
-`heckeSystemDescendsTo_of_prime_cyclic_step` ← this node), so the
-vacuity route would be circular. The classical route above is the one to
-follow.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem exists_heckeTrace_of_prime_cyclic_step
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
-    (Wit : PotentialModularityWitness ℓ O ρ)
-    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
-    (hnormal : (C.subgroupOf D).Normal)
-    (p : ℕ) (hp : p.Prime)
-    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
-    (hC : HeckeSystemDescendsTo Wit C) :
-    ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
-      (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ι : Wit.E →+* EM),
-      (∀ x : Wit.E, ψM (ι x) = Wit.ψℓ x) ∧
-      ∃ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
-          (IntermediateField.fixedField D))),
-        ∀ w ∉ S,
-          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
-            w).coeff 1) ∈ Set.range ψM := by
-  classical
-  -- the descended system over `L = F^C`, unfolded.  Only its EIGENSYSTEM clause
-  -- is consumed here; cuspidality and `Gal(L/M)`-invariance are the input of the
-  -- repaired citation `exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert`,
-  -- not of this trace-only route.
-  obtain ⟨EL, _, _, ψL, ιL, hψιL, SL, aL, h1L, -, -⟩ := hC
-  -- the automorphic citation, at the places of `M` no good place of `L` matches.
-  -- The Hecke field GROWS across the step (Dickson), so `EM` is existential.
-  obtain ⟨EM, _, _, ψM, ιM, hψιM, Sin, hSin⟩ :=
-    exists_heckeTrace_of_prime_cyclic_step_of_inert hℓodd hℓ5
-      hZinj hrank hρ hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard
-      EL ψL SL
-      (fun v => Polynomial.X ^ 2 - Polynomial.C (aL v) * Polynomial.X +
-        Polynomial.C ((Ideal.absNorm v.asIdeal : ℕ) : EL)) h1L
-  -- the finitely many places of `M` over `2` and over `ℓ`, where `ρ` is ramified
-  -- and the residue-cardinality lemma does not apply
-  obtain ⟨S2, hS2⟩ := exists_finset_forall_natCast_notMem_asIdeal
-    (IntermediateField.fixedField D) 2 (by norm_num)
-  obtain ⟨Sℓ, hSℓ⟩ := exists_finset_forall_natCast_notMem_asIdeal
-    (IntermediateField.fixedField D) ℓ (Fact.out : ℓ.Prime).ne_zero
-  refine ⟨EM, inferInstance, inferInstance, ψM, ιM.comp ιL,
-    fun x => by rw [RingHom.comp_apply, hψιM, hψιL], Sin ∪ S2 ∪ Sℓ, fun w hw => ?_⟩
-  simp only [Finset.mem_union, not_or] at hw
-  obtain ⟨⟨hwin, hw2⟩, hwℓ⟩ := hw
-  by_cases hsplit : ∃ vL ∉ SL, Ideal.absNorm vL.asIdeal = Ideal.absNorm w.asIdeal
-  · -- SPLIT half: a good place of `L` of the same residue cardinality answers,
-    -- with no automorphic input, its value pushed forward along `ιM`
-    obtain ⟨vL, hvS, hvnorm⟩ := hsplit
-    have heq := charFrob_baseChange_eq_of_absNorm_eq hℓodd hrank hρ
-      (IntermediateField.fixedField D) (IntermediateField.fixedField C) w vL
-      (hS2 w hw2) (hSℓ w hwℓ) hvnorm
-    have hmatch := h1L vL hvS
-    rw [heq] at hmatch
-    have hcoeff := congrArg
-      (fun P : Polynomial (AlgebraicClosure ℚ_[ℓ]) => P.coeff 1) hmatch
-    simp only [Polynomial.coeff_map] at hcoeff
-    have hcc : (Polynomial.X ^ 2 - Polynomial.C (aL vL) * Polynomial.X +
-        Polynomial.C ((Ideal.absNorm vL.asIdeal : ℕ) : EL)).coeff 1 = -(aL vL) := by
-      simp
-    rw [hcc, map_neg] at hcoeff
-    exact ⟨ιM (-(aL vL)), by rw [hψιM, map_neg, hcoeff]⟩
-  · -- INERT half: the residual citation
-    exact hSin w hwin (fun vL hvL hne => hsplit ⟨vL, hvL, hne⟩)
-
-/-- **Arthur–Clozel cyclic descent of a CUSPIDAL Hilbert eigensystem, prime
-degree, at the NON-SPLIT places, IN THE SHAPE THE REFERENCE ACTUALLY
-DELIVERS** — Arthur–Clozel, *Simple Algebras, Base Change, and the Advanced
-Theory of the Trace Formula*, Ann. of Math. Studies 120 (1989), Ch. 3
-Thm 4.2(d); Langlands, *Base Change for GL(2)*, Ann. of Math. Studies 96
-(1980).  SORRIED CITATION.
-
-**THIS IS THE CUSPIDAL ANALOGUE OF
-`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` ABOVE, AND IT
-IS THE 2026-07-27 CUT OF THE CONSUMER BELOW.**  Read that leaf's docstring
-first: everything it records about the `η`-TORSOR — why the reference
-returns the descended object only up to a character of `Gal(L/M)`, why the
-Hecke field must be existential (Dickson field growth), and the explicit
-counterexample refuting the a-priori pinning route — applies here verbatim
-and is not repeated.  The ONLY difference between the two statements is the
-fourth conjunct: this one additionally carries the RAMANUJAN–PETERSSON
-bound `‖φ(a w)‖ ≤ 2√(Nw)` on the descended eigenvalue, at every complex
-embedding of the descended Hecke field.
-
-WHY THE BOUND IS ON `a` AND NOT ON THE TWISTED VALUE.  Thm 4.2(d) returns
-a CUSPIDAL `π` over `M`; cuspidality is the theorem's OUTPUT, so the bound
-belongs to the object the reference produces — the untwisted eigensystem
-`a` — and NOT to `ζ w · ψM (a w)`, which is a bookkeeping artefact of the
-torsor.  Nothing is lost: `ζ w` is a `p`-th root of unity, the consumer
-proves it lies in `ψM(EM)`, and a root of unity has complex absolute value
-`1`, so the two bounds are equivalent once the twist is removed.  This is
-exactly why the split is faithful: it does NOT peel cuspidality off into a
-second citation (the route the consumer's ATOMICITY AUDIT rejects) — the
-one citation still returns a cuspidal object, and what is factored out of
-it is only the twist bookkeeping.
-
-FAITHFULNESS OF THE HYPOTHESES.  `hSL` is the `L`-side eigensystem in
-HILBERT-NEWFORM SHAPE (`X² − a_w·X + Nw`: parallel weight `2`, trivial
-nebentypus), `hcusp` is cuspidality of the `L`-side object as the
-Ramanujan bound — which excludes the Eisenstein eigensystem `a_w = 1 + Nw`,
-the one object for which Thm 4.2(d) fails — and `hinv` is invariance under
-`Aut(L/ℚ)`, which contains `Gal(L/M)` because `hCD`/`hnormal` make `L/M`
-Galois.  So the theorem's three classical inputs are all present among the
-binders, and none of them is decorative.
-
-CHECK THAT WOULD REFUTE THIS STATEMENT: exhibit a `Gal(L/M)`-invariant
-cuspidal Hilbert eigensystem over `L` of parallel weight `2` and trivial
-nebentypus whose descent along a cyclic degree-`p` extension either fails
-to exist, or exists only with eigenvalues generating a field of infinite
-degree over `EL`, or exists with a non-cuspidal (Eisenstein) descent while
-`hcusp` holds upstairs.
-
-SOUNDNESS AUDIT.  (i) Direct: the classical theorem, whose hypotheses are
-present among the binders.  (ii) Collapse: the arithmetic package (an
-irreducible hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`) is
-classically unsatisfiable — the module headline — so the statement is
-classically true for every package.  Route (ii) is a soundness
-justification only, NOT an available Lean discharge: the headline CONSUMES
-this subtree (see the ROUTE AUDIT on `exists_heckeTrace_of_prime_cyclic_step`),
-so `absurd hirr …` is circular here.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    (Wit : PotentialModularityWitness ℓ O ρ)
-    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
-    (hnormal : (C.subgroupOf D).Normal)
-    (p : ℕ) (hp : p.Prime)
-    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
-    (EL : Type u) [Field EL] [NumberField EL]
-    (ψL : EL →+* AlgebraicClosure ℚ_[ℓ])
-    (SL : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
-      (IntermediateField.fixedField C))))
-    (aL : HeightOneSpectrum (NumberField.RingOfIntegers
-      (IntermediateField.fixedField C)) → EL)
-    (hSL : ∀ w ∉ SL,
-      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w).map Wit.ιO =
-        (Polynomial.X ^ 2 - Polynomial.C (aL w) * Polynomial.X +
-          Polynomial.C ((Ideal.absNorm w.asIdeal : ℕ) : EL)).map ψL)
-    (hcusp : ∀ w ∉ SL, ∀ φ : EL →+* ℂ,
-      ‖φ (aL w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal))
-    (hinv : ∀ τ : IntermediateField.fixedField C ≃ₐ[ℚ] IntermediateField.fixedField C,
-      ∀ w ∉ SL, NumberField.finitePlaceEquiv τ.toRingEquiv w ∉ SL →
-        aL (NumberField.finitePlaceEquiv τ.toRingEquiv w) = aL w) :
-    ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
-      (ψM : EM →+* AlgebraicClosure ℚ_[ℓ]) (ιM : EL →+* EM),
-      (∀ x : EL, ψM (ιM x) = ψL x) ∧
-      ∃ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
-          (IntermediateField.fixedField D))))
-        (a δ : HeightOneSpectrum (NumberField.RingOfIntegers
-          (IntermediateField.fixedField D)) → EM)
-        (ζ : HeightOneSpectrum (NumberField.RingOfIntegers
-          (IntermediateField.fixedField D)) → AlgebraicClosure ℚ_[ℓ]),
-        ∀ w ∉ S,
-          (∀ v ∉ SL, Ideal.absNorm v.asIdeal ≠ Ideal.absNorm w.asIdeal) →
-          ζ w ^ p = 1 ∧
-          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
-            w).coeff 1) = ζ w * ψM (a w) ∧
-          Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
             w).coeff 0) = ζ w ^ 2 * ψM (δ w) ∧
           (∀ φ : EM →+* ℂ,
             ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)) :=
@@ -7758,11 +7056,24 @@ Advanced Theory of the Trace Formula*, Ann. of Math. Studies 120 (1989),
 Ch. 3 Thm 4.2(d); Langlands, *Base Change for GL(2)*, Ann. of Math. Studies
 96 (1980).
 
-**PROVEN 2026-07-27 (SECOND OWNER)** over the torsor-shaped citation
-`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert`
-immediately above — the same dévissage `exists_heckeTrace_of_prime_cyclic_step_of_inert`
-already makes over `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`,
-now carrying the cuspidality clause through it.  What is factored out of the
+**PROVEN 2026-07-27 (SECOND OWNER; RE-BASED 2026-07-27 BY THE SEVENTH
+OWNER OF THE CITATION)** over the torsor-shaped citation
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` immediately
+above — which now carries the Ramanujan clause as its fourth conjunct
+(finding (8) of its docstring).  It was originally proven over a SECOND,
+rival torsor-shaped citation
+(`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert`),
+which differed from the surviving one only by that clause; adding the
+clause upstream made it redundant and it was DELETED, so the descent route
+now carries ONE citation for one theorem.  The mod-`ℓ` half of the
+arithmetic package (`hW`, `hρbar`, `hirr`, `π`, `hπsurj`, `hπ`) is among
+this node's binders because the surviving citation takes it; the consumer
+`heckeSystemDescendsTo_of_prime_cyclic_step` already had every one of them
+in scope, so nothing upstream had to change.  Note this also REPAIRS the
+SOUNDNESS AUDIT below: route (ii) appeals to the module headline, which
+needs `hirr`, and `hirr` was not previously a binder here.
+
+What is factored out of the
 citation and PROVEN here is the removal of the base-change character twist,
 together with the observation that a twist of absolute value `1` cannot move
 an archimedean bound.  See the ATOMICITY AUDIT below for why this axis is
@@ -7867,7 +7178,8 @@ WHAT THE FIRST AUDIT MISSED, AND WHY THE VERDICT WAS ONLY AS WIDE AS ITS
 AXIS.  It ranged over cuts of the CONCLUSION — which clause to drop — and
 correctly found none.  It did not range over cuts of the CITATION'S SHAPE,
 even though this module had already made exactly such a cut one node up:
-`exists_heckeTrace_of_prime_cyclic_step_of_inert` is PROVEN over
+the (now deleted) trace-only sibling
+`exists_heckeTrace_of_prime_cyclic_step_of_inert` was PROVEN over
 `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`, which states
 Thm 4.2(d) in the shape the reference actually delivers — descent only up
 to the torsor of characters of `Gal(L/M)` — and then removes the twist
@@ -7880,7 +7192,7 @@ cuspidality clause OFF the conclusion and re-derives it from a SECOND
 citation (`weilBound_of_charFrob_baseChange` at `D`), which both fails to
 typecheck without absorbing the automorphy-free split half and replaces one
 honest citation by two.  This cut does neither: the citation
-`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert` still
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` still
 RETURNS a cuspidal object — the Ramanujan bound is its fourth conjunct, on
 the untwisted eigenvalue `a`, exactly where Thm 4.2(d) puts it — and no
 second citation appears anywhere in this proof.  What is factored out is
@@ -7904,7 +7216,7 @@ it.  CHECK THAT WOULD REFUTE THIS CUT: exhibit a `ζ` with `ζ ^ p = 1`,
 `ζ ∈ ψM(EM)`, and a complex embedding `φ` of `EM` with `‖φ (ψM⁻¹ ζ)‖ ≠ 1`.
 
 CONCLUSION (superseding the first audit's): the RESIDUAL leaf
-`exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert` is
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` is
 irreducible at this pin and needs Arthur–Clozel; this node is not, and is
 now proven over it.
 
@@ -7919,6 +7231,17 @@ theorem exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
     (hrank : Module.rank O (Fin 2 → O) = 2)
     (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (Wit : PotentialModularityWitness ℓ O ρ)
     (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
     (hnormal : (C.subgroupOf D).Normal)
@@ -7934,9 +7257,9 @@ theorem exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert
       ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w).map Wit.ιO =
         (Polynomial.X ^ 2 - Polynomial.C (aL w) * Polynomial.X +
           Polynomial.C ((Ideal.absNorm w.asIdeal : ℕ) : EL)).map ψL)
-    (hcusp : ∀ w ∉ SL, ∀ φ : EL →+* ℂ,
+    (_hcusp : ∀ w ∉ SL, ∀ φ : EL →+* ℂ,
       ‖φ (aL w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal))
-    (hinv : ∀ τ : IntermediateField.fixedField C ≃ₐ[ℚ] IntermediateField.fixedField C,
+    (_hinv : ∀ τ : IntermediateField.fixedField C ≃ₐ[ℚ] IntermediateField.fixedField C,
       ∀ w ∉ SL, NumberField.finitePlaceEquiv τ.toRingEquiv w ∉ SL →
         aL (NumberField.finitePlaceEquiv τ.toRingEquiv w) = aL w) :
     ∃ (EM : Type u) (_ : Field EM) (_ : NumberField EM)
@@ -7958,8 +7281,11 @@ theorem exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert
   -- GROWS across the step, by Dickson), together with the `Gal(L/M)`-character
   -- twist `ζ` that the torsor leaves undetermined.
   obtain ⟨EM, _, _, ψM, ιM, hψι, S₀, a, δ, ζ, hdata⟩ :=
-    exists_cuspidalBaseChangeDescentData_of_prime_cyclic_step_of_inert hℓodd hℓ5
-      hZinj hrank hρ Wit C D hCD hnormal p hp hcard EL ψL SL aL hSL hcusp hinv
+    exists_baseChangeDescentData_of_prime_cyclic_step_of_inert hℓodd hℓ5
+      hZinj hrank hρ hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard
+      EL ψL SL
+      (fun v => Polynomial.X ^ 2 - Polynomial.C (aL v) * Polynomial.X +
+        Polynomial.C ((Ideal.absNorm v.asIdeal : ℕ) : EL)) hSL
   -- the finitely many places over `ℓ`, where `ρ` is ramified and the
   -- cyclotomic-determinant lemma does not apply
   obtain ⟨Sℓ, hSℓ⟩ := exists_finset_forall_natCast_notMem_asIdeal
@@ -8021,10 +7347,12 @@ theorem exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert
 2026-07-25, from the cuspidal-descent citation
 `exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert` and the
 cyclotomic determinant already established in this module.  NOTE: it was
-proven over the trace citation `exists_heckeTrace_of_prime_cyclic_step`
+proven over a trace-only citation `exists_heckeTrace_of_prime_cyclic_step`
 until the 2026-07-27 cut-level repair rerouted it through the cuspidal
-form; the paragraphs below that name the trace citation as the source
-describe the SPLIT, which is unchanged, not the current call site):
+form; that trace pair thereby lost every application and was DELETED as
+free-floating the same day.  The paragraphs below that name the trace
+citation as the source describe the SPLIT, which is unchanged, not the
+current call site):
 if the eigensystem of `ρ` descends
 to the fixed field `L = F^C`, and `C ≤ D` is normal with quotient `D/C`
 of PRIME order `p` (equivalently: `L/M` is a cyclic Galois extension of
@@ -8047,7 +7375,8 @@ different arithmetic:
 * the LINEAR coefficient is `−a_w`, the Hecke eigenvalue of the descended
   newform.  That is the whole automorphic content of cyclic base change
   and descent, and it is exactly what the citation
-  `exists_heckeTrace_of_prime_cyclic_step` supplies (in range form).
+  `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` supplies,
+  through `exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert`.
 
 The assembly is then formal: choose `a w ∈ E` with
 `ψℓ (a w) = ιO (coeff 1)` off the citation's bad set, put
@@ -8107,7 +7436,8 @@ theorem heckeSystemDescendsTo_of_prime_cyclic_step
   -- field `EM ⊇ EL` (the field grows: see the Dickson paragraph there)
   obtain ⟨EM, _, _, ψM, ιM, hψιM, Sin, aM, hAC⟩ :=
     exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert hℓodd hℓ5 hZinj
-      hrank hρ Wit C D hCD hnormal p hp hcard EL ψL SL aL h1L h2L h3L
+      hrank hρ hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard
+      EL ψL SL aL h1L h2L h3L
   -- (iii) bookkeeping finite sets over `M`
   obtain ⟨Sl, hSl⟩ := exists_finset_forall_natCast_notMem_asIdeal
     (IntermediateField.fixedField D) ℓ (Fact.out : ℓ.Prime).ne_zero
@@ -8227,8 +7557,8 @@ theorem heckeSystemDescendsTo_of_prime_cyclic_step
 
 /-- **One cyclic step of solvable base change** (PROVEN, 2026-07-25, from
 the prime-degree step `heckeSystemDescendsTo_of_prime_cyclic_step` — now
-itself PROVEN, over the trace-only citation
-`exists_heckeTrace_of_prime_cyclic_step` —
+itself PROVEN, over the cuspidal-descent citation
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert` —
 and the group-theoretic dévissage
 `exists_intermediate_of_isCyclic_quotient`): if the eigensystem of `ρ`
 descends to the fixed field `L = F^C`, and `C ≤ D` is normal with CYCLIC
@@ -8244,7 +7574,8 @@ cyclic quotient `D/C` is refined into prime steps by
 `exists_intermediate_of_isCyclic_quotient` (pure finite group theory,
 proven here), and the eigensystem is carried up one prime step at a time
 by `heckeSystemDescendsTo_of_prime_cyclic_step` (proven, over the
-trace-only citation `exists_heckeTrace_of_prime_cyclic_step`). Formally
+cuspidal-descent citation
+`exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`). Formally
 the recursion is a strong induction on `#D`: either `C = D` and the
 hypothesis `hC` already IS the conclusion, or one obtains an
 intermediate `C ≤ E ≤ D` with `#E < #D`, `E/C` cyclic and `D/E` of prime
@@ -8574,7 +7905,8 @@ has since been PROVEN too, by the trace/determinant split: the
 determinant half of the descended Frobenius polynomial is the cyclotomic
 value `Nw` (`charFrob_baseChange_coeff_zero_eq_absNorm`) and needs no
 automorphic input at all.  So the arithmetic citation of the descent
-route is now `exists_heckeTrace_of_prime_cyclic_step` — one scalar per
+route is now `exists_baseChangeDescentData_of_prime_cyclic_step_of_inert`
+— one scalar per
 place, the Hecke eigenvalue of the descended newform at prime degree,
 which is exactly what Langlands/Arthur–Clozel prove.
 
