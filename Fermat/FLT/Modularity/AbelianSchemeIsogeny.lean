@@ -766,9 +766,89 @@ theorem flat_of_flat_of_flat_quotientMap {R B A : Type u}
     v.Flat :=
   sorry
 
+/-- **A finitely presented ring map followed by a localization is essentially
+of finite presentation.**  This is `EssFinitePresentation` read off its own
+definition, with the one piece of friction the definition creates handled
+once and for all: the definition demands
+`@IsLocalization T _ M S _ v.toAlgebra`, i.e. the localization statement for
+the algebra structure *built from* `v`, whereas at a use site the ambient
+`Algebra T S` instance is the one in scope.  The two are equal by
+`Algebra.algebra_ext` (their `algebraMap`s are literally the same function),
+and every construction of an `EssFinitePresentation` below goes through this
+lemma rather than repeating that transport. -/
+theorem essFinitePresentation_of_isLocalization {R T S : Type u} [CommRing R] [CommRing T]
+    [CommRing S] [Algebra T S] (M : Submonoid T) [IsLocalization M S]
+    {g : R →+* T} (hg : g.FinitePresentation) :
+    EssFinitePresentation ((algebraMap T S).comp g) := by
+  refine ⟨T, ‹_›, g, algebraMap T S, M, hg, rfl, ?_⟩
+  have h : (algebraMap T S).toAlgebra = ‹Algebra T S› :=
+    Algebra.algebra_ext _ _ (fun _ => rfl)
+  rw [h]
+  infer_instance
+
+/-- **The localization of a finitely presented map is essentially of finite
+presentation.**  This is the `EssFinitePresentation` analogue of mathlib's
+`RingHom.HoldsForLocalization.isLocalizationMap`, and the proof is that
+proof's factorization specialized to a finitely presented `f`:
+`IsLocalization.map S' f` factors as the `M`-localized map
+`R' → (M.map f)⁻¹S`, which is finitely presented by
+`RingHom.finitePresentation_localizationPreserves`, followed by the further
+localization `(M.map f)⁻¹S → S'`.
+
+Stating it directly, rather than deriving it from the generic
+`isLocalizationMap`, is what lets the whole stalk leaf avoid
+`StableUnderComposition` for `EssFinitePresentation` — which is the only one
+of the four meta-properties with real content, since a finitely presented
+algebra over a localization descends to a finitely presented algebra only
+after clearing denominators in the *relations*. -/
+theorem essFinitePresentation_isLocalizationMap
+    {R S : Type u} [CommRing R] [CommRing S]
+    {M : Submonoid R} {T : Submonoid S}
+    {R' : Type u} [CommRing R'] [Algebra R R'] [IsLocalization M R']
+    (S' : Type u) [CommRing S'] [Algebra S S'] [IsLocalization T S']
+    {f : R →+* S} (hy : M ≤ Submonoid.comap f T) (hf : f.FinitePresentation) :
+    EssFinitePresentation (IsLocalization.map (S := R') S' f hy) := by
+  have hle : Submonoid.map f M ≤ T := by simpa [Submonoid.map_le_iff_le_comap]
+  letI : Algebra (Localization (M.map f)) S' :=
+    IsLocalization.localizationAlgebraOfSubmonoidLe _ _ (M.map f) T hle
+  have : IsScalarTower S (Localization (Submonoid.map f M)) S' :=
+    IsLocalization.localization_isScalarTower_of_submonoid_le _ _ _ _ _
+  have : IsLocalization (T.map (algebraMap S (Localization (M.map f)))) S' :=
+    IsLocalization.isLocalization_of_submonoid_le _ _ (M.map f) T hle
+  have heq : IsLocalization.map (S := R') S' f hy =
+      (algebraMap (Localization (M.map f)) S').comp
+        (IsLocalization.map (M := M) (T := M.map f) (S := R') (Localization (M.map f)) f
+          (M.le_comap_map)) := by
+    apply IsLocalization.ringHom_ext M
+    ext
+    simp [← IsScalarTower.algebraMap_apply]
+  rw [heq]
+  exact essFinitePresentation_of_isLocalization
+    (T.map (algebraMap S (Localization (M.map f))))
+    (RingHom.finitePresentation_localizationPreserves f M R' _ hf)
+
+/-- **`EssFinitePresentation` respects isomorphisms.**  Post-composition
+transports the witnessing localization along the equivalence
+(`IsLocalization.isLocalization_of_algEquiv`); pre-composition is absorbed
+into the finitely presented half, using
+`RingHom.finitePresentation_respectsIso`. -/
+theorem essFinitePresentation_respectsIso :
+    RingHom.RespectsIso @EssFinitePresentation := by
+  constructor
+  · rintro R S T' _ _ _ f e ⟨T₀, _, g, v, M, hg, hv, hloc⟩
+    refine ⟨T₀, ‹_›, g, e.toRingHom.comp v, M, hg, by rw [RingHom.comp_assoc, hv], ?_⟩
+    letI : Algebra T₀ S := v.toAlgebra
+    letI : Algebra T₀ T' := (e.toRingHom.comp v).toAlgebra
+    exact IsLocalization.isLocalization_of_algEquiv (S := S) M
+      (AlgEquiv.ofRingEquiv (f := e) (fun _ => rfl))
+  · rintro R S T' _ _ _ f e ⟨T₀, _, g, v, M, hg, hv, hloc⟩
+    exact ⟨T₀, ‹_›, g.comp e.toRingHom, v, M,
+      RingHom.finitePresentation_respectsIso.2 g e hg,
+      by rw [← RingHom.comp_assoc, hv], hloc⟩
+
 /-- **The stalk of a morphism locally of finite presentation is essentially
-of finite presentation** (sorry leaf — general scheme theory, no abelian
-varieties).
+of finite presentation** (PROVEN 2026-07-27 — general scheme theory, no
+abelian varieties).
 
 This is the exact analogue of mathlib's
 `AlgebraicGeometry.LocallyOfFiniteType.stalkMap`
@@ -786,19 +866,33 @@ presentation is stable under base change) and `S_𝔮` is a localization of it,
 so the composite is a localization of a finitely presented `R_𝔭`-algebra —
 which is `EssFinitePresentation` by definition.
 
-**The likely shape of a proof**, mirroring the finite-type one verbatim:
-`HasRingHomProperty.stalkMap_of_respectsIso` applied to
-`EssFinitePresentation`, which needs the four closure properties mathlib
-already has for `RingHom.EssFiniteType` — `respectsIso`,
-`stableUnderComposition`, `isStableUnderBaseChange` (hence
-`localizationPreserves`) and `holdsForLocalization` — proved for
-`EssFinitePresentation` instead.  Those four are the natural further cut if
-this leaf wants splitting; `stableUnderComposition` is the only one with any
-content. -/
+**HOW IT IS PROVEN, and the ONE STALE CLAIM this replaces.**  The route is
+`HasRingHomProperty.stalkMap_of_respectsIso`, exactly as for the finite-type
+one.  The previous version of this docstring predicted that this would need
+**four** closure properties for `EssFinitePresentation` (`respectsIso`,
+`stableUnderComposition`, `isStableUnderBaseChange`/`localizationPreserves`,
+`holdsForLocalization`), and called `stableUnderComposition` "the only one
+with any content".  That was right about the content and wrong about the
+requirement: `stalkMap_of_respectsIso` asks only for
+
+* `RespectsIso` of the *target* property — `essFinitePresentation_respectsIso`
+  above, which needs no composition lemma at all; and
+* the localized-map statement **for a finitely presented `f` only** —
+  `essFinitePresentation_isLocalizationMap` above.
+
+`stableUnderComposition` for `EssFinitePresentation` is therefore **not
+needed here and is not proven**.  That matters, because it is the one with
+the real mathematics in it: a finitely presented algebra over a localization
+`M⁻¹T` descends to a finitely presented `T`-algebra only after clearing
+denominators in the *relations*, and unlike the finite-type case the
+subalgebra idiom is unavailable (see `EssFinitePresentation`'s own
+docstring).  Anyone who later wants `EssFinitePresentation` as a genuine
+meta-property should expect that lemma to be the whole cost. -/
 theorem essFinitePresentation_stalkMap {X Y : Scheme.{u}} (φ : X ⟶ Y)
     [LocallyOfFinitePresentation φ] (x : X) :
     EssFinitePresentation (φ.stalkMap x).hom :=
-  sorry
+  HasRingHomProperty.stalkMap_of_respectsIso essFinitePresentation_respectsIso
+    (fun _ hf _ _ ↦ essFinitePresentation_isLocalizationMap _ _ hf) ‹_› x
 
 /-- **The stalk of the fibre is the base change of the stalk**, in the
 flatness form the fibre criterion consumes (sorry leaf — general scheme
