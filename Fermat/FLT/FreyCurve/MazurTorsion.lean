@@ -1412,45 +1412,43 @@ abstract form is false, `Γ ℚ` not being topologically finitely generated,
 so Nikolov–Segal does not apply and a discontinuous character trivial on
 every inertia group is not excluded.
 
-**DECLARATION-ORDER OBSTRUCTION, and it is the whole cost of leaf `C`.**
-`C` is not missing mathematics.  Its globalization input,
-`minkowski_character_trivial`, is **PROVEN in THIS FILE** (search by
-name; it sits just after `open_normal_subgroup_eq_top_of_inertia_le`,
-around line 28285), is generic in the target group, and takes exactly
-`IsOpen χ.ker` plus triviality on every local inertia image.  The
-ideal-to-inertia bridge the 2026-07-27 MACHINERY AUDIT called "the only
-thing missing" is likewise proven there, as
-`isUnramifiedAt_of_inertia_le_fixingSubgroup` and
-`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`.  All of it is
-~27000 lines BELOW this point, and Lean has no forward references, so it
-cannot be used here.
+**DECLARATION-ORDER OBSTRUCTION — DISCHARGED 2026-07-27, and leaf `C` is
+now PROVEN.**  `C` was never missing mathematics.  Its globalization
+input, `minkowski_character_trivial`, was already proven IN THIS FILE,
+~27000 lines BELOW this point, together with the ideal-to-inertia bridge
+(`isUnramifiedAt_of_inertia_le_fixingSubgroup`,
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`) that the
+2026-07-27 MACHINERY AUDIT called "the only thing missing"; Lean has no
+forward references, so none of it could be used here.
 
-So the check that would refute "C is open": none — `C` is closed
-mathematics.  The check that would DISCHARGE it is purely mechanical,
-and a successor should do exactly this and nothing else:
+The fix was the mechanical one this note prescribed, in the variant it
+recommended: the whole block — those three plus
+`inertia_eq_bot_of_exists_prime_over`,
+`inertia_eq_bot_of_le_fixingSubgroup`,
+`open_normal_subgroup_eq_top_of_inertia_le` and
+`isOpen_setOf_galoisRep_eq_one` — was hoisted VERBATIM (534 lines,
+sorted-identical, no `namespace`/`section`/`variable`/`open` boundary
+crossed) into the new upstream module
+`Fermat.FLT.GaloisRepresentation.MinkowskiUnramified`, which this file
+`public import`s.  Every downstream consumer — `InertiaCardTransport`,
+`Family`, `ModThree`, `HermiteMinkowski`, `HilbertModularity`,
+`Modularity/Interface` — resolves these names through `MazurTorsion`
+exactly as before, unedited.
 
-* hoist the block from `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
-  through `minkowski_character_trivial`, together with
-  `isOpen_setOf_galoisRep_eq_one`, to a point above this section —
-  either in place, or (better, since this module is oversized and the
-  block is self-contained) into a new module upstream of this one, which
-  `MazurTorsion` then `public import`s so that the downstream consumers
-  in `Family.lean`, `ModThree.lean`, `HermiteMinkowski.lean`,
-  `HilbertModularity.lean` and `Modularity/Interface.lean` keep
-  resolving unchanged;
-* then `C` closes by deriving `IsOpen (ψ.ker)` for
-  `ψ := lam ^ 12 · χ^{-s}` (open kernels of `lam` and of `χ` intersect
-  to an open subgroup; a subgroup containing an open subgroup is open)
-  and applying `minkowski_character_trivial`.
+`C` then closed exactly as predicted: `ψ := λ¹²·χ^{-s}` has open kernel
+because `ker lam ⊓ ker χ` is open and a subgroup containing an open
+subgroup is open (`Subgroup.isOpen_mono`); `ψ` is trivial on every local
+inertia image by hypothesis; `minkowski_character_trivial` finishes.
+Openness of `ker lam` is where the curve data earns its place — see `C`'s
+own docstring.
 
-That block was verified self-contained here: it depends only on this
-module's imports (`AbsoluteGaloisGroup`, `LocalInertiaFixedField`,
-`Ideal.Lemmas`, `ExistsRamified`, `GoingUp`), on nothing declared
-between this section and it, and no in-flight task names any of its
-declarations.  It was NOT moved as part of this cut because relocating
-~510 lines of another owner's region in the tree's busiest file is a
-merge hazard out of proportion to the benefit; it is a separate,
-purely mechanical task.
+NOTE FOR ANYONE WORKING ABOVE THIS POINT: `isOpen_setOf_galoisRep_eq_one`
+came along in the hoist, so it too is now usable HERE.  The alternative
+formulation of `C` this note rejected — abstract character plus an
+explicit continuity hypothesis, derived in the glue — is therefore no
+longer blocked either.  It is still not worth switching to: `C` as stated
+is true and proven, and the abstract form is FALSE without the continuity
+hypothesis.
 
 **ADDITION to the drafted plan: leaf `D`.**  The plan's glue assumed
 "general-`ℓ` triviality of `χ` on inertia away from `N`" as though it
@@ -1589,10 +1587,11 @@ theorem cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne
             hq.toHeightOneSpectrumRingOfIntegersRat)) σ)) = 1 :=
   sorry
 
-/-- **`C` — Minkowski globalization of the isogeny character** (sorry
-leaf, but see the section note above: this is CLOSED MATHEMATICS blocked
-only by declaration order): if `λ¹²` and `χ^s` agree on the inertia
-group at EVERY finite place, they agree on all of `Γ ℚ`.
+/-- **`C` — Minkowski globalization of the isogeny character** (PROVEN
+2026-07-27, once the Minkowski block was hoisted out of this file into
+`Fermat.FLT.GaloisRepresentation.MinkowskiUnramified`; see the section
+note above): if `λ¹²` and `χ^s` agree on the inertia group at EVERY
+finite place, they agree on all of `Γ ℚ`.
 
 The statement carries the curve data `g`, `hg`, `hlam` for a reason that
 is load-bearing rather than decorative: the corresponding statement for
@@ -1600,16 +1599,20 @@ an ARBITRARY `MonoidHom` `Γ ℚ →* (ZMod N)ˣ` is FALSE.  `Γ ℚ` is not
 topologically finitely generated, so Nikolov–Segal does not apply, a
 finite-index subgroup need not be open, and a discontinuous character
 trivial on every inertia group is not excluded.  With `hlam` present the
-character is forced continuous — it factors through the continuous
-`E.galoisRep N`, because `galoisRep N σ = galoisRep N τ` gives
-`lam σ • g = lam τ • g` and `addOrderOf g = N` cancels `g` — and the
-statement becomes true.
+character is forced continuous, and that is exactly what the proof below
+uses: `ker lam` CONTAINS the kernel of the mod-`N` representation
+`E.galoisRep N`, which is open by `isOpen_setOf_galoisRep_eq_one`.
+Indeed if `galoisRep N σ = 1` then `σ` fixes every `N`-torsion point, in
+particular `g`, so `hlam` reads `(lam σ).val • g = g`; with
+`addOrderOf g = N` this forces `N ∣ (lam σ).val − 1`, i.e. `lam σ = 1`.
 
-Discharge (see the section note for the mechanical step it waits on):
-`ψ := λ¹² · χ^{-s}` has open kernel, since `ker lam` and `ker χ` are
-open and a subgroup containing an open subgroup is open; `ψ` is trivial
-on every local inertia image by hypothesis; so `minkowski_character_trivial`
-— PROVEN in this file, but declared ~27000 lines below — gives `ψ = 1`. -/
+Proof, as the section note predicted.  `ψ := λ¹²·χ^{-s}` is a monoid
+homomorphism (`(ZMod N)ˣ` is commutative) whose kernel contains
+`ker lam ⊓ ker χ`; that intersection is open — `ker lam` by the paragraph
+above, `ker χ` because `continuous_cyclotomicCharacterModL` makes `χ`
+continuous into the discrete `ZMod N` — so `ker ψ` is open by
+`Subgroup.isOpen_mono`.  `hloc` says `ψ` kills every local inertia image,
+so `minkowski_character_trivial` gives `ψ = 1`, which is the claim. -/
 theorem WeierstrassCurve.isogenyCharacter_pow_twelve_eq_of_localInertia
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
@@ -1631,8 +1634,131 @@ theorem WeierstrassCurve.isogenyCharacter_pow_twelve_eq_of_localInertia
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
                 hq.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ s) :
     ∀ σ : Field.absoluteGaloisGroup ℚ,
-      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s :=
-  sorry
+      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s := by
+  classical
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  set χ : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ :=
+    GaloisRepresentation.cyclotomicCharacterModL N with hχdef
+  -- the `N`-torsion of the base change is finite
+  have hcard : Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) = N ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) N
+      (Nat.cast_ne_zero.mpr hN.ne_zero)
+  haveI hfin : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) :=
+    Nat.finite_of_card_ne_zero (by
+      rw [hcard]
+      have := hN.pos
+      positivity)
+  -- `g` is an `N`-torsion point
+  have hgz : (N : ℤ) • g = 0 := by
+    have h1 : addOrderOf g • g = 0 := addOrderOf_nsmul_eq_zero g
+    rw [hg] at h1
+    rw [natCast_zsmul]
+    exact h1
+  have hgtor : g ∈ Submodule.torsionBy ℤ ((E⁄(AlgebraicClosure ℚ)).Point) (N : ℤ) :=
+    (Submodule.mem_torsionBy_iff _ _).mpr hgz
+  set P₀ : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N := ⟨g, hgtor⟩
+  -- the kernel of the mod-`N` representation is an open subgroup
+  set Kρ : Subgroup (Field.absoluteGaloisGroup ℚ) :=
+    { carrier := {σ | (E.galoisRep N hN.pos) σ = 1}
+      one_mem' := map_one (E.galoisRep N hN.pos)
+      mul_mem' := by
+        intro a b ha hb
+        show (E.galoisRep N hN.pos) (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show (E.galoisRep N hN.pos) a⁻¹ = 1
+        have h1 : (E.galoisRep N hN.pos) a⁻¹ * (E.galoisRep N hN.pos) a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  have hKρopen : IsOpen (Kρ : Set (Field.absoluteGaloisGroup ℚ)) :=
+    isOpen_setOf_galoisRep_eq_one (E.galoisRep N hN.pos) hfin
+  -- `Kρ` lies in the kernel of `lam`: an element acting trivially on the
+  -- whole `N`-torsion fixes `g`, and `addOrderOf g = N` cancels `g`
+  have hKlam : Kρ ≤ lam.ker := by
+    intro σ hσ
+    have hσ1 : (E.galoisRep N hN.pos) σ = 1 := hσ
+    rw [MonoidHom.mem_ker]
+    have h1 : (E.galoisRep N hN.pos) σ P₀ = P₀ := by rw [hσ1]; rfl
+    have h2 : Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g = g :=
+      congrArg Subtype.val h1
+    rw [hlam σ] at h2
+    -- `k • g = g` with `k = (lam σ).val`
+    have h3 : (((lam σ : ZMod N).val : ℤ) - 1) • g = 0 := by
+      rw [sub_smul, one_smul, natCast_zsmul, h2, sub_self]
+    have h4 : ((N : ℤ)) ∣ (((lam σ : ZMod N).val : ℤ) - 1) := by
+      have h5 := addOrderOf_dvd_iff_zsmul_eq_zero.mpr h3
+      rwa [hg] at h5
+    have h6 : (((lam σ : ZMod N).val : ZMod N) - 1) = 0 := by
+      have := (ZMod.intCast_zmod_eq_zero_iff_dvd
+        (((lam σ : ZMod N).val : ℤ) - 1) N).mpr h4
+      push_cast at this ⊢
+      exact this
+    refine Units.ext ?_
+    have h7 : ((lam σ : ZMod N).val : ZMod N) = (lam σ : ZMod N) := by
+      rw [ZMod.natCast_val, ZMod.cast_id]
+    rw [h7] at h6
+    rw [Units.val_one]
+    exact sub_eq_zero.mp h6
+  have hlamopen : IsOpen ((lam.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isOpen_mono hKlam hKρopen
+  -- the cyclotomic character has open kernel: it is continuous into the
+  -- discrete space `ZMod N`
+  have hχopen : IsOpen ((χ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+    have hc := GaloisRepresentation.continuous_cyclotomicCharacterModL N
+    have hset : ((χ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+        Set (Field.absoluteGaloisGroup ℚ)) =
+        (fun σ : Field.absoluteGaloisGroup ℚ =>
+          ((GaloisRepresentation.cyclotomicCharacterModL N σ : (ZMod N)ˣ) : ZMod N)) ⁻¹'
+          {(1 : ZMod N)} := by
+      ext σ
+      constructor
+      · intro hσ
+        have h1 : χ σ = 1 := MonoidHom.mem_ker.mp hσ
+        show ((GaloisRepresentation.cyclotomicCharacterModL N σ : (ZMod N)ˣ) : ZMod N) ∈
+          ({(1 : ZMod N)} : Set (ZMod N))
+        rw [← hχdef, h1]
+        rfl
+      · intro hσ
+        have h1 : ((GaloisRepresentation.cyclotomicCharacterModL N σ : (ZMod N)ˣ) :
+          ZMod N) = 1 := hσ
+        rw [← hχdef] at h1
+        exact MonoidHom.mem_ker.mpr (Units.ext h1)
+    rw [hset]
+    exact (isOpen_discrete _).preimage hc
+  -- the quotient character `ψ = λ¹² · χ^{-s}`
+  set ψ : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ :=
+    MonoidHom.mk' (fun σ => lam σ ^ 12 * (χ σ ^ s)⁻¹) (by
+      intro a b
+      simp only [map_mul, mul_pow, mul_inv]
+      exact mul_mul_mul_comm _ _ _ _)
+  have hψapp : ∀ σ, ψ σ = lam σ ^ 12 * (χ σ ^ s)⁻¹ := fun σ => rfl
+  have hψopen : IsOpen ((ψ.ker : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+    refine Subgroup.isOpen_mono (H₁ := lam.ker ⊓ χ.ker) ?_ ?_
+    · intro σ hσ
+      rw [MonoidHom.mem_ker, hψapp]
+      have h1 : lam σ = 1 := MonoidHom.mem_ker.mp hσ.1
+      have h2 : χ σ = 1 := MonoidHom.mem_ker.mp hσ.2
+      rw [h1, h2, one_pow, one_pow, inv_one, mul_one]
+    · exact hlamopen.inter hχopen
+  -- Minkowski
+  have hψ1 : ψ = 1 := by
+    refine minkowski_character_trivial ψ hψopen ?_
+    intro q hq σ hσ
+    have h : ψ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+      rw [hψapp, hloc q hq σ hσ, mul_inv_cancel]
+    exact MonoidHom.mem_ker.mpr h
+  intro σ
+  have h1 : ψ σ = 1 := by rw [hψ1]; rfl
+  rw [hψapp] at h1
+  exact mul_inv_eq_one.mp h1
 
 /-- **Serre–Raynaud local data at `N`** (sorry leaf — the local theory at
 `N` alone; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4, and Raynaud,

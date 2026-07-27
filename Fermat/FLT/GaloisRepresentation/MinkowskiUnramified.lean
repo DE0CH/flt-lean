@@ -41,6 +41,8 @@ Contents, in dependency order:
   points needs it, and it was equally stranded below.
 -/
 
+module
+
 -- `localInertiaGroup`, `Field.absoluteGaloisGroup.map` and `lift_map`.
 public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 -- The local inertia-fixed-field node
@@ -61,6 +63,11 @@ public import Mathlib.NumberTheory.NumberField.ExistsRamified
 public import Mathlib.RingTheory.Ideal.GoingUp
 -- `Ideal.inertia` and `Ideal.card_inertia_eq_ramificationIdxIn`.
 public import Mathlib.NumberTheory.RamificationInertia.Galois
+
+-- The block lived inside `MazurTorsion.lean`'s `@[expose] public section`
+-- (its line 203); replicating that here is what keeps the hoist a no-op for
+-- consumers — without it the declarations would not be exported at all.
+@[expose] public section
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Minkowski surjectivity transport** (DERIVED 2026-07-16 from the
