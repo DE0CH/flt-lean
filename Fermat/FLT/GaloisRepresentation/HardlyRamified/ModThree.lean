@@ -3384,8 +3384,9 @@ theorem map_localInertiaGroup_at_two_sub_one_sq_eq_zero {k : Type u} [Finite k]
   · linear_combination (N - 1) 1 1 * htrM - hdetM
 
 /-- **Cube-triviality of the local inertia image at `2`** (DECOMPOSED
-2026-07-24 — the unipotence content is the sorry node
-`map_localInertiaGroup_at_two_sub_one_sq_eq_zero` above; the
+2026-07-24 — the unipotence content is the node
+`map_localInertiaGroup_at_two_sub_one_sq_eq_zero` above, itself now
+PROVEN and `sorryAx`-free (cross-reference corrected 2026-07-27); the
 characteristic-`3` computation is proven here): every element of the
 local inertia at `2` maps under the matrix form `u` to an element of
 `GL₂(𝔽̄₃)` whose cube is `1`.  Glue: for `N := g − 1` with `N² = 0`,
@@ -4264,11 +4265,13 @@ theorem exists_localInertia_two_generator_of_cube_one {G' : Type*} [Group G']
     _ = (u (Emb t)) ^ m := by rw [hut]
 
 /-- **The local inertia image at `2` has order dividing `3`**
-(DECOMPOSED 2026-07-23 into the two sorry nodes above — the
+(DECOMPOSED 2026-07-23 into the two nodes above — the
 representation-theoretic cube-triviality
 `map_localInertiaGroup_at_two_pow_three_eq_one` and the
 local-structure generator leaf
-`exists_localInertia_two_generator_of_cube_one`; the glue is proven
+`exists_localInertia_two_generator_of_cube_one`, BOTH now PROVEN and
+`sorryAx`-free (they were sorry nodes at cut time; cross-reference
+corrected 2026-07-27); the glue is proven
 here): the image under the matrix form `u` of the local inertia at
 `2` is a subgroup of `GL₂(𝔽̄₃)` of order dividing `3`.  Glue: `ker u`
 is open (`ker ρ ≤ ker u` by `hu`, and `ker ρ` is open by continuity
@@ -4365,11 +4368,13 @@ theorem card_map_localInertiaGroup_at_two_dvd_three {k : Type u} [Finite k]
   exact (Subgroup.card_dvd_of_le hS).trans hcard
 
 /-- **The inertia order at `2` divides `3`** (DECOMPOSED 2026-07-23
-into the two sorry nodes above — the quantitative local-to-global
+into the two nodes above — the quantitative local-to-global
 transport `inertia_card_dvd_of_map_localInertiaGroup_card_dvd` (pure
 algebraic number theory) and the representation-theoretic image bound
 `card_map_localInertiaGroup_at_two_dvd_three` (pure local
-representation theory); the glue is proven here): the ideal-inertia
+representation theory) — BOTH now PROVEN and `sorryAx`-free (they were
+sorry nodes at cut time; cross-reference corrected 2026-07-27); the
+glue is proven here): the ideal-inertia
 subgroup in `Gal(K/ℚ)` of any prime `Q` of `𝓞 K` above `2` has order
 dividing `3`. -/
 theorem kernel_field_inertia_card_at_two_dvd_three {k : Type u} [Finite k]
@@ -8396,8 +8401,10 @@ in the trivial direction; the content is entirely in the level shift.
 PROOF AS ACTUALLY CARRIED OUT (2026-07-26), which is NOT the intended
 proof above and is strictly cheaper.  No `φ`, no upper numbering and no
 `⌈·⌉` are used, and Herbrand's THEOREM (IV §3 Lemma 5) is never needed:
-only Herbrand's LEMMA (IV §1 Prop. 3), isolated as the single sorried
-leaf `sum_card_filter_inertia_fiber_le`.  Everything else is
+only Herbrand's LEMMA (IV §1 Prop. 3), isolated as the single
+leaf `sum_card_filter_inertia_fiber_le` — sorried when this was
+written, now PROVEN and `sorryAx`-free (corrected 2026-07-27).
+Everything else is
 `exists_index_of_herbrand`, a purely combinatorial statement about a
 homomorphism of finite groups carrying one antitone filtration to
 another — see its docstring.  The transported level is
@@ -9005,7 +9012,7 @@ typecheck against the new one.  What changed, and what did not:
   sibling now calls this leaf directly.  The extra step Fontaine's
   Prop. 1.7 (ii) needs and the old sibling docstring omitted — that
   `ker(𝒪_N → 𝒪_E/𝔪_E^(k−e))` is itself a divided-power ideal `𝔪_N^j`
-  with `2j > e_N` — is the new sorry node
+  with `2j > e_N` — is the node
   `exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow` (created as a
   one-level statement, refuted, restated with the two levels split, and
   then PROVEN elementarily, all on 2026-07-26).
@@ -12554,7 +12561,10 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **FONTAINE'S PROPERTY `(P_m)` HOLDS FOR A TAME EXTENSION AT EVERY
-LEVEL `m > 1`** (sorry node, created 2026-07-26 — leaf (Y-2) of the
+LEVEL `m > 1`** (**PROVEN** — the head label read "sorry node" until
+2026-07-27, which was STALE: `#print axioms` against the built olean
+returns `[propext, Classical.choice, Quot.sound]`.  Created
+2026-07-26 as leaf (Y-2) of the
 Yoshida cut; this is the EASY half of Fontaine, *Il n'y a pas de variété
 abélienne sur ℤ*, Invent. Math. 81 (1985), Prop. 1.5 (i), specialised to
 the only case the assembly consumes).  Let `F/ℚ₃ᵥ` be finite Galois with
@@ -12966,7 +12976,8 @@ surjectivity of the trace for an unramified extension of local rings —
 neither is in this file yet, and both are ordinary local-field theory
 rather than anything Fontaine-specific.  Leaf (Y-3-b) needs only the
 counting identity plus `aeval_minpoly_eq_prod_sub_integralClosureLE`
-(sorried, owned) and `addVal_prod`/`exists_addVal_integralClosureLE`
+(sorried when this was written, now PROVEN and `sorryAx`-free —
+corrected 2026-07-27) and `addVal_prod`/`exists_addVal_integralClosureLE`
 (PROVEN).
 
 OLDER MACHINERY AUDIT (2026-07-26, fourth owner), retained because its
@@ -13667,10 +13678,12 @@ DECOMPOSED 2026-07-26 ALONG EXACTLY THAT ROUTE — the assembly below is
 now PROVEN and this declaration is no longer a leaf.  The `φ`-free
 Herbrand cut recommended above was taken verbatim; of the three
 resulting nodes the points field `exists_pointsField_le` (pure finite
-Galois theory) is itself PROVEN, and the two remaining sorry leaves are
+Galois theory) is itself PROVEN, and the other two were
 `exists_restrictToLE_mem_inertia_of_lt_two_mul_sum_card_inertia`
 (Herbrand transport, stated in the integer `φ`-free form so that
-neither `φ` nor the upper numbering ever has to be defined), and
+neither `φ` nor the upper numbering ever has to be defined) — now
+PROVEN and `sorryAx`-free too, so only ONE of the three remains open
+(cross-reference corrected 2026-07-27) — and
 `eq_one_of_mem_inertia_of_faithful_of_lt_two_mul_sum_card_inertia`
 (Fontaine's Théorème A for a points-generated field).  UPDATE
 2026-07-26: the latter is no longer a leaf either — it was decomposed
@@ -15820,8 +15833,10 @@ at integer levels** (DECOMPOSED 2026-07-25 into the three leaves above
 — the analytic core (ii-a)
 `forall_point_apply_eq_of_lt_two_mul_sum_card_inertia` and the
 Hopf-differential input (ii-b)
-`kaehlerDifferential_smul_three_eq_zero_of_hopf_package` are the two
-remaining sorry leaves, the faithfulness leaf (ii-c)
+`kaehlerDifferential_smul_three_eq_zero_of_hopf_package` were the two
+sorry leaves at cut time — of which only (ii-a) is still open, (ii-b)
+being now PROVEN and `sorryAx`-free (cross-reference corrected
+2026-07-27) — the faithfulness leaf (ii-c)
 `eq_one_of_forall_point_apply_eq` is PROVEN, and the assembly is PROVEN
 here: negate the goal to get `#G_0 < 2·Σ_{i=1}^{m+1} #G_i`, take a
 NONTRIVIAL `σ ∈ G_{m+1}` from `hm`, let (ii-a) — fed the `3`-torsion of
@@ -16740,10 +16755,12 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **The Serre different numerology of a subextension** (DECOMPOSED
-2026-07-25 into the two sorry leaves directly above — the upper-bound
+2026-07-25 into the two leaves directly above — the upper-bound
 half `le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal` and
 the divisibility half
-`pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal` — with the
+`pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal`, BOTH now
+PROVEN and `sorryAx`-free (they were sorry leaves at cut time;
+cross-reference corrected 2026-07-27) — with the
 `ℕ` bookkeeping that combines them PROVEN here; created 2026-07-24 as
 steps (a)+(b) of the decomposition of
 `two_mul_local_differentIdeal_exponent_add_two_le_of_herbrand_bound`,
@@ -17057,12 +17074,14 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **The subextension different estimate under a `1/2` upper-break
-bound** (DECOMPOSED 2026-07-24 into the two sorry leaves above — the
+bound** (DECOMPOSED 2026-07-24 into the two leaves above — the
 Serre different numerology
 `card_inertia_inf_fixingSubgroup_mul_add_sum_le_sum_card_inertia`
 (steps (a)+(b)) and the tower multiplicativity of the ramification
 index `card_inertia_inf_fixingSubgroup_mul_ramificationIdx'_eq_card_inertia`
-(step (b′)) — with the level selection
+(step (b′)), BOTH now PROVEN and `sorryAx`-free (they were sorry
+leaves at cut time; cross-reference corrected 2026-07-27) — with the
+level selection
 `exists_local_pow_inertia_eq_bot` and the step-(c) arithmetic PROVEN
 here; leaf (iii) of the Fontaine different-bound decomposition, PURE
 local ramification theory with no Hopf vocabulary; Fontaine §1
@@ -17082,8 +17101,10 @@ terminate at the level supplied by `exists_local_pow_inertia_eq_bot`)
 and (b) transitivity of the different
 `𝔡_{L/ℚ₃} = 𝔡_{L/M}·𝔡_{M/ℚ₃}𝒪_L` with `v_L = e_{L/M}·v_M` and
 `e_{L/M} = h₀` give `h₀·v_M(𝔡_{M/ℚ₃}) = Σ_{i≥0}(g_i − h_i)`, i.e. the
-first sorry leaf in its `d ≤ v_M(𝔡)` truncated form; (b′) `h₀·e_M = g₀`
-is the second sorry leaf; (c) PROVEN here: choose (`Nat.find`) the
+first leaf in its `d ≤ v_M(𝔡)` truncated form; (b′) `h₀·e_M = g₀`
+is the second leaf (both were sorried when this was written and both
+are now PROVEN — see the two names above); (c) PROVEN here: choose
+(`Nat.find`) the
 FIRST level `n = j + 1 ≥ 1` with `G_n = ⊥`, so that `hFont` applies at
 `m = j − 1` (vacuously when `j = 0`) and gives `2·Σ_{i=1}^{j} g_i ≤ g₀`;
 splitting both Herbrand sums at their ends (`Finset.sum_range_succ'`,
@@ -17220,8 +17241,10 @@ numerology leaves it consumes,
 are PROVEN as well, the first of them over the two local
 different-formula leaves
 `le_sum_card_inertia_sub_one_of_pow_dvd_local_differentIdeal` and
-`pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal`, which ARE
-still open; under (ii) the residual leaf is the ramification estimate
+`pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal`, which were
+still open when this was written and are now PROVEN and `sorryAx`-free
+(cross-reference corrected 2026-07-27); under (ii) the residual leaf is
+the ramification estimate
 (ii-a′) `sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia`;
 the assembly is PROVEN here: instantiate the subextension estimate at
 `L = hopfPointsField G` with the placement `M ≤ L` from `hM` and the
@@ -17663,10 +17686,12 @@ theorem ramificationIdx'_comap_maximalIdeal_eq_local
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 4000000 in
 /-- **The distinguished prime over `3` and the passage to the local
-different** (DECOMPOSED 2026-07-24 into the two sorry nodes above —
-the completion invariance of the different
+different** (DECOMPOSED 2026-07-24 into the two nodes above — the
+completion invariance of the different
 `maximalIdeal_pow_dvd_local_differentIdeal_of_comap_pow_dvd` and of
-the ramification index `ramificationIdx'_comap_maximalIdeal_eq_local`
+the ramification index `ramificationIdx'_comap_maximalIdeal_eq_local`,
+BOTH now PROVEN and `sorryAx`-free (they were sorry nodes at cut time;
+cross-reference corrected 2026-07-27)
 (Serre, *Corps Locaux* III §4 Prop. 10, both pure algebraic number
 theory over the same dense-embedding data) — with the
 distinguished-prime construction PROVEN here, as in
@@ -17947,7 +17972,9 @@ theorem exists_prime_over_three_of_local_different_bound
     rwa [ramificationIdx'_comap_maximalIdeal_eq_local K M hMgen φ hφcompat]
 
 /-- **Fontaine's sharp different-exponent bound at a choosable prime
-over `3`** (DECOMPOSED 2026-07-24 into the two sorry nodes above —
+over `3`** (DECOMPOSED 2026-07-24 into the two nodes above — of which
+only the first is still a sorry node; the second is now PROVEN and
+`sorryAx`-free (cross-reference corrected 2026-07-27) —
 the LOCAL Fontaine bound
 `two_mul_local_differentIdeal_exponent_add_two_le_of_flat_at_three`
 (where the flatness input `hρ.isFlat` genuinely lives, now a purely
@@ -18004,9 +18031,11 @@ theorem exists_prime_over_three_differentIdeal_exponent_fontaine_bound
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Fontaine's ramification bound at `3` in lower-numbering form**
-(DECOMPOSED 2026-07-24 into the two sorry nodes above — the
+(DECOMPOSED 2026-07-24 into the two nodes above — the
 filtration-sum divisibility `pow_sum_card_inertia_dvd_differentIdeal`
-(Serre IV §1 Prop. 4, `≥` direction, pure algebraic number theory) and
+(Serre IV §1 Prop. 4, `≥` direction, pure algebraic number theory;
+now PROVEN and `sorryAx`-free — it was a sorry node at cut time,
+cross-reference corrected 2026-07-27) and
 Fontaine's sharp different-exponent bound at a choosable prime
 `exists_prime_over_three_differentIdeal_exponent_fontaine_bound`
 (where the flatness input `hρ.isFlat` genuinely lives) — with the
@@ -18122,9 +18151,11 @@ theorem two_mul_sum_card_inertia_pow_add_two_le_of_flat_at_three {k : Type u}
   rwa [hidx] at hb
 
 /-- **The Fontaine bound at a prime over `3`, wild case** (DECOMPOSED
-2026-07-24 into the two sorry nodes above — the ramification-filtration
+2026-07-24 into the two nodes above — the ramification-filtration
 different bound `le_sum_card_inertia_pow_of_pow_dvd_differentIdeal`
-(Serre IV §1 Prop. 4, pure algebraic number theory) and Fontaine's
+(Serre IV §1 Prop. 4, pure algebraic number theory; now PROVEN and
+`sorryAx`-free — it was a sorry node at cut time, cross-reference
+corrected 2026-07-27) and Fontaine's
 filtration bound
 `two_mul_sum_card_inertia_pow_add_two_le_of_flat_at_three` (where the
 flatness input `hρ.isFlat` genuinely lives) — with the
@@ -18288,10 +18319,12 @@ theorem exists_prime_over_three_differentIdeal_exponent_bound {k : Type u}
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Fontaine different bound at `3`, wild case** (DECOMPOSED
-2026-07-23 into the two sorry nodes above — the distinguished-prime
+2026-07-23 into the two nodes above — the distinguished-prime
 bound `exists_prime_over_three_differentIdeal_exponent_bound` (where
 the flatness input `hρ.isFlat` and Fontaine's ramification bound
-genuinely live) and the different-invariance `smul_differentIdeal`;
+genuinely live; still a sorry node) and the different-invariance
+`smul_differentIdeal` (now PROVEN and `sorryAx`-free — it was a sorry
+node at cut time, cross-reference corrected 2026-07-27);
 the conjugacy-transport glue is proven here): for a prime `Q` of
 `𝓞 K` above `3` with `3 ∣ e(Q∣3)` (wild ramification), the different
 exponent `d_Q` satisfies `2·d_Q ≤ 3·e(Q∣3)`.  Glue: `Gal(K/ℚ)` moves
@@ -18413,10 +18446,12 @@ theorem kernel_field_differentIdeal_exponent_at_three {k : Type u} [Finite k]
     omega
 
 /-- **The tame discriminant exponent at `2`** (DECOMPOSED 2026-07-23
-into the three sorry nodes above — the norm bookkeeping
+into the three nodes above — the norm bookkeeping
 `discr_factorization_le_of_forall_differentIdeal_pow_dvd`, the tame
 different bound `not_pow_ramificationIdx_dvd_differentIdeal` and the
-inertia-order leaf `kernel_field_inertia_card_at_two_dvd_three`; the
+inertia-order leaf `kernel_field_inertia_card_at_two_dvd_three`, ALL
+THREE now PROVEN and `sorryAx`-free (they were sorry nodes at cut
+time; cross-reference corrected 2026-07-27); the
 per-prime glue is proven here): the `2`-adic valuation of the
 discriminant of the kernel field of a mod-3 hardly ramified
 representation is at most `(2/3)·[K:ℚ]`, stated integrally as
@@ -18526,9 +18561,10 @@ theorem kernel_field_discr_two_exponent {k : Type u} [Finite k] [Field k]
   omega
 
 /-- **The Fontaine discriminant exponent at `3`** (DECOMPOSED
-2026-07-23 into the two sorry nodes above — the norm bookkeeping
-`discr_factorization_le_of_forall_differentIdeal_pow_dvd` and the
-per-prime Fontaine bound
+2026-07-23 into the two nodes above — the norm bookkeeping
+`discr_factorization_le_of_forall_differentIdeal_pow_dvd` (now PROVEN
+and `sorryAx`-free — it was a sorry node at cut time, cross-reference
+corrected 2026-07-27) and the still-open per-prime Fontaine bound
 `kernel_field_differentIdeal_exponent_at_three`; the assembly is
 proven here): the `3`-adic
 valuation of the discriminant of the kernel field of a mod-3 hardly
@@ -18567,9 +18603,11 @@ theorem kernel_field_discr_three_exponent {k : Type u} [Finite k] [Field k]
     Q hQprime hQmem d hd
 
 /-- **The discriminant bound of the kernel field** (DECOMPOSED
-2026-07-23 into the three sorry nodes above — the
-unramified-outside-`{2,3}` leaf `kernel_field_not_dvd_discr`, the
-tame-at-`2` exponent leaf `kernel_field_discr_two_exponent` and the
+2026-07-23 into the three nodes above — the
+unramified-outside-`{2,3}` leaf `kernel_field_not_dvd_discr` and the
+tame-at-`2` exponent leaf `kernel_field_discr_two_exponent` (both now
+PROVEN and `sorryAx`-free — they were sorry nodes at cut time,
+cross-reference corrected 2026-07-27), and the still-open
 Fontaine-at-`3` exponent leaf `kernel_field_discr_three_exponent`;
 the factorization assembly `|d_K| = 2^{v₂}·3^{v₃}` and the exponent
 arithmetic are proven here): the number field cut out by the kernel
@@ -18647,10 +18685,12 @@ theorem discr_bound_of_kernel_field {k : Type u} [Finite k] [Field k]
   exact_mod_cast key
 
 /-- **The hardly ramified number field, from a degree bound**
-(DECOMPOSED 2026-07-23 into the three sorry nodes above — the
-Galois-correspondence field cut `exists_kernel_field_of_matrixRange`,
-the oddness/totally-complex leaf `isTotallyComplex_of_kernel_field`,
-and the Fontaine/tame discriminant leaf `discr_bound_of_kernel_field`;
+(DECOMPOSED 2026-07-23 into the three nodes above — the
+Galois-correspondence field cut `exists_kernel_field_of_matrixRange`
+and the oddness/totally-complex leaf `isTotallyComplex_of_kernel_field`
+(both now PROVEN and `sorryAx`-free — they were sorry nodes at cut
+time, cross-reference corrected 2026-07-27), and the still-open
+Fontaine/tame discriminant leaf `discr_bound_of_kernel_field`;
 the assembly is proven): a mod-3 hardly ramified representation whose
 `𝔽̄₃`-matrix image `u.range` has at least `48` elements cuts out a
 number field `K` (the fixed field of `ker u` inside `ℚᵃˡᵍ`) that is
@@ -22643,7 +22683,9 @@ analysis into a class-indexed family `P` of `WeakFEPair`s (weight
 functional equation pairing `C` with `[𝔡]C⁻¹`, exponentially decaying
 kernels, and the `re s > 1` identification of `Λ(s/2)` with the
 completed partial zeta), and the leaf `weakFEPair_growth` (sorried
-above) supplies the Lang XIII §5 order-one bound for any such pair.
+above when this was written; now PROVEN and `sorryAx`-free —
+corrected 2026-07-27) supplies the Lang XIII §5 order-one bound for
+any such pair.
 
 The assembly here is pure complex algebra over the `WeakFEPair` API:
 the completed partial zeta is DEFINED as the entire function
@@ -22737,12 +22779,16 @@ The decomposition cuts the Neukirch VII §§3–5 route at its Poisson
 core: the conclusion is verbatim that of
 `heckeClassZeta_of_zlattice_theta` (the ideal-lattice, unit-domain and
 `WeakFEPair`/Mellin machinery — assembly PROVEN above, over the
-sorried leaves `heckeFEPair_exists`/`weakFEPair_growth`), whose sole
+leaves `heckeFEPair_exists` (still sorried) and `weakFEPair_growth`
+(now PROVEN and `sorryAx`-free; cross-reference corrected
+2026-07-27)), whose sole
 hypothesis
 is verbatim the `n`-dimensional `ZLattice` Poisson-summation theta law
-`zlattice_theta_transform` (sorried above, the pin's genuine gap) —
+`zlattice_theta_transform` (recorded above as sorried, the pin's
+genuine gap — that label is STALE: it is now PROVEN and `sorryAx`-free,
+corrected 2026-07-27) —
 the assembly here plugs the one into the other, making the analytic
-route and its two remaining frontiers mechanically explicit.
+route and its remaining frontiers mechanically explicit.
 
 Historical intended-proof sketch (now distributed over the two
 leaves' docstrings):
@@ -23068,7 +23114,10 @@ into the theta–Mellin core `completedDedekindZeta_exists` (entire
 `ξ_K`, the `re s > 1` formula, the functional equation, the order-one
 growth bound — the genuinely deep Poisson-summation material) and the
 Euler-product leaf `dedekindZeta_ne_zero_of_one_lt_re`, both sorried
-above).  The two remaining fields of `DedekindContinuation` are
+above when this was written — the Euler-product leaf is now PROVEN and
+`sorryAx`-free, so only the theta–Mellin core remains open
+(cross-reference corrected 2026-07-27)).
+The two remaining fields of `DedekindContinuation` are
 DERIVED here: `conj_symm` by Schwarz reflection — `z ↦ conj (ξ(z̄))`
 is entire (`differentiableAt_conj_conj_iff`) and agrees with `ξ` on
 `re s > 1` because every factor of `eq_of_one_lt_re` has real
@@ -25962,8 +26011,10 @@ leaf of the decomposition of `DedekindContinuation.zero_count_window`,
 now cut along Landau's route, E. Landau, *Algebraische Zahlen*,
 p. 122, quoted by Poitou p. 6-02, into the Phragmén–Lindelöf window
 bound `DedekindContinuation.xi_window_le_xiFactor` (leaf (i),
-sorried), the elementary-factor Γ-ratio
-`dedekindXiFactor_window_ratio` (leaf (ii), sorried), the
+sorried when this was written, now PROVEN), the elementary-factor
+Γ-ratio
+`dedekindXiFactor_window_ratio` (leaf (ii), likewise now PROVEN —
+both labels were STALE and are corrected 2026-07-27), the
 Euler-product centre lower bound `dedekindZeta_norm_lower_of_re_eq_two`
 (leaf (iii), PROVEN), and the bounded-height compactness bound
 `DedekindContinuation.xi_window_ratio_bound_of_le_eight` (PROVEN)):
@@ -33367,7 +33418,9 @@ of the decomposition of
 `DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
 pp. 6-04–6-06, Lemme 1, Lemme 2 and formula (5)).  The proof is glue
 over this section's bricks: the pointwise Gauss rewrite
-`digamma_eq_neg_euler_add_gaussIntegral` (sorried sub-leaf A) splits
+`digamma_eq_neg_euler_add_gaussIntegral` (sub-leaf A — labelled
+sorried here until 2026-07-27, which was STALE: it is PROVEN and
+`sorryAx`-free) splits
 the integrand into the constant part `r₂·(−γ − log 2π)·Φ` and the
 pairing part `r₂·Φ·gaussDigammaIntegral`; the constant part
 integrates over the line to `2π·r₂·(−γ − log 2π)` by
@@ -34301,8 +34354,10 @@ theorem poitouPrimeEdge_eq_tsum (K : Type*) [Field K] [NumberField K] (T : ℝ) 
 of the decomposition of
 `DedekindContinuation.poitouEdge_sub_poleEdge_tendsto`; Poitou
 pp. 6-03–6-04, the ultrametric term of Proposition 2; now cut down
-to the SINGLE remaining sorried leaf
-`dedekindZeta_logDeriv_eq_neg_tsum` (b₂ᵢᵢ·3·A·i, the von Mangoldt
+to the SINGLE leaf
+`dedekindZeta_logDeriv_eq_neg_tsum`, itself now PROVEN and
+`sorryAx`-free (it was sorried when this was written; cross-reference
+corrected 2026-07-27) (b₂ᵢᵢ·3·A·i, the von Mangoldt
 Dirichlet series of `ζ_K'/ζ_K`) — the truncated identity
 `poitouPrimeEdge_eq_tsum`, the decay leaf `poitouPhi_line_integrable`
 (b₂ᵢᵢ·3·B) and all Fourier analysis are PROVEN above).  Assembly: by
@@ -35902,8 +35957,9 @@ Delange–Pisot–Poitou 18 (1976/77), exp. 6) is now cut into:
 
 The assembly below rewrites the raw constant by (c₁)–(c₃) and
 `log 8π = log 2 + log 4π`, and closes by `ring` — so this node is
-proven glue, and the remaining analytic content lives in the two
-sorried leaves (a) and (b). -/
+proven glue, and the analytic content lives in leaves (a) and (b) —
+both of which were sorried when this was written and are now PROVEN
+and `sorryAx`-free (cross-reference corrected 2026-07-27). -/
 theorem DedekindContinuation.fejer_zero_sum_tendsto {K : Type*} [Field K]
     [NumberField K] (pkg : DedekindContinuation K)
     (htc : NumberField.IsTotallyComplex K) :
@@ -35929,10 +35985,11 @@ theorem DedekindContinuation.fejer_zero_sum_tendsto {K : Type*} [Field K]
 Fejér–Poitou test function** (DECOMPOSED 2026-07-23, assembly PROVEN —
 the analytic leaf of the decomposition of
 `poitou_explicit_formula_bound`, now cut into the Hecke continuation
-package `DedekindContinuation` with its two deep sorried leaves
-`dedekindContinuation_exists` (Hecke's theorem) and
+package `DedekindContinuation` with its two deep leaves
+`dedekindContinuation_exists` (Hecke's theorem; still sorried) and
 `DedekindContinuation.fejer_zero_sum_tendsto` (Poitou's contour
-argument), plus the PROVEN glue `DedekindContinuation.mult_mem_strip`
+argument; now PROVEN and `sorryAx`-free — cross-reference corrected
+2026-07-27), plus the PROVEN glue `DedekindContinuation.mult_mem_strip`
 and `DedekindContinuation.finite_truncation`):
 for a totally complex number field `K` of degree `n` there exist a
 zero-multiplicity function `mult : ℂ → ℕ` — realized here as
@@ -35961,7 +36018,9 @@ Proposition 5's conditions (i)–(iii) for `f`.  The analytic
 continuation and functional equation of the completed zeta now live in
 the sorried leaf `dedekindContinuation_exists`, and the
 contour-integral argument (Landau's horizontal estimates included) in
-the sorried leaf `DedekindContinuation.fejer_zero_sum_tendsto` — the
+the leaf `DedekindContinuation.fejer_zero_sum_tendsto`, which is now
+PROVEN and `sorryAx`-free (it was sorried when this was written;
+cross-reference corrected 2026-07-27) — the
 material the official FLT project axiomatizes away. -/
 theorem dedekind_explicit_formula_fejer (K : Type*) [Field K] [NumberField K]
     (htc : NumberField.IsTotallyComplex K) :
@@ -36572,8 +36631,10 @@ theorem integral_odlyzkoTestFn_le :
 
 /-- **The Odlyzko discriminant bound** (DECOMPOSED 2026-07-23 into
 the explicit-formula sorry node `poitou_explicit_formula_bound`, the
-elementary numeric sorry node
-`integral_one_sub_odlyzkoTestFn_div_sinh_le`, and the PROVEN
+elementary numeric node
+`integral_one_sub_odlyzkoTestFn_div_sinh_le` (now PROVEN and
+`sorryAx`-free — it was a sorry node at cut time, cross-reference
+corrected 2026-07-27), and the PROVEN
 `integral_odlyzkoTestFn_le`; the assembly below is proven): a totally
 complex number field of degree `n ≥ 48` has root discriminant at
 least `33/4 = 8.25 > 314928^{1/6} = 8.2497…`, stated integrally as
@@ -40670,9 +40731,11 @@ def IsNarrowPrincipal {F : Type*} [Field F] [NumberField F]
 set_option maxHeartbeats 400000 in
 /-- **Narrow-class exponent two for the seven quadratic fields — every
 nonzero ideal square is narrowly principal** (PROVEN glue, 2026-07-24,
-over the two per-field class-number sorry leaves
+over the two per-field class-number leaves
 `isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` and
-`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` above; conclusion
+`sq_isPrincipal_ringOfIntegers_neg_six_ray_class` above — BOTH now
+PROVEN and `sorryAx`-free (they were sorry leaves when this was
+written; cross-reference corrected 2026-07-27); conclusion
 CORRECTED and renamed 2026-07-25 from the degenerate
 `IsNarrowRayEquiv 1 (I²) ⊤` form to `IsNarrowPrincipal (I²)` — see
 that definition's docstring for the `ℚ(√−47)` counterexample the old
@@ -50846,8 +50909,10 @@ set_option maxHeartbeats 1000000 in
 /-- **Everywhere-unramified characters of `Γ_{ℚ(x)}` square to one
 when every ideal square of `𝓞_{ℚ(x)}` is narrowly principal — the pure
 reciprocity sub-leaf** (DECOMPOSED 2026-07-24 — the whole `Γ ℚ ↔ Γ F`
-bridge is PROVEN here over the two sorried leaves above: the inertia
-transport `exists_conj_image_localInertiaGroup_rat_ray_class` and the
+bridge is PROVEN here over the two leaves above: the inertia
+transport `exists_conj_image_localInertiaGroup_rat_ray_class` (now
+PROVEN and `sorryAx`-free — it was sorried at cut time,
+cross-reference corrected 2026-07-27) and the still-open
 uniform reciprocity core
 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`,
 assembled through the PROVEN density glue
@@ -51087,11 +51152,13 @@ reciprocity for the narrow Hilbert class field, THE
 class-field-theoretic gap) over the PROVEN narrow-exponent-two glue
 `isNarrowPrincipal_sq_of_quadratic_ray_class` (the `h⁺`-table
 `1, 1, 1, 2, 1, 2, 2` in exponent form) over the two per-field
-class-number sorry leaves
+class-number leaves
 `isPrincipalIdealRing_ringOfIntegers_quadratic_ray_class` (`h = 1`
 for `d = −1, 2, −2, 3, −3, 6`) and
 `sq_isPrincipal_ringOfIntegers_neg_six_ray_class`
-(`Cl(ℚ(√−6)) ≅ ℤ/2`) — with the assembly PROVEN here: `ℚ(x)` is a
+(`Cl(ℚ(√−6)) ≅ ℤ/2`) — both now PROVEN and `sorryAx`-free (they were
+sorry leaves when this was written; cross-reference corrected
+2026-07-27) — with the assembly PROVEN here: `ℚ(x)` is a
 number field since `x² = d` is integral, the reciprocity leaf gives
 `ν(g)² = 1`, the odd pointwise order of `hνodd` gives `ν(g)ⁿ = 1`
 with `n` odd, and `orderOf (ν g) ∣ gcd(2, n) = 1` concludes — leaf
@@ -51162,11 +51229,13 @@ theorem odd_character_eq_one_of_unramified_everywhere_ray_class
 set_option maxHeartbeats 1000000 in
 /-- **An odd-order character of `Γ_{ℚ(√d)}` unramified outside `3` is
 trivial — the representation-free odd ray-class core** (DECOMPOSED
-2026-07-24 into the two sorry nodes above — the conductor-descent
+2026-07-24 into the two nodes above — the conductor-descent
 leaf at `3` `character_pow_eight_localInertia_three_eq_one_ray_class`
 (wild inertia is pro-`3`, the tame quotient Frobenius-conjugates by
 cubing, so a prime-to-`3`-order character has eighth power `1` on the
-inertia at `3`) and the narrow-class reciprocity leaf
+inertia at `3`; now PROVEN and `sorryAx`-free — it was a sorry node at
+cut time, cross-reference corrected 2026-07-27) and the still-open
+narrow-class reciprocity leaf
 `odd_character_eq_one_of_unramified_everywhere_ray_class` (the seven
 narrow class groups `h⁺ = 1, 1, 1, 2, 1, 2, 2` are elementary
 `2`-groups, killing odd characters) — with the assembly PROVEN here:
@@ -52371,8 +52440,10 @@ trivial — the `d = -3` narrow-ray-class core** (DECOMPOSED 2026-07-24
 into the two leaves above — the PROVEN exponent-`2` Kummer leaf
 `exists_kummer_element_of_quadratic_character_ray_class` (the
 character `ν` is the sign character of a square root `y` with
-`y² ∈ ℚ(√-3)`) and the sorried arithmetic leaf
-`kummer_element_fixed_of_unramified_outside_three_neg_three` (a
+`y² ∈ ℚ(√-3)`) and the arithmetic leaf
+`kummer_element_fixed_of_unramified_outside_three_neg_three` — sorried
+when this was written, now PROVEN and `sorryAx`-free (corrected
+2026-07-27) — (a
 square root over `ℚ(√-3)` unramified outside `3` already lies in
 `ℚ(√-3)` — the concrete triviality of the ray class group of modulus
 `(√-3)`) — with the assembly PROVEN here: the detection equivalence
@@ -52993,9 +53064,11 @@ set_option maxHeartbeats 1000000 in
 /-- **An anti-invariant QUADRATIC character of `Γ_{ℚ(√d)}` unramified
 outside `3` and factoring through a hardly ramified representation is
 trivial — the `2`-part of the dihedral elimination** (PROVEN
-2026-07-24 as glue over the two sorry leaves
+2026-07-24 as glue over the two leaves
 `quadratic_character_eq_one_ray_class_neg_three` and
-`exists_mem_localInertiaGroup_two_moving_sqrt` above, plus the PROVEN
+`exists_mem_localInertiaGroup_two_moving_sqrt` above — BOTH now PROVEN
+and `sorryAx`-free (they were sorry leaves when this was written;
+cross-reference corrected 2026-07-27) — plus the PROVEN
 cube-triviality `galoisRep_pow_three_eq_one_of_mem_localInertiaGroup_two`):
 with all the data of the parent node
 `anti_equivariant_ratio_character_eq_one_ray_class` below, but with
@@ -53837,9 +53910,11 @@ theorem dihedral_induced_ray_class_of_two_unramified {k : Type u}
 
 set_option maxHeartbeats 1000000 in
 /-- **The dihedral ray-class core for the induced eigenvalue
-character** (DECOMPOSED 2026-07-23 into the two sorry nodes above —
+character** (DECOMPOSED 2026-07-23 into the two nodes above —
 the local-at-`2` unipotence analysis
-`induced_character_unramified_at_two` and the at-`3`/ray-class
+`induced_character_unramified_at_two` (now PROVEN and `sorryAx`-free —
+it was a sorry node at cut time, cross-reference corrected 2026-07-27)
+and the still-open at-`3`/ray-class
 computation `dihedral_induced_ray_class_of_two_unramified`; the
 assembly is proven): the per-field class-field-theoretic core of the
 dihedral case, with the whole induced-representation step hoisted
@@ -54134,11 +54209,13 @@ theorem serre_elimination_dihedral_ray_class_of_eigenvector {k : Type u}
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral ray-class computation**
-(DECOMPOSED 2026-07-23 into the two sorry nodes above — the
+(DECOMPOSED 2026-07-23 into the two nodes above — the
 common-eigenvector dichotomy `exists_index_two_common_eigenvector`
 (which may SWITCH the quadratic character, as required by the
-Klein-four projective sub-case where `ρ|_{ker θ}` is irreducible) and
-the eigenvector-explicit per-field ray-class core
+Klein-four projective sub-case where `ρ|_{ker θ}` is irreducible; now
+PROVEN and `sorryAx`-free — it was a sorry node at cut time,
+cross-reference corrected 2026-07-27) and the still-open
+eigenvector-explicit per-field ray-class core
 `serre_elimination_dihedral_ray_class_of_eigenvector`; the reduction
 is proven): the dihedral situation of
 `serre_elimination_dihedral_arith`, with the quadratic field made
@@ -54229,10 +54306,12 @@ theorem serre_elimination_dihedral_ray_class {k : Type u} [Finite k] [Field k]
 
 set_option maxHeartbeats 1000000 in
 /-- **The Serre/Tate elimination, dihedral arithmetic** (DECOMPOSED
-2026-07-22 into the two sorry nodes above — the quadratic-field
+2026-07-22 into the two nodes above — the quadratic-field
 classification
-`exists_sqrt_of_quadratic_character_unramified_outside_two_three` and
-the per-field ray-class computation
+`exists_sqrt_of_quadratic_character_unramified_outside_two_three` (now
+PROVEN and `sorryAx`-free — it was a sorry node at cut time,
+cross-reference corrected 2026-07-27) and the still-open
+per-field ray-class computation
 `serre_elimination_dihedral_ray_class`; the reduction is proven): an
 absolutely irreducible mod-3 hardly ramified representation admits no
 surjective quadratic character `θ` of `Γ ℚ` such that the projective
@@ -56315,12 +56394,14 @@ theorem quotCharacter_inertia_three_dichotomy_of_sq_one
     exact hval2
 
 /-- **The Oort–Tate/Raynaud dichotomy at `3`** (DECOMPOSED 2026-07-23
-into the two sorry nodes above — the order-two leaf
+into the two nodes above — the order-two leaf
 `quotCharacter_inertia_three_sq_one` (Frobenius conjugation on the
 tame quotient; no flatness needed since `χ` is GLOBAL, unlike the
 level-2 fundamental characters of Serre's §2.8 prop. 8 setting) and
 the unique-quadratic-quotient leaf
-`quotCharacter_inertia_three_dichotomy_of_sq_one`; the assembly is
+`quotCharacter_inertia_three_dichotomy_of_sq_one`, BOTH now PROVEN and
+`sorryAx`-free (they were sorry nodes at cut time; cross-reference
+corrected 2026-07-27); the assembly is
 proven): the quotient character `χ` of a stable line of a mod-3
 hardly ramified representation, restricted to the inertia at `3`, is
 either TRIVIAL or the mod-3 CYCLOTOMIC character — nothing else can
@@ -56358,8 +56439,10 @@ theorem quotCharacter_inertia_three_dichotomy
     (quotCharacter_inertia_three_sq_one V hV hρ W₀ hW₀fr hstable ψ hψ χ hχ)
 
 /-- **Raynaud's inertia characters at `3`** (DECOMPOSED 2026-07-23
-into the dichotomy sorry node `quotCharacter_inertia_three_dichotomy`
-above; the reduction is proven): if the quotient character `χ` of a
+into the dichotomy node `quotCharacter_inertia_three_dichotomy`
+above — itself now PROVEN and `sorryAx`-free, so this cross-reference's
+"sorry node" label was STALE and is corrected 2026-07-27; the
+reduction is proven): if the quotient character `χ` of a
 stable line of a mod-3 hardly ramified representation is RAMIFIED at
 `3`, then on the inertia at `3` it EQUALS the mod-3 cyclotomic
 character — the ramifiedness hypothesis excludes the trivial branch
@@ -56397,8 +56480,10 @@ theorem quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified
   · exact h
 
 /-- **The Raynaud dichotomy at `3`** (DECOMPOSED 2026-07-22 into the
-sorry node `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified`
-above; the determinant bookkeeping is proven): if the quotient
+node `quotCharacter_eq_cyclotomic_on_inertia_three_of_ramified`
+above — itself now PROVEN and `sorryAx`-free, so this cross-reference's
+"sorry node" label was STALE and is corrected 2026-07-27; the
+determinant bookkeeping is proven): if the quotient
 character `χ` of a stable line of a mod-3 hardly ramified
 representation is RAMIFIED at `3`, then the sub-character `ψ` is
 unramified at `3`. Derivation: on the inertia at `3`,
@@ -57086,9 +57171,11 @@ theorem exists_connectedEtale_subgroup_at_three
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 1000000 in
 /-- **The second inertia-stable line at `3`** (DECOMPOSED 2026-07-23
-into the connected–étale sorry node
+into the connected–étale node
 `exists_connectedEtale_subgroup_at_three` above — the finite-flat
-content; the eigenvector assembly is proven here): a mod-3 hardly
+content, itself now PROVEN and `sorryAx`-free, so this
+cross-reference's "sorry node" label was STALE and is corrected
+2026-07-27; the eigenvector assembly is proven here): a mod-3 hardly
 ramified representation whose stable line `W₀` has quotient character
 `χ` RAMIFIED at `3` admits a vector `v' ∉ W₀` on which the inertia at
 `3` acts through `χ`. The proven assembly: the leaf provides `U`
@@ -57214,8 +57301,10 @@ theorem exists_inertia_eigenvector_complement_at_three
   exact sub_eq_zero.mp hd0
 
 /-- **The local splitting at `3`** (DECOMPOSED 2026-07-23 into the
-sorry node `exists_inertia_eigenvector_complement_at_three` above —
-the finite-flat/connected–étale content; the coordinate reduction is
+node `exists_inertia_eigenvector_complement_at_three` above —
+the finite-flat/connected–étale content, itself now PROVEN and
+`sorryAx`-free, so this cross-reference's "sorry node" label was STALE
+and is corrected 2026-07-27; the coordinate reduction is
 proven here): in the coordinates of
 `exists_splitting_scalar_of_quot_ramified`, the extension cocycle `c`
 is a coboundary already on the inertia at `3`: a single scalar `s`
@@ -58412,13 +58501,16 @@ theorem quadratic_agreement_additive_character_eq_zero_ray_class
 set_option maxHeartbeats 1000000 in
 /-- **The agreement additive character is killed by ray-class
 arithmetic** (DECOMPOSED 2026-07-24 — the `F`-identification glue is
-PROVEN here; the residual sorry nodes are the finite-level tame leaf
+PROVEN here; the two nodes it was cut over are the finite-level tame
+leaf
 `exists_finite_level_tame_frobenius_generator_two` (consumed through
 the proven at-`2` abelian assembly
 `localInertia_two_eq_one_of_no_two_torsion`) and the `ℚ(√-3)`
 ray-class core
 `quadratic_agreement_additive_character_eq_zero_ray_class`, both
-above): an additive character `b` of the agreement subgroup
+above — and BOTH are now PROVEN and `sorryAx`-free, so the "residual
+sorry nodes" wording here was STALE and is corrected 2026-07-27):
+an additive character `b` of the agreement subgroup
 `H = {g | ψ g = χ g} = ker(ψχ⁻¹) = Γ_F` (`hbadd`), trivial on the
 open subgroup `ker ρ` (`hker`), `ψχ⁻¹`-equivariantly conjugated
 (`hconj`), vanishing on the inertia of every prime `q ∉ {2, 3}`
@@ -58442,7 +58534,9 @@ agreement locus is everything, `b` is a global additive character of
 no `2`-torsion in characteristic `3`), and Minkowski kills it. If
 `ε ≠ 1` then `ε = -1` (the only nontrivial square root of `1` in a
 field), `η` is a quadratic character ramified exactly at `3` — the
-character of `F = ℚ(√-3)` — and the ray-class sorry node finishes on
+character of `F = ℚ(√-3)` — and the ray-class node
+`quadratic_agreement_additive_character_eq_zero_ray_class` (PROVEN,
+`sorryAx`-free; it was sorried when this was written) finishes on
 the transported hypotheses. (The ramification hypothesis `h3` on `χ`
 is not needed for this route: the `ε`-dichotomy replaces it.) -/
 theorem agreement_additive_character_eq_zero_ray_class
@@ -58670,7 +58764,7 @@ theorem agreement_additive_character_eq_zero_ray_class
     have h' : Multiplicative.ofAdd (b g) = Multiplicative.ofAdd 0 := h
     exact Multiplicative.ofAdd.injective h'
   · -- `ε = -1`: `η` is the quadratic character of `ℚ(√-3)`;
-    -- the ray-class sorry node finishes
+    -- the ray-class node finishes (PROVEN; was sorried when written)
     have hη2 : ∀ g : Γ ℚ, η g = 1 ∨ (η g : k) = -1 := by
       intro g
       obtain ⟨m, hm⟩ := Subgroup.mem_zpowers_iff.mp (hS g)
@@ -58878,8 +58972,10 @@ theorem agreement_cocycle_eq_zero_ray_class
   rw [hcb, hb0, zero_mul]
 
 /-- **The cocycle vanishes on the character-agreement locus**
-(DECOMPOSED 2026-07-23 into the ray-class core sorry node
-`agreement_cocycle_eq_zero_ray_class` above — the local bookkeeping
+(DECOMPOSED 2026-07-23 into the ray-class core node
+`agreement_cocycle_eq_zero_ray_class` above — itself now PROVEN and
+`sorryAx`-free, so this cross-reference's "sorry node" label was STALE
+and is corrected 2026-07-27; the local bookkeeping
 is PROVEN here as glue): the extension cocycle `c` of a mod-3 hardly
 ramified representation, coboundary on the inertia at `3` (`hs`),
 vanishes at every `g` where the two characters agree, `ψ g = χ g` —
@@ -59018,14 +59114,16 @@ theorem cocycle_eq_zero_on_agreement_of_local_at_three
       rw [h3']
     rw [hψc] at h1
     linear_combination h2 - h1 - c g * hh
-  -- the ray-class core (sorried leaf)
+  -- the ray-class core (PROVEN; sorried when this was written)
   exact agreement_cocycle_eq_zero_ray_class V hV hρ W₀ hW₀fr hstable ψ hψ
     χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ c hc hcocycle s hs hker hunr h3z hconj
 
 /-- **The global Selmer vanishing** (DECOMPOSED 2026-07-23 into the
-agreement-locus sorry node
+agreement-locus node
 `cocycle_eq_zero_on_agreement_of_local_at_three` above — the
-class-field-theory content — assembled with the PROVEN averaging
+class-field-theory content, itself now PROVEN and `sorryAx`-free, so
+this cross-reference's "sorry node" label was STALE and is corrected
+2026-07-27 — assembled with the PROVEN averaging
 lemma `exists_twisted_coboundary_scalar_of_agreement_vanishing`): a
 function `c` satisfying the twisted cocycle identity
 `c(gh) = χ(h)·c(g) + ψ(g)·c(h)` attached to a mod-3 hardly ramified
@@ -59035,7 +59133,10 @@ on the agreement locus `{g : ψ g = χ g}` every coboundary
 `t·(χ − ψ)` vanishes identically, so the class of `c` vanishes iff
 `c` itself vanishes there (restriction to `ker(ψχ⁻¹)` is injective on
 `H¹` because the quotient is finite of order prime to `char k` —
-the averaging lemma); the sorried leaf supplies that vanishing. -/
+the averaging lemma); the agreement-locus leaf
+`cocycle_eq_zero_on_agreement_of_local_at_three` (PROVEN,
+`sorryAx`-free; sorried when this was written) supplies that
+vanishing. -/
 theorem splitting_scalar_global_of_local_at_three
     {k : Type u} [Finite k] [Field k] [Algebra ℤ_[3] k]
     [TopologicalSpace k] [DiscreteTopology k]
@@ -59076,9 +59177,11 @@ theorem splitting_scalar_global_of_local_at_three
       hstable ψ hψ χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ c hc hcocycle s hs)
 
 /-- **The Serre swap, cocycle form** (DECOMPOSED 2026-07-23 into the
-two sorry nodes above — the connected–étale local splitting
+two nodes above — the connected–étale local splitting
 `exists_local_splitting_scalar_at_three` and the global Selmer
-vanishing `splitting_scalar_global_of_local_at_three`; the cocycle
+vanishing `splitting_scalar_global_of_local_at_three`, BOTH now PROVEN
+and `sorryAx`-free (they were sorry nodes at cut time; cross-reference
+corrected 2026-07-27); the cocycle
 identity `c(gh) = χ(h)·c(g) + ψ(g)·c(h)` is proven here as glue):
 with a basis adapted to the ramified-quotient situation — `w₀`
 spanning the stable line `W₀` and `v₁` a complement vector — the
@@ -59133,8 +59236,10 @@ theorem exists_splitting_scalar_of_quot_ramified
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Serre swap: the second stable line** (DECOMPOSED 2026-07-23
-into the cocycle-vanishing sorry node
-`exists_splitting_scalar_of_quot_ramified` above; the coordinate
+into the cocycle-vanishing node
+`exists_splitting_scalar_of_quot_ramified` above — itself now PROVEN
+and `sorryAx`-free, so this cross-reference's "sorry node" label was
+STALE and is corrected 2026-07-27; the coordinate
 reduction is proven): if the quotient character `χ` of a stable line
 `W₀` of a mod-3 hardly ramified representation is ramified at `3`,
 then the representation has a SECOND stable line whose quotient
@@ -59215,7 +59320,7 @@ theorem exists_line_with_quotCharacter_eq_subCharacter
       abel
     rw [hcfun g] at h1
     exact h1.symm
-  -- the splitting scalar of the sorried leaf
+  -- the splitting scalar of the leaf (PROVEN; sorried when written)
   obtain ⟨t, ht⟩ := exists_splitting_scalar_of_quot_ramified V hV hρ W₀
     hW₀fr hstable ψ hψ χ hχ h3 w₀ hw₀ hw₀ne v₁ hv₁ cfun hc
   -- the second line and its generator
@@ -59280,9 +59385,11 @@ theorem exists_line_with_quotCharacter_eq_subCharacter
     rw [smul_comm]
 
 /-- **The stable line with unramified-at-`3` quotient character**
-(DECOMPOSED 2026-07-22 into the two sorry nodes above — the Raynaud
+(DECOMPOSED 2026-07-22 into the two nodes above — the Raynaud
 dichotomy `subCharacter_unramified_at_three_of_quot_ramified` and the
-Serre swap `exists_line_with_quotCharacter_eq_subCharacter`): a
+Serre swap `exists_line_with_quotCharacter_eq_subCharacter`, BOTH now
+PROVEN and `sorryAx`-free (they were sorry nodes at cut time;
+cross-reference corrected 2026-07-27)): a
 reducible mod-3 hardly ramified representation has a stable LINE whose
 quotient character is unramified at `3`. Assembly: the given stable
 submodule is a line with sub-character `ψ` and quotient character `χ`;
