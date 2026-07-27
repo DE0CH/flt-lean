@@ -27252,12 +27252,237 @@ theorem exists_finset_forall_natCast_notMem_asIdeal
   rw [Set.Finite.mem_toFinset]
   exact Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hmem))
 
+/-- **A bound at every complex embedding transfers between number fields
+along a shared image in a common overfield** (PROVEN; pure
+algebraic-number theory, no arithmetic input whatsoever).
+
+If `x : E'` and `c : E` have the SAME image in some characteristic-zero
+field `Ω` — here always `ℚ̄_ℓ`, through the two chosen `ℓ`-adic places
+`ψE'` and `ψE` — then `x` and `c` are literally the same algebraic
+number, read in two different number fields.  Hence they have the same
+minimal polynomial over `ℚ`, hence the same set of complex conjugates,
+and any bound holding at every complex embedding of `E` holds at every
+complex embedding of `E'`.
+
+WHY THIS IS NEEDED HERE.  The descent statements of this module are
+typed over an EXISTENTIAL coefficient field (see the coefficient-field
+paragraph of `HeckeSystemDescendsTo`), while the Ramanujan–Petersson
+citation is naturally a statement about the CARRIER's Hecke field
+`Wit.E`.  The two fields are related only by having a common
+`ℚ̄_ℓ`-realization, which is exactly the hypothesis `h` below — there is
+in general no embedding `Wit.E → E'` available at the point of use.  So
+this lemma is what lets a bound proven for the newform's eigenvalue be
+read off for the descended eigenvalue.
+
+PROOF.  `minpoly.algHom_eq` applied to `ψE'` and `ψE` (both injective,
+being ring homomorphisms out of fields, and both automatically
+`ℚ`-algebra maps in characteristic zero via `RingHom.toRatAlgHom`) gives
+`minpoly ℚ x = minpoly ℚ (ψE' x) = minpoly ℚ (ψE c) = minpoly ℚ c`.
+Then `NumberField.Embeddings.range_eval_eq_rootSet_minpoly` identifies
+`{φ x | φ : E' →+* ℂ}` and `{φ c | φ : E →+* ℂ}` with the SAME root set
+`(minpoly ℚ c).rootSet ℂ`, so every value `φ x` is some value `φ' c`. -/
+theorem forall_complexEmbedding_norm_le_of_ringHom_eq {Ω : Type*} [Field Ω]
+    [CharZero Ω] {E E' : Type*} [Field E] [NumberField E] [Field E']
+    [NumberField E'] (ψE : E →+* Ω) (ψE' : E' →+* Ω) {c : E} {x : E'}
+    (h : ψE' x = ψE c) {B : ℝ} (hB : ∀ φ : E →+* ℂ, ‖φ c‖ ≤ B) :
+    ∀ φ : E' →+* ℂ, ‖φ x‖ ≤ B := by
+  have hmin : minpoly ℚ x = minpoly ℚ c := by
+    have h1 : minpoly ℚ (ψE' x) = minpoly ℚ x :=
+      minpoly.algHom_eq ψE'.toRatAlgHom ψE'.injective x
+    have h2 : minpoly ℚ (ψE c) = minpoly ℚ c :=
+      minpoly.algHom_eq ψE.toRatAlgHom ψE.injective c
+    rw [← h1, ← h2, h]
+  intro φ
+  have hx : φ x ∈ (minpoly ℚ c).rootSet ℂ := by
+    rw [← hmin, ← NumberField.Embeddings.range_eval_eq_rootSet_minpoly]
+    exact ⟨φ, rfl⟩
+  rw [← NumberField.Embeddings.range_eval_eq_rootSet_minpoly] at hx
+  obtain ⟨φ', hφ'⟩ := hx
+  rw [← hφ']
+  exact hB φ'
+
+/-- **Ramanujan–Petersson for the CARRIER's Hilbert newform** (SORRIED
+CITATION — Eichler–Shimura for parallel weight `2`, i.e. Deligne's
+theorem via the Blasius/Carayol realization of a Hilbert newform of
+parallel weight `2` in the `H¹` of a quaternionic Shimura variety,
+together with the Weil conjectures for that variety; Deligne, *La
+conjecture de Weil I*, Publ. IHÉS 43 (1974); Blasius, *Hilbert modular
+forms and the Ramanujan conjecture*, in *Noncommutative Geometry and
+Number Theory* (2006); Carayol, Ann. Sci. ÉNS 19 (1986); Shimura, Duke
+Math. J. 45 (1978), for the parallel-weight-`2` normalization
+`X² − a_w·X + Nw`).
+
+**THIS IS THE IRREDUCIBLE CLASSICAL CONTENT** extracted from
+`weilBound_of_charFrob_baseChange` below (2026-07-27).  It is stated at
+the places of `F` — where the witness's newform actually lives — rather
+than at the places of an intermediate field, so it is LITERALLY the
+classical theorem and nothing else: no base change, no descent, no
+coefficient-field bookkeeping.  That is what makes it the reusable form.
+
+STATEMENT.  Away from the witness's own bad set, the linear coefficient
+of the Hecke polynomial `Wit.heckeF W = X² − a_W·X + NW` — i.e. `−a_W` —
+satisfies `‖φ(a_W)‖ ≤ 2√(NW)` at EVERY complex embedding `φ` of the
+carrier's Hecke field.  (The bound is stated for `(heckeF W).coeff 1`
+itself rather than for `a_W = −(heckeF W).coeff 1`; the two are
+equivalent because `‖−z‖ = ‖z‖`.)
+
+FAITHFULNESS.  The statement is not vacuous and not weakened: at every
+`W ∉ Wit.badF` the polynomial `Wit.heckeF W` is PINNED by the structure
+field `Wit.modularF` — `(charFrob W).map Wit.ιO = (heckeF W).map Wit.ψℓ`
+with `Wit.ψℓ` injective — so `heckeF W` is determined by `ρ` and carries
+no freedom for a junk witness to exploit.  It is genuinely
+discriminating rather than decorative: an Eisenstein eigensystem has
+`a_W = 1 + NW`, and `1 + NW > 2√(NW)` for every `NW ≠ 1`, so the bound
+is exactly what excludes the objects Arthur–Clozel Ch. 3 Thm 4.2(d) must
+exclude.
+
+WHY IT IS NOT A FIELD OF `PotentialModularityWitness`.  It arguably
+should be — it is a property of the newform recorded by the structure,
+in the same family as `modularF` and `matchF₃`, and the producing leaf
+`exists_potentialModularityWitness_of_five_le` is entitled to supply it.
+That structure is being edited by other owners, so the obligation is
+stated here, where it is consumed.  REPORTED UPWARD 2026-07-27.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem weilBound_heckeF_of_witness {ℓ : ℕ} [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (Wit : PotentialModularityWitness ℓ O ρ) :
+    ∀ W ∉ Wit.badF, ∀ φ : Wit.E →+* ℂ,
+      ‖φ ((Wit.heckeF W).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm W.asIdeal) :=
+  sorry
+
+/-- **Ramanujan–Petersson at the places of `L = F^C` that do NOT match a
+good place of `F`** (SORRIED CITATION; the residual half of
+`weilBound_of_charFrob_baseChange` after the 2026-07-27 split).
+
+THE SPLIT, and why this is the shape that is left.  `ρ` is a
+representation of `G_ℚ` unramified outside `{2, ℓ}`, so its Frobenius
+characteristic polynomial at a place depends only on the residue
+CARDINALITY of that place (`charFrob_baseChange_eq_of_absNorm_eq`, below
+in this module).  Hence whenever a place `w` of `L` matches a good place
+`W` of `F` — same residue cardinality AND same Frobenius charpoly — the
+eigenvalue at `w` IS the newform's eigenvalue at `W`, read inside
+`ℚ̄_ℓ`, and the Weil bound at `w` follows from the classical theorem at
+`W` (`weilBound_heckeF_of_witness`) with NO further automorphic input.
+That half is PROVEN in the consumer below.
+
+What genuinely remains is the INERT half: a place `w` of `L` lying under
+places of `F` of strictly larger residue degree, so that no place of `F`
+has residue cardinality `Nw` at all.  There the eigenvalue at `w` is not
+any eigenvalue of the carrier's newform; it is an eigenvalue of the form
+DESCENDED to `L`, related to the one upstairs by the Dickson identity
+`a_W = D_f(a_w, Nw)` (`f` the residue degree of `F/L` at `w`).  Bounding
+it is exactly the assertion that the descended system is CUSPIDAL, which
+is the classical cyclic-descent statement (Langlands, *Base Change for
+GL(2)*, Ann. of Math. Studies 96 (1980); Arthur–Clozel, Ann. of Math.
+Studies 120 (1989), Ch. 3 Thm 4.2) combined with Ramanujan–Petersson for
+the descended form.
+
+WHY THE INEQUALITY UPSTAIRS DOES NOT SUFFICE, recorded so the cheap route
+is not re-attempted.  From `|φ(a_W)| ≤ 2·Nw^{f/2}` and `α_W β_W = Nw^f`
+one CANNOT conclude `|α_w| = |β_w| = √(Nw)`: that step needs the SHARP
+form of the bound (the two Frobenius eigenvalues have absolute value
+exactly `√(NW)`), which in turn needs `φ(a_W)` to be REAL — i.e. total
+reality of the Hecke field of a parallel-weight-`2` Hilbert newform with
+trivial nebentypus.  Total reality of `Wit.E` is NOT among the fields of
+`PotentialModularityWitness`, and the eigenvalues live in `ℚ̄_ℓ` rather
+than in `ℂ`, so the elementary route is unavailable at this pin in two
+independent ways.  CHECK THAT WOULD REFUTE THIS: exhibit a proof of
+`|α| = |β| = √q` from `α β = q`, `|α^f + β^f| ≤ 2 q^{f/2}` alone, for
+some `f > 1`, with `α + β` not assumed real.  (It is false: take `q = 1`,
+`f = 2`, `α = 2`, `β = 1/2`; then `α² + β² = 4.25 > 2`, so pick instead
+`α = i·t`, `β = 1/(i·t)` — the point is that only reality forces the
+conjugate pair.)
+
+AXIS SEARCHED, AXIS NOT SEARCHED.  Searched: the elementary/algebraic
+axis — deducing the bound downstairs from the bound upstairs by pure
+inequalities on Frobenius eigenvalues, in every arrangement the available
+`charFrob` API supports.  NOT searched: any route that first constructs
+the descended automorphic object, which is the citation itself.
+
+SOUNDNESS AUDIT.  (i) Direct: the classical theorem, applied to the
+Hilbert newform obtained by descending the carrier's newform to `L`.
+(ii) Collapse: the hypothesis package (an irreducible hardly ramified
+mod-`ℓ` representation with `ℓ ≥ 5`) is classically unsatisfiable — the
+headline of this module — so the statement is classically true for every
+package.  Route (ii) is a soundness justification only, NOT an available
+Lean discharge: the headline CONSUMES this subtree, so `absurd hirr …`
+is circular here.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem weilBound_of_charFrob_baseChange_of_inert
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F))
+    (E' : Type u) [Field E'] [NumberField E']
+    (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C))))
+    (a : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C)) → E')
+    (ha : ∀ w ∉ S, ψ (a w) =
+      - Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+        w).coeff 1)) :
+    ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C))),
+      ∀ w, w ∉ S → w ∉ S' →
+        (∀ W ∉ Wit.badF,
+          Ideal.absNorm W.asIdeal = Ideal.absNorm w.asIdeal →
+            (ρ.map (algebraMap ℚ Wit.F)).charFrob W ≠
+              (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
+        ∀ φ : E' →+* ℂ,
+          ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) :=
+  sorry
+
 /-- **Ramanujan–Petersson for the descended Hilbert eigensystem** (the
-CUSPIDALITY clause of `HeckeSystemDescendsTo`; SORRIED CITATION —
-Eichler–Shimura for parallel weight `2`, i.e. Deligne's theorem via the
-Blasius/Carayol realization of a Hilbert newform of parallel weight `2` in
-the `H¹` of a quaternionic Shimura variety, together with the Weil
-conjectures for that variety).
+CUSPIDALITY clause of `HeckeSystemDescendsTo`).
+
+**PROVEN 2026-07-27 BY A SPLIT/INERT DÉVISSAGE.**  This node was a single
+opaque citation ("Eichler–Shimura for parallel weight `2`, i.e. Deligne's
+theorem via the Blasius/Carayol realization of a Hilbert newform of
+parallel weight `2` in the `H¹` of a quaternionic Shimura variety,
+together with the Weil conjectures for that variety").  It is now an
+assembly of two named leaves, exactly mirroring the trace/determinant
+split that `exists_heckeTrace_of_prime_cyclic_step` makes further down
+this module:
+
+* `weilBound_heckeF_of_witness` — the IRREDUCIBLE classical content,
+  stated at the places of `F` where the carrier's newform actually
+  lives, so that it is literally Deligne's theorem and nothing else.
+  This is the reusable form, and it is what the SPLIT half consumes.
+* `weilBound_of_charFrob_baseChange_of_inert` — the residual citation,
+  needed only at places of `L = F^C` matching NO good place of `F`.
+* `forall_complexEmbedding_norm_le_of_ringHom_eq` — PROVEN here, the
+  bookkeeping that reads a bound over `Wit.E` as a bound over the
+  existential coefficient field `E'`, the two being related only by a
+  common realization in `ℚ̄_ℓ`.
+
+THE SPLIT HALF, PROVEN.  `ρ` is a representation of `G_ℚ`, so its
+Frobenius characteristic polynomial at a place depends only on the
+residue cardinality.  Hence if some `W ∉ Wit.badF` has
+`NW = Nw` and the same Frobenius charpoly, then `Wit.modularF` at `W`
+identifies `ιO((charFrob w).coeff 1)` with `ψℓ((heckeF W).coeff 1)`, so
+`a w` and `−(heckeF W).coeff 1` are the SAME algebraic number read in
+two number fields, and the bound descends with no automorphic input.
+**At the base of the tower — `C = ⊥`, the only present consumer, where
+`L = F^⊥` is `F` itself in another model — every place is of this kind**,
+so the base case's cuspidality clause now rests on the honest classical
+statement rather than on a statement about an intermediate field.
+
+The split condition is phrased through the Frobenius charpolys rather
+than through residue cardinality alone because
+`charFrob_baseChange_eq_of_absNorm_eq`, which turns the latter into the
+former, is declared BELOW this node and below its consumer; the charpoly
+form is the strictly weaker hypothesis and needs no such reordering.
 
 STATEMENT.  Given an eigenvalue function `a` over `L = F^C` pinned by the
 Frobenius traces (`ha` says `ψ (a w) = −ιO((charFrob w).coeff 1)`, which
@@ -27315,8 +27540,42 @@ theorem weilBound_of_charFrob_baseChange
     ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
         (IntermediateField.fixedField C))),
       ∀ w, w ∉ S → w ∉ S' → ∀ φ : E' →+* ℂ,
-        ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) :=
-  sorry
+        ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) := by
+  classical
+  -- the residual INERT citation supplies the places that match no good place of `F`
+  obtain ⟨Sin, hSin⟩ := weilBound_of_charFrob_baseChange_of_inert hℓodd hℓ5 hrank hρ
+    Wit C E' ψ S a ha
+  refine ⟨Sin, fun w hwS hwin φ => ?_⟩
+  by_cases hsplit : ∃ W, W ∉ Wit.badF ∧
+      Ideal.absNorm W.asIdeal = Ideal.absNorm w.asIdeal ∧
+      (ρ.map (algebraMap ℚ Wit.F)).charFrob W =
+        (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w
+  · -- SPLIT half, PROVEN: the eigenvalue at `w` IS the newform's eigenvalue at `W`
+    obtain ⟨W, hWbad, hWnorm, hWcf⟩ := hsplit
+    -- Deligne's bound at the good place `W` of `F`, transported across the sign
+    have hB : ∀ φ' : Wit.E →+* ℂ,
+        ‖φ' (-(Wit.heckeF W).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm W.asIdeal) := by
+      intro φ'
+      rw [map_neg, norm_neg]
+      exact weilBound_heckeF_of_witness Wit W hWbad φ'
+    -- the carrier's modularity clause at `W`, read at the linear coefficient
+    have hcoeff : Wit.ιO
+        (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w).coeff 1) =
+          Wit.ψℓ ((Wit.heckeF W).coeff 1) := by
+      have h := congrArg (fun P : Polynomial (AlgebraicClosure ℚ_[ℓ]) => P.coeff 1)
+        (Wit.modularF W hWbad)
+      simp only [Polynomial.coeff_map] at h
+      rw [← hWcf]
+      exact h
+    -- so `a w` and `−(heckeF W).coeff 1` are the SAME algebraic number in `ℚ̄_ℓ`
+    have hψeq : ψ (a w) = Wit.ψℓ (-(Wit.heckeF W).coeff 1) := by
+      rw [ha w hwS, hcoeff, map_neg]
+    have hbound :=
+      forall_complexEmbedding_norm_le_of_ringHom_eq Wit.ψℓ ψ hψeq hB φ
+    rwa [hWnorm] at hbound
+  · -- INERT half: the residual citation
+    refine hSin w hwS hwin (fun W hWbad hWnorm hWcf => ?_) φ
+    exact hsplit ⟨W, hWbad, hWnorm, hWcf⟩
 
 /-- **The base of the descent chain — the witness's own eigensystem,
 read over `F^⊥`** (PROVEN 2026-07-25; a pure TRANSPORT node, no
@@ -29238,6 +29497,38 @@ CONSUMES this subtree, so `absurd hirr …` is circular here, and every
 intermediate link of that chain is declared far below this node and is not
 even in scope.
 
+ATOMICITY AUDIT (2026-07-27; AXIS SEARCHED IS NAMED, so the next owner
+knows where to start).  The obvious cut is to peel the CUSPIDALITY clause
+off the conclusion — leaving a trace-only leaf, pure Arthur–Clozel — and
+recover `‖φ(aM w)‖ ≤ 2√(Nw)` afterwards by applying
+`weilBound_of_charFrob_baseChange` at `D` to the produced `(EM, ψM, aM)`.
+That route is MECHANICALLY available (`weilBound_of_charFrob_baseChange`
+is declared above this node and its binders are all present here), and it
+was NOT taken, for two reasons, in increasing order of importance:
+
+* it does not typecheck without extra work — `weilBound_of_charFrob_baseChange`
+  needs its trace identity `ha` at EVERY `w ∉ S`, whereas the identity here
+  is conditional on `w` being inert.  Closing that gap means defining `aM`
+  at the split places too (`aM w := ιM (aL v)` for a good `v` of `L` with
+  `Nv = Nw`, legitimate by `charFrob_baseChange_eq_of_absNorm_eq`), which
+  ABSORBS the automorphy-free split half into a citation leaf — the exact
+  opposite of the trace/determinant discipline this module follows.
+* more decisively, it would be LESS FAITHFUL to the literature.  Thm 4.2(d)
+  returns a CUSPIDAL `π`; cuspidality is part of the theorem's output, not
+  a separate obligation to be re-derived from a second citation.  Peeling
+  it off would replace one honest citation by two, and would make the
+  descended system's cuspidality rest on a Ramanujan statement about a form
+  whose existence the first citation had just asserted.
+
+AXIS NOT SEARCHED: any route that first constructs the descended
+automorphic object.  That is the citation itself, and nothing short of it
+will do — in particular the coefficient field `EM` must be ONE number field
+serving ALL of the infinitely many places at once, which is an automorphic
+finiteness statement with no elementary substitute.
+
+CONCLUSION: this leaf is IRREDUCIBLE at this pin and correctly stated.  Do
+not decompose it; it needs Arthur–Clozel.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert
@@ -29685,9 +29976,42 @@ being edited by other owners.
 SOUNDNESS AUDIT.  (i) Direct: true for the carrier the inhabitation leaf
 produces, by the enlarged choice of `E` just described.  (ii) Collapse:
 the arithmetic hypothesis package is classically unsatisfiable (the module
-headline), so the statement is classically true for every package.  Route
-(ii) is a soundness justification only — the headline CONSUMES this node,
-so `absurd hirr …` is circular here.
+headline), so the statement is classically true for every package.
+
+**CORRECTION TO ROUTE (ii), 2026-07-27 — IT DOES NOT APPLY TO THIS LEAF,
+AND THAT IS THE WHOLE POINT.**  Route (ii) is inherited verbatim from the
+neighbouring leaves, where it is correct.  Here it is not, and the check
+takes one look at the binders: this declaration carries NO arithmetic
+package at all.  There is no `hℓodd`, no `hℓ5`, no `IsHardlyRamified`, no
+irreducibility hypothesis, no `[Algebra ℤ_[ℓ] O]` — only `Fact ℓ.Prime`, a
+topological ring `O`, a representation `ρ`, and a witness for it.  So there
+is nothing here for the module headline to contradict, and route (ii) is
+not merely "unavailable as a Lean discharge" (which is what the sibling
+audits mean) but INAPPLICABLE: it does not even establish classical truth.
+
+Consequently this leaf has exactly ONE soundness justification, route (i),
+and route (i) is a statement about the carrier the inhabitation leaf
+CHOOSES — not about the arbitrary carrier this leaf quantifies over.  That
+is precisely the gap the "HONEST ACCOUNTING" paragraph above describes, and
+it is why the repair below is not a matter of taste.
+
+WHAT WOULD REFUTE THIS CORRECTION: exhibit an arithmetic hypothesis among
+the binders of `heckeField_descentClosed_of_witness`.  There is none.
+
+REPORTED UPWARD 2026-07-27 (agent in `flt-lean-126`, dispatched at this
+leaf): the conclusion is that this obligation MUST move into
+`PotentialModularityWitness` as a field — it cannot be discharged where it
+stands, and no amount of work at this node will change that.  Concretely
+the field wanted is, for every subgroup `H` and every realization of the
+descended system over a number field `E' ⊇ E`, that the eigenvalue function
+takes values in `ι '' E` away from a finite set; equivalently, and more
+usably, that `E` is descent-closed in the sense of the DESCENT-CLOSURE note
+of the structure's own docstring.  `exists_potentialModularityWitness_of_five_le`
+is entitled to supply it, since enlarging `E` to a finite compositum
+preserves every existing field of the structure (`ψℓ`, `ψ₃` extend along a
+finite extension; `modularF`, `matchF₃` are preserved by functoriality of
+`Polynomial.map`).  With the field present this leaf is a one-line
+projection.  The structure has another owner, so it was NOT moved here.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
