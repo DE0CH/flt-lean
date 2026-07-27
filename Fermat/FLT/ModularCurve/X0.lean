@@ -16338,46 +16338,488 @@ def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
   [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (35, 3, 4), (36, 5, 6), (39, 5, 4),
     (42, 11, 8), (50, 3, 4), (65, 3, 4), (91, 5, 4)]
 
-/-- **`Y_0(N)` exists over an ARBITRARY field `K` with `char K ∤ N`, and
-is a geometrically connected smooth curve there** (sorry leaf — the
-MODULAR half of `exists_x0Compactification_field`).
+/-! ### The base-general Katz–Mazur atlas, and `Y_0(N)` over an arbitrary field
 
-This is the base-general form of `exists_isCoarseModuliY0_isSmoothCurve`,
-which is the `K = ℚ` case and is PROVEN (over `exists_gamma0AffineModel`,
-the Katz–Mazur affine model).  As there, the five conclusions are exactly
-the hypotheses of the compactification theorem, and three of them —
-`IsIntegral`, `QuasiCompact`, `IsSeparated` — are formal for an affine
-model over the affine base `Spec K`; the content is
-`SmoothOfRelativeDimension 1` and `GeometricallyConnected`.
+Everything from here to `exists_isCoarseModuliY0_isSmoothCurve_field` is the
+`ARBITRARY BASE FIELD` half of the development.  It mirrors the `ℚ`
+architecture above — an *atlas* (Katz–Mazur (8.1.1)'s `M(𝒫) = 𝔐(𝒫,𝒮)/G`)
+whose coarse-moduli property is DERIVED rather than cited — with two
+differences forced by the base, and one payoff.
 
-TRUE and classical, and it is exactly the fibre at `Spec K` of the
-Deligne–Rapoport / Katz–Mazur smooth model of the `Γ₀(N)`-problem over
-`ℤ[1/N]` (Katz–Mazur 8.2 and 8.2.1 for smoothness over `ℤ[1/N]`;
-Deligne–Rapoport IV.5.5 or Shimura 6.6 for geometric connectedness, which
-holds because `det : Γ₀(N) → (ℤ/N)ˣ` is surjective).
+**Difference 1: base points must be carried.**  Over `ℚ` the atlas gets
+`p ≫ g = m ≫ strM` and `a ≫ strM = b ≫ strM` for free from
+`subsingleton_hom_specQ`, and `Gamma0Atlas.toIsCoarseModuliY0` uses both.
+Over a general `K` they are FALSE: `Gamma0Datum N T` carries no
+`K`-structure, so for `K = ℂ` and `σ ∈ Aut(ℂ)` fixing the isomorphism class
+of a datum, `a` and `σ ≫ a` are two rigidifications of ONE datum lying over
+DIFFERENT base points, and the classifying map does separate them.  So
+`Gamma0AtlasOver` carries the base-point compatibility explicitly:
+`cover` concludes `p ≫ g = m ≫ strM`, and `quotient`'s non-separation
+hypothesis is restricted to rigidifications over a common base point and its
+conclusion is a morphism OVER the base.  That is Katz–Mazur's quotient — it
+is taken in `S`-schemes — and it is exactly what makes
+`Gamma0AtlasOver.toIsCoarseModuliY0` go through.
 
-**Both hypotheses are load-bearing.**  At `N = 0` the coarse space is
-EMPTY (`isEmpty_of_isCoarseModuliY0_zero`), while `IsIntegral` and
+**Difference 2: the base change is a LEAF, not an axis to take.**  The old
+docstring of `exists_isCoarseModuliY0_isSmoothCurve_field` recommended
+building the `Γ₀(N)`-model over `ℤ[1/N]` once and obtaining every base by
+pullback.  That axis is WRONG at this pin, and Katz–Mazur say why:
+**Remark (8.1.7)** — "formation of the coarse moduli scheme does not always
+commute with base change" — with explicit counterexamples at `p = 2` and
+`p = 3` (the problems `[ω]` and `[Δ = 1]`, book pp. 227–228).  Proposition
+(8.1.6) lists the four conditions under which the base-change map IS an
+isomorphism, and for `ℤ[1/N] → 𝔽_p` with `p ∤ N` none of them applies in
+general: `[Γ₀(N)]` is not representable, `ℤ[1/N] → 𝔽_p` is not flat, `6` is
+invertible in `ℤ[1/N]` only when `6 ∣ N`, and the rigidifying group
+`GL₂(ℤ/n)` has order divisible by `p` for most `n`.  What (8.1.1) DOES give
+is the construction over an ARBITRARY ring `R` — "to define `M(𝒫)` as an
+`R`-scheme it suffices to do so locally on `R`, so we may assume some
+integer `n ≥ 3` is invertible in `R`" — and over a field that is
+unconditional (`n = 3`, or `n = 4` in characteristic `3`).  So the atlas is
+built over each field directly, and base change is used only in the one case
+where (8.1.6) licenses it: a FIELD EXTENSION, which is flat, hence (8.1.6)(2).
+
+**The payoff: characteristic zero is CLOSED.**  Splitting on `ringChar K`
+and base-changing out of the prime field leaves exactly one modular
+existence leaf, in characteristic `p`.  The characteristic-`0` half is
+`nonempty_gamma0CurveAtlasOver_rat`, which is PROVEN from the `ℚ` atlas
+already in this file — so the general-base statement now SHARES the three
+`ℚ` geometry leaves rather than duplicating them. -/
+
+/-- **A Katz–Mazur atlas over an arbitrary base scheme `S`.**
+
+Field for field this is `Gamma0Atlas` with `SpecQ` replaced by `S`, except
+that `cover` and `quotient` carry base points; see the section comment above
+for why that is forced and why it is faithful.  `Gamma0Atlas.toGamma0AtlasOver`
+below is the conversion at `S = SpecQ`, and it is what certifies that the
+strengthened fields are satisfiable rather than accidentally contradictory.
+
+`Y` is `M/GL₂(ℤ/n)` and `classify strM dM` is the quotient map; as in
+`Gamma0Atlas` the structure does not name the group, because only the two
+properties below are used. -/
+structure Gamma0AtlasOver (N : ℕ) (S : Scheme.{0}) where
+  /-- the coarse space to be -/
+  Y : Scheme.{0}
+  /-- its structure morphism to the base -/
+  str : Y ⟶ S
+  /-- the classifying map of the moduli problem, Katz–Mazur (8.1.3) -/
+  classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma0Datum N T → RelPoint str g
+  /-- the classifying map is natural in the base -/
+  classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+    IsBaseChangeOf h d' d → classify g' d' = RelPoint.pre h hg (classify g d)
+  /-- the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` -/
+  M : Scheme.{0}
+  /-- its structure morphism -/
+  strM : M ⟶ S
+  /-- the family it carries -/
+  dM : Gamma0Datum N M
+  /-- **rigidification**, over the base: every datum over an `S`-scheme is,
+  after a faithfully flat quasi-compact base change, a base change of `dM` —
+  and the rigidifying map may be taken to lie over the given base point.
+  The last clause is what replaces `subsingleton_hom_specQ` in
+  `toIsCoarseModuliY0`; it is part of Katz–Mazur (8.1.3), where `S_n` is a
+  finite étale galois `S`-SCHEME and the classifying map `S_n → 𝔐(𝒫,[Γ(n)])`
+  is a map of `R`-schemes. -/
+  cover : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma0Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T') (m : T' ⟶ M),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      p ≫ g = m ≫ strM ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (IsBaseChangeOf m d' dM)
+  /-- **categorical quotient in `S`-schemes**: a morphism out of `M` over the
+  base which does not separate two rigidifications OF ONE DATUM LYING OVER ONE
+  BASE POINT factors uniquely, over the base, through the classifying map of
+  `dM`.
+
+  Both restrictions relative to `Gamma0Atlas.quotient` are load-bearing over a
+  general base and both are vacuous over `ℚ`; see the section comment. -/
+  quotient : ∀ {Y' : Scheme.{0}} (str' : Y' ⟶ S) (φ : M ⟶ Y'), φ ≫ str' = strM →
+    (∀ {Z : Scheme.{0}} (a b : Z ⟶ M) (d₁ : Gamma0Datum N Z), a ≫ strM = b ≫ strM →
+      IsBaseChangeOf a d₁ dM → IsBaseChangeOf b d₁ dM → a ≫ φ = b ≫ φ) →
+    ∃! ψ : Y ⟶ Y', ψ ≫ str' = str ∧ (classify strM dM).1 ≫ ψ = φ
+
+/-- **An atlas over `S` IS a coarse moduli space over `S`** (PROVEN) — the
+base-general form of `Gamma0Atlas.toIsCoarseModuliY0`, and the reason the
+existence leaves below may ask for the Katz–Mazur CONSTRUCTION rather than
+for the universal property.
+
+The proof is that one with the two appeals to `subsingleton_hom_specQ`
+replaced by the corresponding fields: `hst` comes from `cover`'s
+`p ≫ g = m ≫ strM`, the identification of the two rigidifications' base
+points is `quotient`'s own hypothesis, and `u ≫ str' = str` is `quotient`'s
+first conclusion instead of a subsingleton argument. -/
+def Gamma0AtlasOver.toIsCoarseModuliY0 {N : ℕ} {S : Scheme.{0}} (A : Gamma0AtlasOver N S) :
+    IsCoarseModuliY0 N A.str where
+  classify := A.classify
+  classify_natural := A.classify_natural
+  universal := by
+    intro Y' str' c hc
+    -- A cocone cannot separate two rigidifications of one datum lying over one
+    -- base point: its own naturality equates both composites with its value there.
+    have hconst : ∀ {Z : Scheme.{0}} (a b : Z ⟶ A.M) (d₁ : Gamma0Datum N Z),
+        a ≫ A.strM = b ≫ A.strM →
+        IsBaseChangeOf a d₁ A.dM → IsBaseChangeOf b d₁ A.dM →
+        a ≫ (c A.strM A.dM).1 = b ≫ (c A.strM A.dM).1 := by
+      intro Z a b d₁ hab ha hb
+      have h1 : (c (a ≫ A.strM) d₁).1 = a ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc a rfl ha)
+      have h2 : (c (b ≫ A.strM) d₁).1 = b ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc b rfl hb)
+      rw [← h1, ← h2, hab]
+    -- so it factors through the quotient, over the base, uniquely.
+    obtain ⟨u, ⟨hus, hu⟩, huniq⟩ :=
+      A.quotient str' (c A.strM A.dM).1 (c A.strM A.dM).2 hconst
+    refine ⟨u, ⟨hus, ?_⟩, ?_⟩
+    · -- `u` computes `c` at an arbitrary datum: pull back to the rigidifying
+      -- cover, where both sides are statements about `dM`, and cancel the cover.
+      intro T g d
+      obtain ⟨T', p, d', m, hflat, hsurj, hqc, hpg, ⟨hbp⟩, ⟨hbm⟩⟩ := A.cover g d
+      haveI := hflat
+      haveI := hsurj
+      haveI := hqc
+      have hcp : (c (p ≫ g) d').1 = p ≫ (c g d).1 :=
+        congrArg Subtype.val (hc p rfl hbp)
+      have hcm : (c (m ≫ A.strM) d').1 = m ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc m rfl hbm)
+      have hAp : (A.classify (p ≫ g) d').1 = p ≫ (A.classify g d).1 :=
+        congrArg Subtype.val (A.classify_natural p rfl hbp)
+      have hAm : (A.classify (m ≫ A.strM) d').1 = m ≫ (A.classify A.strM A.dM).1 :=
+        congrArg Subtype.val (A.classify_natural m rfl hbm)
+      rw [hpg] at hcp hAp
+      have key : p ≫ (c g d).1 = p ≫ ((A.classify g d).1 ≫ u) := by
+        rw [← hcp, hcm, ← hu, ← Category.assoc, ← hAm, hAp, Category.assoc]
+      exact (cancel_epi p).mp key
+    · -- uniqueness: a rival `u₁` factors `c dM` through the quotient too.
+      rintro u₁ ⟨hs₁, h₁⟩
+      exact huniq u₁ ⟨hs₁, (h₁ A.strM A.dM).symm⟩
+
+/-- **The `ℚ` atlas of this file is a `Gamma0AtlasOver _ SpecQ`** (PROVEN).
+
+This is the NON-VACUITY CERTIFICATE for the two strengthened fields of
+`Gamma0AtlasOver`.  The concern it answers is real: `cover` demands an extra
+equation and `quotient` an extra conclusion, so a badly chosen strengthening
+would have left `Gamma0AtlasOver N S` EMPTY and every statement below
+vacuously true.  It is not empty — over `ℚ` both additions are discharged by
+`subsingleton_hom_specQ`, and `quotient`'s extra hypothesis makes the
+non-separation condition *easier* to satisfy, so the `ℚ` quotient applies.
+
+*The check that would refute this*: exhibit an `A : Gamma0Atlas N` for which
+no `Gamma0AtlasOver N SpecQ` exists.  The definition below is a total
+function, so there is none. -/
+def Gamma0Atlas.toGamma0AtlasOver {N : ℕ} (A : Gamma0Atlas N) : Gamma0AtlasOver N SpecQ where
+  Y := A.Y
+  str := A.str
+  classify := A.classify
+  classify_natural := A.classify_natural
+  M := A.M
+  strM := A.strM
+  dM := A.dM
+  cover := by
+    intro T g d
+    obtain ⟨T', p, d', m, hf, hs, hq, hbp, hbm⟩ := A.cover g d
+    exact ⟨T', p, d', m, hf, hs, hq, (subsingleton_hom_specQ _).elim _ _, hbp, hbm⟩
+  quotient := by
+    intro Y' str' φ _ hsep
+    obtain ⟨ψ, hψ, huniq⟩ := A.quotient φ (fun a b d₁ ha hb =>
+      hsep a b d₁ ((subsingleton_hom_specQ _).elim _ _) ha hb)
+    exact ⟨ψ, ⟨(subsingleton_hom_specQ _).elim _ _, hψ⟩, fun y hy => huniq y hy.2⟩
+
+/-- **Any two coarse moduli spaces of the `Γ₀(N)`-problem over the SAME base
+are canonically isomorphic over it** (PROVEN — pure initiality).
+
+Word for word `exists_isIso_of_isCoarseModuliY0` with `SpecQ` replaced by an
+arbitrary `S`; that proof uses the base only as a fixed object, so it
+generalises without change.  This is what lets the geometry below be stated
+for an arbitrary coarse space and discharged on an exhibited model. -/
+theorem exists_isIso_of_isCoarseModuliY0_base {N : ℕ} {S Y Y' : Scheme.{0}}
+    {strY : Y ⟶ S} {strY' : Y' ⟶ S}
+    (hc : IsCoarseModuliY0 N strY) (hc' : IsCoarseModuliY0 N strY') :
+    ∃ u : Y ⟶ Y', IsIso u ∧ u ≫ strY' = strY := by
+  obtain ⟨u, ⟨hus, huc⟩, -⟩ := hc.universal strY' hc'.classify hc'.classify_natural
+  obtain ⟨v, ⟨hvs, hvc⟩, -⟩ := hc'.universal strY hc.classify hc.classify_natural
+  -- `u ≫ v` and `𝟙 Y` both solve the initiality problem of `hc` against itself.
+  obtain ⟨w, -, hYuniq⟩ := hc.universal strY hc.classify hc.classify_natural
+  have huv : u ≫ v = 𝟙 Y :=
+    (hYuniq (u ≫ v) ⟨by rw [Category.assoc, hvs, hus],
+        fun {_T} g d => by rw [← Category.assoc, ← huc g d, ← hvc g d]⟩).trans
+      (hYuniq (𝟙 Y) ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  -- and symmetrically on the other side.
+  obtain ⟨w', -, hY'uniq⟩ := hc'.universal strY' hc'.classify hc'.classify_natural
+  have hvu : v ≫ u = 𝟙 Y' :=
+    (hY'uniq (v ≫ u) ⟨by rw [Category.assoc, hus, hvs],
+        fun {_T} g d => by rw [← Category.assoc, ← hvc g d, ← huc g d]⟩).trans
+      (hY'uniq (𝟙 Y') ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  exact ⟨u, ⟨v, huv, hvu⟩, hus⟩
+
+/-- **The five curve properties transport along an isomorphism over an
+ARBITRARY base** (PROVEN).
+
+`isSmoothCurve_transport` with `SpecQ` replaced by `S`; each of the five moves
+by the same off-the-shelf mathlib mechanism, none of which mentions the
+base. -/
+theorem isSmoothCurve_transport_base {S Y Y' : Scheme.{0}} {strY : Y ⟶ S} {strY' : Y' ⟶ S}
+    (u : Y ⟶ Y') [IsIso u] (hu : u ≫ strY' = strY)
+    (hint : IsIntegral Y') (hqc : QuasiCompact strY') (hsep : IsSeparated strY')
+    (hsmd : SmoothOfRelativeDimension 1 strY') (hconn : GeometricallyConnected strY') :
+    IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+      SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
+  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
+  haveI : IsIntegral Y := IsIntegral.of_isIso (inv u)
+  subst hu
+  haveI : GeometricallyConnected (u ≫ strY') :=
+    MorphismProperty.RespectsIso.precomp (P := @GeometricallyConnected) u strY' hconn
+  refine ⟨inferInstance, inferInstance, inferInstance, ?_, inferInstance⟩
+  exact inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (u ≫ strY'))
+
+/-- **A Katz–Mazur atlas whose coarse space is an affine integral smooth
+geometrically connected curve** — the base-general form of
+`Gamma0AffineModel`.
+
+The four geometric fields are exactly the four of `Gamma0AffineModel`, and
+they are packaged with the atlas for the same reason: three of the five
+properties `exists_isCoarseModuliY0_isSmoothCurve_field` asks for are then
+FORMAL (`isSmoothCurve_of_gamma0CurveAtlasOver`), since the model is affine
+over an affine base with a domain of global functions.
+
+`isDomain` rather than `GeometricallyIntegral` is deliberate: it is the form
+in which the GIT construction supplies integrality (`A^G ⊆ A`), and it is the
+form the `ℚ` material already carries, which is what makes
+`nonempty_gamma0CurveAtlasOver_rat` a theorem rather than a fourth leaf. -/
+structure Gamma0CurveAtlasOver (N : ℕ) (S : Scheme.{0}) extends Gamma0AtlasOver N S where
+  /-- the coarse space is affine — Katz–Mazur (8.1.1)'s `Spec (A^G)` -/
+  isAffine : IsAffine toGamma0AtlasOver.Y
+  /-- its ring of global functions is a domain -/
+  isDomain : IsDomain Γ(toGamma0AtlasOver.Y, ⊤)
+  /-- it is smooth of relative dimension `1` over the base -/
+  smooth : SmoothOfRelativeDimension 1 toGamma0AtlasOver.str
+  /-- and geometrically connected -/
+  connected : GeometricallyConnected toGamma0AtlasOver.str
+
+/-- **The curve atlas over `ℚ`** (PROVEN — no new modular input).
+
+This is `exists_gamma0AffineModel` read through `Gamma0Atlas.toGamma0AtlasOver`:
+the four geometric fields are literally its four, and the atlas half is the
+`ℚ` atlas.  So the characteristic-`0` half of the general-base statement costs
+the tree NOTHING beyond the three `ℚ` geometry leaves it already carries
+(`isDomain_of_gamma0Atlas`, `smoothOfRelativeDimension_of_gamma0Atlas`,
+`geometricallyConnected_of_gamma0Atlas`) — it SHARES them rather than
+duplicating them, which is the whole point of routing the general base
+through the prime fields. -/
+theorem nonempty_gamma0CurveAtlasOver_rat (N : ℕ) (hN : 0 < N) :
+    Nonempty (Gamma0CurveAtlasOver N SpecQ) :=
+  (exists_gamma0AffineModel N hN).map fun M =>
+    { toGamma0AtlasOver := M.toGamma0Atlas.toGamma0AtlasOver
+      isAffine := M.isAffine
+      isDomain := M.isDomain
+      smooth := M.smooth
+      connected := M.connected }
+
+/-- **The curve atlas base-changes along a FIELD EXTENSION** (sorry leaf —
+Katz–Mazur (8.1.6)(2), the one base change the coarse moduli scheme is known
+to commute with).
+
+TRUE and classical.  A ring map out of a field is flat (`K` is a free
+`k`-module), so (8.1.6)(2) applies: the canonical map
+`M([Γ₀(N)] ⊗_k K) → M([Γ₀(N)]) ⊗_k K` is an isomorphism, and the whole atlas
+— the rigidified moduli scheme, its family, the cover and the quotient
+property — base-changes with it, because `𝔐(𝒫,[Γ(n)])` is representable and
+representable moduli schemes commute with arbitrary base change ((8.1.6)(1)).
+
+**Which fields are formal and which are the content**, for a successor who
+wants to split this further:
+
+* `isAffine`, `QuasiCompact`, `IsSeparated` are stable under base change and
+  need nothing;
+* `smooth` and `connected` are `smoothOfRelativeDimension_isStableUnderBaseChange`
+  and `GeometricallyConnected`'s `IsStableUnderBaseChange` instance, both in
+  the pin, once the coarse space over `K` is EXHIBITED as the pullback;
+* `isDomain` is the one geometric clause that is not formal: `A ⊗_k K` is a
+  domain iff `Y` is geometrically integral over `k`, which holds here because
+  `Y` is smooth (hence geometrically reduced and geometrically normal) and
+  geometrically connected over `k`;
+* `classify`, `cover` and `quotient` are the moduli content, i.e. (8.1.6)(2)
+  itself.
+
+So the natural refinement is to state the pullback square first — `∃ B ι,
+IsPullback B.str ι (Spec.map f) A.str` — and then read the geometry off
+mathlib's base-change stability.  That was not done here because `isDomain`
+would then need geometric integrality of `A`, which the `ℚ` material does not
+supply and which would cost a fourth leaf.
+
+AXIS SEARCHED: the base ring.  NOT searched: whether the atlas base-change can
+be derived from `exists_gamma0Datum_baseChange` plus fpqc descent already in
+this file, which is the route that would make this a theorem rather than a
+citation. -/
+theorem nonempty_gamma0CurveAtlasOver_of_ringHom {N : ℕ} {k K : Type} [Field k] [Field K]
+    (_f : k →+* K) (_A : Gamma0CurveAtlasOver N (Spec (CommRingCat.of k))) :
+    Nonempty (Gamma0CurveAtlasOver N (Spec (CommRingCat.of K))) :=
+  sorry
+
+/-- **The curve atlas in characteristic `p`, for `p ∤ N`** (sorry leaf — the
+ONE remaining modular existence statement behind `X_0(N)` over a general
+field).
+
+TRUE and classical, and it is Katz–Mazur (8.1.1) run over the ring `𝔽_p`:
+choose an auxiliary level `n ≥ 3` invertible in `𝔽_p` (`n = 3`, or `n = 4`
+when `p = 3`), form the representable, finite étale galois problem
+`([Γ₀(N)], [Γ(n)])` with group `G = GL₂(ℤ/n)`, and take `Y = 𝔐/G`, which
+exists and is affine because `𝔐` is.  The four geometric fields:
+
+* `isAffine` — `Y = Spec (A^G)` literally, as over `ℚ`;
+* `isDomain` — irreducibility of `𝔐([Γ₀(N)],[Γ(n)])_{𝔽̄_p}` (Deligne–Rapoport
+  IV.5.5 / VI.6.7), so `A^G ⊆ A` is a domain;
+* `smooth` — Lemma (8.1.2): `𝒫` normal implies `M(𝒫)` normal, so `Y` is a
+  normal curve over the PERFECT field `𝔽_p`, hence regular, hence smooth.
+  This is the step that fails over an imperfect field and is exactly why the
+  leaf is stated at the prime field and extended by
+  `nonempty_gamma0CurveAtlasOver_of_ringHom`;
+* `connected` — Deligne–Rapoport IV.5.5, or Shimura 6.6: `det : Γ₀(N) → (ℤ/N)ˣ`
+  is surjective, so the fibres of `X_0(N)/ℤ[1/N]` are geometrically connected.
+
+`¬ p ∣ N` is load-bearing: at `p ∣ N` the `Γ₀(N)`-structure degenerates (the
+subgroup scheme of order `N` acquires an infinitesimal part) and `Y_0(N)_{𝔽_p}`
+is not smooth, so `smooth` is FALSE.  `0 < N` is load-bearing for `isDomain`
+and `connected`: at `N = 0` every coarse space is empty
+(`isEmpty_of_gamma0Datum_zero`), so `Γ(Y, ⊤)` is the zero ring.
+
+**Do NOT attack this by base-changing an integral model from `ℤ[1/N]`.**
+Katz–Mazur Remark (8.1.7) is explicit that formation of the coarse moduli
+scheme does not always commute with base change, with counterexamples at
+`p = 2, 3`, and none of (8.1.6)'s four conditions covers `ℤ[1/N] → 𝔽_p`.  The
+construction over `𝔽_p` is direct and unconditional; see the section comment
+above. -/
+theorem nonempty_gamma0CurveAtlasOver_zmod (N : ℕ) (_hN : 0 < N) (p : ℕ) [Fact p.Prime]
+    (_hpN : ¬ p ∣ N) :
+    Nonempty (Gamma0CurveAtlasOver N (Spec (CommRingCat.of (ZMod p)))) :=
+  sorry
+
+/-- **The curve atlas over an ARBITRARY field with `char K ∤ N`** (PROVEN
+2026-07-27, by splitting on the characteristic and base-changing out of the
+prime field).
+
+`ringChar K` is `0` or prime (`CharP.char_is_prime_or_zero`).  In
+characteristic `0`, `K` is a `ℚ`-algebra and the atlas comes from
+`nonempty_gamma0CurveAtlasOver_rat`, which is PROVEN; in characteristic `p`,
+`¬ ringChar K ∣ N` reads `¬ p ∣ N` and the atlas comes from
+`nonempty_gamma0CurveAtlasOver_zmod`.  Either way the prime field maps into
+`K` and `nonempty_gamma0CurveAtlasOver_of_ringHom` carries the atlas across.
+
+This is where the hypothesis `¬ ringChar K ∣ N` is CONSUMED, and it is
+consumed exactly once, in the characteristic-`p` branch. -/
+theorem nonempty_gamma0CurveAtlasOver_field (N : ℕ) (hN : 0 < N) (K : Type) [Field K]
+    (hchar : ¬ ringChar K ∣ N) :
+    Nonempty (Gamma0CurveAtlasOver N (Spec (CommRingCat.of K))) := by
+  haveI hcp : CharP K (ringChar K) := ringChar.charP K
+  rcases CharP.char_is_prime_or_zero K (ringChar K) with hp | h0
+  · haveI : Fact (ringChar K).Prime := ⟨hp⟩
+    obtain ⟨A⟩ := nonempty_gamma0CurveAtlasOver_zmod N hN (ringChar K) hchar
+    exact nonempty_gamma0CurveAtlasOver_of_ringHom
+      (ZMod.castHom (dvd_refl (ringChar K)) K) A
+  · haveI : CharP K 0 := h0 ▸ hcp
+    haveI : CharZero K := CharP.charP_to_charZero K
+    obtain ⟨A⟩ := nonempty_gamma0CurveAtlasOver_rat N hN
+    exact nonempty_gamma0CurveAtlasOver_of_ringHom (Rat.castHom K) A
+
+/-- **The five curve properties, read off a curve atlas over an AFFINE base**
+(PROVEN).
+
+The base-general form of the argument inside
+`exists_isCoarseModuliY0_isSmoothCurve`: three of the five are not modular at
+all once the model is affine with a domain of global functions.  `IsIntegral`
+is `isIntegral_of_isAffine_of_isDomain`; `QuasiCompact` and `IsSeparated` hold
+because a morphism between affine schemes is affine, and an affine morphism is
+both.  The remaining two are the atlas's own fields. -/
+theorem isSmoothCurve_of_gamma0CurveAtlasOver {N : ℕ} {R : Type} [CommRing R]
+    (A : Gamma0CurveAtlasOver N (Spec (CommRingCat.of R))) :
+    IsIntegral A.Y ∧ QuasiCompact A.str ∧ IsSeparated A.str ∧
+      SmoothOfRelativeDimension 1 A.str ∧ GeometricallyConnected A.str := by
+  haveI := A.isAffine
+  haveI := A.isDomain
+  haveI := A.smooth
+  haveI := A.connected
+  -- `Γ(Y, ⊤)` is a domain, hence nontrivial, so `Spec Γ(Y, ⊤) ≅ Y` is nonempty.
+  haveI : Nonempty A.Y := Nonempty.map A.Y.isoSpec.inv.base inferInstance
+  haveI : IsIntegral A.Y := isIntegral_of_isAffine_of_isDomain (X := A.Y)
+  -- affine source over an affine base: the structure morphism is affine.
+  haveI : IsAffineHom A.str := inferInstance
+  exact ⟨inferInstance, inferInstance, IsSeparated.of_isAffineHom _, inferInstance, inferInstance⟩
+
+/-- **`Y_0(N)` is a geometrically connected smooth curve over an ARBITRARY
+field with `char K ∤ N`, for `N ≥ 1`** (PROVEN 2026-07-27).
+
+The base-general form of `isSmoothCurve_of_isCoarseModuliY0`, and the same
+two-step reduction: exhibit one model with the five properties
+(`nonempty_gamma0CurveAtlasOver_field`), then transport them to the given
+coarse space along the canonical isomorphism supplied by initiality
+(`exists_isIso_of_isCoarseModuliY0_base`, `isSmoothCurve_transport_base`).
+
+Stated for an arbitrary coarse space rather than for the exhibited one because
+that is the form consumers want, and it is no stronger: initiality makes all
+coarse spaces of one level over one base canonically isomorphic. -/
+theorem isSmoothCurve_of_isCoarseModuliY0_field {N : ℕ} (hN : 0 < N) {K : Type} [Field K]
+    (hchar : ¬ ringChar K ∣ N) {Y : Scheme.{0}} {strY : Y ⟶ Spec (CommRingCat.of K)}
+    (hc : IsCoarseModuliY0 N strY) :
+    IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+      SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
+  obtain ⟨A⟩ := nonempty_gamma0CurveAtlasOver_field N hN K hchar
+  obtain ⟨hint, hqc, hsep, hsmd, hconn⟩ := isSmoothCurve_of_gamma0CurveAtlasOver A
+  obtain ⟨u, hu, hcomm⟩ :=
+    exists_isIso_of_isCoarseModuliY0_base hc A.toGamma0AtlasOver.toIsCoarseModuliY0
+  haveI := hu
+  exact isSmoothCurve_transport_base u hcomm hint hqc hsep hsmd hconn
+
+/-- **`Y_0(N)` exists over an ARBITRARY field `K` with `char K ∤ N`, and is
+a geometrically connected smooth curve there** (PROVEN 2026-07-27 over two
+leaves, `nonempty_gamma0CurveAtlasOver_zmod` and
+`nonempty_gamma0CurveAtlasOver_of_ringHom`; formerly a sorry leaf itself).
+
+The proof is the `K = ℚ` proof, base-generalised: exhibit a Katz–Mazur atlas
+over `K` (`nonempty_gamma0CurveAtlasOver_field`), turn it into a coarse
+moduli space (`Gamma0AtlasOver.toIsCoarseModuliY0`), and read the five
+properties off it (`isSmoothCurve_of_isCoarseModuliY0_field`).
+
+TRUE and classical: for `N ≥ 1` and `char K ∤ N` the coarse moduli space of
+the `Γ₀(N)`-problem over `K` is a smooth affine geometrically connected curve
+(Katz–Mazur (8.1.1) for the construction and Lemma (8.1.2) for normality;
+Deligne–Rapoport III.1 and IV.5.5, or Shimura 6.6, for smoothness and
+geometric connectedness).
+
+**Both hypotheses are load-bearing.**  At `N = 0` the coarse space is EMPTY
+(`isEmpty_of_isCoarseModuliY0_zero`), while `IsIntegral` and
 `GeometricallyConnected` both carry nonemptiness — so the conclusion is
 unsatisfiable, exactly as at `K = ℚ`.  At `char K = p ∣ N` the
-`Γ₀(N)`-structure degenerates (the subgroup scheme of order `N` acquires
-an infinitesimal part) and `Y_0(N)_K` is no longer smooth, so
+`Γ₀(N)`-structure degenerates (the subgroup scheme of order `N` acquires an
+infinitesimal part) and `Y_0(N)_K` is no longer smooth, so
 `SmoothOfRelativeDimension 1` is FALSE.
 
-IRREDUCIBLE at this pin, and the axis searched is the BASE one: the
-`K = ℚ` proof runs through `exists_gamma0AffineModel`, whose model is
-built from `ℚ`-specific input, and nothing in this development constructs
-the `Γ₀(N)`-model over `ℤ[1/N]` from which every fibre would follow.  The
-axis NOT searched — and the one a successor should take — is to build
-that integral model once and obtain every base by pullback, which is how
-Katz–Mazur state it; that would subsume this leaf and the `ℚ` case
-together. -/
-theorem exists_isCoarseModuliY0_isSmoothCurve_field (N : ℕ) (_hN : 0 < N) (K : Type)
-    [Field K] (_hchar : ¬ ringChar K ∣ N) :
+**THE PREVIOUS IRREDUCIBLE VERDICT HERE WAS WRONG IN ITS RECOMMENDATION, and
+that is worth recording.**  It read: the axis a successor should take "is to
+build that integral model [over `ℤ[1/N]`] once and obtain every base by
+pullback, which is how Katz–Mazur state it".  Katz–Mazur do NOT state it that
+way, and Remark (8.1.7) says why not: *formation of the coarse moduli scheme
+does not always commute with base change*, with explicit counterexamples at
+`p = 2` and `p = 3`.  Proposition (8.1.6) lists the four conditions under
+which it does, and for `ℤ[1/N] → 𝔽_p` none applies in general.  What
+Katz–Mazur do state — (8.1.1) — is a construction over an ARBITRARY ring,
+which over a field is unconditional.  Following the old advice would have led
+a successor to a leaf that is not known to be true.
+
+**The axis actually taken is the CHARACTERISTIC**, and it closes half the
+statement outright: `ringChar K` is `0` or prime, the prime field maps into
+`K`, and a field extension IS flat, so (8.1.6)(2) licenses exactly one base
+change.  In characteristic `0` the prime-field atlas is
+`nonempty_gamma0CurveAtlasOver_rat`, PROVEN from the `ℚ` material already in
+this file — so this statement now SHARES the three `ℚ` geometry leaves
+instead of duplicating them, and the only new modular input is the
+characteristic-`p` model.  See the section comment above `Gamma0AtlasOver`. -/
+theorem exists_isCoarseModuliY0_isSmoothCurve_field (N : ℕ) (hN : 0 < N) (K : Type)
+    [Field K] (hchar : ¬ ringChar K ∣ N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ Spec (CommRingCat.of K)) (_hc : IsCoarseModuliY0 N strY),
       IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
-        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
-  sorry
+        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
+  obtain ⟨A⟩ := nonempty_gamma0CurveAtlasOver_field N hN K hchar
+  exact ⟨A.Y, A.str, A.toGamma0AtlasOver.toIsCoarseModuliY0,
+    isSmoothCurve_of_isCoarseModuliY0_field hN hchar A.toGamma0AtlasOver.toIsCoarseModuliY0⟩
 
 /-- **A smooth curve over an ARBITRARY field has a smooth proper
 compactification with finite complement** (sorry leaf — the general
