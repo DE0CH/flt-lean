@@ -28080,9 +28080,194 @@ theorem exists_unramifiedAbelianSubgroup_relIndex_classGroup
   · -- (f) relative index
     exact relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup χ hχcyc CF
 
+/-- **CHEBOTAREV, IN THE CLASS GROUP: every ideal class of `𝓞 ℚ(μ_p)` is the
+class of a DEGREE-ONE Frobenius ideal** (E3c support leaf
+(ii-a-1-i-B-2-a-i); SORRY LEAF, cut 2026-07-27 out of
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below along the
+SURJECTIVITY axis): for every `c : ClassGroup (𝓞 CF)` there are `g` and `v`
+with `χ (g · Frob_v · g⁻¹) = 1` and `ClassGroup.mk0 (frobIdeal g v) = c`.
+
+**This leaf mentions no `N`**, which is the point of the cut: it is a
+statement about `frobIdeal` and the class group alone, so it can be attacked
+in isolation from the reciprocity leaf below and from the subgroup `N`.
+
+**What the hypothesis `χ (g · Frob_v · g⁻¹) = 1` means: DEGREE ONE.** By
+`hχcyc`, `χ` is the mod-`p` cyclotomic character `ω`, so
+`χ (g · Frob_v · g⁻¹) = χ (Frob_v) = ℓ mod p` for `v` the place over `ℓ`
+(`ω` is abelian, so conjugation is invisible to it). Thus the hypothesis says
+`ℓ ≡ 1 mod p`, i.e. `ℓ` SPLITS COMPLETELY in `ℚ(μ_p)`, i.e. the primes of
+`𝓞 CF` over `ℓ` have residue degree `1` over `ℚ`. So `frobIdeal g v` ranges
+exactly over the degree-one primes of `𝓞 CF`, and this leaf asserts that those
+already exhaust the class group.
+
+**Why it is true.** Let `K = ι(CF) = ℚ(μ_p)`, `H` its Hilbert class field.
+`H/ℚ` is Galois (`K/ℚ` is abelian and `H` is canonical over `K`, so
+`Gal(ℚ̄/ℚ)` permutes the everywhere-unramified abelian extensions of `K`
+trivially). Given `c`, choose `σ ∈ Gal(H/ℚ)` with `σ|_K = 1` and
+`σ|_H = (c, H/K)` the Artin symbol of `c`; such a `σ` exists because
+`Gal(H/K) ⊆ Gal(H/ℚ)` and the Artin map `Cl(𝓞 K) → Gal(H/K)` is surjective.
+Chebotarev for `H/ℚ` supplies infinitely many `v` unramified in `H` whose
+Frobenius conjugacy class is that of `σ`; picking `g` conjugating one such
+Frobenius to `σ` gives `χ (g · Frob_v · g⁻¹) = 1` (as `σ|_K = 1`) and
+`[frobIdeal g v] = c` (as `(frobIdeal g v, H/K) = σ|_H = (c, H/K)` and the
+Artin map is injective, which is
+`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` above counting
+both sides as `h_K`). Only the qualitative half of Chebotarev is used — "every
+conjugacy class is met" — and `Gal(H/ℚ)`'s relevant classes are met by
+Dirichlet's theorem on primes in arithmetic progressions once `H/ℚ` is
+abelian, which it is when `Cl(𝓞 K)` is (it always is).
+
+**Degenerate case `p = 2`, which shows the leaf is inhabited.** Then `CF = ℚ`,
+`kk'` has characteristic `2` and `χ ≡ 1`, and `ClassGroup (𝓞 ℚ) = ClassGroup ℤ`
+is trivial, so ANY `g` and `v` work.
+
+**The check that would refute it**: exhibit an ideal class of `ℚ(μ_p)`
+containing no prime of residue degree one over `ℚ`. That contradicts
+Chebotarev applied to the Hilbert class field. -/
+theorem exists_frobIdeal_mk0_eq_classGroup
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (c : ClassGroup (𝓞 CF)) :
+    ∃ (g : Field.absoluteGaloisGroup ℚ)
+      (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 ∧
+      ClassGroup.mk0 (frobIdeal g v) = c :=
+  sorry
+
+/-- **ARTIN RECIPROCITY, PRODUCT FORM: a product of degree-one Frobenius
+elements whose ideal product is PRINCIPAL lies in `N`** (E3c support leaf
+(ii-a-1-i-B-2-a-ii); SORRY LEAF, cut 2026-07-27 out of
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below along the
+RECIPROCITY axis, and **the entire arithmetic content of that leaf**).
+
+Given a finite list `L` of pairs `(g, v)` each satisfying
+`χ (g · Frob_v · g⁻¹) = 1`, if the product of the ideals `frobIdeal g v` is
+principal — written `ClassGroup.mk0 (∏ …) = 1` — then the product of the group
+elements `g · Frob_v · g⁻¹` lies in `N`.
+
+**Why a LIST and not three symbols.** A principal ideal factors into an
+arbitrary number of primes, so reciprocity cannot be stated with a fixed
+arity. The list form is also exactly the shape the consumer needs: instances
+at lengths `1`, `1 + m` and `2 + m` give, respectively, that `N` swallows the
+principal class, well-definedness of the symbol on a class, and
+multiplicativity — see the proof of
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below, where the
+`List.replicate` padding converts `x · yᵐ ∈ N` plus `y^(m+1) ∈ N` (Lagrange
+in `ker χ / N`, from `hNcard`) into `x · y⁻¹ ∈ N`.
+
+**The product is over a NON-commutative group and that is harmless**: every
+factor lies in `ker χ`, and `hNab` says `ker χ / N` is abelian, so the value
+modulo `N` does not depend on the order of the list.
+
+**WHY IT IS TRUE UNDER THESE HYPOTHESES — the faithfulness argument, which is
+what stops this leaf being either vacuous or false.** The hypotheses pin `N`
+COMPLETELY, so "some subgroup of the right size" cannot satisfy the conclusion
+by accident:
+
+* `hNker` gives `N ≤ ker χ`;
+* `hNopen` makes `N` closed (an open subgroup of a topological group is
+  closed), and `hNinert` together with `hNab` puts every generator of the
+  subgroup `D` of `relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup`
+  above inside `N`, hence `D ≤ N` (closure of a subset of a closed subgroup);
+* that leaf gives `D.relIndex (ker χ) = h_K`, and `hNcard` gives
+  `N.relIndex (ker χ) = h_K`. With `D ≤ N ≤ ker χ` and
+  `[ker χ : D] = [ker χ : N] · [N : D]`, both outer indices being the finite
+  nonzero `h_K`, we get `[N : D] = 1`, i.e. **`N = D`**.
+
+So `N` is exactly `Γ_H` for `H` the Hilbert class field of `K = ℚ(μ_p)`,
+`ker χ / N = Gal(H/K)`, each `g · Frob_v · g⁻¹` restricts to the Frobenius of
+`H/K` at the degree-one prime `frobIdeal g v` (this is where the
+`IsArithFrobAt` residue-degree bridge quoted on
+`exists_artinMap_of_artinIdealMap` below is used — a four-line definitional
+unfolding, `intro x; rw [← hcard]; exact h x`, deliberately not committed
+anywhere until a prover needs it), and the conclusion is Neukirch VI
+(6.7)–(6.9): the Artin symbol of a principal ideal is trivial.
+
+**THE OBVIOUS CITATION STILL DOES NOT WORK; the survey is on
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below and it applies
+verbatim to THIS leaf, which is now its only consumer.** `ModThree.lean`'s
+116-declaration `*_ray_class` development is reciprocity in the right shape but
+is (1) hardwired to `Dickson.K 3` as its value group, with `hℓ3 : ℓ ≠ 3`
+load-bearing in ~30 signatures, and (2) CHARACTER-valued, so recovering the
+`Gal(H/K)`-valued symbol from it is Pontryagin duality over the class group,
+which exists nowhere in this tree. Do not edit `ModThree.lean` from here; the
+generalization must be requested from that file's owners.
+
+**The check that would refute it**: exhibit `L` all of whose ideals are
+degree-one primes, with `∏ frobIdeal` principal, and with
+`∏ (g · Frob_v · g⁻¹) ∉ N`. By the pinning argument above that is a failure of
+Artin reciprocity for the Hilbert class field. -/
+theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNnorm : N.Normal)
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (hNcard : N.relIndex (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF)))
+    (L : List (Field.absoluteGaloisGroup ℚ ×
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)))
+    (hL : ∀ q ∈ L, χ (q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹) = 1)
+    (hprin : ClassGroup.mk0 ((L.map (fun q => frobIdeal q.1 q.2)).prod) = 1) :
+    (L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod ∈ N :=
+  sorry
+
 /-- **RECIPROCITY, ON IDEALS: the Artin symbol of `H/K` as a map from the
 ideals of `𝓞 CF` to `Γℚ`, well defined modulo `N`, and TRIVIAL on principal
-ideals** (E3c support leaf (ii-a-1-i-B-2-a); SORRY NODE, cut 2026-07-27 out of
+ideals** (E3c support leaf (ii-a-1-i-B-2-a); PROVEN 2026-07-27 over the two
+leaves above, cut 2026-07-27 out of
 `exists_artinMap_of_unramifiedAbelianSubgroup` below along the classical
 RECIPROCITY / CHEBOTAREV / COUNTING axis). Under exactly the hypotheses of that
 leaf, there is a function `art0` on the ideals of `𝓞 CF` with
@@ -28171,7 +28356,48 @@ previously recorded.**
 declaration whose character is valued in a variable field, or whose conclusion
 is valued in a Galois group rather than in the character's codomain.
 `grep -n 'Dickson.K 3' ModThree.lean | awk -F: '$1>38000'` returns 340 hits and
-no such declaration as of 2026-07-27. -/
+no such declaration as of 2026-07-27.
+
+**THE CUT, 2026-07-27 — this node is now PROVEN over two leaves, and the
+survey above has moved with the mathematics it describes.** Nothing is proved
+about reciprocity here; what is proved is that the four clauses follow
+MECHANICALLY from reciprocity in product form plus surjectivity, so that the
+survey above now bears on
+`prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one` alone:
+
+* `exists_frobIdeal_mk0_eq_classGroup` (above) — SURJECTIVITY: every ideal
+  class is the class of some `frobIdeal g v` with `χ (g Frob_v g⁻¹) = 1`, i.e.
+  of a degree-one prime. Mentions no `N`; Chebotarev for `H/ℚ`.
+* `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one` (above) — RECIPROCITY: a
+  list of degree-one Frobenius pairs whose ideal product is principal has its
+  element product in `N`.
+
+The assembly, in one paragraph. Write `h_K = Nat.card (ClassGroup (𝓞 CF))`,
+which is positive, so `h_K = m + 1`. From `hNcard` and
+`Subgroup.pow_relIndex_mem`, `y ^ h_K ∈ N` for every `y ∈ ker χ` — Lagrange in
+`ker χ / N`, and the ONLY use of `hNcard` here. Surjectivity gives a choice
+function `c ↦ (G c, V c)` and hence `A c := G c · Frob_{V c} · (G c)⁻¹`.
+Padding a list with `List.replicate m (G c, V c)` turns each instance of
+reciprocity into `x · (A c)ᵐ ∈ N`, and `x · (A c)ᵐ · ((A c)^(m+1))⁻¹ =
+x · (A c)⁻¹` (powers of one element commute), so `x ≡ A c` modulo `N`
+whenever `[x's ideal] = c`. Lists of length `1`, `1 + m` and `2 + m` give,
+respectively, `A 1 ∈ N`, the Frobenius clause, and multiplicativity. Finally
+`art0 I := if I ∈ (Ideal (𝓞 CF))⁰ then A (ClassGroup.mk0 ⟨I, _⟩) else 1`
+transports all three along `ClassGroup.mk0`, which is a `MonoidHom` (clause
+`hart0mul`), sends principal ideals to `1` (`ClassGroup.mk0_eq_one_iff`, clause
+`hart0prin`), and is the identity on `frobIdeal g v` up to `Subtype.ext rfl`
+(clause `hart0frob`). Clause `hart0ker` is immediate from `χ (A c) = 1` and
+`χ 1 = 1`.
+
+**Why this cut is safe** — the trap it was written to avoid. The tempting
+weaker cut is "some `art1` satisfying `hart0ker`, `hart0mul`, `hart0frob`,
+then prove `hart0prin` of it". That sub-leaf is **FALSE**: those three clauses
+constrain `art1` only on degree-one primes (`χ (g Frob_v g⁻¹) = 1` forces
+residue degree one), so `art1` may be redefined arbitrarily on a prime of
+residue degree `> 1` and extended multiplicatively without disturbing them,
+while destroying `hart0prin`. The cut taken here instead routes everything
+through `ClassGroup.mk0`, where multiplicativity is free and the pinning
+happens once, on the class group. -/
 theorem exists_artinIdealMap_of_unramifiedAbelianSubgroup
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
     (χ : Field.absoluteGaloisGroup ℚ →* kk')
@@ -28222,8 +28448,129 @@ theorem exists_artinIdealMap_of_unramifiedAbelianSubgroup
         χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
         art0 (frobIdeal g v : Ideal (𝓞 CF)) *
           (g * GaloisRepresentation.globalFrob v * g⁻¹)⁻¹ ∈ N) ∧
-      (∀ α : 𝓞 CF, α ≠ 0 → art0 (Ideal.span {α}) ∈ N) :=
-  sorry
+      (∀ α : 𝓞 CF, α ≠ 0 → art0 (Ideal.span {α}) ∈ N) := by
+  classical
+  haveI : N.Normal := hNnorm
+  -- The class number is positive, so write it as `m + 1`.
+  obtain ⟨m, hm⟩ : ∃ m : ℕ, Nat.card (ClassGroup (𝓞 CF)) = m + 1 := by
+    refine ⟨Nat.card (ClassGroup (𝓞 CF)) - 1, ?_⟩
+    have : 0 < Nat.card (ClassGroup (𝓞 CF)) := Nat.card_pos
+    omega
+  -- (0) An elementary identity: powers of one element commute.
+  have key : ∀ (z : Field.absoluteGaloisGroup ℚ) (k : ℕ),
+      z ^ k * (z ^ (k + 1))⁻¹ = z⁻¹ := by
+    intro z k
+    rw [← zpow_natCast z k, ← zpow_natCast z (k + 1), ← zpow_neg, ← zpow_add]
+    norm_num
+  -- (1) Lagrange in `ker χ / N`: this is the only use of `hNcard`.
+  have hpow : ∀ y : Field.absoluteGaloisGroup ℚ, χ y = 1 → y ^ (m + 1) ∈ N := by
+    intro y hy
+    have h1 : y ^ N.relIndex (MonoidHom.ker χ) ∈ N :=
+      Subgroup.pow_relIndex_mem N (K := MonoidHom.ker χ) (MonoidHom.mem_ker.mpr hy)
+    rwa [hNcard, hm] at h1
+  -- (2) A degree-one Frobenius representative for every ideal class.
+  choose G V hGVχ hGVc using fun c : ClassGroup (𝓞 CF) =>
+    exists_frobIdeal_mk0_eq_classGroup χ hχcyc CF ι frobIdeal hfrob c
+  set A : ClassGroup (𝓞 CF) → Field.absoluteGaloisGroup ℚ :=
+    fun c => G c * GaloisRepresentation.globalFrob (V c) * (G c)⁻¹ with hAdef
+  have hAχ : ∀ c, χ (A c) = 1 := fun c => hGVχ c
+  -- (3) The Frobenius clause, before transport along `ClassGroup.mk0`.
+  have hkey : ∀ (g : Field.absoluteGaloisGroup ℚ)
+      (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      (g * GaloisRepresentation.globalFrob v * g⁻¹) *
+        (A (ClassGroup.mk0 (frobIdeal g v)))⁻¹ ∈ N := by
+    intro g v hgv
+    set c := ClassGroup.mk0 (frobIdeal g v) with hc
+    have hlist := prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one
+      χ hχcyc CF ι frobIdeal hfrob N hNnorm hNopen hNker hNinert hNab hNcard
+      ((g, v) :: List.replicate m (G c, V c)) ?_ ?_
+    · simp only [List.map_cons, List.prod_cons, List.map_replicate,
+        List.prod_replicate] at hlist
+      have h2 := hpow (A c) (hAχ c)
+      have h3 := N.mul_mem hlist (N.inv_mem h2)
+      have h4 : (g * GaloisRepresentation.globalFrob v * g⁻¹) * A c ^ m *
+          (A c ^ (m + 1))⁻¹ =
+          (g * GaloisRepresentation.globalFrob v * g⁻¹) * (A c)⁻¹ := by
+        rw [mul_assoc, key (A c) m]
+      rw [← h4]
+      exact h3
+    · intro q hq
+      rcases List.mem_cons.mp hq with h | h
+      · subst h; exact hgv
+      · rw [List.eq_of_mem_replicate h]; exact hGVχ c
+    · simp only [List.map_cons, List.prod_cons, List.map_replicate,
+        List.prod_replicate, map_mul, map_pow, hGVc c, ← hc]
+      rw [← pow_succ', ← hm]
+      exact pow_card_eq_one'
+  -- (4) Multiplicativity, at the level of ideal classes.
+  have hmul : ∀ c d : ClassGroup (𝓞 CF), A c * A d * (A (c * d))⁻¹ ∈ N := by
+    intro c d
+    have hlist := prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one
+      χ hχcyc CF ι frobIdeal hfrob N hNnorm hNopen hNker hNinert hNab hNcard
+      ((G c, V c) :: (G d, V d) :: List.replicate m (G (c * d), V (c * d))) ?_ ?_
+    · simp only [List.map_cons, List.prod_cons, List.map_replicate,
+        List.prod_replicate] at hlist
+      have h2 := hpow (A (c * d)) (hAχ (c * d))
+      have h3 := N.mul_mem hlist (N.inv_mem h2)
+      have h4 : A c * (A d * A (c * d) ^ m) * (A (c * d) ^ (m + 1))⁻¹ =
+          A c * A d * (A (c * d))⁻¹ := by
+        rw [← mul_assoc, mul_assoc (A c * A d), key (A (c * d)) m]
+      rw [← h4]
+      exact h3
+    · intro q hq
+      rcases List.mem_cons.mp hq with h | h
+      · subst h; exact hGVχ c
+      · rcases List.mem_cons.mp h with h' | h'
+        · subst h'; exact hGVχ d
+        · rw [List.eq_of_mem_replicate h']; exact hGVχ (c * d)
+    · simp only [List.map_cons, List.prod_cons, List.map_replicate,
+        List.prod_replicate, map_mul, map_pow, hGVc]
+      rw [← mul_assoc, ← pow_succ', ← hm]
+      exact pow_card_eq_one'
+  -- (5) The principal class lands in `N`.
+  have hone : A 1 ∈ N := by
+    have hlist := prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one
+      χ hχcyc CF ι frobIdeal hfrob N hNnorm hNopen hNker hNinert hNab hNcard
+      [(G 1, V 1)] ?_ ?_
+    · simpa using hlist
+    · intro q hq
+      rw [List.mem_singleton.mp hq]; exact hGVχ 1
+    · simpa using hGVc 1
+  -- (6) Transport along `ClassGroup.mk0` and assemble.
+  refine ⟨fun I => if hI : I ∈ (Ideal (𝓞 CF))⁰ then A (ClassGroup.mk0 ⟨I, hI⟩)
+    else 1, ?_, ?_, ?_, ?_⟩
+  · intro I
+    by_cases hI : I ∈ (Ideal (𝓞 CF))⁰
+    · simp only [dif_pos hI]; exact hAχ _
+    · simp only [dif_neg hI]; exact map_one χ
+  · intro I J hI hJ
+    have hI' : I ∈ (Ideal (𝓞 CF))⁰ := mem_nonZeroDivisors_iff_ne_zero.mpr hI
+    have hJ' : J ∈ (Ideal (𝓞 CF))⁰ := mem_nonZeroDivisors_iff_ne_zero.mpr hJ
+    have hIJ' : I * J ∈ (Ideal (𝓞 CF))⁰ := mul_mem hI' hJ'
+    simp only [dif_pos hI', dif_pos hJ', dif_pos hIJ']
+    have hprod : (⟨I * J, hIJ'⟩ : (Ideal (𝓞 CF))⁰) = ⟨I, hI'⟩ * ⟨J, hJ'⟩ := rfl
+    rw [hprod, map_mul]
+    exact hmul _ _
+  · intro g v hgv
+    have hI' : (frobIdeal g v : Ideal (𝓞 CF)) ∈ (Ideal (𝓞 CF))⁰ := (frobIdeal g v).2
+    simp only [dif_pos hI']
+    have hsub : (⟨(frobIdeal g v : Ideal (𝓞 CF)), hI'⟩ : (Ideal (𝓞 CF))⁰) =
+        frobIdeal g v := rfl
+    rw [hsub]
+    have hinv := N.inv_mem (hkey g v hgv)
+    rwa [mul_inv_rev, inv_inv] at hinv
+  · intro α hα
+    have hspan : Ideal.span ({α} : Set (𝓞 CF)) ≠ ⊥ := by
+      rw [Ne, Ideal.span_singleton_eq_bot]; exact hα
+    have hI' : Ideal.span ({α} : Set (𝓞 CF)) ∈ (Ideal (𝓞 CF))⁰ :=
+      mem_nonZeroDivisors_iff_ne_zero.mpr hspan
+    simp only [dif_pos hI']
+    have hcls : ClassGroup.mk0
+        (⟨Ideal.span ({α} : Set (𝓞 CF)), hI'⟩ : (Ideal (𝓞 CF))⁰) = 1 :=
+      (ClassGroup.mk0_eq_one_iff hI').mpr ⟨⟨α, rfl⟩⟩
+    rw [hcls]
+    exact hone
 
 /-- **CHEBOTAREV: every element of `ker χ` is an Artin symbol, modulo `N`**
 (E3c support leaf (ii-a-1-i-B-2-b); SORRY NODE, cut 2026-07-27 out of
