@@ -14025,44 +14025,169 @@ theorem repr_mem_subring_of_trace_mem_hilbert
   rw [show b.repr M i = ((cC i : C) : B) from congrFun hfinal i]
   exact (cC i).2
 
+/-- **The commutant of `ρbar|_{G_F}` is the scalars** — ABSOLUTE
+irreducibility of the restricted residual representation (LEAF — cut
+2026-07-27 out of `exists_residual_basis_toMatrix'_hilbert` below, whose
+remaining content is PROVEN over this node; the `F`-level twin of
+`Deformation.lean`'s PROVEN `exists_smul_eq_of_commute_of_isIrreducible`).
+
+This is the ONE arithmetic input of Carayol's Théorème 1 at the `F` level,
+and it is now the whole of it. Everything else in the step-1a cluster is
+PROVEN in `exists_residual_basis_toMatrix'_hilbert` below: the Brauer–Nesbitt
+conjugation of the reduction `g ↦ 𝒟.ρ(g) mod 𝔪` onto `ρbar|_{G_F}`
+(`exists_linearEquiv_of_charpoly_eq` applied to `𝒟.resid`, which holds at
+EVERY group element and so needs no Chebotarev step), Burnside/Jacobson
+density (`span_range_eq_top_of_irreducible_of_commutant`), and the extraction
+of a basis from the spanning family (`exists_basis_of_span_range_eq_top`).
+
+`hirrF` gives irreducibility over `k`; what is asked here is ABSOLUTE
+irreducibility, and over a finite field the two genuinely differ. The
+commutant of an irreducible `2`-dimensional representation is a finite
+division algebra over `k`, hence — little Wedderburn — a field extension
+`k'/k` of degree `1` or `2`, and in the degree-`2` case the image lies in the
+nonsplit torus `k'ˣ ⊆ M₂(k)` and is abelian.
+
+THE ROUTE, which is the `ℚ`-level one modulo `ℚ ↝ F`. ODDNESS kills the
+degree-`2` case. The determinant of `ρbar|_{G_F}` is the mod-`ℓ` cyclotomic
+character: `IsHilbertHardlyRamified.det` pins `𝒟.ρ.det` to `χ_ℓ`, and
+`𝒟.resid` carries that down to `ρbar|_{G_F}` through the constant coefficient
+of the characteristic polynomial. A COMPLEX CONJUGATION `c ∈ Γ F` then has
+`c² = 1` and `χ̄_ℓ(c) = -1`, so `ρbar|_{G_F} c` satisfies `X² = 1` with
+determinant `-1` and therefore has the two DISTINCT eigenvalues `1` and `-1`
+in `k` — distinct because `char k = ℓ` and `5 ≤ ℓ` makes `ℓ` odd. That is
+where `hℓ5` is consumed, and it is consumed nowhere else in the cluster. Any
+`f` in the commutant commutes with `ρbar|_{G_F} c`, hence preserves each of
+its two eigenlines, so `f` is `diag(α, β)` in that eigenbasis; and if
+`α ≠ β` then `ker (f - α)` is exactly the first eigenline, which is
+`ρbar|_{G_F}`-stable because `f` commutes with the whole image —
+contradicting `hirrF`, since a line is neither `⊥` nor `⊤` in a
+`2`-dimensional space. So `α = β` and `f = α • 1`.
+
+ROUTE OBSTRUCTION — **THIS LEAF NEEDS A REAL PLACE OF `F`, AND THE BINDER
+HERE IS ONLY `[NumberField F]`** (recorded 2026-07-27 by the prover of the
+consumer; it is why this node is handed on rather than closed).
+
+The oddness input above is a complex conjugation *inside* `Γ F`, i.e. a real
+place of `F`. Over a totally imaginary `F` the argument has no substitute,
+and the shape of a counterexample is explicit rather than hypothetical. Let
+`ρbar : Γ ℚ → GL₂(𝔽_ℓ)` be SURJECTIVE (`ℓ ≥ 5`), let `C ⊆ GL₂(𝔽_ℓ)` be a
+nonsplit Cartan subgroup, and let `F` be the fixed field of `ρbar⁻¹(C)`, a
+number field of degree `ℓ(ℓ-1)`. Then
+
+* `ρbar|_{G_F}` has image `C ≅ 𝔽_{ℓ²}ˣ` acting on `𝔽_{ℓ²} = 𝔽_ℓ²` by
+  multiplication, which is IRREDUCIBLE over `𝔽_ℓ` (no `𝔽_ℓ`-line is stable
+  under all of `𝔽_{ℓ²}ˣ`), so `hirrF` holds;
+* its commutant is `𝔽_{ℓ²}` itself, of `𝔽_ℓ`-dimension `2`, so the conclusion
+  FAILS — and with it the consumer's, since `span_{𝔽_ℓ}(image) = 𝔽_{ℓ²}` is
+  `2`-dimensional and no four residual matrices can be a `k`-basis of
+  `M₂(𝔽_ℓ)`;
+* `F` is totally imaginary, which is exactly why the route dies: the only
+  elements of `C` of order dividing `2` are `±1`, both of determinant `1`,
+  while a complex conjugation has determinant `-1`, so no complex conjugation
+  lies in `ρbar⁻¹(C)`;
+* and a datum `𝒟` for it is supplied by the instance above with
+  `𝒟.R = k = 𝔽_ℓ` and `𝒟.π = id` — that instance is deliberately stated for
+  an ARBITRARY number field `F`, which is what lets the counterexample be
+  built at all.
+
+WHY THIS IS RECORDED AS AN OBSTRUCTION AND NOT AS A REFUTATION. The `ρbar`
+above is exactly the object this development eventually proves cannot exist
+(the standing circularity guard
+`not_isIrreducible_of_isHardlyRamified_of_five_le`). So the hypothesis
+package may well be VACUOUS, in which case this leaf is vacuously true — but
+only through the global contradiction, which may not be used to discharge it.
+Either way the operational conclusion is the same: there is no proof of this
+statement over an arbitrary `F`.
+
+THE REPAIR, a CUT-LEVEL one deliberately not made here because it crosses
+declarations this task does not own: add `[NumberField.IsTotallyReal F]` (or
+just "`F` has a real place") to this leaf, to
+`exists_residual_basis_toMatrix'_hilbert` and to
+`exists_basis_toMatrix'_isUnit_hilbertTraceGram`, and thread it on to
+`exists_conj_entries_mem_hilbertTraceSubring`. The eventual consumer supplies
+it: `PotentialModularityPackage.totallyReal` carries exactly
+`NumberField.IsTotallyReal F`.
+
+THE CHECK THAT WOULD REFUTE THIS NOTE: exhibit `c ∈ Γ F` with
+`(ρbar.map (algebraMap ℚ F)) c` of order dividing `2` and determinant `-1`
+WITHOUT assuming a real place, or give any other proof that the commutant is
+`k`. A weaker sufficient input also suffices and may be easier to obtain:
+some `g ∈ Γ F` whose residual characteristic polynomial has two DISTINCT
+roots in `k`. That alone already forces the commutant to be `k`, because
+every element of a nonsplit torus `k'ˣ` has characteristic polynomial either
+irreducible over `k` or a perfect square.
+
+References: Carayol, *Formes modulaires et représentations galoisiennes à
+valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
+Curtis–Reiner, *Methods of Representation Theory* §3.3 (Burnside); Serre,
+*Propriétés galoisiennes des points d'ordre fini des courbes elliptiques*
+(Invent. Math. 15), §2 (Cartan subgroups and the image of `ρbar`). -/
+theorem exists_smul_eq_of_commute_of_isIrreducible_hilbert
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (f : Module.End k V)
+    (hf : ∀ g : Γ F, Commute f ((ρbar.map (algebraMap ℚ F)) g)) :
+    ∃ c : k, f = c • 1 :=
+  sorry
+
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 1a at the `F` level: four Galois elements
-whose RESIDUAL matrices are a `k`-basis of `M₂(k)`** (LEAF — cut 2026-07-27
-out of `exists_basis_toMatrix'_isUnit_hilbertTraceGram` below, whose
-remaining content is now PROVEN over this node; the `F`-level twin of
-`Deformation.lean`'s `exists_residual_basis_toMatrix'`, which is PROVEN
-there over the single leaf `residual_isIrreducible_of_isHardlyRamified`).
+whose RESIDUAL matrices are a `k`-basis of `M₂(k)`** (PROVEN 2026-07-27 over
+the single arithmetic leaf `exists_smul_eq_of_commute_of_isIrreducible_hilbert`
+above, cut out of it the same day; the `F`-level twin of `Deformation.lean`'s
+`exists_residual_basis_toMatrix'`, which is PROVEN there over the
+corresponding `ℚ`-level leaf `residual_isIrreducible_of_isHardlyRamified`).
 
 This is the BURNSIDE/JACOBSON-DENSITY half of Carayol's Théorème 1 and
 NOTHING else: neither the coefficient ring `𝒟.R`, nor the trace subring, nor
 the trace form occurs in the statement — only the reduction
 `g ↦ 𝒟.ρ(g) mod 𝔪` into `M₂(k)`. Everything on the commutative-algebra side
 (Nakayama, and the nondegeneracy of the trace form in every characteristic)
-is PROVEN over this node in the theorem below, so what remains open here is
-exactly the ARITHMETIC input and none of the algebra.
+is PROVEN over this node in the theorem below.
 
-THE ROUTE, which is the `ℚ`-level one verbatim modulo `ℚ ↝ F` and is worth
-porting rather than reinventing. The single genuinely open input is that the
-residual representation is ABSOLUTELY irreducible. At the `ℚ` level that is
-isolated as `residual_isIrreducible_of_isHardlyRamified`; here it should be
-isolated the same way. Its content: `ρbar|_{G_F}` is irreducible over the
-finite field `k` by `hirrF`, and its determinant is the mod-`ℓ` cyclotomic
-character, so it is odd; an odd irreducible two-dimensional representation
-over a finite field of odd characteristic is absolutely irreducible. `hℓ5`
-is consumed HERE and only here.
+WHAT IS PROVEN HERE, and it is everything except absolute irreducibility.
 
-Given that, the rest of THIS statement is pure algebra and is already
-available upstream in `HardlyRamified/FramedDescent.lean`: package the
-reduction as a monoid hom `σ : Γ F →* End_k(k²)`,
-`σ g = toLin' ((toMatrix' (𝒟.ρ g)).map 𝒟.π)` (multiplicativity is
-`LinearMap.toMatrix'_mul` plus `Matrix.map_mul` plus `Matrix.toLin'_mul`);
-apply the PROVEN Burnside node
-`span_range_eq_top_of_irreducible_of_commutant` to get
-`span_k (range σ) = ⊤`; transport the span to matrices along the `k`-linear
-equivalence `toMatrix'` (`Submodule.map_span`, `Submodule.map_top`,
-`LinearMap.toMatrix'_toLin'`); and extract a basis indexed by `Fin 2 × Fin 2`
-with the PROVEN `exists_basis_of_span_range_eq_top`, whose cardinality
-hypothesis is `finrank_k M₂(k) = 4` through `Matrix.stdBasis`.
+1. *The residual representation.* `σ g = toLin' ((toMatrix' (𝒟.ρ g)).map 𝒟.π)`
+   is a monoid hom `Γ F →* End_k(k²)` — multiplicativity is
+   `LinearMap.toMatrix'_mul` plus `Matrix.map_mul` plus `Matrix.toLin'_mul`.
+2. *Brauer–Nesbitt, with NO Chebotarev step.* `𝒟.resid` gives
+   `charpoly (σ g) = charpoly (ρbar|_{G_F} g)` at EVERY `g ∈ Γ F` — read
+   through the matrix dictionary `Matrix.charpoly_toLin'`,
+   `Matrix.charpoly_map` and `charpoly_eq_charpoly_toMatrix'` — so
+   `BrauerNesbittConjugacy.lean`'s `exists_linearEquiv_of_charpoly_eq`
+   applies directly and conjugates `σ` onto `ρbar|_{G_F}`. This is where the
+   `F`-level datum is BETTER behaved than the `ℚ`-level one, whose `resid` is
+   stated only at Frobenius elements and therefore needs Chebotarev density
+   (`exists_conj_of_charFrob_eq`) to reach the same place; the strong form of
+   `HilbertDeformationDatum.resid` was chosen for exactly this reason.
+3. *Burnside, taken on `V` rather than on `k²`.* With `hirrF` read as a
+   statement about submodules (through `Subrepresentation` and
+   `IsSimpleOrder.eq_bot_or_eq_top`) and the commutant supplied by the leaf,
+   `span_range_eq_top_of_irreducible_of_commutant` gives
+   `span_k (range ρbar|_{G_F}) = ⊤` inside `End_k V`. Doing the density step
+   upstairs on `V` and transporting only the SPAN afterwards avoids having to
+   move both irreducibility and the commutant across the conjugation, which
+   is what the `ℚ`-level proof does with `irreducible_commutant_conj` (a
+   declaration that lives DOWNSTREAM of this module and so is unavailable
+   here).
+4. *Transport and extraction.* The span is carried to `M₂(k)` along the
+   `k`-linear equivalence `Ψ = toMatrix' ∘ (conj e)⁻¹`, under which
+   `ρbar|_{G_F} g ↦ (toMatrix' (𝒟.ρ g)).map 𝒟.π` (`Submodule.map_span`,
+   `Submodule.map_top`, `LinearMap.toMatrix'_toLin'`), and
+   `exists_basis_of_span_range_eq_top` extracts a basis indexed by
+   `Fin 2 × Fin 2`, whose cardinality hypothesis is `finrank_k M₂(k) = 4`
+   through `Matrix.stdBasis`.
+
+So what remains open is exactly the ARITHMETIC input — that the residual
+representation is ABSOLUTELY irreducible — and none of the algebra. `hℓ5` is
+consumed only inside that leaf; see its docstring for the ROUTE OBSTRUCTION
+(the oddness argument needs a REAL PLACE of `F`, which `[NumberField F]` does
+not provide) and for the named repair.
 
 `hirrF` is load-bearing and the statement is FALSE without it: for a
 reducible `ρbar|_{G_F}` the `k`-span of the residual image is a proper
@@ -14082,8 +14207,102 @@ theorem exists_residual_basis_toMatrix'_hilbert
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
     ∃ g : Fin 2 × Fin 2 → Γ F,
       ∃ c : Module.Basis (Fin 2 × Fin 2) k (Matrix (Fin 2) (Fin 2) k),
-        ∀ i, c i = (LinearMap.toMatrix' (𝒟.ρ (g i))).map ⇑𝒟.π :=
-  sorry
+        ∀ i, c i = (LinearMap.toMatrix' (𝒟.ρ (g i))).map ⇑𝒟.π := by
+  classical
+  -- the residual representation `g ↦ 𝒟.ρ g mod 𝔪`, on `k²`
+  set σ : Representation k (Γ F) (Fin 2 → k) :=
+    { toFun := fun g => Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)
+      map_one' := by
+        show Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ 1)).map ⇑𝒟.π) = 1
+        rw [show (𝒟.ρ 1) = 1 from map_one 𝒟.ρ, LinearMap.toMatrix'_one,
+          Matrix.map_one _ (map_zero 𝒟.π) (map_one 𝒟.π), Matrix.toLin'_one]
+        rfl
+      map_mul' := fun g g' => by
+        show Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ (g * g'))).map ⇑𝒟.π)
+          = Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)
+            * Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g')).map ⇑𝒟.π)
+        rw [show (𝒟.ρ (g * g')) = 𝒟.ρ g * 𝒟.ρ g' from map_mul 𝒟.ρ g g',
+          LinearMap.toMatrix'_mul, Matrix.map_mul, Matrix.toLin'_mul]
+        rfl }
+  -- dimensions
+  have hrk : Module.rank k V = 2 := rank_eq_two_of_hilbertDeformationDatum 𝒟
+  have hfrV : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrk)
+  have hfrW : Module.finrank k (Fin 2 → k) = 2 := by simp
+  haveI : Nontrivial V :=
+    Module.nontrivial_of_finrank_pos (R := k) (by rw [hfrV]; norm_num)
+  -- charpoly agreement: `𝒟.resid`, read through the matrix dictionary
+  have hcp : ∀ g : Γ F, (σ g).charpoly =
+      (((ρbar.map (algebraMap ℚ F))).toRepresentation g).charpoly := by
+    intro g
+    show (Matrix.toLin' ((LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)).charpoly = _
+    rw [Matrix.charpoly_toLin', Matrix.charpoly_map,
+      ← charpoly_eq_charpoly_toMatrix']
+    exact 𝒟.resid g
+  -- Brauer–Nesbitt: `σ` is conjugate to `ρbar|_{G_F}`
+  obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq hfrV hfrW
+    (ρbar.map (algebraMap ℚ F)).toRepresentation σ hirrF hcp
+  -- irreducibility of `ρbar|_{G_F}`, in submodule form
+  have hirrV : ∀ p : Submodule k V,
+      (∀ g : Γ F, ∀ w ∈ p,
+        (ρbar.map (algebraMap ℚ F)).toRepresentation g w ∈ p) →
+      p = ⊥ ∨ p = ⊤ := by
+    intro p hp
+    haveI hsim : Representation.IsIrreducible
+        (ρbar.map (algebraMap ℚ F)).toRepresentation := hirrF
+    rcases IsSimpleOrder.eq_bot_or_eq_top
+      (⟨p, fun g v hv => hp g v hv⟩ :
+        Subrepresentation (ρbar.map (algebraMap ℚ F)).toRepresentation)
+      with hb | ht
+    · left; exact congrArg Subrepresentation.toSubmodule hb
+    · right; exact congrArg Subrepresentation.toSubmodule ht
+  -- the commutant of `ρbar|_{G_F}` is the scalars (the LEAF)
+  have hcommV : ∀ f : Module.End k V,
+      (∀ g : Γ F, f * (ρbar.map (algebraMap ℚ F)).toRepresentation g
+        = (ρbar.map (algebraMap ℚ F)).toRepresentation g * f) →
+      ∃ c : k, f = c • 1 :=
+    fun f hf =>
+      exists_smul_eq_of_commute_of_isIrreducible_hilbert ℓ hℓ5 F hirrF 𝒟 f
+        (fun g => hf g)
+  -- Burnside/Jacobson density, on `V`
+  have hspanV : Submodule.span k
+      (Set.range ((ρbar.map (algebraMap ℚ F)).toRepresentation :
+        Γ F → Module.End k V)) = ⊤ :=
+    span_range_eq_top_of_irreducible_of_commutant
+      (ρbar.map (algebraMap ℚ F)).toRepresentation hirrV hcommV
+  -- transport the span to `M₂(k)` along `Ψ = toMatrix' ∘ (conj e)⁻¹`
+  have heconj : ∀ g : Γ F,
+      e.conj (σ g) = (ρbar.map (algebraMap ℚ F)).toRepresentation g := by
+    intro g
+    refine LinearMap.ext fun x => ?_
+    have hx := he g (e.symm x)
+    rw [LinearEquiv.apply_symm_apply] at hx
+    simpa [LinearEquiv.conj_apply] using hx
+  set Ψ : Module.End k V ≃ₗ[k] Matrix (Fin 2) (Fin 2) k :=
+    e.conj.symm.trans LinearMap.toMatrix'
+  have hcomp : (fun g : Γ F => (LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)
+      = fun g => Ψ ((ρbar.map (algebraMap ℚ F)).toRepresentation g) := by
+    funext g
+    show _ = LinearMap.toMatrix'
+      (e.conj.symm ((ρbar.map (algebraMap ℚ F)).toRepresentation g))
+    rw [← heconj g, LinearEquiv.symm_apply_apply]
+    exact (LinearMap.toMatrix'_toLin' _).symm
+  have hspanMat : Submodule.span k
+      (Set.range (fun g : Γ F =>
+        (LinearMap.toMatrix' (𝒟.ρ g)).map ⇑𝒟.π)) = ⊤ := by
+    rw [hcomp]
+    have hmap := congrArg (Submodule.map Ψ.toLinearMap) hspanV
+    rw [Submodule.map_span, Submodule.map_top,
+      LinearMap.range_eq_top.mpr Ψ.surjective] at hmap
+    rw [← hmap, ← Set.range_comp]
+    rfl
+  -- and extract a basis from the spanning family
+  have hcard : Module.finrank k (Matrix (Fin 2) (Fin 2) k)
+      = Fintype.card (Fin 2 × Fin 2) :=
+    Module.finrank_eq_card_basis (Matrix.stdBasis k (Fin 2) (Fin 2))
+  obtain ⟨g, c, hc⟩ := exists_basis_of_span_range_eq_top (κ := Fin 2 × Fin 2)
+    hcard _ hspanMat
+  exact ⟨g, c, hc⟩
 
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 1 at the `F` level: a Galois basis of
@@ -14126,8 +14345,12 @@ porting rather than reinventing:
    level) then makes the `k`-span of the reductions `(𝒟.ρ g).map 𝒟.π` all of
    `M₂(k)`, and `exists_basis_of_span_range_eq_top` extracts four elements
    whose reductions are a `k`-basis. At the `ℚ` level this step is isolated
-   as its own leaf, `exists_residual_basis_toMatrix'`; a prover here should
-   isolate it the same way.
+   as its own leaf, `exists_residual_basis_toMatrix'`; it is now isolated the
+   same way here, and everything in it except absolute irreducibility is
+   PROVEN — as of 2026-07-27 the sole remaining leaf beneath this node is
+   `exists_smul_eq_of_commute_of_isIrreducible_hilbert`, whose docstring
+   records a ROUTE OBSTRUCTION (the oddness argument needs a REAL PLACE of
+   `F`, which `[NumberField F]` does not provide) and the named repair.
 2. *Nakayama.* Four elements of the finite free `𝒟.R`-module `M₂(𝒟.R)` whose
    reductions form a `k`-basis are themselves a `𝒟.R`-basis: by
    `Module.Basis.is_basis_iff_det` against `Matrix.stdBasis`, the
