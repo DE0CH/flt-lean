@@ -10749,22 +10749,41 @@ theorem le_of_pow_eq_of_span_eq_maximalIdeal_pow
     _ = c := hmn
 
 /-- **THE DEGREE OF THE SPLITTING FIELD OF `X^n − a` DIVIDES `n·φ(n)`**
-(sorry node, created 2026-07-27 — leaf (Y-1-b-i), the ONLY remaining
-gap under `exists_isGalois_not_dvd_card_inertia_lt_card_inertia`, and
+(PROVEN 2026-07-27, axiom-clean — leaf (Y-1-b-i) was the last gap under
+`exists_isGalois_not_dvd_card_inertia_lt_card_inertia`, and is
 deliberately stated as PURE FIELD THEORY over an arbitrary
 characteristic-zero base: no local field, no valuation, no `ℚ₃ᵥ`).
-INTENDED PROOF (Kummer + cyclotomic, the classical
-`Gal ↪ μ_n ⋊ (ℤ/n)ˣ`).  `X^n − a` is separable, so `E` contains `n`
-distinct roots; their ratios exhaust `μ_n`, so `E` contains a primitive
-`n`-th root of unity `ζ`.  Put `F' := F(ζ)`.  Then
-* `[F' : F] ∣ φ(n)`: `F'/F` is Galois and `IsPrimitiveRoot.autToPow`
-  embeds `Gal(F'/F) ↪ (ZMod n)ˣ`, which has order `φ(n)`
-  (`ZMod.card_units_eq_totient`), so Lagrange applies.
-* `[E : F'] ∣ n`: fix a root `α`; every root is `ζ^i·α`, so `E = F'(α)`
-  and `σ ↦ σα/α` is an injective homomorphism `Gal(E/F') ↪ μ_n`
-  (a homomorphism because `ζ ∈ F'` is fixed, injective because a `σ`
-  fixing `α` fixes `F'(α) = E`).
-* multiply with `Module.finrank_mul_finrank`.
+PROOF AS ACTUALLY WRITTEN — the classical `Gal ↪ μ_n ⋊ (ℤ/n)ˣ`, but
+carried out ENTIRELY INSIDE THE GALOIS GROUP rather than through the
+field tower `F ⊆ F(ζ) ⊆ E` that the cut originally recorded.  That
+change is the whole economy of the proof: the tower version needs
+`F(ζ)/F` to be Galois (so that `[F(ζ):F] = #Gal(F(ζ)/F)`), which costs a
+separate "F(ζ) is a splitting field of `X^n − 1`" argument, whereas the
+cyclotomic character is defined on ALL of `Gal(E/F)` with no such
+hypothesis.  Concretely, writing `G := Gal(E/F)` and `ψ := autToPow`:
+* `E` contains a primitive `n`-th root of unity `ζ`.  `X^n − a` is
+  separable (`Polynomial.separable_X_pow_sub_C`, using `char F = 0`
+  and `a ≠ 0`) and splits, so its root set has exactly `n` elements
+  (`Polynomial.card_rootSet_eq_natDegree`); dividing them by one fixed
+  root `α` injects that set into `rootsOfUnity n E`, giving
+  `n ≤ #μ_n(E)`, and `card_rootsOfUnity_eq_iff_exists_isPrimitiveRoot`
+  converts the resulting equality into the primitive root.
+* `ψ : G →* (ZMod n)ˣ` is `IsPrimitiveRoot.autToPow`, which needs NO
+  irreducibility and no cyclotomic hypothesis (only its *injectivity*,
+  which is not used here, would).  Hence
+  `[G : ker ψ] = #(range ψ) ∣ #(ZMod n)ˣ = φ(n)`
+  (`Subgroup.index_ker`, `ZMod.card_units_eq_totient`).
+* `#(ker ψ) ∣ n` by the Kummer character `σ ↦ σα/α`.  It lands in
+  `μ_n` because `σ(α)^n = σ(a) = a`; it is a HOMOMORPHISM precisely
+  because `σ ∈ ker ψ` fixes `ζ`, hence fixes all of `μ_n = ⟨ζ⟩`
+  (`IsPrimitiveRoot.eq_pow_of_pow_eq_one`); and it is INJECTIVE because
+  a `σ` fixing `α` and `μ_n` fixes every root `ζ^i·α`, hence fixes
+  `Algebra.adjoin F (rootSet) = ⊤` (`AlgHom.ext_of_adjoin_eq_top`).
+* Multiply: `#G = #(ker ψ)·[G : ker ψ]` (`Subgroup.card_mul_index`) and
+  `#G = [E : F]` (`IsGalois.card_aut_eq_finrank`).
+The `n = 1` edge case is real and is handled explicitly: `(1 : ZMod n)`
+has `val = 1 % n`, which is `0` rather than `1` when `n = 1`, so the
+step "`ψ σ = 1` implies `σζ = ζ`" splits on `n < 2`.
 WHY MATHLIB'S KUMMER API DOES NOT DISCHARGE THIS, checked 2026-07-27
 (and this is the load-bearing observation — the grep that would refute
 it is `grep -n "autEquivRootsOfUnity\|autEquivZmod\|finrank_of_isSplittingField"
@@ -10775,9 +10794,7 @@ conclusion in `autEquivRootsOfUnity : Gal(L/K) ≃* rootsOfUnity n K` and
 carry the hypothesis `H : Irreducible (X ^ n - C a)` **and** require the
 base to already contain `μ_n`.  Here `X^n − 3` over `ℚ₃ᵥ` is reducible
 in general and `ℚ₃ᵥ` contains only `μ_2`, so neither applies; the two
-bullets above have to be built by hand.  `IsPrimitiveRoot.autToPow` and
-`IsPrimitiveRoot.autToPow_injective` DO apply to the first bullet as
-they stand.
+halves above had to be built by hand.
 NOT VACUOUS, and note the bound is sharp: at `F = ℚ`, `n = 3`, `a = 2`
 the splitting field of `X³ − 2` has degree `6 = 3·φ(3)`. -/
 theorem finrank_dvd_of_isSplittingField_X_pow_sub_C
@@ -10785,15 +10802,158 @@ theorem finrank_dvd_of_isSplittingField_X_pow_sub_C
     {n : ℕ} (hn : 0 < n) {a : F} (ha : a ≠ 0)
     (hsf : Polynomial.IsSplittingField F E (Polynomial.X ^ n - Polynomial.C a)) :
     Module.finrank F E ∣ n * n.totient := by
-  sorry
+  classical
+  haveI : NeZero n := ⟨hn.ne'⟩
+  haveI := hsf
+  set p : Polynomial F := Polynomial.X ^ n - Polynomial.C a with hpdef
+  -- ## Basic facts about `p = X^n - a`
+  have hpdeg : p.natDegree = n := by
+    rw [hpdef]; exact Polynomial.natDegree_X_pow_sub_C
+  have hsep : p.Separable := by
+    rw [hpdef]
+    exact Polynomial.separable_X_pow_sub_C a (Nat.cast_ne_zero.mpr hn.ne') ha
+  have hsplit : Polynomial.Splits (p.map (algebraMap F E)) := hsf.1
+  have hAne : algebraMap F E a ≠ 0 := by
+    simpa using (map_ne_zero_iff (algebraMap F E) (algebraMap F E).injective).mpr ha
+  have hroot : ∀ β ∈ p.rootSet E, β ^ n = algebraMap F E a := by
+    intro β hβ
+    have h := (Polynomial.mem_rootSet.mp hβ).2
+    rw [hpdef] at h
+    simp only [map_sub, map_pow, Polynomial.aeval_X, Polynomial.aeval_C, sub_eq_zero] at h
+    exact h
+  have hβ0 : ∀ β ∈ p.rootSet E, β ≠ 0 := by
+    intro β hβ h
+    exact hAne (by rw [← hroot β hβ, h, zero_pow hn.ne'])
+  have hcardroots : Fintype.card (p.rootSet E) = n := by
+    rw [Polynomial.card_rootSet_eq_natDegree hsep hsplit, hpdeg]
+  obtain ⟨α, hα⟩ : ∃ α : E, α ∈ p.rootSet E := by
+    have hne : Nonempty (p.rootSet E) :=
+      Fintype.card_pos_iff.mp (by rw [hcardroots]; exact hn)
+    exact hne.elim fun x => ⟨x.1, x.2⟩
+  have hα0 : α ≠ 0 := hβ0 α hα
+  -- ## `E` contains a primitive `n`-th root of unity
+  have hunit : ∀ β ∈ p.rootSet E, (β / α) ^ n = 1 := by
+    intro β hβ
+    rw [div_pow, hroot β hβ, hroot α hα, div_self hAne]
+  have hmemru : ∀ (β : E) (hβ : β ∈ p.rootSet E),
+      Units.mk0 (β / α) (div_ne_zero (hβ0 β hβ) hα0) ∈ rootsOfUnity n E := by
+    intro β hβ
+    rw [mem_rootsOfUnity, ← Units.val_inj]
+    simpa using hunit β hβ
+  have hle : n ≤ Nat.card (rootsOfUnity n E) := by
+    have hinj : Function.Injective (fun β : p.rootSet E =>
+        (⟨Units.mk0 ((β : E) / α) (div_ne_zero (hβ0 β β.2) hα0), hmemru β β.2⟩ :
+          rootsOfUnity n E)) := by
+      intro β γ h
+      apply Subtype.ext
+      have h1 : ((β : E) / α) = ((γ : E) / α) := by
+        simpa using congrArg (fun u : rootsOfUnity n E => ((u : Eˣ) : E)) h
+      field_simp at h1
+      exact h1
+    calc n = Nat.card (p.rootSet E) := by rw [Nat.card_eq_fintype_card, hcardroots]
+      _ ≤ Nat.card (rootsOfUnity n E) := Nat.card_le_card_of_injective _ hinj
+  obtain ⟨ζ, hζ⟩ : ∃ ζ : E, IsPrimitiveRoot ζ n :=
+    card_rootsOfUnity_eq_iff_exists_isPrimitiveRoot.mp
+      (le_antisymm (card_rootsOfUnity E n) hle)
+  -- ## `E/F` is Galois
+  haveI : FiniteDimensional F E := Polynomial.IsSplittingField.finiteDimensional E p
+  haveI : Normal F E := Normal.of_isSplittingField p
+  haveI : Algebra.IsSeparable F E := Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsGalois F E := ⟨⟩
+  -- ## The cyclotomic character `ψ : Gal(E/F) →* (ZMod n)ˣ`
+  set ψ : (E ≃ₐ[F] E) →* (ZMod n)ˣ := hζ.autToPow F with hψdef
+  have hζfix : ∀ σ : E ≃ₐ[F] E, ψ σ = 1 → σ ζ = ζ := by
+    intro σ hσ
+    have hspec := hζ.autToPow_spec F σ
+    rw [← hψdef, hσ] at hspec
+    rcases Nat.lt_or_ge n 2 with h2 | h2
+    · have hn1 : n = 1 := by omega
+      have hζ1 : ζ = 1 := by
+        have h := hζ.pow_eq_one
+        rwa [hn1, pow_one] at h
+      rw [hζ1, map_one]
+    · have hval : (((1 : (ZMod n)ˣ) : ZMod n)).val = 1 := by
+        rw [Units.val_one, ZMod.val_one_eq_one_mod, Nat.mod_eq_of_lt (by omega)]
+      rw [hval, pow_one] at hspec
+      exact hspec.symm
+  have hfix : ∀ σ : E ≃ₐ[F] E, ψ σ = 1 → ∀ w : E, w ^ n = 1 → σ w = w := by
+    intro σ hσ w hw
+    obtain ⟨i, -, rfl⟩ := hζ.eq_pow_of_pow_eq_one hw
+    rw [map_pow, hζfix σ hσ]
+  -- ## The Kummer character `θ : ker ψ ↪ μ_n`
+  have hkerfix : ∀ σ : ψ.ker, ∀ w : E, w ^ n = 1 → (σ : E ≃ₐ[F] E) w = w :=
+    fun σ w hw => hfix _ (MonoidHom.mem_ker.mp σ.2) w hw
+  have hσα0 : ∀ σ : ψ.ker, (σ : E ≃ₐ[F] E) α ≠ 0 := by
+    intro σ h
+    exact hα0 ((σ : E ≃ₐ[F] E).injective (by simpa using h))
+  have hpowone : ∀ σ : ψ.ker, (((σ : E ≃ₐ[F] E) α) / α) ^ n = 1 := by
+    intro σ
+    rw [div_pow, ← map_pow, hroot α hα, AlgEquiv.commutes, div_self hAne]
+  have hmemru' : ∀ σ : ψ.ker,
+      Units.mk0 (((σ : E ≃ₐ[F] E) α) / α) (div_ne_zero (hσα0 σ) hα0) ∈
+        rootsOfUnity n E := by
+    intro σ
+    rw [mem_rootsOfUnity, ← Units.val_inj]
+    simpa using hpowone σ
+  let θ : ψ.ker →* rootsOfUnity n E :=
+    MonoidHom.mk'
+      (fun σ => ⟨Units.mk0 (((σ : E ≃ₐ[F] E) α) / α) (div_ne_zero (hσα0 σ) hα0),
+        hmemru' σ⟩)
+      (by
+        intro σ τ
+        apply Subtype.ext
+        apply Units.ext
+        show ((σ * τ : ψ.ker) : E ≃ₐ[F] E) α / α
+            = ((σ : E ≃ₐ[F] E) α / α) * ((τ : E ≃ₐ[F] E) α / α)
+        have hτ : (τ : E ≃ₐ[F] E) α = ((τ : E ≃ₐ[F] E) α / α) * α := by field_simp
+        have hcomm : (σ : E ≃ₐ[F] E) ((τ : E ≃ₐ[F] E) α / α) = (τ : E ≃ₐ[F] E) α / α :=
+          hkerfix σ _ (hpowone τ)
+        rw [Subgroup.coe_mul, AlgEquiv.mul_apply]
+        conv_lhs => rw [hτ]
+        rw [map_mul, hcomm]
+        field_simp)
+  have hθinj : Function.Injective θ := by
+    rw [injective_iff_map_eq_one]
+    intro σ hσ1
+    have hσα : (σ : E ≃ₐ[F] E) α = α := by
+      have h := congrArg (fun u : rootsOfUnity n E => ((u : Eˣ) : E)) hσ1
+      simp only [θ, MonoidHom.mk'_apply, Units.val_mk0, OneMemClass.coe_one,
+        Units.val_one] at h
+      field_simp at h
+      exact h
+    have hroots : ∀ β ∈ p.rootSet E, (σ : E ≃ₐ[F] E) β = β := by
+      intro β hβ
+      have h2 := hkerfix σ (β / α) (hunit β hβ)
+      have h3 : β = (β / α) * α := by field_simp
+      conv_lhs => rw [h3]
+      rw [map_mul, h2, hσα, ← h3]
+    apply Subtype.ext
+    rw [Subgroup.coe_one]
+    have hah : ((σ : E ≃ₐ[F] E).toAlgHom : E →ₐ[F] E) = AlgHom.id F E :=
+      AlgHom.ext_of_adjoin_eq_top hsf.2 (fun x hx => by simpa using hroots x hx)
+    ext x
+    have h := AlgHom.ext_iff.mp hah x
+    simpa using h
+  -- ## Assembly: `#G = #(ker ψ) · [G : ker ψ] ∣ n · φ(n)`
+  have hKdvd : Nat.card ψ.ker ∣ n := by
+    have h := Subgroup.card_dvd_of_injective θ hθinj
+    rwa [hζ.card_rootsOfUnity] at h
+  have hIdvd : ψ.ker.index ∣ n.totient := by
+    rw [Subgroup.index_ker]
+    have h : Nat.card ψ.range ∣ Nat.card (ZMod n)ˣ := Subgroup.card_subgroup_dvd_card _
+    rwa [Nat.card_eq_fintype_card (α := (ZMod n)ˣ), ZMod.card_units_eq_totient] at h
+  have hG : Nat.card (E ≃ₐ[F] E) = Module.finrank F E := IsGalois.card_aut_eq_finrank F E
+  rw [← hG, ← Subgroup.card_mul_index (ψ.ker)]
+  exact mul_dvd_mul hKdvd hIdvd
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **A GALOIS EXTENSION OF `ℚ₃ᵥ` WITH RAMIFICATION INDEX PRIME TO `3`
-AND ARBITRARILY LARGE** (PROVEN 2026-07-27 over the single new leaf
-`finrank_dvd_of_isSplittingField_X_pow_sub_C` above — leaf (Y-1-b),
-the arithmetic half of the tameness criterion).  For every `d` there is
+AND ARBITRARILY LARGE** (PROVEN 2026-07-27 — leaf (Y-1-b), the
+arithmetic half of the tameness criterion.  Its one auxiliary,
+`finrank_dvd_of_isSplittingField_X_pow_sub_C` above, was itself closed
+the same day, so this subtree is now sorry-free).  For every `d` there is
 a finite Galois `K'/ℚ₃ᵥ` with `3 ∤ #G_0` and `#G_0 > d`.
 Recall `#G_0 = e_{K'/ℚ₃ᵥ}` — in this development that is not a
 definition but the PROVEN `span_three_eq_maximalIdeal_pow_card_inertia`,
@@ -10831,7 +10991,7 @@ neither needs the unramified half.
 * `3 ∤ #G_0` comes from **LAGRANGE**, not from computing `e`:
   `G_0 ≤ Gal(K'/ℚ₃ᵥ)`, so `#G_0 ∣ [K' : ℚ₃ᵥ]`, and it is enough that
   the WHOLE degree be prime to `3`.  Since `[K' : ℚ₃ᵥ] ∣ n·φ(n)`
-  (leaf `finrank_dvd_of_isSplittingField_X_pow_sub_C`) and
+  (the PROVEN `finrank_dvd_of_isSplittingField_X_pow_sub_C`) and
   `n·φ(n) = 2^(d+1)·2^d = 2^(2d+1)` for `n = 2^(d+1)`, the degree is a
   power of `2`.  This is why `n` must be a `2`-power rather than merely
   prime to `3`: it makes `φ(n)` a `2`-power too, so BOTH the Kummer and
