@@ -2,15 +2,17 @@
 Copyright (c) 2026 Deyao Chen. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Mathlib.RingTheory.HopfAlgebra.Basic
-import Mathlib.RingTheory.HopfAlgebra.MonoidAlgebra
-import Mathlib.RingTheory.Coalgebra.Convolution
-import Mathlib.RingTheory.Bialgebra.Equiv
-import Mathlib.LinearAlgebra.Contraction
-import Mathlib.LinearAlgebra.Dual.Lemmas
-import Mathlib.LinearAlgebra.FreeModule.Finite.Basic
-import Mathlib.LinearAlgebra.TensorProduct.Basis
-import Mathlib.RingTheory.TensorProduct.Finite
+module
+
+public import Mathlib.RingTheory.HopfAlgebra.Basic
+public import Mathlib.RingTheory.HopfAlgebra.MonoidAlgebra
+public import Mathlib.RingTheory.Coalgebra.Convolution
+public import Mathlib.RingTheory.Bialgebra.Equiv
+public import Mathlib.LinearAlgebra.Contraction
+public import Mathlib.LinearAlgebra.Dual.Lemmas
+public import Mathlib.LinearAlgebra.FreeModule.Finite.Basic
+public import Mathlib.LinearAlgebra.TensorProduct.Basis
+public import Mathlib.RingTheory.TensorProduct.Finite
 
 /-!
 # Cartier duality for finite flat commutative group schemes
@@ -72,6 +74,8 @@ statements about `A`.
 * Waterhouse, *Introduction to Affine Group Schemes*, ch. 2.
 * Demazure–Gabriel, *Groupes algébriques*, II §1.
 -/
+
+@[expose] public section
 
 open TensorProduct Coalgebra WithConv
 open scoped RingTheory.LinearMap
@@ -711,17 +715,31 @@ dispatch asked for are **not** here, and both are blocked on things that are gen
 rather than merely unwritten. Recording them precisely so the next owner does not re-derive the
 survey:
 
-**1. Exactness of duality on short exact sequences.** This is the piece `(R3)` under
-`exists_unramified_grouplike_family_generating_corner` actually consumes. It is not stated here
-because *this tree has no definition of a short exact sequence of finite flat group schemes*,
-and writing one is a design decision rather than a proof: the quotient `G / G'` is an fppf
-sheaf quotient, and mathlib's pin carries the fppf/fpqc **sites** but no descent statement that
-would let one build the quotient's coordinate ring. On the Hopf side the honest formulation is
-`A'' ↪ A ↠ A'` with `A` faithfully flat over `A''` and `ker(A → A') = A · ker(ε_{A''})`, and
-that is writable — but it should be written by whoever also writes `(R3)`, so that the
-definition is pinned by its consumer rather than guessed at in advance. Refuting check: a
-definition of a group-scheme quotient, or of fppf descent for modules, anywhere in `Fermat/`,
-the mathlib pin, or `~/cs/FLT`.
+**1. Exactness of duality on short exact sequences — NOW STATED ELSEWHERE, still open.** This is
+the piece `(R3)` under `exists_unramified_grouplike_family_generating_corner` actually consumes.
+
+STALE NOTE CORRECTED (2026-07-27): this item read "it is not stated here because *this tree has
+no definition of a short exact sequence of finite flat group schemes*, and writing one is a
+design decision rather than a proof … it should be written by whoever also writes `(R3)`, so
+that the definition is pinned by its consumer rather than guessed at in advance." That is
+exactly what happened, and it is done.
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` carries the predicted formulation
+verbatim — `A'' ↪ A ↠ A'` with `A` faithfully flat over `A''` and
+`ker(A → A') = A · ker(ε_{A''})`, as `HopfAlgebra.IsShortExact` — together with the
+functoriality `CartierDual.map` this file does not have, and `(R3)` itself as
+`HopfAlgebra.isMultiplicativeType_of_isShortExact`, whose three-symbol proof is the evidence
+that the definition really is pinned by its consumer. No fppf descent was needed.
+
+What is still OPEN there is the mathematics, in two named leaves:
+`HopfAlgebra.IsShortExact.cartierDual` (exactness of duality — three sorried steps, one per
+field of `IsShortExact`, the middle one spending freeness of `A` over `A''`) and
+`HopfAlgebra.etale_of_isShortExact` (an extension of étale by étale is étale). Those are the
+dispatchable targets; this file is complete and unconditional.
+
+Do not trust that count of two: a decomposition of `IsShortExact.cartierDual` was in flight on an
+unreleased branch when this was written, and one of its pieces is reportedly gated on fppf descent,
+which this mathlib pin does not carry. `grep -n 'sorry' ShortExact.lean` is the check that settles
+the current list.
 
 **2. The examples — SUPERSEDED, mostly DONE (2026-07-27).** The blocker recorded here was the
 missing Hopf structure on the coordinate ring of a finite constant group scheme. It now exists as

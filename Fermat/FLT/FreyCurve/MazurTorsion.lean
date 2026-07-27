@@ -81,6 +81,12 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 -- SIGNATURE of `MazurLevelSeven.exists_kernelCoords_of_isShortNF` below, and a
 -- bare `import` is not re-exported.
 public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+-- `exists_variableChange_of_j_eq`: over a separably closed field, two elliptic
+-- curves with the same `j`-invariant differ by an admissible change of
+-- variables. This is what turns `j(E'') = j(E)` into a `ℚ̄`-isomorphism
+-- `E'' ≅ E`, hence a SELF-isogeny of `E_ℚ̄`, in
+-- `MazurLevelFortyNine.exists_selfIsogeny_of_j_eq` below.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.IsomOfJ
 public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 -- Vélu's construction of the quotient of an elliptic curve by a finite
 -- Galois-stable subgroup of odd order (`exists_velu_quotient_isogeny`), which
@@ -125,6 +131,12 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 -- arrived on a branch that also carried a rival `14a4` route in
 -- `MordellWeil.lean`, which was not taken, so it is not re-exported from there.
 public import Fermat.FLT.EllipticCurve.TorsionReduction
+-- the kernel-polynomial criterion for a rational cyclic `p`-isogeny
+-- (`WeierstrassCurve.IsKernelPolynomial`, `exists_point_of_isKernelPolynomial`),
+-- cut out of `exists_isogenyCurve_of_genusOneJTable` below. `IsKernelPolynomial`
+-- appears in SIGNATURE position there, where a merely transitive import is not
+-- re-exported, so this must be a `public import`.
+public import Fermat.FLT.EllipticCurve.KernelPolynomial
 -- mathlib's reduction theory of Weierstrass equations over a DVR
 -- (`IsMinimal`, `HasGoodReduction`, `reduction`). It already reaches this file
 -- publicly through `TorsionReduction → GoodReduction`, and is named here
@@ -15900,8 +15912,10 @@ Each of those leaves bundled two quite different things:
 * the **main theorem of complex multiplication** — a curve with CM by the order
   of discriminant `D` has `j` a root of the Hilbert class polynomial `H_D`.
 
-The first is PROVEN outright below, uniformly in `(N, m)`, over the single new
-structural leaf `WeierstrassCurve.End.exists_intBasis`. The second remains a
+The first is PROVEN outright below, uniformly in `(N, m)`, over the structural
+node `WeierstrassCurve.End.exists_intBasis` (introduced as a leaf on 2026-07-27
+and since PROVEN, so the only leaf under it is `End.mul_comm_charZero`). The
+second remains a
 leaf, once per level, because this development has no Hilbert class polynomial
 and the identification of `H_{−500}` / `H_{−676}` with the literals is a
 computation no Lean argument here can supply.
@@ -16031,18 +16045,35 @@ end MazurCMOrder
 /-!
 ### The endomorphism ring as a lattice: reducing `exists_intBasis` to ONE leaf
 
-(Added 2026-07-27, decomposing `End.exists_intBasis`.)
+(Added 2026-07-27, decomposing `End.exists_intBasis`; re-cut the same day, see
+the second note below.)
 
 `End.exists_intBasis` bundled three separate assertions: that `End(W)` is
 COMMUTATIVE, that it has `ℚ`-rank `2`, and that it is MONOGENIC (`= ℤ[ω]` with
-`1, ω` a basis). Only the second is genuinely characteristic-zero input; the
+`1, ω` a basis). Only one of them is genuinely characteristic-zero input; the
 other two are consequences, and they are proved outright below.
 
-**The one leaf that remains** is `End.exists_zsmul_rel`: any two endomorphisms
-satisfy a nontrivial `ℤ`-linear relation modulo `ℤ`, i.e. `End(W) ⊗ ℚ` has
-`ℚ`-dimension at most `2`. Note it does NOT assert commutativity — commutativity
-comes out of the assembly, since everything ends up a `ℤ`-combination of `1` and
-a single `ω`.
+**The one leaf that remains** is `End.mul_comm_charZero`: `End(W)` is
+COMMUTATIVE. Everything else in the cluster — including the `ℚ`-rank bound
+`End.exists_zsmul_rel`, which was the leaf for the first few hours of
+2026-07-27 — is now proven.
+
+**Why the leaf moved from the rank bound to commutativity** (2026-07-27). The
+two are EQUIVALENT (each implies the other; see the faithfulness note on
+`End.exists_zsmul_rel`), so this is a reformulation and not a weakening. What it
+buys: `MazurEndLattice.quadRel` shows that once `αβ = βα` is available, the rank
+bound is three characteristic polynomials and a division-free cancellation, with
+no Hasse bound, no dual and no rational-root work. So all the arithmetic is
+discharged and the open node is a single named classical theorem
+(Silverman *AEC* III.9.4 + Deuring) with a documented route.
+
+**The check that the remaining leaf is genuinely irreducible relative to
+everything below, and it passes.** The LIPSCHITZ QUATERNION ORDER `ℤ⟨i, j⟩`
+satisfies every property proven in this section — domain, `ℤ`-torsion-free,
+intersection with `ℚ` equal to `ℤ`, every element quadratic with `t² ≤ 4n`, a
+norm-form anti-involution playing the role of the dual — and is NOT commutative.
+So no consequence of items 1–5 below can supply commutativity, and any argument
+claiming to is wrong.
 
 **The argument, and it needs nothing beyond `End.exists_charPoly`.** Write
 `[c]` for the image of `c : ℤ`.
@@ -16062,7 +16093,7 @@ a single `ω`.
    `v₁ = ±1` and `v ∣ c`; torsion-freeness then gives `ψ = [c/v]`.
 4. **Bounded denominators.** Fix `ψ₀ ∉ ℤ` and put `δ := [2]ψ₀ − [s₀]`, so
    `δ² = [−d]` with `d > 0` (`d = 0` would make `δ` a zero divisor). For any
-   `χ` with traceless part `η`, `η² = [−e]`, the leaf gives
+   `χ` with traceless part `η`, `η² = [−e]`, `exists_zsmul_rel` gives
    `[p] η = [q'] δ + [r']` with `(p, q') ≠ (0,0)`. SQUARING BOTH SIDES — which
    needs no commutativity, only centrality of integer casts — the `δ`-component
    reads `[2q'r'] δ ∈ ℤ`, so by (3) either `δ ∈ ℤ` (false) or `q'r' = 0`.
@@ -16278,12 +16309,174 @@ theorem sq_linear (δ : End W) (m : ℤ) (hδ : δ * δ = ((m : ℤ) : End W)) (
     _ = ((a * a * m + b * b : ℤ) : End W) + ((2 * a * b : ℤ) : End W) * δ := by
         push_cast; noncomm_ring
 
+/-- **The algebraic core of `End.exists_zsmul_rel`, in a general commutative ring
+without zero divisors.** If `α`, `β` and `α + β` each satisfy a monic integral
+quadratic, then `1, α, β` satisfy a nontrivial integral linear relation — with a
+nonzero coefficient on `α` or on `β`, so the relation is not the vacuous `0 = 0`.
+
+**Only three quadratics are needed, and no Hasse bound.** The `t² ≤ 4n` half of
+`End.exists_charPoly` plays no role here at all; it is consumed further up, in
+`exists_traceless`, and the statement below is true over any commutative domain.
+
+**The proof, which is elementary and division-free.** Expanding `(α + β)²` and
+subtracting the quadratics for `α` and `β` gives the *product* relation
+
+  `2αβ = Aα + Bβ + C`,   `A = T − t₁`, `B = T − t₂`, `C = n₁ + n₂ − N`,
+
+and THIS is the one and only step that uses commutativity: without `αβ = βα`
+the expansion yields the symmetric combination `αβ + βα`, which is exactly what
+a quaternion order satisfies while `αβ` itself is not in `ℤ + ℤα + ℤβ`.
+
+Now put `u := 2α − B` and `v := 2β − A`. Then `uv = 2C + AB =: M` is an INTEGER
+(the `α` and `β` terms cancel against `2·(2αβ)`), and `u` satisfies its own
+integral quadratic `u(u − P) = Q` with
+
+  `P = 2t₁ − 2B`,   `Q = PB + B² − 4n₁`.
+
+* If `Q = 0` then `u(u − P) = 0`, and having no zero divisors forces `u = 0` or
+  `u = P`; either way `2α ∈ ℤ`, which is already a relation with `p = 2`.
+* If `Q ≠ 0`, multiply `u(u − P) = Q` by `v` and use `uv = M`:
+  `M(u − P) = Qv`, i.e. `2Mα − 2Qβ + (QA − MB − MP) = 0`, whose `β`-coefficient
+  `−2Q` is nonzero.
+
+Note there is no division anywhere: `u` is not inverted, it is only cancelled
+against `v` through the integer `M`. That is why the conclusion has integer
+rather than rational coefficients. -/
+theorem quadRel {R : Type*} [CommRing R] [NoZeroDivisors R] (α β : R)
+    {t₁ n₁ t₂ n₂ T N : ℤ}
+    (h₁ : α * α + (n₁ : R) = (t₁ : R) * α)
+    (h₂ : β * β + (n₂ : R) = (t₂ : R) * β)
+    (h₃ : (α + β) * (α + β) + (N : R) = (T : R) * (α + β)) :
+    ∃ p q r : ℤ, (p ≠ 0 ∨ q ≠ 0) ∧ (p : R) * α + (q : R) * β + (r : R) = 0 := by
+  classical
+  -- `2αβ = Aα + Bβ + C`: the only step that consumes commutativity.
+  have key : (2 : R) * (α * β)
+      = ((T - t₁ : ℤ) : R) * α + ((T - t₂ : ℤ) : R) * β + ((n₁ + n₂ - N : ℤ) : R) := by
+    push_cast
+    linear_combination h₃ - h₁ - h₂
+  set A : ℤ := T - t₁
+  set B : ℤ := T - t₂
+  set C : ℤ := n₁ + n₂ - N
+  set u : R := 2 * α - (B : R) with hu
+  set v : R := 2 * β - (A : R) with hv
+  set M : ℤ := 2 * C + A * B with hM
+  have huv : u * v = (M : R) := by
+    rw [hu, hv, hM]
+    push_cast
+    linear_combination 2 * key
+  set P : ℤ := 2 * t₁ - 2 * B with hP
+  set Q : ℤ := (2 * t₁ - 2 * B) * B + B ^ 2 - 4 * n₁ with hQ
+  have huu : u * (u - (P : R)) = (Q : R) := by
+    rw [hu, hP, hQ]
+    push_cast
+    linear_combination 4 * h₁
+  by_cases hQ0 : Q = 0
+  · -- `u(u − P) = 0`, so `2α` is an integer.
+    have h0 : u * (u - (P : R)) = 0 := by rw [huu, hQ0, Int.cast_zero]
+    rcases mul_eq_zero.1 h0 with h | h
+    · refine ⟨2, 0, -B, Or.inl two_ne_zero, ?_⟩
+      rw [hu] at h
+      push_cast
+      linear_combination h
+    · refine ⟨2, 0, -B - P, Or.inl two_ne_zero, ?_⟩
+      rw [hu] at h
+      push_cast
+      linear_combination h
+  · -- `Mv⁻¹`-free cancellation: multiply `u(u − P) = Q` by `v` and use `uv = M`.
+    have hkey2 : (M : R) * (u - (P : R)) = (Q : R) * v := by
+      calc (M : R) * (u - (P : R)) = (u * v) * (u - (P : R)) := by rw [huv]
+        _ = v * (u * (u - (P : R))) := by ring
+        _ = v * (Q : R) := by rw [huu]
+        _ = (Q : R) * v := by ring
+    refine ⟨2 * M, -(2 * Q), Q * A - M * B - M * P, Or.inr (by omega), ?_⟩
+    rw [hu, hv] at hkey2
+    push_cast at hkey2 ⊢
+    linear_combination hkey2
+
 end MazurEndLattice
 
 end EndLattice
 
-/-- **LEAF — `End(W) ⊗ ℚ` has `ℚ`-dimension at most `2`** (introduced 2026-07-27
-by the decomposition of `End.exists_intBasis`, which it now carries in full).
+/-- **LEAF — `End(W)` IS COMMUTATIVE in characteristic `0`** (introduced
+2026-07-27 by the re-cut of `End.exists_zsmul_rel`, which is now PROVEN over
+this and nothing else).
+
+This is Silverman *AEC* III.9.4 together with Deuring: over an algebraically
+closed field of characteristic `0`, `End(E)` is `ℤ` or an order in an imaginary
+quadratic field, and in both cases it is commutative.
+
+**`[CharZero F]` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** In
+characteristic `p` a supersingular curve has `End(W)` a maximal order in a
+QUATERNION algebra, which is noncommutative — `Isogeny.lean`'s `𝔽̄₂`
+counterexample section, and the `[CharZero F]` on `Isogeny.dual` and
+`End.exists_dual`, are the same phenomenon.
+
+## Why this is the whole of the characteristic-zero input, and how to check it
+
+Everything else that `End.exists_intBasis` used to bundle is now proven from
+`End.exists_charPoly` alone (see the section note above and
+`MazurEndLattice.quadRel`): no zero divisors, `ℤ`-torsion-freeness, a ring-level
+characteristic polynomial, a traceless part squaring to a nonpositive integer,
+`End W ∩ ℚ = ℤ`, monogenicity, and the `ℚ`-rank bound itself.
+
+**The claim that no further consequence of that layer can give commutativity has
+a one-line refutation test, and it passes: the LIPSCHITZ QUATERNION ORDER
+`ℤ⟨i, j⟩` satisfies every single property in the list.** It is a domain, it is
+`ℤ`-torsion-free, its intersection with `ℚ` is `ℤ`, every element
+`a + bi + cj + dk` satisfies `x² − 2ax + (a² + b² + c² + d²) = 0` with
+`t² = 4a² ≤ 4n`, and conjugation is an anti-involution with `x x̄ = [N(x)]`
+playing the role of the dual. So ANY argument that derives commutativity from
+the proven layer is necessarily wrong, and the genuinely characteristic-zero
+input is irreducible here rather than merely undiscovered. (The axis this
+verdict ranges over is: consequences of `End.exists_charPoly`, the dual, and the
+trace form. It says nothing about routes through torsion structure or the
+function field, which is where the two live options below sit.)
+
+## Two routes, and the exact statement the cheaper one wants
+
+**Route A — the invariant differential (the standard algebraic proof).** In
+characteristic `0` every nonzero isogeny is separable, so its action on the
+`1`-dimensional space of invariant differentials is nonzero; `φ*ω = c_φ ω`
+defines `c : End(W) → F` which is multiplicative (functoriality of pullback) and
+ADDITIVE (Silverman *AEC* III.5.2 — the genuinely hard input), hence an
+INJECTIVE ring map into a commutative field. Commutativity is then three lines.
+The statement to introduce, in this file's idiom, is
+
+    theorem End.exists_cotangentChar : ∃ c : WeierstrassCurve.End W →+* F,
+      Function.Injective c
+
+and `mul_comm_charZero` follows from it by `c (φ * ψ) = c φ * c ψ = c ψ * c φ
+= c (ψ * φ)` plus injectivity. **What is missing at this pin is the action
+itself**, and it is a subtree rather than a lemma: `IsRationalMap` certifies an
+isogeny only POINTWISE (`x(φP)·B(xP) = A(xP)` and
+`y(φP)·E(xP) = C(xP)·y(P) + D(xP)`), so building `φ*` requires the function
+field of a general `W`, differentials on it, and the transfer from a pointwise
+certificate to a function-field identity. Note in particular that the
+`InvariantDifferential` namespace in `WeilPairingDescent.lean` is a formal
+polynomial identity and does NOT serve, and that
+`EllipticCurve/InvariantDerivation.lean`'s `DK` is the invariant derivation on
+the UNIVERSAL function field `Kuniv` with no pullback along an isogeny — it is
+the closest existing material and the natural place to start.
+
+**Route B — the analytic uniformisation.** `End(W)` embeds in
+`End(H_1(W, ℤ)) = M₂(ℤ)` commuting with the complex structure, hence in `ℂ`.
+This needs the `H_1` layer, absent at this pin, and is strictly heavier than
+Route A.
+
+**A third route that does NOT work, recorded so it is not re-attempted.**
+"`End ⊗ ℚ` is a division algebra of dimension `≤ 4` (positive-definite degree
+form), and a definite quaternion algebra over `ℚ` is ramified at `∞` hence at
+some finite `p`, contradicting `End ⊗ ℚ_p ↪ End(T_p W) ⊗ ℚ_p = M₂(ℚ_p)`" is a
+correct proof, but its last step is the parity of the Hasse invariants — class
+field theory, far heavier than Route A. -/
+theorem WeierstrassCurve.End.mul_comm_charZero {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    (φ ψ : WeierstrassCurve.End W) : φ * ψ = ψ * φ :=
+  sorry
+
+/-- **`End(W) ⊗ ℚ` has `ℚ`-dimension at most `2`** (introduced 2026-07-27 by the
+decomposition of `End.exists_intBasis`, which it carries in full; **PROVEN
+2026-07-27 over the single leaf `End.mul_comm_charZero`**).
 
 Any two endomorphisms satisfy a nontrivial `ℤ`-linear relation modulo `ℤ`: there
 are integers `p, q, r`, not both `p` and `q` zero, with `pφ + qψ + r = 0`.
@@ -16298,49 +16491,57 @@ algebra, of `ℚ`-dimension `4`; there `1, φ, ψ` are generically independent a
 such relation exists. `Isogeny.lean`'s `𝔽̄₂` counterexample section, and the
 `[CharZero F]` on `Isogeny.dual` and `End.exists_dual`, are the same phenomenon.
 
-**Note what is NOT asserted: commutativity.** It is not needed as a hypothesis and
-it is not needed as a separate leaf — `End.exists_intBasis` derives it, because
-its conclusion exhibits every endomorphism as a `ℤ`-combination of `1` and one
-fixed `ω`, and those commute. That is why this is the ONLY remaining leaf of the
-`exists_intBasis` cluster.
+**HOW IT IS PROVEN.** Commutativity — `End.mul_comm_charZero`, the sole leaf —
+upgrades `End W` to a commutative ring without zero divisors
+(`MazurEndLattice.end_mul_ne_zero`), and `MazurEndLattice.quadRel` then produces
+the relation from the three characteristic polynomials of `φ`, `ψ` and `φ + ψ`
+(`MazurEndLattice.exists_charPolyRing`) by an elementary division-free
+computation. Nothing else is used: not the Hasse bound, not the dual, not
+`End W ∩ ℚ = ℤ`.
 
-**What it will take to prove.** The classical route is: (1) `End(W) ⊗ ℚ` is a
-division algebra of dimension `≤ 4` over `ℚ` (Silverman III.9.3, from the degree
-being a positive-definite quadratic form — the same input as `End.exists_dual`,
-i.e. `End.dualEnd_add`); (2) in characteristic `0` the quaternion case cannot
-occur, because `End(W)` embeds in `End(H_1(W, ℤ)) = M₂(ℤ)` via the analytic
-uniformisation, or equivalently acts faithfully on the `2`-dimensional
-`ℚ`-vector space `H_1(W, ℚ)`. Step (2) is the genuinely new content and is where
-the `H_1` / analytic layer, absent at this pin, is needed.
-
-An ALTERNATIVE route that may be cheaper here, and which the decomposition below
-was designed to leave open: in characteristic `0` the action of `End(W)` on
-invariant differentials is an injective ring map `End(W) → F`, so `End(W)` is
-COMMUTATIVE; and a commutative domain in which every element is quadratic over
-`ℤ` (which is `End.exists_charPoly`) has `ℚ`-dimension `≤ 2` by the primitive
-element theorem, which mathlib has. That replaces the `H_1` layer by the
-differential action — the grep that would settle whether it is available is
-
-    grep -rn 'invariantDifferential\|differential\|cotangent' Fermat/ ~/cs/FLT/FLT/
-
-which at the time of writing finds nothing usable for isogenies (the
-`InvariantDifferential` namespace in `WeilPairingDescent.lean` is a formal
-polynomial identity, not the action of `End` on `Ω¹`).
+**FAITHFULNESS NOTE — this is an EQUIVALENT reformulation, not a weakening.**
+`mul_comm_charZero` implies this statement (above) and this statement implies
+`mul_comm_charZero` (through `End.exists_intBasis`, which exhibits every
+endomorphism as a `ℤ`-combination of `1` and one fixed `ω`, and those commute).
+So the re-cut buys no logical ground; what it buys is that ALL the arithmetic —
+the characteristic polynomial, the Hasse bound, the gcd and rational-root work,
+the ideal of `δ`-coefficients — is now discharged, and the open node is a single
+named classical theorem with a known one-idea proof rather than a bespoke
+rank encoding. The route to it is documented on `mul_comm_charZero`.
 
 **The `(p ≠ 0 ∨ q ≠ 0)` side condition is not decoration**: without it `r = 0`
-and `p = q = 0` satisfies the conclusion for every `φ, ψ`, and the leaf would be
-vacuous. -/
+and `p = q = 0` satisfies the conclusion for every `φ, ψ`, and the statement
+would be vacuous. -/
 theorem WeierstrassCurve.End.exists_zsmul_rel {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
     (φ ψ : WeierstrassCurve.End W) :
     ∃ p q r : ℤ, (p ≠ 0 ∨ q ≠ 0) ∧
       ((p : ℤ) : WeierstrassCurve.End W) * φ + ((q : ℤ) : WeierstrassCurve.End W) * ψ
-        + ((r : ℤ) : WeierstrassCurve.End W) = 0 :=
-  sorry
+        + ((r : ℤ) : WeierstrassCurve.End W) = 0 := by
+  classical
+  letI : CommRing (WeierstrassCurve.End W) :=
+    { (inferInstance : Ring (WeierstrassCurve.End W)) with
+      mul_comm := WeierstrassCurve.End.mul_comm_charZero }
+  haveI : Nontrivial (WeierstrassCurve.End W) := by
+    refine ⟨1, 0, ?_⟩
+    have h := MazurEndLattice.intCast_ne_zero_of_ne_zero (W := W) (c := 1) one_ne_zero
+    rwa [Int.cast_one] at h
+  haveI : NoZeroDivisors (WeierstrassCurve.End W) :=
+    ⟨fun {a b} h => by
+      by_cases ha : a = 0
+      · exact Or.inl ha
+      by_cases hb : b = 0
+      · exact Or.inr hb
+      exact absurd h (MazurEndLattice.end_mul_ne_zero ha hb)⟩
+  obtain ⟨t₁, n₁, -, h₁, -⟩ := MazurEndLattice.exists_charPolyRing φ
+  obtain ⟨t₂, n₂, -, h₂, -⟩ := MazurEndLattice.exists_charPolyRing ψ
+  obtain ⟨T, N, -, h₃, -⟩ := MazurEndLattice.exists_charPolyRing (φ + ψ)
+  exact MazurEndLattice.quadRel φ ψ h₁ h₂ h₃
 
 /-- **`End(E)` is a free `ℤ`-module of rank `2` as soon as it is bigger
 than `ℤ`** (introduced 2026-07-27 by the cut of the two class-polynomial nodes;
-**PROVEN 2026-07-27 over the single leaf `End.exists_zsmul_rel`**).
+**PROVEN 2026-07-27 over `End.exists_zsmul_rel`, itself since re-cut so that the
+cluster's single remaining leaf is `End.mul_comm_charZero`**).
 
 If some `ψ₀ ∈ End W` is not an integer, then there are `ω ∈ End W` and `a, b ∈ ℤ`
 with `ω² = aω − b` such that `1, ω` is a `ℤ`-BASIS of `End W`: every `χ` is
@@ -16365,20 +16566,23 @@ already carries `[CharZero F]` for the same reason.
 (2) in characteristic `0` the quaternion case cannot occur, so the dimension is
 `≤ 2`; (3) a subring of an imaginary quadratic field that is a finitely
 generated `ℤ`-module spanning it is an order, and orders in quadratic fields are
-`ℤ + fO_K = ℤ[fω_K]` — only (1)+(2) remain open, as the single leaf
-`End.exists_zsmul_rel` ("any two endomorphisms are `ℚ`-dependent modulo `ℚ`").
-Step (3), which is where finite generation, monogenicity, INDEPENDENCE of
-`1, ω`, and commutativity of `End(E)` all live, is PROVEN below.
+`ℤ + fO_K = ℤ[fω_K]` — only (1)+(2) remain open, and they are consumed here
+through `End.exists_zsmul_rel` ("any two endomorphisms are `ℚ`-dependent modulo
+`ℚ`"), which is itself now PROVEN over the cluster's single leaf
+`End.mul_comm_charZero`. Step (3), which is where finite generation,
+monogenicity, INDEPENDENCE of `1, ω`, and commutativity of `End(E)` all live, is
+PROVEN below.
 
 The proof is the lattice argument of the section note above: `End.exists_charPoly`
-gives every `χ` a traceless part squaring to a nonpositive integer; the leaf
+gives every `χ` a traceless part squaring to a nonpositive integer;
+`exists_zsmul_rel`
 pins all those traceless parts to a single `ℚ`-line through `δ = 2ψ₀ − t₀`; the
 discriminant congruence bounds the denominators UNIFORMLY by `2d`; and the
 resulting `δ`-coefficients form an ideal of `ℤ`, whose generator supplies `ω`.
 
 Note that `End.exists_charPoly` already gives each individual `χ` a monic
 integral quadratic — that is `(1)` for one element at a time. What was missing,
-and is now isolated in `End.exists_zsmul_rel` alone, is that a single quadratic
+and is now isolated in `End.mul_comm_charZero` alone, is that a single quadratic
 FIELD contains all of them. -/
 theorem WeierstrassCurve.End.exists_intBasis {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
@@ -20631,6 +20835,449 @@ theorem WeierstrassCurve.exists_x0Seven_hauptmodul (E : WeierstrassCurve ℚ)
     E.exists_x0Seven_kernelInvariants g hg hstable
   exact MazurLevelSeven.hauptmodul_of_kernelRelations E.j A B s₁ _ _ hQ hΔ hj h1 h2
 
+/-! #### Vélu's half-sums as sums over the abscissae (obligation 1, PROVEN 2026-07-27)
+
+`veluT`/`veluW` are HALF-sums over the whole kernel `S`.  For `|S|` odd the map
+`veluPointX` has fibres of size exactly `2` on `S ∖ {0}` (`Velu.velu_fiber_card`), and both
+`veluTTerm` and `veluWTerm` factor through `veluPointX` — the `y`-dependence of the `w`-term
+is removed by the Weierstrass equation, `(2y + a₁x + a₃)² = 4x³ + b₂x² + 2b₄x + b₆`.  So each
+half-sum is an ORDINARY sum over the distinct abscissae.  This is exactly obligation 1 of
+`exists_x0Seven_veluFrickeData`, and it is now proven for an arbitrary Weierstrass model, not
+just a short one; specialised to `b₂ = 0`, `b₄ = 2A`, `b₆ = 4B` it reads
+`t = 6(s₁² − 2s₂) + 6A` and `w = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`. -/
+
+section VeluHalfSums
+
+variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] {W : Affine F}
+
+omit [DecidableEq F] [CharZero F] in
+/-- Vélu's `t`-term at a nonzero point depends only on its abscissa. -/
+lemma MazurLevelSeven.veluTTerm_eq_of_ne_zero {Q : W.Point} (hQ : Q ≠ 0) :
+    veluTTerm W Q = 6 * veluPointX Q ^ 2 + W.b₂ * veluPointX Q + W.b₄ := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y h => rfl
+
+omit [DecidableEq F] [CharZero F] in
+/-- Vélu's `w`-term at a nonzero point depends only on its abscissa: the `y`-dependence is
+removed by the Weierstrass equation, `(2y + a₁x + a₃)² = 4x³ + b₂x² + 2b₄x + b₆`. -/
+lemma MazurLevelSeven.veluWTerm_eq_of_ne_zero {Q : W.Point} (hQ : Q ≠ 0) :
+    veluWTerm W Q =
+      (4 * veluPointX Q ^ 3 + W.b₂ * veluPointX Q ^ 2 + 2 * W.b₄ * veluPointX Q + W.b₆)
+        + veluPointX Q * (6 * veluPointX Q ^ 2 + W.b₂ * veluPointX Q + W.b₄) := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y h =>
+    have heq : y ^ 2 + W.a₁ * x * y + W.a₃ * y - (x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆) = 0 :=
+      (Affine.equation_iff' x y).mp h.left
+    simp only [veluWTerm_some, veluPointX_some, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆]
+    linear_combination 4 * heq
+
+omit [CharZero F] in
+/-- The fibrewise-halving step: a term that factors through `veluPointX` sums over `S ∖ {0}`
+to TWICE its sum over the distinct abscissae, because every fibre has exactly two points. -/
+lemma MazurLevelSeven.veluSum_erase_eq_two_mul {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) (f : W.Point → F) (g : F → F)
+    (hf : ∀ Q ∈ S.erase 0, f Q = g (veluPointX Q)) :
+    ∑ Q ∈ S.erase 0, f Q = 2 * ∑ a ∈ (S.erase 0).image veluPointX, g a := by
+  rw [← Finset.sum_fiberwise_of_maps_to (g := veluPointX)
+      (fun i hi => Finset.mem_image_of_mem veluPointX hi) f, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun a ha => ?_
+  have hcard : ({Q' ∈ S.erase 0 | veluPointX Q' = a}).card = 2 := by
+    obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+    exact velu_fiber_card hS hodd hQ
+  have hin : ∑ Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a}, f Q'
+      = ∑ _Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a}, g a := by
+    refine Finset.sum_congr rfl fun Q' hQ' => ?_
+    obtain ⟨hQ'mem, hQ'x⟩ := Finset.mem_filter.mp hQ'
+    rw [hf Q' hQ'mem, hQ'x]
+  rw [hin, Finset.sum_const, hcard]
+  simp only [nsmul_eq_mul, Nat.cast_ofNat]
+
+/-- **Obligation 1 for `t` (PROVEN).**  Vélu's `t` is the sum of `N(x) = 6x² + b₂x + b₄` over
+the DISTINCT abscissae of the nonzero points of an odd-order kernel. -/
+lemma MazurLevelSeven.veluT_eq_sum_image {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) :
+    W.veluT S = ∑ a ∈ (S.erase 0).image veluPointX, (6 * a ^ 2 + W.b₂ * a + W.b₄) := by
+  have h2 : (2 : F) ≠ 0 := two_ne_zero
+  rw [veluT, ← Finset.sum_erase S (veluTTerm_zero (W := W)),
+    MazurLevelSeven.veluSum_erase_eq_two_mul hS hodd _ (fun a => 6 * a ^ 2 + W.b₂ * a + W.b₄)
+      (fun Q hQ => MazurLevelSeven.veluTTerm_eq_of_ne_zero (Finset.ne_of_mem_erase hQ)),
+    inv_mul_cancel_left₀ h2]
+
+/-- **Obligation 1 for `w` (PROVEN).**  Vélu's `w` is the sum of `D(x) + x·N(x)` over the
+DISTINCT abscissae of the nonzero points of an odd-order kernel, with
+`D(x) = 4x³ + b₂x² + 2b₄x + b₆`. -/
+lemma MazurLevelSeven.veluW_eq_sum_image {S : Finset W.Point} (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) :
+    W.veluW S = ∑ a ∈ (S.erase 0).image veluPointX,
+      ((4 * a ^ 3 + W.b₂ * a ^ 2 + 2 * W.b₄ * a + W.b₆) + a * (6 * a ^ 2 + W.b₂ * a + W.b₄)) := by
+  have h2 : (2 : F) ≠ 0 := two_ne_zero
+  rw [veluW, ← Finset.sum_erase S (veluWTerm_zero (W := W)),
+    MazurLevelSeven.veluSum_erase_eq_two_mul hS hodd _
+      (fun a => (4 * a ^ 3 + W.b₂ * a ^ 2 + 2 * W.b₄ * a + W.b₆)
+        + a * (6 * a ^ 2 + W.b₂ * a + W.b₄))
+      (fun Q hQ => MazurLevelSeven.veluWTerm_eq_of_ne_zero (Finset.ne_of_mem_erase hQ)),
+    inv_mul_cancel_left₀ h2]
+
+end VeluHalfSums
+
+/-- **The third `X_0(7)` kernel relation `E3`** (PROVEN 2026-07-27; it existed NOWHERE in this
+tree before, and its absence was recorded as obligation 3 of
+`exists_x0Seven_veluFrickeData`).  In the notation of `MazurLevelSeven.kernelRelations`,
+
+  `E3 :  84s₁s₃ − s₁⁴ + 84Bs₁ + 36As₂ + 10As₁² − 9A² = 0`.
+
+**It is a SIBLING of `kernelRelations`, deliberately not an extra conjunct of it**: four
+callers already consume `kernelRelations`, and the elimination is the same either way.
+
+**HOW IT IS PROVEN, and it is much cheaper than it looks.**  `E3` is NOT a new
+`ψ₇`-certificate.  With `E1` the first relation of `kernelRelations`,
+
+  `E3 = E1 + 21·(4s₁s₃ + 4Bs₁ + 2As₂ − A² − s₂²)`,
+
+and the bracket vanishes IDENTICALLY — from the duplication/triplication formulas `hx2`,
+`hx3` and the definitions `hs1`, `hs2`, `hs3` alone, with **no use of `hpsi`**.  Clearing the
+common denominator `u = 4e·f₃²` (the same `u` as in `kernelRelations`, with
+`e = x₁³ + Ax₁ + B` and `f₃ = 3x₁⁴ + 6Ax₁² + 12Bx₁ − A²`) and using
+
+  `s₁u = f₃²(8ex₁ + X₂) − 8e²f₄`,  `s₂u = …`,  `s₃u = x₁·X₂·(x₁f₃² − 2ef₄)`,
+  `X₂ = x₁⁴ − 2Ax₁² − 8Bx₁ + A²`,
+
+the `u²`-multiple of the bracket is the zero polynomial in `ℚ[A, B, x₁]`, so it closes by
+`ring`.  That the two `ψ₇`-cofactors of `E1` and of `E3` came out IDENTICAL (a `61`-term
+degree-`24` polynomial, computed with Singular as an untrusted searcher) is exactly this
+fact.  Consequently `E3` costs one extra symmetric-function identity and nothing else. -/
+theorem MazurLevelSeven.kernelRelationThree {L : Type*} [Field L] (φ : ℚ →+* L)
+    (A B s₁ s₂ s₃ : ℚ) (a b x₁ x₂ x₃ : L)
+    (ha : a = φ A) (hb : b = φ B)
+    (hE : (x₁ ^ 3 + a * x₁ + b) ≠ 0)
+    (hne : x₂ ≠ x₁)
+    (hx2 : x₂ * (4 * (x₁ ^ 3 + a * x₁ + b)) = (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2))
+    (hx3 : x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 =
+      x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+        - 2 * (x₁ ^ 3 + a * x₁ + b) *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)))
+    (hpsi : (8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+          (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+        - (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 3
+      - 2 * (x₁ ^ 3 + a * x₁ + b) ^ 2 *
+        (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0)
+    (hs1 : φ s₁ = x₁ + x₂ + x₃)
+    (hs2 : φ s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃)
+    (hs3 : φ s₃ = x₁ * x₂ * x₃) :
+    84 * s₁ * s₃ - s₁ ^ 4 + 84 * B * s₁ + 36 * A * s₂ + 10 * A * s₁ ^ 2 - 9 * A ^ 2 = 0 := by
+  have hinj : Function.Injective φ := φ.injective
+  have h4 : (4 : L) ≠ 0 := fun h => by
+    have h0 : (4 : ℚ) = 0 := hinj (by rw [map_ofNat, map_zero, h])
+    norm_num at h0
+  have hF3 : (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ≠ 0 := by
+    intro h
+    refine hne (sub_eq_zero.mp ?_)
+    have hzz : (x₂ - x₁) * (4 * (x₁ ^ 3 + a * x₁ + b)) = 0 := by
+      linear_combination hx2 - h
+    rcases mul_eq_zero.mp hzz with h' | h'
+    · exact h'
+    · rcases mul_eq_zero.mp h' with h'' | h''
+      · exact absurd h'' h4
+      · exact absurd h'' hE
+  obtain ⟨u, hu, hune⟩ : ∃ u : L, u = 4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 ∧ u ≠ 0 :=
+    ⟨_, rfl, mul_ne_zero (mul_ne_zero h4 hE) (pow_ne_zero 2 hF3)⟩
+  have hN1 : φ s₁ * u =
+      (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * (8 * (x₁ ^ 3 + a * x₁ + b) * x₁
+        + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * (4 *
+        (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3
+        - 8 * b ^ 2)) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs1
+      + (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 * hx2
+      + (4 * (x₁ ^ 3 + a * x₁ + b)) * hx3
+  have hN2 : φ s₂ * u =
+      2 * x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 +
+        12 * b * x₁ - a ^ 2) ^ 2 + 4 * (x₁ ^ 3 + a * x₁ + b) * x₁ ^ 2 * (3 * x₁ ^ 4 + 6 * a * x₁
+        ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 - 8 * (x₁ ^ 3 + a * x₁ + b) ^ 2 * x₁ * (4 * (x₁ ^ 6 + 5 *
+        a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))
+        - 2 * (x₁ ^ 3 + a * x₁ + b) * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) * (4 * (x₁
+        ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8
+        * b ^ 2)) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs2
+      + (x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2 + x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hx2
+      + (4 * (x₁ ^ 3 + a * x₁ + b) * x₁ + (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) * hx3
+  have hN3 : φ s₃ * u =
+      x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2) *
+        (x₁ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2
+          - 2 * (x₁ ^ 3 + a * x₁ + b) *
+            (4 * (x₁ ^ 6 + 5 * a * x₁ ^ 4 + 20 * b * x₁ ^ 3 - 5 * a ^ 2 * x₁ ^ 2 - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2))) := by
+    rw [hu]
+    linear_combination (4 * (x₁ ^ 3 + a * x₁ + b) * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hs3
+      + (x₁ * x₃ * (3 * x₁ ^ 4 + 6 * a * x₁ ^ 2 + 12 * b * x₁ - a ^ 2) ^ 2) * hx2
+      + (x₁ * (x₁ ^ 4 - 2 * a * x₁ ^ 2 - 8 * b * x₁ + a ^ 2)) * hx3
+  -- The weight-`8` identity `4s₁s₃ + 4Bs₁ + 2As₂ − A² − s₂² = 0`, which needs NO `ψ₇`.
+  have hAuxL : 4 * (φ s₁) * (φ s₃) + 4 * b * (φ s₁) + 2 * a * (φ s₂) - a ^ 2 - (φ s₂) ^ 2 = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 2 hune)
+    have expand : u ^ 2 * (4 * (φ s₁) * (φ s₃) + 4 * b * (φ s₁) + 2 * a * (φ s₂) - a ^ 2
+        - (φ s₂) ^ 2)
+        = 4 * (φ s₁ * u) * (φ s₃ * u) + 4 * b * (φ s₁ * u) * u + 2 * a * (φ s₂ * u) * u
+          - a ^ 2 * u ^ 2 - (φ s₂ * u) ^ 2 := by ring
+    rw [expand, hN1, hN2, hN3, hu]
+    ring
+  have hAux : 4 * s₁ * s₃ + 4 * B * s₁ + 2 * A * s₂ - A ^ 2 - s₂ ^ 2 = 0 := by
+    refine hinj ?_
+    rw [map_zero]
+    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat, ← ha, ← hb]
+    linear_combination hAuxL
+  obtain ⟨hE1, -⟩ := MazurLevelSeven.kernelRelations φ A B s₁ s₂ a b x₁ x₂ x₃ ha hb hE hne
+    hx2 hx3 hpsi hs1 hs2
+  linear_combination hE1 + 21 * hAux
+
+/-- **The hauptmodul value, PINNED to `P/Q`** (PROVEN 2026-07-27).  This is
+`MazurLevelSeven.hauptmodul_of_kernelRelations` with the existential opened: that lemma
+returns `∃ t, j·t⁷ = …` and so FORGETS which root of the degree-`8` `j`-map it produced,
+which is useless as soon as a second relation has to hold at the SAME `t` — exactly the
+situation in `exists_x0Seven_veluFrickeData`, whose two Fricke conjuncts are conditions on
+the hauptmodul value itself.  The proof is the original one with the opening
+`obtain ⟨t, rfl⟩ : ∃ t, P = t·Q` deleted and `P` supplied as `u·Q`. -/
+theorem MazurLevelSeven.hauptmodul_eq_of_kernelRelations (j A B s₁ u Q : ℚ)
+    (hQ : Q ≠ 0)
+    (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
+    (hj : j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3)
+    (h1 : 147 * A * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2)
+            + s₁ ^ 2 * ((u * Q) ^ 2 + 245 * (u * Q) * Q + 2401 * Q ^ 2) = 0)
+    (h2 : 9261 * B * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2) ^ 2
+            + 2 * s₁ ^ 3 * ((u * Q) ^ 4 - 490 * (u * Q) ^ 3 * Q - 21609 * (u * Q) ^ 2 * Q ^ 2
+              - 235298 * (u * Q) * Q ^ 3 - 823543 * Q ^ 4) = 0) :
+    j * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 := by
+  have hwpos : (0 : ℚ) < u ^ 2 + 13 * u + 49 := by nlinarith [sq_nonneg (2 * u + 13)]
+  have hw : u ^ 2 + 13 * u + 49 ≠ 0 := ne_of_gt hwpos
+  have H1 : 147 * A * (u ^ 2 + 13 * u + 49)
+      + s₁ ^ 2 * (u ^ 2 + 245 * u + 2401) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 2 hQ)
+    linear_combination h1
+  have H2 : 9261 * B * (u ^ 2 + 13 * u + 49) ^ 2
+      + 2 * s₁ ^ 3 * (u ^ 4 - 490 * u ^ 3 - 21609 * u ^ 2 - 235298 * u - 823543) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 4 hQ)
+    linear_combination h2
+  have hne : (147 : ℚ) ^ 3 * (u ^ 2 + 13 * u + 49) ^ 4 ≠ 0 :=
+    mul_ne_zero (by norm_num) (pow_ne_zero _ hw)
+  have key : 6912 * A ^ 3 * u ^ 7
+      = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 * (4 * A ^ 3 + 27 * B ^ 2) := by
+    apply mul_left_cancel₀ hne
+    linear_combination
+      ((6912 * u ^ 7 * (u ^ 2 + 13 * u + 49)
+          - 4 * (u ^ 2 + 245 * u + 2401) ^ 3 * (u ^ 2 + 13 * u + 49) ^ 2)
+        * ((147 * A * (u ^ 2 + 13 * u + 49)) ^ 2
+            - s₁ ^ 2 * (u ^ 2 + 245 * u + 2401) * (147 * A * (u ^ 2 + 13 * u + 49))
+            + s₁ ^ 4 * (u ^ 2 + 245 * u + 2401) ^ 2)) * H1
+      + (-((u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3
+            * (9261 * B * (u ^ 2 + 13 * u + 49) ^ 2
+               - 2 * s₁ ^ 3
+                 * (u ^ 4 - 490 * u ^ 3 - 21609 * u ^ 2 - 235298 * u - 823543)))) * H2
+  apply mul_right_cancel₀ hΔ
+  linear_combination u ^ 7 * hj + key
+
+set_option maxHeartbeats 2000000 in
+/-- **The whole `X_0(7)` Fricke algebra of a Vélu quotient** (PROVEN 2026-07-27).  Given the
+kernel data `(A, B, s₁, s₂, s₃)` of a short model together with the three weight-`8`
+relations `E1`, `E2`, `E3`, and given the short-model coefficients
+
+  `A' = −29A − 30s₁² + 60s₂`,   `B' = −83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`
+
+of the Vélu quotient with their nondegeneracy and `j`-relation, this produces the ENTIRE
+conclusion of `exists_x0Seven_veluFrickeData` at the hauptmodul value `u = P/Q`.  Nothing
+geometric is left in it: `A'`, `B'` and `u` are inputs.
+
+**The certificates** (found with Singular as an untrusted searcher, verified here by `ring`).
+Writing `F = P² + 13PQ + 49Q²` and `G = P² + 5PQ + Q²`, the weight-`4` Fricke relation is a
+ONE-TERM consequence of `E1`,
+
+  `3A'F + 49s₁²G = (−12789A − 13083s₁² + 26460s₂)·E1`,
+
+and the weight-`6` one needs all three, with `21`–`25`-term integral cofactors written out
+below.  `E3` is what makes the second one closable at all: `B'` involves `s₃`, and `E1`, `E2`
+say nothing about `s₃`.  That is the whole reason obligation 3 existed. -/
+theorem MazurLevelSeven.veluFricke_of_relations (jE jQ A B s₁ s₂ s₃ A' B' P Q : ℚ)
+    (hP : P = 49 * (s₁ ^ 2 - 3 * s₂))
+    (hQd : Q = 6 * A - 4 * s₁ ^ 2 + 18 * s₂)
+    (hQne : Q ≠ 0)
+    (hA' : A' = -29 * A - 30 * s₁ ^ 2 + 60 * s₂)
+    (hB' : B' = -83 * B - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃ - 42 * A * s₁)
+    (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
+    (hj : jE * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3)
+    (hE1 : 12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0)
+    (hE2 : 144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
+      + 39 * s₂ ^ 2 = 0)
+    (hE3 : 84 * s₁ * s₃ - s₁ ^ 4 + 84 * B * s₁ + 36 * A * s₂ + 10 * A * s₁ ^ 2 - 9 * A ^ 2 = 0)
+    (hΔ' : 4 * A' ^ 3 + 27 * B' ^ 2 ≠ 0)
+    (hjq : jQ * (4 * A' ^ 3 + 27 * B' ^ 2) = 6912 * A' ^ 3)
+    (h1 : 147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
+      + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0)
+    (h2 : 9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
+      + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
+        - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0) :
+    ∃ u A'' B'' s : ℚ,
+      jE * u ^ 7 = (u ^ 2 + 13 * u + 49) * (u ^ 2 + 245 * u + 2401) ^ 3 ∧
+      4 * A'' ^ 3 + 27 * B'' ^ 2 ≠ 0 ∧
+      jQ * (4 * A'' ^ 3 + 27 * B'' ^ 2) = 6912 * A'' ^ 3 ∧
+      3 * A'' * (u ^ 2 + 13 * u + 49) + 49 * s ^ 2 * (u ^ 2 + 5 * u + 1) = 0 ∧
+      27 * B'' * (u ^ 2 + 13 * u + 49) ^ 2
+        + 686 * s ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0 := by
+  obtain ⟨u, rfl⟩ : ∃ u : ℚ, P = u * Q := ⟨P / Q, by field_simp⟩
+  refine ⟨u, A', B', s₁,
+    MazurLevelSeven.hauptmodul_eq_of_kernelRelations jE A B s₁ u Q hQne hΔ hj h1 h2,
+    hΔ', hjq, ?_, ?_⟩
+  · -- The weight-`4` Fricke relation, cleared of denominators over `Q²`.
+    have G1 : 3 * A' * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2)
+        + 49 * s₁ ^ 2 * ((u * Q) ^ 2 + 5 * (u * Q) * Q + Q ^ 2) = 0 := by
+      rw [hP, hQd, hA']
+      linear_combination (-12789 * A - 13083 * s₁ ^ 2 + 26460 * s₂) * hE1
+    apply mul_left_cancel₀ (pow_ne_zero 2 hQne)
+    linear_combination G1
+  · -- The weight-`6` Fricke relation, cleared of denominators over `Q⁴`.
+    have G2 : 27 * B' * ((u * Q) ^ 2 + 13 * (u * Q) * Q + 49 * Q ^ 2) ^ 2
+        + 686 * s₁ ^ 3 * ((u * Q) ^ 4 + 14 * (u * Q) ^ 3 * Q + 63 * (u * Q) ^ 2 * Q ^ 2
+          + 70 * (u * Q) * Q ^ 3 - 7 * Q ^ 4) = 0 := by
+      rw [hP, hQd, hB']
+      linear_combination
+        (-325888416 * s₁ ^ 7 - 8429226372 * A ^ 2 * s₁ ^ 3 - 16301245128 * A * s₁ ^ 3 * s₂
+          + 34608805644 * s₁ ^ 3 * s₂ ^ 2 + 6913910682 * A ^ 3 * s₁
+          - 1217049939336 * A * B * s₁ ^ 2 + 37914552522 * A ^ 2 * s₁ * s₂
+          + 532112932008 * B * s₁ ^ 2 * s₂ - 256810684914 * A * s₁ * s₂ ^ 2
+          + 60470779950 * s₁ * s₂ ^ 3 - 1307252573256 * A * s₁ ^ 2 * s₃
+          + 320707565640 * s₁ ^ 2 * s₂ * s₃ + 2626747059699 * A ^ 2 * B
+          - 18952701759180 * B ^ 2 * s₁ - 10276979295366 * A * B * s₂
+          + 1507261426083 * B * s₂ ^ 2 + 2714502915810 * A ^ 2 * s₃
+          - 44301784886100 * B * s₁ * s₃ - 10631114804772 * A * s₂ * s₃
+          + 1505705383602 * s₂ ^ 2 * s₃ - 25349083126920 * s₁ * s₃ ^ 2) * hE1
+        + (2312566368 * A * s₁ ^ 3 * s₂ - 1200192672 * s₁ ^ 3 * s₂ ^ 2
+          + 72597020160 * A * B * s₁ ^ 2 - 27750796416 * A ^ 2 * s₁ * s₂
+          + 117326151936 * B * s₁ ^ 2 * s₂ + 60507274464 * A * s₁ * s₂ ^ 2
+          - 31175736480 * s₁ * s₂ ^ 3 + 72597020160 * A * s₁ ^ 2 * s₃
+          + 117326151936 * s₁ ^ 2 * s₂ * s₃ - 871164241920 * A ^ 2 * B
+          + 3799400177664 * B ^ 2 * s₁ + 1860357187584 * A * B * s₂
+          - 812149890048 * B * s₂ ^ 2 - 871164241920 * A ^ 2 * s₃
+          + 7598800355328 * B * s₁ * s₃ + 1860357187584 * A * s₂ * s₃
+          - 812149890048 * s₂ ^ 2 * s₃ + 3799400177664 * s₁ * s₃ ^ 2) * hE2
+        + (149299668 * s₁ ^ 7 - 249843258 * A * s₁ ^ 5 + 874256922 * s₁ ^ 5 * s₂
+          + 8429226372 * A ^ 2 * s₁ ^ 3 + 13450500441 * B * s₁ ^ 4
+          + 3924330228 * A * s₁ ^ 3 * s₂ - 29471107428 * s₁ ^ 3 * s₂ ^ 2
+          + 14841882342 * s₁ ^ 4 * s₃ + 9610621272 * A ^ 3 * s₁
+          + 826585868934 * A * B * s₁ ^ 2 + 82033505820 * A ^ 2 * s₁ * s₂
+          - 1286673454080 * B * s₁ ^ 2 * s₂ - 38494019466 * A * s₁ * s₂ ^ 2
+          + 98373262302 * s₁ * s₂ ^ 3 + 937124084484 * A * s₁ ^ 2 * s₃
+          - 1085542907904 * s₁ ^ 2 * s₂ * s₃ + 3503104225236 * A ^ 2 * B
+          - 6513257447424 * B ^ 2 * s₁ - 2022937839594 * A * B * s₂
+          + 4366425168819 * B * s₂ ^ 2 + 3621297589560 * A ^ 2 * s₃
+          - 6513257447424 * B * s₁ * s₃ - 2082034521756 * A * s₂ * s₃
+          + 4573263556386 * s₂ ^ 2 * s₃) * hE3
+    apply mul_left_cancel₀ (pow_ne_zero 4 hQne)
+    linear_combination G2
+
+/-- **The short-model kernel and quotient data of a stable order-`7` subgroup**
+(SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluFrickeData` just below, which is now
+PROVEN over it together with `MazurLevelSeven.kernelInvariants_of_relations` and
+`MazurLevelSeven.veluFricke_of_relations`).
+
+**THIS IS THE WHOLE REMAINING GEOMETRY OF THE `X_0(7)` VÉLU NODE, AND NOTHING ELSE.**  Six of
+the eight conjuncts are already discharged elsewhere and are here only so that a single
+existential carries them all to the consumer:
+
+* `4A³ + 27B² ≠ 0`, `E.j·(4A³ + 27B²) = 6912A³`, and the coordinates producing `s₁, s₂, s₃`
+  come from the PROVEN `WeierstrassCurve.exists_x0Seven_kernelCoords`;
+* `s₁ ≠ 0` from the PROVEN `MazurLevelSeven.sOne_ne_zero`;
+* `E1`, `E2` from the PROVEN `MazurLevelSeven.kernelRelations`;
+* `E3` from `MazurLevelSeven.kernelRelationThree`, PROVEN just above.
+
+**WHAT IS ACTUALLY MISSING is obligation 2 of `exists_x0Seven_veluFrickeData`, plus the
+abscissa identification that obligation 2 silently presupposed.**  The proof below performs
+the reduction that obligation 1 makes available — `MazurLevelSeven.veluT_eq_sum_image` and
+`veluW_eq_sum_image`, PROVEN just above, rewrite `t` and `w` from HALF-sums over the whole
+kernel into ordinary sums over the three distinct abscissae of `⟨P⟩` — and what remains is:
+
+1. *The abscissa identification.*  `MazurLevelSeven.exists_kernelCoords_of_isShortNF` returns
+   `x₁, x₂, x₃` pinned only by the algebraic relations `hx2`, `hx3`, `hpsi` (a root of `ψ₇`
+   and its duplication/triplication images).  It does **not** state that `x₁, x₂, x₃` are the
+   abscissae of the points of `⟨P⟩`, i.e. that
+   `(hCfin.toFinset.erase 0).image veluPointX = {x₁, x₂, x₃}`.  Without that conjunct the
+   Vélu sums cannot be connected to `s₁, s₂, s₃` at all — `ψ₇` has `24` roots, three for each
+   of the up to eight order-`7` subgroups, and a curve with two independent `7`-isogenies has
+   two DIFFERENT rational triples `(s₁, s₂, s₃)`.  **So the honest repair is to strengthen
+   `exists_kernelCoords_of_isShortNF` with that conjunct**, which its proof already knows (it
+   builds `x₁ = x(P)`, `x₂ = x(2P)`, `x₃ = x(3P)` from actual points); nothing here can
+   recover it after the fact.  Do NOT attempt to close this leaf by sorrying an intermediate
+   `have` in a context where the abscissae are not pinned — such a `have` is unprovable, not
+   merely unproven.
+2. *Transport along the variable change* (obligation 2 proper).  `exists_kernelCoords_of_isShortNF`
+   works on a short model `C • E` while `veluT`/`veluW` are sums over the kernel of `E`
+   itself.  Two ingredients, both absent from the tree and both pure `VariableChange`
+   algebra:
+   * *curve level*: `C • (W.veluModel t w) = (C • W).veluModel (u⁻⁴ t) (u⁻⁶ (w − r t))` for
+     `C = ⟨u, r, s, τ⟩` — check it field by field against mathlib's `variableChange`, using
+     `(C • W).b₂ = u⁻²(b₂ + 12r)`; the `−rt` in the `w`-slot is exactly the `12r` there.
+     Then `WeierstrassCurve.variableChange_j` transports the `j`-conjunct for free.
+   * *point level*: `veluPointX (Affine.Point.equivVariableChange W C P) = u²·veluPointX P + r`
+     (immediate from `Affine.Point.equivVariableChange_some`), whence the abscissa sets
+     correspond and, term by term,
+     `6(u²a' + r)² + b₂(u²a' + r) + b₄ = u⁴(6a'² + b₂'a' + b₄')` — a `ring` identity once the
+     `b`-transformation lemmas are unfolded.  This is what turns `u⁻⁴t` into the short-model
+     `t' = 6(s₁² − 2s₂) + 6A`, and `u⁻⁶(w − rt)` into `w' = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`.
+
+With those, `A' = A − 5t' = −29A − 30s₁² + 60s₂` and `B' = B − 7w' =
+−83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`, which is exactly the last conjunct; the
+nondegeneracy `4A'³ + 27B'² ≠ 0` is `hE'` transported the same way. -/
+theorem WeierstrassCurve.exists_x0Seven_veluShortQuotient
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples P,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples P)
+    (hCfin : ((AddSubgroup.zmultiples P :
+        AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+        Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (t w : ℚ) (hE' : (E.veluModel t w).IsElliptic)
+    (ht : algebraMap ℚ (AlgebraicClosure ℚ) t =
+      veluT (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset)
+    (hw : algebraMap ℚ (AlgebraicClosure ℚ) w =
+      veluW (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset) :
+    ∃ A B s₁ s₂ s₃ : ℚ,
+      4 * A ^ 3 + 27 * B ^ 2 ≠ 0 ∧
+      E.j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3 ∧
+      s₁ ≠ 0 ∧
+      12 * A ^ 2 + 10 * A * s₁ ^ 2 - 6 * A * s₂ - s₁ ^ 4 + 21 * s₂ ^ 2 = 0 ∧
+      144 * B * s₁ + 46 * A * s₁ ^ 2 + 6 * A * s₂ - 7 * s₁ ^ 4 + 24 * s₁ ^ 2 * s₂
+        + 39 * s₂ ^ 2 = 0 ∧
+      84 * s₁ * s₃ - s₁ ^ 4 + 84 * B * s₁ + 36 * A * s₂ + 10 * A * s₁ ^ 2 - 9 * A ^ 2 = 0 ∧
+      4 * (-29 * A - 30 * s₁ ^ 2 + 60 * s₂) ^ 3
+          + 27 * (-83 * B - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃ - 42 * A * s₁) ^ 2 ≠ 0 ∧
+      (E.veluModel t w).j * (4 * (-29 * A - 30 * s₁ ^ 2 + 60 * s₂) ^ 3
+            + 27 * (-83 * B - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃ - 42 * A * s₁) ^ 2)
+        = 6912 * (-29 * A - 30 * s₁ ^ 2 + 60 * s₂) ^ 3 := by
+  classical
+  -- `⟨P⟩` is a point subgroup of odd order `7`, so obligation 1 applies to it.
+  have hS : IsPointSubgroup hCfin.toFinset :=
+    { zero_mem := by simp [Set.Finite.mem_toFinset]
+      add_mem := by
+        intro p hp q hq
+        simp only [Set.Finite.mem_toFinset, SetLike.mem_coe] at hp hq ⊢
+        exact AddSubgroup.add_mem _ hp hq
+      neg_mem := by
+        intro p hp
+        simp only [Set.Finite.mem_toFinset, SetLike.mem_coe] at hp ⊢
+        exact AddSubgroup.neg_mem _ hp }
+  have hodd : Odd hCfin.toFinset.card := by
+    have hcard : hCfin.toFinset.card = 7 := by
+      rw [← Set.ncard_eq_toFinset_card _ hCfin, ← Nat.card_coe_set_eq, SetLike.coe_sort_coe,
+        Nat.card_zmultiples, hP]
+    rw [hcard]
+    exact ⟨3, by norm_num⟩
+  -- Obligation 1: the half-sums become ordinary sums over the three distinct abscissae.
+  rw [MazurLevelSeven.veluT_eq_sum_image hS hodd] at ht
+  rw [MazurLevelSeven.veluW_eq_sum_image hS hodd] at hw
+  sorry
+
 /-- **The `X_0(7)` kernel data of a Vélu quotient, in Fricke-relation form**
 (SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluParam` below, which is now
 PROVEN over it together with the PROVEN `X0Seven.quot_fricke_jmap`).
@@ -20713,9 +21360,28 @@ It also said `E3` should be proven "alongside `E1`, `E2` in
 already consume, for no gain — the elimination is the same computation either
 way, and a sibling costs the integrator nothing.
 
-**THE THREE REMAINING OBLIGATIONS, and they are all mathematics** — obligations 1
-and 2 above, plus `E3`.  Each is independently dispatchable now that the
-ordering is fixed; none of them is blocked on the others. -/
+**STATUS 2026-07-27: THIS NODE IS NOW PROVEN, AND TWO OF THE THREE OBLIGATIONS ARE
+CLOSED.**  Do not re-dispatch a prover here; the open work has moved one level down.
+
+* *Obligation 1 (`±`-pairing) is PROVEN*, and for an ARBITRARY Weierstrass model rather
+  than only a short one: `MazurLevelSeven.veluT_eq_sum_image` and
+  `MazurLevelSeven.veluW_eq_sum_image`, over `MazurLevelSeven.veluSum_erase_eq_two_mul`
+  and the two term lemmas `veluTTerm_eq_of_ne_zero`, `veluWTerm_eq_of_ne_zero`.
+* *Obligation 3 (`E3`) is PROVEN* as `MazurLevelSeven.kernelRelationThree`, and it turned
+  out to be far cheaper than advertised: `E3 = E1 + 21·(4s₁s₃ + 4Bs₁ + 2As₂ − A² − s₂²)`
+  with the bracket an IDENTITY needing no `ψ₇` at all.  So no second degree-`48`
+  certificate was required.
+* *The `j`-map and Fricke algebra is PROVEN* as `MazurLevelSeven.veluFricke_of_relations`
+  (over the new `MazurLevelSeven.hauptmodul_eq_of_kernelRelations`, which is
+  `hauptmodul_of_kernelRelations` with the existential opened so that the SAME `u = P/Q`
+  carries all three conjuncts).  The weight-`4` Fricke relation really is the one-term
+  `3A'F + 49s₁²G = (−12789A − 13083s₁² + 26460s₂)·E1`; the weight-`6` one consumes all of
+  `E1`, `E2`, `E3`.
+* *Obligation 2 (transport along the variable change) is the one thing left*, and it has
+  been isolated in the single new leaf `WeierstrassCurve.exists_x0Seven_veluShortQuotient`
+  below-this-docstring's-consumer — see ITS docstring, which also records a gap obligation 2
+  presupposed: `exists_kernelCoords_of_isShortNF` never states that its `x₁, x₂, x₃` ARE the
+  abscissae of `⟨P⟩`, and it must be strengthened to say so. -/
 theorem WeierstrassCurve.exists_x0Seven_veluFrickeData
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
@@ -20738,8 +21404,13 @@ theorem WeierstrassCurve.exists_x0Seven_veluFrickeData
       (E.veluModel t w).j * (4 * A' ^ 3 + 27 * B' ^ 2) = 6912 * A' ^ 3 ∧
       3 * A' * (u ^ 2 + 13 * u + 49) + 49 * s₁ ^ 2 * (u ^ 2 + 5 * u + 1) = 0 ∧
       27 * B' * (u ^ 2 + 13 * u + 49) ^ 2
-        + 686 * s₁ ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0 :=
-  sorry
+        + 686 * s₁ ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) = 0 := by
+  obtain ⟨A, B, s₁, s₂, s₃, hΔ, hj, hs1ne, hE1, hE2, hE3, hΔ', hjq⟩ :=
+    E.exists_x0Seven_veluShortQuotient P hP hstable hCfin t w hE' ht hw
+  obtain ⟨hQne, h1, h2⟩ :=
+    MazurLevelSeven.kernelInvariants_of_relations A B s₁ s₂ hs1ne hΔ hE1 hE2
+  exact MazurLevelSeven.veluFricke_of_relations E.j (E.veluModel t w).j A B s₁ s₂ s₃ _ _ _ _
+    rfl rfl hQne rfl rfl hΔ hj hE1 hE2 hE3 hΔ' hjq h1 h2
 
 /-- **The `X_0(7)` `j`-map pair of a Vélu quotient** (PROVEN 2026-07-27 over the
 single geometric leaf `exists_x0Seven_veluFrickeData` just above together with the
@@ -21067,15 +21738,309 @@ lemma ker_comp_eq_seven (φ : G →+ H) (ψ : H →+ I) (h : G)
 
 end Groups
 
+/-! ### The level-`49` CM step, cut 2026-07-27
+
+`not_stableCyclicFortyNine_of_j_eq` below is PROVEN over the two leaves
+`trace_eq_zero_of_stable_cyclic` and `not_sq_eq_negFortyNine_of_stable` at the end
+of this section; everything else here is closed outright.
+
+**Correction to the MISSING MACHINERY note that this cut was dispatched from.**
+That note said steps 2 and 4 of the argument need "`End(E_ℚ̄) = ℤ` for non-CM
+curves" and "the normalizer-of-Cartan description of the mod-`p` image". The first
+half is STALE and the cut below does not use it: `IsogenyTrace.lean` supplies
+`WeierstrassCurve.End.exists_charPoly`, which gives every endomorphism a monic
+quadratic `ψ² − [t]ψ + [deg ψ] = 0` over `ℤ` together with the Hasse bound
+`t² ≤ 4 deg ψ`. That is strictly more useful here than the `End = ℤ` dichotomy,
+because it applies to the CM case as well and it is what pins the trace. What the
+`End = ℤ` clause was really being asked for — "`Ψ` is not an integer" — is proven
+outright below as `not_intMul_of_cyclic_ker`, from the torsion count
+`TorsionCard.card_torsionBy` alone, with no endomorphism theory at all. -/
+
+/-- **An admissible change of variables is a rational map on points** (PROVEN
+2026-07-27).
+
+`(x, y) ↦ (u²x + r, u³y + u²sx + t)` is visibly given by polynomials in the
+coordinates, so the witnesses of `IsRationalMap` are read off:
+`A = u²X + r`, `B = 1`, `C = u³`, `D = u²sX + t`, `E = 1`. Combined with the
+PROVEN `IsRationalMap.isIsogeny` over an algebraically closed field, this is what
+makes a `ℚ̄`-isomorphism of Weierstrass curves an ISOGENY, and it is the one piece
+of geometry that `exists_selfIsogeny_of_j_eq` below needs. -/
+theorem isRationalMap_variableChangeEquiv {F : Type*} [Field F] [DecidableEq F]
+    (W V : WeierstrassCurve F) [W.IsElliptic] (C : VariableChange F) (hC : V = C • W) :
+    WeierstrassCurve.IsRationalMap
+      (((Point.equivOfEq hC).trans (Point.equivVariableChange W C)).toAddMonoidHom) := by
+  refine ⟨Polynomial.C ((C.u : F) ^ 2) * Polynomial.X + Polynomial.C C.r, 1,
+    Polynomial.C ((C.u : F) ^ 3),
+    Polynomial.C ((C.u : F) ^ 2 * C.s) * Polynomial.X + Polynomial.C C.t, 1,
+    one_ne_zero, one_ne_zero, ?_⟩
+  rintro (_ | ⟨x, y, hns⟩) hP
+  · exact absurd (map_zero _) hP
+  · refine ⟨?_, ?_⟩ <;>
+    · simp only [AddEquiv.toAddMonoidHom_eq_coe, AddMonoidHom.coe_coe, AddEquiv.trans_apply,
+        Point.equivOfEq_some, Point.equivVariableChange_some, veluPointX_some, veluPointY_some,
+        Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_X,
+        Polynomial.eval_one, mul_one]
+      try ring
+
+/-- **Step 1 of the level-`49` argument: `j(E'') = j(E)` turns an isogeny
+`E → E''` into a SELF-isogeny of `E` over `ℚ̄`** (PROVEN 2026-07-27).
+
+This is the step that the ROUTE AUDIT of `not_stableCyclicFortyNine_of_j_eq`
+identified as secretly demanding **Faltings' isogeny theorem** when `Φ` was
+hypothesised only as a Galois-equivariant `AddMonoidHom`. With `Φ` carrying its
+`IsIsogeny` certificate the step is elementary: over the separably closed `ℚ̄`,
+equal `j`-invariants give an admissible change of variables
+(`exists_variableChange_of_j_eq`), that change of variables is an isomorphism of
+point groups (`Point.equivVariableChange`), it is rational
+(`isRationalMap_variableChangeEquiv` above) hence an isogeny
+(`IsRationalMap.isIsogeny`), and isogenies compose (`IsIsogeny.comp`).
+
+The kernel is unchanged because the transporting map is an equivalence — which is
+the conjunct returned, and it is what lets the consumer keep speaking about the
+cyclic subgroup `⟨h⟩` after the transport.
+
+Note the transporting isomorphism is **not** claimed to be Galois-equivariant, and
+it is not: `E''` may be a nontrivial twist of `E`. Nothing below needs it to be —
+the Galois input used downstream is the stability of `⟨h⟩` inside `E(ℚ̄)`, which is
+a hypothesis of the consumer. -/
+theorem exists_selfIsogeny_of_j_eq (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
+    (hj : E''.j = E.j)
+    (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hΦiso : WeierstrassCurve.IsIsogeny Φ) :
+    ∃ Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point,
+      WeierstrassCurve.IsIsogeny Ψ ∧
+        ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, (Ψ Pt = 0 ↔ Φ Pt = 0) := by
+  classical
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  haveI hE''ell : ((E''⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E''.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  have hjj : (E⁄(AlgebraicClosure ℚ)).j = (E''⁄(AlgebraicClosure ℚ)).j := by
+    show (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).j
+      = (E''.map (algebraMap ℚ (AlgebraicClosure ℚ))).j
+    rw [WeierstrassCurve.map_j, WeierstrassCurve.map_j, hj]
+  obtain ⟨C, hC⟩ := WeierstrassCurve.exists_variableChange_of_j_eq
+    (E := E⁄(AlgebraicClosure ℚ)) (E' := E''⁄(AlgebraicClosure ℚ)) hjj
+  set ι : ((E''⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point ≃+
+      ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point :=
+    (Point.equivOfEq hC.symm).trans (Point.equivVariableChange (E⁄(AlgebraicClosure ℚ)) C)
+    with hιdef
+  have hιiso : WeierstrassCurve.IsIsogeny (ι.toAddMonoidHom) := by
+    rw [hιdef]
+    exact (isRationalMap_variableChangeEquiv _ _ C hC.symm).isIsogeny
+  refine ⟨ι.toAddMonoidHom.comp Φ, WeierstrassCurve.IsIsogeny.comp hΦiso hιiso, fun Pt => ?_⟩
+  show ι (Φ Pt) = 0 ↔ Φ Pt = 0
+  exact ⟨fun hz => by simpa using congrArg ι.symm hz, fun hz => by rw [hz, map_zero]⟩
+
+/-- **Step 2: a self-isogeny of `E_ℚ̄` with CYCLIC kernel of order `49` is not
+multiplication by an integer** (PROVEN 2026-07-27).
+
+This is the honest content of the "`End(E_ℚ̄) = ℤ` for non-CM curves" clause of the
+MISSING MACHINERY note, and it costs no endomorphism theory whatsoever: if
+`Ψ = [n]` then `ker Ψ` is the full `n`-torsion, whose cardinality is `n²`
+(`TorsionCard.card_torsionBy`), while `ker Ψ = ⟨h⟩` has cardinality
+`addOrderOf h = 49`. Hence `|n| = 7`. But `h ∈ ker Ψ` forces `49 ∣ n`, and
+`49 ∤ 7`.
+
+The degenerate case `n = 0` is excluded separately: it would make `⟨h⟩` the whole
+of `E(ℚ̄)`, contradicting `WeierstrassCurve.infinite_point`.
+
+Downstream this is what tells the CM leaves below that `ℤ[Ψ]` is a genuine
+imaginary quadratic order and that Galois cannot act trivially on it. -/
+theorem not_intMul_of_cyclic_ker (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h) (n : ℤ) :
+    ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt := by
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  haveI hinf : Infinite ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point :=
+    WeierstrassCurve.infinite_point _
+  by_contra hcon0
+  have hcon : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt = n • Pt :=
+    fun Pt => not_not.mp fun hne => hcon0 ⟨Pt, hne⟩
+  have hord : addOrderOf h = 49 := by
+    have hd : addOrderOf h ∣ 7 ^ 2 := by
+      have := addOrderOf_dvd_of_nsmul_eq_zero h49
+      simpa using this
+    obtain ⟨k, hk, hkk⟩ := (Nat.dvd_prime_pow (p := 7) (by norm_num)).mp hd
+    interval_cases k
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · simpa using hkk
+  have hcard : Nat.card (AddSubgroup.zmultiples h) = 49 := by rw [Nat.card_zmultiples, hord]
+  have hnh : n • h = 0 := by
+    rw [← hcon h]
+    exact (hker h).mpr (AddSubgroup.mem_zmultiples h)
+  have hdvd : (49 : ℤ) ∣ n := by
+    have := addOrderOf_dvd_iff_zsmul_eq_zero.mpr hnh
+    rwa [hord] at this
+  have hn0 : n ≠ 0 := by
+    rintro rfl
+    have htop : AddSubgroup.zmultiples h = ⊤ := by
+      refine eq_top_iff.mpr fun P _ => (hker P).mp ?_
+      rw [hcon P, zero_zsmul]
+    have hpt : Nat.card ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).Point = 49 := by
+      rw [← hcard, htop]
+      exact (Nat.card_congr (AddSubgroup.topEquiv).toEquiv).symm
+    rw [Nat.card_eq_zero_of_infinite] at hpt
+    exact absurd hpt (by norm_num)
+  set m : ℕ := n.natAbs with hm
+  have hm0 : m ≠ 0 := by simpa [hm] using hn0
+  have hsm : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, n • P = 0 ↔ (m : ℤ) • P = 0 := by
+    intro P
+    rcases Int.natAbs_eq n with hh | hh
+    · rw [← hm] at hh; rw [← hh]
+    · rw [← hm] at hh
+      constructor
+      · intro hz; rw [hh, neg_zsmul, neg_eq_zero] at hz; exact hz
+      · intro hz; rw [hh, neg_zsmul, hz, neg_zero]
+  have hequiv : Nat.card (AddSubgroup.zmultiples h)
+      = Nat.card (Submodule.torsionBy ℤ ((E⁄(AlgebraicClosure ℚ)).Point) (m : ℤ)) := by
+    refine Nat.card_congr (Equiv.subtypeEquivRight fun P => ?_)
+    rw [← hker P, hcon P, Submodule.mem_torsionBy_iff, hsm P]
+  have hmcard : Nat.card (Submodule.torsionBy ℤ ((E⁄(AlgebraicClosure ℚ)).Point) (m : ℤ))
+      = m ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) m
+      (by exact_mod_cast Nat.cast_ne_zero.mpr hm0)
+  have hm7 : m = 7 := by
+    have hsq : m ^ 2 = 7 ^ 2 := by rw [← hmcard, ← hequiv, hcard]; norm_num
+    exact Nat.pow_left_injective (by norm_num) hsq
+  have hdm : (49 : ℕ) ∣ m := by rw [hm]; exact Int.natAbs_dvd_natAbs.mpr hdvd
+  rw [hm7] at hdm
+  omega
+
+/-- **LEAF (cut 2026-07-27): the trace of a `Gal`-stable cyclic `49`-endomorphism
+vanishes.**
+
+`Ψ` is a self-isogeny of `E_ℚ̄` (`E` over `ℚ`) whose kernel is the
+`Gal(ℚ̄/ℚ)`-stable cyclic group `⟨h⟩` of order `49`; `t` is its trace, supplied
+with the Hasse bound by the PROVEN `WeierstrassCurve.End.exists_charPoly`. The
+claim is `t = 0`, i.e. `Ψ² = [−49]`.
+
+**THE ARGUMENT.** By `not_intMul_of_cyclic_ker` — which is the hypothesis
+`hnotint` — `Ψ ∉ ℤ`, so `ℤ[Ψ]` is an order in an imaginary quadratic field `K`
+(`t² − 4·49 < 0`, the Hasse bound being strict here because equality would force
+`(Ψ ∓ [7])² = 0`, impossible for a nonzero isogeny, which is surjective). The
+absolute Galois group acts on `End(E_ℚ̄)` by `Ψ ↦ σ ∘ Ψ ∘ σ⁻¹`, through ring
+automorphisms fixing `ℤ`, so each `σ` sends `Ψ` to `Ψ` or to `[t] − Ψ`.
+
+* If every `σ` fixes `Ψ`, then `Ψ ∈ End_ℚ(E)`, which is `ℤ` for a curve over `ℚ`:
+  the CM field `K` is imaginary quadratic and cannot embed in the base field.
+  That contradicts `hnotint`.
+* Otherwise some `σ` gives `σΨσ⁻¹ = [t] − Ψ`. Then
+  `ker([t] − Ψ) = σ(ker Ψ) = ker Ψ` by `hstable`, so `h` is killed by both `Ψ` and
+  `[t] − Ψ`, hence by `[t]`. As `addOrderOf h = 49` this gives `49 ∣ t`, and
+  `t² ≤ 196` forces `t = 0`.
+
+**MISSING MACHINERY, precisely.** Two things, and neither is in the mathlib pin,
+in `~/cs/FLT`, or elsewhere in `Fermat/` (re-checked 2026-07-27 by grepping for
+`Cartan`, for `ComplexMultiplication`/`HasCM`, and over `WeierstrassCurve.End`):
+
+1. the Galois action on `End(E_ℚ̄)` — that `σ ∘ Ψ ∘ σ⁻¹` is again an isogeny (its
+   defining rational functions are the `σ`-conjugates of `Ψ`'s), and that the
+   action is by ring automorphisms;
+2. `End_ℚ(E) = ℤ` for `E/ℚ`, equivalently that a curve over `ℚ` has no
+   `ℚ`-rational complex multiplication.
+
+Reference: Silverman *AEC* III.9 and *ATAEC* II.2; Serre, *Propriétés galoisiennes
+des points d'ordre fini*, Invent. Math. 15 (1972), §4.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ`, a
+`Gal`-stable cyclic `⟨h⟩` of order `49`, and an isogeny with that kernel whose
+trace is nonzero. -/
+theorem trace_eq_zero_of_stable_cyclic (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt)
+    (t : ℤ)
+    (hchar : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = t • Ψ P)
+    (hbound : t ^ 2 ≤ 4 * 49) :
+    t = 0 :=
+  sorry
+
+/-- **LEAF (cut 2026-07-27): no curve over `ℚ` carries a `Gal`-stable cyclic
+`49`-endomorphism with `Ψ² = [−49]`.**
+
+This is the CM half of the level-`49` argument, and it is where the
+normalizer-of-Cartan input genuinely lives.
+
+**THE ARGUMENT.** `Ψ² = [−49]` and `Ψ ∉ ℤ` make `ℚ(Ψ) = ℚ(i)`, and `ker Ψ = ⟨h⟩`
+cyclic of order `49` says `Ψ` is not `[7]` times a unit, so the CM order is
+`ℤ[7i]`. Restrict `Ψ` to `E[7]`: it is nilpotent there (`Ψ² = −49 ≡ 0`) with
+kernel `⟨7h⟩` of order `7`, hence of rank exactly `1`, with image `⟨7h⟩` as well.
+
+`⟨7h⟩` is `Gal`-stable, so the mod-`7` representation is upper triangular in a
+basis `(7h, e)`: `ρ(σ) = [[a(σ), b(σ)], [0, d(σ)]]`. Writing `σΨσ⁻¹ = ε(σ)Ψ` with
+`ε` the quadratic character of `ℚ(i)`, conjugating the nilpotent matrix gives
+`a(σ) = ε(σ)·d(σ)`. Hence
+`χ₇(σ) = det ρ(σ) = a(σ)d(σ) = ε(σ)·d(σ)²`, and applying the unique surjection
+`𝔽₇ˣ → {±1}` (`x ↦ x³`) kills the square and leaves `χ₇³ = ε`. But `χ₇³` is the
+quadratic character of `ℚ(√−7)` — the quadratic subfield of `ℚ(ζ₇)` — while `ε`
+cuts out `ℚ(i)`, and `ℚ(√−7) ≠ ℚ(i)`. Contradiction.
+
+Concretely, this is the `7`-split branch of the classification: `7` splits in the
+CM orders of discriminant `−3, −12, −19, −27` and ramifies for `−7, −28`, and the
+present branch is the one where the mod-`7` image lies in the normalizer of a
+split Cartan but not in the Cartan.
+
+**MISSING MACHINERY, precisely** — the same absences as in
+`trace_eq_zero_of_stable_cyclic` above, plus:
+
+3. `det ρ̄_ℓ = ` the mod-`ℓ` cyclotomic character (the Weil-pairing determinant);
+   `GaloisRepresentation.cyclotomicCharacterModL` exists in this tree and the
+   Weil-pairing files are here, but the determinant identity itself is not;
+4. the identification of `ε` with the quadratic character of the CM field — i.e.
+   that `End(E_ℚ̄)` is defined exactly over `K` (*ATAEC* II.2.2).
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` with an
+endomorphism `Ψ` of `E_ℚ̄` satisfying `Ψ² = [−49]` whose kernel is cyclic of order
+`49` and `Gal(ℚ̄/ℚ)`-stable. Equivalently, a curve over `ℚ` with CM by the order
+of discriminant `−196` and a rational `7`-isogeny; `−196` is not among the
+thirteen rational CM discriminants, which is a second, independent reason the leaf
+is true (and a heavier one, since it needs the class-number-one classification —
+the Galois argument above deliberately avoids it). -/
+theorem not_sq_eq_negFortyNine_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt)
+    (hsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = 0) :
+    False :=
+  sorry
+
 end MazurLevelFortyNine
 
 /-- **No `Gal(ℚ̄/ℚ)`-stable cyclic `49`-isogeny returns to its own
-`j`-invariant** (SORRY LEAF, cut 2026-07-27 out of `x0Seven_param_mul_ne_49`
-below, which is now PROVEN over it together with the PROVEN
-`MazurLevelFortyNine.j_eq_of_backtrack` and
-`MazurLevelFortyNine.ker_comp_eq_seven`): there is no elliptic curve `E/ℚ`
-carrying a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup `⟨h⟩` of order `49` whose quotient
-`E''` satisfies `j(E'') = j(E)`.
+`j`-invariant** (cut 2026-07-27 out of `x0Seven_param_mul_ne_49` below, which is
+PROVEN over it together with the PROVEN `MazurLevelFortyNine.j_eq_of_backtrack`
+and `MazurLevelFortyNine.ker_comp_eq_seven`; **PROVEN here, later the same day,
+over the two CM leaves `MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic` and
+`MazurLevelFortyNine.not_sq_eq_negFortyNine_of_stable`**): there is no elliptic
+curve `E/ℚ` carrying a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup `⟨h⟩` of order `49`
+whose quotient `E''` satisfies `j(E'') = j(E)`.
+
+**The hypothesis `hΦgal` is NOT used by the proof and is underscore-prefixed to
+make that mechanically visible.** The Galois input the argument actually consumes
+is `hhstable` — stability of `⟨h⟩` inside `E(ℚ̄)` — and `hΦgal` is redundant given
+it, since `⟨h⟩ = ker Φ`. The binder is kept so the statement is unchanged for the
+consumer below, which applies it positionally.
 
 **THIS IS STRICTLY WEAKER THAN THE LEVEL-`49` THEOREM IT SERVES, and saying why
 is the point of the cut.**  `not_cyclicIsogeny_fortyNine` asserts that no such
@@ -21118,13 +22083,24 @@ which `j(E/C) = j(E)` — equivalently a rational point of `X_0(49)` lying on th
 locus `j₁ = j₂`.  A weaker but still fatal refutation would be a non-CM `E_ℚ̄`
 admitting a cyclic degree-`49` self-isogeny, which would break step 2.
 
-**MISSING MACHINERY, so the next owner knows what is being asked for.**  Steps 2
-and 4 need a CM theory this tree does not yet have: `End(E_ℚ̄) = ℤ` for non-CM
-curves, and the normalizer-of-Cartan description of the mod-`p` image for a CM
-curve over `ℚ` at a split `p`.  Neither is in the mathlib pin, in `~/cs/FLT`, or
-in `Fermat/FLT/` — that claim is refutable in one grep for `Cartan` and for
-`End`/`ringOfIntegers` over `WeierstrassCurve`, and should be re-run before
-building anything, since docstrings of this kind go stale.
+**MISSING MACHINERY — SUPERSEDED 2026-07-27, and the correction halved the ask.**
+The earlier version of this section said steps 2 and 4 need "`End(E_ℚ̄) = ℤ` for
+non-CM curves" and "the normalizer-of-Cartan description of the mod-`p` image for
+a CM curve over `ℚ` at a split `p`". The first of those is NOT needed and is not
+used: `IsogenyTrace.lean` already supplies
+`WeierstrassCurve.End.exists_charPoly`, giving every endomorphism its monic
+quadratic `ψ² − [t]ψ + [deg ψ] = 0` over `ℤ` with the Hasse bound `t² ≤ 4 deg ψ`,
+which is what steps 2–4 really wanted. And the working content of the `End = ℤ`
+clause — "a self-isogeny with cyclic kernel of order `49` is not `[n]`" — is now
+PROVEN outright as `MazurLevelFortyNine.not_intMul_of_cyclic_ker`, from the
+torsion count `TorsionCard.card_torsionBy` alone.
+
+What is genuinely absent, re-checked 2026-07-27 against the mathlib pin,
+`~/cs/FLT` and all of `Fermat/` (grep `Cartan`, `ComplexMultiplication`, `HasCM`,
+and over `WeierstrassCurve.End`), is recorded at the two leaves themselves — the
+Galois action on `End(E_ℚ̄)`, `End_ℚ(E) = ℤ`, `det ρ̄_ℓ = χ_ℓ`, and the CM field as
+the field of definition of the endomorphisms. Those four are what the two open
+leaves ask for; nothing else here is open.
 
 **ROUTE AUDIT, 2026-07-27 — RAISED, AND NOW CARRIED OUT.  The `hΦiso`
 hypothesis in the statement above IS the repair; steps 2–5 are back on.**
@@ -21184,15 +22160,29 @@ stands as originally written.
 would be a non-CM `E_ℚ̄` admitting a cyclic degree-`49` self-isogeny, which
 would break step 2.
 
-**WHAT REMAINS OPEN HERE, unchanged by the repair.**  Steps 2 and 4 still need
-the CM theory named under MISSING MACHINERY above: `End(E_ℚ̄) = ℤ` for non-CM
-curves, and the normalizer-of-Cartan description of the mod-`p` image of a CM
-curve over `ℚ` at a split `p`.  That absence was re-checked on 2026-07-27 and is
-accurate: neither is in the mathlib pin, in `~/cs/FLT`, or in `Fermat/FLT/`. -/
+**WHAT REMAINS OPEN — the cut carried out 2026-07-27, later the same day.**
+Nothing remains open *here*: the declaration below is now PROVEN, over exactly two
+leaves, both in `namespace MazurLevelFortyNine` just above.
+
+The proof is the five steps above, mechanised as:
+
+1. `exists_selfIsogeny_of_j_eq` (PROVEN) — `j(E'') = j(E)` plus `hΦiso` gives a
+   self-isogeny `Ψ` of `E_ℚ̄` with `ker Ψ = ker Φ = ⟨h⟩`. This is where the
+   Faltings gap used to be, and `hΦiso` is what closes it;
+2. `not_intMul_of_cyclic_ker` (PROVEN) — `Ψ` is not `[n]` for any integer `n`;
+3. `WeierstrassCurve.End.exists_charPoly` (PROVEN, `IsogenyTrace.lean`) — the
+   trace `t` of `Ψ` with `t² ≤ 4·49`;
+4. `trace_eq_zero_of_stable_cyclic` (**OPEN LEAF**) — Galois stability of `⟨h⟩`
+   forces `t = 0`;
+5. `not_sq_eq_negFortyNine_of_stable` (**OPEN LEAF**) — and `Ψ² = [−49]` with
+   `⟨h⟩` stable is impossible.
+
+Steps 4 and 5 are where the CM theory lives; their docstrings state exactly which
+four pieces of it are missing, and the refuting check for each. -/
 theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
     (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
     (Φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
-    (hΦgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+    (_hΦgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
         (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
         Φ (Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
@@ -21209,11 +22199,60 @@ theorem WeierstrassCurve.not_stableCyclicFortyNine_of_j_eq
     (hΦker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
       Φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
     (hj : E''.j = E.j) :
-    False :=
-  sorry
+    False := by
+  classical
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- Step 1: `j(E'') = j(E)` turns `Φ` into a self-isogeny of `E` over `ℚ̄`.
+  obtain ⟨Ψ, hΨiso, hΨΦ⟩ :=
+    MazurLevelFortyNine.exists_selfIsogeny_of_j_eq E E'' hj Φ hΦiso
+  have hΨker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h := fun Pt => (hΨΦ Pt).trans (hΦker Pt)
+  -- Step 2: `Ψ` is not multiplication by an integer.
+  have hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt :=
+    MazurLevelFortyNine.not_intMul_of_cyclic_ker E Ψ h h49 h7 hΨker
+  -- the order of `h`, hence the degree of `Ψ`
+  have hord : addOrderOf h = 49 := by
+    have hd : addOrderOf h ∣ 7 ^ 2 := by
+      have := addOrderOf_dvd_of_nsmul_eq_zero h49
+      simpa using this
+    obtain ⟨k, hk, hkk⟩ := (Nat.dvd_prime_pow (p := 7) (by norm_num)).mp hd
+    interval_cases k
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · simpa using hkk
+  have hkereq : AddMonoidHom.ker Ψ = AddSubgroup.zmultiples h := by
+    ext P
+    rw [AddMonoidHom.mem_ker]
+    exact hΨker P
+  have hkercard : Nat.card (AddMonoidHom.ker Ψ) = 49 := by
+    rw [hkereq, Nat.card_zmultiples, hord]
+  have hΨ0 : Ψ ≠ 0 := by
+    obtain ⟨Pt, hPt⟩ := hnotint 0
+    intro hc
+    exact hPt (by rw [hc]; simp)
+  -- Step 3: the characteristic polynomial of `Ψ`, with the Hasse bound on its trace.
+  obtain ⟨t, hchar, hbound⟩ :=
+    WeierstrassCurve.End.exists_charPoly
+      (W := (E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)))
+      ⟨(Ψ : AddMonoid.End _), hΨiso⟩ 49 hkercard hΨ0
+  -- Step 4: Galois stability of `⟨h⟩` forces the trace to vanish.
+  have ht0 : t = 0 :=
+    MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic E Ψ hΨiso h h49 h7 hhstable hΨker
+      hnotint t hchar hbound
+  -- Step 5: and `Ψ² = [-49]` is impossible for a curve over `ℚ` with `⟨h⟩` stable.
+  exact MazurLevelFortyNine.not_sq_eq_negFortyNine_of_stable E Ψ hΨiso h h49 h7 hhstable
+    hΨker hnotint
+    (fun P => by
+      have hP := hchar P
+      rw [ht0, zero_zsmul] at hP
+      exact hP)
 
-/-- **Non-backtracking at level `7`** (PROVEN 2026-07-27 over the single leaf
-`not_stableCyclicFortyNine_of_j_eq` just above; introduced 2026-07-26):
+/-- **Non-backtracking at level `7`** (PROVEN 2026-07-27 over
+`not_stableCyclicFortyNine_of_j_eq` just above — which was itself a leaf when this
+was written and is now PROVEN in turn, over the two CM leaves
+`MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic` and
+`MazurLevelFortyNine.not_sq_eq_negFortyNine_of_stable`; introduced 2026-07-26):
 for a chain `E --φ--> E' --ψ--> E''` of two rational `7`-isogenies whose
 composite has CYCLIC kernel `⟨h⟩` of order `49`, the two `X_0(7)` parameters
 satisfy `uv ≠ 49`.
@@ -21247,8 +22286,9 @@ What `uv = 49` DOES give, exactly and by pure algebra, is `j(E'') = j(E)` — th
 is `MazurLevelFortyNine.j_eq_of_backtrack`, and note it consumes only `hju` and
 `hjv'`, leaving `hju'` and `hjv` unused.  Composing the two isogenies then gives
 a single Galois-equivariant map with kernel exactly `⟨h⟩`
-(`MazurLevelFortyNine.ker_comp_eq_seven`), and the contradiction is the CM leaf
-`not_stableCyclicFortyNine_of_j_eq`: a `j`-preserving cyclic `49`-isogeny forces
+(`MazurLevelFortyNine.ker_comp_eq_seven`), and the contradiction is the CM node
+`not_stableCyclicFortyNine_of_j_eq` (a leaf when this was written; PROVEN
+2026-07-27 over two smaller CM leaves): a `j`-preserving cyclic `49`-isogeny forces
 complex multiplication, and for a CM curve over `ℚ` at a split `7` complex
 conjugation swaps the two eigenlines of `E[7]`, so the stable line `⟨7h⟩` cannot
 exist.  That is "close it group-theoretically rather than modularly" carried out,
@@ -22611,8 +23651,78 @@ hypothesis is load-bearing rather than decoration. -/
 theorem x0GenusOneTable_pos {p ℓ m : ℕ} (h : (p, ℓ, m) ∈ x0GenusOneTable) : p ≠ 0 := by
   fin_cases h <;> decide
 
-/-- **LEAF — every tabulated `j`-value is REALISED by a curve carrying a
-rational `p`-isogeny** (sorry leaf, introduced 2026-07-27 by the cut of
+/-- **LEAF — the six kernel-polynomial certificates** (sorry leaf, introduced
+2026-07-27 by the cut of `exists_isogenyCurve_of_genusOneJTable`, which is
+PROVEN over it).
+
+For each row `(p, j₀)` of `genusOneJTable`: an elliptic curve `E/ℚ` with
+`j(E) = j₀`, a monic `f ∈ ℚ[X]` and a multiplier `m` forming a
+`WeierstrassCurve.IsKernelPolynomial` certificate at level `p` — i.e. `f` has
+degree `(p−1)/2`, divides the `p`-division polynomial `ΨSq p`, `m` is a
+primitive root mod `p`, and the root set of `f` is stable under
+`x(P) ↦ x(m ⬝ P)` (written multiplied-out as a divisibility in `ℚ[X]`).
+
+**NOTHING GALOIS-THEORETIC IS LEFT HERE.** The subgroup, its exact order `p`,
+and its stability under `Gal(ℚ̄/ℚ)` are all discharged once and for all by
+`WeierstrassCurve.exists_point_of_isKernelPolynomial`
+(`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`, PROVEN 2026-07-27, axioms
+`[propext, Classical.choice, Quot.sound]`).  What remains is arithmetic in
+`ℚ[X]` for six explicit curves: two divisibilities and a degree, per row.
+
+**THE CERTIFICATES, computed and verified in PARI/GP 2026-07-27** (untrusted
+searcher; each must still be re-verified in Lean, which is exactly what this
+leaf asks).  In every row `f ∣ elldivpol(E, p)` holds, `disc f ≠ 0`, and
+`f ∣ ∑ᵢ fᵢ ⬝ A^i ⬝ B^(d−i)` where `[A, B] = ellxn(E, m)` is the
+multiplication-by-`m` abscissa map — all six confirmed:
+
+| `p` | `j₀` | model `[a₁,a₂,a₃,a₄,a₆]` | `m` | kernel polynomial `f` |
+|-----|------|--------------------------|-----|------------------------|
+| 11 | `−24729001` | `[1,1,1,−30,−76]` | 2 | `x⁵ + 14x⁴ + 63x³ + 62x² − 230x − 439` |
+| 11 | `−32768` | `[0,−1,1,−7,10]` | 2 | `x⁵ − 9x⁴ + 17x³ + 20x² − 73x + 43` |
+| 11 | `−121` | `[1,1,0,−2,−7]` | 2 | `x⁵ + 14x⁴ + 30x³ − 37x² − 76x + 1` |
+| 17 | `−297756989/2` | `[1,0,1,−3041,64278]` | 3 | `x⁸ − 226x⁷ + 18372x⁶ − 543828x⁵ − 9242705x⁴ + 1127218758x³ − 33006143963x² + 437271444481x − 2252576338909` |
+| 17 | `−882216989/131072` | `[1,1,0,−660,−7600]` | 3 | `x⁸ + 230x⁷ + 10840x⁶ − 17600x⁵ − 8729600x⁴ − 122880000x³ + 339968000x² + 12615680000x + 41943040000` |
+| 19 | `−884736` | `[0,0,1,−38,90]` | 2 | `x⁹ − 38x⁸ + 437x⁷ − 1444x⁶ − 7942x⁵ + 82308x⁴ − 274360x³ + 390963x² − 130321x − 130321` |
+
+`m` is `znprimroot(p)` in each case (`2, 2, 2, 3, 3, 2`); `2` is NOT usable at
+`p = 17`, where it has order `8` and hence order `4` in `(ℤ/17)ˣ/±1`, too small
+to reach all `8` abscissae — the `generates` field would then be unprovable.
+
+**A TRAP FOR ANYONE REGENERATING THIS TABLE.** At the fifth row
+(`j₀ = −882216989/131072`) the kernel polynomial is **REDUCIBLE**: the
+`17`-division polynomial factors with degrees `[4, 4, 136]` and there is NO
+irreducible rational factor of degree `8`, so `f` is the PRODUCT of the two
+quartics.  A search that looks only for an irreducible factor of degree
+`(p−1)/2` finds nothing there and wrongly concludes the row is false.  The
+other five rows do have an irreducible factor of the right degree
+(`[5, 55]`, `[5, 55]`, `[5, 55]`, `[8, 68, 68]`, `[9, 171]`).
+
+**The model is free and that is what makes the table small.** Only `j(E) = j₀`
+is demanded, and a rational cyclic `p`-isogeny is invariant under quadratic
+twisting, so the minimal twists above (conductors `121, 121, 121, 14450,
+14450, 361`) may be used rather than `WeierstrassCurve.ofJ j₀`; their
+coefficients are what keeps the certificates writable.  All six `j₀` are
+`≠ 0, 1728`.
+
+WHAT A PROVER OWES, per row: `E.j = j₀` (rational arithmetic on an explicit
+model); `f.Monic` and `f.natDegree = (p−1)/2` (`decide`/`norm_num` on an
+explicit polynomial); `(m : ZMod p) ≠ 0` and `generates` (`decide` over `ZMod
+p`); and the two divisibilities, each of which is an identity `ΨSq p = f * q`
+resp. `∑ᵢ … = f * q'` with an explicit cofactor `q`, verifiable by `ring` once
+`ΨSq p` and `Φ m` have been unfolded to explicit polynomials.  THE COST SITS
+ENTIRELY IN THAT UNFOLDING — `ΨSq 11` has degree `120`, `ΨSq 17` degree `288`,
+`ΨSq 19` degree `360` — and the natural sub-cut, if this proves too large in
+one piece, is a per-row lemma computing `E.ΨSq p` for the explicit model. -/
+theorem exists_kernelPolynomial_of_genusOneJTable (p : ℕ) (j₀ : ℚ)
+    (_h : (p, j₀) ∈ genusOneJTable) :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
+      E.j = j₀ ∧ E.IsKernelPolynomial p f m :=
+  sorry
+
+/-- **Every tabulated `j`-value is REALISED by a curve carrying a
+rational `p`-isogeny** (PROVEN 2026-07-27 over
+`exists_kernelPolynomial_of_genusOneJTable` and the kernel-polynomial
+criterion; opened the same day by the cut of
 `exists_x0GenusOnePoints`, which is PROVEN over it).
 
 Asserts, for each of the six pairs of `genusOneJTable`: there is an elliptic
@@ -22669,24 +23779,43 @@ statement trivial (every `E` has points of order `p` over `ℚ̄`); dropping
 `E.j = j₀` would make it useless to the consumer.  With both, it is the
 existence half of Mazur's isogeny theorem at `p ∈ {11, 17, 19}`.
 
-IRREDUCIBLE at this mathlib pin only in that arithmetic half — mathlib already
-supplies `WeierstrassCurve.ofJ` and its `j`.  The CHECK that would refute the
-residual irreducibility: a construction of the order-`p` kernel, e.g. a
-rational factor of degree `(p − 1)/2` of the `p`-division polynomial of one of
-the six models above, which the Vélu and division-polynomial material already
-in this file's import cone (`Fermat.FLT.EllipticCurve.Velu`,
-`Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree`) can
-consume. -/
+**THE RESIDUAL IRREDUCIBILITY WAS REFUTED, 2026-07-27, by exactly the CHECK the
+previous version of this docstring named.**  That check read: "a construction of
+the order-`p` kernel, e.g. a rational factor of degree `(p − 1)/2` of the
+`p`-division polynomial of one of the six models above".  It has been carried
+out in general, once, as
+`WeierstrassCurve.exists_point_of_isKernelPolynomial`
+(`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`, PROVEN): a monic `f` of
+degree `(p−1)/2` dividing `ΨSq p` whose root set is stable under the abscissa
+of multiplication by a primitive root `m` mod `p` yields a point of exact order
+`p` with Galois-stable span.  The mechanism is a degree count: the iterates
+`x(m^i ⬝ P)` are roots of `f` and exhaust `x(⟨P⟩ ∖ 0)`, whose cardinality is at
+least `(p−1)/2` because `Q ↦ x(Q)` is at most `2`-to-`1`, while `f` has at most
+`(p−1)/2` roots — so the root set of `f` IS `x(⟨P⟩ ∖ 0)`, and Galois, which
+permutes the roots of the rational `f`, permutes `⟨P⟩`.
+
+So this theorem is PROVEN, over `exists_kernelPolynomial_of_genusOneJTable`
+above, and the whole residue is polynomial arithmetic over `ℚ` for six explicit
+curves.  AXIS SEARCHED by the refutation: the division-polynomial /
+kernel-polynomial axis, which the earlier audit named but did not walk. -/
 theorem exists_isogenyCurve_of_genusOneJTable (p : ℕ) (j₀ : ℚ)
-    (_h : (p, j₀) ∈ genusOneJTable) :
+    (h : (p, j₀) ∈ genusOneJTable) :
     ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
       addOrderOf g = p ∧
       (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) ∧
-      E.j = j₀ :=
-  sorry
+      E.j = j₀ := by
+  have hp : p.Prime := by fin_cases h <;> decide
+  have hp2 : p ≠ 2 := by fin_cases h <;> decide
+  obtain ⟨E, hE, f, m, hj, hker⟩ := exists_kernelPolynomial_of_genusOneJTable p j₀ h
+  haveI := hE
+  obtain ⟨g, hord, hstab⟩ :=
+    WeierstrassCurve.exists_point_of_isKernelPolynomial
+      (L := AlgebraicClosure ℚ) hp hp2 hker
+  exact ⟨E, hE, g, hord, fun σ x hx => hstab (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x hx,
+    hj⟩
 
 /-- **Each tabulated `j`-value is attained at a rational point of `Y_0(p)`**
 (PROVEN over the leaf above, via `IsJMapOn.classify_jm`).
@@ -23136,6 +24265,14 @@ which is the atom in disguise.
 * `card_le_of_cuspBound_of_y0Bound`, the splitting itself, PROVEN and
   generic in the level and in both bounds.
 
+*Amended 2026-07-27 (flt-lean-37).*  `card_y0Le_thirtySeven` is now PROVEN,
+over the `∃`-form leaf `exists_coarseModuliY0_thirtySeven_cardLe` through
+the initiality transport `card_y0Le_of_exists_coarseModuli`; the open leaf
+at `37` is the `∃`-form, and the audit of every axis searched — including
+the two axes RE-REFUTED that day, with the explicit genus-`2` model and the
+action of all three involutions on the four rational points — stays on
+`card_y0Le_thirtySeven`.
+
 **Why the affine half is TWO leaves and not one.**  The four levels do not
 share an argument, and the split is exactly `37` against `43, 67, 163`.
 At `43, 67, 163` the single non-cuspidal point is CM by the maximal order
@@ -23252,9 +24389,61 @@ theorem card_le_of_cuspBound_of_y0Bound {N c k : ℕ} {X Y : Scheme.{0}}
   have h2 : (s.filter fun x => ¬ hX.IsCusp x).card ≤ k := himg ▸ hy0 _
   omega
 
-/-- **`#Y_0(37)(ℚ) ≤ 2`** (sorry leaf, introduced 2026-07-27; the affine
+/-- **A point bound on ONE coarse moduli space of `Γ_0(N)` gives it on
+every one** (PROVEN 2026-07-27, flt-lean-37).
+
+Pure initiality, no geometry and no arithmetic: `IsCoarseModuliY0` is an
+initiality property, so any two spaces satisfying it at the same level are
+`ℚ`-isomorphic (`Fermat.IsCoarseModuliY0.exists_inverse`), and
+`Fermat.relPointEquivOfInverse` turns that inverse pair into a bijection of
+`ℚ`-points.  A `Finset` cardinality bound transports across a bijection.
+
+**Why this is worth a name.**  Every route to a bound of this shape runs on
+an EXPLICIT model — for `Y_0(37)` the reconnaissance below is carried out
+on the genus-`2` curve `y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4` — and
+without this lemma a successor must either argue for an arbitrary coarse
+space or re-derive the initiality transport itself.  With it the obligation
+becomes the `∃`-form leaf below: build ONE model and count on it.
+
+Generic in `N` and in `k`, so `card_y0Le_classNumberOne` (another owner's
+declaration, at `p = 43, 67, 163`) can be reduced the same way; it is not
+done here for that reason.  This is the cardinality analogue of
+`Fermat.y0HasNoRationalPoint_of_isEmpty`, which does the same job for
+emptiness. -/
+theorem card_y0Le_of_exists_coarseModuli {N k : ℕ}
+    (h : ∃ (Y' : Scheme.{0}) (strY' : Y' ⟶ SpecQ) (_ : IsCoarseModuliY0 N strY'),
+      ∀ t : Finset (RelPoint strY' (𝟙 SpecQ)), t.card ≤ k)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY)
+    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ k := by
+  classical
+  obtain ⟨Y', strY', hc', hb⟩ := h
+  obtain ⟨u, v, hu, hv, huv, hvu⟩ := hc.exists_inverse hc'
+  have e : RelPoint strY (𝟙 SpecQ) ≃ RelPoint strY' (𝟙 SpecQ) :=
+    relPointEquivOfInverse hu hv huv hvu
+  calc t.card = (t.image e).card := (Finset.card_image_of_injective t e.injective).symm
+    _ ≤ k := hb _
+
+/-- **SOME coarse moduli space of `Γ_0(37)` has at most `2` rational
+points** (sorry leaf, introduced 2026-07-27, flt-lean-37; the `∃`-form of
+`card_y0Le_thirtySeven`, which is proven over it by
+`card_y0Le_of_exists_coarseModuli`).
+
+Equivalent in strength to the `∀`-form — initiality makes all coarse moduli
+spaces `ℚ`-isomorphic — but it is the form every actual route needs, since
+every route runs on one explicit model.  The full audit, the explicit model,
+the four rational points with their `j`-invariants and the three involutions
+acting on them, and the state of every axis searched are on
+`card_y0Le_thirtySeven` immediately below; read that first. -/
+theorem exists_coarseModuliY0_thirtySeven_cardLe :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (_ : IsCoarseModuliY0 37 strY),
+      ∀ t : Finset (RelPoint strY (𝟙 SpecQ)), t.card ≤ 2 :=
+  sorry
+
+/-- **`#Y_0(37)(ℚ) ≤ 2`** (PROVEN 2026-07-27, flt-lean-37, over the
+`∃`-form leaf `exists_coarseModuliY0_thirtySeven_cardLe` through
+`card_y0Le_of_exists_coarseModuli`; a sorry leaf until then).  The affine
 half at `p = 37`, and the level that does NOT share an argument with the
-other three).
+other three.
 
 TRUE, and sharp: `Y_0(37)(ℚ)` has exactly two points, of `j`-invariants
 `−7·11³ = −9317` and `−7·137³·2083³ = −162677523113838677`
@@ -23269,15 +24458,57 @@ non-cuspidal rational point is CM by the maximal order of discriminant
 classical source is a different paper.  `X_0(37)` has genus `2` and
 `J_0(37)` has rank `1`.
 
-`_hc` is unused by the (absent) proof and is LOAD-BEARING in the
-statement: without it `strY` is an arbitrary `ℚ`-scheme and the leaf is
-wildly false.  `IsCoarseModuliY0 37 strY` — rather than the
-compactification — is what pins `Y` as `Y_0(37)`, and it is deliberately
-the weakest pinning that does so: this leaf is about the AFFINE curve and
-mentions no cusps, no compactification and no `j`-map.
+`hc` is LOAD-BEARING in the statement: without it `strY` is an arbitrary
+`ℚ`-scheme and the leaf is wildly false.  `IsCoarseModuliY0 37 strY` —
+rather than the compactification — is what pins `Y` as `Y_0(37)`, and it is
+deliberately the weakest pinning that does so: this leaf is about the
+AFFINE curve and mentions no cusps, no compactification and no `j`-map.
+It is now consumed, by the initiality transport.
 
-**AXES SEARCHED for the four levels together, inherited verbatim from the
-atom this leaf was cut out of, and all three still refuted:**
+## RECONNAISSANCE (2026-07-27, flt-lean-37) — the explicit model
+
+Magma's `SmallModularCurve(37)`, simplified, is the genus-`2` curve
+
+    S : y² = x⁶ + 8x⁵ − 20x⁴ + 28x³ − 24x² + 12x − 4
+
+and `S(ℚ)` (searched to height `500`) is exactly four points, whose
+`j`-invariants Magma's `jInvariant(·, 37)` returns as:
+
+    A = (1 : −1 : 0)   j = −9317 = −7·11³               AFFINE
+    C = (1 : −1 : 1)   j = −162677523113838677          AFFINE
+    B = (1 :  1 : 0)   cusp
+    D = (1 :  1 : 1)   cusp
+
+(coordinates are the weighted-projective `(x : y : z)`, weights `(1,3,1)`;
+`z = 0` is the pair of points at infinity, `z = 1` gives `x = 1`, where
+`f(1) = 1`).  The three involutions, transported to this model, are
+
+    w₃₇ : (x : y : z) ↦ (x :  y : x − z)    orbits {A, C}, {B, D}
+    ι   : (x : y : z) ↦ (x : −y : z)        orbits {A, B}, {C, D}
+    σ = ι∘w₃₇ : (x : y : z) ↦ (x : −y : x − z)   orbits {A, D}, {B, C}
+
+`ι` is the hyperelliptic involution, and `37` is Ogg's exceptional level —
+the one hyperelliptic `X_0(N)` whose hyperelliptic involution is not an
+Atkin–Lehner involution — which is exactly why there are three and not two.
+`X/ι = ℙ¹`, `X/w₃₇ = 37a` (rank `1`), `X/σ = 37b` (rank `0`); these are ALL
+the degree-`2` quotients, since the two elliptic ones are the two isogeny
+factors of `J_0(37)`.
+
+`X/σ` computed explicitly, with `u = x²/(x−1)` and
+`V = y((x−1)³ − 1)/((x−1)³(u−1))`:
+
+    C : V² = u⁴ + 4u³ − 44u² + 52u − 16
+
+whose rational points are the two at `u = ∞` (the leading coefficient is a
+square) and `(u, V) = (4, 0)` — three in all, matching `#37b(ℚ) = 3`.  The
+three fibres of `X → C` over `C(ℚ)` are therefore
+
+    u = ∞  ⟶  {A, D}          affine + CUSP
+    u = ∞  ⟶  {B, C}          CUSP + affine
+    (4,0)  ⟶  x² − 4x + 4 = 0, so x = 2 and y² = f(2) = 148 = 4·37,
+              i.e. the conjugate pair (2, ±2√37) — NOT rational.
+
+**AXES SEARCHED, and the state of each:**
 
 1. *The rank-`0` counting layer of `X0.lean`* — inapplicable, and its
    `HasRankZeroJacobian` hypothesis is FALSE here, not merely unavailable
@@ -23291,34 +24522,287 @@ atom this leaf was cut out of, and all three still refuted:**
    that criterion as a general interface would be correct mathematics that
    discharges NOTHING here.
 3. *A rank-`0` isogeny factor or Atkin–Lehner quotient of `J_0(p)`
-   receiving `X_0(p)(ℚ)` injectively* — fails at `37`, which is the level
-   where it looks most promising: `J_0(37) ~ 37a × 37b` with `37b` of rank
-   `0`, but `#37b(ℚ) = 3 < 4 = #X_0(37)(ℚ)`, so no injection exists; and
-   the quotient `X_0(37)/w_37` has genus `1` with Jacobian the `w`-invariant
-   factor `37a`, of rank `1`, hence infinitely many rational points.
+   receiving the points injectively.*  The cusp/affine split REOPENED this
+   axis — `#37b(ℚ) = 3` refutes an injection out of `X_0(37)(ℚ)` (`4`
+   points) on cardinality alone, but not one out of `Y_0(37)(ℚ)`.
+   **RE-REFUTED 2026-07-27 (flt-lean-37), on the data above, for two
+   independent reasons:**
 
-Note that the cusp/affine split SHARPENS objection 3 rather than escaping
-it: this leaf now asks only for `#Y_0(37)(ℚ) ≤ 2` against `#37b(ℚ) = 3`,
-so a rank-`0` quotient receiving the AFFINE points injectively is no
-longer refuted on cardinality alone.  **That is the check worth running
-first**, and it is the one axis the split reopens: does
-`Y_0(37)(ℚ) → 37b(ℚ)` separate the two non-cuspidal points?  If it does,
-this leaf closes by the existing `neronReduction_injective` route with no
-formal-immersion theory at all.
+   * an injection `Y_0(37)(ℚ) ↪ 37b(ℚ)` gives only `≤ 3`, and this leaf
+     asks for `2`.  The split converted "no injection exists" into "an
+     injection would not be sharp enough"; that is not a route.
+   * and the injection is not there to be had, for a structural reason
+     that no cardinality bookkeeping can repair: **every degree-`2`
+     quotient of `X_0(37)` pairs an affine rational point with a CUSP.**
+     `ι` and `σ` do so directly ({A,B},{C,D} and {A,D},{B,C}); `w₃₇` pairs
+     the two affine points with each other.  So passing from `X` to `Y`
+     removes no collision, and no "subtract the classes of the cusps"
+     refinement recovers `2`.
 
-AXIS NOT SEARCHED, and the fallback if that check fails: **Mazur's
-formal-immersion criterion** at the cusp `∞` in characteristic `ℓ ≠ 2`
-(*Rational isogenies of prime degree*, Invent. Math. 44 (1978), §4).
-`X0.lean` names the same missing objects in the docstring of
-`Fermat.exists_cuspidalReduction_of_padicValRat_neg`. -/
+   The check that would refute THIS: any degree-`2` map from `X_0(37)` to a
+   rank-`0` curve whose fibres do not mix cusps with affine points — there
+   is none, because the list of quotients above is complete.
+4. *Mazur's formal-immersion criterion in its PLAIN COUNTING form* — the
+   fallback this docstring previously named as unsearched.  **REFUTED WITH
+   NUMBERS 2026-07-27 (flt-lean-37).**  Any criterion of the shape
+   `#X(ℚ) ≤ #X(𝔽_ℓ)` — which is the shape of
+   `Fermat.card_le_of_rankZeroJacobian`, and the shape a formal immersion
+   produces — is capped by `min_ℓ #X_0(37)(𝔽_ℓ)`.  By Eichler–Shimura
+   `#X_0(37)(𝔽_ℓ) = ℓ + 1 − a_ℓ(37a) − a_ℓ(37b)`, and over every odd
+   `ℓ ≠ 37` up to `200` the minimum is **`6`**, at `ℓ = 3` (then `8` at
+   `5`, `10` at `7`, `12` at `17`, `14` at `11`, growing after).  So this
+   axis cannot do better than `#X_0(37)(ℚ) ≤ 6`, i.e. `#Y_0(37)(ℚ) ≤ 4`.
+   The check that would refute it: any odd `ℓ ≠ 37` with
+   `#X_0(37)(𝔽_ℓ) = 4`.
+
+**AXIS OPEN, and it is the one the data above makes concrete: the
+rank-`0`-QUOTIENT Mordell–Weil SIEVE.**  Counting only those `𝔽_ℓ`-points
+whose image lies in the image of `C(ℚ)` — the refinement
+`Fermat.exists_x0Sieve` already makes at `45, 54, 63, 75`, there against a
+rank-`0` Jacobian and here against a rank-`0` QUOTIENT — is sharp, and the
+witness is explicit and cheap.  The third fibre is `(2, ±2√37)`, so it has
+an `𝔽_ℓ`-point exactly when `37` is a square mod `ℓ`; at any odd `ℓ ≠ 37`
+with `(37/ℓ) = −1` precisely the four reductions of `A, B, C, D` lie over
+the image of `C(ℚ)`, giving `#X_0(37)(ℚ) ≤ 4`.  **`ℓ = 5` is such a
+prime** (`37 ≡ 2 mod 5`, a non-residue), and note the contrast that makes
+the sieve the whole content: `#X_0(37)(𝔽₅) = 8`, so the plain count at `5`
+gives `8` and the sieved count gives `4`.  The consistency check at `ℓ = 3`,
+where `37 ≡ 1` IS a square, is that the third fibre survives and
+`4 + 2 = 6 = #X_0(37)(𝔽₃)` — the whole special fibre lies over `C(𝔽₃)`.
+
+**A CUT-LEVEL observation for whoever owns the cusp/affine split, recorded
+and deliberately NOT acted on.**  The fibre count above is elementary and
+needs no Chabauty, no formal immersion and no Coleman integration: on the
+model `S`, for `P = (x, y) ∈ S(ℚ)` the value `u = x²/(x−1)` is a rational
+point of `C`, hence `u ∈ {∞, 4}`; `u = 4` forces `x = 2` and `y² = 148`,
+not a square in `ℚ`; `u = ∞` forces `x ∈ {1, ∞}`, giving exactly the four
+points.  Its only deep input is `rank 37b(ℚ) = 0`, whence `#C(ℚ) = 3`.  But
+it bounds `X`, not `Y`, and converting it needs the two rational cusps
+back — `Fermat.exists_rationalCusps` is PROVEN and would supply them, yet
+the resulting sub-leaf `#X_0(37)(ℚ) ≤ 4` is literally
+`card_le_of_isogenyPrimeHigherGenus 37 4`, which is proven OVER this leaf.
+Routing this leaf through it would re-merge the atom the split exists to
+break, so it is not done here.  If the split is ever revisited, this is the
+argument that says the arithmetic wants to live on the COMPACT side. -/
 theorem card_y0Le_thirtySeven {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 37 strY)
+    (hc : IsCoarseModuliY0 37 strY)
     (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 2 :=
+  card_y0Le_of_exists_coarseModuli exists_coarseModuliY0_thirtySeven_cardLe hc t
+
+/-! #### Cutting `#Y_0(p)(ℚ) ≤ 1` into MAZUR and CLASS NUMBER ONE
+
+(2026-07-27, flt-lean-48.)  `card_y0Le_classNumberOne` was introduced the
+same day as an atom whose own docstring prescribed the cut:
+"`Y_0(p)(ℚ) → (the point is CM by disc −p)` as one leaf and
+`h(−p) = 1 → at most one such point` as another".  That is what the three
+declarations below do, and the atom is now PROVEN over them.
+
+The vocabulary the cut needed is `IsCMByRamifiedMaximalOrder`, an
+endomorphism of the datum's functor of points with the minimal polynomial
+of `(1 + √−p)/2` whose `√−p` cuts out the level structure.  Everything
+else — the passage from the COARSE space to `ℚ̄`-data, the field of
+moduli, and the descent of the resulting equality of `ℚ̄`-points back to
+`ℚ` — is discharged here and is not part of either leaf.
+
+**The two halves have genuinely different characters**, which is the point
+of the cut:
+
+* `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` is **Mazur's
+  isogeny theorem** at these three levels: a rational point forces CM.
+  Deep, and the Eisenstein-ideal descent is the only known route.
+* `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` is **`h(−p) = 1`
+  and nothing else**: no Eisenstein ideal, no Chabauty, no modular curve —
+  two CM elliptic curves with the same maximal order are isomorphic, and
+  the isomorphism carries `ker √−p` to `ker √−p` because `±√−p` are the
+  only elements of `O_{−p}` of square `−p`.
+
+**THE MAXIMAL ORDER IS LOAD-BEARING AND THE OBVIOUS WEAKER FORM IS FALSE.**
+Stating the CM by an endomorphism `ψ` with `ψ² = [−p]` — the shape the
+prime-power siblings `classPoly500_of_endSq_neg125` and
+`classPoly676_of_endSq_neg169` use — pins only `ℤ[√−p]`, the order of
+discriminant `−4p`, and `h(−4·43) = h(−4·67) = h(−4·163) = 3`
+(PARI/GP, `qfbclassno`, 2026-07-27).  So the second leaf would be FALSE in
+that form: three isomorphism classes, not one.  `IsCMByRamifiedMaximalOrder`
+therefore carries `φ = (1 + √−p)/2` and the relation
+`φ² + (p+1)/4 = φ`, whose discriminant is `1 − (p+1) = −p`; `ψ = 2φ − 1`
+is then recovered inside the structure as the map cutting out `cyc`.  This
+is exactly the trap the doctrine records in the other direction — the
+prime-power CM argument does not transfer to prime level — seen from the
+class-number side.
+
+**THE RANK-`0`-QUOTIENT AXIS WAS RE-OPENED AND RE-REFUTED HERE, ON
+DIFFERENT GROUNDS FROM `37`** (2026-07-27, PARI/GP as untrusted searcher).
+At `37` axis 3 died on CARDINALITY (`#37b(ℚ) = 3 < 4 = #X_0(37)(ℚ)`), and
+the cusp/affine split — which lowered the target from `4` to `2` there —
+was flagged as possibly reviving it.  At `43, 67, 163` the cardinality
+objection genuinely does NOT apply, and the axis still fails:
+
+* the analytic ranks of the newform factors are, recomputed from scratch,
+  `43`: `[dim 1, ord 1], [dim 2, ord 0]`; `67`: `[1, 0], [2, 0], [2, 2]`;
+  `163`: `[1, 1], [5, 5], [7, 0]` — totals `1, 2, 6`, confirming the figure
+  the sibling docstrings record.  So a rank-`0` quotient DOES exist at each
+  level (of dimension `2, 3, 7`), unlike the situation the `HasRankZeroJacobian`
+  hypothesis needs, which is FALSE for the whole Jacobian;
+* but the bound such a quotient `A` yields is `#Y_0(p)(ℚ) ≤ #A(ℚ)`, and
+  `#A(ℚ)` is never `1` in a usable way.  At `67` the rank-`0` factor
+  contains the elliptic curve of conductor `67` with `ellrank = [0,0]` and
+  `elltors = 1`, i.e. `A(ℚ) = 0` — a map to the TRIVIAL group, which
+  separates nothing and whose injectivity IS the conclusion.  In the other
+  direction the Eisenstein quotient carries the cuspidal `ℤ/n` with
+  `n = num((p−1)/12) = 7, 11, 27`, so the bound it gives is `7, 11, 27`
+  against a truth of `1`.
+
+Net: axis 3 is refuted at these levels not by cardinality but by
+STRENGTH — the injection is not contradicted, it is simply never enough.
+The check that would refute this re-refutation: a rank-`0` quotient `A` of
+`J_0(p)` with `#A(ℚ) = 1` **together with** a proof that
+`Y_0(p)(ℚ) → A(ℚ)` is injective; the second half is the whole leaf, so a
+successor should not expect the first half to buy anything on its own. -/
+
+/-- **The `Γ₀(p)`-datum `d` has complex multiplication by the MAXIMAL order
+of discriminant `−p`, with its level structure cut out by `√−p`.**
+
+The data is a single endomorphism `φ` of the functor of points of `d.E`
+(by Yoneda, an endomorphism of the elliptic scheme: `phi_pre` is the
+naturality that makes it one, and `phi_add` that it is a homomorphism),
+subject to
+
+* `phi_sq`: `φ² + (p+1)/4 = φ`, the minimal polynomial of `(1 + √−p)/2`.
+  Its discriminant is `1 − 4·(p+1)/4 = −p`, so `ℤ[φ]` is the order of
+  discriminant `−p` — MAXIMAL for `p` a prime with `p ≡ 3 mod 4`, which
+  every level this is used at satisfies.  The polynomial has no rational
+  root, so `φ ∉ ℤ` and the curve really does have CM.
+* `liesIn_iff`: the level structure is the kernel of `ψ := 2φ − 1`, which
+  satisfies `ψ² = 4φ² − 4φ + 1 = −p`; in characteristic `0` that kernel is
+  cyclic of order `deg ψ = p`, matching `d.cyc`.
+
+**Why not `ψ² = [−p]` alone**, which is the shape the prime-power
+siblings use: that pins only `ℤ[√−p]`, of discriminant `−4p`, and
+`h(−4p) = 3` at all three levels — see the subsection note.
+
+`(p + 1) / 4` is NATURAL division, exact exactly when `p ≡ 3 mod 4`; at
+`43, 67, 163` it is `11, 17, 41`.  At other `p` the structure is not the
+intended one, which is why both consumers carry the membership
+hypothesis. -/
+structure IsCMByRamifiedMaximalOrder (p : ℕ) {T : Scheme.{0}} (d : Gamma0Datum p T) where
+  /-- the endomorphism `φ = (1 + √−p)/2` on relative points -/
+  phi : ∀ {T' : Scheme.{0}} {g : T' ⟶ T}, RelPoint d.f g → RelPoint d.f g
+  /-- `φ` is a homomorphism for the group law -/
+  phi_add : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x y : RelPoint d.f g),
+    phi (d.ab.add x y) = d.ab.add (phi x) (phi y)
+  /-- `φ` is natural, i.e. is an endomorphism of the scheme and not merely
+  of one fibre -/
+  phi_pre : ∀ {T'' T' : Scheme.{0}} (h : T'' ⟶ T') {g : T' ⟶ T} {g' : T'' ⟶ T}
+    (hg : h ≫ g = g') (x : RelPoint d.f g),
+    phi (RelPoint.pre h hg x) = RelPoint.pre h hg (phi x)
+  /-- `φ² + (p+1)/4 = φ`: the minimal polynomial of `(1 + √−p)/2`, of
+  discriminant `−p` -/
+  phi_sq : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    letI := d.ab.addCommGroup g
+    phi (phi x) + ((p + 1) / 4 : ℕ) • x = phi x
+  /-- the level structure is the kernel of `ψ = 2φ − 1 = √−p` -/
+  liesIn_iff : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+    RelPoint.LiesIn d.cyc.ι x ↔
+      letI := d.ab.addCommGroup g
+      phi x + phi x = x
+
+/-- **MAZUR: a rational point of `Y_0(p)` at `p = 43, 67, 163` is a CM point
+for the maximal order of discriminant `−p`** (sorry leaf, introduced
+2026-07-27 by the cut of `card_y0Le_classNumberOne`; the DEEP half).
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
+Theorem 1 and the table following it.  At every prime `p ≥ 23` other than
+`37` the non-cuspidal rational points of `X_0(p)` are CM points, and at
+`43, 67, 163` the discriminant is `−p` itself.
+
+**NOT vacuous, and that is checkable.**  `Y_0(p)(ℚ)` is nonempty at all
+three levels — the single CM point, of `j`-invariant `−884736000`,
+`−147197952000`, `−262537412640768000` (`polclass(−p)` is LINEAR, each
+re-verified in the reconnaissance block above) — so the hypothesis `hd`
+really is satisfiable and the leaf really does assert something.
+
+**The hypothesis is stated over `ℚ̄`-data on purpose.**  `d` is a datum over
+`ℚ̄` classifying (the base change of) a `ℚ`-rational point `y`; it is NOT
+asked to be defined over `ℚ`.  That is what keeps the field-of-moduli
+descent — `Fermat.exists_gamma0Datum_descent`, another owner's leaf, and
+one whose hypothesis `p ∉ mazurIsogenyPrimes` is FALSE here — entirely out
+of this cut.  Only `Fermat.exists_gamma0Datum_geomClassify` is consumed,
+and that carries no membership hypothesis at all.
+
+**Where the mathematics is.**  This is Mazur's Eisenstein-ideal descent,
+the same input `exists_eisensteinFormalImmersion` packages at the top of
+this file for the `p ∉ mazurIsogenyPrimes` regime.  There the conclusion is
+"no rational point"; here the primes ARE in the list, so the conclusion is
+the weaker "every rational point is CM", and the classical route is the
+`j`-invariant analysis of Mazur §5 run at the three surviving signatures
+rather than to a contradiction.
+
+**AXES ALREADY REFUTED, inherited from the atom and re-checked here**:
+the rank-`0` Jacobian (ranks `1, 2, 6`), effective Chabauty–Coleman
+(`15, 19, 64` against `3`) and the rank-`0` QUOTIENT — the last one
+re-examined at these levels for the first time, with numbers, in the
+subsection note above.  `classPoly` is not a route either: at `h(−p) = 1`
+the class polynomial is linear, so "`j` is its root" is this leaf's own
+conclusion rewritten. -/
+theorem nonempty_isCMByRamifiedMaximalOrder_of_classify_eq (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    (y : RelPoint strY (𝟙 SpecQ))
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (_hd : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = RelPoint.pre (specAlgClos ℚ) rfl y) :
+    Nonempty (IsCMByRamifiedMaximalOrder p d) :=
   sorry
 
-/-- **`#Y_0(p)(ℚ) ≤ 1` at `p = 43, 67, 163`** (sorry leaf, introduced
-2026-07-27; the affine half at the three class-number-one levels, and
-uniform across them).
+/-- **CLASS NUMBER ONE: two CM `Γ₀(p)`-data over `ℚ̄` for the maximal order
+of discriminant `−p` are isomorphic** (sorry leaf, introduced 2026-07-27 by
+the cut of `card_y0Le_classNumberOne`; the SHALLOW half, and it contains no
+Mazur, no Eisenstein ideal and no modular curve).
+
+TRUE, and the argument is three steps:
+
+1. `phi_sq` makes `ℤ[φ] ⊆ End(E_i)` the order of discriminant `−p`, which
+   for `p ∈ {43, 67, 163}` is the MAXIMAL order of `ℚ(√−p)`; an order
+   containing a maximal order equals it, so `End(E_i) = O_{−p}` exactly.
+2. `h(−43) = h(−67) = h(−163) = 1` (`qfbclassno`, re-verified 2026-07-27),
+   so there is a single `ℚ̄`-isomorphism class of elliptic curves with that
+   endomorphism ring: `E₁ ≅ E₂`.
+3. Any such isomorphism `α` conjugates `End(E₁)` to `End(E₂)`, and the only
+   elements of `O_{−p}` of square `−p` are `±√−p`; so `α` carries
+   `ψ₁ = 2φ₁ − 1` to `±ψ₂`, hence `ker ψ₁` to `ker ψ₂` — that is, `α`
+   respects the level structures, which by `liesIn_iff` are exactly those
+   kernels.  So `α` is an isomorphism of `Γ₀(p)`-data.
+
+**NOT vacuous**: the hypotheses are satisfiable — the CM curve of
+discriminant `−p` with its ramified `p`-isogeny is a `Γ₀(p)`-datum carrying
+this structure at each of the three levels, and `ellisomat (ellfromj j)`
+returns `[1, p; p, 1]` for each of the three tabulated `j`, confirming the
+`p`-isogeny is there.
+
+**FALSE if `IsCMByRamifiedMaximalOrder` is weakened to `ψ² = [−p]`**: that
+is CM by `ℤ[√−p]`, of discriminant `−4p`, and `h(−4p) = 3` at all three
+levels.  See the subsection note; this is the one place where the
+statement's exact form is load-bearing rather than convenient.
+
+**What is missing.**  CM theory proper is absent from mathlib, from this
+project and from `~/cs/FLT` (re-checked 2026-07-27): there is no statement
+that `End` of a CM elliptic curve is an order, no class-group action on CM
+points, and no class-number-one input.  A theory build is what this leaf
+asks for — and it is a bounded one, since only the imaginary quadratic
+maximal orders of class number one at these three discriminants are
+needed. -/
+theorem nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (_h₁ : IsCMByRamifiedMaximalOrder p d₁) (_h₂ : IsCMByRamifiedMaximalOrder p d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
+  sorry
+
+/-- **`#Y_0(p)(ℚ) ≤ 1` at `p = 43, 67, 163`** (PROVEN 2026-07-27 over
+`nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` (Mazur) and
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` (class number one),
+plus `Fermat.exists_gamma0Datum_geomClassify`; a sorry leaf from earlier the
+same day until then.  The affine half at the three class-number-one levels,
+and uniform across them).
 
 TRUE, and sharp: each of `Y_0(43)`, `Y_0(67)`, `Y_0(163)` has exactly one
 rational point, of `j`-invariant `−884736000`, `−147197952000` and
@@ -23340,26 +24824,62 @@ is the reason the bound is `1` rather than `h(−p)`.
 `37` is excluded because its two rational points are NOT CM — see
 `card_y0Le_thirtySeven`, which carries the four-level axis audit.
 
-`_hp` and `_hc` are both LOAD-BEARING in the statement.  Without `_hp` the
-leaf claims `#Y_0(N)(ℚ) ≤ 1` at every level, which is false at `N = 1`
-(where `Y_0(1)` is the `j`-line and has infinitely many rational points)
-and at `N = 37`.  Without `_hc`, `strY` is an arbitrary `ℚ`-scheme.  As
-with the sibling, `IsCoarseModuliY0` rather than `IsX0Compactification` is
-the pinning, because this leaf is about the affine curve and mentions no
-cusps.
+`hp` and `hc` are both LOAD-BEARING in the statement, and both lost their
+underscores when this became a theorem.  Without `hp` the leaf claims
+`#Y_0(N)(ℚ) ≤ 1` at every level, which is false at `N = 1` (where `Y_0(1)`
+is the `j`-line and has infinitely many rational points) and at `N = 37`.
+Without `hc`, `strY` is an arbitrary `ℚ`-scheme.  As with the sibling,
+`IsCoarseModuliY0` rather than `IsX0Compactification` is the pinning,
+because this leaf is about the affine curve and mentions no cusps.
 
-**The route a successor should take, and the check that would refute it.**
-The CM half is the hard half and it is Mazur's theorem; the class-number
-half is finite computation.  So the cut worth making next is
-`Y_0(p)(ℚ) → (the point is CM by disc −p)` as one leaf and
-`h(−p) = 1 → at most one such point` as another.  Refuted if some rational
-point of `Y_0(p)` for `p` in this list is non-CM — which is exactly what
-happens at `37`, so the check is not vacuous and the list may not be
-widened. -/
-theorem card_y0Le_classNumberOne (p : ℕ) (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
-    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (_hc : IsCoarseModuliY0 p strY)
-    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 1 :=
-  sorry
+**WHAT THE PROOF BELOW DISCHARGES, AND WHAT IT DOES NOT.**  `t.card ≤ 1`
+for every `t` is exactly `Subsingleton (Y_0(p)(ℚ))`, so the whole content
+is "any two rational points coincide".  The four steps are:
+
+1. base-change both points to `ℚ̄` and classify them by `ℚ̄`-data
+   (`Fermat.exists_gamma0Datum_geomClassify`, another owner's leaf, and it
+   carries NO membership hypothesis — the field-of-moduli descent, which
+   does, is never invoked);
+2. Mazur, on each of the two data (the first leaf above);
+3. class number one, identifying the two data (the second leaf above);
+4. `IsCoarseModuliY0.classify_natural` at `h = 𝟙` turns that isomorphism
+   into equality of the two `ℚ̄`-points, and `Fermat.epi_specMap_of_fieldHom`
+   — `Spec` of a map of FIELDS is an epimorphism, faithful flatness being
+   free there — descends it to equality of the two `ℚ`-points.
+
+Step 4 is worth naming because the natural-looking route through the
+descent leaf is BLOCKED: `Fermat.exists_gamma0Datum_descent` needs
+`p ∉ mazurIsogenyPrimes`, which is false at every level here.  Producing a
+`ℚ`-datum is not needed and is deliberately avoided. -/
+theorem card_y0Le_classNumberOne (p : ℕ) (hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    (t : Finset (RelPoint strY (𝟙 SpecQ))) : t.card ≤ 1 := by
+  classical
+  have hprime : p.Prime := by fin_cases hp <;> norm_num
+  haveI : Epi (specAlgClos ℚ) := by
+    show Epi (Spec.map (CommRingCat.ofHom (algebraMap ℚ (AlgebraicClosure ℚ))))
+    exact epi_specMap_of_fieldHom _
+  refine Finset.card_le_one.mpr ?_
+  intro y _ z _
+  -- **1.** both rational points, base-changed to `ℚ̄`, are classified by `ℚ̄`-data
+  obtain ⟨d₁, hd₁⟩ :=
+    exists_gamma0Datum_geomClassify hprime hc (RelPoint.pre (specAlgClos ℚ) rfl y)
+  obtain ⟨d₂, hd₂⟩ :=
+    exists_gamma0Datum_geomClassify hprime hc (RelPoint.pre (specAlgClos ℚ) rfl z)
+  -- **2.** Mazur: each of them is a CM datum for the maximal order of discriminant `−p`
+  obtain ⟨e₁⟩ := nonempty_isCMByRamifiedMaximalOrder_of_classify_eq p hp hc y d₁ hd₁
+  obtain ⟨e₂⟩ := nonempty_isCMByRamifiedMaximalOrder_of_classify_eq p hp hc z d₂ hd₂
+  -- **3.** class number one: the two data are isomorphic
+  obtain ⟨iso⟩ := nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder p hp e₁ e₂
+  -- **4.** naturality of `classify` at `h = 𝟙` turns that into equality of `ℚ̄`-points
+  have hcl : hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁
+      = hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂ := by
+    rw [hc.classify_natural (𝟙 _) (Category.id_comp _) iso]
+    exact Subtype.ext (Category.id_comp _)
+  -- and `Spec ℚ̄ ⟶ Spec ℚ` is an epimorphism, so the equality descends to `ℚ`
+  have hyz : specAlgClos ℚ ≫ y.1 = specAlgClos ℚ ≫ z.1 :=
+    congrArg Subtype.val (hd₁.symm.trans (hcl.trans hd₂))
+  exact Subtype.ext ((cancel_epi (specAlgClos ℚ)).mp hyz)
 
 /-- **`#X_0(p)(ℚ) ≤ m` at the four higher-genus isogeny primes** (PROVEN
 2026-07-27 by the cusp/affine split, over
@@ -30233,14 +31753,18 @@ pairwise distinct; and the derivation `X(ℚ) ↪ X(𝔽₅)` from finiteness of
 `J(ℚ)` plus torsion-freeness of the kernel of reduction.
 
 Items 1–4 above survive as the SINGLE leaf
-`Fermat.Hyperelliptic.X18.redPt_injective_five`, the injectivity of
-reduction at `5` on `X(ℚ)`. (Until 2026-07-26 that leaf was the bundled
-`X18.exists_jacobianPackage`; **that is now PROVEN** and is no longer a
-leaf. The two are equivalent — both directions are proven there — and
-the bundled form was retired because its abelian-variety structure turned
-out not to be load-bearing: once `redPt` is injective the package is met
-by free `𝔽₂`-vector spaces on the point sets. Do NOT dispatch at
-`exists_jacobianPackage`; the arithmetic is all in the injectivity.)
+`Fermat.Hyperelliptic.X18.exists_jacobianPackage` — `Pic⁰`, `rank J(ℚ) = 0`
+and a torsion-free reduction kernel, bundled. (**Corrected 2026-07-27.**
+This paragraph previously named `X18.redPt_injective_five` as the leaf
+and said the bundled form "is now PROVEN"; both statements were undone
+when route 2 was adopted and the file's dependency direction was
+inverted. The two remain EQUIVALENT — a package can be built out of
+nothing but that injectivity, taking free `𝔽₂`-vector spaces on the point
+sets — so the bundled form carries no more arithmetic than the
+injectivity does; it is the leaf because it is where the classical proof
+attaches, and its docstring records the Magma certificate and the
+refutation of the elliptic-Chabauty route that the Diophantine framing
+had depended on.)
 Two remarks worth carrying: the reduction map on
 POINTS is constructed rather than postulated (a package with an
 existentially quantified point-reduction would be discharged by the very
@@ -31421,8 +32945,15 @@ theorem seven_split {X Y f : ℤ} (hXY : X * Y = 7 * f ^ 2) (hcop : IsCoprime X 
         (dvd_pow_self γ two_ne_zero)).symm
     · rw [← hmul, hα, hγ]
 
-/-- **The class-`1` homogeneous space of the `2`-isogenous curve
-`Y² = X(X−1)(X−49)`** (sorry leaf, cut 2026-07-27 out of `quartic_one`; it
+/-! ### Background: `dual_quartic`'s descent, as it was first mapped
+
+This block is **historical background**, kept because its reconnaissance is
+still correct and useful; the live statement of the theorem, the corrected
+plan and the proof structure are on `dual_quartic` itself, far below.
+
+**The class-`1` homogeneous space of the `2`-isogenous curve
+`Y² = X(X−1)(X−49)`** (PROVEN 2026-07-27 over the four CASE I leaves; cut
+2026-07-27 out of `quartic_one`; it
 carries `quartic_negThree` too, through the translation trick recorded there).
 
 For coprime `M`, `e`,
@@ -31498,14 +33029,863 @@ into `h²(f² − k²) = g²(49f² − k²)`, whence
 which is **this same system at `(M', e') = (k, f)` with `gcd = −K`** — so the
 descent is self-referential and wants ONE strong induction, exactly as
 `MazurLevel15.concordant_both_aux` carries `concordant_one` and
-`concordant_five` together. What is **not** done: pruning `K ∣ 48` (the
-level-`15` analogue prunes `K ∣ 15` to `K ∈ {1,5}` with
-`three_dvd_of_sq_add_sq`), the `7 ∣ M` sub-branch, and the branch where `M`,
-`e` are both odd (there `8 ∣ A`, `8 ∣ B`). -/
+`concordant_five` together.
+
+**THE PLAN ABOVE IS SUPERSEDED (2026-07-27); see the corrections recorded on
+`dual_quartic` itself.** Two of its claims were wrong and cost real time, so
+they are flagged here rather than deleted: (a) the induction measure is
+**`|e|`**, not `M² + e²` — with `|e|` the whole "egg" `|M| < |e|` collapses to
+a *single* application of the induction hypothesis and needs no descent at
+all; and (b) **`K ∣ 48` never needs pruning**, because `(f²−k²)(49f²−k²) =
+(Kgh)²` is a square for every `K` whatsoever, so the descent lands back on
+this same statement regardless of `K`. -/
+
+/-- **The `d = 7` homogeneous space of `y² = x(x−1)(x−49)` is locally
+insoluble at `7`** (PROVEN 2026-07-27): for coprime `M`, `e` there is no `N`
+with `N² = (M² − 7e²)(7M² − e²)`.
+
+This is the space `N² = 7M⁴ − 50M²e² + 7e⁴` of the same `2`-isogeny descent
+as `dual_quartic` (which is `d = 1`); the classes `d = −1`, `d = −7` are
+excluded by sign, so these two are the whole descent.
+
+The proof is two lines of arithmetic. Mod `7` the equation reads
+`N² ≡ −(Me)²`, and `−1` is not a square mod `7`, so `7 ∣ M` or `7 ∣ e`. In
+either case the `7`-adic valuation of the right-hand side is exactly `1` more
+than an even number: with `M = 7M₁`, `M² − 7e² = 7(7M₁² − e²)` has valuation
+`1` while `7M² − e² ≡ −e²` has valuation `0`, so `N²` would have odd
+valuation unless `7 ∣ e` — contradicting coprimality.
+
+**This lemma is what closes the `7 ∣ M` sub-branches** of `caseI_one` and of
+`caseI_fortyEight` outright, with no descent. -/
+theorem dual_seven (M e N : ℤ) (hcop : IsCoprime M e)
+    (h : N ^ 2 = (M ^ 2 - 7 * e ^ 2) * (7 * M ^ 2 - e ^ 2)) : False := by
+  -- Step 1: `7 ∣ M ∨ 7 ∣ e`, because `−1` is not a square mod `7`.
+  have hmod : ∀ x y z : ZMod 7, z ^ 2 = -(x ^ 2 * y ^ 2) → x = 0 ∨ y = 0 := by decide
+  have h7z : (7 : ZMod 7) = 0 := by decide
+  have hcast : ((N : ZMod 7)) ^ 2 = -(((M : ZMod 7)) ^ 2 * ((e : ZMod 7)) ^ 2) := by
+    have h' := congrArg (fun t : ℤ => (t : ZMod 7)) h
+    push_cast at h'
+    rw [h7z] at h'
+    linear_combination h'
+  have hdvd : (7 : ℤ) ∣ M ∨ (7 : ℤ) ∣ e := by
+    rcases hmod _ _ _ hcast with h0 | h0
+    · exact Or.inl ((ZMod.intCast_zmod_eq_zero_iff_dvd M 7).mp h0)
+    · exact Or.inr ((ZMod.intCast_zmod_eq_zero_iff_dvd e 7).mp h0)
+  -- Step 2: either way the `7`-adic valuation of the right-hand side is odd.
+  have key : ∀ x y z : ℤ, IsCoprime x y → (7 : ℤ) ∣ x →
+      z ^ 2 = (x ^ 2 - 7 * y ^ 2) * (7 * x ^ 2 - y ^ 2) → False := by
+    intro x y z hxy h7 hz
+    obtain ⟨x₁, rfl⟩ := h7
+    have h7p : Prime (7 : ℤ) := by
+      rw [Int.prime_iff_natAbs_prime]; norm_num
+    have hz7 : (7 : ℤ) ∣ z := by
+      refine h7p.dvd_of_dvd_pow (n := 2) ?_
+      exact ⟨(7 * x₁ ^ 2 - y ^ 2) * (343 * x₁ ^ 2 - y ^ 2), by rw [hz]; ring⟩
+    obtain ⟨z₁, rfl⟩ := hz7
+    have hred : 7 * z₁ ^ 2 = (7 * x₁ ^ 2 - y ^ 2) * (343 * x₁ ^ 2 - y ^ 2) :=
+      mul_left_cancel₀ (by norm_num : (7 : ℤ) ≠ 0) (by linear_combination hz)
+    have h7y : (7 : ℤ) ∣ y := by
+      refine h7p.dvd_of_dvd_pow (n := 4) ?_
+      exact ⟨z₁ ^ 2 - 343 * x₁ ^ 4 + 50 * x₁ ^ 2 * y ^ 2, by linear_combination -hred⟩
+    have hu : IsUnit (7 : ℤ) := hxy.isUnit_of_dvd' ⟨x₁, rfl⟩ h7y
+    rw [Int.isUnit_iff] at hu
+    omega
+  rcases hdvd with h7 | h7
+  · exact key M e N hcop h7 h
+  · exact key e M N hcop.symm h7 (by linear_combination h)
+
+/-- `8 ∣ g·X` with `g ∈ {2, 4, 6, 12}` forces `2 ∣ X` (PROVEN 2026-07-27). -/
+theorem two_dvd_aux {g X : ℤ} (hg : g = 2 ∨ g = 4 ∨ g = 6 ∨ g = 12)
+    (h : (8 : ℤ) ∣ g * X) : (2 : ℤ) ∣ X := by
+  rcases hg with rfl | rfl | rfl | rfl <;> omega
+
+/-- An odd square is `1` mod `8` (PROVEN 2026-07-27). -/
+theorem oddsq_mod_eight {e : ℤ} (he : Odd e) : ((e : ZMod 8)) ^ 2 = 1 := by
+  obtain ⟨l, rfl⟩ := he
+  have h : ∀ t : ZMod 8, (2 * t + 1) ^ 2 = 1 := by decide
+  push_cast
+  exact h _
+
+/-- **The even `gcd` classes of CASE I are empty** (PROVEN 2026-07-27).
+
+If `M² − e² = c·a²` and `M² − 49e² = c·b²` with `c` even, then `M² − e²` is
+even, so `M` and `e` have the same parity, so — being coprime — both are odd
+and `8 ∣ M² − e²`, `8 ∣ M² − 49e²`. Then:
+
+* `c ∈ {2, 4, 6, 12}`: `8 ∣ c·a²` forces `2 ∣ a`, and likewise `2 ∣ b`,
+  contradicting `IsCoprime a b`;
+* `c = 8`: subtracting gives `a² − b² = 6e² ≡ 6 (mod 8)`, and no difference of
+  two squares is `6` mod `8`;
+* `c = 24`: likewise `a² − b² = 2e² ≡ 2 (mod 8)`, again impossible. -/
+theorem caseI_even {M e a b c : ℤ} (hcop : IsCoprime M e) (hab : IsCoprime a b)
+    (hc : c = 2 ∨ c = 4 ∨ c = 6 ∨ c = 8 ∨ c = 12 ∨ c = 24)
+    (ha : M ^ 2 - e ^ 2 = c * a ^ 2) (hb : M ^ 2 - 49 * e ^ 2 = c * b ^ 2) : False := by
+  have hnot2 : ¬((2 : ℤ) ∣ M ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have hu := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at hu
+    omega
+  have hd2 : (2 : ℤ) ∣ M ^ 2 - e ^ 2 := by
+    rw [ha]; rcases hc with rfl | rfl | rfl | rfl | rfl | rfl <;>
+      exact Dvd.dvd.mul_right (by norm_num) _
+  have hev : Even (M ^ 2 - e ^ 2) := by obtain ⟨d, hd⟩ := hd2; exact ⟨d, by linarith⟩
+  have hiff : Even M ↔ Even e := by
+    have hx := Int.even_sub.mp hev
+    simpa [Int.even_pow] using hx
+  have hMo : Odd M := by
+    rcases Int.even_or_odd M with hm | hm
+    · exact absurd ⟨hm.two_dvd, (hiff.mp hm).two_dvd⟩ hnot2
+    · exact hm
+  have heo : Odd e := by
+    rcases Int.even_or_odd e with hf | hf
+    · exact absurd ⟨(hiff.mpr hf).two_dvd, hf.two_dvd⟩ hnot2
+    · exact hf
+  obtain ⟨k, hk⟩ := hMo
+  obtain ⟨l, hl⟩ := heo
+  obtain ⟨s, hs⟩ : Even (k * (k + 1)) := Int.even_mul_succ_self k
+  obtain ⟨t, ht⟩ : Even (l * (l + 1)) := Int.even_mul_succ_self l
+  have h8A : (8 : ℤ) ∣ M ^ 2 - e ^ 2 :=
+    ⟨s - t, by rw [hk, hl]; linear_combination 4 * hs - 4 * ht⟩
+  have h8B : (8 : ℤ) ∣ M ^ 2 - 49 * e ^ 2 := by
+    obtain ⟨w, hw⟩ := h8A
+    exact ⟨w - 6 * e ^ 2, by linarith⟩
+  have hp2 : Prime (2 : ℤ) := Int.prime_two
+  have heo' : Odd e := ⟨l, hl⟩
+  rcases hc with rfl | rfl | rfl | rfl | rfl | rfl
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · have hdiff : a ^ 2 - b ^ 2 = 6 * e ^ 2 := by linarith
+    have hmod8 : ∀ x y : ZMod 8, x ^ 2 - y ^ 2 ≠ 6 := by decide
+    refine hmod8 (a : ZMod 8) (b : ZMod 8) ?_
+    have h' := congrArg (fun t : ℤ => (t : ZMod 8)) hdiff
+    push_cast at h'
+    rw [oddsq_mod_eight heo'] at h'
+    linear_combination h'
+  · exact absurd (hab.isUnit_of_dvd' (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (ha ▸ h8A)))
+      (hp2.dvd_of_dvd_pow (two_dvd_aux (by norm_num) (hb ▸ h8B)))) (by
+        rw [Int.isUnit_iff]; omega)
+  · have hdiff : a ^ 2 - b ^ 2 = 2 * e ^ 2 := by linarith
+    have hmod8 : ∀ x y : ZMod 8, x ^ 2 - y ^ 2 ≠ 2 := by decide
+    refine hmod8 (a : ZMod 8) (b : ZMod 8) ?_
+    have h' := congrArg (fun t : ℤ => (t : ZMod 8)) hdiff
+    push_cast at h'
+    rw [oddsq_mod_eight heo'] at h'
+    linear_combination h'
+
+/-- **The `gcd` split of CASE I** (PROVEN 2026-07-27). With `M > 7e > 0` and
+`(M² − e²)(M² − 49e²) = N²`, both cofactors are positive; writing
+`g = gcd(M² − e², M² − 49e²)` one has `M² − e² = g·a²`, `M² − 49e² = g·b²`
+with `a`, `b` coprime, and `g ∣ 48` — because `g` divides `A − B = 48e²` and
+`49A − B = 48M²` while `M²`, `e²` are coprime.
+
+`caseI_even` then kills every even `g`, leaving exactly
+
+    g ∈ {1, 3, 16, 48},
+
+i.e. the four systems `A = g a²`, `B = g b²`. Equivalently, in the form the
+descent uses, `a² − b² = c·e²` and `49a² − b² = c·M²` with `g·c = 48`, so the
+four branches are the pairs `(g, c) ∈ {(1,48), (3,16), (16,3), (48,1)}` — and
+the involution `(g, c) ↦ (c, g)` is the `2`-isogeny pairing. -/
+theorem caseI_split {M e N : ℤ} (hcop : IsCoprime M e) (he : 0 < e) (hM : 7 * e < M)
+    (h : N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2)) :
+    ∃ a b : ℤ, IsCoprime a b ∧
+      ((M ^ 2 - e ^ 2 = a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = b ^ 2) ∨
+       (M ^ 2 - e ^ 2 = 3 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 3 * b ^ 2) ∨
+       (M ^ 2 - e ^ 2 = 16 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 16 * b ^ 2) ∨
+       (M ^ 2 - e ^ 2 = 48 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 48 * b ^ 2)) := by
+  have hApos : 0 < M ^ 2 - e ^ 2 := by nlinarith
+  have hBpos : 0 < M ^ 2 - 49 * e ^ 2 := by nlinarith
+  obtain ⟨a, b, ha, hb, hab⟩ := MazurLevel15.split_gcd h.symm hApos.le hBpos.le hApos.ne'
+  obtain ⟨g, hgdef⟩ : ∃ g : ℕ, g = Int.gcd (M ^ 2 - e ^ 2) (M ^ 2 - 49 * e ^ 2) := ⟨_, rfl⟩
+  rw [← hgdef] at ha hb
+  obtain ⟨u₀, v₀, huv⟩ := hcop.pow (m := 2) (n := 2)
+  have hg48 : ((g : ℤ)) ∣ 48 :=
+    ⟨u₀ * (49 * a ^ 2 - b ^ 2) + v₀ * (a ^ 2 - b ^ 2), by
+      linear_combination (-48 : ℤ) * huv + (49 * u₀ + v₀) * ha - (u₀ + v₀) * hb⟩
+  have hgn : g ∣ 48 := by exact_mod_cast hg48
+  have hgcases : g = 1 ∨ g = 2 ∨ g = 3 ∨ g = 4 ∨ g = 6 ∨ g = 8 ∨ g = 12 ∨ g = 16
+      ∨ g = 24 ∨ g = 48 := by
+    have hgle : g ≤ 48 := Nat.le_of_dvd (by norm_num) hgn
+    interval_cases g <;> revert hgn <;> decide
+  rcases hgcases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inl ⟨by linarith, by linarith⟩⟩
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inr (Or.inl ⟨by linarith, by linarith⟩)⟩
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inr (Or.inr (Or.inl ⟨by linarith, by linarith⟩))⟩
+  · push_cast at ha hb
+    exact absurd (caseI_even hcop hab (by norm_num) ha hb) not_false
+  · push_cast at ha hb
+    exact ⟨a, b, hab, Or.inr (Or.inr (Or.inr ⟨by linarith, by linarith⟩))⟩
+
+/-! ### Helpers for `caseI_one`'s descent -/
+
+/-- `7` is coprime to anything it does not divide (PROVEN 2026-07-27). -/
+theorem coprime_seven {M : ℤ} (h7 : ¬ (7 : ℤ) ∣ M) : IsCoprime (7 : ℤ) M := by
+  have hp : Nat.Prime 7 := by norm_num
+  have hnd : ¬ (7 : ℕ) ∣ M.natAbs := fun hd =>
+    h7 (Int.natAbs_dvd_natAbs.mp (by simpa using hd))
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  simpa [Int.gcd] using (Nat.Prime.coprime_iff_not_dvd hp).mpr hnd
+
+theorem not_even_odd {x : ℤ} (h1 : Even x) (h2 : Odd x) : False := by
+  obtain ⟨u, hu⟩ := h1; obtain ⟨v, hv⟩ := h2; omega
+
+/-- If `M² − c·e² = a²` with `M`, `e` coprime then `a`, `e` are coprime. -/
+theorem coprime_of_sq_sub {M e a c : ℤ} (hcop : IsCoprime M e) (h : M ^ 2 - c * e ^ 2 = a ^ 2) :
+    IsCoprime a e := by
+  have h1 : IsCoprime (M ^ 2 + e ^ 2 * (-c)) (e ^ 2) := (hcop.pow (m := 2) (n := 2)).add_mul_left_left (-c)
+  have h2 : IsCoprime (a ^ 2) (e ^ 2) := by
+    have hx : M ^ 2 + e ^ 2 * (-c) = a ^ 2 := by linear_combination h
+    rwa [hx] at h1
+  exact (h2.of_isCoprime_of_dvd_left (dvd_pow_self a two_ne_zero)).of_isCoprime_of_dvd_right
+    (dvd_pow_self e two_ne_zero)
+
+/-- `8` divides `M² − e²` and `M² − 49e²` when both `M` and `e` are odd. -/
+theorem eight_dvd_of_odd {M e : ℤ} (hM : Odd M) (he : Odd e) :
+    (8 : ℤ) ∣ M ^ 2 - e ^ 2 ∧ (8 : ℤ) ∣ M ^ 2 - 49 * e ^ 2 := by
+  obtain ⟨k, hk⟩ := hM
+  obtain ⟨l, hl⟩ := he
+  obtain ⟨s, hs⟩ : Even (k * (k + 1)) := Int.even_mul_succ_self k
+  obtain ⟨t, ht⟩ : Even (l * (l + 1)) := Int.even_mul_succ_self l
+  have h8A : (8 : ℤ) ∣ M ^ 2 - e ^ 2 :=
+    ⟨s - t, by rw [hk, hl]; linear_combination 4 * hs - 4 * ht⟩
+  refine ⟨h8A, ?_⟩
+  obtain ⟨w, hw⟩ := h8A
+  exact ⟨w - 6 * e ^ 2, by linarith⟩
+
+/-- **The four-way coprime split.** From `P·Q = R·S` with `P`, `Q` coprime and
+`R`, `S` coprime and `P ≠ 0`, there are `f, g, h, k` with `P = fg`, `Q = hk`,
+`R = fh`, `S = gk`, pairwise coprime across the two factorisations. -/
+theorem split_four {P Q R S : ℤ} (hP : P ≠ 0) (_hPQ : IsCoprime P Q) (hRS : IsCoprime R S)
+    (hprod : P * Q = R * S) :
+    ∃ f g h k : ℤ, P = f * g ∧ Q = h * k ∧ R = f * h ∧ S = g * k ∧
+      IsCoprime f g ∧ IsCoprime f k ∧ IsCoprime h g ∧ IsCoprime h k := by
+  obtain ⟨f, g, hfR, hgS, hfg⟩ :=
+    exists_dvd_and_dvd_of_dvd_mul (a := P) (b := R) (c := S) ⟨Q, hprod.symm⟩
+  obtain ⟨h, hh⟩ := hfR
+  obtain ⟨k, hk⟩ := hgS
+  have hf0 : f ≠ 0 := by rintro rfl; exact hP (by rw [hfg]; ring)
+  have hg0 : g ≠ 0 := by rintro rfl; exact hP (by rw [hfg]; ring)
+  have hQ : Q = h * k := by
+    refine mul_left_cancel₀ (mul_ne_zero hf0 hg0) ?_
+    have : P * Q = R * S := hprod
+    rw [hh, hk, hfg] at this
+    linear_combination this
+  have hfd : f ∣ R := ⟨h, hh⟩
+  have hhd : h ∣ R := ⟨f, by rw [hh]; ring⟩
+  have hgd : g ∣ S := ⟨k, hk⟩
+  have hkd : k ∣ S := ⟨g, by rw [hk]; ring⟩
+  exact ⟨f, g, h, k, hfg, hQ, hh, hk,
+    (hRS.of_isCoprime_of_dvd_left hfd).of_isCoprime_of_dvd_right hgd,
+    (hRS.of_isCoprime_of_dvd_left hfd).of_isCoprime_of_dvd_right hkd,
+    (hRS.of_isCoprime_of_dvd_left hhd).of_isCoprime_of_dvd_right hgd,
+    (hRS.of_isCoprime_of_dvd_left hhd).of_isCoprime_of_dvd_right hkd⟩
+
+/-- From `h²·U = g²·V` with `g`, `h` coprime and `g ≠ 0`: a common `K` with
+`U = g²K` and `V = h²K`. -/
+theorem common_factor {g h U V : ℤ} (hgh : IsCoprime g h) (hg0 : g ≠ 0)
+    (heq : h ^ 2 * U = g ^ 2 * V) : ∃ K : ℤ, U = g ^ 2 * K ∧ V = h ^ 2 * K := by
+  have hcop2 : IsCoprime (g ^ 2) (h ^ 2) := hgh.pow
+  obtain ⟨K, hK⟩ : g ^ 2 ∣ U := hcop2.dvd_of_dvd_mul_left ⟨V, heq⟩
+  refine ⟨K, hK, ?_⟩
+  refine mul_left_cancel₀ (pow_ne_zero 2 hg0) ?_
+  rw [hK] at heq
+  linear_combination -heq
+
+/-- **CASE I, `g = 1`: `M² − e² = a²`, `M² − 49e² = b²`** (PROVEN
+2026-07-27, the day it was cut out of `dual_quartic`).
+
+`M` is the hypotenuse of two Pythagorean triples with legs `e` and `7e`. Both
+triples force `M` odd (an even hypotenuse would give `a² + e² ≡ 2 mod 4`), so
+`e` is even. The descent lands back on `dual_quartic` at a point with strictly
+smaller `|e|`, which is exactly what the hypothesis `ih` supplies:
+
+* `7 ∤ M`. Both triples are primitive: `M = p² + q²`, `e = 2pq` and
+  `M = r² + s²`, `7e = 2rs`, hence `rs = 7pq` and `p² + q² = r² + s²`. Split
+  `rs = 7pq` four ways (`MazurLevel15.descent_step` is the reusable shape,
+  built on `exists_dvd_and_dvd_of_dvd_mul`). With `7 ∣ r`, `r = 7fg`, `s = hk`,
+  `p = fh`, `q = gk`, the second equation becomes
+  `h²(f² − k²) = g²(49f² − k²)`, so `f² − k² = K g²` and `49f² − k² = K h²`
+  for a common `K`, whence `(k² − f²)(k² − 49f²) = (Kgh)²` — **`dual_quartic`
+  at `(k, f)`**. With `7 ∣ s` instead one gets `dual_quartic` at `(f, k)` by
+  the mirror computation. **`K` needs no pruning at all**: the product is a
+  square for every `K`, which is the correction to the old plan.
+  Strict decrease: `e = 2fghk`, so `|f| ≤ |e|/2 < |e|` (all four factors are
+  nonzero because `e ≠ 0`). Each of the four conclusions of `ih` at `(k, f)`
+  forces `e = 0`, a contradiction.
+* `7 ∣ M`. Write `M = 7M₁`; then `b = 7b₁`, and `e` is a common leg of triples
+  with hypotenuses `7M₁` and `M₁`: `pq = rs` with `p² + q² = 7(r² + s²)`. The
+  same four-way split gives `h²(7f² − k²) = g²(f² − 7k²)`, i.e.
+  `(f² − 7k²)(7f² − k²) = (Kgh)²`, which is **`dual_seven`** — already PROVEN
+  above to be locally insoluble at `7`. So this sub-branch closes outright,
+  with no descent. -/
+theorem caseI_one (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = b ^ 2) : False := by
+  have hMpos : (0 : ℤ) < M := by linarith
+  have he0 : e ≠ 0 := he.ne'
+  have hnot2 : ¬((2 : ℤ) ∣ M ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have hu := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at hu; omega
+  have hp2 : Prime (2 : ℤ) := Int.prime_two
+  -- `M` is odd: an even hypotenuse would force `a² ≡ 3 (mod 4)`.
+  have hMo : Odd M := by
+    rcases Int.even_or_odd M with hm | hm
+    · exfalso
+      have heo : Odd e := by
+        rcases Int.even_or_odd e with hf | hf
+        · exact absurd ⟨hm.two_dvd, hf.two_dvd⟩ hnot2
+        · exact hf
+      have sq4 : ∀ t : ZMod 4, t ^ 2 = 0 ∨ t ^ 2 = 1 := by decide
+      have hMsq : ((M : ZMod 4)) ^ 2 = 0 := by
+        obtain ⟨m, rfl⟩ := hm
+        have hz : ∀ t : ZMod 4, (t + t) ^ 2 = 0 := by decide
+        push_cast; exact hz _
+      have hesq : ((e : ZMod 4)) ^ 2 = 1 := by
+        obtain ⟨l, rfl⟩ := heo
+        have hz : ∀ t : ZMod 4, (2 * t + 1) ^ 2 = 1 := by decide
+        push_cast; exact hz _
+      have hc := congrArg (fun t : ℤ => (t : ZMod 4)) hA
+      push_cast at hc
+      rw [hMsq, hesq] at hc
+      rcases sq4 (a : ZMod 4) with hs | hs <;> rw [hs] at hc <;> revert hc <;> decide
+    · exact hm
+  -- `e` is even: `M`, `e` both odd would make `a` and `b` both even.
+  have heE : Even e := by
+    rcases Int.even_or_odd e with hf | hf
+    · exact hf
+    · exfalso
+      obtain ⟨h8A, h8B⟩ := eight_dvd_of_odd hMo hf
+      rw [hA] at h8A; rw [hB] at h8B
+      have h2a : (2 : ℤ) ∣ a := hp2.dvd_of_dvd_pow (dvd_trans ⟨4, by norm_num⟩ h8A)
+      have h2b : (2 : ℤ) ∣ b := hp2.dvd_of_dvd_pow (dvd_trans ⟨4, by norm_num⟩ h8B)
+      have hu := hab.isUnit_of_dvd' h2a h2b
+      rw [Int.isUnit_iff] at hu; omega
+  have hao : Odd a := by
+    rcases Int.even_or_odd a with ha | ha
+    · exfalso
+      have h1 : Even (M ^ 2 - e ^ 2) := by
+        rw [hA]; exact Int.even_pow.mpr ⟨ha, two_ne_zero⟩
+      have h2 : Even (M ^ 2) := by
+        have hx : Even (e ^ 2) := Int.even_pow.mpr ⟨heE, two_ne_zero⟩
+        exact (Int.even_sub.mp h1).mpr hx
+      exact not_even_odd (Int.even_pow.mp h2).1 hMo
+    · exact ha
+  have hbo : Odd b := by
+    rcases Int.even_or_odd b with hb | hb
+    · exfalso
+      have h1 : Even (M ^ 2 - 49 * e ^ 2) := by
+        rw [hB]; exact Int.even_pow.mpr ⟨hb, two_ne_zero⟩
+      have hx : Even (49 * e ^ 2) := (Int.even_pow.mpr ⟨heE, two_ne_zero⟩).mul_left 49
+      have h2 : Even (M ^ 2) := (Int.even_sub.mp h1).mpr hx
+      exact not_even_odd (Int.even_pow.mp h2).1 hMo
+    · exact hb
+  -- The first Pythagorean triple `a² + e² = M²`.
+  have hae : IsCoprime a e := coprime_of_sq_sub (c := 1) hcop (by linear_combination hA)
+  have hT1 : PythagoreanTriple a e M := by show a * a + e * e = M * M; linear_combination -hA
+  obtain ⟨p, q, hpq1, hpqM, hpqcop, _⟩ :=
+    (PythagoreanTriple.coprime_classification (x := a) (y := e) (z := M)).mp
+      ⟨hT1, Int.isCoprime_iff_gcd_eq_one.mp hae⟩
+  have hpqcop' : IsCoprime p q := Int.isCoprime_iff_gcd_eq_one.mpr hpqcop
+  have hpqe : e = 2 * p * q := by
+    rcases hpq1 with ⟨_, h⟩ | ⟨h, _⟩
+    · exact h
+    · exact absurd hao (fun hx => not_even_odd ⟨p * q, by rw [h]; ring⟩ hx)
+  have hpqMv : M = p ^ 2 + q ^ 2 := by
+    rcases hpqM with h | h
+    · exact h
+    · exfalso; rw [h] at hMpos; nlinarith [sq_nonneg p, sq_nonneg q]
+  have hp0 : p ≠ 0 := by rintro rfl; exact he0 (by rw [hpqe]; ring)
+  have hq0 : q ≠ 0 := by rintro rfl; exact he0 (by rw [hpqe]; ring)
+  by_cases h7M : (7 : ℤ) ∣ M
+  · -- `7 ∣ M`: the branch that lands on `dual_seven`.
+    obtain ⟨M₁, rfl⟩ := h7M
+    have h7p : Prime (7 : ℤ) := by rw [Int.prime_iff_natAbs_prime]; norm_num
+    have hcopM₁ : IsCoprime M₁ e := hcop.of_isCoprime_of_dvd_left ⟨7, by ring⟩
+    have h7b : (7 : ℤ) ∣ b := by
+      refine h7p.dvd_of_dvd_pow (n := 2) ?_
+      exact ⟨7 * (M₁ ^ 2 - e ^ 2), by rw [← hB]; ring⟩
+    obtain ⟨b₁, rfl⟩ := h7b
+    have hb₁ : M₁ ^ 2 - e ^ 2 = b₁ ^ 2 :=
+      mul_left_cancel₀ (by norm_num : (49 : ℤ) ≠ 0) (by linear_combination hB)
+    have hb₁e : IsCoprime b₁ e := coprime_of_sq_sub (c := 1) hcopM₁ (by linear_combination hb₁)
+    have hT2 : PythagoreanTriple b₁ e M₁ := by
+      show b₁ * b₁ + e * e = M₁ * M₁; linear_combination -hb₁
+    obtain ⟨r, s, hrs1, hrsM, hrscop, _⟩ :=
+      (PythagoreanTriple.coprime_classification (x := b₁) (y := e) (z := M₁)).mp
+        ⟨hT2, Int.isCoprime_iff_gcd_eq_one.mp hb₁e⟩
+    have hrscop' : IsCoprime r s := Int.isCoprime_iff_gcd_eq_one.mpr hrscop
+    have hb₁o : Odd b₁ := by
+      rcases Int.even_or_odd b₁ with hx | hx
+      · exfalso
+        obtain ⟨c, hc⟩ := hx
+        exact not_even_odd (⟨7 * c, by rw [hc]; ring⟩ : Even (7 * b₁)) hbo
+      · exact hx
+    have hrse : e = 2 * r * s := by
+      rcases hrs1 with ⟨_, h⟩ | ⟨h, _⟩
+      · exact h
+      · exact absurd hb₁o (fun hx => not_even_odd ⟨r * s, by rw [h]; ring⟩ hx)
+    have hM₁pos : (0 : ℤ) < M₁ := by linarith
+    have hrsMv : M₁ = r ^ 2 + s ^ 2 := by
+      rcases hrsM with h | h
+      · exact h
+      · exfalso; rw [h] at hM₁pos; nlinarith [sq_nonneg r, sq_nonneg s]
+    -- `pq = rs` and `7(p² + q²) = r² + s²`
+    have hpqrs : p * q = r * s := by linarith [hpqe, hrse]
+    have hsum : p ^ 2 + q ^ 2 = 7 * (r ^ 2 + s ^ 2) := by rw [← hpqMv, ← hrsMv]
+    obtain ⟨f, g, h', k, hpf, hqf, hrf, hsf, _hfg, hfk, hhg, _hhk⟩ :=
+      split_four hp0 hpqcop' hrscop' hpqrs
+    have hgh : IsCoprime g h' := hhg.symm
+    have hg0 : g ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+    -- `h'²(7f² − k²) = g²(f² − 7k²)`
+    have hkey : h' ^ 2 * (7 * f ^ 2 - k ^ 2) = g ^ 2 * (f ^ 2 - 7 * k ^ 2) := by
+      rw [hpf, hqf, hrf, hsf] at hsum; linear_combination -hsum
+    obtain ⟨K, hK1, hK2⟩ := common_factor hgh hg0 hkey
+    exact dual_seven f k (K * g * h') hfk (by rw [hK2, hK1]; ring)
+  · -- `7 ∤ M`: both triples are primitive and the split lands on `dual_quartic`.
+    have h7p : Prime (7 : ℤ) := by rw [Int.prime_iff_natAbs_prime]; norm_num
+    have hnb7 : ¬ (7 : ℤ) ∣ b := by
+      rintro ⟨c, rfl⟩
+      refine h7M (h7p.dvd_of_dvd_pow (n := 2) ⟨7 * c ^ 2 + 7 * e ^ 2, by linear_combination hB⟩)
+    have hbe : IsCoprime b e := coprime_of_sq_sub (c := 49) hcop (by linear_combination hB)
+    have hb7e : IsCoprime b (7 * e) := ((coprime_seven hnb7).symm).mul_right hbe
+    have hT2 : PythagoreanTriple b (7 * e) M := by
+      show b * b + 7 * e * (7 * e) = M * M; linear_combination -hB
+    obtain ⟨r, s, hrs1, hrsM, hrscop, _⟩ :=
+      (PythagoreanTriple.coprime_classification (x := b) (y := 7 * e) (z := M)).mp
+        ⟨hT2, Int.isCoprime_iff_gcd_eq_one.mp hb7e⟩
+    have hrscop' : IsCoprime r s := Int.isCoprime_iff_gcd_eq_one.mpr hrscop
+    have hrse : 7 * e = 2 * r * s := by
+      rcases hrs1 with ⟨_, h⟩ | ⟨h, _⟩
+      · exact h
+      · exact absurd hbo (fun hx => not_even_odd ⟨r * s, by rw [h]; ring⟩ hx)
+    have hrsMv : M = r ^ 2 + s ^ 2 := by
+      rcases hrsM with h | h
+      · exact h
+      · exfalso; rw [h] at hMpos; nlinarith [sq_nonneg r, sq_nonneg s]
+    have hrspq : r * s = 7 * (p * q) := by linarith [hpqe, hrse]
+    have hr0 : r ≠ 0 := by rintro rfl; exact he0 (by linarith [hrse])
+    have hs0 : s ≠ 0 := by rintro rfl; exact he0 (by linarith [hrse])
+    -- sizes: `|f| ≤ |p| < |e|` and `|k| ≤ |q| < |e|`
+    have hpn : 1 ≤ p.natAbs := Nat.one_le_iff_ne_zero.mpr (Int.natAbs_ne_zero.mpr hp0)
+    have hqn : 1 ≤ q.natAbs := Nat.one_le_iff_ne_zero.mpr (Int.natAbs_ne_zero.mpr hq0)
+    have hee : e.natAbs = 2 * p.natAbs * q.natAbs := by
+      rw [hpqe, Int.natAbs_mul, Int.natAbs_mul]; norm_num
+    have hplt : p.natAbs < e.natAbs := by rw [hee]; nlinarith [hpn, hqn]
+    have hqlt : q.natAbs < e.natAbs := by rw [hee]; nlinarith [hpn, hqn]
+    rcases (h7p.dvd_mul.mp ⟨p * q, hrspq⟩) with h7r | h7s
+    · -- `7 ∣ r`: `dual_quartic` at `(k, f)`
+      obtain ⟨r₁, rfl⟩ := h7r
+      have hr₁0 : r₁ ≠ 0 := by rintro rfl; exact hr0 (by ring)
+      have hr₁s : IsCoprime r₁ s := hrscop'.of_isCoprime_of_dvd_left ⟨7, by ring⟩
+      have hprod : r₁ * s = p * q :=
+        mul_left_cancel₀ (by norm_num : (7 : ℤ) ≠ 0) (by linear_combination hrspq)
+      obtain ⟨f, g, h', k, hr₁f, hsf, hpf, hqf, _hfg, hfk, hhg, _hhk⟩ :=
+        split_four hr₁0 hr₁s hpqcop' hprod
+      have hgh : IsCoprime g h' := hhg.symm
+      have hf0 : f ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hh0 : h' ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hg0 : g ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hk0 : k ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hsum : p ^ 2 + q ^ 2 = (7 * r₁) ^ 2 + s ^ 2 := by rw [← hpqMv, ← hrsMv]
+      have hkey : h' ^ 2 * (f ^ 2 - k ^ 2) = g ^ 2 * (49 * f ^ 2 - k ^ 2) := by
+        rw [hpf, hqf, hr₁f, hsf] at hsum; linear_combination hsum
+      obtain ⟨K, hK1, hK2⟩ := common_factor hgh hg0 hkey
+      have hfn : f.natAbs ≤ n := by
+        have hfp : f.natAbs ≤ p.natAbs :=
+          Nat.le_of_dvd hpn (Int.natAbs_dvd_natAbs.mpr ⟨h', hpf⟩)
+        omega
+      rcases ih k f (K * g * h') hfn hfk.symm (by rw [show k ^ 2 - f ^ 2 = -(f ^ 2 - k ^ 2) by ring,
+        show k ^ 2 - 49 * f ^ 2 = -(49 * f ^ 2 - k ^ 2) by ring, hK1, hK2]; ring) with
+        hc | hc | hc | hc
+      · exact hk0 hc
+      · exact hf0 hc
+      · exact hf0 (by
+          have hK0 : K = 0 := by
+            have : g ^ 2 * K = 0 := by rw [← hK1]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hg0
+            · exact hx
+          have h48 : f ^ 2 = 0 := by
+            have := hK2; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
+      · exact hf0 (by
+          have hK0 : K = 0 := by
+            have : h' ^ 2 * K = 0 := by rw [← hK2]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hh0
+            · exact hx
+          have h48 : f ^ 2 = 0 := by
+            have := hK1; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
+    · -- `7 ∣ s`: `dual_quartic` at `(f, k)`
+      obtain ⟨s₁, rfl⟩ := h7s
+      have hs₁0 : s₁ ≠ 0 := by rintro rfl; exact hs0 (by ring)
+      have hrs₁ : IsCoprime r s₁ := hrscop'.of_isCoprime_of_dvd_right ⟨7, by ring⟩
+      have hprod : r * s₁ = p * q :=
+        mul_left_cancel₀ (by norm_num : (7 : ℤ) ≠ 0) (by linear_combination hrspq)
+      obtain ⟨f, g, h', k, hrf, hs₁f, hpf, hqf, _hfg, hfk, hhg, _hhk⟩ :=
+        split_four hr0 hrs₁ hpqcop' hprod
+      have hgh : IsCoprime g h' := hhg.symm
+      have hf0 : f ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hh0 : h' ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hg0 : g ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hk0 : k ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hsum : p ^ 2 + q ^ 2 = r ^ 2 + (7 * s₁) ^ 2 := by rw [← hpqMv, ← hrsMv]
+      have hkey : h' ^ 2 * (f ^ 2 - 49 * k ^ 2) = g ^ 2 * (f ^ 2 - k ^ 2) := by
+        rw [hpf, hqf, hrf, hs₁f] at hsum; linear_combination hsum
+      obtain ⟨K, hK1, hK2⟩ := common_factor hgh hg0 hkey
+      have hkn : k.natAbs ≤ n := by
+        have hkq : k.natAbs ≤ q.natAbs :=
+          Nat.le_of_dvd hqn (Int.natAbs_dvd_natAbs.mpr ⟨g, by rw [hqf]; ring⟩)
+        omega
+      rcases ih f k (K * g * h') hkn hfk (by rw [hK2, hK1]; ring) with hc | hc | hc | hc
+      · exact hf0 hc
+      · exact hk0 hc
+      · exact hk0 (by
+          have hK0 : K = 0 := by
+            have : h' ^ 2 * K = 0 := by rw [← hK2]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hh0
+            · exact hx
+          have h48 : k ^ 2 = 0 := by
+            have := hK1; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
+      · exact hk0 (by
+          have hK0 : K = 0 := by
+            have : g ^ 2 * K = 0 := by rw [← hK1]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hg0
+            · exact hx
+          have h48 : k ^ 2 = 0 := by
+            have := hK2; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
+
+/-- **CASE I, `g = 3`: `M² − e² = 3a²`, `M² − 49e² = 3b²`** (sorry leaf, cut
+2026-07-27 out of `dual_quartic`).
+
+Equivalently `a² − b² = 16e²` and `49a² − b² = 16M²`. Established facts:
+`3 ∤ M`, `3 ∤ e`, and (mod `8`) **`M` is even with `M ≡ 2 mod 4`, `e` odd** —
+the sub-case `M` odd, `e` even is impossible, since `3a² ≡ 3 (mod 8)` for odd
+`a` while `M² − e² ≡ 1 − e²` can never be `3` mod `8` with `e` even. A mod-`9`
+count shows `a² − b² ≡ 1 (mod 3)`, so `3 ∤ a` and `3 ∣ b`.
+
+**AXIS SEARCHED**: congruences mod `2^k`, `3^k` (they constrain but do not
+close the branch — the class `(3,3)` is genuinely in the image of the descent
+map, realised by the `2`-torsion point `(49, 0)`). **AXIS NOT SEARCHED**: the
+four-way split of `(a − b)(a + b) = 16e²` and `(7a − b)(7a + b) = 16M²`. -/
+theorem caseI_three (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 3 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 3 * b ^ 2) : False :=
+  sorry
+
+/-- **CASE I, `g = 16`: `M² − e² = 16a²`, `M² − 49e² = 16b²`** (sorry leaf,
+cut 2026-07-27 out of `dual_quartic`).
+
+Here `M` and `e` are both odd, and dividing out gives `a² − b² = 3e²`,
+`49a² − b² = 3M²` — the mirror of `caseI_three` under `(g, c) ↦ (c, g)`.
+Mod `8`: `3e² ≡ 3`, so `a` is even and `b` is odd. -/
+theorem caseI_sixteen (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 16 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 16 * b ^ 2) : False :=
+  sorry
+
+/-- **CASE I, `g = 48`: `M² − e² = 48a²`, `M² − 49e² = 48b²`** (sorry leaf,
+cut 2026-07-27 out of `dual_quartic`).
+
+Here `M`, `e` are both odd and dividing out gives `a² − b² = e²`,
+`49a² − b² = M²`: so `b` is a common **leg** of two Pythagorean triples,
+`b² + e² = a²` and `b² + M² = (7a)²`.
+
+**THE BRANCH IS FULLY MAPPED (2026-07-27); the only gap is the induction
+measure.** The split is on `7 ∣ b` (and `7 ∣ b ↔ 7 ∣ M` here, since
+`b² + M² = 49a²`):
+
+* `7 ∤ b`. Then `gcd(b, M) = 1`, both triples are primitive, and — exactly
+  as in the `7 ∣ M` sub-branch of `caseI_one` — one gets `mn = pq` with
+  `p² + q² = 7(m² + n²)`, whose four-way split (`split_four`,
+  `common_factor`) lands on **`dual_seven`**, PROVEN insoluble above. Closes
+  outright.
+* `7 ∣ b`. Write `b = 7b₁`, `M = 7M₁`. Then `a² − b₁² = M₁²` and
+  `a² − 49b₁² = e²`, so `(a² − b₁²)(a² − 49b₁²) = (M₁e)²` — this is
+  **`dual_quartic` at `(a, b₁)`**, and in fact its `g = 1` branch, since
+  `gcd(M₁², e²) = 1`. All four conclusions there give a contradiction:
+  `a = 0` is impossible (`a² = b² + e² > 0`), `b₁ = 0` forces `M² = 49e²`
+  against `M > 7e`, `a² = b₁²` forces `M₁ = 0`, and `a² = 49b₁²` forces
+  `e = 0`.
+
+**WHY IT IS STILL OPEN: `|b₁|` IS NOT SMALLER THAN `|e|`.** `48b² = M² − 49e²`
+so `b ≈ M/√48` and `b₁ ≈ M/48.5`, which is far LARGER than `e` (bounded by
+`M/7`). The `|e|` measure that carries `dual_quartic_aux` therefore does not
+justify the recursive call, even though the mathematics is complete. Do not
+attempt to patch this with a bound on `b₁`; there isn't one.
+
+**THE FIX THAT LOOKS RIGHT, and the check that would refute it.** Measure by
+`|M|` instead, restructuring so that every descent target is normalised into
+CASE I *before* the recursive call (the egg reduction of `dual_quartic_step`
+applied inline rather than as a separate branch). Then:
+
+* here, `a < M/√48 < M` — a strict decrease outright;
+* in `caseI_one`, the target `(k, f)` has `max(|f|,|k|) ≤ max(|p|,|q|) ≤ √M`,
+  so the normalised CASE I point has `|M''| ≤ 7√M`, which beats `M` **only
+  for `M > 49`**. The residual `M ≤ 49` (hence `e ≤ 7`) is a finite check.
+
+The refuting check is the second bullet: if the normalisation can push
+`|M''|` above `7√M`, the measure fails and the two branches need separate
+inductions. -/
+theorem caseI_fortyEight (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 48 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 48 * b ^ 2) : False :=
+  sorry
+
+/-- **CASE I of the descent** (PROVEN 2026-07-27 over the four `g`-branches):
+`M > 7e > 0`, so both cofactors are positive, and `caseI_split` reduces to
+`g ∈ {1, 3, 16, 48}`. -/
+theorem dual_quartic_caseI (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
+    (M e N : ℤ) (hcop : IsCoprime M e) (hlen : e.natAbs ≤ n + 1)
+    (he : 0 < e) (hM : 7 * e < M)
+    (h : N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2)) : False := by
+  obtain ⟨a, b, hab, hcase⟩ := caseI_split hcop he hM h
+  rcases hcase with ⟨hA, hB⟩ | ⟨hA, hB⟩ | ⟨hA, hB⟩ | ⟨hA, hB⟩
+  · exact caseI_one n ih M e a b hcop hab hlen he hM hA hB
+  · exact caseI_three n ih M e a b hcop hab hlen he hM hA hB
+  · exact caseI_sixteen n ih M e a b hcop hab hlen he hM hA hB
+  · exact caseI_fortyEight n ih M e a b hcop hab hlen he hM hA hB
+
+/-- Coprimality is insensitive to signs (PROVEN 2026-07-27). -/
+theorem abs_isCoprime {M e : ℤ} (hcop : IsCoprime M e) : IsCoprime |M| |e| := by
+  rcases abs_choice M with hm | hm <;> rcases abs_choice e with hf | hf <;> rw [hm, hf]
+  · exact hcop
+  · exact hcop.neg_right
+  · exact hcop.neg_left
+  · exact hcop.neg_left.neg_right
+
+/-- **The induction step of `dual_quartic`** (PROVEN 2026-07-27 over
+`dual_quartic_caseI`): everything outside CASE I is discharged here.
+
+After the four trivial conclusions are ruled out, `A = M² − e²` and
+`B = M² − 49e²` are nonzero with `AB = N² > 0`, so they have the same sign.
+
+* `M² < e²` (the **egg** `0 < x < 1` on `y² = x(x−1)(x−49)`, where both
+  cofactors are negative). Translation by the `2`-torsion point `(0, 0)` sends
+  `x ↦ 49/x`, i.e. `(M, e) ↦ (7e, M)` when `7 ∤ M` and `(M, e) ↦ (e, M/7)`
+  when `7 ∣ M`, and `49(M²−e²)(M²−49e²) = ((7e)²−M²)((7e)²−49M²)` makes this
+  an honest solution again. **Both images have `|e'| = |M| < |e|`**, so this
+  whole half is a single application of `ih` — no descent is needed. (This is
+  why the induction measure is `|e|` and not `M² + e²`, under which the same
+  transformation *increases* the measure.) Each of the four conclusions
+  transports back to one of ours.
+* `M² > e²`: then `A > 0`, hence `B > 0` and `M² > 49e²`. Replacing `M`, `e`
+  by `|M|`, `|e|` (the statement is even in both) puts us in CASE I. -/
+theorem dual_quartic_step (n : ℕ)
+    (ih : ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2) :
+    ∀ M e N : ℤ, e.natAbs ≤ n + 1 → IsCoprime M e →
+      N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+      M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2 := by
+  intro M e N hlen hcop h
+  by_cases he0 : e = 0
+  · exact Or.inr (Or.inl he0)
+  by_cases hM0 : M = 0
+  · exact Or.inl hM0
+  by_cases h1 : M ^ 2 = e ^ 2
+  · exact Or.inr (Or.inr (Or.inl h1))
+  by_cases h2 : M ^ 2 = 49 * e ^ 2
+  · exact Or.inr (Or.inr (Or.inr h2))
+  exfalso
+  have hA0 : M ^ 2 - e ^ 2 ≠ 0 := fun hc => h1 (by linarith)
+  have hB0 : M ^ 2 - 49 * e ^ 2 ≠ 0 := fun hc => h2 (by linarith)
+  have hNne : N ^ 2 ≠ 0 := by rw [h]; exact mul_ne_zero hA0 hB0
+  have hprodpos : 0 < (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) := by
+    rw [← h]; exact (sq_nonneg N).lt_of_ne (Ne.symm hNne)
+  rcases lt_trichotomy (M ^ 2) (e ^ 2) with hlt | heq | hgt
+  · -- The egg: reduce to a point with a strictly smaller `|e|`.
+    have habs : |M| < |e| := by
+      nlinarith [sq_abs M, sq_abs e, abs_nonneg M, abs_nonneg e]
+    have hnat : M.natAbs < e.natAbs := by
+      have hc : (M.natAbs : ℤ) < (e.natAbs : ℤ) := by
+        rwa [Int.natCast_natAbs, Int.natCast_natAbs]
+      exact_mod_cast hc
+    have hMn : M.natAbs ≤ n := by omega
+    by_cases h7 : (7 : ℤ) ∣ M
+    · obtain ⟨M₁, rfl⟩ := h7
+      have h7p : Prime (7 : ℤ) := by rw [Int.prime_iff_natAbs_prime]; norm_num
+      have h7N : (7 : ℤ) ∣ N := by
+        refine h7p.dvd_of_dvd_pow (n := 2) ?_
+        exact ⟨7 * (49 * M₁ ^ 2 - e ^ 2) * (M₁ ^ 2 - e ^ 2), by rw [h]; ring⟩
+      obtain ⟨N₁, rfl⟩ := h7N
+      have hcop' : IsCoprime e M₁ :=
+        hcop.symm.of_isCoprime_of_dvd_right ⟨7, by ring⟩
+      have hred : N₁ ^ 2 = (e ^ 2 - M₁ ^ 2) * (e ^ 2 - 49 * M₁ ^ 2) :=
+        mul_left_cancel₀ (by norm_num : (49 : ℤ) ≠ 0) (by linear_combination h)
+      have hM₁n : M₁.natAbs ≤ n := by
+        have hle : M₁.natAbs ≤ (7 * M₁).natAbs := by
+          rw [Int.natAbs_mul]; simp; omega
+        omega
+      rcases ih e M₁ N₁ hM₁n hcop' hred with hc | hc | hc | hc
+      · exact he0 hc
+      · exact hM0 (by rw [hc]; ring)
+      · exact h2 (by linarith)
+      · exact h1 (by linarith)
+    · have hcop' : IsCoprime (7 * e) M := ((coprime_seven h7).mul_left hcop.symm)
+      have hred : (7 * N) ^ 2 = ((7 * e) ^ 2 - M ^ 2) * ((7 * e) ^ 2 - 49 * M ^ 2) := by
+        linear_combination 49 * h
+      rcases ih (7 * e) M (7 * N) hMn hcop' hred with hc | hc | hc | hc
+      · exact he0 (by linarith)
+      · exact hM0 hc
+      · exact h2 (by linarith)
+      · exact h1 (by linarith)
+  · exact h1 heq
+  · have hApos : 0 < M ^ 2 - e ^ 2 := by linarith
+    have hBpos : 0 < M ^ 2 - 49 * e ^ 2 := by nlinarith [hprodpos, hApos]
+    refine dual_quartic_caseI n ih |M| |e| N (abs_isCoprime hcop) ?_ ?_ ?_ ?_
+    · rwa [Int.natAbs_abs]
+    · exact abs_pos.mpr he0
+    · nlinarith [sq_abs M, sq_abs e, abs_nonneg M, abs_nonneg e]
+    · rw [sq_abs, sq_abs]; exact h
+
+/-- **The strong induction on `|e|` carrying `dual_quartic`** (PROVEN
+2026-07-27 over `dual_quartic_step`). -/
+theorem dual_quartic_aux : ∀ n : ℕ, ∀ M e N : ℤ, e.natAbs ≤ n → IsCoprime M e →
+    N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
+    M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2 := by
+  intro n
+  induction n with
+  | zero =>
+    intro M e N hlen _ _
+    exact Or.inr (Or.inl (Int.natAbs_eq_zero.mp (Nat.le_zero.mp hlen)))
+  | succ n ih => exact dual_quartic_step n ih
+
+/-- **The class-`1` homogeneous space of the `2`-isogenous curve
+`Y² = X(X−1)(X−49)`** (PROVEN 2026-07-27 over the four CASE I leaves
+`caseI_one`, `caseI_three`, `caseI_sixteen`, `caseI_fortyEight`; it carries
+`quartic_negThree` too, through the translation trick recorded on
+`quartic_one`).
+
+For coprime `M`, `e`,
+
+    `N² = M⁴ − 50M²e² + 49e⁴ = (M² − e²)(M² − 49e²)`
+
+only for `M = 0`, `e = 0`, `M² = e²` and `M² = 49e²` — the four rational
+points `X ∈ {0, ∞, 1, 49}` of `Y² = X(X−1)(X−49)`, which are exactly its
+`2`-torsion together with `O`.  Verified by exhaustive search over coprime
+`0 ≤ M, e ≤ 6000`: no further solution.  `ellinit([0,-50,0,49,0])` has
+conductor `21`, `E(ℚ)_tors ≅ ℤ/2 × ℤ/2` and rank `0`, so the statement is true
+and is not weaker than the geometry.
+
+**THE STRUCTURE OF THE PROOF, and two corrections to the plan this leaf was
+cut with** (2026-07-27).
+
+1. **The induction measure is `|e|`.** The old plan proposed `M² + e²` in
+   imitation of `MazurLevel15.concordant_both_aux`. That is the wrong measure
+   here: the "egg" branch `M² < e²` is handled by translating with the
+   `2`-torsion point `(0, 0)`, `x ↦ 49/x`, i.e. `(M, e) ↦ (7e, M)` (or
+   `(e, M/7)` when `7 ∣ M`) — which *raises* `M² + e²` but *lowers* `|e|` to
+   `|M|`. Under `|e|` that entire half of the problem is one application of
+   the induction hypothesis and needs no descent whatsoever
+   (`dual_quartic_step`).
+2. **`K ∣ 48` needs no pruning.** The old plan listed "pruning `K ∣ 48`" as
+   outstanding work, by analogy with the level-`15` pruning of `K ∣ 15` to
+   `K ∈ {1,5}`. It is unnecessary: the descent produces `f² − k² = Kg²` and
+   `49f² − k² = Kh²`, whose product is `(Kgh)²` — **a square for every `K`** —
+   so it is a `dual_quartic` solution at `(k, f)` whatever `K` is.
+
+What the proof actually does, top down:
+
+* `dual_quartic_aux` — strong induction on `|e|`; base case `e = 0`.
+* `dual_quartic_step` — the four trivial conclusions, then the sign split.
+  `A = M²−e²` and `B = M²−49e²` are nonzero with `AB = N² > 0`, so they agree
+  in sign: either `M² < e²` (the egg, discharged by `ih` as above) or
+  `M² > e²`, which forces `M² > 49e²`, i.e. CASE I.
+* `caseI_split` — `g = gcd(A, B)` divides `48`, and `caseI_even` kills every
+  even `g` (`g ∈ {2,4,6,12}` make `a` and `b` both even; `g ∈ {8,24}` give
+  `a² − b² ≡ 6` resp. `2` mod `8`, impossible). Four branches survive,
+  `g ∈ {1, 3, 16, 48}`, which are the four sorry leaves.
+* `dual_seven` — PROVEN here: `N² = (M²−7e²)(7M²−e²)` is **locally insoluble
+  at `7`** (`−1` is not a square mod `7`, and `7 ∣ M` or `7 ∣ e` makes the
+  `7`-adic valuation odd). This is the `d = 7` space of the same `2`-isogeny
+  descent, and it is what closes the `7 ∣ M` sub-branches of `caseI_one` and
+  `caseI_fortyEight` outright.
+
+**THE ISOGENY PICTURE.** Write `E₁ : y² = x(x² + 25x + 144)` (the `X = V − 9`
+model) and `E'' : y² = x(x² − 50x + 49)`, `2`-isogenous by `φ : E₁ → E''`,
+`φ'' : E'' → E₁` with `φ'' ∘ φ = [2]`. This leaf is the class-`1` space of
+`φ''`; `quartic_one` is the class-`1` space of the OTHER `2`-isogeny (kernel
+`V = 0`), and `quartic_one`'s proof is the arrow `quartic_one ⟶ dual_quartic`.
+The return arrow `φ''` sends a solution here to `x = (N/(2Me))²` on `E₁`, i.e.
+to a solution of
+
+    `t² = x₀⁴ + 25x₀²y₀² + 144y₀⁴ = (x₀² + 9y₀²)(x₀² + 16y₀²)`,
+
+whose two factors have `gcd` dividing `7` — and `7` is impossible, since
+`x₀² + 2y₀² ≡ 0 (mod 7)` forces `7 ∣ x₀`, `7 ∣ y₀`. So that space **always**
+splits into the concordant system
+
+    `x² + 9y² = □`,  `x² + 16y² = □`   ⟹   `xy = 0`.
+
+**That route was mapped and then NOT taken; record of what it costs, so the
+next agent does not have to redo the reconnaissance.** The concordant `(9,16)`
+system descends into a `K ∈ {1,7}` split with `K = 7` empty (again because
+`−2` is not a square mod `7`) — but only along the *aligned* four-way split
+`3 ∣ m, 4 ∣ p`. The *crossed* split `3 ∣ m, 4 ∣ q` produces a genuinely
+different system,
+
+    `u² + v² = □`,  `9u² + 16v² = □`,
+
+which has the same Jacobian `Y² = X(X−1)(X−49)` (its quartic invariant is
+`b² − 4ac = 625 − 576 = 49`) and so must be carried alongside. That is why the
+descent was run **inside** `dual_quartic` instead: there the recursion closes
+on this one statement.
+
+**AXIS SEARCHED**: congruences mod `2^k`, `3^k`, `7^k` on the quartic and on
+the split factors — all refuted by the integral points `(1,1)`, `(7,1)`,
+`(1,0)`, `(0,1)`, so no congruence can close this. In particular the
+both-odd branch is **2-adically soluble**: `t² = 65` in `ℤ₂` gives
+`(t²−1)(t²−49) = 1024 = 32²`, so `g ∈ {16, 48}` cannot be killed mod `2^k`. -/
 theorem dual_quartic (M e N : ℤ) (hcop : IsCoprime M e)
     (h : N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2)) :
     M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2 :=
-  sorry
+  dual_quartic_aux e.natAbs M e N le_rfl hcop h
 
 /-- **Both cofactors of `quartic_one` are perfect squares** (PROVEN
 2026-07-27). With `A = S² − 9e²` and `B = S² + 7e²` one has `AB = c²` and

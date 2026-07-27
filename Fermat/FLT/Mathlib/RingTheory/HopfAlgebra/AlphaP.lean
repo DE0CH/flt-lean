@@ -2,10 +2,12 @@
 Copyright (c) 2026 Deyao Chen. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
-import Mathlib.RingTheory.AdjoinRoot
-import Mathlib.Algebra.CharP.Algebra
-import Mathlib.Data.Nat.Choose.Dvd
+module
+
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
+public import Mathlib.RingTheory.AdjoinRoot
+public import Mathlib.Algebra.CharP.Algebra
+public import Mathlib.Data.Nat.Choose.Dvd
 
 /-!
 # `α_p`: the Frobenius kernel of the additive group, as a Hopf algebra
@@ -74,6 +76,8 @@ file's module docstring for the full argument.
 * Waterhouse, *Introduction to Affine Group Schemes*, ch. 11 (`α_p` and `μ_p`).
 * Demazure–Gabriel, *Groupes algébriques*, II §7.
 -/
+
+@[expose] public section
 
 open TensorProduct Coalgebra Polynomial
 

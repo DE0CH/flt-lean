@@ -43,6 +43,24 @@ public import Mathlib.RingTheory.Flat.Domain
 -- `hasFlatProlongationAt_trivialQuotChar_of_base` is proved in this module and
 -- consumes it, so the import is public.
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
+-- CARTIER DUALITY, and specifically `(R3)` — "an extension of multiplicative
+-- type by multiplicative type is of multiplicative type" — which is the
+-- requirement `exists_unramified_grouplike_family_generating_corner` below
+-- consumes, and which `ShortExact.lean` states and assembles as
+-- `HopfAlgebra.isMultiplicativeType_of_isShortExact` over `IsMultiplicativeType`
+-- ("the Cartier dual is étale"). The assembly is written and compiles; it rests
+-- on two open leaves in that module, `HopfAlgebra.IsShortExact.cartierDual`
+-- (exactness of duality) and `HopfAlgebra.etale_of_isShortExact` (an extension
+-- of étale by étale is étale — the elementary half, whose henselian route this
+-- file's survey below records). `CartierDualExamples` supplies the dictionary
+-- between the two descriptions of the corner: `dualGroupAlgebraBialgEquiv`
+-- identifies `CartierDual R (MonoidAlgebra R G)` with `GroupFunctions R G`,
+-- which is exactly what turns the étaleness of `GroupFunctions` proved in this
+-- file (`hasFlatProlongationAt_trivialQuotChar_of_base`) into
+-- `IsMultiplicativeType` for the diagonalizable corner. Both imports are public
+-- because the consuming statements are the ones named above.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDualExamples
 -- the `μ`-typed factor of the Eisenstein member: the group-algebra Hopf
 -- structure `MonoidAlgebra.instHopfAlgebra` (the diagonalizable group scheme
 -- `Spec 𝒪ᵥ[D]`), its base change `MonoidAlgebra.scalarTensorEquiv`, and
@@ -3396,7 +3414,10 @@ VERDICT (2026-07-26, this owner): IRREDUCIBLY A CITATION at the present
 state of the tree. What remains, enumerated, with its formalization
 status. **(R4) IS NO LONGER PART OF IT — see the note under (R4) below;
 it is proven, and this leaf's restatement is exactly what discharging it
-bought.** So the live requirements are (R1)–(R3):
+bought.** So the live requirements are (R1)–(R3). **UPDATED 2026-07-27:
+(R3) IS NOW PROVEN TOO** — see its entry below and the rewritten (C4)
+closing paragraph; the only requirement still genuinely open for THIS
+leaf is (R1), the Raynaud dévissage.
 
 (R1) *Raynaud dévissage*: over `𝒪ᵖᵥ` with `e = 1 < p − 1`, a finite
      flat group scheme killed by `p` acquires, over the STRICT
@@ -3426,11 +3447,25 @@ bought.** So the live requirements are (R1)–(R3):
 (R3) *the extension step*: an iterated extension of `μ`-types over the
      henselian `𝒪ᵖᵥ` is of multiplicative type (dually: étale-by-étale
      is étale). This is where FLATNESS does its work — see (S2).
+     **(R3) ITSELF IS PROVEN (2026-07-27).** It is
+     `HopfAlgebra.isMultiplicativeType_of_isShortExact` in
+     `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, a
+     two-line assembly `etale_of_isShortExact h.cartierDual h' h''` over
+     the Cartier-duality construction of
+     `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` (which
+     is complete and sorry-free, biduality and all three examples
+     included). What is still OPEN is not (R3) but its two inputs, which
+     are separate leaves in that same file with their own owners:
+     `HopfAlgebra.IsShortExact.cartierDual` (Cartier duality is exact)
+     and `HopfAlgebra.etale_of_isShortExact` (étale-by-étale is étale).
+     Consuming (R3) here is still blocked on `IsShortExact` being
+     established for this cluster's dévissage, i.e. on (R1).
 (R4) *multiplicative type ⟹ unramified character group*: **PROVEN
      2026-07-26, and it is why this leaf now reads as it does.** It was
      expected to need `Algebra.FormallyEtale.equivPiOfIsSepClosed` over
      the strictly henselian base, plus the character group of `G°` as an
-     étale SCHEME — i.e. Cartier duality, which this tree does not have.
+     étale SCHEME — i.e. Cartier duality, which this tree did not have at
+     the time (it does now: `CartierDual.lean`, sorry-free).
      None of that was necessary. In Hopf terms "multiplicative type"
      says the corner group-likes GENERATE the corner and "unramified
      character group" says they are ALL unramified, so (R4) is the
@@ -3708,32 +3743,64 @@ that would unblock it. Nothing here changes the statement.
      Refuting checks: a proof of the `p ^ k` form consuming only the `p`
      form plus group theory (ruled out by the witness above), or a
      classification of finite flat group schemes over `ℤ_p` killed by
-     `p ^ k` anywhere in the pin. As of 2026-07-27,
-     `grep -rn 'fppf\|CartierDual\|cartierDual'` over `Fermat/`,
-     `.lake/packages/mathlib` and `~/cs/FLT` returns only docstring PROSE
+     `p ^ k` anywhere in the pin. **UPDATED 2026-07-27, LATER THE SAME
+     DAY — the duality half of this sentence is now WRONG and must not be
+     re-used.** The grep it rested on
+     (`grep -rn 'fppf\|CartierDual\|cartierDual'` over `Fermat/`,
+     `.lake/packages/mathlib` and `~/cs/FLT`) reported "docstring PROSE
      plus mathlib's fpqc/flat-descent SITE definitions — no cohomology of
-     group schemes and no duality.
+     group schemes and no duality". Cartier duality has since been BUILT
+     here: `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean`
+     (sorry-free — the dual Hopf algebra, biduality as a bundled
+     `≃ₐc`, and the three examples `μ_n^D ≅ ℤ/n`, `(ℤ/n)^D ≅ μ_n`,
+     `α_p^D ≅ α_p`). What the grep would still find missing is the
+     COHOMOLOGY — no `H¹_fl` and no classification of finite flat group
+     schemes over `ℤ_p` killed by `p ^ k` — so check 2 is still ruled out
+     and this paragraph's CONCLUSION stands; only its evidence has moved.
 
      DECISION (the dispatch asked for one): BUILD THE RAYNAUD INPUT. Closing
      the exponent gap is not the cheaper half of the choice; it is the same
      missing statement plus a second leaf.
 
-     WHERE THE NEXT WORKER SHOULD GO, sharpened. Of the live requirements
-     (R1)–(R3), it is (R3) whose cost is overstated above. Its ÉTALE side —
-     *an extension of étale by étale over a HENSELIAN local base is étale* —
-     is elementary and needs no flat cohomology at all: the connected
-     component `H°` maps to the étale quotient by a homomorphism out of a
-     connected scheme, hence trivially, so `H° ⊆ H'`, and `H'` étale gives
-     `H'° = 0`. Both halves of the machinery are already in this cone —
-     `Bialgebra.exists_connected_counit_idempotent` for the connected
-     idempotent, and the henselian splitting of a finite algebra recorded in
-     the SUPPLY SURVEY above. What (R3) actually costs is the passage from
-     that étale statement to the MULTIPLICATIVE one, i.e. CARTIER DUALITY
-     for finite flat commutative group schemes, which the same grep shows is
-     absent from all three trees. So the dispatchable next target is Cartier
-     duality — a self-contained classical construction — and NOT "Raynaud"
-     as an undifferentiated whole. Refuting check: a proof of (R3) on the
-     multiplicative side that never dualizes. -/
+     WHERE THE NEXT WORKER SHOULD GO — **REWRITTEN 2026-07-27; the
+     previous version of this paragraph named CARTIER DUALITY as the
+     dispatchable next target and that is now FINISHED WORK. Do not
+     dispatch anyone at it.** The paragraph was right that (R3)'s cost was
+     overstated and right that duality, not "Raynaud" undifferentiated,
+     was the thing to build; it has been built. Current state:
+
+     * CARTIER DUALITY — DONE, sorry-free, in
+       `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean`
+       (plus `CartierDualExamples.lean`, `AlphaP.lean`,
+       `AlphaPSelfDual.lean`, `GroupFunctions.lean`).
+     * (R3) ITSELF — PROVEN, as
+       `HopfAlgebra.isMultiplicativeType_of_isShortExact` in
+       `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, which
+       is literally `etale_of_isShortExact h.cartierDual h' h''`.
+     * WHAT IS ACTUALLY OPEN, and these are the two dispatchable leaves —
+       both in `ShortExact.lean`, both already OWNED, so check
+       `~/.flt-inflight.jsonl` before touching either:
+       - `HopfAlgebra.IsShortExact.cartierDual` — Cartier duality is
+         exact. This is the half that wants faithfully flat descent /
+         Takeuchi's Hopf-ideal correspondence.
+       - `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale.
+         This is the ELEMENTARY half the previous paragraph described:
+         the connected component `H°` maps to the étale quotient by a
+         homomorphism out of a connected scheme, hence trivially, so
+         `H° ⊆ H'`, and `H'` étale gives `H'° = 0`. Both halves of the
+         machinery are already in this cone —
+         `Bialgebra.exists_connected_counit_idempotent` for the connected
+         idempotent, and the henselian splitting of a finite algebra
+         recorded in the SUPPLY SURVEY above. Note `etale_of_isShortExact`
+         is stated over an ARBITRARY base; specialising it to a henselian
+         local `R` is a legitimate weakening if the general form resists,
+         and its own docstring says so.
+     * SO THE REMAINING WORK FOR *THIS* LEAF IS (R1), the Raynaud
+       dévissage, which is what actually supplies an `IsShortExact` for
+       this cluster. (R2) is formalized and sorry-free; (R3) is proven;
+       (R4) is proven. Refuting check on this paragraph: a route to the
+       conclusion that never needs a composition series, i.e. that gets
+       multiplicative type of `G°` without dévissage. -/
 theorem exists_unramified_grouplike_family_generating_corner
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -6956,8 +7023,13 @@ lemma isHardlyRamified_galoisRepULift (hℓodd : Odd ℓ)
             refine LinearMap.ext fun x => ?_
             simp [LinearEquiv.conj_apply]
 
-/-- **Universe/abstraction transport of a concrete realization** (sorry
-node, purely formal — no arithmetic content): a hardly ramified
+/-- **Universe/abstraction transport of a concrete realization**
+(**PROVEN**, purely formal — no arithmetic content.  The head label read
+"sorry node" until 2026-07-27, when it was found STALE and corrected here:
+the declaration is compiler-certified `sorryAx`-free, `#print axioms`
+against the built olean returning `[propext, Classical.choice, Quot.sound]`.
+The proof plan recorded below is what the proof actually carries out.)
+A hardly ramified
 representation `τ₀` over a coefficient ring `A₀` in `Type 0` carrying
 the full coefficient-ring package (module-finite local topological
 `ℤ_ℓ`-algebra with the module topology, embedded in `ℚ̄_ℓ`), together
@@ -8920,12 +8992,33 @@ no Hecke-eigenform carrier type is statable on this mathlib pin, so
 the leaf keeps the fused Eichler–Shimura + integrality + hardly
 ramified shape. RE-AUDIT (2026-07-23, fresh against the actual pin —
 see the refreshed VOCABULARY OBSTRUCTION below for the details): the
-obstruction stands; the pin's only new Hecke material is
-`Mathlib.NumberTheory.HeckeRing.Defs` (abstract double-coset modules,
-no ring product, no action on modular forms), and the reference
-project's `IsAutomorphicOfLevel` interface is confirmed unvendorable
-and non-restating (totally-real-`F` quaternionic shape, ≈22.8k-line
-closure with sorried definitions).
+obstruction stands as far as MATHLIB goes; the pin's only new Hecke
+material is `Mathlib.NumberTheory.HeckeRing.Defs` (abstract double-coset
+modules, no ring product, no action on modular forms) — re-checked
+2026-07-27, `grep -rln 'eigenform\|Eigenform\|newform\|Newform\|AtkinLehner'`
+over `.lake/packages/mathlib/Mathlib/` is still EMPTY. The RE-AUDIT then
+went on to say the reference project's `IsAutomorphicOfLevel` interface
+is "confirmed unvendorable and non-restating".
+
+CORRECTION (2026-07-27): the UNVENDORABLE half of that is FALSE, and
+has been since the quaternionic tower was vendored. The tower is IN
+THIS TREE and in the import closure of `Fermat.lean`:
+`IsQuaternionAlgebra` (`Fermat/FLT/Mathlib/Algebra/IsQuaternionAlgebra.lean`),
+`IsQuaternionAlgebra.NumberField.WithRigidification`
+(`Fermat/FLT/QuaternionAlgebra/NumberField.lean`),
+`WeightTwoAutomorphicForm` and `LevelStruct`
+(`Fermat/FLT/AutomorphicForm/QuaternionAlgebra/Basic.lean`), and
+`U₁Data`, `HeckeAlgebra`, `HeckeAlgebra.T`
+(`Fermat/FLT/AutomorphicForm/QuaternionAlgebra/HeckeOperators/Concrete.lean`).
+The same stale claim was already refuted in
+`Fermat/FLT/Modularity/KhareWintenberger.lean` (search `It IS vendorable`)
+with the full 109-module accounting. Refuting check, if this note goes
+stale in the other direction:
+`grep -rn 'HeckeAlgebra.T' Fermat/FLT/AutomorphicForm/` plus
+`lake build Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete`.
+
+What SURVIVES the correction, and is the operative half for this leaf,
+is NON-RESTATING: see the corrected RE-AUDIT item (2) below.
 
 DECOMPOSED (2026-07-23, opening the modularity subtree — this
 supersedes the "no carrier is statable" conclusion of the notes above:
@@ -9025,10 +9118,19 @@ attached to them, so a "newform-like datum" has no carrier type. The
 reference FLT project states the datum as an `ℤ_p`-algebra hom
 `π : HeckeAlgebra D … →ₐ[ℤ_[p]] A` out of a quaternionic Hecke algebra
 (`GaloisRep.IsAutomorphicOfLevel`,
-`FLT/GaloisRepresentation/Automorphic.lean`), but its entire
-`AutomorphicForm/QuaternionAlgebra` tower is absent from both the
-mathlib pin and the vendored subset, so that interface cannot be
-vendored as a leaf statement here.
+`FLT/GaloisRepresentation/Automorphic.lean`), and this paragraph used
+to continue "but its entire `AutomorphicForm/QuaternionAlgebra` tower
+is absent from both the mathlib pin and the vendored subset, so that
+interface cannot be vendored as a leaf statement here".
+
+CORRECTION (2026-07-27): that continuation is FALSE. The tower is
+absent from the MATHLIB PIN only; it is present in THIS PROJECT, under
+`Fermat/FLT/{AutomorphicForm,QuaternionAlgebra,DivisionAlgebra,HaarMeasure}/…`
+and the `Fermat/FLT/Mathlib/` shim, and every one of those modules is
+reachable from `Fermat.lean`, so it is neither absent nor free-floating.
+The prerequisites of `IsAutomorphicOfLevel` are therefore all available
+here and the predicate IS vendorable. What blocks its USE at this leaf
+is the shape mismatch recorded in RE-AUDIT item (2) below, not absence.
 
 RE-AUDIT (2026-07-23, against the actual pin and reference tree,
 refreshing the above): (1) the pin has gained exactly one Hecke item,
@@ -9036,13 +9138,28 @@ refreshing the above): (1) the pin has gained exactly one Hecke item,
 double-coset modules ONLY; the convolution product/ring structure of
 its "later files" is not in the pin (nothing imports it), and grep
 confirms zero hits for Hecke operators on modular forms, newforms,
-Atkin–Lehner, eigenforms, or attached Galois representations. (2) The
-reference `IsAutomorphicOfLevel` remains unvendorable AND would not
-restate these leaves even if vendored: its transitive FLT-internal
-closure is 122 files / ≈22.8k lines (quaternionic automorphic forms,
-Fujisaki finiteness, adelic Haar measure), it contains sorried
-members (including a sorried `IsQuaternionAlgebra (E ⊗[F] D)`
-instance inside its own interface layer), and it is stated for
+Atkin–Lehner, eigenforms, or attached Galois representations —
+re-verified 2026-07-27. (2) [CORRECTED 2026-07-27; the original read
+"The reference `IsAutomorphicOfLevel` remains unvendorable AND would
+not restate these leaves even if vendored", and the first conjunct is
+FALSE.] `IsAutomorphicOfLevel` HAS BEEN VENDORED in substance: its
+transitive FLT-internal closure — quaternionic automorphic forms,
+Fujisaki finiteness, adelic Haar measure — now lives under
+`Fermat/FLT/{AutomorphicForm,QuaternionAlgebra,DivisionAlgebra,HaarMeasure}/…`
+(`IsQuaternionAlgebra`, `WithRigidification`, `LevelStruct`,
+`WeightTwoAutomorphicForm`, `U₁Data`, `HeckeAlgebra`, `HeckeAlgebra.T`),
+builds green against our pin, and is inside the import closure of
+`Fermat.lean`. The vendoring cost is TWO sorried leaves, both in
+`AutomorphicForm/QuaternionAlgebra/Basic.lean` — `index_ray_ne_zero`
+(finiteness of a ray class group) and `relIndex_unitsOrder_ne_zero`
+(Voight 17.7.13, feeding `isFiniteRelIndex_Δ`). In particular there is
+NO sorried `IsQuaternionAlgebra (E ⊗[F] D)` instance in the vendored
+interface layer; that specific claim was wrong even about the reference
+tree as it now stands here (`grep -rn 'E ⊗\[F\] D' Fermat/` hits only
+this docstring).
+
+What DOES survive, and is the whole of the live obstruction: the
+predicate is stated for
 totally real `F` with `2 < [F(ζ_p):F]` — the quaternionic shape the
 reference project reaches from `ℚ` only through the (sorried)
 `cyclic_base_change`; our leaves are the classical `ℚ`-level
