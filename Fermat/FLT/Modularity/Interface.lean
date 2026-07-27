@@ -2892,21 +2892,136 @@ CIRCLE. This leaf is STRICTLY WEAKER than the node
   untouched — as it must, since discreteness is where the integral model
   is unavoidable.
 
-**REDUNDANCY TO COLLECT, for the owner of the `q`-expansion cluster
-below.** `exists_qCoeff_rational_relations` (and hence
-`exists_rational_qExpansion_spanning`) is currently proven from
-`integralCuspForms_span_eq_top`, i.e. THROUGH `exists_heckeSubring_zForm`
-— it obtains a `ℚ`-statement by way of the `ℤ`-form, the most expensive
-available route, exactly as `heckeSubring_moduleFinite` does for
-finiteness. Its proof extracts a `ℂ`-basis from the integral lattice and
-then only ever uses that the selected forms have RATIONAL coefficients,
-so replacing `exists_linearIndependent ℂ (integralCuspForms N)` +
-`integralCuspForms_span_eq_top hN` by `exists_linearIndependent ℂ
-(rationalCuspForms N)` + `rationalCuspForms_span_eq_top hN` re-proves it
-verbatim from THIS leaf and removes the `ℤ`-form from the whole
-rationality cluster's cone. That rewiring is left to that declaration's
-owner; it is not done here because this owner's mandate is the two
-`ℤ`-form leaves.
+**REDUNDANCY COLLECTED (2026-07-27).** `exists_qCoeff_rational_relations`
+below was proven from `integralCuspForms_span_eq_top`, i.e. THROUGH
+`exists_heckeSubring_zForm` — a `ℚ`-statement obtained by way of the
+`ℤ`-form, the most expensive available route. Its proof extracts a
+`ℂ`-basis from the lattice and then only ever uses that the selected
+forms have RATIONAL coefficients, so `exists_linearIndependent ℂ
+(integralCuspForms N)` + `integralCuspForms_span_eq_top hN` has been
+replaced by `exists_linearIndependent ℂ (rationalCuspForms N)` +
+`rationalCuspForms_span_eq_top hN`, re-proving it verbatim from THIS
+leaf (the coordinates are now rational rather than integral, which is
+all the argument ever consumed). Consequence, and the point of the
+exercise: `heckeSubring_moduleFinite_int` — the DISCRETENESS leaf — is
+no longer in the cone of `exists_qCoeff_rational_relations`,
+`exists_rational_qExpansion_spanning` or anything downstream of them.
+The whole rationality cluster now rests on THIS leaf alone.
+
+**ATOMICITY / ROUTE AUDIT (2026-07-27, by the owner who collected the
+redundancy). Four axes searched. Along three of them the leaf is
+irreducible; the fourth is a genuine decomposition and is named.**
+
+*Axis 1 — `ℚ`-structure-shaped cuts: every candidate is EQUIVALENT, i.e.
+DEAD END 8.* Write `𝕋_ℚ` for the `ℚ`-subalgebra of `End_ℂ(S₂)` generated
+by the `T_q`, and `W ⊆ S₂^∨` for the `ℚ`-span of the coefficient
+functionals `a_m`. All of the following are equivalent to this leaf, so
+none of them is a cut:
+
+1. `dim_ℚ 𝕋_ℚ ≤ D`;
+2. `𝕋_ℚ ⊗_ℚ ℂ → End_ℂ(S₂)` is injective (`𝕋` is DEFINED OVER `ℚ`);
+3. `dim_ℚ W ≤ D` — this is `exists_qCoeff_rational_relations` below,
+   which since today is proven FROM this leaf;
+4. `∃ V ⊆ S₂` a `ℚ`-subspace, `T_q`-stable, having a `ℚ`-basis that is
+   also a `ℂ`-basis of `S₂`.
+
+The chain, each step checkable: (4) ⟹ `𝕋_ℚ ↪ End_ℚ(V) ≅ M_D(ℚ)` so
+`dim_ℚ 𝕋_ℚ ≤ D²`, and `−⊗_ℚ ℂ` is exact so
+`𝕋_ℚ ⊗ ℂ ↪ End_ℚ(V) ⊗ ℂ = End_ℂ(S₂)`, which is (2); (2) ⟹
+`dim_ℚ 𝕋_ℚ = dim_ℂ (ℂ-span of 𝕋) ≤ D`, the last inequality FREE from
+left-nondegeneracy (`heckeSubring_eq_zero_of_forall_qCoeff_one` above,
+via `T ↦ (a₁(T e_j))_j`), which is (1); (1) ⟹ (3) because `W` is the
+`ℚ`-linear image of `𝕋_ℚ` under `T ↦ a₁(T ·)` (surjective by
+`exists_mem_heckeSubring_qCoeff`); (3) ⟹ this leaf is the predual-basis
+argument already written in `exists_rational_qExpansion_spanning`; and
+this leaf ⟹ (4) with `V = rationalCuspForms N`, which IS a `ℚ`-subspace
+(`a_m(c f) = c · a_m(f)` for `c ∈ ℚ`) even though it is declared as a
+`ℤ`-submodule.
+
+**Warning for anyone cutting at (4): drop the basis clause and it goes
+VACUOUS.** `V = S₂` viewed as a `ℚ`-subspace is `T_q`-stable and
+`ℂ`-spans. The content is entirely in `dim_ℚ V = D`.
+
+*Axis 2 — the TRACE FORM / Eichler–Selberg: blocked by an OPEN problem,
+not by a missing formalization.* Suppose one had `Tr(T_n) ∈ ℤ` (the
+Eichler–Selberg trace formula; absent from this pin and from mathlib —
+`grep -rn 'Eichler' .lake/packages/mathlib` is empty). Since `T_n T_m`
+is a `ℤ`-combination of `T_k`, the form `⟨x, y⟩ = Tr(xy)` on `𝕋_ℚ` is
+then `ℚ`-valued, and `x ↦ (Tr(x T_{n_i}))_i ∈ ℚ^D` for `T_{n_i}`
+`ℂ`-spanning the `ℂ`-span of `𝕋` would give `dim_ℚ 𝕋_ℚ ≤ D` — EXCEPT
+that its kernel is the radical of the trace form, which vanishes iff
+`𝕋 ⊗ ℂ` is SEMISIMPLE. For `Γ₀(N)` that is exactly the semisimplicity
+of `U_q` on the `q`-old part, which is a known-hard and in general OPEN
+question (Coleman–Edixhoven, *On the semi-simplicity of the
+`U_p`-operator on modular forms*, Math. Ann. 310 (1998), 119–127). So
+this axis does not merely need a theory nobody has written; it needs a
+theorem nobody has proven, and the `ℚ`-dimension of the radical is
+unbounded a priori. **Do not spend a slot on the trace formula for the
+sake of THIS leaf.**
+
+*Axis 3 — `H¹(Γ₀(N), ℚ)` / group cohomology: gives `≤ 2D`, and the
+factor `2` is the whole remaining content.* mathlib does have group
+cohomology, so this looks like the cheap route, and it is not. A
+Hecke-stable `ℚ`-structure on `H¹_par ≅ S₂ ⊕ S̄₂` makes
+`𝕋_ℚ ⊗ ℂ ↪ End_ℂ(S₂ ⊕ S̄₂)`. Writing `J` for the kernel of
+`𝕋_ℚ ⊗ ℂ → End_ℂ(S₂)`, the second factor is the COMPLEX CONJUGATE
+action, so it contributes only `J ∩ J̄ = 0`, whence `dim J ≤ ½ dim_ℚ 𝕋_ℚ`
+and `dim_ℚ 𝕋_ℚ ≤ 2D` — finite, but NOT `≤ D`, and finiteness alone is
+useless here (`ℚ(√2) ⊆ ℂ` is finite over `ℚ` at `D = 1`, the standing
+counterexample of this cluster). Closing the factor `2` is precisely
+"`H¹_par(Γ₀(N), ℚ)` is FREE OF RANK `2` over `𝕋_ℚ`", the substantive
+half of Eichler–Shimura, which is not weaker than this leaf.
+
+*Axis 4 — NEWFORMS: a genuine decomposition, the only one found, and
+the most promising of the four.*
+`S₂(Γ₀(N)) = ⊕_{M ∣ N} ⊕_{d ∣ N/M} V_d(S₂(Γ₀(M))^{new})`, where the
+degeneracy map `V_d : f(z) ↦ f(dz)` acts on coefficients by
+`a_m(V_d f) = a_{m/d}(f)` (`0` unless `d ∣ m`) and therefore PRESERVES
+rationality by inspection. So this leaf decomposes into (i) rationality
+on the NEW subspace at each `M ∣ N` — strictly weaker, being a
+statement about a subspace — and (ii) the Atkin–Lehner decomposition
+itself.
+
+**CORRECTION to a claim this audit made in its first draft (same day),
+recorded because it is exactly the "stale impossible note" the doctrine
+warns about.** The first draft said (ii) "exists NOWHERE", on the
+strength of a grep that was truncated by `head`. That is FALSE. What is
+true, and what the next owner should check by name rather than take from
+here:
+
+* mathlib really has none of it —
+  `grep -rn 'newform\|oldform\|AtkinLehner' .lake/packages/mathlib` is
+  empty — and `~/cs/FLT` is quaternionic. That half of the draft stands.
+* But THIS FILE already has the degeneracy operators, PROVEN:
+  `degeneracyOp N M d` (~30889) with `qCoeff_degeneracyOp` (~30901) —
+  literally `a_m(V_d f) = if d ∣ m then a_{m/d}(f) else 0`, i.e. the
+  rationality-preservation above is one `rw` away — together with
+  `degeneracyOp_injective` (~30982) and `heckeOp_degeneracyOp` (~30964),
+  `T_q ∘ V_d = V_d ∘ T_q` at `q ∤ M`. The file's own line ~27673, "no
+  Petersson product and no oldform degeneracy maps", is itself STALE:
+  that block was built 2026-07-26.
+* `atkinLehnerOp M Q` (~36221) exists too, though `exists_atkinLehnerOp`
+  (~36191) and `atkinLehnerOp_apply_eq_neg_qCoeff_smul` (~36272) are
+  still OPEN leaves.
+
+So what axis 4 is actually missing is narrower than "the whole
+Atkin–Lehner theory": it is the DIRECT-SUM decomposition (old ⊕ new,
+with multiplicity one) plus rationality on the new part. The nearest
+existing statement is the OPEN leaf
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (~31779).
+
+**Second obstacle on axis 4, and it is real: DECLARATION ORDER.** All of
+that machinery sits ~28000 lines BELOW this leaf, so consuming it here
+needs the degeneracy block hoisted above `rationalCuspForms` — the same
+shape of large relocation that route B of `integralCuspForms_span_eq_top`
+needed for the `heckeEndo` block, and it belongs to whoever executes
+axis 4 rather than to this audit.
+
+**Net verdict**: the arithmetic residue is `dim_ℚ 𝕋_ℚ ≤ D`, and on this
+pin it is reachable only by building one of: the `ℚ`-model of `X₀(N)`
+(route A), Eichler–Shimura freeness of `H¹_par` over `𝕋` (axis 3), or
+Atkin–Lehner newform theory (axis 4). A successor should pick one and
+build it, and should NOT expect a further cut of this statement.
 
 SOUNDNESS: `0 < N` is inherited from the consumer. At genus-zero levels
 `S₂(Γ₀(N)) = 0` and the statement is `⊥ = ⊤` in the zero module, i.e.
@@ -3306,10 +3421,18 @@ those four may be used here; in particular
 `exists_integral_qExpansion_spanning` is a repackaging of this very
 statement and is the trap to avoid.
 
-THIS NODE ALSO DISCHARGES THE `ℚ`-LEAF (done 2026-07-26). The former
-citation `exists_qCoeff_rational_relations` immediately below is now
-PROVEN from this one, entirely non-circularly since it is stated above
-it, by the following linear algebra: fix a `ℂ`-basis `e₁,…,e_D`
+THIS NODE ONCE DISCHARGED THE `ℚ`-LEAF — **NO LONGER, AS OF
+2026-07-27, AND THAT IS AN IMPROVEMENT.** The paragraph below is kept
+because its linear algebra is still exactly the proof of
+`exists_qCoeff_rational_relations`; only its INPUT changed. That node
+is now proven from `rationalCuspForms_span_eq_top` — Shimura
+rationality, stated far above and STRICTLY WEAKER than this one — so
+this node is no longer in the `ℚ`-cluster's cone at all, and neither
+is the discreteness leaf `heckeSubring_moduleFinite_int` beneath it.
+Read `ℤ^D` as `ℚ^D` and "integral" as "rational" throughout the
+paragraph and it describes the current proof verbatim; that is the
+whole of the change, and it is why the rewiring was free. Historical
+form, 2026-07-26: fix a `ℂ`-basis `e₁,…,e_D`
 of `S₂(Γ₀(N))` drawn from `S₂(Γ₀(N); ℤ)` (possible by this node), so
 that every `a_m` has INTEGER coordinates `(a_m(e_j))_j ∈ ℤ^D`; extract
 from `{(a_m(e_j))_j : m ∈ ℕ} ⊆ ℚ^D` a maximal `ℚ`-independent
@@ -3321,16 +3444,16 @@ subfamily, indexed by `n₁,…,n_d`; it has `d ≤ D` by independence and
 functionals because they agree on a basis. That makes this node the
 SINGLE citation of the whole `q`-expansion cluster.
 
-TRADE-OFF THIS CREATES, recorded so it can be undone deliberately.
+TRADE-OFF THIS CREATED — **RESOLVED 2026-07-27, no action outstanding.**
 Classically, rationality (Shimura Thm 3.52) needs only the `ℚ`-model of
 `X₀(N)`, while bounded denominators needs the INTEGRAL model — the
 literature keeps them apart, and the 2026-07-25 cut did too. Routing
-the `ℚ`-statement through this node cites the STRONGER of the two for
-both. That is a strict reduction in the number of open leaves and no
-loss in practice on a pin that has neither model; but an owner who
-later proves rationality from the `ℚ`-model alone should restore
-`exists_qCoeff_rational_relations` to a citation and delete the
-derivation, which is self-contained and touches nothing else.
+the `ℚ`-statement through this node cited the STRONGER of the two for
+both, and this paragraph asked a successor to undo that once a
+`ℚ`-only citation existed. One now does — `rationalCuspForms_span_eq_top`,
+opened 2026-07-27 — and `exists_qCoeff_rational_relations` has been
+rewired onto it. The literature's separation is restored: the
+`ℚ`-statement cites the `ℚ`-model and this node cites the integral one.
 
 SOUNDNESS: `0 < N` is required only because the Sturm bound and the
 Hecke operators are junk at `N = 0`; at genus-zero levels
@@ -3495,11 +3618,11 @@ theorem integralCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
   exact Submodule.span_mono hsub
 
 /-- **The `ℚ`-structure of the `q`-expansion coefficient functionals**
-(PROVEN, 2026-07-26, over the single `q`-expansion-principle citation
-`integralCuspForms_span_eq_top` above — formerly itself a citation, the
-ARITHMETIC RESIDUE of Shimura's rationality theorem isolated 2026-07-25
-as the single input of the assembly `exists_rational_qExpansion_spanning`
-below):
+(PROVEN, 2026-07-26; REWIRED 2026-07-27 to the strictly weaker
+`ℚ`-citation `rationalCuspForms_span_eq_top` above — formerly itself a
+citation, the ARITHMETIC RESIDUE of Shimura's rationality theorem
+isolated 2026-07-25 as the single input of the assembly
+`exists_rational_qExpansion_spanning` below):
 writing `D = dim_ℂ S₂(Γ₀(N))` (finite by `cuspForm_finiteDimensional`),
 there are `D` indices `n 0, …, n (D−1)` such that EVERY coefficient
 functional `a_m` is a `ℚ`-linear combination of
@@ -3543,12 +3666,13 @@ the `ℚ`-span of `{a_1, a_2}` while no cusp form has rational
 exactly what rules this out, and it is also what the classical proof
 gives — `dim_ℚ W = D` is the `ℚ`-form statement.
 
-ASSEMBLY (2026-07-26). The arithmetic is now supplied entirely by
-`integralCuspForms_span_eq_top` — `S₂(Γ₀(N); ℤ)` has full rank — and
-the rest is linear algebra over `ℚ ⊆ ℂ`, with no modular-curve input:
-(i) extract from the integral lattice a `ℂ`-basis `e₁,…,e_D` of
+ASSEMBLY (2026-07-26; rewired to the `ℚ`-citation 2026-07-27). The
+arithmetic is supplied entirely by `rationalCuspForms_span_eq_top` —
+`S₂(Γ₀(N); ℚ)` has full rank — and the rest is linear algebra over
+`ℚ ⊆ ℂ`, with no modular-curve input:
+(i) extract from the rational forms a `ℂ`-basis `e₁,…,e_D` of
 `S₂(Γ₀(N))`, so that the coordinate vector `v_m = (a_m(e_j))_j` of
-every coefficient functional lies in `ℤ^D ⊆ ℚ^D`; (ii) the `v_m` span
+every coefficient functional lies in `ℚ^D`; (ii) the `v_m` span
 `ℚ^D` over `ℚ` — otherwise a nonzero `u ∈ ℚ^D` kills all of them, and
 then `∑_j u_j e_j` is killed by every `a_m`, hence is `0` by the
 `q`-expansion principle `cuspForm_eq_of_forall_qCoeff_eq`,
@@ -3595,34 +3719,32 @@ theorem exists_qCoeff_rational_relations {N : ℕ} (hN : 0 < N) :
     refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
     rw [qCoeff_zero_cuspForm]
     exact hf m
-  -- (1) a `ℂ`-basis of `S₂(Γ₀(N))` drawn from the integral lattice
+  -- (1) a `ℂ`-basis of `S₂(Γ₀(N))` drawn from the RATIONAL forms
   obtain ⟨b, hbsub, hbspan, hbli⟩ :=
     exists_linearIndependent ℂ
-      ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2)))
-  rw [integralCuspForms_span_eq_top hN] at hbspan
+      ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2)))
+  rw [rationalCuspForms_span_eq_top hN] at hbspan
   let B0 : Module.Basis b ℂ (CuspForm (Gamma0GL N) 2) :=
     Module.Basis.mk hbli (by rw [Subtype.range_coe, hbspan])
   haveI : Fintype b := FiniteDimensional.fintypeBasisIndex B0
   have hcard : Fintype.card b = D := (Module.finrank_eq_card_basis B0).symm
   let e : Module.Basis (Fin D) ℂ (CuspForm (Gamma0GL N) 2) :=
     B0.reindex (Fintype.equivFinOfCardEq hcard)
-  have hein : ∀ i : Fin D, e i ∈ integralCuspForms N := by
+  have hein : ∀ i : Fin D, e i ∈ rationalCuspForms N := by
     intro i
     have hval : e i
         = (((Fintype.equivFinOfCardEq hcard).symm i : b) : CuspForm (Gamma0GL N) 2) := by
       simp [e, Module.Basis.reindex_apply, B0, Module.Basis.mk_apply]
     rw [hval]
     exact hbsub ((Fintype.equivFinOfCardEq hcard).symm i).2
-  -- (2) the coefficient functionals have INTEGER coordinates in that basis
-  have hval : ∀ (m : ℕ) (j : Fin D), ∃ z : ℤ, qCoeffL N m (e j) = (z : ℂ) :=
+  -- (2) the coefficient functionals have RATIONAL coordinates in that basis
+  have hval : ∀ (m : ℕ) (j : Fin D), ∃ z : ℚ, qCoeffL N m (e j) = (z : ℂ) :=
     fun m j => hein j m
   choose z hz using hval
-  set v : ℕ → (Fin D → ℚ) := fun m j => ((z m j : ℤ) : ℚ) with hv
+  set v : ℕ → (Fin D → ℚ) := fun m j => z m j with hv
   have hvC : ∀ (m : ℕ) (j : Fin D), ((v m j : ℚ) : ℂ) = qCoeffL N m (e j) := by
     intro m j
     rw [hv, hz m j]
-    push_cast
-    ring
   -- (3) those rational coordinate vectors span `ℚ^D`
   have hvspan : Submodule.span ℚ (Set.range v) = ⊤ := by
     by_contra hne
