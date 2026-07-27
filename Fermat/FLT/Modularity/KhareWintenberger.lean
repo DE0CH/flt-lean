@@ -3413,9 +3413,222 @@ theorem exists_totallyDefinite_rigidified_quaternionAlgebra_of_even
       Nonempty (_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D) := by
   sorry
 
+/-- **A nonzero simultaneous eigenvector for a commutative coefficient algebra
+produces an algebra CHARACTER** (PROVEN, 2026-07-27; general linear algebra, no
+automorphic input).
+
+`A` is a commutative `E`-algebra acting on an `E`-vector space `V`, compatibly
+with the `E`-action (`IsScalarTower E A V`, `SMulCommClass A E V`), and `f ≠ 0`
+is a vector every element of `A` scales. Then the scaling factor is an
+`E`-algebra homomorphism `A →ₐ[E] E`, and the conclusion is stated in the
+"read off the eigenvalue" form `∀ a e, a • f = e • f → θ a = e`, which is what a
+consumer actually needs: it both DEFINES `θ` on the generators and gives back the
+uniqueness of the eigenvalue, so no separate injectivity argument is needed
+downstream.
+
+Well-definedness is the only content: `e • f = e' • f` with `f ≠ 0` forces
+`e = e'`, because `(e - e') • f = 0` and `e - e'` would otherwise be invertible.
+The algebra-hom axioms are then forced, `map_mul'` using commutativity of the
+`A`- and `E`-actions.
+
+This is the brick that turns the Jacquet–Langlands EIGENFORM into the Hecke
+CHARACTER the Carayol node consumes; see
+`exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`. -/
+theorem exists_algHom_of_smul_eq_smul
+    {E : Type*} [Field E] {A : Type*} [CommRing A] [Algebra E A]
+    {V : Type*} [AddCommGroup V] [Module E V] [Module A V]
+    [IsScalarTower E A V] [SMulCommClass A E V]
+    {f : V} (hf : f ≠ 0) (h : ∀ a : A, ∃ e : E, a • f = e • f) :
+    ∃ θ : A →ₐ[E] E, ∀ (a : A) (e : E), a • f = e • f → θ a = e := by
+  have hinj : ∀ e e' : E, e • f = e' • f → e = e' := by
+    intro e e' he
+    by_contra hne
+    apply hf
+    have h0 : (e - e') • f = 0 := by rw [sub_smul, he, sub_self]
+    have h1 := congrArg (fun x => (e - e')⁻¹ • x) h0
+    simpa [smul_smul, inv_mul_cancel₀ (sub_ne_zero.mpr hne)] using h1
+  obtain ⟨θ₀, hθ⟩ : ∃ θ₀ : A → E, ∀ a : A, a • f = θ₀ a • f :=
+    ⟨fun a => (h a).choose, fun a => (h a).choose_spec⟩
+  refine ⟨{ toFun := θ₀
+            map_one' := hinj _ _ (by rw [← hθ, one_smul, one_smul])
+            map_mul' := fun x y => hinj _ _ ?_
+            map_zero' := hinj _ _ (by rw [← hθ, zero_smul, zero_smul])
+            map_add' := fun x y => hinj _ _ ?_
+            commutes' := fun e => hinj _ _ ?_ },
+    fun a e he => hinj _ _ ((hθ a).symm.trans he)⟩
+  · rw [← hθ, mul_smul, hθ y, smul_comm, hθ x, smul_smul, mul_comm]
+  · rw [← hθ, add_smul, hθ x, hθ y, add_smul]
+  · rw [← hθ, algebraMap_smul]
+    simp
+
+/-- **An auxiliary prime for the quaternionic level datum exists** (PROVEN,
+2026-07-27; CUT out of STEP 1b, `exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`).
+
+`TotallyDefiniteQuaternionAlgebra.U₁Data F R p` carries two conditions on `p`
+that have NOTHING to do with Jacquet–Langlands: `p.Prime` and
+`2 < [F(ζ_p) : F]` (the latter is what makes the `U₁`-level "sufficiently
+small", i.e. what kills the units obstruction in
+`U₁Data.eq_one_of_pow_eq_one_of_natDegree_le_two`). Since the level datum built
+by the transfer half takes trivial characters at the bad places, ANY `p`
+satisfying these two conditions serves, so this obligation splits off cleanly
+and the citation shrinks by exactly it.
+
+Proof. `[F(ζ_p) : ℚ] = [F : ℚ] · [F(ζ_p) : F]`, and `F(ζ_p)` contains
+`ℚ(ζ_p)`, whose degree over `ℚ` is `φ(p) = p - 1` because `cyclotomic p ℚ` is
+irreducible (`Polynomial.cyclotomic.irreducible_rat`) and is therefore the
+minimal polynomial of a primitive `p`-th root of unity. Hence
+`p - 1 ≤ [F : ℚ] · [F(ζ_p) : F]`, and choosing `p ≥ 2·[F : ℚ] + 2` prime
+(infinitude of primes) forces `[F(ζ_p) : F] > 2`. Note the argument bounds the
+degree from BELOW and so needs no irreducibility of `cyclotomic p F`, which is
+false in general. -/
+theorem exists_prime_two_lt_finrank_cyclotomicField
+    (F : Type u) [Field F] [NumberField F] :
+    ∃ p : ℕ, p.Prime ∧ 2 < Module.finrank F (CyclotomicField p F) := by
+  classical
+  obtain ⟨p, hple, hp⟩ := Nat.exists_infinite_primes (2 * Module.finrank ℚ F + 2)
+  refine ⟨p, hp, ?_⟩
+  haveI : NeZero p := ⟨hp.ne_zero⟩
+  set L := CyclotomicField p F with hLdef
+  have hζ : IsPrimitiveRoot (IsCyclotomicExtension.zeta p F L) p :=
+    IsCyclotomicExtension.zeta_spec p F L
+  set ζ := IsCyclotomicExtension.zeta p F L with hζdef
+  have hmin : minpoly ℚ ζ = Polynomial.cyclotomic p ℚ :=
+    (hζ.minpoly_eq_cyclotomic_of_irreducible
+      (Polynomial.cyclotomic.irreducible_rat hp.pos)).symm
+  have hint : IsIntegral ℚ ζ := IsIntegral.of_finite ℚ ζ
+  have hdeg : Module.finrank ℚ (IntermediateField.adjoin ℚ ({ζ} : Set L)) = p - 1 := by
+    rw [IntermediateField.adjoin.finrank hint, hmin, Polynomial.natDegree_cyclotomic,
+      Nat.totient_prime hp]
+  have hle : Module.finrank ℚ (IntermediateField.adjoin ℚ ({ζ} : Set L))
+      ≤ Module.finrank ℚ L :=
+    Nat.le_of_dvd Module.finrank_pos
+      ⟨_, (Module.finrank_mul_finrank ℚ (IntermediateField.adjoin ℚ ({ζ} : Set L)) L).symm⟩
+  have htow : Module.finrank ℚ F * Module.finrank F L = Module.finrank ℚ L :=
+    Module.finrank_mul_finrank ℚ F L
+  have hFpos : 0 < Module.finrank ℚ F := Module.finrank_pos
+  by_contra hcon
+  have hmul : Module.finrank ℚ F * Module.finrank F L ≤ Module.finrank ℚ F * 2 :=
+    Nat.mul_le_mul_left _ (Nat.le_of_not_lt hcon)
+  omega
+
+/-- **STEP 1b′ of the Carayol node — JACQUET–LANGLANDS proper, in its EIGENFORM
+form** (sorry leaf; CUT 2026-07-27 out of STEP 1b,
+`exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra`, which is now a
+PROVEN assembly over this leaf, `exists_prime_two_lt_finrank_cyclotomicField`
+and `exists_algHom_of_smul_eq_smul`).
+
+Content, and what the cut removed from the citation. The parent asked for an
+`E`-algebra CHARACTER of `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮`.
+Two of the three things that requires are not Jacquet–Langlands at all:
+
+* the auxiliary prime `p` of the level datum (`p.Prime`, `2 < [F(ζ_p) : F]`) —
+  now an INPUT, supplied by `exists_prime_two_lt_finrank_cyclotomicField`;
+* the passage from a Hecke EIGENVECTOR to an algebra CHARACTER — pure linear
+  algebra over a commutative subalgebra of `End_E`, now
+  `exists_algHom_of_smul_eq_smul`, using
+  `HeckeAlgebra.adjoin_T_U_eq_top` to see that the `T`'s and `U`'s generate.
+
+What is LEFT here is the analytic statement and nothing else: the Hilbert
+eigensystem `(E, heckeF)` — automorphic by `hmod` together with the cuspidality
+proxy `hirrF` — is matched, place by place outside `badF`, by a NONZERO weight-`2`
+automorphic form `f` on `Dˣ` of level `U₁(S, ∅)`, which is a simultaneous
+eigenvector for every `T_w` with `w ∉ S`. Jacquet–Langlands, *Automorphic forms
+on GL(2)*, Lecture Notes in Math. **114** (1970), §14–16; see also Carayol 1986
+§0.9. Classically: `π` cuspidal on `GL₂/F`, discrete series (here: weight `2`)
+at every infinite place, transfers to an automorphic representation `π'` of
+`Dˣ` with the same finite components, and `f` is the new vector in the
+`U₁(S, ∅)`-fixed line of `π'`; the eigenvalues at `w ∉ S` agree because
+`π'_w ≅ π_w` is unramified there.
+
+`𝒮.Q = ∅` IS PART OF THE CONCLUSION AND IS NOT A WEAKENING. `Q` is the set of
+Taylor–Wiles primes, an AUXILIARY datum imposed by the patching argument
+downstream, not by the transfer; the form Jacquet–Langlands produces lives at
+the minimal level, with no tame-`p` condition. Pinning it here is what makes the
+`U`-generators of the Hecke algebra vacuous, hence what lets the parent's
+character be built from the `T`-eigenvalues alone. A successor who finds it
+inconvenient may drop it and instead conclude `∀ w ∈ 𝒮.Q, ∀ α ≠ 0, ∃ e,
+U D E 𝒮 w _ α _ f = e • f`; the parent assembly would then need that clause in
+its `mem` case and nothing else changes.
+
+`a` IS AN OUTPUT AND IS ONLY PINNED OUTSIDE `badF ∪ 𝒮.S`. That asymmetry is
+deliberate and necessary: the character has to be defined on `T_w` for EVERY
+`w ∉ 𝒮.S`, including the `w ∈ badF \ 𝒮.S` where `hmod` says nothing, so `f` must
+be a `T_w`-eigenvector there too — but its eigenvalue is not determined by the
+data and must not be asserted to be `-(heckeF w).coeff 1`. This is exactly why
+the eigenvalue function `a` is existentially quantified rather than written as
+`fun w => -(heckeF w).coeff 1`.
+
+WHY THE DEFINITENESS HYPOTHESIS IS LOAD-BEARING — inherited verbatim from the
+parent, and this statement is FALSE without it. `D := M₂(F)` is a rigidified
+quaternion algebra over every `F`, and the split algebra has no
+compact-mod-centre unit group, so the finite-dimensional space of weight-`2`
+forms on `Dˣ` that the vendored `HeckeAlgebra` is built from is not the one
+Jacquet–Langlands transfers into. `IsTotallyDefinite F D` together with
+`WithRigidification F D` pins `D` completely.
+
+`hFeven` IS DELIBERATELY ABSENT, for the parent's reason: a totally definite `D`
+split at every finite place has local invariant `1/2` at each of the `[F : ℚ]`
+infinite places and `0` elsewhere, and those must sum to `0` in `ℚ/ℤ`.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_eigenform_of_totallyDefinite_quaternionAlgebra
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ) (hp : p.Prime)
+    (hcyc : 2 < Module.finrank F (CyclotomicField p F)) :
+    ∃ (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
+      (f : (_root_.TotallyDefiniteQuaternionAlgebra.U₁ 𝒮).toStruct.form D E),
+      𝒮.Q = ∅ ∧ f ≠ 0 ∧
+      (∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) (hwS : w ∉ 𝒮.S),
+        _root_.TotallyDefiniteQuaternionAlgebra.HeckeOperator.T D E 𝒮 w hwS f = a w • f) ∧
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F), w ∉ 𝒮.S → w ∉ badF →
+        (heckeF w).coeff 1 = - a w) := by
+  sorry
+
 /-- **STEP 1b of the Carayol node — JACQUET–LANGLANDS proper: the Hilbert
 eigensystem `(E, heckeF)` transfers to a GIVEN totally definite rigidified
-quaternion algebra** (sorry leaf; CUT 2026-07-27 out of STEP 1,
+quaternion algebra** (PROVEN assembly since 2026-07-27; CUT 2026-07-27 out of STEP 1,
 `exists_totallyDefinite_heckeCharacter_of_heckePackage`, which is now a
 PROVEN assembly over this leaf and its sibling
 `exists_totallyDefinite_rigidified_quaternionAlgebra_of_even`).
@@ -3433,11 +3646,31 @@ cuspidality proxy `hirrF`; the RESIDUAL FAITHFULNESS GAP that leaves is
 stated in `carayol_threeadic_realization_of_heckePackage`'s docstring and
 is unchanged by this cut.
 
-This is a genuine literature citation and is not expected to be proven
-in-tree: Jacquet–Langlands, *Automorphic forms on GL(2)*, Lecture Notes in
-Math. **114** (1970), §14–16; see also Carayol 1986 §0.9, which is where
-the even-degree quaternionic form of Théorème (A) comes from in the first
-place.
+This WAS a bare citation and is now an ASSEMBLY (2026-07-27) over three
+declarations stated immediately above, of which only the first is a citation:
+
+* `exists_eigenform_of_totallyDefinite_quaternionAlgebra` — Jacquet–Langlands
+  proper, in its eigenform form: a NONZERO weight-`2` form `f` on `Dˣ` of level
+  `U₁(S, ∅)`, simultaneous eigenvector for every `T_w` with `w ∉ S`, whose
+  eigenvalue is `-(heckeF w).coeff 1` outside `badF`. Jacquet–Langlands,
+  *Automorphic forms on GL(2)*, Lecture Notes in Math. **114** (1970), §14–16;
+  see also Carayol 1986 §0.9, which is where the even-degree quaternionic form
+  of Théorème (A) comes from in the first place;
+* `exists_prime_two_lt_finrank_cyclotomicField` (PROVEN) — the auxiliary prime
+  `p` of the level datum. `U₁Data` demands `p.Prime` and `2 < [F(ζ_p) : F]`,
+  neither of which is automorphic; with trivial characters at the bad places any
+  such `p` serves, so this obligation is not part of the correspondence and is
+  now discharged in-tree;
+* `exists_algHom_of_smul_eq_smul` (PROVEN) — the passage from Hecke
+  EIGENVECTOR to Hecke CHARACTER. `HeckeAlgebra D 𝒮` is a COMMUTATIVE
+  subalgebra of `End_E` generated by the `T`'s and `U`'s
+  (`HeckeAlgebra.adjoin_T_U_eq_top`), the `U`'s are vacuous because the leaf
+  delivers `𝒮.Q = ∅`, so `Algebra.adjoin_induction` propagates "scales `f`"
+  from the generators to the whole algebra and the scaling factor IS the
+  character.
+
+So what remains cited is exactly the analytic transfer, and the two pieces of
+bookkeeping that used to travel with it are gone from the citation.
 
 WHY THE DEFINITENESS HYPOTHESIS IS LOAD-BEARING — this statement is FALSE
 without it. Quantified over an ARBITRARY rigidified `D`, the conclusion is
@@ -3511,7 +3744,44 @@ theorem exists_heckeCharacter_of_totallyDefinite_quaternionAlgebra
         (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
         (heckeF w).coeff 1 =
           -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
-  sorry
+  haveI : NumberField.IsTotallyReal F := hFtr
+  -- The auxiliary prime of the level datum: NOT part of the correspondence.
+  obtain ⟨p, hp, hcyc⟩ := exists_prime_two_lt_finrank_cyclotomicField F
+  -- Jacquet–Langlands proper, as an eigenform at the minimal level `U₁(S, ∅)`.
+  obtain ⟨𝒮, a, f, hQ, hf0, hTa, hmatch⟩ :=
+    exists_eigenform_of_totallyDefinite_quaternionAlgebra hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ D
+      p hp hcyc
+  -- `f` is scaled by every element of the Hecke algebra, not merely by the
+  -- generators: `T`'s and `U`'s generate, and the `U`'s are vacuous since
+  -- `𝒮.Q = ∅`.
+  have hall : ∀ T : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮,
+      ∃ e : E, T • f = e • f := by
+    intro T
+    induction (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.adjoin_T_U_eq_top ..).ge
+      (Set.mem_univ T) using Algebra.adjoin_induction with
+    | mem x hx =>
+        obtain ⟨v, hvS, hvQ, rfl⟩ | ⟨v, hvQ, α, hα, rfl⟩ := hx
+        · exact ⟨a v, by
+            rw [_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T_smul_def]
+            exact hTa v hvS⟩
+        · rw [hQ] at hvQ; simp at hvQ
+    | algebraMap s => exact ⟨s, algebraMap_smul _ _ _⟩
+    | add x y _ _ hx hy =>
+        obtain ⟨ex, hx⟩ := hx; obtain ⟨ey, hy⟩ := hy
+        exact ⟨ex + ey, by rw [add_smul, hx, hy, add_smul]⟩
+    | mul x y _ _ hx hy =>
+        obtain ⟨ex, hx⟩ := hx; obtain ⟨ey, hy⟩ := hy
+        exact ⟨ex * ey, by rw [mul_smul, hy, smul_comm, hx, smul_smul, mul_comm]⟩
+  -- The scaling factor is an `E`-algebra character.
+  obtain ⟨θ, hθ⟩ := exists_algHom_of_smul_eq_smul hf0 hall
+  refine ⟨p, 𝒮, θ, fun w hwS hwQ hwbad => ?_⟩
+  have h1 : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ • f
+      = a w • f := by
+    rw [_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T_smul_def]
+    exact hTa w hwS
+  rw [hθ _ _ h1]
+  exact hmatch w hwS hwbad
 
 /-- **STEP 1 of the Carayol node — JACQUET–LANGLANDS: the Hilbert
 eigensystem `(E, heckeF)` is seen by a TOTALLY DEFINITE quaternion
