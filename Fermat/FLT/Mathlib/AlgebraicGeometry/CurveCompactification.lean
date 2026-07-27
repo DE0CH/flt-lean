@@ -9,6 +9,8 @@ public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Normalization
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
+public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
+public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.FieldTheory.Perfect
 
 /-!
@@ -67,16 +69,34 @@ Four of the original five leaves have been cut down; the remaining leaves are:
 | `locallyOfFiniteType_fromNormalization` | Nagata/Japanese rings: the normalization of a finite-type `K`-algebra is of finite type |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
-| `denseRange_of_isPullback` | density survives flat (here: field-valued) base change |
+| `universallyOpen_of_specField` | a field extension `Spec L ⟶ Spec K` is universally open (Stacks `0383`) |
 
-`isFinite_fromNormalization`, `finite_compl_range_toNormalization` and
-`geometricallyConnected_of_isSmoothCompactification` are now THEOREMS over those.  What was
+`isFinite_fromNormalization`, `finite_compl_range_toNormalization`, `denseRange_of_isPullback`
+and `geometricallyConnected_of_isSmoothCompactification` are now THEOREMS over those.  What was
 removed from them was, in each case, real: the integrality half of finiteness (free from
 `Mathlib`), the entire noetherian-ness bookkeeping and point-set argument behind the finite
-complement, and the closure-of-a-connected-set half of geometric connectedness.
+complement, the closure-of-a-connected-set half of geometric connectedness, and — as of the
+second pass below — the whole pullback-pasting and point-set argument behind base change.
 
 None of the leaves mentions modular curves; each is independent of the others; all are
 dispatchable in isolation.
+
+## `denseRange_of_isPullback` was FALSE, and is now a THEOREM (2026-07-27, second pass)
+
+It quantified over an arbitrary base scheme `S`, and its own justification named the false
+step: `Spec L ⟶ S` is flat for a field `L` only when `S` is itself the spectrum of a field.
+`S = Spec ℤ`, `Y' = Spec ℚ ↪ Spec ℤ = X'` and `L = 𝔽_p` refutes it, the base change of the
+dense `Spec ℚ` being empty inside the one-point `Spec 𝔽_p`.  See the FALSITY AUDIT on the
+declaration for that counterexample in full, for a second one showing that adding `[Flat y]`
+would NOT have been enough, and for the two hypotheses that had to be added to make `m` the
+base change of `j` rather than an arbitrary lift.
+
+Restricted to the field base the consumer actually has, it is now PROVEN, over the sharper
+and entirely classical `universallyOpen_of_specField`.  Everything else that was inside it —
+that `m` is a base change of `j` (a pasting of pullback squares), that the range of a
+pullback projection is the preimage of the range (`range_base_of_isPullback`, proven here by
+transporting `Mathlib`'s `Scheme.Pullback.range_fst` along `IsPullback.isoPullback`), and the
+open-image density argument — is proven here.
 
 ## Faithfulness
 
@@ -450,31 +470,130 @@ theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
       smooth := hsX
       finite_compl := hfin }
 
-/-- **A dominant morphism stays dominant after base change to a field-valued point** (sorry
-leaf — the flat-base-change input, and all that is left of the old
+/-- **The range of a projection of an arbitrary pullback square of schemes.**
+
+`Mathlib`'s `Scheme.Pullback.range_fst` states this for the CHOSEN pullback
+`Limits.pullback f g`; this transports it along `IsPullback.isoPullback`, so that a consumer
+stated over an arbitrary pullback square — which `Mathlib`'s `geometrically` forces, since it
+unfolds to a statement about all such squares — can use it without transporting first.
+
+Kept inside `namespace AlgebraicGeometry` for the same reason as the topological
+preliminaries at the top of the file: this module adds no root-level names to the cone of
+everything that `public import`s it. -/
+theorem range_base_of_isPullback {P X Y Z : Scheme.{u}}
+    {fst : P ⟶ X} {snd : P ⟶ Y} {f : X ⟶ Z} {g : Y ⟶ Z} (h : IsPullback fst snd f g) :
+    Set.range fst.base = f.base ⁻¹' Set.range g.base := by
+  rw [← Scheme.Pullback.range_fst f g, ← h.isoPullback_hom_fst]
+  exact (Scheme.Hom.surjective (f := h.isoPullback.hom)).range_comp _
+
+/-- **A field extension is universally open** (sorry leaf — the base-change input behind
+`denseRange_of_isPullback`, and the only thing left of the old
 `geometricallyConnected_of_isSmoothCompactification`).
 
-TRUE: `y : Spec L ⟶ S` with `L` a field is flat, hence so is every base change of it, and
-density is preserved by flat base change (Stacks tag `0CC1`; equivalently, the schematic
-image commutes with flat base change, Stacks `081I`).  Concretely `V ⟶ X'` is flat, `W` is
-the preimage of `Y'` in `V`, and a flat morphism is generalizing, so a point of `V` whose
-image lies in the closure of `Y'` has a generization in `W`.
+TRUE and classical: for any field extension `L / K` the morphism `Spec L ⟶ Spec K` is
+universally open.  Stacks tag `0383`; EGA IV 2.4.9.  No hypothesis relating `L` to `K` is
+needed, because a ring homomorphism between fields is automatically injective, so every
+`y : Spec L ⟶ Spec K` IS a field extension.
+
+**Why this is not free at this pin.**  `Mathlib`'s only route from flatness to openness is
+`AlgebraicGeometry.UniversallyOpen.of_flat`, which additionally requires
+`LocallyOfFinitePresentation`.  `Spec L ⟶ Spec K` is certainly flat — every `K`-module is
+free — but it is of finite presentation exactly when `L / K` is FINITE (Zariski's lemma: a
+finitely generated `K`-algebra which is a field is finite over `K`).  The consumer quantifies
+over ALL field extensions of `K`, since `GeometricallyConnected` runs over every `L`, in
+particular infinite ones such as `ℚ̄ / ℚ` — which is precisely the modular application — so
+the finitely presented case does not suffice.
+
+The classical proof writes `L` as the filtered union of its finitely generated
+`K`-subextensions, where `UniversallyOpen.of_flat` does apply, and descends openness through
+the limit.  `Mathlib.AlgebraicGeometry.AffineTransitionLimit` is the nearest available
+machinery at this pin.
+
+Note what is NOT needed and should not be added: surjectivity, faithful flatness, and
+quasi-compactness of anything play no part.  Only openness of the base-changed projection is
+consumed, and it is consumed through `Mathlib`'s own
+`UniversallyOpen.isStableUnderBaseChange`, so the leaf is stated in exactly the form that
+instance takes. -/
+theorem universallyOpen_of_specField {L : Type u} [Field L]
+    (y : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of K)) : UniversallyOpen y :=
+  sorry
+
+/-- **A dominant morphism stays dominant after base change along a field extension** (PROVEN
+over `universallyOpen_of_specField`).
+
+`px : V ⟶ X'` is a base change of the universally open `y`, hence open; and `m` is a base
+change of `j`, hence has range exactly `px ⁻¹ (range j)`.  So a nonempty open `U ⊆ V` has
+open nonempty image `px(U)`, which meets the dense `range j`, and any `b ∈ U` mapping into
+`range j` lies in `range m`.  That is the whole proof, and none of it is the leaf: the leaf
+is only the openness of `px`.
+
+Only `IsDominant j` is used, so this is genuinely independent of the compactification: no
+smoothness, no properness, no perfect field.
 
 Stated over an ARBITRARY pullback square rather than over `Limits.pullback` so that the
 consumer does not have to transport along a `pullbackRightPullbackFstIso`: `Mathlib`'s
 `geometrically` unfolds to a statement about all pullback squares, and this shape plugs
 straight in.
 
-Only `IsDominant j` is used, so this is genuinely independent of the compactification: no
-smoothness, no properness, no perfect field. -/
-theorem denseRange_of_isPullback {X' Y' S W V : Scheme.{u}}
-    {strY : Y' ⟶ S} {strX : X' ⟶ S} {j : Y' ⟶ X'} [IsDominant j]
-    {L : Type u} [Field L] {y : Spec (CommRingCat.of L) ⟶ S}
-    {py : W ⟶ Y'} {qy : W ⟶ Spec (CommRingCat.of L)} (_hW : IsPullback py qy strY y)
-    {px : V ⟶ X'} {qx : V ⟶ Spec (CommRingCat.of L)} (_hV : IsPullback px qx strX y)
-    (m : W ⟶ V) (_hm : m ≫ px = py ≫ j) :
-    DenseRange m.base :=
-  sorry
+## FALSITY AUDIT (2026-07-27) — the previous statement was FALSE, over an arbitrary base
+
+The leaf used to quantify over an ARBITRARY base scheme `S`.  Its own justification named the
+false step: "`y : Spec L ⟶ S` with `L` a field is flat" holds over a FIELD base and nowhere
+else — `𝔽_p` is not flat over `ℤ`.
+
+*Counterexample.*  `S = X' = Spec ℤ`, `strX = 𝟙`, `Y' = Spec ℚ`, and `strY = j` the generic
+point `Spec ℚ ⟶ Spec ℤ`.  Then `j` is dominant, because `ℤ` is a domain and so `{(0)}` is
+dense in `Spec ℤ`.  Take `L = 𝔽_p`.  Now `V = X' ×ₛ Spec L ≅ Spec 𝔽_p` is a ONE-POINT space,
+while `W = Y' ×ₛ Spec L = Spec (ℚ ⊗ℤ 𝔽_p) = Spec 0 = ∅`, since `p` is a unit in `ℚ` and zero
+in `𝔽_p`.  The unique `m : ∅ ⟶ V` has empty range, which is not dense in a nonempty space.
+
+Both hypotheses added below hold in that counterexample — `hcomm` because `strX = 𝟙`, and
+`hm₂` because `W` is initial, so any two morphisms out of it agree — which is what shows the
+restriction of the base to a FIELD is INDEPENDENTLY necessary rather than an artefact of the
+other repairs.
+
+*Why `[Flat y]` is NOT the right repair, although it kills the counterexample above.*  It is
+still insufficient: take `S = X' = Spec ℤ`, `strX = 𝟙`, `Y' = ∐_p Spec 𝔽_p` and `j` the
+canonical map, which is dominant because the closed points are dense in `Spec ℤ`.  Base
+change along `y : Spec ℚ ⟶ Spec ℤ`, which IS flat, gives `V = Spec ℚ` (one point) and
+`W = ∐_p Spec (𝔽_p ⊗ℤ ℚ) = ∅`.  What fails here is quasi-compactness of `j`, not flatness of
+`y`.  Over a field base neither question arises, and a field base is what the consumer has —
+so restricting `S` is both the weakest sufficient repair and the faithful one.
+
+## Two hypotheses ADDED (2026-07-27), each supplied free at the one call site
+
+* `hcomm : j ≫ strX = strY`.  Without it `j` need not be a morphism over the base at all, so
+  `W` is not `Y' ×_{X'} V` and the statement is not about the base change of `j`.  Supplied
+  by `IsSmoothCompactification.comm`.
+* `hm₂ : m ≫ qx = qy`.  `hm₁` pins only the `X'`-component of `m`, leaving `m ≫ qx` free, so
+  `m` need not be the base change of `j` but merely some lift making one triangle commute.
+  Supplied by `pullback.lift_snd`.
+
+Neither is a weakening of the intended content: together they are exactly what makes `m` *the*
+base change of `j`, which is what the name of the leaf claims. -/
+theorem denseRange_of_isPullback {X' Y' W V : Scheme.{u}}
+    {strY : Y' ⟶ Spec (CommRingCat.of K)} {strX : X' ⟶ Spec (CommRingCat.of K)}
+    {j : Y' ⟶ X'} [IsDominant j] (hcomm : j ≫ strX = strY)
+    {L : Type u} [Field L] {y : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of K)}
+    {py : W ⟶ Y'} {qy : W ⟶ Spec (CommRingCat.of L)} (hW : IsPullback py qy strY y)
+    {px : V ⟶ X'} {qx : V ⟶ Spec (CommRingCat.of L)} (hV : IsPullback px qx strX y)
+    (m : W ⟶ V) (hm₁ : m ≫ px = py ≫ j) (hm₂ : m ≫ qx = qy) :
+    DenseRange m.base := by
+  haveI : UniversallyOpen y := universallyOpen_of_specField y
+  haveI : UniversallyOpen px := MorphismProperty.of_isPullback hV.flip ‹UniversallyOpen y›
+  -- `m` is the base change of `j` along `px`, by pasting the right-hand square `hV` off `hW`
+  have hsq : IsPullback m py px j := by
+    refine IsPullback.of_right ?_ hm₁ hV.flip
+    rw [hm₂, hcomm]
+    exact hW.flip
+  have hrange : Set.range m.base = px.base ⁻¹' Set.range j.base := range_base_of_isPullback hsq
+  rw [DenseRange, dense_iff_inter_open]
+  intro U hU hUne
+  obtain ⟨a, haU⟩ := hUne
+  obtain ⟨x, ⟨b, hbU, hbx⟩, hxj⟩ :=
+    dense_iff_inter_open.mp (Scheme.Hom.denseRange j) _ (px.isOpenMap U hU)
+      ⟨px.base a, a, haU, rfl⟩
+  exact ⟨b, hbU, hrange ▸ Set.mem_preimage.mpr (hbx ▸ hxj)⟩
 
 /-- **A compactification of a geometrically connected curve is geometrically connected**
 (PROVEN over `denseRange_of_isPullback`).
@@ -491,9 +610,10 @@ a DISCONNECTED curve is of course disconnected, and `Fermat.IsCompactificationY0
 is used at the degenerate level `N = 0`, where the curve is empty — deliberately does not
 ask for it.  Only `Fermat.IsX0Compactification`, which is restricted to `N ≥ 1`, does.
 
-The density-of-base-change step is the only thing left, and it is now the named leaf
-`denseRange_of_isPullback` above; the closure-of-a-connected-set half is
-`connectedSpace_of_denseRange`, proven at the top of this file.  Note that only
+The density-of-base-change step is `denseRange_of_isPullback` above, itself now a THEOREM
+over the single leaf `universallyOpen_of_specField`; the closure-of-a-connected-set half is
+`connectedSpace_of_denseRange`, proven at the top of this file.  So nothing sorried remains
+on this path except the universal openness of a field extension.  Note that only
 `h.isDominant` and `h.comm` are consumed — properness, smoothness and the finiteness of the
 complement play no part, which is why the leaf above carries none of them. -/
 theorem geometricallyConnected_of_isSmoothCompactification {Y X : Scheme.{u}}
@@ -508,6 +628,6 @@ theorem geometricallyConnected_of_isSmoothCompactification {Y X : Scheme.{u}}
     rw [Category.assoc, h.comm]; exact pullback.condition
   exact connectedSpace_of_denseRange
     (Scheme.Hom.continuous (pullback.lift (pullback.fst strY y ≫ j) (pullback.snd strY y) hcond))
-    (denseRange_of_isPullback hW hV _ (pullback.lift_fst _ _ _))
+    (denseRange_of_isPullback h.comm hW hV _ (pullback.lift_fst _ _ _) (pullback.lift_snd _ _ _))
 
 end AlgebraicGeometry
