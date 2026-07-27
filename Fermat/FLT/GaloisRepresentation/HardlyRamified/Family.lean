@@ -3551,7 +3551,113 @@ owner does not pay for them again):
      `H¹_fl(Spec ℤ_p, ℤ/p) = H¹_ét(Spec ℤ_p, ℤ/p) = Hom(Γ^ur, ℤ/p)`,
      i.e. by UNRAMIFIED classes only, so the ramified unipotent class
      has no finite flat model. Level-one and flatness therefore cannot
-     be separated here the way `hstab` separates them at order `p`. -/
+     be separated here the way `hstab` separates them at order `p`.
+
+AUDIT REFRESH (2026-07-27, a later owner). The VERDICT above — IRREDUCIBLY A
+CITATION — was re-derived independently and STANDS. What follows is one
+faithfulness re-confirmation, one CORRECTION of a defective item, and one
+sharpening that names the unique strict narrowing together with the two checks
+that would unblock it. Nothing here changes the statement.
+
+(C1) FAITHFULNESS RE-CONFIRMED INDEPENDENTLY, and this leaf sits on the SAFE
+     side of the rule that kills its neighbours. The rule: over `𝒪ᵥ`,
+     identities and VALUES descend from `𝒪^nr` (flatness/torsion-freeness, and
+     inertia fixes `𝒪^nr` pointwise); the EXISTENCE of a coordinate or a normal
+     form does not. The added clause here asks for membership in
+     `unramifiedTensorSubmodule G` — an INERTIA-ONLY condition on the SCALARS
+     of an element of `ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G`. It does not ask for an element of
+     `G`, and it does not ask for `ℚᵖᵥ`-rationality. An unramified twist
+     changes WHICH elements the corner group-likes are; it never changes
+     whether their scalars are inertia-fixed, because inertia does not see the
+     twist at all. So the conclusion is twist-blind and the leaf is faithful.
+     This is the same shape as the sibling leaf that asks for a LINE and was
+     cleared on audit — not the shape that killed `exists_muType_closure`,
+     which demanded the `μ_p`-COORDINATE itself.
+
+(C2) AUDIT ITEM (i) IS WRONG AS WRITTEN — its non-vacuity witness does not
+     satisfy this leaf's hypotheses, and the defect is exactly at the two
+     hypotheses that carry the arithmetic. Item (i) offers `G = μ_p` over
+     `ℤ_p`. That `G` has a geometric point group of order `p`, while `hfG`
+     demands a BIJECTION onto `(R ⧸ I) ⊗[R] V`, which has `(R ⧸ I)`-rank `2`
+     and hence order `|R ⧸ I|² ≥ p²`. No such `fG` exists. So item (i) checked
+     non-vacuity of everything EXCEPT `fG`/`hfG`, which is where the content
+     is, and it must not be relied on as written.
+
+     A witness that does satisfy all of them, so the leaf is genuinely
+     non-vacuous with a NONTRIVIAL connected part:
+
+       `R = ℤ_[p]`, `I = (p)` (open), `V` of rank `2`, `ρ = χ_cyc ⊕ 1`,
+       `G = 𝒪(μ_p × ℤ/p)` — that is, `p` copies of `ℤ_p[T]/(T^p − 1)`,
+       one per point of `ℤ/p`.
+
+     `hZinj` is the identity and `hRinj` the standard embedding
+     `ℤ_p ↪ ℚ̄_p`; `hchar` holds with `χ₁ = χ_cyc`, `χ₂ = 1`, both
+     multiplicative on all of `Γ ℚ` as the level-one paragraph requires;
+     `G` is finite free over `ℤ_p` with étale generic fibre (characteristic
+     `0`); the geometric point group is `μ_p ⊕ ℤ/p ≅ 𝔽_p(1) ⊕ 𝔽_p`, which is
+     precisely `(ℤ_p ⧸ p) ⊗ V` with its `Γ`-action, so `fG` exists and is
+     bijective. `e₀` is the primitive idempotent at the identity of `ℤ/p`
+     (`ℤ_p[T]/(T^p − 1)` is local modulo `p`, since `T^p − 1 ≡ (T − 1)^p`,
+     hence connected — which is what makes `hprim₀` hold), and the corner
+     group-likes are the `1 ⊗ T^j e₀`, whose scalars are `1 ∈ ℚᵖᵥᵘⁿʳ`. The
+     conclusion therefore holds, non-vacuously. Item (ii)'s unramified-twist
+     instance is the SAME witness with `G° = μ_p ⊗ ψ` and `χ₁ = χ_cyc · ψ`,
+     and it remains the reason the conclusion may not be strengthened to
+     `ℚᵖᵥ`-rationality.
+
+(C3) THE UNIQUE STRICT NARROWING, why it is not harvestable, and the two
+     checks that would refute this. Every cut in the survey above is a
+     relocation. There is exactly one candidate that would genuinely REMOVE
+     content, and naming it precisely should save the next owner the survey.
+
+     `GroupScheme/ConnectedEtale.lean` is SORRY-FREE (re-checked 2026-07-27:
+     zero `sorry` tokens outside comments, after stripping nested block
+     comments), and its
+     `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` already
+     PROVES the point-level cyclotomic action from three inputs only:
+     connectedness (`hφe`), `φ ^ p = 1` (`hord`), and the one-dimensionality
+     input `hstab` — "every local inertia element moves `φ` to one of its
+     convolution powers". So the citation here could in principle be cut down
+     to `hstab` alone, i.e. to the strictly weaker leaf
+
+       (P1) for every connected geometric point `φ` of the generic fibre and
+            every `τ ∈ localInertiaGroup`, `∃ m : ℕ, τ • φ = φ ^ m`
+
+     — SOME power, where the conclusion needs the CYCLOTOMIC one. The step
+     from (P1) to the cyclotomic power is exactly requirement (R2), and (R2)
+     is already formalized, so cutting at (P1) would remove (R2) from the
+     citation the way the restatement above removed (R4). Note this is NOT
+     shortcut (S1): (S1) relocates to a statement EQUIVALENT to this leaf and
+     is therefore circular; (P1) is strictly weaker and is not.
+
+     THE BLOCKER IS THE EXPONENT, not the mathematics.
+     `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` requires
+     `φ ^ p = 1` exactly, whereas this cluster only ever produces
+     `φ ^ (p ^ k) = 1`. That exponent is DERIVED (proven, inside
+     `connected_point_smul_eq_cyclotomicCharacter_smul_of_hopf_package` below)
+     from the OPENNESS of `I`, which gives `p ^ k ∈ I` for some `k` and
+     nothing better. And `k = 1` is not available anywhere in the cone: the
+     top-level consumer
+     `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+     obtains its conclusion by intersecting over `I = 𝔪 ^ n` for ALL `n`
+     (`Ideal.iInf_pow_eq_bot_of_isLocalRing`), so `k` is unbounded by
+     construction. Harvesting (P1) therefore costs a SECOND leaf — the
+     exponent-`p ^ k` form of the Oort–Tate node — and one citation becomes
+     two, which is why the verdict above is unchanged.
+
+     THE TWO CHECKS THAT WOULD REFUTE THIS PARAGRAPH, either of which makes
+     the (P1) cut correct to take immediately:
+     * exhibit a consumer of this cluster that pins `I` to a `p`-torsion level
+       (`p ∈ I`, i.e. `k = 1`) — then ConnectedEtale applies verbatim and (P1)
+       is the only leaf left. As of 2026-07-27 there is none: the cluster has
+       NO consumer outside `Family.lean`, and the in-file chain runs through
+       the arbitrary open `I` of `GaloisRep.HasFlatProlongationAt`;
+     * prove the exponent-`p ^ k` form of
+       `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` from the
+       `p` form — a dévissage in `k`, NOT in the group scheme, so it is a
+       different and much smaller problem than (R1). Then (P1) is again the
+       only leaf left.
+     Both are cheap to re-test and neither was available on 2026-07-27. -/
 theorem exists_unramified_grouplike_family_generating_corner
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
