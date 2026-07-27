@@ -126,11 +126,20 @@ def main() -> int:
     if not project_dir:
         return 0  # cannot locate the project; do not wedge the session
 
-    # Session guard (Deyao, 2026-07-21): the continuous-loop reprompting is
-    # meant for exactly one designated session, recorded on disk. Any OTHER
-    # session that triggers this hook (e.g. an accidentally launched chat in
-    # the same worktree) must NOT be driven into the loop: block its stop
-    # with a standing refusal so it only warns the user, repeatedly.
+    # Session guard (Deyao, 2026-07-21; amended 2026-07-27): the
+    # continuous-loop reprompting is meant for exactly one designated session,
+    # recorded on disk. Any OTHER session that triggers this hook (e.g. an
+    # accidentally launched chat in the same worktree) must NOT be driven into
+    # the loop -- so it is ALLOWED TO STOP, with one line on stderr.
+    #
+    # It used to be blocked instead (exit 2 + "warn the user, repeatedly").
+    # That was wrong in the only way that matters: the loop exists to drive
+    # the ONE designated session, and a session that is not it has, by
+    # definition, nothing to continue. Blocking it did not protect anything
+    # -- it just wedged an unrelated session into an unbreakable reprompt
+    # cycle whose only available action was to emit the same warning again.
+    # Allowing the stop is also what the two branches below already do when
+    # the designation is unreadable or empty; this branch was the outlier.
     id_file = os.path.join(project_dir, ".claude", "stop-hook-session-id")
     try:
         with open(id_file, "r", encoding="utf-8") as fh:
@@ -149,13 +158,9 @@ def main() -> int:
         return 0
     if caller_session != designated_session:
         sys.stderr.write(
-            "The stop hook is intended to be used by session "
-            f"{designated_session}, and you are {caller_session}, so there "
-            "is NO SAFE ACTION to continue. Warn the user instead "
-            "(repeatedly, after each time this stop hook fires): "
-            '"the STOP HOOK ran, this is probably not intended."\n'
-        )
-        return 2
+            f"Stop hook: the FLT loop drives session {designated_session}, "
+            f"not {caller_session} — allowing the stop.\n")
+        return 0
 
     fermat = project_dir  # flt-lean: the project root IS the Lean package
     if not os.path.isdir(os.path.join(fermat, "Fermat")):
