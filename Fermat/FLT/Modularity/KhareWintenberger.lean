@@ -3333,6 +3333,57 @@ cost is in step 6.
    applies in full, so keep the intermediate lemmas stated over an ABSTRACT
    module.
 
+STEPS 1–3 ARE CONFIRMED LOOKUPS — the incantations, each COMPILED in a scratch
+module against this file's own import surface on 2026-07-27, so the next owner
+can paste them rather than rediscover them. Nothing below is a guess.
+
+```
+-- step 1
+example {F : Type u} [Field F] [NumberField F] : CompactSpace (Field.absoluteGaloisGroup F) :=
+  inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))
+
+-- step 2, set-up: `L` carries no `Algebra ℤ_p` instance, it must be built
+noncomputable local instance : Algebra ℤ_[p] L :=
+  ((algebraMap ℚ_[p] L).comp (algebraMap ℤ_[p] ℚ_[p])).toAlgebra
+local instance : IsScalarTower ℤ_[p] ℚ_[p] L := IsScalarTower.of_algebraMap_eq fun _ => rfl
+
+-- step 2, `𝒪_L`: finite, free, and of the expected rank
+example : Module.Finite ℤ_[p] ↥(integralClosure ℤ_[p] L) :=
+  IsIntegralClosure.finite ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+example : Module.Free ℤ_[p] ↥(integralClosure ℤ_[p] L) :=
+  IsIntegralClosure.module_free ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+example : Module.finrank ℤ_[p] ↥(integralClosure ℤ_[p] L) = Module.finrank ℚ_[p] L :=
+  IsIntegralClosure.rank ℤ_[p] ℚ_[p] L ↥(integralClosure ℤ_[p] L)
+
+-- step 3
+example {G : Type*} [Group G] [TopologicalSpace G] [IsTopologicalGroup G] [CompactSpace G]
+    (U : Subgroup G) (hU : IsOpen (U : Set G)) : U.FiniteIndex :=
+  haveI : Finite (G ⧸ U) := Subgroup.quotient_finite_of_isOpen U hU
+  Subgroup.finiteIndex_of_finite_quotient
+```
+
+THE ONE HYPOTHESIS THAT IS NOT INFERRED, and the only friction found in that
+pass: `IsIntegralClosure.module_free` and `IsIntegralClosure.rank` want
+`Module.IsTorsionFree ℤ_[p] L`, which instance search does NOT produce. It is
+three lines, and it is `comap` along `ℤ_p ↪ ℚ_p` from the field instance:
+
+```
+local instance : Module.IsTorsionFree ℤ_[p] L :=
+  Module.IsTorsionFree.comap (S := ℚ_[p]) (algebraMap ℤ_[p] ℚ_[p])
+    (fun _ hr => isRegular_iff_ne_zero.mpr fun h => (isRegular_iff_ne_zero.mp hr)
+      ((map_eq_zero_iff _ (IsFractionRing.injective ℤ_[p] ℚ_[p])).mp h))
+    (fun r m => algebraMap_smul ℚ_[p] r m)
+```
+
+What is NOT yet confirmed is the openness half of step 2 — `𝒪_L` open in `L`.
+`TateModule.lean`'s `isOpen_span_natCast_pow` is about an ideal INSIDE a ring
+carrying the `ℤ_q`-module topology, so it is the right technique
+(`chooseBasis`'s `equivFun` + `isOpen_set_pi`) but not the right statement; the
+`L`-version additionally needs `ℤ_p` open in `ℚ_p` (the closed unit ball is
+open by ultrametricity) and a `ℚ_p`-basis of `L` drawn from a `ℤ_p`-basis of
+`𝒪_L`, which `IsIntegralClosure.rank` above is exactly what makes possible.
+Treat that as the first genuinely NEW lemma of this development.
+
 **THE ONE PIN GAP THAT ROUND 5 NAMED HAS CLOSED — this is a correction to that
 audit, checked mechanically on 2026-07-27.** Round 5 recorded that the
 transitivity lemma step 6 opens with (`IsModuleTopology R M ↔ IsModuleTopology
