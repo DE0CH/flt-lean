@@ -1731,11 +1731,521 @@ operators on `Γ₀(m)`*, Math. Ann. 185 (1970), §2 for `w_N` and its action
 on cusps; Deligne–Rapoport, *Les schémas de modules de courbes
 elliptiques* (Antwerp II, 1973), for the cusps of the smooth model of
 `X_0(N)` over `ℤ[1/N]` and their behaviour in the fibre at `q ∤ N`.
-Neither needs the other. -/
+Neither needs the other.
+
+#### THE SECOND CUT (2026-07-27, later the same day)
+
+Both leaves below are now PROVEN, over two SMALLER leaves — one per
+literature item, exactly the split this docstring already predicted — plus
+glue.  What changed is the SHAPE of what is asked of the literature:
+
+* `exists_atkinLehnerModel_of_jNeronDatum` replaces
+  `exists_atkinLehnerInvolution_of_jNeronDatum`.  Atkin–Lehner do not
+  construct a pair of functions on two point sets; they construct an
+  AUTOMORPHISM `w` of the modular curve over `ℤ[1/N]`, restricting to one
+  of the open part.  That is what the new leaf asks for — `w : 𝒳 ⟶ 𝒳` and
+  `w_𝒴 : 𝒴 ⟶ 𝒴` over `Spec ℤ_(q)`, with `w ∘ w = 1` and
+  `w_𝒴 ≫ jZ = jZ ≫ w` — and all FIVE point-level properties become
+  theorems about its transports `neronGenAut` / `neronSpAut`.  In
+  particular `red_al` is no longer an assumption about how two ad-hoc
+  functions interact with reduction: it is the associativity of
+  composition, once `intX (al x) = post w (intX x)` is read off the
+  valuative criterion.
+* `nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum` replaces
+  `card_cusps_specialFibre_of_jNeronDatum`.  Deligne–Rapoport do not
+  prove a cardinality; they describe the cuspidal SUBSCHEME of the model
+  and its fibres.  The new leaf asks for that description over `𝔽_q` —
+  `IsX0RationalCuspLocus`, the base-field analogue of
+  `IsX0Compactification.CuspLocus` in `X0.lean` — and the count `= 2`
+  is then bookkeeping: the cusps biject with `N.divisors`, and
+  `Nat.Prime.divisors` gives `{1, N}`.
+
+**THE FIXED-POINT CLAUSE STAYS WITH THE INVOLUTION, AND IT IS STILL
+FORCED.**  `neronSpAut d w hw` is a *defined* function of `w`, so the
+clause `∀ x' cuspidal, neronSpAut d w hw x' ≠ x'` is a genuine condition
+on `w` and not a condition on a hypothesised function: it is exactly what
+rules out the junk witness `w = 𝟙`, which satisfies every other conjunct.
+It could not be moved to the counting leaf for the reason recorded above,
+and it cannot be split off into a leaf of its own taking `w` as a
+hypothesis, for the same reason — `w = 𝟙` satisfies all the algebraic
+clauses.  Pinning `w` any other way means pinning its action on moduli
+(`(E, C) ↦ (E/C, E[N]/C)`), which needs quotients by finite flat subgroup
+schemes; that is a strictly larger theory and is not required here.
+
+**WHY THE CUSP LOCUS IS RE-STATED OVER A BASE FIELD RATHER THAN REUSED.**
+`IsX0Compactification.CuspLocus` in `X0.lean` is hardwired to `Spec ℚ`
+(deliberately: its `degree` field records `φ(gcd(d, N/d))`, which is the
+residue degree over `ℚ` and NOT over `𝔽_q` — over a finite field the
+degree is the order of `q` in `(ℤ/gcd)ˣ`).  `IsX0RationalCuspLocus`
+therefore records `finrank k (K d) = 1` instead of a totient: at PRIME
+level every `gcd(d, N/d)` is `1`, so every cusp is rational over any
+base, and that is the only case this cut needs.  Stating a totient there
+would have been FALSE over `𝔽_q` at composite level. -/
+
+/-- **The cusp locus of `X_0(N)` over a base FIELD `k`, all of whose cusps
+are `k`-rational** (new 2026-07-27).
+
+The base-field analogue of `IsX0Compactification.CuspLocus` in `X0.lean`,
+and the shape in which Deligne–Rapoport's cuspidal description is
+consumed on the SPECIAL fibre.  `X ∖ Y` is the disjoint union, over the
+divisors `d ∣ N`, of `Spec` of a field `K d`, and every `K d` is `k`
+itself.
+
+**Which field records what.**  `κ`/`comm` present the cusp above `d` as a
+`k`-morphism `Spec (K d) ⟶ X`; `cover` forces the `κ d` to EXHAUST the
+complement of `Y`, which is what stops a curve with too few cusps from
+satisfying the datum; `disj` makes the indexing injective; and
+`ratPoint` — the `k`-point half of the same identification — is what
+makes the count an UPPER bound as well as a lower one.  The discussion of
+why `cover` alone is too weak for the upper bound is in
+`IsX0Compactification.CuspLocus`'s docstring and applies verbatim.
+
+**`degree_one` RATHER THAN A TOTIENT, deliberately.**  Over `ℚ` the cusp
+above `d` has residue degree `φ(gcd(d, N/d))`; over `𝔽_q` it has degree
+`ord_{gcd(d, N/d)}(q)`, which is a different number.  Recording either
+would make this structure wrong on the other base.  At PRIME level both
+collapse to `1` for every divisor, which is the only case used here, so
+the honest field is `degree_one`.  A consumer at composite level must
+generalise this structure, not instantiate it.
+
+**The field is named `comm` and not the obvious `over`**: `over` is a
+reserved token in the notation scope reaching `X0.lean`, and a structure
+field of that name is silently TRUNCATED there.  See
+`IsCompactificationY0.over`'s docstring. -/
+structure IsX0RationalCuspLocus (N : ℕ) {k : Type} [Field k] {X Y : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of k)} {strY : Y ⟶ Spec (CommRingCat.of k)} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) where
+  /-- the residue field of the cusp above `d` -/
+  K : N.divisors → Type
+  /-- each residue algebra is a field -/
+  [isField : ∀ d, Field (K d)]
+  /-- each residue field is a `k`-algebra -/
+  [isAlgebra : ∀ d, Algebra k (K d)]
+  /-- every cusp is `k`-RATIONAL: its residue field is `k` itself -/
+  degree_one : ∀ d, Module.finrank k (K d) = 1
+  /-- the cusp above `d`, as a `k`-morphism `Spec (K d) ⟶ X` -/
+  κ : ∀ d : N.divisors, Spec (CommRingCat.of (K d)) ⟶ X
+  /-- `κ d` is a morphism over the base -/
+  comm : ∀ d : N.divisors, κ d ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap k (K d)))
+  /-- the cusps exhaust the complement of `Y` -/
+  cover : ⋃ d : N.divisors, Set.range (κ d).base = (Set.range j.base)ᶜ
+  /-- cusps above distinct divisors are disjoint -/
+  disj : ∀ d d' : N.divisors, d ≠ d' →
+    Disjoint (Set.range (κ d).base) (Set.range (κ d').base)
+  /-- the `k`-POINTS of the cusp locus: a `k`-rational point of `X` that
+  is not the image of a `k`-rational point of `Y` factors through one of
+  the `Spec (K d)` -/
+  ratPoint : ∀ x : RelPoint strX (𝟙 (Spec (CommRingCat.of k))), h.IsCusp x →
+    ∃ (d : N.divisors) (f : K d →ₐ[k] k),
+      Spec.map (CommRingCat.ofHom f.toRingHom) ≫ κ d = x.1
+
+attribute [instance] IsX0RationalCuspLocus.isField IsX0RationalCuspLocus.isAlgebra
+
+/-- **A field of degree one over `k` admits a `k`-algebra map back to `k`**
+(PROVEN 2026-07-27; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+The base-field form of `exists_specSection_of_finrank_eq_one`, packaged as
+an ALGEBRA map rather than as a section of spectra so that
+`algHom_to_base_unique` applies to it directly — that uniqueness is what
+makes the cusp-counting map both injective and surjective, and routing
+through `Spec` first would leave the two directions with unrelated data. -/
+theorem exists_algHom_of_finrank_eq_one {k A : Type} [Field k] [Field A] [Algebra k A]
+    (hrank : Module.finrank k A = 1) : Nonempty (A →ₐ[k] k) := by
+  have hbij : Function.Bijective (algebraMap k A) :=
+    Algebra.finrank_eq_one_iff_bijective_algebraMap.mp hrank
+  let e : k ≃+* A := RingEquiv.ofBijective _ hbij
+  refine ⟨AlgHom.mk (e.symm : A →+* k) ?_⟩
+  intro r
+  show e.symm (algebraMap k A r) = r
+  exact e.symm_apply_apply r
+
+namespace IsX0RationalCuspLocus
+
+variable {N : ℕ} {k : Type} [Field k] {X Y : Scheme.{0}}
+    {strX : X ⟶ Spec (CommRingCat.of k)} {strY : Y ⟶ Spec (CommRingCat.of k)} {j : Y ⟶ X}
+    {h : IsX0Compactification N strX strY j}
+
+/-- The collapse `K d ≃ k` of the residue field of the cusp above `d`.
+Unique by `algHom_to_base_unique`, so nothing depends on the choice. -/
+noncomputable def cuspHom (C : IsX0RationalCuspLocus N h) (d : N.divisors) : C.K d →ₐ[k] k :=
+  (exists_algHom_of_finrank_eq_one (C.degree_one d)).some
+
+/-- **The `k`-rational cusp above `d`.** -/
+noncomputable def cusp (C : IsX0RationalCuspLocus N h) (d : N.divisors) :
+    RelPoint strX (𝟙 (Spec (CommRingCat.of k))) :=
+  ⟨Spec.map (CommRingCat.ofHom (C.cuspHom d).toRingHom) ≫ C.κ d, by
+    rw [Category.assoc, C.comm d, ← Spec.map_comp]
+    have hid : CommRingCat.ofHom (algebraMap k (C.K d)) ≫
+        CommRingCat.ofHom (C.cuspHom d).toRingHom = 𝟙 (CommRingCat.of k) := by
+      ext r
+      exact (C.cuspHom d).commutes r
+    rw [hid, Spec.map_id]⟩
+
+theorem cusp_val (C : IsX0RationalCuspLocus N h) (d : N.divisors) :
+    (C.cusp d).1 = Spec.map (CommRingCat.ofHom (C.cuspHom d).toRingHom) ≫ C.κ d := rfl
+
+/-- `cusp d` really is a cusp: its image point lies outside `Set.range j`
+by `cover`, while every point coming from `Y` lies inside it. -/
+theorem isCusp_cusp (C : IsX0RationalCuspLocus N h) (d : N.divisors) : h.IsCusp (C.cusp d) := by
+  rintro ⟨y, hy⟩
+  obtain ⟨P⟩ : Nonempty (PrimeSpectrum k) := inferInstance
+  have heq : y.1 ≫ j = Spec.map (CommRingCat.ofHom (C.cuspHom d).toRingHom) ≫ C.κ d :=
+    congrArg Subtype.val hy
+  have hp := congrArg (fun (f : Spec (CommRingCat.of k) ⟶ X) => f.base P) heq
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at hp
+  have hout : ((C.κ d).base
+      ((Spec.map (CommRingCat.ofHom (C.cuspHom d).toRingHom)).base P))
+      ∈ (Set.range j.base)ᶜ := by
+    rw [← C.cover]
+    exact Set.mem_iUnion.mpr ⟨d, ⟨_, rfl⟩⟩
+  exact hout ⟨y.1.base P, hp⟩
+
+/-- Cusps above distinct divisors are distinct — `disj`. -/
+theorem cusp_injective (C : IsX0RationalCuspLocus N h) : Function.Injective C.cusp := by
+  intro d d' hdd
+  by_contra hne
+  obtain ⟨P⟩ : Nonempty (PrimeSpectrum k) := inferInstance
+  have heq : Spec.map (CommRingCat.ofHom (C.cuspHom d).toRingHom) ≫ C.κ d
+      = Spec.map (CommRingCat.ofHom (C.cuspHom d').toRingHom) ≫ C.κ d' :=
+    congrArg Subtype.val hdd
+  have hp := congrArg (fun (f : Spec (CommRingCat.of k) ⟶ X) => f.base P) heq
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at hp
+  exact Set.disjoint_left.mp (C.disj d d' hne) ⟨_, rfl⟩ ⟨_, hp.symm⟩
+
+/-- Every rational cusp is one of the `cusp d` — `ratPoint`, with
+`algHom_to_base_unique` collapsing the two residue-field maps. -/
+theorem exists_cusp_eq (C : IsX0RationalCuspLocus N h)
+    (x : RelPoint strX (𝟙 (Spec (CommRingCat.of k)))) (hx : h.IsCusp x) :
+    ∃ d : N.divisors, C.cusp d = x := by
+  obtain ⟨d, f, hf⟩ := C.ratPoint x hx
+  refine ⟨d, Subtype.ext ?_⟩
+  rw [cusp_val, algHom_to_base_unique (C.cuspHom d) f]
+  exact hf
+
+/-- **The rational cusps biject with the divisors of `N`** (PROVEN
+2026-07-27; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+`cusp` is injective by `disj` and surjective by `ratPoint`; the count
+follows.  Note that BOTH directions are needed — `cover` alone gives the
+lower bound and would leave the cardinality an inequality. -/
+theorem card_isCusp_eq_card_divisors (C : IsX0RationalCuspLocus N h) :
+    Nat.card {x : RelPoint strX (𝟙 (Spec (CommRingCat.of k))) // h.IsCusp x}
+      = N.divisors.card := by
+  have hbij : Function.Bijective
+      (fun d : N.divisors => (⟨C.cusp d, C.isCusp_cusp d⟩ : {x // h.IsCusp x})) := by
+    constructor
+    · intro d d' hdd
+      exact C.cusp_injective (congrArg Subtype.val hdd)
+    · rintro ⟨x, hx⟩
+      obtain ⟨d, hd⟩ := C.exists_cusp_eq x hx
+      exact ⟨d, Subtype.ext hd⟩
+  rw [← Nat.card_eq_finsetCard]
+  exact (Nat.card_eq_of_bijective _ hbij).symm
+
+/-- **At PRIME level there are exactly TWO rational cusps** (PROVEN
+2026-07-27; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+`Nat.Prime.divisors` is `{1, N}`, and `1 ≠ N` because `1 < N`.  This is
+where `N.Prime` enters the counting half of the Atkin–Lehner cut: at
+`N = 4` the divisors are `{1, 2, 4}` and the count is `3`, not `2`. -/
+theorem card_isCusp_eq_two (hN : N.Prime) (C : IsX0RationalCuspLocus N h) :
+    Nat.card {x : RelPoint strX (𝟙 (Spec (CommRingCat.of k))) // h.IsCusp x} = 2 := by
+  rw [card_isCusp_eq_card_divisors C, hN.divisors]
+  exact Finset.card_pair_eq_two_iff.mpr hN.one_lt.ne
+
+end IsX0RationalCuspLocus
+
+/-- **Precomposition and postcomposition on relative points commute**
+(PROVEN 2026-07-27) — associativity of composition, and the whole of the
+content of `red_al` below. -/
+theorem relPoint_pre_post {A B S T' T : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ bf = af) {hh : T' ⟶ T} {g : T ⟶ S} {g' : T' ⟶ S} (hg : hh ≫ g = g')
+    (x : RelPoint af g) :
+    RelPoint.pre hh hg (RelPoint.post u hu x) = RelPoint.post u hu (RelPoint.pre hh hg x) :=
+  Subtype.ext (Category.assoc _ _ _).symm
+
+/-- **An automorphism of the ambient scheme commuting with an open
+immersion carries sections of the open part to sections of the open
+part** (PROVEN 2026-07-27).
+
+This is what turns "`w` restricts to an automorphism of `𝒴`" into "the
+induced map on points preserves the non-cuspidal locus", on either
+fibre. -/
+theorem post_relSectionAlong_of_comm {S T AZ BZ : Scheme.{0}} {axstr : AZ ⟶ S} {aystr : BZ ⟶ S}
+    (jj : BZ ⟶ AZ) (hjj : jj ≫ axstr = aystr) {w : AZ ⟶ AZ} (hw : w ≫ axstr = axstr)
+    {wY : BZ ⟶ BZ} (hwY : wY ≫ aystr = aystr) (hcomm : wY ≫ jj = jj ≫ w)
+    {g : T ⟶ S} (y : RelPoint aystr g) :
+    RelPoint.post w hw (relSectionAlong jj hjj y)
+      = relSectionAlong jj hjj (RelPoint.post wY hwY y) := by
+  apply Subtype.ext
+  show (y.1 ≫ jj) ≫ w = (y.1 ≫ wY) ≫ jj
+  rw [Category.assoc, Category.assoc, hcomm]
+
+section NeronModelAutomorphism
+
+variable {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+
+/-- **A model automorphism, read on the rational points of the GENERIC
+fibre.**  Transport along the functorial identification `genX`, which is
+what makes this a map of `X_0(N)(ℚ)` rather than of the model. -/
+noncomputable def neronGenAut (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) :
+    RelPoint strX (𝟙 SpecQ) → RelPoint strX (𝟙 SpecQ) := fun x =>
+  (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+    (RelPoint.post w hw (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x))
+
+/-- **A model automorphism, read on the rational points of the SPECIAL
+fibre**, along `spX`. -/
+noncomputable def neronSpAut (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) :
+    RelPoint strX' (𝟙 (SpecF q)) → RelPoint strX' (𝟙 (SpecF q)) := fun x' =>
+  (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)).symm
+    (RelPoint.post w hw (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) x'))
+
+theorem neronGenAut_apply (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (x : RelPoint strX (𝟙 SpecQ)) :
+    neronGenAut d w hw x = (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+      (RelPoint.post w hw (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x)) := rfl
+
+theorem neronSpAut_apply (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr)
+    (x' : RelPoint strX' (𝟙 (SpecF q))) :
+    neronSpAut d w hw x' = (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)).symm
+      (RelPoint.post w hw
+        (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) x')) := rfl
+
+/-- **An involutive model automorphism induces an involution of the
+special fibre's rational points** (PROVEN 2026-07-27). -/
+theorem neronSpAut_involutive (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (hinv : w ≫ w = 𝟙 XZ)
+    (x' : RelPoint strX' (𝟙 (SpecF q))) :
+    neronSpAut d w hw (neronSpAut d w hw x') = x' := by
+  have hpp : ∀ z : RelPoint xstr (SpecLoc.special toF),
+      RelPoint.post w hw (RelPoint.post w hw z) = z := by
+    intro z
+    apply Subtype.ext
+    show (z.1 ≫ w) ≫ w = z.1
+    rw [Category.assoc, hinv, Category.comp_id]
+  rw [neronSpAut_apply, neronSpAut_apply, Equiv.apply_symm_apply, hpp,
+    Equiv.symm_apply_apply]
+
+/-- **A model automorphism preserving the open part preserves the
+non-cuspidal locus of the GENERIC fibre** (PROVEN 2026-07-27).
+
+`genX_j` carries the open immersion, so a point of `X_0(N)(ℚ)` coming
+from `Y_0(N)(ℚ)` has integral avatar a section of `𝒴`; `w` moves it
+inside `𝒴` by `post_relSectionAlong_of_comm`; and reading back through
+`genY`/`genX` produces the required rational point of `Y_0(N)`. -/
+theorem not_isCusp_neronGenAut (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr)
+    (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr) (hcomm : wY ≫ jZ = jZ ≫ w)
+    (x : RelPoint strX (𝟙 SpecQ)) (hx : ¬ hX.IsCusp x) :
+    ¬ hX.IsCusp (neronGenAut d w hw x) := by
+  obtain ⟨y, hy⟩ := not_not.mp hx
+  have hyy : y ≫ strY = 𝟙 SpecQ := by
+    rw [← hX.«over», ← Category.assoc, hy, x.2]
+  set yR : RelPoint strY (𝟙 SpecQ) := ⟨y, hyy⟩ with hyR
+  have hxs : sectionAlong hX.j hX.«over» yR = x := Subtype.ext hy
+  set gy := d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) yR with hgy
+  set y2R := (d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+    (RelPoint.post wY hwY gy) with hy2R
+  have key : neronGenAut d w hw x = sectionAlong hX.j hX.«over» y2R := by
+    apply (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
+    rw [neronGenAut_apply, Equiv.apply_symm_apply, ← hxs,
+      sectionAlong_eq_relSectionAlong, d.genX_j, ← hgy,
+      post_relSectionAlong_of_comm jZ d.model.comm hw hwY hcomm,
+      sectionAlong_eq_relSectionAlong, d.genX_j, hy2R, Equiv.apply_symm_apply]
+  exact fun hcs => hcs ⟨y2R.1, congrArg Subtype.val key.symm⟩
+
+/-- **The same on the SPECIAL fibre** (PROVEN 2026-07-27), through `spX_j`
+and `spY` instead of `genX_j` and `genY`.
+
+Note this is the NON-cusp direction; the cusp-preservation clause the
+dichotomy consumes is its contrapositive, available only because the
+induced map is an involution. -/
+theorem not_isCusp_neronSpAut (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr)
+    (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr) (hcomm : wY ≫ jZ = jZ ≫ w)
+    (x' : RelPoint strX' (𝟙 (SpecF q))) (hx' : ¬ hX'.IsCusp x') :
+    ¬ hX'.IsCusp (neronSpAut d w hw x') := by
+  obtain ⟨y', hy'⟩ := not_not.mp hx'
+  set gy' := d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y' with hgy'
+  set y2' := (d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)).symm
+    (RelPoint.post wY hwY gy') with hy2'
+  have key : neronSpAut d w hw x' = sectionAlong jY' hX'.comm y2' := by
+    apply (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)).injective
+    rw [neronSpAut_apply, Equiv.apply_symm_apply, ← hy',
+      sectionAlong_eq_relSectionAlong, d.spX_j, ← hgy',
+      post_relSectionAlong_of_comm jZ d.model.comm hw hwY hcomm,
+      sectionAlong_eq_relSectionAlong, d.spX_j, hy2', Equiv.apply_symm_apply]
+  exact fun hcs => hcs ⟨y2', key.symm⟩
+
+/-- **A model automorphism COMMUTES WITH REDUCTION** (PROVEN 2026-07-27) —
+the `red_al` clause, and the reason the Atkin–Lehner leaf is worth
+restating at the level of the model.
+
+Nothing modular is used.  The integral avatar of `neronGenAut d w hw x`
+is `post w (intX x)`, because `pre generic` is injective (the valuative
+criterion, `properX`) and both sides restrict generically to
+`post w (genX x)`; and `pre special` commutes with `post w` by
+associativity.  Over an unpinned `redX` this clause is a condition on an
+arbitrary function; here it is a theorem. -/
+theorem redX_neronGenAut (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (x : RelPoint strX (𝟙 SpecQ)) :
+    d.redX (neronGenAut d w hw x) = neronSpAut d w hw (d.redX x) := by
+  have hint : d.intX (neronGenAut d w hw x) = RelPoint.post w hw (d.intX x) := by
+    apply d.properX.1
+    rw [d.pre_intX, relPoint_pre_post, d.pre_intX, neronGenAut_apply, Equiv.apply_symm_apply]
+  rw [d.redX_def, hint, neronSpAut_apply, d.redX_def, Equiv.apply_symm_apply, relPoint_pre_post]
+
+end NeronModelAutomorphism
+
+/-- **The Atkin–Lehner involution of the INTEGRAL MODEL** (sorry node, new
+2026-07-27) — the Atkin–Lehner half of the second cut, and what the 1970
+paper actually constructs.
+
+`w_N` is an automorphism of the smooth model of `X_0(N)` over `ℤ[1/N]`,
+hence over `ℤ_(q)` for `q ∤ N`, restricting to an automorphism of the
+open part `𝒴 = Y_0(N)`; it is an involution; and at PRIME level it
+interchanges the two cusps, so the involution it induces on the
+`𝔽_q`-points of the special fibre has NO FIXED CUSP.
+
+**WHAT IS ASKED, PRECISELY.**  A pair `w : 𝒳 ⟶ 𝒳`, `w_𝒴 : 𝒴 ⟶ 𝒴` over
+`Spec ℤ_(q)` with `w_𝒴 ≫ jZ = jZ ≫ w` and `w ≫ w = 𝟙`, together with
+fixed-point-freeness of the induced `neronSpAut d w hw` on the cuspidal
+locus.  Everything the dichotomy consumes — the five point-level
+properties of `exists_atkinLehnerInvolution_of_jNeronDatum` — is derived
+from this and nothing else.
+
+**WHERE THE HYPOTHESES ENTER.**  `N.Prime` is the fixed-point-freeness
+clause and nothing else: at composite level `w_N` FIXES cusps, the
+smallest witness being `N = 4`, whose three cusps are `0`, `1/2`, `∞`
+with `w_4` interchanging `0` and `∞` and fixing `1/2`.  `q.Prime` with
+`q ≠ N` is `q ∤ N`, i.e. good reduction of the model, which is what lets
+`w_N` be defined over `ℤ_(q)` at all and what keeps the two cusps
+distinct in the fibre.  `q ≠ 2` is NOT needed; it belongs to the formal
+immersion.
+
+**WHY THE FIXED-POINT CLAUSE CANNOT BE SPLIT OFF.**  Every other conjunct
+is satisfied by `w = 𝟙`, `w_𝒴 = 𝟙`.  So a leaf asking only for the
+algebraic clauses would be discharged by the identity, and a second leaf
+taking such a `w` as a hypothesis and concluding fixed-point-freeness
+would be FALSE.  The clause is stated about `neronSpAut d w hw`, a
+DEFINED function of `w`, precisely so that it is a condition on `w`
+rather than on a hypothesised function — this is the same forcing that
+keeps the cusp count in a leaf mentioning no involution at all.
+
+**WHY IT IS STATED OVER `IsX0JNeronDatum`.**  The conclusion mentions
+`neronSpAut d`, i.e. the special-fibre identification `spX` of the model;
+over an arbitrary `IsX0JReductionAt` there is no model and the statement
+cannot be made.  `d` is consumed by the STATEMENT.
+
+**NON-VACUITY.**  `N = 37`, `q = 3` satisfies every hypothesis, and the
+genuine `w_37` on the Deligne–Rapoport model over `ℤ_(3)` witnesses the
+conclusion; its induced involution swaps the reductions of the cusps `0`
+and `∞`, which are distinct because the cuspidal subscheme is étale at
+`3 ∤ 37`.
+
+**REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ₀(m)`*, Math. Ann.
+185 (1970), §2.  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), for the model over `ℤ[1/N]` and the
+extension of `w_N` to it. -/
+theorem exists_atkinLehnerModel_of_jNeronDatum (N q : ℕ)
+    (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    ∃ (w : XZ ⟶ XZ) (wY : YZ ⟶ YZ) (hw : w ≫ xstr = xstr) (hwY : wY ≫ ystr = ystr),
+      wY ≫ jZ = jZ ≫ w ∧ w ≫ w = 𝟙 XZ ∧
+      ∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → neronSpAut d w hw x' ≠ x' :=
+  sorry
+
+/-- **The cuspidal subscheme of the special fibre is two `𝔽_q`-rational
+points** (sorry node, new 2026-07-27) — the Deligne–Rapoport half of the
+second cut, in the shape DR proves rather than as a cardinality.
+
+At PRIME level the cusps of `X_0(N)` are `0` and `∞`, indexed by the two
+divisors `1` and `N`, and `gcd(d, N/d) = 1` for both — so both cusps are
+rational over EVERY base, in particular over `𝔽_q`.  The cuspidal
+subscheme of the smooth model over `ℤ[1/N]` is finite étale of degree
+`2`, so its fibre at `q ∤ N` is again two distinct `𝔽_q`-rational points,
+and these are exactly the `𝔽_q`-points of `X'` that do not factor through
+the open part `Y'`.
+
+**WHY THIS AND NOT THE COUNT.**  `Nat.card ... = 2` is a shadow of the
+statement; this is the statement, and the count follows from it by
+`IsX0RationalCuspLocus.card_isCusp_eq_two`.  In particular the
+`cover`/`ratPoint` pair is what makes the count exact rather than a lower
+bound, and both are things DR proves.
+
+**WHERE THE HYPOTHESES ENTER.**  `N.Prime` makes every `gcd(d, N/d)`
+equal to `1`, which is `degree_one`; at `N = 4` the cusp `1/2` has
+`gcd(2, 2) = 2` and is not rational over every base, so the structure
+would be unsatisfiable and the count would in any case be `3`.  `q.Prime`
+is what makes `ZMod q` a field at all (it is supplied as `Fact q.Prime`),
+and together with `q ≠ N` it is `q ∤ N`, without which the model is not
+smooth at `q` and the cuspidal fibre can degenerate.  `q ≠ 2` is not
+needed.
+
+**WHY `d` IS CARRIED THOUGH THE CONCLUSION MENTIONS ONLY `hX'`.**  It is
+a guard, underscored because the proof need not use it: `hX'` already
+pins `X'` as a smooth proper geometrically connected curve compactifying
+the coarse space of `Γ₀(N)` over `𝔽_q`.  Carrying `d` records that the
+assertion is about the SPECIAL FIBRE OF THE GOOD MODEL at `q ∤ N`, which
+is where DR proves it, and keeps every leaf of this cut indexed by the
+same datum.
+
+**NO INVOLUTION APPEARS HERE, DELIBERATELY** — see the subsection
+docstring: a counting or cusp-locus leaf quantified over a hypothesised
+`al'` is FALSE against `al' = id`.
+
+**NON-VACUITY.**  For `N = 37`, `q = 3` the two cusps of `X_0(37)` reduce
+to two distinct `𝔽_3`-points, so the resulting count is `2` and not `0`
+or `1`.
+
+**REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), IV–VI for the
+cuspidal subscheme of the smooth model of `X_0(N)` over `ℤ[1/N]`; Ogg,
+*Rational points on certain elliptic modular curves* (1973) for the cusp
+count at prime level. -/
+theorem nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum (N q : ℕ)
+    (_hN : N.Prime) [_hq : Fact q.Prime] (_hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    Nonempty (IsX0RationalCuspLocus N hX') :=
+  sorry
 
 /-- **The Atkin–Lehner involution `w_N` with its reduction mod `q`**
-(sorry node, new 2026-07-27) — the first of the two classical inputs of
+(PROVEN 2026-07-27 over `exists_atkinLehnerModel_of_jNeronDatum`; opened
+as a sorry node the same day) — the first of the two classical inputs of
 `exists_atkinLehner_of_jNeronDatum`.
+
+**HOW IT IS PROVEN.**  `exists_atkinLehnerModel_of_jNeronDatum` supplies
+the Atkin–Lehner automorphism `w` of the INTEGRAL MODEL together with its
+restriction `w_𝒴` to the open part, and `al` / `al'` are its transports
+`neronGenAut d w hw` / `neronSpAut d w hw` along the model's two fibre
+identifications.  Then, clause by clause: the first is
+`not_isCusp_neronGenAut` (`genX_j` plus `post_relSectionAlong_of_comm`);
+the second is `neronSpAut_involutive` (`w ≫ w = 𝟙`); the third is the
+CONTRAPOSITIVE of `not_isCusp_neronSpAut`, which is available only
+because the second makes `al'` an involution; the fourth is the model
+leaf's own fixed-point clause; and the fifth is `redX_neronGenAut`, where
+the valuative criterion `properX` makes `intX (al x) = post w (intX x)`
+and the rest is associativity.  Nothing modular is used after the model
+leaf.
 
 Produces `w_N` on the rational points of `X_0(N)` AND `w'_N` on the
 `𝔽_q`-points of the special fibre, together with the four properties the
@@ -1775,7 +2285,7 @@ contradicting its own hypotheses.
 185 (1970), §2.  Deligne–Rapoport (Antwerp II, 1973) for the extension of
 `w_N` to the smooth model at `q ∤ N`. -/
 theorem exists_atkinLehnerInvolution_of_jNeronDatum (N q : ℕ)
-    (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
+    (hN : N.Prime) (hq : q.Prime) (hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -1791,12 +2301,35 @@ theorem exists_atkinLehnerInvolution_of_jNeronDatum (N q : ℕ)
       (∀ x' : RelPoint strX' (𝟙 (SpecF q)), al' (al' x') = x') ∧
       (∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → hX'.IsCusp (al' x')) ∧
       (∀ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' → al' x' ≠ x') ∧
-      (∀ x : RelPoint strX (𝟙 SpecQ), d.redX (al x) = al' (d.redX x)) :=
-  sorry
+      (∀ x : RelPoint strX (𝟙 SpecQ), d.redX (al x) = al' (d.redX x)) := by
+  obtain ⟨w, wY, hw, hwY, hcomm, hinv, hfree⟩ :=
+    exists_atkinLehnerModel_of_jNeronDatum N q hN hq hqN d
+  refine ⟨neronGenAut d w hw, neronSpAut d w hw, ?_, ?_, ?_, hfree, ?_⟩
+  · exact fun x hx => not_isCusp_neronGenAut d w hw wY hwY hcomm x hx
+  · exact fun x' => neronSpAut_involutive d w hw hinv x'
+  · -- cusp preservation is the contrapositive of non-cusp preservation,
+    -- read at `al' x'` and folded back with involutivity
+    intro x' hx'
+    by_contra hcs
+    have h2 := not_isCusp_neronSpAut d w hw wY hwY hcomm _ hcs
+    rw [neronSpAut_involutive d w hw hinv x'] at h2
+    exact h2 hx'
+  · exact fun x => redX_neronGenAut d w hw x
 
 /-- **`X_0(N)` mod `q` has exactly TWO `𝔽_q`-rational cusps at prime
-level** (sorry node, new 2026-07-27) — the second of the two classical
-inputs, and the two-cusp count itself.
+level** (PROVEN 2026-07-27 over
+`nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum`; opened as a
+sorry node the same day) — the second of the two classical inputs, and
+the two-cusp count itself.
+
+**HOW IT IS PROVEN.**  The Deligne–Rapoport input is now the cuspidal
+SUBSCHEME of the special fibre — `IsX0RationalCuspLocus`, the base-field
+analogue of `IsX0Compactification.CuspLocus` — and the count is
+bookkeeping on top of it: `cover` makes each `κ d` a cusp, `disj` makes
+the indexing injective, `ratPoint` makes it surjective, so the rational
+cusps biject with `N.divisors`, and `Nat.Prime.divisors` gives `{1, N}`,
+of cardinality `2` since `1 < N`.  See
+`IsX0RationalCuspLocus.card_isCusp_eq_two`.
 
 At prime level `X_0(N)` has exactly the two cusps `0` and `∞`, both
 `ℚ`-rational; the cuspidal subscheme of the smooth model over `ℤ_(q)` is
@@ -1811,7 +2344,10 @@ the model is not smooth at `q` and the cuspidal fibre can degenerate.
 `q ≠ 2` is not needed.
 
 **WHY `d` IS CARRIED THOUGH THE STATEMENT DOES NOT MENTION IT.**  It is a
-guard, and it is underscored because the proof genuinely need not use it:
+guard (it was underscored while this was a leaf; since the second cut it
+is passed on to
+`nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum`, which carries
+it for the same reason):
 the statement is about `hX'` alone, and `hX'` already pins `X'` as a
 smooth proper geometrically connected curve compactifying the coarse
 space of `Γ₀(N)` over `𝔽_q`.  Carrying `d` records that the count is
@@ -1833,7 +2369,7 @@ elliptiques* (Antwerp II, 1973), IV–VI for the cuspidal subscheme of the
 smooth model of `X_0(N)` over `ℤ[1/N]`; Ogg, *Rational points on certain
 elliptic modular curves* (1973) for the cusp count at prime level. -/
 theorem card_cusps_specialFibre_of_jNeronDatum (N q : ℕ)
-    (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
+    (hN : N.Prime) (hq : q.Prime) (hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -1842,9 +2378,11 @@ theorem card_cusps_specialFibre_of_jNeronDatum (N q : ℕ)
     {hX' : IsX0Compactification N strX' strY' jY'}
     {hj : IsJMapOn N hc}
     {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
-    Nat.card {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'} = 2 :=
-  sorry
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    Nat.card {x' : RelPoint strX' (𝟙 (SpecF q)) // hX'.IsCusp x'} = 2 := by
+  haveI : Fact q.Prime := ⟨hq⟩
+  obtain ⟨C⟩ := nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum N q hN hqN d
+  exact C.card_isCusp_eq_two hN
 
 /-- **The reduction of a rational cusp is a cusp** (PROVEN 2026-07-27).
 
