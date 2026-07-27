@@ -2244,8 +2244,18 @@ just believe them): (i) exhibit a derivation of `(M⁰)^{σ} = 0` for some
 single `σ` from `(M⁰)^{I₃} = 0` alone — it must contend with the `S₃`
 configuration above; (ii) find a Cartier-duality development in the
 tree transporting the proven "no unramified sub" half to this one —
-`grep -rn 'CartierDual\|cartierDual' Fermat/` returns nothing as of
-2026-07-27, which is why that route was not taken.
+**THIS CHECK HAS NOW FIRED (2026-07-27) and the sentence it replaces was
+stale: the grep no longer returns nothing.**
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` builds Cartier
+duality for finite flat commutative group schemes, sorry-free, and
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` adds its
+functoriality (`CartierDual.map`) together with the definition of a short
+exact sequence (`HopfAlgebra.IsShortExact`) that the transport needs. So the
+duality route is no longer ABSENT; it is available in principle and blocked
+on ONE named open leaf, `HopfAlgebra.IsShortExact.cartierDual` (exactness of
+duality). That is a different — and much smaller — obstruction than the one
+recorded here, and the next owner of this leaf should weigh it afresh rather
+than treating the duality route as nonexistent.
 
 `hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
 idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
