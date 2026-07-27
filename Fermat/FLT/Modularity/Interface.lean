@@ -21193,10 +21193,12 @@ The classical chain, and what each link costs on this pin:
 
 So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
 genuinely missing mathematics — is now stated and isolated. As of
-2026-07-27 the frontier of this whole chain is exactly TWO leaves,
+2026-07-27 the frontier of this whole chain is exactly ONE leaf,
 `span_jacobiSum_le_decompCarryPow` (the Jacobi-sum carry formula, i.e.
-Stickelberger's congruence, and the only deep one) and
-`span_natCard_le_decompPow` (`v_q(#(𝓞/q)) = f`, standard). The node
+Stickelberger's congruence, and the only deep one);
+`span_natCard_le_decompPow` (`v_q(#(𝓞/q)) = f`, standard) was PROVEN
+2026-07-27 over `IsCyclotomicExtension.Rat.galEquivZMod_stabilizer`.
+The node
 below is PROVEN over them as of 2026-07-27, and the description that
 follows is retained because it is still the correct account of what (b)
 IS:
@@ -22782,8 +22784,89 @@ theorem span_gaussPowOfJacobiSums_le_pow_of_factors {F : Type*} [CommRing F] [Fi
     ← Ideal.span_singleton_mul_span_singleton]
   exact Dvd.dvd.mul_right (mul_dvd_mul (Ideal.dvd_iff_le.mpr hN) hprod) _
 
+open scoped Pointwise in
+/-- **`σ_u` acts on ideals as the pointwise Galois translate** (PROVEN
+2026-07-27; the bridge between this development's `Ideal.map σ_u` idiom
+and mathlib's `MulAction` on `Ideal (𝓞 CF)`).
+
+`cycGalRingOfIntegersEquiv CF u` is by construction the restriction to
+`𝓞 CF` of `(galEquivZMod p CF).symm u`, and mathlib's pointwise action
+of a `MulSemiringAction` on ideals is `Ideal.map` of the induced ring
+hom (`Ideal.pointwise_smul_def`). The two ring homs are DEFINITIONALLY
+equal — both send `x` to the Galois image of `x` inside `CF` — so
+`congr 1` closes it. Needed because
+`IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` is stated for
+`MulAction.stabilizer Gal(CF/ℚ) q`, i.e. for the `•` form. -/
+theorem cycGalRingOfIntegersEquiv_smul_ideal (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (u : (ZMod p)ˣ) (q : Ideal (𝓞 CF)) :
+    ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) • q
+      = Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q := by
+  rw [Ideal.pointwise_smul_def]
+  congr 1
+
+open scoped Pointwise in
+/-- **The decomposition count IS the residue degree** (PROVEN
+2026-07-27): for `q` a prime of `𝓞 CF` lying over the rational prime
+`ℓ ∤ p`,
+
+`#{u ∈ (ℤ/p)ˣ : σ_u(q) = q} = f(q/ℓ)`.
+
+This is the `#D = e·f` of decomposition theory specialised to the
+unramified case `e = 1`, and it is entirely mathlib on this pin — no
+new mathematics. The chain:
+
+* the filter set is in bijection with `MulAction.stabilizer Gal(CF/ℚ) q`
+  along `(galEquivZMod p CF).symm` (this is
+  `cycGalRingOfIntegersEquiv_smul_ideal` plus
+  `MulAction.mem_stabilizer_iff`);
+* `IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` identifies the
+  IMAGE of that stabilizer in `(ℤ/p)ˣ` with `zpowers [ℓ]`, so its
+  cardinality is `orderOf [ℓ]` (`Subgroup.card_mapSubgroup`,
+  `Nat.card_zpowers`);
+* `IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd` says that same
+  `orderOf [ℓ]` is `inertiaDeg q ℤ`.
+
+Stated with `ℓ` and the `LiesOver` instance as HYPOTHESES rather than
+existentially, so that the consumer can instantiate at
+`ℓ := absNorm (under ℤ q)`, where `Int.liesOver_span_absNorm` supplies
+the instance definitionally. -/
+theorem card_decompFilter_eq_inertiaDeg (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (ℓ : ℕ) [Fact (Nat.Prime ℓ)]
+    (q : Ideal (𝓞 CF)) [q.IsPrime] [q.LiesOver (Ideal.span {(ℓ : ℤ)})]
+    (hnd : ¬ ℓ ∣ p) :
+    (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+        Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card
+      = Ideal.inertiaDeg q ℤ := by
+  have hcop : Nat.Coprime ℓ p := (Nat.Prime.coprime_iff_not_dvd Fact.out).mpr hnd
+  haveI : q.IsMaximal := Ideal.IsMaximal.of_liesOver_isMaximal q (Ideal.span {(ℓ : ℤ)})
+  have hstab := IsCyclotomicExtension.Rat.galEquivZMod_stabilizer p CF ℓ q hcop
+  have e1 : (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+        Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card
+      = Nat.card (MulAction.stabilizer (CF ≃ₐ[ℚ] CF) q) := by
+    have hbij : ∀ u : (ZMod p)ˣ,
+        (Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)
+          ↔ ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm.toEquiv u
+              ∈ MulAction.stabilizer (CF ≃ₐ[ℚ] CF) q) := by
+      intro u
+      rw [MulAction.mem_stabilizer_iff]
+      show _ ↔ ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) • q = q
+      rw [cycGalRingOfIntegersEquiv_smul_ideal]
+    rw [← Fintype.card_subtype, Nat.card_eq_fintype_card]
+    exact Fintype.card_congr (Equiv.subtypeEquiv _ hbij)
+  have e2 : Nat.card (MulAction.stabilizer (CF ≃ₐ[ℚ] CF) q)
+      = orderOf (ZMod.unitOfCoprime ℓ hcop) := by
+    rw [← Subgroup.card_mapSubgroup (H := MulAction.stabilizer (CF ≃ₐ[ℚ] CF) q)
+      (IsCyclotomicExtension.Rat.galEquivZMod p CF), hstab, Nat.card_zpowers]
+  have e3 : orderOf (ZMod.unitOfCoprime ℓ hcop) = orderOf ((ℓ : ZMod p)) := by
+    have h := orderOf_injective (Units.coeHom (ZMod p)) Units.coeHom_injective
+      (ZMod.unitOfCoprime ℓ hcop)
+    simpa [ZMod.coe_unitOfCoprime] using h.symm
+  have e4 : Ideal.inertiaDeg q ℤ = orderOf ((ℓ : ZMod p)) :=
+    IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd ℓ CF q hnd
+  rw [e1, e2, e3, e4]
+
 /-- **`q^f ∣ #(𝓞 CF ⧸ q)`, WITH `f` READ OFF THE DECOMPOSITION SUBGROUP**
-(SORRY LEAF, cut 2026-07-27 out of
+(PROVEN 2026-07-27, cut 2026-07-27 out of
 `span_gaussPowOfJacobiSums_le_localPow` below).
 
 `#(𝓞 CF ⧸ q) = ℓ^f` where `ℓ` is the rational prime under `q` and `f`
@@ -22802,13 +22885,26 @@ dictionary only to eliminate them again would add a second lemma with
 no mathematical content. Everything the statement needs is already in
 the hypotheses.
 
-**Ingredients on this pin**:
-`IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` (the decomposition
-subgroup is generated by `[ℓ]`), the unramifiedness of `ℓ ≠ p` in
-`ℚ(ζ_p)`, `Ideal.absNorm`/`Ideal.absNorm_apply` and
-`Ideal.absNorm_eq_pow_ramificationIdx_mul_inertiaDeg`-style bookkeeping,
-and `IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd`
-to convert the valuation statement back to the ideal inequality.
+**THE PROOF, as carried out.** Let `ℓ := absNorm (under ℤ q)`, the
+rational prime under `q` (`Nat.absNorm_under_prime`), so that
+`Int.liesOver_span_absNorm` gives `q.LiesOver (ℓ)` as an INSTANCE and
+`Int.absNorm_under_mem` gives `(ℓ : 𝓞 CF) ∈ q`. Then `ℓ ≠ p`, since
+`ℓ ∣ p` between primes forces `ℓ = p` and hence `(p : 𝓞 CF) ∈ q`,
+against `hpq`. Two steps remain, and neither needs a valuation:
+
+* `card_decompFilter_eq_inertiaDeg` above rewrites the EXPONENT as
+  `inertiaDeg q ℤ` — this is where `galEquivZMod_stabilizer` and the
+  unramifiedness of `ℓ ∤ p` are consumed;
+* `Ideal.pow_inertiaDeg` says `ℓ ^ inertiaDeg q ℤ = absNorm q`, and
+  `absNorm q = #(𝓞 CF ⧸ q)` by `Ideal.absNorm_apply` +
+  `Submodule.cardQuot_apply`.
+
+So the goal becomes `span {(ℓ : 𝓞 CF)^f} ≤ q^f`, which is
+`Ideal.span_singleton_pow` followed by `pow_le_pow_left'` applied to
+`span {(ℓ : 𝓞 CF)} ≤ q`. Note that no `v_q` ever appears: the
+divisibility is read off directly from `(ℓ) ≤ q`, which is why the
+unramifiedness is needed only to identify the EXPONENT `#D` with `f`,
+not to compute `v_q(ℓ)`.
 
 **The check that would refute this leaf**: compute
 `idealval(K, Q, q)` in PARI/GP against `znorder(Mod(ℓ, p))` for a
@@ -22823,8 +22919,26 @@ theorem span_natCard_le_decompPow (CF : Type) [Field CF] [NumberField CF]
     (hpq : (p : 𝓞 CF) ∉ q) :
     Ideal.span {(Fintype.card (𝓞 CF ⧸ q) : 𝓞 CF)}
       ≤ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
-          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card :=
-  sorry
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card := by
+  haveI := hq
+  haveI : NeZero q := ⟨hq0⟩
+  have hlprime : (Ideal.absNorm (Ideal.under ℤ q)).Prime := Nat.absNorm_under_prime q
+  haveI : Fact (Nat.Prime (Ideal.absNorm (Ideal.under ℤ q))) := ⟨hlprime⟩
+  have hnd : ¬ (Ideal.absNorm (Ideal.under ℤ q)) ∣ p := by
+    intro hdvd
+    have heq : Ideal.absNorm (Ideal.under ℤ q) = p :=
+      (Nat.prime_dvd_prime_iff_eq hlprime hp.out).mp hdvd
+    exact hpq (heq ▸ Int.absNorm_under_mem q)
+  rw [card_decompFilter_eq_inertiaDeg CF (Ideal.absNorm (Ideal.under ℤ q)) q hnd]
+  have hcard : (Fintype.card (𝓞 CF ⧸ q))
+      = (Ideal.absNorm (Ideal.under ℤ q)) ^ (Ideal.inertiaDeg q ℤ) := by
+    rw [Ideal.pow_inertiaDeg, Ideal.absNorm_apply, Submodule.cardQuot_apply,
+      Nat.card_eq_fintype_card]
+  rw [hcard]
+  push_cast
+  rw [← Ideal.span_singleton_pow]
+  exact pow_le_pow_left'
+    (Ideal.span_le.mpr (by simpa using Int.absNorm_under_mem q)) _
 
 /-- **`∑_{x ∈ K} x^A (1−x)^C = 0` WHEN `A + C < #K − 1`** (PROVEN
 2026-07-27; the finite-field kernel of the ELEMENTARY half of
