@@ -4687,19 +4687,37 @@ at `z₀`. It is the building block of the JACOBIAN of a polynomial system, and
 `hasStrictFDerivAt_mvPolynomial_eval` below identifies it with the analytic
 derivative of `z ↦ p(z)` — which is the bridge mathlib does not have, and
 without which the formal `MvPolynomial.pderiv` and the analytic `fderiv` cannot
-be compared at all. -/
-noncomputable def mvPolynomialGradient {m : ℕ} (p : MvPolynomial (Fin m) ℝ)
-    (z₀ : Fin m → ℝ) : (Fin m → ℝ) →L[ℝ] ℝ :=
+be compared at all.
+
+**STATED OVER A GENERAL COMPLETE FIELD SINCE 2026-07-27** (base field `𝕜`
+generalised from `ℝ`, no proof change beyond replacing two `simp only` calls
+that happened to depend on `ℝ`'s instance path). The `ℝ` consumer
+(`exists_euclideanPatch_of_polynomialSystem`) is unaffected — it simply
+instantiates `𝕜 := ℝ` — and the generality is what lets the `p`-adic Bertini
+leaf `exists_padicBall_of_affine_geometricallyIrreducible` below reuse the same
+bridge at `𝕜 := ℚ_[p]`. -/
+noncomputable def mvPolynomialGradient {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+    {m : ℕ} (p : MvPolynomial (Fin m) 𝕜)
+    (z₀ : Fin m → 𝕜) : (Fin m → 𝕜) →L[𝕜] 𝕜 :=
   ∑ i : Fin m, (MvPolynomial.eval z₀ (MvPolynomial.pderiv i p)) •
-    (ContinuousLinearMap.proj i : (Fin m → ℝ) →L[ℝ] ℝ)
+    (ContinuousLinearMap.proj i : (Fin m → 𝕜) →L[𝕜] 𝕜)
 
 /-- `mvPolynomialGradient` in coordinates (PROVEN, 2026-07-26). -/
-theorem mvPolynomialGradient_apply {m : ℕ} (p : MvPolynomial (Fin m) ℝ)
-    (z₀ v : Fin m → ℝ) :
+theorem mvPolynomialGradient_apply {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+    {m : ℕ} (p : MvPolynomial (Fin m) 𝕜)
+    (z₀ v : Fin m → 𝕜) :
     mvPolynomialGradient p z₀ v =
       ∑ i : Fin m, MvPolynomial.eval z₀ (MvPolynomial.pderiv i p) * v i := by
   simp only [mvPolynomialGradient, FunLike.coe_sum, Finset.sum_apply,
     FunLike.coe_smul, Pi.smul_apply, ContinuousLinearMap.proj_apply, smul_eq_mul]
+
+/-- The gradient of a constant polynomial vanishes (PROVEN, 2026-07-27). -/
+theorem mvPolynomialGradient_C {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+    {m : ℕ} (a : 𝕜) (z₀ : Fin m → 𝕜) :
+    mvPolynomialGradient (MvPolynomial.C a : MvPolynomial (Fin m) 𝕜) z₀ = 0 := by
+  ext v
+  rw [mvPolynomialGradient_apply]
+  simp
 
 /-- **THE FORMAL DERIVATIVE IS THE ANALYTIC ONE, for multivariate polynomials**
 (PROVEN, 2026-07-26 — this bridge is genuinely absent from mathlib at this pin:
@@ -4719,39 +4737,42 @@ gradient (`pderiv_C`), the gradient is additive (`pderiv` is a derivation), and
 the `mul_X` step is the Leibniz rule `pderiv_mul` matched against the product
 rule for `HasStrictFDerivAt`, the two `if`-branches of `pderiv_X` collapsing
 under `Finset.sum_ite_eq'`. -/
-theorem hasStrictFDerivAt_mvPolynomial_eval {m : ℕ} (p : MvPolynomial (Fin m) ℝ)
-    (z₀ : Fin m → ℝ) :
-    HasStrictFDerivAt (fun z : Fin m → ℝ => MvPolynomial.eval z p)
+theorem hasStrictFDerivAt_mvPolynomial_eval {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+    {m : ℕ} (p : MvPolynomial (Fin m) 𝕜)
+    (z₀ : Fin m → 𝕜) :
+    HasStrictFDerivAt (fun z : Fin m → 𝕜 => MvPolynomial.eval z p)
       (mvPolynomialGradient p z₀) z₀ := by
   classical
   induction p using MvPolynomial.induction_on with
   | C a =>
-      have h1 : (fun z : Fin m → ℝ =>
-          MvPolynomial.eval z (MvPolynomial.C a : MvPolynomial (Fin m) ℝ)) = fun _ => a :=
+      have h1 : (fun z : Fin m → 𝕜 =>
+          MvPolynomial.eval z (MvPolynomial.C a : MvPolynomial (Fin m) 𝕜)) = fun _ => a :=
         funext fun _ => MvPolynomial.eval_C a
-      have h2 : mvPolynomialGradient (MvPolynomial.C a : MvPolynomial (Fin m) ℝ) z₀ = 0 := by
-        simp only [mvPolynomialGradient, MvPolynomial.pderiv_C, map_zero, zero_smul,
-          Finset.sum_const_zero]
+      have h2 : mvPolynomialGradient (MvPolynomial.C a : MvPolynomial (Fin m) 𝕜) z₀ = 0 :=
+        mvPolynomialGradient_C a z₀
       rw [h1, h2]
       exact hasStrictFDerivAt_const a z₀
   | add p q hp hq =>
-      have h1 : (fun z : Fin m → ℝ => MvPolynomial.eval z (p + q))
+      have h1 : (fun z : Fin m → 𝕜 => MvPolynomial.eval z (p + q))
           = fun z => MvPolynomial.eval z p + MvPolynomial.eval z q :=
         funext fun _ => by rw [map_add]
       have h2 : mvPolynomialGradient (p + q) z₀
           = mvPolynomialGradient p z₀ + mvPolynomialGradient q z₀ := by
-        simp only [mvPolynomialGradient, map_add, add_smul, Finset.sum_add_distrib]
+        ext v
+        rw [add_apply, mvPolynomialGradient_apply, mvPolynomialGradient_apply,
+          mvPolynomialGradient_apply, ← Finset.sum_add_distrib]
+        exact Finset.sum_congr rfl fun i _ => by rw [map_add, map_add, add_mul]
       rw [h1, h2]
       exact hp.add hq
   | mul_X p i hp =>
-      have hX : HasStrictFDerivAt (fun z : Fin m → ℝ => z i)
-          (ContinuousLinearMap.proj i : (Fin m → ℝ) →L[ℝ] ℝ) z₀ :=
+      have hX : HasStrictFDerivAt (fun z : Fin m → 𝕜 => z i)
+          (ContinuousLinearMap.proj i : (Fin m → 𝕜) →L[𝕜] 𝕜) z₀ :=
         hasStrictFDerivAt_apply i z₀
-      have h1 : (fun z : Fin m → ℝ => MvPolynomial.eval z (p * MvPolynomial.X i))
+      have h1 : (fun z : Fin m → 𝕜 => MvPolynomial.eval z (p * MvPolynomial.X i))
           = fun z => MvPolynomial.eval z p * z i := by
         funext z; rw [map_mul, MvPolynomial.eval_X]
       have h2 : mvPolynomialGradient (p * MvPolynomial.X i) z₀
-          = (MvPolynomial.eval z₀ p) • (ContinuousLinearMap.proj i : (Fin m → ℝ) →L[ℝ] ℝ)
+          = (MvPolynomial.eval z₀ p) • (ContinuousLinearMap.proj i : (Fin m → 𝕜) →L[𝕜] 𝕜)
             + (z₀ i) • mvPolynomialGradient p z₀ := by
         ext v
         have key : ∀ j : Fin m,
@@ -5935,6 +5956,543 @@ theorem exists_rat_mem_box_padicClose_eval_ne_zero {m : ℕ} {F : MvPolynomial (
   rw [hsplit]
   exact le_trans padicNorm.nonarchimedean (max_le hterm1 hterm2)
 
+/-! ### BREAK B, STEP 1: the `p`-adic ball (2026-07-27)
+
+The remaining half of `exists_rat_mem_box_padicPoints_eval_ne_zero` is the
+statement that the good hyperplane parameters at a prime `p` contain a whole
+`p`-adic ball. Its earlier docstring recorded this as *"a genuinely missing
+theory rather than a missing lemma"*, namely the scheme-level crossing
+`AlgebraicGeometry.Smooth g` ⟹ *"a smooth morphism is open on `ℚ_[p]`-points"*.
+
+**THAT CLAIM WAS TOO PESSIMISTIC, AND THIS BLOCK REPLACES IT.** Mathlib's
+inverse/implicit function theorem is *not* an `ℝ`-theorem: `map_nhds_eq_of_surj`
+(`Mathlib/Analysis/Calculus/InverseFunctionTheorem/FDeriv.lean:85`) is stated
+for an arbitrary `[NontriviallyNormedField 𝕜] [CompleteSpace 𝕜]`, and
+`ℚ_[p]` is one (`Padic.instNontriviallyNormedField`, `Padic.instCompleteSpace`).
+So the `p`-adic analysis is not missing at all: the ONLY thing that had to be
+generalised was this file's own bridge `hasStrictFDerivAt_mvPolynomial_eval`
+between `MvPolynomial.pderiv` and `fderiv`, which was written over `ℝ` and is
+now written over `𝕜`. Nothing else about the real tower had to be redone, and
+no multivariate Hensel was redeveloped.
+
+The `p`-adic side is genuinely EASIER than the real one, exactly as the parent
+docstring predicted but for a sharper reason: the real leaf needs an ARC and the
+intermediate value theorem because `ℝ`-openness of a submersion is not enough to
+hit a prescribed rational parameter; over `ℚ_[p]` the open image *is* the whole
+statement, because `ℚ` is DENSE in `ℚ_[p]` and denominators can be cleared
+integrally. So the chain here is
+`map_nhds_eq_of_surj` → `Padic.rat_dense` → common denominator → done.
+
+WHAT IS LEFT, and it is pure algebraic geometry with no analysis in it:
+`exists_padicPolynomialModel_of_affine_geometricallyIrreducible`. See its
+docstring for the (complete) attack path. -/
+
+/-- **A SURJECTION PAIRED WITH A FUNCTIONAL THAT IS NONZERO ON ITS KERNEL IS
+SURJECTIVE** (PROVEN, 2026-07-27) — the two-line linear algebra that upgrades
+"the Jacobian of the defining system is surjective" to "the Jacobian of the
+system TOGETHER WITH one more equation is surjective", which is what the
+implicit function theorem needs when one cuts a smooth variety by a hyperplane.
+-/
+theorem surjective_prod_of_surjective_of_apply_ne_zero
+    {𝕜 : Type*} [Field 𝕜]
+    {E F : Type*} [AddCommGroup E] [Module 𝕜 E] [AddCommGroup F] [Module 𝕜 F]
+    (T : E →ₗ[𝕜] F) (φ : E →ₗ[𝕜] 𝕜) (hT : Function.Surjective T)
+    (w : E) (hw : T w = 0) (hφw : φ w ≠ 0) :
+    Function.Surjective (fun e => (T e, φ e)) := by
+  rintro ⟨y, t⟩
+  obtain ⟨e, he⟩ := hT y
+  refine ⟨e + ((t - φ e) / φ w) • w, ?_⟩
+  have h1 : T (e + ((t - φ e) / φ w) • w) = y := by
+    rw [map_add, map_smul, hw, smul_zero, add_zero, he]
+  have h2 : φ (e + ((t - φ e) / φ w) • w) = t := by
+    rw [map_add, map_smul, smul_eq_mul, div_mul_cancel₀ _ hφw]
+    ring
+  rw [Prod.ext_iff]
+  exact ⟨h1, h2⟩
+
+open Filter in
+/-- **THE ZERO LOCUS OF A SMOOTH POLYNOMIAL SYSTEM SURVIVES A WHOLE BALL OF
+LINEAR CUTS** (**PROVEN 2026-07-27** — the `p`-adic analogue of
+`exists_euclideanPatch_of_polynomialSystem`, and the whole analytic content of
+Break B step 1).
+
+Over ANY complete nontrivially normed field `𝕜` — in particular `𝕜 = ℚ_[p]` —
+let `Pol : Fin c → 𝕜[X₀,…,X_{m−1}]` be a system with a common zero `z₀`, let
+`Q : Fin k → 𝕜[X₀,…,X_{m−1}]` be "coordinate" polynomials, and let
+`v₀ : Fin k → 𝕜` be a parameter with `∑ᵢ v₀ᵢ · Qᵢ(z₀) = 0` at which the combined
+Jacobian `z ↦ (Pol'(z₀)z, ∑ᵢ v₀ᵢ Qᵢ'(z₀)z)` is SURJECTIVE. Then there is a
+radius `r > 0` such that EVERY parameter `v` within `r` of `v₀` still admits a
+common zero `z` of `Pol` with `∑ᵢ vᵢ · Qᵢ(z) = 0`.
+
+HOW IT IS PROVEN, in one application and no quantitative estimates. Put
+
+    G(z, v) := (Pol(z), ∑ᵢ vᵢ Qᵢ(z), v)
+
+on `𝕜^m × 𝕜^k`. `hasStrictFDerivAt_mvPolynomial_eval` (now stated over `𝕜`)
+makes `G` strictly differentiable, its derivative is surjective precisely by the
+hypothesis — the third component absorbs the `v`-direction and the first two are
+the hypothesis — so `HasStrictFDerivAt.map_nhds_eq_of_surj` gives
+`map G (𝓝 (z₀,v₀)) = 𝓝 (G (z₀,v₀)) = 𝓝 (0,0,v₀)`. Hence `Set.range G` is a
+NEIGHBOURHOOD of `(0,0,v₀)`, so it contains a ball; every `(0,0,v)` in that ball
+is `G` of something, and reading off the three components is the conclusion.
+
+Note the third component `v` of `G` is what makes this one application rather
+than a family of them: without it the radius would depend on `v` and no uniform
+ball would exist. -/
+theorem exists_ball_param_of_polynomialSystem
+    {𝕜 : Type*} [NontriviallyNormedField 𝕜] [CompleteSpace 𝕜]
+    {m c k : ℕ}
+    (Pol : Fin c → MvPolynomial (Fin m) 𝕜)
+    (Q : Fin k → MvPolynomial (Fin m) 𝕜)
+    (z₀ : Fin m → 𝕜) (v₀ : Fin k → 𝕜)
+    (hz₀ : ∀ j, MvPolynomial.eval z₀ (Pol j) = 0)
+    (hv₀ : ∑ i, v₀ i * MvPolynomial.eval z₀ (Q i) = 0)
+    (hsurj : Function.Surjective (fun w : Fin m → 𝕜 =>
+      ((fun j : Fin c => mvPolynomialGradient (Pol j) z₀ w),
+        ∑ i, v₀ i * mvPolynomialGradient (Q i) z₀ w))) :
+    ∃ r : ℝ, 0 < r ∧ ∀ v : Fin k → 𝕜, (∀ i, ‖v i - v₀ i‖ < r) →
+      ∃ z : Fin m → 𝕜, (∀ j, MvPolynomial.eval z (Pol j) = 0) ∧
+        ∑ i, v i * MvPolynomial.eval z (Q i) = 0 := by
+  classical
+  set G : ((Fin m → 𝕜) × (Fin k → 𝕜)) → ((Fin c → 𝕜) × 𝕜 × (Fin k → 𝕜)) := fun q =>
+    ((fun j => MvPolynomial.eval q.1 (Pol j)),
+      ∑ i, q.2 i * MvPolynomial.eval q.1 (Q i), q.2) with hGdef
+  set L1 : ((Fin m → 𝕜) × (Fin k → 𝕜)) →L[𝕜] (Fin c → 𝕜) :=
+    ContinuousLinearMap.pi
+      (fun j => (mvPolynomialGradient (Pol j) z₀).comp (ContinuousLinearMap.fst 𝕜 _ _))
+  set L2 : ((Fin m → 𝕜) × (Fin k → 𝕜)) →L[𝕜] 𝕜 :=
+    ∑ i : Fin k, (v₀ i • (mvPolynomialGradient (Q i) z₀).comp
+        (ContinuousLinearMap.fst 𝕜 _ _)
+      + (MvPolynomial.eval z₀ (Q i)) •
+        ((ContinuousLinearMap.proj i).comp (ContinuousLinearMap.snd 𝕜 _ _))) with hL2
+  set L3 : ((Fin m → 𝕜) × (Fin k → 𝕜)) →L[𝕜] (Fin k → 𝕜) :=
+    ContinuousLinearMap.snd 𝕜 _ _
+  have hcoord : ∀ P : MvPolynomial (Fin m) 𝕜,
+      HasStrictFDerivAt (fun q : (Fin m → 𝕜) × (Fin k → 𝕜) => MvPolynomial.eval q.1 P)
+        ((mvPolynomialGradient P z₀).comp
+          (ContinuousLinearMap.fst 𝕜 (Fin m → 𝕜) (Fin k → 𝕜))) (z₀, v₀) := by
+    intro P
+    have h := (hasStrictFDerivAt_mvPolynomial_eval P z₀).comp
+      ((z₀, v₀) : (Fin m → 𝕜) × (Fin k → 𝕜))
+      (hasStrictFDerivAt_fst (𝕜 := 𝕜) (p := ((z₀, v₀) : (Fin m → 𝕜) × (Fin k → 𝕜))))
+    simpa [Function.comp_def] using h
+  have hparam : ∀ i : Fin k,
+      HasStrictFDerivAt (fun q : (Fin m → 𝕜) × (Fin k → 𝕜) => q.2 i)
+        ((ContinuousLinearMap.proj i).comp
+          (ContinuousLinearMap.snd 𝕜 (Fin m → 𝕜) (Fin k → 𝕜))) (z₀, v₀) := by
+    intro i
+    have h := (hasStrictFDerivAt_apply i v₀).comp
+      ((z₀, v₀) : (Fin m → 𝕜) × (Fin k → 𝕜))
+      (hasStrictFDerivAt_snd (𝕜 := 𝕜) (p := ((z₀, v₀) : (Fin m → 𝕜) × (Fin k → 𝕜))))
+    simpa [Function.comp_def] using h
+  have hSD : HasStrictFDerivAt G (L1.prod (L2.prod L3)) (z₀, v₀) := by
+    refine HasStrictFDerivAt.prodMk (hasStrictFDerivAt_pi.mpr fun j => hcoord (Pol j))
+      (HasStrictFDerivAt.prodMk ?_ hasStrictFDerivAt_snd)
+    have hsum : HasStrictFDerivAt
+        (∑ i : Fin k, fun q : (Fin m → 𝕜) × (Fin k → 𝕜) =>
+          q.2 i * MvPolynomial.eval q.1 (Q i)) L2 (z₀, v₀) := by
+      rw [hL2]
+      exact HasStrictFDerivAt.sum fun i _ => (hparam i).mul (hcoord (Q i))
+    have hfun : (∑ i : Fin k, fun q : (Fin m → 𝕜) × (Fin k → 𝕜) =>
+          q.2 i * MvPolynomial.eval q.1 (Q i))
+        = fun q : (Fin m → 𝕜) × (Fin k → 𝕜) =>
+          ∑ i, q.2 i * MvPolynomial.eval q.1 (Q i) := by
+      funext q; simp
+    rwa [hfun] at hsum
+  have hL2apply : ∀ q : (Fin m → 𝕜) × (Fin k → 𝕜),
+      L2 q = ∑ i : Fin k, (v₀ i * mvPolynomialGradient (Q i) z₀ q.1
+        + MvPolynomial.eval z₀ (Q i) * q.2 i) := by
+    intro q
+    simp only [hL2, FunLike.coe_sum, Finset.sum_apply, add_apply, smul_apply,
+      ContinuousLinearMap.coe_comp, Function.comp_apply,
+      ContinuousLinearMap.proj_apply, smul_eq_mul]
+    rfl
+  have hrange : (L1.prod (L2.prod L3)).range = ⊤ := by
+    rw [LinearMap.range_eq_top]
+    rintro ⟨u, s, e⟩
+    obtain ⟨w, hw⟩ := hsurj (u, s - ∑ i : Fin k, MvPolynomial.eval z₀ (Q i) * e i)
+    refine ⟨(w, e), ?_⟩
+    have hw1 : ∀ j, mvPolynomialGradient (Pol j) z₀ w = u j :=
+      fun j => congrFun (congrArg Prod.fst hw) j
+    have hw2 : ∑ i : Fin k, v₀ i * mvPolynomialGradient (Q i) z₀ w
+        = s - ∑ i : Fin k, MvPolynomial.eval z₀ (Q i) * e i := congrArg Prod.snd hw
+    refine Prod.ext (funext fun j => hw1 j) (Prod.ext ?_ rfl)
+    show L2 (w, e) = s
+    rw [hL2apply, Finset.sum_add_distrib, hw2]
+    ring
+  have hmap := hSD.map_nhds_eq_of_surj hrange
+  have hGval : G (z₀, v₀) = ((0 : Fin c → 𝕜), (0 : 𝕜), v₀) := by
+    rw [hGdef]
+    exact Prod.ext (funext fun j => hz₀ j) (Prod.ext hv₀ rfl)
+  have hmem : Set.range G ∈ nhds ((0 : Fin c → 𝕜), (0 : 𝕜), v₀) := by
+    have h : G '' Set.univ ∈ Filter.map G
+        (nhds ((z₀, v₀) : (Fin m → 𝕜) × (Fin k → 𝕜))) :=
+      Filter.image_mem_map Filter.univ_mem
+    rw [hmap, Set.image_univ, hGval] at h
+    exact h
+  obtain ⟨r, hr, hsub⟩ := Metric.mem_nhds_iff.mp hmem
+  refine ⟨r, hr, fun v hv => ?_⟩
+  have hball : ((0 : Fin c → 𝕜), (0 : 𝕜), v) ∈
+      Metric.ball ((0 : Fin c → 𝕜), (0 : 𝕜), v₀) r := by
+    rw [Metric.mem_ball, Prod.dist_eq, Prod.dist_eq]
+    have h1 : dist ((0 : Fin c → 𝕜)) ((0 : Fin c → 𝕜)) = 0 := by simp
+    have h2 : dist ((0 : 𝕜)) ((0 : 𝕜)) = 0 := by simp
+    have h3 : dist v v₀ < r := (dist_pi_lt_iff hr).mpr fun i => by
+      rw [dist_eq_norm]; exact hv i
+    simp only [h1, h2]
+    exact max_lt hr (max_lt hr h3)
+  obtain ⟨q, hq⟩ := hsub hball
+  refine ⟨q.1, fun j => ?_, ?_⟩
+  · exact congrFun (congrArg Prod.fst hq) j
+  · have h2 : ∑ i, q.2 i * MvPolynomial.eval q.1 (Q i) = 0 := congrArg (fun t => t.2.1) hq
+    have h3 : q.2 = v := congrArg (fun t => t.2.2) hq
+    rw [← h3]; exact h2
+
+/-- **A COMMON DENOMINATOR FOR A FINITE FAMILY OF RATIONALS** (PROVEN,
+2026-07-27): there is a nonzero integer `D` such that every `D · vᵢ` is an
+integer. This is what turns a `p`-adic ball centred at a RATIONAL parameter into
+one centred at an INTEGER parameter, using that the good-parameter set is a cone
+(see `exists_rat_mem_box_padicPoints_eval_ne_zero`'s docstring). -/
+theorem exists_int_commonDenominator {k : ℕ} (v : Fin k → ℚ) :
+    ∃ D : ℤ, D ≠ 0 ∧ ∀ i, ∃ z : ℤ, (z : ℚ) = (D : ℚ) * v i := by
+  classical
+  refine ⟨∏ i : Fin k, ((v i).den : ℤ), ?_, ?_⟩
+  · refine Finset.prod_ne_zero_iff.mpr fun i _ => ?_
+    exact_mod_cast (v i).den_ne_zero
+  · intro i
+    set d := ∏ j ∈ Finset.univ.erase i, ((v j).den : ℤ) with hdset
+    refine ⟨d * (v i).num, ?_⟩
+    have hprod : (∏ j : Fin k, ((v j).den : ℤ)) = d * ((v i).den : ℤ) :=
+      (Finset.prod_erase_mul Finset.univ (fun j => ((v j).den : ℤ))
+        (Finset.mem_univ i)).symm
+    rw [hprod]
+    have hd : ((v i).den : ℚ) ≠ 0 := by exact_mod_cast (v i).den_ne_zero
+    have h : ((v i).den : ℚ) * v i = ((v i).num : ℚ) := by
+      have hnd : ((v i).num : ℚ) / ((v i).den : ℚ) = v i := Rat.num_div_den (v i)
+      rw [div_eq_iff hd] at hnd
+      linear_combination -hnd
+    push_cast
+    linear_combination (-(d : ℚ)) * h
+
+open CategoryTheory AlgebraicGeometry in
+/-- **THE `ℚ_[p]`-POLYNOMIAL MODEL OF A SMOOTH AFFINE `ℚ`-VARIETY AT A
+`ℚ_[p]`-POINT** (LEAF, stated 2026-07-27 — the last open piece of Break B, and
+it contains NO analysis).
+
+This is the `p`-adic shadow of the four already-PROVEN real declarations
+`exists_ratAlgebra_smooth_of_smooth`, `exists_standardSmoothAway_of_realPoint`,
+`exists_realPolynomialModel_of_isStandardSmooth` and
+`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`,
+plus ONE new nondegeneracy statement. Everything downstream of it —
+`exists_ball_param_of_polynomialSystem`, the rational approximation, the
+denominator clearing and the reconciliation — is proven.
+
+WHAT IT SAYS. Presenting `Spec A` in the coordinates `x` and base-changing to
+`ℚ_[p]`, a `ℚ_[p]`-point of `g` is a common zero `z₀` of a finite polynomial
+system `Pol` over `ℚ_[p]` in `m` variables such that
+
+* every common zero of `Pol` is again a `ℚ_[p]`-point of `A`, with `xᵢ` reading
+  off as `Qᵢ(z)` (`hpts`);
+* the Jacobian of `Pol` at `z₀` is surjective (smoothness);
+* SOME nonzero tangent direction `w` of the zero locus at `z₀` is not killed by
+  SOME coordinate `Q i₀` (the nondegeneracy; this is what makes the hyperplane
+  cut transverse, and it is the only genuinely new statement here).
+
+THE ATTACK PATH, which is a PORT plus one lemma and needs no new theory.
+
+1. **Port the real tower from `ℝ` to a variable field.** The declarations
+   `realModel_eval_map_eq`, `realModelRel`, `realModel_hom_algebraMap_eq`,
+   `realModel_exists_hom_of_zero`, `realModel_eval_pderiv`,
+   `realModel_jacobian_surjective`, `exists_standardSmoothAway_of_realPoint`,
+   `exists_realPolynomialModel_of_isStandardSmooth` and
+   `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+   are all written for `ℝ`, and NOTHING in any of their proofs uses more than
+   "`K` is a field of characteristic zero": the only arithmetic input is
+   `Subsingleton (ℚ →+* K)`, `isUnit_iff_ne_zero`, and `K` reduced. Replacing
+   `ℝ` by `{K : Type v} [Field K] [Algebra ℚ K]` is mechanical, is a strict
+   improvement, and leaves every existing `ℝ` call site unchanged (it just
+   instantiates `K := ℝ`). Do that IN PLACE rather than duplicating the block —
+   the same treatment `mvPolynomialGradient` and
+   `hasStrictFDerivAt_mvPolynomial_eval` received here for the base field.
+   That yields `m`, `c`, `Pol`, `z₀`, `Φ`, the surjective Jacobian, the
+   polynomial representative `Q_a` of every `a : A`, and — via step 6 of the
+   real path — `c < m`.
+
+2. **The nondegeneracy, which is the one new lemma.** With `c < m` the kernel
+   `W := ker (Jac Pol z₀)` is nonzero, so pick `w ∈ W`, `w ≠ 0`. Claim: some
+   `mvPolynomialGradient (Q (x i)) z₀ w ≠ 0`. Suppose not. Then:
+
+   * *the vanishing spreads from the generators to all of `A`.* The set
+     `{a : A | grad (Q a) z₀ w = 0}` is a SUBRING of `A` (`Q` is additive and
+     multiplicative modulo the relation ideal, and `grad` is additive and
+     satisfies Leibniz, the correction terms carrying a factor `Q b (z₀)` or
+     `Q a (z₀)`), and it contains the image of the structure map (constants have
+     zero gradient) and every `x i`; by `hx` it is therefore all of `A`.
+   * *`grad` kills the relation ideal on `W`.* If `F = ∑ⱼ gⱼ · relⱼ` then
+     `pderivᵢ F = ∑ⱼ (pderivᵢ gⱼ)·relⱼ + gⱼ·(pderivᵢ relⱼ)`, and evaluating at
+     `z₀` kills the first family because `relⱼ(z₀) = 0`; so
+     `grad F z₀ w = ∑ⱼ gⱼ(z₀) · grad relⱼ z₀ w = 0` for `w ∈ W`. Hence
+     `grad (Q a) z₀ w` does not depend on the choice of representative.
+   * *therefore `w = 0`, a contradiction.* Each model coordinate `P.val i` lies
+     in `A[1/f]`, so `f^{kᵢ} · P.val i = a i` for some `a i : A` and `kᵢ : ℕ`
+     (`IsLocalization.surj`). Applying the previous two points to the polynomial
+     `Xᵢ · Q f ^ kᵢ − Q (a i)`, which lies in the relation ideal, and using
+     `grad (Q f) z₀ w = 0` and `grad (Q (a i)) z₀ w = 0`, leaves
+     `wᵢ · (Q f)(z₀)^{kᵢ} = 0`; and `(Q f)(z₀) = χ f ≠ 0` by the choice of `f`
+     in step 1. So every `wᵢ = 0`.
+
+   Geometrically this is just "a closed immersion has injective differential",
+   but the argument above avoids Kähler differentials entirely and is elementary.
+
+NOT VACUOUS: `hpt` is genuinely consumed (it is what produces `z₀` at all), and
+the conclusion's last two clauses fail for `n = 0`, i.e. the statement really
+does need the coordinates to separate a tangent direction. -/
+theorem exists_padicPolynomialModel_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤)
+    (p : ℕ) [Fact p.Prime]
+    (hpt : HasRationalPoint g (ULift.{u} ℚ_[p])) :
+    ∃ (m cc : ℕ) (Pol : Fin cc → MvPolynomial (Fin m) ℚ_[p])
+      (Qc : Fin n → MvPolynomial (Fin m) ℚ_[p]) (z₀ : Fin m → ℚ_[p])
+      (i₀ : Fin n) (w : Fin m → ℚ_[p]),
+      (∀ j, MvPolynomial.eval z₀ (Pol j) = 0) ∧
+      (∀ z : Fin m → ℚ_[p], (∀ j, MvPolynomial.eval z (Pol j) = 0) →
+        ∃ χ : A →+* ℚ_[p], ∀ i, χ (x i) = MvPolynomial.eval z (Qc i)) ∧
+      Function.Surjective
+        (fun u : Fin m → ℚ_[p] => fun j : Fin cc =>
+          mvPolynomialGradient (Pol j) z₀ u) ∧
+      (∀ j, mvPolynomialGradient (Pol j) z₀ w = 0) ∧
+      mvPolynomialGradient (Qc i₀) z₀ w ≠ 0 := sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **BREAK B STEP 1 AT ONE PRIME: a `p`-adic ball of good hyperplane
+parameters, centred at an INTEGER parameter** (**PROVEN 2026-07-27** over
+`exists_padicPolynomialModel_of_affine_geometricallyIrreducible`).
+
+Given a `ℚ_[p]`-point of the smooth affine `ℚ`-variety `Spec A`, there are an
+integer parameter `c` and a precision `N` such that EVERY rational hyperplane
+parameter `v` congruent to `c` modulo `p^N` (coordinatewise, in the `p`-adic
+sense) cuts out a section that still has a `ℚ_[p]`-point.
+
+THE PROOF, in four steps, none of which needs the ball to be centred anywhere in
+particular:
+
+1. the polynomial model at the point (the leaf above) supplies `Pol`, `z₀`, the
+   coordinates `Qc`, and a tangent direction `w` on which `Q i₀` does not
+   vanish;
+2. taking the `ℚ_[p]`-parameter `v₀ := (0,…,1 at i₀,…,0, Q i₀ (z₀))` — the
+   hyperplane `x_{i₀} = x_{i₀}(z₀)` through the point — the extended coordinate
+   family `Qext := Fin.snoc Qc (C (−1))` satisfies `∑ᵢ v₀ᵢ Qextᵢ(z₀) = 0`, and
+   the combined Jacobian is surjective by
+   `surjective_prod_of_surjective_of_apply_ne_zero`; so
+   `exists_ball_param_of_polynomialSystem` gives a radius `r`;
+3. `ℚ` is dense in `ℚ_[p]` (`Padic.rat_dense`), so there is a RATIONAL parameter
+   `v*` within `r/2` of `v₀`; `exists_int_commonDenominator` clears its
+   denominators to an integer `c = D · v*`;
+4. for rational `v` with `|vᵢ − cᵢ|_p ≤ p^{−N}` and `N` large, the parameter
+   `v/D` is within `r` of `v₀`, so it has a point `z`; multiplying the linear
+   relation by `D` gives it for `v` itself. That last multiplication IS the cone
+   property of the good-parameter set, used without ever having to compare two
+   quotient rings.
+
+The `ℚ_[p]`-point of the CUT scheme is then produced from the ring map
+`χ : A →+* ℚ_[p]` by `hasRationalPoint_specQuotSpanSingleton_of_ringHom`; base
+compatibility over `Spec ℚ` is automatic (`ringHom_uliftRat_ext`). -/
+theorem exists_padicBall_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤)
+    (p : ℕ) [Fact p.Prime]
+    (hpt : HasRationalPoint g (ULift.{u} ℚ_[p])) :
+    ∃ (cint : Fin (n + 1) → ℤ) (N : ℕ), ∀ v : Fin (n + 1) → ℚ,
+      (∀ i, padicNorm p (v i - (cint i : ℚ)) ≤ (p : ℚ) ^ (-(N : ℤ))) →
+      HasRationalPoint (specQuotSpanSingleton
+        (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g)
+        (ULift.{u} ℚ_[p]) := by
+  classical
+  obtain ⟨m, cc, Pol, Qc, z₀, i₀, w, hz₀, hpts, hjac, hwker, hwne⟩ :=
+    exists_padicPolynomialModel_of_affine_geometricallyIrreducible g hsmooth hft hgi
+      hdim x hx p hpt
+  set Qext : Fin (n + 1) → MvPolynomial (Fin m) ℚ_[p] :=
+    Fin.snoc Qc (MvPolynomial.C (-1)) with hQextdef
+  set v₀ : Fin (n + 1) → ℚ_[p] :=
+    Fin.snoc (fun i => if i = i₀ then (1 : ℚ_[p]) else 0)
+      (MvPolynomial.eval z₀ (Qc i₀)) with hv₀def
+  have hQc : ∀ i : Fin n, Qext i.castSucc = Qc i := fun i => by
+    rw [hQextdef, Fin.snoc_castSucc]
+  have hQl : Qext (Fin.last n) = MvPolynomial.C (-1) := by
+    rw [hQextdef, Fin.snoc_last]
+  have hvc : ∀ i : Fin n, v₀ i.castSucc = if i = i₀ then (1 : ℚ_[p]) else 0 := fun i => by
+    rw [hv₀def, Fin.snoc_castSucc]
+  have hvl : v₀ (Fin.last n) = MvPolynomial.eval z₀ (Qc i₀) := by
+    rw [hv₀def, Fin.snoc_last]
+  have hphi : ∀ u : Fin m → ℚ_[p],
+      ∑ i : Fin (n + 1), v₀ i * mvPolynomialGradient (Qext i) z₀ u
+        = mvPolynomialGradient (Qc i₀) z₀ u := by
+    intro u
+    rw [Fin.sum_univ_castSucc, hvl, hQl, mvPolynomialGradient_C]
+    simp only [hvc, hQc, zero_apply, mul_zero, add_zero, ite_mul, one_mul, zero_mul]
+    exact Finset.sum_ite_eq' Finset.univ i₀
+      (fun i => mvPolynomialGradient (Qc i) z₀ u) ▸ by simp
+  have hsum0 : ∑ i : Fin (n + 1), v₀ i * MvPolynomial.eval z₀ (Qext i) = 0 := by
+    rw [Fin.sum_univ_castSucc, hvl, hQl]
+    simp only [hvc, hQc, map_neg, map_one, mul_neg, mul_one, ite_mul, one_mul, zero_mul]
+    rw [Finset.sum_ite_eq' Finset.univ i₀ (fun i => MvPolynomial.eval z₀ (Qc i))]
+    simp
+  set T : (Fin m → ℚ_[p]) →ₗ[ℚ_[p]] (Fin cc → ℚ_[p]) :=
+    (ContinuousLinearMap.pi (fun j : Fin cc => mvPolynomialGradient (Pol j) z₀) :
+      (Fin m → ℚ_[p]) →L[ℚ_[p]] (Fin cc → ℚ_[p])).toLinearMap
+  have hsurj : Function.Surjective (fun u : Fin m → ℚ_[p] =>
+      ((fun j : Fin cc => mvPolynomialGradient (Pol j) z₀ u),
+        ∑ i, v₀ i * mvPolynomialGradient (Qext i) z₀ u)) := by
+    have hjac' : Function.Surjective (T : (Fin m → ℚ_[p]) → (Fin cc → ℚ_[p])) := hjac
+    have hTw : T w = 0 := funext fun j => hwker j
+    have hT : Function.Surjective (fun u : Fin m → ℚ_[p] =>
+        (T u, (mvPolynomialGradient (Qc i₀) z₀ :
+          (Fin m → ℚ_[p]) →L[ℚ_[p]] ℚ_[p]).toLinearMap u)) :=
+      surjective_prod_of_surjective_of_apply_ne_zero T
+        ((mvPolynomialGradient (Qc i₀) z₀ :
+          (Fin m → ℚ_[p]) →L[ℚ_[p]] ℚ_[p]).toLinearMap) hjac' w hTw hwne
+    intro y
+    obtain ⟨u, hu⟩ := hT y
+    refine ⟨u, ?_⟩
+    show ((fun j : Fin cc => mvPolynomialGradient (Pol j) z₀ u),
+      ∑ i, v₀ i * mvPolynomialGradient (Qext i) z₀ u) = y
+    rw [hphi]
+    exact hu
+  obtain ⟨r, hr, hballs⟩ :=
+    exists_ball_param_of_polynomialSystem Pol Qext z₀ v₀ hz₀ hsum0 hsurj
+  have hrat : ∀ i : Fin (n + 1), ∃ s : ℚ, ‖(s : ℚ_[p]) - v₀ i‖ < r / 2 := by
+    intro i
+    obtain ⟨s, hs⟩ := Padic.rat_dense (p := p) (v₀ i) (half_pos hr)
+    exact ⟨s, by rwa [norm_sub_rev]⟩
+  choose vstar hvstar using hrat
+  obtain ⟨D, hD0, hDint⟩ := exists_int_commonDenominator vstar
+  choose cint hcint using hDint
+  have hDne : ((D : ℚ_[p])) ≠ 0 := by
+    simpa using (Int.cast_injective (α := ℚ_[p])).ne hD0
+  have hDnorm : (0 : ℝ) < ‖(D : ℚ_[p])‖ := norm_pos_iff.mpr hDne
+  have hp1 : (1 : ℝ) < (p : ℝ) := by
+    exact_mod_cast (Fact.out : p.Prime).one_lt
+  obtain ⟨N, hN⟩ : ∃ N : ℕ, (p : ℝ) ^ (-(N : ℤ)) < r / 2 * ‖(D : ℚ_[p])‖ := by
+    obtain ⟨N, hN⟩ := exists_pow_lt_of_lt_one (mul_pos (half_pos hr) hDnorm)
+      (inv_lt_one_of_one_lt₀ hp1)
+    refine ⟨N, ?_⟩
+    rwa [zpow_neg, zpow_natCast, ← inv_pow]
+  refine ⟨cint, N, fun v hv => ?_⟩
+  have hci : ∀ i, ((cint i : ℤ) : ℚ_[p]) = (D : ℚ_[p]) * ((vstar i : ℚ) : ℚ_[p]) := by
+    intro i
+    have h := congrArg (fun q : ℚ => (q : ℚ_[p])) (hcint i)
+    push_cast at h
+    exact h
+  have huclose : ∀ i, ‖((v i : ℚ) : ℚ_[p]) / (D : ℚ_[p]) - v₀ i‖ < r := by
+    intro i
+    have h1 : ((v i : ℚ) : ℚ_[p]) / (D : ℚ_[p]) - ((vstar i : ℚ) : ℚ_[p])
+        = (((v i - (cint i : ℚ) : ℚ)) : ℚ_[p]) / (D : ℚ_[p]) := by
+      rw [eq_div_iff hDne]
+      push_cast [hci i]
+      field_simp
+    have h2 : ‖((v i : ℚ) : ℚ_[p]) / (D : ℚ_[p]) - ((vstar i : ℚ) : ℚ_[p])‖ < r / 2 := by
+      rw [h1, norm_div, Padic.eq_padicNorm, div_lt_iff₀ hDnorm]
+      refine lt_of_le_of_lt ?_ hN
+      have hcast : ((padicNorm p (v i - (cint i : ℚ)) : ℚ) : ℝ)
+          ≤ (((p : ℚ) ^ (-(N : ℤ)) : ℚ) : ℝ) := by exact_mod_cast hv i
+      simpa using hcast
+    calc ‖((v i : ℚ) : ℚ_[p]) / (D : ℚ_[p]) - v₀ i‖
+        ≤ ‖((v i : ℚ) : ℚ_[p]) / (D : ℚ_[p]) - ((vstar i : ℚ) : ℚ_[p])‖
+          + ‖((vstar i : ℚ) : ℚ_[p]) - v₀ i‖ :=
+          norm_sub_le_norm_sub_add_norm_sub _ _ _
+      _ < r / 2 + r / 2 := add_lt_add h2 (hvstar i)
+      _ = r := by ring
+  obtain ⟨z, hzPol, hzsum⟩ :=
+    hballs (fun i => ((v i : ℚ) : ℚ_[p]) / (D : ℚ_[p])) huclose
+  obtain ⟨χ, hχ⟩ := hpts z hzPol
+  have hkey : ∑ i : Fin (n + 1),
+      ((v i : ℚ) : ℚ_[p]) * MvPolynomial.eval z (Qext i) = 0 := by
+    have hD : (D : ℚ_[p]) * ∑ i : Fin (n + 1),
+        (((v i : ℚ) : ℚ_[p]) / (D : ℚ_[p])) * MvPolynomial.eval z (Qext i) = 0 := by
+      rw [hzsum, mul_zero]
+    rw [Finset.mul_sum] at hD
+    refine hD ▸ Finset.sum_congr rfl fun i _ => ?_
+    field_simp
+  have hbase : ∀ q : ℚ, χ ((AlgebraicGeometry.Spec.preimage g).hom (ULift.up q))
+      = (q : ℚ_[p]) := by
+    intro q
+    have huniq := ringHom_uliftRat_ext (χ.comp (AlgebraicGeometry.Spec.preimage g).hom)
+      ((Rat.castHom ℚ_[p]).comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom)
+    have hcf := RingHom.congr_fun huniq (ULift.up q)
+    have hq : ((ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ) (ULift.up q)) = q := rfl
+    simpa [hq] using hcf
+  have hzero : χ (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) = 0 := by
+    rw [affineLinearForm, map_sub, map_sum]
+    simp only [map_mul, hbase, hχ]
+    simp only [Fin.sum_univ_castSucc, hQl, hQc, map_neg, map_one, mul_neg, mul_one] at hkey
+    linear_combination hkey
+  refine hasRationalPoint_specQuotSpanSingleton_of_ringHom g
+    (CommRingCat.ofHom
+      (((ULift.ringEquiv : ULift.{u} ℚ_[p] ≃+* ℚ_[p]).symm.toRingHom).comp χ)) ?_ _ ?_
+  · exact CommRingCat.hom_ext (ringHom_uliftRat_ext _ _)
+  · show (ULift.ringEquiv : ULift.{u} ℚ_[p] ≃+* ℚ_[p]).symm
+      (χ (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v)) = 0
+    rw [hzero, map_zero]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **BREAK B STEP 1, ALL PRESCRIBED PRIMES AT ONCE** (**PROVEN 2026-07-27**):
+the per-prime balls of `exists_padicBall_of_affine_geometricallyIrreducible`,
+packaged as functions of `p` so that the CRT reconciliation
+`exists_rat_mem_box_padicClose_eval_ne_zero` can consume them.
+
+The only content beyond the per-prime statement is the bookkeeping that the
+centre and precision must be TOTAL functions of `p : ℕ` while the per-prime
+theorem is available only at primes: the non-prime and non-`S₀` values are junk
+(`0`), guarded by the `Fact p.Prime` hypothesis inside the quantifier. -/
+theorem exists_padicBalls_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤)
+    (S₀ : Finset ℕ)
+    (hS₀pt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ →
+      HasRationalPoint g (ULift.{u} ℚ_[p])) :
+    ∃ (c : ℕ → Fin (n + 1) → ℤ) (N : ℕ → ℕ),
+      ∀ (p : ℕ) [Fact p.Prime], p ∈ S₀ → ∀ v : Fin (n + 1) → ℚ,
+        (∀ i, padicNorm p (v i - (c p i : ℚ)) ≤ (p : ℚ) ^ (-(N p : ℤ))) →
+        HasRationalPoint (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g)
+          (ULift.{u} ℚ_[p]) := by
+  classical
+  have key : ∀ q : ℕ, ∃ (cq : Fin (n + 1) → ℤ) (Nq : ℕ),
+      ∀ _inst : Fact q.Prime, q ∈ S₀ → ∀ v : Fin (n + 1) → ℚ,
+        (∀ i, padicNorm q (v i - (cq i : ℚ)) ≤ (q : ℚ) ^ (-(Nq : ℤ))) →
+        HasRationalPoint (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g)
+          (ULift.{u} ℚ_[q]) := by
+    intro q
+    by_cases hq : q.Prime
+    · haveI hfq : Fact q.Prime := ⟨hq⟩
+      by_cases hqS : q ∈ S₀
+      · obtain ⟨cq, Nq, h⟩ :=
+          exists_padicBall_of_affine_geometricallyIrreducible g hsmooth hft hgi hdim
+            x hx q (hS₀pt q hqS)
+        exact ⟨cq, Nq, fun _ _ => h⟩
+      · exact ⟨0, 0, fun _ hmem => absurd hmem hqS⟩
+    · exact ⟨0, 0, fun inst _ => absurd inst.out hq⟩
+  choose c N hcN using key
+  exact ⟨c, N, fun q inst hq v hv => hcN q inst hq v hv⟩
+
+
 open CategoryTheory AlgebraicGeometry in
 /-- **BREAK B — A HYPERPLANE PARAMETER THAT KEEPS THE PRESCRIBED `ℚ_[p]`-POINTS,
 IN THE REAL BOX, AND OFF A HYPERSURFACE** (LEAF, stated 2026-07-27).
@@ -6012,9 +6570,30 @@ neighbourhood, for contrast, are `exists_rat_mem_box_eval_ne_zero`,
 Anyone tempted to revert the thread-through on cone-growth grounds should re-run
 that check first.
 
-**STATUS 2026-07-27: STEP 2 IS PROVEN; THE WHOLE OF WHAT IS LEFT IS STEP 1.**
-The proof below is now a complete skeleton and the ONE surviving `sorry` is the
-interior `have hballs` — Hensel-openness of the `ℚ_[p]`-points, per prime.
+**STATUS 2026-07-27 (SECOND UPDATE): THIS DECLARATION IS NOW SORRY-FREE.** The
+interior `have hballs` is discharged by
+`exists_padicBalls_of_affine_geometricallyIrreducible` above, which is proven
+over `exists_padicBall_of_affine_geometricallyIrreducible`, itself proven over
+the analysis leaf `exists_ball_param_of_polynomialSystem` (PROVEN) and the ONE
+remaining open node
+`exists_padicPolynomialModel_of_affine_geometricallyIrreducible` — a statement
+of pure algebraic geometry with no analysis in it. See that leaf's docstring for
+the complete attack path.
+
+**AND THE "MISSING THEORY" PARAGRAPH BELOW IS CORRECTED — DO NOT ACT ON IT.**
+It records that "a smooth morphism is open on `ℚ_[p]`-points" is a genuinely
+missing theory and that only the commutative-algebra kernel is available. That
+is wrong in the direction that matters: mathlib's inverse/implicit function
+theorem is stated for an arbitrary `[NontriviallyNormedField 𝕜]
+[CompleteSpace 𝕜]`, and `ℚ_[p]` is one, so
+`HasStrictFDerivAt.map_nhds_eq_of_surj` applies verbatim. The only thing that
+had to be built was the generalisation of THIS FILE's own
+`pderiv`-versus-`fderiv` bridge (`mvPolynomialGradient`,
+`hasStrictFDerivAt_mvPolynomial_eval`) from `ℝ` to `𝕜`, plus the parameter-space
+packaging in `exists_ball_param_of_polynomialSystem`. No multivariate Hensel was
+redeveloped and none was needed.
+
+**STATUS 2026-07-27 (first update): STEP 2 IS PROVEN.**
 Everything else is discharged:
 
 * the `S₀ = ∅` case, from `exists_rat_mem_box_eval_ne_zero` (as before);
@@ -6094,7 +6673,9 @@ theorem exists_rat_mem_box_padicPoints_eval_ne_zero
           (∀ i, padicNorm p (v i - (c p i : ℚ)) ≤ (p : ℚ) ^ (-(N p : ℤ))) →
           HasRationalPoint (specQuotSpanSingleton
             (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g)
-            (ULift.{u} ℚ_[p]) := sorry
+            (ULift.{u} ℚ_[p]) :=
+      exists_padicBalls_of_affine_geometricallyIrreducible g hsmooth hft hgi hdim x hx
+        S₀ hS₀pt
     obtain ⟨c, N, hgood⟩ := hballs
     -- STEP 2 (PROVEN): the reconciliation — one rational parameter in the real
     -- box, off `F = 0`, and inside every one of those `p`-adic balls.
