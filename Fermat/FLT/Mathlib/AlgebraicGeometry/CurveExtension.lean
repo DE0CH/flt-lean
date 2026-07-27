@@ -829,10 +829,53 @@ at this pin), so `hdvr` says exactly that `X` is regular; over a perfect field a
 scheme of finite type is smooth, and the relative dimension is `1` because a dense open of `X`
 is already smooth of relative dimension `1`.
 
-**`PerfectField K` is load-bearing and the statement is FALSE without it.**  Over an imperfect
-field `k` of characteristic `p` the curve `y^p = t x^p + t` with `t ∈ k ∖ k^p` is regular —
-so all its local rings are DVRs — and is not smooth.  `ℚ` and `𝔽_ℓ` are perfect, which is all
-either consumer needs.
+**`PerfectField K` is load-bearing and the statement is FALSE without it.**  `ℚ` and `𝔽_ℓ` are
+perfect, which is all either consumer needs.
+
+**COUNTEREXAMPLE CORRECTED (2026-07-28) — the witness this docstring used to cite was INVALID,
+and invalid in a way that bore directly on `hdvr`.**  It read: "over an imperfect field `k` of
+characteristic `p` the curve `y^p = t x^p + t` with `t ∈ k ∖ k^p` is regular — so all its local
+rings are DVRs — and is not smooth."  Both clauses are false, and the gloss in the middle is
+exactly the hypothesis the witness was cited to illustrate, so it failed the very thing it was
+meant to show:
+
+* it is **not regular**.  In characteristic `p`, `t x^p + t = t (x + 1)^p`, so after `u = x + 1`
+  the equation is `y^p = t u^p`; at the `k`-rational point `u = y = 0` the defining polynomial
+  lies in `𝔪²` (checked in `Singular`), so that local ring has `dim_k 𝔪/𝔪² = 2` in dimension
+  one.  Hence **`hdvr` FAILS** — that stalk is not a DVR — and the integral closure
+  `k(t^{1/p})[u]` is strictly larger, so the curve is not its own normalization either;
+* it is **not geometrically reduced** — over `k̄` it is `(y − t^{1/p}(x+1))^p = 0` — so it has
+  no smooth open subscheme and cannot satisfy `hY` either.
+
+**The correct witness is QUASI-ELLIPTIC** (such curves exist only in characteristics `2` and
+`3`).  Over the imperfect field `k = 𝔽₃(t)` take `C : y² = x³ + t ⊆ 𝔸²_k`, let `X` be its
+regular proper model `C̄`, and let `Y := C ∖ {P}` where `P` is the point `y = 0`, `x³ = −t`.
+
+* **`hdvr` holds.**  In characteristic `3` the partials are `∂/∂y = 2y` and `∂/∂x = −3x² = 0`,
+  so `P` is the only candidate singular point, and there `𝔪 = (y, x³ + t) = (y)` because
+  `x³ + t = y²`.  A one-dimensional local ring with principal maximal ideal is a DVR, so every
+  non-generic stalk of `X` is a DVR.
+* **`hY` holds and `j` is dominant**: `Y` is a smooth affine curve over `k`, and it is a dense
+  open of `X`.
+* **The conclusion fails**: `X` is not smooth at `P`, because over `k̄` we have
+  `x³ + t = (x + t^{1/3})³`, so `C ⊗ k̄` is the cuspidal cubic `y² = (x + t^{1/3})³` — reduced,
+  but singular at the cusp.
+
+Machine-checked in `Magma` (2026-07-28, on branch `flt-lean-272`): `k(C)` has genus `1` over
+`𝔽₃(t)` **with exact constant field `k`** — so `C` is geometrically integral, which the
+genus-preservation argument needs and which nobody had checked — and genus `0` after the purely
+inseparable base change `t = s³`, a drop of `1 = (p−1)/2`, exactly what Tate's genus-change
+theorem permits at `p = 3`.  A smooth (= geometrically regular) proper model would preserve the
+genus under base change, so none exists.
+
+**The tempting repair is wrong too**, which is why `hY` does not let one drop the hypothesis:
+`k(C)/k` **is** separably generated (`k(C)/k(x)` is separable of degree `2`), so "smooth `Y` ⟹
+separably generated function field ⟹ smooth `X`" is FALSE.  Separable generation is strictly
+weaker than conservativity, and conservativity is what smoothness of the model needs.
+
+This same false witness occurred three times.  The other two — in `CurveCompactification.lean`
+and in `SmoothConnectedCriteria.lean` — were corrected on branch `flt-lean-272` (`45e2a43c`,
+docstrings only); this is the third.
 
 **Why `j` and `hY` rather than a bare dimension hypothesis.**  `hdvr` alone does not pin the
 RELATIVE dimension: `Spec K` itself satisfies it vacuously (its only stalk is a field) and is
