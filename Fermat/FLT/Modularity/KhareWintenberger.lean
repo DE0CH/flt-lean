@@ -8610,6 +8610,38 @@ theorem locallyOfFinitePresentation_of_locallyOfFiniteType_over_field
     AlgebraicGeometry.IsLocallyNoetherian.component_noetherian U
   exact RingHom.FinitePresentation.of_finiteType.mp h
 
+open CategoryTheory AlgebraicGeometry TopologicalSpace in
+/-- **A DIMENSION BOUND ON THE SPACE BOUNDS THE KRULL DIMENSION OF EVERY
+STALK** (**PROVEN 2026-07-27** — general scheme theory, reusable, and the
+bridge that lets dimension leaves be stated where they belong).
+
+`Ring.KrullDimLE n 𝒪_{X,x}` for every `x`, from `topologicalKrullDim X ≤ n`.
+
+An earlier version of the dimension leaf below was stated at the STALK
+because this bridge was believed missing. It is not missing — it is a
+three-line composition of two mathlib lemmas that had simply not been put
+next to each other:
+
+* `AlgebraicGeometry.krullDimLE_of_coheight_le` turns `Order.coheight x ≤ n`
+  into `Ring.KrullDimLE n (X.presheaf.stalk x)`, over `@[stacks 02IZ]`
+  `ringKrullDim_stalk_eq_coheight : ringKrullDim 𝒪_{X,x} = coheight x`;
+* `Order.coheight_le_krullDim` bounds any coheight by the ambient
+  `Order.krullDim`, and `topologicalKrullDim` is BY DEFINITION
+  `krullDim (IrreducibleCloseds X)`, to which the points of a sober `T0`
+  space are order-isomorphic by `irreducibleSetEquivPoints`.
+
+So the dimension leaf is stated at the SPACE, which is both the natural
+mathematical statement and the reusable one. -/
+theorem krullDimLE_stalk_of_topologicalKrullDim_le {X : AlgebraicGeometry.Scheme.{u}} {n : ℕ}
+    (h : topologicalKrullDim ↥X ≤ n) (x : X) :
+    Ring.KrullDimLE n (X.presheaf.stalk x) := by
+  refine AlgebraicGeometry.krullDimLE_of_coheight_le ?_
+  have h1 : (Order.coheight x : WithBot ℕ∞) ≤ topologicalKrullDim ↥X := by
+    rw [topologicalKrullDim,
+      ← Order.coheight_orderIso (irreducibleSetEquivPoints (α := ↥X)).symm x]
+    exact Order.coheight_le_krullDim _
+  exact_mod_cast h1.trans h
+
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF C2 — REGULAR ⟹ SMOOTH OVER A PERFECT FIELD** (SORRY LEAF, and this
 is THE genuinely missing theory in the whole smooth-proper-model cluster).
@@ -8736,38 +8768,38 @@ theorem isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve
   sorry
 
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF C1b — THE STALKS OF THE NORMALIZED MODEL HAVE DIMENSION `≤ 1`**
-(SORRY LEAF).
+/-- **LEAF C1b — THE NORMALIZED MODEL HAS DIMENSION `≤ 1`** (SORRY LEAF).
 
-The DIMENSION half of "the model is regular". `g.toNormalization : C ⟶ X̄` is
-an OPEN IMMERSION by Zariski's Main Theorem and is DOMINANT
-(`instance : IsDominant f.toNormalization`), so `C` is a dense open subscheme
-of `X̄`; `X̄` is integral, hence irreducible, so `X̄` and `C` have the same
-generic point and the same function field, and `hdim` bounds the dimension of
-`C`. Since `X̄` is of finite type over a field, its dimension is the
-transcendence degree of that common function field, whence `dim X̄ ≤ 1` and a
-fortiori `dim 𝒪_{X̄,x} ≤ 1` for every `x`.
+The DIMENSION half of "the model is regular", stated at the SPACE — the stalk
+form it needs is supplied by the PROVEN
+`krullDimLE_stalk_of_topologicalKrullDim_le` above.
 
-WHY THIS IS STATED AT THE STALK AND NOT AT THE SPACE. The natural statement is
-`topologicalKrullDim ↥(g.normalization) ≤ 1`, and it would be the better leaf —
-but mathlib has NO comparison between the Krull dimension of a stalk and the
-topological Krull dimension of the space. The check that would refute this:
-`grep -rn "topologicalKrullDim" .lake/packages/mathlib/Mathlib/ | grep -i
-stalk` is empty, and `Mathlib/Topology/KrullDimension.lean` offers only
-`topologicalKrullDim_subspace_le`. So a space-level leaf would need an extra
-bridge (affine open `U ∋ x`, `IsAffineOpen.isLocalization_stalk`,
-`IsLocalization.AtPrime.orderIsoOfPrime` to see the primes of `𝒪_{X,x}` as the
-primes of `Γ(X,U)` below `x`, then
-`PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`) which nobody has written.
-Whoever proves this leaf should consider writing that bridge FIRST and then
-proving the space-level statement, since the bridge is reusable and the
-space-level statement is the one the rest of the development will want.
+`g.toNormalization : C ⟶ X̄` is an OPEN IMMERSION by Zariski's Main Theorem
+and is DOMINANT (`instance : IsDominant f.toNormalization`), so `C` is a dense
+open subscheme of `X̄`; `X̄` is integral, hence irreducible, so `X̄` and `C`
+have the same generic point and the same function field, and `hdim` bounds the
+dimension of `C`. Since `X̄` is of finite type over a field, its dimension is
+the transcendence degree of that common function field, whence `dim X̄ ≤ 1`.
 
-The genuine mathematical content is "a dense open subscheme of an integral
-scheme of finite type over a field has the same dimension", i.e. dimension =
-transcendence degree of the function field — which mathlib also lacks. That,
-not the bookkeeping, is what makes this a leaf rather than a lemma. -/
-theorem krullDimLE_one_stalk_normalizationModel_of_smooth_affine_curve
+WHAT MAKES THIS A LEAF RATHER THAN BOOKKEEPING. `topologicalKrullDim` is
+monotone only in the WRONG direction for this: mathlib's
+`topologicalKrullDim_subspace_le` gives `dim C ≤ dim X̄`, and the reverse
+inequality for a DENSE open is FALSE for general topological spaces — it needs
+that `X̄` is of finite type over a field, where dimension is computed by the
+transcendence degree of the function field. Mathlib has no dimension =
+transcendence degree theorem; the check that would refute this is
+`grep -rn "transcendence\|trdeg" .lake/packages/mathlib/Mathlib/RingTheory/KrullDimension/`,
+which is empty at this pin. That theorem, not the scheme-theoretic
+bookkeeping, is what this leaf owes.
+
+A CHEAPER ROUTE WORTH TRYING FIRST: `X̄ \ C` is a closed subset missing the
+generic point of the irreducible `X̄`, and `g.fromNormalization` is FINITE
+(`hfin`), so `X̄ → P` has finite fibres; a chain of length `2` in `X̄` would
+have to meet the open `C` in a chain of length `2` unless two of its members
+lie in `X̄ \ C`, which is where finiteness of the fibres can be used to
+contradict `hdim` directly. That argument avoids transcendence degree
+entirely and is the first thing to attempt. -/
+theorem topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve
     {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (fP : P ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) (g : C ⟶ P)
@@ -8779,9 +8811,8 @@ theorem krullDimLE_one_stalk_normalizationModel_of_smooth_affine_curve
     (hgsep : AlgebraicGeometry.IsSeparated g)
     (hgft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgqc : AlgebraicGeometry.QuasiCompact g)
-    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization)
-    (x : (g.normalization : AlgebraicGeometry.Scheme.{u})) :
-    Ring.KrullDimLE 1 ((g.normalization).presheaf.stalk x) :=
+    (hfin : AlgebraicGeometry.IsFinite g.fromNormalization) :
+    topologicalKrullDim ↥(g.normalization : AlgebraicGeometry.Scheme.{u}) ≤ 1 :=
   sorry
 
 open CategoryTheory AlgebraicGeometry in
@@ -8830,8 +8861,11 @@ this file:
   is LOCALLY NOETHERIAN (`LocallyOfFiniteType.isLocallyNoetherian`), which is
   what makes every stalk a NOETHERIAN local ring;
 * `ULift ℚ` is a PERFECT field, being of characteristic zero;
+* the model has dimension `≤ 1` (LEAF C1b), and that bounds the Krull
+  dimension of every stalk by `krullDimLE_stalk_of_topologicalKrullDim_le`
+  (PROVEN above);
 * each stalk is then NOETHERIAN, LOCAL, a DOMAIN, INTEGRALLY CLOSED (LEAF C1a)
-  and of dimension `≤ 1` (LEAF C1b), so it is REGULAR by
+  and of dimension `≤ 1`, so it is REGULAR by
   `isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one` (PROVEN above);
 * and regular stalks over a perfect field give smoothness by LEAF C2.
 
@@ -8844,21 +8878,31 @@ THE THREE RESIDUAL LEAVES, in decreasing order of expected cost:
   mathlib has, what it lacks (re-checked by name 2026-07-27), why perfectness
   is load-bearing, and a strictly smaller statement that would also discharge
   this consumer.
-* `krullDimLE_one_stalk_normalizationModel_of_smooth_affine_curve` — the model
-  has dimension `≤ 1`; the content is "a dense open of an integral finite-type
-  scheme has the same dimension".
+* `topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve` — the
+  model has dimension `≤ 1`; the content is "a dense open of an integral
+  finite-type scheme has the same dimension".
 * `isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve` — the
   model is normal; Stacks 035Q, a transitivity-of-integrality argument with
   no curve theory in it.
 
 The earlier version of this docstring said the missing theory was the ONLY
-gap. That was optimistic on two counts, and both corrections are recorded
-above: mathlib has **no notion of a normal scheme at all**
-(`grep -rn "IsIntegrallyClosed" Mathlib/AlgebraicGeometry/` is empty) and
-**no comparison between a stalk's Krull dimension and the space's**
-(`grep -rn "topologicalKrullDim" Mathlib/ | grep -i stalk` is empty), so the
-normality and the dimension bound are separate obligations rather than
-free consequences.
+gap. That was optimistic: mathlib has **no notion of a normal scheme at all**
+(`grep -rn "IsIntegrallyClosed" Mathlib/AlgebraicGeometry/` is empty), so
+normality of the model is a separate obligation and not a free consequence.
+
+ONE CLAIM MADE IN THE FIRST VERSION OF THIS DECOMPOSITION IS RETRACTED, by
+its own author and within the same day. It said mathlib had no comparison
+between a stalk's Krull dimension and the space's, and stated the dimension
+leaf at the STALK for that reason. **That was wrong**: `@[stacks 02IZ]`
+`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` and
+`AlgebraicGeometry.krullDimLE_of_coheight_le` are both in
+`Mathlib/AlgebraicGeometry/Properties.lean`, and composing them with
+`Order.coheight_le_krullDim` proves the comparison in three lines — it is
+`krullDimLE_stalk_of_topologicalKrullDim_le` above, PROVEN. The dimension
+leaf is now stated at the SPACE where it belongs. The grep that produced the
+false claim searched `topologicalKrullDim` against `stalk`; the lemma is
+phrased in `coheight` and so did not match. **Search the CONCEPT, not one
+spelling of it.**
 
 `hfin` is supplied so that the model is already known to be of finite type
 over `ℚ` — smoothness is a property of finitely presented morphisms, so
@@ -8902,8 +8946,9 @@ theorem smooth_normalizationModel_of_smooth_affine_curve
   refine smooth_of_isRegularLocalRing_stalk_of_perfectField _ hfp (fun x => ?_)
   haveI := isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
     hft hPproper hcomm hgqf hgsep hgft hgqc x
-  haveI := krullDimLE_one_stalk_normalizationModel_of_smooth_affine_curve fC fP g hsmooth
-    hft hdim hPproper hcomm hgqf hgsep hgft hgqc hfin x
+  haveI := krullDimLE_stalk_of_topologicalKrullDim_le
+    (topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve fC fP g hsmooth
+      hft hdim hPproper hcomm hgqf hgsep hgft hgqc hfin) x
   exact isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one _
 
 open CategoryTheory AlgebraicGeometry in
