@@ -24442,6 +24442,132 @@ theorem eval_twentyFive (b c : ℚ) :
     eval_fourteen] at h
   rw [h, x1Poly25]; ring
 
+/-- **Mazur's rank-`0` counting datum for `X_1(25)`** — the interface
+through which `WeierstrassCurve.x1TwentyFive_plane_ne_zero` below is
+decomposed (NEW 2026-07-27).
+
+This is Mazur 1977, Thm 8 packaged as data rather than cited as a slogan.
+The argument it encodes is pure counting, and every field is one of its
+four inputs:
+
+* `red`, `red_injective` — **the rank-`0` reduction bound at `ℓ = 3`.**
+  `J_1(25)` is `ℚ`-isogenous to `A₄ × A₈` with `LRatio(A₄, 1) = 1/5041`
+  and `LRatio(A₈, 1) = 1/10272025`, both nonzero, so
+  `rank J_1(25)(ℚ) = 0` by Kolyvagin–Logachev (or Kato) and `J_1(25)(ℚ)`
+  is finite, hence torsion.  `3 ∤ 25`, so `X_1(25)` has good reduction at
+  `3`; the kernel of reduction on `J_1(25)(ℚ)` is the group of points of
+  a formal group over `ℤ_3`, torsion-free because `3` is ODD; and
+  Abel–Jacobi based at a rational point embeds `X_1(25)(ℚ)` into
+  `J_1(25)(ℚ)` (genus `12 ≥ 1`) compatibly with reduction.  So reduction
+  is injective on `X_1(25)(ℚ)`.  This is the same criterion as
+  `card_le_of_rankZeroJacobian` in `Fermat/FLT/ModularCurve/X0.lean`
+  (which HAS landed, and which this module already `public import`s), in
+  its `Function.Injective` form rather than its `Finset.card` form, and
+  at `Γ_1(25)` rather than `Γ_0(N)` — see the AUDIT below for why it is
+  restated here instead of reused.
+
+* `card_ptF3` — **`#X_1(25)(𝔽_3) = 10`.**  Note this is not a deep
+  input: `10 = φ(25)/2` is exactly the number of rational cusps, so the
+  content is that there are no NON-cuspidal `𝔽_3`-points, and a
+  non-cuspidal `𝔽_3`-point of `X_1(25)` is a pair `(E, P)` over `𝔽_3`
+  with `P` of exact order `25`.  By Hasse
+  `#E(𝔽_3) ≤ 3 + 1 + 2√3 < 8 < 25`, so no such pair exists.  The whole
+  weight of the theorem therefore sits in `red_injective`, i.e. in the
+  rank-`0` statement — which is the honest accounting, and is why level
+  `25` is tractable where levels `17` and `19` (rank `1`, needing
+  Chabauty–Coleman) are not.
+
+* `cusp`, `cusp_injective` — **the `φ(25)/2 = 10` rational cusps**, which
+  are genuine rational points and are what make the bound `≤ 10` sharp.
+
+* `exists_notCusp_of_plane` — **the moduli dictionary.**  A rational
+  point of the plane model `G₂₅ = 0` with `b ≠ 0` and `b ≠ c` is a
+  non-cuspidal rational point of `X_1(25)`: `b ≠ 0` keeps
+  `tateNormalForm b c` off the degenerate locus, `b ≠ c` keeps the origin
+  off the `X_1(5)` line, and `MazurX1Plane.eval_twentyFive` makes
+  `G₂₅(b, c) = 0` say that the origin has order exactly `25`.  The cusps
+  of `X_1(25)` are precisely where the family degenerates, so such a
+  point is not among them.
+
+**PINNING AUDIT — what stops this from being satisfiable by junk.**  The
+structure quantifies over bare types, so it is fair to ask what a junk
+model would have to prove.  Take any model in which the cusps exhaust the
+rational points (for instance `Pt = PtF3 = Fin 10`, `red = id`,
+`cusp = id`): then `∀ i, p ≠ cusp i` is unsatisfiable, so
+`exists_notCusp_of_plane` becomes exactly the assertion that `G₂₅` has no
+nondegenerate rational zero — i.e. the target theorem itself.  So junk
+models do NOT come cheaply: constructing this datum without proving the
+target requires exhibiting the genuine `X_1(25)`, its cusps, its
+reduction at `3` and its rank-`0` Jacobian.  That is the intended content
+and the reason the cut is safe.
+
+**AUDIT — why `card_le_of_rankZeroJacobian` is NOT reused verbatim.**  It
+has landed and is the right criterion, but its hypothesis is
+`IsX0Compactification N strX strY j`, whose `coarse` field pins `Y` as a
+coarse moduli space for the **`Γ₀(N)`** problem.  `X_1(25)` is the
+`Γ_1(25)` curve and the `X_0` route is not merely unavailable here but
+REFUTED: `X_0(25)` has genus `0` and a rational cyclic `25`-isogeny
+genuinely exists (the class `11a`), so a rational `25`-subgroup puts no
+constraint on `j(E)` whatsoever.  Supplying the `Γ_1` analogue of
+`IsCoarseModuliY0` is a modular-curves development in its own right and
+belongs beside `X0.lean`, not inside this file; the datum below is the
+minimal interface the counting argument actually consumes, and it should
+be RECONCILED with that development when it lands.
+
+**NUMERICAL CORROBORATION of the target statement** (PARI/GP 2026-07-27,
+untrusted searcher — none of this is a proof, it is a faithfulness check
+run before the cut).  `G₂₅` is IRREDUCIBLE over `ℚ` (a single factor of
+multiplicity one), so the curve has no rational component.  A sweep of
+every rational value of either coordinate with numerator `|n| ≤ 20` and
+denominator `d ≤ 6`, solving for the other coordinate over `ℚ`, found NO
+zero of `G₂₅` off the two degenerate loci — the only rational zero found
+at all was `(0, 0)`, which has `b = 0`.  And `G₂₅ mod 3` vanishes on
+`𝔽_3 × 𝔽_3` ONLY at `(0, 0)`: it is nonzero at all four points with
+`b ≠ 0` and `b ≠ c`, which is the mod-`3` shadow of `card_ptF3`. -/
+structure IsX1TwentyFiveDatum where
+  /-- the rational points `X_1(25)(ℚ)` -/
+  Pt : Type
+  /-- the `𝔽_3`-points `X_1(25)(𝔽_3)` -/
+  PtF3 : Type
+  /-- reduction modulo `3` -/
+  red : Pt → PtF3
+  /-- **the rank-`0` reduction bound**: reduction at the odd good prime
+  `3` is injective on `X_1(25)(ℚ)`, because `rank J_1(25)(ℚ) = 0` -/
+  red_injective : Function.Injective red
+  /-- **the point count** `#X_1(25)(𝔽_3) = 10 = φ(25)/2` -/
+  card_ptF3 : Nat.card PtF3 = 10
+  /-- the `10` rational cusps -/
+  cusp : Fin 10 → Pt
+  /-- the `10` rational cusps are distinct -/
+  cusp_injective : Function.Injective cusp
+  /-- **the moduli dictionary**: a nondegenerate rational point of the
+  plane model `G₂₅ = 0` is a non-cuspidal rational point of `X_1(25)` -/
+  exists_notCusp_of_plane : ∀ b c : ℚ, x1Poly25 b c = 0 → b ≠ 0 → b - c ≠ 0 →
+    ∃ p : Pt, ∀ i, p ≠ cusp i
+
+/-- **Mazur 1977, Thm 8 for `X_1(25)`, as the counting datum above**
+(sorry node — NEW 2026-07-27, the modular half of the level-`25` leaf).
+
+Everything mathematical in `WeierstrassCurve.x1TwentyFive_plane_ne_zero`
+is here; what remains there is `11 > 10`.  See `IsX1TwentyFiveDatum` for
+the four inputs, the pinning audit, and the reconciliation note against
+`Fermat/FLT/ModularCurve/X0.lean`.
+
+MISSING MACHINERY, in dependency order — the pin has NONE of it, and this
+is the honest reason the node is open rather than hard:
+1. the modular curve `X_1(N)` as a coarse moduli space over `ℤ[1/N]`,
+   with its cusps (`X0.lean` builds the `Γ₀` analogue only);
+2. Jacobians of curves of genus `> 1` over `ℚ`, and Abel–Jacobi;
+3. Mordell–Weil, plus `L`-functions of modular abelian varieties and
+   Kolyvagin–Logachev, to get `rank J_1(25)(ℚ) = 0`;
+4. the formal group of an abelian scheme, for injectivity of reduction.
+
+Items 2–4 are shared verbatim with `hasRankZeroJacobian_of_kenkuLevel`
+and `card_le_of_rankZeroJacobian` in `X0.lean`; only item 1 is specific
+to `Γ_1`. -/
+theorem exists_isX1TwentyFiveDatum : Nonempty IsX1TwentyFiveDatum :=
+  sorry
+
 end MazurX1Plane
 
 /-- **`X_1(25)` has no non-cuspidal rational point, as an explicit
@@ -24483,11 +24609,48 @@ This is the level-`25` analogue of the explicit plane leaves
 `11` is PROVEN there from the rank-`0` Mordell–Weil group of `11a3`, and
 that route is unavailable here for the reason the genus records: `11` is
 genus `1` and there is an elliptic curve to descend to, `25` is genus
-`12` and there is not. -/
+`12` and there is not.
+
+**DECOMPOSED 2026-07-27 along Mazur's argument.**  This declaration is no
+longer a leaf: its whole content now sits in the single node
+`MazurX1Plane.exists_isX1TwentyFiveDatum`, and what is left here is
+counting.  The `10` rational cusps and one nondegenerate plane point are
+`11` distinct rational points of `X_1(25)`; reduction at `3` is injective
+on `X_1(25)(ℚ)` because `rank J_1(25)(ℚ) = 0`; and `#X_1(25)(𝔽_3) = 10`.
+So `11 ≤ #X_1(25)(ℚ) ≤ 10`, which is false.  See
+`MazurX1Plane.IsX1TwentyFiveDatum` for the four inputs, the pinning
+audit, the numerical corroboration of this statement, and the note on
+reconciling with `card_le_of_rankZeroJacobian` in
+`Fermat/FLT/ModularCurve/X0.lean`.
+
+The `IsElliptic` instance is not consumed by the argument below — it is
+kept because every caller has it and because dropping it would change the
+signature of a declaration `x1TwentyFive_plane_eq_line` already applies.
+`hb` and `hbc` are both load-bearing: they are exactly what makes the
+plane point NON-cuspidal, and without them the statement is false (the
+whole line `b = c` is `X_1(5)`, where `G₂₅` does vanish). -/
 theorem WeierstrassCurve.x1TwentyFive_plane_ne_zero (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic] (hb : b ≠ 0)
-    (hbc : b - c ≠ 0) : MazurX1Plane.x1Poly25 b c ≠ 0 :=
-  sorry
+    (hbc : b - c ≠ 0) : MazurX1Plane.x1Poly25 b c ≠ 0 := by
+  intro hG
+  obtain ⟨M⟩ := MazurX1Plane.exists_isX1TwentyFiveDatum
+  obtain ⟨p, hp⟩ := M.exists_notCusp_of_plane b c hG hb hbc
+  have hfin3 : Finite M.PtF3 := Nat.finite_of_card_ne_zero (by rw [M.card_ptF3]; norm_num)
+  have hfinPt : Finite M.Pt := Finite.of_injective M.red M.red_injective
+  have hinj : Function.Injective (fun o : Option (Fin 10) => o.elim p M.cusp) := by
+    rintro (_ | i) (_ | j) hij
+    · rfl
+    · exact absurd hij (hp j)
+    · exact absurd hij.symm (hp i)
+    · exact congrArg some (M.cusp_injective hij)
+  have h11 : 11 ≤ Nat.card M.Pt := by
+    have hle := Nat.card_le_card_of_injective _ hinj
+    rw [Finite.card_option, Nat.card_fin] at hle
+    omega
+  have h10 : Nat.card M.Pt ≤ 10 := by
+    have hle := Nat.card_le_card_of_injective M.red M.red_injective
+    rwa [M.card_ptF3] at hle
+  omega
 
 /-- **`X_1(25)`: every zero of `w₂₅` on the Tate family lies on the
 `X_1(5)` line `b = c`** (PROVEN 2026-07-26 from the explicit leaf
