@@ -9976,6 +9976,175 @@ theorem WeierstrassCurve.exists_x0Sixteen_hauptmodul
   obtain ⟨s, hs⟩ := MazurLevel16.exists_univCurve_param_of_stable E g hg hstable
   exact ⟨s, MazurLevel16.j16_of_param s E.j hs⟩
 
+/-! ### The four levels at which `X_0(N)` is an elliptic curve of rank `0`
+
+**THE SHAPE, STATED ONCE** (introduced 2026-07-27).  Four leaves in this
+file — two at level `32` and two at the genus-one isogeny primes
+`11, 17, 19` — were the SAME two statements written twice: a rank-`0`
+Jacobian statement, and an Eichler–Shimura point count on a good special
+fibre.  They are consolidated here into one leaf each, and the four
+former leaves are now PROVEN corollaries.
+
+**Why not generalise `X0.lean`'s versions instead**, which would have been
+better still and was the first thing checked (2026-07-27).  The natural
+move is to widen `Fermat.hasRankZeroJacobian_of_kenkuLevel`'s level
+hypothesis and `Fermat.exists_x0Compactification_mod_prime`'s table, so
+that ONE statement covers all fifteen levels.  Both of those declarations
+were under active concurrent ownership when this section was written
+(`~/.flt-inflight.jsonl`: `hasRankZeroJacobian_of_kenkuLevel` and
+`exists_x0Compactification_mod_prime`/`x0WitnessTable` each had a named
+owner, the former being SPLIT along a seam of its own).  Editing a
+declaration another worker is cutting is the one thing this development
+has paid for repeatedly, so the consolidation is done here, inside this
+file's own region, and stops at this file's four levels.
+
+**The merge is therefore a strictly local one, and it is REVERSIBLE
+UPWARDS**: when `X0.lean`'s two leaves settle, `levels` and `countTable`
+below are exactly the extra rows to append there, and these two leaves
+become one-line corollaries in turn.  That is the intended successor step
+and it is why the statements are written in verbatim the same shape as
+their `X0.lean` analogues rather than in a shape convenient here.
+
+**The coherent mathematical class**, which is what makes one statement
+honest rather than an ad-hoc union: at `N ∈ {11, 17, 19, 32}` the modular
+curve `X_0(N)` has genus exactly `1` and a rational cusp, so it IS an
+elliptic curve over `ℚ` — `11a1`, `17a1`, `19a1`, `32a1` — and is its own
+Jacobian.  Every one of the four has Mordell–Weil rank `0`.  So this is
+not "the levels that happened to be needed"; it is "the levels where the
+Jacobian is the curve itself and the rank vanishes", and no other level
+of `X_0` has both properties with the rank-`0` half true (`37, 43, 67,
+163` are the next prime levels and have ranks `1, 1, 2, 6`).
+
+#### Reconnaissance (PARI/GP 2.17.4, 2026-07-27, untrusted searcher;
+#### statement check only, re-verified against the docstrings it replaces)
+
+On the explicit models `11a1 = [0,-1,1,-10,-20]`, `17a1 = [1,-1,1,-1,-14]`,
+`19a1 = [0,1,1,-9,-15]`, `32a1 = [0,0,0,4,0]`:
+
+| `N` | conductor | `ℓ` | `a_ℓ` | `#X_0(N)(𝔽_ℓ)` | `ellrank` | `elltors` |
+|-----|-----------|-----|-------|----------------|-----------|-----------|
+| 11  | 11        | 3   | −1    | 5              | `[0,0]`   | 5         |
+| 17  | 17        | 3   | 0     | 4              | `[0,0]`   | 4         |
+| 19  | 19        | 5   | 3     | 3              | `[0,0]`   | 3         |
+| 32  | 32        | 3   | 0     | 4              | `[0,0]`   | 4         |
+
+`ellrank` returns the INTERVAL `[0, 0]` at all four — rank proven `0`, not
+merely bounded above.  The conductor column is the check that the model is
+the right curve, i.e. that `X_0(N)` really is `N a 1`.
+
+**Two traps, both re-confirmed rather than taken on trust.**  `N = 19`
+needs `ℓ = 5`: `ℓ = 3` gives `3 + 1 − (−2) = 6 > 3`, so the smallest odd
+prime does NOT work — the exact analogue of the `N = 30` trap recorded on
+`Fermat.x0WitnessTable`.  And `N = 32` needs `ℓ = 3`: `a_5 = −2` gives
+`#X_0(32)(𝔽_5) = 8 > 4`.  Every row satisfies `ℓ ≠ 2` and `ℓ ∤ N`, both of
+which `Fermat.card_le_of_rankZeroJacobian` requires. -/
+
+namespace X0GenusOne
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat
+
+/-- **The four levels at which `X_0(N)` is an elliptic curve of rank `0`.**
+
+`X_0(11) = 11a1`, `X_0(17) = 17a1`, `X_0(19) = 19a1`, `X_0(32) = 32a1`,
+all of genus `1` and Mordell–Weil rank `0`; see the section note for the
+PARI/GP certificate.
+
+Deliberately NOT a superset of `Fermat.kenkuLevels`, whose eleven levels
+have genus `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5` and so are a different (and
+strictly harder) class: there the Jacobian must be produced from
+`S_2(Γ_0(N))` rather than being the curve itself. -/
+def levels : List ℕ := [11, 17, 19, 32]
+
+/-- **The witness table `(N, ℓ, #X_0(N)(𝔽_ℓ))` at the four genus-one
+levels**, the analogue of `Fermat.x0WitnessTable`.
+
+Every row is `ℓ + 1 − a_ℓ` for the elliptic curve `N a 1`; see the section
+note for the certificate and for why `N = 19` needs `ℓ = 5` and `N = 32`
+needs `ℓ = 3`.
+
+Note the counts here are `#X_0(N)(ℚ)`, NOT `numRationalCusps N`: at the
+prime levels only `2` of the points are cusps, which is exactly why these
+levels give a `j`-value table rather than emptiness of `Y_0(N)(ℚ)`. -/
+def countTable : List (ℕ × ℕ × ℕ) :=
+  [(11, 3, 5), (17, 3, 4), (19, 5, 3), (32, 3, 4)]
+
+/-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the four genus-one
+levels** (sorry leaf, introduced 2026-07-27; consolidates the former
+`MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` and
+`MazurIsogenyPrimeJ.hasRankZeroJacobian_of_genusOnePrime`, which are now
+proven from it).
+
+The exact analogue of `Fermat.hasRankZeroJacobian_of_kenkuLevel`, which is
+restricted to `Fermat.kenkuLevels` and so reaches none of these four.
+
+TRUE, and STRICTLY EASIER than that analogue — which its own docstring
+calls "the deepest of the six leaves" — because here `X_0(N)` is itself an
+elliptic curve, so:
+
+* `J_0(N) = X_0(N)` (the Jacobian of a genus-`1` curve with a rational
+  point is the curve), and rank `0` is a Mordell–Weil computation on ONE
+  elliptic curve of conductor `N`, not a decomposition of `S_2(Γ_0(N))`
+  into newform factors with `L(A, 1) ≠ 0` at each;
+* the genus is exactly `1`, hence positive, so Abel–Jacobi is injective on
+  rational points.
+
+**Both conjuncts of `Fermat.HasRankZeroJacobian` are load-bearing and
+neither may be trimmed**, for the reasons that definition records: without
+finiteness a positive-rank Jacobian gives infinitely many rational points
+already in genus `1`; without injectivity `X_0(1) = ℙ¹` refutes the
+criterion downstream.
+
+**Not vacuous**: `Fermat.exists_x0Compactification N` supplies an `hX` at
+each of the four levels.
+
+IRREDUCIBLE at this mathlib pin, and the CHECK that would refute it is one
+grep: a Mordell–Weil theorem, or any rank computation for elliptic curves
+over `ℚ`, anywhere in `Mathlib`, in this project, or in `~/cs/FLT`.  There
+is none — `~/cs/FLT` assumes Mazur's torsion theorem outright
+(`FLT/Assumptions/Mazur.lean`).  AXIS SEARCHED: the rank input, and the
+consolidation axis (the four levels are now one statement; widening to
+`Fermat.kenkuLevels` is the successor step, see the section note).  NOT
+searched: whether an explicit Weierstrass model plus descent — the route
+`MazurLevel32.y0HasNoRationalPoint_thirtyTwo` takes at level `32`, where
+`QuarticDescent` replaces the rank input entirely — reaches the three
+prime levels. -/
+theorem hasRankZeroJacobian (N : ℕ) (_hN : N ∈ levels)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY jY) : HasRankZeroJacobian strX :=
+  sorry
+
+/-- **The reduction `X_0(N)_{𝔽_ℓ}` and its point count, at the four
+genus-one witness primes** (sorry leaf, introduced 2026-07-27;
+consolidates the former `MazurLevel32.exists_x0ThirtyTwo_mod_three` and
+`MazurIsogenyPrimeJ.exists_x0GenusOne_mod_prime`, which are now proven
+from it).
+
+The exact analogue of `Fermat.exists_x0Compactification_mod_prime` against
+`countTable`, and TRUE for the same reason: for `ℓ ∤ N` the modular curve
+has good reduction at `ℓ`, its special fibre is the coarse space of the
+same `Γ₀(N)`-problem over `𝔽_ℓ`, and being proper over a finite field it
+has finitely many rational points.  Eichler–Shimura evaluates the count as
+`ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`, which at these levels is `ℓ + 1 − a_ℓ`
+for the single newform; see the section note for the four values.
+
+Quantified over the table rather than over `N` alone so that the witness
+prime and the count travel together, exactly as in the Kenku analogue —
+and that matters here, since `ℓ` is NOT the smallest odd prime at `N = 19`.
+
+IRREDUCIBLE at this mathlib pin: neither the integral model of `X_0(N)`
+nor its reduction exists here.  The CHECK that would refute this: an
+integral model of any modular curve in this project — `Fermat.IsX0NeronDatum`
+in `X0.lean` is the closest thing and carries models only for the SIEVE
+levels, not for these four. -/
+theorem exists_mod_prime (N ℓ m : ℕ) (_h : (N, ℓ, m) ∈ countTable) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY j) ∧
+        Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
+        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
+  sorry
+
+end X0GenusOne
+
 namespace MazurLevel32
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat
@@ -10116,14 +10285,25 @@ cannot import a `sorryAx` — see the `#print axioms` note on
 lemma fourPoints_injective : Function.Injective fourPoints :=
   Function.Injective.of_comp (f := planeCoords) (by decide)
 
-/-- **`rank J_0(32)(ℚ) = 0` and `genus X_0(32) ≥ 1`** (sorry node,
-introduced 2026-07-27).
+/-- **`rank J_0(32)(ℚ) = 0` and `genus X_0(32) ≥ 1`** (PROVEN 2026-07-27
+over `X0GenusOne.hasRankZeroJacobian`; was a sorry node, introduced the
+same day).
 
 The exact level-`32` analogue of `X0.lean`'s
 `hasRankZeroJacobian_of_kenkuLevel`, which cannot be reused verbatim
 because `kenkuLevels` is by construction the list of NON-prime-power levels
 of Kenku's determination and `32 = 2⁵` is not among them.  Nothing else
 about the statement differs.
+
+**The arithmetic now lives ONE level up**, in `X0GenusOne.hasRankZeroJacobian`,
+which states this at all four levels where `X_0(N)` is an elliptic curve of
+rank `0` — `11, 17, 19, 32` — because the level-`19` and level-`32` versions
+of this leaf were the same theorem written twice.  This declaration is kept
+under its own name because it is what the level-`32` assembly consumes and
+because its hypothesis shape (`32` fixed, `j` rather than `jY`) is the one
+that assembly was written against.  See the section note above
+`X0GenusOne.levels` for the certificate and for why `X0.lean`'s own leaves
+were not widened instead.
 
 **TRUE**, and at this level it is the softest of all the Kenku-style
 instances rather than the hardest, because `J_0(32) = X_0(32) = 32a1`
@@ -10150,16 +10330,23 @@ proved. -/
 theorem hasRankZeroJacobian_x0ThirtyTwo {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification 32 strX strY j) :
     HasRankZeroJacobian strX :=
-  sorry
+  X0GenusOne.hasRankZeroJacobian 32 (by decide) h
 
-/-- **`X_0(32)` reduces well at `3`, and `#X_0(32)(𝔽_3) = 4`** (sorry node,
-introduced 2026-07-27).
+/-- **`X_0(32)` reduces well at `3`, and `#X_0(32)(𝔽_3) = 4`** (PROVEN
+2026-07-27 over `X0GenusOne.exists_mod_prime`; was a sorry node,
+introduced the same day).
 
 The exact level-`32` analogue of `X0.lean`'s
 `exists_x0Compactification_mod_prime`, which cannot be reused verbatim
 because `x0WitnessTable` lists only the seven Kenku levels that close on a
 single prime; `(32, 3, 4)` would be its eighth row.  Nothing else about the
 statement differs.
+
+**The arithmetic now lives ONE level up**, in `X0GenusOne.exists_mod_prime`
+against `X0GenusOne.countTable`, whose fourth row is exactly `(32, 3, 4)`;
+the other three rows are the genus-one isogeny primes, where this same
+statement was written a second time.  See the section note above
+`X0GenusOne.levels`.
 
 **TRUE.**  `3 ∤ 32`, so `X_0(32)` has good reduction at `3` and the special
 fibre is the coarse space of the same `Γ₀(32)`-problem over `𝔽_3`; being
@@ -10183,7 +10370,7 @@ theorem exists_x0ThirtyTwo_mod_three :
       Nonempty (IsX0Compactification 32 strX strY j) ∧
         Finite (RelPoint strX (𝟙 (SpecF 3))) ∧
         Nat.card (RelPoint strX (𝟙 (SpecF 3))) = 4 :=
-  sorry
+  X0GenusOne.exists_mod_prime 32 3 4 (by decide)
 
 /-- **`#X_0(32)(ℚ) ≤ 4`** (PROVEN 2026-07-27 over
 `hasRankZeroJacobian_x0ThirtyTwo` and `exists_x0ThirtyTwo_mod_three`, by
@@ -16243,14 +16430,28 @@ theorem jInvariant_mem_of_exists_jMap {N : ℕ} {T : List (ℕ × ℚ)}
   exact hall _
 
 /-- **`rank J_0(p)(ℚ) = 0` and `genus X_0(p) ≥ 1` at `p ∈ {11, 17, 19}`**
-(sorry leaf, introduced 2026-07-27; the BOUNDING half of the genus-one
-decomposition, together with `exists_x0GenusOne_mod_prime`).
+(PROVEN 2026-07-27 over `X0GenusOne.hasRankZeroJacobian`; was a sorry leaf,
+introduced the same day.  The BOUNDING half of the genus-one decomposition,
+together with `exists_x0GenusOne_mod_prime`).
 
 The exact analogue of `Fermat.hasRankZeroJacobian_of_kenkuLevel`, which is
 restricted to `Fermat.kenkuLevels` and so does not reach the prime levels.
-A successor may well prefer to merge the two by widening that leaf's level
+
+**THE MERGE THIS DOCSTRING ASKED FOR HAS HAPPENED, one level down from
+where it proposed it** (2026-07-27).  The previous version said "a
+successor may well prefer to merge the two by widening that leaf's level
 hypothesis; it is stated separately here only because modifying another
-owner's declaration is not this task's to make.
+owner's declaration is not this task's to make."  That is still the right
+end state and it is still not available: at the time of writing,
+`Fermat.hasRankZeroJacobian_of_kenkuLevel` had a named concurrent owner in
+`~/.flt-inflight.jsonl` who was actively SPLITTING it, so widening it would
+have been the same-declaration collision this development has paid for
+before.  What WAS available is the merge with the level-`32` copy of the
+identical statement inside this file, and that is
+`X0GenusOne.hasRankZeroJacobian` — one leaf at `11, 17, 19, 32`, the four
+levels where `X_0(N)` is an elliptic curve of rank `0`.  Appending those
+four levels to `Fermat.kenkuLevels` remains the successor step; see the
+section note above `X0GenusOne.levels`.
 
 TRUE, and STRICTLY EASIER than its Kenku analogue, which is worth saying
 because the analogue is described there as "the deepest of the six leaves".
@@ -16281,13 +16482,20 @@ successor should look instead at whether an explicit Weierstrass model of
 `X_0(p)` plus descent — the route `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`
 takes at level `32`, where `QuarticDescent` replaces the rank input
 entirely — reaches these three levels; that axis is NOT searched here. -/
-theorem hasRankZeroJacobian_of_genusOnePrime (p : ℕ) (_hp : p ∈ ({11, 17, 19} : Finset ℕ))
+theorem hasRankZeroJacobian_of_genusOnePrime (p : ℕ) (hp : p ∈ ({11, 17, 19} : Finset ℕ))
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification p strX strY jY) : HasRankZeroJacobian strX :=
-  sorry
+    (hX : IsX0Compactification p strX strY jY) : HasRankZeroJacobian strX :=
+  X0GenusOne.hasRankZeroJacobian p (by fin_cases hp <;> decide) hX
 
 /-- **The reduction `X_0(p)_{𝔽_ℓ}` and its point count, at the three
-genus-one witness primes** (sorry leaf, introduced 2026-07-27).
+genus-one witness primes** (PROVEN 2026-07-27 over
+`X0GenusOne.exists_mod_prime`; was a sorry leaf, introduced the same day).
+
+The three rows of `x0GenusOneTable` are the first three rows of
+`X0GenusOne.countTable`, whose fourth is level `32` — where this same
+statement was written a second time.  See the section note above
+`X0GenusOne.levels` for why `Fermat.x0WitnessTable` was not simply given
+four more rows instead.
 
 The exact analogue of `Fermat.exists_x0Compactification_mod_prime` against
 the new table `x0GenusOneTable`, and TRUE for the same reason: for `ℓ ∤ p`
@@ -16306,12 +16514,12 @@ its reduction exists here.  The CHECK that would refute this: an integral
 model of any modular curve in this project — `Fermat.IsX0NeronDatum` in
 `X0.lean` is the closest thing and carries models only for the SIEVE
 levels, not for prime level. -/
-theorem exists_x0GenusOne_mod_prime (p ℓ m : ℕ) (_h : (p, ℓ, m) ∈ x0GenusOneTable) :
+theorem exists_x0GenusOne_mod_prime (p ℓ m : ℕ) (h : (p, ℓ, m) ∈ x0GenusOneTable) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (j : Y ⟶ X),
       Nonempty (IsX0Compactification p strX strY j) ∧
         Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
         Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
-  sorry
+  X0GenusOne.exists_mod_prime p ℓ m (by fin_cases h <;> decide)
 
 /-- **The rational points of `X_0(p)` at the genus-one isogeny primes, with
 their `j`-invariants** (sorry leaf, introduced 2026-07-27; the CONSTRUCTIVE
@@ -16328,6 +16536,17 @@ and the non-cuspidal `j`-values are the six of `genusOneJTable` (Magma
 `SmallModularCurve(p)` with `jFunction`, recorded in the INDEPENDENT
 RE-VERIFICATION block of `jInvariant_mem_of_isogenyPrime_genusOne` below,
 down to which affine point is the second cusp).
+
+**THIS IS NOW THE ONLY OPEN LEAF OF THE GENUS-ONE DECOMPOSITION AT THIS
+FILE'S LEVEL** (2026-07-27).  Its two siblings —
+`hasRankZeroJacobian_of_genusOnePrime` and `exists_x0GenusOne_mod_prime`,
+the BOUNDING half — were the same two statements the level-`32` cluster
+also carried, and are now proven from the consolidated
+`X0GenusOne.hasRankZeroJacobian` and `X0GenusOne.exists_mod_prime`.  This
+leaf is NOT of that kind and was deliberately not folded in: it is the
+CONSTRUCTIVE half, and it needs the explicit `j`-function of `X_0(p)` as a
+rational function rather than a rank or a point count.  So a successor
+should not expect the consolidation above to reach it.
 
 **Why the `j`-map is PRODUCED here rather than assumed.**  See the
 subsection note: `IsJMapOn` under-determines `jm` away from the image of
