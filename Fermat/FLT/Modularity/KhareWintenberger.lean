@@ -6586,14 +6586,159 @@ theorem isPrime_radical_integralSystemIdeal_algClosureRat
         (ULift.ringEquiv : ULift.{u} (AlgebraicClosure ℚ) ≃+* AlgebraicClosure ℚ)) h4
   exact isPrime_radical_of_irreducibleSpace_quotient _ h5
 
-/-- **SPREADING OUT OF GEOMETRIC IRREDUCIBILITY, SCHEME-FREE AND UNIVERSE-FREE**
+/-- **EGA IV 9.7.7 OVER `Spec ℤ`, IN THE SHAPE THE ARGUMENT ACTUALLY PRODUCES**
 (SORRY LEAF, cut 2026-07-27 out of
-`exists_bound_forall_irreducibleFibre_of_geometricallyIrreducible` below, which
-is PROVEN over it). This is the whole mathematical content of that leaf; a
-prover here needs NOTHING from this file except `integralSystemIdeal` and
+`exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`
+immediately below, which is PROVEN over it). This carries the WHOLE mathematical
+content of that leaf — the layer below removes packaging only — and a prover here
+needs NOTHING from this file except `integralSystemIdeal` and
 `IntegralSystemModel`, so it is dispatchable to a commutative algebraist in
-isolation — exactly like its Lang–Weil sibling
+isolation, exactly like its Lang–Weil sibling
 `exists_bound_forall_zmodSolvable_of_irreducibleFibre`.
+
+TWO SHAPE CHANGES relative to the consumer, both of them the shape the geometry
+delivers rather than the shape the consumer wants. Neither strengthens nor
+weakens the statement:
+
+* the conclusion is TOPOLOGICAL, `IrreducibleSpace (PrimeSpectrum …)`, not
+  ideal-theoretic. That is literally what EGA proves — "the geometric fibre is
+  an irreducible space" — and the consumer's `radical.IsPrime` comes out of it
+  in one application of `isPrime_radical_of_irreducibleSpace_quotient` (PROVEN,
+  ~200 lines above), which is what the layer below does;
+* the exceptional set is an INVERTED INTEGER `N` (`¬ p ∣ N`), not a bound
+  `B < p`. Every spreading-out argument produces `N`, by shrinking `Spec ℤ` to a
+  basic open `D(N)`; the proven sibling
+  `exists_inverted_formallySmooth_integralSystemModel` has exactly this shape,
+  and its parent converts `N` to a bound by the same two lines used below. A
+  prover who would rather produce a bound directly may take `N` to be the
+  primorial or factorial of it — the conversion is trivial both ways.
+
+WHAT IS ALREADY DISCHARGED, and is therefore NOT part of this leaf: the scheme
+layer, the universe gap and the `A`/`π`/`hker` packaging, all of them in
+`isPrime_radical_integralSystemIdeal_algClosureRat` above — the hypothesis `hQ`
+is precisely that lemma's output; and the `p`-quantifier together with the
+topology/ideal bridge, in the layer immediately below.
+
+WHY IT IS TRUE (EGA IV 9.7.7; Poonen, *Rational Points on Varieties*, §3.2).
+`ℤ[x₁..xₙ] ⧸ (f)` is a finitely presented `ℤ`-algebra, and geometric
+irreducibility of the fibres of a finitely presented morphism is a CONSTRUCTIBLE
+condition on the base. By `hQ` that constructible subset of `Spec ℤ` contains
+the generic point; a constructible subset of `Spec ℤ` containing the generic
+point contains a nonempty basic open `D(N)`, and that `N` is the integer below.
+
+The second half of that sentence is elementary here — the constructible subsets
+of `Spec ℤ` are exactly the finite and the cofinite ones. ALL the content is in
+the first half; budget accordingly.
+
+WHAT IS MISSING FROM THE PIN (re-checked 2026-07-27 on the host owning `.lake`,
+over `Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT/`), each claim paired
+with the grep that refutes it:
+
+* PRESENT, so build on these rather than around them: Chevalley, as
+  `PrimeSpectrum.isConstructible_range_comap` and `isConstructible_comap_image`
+  (`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:54,38`);
+  `Mathlib/Topology/Constructible.lean`;
+  `Mathlib/RingTheory/Spectrum/Prime/ConstructibleSet.lean`;
+  `Mathlib/AlgebraicGeometry/SpreadingOut.lean`; and
+  `Mathlib/AlgebraicGeometry/Geometrically/{Basic,Connected,Integral,
+  Irreducible,Reduced}.lean`.
+  REFUTE BY: `grep -rn "isConstructible_range_comap" .lake/packages/mathlib/`.
+* ABSENT: anything tying geometric irreducibility to constructibility.
+  `GeometricallyIrreducible` occurs in exactly THREE mathlib files —
+  `AlgebraicGeometry/AffineSpace.lean`, `Geometrically/Irreducible.lean` and
+  `Geometrically/Integral.lean` — and NONE of the three contains the token
+  `IsConstructible`. `~/cs/FLT` contains neither token anywhere in `FLT/`.
+  REFUTE BY: `grep -rln "GeometricallyIrreducible" .lake/packages/mathlib/`
+  returning a fourth file, or `grep -l IsConstructible` succeeding on any of
+  those three.
+
+ROUTES SEARCHED, AND WHY EACH IS BLOCKED. Read this before attempting the leaf;
+every verdict names the check that refutes it, so none of them costs a
+re-survey, and the axis searched here is COMMUTATIVE-ALGEBRAIC — a topological
+or model-theoretic attack is not covered by any of it.
+
+1. SMOOTH ⟹ REGULAR ⟹ (IRREDUCIBLE ⟺ CONNECTED), THEN SPREAD CONNECTEDNESS.
+   Very attractive, because `hsm` is in hand, its sibling
+   `exists_inverted_formallySmooth_integralSystemModel` is PROVEN, and
+   connectedness is idempotent-theoretic, hence FINITARY in a way irreducibility
+   is not. BLOCKED AT STEP ONE: this pin derives no regularity from smoothness
+   whatsoever.
+   REFUTE BY: `grep -rn "IsRegularLocalRing\|IsRegularRing"
+   .lake/packages/mathlib/Mathlib/RingTheory/Smooth/
+   .lake/packages/mathlib/Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`
+   returning anything at all — as of 2026-07-27 it returns nothing.
+   And step one is not the only problem: geometric connectedness of the fibres
+   is EGA 9.7.7 over again, for `π₀`, and this family is AFFINE rather than
+   proper, so `π₀` is not a finite étale algebra over the base for free.
+2. CHEVALLEY APPLIED DIRECTLY TO THE REDUCIBILITY LOCUS. Reducibility of a fibre
+   says `∃ g h ∉ √I` with `g * h ∈ √I`. The DEGREES of `g` and `h` are
+   unbounded, so this is not a finite-type condition on the base and Chevalley
+   does not apply to it. Manufacturing that degree bound IS the content of
+   9.7.7. This is the trap in the present pin: the machinery all looks present,
+   and it is present — for a statement exactly one degree bound away.
+3. THE ARCHITECTURE THAT DOES WORK (Poonen §3.2; EGA IV 4.5–4.6 with 9.7.7), in
+   four steps. It is recorded here as prose rather than as sorried sub-leaves
+   deliberately: steps (a)–(c) cannot be stated in this pin without first
+   building Noether normalisation over a base and a theory of function fields of
+   integral models, and a cut whose leaves cannot be stated is worse than none.
+   (a) reduce to the case where the `ℤ`-model is a DOMAIN dominating `ℤ`, by
+       decomposing `Spec (IntegralSystemModel f ℤ)` into its finitely many
+       irreducible components. Each component is again `ℤ[x] ⧸ (g)` for a finite
+       integral system, so the reduction stays inside this file's
+       `integralSystemIdeal` vocabulary;
+   (b) in characteristic zero, geometric integrality of the generic fibre is
+       equivalent to `ℚ` being algebraically closed in the function field
+       (separability is automatic, which is why only char 0 is easy here);
+   (c) Noether-normalise over `ℤ[1/N]` and take a primitive element: the
+       function field becomes `ℚ(t₁..t_d)[y] ⧸ (g)` with `g` ABSOLUTELY
+       IRREDUCIBLE. This is where the degree bound route 2 lacks comes from, and
+       it is what makes the whole question finite-type;
+   (d) absolute irreducibility of `g` survives reduction mod almost every `p`
+       (Noether–Ostrowski). THIS step is Chevalley applied to the honest
+       finite-type incidence variety `{(g₁, g₂) : deg gᵢ < deg g, g₁ * g₂ = g}`,
+       whose image in `Spec ℤ` is constructible and misses the generic point,
+       hence is finite. Of the four, only (d) has its main tool in the pin.
+
+ON `hsm`. Carried because the parent knows it for free
+(`formallySmooth_integralSystemModel_rat`) and because route 1 and step (b)
+above both want it: a smooth fibre is geometrically reduced, so "irreducible"
+upgrades to "integral" and the algebraically-closed-in-the-function-field
+criterion becomes available. EGA IV 9.7.7 itself does NOT need it, so a prover
+who does not use it should underscore it and say so; dropping it strengthens the
+leaf and is a welcome outcome, not a deviation.
+
+WHY `IrreducibleSpace` AND NOT `IsPrime` OF THE IDEAL ITSELF. Irreducibility of
+the topological space is the literal meaning of "irreducible fibre" and the only
+thing Lang–Weil consumes downstream — point counts do not see nilpotents.
+Primality of `integralSystemIdeal f k` itself would additionally assert
+REDUCEDNESS of the fibre. That is also true here for large `p`, but it is
+strictly more than the consumer needs, and asking for it would mean spreading
+out reducedness as well.
+
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_inverted_irreducibleSpace_integralSystemModel
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      IrreducibleSpace
+        (PrimeSpectrum (IntegralSystemModel f (AlgebraicClosure (ZMod p)))) :=
+  sorry
+
+/-- **SPREADING OUT OF GEOMETRIC IRREDUCIBILITY, SCHEME-FREE AND UNIVERSE-FREE**
+(**PROVEN 2026-07-27** over the single leaf
+`exists_inverted_irreducibleSpace_integralSystemModel` immediately above, which
+carries the whole of EGA IV 9.7.7 and is now the one remaining SORRY on this
+branch).
+
+WHAT THIS LAYER DISCHARGES — packaging only, but worth naming so nobody redoes
+it: the conversion of the spreading-out argument's inverted integer `N` into the
+bound `B` the consumer asks for, and the bridge from the topological statement
+EGA proves to the ideal-theoretic `radical.IsPrime` the Lang–Weil side consumes
+(`isPrime_radical_of_irreducibleSpace_quotient`). The mathematics is entirely in
+the leaf above, and its docstring — not this one — is what a prover should read.
 
 WHAT WAS ALREADY DISCHARGED, and is therefore NOT part of this leaf: the scheme
 layer, the universe gap, and the `A`/`π`/`hker` packaging, all of them in
@@ -6619,51 +6764,38 @@ is taking on extra work for nothing.
 
 ON `hsm`. Formal smoothness of the `ℚ`-model is carried because the parent knows
 it (`formallySmooth_integralSystemModel_rat`) and because one plausible route
-uses it: a smooth fibre is geometrically reduced, so "irreducible" upgrades to
-"integral" and the classical criterion — `k` algebraically closed in the
-function field of `X_k` — becomes available. EGA IV 9.7.7 does NOT need it, so a
-prover who does not use `hsm` should underscore it and say so; dropping it
-strengthens the leaf and is a welcome outcome, not a deviation.
+uses it. It is passed straight through to the leaf above and is not used here;
+see that leaf's `ON hsm` paragraph for what it would buy and for the standing
+invitation to drop it.
 
-WHAT IS ACTUALLY MISSING FROM THE PIN, and the greps that would refute each
-claim (checked 2026-07-27 with `.lake/packages` seeded, on the host owning
-`.lake`, over `Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT/`):
-
-* PRESENT, and this leaf should be built on them, not around them:
-  `PrimeSpectrum.isConstructible_range_comap` and `isConstructible_comap_image`
-  (Chevalley's theorem, `Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean`),
-  `Mathlib/Topology/Constructible.lean`,
-  `Mathlib/RingTheory/Spectrum/Prime/ConstructibleSet.lean`,
-  `Mathlib/AlgebraicGeometry/SpreadingOut.lean`, and the whole
-  `Mathlib/AlgebraicGeometry/Geometrically/` directory.
-  REFUTE BY: `grep -rn "isConstructible_range_comap" .lake/packages/mathlib/`.
-* ABSENT: the statement that geometric irreducibility of the FIBRES of a
-  finitely presented morphism is constructible on the base (EGA IV 9.7.7
-  itself). This is the one genuinely new theorem.
-  REFUTE BY: `grep -rn "GeometricallyIrreducible" .lake/packages/mathlib/`
-  returning a file other than `Geometrically/{Basic,Integral,Irreducible,
-  Reduced,Connected}.lean` and `AffineSpace.lean`, or any hit for
-  `IsConstructible` together with `GeometricallyIrreducible` in one file.
-
-A REDUCTION WORTH TRYING BEFORE THE FULL EGA ARGUMENT: only `Spec ℤ` is at
-stake, which is one-dimensional and whose constructible sets are exactly the
-finite and the cofinite ones, so the "constructible + contains the generic point
-⟹ cofinite" half is elementary here. The work is entirely in the first half. -/
+MISSING MACHINERY, ROUTES SEARCHED, AND THE ARCHITECTURE THAT WOULD WORK: all of
+it now lives on `exists_inverted_irreducibleSpace_integralSystemModel` above,
+each claim paired with the grep that refutes it. It is not repeated here — one
+copy, on the leaf that is actually open. -/
 theorem exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre
     {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
     (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
     (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
-      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime :=
-  sorry
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime := by
+  -- The inverted integer IS the bound: a prime exceeding `N > 0` cannot divide it.
+  obtain ⟨N, hN, hall⟩ := exists_inverted_irreducibleSpace_integralSystemModel f hsm hQ
+  refine ⟨N, fun p _ hp => ?_⟩
+  have hdvd : ¬ (p ∣ N) := fun h => absurd (Nat.le_of_dvd hN h) (not_le.mpr hp)
+  -- and the topological statement EGA proves is the ideal-theoretic one the
+  -- Lang–Weil side consumes.
+  exact isPrime_radical_of_irreducibleSpace_quotient _ (hall p hdvd)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Spreading out of GEOMETRIC IRREDUCIBILITY** (**PROVEN 2026-07-27** over
 the two lemmas immediately above: the scheme-and-universe transport
 `isPrime_radical_integralSystemIdeal_algClosureRat`, which is PROVEN, and the
-scheme-free spreading-out leaf
+scheme-free spreading-out layer
 `exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`,
-which is the one remaining SORRY and carries the whole of EGA IV 9.7.7).
+which is **also PROVEN as of 2026-07-27**. The one remaining SORRY on this whole
+branch is now `exists_inverted_irreducibleSpace_integralSystemModel`, which
+carries the whole of EGA IV 9.7.7 and whose docstring holds the missing-machinery
+inventory and the route audit).
 
 For all but finitely many primes `p`, the geometric fibre of the integral model
 is irreducible: the ideal cut out by `f` over an algebraic closure of `𝔽_p` has
