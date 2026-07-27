@@ -15,9 +15,13 @@ So it is a tool now, not a discipline. Run it before every SendMessage:
     python3 flt-owner.py flt-lean-15
     python3 flt-owner.py --all
 
-GROUND TRUTH is the first user message of each subagent transcript, which the
-dispatch hook writes: "Your worktree is /home/chend/flt-lean-N". The task text
-in that same message names the leaves. Nothing here is inferred from ordering.
+GROUND TRUTH is the first user message of each subagent transcript, in which the
+dispatch hook has substituted the real worktree path. The task text in that same
+message names the leaves. Nothing here is inferred from ordering.
+
+That path appears in SEVERAL shapes -- "Your worktree is /home/chend/flt-lean-N",
+"Worktree /home/chend/flt-lean-N.", and markdown-wrapped variants -- so matching
+only one of them is how this tool has failed twice. See WORKTREE_RE below.
 
 Only the LATEST dispatch per worktree counts -- pool slots are recycled, and a
 prior occupant's transcript is not the current owner. That was the first bug:
@@ -35,6 +39,31 @@ SESSION_ROOT = "/home/chend/.claude/projects/-home-chend-flt-lean"
 # **Your worktree is `/home/chend/flt-lean-89`**, and the bare-path regex missed
 # all ten of them -- so ten claimed worktrees read as unowned for hours.
 WORKTREE_RE = re.compile(r"Your worktree is[`* ]*/home/chend/(flt-lean-\d+)\b")
+# ...but that phrasing is only ONE of the shapes in use. Task prompts written
+# from ~/.flt-task-queue say "Worktree /home/chend/flt-lean-153." instead, and
+# for those WORKTREE_RE matches nothing -- so load() skipped the CURRENT owner
+# entirely and reported the previous occupant of that slot as latest. On
+# 2026-07-27 that sent a resume to an agent whose dispatch had completed hours
+# earlier; it woke up inside a worktree reallocated to someone else and merged a
+# branch under a live 58-minute build. A resolver that silently answers with the
+# wrong agent is worse than one that answers "unknown", so match both shapes and
+# fall back to any bare worktree path in the head.
+WORKTREE_ANY_RE = re.compile(
+    r"(?:Your worktree is|Worktree|worktree)[`* :]*/home/chend/(flt-lean-\d+)\b")
+WORKTREE_BARE_RE = re.compile(r"/home/chend/(flt-lean-\d+)\b")
+
+
+def _find_worktree(blob):
+    """Return (worktree, how) or (None, None). Tries most specific first."""
+    for rx, how in ((WORKTREE_RE, "explicit"), (WORKTREE_ANY_RE, "phrase")):
+        m = rx.search(blob)
+        if m:
+            return m.group(1), how
+    # Last resort: the first worktree path mentioned anywhere in the head.
+    # Prompts do name OTHER worktrees (branch-merge instructions), but never
+    # before their own, because the dispatch line comes first.
+    m = WORKTREE_BARE_RE.search(blob)
+    return (m.group(1), "bare") if m else (None, None)
 # Leaf names as the task prompts write them: `name` in backticks.
 NAME_RE = re.compile(r"`([A-Za-z_][A-Za-z0-9_.']{5,})`")
 # Only names in the TARGET block count as OWNED. Task prompts deliberately name
@@ -64,13 +93,12 @@ def load():
             except OSError:
                 continue
             blob = "".join(head)
-            m = WORKTREE_RE.search(blob)
-            if not m:
+            wt, how = _find_worktree(blob)
+            if not wt:
                 continue
-            wt = m.group(1)
             ts = ""
             for line in head:
-                if WORKTREE_RE.search(line):
+                if WORKTREE_BARE_RE.search(line):
                     try:
                         ts = json.loads(line).get("timestamp", "") or ""
                     except Exception:
@@ -80,7 +108,7 @@ def load():
             names = set(NAME_RE.findall(tm.group(1))) if tm else set()
             prev = best.get(wt)
             if prev is None or ts > prev["ts"]:
-                best[wt] = {"agent": aid, "ts": ts, "names": names}
+                best[wt] = {"agent": aid, "ts": ts, "names": names, "how": how}
     return best
 
 
