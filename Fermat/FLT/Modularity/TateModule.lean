@@ -1836,7 +1836,81 @@ a SINGLE maximal `J` without a rational-homology input (equivalently:
 without a `D`-vector-space, Betti, or complex-uniformization step) — for
 instance any constraint forcing the `r_J` to be equal to one another.
 Such a route defeats the counterexample, since `M₀` and `M₁` differ only
-in distributing `r_{J₁} + r_{J₂} = 4` as `2 + 2` versus `1 + 3`. -/
+in distributing `r_{J₁} + r_{J₂} = 4` as `2 + 2` versus `1 + 3`.
+
+THE REFUTING CHECK HAS AN ANSWER: PARITY (2026-07-27). The audit above
+is CORRECT that no collection of integer counts suffices, and its
+counterexample stands. But it invites exactly one refutation — "a
+constraint pinning `r_J` without a rational-homology input" — and there
+is one, namely that an `𝒪_D`-LINEAR POLARIZATION forces every `r_J` to
+be EVEN. `M₁` is killed by that constraint alone: it has `r_{J₁} = 1`.
+
+The constraint. A polarization that is `𝒪_D`-linear induces an
+`𝒪_D`-bilinear ALTERNATING pairing on `A[J]`; if it is moreover
+NONDEGENERATE there, then `A[J]` is a symplectic vector space over the
+residue field `𝒪_D/J`, and a symplectic space has even dimension. So
+`r_J` is even for every maximal `J` — a purely local conclusion, drawn
+from the polarization and not from `H₁(A, ℚ)`.
+
+With parity in hand the integer counts DO close the argument, and this
+is the sense in which the audit's verdict is too strong. Write
+`p 𝒪_D = ∏_{J ∣ p} J^(e_J)`. The ideals `J^(e_J)` are pairwise
+comaximal, so CRT splits the torsion EXACTLY —
+`A[p] = ⨁_{J ∣ p} A[J^(e_J)]`, with no ramification caveat, because
+`p 𝒪_D` IS that product — and the tower relation
+`#A[J^(n+1)] = #A[J] · #A[J^n]` (from surjectivity of `·π`, already
+proven as `exists_mem_torsion_act_uniformizer_eq`, whose kernel on
+`A[J^(n+1)]` is `A[J]` because `(π) + J^(n+1) = J` for `n ≥ 1` in a
+Dedekind domain) gives `#A[J^(e_J)] = #(𝒪_D/J)^(r_J e_J)`. Hence
+`#A[p] = p^(Σ_J e_J f_J r_J)`, and `#A[p] = p^(2g)` forces
+`Σ_J e_J f_J r_J = 2g = 2 [D : ℚ] = 2 Σ_J e_J f_J`, i.e.
+`Σ_J e_J f_J (r_J − 2) = 0`. Every `r_J` is even, so `r_J ≥ 2` as soon
+as `r_J ≠ 0`, every summand is then `≥ 0`, and all of them vanish:
+`r_J = 2` for every `J ∣ p`, this leaf included.
+
+SO THE LEAF IS STILL GEOMETRIC, BUT OVER THREE STANDARD INPUTS RATHER
+THAN ONE BESPOKE ONE. What the route needs, and none of it exists at
+this pin:
+
+* `#A[p] = p ^ (2g)` — the degree of `[p]`, in characteristic zero. A
+  UNIVERSAL fact about abelian schemes, reusable everywhere, and the
+  natural successor to the finite-locally-free presentation of `[N]`
+  already in `Modularity/AbelianSchemeIsogeny.lean`.
+* An `𝒪_D`-linear polarization whose induced Weil pairing on `A[J]` is
+  NONDEGENERATE. Classically `A^∨ ≅ A ⊗_{𝒪_D} 𝔠` for an invertible
+  `𝒪_D`-module `𝔠` (a `𝔠`-polarization), which is an isomorphism and so
+  nondegenerate at every `J`.
+* `A[J] ≠ 0` for every maximal `J`, equivalently faithfulness of
+  `𝒪_D ⊗ ℤ_p` on `T_p A` (Mumford §19, `End(A) ↪ End(T_p A)`). This is
+  NOT the faithfulness the audit dismisses: the counterexample `M₁` is
+  faithful as an `𝒪_D`-MODULE, and so is the variant with
+  `(r_{J₁}, r_{J₂}) = (0, 4)`, which parity alone does not exclude.
+  Only nonvanishing at each single `J` does.
+
+THE CHECK THAT WOULD REFUTE THIS ROUTE — and it is the one place it can
+fail, so run it before dispatching. Show that the existence of an
+`𝒪_D`-linear `J`-nondegenerate polarization already PRESUPPOSES
+`r_J = 2`. The classical proof that `A^∨ ≅ A ⊗_{𝒪_D} 𝔠` classifies the
+`𝒪_D`-module structure of the homology, and if that classification is
+what supplies the rank, the route is circular and the audit's verdict
+survives unchanged. If instead the `𝔠`-polarization can be obtained
+from projectivity plus `𝒪_D`-averaging (`D` totally real, so the Rosati
+involution is positive and trivial on `𝒪_D` — which is exactly what
+`DualStruct.weil_act` axiomatises) without a rank input, the route is
+sound and this leaf splits three ways.
+
+THE VOCABULARY NOW EXISTS — verified 2026-07-27, and it is NOT yet on
+`main`. `DualStruct`, `PolarizationStruct`, `PolarizationStruct.pairing`
+and its six lemmas (`pairing_add_left`, `pairing_add_right`,
+`pairing_self` — alternating, `pairing_gal`, `pairing_act`,
+`galSMul_hom`) live in `Modularity/AbelianScheme.lean` as of commit
+`4ff8dde1` on branch `flt-lean-169`. Two gaps remain between that layer
+and this leaf, both checkable by reading the structure: nothing asserts
+a `DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`, and
+`PolarizationStruct` does not assert that its induced pairing is
+nondegenerate (only `DualStruct.weil_nondegenerate` is an axiom, and
+that is the canonical `A × A^∨` pairing, not the polarized one). Those
+two gaps are precisely the second bullet above. -/
 theorem card_torsion_of_isMaximal
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -5215,12 +5289,60 @@ two over `𝒪_{D,I}` the pairing is perfect, hence identifies
 `χ_cyc`; and the determinant of an endomorphism of a rank-two free
 module is its action on the second exterior power.
 
-WHAT A SUCCESSOR NEEDS, and where to start. None of that machinery
-exists on this pin: there is no dual abelian scheme, no polarization, no
-Cartier duality and no Weil pairing over a general base, and
-`AbelianSchemeStruct` carries only `add`/`zero`/`neg` together with
-`proper`/`smooth`/`connected` — no line bundles, so "polarization" is not
-even stateable yet. The closest existing material in this repository is
+WHAT A SUCCESSOR NEEDS, and where to start.
+
+CORRECTION 2026-07-27 — THE VOCABULARY NOW EXISTS. This paragraph used
+to read "there is no dual abelian scheme, no polarization, no Cartier
+duality and no Weil pairing over a general base ... so `polarization` is
+not even stateable yet". That is no longer true, and a successor who
+believes it will rebuild a rival interface, which is the most expensive
+object this fleet produces. `Modularity/AbelianScheme.lean` now carries
+`DualStruct` (a dual abelian scheme bundled with its canonical Weil
+pairing on `I`-torsion: bi-additive, `Γ_F`-equivariant through
+`galRoot`, `R`-adjoint and NONDEGENERATE), `PolarizationStruct` (an
+`R`-linear symmetric isogeny `A ⟶ A^∨`), and
+`PolarizationStruct.pairing` with `pairing_add_left`,
+`pairing_add_right`, `pairing_self` (alternating), `galSMul_hom`,
+`pairing_gal` (equivariance through the cyclotomic character) and
+`pairing_act` (`R`-bilinearity) — all proven from the axioms. As of
+2026-07-27 this is commit `4ff8dde1` on branch `flt-lean-169` and is NOT
+yet on `main`; check `git log --all --oneline -- Fermat/FLT/Modularity/AbelianScheme.lean`
+before concluding it is absent.
+
+WHY THAT LAYER STILL DOES NOT CLOSE THIS LEAF — three gaps, each
+checkable in one reading of the structure, and a successor should
+confirm all three are still open before building anything:
+
+1. IT IS LEVEL ONE. `DualStruct.weil` is a pairing on `I`-TORSION,
+   `GeomFibrePt f x → GeomFibrePt dualMap x → rootsOfUnity n (F̄)` for
+   an integer `n ∈ I`. The determinant identity is a statement about the
+   whole `I`-adic tower: it needs pairings on `A[I^k]` valued in
+   `μ_(q^k)`, COMPATIBLE with the transition maps `·π`, so that they
+   assemble into `∧²_O T_I A ≅ O(1)`. Nothing at level one gives that.
+   REFUTING CHECK: find a `weil`-like field indexed by `I ^ k` with a
+   compatibility axiom, or a lemma deriving one.
+2. NO EXISTENCE IS ASSERTED. Both structures are bundled DATA, by
+   deliberate design ("the dual is a BUNDLED DATUM, not a construction"
+   — representing `Pic⁰` is Grothendieck representability). This leaf's
+   hypotheses supply `ab`, `m`, `x`, `hdim`, the frame and the
+   coefficient ring, and NO `DualStruct`. So the layer is unusable here
+   until either an existence theorem is proven or this leaf is restated
+   to take a `PolarizationStruct` hypothesis — and the latter is a cut
+   decision, not a repair, since it relocates the burden onto every
+   consumer.
+3. THE POLARIZED PAIRING IS NOT ASSERTED NONDEGENERATE. Only
+   `DualStruct.weil_nondegenerate` is an axiom, and it is about the
+   canonical `A × A^∨` pairing. `PolarizationStruct.pairing` is
+   `weil (·) (hom ·)`, which is degenerate exactly on `ker λ`; perfection
+   of the pairing is what the classical argument above uses when it says
+   "the pairing is perfect".
+
+The same three gaps block the sibling `card_torsion_of_isMaximal`,
+where gap 1 does NOT bite (that leaf is level one), and where the layer
+plus two further geometric inputs does give a genuine route — see the
+PARITY section of its docstring.
+
+The closest existing material in this repository is
 `Fermat/FLT/EllipticCurve/WeilPairing.lean`
 (`WeilPairing.exists_weilPairing`, PROVEN), but that is the
 divisor-theoretic construction for ELLIPTIC curves over a field, i.e.
