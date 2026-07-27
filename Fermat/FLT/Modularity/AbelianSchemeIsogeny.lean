@@ -6820,8 +6820,36 @@ re-cutting the leaf into another of them.  Two shape changes have already been
 made here; a third would buy nothing.  Refute by exhibiting a member of that
 list that does not reach the others.
 
+**⚠ THE PARAGRAPH THAT FOLLOWS IS SUPERSEDED — ITS FIRST HALF IS FALSE OF THIS
+PROJECT, AND THE REFUTING CHECK IS ONE GREP** (2026-07-27, re-verified by the
+sweep over every citation of this blocker).  It is kept verbatim because its
+*second* half — that PROVING the ample-sheaf theory is a theory build — is
+correct and still governs, and because it is the text every other citation
+inherited.  What is wrong with it, precisely:
+
+* "there is no monoidal structure on sheaves of modules over a scheme" is TRUE
+  OF MATHLIB (`grep -rn 'MonoidalCategory\|tensorObj'
+  Mathlib/Algebra/Category/ModuleCat/Sheaf/` is still EMPTY at this pin —
+  re-run 2026-07-27) and FALSE OF THIS PROJECT: `Fermat.modTensor`
+  (`ModularCurve/RelativePicard.lean`) is the OBJECT part of `⊗`, obtained by
+  sheafifying the presheaf tensor product.
+* "so `L^{⊗n}` cannot even be WRITTEN" is therefore false as an inference:
+  `Fermat.modTensorPow`, `Fermat.IsAmpleSheaf` and the cube's output
+  `[n]^*L ≅ L^{⊗n²}` all elaborate (`Modularity/AmpleSheaf.lean`,
+  `exists_isAmpleSheaf_cube_of_isAlgClosed` above).
+* Hence the standing rule "does the cut need `T` PROVEN or only STATED?"
+  resolves the OPPOSITE way from the paragraph's verdict: only STATED, and the
+  cut was taken — `isQuasiAffine_ker_mulByNat_of_isAlgClosed` above is now
+  PROVEN over six named sheaf-theoretic leaves, none carrying abelian-variety
+  content.
+* An OBJECT part is all a STATEMENT needs; what the paragraph correctly
+  identifies is the cost of the MORPHISM part, the associator and the unitor —
+  i.e. the obligations now named one by one on the six leaves in
+  `Modularity/AmpleSheaf.lean`.
+
 **Why "ample line bundles are absent" UNDERSTATES the blocker, and why this leaf
-is NOT of the "state the interface and cut" kind** (2026-07-27).  The survey
+is NOT of the "state the interface and cut" kind** (2026-07-27, SUPERSEDED —
+see the correction immediately above).  The survey
 above is right that `Ample`, `Pic` and invertible sheaves are missing, but the
 operative fact is stronger and it is what decides feasibility: **there is no
 monoidal structure on sheaves of modules over a scheme, so `L^{⊗n}` cannot even

@@ -17438,6 +17438,85 @@ theorem surjective_classifyingMap_hilbertHeckeDatum
   have hey : e (ψ r) = e y := by rw [hr]; exact hez
   exact e.injective hey
 
+/-- **A COEFFICIENT-FIELD ENLARGEMENT in which every element of `k` is a
+square** — the "quadratic enlargement of `k`" that the Taylor–Wiles argument
+performs before reading off Frobenius eigenvalues, made explicit as a
+predicate so that it can be THREADED rather than assumed away.
+
+This is what repairs `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`
+below.  That leaf used to demand the discriminant of `ρbar(σ)` be a nonzero
+square IN `k`, and was FALSE as stated: the counterexample `E = 54b1` at
+`ℓ = 7`, over an `F` with `ρ̄(Γ F) = N(T_ns) ∩ SL₂(𝔽₇)`, has
+`{tr² − 4 det} = {0, 3, 5}` while the squares mod `7` are `{1, 2, 4}`, so NO
+element at all works — see the FALSITY AUDIT there.  The eigenvalues live in
+`𝔽_{49}`, not in `𝔽₇`, and that is exactly what an enlargement supplies.
+
+**Why a PREDICATE on a given `k'` and not an added hypothesis on `ρbar`.**  The
+rejected repair was to demand that `ρbar|_{Γ F(ζ_ℓ)}` already contain an element
+with two distinct `k`-rational eigenvalues.  That is a constraint on the IMAGE,
+and the counterexample shows the image can be `N(T_ns) ∩ SL₂(𝔽₇)`, which
+satisfies the irreducibility hypothesis — so such a hypothesis would have to be
+discharged by whoever PRODUCES `ρbar`, and would be unsatisfiable in precisely
+the cases Taylor–Wiles exists to handle.  Enlarging the coefficient field, by
+contrast, is ALWAYS available and is what the literature does (Wiles ch. 3;
+Diamond–Darmon–Taylor §5.3; Fujiwara §3).
+
+**Satisfiable, and satisfiable FINITELY in the case at hand.**  For any `k`,
+`AlgebraicClosure k` satisfies it.  For `k` FINITE — the case every consumer
+below is instantiated at — the QUADRATIC extension `𝔽_{q²}` already does: for
+`q` odd, `(q² − 1)/2 = (q − 1)·(q + 1)/2` is a multiple of `q − 1`, so every
+`c ∈ 𝔽_qˣ` satisfies `c^{(q²−1)/2} = 1` and is a square in `𝔽_{q²}`.  See
+`exists_squareEnlargement_of_finite` below, which is the leaf that supplies it.
+
+Note this is a condition on the enlargement ALONE — it mentions neither `ρbar`
+nor `F` — which is what makes it threadable through the whole Taylor–Wiles
+stack without entangling the coefficient field with the arithmetic. -/
+def IsSquareEnlargement (k k' : Type*) [Field k] [Field k'] [Algebra k k'] :
+    Prop :=
+  ∀ c : k, ∃ δ : k', δ ^ 2 = algebraMap k k' c
+
+/-- **THE QUADRATIC ENLARGEMENT EXISTS, AND IT IS FINITE** (sorry leaf, new
+2026-07-27 — the one obligation created by the faithfulness repair of
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` below).
+
+Every finite field `k` sits inside a FINITE extension `k'` in which every
+element of `k` is a square.  This is what lets `injective_classifyingMap_hilbertHeckeDatum`
+discharge the enlargement hypothesis without asking anything of its own caller,
+which is the whole reason repair (a) was preferred to adding a hypothesis on
+`ρbar`.
+
+**THE CONSTRUCTION, AND WHY `Module.Finite` IS DEMANDED.**  Take
+`k' = 𝔽_{q²}` for `q = #k`.  For `q` odd, `(q² − 1)/2 = (q − 1) · (q + 1)/2` is
+an integer multiple of `q − 1`, so every `c ∈ kˣ` satisfies
+`c^{(q²−1)/2} = 1` and is therefore a square in the cyclic group `k'ˣ` of order
+`q² − 1`; `c = 0` is `0²`.  For `q` even, squaring is the Frobenius
+automorphism and is already BIJECTIVE on `k`, so `k' = k` works.  Either way
+`[k' : k] ≤ 2`.
+
+`Module.Finite k k'` is not decoration: it is what keeps the enlarged
+coefficient field a legitimate residue field for a `W(k')`-coefficient
+deformation/Hecke theory.  Dropping it would let `k' = AlgebraicClosure k`
+discharge the enlargement trivially — the statement below would then be a
+three-line proof off `IsAlgClosed.exists_pow_nat_eq` — at the cost of making
+every downstream leaf that consumes the distinct-eigenvalue clause quantify
+over an infinite coefficient field, where the local deformation problem at a
+Taylor–Wiles place does NOT split into a torus over the coefficients.  That
+would be exactly the "weaken a hypothesis and hand the difficulty to a sorried
+consumer" move this development rules against, so the finiteness is carried
+here where it can be discharged.
+
+MISSING MACHINERY (this is why it is a leaf and not a proof): the pin has
+`GaloisField p n` with `GaloisField.card`, and `GaloisField.algEquivGaloisField`
+identifying any finite field of cardinality `p ^ n` with it — but no `Algebra`
+instance for the tower `𝔽_{p^n} ⊆ 𝔽_{p^{2n}}`, which has to be produced from
+`GaloisField.algEquivGaloisField` plus the divisibility `n ∣ 2n`.  Refute this
+note by exhibiting such an instance, or a `FiniteField` embedding lemma keyed
+on `n ∣ m`, in `Mathlib/FieldTheory/Finite/GaloisField.lean`. -/
+theorem exists_squareEnlargement_of_finite (k : Type u) [Field k] [Finite k] :
+    ∃ (k' : Type u) (_ : Field k') (_ : Algebra k k'),
+      Module.Finite k k' ∧ IsSquareEnlargement k k' :=
+  sorry
+
 /-- **Taylor–Wiles primes of a totally real field `F`** — the `F`-level twin of
 `Modularity/Patching.lean`'s `IsTaylorWilesPrimeSet`, with rational primes
 replaced by finite places of `F`.
@@ -17449,14 +17528,34 @@ A place `w` of `F` is a Taylor–Wiles prime of level `n` for `ρbar|_{G_F}` whe
 * its residue field satisfies `N w ≡ 1 mod ℓ ^ n`, so that the `ℓ`-part of
   `(𝓞_F/w)ˣ` has order divisible by `ℓ ^ n` — this is what supplies the
   diamond torus `Δ_{Q_n}` and makes the auxiliary levels converge;
-* `ρbar(Frob_w)` has DISTINCT eigenvalues in `k`, which is what splits the
-  local deformation problem at `w` into a torus and lets the diamond operators
-  act.
+* `ρbar(Frob_w)` has DISTINCT eigenvalues in the ENLARGED coefficient field
+  `k'`, which is what splits the local deformation problem at `w` into a torus
+  and lets the diamond operators act.
 
 The eigenvalue condition is written on the characteristic polynomial so that it
-makes sense over `k` without choosing a basis: `charFrob w` is monic of degree
-`2`, and asking it to be `(X - α)(X - β)` with `α ≠ β` is exactly "split with
-distinct eigenvalues".
+makes sense without choosing a basis: `charFrob w` is monic of degree `2`, and
+asking its image in `k'[X]` to be `(X - α)(X - β)` with `α ≠ β` is exactly
+"split with distinct eigenvalues over `k'`".
+
+**⚠ THE `k'` PARAMETER IS A FAITHFULNESS REPAIR, 2026-07-27.**  This predicate
+used to demand `α β : k`, i.e. eigenvalues rational over the ORIGINAL
+coefficient field, and in that shape its producer
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` was **FALSE AS STATED** —
+refuted by `E = 54b1` at `ℓ = 7` over an `F` cut out so that
+`ρ̄(Γ F) = N(T_ns) ∩ SL₂(𝔽₇)`, where the discriminant set is `{0, 3, 5}` and
+the squares mod `7` are `{1, 2, 4}`, so no `σ` whatsoever qualifies.  The
+falsity is created by `F` ranging over ARBITRARY number fields while the
+eigenvalues are demanded in a FIXED `k`; over `F = ℚ` the counterexample cannot
+be built.  The repair chosen — see `IsSquareEnlargement` above for why the
+alternative (a hypothesis on `ρbar|_{Γ F(ζ_ℓ)}`) was rejected — is the
+quadratic ENLARGEMENT of `k` the literature performs, threaded through this
+predicate and every consumer of it.
+
+`k'` is a PARAMETER, not an existential, precisely so that ONE enlargement
+serves the whole set `Q` and every level `n`: a per-place enlargement would not
+assemble, since the diamond torus at level `n` is built from all of `Q_n` at
+once.  It is `exists_hilbertTaylorWilesPrimeSet` that produces the `k'`, from
+`exists_squareEnlargement_of_finite`; nothing has to be supplied by a caller.
 
 This is the `F`-level form of Wiles, Ann. of Math. 141 (1995), ch. 3;
 Diamond–Darmon–Taylor (1995), §5.3, as used by Fujiwara and Skinner–Wiles over
@@ -17465,12 +17564,13 @@ def IsHilbertTaylorWilesPrimeSet (ℓ : ℕ) (F : Type u) [Field F] [NumberField
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
-    (ρbar : GaloisRep ℚ k V) (n : ℕ)
+    (ρbar : GaloisRep ℚ k V)
+    (k' : Type u) [Field k'] [Algebra k k'] (n : ℕ)
     (Q : Finset (HeightOneSpectrum (𝓞 F))) : Prop :=
   ∀ w ∈ Q, ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal ∧ ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal ∧
     Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n] ∧
-    ∃ α β : k, α ≠ β ∧
-      (ρbar.map (algebraMap ℚ F)).charFrob w =
+    ∃ α β : k', α ≠ β ∧
+      ((ρbar.map (algebraMap ℚ F)).charFrob w).map (algebraMap k k') =
         (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
 
 /-! ### The single Taylor–Wiles prime of `F`, and how it is cut
@@ -17800,7 +17900,50 @@ theorem charpoly_natDegree_eq_two_of_hilbertDeformationDatum {ℓ : ℕ}
   rw [← Module.finrank_eq_rank] at h
   exact_mod_cast h
 
-/-- ### ⚠ THIS LEAF IS **FALSE AS STATED**. DO NOT DISPATCH A PROVER AT IT.
+/-- ### ✅ REPAIRED 2026-07-27 — THIS LEAF WAS FALSE AS STATED AND HAS BEEN
+RESTATED OVER A COEFFICIENT-FIELD ENLARGEMENT. A PROVER MAY NOW BE DISPATCHED.
+
+**What changed, in one line:** the discriminant is now demanded to be a nonzero
+square in an ENLARGEMENT `k'` of `k` (`IsSquareEnlargement k k'`, defined
+above), not in `k` itself.  Since `hk'` makes *every* element of `k` a square in
+`k'`, the surviving content is exactly `δ ≠ 0`, i.e. **`ρ̄(σ)` has DISTINCT
+eigenvalues over `k'`** — the classical Diamond–Darmon–Taylor §4.3 statement,
+which is what the Taylor–Wiles argument actually uses and what the literature
+proves after enlarging the coefficient field.
+
+**The counterexample below no longer refutes it, and here is the check.**  For
+`H = N(T_ns) ∩ SL₂(𝔽₇)` the discriminant set is `{0, 3, 5}`.  The old statement
+died because `3` and `5` are non-squares mod `7`.  The repaired statement needs
+only a `σ` with discriminant `≠ 0` — and `H` has plenty: the `8` non-torus
+elements have charpoly `X² + 1`, discriminant `−4 = 3 ≠ 0`, and `3` IS a square
+in `𝔽_{49}`.  (Equivalently: those elements have eigenvalues `±i ∈ 𝔽_{49}`,
+distinct.  This is precisely the "the eigenvalues live in `𝔽_{49}`, not `𝔽₇`"
+diagnosis of the audit.)  So the witness `E = 54b1` at `ℓ = 7` satisfies the
+repaired conclusion, as it must.
+
+**Which repair was taken, and which was REJECTED.**  Taken: the quadratic
+enlargement of `k`, threaded through `IsHilbertTaylorWilesPrimeSet` and every
+consumer.  Rejected: an added hypothesis that `ρbar|_{Γ F(ζ_ℓ)}` already
+contains an element with two distinct `k`-rational eigenvalues.  That is a
+constraint on the IMAGE, and the counterexample exhibits an image satisfying
+`hirrF` for which it FAILS — so it would have to be discharged by whoever
+produces `ρbar`, and would be unsatisfiable in exactly the cases Taylor–Wiles
+exists to handle.  Converting a false leaf into an undischargeable one is a
+trade this development has repeatedly ruled against.
+
+**No topology diamond is introduced.**  `k'` carries no `TopologicalSpace`
+binder at all — it appears only inside a polynomial identity — so nothing here
+can conflict with the `⊥`-topology argument that
+`isNoetherianRing_isAdic_hilbertTraceSubring_of_descent` relies on at
+`IsLocalRing.ResidueField R'`.
+
+**EVERYTHING BELOW THIS LINE IS THE FALSITY AUDIT OF THE OLD STATEMENT.**  It is
+kept verbatim, because it is the reason for the repair and because it records
+four refuted attacks (determinant size, `Q₈`-only reasoning, `isTameAtTwo`, and
+the CM near-miss) that a prover should not rediscover.  Read it as history of a
+statement that no longer exists in this file.
+
+### ⚠ THE OLD STATEMENT WAS **FALSE AS STATED**.
 
 **(Banner added 2026-07-27 by flt-lean-182, which was dispatched to prove it,
 re-ran the FALSITY AUDIT's load-bearing computation, and confirmed it
@@ -18017,16 +18160,31 @@ theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hk' : IsSquareEnlargement k k')
+    (n : ℕ) :
     ∃ σ : Γ F,
       (∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
         (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
-      ∃ δ : k, δ ≠ 0 ∧
-        δ ^ 2 = ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 1 ^ 2
-          - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0 :=
+      ∃ δ : k', δ ≠ 0 ∧
+        δ ^ 2 = algebraMap k k'
+          (((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 1 ^ 2
+            - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0) :=
   sorry
 
-/-- **The Taylor–Wiles Galois element over `F`** (PROVEN 2026-07-27 over
+/-- **✅ RESTATED 2026-07-27 over the enlargement `k'`, together with the leaf it
+is proven from.**  This declaration was EQUALLY FALSE in its old shape — it is
+equivalent to `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above, so
+repairing one and not the other would have left a false statement standing.
+The conclusion now splits the IMAGE of the residual charpoly in `k'[X]`, not the
+charpoly itself in `k[X]`; the EQUIVALENCE AUDIT below is unaffected, since
+`exists_split_of_sq_eq_discrim` is polymorphic in the field and is applied here
+at `k'` rather than at `k`.  `hk'` is what supplies the square root, and `hℓ5`
+is still what supplies `2 ≠ 0` — now transported to `k'` along the injective
+`algebraMap k k'`.
+
+**The Taylor–Wiles Galois element over `F`** (PROVEN 2026-07-27 over
 `exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above; the
 `F`-level twin of `Modularity/Patching.lean`'s
 `exists_fixing_rootsOfUnity_charpoly_split`).
@@ -18121,19 +18279,34 @@ theorem exists_hilbertFixing_rootsOfUnity_charpoly_split
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hk' : IsSquareEnlargement k k')
+    (n : ℕ) :
     ∃ σ : Γ F,
       (∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
         (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
-      ∃ α β : k, α ≠ β ∧
-        ((ρbar.map (algebraMap ℚ F)) σ).charpoly =
+      ∃ α β : k', α ≠ β ∧
+        (((ρbar.map (algebraMap ℚ F)) σ).charpoly).map (algebraMap k k') =
           (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
   obtain ⟨σ, hfix, δ, hδ, hδ2⟩ :=
-    exists_hilbertFixing_rootsOfUnity_discrim_isSquare ℓ hℓ5 F hirrF 𝒟₀ n
-  exact ⟨σ, hfix,
-    exists_split_of_sq_eq_discrim (two_ne_zero_of_hilbertDeformationDatum hℓ5 𝒟₀)
-      _ (LinearMap.charpoly_monic _)
-      (charpoly_natDegree_eq_two_of_hilbertDeformationDatum 𝒟₀ σ) hδ hδ2⟩
+    exists_hilbertFixing_rootsOfUnity_discrim_isSquare ℓ hℓ5 F hirrF 𝒟₀ k' hk' n
+  refine ⟨σ, hfix, ?_⟩
+  have hinj : Function.Injective (algebraMap k k') := (algebraMap k k').injective
+  have h2k : (2 : k) ≠ 0 := two_ne_zero_of_hilbertDeformationDatum hℓ5 𝒟₀
+  have h2 : (2 : k') ≠ 0 := fun h =>
+    h2k (hinj (by rw [map_ofNat, map_zero]; exact h))
+  have hm : (((ρbar.map (algebraMap ℚ F)) σ).charpoly).Monic := LinearMap.charpoly_monic _
+  have hd : ((((ρbar.map (algebraMap ℚ F)) σ).charpoly).map
+      (algebraMap k k')).natDegree = 2 := by
+    rw [hm.natDegree_map]
+    exact charpoly_natDegree_eq_two_of_hilbertDeformationDatum 𝒟₀ σ
+  have hdisc : δ ^ 2 =
+      ((((ρbar.map (algebraMap ℚ F)) σ).charpoly).map (algebraMap k k')).coeff 1 ^ 2
+        - 4 * ((((ρbar.map (algebraMap ℚ F)) σ).charpoly).map (algebraMap k k')).coeff 0 := by
+    rw [hδ2, Polynomial.coeff_map, Polynomial.coeff_map, map_sub, map_mul, map_pow,
+      map_ofNat]
+  exact exists_split_of_sq_eq_discrim h2 _ (hm.map _) hd hδ hdisc
 
 /-- **A single Taylor–Wiles prime of `F`** (PROVEN 2026-07-26 over the Galois
 element `exists_hilbertFixing_rootsOfUnity_charpoly_split`; the `F`-level twin
@@ -18143,10 +18316,12 @@ as that one is).
 Avoiding any prescribed finite set `S` of places there is a place `w` of `F`
 which is a Taylor–Wiles prime of level `n`: good away from `2ℓ`, with
 `N w ≡ 1 mod ℓ ^ n`, and with `ρbar|_{G_F}(Frob_w)` split with two DISTINCT
-eigenvalues in `k`.
+eigenvalues in the ENLARGEMENT `k'` (2026-07-27: this used to say "in `k`",
+and in that shape the chain below it was false — see the repaired leaf
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above).
 
 PROOF — Chebotarev density over `F`, not over `ℚ`. The locus
-`U = {x | charpoly (ρbar|_{G_F} x) = (X − α)(X − β)} ∩ {x | x fixes μ_{ℓⁿ}}`
+`U = {x | charpoly (ρbar|_{G_F} x) = charpoly (ρbar|_{G_F} σ)} ∩ {x | x fixes μ_{ℓⁿ}}`
 is open and contains the element `σ` supplied by the leaf, so it meets the
 dense union of Frobenius conjugacy classes at places outside the finite bad
 set. Both conditions are conjugation-invariant — `charpoly` manifestly, and
@@ -18191,20 +18366,26 @@ theorem exists_hilbertTaylorWilesPrime
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hk' : IsSquareEnlargement k k')
     (n : ℕ) (S : Finset (HeightOneSpectrum (𝓞 F))) :
     ∃ w : HeightOneSpectrum (𝓞 F), w ∉ S ∧
       ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal ∧ ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal ∧
       Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n] ∧
-      ∃ α β : k, α ≠ β ∧
-        (ρbar.map (algebraMap ℚ F)).charFrob w =
+      ∃ α β : k', α ≠ β ∧
+        ((ρbar.map (algebraMap ℚ F)).charFrob w).map (algebraMap k k') =
           (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
   classical
   obtain ⟨σ, hσfix, α, β, hαβ, hσpoly⟩ :=
-    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hirrF 𝒟₀ n
+    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hirrF 𝒟₀ k' hk' n
   set φ := Field.absoluteGaloisGroup.map (algebraMap ℚ F)
-  -- FIRST OPEN CONDITION: the residual eigenvalue locus, open by the datum
+  -- FIRST OPEN CONDITION: the residual charpoly locus, open by the datum.
+  -- NOTE (2026-07-27, the `k'` repair): the locus is cut out by the `k`-level
+  -- charpoly of `σ` itself, NOT by `(X − α)(X − β)`, because `α, β` now live in
+  -- the enlargement `k'` and the openness lemma is a statement about `k[X]`.
+  -- Membership of `σ` is then `rfl`, and the split is transported at the end.
   have hU1open : IsOpen {x : Γ F | ((ρbar.map (algebraMap ℚ F)) x).charpoly =
-      (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)} :=
+      ((ρbar.map (algebraMap ℚ F)) σ).charpoly} :=
     isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum 𝒟₀ _
   -- SECOND OPEN CONDITION: fixing `μ_{ℓⁿ}` pointwise, pulled back from `Γ ℚ`
   have hSfin : {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}.Finite := by
@@ -18270,7 +18451,7 @@ theorem exists_hilbertTaylorWilesPrime
   -- CHEBOTAREV over `F`: a Frobenius conjugate lands in the nonempty open locus
   obtain ⟨x, hxU, hxfrob⟩ :=
     (dense_conjClasses_globalFrob (K := F) T).inter_open_nonempty _
-      (hU1open.inter hU2open) ⟨σ, hσpoly, hσfix⟩
+      (hU1open.inter hU2open) ⟨σ, rfl, hσfix⟩
   obtain ⟨hxpoly, hxfix⟩ := hxU
   obtain ⟨w, hwT, g, rfl⟩ := hxfrob
   have hwS : w ∉ S := fun hmem => hwT (by
@@ -18338,8 +18519,8 @@ theorem exists_hilbertTaylorWilesPrime
       rw [Nat.mod_eq_of_lt h1lt, ← ZMod.val_natCast]
       exact hval
   refine ⟨w, hwS, hwℓ, hw2, hmod, α, β, hαβ, ?_⟩
-  rw [GaloisRep.charFrob_eq_charpoly_globalFrob, ← hconj]
-  exact hxpoly
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob, ← hconj, hxpoly]
+  exact hσpoly
 
 /-- **The Taylor–Wiles prime supply over `F`** (PROVEN 2026-07-26 by iterating
 the per-place leaf `exists_hilbertTaylorWilesPrime`; the `F`-level twin of
@@ -18347,7 +18528,19 @@ the per-place leaf `exists_hilbertTaylorWilesPrime`; the `F`-level twin of
 as that one is).
 
 For every level `n` and every required size `r` there is a set of at least `r`
-Taylor–Wiles primes of `F` of level `n`.
+Taylor–Wiles primes of `F` of level `n`, with eigenvalues in the ENLARGEMENT
+`k'`.
+
+**WHY `k'` IS A PARAMETER AND NOT AN EXISTENTIAL HERE** (2026-07-27, the
+faithfulness repair).  The enlargement must be the SAME for every level `n` and
+every size `r`, because the patched module is built from the whole tower
+`(Q_n)_n` at once; an `∃ k'` inside the `∀ n r` would license a different
+coefficient field at each level and the tower would not assemble.  Keeping `k'`
+a parameter also keeps the induction below literally unchanged: each call to the
+per-place theorem uses the same `k'`, so the `r` places really do share one
+splitting field.  The caller obtains `k'` once, from
+`exists_squareEnlargement_of_finite`; see
+`injective_classifyingMap_hilbertHeckeDatum` below for the only place that does.
 
 PROOF: induction on `r`. At each step the per-place leaf is called with the
 places already chosen as the excluded set `S`, so the place it returns is
@@ -18375,9 +18568,11 @@ theorem exists_hilbertTaylorWilesPrimeSet
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hk' : IsSquareEnlargement k k') :
     ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q := by
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q := by
   classical
   intro n r
   induction r with
@@ -18387,7 +18582,7 @@ theorem exists_hilbertTaylorWilesPrimeSet
     obtain ⟨Q, hQcard, hQ⟩ := ih
     -- exclude the places already chosen, so the new one is genuinely fresh
     obtain ⟨w, hwQ, hwℓ, hw2, hwmod, α, β, hαβ, hwpoly⟩ :=
-      exists_hilbertTaylorWilesPrime ℓ hℓ5 F hirrF 𝒟₀ n Q
+      exists_hilbertTaylorWilesPrime ℓ hℓ5 F hirrF 𝒟₀ k' hk' n Q
     refine ⟨insert w Q, ?_, fun w' hw' => ?_⟩
     · rw [Finset.card_insert_of_notMem hwQ]
       omega
@@ -18475,8 +18670,9 @@ theorem isHilbertTaylorWilesPrimeSet_of_subset (ℓ : ℕ)
     [Module.Free k V]
     (ρbar : GaloisRep ℚ k V) (n : ℕ)
     {Q Q' : Finset (HeightOneSpectrum (𝓞 F))}
-    (hsub : Q' ⊆ Q) (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
-    IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q' :=
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hsub : Q' ⊆ Q) (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
+    IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q' :=
   fun w hw => hQ w (hsub hw)
 
 /-- **The Taylor–Wiles prime supply normalises to EXACT cardinality**
@@ -18502,14 +18698,15 @@ theorem exists_card_eq_isHilbertTaylorWilesPrimeSet (ℓ : ℕ)
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     (ρbar : GaloisRep ℚ k V)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q := by
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q := by
   intro n r
   obtain ⟨Q, hcard, hQ⟩ := hTW n r
   obtain ⟨Q', hsub, hcard'⟩ := Finset.exists_subset_card_eq hcard
-  exact ⟨Q', hcard', isHilbertTaylorWilesPrimeSet_of_subset ℓ F ρbar n hsub hQ⟩
+  exact ⟨Q', hcard', isHilbertTaylorWilesPrimeSet_of_subset ℓ F ρbar n k' hsub hQ⟩
 
 /-- **The RING half of the bottom Taylor–Wiles level over `F`** (LEAF — new
 2026-07-27, LEAF B1 of the RING/MODULE cut of
@@ -18672,8 +18869,9 @@ theorem exists_hilbertTaylorWilesBottomPresentation
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
     (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     ∃ (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
       (pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟.R),
       Function.Surjective pres :=
@@ -19021,8 +19219,9 @@ theorem exists_hilbertTaylorWilesBottomLevel
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
       (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
       Nonempty (M0 ≃ₗ[𝒟T.R] (Fin 2 → 𝒟T.R)) ∧
@@ -19037,7 +19236,7 @@ theorem exists_hilbertTaylorWilesBottomLevel
   -- presentation of `𝒟.R` over `𝒪`.
   obtain ⟨q, coeff, pres, hpres⟩ :=
     exists_hilbertTaylorWilesBottomPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
-      h𝒟t hTW
+      h𝒟t k' hTW
   -- LEAF B2 (`exists_hilbertTaylorWilesBottomHeckeModule`): the bottom Hecke
   -- module `M₀`, `Λ`-free of rank `d` through the augmentation.
   obtain ⟨d, M0, instM0add, instM0T, instM0nt, instM0L, haug, hM0T, ⟨coord⟩⟩ :=
@@ -19946,7 +20145,8 @@ theorem isHilbertAuxFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 �
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] {ρbar : GaloisRep ℚ k V}
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     IsHilbertAuxFibreProductClause ℓ F Q ρbar :=
   sorry
 
@@ -19996,7 +20196,8 @@ theorem isHilbertAuxProLimitClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓOdd : Odd �
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] {ρbar : GaloisRep ℚ k V}
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     IsHilbertAuxProLimitClause ℓ F Q ρbar :=
   sorry
 
@@ -20093,18 +20294,19 @@ theorem exists_isWeaklyUniversal_hilbertAuxDeformationDatum
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q)
     (𝒟₀ : HilbertAuxDeformationDatum ℓ F Q ρbar) :
     ∃ 𝒟 : HilbertAuxDeformationDatum ℓ F Q ρbar, 𝒟.IsWeaklyUniversal :=
   exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses ℓ F Q
     ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) hirrF 𝒟₀
     (isHilbertAuxBaseChangeClause ℓ F Q)
-    (isHilbertAuxFibreProductClause ℓ hℓ5 F hw2 n Q hQ)
+    (isHilbertAuxFibreProductClause ℓ hℓ5 F hw2 n Q k' hQ)
     (isHilbertAuxFiniteFramesClause ℓ F Q)
     (isHilbertTameSeparationClause ℓ
       ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) F hw2)
     (isHilbertAuxProLimitClause ℓ ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega))
-      F n Q hQ)
+      F n Q k' hQ)
     (isHilbertResidualRigidityClause F ρbar)
 
 /-- **The raised-level Hecke algebra exists** (LEAF — new 2026-07-27).
@@ -20147,7 +20349,8 @@ theorem exists_hilbertAuxHeckeAlgebra
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (T : HilbertHeckeAlgebra ℓ F ρbar)
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F)))
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     ∃ H : HilbertAuxHeckeAlgebra ℓ F Q ρbar, T.bad ⊆ H.bad :=
   sorry
 
@@ -20387,7 +20590,8 @@ theorem exists_hilbertAuxDeformationRingPresentation
     (h𝒟e : 𝒟.toAuxEmpty.IsWeaklyUniversal)
     (q : ℕ) (coeff : Modularity.TaylorWilesCoefficients)
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar)
     (h𝒟Q : 𝒟Q.IsWeaklyUniversal) :
     ∃ (ex : Fin q → ℕ)
@@ -20468,7 +20672,8 @@ theorem exists_hilbertAuxHeckeModuleData
     (hbot : Nonempty
       (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q)
     (𝒟Q : HilbertAuxDeformationDatum ℓ F Q ρbar) (h𝒟Q : 𝒟Q.IsWeaklyUniversal)
     (H : HilbertAuxHeckeAlgebra ℓ F Q ρbar) (hbad : T.bad ⊆ H.bad)
     (ex : Fin q → ℕ) (hex : ∀ i, n ≤ ex i)
@@ -20602,7 +20807,8 @@ theorem exists_hilbertTaylorWilesAuxLevelData
     (hbot : Nonempty
       (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d 0 coeff M0))
     (n : ℕ) (Q : Finset (HeightOneSpectrum (𝓞 F))) (hQcard : Q.card = q)
-    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
+    (hQ : IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     ∃ ex : Fin q → ℕ, (∀ i, n ≤ ex i) ∧
       ∃ (R : Type u) (_ : CommRing R)
         (pres : MvPowerSeries (Fin q) coeff.carrier →+* R)
@@ -20626,12 +20832,12 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   classical
   -- The raised-level Hecke algebra, carrying the module `M_Q` it acts on.
   obtain ⟨H, hbad⟩ :=
-    exists_hilbertAuxHeckeAlgebra ℓ hℓ5 F htr hgal hirrF T n Q hQ
+    exists_hilbertAuxHeckeAlgebra ℓ hℓ5 F htr hgal hirrF T n Q k' hQ
   -- The raised-level UNIVERSAL deformation ring.  Its non-emptiness
   -- hypothesis is discharged by `H.datum`: a Hecke algebra at raised level IS
   -- a raised-level deformation datum, so the category is not empty.
   obtain ⟨𝒟Q, h𝒟Q⟩ :=
-    exists_isWeaklyUniversal_hilbertAuxDeformationDatum ℓ hℓ5 F hw2 hirrF n Q hQ
+    exists_isWeaklyUniversal_hilbertAuxDeformationDatum ℓ hℓ5 F hw2 hirrF n Q k' hQ
       H.datum
   -- Weak universality turns `M_Q` into an `R_Q`-module through the classifying
   -- map `f : R_Q → T_Q`.  THIS is the field `TaylorWilesLevelRaw.moduleRM`,
@@ -20642,11 +20848,11 @@ theorem exists_hilbertTaylorWilesAuxLevelData
   -- The RING half.
   obtain ⟨ex, pres, diamond, toRuniv, hex, hpres, htoRuniv, hker, hbex⟩ :=
     exists_hilbertAuxDeformationRingPresentation ℓ hℓ5 F htr hgal hirrF 𝒟 h𝒟w
-      h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff n Q hQcard hQ 𝒟Q h𝒟Q
+      h𝒟t (𝒟.isWeaklyUniversal_toAuxEmpty h𝒟w) q coeff n Q hQcard k' hQ 𝒟Q h𝒟Q
   -- The HECKE half.
   obtain ⟨instLM, projM, hdsmul, hcoord, hprojsurj, hprojsmul, hprojzero⟩ :=
     exists_hilbertAuxHeckeModuleData ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e ψ hψalg
-      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ 𝒟Q h𝒟Q H hbad ex hex diamond
+      hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard k' hQ 𝒟Q h𝒟Q H hbad ex hex diamond
       toRuniv htoRuniv hker hbex f hfalg hfπ hfρ hfsmul
   exact ⟨ex, hex, 𝒟Q.R, inferInstance, pres, diamond, toRuniv, H.M,
     inferInstance, instRM, instLM, projM, hpres, htoRuniv, hker, hdsmul, hcoord,
@@ -20762,8 +20968,9 @@ theorem exists_hilbertTaylorWilesLevelRaw
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q)
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q)
     (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
     [AddCommGroup M0] [Module 𝒟T.R M0] (hM0 : Nontrivial M0)
     (hbot : Nonempty
@@ -20779,7 +20986,7 @@ theorem exists_hilbertTaylorWilesLevelRaw
     instML, projM, hpres, htoRuniv, hker, hdsmul, ⟨coord⟩, hprojsurj,
     hprojsmul, hprojzero⟩ :=
     exists_hilbertTaylorWilesAuxLevelData ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w
-      h𝒟t ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard hQ
+      h𝒟t ψ hψalg hψπ hψρ q d coeff M0 hM0 hbot n Q hQcard k' hQ
   -- The two level-ideal bounds are discharged off the arithmetic leaf, from
   -- the explicit shape of `𝔟_n`.
   exact ⟨{ R := R
@@ -21109,23 +21316,24 @@ theorem exists_hilbertTaylorWilesLevels
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     ∃ (q d : ℕ) (coeff : Modularity.TaylorWilesCoefficients) (M0 : Type u)
       (_ : AddCommGroup M0) (_ : Module 𝒟T.R M0) (_ : Nontrivial M0),
       ∀ n : ℕ, Nonempty
         (Modularity.TaylorWilesLevelRaw.{u, u, u, u, u} ℓ ψ q d n coeff M0) := by
   have hTWe : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q :=
-    exists_card_eq_isHilbertTaylorWilesPrimeSet ℓ F ρbar hTW
+      Q.card = r ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q :=
+    exists_card_eq_isHilbertTaylorWilesPrimeSet ℓ F ρbar k' hTW
   obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hbot⟩ :=
     exists_hilbertTaylorWilesBottomLevel ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
-      ψ hψalg hψπ hψρ hTWe
+      ψ hψalg hψπ hψρ k' hTWe
   letI := iAG
   letI := iMod
   exact ⟨q, d, coeff, M0, iAG, iMod, iNt, fun n =>
     exists_hilbertTaylorWilesLevelRaw ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t
-      ψ hψalg hψπ hψρ hTWe q d coeff M0 iNt hbot.2 n⟩
+      ψ hψalg hψπ hψρ k' hTWe q d coeff M0 iNt hbot.2 n⟩
 
 /-- **The Taylor–Wiles tower over `F` assembles into a system** (PROVEN
 2026-07-27 as pure glue over `exists_hilbertTaylorWilesLevels` above).
@@ -21169,12 +21377,13 @@ theorem exists_hilbertPatchingSystem
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     Nonempty (Modularity.TaylorWilesSystem.{u, 0, u, u, u} ℓ ψ) := by
   obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hlev⟩ :=
     exists_hilbertTaylorWilesLevels ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
-      hψalg hψπ hψρ hTW
+      hψalg hψπ hψρ k' hTW
   letI := iAG
   letI := iMod
   exact Modularity.nonempty_taylorWilesSystem_of_tower
@@ -21285,8 +21494,9 @@ theorem exists_hilbertPatchedModule
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (k' : Type u) [Field k'] [Algebra k k'] [Module.Finite k k']
     (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
-      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar k' n Q) :
     Nonempty (Modularity.PatchedModule.{u, u, u, u} ℓ ψ) := by
   -- residual finiteness of `R_F`: `𝒟.π : 𝒟.R ↠ k` is surjective onto a field,
   -- so its kernel is THE maximal ideal of the local ring `𝒟.R`.
@@ -21298,7 +21508,7 @@ theorem exists_hilbertPatchedModule
     exact Finite.of_equiv k
       (RingHom.quotientKerEquivOfSurjective 𝒟.π_surjective).symm.toEquiv
   exact (exists_hilbertPatchingSystem ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
-      hψalg hψπ hψρ hTW).elim
+      hψalg hψπ hψρ k' hTW).elim
     fun S => S.exists_patchedModule 𝒟.isAdicComplete hres
 
 /-- **`R_F ↪ T_F`: the classifying map is INJECTIVE** (PROVEN 2026-07-26 as
@@ -21380,10 +21590,22 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly) :
-    Function.Injective ψ :=
-  (exists_hilbertPatchedModule ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
-      hψalg hψπ hψρ
-      (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟)).elim
+    Function.Injective ψ := by
+  -- THE QUADRATIC ENLARGEMENT (2026-07-27, the faithfulness repair of
+  -- `exists_hilbertFixing_rootsOfUnity_discrim_isSquare`).  The Frobenius
+  -- eigenvalues at Taylor–Wiles places are rational only after enlarging the
+  -- coefficient field, and `[Finite k]` — which this theorem already carries,
+  -- for the residual-finiteness argument below — is exactly what makes the
+  -- enlargement available.  So the repair costs this theorem's CALLERS
+  -- nothing: `k'` is produced here and never appears in the statement.
+  obtain ⟨k', instFieldk', instAlgk', instFink', hk'⟩ :=
+    exists_squareEnlargement_of_finite k
+  letI := instFieldk'
+  letI := instAlgk'
+  letI := instFink'
+  exact (exists_hilbertPatchedModule ℓ hℓ5 F hw2 htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
+      hψalg hψπ hψρ k'
+      (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟 k' hk')).elim
     Modularity.PatchedModule.injective
 
 /-- **`R_F` IS a Hilbert Hecke algebra** (PROVEN 2026-07-26 over the three

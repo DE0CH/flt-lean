@@ -1464,6 +1464,19 @@ without touching that file); and
 `𝒟T.ρ = T.ρT` on the nose.  So `ιT := ιO ∘ f ∘ ψ⁻¹` and `t w := heckeT w`
 give the conclusion verbatim, `charFrobT` supplying the sign.
 
+**UPDATE 2026-07-27 — THE REPAIR THIS WARNING ASKS FOR HAS BEEN DONE, AND IT
+COSTS THIS MODULE NOTHING.**  The quadratic enlargement is now threaded through
+`IsHilbertTaylorWilesPrimeSet` and every consumer of it in
+`HardlyRamified/HilbertModularity.lean`; the eigenvalue clause reads in an
+enlargement `k'` of `k`, and `k'` is produced INSIDE
+`injective_classifyingMap_hilbertHeckeDatum` (from `[Finite k]`, via the new
+`exists_squareEnlargement_of_finite`).  So the "future owner should expect the
+injectivity half to arrive with an ENLARGED `k`" sentence below is now
+obsolete in the direction that matters: **`injective_classifyingMap_hilbertHeckeDatum`'s
+SIGNATURE is unchanged**, `k'` never reaching it, and this module's use of it
+needs no adjustment.  The rest of the warning is kept because the refutation
+itself is still the reason the shape is what it is.
+
 WARNING ON THE INJECTIVITY HALF (2026-07-27, from the owner of the
 Taylor–Wiles-prime cluster; recorded here because this audit RECOMMENDS that
 route).  `injective_classifyingMap_hilbertHeckeDatum` is the Taylor–Wiles
