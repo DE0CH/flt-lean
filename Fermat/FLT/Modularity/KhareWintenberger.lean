@@ -7022,38 +7022,119 @@ theorem isPrime_radical_integralSystemIdeal_algClosureRat
         (ULift.ringEquiv : ULift.{u} (AlgebraicClosure ℚ) ≃+* AlgebraicClosure ℚ)) h4
   exact isPrime_radical_of_irreducibleSpace_quotient _ h5
 
-/-- **EGA IV 9.7.7 OVER `Spec ℤ`, IN THE SHAPE THE ARGUMENT ACTUALLY PRODUCES**
+/-- **NOETHER–OSTROWSKI: ABSOLUTE IRREDUCIBILITY OF ONE POLYNOMIAL SPREADS OUT**
 (SORRY LEAF, cut 2026-07-27 out of
-`exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`
-immediately below, which is PROVEN over it). This carries the WHOLE mathematical
-content of that leaf — the layer below removes packaging only — and a prover here
-needs NOTHING from this file except `integralSystemIdeal` and
-`IntegralSystemModel`, so it is dispatchable to a commutative algebraist in
-isolation, exactly like its Lang–Weil sibling
+`exists_inverted_irreducibleSpace_integralSystemModel` below, which is now PROVEN
+over this leaf together with its geometric sibling
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel`
+immediately below.)
+
+An integral polynomial irreducible over `ℚ̄` stays irreducible over `𝔽̄_p` for
+every prime outside one explicit integer `N`.
+
+WHY THIS IS THE PIECE WORTH PEELING OFF, AND WHY IT IS SEPARATELY DISPATCHABLE.
+The route audit on the sibling leaf below records the Poonen §3.2 architecture
+in four steps (a)–(d), and says of them: *"Of the four, only (d) has its main
+tool in the pin."* THIS LEAF IS STEP (d), stated on its own. It mentions no
+scheme, no function field, no Noether normalisation, no base ring, and not the
+system `f` — a commutative algebraist who has never opened this file can take
+it, exactly like the Lang–Weil sibling
 `exists_bound_forall_zmodSolvable_of_irreducibleFibre`.
 
-TWO SHAPE CHANGES relative to the consumer, both of them the shape the geometry
-delivers rather than the shape the consumer wants. Neither strengthens nor
-weakens the statement:
+WHY CHEVALLEY APPLIES HERE THOUGH IT DID NOT APPLY TO THE PARENT. The parent's
+route 2 (see the sibling below) died because a factorisation of the SYSTEM's
+radical has UNBOUNDED degrees, so the reducibility locus is not a finite-type
+condition. Here the degrees are bounded by `g` itself: in a factorisation
+`g = g₁ * g₂` each `gᵢ` has total degree at most that of `g`. So the pairs
+`(g₁, g₂)` range over a FINITE-dimensional affine space over `ℤ` — one
+coordinate per monomial of total degree `≤ g.totalDegree` — and `g₁ * g₂ = g` is
+a finite system of polynomial equations in those coordinates. That incidence
+scheme is finitely presented over `ℤ`, so
+`PrimeSpectrum.isConstructible_comap_image`
+(`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`) makes its image in
+`Spec ℤ` constructible. The hypothesis says that image misses the generic point,
+and a constructible subset of `Spec ℤ` missing `(0)` is FINITE — the
+constructible subsets of `Spec ℤ` are exactly the finite and the cofinite ones —
+so it sits inside `V(N)` for `N` the product of the offending primes. This is
+the classical Ostrowski/Noether theorem on absolute irreducibility under
+reduction, and it is why the parent's "one degree bound away" is a real gap
+between the two leaves rather than a gap inside either of them.
 
-* the conclusion is TOPOLOGICAL, `IrreducibleSpace (PrimeSpectrum …)`, not
-  ideal-theoretic. That is literally what EGA proves — "the geometric fibre is
-  an irreducible space" — and the consumer's `radical.IsPrime` comes out of it
-  in one application of `isPrime_radical_of_irreducibleSpace_quotient` (PROVEN,
-  ~200 lines above), which is what the layer below does;
-* the exceptional set is an INVERTED INTEGER `N` (`¬ p ∣ N`), not a bound
-  `B < p`. Every spreading-out argument produces `N`, by shrinking `Spec ℤ` to a
-  basic open `D(N)`; the proven sibling
-  `exists_inverted_formallySmooth_integralSystemModel` has exactly this shape,
-  and its parent converts `N` to a bound by the same two lines used below. A
-  prover who would rather produce a bound directly may take `N` to be the
-  primorial or factorial of it — the conversion is trivial both ways.
+THE TWO NON-FORMAL POINTS TO BUDGET FOR, neither needing theory absent from the
+pin:
 
-WHAT IS ALREADY DISCHARGED, and is therefore NOT part of this leaf: the scheme
-layer, the universe gap and the `A`/`π`/`hker` packaging, all of them in
-`isPrime_radical_integralSystemIdeal_algClosureRat` above — the hypothesis `hQ`
-is precisely that lemma's output; and the `p`-quantifier together with the
-topology/ideal bridge, in the layer immediately below.
+* NONCONSTANCY of both factors is an OPEN condition on the coefficient vector
+  (some coefficient of a positive-degree monomial is nonzero), not a closed one.
+  That is why the locus is CONSTRUCTIBLE rather than the image of a closed set,
+  and it is why `isConstructible_comap_image` is the right tool rather than a
+  bare image-of-`Spec` argument;
+* the bridge between "`g` factors over the algebraically closed field `k`" and
+  "the incidence scheme has a `k`-point" is the ordinary Nullstellensatz
+  dictionary between `k`-points and maximal ideals of the fibre. In particular
+  the fibre over the generic point of `Spec ℤ` has a point iff `g` factors over
+  SOME extension of `ℚ`, iff it factors over `ℚ̄` — which is the hypothesis.
+
+FAITHFULNESS. The statement is not vacuous: `Irreducible` in `MvPolynomial` is
+the ordinary monoid-theoretic notion, so it already excludes units, and the
+hypothesis genuinely constrains `g` (a `g` that factors over `ℚ̄` is excluded, and
+a `g` that is a unit or zero fails `Irreducible` over `ℚ̄` too). The conclusion is
+not weakenable to "a unit times a power of an irreducible": irreducibility is
+what the sibling below consumes, and it is what is true.
+
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_inverted_irreducible_map_algClosureZMod {k : ℕ}
+    (g : MvPolynomial (Fin k) ℤ)
+    (hQ : Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g)) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g) :=
+  sorry
+
+/-- **EGA IV 9.7.7 OVER `Spec ℤ`, MINUS NOETHER–OSTROWSKI: REDUCTION OF A
+GEOMETRICALLY IRREDUCIBLE SYSTEM TO ONE ABSOLUTELY IRREDUCIBLE POLYNOMIAL**
+(SORRY LEAF, cut 2026-07-27 out of
+`exists_inverted_irreducibleSpace_integralSystemModel` below, which is now PROVEN
+over this leaf and `exists_inverted_irreducible_map_algClosureZMod` above.)
+
+This leaf is steps (a)–(c) of the Poonen §3.2 architecture recorded below; step
+(d) is the sibling above and is NOT part of it. It asks for a single integral
+polynomial `g`, irreducible over `ℚ̄`, together with an integer `N`, such that for
+`p ∤ N` irreducibility of `g mod p` over `𝔽̄_p` FORCES irreducibility of the
+geometric fibre of the system. In Poonen's proof `g` is the primitive-element
+polynomial of the function field after Noether normalisation, and `N` inverts
+everything that has to become finite, free and separable along the way.
+
+WHY THE CUT IS SAFE, i.e. why this leaf cannot be discharged cheaply. `g` is
+required to be irreducible over `ℚ̄`, so a prover cannot make the implication
+vacuous by choosing a `g` whose reductions are all reducible: by the sibling
+above — which is TRUE, being the classical Ostrowski/Noether theorem — an
+absolutely irreducible `g` has irreducible reduction for all but finitely many
+`p`, so infinitely many primes outside `V(N)` really do trigger the implication's
+hypothesis. The geometry therefore has to be done here. Conversely the leaf is
+strictly weaker than its consumer, since the consumer must ALSO supply step (d).
+
+WHY THE CUT NEEDS NO NOETHER NORMALISATION OVER A BASE, though the architecture
+below does. The previous version of this docstring recorded that steps (a)–(c)
+"cannot be stated in this pin without first building Noether normalisation over a
+base", and concluded that no cut was available. That is right about the
+MACHINERY and wrong about the STATEMENT: what is cut here is the OUTPUT of steps
+(a)–(c) — the certificate `(N, g)` and the implication it satisfies — not the
+apparatus that produces it. Stating a theory is not proving it, and only the
+statement is needed to make the cut. Nothing about Noether normalisation appears
+in the signature below.
+
+RELATED CORRECTION TO THE INVENTORY BELOW (checked 2026-07-27 on the host owning
+`.lake`): Noether normalisation OVER A FIELD *is* in the pin, as
+`exists_integral_inj_algHom_of_fg` and `exists_finite_inj_algHom_of_fg`
+(`Mathlib/RingTheory/NoetherNormalization.lean`, tagged `@[stacks 00OW]`). What
+is genuinely absent is the version over a BASE RING — and in Poonen's argument
+that version is not needed axiomatically either: one normalises the generic fibre
+over `ℚ`, where the mathlib lemma applies verbatim, and then clears denominators
+to spread the normalisation over `ℤ[1/N]`. A prover of this leaf should start
+there rather than building a base-ring Noether normalisation from scratch.
+REFUTE BY: `ls .lake/packages/mathlib/Mathlib/RingTheory/NoetherNormalization.lean`
+failing.
 
 WHY IT IS TRUE (EGA IV 9.7.7; Poonen, *Rational Points on Varieties*, §3.2).
 `ℤ[x₁..xₙ] ⧸ (f)` is a finitely presented `ℤ`-algebra, and geometric
@@ -7154,20 +7235,89 @@ out reducedness as well.
 CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
 Galois representation, no route through `Family.lean`, `Lift.lean` or
 `Modularity/Interface.lean`. -/
+theorem exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ (N k : ℕ) (g : MvPolynomial (Fin k) ℤ), 0 < N ∧
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g) ∧
+      ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+        Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g) →
+        IrreducibleSpace
+          (PrimeSpectrum (IntegralSystemModel f (AlgebraicClosure (ZMod p)))) :=
+  sorry
+
+/-- **EGA IV 9.7.7 OVER `Spec ℤ`, IN THE SHAPE THE ARGUMENT ACTUALLY PRODUCES**
+(**PROVEN 2026-07-27** over the two leaves immediately above, into which its
+mathematics was split along the boundary the route audit already identified:
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` is steps
+(a)–(c) of the Poonen §3.2 architecture — the geometry — and
+`exists_inverted_irreducible_map_algClosureZMod` is step (d), Noether–Ostrowski —
+the arithmetic. The audit's own verdict, *"of the four, only (d) has its main
+tool in the pin"*, is exactly what makes that the right place to cut: step (d)
+is now a standalone leaf that Chevalley genuinely applies to, because the
+degrees of the factors of one polynomial ARE bounded.)
+
+WHAT THIS LAYER DISCHARGES: only the combination of the two, and it is one line
+of arithmetic — invert `N₁ * N₂`, so that a prime dividing neither factor
+satisfies both leaves at once. That is the whole proof below; no mathematics is
+hidden in it.
+
+TWO SHAPE CHANGES relative to the consumer below, both of them the shape the
+geometry delivers rather than the shape the consumer wants. Neither strengthens
+nor weakens the statement:
+
+* the conclusion is TOPOLOGICAL, `IrreducibleSpace (PrimeSpectrum …)`, not
+  ideal-theoretic. That is literally what EGA proves — "the geometric fibre is
+  an irreducible space" — and the consumer's `radical.IsPrime` comes out of it
+  in one application of `isPrime_radical_of_irreducibleSpace_quotient` (PROVEN,
+  ~200 lines above), which is what the layer below does;
+* the exceptional set is an INVERTED INTEGER `N` (`¬ p ∣ N`), not a bound
+  `B < p`. Every spreading-out argument produces `N`, by shrinking `Spec ℤ` to a
+  basic open `D(N)`; the proven sibling
+  `exists_inverted_formallySmooth_integralSystemModel` has exactly this shape,
+  and its parent converts `N` to a bound by the same two lines used below.
+
+WHAT WAS ALREADY DISCHARGED ELSEWHERE, and is therefore not part of either leaf
+above: the scheme layer, the universe gap and the `A`/`π`/`hker` packaging, all
+of them in `isPrime_radical_integralSystemIdeal_algClosureRat` above — the
+hypothesis `hQ` is precisely that lemma's output; and the `p`-quantifier together
+with the topology/ideal bridge, in the layer immediately below.
+
+ON `hsm`. Passed straight through to the geometric leaf above, where the standing
+invitation to drop it is recorded; it is not used here.
+
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
 theorem exists_inverted_irreducibleSpace_integralSystemModel
     {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
     (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
     (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
     ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
       IrreducibleSpace
-        (PrimeSpectrum (IntegralSystemModel f (AlgebraicClosure (ZMod p)))) :=
-  sorry
+        (PrimeSpectrum (IntegralSystemModel f (AlgebraicClosure (ZMod p)))) := by
+  -- The geometry supplies an absolutely irreducible certificate `g` and an `N₁`
+  -- past which mod-`p` irreducibility of `g` forces irreducibility of the fibre.
+  obtain ⟨N₁, k, g, hN₁, hgQ, hgeom⟩ :=
+    exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel f hsm hQ
+  -- Noether–Ostrowski supplies an `N₂` past which `g` really is irreducible mod `p`.
+  obtain ⟨N₂, hN₂, harith⟩ := exists_inverted_irreducible_map_algClosureZMod g hgQ
+  -- A prime dividing neither factor of `N₁ * N₂` satisfies both leaves at once.
+  refine ⟨N₁ * N₂, Nat.mul_pos hN₁ hN₂, fun p _ hp => ?_⟩
+  have h1 : ¬ (p ∣ N₁) := fun h => hp (h.mul_right N₂)
+  have h2 : ¬ (p ∣ N₂) := fun h => hp (h.mul_left N₁)
+  exact hgeom p h1 (harith p h2)
 
 /-- **SPREADING OUT OF GEOMETRIC IRREDUCIBILITY, SCHEME-FREE AND UNIVERSE-FREE**
-(**PROVEN 2026-07-27** over the single leaf
-`exists_inverted_irreducibleSpace_integralSystemModel` immediately above, which
-carries the whole of EGA IV 9.7.7 and is now the one remaining SORRY on this
-branch).
+(**PROVEN 2026-07-27** over `exists_inverted_irreducibleSpace_integralSystemModel`
+immediately above, which is ITSELF PROVEN as of 2026-07-27 over the two leaves
+that now carry EGA IV 9.7.7 between them:
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` (the
+geometry, Poonen §3.2 steps (a)–(c)) and
+`exists_inverted_irreducible_map_algClosureZMod` (Noether–Ostrowski, step (d)).
+Those two are the open SORRIES on this branch; everything between them and the
+scheme-level consumer below is proven).
 
 WHAT THIS LAYER DISCHARGES — packaging only, but worth naming so nobody redoes
 it: the conversion of the spreading-out argument's inverted integer `N` into the
@@ -7205,9 +7355,13 @@ see that leaf's `ON hsm` paragraph for what it would buy and for the standing
 invitation to drop it.
 
 MISSING MACHINERY, ROUTES SEARCHED, AND THE ARCHITECTURE THAT WOULD WORK: all of
-it now lives on `exists_inverted_irreducibleSpace_integralSystemModel` above,
-each claim paired with the grep that refutes it. It is not repeated here — one
-copy, on the leaf that is actually open. -/
+it now lives on `exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel`
+above — the geometric one of the two open leaves — each claim paired with the
+grep that refutes it. It is not repeated here: one copy, on the leaf that is
+actually open. The arithmetic leaf
+`exists_inverted_irreducible_map_algClosureZMod` carries its own, shorter audit,
+which is the Chevalley discussion that route 2 of that inventory lacked a degree
+bound for. -/
 theorem exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre
     {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
     (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
@@ -7228,10 +7382,15 @@ the two lemmas immediately above: the scheme-and-universe transport
 `isPrime_radical_integralSystemIdeal_algClosureRat`, which is PROVEN, and the
 scheme-free spreading-out layer
 `exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`,
-which is **also PROVEN as of 2026-07-27**. The one remaining SORRY on this whole
-branch is now `exists_inverted_irreducibleSpace_integralSystemModel`, which
-carries the whole of EGA IV 9.7.7 and whose docstring holds the missing-machinery
-inventory and the route audit).
+which is **also PROVEN as of 2026-07-27**, as is
+`exists_inverted_irreducibleSpace_integralSystemModel` below it. The open SORRIES
+on this whole branch are now the TWO leaves that carry EGA IV 9.7.7 between them:
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel`, the
+geometry — Poonen §3.2 steps (a)–(c), whose docstring holds the missing-machinery
+inventory and the route audit — and
+`exists_inverted_irreducible_map_algClosureZMod`, the arithmetic — step (d),
+Noether–Ostrowski, which Chevalley genuinely applies to and which is dispatchable
+to a commutative algebraist in isolation).
 
 For all but finitely many primes `p`, the geometric fibre of the integral model
 is irreducible: the ideal cut out by `f` over an algebraic closure of `𝔽_p` has
