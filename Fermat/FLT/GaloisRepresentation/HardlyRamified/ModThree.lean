@@ -44608,9 +44608,11 @@ theorem artinDivisorMap_apply_span_ray_class
 set_option maxHeartbeats 1000000 in
 /-- **THE GLOBAL CYCLIC NORM INDEX INEQUALITY, AT AN ADMISSIBLE MODULUS**
 (sorry node, created 2026-07-27 as sub-leaf (A3b-1-c) of
-`exists_artinDivisorPackage_ray_class` below; **REFUTED AND RESTATED 2026-07-27**
-— see the FALSITY AUDIT below, which is the reason this leaf now CHOOSES its
-modulus instead of receiving one).
+`exists_artinDivisorPackage_ray_class` below; **REFUTED AND RESTATED TWICE ON
+2026-07-27** — see the two FALSITY AUDITS below. The first is why this leaf now
+CHOOSES its modulus instead of receiving one; the second is why `mm₀` must be
+required to carry the ramified primes (`hmm₀ram`), without which the leaf was
+still false even after the first repair.)
 
 Childress ch. 4: for `M/F` cyclic and `mm` **admissible**,
 `[I_F(mm) : P⁺_{F,mm} · N_{M/F} I_M(mm)] ≥ #G`, which in the relative-index
@@ -44772,18 +44774,71 @@ that does not pass through `exists_artinIdealGroup_relIndex_ray_class`. If one
 exists, the whole (A3b) package is redundant rather than this leaf being blocked,
 and that is a cut-level repair for an owner of the cluster, not a leaf-level one.
 
-**FAITHFULNESS: TRUE as restated, and NOT vacuous.** True with `mm` any common
-multiple of `mm₀` and the conductor of `M/F`, by the route above. Not vacuous in
-either direction: the `ℚ(i)`, `mm = (2)` computation shows the conclusion genuinely
-fails for a badly chosen `mm`, so the existential carries the choice of an
-admissible modulus; and the conclusion also asserts `(P ⊔ N).relIndex Im ≠ 0`
-(otherwise it would read `#φ(Im) ≤ 0`, false since `#φ(Im) ≥ 1`), i.e. the index is
-genuinely FINITE, which no junk modulus supplies.
+**SECOND FALSITY AUDIT (2026-07-27, later the same day): THE FIRST REPAIR WAS
+INCOMPLETE — THE RESTATED LEAF WAS STILL FALSE, BECAUSE `mm₀` WAS ARBITRARY.**
 
-**Check that would refute the restated form**: hypotheses as stated together with a
-`χ` and an `mm₀` for which EVERY nonzero multiple `mm` of `mm₀` admits `φ`, `d`,
-`Im`, `P`, `N` satisfying the pinning clauses with
-`(P ⊔ N).relIndex Im < A.relIndex Im`. -/
+The first repair made `mm` an OUTPUT, and integration then added the SUPPORT
+clause `∀ w, w.asIdeal ∣ mm → w.asIdeal ∣ mm₀` to the conclusion so that the
+consumer could still read off Childress 5.2.1(ii). Each change is right on its
+own and the two together are fatal: the support clause confines the chosen `mm`
+to primes ALREADY dividing `mm₀` — the enlargement is permitted in the exponents
+only — while the sole hypothesis on `mm₀` was `mm₀ ≠ ⊥`. So a caller may hand in
+an `mm₀` that misses a ramified prime, and then no admissible `mm` is reachable
+at all.
+
+*Explicit counterexample to the first restatement.* Same `F = ℚ` and the same
+quadratic `χ` cutting out `ℚ(i)` as above (`ℓ = 2`, `k = 1`, `c` the
+multiplicative extension of `v ↦ χ (globalFrob v)`), and take **`mm₀ = ⊤`**,
+which satisfies `mm₀ ≠ ⊥`.
+
+- Any `mm` meeting the conclusion's first three clauses is nonzero and has NO
+  prime divisor, since no height-one prime divides `⊤`; hence `mm = ⊤`.
+- `Im = ⊤`, because the membership clause is vacuous for the same reason.
+- `P = ⊤`: the congruence `δ - 1 ∈ ⊤` is vacuous, so `P` is the closure of `d δ`
+  over the totally positive `δ ≠ 0`; taking `δ = p` over the rational primes
+  gives every basis element `single p 1`, and those generate the free group.
+  (This is `h⁺(ℚ) = 1` written in the formal language.) Hence
+  `(P ⊔ N).relIndex Im = 1`.
+- `A.relIndex Im = #φ(Im) = 2`, since `φ (single p 1) = χ (globalFrob p) = -1`
+  for `p ≡ 3 (mod 4)`, and `-1 ≠ 1` in characteristic `3`.
+
+So the conclusion reads `2 ≤ 1` again. It is not a corner case of the unit
+ideal: `mm₀ = (3)` refutes it identically, since `supp mm ⊆ {3}` again keeps `mm`
+coprime to the conductor `(4)` — there `Im/P` is the narrow ray class group
+`(ℤ/3ᵉ)ˣ`, `N` already surjects onto it, and the same `2 ≤ 1` results.
+
+*The repair, and why it costs the consumer nothing.* Add `hmm₀ram`: every prime
+at which `χ` is ramified (`IsRamifiedCharRayClass F χ w`) divides `mm₀`. The
+consumer `exists_artinDivisorPackage_ray_class` draws `mm₀` from
+`exists_radical_isRamifiedChar_ray_class`, which returns the ramified radical
+together with the **iff** `w.asIdeal ∣ mm₀ ↔ IsRamifiedCharRayClass F χ w`. The
+new hypothesis is literally that iff's `mpr`, which the consumer was already
+holding and discarding; the package's STATEMENT is unchanged and its proof grows
+one argument.
+
+With `hmm₀ram` the two clauses are consistent again: `supp mm₀` contains the
+ramified primes, the conductor is supported there too, and a high enough
+power-multiple of `mm₀` is admissible with exactly the same support. The `ℚ(i)`
+example then behaves as intended — `mm₀ = (2)` forces `mm = (2)ᵉ`, `e = 1` still
+gives `2 ≤ 1`, and `e = 2` (i.e. `mm = (4)`, the conductor) gives `2 ≤ 2` — so
+the existential is doing precisely the work it was restated to do.
+
+**FAITHFULNESS: TRUE as restated with `hmm₀ram`, and NOT vacuous.** True with
+`mm` any common multiple of `mm₀` and the conductor of `M/F` supported inside
+`supp mm₀` — e.g. a sufficiently high power of `mm₀`, using that the conductor is
+supported at the ramified primes and `hmm₀ram` places those in `supp mm₀`. Not
+vacuous in either direction: the `ℚ(i)`, `mm = (2)` computation shows the
+conclusion genuinely fails for a badly chosen `mm`, so the existential carries the
+choice of an admissible modulus; and the conclusion also asserts
+`(P ⊔ N).relIndex Im ≠ 0` (otherwise it would read `#φ(Im) ≤ 0`, false since
+`#φ(Im) ≥ 1`), i.e. the index is genuinely FINITE, which no junk modulus supplies.
+
+**Check that would refute the current form**: hypotheses as stated — `hmm₀ram`
+included — together with a `χ` and an `mm₀` divisible by every ramified prime for
+which EVERY nonzero multiple `mm` of `mm₀` with `supp mm ⊆ supp mm₀` admits `φ`,
+`d`, `Im`, `P`, `N` satisfying the pinning clauses with
+`(P ⊔ N).relIndex Im < A.relIndex Im`. Both refutations above are of exactly this
+shape, and both were possible only because `mm₀` could omit a ramified prime. -/
 theorem exists_artinDivisorNormIndex_le_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -44797,7 +44852,9 @@ theorem exists_artinDivisorNormIndex_le_ray_class
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       c v.asIdeal = χ (globalFrob v))
-    (mm₀ : Ideal (NumberField.RingOfIntegers F)) (hmm₀ : mm₀ ≠ ⊥) :
+    (mm₀ : Ideal (NumberField.RingOfIntegers F)) (hmm₀ : mm₀ ≠ ⊥)
+    (hmm₀ram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      IsRamifiedCharRayClass F χ w → w.asIdeal ∣ mm₀) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧ mm₀ ∣ mm ∧
       (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
         w.asIdeal ∣ mm → w.asIdeal ∣ mm₀) ∧
@@ -45005,6 +45062,18 @@ PROOF that drew `mm` from the wrong place. The repair is local: (A3b-1-a)
 supplies `mm₀`, (A3b-1-c) returns an admissible multiple `mm` of it, and
 `hmmram` transports along `mm₀ ∣ mm`. Nothing downstream changes.
 
+**THIRD REPAIR 2026-07-27: (A3b-1-c) NOW ALSO REQUIRES `mm₀` TO CARRY THE
+RAMIFIED PRIMES (`hmm₀ram`), AND THIS PROOF SUPPLIES IT FOR FREE.** The
+second repair above left (A3b-1-c) still false, because the SUPPORT clause
+that integration added to its conclusion confines the chosen `mm` to the
+primes already dividing `mm₀`, while `mm₀` itself carried only `mm₀ ≠ ⊥`;
+`mm₀ = ⊤` (or `mm₀ = (3)`) then makes every admissible `mm` unreachable and
+reproduces `2 ≤ 1`. The fix is one hypothesis, `IsRamifiedCharRayClass F χ w
+→ w.asIdeal ∣ mm₀`, which is exactly the `mpr` half of the **iff** that
+(A3b-1-a) already returns here and that this proof was discarding. **This
+package's statement is again unaffected**; only the call grows an argument.
+See the SECOND FALSITY AUDIT on `exists_artinDivisorNormIndex_le_ray_class`.
+
 **REPAIR 2026-07-27: `A` is now `φ.ker ⊓ Im`, not `φ.ker`.** The Artin
 kernel of Childress 5.2.2 is the kernel of the Artin map restricted to
 `I_F(mm)`. With the unrestricted `φ.ker`, the crux (A3b-2)
@@ -45099,9 +45168,14 @@ theorem exists_artinDivisorPackage_ray_class
   -- index clause is refuted for a modulus that is merely divisible by the ramified
   -- primes (`F = ℚ`, `χ` the quadratic character of `ℚ(i)`, `mm = (2)`, giving
   -- `2 ≤ 1`). Divisibility by the ramified primes transports along `mm₀ ∣ mm`.
+  -- `hmm₀ram` is the `mpr` half of the radical's **iff**, and it is what makes the
+  -- enlargement possible at all: the leaf may only thicken the EXPONENTS of `mm₀`
+  -- (its support clause forbids new primes), so it can reach the conductor only if
+  -- `mm₀` already carries every ramified prime.  See the SECOND FALSITY AUDIT on
+  -- `exists_artinDivisorNormIndex_le_ray_class`, where the leaf is refuted without it.
   obtain ⟨mm, hmm, hmmdvd, hmmsupp₀, hnorm⟩ :=
     exists_artinDivisorNormIndex_le_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c
-      hcmul hcfrob mm₀ hmm₀
+      hcmul hcfrob mm₀ hmm₀ (fun w hw => (hmm₀iff w).mpr hw)
   have hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
         χ (a * Field.absoluteGaloisGroup.map
