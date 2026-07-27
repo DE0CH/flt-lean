@@ -505,6 +505,17 @@ public import Mathlib.RingTheory.Smooth.Fiber
 import Mathlib.Data.Nat.ChineseRemainder
 import Mathlib.NumberTheory.Padics.Hensel
 
+-- ARCHIMEDEAN-HALF ADDITION (2026-07-27): the `n`-torsion count
+-- (`WeierstrassCurve.n_torsion_card`) and the divisibility of the geometric
+-- point group (`TorsionCard.smul_surjective`), which are the two algebraic
+-- inputs of `exists_realWeierstrassCurveWithConjTorsion`. Both modules were
+-- ALREADY in this module's transitive import closure (through
+-- `GaloisRepresentation/Chebotarev.lean`), so this adds ZERO modules to any
+-- cone; it is `public` because those names are used in a proof body and a
+-- purely transitive private route does not re-export them.
+public import Fermat.FLT.EllipticCurve.Torsion
+public import Fermat.FLT.EllipticCurve.TorsionCard
+
 @[expose] public section
 
 /-! ## HOISTED SUPPORT (see the module docstring): declarations moved here from
@@ -534,16 +545,6 @@ lemma discreteTopology_moduleEnd_finTwoFun (R : Type*) [CommRing R]
   haveI : Module.Finite R (Module.End R (Fin 2 → R)) := Module.Finite.of_finite
   exact discreteTopology_moduleTopology R (Module.End R (Fin 2 → R))
 
--- ARCHIMEDEAN-HALF ADDITION (2026-07-27): the `n`-torsion count
--- (`WeierstrassCurve.n_torsion_card`) and the divisibility of the geometric
--- point group (`TorsionCard.smul_surjective`), which are the two algebraic
--- inputs of `exists_realWeierstrassCurveWithConjTorsion`. Both modules were
--- ALREADY in this module's transitive import closure (through
--- `GaloisRepresentation/Chebotarev.lean`), so this adds ZERO modules to any
--- cone; it is `public` because those names are used in a proof body and a
--- purely transitive private route does not re-export them.
-public import Fermat.FLT.EllipticCurve.Torsion
-public import Fermat.FLT.EllipticCurve.TorsionCard
 /-- **A framed representation over a finite discrete ring is locally
 constant**: the fibres of `g ↦ ρ g` are open. This is the form in which
 continuity of the two level representations is CONSUMED when the
