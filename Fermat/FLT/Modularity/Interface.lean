@@ -2971,22 +2971,50 @@ counterexample of this cluster). Closing the factor `2` is precisely
 "`H¹_par(Γ₀(N), ℚ)` is FREE OF RANK `2` over `𝕋_ℚ`", the substantive
 half of Eichler–Shimura, which is not weaker than this leaf.
 
-*Axis 4 — NEWFORMS: a genuine decomposition, and the only one found.*
-`S₂(Γ₀(N)) = ⊕_{M ∣ N} ⊕_{d ∣ N/M} α_d(S₂(Γ₀(M))^{new})`, where the
-degeneracy map `α_d : f(z) ↦ f(dz)` acts on coefficients by
-`a_m(α_d f) = a_{m/d}(f)` (`0` unless `d ∣ m`) and therefore PRESERVES
+*Axis 4 — NEWFORMS: a genuine decomposition, the only one found, and
+the most promising of the four.*
+`S₂(Γ₀(N)) = ⊕_{M ∣ N} ⊕_{d ∣ N/M} V_d(S₂(Γ₀(M))^{new})`, where the
+degeneracy map `V_d : f(z) ↦ f(dz)` acts on coefficients by
+`a_m(V_d f) = a_{m/d}(f)` (`0` unless `d ∣ m`) and therefore PRESERVES
 rationality by inspection. So this leaf decomposes into (i) rationality
 on the NEW subspace at each `M ∣ N` — strictly weaker, being a
 statement about a subspace — and (ii) the Atkin–Lehner decomposition
-itself. Checked rather than assumed, 2026-07-27: (ii) exists NOWHERE —
-`grep -rn 'newform\|oldform\|AtkinLehner' .lake/packages/mathlib` is
-empty, `~/cs/FLT` is quaternionic and has none of it, and this file's
-own line ~27673 already records "no Petersson product and no oldform
-degeneracy maps". `IsWeightTwoNewform` in this file is a PREDICATE, not
-a decomposition. So axis 4 is a real cut whose second half is a whole
-missing theory (multiplicity one, the Petersson product, the degeneracy
-maps) — larger than the leaf, but it is the honest answer to "what
-would a decomposition look like".
+itself.
+
+**CORRECTION to a claim this audit made in its first draft (same day),
+recorded because it is exactly the "stale impossible note" the doctrine
+warns about.** The first draft said (ii) "exists NOWHERE", on the
+strength of a grep that was truncated by `head`. That is FALSE. What is
+true, and what the next owner should check by name rather than take from
+here:
+
+* mathlib really has none of it —
+  `grep -rn 'newform\|oldform\|AtkinLehner' .lake/packages/mathlib` is
+  empty — and `~/cs/FLT` is quaternionic. That half of the draft stands.
+* But THIS FILE already has the degeneracy operators, PROVEN:
+  `degeneracyOp N M d` (~30889) with `qCoeff_degeneracyOp` (~30901) —
+  literally `a_m(V_d f) = if d ∣ m then a_{m/d}(f) else 0`, i.e. the
+  rationality-preservation above is one `rw` away — together with
+  `degeneracyOp_injective` (~30982) and `heckeOp_degeneracyOp` (~30964),
+  `T_q ∘ V_d = V_d ∘ T_q` at `q ∤ M`. The file's own line ~27673, "no
+  Petersson product and no oldform degeneracy maps", is itself STALE:
+  that block was built 2026-07-26.
+* `atkinLehnerOp M Q` (~36221) exists too, though `exists_atkinLehnerOp`
+  (~36191) and `atkinLehnerOp_apply_eq_neg_qCoeff_smul` (~36272) are
+  still OPEN leaves.
+
+So what axis 4 is actually missing is narrower than "the whole
+Atkin–Lehner theory": it is the DIRECT-SUM decomposition (old ⊕ new,
+with multiplicity one) plus rationality on the new part. The nearest
+existing statement is the OPEN leaf
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (~31779).
+
+**Second obstacle on axis 4, and it is real: DECLARATION ORDER.** All of
+that machinery sits ~28000 lines BELOW this leaf, so consuming it here
+needs the degeneracy block hoisted above `rationalCuspForms` — the same
+shape of large relocation that route B of `integralCuspForms_span_eq_top`
+needed for the `heckeEndo` block, and it belongs to whoever executes
+axis 4 rather than to this audit.
 
 **Net verdict**: the arithmetic residue is `dim_ℚ 𝕋_ℚ ≤ D`, and on this
 pin it is reachable only by building one of: the `ℚ`-model of `X₀(N)`
