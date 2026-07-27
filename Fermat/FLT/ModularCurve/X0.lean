@@ -2018,11 +2018,100 @@ could derive it.  It is the surjectivity hypothesis in disguise: the
 *surjective* precisely because every geometric fibre of `E[n]` admits a
 basis.  Handing that in as `hfib` is what leaves the torsor half with a
 purely scheme-theoretic obligation.
+
+**Second round, the same day.**  Both of the two leaves above are now
+PROVEN, each from one smaller leaf plus one proven general lemma, so that
+what remains open carries no incidental Lean-level bookkeeping:
+
+* `exists_torsionBasis_geomPoint` = `exists_zmodBasis_torsion_geomPoint`
+  (the Silverman citation, stated in plain `ℕ`-coefficient form: two
+  generators killed by `n`, spanning, with only `n`-divisible relations)
+  + `nsmul_eq_zero_iff_existsUnique_finPair` (pure algebra: that form is
+  equivalent to unique `Fin n × Fin n`-coordinates).  The residue trick
+  `m • w = (m % n) • w` and the "nonzero multiple of `n` below `2 * n`"
+  step are the whole of the second factor, and neither belongs in a
+  citation.
+* `exists_torsionBasis_cover_of_geomPoint` =
+  `exists_isomTorsor_of_geomPoint` (the `Isom`-scheme, flat and
+  quasi-compact, with the tautological pair and a *pointwise* lifting
+  clause) + `surjective_of_exists_lift_geomPoint` (a general fact: a
+  morphism whose geometric points all lift is surjective).  Surjectivity
+  of a continuous map is not moduli theory, and the residual leaf no
+  longer mentions it.
 -/
 
+/-- **A pair of `n`-torsion points is a `ℤ/n`-basis exactly when the
+`Fin n`-coordinates of every `n`-torsion point exist and are unique**
+(PROVEN 2026-07-27) — the purely algebraic bridge between the two ways of
+saying `E[n] ≅ (ℤ/n)²`, and the whole non-geometric content of
+`exists_torsionBasis_geomPoint` below.
+
+`hspan` and `hindep` are the module-theoretic form of "`y, z` is a basis
+of the `n`-torsion over `ℤ/n`": every `n`-torsion element is an
+`ℕ`-combination of `y` and `z`, and a combination vanishes only when both
+coefficients are divisible by `n`.  The conclusion is the
+`Fin n × Fin n`-indexed form that `FullLevelStructure.geom_basis`, and
+hence both leaves of the level-`n` torsor, are stated in.
+
+Only two pieces of arithmetic are involved: `m • w = (m % n) • w`
+whenever `n • w = 0`, which is what produces the coordinates in `Fin n`;
+and the fact that a nonzero multiple of `n` strictly below `2 * n` is `n`
+itself, which is what turns the *difference* of two coordinate pairs into
+an equality of `Fin n` values without ever leaving `ℕ` — writing
+`c + (n - c')` rather than `c - c'` is exactly what avoids `ℤ`. -/
+theorem nsmul_eq_zero_iff_existsUnique_finPair {G : Type*} [AddCommGroup G] {n : ℕ}
+    (hn : 0 < n) {y z : G} (hy : n • y = 0) (hz : n • z = 0)
+    (hspan : ∀ x : G, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z)
+    (hindep : ∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) (x : G) :
+    n • x = 0 ↔ ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z := by
+  have hred : ∀ (m : ℕ) (w : G), n • w = 0 → m • w = (m % n) • w := by
+    intro m w hw
+    conv_lhs => rw [← Nat.div_add_mod m n]
+    rw [add_nsmul, mul_nsmul, hw, nsmul_zero, zero_add]
+  have hkill : ∀ (m : ℕ) (w : G), n • w = 0 → n • (m • w) = 0 := by
+    intro m w hw
+    rw [← mul_nsmul', mul_comm n m, mul_nsmul', hw, nsmul_zero]
+  have hinj : ∀ c c' : Fin n × Fin n,
+      (c.1 : ℕ) • y + (c.2 : ℕ) • z = (c'.1 : ℕ) • y + (c'.2 : ℕ) • z → c = c' := by
+    intro c c' h
+    have expand : ∀ a b : ℕ, (a + (n - (c'.1 : ℕ))) • y + (b + (n - (c'.2 : ℕ))) • z
+        = (a • y + b • z) + ((n - (c'.1 : ℕ)) • y + (n - (c'.2 : ℕ)) • z) := by
+      intro a b; rw [add_nsmul, add_nsmul]; abel
+    have e1 : ((c'.1 : ℕ) + (n - (c'.1 : ℕ))) = n := Nat.add_sub_cancel' (le_of_lt c'.1.isLt)
+    have e2 : ((c'.2 : ℕ) + (n - (c'.2 : ℕ))) = n := Nat.add_sub_cancel' (le_of_lt c'.2.isLt)
+    have key : ((c.1 : ℕ) + (n - (c'.1 : ℕ))) • y + ((c.2 : ℕ) + (n - (c'.2 : ℕ))) • z = 0 := by
+      rw [expand, h, ← expand, e1, e2, hy, hz, add_zero]
+    obtain ⟨hd1, hd2⟩ := hindep _ _ key
+    have hlt1 : (c.1 : ℕ) + (n - (c'.1 : ℕ)) < 2 * n := by
+      have := c.1.isLt; have := c'.1.isLt; omega
+    have hlt2 : (c.2 : ℕ) + (n - (c'.2 : ℕ)) < 2 * n := by
+      have := c.2.isLt; have := c'.2.isLt; omega
+    have hne1 : (c.1 : ℕ) + (n - (c'.1 : ℕ)) ≠ 0 := by
+      have := c'.1.isLt; omega
+    have hne2 : (c.2 : ℕ) + (n - (c'.2 : ℕ)) ≠ 0 := by
+      have := c'.2.isLt; omega
+    have f1 := Nat.eq_of_dvd_of_lt_two_mul hne1 hd1 hlt1
+    have f2 := Nat.eq_of_dvd_of_lt_two_mul hne2 hd2 hlt2
+    have g1 : (c.1 : ℕ) = (c'.1 : ℕ) := by have := c'.1.isLt; omega
+    have g2 : (c.2 : ℕ) = (c'.2 : ℕ) := by have := c'.2.isLt; omega
+    exact Prod.ext (Fin.ext g1) (Fin.ext g2)
+  constructor
+  · intro hx
+    obtain ⟨a, b, rfl⟩ := hspan x hx
+    refine ⟨(⟨a % n, Nat.mod_lt _ hn⟩, ⟨b % n, Nat.mod_lt _ hn⟩), ?_, ?_⟩
+    · show a • y + b • z = (a % n) • y + (b % n) • z
+      rw [hred a y hy, hred b z hz]
+    · intro c' hc'
+      refine hinj c' _ ?_
+      show (c'.1 : ℕ) • y + (c'.2 : ℕ) • z = (a % n) • y + (b % n) • z
+      rw [← hc', hred a y hy, hred b z hz]
+  · rintro ⟨c, hc, -⟩
+    rw [hc, smul_add, hkill _ y hy, hkill _ z hz, add_zero]
+
 /-- **The `n`-torsion at a geometric point is free of rank two over
-`ℤ/n`** (sorry leaf, opened 2026-07-27) — the fibre input to the
-level-`n` torsor, and the only citation in it.
+`ℤ/n`** (sorry leaf, opened 2026-07-27; restated 2026-07-27 in
+`ℕ`-coefficient form) — the fibre input to the level-`n` torsor, and the
+only citation in it.
 
 ## What the prover of this node owes
 
@@ -2035,41 +2124,109 @@ elliptic curve because `ab` makes `f` proper, smooth and geometrically
 connected and `hdim` makes the fibres curves, so the fibre is a smooth
 proper geometrically connected genus-one curve with the origin `ab.zero t`.
 
+The conclusion is the plain module-theoretic reading of "free of rank two
+over `ℤ/n` with basis `y, z`": both generators are killed by `n`, every
+`n`-torsion point is an `ℕ`-combination of them, and a combination
+vanishes only when `n` divides both coefficients.  Silverman's proof is
+that `[n]` is separable of degree `n²` in characteristic `0`, so
+`#E[m] = m²` for every `m ∣ n`, which forces the structure.
+
 ## What it does NOT owe
 
 Nothing scheme-theoretic: no `E[n]` as a subscheme, no finiteness, no
 flatness, no étaleness, no `Isom`-sheaf.  All of that is
-`exists_torsionBasis_cover_of_geomPoint`, which receives this statement
-as a hypothesis.
+`exists_torsionBasis_cover_of_geomPoint`, which receives the
+`Fin n`-coordinate consequence of this statement as a hypothesis.
+
+Nothing about `Fin n` either: the passage from this statement to the
+`∃!`-over-`Fin n × Fin n` form is `nsmul_eq_zero_iff_existsUnique_finPair`
+above, which is PROVEN.
 
 ## Faithfulness
 
 `g` is **load-bearing for TRUTH and cannot be dropped**: it is the only
 route by which `K` is known to have characteristic `0`.  Over
-`K = 𝔽̄_p` with `p ∣ n` the statement is FALSE — `E(K)[p] ` is `ℤ/p` for
-an ordinary curve and trivial for a supersingular one, so no pair
-`(y, z)` can satisfy the `∃!` clause.
+`K = 𝔽̄_p` with `p ∣ n` the statement is FALSE — `E(K)[p]` is `ℤ/p` for
+an ordinary curve and trivial for a supersingular one, so no `hindep`
+pair `(y, z)` can also satisfy `hspan`.
 
-`hn` is load-bearing at `n = 0`, exactly as on the parent: `Fin 0` is
-empty while `0 • x = 0` holds for every `x`, so the right-hand side is
-unsatisfiable and the left-hand side is universally true.  At `n = 1, 2`
-the statement is true and `hn` is merely inherited.
+`hn` is inherited from the parent.  Unlike on the `Fin n` form it is not
+needed for truth here — at `n = 0` the statement reads "`E(K)` is free of
+rank two over `ℤ`", which is false, so `hn` is in fact load-bearing at
+`n = 0` for a different reason; at `n = 1, 2` the statement is true.
 
 `hdim` is load-bearing: without it `f` is an abelian scheme of arbitrary
 relative dimension `d`, whose `n`-torsion is `(ℤ/n)^{2d}` and admits no
 two-element basis for `d ≥ 2`. -/
+theorem exists_zmodBasis_torsion_geomPoint (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
+    letI := ab.addCommGroup t
+    ∃ y z : RelPoint f t, n • y = 0 ∧ n • z = 0 ∧
+      (∀ x : RelPoint f t, n • x = 0 → ∃ a b : ℕ, x = a • y + b • z) ∧
+      (∀ a b : ℕ, a • y + b • z = 0 → n ∣ a ∧ n ∣ b) :=
+  sorry
+
+/-- **The `n`-torsion at a geometric point has unique `Fin n`-coordinates**
+(PROVEN 2026-07-27) — the fibre input to the level-`n` torsor, in the
+shape `FullLevelStructure.geom_basis` asks for.
+
+It is `exists_zmodBasis_torsion_geomPoint` — the Silverman *AEC* III.6.4
+citation, and the only geometric content — read through
+`nsmul_eq_zero_iff_existsUnique_finPair`, which is pure algebra.  Nothing
+else happens here; in particular the geometric hypotheses `hdim` and `g`
+are consumed only by the citation, and `hn` is used only to know `0 < n`,
+which is what makes `Fin n` inhabited by the residues `a % n`. -/
 theorem exists_torsionBasis_geomPoint (n : ℕ) (hn : 3 ≤ n)
     {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
     (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
     letI := ab.addCommGroup t
     ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
-      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z :=
-  sorry
+      ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z := by
+  letI := ab.addCommGroup t
+  obtain ⟨y, z, hy, hz, hspan, hindep⟩ :=
+    exists_zmodBasis_torsion_geomPoint n hn ab hdim g K t
+  exact ⟨y, z, nsmul_eq_zero_iff_existsUnique_finPair (by omega) hy hz hspan hindep⟩
 
-/-- **The level-`n` torsor** (sorry leaf, opened 2026-07-27) — the
-scheme-theoretic half of `exists_fullLevelStructure_cover_of_baseChange`,
-with the fibre computation discharged by the hypothesis `hfib`.
+/-- **A morphism of schemes all of whose geometric points lift is
+surjective** (PROVEN 2026-07-27) — the general scheme-theoretic fact that
+separates the *pointwise* content of the level-`n` torsor from its
+*topological* conclusion.
+
+Given `x : T`, the canonical `Spec κ(x) ⟶ T` composed with
+`Spec (κ(x)^alg) ⟶ Spec κ(x)` is a geometric point over `x`
+(`Scheme.fromSpecResidueField_apply`); lifting it along `p` and taking
+the image of the closed point of `Spec (κ(x)^alg)` produces a preimage of
+`x`.  No hypothesis on `p` is needed at all.
+
+This is what lets `exists_isomTorsor_of_geomPoint` below owe only a
+pointwise lifting statement — which is what "the `Isom`-scheme is
+nonempty over every geometric point" literally says — instead of
+surjectivity of the underlying continuous map. -/
+theorem surjective_of_exists_lift_geomPoint {T' T : Scheme.{0}} (p : T' ⟶ T)
+    (h : ∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+      ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) :
+    AlgebraicGeometry.Surjective p := by
+  refine ⟨fun x => ?_⟩
+  obtain ⟨t', ht'⟩ := h (AlgebraicClosure (T.residueField x))
+    (Spec.map (CommRingCat.ofHom
+        (algebraMap (T.residueField x) (AlgebraicClosure (T.residueField x)))) ≫
+      T.fromSpecResidueField x)
+  let pt : ↥(Spec (CommRingCat.of (AlgebraicClosure (T.residueField x)))) :=
+    IsLocalRing.closedPoint (AlgebraicClosure (T.residueField x))
+  refine ⟨t' pt, ?_⟩
+  have h2 : (t' ≫ p) pt =
+      (Spec.map (CommRingCat.ofHom
+          (algebraMap (T.residueField x) (AlgebraicClosure (T.residueField x)))) ≫
+        T.fromSpecResidueField x) pt := by rw [ht']
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at h2
+  exact h2.trans (Scheme.fromSpecResidueField_apply x _)
+
+/-- **The `Isom`-scheme of the level-`n` torsor** (sorry leaf, opened
+2026-07-27) — everything in `exists_torsionBasis_cover_of_geomPoint`
+except the passage from pointwise lifting to surjectivity.
 
 ## What the prover of this node owes
 
@@ -2084,19 +2241,28 @@ over `T'` is a pair of sections `P, Q : RelPoint f p` that is a basis at
 every geometric point of `T'`.  Katz–Mazur (8.1.1) is the citation for
 rigidifying by `[Γ(n)]`-structures at `n ≥ 3`.
 
-Finite étale gives the three properties asked for: `Flat` because étale
-is flat, `QuasiCompact` because finite morphisms are affine, and
-`Surjective` because **`hfib`** says every geometric fibre of `E[n]` has
-a basis, so the `Isom`-scheme is nonempty over every geometric point.
-That last implication is the whole reason `hfib` is a hypothesis rather
-than an internal step: it is the surjectivity input.
+Finite étale gives the properties asked for: `Flat` because étale is
+flat, `QuasiCompact` because finite morphisms are affine, and — the last
+clause of the conclusion — a lift of every geometric point of `T` *at
+which the torsion admits a basis*, because the `Isom`-scheme is by
+construction nonempty exactly over those points.
+
+That last clause is where `hfib` used to sit, and separating it is the
+point of this cut: this node owes the `Isom`-scheme and its
+representability, and owes **nothing topological**.  The passage from
+"every geometric point lifts" to `Surjective p` is
+`surjective_of_exists_lift_geomPoint` above, which is PROVEN and is a
+general fact about schemes; feeding it `hfib` is what
+`exists_torsionBasis_cover_of_geomPoint` below does.
 
 ## What it does NOT owe
 
 * the production of the base-changed datum `d'` — that is the parent's
   `hbc`, i.e. `exists_gamma0Datum_baseChange`;
-* the fibrewise structure of `E[n]` — that is `hfib`, i.e.
-  `exists_torsionBasis_geomPoint`;
+* the fibrewise structure of `E[n]` — that is the last hypothesis of the
+  lifting clause, supplied downstream by `exists_torsionBasis_geomPoint`;
+* surjectivity of `p` as a map of topological spaces — that is
+  `surjective_of_exists_lift_geomPoint`;
 * anything about `Γ₀(N)`: the statement is about a bare abelian scheme of
   relative dimension one, and the level structure `d.cyc` plays no part.
 
@@ -2115,16 +2281,53 @@ flatness, and then the representability of the `Isom`-functor.
 
 ## Faithfulness
 
-`hfib` is a Prop-valued hypothesis, not an under-determined structure, so
-this node cannot be false for the junk-witness reason discussed in the
-section comment above; and it is not vacuous, because `hfib` is TRUE (it
-is the statement of `exists_torsionBasis_geomPoint`).
+The lifting clause is conditional on the geometric point admitting a
+basis, so nothing here asserts that such points exist — this node is
+therefore satisfiable by an *empty* `T'` when `E[n]` has no fibrewise
+basis anywhere, which is exactly right and is why the conditional form is
+the faithful one.  It is not vacuous, because the hypothesis of the
+implication is TRUE over a `ℚ`-scheme (it is
+`exists_torsionBasis_geomPoint`), so the clause really does force
+surjectivity there.
 
 `g` is load-bearing: over a base of characteristic `p ∣ n` the kernel
 `E[n]` is not étale and the torsor does not exist.  `hdim` is
 load-bearing for the *rank* (a `2`-element basis needs relative dimension
 one).  `hn` is inherited from the parent, where it is load-bearing at
 `n = 0`. -/
+theorem exists_isomTorsor_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
+      AlgebraicGeometry.Flat p ∧ QuasiCompact p ∧
+      ∃ P Q : RelPoint f p,
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+          letI := ab.addCommGroup (t ≫ p)
+          ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
+            ∃! c : Fin n × Fin n,
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
+        (∀ (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
+          (letI := ab.addCommGroup t
+            ∃ y z : RelPoint f t, ∀ x : RelPoint f t, n • x = 0 ↔
+              ∃! c : Fin n × Fin n, x = (c.1 : ℕ) • y + (c.2 : ℕ) • z) →
+          ∃ t' : Spec (CommRingCat.of K) ⟶ T', t' ≫ p = t) :=
+  sorry
+
+/-- **The level-`n` torsor** (PROVEN 2026-07-27) — the scheme-theoretic
+half of `exists_fullLevelStructure_cover_of_baseChange`, with the fibre
+computation discharged by the hypothesis `hfib`.
+
+It is `exists_isomTorsor_of_geomPoint` — the `Isom`-scheme, and all of
+the moduli content — combined with `surjective_of_exists_lift_geomPoint`,
+which turns that node's *pointwise* lifting clause into surjectivity of
+`p` once `hfib` supplies a basis at every geometric point of `T`.
+
+That combination is the precise sense in which **`hfib` is the
+surjectivity input in disguise**: it is used here for nothing else, and
+the two other properties of `p` are handed over untouched.  Keeping it a
+hypothesis rather than an internal step is what leaves
+`exists_isomTorsor_of_geomPoint` with a purely scheme-theoretic
+obligation. -/
 theorem exists_torsionBasis_cover_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
     {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ SpecQ)
@@ -2139,8 +2342,12 @@ theorem exists_torsionBasis_cover_of_geomPoint (n : ℕ) (hn : 3 ≤ n)
           letI := ab.addCommGroup (t ≫ p)
           ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
             ∃! c : Fin n × Fin n,
-              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q :=
-  sorry
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q := by
+  obtain ⟨T', p, hflat, hqc, P, Q, hbasis, hlift⟩ :=
+    exists_isomTorsor_of_geomPoint n hn ab hdim g
+  exact ⟨T', p, hflat,
+    surjective_of_exists_lift_geomPoint p (fun K _ _ t => hlift K t (hfib K t)), hqc,
+    P, Q, hbasis⟩
 
 /-- **A fibrewise basis over the cover IS a full level structure on the
 base-changed datum** (PROVEN 2026-07-27) — the transport half of the
