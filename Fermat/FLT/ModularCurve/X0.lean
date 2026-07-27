@@ -13849,6 +13849,65 @@ structure IsX0Compactification (N : ℕ) {X Y S : Scheme.{0}} (strX : X ⟶ S)
   /-- the complement of `Y` in `X` — the cusp locus — is finite -/
   finite_compl : (Set.range j.base)ᶜ.Finite
 
+/-! ### Weierstrass models of an elliptic scheme
+
+These three declarations used to live further down, next to `IsJSection`.
+They were hoisted here on 2026-07-27 because `IsJMapOn.jm_classify` names
+`IsWeierstrassModel`, and `IsJMapOn` is declared in the subsection below.
+Nothing else changed about them. -/
+
+/-- **The affine Weierstrass curve `Spec R[W]` as a scheme.**
+
+`WeierstrassCurve.Affine.CoordinateRing` is mathlib's `R[X,Y]/(W)`; its
+spectrum is the affine Weierstrass curve, which is the projective one
+with the point at infinity removed.  That last sentence is the whole
+content of `IsWeierstrassModel` below. -/
+noncomputable def weierstrassAffine {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    Scheme.{0} :=
+  Spec (CommRingCat.of W.toAffine.CoordinateRing)
+
+/-- **The structure morphism of the affine Weierstrass curve**, `Spec` of
+`R → R[W]`. -/
+noncomputable def weierstrassAffineStr {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    weierstrassAffine W ⟶ Spec (CommRingCat.of R) :=
+  Spec.map (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
+
+/-- **`W` is a Weierstrass model of the elliptic scheme carrying `ab`**:
+the complement of the zero section is the affine Weierstrass curve of
+`W`, as a scheme over the base.
+
+This is the coordinate-level pinning that the moduli-level `≃+` of
+`exists_ellipticScheme_of_weierstrass` cannot provide, and it is stated
+in the only form available at this pin — an OPEN IMMERSION of
+`Spec R[W]` whose set-theoretic range is the complement of the range of
+the zero section — because `Proj` of a graded quotient ring, and hence
+the projective Weierstrass scheme itself, cannot yet be formed.
+
+**Why this determines `j`, which is what keeps `IsJSection.jt_model`,
+`IsJLine.jt_model` and `IsJMapOn.jm_classify` from being false.**  Over a
+field the smooth projective completion of an
+integral affine curve is unique, and it adds exactly the missing points.
+So if `W` and `W'` are both models of one `ab`, the two open immersions
+identify `Spec K[W] ≅ A ∖ {O} ≅ Spec K[W']`, hence identify the
+completions carrying the single point at infinity of each to the other,
+i.e. give an isomorphism of the two Weierstrass curves matching their
+origins.  Such an isomorphism is a `VariableChange`, and
+`WeierstrassCurve.variableChange_j` then gives `W.j = W'.j`.  Note the
+`range_eq` field is what forces the removed point to BE the origin; the
+weaker "some open immersion" would still determine `j` (by translation)
+but only after an argument, so the stronger form is stated.
+
+**`W` is not required to be elliptic here.**  It cannot be: `Δ` is
+invertible automatically, since a singular `Spec R[W]` cannot be an open
+subscheme of the smooth `A`.  Consumers that need `W.j` supply
+`[W.IsElliptic]` themselves. -/
+def IsWeierstrassModel {R : Type} [CommRing R] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
+    (W : WeierstrassCurve R) : Prop :=
+  ∃ ι : weierstrassAffine W ⟶ A, IsOpenImmersion ι ∧
+    ι ≫ f = weierstrassAffineStr W ∧
+    Set.range ι.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ
+
 /-! ### The `j`-map, and the `v_q(j) < 0 ⟹ cuspidal reduction` dictionary
 
 The layer this subsection adds is the one Mazur's Cor. 4.4 opens with:
@@ -13869,20 +13928,41 @@ identification `Γ(Spec ℚ, 𝒪) ≅ ℚ` at every use site and would pin
 nothing extra, since every statement below evaluates it at a rational
 point.
 
-**What pins `jm`, and why the pinning is an EXISTENCE statement.**  The
-tempting field is the equation `jm (hc.classify d) = E.j` for every
-datum `d` whose elliptic scheme is a model of the Weierstrass curve `E`.
-It is *not* used, and deliberately: the only "is a model of" relation
-available here is the one `exists_ellipticScheme_of_weierstrass`
-produces — a Galois-equivariant `≃+` of geometric-fibre point groups —
-and that relation is NOT known to determine `E` up to isomorphism, hence
-not known to determine `E.j`.  Were two curves with different
-`j`-invariants to share a datum, that field would make `IsJMapOn`
-UNSATISFIABLE and `exists_jMap` FALSE, silently.  `classify_jm` is
-therefore stated existentially (*some* datum is classified by a point
-carrying `E.j`), which is what the consumer needs, is true of the genuine
-`j`-map, and cannot be contradictory whatever that relation turns out to
-pin.
+**What pins `jm`, and why ONE of the two pinnings is an EXISTENCE
+statement.**  The tempting field is the equation `jm (hc.classify d) = E.j`
+for every datum `d` whose elliptic scheme is a model of the Weierstrass
+curve `E`, and everything turns on *which* "is a model of" relation is
+quantified over.
+
+Against the relation `exists_ellipticScheme_of_weierstrass` produces — a
+Galois-equivariant `≃+` of geometric-fibre point groups — the universal
+form is NOT used, and deliberately: that relation is not known to
+determine `E` up to isomorphism, hence not known to determine `E.j`.  Were
+two curves with different `j`-invariants to share a datum, such a field
+would make `IsJMapOn` UNSATISFIABLE and `exists_jMap` FALSE, silently.
+`classify_jm` is therefore stated existentially (*some* datum is
+classified by a point carrying `E.j`), which is what most consumers need,
+is true of the genuine `j`-map, and cannot be contradictory whatever that
+relation turns out to pin.
+
+**UPDATE 2026-07-27: the universal form IS available, against
+`IsWeierstrassModel`, and it is the second field `jm_classify`.**
+`IsWeierstrassModel` (hoisted above this subsection for exactly this
+reason) pins the elliptic scheme by COORDINATES rather than by a
+point-group equivalence, and it *does* determine `E.j` — see its own
+docstring, and note that `IsJSection.jt_model` has quantified over it
+universally since it was written, for precisely that reason.  So the
+objection above is an objection to the RELATION, not to the universal
+shape, and it does not apply here.
+
+`jm_classify` is satisfiable, and not merely believed to be: `exists_jMap`
+discharges it, by pushing `IsJSection.jt_model` through `IsJLine.jt_model`
+and the universal property.  It is what closed
+`exists_weierstrass_jm_of_gamma0Datum`, whose whole residue was the value
+of `jm` at the classifying point of a datum given IN ADVANCE — something
+`classify_jm`'s existential cannot supply, and something the `N = 5`
+junk-`jm` witness recorded in that theorem's docstring shows is genuinely
+not derivable from `classify_jm` alone.
 
 **`hN : N ≠ 0` on `exists_jMap` is load-bearing** — the same propagation
 recorded in the FALSITY AUDIT of
@@ -13933,6 +14013,15 @@ structure IsJMapOn (N : ℕ) {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) →
       ∃ d : Gamma0Datum N SpecQ, jm (hc.classify (𝟙 SpecQ) d) = E.j
+  /-- `jm` takes the value `E.j` at the classifying point of a datum given
+  IN ADVANCE, whenever `E` is a Weierstrass model of that datum's elliptic
+  scheme.  This is the universal companion of `classify_jm`, and the two are
+  not interchangeable: `classify_jm` produces *some* datum, this one is
+  evaluated at *the* datum a consumer already holds.  See the subsection
+  docstring for why the universal form is safe against `IsWeierstrassModel`
+  and unsafe against the point-group `≃+`. -/
+  jm_classify : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic] (d : Gamma0Datum N SpecQ),
+      IsWeierstrassModel d.ab E → jm (hc.classify (𝟙 SpecQ) d) = E.j
 
 /-- **Good reduction at `q` of the pair `(X_0(N), j)`, on rational
 points.**
@@ -14227,6 +14316,16 @@ structure IsJLine where
       ∃ d : Gamma0Datum N SpecQ,
         letI := d.cyc.etale_of_specQBase (𝟙 SpecQ)
         jLineVal (jt (𝟙 SpecQ) (d.ofDvd hN (one_dvd N))) = E.j
+  /-- `jt` agrees with `WeierstrassCurve.j` at a datum given IN ADVANCE:
+  `IsJSection.jt_model` verbatim.  Carried here because `exists_jMap` needs
+  the value of `jt` at the datum a consumer already holds, which
+  `jt_weierstrass`'s existential cannot supply; it is what pins
+  `IsJMapOn.jm_classify`.  Universally quantified over `IsWeierstrassModel`
+  rather than over the point-group `≃+` of
+  `exists_ellipticScheme_of_weierstrass`, which is the whole reason the
+  universal form is safe here — see `IsWeierstrassModel`'s docstring. -/
+  jt_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
+    IsWeierstrassModel d.ab W → jLineVal (jt (𝟙 SpecQ) d) = W.j
 
 /-! #### The cut of `exists_jLine`: the `j`-theory and the Weierstrass model
 
@@ -14284,56 +14383,13 @@ ingredients for the middle step are already in the pin —
 of one elliptic scheme differ by a variable change", not the invariance
 itself. -/
 
-/-- **The affine Weierstrass curve `Spec R[W]` as a scheme.**
-
-`WeierstrassCurve.Affine.CoordinateRing` is mathlib's `R[X,Y]/(W)`; its
-spectrum is the affine Weierstrass curve, which is the projective one
-with the point at infinity removed.  That last sentence is the whole
-content of `IsWeierstrassModel` below. -/
-noncomputable def weierstrassAffine {R : Type} [CommRing R] (W : WeierstrassCurve R) :
-    Scheme.{0} :=
-  Spec (CommRingCat.of W.toAffine.CoordinateRing)
-
-/-- **The structure morphism of the affine Weierstrass curve**, `Spec` of
-`R → R[W]`. -/
-noncomputable def weierstrassAffineStr {R : Type} [CommRing R] (W : WeierstrassCurve R) :
-    weierstrassAffine W ⟶ Spec (CommRingCat.of R) :=
-  Spec.map (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
-
-/-- **`W` is a Weierstrass model of the elliptic scheme carrying `ab`**:
-the complement of the zero section is the affine Weierstrass curve of
-`W`, as a scheme over the base.
-
-This is the coordinate-level pinning that the moduli-level `≃+` of
-`exists_ellipticScheme_of_weierstrass` cannot provide, and it is stated
-in the only form available at this pin — an OPEN IMMERSION of
-`Spec R[W]` whose set-theoretic range is the complement of the range of
-the zero section — because `Proj` of a graded quotient ring, and hence
-the projective Weierstrass scheme itself, cannot yet be formed.
-
-**Why this determines `j`, which is what keeps `IsJSection.jt_model`
-from being false.**  Over a field the smooth projective completion of an
-integral affine curve is unique, and it adds exactly the missing points.
-So if `W` and `W'` are both models of one `ab`, the two open immersions
-identify `Spec K[W] ≅ A ∖ {O} ≅ Spec K[W']`, hence identify the
-completions carrying the single point at infinity of each to the other,
-i.e. give an isomorphism of the two Weierstrass curves matching their
-origins.  Such an isomorphism is a `VariableChange`, and
-`WeierstrassCurve.variableChange_j` then gives `W.j = W'.j`.  Note the
-`range_eq` field is what forces the removed point to BE the origin; the
-weaker "some open immersion" would still determine `j` (by translation)
-but only after an argument, so the stronger form is stated.
-
-**`W` is not required to be elliptic here.**  It cannot be: `Δ` is
-invertible automatically, since a singular `Spec R[W]` cannot be an open
-subscheme of the smooth `A`.  Consumers that need `W.j` supply
-`[W.IsElliptic]` themselves. -/
-def IsWeierstrassModel {R : Type} [CommRing R] {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
-    (W : WeierstrassCurve R) : Prop :=
-  ∃ ι : weierstrassAffine W ⟶ A, IsOpenImmersion ι ∧
-    ι ≫ f = weierstrassAffineStr W ∧
-    Set.range ι.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ
+/- `weierstrassAffine`, `weierstrassAffineStr` and `IsWeierstrassModel` used
+to stand here.  They have MOVED upward, to just before the `j`-map
+subsection, because `IsJMapOn.jm_classify` — added 2026-07-27, and the field
+that closed `exists_weierstrass_jm_of_gamma0Datum` — names
+`IsWeierstrassModel` in its statement and `IsJMapOn` is declared there.  The
+declarations themselves are unchanged; only their position moved, and
+nothing between the two positions depends on them. -/
 
 /-- **The `j`-invariant of an elliptic scheme, pinned by Weierstrass
 models rather than by a chosen datum.**
@@ -15979,7 +16035,8 @@ supplies; the `letI` below is the same discharge `exists_jMap` uses, and
 matches the one inside `IsJLine.jt_weierstrass`'s own statement. -/
 theorem exists_jLine : Nonempty IsJLine := by
   obtain ⟨js⟩ := exists_jSection
-  refine ⟨{ jt := js.jt, jt_natural := js.jt_natural, jt_weierstrass := ?_ }⟩
+  refine ⟨{ jt := js.jt, jt_natural := js.jt_natural, jt_weierstrass := ?_
+            jt_model := js.jt_model }⟩
   intro E _ N hN g hg hstable
   obtain ⟨d, hd⟩ := exists_weierstrassModel_gamma0Datum E N hN g hg hstable
   -- `Gamma0Datum.ofDvd` acquired an `[Etale (d.cyc.ι ≫ d.f)]` hypothesis at the
@@ -16018,12 +16075,22 @@ theorem exists_jMap (N : ℕ) (hN : N ≠ 0) {Y : Scheme.{0}} {strY : Y ⟶ Spec
         haveI := d.cyc.etale_of_specQBase g
         exact jl.jt_natural h hg (hb.ofDvd hN (one_dvd N)))
   refine ⟨{ jm := fun y => jLineVal ⟨y.1 ≫ u, by rw [Category.assoc, hu, y.2]⟩
-            classify_jm := ?_ }⟩
-  intro E _ g hg hstable
-  obtain ⟨d, hd⟩ := jl.jt_weierstrass E N hN g hg hstable
-  refine ⟨d, Eq.trans ?_ hd⟩
-  congr 1
-  exact Subtype.ext (hu2 (𝟙 SpecQ) d).symm
+            classify_jm := ?_
+            jm_classify := ?_ }⟩
+  · intro E _ g hg hstable
+    obtain ⟨d, hd⟩ := jl.jt_weierstrass E N hN g hg hstable
+    refine ⟨d, Eq.trans ?_ hd⟩
+    congr 1
+    exact Subtype.ext (hu2 (𝟙 SpecQ) d).symm
+  -- `jm_classify` is `IsJLine.jt_model` transported across the SAME equation
+  -- `hu2`, at the datum given rather than at a produced one.  `Gamma0Datum.ofDvd`
+  -- keeps `ab` definitionally, so `hmodel` is already a model hypothesis for the
+  -- level-`1` datum and no transport lemma is needed.
+  · intro E _ d hmodel
+    haveI := d.cyc.etale_of_specQBase (𝟙 SpecQ)
+    refine Eq.trans ?_ (jl.jt_model E (d.ofDvd hN (one_dvd N)) hmodel)
+    congr 1
+    exact Subtype.ext (hu2 (𝟙 SpecQ) d).symm
 
 /- `exists_x0JReductionAt` used to stand here.  It has MOVED to the
 subsection `#### The Néron pinning of the `j`-map` at the end of this
@@ -16477,9 +16544,43 @@ point of the cut: the vacuity is now confined to the half that carries
 `hmem`, and the geometric half is a statement that can be tested against
 examples.
 
-IRREDUCIBLE at this pin: there is no descent or twisting API in `Fermat/`,
-in the mathlib pin, or in `~/cs/FLT` (`grep -rni 'fieldOfModuli|field of
-moduli|quadraticTwist'`, run 2026-07-27, finds only prose in this file). -/
+IRREDUCIBLE at this pin, but **the recorded reason was WRONG and is
+corrected here** (2026-07-27, second run of the same check).
+
+The old note said "there is no descent or twisting API in `Fermat/`, in the
+mathlib pin, or in `~/cs/FLT`".  **The twisting half of that is false.**
+`Fermat/FLT/KnownIn1980s/EllipticCurves/QuadraticTwists/QuadraticTwists.lean`
+is a full quadratic-twist development — `quadraticTwist`,
+`j_quadraticTwist` (`(E^L).j = E.j`), `quadraticTwistPointEquiv` and its
+Galois-equivariance `quadraticTwistPointEquiv_galois` — vendored from
+`~/cs/FLT`, where the same file exists.  It is not in this module's import
+cone, but it depends only on mathlib and on `Fermat/FLT/Mathlib/`, so it
+could be imported.  The first run's grep missed it because the identifiers
+are `quadraticTwist`, not `quadraticTwistOf`-style spellings of the search
+pattern, and the module sits under `KnownIn1980s/` rather than under
+`ModularCurve/`.
+
+**What is genuinely missing is the DESCENT, not the twisting.**  Twists
+describe the AMBIGUITY of a descent that already exists; this leaf needs the
+existence, i.e. Weil's descent criterion / the field-of-moduli theorem "when
+`Aut(E, C) = {±1}` the field of moduli is a field of definition".  The
+project's placeholder for that,
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/GaloisDescent.lean`, is
+a **35-line stub with zero declarations** despite its docstring — checked
+2026-07-27, do not go there expecting content.
+
+**A second, independent obstruction, and it is mechanical rather than
+mathematical**: conjugating a curve defined only over `ℚ̄` is not expressible
+with mathlib's point API, since `WeierstrassCurve.Affine.Point.map` needs a
+common base algebra.  That is why every statement in this cluster is phrased
+in the `ℚ`-model language rather than through an intermediate `Ē/ℚ̄`, and it
+is the wall any attempt to write `σ(E)` for `E/ℚ̄` hits.  So importing the
+twist API would not on its own move this leaf.
+
+**The check that would refute this**: a declaration anywhere in `Fermat/`,
+the pin, or `~/cs/FLT` producing a `K`-form of a variety from a
+Galois-stable `K̄`-isomorphism class — equivalently, anything inhabiting
+`GaloisDescent.lean`. -/
 theorem exists_gamma0Datum_descent {p : ℕ} (_hp : p.Prime)
     (_hmem : p ∉ mazurIsogenyPrimes)
     {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
@@ -16565,10 +16666,26 @@ So the missing ingredient is a single, nameable thing: **a geometric-points
 clause on `IsCoarseModuliY0`** (the omitted half of the usual coarse-space
 definition), plus the field-of-moduli descent that turns a Galois-stable
 `ℚ̄`-class into a `ℚ`-rational datum.  The first is a structure field owned
-elsewhere; only the second is mathematics for this leaf.  Note the sibling
-`exists_weierstrass_jm_of_gamma0Datum` is blocked in exactly the same
-shape — on a missing field of `IsJMapOn` — which is why neither leaf is a
-prover's task until a structure owner moves.
+elsewhere; only the second is mathematics for this leaf.  The sibling
+`exists_weierstrass_jm_of_gamma0Datum` used to be blocked in exactly the
+same shape — on a missing field of `IsJMapOn`.
+
+**THAT SIBLING IS NOW PROVEN (2026-07-27), AND HOW IT CLOSED IS THE USEFUL
+PART.**  "Blocked on a missing structure field, owned elsewhere" turned out
+to mean nothing more than: add the field, and pay for it in the structure's
+sole producer.  `IsJMapOn` gained `jm_classify`, `IsJLine` gained the
+`jt_model` it is proved from, and `exists_jMap` discharged it from
+`IsJSection.jt_model` — no new leaf, no new sorry, and no owner of
+`EllipticScheme.lean` had to move.  So **do not read "a structure owner must
+move" as a reason to wait**; check first whether the field can be
+discharged in the producer you already have.
+
+Whether the same trick applies HERE is a different question, and the answer
+is no: `IsCoarseModuliY0` has many producers (every `Gamma0Atlas`, through
+`toIsCoarseModuliY0`), so a geometric-points field falls due at each of
+them, and none of them can discharge it without the Katz–Mazur clause.  That
+is exactly why `exists_gamma0Datum_geomClassify` took the citation route
+instead — and why the DESCENT half below is still not a prover's task.
 
 ## THE CUT (2026-07-27): THE OMITTED CLAUSE AND THE DESCENT ARE NOW TWO LEAVES
 
@@ -16612,8 +16729,8 @@ theorem exists_gamma0Datum_classify_eq {p : ℕ} (hp : p.Prime)
   exact exists_gamma0Datum_descent hp hmem hc y d' hd'
 
 /-- **A `Γ₀(p)`-datum over `ℚ` is a Weierstrass curve with a stable cyclic
-subgroup, and `jm` reads its `j`-invariant** (sorry node, introduced
-2026-07-27).
+subgroup, and `jm` reads its `j`-invariant** (PROVEN 2026-07-27; a sorry
+node from 2026-07-27 until then).
 
 This is the **`jm`-pinning half** of `exists_weierstrass_jm_of_relPointY0`,
 isolated from the descent.  It is the converse of
@@ -16621,20 +16738,35 @@ isolated from the descent.  It is the converse of
 has had, together with the assertion that `hj.jm` takes the expected value
 at the classifying point.
 
-## THE WHOLE DIFFICULTY IS THE LAST CONJUNCT, AND IT IS A GAP IN `IsJMapOn`
+## THE WHOLE DIFFICULTY WAS THE LAST CONJUNCT, AND IT WAS A GAP IN `IsJMapOn`
+
+**That gap is now CLOSED: `IsJMapOn` gained the field `jm_classify`, and
+this leaf is proven.**  The two sections below are kept because they record
+*why* the repair had to be a field rather than a lemma, and that reasoning
+is still live for anyone tempted to weaken it back.
 
 Turning the datum into a Weierstrass curve is the ordinary Weierstrass
 bridge: an elliptic scheme over `Spec ℚ` has a Weierstrass model, and the
 cyclic subgroup scheme of order `p` gives a `ℚ̄`-point `g` of order `p`
 whose `zmultiples` are Galois-stable.  That half is bookkeeping.
 
-The conjunct `hj.jm (hc.classify (𝟙 SpecQ) d) = E.j` is not.  `IsJMapOn`
-pins `jm` **only** through `classify_jm`, which is an EXISTENCE statement —
-"for every `(E, g)` there is SOME `d` with `jm (hc.classify _ d) = E.j`" —
-and deliberately not the equation `jm (hc.classify _ d) = E.j` for a GIVEN
-`d`.  So going from a given `d` to a curve realising `jm` at that specific
-point is not available from the structure, and this leaf is where that gap
-now lives, by name.
+The conjunct `hj.jm (hc.classify (𝟙 SpecQ) d) = E.j` was not.  Until
+2026-07-27 `IsJMapOn` pinned `jm` **only** through `classify_jm`, which is
+an EXISTENCE statement — "for every `(E, g)` there is SOME `d` with
+`jm (hc.classify _ d) = E.j`" — and deliberately not the equation
+`jm (hc.classify _ d) = E.j` for a GIVEN `d`.  So going from a given `d` to
+a curve realising `jm` at that specific point was not available from the
+structure, and this leaf was where that gap lived, by name.
+
+**The repair, in full.**  `IsJMapOn` gained
+`jm_classify : ∀ E [E.IsElliptic] (d : Gamma0Datum N SpecQ),
+IsWeierstrassModel d.ab E → jm (hc.classify (𝟙 SpecQ) d) = E.j`, and
+`IsJLine` gained the `jt_model` field it is proved from.  Nothing was
+sorried to get there: `IsJSection.jt_model` had quantified universally over
+`IsWeierstrassModel` since it was written, `exists_jLine` passes it
+straight through, and `exists_jMap` transports it across the universal
+property with the same three lines `classify_jm` already used.  So the
+sorry count fell by one and no new leaf was created.
 
 ## THE RECOMMENDED NON-VACUOUS TARGET IS FALSE — REFUTED 2026-07-27
 
@@ -16652,23 +16784,35 @@ infinite.  Pick `d₀` and set `y₀ := hc.classify (𝟙 SpecQ) d₀`; pick
 
     jm y₀ := v,    jm ↾ (image of classify \ {y₀}) := any surjection onto S.
 
-`IsJMapOn 5 hc` has exactly **two** fields, `jm` and `classify_jm`, so
-this `jm` is a legitimate `IsJMapOn`: every `E.j` lies in `S` and is
-therefore attained at some classified point other than `y₀`, which is all
-`classify_jm` asks.  But at `d₀` the conclusion demands a curve with
-`j = v ∉ S` carrying a Galois-stable cyclic subgroup of order `5`, and
-`v ∉ S` denies exactly that.
+At the time this was written `IsJMapOn 5 hc` had exactly **two** fields,
+`jm` and `classify_jm`, so this `jm` was a legitimate `IsJMapOn`: every
+`E.j` lies in `S` and is therefore attained at some classified point other
+than `y₀`, which is all `classify_jm` asks.  But at `d₀` the conclusion
+demands a curve with `j = v ∉ S` carrying a Galois-stable cyclic subgroup
+of order `5`, and `v ∉ S` denies exactly that.
 
 So `classify_jm`'s existential does not merely fail to PROVE the
-membership-free statement; it fails to make it TRUE.  **This leaf is true
-only through its vacuity.**  That does not license an `exfalso`
-discharge — the unsatisfiability is knowable only through the chain this
-leaf belongs to — but it does mean the "start from the non-vacuous
-version" advice is unusable here.
+membership-free statement; it fails to make it TRUE.
 
-## THE REPAIR IS A FIELD ON `IsJMapOn`, AND THE OBVIOUS FIELD IS UNSAFE
+**THIS REFUTATION IS EXACTLY WHY THE REPAIR IS A FIELD (2026-07-27).**  The
+witness is a refutation of the *two-field* structure, and it is precisely
+the third field `jm_classify` that it violates: `jm y₀ = v` is not `E.j`
+for any `E` modelling `d₀`, so the junk `jm` is no longer an `IsJMapOn` at
+all.  Adding the field is therefore not "assuming the conclusion" — it is
+adding the axiom the junk witness shows is missing, and `exists_jMap`
+discharges it for the genuine `j`-map, so the strengthened structure is
+still inhabited.  **What the witness does still rule out is a top-level
+lemma** quantified over an arbitrary two-field-style `IsJMapOn`; see the
+warning below, which is unretracted.
 
-The repair is still a field pinning `jm` at a classifying point given in
+## THE REPAIR WAS A FIELD ON `IsJMapOn`, AND THE OBVIOUS FIELD WAS UNSAFE
+
+**DONE 2026-07-27.**  The section below is the reasoning that selected the
+relation, and it is worth keeping: the field that landed quantifies over
+`IsWeierstrassModel`, precisely because the relation this section rules out
+is the one an unwary repair would have reached for first.
+
+The repair is a field pinning `jm` at a classifying point given in
 advance, roughly `jm_classify : ∀ (E) [E.IsElliptic] (g) …
 (d : Gamma0Datum N SpecQ), IsGamma0DatumOf d E g → jm (hc.classify _ d) =
 E.j`.  **But `IsGamma0DatumOf` cannot be the "is a model of" relation this
@@ -16713,7 +16857,7 @@ So the repair is a two-step job, each step with a different owner:
    leaf's last conjunct becomes free and only the Weierstrass bridge
    survives.
 
-## STEP 1 HAS LANDED (2026-07-27), AND STEP 2 IS THE WHOLE RESIDUE
+## STEP 1 HAS LANDED (2026-07-27), AND SO HAS STEP 2 — BUT NOT AS WRITTEN
 
 The two paragraphs that followed here — "the check that would refute step
 1's premise", answered by quoting `exists_ellipticScheme_of_projModel`'s
@@ -16753,22 +16897,30 @@ called "bookkeeping" is discharged: `d.cyc.geom_cyclic` supplies a generator
 `RelPoint.LiesIn` is preserved by precomposition while `galSMul` IS
 precomposition (`AbelianSchemeStruct.galSMul_def`, `rfl`).
 
-**WHAT REMAINS IS EXACTLY STEP 2, AND IT IS THE `have hjm` BELOW.**  It is
-stated in the shape the `jm_classify` field will take —
-`IsWeierstrassModel d.ab E → jm (hc.classify (𝟙 SpecQ) d) = E.j` — so that
-adding the field discharges it by `exact hj.jm_classify …` with nothing else
-to change.
+**STEP 2 IS DONE, AND STEP 1'S OWNER WAS NEVER NEEDED.**  The residue used
+to be a sorried `have hjm : IsWeierstrassModel d.ab E → jm (hc.classify
+(𝟙 SpecQ) d) = E.j` at the end of the proof below, stated in the shape the
+`jm_classify` field would take.  That field is now ON `IsJMapOn`, against
+`IsWeierstrassModel` rather than against the scheme-level relation step 1
+was going to supply — which is why no owner of `EllipticScheme.lean` had to
+move.  The last line of the proof is now `hj.jm_classify E d hmodel`.
 
-**DO NOT HOIST `have hjm` INTO A TOP-LEVEL THEOREM: it would be FALSE.**
-This is the same refutation as the one recorded above, and it is the reason
-step 2 must be a FIELD and not a lemma.  Quantified over an arbitrary
-`hj : IsJMapOn p hc`, the statement is refuted by the `N = 5` witness: with
-only the two fields `jm` and `classify_jm`, `jm` may be junk at one
-classified point `y₀` while `classify_jm` is still satisfied elsewhere, and
-then no curve realises the value.  Inside this proof the hypothesis is
-harmless only because the enclosing statement is itself true only through
-its vacuity.  A prover dispatched at `hjm` in isolation would be dispatched
-at a false statement.
+Where the obligation went, since a field is not free: `IsJLine` gained the
+matching `jt_model` (verbatim `IsJSection.jt_model`), `exists_jLine` passes
+`js.jt_model` through, and `exists_jMap` proves `jm_classify` by the same
+transport across `hc.universal` that `classify_jm` already used.  **No new
+leaf, no new sorry**: the universal `jt_model` was already a field of
+`IsJSection`, which `exists_jSection` produces.
+
+**DO NOT HOIST `jm_classify` INTO A TOP-LEVEL LEMMA OVER AN ARBITRARY
+`IsJMapOn`: it would be FALSE, and this is why it is a FIELD.**  This is
+the same refutation as the one recorded above.  Quantified over a structure
+carrying only `jm` and `classify_jm`, the statement is refuted by the
+`N = 5` witness: `jm` may be junk at one classified point `y₀` while
+`classify_jm` is still satisfied elsewhere, and then no curve realises the
+value.  A field is admissible exactly because it is an added AXIOM that the
+sole producer `exists_jMap` discharges for the genuine `j`-map; a lemma
+would have had to derive it from the others, and cannot.
 
 **VACUITY, inherited and now sharper.**  `Gamma0Datum p SpecQ` is itself
 empty for `p ∉ mazurIsogenyPrimes` — that is Mazur's theorem again — so
@@ -16826,17 +16978,12 @@ theorem exists_weierstrass_jm_of_gamma0Datum {p : ℕ} (_hp : p.Prime)
     apply e.injective
     rw [map_zsmul, AddEquiv.apply_symm_apply]
     exact hk
-  /- **THE RESIDUE, AND IT IS `IsJMapOn.jm_classify`** (sorry step).  `jm` is
-  pinned by `IsJMapOn` only through the EXISTENTIAL `classify_jm`, so the
-  value of `jm` at the classifying point of a GIVEN `d` is not available from
-  the structure.  This is the missing field, stated in the shape it will
-  take.  It is **not** a standalone theorem — see the docstring above: over an
-  arbitrary `IsJMapOn` the statement is refuted by an explicit `N = 5`
-  witness, and it is admissible here only because the enclosing leaf is true
-  through its vacuity. -/
-  have hjm : IsWeierstrassModel d.ab E → hj.jm (hc.classify (𝟙 SpecQ) d) = E.j := by
-    sorry
-  exact ⟨E, hE, e.symm y, hord, hstab, hjm hmodel⟩
+  -- **THE RESIDUE IS NOW THE FIELD `IsJMapOn.jm_classify`** (added 2026-07-27,
+  -- and discharged in `exists_jMap` from `IsJSection.jt_model`): the value of
+  -- `jm` at the classifying point of a datum given IN ADVANCE, which
+  -- `classify_jm`'s existential cannot supply.  This step was a `sorry` until
+  -- the field landed.
+  exact ⟨E, hE, e.symm y, hord, hstab, hj.jm_classify E d hmodel⟩
 
 /-- **The coarse-to-fine descent on `Y_0(p)`** (PROVEN 2026-07-27 over
 `exists_gamma0Datum_classify_eq` and `exists_weierstrass_jm_of_gamma0Datum`;
@@ -16874,10 +17021,13 @@ are the whole of the assembly:
   deliberately is not the equation `jm (hc.classify d) = E.j`.  So `jm y`
   for a general `y` is unconstrained by the structure, and the final
   conjunct `hj.jm y = E.j` is the one clause here that needs `jm` to be the
-  genuine `j`-map rather than merely an `IsJMapOn`.  **This is a gap in
-  `IsJMapOn`, not in this leaf**, and the repair — a field pinning `jm` at
-  a classifying point given in advance — is owned elsewhere.  The cut makes
-  that gap a NAMED leaf, so the `IsJMapOn` owner can see it.
+  genuine `j`-map rather than merely an `IsJMapOn`.  **That was a gap in
+  `IsJMapOn`, not in this leaf**, and the repair was a field pinning `jm`
+  at a classifying point given in advance.  Making the gap a NAMED leaf is
+  what let it be seen — and it is now **CLOSED** (2026-07-27):
+  `IsJMapOn.jm_classify` is that field, discharged in `exists_jMap` from
+  `IsJSection.jt_model`, so the sibling leaf is PROVEN and this half costs
+  nothing.
 
 What the cut buys is that a repair to `IsJMapOn` collapses the second leaf
 to the Weierstrass bridge without touching the first, and an advance on the
@@ -16954,14 +17104,47 @@ in particular not through `cuspidal_x0_prime` below; see that theorem's
 `⚠ DO NOT CLOSE` warning, which records the same trap in the other
 direction.
 
-**The right repair is a HOIST, not a proof.**  The three signature/resultant
-/class-number leaves of `MazurTorsion.lean` mention only `WeierstrassCurve`,
-`Field.absoluteGaloisGroup` and `padicValRat`; nothing in them needs this
-module.  Moving them (and the `hstable ↔ hlam` bridge
-`exists_isogenyCharacter`) to a module upstream of BOTH would let this leaf
-be discharged by citation and would delete the duplication outright.  That
-is a cross-module refactor with two owners and is deliberately not done
-here.
+**The right repair is a HOIST, not a proof** — and the check that the hoist
+is legal has now been RUN (2026-07-27), so what follows is measured rather
+than hoped.
+
+The claim used to be that the three signature/resultant/class-number steps
+"mention only `WeierstrassCurve`, `Field.absoluteGaloisGroup` and
+`padicValRat`", which is a claim about their STATEMENTS and says nothing
+about their proofs.  The proofs were checked directly:
+
+* **The hoistable block is `MazurTorsion.lean` lines ~2229–6700**
+  (`exists_isogenySignature`, `not_isogenyCharacter_of_isogenySignature_ne_six`,
+  `mem_classNumberOnePrimes_of_isogenySignature_six` and their sub-leaves)
+  **plus ~600–780** (`exists_isogenyCharacter`, the `hstable ↔ hlam`
+  bridge).  Grepping BOTH ranges for every name this module exports —
+  `IsJMapOn`, `IsCoarseModuliY0`, `Gamma0Datum`, `IsCompactificationY0`,
+  `IsX0*`, `RelPoint`, `SpecQ`, `mazurIsogenyPrimes`, `Fermat.*` — returns
+  **zero hits**.  So the block genuinely does not need this module and the
+  move is mechanical.
+* **What must NOT be hoisted is step 0**,
+  `potentiallyGoodReduction_of_isogenyCharacter` (line ~2195).  Its proof
+  consumes `Fermat.exists_coarseModuliY0`,
+  `Fermat.exists_compactificationY0` and
+  `Fermat.exists_cuspidalReduction_of_padicValRat_neg` — all from THIS
+  module — which is exactly why the import runs the way it does.  It is
+  also exactly what this leaf does not need.
+* **The interface matches on the nose.** Step 0's conclusion is literally
+  `∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j`, i.e. verbatim
+  this leaf's `_hint`, and it is passed to steps 1–3 as the hypothesis
+  `hpg`.  So after the hoist this leaf is
+  `not_isogenyCharacter_of_prime_ge_twentyThree`'s own three-case proof with
+  `hpg := _hint`, plus the arithmetic bookkeeping
+  `p.Prime → p ∉ mazurIsogenyPrimes → 23 ≤ p ∧ p ≠ 37 ∧ p ∉ {43, 67, 163}`.
+* **None of the four steps is itself sorried** — they are assembled over
+  deeper leaves — so the hoist moves several thousand lines of live proof,
+  not a handful of statements.  That is the real cost, and it is a
+  file-surgery cost in a 35k-line concurrently-edited module, not a
+  mathematical one.
+
+So this remains a cross-module refactor with two owners, deliberately not
+done here; but it is now a *mechanical* one with the legality check
+discharged, rather than a conjecture.
 
 Stated in the `hstable` form rather than with an isogeny character `λ`
 because that is the form this module has (`nonempty_gamma0Datum_of_stable`,
