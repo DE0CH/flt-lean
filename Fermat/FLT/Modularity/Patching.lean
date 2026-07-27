@@ -4416,8 +4416,75 @@ theorem taylorWilesLevelIdeal_le_aug (p : ℕ) [Fact p.Prime] {q : ℕ}
   simp only [SetLike.mem_coe, hc]
   exact Ideal.mul_mem_right _ _ (Ideal.subset_span ⟨i, rfl⟩)
 
-/-- **The level ideals shrink** (sorry node, LEAF A1 of the 2026-07-27
-decomposition of `exists_taylorWilesLevelRaw`): `𝔟_n ⊆ 𝔪_Λ^n` whenever
+/-- **One binomial step of the level-ideal induction** (PROVEN 2026-07-27,
+helper for `taylorWilesLevelIdeal_le_maximalIdeal_pow`).
+
+In any commutative ring, if the prime `p` lies in an ideal `I` and
+`x ∈ I^m` with `m ≥ 1`, then `(1 + x)^p - 1 ∈ I^{m+1}`.
+
+Proof: expand `(1 + x)^p - 1 = ∑_{j=1}^{p} binom(p, j) x^j`.  For
+`1 ≤ j ≤ p - 1` the prime divides `binom(p, j)`
+(`Nat.Prime.dvd_choose_self`), and `x^j ∈ I^m`, so the term lies in
+`I^m · I = I^{m+1}`.  The top term is `x^p ∈ I^{mp} ⊆ I^{m+1}`, where
+`m + 1 ≤ mp` uses BOTH `p ≥ 2` and `m ≥ 1` — at `m = 0` the top term is
+genuinely not in `I`, which is why the hypothesis `1 ≤ m` cannot be
+dropped (it is supplied by the base case of the induction below). -/
+theorem onePlus_pow_prime_sub_one_mem {R : Type*} [CommRing R]
+    {I : Ideal R} {p : ℕ} (hp : p.Prime) (hpI : (p : R) ∈ I) {m : ℕ}
+    (hm : 1 ≤ m) {x : R} (hx : x ∈ I ^ m) : (1 + x) ^ p - 1 ∈ I ^ (m + 1) := by
+  have hexp : (1 + x) ^ p - 1 =
+      ∑ k ∈ Finset.range p, x ^ (k + 1) * (p.choose (k + 1) : R) := by
+    have h := add_pow x (1 : R) p
+    rw [Finset.sum_range_succ'] at h
+    simp only [one_pow, mul_one, pow_zero, Nat.choose_zero_right,
+      Nat.cast_one] at h
+    rw [add_comm (1 : R) x, h]
+    ring
+  rw [hexp]
+  refine Submodule.sum_mem _ ?_
+  intro k hk
+  rw [Finset.mem_range] at hk
+  have hxm : x ^ (k + 1) ∈ I ^ m := by
+    rw [pow_succ]
+    exact Ideal.mul_mem_left _ _ hx
+  rcases eq_or_ne (k + 1) p with hkp | hkp
+  · rw [hkp, Nat.choose_self, Nat.cast_one, mul_one]
+    have h1 : x ^ p ∈ I ^ (m * p) := by
+      rw [pow_mul]; exact Ideal.pow_mem_pow hx p
+    refine Ideal.pow_le_pow_right ?_ h1
+    nlinarith [hp.two_le]
+  · have hlt : k + 1 < p := lt_of_le_of_ne hk hkp
+    obtain ⟨c, hc⟩ := hp.dvd_choose_self (Nat.succ_ne_zero k) hlt
+    rw [hc]
+    push_cast
+    have hmem : x ^ (k + 1) * (p : R) ∈ I ^ (m + 1) := by
+      rw [pow_succ]
+      exact Ideal.mul_mem_mul hxm hpI
+    rw [← mul_assoc]
+    exact Ideal.mul_mem_right _ _ hmem
+
+/-- **The `p`-power binomial estimate** (PROVEN 2026-07-27, helper for
+`taylorWilesLevelIdeal_le_maximalIdeal_pow`): if `p ∈ I` and `x ∈ I`
+then `(1 + x)^{p^f} - 1 ∈ I^{f+1}`.
+
+Induction on `f`.  At `f = 0` the element is `x ∈ I`.  The step writes
+`(1 + x)^{p^{f+1}} = (1 + z)^p` for `z = (1 + x)^{p^f} - 1 ∈ I^{f+1}` and
+applies `onePlus_pow_prime_sub_one_mem` at `m = f + 1 ≥ 1`. -/
+theorem onePlus_pow_primePow_sub_one_mem {R : Type*} [CommRing R]
+    {I : Ideal R} {p : ℕ} (hp : p.Prime) (hpI : (p : R) ∈ I) {x : R}
+    (hx : x ∈ I) (f : ℕ) : (1 + x) ^ p ^ f - 1 ∈ I ^ (f + 1) := by
+  induction f with
+  | zero => simpa using hx
+  | succ f ih =>
+      have h1 : (1 + x) ^ p ^ (f + 1) = (1 + ((1 + x) ^ p ^ f - 1)) ^ p := by
+        have h2 : (1 : R) + ((1 + x) ^ p ^ f - 1) = (1 + x) ^ p ^ f := by ring
+        rw [h2, ← pow_mul, ← pow_succ]
+      rw [h1]
+      exact onePlus_pow_prime_sub_one_mem hp hpI (Nat.le_add_left 1 f) ih
+
+/-- **The level ideals shrink** (PROVEN 2026-07-27; was LEAF A1 of the
+2026-07-27 decomposition of `exists_taylorWilesLevelRaw`): `𝔟_n ⊆ 𝔪_Λ^n`
+whenever
 every exponent satisfies `e_i ≥ n`, i.e.
 `TaylorWilesLevelRaw.bIdeal_le` for the explicit level ideal.
 
@@ -4426,8 +4493,9 @@ makes the pigeonhole of `TaylorWilesSystem.exists_patchedModule`
 nontrivial — and it is pure commutative algebra over
 `Λ = ℤ_p[[S_1,…,S_q]]`, with no Galois or Hecke content whatsoever.
 
-INTENDED PROOF (sketched here because it is short and the leaf is meant
-to be closed in isolation).  Write `a = S_i ∈ 𝔪` and
+PROOF (as sketched below, and carried out by the two helper lemmas
+`onePlus_pow_prime_sub_one_mem` and `onePlus_pow_primePow_sub_one_mem`
+above).  Write `a = S_i ∈ 𝔪` and
 `z_e = (1 + a)^{p^e} − 1`.  Claim: `z_e ∈ 𝔪^{e+1}`, by induction on `e`.
 
 * `e = 0`: `z_0 = a ∈ 𝔪`.
@@ -4448,12 +4516,86 @@ dichotomy exists. -/
 theorem taylorWilesLevelIdeal_le_maximalIdeal_pow (p : ℕ) [Fact p.Prime]
     {q n : ℕ} (e : Fin q → ℕ) (he : ∀ i, n ≤ e i) :
     taylorWilesLevelIdeal p e ≤
-      IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n :=
+      IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n := by
+  have hp : p.Prime := Fact.out
+  -- `p` is a nonunit of `Λ`, because its constant coefficient `p` is a
+  -- nonunit of `ℤ_[p]`.
+  have hpI : ((p : ℕ) : MvPowerSeries (Fin q) ℤ_[p]) ∈
+      _root_.IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+    rw [_root_.IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+      MvPowerSeries.isUnit_iff_constantCoeff, map_natCast, ← mem_nonunits_iff,
+      ← _root_.IsLocalRing.mem_maximalIdeal, PadicInt.maximalIdeal_eq_span_p]
+    exact Ideal.mem_span_singleton_self _
+  -- each variable `S_i = X i` is a nonunit of `Λ`, its constant coefficient
+  -- being `0`.
+  have hXI : ∀ i : Fin q, (MvPowerSeries.X i : MvPowerSeries (Fin q) ℤ_[p]) ∈
+      _root_.IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+    intro i
+    rw [_root_.IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+      MvPowerSeries.isUnit_iff_constantCoeff, MvPowerSeries.constantCoeff_X]
+    exact not_isUnit_zero
+  rw [taylorWilesLevelIdeal, Ideal.span_le]
+  rintro _ ⟨i, rfl⟩
+  exact Ideal.pow_le_pow_right (le_trans (he i) (Nat.le_succ _))
+    (onePlus_pow_primePow_sub_one_mem hp hpI (hXI i) (e i))
+
+/-- **Cohen's structure theorem, in exactly the form the bottom ring leaf
+consumes** (sorry node, LEAF B1a of the 2026-07-27 decomposition of
+`exists_taylorWilesBottomPresentation`): a complete Noetherian local ring
+with finite residue field is a quotient of a power series ring in finitely
+many variables over a `TaylorWilesCoefficients`.
+
+Classically this is Cohen's structure theorem (Cohen 1946; Matsumura,
+*Commutative Ring Theory*, Thm. 29.4; Eisenbud, *Commutative Algebra*,
+Thm. 7.7): pick a coefficient ring `𝒪 ⊆ R` — for `k` finite, hence
+perfect of characteristic `p`, the ring of Witt vectors `𝒪 = W(k)`, which
+maps to `R` because `R` is complete and `k` is perfect — and then send the
+variables to a finite generating set `t_1, …, t_q` of `𝔪_R`, which exists
+because `R` is Noetherian.  The resulting substitution homomorphism
+converges because the `t_i` lie in `𝔪_R` and `R` is `𝔪_R`-adically
+complete, and it is surjective by the complete version of Nakayama.
+
+WHAT THIS LEAF IS AND IS NOT.  It is PURE COMMUTATIVE ALGEBRA: there is
+no Galois representation, no deformation functor, no Hecke algebra and no
+elliptic curve anywhere in its statement, and the CIRCULARITY GUARD of
+the patching subtree therefore cannot even be stated against it.  It is
+also the ENTIRE remaining content of `exists_taylorWilesBottomPresentation`
+— see the FORMAL-CONTENT AUDIT there.
+
+MISSING MACHINERY (checked 2026-07-27 against our pin, `~/cs/FLT` and this
+project's own `Fermat/FLT/Mathlib/` shim tree; the refuting check for each
+is a grep for the name):
+
+* **Cohen's structure theorem is absent from mathlib.** The only file
+  matching `Cohen` is `Mathlib/RingTheory/Noetherian/OfPrime.lean`, which
+  is Cohen's *other* theorem ("Noetherian iff every prime is finitely
+  generated") and is unrelated.
+* The **coefficient-ring map** `W(k) → R` for `R` complete local with
+  perfect residue field `k` is the substantial half and is likewise
+  absent; mathlib's Witt vector universal property (`WittVector.lift`)
+  maps *into* `𝕎 k`, which is the wrong direction.
+* What IS available and should be reused: `MvPowerSeries.subst` for the
+  substitution homomorphism, `IsAdicComplete`/`IsPrecomplete` for its
+  convergence, and `WittVector.isDiscreteValuationRing` for the DVR half
+  of the `TaylorWilesCoefficients` obligations.  The topological half of
+  those obligations (`CompactSpace`, `T2Space`,
+  `TotallyDisconnectedSpace`, `IsTopologicalRing`,
+  `Algebra.TopologicallyFG ℤ`) is genuinely owed: for `k` finite,
+  `W(k) = lim W_n(k)` is an inverse limit of FINITE rings, hence
+  profinite, which supplies all four at once. -/
+theorem exists_taylorWilesCoefficientsPresentation
+    {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {k : Type*} [Field k] [Finite k] {π : R →+* k}
+    (hπ : Function.Surjective π) :
+    ∃ (q : ℕ) (coeff : TaylorWilesCoefficients)
+      (φ : MvPowerSeries (Fin q) coeff.carrier →+* R), Function.Surjective φ :=
   sorry
 
 set_option linter.checkUnivs false in
 /-- **The Taylor–Wiles presentation of the universal deformation ring**
-(sorry node, LEAF B1 of the 2026-07-27 decomposition of
+(PROVEN 2026-07-27 from `exists_taylorWilesCoefficientsPresentation`;
+was LEAF B1 of the 2026-07-27 decomposition of
 `exists_taylorWilesBottomLevel`): the RING half of the bottom level —
 the coefficient ring `𝒪` and the `q`-generator power-series presentation
 of `Runiv` over it, in a universe-`0` model.
@@ -4478,11 +4620,59 @@ level's ring side consumes:
    `Hom_k(𝔪_R/(𝔪_R² + 𝔪_𝒪), k) = H¹_f(ℚ, ad⁰ρbar)`.
 3. **A universe-`0` model**: the presentation is required to land in a
    ring `R : Type` isomorphic to `Runiv`, which is the "Type-0 note" of
-   `exists_taylorWilesTower` made into an obligation.  It is satisfiable:
-   `Runiv` is local Noetherian, `𝔪`-adically complete (`hcomplete`) with
-   residue field `k` finite through `hπuniv`, so every `Runiv/𝔪^j` is
-   finite and `Runiv` is an inverse limit of finite rings, of cardinality
-   at most the continuum.
+   `exists_taylorWilesTower` made into an obligation.
+
+   **CORRECTED 2026-07-27: obligation 3 is NOT an obligation at all — it
+   is free, and this docstring previously overstated it.**  The earlier
+   text argued that a universe-`0` model exists because `Runiv` is an
+   inverse limit of finite rings of cardinality at most the continuum.
+   That argument is sound but entirely unnecessary, and formalising it
+   would have been days of wasted work.  Given ANY surjection
+   `φ : 𝒪[[x_1, …, x_q]] ↠ Runiv`, the ring
+   `𝒪[[x_1, …, x_q]] / ker φ` is ALREADY in `Type`, because
+   `TaylorWilesCoefficients.carrier` is declared `Type` and both
+   `MvPowerSeries` and `Ideal.Quotient` preserve the universe; and it is
+   isomorphic to `Runiv` by the first isomorphism theorem
+   (`RingHom.quotientKerEquivOfSurjective`).  So obligation 3 is
+   discharged by obligation 2 with no cardinality argument whatsoever,
+   and that is exactly how the proof below reads.
+
+# FORMAL-CONTENT AUDIT (2026-07-27) — THIS LEAF CARRIES NO GALOIS CONTENT
+
+Its proof consumes exactly TWO of its hypotheses: `hcomplete` and
+`hπuniv`.  Seven others — `hres`, `hirr`, `hadic`, `hρuniv`, `hunivred`,
+`hfact` and `hTWq` — are entirely unused, and the seven
+`unusedVariables` warnings this declaration emits are that fact made
+mechanically visible rather than merely asserted.  They are EXPECTED and
+must not be silenced: they are the audit.  (`hpodd` and `hW` draw no
+warning only because they appear in the TYPES of `hres` and `hρuniv`, so
+they are referenced implicitly; the proof does not use them either.)
+
+The reason is structural, not an artefact of how the proof was written.
+`pres` is quantified as a BARE `RingHom` — no continuity, no
+`𝒪`-algebra structure, and no minimality on `q` — so the statement asks
+only that `Runiv` be *some* quotient of *some* power series ring over
+*some* coefficient ring.  That is Cohen's structure theorem, which needs
+nothing beyond "local, Noetherian, complete, finite residue field".  In
+particular **obligation 2 above is NOT Mazur's tangent-space bound**: the
+bound says `q` may be taken to be `dim_k H¹_f(ℚ, ad⁰ρbar)`, and nothing
+in this statement asks for the minimal `q`, so `hfact` is not needed and
+cannot be needed.
+
+**CONSEQUENCE, and it is the same hazard class as the vacuity recorded on
+the sibling `exists_taylorWilesBottomHeckeModule`.**  `q` is chosen here
+and consumed by `exists_taylorWilesAuxLevelData`, where it must be at
+least the Taylor–Wiles number `dim_k H¹_{∅^*}(ℚ, ad⁰ρbar(1))`.  A proof
+of THIS leaf that returns Cohen's `q` — the minimal number of generators
+of `𝔪_Runiv` — satisfies this leaf while making the auxiliary leaf FALSE,
+with no compiler warning and no axiom-audit signal.  The interface cannot
+prevent this: the Taylor–Wiles number is a Galois-cohomological quantity
+and this statement has no vocabulary for it (`hTWq` supplies prime sets
+of every size but no lower bound on `q`).  Padding `q` UPWARD is safe on
+both sides — extra variables may be sent to `0` — so the honest
+instruction to any prover of the leaf below is: **return
+`max(Cohen's q, the Taylor–Wiles number)`, never Cohen's `q` alone.**
+Enforcing this is a cut-level repair, not a prover's decision.
 
 WHY `q` IS SHARED, AND THE COUPLING THIS INHERITS.  `q` is produced here
 and consumed by `exists_taylorWilesAuxLevelData` at every level, so a
@@ -4538,8 +4728,18 @@ theorem exists_taylorWilesBottomPresentation.{s, t, uK, uW, uR}
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
     ∃ (q : ℕ) (coeff : TaylorWilesCoefficients) (R : Type) (_ : CommRing R)
       (pres : MvPowerSeries (Fin q) coeff.carrier →+* R),
-      Function.Surjective pres ∧ Nonempty (R ≃+* Runiv) :=
-  sorry
+      Function.Surjective pres ∧ Nonempty (R ≃+* Runiv) := by
+  -- LEAF B1a: Cohen's structure theorem supplies the coefficient ring and
+  -- a surjection from a power series ring over it onto `Runiv`.
+  obtain ⟨q, coeff, φ, hφ⟩ :=
+    exists_taylorWilesCoefficientsPresentation hcomplete hπuniv
+  -- The universe-`0` model is then FREE: `MvPowerSeries (Fin q) coeff.carrier`
+  -- already lives in `Type`, because `TaylorWilesCoefficients.carrier` does,
+  -- and so does its quotient by `ker φ`, which the first isomorphism theorem
+  -- identifies with `Runiv`.
+  refine ⟨q, coeff, MvPowerSeries (Fin q) coeff.carrier ⧸ RingHom.ker φ,
+    inferInstance, Ideal.Quotient.mk _, Ideal.Quotient.mk_surjective, ?_⟩
+  exact ⟨RingHom.quotientKerEquivOfSurjective hφ⟩
 
 set_option linter.checkUnivs false in
 /-- **The bottom Hecke module** (sorry node, LEAF B2 of the 2026-07-27
@@ -4558,17 +4758,35 @@ identification `Λ/𝔫 ≅ ℤ_[p]` is needed on the consuming side.
 
 # FORMAL-CONTENT AUDIT (2026-07-27) — THIS HALF IS VACUOUS IN ISOLATION
 
-**This leaf admits the junk witness `M₀ := T`**, and so, therefore, does
-the whole of `exists_taylorWilesBottomLevel`: take `d := finrank ℤ_[p] T`,
-which is legitimate because the pillar's Hecke ring already carries
-`[Module.Finite ℤ_[p] T]`, `[Module.Free ℤ_[p] T]` and `[IsLocalRing T]`
-(hence `Nontrivial T`); let `Λ` act through `constantCoeff` and
-`algebraMap ℤ_[p] T`, which is `aug_smul` by construction; and obtain the
-coordinate equivalence from `Λ/𝔫 ≃+* ℤ_[p]` (which is
-`ker_constantCoeff_mvPowerSeries` below, plus
+**This leaf admits a junk witness built out of `T` alone**, and so,
+therefore, does the whole of `exists_taylorWilesBottomLevel`: take
+`d := finrank ℤ_[p] T`, which is legitimate because the pillar's Hecke
+ring already carries `[Module.Finite ℤ_[p] T]`, `[Module.Free ℤ_[p] T]`
+and `[IsLocalRing T]` (hence `Nontrivial T`); let `Λ` act through
+`constantCoeff` and `algebraMap ℤ_[p] T`, which is `aug_smul` by
+construction; and obtain the coordinate equivalence from `Λ/𝔫 ≃+* ℤ_[p]`
+(which is `ker_constantCoeff_mvPowerSeries` below, plus
 `RingHom.quotientKerEquivOfSurjective`) together with an `ℤ_[p]`-basis of
 `T`.  No modular curve, no Hecke correspondence, nothing arithmetic is
 consumed.
+
+**CORRECTION 2026-07-27 — the witness is NOT literally `M₀ := T`, and
+that matters if you are checking this audit rather than trusting it.**
+This leaf binds `{T : Type s}` at a universe VARIABLE `s`, while its
+conclusion demands `M0 : Type`, i.e. universe `0`.  So `M₀ := T` does not
+typecheck, and an agent who tries the audit's literal witness will be
+stopped by the elaborator and may wrongly conclude the leaf has content.
+The vacuity survives the universe gap, but only through an extra step:
+`T` is finite and free over `ℤ_[p]`, so `T ≃ₗ[ℤ_[p]] (Fin d → ℤ_[p])`
+with `d = finrank ℤ_[p] T` (`Module.Free.chooseBasis`, whose index type is
+finite by `Module.Finite`, hence `Fintype.equivFin`), and
+`Fin d → ℤ_[p] : Type` is already in universe `0`.  Take `M₀` to be that,
+with the regular `T`-module structure of `T` transported along the
+equivalence.  Every clause then reads exactly as above.  `Nontrivial M₀`
+holds because `d ≥ 1`: `T` is a nontrivial finite free `ℤ_[p]`-module.
+
+So the audit's CONCLUSION stands and the hazard below is real; only its
+one-line witness needed repair.
 
 This is NOT a defect introduced by the decomposition — the parent leaf
 `exists_taylorWilesBottomLevel` already had it, since every other field
