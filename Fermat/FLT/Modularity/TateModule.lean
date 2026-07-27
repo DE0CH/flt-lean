@@ -5840,8 +5840,12 @@ seam into two mathematically distinct inputs:
   polynomial is `X² - a_w X + b_w` with `a_w, b_w ∈ 𝒪_D` independent of
   `I`*.  This is the arithmetic: Weil's Riemann hypothesis for abelian
   varieties over finite fields (the coefficients are algebraic integers
-  of the right size) together with Faltings' independence of `λ` (they
-  do not depend on the residue characteristic).
+  of the right size) together with independence of `λ` (they do not
+  depend on the residue characteristic).  **Itself PROVEN 2026-07-27**
+  by a further cut into rationality and independence — see the section
+  note at that statement, which also corrects the attribution of the
+  independence half to Faltings: at a place of good reduction it is
+  classical.
 
 Why this is the right seam, and not an arbitrary one.  The old statement
 buried BOTH inputs inside one existential over `AlgebraicClosure ℚ_[q]`,
@@ -5932,15 +5936,238 @@ theorem exists_algebraicClosureEmbedding_of_tateFrame_mult
         ι (j a) = ψ (algebraMap (NumberField.RingOfIntegers D) D a) :=
   sorry
 
+/-! #### The arithmetic half, cut into RATIONALITY and INDEPENDENCE
+
+`exists_intWeilPolynomial_of_mult` below is PROVEN by assembly over the
+two leaves that follow this note.  The seam is the one place where the
+quantifier order of the target — `a, b` BEFORE `q` and `I` — can be
+manufactured out of statements in which they come AFTER, and it is worth
+recording why that is not circular.
+
+* `exists_weilCoeffs_of_tateFrame_mult` is the target with `a`, `b` and
+  `bad` moved INSIDE the frame quantifiers: *this* frame's Frobenius
+  characteristic polynomial has its coefficients in `j(𝒪_D)`.  That is
+  pure rationality — Weil, one residue characteristic at a time — and it
+  says nothing about `I`-independence.
+* `exists_finset_weilCoeffs_eq_of_mult` is exactly the missing content:
+  two families obtained that way, from two frames at possibly DIFFERENT
+  residue characteristics, agree off a finite set of places.
+* The assembly then needs no reference frame handed to it, and in
+  particular no frame-existence leaf.  Split on whether any frame at all
+  admits a rational family (`IsTateFrameWeilCoeffs`).  If one does, take
+  its `a, b` as the global answer; a given frame's own family agrees with
+  them off `bad' ∪ bad''`, both finite, and `bad` is quantified after the
+  frame so it may be enlarged freely — which is precisely the slack the
+  target's docstring identifies as load-bearing, used here for the first
+  time.  If none does, the branch is closed by contradiction rather than
+  by vacuity: applying the rationality leaf to the frame just introduced
+  produces the witness whose non-existence was assumed.
+
+**CITATION AUDIT — Faltings is NOT what this needs, and saying so is a
+correction to the docstring below.**  Independence of `λ` for the
+Frobenius characteristic polynomial at a place of GOOD reduction is
+classical (Weil): over the residue field the polynomial is the
+characteristic polynomial of the Frobenius ENDOMORPHISM, computed from
+the degree map `n ↦ deg(n - F)`, which mentions no `λ` at all.  Faltings
+is what gives semisimplicity, the Tate conjecture, and independence of
+`λ` at the RAMIFIED places — and this statement never claims anything at
+a ramified place, because `bad` absorbs them.  So
+`exists_finset_weilCoeffs_eq_of_mult` is a Weil-level statement, not a
+Faltings-level one, and a prover should not go looking for
+*Endlichkeitssätze*.
+
+**ROUTE NOTE, and why the cut is not the endomorphism-algebra one.**
+The structurally best proof of both leaves is the one through the
+reduction: for `w` of good reduction `Frob_w ∈ End(A_w)` commutes with
+`𝒪_D`, so it lies in the centralizer of `𝒪_D` there, which is a
+commutative `D`-algebra of degree `≤ 2` (the bound coming from `T_I A_w`
+being free of rank two over `𝒪_{D,I}`); `a_w` and `b_w` are then the
+coefficients of its characteristic polynomial over `D`, an identity in
+the endomorphism algebra in which neither `q` nor `I` occurs, and both
+leaves become corollaries of the faithfulness of `T_I`.
+
+That route is NOT available in this tree and building it is a subtree,
+not a step.  Checked 2026-07-27: there is no reduction of an abelian
+scheme at a finite place anywhere here — no Néron model, no integral
+model over `Spec 𝒪_F`, no special fibre, no reduction map on points; the
+`GoodReduction` material under `KnownIn1980s/EllipticCurves/` is about
+elliptic curves over `ℚ` and does not apply.  Nor is there an
+endomorphism ring of an abelian scheme: `AbelianSchemeIsogeny.lean`
+supplies only `mulByNat` and its flatness/finiteness/properness, never
+`End(A)` as a ring.  And there is no Frobenius ENDOMORPHISM — `Frobᵥ` in
+`GaloisRep.charFrob` is the Galois-theoretic Frobenius.  The
+endomorphism-algebra cut therefore presupposes: good reduction of an
+abelian scheme at a place, the specialization isomorphism
+`T_I A_x ≅ T_I A_w`, the Frobenius endomorphism over the residue field,
+`End(A) ↪ End(T_I A)`, and the degree map.  It trades Faltings for that
+package; it does not remove the deep input.  The cut taken here is
+orthogonal to it and survives whichever way that package is eventually
+built, since both leaves are stated over frames only. -/
+
+/-- **`a` and `b` are the Weil coefficients read off SOME frame of SOME
+`I`-adic Tate module of `(m, x)`** — the auxiliary predicate through
+which `exists_intWeilPolynomial_of_mult` is assembled.
+
+This is `exists_weilCoeffs_of_tateFrame_mult`'s conclusion with the
+frame data and the exceptional set existentially bound, so that it is a
+predicate on the pair of families `(a, b)` ALONE.  That is what makes it
+usable as the case split of the assembly: "some frame has a rational
+family with these coefficients".
+
+The pinning hypotheses are part of the predicate, `hj` included: a frame
+that does not remember the real multiplication must not be allowed to
+witness this, or the exotic frame `O = ℤ₁₃ × ℤ₁₃` of Counterexample 2
+below would supply coefficients that no honest frame can match. -/
+def IsTateFrameWeilCoeffs {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (a b : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      NumberField.RingOfIntegers D) : Prop :=
+  ∃ (q : ℕ) (_ : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (_ : I.IsMaximal)
+    (_ : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (_ : π ∈ I) (_ : π ∉ I ^ 2)
+    (O : Type u) (_ : CommRing O) (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O),
+    (∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) ∧
+    Function.Bijective φ ∧
+    (∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) ∧
+    (∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j c • u)).1 n = m.act c ((φ u).1 n)) ∧
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad,
+        τ.charFrob w =
+          Polynomial.X ^ 2 - Polynomial.C (j (a w)) * Polynomial.X +
+            Polynomial.C (j (b w))
+
+/-- **RATIONALITY: the Frobenius characteristic polynomial of ONE frame
+has its coefficients in `j(𝒪_D)`** (sorry leaf — Weil's Riemann
+hypothesis for abelian varieties over finite fields, in the
+Hilbert–Blumenthal normalization of Shimura / Taylor 2002 §1).
+
+Fix a frame `(O, τ, φ, j)` of `TatePt m x I π` which remembers the real
+multiplication.  Then for all but finitely many places `w` of `F`,
+
+    τ.charFrob w = X² - C (j (a w)) · X + C (j (b w))
+
+for some `a, b : w ↦ 𝒪_D`.  This is the target statement with `a`, `b`
+and `bad` moved INSIDE the frame quantifiers, so it carries no
+independence-of-`I` content whatever; that is
+`exists_finset_weilCoeffs_eq_of_mult`'s job.
+
+WHAT IS ACTUALLY OWED HERE.  By the sibling leaf
+`exists_algebraicClosureEmbedding_of_tateFrame_mult` the frame forces
+`O = 𝒪_{D,I}`, and `τ.charFrob w` is a monic quadratic over that
+completion whatever happens — being the characteristic polynomial of an
+endomorphism of a free rank-two module.  So the ONLY content is that its
+two coefficients lie in the DENSE SUBRING `j(𝒪_D) ⊂ 𝒪_{D,I}`, i.e. that
+they are global algebraic integers of `D` rather than merely `I`-adic
+ones.  Classically `a w` is the trace and `b w` the norm of the
+Frobenius endomorphism of the reduction `A_w`, and integrality is
+Weil's; `b w = N(w)` and the archimedean bound `|a w| ≤ 2√N(w)` are true
+but are NOT needed by any consumer in this tree and are deliberately not
+asserted, so a prover need not carry the Riemann-hypothesis half.
+
+`hdim` is what makes the rank two rather than `2d`; `hπ`, `hπ2` pin `π`
+as a uniformizer so that `TatePt` is the `I`-adic Tate module; `hj` is
+what makes the coefficients `𝒪_D`-rational at all — without it the
+frame's coefficient ring need not even contain a copy of `𝒪_D`. -/
+theorem exists_weilCoeffs_of_tateFrame_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) (hq : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) (iCR : CommRing O) (iTS : TopologicalSpace O) (iTR : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hj : ∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j c • u)).1 n = m.act c ((φ u).1 n)) :
+    ∃ (a b : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+        NumberField.RingOfIntegers D)
+      (bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))),
+      ∀ w ∉ bad,
+        τ.charFrob w =
+          Polynomial.X ^ 2 - Polynomial.C (j (a w)) * Polynomial.X +
+            Polynomial.C (j (b w)) :=
+  sorry
+
+/-- **INDEPENDENCE: two frames give the SAME `𝒪_D`-coefficients at all
+but finitely many places** (sorry leaf — this is the whole
+compatible-system content of `exists_intWeilPolynomial_of_mult`, and the
+only place in the chain where two residue characteristics are compared).
+
+If `(a, b)` are the Weil coefficients of some frame and `(a', b')` those
+of some other frame — the two frames unrelated, at possibly DIFFERENT
+rational primes `q`, `q'` and different maximal ideals `I`, `I'` — then
+`a w = a' w` and `b w = b' w` for all but finitely many `w`.
+
+Why this is the right way to say it, and why it is not the target again.
+The two characteristic polynomials live over two DIFFERENT coefficient
+rings `O = 𝒪_{D,I}` and `O' = 𝒪_{D,I'}` and cannot be compared as
+polynomials at all; the comparison is possible only after each has been
+recognised as coming from a family of GLOBAL integers of `D`, which is
+what `IsTateFrameWeilCoeffs` records.  So this leaf is exactly the
+assertion that the `I`-adic and `I'`-adic Tate modules are two members of
+ONE compatible system, with nothing else attached.
+
+The exceptional set is existential and that is deliberate: `a` and `b`
+are constrained by their frames only outside those frames' own bad sets,
+and on those sets they are arbitrary, so no pointwise statement is
+available and none is needed — the assembly unions three finite sets.
+
+PROOF ROUTE, once the reduction machinery exists.  At a place `w` of
+good reduction outside both bad sets, both sides compute the
+characteristic polynomial of the Frobenius ENDOMORPHISM of `A_w` as an
+element of the centralizer of `𝒪_D` in `End(A_w)`, via the faithful
+functors `T_I` and `T_{I'}`; that element is one and the same and its
+characteristic polynomial over `D` mentions no residue characteristic.
+This is Weil, not Faltings — see the CITATION AUDIT in the section note
+above.  The machinery it needs (good reduction of an abelian scheme, the
+specialization isomorphism, `End(A) ↪ End(T_I A)`, the degree map) is
+absent from this tree and is a subtree of its own; the ROUTE NOTE above
+records the survey. -/
+theorem exists_finset_weilCoeffs_eq_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (a b a' b' : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      NumberField.RingOfIntegers D)
+    (h : IsTateFrameWeilCoeffs m x a b) (h' : IsTateFrameWeilCoeffs m x a' b') :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad, a w = a' w ∧ b w = b' w :=
+  sorry
+
 /-- **The Frobenius characteristic polynomials of the `𝒪_D`-Tate modules
 are `X² - a_w X + b_w` with `a_w, b_w ∈ 𝒪_D` independent of `I`**
-(sorry leaf — the arithmetic half of
-`exists_weilFrobeniusSystem_of_mult`, and the deepest statement in the
-chain: Weil's Riemann hypothesis for abelian varieties over finite
-fields together with Faltings' theorem that the system is independent of
-the residue characteristic; Faltings, *Endlichkeitssätze für abelsche
-Varietäten über Zahlkörpern*, Invent. Math. 73 (1983); Taylor 2002 §1–2
-and Shimura for the Hilbert–Blumenthal normalization).
+(PROVEN 2026-07-27 by assembly over `exists_weilCoeffs_of_tateFrame_mult`
+and `exists_finset_weilCoeffs_eq_of_mult`; see the section note above for
+why that is the seam, and for the correction to the citation — the
+arithmetic half of `exists_weilFrobeniusSystem_of_mult`, and the deepest
+statement in the chain: Weil's Riemann hypothesis for abelian varieties
+over finite fields, in the Hilbert–Blumenthal normalization of Shimura /
+Taylor 2002 §1–2.  Faltings, *Endlichkeitssätze für abelsche Varietäten
+über Zahlkörpern*, Invent. Math. 73 (1983), was cited here and is NOT
+needed: independence of `λ` at a place of GOOD reduction is classical,
+and `bad` absorbs every ramified place).
 
 For an abelian scheme with real multiplication by `𝒪_D` and an
 `F`-point `x` there are two families `a, b : w ↦ 𝒪_D` such that for
@@ -6009,8 +6236,37 @@ theorem exists_intWeilPolynomial_of_mult
           ∀ w ∉ bad,
             τ.charFrob w =
               Polynomial.X ^ 2 - Polynomial.C (j (a w)) * Polynomial.X +
-                Polynomial.C (j (b w)) :=
-  sorry
+                Polynomial.C (j (b w)) := by
+  classical
+  -- Does ANY frame admit a rational family?  If so its coefficients are the answer.
+  by_cases hex : ∃ a b : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      NumberField.RingOfIntegers D, IsTateFrameWeilCoeffs m x a b
+  · obtain ⟨a, b, href⟩ := hex
+    refine ⟨a, b, ?_⟩
+    intro q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+    -- The given frame has its own rational family, a priori unrelated to `a`, `b`.
+    obtain ⟨a', b', bad', hbad'⟩ :=
+      exists_weilCoeffs_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O iCR iTS iTR
+        τ φ j hφadd hφbij hφequiv hj
+    -- Independence identifies the two families off a finite set.
+    obtain ⟨bad'', hbad''⟩ :=
+      exists_finset_weilCoeffs_eq_of_mult m x hdim a' b' a b
+        ⟨q, hq, I, hI, hqI, π, hπ, hπ2, O, iCR, iTS, iTR, τ, φ, j,
+          hφadd, hφbij, hφequiv, hj, bad', hbad'⟩ href
+    -- `bad` is quantified after the frame, so it may absorb both finite sets.
+    refine ⟨bad' ∪ bad'', fun w hw => ?_⟩
+    have hw' : w ∉ bad' := fun h => hw (Finset.mem_union_left _ h)
+    have hw'' : w ∉ bad'' := fun h => hw (Finset.mem_union_right _ h)
+    rw [hbad' w hw', (hbad'' w hw'').1, (hbad'' w hw'').2]
+  · -- No frame admits one; but the frame just introduced does, by rationality.
+    refine ⟨0, 0, ?_⟩
+    intro q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+    obtain ⟨a', b', bad', hbad'⟩ :=
+      exists_weilCoeffs_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O iCR iTS iTR
+        τ φ j hφadd hφbij hφequiv hj
+    exact absurd
+      ⟨a', b', q, hq, I, hI, hqI, π, hπ, hπ2, O, iCR, iTS, iTR, τ, φ, j,
+        hφadd, hφbij, hφequiv, hj, bad', hbad'⟩ hex
 
 /-- **The Frobenius characteristic polynomials of the Tate modules form
 one `D`-rational compatible system** (PROVEN 2026-07-26 by assembly over
