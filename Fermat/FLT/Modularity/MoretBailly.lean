@@ -12679,8 +12679,137 @@ theorem exists_bertiniNoetherWitness_two (d : ℕ) :
 
 /-! ### The genuine content: `N ≥ 3` -/
 
-/-- **BERTINI-NOETHER AT `N ≥ 3` (SORRY LEAF, cut 2026-07-27) -- THE WHOLE
-GEOMETRIC CONTENT OF ITEM 4.**
+/-- **BERTINI'S IRREDUCIBILITY THEOREM FOR PLANE SECTIONS (SORRY LEAF, cut
+2026-07-27)** -- the GEOMETRIC half of `exists_bertiniNoetherWitness_of_three_le`.
+
+Over an ALGEBRAICALLY CLOSED field, an irreducible hypersurface of total degree
+`d` in `N = n + 3 ≥ 3` variables admits at least ONE plane section that is again
+irreducible of total degree exactly `d`.
+
+WHAT IS AND IS NOT ASSERTED. Only EXISTENCE of a good plane, over a single
+algebraically closed field. The GENERICITY -- that the good planes form a
+nonempty Zariski open set cut out by forms whose degrees are bounded
+independently of the characteristic -- is the separate arithmetic half,
+`exists_noetherBadLocusForms`. Splitting the two is what lets each be attacked
+with its own technique: this one is geometry over one algebraically closed
+field, that one is elimination theory with a `p`-uniform degree bound. Neither
+half alone gives the parent leaf, and neither needs the other's methods.
+
+WHY IT IS TRUE IN EVERY CHARACTERISTIC. This is the IRREDUCIBILITY Bertini
+(Schmidt, *Equations over Finite Fields*, Chapter V §1; Fried-Jarden, *Field
+Arithmetic*, §10.4, around Proposition 10.4.2; Jouanolou, *Théorèmes de Bertini
+et applications*). The classical characteristic-`p` failure of Bertini concerns
+SMOOTHNESS of the generic hyperplane section and is irrelevant here.
+
+THE ROUTE. Induct on `N`, cutting by one hyperplane at a time: `V(h) ⊆ 𝔸^N` is
+irreducible of dimension `N - 1 ≥ 2`, and Bertini says a general hyperplane
+section of an irreducible variety of dimension `≥ 2` is again irreducible, so
+after `N - 2` cuts one lands on an irreducible curve inside a plane, which is
+`V(planeSection h v u₁ u₂)` for the composed parametrisation. `planeSection_comp`
+is stated at a GENERAL `N` precisely so that this composition is available. What
+is missing is (a) the one-step hyperplane statement and (b) the bookkeeping that
+a composite of affine parametrisations `𝔸² → 𝔸^{N-1} → 𝔸^N` is again a plane
+parametrisation of `𝔸^N`. For (b) the natural infrastructure is a general
+`affineSection h v u` for `u : Fin M → Fin N → K` with a composition lemma
+generalising `planeSection_comp`; it is deliberately NOT built here, because an
+attack through the generic plane over `K(v, u₁, u₂)` -- the other standard route
+-- would not use it, and unusable machinery is worse than none.
+
+WHY `N ≥ 3` AND NOT GENERAL `N`. At `N ≤ 2` the statement is true but carries no
+Bertini content and is already discharged elsewhere: at `N = 2` the identity
+plane works (`planeSection_id`), at `N = 1` any `u₁ ≠ 0` works
+(`exists_eq_linear_of_irreducible_of_unique`), and at `N = 0` an irreducible
+constant does not exist. Restricting to `n + 3` keeps this leaf equal to exactly
+the missing mathematics -- see `exists_bertiniNoetherWitness_zero` / `_one` /
+`_two`.
+
+FAITHFULNESS NOTE. `d` is not assumed positive, and need not be: at `d = 0` the
+hypothesis `Irreducible h` is already false over a field (a constant is a unit or
+zero), so the statement is vacuous there rather than wrong. Likewise no
+independence condition is imposed on the produced `(u₁, u₂)`; it is forced,
+since a degenerate parametrisation makes the section a univariate polynomial in
+a linear form, which for `d ≥ 2` is reducible. -/
+theorem exists_irreducible_planeSection_of_irreducible {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = d) (hirr : Irreducible h) :
+    ∃ v u₁ u₂ : Fin (n + 3) → K,
+      (planeSection h v u₁ u₂).totalDegree = d ∧ Irreducible (planeSection h v u₁ u₂) :=
+  sorry
+
+/-- **E. NOETHER'S IRREDUCIBILITY FORMS, PULLED BACK TO THE PLANE PARAMETERS
+(SORRY LEAF, cut 2026-07-27)** -- the ARITHMETIC half of
+`exists_bertiniNoetherWitness_of_three_le`, and the half that carries the
+uniformity in `p`.
+
+WHAT IT SAYS. For each `(N, d)` there is a degree bound `D` depending ONLY on `N`
+and `d` such that, for every prime `p` and every `h ∈ 𝔽_p[x₁ … x_N]` of total
+degree `d`, the BAD plane parameters `w = (v, u₁, u₂) ∈ 𝔽̄_p^{3N}` -- those for
+which `planeSection h w` fails to be absolutely irreducible of total degree
+exactly `d` -- are exactly the COMMON zero set of finitely many polynomials
+`Fs i`, all defined over `𝔽_p` and all of total degree `≤ D`.
+
+`D` DOES NOT DEPEND ON `p`. That is the whole content of Noether's theorem and
+the reason the statement quantifies `∃ D` OUTSIDE `∀ p`. A bound depending on `p`
+would be worthless downstream, where `D` is compared against `p` itself
+(`exists_bertiniGoodPlaneCount` needs `2 * D < p`).
+
+THE FORMS ARE `𝔽_p`-RATIONAL even though the locus is described over `𝔽̄_p`.
+Noether's forms have INTEGER coefficients, and the map
+`w ↦ coefficients of planeSection h w` is defined over `𝔽_p` because `h` is; so
+the pullbacks lie in `𝔽_p[v, u₁, u₂]`. This is what lets the consumer hand back a
+witness `F` over `𝔽_p` rather than only over the closure.
+
+WHY AN `↔`, AND WHY SEVERAL FORMS. The bad locus is Zariski closed but in general
+not a hypersurface, so it takes several forms to cut out; goodness at `w` is then
+`w ∉ V(Fs)`, i.e. `∃ i, Fs i (w) ≠ 0`. The consumer needs only ONE of them, and
+uses each direction once: `←` gives `Fs i (w) ≠ 0 ⟹ w` good, which is the shape
+`exists_bertiniNoetherWitness_of_three_le` asks for, and `→` turns Bertini's ONE
+good plane over `𝔽̄_p` into the non-vanishing of some `Fs i` at a point, hence
+into `Fs i ≠ 0` as a polynomial.
+
+THE PROOF (Schmidt, *Equations over Finite Fields*, Chapter V §2, Theorem 2A;
+Fried-Jarden, *Field Arithmetic*, Proposition 10.4.2). In the coefficient space
+of plane polynomials of total degree `≤ d`, the locus of those that FAIL to be
+absolutely irreducible of total degree exactly `d` is Zariski CLOSED, cut out by
+forms whose degrees are bounded in terms of `d` ALONE. Closedness is elimination
+theory, not schemes: "the degree drops below `d`" is the vanishing of the
+degree-`d` part, finitely many linear conditions; and "factors nontrivially" is
+the image of the multiplication maps `(g₁, g₂) ↦ g₁·g₂` over the finitely many
+splittings `d₁ + d₂ = d` with `d₁, d₂ ≥ 1`, each image closed because the
+projectivised factor spaces are complete. The union of those two closed sets is
+cut out by the pairwise products, whose degrees add and stay bounded.
+
+Finally the pullback. Each coefficient of `planeSection h v u₁ u₂`, read as a
+function of `(v, u₁, u₂)`, is a polynomial of total degree `≤ d`: the
+substitution sends each `xᵢ` to `vᵢ + u₁ᵢ·s + u₂ᵢ·t`, which is LINEAR in the
+parameters, and `h` has degree `d`. So pulling a Noether form of degree `≤ E(d)`
+back along the coefficient map multiplies its degree by at most `d`, and
+`D := d · E(d)` works.
+
+NO `D < p` HYPOTHESIS HERE. Noether's forms are characteristic-free, so this leaf
+does not need one; the `D < p` carried by the parent is pure slack for the
+consumer.
+
+STATED AT GENERAL `N`, not only at `N ≥ 3`: nothing in Noether's half cares, and
+`N ≤ 2` is not harder. Only the Bertini half is restricted.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_noetherBadLocusForms (N d : ℕ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime],
+      ∀ h : MvPolynomial (Fin N) (ZMod p), h.totalDegree = d →
+        ∃ (m : ℕ) (Fs : Fin m → MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) (ZMod p)),
+          (∀ i, (Fs i).totalDegree ≤ D) ∧
+          ∀ v u₁ u₂ : Fin N → AlgebraicClosure (ZMod p),
+            ((planeSection (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h)
+                  v u₁ u₂).totalDegree = d ∧
+              Irreducible (planeSection
+                (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) v u₁ u₂))
+            ↔ ∃ i, MvPolynomial.eval (Sum.elim v (Sum.elim u₁ u₂))
+                (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Fs i)) ≠ 0 :=
+  sorry
+
+/-- **BERTINI-NOETHER AT `N ≥ 3` (PROVEN 2026-07-27 over two named sub-leaves) --
+THE WHOLE GEOMETRIC CONTENT OF ITEM 4.**
 
 This is `exists_bertiniNoetherWitness` restricted to `N = n + 3`; the cases
 `N = 0, 1, 2` are PROVEN above and use no Bertini content at all (they are
@@ -12718,8 +12847,26 @@ non-vanishing of ANY ONE of them certifies a good plane, which is why a single
 polynomial rings is injective; take `F` to be one that does not vanish
 identically.
 
-INFRASTRUCTURE ALREADY IN PLACE, so that a proof of this leaf need not rebuild
-it: `planeSection_comp` (composition of parametrisations, stated for a general
+WHAT THIS PROOF DOES, now that the two halves are cut (2026-07-27). Take `D`
+from `exists_noetherBadLocusForms`, which hands back the finitely many
+`𝔽_p`-rational forms `Fs` of degree `≤ D` whose COMMON zero set is exactly the
+bad locus over `𝔽̄_p`. `exists_irreducible_planeSection_of_irreducible`, applied
+to `h` base-changed to `𝔽̄_p`, produces ONE good plane there; the `→` direction
+of Noether's `↔` then names an index `i` with `Fs i` not vanishing at that plane,
+so `Fs i ≠ 0` as a polynomial over `𝔽_p`. That single `Fs i` is the witness `F`.
+For an `𝔽_p`-point `w` with `F(w) ≠ 0`, injectivity of `𝔽_p → 𝔽̄_p` gives
+`F(w) ≠ 0` in `𝔽̄_p` as well, the `←` direction gives goodness of the base-changed
+section, and `planeSection_map` plus `totalDegree_map_eq_of_injective` bring both
+conclusions back down to `𝔽_p`. Nothing else is used: the whole content is in the
+two sub-leaves.
+
+WHAT IS OPEN AFTER THIS CUT: exactly `exists_irreducible_planeSection_of_irreducible`
+(Bertini, geometry over one algebraically closed field) and
+`exists_noetherBadLocusForms` (Noether, elimination theory with a `p`-uniform
+degree bound). They share no technique, so they are independently dispatchable.
+
+INFRASTRUCTURE ALREADY IN PLACE, so that proofs of those two need not rebuild it:
+`planeSection_comp` (composition of parametrisations, stated for a general
 `N` precisely so that an inductive hyperplane-section argument can use it),
 `planeSection_map` (compatibility with `𝔽_p → 𝔽̄_p`),
 `totalDegree_planeSection_le`, `totalDegree_map_eq_of_injective`,
@@ -12750,18 +12897,71 @@ theorem exists_bertiniNoetherWitness_of_three_le (n d : ℕ) :
               (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
               Irreducible (MvPolynomial.map
                 (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-                (planeSection h w.1 w.2.1 w.2.2)) :=
-  sorry
+                (planeSection h w.1 w.2.1 w.2.2)) := by
+  obtain ⟨D, hD⟩ := exists_noetherBadLocusForms (n + 3) d
+  refine ⟨D, ?_⟩
+  intro p _ _hDp h hdeg hirr
+  have hinj : Function.Injective (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) :=
+    (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+  have hkey : ∀ (x : (Fin (n + 3) ⊕ Fin (n + 3) ⊕ Fin (n + 3)) → ZMod p)
+      (G : MvPolynomial (Fin (n + 3) ⊕ Fin (n + 3) ⊕ Fin (n + 3)) (ZMod p)),
+      MvPolynomial.eval (fun j => algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (x j))
+          (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) G)
+        = algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (MvPolynomial.eval x G) := by
+    intro x G
+    rw [MvPolynomial.eval_map]
+    conv_rhs => rw [← MvPolynomial.eval₂_id (g := x) G]
+    rw [MvPolynomial.eval₂_comp_left]
+    rfl
+  obtain ⟨m, Fs, hFsdeg, hiff⟩ := hD p h hdeg
+  have hdegK : (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h).totalDegree
+      = d := by rw [totalDegree_map_eq_of_injective h hinj]; exact hdeg
+  obtain ⟨v, u₁, u₂, hgood⟩ :=
+    exists_irreducible_planeSection_of_irreducible n d _ hdegK hirr
+  obtain ⟨i, hi⟩ := (hiff v u₁ u₂).mp hgood
+  refine ⟨Fs i, ?_, hFsdeg i, ?_⟩
+  · intro hc
+    rw [hc] at hi
+    simp at hi
+  · intro w hw
+    have hne : MvPolynomial.eval
+        (fun j => algebraMap (ZMod p) (AlgebraicClosure (ZMod p))
+          (Sum.elim w.1 (Sum.elim w.2.1 w.2.2) j))
+        (MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Fs i)) ≠ 0 := by
+      rw [hkey]
+      exact fun hc => hw (hinj (by simpa using hc))
+    have hsum : (fun j => algebraMap (ZMod p) (AlgebraicClosure (ZMod p))
+          (Sum.elim w.1 (Sum.elim w.2.1 w.2.2) j))
+        = Sum.elim (fun i => algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.1 i))
+            (Sum.elim (fun i => algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.1 i))
+              (fun i => algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (w.2.2 i))) := by
+      funext j
+      rcases j with j | j | j <;> rfl
+    rw [hsum] at hne
+    obtain ⟨hdeg', hirr'⟩ := (hiff _ _ _).mpr ⟨i, hne⟩
+    rw [← planeSection_map] at hdeg' hirr'
+    refine ⟨?_, hirr'⟩
+    rw [← totalDegree_map_eq_of_injective (planeSection h w.1 w.2.1 w.2.2) hinj]
+    exact hdeg'
 
 /-- **BERTINI OVER FINITE FIELDS, AS A HYPERSURFACE WITNESS** (PROVEN 2026-07-27
 at `N = 0, 1, 2` over `exists_bertiniNoetherWitness_of_three_le`) — Schmidt
 Chapter V, Theorem 4C together with E. Noether's Theorem 2A.
 
-WHAT IS OPEN AFTER THIS CUT: only `exists_bertiniNoetherWitness_of_three_le`,
-i.e. the case `N ≥ 3`. The three small cases below are now PROVEN in full and
-carry no Bertini content whatever — see `exists_bertiniNoetherWitness_zero`,
-`exists_bertiniNoetherWitness_one`, `exists_bertiniNoetherWitness_two` — so the
-genuinely missing geometry is exactly `N ≥ 3` and lives in one named leaf.
+WHAT IS OPEN AFTER THIS CUT (updated 2026-07-27): TWO leaves, and neither is
+this one nor `exists_bertiniNoetherWitness_of_three_le`, which is now PROVEN over
+them. The three small cases below are PROVEN in full and carry no Bertini content
+whatever — see `exists_bertiniNoetherWitness_zero`,
+`exists_bertiniNoetherWitness_one`, `exists_bertiniNoetherWitness_two` — and the
+`N ≥ 3` case is split along the line the literature draws:
+
+* `exists_irreducible_planeSection_of_irreducible` — Bertini's irreducibility
+  theorem, pure geometry over ONE algebraically closed field, EXISTENCE of a good
+  plane only;
+* `exists_noetherBadLocusForms` — E. Noether's irreducibility forms, elimination
+  theory, carrying the degree bound that is UNIFORM in `p`.
+
+They share no technique and are independently dispatchable.
 
 WHAT IT SAYS. For each `(N, d)` there is a degree bound `D`, DEPENDING ONLY ON
 `N` AND `d` AND NOT ON `p`, such that for every absolutely irreducible `h` of
@@ -12901,12 +13101,15 @@ the `p^{3N}/2` slack for `N ≥ 2`; for `N ≤ 1` the conclusion is reached in t
 consumer without this leaf (`N = 0` forces `d = 0`, and `N = 1` forces `d ≤ 1`
 by absolute irreducibility, both handled by the degenerate branches).
 
-WHAT IS ACTUALLY MISSING, after this proof: ONLY
-`exists_bertiniNoetherWitness_of_three_le` (the cases `N = 0, 1, 2` of
-`exists_bertiniNoetherWitness` were PROVEN on 2026-07-27 and carry no Bertini
-content) — Bertini's irreducibility theorem proved by ELIMINATION THEORY (Schmidt
-Chapter V §1 — no schemes, no generic smoothness), and E. Noether's Theorem 2A on
-the forms cutting out the absolutely-irreducible locus. The Lang–Weil-free counting that
+WHAT IS ACTUALLY MISSING, after this proof (updated 2026-07-27): TWO leaves,
+`exists_irreducible_planeSection_of_irreducible` and
+`exists_noetherBadLocusForms`, over which `exists_bertiniNoetherWitness_of_three_le`
+is now PROVEN (and the cases `N = 0, 1, 2` of `exists_bertiniNoetherWitness` were
+PROVEN the same day and carry no Bertini content). The first is Bertini's
+irreducibility theorem — EXISTENCE of one good plane over `𝔽̄_p`, by elimination
+theory (Schmidt Chapter V §1 — no schemes, no generic smoothness); the second is
+E. Noether's Theorem 2A on the forms cutting out the absolutely-irreducible
+locus, which is what supplies the `p`-independent degree bound. The Lang–Weil-free counting that
 Schmidt's Chapter IV §3 supplies is no longer needed: `mathlib`'s Schwartz–Zippel
 lemma does that job, and the reduction to it is proven above.
 
@@ -12975,10 +13178,14 @@ WHAT IS PROVEN HERE, and what was cut off. The averaging is carried out in full
 — `sum_zeroCount_planeSection` is the exact double count, and the assembly below
 is `ℕ`-arithmetic with `c = 4`. The `d = 1` branch, which the plane-curve
 hypothesis cannot reach because it needs `d ≥ 2`, is
-`card_zeros_of_totalDegree_one` and is PROVEN. Exactly ONE sub-leaf is left open:
-`exists_bertiniNoetherWitness_of_three_le`, which carries all of the
-Bertini/Noether content (`exists_bertiniNoetherWitness` itself is PROVEN over it,
-its `N = 0, 1, 2` cases having been discharged on 2026-07-27). (`exists_bertiniGoodPlaneCount` was itself cut and PROVEN on
+`card_zeros_of_totalDegree_one` and is PROVEN. TWO sub-leaves are left open
+(updated 2026-07-27): `exists_irreducible_planeSection_of_irreducible` (Bertini,
+existence of one good plane over an algebraically closed field) and
+`exists_noetherBadLocusForms` (Noether's forms, with the `p`-uniform degree
+bound). Between them they carry all of the Bertini/Noether content:
+`exists_bertiniNoetherWitness_of_three_le` is PROVEN over the pair, and
+`exists_bertiniNoetherWitness` in turn over it, its `N = 0, 1, 2` cases having
+been discharged on 2026-07-27. (`exists_bertiniGoodPlaneCount` was itself cut and PROVEN on
 2026-07-27: its counting half is `mathlib`'s Schwartz–Zippel lemma, wrapped as
 `schwartzZippel_card_zeros_planeParam_mul_le`.)
 
@@ -13009,12 +13216,14 @@ plane count `N(M) ≥ q/2` rather than with `N(M) ≥ 1`: it then yields
 existential here because `ψ(d)` is Schmidt's `2d^κ` and pinning it buys nothing
 — every consumer only needs SOME constant.
 
-WHAT IS ACTUALLY MISSING, after this proof: ONLY
-`exists_bertiniNoetherWitness_of_three_le` — Bertini's irreducibility theorem
-(proved by ELIMINATION THEORY in Schmidt's Chapter V §1 — no schemes, no generic
-smoothness) together with E. Noether's Theorem 2A on the forms cutting out the
-absolutely-irreducible locus, which is what makes "bad plane" a hypersurface
-condition of `p`-independent degree. The counting form of Schmidt's Theorem 4C,
+WHAT IS ACTUALLY MISSING, after this proof (updated 2026-07-27): the TWO leaves
+`exists_irreducible_planeSection_of_irreducible` — Bertini's irreducibility
+theorem, existence of one good plane over `𝔽̄_p` (proved by ELIMINATION THEORY in
+Schmidt's Chapter V §1 — no schemes, no generic smoothness) — and
+`exists_noetherBadLocusForms` — E. Noether's Theorem 2A on the forms cutting out
+the absolutely-irreducible locus, which is what makes "bad plane" a hypersurface
+condition of `p`-independent degree. `exists_bertiniNoetherWitness_of_three_le`
+is PROVEN over the two. The counting form of Schmidt's Theorem 4C,
 `exists_bertiniGoodPlaneCount`, is PROVEN from that witness by Schwartz–Zippel;
 Schmidt's Lang–Weil-free upper bounds of Chapter IV §3 are not needed.
 
@@ -14564,9 +14773,12 @@ five-item route is realised in the file rather than merely described):
   had to be strengthened, and note the strengthening cost nothing — the same
   `exists_stepanovAuxiliary` data gives the count once `2d² ≤ M` is used.
 * item 4 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`:
-  **PROVEN** (2026-07-27) over the single sub-leaf
-  `exists_bertiniNoetherWitness_of_three_le` (`exists_bertiniNoetherWitness` is
-  PROVEN over it, small `N` being elementary); the counting form
+  **PROVEN** (2026-07-27) over the two sub-leaves
+  `exists_irreducible_planeSection_of_irreducible` (Bertini) and
+  `exists_noetherBadLocusForms` (Noether's forms), over which
+  `exists_bertiniNoetherWitness_of_three_le` is PROVEN in turn
+  (`exists_bertiniNoetherWitness` is PROVEN over that, small `N` being
+  elementary); the counting form
   `exists_bertiniGoodPlaneCount` is itself now **PROVEN** (2026-07-27) from that
   witness by Schwartz–Zippel; its `d = 1` branch,
   `card_zeros_of_totalDegree_one`, is proven too. The averaging over 2-dimensional linear
@@ -14590,11 +14802,13 @@ five-item route is realised in the file rather than merely described):
   The base-change bridge `irreducible_of_irreducible_map` is PROVEN, which is what
   lets the counting leaf be stated with no algebraic closure in its signature.
 
-So after the 2026-07-27 work the remaining open leaves under this node are FIVE:
+So after the 2026-07-27 work the remaining open leaves under this node are SIX:
 `exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz` and
 `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the three children of the
 now-proven `exists_stepanovAuxiliaryFunction`),
-`exists_bertiniNoetherWitness_of_three_le`, and
+`exists_irreducible_planeSection_of_irreducible` and
+`exists_noetherBadLocusForms` (the two halves of the now-proven
+`exists_bertiniNoetherWitness_of_three_le`), and
 `exists_integralHypersurfaceCertificate`.  All the glue between them is written
 and compiles, and this leaf itself has nothing left to prove.
 
@@ -14613,7 +14827,9 @@ leaves:
   named above;
 * `exists_bertiniGoodPlaneCount` is PROVEN over `exists_bertiniNoetherWitness`,
   which is itself PROVEN over `exists_bertiniNoetherWitness_of_three_le` (the
-  `N = 0, 1, 2` branches were discharged directly);
+  `N = 0, 1, 2` branches were discharged directly), and that in turn — later the
+  same day — over the two halves `exists_irreducible_planeSection_of_irreducible`
+  (Bertini) and `exists_noetherBadLocusForms` (Noether);
 * `exists_bound_badLocusCount` is PROVEN (Schmidt Lemma 3C: shear, resultant,
   Schwartz–Zippel), so `exists_birationalHypersurfaceModel` now rests only on
   `exists_spreadOutHypersurfaceModel`, which is itself PROVEN over the single
