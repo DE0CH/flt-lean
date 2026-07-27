@@ -11676,7 +11676,71 @@ site now passes it.
 Note also, from the same audit and still true: §3.1 is no longer part of this
 leaf's burden in any case. `exists_projectiveCompactification_of_affine_curve`
 is now an assembly, and its complement-nonemptiness half — `hZ`, which this
-leaf consumes — is PROVEN. -/
+leaf consumes — is PROVEN.
+
+MACHINERY SURVEY, RE-RUN ACROSS ALL THREE TREES (2026-07-27), because the
+doctrine's "absent from the pin is often wrong" rule demands `Fermat/`, the
+mathlib pin AND `~/cs/FLT` be checked, not just mathlib. **The verdict is
+unchanged: every one of §3.2–3.10's five inputs is absent from all three.**
+These are the greps that would REFUTE it — a hit from any of them reopens the
+costing, and the next auditor should run them rather than re-reading the paper:
+
+* `grep -rn "PicardScheme\|PicardFunctor\|Pic⁰\|picardGroupScheme" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+  — no Picard SCHEME or functor anywhere.  What mathlib does have is
+  `CommRing.Pic R` (`Mathlib/RingTheory/PicardGroup.lean`), the Picard *group*
+  of a commutative RING — invertible modules up to isomorphism, with
+  `ClassGroup.equivPic` identifying it with the class group for a domain.  That
+  is a `CommGroup`, not a `B`-group scheme; it has no relative version over a
+  base, no neutral component, no smoothness, and none of §3.4's exact sequence
+  `1 → 𝔾_m,B → (π_Z)_* 𝔾_m,Z → PG(X̄,Z) → Pic_{X̄/B} → 1`.  So it is a name
+  collision, not a starting point — the two occurrences of "Picard" under
+  `AlgebraicGeometry/` are prose in `EllipticCurve/Weierstrass.lean` about rings
+  of trivial Picard group, not a construction.
+* `grep -rn "SymmetricPower" --include=*.lean .lake/packages/mathlib/Mathlib/AlgebraicGeometry/`
+  — EMPTY: no symmetric power OF A SCHEME, so `X̄^(d)` of §3.2 cannot be written.
+  **Beware the near-miss that makes the naive grep useless here**: mathlib DOES
+  have `SymmetricPower` (`Mathlib/LinearAlgebra/TensorPower/Symmetric.lean`,
+  `SymmetricPower.Rel`, `SymmetricPower.module`), but it is the symmetric tensor
+  power of a MODULE — a quotient of `⨂[R] M` — with no scheme, no quotient by
+  `S_d`, and nothing about effective Cartier divisors finite flat of degree `d`.
+  It is not a foothold for §3.2; searching `AlgebraicGeometry/` is the check that
+  actually discriminates.
+* `grep -rn "GeneralisedJacobian\|GeneralizedJacobian" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+  — no generalised Jacobian (Serre, *GACC* ch. V), the neutral component in §3.4.
+* `grep -rn "StrongApproximation\|strongApproximation" --include=*.lean Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+  — EMPTY in all three. §3.8 is the step that actually produces the point, and
+  it is strong approximation in an affine space over a ring of `S`-integers.
+* Raynaud's compactness of `J(F)` for `F` local (§3.10.2), and the
+  Altman–Kleiman compactified Picard scheme it runs through: absent, and
+  downstream of the Picard scheme in any case.
+
+The hits that a NAIVE grep produces in `~/cs/FLT` on the bare word "Jacobian"
+are false positives — they are `Matrix`/derivative Jacobians in
+`ModuleTopology.lean`, `Determinant.lean` and `HaarChar/RealComplex.lean`, with
+no curve or Picard content. Do not read them as a foothold; that is the specific
+mistake this paragraph exists to prevent.
+
+CONSEQUENCE FOR DISPATCH, stated so it is not mistaken for a smaller claim: this
+leaf is NOT gated on any repair elsewhere in this file. Its dense-open dimension
+obligation was discharged (it now CARRIES `hXdim`), its §3.1 obligation was
+discharged (`hZ` is proven), and the `residueCardTwo` layering break that gates
+its two sibling leaves does not touch it at all. What stands between it and a
+proof is five absent chapters of algebraic geometry, in the order §3.2 → §3.4 →
+§3.5 → §3.8 → §3.10. A prover dispatched here without at least the Picard scheme
+and the symmetric power in hand has nothing to write.
+
+FAITHFULNESS RE-CHECK (2026-07-27), since a leaf that will sit open a long time
+should be known to be TRUE: the statement is Moret–Bailly Thm 1.3 + Remarque 1.5
+read at `K = ℚ`, `Σ = {∞} ∪ S`, `L_v = K_v`, `Ω_∞ = C(ℝ)`, `Ω_p = C(ℚ_p)`, and
+each conjunct of the conclusion is the reading of a conjunct of his: `F` a number
+field and `F ⊗ ℝ ≅ ℝ^[F:ℚ]` is `NumberField.IsTotallyReal F`; `F ⊗ ℚ_p ≅ ℚ_p^[F:ℚ]`
+is `IsTotallySplitAt F p`; and the point entier `Y ⊆ C` — note `C`, the affine
+part, not `X̄` — gives `HasRationalPoint fC F`. The conclusion asks for the point
+on `C`, which is what MB delivers and what the consumer needs, so there is no
+gap of the kind that has bitten sibling leaves here. Incompleteness of the Skolem
+datum, which §3.8 and §3.10.3 both consume, is bought by inverting one prime
+`q ∉ S ∪ {∞}` and is why the conclusion is a `ℚ`-point rather than an integral
+point. -/
 theorem exists_totallySplitPoint_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -21502,17 +21566,30 @@ FOUR blockers stood in the way.  TWO ARE NOW GONE:
    basis homeomorphism carries to `Set.pi univ (fun _ => ℓ ^ n • ℤ_[ℓ])`.
    Refuting check: read `Threeadic.lean:135-150`.
 
-TWO REMAIN, and only the second is deep:
+ONE REMAINS (item 4).  Item 3 was retired on 2026-07-27 by running its own
+refuting check; the record of what it claimed, and why it is now false, is kept
+below so that the next audit does not re-derive it:
 
-3. `HilbertHeckeAlgebra.T` is module-finite over **`ℤ_[ℓ]`**, not over `ℤ`.
-   The `ℚ`-rational structure — that `T` is the `ℤ_[ℓ]`-completion of a
-   `ℤ`-finite algebra of Hecke operators acting on a `ℚ`-rational space of
-   cusp forms, i.e. Shimura rationality — is recorded nowhere.  This is the
-   ONLY reason that development yields `IsIntegral ℤ_[ℓ]`
-   (`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`) and
-   cannot yield a number field.  Cost: a `Tℤ`/`jℤ`/`tℤ` package on
-   `HilbertHeckeAlgebra` (or on `MoretBaillySeed`), plus a producing leaf.
-   Refuting check: `grep 'Module.Finite ℤ ' HilbertModularity.lean`.
+3. *(REMOVED 2026-07-27 — REFUTED BY ITS OWN REFUTING CHECK.)*  This item
+   said `HilbertHeckeAlgebra.T` is module-finite over `ℤ_[ℓ]` and not over
+   `ℤ`, that the `ℚ`-rational (Shimura-rationality) structure "is recorded
+   nowhere", and that closing it costs a `Tℤ`/`jℤ`/`tℤ` package plus a
+   producing leaf.  **All three claims are now false.**  Running the check
+   this item itself prescribes — `grep 'Module.Finite ℤ ' HilbertModularity.lean`
+   — returns hits, because the `ℤ`-RATIONAL STRUCTURE repair of 2026-07-27
+   added the `ℤ`-form to the structure directly: `HilbertHeckeAlgebra` now
+   carries the fields `T₀`, `[commRingT₀]`, `[moduleFiniteT₀ : Module.Finite ℤ T₀]`
+   and `[moduleFreeT₀ : Module.Free ℤ T₀]`, with `T` pinned to the local factor
+   of `W(k) ⊗_{ℤ_[ℓ]} (ℤ_[ℓ] ⊗_ℤ T₀)` at `𝔪` through `TEquiv`.  So the `ℤ`-form
+   is not a cost to be paid here; it is a hypothesis this leaf may consume.
+     The consumer is already PROVEN and already in this file:
+   `exists_numberField_ringHom_of_moduleFinite_int` takes exactly
+   `[Module.Finite ℤ T]` plus `ιT : T →+* ℚ̄_ℓ` and produces the number field
+   `E` with `ψ : E ↪ ℚ̄_ℓ` factoring `ιT` — which is precisely the `Module.Finite ℤ T`
+   conjunct of this leaf's own conclusion.  It is applied that way at
+   `exists_hilbertNewform_of_heckeTraceAlgebra` below.
+     **Do not re-derive Shimura rationality for this leaf.**  What remains is
+   item 4 alone.
 
 4. **THE REAL BLOCKER, AND IT IS NOT THE ONE THIS DOCSTRING USED TO NAME.**
    The first pass said the repair was to "re-plumb this leaf's consumer chain
