@@ -44573,6 +44573,33 @@ with no written consumer is floating. Whoever takes this leaf should
 write that transport first and then the `ℚ`-side statement becomes a
 second named leaf consumed by both.
 
+**THE TRANSPORT MACHINERY EXISTS — DO NOT REBUILD IT** (checked
+2026-07-27, in this file's import cone through
+`Deformations.RepresentationTheory.AbsoluteGaloisGroup`):
+
+* `Field.absoluteGaloisGroup.map (f : K →+* L) : Γ L →ₜ* Γ K` — the
+  restriction homomorphism along an arbitrarily chosen embedding of
+  algebraic closures. Instantiate at `f := algebraMap ℚ F` to get
+  `Γ F →ₜ* Γ ℚ`. **It carries an UNNAMED `[NumberField K]` binder that
+  `#check` does not print** — read the `variable` block, or use
+  `set_option pp.explicit true`, before assuming it applies at your
+  generality.
+* `Field.absoluteGaloisGroup.lift_map (f) (σ : Γ L) (x : Kᵃˡᵍ) :
+  AlgebraicClosure.map f (map f σ x) = σ (AlgebraicClosure.map f x)` —
+  this is the ONE compatibility a `μ_m`-clause needs: `AlgebraicClosure.map f`
+  is an injective ring hom, so it carries `μ_m ⊆ ℚᵃˡᵍ` into `μ_m ⊆ Fᵃˡᵍ`
+  and turns "`σ` acts by the `k`-th power on `μ_m ⊆ Fᵃˡᵍ`" into the same
+  statement downstairs. Every `μ_m`-clause in both leaves crosses the
+  seam through this single lemma.
+
+Also worth knowing, though NOT currently imported here:
+`normal_range_absoluteGaloisGroup_map` and
+`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`
+(`Fermat/FLT/Modularity/MoretBailly.lean`) compute the range of that map.
+Check whether you need them before adding the import edge — this file's
+header records that import edges to the largest modules are a wall-clock
+regression the merger will want to know about.
+
 FAITHFULNESS. Non-vacuous: the conclusion pins the ACTION of `g` on all
 of `μ_m`, so a junk witness does not discharge it — at `m = 5`, `k = 2`
 it asserts the existence of an element of `Γ F` inducing a generator of
