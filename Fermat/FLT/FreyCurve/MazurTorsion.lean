@@ -7324,6 +7324,15 @@ leaves are vacuously true in the sense of the `exists_x0ThirtyTwo_point`
 audit above; unlike that leaf, these two ARE the mathematics rather than a
 dictionary step, so the vacuity relocates no burden onto a sibling.
 
+**AMENDED 2026-07-27.** The cross-reference in the sentence above now points
+at a node that has CHANGED SHAPE, so read it with care.
+`exists_x0ThirtyTwo_point` is no longer the vacuous-and-REFUTABLE leaf that
+audit described: it is PROVEN, over `Y0HasNoRationalPoint 32`, and the leaf
+that made it refutable is gone. What survives of that audit, and all that is
+being borrowed here, is the narrow observation that an unsatisfiable
+hypothesis makes a leaf vacuously true. Nothing about unattackability
+transfers with it — level `81` closed, and so did `32` and `49`.
+
 **GENUS AND CUSPS, recomputed.**
 * PARI/GP with `g = 1 + μ/12 − ν₂/4 − ν₃/3 − ε_∞/2`:
   `X_0(81)`: `μ = 108`, `ν₂ = ν₃ = 0`, `ε_∞ = 12` ⟹ `g = 4`;
@@ -8145,7 +8154,19 @@ cannot replace — see the section note for why its bound cannot go below
 `classPoly676_of_stable_cyclic_subgroup_order_169`, …) the hypotheses here
 are jointly unsatisfiable — no elliptic curve over `ℚ` has a rational
 cyclic `125`-isogeny — so this leaf is vacuously true and cannot be proven
-by exhibiting a witness. What makes the cut a REDUCTION rather than a
+by exhibiting a witness.
+
+**AMENDED 2026-07-27 — the vacuity claim stands, the company it keeps has
+moved on.** Every node named in that list has since been CLOSED:
+`exists_x0ThirtyTwo_point` is PROVEN over `Y0HasNoRationalPoint 32`,
+`not_cyclicIsogeny_eightyOne_of_j` is PROVEN, and `exists_x0FortyNine_point`
+is PROVEN over the `7`-isogeny chain. So "like every level node in this
+file, and therefore equally stuck" is no longer a fair reading of the list —
+vacuity did not stop any of them. What vacuity rules out is proving a leaf
+from its OWN hypotheses in isolation; it says nothing about DECOMPOSING it,
+and decomposition is exactly how those three closed. Do not read this
+paragraph as a reason not to dispatch at level `125`; read it as a reason
+not to dispatch a prover who intends to exhibit a witness. What makes the cut a REDUCTION rather than a
 renaming is that the class-number half is now closed: whoever attacks this
 leaf has to produce only the Atkin–Lehner descent, and no longer has to
 also settle the arithmetic of the fixed points.
@@ -8202,12 +8223,55 @@ level-`125` node again: proving it still requires identifying the
 the arithmetic that `classPoly500_no_rat_root` has already PROVEN would have
 to be redone inside the new leaf — the class-number half would be swallowed
 back up, leaving the H_{−500} apparatus as decoration on a proof from
-`False`. Second, `X0.lean` deliberately builds only the AFFINE coarse moduli
-space `Y_0(N)`: it has no compactification, no cusps, no divisors, no
-Jacobian and no Atkin–Lehner involution, so it cannot express the descent
+`False`. Second, `X0.lean` cannot express the descent
 `[(P) − (w_125 P)] ∈ ker(1 + w_125)` even in principle. It is the right home
 for the twelve composite levels, whose leaves really are "this curve has no
 rational point"; it is not the right home for this one.
+
+**CORRECTION 2026-07-27 — the SECOND reason above was overstated and is
+now three-fifths FALSE; the FIRST reason, and the verdict, both stand.**
+The retired wording read: "`X0.lean` deliberately builds only the AFFINE
+coarse moduli space `Y_0(N)`: it has no compactification, no cusps, no
+divisors, no Jacobian and no Atkin–Lehner involution". Recounted against
+the file on 2026-07-27, declaration by declaration:
+
+* *compactification* — PRESENT: `IsCompactificationY0`,
+  `IsX0Compactification`, `exists_compactificationY0`,
+  `exists_x0Compactification`;
+* *cusps* — PRESENT: `IsCompactificationY0.IsCusp`, `numRationalCusps`,
+  `exists_rationalCusps`, `y0HasNoRationalPoint_of_cuspidal`;
+* *Jacobian* — PRESENT: `IsJacobianOf`, `HasRankZeroJacobian`, and
+  `IsX0ReductionAt` with an injective `redJ` and `red_aj`;
+* *divisors* — genuinely ABSENT (no divisor group, no `Pic⁰`);
+* *Atkin–Lehner* — genuinely ABSENT (the string does not occur in the
+  file at all).
+
+So the conclusion survives, but on the two narrow grounds that remain
+rather than on a blanket "there is no compactification layer": what blocks
+the descent is the missing DIVISOR group and the missing INVOLUTION, not
+the missing curve. That matters, because it names a much smaller thing for
+a successor to build. The FIRST reason — that a `Y0HasNoRationalPoint 125`
+route would swallow the already-PROVEN `classPoly500_no_rat_root` back up
+and leave the `H_{−500}` apparatus as decoration on a proof from `False` —
+is untouched by any of this and remains the load-bearing objection.
+
+**And the counting cut of level `32` does NOT transfer here.** Checked
+2026-07-27 alongside level `49`, where it does. The reason is not the
+cusps — `numRationalCusps 125 = 2`, exactly as at `49` — but the other
+input: the level-`32`/`49` route needs the rational points of an explicit
+plane model to be ALREADY PINNED (`rational_point_x0ThirtyTwo`,
+`rational_point_x0FortyNine`, both proven), and `X_0(125)` has GENUS `8`.
+There is no plane model here whose rational points are pinned by anything
+proven, and producing one IS the level-`125` problem. The counting route
+would therefore relocate the entire difficulty into a single leaf and
+discard the class-number half — which is the first objection again, in a
+new costume. Same verdict at level `169`, genus `8`, for the same reason.
+
+The check that would refute this: exhibit a plane model of `X_0(125)`
+whose rational points are pinned by a PROVEN theorem in this tree, as
+`rational_point_x0FortyNine` pins `49a1`. Nothing of the sort exists, and
+at genus `8` it would be a Chabauty–Coleman or Mordell–Weil-sieve
+computation, not a `2`-descent.
 
 **CUT-OBSTRUCTION AUDIT: the obvious next cut does not work, and here is
 why** (2026-07-26). The natural way to split this leaf further is to peel
@@ -10240,12 +10304,15 @@ theorem WeierstrassCurve.exists_x0Seven_chainParameters
     MazurLevelFortyNine.residual_of_matching E₁.j u₁ u₂ hj1' hj2 hnb⟩
 
 /-- **`X_0(49)`: a rational cyclic `49`-subgroup gives a NON-CUSPIDAL
-rational point of `49a1`** (sorry node — the level-`49` moduli content,
-introduced 2026-07-26 by the cut of `not_cyclicIsogeny_fortyNine`): if `E/ℚ`
-carries a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `49`, then the affine
-introduced 2026-07-26 by the cut of `not_cyclicIsogeny_fortyNine`): if `E/ℚ`
+rational point of `49a1`** (PROVEN 2026-07-26 — the level-`49` moduli
+content, introduced by the cut of `not_cyclicIsogeny_fortyNine`): if `E/ℚ`
 carries a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `49`, then the affine
 curve `y² + x y = x³ − x² − 2x − 1` has a rational point other than `(2, −1)`.
+
+(Header repaired 2026-07-27: this docstring carried two DUPLICATED lines,
+a merge artefact of the kind this project has hit before, and still called
+the node a `sorry` node although it has been PROVEN since the day it was
+written. Both are fixed above.)
 
 This is the moduli dictionary at level `49`, and it is the only modular-curve
 content the level needs: the pair `(E, ⟨g⟩)` with `⟨g⟩` cyclic of order `49`
@@ -10283,8 +10350,8 @@ Vacuity of a leaf says nothing about whether it can be DECOMPOSED. What it
 rules out is proving the leaf from its own hypotheses in isolation; it does
 not rule out reducing it to shallower leaves whose hypotheses are
 SATISFIABLE, and that is exactly what the level-`27` cluster does one prime
-down — `exists_x0TwentySeven_point` is equally vacuous and is nonetheless
-PROVEN, over `exists_x0Three_chainParameters`. The general principle: a node
+down — `exists_x0TwentySeven_point` is PROVEN over
+`exists_x0Three_chainParameters`. The general principle: a node
 `P → R` with `P` unsatisfiable is vacuous, but the chain
 `P → Q₁ → Q₂ → ⋯ → R` may pass through statements with satisfiable
 hypotheses, and those carry real content and real provability.
@@ -10298,7 +10365,64 @@ cross-checked. The one place where "the moduli dictionary in general" was
 supposedly needed has turned into two leaves, neither of which is vacuous:
 `exists_x0Seven_param_of_stableSevenSubgroup` has a satisfiable hypothesis
 (`7`-isogenies exist), and `x0FortyNine_point_of_residual` has no curve in
-it at all. -/
+it at all.
+
+**CORRECTION 2026-07-27 — `exists_x0TwentySeven_point` is NOT a vacuity
+precedent, and must not be cited as one.** The paragraph above previously
+called it "equally vacuous". It is not: `27` IS one of Kenku's cyclic
+isogeny degrees over `ℚ` (the class `27a` realises a rational cyclic
+`27`-isogeny, with CM `j = −12288000`), so `addOrderOf g = 27` plus
+stability is SATISFIABLE and the level-`27` node carries genuine content.
+`49` is not in that list, so THIS node is vacuous. The correct precedent
+for "vacuous and nevertheless decomposable" is level `32`, not level `27`.
+
+**THE LEVEL-`32` COUNTING CUT WAS CHECKED HERE ON 2026-07-27. It
+TRANSFERS — and it was deliberately NOT adopted.** Recorded so that nobody
+spends a cycle rediscovering either half.
+
+*It transfers, and this was verified in Lean, not merely asserted.* The
+arithmetic lines up exactly, which at first sight makes level `49` look
+like a carbon copy of level `32`:
+
+* `numRationalCusps 49 = 2` by `decide` — the divisors `1, 7, 49` give
+  `gcd(d, 49/d) = 1, 7, 1` with totients `1, 6, 1`, so `2` of the `8`
+  cusps are rational and the `6` of denominator `7` are conjugate over
+  `ℚ(ζ₇)`;
+* `#X_0(49)(ℚ) = 2` as well, and — unlike every other level — this half is
+  ALREADY PROVEN here and unconditionally, as
+  `rational_point_x0FortyNine`;
+* so `2` rational cusps plus one rational point of `Y_0(49)` would be `3`
+  points in a set of size `≤ 2`.
+
+The full route elaborates clean: a leaf `exists_planeModel_x0FortyNine`
+injecting `X_0(49)(ℚ)` into `Option (ℚ × ℚ)` over
+`y² + xy = x³ − x² − 2x − 1`, then `y0HasNoRationalPoint_fortyNine :
+Y0HasNoRationalPoint 49` PROVEN by the `MazurLevel32` counting argument
+verbatim, then this node as
+`(false_of_stable_of_y0HasNoRationalPoint … (by norm_num)).elim`.
+
+*Why it was NOT adopted: leaf COUNT is the wrong metric, CLOSABILITY is the
+right one.* Adopting it would orphan — and therefore require deleting —
+`residual_of_matching`, `x0FortyNine_point_of_residual`,
+`exists_x0Seven_param_of_stableSevenSubgroup`, `x0Seven_param_mul_ne_49`
+and `exists_x0Seven_chainParameters`, trading THREE open leaves for ONE.
+But the three are all concrete and attackable at this pin — an explicit
+birational inversion, Vélu at an odd kernel, and a dual-isogeny argument,
+with every constant needed for them computed in the section note above —
+whereas the one requires `X_0(49)` as a SCHEME together with a Weierstrass
+model and the identification of its rational points, which the sibling
+`MazurLevel32.exists_planeModel_x0ThirtyTwo` records as not existing
+anywhere in this development. Level `32` had no such choice: the node it
+replaced was vacuous AND refutable with no concrete route at all, so the
+swap there was forced. Here it is not, because this node is already PROVEN.
+
+*The check that would refute this verdict.* If
+`exists_planeModel_x0ThirtyTwo` is ever PROVEN, its machinery closes level
+`49` too at the cost of one analogous leaf, and the balance flips — at
+that point delete this cluster and route the node through
+`Y0HasNoRationalPoint 49`. Until then, do not. Conversely, if the
+birational inversion in `x0FortyNine_point_of_residual` turns out to be
+genuinely intractable, that is the other trigger to revisit. -/
 theorem WeierstrassCurve.exists_x0FortyNine_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 49)
@@ -10689,7 +10813,28 @@ the two independent computations of the fixed-point count `6`.
 `not_cyclicIsogeny_sq_of_jInvariant`, …) the hypotheses here are jointly
 unsatisfiable — no elliptic curve over `ℚ` has a rational cyclic
 `169`-isogeny — so this leaf is vacuously true and cannot be proven by
-exhibiting a witness. What makes the cut a REDUCTION rather than a
+exhibiting a witness.
+
+**AMENDED 2026-07-27, exactly as at level `125`.** The vacuity claim is
+correct; the implicit "and so is every other level node, so nothing can be
+done" is not. `exists_x0ThirtyTwo_point`, `not_cyclicIsogeny_eightyOne_of_j`
+and `exists_x0FortyNine_point` have all since been PROVEN, every one of them
+by DECOMPOSITION rather than by exhibiting a witness. Vacuity blocks the
+latter and not the former.
+
+**The level-`32` counting cut does NOT transfer to `169`.** Checked
+2026-07-27. `numRationalCusps 169 = 2` — divisors `1, 13, 169` give
+`gcd(d, 169/d) = 1, 13, 1`, totients `1, 12, 1`, so `2` of the `14` cusps
+are rational — which is the same favourable count as at levels `49` and
+`125`. That is not the obstruction. The obstruction is that the route also
+needs the rational points of an explicit plane model to be pinned by
+something already PROVEN, as `rational_point_x0FortyNine` pins `49a1`, and
+`X_0(169)` has GENUS `8`. Producing such a model IS the level-`169`
+problem, so the counting route would relocate the whole difficulty into one
+leaf while discarding the PROVEN class-number half
+`MazurLevel169.classPoly676_no_rat_root`. Refuting check: exhibit a plane
+model of `X_0(169)` whose rational points are pinned by a proven theorem in
+this tree. What makes the cut a REDUCTION rather than a
 renaming is that the class-number half is now closed: whoever attacks this
 leaf has to produce only the Atkin–Lehner descent, and no longer has to
 also settle the arithmetic of the fixed points.
