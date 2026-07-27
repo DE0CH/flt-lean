@@ -14333,26 +14333,226 @@ theorem bijective_pre_generic_of_isProper (ℓ : ℕ) (R : Subring ℚ) (toF : R
     obtain ⟨l, hl₁, hl₂⟩ := (hvc sq).some.default
     exact ⟨⟨l, hl₂⟩, Subtype.ext hl₁⟩
 
-/-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists,
-with its generic fibre identified with the given `X/ℚ`** (sorry node —
-Deligne–Rapoport / Igusa).
+/-! ### Two transport lemmas for `IsFibreIdent`
 
-This is `exists_x0CurveModel_of_base` with everything FORMAL removed.
-What is left is the one citation: `X_0(N)` has a smooth proper model over
-`ℤ[1/N]`, hence over `ℤ_(ℓ)` for `ℓ ∤ N`, and its generic fibre is the
-`X_0(N)` we started with — the second half being the uniqueness of the
-coarse moduli space and of the smooth compactification of a curve over
-`ℚ`, both of which are determined up to unique isomorphism by
-`IsCoarseModuliY0`'s initiality clause.
+Both are pure category theory and neither mentions modular curves.  They
+are what lets the identification of the generic fibre be *transported*
+along an isomorphism over `Spec ℚ`, which is the step that separates the
+CONSTRUCTION of the integral model from the IDENTIFICATION of its generic
+fibre with a particular `X/ℚ` — the two halves of
+`exists_x0CompactificationModel`. -/
 
-Three things this leaf NO LONGER carries, and each is a genuine
-reduction rather than a repackaging:
+/-- **An isomorphism over the base induces an equivalence of relative
+points, naturally** (PROVEN).
 
-* the SPECIAL fibre `X'` — it is the pullback `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`, by
-  `fibreIdentPullback`, which is PROVEN;
-* `spX` and `spX_nat` — same lemma;
-* `properX` — that is `bijective_pre_generic_of_isProper` applied to
-  `model.isProper`.
+`x ↦ x ≫ e.hom` with inverse `y ↦ y ≫ e.inv`; the two side conditions
+are `he` and its consequence `e.inv ≫ f = f'`, and the round trips are
+`e.hom_inv_id` / `e.inv_hom_id`.  Nothing here is specific to schemes. -/
+def relPointEquivOfIso {S A A' : Scheme.{0}} {f : A ⟶ S} {f' : A' ⟶ S}
+    (e : A ≅ A') (he : e.hom ≫ f' = f) {T : Scheme.{0}} (g : T ⟶ S) :
+    RelPoint f g ≃ RelPoint f' g where
+  toFun x := ⟨x.1 ≫ e.hom, by rw [Category.assoc, he, x.2]⟩
+  invFun y := ⟨y.1 ≫ e.inv, by
+    have h2 : e.inv ≫ f = f' := by
+      rw [← he, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+    rw [Category.assoc, h2, y.2]⟩
+  left_inv x := Subtype.ext (by
+    simp only [Category.assoc, e.hom_inv_id, Category.comp_id])
+  right_inv y := Subtype.ext (by
+    simp only [Category.assoc, e.inv_hom_id, Category.comp_id])
+
+/-- **Transport of an `IsFibreIdent` along an isomorphism of the fibre**
+(PROVEN).
+
+If `f'` is the fibre of `f` along `s`, and `f''` is isomorphic to `f'`
+over `S'`, then `f''` is the fibre of `f` along `s`.  Naturality reduces
+to associativity: precomposing with `h` and postcomposing with `e.hom`
+commute, so the transported equivalence inherits `hf.nat` verbatim.
+
+This is what lets the Deligne–Rapoport leaf below be stated with an
+existentially quantified generic fibre — the model is built first, and
+only afterwards identified with the `X/ℚ` the caller supplied. -/
+def IsFibreIdent.congrFibre {S S' A A' A'' : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S}
+    {f' : A' ⟶ S'} {f'' : A'' ⟶ S'} (hf : IsFibreIdent s f f')
+    (e : A'' ≅ A') (he : e.hom ≫ f' = f'') : IsFibreIdent s f f'' where
+  toEquiv g g₀ hg := (relPointEquivOfIso e he g).trans (hf.toEquiv g g₀ hg)
+  nat := by
+    intro T' T hmap g g' hg g₀ g₀' h₀ h₀' x
+    simp only [Equiv.trans_apply]
+    rw [show relPointEquivOfIso e he g' (RelPoint.pre hmap hg x)
+        = RelPoint.pre hmap hg (relPointEquivOfIso e he g x) from
+      Subtype.ext (Category.assoc _ _ _)]
+    exact hf.nat hmap hg h₀ h₀' _
+
+/-! ### Uniqueness of `X_0(N)` over `ℚ`
+
+The docstring that used to sit on `exists_x0CompactificationModel` named
+the second half of that leaf as "the uniqueness of the coarse moduli
+space and of the smooth compactification of a curve over `ℚ`, both of
+which are determined up to unique isomorphism by `IsCoarseModuliY0`'s
+initiality clause".  That sentence is now carried out.  The first half is
+PROVEN outright from initiality; the second reduces to a single extension
+property of a proper target, with the round-trip argument written out. -/
+
+/-- **A coarse moduli space of the `Γ₀(N)`-problem is unique up to
+isomorphism over the base** (PROVEN, from initiality alone — no geometry).
+
+This is the standard "initial objects are unique" argument, run inside
+the comma category that `IsCoarseModuliY0.universal` describes.
+`h.universal` applied to `(Y₀, h₀.classify)` gives `u : Y ⟶ Y₀`, and
+symmetrically `v : Y₀ ⟶ Y`.  Both `u ≫ v` and `𝟙 Y` satisfy the property
+that `h.universal strY h.classify` asserts a UNIQUE morphism satisfies —
+being over the base, and fixing every classified point — so they are
+equal; likewise on the other side.
+
+Note the base `S` is arbitrary.  Nothing in the argument sees `Spec ℚ`,
+so this is reusable for the integral coarse moduli space over `ℤ_(ℓ)`
+should a later cut need it. -/
+theorem exists_iso_of_isCoarseModuliY0 {N : ℕ} {Y Y₀ S : Scheme.{0}}
+    {strY : Y ⟶ S} {strY₀ : Y₀ ⟶ S}
+    (h : IsCoarseModuliY0 N strY) (h₀ : IsCoarseModuliY0 N strY₀) :
+    ∃ e : Y ≅ Y₀, e.hom ≫ strY₀ = strY := by
+  obtain ⟨u, ⟨hu₁, hu₂⟩, -⟩ := h.universal strY₀ h₀.classify h₀.classify_natural
+  obtain ⟨v, ⟨hv₁, hv₂⟩, -⟩ := h₀.universal strY h.classify h.classify_natural
+  obtain ⟨w, -, hwY⟩ := h.universal strY h.classify h.classify_natural
+  obtain ⟨w₀, -, hwY₀⟩ := h₀.universal strY₀ h₀.classify h₀.classify_natural
+  have huv : u ≫ v = 𝟙 Y := by
+    rw [hwY (u ≫ v) ⟨by rw [Category.assoc, hv₁, hu₁],
+        fun g d => (hv₂ g d).trans (by rw [hu₂ g d, Category.assoc])⟩,
+      hwY (𝟙 Y) ⟨Category.id_comp _, fun g d => (Category.comp_id _).symm⟩]
+  have hvu : v ≫ u = 𝟙 Y₀ := by
+    rw [hwY₀ (v ≫ u) ⟨by rw [Category.assoc, hu₁, hv₁],
+        fun g d => (hu₂ g d).trans (by rw [hv₂ g d, Category.assoc])⟩,
+      hwY₀ (𝟙 Y₀) ⟨Category.id_comp _, fun g d => (Category.comp_id _).symm⟩]
+  exact ⟨⟨u, v, huv, hvu⟩, hu₁⟩
+
+/-- **A morphism from `Y_0(N)` into a proper `ℚ`-scheme extends uniquely
+over the compactification** (sorry leaf — a rational map from a smooth
+curve to a proper scheme is a morphism).
+
+TRUE: `X` is a smooth — hence normal — proper curve over `ℚ` and `Y` is a
+dense open of it, so a morphism `Y ⟶ Z` into a proper `Z` extends over
+every codimension-one point of `X` by the valuative criterion, and the
+extension is unique because `X` is reduced and `Z` separated (properness
+gives both).  Hartshorne I.6.8 in the classical setting; EGA II 7.4.10 /
+BLR *Néron Models* 4.4 in the form used here.
+
+**The one hypothesis that is present but INVISIBLE, recorded because a
+prover will need it first: `Y` is DENSE in `X`.**  It does not appear as
+a field of `IsX0Compactification`; it is a consequence of two that do.
+`X` is smooth and geometrically connected over `ℚ`, hence normal and
+connected, hence IRREDUCIBLE — so every nonempty open is dense.  And `Y`
+is nonempty because `finite_compl` makes `(range j.base)ᶜ` finite while a
+smooth proper curve over `ℚ` has infinitely many points; if instead `X`
+itself is empty then `X ⟶ Z` is unique for trivial reasons and the
+statement still holds.  So the leaf is TRUE with no extra hypothesis, but
+the density step is where the work starts, not a triviality to skip.
+
+**Why the target is only assumed PROPER, not a curve.**  It is applied
+three times below — twice at another `X_0(N)`, once at `X` itself for the
+uniqueness half of the round trip — and the extension theorem needs
+nothing of the target beyond properness.  Weakening the hypothesis this
+far is what lets the SAME leaf discharge all three uses.
+
+**It has a TWIN further down this file, and whoever proves one should
+prove both.**  `exists_inverse_of_isX0Compactification` is the same
+mathematics over `Spec 𝔽_ℓ` instead of `Spec ℚ` — "two smooth proper
+compactifications of the same open curve are isomorphic" — and it is
+still open.  Its docstring records the identical obstruction ("no
+smooth-compactification theorem for curves exists in Mathlib").  The
+round-trip half of it is `exists_iso_of_isX0Compactification` below with
+`SpecQ` replaced by `SpecF ℓ`, so once this leaf is proved over a field
+base, that one follows by the same three-line argument.
+
+**But do NOT simply generalize the base to an arbitrary `S`.**  The leaf
+is stated over `Spec ℚ` because the argument is a CURVE argument: `X` has
+dimension one, so the missing locus has codimension one and the valuative
+criterion reaches it.  Over `Spec ℤ_(ℓ)` — which `IsX0Compactification`
+also admits, and which is exactly the base of the integral model above —
+`X` is two-dimensional and the cusp locus has codimension one only
+fibrewise; extension across a codimension-two locus needs more of the
+target than properness (a weak Néron property), so a base-general
+restatement is very likely FALSE.  Generalize to `Spec` of a FIELD, not
+further.
+
+IRREDUCIBLE at this pin ALONG THE CURVE-EXTENSION AXIS, and the CHECK
+THAT WOULD REFUTE THAT: produce, in mathlib or this project, an extension
+theorem for morphisms from a dense open of a normal (or regular
+one-dimensional) scheme into a proper scheme.  mathlib's
+`ValuativeCriterion` gives the lift along ONE valuation ring at a time
+(`IsProper.eq_valuativeCriterion`, used a few declarations above in
+`bijective_pre_generic_of_isProper`); what is missing is the glueing of
+those local lifts into a morphism on all of `X`. -/
+theorem exists_unique_extension_of_isX0Compactification {N : ℕ} {X Y Z : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X} {strZ : Z ⟶ SpecQ}
+    (_hX : IsX0Compactification N strX strY j) (_hZ : IsProper strZ)
+    (φ : Y ⟶ Z) (_hφ : φ ≫ strZ = strY) :
+    ∃! Φ : X ⟶ Z, Φ ≫ strZ = strX ∧ j ≫ Φ = φ :=
+  sorry
+
+/-- **The smooth compactification of `Y_0(N)` is unique** (PROVEN, over
+the extension property).
+
+Given an isomorphism `e : Y ≅ Y₀` of the two open parts over `Spec ℚ` —
+supplied by `exists_iso_of_isCoarseModuliY0` — extend `e.hom ≫ j₀` to
+`Φ : X ⟶ X₀` and `e.inv ≫ j` to `Ψ : X₀ ⟶ X`.  Then `Φ ≫ Ψ` and `𝟙 X`
+are both extensions of `j` to `X`, so the UNIQUENESS half of the
+extension property identifies them; symmetrically for `Ψ ≫ Φ`.  That is
+the whole proof, and it is why the leaf above is stated as `∃!` rather
+than `∃` — the existence half alone would give two maps and no way to see
+they are mutually inverse.
+
+Note that no compatibility between `E` and `e` is claimed.  It is true
+(`j ≫ Φ = e.hom ≫ j₀` by construction) but nothing downstream consumes
+it, and leaving it out keeps the statement at the strength its one
+consumer needs. -/
+theorem exists_iso_of_isX0Compactification {N : ℕ} {X Y X₀ Y₀ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {strX₀ : X₀ ⟶ SpecQ} {strY₀ : Y₀ ⟶ SpecQ} {j₀ : Y₀ ⟶ X₀}
+    (hX : IsX0Compactification N strX strY j)
+    (hX₀ : IsX0Compactification N strX₀ strY₀ j₀)
+    (e : Y ≅ Y₀) (he : e.hom ≫ strY₀ = strY) :
+    ∃ E : X ≅ X₀, E.hom ≫ strX₀ = strX := by
+  have hφ : (e.hom ≫ j₀) ≫ strX₀ = strY := by rw [Category.assoc, hX₀.comm, he]
+  have hψ : (e.inv ≫ j) ≫ strX = strY₀ := by
+    rw [Category.assoc, hX.comm, ← he, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+  obtain ⟨Φ, ⟨hΦ₁, hΦ₂⟩, -⟩ :=
+    exists_unique_extension_of_isX0Compactification hX hX₀.isProper (e.hom ≫ j₀) hφ
+  obtain ⟨Ψ, ⟨hΨ₁, hΨ₂⟩, -⟩ :=
+    exists_unique_extension_of_isX0Compactification hX₀ hX.isProper (e.inv ≫ j) hψ
+  have hΦΨ : Φ ≫ Ψ = 𝟙 X := by
+    obtain ⟨w, -, hw⟩ :=
+      exists_unique_extension_of_isX0Compactification hX hX.isProper j hX.comm
+    rw [hw (Φ ≫ Ψ) ⟨by rw [Category.assoc, hΨ₁, hΦ₁], by
+          rw [← Category.assoc, hΦ₂, Category.assoc, hΨ₂, ← Category.assoc,
+            e.hom_inv_id, Category.id_comp]⟩,
+      hw (𝟙 X) ⟨Category.id_comp _, Category.comp_id _⟩]
+  have hΨΦ : Ψ ≫ Φ = 𝟙 X₀ := by
+    obtain ⟨w, -, hw⟩ :=
+      exists_unique_extension_of_isX0Compactification hX₀ hX₀.isProper j₀ hX₀.comm
+    rw [hw (Ψ ≫ Φ) ⟨by rw [Category.assoc, hΦ₁, hΨ₁], by
+          rw [← Category.assoc, hΨ₂, Category.assoc, hΦ₂, ← Category.assoc,
+            e.inv_hom_id, Category.id_comp]⟩,
+      hw (𝟙 X₀) ⟨Category.id_comp _, Category.comp_id _⟩]
+  exact ⟨⟨Φ, Ψ, hΦΨ, hΨΦ⟩, hΦ₁⟩
+
+/-! ### The integral model, and its generic fibre -/
+
+/-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists**
+(sorry leaf — Deligne–Rapoport / Igusa).
+
+This is the pure citation, with EVERY identification stripped off: no
+generic fibre is claimed, no comparison with the given `X/ℚ` is made.
+`X_0(N)` has a smooth proper model over `ℤ[1/N]`, hence over `ℤ_(ℓ)` for
+`ℓ ∤ N` (Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques*, IV.3; Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*,
+ch. 8 for the moduli side and 13.11 for the compactification; Igusa for
+good reduction away from the level).
+
+`_hX` is retained only to keep the leaf no stronger than its consumer
+needs — it is what rules out the degenerate level `N = 0`, where
+`Gamma0Datum 0` is supported on the empty scheme and the assertion would
+have to be discharged some other way.
 
 IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
 REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
@@ -14365,14 +14565,158 @@ refutes the claim.  The nearest usable foothold in this file is
 `Gamma0Atlas` / `exists_coarseModuliY0_of_pos`, whose base was
 deliberately left general — extending that construction from `Spec ℚ` to
 `Spec ℤ_(ℓ)` is the concrete attack. -/
-theorem exists_x0CompactificationModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
-    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
+theorem exists_x0IntegralModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (_toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R _toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (_hX : IsX0Compactification N strX strY j) :
     ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
-      (jZ : YZ ⟶ XZ) (_ : IsX0Compactification N xstr ystr jZ),
-      Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) :=
+      (jZ : YZ ⟶ XZ), Nonempty (IsX0Compactification N xstr ystr jZ) :=
   sorry
+
+/-- **The generic fibre of an integral model carries the cuspidal open**
+(sorry leaf — formation of the coarse moduli space commutes with the flat
+base change `ℤ_(ℓ) → ℚ`).
+
+TRUE: the `Γ₀(N)`-moduli problem is defined over `ℤ[1/N]` and its coarse
+moduli space commutes with flat base change (Katz–Mazur 8.1; the
+`ℓ ∤ N` hypothesis is what makes the problem étale, so no inseparability
+correction arises), so the generic fibre `𝒴 ×_{ℤ_(ℓ)} ℚ` of the integral
+`Y_0(N)` is a coarse moduli space over `ℚ`.  The open immersion and the
+finiteness of the cusp locus base change too — an open immersion is
+stable under base change, and the cusp locus is finite over the base, so
+its generic fibre is finite.
+
+**What this leaf deliberately does NOT carry, because it is already
+PROVEN.**  The three GEOMETRIC fields of the generic fibre —
+`isProper`, `smooth`, `connected` — are not asked for here.  They are
+base change of the corresponding fields of `_hmodel` (the same three
+facts `isSmoothProperCurve_of_fibreIdent` assembles, inlined at the use
+site because that theorem is declared later in this file), which is why
+this leaf's conclusion mentions only `IsCoarseModuliY0`,
+`IsOpenImmersion` and `finite_compl`.  That is a genuine reduction: three
+of the seven fields of the generic-fibre `IsX0Compactification` are
+discharged by base-change instances already in the tree.
+
+**Why it is stated over an abstract `IsFibreIdent` rather than over the
+literal pullback.**  The consumer instantiates `_eGen` at
+`fibreIdentPullback`, so `X₀` really is `𝒳 ×_{ℤ_(ℓ)} ℚ` there; but
+stating it this way means a prover may work with ANY presentation of the
+generic fibre, and the statement is invariant under isomorphism over
+`Spec ℚ` by `IsFibreIdent.congrFibre`.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and with the SAME refuting
+check as `exists_x0IntegralModel`: it is the moduli interpretation of the
+integral model that supplies `IsCoarseModuliY0` on the generic fibre, and
+nothing in this file's `Gamma0Atlas` development is stated over a base
+other than `Spec ℚ`. -/
+theorem exists_genericFibreOpen_of_x0IntegralModel {N : ℕ} {R : Subring ℚ}
+    {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    {X₀ : Scheme.{0}} {strX₀ : X₀ ⟶ SpecQ}
+    (_eGen : IsFibreIdent (SpecLoc.generic R) xstr strX₀) :
+    ∃ (Y₀ : Scheme.{0}) (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀)
+      (_ : IsCoarseModuliY0 N strY₀),
+      j₀ ≫ strX₀ = strY₀ ∧ IsOpenImmersion j₀ ∧ (Set.range j₀.base)ᶜ.Finite :=
+  sorry
+
+/-- **The integral model exists, and its generic fibre is SOME
+`X_0(N)/ℚ`** (PROVEN, over the two leaves above).
+
+The generic fibre is not posited: it is `Limits.pullback xstr
+(SpecLoc.generic R)`, i.e. literally `𝒳 ×_{ℤ_(ℓ)} ℚ`, and its
+identification is `fibreIdentPullback` — the exact mirror of what
+`exists_x0CurveModel_of_base` already does at the CLOSED point.  Its
+three geometric fields are base change — `IsProper` and
+`GeometricallyConnected` are stable-under-base-change instances and
+`SmoothOfRelativeDimension 1` is
+`smoothOfRelativeDimension_isStableUnderBaseChange`, which is exactly
+what `isSmoothProperCurve_of_fibreIdent` does, inlined because that
+theorem is declared further down this file — and the remaining four come
+from `exists_genericFibreOpen_of_x0IntegralModel`.
+
+What is still missing at this point, and is supplied by
+`exists_iso_of_isX0Compactification` in the assembly below, is the
+comparison of this `X₀` with the `X` the caller handed in. -/
+theorem exists_x0IntegralCompactification (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY j) :
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ) (_ : IsX0Compactification N xstr ystr jZ)
+      (X₀ Y₀ : Scheme.{0}) (strX₀ : X₀ ⟶ SpecQ) (strY₀ : Y₀ ⟶ SpecQ) (j₀ : Y₀ ⟶ X₀)
+      (_ : IsX0Compactification N strX₀ strY₀ j₀),
+      Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX₀) := by
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, ⟨hmodel⟩⟩ :=
+    exists_x0IntegralModel N ℓ hℓ hℓN R toF hbase hX
+  -- the generic fibre is not posited: it is the pullback along the generic point
+  have eGen : IsFibreIdent (SpecLoc.generic R) xstr
+      (Limits.pullback.snd xstr (SpecLoc.generic R)) :=
+    fibreIdentPullback (SpecLoc.generic R) xstr
+  -- the three geometric fields are base change, verbatim as in
+  -- `isSmoothProperCurve_of_fibreIdent` (which is declared later in this
+  -- file, hence inlined here rather than cited)
+  haveI := hmodel.isProper
+  haveI := hmodel.connected
+  haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+  obtain ⟨Y₀, strY₀, j₀, hcoarse, hcomm, hopen, hfin⟩ :=
+    exists_genericFibreOpen_of_x0IntegralModel hmodel eGen
+  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel, _, Y₀, _, strY₀, j₀,
+    { comm := hcomm
+      coarse := hcoarse
+      isOpen := hopen
+      isProper := inferInstance
+      smooth := MorphismProperty.pullback_snd xstr (SpecLoc.generic R) hmodel.smooth
+      connected := inferInstance
+      finite_compl := hfin }, ⟨eGen⟩⟩
+
+/-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists,
+with its generic fibre identified with the given `X/ℚ`** (PROVEN, over
+three leaves).
+
+**The cut (2026-07-27), and what it removed.**  This node used to be a
+single `sorry` carrying two unrelated obligations at once — a
+CONSTRUCTION (Deligne–Rapoport's integral model) and an IDENTIFICATION
+(that its generic fibre is the `X/ℚ` the caller supplied).  The old
+docstring already named the second as "the uniqueness of the coarse
+moduli space and of the smooth compactification of a curve over `ℚ`,
+both of which are determined up to unique isomorphism by
+`IsCoarseModuliY0`'s initiality clause"; that sentence is now carried
+out rather than cited.
+
+The assembly is three lines.  `exists_x0IntegralCompactification`
+produces the model together with an identification of its generic fibre
+with SOME `X_0(N)` over `ℚ`; `exists_iso_of_isCoarseModuliY0` compares
+the two open parts, PROVEN from initiality alone;
+`exists_iso_of_isX0Compactification` promotes that to the
+compactifications; and `IsFibreIdent.congrFibre` transports the
+identification along the resulting isomorphism.
+
+**What is left open, and it is three leaves rather than one:**
+
+* `exists_x0IntegralModel` — the Deligne–Rapoport / Igusa construction,
+  with no identification attached;
+* `exists_genericFibreOpen_of_x0IntegralModel` — coarse moduli commutes
+  with the flat base change `ℤ_(ℓ) → ℚ`, carrying only the three fields
+  that are NOT base-change instances;
+* `exists_unique_extension_of_isX0Compactification` — a rational map
+  from a smooth proper curve to a proper scheme is a morphism.
+
+The third is not modular at all: it is a general fact about curves, so
+it is reusable, and it is the only one of the three that does not depend
+on the missing moduli theory.  The first two remain IRREDUCIBLE ALONG
+THE MODULI AXIS, with the refuting check recorded on each. -/
+theorem exists_x0CompactificationModel (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY j) :
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ) (_ : IsX0Compactification N xstr ystr jZ),
+      Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) := by
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, X₀, Y₀, strX₀, strY₀, j₀, h₀, ⟨eGen⟩⟩ :=
+    exists_x0IntegralCompactification N ℓ hℓ hℓN R toF hbase hX
+  obtain ⟨eY, heY⟩ := exists_iso_of_isCoarseModuliY0 hX.coarse h₀.coarse
+  obtain ⟨E, hE⟩ := exists_iso_of_isX0Compactification hX h₀ eY heY
+  exact ⟨XZ, YZ, xstr, ystr, jZ, hmodel, ⟨eGen.congrFibre E hE⟩⟩
 
 /-- **The integral CURVE model of `X_0(N)` over `ℤ_(ℓ)` exists, at every
 `ℓ ∤ N`** (PROVEN, over the integral model and the valuative criterion).
@@ -14387,9 +14731,11 @@ universal in `ℓ ∤ N` and says only that the model exists.
 **The cut (2026-07-27), and what it removed.**  The previous audit here
 recorded the node as irreducible along the MODULI axis, citing the
 absence of a Deligne–Rapoport integral model from mathlib, `~/cs/FLT`
-and this project.  That citation is still correct — it now sits on
-`exists_x0CompactificationModel`, which is the only part of this
-statement that needs it — but it covered three further obligations that
+and this project.  That citation is still correct, but it no longer sits
+on `exists_x0CompactificationModel`, which is now PROVEN: it has moved
+down to `exists_x0IntegralModel` and
+`exists_genericFibreOpen_of_x0IntegralModel`, the only two parts of this
+statement that need it.  It covered three further obligations that
 need no moduli theory at all, and those are now discharged here:
 
 * the SPECIAL fibre `X'` is no longer existentially quantified over.  It
