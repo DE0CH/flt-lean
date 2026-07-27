@@ -8150,6 +8150,35 @@ def isolatedJInvariants (p : ℕ) : Finset ℚ :=
   else if p = 163 then {-262537412640768000}
   else ∅
 
+/-- **The five CM entries of `isolatedJInvariants`** — the singular
+moduli of the five class-number-one discriminants `−11, −19, −43, −67,
+−163` that occur in Mazur's table.
+
+This is the ONE split the second-isogeny leaf actually needs, because the
+two halves have completely different proofs: the CM rows go through the
+mod-`ℓ` image lying in the normalizer of a Cartan subgroup attached to
+`K = ℚ(√−p)`, uniformly in `ℓ`; the non-CM rows are a finite explicit
+computation with no uniform structure at all.  See
+`not_stable_of_mem_isolatedCMJInvariants` and
+`not_stable_of_mem_isolatedNonCMJInvariants`.
+
+**Verified in PARI/GP 2.17.4 on 2026-07-27**, independently of the
+factorisations recorded on `isolatedJInvariants`: each of these five is
+`round(real(ellj((1 + √−d)/2)))` for `d = 11, 19, 43, 67, 163` in turn,
+i.e. each really is the singular modulus of that discriminant and not
+merely a value the table happens to list.
+
+The intersection with each row is
+`11 ↦ {−32768}`, `17 ↦ ∅`, `19 ↦ {−884736}`, `37 ↦ ∅`,
+`43 ↦ {−884736000}`, `67 ↦ {−147197952000}`,
+`163 ↦ {−262537412640768000}` — so the CM leaf is five genuine cases and
+two vacuous ones, and the non-CM leaf is the remaining six values
+`−121`, `−24729001` (at `p = 11`), `−882216989/131072`,
+`−297756989/2` (at `p = 17`), `−9317`, `−162677523113838677`
+(at `p = 37`). -/
+def isolatedCMJInvariants : Finset ℚ :=
+  {-32768, -884736, -884736000, -147197952000, -262537412640768000}
+
 /-- **Galois stability passes from `⟨g⟩` to `⟨n • g⟩`** (PROVEN).
 
 This is the elementary step that turns a Galois-stable cyclic subgroup
@@ -8305,6 +8334,35 @@ Weierstrass curves over `ℚ` and their `ℚ̄`-torsion, so they can be owned
 and attacked by someone with no modular-curve machinery, while all the
 moduli theory sits in `y0HasNoRationalPoint_of_no_stable_isolated`.
 
+**FAITHFULNESS AUDIT, 2026-07-27** (leaf owner; the table was recomputed
+rather than trusted).  Every one of the eleven entries of
+`isolatedJInvariants` was re-derived in PARI/GP 2.17.4 from the
+factorisations in the table, and independently the five CM entries were
+obtained as `round(real(ellj((1 + √−d)/2)))` for
+`d = 11, 19, 43, 67, 163`; all eleven agree, all eleven are DISTINCT, all
+eleven are strictly negative, and in particular **none is `0` and none is
+`1728`** — the single property the sibling descent
+`y0HasNoRationalPoint_of_no_stable_isolated` consumes.  No error was
+found in the statement, and none of its hypotheses is redundant: dropping
+`_hp` makes it false at `p ∈ {2, 3, 5, 7, 13}` (where `X_0(p) ≅ ℙ¹` and
+`isolatedJInvariants p = ∅` while infinitely many `j` occur), dropping
+`_hg` or `_hstable` makes it false for any curve with no `p`-isogeny.
+
+The direction proved here is the easy one to state and the only one used:
+a `Γ_ℚ`-stable order-`p` subgroup of `E(ℚ̄)` gives a NON-CUSPIDAL rational
+point of `X_0(p)` with that `j`-invariant, so no coarse-space subtlety
+enters — the subtlety is entirely in the converse, which is where
+`y0HasNoRationalPoint_of_no_stable_isolated` lives.
+
+ATOMICITY, and the axis searched: cuts along the *level* (push to a
+divisor), along the *prime* (`fin_cases` on `_hp`) and along the
+*`j`-value* were all considered.  The first is vacuous at prime level; the
+second yields seven copies of the same theorem, each still Mazur; the
+third runs backwards (it needs the conclusion to case on).  There is no
+sub-statement here that is not Mazur's Theorem 1, which is why — unlike
+its sibling `not_stable_of_mem_isolatedJInvariants`, which DID cut — this
+node stays a single leaf.
+
 IRREDUCIBLE at this pin: Mazur's theorem is not in `Mathlib`, not in
 `~/cs/FLT`, and not in this project.  Its proof is the Eisenstein-ideal
 argument — the deepest input to the whole `X_0` subtree. -/
@@ -8318,49 +8376,202 @@ theorem mem_isolatedJInvariants_of_stable {p : ℕ} (_hp : p ∈ isolatedIsogeny
     E.j ∈ isolatedJInvariants p :=
   sorry
 
-/-- **None of the seven isolated `j`-invariant families admits a second
-isogeny** (sorry node, introduced 2026-07-27): if `E.j` is one of the
-`j`-invariants of `X_0(p)(ℚ)` for `p` isolated, then `E` has no rational
-`q`-isogeny for any prime `q ≠ p`.
+/-! #### No second isogeny: the CM half and the non-CM half
 
-TRUE, and it is the arithmetic heart of the `56`-level family.
+`not_stable_of_mem_isolatedJInvariants` below was a single leaf when it
+was introduced earlier on 2026-07-27.  It is now PROVEN from the two
+leaves in this subsection, and it carries one extra hypothesis.  Both
+changes are recorded in its own docstring; read that first if you are
+here to prove something.
+-/
 
-**For the five CM rows** — `j = −32768` (disc `−11`), `−884736`
-(`−19`), `−884736000` (`−43`), `−147197952000` (`−67`),
-`−262537412640768000` (`−163`) — the argument is uniform and clean.  The
-mod-`ℓ` image of `Γ_ℚ` lies in the normalizer of a Cartan subgroup
-attached to `K = ℚ(√−p)`, and a `Γ_ℚ`-stable line in `E[ℓ]` exists only
-when `ℓ` ramifies in `K`, i.e. only for `ℓ = p`.
+/-- **The CM half of the second-isogeny theorem** (sorry node, introduced
+2026-07-27): for the five entries of `isolatedJInvariants p` that are
+singular moduli, `E` has no rational `q`-isogeny for any prime
+`q ≠ p` in `mazurIsogenyPrimes`.
 
-**For the four non-CM values** — `−121` and `−24729001` at `p = 11`, and
-`−9317`, `−162677523113838677` at `p = 37`, plus the two `p = 17` values
-— it is a finite explicit check.  Confirmed against LMFDB at `p = 11`:
-the three `j`-invariants give isogeny classes `121.a`, `121.b`, `121.c`,
-each of size `2`, each with the single isogeny degree `11`.
+TRUE, and this is the half with a UNIFORM argument, which is the whole
+reason it is separated from its non-CM sibling.  `E` has complex
+multiplication by the maximal order of `K = ℚ(√−p)`, one of the five
+class-number-one imaginary quadratic fields occurring in Mazur's table
+(`p = 11, 19, 43, 67, 163`; the `p = 17` and `p = 37` rows contribute
+nothing here, and `isolatedJInvariants p ∩ isolatedCMJInvariants = ∅` for
+those two).  The mod-`q` image of `Γ_ℚ` then lies in the normalizer of
+the Cartan subgroup attached to `K`, and a `Γ_ℚ`-stable line in `E[q]`
+forces the image into a Borel; the intersection of a Borel with the
+normalizer of a Cartan is small enough to force `q` to ramify in `K`,
+i.e. `q = p`, contradicting `hpq`.
 
-**CIRCULARITY WARNING — READ THIS BEFORE ATTEMPTING A PROOF.**  Do NOT
-discharge this by citing Kenku's list of possible cyclic isogeny degrees
-over `ℚ` (J. Number Theory **15** (1982) 199–202).  That list is
-precisely what this subtree is proving: "a curve with an `11`-isogeny has
-no `2`-isogeny" IS the assertion that `22` is not an isogeny degree.  The
-proof must go through the explicit `j`-invariants above and the CM /
-explicit-check split.
+Note the argument never looks at *which* of the five values `E.j` is —
+only at the discriminant it names — and it is uniform in `q`, so `hqm` is
+NOT needed for this half.  It is carried anyway so that the two halves
+have the same hypothesis shape and the assembly is a plain case split;
+prefixing it with `_` records that the proof may ignore it.
 
-IRREDUCIBLE at this pin: it needs the CM theory of the mod-`ℓ` image
-(Deuring; Serre 1972 §4) for the five CM rows, and an explicit
-`ℓ`-division-polynomial computation for the four non-CM ones.  Neither
+**Twist-invariance is not an extra hypothesis and must not be added as
+one.**  `E` is pinned only up to quadratic twist by `hj` (the statement
+constrains `E.j`, not `E`), and that is correct: for `j ∉ {0, 1728}` the
+`q`-torsion of a quadratic twist is the `q`-torsion of `E` tensored with
+a quadratic character, so `Γ_ℚ`-stable lines correspond bijectively.
+Every entry of `isolatedJInvariants` is strictly negative — verified in
+PARI/GP, see `isolatedJInvariants` — so `j ∉ {0, 1728}` throughout.
+
+IRREDUCIBLE at this pin: needs the CM theory of the mod-`ℓ` image
+(Deuring; Serre, *Propriétés galoisiennes*, 1972, §4), of which neither
 the Cartan-normalizer classification nor `E[ℓ]` as a Galois module in the
-required form exists here. -/
-theorem not_stable_of_mem_isolatedJInvariants {p q : ℕ} (_hp : p ∈ isolatedIsogenyPrimes)
-    (_hq : q.Prime) (_hpq : p ≠ q) (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (_hj : E.j ∈ isolatedJInvariants p) (g : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg : addOrderOf g = q)
+required form exists in `Mathlib`, in `~/cs/FLT`, or in this project. -/
+theorem not_stable_of_mem_isolatedCMJInvariants {p q : ℕ}
+    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime)
+    (_hqm : q ∈ mazurIsogenyPrimes) (_hpq : p ≠ q)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (_hj : E.j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
     (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
     False :=
   sorry
+
+/-- **The non-CM half of the second-isogeny theorem** (sorry node,
+introduced 2026-07-27): for the six entries of `isolatedJInvariants p`
+that are not singular moduli, `E` has no rational `q`-isogeny for any
+prime `q ≠ p` in `mazurIsogenyPrimes`.
+
+TRUE, and — unlike its CM sibling — **FINITE**.  The six values are
+`−121` and `−24729001` (at `p = 11`), `−882216989/131072` and
+`−297756989/2` (at `p = 17`), `−9317` and `−162677523113838677` (at
+`p = 37`); `isolatedJInvariants p \ isolatedCMJInvariants = ∅` for the
+four remaining primes `19, 43, 67, 163`.  With `hqm` in hand there are
+`6 × 12 = 72` pairs `(j, q)`, of which the `6` with `q = p` are excluded
+by `hpq`, leaving **`66` explicit checks** and no uniform structure to
+find.
+
+**VERIFIED IN PARI/GP 2.17.4, 2026-07-27** — the leaf owner computed
+`ellisomat` on `ellinit(ellfromj(j))` for all ELEVEN entries of the table
+(both halves), and every one has isogeny class of size exactly `2` with
+degree multiset `{1, p}`:
+
+    p=11  j=−32768                 size 2  degrees {1, 11}
+    p=11  j=−121                   size 2  degrees {1, 11}
+    p=11  j=−24729001              size 2  degrees {1, 11}
+    p=17  j=−882216989/131072      size 2  degrees {1, 17}
+    p=17  j=−297756989/2           size 2  degrees {1, 17}
+    p=19  j=−884736                size 2  degrees {1, 19}
+    p=37  j=−9317                  size 2  degrees {1, 37}
+    p=37  j=−162677523113838677    size 2  degrees {1, 37}
+    p=43  j=−884736000             size 2  degrees {1, 43}
+    p=67  j=−147197952000          size 2  degrees {1, 67}
+    p=163 j=−262537412640768000    size 2  degrees {1, 163}
+
+This supersedes the earlier note that cited LMFDB for `p = 11` only: the
+claim is now checked at every row, by machine, and it is a check of
+exactly the statement being made (a rational cyclic isogeny of prime
+degree `q` is an edge of degree `q` in the isogeny graph).  PARI is an
+untrusted searcher, so this is evidence of FAITHFULNESS, not a proof.
+
+**CIRCULARITY WARNING — READ THIS BEFORE ATTEMPTING A PROOF.**  Do NOT
+discharge this by citing Kenku's list of possible cyclic isogeny degrees
+over `ℚ` (J. Number Theory **15** (1982) 199–202).  That list is
+precisely what this subtree is proving: "a curve with an `11`-isogeny has
+no `2`-isogeny" IS the assertion that `22` is not an isogeny degree.
+Using `hqm` is NOT circular by contrast — it is Mazur's PRIME-degree
+theorem, an independent input that this file already carries as
+`y0HasNoRationalPoint_prime`, and it is what makes the check finite.
+
+IRREDUCIBLE at this pin: each of the `66` checks is an explicit
+`q`-division-polynomial computation, and `E[q]` as a Galois module in the
+required form does not exist here.  What HAS changed is that the missing
+theory is now a finite computation rather than Serre's open-image theorem
+— see the `hqm` discussion on
+`not_stable_of_mem_isolatedJInvariants`. -/
+theorem not_stable_of_mem_isolatedNonCMJInvariants {p q : ℕ}
+    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime)
+    (_hqm : q ∈ mazurIsogenyPrimes) (_hpq : p ≠ q)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (_hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **None of the seven isolated `j`-invariant families admits a second
+isogeny** (PROVEN 2026-07-27 by decomposition; introduced as a leaf
+earlier the same day): if `E.j` is one of the `j`-invariants of
+`X_0(p)(ℚ)` for `p` isolated, then `E` has no rational `q`-isogeny for
+any prime `q ≠ p` in `mazurIsogenyPrimes`.
+
+The proof is the case split on whether `E.j` is a singular modulus, and
+nothing else; the two halves are
+`not_stable_of_mem_isolatedCMJInvariants` (uniform, CM theory) and
+`not_stable_of_mem_isolatedNonCMJInvariants` (`66` explicit checks).
+They are genuinely different arguments over disjoint sets of `j`-values,
+which is why this is a cut and not a rename.
+
+## THE ADDED HYPOTHESIS `hqm : q ∈ mazurIsogenyPrimes` (2026-07-27)
+
+The previous statement quantified over **all** primes `q ≠ p`, and its
+docstring justified that with "stated uniformly in `q`, which is stronger
+than needed and easier to prove".  That sentence is correct about the
+sibling `y0HasNoRationalPoint_of_no_stable_isolated` — the descent really
+does not look at `q` — and **wrong about this node**, which is where the
+correction belongs:
+
+* the CM half is uniform in `q` and does not care either way;
+* the non-CM half is a per-`(j, q)` computation, so quantifying over all
+  primes `q` makes it an INFINITE family of computations, whose only
+  known uniform proof is Serre's open-image theorem.  Bounding `q` first
+  turns it into `66` checks.
+
+So the general-`q` form silently required Serre where the restricted form
+requires only Mazur's prime-degree theorem, which this file already
+proves.  **This is a strict reduction of what the tree depends on**, and
+it costs the consumers nothing: the sole consumer of this node is
+`y0HasNoRationalPoint_of_isolatedSemiprime`, whose own sole consumer
+`cuspidal_x0_semiprime_of_mazurPrimes` already carries `hpm` and `hqm`
+for both primes and simply was not passing them down.
+
+**Why `hqm` is a hypothesis and not a step of the proof.**  It IS
+derivable inside this file — `false_of_stable_of_y0HasNoRationalPoint`
+applied to `y0HasNoRationalPoint_prime` refutes the `q ∉
+mazurIsogenyPrimes` case outright, without ever looking at `E.j`.  But
+`y0HasNoRationalPoint_prime` is declared roughly `2200` lines BELOW this
+point (it needs `cuspidal_x0_prime`, and that needs the `j`-map and the
+formal-immersion apparatus), so the implication is unavailable here.
+This is declaration order, not mathematics.
+
+**The one-line generalisation, for whoever relocates this block.**  If
+the `isolatedIsogenyPrimes` group is ever moved below
+`y0HasNoRationalPoint_prime`, `hqm` should be dropped from this node and
+from `y0HasNoRationalPoint_of_isolatedSemiprime`, and the general case
+recovered there by
+
+    by_cases hqm : q ∈ mazurIsogenyPrimes
+    · ‹the current proof›
+    · exact y0HasNoRationalPoint_of_dvd (Nat.mul_ne_zero hp0 hq.ne_zero)
+        (dvd_mul_left q p) (y0HasNoRationalPoint_prime hq hqm)
+
+Do NOT instead introduce a local sorried copy of the prime-degree theorem
+to dodge the ordering: it would duplicate a node this file already proves
+and would attract a prover to a phantom leaf. -/
+theorem not_stable_of_mem_isolatedJInvariants {p q : ℕ} (hp : p ∈ isolatedIsogenyPrimes)
+    (hq : q.Prime) (hqm : q ∈ mazurIsogenyPrimes) (hpq : p ≠ q)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (hj : E.j ∈ isolatedJInvariants p) (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (hg : addOrderOf g = q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    False := by
+  by_cases hcm : E.j ∈ isolatedCMJInvariants
+  · exact not_stable_of_mem_isolatedCMJInvariants hp hq hqm hpq E
+      (Finset.mem_inter.mpr ⟨hj, hcm⟩) g hg hstable
+  · exact not_stable_of_mem_isolatedNonCMJInvariants hp hq hqm hpq E
+      (Finset.mem_sdiff.mpr ⟨hj, hcm⟩) g hg hstable
 
 /-- **The `56` levels with an isolated prime** (PROVEN 2026-07-27 by
 decomposition): for `p ∈ isolatedIsogenyPrimes` and any prime `q ≠ p`,
@@ -8396,10 +8607,12 @@ It then remains that none of those curves has a rational `q`-isogeny for
 any prime `q ≠ p`.  For the five CM rows this is uniform and clean: the
 mod-`ℓ` image lies in the normalizer of a Cartan subgroup attached to
 `K = ℚ(√−p)`, and a Galois-stable line in `E[ℓ]` exists only when `ℓ`
-ramifies in `K`, i.e. only for `ℓ = p`.  For the four non-CM `j`-values
-it is a finite explicit check, confirmed against LMFDB at `p = 11`, where
-the three `j`-invariants give isogeny classes `121.a`, `121.b`, `121.c`,
-each of size `2` with the single isogeny degree `11`.
+ramifies in `K`, i.e. only for `ℓ = p`.  For the six non-CM `j`-values it
+is a finite explicit check.  All eleven rows were verified by machine in
+PARI/GP on 2026-07-27 — `ellisomat` gives isogeny class size `2` and
+degree multiset `{1, p}` for every one of them — superseding the earlier
+LMFDB spot-check at `p = 11`; the computation is tabulated on
+`not_stable_of_mem_isolatedNonCMJInvariants`.
 
 **CIRCULARITY WARNING for whoever proves this.**  Do NOT discharge it by
 citing Kenku's list of possible cyclic isogeny degrees over `ℚ`
@@ -8410,15 +8623,29 @@ must go through the explicit `j`-invariants above.  The warning is now
 carried by `not_stable_of_mem_isolatedJInvariants`, which is where a
 prover will meet it.
 
-**Stated uniformly in `q`, which is stronger than needed and easier to
-prove.**  Only the `56` cases with `q ∈ mazurIsogenyPrimes` are consumed
-here; for the other `q` the conclusion already follows from
-`y0HasNoRationalPoint_prime` through `y0HasNoRationalPoint_of_dvd` at
-`q ∣ pq`.  The descent argument does not look at `q` at all, so
-restricting the statement would buy nothing.  It is TRUE as stated: every
-`pq` with `p ≥ 11` is at least `22`, and the only members of the
-Mazur–Kenku list that large are `25, 27, 37, 43, 67, 163`, none of which
-is a product of two distinct primes.
+**`hqm : q ∈ mazurIsogenyPrimes` was ADDED on 2026-07-27, and it costs
+nothing.**  The previous version of this paragraph said the node was
+"stated uniformly in `q`, which is stronger than needed and easier to
+prove", on the grounds that the descent does not look at `q`.  That is
+true of the descent and FALSE of the second-isogeny leaf underneath it:
+without a bound on `q` the non-CM rows become an infinite family of
+explicit computations, whose only uniform proof is Serre's open-image
+theorem, whereas with the bound they are `66` checks.  The full argument
+is on `not_stable_of_mem_isolatedJInvariants`; the restriction is a
+strict reduction of what the tree depends on.
+
+It costs nothing because the sole consumer,
+`cuspidal_x0_semiprime_of_mazurPrimes`, already carries `hpm` and `hqm`
+for both primes and merely was not passing them down — so the same `56`
+levels are still covered.  For the levels this no longer reaches (`q`
+prime outside `mazurIsogenyPrimes`) the conclusion still follows, at any
+point below `y0HasNoRationalPoint_prime`, from
+`y0HasNoRationalPoint_of_dvd` at `q ∣ pq`; that route is unavailable
+*here* only because `y0HasNoRationalPoint_prime` is declared some `2200`
+lines below.  It remains TRUE for all `q`: every `pq` with `p ≥ 11` is at
+least `22`, and the only members of the Mazur–Kenku list that large are
+`25, 27, 37, 43, 67, 163`, none of which is a product of two distinct
+primes.
 
 ## THE CUT (2026-07-27) — this node is NO LONGER A LEAF
 
@@ -8440,7 +8667,9 @@ declarations above carry the three ingredients separately:
   it is open in exactly one place.  See that node's docstring for what
   proving it needs;
 * `mem_isolatedJInvariants_of_stable` — Mazur's Theorem 1;
-* `not_stable_of_mem_isolatedJInvariants` — no second isogeny.
+* `not_stable_of_mem_isolatedJInvariants` — no second isogeny, itself
+  PROVEN later on 2026-07-27 from `not_stable_of_mem_isolatedCMJInvariants`
+  and `not_stable_of_mem_isolatedNonCMJInvariants`.
 
 The last two are statements about Weierstrass curves over `ℚ` and their
 `ℚ̄`-torsion, with **no scheme theory in sight**, so they are ownable by
@@ -8458,7 +8687,8 @@ that the SAME `E` carries both, which is exactly what a push-forward to
 level `p` and to level `q` separately would NOT give — and is why the
 descent leaf is stated at level `p q` rather than at level `p`. -/
 theorem y0HasNoRationalPoint_of_isolatedSemiprime {p q : ℕ}
-    (hp : p ∈ isolatedIsogenyPrimes) (hq : q.Prime) (hpq : p ≠ q) :
+    (hp : p ∈ isolatedIsogenyPrimes) (hq : q.Prime) (hqm : q ∈ mazurIsogenyPrimes)
+    (hpq : p ≠ q) :
     Y0HasNoRationalPoint (p * q) := by
   have hp0 : p ≠ 0 := by fin_cases hp <;> decide
   refine y0HasNoRationalPoint_of_no_stable_isolated hp
@@ -8470,7 +8700,7 @@ theorem y0HasNoRationalPoint_of_isolatedSemiprime {p q : ℕ}
   have hordq : addOrderOf (p • g) = q := by
     rw [addOrderOf_nsmul' _ hp0, hg, Nat.gcd_eq_right (dvd_mul_right p q),
       Nat.mul_div_cancel_left _ (Nat.pos_of_ne_zero hp0)]
-  exact not_stable_of_mem_isolatedJInvariants hp hq hpq E
+  exact not_stable_of_mem_isolatedJInvariants hp hq hqm hpq E
     (mem_isolatedJInvariants_of_stable hp E (q • g) hordp
       (stable_zmultiples_nsmul q hstable))
     (p • g) hordq (stable_zmultiples_nsmul p hstable)
@@ -17807,10 +18037,10 @@ theorem cuspidal_x0_semiprime_of_mazurPrimes {p q : ℕ} (hp : p.Prime)
     (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x := by
   have hY : Y0HasNoRationalPoint (p * q) := by
     by_cases hpi : p ∈ isolatedIsogenyPrimes
-    · exact y0HasNoRationalPoint_of_isolatedSemiprime hpi hq hpq
+    · exact y0HasNoRationalPoint_of_isolatedSemiprime hpi hq hqm hpq
     · by_cases hqi : q ∈ isolatedIsogenyPrimes
       · rw [Nat.mul_comm]
-        exact y0HasNoRationalPoint_of_isolatedSemiprime hqi hp hpq.symm
+        exact y0HasNoRationalPoint_of_isolatedSemiprime hqi hp hpm hpq.symm
       · exact y0HasNoRationalPoint_of_smallSemiprimeLevel _
           (mem_smallSemiprimeLevels hpm hqm hpq hpi hqi hmem)
   rintro ⟨y, hy⟩
