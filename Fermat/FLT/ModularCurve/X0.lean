@@ -26124,8 +26124,18 @@ has been run.  `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`
 now carries
 
 * `HasUniversallyTrivialPushforward` — `𝒪_S ≅ f_*𝒪_X`, universally;
-* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — LEAF, the
-  classical theorem (Hartshorne III.12, Mumford *AV* §5, Stacks 0E6R);
+* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — PROVEN
+  (Hartshorne III.12, Mumford *AV* §5, Stacks 0E6R).  Both its
+  quantifiers, and then the base itself, turned out to be bookkeeping:
+  it reduces to `isIso_appTop_of_isProper_of_flat`, that reduces to the
+  AFFINE-base case (`isIso_appTop_of_isIso_app_affineOpens`, sheaf
+  theory), and that in turn is PROVEN over exactly two leaves —
+  `isIso_appTop_of_isProper_over_field` (`H⁰(Z, 𝒪) = K` for `Z` proper,
+  geometrically connected and geometrically reduced over a field: one
+  scheme, one field, no flatness, the tractable half) and
+  `isIso_appTop_of_isIso_appTop_fiber` (degree-zero cohomology and base
+  change, the genuine theory build).  **Dispatch at those two names, not
+  at this one** (2026-07-27);
 * `hasUniversallyTrivialPushforward_of_isProper_of_smooth` — PROVEN over
   that leaf, and it is the form an `AbelianSchemeStruct` can supply,
   since its fields are `proper`, `smooth`, `connected`.  (It used to be
