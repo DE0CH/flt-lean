@@ -2937,11 +2937,18 @@ conclusion from `(M⁰)^{I₃} = 0` alone — it must contend with the `S₃`
 configuration, and the decomposition below does NOT attempt one: it
 takes tameness as an explicit leaf; (ii) find a Cartier-duality
 development in the tree transporting the proven "no unramified sub"
-half to this one — `grep -rn 'CartierDual\|cartierDual' Fermat/` was
-re-run on 2026-07-27 and still matches only docstrings, which is why
-that route was not taken. A Cartier-duality build has its own owner, so
-re-run the grep before assuming it is unavailable: if it lands it would
-most likely close
+half to this one — **CHECK (ii) HAS NOW FIRED (2026-07-27, at
+integration): the earlier sentence here, that the grep "still matches
+only docstrings", is STALE.**
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` builds Cartier
+duality for finite flat commutative group schemes, sorry-free, and
+`.../HopfAlgebra/ShortExact.lean` adds its functoriality
+(`CartierDual.map`) plus the short-exactness definition
+(`HopfAlgebra.IsShortExact`) the transport needs.  The duality route is
+therefore no longer ABSENT; it is available in principle and blocked on
+ONE named open leaf, `HopfAlgebra.IsShortExact.cartierDual` (exactness of
+duality) — a different and much smaller obstruction than the one recorded
+here.  If it lands it would most likely close
 `wildInertia_fixes_connected_threeTorsion_of_hopf_package` directly,
 since the duality argument for the connected case is written out there.
 
@@ -3184,6 +3191,24 @@ comes with, and the `S₃` configuration are now recorded on
 above, which is the declaration that must spend `e < p − 1`; the
 assembly here spends none of it and is correspondingly unable to
 manufacture it.
+
+CHECKS THAT WOULD REFUTE THIS OBSTRUCTION RECORD (state them, do not
+just believe them): (i) exhibit a derivation of `(M⁰)^{σ} = 0` for some
+single `σ` from `(M⁰)^{I₃} = 0` alone — it must contend with the `S₃`
+configuration above; (ii) find a Cartier-duality development in the
+tree transporting the proven "no unramified sub" half to this one —
+**THIS CHECK HAS NOW FIRED (2026-07-27) and the sentence it replaces was
+stale: the grep no longer returns nothing.**
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDual.lean` builds Cartier
+duality for finite flat commutative group schemes, sorry-free, and
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` adds its
+functoriality (`CartierDual.map`) together with the definition of a short
+exact sequence (`HopfAlgebra.IsShortExact`) that the transport needs. So the
+duality route is no longer ABSENT; it is available in principle and blocked
+on ONE named open leaf, `HopfAlgebra.IsShortExact.cartierDual` (exactness of
+duality). That is a different — and much smaller — obstruction than the one
+recorded here, and the next owner of this leaf should weigh it afresh rather
+than treating the duality route as nonexistent.
 
 `hprim₀` IS ESSENTIAL — WITHOUT IT THE STATEMENT IS FALSE. The
 idempotent `e₀ = 1` satisfies `he₀`, `hε₀` and `hcomul₀` and makes the
