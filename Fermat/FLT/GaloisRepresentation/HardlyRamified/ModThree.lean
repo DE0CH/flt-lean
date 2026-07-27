@@ -47494,10 +47494,260 @@ theorem exists_globalFrob_generator_ray_class
   refine ⟨e, ?_⟩
   rw [← hUval (globalFrob v), ← hUval (globalFrob v₀), ← he, Units.val_zpow_eq_zpow_val]
 
+/-- **EVERY FUNCTION ON THE HEIGHT-ONE PRIMES EXTENDS TO A MULTIPLICATIVE
+SYMBOL ON THE NONZERO IDEALS** (PROVEN 2026-07-27; created the same day as
+sub-leaf (A3b-3-a) of `artinDivisorKernel_le_sup_of_cyclotomic_ray_class`
+below): for a Dedekind domain `R` and any `u : HeightOneSpectrum R → Kf`
+into a field there is a `c : Ideal R → Kf` that is multiplicative on
+NONZERO ideals and satisfies `c v.asIdeal = u v`.
+
+**Why this exists at all.** Every statement in this cluster that reasons
+about the Artin symbol on IDEALS — in particular the PROVEN cyclotomic
+base case `artinSymbol_span_eq_one_of_cyclotomic_ray_class` and the
+divisor-to-ideal bridge `artinDivisorMap_apply_span_generic_ray_class` —
+takes `c`, `hcmul`, `hcfrob` as HYPOTHESES, because at the top of the
+cluster `c` is supplied by the caller. A leaf that is handed only the
+divisor-group map `φ'` therefore has no `c` to feed them. This lemma
+manufactures one, and it is the only thing needed to run the ideal-level
+machinery from divisor-level data.
+
+**Proof.** `c I := ∏ (normalizedFactors I).map g` for `I ≠ ⊥` (and `0` at
+`⊥`), where `g J` is `u ⟨J, _, _⟩` when `J` is a nonzero prime and `1`
+otherwise. Multiplicativity is `normalizedFactors_mul` (valid for nonzero
+arguments in a Dedekind domain, which is a `UniqueFactorizationMonoid`)
+plus `Multiset.prod_add`; the value at a prime is
+`normalizedFactors_irreducible` — `v.asIdeal` is irreducible because
+`Ideal.prime_of_isPrime v.ne_bot v.isPrime` — together with
+`normalize_eq`, ideals having unique units.
+
+**FAITHFULNESS: TRUE as stated, and deliberately WEAK.** No hypothesis on
+`u` is needed, and in particular NOT `u v ≠ 0`: nonvanishing is what the
+CONSUMER (`artinDivisorMap_apply_span_generic_ray_class`) needs in order
+to pin `c ⊤ = 1`, and it is supplied there from `hcyc`. The `⊥` value is
+junk by design — `hcmul` never evaluates it, and the whole cluster
+evaluates `c` only at ideals coprime to the modulus. -/
+theorem exists_idealSymbol_ray_class {R : Type*} [CommRing R]
+    [IsDedekindDomain R] {Kf : Type*} [Field Kf]
+    (u : IsDedekindDomain.HeightOneSpectrum R → Kf) :
+    ∃ c : Ideal R → Kf,
+      (∀ I J : Ideal R, I ≠ ⊥ → J ≠ ⊥ → c (I * J) = c I * c J) ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum R, c v.asIdeal = u v) := by
+  classical
+  set g : Ideal R → Kf := fun J =>
+    if h : J.IsPrime ∧ J ≠ ⊥ then u ⟨J, h.1, h.2⟩ else 1 with hgdef
+  refine ⟨fun I => if I = ⊥ then 0 else
+    ((UniqueFactorizationMonoid.normalizedFactors I).map g).prod, ?_, ?_⟩
+  · intro I J hI hJ
+    have hI0 : I ≠ 0 := by rwa [Ideal.zero_eq_bot]
+    have hJ0 : J ≠ 0 := by rwa [Ideal.zero_eq_bot]
+    have hIJ : I * J ≠ ⊥ := by
+      rw [← Ideal.zero_eq_bot]
+      exact mul_ne_zero hI0 hJ0
+    simp only [if_neg hI, if_neg hJ, if_neg hIJ]
+    rw [UniqueFactorizationMonoid.normalizedFactors_mul hI0 hJ0, Multiset.map_add,
+      Multiset.prod_add]
+  · intro v
+    have hv : v.asIdeal ≠ ⊥ := v.ne_bot
+    have hirr : Irreducible v.asIdeal :=
+      (Ideal.prime_of_isPrime hv v.isPrime).irreducible
+    simp only [if_neg hv]
+    rw [UniqueFactorizationMonoid.normalizedFactors_irreducible hirr, normalize_eq,
+      Multiset.map_singleton, Multiset.prod_singleton, hgdef]
+    exact dif_pos ⟨v.isPrime, hv⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **THE CYCLOTOMIC BASE CASE, READ IN THE DIVISOR GROUP** (PROVEN AS
+GLUE 2026-07-27; created the same day as sub-leaf (A3b-3-b) of
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class` below): with `χ'`
+multiplicative and cyclotomic of level `m`, and `φ'`/`d'` the
+divisor-group Artin map and divisor map pinned by `hφv'`/`hd'`, every
+nonzero totally positive `δ ≡ 1 (mod m)` has `φ' (d' δ) = 1`.
+
+This is `artinSymbol_span_eq_one_of_cyclotomic_ray_class` — Childress
+pp. 113–114, the statement `ray ⊆ ker` — transported from the ideal group
+to the divisor group. It is exactly the clause `P⁺_{E,mmE} ≤ ker φ'` that
+the parent needs, and it is why clause (i) of `hcycl` was KEPT when
+clause (ii) was added: the two directions are used at different levels of
+the same argument, and neither implies the other.
+
+**Proof.** `hcyc` at `σ = 1` gives `χ' 1 = 1`, whence
+`χ' a · χ' a⁻¹ = 1` and so `χ' a ≠ 0` for every `a` — this is the
+nonvanishing that `artinDivisorMap_apply_span_generic_ray_class` needs
+and it comes free from multiplicativity, with no `ℓ`-power order
+hypothesis (which is why this leaf does NOT use
+`artinDivisorMap_apply_span_ray_class`, whose `hord` is unavailable at a
+general auxiliary field `E`). `exists_idealSymbol_ray_class` then
+manufactures the ideal symbol `c` matching `v ↦ χ' (globalFrob v)`, the
+bridge identifies `φ' (d' δ)` with `c ((δ))`, and the ideal-level base
+case kills it, its `hfrob` hypothesis being the PROVEN
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`.
+
+**FAITHFULNESS: TRUE as stated, and NOT vacuous.** `φ'` is pinned by
+`hφv'` on the basis of the free abelian divisor group and `d'` by
+`w ^ n ∣ (δ) ↔ n ≤ (d' δ) w`, so the pair is determined on `d' δ` and no
+junk witness discharges the conclusion. `hδpos` is load-bearing exactly
+as in the ideal-level statement: without total positivity the absolute
+norm of `(δ)` is `|N_{E/ℚ} δ|` and can be `≡ −1 (mod m)`, on which a
+cyclotomic character need not be trivial. -/
+theorem artinDivisorSymbol_span_eq_one_of_cyclotomic_ray_class
+    (E : Type*) [Field E] [NumberField E]
+    (χ' : Γ E → Dickson.K 3)
+    (hmul' : ∀ a b : Γ E, χ' (a * b) = χ' a * χ' b)
+    (m : ℕ) (hm : 0 < m)
+    (hcyc : ∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ' σ = 1)
+    (φ' : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d' : NumberField.RingOfIntegers E → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+    (hφv' : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      ((φ' (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))) : Dickson.K 3)
+        = χ' (globalFrob w))
+    (hd' : ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+          (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w))
+    (δ : NumberField.RingOfIntegers E) (hδ0 : δ ≠ 0)
+    (hδpos : ∀ ψ : E →+* ℝ,
+      0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ))
+    (hδcong : δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)}) :
+    ((φ' (d' δ) : Dickson.K 3)) = 1 := by
+  classical
+  have hχone : χ' 1 = 1 := hcyc 1 (fun ζ _ => rfl)
+  have hχne : ∀ a : Γ E, χ' a ≠ 0 := by
+    intro a ha
+    have h1 : χ' a * χ' a⁻¹ = 1 := by rw [← hmul', mul_inv_cancel, hχone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  haveI : Nonempty (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E)) := by
+    obtain ⟨M, hM⟩ := Ideal.exists_maximal (NumberField.RingOfIntegers E)
+    haveI : M.IsMaximal := hM
+    exact ⟨⟨M, hM.isPrime, NeZero.ne M⟩⟩
+  obtain ⟨c, hcmul, hcfrob⟩ := exists_idealSymbol_ray_class
+    (fun v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) =>
+      χ' (globalFrob v))
+  have h1 := artinDivisorMap_apply_span_generic_ray_class
+    (fun v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) =>
+      χ' (globalFrob v)) (fun v => hχne _) c hcmul hcfrob φ' d' hφv' hd' δ hδ0
+  rw [h1]
+  exact artinSymbol_span_eq_one_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
+    (fun v hv ζ hζ =>
+      globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
+    c hcmul hcfrob δ hδ0 hδpos hδcong
+
+set_option maxHeartbeats 1000000 in
+/-- **DIRICHLET'S THEOREM FOR THE NARROW RAY CLASS GROUP: EVERY CLASS
+CONTAINS A PRIME** (sorry node, created 2026-07-27 as the single
+mathematical sub-leaf (A3b-3-c) of
+`artinDivisorKernel_le_sup_of_cyclotomic_ray_class` below, which is now
+GLUE over it and the two PROVEN leaves just above): for a nonzero modulus
+`mmE`, every divisor `x` prime to `mmE` differs from a single prime
+`w ∤ mmE` by an element of the narrow ray `P⁺_{E,mmE}`, i.e.
+`x · w^{-1} ∈ PE`.
+
+Classically: the map from the primes of `𝓞_E` not dividing `mmE` to the
+narrow ray class group `I_E(mmE) / P⁺_{E,mmE}` of modulus `mmE·∞` is
+SURJECTIVE. Lang *ANT* VIII §2, Neukirch *ANT* VII §13, Childress ch. 4;
+in the form usually stated, every ray class contains infinitely many
+prime ideals, of which surjectivity is the weakest useful consequence and
+the only one needed here.
+
+**WHY THIS IS THE RIGHT CUT, and what it replaces.** Given it, the parent
+is three lines: pick the prime `w` representing `x`; since `PE ≤ ker φ'`
+(the leaf just above) and `φ' x = 1`, also `φ' w = 1`, so
+`orderOf (χ' (globalFrob w)) = 1` and the generator `w^{f(w)}` of `NE`
+is `w` ITSELF; then `x = (x · w^{-1}) · w ∈ PE ⊔ NE`. All the reciprocity
+content of the parent is discharged by the single observation that a
+prime whose Frobenius symbol is trivial has residue degree one in the
+extension, hence IS a norm — which is what `NE`'s exponent
+`orderOf (χ' (globalFrob w))` says, and it is why this cluster never has
+to name `L`, its ideal group or its norm map.
+
+**NO CIRCULARITY.** The theorem is proved analytically, by Hecke/Weber
+`L`-functions of ray class characters — the pole of the ray class zeta
+function factored as `∏_ψ L(s, ψ)`, plus `L(1, ψ) ≠ 0` for `ψ ≠ 1`. That
+argument is Dirichlet's, generalised; it uses no class field theory and
+in particular NOT the norm index inequalities, so it does not re-import
+what this cluster is proving. This is the reason the leaf was cut here
+rather than at the "norm index at every `E`" shape recorded as REJECTED
+in the parent's docstring: that shape needs the First Inequality at every
+auxiliary field, which is genuinely absent everywhere.
+
+**WHAT IS IN TREE TO BUILD ON.** `Chebotarev.lean` already carries the
+whole analytic apparatus for the narrow ray classes of modulus `ℓ·∞`,
+`ℓ` prime, and it is SORRY-FREE: `IsNarrowRayEquiv` with its
+`symm`/`trans`, class-representative finiteness
+(`exists_finset_forall_isNarrowRayEquiv`), the per-class Weber count
+`exists_forall_abs_natCard_isNarrowRayEquiv_sub_mul_le_rpow`, the ideal
+Euler product `tprod_one_sub_dirichletCharacter_mul_cpow_neg_inv_eq_tsum`,
+the twisted `L`-series bounds
+`exists_forall_le_norm_LSeries_and_norm_deriv_LSeries_le`, and the
+minimal nonvanishing statement
+`exists_forall_norm_tsum_dirichletCharacter_mul_rpow_neg_le`. Two things
+are missing and they are the leaf's real work: (a) the modulus must be a
+general ideal `mmE` rather than `(ℓ)`, and (b) the counts must be pushed
+from IDEALS to PRIMES in a class, i.e. the divergence statement
+`exists_lt_tsum_rpow_neg_natCard_quotient_prime_and_map_zeta_eq_pow` must
+be reproved with the cyclotomic congruence class replaced by a narrow ray
+class. Both are re-runs of arguments that exist in that file.
+
+**FAITHFULNESS: TRUE as stated, and NOT vacuous.** `d'`, `ImE` and `PE`
+are pinned by intrinsic clauses (`hd'`, the support condition, the named
+closure), so no junk witness discharges it. `hmmE : mmE ≠ ⊥` is
+LOAD-BEARING and not decoration: at `mmE = ⊥` every prime divides `mmE`,
+so no `w` exists at all and the statement is FALSE (already at `x = 1`).
+`hx : x ∈ ImE` is load-bearing for the same reason in the other
+direction: a divisor supported at a prime dividing `mmE` is not congruent
+to anything prime to `mmE` modulo a ray whose members are all prime to
+`mmE`.
+
+Note `PE` is the closure of the INTEGRAL generators `d' δ`, `δ ≫ 0`,
+`δ ≡ 1 (mod mmE)`; as a subgroup it contains the ratios `d' δ₁ · (d' δ₂)⁻¹`
+and therefore IS the classical narrow ray group `P⁺_{E,mmE}` of principal
+FRACTIONAL ideals with a totally positive generator `≡ 1 (mod mmE)` —
+every such generator is a ratio of two integral ones, by choosing the
+common denominator congruent to `1` mod `mmE` and of the right sign
+vector (approximation at the archimedean places, `mmE ≠ ⊥` giving a full
+lattice to shift by). So the class group appearing here is the honest
+narrow ray class group and not a coarser quotient.
+
+**Check that would refute it**: a number field `E`, a nonzero `mmE`, and
+a divisor `x` prime to `mmE` such that no prime `w ∤ mmE` has
+`x · w^{-1}` in the group generated by the totally positive
+`δ ≡ 1 (mod mmE)` — equivalently, a narrow ray class of `E` mod `mmE·∞`
+containing no prime ideal. -/
+theorem exists_prime_narrowRayEquiv_divisor_ray_class
+    (E : Type*) [Field E] [NumberField E]
+    (mmE : Ideal (NumberField.RingOfIntegers E)) (hmmE : mmE ≠ ⊥)
+    (d' : NumberField.RingOfIntegers E → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ))
+    (ImE PE : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E) →₀ ℤ)))
+    (hd' : ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        ∀ n : ℕ, (w.asIdeal ^ n ∣ Ideal.span {δ} ↔
+          (n : ℤ) ≤ Multiplicative.toAdd (d' δ) w))
+    (hImE : ∀ x, x ∈ ImE ↔ ∀ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E), w.asIdeal ∣ mmE →
+        Multiplicative.toAdd x w = 0)
+    (hPE : PE = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers E, δ ≠ 0 ∧
+      (∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) ∧
+      δ - 1 ∈ mmE ∧ y = d' δ})
+    (x : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers E) →₀ ℤ)) (hx : x ∈ ImE) :
+    ∃ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+      ¬ w.asIdeal ∣ mmE ∧
+      x * (Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)))⁻¹ ∈ PE :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **ARTIN RECIPROCITY FOR A CYCLOTOMIC EXTENSION, IN THE DIRECTION
-`ker ⊆ ray · norms`** (sorry node, created 2026-07-27 as the CUT-LEVEL
-REPAIR of `hcycl` demanded by the ROUTE AUDIT on
+`ker ⊆ ray · norms`** (**PROVEN AS GLUE 2026-07-27** over
+`exists_prime_narrowRayEquiv_divisor_ray_class` and
+`artinDivisorSymbol_span_eq_one_of_cyclotomic_ray_class` just above — the
+head label read "sorry node" until the decomposition landed; created
+2026-07-27 as the CUT-LEVEL REPAIR of `hcycl` demanded by the ROUTE AUDIT
+on
 `exists_artinNormSubgroups_ray_class` just below): if `χ' : Γ E → 𝔽̄₃` is
 multiplicative and CYCLOTOMIC of level `m` — trivial on every `σ` fixing
 `μ_m`, so that the abelian extension `L/E` it cuts out lies inside
@@ -47566,7 +47816,44 @@ statement about `I_ℚ((4))`.
 
 **Check that would refute it**: a number field `E`, a cyclotomic `χ'` of
 level `m`, a modulus `mmE` divisible by `(m)`, and a divisor prime to
-`mmE` in `ker φ'` exhibited outside `PE ⊔ NE`. -/
+`mmE` in `ker φ'` exhibited outside `PE ⊔ NE`.
+
+**DECOMPOSED AND PROVEN AS GLUE 2026-07-27**, into the three leaves
+stated immediately above. The cut isolates the ONE analytic input and
+makes the reciprocity itself a three-line computation:
+
+* `exists_idealSymbol_ray_class` (PROVEN) — pure factorisation
+  bookkeeping, manufacturing the ideal-level symbol `c` that every
+  ideal-level statement in this cluster takes as a hypothesis;
+* `artinDivisorSymbol_span_eq_one_of_cyclotomic_ray_class` (PROVEN AS
+  GLUE) — clause (i) of `hcycl`, `P⁺_{E,mmE} ≤ ker φ'`, transported from
+  ideals to divisors. **This is what makes keeping clause (i) load-bearing
+  rather than merely historical**: the `ker ⊆ ray·norms` direction is
+  proved THROUGH the `ray ⊆ ker` direction, not instead of it;
+* `exists_prime_narrowRayEquiv_divisor_ray_class` (SORRY) — Dirichlet for
+  the narrow ray class group: every class contains a prime.
+
+**And the whole reciprocity content collapses to one sentence.** Let `x`
+be a divisor prime to `mmE` with `φ' x = 1`, and let `w ∤ mmE` be a prime
+representing its narrow ray class, so `x · w^{-1} ∈ PE`. Since
+`PE ≤ ker φ'`, also `φ' w = φ' x = 1`, i.e. `χ' (globalFrob w) = 1`; so
+`orderOf (χ' (globalFrob w)) = 1` and the generator
+`w ^ orderOf (χ' (globalFrob w))` of `NE` is `w` itself. Hence
+`x = (x · w^{-1}) · w ∈ PE ⊔ NE`. In classical language: a prime whose
+Artin symbol is trivial splits completely in `L`, so it is a norm from
+`L` — and that is the only fact about `L` the argument ever uses, which
+is exactly why `L` need not be named.
+
+**A NEGATIVE RESULT, so it is not re-tried.** The obvious attempt to
+avoid Dirichlet — reduce `x` modulo `NE` prime by prime, using that
+`φ'` factors through the norm residue `N(x) mod m` (which it does, by
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`) — does not
+close: `φ' x = 1` says the PRODUCT of the local contributions is trivial,
+not that each is, and combining several primes into one is precisely the
+statement that a ray class is represented by a prime. Without it the
+inclusion is equivalent to the index bound
+`[I_E(mmE) : P⁺ · N] ≤ #im χ'`, i.e. the First Inequality at `E`, the
+input the ROUTE AUDIT already established is absent. -/
 theorem artinDivisorKernel_le_sup_of_cyclotomic_ray_class
     (E : Type*) [Field E] [NumberField E]
     (χ' : Γ E → Dickson.K 3)
@@ -47598,8 +47885,47 @@ theorem artinDivisorKernel_le_sup_of_cyclotomic_ray_class
       (NumberField.RingOfIntegers E), ¬ (w.asIdeal ∣ mmE) ∧
       y = Multiplicative.ofAdd
         (Finsupp.single w (orderOf (χ' (globalFrob w)) : ℤ))}) :
-    φ'.ker ⊓ ImE ≤ PE ⊔ NE :=
-  sorry
+    φ'.ker ⊓ ImE ≤ PE ⊔ NE := by
+  classical
+  -- `(m) ∣ mmE` means `mmE ⊆ (m)`, so `δ ≡ 1 (mod mmE)` implies `δ ≡ 1 (mod m)`.
+  -- This is the one place `hmdvd` is consumed, and it is what makes `mmE` an
+  -- ADMISSIBLE modulus for the cyclotomic base case.
+  have hmmle : mmE ≤ Ideal.span {(m : NumberField.RingOfIntegers E)} :=
+    Ideal.le_of_dvd hmdvd
+  -- Clause (i) of `hcycl`, in the divisor group: `P⁺_{E,mmE} ≤ ker φ'`.
+  have hPker : PE ≤ φ'.ker := by
+    rw [hPE, Subgroup.closure_le]
+    rintro y ⟨δ, hδ0, hδpos, hδcong, rfl⟩
+    have hval := artinDivisorSymbol_span_eq_one_of_cyclotomic_ray_class E χ' hmul' m hm
+      hcyc φ' d' hφv' hd' δ hδ0 hδpos (hmmle hδcong)
+    exact Units.ext hval
+  intro x hx
+  rw [Subgroup.mem_inf] at hx
+  obtain ⟨hxker, hxIm⟩ := hx
+  -- Dirichlet: the narrow ray class of `x` is represented by a prime `w ∤ mmE`.
+  obtain ⟨w, hwmm, hwP⟩ := exists_prime_narrowRayEquiv_divisor_ray_class E mmE hmmE
+    d' ImE PE hd' hImE hPE x hxIm
+  set s : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+    (NumberField.RingOfIntegers E) →₀ ℤ) :=
+    Multiplicative.ofAdd (Finsupp.single w (1 : ℤ)) with hsdef
+  have hxone : φ' x = 1 := hxker
+  -- `x · w^{-1} ∈ PE ≤ ker φ'` and `φ' x = 1` force `φ' w = 1`.
+  have hsone : φ' s = 1 := by
+    have h1 : φ' (x * s⁻¹) = 1 := hPker hwP
+    rw [map_mul, map_inv, hxone, one_mul, inv_eq_one] at h1
+    exact h1
+  have hfrob : χ' (globalFrob w) = 1 := by
+    rw [← hφv' w, ← hsdef, hsone, Units.val_one]
+  -- So `w` has residue degree one in `L`, i.e. its `NE`-generator is `w` itself.
+  have hordone : orderOf (χ' (globalFrob w)) = 1 := by
+    rw [hfrob]; exact orderOf_one
+  have hsN : s ∈ NE := by
+    rw [hNE]
+    refine Subgroup.subset_closure ⟨w, hwmm, ?_⟩
+    rw [hsdef, hordone, Nat.cast_one]
+  have hxeq : x = (x * s⁻¹) * s := (inv_mul_cancel_right x s).symm
+  rw [hxeq]
+  exact Subgroup.mul_mem _ (Subgroup.mem_sup_left hwP) (Subgroup.mem_sup_right hsN)
 
 /-- **DESCENT OF A NORM SUBGROUP ALONG THE CONSISTENCY PROPERTY** (PROVEN
 2026-07-27; the group-theoretic half of step 4 of Childress pp. 121–123,
