@@ -9217,8 +9217,9 @@ end Assembly
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Every point of an irreducible finite-type `ℚ`-scheme is dominated in coheight by a
-point of any nonempty open** (PROVEN modulo two scheme-theoretic PLUMBING leaves, named in
-step 5 below and written as sorried `have`s in the proof; **the commutative-algebra content
+point of any nonempty open** (PROVEN modulo ONE scheme-theoretic PLUMBING `have`, described
+after step 5 below, which asks only for a finitely generated `ℚ`-algebra structure on the
+affine chart together with irreducibility of its spectrum; **the commutative-algebra content
 — what this docstring used to call "THE MISSING STEP" — is now fully proven**, in the block
 immediately above).
 
