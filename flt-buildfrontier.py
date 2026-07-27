@@ -56,10 +56,13 @@ def fetch_log(spec):
     return host, path, out.stdout
 
 
+TREE = "/home/chend/flt-lean"
+
+
 def decl_at(path, line):
     """Walk BACKWARDS from `line` to the nearest declaration header."""
     try:
-        src = open("/home/chend/flt-lean/" + path, encoding="utf-8").read()
+        src = open(TREE + "/" + path, encoding="utf-8").read()
     except OSError:
         return None
     lines = src.split("\n")
@@ -71,12 +74,20 @@ def decl_at(path, line):
 
 
 def main():
+    global TREE
     ap = argparse.ArgumentParser()
     ap.add_argument("--log", help="HOST:PATH of a build log")
     ap.add_argument("--names-only", action="store_true")
     ap.add_argument("--errors", action="store_true",
                     help="also report hard errors (the invisible frontier)")
+    ap.add_argument("--tree", default=TREE,
+                    help="source tree the log was built from (default %s). "
+                         "THE MERGER MUST PASS ITS STAGING WORKTREE: during a "
+                         "cycle /home/chend/flt-lean is still the PREVIOUS "
+                         "release, so line numbers there resolve to the wrong "
+                         "declarations." % TREE)
     a = ap.parse_args()
+    TREE = a.tree.rstrip("/")
 
     host, path, log = fetch_log(a.log)
     hits = [(m.group("file"), int(m.group("line"))) for m in WARN.finditer(log)]
