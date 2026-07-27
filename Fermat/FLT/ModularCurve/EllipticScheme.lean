@@ -98,9 +98,10 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 (`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
 (`V₊(Z̄)` is the image of `projInfty`).
 
-The open leaves of this FILE are therefore EIGHTEEN, and this list is the
-COMPILER's `declaration uses 'sorry'` warning set at `lake env lean` of this
-file, transcribed (2026-07-27) rather than taken from any branch's prose —
+The open leaves of this FILE are therefore SEVENTEEN, and this list is the
+COMPILER's `declaration uses 'sorry'` warning set of a green
+`lake build Fermat.FLT.ModularCurve.EllipticScheme` after merging release 6,
+transcribed (2026-07-27) rather than taken from any branch's prose —
 several branches each carried a list that was correct on its own branch and
 wrong once the others landed.  A rising count here is DISCLOSURE: the
 second-law cut of `exists_projMulOfCoords` closed one leaf and opened three,
