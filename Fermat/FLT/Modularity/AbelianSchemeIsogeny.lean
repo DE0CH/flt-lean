@@ -1524,26 +1524,74 @@ theorem exists_isWeaklyRegular_span_eq_maximalIdeal (R : Type u) [CommRing R]
   obtain ⟨rs, hspan, hlen, hreg⟩ := exists_isWeaklyRegular_span_eq_maximalIdeal_aux _ R rfl
   exact ⟨rs, hspan, by rw [hlen, IsRegularLocalRing.spanFinrank_maximalIdeal], hreg⟩
 
+/-- **UNMIXEDNESS: IN A COHEN–MACAULAY LOCAL RING EVERY SYSTEM OF PARAMETERS IS
+A REGULAR SEQUENCE** (sorry leaf — pure commutative algebra, Matsumura
+*Commutative Ring Theory* 17.4 / Stacks 00N7.  **This is the single genuinely
+missing statement under this node**, and it is the ONLY thing
+`isWeaklyRegular_map_of_ringKrullDim_eq` below now rests on.)
+
+**COHEN–MACAULAYNESS IS SPELLED OUT, DELIBERATELY, RATHER THAN NAMED.**  `hCM`
+says verbatim: some weakly regular sequence of length `dim T` generates `𝔪_T`.
+That is `depth T = dim T` written without a `depth` predicate, and writing it
+this way is what makes the leaf stateable at all — **there is no depth or
+Cohen–Macaulay layer anywhere in this repository**, and mathlib's
+`RingTheory/Regular/Depth.lean` is a 10-line file with zero declarations.  A
+prover who would rather have the predicate should vendor
+`~/cs/FLT/FLT/Patching/Utils/Depth.lean` (259 lines, UNVENDORED — see the
+correction in the docstring below) and restate this in terms of `Module.depth`;
+the mathematics is unaffected.
+
+**WHY THIS SHAPE AND NOT `[IsRegularLocalRing T]`.**  The previous cut demanded
+the conclusion for a regular local `T`, which conflates two different facts:
+that `T` is Cohen–Macaulay, and that a Cohen–Macaulay ring has this unmixedness
+property.  The FIRST is no longer open — `exists_isWeaklyRegular_span_eq_maximalIdeal`
+above (**PROVEN 2026-07-27**) produces exactly the sequence `hCM` asks for — so
+carrying `IsRegularLocalRing T` here would make a prover re-derive something
+already available.  Note also that `φ` and `R` have disappeared entirely: this
+is a statement about ONE local ring.
+
+**WHY THE OBVIOUS INDUCTION FAILS, and it is the trap to avoid.**  The first
+step is easy and needs only that `T` is a domain: `ys` being a system of
+parameters forces `dim T ⧸ (ys.head) = dim T - 1`, so the head lies in no
+minimal prime.  What breaks is the INDUCTION, because `T ⧸ (t)` is in general
+**not regular** — take `T = k⟦x⟧` and `t = x²`, a system of parameters whose
+quotient is not even reduced.  So the induction hypothesis must be
+Cohen–Macaulayness, which is precisely why this leaf is stated with `hCM`
+rather than with regularity: `hCM` is a hypothesis that SURVIVES the quotient,
+and `IsRegularLocalRing` is not.  A prover must not plan an induction that keeps
+`IsRegularLocalRing` on the quotient. -/
+theorem isWeaklyRegular_of_ringKrullDim_quotient_eq_zero {T : Type u} [CommRing T]
+    [IsLocalRing T] [IsNoetherianRing T] (ys : List T)
+    (hCM : ∃ zs : List T, Ideal.span {z | z ∈ zs} = IsLocalRing.maximalIdeal T ∧
+      (zs.length : WithBot ℕ∞) = ringKrullDim T ∧ RingTheory.Sequence.IsWeaklyRegular T zs)
+    (hlen : (ys.length : WithBot ℕ∞) = ringKrullDim T)
+    (hfib : ringKrullDim (T ⧸ Ideal.span {y | y ∈ ys}) = 0) :
+    RingTheory.Sequence.IsWeaklyRegular T ys :=
+  sorry
+
 /-- **A SYSTEM OF PARAMETERS OF A REGULAR LOCAL RING IS A REGULAR SEQUENCE**
-(sorry leaf — pure commutative algebra; this is "regular local ⟹
-Cohen–Macaulay" in the only form the assembly needs, and it is the one genuinely
-missing piece of commutative algebra under this node).
+(**PROVEN 2026-07-27** over the unmixedness leaf
+`isWeaklyRegular_of_ringKrullDim_quotient_eq_zero` immediately above, into which
+all of its remaining content has been moved).
 
 The hypotheses say exactly that `rs.map φ` is a system of parameters of `T`:
 `hspan` makes `Ideal.span (rs.map φ) = Ideal.map φ 𝔪_R`, `hfib` says that ideal
 is `𝔪_T`-primary (dimension `0` quotient), and `hlen` with `hdim` says the list
-has exactly `dim T` entries.  `T` regular ⟹ `T` Cohen–Macaulay ⟹ every system of
-parameters is a regular sequence.
+has exactly `dim T` entries.  The classical chain is `T` regular ⟹ `T`
+Cohen–Macaulay ⟹ every system of parameters is a regular sequence, and the CUT
+made here is exactly at the arrow in the middle:
 
-**WHY THIS IS HARD, and why the obvious induction does not work.**  The FIRST
-step is easy and uses only that `T` is a domain: `rs.map φ` being a system of
-parameters forces `dim T ⧸ (rs.map φ).head = dim T - 1`, so the head lies in no
-minimal prime, and a regular local ring has only the zero minimal prime.  What
-breaks is the INDUCTION: `T ⧸ (t)` is in general **not regular** — take
-`T = k⟦x⟧` and `t = x²`, where `t` is a system of parameters and `T ⧸ (t)` is
-not even reduced.  So the induction hypothesis has to be "Cohen–Macaulay", and
-carrying it means having depth theory.  A prover must not plan an induction that
-keeps `IsRegularLocalRing` on the quotient.
+* `T` regular ⟹ `T` Cohen–Macaulay is **PROVEN**, as
+  `exists_isWeaklyRegular_span_eq_maximalIdeal` above — the sequence it produces
+  is precisely the `hCM` witness the unmixedness leaf asks for.
+* Cohen–Macaulay ⟹ unmixedness is the open leaf
+  `isWeaklyRegular_of_ringKrullDim_quotient_eq_zero` above, where the discussion
+  of why the naive induction fails now lives.
+
+All this declaration still does is match the two up: `Ideal.map_ofList` turns
+`Ideal.span (rs.map φ)` into `Ideal.map φ 𝔪_R`, so `hfib` is literally the
+zero-dimensionality hypothesis, and `hlen` with `hdim` is literally the length
+hypothesis.
 
 **ABSENT EVERYWHERE, re-checked 2026-07-27 with the refuting greps.**
 `grep -rl CohenMacaulay .lake/packages/mathlib/Mathlib/` is empty and
@@ -1572,27 +1620,36 @@ That file (259 lines) does contain `Module.depth`, `Module.length_le_depth`,
 vendor first — but note it proves only `depth ≤ dim`, which is the WRONG
 inequality here.
 
-**SO THE ROUTE, IN THE ORDER THE PIECES ARE NEEDED.**  What is required is
-`dim ≤ depth` for a regular local ring — and that half is now **available**, not
-missing: `exists_isWeaklyRegular_span_eq_maximalIdeal` above (**PROVEN
-2026-07-27**) produces a weakly regular sequence generating `𝔪_T` of length
-exactly `dim T`, which is precisely a witness that `depth T ≥ dim T`, i.e. that
-a regular local ring is Cohen–Macaulay.  What remains genuinely new is only the
-UNMIXEDNESS half: in a Cohen–Macaulay local ring every system of parameters is a
-regular sequence.  Stating it needs a depth predicate (vendor `Depth.lean`, or
-state Cohen–Macaulayness directly as "some weakly regular sequence in `𝔪`
-generates an ideal of the full length `dim`"); proving it is the real work.
-
-Whoever takes this leaf should therefore NOT restate it as "regular ⟹ CM" — that
-direction is done — but cut it at the unmixedness statement. -/
+**SO THE ROUTE, IN THE ORDER THE PIECES ARE NEEDED** — and this is why the cut
+above is where it is.  What is required is `dim ≤ depth` for a regular local
+ring, and that half is now **available, not missing**:
+`exists_isWeaklyRegular_span_eq_maximalIdeal` above (**PROVEN 2026-07-27**)
+produces a weakly regular sequence generating `𝔪_T` of length exactly `dim T`,
+which is precisely a witness that `depth T ≥ dim T`, i.e. that a regular local
+ring is Cohen–Macaulay.  What remained genuinely new was only the UNMIXEDNESS
+half, and that is now the separate leaf
+`isWeaklyRegular_of_ringKrullDim_quotient_eq_zero` above — stated WITHOUT a
+depth predicate, by writing Cohen–Macaulayness out as "some weakly regular
+sequence of length `dim` generates `𝔪`", so that no `Depth.lean` vendoring is
+needed merely to state it.  Proving it is the real work, and it is all that is
+left under this node. -/
 theorem isWeaklyRegular_map_of_ringKrullDim_eq {R T : Type u} [CommRing R] [CommRing T]
     [IsRegularLocalRing R] [IsRegularLocalRing T] (φ : R →+* T) [IsLocalHom φ] (rs : List R)
     (hspan : Ideal.span {r | r ∈ rs} = IsLocalRing.maximalIdeal R)
     (hlen : (rs.length : WithBot ℕ∞) = ringKrullDim R)
     (hdim : ringKrullDim T = ringKrullDim R)
     (hfib : ringKrullDim (T ⧸ Ideal.map φ (IsLocalRing.maximalIdeal R)) = 0) :
-    RingTheory.Sequence.IsWeaklyRegular T (rs.map φ) :=
-  sorry
+    RingTheory.Sequence.IsWeaklyRegular T (rs.map φ) := by
+  -- the image list spans exactly the extended ideal, so `hfib` IS the
+  -- zero-dimensionality hypothesis of the unmixedness leaf
+  have himg : Ideal.span {y | y ∈ rs.map φ} = Ideal.map φ (IsLocalRing.maximalIdeal R) := by
+    rw [show (Ideal.span {y | y ∈ rs.map φ}) = Ideal.ofList (rs.map φ) from rfl,
+      ← Ideal.map_ofList]
+    exact congrArg (Ideal.map φ) hspan
+  refine isWeaklyRegular_of_ringKrullDim_quotient_eq_zero (rs.map φ)
+    (exists_isWeaklyRegular_span_eq_maximalIdeal T) ?_ ?_
+  · rw [List.length_map, hlen, hdim]
+  · rw [himg]; exact hfib
 
 /-- **THE ONE-ELEMENT LOCAL CRITERION OF FLATNESS — THE ATOM**
 (sorry leaf — pure commutative algebra; Matsumura *Commutative Ring Theory*
