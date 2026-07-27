@@ -39372,11 +39372,195 @@ theorem localInertia_two_sq_eq_zero_of_padic_inertia_sq_eq_zero
     simp only [mul_assoc]
   rw [h1, ha', mul_one, ← pow_two, hN, mul_zero, zero_mul]
 
+/-- **The wild inertia is pro-`ℓ`: an `n`-th root exists INSIDE `P_v`
+whenever `n` is prime to the residue characteristic** (SORRY LEAF, cut
+2026-07-27). This is STEP 3 of the four-step route recorded on
+`isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` below, and after that cut
+it is the ONLY step still open there — steps 1, 2 and 4 are proven.
+
+`P_v = wildInertiaGroup v = Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)` is the (unique) Sylow
+pro-`ℓ` subgroup of the inertia, `ℓ` the residue characteristic of `v`.
+In a pro-`ℓ` group the `n`-th power map is a BIJECTION for every `n`
+prime to `ℓ`: it is bijective on each finite continuous quotient — there
+the order of any element divides an `ℓ`-power, so `n` is invertible
+modulo it — and bijectivity passes to the inverse limit by compactness.
+The hypothesis is spelled `(n : 𝓞 K) ∉ v.asIdeal`, which is exactly
+`ℓ ∤ n` (and forces `n ≠ 0`, since `0 ∈ v.asIdeal`).
+
+Note the conclusion must place `θ` back in `P_v`, not merely in `I_v`:
+the consumer iterates this lemma to extract a `pᵏ`-th root, and an
+`I_v`-valued root would break the induction at the second step.
+
+WHAT IS MISSING, and it is a genuine subtree rather than a lemma. The
+statement splits cleanly in two, and only the first half is arithmetic:
+
+* `P_v` is pro-`ℓ`, i.e. every finite continuous quotient of
+  `Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)` has `ℓ`-power order. This is local field theory:
+  the residue field of `Kᵥᵗᵃᵐᵉ` is separably closed and its value group
+  is `n`-divisible for every `n` prime to `ℓ`, so a finite extension of
+  `Kᵥᵗᵃᵐᵉ` has trivial residue extension and ramification index an
+  `ℓ`-power.
+* In a profinite group all of whose finite quotients have `ℓ`-power
+  order, `x ↦ xⁿ` is surjective for `ℓ ∤ n`. This half is pure profinite
+  group theory and carries no arithmetic at all.
+
+VERIFIED ABSENT 2026-07-27, and here is the check that would refute it:
+`grep -rn "IsProP\|pro_p\|ProfiniteGrp" Fermat/ .lake/packages/mathlib/`
+plus `~/cs/FLT`. Mathlib's `Topology/Algebra/Category/ProfiniteGrp/` has
+only `Basic`, `Completion` and `Limits` — no Sylow theory for
+topological groups, no pro-`ℓ` predicate — and mathlib's
+`RamificationGroup.lean` is 54 lines ending in a TODO with zero
+`ramificationGroup` hits library-wide. Neither this project nor
+`~/cs/FLT` defines "pro-`ℓ`" anywhere. If a later release adds a pro-`ℓ`
+predicate with the finite-quotient characterisation, this leaf reduces
+to the two bullets above and nothing else.
+
+The closest EXISTING approximation in this tree is
+`exists_mem_localInertiaGroup_pow_pro_of_forall_finite_level` (above in
+this file). It delivers only a pro-statement (`∀ open H, ∃ n, … ∈ H`)
+rather than an equality of group elements, so it does not discharge this
+leaf as stated — but it is the right template for the compactness half.
+
+This is stated for a general number field and place so that it can be
+hoisted to `ArtinConductor.lean`, next to `wildInertiaGroup` itself,
+once it has an owner; it is parked here only because that is where its
+single consumer lives. -/
+theorem exists_pow_eq_of_mem_wildInertiaGroup {K : Type*} [Field K]
+    [NumberField K]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
+    {n : ℕ} (hn : (n : NumberField.RingOfIntegers K) ∉ v.asIdeal)
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
+    (hσ : σ ∈ wildInertiaGroup v) :
+    ∃ θ ∈ wildInertiaGroup v, θ ^ n = σ :=
+  sorry
+
+/-- **STEP 4 of the at-`2` wild half: an infinitely `p`-divisible value
+of `σ ↦ τσ − 1` VANISHES** (PROVEN 2026-07-27). This is the step that
+the route on `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` below flags
+as "where the topology is genuinely load-bearing".
+
+Why continuity cannot be dropped: ABSTRACTLY `Hom(ℤ₂, ℚ_p) ≠ 0` (`ℤ₂ ⊗ ℚ`
+is a huge `ℚ`-vector space), so a version of the wild half with the
+topology removed would be FALSE. It is `GaloisRep`'s continuity that
+rescues it, and this lemma is the single place where that hypothesis is
+spent — no other step of the route touches it.
+
+THE PROOF, which is short once the right functional is chosen. Fix a
+vector `u` and a coordinate `i`, and let `ev f := f u i`. This is
+`AlgebraicClosure ℚ_[p]`-LINEAR out of `Module.End`, which carries the
+module topology, so `IsModuleTopology.continuous_of_linearMap` makes
+`g ↦ ev (τ_v g)` continuous; `Γ Kᵥ` is compact (`IsGalois` together with
+`InfiniteGalois`'s `CompactSpace` instance), so that image is compact,
+hence NORM-BOUNDED by some `C` — `AlgebraicClosure ℚ_[p]` is a normed
+field through `spectralNorm` (`PadicAlgCl.normedField`). Then for every
+`k`, `‖ev x‖ = ‖p‖ᵏ · ‖ev (τ_v θₖ − 1)‖ ≤ (1/p)ᵏ · (C + ‖ev 1‖)`, and
+`‖p‖ = 1/p < 1` (`PadicAlgCl.valuation_p`), so the right-hand side tends
+to `0` and `ev x = 0`. Ranging over `u` and `i` gives `x = 0`.
+
+Note the hypothesis does NOT constrain `θ` to the wild inertia: the
+bound is uniform over all of `Γ Kᵥ`, so the compactness argument never
+needs to know where `θ` came from. That is deliberate — it keeps this
+lemma independent of the one genuinely missing input, the pro-`2` leaf
+`exists_pow_eq_of_mem_wildInertiaGroup` above. -/
+theorem eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {x : Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hdiv : ∀ k : ℕ, ∃ θ, x = (p ^ k : ℕ) • (τ.toLocal
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat θ - 1)) :
+    x = 0 := by
+  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])) :=
+    moduleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
+  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
+      (Module.End (AlgebraicClosure ℚ_[p])
+        (Fin 2 → AlgebraicClosure ℚ_[p])) := ⟨rfl⟩
+  haveI : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) := ⟨⟩
+  haveI : CompactSpace (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) :=
+    inferInstanceAs (CompactSpace (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) ≃ₐ[_] _))
+  refine LinearMap.ext fun u => funext fun i => ?_
+  show x u i = 0
+  -- the coordinate functional `f ↦ f u i`, which is `F`-linear and so
+  -- automatically continuous out of the module topology
+  set ev : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])
+      →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p] :=
+    { toFun := fun f => f u i
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl }
+  have hcont : Continuous fun g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat) =>
+      ev (τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat g) :=
+    (IsModuleTopology.continuous_of_linearMap ev).comp
+      (ContinuousMonoidHom.continuous_toFun
+        (τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+  -- compactness of `Γ Kᵥ` bounds the whole image
+  obtain ⟨C, hC⟩ := (isCompact_range hcont).isBounded.subset_closedBall
+    (0 : AlgebraicClosure ℚ_[p])
+  have hCg : ∀ g, ‖ev (τ.toLocal
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat g)‖ ≤ C := by
+    intro g
+    have hmem := hC (Set.mem_range_self g)
+    simpa [Metric.mem_closedBall, dist_zero_right] using hmem
+  have hnp : ‖((p : ℕ) : AlgebraicClosure ℚ_[p])‖ = 1 / (p : ℝ) := by
+    rw [← PadicAlgCl.valuation_coe, PadicAlgCl.valuation_p]
+    simp
+  have hple : (1 : ℝ) / (p : ℝ) < 1 := by
+    have h2 : (2 : ℝ) ≤ (p : ℝ) := by exact_mod_cast hp.out.two_le
+    rw [div_lt_one (by linarith)]
+    linarith
+  have hpnn : (0 : ℝ) ≤ 1 / (p : ℝ) := by positivity
+  have hbound : ∀ k : ℕ, ‖x u i‖ ≤ (1 / (p : ℝ)) ^ k * (C + ‖ev 1‖) := by
+    intro k
+    obtain ⟨θ, hθ⟩ := hdiv k
+    have hx : x u i = ((p : AlgebraicClosure ℚ_[p]) ^ k) *
+        ev (τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat θ
+          - 1) := by
+      have h1 : ev x = (p ^ k : ℕ) • ev (τ.toLocal
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat θ - 1) := by
+        rw [hθ]; exact map_nsmul ev _ _
+      rw [show x u i = ev x from rfl, h1, nsmul_eq_mul]
+      norm_cast
+    have hsub : ‖ev (τ.toLocal
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat θ - 1)‖
+        ≤ C + ‖ev 1‖ := by
+      rw [map_sub]
+      exact (norm_sub_le _ _).trans (add_le_add (hCg θ) le_rfl)
+    rw [hx, norm_mul, norm_pow, hnp]
+    exact mul_le_mul_of_nonneg_left hsub (by positivity)
+  have hlim : Filter.Tendsto (fun k : ℕ => (1 / (p : ℝ)) ^ k * (C + ‖ev 1‖))
+      Filter.atTop (nhds 0) := by
+    have h := tendsto_pow_atTop_nhds_zero_of_lt_one hpnn hple
+    simpa using h.mul_const (C + ‖ev 1‖)
+  have hle : ‖x u i‖ ≤ 0 :=
+    ge_of_tendsto hlim (Filter.Eventually.of_forall hbound)
+  simpa using norm_le_zero_iff.mp hle
+
 include hpodd in
 /-- **A square-zero-unipotent inertia action at `2` is TAMELY RAMIFIED
-when `p` is odd** (sorry leaf, 2026-07-26 — Serre, *Local Fields* IV §2;
-this is the residual local content of the at-`2` wild half, and the
-ONLY thing that still stands between `hsq` and `Sw₂(τ) = 0`).
+when `p` is odd** (PROVEN 2026-07-27 MODULO ONE LEAF — Serre, *Local
+Fields* IV §2; this is the residual local content of the at-`2` wild
+half, and the ONLY thing that still stands between `hsq` and
+`Sw₂(τ) = 0`).
+
+STATUS after the 2026-07-27 cut. The four-step route below is now
+written out in full, and steps **1, 2 and 4 are PROVEN right here**. The
+single remaining input is step 3, cut out as the sorry leaf
+`exists_pow_eq_of_mem_wildInertiaGroup` above — the assertion that the
+wild inertia is pro-`ℓ`, which is the one piece of genuine local field
+theory this tree does not have. Nothing else in this proof is open, and
+in particular the analytic step 4, which the previous owner recorded as
+the delicate one, is discharged by
+`eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one` above.
 
 `GaloisRep.IsTamelyRamifiedAt τ v₂` says the WILD inertia
 `P₂ = Gal(ℚ₂ᵃˡᵍ / ℚ₂ᵗᵃᵐᵉ)` acts trivially on `V` — see
@@ -39401,7 +39585,9 @@ every `σ ∈ I₂` (this is `hloc`):
 3. *`P₂` is pro-`2`*, so for every `n` prime to `2` the `n`-th power map
    is a bijection on it; in particular every `σ ∈ P₂` is a `p`-th power
    in `P₂` (here `p` is ODD — this is the ONLY use of `hpodd`).
-   Iterating, `N(σ) ∈ pᵏ · N(P₂)` for every `k`.
+   Iterating, `N(σ) ∈ pᵏ · N(P₂)` for every `k`. This is the sorry leaf
+   `exists_pow_eq_of_mem_wildInertiaGroup` above, and `hpodd` enters the
+   present proof only through its side condition `(p : 𝓞 ℚ) ∉ v₂`.
 4. *`N(P₂)` is BOUNDED*, being the continuous image of the compact `P₂`
    in `(ℚ̄_p, +)`. Bounded and infinitely `p`-divisible forces
    `N(σ) = 0`, i.e. `τσ = 1`.
@@ -39410,10 +39596,15 @@ Step 4 is where the topology is genuinely load-bearing and cannot be
 dropped: ABSTRACTLY there are nonzero homomorphisms `ℤ₂ → ℚ_p` (`ℤ₂ ⊗ ℚ`
 is a huge `ℚ`-vector space), so a version of this leaf without
 continuity would be FALSE. `GaloisRep` is by definition continuous and
-`Γ ℚ_[2]` is compact, so the hypothesis is present; formalizing step 4
-means putting a norm on `AlgebraicClosure ℚ_[p]` (`spectralNorm`, which
-`AbsoluteGaloisGroup.lean` already uses) and running the two-line
-`‖N(σ)‖ = pᵏ‖N(σ)/pᵏ‖ → ∞` argument.
+`Γ ℚ_[2]` is compact, so the hypothesis is present — and step 4 is now
+DONE, as `eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one` above: the
+`spectralNorm` on `AlgebraicClosure ℚ_[p]` (`PadicAlgCl.normedField`)
+bounds the continuous image of the compact `Γ Kᵥ` under a coordinate
+functional, and `‖p‖ = 1/p < 1` then squeezes `‖N(σ)‖ ≤ (1/p)ᵏ · C` to
+zero. The prediction that this would be short was correct; the
+functional has to be a COORDINATE map, since `Module.End` carries the
+module topology and `IsModuleTopology.continuous_of_linearMap` is what
+supplies its continuity for free.
 
 SOUNDNESS AUDIT (2026-07-26): non-vacuously satisfiable and NOT
 vacuously true. `τ` unramified at `2` satisfies `hloc` and is tamely
@@ -39433,8 +39624,133 @@ theorem isTamelyRamifiedAt_two_of_inertia_sq_eq_zero
       (τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat σ - 1) ^ 2
         = 0) :
     τ.IsTamelyRamifiedAt
-      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat := by
+  set v₂ := Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat with hv₂
+  -- STEP 1 (Kolchin in dimension `2`): the inertia image consists of
+  -- square-zero unipotents, so it has a COMMON nonzero fixed vector.
+  obtain ⟨w₀, hw₀ne, hw₀fix⟩ :=
+    BrauerNesbitt.exists_fixed_of_unipotent
+      (F := AlgebraicClosure ℚ_[p]) (V := Fin 2 → AlgebraicClosure ℚ_[p])
+      (by simp)
+      (G := (localInertiaGroup v₂))
+      { toFun := fun g => τ.toLocal v₂ g.1
+        map_one' := map_one _
+        map_mul' := fun g h => map_mul _ g.1 h.1 }
+      (fun g => hloc g.1 g.2)
+  have hw₀ker : ∀ σ ∈ localInertiaGroup v₂,
+      (τ.toLocal v₂ σ - 1) w₀ = 0 := by
+    intro σ hσ
+    have h : τ.toLocal v₂ σ w₀ = w₀ := hw₀fix ⟨σ, hσ⟩
+    simp only [LinearMap.sub_apply, Module.End.one_apply, h, sub_self]
+  have hspanle : ∀ σ ∈ localInertiaGroup v₂,
+      Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} ≤
+        LinearMap.ker (τ.toLocal v₂ σ - 1) := by
+    intro σ hσ
+    rw [Submodule.span_le, Set.singleton_subset_iff]
+    exact hw₀ker σ hσ
+  -- In dimension `2` a nonzero square-zero endomorphism has `im = ker`,
+  -- a line; `w₀` lies in that kernel, so the line IS `ℚ̄_p·w₀` and every
+  -- `N σ` maps INTO the common fixed line.
+  have hrange : ∀ σ ∈ localInertiaGroup v₂,
+      LinearMap.range (τ.toLocal v₂ σ - 1) ≤
+        Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} := by
+    intro σ hσ
+    have hmulzero : (τ.toLocal v₂ σ - 1) * (τ.toLocal v₂ σ - 1) = 0 := by
+      rw [← pow_two]; exact hloc σ hσ
+    have hle : LinearMap.range (τ.toLocal v₂ σ - 1) ≤
+        LinearMap.ker (τ.toLocal v₂ σ - 1) := by
+      rintro y ⟨x, rfl⟩
+      have hx : ((τ.toLocal v₂ σ - 1) * (τ.toLocal v₂ σ - 1)) x = 0 := by
+        rw [hmulzero]; rfl
+      simpa [Module.End.mul_apply] using hx
+    by_cases hzero : LinearMap.range (τ.toLocal v₂ σ - 1) = ⊥
+    · rw [hzero]; exact bot_le
+    · have hrn := LinearMap.finrank_range_add_finrank_ker (τ.toLocal v₂ σ - 1)
+      have hV : Module.finrank (AlgebraicClosure ℚ_[p])
+          (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+      have h1 : 1 ≤ Module.finrank (AlgebraicClosure ℚ_[p])
+          (LinearMap.range (τ.toLocal v₂ σ - 1)) :=
+        Submodule.one_le_finrank_iff.mpr hzero
+      have hspanrank : Module.finrank (AlgebraicClosure ℚ_[p])
+          (Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) = 1 :=
+        finrank_span_singleton hw₀ne
+      have hkerle : Module.finrank (AlgebraicClosure ℚ_[p])
+          (LinearMap.ker (τ.toLocal v₂ σ - 1)) ≤ 1 := by
+        rw [hV] at hrn; omega
+      have heq : Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} =
+          LinearMap.ker (τ.toLocal v₂ σ - 1) :=
+        Submodule.eq_of_le_of_finrank_le (hspanle σ hσ)
+          (by rw [hspanrank]; exact hkerle)
+      rw [heq]; exact hle
+  -- STEP 2: `im N θ ⊆ ℚ̄_p·w₀ ⊆ ker N σ`, so `N σ ∘ N θ = 0` and hence
+  -- `σ ↦ N σ` is ADDITIVE on the inertia.
+  have hmulzero2 : ∀ σ ∈ localInertiaGroup v₂, ∀ θ ∈ localInertiaGroup v₂,
+      (τ.toLocal v₂ σ - 1) * (τ.toLocal v₂ θ - 1) = 0 := by
+    intro σ hσ θ hθ
+    refine LinearMap.ext fun x => ?_
+    have hx : (τ.toLocal v₂ θ - 1) x ∈
+        Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} := hrange θ hθ ⟨x, rfl⟩
+    have hy := hspanle σ hσ hx
+    rw [LinearMap.mem_ker] at hy
+    rw [Module.End.mul_apply, hy, LinearMap.zero_apply]
+  have hadd : ∀ σ ∈ localInertiaGroup v₂, ∀ θ ∈ localInertiaGroup v₂,
+      τ.toLocal v₂ (σ * θ) - 1 =
+        (τ.toLocal v₂ σ - 1) + (τ.toLocal v₂ θ - 1) := by
+    intro σ hσ θ hθ
+    have hm : τ.toLocal v₂ (σ * θ) = τ.toLocal v₂ σ * τ.toLocal v₂ θ :=
+      map_mul _ _ _
+    have hz := hmulzero2 σ hσ θ hθ
+    have key : (τ.toLocal v₂ σ - 1) * (τ.toLocal v₂ θ - 1) =
+        τ.toLocal v₂ σ * τ.toLocal v₂ θ - τ.toLocal v₂ σ -
+          (τ.toLocal v₂ θ - 1) := by
+      rw [sub_mul, one_mul, mul_sub, mul_one]
+    rw [key, sub_sub, sub_eq_zero] at hz
+    rw [hm, hz]
+    abel
+  have hpow : ∀ σ ∈ localInertiaGroup v₂, ∀ m : ℕ,
+      τ.toLocal v₂ (σ ^ m) - 1 = (m : ℕ) • (τ.toLocal v₂ σ - 1) := by
+    intro σ hσ m
+    induction m with
+    | zero => simp
+    | succ m ih =>
+      have hmem : σ ^ m ∈ localInertiaGroup v₂ := pow_mem hσ m
+      rw [pow_succ, hadd _ hmem _ hσ, ih, succ_nsmul]
+  -- STEP 3: `p` is prime to the residue characteristic `2` — the ONLY
+  -- use of `hpodd` — so the pro-`2` leaf supplies `pᵏ`-th roots in `P₂`.
+  have hpn : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v₂.asIdeal := by
+    rw [hv₂, Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal,
+      map_natCast]
+    intro hdvd
+    have h2 : (2 : ℕ) ∣ p := by exact_mod_cast hdvd
+    obtain ⟨m, hm⟩ := hpodd
+    obtain ⟨c, hc⟩ := h2
+    omega
+  have hiter : ∀ (k : ℕ) (σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v₂)),
+      σ ∈ wildInertiaGroup v₂ →
+        ∃ θ ∈ wildInertiaGroup v₂, θ ^ p ^ k = σ := by
+    intro k
+    induction k with
+    | zero => intro σ hσ; exact ⟨σ, hσ, by simp⟩
+    | succ k ih =>
+      intro σ hσ
+      obtain ⟨θ, hθ, hθpow⟩ := ih σ hσ
+      obtain ⟨η, hη, hηp⟩ := exists_pow_eq_of_mem_wildInertiaGroup v₂ hpn hθ
+      refine ⟨η, hη, ?_⟩
+      rw [pow_succ p k, pow_mul', hηp, hθpow]
+  -- STEP 4: additivity turns those roots into infinite `p`-divisibility
+  -- of `N σ`, and boundedness of the continuous image kills it.
+  intro σ hσ x
+  have hzero : τ.toLocal v₂ σ - 1 = 0 := by
+    refine eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one (τ := τ) ?_
+    intro k
+    obtain ⟨θ, hθ, hθpow⟩ := hiter k σ hσ
+    refine ⟨θ, ?_⟩
+    rw [← hθpow]
+    exact hpow θ (wildInertiaGroup_le_localInertiaGroup v₂ hθ) (p ^ k)
+  have h1 : τ.toLocal v₂ σ = 1 := by rwa [sub_eq_zero] at hzero
+  rw [h1]
+  rfl
 
 include hpodd in
 /-- **THE WILD HALF of the at-`2` conductor bound: the Swan conductor at
