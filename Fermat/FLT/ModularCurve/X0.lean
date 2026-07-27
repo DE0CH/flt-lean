@@ -285,6 +285,13 @@ strengthening of `card_le_of_rankZeroJacobian` rather than a new theory.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+-- `AbelianSchemeStruct.baseChange` and the relative-point bijection
+-- `RelPoint.baseChangeDown` / `RelPoint.baseChangeUp`, which are what
+-- `exists_gamma0Datum_baseChange` is built from.  PUBLIC because those names
+-- appear in the signatures of the `Gamma0BaseChange` helpers, not only in
+-- their proof bodies.  No cycle: this module's only project import is
+-- `Fermat.FLT.Modularity.AbelianScheme`.
+public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
 -- `Fermat.FLT.ModularCurve.EllipticScheme`: the assembly of
 -- `exists_ellipticScheme_of_weierstrass` below, out of the projective
 -- Weierstrass model as a `Scheme`.
@@ -548,8 +555,14 @@ base-change relation is *stated*: a morphism `map` on total spaces making
 a cartesian square, compatible with the group law and with the level
 structure.  `RelPoint.along map isPullback.w` is the induced map on
 relative points, and cartesianness is what makes it a bijection onto the
-points over the shifted base point — a fact this development never needs
-and therefore never proves.
+points over the shifted base point.  **That bijection IS needed and IS
+available** (corrected 2026-07-27; this docstring previously said the
+development never needs it and therefore never proves it):
+`exists_gamma0Datum_baseChange` consumes it in both directions, as
+`RelPoint.baseChangeDown` / `RelPoint.baseChangeUp` from
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` at the defining
+cartesian square, and as `IsPullback.lift` at the level structure
+(`Gamma0BaseChange.liesIn_iota_iff`).
 
 Taking `h = 𝟙` recovers *isomorphism* of `Γ₀(N)`-data over a fixed base,
 which is why a natural transformation out of the moduli problem (in the
@@ -1389,7 +1402,8 @@ other — so that neither of the four leaves below carries both:
   problem is a FUNCTOR: base change as a construction, no `ℚ`, no `n`, no
   moduli scheme) and `exists_fullLevelStructure_cover_of_baseChange`
   (the finite étale `GL₂(ℤ/n)`-torsor), which receives the former as a
-  hypothesis;
+  hypothesis.  **The first of those is PROVEN**, the same day it was
+  opened — so item 2 is now exactly the torsor and nothing else;
 * item 1 became `exists_rigidifiedModuli` (Katz–Mazur 4.7, 5.1.1, 6.6.1
   and the affineness parenthesis of 8.1.1, and NOTHING else) and
   `exists_gamma0GITPresentation_of_rigidified` (deck group, invariants,
@@ -1464,10 +1478,223 @@ structure FullLevelStructure (n : ℕ) {N : ℕ} {T : Scheme.{u}}
           x = (ab.1 : ℕ) • RelPoint.pre t (Category.comp_id t) P
               + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) Q
 
-/-- **Base change of a `Γ₀(N)`-datum, as a CONSTRUCTION** (sorry leaf,
-opened 2026-07-27) — split out of `exists_fullLevelStructure_cover`
-below, whose docstring recorded exactly this as the one thing it needed
-that the project does not have.
+/-! #### Base change of a `Γ₀(N)`-datum, as a construction
+
+The `Γ₀(N)`-moduli problem is a FUNCTOR: every datum pulls back along
+every `h : T' ⟶ T`.  `exists_fullLevelStructure_cover`'s docstring
+recorded this as "what it needs that this project does not have"; it was
+split off as its own leaf on 2026-07-27 and PROVEN the same day.  The
+construction is here and the leaf is `exists_gamma0Datum_baseChange`
+below.
+
+Everything rests on `AbelianSchemeStruct.baseChange`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`) and its bijection
+`RelPoint.baseChangeDown` / `RelPoint.baseChangeUp` on relative points,
+which is why this file now carries that import.  The only genuinely new
+work is the level structure, and its two non-formal steps are:
+
+* `iota` is a base change of `d.cyc.ι` — obtained by pullback PASTING
+  (`IsPullback.of_bot`) rather than by definition, because `C'` is built
+  as `C ×_T T'` (which makes `IsFinite` and `Flat` of `ι' ≫ f'`
+  immediate, those being properties of the composite) and the closed
+  immersion then has to be recovered;
+* `geom_cyclic`, where the generator at a geometric point `t` of `T'` is
+  the one at `t ≫ h` transported by `baseChangeUp`, and `addOrderOf` and
+  `AddSubgroup.zmultiples` transport because `baseChangeDown` is an
+  injective additive map (`downHom`).
+-/
+
+namespace Gamma0BaseChange
+
+open CategoryTheory.Limits
+
+variable {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ T) (d : Gamma0Datum N T)
+
+/-- the projection of the base-changed total space to `E` -/
+noncomputable abbrev qq : pullback d.f h ⟶ d.E := pullback.fst d.f h
+
+/-- the structure morphism of the base-changed total space -/
+noncomputable abbrev fb : pullback d.f h ⟶ T' := pullback.snd d.f h
+
+/-- the base-changed level subscheme, built as `C ×_T T'` -/
+noncomputable abbrev Cb : Scheme.{u} := pullback (d.cyc.ι ≫ d.f) h
+
+/-- its projection to `C` -/
+noncomputable abbrev cq : Cb h d ⟶ d.cyc.C := pullback.fst (d.cyc.ι ≫ d.f) h
+
+/-- its projection to `T'` -/
+noncomputable abbrev cp : Cb h d ⟶ T' := pullback.snd (d.cyc.ι ≫ d.f) h
+
+/-- the inclusion of the base-changed level subscheme into the
+base-changed total space -/
+noncomputable def iota : Cb h d ⟶ pullback d.f h :=
+  pullback.lift (cq h d ≫ d.cyc.ι) (cp h d) (by
+    rw [Category.assoc]; exact pullback.condition)
+
+lemma iota_snd : iota h d ≫ fb h d = cp h d := pullback.lift_snd _ _ _
+
+lemma iota_fst : iota h d ≫ qq h d = cq h d ≫ d.cyc.ι := pullback.lift_fst _ _ _
+
+/-- **`iota` is a base change of `d.cyc.ι`** — pullback pasting: the outer
+square `C ×_T T'` and the lower square `E ×_T T'` are cartesian, hence so
+is the upper one. -/
+lemma isPullback_iota : IsPullback (cq h d) (iota h d) d.cyc.ι (qq h d) := by
+  refine IsPullback.of_bot ?_ (iota_fst h d).symm (IsPullback.of_hasPullback d.f h)
+  rw [iota_snd]
+  exact IsPullback.of_hasPullback (d.cyc.ι ≫ d.f) h
+
+lemma isClosedImmersion_iota : IsClosedImmersion (iota h d) :=
+  MorphismProperty.of_isPullback (P := @IsClosedImmersion)
+    (isPullback_iota h d) d.cyc.isClosedImmersion
+
+lemma isFinite_iota_comp : IsFinite (iota h d ≫ fb h d) := by
+  rw [iota_snd]
+  haveI := d.cyc.isFinite
+  infer_instance
+
+lemma flat_iota_comp : AlgebraicGeometry.Flat (iota h d ≫ fb h d) := by
+  rw [iota_snd]
+  haveI := d.cyc.flat
+  infer_instance
+
+/-- **Lying in the base-changed level subscheme is lying in the original
+one.**  The `←` direction is exactly where cartesianness of
+`isPullback_iota` is consumed. -/
+lemma liesIn_iota_iff {U : Scheme.{u}} {g : U ⟶ T'} (x : RelPoint (fb h d) g) :
+    RelPoint.LiesIn (iota h d) x ↔
+      RelPoint.LiesIn d.cyc.ι (RelPoint.baseChangeDown h x) := by
+  constructor
+  · rintro ⟨y, hy⟩
+    refine ⟨y ≫ cq h d, ?_⟩
+    show (y ≫ cq h d) ≫ d.cyc.ι = x.1 ≫ qq h d
+    rw [Category.assoc, ← iota_fst h d, ← Category.assoc, hy]
+  · rintro ⟨z, hz⟩
+    have hz' : z ≫ d.cyc.ι = x.1 ≫ qq h d := hz
+    exact ⟨(isPullback_iota h d).lift z x.1 hz',
+      (isPullback_iota h d).lift_snd z x.1 hz'⟩
+
+/-- **`baseChangeDown` as an additive map on relative points.**  This is
+what carries `addOrderOf` and `AddSubgroup.zmultiples` between the two
+sides in `geom_cyclic`; it is injective by
+`RelPoint.baseChangeDown_injective`. -/
+noncomputable def downHom {U : Scheme.{u}} (g : U ⟶ T') :
+    letI := (d.ab.baseChange h).addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ h)
+    RelPoint (fb h d) g →+ RelPoint d.f (g ≫ h) :=
+  letI := (d.ab.baseChange h).addCommGroup g
+  letI := d.ab.addCommGroup (g ≫ h)
+  { toFun := RelPoint.baseChangeDown h
+    map_zero' := by
+      show RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g) = d.ab.zero (g ≫ h)
+      rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+    map_add' := by
+      intro x y
+      show RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y)
+          = d.ab.add (RelPoint.baseChangeDown h x) (RelPoint.baseChangeDown h y)
+      rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp] }
+
+lemma downHom_apply {U : Scheme.{u}} (g : U ⟶ T') (x : RelPoint (fb h d) g) :
+    downHom h d g x = RelPoint.baseChangeDown h x := rfl
+
+/-- **The base-changed cyclic subgroup scheme of order `N`.** -/
+noncomputable def cycBC : CyclicSubgroupOfOrder (d.ab.baseChange h) N where
+  C := Cb h d
+  ι := iota h d
+  isClosedImmersion := isClosedImmersion_iota h d
+  isFinite := isFinite_iota_comp h d
+  flat := flat_iota_comp h d
+  zero_liesIn := by
+    intro U g
+    rw [liesIn_iota_iff]
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g))
+    rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+    exact d.cyc.zero_liesIn (g ≫ h)
+  add_liesIn := by
+    intro U g x y hx hy
+    rw [liesIn_iota_iff] at hx hy ⊢
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y))
+    rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
+    exact d.cyc.add_liesIn hx hy
+  neg_liesIn := by
+    intro U g x hx
+    rw [liesIn_iota_iff] at hx ⊢
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h ((d.ab.baseChange h).neg x))
+    show RelPoint.LiesIn d.cyc.ι
+      (RelPoint.baseChangeDown h
+        (RelPoint.baseChangeUp h (d.ab.neg (RelPoint.baseChangeDown h x))))
+    rw [RelPoint.baseChangeDown_baseChangeUp]
+    exact d.cyc.neg_liesIn hx
+  geom_cyclic := by
+    intro K _ _ t
+    letI := (d.ab.baseChange h).addCommGroup t
+    letI := d.ab.addCommGroup (t ≫ h)
+    obtain ⟨y, hy1, hy2, hy3⟩ := d.cyc.geom_cyclic K (t ≫ h)
+    have hinj : Function.Injective (downHom h d t) :=
+      RelPoint.baseChangeDown_injective h
+    have hdu : ∀ z : RelPoint d.f (t ≫ h),
+        downHom h d t (RelPoint.baseChangeUp h z) = z :=
+      fun z => RelPoint.baseChangeDown_baseChangeUp h z
+    refine ⟨RelPoint.baseChangeUp h y, ?_, ?_, ?_⟩
+    · rw [liesIn_iota_iff, ← downHom_apply, hdu]
+      exact hy1
+    · rw [← addOrderOf_injective (downHom h d t) hinj, hdu]
+      exact hy2
+    · intro x
+      rw [liesIn_iota_iff, ← downHom_apply, hy3]
+      constructor
+      · rintro ⟨k, hk⟩
+        have hk' : k • y = downHom h d t x := hk
+        refine ⟨k, hinj ?_⟩
+        show downHom h d t (k • RelPoint.baseChangeUp h y) = downHom h d t x
+        rw [map_zsmul, hdu]
+        exact hk'
+      · rintro ⟨k, hk⟩
+        have hk' : k • RelPoint.baseChangeUp h y = x := hk
+        refine ⟨k, ?_⟩
+        show k • y = downHom h d t x
+        rw [← hdu y, ← map_zsmul]
+        exact congrArg (downHom h d t) hk'
+
+/-- **The base-changed `Γ₀(N)`-datum.** -/
+noncomputable def datumBC : Gamma0Datum N T' where
+  E := pullback d.f h
+  f := fb h d
+  ab := d.ab.baseChange h
+  relativeDimensionOne :=
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    MorphismProperty.of_isPullback (P := @SmoothOfRelativeDimension 1)
+      (IsPullback.of_hasPullback d.f h) d.relativeDimensionOne
+  cyc := cycBC h d
+
+/-- **And it IS a base change**, with the cartesian square the defining
+one and all three compatibilities holding because
+`RelPoint.along (qq h d) _` and `RelPoint.baseChangeDown h` are the same
+function. -/
+noncomputable def isBaseChangeBC : IsBaseChangeOf h (datumBC h d) d where
+  map := qq h d
+  isPullback := (IsPullback.of_hasPullback d.f h).flip
+  map_zero := by
+    intro U g
+    show RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g) = d.ab.zero (g ≫ h)
+    rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+  map_add := by
+    intro U g x y
+    show RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y)
+        = d.ab.add (RelPoint.baseChangeDown h x) (RelPoint.baseChangeDown h y)
+    rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
+  liesIn_iff := by
+    intro U g x
+    exact liesIn_iota_iff h d x
+
+end Gamma0BaseChange
+
+/-- **Base change of a `Γ₀(N)`-datum, as a CONSTRUCTION** (PROVEN
+2026-07-27, on the day it was split out of
+`exists_fullLevelStructure_cover` below, whose docstring recorded exactly
+this as the one thing it needed that the project does not have).
 
 Given any `h : T' ⟶ T` and any datum over `T`, there is a datum over `T'`
 which is a base change of it.  Nothing here mentions the level `n`, `ℚ`,
@@ -1475,49 +1702,48 @@ or any moduli scheme: it is the statement that the `Γ₀(N)`-moduli problem
 is a FUNCTOR, and `exists_fullLevelStructure_cover_of_baseChange` consumes
 it purely to produce the datum living on the cover.
 
-## Why it is true, and what proving it needs
+## How it is proven
 
-Take `E' = E ×_T T'` and `f' = pullback.snd d.f h`.  The three components:
+`E' = E ×_T T'`, `f' = pullback.snd d.f h`, and the three components are
+built in the `Gamma0BaseChange` namespace above:
 
 * the abelian-scheme structure is `AbelianSchemeStruct.baseChange`
-  (`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), which is PROVEN and
-  sorry-free, and ships with the bijection
+  (`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), with the bijection
   `RelPoint.baseChangeDown` / `RelPoint.baseChangeUp` on relative points
-  together with `baseChangeDown_nsmul`, `baseChange_add`,
-  `baseChange_zero`.  **This file does not yet import that module**, so
-  that import is part of the cost;
-  `grep -n "ModularCurve" Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`
-  finds only a docstring reference, so the import creates no cycle.
+  and `baseChange_add` / `baseChange_zero`.  **This file now imports that
+  module**, which was the anticipated cost; the import creates no cycle,
+  since `AbelianSchemeIsogeny.lean`'s only project import is
+  `Fermat.FLT.Modularity.AbelianScheme`.
 * `relativeDimensionOne` is mathlib's
-  `MorphismProperty.IsStableUnderBaseChange (@SmoothOfRelativeDimension n)`
-  (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`).
-* the level structure is `C ×_T T'`, with `IsClosedImmersion`, `IsFinite`
-  and `Flat` inherited by base change.  Note the finiteness and flatness
-  wanted are those of `ι' ≫ f'`, which is the base change of `ι ≫ f`
-  along `h` — so build `C'` as `pullback (d.cyc.ι ≫ d.f) h`, get those two
-  properties directly, and obtain `ι'` by `pullback.lift`; that `ι'` is
-  then a closed immersion by pullback PASTING (`IsPullback.of_bot`)
-  against the cartesian square defining `E'`.
+  `smoothOfRelativeDimension_isStableUnderBaseChange`
+  (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`), which is a `lemma`
+  and NOT an instance — `infer_instance` does not find it, unlike the
+  `IsFinite` and `Flat` cases below.
+* the level structure is `Gamma0BaseChange.cycBC`.  `C'` is built as
+  `C ×_T T'`, so `IsFinite` and `Flat` of `ι' ≫ f'` — which is what the
+  structure actually asks for — are immediate; the price is that
+  `IsClosedImmersion ι'` must be recovered by pullback PASTING
+  (`IsPullback.of_bot`, in `isPullback_iota`) instead of holding by
+  definition.
 
-  The one step with real content is `geom_cyclic`: a geometric point
-  `t : Spec K ⟶ T'` is carried to `t ≫ h`, the generator produced there is
-  transported by `RelPoint.baseChangeUp`, and this needs that
-  `baseChangeDown` is a bijection preserving `LiesIn` and the group law.
-  That is the fact `IsBaseChangeOf`'s docstring calls "a fact this
-  development never needs and therefore never proves".  **It needs it
-  now**, and that sentence should be corrected when this leaf closes.
+  The step with real content is `geom_cyclic`: a geometric point
+  `t : Spec K ⟶ T'` is carried to `t ≫ h` and the generator produced there
+  is transported by `RelPoint.baseChangeUp`.  That `baseChangeDown` is a
+  bijection preserving `LiesIn` and the group law is `liesIn_iota_iff`
+  together with `downHom`; `addOrderOf` and `AddSubgroup.zmultiples`
+  transport because `downHom` is an INJECTIVE additive map, via
+  `addOrderOf_injective` and `map_zsmul`.
 
-*The check that would refute this being open*:
-`grep -rn "CyclicSubgroupOfOrder" Fermat/` finding a transport lemma.  As
-of 2026-07-27 it finds the structure only in this file, plus a docstring
-mention in `MazurTorsion.lean`.
+  Note this consumes the fact `IsBaseChangeOf`'s docstring used to call
+  "a fact this development never needs and therefore never proves"; that
+  sentence has been corrected.
 
 Stated at universe `u` rather than at `0` because nothing in it is
 specific to the modular-curve layer. -/
 theorem exists_gamma0Datum_baseChange {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ T)
     (d : Gamma0Datum N T) :
     ∃ d' : Gamma0Datum N T', Nonempty (IsBaseChangeOf h d' d) :=
-  sorry
+  ⟨Gamma0BaseChange.datumBC h d, ⟨Gamma0BaseChange.isBaseChangeBC h d⟩⟩
 
 /-- **The level-`n` torsor** (sorry leaf, opened 2026-07-27) — what
 remains of `exists_fullLevelStructure_cover` once base change is supplied
@@ -1856,7 +2082,8 @@ that no leaf carries both a citation and a formalisation task.  Item 1 is
 now `exists_rigidifiedModuli` (the citation: 4.7, 5.1.1, 6.6.1, and the
 affineness parenthesis of 8.1.1) plus
 `exists_gamma0GITPresentation_of_rigidified` (the assembly); item 2 is now
-`exists_gamma0Datum_baseChange` (functoriality of the moduli problem) plus
+`exists_gamma0Datum_baseChange` (functoriality of the moduli problem —
+**PROVEN 2026-07-27**) plus
 `exists_fullLevelStructure_cover_of_baseChange` (the torsor).  The refuting
 checks recorded under each item below are still the right first thing to
 run, and each new leaf carries its own.
