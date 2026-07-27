@@ -857,8 +857,210 @@ section MazurCorFourFour
 
 open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat
 
-/-- **The Eisenstein half of Mazur's Cor. 4.4** (sorry node, new
-2026-07-27): for `N` prime `> 19` and `q` a prime other than `2` and `N`,
+/-- **Mazur's Eisenstein-quotient datum at `q`, with its formal immersion
+at `∞` and the Atkin–Lehner involution** (new 2026-07-27).
+
+This is inputs (3) and (4) of Mazur's Cor. 4.4 — the two objects the
+requirements audit under
+`WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter` records as
+ABSENT from this project, from mathlib and from `~/cs/FLT` — packaged as
+DATA, in exactly the style `X0.lean` already uses for `IsX0ReductionAt`
+and `IsX0JReductionAt`: the arithmetic that cannot be proved at this pin
+is carried as fields, and Mazur's deduction from them is a theorem.
+
+**The generalisation `jac.aj ↝ π ∘ aj`, packaged BESIDE rather than
+INSIDE.**  The audit under `exists_noCuspidalReduction_of_isogenyPrime`
+below recorded, correctly, that `IsX0ReductionAt` cannot be instantiated
+at `J_e(N)`: it is indexed by `jac : IsJacobianOf strX ab o`, which pins
+the target to the Jacobian of `X`, whereas the Eisenstein quotient is an
+optimal QUOTIENT of `J_0(N)`.  The recorded remedy was to generalise that
+structure.  That is not done here and is not needed: `f` below IS the
+composite `π ∘ aj_∞`, presented directly as a map on rational points, and
+`redA`, `redA_inj`, `red_f` are the generalised structure's remaining
+content.  Nothing owned by another worktree changes — the same move
+`IsX0JReductionAt` made when it added `red_jm` beside `IsX0ReductionAt`
+instead of inside it.
+
+**WHAT EACH FIELD IS, AND WHY IT IS TRUE OF THE GENUINE OBJECTS.**
+
+* `cusp`, `cusp_isCusp` — the cusp `∞ ∈ X_0(N)(ℚ)`.  At prime level both
+  cusps `0` and `∞` are rational.
+* `A`, `astr`, `ab` — the Eisenstein quotient `J_e(N)`, a nontrivial
+  optimal quotient of `J_0(N)` (Mazur, IHÉS 47 (1977), §II).
+* `A'`, `astr'`, `ab'` — its good reduction `J_e(N)_{𝔽_q}` at `q ∤ N`.
+* `f` — `π ∘ aj_∞`, the Abel–Jacobi map based at `∞` followed by the
+  quotient; `f'` — the same on the special fibre.
+* `redA`, `redA_inj` — **input (3)**, in the only form the argument uses.
+  `rank J_e(N)(ℚ) = 0` (Mazur, IHÉS 47, Thm 4) makes `J_e(N)(ℚ)` finite,
+  hence torsion; reduction is injective on the torsion of an abelian
+  variety with good reduction at an ODD prime.  This is the exact analogue
+  of `IsX0ReductionAt.redJ_inj`, which carries the same fact for `J_0(N)`
+  and is likewise data.
+* `red_f` — the reduction square, i.e. that `π ∘ aj` is defined over
+  `ℤ_(q)`; the analogue of `IsX0ReductionAt.red_aj`.
+* `formalImmersion` — **input (4)**.  `f` is a formal immersion at `∞` in
+  characteristic `q ≠ 2`, because a normalised Hecke eigenform has
+  `a₁ ≠ 0`.  Written **without any `ℤ_q`-points or formal group**, as the
+  requirements audit below already observed it could be: two rational
+  points in the same residue class at `q` with the same image under `f`
+  coincide.  Mazur needs the residue disc to PROVE this, not to state it.
+* `al`, `al_notCusp`, `al_redX` — the **Atkin–Lehner** step, which the
+  landed dictionary makes this node's business rather than the glue's
+  (the dictionary concludes membership of the cuspidal LOCUS, not equality
+  with a named cusp, so the move to `∞` has to happen here).  `w_N` is an
+  automorphism of `X_0(N)` over `ℚ` preserving `Y_0(N)` — whence
+  `al_notCusp` — and interchanging the two cusps; since at PRIME level
+  those are the only two, and `w_N` commutes with reduction, a point
+  reducing into the cuspidal locus reduces into the residue class of `∞`
+  either directly or after applying `w_N`, which is `al_redX`.  This is
+  the only field that uses `N.Prime`.
+
+**WHY THIS STRUCTURE MUST BE PRODUCED, NEVER ASSUMED — and the check is
+NOT the usual one.**  `exists_eisensteinFormalImmersion` below produces
+`hj` and `hjr` along with this datum, and a version taking `hjr` as a
+hypothesis would be **FALSE**, not merely unsupported.  Take the junk
+`hjr` that `X0.lean`'s FORMAL-CONTENT AUDIT on `IsX0JReductionAt` exhibits
+— `redX` sending every rational point outside the image of
+`sectionAlong jY' hX'.comm`, so that `red_jm` is vacuous — and refine it
+to the CONSTANT such map.  Then `redX x = redX cusp` for every `x`; by
+`red_f` and `redA_inj`, `f` is constant, so `f x = f cusp` for every `x`;
+and `formalImmersion` then forces `x = cusp` for EVERY rational point of
+`X_0(N)`.  That is false as soon as `Y_0(N)(ℚ) ≠ ∅`, which holds at
+`N = 37` (two rational `37`-isogeny `j`-invariants, `−9317` and
+`−162677523113838677`).  So the universally quantified form is refuted by
+an explicit witness, and the existential form is forced.
+
+**THE CHECK THAT WOULD REFUTE THAT AUDIT**: a field on `IsX0JReductionAt`
+pinning `redX` as the map induced by a morphism of integral models, which
+would rule the constant map out.  There is none today; `X0.lean` records
+that the `IsX0NeronDatum` layer is the remedy in flight, and when it lands
+this structure should be re-founded on it and `red_f` should become a
+theorem.
+
+**A DEGENERATE WITNESS EXISTS AND IS HARMLESS — but know that it does.**
+Because the datum is produced, a prover may take `A = A' = Spec ℚ`-shaped
+trivial abelian schemes with `f`, `f'` constant and `redA` the unique map;
+`redA_inj` is then trivial and the whole content collapses into
+`formalImmersion`, which becomes `∀ x, redX x = redX cusp → x = cusp`.
+The leaf stays TRUE and stays exactly as hard — the collapsed
+`formalImmersion` is precisely "reduction is injective at the cusp", which
+is what Eisenstein-quotient-plus-formal-immersion is FOR.  The split into
+fields is therefore documentation of Mazur's argument, not a mechanical
+guarantee that a prover will follow it, and the honest statement of what
+is gained is that the DEDUCTION below (rank `0` + reduction square +
+formal immersion + Atkin–Lehner ⟹ no rational point of `Y_0(N)` reduces
+to a cusp) is now formalised rather than assumed. -/
+structure IsEisensteinFormalImmersion (N q : ℕ)
+    {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    (hjr : IsX0JReductionAt N q hX hX' hj) where
+  /-- the base cusp `∞` of `X_0(N)`, a rational point at prime level -/
+  cusp : RelPoint strX (𝟙 SpecQ)
+  /-- `∞` really is a cusp: it does not come from `Y_0(N)(ℚ)` -/
+  cusp_isCusp : hX.IsCusp cusp
+  /-- the Eisenstein quotient `J_e(N)` over `ℚ` -/
+  A : Scheme.{0}
+  /-- its structure morphism to `Spec ℚ` -/
+  astr : A ⟶ SpecQ
+  /-- `J_e(N)` is an abelian scheme over `ℚ` -/
+  ab : AbelianSchemeStruct astr
+  /-- the good reduction `J_e(N)_{𝔽_q}`, which exists because `q ∤ N` -/
+  A' : Scheme.{0}
+  /-- its structure morphism to `Spec 𝔽_q` -/
+  astr' : A' ⟶ SpecF q
+  /-- the special fibre is an abelian scheme over `𝔽_q` -/
+  ab' : AbelianSchemeStruct astr'
+  /-- `f = π ∘ aj_∞` on the rational points of `X_0(N)`: the Abel–Jacobi
+  map based at `∞`, followed by the optimal quotient `J_0(N) ↠ J_e(N)` -/
+  f : RelPoint strX (𝟙 SpecQ) → RelPoint astr (𝟙 SpecQ)
+  /-- the same composite on the rational points of the special fibre -/
+  f' : RelPoint strX' (𝟙 (SpecF q)) → RelPoint astr' (𝟙 (SpecF q))
+  /-- reduction at `q` on the rational points of `J_e(N)` -/
+  redA : RelPoint astr (𝟙 SpecQ) → RelPoint astr' (𝟙 (SpecF q))
+  /-- **`rank J_e(N)(ℚ) = 0`, in the form the argument uses**: `J_e(N)(ℚ)`
+  is finite hence torsion, and reduction is injective on the torsion of an
+  abelian variety with good reduction at the odd prime `q` -/
+  redA_inj : Function.Injective redA
+  /-- **the reduction square**: `π ∘ aj_∞` is defined over `ℤ_(q)`, so it
+  commutes with reduction -/
+  red_f : ∀ x : RelPoint strX (𝟙 SpecQ), redA (f x) = f' (hjr.redX x)
+  /-- **the formal immersion at `∞` in characteristic `q ≠ 2`**, read on
+  rational points: two rational points in the same residue class at `q`
+  with the same image under `f` are equal -/
+  formalImmersion : ∀ x : RelPoint strX (𝟙 SpecQ),
+    hjr.redX x = hjr.redX cusp → f x = f cusp → x = cusp
+  /-- the **Atkin–Lehner involution** `w_N` on rational points of
+  `X_0(N)` -/
+  al : RelPoint strX (𝟙 SpecQ) → RelPoint strX (𝟙 SpecQ)
+  /-- `w_N` is an automorphism of `X_0(N)` preserving the open part
+  `Y_0(N)`, so it preserves the non-cuspidal locus -/
+  al_notCusp : ∀ x : RelPoint strX (𝟙 SpecQ), ¬ hX.IsCusp x → ¬ hX.IsCusp (al x)
+  /-- **the two-cusp dichotomy at PRIME level**: `X_0(N)` has exactly the
+  cusps `0` and `∞`, interchanged by `w_N`, and `w_N` commutes with
+  reduction — so a rational point reducing into the cuspidal locus mod `q`
+  reduces into the residue class of `∞`, either as it stands or after
+  `w_N` -/
+  al_redX : ∀ x : RelPoint strX (𝟙 SpecQ), hX'.IsCusp (hjr.redX x) →
+    hjr.redX x = hjr.redX cusp ∨ hjr.redX (al x) = hjr.redX cusp
+
+/-- **Existence of Mazur's Eisenstein-quotient datum** (sorry node, new
+2026-07-27).  This is the WHOLE remaining mathematical content of Mazur's
+Cor. 4.4 in this development: inputs (3) and (4) of the requirements audit
+under `WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter`,
+fused with the Atkin–Lehner step, and now stated as the existence of named
+classical objects rather than as an implication about reduction.
+
+It produces `hj` and `hjr` alongside the datum, for the reason recorded in
+the structure's docstring and in
+`exists_noCuspidalReduction_of_isogenyPrime` below: BOTH must be produced,
+and taking either as a hypothesis makes the statement FALSE against an
+explicit junk witness.  Consequently `exists_jMap` and
+`exists_x0JReductionAt` are consumed by THIS node's eventual proof, not by
+the glue, and they remain outside the root cone until it is proven — the
+same trade the node below already made, and for the same reason.
+
+**REFERENCES.** Mazur, *Modular curves and the Eisenstein ideal*, IHÉS 47
+(1977): §II for the Eisenstein ideal and the quotient `J_e(N)`, Thm 4 for
+`rank J_e(N)(ℚ) = 0`, §II.4 for the `a₁ ≠ 0` computation behind the formal
+immersion.  Mazur, *Rational isogenies of prime degree*, Invent. Math. 44
+(1978), Cor. 4.4 for the assembly.  Atkin–Lehner for `w_N`; the two-cusp
+statement at prime level is Deligne–Rapoport.
+
+**WHAT IS GENUINELY MISSING, RE-CHECKED BY NAME 2026-07-27.** Neither the
+Eisenstein ideal nor the Eisenstein quotient nor the formal-immersion
+criterion exists in this project, in mathlib, or in `~/cs/FLT` — the last
+carries only `FLT/Assumptions/Mazur.lean`, which assumes Mazur's torsion
+theorem outright and has no modular-curve, Jacobian or Eisenstein
+material.  There is nothing to vendor.  The Hecke-algebra side of this
+development (`Fermat/FLT/Modularity/`) is about `R = 𝕋` deformation theory
+and carries no Eisenstein ideal.
+
+**NON-VACUITY.** `N = 37`, `q = 3` satisfies every hypothesis, and
+`Y_0(37)(ℚ)` is nonempty, so no proof can discharge this by contradicting
+its own hypotheses.
+
+**WHERE `q ≠ 2` AND `19 < N` ENTER.** `q ≠ 2` is `formalImmersion`;
+`N.Prime` is `al_redX` (the two-cusp count); `19 < N` is what makes
+Mazur's Thm 4 give a NONTRIVIAL Eisenstein quotient at prime level.
+`q ≠ N` is `A'`, i.e. good reduction. -/
+theorem exists_eisensteinFormalImmersion (N q : ℕ)
+    (_hN : N.Prime) (_hN19 : 19 < N) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqN : q ≠ N)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
+    ∃ (hj : IsJMapOn N hc) (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q)
+      (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
+      (hX' : IsX0Compactification N strX' strY' jY')
+      (hjr : IsX0JReductionAt N q hX hX' hj),
+      Nonempty (IsEisensteinFormalImmersion N q hjr) :=
+  sorry
+
+/-- **The Eisenstein half of Mazur's Cor. 4.4** (PROVEN 2026-07-27 over
+`exists_eisensteinFormalImmersion` immediately above; opened as a sorry
+node the same day): for `N` prime `> 19` and `q` a prime other than `2` and `N`,
 there is a reduction datum for `(X_0(N), j)` at `q` under which **no**
 rational point of `Y_0(N)` reduces to a cusp.
 
@@ -955,9 +1157,9 @@ reduction is injective on such torsion, so `f(y) = f(∞)`. Finally `f` is
 a formal immersion at `∞` in characteristic `q ≠ 2`, because a normalised
 Hecke eigenform has `a₁ ≠ 0`. Hence `y = ∞`, contradicting `y ∈ Y_0(N)`.
 
-**WHAT IS MISSING, AND WHERE THE FIRST STEP OF THE PROOF LIVES.** Two
-objects, neither in this project, in mathlib, or in `~/cs/FLT`
-(re-checked 2026-07-27; the latter carries only
+**WHAT IS MISSING, AND WHERE IT NOW LIVES — UPDATED 2026-07-27 WHEN THIS
+NODE WAS PROVEN.** Two objects, neither in this project, in mathlib, or in
+`~/cs/FLT` (re-checked 2026-07-27; the latter carries only
 `FLT/Assumptions/Mazur.lean`, which assumes Mazur's torsion theorem
 outright): the **Eisenstein quotient** `J_e(N)` with `rank J_e(N)(ℚ) = 0`,
 and the **formal-immersion criterion**. Note the statement above mentions
@@ -966,16 +1168,29 @@ neither, nor `j`, nor a valuation, nor a `ℤ_q`-point, nor a formal group
 deliberate and it is what makes this a decomposition rather than a
 restatement.
 
-To *prove* it, the first concrete step is the generalisation of
-`IsX0ReductionAt` recorded in the docstring below: replace `jac.aj` by a
-composite `f = π ∘ aj` into an arbitrary abelian scheme and drop the
-`IsJacobianOf` index, keeping `redX`, `redJ_add`, `redJ_inj` and
-`red_aj`. `IsX0ReductionAt` as it stands is indexed by
-`jac : IsJacobianOf strX ab o`, which pins the target to `J_0(N)` itself,
-whereas `J_e(N)` is an optimal QUOTIENT; the generalised datum is
-strictly weaker, so every existing witness still supplies one and no
-existing consumer is disturbed. That step is *not* needed to state this
-node — see the correction in the docstring below — only to prove it.
+Both now live in `IsEisensteinFormalImmersion` above, together with the
+Atkin–Lehner step, and the single remaining sorry is the existence of that
+datum, `exists_eisensteinFormalImmersion`. Mazur's DEDUCTION from them is
+the proof below and is complete: Atkin–Lehner moves the point into the
+residue class of `∞` (`al_redX`, `al_notCusp`), rank `0` plus injectivity
+of reduction gives `f z = f ∞` (`redA_inj`, `red_f`), the formal immersion
+gives `z = ∞` (`formalImmersion`), and `cusp_isCusp` contradicts
+non-cuspidality.
+
+**THE `jac.aj ↝ π ∘ aj` GENERALISATION THAT USED TO BE PRESCRIBED HERE WAS
+NOT NEEDED, AND THAT IS A REUSABLE CORRECTION.** The previous version of
+this paragraph said the first concrete step of *proving* this node is to
+generalise `IsX0ReductionAt` — replace `jac.aj` by a composite
+`f = π ∘ aj` into an arbitrary abelian scheme and drop the `IsJacobianOf`
+index. The diagnosis was right (`IsX0ReductionAt` is indexed by
+`jac : IsJacobianOf strX ab o`, which pins the target to `J_0(N)`, whereas
+`J_e(N)` is an optimal QUOTIENT) and the prescribed *edit* was
+unnecessary: the generalised content — `f`, `redA`, `redA_inj`, `red_f` —
+was packaged BESIDE `IsX0ReductionAt` in a new structure instead of
+inside it, exactly as `IsX0JReductionAt` packaged `red_jm` beside it
+rather than as a new field. No structure owned by another worktree
+changed. This is the third time in this file that "the needed field would
+change a structure I do not own" turned out not to be an obstruction.
 
 **NON-VACUITY.** The hypotheses are satisfiable: `N = 37` is prime and
 `> 19`, `q = 3` is prime and differs from `2` and from `37`, and `hX`,
@@ -991,7 +1206,7 @@ has a pole at `q`. By A this would reduce to a cusp, contradicting this
 node — and by Mazur no such point exists, which is precisely the content
 being assumed here. -/
 theorem exists_noCuspidalReduction_of_isogenyPrime (N q : ℕ)
-    (_hN : N.Prime) (_hN19 : 19 < N) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqN : q ≠ N)
+    (hN : N.Prime) (hN19 : 19 < N) (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     (hc : IsCoarseModuliY0 N strY) (hX : IsCompactificationY0 strY strX) :
     ∃ (hj : IsJMapOn N hc) (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q)
@@ -999,8 +1214,27 @@ theorem exists_noCuspidalReduction_of_isogenyPrime (N q : ℕ)
       (hX' : IsX0Compactification N strX' strY' jY')
       (hjr : IsX0JReductionAt N q hX hX' hj),
       ∀ y : RelPoint strY (𝟙 SpecQ),
-        ¬ hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.over y)) :=
-  sorry
+        ¬ hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.over y)) := by
+  obtain ⟨hj, Y', X', strY', strX', jY', hX', hjr, ⟨hE⟩⟩ :=
+    exists_eisensteinFormalImmersion N q hN hN19 hq hq2 hqN hc hX
+  refine ⟨hj, Y', X', strY', strX', jY', hX', hjr, ?_⟩
+  intro y hcusp
+  -- A rational point of `Y_0(N)` pushed into `X_0(N)` is not a cusp.
+  have hxY : ¬ hX.IsCusp (sectionAlong hX.j hX.over y) := fun h => h ⟨y.1, rfl⟩
+  -- **Atkin–Lehner.**  Replacing the point by `w_N` of it if necessary, we get a
+  -- NON-cuspidal rational point `z` reducing into the residue class of `∞`.
+  obtain ⟨z, hzred, hzY⟩ : ∃ z : RelPoint strX (𝟙 SpecQ),
+      hjr.redX z = hjr.redX hE.cusp ∧ ¬ hX.IsCusp z := by
+    rcases hE.al_redX _ hcusp with h | h
+    · exact ⟨_, h, hxY⟩
+    · exact ⟨_, h, hE.al_notCusp _ hxY⟩
+  -- **Rank `0` and injectivity of reduction on `J_e(N)(ℚ)`**: `f z = f ∞`.
+  have hfz : hE.f z = hE.f hE.cusp :=
+    hE.redA_inj (by rw [hE.red_f, hE.red_f, hzred])
+  -- **The formal immersion at `∞` in characteristic `q ≠ 2`**: `z = ∞`.
+  have hzc : z = hE.cusp := hE.formalImmersion z hzred hfz
+  -- But `∞` is a cusp and `z` is not.
+  exact hzY (hzc ▸ hE.cusp_isCusp)
 
 end MazurCorFourFour
 
@@ -1082,10 +1316,13 @@ vendor.
 (4) *The formal immersion of `X_0(N) → J_e(N)` at `∞` in characteristic
 `q ≠ 2`.* ABSENT.
 
-(3) and (4) are now the WHOLE remaining content of this leaf, and they
-are fused into the single sorry node
-`exists_noCuspidalReduction_of_isogenyPrime`, stated immediately above
-this theorem. This theorem is PROVEN from it and from (2).
+(3) and (4) are now the WHOLE remaining content of this leaf. UPDATED
+2026-07-27: they were fused into the single sorry node
+`exists_noCuspidalReduction_of_isogenyPrime`, which is now itself PROVEN;
+they have moved one level down, into the datum
+`IsEisensteinFormalImmersion` and the single sorry
+`exists_eisensteinFormalImmersion`, both stated above that node. This
+theorem is PROVEN from it and from (2).
 
 **RE-CHECK OF THE "does not apply here" CLAIM IMMEDIATELY ABOVE — it
 SURVIVES for the STATEMENT-level reason it was written for, but note
@@ -1120,7 +1357,8 @@ equality with a named cusp:
   `padicValRat q E.j < 0`, a rational point `y` of `Y_0(N)` with
   `jm y = E.j` whose image in `X_0(N)` satisfies
   `hX'.IsCusp (hjr.redX (sectionAlong … y))`.
-* B — the Eisenstein half, the new sorry node: it PRODUCES the `j`-map
+* B — the Eisenstein half, PROVEN 2026-07-27 over
+  `exists_eisensteinFormalImmersion`; it PRODUCES the `j`-map
   `hj` and the reduction datum `hjr` (neither may be assumed — see the
   two junk witnesses in its docstring) together with
   `∀ y, ¬ hX'.IsCusp (hjr.redX (sectionAlong … y))`, i.e. NO rational
@@ -1267,8 +1505,11 @@ interface would be free-floating — is dead. A decomposition exists, is
 taken immediately above, and B has a compiling consumer, namely this
 theorem.
 
-WHAT REMAINS, PRECISELY: (3) and (4), fused into
-`exists_noCuspidalReduction_of_isogenyPrime`. The check that would refute
+WHAT REMAINS, PRECISELY: (3) and (4), fused — as of 2026-07-27, together
+with the Atkin–Lehner step — into `exists_eisensteinFormalImmersion`,
+which is now the sole sorry on this route.
+`exists_noCuspidalReduction_of_isogenyPrime` is PROVEN over it, and
+Mazur's deduction is formalised there. The check that would refute
 *that* being the whole remainder: exhibit an input to Mazur's Cor. 4.4
 used in his argument and not among the five enumerated here.
 
