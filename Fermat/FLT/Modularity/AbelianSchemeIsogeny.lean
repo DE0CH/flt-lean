@@ -165,6 +165,22 @@ public import Mathlib.RingTheory.Ideal.Height
 -- as an INSTANCE — this is what discharges going down on an affine chart in
 -- `generalizingMap_of_isFinite_of_isIntegral` below.
 public import Mathlib.RingTheory.IntegralClosure.GoingDown
+-- The four modules under `isIntegrallyClosed_of_isRegularRing` below (a regular
+-- ring is normal).  `LocalProperties.IntegrallyClosed` is the local-to-global
+-- step for DOMAINS (`IsIntegrallyClosed.of_localization_maximal`);
+-- `DiscreteValuationRing.TFAE` supplies the implication "noetherian local domain
+-- with PRINCIPAL maximal ideal ⟹ integrally closed", which is what discharges
+-- `A_(x)`; `LocalizationLocalization` identifies a localization of a
+-- localization (both the prime correspondence and
+-- `IsFractionRing (Localization.AtPrime p) (FractionRing A)`); `Away.Basic`
+-- gives `Localization.Away x = A[1/x]`, the other half of `A = A[1/x] ∩ A_(x)`.
+-- All four appear only in PROOF bodies, but are `public` for the same reason the
+-- rest of this header is: a private import upstream must not be able to break
+-- them.
+public import Mathlib.RingTheory.LocalProperties.IntegrallyClosed
+public import Mathlib.RingTheory.DiscreteValuationRing.TFAE
+public import Mathlib.RingTheory.Localization.LocalizationLocalization
+public import Mathlib.RingTheory.Localization.Away.Basic
 -- `Scheme.Hom.app_injective` for a dominant morphism to a REDUCED target, which
 -- is the `FaithfulSMul` input of Krull's instance on the chart.
 public import Mathlib.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
@@ -4569,10 +4585,407 @@ paragraph above: `IsRegularRing` is mathlib's own class for "noetherian, and
 every localisation at a prime is regular local", so the hypothesis "all the
 localisations are regular" — the thing that replaces Serre's theorem — is
 carried by the STATEMENT of the leaf rather than having to be threaded through
-the induction by hand. -/
+the induction by hand.
+
+**STATUS 2026-07-27 — PROVEN**, over the seven-declaration tower immediately
+below.  Two corrections to the route note above, both load-bearing:
+
+1. **STACKS 030C IS NOT NEEDED.**  The warning recorded on
+   `isIntegrallyClosed_sections_of_smooth` below — that `Γ(X,U)` need not be a
+   domain, that every mathlib local-property tool for `IsIntegrallyClosed`
+   carries `[IsDomain R]`, and that this leaf must therefore ALSO prove "a
+   noetherian normal ring is a finite product of normal domains" — was right
+   about the obstruction and wrong about the repair.  The finite-product
+   decomposition is never used.  What replaces it is
+   `isIntegrallyClosed_of_isIntegrallyClosed_localization_maximal` below, the
+   ordinary Stacks 037C argument run with bare hands: for `x` integral over `R`
+   the DENOMINATOR IDEAL `{r : r·x ∈ R}` is an ideal of `R` whatever `R` is, and
+   it escapes every maximal ideal `m` because `R_m` is an integrally closed
+   DOMAIN.  Only the LOCALIZATIONS are ever required to be domains — which they
+   are here, being regular local — and `R` itself is never assumed to be one.
+   That lemma is stated for an arbitrary `CommRing` and is reusable.
+2. **THE INDUCTION IS ON THE EMBEDDING DIMENSION, and `A[1/x]` is what needs
+   `IsRegularRing` rather than `IsRegularLocalRing`.**  In the inductive step the
+   induction hypothesis is applied to `A_q` for primes `q` with `x ∉ q`, which
+   are NOT quotients or sub-objects of `A` — so the class carrying "every
+   localisation at a prime is regular local" has to travel with the ring.  It
+   does: `isRegularRing_localization_of_isRegularRing` below is the prime
+   correspondence and nothing more.
+
+The tower, bottom-up:
+
+* `isRegularRing_localization_of_isRegularRing` — a localization of a regular
+  ring is regular.
+* `exists_denominator_notMem_of_isIntegrallyClosed_atPrime` and
+  `isIntegrallyClosed_of_isIntegrallyClosed_localization_maximal` — the
+  domain-free local-to-global step (item 1).
+* `isIntegrallyClosed_localization_atPrime_span_singleton` — `A_(x)` is
+  integrally closed, because its maximal ideal is principal.
+* `isIntegrallyClosed_localization_away_of_forall_atPrime` — `A[1/x]` is
+  integrally closed as soon as every `A_q` with `x ∉ q` is.
+* `exists_eq_of_pow_denominator` and
+  `isIntegrallyClosed_of_away_of_atPrime_span_singleton` — `A = A[1/x] ∩ A_(x)`,
+  by minimality of the exponent (`x` prime, `s ∉ (x)`).
+* `isIntegrallyClosed_of_isRegularRing_of_isLocalRing_aux` — the induction. -/
+theorem isRegularRing_localization_of_isRegularRing {R : Type u} [CommRing R]
+    [IsRegularRing R] (M : Submonoid R) : IsRegularRing (Localization M) := by
+  rw [isRegularRing_iff]
+  intro p hp
+  exact IsRegularLocalRing.of_ringEquiv
+    (IsLocalization.algEquiv (p.comap (algebraMap R (Localization M))).primeCompl
+      (Localization.AtPrime (p.comap (algebraMap R (Localization M))))
+      (Localization.AtPrime p)).toRingEquiv
+
+/-- **THE DENOMINATOR ESCAPES ONE MAXIMAL IDEAL** (**PROVEN 2026-07-27**), the
+local half of the domain-free local-to-global step for `IsIntegrallyClosed`.
+
+For `x` in the TOTAL RING OF FRACTIONS `K` of an arbitrary commutative ring `R`
+and `m` maximal with `R_m` an integrally closed DOMAIN, some `r ∉ m` has
+`r · x ∈ R`.  `R` itself is not assumed to be a domain anywhere.
+
+THE PROOF is Stacks 037C.  `R⁰` lands in the nonzero elements of `R_m` — if
+`s ∈ R⁰` died in `R_m` then `t·s = 0` for some `t ∉ m`, forcing `t = 0 ∈ m` —
+so `K` maps to `Frac(R_m)`, and `x` maps to something integral over `R_m`,
+hence into `R_m`.  Clearing that denominator inside `R_m` and then in `R`
+(`IsLocalization.eq_iff_exists`) produces the witness. -/
+theorem exists_denominator_notMem_of_isIntegrallyClosed_atPrime {R : Type u} [CommRing R]
+    {K : Type u} [CommRing K] [Algebra R K] [IsFractionRing R K] (m : Ideal R)
+    [hm : m.IsMaximal] [IsDomain (Localization.AtPrime m)]
+    [IsIntegrallyClosed (Localization.AtPrime m)] {x : K} (hx : IsIntegral R x) :
+    ∃ r : R, r ∉ m ∧ ∃ b : R, algebraMap R K b = algebraMap R K r * x := by
+  classical
+  set A := Localization.AtPrime m with hA
+  set L := FractionRing A with hL
+  set f : R →+* A := algebraMap R A with hf
+  set g : A →+* L := algebraMap A L with hg
+  have hginj : Function.Injective g := IsFractionRing.injective A L
+  have hunits : ∀ y : nonZeroDivisors R, IsUnit ((g.comp f) y) := by
+    rintro ⟨s, hs⟩
+    have hne : f s ≠ 0 := by
+      intro h
+      rw [hf, IsLocalization.map_eq_zero_iff m.primeCompl] at h
+      obtain ⟨⟨t, ht⟩, hts⟩ := h
+      have h0 : t = 0 := (mem_nonZeroDivisors_iff.mp hs).2 t hts
+      subst h0
+      exact ht m.zero_mem
+    exact IsLocalization.map_units L
+      (⟨f s, mem_nonZeroDivisors_of_ne_zero hne⟩ : nonZeroDivisors A)
+  set φ : K →+* L := IsLocalization.lift hunits with hφ
+  have hφcomp : φ.comp (algebraMap R K) = g.comp f := IsLocalization.lift_comp hunits
+  have hint : IsIntegral A (φ x) := by
+    obtain ⟨p, hpm, hpx⟩ := hx
+    refine ⟨p.map f, hpm.map f, ?_⟩
+    rw [Polynomial.eval₂_map, ← hφcomp, ← Polynomial.hom_eval₂, hpx, map_zero]
+  obtain ⟨y, hy⟩ := (isIntegrallyClosed_iff L).mp ‹IsIntegrallyClosed A› hint
+  obtain ⟨a, ⟨t, ht⟩, hyat⟩ := IsLocalization.exists_mk'_eq m.primeCompl y
+  obtain ⟨c, ⟨s, hs⟩, hxcs⟩ := IsLocalization.exists_mk'_eq (nonZeroDivisors R) x
+  have h1 : φ x * (g.comp f) s = (g.comp f) c := by
+    have hspec := IsLocalization.mk'_spec K c ⟨s, hs⟩
+    rw [hxcs] at hspec
+    calc φ x * (g.comp f) s = φ x * φ (algebraMap R K s) := by
+          rw [← RingHom.comp_apply, hφcomp]
+      _ = φ (x * algebraMap R K s) := by rw [map_mul]
+      _ = φ (algebraMap R K c) := by rw [hspec]
+      _ = (g.comp f) c := by rw [← RingHom.comp_apply, hφcomp]
+  have h2 : g y * (g.comp f) t = (g.comp f) a := by
+    have hspec := IsLocalization.mk'_spec A a ⟨t, ht⟩
+    rw [hyat] at hspec
+    calc g y * (g.comp f) t = g (y * algebraMap R A t) := by
+          simp [RingHom.comp_apply, hg, hf]
+      _ = g (algebraMap R A a) := by rw [hspec]
+      _ = (g.comp f) a := rfl
+  have h3 : (g.comp f) (a * s) = (g.comp f) (c * t) := by
+    rw [map_mul, map_mul, ← h2, ← h1, hy]
+    ring
+  have h4 : f (a * s) = f (c * t) := hginj (by simpa [RingHom.comp_apply] using h3)
+  obtain ⟨⟨u, hu⟩, hueq⟩ := (IsLocalization.eq_iff_exists m.primeCompl A).mp h4
+  have hmp : m.IsPrime := hm.isPrime
+  refine ⟨u * t, ?_, ⟨u * a, ?_⟩⟩
+  · exact fun h => ((hmp.mem_or_mem h).elim hu ht)
+  · have hsu : IsUnit (algebraMap R K s) := IsLocalization.map_units K ⟨s, hs⟩
+    refine hsu.mul_left_cancel ?_
+    have hR : u * (a * s) = u * (c * t) := by simpa using hueq
+    have hxs : x * algebraMap R K s = algebraMap R K c := by
+      rw [← hxcs]; exact IsLocalization.mk'_spec K c ⟨s, hs⟩
+    calc algebraMap R K s * algebraMap R K (u * a)
+        = algebraMap R K (u * (a * s)) := by rw [← map_mul]; ring_nf
+      _ = algebraMap R K (u * (c * t)) := by rw [hR]
+      _ = algebraMap R K (u * t) * algebraMap R K c := by rw [← map_mul]; ring_nf
+      _ = algebraMap R K (u * t) * (x * algebraMap R K s) := by rw [hxs]
+      _ = algebraMap R K s * (algebraMap R K (u * t) * x) := by ring
+
+/-- **`IsIntegrallyClosed` IS LOCAL — WITHOUT A DOMAIN HYPOTHESIS ON `R`**
+(**PROVEN 2026-07-27**; Stacks 034M/037C).
+
+If `R_m` is an integrally closed DOMAIN for every maximal `m`, then `R` is
+integrally closed in its total ring of fractions.  Mathlib's
+`IsIntegrallyClosed.of_localization_maximal` needs `[IsDomain R]`; this does
+not, and that is what removes the finite-product reduction (Stacks 030C) from
+the route note above.
+
+The whole content is that the denominator ideal `{r : r·x ∈ R}` is an ideal of
+`R` with no hypotheses at all, and
+`exists_denominator_notMem_of_isIntegrallyClosed_atPrime` says it is contained
+in no maximal ideal. -/
+theorem isIntegrallyClosed_of_isIntegrallyClosed_localization_maximal {R : Type u} [CommRing R]
+    (hdom : ∀ (m : Ideal R) [m.IsMaximal], IsDomain (Localization.AtPrime m))
+    (hic : ∀ (m : Ideal R) [m.IsMaximal], IsIntegrallyClosed (Localization.AtPrime m)) :
+    IsIntegrallyClosed R := by
+  classical
+  have main : ∀ x : FractionRing R, IsIntegral R x →
+      ∃ y : R, algebraMap R (FractionRing R) y = x := by
+    intro x hx
+    let K := FractionRing R
+    let I : Ideal R :=
+      { carrier := {r : R | ∃ b : R, algebraMap R K b = algebraMap R K r * x}
+        add_mem' := by
+          rintro p q ⟨u, hu⟩ ⟨v, hv⟩
+          exact ⟨u + v, by rw [map_add, hu, hv, map_add]; ring⟩
+        zero_mem' := ⟨0, by simp⟩
+        smul_mem' := by
+          rintro c p ⟨u, hu⟩
+          exact ⟨c * u, by rw [map_mul, hu, smul_eq_mul, map_mul]; ring⟩ }
+    have hItop : I = ⊤ := by
+      by_contra hne
+      obtain ⟨m, hm, hIm⟩ := Ideal.exists_le_maximal I hne
+      haveI := hm
+      haveI := hdom m
+      haveI := hic m
+      obtain ⟨r, hrm, b, hb⟩ :=
+        exists_denominator_notMem_of_isIntegrallyClosed_atPrime (K := K) m hx
+      exact hrm (hIm (show r ∈ I from ⟨b, hb⟩))
+    obtain ⟨b, hb⟩ : (1 : R) ∈ I := hItop ▸ Submodule.mem_top
+    exact ⟨b, by simpa using hb⟩
+  exact (isIntegrallyClosedIn_iff (R := R) (A := FractionRing R)).mpr
+    ⟨IsLocalization.injective _ le_rfl, fun {x} hx => main x hx⟩
+
+/-- **`A_(x)` IS INTEGRALLY CLOSED WHEN `(x)` IS PRIME** (**PROVEN 2026-07-27**).
+
+A noetherian local domain whose maximal ideal is PRINCIPAL is integrally closed
+— mathlib's `tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain`, items 4 ⟹ 3.
+Note this needs no dimension count: the `IsField` case is covered by the same
+TFAE, so `x = 0` is allowed and no `x ≠ 0` hypothesis appears. -/
+theorem isIntegrallyClosed_localization_atPrime_span_singleton {A : Type u} [CommRing A]
+    [IsDomain A] [IsNoetherianRing A] {x : A} [hP : (Ideal.span {x} : Ideal A).IsPrime] :
+    IsIntegrallyClosed (Localization.AtPrime (Ideal.span {x} : Ideal A)) := by
+  haveI : IsDomain (Localization.AtPrime (Ideal.span {x} : Ideal A)) :=
+    IsLocalization.isDomain_localization (Ideal.primeCompl_le_nonZeroDivisors _)
+  have hprinc :
+      (IsLocalRing.maximalIdeal (Localization.AtPrime (Ideal.span {x} : Ideal A))).IsPrincipal := by
+    refine ⟨⟨algebraMap A _ x, ?_⟩⟩
+    rw [← Localization.AtPrime.map_eq_maximalIdeal, Ideal.map_span, Set.image_singleton]
+  have key : IsIntegrallyClosed (Localization.AtPrime (Ideal.span {x} : Ideal A)) ∧
+      ∀ P : Ideal (Localization.AtPrime (Ideal.span {x} : Ideal A)), P ≠ ⊥ → P.IsPrime →
+        P = IsLocalRing.maximalIdeal (Localization.AtPrime (Ideal.span {x} : Ideal A)) :=
+    ((tfae_of_isNoetherianRing_of_isLocalRing_of_isDomain
+      (Localization.AtPrime (Ideal.span {x} : Ideal A))).out 4 3).mp hprinc
+  exact key.1
+
+/-- **`A[1/x]` IS INTEGRALLY CLOSED IF EVERY `A_q` WITH `x ∉ q` IS**
+(**PROVEN 2026-07-27**).
+
+`A[1/x]` IS a domain, so mathlib's `IsIntegrallyClosed.of_localization_maximal`
+applies to it; and its primes are exactly the primes of `A` missing `x`, by
+`IsLocalization.localizationLocalizationAtPrimeIsoLocalization`. -/
+theorem isIntegrallyClosed_localization_away_of_forall_atPrime {A : Type u} [CommRing A]
+    [IsDomain A] {x : A} (hx0 : x ≠ 0)
+    (h : ∀ (q : Ideal A) [q.IsPrime], x ∉ q → IsIntegrallyClosed (Localization.AtPrime q)) :
+    IsIntegrallyClosed (Localization.Away x) := by
+  classical
+  have hpow : Submonoid.powers x ≤ nonZeroDivisors A := by
+    rintro y ⟨k, rfl⟩
+    exact pow_mem (mem_nonZeroDivisors_of_ne_zero hx0) k
+  haveI : IsDomain (Localization.Away x) := IsLocalization.isDomain_localization hpow
+  refine IsIntegrallyClosed.of_localization_maximal ?_
+  intro p hp0 hpmax
+  haveI : (p.comap (algebraMap A (Localization.Away x))).IsPrime := Ideal.IsPrime.comap _
+  have hxq : x ∉ p.comap (algebraMap A (Localization.Away x)) := by
+    intro hmem
+    have hunit : IsUnit (algebraMap A (Localization.Away x) x) :=
+      IsLocalization.map_units _ (⟨x, Submonoid.mem_powers x⟩ : Submonoid.powers x)
+    exact hpmax.ne_top (p.eq_top_of_isUnit_mem hmem hunit)
+  exact (h _ hxq).of_equiv
+    (IsLocalization.localizationLocalizationAtPrimeIsoLocalization
+      (Submonoid.powers x) p).toRingEquiv
+
+/-- **CLEARING A POWER OF A PRIME `x` AGAINST A DENOMINATOR PRIME TO IT**
+(**PROVEN 2026-07-27**) — the arithmetic core of `A = A[1/x] ∩ A_(x)`.
+
+If `z = a/s` with `s ∉ (x)` and also `z = b/xᵏ`, then `b·s = xᵏ·a`, so `x ∣ b`
+whenever `k ≥ 1`, and the exponent drops.  Induction on `k` ends at `z = b ∈ A`.
+This is exactly the "`n` minimal" step of the classical proof, written as a
+descent rather than as a well-ordering argument. -/
+theorem exists_eq_of_pow_denominator {A : Type u} [CommRing A] [IsDomain A] {K : Type u}
+    [Field K] [Algebra A K] [IsFractionRing A K] {x : A} (hx : Prime x) {z : K} {a s : A}
+    (hs : s ∉ Ideal.span {x}) (hzs : algebraMap A K a = z * algebraMap A K s) :
+    ∀ (k : ℕ) (b : A), algebraMap A K b = z * algebraMap A K (x ^ k) →
+      ∃ y : A, algebraMap A K y = z := by
+  have hinj : Function.Injective (algebraMap A K) := IsFractionRing.injective A K
+  intro k
+  induction k with
+  | zero => intro b hb; exact ⟨b, by simpa using hb⟩
+  | succ k ihk =>
+      intro b hb
+      have key : b * s = x ^ (k + 1) * a := by
+        apply hinj
+        rw [map_mul, map_mul, hb, hzs]
+        ring
+      have hxb : x ∣ b := by
+        have hdvd : x ∣ b * s := ⟨x ^ k * a, by rw [key]; ring⟩
+        rcases hx.dvd_mul.mp hdvd with hh | hh
+        · exact hh
+        · exact absurd (Ideal.mem_span_singleton.mpr hh) hs
+      obtain ⟨b', rfl⟩ := hxb
+      refine ihk b' ?_
+      have hxne : algebraMap A K x ≠ 0 := fun hcon =>
+        hx.ne_zero (hinj (by rw [hcon, map_zero]))
+      refine mul_left_cancel₀ hxne ?_
+      calc algebraMap A K x * algebraMap A K b' = algebraMap A K (x * b') := (map_mul _ _ _).symm
+        _ = z * algebraMap A K (x ^ (k + 1)) := hb
+        _ = algebraMap A K x * (z * algebraMap A K (x ^ k)) := by rw [map_pow, map_pow]; ring
+
+/-- **`A = A[1/x] ∩ A_(x)` FOR A PRIME ELEMENT `x`** (**PROVEN 2026-07-27**).
+
+Both halves are integrally closed with the SAME fraction field `Frac A`
+(`IsFractionRing.isFractionRing_of_isDomain_of_isLocalization`), so an element
+integral over `A` lands in both, and `exists_eq_of_pow_denominator` intersects
+them. -/
+theorem isIntegrallyClosed_of_away_of_atPrime_span_singleton {A : Type u} [CommRing A]
+    [IsDomain A] {x : A} (hx0 : x ≠ 0) [hP : (Ideal.span {x} : Ideal A).IsPrime]
+    (h1 : IsIntegrallyClosed (Localization.Away x))
+    (h2 : IsIntegrallyClosed (Localization.AtPrime (Ideal.span {x} : Ideal A))) :
+    IsIntegrallyClosed A := by
+  classical
+  have hxprime : Prime x := (Ideal.span_singleton_prime hx0).mp hP
+  have hpow : Submonoid.powers x ≤ nonZeroDivisors A := by
+    rintro y ⟨k, rfl⟩
+    exact pow_mem (mem_nonZeroDivisors_of_ne_zero hx0) k
+  letI : Algebra (Localization.Away x) (FractionRing A) :=
+    IsLocalization.localizationAlgebraOfSubmonoidLe _ _
+      (Submonoid.powers x) (nonZeroDivisors A) hpow
+  haveI : IsScalarTower A (Localization.Away x) (FractionRing A) :=
+    IsLocalization.localization_isScalarTower_of_submonoid_le _ _
+      (Submonoid.powers x) (nonZeroDivisors A) hpow
+  haveI : IsFractionRing (Localization.Away x) (FractionRing A) :=
+    IsFractionRing.isFractionRing_of_isDomain_of_isLocalization (Submonoid.powers x) _ _
+  refine (isIntegrallyClosed_iff (FractionRing A)).mpr ?_
+  intro z hz
+  obtain ⟨yB, hyB⟩ := (isIntegrallyClosed_iff (FractionRing A)).mp h2
+    (hz.tower_top (A := Localization.AtPrime (Ideal.span {x} : Ideal A)))
+  obtain ⟨a, ⟨s, hs⟩, hyB'⟩ :=
+    IsLocalization.exists_mk'_eq (Ideal.span {x} : Ideal A).primeCompl yB
+  have hBrel : algebraMap A (FractionRing A) a = z * algebraMap A (FractionRing A) s := by
+    have hspec := IsLocalization.mk'_spec
+      (Localization.AtPrime (Ideal.span {x} : Ideal A)) a ⟨s, hs⟩
+    rw [hyB'] at hspec
+    have hmap := congrArg (algebraMap (Localization.AtPrime (Ideal.span {x} : Ideal A))
+      (FractionRing A)) hspec
+    rw [map_mul, hyB, ← IsScalarTower.algebraMap_apply,
+      ← IsScalarTower.algebraMap_apply] at hmap
+    exact hmap.symm
+  obtain ⟨w, hw⟩ := (isIntegrallyClosed_iff (FractionRing A)).mp h1
+    (hz.tower_top (A := Localization.Away x))
+  obtain ⟨b, t, hw'⟩ := IsLocalization.exists_mk'_eq (Submonoid.powers x) w
+  obtain ⟨k, hk⟩ := t.2
+  have hCrel : algebraMap A (FractionRing A) b = z * algebraMap A (FractionRing A) (x ^ k) := by
+    have hspec := IsLocalization.mk'_spec (Localization.Away x) b t
+    rw [hw'] at hspec
+    have hmap := congrArg (algebraMap (Localization.Away x) (FractionRing A)) hspec
+    rw [map_mul, hw, ← IsScalarTower.algebraMap_apply,
+      ← IsScalarTower.algebraMap_apply] at hmap
+    rw [← hk] at hmap
+    exact hmap.symm
+  exact exists_eq_of_pow_denominator hxprime hs hBrel k b hCrel
+
+/-- **A REGULAR LOCAL RING IS INTEGRALLY CLOSED, BY INDUCTION ON THE EMBEDDING
+DIMENSION** (**PROVEN 2026-07-27**) — the Serre-free induction the route note
+above describes, and the one place `IsRegularRing` (rather than
+`IsRegularLocalRing`) is genuinely needed.
+
+`d = 0`: `A` is a field.  `d = m+1`: `𝔪 ⊄ 𝔪²` by Nakayama, so pick
+`x ∈ 𝔪 ∖ 𝔪²`; `A ⧸ (x)` is regular local
+(`isRegularLocalRing_quotient_span_singleton`) hence a domain
+(`isDomain_of_isRegularLocalRing`), so `(x)` is PRIME.  Then `A_(x)` is
+integrally closed because its maximal ideal is principal, and `A[1/x]` because
+every `A_q` with `x ∉ q` has `ht q < ht 𝔪` — `Ideal.height_strict_mono_of_isPrime_of_isPrime`
+against `IsLocalization.AtPrime.ringKrullDim_eq_height` and
+`IsRegularLocalRing.spanFinrank_maximalIdeal` — so the induction hypothesis
+applies to it.  `A = A[1/x] ∩ A_(x)` finishes.
+
+NOTE the induction quantifies over the RING, like
+`isDomain_of_isRegularLocalRing_aux`, because `A_q` is a different ring; and it
+is `≤ n` rather than `= n` so that the final instantiation is `le_rfl`. -/
+theorem isIntegrallyClosed_of_isRegularRing_of_isLocalRing_aux (n : ℕ) :
+    ∀ (A : Type u) [CommRing A] [IsLocalRing A] [IsRegularRing A],
+      (IsLocalRing.maximalIdeal A).spanFinrank ≤ n → IsIntegrallyClosed A := by
+  classical
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro A _ _ _ hle
+    haveI : IsRegularLocalRing A := IsRegularLocalRing.of_isRegularRing_of_isLocalRing A
+    haveI : IsDomain A := GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing A
+    by_cases hfield : IsField A
+    · letI := hfield.toField
+      infer_instance
+    · have hbot : IsLocalRing.maximalIdeal A ≠ ⊥ := fun hb =>
+        hfield (IsLocalRing.isField_iff_maximalIdeal_eq.mpr hb)
+      have hm2 : ¬ (IsLocalRing.maximalIdeal A ≤ (IsLocalRing.maximalIdeal A) ^ 2) := by
+        intro hsub
+        refine hbot (Submodule.eq_bot_of_le_smul_of_le_jacobson_bot
+          (IsLocalRing.maximalIdeal A) _ (IsNoetherian.noetherian _) ?_ ?_)
+        · rwa [smul_eq_mul, ← pow_two]
+        · rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+      obtain ⟨x, hxm, hx2⟩ := SetLike.not_le_iff_exists.mp hm2
+      have hx0 : x ≠ 0 := fun hz => hx2 (by rw [hz]; exact Submodule.zero_mem _)
+      haveI : IsRegularLocalRing (A ⧸ Ideal.span {x}) :=
+        GaloisRepresentation.Modularity.isRegularLocalRing_quotient_span_singleton hxm hx2
+      haveI : IsDomain (A ⧸ Ideal.span {x}) :=
+        GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing _
+      haveI hPprime : (Ideal.span {x} : Ideal A).IsPrime :=
+        (Ideal.Quotient.isDomain_iff_prime _).1 inferInstance
+      have h2 : IsIntegrallyClosed (Localization.AtPrime (Ideal.span {x} : Ideal A)) :=
+        isIntegrallyClosed_localization_atPrime_span_singleton
+      have h1 : IsIntegrallyClosed (Localization.Away x) := by
+        refine isIntegrallyClosed_localization_away_of_forall_atPrime hx0 ?_
+        intro q _ hxq
+        have hqlt : q < IsLocalRing.maximalIdeal A := by
+          refine lt_of_le_of_ne (IsLocalRing.le_maximalIdeal Ideal.IsPrime.ne_top') ?_
+          rintro rfl
+          exact hxq hxm
+        haveI : IsRegularRing (Localization.AtPrime q) :=
+          isRegularRing_localization_of_isRegularRing q.primeCompl
+        haveI : IsRegularLocalRing (Localization.AtPrime q) :=
+          IsRegularLocalRing.of_isRegularRing_of_isLocalRing _
+        have he : (((IsLocalRing.maximalIdeal A).spanFinrank : ℕ) : WithBot ℕ∞)
+            = (((IsLocalRing.maximalIdeal A).height : ℕ∞) : WithBot ℕ∞) := by
+          rw [IsRegularLocalRing.spanFinrank_maximalIdeal,
+            IsLocalRing.maximalIdeal_height_eq_ringKrullDim]
+        have hdq : (((IsLocalRing.maximalIdeal (Localization.AtPrime q)).spanFinrank : ℕ) :
+              WithBot ℕ∞) = ((q.height : ℕ∞) : WithBot ℕ∞) := by
+          rw [IsRegularLocalRing.spanFinrank_maximalIdeal,
+            IsLocalization.AtPrime.ringKrullDim_eq_height q (Localization.AtPrime q)]
+        have hlt : q.height < (IsLocalRing.maximalIdeal A).height :=
+          Ideal.height_strict_mono_of_isPrime_of_isPrime hqlt
+        have hcast : (((IsLocalRing.maximalIdeal (Localization.AtPrime q)).spanFinrank : ℕ) :
+              WithBot ℕ∞)
+            < (((IsLocalRing.maximalIdeal A).spanFinrank : ℕ) : WithBot ℕ∞) := by
+          rw [hdq, he]
+          exact_mod_cast hlt
+        have hnat : (IsLocalRing.maximalIdeal (Localization.AtPrime q)).spanFinrank
+            < (IsLocalRing.maximalIdeal A).spanFinrank := by exact_mod_cast hcast
+        exact ih _ (lt_of_lt_of_le hnat hle) (Localization.AtPrime q) le_rfl
+      exact isIntegrallyClosed_of_away_of_atPrime_span_singleton hx0 h1 h2
+
 theorem isIntegrallyClosed_of_isRegularRing (R : Type u) [CommRing R] [IsRegularRing R] :
-    IsIntegrallyClosed R :=
-  sorry
+    IsIntegrallyClosed R := by
+  refine isIntegrallyClosed_of_isIntegrallyClosed_localization_maximal ?_ ?_
+  · intro m _
+    exact GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing _
+  · intro m _
+    haveI : IsRegularRing (Localization.AtPrime m) :=
+      isRegularRing_localization_of_isRegularRing m.primeCompl
+    exact isIntegrallyClosed_of_isRegularRing_of_isLocalRing_aux
+      (IsLocalRing.maximalIdeal (Localization.AtPrime m)).spanFinrank _ le_rfl
 
 /-- **THE SECTIONS OVER AN AFFINE OPEN OF A SMOOTH SCHEME OVER A FIELD FORM A
 REGULAR RING** (**PROVEN 2026-07-27** — this is the whole GEOMETRIC content of
@@ -4645,7 +5058,21 @@ Mathlib's local-property machinery for `IsIntegrallyClosed`
 product case (Stacks 030C: a noetherian normal ring is a finite product of normal
 domains, and such a ring is integrally closed in its total ring of fractions).
 Whoever proves that leaf should plan for two halves — the domain induction, and
-the reduction of the general case to it — rather than only the first. -/
+the reduction of the general case to it — rather than only the first.
+
+**CORRECTION 2026-07-27, when that leaf was PROVEN: the OBSTRUCTION above is
+real, the PROPOSED REPAIR is not.**  `Γ(X,U)` really need not be a domain and
+mathlib's local-property tools for `IsIntegrallyClosed` really do all carry
+`[IsDomain R]` — but STACKS 030C IS NOT NEEDED, and no finite-product
+decomposition appears anywhere in the finished proof.  The reduction is instead
+`isIntegrallyClosed_of_isIntegrallyClosed_localization_maximal` above: the
+DENOMINATOR IDEAL `{r : r·x ∈ R}` of an element `x` integral over `R` is an
+ideal for an arbitrary commutative `R`, and it escapes every maximal ideal `m`
+purely because `R_m` is an integrally closed DOMAIN.  Only the localizations
+have to be domains; `R` never does.  So the two halves are "the domain
+induction" and "one twenty-line local-to-global lemma", not "the domain
+induction" and "Stacks 030C" — an estimate that was wrong by about an order of
+magnitude, in the direction of pessimism. -/
 theorem isIntegrallyClosed_sections_of_smooth {X : Scheme.{u}} {K : Type u} [Field K]
     (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] (U : X.affineOpens) (_hU : Nonempty ↥U.1) :
     IsIntegrallyClosed Γ(X, U.1) :=
