@@ -50282,8 +50282,97 @@ theorem exists_frobeniusForm_modularTateFrame {M : ℕ} (hM : 0 < M) :
   exact tensorFunctional_frobenius (F := AlgebraicClosure ℚ_[p])
     (fun a b => Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2)) θ hθ
 
-/-- **EICHLER–SHIMURA, IN TRACE-AND-DETERMINANT FORM** (sorry leaf, the
-FOURTEENTH decomposition, 2026-07-27): the Galois action on
+/-- **THE ABSTRACT CARRIER** of the sixteenth cut: a `ℚ̄_p`-vector space
+of dimension `2·dim_ℚ 𝕋_ℚ`, with no Hecke-module structure built in.
+
+Choosing a `ℚ̄_p`-basis of `V_p(J₀(M)) ⊗ ℚ̄_p` is free information — it is
+a finite-dimensional vector space over a field — so naming this concrete
+space costs nothing, while `modularTateSpace M = (𝕋_ℚ ⊗ ℚ̄_p)²` costs
+item 7 (freeness of rank two over the Hecke algebra). That is exactly the
+content the sixteenth cut moves out of the geometry and into
+`exists_frameEquiv_of_symplectic`. -/
+abbrev modularTateCarrier (M : ℕ) : Type :=
+  Fin (2 * Module.finrank ℚ ↥(modularHeckeAlgebraQ M)) → AlgebraicClosure ℚ_[p]
+
+/-- **EICHLER–SHIMURA ON AN UNFRAMED CARRIER** (sorry leaf, the SIXTEENTH
+decomposition, 2026-07-27): items **4** and **6** of the list in
+`ModularTateGaloisData` — Hecke correspondences with `ℚ`-models
+(Diamond–Shurman §7.9, §8.5) and the Eichler–Shimura congruence relation
+(Igusa; D–S 8.6.1, 8.7.2) — together with the Weil pairing and its
+Frobenius multiplier, on a carrier that is only a `ℚ̄_p`-VECTOR SPACE of
+the right dimension.
+
+WHAT THIS LEAF DOES *NOT* CARRY, AND THAT IS THE WHOLE POINT. Its
+predecessor `exists_galoisRep_modularTateFrame_traceDet` put the Galois
+action on the FRAME `(𝕋_ℚ ⊗ ℚ̄_p)²`, which silently asserted
+
+  `V_p(J₀(M)) ⊗ ℚ̄_p ≅ (𝕋_ℚ ⊗ ℚ̄_p)²` as `𝕋_ℚ ⊗ ℚ̄_p`-modules,
+
+i.e. **item 7** — a theorem of Mazur and Ribet, not a formality. Here the
+carrier is `Fin (2·dim 𝕋_ℚ) → ℚ̄_p`, the Hecke action is an arbitrary
+INJECTIVE `ℚ̄_p`-algebra map `act` (faithfulness, which is what the
+geometry actually gives), and freeness is not mentioned. It is recovered
+in the assembly below from `exists_frobeniusForm_modularTateFrame` and
+the pairing, through the algebra theorem
+`exists_frameEquiv_of_symplectic` in `Modularity/HeckeFrameForm.lean`.
+
+So the missing theories under this leaf are items 4 and 6 plus the Weil
+pairing on `J₀(M)[p^∞]` with multiplier the cyclotomic character; the
+genuinely absent input is the Jacobian `J₀(M)`, its `p`-adic Tate module
+and its Hecke correspondences. **Items 7 and the Frobenius property of
+`𝕋_ℚ` are no longer here**: they live in
+`exists_frobeniusForm_modularHeckeAlgebraQ` and
+`exists_freeElement_of_frobenius`.
+
+NON-VACUITY. `act` injective forbids the junk `act = 0`; `τJ = 1` fails
+the congruence (`1 − T_q + q = 0` at every good `q` would force `𝕋_ℚ` to
+be spanned by `(1+q)` at once, and it fails already at `M = 11`, where
+`𝕋_ℚ = ℚ` and `a_q` is unbounded); and `pair` is required nondegenerate
+and alternating, so the carrier really is symplectic. The Frobenius
+multiplier clause pins `q` and not merely "some scalar".
+
+WORKED PRECEDENT for the multiplier clause: `det_galoisRep_eq_cyclotomic`
+for elliptic curves in `Fermat/FLT/EllipticCurve/WeilPairing.lean`, and
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` in
+`Modularity/TateModule.lean`.
+
+NOTHING TO VENDOR (checked 2026-07-27): `~/cs/FLT` mentions a Jacobian
+only in `FLT/Assumptions/Mazur.lean` and has no Eichler–Shimura; mathlib
+`Mathlib/NumberTheory` has no modular curve, no `J₀`, and no
+Eichler–Shimura. -/
+theorem exists_galoisRep_modularTateCarrier {M : ℕ} (hM : 0 < M) :
+    ∃ (act : ((AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M)) →ₐ[AlgebraicClosure ℚ_[p]]
+          Module.End (AlgebraicClosure ℚ_[p]) (modularTateCarrier (p := p) M))
+      (τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateCarrier (p := p) M))
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+      (pair : modularTateCarrier (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+        modularTateCarrier (p := p) M →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]),
+      Function.Injective act ∧
+      (∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+          (γ : Field.absoluteGaloisGroup ℚ), act r * τJ γ = τJ γ * act r) ∧
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+          - act ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M q) *
+            τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + (q : AlgebraicClosure ℚ_[p]) • 1 = 0) ∧
+      (∀ x : modularTateCarrier (p := p) M, pair x x = 0) ∧
+      (∀ x : modularTateCarrier (p := p) M,
+        (∀ y : modularTateCarrier (p := p) M, pair x y = 0) → x = 0) ∧
+      (∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+          (x y : modularTateCarrier (p := p) M), pair (act r x) y = pair x (act r y)) ∧
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        ∀ x y : modularTateCarrier (p := p) M,
+          pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+              (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+            (q : AlgebraicClosure ℚ_[p]) * pair x y) := sorry
+
+set_option maxHeartbeats 800000 in
+/-- **EICHLER–SHIMURA, IN TRACE-AND-DETERMINANT FORM** (opened as a sorry
+leaf by the FOURTEENTH decomposition, 2026-07-27; PROVEN the same day by
+the SIXTEENTH as glue over `exists_galoisRep_modularTateCarrier` above and
+the algebra theorem `exists_frameEquiv_of_symplectic`): the Galois action on
 `(𝕋_ℚ ⊗ ℚ̄_p)²` commuting with the Hecke operators, whose Frobenius at
 every good prime `q` has
 
@@ -50425,7 +50514,39 @@ REFUTING CHECK: produce a `𝕋_ℚ ⊗ ℚ̄_p`-linear equivalence
 `V ≃ₗ (𝕋_ℚ ⊗ ℚ̄_p)²` from a Frobenius functional on `𝕋_ℚ ⊗ ℚ̄_p` and no
 further input.
 
-## THE MOST PROMISING FIFTEENTH CUT IS AN ALGEBRA QUESTION, NOT GEOMETRY
+## THE CUT, EXECUTED (2026-07-27) — THE ALGEBRA QUESTION IS TRUE
+
+(Numbered the SIXTEENTH decomposition. The audit below calls it "the
+fifteenth cut"; that ordinal was taken the same day by the cyclicity cut
+far above, so the name was bumped rather than reused.)
+
+**Everything in this section below the horizontal rule was written while
+the leaf was open, and it is preserved because it is the map that led to
+the cut. What changed: the algebra question it names is now SETTLED
+(true away from characteristic two, false in characteristic two), proved
+as `exists_frameEquiv_of_symplectic` in `Modularity/HeckeFrameForm.lean`,
+and this declaration is now GLUE.** The two leaves under it are
+
+* `exists_galoisRep_modularTateCarrier` (above) — items 4 and 6 plus the
+  Weil pairing, on a carrier that is only a `ℚ̄_p`-vector space of
+  dimension `2·dim 𝕋_ℚ`. **Item 7 has left it.**
+* `exists_freeElement_of_frobenius` (`Modularity/HeckeFrameForm.lean`) —
+  "a faithful module over a commutative Frobenius algebra contains a free
+  rank-one submodule", the single deep input of the algebra theorem. Pure
+  commutative algebra; its docstring carries a three-step proof.
+
+The `∀`-half of the cut is therefore TRUE and PROVEN, which is exactly
+what the audit below says every other candidate split lacks. Two further
+by-products, both PROVEN in `HeckeFrameForm.lean`:
+`traceDet_of_congruence_of_multiplier` formalizes the arrow `(c) ⟹ (a)`
+that the audit records as "elementary, not formalized"; and the
+characteristic-two COUNTEREXAMPLE to the algebra question
+(`A = k × k[x]/x²`, `V = k⁴ ⊕ k[x]/x²` over `char k = 2`) is recorded
+there, so the hypothesis `2 ≠ 0` cannot be dropped by a later reader.
+
+────────────────────────────────────────────────────────────────────────
+
+## (HISTORICAL) THE MOST PROMISING FIFTEENTH CUT IS AN ALGEBRA QUESTION
 
 Splitting item 7 back out of this leaf turns on ONE statement of pure
 commutative algebra, and a successor should settle it BEFORE attempting
@@ -50461,11 +50582,16 @@ asking rather than assumed either way):
   `ann_V x` has radical `ann_V x ∩ xV` of dimension exactly 2, leaving an
   alternating form of rank 1, which does not exist.
 
-So no counterexample is known and three families force `V ≅ A²`. This is
-the classical route to multiplicity one, and it may well be a theorem;
-naming it here is worth more than another attempt at the geometry.
-REFUTING CHECK, and it is cheap: exhibit `A`, `V` as above with
-`V ≇ A²`.
+**RESOLVED 2026-07-27: YES when `2 ≠ 0`, NO in characteristic two.** The
+three searches above failed because the statement is true; the proof is
+four lines of duality once one has a free element `v` (`A·v` is isotropic
+by polarization, `w ↦ (a ↦ ⟨a·v, w⟩)` is a surjection `V ↠ A` with kernel
+`A·v` by rank–nullity, and a splitting of `V ↠ A` finishes). See
+`exists_frameEquiv_of_symplectic`. The characteristic-two counterexample
+is `A = k × k[x]/x²`, `V = k⁴ ⊕ k[x]/x²`, where `θ(α + βx) = β` gives an
+alternating nondegenerate self-adjoint form on the second block because
+`(α + βx)² = α²` there — so the fourth search would have succeeded had it
+looked in characteristic two.
 
 ## FAITHFULNESS CHECK RUN, AND IT PASSES
 
@@ -50549,8 +50675,164 @@ theorem exists_galoisRep_modularTateFrame_traceDet {M : ℕ} (hM : 0 < M) :
             τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₂ 0 *
               τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₁ 1 =
           (q : AlgebraicClosure ℚ_[p]) •
-            (1 : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))) :=
-  sorry
+            (1 : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))) := by
+  classical
+  haveI hfd : FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+    finiteDimensional_modularHeckeAlgebraQ hM
+  have hcomm : ∀ x y : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
+      x * y = y * x :=
+    mul_comm_tensor fun a b =>
+      Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2)
+  have hgenset : Algebra.adjoin ℚ
+      {x : ↥(modularHeckeAlgebraQ M) | ∃ n : ℕ, n.Prime ∧ x = modularTateGen M n} = ⊤ :=
+    adjoin_modularTateGen_eq_top M
+  obtain ⟨θ0, hθ0⟩ := exists_frobeniusForm_modularTateFrame (p := p) hM
+  obtain ⟨act, τ0, S, pair, hactinj, hactcomm, hcong0, hself0, hnondeg0, hadj0, hfrob0⟩ :=
+    exists_galoisRep_modularTateCarrier (p := p) hM
+  -- the dimension count that feeds the algebra lemma
+  have hdim : Module.finrank (AlgebraicClosure ℚ_[p]) (modularTateCarrier (p := p) M) =
+      2 * Module.finrank (AlgebraicClosure ℚ_[p])
+        ((AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M)) := by
+    rw [Module.finrank_baseChange]
+    simp
+  have h2 : (2 : AlgebraicClosure ℚ_[p]) ≠ 0 := two_ne_zero
+  obtain ⟨e, he⟩ :=
+    exists_frameEquiv_of_symplectic (F := AlgebraicClosure ℚ_[p]) h2 hcomm θ0 hθ0 act hactinj
+      hdim pair hself0 hnondeg0 hadj0
+  -- transport of the Hecke action and of the Galois action along `e`
+  have hsmul : ∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (z : modularTateSpace (p := p) M),
+      frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p]) (T := ↥(modularHeckeAlgebraQ M)) r z
+        = r • z := by
+    intro r z
+    funext i
+    rw [frameMul_apply_coord]
+    rw [Pi.smul_apply, smul_eq_mul]
+  set C := LinearEquiv.conjAlgEquiv (AlgebraicClosure ℚ_[p]) e
+  have hCact : ∀ r, C (act r) =
+      frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+        (T := ↥(modularHeckeAlgebraQ M)) r := by
+    intro r
+    refine LinearMap.ext fun z => ?_
+    have h1 : C (act r) z = e (act r (e.symm z)) := rfl
+    rw [h1, he r (e.symm z), e.apply_symm_apply, hsmul]
+  set τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M) :=
+    τ0.conj e
+  have hτJ : ∀ γ, τJ γ = C (τ0 γ) := fun _ => rfl
+  have hesym : ∀ (γ : Field.absoluteGaloisGroup ℚ) (z : modularTateSpace (p := p) M),
+      e.symm (τJ γ z) = τ0 γ (e.symm z) := by
+    intro γ z
+    rw [hτJ]
+    show e.symm (e (τ0 γ (e.symm z))) = _
+    rw [e.symm_apply_apply]
+  have hpad : ∀ m : ℕ, modularTatePadic (p := p) M (modularTateGen M m) =
+      frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p]) (T := ↥(modularHeckeAlgebraQ M))
+        ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M m) := fun _ => rfl
+  -- `hecke_comm` on the frame
+  have hheckecomm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+      modularTatePadic (p := p) M (modularTateGen M m) * τJ γ =
+        τJ γ * modularTatePadic (p := p) M (modularTateGen M m) := by
+    intro m γ
+    have h := congrArg C (hactcomm ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M m) γ)
+    rw [map_mul, map_mul, hCact, ← hτJ] at h
+    rw [hpad]
+    exact h
+  -- the Eichler–Shimura congruence on the frame
+  have hcong : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+        - modularTatePadic (p := p) M (modularTateGen M q) *
+          τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        + (q : AlgebraicClosure ℚ_[p]) • 1 = 0 := by
+    intro q hq hqS
+    have h := congrArg C (hcong0 q hq hqS)
+    rw [map_add, map_sub, map_pow, map_mul, map_smul, map_one, map_zero, hCact, ← hτJ] at h
+    rw [hpad]
+    exact h
+  -- the Weil pairing on the frame
+  set pair' : modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+      modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p] :=
+    pair.compl₁₂ e.symm.toLinearMap e.symm.toLinearMap
+  have hpair'apply : ∀ x y, pair' x y = pair (e.symm x) (e.symm y) := fun _ _ => rfl
+  have hpair'self : ∀ x, pair' x x = 0 := fun x => hself0 _
+  have hpair'nondeg : ∀ x, (∀ y, pair' x y = 0) → x = 0 := by
+    intro x hx
+    have hz : e.symm x = 0 := by
+      refine hnondeg0 _ fun y => ?_
+      have h := hx (e y)
+      rwa [hpair'apply, e.symm_apply_apply] at h
+    exact e.symm.map_eq_zero_iff.mp hz
+  have hsymact : ∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (z : modularTateSpace (p := p) M),
+      e.symm (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+        (T := ↥(modularHeckeAlgebraQ M)) r z) = act r (e.symm z) := by
+    intro r z
+    refine e.injective ?_
+    have h1 : e (e.symm (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+        (T := ↥(modularHeckeAlgebraQ M)) r z)) = r • z := by
+      rw [e.apply_symm_apply, hsmul]
+    have h2 : e (act r (e.symm z)) = r • z := by
+      rw [he r (e.symm z), e.apply_symm_apply]
+    rw [h1, h2]
+  have hpair'adj : ∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (x y : modularTateSpace (p := p) M),
+      pair' (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+          (T := ↥(modularHeckeAlgebraQ M)) r x) y =
+        pair' x (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+          (T := ↥(modularHeckeAlgebraQ M)) r y) := by
+    intro r x y
+    rw [hpair'apply, hpair'apply, hsymact, hsymact]
+    exact hadj0 r _ _
+  have hpair'frob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ∀ x y : modularTateSpace (p := p) M,
+        pair' (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+            (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+          (q : AlgebraicClosure ℚ_[p]) * pair' x y := by
+    intro q hq hqS x y
+    rw [hpair'apply, hpair'apply, hesym, hesym]
+    exact hfrob0 q hq hqS _ _
+  -- `A`-linearity of every Frobenius
+  have hglin : ∀ (q : ℕ) (hq : q.Prime)
+      (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (z : modularTateSpace (p := p) M),
+      τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+            (T := ↥(modularHeckeAlgebraQ M)) r z) =
+        frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+          (T := ↥(modularHeckeAlgebraQ M)) r
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) z) := by
+    intro q hq
+    refine commute_frameMul_of_adjoin
+      (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) _ hgenset ?_
+    rintro s ⟨n, hn, rfl⟩ z
+    have h := congrArg
+      (fun f : Module.End (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M) => f z)
+      (hheckecomm n (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+    exact h.symm
+  -- trace and determinant, by the abstract arrow in `HeckeFrameForm.lean`
+  have hmain : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₁ 0 *
+            τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₂ 1 -
+          τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₂ 0 *
+            τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₁ 1 =
+        (q : AlgebraicClosure ℚ_[p]) •
+          (1 : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))) ∧
+      (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₁ 0 +
+          τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₂ 1 =
+        (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] (modularTateGen M q)) := by
+    intro q hq hqS
+    have hqne : (q : AlgebraicClosure ℚ_[p]) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+    refine traceDet_of_congruence_of_multiplier hcomm
+      (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) (hglin q hq)
+      pair' hpair'self hpair'nondeg hpair'adj (q : AlgebraicClosure ℚ_[p]) hqne
+      (hpair'frob q hq hqS) ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[ℚ] modularTateGen M q) ?_
+    have h := hcong q hq hqS
+    rw [hpad, pow_two] at h
+    exact h
+  exact ⟨τJ, S, hheckecomm, fun q hq hqS => (hmain q hq hqS).2,
+    fun q hq hqS => (hmain q hq hqS).1⟩
 
 /-- **EICHLER–SHIMURA, IN DETERMINANT FORM** (opened as a sorry leaf by the
 THIRTEENTH decomposition, 2026-07-27; PROVEN the same day by the
