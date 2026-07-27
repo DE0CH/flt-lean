@@ -161,6 +161,12 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 -- spectral descent out of the old subspace
 -- (`exists_heckeOp_eigen_of_mem_oldSubspace`).
 import Mathlib.LinearAlgebra.Eigenspace.Pi
+-- `Submodule.exists_isCompl`: every subspace of a vector space has a
+-- complement. Used by `exists_oldSubspace_complement_vanishing` to produce the
+-- complement of the old subspace. Already in this file's transitive cone
+-- through `Mathlib.LinearAlgebra.Dual.Lemmas`, named here so the use does not
+-- depend on that route staying public.
+import Mathlib.LinearAlgebra.Projection
 -- Dual-space machinery for the rational-spanning descent
 -- (`cuspForm_mem_span_rational`): the Sturm coefficient functionals
 -- span the dual, a dual basis is extracted, and `Aut(ℂ)`-stability
@@ -432,6 +438,10 @@ public import Mathlib.LinearAlgebra.TensorProduct.Pi
 public import Mathlib.LinearAlgebra.TensorProduct.Free
 public import Mathlib.LinearAlgebra.TensorProduct.Finiteness
 public import Mathlib.LinearAlgebra.Finsupp.VectorSpace
+public import Mathlib.NumberTheory.Modular
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Complex
+public import Mathlib.MeasureTheory.Measure.Prod
+public import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 
 @[expose] public section
 
@@ -20714,13 +20724,15 @@ So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
 genuinely missing mathematics — is now stated and isolated. As of
 2026-07-26 the frontier of this whole chain is exactly ONE leaf:
 
-* `span_gaussPowOfJacobiSums_le_twistedProd_base` — Stickelberger's
-  theorem in its sharp Gauss-sum form AT `a = 1` AND `v = 1`, and only
-  in its DIVISIBILITY half, `∏_w σ_{(−1)w⁻¹}(q)^{w.val} ∣ (g(χ)^p)` for
-  the canonical `p`-th power residue character `χ(x) ≡ x^{(Q−1)/p}`,
-  which is exactly (b). (The `v`-quantified
-  `span_gaussPowOfJacobiSums_le_twistedProd_one` is PROVEN from it,
-  2026-07-26, by transport along `σ_v`.) Its
+* `span_gaussPowOfJacobiSums_le_localPow` — Stickelberger's
+  theorem in its sharp Gauss-sum form AT THE SINGLE PRIME `q`, and only
+  in its DIVISIBILITY half, `q^{∑_{w : σ_{(−b)w⁻¹}(q) = q} w.val} ∣
+  (g(χ^{b.val})^p)` for the canonical `p`-th power residue character
+  `χ(x) ≡ x^{(Q−1)/p}`, which is exactly (b). (The twisted-PRODUCT form
+  `span_gaussPowOfJacobiSums_le_twistedProd_base` is PROVEN from it,
+  2026-07-26, by fibrewise regrouping and transport along `σ`; and the
+  `v`-quantified `span_gaussPowOfJacobiSums_le_twistedProd_one` from
+  that, by transport along `σ_v`.) Its
   statement mentions only `jacobiSum` (mathlib) and objects of `𝓞 CF` —
   no compositum, no valuation, nothing to define first — because
   `g(ψ)^p` is written without Gauss sums as `gaussPowOfJacobiSums`
@@ -21860,34 +21872,226 @@ theorem mk_pow_apply_eq {F : Type*} [Field F] [Fintype F] {R : Type*} [CommRing 
   · rw [pow_add, pow_mul x (P * d) m, hd, FiniteField.pow_card_sub_one_eq_one x hx, one_pow,
       one_mul]
 
-/-- **STICKELBERGER'S THEOREM, DIVISIBILITY HALF, AT `a = 1` AND
-`v = 1`** (SORRY LEAF, cut 2026-07-26 out of
-`span_gaussPowOfJacobiSums_le_twistedProd_one`). **This is now the ONLY
-open node of the whole Stickelberger chain**, and it carries all of its
-remaining mathematical content. Everything above it — the `a`
-quantifier (a Galois orbit), the `v` quantifier (a renormalisation),
-and the UPPER bound on the valuation (Dedekind cancellation against the
-reciprocal character) — is proven.
+/-- **`σ_1` is the identity** (PROVEN 2026-07-26): the `u = 1` case of
+`cycGalRingOfIntegersEquiv_comp`, needed because that lemma composes
+indices without ever evaluating the neutral one. `galEquivZMod`'s
+inverse is a `MulEquiv`, so it sends `1` to the identity automorphism
+(`map_one`, `AlgEquiv.one_apply`); inject into `CF` as everywhere else
+in this cluster. -/
+theorem cycGalRingOfIntegersEquiv_one (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] :
+    ((cycGalRingOfIntegersEquiv CF (1 : (ZMod p)ˣ) : 𝓞 CF ≃+* 𝓞 CF) : 𝓞 CF →+* 𝓞 CF)
+      = RingHom.id (𝓞 CF) := by
+  refine RingHom.ext fun x => ?_
+  apply FaithfulSMul.algebraMap_injective (𝓞 CF) CF
+  show ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm 1) (algebraMap (𝓞 CF) CF x) = _
+  rw [map_one, AlgEquiv.one_apply]
+  rfl
+
+/-- **A Galois conjugate of a maximal ideal is maximal** (PROVEN
+2026-07-26): `cycGalRingOfIntegersEquiv CF u` is a `RingEquiv`, and
+mathlib registers `Ideal.map_isMaximal_of_equiv` as an instance for
+exactly that. Stated separately because the surrounding development
+carries the map in its coerced `RingHom` form, where the instance does
+not fire on its own. -/
+theorem cycGalRingOfIntegersEquiv_map_isMaximal (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] {q : Ideal (𝓞 CF)} (hq : q.IsMaximal) (u : (ZMod p)ˣ) :
+    (Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF ≃+* 𝓞 CF) : 𝓞 CF →+* 𝓞 CF) q).IsMaximal := by
+  haveI := hq
+  exact Ideal.map_isMaximal_of_equiv (cycGalRingOfIntegersEquiv CF u)
+
+/-- **A product of conjugate maximal ideals divides an element as soon
+as each PRIME POWER occurring in it does** (PROVEN 2026-07-26; stated
+over an abstract Dedekind domain because nothing cyclotomic enters).
+
+This is the brick that makes the Stickelberger divisor a statement
+about ONE prime at a time. The point — and the thing that makes the
+reduction non-obvious — is that the ideals `A i` are **not distinct**:
+in the application `A w = σ_{(−1)w⁻¹}(q)` and the map `w ↦ A w` has
+fibres the cosets of the decomposition subgroup, of size the residue
+degree `f`. So `∏ᵢ A i ^ e i` is not a product of pairwise coprime
+factors as written, and one may not argue factor by factor.
+
+Regrouping fixes that. `Finset.prod_fiberwise_of_maps_to` rewrites the
+product as `∏_{P ∈ image A} P ^ (∑_{i : A i = P} e i)` — a product over
+DISTINCT maximal ideals, whose factors are pairwise coprime
+(`Ideal.IsMaximal.coprime_of_ne`, `IsCoprime.pow`) — and
+`Finset.prod_dvd_of_coprime` then reduces divisibility to the separate
+factors. Each of those is the hypothesis `h` at any `i₀` in the fibre,
+so what a prover owes is exactly one bound per prime, with the FIBRE
+SUM as its exponent. -/
+theorem span_le_prod_pow_of_forall_fiber {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (A : ι → Ideal R) (hAmax : ∀ i, (A i).IsMaximal) (e : ι → ℕ) (x : R)
+    (h : ∀ i₀ : ι, Ideal.span {x} ≤ A i₀ ^ (∑ i ∈ Finset.univ.filter (fun i => A i = A i₀), e i)) :
+    Ideal.span {x} ≤ ∏ i, A i ^ e i := by
+  classical
+  rw [← Ideal.dvd_iff_le]
+  have hreg : (∏ i, A i ^ e i)
+      = ∏ P ∈ Finset.image A Finset.univ,
+          P ^ (∑ i ∈ Finset.univ.filter (fun i => A i = P), e i) := by
+    rw [← Finset.prod_fiberwise_of_maps_to
+      (fun i _ => Finset.mem_image_of_mem A (Finset.mem_univ i)) (fun i => A i ^ e i)]
+    refine Finset.prod_congr rfl fun P hP => ?_
+    rw [← Finset.prod_pow_eq_pow_sum]
+    refine Finset.prod_congr rfl fun i hi => ?_
+    rw [(Finset.mem_filter.mp hi).2]
+  rw [hreg]
+  refine Finset.prod_dvd_of_coprime ?_ ?_
+  · intro P hP P' hP' hne
+    simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_univ,
+      true_and] at hP hP'
+    obtain ⟨i, rfl⟩ := hP
+    obtain ⟨i', rfl⟩ := hP'
+    exact (Ideal.isCoprime_iff_sup_eq.mpr ((hAmax i).coprime_of_ne (hAmax i') hne)).pow
+  · intro P hP
+    obtain ⟨i₀, -, rfl⟩ := Finset.mem_image.mp hP
+    exact Ideal.dvd_iff_le.mpr (h i₀)
+
+/-- **The Stickelberger divisor is a LOCAL statement: the whole twisted
+product follows from the bound at the single prime `q`** (PROVEN
+2026-07-26; stated over an abstract Dedekind domain, since the only
+inputs are that the conjugating maps form a group action and that the
+element family is permuted by it).
+
+Given a family of ring endomorphisms `σ_u` indexed by `(ℤ/p)ˣ` that
+composes (`σ_u ∘ σ_{u'} = σ_{uu'}`) with `σ_1 = id`, a maximal ideal
+`q` all of whose conjugates are maximal, and a family `g : (ℤ/p)ˣ → R`
+permuted by the action (`σ_c (g b) = g (bc)` — in the application
+`g b = G(χ^{b.val})` and this is
+`map_gaussPowOfJacobiSums` + `ringHomComp_cycGalRingOfIntegersEquiv`),
+the twisted-product divisibility
+
+`(g 1) ∈ ∏_w σ_{(−1)w⁻¹}(q)^{w.val}`
+
+follows from the single-prime bounds
+
+`(g b) ∈ q ^ (∑_{w : σ_{(−b)w⁻¹}(q) = q} w.val)`,  `b ∈ (ℤ/p)ˣ`.
+
+**Why the `b` quantifier does not collapse.** The bound at the
+conjugate prime `σ_c(q)` is `σ_c` applied to the bound at `q` — but
+applied to a DIFFERENT member of the family, namely `g` at another
+index. So the `p−1` local statements are genuinely `p−1` assertions
+about `p−1` Gauss sums at ONE prime; the Galois action moves between
+primes and between characters simultaneously and cannot be used to
+reduce the family to one member. That is the same phenomenon as the
+Frobenius-orbit sum in `span_le_prod_pow_of_forall_fiber`.
+
+The proof is bookkeeping: `span_le_prod_pow_of_forall_fiber` reduces to
+one prime `A w₀ = σ_{(−1)w₀⁻¹}(q)`; the hypothesis at `b := −w₀`,
+pushed forward along `σ_{(−1)w₀⁻¹}`, has exactly that prime on the
+right (`Ideal.map_pow`, `Ideal.map_map`) and `g ((−w₀)·(−1)w₀⁻¹) = g 1`
+on the left; and the two index sets agree because
+`σ_x(q) = σ_y(q) ↔ σ_{y⁻¹x}(q) = q`, which is `Ideal.map` applied to
+both sides in each direction — no injectivity is needed. -/
+theorem span_le_twistedProd_of_localBound {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (σ : (ZMod p)ˣ → R →+* R)
+    (hσ : ∀ u u' : (ZMod p)ˣ, (σ u).comp (σ u') = σ (u * u'))
+    (hσ1 : σ 1 = RingHom.id R)
+    (q : Ideal R) (hqmax : ∀ u : (ZMod p)ˣ, (Ideal.map (σ u) q).IsMaximal)
+    (g : (ZMod p)ˣ → R) (hg : ∀ b c : (ZMod p)ˣ, σ c (g b) = g (b * c))
+    (hloc : ∀ b : (ZMod p)ˣ, Ideal.span {g b}
+      ≤ q ^ (∑ w ∈ Finset.univ.filter
+          (fun w : (ZMod p)ˣ => Ideal.map (σ ((-b) * w⁻¹)) q = q), ((w : ZMod p)).val)) :
+    Ideal.span {g 1}
+      ≤ ∏ w : (ZMod p)ˣ, Ideal.map (σ ((-1 : (ZMod p)ˣ) * w⁻¹)) q ^ ((w : ZMod p)).val := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hmapmap : ∀ (u u' : (ZMod p)ˣ) (I : Ideal R),
+      Ideal.map (σ u) (Ideal.map (σ u') I) = Ideal.map (σ (u * u')) I := by
+    intro u u' I
+    rw [Ideal.map_map, hσ]
+  have hmap1 : ∀ I : Ideal R, Ideal.map (σ 1) I = I := by
+    intro I; rw [hσ1, Ideal.map_id]
+  have hnegsq : (-1 : (ZMod p)ˣ) * (-1 : (ZMod p)ˣ) = 1 := by simp
+  refine span_le_prod_pow_of_forall_fiber
+    (A := fun w : (ZMod p)ˣ => Ideal.map (σ ((-1 : (ZMod p)ˣ) * w⁻¹)) q)
+    (fun w => hqmax _) (fun w => ((w : ZMod p)).val) (g 1) ?_
+  intro w₀
+  have hfilter : ∀ w : (ZMod p)ˣ,
+      (Ideal.map (σ ((-1 : (ZMod p)ˣ) * w⁻¹)) q = Ideal.map (σ ((-1 : (ZMod p)ˣ) * w₀⁻¹)) q)
+        ↔ (Ideal.map (σ ((-(-w₀)) * w⁻¹)) q = q) := by
+    intro w
+    constructor
+    · intro hEq
+      have hstep := congrArg (Ideal.map (σ ((-1 : (ZMod p)ˣ) * w₀))) hEq
+      rw [hmapmap, hmapmap] at hstep
+      rw [show (-1 : (ZMod p)ˣ) * w₀ * ((-1 : (ZMod p)ˣ) * w₀⁻¹) = 1 by
+        rw [mul_mul_mul_comm, hnegsq, one_mul, mul_inv_cancel]] at hstep
+      rw [hmap1] at hstep
+      rw [show (-(-w₀)) * w⁻¹ = (-1 : (ZMod p)ˣ) * w₀ * ((-1 : (ZMod p)ˣ) * w⁻¹) by
+        rw [mul_mul_mul_comm, hnegsq, one_mul, neg_neg]]
+      exact hstep
+    · intro hEq
+      have hstep := congrArg (Ideal.map (σ ((-1 : (ZMod p)ˣ) * w₀⁻¹))) hEq
+      rw [hmapmap] at hstep
+      rw [show (-1 : (ZMod p)ˣ) * w₀⁻¹ * ((-(-w₀)) * w⁻¹) = (-1 : (ZMod p)ˣ) * w⁻¹ by
+        group] at hstep
+      exact hstep
+  have hset : (Finset.univ.filter
+        (fun w : (ZMod p)ˣ => Ideal.map (σ ((-1 : (ZMod p)ˣ) * w⁻¹)) q
+          = Ideal.map (σ ((-1 : (ZMod p)ˣ) * w₀⁻¹)) q))
+      = Finset.univ.filter
+        (fun w : (ZMod p)ˣ => Ideal.map (σ ((-(-w₀)) * w⁻¹)) q = q) := by
+    refine Finset.filter_congr fun w _ => ?_
+    simpa using hfilter w
+  rw [hset]
+  have hmono := Ideal.map_mono (f := σ ((-1 : (ZMod p)ˣ) * w₀⁻¹)) (hloc (-w₀))
+  rw [Ideal.map_span, Set.image_singleton, Ideal.map_pow, hg] at hmono
+  rw [show (-w₀) * ((-1 : (ZMod p)ˣ) * w₀⁻¹) = 1 by
+    rw [neg_one_mul, neg_mul_neg, mul_inv_cancel]] at hmono
+  exact hmono
+
+/-- **STICKELBERGER'S THEOREM, DIVISIBILITY HALF, AT THE SINGLE PRIME
+`q`** (SORRY LEAF, cut 2026-07-26 out of
+`span_gaussPowOfJacobiSums_le_twistedProd_base` below, which is PROVEN
+over it). **This is now the ONLY open node of the whole Stickelberger
+chain**, and it carries all of its remaining mathematical content: the
+consumer's product bookkeeping — the fibres of `u ↦ σ_u(q)`, the
+coprimality of distinct conjugates, and the Galois transport between
+primes — is discharged by `span_le_twistedProd_of_localBound` and
+`span_le_prod_pow_of_forall_fiber` above.
 
 Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
 `d := (Q−1)/p`, and let `χ` be **the** `p`-th power residue character
 at `q`, i.e. the one in the normalisation `χ(x) ≡ x^d (mod q)` — which
 is exactly what `exists_powerResidueChar_of_prime_notMem` produces.
-Then
+Then for every `b ∈ (ℤ/p)ˣ`
 
-`∏_w σ_{(−1)·w⁻¹}(q)^{w.val}`  divides  `(g(χ)^p)`,
+`q ^ (∑_{w : σ_{(−b)w⁻¹}(q) = q} w.val)`  divides  `(g(χ^{b.val})^p)`,
 
-the right side written WITHOUT Gauss sums as `gaussPowOfJacobiSums p χ`
-(see that definition: `g(χ)^p = χ(−1)·Q·∏_{i=1}^{p−2} J(χ,χⁱ)`,
-mathlib's `gaussSum_pow_eq_prod_jacobiSum`), so the statement is an
-identity of ideals of `𝓞 CF` even though `g(χ)` itself lives only in
-the compositum `CF(ζ_ℓ)`.
+the right side written WITHOUT Gauss sums as
+`gaussPowOfJacobiSums p (χ^{b.val})` (see that definition:
+`g(ψ)^p = ψ(−1)·Q·∏_{i=1}^{p−2} J(ψ,ψⁱ)`, mathlib's
+`gaussSum_pow_eq_prod_jacobiSum`), so the statement is an identity of
+ideals of `𝓞 CF` even though `g(χ)` itself lives only in the compositum
+`CF(ζ_ℓ)`.
+
+**Read it as a `q`-adic valuation.** `χ^{b.val}` is the `p`-th power
+residue character in the normalisation `b` (`mk_pow_apply_eq`), so this
+is precisely the `q`-component of the twisted product that the consumer
+asks for: the index set `{w : σ_{(−b)w⁻¹}(q) = q}` is the set of
+factors of `∏_w σ_{(−b)w⁻¹}(q)^{w.val}` that ARE `q`, all other factors
+being distinct primes and so invisible at `q`. Equivalently, writing
+`D = {h : σ_h(q) = q}` for the decomposition subgroup — cyclic of order
+the residue degree `f`, generated by `[ℓ]` where `ℓ` is the rational
+prime under `q` (`IsCyclotomicExtension.Rat.galEquivZMod_stabilizer`) —
+the exponent is the FROBENIUS-ORBIT SUM
+
+`v_q(g(χ^{b.val})^p)  ≥  ∑_{h ∈ D} (−b·h).val`,
+
+which is Washington's Thm. 6.10 read at one prime. **It is emphatically
+not a single fractional part**: the sum over the orbit is exactly why
+Washington computes one `𝒬`-adic valuation upstairs in `CF(ζ_ℓ)`, and
+why Stickelberger's congruence proper cannot be routed around. The `b`
+quantifier does NOT collapse — see the "why" paragraph in
+`span_le_twistedProd_of_localBound` — because `σ_c` moves the prime and
+the character together.
 
 **What a prover must still build**, in dependency order — this is now
 exactly Washington §6.1–§6.2 and NOTHING else, since the Gauss/Jacobi
-descent and the return to `𝓞 CF` are discharged by
-`gaussPowOfJacobiSums_mul_jacobiSum_pow` and by the shape of this
-statement:
+descent, the return to `𝓞 CF`, and now the per-prime reduction are all
+discharged:
 
 1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
    its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L` (with
@@ -21902,9 +22106,12 @@ statement:
    `(ℓ−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
    produces the fractional parts defining `θ`. This is the ONLY deep
    input left;
-4. reading the resulting valuations back as the ideal identity above,
-   which needs `v_{σ(q)}` on `𝓞 CF` versus `v_{σ(𝒬)}` on `𝓞 L` — a
-   ramification-index bookkeeping, `e(𝒬/q)` being independent of `σ`.
+4. reading the resulting valuation back as the bound above, which needs
+   `v_q` on `𝓞 CF` versus `v_𝒬` on `𝓞 L` — a ramification-index
+   bookkeeping, `e(𝒬/q) = ℓ−1` being independent of `σ`. With the
+   product regrouping now done for you, this is a single
+   `IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd`
+   at `q`.
 
 **Nothing in items 1–3 exists on this pin** (surveyed 2026-07-26):
 mathlib's `Mathlib/NumberTheory/GaussSum.lean` has no norm, absolute
@@ -21921,30 +22128,103 @@ should be used: `IsCyclotomicExtension.Rat.ramificationIdx_span_zeta_sub_one'`
 `multiplicity_map_eq` (valuations are invariant under `Ideal.map` along
 a ring equiv).
 
-**The shape a per-prime attack must take** (recorded 2026-07-26 by the
-agent that cut this leaf, because it is the thing that makes item 4
-non-trivial). Reindexing `u := (−1)·w⁻¹` writes the target as
-`∏_u σ_u(q)^{(−u⁻¹).val}`, but the ideals `σ_u(q)` are NOT distinct:
-`u ↦ σ_u(q)` has fibres the cosets of the decomposition subgroup
-`H = ⟨ℓ⟩ ⊆ (ℤ/p)ˣ`, of order the residue degree `f`. So divisibility
-by the product is NOT a conjunction of one inequality per `u`; at each
-prime `P` above `ℓ` the required bound is the SUM
-`∑_{u : σ_u(q) = P} (−u⁻¹).val` over a whole coset. That is exactly
-why Washington computes a single `𝒬`-adic valuation in `𝓞 L` and why
-`v_q` comes out as a sum over the Frobenius orbit — item 3 cannot be
-routed around.
-
-An ELEMENTARY partial route (mapped 2026-07-26) disposes of the split
-case with no Gauss sums at all: reducing mod `q` and using
+**THE ELEMENTARY ROUTE SETTLES `f = 1` OUTRIGHT, and the arithmetic
+checks against this statement exactly** (mapped 2026-07-26, and
+recomputed against the present cut). Reducing mod `q` and using
 `∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum
-into a binomial coefficient,
-`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd) (mod q)` for
-`α + β < p`, and `≡ 0 (mod q)` for `α + β > p`. Since
-`α + (αs mod p) > p` is exactly the condition `E = 1`, this settles
-`f = 1` outright (there `d < ℓ`, so Kummer's theorem shows the binomial
-is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1` versus `= 0`,
-because `v_q` is then the SUM of the `E`'s over the Frobenius orbit
-`⟨ℓ⟩·α` — which is precisely why item 3 is unavoidable.
+into a binomial coefficient: for `a, b ∈ [1,p−1]`,
+
+`J(χᵃ, χᵇ) ≡ 0 (mod q)` when `a + b < p`,
+`J(χᵃ, χᵇ) ≡ −(−1)^{(p−a)d}·C(bd, (p−a)d) (mod q)` when `a + b > p`.
+
+Applying it to the `p−2` factors of `G(χ^m) = χ^m(−1)·Q·∏_{i=1}^{p−2}
+J(χ^m, χ^{im})` gives `v_q(G(χ^m)) ≥ f + #{i ∈ [1,p−2] : m + (im mod p)
+< p}`, and the carry count telescopes:
+`#{i : carry} = ⌊(p−1)m/p⌋ − ⌊m/p⌋ = m − 1`, so the bound is
+`f + (p − 1 − m)`. At `f = 1` and `m = b.val` that is exactly
+`p − b.val = (−b).val = ∑_{h ∈ D} (−b·h).val`, i.e. the bound above
+holds with EQUALITY — so the `f = 1` case of this leaf is elementary
+and needs no Gauss sums at all. For `f > 1` the required exponent is a
+sum of `f` orbit terms while the elementary bound is `f + (p−1−m)`,
+which is strictly too small in general; there the mod-`q` congruence
+only decides `v_q ≥ 1` versus `= 0` per factor, because `χ` is
+determined only mod `q`. That is precisely why item 3 is unavoidable.
+
+**Faithfulness**: this is the `q`-component of the equality verified
+numerically in the docstring of
+`span_gaussPowOfJacobiSums_le_twistedProd_one` below — 318 PARI/GP
+cases over `(p,ℓ) = (5,11), (5,19), (5,3), (7,29), (7,2), (11,23),
+(11,3), (13,53)`, residue degrees `f = 1…5`, no failures, and holding
+as an EQUALITY for every `v ∈ (ℤ/p)ˣ`. Since the other factors of the
+twisted product are primes different from `q`, restricting that
+equality to `q` gives exactly the bound stated here, for every `b`. -/
+theorem span_gaussPowOfJacobiSums_le_localPow
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p))
+    (b : (ZMod p)ˣ) :
+    Ideal.span {gaussPowOfJacobiSums p (χ ^ ((b : ZMod p)).val)}
+      ≤ q ^ (∑ w ∈ Finset.univ.filter (fun w : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-b) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q = q),
+        ((w : ZMod p)).val) :=
+  sorry
+
+/-- **STICKELBERGER'S THEOREM, DIVISIBILITY HALF, AT `a = 1` AND
+`v = 1`** (PROVEN 2026-07-26 over the single-prime leaf
+`span_gaussPowOfJacobiSums_le_localPow` above; cut 2026-07-26 out of
+`span_gaussPowOfJacobiSums_le_twistedProd_one`). What is done HERE is
+the reduction of the twisted PRODUCT to one prime at a time; the whole
+remaining mathematical content is in that leaf.
+
+Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
+`d := (Q−1)/p`, and let `χ` be **the** `p`-th power residue character
+at `q`, i.e. the one in the normalisation `χ(x) ≡ x^d (mod q)` — which
+is exactly what `exists_powerResidueChar_of_prime_notMem` produces.
+Then
+
+`∏_w σ_{(−1)·w⁻¹}(q)^{w.val}`  divides  `(g(χ)^p)`,
+
+the right side written WITHOUT Gauss sums as `gaussPowOfJacobiSums p χ`
+(see that definition: `g(χ)^p = χ(−1)·Q·∏_{i=1}^{p−2} J(χ,χⁱ)`,
+mathlib's `gaussSum_pow_eq_prod_jacobiSum`), so the statement is an
+identity of ideals of `𝓞 CF` even though `g(χ)` itself lives only in
+the compositum `CF(ζ_ℓ)`.
+
+**THE PER-PRIME REDUCTION IS DONE HERE (2026-07-26), and the earlier
+note recording it as the hard part of item 4 is superseded.** That note
+was right about the obstruction and wrong that it had to be faced
+inside the Gauss-sum argument. Reindexing `u := (−1)·w⁻¹` writes the
+target as `∏_u σ_u(q)^{(−u⁻¹).val}`, and the ideals `σ_u(q)` are indeed
+NOT distinct — `u ↦ σ_u(q)` has fibres the cosets of the decomposition
+subgroup `⟨ℓ⟩ ⊆ (ℤ/p)ˣ`, of order the residue degree `f` — so
+divisibility by the product is NOT a conjunction of one inequality per
+`u`. But that is a statement about a product of ideals and nothing
+else, so it can be settled once, generically:
+
+* `span_le_prod_pow_of_forall_fiber` regroups the product over the
+  DISTINCT primes in the image (`Finset.prod_fiberwise_of_maps_to`),
+  which are pairwise coprime as distinct maximal ideals, and
+  `Finset.prod_dvd_of_coprime` splits the divisibility. The exponent
+  demanded at each prime is then exactly the FIBRE SUM
+  `∑_{u : σ_u(q) = P} (−u⁻¹).val` — the Frobenius-orbit sum, now
+  produced by the bookkeeping rather than owed to it;
+* `span_le_twistedProd_of_localBound` moves each of those to the prime
+  `q` itself along `σ`, using only that `u ↦ σ_u` composes with
+  `σ_1 = id` (`cycGalRingOfIntegersEquiv_comp`,
+  `cycGalRingOfIntegersEquiv_one`) and that the Gauss-sum family is
+  permuted by the action: `σ_c(G(χ^{b.val})) = G(χ^{(bc).val})`, which
+  is `map_gaussPowOfJacobiSums` followed by
+  `ringHomComp_cycGalRingOfIntegersEquiv` and `pow_eq_pow_iff_modEq`
+  (the exponents `b.val·c.val` and `(bc).val` agree mod `p = orderOf χ`).
+
+What survives the reduction is the `b` quantifier: the `p−1` local
+bounds are `p−1` assertions about `p−1` different Gauss sums at ONE
+prime, and they do NOT collapse to one, because `σ_c` moves the prime
+and the character simultaneously. That is the leaf.
 
 **Faithfulness**: see the numerical record in the docstring of
 `span_gaussPowOfJacobiSums_le_twistedProd_one` below — 318 PARI/GP
@@ -21962,8 +22242,49 @@ theorem span_gaussPowOfJacobiSums_le_twistedProd_base
     Ideal.span {gaussPowOfJacobiSums p χ}
       ≤ ∏ w : (ZMod p)ˣ,
           Ideal.map ((cycGalRingOfIntegersEquiv CF ((-1 : (ZMod p)ˣ) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
-            ^ (((w : (ZMod p)ˣ) : ZMod p)).val :=
-  sorry
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val := by
+  classical
+  have hpp : p.Prime := hp.out
+  haveI : NeZero p := ⟨hpp.ne_zero⟩
+  haveI : Fact (1 < p) := ⟨hpp.one_lt⟩
+  haveI hqmax : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  -- `χ ^ p = 1` as an identity of characters, and `χ` has exact order `p`
+  have hχpow : χ ^ p = 1 := by
+    refine MulChar.ext fun a => ?_
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe]
+    exact hχp a (Units.ne_zero a)
+  have hord : orderOf χ = p := by
+    have h1 : orderOf χ ∣ p := orderOf_dvd_of_pow_eq_one hχpow
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hpp _ h1) with h | h
+    · exact absurd (orderOf_eq_one_iff.mp h) hχ1
+    · exact h
+  -- the Gauss-sum family `b ↦ G(χ^{b.val})` is permuted by the Galois action
+  have hg : ∀ b c : (ZMod p)ˣ,
+      ((cycGalRingOfIntegersEquiv CF c : 𝓞 CF ≃+* 𝓞 CF) : 𝓞 CF →+* 𝓞 CF)
+          (gaussPowOfJacobiSums p (χ ^ (((b : (ZMod p)ˣ) : ZMod p)).val))
+        = gaussPowOfJacobiSums p (χ ^ (((b * c : (ZMod p)ˣ) : ZMod p)).val) := by
+    intro b c
+    rw [map_gaussPowOfJacobiSums, ringHomComp_cycGalRingOfIntegersEquiv CF χ hχpow c]
+    congr 1
+    refine (pow_eq_pow_iff_modEq (x := χ)).mpr ?_
+    rw [hord]
+    have hv : (((b * c : (ZMod p)ˣ) : ZMod p)).val
+        = ((((b : (ZMod p)ˣ) : ZMod p)).val * (((c : (ZMod p)ˣ) : ZMod p)).val) % p := by
+      rw [Units.val_mul, ZMod.val_mul]
+    rw [hv]
+    simp [Nat.ModEq]
+  have hgone : gaussPowOfJacobiSums p (χ ^ (((1 : (ZMod p)ˣ) : ZMod p)).val)
+      = gaussPowOfJacobiSums p χ := by
+    rw [Units.val_one, ZMod.val_one, pow_one]
+  rw [← hgone]
+  exact span_le_twistedProd_of_localBound
+    (fun u => ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF ≃+* 𝓞 CF) : 𝓞 CF →+* 𝓞 CF))
+    (fun u u' => cycGalRingOfIntegersEquiv_comp CF u u')
+    (cycGalRingOfIntegersEquiv_one CF) q
+    (fun u => cycGalRingOfIntegersEquiv_map_isMaximal CF hqmax u)
+    (fun b => gaussPowOfJacobiSums p (χ ^ (((b : (ZMod p)ˣ) : ZMod p)).val)) hg
+    (fun b => span_gaussPowOfJacobiSums_le_localPow CF hq hq0 hpq χ hχ1 hχp hχcong b)
 
 /-- **STICKELBERGER'S THEOREM, in the sharp Gauss-sum form, AT `a = 1`,
 IN ITS DIVISIBILITY HALF** (PROVEN 2026-07-26 over the `v = 1` leaf
@@ -22071,11 +22392,13 @@ difference; the index above is `(−v) · w⁻¹`.
 
 **What a prover must still build** is no longer recorded here: it is
 the dependency list in the docstring of
-`span_gaussPowOfJacobiSums_le_twistedProd_base` above (the compositum
+`span_gaussPowOfJacobiSums_le_localPow` above (the compositum
 `CF(ζ_ℓ)`, the Gauss sum there, Stickelberger's congruence itself, and
-the ramification bookkeeping that reads the valuations back), together
+the ramification bookkeeping that reads the valuation back), together
 with the survey of what this pin does and does not supply and the
-elementary `f = 1` route. Dispatch at that leaf, not at this one. -/
+elementary `f = 1` route. Dispatch at that leaf, not at this one and
+not at `span_gaussPowOfJacobiSums_le_twistedProd_base`, both of which
+are PROVEN. -/
 theorem span_gaussPowOfJacobiSums_le_twistedProd_one
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
@@ -23075,22 +23398,28 @@ theorem as a hypothesis. Items 3–6, the Gauss-sum core, were a single
 opaque `sorry` here until 2026-07-26; they are now cut into TWO
 narrower leaves plus proven bookkeeping:
 
-* `span_gaussPowOfJacobiSums_le_twistedProd_base` (SORRY LEAF, cut
+* `span_gaussPowOfJacobiSums_le_localPow` (SORRY LEAF, cut
   2026-07-26) — Stickelberger's theorem in its sharp Gauss-sum form at
-  `a = 1` AND `v = 1`, and in its DIVISIBILITY half only,
-  `∏_w σ_{(−1)w⁻¹}(q)^{w.val} ∣ (g(χ)^p)` for the canonical `p`-th
-  power residue character `χ(x) ≡ x^{(Q−1)/p}`, with `g(χ)^p`
-  written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. What is left in
-  it is the compositum `CF(ζ_ℓ)` and the EASY half of Stickelberger's
-  congruence (Washington Prop. 6.13 / Lemma 6.14) — and nothing else:
-  the descent and the return to `𝓞 CF` are discharged by
-  `gaussPowOfJacobiSums_mul_jacobiSum_pow`, the `a`-quantifier by the
-  Galois-orbit argument below, the `v`-quantifier by transport along
-  `σ_v` (`span_gaussPowOfJacobiSums_le_twistedProd_one`, PROVEN
-  2026-07-26), and the UPPER bound on the valuation by
-  the cancellation against `ψ^{p−1}`. Its
-  docstring itemises the remainder, points at the PARI/GP faithfulness
-  check, and surveys what this pin does and does not already supply.
+  THE SINGLE PRIME `q`, and in its DIVISIBILITY half only,
+  `q^{∑_{w : σ_{(−b)w⁻¹}(q) = q} w.val} ∣ (g(χ^{b.val})^p)` for the
+  canonical `p`-th power residue character `χ(x) ≡ x^{(Q−1)/p}`, with
+  `g(·)^p` written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. What
+  is left in it is the compositum `CF(ζ_ℓ)` and the EASY half of
+  Stickelberger's congruence (Washington Prop. 6.13 / Lemma 6.14) — and
+  nothing else: the descent and the return to `𝓞 CF` are discharged by
+  `gaussPowOfJacobiSums_mul_jacobiSum_pow`, the product bookkeeping
+  (fibres of `u ↦ σ_u(q)`, coprimality, Galois transport between
+  primes) by `span_le_prod_pow_of_forall_fiber` and
+  `span_le_twistedProd_of_localBound`
+  (`span_gaussPowOfJacobiSums_le_twistedProd_base`, PROVEN 2026-07-26),
+  the `a`-quantifier by the Galois-orbit argument below, the
+  `v`-quantifier by transport along `σ_v`
+  (`span_gaussPowOfJacobiSums_le_twistedProd_one`, PROVEN 2026-07-26),
+  and the UPPER bound on the valuation by the cancellation against
+  `ψ^{p−1}`. Its docstring itemises the remainder, points at the
+  PARI/GP faithfulness check, surveys what this pin does and does not
+  already supply, and records the elementary route that settles `f = 1`
+  outright.
 * `span_gaussPowOfJacobiSums_le_twistedProd_one` (PROVEN 2026-07-26 from
   the leaf above) — the same divisibility for an arbitrary `p`-th power
   residue character with parameter `v ∈ (ℤ/p)ˣ`, by applying the leaf to
@@ -27032,68 +27361,6 @@ theorem upperHalfPlane_volume_isOpenPosMeasure :
     intro hcon
     exact absurd (congrArg NNReal.toReal hcon) (by simpa using z.im_pos.ne')
 
-/-- **THE PETERSSON DOMAIN** (sorry leaf — cut 2026-07-26 out of
-`exists_peterssonProduct_selfAdjoint_heckeOp` below, which is PROVEN over
-it; Diamond–Shurman *A First Course in Modular Forms* §5.4–§5.5, Theorem
-5.5.3): there is a set `D ⊆ ℍ` of FINITE invariant volume, containing a
-nonempty open set, over which the Petersson integrand pairs the good Hecke
-operators `T_q`, `q ∤ M`, self-adjointly.
-
-The intended witness is a fundamental domain for `Γ₀(M)` acting on `ℍ`; the
-three conjuncts are, in order, its finite volume, the fact that it has
-interior, and the unfolding computation.  Everything ELSE that the Petersson
-product needs — integrability, additivity, homogeneity, conjugate symmetry
-and DEFINITENESS — is proven below from these three, so this is all that is
-left of the analysis.
-
-WHY THIS IS NOT PHRASED WITH `MeasureTheory.IsFundamentalDomain`, which is
-the first thing anyone will try.  `Gamma0GL M` contains `-1` (the image of
-`-I ∈ Γ₀(M) ⊆ SL(2,ℤ)`), which acts TRIVIALLY on `ℍ`.  So
-`IsFundamentalDomain (Gamma0GL M) D volume` is FALSE for every `D` of
-positive measure: its `aedisjoint` field would demand
-`AEDisjoint volume ((-1) • D) D`, i.e. `volume D = 0`.  A fundamental domain
-here exists only for the quotient by `±1`, and the pin has no action of that
-quotient on `ℍ` — hence the hand-rolled conjuncts.  (Checked against this
-pin: `IsFundamentalDomain` occurs nowhere in `Mathlib/NumberTheory`, and no
-subset of `ℍ` is registered as one anywhere.)
-
-WHAT THE PIN SUPPLIES for whoever attacks this (checked 2026-07-26):
-
-* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
-  measure `dx dy / y²` as `(volume : Measure ℍ)`, with the instance
-  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`.  The change of variables
-  is therefore DONE;
-* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — `petersson_slash`,
-  the full `GL₂⁺` transformation law, which is the identity the unfolding
-  argument runs on;
-* `Mathlib/NumberTheory/Modular.lean` — the standard set `𝒟` for `SL(2,ℤ)`
-  with `exists_smul_mem_fd`, `eq_one_or_neg_one_of_mem_fdo_mem_fd`,
-  `isClosed_fd`, `fdo_eq_interior_fd` (so the SECOND conjunct is immediate
-  for `𝒟`, since `𝒟ᵒ` is open, nonempty and contained in `𝒟`);
-* MISSING and the real work: `volume 𝒟 ≠ ⊤` (no measure computation on `ℍ`
-  exists in the pin at all), the coset union `⋃ᵢ γᵢ 𝒟` over
-  representatives of `Γ₀(M) \ SL(2,ℤ)` — `(Gamma0 M).FiniteIndex` is an
-  instance but no explicit representatives exist — and the double-coset
-  unfolding for the third conjunct.
-
-`~/cs/FLT` does NOT help: its only inner-product material,
-`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
-quaternionic setting where the "integral" is a finite sum over a class set.
-
-FAITHFULNESS.  A degenerate witness cannot cheapen the consumer: the
-conclusion of `exists_peterssonProduct_selfAdjoint_heckeOp` is UNCHANGED by
-this cut, and definiteness of the resulting form is DERIVED below rather
-than assumed, so any `D` satisfying these three conjuncts really does prove
-the consumer.  In particular `D = ∅` is ruled out by the second conjunct. -/
-theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
-    ∃ D : Set ℍ,
-      volume D ≠ ⊤ ∧
-      (∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ D) ∧
-      (∀ q : ℕ, q.Prime → ¬ q ∣ M → ∀ f g : CuspForm (Gamma0GL M) 2,
-        (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
-          = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ) :=
-  sorry
-
 /-- **THE PETERSSON INTEGRAND IS INTEGRABLE OVER ANY FINITE-VOLUME SET**
 (PROVEN 2026-07-26): no fundamental-domain property is needed, only that
 `volume D < ∞`.  The integrand is continuous
@@ -27184,6 +27451,379 @@ theorem cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero {M : ℕ} (hM : 0
   have hzero : (⇑f : ℍ → ℂ) = 0 :=
     UpperHalfPlane.eq_zero_of_frequently (ModularFormClass.holo f) hfreq
   exact DFunLike.coe_injective (by simpa using hzero)
+
+section Gamma0FundamentalDomain
+
+open scoped Pointwise NNReal ENNReal
+
+/-! ### The `Γ₀(M)` fundamental domain, and its finite volume
+
+`exists_peterssonDomain` below asks for a set of FINITE invariant volume, with
+interior, over which the good Hecke operators pair self-adjointly.  This block
+BUILDS that set — `gamma0Domain M`, the union of the `[SL(2,ℤ) : Γ₀(M)]`
+translates of mathlib's standard domain `𝒟` — and PROVES its finite volume, its
+interior and its `Γ₀(M)`-covering property, leaving only the two genuinely open
+facts (a.e.-disjointness, and the double-coset unfolding) as leaves.
+
+The finite-volume computation is new to this pin: as the survey below records,
+mathlib has the invariant measure `dx dy / y²` on `ℍ` but NO measure
+computation on `ℍ` whatsoever, so `volume 𝒟 ≠ ⊤` had to be proven here. -/
+
+/-- **THE MODULAR DOMAIN SITS IN A VERTICAL STRIP** (PROVEN 2026-07-26):
+`𝒟 = {z : 1 ≤ |z|, |re z| ≤ 1/2}` is contained in `{|x| ≤ 1/2, y ≥ 1/2}`,
+because `|z| ≥ 1` together with `re z ² ≤ 1/4` forces `im z ² ≥ 3/4 > 1/4`.
+(The sharp bound is `y ≥ √3/2`, which is what
+`ModularGroup.three_le_four_mul_im_sq_of_mem_fd` records; `1/2` is all the
+volume estimate needs and it avoids carrying a square root.)
+
+The strip is written as a PREIMAGE under `Complex.measurableEquivRealProd`
+rather than as a set-builder, because that is the shape in which
+`Complex.volume_preserving_equiv_real_prod` transports the integral to
+`ℝ × ℝ`, where Tonelli applies. -/
+theorem coe_modularFd_subset_strip :
+    ((↑) '' (ModularGroup.fd) : Set ℂ) ⊆
+      Complex.measurableEquivRealProd ⁻¹'
+        (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)) := by
+  rw [ModularGroup.coe_fd]
+  rintro z ⟨him, hnorm, hre⟩
+  have hre' := abs_le.mp hre
+  have hns' : z.re ^ 2 + z.im ^ 2 = ‖z‖ ^ 2 := by
+    rw [← Complex.normSq_eq_norm_sq, Complex.normSq_apply]; ring
+  have hnorm2 : (1 : ℝ) ≤ ‖z‖ ^ 2 := by nlinarith [norm_nonneg z]
+  have hre2 : z.re ^ 2 ≤ 1 / 4 := by nlinarith [hre'.1, hre'.2]
+  have him2 : (1 / 2 : ℝ) ≤ z.im := by nlinarith [him]
+  exact ⟨Set.mem_Icc.mpr hre', him2⟩
+
+/-- **`∫_{1/2}^∞ dy/y² < ∞`** (PROVEN 2026-07-26), in the `ℝ≥0∞` form in
+which `UpperHalfPlane.volume_eq_lintegral` presents the invariant density.
+Obtained from `integrableOn_Ioi_rpow_of_lt` at the exponent `-2 < -1` on
+`(1/4, ∞) ⊇ [1/2, ∞)`, whose `HasFiniteIntegral` field IS this
+`lintegral < ⊤` once `‖y ^ (-2 : ℝ)‖ₑ` is identified with `(1/‖y‖₊)²`. -/
+theorem lintegral_Ici_inv_sq_lt_top :
+    (∫⁻ y : ℝ in Set.Ici (1/2 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞)) < ⊤ := by
+  have hint : IntegrableOn (fun t : ℝ ↦ t ^ (-2 : ℝ)) (Set.Ioi (1/4 : ℝ)) :=
+    integrableOn_Ioi_rpow_of_lt (by norm_num) (by norm_num)
+  have hfin : (∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), ‖y ^ (-2 : ℝ)‖ₑ) < ⊤ := hint.2
+  have hsub : Set.Ici (1/2 : ℝ) ⊆ Set.Ioi (1/4 : ℝ) := fun y hy =>
+    lt_of_lt_of_le (by norm_num) (Set.mem_Ici.mp hy)
+  have hcongr : (∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞))
+      = ∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), ‖y ^ (-2 : ℝ)‖ₑ := by
+    refine setLIntegral_congr_fun measurableSet_Ioi (fun y hy => ?_)
+    have hy0 : (0 : ℝ) < y := lt_trans (by norm_num) hy
+    have h1 : y ^ (-2 : ℝ) = (y ^ (2 : ℕ))⁻¹ := by
+      rw [show (-2 : ℝ) = -((2 : ℕ) : ℝ) by norm_num, Real.rpow_neg hy0.le,
+        Real.rpow_natCast]
+    rw [h1, enorm_eq_nnnorm]
+    congr 1
+    rw [nnnorm_inv, nnnorm_pow, one_div, inv_pow]
+  calc (∫⁻ y : ℝ in Set.Ici (1/2 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞))
+      ≤ ∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞) :=
+        lintegral_mono_set hsub
+    _ = ∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), ‖y ^ (-2 : ℝ)‖ₑ := hcongr
+    _ < ⊤ := hfin
+
+/-- **THE STRIP HAS FINITE INVARIANT VOLUME** (PROVEN 2026-07-26): the
+hyperbolic area `∫∫ dx dy / y²` of `{|x| ≤ 1/2, y ≥ 1/2}` is finite.
+
+Transport to `ℝ × ℝ` by `Complex.volume_preserving_equiv_real_prod`, apply
+Tonelli (`setLIntegral_prod`), and the `x`-integral is a constant over an
+interval of length `1` while the `y`-integral is
+`lintegral_Ici_inv_sq_lt_top`. -/
+theorem lintegral_strip_lt_top :
+    (∫⁻ z : ℂ in Complex.measurableEquivRealProd ⁻¹'
+        (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)),
+      (((1 / ‖z.im‖₊) ^ 2 : NNReal) : ℝ≥0∞)) < ⊤ := by
+  have hmeas : Measurable (fun p : ℝ × ℝ => (((1 / ‖p.2‖₊) ^ 2 : NNReal) : ℝ≥0∞)) := by
+    fun_prop
+  have key : (∫⁻ z : ℂ in Complex.measurableEquivRealProd ⁻¹'
+        (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)),
+        (((1 / ‖z.im‖₊) ^ 2 : NNReal) : ℝ≥0∞))
+      = ∫⁻ p : ℝ × ℝ in (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)),
+          (((1 / ‖p.2‖₊) ^ 2 : NNReal) : ℝ≥0∞) :=
+    Complex.volume_preserving_equiv_real_prod.setLIntegral_comp_preimage_emb
+      Complex.measurableEquivRealProd.measurableEmbedding
+      (fun p : ℝ × ℝ => (((1 / ‖p.2‖₊) ^ 2 : NNReal) : ℝ≥0∞)) _
+  rw [key, Measure.volume_eq_prod, setLIntegral_prod _ hmeas.aemeasurable]
+  dsimp only
+  rw [lintegral_const, Measure.restrict_apply_univ]
+  exact ENNReal.mul_lt_top lintegral_Ici_inv_sq_lt_top (by simp)
+
+/-- **THE STANDARD MODULAR DOMAIN HAS FINITE HYPERBOLIC AREA**
+(PROVEN 2026-07-26 — the fact the pin does NOT have, and the reason no
+`Γ₀(M)`-domain of finite volume could previously be exhibited):
+`volume 𝒟 ≠ ⊤` for the invariant measure `dx dy / y²` on `ℍ`.
+
+`UpperHalfPlane.volume_eq_lintegral` turns `volume 𝒟` into a Lebesgue
+integral of the density over `(↑) '' 𝒟 ⊆ ℂ`; `coe_modularFd_subset_strip`
+puts that inside the strip and `lintegral_strip_lt_top` bounds it.  (The
+true value is `π/3`; only finiteness is used anywhere below.) -/
+theorem volume_modularFd_ne_top : volume (ModularGroup.fd) ≠ ⊤ := by
+  rw [UpperHalfPlane.volume_eq_lintegral]
+  exact (lt_of_le_of_lt (lintegral_mono_set coe_modularFd_subset_strip)
+    lintegral_strip_lt_top).ne
+
+open scoped Classical in
+/-- Chosen representatives for the LEFT cosets `SL(2,ℤ) ⧸ Γ₀(M)`, normalised so
+that the trivial coset is represented by `1` (which is what puts `𝒟` itself,
+hence an open set, inside `gamma0Domain M`).  `Quotient.out` alone would not:
+its representative of the trivial coset is an arbitrary element of `Γ₀(M)`. -/
+noncomputable def gamma0Rep (M : ℕ) (c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) :
+    SL(2, ℤ) :=
+  if c = QuotientGroup.mk 1 then 1 else Quotient.out c
+
+/-- `gamma0Rep M c` really does represent the coset `c`. -/
+theorem gamma0Rep_spec (M : ℕ) (c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) :
+    (QuotientGroup.mk (gamma0Rep M c) : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) = c := by
+  classical
+  rw [gamma0Rep]
+  split_ifs with h
+  · exact h.symm
+  · exact Quotient.out_eq c
+
+/-- The trivial coset is represented by `1`. -/
+theorem gamma0Rep_one (M : ℕ) :
+    gamma0Rep M (QuotientGroup.mk 1 : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) = 1 := by
+  classical
+  rw [gamma0Rep, if_pos rfl]
+
+/-- **THE `Γ₀(M)` FUNDAMENTAL DOMAIN**: `⋃_c γ_c⁻¹ 𝒟`, over the (finitely
+many) left cosets `c = γ_c Γ₀(M)` of `Γ₀(M)` in `SL(2,ℤ)`.
+
+The inverses are what makes the covering property come out on the correct
+side: if `g • τ ∈ 𝒟` and `g = γ_c h` with `h ∈ Γ₀(M)`, then
+`h • τ = γ_c⁻¹ • (g • τ) ∈ γ_c⁻¹ 𝒟`, so it is `Γ₀(M)` — not `SL(2,ℤ)` —
+that moves an arbitrary `τ` into this set. -/
+noncomputable def gamma0Domain (M : ℕ) : Set ℍ :=
+  ⋃ c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M, (gamma0Rep M c)⁻¹ • (ModularGroup.fd)
+
+/-- The invariant measure is `SL(2,ℤ)`-invariant, the action being the
+restriction along `Matrix.SpecialLinearGroup.mapGL` of the `GL(2,ℝ)` action for
+which the pin registers `SMulInvariantMeasure`. -/
+theorem volume_smul_specialLinearGroup (g : SL(2, ℤ)) (s : Set ℍ) :
+    volume (g • s) = volume s := by
+  have h : g • s = (Matrix.SpecialLinearGroup.mapGL ℝ g) • s := rfl
+  rw [h]
+  exact measure_smul volume _ s
+
+/-- **THE `Γ₀(M)` DOMAIN HAS FINITE VOLUME** (PROVEN 2026-07-26): a finite
+union — `[SL(2,ℤ) : Γ₀(M)] < ∞` by `CongruenceSubgroup.instFiniteIndexGamma0` —
+of isometric copies of `𝒟`, each of finite volume by
+`volume_modularFd_ne_top`. -/
+theorem volume_gamma0Domain_ne_top (M : ℕ) [NeZero M] :
+    volume (gamma0Domain M) ≠ ⊤ := by
+  have hle : volume (gamma0Domain M)
+      ≤ ∑' c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M,
+          volume ((gamma0Rep M c)⁻¹ • (ModularGroup.fd)) := measure_iUnion_le _
+  classical
+  letI := Fintype.ofFinite (SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M)
+  refine ne_of_lt (lt_of_le_of_lt hle ?_)
+  rw [tsum_fintype]
+  refine ENNReal.sum_lt_top.mpr (fun c _ => ?_)
+  rw [volume_smul_specialLinearGroup]
+  exact volume_modularFd_ne_top.lt_top
+
+/-- `𝒟 ⊆ gamma0Domain M` — the trivial coset contributes `1⁻¹ 𝒟 = 𝒟`.  This is
+exactly what `gamma0Rep`'s normalisation at the trivial coset buys. -/
+theorem modularFd_subset_gamma0Domain (M : ℕ) :
+    (ModularGroup.fd) ⊆ gamma0Domain M := by
+  refine le_trans (le_of_eq ?_)
+    (Set.subset_iUnion _ (QuotientGroup.mk 1 : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M))
+  rw [gamma0Rep_one, inv_one, one_smul]
+
+/-- **THE `Γ₀(M)` DOMAIN HAS INTERIOR** (PROVEN 2026-07-26): it contains the
+open modular domain `𝒟ᵒ`, which is nonempty (`2i ∈ 𝒟ᵒ`). -/
+theorem exists_open_subset_gamma0Domain (M : ℕ) :
+    ∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ gamma0Domain M := by
+  have hz : (⟨2 * Complex.I, by norm_num⟩ : ℍ) ∈ ModularGroup.fdo := by
+    constructor <;> norm_num [Complex.normSq_apply, UpperHalfPlane.re]
+  exact ⟨ModularGroup.fdo, ModularGroup.isOpen_fdo, ⟨_, hz⟩,
+    le_trans ModularGroup.fdo_subset_fd (modularFd_subset_gamma0Domain M)⟩
+
+/-- **THE `Γ₀(M)` DOMAIN COVERS `ℍ` UNDER `Γ₀(M)`** (PROVEN 2026-07-26): every
+`τ ∈ ℍ` is moved into `gamma0Domain M` by an element of `Gamma0GL M`.
+
+`ModularGroup.exists_smul_mem_fd` supplies `g ∈ SL(2,ℤ)` with `g • τ ∈ 𝒟`;
+writing `c` for its coset and `h = γ_c⁻¹ g ∈ Γ₀(M)` (which is exactly
+`QuotientGroup.eq` for `gamma0Rep_spec`), `h • τ = γ_c⁻¹ • (g • τ)` lands in
+the `c`-th piece.  The `Gamma0GL` element is the `mapGL` image of `h`, and the
+two actions agree definitionally since the `SL` action is `compHom` along
+`mapGL`. -/
+theorem exists_mem_gamma0Domain (M : ℕ) (τ : ℍ) :
+    ∃ γ ∈ Gamma0GL M, γ • τ ∈ gamma0Domain M := by
+  obtain ⟨g, hg⟩ := ModularGroup.exists_smul_mem_fd τ
+  set c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M := QuotientGroup.mk g with hc
+  have hout : (QuotientGroup.mk (gamma0Rep M c) :
+      SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) = c := gamma0Rep_spec M c
+  have hmem : (gamma0Rep M c)⁻¹ * g ∈ CongruenceSubgroup.Gamma0 M := by
+    rw [← QuotientGroup.eq, hout, hc]
+  refine ⟨Matrix.SpecialLinearGroup.mapGL ℝ ((gamma0Rep M c)⁻¹ * g), ⟨_, hmem, rfl⟩, ?_⟩
+  have hact : (Matrix.SpecialLinearGroup.mapGL ℝ ((gamma0Rep M c)⁻¹ * g)) • τ
+      = ((gamma0Rep M c)⁻¹ * g) • τ := rfl
+  rw [hact, mul_smul]
+  exact Set.mem_iUnion.mpr ⟨c, Set.smul_mem_smul_set hg⟩
+
+/-- **A.E.-DISJOINTNESS OF THE `Γ₀(M)` DOMAIN** (sorry leaf — cut 2026-07-26
+out of `exists_peterssonDomain` below, together with
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain`): distinct `Γ₀(M)`-translates
+of `gamma0Domain M` meet in a null set, once the two elements acting trivially
+on `ℍ` are excluded.
+
+WHY `±1` MUST BE EXCLUDED, and why this is not
+`MeasureTheory.IsFundamentalDomain`.  `Gamma0GL M` contains `-1` (the image of
+`-I ∈ Γ₀(M) ⊆ SL(2,ℤ)`), which acts TRIVIALLY on `ℍ`.  So
+`IsFundamentalDomain (Gamma0GL M) D volume` is FALSE for every `D` of positive
+measure: its `aedisjoint` field would demand `AEDisjoint volume ((-1) • D) D`,
+i.e. `volume D = 0`.  A fundamental domain here exists only for the quotient by
+`±1`, and the pin has no action of that quotient on `ℍ` — hence this
+hand-rolled conjunct.  (Checked against this pin: `IsFundamentalDomain` occurs
+nowhere in `Mathlib/NumberTheory`, and no subset of `ℍ` is registered as one.)
+Note `±1` are the ONLY trivially-acting elements: the kernel of the `SL(2,ℝ)`
+action on `ℍ` is `{±I}`, so nothing else has to be excluded and the statement
+is not weakened by the exclusion.
+
+PROOF PLAN (the mathematics is settled; what is missing is one measure fact).
+Let `h ∈ Γ₀(M)`, `h ≠ ±1`, and suppose `z ∈ (h • D) ∩ D` with
+`D = ⋃_c γ_c⁻¹ 𝒟`.  Then `z ∈ γ_{c'}⁻¹ 𝒟` and `h⁻¹ z ∈ γ_c⁻¹ 𝒟` for some
+cosets `c, c'`.  Put `w = γ_{c'} z ∈ 𝒟` and `g = γ_c h⁻¹ γ_{c'}⁻¹ ∈ SL(2,ℤ)`,
+so that `g • w ∈ 𝒟`.  If `w ∈ 𝒟ᵒ` then
+`ModularGroup.eq_one_or_neg_one_of_mem_fdo_mem_fd` forces `g = ±1`; since
+`-1 ∈ Γ₀(M)`, `g = ±1` gives `γ_c Γ₀(M) = γ_{c'} Γ₀(M)`, i.e. `c = c'`, and
+then `γ_c h⁻¹ γ_c⁻¹ = ±1`, i.e. `h = ±1` — excluded.  So the intersection is
+contained in `⋃_{c'} γ_{c'}⁻¹ (𝒟 \ 𝒟ᵒ)`, a finite union of translates of the
+BOUNDARY of `𝒟`.
+
+THE ONE MISSING FACT is therefore `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the
+modular domain is null.  `ModularGroup.fdo_eq_interior_fd` and
+`ModularGroup.isClosed_fd` identify `𝒟 \ 𝒟ᵒ` with `frontier 𝒟`; the boundary is
+contained in the union of the vertical lines `re z = ±1/2` and the unit circle
+`|z| = 1`, each of which is null for planar Lebesgue measure (and hence, being
+a set of the same null sets, for `volume` on `ℍ` — the density is finite and
+strictly positive there).  `volume_modularFd_ne_top` above is the model for how
+to move between `volume` on `ℍ` and Lebesgue measure on `ℂ`
+(`UpperHalfPlane.volume_eq_lintegral`). -/
+theorem volume_smul_inter_gamma0Domain_eq_zero {M : ℕ} (hM : 0 < M)
+    {γ : GL (Fin 2) ℝ} (hγ : γ ∈ Gamma0GL M) (h1 : γ ≠ 1) (h2 : γ ≠ -1) :
+    volume ((γ • gamma0Domain M) ∩ gamma0Domain M) = 0 :=
+  sorry
+
+/-- **SELF-ADJOINTNESS OF THE GOOD HECKE OPERATORS OVER A `Γ₀(M)` FUNDAMENTAL
+DOMAIN** (sorry leaf — cut 2026-07-26 out of `exists_peterssonDomain` below;
+Diamond–Shurman *A First Course in Modular Forms* §5.5, Theorem 5.5.3, and
+Shimura, *Introduction to the arithmetic theory of automorphic functions*, for
+the double-coset computation): over ANY set `D` of finite volume that covers
+`ℍ` under `Γ₀(M)` and is a.e.-disjoint from its nontrivial `Γ₀(M)`-translates,
+the Petersson integrand pairs `T_q` self-adjointly at every good prime `q ∤ M`.
+
+This is the whole analytic content that survives the cut: `exists_peterssonDomain`
+below supplies the domain (`gamma0Domain M`, whose finite volume, interior and
+covering property are PROVEN above and whose a.e.-disjointness is the sibling
+leaf `volume_smul_inter_gamma0Domain_eq_zero`), and everything the Petersson
+product needs BEYOND self-adjointness — integrability, additivity, homogeneity,
+conjugate symmetry and DEFINITENESS — is proven below from finite volume and
+interior alone.
+
+WHAT THE PIN SUPPLIES (checked 2026-07-26):
+
+* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
+  measure `dx dy / y²` as `(volume : Measure ℍ)`, with the instance
+  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`.  The change of variables is
+  therefore DONE;
+* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — `petersson_slash`,
+  the full `GL₂⁺` transformation law
+  `petersson k (f∣γ) (f'∣γ) τ = |det γ|^{k-2} · σ γ (petersson k f f' (γ • τ))`.
+  **At `k = 2` the determinant factor is `|det γ|⁰ = 1`**, and `σ γ = id` for
+  `det γ > 0`, so the law degenerates to the clean
+  `petersson 2 (f∣γ) (f'∣γ) τ = petersson 2 f f' (γ • τ)`.  That is the single
+  identity the whole unfolding runs on, and weight `2` is exactly the weight at
+  which it is free of determinant bookkeeping;
+* `heckeTransform`/`heckeOp_coe` above — `T_q f = Σ_{j<q} f∣[1,j;0,q] + f∣[q,0;0,1]`
+  at `q ∤ M`, with the representatives explicit.
+
+PROOF PLAN (reconstructed 2026-07-26; D–S Thm 5.5.3).  Write `Γ = Γ₀(M)`,
+`α = [1,0;0,q]`, `Γ' = Γ ∩ α⁻¹Γα`, and `Γ = ⊔_i Γ' γ_i`, so that
+`T_q f = Σ_i (f∣α)∣γ_i`.  Three steps, each a change of variables under the
+invariant measure:
+
+1. FOLD UP.  For `γ ∈ Γ`, `petersson 2 g (h∣γ) = petersson 2 (g∣γ) (h∣γ)
+   = (petersson 2 g h) ∘ γ`, so `∫_D petersson 2 g ((f∣α)∣γ_i) = ∫_{γ_i D}
+   petersson 2 g (f∣α)`; and `petersson 2 g (f∣α)` is `Γ'`-invariant, so the sum
+   over `i` is `∫_{D'} petersson 2 g (f∣α)` for `D' = ⊔_i γ_i D`, a fundamental
+   domain for `Γ'`.  (This is where the covering and a.e.-disjointness
+   hypotheses are consumed, via additivity of the integral over an essentially
+   disjoint union.)
+2. MOVE BY `α`.  `petersson 2 g (f∣α) = petersson 2 (g∣α⁻¹) f ∘ α`, so the
+   integral becomes `∫_{αD'} petersson 2 (g∣α⁻¹) f`, and `α D'` is a
+   fundamental domain for `Γ'' = αΓα⁻¹ ∩ Γ`.  At weight `2` scalar matrices act
+   trivially (`f∣(cI) = c^{k-2} f = f`), so `g∣α⁻¹ = g∣α'` with
+   `α' = det(α)·α⁻¹ = [q,0;0,1]` INTEGRAL.
+3. FOLD DOWN, AND `α' ∼ α`.  Running step 1 backwards for the double coset
+   `Γα'Γ` returns `∫_D petersson 2 ([Γα'Γ] g) f`.  It remains that
+   `[Γα'Γ] = [ΓαΓ] = T_q` on `S₂(Γ₀(M))`, which holds because `α' ∈ ΓαΓ`:
+   with `qu − Mv = 1` (available exactly because `q ∤ M` — THIS is where the
+   good-prime hypothesis enters, and the identity is false at `q ∣ M`),
+   `α' = γ₁ α γ₂` with `γ₁ = [q,v;M,u]` and `γ₂ = [uq,−v;−M,1]`, both of
+   determinant `1` with lower-left divisible by `M`, hence both in `Γ₀(M)`.
+   Classically this last step is "the diamond operator `⟨q⟩` is the identity at
+   weight 2 with trivial character".
+
+FAITHFULNESS.  `hqM` is LOAD-BEARING (see the FAITHFULNESS AUDIT on the
+consumer `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` below: at
+`q ∣ M` the operator `U_q` is genuinely non-semisimple), and the `±1`
+exclusions in `hdisj` are forced, not cosmetic — see
+`volume_smul_inter_gamma0Domain_eq_zero` above. -/
+theorem peterssonSelfAdjoint_of_gamma0FundamentalDomain {M : ℕ} (hM : 0 < M)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤)
+    (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
+    (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
+    (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
+      = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ :=
+  sorry
+
+/-- **THE PETERSSON DOMAIN** (PROVEN 2026-07-26 over the two leaves
+`volume_smul_inter_gamma0Domain_eq_zero` and
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain` above; cut 2026-07-26 out of
+`exists_peterssonProduct_selfAdjoint_heckeOp` below, which is PROVEN over it;
+Diamond–Shurman §5.4–§5.5, Theorem 5.5.3): there is a set `D ⊆ ℍ` of FINITE
+invariant volume, containing a nonempty open set, over which the Petersson
+integrand pairs the good Hecke operators `T_q`, `q ∤ M`, self-adjointly.
+
+The witness is `gamma0Domain M`, the union of the `[SL(2,ℤ) : Γ₀(M)]` translates
+of mathlib's standard domain `𝒟`.  Of the three conjuncts, the first two are now
+PROVEN (`volume_gamma0Domain_ne_top`, over the new `volume_modularFd_ne_top`,
+and `exists_open_subset_gamma0Domain`); the third is the analytic leaf, applied
+through the covering property `exists_mem_gamma0Domain` (PROVEN) and the
+geometric leaf `volume_smul_inter_gamma0Domain_eq_zero`.
+
+Everything ELSE that the Petersson product needs — integrability, additivity,
+homogeneity, conjugate symmetry and DEFINITENESS — is proven below from the
+first two conjuncts, so the third is all that is left of the analysis.
+
+`~/cs/FLT` does NOT help: its only inner-product material,
+`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
+quaternionic setting where the "integral" is a finite sum over a class set.
+
+FAITHFULNESS.  A degenerate witness cannot cheapen the consumer: the conclusion
+of `exists_peterssonProduct_selfAdjoint_heckeOp` is UNCHANGED by this cut, and
+definiteness of the resulting form is DERIVED below rather than assumed, so any
+`D` satisfying these three conjuncts really does prove the consumer.  In
+particular `D = ∅` is ruled out by the second conjunct. -/
+theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
+    ∃ D : Set ℍ,
+      volume D ≠ ⊤ ∧
+      (∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ D) ∧
+      (∀ q : ℕ, q.Prime → ¬ q ∣ M → ∀ f g : CuspForm (Gamma0GL M) 2,
+        (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
+          = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ) := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  refine ⟨gamma0Domain M, volume_gamma0Domain_ne_top M,
+    exists_open_subset_gamma0Domain M, fun q hq hqM f g => ?_⟩
+  exact peterssonSelfAdjoint_of_gamma0FundamentalDomain hM
+    (volume_gamma0Domain_ne_top M) (exists_mem_gamma0Domain M)
+    (fun γ hγ hne1 hne2 => volume_smul_inter_gamma0Domain_eq_zero hM hγ hne1 hne2)
+    hq hqM f g
+
+end Gamma0FundamentalDomain
 
 /-- **THE PETERSSON PRODUCT ON `S₂(Γ₀(M))`, WITH THE GOOD HECKE
 OPERATORS SELF-ADJOINT FOR IT** (PROVEN 2026-07-26 over the single leaf
@@ -27348,14 +27988,21 @@ level `M'·q²`, so `h(q·) ∈ S₂(Γ₀(M))`, and `U_q ∘ V_q = id` gives
 good-prime hypothesis is not decoration; the same phenomenon is exactly
 what makes the consumer node's own counterexample work.
 
-DEPENDENCY NOTE (updated 2026-07-26).
-`exists_peterssonProduct_selfAdjoint_heckeOp` is itself now PROVEN, over
-the single remaining leaf `exists_peterssonDomain`, whose docstring carries
-the full map of what this mathlib pin does and does not provide (invariant
-measure and the `petersson` transformation law: yes; any measure-theoretic
-fundamental domain for a modular group, or any computation of `volume 𝒟`:
-no).  So the analysis under this node is now exactly: a `Γ₀(M)`-fundamental
-domain of finite volume, plus the double-coset unfolding. -/
+DEPENDENCY NOTE (updated 2026-07-27 — SUPERSEDES the 2026-07-26 version,
+which said the analysis under this node was "a `Γ₀(M)`-fundamental domain of
+finite volume, plus the double-coset unfolding", and that the pin had no
+computation of `volume 𝒟`).  BOTH halves of that are now out of date.
+`exists_peterssonProduct_selfAdjoint_heckeOp` is PROVEN over
+`exists_peterssonDomain`, which is itself now PROVEN over TWO leaves, the
+domain having been constructed (`gamma0Domain`, the union of the
+`[SL(2,ℤ) : Γ₀(M)]` translates of `𝒟`) with its FINITE VOLUME
+(`volume_gamma0Domain_ne_top`, over the new `volume_modularFd_ne_top` —
+`volume 𝒟 ≠ ⊤` is no longer missing from this development), its INTERIOR and
+its `Γ₀(M)`-COVERING property all proven.  So the analysis remaining under
+this node is exactly: `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the modular
+domain is null, which is all that
+`volume_smul_inter_gamma0Domain_eq_zero` still needs — plus the double-coset
+unfolding `peterssonSelfAdjoint_of_gamma0FundamentalDomain`. -/
 theorem heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level {M : ℕ} (hM : 0 < M)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (c : ℂ)
     {v : CuspForm (Gamma0GL M) 2} {n : ℕ}
@@ -28013,77 +28660,277 @@ theorem exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd {N M : ℕ}
         ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q :=
   sorry
 
+/-- **A STABLE SUBSPACE IS THE SUM OF ITS SIMULTANEOUS GENERALIZED
+EIGENCOMPONENTS** (PROVEN 2026-07-26, pure linear algebra over an
+algebraically closed field): if a family `T i` of COMMUTING endomorphisms of a
+finite-dimensional space `V` preserves a submodule `U`, then `U` is the
+supremum of its intersections with the simultaneous maximal generalized
+eigenspaces of the family.
+
+This is the companion of `exists_ne_zero_mem_inf_iInf_maxGenEigenspace` above,
+and it is what lets a CONTAINMENT between two Hecke-stable subspaces be checked
+on joint EIGENVECTORS alone: both sides decompose, so the containment holds iff
+it holds in each joint generalized eigenspace.
+
+PROOF.  Simultaneous triangularizability
+(`Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute`)
+applied to the operators RESTRICTED to `U` writes the top of `U` as a supremum
+of joint generalized eigenspaces of the restrictions; pushing that forward along
+the inclusion `U.subtype` with
+`Submodule.inf_iInf_maxGenEigenspace_of_forall_mapsTo` turns each summand into
+`U ⊓ E ψ`. -/
+theorem eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo
+    {K V ι : Type*} [Field K] [IsAlgClosed K] [AddCommGroup V] [Module K V]
+    [FiniteDimensional K V] (T : ι → Module.End K V)
+    (hcomm : ∀ i j, Commute (T i) (T j)) (U : Submodule K V)
+    (hp : ∀ i, Set.MapsTo (T i) U U) :
+    U = ⨆ ψ : ι → K, U ⊓ ⨅ i, (T i).maxGenEigenspace (ψ i) := by
+  have hcomm' : ∀ i j, Commute ((T i).restrict (hp i)) ((T j).restrict (hp j)) := by
+    intro i j
+    refine LinearMap.ext fun x => Subtype.ext ?_
+    have hx := LinearMap.congr_fun (hcomm i j).eq (x : V)
+    simpa [LinearMap.restrict_apply, Module.End.mul_apply] using hx
+  have htop : ⨆ ψ : ι → K,
+      ⨅ i, Module.End.maxGenEigenspace ((T i).restrict (hp i)) (ψ i) = ⊤ :=
+    Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute
+      _ (fun i j _ => hcomm' i j)
+      (fun i => Module.End.iSup_maxGenEigenspace_eq_top _)
+  have hmap := congrArg (Submodule.map U.subtype) htop
+  rw [Submodule.map_iSup, Submodule.map_top, Submodule.range_subtype] at hmap
+  simp only [← Submodule.inf_iInf_maxGenEigenspace_of_forall_mapsTo T U hp] at hmap
+  exact hmap.symm
+
+/-- **THE ATKIN–LEHNER MAIN LEMMA FOR A JOINT GOOD-HECKE EIGENVECTOR** (sorry
+leaf — cut 2026-07-26 out of `exists_oldSubspace_complement_vanishing` below;
+Diamond–Shurman Theorem 5.7.1 read through Corollary 5.6.3 and §5.8,
+Atkin–Lehner 1970 Lemma 18): a cusp form `v ∈ S₂(Γ₀(M))` that is an HONEST
+eigenvector of every GOOD Hecke operator `T_q`, `q ∤ M`, and whose
+`q`-expansion coefficients vanish at every index COPRIME to `M`, lies in the
+old subspace `Σ_{p ∣ M} V_p S₂(Γ₀(M/p))`.
+
+WHY THIS IS A REDUCTION AND NOT A RESTATEMENT — read this before "simplifying"
+the cut, because the OBVIOUS cut here is a restatement and was correctly
+refused by the previous owner.  The consumer
+`exists_oldSubspace_complement_vanishing` quantifies over ALL cusp forms; this
+leaf quantifies only over JOINT EIGENVECTORS of the good Hecke algebra.  The
+passage between the two is not bookkeeping: it is the spectral decomposition of
+`S₂(Γ₀(M))` under the commuting family `{T_q : q ∤ M}`, and it consumes
+
+* commutativity, `heckeOp_mul_comm` (PROVEN);
+* SEMISIMPLICITY at the good primes,
+  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` (PROVEN over
+  `exists_peterssonProduct_selfAdjoint_heckeOp`, itself PROVEN over the single
+  domain leaf `exists_peterssonDomain`) — this is what turns the generalized
+  eigenvectors the decomposition produces into honest ones, and it is FALSE at
+  the bad primes, where `U_q` has genuine Jordan blocks;
+* finite-dimensionality, `cuspForm_finiteDimensional` (PROVEN);
+* stability of BOTH subspaces: the old subspace by `heckeOp_degeneracyOp`, and
+  the vanishing-coefficient submodule because `a_n(T_q v) = a_{qn}(v) +
+  q·a_{n/q}(v)` and `n` coprime to `M` forces `qn` and `n/q` coprime to `M`
+  as well (this is where `q ∤ M` is used a second time).
+
+So the analytic input this cut needs was ALREADY isolated in the tree, in
+`exists_peterssonProduct_selfAdjoint_heckeOp`; the cut adds no new analytic
+obligation and strictly shrinks the quantifier.  (The docstring of
+`exists_oldSubspace_complement_vanishing` previously asserted that no
+`exists_peterssonProduct_selfAdjoint_heckeOp` declaration exists in this tree.
+That was already false when written — it is declared above in this same file —
+and the claim is corrected here.)
+
+WHAT REMAINS, and it is genuine Atkin–Lehner theory.  Classically this is the
+newform decomposition: `S₂(Γ₀(M)) = ⊕_{M' ∣ M} ⊕_{f newform of level M'}
+span{V_d f : d ∣ M/M'}`, each block stable under every `T_q`, `q ∤ M`, and
+acted on by the SCALAR `a_q(f)` there (`heckeOp_degeneracyOp`).  A joint
+good-eigenvector therefore lives in the span of the blocks with a fixed
+eigensystem; writing `v = Σ_{d} c_d V_d f`, the hypothesis `a_n(v) = 0` at the
+indices coprime to `M` forces `c_1 = 0` (it forces `a_1(v) = 0`, and `a_1` is
+nonzero only on the `d = 1` component, where the newform is normalized), so `v`
+is supported on the `d > 1` components, and each `V_d f` with `d > 1` factors
+as `V_p (V_{d/p} f)` for any prime `p ∣ d`, with `V_{d/p} f` of level
+`M'·(d/p) ∣ M/p`.  That is exactly membership in the old subspace.
+
+WHY THE OBVIOUS FURTHER CUT DOES NOT WORK.  Diamond–Shurman's own proof of
+Theorem 5.7.1 (due to Carlton) does not run at `Γ₀` at all: it uses the
+projections `π_d f = (1/d)·Σ_{b<d} f|[1, bN/d; 0, 1]`, which sieve the
+`q`-expansion down to the indices divisible by `d`.  Those do NOT preserve
+`S₂(Γ₀(M))` — for a newform `f` of level `M` with `p ∣ M`, `π_p f = a_p(f)·f(pτ)`
+has level `Mp` and `a_p(f) ≠ 0` when `p ‖ M` — which is why D–S first conjugates
+to `Γ¹(N)` and then descends to `Γ(N)`, where the argument becomes the
+representation theory of `SL₂(ℤ/Nℤ)` (D–S Prop. 5.7.7) and the group-theoretic
+Lemma 5.7.6.  Reproducing that route needs cusp forms for `Γ(N)`, which this
+file's `Gamma0GL`-only vocabulary cannot express; the eigenvector route above
+(D–S §5.8) is the one that fits the machinery this file already has.
+
+FAITHFULNESS.  No `v ≠ 0` hypothesis is needed or wanted: at `v = 0` the
+conclusion is trivially true, so adding it would only weaken the leaf.  The
+statement is NOT vacuous — its hypotheses are satisfiable by a nonzero form,
+e.g. `v = V_p g` for any nonzero `g ∈ S₂(Γ₀(M/p))` that is a good-prime
+eigenvector, whose coprime-index coefficients vanish by
+`qCoeff_eq_zero_of_mem_oldSubspace` and which is a good-prime eigenvector at
+level `M` by `heckeOp_degeneracyOp`. -/
+theorem mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero {M : ℕ}
+    (hM : 0 < M) {c : ℕ → ℂ} {v : CuspForm (Gamma0GL M) 2}
+    (hve : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q v = c q • v)
+    (hvc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) :
+    v ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p) :=
+  sorry
+
 /-- **THE NEW SUBSPACE DETECTS NO FORM WITH VANISHING GOOD COEFFICIENTS**
-(sorry leaf — cut 2026-07-26 out of
-`mem_oldSubspace_of_qCoeff_coprime_eq_zero`; Diamond–Shurman Theorem 5.7.1,
-Atkin–Lehner 1970 Lemma 18): the old subspace admits a COMPLEMENT `W` inside
-which the only form whose `q`-expansion coefficients all vanish at indices
+(PROVEN 2026-07-26 over the single leaf
+`mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` above; Diamond–Shurman
+Theorem 5.7.1, Atkin–Lehner 1970 Lemma 18): the old subspace admits a COMPLEMENT `W`
+inside which the only form whose `q`-expansion coefficients all vanish at indices
 COPRIME to `M` is `0`.
 
-This is the whole ANALYTIC content of the Atkin–Lehner Main Lemma, and it is
-stated in the form the classical proof actually produces.  `W` is the *new*
-subspace: the orthogonal complement of the old subspace for the PETERSSON
-inner product
+AUDIT CORRECTION, 2026-07-26.  This node was previously a sorry leaf carrying
+the whole analytic content, with `W` intended to be the *new* subspace — the
+PETERSSON-orthogonal complement of the old subspace — and its docstring
+recorded that "no `exists_peterssonProduct_selfAdjoint_heckeOp` declaration
+exists in this tree".  That claim was FALSE at the time it was written: the
+Petersson leaf is declared above in this very file, and the good-prime
+semisimplicity it feeds (`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`)
+is PROVEN over it.  With that in hand the node is no longer analytic at all.
 
-  `⟨f, h⟩ = ∫_{Γ₀(M)\ℍ} f(τ) conj(h(τ)) dx dy`,
+The previous owner's audit was nevertheless correct on its own terms and is
+worth preserving, because it rules out the obvious cut: this statement is
+LOGICALLY EQUIVALENT to its own consumer
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero`, and no cleverness in choosing `W`
+can help, because if the vanishing-coefficient submodule strictly contained the
+old subspace then EVERY complement would fail by a dimension count.  So the
+reduction cannot come from the choice of `W`; it has to come from shrinking the
+QUANTIFIER, which is what is done here.
 
-which exists because `S₂(Γ₀(M))` is finite-dimensional
-(`cuspForm_finiteDimensional`, PROVEN) and the Petersson form is a
-positive-definite Hermitian form on it.  The vanishing statement is then
-D–S Thm 5.7.1 proper, whose proof runs through the Atkin–Lehner involutions
-`W_Q` and the Petersson adjointness of the degeneracy maps.
+PROOF.  Let `Kv = ⋂_{(n,M)=1} ker a_n` be the vanishing-coefficient submodule.
+
+* `Kv` is stable under every good Hecke operator `T_q`, `q ∤ M`: by
+  `qCoeff_heckeOp`, `a_n(T_q v) = a_{qn}(v) + q·a_{n/q}(v)`, and for `n` coprime
+  to `M` both `qn` and `n/q` are again coprime to `M` — the first because
+  `q ∤ M` makes `q` coprime to `M`, the second because `n/q ∣ n`.
+* The good `T_q` commute (`heckeOp_mul_comm`) and `S₂(Γ₀(M))` is
+  finite-dimensional (`cuspForm_finiteDimensional`), so
+  `eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo` writes `Kv` as the supremum of
+  its intersections with the simultaneous maximal generalized eigenspaces.
+* Each such intersection consists of GENERALIZED joint eigenvectors, which
+  good-prime semisimplicity
+  (`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, PROVEN over the
+  Petersson leaf) upgrades to HONEST joint eigenvectors; the single remaining
+  leaf `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` then puts
+  them in the old subspace.  Hence `Kv ≤ old`.
+* Finally take for `W` ANY vector-space complement of the old subspace
+  (`Submodule.exists_isCompl`).  The first conjunct is `IsCompl.sup_eq_top`;
+  for the second, a `v ∈ W` with vanishing coprime coefficients lies in `Kv`,
+  hence in the old subspace, hence in `old ⊓ W = ⊥`.
 
 WHY ONLY `⊔ = ⊤` IS DEMANDED, not `IsCompl`.  Directness is not needed by
 the consumer — only that every form splits — so the weaker requirement is
-stated, which is the easier obligation.  The leaf is NOT thereby weakened
-into vacuity: `W = ⊤` satisfies `⊔ = ⊤` but violates the second conjunct,
-since a nonzero old form has vanishing coefficients at every index coprime
-to `M` (`qCoeff_eq_zero_of_mem_oldSubspace`).  The two conjuncts together
-still force `W` to meet the old subspace trivially.
+stated.  The statement is NOT thereby vacuous: `W = ⊤` satisfies `⊔ = ⊤` but
+violates the second conjunct, since a nonzero old form has vanishing
+coefficients at every index coprime to `M`
+(`qCoeff_eq_zero_of_mem_oldSubspace`).  The two conjuncts together still force
+`W` to meet the old subspace trivially.
+
+THE PRIOR AUDIT, AND EXACTLY WHICH HALF OF IT SURVIVES.  A "THIS CUT IS A
+RESTATEMENT, NOT A REDUCTION" audit stood here, and it was right about the
+statement and wrong only about what follows from that.  Its content, preserved
+because it still rules out the obvious attack: writing
+`K := {v | ∀ n, n.Coprime M → qCoeff M v n = 0}` (a submodule, an intersection
+of kernels of the functionals `qCoeffL M n`), the consumer
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` below is exactly `K ≤ old`, the
+converse `old ≤ K` is PROVEN (`qCoeff_eq_zero_of_mem_oldSubspace`), and this
+node and that consumer are LOGICALLY EQUIVALENT — `(consumer ⇒ node)` by taking
+any complement, `(node ⇒ consumer)` by the splitting argument below.  Hence
+nothing whatever is gained by choosing `W` cleverly: if `K ⊋ old` then EVERY
+complement of `old` fails the second conjunct, by the dimension count
+`dim (W ⊓ K) ≥ dim W + dim K − dim S₂ = dim K − dim old > 0`.
+
+What the audit then inferred — that a prover "must actually produce"
+Diamond–Shurman 5.7.1 in full, via the Petersson-orthogonal complement and the
+Atkin–Lehner involutions `W_Q` — does NOT follow, and is what the proof below
+refutes.  Equivalence with the consumer blocks a reduction that comes from the
+SHAPE of the statement; it says nothing about one that comes from shrinking the
+QUANTIFIER.  Both this node and the consumer quantify over all cusp forms, and
+the spectral decomposition of `S₂(Γ₀(M))` under the good Hecke algebra reduces
+both to JOINT EIGENVECTORS — a strictly smaller class — at the cost of no new
+analytic obligation.  The involutions `W_Q` are not used anywhere below.
 
 WHAT THE PIN LACKS.  Nothing of the Petersson theory beyond the integrand
 `petersson` and its `SL(2,ℤ)`-invariance and exponential decay exists in
 `Mathlib.NumberTheory.ModularForms.Petersson`: the integral over a
 fundamental domain, positive-definiteness, the inner-product structure and
 the adjointness computation all have to be built, and there is no
-Atkin–Lehner material in mathlib or in `~/cs/FLT`.  This is shared with the
+Atkin–Lehner material in mathlib or in `~/cs/FLT`.  That machinery is not
+needed for THIS node (see the paragraph above), but it is needed by the
 sibling leaf `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
-(good-prime semisimplicity), which needs the SAME inner product and
-self-adjointness of `T_q` — so whoever builds the Petersson product should
-expect to discharge both.  As of 2026-07-26 that shared prerequisite is
-CUT DOWN to the single leaf `exists_peterssonDomain` above: the Petersson
-product itself (`exists_peterssonProduct_selfAdjoint_heckeOp`) is PROVEN
-over it, definiteness included.
-
-AUDIT 2026-07-26 — THIS CUT IS A RESTATEMENT, NOT A REDUCTION.  Write
-`K := {v | ∀ n, n.Coprime M → qCoeff M v n = 0}`, a submodule (an
-intersection of kernels of the functionals `qCoeffL M n`).  The consumer
-`mem_oldSubspace_of_qCoeff_coprime_eq_zero` below is exactly `K ≤ old`, and
-the converse `old ≤ K` is already PROVEN
-(`qCoeff_eq_zero_of_mem_oldSubspace`).  Then THIS LEAF AND THAT CONSUMER
-ARE LOGICALLY EQUIVALENT:
-
-* (leaf ⇒ consumer) is the three-line splitting argument written out below;
-* (consumer ⇒ leaf) take `W` to be ANY complement of `old`, which exists in
-  any vector space (`Submodule.exists_isCompl`); then `old ⊔ W = ⊤` by
-  construction, and `v ∈ W` with vanishing good coefficients means `v ∈ K ≤
-  old`, so `v ∈ W ⊓ old = ⊥`.
-
-Two consequences worth knowing before anyone is dispatched here.  First,
-there is NO cheaper attack hiding in the shape of the statement: nothing is
-gained by choosing `W` cleverly, because if `K ⊋ old` then EVERY complement
-of `old` fails the second conjunct (a dimension count: `dim (W ⊓ K) ≥ dim W
-+ dim K − dim S₂ = dim K − dim old > 0`).  Second, the leaf is therefore
-neither vacuous nor weakened — it carries the full strength of
-Diamond–Shurman 5.7.1, and that is the theorem a prover must actually
-produce, via the Petersson-orthogonal complement and the Atkin–Lehner
-involutions `W_Q`. -/
+(good-prime semisimplicity), which wants the same inner product and
+self-adjointness of `T_q`.  As of 2026-07-26 that prerequisite is CUT DOWN
+to `exists_peterssonDomain` above: the Petersson product itself
+(`exists_peterssonProduct_selfAdjoint_heckeOp`) is PROVEN over it,
+definiteness included.  (2026-07-27: `exists_peterssonDomain` is now PROVEN
+in turn, over the two leaves `volume_smul_inter_gamma0Domain_eq_zero` and
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain`, with the domain itself
+constructed and its finite volume, interior and covering property proven.) -/
 theorem exists_oldSubspace_complement_vanishing (M : ℕ) (hM : 0 < M) :
     ∃ W : Submodule ℂ (CuspForm (Gamma0GL M) 2),
       (⨆ p ∈ M.primeFactors,
         LinearMap.range (degeneracyOp (M / p) M p)) ⊔ W = ⊤ ∧
-      ∀ v ∈ W, (∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) → v = 0 :=
-  sorry
+      ∀ v ∈ W, (∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) → v = 0 := by
+  classical
+  haveI : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  -- The submodule cut out by vanishing of every coefficient at an index
+  -- coprime to `M`.
+  set Kv : Submodule ℂ (CuspForm (Gamma0GL M) 2) :=
+    ⨅ n : {n : ℕ // Nat.Coprime n M}, LinearMap.ker (qCoeffL M n.1) with hKvdef
+  have hmemKv : ∀ v : CuspForm (Gamma0GL M) 2,
+      v ∈ Kv ↔ ∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0 := by
+    intro v
+    simp only [hKvdef, Submodule.mem_iInf, LinearMap.mem_ker, qCoeffL_apply,
+      Subtype.forall]
+  -- The good Hecke operators commute and preserve `Kv`.
+  have hcomm : ∀ i j : {q : ℕ // q.Prime ∧ ¬ q ∣ M},
+      Commute (heckeOp M i.1) (heckeOp M j.1) := fun i j =>
+    heckeOp_mul_comm hM i.2.1 j.2.1
+  have hst : ∀ i : {q : ℕ // q.Prime ∧ ¬ q ∣ M},
+      Set.MapsTo (heckeOp M i.1) Kv Kv := by
+    intro i x hx
+    have hx' : ∀ n : ℕ, Nat.Coprime n M → qCoeff M x n = 0 := (hmemKv x).mp hx
+    refine (hmemKv _).mpr fun n hn => ?_
+    have hqc : Nat.Coprime i.1 M := (Nat.Prime.coprime_iff_not_dvd i.2.1).mpr i.2.2
+    have h1 : qCoeff M x (i.1 * n) = 0 :=
+      hx' _ (Nat.coprime_mul_iff_left.mpr ⟨hqc, hn⟩)
+    rw [qCoeff_heckeOp hM i.2.1 x n, h1, if_neg i.2.2]
+    by_cases hdvd : i.1 ∣ n
+    · have h2 : qCoeff M x (n / i.1) = 0 :=
+        hx' _ (Nat.Coprime.coprime_dvd_left (Nat.div_dvd_of_dvd hdvd) hn)
+      rw [if_pos hdvd, h2]
+      ring
+    · rw [if_neg hdvd]
+      ring
+  -- Every form with vanishing coprime coefficients is old: decompose `Kv` along
+  -- the joint generalized eigenspaces of the good Hecke operators, upgrade each
+  -- generalized eigenvector to an honest one by good-prime semisimplicity, and
+  -- apply the eigenvector case.
+  have hKO : Kv ≤ ⨆ p ∈ M.primeFactors,
+      LinearMap.range (degeneracyOp (M / p) M p) := by
+    refine le_trans (le_of_eq (eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo
+      (fun q : {q : ℕ // q.Prime ∧ ¬ q ∣ M} => heckeOp M q.1) hcomm Kv hst)) ?_
+    refine iSup_le fun ψ => ?_
+    intro v hv
+    obtain ⟨hvK, hvE⟩ := Submodule.mem_inf.mp hv
+    refine mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero hM
+      (c := fun q => if h : q.Prime ∧ ¬ q ∣ M then ψ ⟨q, h⟩ else 0)
+      (fun q hq hqM => ?_) ((hmemKv v).mp hvK)
+    obtain ⟨k, hk⟩ := (Module.End.mem_iInf_maxGenEigenspace_iff
+      (fun q : {q : ℕ // q.Prime ∧ ¬ q ∣ M} => heckeOp M q.1) ψ v).mp hvE
+        ⟨q, hq, hqM⟩
+    rw [dif_pos (show q.Prime ∧ ¬ q ∣ M from ⟨hq, hqM⟩)]
+    exact heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level hM hq hqM _
+      (n := k) (by simpa using hk)
+  obtain ⟨W, hW⟩ := Submodule.exists_isCompl
+    (⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p))
+  refine ⟨W, hW.sup_eq_top, fun v hvW hvc => ?_⟩
+  simpa using hW.disjoint.le_bot
+    (Submodule.mem_inf.mpr ⟨hKO ((hmemKv v).mpr hvc), hvW⟩)
 
 /-- **ATKIN–LEHNER MAIN LEMMA: no coefficients away from the level forces a form
 into the OLD SUBSPACE** (PROVEN 2026-07-26 over the single analytic leaf
@@ -28099,28 +28946,37 @@ product and the Atkin–Lehner involutions `W_Q`, neither of which exists on thi
 pin.  Note it needs NO eigenvector hypothesis — it is a statement about a single
 cusp form, exactly as in Diamond–Shurman.
 
-STATUS 2026-07-26.  The analysis is now isolated in ONE leaf,
-`exists_oldSubspace_complement_vanishing` above — the existence of a
-complement of the old subspace (the *new* subspace, Petersson-orthogonal) in
-which no nonzero form has vanishing coefficients at all indices coprime to
-`M`.  Given it, this node is a three-line splitting argument, because the
-CONVERSE inclusion is elementary and is now PROVEN and consumed here:
-`qCoeff_eq_zero_of_mem_oldSubspace` (`a_n(V_p u) = 0` unless `p ∣ n` by
-`qCoeff_degeneracyOp`, and an `n` coprime to `M` is divisible by no `p ∣ M`).
-Split `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
-good coefficients by the converse, hence so does `b = w − a`, hence `b = 0`.
+STATUS 2026-07-26 (SUPERSEDES the paragraph this replaces).  This node is still
+a three-line splitting argument over `exists_oldSubspace_complement_vanishing`
+above — `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
+good coefficients by the elementary converse
+`qCoeff_eq_zero_of_mem_oldSubspace`, hence so does `b = w − a`, hence `b = 0` —
+but that node is now itself PROVEN, so the whole cluster rests on the single
+leaf `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`: the same
+statement restricted to JOINT EIGENVECTORS of the good Hecke operators.
 
-DEPENDENCY NOTE (corrected 2026-07-26 — the previous version of this
-paragraph was STALE and said the opposite).  `V_p` itself is BUILT and
-sorry-free (`degeneracyOp` above, with `degeneracyOp_coe` and
-`qCoeff_degeneracyOp`), so nothing definitional remains anywhere in this
-cluster.  What the remaining leaf needs is the Petersson inner product on
-`S₂(Γ₀(M))` and the involutions `W_Q`.  Contrary to the note that stood
-here, `exists_peterssonProduct_selfAdjoint_heckeOp` DOES exist in this tree
-and is PROVEN, over the single leaf `exists_peterssonDomain`; so the
-Petersson product is available as a definite conjugate-symmetric form as
-soon as that domain leaf is discharged, and the domain leaf is SHARED with
-the sibling `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
+DEPENDENCY NOTE (corrected 2026-07-26 — the previous version of this paragraph
+was STALE and said the opposite; two owners caught it independently).  `V_p`
+itself is BUILT and sorry-free (`degeneracyOp` above, with `degeneracyOp_coe`
+and `qCoeff_degeneracyOp`), so nothing definitional remains anywhere in this
+cluster.  Contrary to the note that stood here,
+`exists_peterssonProduct_selfAdjoint_heckeOp` DOES exist in this tree and is
+PROVEN, over `exists_peterssonDomain` — which as of 2026-07-27 is itself
+PROVEN, over the two leaves `volume_smul_inter_gamma0Domain_eq_zero`
+(a.e.-disjointness, reduced to `volume (𝒟 \ 𝒟ᵒ) = 0`) and
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain` (the double-coset
+unfolding).  So the Petersson product is available as a definite
+conjugate-symmetric form as soon as those two are discharged, and they are
+SHARED with the sibling
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` (good-prime
+semisimplicity).
+
+Consequently the passage from "all cusp forms" to "joint good-Hecke
+eigenvectors" is available and has been taken in
+`exists_oldSubspace_complement_vanishing` above.  What remains under this
+cluster is therefore NOT the Petersson product and NOT the involutions `W_Q` —
+neither is used in the eigenvector case — but the newform decomposition itself,
+isolated in `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`. -/
 theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
     {w : CuspForm (Gamma0GL M) 2}
     (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
@@ -37574,6 +38430,29 @@ The three families that bracket the criterion:
 * `ℚ_p(u^{1/p})` for a unit `u` (PEU RAMIFIÉE): `v₃(disc(x³−2)) = 3`,
   degree `3`, so `v₃(𝔡) = 1`.
 
+CONFIRMED IN UPPER NUMBERING, AND THE MARGIN IS EXACTLY ZERO (third
+owner, 2026-07-26). The audit above reasons with DIFFERENTS, but
+Fontaine's theorem is really about the upper-numbering ramification
+groups (`G^{(u)} = 1` for `u > n − 1 + 1/(p−1)` when `e = 1`), which is
+SHARPER — so it had to be rechecked there rather than assumed. Both
+`S₃` fields were recomputed independently in PARI/GP; each has degree
+`6` with `e = 6`, `f = 1`, so `v₃(disc) = f·d = d`:
+
+* peu ramifiée `ℚ₃(μ₃, 2^{1/3})`: `v₃(disc) = 7`, so `d = 7 = 5 + 2·1`,
+  lower breaks `0, 1`, upper break `φ(1) = 1/2`;
+* très ramifiée `ℚ₃(μ₃, 3^{1/3})`: `v₃(disc) = 11`, so `d = 11 = 5 + 2·3`,
+  lower breaks `0, 3`, upper break `φ(3) = 3/2`.
+
+(Here `d = Σ_i (|G_i| − 1) = 5 + 2t` because `G₀ = S₃` is all of the
+inertia and `G₁ = ⋯ = G_t = C₃` is its wild part; `φ` has slope
+`1/[G₀ : G_t] = 1/2` beyond `0`.) So at `n = 1` the threshold `1/2` is
+SHARP IN BOTH DIRECTIONS — peu ramifiée sits exactly at it, très
+ramifiée exactly above. At `n = 2` the threshold is `3/2`, EQUAL to the
+très ramifiée break, so the `s = 1` case is not excluded by a margin of
+exactly ZERO — not the comfortable margin the different form suggests.
+The verdict below is unchanged; the honest gap is merely much narrower
+than differents make it look.
+
 WHAT FONTAINE'S BOUND DOES GIVE, AND WHERE `hpodd` ENTERS. At `n = 1`
 the bound is SHARP and closes the leaf: `1 + 1 − 1/p ≥ 1 + 1/(p−1)`
 iff `(p−1)² ≥ p` iff `p ≥ 3`, so the très ramifiée radical is excluded
@@ -37680,6 +38559,71 @@ prolongation introduced only to be contradicted. So the Proposition
 above, which covers the Tate case the geometry actually produces, does
 NOT discharge the consumer, and restricting the leaf to Tate-curve
 prolongations would break it.
+
+SECOND FAMILY RULED OUT AT `n = 2`: THE HEIGHT-2 FORMAL GROUPS (third
+owner, 2026-07-26; new, and the family Fontaine's bound comes CLOSEST to
+allowing). The Tate family is ordinary/toric; the natural next candidate
+is the supersingular one, where the whole `pⁿ`-torsion is connected. Let
+`F` be the Lubin–Tate formal group over `ℤ_3` with `[3](X) = 3X + X⁹`
+(height 2, dimension 1), so `F[9]` IS a finite flat group scheme over
+`ℤ_3` killed by `9`, of exactly the kind this leaf quantifies over. Take
+the `s = 1` shape the audit below shows ramification cannot exclude:
+`q = 27`, `r = 3^{1/3}`, `r⁹ = 27`, `9 ∤ v₃(27) = 3`. Then
+`3^{1/3} ∉ ℚ_3(x)` for `x` a primitive `9`-torsion point of `F`:
+
+* `F[3] \ {0}` is cut out by `3 + X⁸`, so `K₁ = ℚ_3(π)`, `π⁸ = −3`,
+  Eisenstein — totally TAMELY ramified of degree `8`.
+* `[3](x) = π` reads `x⁹ + 3x = π`; eliminating `π` gives the Eisenstein
+  `h(X) = (X⁹ + 3X)⁸ + 3` of degree `72`, so `K₂ = ℚ_3(x)` is totally
+  ramified of degree `72` and `v(x) = 1/72` (normalising `v(3) = 1`).
+* `h(x) = 0` rearranges to `x⁷² = −3w` with `w = (1 + 3x⁻⁸)⁻⁸`, and
+  `v_{K₂}(3x⁻⁸) = 72 − 8 = 64`, so `v_{K₂}(w − 1) = 64` EXACTLY (the
+  linear term `−8·3x⁻⁸` dominates, `8` being a unit).
+* Any `y ∈ K₂` with `y³ = 3` has `v_{K₂}(y) = 24`, hence `y = x²⁴c` with
+  `c` a unit and `c³ = −w⁻¹`; `−1 = (−1)³` is a cube, so this needs `w`
+  to be a cube. On principal units of `K₂` (where `e = 72` and
+  `e/(p−1) = 36`) cubing carries `U^{(m)}` onto `U^{(3m)}` for `m < 36`
+  and onto `U^{(m+72)}` for `m > 36`; so a principal unit that is a cube
+  and is `≢ 1 mod 𝔪^{108}` has `v(· − 1)` DIVISIBLE BY 3. Since `3 ∤ 64`
+  and `64 < 108`, `w` is not a cube.
+
+Cross-checked in Magma: over the degree-`72` field defined by `h`,
+`Factorization(Y³ − 3)` returns one irreducible factor of degree `3`.
+
+THE CHECK THAT WOULD REFUTE THIS SECOND ITEM, stated because a bare
+"family ruled out" is not refutable: the computation above covers
+`ℚ_3(x)` for ONE primitive `9`-torsion point, not the full
+`ℚ_3(F[9])`, which is its Galois closure and has degree up to
+`|GL₂(ℤ/9)| = 3888`. A Magma `SplittingField` of `[9](X)/X` did not
+finish in 9 minutes and was abandoned; whether `3^{1/3} ∈ ℚ_3(F[9])`
+is therefore still OPEN, and a positive answer would REFUTE this leaf.
+That is the single cheapest experiment a next owner can run.
+
+WHY NO SHARPENING OF FONTAINE'S CONSTANT CAN CLOSE THE `s ≥ 1` CASE
+(third owner, 2026-07-26 — the structural form of the numerical gap the
+audit below reports). Write `p^s ‖ v_p(q)` and `t := n − s`. Put
+`π₀ := r^{p^t}`; then `v_p(π₀) = v_p(q)/p^s` is PRIME TO `p` and
+`r = π₀^{1/p^t}`. So the radical that `hfix` places inside `ℚ_p(G)` is
+très ramifiée AT LEVEL `p^t`, not at level `pⁿ`. Its top upper break is
+`1 + 1/(p−1) = 3/2` at `t = 1`, `p = 3` (PARI-confirmed below), while
+Fontaine's threshold `n − 1 + 1/(p−1)` grows with `n`. The two meet
+exactly when `t = n`, i.e. `s = 0`. The deficit is therefore the LINEAR
+gap `t` versus `n`, not a constant, so improving Fontaine's `1/(p−1)`
+changes nothing. This is the precise sense of "ramification alone yields
+`p ∣ v_p(q)` and never more", and it is why the residual input must be
+Raynaud/fppf rather than a better ramification estimate.
+
+FAITHFULNESS RE-CHECK OF THE HYPOTHESIS (third owner, 2026-07-26).
+`GaloisRep.HasFlatProlongationAt` was re-read at its definition
+(`Fermat/FLT/Deformations/RepresentationTheory/GaloisRep.lean`) to rule
+out the possibility that this leaf is hard only because the predicate is
+loose: it demands a Hopf algebra `G` over `𝒪ᵥ` that is `Module.Flat` AND
+`Module.Finite`, with étale generic fibre, together with a
+`Γ Kᵥ`-equivariant BIJECTION onto `(ρ.toLocal v).Space`. So `hflat` says
+exactly "the local module is the group of geometric points of a finite
+flat group scheme over `ℤ_p`", and `hkill` transports to the scheme by
+flatness. The leaf is a genuine Raynaud/Fontaine assertion; it is not
+weakened, and it is not vacuous.
 
 THE PROOF ROUTE, AND THE MACHINERY IT NEEDS. Serre's own argument for
 §2.8 Prop. 4 is the fppf Kummer sequence over `Spec ℤ_p`:
