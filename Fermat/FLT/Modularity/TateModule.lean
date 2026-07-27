@@ -10821,9 +10821,10 @@ of which are PROVEN outright and only one of which is open.
   the existence of `σ` and the clause `hσ`: over a finite field the
   `#k`-power map really is a `k`-algebra automorphism of `k̄`.  This is
   mathlib's `FiniteField.frobeniusAlgEquivOfAlgebraic`.
-* `exists_finset_reductionMap_of_mult` (OPEN) keeps everything geometric:
-  the finite set `bad`, the reduced abelian scheme with its real
-  multiplication, and the reduction map `e`.
+* `exists_finset_reductionMap_of_mult` (**PROVEN 2026-07-27**, see the
+  next update below) keeps everything geometric: the finite set `bad`,
+  the reduced abelian scheme with its real multiplication, and the
+  reduction map `e`.
 
 Two clauses were also made MORE PRIMITIVE in the passage, and the algebra
 that converts them back is what the assembly proves:
@@ -10842,7 +10843,29 @@ that converts them back is what the assembly proves:
 So the ideal `I` and its maximality, which are bookkeeping rather than
 geometry, no longer appear in the open leaf at all: it quantifies only
 over a prime `q` prime to `w` and an exponent `n`.  What remains open is
-exactly the Néron-model content, and nothing else. -/
+exactly the Néron-model content, and nothing else.
+
+**UPDATE 2026-07-27, LATER — `exists_finset_reductionMap_of_mult` IS NOW
+PROVEN TOO, over two DISJOINT leaves.**  The obstruction to cutting it
+was that `e` was a bare function, so its four properties were four
+independent assumptions and no sub-leaf could be stated.  The subsection
+`The Néron-pinned reduction datum` below removes that exactly as
+`Fermat/FLT/ModularCurve/X0.lean` did for `X_0(N)` (`IsX0NeronDatum`):
+`IsAbelianReductionDatum` carries the INTEGRAL MODEL over the local ring
+of `F̄` at a place above `w`, `red` is DEFINED as "extend by the valuative
+criterion, restrict to the closed point", and additivity, `𝒪_D`-
+equivariance and the Frobenius intertwining become THEOREMS.  What is
+left is
+
+* `exists_finset_abelianReductionDatum_of_mult` — SPREADING OUT, the
+  existence of the datum outside a finite set of places;
+* `abelianSchemePt_eq_zero_of_pre_eq_of_isUnit` — the kernel of reduction
+  has no torsion prime to the residue characteristic, now a statement
+  about ONE abelian scheme over ONE local ring, with no `F`, no `w` and
+  no Galois action in it.
+
+The two live in different books (BLR ch. 1 and 7 versus the finite étale
+torsion subscheme) and can be owned independently. -/
 
 /-- **THE RESIDUE FIELD AT A FINITE PLACE OF A NUMBER FIELD IS FINITE**
 (PROVEN).  `w.asIdeal` is a nonzero prime of the Dedekind domain `𝒪_F`,
@@ -10892,10 +10915,416 @@ theorem exists_absoluteGaloisGroup_pow_natCard_of_finite {k : Type u} [Field k]
   rw [Nat.card_eq_fintype_card]
   rfl
 
+section AbelianReduction
+
+open _root_.NumberField
+
+/-! #### The Néron-pinned reduction datum, and the cut of
+`exists_finset_reductionMap_of_mult`
+
+`exists_finset_reductionMap_of_mult` below asks for a reduction map `e`
+with four properties.  As long as `e` is a bare function the four
+properties are four independent assumptions, and the leaf is atomic: no
+sub-leaf can be stated about `e` without either assuming it or assuming
+something that a junk `e` would satisfy.  This subsection removes that
+obstruction the way `Fermat/FLT/ModularCurve/X0.lean` removed it for
+`X_0(N)` (`IsX0NeronDatum`): the map is no longer posited, it is READ OFF
+an integral model.
+
+`IsAbelianReductionDatum` carries the model of the geometric fibre over
+the local ring `O` of `F̄` at a place `w̄ ∣ w`, together with the two
+fibre identifications and the valuative criterion of properness; `red` is
+then DEFINED as "extend to `O`, restrict to the closed point", and
+
+* additivity (`red_add`),
+* `𝒪_D`-equivariance (`red_act`), and
+* the Frobenius intertwining (`red_galSMul`)
+
+are THEOREMS about it rather than hypotheses.  What is left open is
+exactly two statements, and they belong to two disjoint mathematical
+subtrees:
+
+* `exists_finset_abelianReductionDatum_of_mult` — SPREADING OUT: outside a
+  finite set of places the datum exists at all (BLR *Néron Models* 1.2,
+  1.4, 7.4; Mumford *AV* §6);
+* `abelianSchemePt_eq_zero_of_pre_eq_of_isUnit` — the KERNEL OF REDUCTION
+  is torsion-free away from the residue characteristic.  This one no
+  longer mentions `F`, `x`, `w`, `D`-multiplication on the generic fibre
+  or the Galois action: it is a statement about ONE abelian scheme over
+  ONE local ring, namely that a `q`-power-torsion section with `q`
+  invertible which vanishes at the closed point vanishes.  Classically:
+  `𝒜[qⁿ]` is finite étale over `O`, the zero section is therefore open
+  and closed in it, and `Spec O` is connected because `O` is local, so
+  the locus where the section agrees with `0` is everything.
+
+**Why the base is pinned, and how.**  The second leaf quantifies
+UNIVERSALLY over data, so a junk datum would make it FALSE rather than
+merely weak — this is the trap recorded in `X0.lean`'s `exists_x0Sieve`
+subsection.  The fields `ι_injective`, `π_surjective`, `ker_π`,
+`valuationRing` and `lift_int` pin `O` as a valuation ring of `F̄`, local
+with residue field `κ(w)ᵃˡᵍ`, whose centre on `𝒪_F` is exactly `w`.  In
+particular `q ∉ w` forces `q ∈ O ˣ` (`isUnit_natCast_of_notMem`), which
+is the hypothesis the second leaf is stated with — so the passage from
+"prime to `w`" to "invertible on the base" is carried out HERE, by a
+proof, and the geometric leaf never has to mention `w`. -/
+
+/-- **A NÉRON-PINNED REDUCTION DATUM FOR THE FIBRE `A_x` AT A PLACE `w`
+OF `F`.**
+
+The data is an abelian scheme `fO : 𝒜 ⟶ Spec O` with real multiplication
+`mO`, over the local ring `O` of `F̄` at a place above `w`, together with:
+
+* `ι`, `π` — the inclusion `O ↪ F̄` and the residue map `O ↠ κ(w)ᵃˡᵍ`,
+  with the five conditions that pin `(O, ι, π)` as that local ring (see
+  the subsection note above);
+* `gen`, `sp` — identifications of the generic and special fibres of the
+  model with the geometric fibre `A_x` and with `A'`, respecting the
+  group law (`gen_add`, `sp_add`) and the `𝒪_D`-action (`gen_act`,
+  `sp_act`);
+* `neron` — the VALUATIVE CRITERION OF PROPERNESS, `𝒜(O) ≅ 𝒜(F̄)`.  This
+  is what makes a reduction map exist at all, and it is where `ab.proper`
+  is used;
+* `frobPt`, `gen_frob`, `sp_frob` — the DECOMPOSITION-GROUP structure:
+  the arithmetic Frobenius at `w` acts on the model's integral points,
+  inducing `Frob_w` on the generic fibre and `σ` on the special fibre.
+  These three fields are what turn the Frobenius intertwining of
+  `exists_finset_reductionMap_of_mult` from an assumption about `e` into
+  the theorem `red_galSMul`.
+
+`σ` is a parameter rather than an output: the datum records that the
+Galois action on the model reduces to THIS element, and the existence
+leaf quantifies over the `σ` pinned by `z ↦ z^{N w}`. -/
+structure IsAbelianReductionDatum
+    {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {D : Type u} [Field D] [NumberField D] (m : Mult ab (𝓞 D))
+    {F : Type u} [Field F] [NumberField F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (w : HeightOneSpectrum (𝓞 F))
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField)}
+    (ab' : AbelianSchemeStruct f') (m' : Mult ab' (𝓞 D))
+    (σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField)
+    (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+    (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField))
+    {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+    (abO : AbelianSchemeStruct fO) (mO : Mult abO (𝓞 D)) where
+  /-- `O` is a subring of `F̄` -/
+  ι_injective : Function.Injective ι.hom
+  /-- `κ(w)ᵃˡᵍ` is the residue field of `O` -/
+  π_surjective : Function.Surjective π.hom
+  /-- `O` is local and the kernel of `π` is its maximal ideal -/
+  ker_π : ∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z
+  /-- `O` is a VALUATION ring of `F̄`; with `ι_injective` this makes `F̄`
+  its fraction field, so `O` is strictly henselian -/
+  valuationRing : ∀ z : AlgebraicClosure F, z ≠ 0 →
+    (∃ u : O, ι.hom u = z) ∨ (∃ u : O, ι.hom u = z⁻¹)
+  /-- the centre of the valuation on `𝒪_F` is exactly `w`: this is what
+  makes the place a place ABOVE `w` -/
+  lift_int : ∀ a : 𝓞 F, ∃ z : O,
+    ι.hom z = algebraMap F (AlgebraicClosure F) (algebraMap (𝓞 F) F a) ∧
+      (π.hom z = 0 ↔ a ∈ w.asIdeal)
+  /-- the generic fibre of the model is the geometric fibre at `x` -/
+  gen : GeomFibrePt f x ≃ RelPoint fO (Spec.map ι)
+  /-- the generic identification is additive -/
+  gen_add : ∀ y y' : GeomFibrePt f x, gen (ab.add y y') = abO.add (gen y) (gen y')
+  /-- the generic identification respects the real multiplication -/
+  gen_act : ∀ (c : 𝓞 D) (y : GeomFibrePt f x), gen (m.act c y) = mO.act c (gen y)
+  /-- the special fibre of the model is `A'` -/
+  sp : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))) ≃
+    RelPoint fO (Spec.map π)
+  /-- the special identification is additive -/
+  sp_add : ∀ u v : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))),
+    sp (ab'.add u v) = abO.add (sp u) (sp v)
+  /-- the special identification respects the real multiplication -/
+  sp_act : ∀ (c : 𝓞 D) (u : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField)))),
+    sp (m'.act c u) = mO.act c (sp u)
+  /-- **VALUATIVE CRITERION OF PROPERNESS**: every `F̄`-point of the
+  fibre extends uniquely to an `O`-point of the model -/
+  neron : Function.Bijective
+    (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) :
+      RelPoint fO (𝟙 (Spec O)) → RelPoint fO (Spec.map ι))
+  /-- the action of the arithmetic Frobenius at `w` on integral points -/
+  frobPt : RelPoint fO (𝟙 (Spec O)) → RelPoint fO (𝟙 (Spec O))
+  /-- on the generic fibre `frobPt` is the Galois action of `Frob_w` -/
+  gen_frob : ∀ u : RelPoint fO (𝟙 (Spec O)),
+    gen (ab.galSMul x
+        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w))
+        (gen.symm (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) u)))
+      = RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (frobPt u)
+  /-- on the special fibre `frobPt` reduces to `σ` -/
+  sp_frob : ∀ u : RelPoint fO (𝟙 (Spec O)),
+    RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (frobPt u)
+      = sp (ab'.galSMul _ σ
+          (sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u)))
+
+namespace IsAbelianReductionDatum
+
+variable {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+  {D : Type u} [Field D] [NumberField D] {m : Mult ab (𝓞 D)}
+  {F : Type u} [Field F] [NumberField F] {x : Spec (CommRingCat.of F) ⟶ S}
+  {w : HeightOneSpectrum (𝓞 F)}
+  {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField)}
+  {ab' : AbelianSchemeStruct f'} {m' : Mult ab' (𝓞 D)}
+  {σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField}
+  {O : CommRingCat.{u}} {ι : O ⟶ CommRingCat.of (AlgebraicClosure F)}
+  {π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)}
+  {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+  {abO : AbelianSchemeStruct fO} {mO : Mult abO (𝓞 D)}
+  (d : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO)
+
+/-- **The integral point extending a geometric point**, by the valuative
+criterion of properness. -/
+noncomputable def intPt (y : GeomFibrePt f x) : RelPoint fO (𝟙 (Spec O)) :=
+  (Equiv.ofBijective _ d.neron).symm (d.gen y)
+
+theorem pre_intPt (y : GeomFibrePt f x) :
+    RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (d.intPt y) = d.gen y :=
+  (Equiv.ofBijective _ d.neron).apply_symm_apply _
+
+theorem intPt_add (y y' : GeomFibrePt f x) :
+    d.intPt (ab.add y y') = abO.add (d.intPt y) (d.intPt y') := by
+  apply d.neron.1
+  rw [d.pre_intPt, abO.pre_add, d.pre_intPt, d.pre_intPt, d.gen_add]
+
+theorem intPt_act (c : 𝓞 D) (y : GeomFibrePt f x) :
+    d.intPt (m.act c y) = mO.act c (d.intPt y) := by
+  apply d.neron.1
+  rw [d.pre_intPt, mO.pre_act, d.pre_intPt, d.gen_act]
+
+/-- **THE REDUCTION MAP**: extend the geometric point to the integral
+model, then restrict to the closed point. -/
+noncomputable def red (y : GeomFibrePt f x) :
+    GeomFibrePt f' (𝟙 (Spec (CommRingCat.of w.asIdeal.ResidueField))) :=
+  d.sp.symm (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (d.intPt y))
+
+theorem red_def (y : GeomFibrePt f x) :
+    d.red y = d.sp.symm
+      (RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (d.intPt y)) := rfl
+
+/-- **The reduction map is additive** (PROVEN) — the first of the four
+properties of `exists_finset_reductionMap_of_mult`, no longer an
+assumption about an arbitrary `e`. -/
+theorem red_add (y y' : GeomFibrePt f x) :
+    d.red (ab.add y y') = ab'.add (d.red y) (d.red y') := by
+  apply d.sp.injective
+  rw [d.sp_add, red_def, red_def, red_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply,
+    Equiv.apply_symm_apply, d.intPt_add, abO.pre_add]
+
+/-- **The reduction map is `𝒪_D`-equivariant** (PROVEN). -/
+theorem red_act (c : 𝓞 D) (y : GeomFibrePt f x) :
+    d.red (m.act c y) = m'.act c (d.red y) := by
+  apply d.sp.injective
+  rw [d.sp_act, red_def, red_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply,
+    d.intPt_act, mO.pre_act]
+
+/-- Extension to the integral model intertwines `Frob_w` with the action
+of the decomposition group on the model. -/
+theorem intPt_frob (y : GeomFibrePt f x) :
+    d.intPt (ab.galSMul x
+        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
+      = d.frobPt (d.intPt y) := by
+  have hu : d.gen.symm
+      (RelPoint.pre (Spec.map ι) (Category.comp_id (Spec.map ι)) (d.intPt y)) = y := by
+    rw [d.pre_intPt, Equiv.symm_apply_apply]
+  have h2 := d.gen_frob (d.intPt y)
+  rw [hu] at h2
+  apply d.neron.1
+  rw [d.pre_intPt]
+  exact h2
+
+/-- **THE FROBENIUS INTERTWINING** (PROVEN, and on ALL geometric points
+— the restriction to prime-to-`w` torsion is needed for injectivity, not
+for this).  Reduction carries the arithmetic Frobenius at `w` to `σ`. -/
+theorem red_galSMul (y : GeomFibrePt f x) :
+    d.red (ab.galSMul x
+        (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
+      = ab'.galSMul _ σ (d.red y) := by
+  rw [red_def, d.intPt_frob, d.sp_frob, Equiv.symm_apply_apply]
+  rfl
+
+/-- An additive bijection kills zero. -/
+theorem gen_zero : d.gen (ab.zero (specAlgClos F ≫ x)) = abO.zero (Spec.map ι) := by
+  letI := abO.addCommGroup (Spec.map ι)
+  have h := d.gen_add (ab.zero (specAlgClos F ≫ x)) (ab.zero (specAlgClos F ≫ x))
+  rw [ab.zero_add] at h
+  have h2 : (abO.zero (Spec.map ι)) + d.gen (ab.zero (specAlgClos F ≫ x))
+      = d.gen (ab.zero (specAlgClos F ≫ x)) + d.gen (ab.zero (specAlgClos F ≫ x)) := by
+    show abO.add _ _ = abO.add _ _
+    rw [abO.zero_add]
+    exact h
+  exact (add_right_cancel h2).symm
+
+theorem intPt_zero : d.intPt (ab.zero (specAlgClos F ≫ x)) = abO.zero (𝟙 (Spec O)) := by
+  apply d.neron.1
+  rw [d.pre_intPt, abO.pre_zero, d.gen_zero]
+
+theorem intPt_injective : Function.Injective d.intPt :=
+  fun _ _ h => d.gen.injective ((Equiv.ofBijective _ d.neron).symm.injective h)
+
+include d in
+/-- **A rational prime away from `w` is INVERTIBLE ON THE BASE** (PROVEN).
+This is the whole use of `lift_int` and `ker_π`, and it is what lets the
+geometric leaf below be stated with `IsUnit (q : O)` instead of with a
+place of a number field. -/
+theorem isUnit_natCast_of_notMem (q : ℕ) (hqw : (q : 𝓞 F) ∉ w.asIdeal) :
+    IsUnit ((q : O)) := by
+  obtain ⟨z, hz1, hz2⟩ := d.lift_int (q : 𝓞 F)
+  have hzq : z = (q : O) := by
+    apply d.ι_injective
+    rw [hz1]
+    simp
+  have hπ : ¬ π.hom z = 0 := fun h => hqw (hz2.mp h)
+  have hnn : ¬ ¬ IsUnit z := fun h => hπ ((d.ker_π z).mpr h)
+  exact hzq ▸ not_not.mp hnn
+
+end IsAbelianReductionDatum
+
+/-- **THE KERNEL OF REDUCTION IS TORSION-FREE AWAY FROM THE RESIDUE
+CHARACTERISTIC** (sorry leaf — the finite étale torsion subscheme; BLR
+*Néron Models* 7.3, Mumford *AV* §6, Silverman *AEC* VII.3.1 in the
+elliptic case).
+
+An `O`-point `u` of an abelian scheme over a LOCAL ring `O`, killed by
+`qⁿ` for `q` invertible on `O`, which reduces to `0` at the closed point,
+IS `0`.
+
+Classically: `𝒜[qⁿ]` is finite étale over `O` because `q ∈ O ˣ`, so its
+zero section is an open and closed subscheme; `u` factors through
+`𝒜[qⁿ]`, and `u⁻¹(0)` is therefore a clopen subscheme of `Spec O`
+containing the closed point; `Spec O` is connected because `O` is local,
+so `u⁻¹(0) = Spec O`, i.e. `u = 0`.  Equivalently, and this is the form
+usually quoted, the kernel of reduction is the group of points of a
+formal group over the maximal ideal and hence has no prime-to-residue
+characteristic torsion.
+
+`hlocal` is the only thing asked of `O` and it says exactly "`O` is local
+and `π` is its residue map" — the kernel of a ring map is an ideal, so
+"kernel = non-units" is locality.  It is INDISPENSABLE: over a
+disconnected base a `qⁿ`-torsion section may vanish on one component and
+not on another, so the statement is false for a general `O`.
+
+`hq` is not needed — `hqO` alone drives the argument — and is carried
+only because every consumer has it. -/
+theorem abelianSchemePt_eq_zero_of_pre_eq_of_isUnit
+    {D : Type u} [Field D] [NumberField D]
+    {O : CommRingCat.{u}} {κ : Type u} [Field κ] (π : O ⟶ CommRingCat.of κ)
+    (hlocal : ∀ z : O, π.hom z = 0 ↔ ¬ IsUnit z)
+    {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O} {abO : AbelianSchemeStruct fO}
+    (mO : Mult abO (𝓞 D)) (q n : ℕ) (hq : q.Prime) (hqO : IsUnit ((q : O)))
+    (u : RelPoint fO (𝟙 (Spec O)))
+    (hu : mO.act ((q : 𝓞 D) ^ n) u = abO.zero (𝟙 (Spec O)))
+    (hred : RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) u
+      = RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π))
+          (abO.zero (𝟙 (Spec O)))) :
+    u = abO.zero (𝟙 (Spec O)) :=
+  sorry
+
+namespace IsAbelianReductionDatum
+
+variable {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+  {D : Type u} [Field D] [NumberField D] {m : Mult ab (𝓞 D)}
+  {F : Type u} [Field F] [NumberField F] {x : Spec (CommRingCat.of F) ⟶ S}
+  {w : HeightOneSpectrum (𝓞 F)}
+  {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField)}
+  {ab' : AbelianSchemeStruct f'} {m' : Mult ab' (𝓞 D)}
+  {σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField}
+  {O : CommRingCat.{u}} {ι : O ⟶ CommRingCat.of (AlgebraicClosure F)}
+  {π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField)}
+  {𝒜 : Scheme.{u}} {fO : 𝒜 ⟶ Spec O}
+  {abO : AbelianSchemeStruct fO} {mO : Mult abO (𝓞 D)}
+  (d : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO)
+
+/-- **THE KERNEL OF REDUCTION CONTAINS NO NONZERO PRIME-TO-`w` TORSION**
+(PROVEN over `abelianSchemePt_eq_zero_of_pre_eq_of_isUnit`).  The passage
+from the geometric fibre to the model is by the three bijections `gen`,
+`intPt` and `sp`, all of which are additive and `𝒪_D`-equivariant; the
+only non-injective step is restriction to the closed point, which is
+where the geometric leaf applies. -/
+theorem eq_zero_of_red_eq_red_zero (q n : ℕ) (hq : q.Prime)
+    (hqw : (q : 𝓞 F) ∉ w.asIdeal) (y : GeomFibrePt f x)
+    (hy : m.act ((q : 𝓞 D) ^ n) y = ab.zero (specAlgClos F ≫ x))
+    (hz : d.red y = d.red (ab.zero (specAlgClos F ≫ x))) :
+    y = ab.zero (specAlgClos F ≫ x) := by
+  have hu : mO.act ((q : 𝓞 D) ^ n) (d.intPt y) = abO.zero (𝟙 (Spec O)) := by
+    rw [← d.intPt_act, hy, d.intPt_zero]
+  have hred : RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π)) (d.intPt y)
+      = RelPoint.pre (Spec.map π) (Category.comp_id (Spec.map π))
+          (abO.zero (𝟙 (Spec O))) := by
+    rw [← d.intPt_zero]
+    exact d.sp.symm.injective hz
+  have hzero := abelianSchemePt_eq_zero_of_pre_eq_of_isUnit π d.ker_π mO q n hq
+    (d.isUnit_natCast_of_notMem q hqw) (d.intPt y) hu hred
+  apply d.intPt_injective
+  rw [hzero, d.intPt_zero]
+
+end IsAbelianReductionDatum
+
+/-- **GOOD REDUCTION OUTSIDE A FINITE SET OF PLACES** (sorry leaf —
+SPREADING OUT; BLR *Néron Models* 1.2/1.4 and 7.4, Mumford *AV* §6).
+
+Outside a finite set of places `w` of `F` the fibre `A_x` has a
+Néron-pinned reduction datum at `w`: an abelian scheme over the local
+ring of `F̄` at a place above `w`, with real multiplication, with generic
+fibre `A_x` and special fibre an abelian variety `A'` over `κ(w)` of the
+same relative dimension `[D:ℚ]`, and with the decomposition group at `w`
+acting compatibly.
+
+This is where ALL the geometry of `exists_finset_reductionMap_of_mult`
+now lives.  The three arguments are the standard ones and they are what a
+prover has to build:
+
+1. `A_x` is of finite type over `F`, so it and its group law and its
+   `𝒪_D`-action DESCEND to a finitely generated `𝒪_F`-subalgebra, i.e.
+   spread out to an abelian scheme over `Spec 𝒪_F[1/N]` for some `N`
+   (BLR 1.2/1.4);
+2. `bad` is the set of places dividing `N` together with the finitely
+   many places of bad reduction; at every other `w` the model is proper
+   and smooth, so its base change to the valuation ring `O` of `F̄` at a
+   chosen `w̄ ∣ w` is an abelian scheme over `O` and the valuative
+   criterion gives `𝒜(O) ≅ 𝒜(F̄)` (`neron`);
+3. the Galois group acts on `F̄` over `F` and the decomposition group at
+   `w̄` preserves `O`, hence acts on the base change, inducing `Frob_w` on
+   the generic fibre and the `N w`-power map on the residue field — which
+   is `frobPt`, `gen_frob`, `sp_frob`.
+
+`hσ` is used only in step 3, to say WHICH element of `Γ_{κ(w)}` the
+Frobenius reduces to; it is not an assumption, since
+`exists_absoluteGaloisGroup_pow_natCard_of_finite` produces such a `σ`
+and it is unique. -/
+theorem exists_finset_abelianReductionDatum_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (𝓞 D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ bad : Finset (HeightOneSpectrum (𝓞 F)),
+      ∀ w ∉ bad,
+        ∀ σ : Field.absoluteGaloisGroup w.asIdeal.ResidueField,
+          (∀ z : AlgebraicClosure w.asIdeal.ResidueField,
+            (σ : AlgebraicClosure w.asIdeal.ResidueField ≃ₐ[w.asIdeal.ResidueField]
+                AlgebraicClosure w.asIdeal.ResidueField) z = z ^ Ideal.absNorm w.asIdeal) →
+        ∃ (A' : Scheme.{u}) (f' : A' ⟶ Spec (CommRingCat.of w.asIdeal.ResidueField))
+          (ab' : AbelianSchemeStruct f') (m' : Mult ab' (𝓞 D))
+          (O : CommRingCat.{u}) (ι : O ⟶ CommRingCat.of (AlgebraicClosure F))
+          (π : O ⟶ CommRingCat.of (AlgebraicClosure w.asIdeal.ResidueField))
+          (𝒜 : Scheme.{u}) (fO : 𝒜 ⟶ Spec O) (abO : AbelianSchemeStruct fO)
+          (mO : Mult abO (𝓞 D))
+          (_ : IsAbelianReductionDatum ab m x w ab' m' σ O ι π abO mO),
+          SmoothOfRelativeDimension (Module.finrank ℚ D) f' :=
+  sorry
+
+end AbelianReduction
+
 /-- **THE REDUCTION MAP AT A PLACE OF GOOD REDUCTION, IN ITS PRIMITIVE
-FORM** (sorry leaf — Néron models and the specialization isomorphism;
-Bosch–Lütkebohmert–Raynaud *Néron Models*, Mumford *Abelian Varieties*
-§6).
+FORM** (**PROVEN 2026-07-27** over two disjoint leaves — see the
+subsection `The Néron-pinned reduction datum` immediately above:
+`exists_finset_abelianReductionDatum_of_mult` (spreading out) and
+`abelianSchemePt_eq_zero_of_pre_eq_of_isUnit` (the kernel of reduction).
+The four properties of `e` are `IsAbelianReductionDatum.red_add`,
+`red_act`, `eq_zero_of_red_eq_red_zero` and `red_galSMul`; Bosch–
+Lütkebohmert–Raynaud *Néron Models*, Mumford *Abelian Varieties* §6).
 
 This is the whole geometric content of
 `exists_finset_frobSpecialization_of_mult`, and nothing else: the number
@@ -10973,8 +11402,13 @@ theorem exists_finset_reductionMap_of_mult
                 e (ab.galSMul x
                     (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
                       (Field.AbsoluteGaloisGroup.adicArithFrob w)) y)
-                  = ab'.galSMul _ σ (e y)) :=
-  sorry
+                  = ab'.galSMul _ σ (e y)) := by
+  obtain ⟨bad, hbad⟩ := exists_finset_abelianReductionDatum_of_mult m x hdim
+  refine ⟨bad, fun w hw σ hσ => ?_⟩
+  obtain ⟨A', f', ab', m', O, ι, π, 𝒜, fO, abO, mO, d, hdim'⟩ := hbad w hw σ hσ
+  exact ⟨A', f', ab', m', d.red, hdim', d.red_add, d.red_act,
+    fun q n hq hqw y hy hz => d.eq_zero_of_red_eq_red_zero q n hq hqw y hy hz,
+    fun _ _ _ _ y _ => d.red_galSMul y⟩
 
 /-- **THE REDUCTION MAP AT A PLACE OF GOOD REDUCTION** (**PROVEN
 2026-07-27** over `exists_finset_reductionMap_of_mult` and the three
