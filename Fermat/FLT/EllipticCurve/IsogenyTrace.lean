@@ -489,6 +489,64 @@ multiplicativity of the degree is used) and for the route through
 `det (A+B) + det (A−B) = 2 det A + 2 det B` and the single missing input is
 `deg ψ ≡ det (ρ_N ψ) (mod N)`.
 
+### ROUTE AUDIT (2026-07-27, second pass). Two corrections, each one grep deep.
+
+**(a) The leaf is NOT reducible to algebra, and here is the counterexample.** The
+facts available about `deg` without this leaf are: `deg 0 = 0`, `deg 1 = 1`,
+multiplicativity (`Isogeny.degree_comp`) and definiteness
+(`Isogeny.degree_eq_zero_iff`). Those four do **not** imply the parallelogram law:
+take `R = ℤ` and `q n := n ^ 4`. Then `q 0 = 0`, `q 1 = 1`, `q (nm) = q n · q m`
+and `q n = 0 → n = 0` all hold, while `q 2 + q 0 = 16 ≠ 4 = 2 q 1 + 2 q 1`. So
+every purely ring-theoretic strengthening of what is already here is closed off,
+and the remaining input must be genuinely geometric. (Contrast the trace formula,
+which those four facts *do* give once the parallelogram law is assumed — that is
+`charPoly_of_multiplicative_parallelogram`.)
+
+**(b) `WeilPairing*.lean` is a DEAD END for this, and the CUT note above is wrong
+to send the next owner there first.** The route note asks for
+`e_N (ψP, ψQ) = e_N (P,Q) ^ deg ψ`. Half of that is already free and the other
+half is not in the tree at all:
+
+* `WeilPairing.pairing_map_eq_det_smul` (`WeilPairing.lean:54`, PROVEN) is
+  `e (f x) (f y) = det f * e x y` for **any** alternating bilinear form on a
+  rank-`2` space over a field. It is pure linear algebra and says nothing about
+  curves;
+* `WeilPairing.exists_weilPairing` is **constructed as the coordinate determinant
+  form in a basis** (see its own docstring), so its compatibility with `det` is
+  definitional and it carries **no** information relating `e` to `deg`.
+
+So the tree has the `det` side twice over and the `deg` side not at all. The
+missing input is exactly `deg ψ ≡ det (ρ_ℓ ψ) (mod ℓ)`, and it needs the Weil
+pairing built from *functions and divisors* — the construction that makes
+`e_N (ψP, ψQ) = e_N (P,Q) ^ deg ψ` a theorem rather than a definition — or an
+`ℓ`-adic Smith-normal-form argument on the Tate module. Neither exists here.
+
+**Take `ℓ` PRIME, not general `N`.** `pairing_map_eq_det_smul` needs a field, and
+`WeierstrassCurve.p_torsion_rank` (`Torsion.lean`, PROVEN) gives
+`Module.rank (ZMod ℓ) (E.nTorsion ℓ) = 2` for `ℓ` prime. Since the conclusion is an
+identity between integers, holding modulo infinitely many primes suffices, so
+nothing is lost by restricting to prime moduli — and `ZMod N` for composite `N` is
+not a field, which is what makes the general-`N` phrasing of the CUT note harder
+than it needs to be.
+
+**What IS cheaply available, and is not enough.** `ker (ρ_ℓ ψ) = ker ψ ∩ W[ℓ]`, so
+by Cauchy's theorem in the finite group `ker ψ`, `det (ρ_ℓ ψ) = 0 ↔ ℓ ∣ deg ψ`.
+That pins the *vanishing* of the determinant but not its value, and the
+parallelogram law needs the value.
+
+**The greps that would refute this audit**: a divisor-theoretic or function-field
+Weil pairing, or any statement relating a pairing to `Isogeny.degree` —
+
+    grep -rn 'weilPairing.*degree\|degree.*weilPairing' Fermat/
+    grep -rn 'Isogeny\|degree' Fermat/FLT/EllipticCurve/WeilPairing*.lean
+    grep -rn 'Tate module\|tateModule\|adjugate' Fermat/ ~/cs/FLT/FLT/
+
+All were run on 2026-07-27 and none returns anything relevant. `~/cs/FLT` was
+checked too and does not help: its
+`FLT/KnownIn1980s/EllipticCurves/WeilPairing.lean` is a 42-line stub whose single
+declaration `WeierstrassCurve.weilPairing` is a `def` with a `sorry` body, so
+there is nothing to vendor.
+
 **Sanity check of the statement**, from the CM case: over `ℚ̄` with `End W ⊇ ℤ[i]`
 and `deg = N` the field norm, `φ = 1`, `ψ = i` gives `N(1+i) + N(1−i) = 2 + 2 = 4`
 and `2 N(1) + 2 N(i) = 2 + 2 = 4`. The degenerate cases are consistent too:
