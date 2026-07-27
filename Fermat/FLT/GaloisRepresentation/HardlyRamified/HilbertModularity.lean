@@ -7460,6 +7460,175 @@ lemma exists_hilbertGLTwoLift_of_surjective {A : Type*} [CommRing A] [IsLocalRin
     exact hU.ne_zero
   exact ⟨(Matrix.isUnit_iff_isUnit_det W₀).mpr hdet |>.unit, by simpa using hmap⟩
 
+/-- **`IsHilbertHardlyRamified` DESCENDS TO A SUBRING CARRYING THE MATRIX
+ENTRIES** (LEAF — stated 2026-07-27; item 4 of the `CUT AUDIT` decomposition
+recorded on `hilbertFrameLevels_classification` below, written now because
+`hilbertFrameLevels_repClause_ker` is now PROVEN over it and it is therefore
+no longer free-floating. The `F`-level twin of `Deformation.lean`'s PROVEN
+`isHardlyRamified_of_subring_entries`.)
+
+Setting: `A` a finite discrete local `ℤ_ℓ`-algebra in which `2` is a unit,
+`C ⊆ A` a local subring, and `ρC` a framed representation over `C` whose
+matrix entries are exactly those of the hardly ramified `ρA` (hypothesis
+`hent`). Then `ρC` is itself `F`-level hardly ramified.
+
+**CLAUSE-BY-CLAUSE STATUS — three of the four clauses are already available
+here and only the tame one is genuinely open.** This is recorded so that the
+next owner does not re-survey it; each item names the check that settles it.
+
+* *Determinant.* Formal. `LinearMap.det` commutes with `Matrix.map` along
+  `C.subtype` (`RingHom.map_det`), the `ℤ_ℓ`-structures agree because
+  `hilbertRingHom_padicInt_ext_finite` makes a ring map `ℤ_ℓ →+* A` into a
+  FINITE ring unique, and `C ↪ A` is injective. The `ℚ`-level proof of this
+  half transcribes verbatim; nothing about `F` enters, the determinant clause
+  of `IsHilbertHardlyRamified` differing from the `ℚ` one only by composing
+  the cyclotomic character with `Field.absoluteGaloisGroup.map`, which is a
+  fixed element of `Γ ℚ` per `g` and plays no part.
+* *Unramifiedness away from `2ℓ`.* Formal, and the inertia quantifier is
+  never widened: `ρA.toLocal w σ = 1` for `σ ∈ localInertiaGroup w` forces
+  `ρC.toLocal w σ = 1` entrywise through the injection. The one shape
+  difference from `ℚ` is that the places are `w : HeightOneSpectrum (𝓞 F)`
+  rather than rational primes, so the clause is read off directly instead of
+  through `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`.
+* *Flatness at the places over `ℓ`.* ALREADY PROVEN IN THIS FILE, and blocked
+  here only by DECLARATION ORDER: it is
+  `isFlatAt_of_conj_eq_of_numberField` composed with
+  `isFlatAt_of_subring_baseChange_of_numberField`, applied to the base-change
+  identity `(ρC ⊗ A)ᵉ = ρA` for `e = TensorProduct.piScalarRight C A A (Fin 2)`
+  — exactly as at the `ℚ` level — plus a port of `Deformation.lean`'s
+  `isAdic_maximalIdeal_of_finite` (twelve lines: a finite ring is Artinian,
+  so `𝔪ⁿ = ⊥`). Both flat lemmas live ~4200 lines BELOW this point
+  (`isFlatAt_of_subring_baseChange_of_numberField`, in the trace-subring
+  development), so closing this half is a pure HOIST of that block above
+  `section HilbertFrameRing`, not new mathematics. Check that refutes the
+  claim it is only an ordering problem: grep the moved block for any name
+  declared between here and its current home.
+* *Tameness at the places over `2`.* THE ONLY GENUINELY OPEN CONTENT, and it
+  is NOT a transcription — see the next section.
+
+**OBSTRUCTION AUDIT FOR THE TAME CLAUSE: THE `ℚ`-LEVEL ARITHMETIC INPUT DOES
+NOT TRANSPORT** (2026-07-27; this is the same obstruction already recorded,
+independently, in the FALSITY AUDIT on
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` below, and the two
+should be read together).
+
+At the `ℚ` level the stable line is produced from a SIMPLE residual root of
+the eigen-quadratic: Cayley–Hamilton makes each row of
+`ρ(g₀) − χ_ℓ(g₀)δ(g₀)·I` a left eigenvector for the eigenvalue `δ(g₀)`, and
+that matrix has trace `δ(g₀)(1 − χ_ℓ(g₀))`, so one of its rows is unimodular
+over the local ring `C` exactly when `1 − χ_ℓ(g₀)` is a UNIT. Over `ℚ_2` such
+a `g₀` always exists (`exists_cyclotomicCharacter_padicTwo_sub_one_isUnit`;
+concretely Frobenius, where `χ_ℓ = 2` and `1 − 2 = −1`).
+
+Over a place `w ∣ 2` of a general totally real `F` it need NOT: `χ_ℓ mod ℓ`
+is trivial on `Γ F_w` exactly when `μ_ℓ ⊆ F_w`, and `ℚ_2(μ_ℓ)` is the
+unramified extension of `ℚ_2` of degree `ord_ℓ(2)`, which is finite. The
+witness is explicit: `ℓ = 7`, `F = ℚ(ζ₇)⁺` (totally real, `ℓ ≥ 5`), where `2`
+is inert with residue degree `3` and the unique `w ∣ 2` has `F_w = ℚ_2(μ_7)`,
+so `χ_7(Γ F_w) ⊆ 1 + 7ℤ_7` and NO `g₀` separates the two residual
+eigenvalues. Nothing available here excludes such an `F`. Substituting
+`δ(g₀) = −1` for `δ(g₀) = 1` does not help: the trace is `δ(g₀)(1 − χ_ℓ(g₀))`
+either way.
+
+WHAT WOULD REFUTE THIS LEAF, stated so the next owner can aim at it. Over
+that `(F, ℓ, w)` the LATTICE obstruction is realisable in the FINITE setting
+this leaf lives in — the sibling audit's `ℤ_7[[Z]] ↪ ℤ_7[[Y]]`, `Z ↦ 7Y`
+witness truncates: with `A = (ℤ/49)[Y]/(Y²)` (finite, local, discrete,
+`2 ∈ Aˣ`), `C = ℤ/49 + (7Y)·(ℤ/7) ⊆ A` and `M_c = [[1, (1−c)Y], [0, c]]` for
+`c ∈ χ_7(Γ F_w) ⊆ 1 + 7ℤ_7`, the entries lie in `C`, the row `(1, Y)` is a
+unimodular `δ = 1` eigenrow over `A`, and a direct computation shows every
+`δ = 1` eigenrow over `C` lies in `𝔪_C·C²` while the only other eigenrow has
+character `χ_7`, barred by `δ² = 1`. Note `C` is exactly the subring
+generated by `ℤ_ℓ`, the matrix entries and the Teichmüller lifts of the
+residue field, so it IS of the shape `range f` that the consumer produces.
+**The one thing still missing for a refutation is GLOBAL**: a genuinely
+`F`-level hardly ramified `ρA` over `A` restricting to that shape at `w` (it
+must also be flat at the places over `7`). Producing it — or proving no such
+`ρA` exists — is the check that decides this leaf.
+
+WHAT WOULD PROVE IT. The sibling leaf is true because it carries a ring
+RETRACTION `f : 𝒟.R ↠ R'` of the inclusion, which kills the counterexample
+outright and makes the tame descent three formal steps with no arithmetic at
+`w` at all. No retraction `A ↠ C` is available here, and none exists in
+general: for the `A`, `C` above, `φ(Y) ∈ C` with `φ(Y)² = 0` forces
+`φ(Y) ∈ 7A`, whence `7(φ(Y) − Y) = −7Y ≠ 0`. Note also that residual
+fullness — `πA` restricted to `C` is onto `k`, which the consumer DOES supply
+— is NOT enough: the `C` above already has it. So a proof needs either a new
+hypothesis with real content or a genuinely different argument, and saying
+which is worth more than another proof attempt.
+
+**WHY `Odd ℓ` IS NOW THREADED DOWN TO THIS POINT** (2026-07-27). `h2` is the
+`ℚ`-level hypothesis verbatim, and it is where `Odd ℓ` is spent: the quotient
+character satisfies `δ(g)² = 1`, and only in a ring where `2` is invertible
+does that force `δ(g) = ±1 ∈ C`. At `ℓ = 2` it does not — in
+`A = 𝔽_2[Y]/(Y²)` the element `1 + Y` is a square root of `1` outside
+`C = 𝔽_2` — so the clause can fail for the character alone, before any
+lattice question arises. The `ℚ`-level chain never had to thread `Odd ℓ`
+because `IsHardlyRamified hodd …` carries it IN THE TYPE;
+`IsHilbertHardlyRamified` deliberately does not, so the hypothesis had to be
+threaded by hand through the five signatures from
+`exists_isWeaklyUniversal_hilbertDeformationDatum` (which already carries
+`5 ≤ ℓ`) down to here. Nothing downstream of that theorem changed.
+
+References: Carayol, *Formes modulaires et représentations galoisiennes*,
+Théorème 1; Mazur, *Deforming Galois representations*, §1.8; de Smit–Lenstra,
+in Cornell–Silverman–Stevens, Prop. 2.3. -/
+theorem isHilbertHardlyRamified_of_subring_entries
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
+    (h2 : IsUnit (2 : A))
+    (C : Subring A) [IsLocalRing C] [Algebra ℤ_[ℓ] C]
+    {ρC : FramedGaloisRep F C (Fin 2)} {ρA : FramedGaloisRep F A (Fin 2)}
+    (hent : ∀ (g : Γ F) (i j : Fin 2),
+      ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
+        LinearMap.toMatrix' (ρA g) i j)
+    (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA) :
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi C) ρC :=
+  sorry
+
+/-- **TRANSPORT OF A FRAMED `F`-LEVEL HARDLY RAMIFIED REPRESENTATION ALONG A
+CONTINUOUS RING MAP INTO A FINITE LOCAL RING** (PROVEN 2026-07-27; the
+`F`-level twin of `Deformation.lean`'s PROVEN
+`exists_framedGaloisRep_transport`).
+
+`framePushforward` plus the functoriality CLAUSE `hbase` — which is where the
+`F` level differs from `ℚ`, the `ℚ`-level twin using the theorem
+`isHardlyRamified_pushforwardFrame` directly. This is the ONLY use `hbase`
+gets inside the `hilbertFrameLevels_repClause_ker` cut, and it is the reason
+the audit's guess that `hbase` "can only be needed at item 5" was right.
+
+The `ℤ_ℓ`-compatibility hypothesis of `hbase` is discharged for free by
+`hilbertRingHom_padicInt_ext_finite`, the target being FINITE.
+
+Stated separately rather than inlined for the reason recorded at the `ℚ`
+level: the elaborator will not solve for the implicit coefficient ring of
+`framePushforward` when the target is the concrete `P ⧸ ker f` (it postpones
+and reports the arguments back as metavariables); against an abstract `Q` it
+does so immediately. -/
+theorem exists_hilbertFramedGaloisRep_transport
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (hbase : IsHilbertBaseChangeClause ℓ F)
+    {C : Type u} [CommRing C] [TopologicalSpace C] [IsTopologicalRing C]
+    [IsLocalRing C] [Algebra ℤ_[ℓ] C]
+    {Q : Type u} [CommRing Q] [TopologicalSpace Q] [IsTopologicalRing Q]
+    [IsLocalRing Q] [Finite Q] [Algebra ℤ_[ℓ] Q]
+    (σ : C →+* Q) (hσ : Continuous σ)
+    {ρC : FramedGaloisRep F C (Fin 2)}
+    (hHRC : IsHilbertHardlyRamified ℓ F (rank_finTwoPi C) ρC)
+    (N : Γ F → Matrix (Fin 2) (Fin 2) Q)
+    (hN : ∀ (g : Γ F) (i j : Fin 2),
+      σ (LinearMap.toMatrix' (ρC g) i j) = N g i j) :
+    ∃ ρJ : FramedGaloisRep F Q (Fin 2),
+      (∀ g : Γ F, LinearMap.toMatrix' (ρJ g) = N g) ∧
+      IsHilbertHardlyRamified ℓ F (rank_finTwoPi Q) ρJ := by
+  refine ⟨framePushforward σ hσ ρC, ?_, ?_⟩
+  · intro g
+    refine Matrix.ext fun i j => ?_
+    rw [toMatrix'_framePushforward σ hσ ρC g]
+    simpa only [Matrix.map_apply] using hN g i j
+  · exact hbase σ hσ (hilbertRingHom_padicInt_ext_finite _ _) hHRC
+
 section HilbertFrameRing
 
 -- The tautological ring and its evaluation maps are PURE ALGEBRA: they need
@@ -8243,9 +8412,14 @@ theorem hilbertQuotient_inf_isLevel {P : Type u} [CommRing P] [Algebra ℤ_[ℓ]
 /-! ### The four leaves of the F-level construction
 
 All four are now PROVEN (three on 2026-07-26, `hilbertFrameLevels_classification`
-on 2026-07-27). The only sorried declaration left in this section is
-`hilbertFrameLevels_repClause_ker`, which the classification leaf was cut
-over. -/
+on 2026-07-27), and so is `hilbertFrameLevels_repClause_ker`, which the
+classification leaf was cut over (2026-07-27). **This section is now
+sorry-free.** The single open leaf of the whole `hilbertFrameLevels`
+construction is `isHilbertHardlyRamified_of_subring_entries`, which lives
+ABOVE this section — item 4 of the `CUT AUDIT` decomposition, stated when
+`hilbertFrameLevels_repClause_ker` was written and consumed only there.
+Its docstring carries the obstruction audit; do not look for open work in
+this section. -/
 
 /-- **THE `F`-LEVEL LEVEL FAMILY IS NONEMPTY** (PROVEN 2026-07-26; the
 `F`-level twin of `Deformation.lean`'s PROVEN `frameLevels_nonempty`).
@@ -8353,47 +8527,65 @@ theorem hilbertFrameLevels_directed {ρbar : GaloisRep ℚ k V}
     hglue h1ker h1fin h1loc h1rep h2ker h2fin h2loc h2rep
   exact ⟨J₁ ⊓ J₂, ⟨le_trans inf_le_left h1ker, hfin, hloc, hrep⟩, le_refl _⟩
 
-/-- **THE REPRESENTATION CLAUSE FOR `ker f`** (OPEN — item 5 of the
-`CUT AUDIT` decomposition above, and the only leaf that decomposition leaves
-after the assembly below; the `F`-level twin of `Deformation.lean`'s PROVEN
-`frameLevels_repClause_ker`).
+/-- **THE REPRESENTATION CLAUSE FOR `ker f`** (PROVEN 2026-07-27 as an
+ASSEMBLY over ONE new leaf, `isHilbertHardlyRamified_of_subring_entries`
+above — item 4 of the `CUT AUDIT` decomposition below, which this node is
+item 5 of; the `F`-level twin of `Deformation.lean`'s PROVEN
+`frameLevels_repClause_ker`, whose proof this is, one step for one step).
 
 `P ⧸ ker f` is, through `f`, the IMAGE SUBRING of `f` inside the test object
 `A` — a finite local subring carrying every matrix entry of `ρA`. What is
 needed is that the framed representation descends to it and stays hardly
-ramified.
+ramified. The four steps:
 
-**EXPECTED SUB-LEAF, and it is a task of its own.** The `ℚ`-level proof
-runs: form `C := f.range`, note `C` is finite and local
-(`hilbertIsLocalRing_of_injective_of_finite`, ported above), produce the
-framed representation over `C` from the matrices (the `F`-level twin of
-`exists_framedGaloisRep_of_matrices`), make it hardly ramified by the
-subring descent `isHardlyRamified_of_subring_entries`, and transport it
-along `C ≃ P ⧸ ker f` (`exists_framedGaloisRep_transport`). Item 4 of the
-audit — `isHilbertHardlyRamified_of_subring_entries` — is that descent, and
-it is explicitly NOT a transcription: it is about 340 lines at the `ℚ`
-level, and `IsHilbertHardlyRamified` has different fields from
-`IsHardlyRamified` (determinant through `Field.absoluteGaloisGroup.map`, and
-local conditions indexed by places `w` of `F` rather than by rational
-primes). It is deliberately NOT stated here, because nothing would consume
-it yet and it would be free-floating; whoever proves this leaf should state
-it as part of that work.
+1. `C := f.range` is finite and NONTRIVIAL, hence local by the ported
+   `hilbertIsLocalRing_of_injective_of_finite`, and it is a `ℤ_ℓ`-algebra:
+   `hilbertRingHom_padicInt_ext_finite` identifies `algebraMap ℤ_ℓ A` with
+   `f ∘ algebraMap ℤ_ℓ P`, so the structure map lands in `C` and is
+   corestricted there.
+2. `2` is a unit of `A`. This is the ONLY place `hπsurj` is used, and the
+   only place the leaf touches `πA` at all: `ker πA = 𝔪_A` and the residue
+   field `k` has characteristic `ℓ`, which `hodd` makes odd.
+3. The framed representation over `C` comes from the matrices, by the hoisted
+   `exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem` of
+   `HardlyRamified/FramedDescent.lean` — the `F`-variable form of the
+   `ℚ`-level `exists_framedGaloisRep_of_matrices`, which is why no `F`-level
+   copy of that lemma had to be written. Its entries lie in `C` by `hmat`,
+   and continuity is free into the DISCRETE `A`. It is hardly ramified by
+   the subring descent, which is the leaf.
+4. `RingHom.quotientKerEquivRange f` transports it from `C` back to
+   `P ⧸ ker f` through `exists_hilbertFramedGaloisRep_transport` above, where
+   the matrix clause becomes `hilbertFrameMat mod ker f` because
+   `σ ∘ fC = Ideal.Quotient.mk (ker f)`.
 
-`hbase`, `hglue` and `hfin` are threaded in because — exactly as the audit
-records — this is the only place in the cut that can need them: they are
-passed by `hilbertFrameLevels_classification` and used by NOTHING else in
-its assembly. -/
+WHAT THE CLAUSE PACKAGE ACTUALLY CONTRIBUTES — an answer to the question the
+cut deliberately left open, and it CORRECTS the guess recorded below. Of the
+three clauses threaded here on the theory that "this is the only place in the
+cut that can need them", exactly ONE is used: `hbase`, and it is used once,
+inside step 4, as the functoriality of the condition along `σ`. `hglue` and
+`hfin` are used by NOTHING — they are underscored below so that the emptiness
+is mechanically visible rather than merely asserted — and neither is used by
+the leaf either, whose `ℚ`-level twin does not take them. So the audit's
+prediction was half right: `hbase` really did surface here, and `hglue` and
+`hfin` are genuinely spent elsewhere in the Schlessinger machine.
+
+`hodd` is NEW (2026-07-27) and is threaded down from
+`exists_isWeaklyUniversal_hilbertDeformationDatum`, which already carries
+`5 ≤ ℓ`; step 2 is where it is spent. See the closing section of
+`isHilbertHardlyRamified_of_subring_entries`'s docstring for why the `ℚ`
+level never needed the threading and why `ℓ = 2` really does break the
+descent. -/
 theorem hilbertFrameLevels_repClause_ker {ρbar : GaloisRep ℚ k V}
-    (e0 : V ≃ₗ[k] (Fin 2 → k))
-    (hbase : IsHilbertBaseChangeClause ℓ F) (hglue : IsHilbertFibreProductClause ℓ F)
-    (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (hodd : Odd ℓ) (e0 : V ≃ₗ[k] (Fin 2 → k))
+    (hbase : IsHilbertBaseChangeClause ℓ F) (_hglue : IsHilbertFibreProductClause ℓ F)
+    (_hfin : IsHilbertFiniteFramesClause ℓ F)
     (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
     (πA : A →+* k) (hπsurj : Function.Surjective πA)
     (ρA : FramedGaloisRep F A (Fin 2))
     (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA)
     (f : hilbertFrameRing ℓ F k →+* A)
-    (hres : πA.comp f = hilbertFrameEv ℓ F k ρbar e0)
+    (_hres : πA.comp f = hilbertFrameEv ℓ F k ρbar e0)
     (hmat : ∀ g : Γ F, (hilbertFrameMat ℓ F k g).map ⇑f =
       LinearMap.toMatrix' (ρA g)) :
     ∀ [Finite (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)]
@@ -8405,8 +8597,97 @@ theorem hilbertFrameLevels_repClause_ker {ρbar : GaloisRep ℚ k V}
         (∀ g : Γ F, LinearMap.toMatrix' (ρJ g) =
           (hilbertFrameMat ℓ F k g).map ⇑(Ideal.Quotient.mk (RingHom.ker f))) ∧
         IsHilbertHardlyRamified ℓ F
-          (rank_finTwoPi (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)) ρJ :=
-  sorry
+          (rank_finTwoPi (hilbertFrameRing ℓ F k ⧸ RingHom.ker f)) ρJ := by
+  intro _ _ _ _ _
+  classical
+  -- STEP 1: the image subring, its finiteness, locality and `ℤ_ℓ`-structure.
+  set C : Subring A := f.range with hCdef
+  haveI : Finite C := Subtype.finite
+  haveI : Nontrivial C := by
+    refine ⟨⟨1, 0, fun h => one_ne_zero (?_ : (1 : A) = 0)⟩⟩
+    exact congrArg (fun c : C => (c : A)) h
+  haveI hlocC : IsLocalRing C :=
+    hilbertIsLocalRing_of_injective_of_finite (C.subtype) Subtype.val_injective
+  have hfalg : (f.comp (algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k))) =
+      algebraMap ℤ_[ℓ] A := hilbertRingHom_padicInt_ext_finite _ _
+  have hmemalg : ∀ r : ℤ_[ℓ], algebraMap ℤ_[ℓ] A r ∈ C := by
+    intro r
+    rw [hCdef]
+    exact ⟨algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k) r, RingHom.congr_fun hfalg r⟩
+  letI : Algebra ℤ_[ℓ] C :=
+    (((algebraMap ℤ_[ℓ] A).codRestrict C hmemalg) : ℤ_[ℓ] →+* C).toAlgebra
+  -- STEP 2: `2` is a unit of `A`, because `char k = ℓ` is odd.
+  have h2k : (2 : k) ≠ 0 := by
+    intro h20
+    have hd2 : ringChar k ∣ 2 := ringChar.dvd (by exact_mod_cast h20)
+    have hdl : ringChar k ∣ ℓ :=
+      ringChar.dvd (natCast_eq_zero_of_finite_algebra ℓ k)
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hchar2 : ringChar k = 2 :=
+      (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hchar2] at hdl
+    obtain ⟨m, hm⟩ := hdl
+    obtain ⟨t, ht⟩ := hodd
+    omega
+  have hkerπ : RingHom.ker πA = IsLocalRing.maximalIdeal A :=
+    IsLocalRing.ker_eq_maximalIdeal πA hπsurj
+  have h2 : IsUnit (2 : A) := by
+    by_contra hnu
+    have hmem : (2 : A) ∈ IsLocalRing.maximalIdeal A :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hnu
+    rw [← hkerπ, RingHom.mem_ker, map_ofNat] at hmem
+    exact h2k hmem
+  -- STEP 3: the framed representation over `C`, and the subring descent.
+  set fC : hilbertFrameRing ℓ F k →+* C := f.rangeRestrict with hfCdef
+  have hfC : ∀ x : hilbertFrameRing ℓ F k, ((fC x : C) : A) = f x := fun _ => rfl
+  have hentf : ∀ (g : Γ F) (i j : Fin 2),
+      LinearMap.toMatrix' (ρA g) i j = f (hilbertFrameMat ℓ F k g i j) := by
+    intro g i j
+    rw [← hmat g]
+    rfl
+  obtain ⟨ρC, hρCmap⟩ :=
+    exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem (F := F) C
+      (fun g => LinearMap.toMatrix' (ρA g))
+      (fun i j => (LevelLimit.continuous_toMatrix' ρA).matrix_elem i j)
+      (by simp only [map_one, LinearMap.toMatrix'_one])
+      (fun g h => by simp only [map_mul, LinearMap.toMatrix'_mul])
+      (fun g i j => by rw [hCdef, hentf g i j]; exact ⟨_, rfl⟩)
+  have hent : ∀ (g : Γ F) (i j : Fin 2),
+      ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
+        LinearMap.toMatrix' (ρA g) i j := by
+    intro g i j
+    have h1 := congrFun (congrFun (hρCmap g) i) j
+    simpa only [Matrix.map_apply, Subring.coe_subtype] using h1
+  have hρCtm : ∀ g : Γ F,
+      LinearMap.toMatrix' (ρC g) = (hilbertFrameMat ℓ F k g).map ⇑fC := by
+    intro g
+    refine Matrix.ext fun i j => Subtype.val_injective ?_
+    have hR : ((((hilbertFrameMat ℓ F k g).map ⇑fC) i j : C) : A) =
+        LinearMap.toMatrix' (ρA g) i j := by
+      show ((fC (hilbertFrameMat ℓ F k g i j) : C) : A) = _
+      rw [hfC, ← hentf g i j]
+    rw [hent g i j, hR]
+  have hHRC : IsHilbertHardlyRamified ℓ F (rank_finTwoPi C) ρC :=
+    isHilbertHardlyRamified_of_subring_entries ℓ F h2 C hent hHRA
+  -- STEP 4: transport along `range f ≃+* P ⧸ ker f`.
+  obtain ⟨σ, hσfC⟩ : ∃ σ : C →+* (hilbertFrameRing ℓ F k ⧸ RingHom.ker f),
+      ∀ x : hilbertFrameRing ℓ F k,
+        σ (fC x) = Ideal.Quotient.mk (RingHom.ker f) x := by
+    refine ⟨((RingHom.quotientKerEquivRange f).symm :
+      f.range ≃+* _).toRingHom, ?_⟩
+    intro x
+    have h1 : (RingHom.quotientKerEquivRange f)
+        (Ideal.Quotient.mk (RingHom.ker f) x) = fC x := rfl
+    show (RingHom.quotientKerEquivRange f).symm (fC x) = _
+    rw [← h1, RingEquiv.symm_apply_apply]
+  have hσcont : Continuous σ := continuous_of_discreteTopology
+  refine exists_hilbertFramedGaloisRep_transport ℓ F hbase σ hσcont hHRC _ ?_
+  intro g i j
+  rw [hρCtm g]
+  simp only [Matrix.map_apply]
+  exact hσfC _
 
 /-- **CLASSIFICATION: EVERY CHARPOLY-IDENTIFIED FINITE DISCRETE TEST OBJECT
 RECEIVES A MAP FROM `P` KILLING A LEVEL** (PROVEN 2026-07-27 as an ASSEMBLY
@@ -8420,9 +8701,21 @@ was opaque and is preserved because its diagnosis was right; items 1, 2 and
 `exists_hilbertTeichmullerSection`,
 `hilbertFramePolyEval_comp_algebraMap`), and the assembly below is exactly
 the `ℚ`-level proof of `frameLevels_classification` with the conjugation
-lift spliced in, as the audit predicted. Item 5 is the single remaining
-leaf; item 4 is deliberately NOT stated, because nothing would consume it
-yet — see `hilbertFrameLevels_repClause_ker`'s docstring.
+lift spliced in, as the audit predicted.
+
+**STATUS UPDATE 2026-07-27 (later the same day).** Item 5,
+`hilbertFrameLevels_repClause_ker`, is now PROVEN too, as a four-step
+assembly. Item 4, `isHilbertHardlyRamified_of_subring_entries`, was stated at
+that point — it is consumed there and only there — and is the SINGLE
+remaining leaf of this whole construction. Two corrections to the
+decomposition below follow from writing item 5, and both are recorded on the
+declarations themselves: (a) no `F`-level copy of
+`exists_framedGaloisRep_of_matrices` was needed, the hoisted
+`exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem` in
+`HardlyRamified/FramedDescent.lean` already being `F`-variable; (b) of the
+three clause hypotheses threaded to item 5 on the theory that it was the only
+place that could need them, only `hbase` is actually used — `hglue` and
+`hfin` are underscored there.
 
 **ONE CORRECTION TO THE AUDIT, found while executing it.** Item 2 is
 recorded as needing nothing new because "the hoisted `teichmullerRootSet`
@@ -8495,11 +8788,16 @@ dispatchable).**
    `IsHilbertHardlyRamified` has different fields from `IsHardlyRamified`
    (determinant through `Field.absoluteGaloisGroup.map`, and local
    conditions indexed by places `w` of `F` rather than by rational
-   primes). Budget it as a task of its own.
+   primes). Budget it as a task of its own. STATED 2026-07-27, and it is
+   the only leaf left; its docstring narrows the open content to the
+   TAME-AT-`2` clause alone and records why the `ℚ`-level arithmetic input
+   does not transport to a general `F`.
 5. `hilbertFrameLevels_repClause_ker` — the `F`-level twin of
    `frameLevels_repClause_ker`, over items 3 and 4 plus the `F`-level
    twins of `exists_framedGaloisRep_of_matrices` and
-   `exists_framedGaloisRep_transport`.
+   `exists_framedGaloisRep_transport`. PROVEN 2026-07-27; the first of
+   those two twins turned out not to be needed (see the status update
+   above) and the second is `exists_hilbertFramedGaloisRep_transport`.
 
 With 1-5 in place this leaf is the `ℚ`-level assembly of
 `frameLevels_classification` (about 75 lines) with the conjugation lift of
@@ -8509,6 +8807,7 @@ Note finally that `hfin` and `hglue` are passed in but are used by NOTHING
 in the `ℚ`-level assembly; as there, the only place in this cut that could
 need them is the descent leaf, item 5. -/
 theorem hilbertFrameLevels_classification {ρbar : GaloisRep ℚ k V}
+    (hodd : Odd ℓ)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (hbase : IsHilbertBaseChangeClause ℓ F) (hglue : IsHilbertFibreProductClause ℓ F)
@@ -8672,7 +8971,7 @@ theorem hilbertFrameLevels_classification {ρbar : GaloisRep ℚ k V}
     rw [Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk] at hxy
     rw [Ideal.Quotient.eq, RingHom.mem_ker, map_sub, hxy, sub_self]
   · intro _ _ _ _ _
-    exact hilbertFrameLevels_repClause_ker ℓ F k e0 hbase hglue hfin A πA hπsurj ρA'
+    exact hilbertFrameLevels_repClause_ker ℓ F k hodd e0 hbase hglue hfin A πA hπsurj ρA'
       hHRA' f hc2 (fun g => by rw [hmatf g, ← hρA'mat g])
 
 omit [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
@@ -8844,6 +9143,7 @@ theorem exists_hilbertLevelIdealSystem_of_clauses
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hodd : Odd ℓ)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (hbase : IsHilbertBaseChangeClause ℓ F)
@@ -8899,7 +9199,7 @@ theorem exists_hilbertLevelIdealSystem_of_clauses
     fun J hJ => hJ.1, fun J hJ => ⟨hJ.2.1, hJ.2.2.1⟩,
     ?_,
     fun J hJ _ _ _ _ _ => hJ.2.2.2,
-    hilbertFrameLevels_classification ℓ F k hirrF 𝒟₀ hbase hglue hfin hrig e0,
+    hilbertFrameLevels_classification ℓ F k hodd hirrF 𝒟₀ hbase hglue hfin hrig e0,
     fun A _ _ _ πA f₁ f₂ h₁ h₂ hM =>
       hilbertFrameRing_rigid ℓ F k e0 A πA f₁ f₂ h₁ h₂ hM⟩
   intro g
@@ -9348,6 +9648,7 @@ theorem exists_universalFrame_profinite_hilbert_of_clauses
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hodd : Odd ℓ)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (hbase : IsHilbertBaseChangeClause ℓ F)
@@ -9380,7 +9681,7 @@ theorem exists_universalFrame_profinite_hilbert_of_clauses
       IsHilbertWeaklyUniversalOnFiniteFrames ℓ F ρbar ρuniv πuniv := by
   obtain ⟨P, iP, iPalg, evbar, hevsurj, M, 𝒥, hne, hdir, hker, hlev,
       hres, hrep, hclass, hsep⟩ :=
-    exists_hilbertLevelIdealSystem_of_clauses ℓ F hirrF 𝒟₀ hbase hglue hfin hrig
+    exists_hilbertLevelIdealSystem_of_clauses ℓ F hodd hirrF 𝒟₀ hbase hglue hfin hrig
   letI := iP
   letI := iPalg
   exact exists_universalFrame_profinite_hilbert_of_levelIdealSystem ℓ F hbase
@@ -9905,6 +10206,7 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
+    (hodd : Odd ℓ)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (hbase : IsHilbertBaseChangeClause ℓ F)
@@ -9916,7 +10218,7 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses
   classical
   obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iCompact, iT2, ρuniv, πuniv, hπsurj,
       hπcont, hbasis, hres, hquot, hinj, huniv⟩ :=
-    exists_universalFrame_profinite_hilbert_of_clauses ℓ F hirrF 𝒟₀ hbase
+    exists_universalFrame_profinite_hilbert_of_clauses ℓ F hodd hirrF 𝒟₀ hbase
       hglue hfin hrig
   -- **The `πuniv`-compatible continuous points of `R` in a finite DISCRETE
   -- test ring are finite in number**: they inject, by the minimality clause
@@ -10023,7 +10325,8 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
     ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal :=
-  exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses ℓ F hirrF 𝒟₀
+  exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses ℓ F
+    ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) hirrF 𝒟₀
     (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ hℓ5 F hw2)
     (isHilbertFiniteFramesClause ℓ F)
     (isHilbertProLimitClause ℓ ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) F)
