@@ -9788,7 +9788,10 @@ with the degree bookkeeping and the point/branch bridge PROVEN as glue:
 
 * `exists_stepanovJetSolution` — §4, pp. 110–113: the LINEAR SYSTEM. `B < A`
   gives a nonzero Frobenius-shaped `a` all of whose jets `a^{(ν)}`, `ν < M`,
-  vanish at every irrational point of the curve over `𝔽_p`.
+  vanish at every irrational point of the curve over `𝔽_p`. **This one is itself
+  now PROVEN (2026-07-27) over three further sub-leaves** — the reduction, the
+  unknown count, and `B < A`; see the second section note, "The linear system of
+  Schmidt III §4", below.
 * `stepanov_not_dvd_stepanovAnsatz` — §2, pp. 100–105: **Lemma 2D** (through
   Corollary 2C). A nonzero polynomial of the restricted shape does not vanish
   at the generic point of the curve, i.e. `F ∤ a`. This is the clause Schmidt
@@ -9978,8 +9981,227 @@ theorem stepanovAnsatz_coeff_natDegree_add_le (d p K B : ℕ) (hB : B = p * (K +
   · rw [if_neg hif]
     simp
 
-/-- **SCHMIDT LEMMA 4A, THE DIMENSION COUNT ITSELF** (SORRY LEAF, cut
-2026-07-27 out of `exists_stepanovAuxiliaryFunction`) — Chapter III §4,
+/-! #### The linear system of Schmidt III §4: how `exists_stepanovJetSolution` is cut
+
+(2026-07-27.) `exists_stepanovJetSolution` is Schmidt's dimension count, and a
+dimension count has exactly three moving parts: an upper bound `B` on the number
+of EQUATIONS, a lower bound `A` on the number of UNKNOWNS, and the inequality
+`B < A`. They are cut apart here into three sub-leaves, with the linear algebra
+("fewer equations than unknowns ⟹ a nonzero solution") proven as glue:
+
+* `exists_stepanovJetLinearForms` — **the reduction**, Schmidt pp. 110–112. The
+  jet-vanishing conditions are cut out by at most `stepanovEquationCount d p M`
+  many `𝔽_p`-linear forms in the coefficients `A_{ijk}`.
+* `exists_stepanovCoefficientParametrisation` — **the unknowns**. The families
+  `A` of the prescribed shape form a space of dimension
+  `stepanovUnknownCount d p K`, exhibited as an injective linear parametrisation.
+* `stepanov_equationCount_lt_unknownCount` — **`B < A`**, a self-contained
+  statement of natural-number arithmetic, and the ONLY place Schmidt's standing
+  conditions `d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ p` are used.
+
+**WHY THE CONSTANT `2d − 3` IN LEMMA 3A IS LOAD-BEARING, and a warning.** The
+margin in `B < A` is thin in RATIO though wide in absolute terms: at the minimal
+admissible `p` one finds `A/B → 1` (numerically `1.00002` at `d = 5`,
+`M = 2995`), while `A − B ≥ ½(d−1)[(2d² − 2d)(16M + 64) + M²]` grows like `M²`.
+Concretely: replacing the Lemma 3A growth constant `2d − 3` by `2d − 2` in
+`stepanovEquationCount` makes the inequality **FALSE** (first failure `d = 2`,
+`M = 124`, `p = 34849`). So the reduction leaf may NOT be proven with a sloppier
+degree bound and then padded — `stepanovEquationCount` is essentially the tight
+value, and the three savings that produce it are all needed:
+
+1. the SHARP per-index degree constraint `deg A_{ijk} + d + i + j + k ≤ p/d`
+   (not the weak `deg A_{ijk} + d ≤ p/d` that the parent consumes), which is what
+   makes `deg_X (A_{ijk} X^{pj}) ≤ p/d − d − i − k` independent of `j`;
+2. Lemma 3A in the WEIGHTED total degree `w(P) := maxₙ (deg (P.coeff n) + n)`,
+   for which `w(F) ≤ d` is exactly `hcoeff`, `w(F_Y), w(F_X) ≤ d − 1`,
+   `w(F_{YX}), w(F_{YY}) ≤ d − 2`, and each of the three terms of
+   `stepanovJet`'s recursion raises `w` by at most `(d−2) + (d−1) = 2d − 3`;
+3. reduction modulo `F` PRESERVES `w` — `Y^d ≡ −∑_{i<d} F_i Y^i` and
+   `w(F_i Y^i) ≤ (d − i) + i = d = w(Y^d)` — so cutting `deg_Y` down to `d − 1`
+   is free, and likewise the reduction of `deg_{Y'}` from `d − 1` to `d − 2`
+   modulo `e₂` costs nothing after the `−k` saving in item 1 is spent.
+
+Counting the surviving coefficients: for each `ν < M` the reduced
+`d^{(ν)}(X, Y, Y')` has `deg_X ≤ p/d − d + (2d−3)ν`, `deg_Y ≤ d − 1`,
+`deg_{Y'} ≤ d − 2`, i.e. at most `(p/d + (2d−3)ν)·d·(d−1)` coefficients, and
+`∑_{ν<M} d(d−1)(p/d + (2d−3)ν) ≤ (d−1)pM + ½d(d−1)(2d−3)M²`, which IS
+`stepanovEquationCount d p M`.
+
+**A TRANSCRIPTION WARNING about Schmidt's own numbers.** His `B < ε₂pM +
+ε₂M²(2d² − 3d)` carries a factor `2` of slack in the `M²` term against the count
+above, and his `A > ε₂pM + p(d² − d/3) − ½ε₂²M² − ⋯` carries a matching factor
+`2` in the `p d²` term against `∑_{i,j,k} p/d = (d−1)pM + ½pd(d−1)`. The two
+scale together, so his comparison is the same as this one — but **his `B` alone
+is NOT an admissible bound against the `A` computed here**, and pairing the loose
+`B` with the tight `A` yields a false statement. Use the two definitions below,
+not the book's displayed constants. -/
+
+/-- **THE NUMBER OF EQUATIONS `B`** in Schmidt's linear system (III §4, p. 112):
+`M` copies — one per jet order `ν < M` — of the coefficient space of the reduced
+polynomial `d^{(ν)}(X, Y, Y')`, which has `deg_X ≤ p/d − d + (2d−3)ν`,
+`deg_Y ≤ d − 1` and `deg_{Y'} ≤ d − 2`. Summing `d(d−1)(p/d + (2d−3)ν)` over
+`ν < M` and using `d·(p/d) ≤ p` gives this closed form. See the section note
+above for why the `2d − 3` may not be weakened. -/
+def stepanovEquationCount (d p M : ℕ) : ℕ :=
+  (d - 1) * p * M + d * (d - 1) / 2 * (2 * d - 3) * M ^ 2
+
+/-- **THE NUMBER OF UNKNOWNS `A`** in Schmidt's linear system (III §4, p. 112):
+the coefficients of the `A_{ijk} ∈ 𝔽_p[X]` for `i < d`, `k < d`, `j + k ≤ K`,
+subject to Schmidt's SHARP degree constraint `deg A_{ijk} ≤ p/d − d − i − j − k`,
+which contributes `p/d + 1 − (d + i + j + k)` coefficients (truncated at `0`,
+where the constraint forces `A_{ijk} = 0` and contributes nothing). -/
+def stepanovUnknownCount (d p K : ℕ) : ℕ :=
+  ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1 - k),
+    (p / d + 1 - (d + i + j + k))
+
+/-- **THE REDUCTION TO A LINEAR SYSTEM** (SORRY LEAF, cut 2026-07-27 out of
+`exists_stepanovJetSolution`) — Schmidt Chapter III §4, pp. 110–112. This is the
+part of the dimension count that does MATHEMATICS; the two siblings only count.
+
+WHAT IT SAYS. There are at most `stepanovEquationCount d p M` many `𝔽_p`-linear
+forms in the coefficient family `A` whose simultaneous vanishing already forces
+every jet `a^{(ν)}`, `ν < M`, of the ansatz to vanish at every irrational point
+of the curve. They are packaged as ONE linear map `Φ` into `Fin B → ZMod p`;
+padding with zero forms is free, so an implementation producing fewer equations
+simply leaves the tail of `Φ` zero.
+
+HOW IT IS PROVED. Four steps, all recorded in the section note above.
+
+1. **Frobenius splitting.** `∂_X (X^p) = 0` and `∂_Y (Y^p) = 0`, so writing
+   `b_{jk}(X, Y) := ∑_{i<d} A_{ijk}(X) Y^i` and
+   `stepanovAnsatz d p K A = ∑_{j+k≤K} b_{jk}·X^{pj}·Y^{pk}` one gets
+   `stepanovJet F M ν (∑ b_{jk} X^{pj} Y^{pk}) = ∑ (stepanovJet F M ν b_{jk}) X^{pj} Y^{pk}`
+   as a polynomial identity — the `X^{pj}Y^{pk}` are constants for the
+   derivation, so they pass through the whole recursion.
+2. **Lemma 3A**, `w(stepanovJet F M ν b) ≤ w(b) + (2d−3)ν` for the weighted
+   degree `w(P) = maxₙ (deg (P.coeff n) + n)`, by induction on `ν` directly off
+   `stepanovJet`'s recursion. `w(b_{jk}) ≤ p/d − d − j − k` is the sharp
+   hypothesis `hAdeg`.
+3. **Elimination.** At a point with `x ∈ 𝔽_p`, `F(x, y) = 0` and `y ∉ 𝔽_p`, put
+   `y' := y^p`. Then `x^{pj} = x^j`, `y^{pk} = y'^k`, `F(x, y') = F(x, y)^p = 0`
+   and `y ≠ y'`, so `e₂(x, y, y') = 0` where
+   `F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')`. Hence
+   `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')` for the three-variable polynomial
+   `D^{(ν)} := ∑_{j+k≤K} (stepanovJet F M ν b_{jk})·X^j·Y'^k`, and reducing
+   `D^{(ν)}` modulo `F` in `Y` (monic of degree `d`) and modulo `e₂` in `Y'`
+   (monic of degree `d − 1`, since the `Y'^{d−1}`-coefficient of `e₂` is `−1`)
+   changes none of its values at such points.
+4. **The forms.** `Φ A` is the tuple of coefficients of the reduced
+   `d^{(ν)}(X, Y, Y')` for `ν < M`; every operation above is `𝔽_p`-linear in `A`,
+   and the count of surviving coefficients is `≤ stepanovEquationCount d p M` by
+   the section note. `Φ A = 0` then gives `D^{(ν)} ≡ 0` hence
+   `a^{(ν)}(x, y) = 0`.
+
+MISSING AT THIS PIN (grepped 2026-07-27 across `Fermat/`, `.lake/packages/
+mathlib/` and `~/cs/FLT/`): nothing named `[Ss]tepanov` and no hyperderivative
+theory beyond `Polynomial.hasseDeriv`. `Polynomial.modByMonic` covers both
+reductions; the weighted-degree bookkeeping has to be written here.
+
+NOTE the hypothesis `hAdeg` is the SHARP constraint `deg + d + i + j + k ≤ p/d`,
+not the weak `deg + d ≤ p/d` the parent exports — the `−(i + j + k)` is what
+pays for the `X^{pj}` in step 3 and it may not be dropped. `hp : 250 d⁵ < p` is
+NOT needed here and is not taken.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2) :
+    ∃ Φ : (ℕ → ℕ → ℕ → Polynomial (ZMod p)) →ₗ[ZMod p]
+        (Fin (stepanovEquationCount d p M) → ZMod p),
+      ∀ A : ℕ → ℕ → ℕ → Polynomial (ZMod p),
+        (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+        (∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0) →
+        Φ A = 0 →
+        ∀ (x : ZMod p) (y : AlgebraicClosure (ZMod p)),
+          stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
+          (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
+          ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
+  sorry
+
+/-- **THE UNKNOWNS ARE `stepanovUnknownCount d p K` MANY** (SORRY LEAF, cut
+2026-07-27 out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 112,
+the trivial half of the dimension count, but the half that has to be BUILT in
+Lean because the parent needs an honest injective parametrisation, not a
+cardinality.
+
+WHAT IT SAYS. The families `A : ℕ → ℕ → ℕ → 𝔽_p[X]` supported in the box
+`i < d`, `k < d`, `j + k ≤ K` and subject to Schmidt's sharp degree constraint
+`deg A_{ijk} + d + i + j + k ≤ p/d` contain the image of an INJECTIVE `𝔽_p`-linear
+map out of a space of dimension `stepanovUnknownCount d p K`. Equality of
+dimensions is not asserted and is not needed: the consumer only needs enough
+unknowns.
+
+HOW IT IS PROVED. Take the index type
+`Σ (i, j, k) ∈ box, Fin (p/d + 1 − (d + i + j + k))`, whose cardinality is the
+triple sum defining `stepanovUnknownCount` (`Finset.card_sigma`), transport it to
+`Fin N` along any equivalence, and send `c` to
+`fun i j k => ∑_{v} c ⟨(i,j,k), v⟩ • X^v`. Linearity is `Finset.sum` linearity;
+the degree bound is `Polynomial.natDegree_sum_le` against `v ≤ p/d − d − i − j − k`;
+the support clause is the empty sum; injectivity is coefficient extraction,
+`(∑_v c_v X^v).coeff v = c_v`.
+
+There are no hypotheses beyond `2 ≤ d` and `p` prime: this is pure bookkeeping
+about polynomial coefficient spaces, and in particular Schmidt's standing
+conditions on `M` are NOT used here — they live entirely in
+`stepanov_equationCount_lt_unknownCount`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovCoefficientParametrisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (K : ℕ) :
+    ∃ ι : (Fin (stepanovUnknownCount d p K) → ZMod p) →ₗ[ZMod p]
+        (ℕ → ℕ → ℕ → Polynomial (ZMod p)),
+      Function.Injective ι ∧
+      (∀ c i j k, ι c i j k = 0 ∨ (ι c i j k).natDegree + d + i + j + k ≤ p / d) ∧
+      (∀ c i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → ι c i j k = 0) :=
+  sorry
+
+/-- **`B < A`: MORE UNKNOWNS THAN EQUATIONS** (SORRY LEAF, cut 2026-07-27 out of
+`exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 113. **This inequality
+IS where the `√q` of Weil's bound comes from**: it is the only place the three
+standing conditions `d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ p` are consumed, and
+`p ≈ 2dM²` — i.e. `M ≈ √(p/2d)` — is exactly the balance it forces.
+
+WHAT HAS TO BE SHOWN. With `K = (d−1)M/d + d − 2` and `Q = p/d`, expand
+
+  `A = ∑_{i<d} ∑_{k<d} ∑_{j≤K−k} (Q + 1 − d − i − j − k)`.
+
+Every summand is positive: the smallest is at `i = d − 1`, `j + k = K`, namely
+`Q + 2 − 2d − K`, and `Q ≥ 2(d−1)(M+8)²/d ≥ (M+8)² > K + 2d` for `d ≥ 2`. So the
+truncated subtraction can be discharged first, and then
+
+  `A = d²(K+1)Q − ½d²(d−1)Q − [the (d + i + j + k) part]`
+    `= (d−1)pM + ½pd(d−1) − ½(d−1)²M² − O(d³M)` (to leading order),
+  `B = (d−1)pM + ½d(d−1)(2d−3)M²`,
+
+so `A − B = ½pd(d−1) − ½(d−1)(2d² − 2d − 1)M² − O(d³M)`, and
+`p ≥ 2(d−1)(M+8)²` gives
+
+  `A − B ≥ ½(d−1)·[(2d² − 2d)(16M + 64) + M²] − O(d³M) > 0`,
+
+the `M²` coming from `(2d² − 2d) − (2d² − 2d − 1) = 1`. When `M` is close to its
+floor `d²` the `O(d³M)` error is not dominated by that `M²`; there `hp : 250d⁵ < p`
+takes over, since `250d⁵` exceeds the `2(d−1)(M+8)² ≈ 2d⁵` that `M = d²` gives by
+a factor of `125`. **Both hypotheses are therefore load-bearing here**, which is
+the one place in this cluster where `hp` is not merely free slack.
+
+VERIFIED NUMERICALLY before cutting (2026-07-27): no failure over `2 ≤ d ≤ 100`
+and `M` from `d²` up to `10⁵d` at the minimal admissible `p`; worst absolute
+margin `A − B = 5397` at `d = 2`, `M = 40`. Replacing `2d − 3` by `2d − 2` in
+`stepanovEquationCount` breaks it at `d = 2`, `M = 124` — see the section note.
+
+`Fact p.Prime` is NOT needed: this is a statement about natural numbers. -/
+theorem stepanov_equationCount_lt_unknownCount (d : ℕ) (hd : 2 ≤ d) (p : ℕ)
+    (hp : 250 * d ^ 5 < p) (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M)
+    (hMq : 2 * (d - 1) * (M + 8) ^ 2 ≤ p) :
+    stepanovEquationCount d p M < stepanovUnknownCount d p ((d - 1) * M / d + d - 2) :=
+  sorry
+
+/-- **SCHMIDT LEMMA 4A, THE DIMENSION COUNT ITSELF** (PROVEN 2026-07-27 over the
+three sub-leaves above; cut 2026-07-27 out of
+`exists_stepanovAuxiliaryFunction`) — Chapter III §4,
 pp. 110–113, at `λ = 2`, `ε₂ = d − 1`. **This is the genuinely hard sub-leaf, and
 it is where the `√q` of Schmidt's theorem comes from.**
 
@@ -10021,32 +10243,34 @@ reduces `B < A` to `¼M²(d−1)(2d² − 2d − 1) + 8Md²(d−1) < ½pd(d−1)
 `M(d−1) + 8Md < ½p`, which is the hypothesis. `B < A` then gives a nonzero
 solution.
 
-THE LEAN ROUTE, and the three places to budget for.
+**Schmidt's two displayed constants `B` and `A` just above are NOT usable as a
+matched pair** — his `B` carries a factor `2` of slack in its `M²` term and his
+`A` a matching factor `2` in its `pd²` term, so pairing one with the other gives
+a FALSE inequality. The admissible pair is `stepanovEquationCount` /
+`stepanovUnknownCount`; see the section note above this block.
 
-1. `Polynomial.hasseDeriv` is NOT what `stepanovJet` is; the jets are the
-   `F_Y`-cleared iterates of the derivation, and `stepanovJet`'s recursion is
-   their definition. Lemma 3A — `deg a^{(ν)} ≤ deg a + (2d−3)ν` in BOTH
-   variables — has to be proven by induction directly off that recursion.
-2. The reduction to `d^{(ν)}` is division with remainder twice: modulo `F`,
-   monic of degree `d` in `Y` (`Polynomial.modByMonic`), and modulo
-   `e₂(X, Y, Y′)`, which as a polynomial in `Y′` is monic of degree `d − 1`
-   because `g₀ = 1`. The target is the free `𝔽_p[X]`-module on `Y^i Y′^k`,
-   `i < d`, `k < d − 1`.
-3. "More unknowns than equations ⟹ nonzero kernel vector" is mathlib
-   (`Module.exists_ne_zero_of_finrank_lt_finrank` and neighbours on
-   `LinearMap.ker`); what has to be built is the `𝔽_p`-linear map from the
-   coefficient space of the `A_{ijk}` to the `M` copies of the reduced module,
-   whose kernel is the system, together with the two `Finset.card` computations
-   `A` and `B`.
+**STATUS 2026-07-27: PROVEN over three sub-leaves**, cut along the three moving
+parts of any dimension count and stated above this block:
+`exists_stepanovJetLinearForms` (the reduction — the only one that does
+mathematics), `exists_stepanovCoefficientParametrisation` (the unknowns), and
+`stepanov_equationCount_lt_unknownCount` (`B < A`, and the ONLY consumer of
+`hMd`, `hMsq`, `hMq` and `hp`). Do NOT dispatch a prover at this node; dispatch
+at those three.
 
-Recovering `∃ i j k, A i j k ≠ 0` from a nonzero kernel vector is immediate;
-recovering `stepanovAnsatz ≠ 0` from it is NOT needed here — that is
+The only glue this proof does is the linear algebra: a linear map between
+`Fin N → 𝔽_p` and `Fin B → 𝔽_p` with `B < N` cannot be injective
+(`LinearMap.finrank_le_finrank_of_injective`), so its kernel is nonzero, and the
+parametrisation carries a nonzero kernel vector back to a nonzero family `A` of
+the prescribed shape. Recovering `∃ i j k, A i j k ≠ 0` is `funext`;
+recovering `stepanovAnsatz ≠ 0` is NOT needed here — that is
 `stepanov_not_dvd_stepanovAnsatz`'s job, and it only ever uses "not all
 `A_{ijk}` zero".
 
-`hp : 250 * d ^ 5 < p` is not used by Schmidt's count (it exists for the §4
-Remark, which this cut does not need — see the section note above); it is passed
-in because a large `p` is free and `d < p` is convenient.
+`hp : 250 * d ^ 5 < p` was recorded here as unused. That is now known to be
+WRONG: it is not needed for the `F_Y^{2M}` Remark (which this rendering does
+not use), but it IS load-bearing inside
+`stepanov_equationCount_lt_unknownCount`, where it covers the regime `M ≈ d²`
+in which `2(d−1)(M+8)² ≈ 2d⁵` is too weak.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_stepanovJetSolution (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -10062,8 +10286,26 @@ theorem exists_stepanovJetSolution (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Pr
         stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
         (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
         ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-          (stepanovJet F M ℓ (stepanovAnsatz d p ((d - 1) * M / d + d - 2) A)) x y = 0) :=
-  sorry
+          (stepanovJet F M ℓ (stepanovAnsatz d p ((d - 1) * M / d + d - 2) A)) x y = 0) := by
+  obtain ⟨Φ, hΦ⟩ := exists_stepanovJetLinearForms d hd p F hmon hdegY hcoeff M _ rfl
+  obtain ⟨ι, hιinj, hιdeg, hιsupp⟩ :=
+    exists_stepanovCoefficientParametrisation d hd p ((d - 1) * M / d + d - 2)
+  have hNB := stepanov_equationCount_lt_unknownCount d hd p hp M hMd hMsq hMq
+  -- `B < N` forbids `Φ ∘ ι` from being injective, so the system has a nonzero solution
+  have hker : LinearMap.ker (Φ.comp ι) ≠ ⊥ := by
+    intro h
+    have hle := LinearMap.finrank_le_finrank_of_injective (R := ZMod p)
+      (LinearMap.ker_eq_bot.mp h)
+    rw [Module.finrank_fin_fun, Module.finrank_fin_fun] at hle
+    omega
+  obtain ⟨c, hcmem, hcne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
+  have hΦc : Φ (ι c) = 0 := hcmem
+  have hne0 : ι c ≠ 0 := fun h => hcne (hιinj (by rw [h, map_zero]))
+  refine ⟨ι c, fun i j k => (hιdeg c i j k).imp id (by omega), hιsupp c, ?_,
+    hΦ (ι c) (hιdeg c) (hιsupp c) hΦc⟩
+  by_contra hcon
+  push Not at hcon
+  exact hne0 (funext fun i => funext fun j => funext fun k => by simpa using hcon i j k)
 
 /-- **SCHMIDT LEMMA 2D** (SORRY LEAF, cut 2026-07-27 out of
 `exists_stepanovAuxiliaryFunction`) — Chapter III §2, pp. 100–105. This is
