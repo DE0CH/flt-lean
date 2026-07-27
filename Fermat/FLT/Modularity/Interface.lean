@@ -23954,6 +23954,60 @@ of. Clauses (iv-a)/(iv-b) are where (1) and (2) enter; (ii), (iii) and
 into a project-level lemma yet: nothing in the cone could consume such
 a wrapper until (2) exists, so it would be free-floating.
 
+**AUDIT CORRECTION (2026-07-27): THE PIN AUDIT ABOVE SURVEYS MATHLIB
+AND `~/cs/FLT`, BUT NOT THIS PROJECT — AND THIS PROJECT HAS A LARGE
+RAY-CLASS CFT DEVELOPMENT, ALREADY IN THIS FILE'S IMPORT CONE.** Read
+"there is still NO global class field theory" as a statement about the
+pin only. `Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean`
+is imported by this file (its own import block, `Fermat.FLT.
+GaloisRepresentation.HardlyRamified.ModThree`), and lines ~37000–41500
+of it are a sustained formalization of **Artin's own proof of
+RECIPROCITY**, following Childress *Class Field Theory* ch. 5:
+`IsAdmissibleModulusRayClass` and `IsRamifiedCharRayClass`, the
+auxiliary-field/modulus machinery (`exists_artinPackage_ray_class`,
+`exists_artinAuxiliaryField_ray_class`), the cyclotomic base case
+(`artinSymbol_span_eq_one_of_cyclotomic_ray_class`), the descent
+(`artinSymbol_ray_class_descend_unramified_prime`) and the conductor
+theory (`exists_conductor_artinSymbol_span_eq_one_ray_class`,
+`exists_artinSymbol_isNarrowPrincipal_ray_class`). Much of it is
+PROVEN, as glue over a handful of open leaves.
+
+**TWO REASONS IT STILL CANNOT BE CITED HERE, each stated so it can be
+rechecked rather than taken on trust:**
+
+* *Wrong theorem.* That development is RECIPROCITY — the Artin symbol
+  of a (narrow-)principal ideal is trivial — for a GIVEN abelian
+  extension, presented as a character. Clause (ii) here demands
+  SURJECTIVITY of `art` onto `Cl(𝓞 CF)`, which is the EXISTENCE
+  theorem for the Hilbert class field: an unramified abelian extension
+  whose group IS the class group. Reciprocity does not produce it, and
+  nothing in `ModThree.lean` does. This is the load-bearing gap.
+* *Wrong value group.* Its characters are valued in `Dickson.K 3`,
+  which is `AlgebraicClosure (ZMod 3)` (`KnownIn1980s/PGL2/Basic.lean`)
+  — characteristic three is hardwired, while `Cl(𝓞 CF)` is an arbitrary
+  finite abelian group. The development is general in the base number
+  field `F`, so this is a value-group generalization, not a rewrite.
+
+**Consequently the honest shape of the remaining obligation is
+"existence theorem + the Frobenius-to-ideal dictionary", not "all of
+unramified CFT"** — and a successor who needs reciprocity should price
+generalizing `ModThree.lean`'s value group before building reciprocity
+again from scratch. A second, independent reciprocity development is
+the most expensive object this fleet can produce.
+
+**Why this leaf was NOT decomposed on 2026-07-27** (recorded so the
+decision can be overturned deliberately). The natural cut — write a
+Hilbert-class-field/Artin-package interface and prove the six clauses
+over it — is exactly the interface that the three CFT efforts live in
+this tree would also produce (`exists_isAdmissibleModulus_ray_class`
+and `isAdmissibleModulus_of_mul_unramified_ray_class` in
+`ModThree.lean`; `exists_anticyclotomicDihedralCocycle` in
+`Modularity/KhareWintenberger.lean`). Cutting here now would very
+likely create a rival API rather than reuse one. The check that would
+reverse this: once any of those efforts lands a base-field-general
+Artin map for a ray class group, this leaf should be re-cut to consume
+it directly, and the cut is then cheap.
+
 Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
 cyclotomic field) and the conclusion holds for every inhabitant, by the
 classical construction recalled above. -/
