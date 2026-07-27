@@ -288,6 +288,24 @@ strengthening of `card_le_of_rankZeroJacobian` rather than a new theory.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+-- `AbelianSchemeStruct.mulByNat` / `zeroSection` and their free properties
+-- (`isProper_mulByNat`, `locallyOfFiniteType_mulByNat`, `nsmul_val`,
+-- `zero_val`, `zeroSection_comp_mulByNat`), consumed by the étale-rigidity
+-- half of `neronKernel_torsionFree`.  This module imports only
+-- `AbelianScheme` from the project, so no cycle is created.
+public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
+-- `AlgebraicGeometry.FormallyUnramified`, and in particular the instance
+-- `FormallyUnramified.isOpenImmersion_diagonal`: the diagonal of a formally
+-- unramified morphism locally of finite type is an OPEN immersion.  Together
+-- with `IsSeparated` (diagonal a CLOSED immersion) this is what makes
+-- `section_eq_of_formallyUnramified` — the rigidity lemma — go through.
+public import Mathlib.AlgebraicGeometry.Morphisms.FormallyUnramified
+-- `isIso_iff_isOpenImmersion_and_surjective`, used to turn the clopen
+-- equalizer of two sections into an isomorphism.
+public import Mathlib.AlgebraicGeometry.Morphisms.IsIso
+-- `PrimeSpectrum.irreducibleSpace` for a domain, which is how `Spec ℤ_(ℓ)`
+-- is seen to be connected in the rigidity argument.
+public import Mathlib.RingTheory.Spectrum.Prime.Topology
 -- `Fermat.FLT.ModularCurve.EllipticScheme`: the assembly of
 -- `exists_ellipticScheme_of_weierstrass` below, out of the projective
 -- Weierstrass model as a `Scheme`.
@@ -7922,8 +7940,252 @@ theorem torsionFree_of_prime {G H : Type*} [AddCommGroup G] [AddCommGroup H]
         _ < q * m := (Nat.mul_lt_mul_right (Nat.pos_of_ne_zero hm)).mpr hq.one_lt
       exact ih m hlt hm x hx hy
 
+section NeronEtaleRigidity
+
+open _root_.CategoryTheory.Limits
+
+/-- **A fibre square whose first projection is an isomorphism factors its
+first leg through the second** (PROVEN).
+
+Elementary, and it is the last step of the rigidity lemma below: once the
+equalizer `E ⟶ S` of two sections has been shown to be an isomorphism, the
+square `E ⟶ S`, `E ⟶ Z` exhibits `S ⟶ Z ×_S Z` as factoring through the
+diagonal, which is what forces the two sections to coincide. -/
+theorem exists_comp_eq_of_isIso_pullback_fst {A B C : Scheme.{u}} (f : A ⟶ C) (g : B ⟶ C)
+    [IsIso (pullback.fst f g)] : ∃ u : A ⟶ B, f = u ≫ g :=
+  ⟨inv (pullback.fst f g) ≫ pullback.snd f g, by
+    rw [Category.assoc, ← pullback.condition, ← Category.assoc, IsIso.inv_hom_id,
+      Category.id_comp]⟩
+
+/-- **RIGIDITY: two sections of a separated, formally unramified morphism of
+finite type over a CONNECTED base that agree at a point agree everywhere**
+(PROVEN).
+
+This is the whole geometric content of the `q ≠ ℓ` half of
+`neronKernel_torsionFree`, isolated from the abelian scheme entirely — it is
+a statement about an arbitrary morphism of schemes, and it is proven here
+outright.
+
+The argument, in the form the compiler checks it.  Let `s t : S ⟶ Z` be
+sections of `p` and let `e := (s, t) : S ⟶ Z ×_S Z`.  Their equalizer is the
+fibre square `E := S ×_{Z ×_S Z} Z` formed along the DIAGONAL `Δ` of `p`, and
+`E ⟶ S` is a base change of `Δ`.  Now `Δ` is:
+
+* an OPEN immersion, because `p` is formally unramified and locally of finite
+  type — mathlib's `FormallyUnramified.isOpenImmersion_diagonal`; and
+* a CLOSED immersion, because `p` is separated — that is the definition of
+  `IsSeparated`.
+
+Both properties are stable under base change, so `Set.range (E ⟶ S)` is
+CLOPEN.  It is nonempty because `w ≫ s = w ≫ t` supplies a lift of `w`
+through `E` and `T` is nonempty.  A clopen nonempty subset of a preconnected
+space is everything, so `E ⟶ S` is an open immersion that is surjective,
+hence an isomorphism (`isIso_iff_isOpenImmersion_and_surjective`), and
+`exists_comp_eq_of_isIso_pullback_fst` then factors `e` through `Δ`.
+Composing with the two projections of `Z ×_S Z` gives `s = u = t`.
+
+Note what is NOT needed: no properness, no finiteness of the fibres, no
+hypothesis on the base beyond preconnectedness, and no group structure. -/
+theorem section_eq_of_formallyUnramified {Z S : Scheme.{u}} (p : Z ⟶ S)
+    [FormallyUnramified p] [LocallyOfFiniteType p] [IsSeparated p]
+    [PreconnectedSpace S] {T : Scheme.{u}} [Nonempty T] (w : T ⟶ S)
+    {s t : S ⟶ Z} (hs : s ≫ p = 𝟙 S) (ht : t ≫ p = 𝟙 S)
+    (hw : w ≫ s = w ≫ t) : s = t := by
+  have hst : s ≫ p = t ≫ p := by rw [hs, ht]
+  have hefst : pullback.lift s t hst ≫ pullback.fst p p = s := pullback.lift_fst _ _ _
+  have hesnd : pullback.lift s t hst ≫ pullback.snd p p = t := pullback.lift_snd _ _ _
+  have hfac : w ≫ pullback.lift s t hst = (w ≫ s) ≫ pullback.diagonal p := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hefst, Category.assoc, pullback.diagonal_fst, Category.comp_id]
+    · rw [Category.assoc, hesnd, Category.assoc, pullback.diagonal_snd, Category.comp_id, hw]
+  obtain ⟨x⟩ := ‹Nonempty ↥T›
+  haveI hne := Nonempty.intro ((pullback.lift w (w ≫ s) hfac).base x)
+  haveI : IsIso (pullback.fst (pullback.lift s t hst) (pullback.diagonal p)) := by
+    refine (isIso_iff_isOpenImmersion_and_surjective _).mpr ⟨inferInstance, ⟨?_⟩⟩
+    rw [← Set.range_eq_univ]
+    refine IsClopen.eq_univ ⟨?_, ?_⟩ (Set.range_nonempty _)
+    · exact (pullback.fst (pullback.lift s t hst)
+        (pullback.diagonal p)).isClosedEmbedding.isClosed_range
+    · exact (pullback.fst (pullback.lift s t hst)
+        (pullback.diagonal p)).isOpenEmbedding.isOpen_range
+  obtain ⟨u, hu⟩ := exists_comp_eq_of_isIso_pullback_fst
+    (pullback.lift s t hst) (pullback.diagonal p)
+  have h1 : s = u := by
+    rw [← hefst, hu, Category.assoc, pullback.diagonal_fst, Category.comp_id]
+  have h2 : t = u := by
+    rw [← hesnd, hu, Category.assoc, pullback.diagonal_snd, Category.comp_id]
+  rw [h1, h2]
+
+/-- **The kernel of `A(R) ⟶ A(R/I)` along a SQUARE-ZERO extension has no
+`q`-torsion when `q` is a unit of `R`** (sorry node — and, after the
+reduction below, the ONLY thing left in the whole `q ≠ ℓ` half of
+`neronKernel_torsionFree`).
+
+TRUE, and it is the standard first statement of deformation theory.  For a
+SMOOTH `f : A ⟶ S` (here `ab.smooth`) and a square-zero extension
+`R ↠ R/I`, the kernel of `A(R) ⟶ A(R/I)` is canonically
+
+    Hom_{R/I}(e^* Ω_{A/S} ⊗ R/I, I)  ≅  Lie(A/S) ⊗ I,
+
+the lifts of a fixed `(R/I)`-point forming a TORSOR under it.  The point
+that matters is not the precise identification but its consequence: the
+kernel is an `R`-MODULE, not merely an abelian group (the `R`-action factors
+through `R/I` because `I² = 0`).  Multiplication by `q` on an `R`-module is
+bijective as soon as `q ∈ Rˣ`, so a `q`-torsion element of the kernel is
+`0`.
+
+**Why THIS is the right atom, and why the previous statement of the gap was
+not** (2026-07-27).  The gap used to be recorded as "`[q]` is formally
+unramified", with the repair plan "globalize `HopfKaehler.lean` from Hopf
+algebras to group schemes" — i.e. build translation-invariance of `Ω_{A/S}`
+for a non-affine group scheme.  That plan is sound but enormous, and it is
+not necessary.  Mathlib's `FormallyUnramified.of_hom_ext` is the
+INFINITESIMAL LIFTING CRITERION, phrased on `Spec R`-points — which is
+exactly the language `AbelianSchemeStruct` is written in — and reduces
+unramifiedness of `[q]` to this statement in about thirty lines (see
+`formallyUnramified_mulByNat_of_isUnit` immediately below, PROVEN).  So the
+differential-geometric packaging can be dropped entirely: nothing in the
+STATEMENT here mentions `Ω`, Kähler differentials, diagonals, or even
+morphisms of schemes.  It is a sentence about relative points.
+
+That is the general lesson from this leaf twice over: an irreducibility
+verdict is only as wide as the axis searched, and a gap is only as large as
+the language it happens to be stated in.
+
+MISSING MACHINERY, checked rather than assumed (2026-07-27).  Mathlib has the
+AFFINE-ALGEBRA half of exactly this in
+`Mathlib/RingTheory/Smooth/Kaehler.lean`: `derivationOfSectionOfKerSqZero`
+(the difference of two sections of a square-zero extension IS a derivation),
+`retractionKerToTensorEquivSection`, `tensorKaehlerQuotKerSqEquiv`.  What is
+absent is the SCHEME-level statement, and — the harder half — the
+compatibility saying that the group law of `ab` on relative points
+corresponds to ADDITION of derivations under that identification.  This
+project's `Fermat/FLT/GroupScheme/HopfKaehler.lean` has the affine group
+scheme version; `~/cs/FLT` has no abelian-scheme development at all.
+
+THE CHECK THAT WOULD REFUTE THE VERDICT: produce, at this pin, an
+`R`-module structure (or even just an `R`-scalar action) on the kernel of
+`RelPoint.pre` along a square-zero extension, compatible with `ab.add`.  A
+single such declaration closes this leaf, since `IsUnit.map` then makes `[q]`
+bijective on it.  Note the smoothness hypothesis is already available as
+`ab.smooth` and is the only geometric input the construction needs — no
+properness, no connectedness, no abelian-ness. -/
+theorem eq_zero_of_squareZero_of_isUnit_nsmul
+    {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f) (q : ℕ)
+    {R S' : CommRingCat.{u}} (φ : R ⟶ S') (_hφ : Function.Surjective φ)
+    (_hsq : RingHom.ker φ.hom ^ 2 = ⊥) (_hq : IsUnit ((q : ℕ) : R))
+    {b : Spec R ⟶ S} (c : RelPoint f b)
+    (_htors : ab.nsmulPoint q c = ab.zero b)
+    (_hker : RelPoint.pre (Spec.map φ) rfl c = ab.zero (Spec.map φ ≫ b)) :
+    c = ab.zero b :=
+  sorry
+
+/-- **`[q]` is formally unramified on an abelian scheme over a base on which
+`q` is invertible** (PROVEN, over the deformation-theoretic leaf above).
+
+The reduction is mathlib's `FormallyUnramified.of_hom_ext`: it suffices that
+along every square-zero extension `R ↠ R/I` any two `R`-points `g₁, g₂` of
+`A` that agree on `Spec (R/I)` and satisfy `[q] ∘ g₁ = [q] ∘ g₂` are equal.
+
+Everything then happens inside the group of relative points, and this is
+where the functor-of-points presentation of `AbelianSchemeStruct` pays for
+itself:
+
+* `g₁` and `g₂` lie over the SAME base point, because `[q] ≫ f = f`
+  (`mulByNat_comp`) — so they are two elements of one group `RelPoint f b`,
+  and their difference `c := g₁ − g₂` is meaningful;
+* `q • c = 0`, because `nsmul_val` says `q • gᵢ` is `gᵢ ≫ [q]` and those are
+  equal by hypothesis;
+* `c` dies on `Spec (R/I)`, because `RelPoint.pre` is a group homomorphism
+  (`pre_add`, packaged by `AddMonoidHom.mk'`) and `g₁`, `g₂` agree there;
+* `q` is a unit in `R`, transported from the base along the ring map
+  underlying `b : Spec R ⟶ Spec B` via `map_natCast` and `IsUnit.map`.
+
+The leaf then gives `c = 0`, i.e. `g₁ = g₂`. -/
+theorem formallyUnramified_mulByNat_of_isUnit (B : CommRingCat.{u}) (q : ℕ)
+    (hq : IsUnit ((q : ℕ) : B)) {A : Scheme.{u}} {f : A ⟶ Spec B}
+    (ab : AbelianSchemeStruct f) : FormallyUnramified (ab.mulByNat q) := by
+  refine FormallyUnramified.of_hom_ext _ ?_
+  intro R S' φ hφ hsq g₁ g₂ hagree hcomp
+  have hb : g₂ ≫ f = g₁ ≫ f := by
+    rw [← ab.mulByNat_comp q, ← Category.assoc, ← hcomp, Category.assoc, ab.mulByNat_comp]
+  letI := ab.addCommGroup (g₁ ≫ f)
+  letI := ab.addCommGroup (Spec.map φ ≫ (g₁ ≫ f))
+  have pre_sub : ∀ y z : RelPoint f (g₁ ≫ f),
+      RelPoint.pre (Spec.map φ) rfl (y - z)
+        = RelPoint.pre (Spec.map φ) rfl y - RelPoint.pre (Spec.map φ) rfl z :=
+    fun y z => map_sub (AddMonoidHom.mk' (RelPoint.pre (Spec.map φ)
+      (rfl : Spec.map φ ≫ (g₁ ≫ f) = Spec.map φ ≫ (g₁ ≫ f)))
+      (ab.pre_add (Spec.map φ) rfl)) y z
+  set p₁ : RelPoint f (g₁ ≫ f) := ⟨g₁, rfl⟩ with hp₁
+  set p₂ : RelPoint f (g₁ ≫ f) := ⟨g₂, hb⟩ with hp₂
+  obtain ⟨ψ, hψ⟩ := Spec.homEquiv.symm.surjective (g₁ ≫ f)
+  have hqR : IsUnit ((q : ℕ) : R) := by
+    have := hq.map ψ.hom
+    rwa [map_natCast] at this
+  have hq12 : ab.nsmulPoint q p₁ = ab.nsmulPoint q p₂ := by
+    refine Subtype.ext ?_
+    show (q • p₁ : RelPoint f (g₁ ≫ f)).1 = (q • p₂ : RelPoint f (g₁ ≫ f)).1
+    rw [ab.nsmul_val q p₁, ab.nsmul_val q p₂]
+    exact hcomp
+  have htors : ab.nsmulPoint q (p₁ - p₂) = ab.zero (g₁ ≫ f) := by
+    show (q • (p₁ - p₂) : RelPoint f (g₁ ≫ f)) = (0 : RelPoint f (g₁ ≫ f))
+    rw [nsmul_sub]
+    exact sub_eq_zero_of_eq hq12
+  have hker : RelPoint.pre (Spec.map φ) rfl (p₁ - p₂)
+      = ab.zero (Spec.map φ ≫ (g₁ ≫ f)) := by
+    rw [pre_sub p₁ p₂]
+    have h : RelPoint.pre (Spec.map φ) (rfl : Spec.map φ ≫ (g₁ ≫ f) = _) p₁
+        = RelPoint.pre (Spec.map φ) rfl p₂ := Subtype.ext hagree
+    rw [h]
+    exact sub_self _
+  have hzero := eq_zero_of_squareZero_of_isUnit_nsmul ab q φ hφ hsq hqR (p₁ - p₂) htors hker
+  have hp : p₁ = p₂ := by
+    rw [show (ab.zero (g₁ ≫ f)) = (0 : RelPoint f (g₁ ≫ f)) from rfl] at hzero
+    exact sub_eq_zero.mp hzero
+  exact congrArg Subtype.val hp
+
+/-- **`𝔽_ℓ` is nontrivial when `IsReductionBase` holds** (PROVEN).
+
+Immediate, and needed twice below: `Spec 𝔽_ℓ` must be NONEMPTY for it to
+witness the agreement of two sections, and `ℓ = 1` must be excluded when
+deducing `ℓ ∤ q`.  If `ZMod ℓ` were trivial then `toF 1 = 0`, so
+`ker_eq_nonunits` would make `1` a non-unit of `R`. -/
+theorem nontrivial_zmod_of_reductionBase {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) : Nontrivial (ZMod ℓ) := by
+  refine ⟨⟨1, 0, ?_⟩⟩
+  rw [← map_one toF, Ne, hbase.ker_eq_nonunits 1]
+  exact fun h => h isUnit_one
+
+/-- **A prime `q ≠ ℓ` is a UNIT in the base `ℤ_(ℓ)`** (PROVEN).
+
+`ker_eq_nonunits` turns this into `toF (q : R) ≠ 0`, i.e. `(q : 𝔽_ℓ) ≠ 0`,
+i.e. `¬ ℓ ∣ q` — via `CharP.cast_eq_zero_iff`, which holds for `ZMod ℓ` at
+EVERY `ℓ`, including `0` and `1`, so no `NeZero` side condition appears.  As
+`q` is prime, `ℓ ∣ q` forces `ℓ = 1` or `ℓ = q`; the second is `hqℓ` and the
+first is `nontrivial_zmod_of_reductionBase`.
+
+Note this is where — and the only place where — primality of `q` is used in
+the `q ≠ ℓ` leaf, and that **`ℓ.Prime` is not needed at all**, which is why it
+is absent from the leaf's hypotheses. -/
+theorem isUnit_natCast_of_reductionBase {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) {q : ℕ} (hq : q.Prime) (hqℓ : q ≠ ℓ) :
+    IsUnit ((q : ℕ) : R) := by
+  haveI := nontrivial_zmod_of_reductionBase hbase
+  have hone : ¬ (toF 1 = 0) := by
+    rw [hbase.ker_eq_nonunits 1]
+    exact fun h => h isUnit_one
+  by_contra hcon
+  have hz : toF ((q : ℕ) : R) = 0 := (hbase.ker_eq_nonunits _).mpr hcon
+  rw [map_natCast] at hz
+  have hdvd : ℓ ∣ q := (CharP.cast_eq_zero_iff (ZMod ℓ) ℓ q).mp hz
+  rcases hq.eq_one_or_self_of_dvd ℓ hdvd with h1 | h2
+  · subst h1
+    exact hone (Subsingleton.elim _ _)
+  · exact hqℓ h2.symm
+
 /-- **The kernel of reduction contains no point of PRIME order `q ≠ ℓ`**
-(sorry node — the ÉTALE RIGIDITY fact).
+(PROVEN, over the single leaf `formallyUnramified_mulByNat_of_isUnit`).
 
 TRUE, and note what is NOT among its hypotheses: **`ℓ ≠ 2` is absent,
 and that is the point of separating this case out.**  This half of the
@@ -7942,29 +8204,82 @@ CLOSED; `Spec R` of a local ring is connected; and `hker` says the
 equalizer contains the closed point.  Hence it is everything and
 `x = 0`.
 
-MISSING MACHINERY, and this is a DIFFERENT gap from the one below: the
-`q`-torsion subscheme `𝒥[q]` as a scheme, and étaleness of `[q]` when
-`q` is invertible.  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`
-already has `zeroSection`, `mulByNat` and `zeroSection_comp_mulByNat`,
-so the kernel is expressible as a fibre product there; what is absent is
-its étaleness.
+**The old audit here recorded this leaf as IRREDUCIBLE along the étale
+axis, and that verdict is now RETIRED** (2026-07-27).  It named two
+missing ingredients — the `q`-torsion subscheme `𝒥[q]` as a scheme, and
+étaleness of `[q]` — and the first of the two turned out not to be
+needed at all.  The rigidity argument never studies `𝒥[q]` as an object:
+it forms the fibre square `pullback [q] e` and reads two SECTIONS off
+it, which mathlib's `pullback` supplies for free.  Everything else — the
+open/closed equalizer, connectedness, the passage back to `x = 0` — is
+`section_eq_of_formallyUnramified`, proven above outright.
 
-IRREDUCIBLE at this pin ALONG THE ÉTALE AXIS, and the CHECK THAT WOULD
-REFUTE THAT: produce, anywhere in the pin, `IsEtale` (or even
-`UnramifiedAt`) for multiplication by an invertible integer on an
-abelian scheme — grep `AbelianSchemeIsogeny.lean` for an étaleness
-statement about `mulByNat`.  One such declaration collapses this leaf to
-the connectedness argument above, which is elementary. -/
+So the whole leaf is now proven over ONE hypothesis,
+`formallyUnramified_mulByNat_of_isUnit`, whose own docstring carries the
+sharpened audit and the check that would refute it.
+
+The proof, concretely.  `isUnit_natCast_of_reductionBase` makes `q` a
+unit of `R`, so `[q]` is formally unramified; it is locally of finite
+type and separated for free (`locallyOfFiniteType_mulByNat`,
+`isProper_mulByNat`).  Base-changing along the zero section, the
+projection `p : 𝒥 ×_{[q],𝒥,e} R ⟶ Spec R` inherits all three.  The
+torsion point `x` and the zero section are two SECTIONS of `p` — that is
+exactly what `htors` and the zero-section identity say — and `hker` says
+they agree after `Spec 𝔽_ℓ ⟶ Spec ℤ_(ℓ)`.  `Spec ℤ_(ℓ)` is preconnected
+because `R ⊆ ℚ` is a DOMAIN (`PrimeSpectrum.irreducibleSpace`), and
+`Spec 𝔽_ℓ` is nonempty by `nontrivial_zmod_of_reductionBase`.  Rigidity
+gives the two sections equal, and composing with the first projection
+gives `x.1 = e`, i.e. `x = 0`. -/
 theorem neronKernel_torsionFree_primeToResidue (ℓ : ℕ) (R : Subring ℚ)
-    (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
-    (q : ℕ) (_hq : q.Prime) (_hqℓ : q ≠ ℓ)
+    (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    (q : ℕ) (hq : q.Prime) (hqℓ : q ≠ ℓ)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
     (x : RelPoint jstrZ (𝟙 (SpecLoc R)))
-    (_htors : abZ.nsmulPoint q x = abZ.zero (𝟙 (SpecLoc R)))
-    (_hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
+    (htors : abZ.nsmulPoint q x = abZ.zero (𝟙 (SpecLoc R)))
+    (hker : RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) x
       = abZ.zero (SpecLoc.special toF)) :
-    x = abZ.zero (𝟙 (SpecLoc R)) :=
-  sorry
+    x = abZ.zero (𝟙 (SpecLoc R)) := by
+  haveI := nontrivial_zmod_of_reductionBase hbase
+  haveI : Nonempty ↥(SpecF ℓ) := inferInstanceAs (Nonempty (PrimeSpectrum (ZMod ℓ)))
+  haveI : PreconnectedSpace ↥(SpecLoc R) := inferInstanceAs (PreconnectedSpace (PrimeSpectrum R))
+  haveI hfu : FormallyUnramified (abZ.mulByNat q) :=
+    formallyUnramified_mulByNat_of_isUnit (CommRingCat.of R) q
+      (isUnit_natCast_of_reductionBase hbase hq hqℓ) abZ
+  haveI : LocallyOfFiniteType (abZ.mulByNat q) := abZ.locallyOfFiniteType_mulByNat q
+  haveI : IsSeparated (abZ.mulByNat q) := (abZ.isProper_mulByNat q).toIsSeparated
+  have hx : x.1 ≫ abZ.mulByNat q = 𝟙 (SpecLoc R) ≫ abZ.zeroSection := by
+    have h := congrArg Subtype.val htors
+    rw [abZ.zero_val (𝟙 (SpecLoc R))] at h
+    rw [← h]
+    exact (abZ.nsmul_val q x).symm
+  have h0 : abZ.zeroSection ≫ abZ.mulByNat q = 𝟙 (SpecLoc R) ≫ abZ.zeroSection := by
+    rw [abZ.zeroSection_comp_mulByNat q, Category.id_comp]
+  set sx : SpecLoc R ⟶ pullback (abZ.mulByNat q) abZ.zeroSection :=
+    pullback.lift x.1 (𝟙 _) hx with hsx
+  set s0 : SpecLoc R ⟶ pullback (abZ.mulByNat q) abZ.zeroSection :=
+    pullback.lift abZ.zeroSection (𝟙 _) h0 with hs0
+  have hsxs : sx ≫ pullback.snd (abZ.mulByNat q) abZ.zeroSection = 𝟙 _ :=
+    pullback.lift_snd _ _ _
+  have hs0s : s0 ≫ pullback.snd (abZ.mulByNat q) abZ.zeroSection = 𝟙 _ :=
+    pullback.lift_snd _ _ _
+  have hw : SpecLoc.special toF ≫ sx = SpecLoc.special toF ≫ s0 := by
+    refine pullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hsx, pullback.lift_fst, Category.assoc, hs0, pullback.lift_fst]
+      have h := congrArg Subtype.val hker
+      rw [abZ.zero_val (SpecLoc.special toF)] at h
+      exact h
+    · rw [Category.assoc, hsx, pullback.lift_snd, Category.assoc, hs0, pullback.lift_snd]
+  haveI : FormallyUnramified (pullback.snd (abZ.mulByNat q) abZ.zeroSection) :=
+    MorphismProperty.pullback_snd (P := @FormallyUnramified) _ _ hfu
+  have heq : sx = s0 :=
+    section_eq_of_formallyUnramified _ (SpecLoc.special toF) hsxs hs0s hw
+  refine Subtype.ext ?_
+  rw [abZ.zero_val (𝟙 (SpecLoc R)), Category.id_comp]
+  have hfin := congrArg (fun m => m ≫ pullback.fst (abZ.mulByNat q) abZ.zeroSection) heq
+  simp only [hsx, hs0, pullback.lift_fst] at hfin
+  exact hfin
+
+end NeronEtaleRigidity
 
 /-- **The kernel of reduction contains no point of order `ℓ`, for `ℓ`
 odd** (sorry node — the FORMAL-GROUP fact).
@@ -7997,7 +8312,30 @@ OF an abelian scheme along its zero section, and (b) the
 torsion-freeness theorem for `e < p − 1`.  Producing either as a
 declaration refutes the claim; `FormalGroup.Point` is the natural target
 for (a), and an `AddGroup` instance on it is the prerequisite for
-either. -/
+either.
+
+**RE-VERIFIED 2026-07-27** (an audit is only as good as its last check).
+`Mathlib/RingTheory/FormalGroup/Basic.lean` is still the only file in
+that directory, and it still stops exactly where the audit said: it has
+`Add` and `Zero` on `Point`, `AddMonoid`, and `AddCommMonoid` under
+`IsComm` — and **no `Neg` and no `AddGroup`** — with the
+points-in-a-complete-local-ring construction still a `TODO` in its own
+docstring.  The verdict stands.
+
+**AND THE ÉTALE ROUTE DOES NOT TRANSFER HERE — do not try it.**  The
+sibling leaf `neronKernel_torsionFree_primeToResidue` was closed on
+2026-07-27 by rigidity: `[q]` is formally unramified when `q` is a unit
+on the base, so the equalizer of a `q`-torsion section with the zero
+section is CLOPEN, and `Spec ℤ_(ℓ)` is connected.  Every step of that
+argument is available here EXCEPT the first, and the first is false:
+`q = ℓ` is precisely the case where `ℓ` is NOT a unit on `ℤ_(ℓ)`, `[ℓ]`
+is ramified in residue characteristic `ℓ`, and the equalizer is closed
+but not open.  This is not an accident of the proof — it is the same
+distinction that makes `hℓ2` load-bearing here and absent there.  So the
+two halves really do share no argument, as the cut's docstring claims,
+and the rigidity machinery
+(`section_eq_of_formallyUnramified`, proven above) buys nothing at this
+leaf. -/
 theorem neronKernel_torsionFree_residue (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
     (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
@@ -8025,17 +8363,28 @@ characteristic into two cases that need **entirely different theories**
 and share no argument:
 
 * `q ≠ ℓ` (`neronKernel_torsionFree_primeToResidue`) — étale rigidity:
-  `𝒥[q]` is finite étale because `q` is a unit, and two sections of a
-  separated unramified morphism agreeing at a point of a connected base
-  agree.  **Needs no hypothesis on `ℓ` whatsoever.**
+  two sections of a separated unramified morphism agreeing at a point of
+  a connected base agree.  **Needs no hypothesis on `ℓ` whatsoever**, and
+  is now PROVEN (2026-07-27), over the single residual leaf
+  `formallyUnramified_mulByNat_of_isUnit`.
 * `q = ℓ` (`neronKernel_torsionFree_residue`) — the formal group of
-  `𝒥` on the maximal ideal, torsion-free because `e = 1 < ℓ − 1`.
+  `𝒥` on the maximal ideal, torsion-free because `e = 1 < ℓ − 1`.  Still
+  a sorry node, and the formal-group axis is genuinely empty at this pin.
 
 The previous audit here recorded the node as irreducible, but it ranged
 only over the formal-group axis; along that axis it was right.  The
 ÉTALE axis was never searched, and it carries a strict majority of the
 statement (every prime but one).  Isolating it also makes visible that
 `hℓ2` is needed for a single prime, which the undivided statement hid.
+
+**How that played out** (2026-07-27, worth recording because it is the
+general lesson).  Once the étale half was attacked on its own axis it
+turned out that the "missing machinery" the old audit listed was
+half-imaginary: the `q`-torsion SUBSCHEME is never needed, only a fibre
+square and two sections of it, and the rigidity step is a theorem about
+arbitrary morphisms of schemes that mathlib fully supports.  What
+survived is one differential-geometric fact about `[q]`, and it is now
+the only thing standing between this half and a complete proof.
 
 This is the SHARED content that `card_le_of_rankZeroJacobian` also rests
 on, isolated here so that it is proven once. -/
