@@ -14989,7 +14989,7 @@ theorem WeierstrassCurve.exists_x0Seven_param_of_stableSevenSubgroup
   haveI := hell'
   obtain ⟨u, hju, hju'⟩ :=
     E.exists_x0Seven_veluParam P hP hstable hCfin t w hell' ht hw
-  exact ⟨u, E.veluModel t w, hell', φ, hgal, hker,
+  exact ⟨u, E.veluModel t w, hell', φ, hgal, hker.1,
     X0Seven.param_ne_zero u E.j hju, hju, hju'⟩
 
 namespace MazurLevelFortyNine
