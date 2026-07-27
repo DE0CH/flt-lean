@@ -353,6 +353,24 @@ public import Mathlib.NumberTheory.NumberField.Discriminant.Different
 -- downstream consumer's cone; it only makes THIS module rebuild when the
 -- Hermite–Minkowski cluster moves.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HermiteMinkowski
+-- `complexConj : Γ ℚ`, `complexConj_mul_self` and `cyclotomicCharacter_complexConj`:
+-- the ODDNESS vocabulary, consumed by `exists_smul_eq_of_commute_of_isIrreducible_hilbert`
+-- below (added 2026-07-27 with the proof of that leaf).
+--
+-- CIRCULARITY GUARD: `ComplexConjugation.lean`'s own import closure is PURE
+-- MATHLIB (`Mathlib.FieldTheory.AbsoluteGaloisGroup`,
+-- `Mathlib.FieldTheory.AlgebraicClosure`,
+-- `Mathlib.NumberTheory.Cyclotomic.CyclotomicCharacter`,
+-- `Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed`,
+-- `Mathlib.Analysis.Complex.Polynomial.Basic`, `Mathlib.Algebra.Order.Ring.Basic`),
+-- so it contains nothing from `HardlyRamified/`, `Deformation.lean`, `Lift.lean`,
+-- `Family.lean` or `Modularity/*` and no cycle is created.
+--
+-- CONE-GROWTH AUDIT: the sole project consumer of this module,
+-- `Deformation.lean`, ALREADY imports `ComplexConjugation.lean` directly (it is
+-- what its own `exists_smul_eq_of_commute_of_isIrreducible` consumes), so this
+-- line adds ZERO modules to any downstream cone.
+public import Fermat.FLT.GaloisRepresentation.ComplexConjugation
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
@@ -637,6 +655,143 @@ need the reverse inclusion of step 3 there. -/
 theorem finiteIndex_galoisSubgroup (F : Type u) [Field F] [NumberField F] :
     (galoisSubgroup F).FiniteIndex :=
   finiteIndex_range_absoluteGaloisGroupMap ℚ F
+
+/-- **An element of `Γ K` fixing every `K`-embedding of `F` into `Kᵃˡᵍ` lies in
+the range of `Γ F → Γ K`** (PROVEN 2026-07-27; this is the CONVERSE-FLAVOURED
+half of `finiteIndex_range_absoluteGaloisGroupMap`'s step 3, isolated as its
+own statement because the oddness argument below needs a NAMED element of
+`Γ F`, not merely a finite index).
+
+The construction is the one that lemma's step 3 performs internally, and the
+two proofs deliberately share their first two steps verbatim:
+
+1. The chosen embedding `e := AlgebraicClosure.map (algebraMap K F)` of `Kᵃˡᵍ`
+   into `Fᵃˡᵍ` is BIJECTIVE — injective as a map of fields, surjective because
+   `Fᵃˡᵍ` is integral over the algebraically closed image
+   (`IsAlgClosed.ringHom_bijective_of_isIntegral`).
+2. Transporting `F` back along `e⁻¹` gives a `K`-algebra embedding
+   `g : F →ₐ[K] Kᵃˡᵍ`.
+3. `e τ e⁻¹` is then a ring automorphism of `Fᵃˡᵍ`, and it fixes `F` pointwise
+   exactly because `τ` fixes `g`'s image — which is what `hτ` supplies. So it
+   IS an element of `Γ F`, and `Field.absoluteGaloisGroup.lift_map` plus
+   injectivity of `e` identify its image in `Γ K` with `τ`.
+
+Why `hτ` quantifies over ALL `K`-embeddings `g` rather than over the one this
+proof builds: the `g` produced in step 2 depends on mathlib's arbitrary choice
+of `IsAlgClosed.lift`, so a hypothesis naming it would be unusable at a call
+site. The universally quantified form is exactly what "`F` is totally real"
+delivers (every complex embedding of `F` is real), which is the only intended
+instantiation.
+
+NOT deduplicated against `finiteIndex_range_absoluteGaloisGroupMap`: that
+theorem needs the intermediate field `E = g.fieldRange` itself for its step 4
+(`E.fixingSubgroup` is open because `E/K` is finite), and this statement hides
+`E`, so neither can be expressed as an instance of the other without exposing
+`E` in a signature that no consumer wants. The shared part is steps 1–2. -/
+theorem mem_range_absoluteGaloisGroupMap_of_forall_algHom_fixed
+    (K : Type*) [Field K] (F : Type*) [Field F] [Algebra K F] [FiniteDimensional K F]
+    (τ : Γ K)
+    (hτ : ∀ (g : F →ₐ[K] AlgebraicClosure K) (y : F), τ (g y) = g y) :
+    τ ∈ (Field.absoluteGaloisGroup.map (algebraMap K F)).toMonoidHom.range := by
+  classical
+  -- STEP 1: the chosen embedding `Kᵃˡᵍ → Fᵃˡᵍ` is bijective.
+  have key : ∀ j : AlgebraicClosure K →+* AlgebraicClosure F,
+      (∀ y : K, j (algebraMap K (AlgebraicClosure K) y)
+        = algebraMap K (AlgebraicClosure F) y) → Function.Bijective j := by
+    intro j hj
+    refine IsAlgClosed.ringHom_bijective_of_isIntegral j fun x => ?_
+    refine ⟨(minpoly K x).map (algebraMap K (AlgebraicClosure K)),
+      (minpoly.monic (Algebra.IsIntegral.isIntegral x)).map _, ?_⟩
+    have hcomp : j.comp (algebraMap K (AlgebraicClosure K))
+        = algebraMap K (AlgebraicClosure F) := RingHom.ext hj
+    rw [Polynomial.eval₂_map, hcomp, ← Polynomial.aeval_def, minpoly.aeval]
+  have hcommutes : ∀ y : K, AlgebraicClosure.map (algebraMap K F)
+      (algebraMap K (AlgebraicClosure K) y) = algebraMap K (AlgebraicClosure F) y := fun y => by
+    rw [AlgebraicClosure.map_algebraMap, ← IsScalarTower.algebraMap_apply]
+  have hbij : Function.Bijective (AlgebraicClosure.map (algebraMap K F)) := key _ hcommutes
+  let e : AlgebraicClosure K ≃+* AlgebraicClosure F := RingEquiv.ofBijective _ hbij
+  have he : ∀ x, e x = AlgebraicClosure.map (algebraMap K F) x := fun _ => rfl
+  -- STEP 2: the copy of `F` inside `Kᵃˡᵍ` along `e⁻¹`.
+  let g : F →ₐ[K] AlgebraicClosure K :=
+    { (e.symm : AlgebraicClosure F ≃+* AlgebraicClosure K).toRingHom.comp
+        (algebraMap F (AlgebraicClosure F)) with
+      commutes' := fun y => by
+        show e.symm (algebraMap F (AlgebraicClosure F) (algebraMap K F y)) = _
+        rw [← IsScalarTower.algebraMap_apply, ← hcommutes y, ← he]
+        exact e.symm_apply_apply _ }
+  have hg : ∀ y : F, e (g y) = algebraMap F (AlgebraicClosure F) y := fun y =>
+    e.apply_symm_apply _
+  -- STEP 3: `e τ e⁻¹` fixes `F` pointwise, hence is an element of `Γ F`.
+  have hfix : ∀ y : F, ((e.symm.trans τ.toRingEquiv).trans e)
+      (algebraMap F (AlgebraicClosure F) y) = algebraMap F (AlgebraicClosure F) y := by
+    intro y
+    have hsy : e.symm (algebraMap F (AlgebraicClosure F) y) = g y := by
+      rw [← hg y, e.symm_apply_apply]
+    show e (τ (e.symm (algebraMap F (AlgebraicClosure F) y))) = _
+    rw [hsy, hτ g y, hg]
+  refine ⟨AlgEquiv.ofRingEquiv (f := (e.symm.trans τ.toRingEquiv).trans e) hfix, ?_⟩
+  refine AlgEquiv.ext fun x => hbij.injective ?_
+  refine (Field.absoluteGaloisGroup.lift_map (algebraMap K F)
+    (AlgEquiv.ofRingEquiv (f := (e.symm.trans τ.toRingEquiv).trans e) hfix) x).trans ?_
+  show e (τ (e.symm (e x))) = e (τ x)
+  rw [e.symm_apply_apply]
+
+/-- **Complex conjugation fixes every copy of a TOTALLY REAL field inside
+`ℚᵃˡᵍ`** (PROVEN 2026-07-27).
+
+`complexConj` is conjugation of `ℂ`, restricted to the algebraic numbers and
+transported along the chosen isomorphism `ratAlgClosureEquiv : ℚᵃˡᵍ ≃+*
+algebraicClosure ℚ ℂ`. So for a ring map `j : F →+* ℚᵃˡᵍ` the composite
+`φ := ι ∘ ratAlgClosureEquiv ∘ j : F →+* ℂ` is a complex embedding of `F`, and
+`complexConj (j y) = j y` says exactly that `φ` commutes with conjugation —
+i.e. that `φ` is REAL. For a totally real `F` every complex embedding is real
+(`NumberField.IsTotallyReal.complexEmbedding_isReal`), so the hypothesis is
+discharged for free.
+
+This is the ONE place where total realness of `F` is used in the whole
+`R_F = T_F` cluster, and it is what the ROUTE OBSTRUCTION recorded on
+`exists_smul_eq_of_commute_of_isIrreducible_hilbert` demanded: over a totally
+IMAGINARY `F` there is no complex conjugation in `Γ F` at all, and the oddness
+argument has no substitute. -/
+theorem complexConj_apply_eq_of_isTotallyReal
+    {F : Type*} [Field F] [NumberField.IsTotallyReal F]
+    (j : F →+* ℚᵃˡᵍ) (y : F) : complexConj (j y) = j y := by
+  set φ : F →+* ℂ :=
+    ((algebraicClosure ℚ ℂ).val.toRingHom).comp
+      (ratAlgClosureEquiv.toRingHom.comp j) with hφ
+  have hreal : NumberField.ComplexEmbedding.IsReal φ :=
+    NumberField.IsTotallyReal.complexEmbedding_isReal φ
+  have hconj : (starRingEnd ℂ) (φ y) = φ y := by
+    simpa using RingHom.congr_fun hreal y
+  have hz : conjAlgebraic (ratAlgClosureEquiv (j y)) = ratAlgClosureEquiv (j y) := by
+    refine Subtype.ext ?_
+    rw [coe_conjAlgebraic]
+    exact hconj
+  show ratAlgClosureEquiv.symm (conjAlgebraic (ratAlgClosureEquiv (j y))) = j y
+  rw [hz, RingEquiv.symm_apply_apply]
+
+/-- **A complex conjugation lives inside `G_F`, for `F` totally real**
+(PROVEN 2026-07-27): there is `c : Γ F` restricting to `complexConj` on
+`ℚᵃˡᵍ`.
+
+This is the arithmetic input of the oddness argument at the `F` level, and it
+is the reason `[NumberField.IsTotallyReal F]` is threaded through the whole
+Carayol cluster below. Its two halves are the two lemmas just above: total
+realness makes `complexConj` fix the copy of `F` inside `ℚᵃˡᵍ`
+(`complexConj_apply_eq_of_isTotallyReal`), and an element of `Γ ℚ` fixing that
+copy is a restriction (`mem_range_absoluteGaloisGroupMap_of_forall_algHom_fixed`).
+
+Note what is NOT claimed: nothing says `c * c = 1` in `Γ F`. It need not be
+proven — the consumers only ever evaluate a representation OF `Γ ℚ` at `c`
+through `Field.absoluteGaloisGroup.map`, and `complexConj * complexConj = 1`
+holds downstairs, which is enough. (It is in fact true, `map` being injective,
+but proving that would cost the reverse inclusion of step 3 above for no gain.) -/
+theorem exists_map_eq_complexConj (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F] :
+    ∃ c : Γ F, Field.absoluteGaloisGroup.map (algebraMap ℚ F) c = complexConj := by
+  obtain ⟨c, hc⟩ := mem_range_absoluteGaloisGroupMap_of_forall_algHom_fixed ℚ F complexConj
+    (fun g y => complexConj_apply_eq_of_isTotallyReal g.toRingHom y)
+  exact ⟨c, hc⟩
 
 /-! ### Item 2a — the `F`-level local deformation condition -/
 
@@ -14797,7 +14952,8 @@ theorem repr_mem_subring_of_trace_mem_hilbert
   exact (cC i).2
 
 /-- **The commutant of `ρbar|_{G_F}` is the scalars** — ABSOLUTE
-irreducibility of the restricted residual representation (LEAF — cut
+irreducibility of the restricted residual representation (PROVEN 2026-07-27
+over the added hypothesis `[NumberField.IsTotallyReal F]`; cut
 2026-07-27 out of `exists_residual_basis_toMatrix'_hilbert` below, whose
 remaining content is PROVEN over this node; the `F`-level twin of
 `Deformation.lean`'s PROVEN `exists_smul_eq_of_commute_of_isIrreducible`).
@@ -14834,9 +14990,30 @@ its two eigenlines, so `f` is `diag(α, β)` in that eigenbasis; and if
 contradicting `hirrF`, since a line is neither `⊥` nor `⊤` in a
 `2`-dimensional space. So `α = β` and `f = α • 1`.
 
-ROUTE OBSTRUCTION — **THIS LEAF NEEDS A REAL PLACE OF `F`, AND THE BINDER
-HERE IS ONLY `[NumberField F]`** (recorded 2026-07-27 by the prover of the
-consumer; it is why this node is handed on rather than closed).
+WHERE THE THREE INPUTS COME FROM IN THE PROOF BELOW.
+
+* *Schur* is mathlib's `Representation.IsIrreducible.bijective_or_eq_zero`
+  through `LinearMap.intertwiningMap_of_isIntertwiningMap`, applied to `hirrF`.
+* *The complex conjugation* is `exists_map_eq_complexConj F`, the item-1 lemma
+  above — this is the ONLY consumer of `[NumberField.IsTotallyReal F]` in the
+  entire `R_F = T_F` cluster, and everything else in the chain merely threads
+  the binder.
+* *Oddness* is `𝒟` rather than `ρbar`: `IsHilbertHardlyRamified.det` gives
+  `det (𝒟.ρ c) = χ̄_ℓ(map c) = χ̄_ℓ(complexConj) = −1`
+  (`cyclotomicCharacter_complexConj`), and `𝒟.resid c` carries that down to
+  `ρbar|_{G_F} c` through the CONSTANT COEFFICIENT of the characteristic
+  polynomial — `LinearMap.det_eq_sign_charpoly_coeff` with
+  `(−1)^(finrank) = (−1)² = 1` at both ends. That detour is needed because the
+  leaf's hypothesis package carries no `IsHardlyRamified` for `ρbar` itself,
+  only the datum `𝒟`; at the `ℚ` level the determinant is available directly.
+
+ROUTE OBSTRUCTION, NOW REPAIRED — **THIS LEAF NEEDS A REAL PLACE OF `F`, AND
+THE BINDER WAS ONLY `[NumberField F]`** (recorded 2026-07-27 by the prover of
+the consumer; the hypothesis `[NumberField.IsTotallyReal F]` named as THE
+REPAIR below was threaded through the cluster the same day and the leaf then
+closed. The obstruction is kept because it is what the hypothesis is FOR, and
+because a future "simplification" that drops the binder would silently make
+this statement false).
 
 The oddness input above is a complex conjugation *inside* `Γ F`, i.e. a real
 place of `F`. Over a totally imaginary `F` the argument has no substitute,
@@ -14870,23 +15047,32 @@ only through the global contradiction, which may not be used to discharge it.
 Either way the operational conclusion is the same: there is no proof of this
 statement over an arbitrary `F`.
 
-THE REPAIR, a CUT-LEVEL one deliberately not made here because it crosses
-declarations this task does not own: add `[NumberField.IsTotallyReal F]` (or
-just "`F` has a real place") to this leaf, to
-`exists_residual_basis_toMatrix'_hilbert` and to
-`exists_basis_toMatrix'_isUnit_hilbertTraceGram`, and thread it on to
-`exists_conj_entries_mem_hilbertTraceSubring`. The eventual consumer supplies
-it: `PotentialModularityPackage.totallyReal` carries exactly
-`NumberField.IsTotallyReal F`.
+THE REPAIR, MADE 2026-07-27 and now in force: `[NumberField.IsTotallyReal F]`
+is a binder of this leaf, of `exists_residual_basis_toMatrix'_hilbert`, of
+`exists_basis_toMatrix'_isUnit_hilbertTraceGram`, of
+`exists_basis_repr_mem_hilbertTraceSubring`, of
+`exists_conj_entries_mem_hilbertTraceSubring`, of
+`exists_framedGaloisRep_baseChange_hilbertTraceSubring`, of
+`exists_framedGaloisRep_hilbertTraceSubring`, of
+`exists_hilbertTraceDescent` and of
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum` — the
+whole chain from here to the two terminal consumers. Both discharge it for
+free and neither signature changed: `exists_heckeDatum_isWeaklyUniversal_isTraceGenerated`
+already carries `htr : NumberField.IsTotallyReal F` as an explicit
+hypothesis, and `exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`
+gets it from `PotentialHeckeDatum.totallyReal`. Since the binder is an
+INSTANCE binder, no positional call site anywhere changed either; the two
+consumers gained one `haveI` each.
 
-THE CHECK THAT WOULD REFUTE THIS NOTE: exhibit `c ∈ Γ F` with
-`(ρbar.map (algebraMap ℚ F)) c` of order dividing `2` and determinant `-1`
-WITHOUT assuming a real place, or give any other proof that the commutant is
-`k`. A weaker sufficient input also suffices and may be easier to obtain:
-some `g ∈ Γ F` whose residual characteristic polynomial has two DISTINCT
-roots in `k`. That alone already forces the commutant to be `k`, because
-every element of a nonsplit torus `k'ˣ` has characteristic polynomial either
-irreducible over `k` or a perfect square.
+THE CHECK THAT WOULD HAVE REFUTED THIS NOTE (recorded for the record, since
+the note stands): exhibit `c ∈ Γ F` with `(ρbar.map (algebraMap ℚ F)) c` of
+order dividing `2` and determinant `-1` WITHOUT assuming a real place, or give
+any other proof that the commutant is `k`. A weaker sufficient input also
+suffices: some `g ∈ Γ F` whose residual characteristic polynomial has two
+DISTINCT roots in `k`. That alone already forces the commutant to be `k`,
+because every element of a nonsplit torus `k'ˣ` has characteristic polynomial
+either irreducible over `k` or a perfect square. Neither was needed: the
+totally-real route went through, in the shape `exists_map_eq_complexConj`.
 
 References: Carayol, *Formes modulaires et représentations galoisiennes à
 valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
@@ -14895,6 +15081,7 @@ Curtis–Reiner, *Methods of Representation Theory* §3.3 (Burnside); Serre,
 (Invent. Math. 15), §2 (Cartan subgroups and the image of `ρbar`). -/
 theorem exists_smul_eq_of_commute_of_isIrreducible_hilbert
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -14903,14 +15090,163 @@ theorem exists_smul_eq_of_commute_of_isIrreducible_hilbert
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
     (f : Module.End k V)
     (hf : ∀ g : Γ F, Commute f ((ρbar.map (algebraMap ℚ F)) g)) :
-    ∃ c : k, f = c • 1 :=
-  sorry
+    ∃ c : k, f = c • 1 := by
+  classical
+  haveI : Representation.IsIrreducible
+    (ρbar.map (algebraMap ℚ F)).toRepresentation := hirrF
+  have hrk : Module.rank k V = 2 := rank_eq_two_of_hilbertDeformationDatum 𝒟
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrk)
+  -- **Schur's lemma**: an endomorphism commuting with the whole image of the
+  -- irreducible `ρbar|_{G_F}` is an intertwiner, hence zero or bijective.
+  have schur : ∀ e : Module.End k V,
+      (∀ g : Γ F, Commute e ((ρbar.map (algebraMap ℚ F)) g)) →
+      e = 0 ∨ Function.Bijective e := by
+    intro e he
+    have hint : ∀ (g : Γ F) (x : V),
+        e ((ρbar.map (algebraMap ℚ F)).toRepresentation g x)
+          = (ρbar.map (algebraMap ℚ F)).toRepresentation g (e x) := by
+      intro g x
+      have h9 := congrArg (fun m : Module.End k V => m x) (he g).eq
+      simp only [Module.End.mul_apply] at h9
+      exact h9
+    have hb := Representation.IsIrreducible.bijective_or_eq_zero
+      (LinearMap.intertwiningMap_of_isIntertwiningMap
+        (ρbar.map (algebraMap ℚ F)).toRepresentation
+        (ρbar.map (algebraMap ℚ F)).toRepresentation e hint)
+    rcases hb with hbij | h0
+    · exact Or.inr hbij
+    · left
+      have h10 := congrArg
+        (fun G : Representation.IntertwiningMap
+            (ρbar.map (algebraMap ℚ F)).toRepresentation
+            (ρbar.map (algebraMap ℚ F)).toRepresentation => G.toLinearMap) h0
+      simp only [Representation.IntertwiningMap.zero_toLinearMap] at h10
+      exact h10
+  -- **`−1 ≠ 1` in `k`**, because `char k = ℓ` is odd. This is where `hℓ5` is
+  -- consumed, and it is consumed nowhere else in the cluster.
+  have hℓOdd : Odd ℓ := (Fact.out : ℓ.Prime).odd_of_ne_two (by omega)
+  have hlk : ((ℓ : ℕ) : k) = 0 := natCast_eq_zero_of_hilbertDeformationDatum ℓ 𝒟
+  have hne1 : (-1 : k) ≠ 1 := by
+    intro hcon
+    have h2 : ((2 : ℕ) : k) = 0 := by
+      push_cast
+      linear_combination -hcon
+    haveI hc : CharP k (ringChar k) := ringChar.charP k
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hd2 : ringChar k ∣ 2 := (CharP.cast_eq_zero_iff k (ringChar k) 2).mp h2
+    have hdl : ringChar k ∣ ℓ := (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp hlk
+    have hr2 : ringChar k = 2 := (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hr2] at hdl
+    exact (Nat.not_odd_iff_even.mpr (even_iff_two_dvd.mpr hdl)) hℓOdd
+  -- **A complex conjugation inside `Γ F`** — the ONLY use of total realness.
+  obtain ⟨c, hc⟩ := exists_map_eq_complexConj F
+  set J : Module.End k V := (ρbar.map (algebraMap ℚ F)) c with hJdef
+  have hJc : J = ρbar complexConj := by
+    rw [hJdef, GaloisRep.map_apply, hc]
+  have hJJ : J * J = 1 := by
+    rw [hJc, ← map_mul ρbar]
+    convert map_one ρbar using 2
+    exact complexConj_mul_self
+  -- **Oddness**, through `𝒟`: the determinant clause gives `det (𝒟.ρ c) = −1`,
+  -- and `𝒟.resid` carries it to `J` through the constant charpoly coefficient.
+  have hdet𝒟 : LinearMap.det (𝒟.ρ c) = -1 := by
+    have hd := 𝒟.isHilbertHardlyRamified.det c
+    rw [GaloisRep.det_apply, hc, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
+    rw [hd]
+    simp
+  have hdetJ : LinearMap.det J = -1 := by
+    have h1 : LinearMap.det J = J.charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff, hfr]
+      ring
+    have h2 : LinearMap.det (𝒟.ρ c) = (𝒟.ρ c).charpoly.coeff 0 := by
+      rw [LinearMap.det_eq_sign_charpoly_coeff,
+        show Module.finrank 𝒟.R (Fin 2 → 𝒟.R) = 2 by simp]
+      ring
+    have h3 : J.charpoly = ((𝒟.ρ c).charpoly).map 𝒟.π := (𝒟.resid c).symm
+    rw [h1, h3, Polynomial.coeff_map, ← h2, hdet𝒟, map_neg, map_one]
+  have hJnot1 : J ≠ 1 := by
+    intro hcJ
+    rw [hcJ, show LinearMap.det (1 : Module.End k V) = 1 from LinearMap.det_id] at hdetJ
+    exact hne1 hdetJ.symm
+  have hJnotneg1 : J ≠ -1 := by
+    intro hcJ
+    have h12 : LinearMap.det J = 1 := by
+      rw [hcJ, show (-1 : Module.End k V) = (-1 : k) • 1 by simp,
+        LinearMap.det_smul, hfr]
+      simp
+    rw [h12] at hdetJ
+    exact hne1 hdetJ.symm
+  -- **A `+1`-eigenvector exists**: otherwise `J − 1` is injective, forcing `J = −1`.
+  have hprod : (J - 1) * (J + 1) = 0 := by
+    have h13 : (J - 1) * (J + 1) = J * J - 1 := by noncomm_ring
+    rw [h13, hJJ, sub_self]
+  have hex : ∃ w : V, w ≠ 0 ∧ J w = w := by
+    by_contra hcon
+    push Not at hcon
+    have hinj : Function.Injective ((J - 1 : Module.End k V) : V →ₗ[k] V) := by
+      rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+      intro x hx
+      rw [LinearMap.mem_ker] at hx
+      by_contra hx0
+      refine hcon x hx0 ?_
+      have h14 : J x - x = 0 := by simpa using hx
+      linear_combination (norm := module) h14
+    have hJ1 : J + 1 = 0 := by
+      apply LinearMap.ext
+      intro x
+      have h15 : (J - 1) ((J + 1) x) = (J - 1) 0 := by
+        have h16 := congrArg (fun m : Module.End k V => m x) hprod
+        simpa [Module.End.mul_apply] using h16
+      simpa using hinj h15
+    exact hJnotneg1 (by linear_combination (norm := noncomm_ring) hJ1)
+  obtain ⟨w, hw0, hwJ⟩ := hex
+  -- `f w` lies in the same eigenspace, `f` commuting with `J`.
+  have hfwJ : J (f w) = f w := by
+    have h17 := congrArg (fun m : Module.End k V => m w) (hf c).eq
+    simp only [Module.End.mul_apply] at h17
+    rw [← hJdef] at h17
+    rw [← h17, hwJ]
+  -- `w` and `f w` cannot be independent: they would span `V` and force `J = 1`.
+  have hdep : ¬ LinearIndependent k ![f w, w] := by
+    intro hli
+    have hcard : Fintype.card (Fin 2) = Module.finrank k V := by simp [hfr]
+    refine hJnot1 ?_
+    apply (basisOfLinearIndependentOfCardEqFinrank hli hcard).ext
+    intro i
+    fin_cases i <;>
+      simp [coe_basisOfLinearIndependentOfCardEqFinrank, hfwJ, hwJ]
+  have hav : ∃ a : k, f w = a • w := by
+    rw [linearIndependent_fin2] at hdep
+    push Not at hdep
+    obtain ⟨a, ha⟩ := hdep hw0
+    exact ⟨a, by simpa using ha.symm⟩
+  obtain ⟨a, ha⟩ := hav
+  -- `f − a` kills `w ≠ 0`, so Schur forces it to vanish.
+  refine ⟨a, ?_⟩
+  have hcomm : ∀ g : Γ F, Commute (f - a • (1 : Module.End k V))
+      ((ρbar.map (algebraMap ℚ F)) g) := by
+    intro g
+    have h18 := (hf g).eq
+    unfold Commute SemiconjBy
+    rw [sub_mul, mul_sub, h18]
+    congr 1
+    simp [Algebra.smul_def, Algebra.commutes]
+  rcases schur (f - a • 1) hcomm with h0 | hbij
+  · linear_combination (norm := noncomm_ring) h0
+  · exfalso
+    have hzero : (f - a • (1 : Module.End k V)) w = (f - a • (1 : Module.End k V)) 0 := by
+      simp [ha]
+    exact hw0 (hbij.1 hzero)
 
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 1a at the `F` level: four Galois elements
 whose RESIDUAL matrices are a `k`-basis of `M₂(k)`** (PROVEN 2026-07-27 over
-the single arithmetic leaf `exists_smul_eq_of_commute_of_isIrreducible_hilbert`
-above, cut out of it the same day; the `F`-level twin of `Deformation.lean`'s
+the single arithmetic node `exists_smul_eq_of_commute_of_isIrreducible_hilbert`
+above, cut out of it the same day and PROVEN the same day over the added binder
+`[NumberField.IsTotallyReal F]`; the `F`-level twin of `Deformation.lean`'s
 `exists_residual_basis_toMatrix'`, which is PROVEN there over the
 corresponding `ℚ`-level leaf `residual_isIrreducible_of_isHardlyRamified`).
 
@@ -14954,11 +15290,12 @@ WHAT IS PROVEN HERE, and it is everything except absolute irreducibility.
    `Fin 2 × Fin 2`, whose cardinality hypothesis is `finrank_k M₂(k) = 4`
    through `Matrix.stdBasis`.
 
-So what remains open is exactly the ARITHMETIC input — that the residual
-representation is ABSOLUTELY irreducible — and none of the algebra. `hℓ5` is
-consumed only inside that leaf; see its docstring for the ROUTE OBSTRUCTION
-(the oddness argument needs a REAL PLACE of `F`, which `[NumberField F]` does
-not provide) and for the named repair.
+The ARITHMETIC input — that the residual representation is ABSOLUTELY
+irreducible — is the node above, and it too is now PROVEN (2026-07-27), over
+the added binder `[NumberField.IsTotallyReal F]` that the ROUTE OBSTRUCTION in
+its docstring called for: the oddness argument needs a REAL PLACE of `F`, which
+`[NumberField F]` alone does not provide. `hℓ5` is consumed only inside that
+node. NOTHING beneath this declaration is open.
 
 `hirrF` is load-bearing and the statement is FALSE without it: for a
 reducible `ρbar|_{G_F}` the `k`-span of the residual image is a proper
@@ -14970,6 +15307,7 @@ valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
 Curtis–Reiner, *Methods of Representation Theory* §3.3 (Burnside). -/
 theorem exists_residual_basis_toMatrix'_hilbert
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -15107,7 +15445,7 @@ this basis to the `R'`-order is the separate, PROVEN, pure linear algebra of
 THE ROUTE, which is the `ℚ`-level one verbatim modulo `ℚ ↝ F` and is worth
 porting rather than reinventing:
 
-1. *Residual step* (the only genuinely open input). `ρbar|_{G_F}` is
+1. *Residual step* (PROVEN 2026-07-27; it was the last open input). `ρbar|_{G_F}` is
    absolutely irreducible: it is irreducible over the finite field `k` by
    `hirrF`, and its determinant is the mod-`ℓ` cyclotomic character, so it is
    odd, and an odd irreducible two-dimensional representation over a finite
@@ -15117,11 +15455,11 @@ porting rather than reinventing:
    `M₂(k)`, and `exists_basis_of_span_range_eq_top` extracts four elements
    whose reductions are a `k`-basis. At the `ℚ` level this step is isolated
    as its own leaf, `exists_residual_basis_toMatrix'`; it is now isolated the
-   same way here, and everything in it except absolute irreducibility is
-   PROVEN — as of 2026-07-27 the sole remaining leaf beneath this node is
-   `exists_smul_eq_of_commute_of_isIrreducible_hilbert`, whose docstring
-   records a ROUTE OBSTRUCTION (the oddness argument needs a REAL PLACE of
-   `F`, which `[NumberField F]` does not provide) and the named repair.
+   same way here. Absolute irreducibility itself is
+   `exists_smul_eq_of_commute_of_isIrreducible_hilbert`, PROVEN 2026-07-27 over
+   the added binder `[NumberField.IsTotallyReal F]` — the repair its own ROUTE
+   OBSTRUCTION named: the oddness argument needs a REAL PLACE of `F`, which
+   `[NumberField F]` does not provide. NOTHING beneath this node is open.
 2. *Nakayama.* Four elements of the finite free `𝒟.R`-module `M₂(𝒟.R)` whose
    reductions form a `k`-basis are themselves a `𝒟.R`-basis: by
    `Module.Basis.is_basis_iff_det` against `Matrix.stdBasis`, the
@@ -15151,6 +15489,7 @@ Nyssen, *Pseudo-représentations* (Math. Ann. 306); Rouquier,
 *Caractérisation des caractères et pseudo-caractères* (J. Algebra 180). -/
 theorem exists_basis_toMatrix'_isUnit_hilbertTraceGram
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -15260,6 +15599,7 @@ input, supplied there by Chebotarev density plus Brauer–Nesbitt.
 `charpoly_coeff_mem_hilbertTraceSubring`, already proven above. -/
 theorem exists_basis_repr_mem_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -15375,9 +15715,12 @@ the call below now uses the single proven original.
 
 A further correction, since the previous note asserted the opposite: the
 `ℚ`-level `exists_conj_entries_mem_of_single_mem` is NOT an open sorry — the
-hoisted cluster contains no `sorry` at all. So half 2 is closed outright, and
-the ONLY thing still open beneath this node is the residual absolute
-irreducibility of half 1, `exists_residual_basis_toMatrix'_hilbert`.
+hoisted cluster contains no `sorry` at all. So half 2 is closed outright; and
+as of 2026-07-27 so is half 1 — the residual absolute irreducibility that was
+the last leaf beneath this node is now PROVEN in
+`exists_smul_eq_of_commute_of_isIrreducible_hilbert`, over the added binder
+`[NumberField.IsTotallyReal F]` threaded through this whole chain. NOTHING
+beneath this node is open.
 
 `hℓ5` and `hirrF` are both load-bearing and the statement is FALSE without
 `hirrF`: a reducible `ρ` whose extension class is not defined over `R'` cannot
@@ -15403,6 +15746,7 @@ Nyssen, *Pseudo-représentations* (Math. Ann. 306); Rouquier,
 *Caractérisation des caractères et pseudo-caractères* (J. Algebra 180). -/
 theorem exists_conj_entries_mem_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -15503,6 +15847,7 @@ Nyssen, *Pseudo-représentations* (Math. Ann. 306); Rouquier,
 *Caractérisation des caractères et pseudo-caractères* (J. Algebra 180). -/
 theorem exists_framedGaloisRep_baseChange_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -16010,6 +16355,7 @@ References: Carayol, op. cit., Théorème 1; Mazur, *Deforming Galois
 representations*, §1.8. -/
 theorem exists_framedGaloisRep_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -16226,6 +16572,7 @@ corestricted `ℤ_ℓ`-structure map, the definition of `𝒟'.π`, and the seco
 leaf's charpoly clause. -/
 theorem exists_hilbertTraceDescent
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -16296,6 +16643,7 @@ faithfulness note at the head of this subsection. All three are discharged
 for free at the sole consumer. -/
 theorem exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -19236,6 +19584,10 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
     ∃ (T : HilbertHeckeAlgebra ℓ F ρbar) (𝒟T : HilbertDeformationDatum ℓ F ρbar),
       𝒟T.IsWeaklyUniversal ∧ 𝒟T.IsTraceGenerated ∧
         Nonempty (𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T) := by
+  -- Total realness is a BINDER of the Carayol trace-descent chain (it is what
+  -- puts a complex conjugation inside `Γ F`; see
+  -- `exists_smul_eq_of_commute_of_isIrreducible_hilbert`), and `htr` supplies it.
+  haveI : NumberField.IsTotallyReal F := htr
   -- (1) the `F`-level universal ring, made trace-generated. Both steps are
   -- already cut leaves of this module; `𝒟₀` is what makes the first one apply.
   obtain ⟨𝒟₁, h𝒟₁⟩ :=
@@ -19441,6 +19793,11 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
       ∀ g ∈ H, IsIntegral ℤ_[ℓ] ((ρ g).charpoly.coeff 1) := by
   -- (1) potential modularity: the totally real field `F` and `T_F`
   obtain ⟨P⟩ := nonempty_potentialHeckeDatum_of_five_le ℓ hℓ5 hbar hirr
+  -- Total realness of `P.F` is a BINDER of the Carayol trace-descent chain (it
+  -- is what puts a complex conjugation inside `Γ P.F`; see
+  -- `exists_smul_eq_of_commute_of_isIrreducible_hilbert`), and it is exactly
+  -- what `PotentialHeckeDatum.totallyReal` records.
+  haveI : NumberField.IsTotallyReal P.F := P.totallyReal
   -- (2) `ρ|_{G_F}` as an object of the `F`-level category. It is built FIRST
   -- because it is also what makes that category nonempty, which is the
   -- hypothesis `exists_isWeaklyUniversal_hilbertDeformationDatum` needs (see
