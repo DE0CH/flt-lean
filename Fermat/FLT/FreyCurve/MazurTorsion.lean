@@ -7554,8 +7554,48 @@ lemma j_chainModel_of_twoTorsionModel (J a β μ : ℚ)
   rw [hΔ, hc]
   linear_combination β ^ 6 * hj
 
-/-- **Transport of the `16`-chain onto the `2`-torsion normal form** (SORRY
-LEAF, cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`): the second
+/-- **Transport along an equality of curves commutes with the Galois action**
+(PROVEN 2026-07-27).  `Affine.Point.equivOfEq` moves points along an equality
+`V = V'` of curves over the base field; base-changing that equality to `Ω` gives
+an identification of `Ω`-points which is trivially `Gal(Ω/K)`-equivariant,
+because after `subst` it is the identity.
+
+Stated here rather than next to `Affine.Point.equivOfEq` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` only to
+keep the rebuild local; it is a general-purpose lemma and belongs there
+eventually. -/
+lemma equivOfEq_map {K : Type*} [Field K] {Ω : Type*} [Field Ω] [Algebra K Ω]
+    [DecidableEq Ω] {V V' : WeierstrassCurve K} (h : V = V') (σ : Ω →ₐ[K] Ω)
+    (P : (V⁄Ω).toAffine.Point) :
+    Affine.Point.equivOfEq (congrArg (fun W : WeierstrassCurve K => W⁄Ω) h)
+        (Affine.Point.map (W' := V) σ P) =
+      Affine.Point.map (W' := V') σ
+        (Affine.Point.equivOfEq (congrArg (fun W : WeierstrassCurve K => W⁄Ω) h) P) := by
+  subst h; rfl
+
+/-- **The `x`-coordinate under the base-changed variable-change isomorphism**
+(PROVEN 2026-07-27): `Affine.Point.equivVariableChangeBaseChange` sends an
+affine point with `x`-coordinate `x` to one with `x`-coordinate
+`u²x + r`, the coefficients being those of `C` viewed in `Ω`.
+
+Phrased as "if the image IS `some x' y' _` then `x' = u²x + r`" rather than as
+an existential computing the image, because the `y`-coordinate and the
+nonsingularity witness of the image are then never named — an existential over
+them cannot have its witness inferred from an `rfl`. -/
+lemma equivVariableChangeBaseChange_xCoord {K : Type*} [Field K] {Ω : Type*} [Field Ω]
+    [Algebra K Ω] [DecidableEq Ω] (W : WeierstrassCurve K) [W.IsElliptic]
+    (C : VariableChange K) {x y : Ω} (h : ((C • W)⁄Ω).toAffine.Nonsingular x y)
+    {x' y' : Ω} (hns : (W⁄Ω).toAffine.Nonsingular x' y')
+    (heq : Affine.Point.equivVariableChangeBaseChange W C Ω (Affine.Point.some x y h)
+      = Affine.Point.some x' y' hns) :
+    x' = ((C.baseChange Ω).u : Ω) ^ 2 * x + (C.baseChange Ω).r := by
+  simp only [Affine.Point.equivVariableChangeBaseChange, AddEquiv.trans_apply,
+    Affine.Point.equivOfEq_some, Affine.Point.equivVariableChange_some] at heq
+  exact ((Affine.Point.some.injEq _ _ _ _ _ _).mp heq).1.symm
+
+/-- **Transport of the `16`-chain onto the `2`-torsion normal form** (PROVEN
+2026-07-27; was a sorry leaf cut out of `exists_chainModel_of_ratTwoTorsion`
+the same day): the second
 half of step 2, which is pure plumbing rather than mathematics.
 
 `exists_twoTorsionModel_of_order_two` (PROVEN, just above) hands us a change of
@@ -7578,14 +7618,33 @@ and set `h₀ := Φ.symm g`.  Then
 * `HasXCoord ((8 : ℕ) • h₀) 0` from `hQg` and `hQ0`: `8 • h₀ = Φ.symm (8 • g) =
   Φ.symm (Q ⊗ ℚ̄)` and `Q` is the image of the origin.
 
-The one genuinely fiddly point, and the reason this is a leaf rather than three
-lines of the consumer's proof, is that the last bullet needs
-`equivVariableChange` to COMMUTE WITH BASE CHANGE — the `ℚ`-level statement
-`hQ0` has to be pushed to `ℚ̄`.  That compatibility is not in the pin; it is a
-`rcases P; simp [equivVariableChange_some, Point.map_some]` proof, since both
-sides are the same explicit formula with coefficients in `ℚ`, and it belongs
-next to `equivVariableChangeBaseChange` in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`.
+**THE PREDICTED OBSTRUCTION WAS AVOIDED, AND THE NOTE PREDICTING IT IS
+CORRECTED HERE** (2026-07-27).  The old version of this docstring said the last
+bullet needs `equivVariableChange` to COMMUTE WITH BASE CHANGE, that the
+compatibility is absent from the pin, and that it should be written next to
+`equivVariableChangeBaseChange`.  The first claim is what makes it expensive and
+it is FALSE: that compatibility is genuinely painful to state, because
+`Affine.Point.baseChange` has domain `(W'⁄K).Point` while `equivVariableChange`
+consumes `(C • W).toAffine.Point`, and although `V⁄K = V` holds by `rfl`, the
+two presentations are NOT syntactically equal, so `simp`/`rw` matching fails
+inside any statement that mixes them (the goal is not type-correct at
+`instances` transparency, and Lean says so in those words).  Three separate
+formulations died on this.
+
+What works instead is to never push `hQ0` to `ℚ̄` at all, and to compare
+`x`-COORDINATES rather than points.  `Φ` sends an affine point with
+`x`-coordinate `x` to one with `x`-coordinate `u²x + r`
+(`equivVariableChangeBaseChange_xCoord`, just above), so if `8 • h₀ = (x, y)`
+then `Φ (8 • h₀) = 8 • g = Q ⊗ ℚ̄` has `x`-coordinate `u²x + r`; and `hQ0` says
+over `ℚ` that `Q` has `x`-coordinate `u²·0 + r = r`, whose image in `ℚ̄` is `r`.
+Hence `u²x = 0` and `x = 0` since `u` is a unit.  Every step stays inside a
+single presentation of each type, and no base-change/variable-change
+compatibility lemma is needed anywhere.
+
+USEFUL GENERALLY: when a transport lemma refuses to be stated because two
+defeq-but-not-syntactically-equal presentations of a curve meet in one
+statement, ask whether the CONSUMER needs the point or only one coordinate of
+it.  Here it only ever needed the `x`-coordinate.
 
 **WHY `HasXCoord _ 0` IS ENOUGH TO SAY "THE ORIGIN".**  On
 `twoTorsionModel a b` the fibre over `x = 0` is `y² = 0`, a single point, so an
@@ -7611,8 +7670,73 @@ theorem exists_twoTorsionChain_of_variableChange (E : WeierstrassCurve ℚ) [E.I
           Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
             AddSubgroup.zmultiples h₀) ∧
-      HasXCoord ((8 : ℕ) • h₀) 0 :=
-  sorry
+      HasXCoord ((8 : ℕ) • h₀) 0 := by
+  set Φ : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).Point ≃+
+      (E⁄(AlgebraicClosure ℚ)).Point :=
+    (Affine.Point.equivOfEq
+        (congrArg (fun W : WeierstrassCurve ℚ => W⁄(AlgebraicClosure ℚ)) hCeq.symm)).trans
+      (Affine.Point.equivVariableChangeBaseChange (E⁄ℚ) C (AlgebraicClosure ℚ)) with hΦdef
+  have hΦmap : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (P : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).Point),
+      Φ (Affine.Point.map σ.toAlgHom P) = Affine.Point.map σ.toAlgHom (Φ P) := by
+    intro σ P
+    rw [hΦdef]
+    simp only [AddEquiv.trans_apply]
+    rw [equivOfEq_map hCeq.symm σ.toAlgHom P]
+    exact Affine.Point.equivVariableChangeBaseChange_galois (E⁄ℚ) C _ σ _
+  -- the coefficients of the base-changed change of variables
+  have hbcu : ((C.baseChange (AlgebraicClosure ℚ)).u : AlgebraicClosure ℚ)
+      = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) := by
+    simp only [VariableChange.baseChange, VariableChange.map_u, Units.coe_map, MonoidHom.coe_coe]
+  have hbcr : (C.baseChange (AlgebraicClosure ℚ)).r
+      = algebraMap ℚ (AlgebraicClosure ℚ) C.r := by
+    simp only [VariableChange.baseChange, VariableChange.map_r]
+  -- `Φ` reads off `x`-coordinates as `u²x + r`
+  have hΦx : ∀ (x y x' y' : AlgebraicClosure ℚ)
+      (hxy : ((twoTorsionModel a b)⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular x y)
+      (hns : (E⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular x' y'),
+      Φ (Affine.Point.some x y hxy) = Affine.Point.some x' y' hns →
+        x' = ((C.baseChange (AlgebraicClosure ℚ)).u : AlgebraicClosure ℚ) ^ 2 * x
+          + (C.baseChange (AlgebraicClosure ℚ)).r := by
+    intro x y x' y' hxy hns heq
+    rw [hΦdef] at heq
+    simp only [AddEquiv.trans_apply, Affine.Point.equivOfEq_some] at heq
+    exact equivVariableChangeBaseChange_xCoord (E⁄ℚ) C _ _ heq
+  refine ⟨Φ.symm g, ?_, ?_, ?_⟩
+  · have h := Φ.addOrderOf_eq (Φ.symm g)
+    rw [Φ.apply_symm_apply, hg] at h
+    exact h.symm
+  · intro σ x hx
+    obtain ⟨n, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ (n • g) (AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩))
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, Φ.injective ?_⟩
+    calc Φ (k • Φ.symm g) = k • g := by rw [map_zsmul, Φ.apply_symm_apply]
+      _ = Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (n • g) := hk
+      _ = Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+            (Φ (n • Φ.symm g)) := by
+              congr 1
+              rw [map_zsmul, Φ.apply_symm_apply]
+      _ = Φ (Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+            (n • Φ.symm g)) := (hΦmap σ (n • Φ.symm g)).symm
+  · rw [Affine.Point.equivOfEq_some, Affine.Point.equivVariableChange_some] at hQ0
+    intro x y hxy hEq
+    have hkey : Φ ((8 : ℕ) • Φ.symm g) = Φ (Affine.Point.some x y hxy) := congrArg Φ hEq
+    rw [map_nsmul, Φ.apply_symm_apply] at hkey
+    have hQ' := hQg.trans hkey
+    rw [← hQ0] at hQ'
+    simp only [Affine.Point.baseChange, Affine.Point.map_some] at hQ'
+    have h1 := hΦx x y _ _ hxy _ hQ'.symm
+    have hu : algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ≠ 0 := by
+      simp [(C.u).ne_zero]
+    rw [hbcu, hbcr] at h1
+    simp only [Algebra.ofId_apply, mul_zero, zero_add] at h1
+    have hx0 : algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x = 0 := by
+      linear_combination -h1
+    rcases mul_eq_zero.mp hx0 with h | h
+    · exact absurd ((pow_eq_zero_iff (n := 2) (by norm_num)).mp h) hu
+    · exact h
 
 /-- **Step 3 of the `X_0(16)` route: the two halving conditions** (SORRY LEAF,
 cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`).  This is the whole
