@@ -39727,8 +39727,132 @@ theorem heckeOp_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
       heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hr,
       map_smul]
 
-/-- **THE EIGENVALUE HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
-THIRTEENTH decomposition 2026-07-27): the FIRST Fourier coefficient of
+/-- **THE ATKIN–LEHNER TRACE IDENTITY at `q ‖ M`** (sorry leaf,
+FIFTEENTH decomposition 2026-07-27): for EVERY `f ∈ S₂(Γ₀(M))`,
+
+    `Tr^M_{M/q} f = f + U_q (W_q f)`,
+
+read inside `S₂(Γ₀(M))` through the level-raising inclusion
+`degeneracyOp (M/q) M 1` (which is the identity on `q`-expansions,
+`qCoeff_degeneracyOp_one`).  No newform hypothesis: this is a pure
+coset identity, and it is the axis on which the eigenvalue half of
+Atkin–Lehner is cut here.
+
+WHY IT IS TRUE, with the coset bookkeeping made explicit so a successor
+need not redo it.  Write `M = q·M₀` with `q ∤ M₀` (that is `hqM2`, via
+`coprime_div_of_exactly_dvd`), and let `A = !![q*a, b; M*c, q*d]` be an
+Atkin–Lehner matrix, `det A = q`, i.e. `q*a*d − M₀*b*c = 1`
+(`IsAtkinLehnerMatrix`).  Then for `0 ≤ j < q`
+
+    `A * !![1, j; 0, q] = q • B j`,   `B j = !![a, a*j + b; M₀*c, M₀*c*j + q*d]`,
+
+and `det (B j) = q*a*d − M₀*b*c = 1`, so `B j ∈ SL(2, ℤ)` with lower
+left `M₀*c`.  The scalar `q` acts trivially in the weight-two slash
+(`weightTwo_slash_scalar`), so with `heckeOp_coe`/`atkinLehnerOp_coe`
+
+    `U_q (W_q f) = Σ_{j<q} ⇑f ∣[2] B j`   —   exactly `q` terms.
+
+Moreover `q ∤ c`: if `q ∣ c` then `q ∣ M₀*b*c`, and `q*a*d − M₀*b*c = 1`
+would give `q ∣ 1`.  So `B j ∈ Γ₀(M₀) \ Γ₀(M)`, its bottom row is
+`M₀*c*(1, j) mod q`, and the `q` classes `(1 : j) ∈ ℙ¹(𝔽_q)` are
+pairwise distinct and all distinct from the identity's class
+`(0 : 1) = ∞`.  Since `[Γ₀(M₀) : Γ₀(M)] = q + 1` at `q ‖ M`, the
+matrices `1, B 0, …, B (q−1)` are a COMPLETE set of coset
+representatives, and `CuspForm.trace` — which is exactly the sum of
+`⇑f ∣[2] γ⁻¹` over `Γ₀(M₀) ⧸ Γ₀(M)`, see `traceOp` — is therefore
+`f + Σ_j ⇑f ∣[2] B j`.  Note the constant is exactly `1` on BOTH terms:
+`traceOp` is the plain coset sum (its normalization is pinned by
+`exists_smul_traceOp_degeneracyOp_one`, where the index `κ` appears
+precisely because that lemma traces an already-invariant form), and the
+weight-two `q^{k/2−1} = 1`.
+
+NOT VACUOUS and not a restatement of anything below: it quantifies over
+ALL `f`, mentions no eigenform, no newform and no eigenvalue, and its
+`f = 0` instance is trivial while its content at general `f` is the
+`q + 1`-coset decomposition.  `hqM2` is load-bearing twice — once
+because `atkinLehnerOp M q` is junk without `Nat.Coprime q (M / q)`,
+and once because the index `[Γ₀(M/q) : Γ₀(M)]` is `q + 1` only at
+`q ‖ M`. -/
+theorem degeneracyOp_one_traceOp_eq_self_add_heckeOp_atkinLehnerOp {M q : ℕ}
+    [NeZero M] [NeZero (M / q)]
+    (hM : 0 < M) (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M)
+    (f : CuspForm (Gamma0GL M) 2) :
+    degeneracyOp (M / q) M 1 (traceOp M (M / q) f)
+      = f + heckeOp M q (atkinLehnerOp M q f) :=
+  sorry
+
+/-- **A NEWFORM HAS VANISHING TRACE TO EVERY LOWER LEVEL** (sorry leaf,
+FIFTEENTH decomposition 2026-07-27; Atkin–Lehner 1970, Diamond–Shurman
+§5.6–5.8): for a weight-two level-`M` newform `g` and a prime `q ∣ M`,
+`Tr^M_{M/q} g = 0`.
+
+This is the coordinate-free form of "a newform is orthogonal to the old
+subspace", and it is the ONLY place the newform hypothesis enters the
+eigenvalue half of Atkin–Lehner below.  It says nothing about `W_q`, nothing
+about `a_q`, and nothing about eigenvalues at all.
+
+CLASSICAL PROOF, and exactly what of it the pin already has.  The trace
+`Tr^M_{M/q}` is the Petersson ADJOINT of the level-raising inclusion
+`degeneracyOp (M/q) M 1` (up to the covolume ratio):
+`⟨Tr^M_{M/q} g, h⟩_{M/q} = ⟨g, V₁ h⟩_M` for every `h ∈ S₂(Γ₀(M/q))`.  A
+newform of level exactly `M` is orthogonal to the whole old subspace, so the
+right side vanishes identically, and the Petersson product at level `M/q` is
+DEFINITE, hence `Tr^M_{M/q} g = 0`.  This development already has a Petersson
+product with the properties that argument needs —
+`exists_peterssonProduct_selfAdjoint_heckeOp` supplies additivity, scalar
+equivariance, symmetry, DEFINITENESS and `T_r`-self-adjointness at `r ∤ M` —
+so what a successor must add is exactly two things:
+
+* the ADJOINTNESS `⟨Tr F, h⟩ = ⟨F, V₁ h⟩`, an unfolding of the coset sum
+  against the invariant measure (the `Γ₀(M)`-fundamental domain machinery
+  used by `exists_peterssonDomain` is the same input), and
+* the ORTHOGONALITY of `g` to `range (degeneracyOp (M/q) M 1)`, which on the
+  minimal-level carrier is where `hg.eigensystem_minimal` has to be spent.
+
+A ROUTE THAT DOES NOT WORK, recorded so it is not retried: one cannot get
+this from `eigensystem_minimal` by coefficients alone.  If `g = V₁ u` with
+`u ∈ S₂(Γ₀(M/q))` then `u` has `g`'s coefficients verbatim
+(`qCoeff_degeneracyOp_one`), but `u` is then NOT an inhabitant of
+`IsWeightTwoEigenform (M/q)`: at `q ∤ (M/q)` that carrier demands the GOOD
+recursion `a_{q²} = a_q² − q·a_1`, while `g` satisfies the BAD one
+`a_{q²} = a_q²`, and the two differ by `q ≠ 0`.  So no eigenform at the
+proper divisor level is produced and `eigensystem_minimal` is never reached.
+The analytic input is genuinely needed. -/
+theorem traceOp_eq_zero_of_isWeightTwoNewform {M q : ℕ} [NeZero M] [NeZero (M / q)]
+    (hM : 0 < M) (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (hq : q.Prime) (hqM : q ∣ M) :
+    traceOp M (M / q) g = 0 :=
+  sorry
+
+/-- **`U_q W_q = −1` ON THE `q`-NEW PART at `q ‖ M`** (PROVEN 2026-07-27
+over the two trace leaves above; Atkin–Lehner 1970 Theorem 3 in operator
+form, weight two): `U_q (W_q g) = −g` for a weight-two level-`M` newform.
+
+Assembly: the trace identity gives
+`V₁ (Tr^M_{M/q} g) = g + U_q (W_q g)` unconditionally, and the newform's
+trace vanishes, so the left side is `0`.
+
+This is the operator shape of the Atkin–Lehner relation, and it is the
+statement that carries the `−1`.  It is NOT the sibling
+`atkinLehnerOp_apply_eq_neg_qCoeff_smul` in disguise: it never mentions
+`a_q`, and its own proof runs entirely on the trace/degeneracy axis, where
+neither `W_q g ∈ ℂ·g` nor any eigenvalue is available. -/
+theorem heckeOp_atkinLehnerOp_eq_neg_of_newform {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    heckeOp M q (atkinLehnerOp M q g) = -g := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  haveI : NeZero (M / q) := ⟨(Nat.div_pos (Nat.le_of_dvd hM hqM) hq.pos).ne'⟩
+  have h1 := degeneracyOp_one_traceOp_eq_self_add_heckeOp_atkinLehnerOp
+    (M := M) (q := q) hM hq hqM hqM2 g
+  rw [traceOp_eq_zero_of_isWeightTwoNewform hM g hg hq hqM, map_zero] at h1
+  have h2 : heckeOp M q (atkinLehnerOp M q g) + g = 0 := by
+    rw [add_comm]; exact h1.symm
+  exact eq_neg_of_add_eq_zero_left h2
+
+/-- **THE EIGENVALUE HALF of Atkin–Lehner at `q ‖ M`** (PROVEN 2026-07-27,
+FIFTEENTH decomposition, over the two trace leaves above; was the
+THIRTEENTH decomposition's sorry node): the FIRST Fourier coefficient of
 the Atkin–Lehner transform of a normalized weight-two newform is `−a_q`.
 
 This is Atkin–Lehner 1970 Theorem 3 (Diamond–Shurman §5.8) with the
@@ -39747,12 +39871,90 @@ about the value.  Their conjunction is exactly what
 Once both are closed, `qCoeff_sq_eq_one_of_exactly_dvd` gets `a_q² = 1`
 from the INVOLUTION `atkinLehnerOp_atkinLehnerOp` (PROVEN) — the `±1`
 never comes from this leaf, which is what makes the split a reduction
-rather than a restatement. -/
+rather than a restatement.
+
+FIFTEENTH DECOMPOSITION (2026-07-27) — this node is now PROVEN, and it is
+cut on the TRACE axis rather than the operator axis.  Four inputs, three of
+them already in this file:
+
+1. `W_q g` is an honest eigenvector of every GOOD `T_r`, `r ∤ M`, at `g`'s
+   eigenvalue: `r ∤ M` forces `r ≠ q`, so `heckeOp_comm_atkinLehnerOp`
+   applies, and `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` supplies
+   `T_r g = a_r·g`.
+2. STRONG MULTIPLICITY ONE QUANTIFIED ONLY OVER `r ∤ M` then puts `W_q g` on
+   the line `ℂ·g`: `W_q g = c·g`.  **This is
+   `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`, PROVEN 2026-07-26
+   ~4800 lines above.**  It is worth saying loudly, because the docstring of
+   the neighbouring `r = q` leaf records that "a strong-multiplicity-one
+   variant quantified only over `r ∤ M` … does not exist in this file or in
+   the pin".  That was true when written and is now FALSE: the variant
+   exists, is proven, and consumes `hg.eigensystem_minimal` rather than any
+   eigenvalue at `q`.  In particular it also removes the `r = q` leaf
+   `heckeOp_self_atkinLehnerOp_eigen_of_newform` outright, since
+   `U_q (c·g) = c·(a_q·g) = a_q·(c·g)`.
+3. The INVOLUTION `atkinLehnerOp_atkinLehnerOp` gives `c² = 1`, read in the
+   first coefficient.
+4. `heckeOp_atkinLehnerOp_eq_neg_of_newform` (`U_q W_q = −1`, above) gives
+   `c·a_q = −1`, again in the first coefficient.
+
+Then `c·(c·a_q + 1) − a_q·(c² − 1) = c + a_q` forces `c = −a_q`, and
+`a₁(W_q g) = c·a₁(g) = c`.  Note how the `±1` is produced: `c² = 1` comes
+from the involution and `a_q² = 1` only as a CONSEQUENCE, exactly as the
+paragraph above requires.
+
+WHY THIS IS NOT THE RESTATEMENT REFUTED UNDER THE `r = q` LEAF.  That
+refutation applies to a cut at `W_q g = −a_q·g`, which is definitionally
+this conclusion once `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` is
+available.  The residue here is on a different axis entirely: the two new
+leaves are the coset identity `Tr = 1 + U_q W_q` (no newform, no eigenvalue,
+no `a_q`) and the vanishing `Tr^M_{M/q} g = 0` (no `W_q`, no `U_q`, no
+`a_q`).  Neither mentions the objects this statement is about, and the first
+is a statement about every cusp form rather than about `g`. -/
 theorem qCoeff_one_atkinLehnerOp_of_newform {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
-    qCoeff M (atkinLehnerOp M q g) 1 = -(qCoeff M g q) :=
-  sorry
+    qCoeff M (atkinLehnerOp M q g) 1 = -(qCoeff M g q) := by
+  -- 1. `W_q g` is a good-prime eigenvector at `g`'s own eigensystem.
+  have hcomm : ∀ r : ℕ, r.Prime → ¬ r ∣ M →
+      heckeOp M r (atkinLehnerOp M q g) = qCoeff M g r • atkinLehnerOp M q g := by
+    intro r hr hrM
+    have hrq : r ≠ q := by rintro rfl; exact hrM hqM
+    rw [heckeOp_comm_atkinLehnerOp hM hq hqM hqM2 hr hrq g,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hr,
+      map_smul]
+  -- 2. Strong multiplicity one over `r ∤ M` puts it on the line `ℂ·g`.
+  obtain ⟨c, hc⟩ := exists_smul_of_heckeOp_eq_smul_of_not_dvd_level hM hg hcomm
+  -- `q ‖ M` as the coprimality the Atkin–Lehner operator is pinned by
+  -- (`coprime_div_of_exactly_dvd` states exactly this, but is declared below).
+  have hcop : Nat.Coprime q (M / q) := by
+    refine (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd => hqM2 ?_
+    obtain ⟨t, ht⟩ := hdvd
+    refine ⟨t, ?_⟩
+    have h := Nat.mul_div_cancel' hqM
+    rw [ht] at h
+    rw [← h]; ring
+  have hone : qCoeff M g 1 = 1 := hg.toIsWeightTwoEigenform.qCoeff_one
+  -- 3. The involution gives `c² = 1`.
+  have hsq : c * c = 1 := by
+    have h := atkinLehnerOp_atkinLehnerOp hM hqM hcop g
+    rw [hc, map_smul, hc, smul_smul] at h
+    have h2 := congrArg (fun f => qCoeff M f 1) h
+    simp only [qCoeff_smul, hone, mul_one] at h2
+    exact h2
+  -- 4. The Atkin–Lehner relation `U_q W_q = −1` gives `c·a_q = −1`.
+  have hrel : c * qCoeff M g q = -1 := by
+    have h := heckeOp_atkinLehnerOp_eq_neg_of_newform hM g hg hq hqM hqM2
+    rw [hc, map_smul,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hq,
+      smul_smul] at h
+    have h2 := congrArg (fun f => qCoeff M f 1) h
+    have hneg : qCoeff M (-g) 1 = -(qCoeff M g 1) := by
+      have h3 := (qCoeffL M 1).map_neg g
+      simpa only [qCoeffL_apply] using h3
+    simp only [qCoeff_smul, hone, mul_one, hneg] at h2
+    exact h2
+  rw [hc, qCoeff_smul, hone, mul_one]
+  linear_combination c * hrel - (qCoeff M g q) * hsq
 
 /-- **THE ATKIN–LEHNER THEOREM at a prime exactly dividing the level**
 (sorry node, TWELFTH decomposition 2026-07-26): for `q ‖ M` the
