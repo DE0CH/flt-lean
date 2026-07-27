@@ -140,9 +140,13 @@ fail), so `E[2]` is irreducible and the isogeny class `11a` contains no
 `2`-isogeny at all. The descent there is by the rational `5`-isogeny, whose
 dual side is `H¹(ℚ, ℤ/5)` — cyclic quintic extensions unramified outside
 `{5, 11}` with local conditions — and that needs class field theory, not a
-`gcd` argument. The alternative, a `2`-descent over the cubic field
-`ℚ[s]/(s³ − 2s² + 2)` of discriminant `−44`, needs that field's class group and
-unit group. Neither is in the pin. See `curve11a3_rational_points`.
+`gcd` argument. The alternative is a `2`-descent over the cubic field
+`ℚ[s]/(s³ − 2s² + 2)` of discriminant `−44`. **Corrected 2026-07-27**: that
+field's class group and unit group were recorded here as the obstruction, and
+they are not — `ℤ[s] = 𝓞_K` exactly (index `1`) and `h = 1` follows from one
+mathlib lemma. The real obstruction is the HEIGHT descent, which both routes
+need. See the `MazurLevel11` section docstring for the computed evidence, and
+`curve11a3_rational_points`.
 
 The `X_1(11)` plane model itself — the birational passage between
 `tateNormalForm b c` with an order-`11` origin and a rational point of
@@ -292,26 +296,329 @@ PROVEN: strip the Weierstrass API and the rationals off the statement. With
 one. So `curve11a3_rational_points` is now a corollary of the single integer
 statement `integral_leaf` below.
 
-WHAT REMAINS, and it is unchanged in substance: the two routes are (i) the
-`5`-isogeny descent, whose descent map is `α(P) = f(P)` for
-`f = y + x² + xy` with `div(f) = 5(T) − 5(O)` — that side is trivial, but the
-DUAL side is `H¹(ℚ, ℤ/5)`, i.e. cyclic quintic extensions unramified outside
-`{5, 11}` cut out by local conditions, which needs class field theory; or
-(ii) a `2`-descent over the cubic field `ℚ[s]/(s³ − 2s² + 2)` — the `2`-division
-field, of discriminant `−44` — which needs that field's class group and unit
-group (unit rank `1`). Neither is in the pin, and neither is a `gcd` argument.
-Whoever takes `integral_leaf` should expect to build one of them. -/
+## ROUTING CORRECTION, 2026-07-27 — the class group is CHEAP; the expensive
+## ingredient is the HEIGHT DESCENT, and it was hiding behind a deleted leaf
+
+The previous version of this docstring named two routes and said of route (ii),
+the `2`-descent over the cubic field `ℚ[s]/(s³ − 2s² + 2)`, that it "needs that
+field's class group and unit group … neither is in the pin". **Both halves of
+that are wrong**, and the error mattered: it pointed successive owners at the
+cheapest ingredient and away from the expensive one. Computed evidence (PARI/GP
+as an untrusted searcher; every number below is independently checkable):
+
+* `f = X³ − 2X² + 2` is irreducible with `poldisc f = −44`, and the FIELD
+  discriminant is also `−44`, so the index `[𝓞_K : ℤ[s]]` is `1` — i.e.
+  **`ℤ[s] = 𝓞_K` exactly**, no index correction anywhere.
+* **`h(K) = 1`**, and it follows from a single mathlib lemma already in the pin:
+  `NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`
+  (`Mathlib/NumberTheory/NumberField/ClassNumber.lean:200`). At
+  `finrank ℚ K = 3`, `nrComplexPlaces K = 1` its bound reads
+  `|discr K| < (2·(π/4)·(3³/3!))² = 81π²/16 ≈ 49.96`, and `44 < 49.96`; the
+  only real input is `π > 2.949`. Worked precedent for the whole pattern:
+  `Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean:35,50`.
+* The identification `𝓞_K = ℤ[s]` is likewise in reach: `−44 = −2²·11` and
+  `11² ∤ 44`, so only `p = 2` needs clearing, and **`X³ − 2X² + 2` is Eisenstein
+  at `2`**. The two lemmas are `Algebra.discr_mul_isIntegral_mem_adjoin`
+  (`Mathlib/RingTheory/Discriminant.lean:257`) and
+  `mem_adjoin_of_smul_prime_pow_smul_of_minpoly_isEisensteinAt`
+  (`Mathlib/RingTheory/Polynomial/Eisenstein/IsIntegral.lean:363`), combined
+  exactly as `Mathlib/NumberTheory/NumberField/Cyclotomic/Basic.lean:94` does.
+* Units: rank `1`, torsion `{±1}`, fundamental unit `ε = −s² + s + 1`, certified
+  by the single `ring` identity `ε·(s − 1) = 1`; `N(ε) = −1`, `N(s − 1) = −1`.
+
+**What is actually expensive is FINITE GENERATION — the height theory.** A
+complete `2`-descent here yields only `E(ℚ)/2E(ℚ) = 0`, and since `E[2]` is
+irreducible over `ℚ` so that `E(ℚ)[2] = 0`, that says exactly that `E(ℚ)` is
+*uniquely `2`-divisible*. That is true of `ℤ/5` — and equally true of `ℚ`, of
+`ℤ[1/2]`, and of every uniquely `2`-divisible infinite group. The `5`-isogeny
+route stalls in the same place: it yields `E(ℚ) = 5E(ℚ)` and no more. So route
+(ii) is **not** cheaper than route (i); *both* need Mordell–Weil or a hand-rolled
+height descent, and this module deleted its `mordellWeil` leaf on the ground
+that it was "not on the critical path". It is on the critical path. The two
+descent-map facts previously recorded are still correct and still useful — the
+`5`-isogeny map is `α(P) = f(P)` for `f = y + x² + xy` with
+`div(f) = 5(T) − 5(O)`, whose dual side `H¹(ℚ, ℤ/5)` is cyclic quintic
+extensions unramified outside `{5, 11}` and does need class field theory — but
+neither of them is where the difficulty lives.
+
+## THE DESCENT, MADE EXPLICIT (2026-07-27): the `2`-covering IS the curve, so
+## the descent witness is literally a HALVING
+
+Writing the `2`-descent out in coordinates turns it into pure integer algebra,
+and the result is much more concrete than the prose above suggested. Since
+`X³ − 4X² + 16` is the minimal polynomial of `2s`, the cubic factors over `K` as
+
+    U³ − 4U² + 16 = (U − 2s)(U² + (2s − 4)U + (4s² − 8s)),
+
+so a coprime integral point `(p, e, n)` has `N(β) = n²` for `β = p − 2s·e²`, and
+the descent map is `P ↦ β mod (K*)²`. Because `E(ℚ) ≅ ℤ/5` is `2`-divisible,
+every `β` is a square — and a square root of an algebraic integer is an
+algebraic integer, so `β = δ²` with `δ = a + bs + cs² ∈ 𝓞_K = ℤ[s]`. Expanding
+with `s³ = 2s² − 2` and `s⁴ = 4s² − 2s − 4` and comparing coefficients gives the
+system carried by `exists_halving_witness` below:
+
+    1  :  a² − 4c² − 4bc = p
+    s  :  2ab − 2c²      = −2e²      i.e.  e² = c² − ab
+    s² :  b² + 2ac + 4bc + 4c² = 0
+
+Both known points sit in this trivial class, with explicit witnesses:
+`(s² − 2)² = −2s` gives `(p, e) = (0, 1)`, and `(s² − 2s)² = 4 − 2s` gives
+`(p, e) = (4, 1)`. That is *why* the finite-generation gap bites — every
+NONTRIVIAL square class dies locally, and the surviving trivial class is the
+`2`-covering `P ↦ 2P` of `E` by itself.
+
+The last sentence is literally true, and it is the useful discovery here. Put
+`m = b + 2c`; the `s²`-equation is exactly `2ac = −m²`, and eliminating `a`
+turns the other two into (both PROVEN below, by `linear_combination`)
+
+    2c·e² = m³ − 2c·m² + 2c³        and        4c²·p = m⁴ + 16c⁴ − 16m·c³.
+
+Dividing the first by `c³` and setting `U' = 2m/c`, `W' = 4e/c` gives
+`W'² = U'³ − 4U'² + 16` — **the same curve**. Eliminating `m` and `c` between
+the two identities gives
+
+    U  =  (U'⁴ − 128U' + 256) / (4(U'³ − 4U'² + 16))  =  (U'⁴ − 128U' + 256)/(4W'²),
+
+which is precisely the standard duplication formula for
+`y² = x³ + a₂x² + a₄x + a₆` at `(a₂, a₄, a₆) = (−4, 0, 16)`. So the witness
+`(a, b, c)` is a halving: `(U', W')` is a point `Q` with `2Q = P`. The two known
+witnesses realise the two `5`-torsion duplications `2·(4, 4) = (0, 4)` and
+`2·(0, 4) = (4, −4)`, and `trivial_ascends` below PROVES both of them from the
+integer identities.
+
+WHAT REMAINS is therefore exactly one quantitative statement, `halving_descends`
+below: the halving strictly decreases the height. The standard resultant bound
+gives it for all but boundedly many points, and the bound is small:
+
+    Res(X⁴ − 128X + 256, X³ − 4X² + 16) = 2¹⁶·11² = 7929856,
+
+so `H(2Q) ≥ H(Q)⁴/7929856`, and a counterexample of minimal height must satisfy
+`max(|p|, e²)³ ≤ 7929856`, i.e. `max(|p|, e²) ≤ 199` and `e ≤ 14`. That base
+case is genuinely finite and small — a few thousand coprime pairs — rather than
+the exponentially large check one would fear from a crude height inequality.
+Whoever takes these two leaves should expect: `exists_halving_witness` from the
+`ℤ[s]` arithmetic above (PID + units + the local conditions killing the
+nontrivial classes), and `halving_descends` from the resultant bound plus that
+bounded base case. -/
 
 namespace MazurLevel11
 
-/-- **THE level-`11` leaf** (sorry leaf, 2026-07-26): the only coprime integral
+/-- **THE `2`-DESCENT LEAF at level `11`** (sorry leaf, 2026-07-27): every
+coprime integral point of `W² = U³ − 4U² + 16` lies in the TRIVIAL square class
+of the `2`-division field, written out in coordinates.
+
+MEANING. With `s³ = 2s² − 2` the cubic factors as `U³ − 4U² + 16 =
+(U − 2s)(U² + (2s − 4)U + 4s² − 8s)` over `K = ℚ(s)`, and a coprime integral
+point has `N(p − 2s·e²) = n²`. This statement says `p − 2s·e² = (a + bs + cs²)²`
+in `𝓞_K = ℤ[s]`: the three components of that equation, after reducing with
+`s³ = 2s² − 2` and `s⁴ = 4s² − 2s − 4`, are exactly the three conclusions below
+(constant, `s`, and `s²` coefficients respectively, the `s`-one divided by `−2`).
+
+WHY IT IS TRUE, and it is: the `2`-descent map `P ↦ (x(P) − 2s) mod (K*)²` is a
+homomorphism with kernel `2E(ℚ)`, and `E(ℚ) ≅ ℤ/5` is `2`-divisible, so every
+`β = p − 2s·e²` is a square in `K*`; a square root of an algebraic integer is an
+algebraic integer, so the root lies in `𝓞_K`, which is `ℤ[s]` on the nose
+(index `1`, see the section docstring). Note `β ≠ 0`, since `N(β) = 0` would
+force `e = 0`. Both known points have explicit witnesses:
+`(a, b, c) = (−2, 0, 1)` for `(p, e) = (0, 1)` and `(0, −2, 1)` for `(4, 1)`.
+
+HOW TO PROVE IT. This is the leaf that consumes the cubic field's arithmetic,
+and the section docstring records that all of it is within reach of the pin:
+`𝓞_K = ℤ[s]` from `Algebra.discr_mul_isIntegral_mem_adjoin` plus the Eisenstein
+lemma (`X³ − 2X² + 2` is Eisenstein at `2`, and `2` is the only prime needing
+clearing), then `h(K) = 1` from
+`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt` since
+`44 < 81π²/16`, then the unit group `⟨−1⟩ × ⟨ε⟩` with `ε = −s² + s + 1`, and
+finally the local conditions that kill the nontrivial square classes. Nothing
+here needs heights or finite generation — that burden is entirely in
+`halving_descends`. -/
+theorem exists_halving_witness {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) :
+    ∃ a b c : ℤ, b ^ 2 + 2 * a * c + 4 * b * c + 4 * c ^ 2 = 0 ∧
+      p = a ^ 2 - 4 * c ^ 2 - 4 * b * c ∧ e ^ 2 = c ^ 2 - a * b := sorry
+
+/-- **THE HEIGHT LEAF at level `11`** (sorry leaf, 2026-07-27): the halving
+supplied by `exists_halving_witness` strictly decreases the height, except at
+the two points that are actually there.
+
+The hypotheses are the halving in its eliminated form: `m` and `c` satisfy the
+`2`-covering `2c·e² = m³ − 2c·m² + 2c³` and the `x`-relation
+`4c²·p = m⁴ + 16c⁴ − 16m·c³` (both PROVEN from the witness in
+`integral_leaf_aux`), and `(p', e', n')` is the coprime integral model of the
+halved point `U' = 2m/c`, pinned by the cross-multiplied `2m·e'² = p'·c`.
+
+**THIS IS THE FINITE-GENERATION CONTENT OF LEVEL `11`**, and it is the only
+place it appears. Everything else in this section is either the `2`-descent
+(`exists_halving_witness`) or proven algebra. A `2`-descent alone gives
+`E(ℚ)/2E(ℚ) = 0`, i.e. unique `2`-divisibility, which is satisfied by infinite
+groups too; it is exactly this height inequality that converts that into
+finiteness. So do not expect to remove this leaf by strengthening the descent.
+
+HOW TO PROVE IT, quantitatively. Eliminating `m, c` shows the halving is the
+duplication `U = (U'⁴ − 128U' + 256)/(4(U'³ − 4U'² + 16))`, and
+
+    Res(X⁴ − 128X + 256, X³ − 4X² + 16) = 2¹⁶·11² = 7929856,
+
+so the numerator and denominator share only divisors of that resultant and
+`H(2Q) ≥ H(Q)⁴/7929856`. If the height did NOT drop we would get
+`H(P)³ ≤ 7929856`, i.e. `max(|p|, e²) ≤ 199` and hence `e ≤ 14` — a base case of
+a few thousand coprime pairs, each decided by whether `p³ − 4p²e² + 16e⁶` is a
+square. That is the whole proof, and both halves of it are elementary; the
+work is in the coprimality bookkeeping for the resultant bound.
+
+The two exceptional disjuncts are not slack: the halvings of the two real points
+INCREASE the height (`(p, e) = (0, 1)` has `m = 2`, `c = 1`, and halves to
+`U' = 4`; `(4, 1)` has `m = 0` and halves to `U' = 0`), because both are
+`5`-torsion. `trivial_ascends` handles them on the way back up. -/
+theorem halving_descends {p e n m c p' e' n' : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) (hc : c ≠ 0)
+    (hcov : 2 * c * e ^ 2 = m ^ 3 - 2 * c * m ^ 2 + 2 * c ^ 3)
+    (hpm : 4 * c ^ 2 * p = m ^ 4 + 16 * c ^ 4 - 16 * m * c ^ 3)
+    (he' : 0 < e') (hcop' : IsCoprime p' e')
+    (hcross : 2 * m * e' ^ 2 = p' * c)
+    (hn' : n' ^ 2 = p' ^ 3 - 4 * p' ^ 2 * e' ^ 2 + 16 * e' ^ 6) :
+    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) ∨
+      p'.natAbs + (e' ^ 2).natAbs < p.natAbs + (e ^ 2).natAbs := sorry
+
+/-- **The halving witness has `c ≠ 0`** (PROVEN 2026-07-27). If `c = 0` the
+quadric `b² + 2ac + 4bc + 4c² = 0` collapses to `b² = 0`, and then
+`e² = c² − ab = 0` contradicts `0 < e`. Equivalently: `δ = a + bs + cs²` with
+`c = 0` cannot have `δ²` in the `ℤ`-span of `1` and `s` unless `δ ∈ ℤ`. -/
+theorem witness_c_ne_zero {e a b c : ℤ} (he : 0 < e)
+    (hq : b ^ 2 + 2 * a * c + 4 * b * c + 4 * c ^ 2 = 0)
+    (hee : e ^ 2 = c ^ 2 - a * b) : c ≠ 0 := by
+  rintro rfl
+  have hb2 : b ^ 2 = 0 := by linear_combination hq
+  have hb : b = 0 := pow_eq_zero_iff two_ne_zero |>.mp hb2
+  have hz : e ^ 2 = 0 := by rw [hee, hb]; ring
+  have he0 : e = 0 := pow_eq_zero_iff two_ne_zero |>.mp hz
+  omega
+
+/-- **Triviality of the halved point ascends** (PROVEN 2026-07-27): if the
+halving `Q` of `P` is one of the two known points, so is `P`.
+
+This is the duplication of the rational `5`-torsion, done in integers. If
+`(p', e') = (0, 1)` then `U' = 0`, so `m = 0`, and the two covering identities
+collapse to `p = 4c²`, `e² = c²`; coprimality of `p` and `e` then forces `e = 1`
+and `p = 4`. If `(p', e') = (4, 1)` then `U' = 4`, so `m = 2c`, and they
+collapse to `p = 0`, `e² = c²`, forcing `e = 1`. These are exactly
+`2·(0, 4) = (4, −4)` and `2·(4, 4) = (0, 4)` on `W² = U³ − 4U² + 16`, which is
+what makes the descent below close upwards instead of merely producing ever
+smaller solutions. -/
+theorem trivial_ascends {p e m c p' e' : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
+    (hc : c ≠ 0)
+    (hcov : 2 * c * e ^ 2 = m ^ 3 - 2 * c * m ^ 2 + 2 * c ^ 3)
+    (hpm : 4 * c ^ 2 * p = m ^ 4 + 16 * c ^ 4 - 16 * m * c ^ 3)
+    (hcross : 2 * m * e' ^ 2 = p' * c)
+    (h' : (p' = 0 ∧ e' = 1) ∨ (p' = 4 ∧ e' = 1)) :
+    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := by
+  have hc2 : (4 * c ^ 2 : ℤ) ≠ 0 := by positivity
+  have h2c : (2 * c : ℤ) ≠ 0 := by simpa using hc
+  rcases h' with ⟨hp', he'1⟩ | ⟨hp', he'1⟩
+  · -- `U' = 0`, so `m = 0`, and `P` is the point with `U = 4`.
+    subst hp'; subst he'1
+    have hm : m = 0 := by linarith [hcross]
+    subst hm
+    have hpv : p = 4 * c ^ 2 := by
+      refine mul_left_cancel₀ hc2 ?_
+      linear_combination hpm
+    have hev : e ^ 2 = c ^ 2 := by
+      refine mul_left_cancel₀ h2c ?_
+      linear_combination hcov
+    have hdvd : e ∣ p := by
+      rw [hpv, ← hev]
+      exact ⟨4 * e, by ring⟩
+    have hu : IsUnit e := hcop.isUnit_of_dvd' hdvd dvd_rfl
+    have he1 : e = 1 := by
+      rcases Int.isUnit_iff.mp hu with h1 | h1 <;> omega
+    refine Or.inr ⟨?_, he1⟩
+    rw [hpv, ← hev, he1]; ring
+  · -- `U' = 4`, so `m = 2c`, and `P` is the point with `U = 0`.
+    subst hp'; subst he'1
+    have hm : m = 2 * c := by linarith [hcross]
+    subst hm
+    have hpv : p = 0 := by
+      refine mul_left_cancel₀ hc2 ?_
+      linear_combination hpm
+    have hev : e ^ 2 = c ^ 2 := by
+      refine mul_left_cancel₀ h2c ?_
+      linear_combination hcov
+    have hu : IsUnit e := by
+      rw [hpv] at hcop
+      exact isCoprime_zero_left.mp hcop
+    have he1 : e = 1 := by
+      rcases Int.isUnit_iff.mp hu with h1 | h1 <;> omega
+    exact Or.inl ⟨hpv, he1⟩
+
+/-- **The infinite descent at level `11`** (PROVEN 2026-07-27 over the two
+leaves above), by strong induction on `|p| + e²` — the same shape as
+`MazurLevel14.h1_classification`, `MazurLevel15.concordant_both_aux` and
+`QuarticDescent.not_isSquare_form`.
+
+Each step: take the halving witness `(a, b, c)`; `c ≠ 0`; put `m = b + 2c`, for
+which the `s²`-equation reads `2ac = −m²` and eliminating `a` gives the two
+covering identities by `linear_combination`; pass to the rational point
+`(U', W') = (2m/c, 4e/c)` of the SAME curve and take its coprime integral model
+with `RationalPointDescent.exists_int_model`; then either `P` is one of the two
+known points, or the model is strictly smaller and the induction hypothesis
+applies to it — and `trivial_ascends` carries the conclusion back up. -/
+theorem integral_leaf_aux : ∀ N : ℕ, ∀ p e n : ℤ, p.natAbs + (e ^ 2).natAbs ≤ N →
+    0 < e → IsCoprime p e → n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6 →
+    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    intro p e n hN he hcop h
+    obtain ⟨a, b, c, hq, hp, hee⟩ := exists_halving_witness he hcop h
+    have hc : c ≠ 0 := witness_c_ne_zero he hq hee
+    set m : ℤ := b + 2 * c with hm
+    have hcov : 2 * c * e ^ 2 = m ^ 3 - 2 * c * m ^ 2 + 2 * c ^ 3 := by
+      rw [hm]; linear_combination (2 * c) * hee - b * hq
+    have hpm : 4 * c ^ 2 * p = m ^ 4 + 16 * c ^ 4 - 16 * m * c ^ 3 := by
+      rw [hm]; linear_combination (4 * c ^ 2) * hp + (2 * a * c - (b + 2 * c) ^ 2) * hq
+    have hcQ : (c : ℚ) ≠ 0 := Int.cast_ne_zero.mpr hc
+    have hcovQ : 2 * (c : ℚ) * (e : ℚ) ^ 2 =
+        (m : ℚ) ^ 3 - 2 * (c : ℚ) * (m : ℚ) ^ 2 + 2 * (c : ℚ) ^ 3 := by
+      exact_mod_cast hcov
+    have hV : (4 * (e : ℚ) / (c : ℚ)) ^ 2 =
+        (2 * (m : ℚ) / (c : ℚ)) ^ 3 + ((-4 : ℤ) : ℚ) * (2 * (m : ℚ) / (c : ℚ)) ^ 2
+          + ((0 : ℤ) : ℚ) * (2 * (m : ℚ) / (c : ℚ)) + ((16 : ℤ) : ℚ) := by
+      push_cast
+      field_simp
+      linear_combination (8 : ℚ) * hcovQ
+    obtain ⟨p', e', n', he', hcop', hTeq, hn'0⟩ :=
+      RationalPointDescent.exists_int_model (A := -4) (B := 0) (C := 16) hV
+    have hn' : n' ^ 2 = p' ^ 3 - 4 * p' ^ 2 * e' ^ 2 + 16 * e' ^ 6 := by
+      linear_combination hn'0
+    have he'Q : ((e' : ℚ)) ≠ 0 := Int.cast_ne_zero.mpr (by omega)
+    have hcross : 2 * m * e' ^ 2 = p' * c := by
+      have hQ : 2 * (m : ℚ) * (e' : ℚ) ^ 2 = (p' : ℚ) * (c : ℚ) := by
+        field_simp at hTeq
+        linarith [hTeq]
+      exact_mod_cast hQ
+    rcases halving_descends he hcop h hc hcov hpm he' hcop' hcross hn' with h1 | h1 | hlt
+    · exact Or.inl h1
+    · exact Or.inr h1
+    · exact trivial_ascends he hcop hc hcov hpm hcross
+        (ih (p'.natAbs + (e' ^ 2).natAbs) (lt_of_lt_of_le hlt hN) p' e' n' le_rfl he' hcop' hn')
+
+/-- **THE level-`11` statement** (PROVEN 2026-07-27 from
+`exists_halving_witness` and `halving_descends`): the only coprime integral
 points of the monic model `W² = U³ − 4U² + 16` of `11a3` are `(p, e) = (0, 1)`
 and `(4, 1)`, i.e. `U = 0` and `U = 4`.
 
 This is `curve11a3_rational_points` with the Weierstrass API and the rationals
 removed; the reduction is PROVEN (`U_dichotomy`), so this statement carries the
-ENTIRE arithmetic content of level `11` — rank `0` for one explicit curve — and
-nothing else.
+ENTIRE arithmetic content of level `11` — rank `0` for one explicit curve.
+
+DECOMPOSED 2026-07-27. It is no longer a leaf: it is the infinite descent
+`integral_leaf_aux` over exactly two open statements, which are the two genuinely
+different mathematical inputs and are attackable independently —
+`exists_halving_witness` (the `2`-descent over `ℤ[s]`: PID, units, and the local
+conditions) and `halving_descends` (the height inequality, which is where the
+finite-generation content actually lives). See the section docstring for the
+computed evidence behind that split, including why the earlier routing note —
+which called the cubic field's class group the obstruction — was wrong.
 
 Verified by exhaustive search (`|p| < 6000`, `1 ≤ e < 260`, coprime): `(0, 1)`
 and `(4, 1)` are the only solutions, so the statement is true as written.
@@ -320,13 +627,13 @@ CHECKED EXTERNALLY (PARI/GP, untrusted searcher — not a proof).
 `ellinit([0,-1,1,0,0])` gives `disc = −11`, conductor `11`,
 `j = −4096/11`; `ellrank` returns rank `0` with matching lower and upper
 bounds, i.e. it *proves* rank `0`; `elltors` returns `ℤ/5`; and
-`ellratpoints(E, 1000)` returns exactly the four affine points.
-
-See the section docstring above for why no elementary descent reaches this and
-what the two genuine routes are. -/
+`ellratpoints(E, 1000)` returns exactly the four affine points. On the monic
+model `ellinit([0,-4,0,0,16])` the four affine points are `(0, ±4)`, `(4, ±4)`,
+and `ellmul` confirms the two duplications used by `trivial_ascends`. -/
 theorem integral_leaf {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) :
-    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := sorry
+    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) :=
+  integral_leaf_aux (p.natAbs + (e ^ 2).natAbs) p e n le_rfl he hcop h
 
 /-- **The two rational `U`-values of `W² = U³ − 4U² + 16`** (PROVEN 2026-07-26
 from `integral_leaf`): `U ∈ {0, 4}`. These are `U = 4x` for the two
@@ -398,10 +705,20 @@ descent by hand on the coprime factorisation of
 Route (i) is the smaller of the two and is what the concrete data above is
 for.
 
-DECOMPOSED 2026-07-26. This is no longer the leaf: the Weierstrass-API layer
-has been stripped off and PROVEN, leaving the pure integer statement
-`MazurLevel11.integral_leaf`. See that declaration and the `MazurLevel11`
-section docstring. -/
+DECOMPOSED 2026-07-26, and again 2026-07-27. The Weierstrass-API layer was
+stripped off first, leaving the pure integer statement
+`MazurLevel11.integral_leaf`; that statement is now itself PROVEN, as an
+infinite descent (`MazurLevel11.integral_leaf_aux`) over exactly two open
+statements — `MazurLevel11.exists_halving_witness` (the `2`-descent over
+`ℤ[s]`) and `MazurLevel11.halving_descends` (the height inequality). See the
+`MazurLevel11` section docstring.
+
+Note the sentence above — "finite generation alone never yields rank `0`, so it
+was never the hard half" — is true but was read the wrong way round when
+`mordellWeil` was deleted. Finite generation is not SUFFICIENT, and it is also
+not OPTIONAL: a complete `2`-descent here gives only `E(ℚ)/2E(ℚ) = 0`, which
+without a height theory is satisfied by infinite groups. The height content is
+now explicit and named, in `MazurLevel11.halving_descends`. -/
 theorem curve11a3_rational_points (x y : ℚ)
     (h : curve11a3.toAffine.Nonsingular x y) :
     (x, y) = ((0 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
