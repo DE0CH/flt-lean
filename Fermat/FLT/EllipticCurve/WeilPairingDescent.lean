@@ -10257,13 +10257,18 @@ generic coordinates: `smul_taut_xCoord_ne_constHom` and the new
 this is: nothing here needs a `2`-torsion point, only one that is NOT
 `2`-torsion.
 
-**Axioms.**  The `sorryAx` in this declaration's cone is entirely
-INHERITED from the vertical brick
-`count_pointEval_XClass_of_smul_ne_zero`, whose own characteristic-`2`
-residue `rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero` is a
-separate open leaf above; the already-proven sibling
-`one_le_count_pointEval_YClass_of_two_ne_zero` carries exactly the same
-inherited axiom.  Nothing below adds a new one. -/
+**Axioms — CLEAN as of 2026-07-27** (audited by `#print axioms`, not
+inferred).  The last `sorryAx` in this declaration's cone came from the
+vertical brick `count_pointEval_XClass_of_smul_ne_zero`, through its
+characteristic-`2` residue
+`rootMultiplicity_derivative_Φ_eq_two_of_two_eq_zero`; that leaf is now
+PROVEN (by the fibre count, above), so this declaration, its sibling
+`one_le_count_pointEval_YClass_of_two_ne_zero`, the bricks
+`count_pointEval_{X,Y}Class_of_smul_ne_zero`,
+`count_pointEval_of_smul_{ne,eq}_zero` and the L4-7 assembly
+`spanSingleton_pointEval_mul_fiberProd_pow` all audit to
+`[propext, Classical.choice, Quot.sound]`.  Nothing below adds a new
+axiom. -/
 theorem count_pointEval_YClass_neg_nonpos_of_ne_neg_char_two
     [IsDedekindDomain W.CoordinateRing]
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) (_h2 : (2 : F) = 0)
@@ -12017,7 +12022,8 @@ theorem count_pointEval_of_smul_eq_zero [IsDedekindDomain W.CoordinateRing]
       mul_right_cancel₀ hpos.ne' (hkey.trans (by ring))
     rw [hfin]
 
-/-- **L4-7 brick (sorry): the multiplicity-one `[p]`-pullback formula
+/-- **L4-7 brick (PROVEN, and axiom-clean since 2026-07-27): the
+multiplicity-one `[p]`-pullback formula
 for a coordinate function.**  Let `val` enumerate `E[p]`, let
 `(xp, yp)` be the affine coordinates of the generic multiple
 `p • taut` — so that `pointEval (constHom W) hpn.left` realizes the
