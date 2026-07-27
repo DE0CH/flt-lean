@@ -17658,7 +17658,28 @@ internally coherent. If the `Γ ℚ` convention turns out to make that leaf fals
 the defect is in `Sha2`'s definition and the repair is a cut-level restatement
 of BOTH, not a proof attempt at either. The check that settles it:
 `grep -rn "G_S\|restrictedGaloisGroup\|ramifiedOutside" Fermat/` — currently no
-hit, i.e. `G_{ℚ,S}` does not exist in this development at all. -/
+hit, i.e. `G_{ℚ,S}` does not exist in this development at all.
+
+**ANSWERED 2026-07-27, AND THE ANSWER IS THAT THE CONVENTION IS FATAL. The
+paragraph above is now settled, not open — read it as history.** Over the full
+`Γ ℚ` the source `H¹_cont(Γ ℚ, ad⁰(1))` is INFINITE-dimensional over `k` (a
+class may ramify at any auxiliary prime outside `S`), while `S` has two
+elements and each `H¹(ℚ_v, −)` is finite, so `Module.rank k (Sha1Twist …) = ℵ₀`
+— and identically `Module.rank k (Sha2 …) = ℵ₀`. Consequently
+`rank_sha2_le_rank_sha1_twist` is true but VACUOUS (`ℵ₀ ≤ ℵ₀`, by cardinality,
+with no Poitou–Tate content) and `rank_sha1_twist_le_of_tangent_span` is FALSE
+(`ℵ₀ ≤ g` for a natural number `g`, with the span hypothesis genuinely
+satisfiable via `HardlyRamifiedDeformation.isNoetherianRing`). Both leaves now
+carry the full audit; the `μ_ℓ` shadow of the phenomenon —
+`H¹(Γ ℚ, μ_ℓ) ≅ ℚˣ/(ℚˣ)^ℓ`, infinite, against the `S`-unit group `ℚ(S, ℓ)` of
+dimension `2` over `G_{ℚ,S}` — is the one-line version.
+
+The repair is asymmetric and is NOT made here: in degree `1` the missing
+unramified-outside-`S` condition is statable today with the tree's existing
+inertia subgroups, but in degree `2` `Sha2` genuinely needs `G_{ℚ,S}` as a
+group object, which still does not exist. Since that spans another owner's
+definition and two of their PROVEN consumers, it is left to a cut-level
+repair. -/
 noncomputable def Sha1Twist (ρbar : GaloisRep ℚ k V)
     (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
     Submodule k (continuousCohomology 1 (adZeroTwist ℓ ρbar)) :=
@@ -17722,8 +17743,95 @@ it keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to
 the prime `3`) inapplicable, so that route stays closed mathematically rather
 than merely by import scope.
 
+**FAITHFULNESS AUDIT, 2026-07-27 — THE `Γ ℚ` CONVENTION IS NOT BENIGN, AND
+THIS LEAF IS VACUOUS. DO NOT ATTEMPT IT; THE REPAIR IS UPSTREAM, IN `Sha2`.**
+
+This answers the question the `Sha1Twist` docstring above explicitly hands to
+"a future owner of either leaf". The answer is worse than that docstring's two
+alternatives allowed for: the convention does not leave this leaf false, it
+leaves it **true and empty**, and dumps the entire falsity onto
+`rank_sha1_twist_le_of_tangent_span` below. So the two leaves must be repaired
+TOGETHER, and neither in isolation.
+
+*The computation.* `S = hardlyRamifiedPlaces ℓ` has exactly TWO elements, and
+`k` is `Finite`, so `ad⁰` and `ad⁰(1)` are finite discrete `Γ ℚ`-modules
+(`dim_k ad⁰ = 3`). Then:
+
+* `dim_k H^n_cont(Γ ℚ, M) ≤ ℵ₀`: `ℚ` has countably many finite subextensions
+  of `ℚᵃˡᵍ`, so `Γ ℚ` is countably based and a continuous cochain into a
+  discrete finite `M` is locally constant, hence factors through one of
+  countably many finite quotients.
+* `dim_k H¹(Γ ℚ, ad⁰(1)) = ℵ₀` and `dim_k H²(Γ ℚ, ad⁰) = ℵ₀` — both INFINITE.
+  For `H¹`: inflation–restriction over `L = ℚ(M)` bounds it below by
+  `dim Hom_{Gal(L/ℚ)}(G_L^{ab}/ℓ, M)` minus a finite term, and every rational
+  prime `q` split completely in `L(ζ_ℓ)` contributes a further
+  `𝔽_ℓ[Gal(L/ℚ)]`-quotient (tame ray-class characters at the primes over `q`),
+  of which Chebotarev supplies infinitely many. For `H²`: the Poitou–Tate
+  sequence for the FULL group has `H²(Γ ℚ, M) → ⊕_{all v} H²(ℚ_v, M)` with
+  finite cokernel `H⁰(Γ ℚ, M*)^∨`, and `H²(ℚ_v, M) ≅ H⁰(ℚ_v, M*)^∨ ≠ 0` at
+  every `v` split completely in `ℚ(M*)`.
+* each `H^n(ℚ_v, M)` is FINITE, so `Sha2` and `Sha1Twist`, being kernels of
+  maps into a product over just two places, have FINITE CODIMENSION in those
+  infinite-dimensional spaces.
+
+Hence `Module.rank k Sha2 = ℵ₀ = Module.rank k Sha1Twist`. This leaf reads
+`ℵ₀ ≤ ℵ₀`: true, but by pure cardinality, with no Poitou–Tate content
+whatsoever. And `rank_sha1_twist_le_of_tangent_span` below reads `ℵ₀ ≤ g` for
+a natural number `g`, which is FALSE — see the matching audit there for why
+its span hypothesis is genuinely satisfiable (`HardlyRamifiedDeformation`
+carries `isNoetherianRing`, so `𝔪_{D.R}` is finitely generated, and that is
+derived from the structure field alone, NOT through any banned input).
+
+*The explicit witness, elementary and requiring no `ad⁰`.* Take `M = μ_ℓ`.
+Kummer theory gives `H¹(Γ ℚ, μ_ℓ) ≅ ℚˣ/(ℚˣ)^ℓ`, with an `𝔽_ℓ`-basis
+`{−1} ∪ {rational primes}` — infinite. The two local conditions land in
+`ℚ₂ˣ/(ℚ₂ˣ)^ℓ × ℚ_ℓˣ/(ℚ_ℓˣ)^ℓ`, of dimension `1 + 2 = 3` for odd `ℓ`. So the
+analogous `Ш¹_{2,ℓ}(μ_ℓ)` has codimension at most `3` in an
+infinite-dimensional space. Over `G_{ℚ,S}` the same group is the `S`-unit
+Selmer group `ℚ(S, ℓ)`, of dimension `2`. That gap — `2` against `ℵ₀` — is the
+whole defect, in one line.
+
+*Where the defect is.* Not here and not in `Sha1Twist`, but in `Sha2`, which
+took `H²` of the full `Γ ℚ`; `Sha1Twist` then inherited it deliberately, to
+stay coherent. This module's OWN machinery audit on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below specifies
+item (3) as `Ш²_S(ad⁰) = ker(H²(G_S, ad⁰) → ⨁_{v ∈ S} H²(ℚ_v, ad⁰))` — with
+`G_S` — and item (2) asks for finiteness of `Hⁱ_cont(Γ ℚ, ad⁰)` "in the
+restricted-ramification setting". That qualifier is load-bearing and is exactly
+what `Sha2` dropped. So this is an implementation slip against a correct
+written spec, not a considered convention.
+
+*Consequences, which reach past these two leaves.* `rank_sha2_le_of_tangent_span`
+and `rank_sha2_le_of_minimal_mvPowerSeries_presentation` below both conclude
+`rank Sha2 ≤ g` and are therefore false in the same way, notwithstanding that
+they are marked PROVEN — they are proven OVER these leaves, so they inherit,
+and each is another owner's declaration. `rank_relationSpace_le_of_rank_sha2_le`
+above is unaffected in form, since it takes `rank Sha2 ≤ n` as a HYPOTHESIS —
+but that hypothesis is now unsatisfiable for finite `n`, so it too is unusable
+until the repair lands.
+
+*The repair, and it is asymmetric.* Both `Sha2` and `Sha1Twist` must add the
+unramified-outside-`S` condition. In degree `1` that is statable TODAY without
+building `G_{ℚ,S}`: intersect additionally with `⨅_{v ∉ S}` of the kernel of
+restriction to the inertia subgroup at `v`, and `ValuationSubring.inertiaSubgroup`
+and `localInertiaGroup` already exist in this tree. In degree `2` there is no
+unramified description, so `Sha2` genuinely needs `G_{ℚ,S} = Gal(ℚ_S/ℚ)` as a
+group object, which `grep -rn "G_S\|restrictedGaloisGroup\|ramifiedOutside" Fermat/`
+confirms exists nowhere here (only in prose). That is a cut-level restatement
+spanning another owner's definition and two of their PROVEN consumers, so it is
+deliberately NOT done from this leaf.
+
+*The checks that would refute this audit*, in decreasing order of cheapness:
+(a) `grep -rn "def Sha2" Fermat/` — if it ever names anything but
+`Field.absoluteGaloisGroup ℚ`, the audit is stale; (b) exhibit a finite bound
+on `dim_𝔽_ℓ ℚˣ/(ℚˣ)^ℓ`, which Kummer theory forbids; (c) show `hardlyRamifiedPlaces ℓ`
+is infinite — it is the two-element set `{(2), (ℓ)}`; (d) show
+`HardlyRamifiedDeformation` does not carry `isNoetherianRing` — it does, at the
+structure definition above.
+
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
-(the nine-term sequence) and VII.2 (local duality); Darmon–Diamond–Taylor,
+(the nine-term sequence) and VII.2 (local duality), and VIII.3 for the
+finiteness of `Hⁱ(G_S, M)` that fails for `Γ ℚ`; Darmon–Diamond–Taylor,
 §2.6–2.7. -/
 theorem rank_sha2_le_rank_sha1_twist
     (hℓ5 : 5 ≤ ℓ)
@@ -17796,9 +17904,69 @@ is the check that would refute this. (The DISCRETE `groupCohomology` does have
 it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
 clause and for what `hℓ5` is doing.
 
+**FALSITY AUDIT, 2026-07-27 — THIS LEAF IS FALSE AS STATED. DO NOT ATTEMPT IT.
+The `Γ ℚ` convention inherited from `Sha2` is what makes it false, and the
+repair is a cut-level restatement of BOTH this leaf and
+`rank_sha2_le_rank_sha1_twist` above, driven by a restatement of `Sha2`
+itself.** The full computation is recorded on that leaf; only the part specific
+to this one is repeated here, since the split is exactly where a future owner
+may read one leaf without the other.
+
+*Why it is false.* `Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)` is the kernel of
+a map out of `H¹_cont(Γ ℚ, ad⁰(1))` — cohomology of the FULL absolute Galois
+group — into a product over the TWO places `{(2), (ℓ)}`. The source is
+infinite-dimensional over `k` (a class may ramify at any auxiliary prime
+outside `S`; Chebotarev supplies infinitely many usable ones), the target is
+finite-dimensional, so `Module.rank k (Sha1Twist …) = ℵ₀`. The conclusion
+demands `ℵ₀ ≤ (g : Cardinal)` for a natural number `g`. It fails for every `g`.
+
+Over `G_{ℚ,S} = Gal(ℚ_S/ℚ)`, which is what Greenberg–Wiles is stated for, the
+source is FINITE-dimensional and the bound is the theorem it is meant to be.
+The gap between the two groups is not the harmless one the `Sha1Twist`
+docstring above hoped for: it is the gap between a finite and an infinite
+dimension.
+
+*Why this is genuine falsity and not vacuity — the point that decides the
+verdict, and it does NOT go through the banned inputs.* One might hope the span
+hypothesis is unsatisfiable, leaving the leaf vacuously true. It is not:
+`HardlyRamifiedDeformation` carries `[isNoetherianRing : IsNoetherianRing R]`
+as a structure field, so `𝔪_{D.R}` is finitely generated, and any finite
+generating family `ts : Fin g → D.R` satisfies both `∀ i, ts i ∈ 𝔪` and
+`𝔪 ≤ span (range ts) ⊔ span {ℓ}`. That witness is derived from the structure
+field alone — not from `not_isIrreducible_of_isHardlyRamified_of_five_le`, not
+from `not_isIrreducible_of_isHardlyRamified_of_odd`, and not from anything
+proven over them. So the hypotheses of this leaf ARE reachable and the
+conclusion still fails: the leaf is false, not empty.
+
+The corollary matters for whoever repairs it. Since the ambient hypotheses
+`h`/`hirr`/`hℓ5` are exactly what this subtree exists to refute, the ONLY route
+that could ever close this leaf as written is the contradiction it is supposed
+to feed — which is precisely what the circularity guard below forbids. A leaf
+whose sole proof is the banned one is not a hard leaf; it is a mis-stated one.
+
+*What a proof attempt would look like from the inside*, recorded because the
+docstring above makes it sound merely expensive: the first bullet
+(`Ш¹_S ⊆ H¹_{L^⊥}`) and the Greenberg–Wiles formula are both fine as
+mathematics and both silently assume the `G_S` source. Building the local Tate
+pairing, the `oneCocycles` that `ContCohomology/LowDegree.lean` lacks, and the
+Euler characteristic formula would ALL succeed and still not close this leaf,
+because the object on the left of the inequality is the wrong one. That is why
+the cost audit above, though accurate, points at the wrong obstruction: the
+missing machinery is necessary and not sufficient, and no amount of it changes
+the verdict.
+
+*The refuting checks*: (a) `grep -rn "def Sha1Twist" -A6 Fermat/` — the source
+is `continuousCohomology 1 (adZeroTwist ℓ ρbar)` and `adZeroTwist` is a
+`TopRep k (Field.absoluteGaloisGroup ℚ)`, the full group; (b) show
+`hardlyRamifiedPlaces ℓ` is infinite — it is `{(2), (ℓ)}`; (c) show
+`HardlyRamifiedDeformation` lacks `isNoetherianRing` — it has it; (d) exhibit a
+finite bound on `dim_𝔽_ℓ ℚˣ/(ℚˣ)^ℓ`, the `μ_ℓ` shadow of the same phenomenon,
+which Kummer theory forbids.
+
 References: Washington's article in Cornell–Silverman–Stevens (the
 Greenberg–Wiles formula, and the local computations at `2`, `ℓ` and `∞`);
-Darmon–Diamond–Taylor, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII. -/
+Darmon–Diamond–Taylor, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII, and
+VIII.3 for the finiteness of `Hⁱ(G_S, M)` that fails over `Γ ℚ`. -/
 theorem rank_sha1_twist_le_of_tangent_span
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -17851,6 +18019,21 @@ archimedean term `−1`. Finally weak universality plus trace generation makes
 `D` universal (`isUniversal_of_isWeaklyUniversal_isTraceGenerated` above), so
 `D.R` pro-represents the hardly ramified functor and its mod-`ℓ` tangent
 space IS `H¹_L`; the hypothesis then reads `dim_k H¹_L ≤ g`.
+
+**WARNING, ADDED 2026-07-27 BY THE OWNER OF THE TWO LEAVES IMMEDIATELY ABOVE:
+THIS NODE IS MARKED PROVEN, BUT IT IS PROVEN OVER A LEAF THAT IS FALSE, SO ITS
+CONCLUSION IS NOT TO BE RELIED ON.** `Module.rank k (Sha2 ρbar (hardlyRamifiedPlaces ℓ))`
+is `ℵ₀`, because `Sha2` takes `H²` of the FULL `Γ ℚ` and cuts by only the two
+places of `hardlyRamifiedPlaces ℓ`; so `… ≤ (g : Cardinal)` for a natural
+number `g` is false here for exactly the reason it is false on
+`rank_sha1_twist_le_of_tangent_span` above. The `le_trans` below is valid, and
+what it transports is a false bound. The defect is `Sha2`'s use of `Γ ℚ` where
+this module's own machinery audit (item (3) on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below) specifies
+`G_S`; the full computation, the explicit `μ_ℓ` witness and the refuting checks
+are on `rank_sha2_le_rank_sha1_twist` above. The same warning applies to
+`rank_sha2_le_of_minimal_mvPowerSeries_presentation` below, which consumes this
+node. Repairing it is a cut-level restatement of `Sha2`, not a leaf edit.
 
 **STATUS 2026-07-27 (LATER THE SAME DAY): THIS NODE IS NO LONGER A LEAF, AND
 THE CUT THAT ITS OWN DOCSTRING PROPOSED HAS BEEN MADE.** The proposal was to
