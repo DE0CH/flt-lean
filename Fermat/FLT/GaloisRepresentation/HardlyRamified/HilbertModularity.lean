@@ -12643,7 +12643,248 @@ theorem isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum
     exact isOpen_iInter_of_finite fun i => isOpen_iInter_of_finite fun j =>
       hmopen.preimage ((hcont i j).sub continuous_const)
 
-/-- **The Taylor–Wiles Galois element over `F`** (LEAF — new 2026-07-26; the
+/-! #### The rank-two splitting criterion, and `char k ≠ 2`
+
+The five lemmas below are the mechanical half of the cut made at
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` (2026-07-27): over a field of
+characteristic `≠ 2` a monic quadratic splits with two DISTINCT roots exactly
+when its discriminant is a nonzero square, so that leaf's `∃ α β : k, α ≠ β ∧ …`
+can be traded for a single scalar `δ ≠ 0` with `δ² = b² − 4c`. The trade is an
+EQUIVALENCE, not a weakening — see the audit on
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` below.
+
+`char k ≠ 2` is where `hℓ5` is first genuinely consumed: `k` is the residue
+field of the datum's coefficient ring `𝒟.R`, which is a `ℤ_[ℓ]`-algebra, and
+`2` is a UNIT in `ℤ_[ℓ]` as soon as `ℓ ≠ 2`. -/
+
+/-- **Normal form of a monic degree-two polynomial** (PROVEN):
+`p = X² + C (p.coeff 1) * X + C (p.coeff 0)`, by comparing coefficients —
+`p.coeff 2 = 1` is monicity at `natDegree p = 2`, and every coefficient above
+`2` vanishes by `coeff_eq_zero_of_natDegree_lt`. -/
+theorem monic_natDegree_two_normalForm {k : Type*} [Field k] (p : Polynomial k)
+    (hm : p.Monic) (hd : p.natDegree = 2) :
+    p = Polynomial.X ^ 2 + Polynomial.C (p.coeff 1) * Polynomial.X
+      + Polynomial.C (p.coeff 0) := by
+  ext n
+  match n with
+  | 0 => simp
+  | 1 => simp
+  | 2 =>
+      have h2 : p.coeff 2 = 1 := by
+        have := hm.coeff_natDegree
+        rwa [hd] at this
+      simp [h2]
+  | (m + 3) =>
+      rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)]
+      simp [Polynomial.coeff_X_pow]
+
+/-- **Splitting a monic quadratic in normal form** (PROVEN): with `2 ≠ 0` and a
+square root `δ ≠ 0` of the discriminant `b² − 4c`, the roots are
+`(−b ± δ)/2`; they are distinct because their difference is `δ`, and they have
+sum `−b` and product `c` by `field_simp`. -/
+theorem exists_split_of_sq_eq_discrim_normalForm {k : Type*} [Field k]
+    (h2 : (2 : k) ≠ 0) (b c : k) {δ : k} (hδ : δ ≠ 0)
+    (hδ2 : δ ^ 2 = b ^ 2 - 4 * c) :
+    ∃ α β : k, α ≠ β ∧
+      Polynomial.X ^ 2 + Polynomial.C b * Polynomial.X + Polynomial.C c
+        = (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+  refine ⟨(-b + δ) / 2, (-b - δ) / 2, ?_, ?_⟩
+  · intro h
+    have h2δ : (2 : k) * δ = 0 := by
+      field_simp at h
+      linear_combination h
+    rcases mul_eq_zero.mp h2δ with h' | h'
+    · exact h2 h'
+    · exact hδ h'
+  · have hsum : (-b + δ) / 2 + (-b - δ) / 2 = -b := by field_simp; ring
+    have hprod : (-b + δ) / 2 * ((-b - δ) / 2) = c := by
+      field_simp
+      linear_combination -hδ2
+    rw [show (Polynomial.X - Polynomial.C ((-b + δ) / 2))
+          * (Polynomial.X - Polynomial.C ((-b - δ) / 2))
+        = Polynomial.X ^ 2
+          - Polynomial.C ((-b + δ) / 2 + (-b - δ) / 2) * Polynomial.X
+          + Polynomial.C ((-b + δ) / 2 * ((-b - δ) / 2)) by
+      rw [map_add, map_mul]; ring, hsum, hprod, map_neg]
+    ring
+
+/-- **The rank-two splitting criterion** (PROVEN): a monic degree-two polynomial
+over a field of characteristic `≠ 2` whose discriminant is a nonzero square
+splits with two DISTINCT roots. Normal form, then
+`exists_split_of_sq_eq_discrim_normalForm`. -/
+theorem exists_split_of_sq_eq_discrim {k : Type*} [Field k] (h2 : (2 : k) ≠ 0)
+    (p : Polynomial k) (hm : p.Monic) (hd : p.natDegree = 2)
+    {δ : k} (hδ : δ ≠ 0)
+    (hδ2 : δ ^ 2 = p.coeff 1 ^ 2 - 4 * p.coeff 0) :
+    ∃ α β : k, α ≠ β ∧
+      p = (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+  obtain ⟨α, β, hne, heq⟩ :=
+    exists_split_of_sq_eq_discrim_normalForm h2 (p.coeff 1) (p.coeff 0) hδ hδ2
+  exact ⟨α, β, hne, (monic_natDegree_two_normalForm p hm hd).trans heq⟩
+
+/-- **Two is nonzero in any field receiving a ring map from `ℤ_[ℓ]`, `ℓ ≠ 2`**
+(PROVEN): `‖(2 : ℤ_[ℓ])‖ = 1` because `ℓ` is a prime other than `2`, hence
+coprime to `2`, so `2` is a unit of `ℤ_[ℓ]`; ring maps carry units to units and
+`0` is not a unit of a field. -/
+theorem two_ne_zero_of_padicIntRingHom {ℓ : ℕ} [Fact ℓ.Prime] (hℓ : ℓ ≠ 2)
+    {k : Type*} [Field k] (φ : ℤ_[ℓ] →+* k) : (2 : k) ≠ 0 := by
+  have hp := (Fact.out : ℓ.Prime)
+  have hu : IsUnit ((2 : ℕ) : ℤ_[ℓ]) := by
+    rw [PadicInt.isUnit_iff, PadicInt.norm_natCast_eq_one_iff]
+    exact hp.coprime_iff_not_dvd.mpr fun h =>
+      hℓ ((Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp h)
+  have hu2 : IsUnit ((2 : ℕ) : k) := by
+    have := hu.map φ
+    rwa [map_natCast] at this
+  simpa using hu2.ne_zero
+
+/-- **The residual coefficient field has characteristic `≠ 2`** (PROVEN):
+`𝒟.π ∘ algebraMap ℤ_[ℓ] 𝒟.R` is a ring map `ℤ_[ℓ] →+* k`, and `ℓ ≥ 5 > 2`.
+
+This is the first place `hℓ5` does real work: without it `k` could have
+characteristic `2`, where a monic quadratic of nonzero discriminant need not
+split at all (Artin–Schreier), and the splitting criterion above would be
+false. -/
+theorem two_ne_zero_of_hilbertDeformationDatum {ℓ : ℕ} [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) : (2 : k) ≠ 0 :=
+  two_ne_zero_of_padicIntRingHom (by omega)
+    (𝒟.π.comp (algebraMap ℤ_[ℓ] 𝒟.R))
+
+/-- **The residual characteristic polynomials have degree two** (PROVEN):
+`LinearMap.charpoly_natDegree` plus `rank_eq_two_of_hilbertDeformationDatum`. -/
+theorem charpoly_natDegree_eq_two_of_hilbertDeformationDatum {ℓ : ℕ}
+    [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) (g : Γ F) :
+    (((ρbar.map (algebraMap ℚ F)) g).charpoly).natDegree = 2 := by
+  rw [LinearMap.charpoly_natDegree]
+  have h := rank_eq_two_of_hilbertDeformationDatum 𝒟
+  rw [← Module.finrank_eq_rank] at h
+  exact_mod_cast h
+
+/-- **The Taylor–Wiles Galois element over `F`, in discriminant form** (LEAF —
+new 2026-07-27; this is the whole mathematical content of
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` below, which is now PROVEN
+over it).
+
+In `G_F` there is an element `σ` acting trivially on all `ℓⁿ`-th roots of unity
+whose residual characteristic polynomial has DISCRIMINANT a nonzero square in
+`k`.
+
+**EQUIVALENCE AUDIT — this cut plants no falsity.** Over a field with `2 ≠ 0`,
+a monic quadratic `X² + bX + c` splits as `(X − α)(X − β)` with `α ≠ β` if and
+only if `b² − 4c = δ²` for some `δ ≠ 0`:
+
+* (⇐) is `exists_split_of_sq_eq_discrim` above, PROVEN, with `α, β = (−b ± δ)/2`;
+* (⇒) is the one-line converse `δ := α − β`, since `b = −(α + β)` and `c = αβ`
+  give `b² − 4c = (α + β)² − 4αβ = (α − β)²`, nonzero exactly when `α ≠ β`.
+  (Verified in a scratch module; not carried here as a declaration because
+  nothing consumes it and the free-floating rule forbids it. The check that
+  would refute the claim is to elaborate
+  `example {k : Type} [Field k] (α β : k) : (α + β) ^ 2 - 4 * (α * β)
+  = (α - β) ^ 2 := by ring`.)
+
+The hypotheses `𝒟₀` and `char k ≠ 2` needed for (⇐) are exactly the ones this
+statement already carries, so the two leaves have the same truth value: nothing
+is assumed here that was not assumed there, and nothing is concluded that was
+not concluded there.
+
+**WHY THIS IS NOT THE FORBIDDEN CUT.** The SHAPE AUDIT below forbids splitting
+this leaf into "restricted irreducibility" plus a PURE GROUP-THEORETIC half,
+because the group-theoretic half is false. This cut is different in kind: it
+discards no hypothesis at all — `hirrF`, `𝒟₀`, `hℓ5` and the μ_{ℓⁿ}-fixing
+clause all survive verbatim — and only rewrites the CONCLUSION through a proven
+equivalence of algebra. It moves no mathematics; it removes bookkeeping.
+
+**SHARPENED FALSITY AUDIT (2026-07-27), machine-checked, and it CORRECTS the
+correction.** The docstring below records that the "determinant image is large"
+hint is wrong because `σ` fixing `μ_{ℓⁿ}` forces `det ρbar|_{G_F}(σ) = 1` in
+residue characteristic `ℓ`. That is right, but it is not the end of the story,
+and the natural next attempt — *the determinant still constrains the AMBIENT
+group, even if it pins `σ` to `SL₂`* — is worth recording because it half-works
+and then fails:
+
+* Write `H = ρbar(G_{F(ζ_{ℓⁿ})}) ⊆ SL₂(k)` and `G = ρbar(G_F)`, so `G`
+  normalizes `H` and `det G = im χ̄_ℓ`. If `H` were the notorious `Q₈`, the
+  attempt SUCCEEDS: at `k = 𝔽₇` the normalizer `N_{GL₂(𝔽₇)}(Q₈)` has order
+  `144` and determinant image exactly `{1, 2, 4}` — the SQUARES — so a
+  surjective `χ̄_ℓ` is incompatible with it. **The `Q₈` counterexample is
+  genuinely excluded here.** (Enumerated over all `2401` matrices.)
+* But the attempt FAILS in general, and the reason is sharp: replace `Q₈` by
+  the FULL binary dihedral group `H = N(T_ns) ∩ SL₂(k)`, of order `2(q + 1)`
+  for `k = 𝔽_q`. At `q = ℓ = 7` (so `ℓ ≥ 5` and `ℓ ≡ 3 mod 4`) enumeration
+  gives `|T_ns| = 48`, `|N(T_ns)| = 96`, `|H| = 16`; `H` has NO common
+  eigenvector in `P¹(𝔽₇)`, so it is irreducible; and NO element of `H` has two
+  distinct `𝔽₇`-rational eigenvalues (torus elements have eigenvalues
+  `λ, λ⁷` with `λ⁸ = 1`, which lie in `𝔽₇` only for `λ = ±1`, giving equal
+  pairs; the `8` coset elements have trace `0` and determinant `1`, hence
+  charpoly `X² + 1`, irreducible since `−1` is a nonsquare mod `7`).
+  Meanwhile `det N(T_ns) = 𝔽₇ˣ` in full — the norm `k'ˣ → kˣ` of finite
+  fields is SURJECTIVE — so the determinant is satisfied with room to spare.
+
+**Conclusion: no determinant-size argument can close this leaf.** The
+group-theoretic half stays false after imposing `det = χ̄_ℓ` AND `σ ∈ ker χ̄_ℓ`,
+at a prime `ℓ ≥ 5`. Anyone who rediscovers the determinant idea should stop
+here. The check that would refute this paragraph is to exhibit an element of
+`N(T_ns) ∩ SL₂(𝔽₇)` with two distinct `𝔽₇`-rational eigenvalues; there is
+none.
+
+**SO WHERE MUST THE PROOF COME FROM? `isTameAtTwo`.** The remaining hypothesis
+that has not been used against the bad image is the local condition at `2`, and
+there is direct evidence it is the load-bearing one. Consider the nearest miss
+to a counterexample: the `ℓ`-adic Tate module of a CM elliptic curve over `ℚ`
+of `2`-power conductor — `y² = x³ − x`, conductor `32`, CM by `ℤ[i]` — at a
+prime `ℓ ≥ 5` INERT in `ℚ(i)`. It satisfies
+
+* `det = χ_ℓ` (Weil pairing) — the determinant clause, exactly;
+* unramified outside `2ℓ` (conductor `32`);
+* flat at `ℓ` (good reduction at `ℓ`, so the `ℓ`-divisible group is finite
+  flat);
+* and its image lies in the normalizer of a NONSPLIT torus — precisely the bad
+  shape above.
+
+It fails exactly one clause, `isTameAtTwo`, and necessarily so: a CM curve has
+potentially good reduction everywhere, and at a place `w ∤ ℓ` of good reduction
+the eigenvalues of `ρ(Frob_w)` are Weil numbers of absolute value `√(N w)`, so
+neither can be the value `±1` that an unramified quotient character `δ` with
+`δ² = 1` would demand. **`isTameAtTwo` therefore forces non-good reduction
+above `2` — the Frey-curve shape — and that is the only hypothesis left that
+can distinguish this leaf from the false group-theoretic statement.** A prover
+should attack it there, and an author asked to adjudicate faithfulness should
+ask precisely: *can a hardly ramified `F`-level datum be residually of
+nonsplit-torus-normalizer type at some `ℓ ≥ 5` with `#k ≡ 3 mod 4`?* If yes,
+this leaf is FALSE and the honest repair is to thread the quadratic enlargement
+of `k` through `IsTaylorWilesPrimeSet`, as the `ℚ`-level SHAPE AUDIT already
+recommends.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular the `ℚ`-level `exfalso`
+through `not_isIrreducible_of_isHardlyRamified_of_five_le` is FORBIDDEN. -/
+theorem exists_hilbertFixing_rootsOfUnity_discrim_isSquare
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
+    ∃ σ : Γ F,
+      (∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
+      ∃ δ : k, δ ≠ 0 ∧
+        δ ^ 2 = ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 1 ^ 2
+          - 4 * ((ρbar.map (algebraMap ℚ F)) σ).charpoly.coeff 0 :=
+  sorry
+
+/-- **The Taylor–Wiles Galois element over `F`** (PROVEN 2026-07-27 over
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above; the
 `F`-level twin of `Modularity/Patching.lean`'s
 `exists_fixing_rootsOfUnity_charpoly_split`).
 
@@ -12710,6 +12951,20 @@ References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
 Fujiwara, *Deformation rings and Hecke algebras in the totally real case*, §3;
 Skinner–Wiles, Duke 107 (2001), §2.
 
+**STATUS 2026-07-27: PROVEN, over the discriminant-form leaf
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` above.** The mathematical
+content is untouched — the two statements are EQUIVALENT (audit on that leaf) —
+and this declaration is now pure glue: take the `σ` and the square root `δ` of
+the discriminant, and split the residual charpoly by
+`exists_split_of_sq_eq_discrim`, whose two side conditions are supplied by
+`two_ne_zero_of_hilbertDeformationDatum` (this is where `hℓ5` is consumed, `2`
+being a unit of `ℤ_[ℓ]`) and
+`charpoly_natDegree_eq_two_of_hilbertDeformationDatum`. The SHAPE AUDIT above
+is unaffected: no hypothesis was discarded, so no group-theoretic leaf was
+planted. **The SHARPENED FALSITY AUDIT now lives on that leaf, and it
+machine-checks that no determinant-size argument can close this node** — read
+it before attempting a proof.
+
 CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
 `Modularity/*` or `Deformation.lean`. In particular the `ℚ`-level escape —
 discharging the twin by `exfalso` through the odd-prime dichotomy
@@ -12729,8 +12984,13 @@ theorem exists_hilbertFixing_rootsOfUnity_charpoly_split
         (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
       ∃ α β : k, α ≠ β ∧
         ((ρbar.map (algebraMap ℚ F)) σ).charpoly =
-          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) :=
-  sorry
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+  obtain ⟨σ, hfix, δ, hδ, hδ2⟩ :=
+    exists_hilbertFixing_rootsOfUnity_discrim_isSquare ℓ hℓ5 F hirrF 𝒟₀ n
+  exact ⟨σ, hfix,
+    exists_split_of_sq_eq_discrim (two_ne_zero_of_hilbertDeformationDatum hℓ5 𝒟₀)
+      _ (LinearMap.charpoly_monic _)
+      (charpoly_natDegree_eq_two_of_hilbertDeformationDatum 𝒟₀ σ) hδ hδ2⟩
 
 /-- **A single Taylor–Wiles prime of `F`** (PROVEN 2026-07-26 over the Galois
 element `exists_hilbertFixing_rootsOfUnity_charpoly_split`; the `F`-level twin
