@@ -2301,37 +2301,222 @@ structure BettiFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct 
 attribute [instance] BettiFrame.addCommGroup BettiFrame.module BettiFrame.finiteOD
   BettiFrame.torsionFree BettiFrame.freeInt BettiFrame.finiteInt
 
+namespace LevelFrame
+
+open _root_.NumberField
+
+/-- **From the residual count at every MAXIMAL ideal to the count at
+every NONZERO ideal** (PROVEN 2026-07-27).  Pure module theory over
+`𝒪_D`: no schemes, no abelian varieties, no rank-two hypothesis beyond
+the residual one.
+
+Given, for an `𝒪_D`-module `P`,
+
+* `hsurj` — surjectivity of `·π` from each torsion level onto the
+  previous one at every maximal ideal (divisibility), and
+* `hres`  — `#P[J] = #(𝒪_D/J)²` at every MAXIMAL `J`,
+
+the same count `#P[I] = #(𝒪_D/I)²` holds at every NONZERO `I`.
+
+THE ARGUMENT is the factorisation `I = ∏_J J^(e_J)` in the Dedekind
+domain `𝒪_D`, and it reuses the two pieces the `p`-case already needed:
+
+* `P[I] = ⨁_J P[J^(e_J)]` EXACTLY, because the `J^(e_J)` are pairwise
+  comaximal — mathlib's
+  `Submodule.isInternal_prime_power_torsion_of_is_torsion_by_ideal`,
+  which needs only `I ≠ ⊥`;
+* `#P[J^(e_J)] = #(𝒪_D/J)^(2·e_J) = #(𝒪_D/J^(e_J))²` by the tower lemma
+  `card_tors_pow` at `r = 2` together with `card_quotient_pow`;
+* `∏_J #(𝒪_D/J^(e_J)) = #(𝒪_D/I)` by multiplicativity of
+  `Ideal.absNorm`.
+
+WHY IT IS NOT `card_tors_eq_sq`.  That lemma *derives* the residual rank
+`r_J = 2` from parity, nonvanishing and the integer count at a rational
+prime `p`, and its conclusion is only at a maximal ideal.  This one takes
+the residual count as given and *propagates* it to all ideals.  The two
+compose in the obvious way but neither implies the other. -/
+theorem card_tors_eq_sq_of_ne_bot
+    {D : Type*} [Field D] [NumberField D]
+    {P : Type*} [AddCommGroup P] [Module (𝓞 D) P]
+    (hsurj : ∀ J : Ideal (𝓞 D), J.IsMaximal → ∀ π ∈ J, π ∉ J ^ 2 →
+      ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ k : Ideal (𝓞 D)) : Set (𝓞 D)) →
+        ∃ z ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ (k + 1) : Ideal (𝓞 D)) : Set (𝓞 D)),
+          π • z = y)
+    (hres : ∀ J : Ideal (𝓞 D), J.IsMaximal →
+      Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+        = Nat.card (𝓞 D ⧸ J) ^ 2)
+    (I : Ideal (𝓞 D)) (hI0 : I ≠ ⊥) :
+    Nat.card (Submodule.torsionBySet (𝓞 D) P ((I : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ I) ^ 2 := by
+  classical
+  set S : Finset (Ideal (𝓞 D)) := (UniqueFactorizationMonoid.factors I).toFinset with hSdef
+  set e : Ideal (𝓞 D) → ℕ := fun J => (UniqueFactorizationMonoid.factors I).count J with hedef
+  have hprod : ∏ J ∈ S, J ^ e J = I := by
+    rw [hSdef, hedef, ← Finset.prod_multiset_count, ← associated_iff_eq]
+    exact UniqueFactorizationMonoid.factors_prod hI0
+  have hprime : ∀ J ∈ S, Prime J := fun J hJ =>
+    UniqueFactorizationMonoid.prime_of_factor J (Multiset.mem_toFinset.mp hJ)
+  have hJbot : ∀ J ∈ S, J ≠ ⊥ := fun J hJ => (hprime J hJ).ne_zero
+  have hmax : ∀ J ∈ S, J.IsMaximal := fun J hJ =>
+    (Ideal.isPrime_of_prime (hprime J hJ)).isMaximal (hJbot J hJ)
+  have hlepow : ∀ J ∈ S, I ≤ J ^ e J := by
+    intro J hJ
+    rw [← hprod]
+    exact Ideal.dvd_iff_le.mp (Finset.dvd_prod_of_mem _ hJ)
+  -- ### the CRT splitting of `P[I]`
+  have hequiv : ∀ K : Ideal (𝓞 D), I ≤ K →
+      Nat.card (Submodule.torsionBySet (𝓞 D)
+          (Submodule.torsionBySet (𝓞 D) P ((I : Ideal (𝓞 D)) : Set (𝓞 D))) (K : Set (𝓞 D)))
+        = Nat.card (Submodule.torsionBySet (𝓞 D) P ((K : Ideal (𝓞 D)) : Set (𝓞 D))) := by
+    intro K hK
+    refine Nat.card_congr ⟨fun z => ⟨(z.1 : P), ?_⟩,
+      fun y => ⟨⟨(y : P), tors_mono hK y.2⟩, ?_⟩, fun _ => rfl, fun _ => rfl⟩
+    · rw [mem_tors_iff]
+      intro a ha
+      have h := (mem_tors_iff (P := (Submodule.torsionBySet (𝓞 D) P
+        ((I : Ideal (𝓞 D)) : Set (𝓞 D)))) K z.1).mp z.2 a ha
+      simpa using congrArg Subtype.val h
+    · rw [mem_tors_iff]
+      intro a ha
+      exact Subtype.ext (by simpa using (mem_tors_iff K (y : P)).mp y.2 a ha)
+  have hint := Submodule.isInternal_prime_power_torsion_of_is_torsion_by_ideal
+    (M := (Submodule.torsionBySet (𝓞 D) P ((I : Ideal (𝓞 D)) : Set (𝓞 D)))) hI0
+    (Submodule.torsionBySet_isTorsionBySet ((I : Ideal (𝓞 D)) : Set (𝓞 D)))
+  have hcardprod : Nat.card (Submodule.torsionBySet (𝓞 D) P ((I : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = ∏ J ∈ S, Nat.card (Submodule.torsionBySet (𝓞 D) P
+          ((J ^ e J : Ideal (𝓞 D)) : Set (𝓞 D))) := by
+    have h1 := Nat.card_congr (Equiv.ofBijective _ hint).symm
+    rw [h1, Nat.card_congr (DirectSum.linearEquivFunOnFintype (𝓞 D)
+      (ι := { x // x ∈ S }) (M := fun J : S =>
+        (Submodule.torsionBySet (𝓞 D)
+          (Submodule.torsionBySet (𝓞 D) P ((I : Ideal (𝓞 D)) : Set (𝓞 D)))
+          (((J : Ideal (𝓞 D)) ^ e (J : Ideal (𝓞 D)) : Ideal (𝓞 D)) : Set (𝓞 D))))).toEquiv,
+      Nat.card_pi]
+    rw [← Finset.prod_coe_sort S (fun J => Nat.card (Submodule.torsionBySet (𝓞 D) P
+      ((J ^ e J : Ideal (𝓞 D)) : Set (𝓞 D))))]
+    exact Finset.prod_congr rfl fun J _ => hequiv _ (hlepow J J.2)
+  -- ### the count at each prime power, from the tower lemma at `r = 2`
+  have hper : ∀ J ∈ S, Nat.card (Submodule.torsionBySet (𝓞 D) P
+      ((J ^ e J : Ideal (𝓞 D)) : Set (𝓞 D))) = Nat.card (𝓞 D ⧸ J ^ e J) ^ 2 := by
+    intro J hJ
+    obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal (hmax J hJ) (hJbot J hJ)
+    rw [card_tors_pow J (hmax J hJ) (hJbot J hJ) hπ hπ2
+      (hsurj J (hmax J hJ) π hπ hπ2) 2 (hres J (hmax J hJ)) (e J),
+      card_quotient_pow, ← pow_mul]
+    ring_nf
+  -- ### the same product, computed in the RING
+  have hringprod : ∏ J ∈ S, Nat.card (𝓞 D ⧸ J ^ e J) = Nat.card (𝓞 D ⧸ I) := by
+    have h1 : ∏ J ∈ S, Ideal.absNorm (J ^ e J) = Ideal.absNorm I := by
+      rw [← map_prod, hprod]
+    simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply] using h1
+  rw [hcardprod, Finset.prod_congr rfl hper, Finset.prod_pow, hringprod]
+
+end LevelFrame
+
 open _root_.NumberField in
-/-- **The homology of a geometric fibre exists** (sorry leaf — ABELIAN
-VARIETIES; Mumford *Abelian Varieties* §1 and §19, Milne *Abelian
+/-- **The homology of a geometric fibre exists** (DECOMPOSED 2026-07-27;
+one sorried `have` remains, and it is NO LONGER A HOMOLOGY STATEMENT —
+see below.  Mumford *Abelian Varieties* §1, §6, §19, Milne *Abelian
 Varieties* I.1–I.7, Silverman *AEC* VI for the elliptic case).
 
-**This is the one geometric input of the whole rank count.**  It replaces
-three separate leaves — the theorem of the cube, the nondegenerate
-polarized Weil pairing, and `End(A) ↪ End(T_p A)` — by the single
-classical statement that an abelian variety of dimension `g` in
-characteristic zero has a homology lattice of rank `2g` computing its
-torsion.
+**NO HOMOLOGY IS NEEDED, AND THIS IS THE POINT OF THE DECOMPOSITION.**
+The previous docstring said a prover must build the uniformization
+`A(ℂ) = (H₁ ⊗ ℝ)/H₁`, or étale homology `H₁^{ét}(A, ẑ)`, neither of
+which exists at this pin.  That is not so.  `BettiFrame` is an
+EXISTENTIAL over the module `H`, and every structural clause of it —
+`Module.Finite`, `Module.IsTorsionFree`, `Module.Free ℤ`,
+`Module.Finite ℤ` and the Betti number `finrank_int` — is satisfied
+outright by the FREE module `H := Fin 2 → 𝒪_D`, whose `ℤ`-rank is
+`2 · [D:ℚ]` by `NumberField.RingOfIntegers.rank`.  So the whole content
+of the leaf is the single `card_torsion` clause, and the homology is
+merely one way of producing it.
 
-WHAT A PROVER MUST BUILD.  Over `ℂ` this is the uniformization
-`A(ℂ) = (H₁ ⊗ ℝ)/H₁`; over a general algebraically closed field of
-characteristic zero it is the same statement after a choice of embedding,
-or equivalently the étale homology `H₁^{ét}(A, ẑ)` with its
-`ẑ`-lattice structure.  Neither singular nor étale homology of a scheme
-exists at this pin, which is precisely why this is the leaf.
+WHAT ACTUALLY REMAINS, in full: `#A[J] = #(𝒪_D/J)²` at every MAXIMAL
+`J`.  Two proven steps carry that to the stated frame:
 
-WHY `hdim` IS PRESENT.  It is what makes the Betti number `2 · [D:ℚ]`
-rather than `2 · dim A`: `hdim` says the relative dimension IS
-`Module.finrank ℚ D`.  Without it the statement is not merely harder, it
-is false at relative dimension `0` — see the section note above. -/
+* `LevelFrame.card_tors_eq_sq_of_ne_bot` (above) propagates the maximal
+  count to every NONZERO ideal, by the factorisation `I = ∏ J^(e_J)`,
+  the CRT splitting of the torsion, and the tower lemma — consuming the
+  already-proven divisibility leaf
+  `exists_mem_torsion_act_uniformizer_eq`;
+* `Module.card_quotient_ideal_smul_top_of_basis` computes
+  `#((Fin 2 → 𝒪_D) ⧸ I·(Fin 2 → 𝒪_D)) = #(𝒪_D/I)²` at an ARBITRARY
+  ideal (the Dedekind lemma next to it needs `I` maximal, which is not
+  enough here, since `Ideal.span {(N : 𝒪_D)}` is what
+  `card_torsion_span_natCast` feeds in).
+
+**CIRCULARITY WARNING — DO NOT DISCHARGE THE REMAINING `have` FROM THIS
+FILE.**  Its statement is verbatim that of `card_torsion_of_isMaximal`
+below, which is proven from `card_torsion_span_natCast`,
+`even_dim_torsion_of_isMaximal` and `card_torsion_ne_one_of_isMaximal`
+— and all three of those are proven from THIS leaf.  So the whole
+downstream chain is unavailable as an input here; citing any of it would
+close the loop and prove nothing.  This is not a defect introduced by
+the decomposition: it is a fact about the cluster that the decomposition
+makes visible, namely that `BettiFrame` carries exactly the information
+of `card_torsion_of_isMaximal` and no more.
+
+THE THREE HONEST ROUTES, all of which are inputs from OUTSIDE this
+cluster, and any ONE of which closes it:
+
+1. the classical triple, recombined by `LevelFrame.card_tors_eq_sq`:
+   the integer count `#A[p] = p^(2g)` (theorem of the cube — Mumford §6,
+   §18; the missing piece is a `degree` for the finite locally free
+   `[N]` of `Modularity/AbelianSchemeIsogeny.lean`), PARITY from a
+   nondegenerate `𝒪_D`-linear polarized Weil pairing (Mumford §16, §20,
+   §23 — note `PolarizationStruct` in `Modularity/AbelianScheme.lean` is
+   satisfied by the constant zero map and must be repaired first), and
+   NONVANISHING from `End(A) ↪ End(T_p A)` (Mumford §19);
+2. `H₁(A_x, ℤ)` itself — singular homology after an embedding
+   `F̄ ↪ ℂ`, or étale homology `H₁^{ét}(A, ẑ)`.  This remains a correct
+   route and it is the one the section note above describes; it is now
+   optional rather than forced;
+3. the rational Tate module: `V_ℓ(A)` free of rank `2` over `D ⊗ ℚ_ℓ`.
+
+WHY `hdim` IS PRESENT, AND WHERE IT IS CONSUMED.  It is what makes the
+count `#(𝒪_D/J)²` rather than `1`: without it the ambient statement is
+FALSE at relative dimension `0`, where `f = 𝟙 S` gives one-point
+geometric fibres (see the section note above).  It is therefore threaded
+INTO the sorried `have` as an explicit hypothesis rather than left
+dangling, so that the dependence is visible in the goal a successor
+sees.  Note that nothing else in the assembly uses it: the free witness
+`Fin 2 → 𝒪_D` and the propagation lemma are dimension-blind, exactly as
+they should be. -/
 theorem exists_bettiFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
     (m : Mult ab (NumberField.RingOfIntegers D))
     {F : Type u} [Field F] [NumberField F]
     (x : Spec (CommRingCat.of F) ⟶ S)
     (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
-    Nonempty (BettiFrame m x) :=
-  sorry
+    Nonempty (BettiFrame m x) := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+    m.module (specAlgClos F ≫ x)
+  /- **THE ONE REMAINING GEOMETRIC INPUT**: the `J`-torsion of a
+  geometric fibre of an abelian scheme of relative dimension `[D:ℚ]`
+  with real multiplication by `𝒪_D` has exactly `#(𝒪_D/J)²` points, at
+  every maximal `J`.  See the CIRCULARITY WARNING in the docstring: this
+  must be proven from outside the cluster. -/
+  have hres : SmoothOfRelativeDimension (Module.finrank ℚ D) f →
+      ∀ J : Ideal (NumberField.RingOfIntegers D), J.IsMaximal →
+        Nat.card (m.torsion x J).1
+          = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ 2 := sorry
+  have hall : ∀ I : Ideal (NumberField.RingOfIntegers D), I ≠ ⊥ →
+      Nat.card (m.torsion x I).1
+        = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ 2 := fun I hI =>
+    LevelFrame.card_tors_eq_sq_of_ne_bot (P := GeomFibrePt f x)
+      (fun J hJ π hπ hπ2 k y hy =>
+        exists_mem_torsion_act_uniformizer_eq m x J hJ π hπ hπ2 k y hy)
+      (hres hdim) I hI
+  refine ⟨{ H := Fin 2 → NumberField.RingOfIntegers D
+            finrank_int := ?_
+            card_torsion := fun I hI => ?_ }⟩
+  · rw [Module.finrank_pi_fintype ℤ (M := fun _ : Fin 2 => NumberField.RingOfIntegers D)]
+    simp [NumberField.RingOfIntegers.rank D, two_mul]
+  · rw [hall I hI, Module.card_quotient_ideal_smul_top_of_basis
+      (Pi.basisFun (NumberField.RingOfIntegers D) (Fin 2)) I]
+    simp
 
 open _root_.NumberField in
 /-- **A Betti frame has `𝒪_D`-rank two.**  This is the rank bridge
