@@ -5954,101 +5954,18 @@ so every unification step performed against it unfolds that chain, and a
 first attempt that argued directly about `frameRing ℓ k ⧸ J` blew the
 heartbeat limit in five separate places. Over an opaque `P` the same
 arguments elaborate in seconds and the frame ring enters only at the two
-one-line applications at the very end. -/
+one-line applications at the very end.
 
-/-- The endomorphism ring of `Rⁿ` is finite when `R` is. -/
-lemma finite_moduleEnd_finTwoFun (R : Type*) [CommRing R] [Finite R] :
-    Finite (Module.End R (Fin 2 → R)) :=
-  Finite.of_injective
-    (fun f : Module.End R (Fin 2 → R) => (f : (Fin 2 → R) → (Fin 2 → R)))
-    DFunLike.coe_injective
-
-/-- Over a finite discrete ring the module topology on `End R (R²)` — the
-topology a `FramedGaloisRep` is continuous into — is discrete. -/
-lemma discreteTopology_moduleEnd_finTwoFun (R : Type*) [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [DiscreteTopology R] [Finite R] :
-    @DiscreteTopology (Module.End R (Fin 2 → R))
-      (moduleTopology R (Module.End R (Fin 2 → R))) := by
-  haveI := finite_moduleEnd_finTwoFun R
-  haveI : Module.Finite R (Module.End R (Fin 2 → R)) := Module.Finite.of_finite
-  exact discreteTopology_moduleTopology R (Module.End R (Fin 2 → R))
-
-/-- **A framed representation over a finite discrete ring is locally
-constant**: the fibres of `g ↦ ρ g` are open. This is the form in which
-continuity of the two level representations is CONSUMED when the
-intersection level is built. -/
-lemma isOpen_setOf_framedGaloisRep_eq {R : Type u} [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [DiscreteTopology R] [Finite R]
-    (ρ : FramedGaloisRep ℚ R (Fin 2)) (g₀ : Field.absoluteGaloisGroup ℚ) :
-    IsOpen {g : Field.absoluteGaloisGroup ℚ | ρ g = ρ g₀} := by
-  letI := moduleTopology R (Module.End R (Fin 2 → R))
-  haveI := discreteTopology_moduleEnd_finTwoFun R
-  exact (isOpen_discrete {ρ g₀}).preimage ρ.continuous_toFun
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **A framed representation OUT OF a multiplicative, locally constant
-matrix family** over a finite discrete ring (PROVEN 2026-07-26).
-
-This is the constructor the intersection level needs and which the
-`pushforwardFrame` API cannot supply: `P ⧸ (J₁ ⊓ J₂)` is a FIBRE PRODUCT
-of the two levels, not a quotient or extension of either, so its
-representation has to be manufactured from its matrices. Multiplicativity
-of the matrices makes the monoid homomorphism; `hopen` — which is exactly
-what the two levels' own continuity provides, through
-`isOpen_setOf_framedGaloisRep_eq` — makes it continuous, the module
-topology on `End R (R²)` being discrete. -/
-noncomputable def framedGaloisRepOfMatrix {R : Type u} [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [DiscreteTopology R] [Finite R]
-    (N : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) R)
-    (hN1 : N 1 = 1) (hNmul : ∀ g h, N (g * h) = N g * N h)
-    (hopen : ∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | N g = N g₀}) :
-    FramedGaloisRep ℚ R (Fin 2) :=
-  letI : TopologicalSpace (Module.End R (Fin 2 → R)) :=
-    moduleTopology R (Module.End R (Fin 2 → R))
-  { toFun := fun g => Matrix.toLin' (N g)
-    map_one' := by rw [hN1]; exact Matrix.toLin'_one
-    map_mul' := fun g h => by rw [hNmul]; exact Matrix.toLin'_mul _ _
-    continuous_toFun := by
-      haveI := discreteTopology_moduleEnd_finTwoFun R
-      refine IsLocallyConstant.continuous ?_
-      refine IsLocallyConstant.iff_isOpen_fiber.mpr fun y => ?_
-      by_cases hy : ∃ g₀, (Matrix.toLin' (N g₀) : Module.End R (Fin 2 → R)) = y
-      · obtain ⟨g₀, rfl⟩ := hy
-        have hpre : (fun g => (Matrix.toLin' (N g) : Module.End R (Fin 2 → R))) ⁻¹'
-            {(Matrix.toLin' (N g₀) : Module.End R (Fin 2 → R))} =
-            {g : Field.absoluteGaloisGroup ℚ | N g = N g₀} := by
-          ext g
-          simp only [Set.mem_preimage, Set.mem_singleton_iff, Set.mem_setOf_eq]
-          exact ⟨fun h => Matrix.toLin'.injective h, fun h => by rw [h]⟩
-        rw [hpre]
-        exact hopen g₀
-      · have hpre : (fun g => (Matrix.toLin' (N g) : Module.End R (Fin 2 → R))) ⁻¹'
-            {y} = ∅ := by
-          ext g
-          simp only [Set.mem_preimage, Set.mem_singleton_iff,
-            Set.mem_empty_iff_false, iff_false]
-          exact fun h => hy ⟨g, h⟩
-        rw [hpre]
-        exact isOpen_empty }
-
-set_option backward.isDefEq.respectTransparency false in
-lemma apply_framedGaloisRepOfMatrix {R : Type u} [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [DiscreteTopology R] [Finite R]
-    (N : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) R)
-    (hN1 : N 1 = 1) (hNmul : ∀ g h, N (g * h) = N g * N h)
-    (hopen : ∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | N g = N g₀})
-    (g : Field.absoluteGaloisGroup ℚ) :
-    (framedGaloisRepOfMatrix N hN1 hNmul hopen) g = Matrix.toLin' (N g) := rfl
-
-set_option backward.isDefEq.respectTransparency false in
-lemma toMatrix'_framedGaloisRepOfMatrix {R : Type u} [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [DiscreteTopology R] [Finite R]
-    (N : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) R)
-    (hN1 : N 1 = 1) (hNmul : ∀ g h, N (g * h) = N g * N h)
-    (hopen : ∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | N g = N g₀})
-    (g : Field.absoluteGaloisGroup ℚ) :
-    LinearMap.toMatrix' (framedGaloisRepOfMatrix N hN1 hNmul hopen g) = N g := by
-  rw [apply_framedGaloisRepOfMatrix, LinearMap.toMatrix'_toLin']
+RELOCATED 2026-07-27 (the Break-D hoist). The first six lemmas of this block —
+`finite_moduleEnd_finTwoFun`, `discreteTopology_moduleEnd_finTwoFun`,
+`isOpen_setOf_framedGaloisRep_eq`, `framedGaloisRepOfMatrix`,
+`apply_framedGaloisRepOfMatrix`, `toMatrix'_framedGaloisRepOfMatrix` — moved
+VERBATIM to `Fermat/FLT/Modularity/MoretBailly.lean`, which is upstream of
+`HilbertModularity.lean` and hence of this file, and they are still visible here
+through that import chain. They had to move because the Moret–Bailly chain,
+which is upstream of this module, uses `framedGaloisRepOfMatrix` in
+`exists_dihedralOddGaloisRep_of_charThree`; they depend on nothing in this file,
+so the move is a pure relocation. -/
 
 /-- **The matrix of a pushed-forward frame is the entrywise image**
 (PROVEN 2026-07-25; HOISTED here 2026-07-26 from its old home far below
