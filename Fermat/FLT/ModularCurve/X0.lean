@@ -1076,6 +1076,171 @@ theorem subsingleton_hom_specQ (X : Scheme.{0}) : Subsingleton (X ⟶ SpecQ) := 
   apply AlgebraicGeometry.ext_to_Spec
   exact CommRingCat.hom_ext (Subsingleton.elim _ _)
 
+/-! #### fpqc is NOT fppf: a cover of `Spec ℚ̄` need not split
+
+The three declarations below exist for ONE purpose — to keep a route that
+this file recorded as available, and that reads as obviously available,
+from being taken again.  They are stated and proven rather than left as
+prose because the claim they refute was itself stated in prose, twice, and
+survived both times.
+
+**The claim.**  `Gamma0Atlas.cover` (and its twin
+`Gamma0GITPresentation.cover`) rigidifies a `Γ₀(N)`-datum only after a
+base change `p : T' ⟶ T` that is flat, surjective and quasi-compact.  A
+docstring of this file once inferred that at `T = Spec ℚ̄` such a `p` "has
+a section — an fppf cover of the spectrum of an algebraically closed field
+is split", and offered as *the check that would refute this route*: "exhibit
+a faithfully flat quasi-compact `T' ⟶ Spec ℚ̄` with `T'` nonempty admitting
+no section; there is none, since `T'` has a closed point whose residue field
+is a finite extension of `ℚ̄`, hence `ℚ̄` itself."
+
+**That check has fired.**  `exists_fpqc_no_section_specAlgClos` below is
+the witness, and it is as small as a counterexample gets:
+`Spec ℚ̄(t) ⟶ Spec ℚ̄`.  Every module over a field is flat; both schemes
+are one-point and affine, so the map is surjective and quasi-compact; and
+a section would be a `ℚ̄`-algebra retraction `ℚ̄(t) → ℚ̄`, which is
+injective because `ℚ̄(t)` is a field — so it would force `t ∈ ℚ̄`.
+
+**Where the quoted argument breaks.**  "`T'` has a closed point whose
+residue field is a finite extension of `ℚ̄`" is the Nullstellensatz, and it
+needs `p` to be **locally of finite presentation**.  fppf = *faithfully
+flat + locally of finite presentation*, and locally-of-finite-presentation
+is exactly the hypothesis `cover` does NOT carry: `cover` is **fpqc**.
+`Spec ℚ̄(t)` is a single point, and that point is closed, with residue
+field `ℚ̄(t)` — an infinite-degree extension of `ℚ̄`.  So: fppf ⇒ split over
+an algebraically closed field, fpqc ⇏ split, and `cover` is the weaker one.
+
+**What this does and does not cost the development.**  Nothing on `main`
+currently depends on the false claim: the surjectivity half of geometric
+bijectivity — the one place the section was wanted — is instead PROVEN, in
+`Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint`, by lifting a
+`ℚ̄`-point of `Spec A^G` to `Spec A` along an *integral* extension.  That is
+why the cut for both halves is at the GIT presentation and not at the bare
+atlas: an arbitrary `Gamma0Atlas` gives no reason for `M ⟶ Y` to be
+surjective on `ℚ̄`-points either, since `quotient` forces only that `M ⟶ Y`
+be an epimorphism, and epimorphisms of schemes (flat monomorphisms, for
+instance) need not be surjective.
+
+The injectivity half is still open, inside `exists_gamma0Datum_specQ_of_ratPoint`
+as its hypothesis `hd`; a successor there is the reader this section is
+written for.
+
+*The check that would refute THIS section*: exhibit a section of
+`Spec ℚ̄(t) ⟶ Spec ℚ̄`, or a proof that `Gamma0Atlas.cover`'s `p` is locally
+of finite presentation.  Neither exists — the field's conclusion lists
+`Flat`, `Surjective` and `QuasiCompact` and nothing else. -/
+
+/-- **`Spec` of a homomorphism of FIELDS is an fpqc cover** (PROVEN
+2026-07-27): flat, surjective and quasi-compact, with no hypothesis on the
+homomorphism at all.
+
+Each of the three for its own trivial reason.  `L` is a nonzero
+`K`-vector space, hence free, hence flat.  Both spectra are single points,
+so surjectivity is `Subsingleton.elim`.  And `QuasiCompact` is an instance
+here, `Spec` of a ring being a compact space.
+
+This packages, as a reusable statement, the two facts that
+`epi_specMap_of_fieldHom` (below, in the geometric-base-point section)
+establishes inside its own proof on the way to `Epi`; that lemma is left
+as it stands, and a later reader may re-base it on this one. -/
+theorem fpqc_specMap_of_fieldHom {K L : Type} [Field K] [Field L] (ι : K →+* L) :
+    Flat (Spec.map (CommRingCat.ofHom ι)) ∧ Surjective (Spec.map (CommRingCat.ofHom ι)) ∧
+      QuasiCompact (Spec.map (CommRingCat.ofHom ι)) := by
+  refine ⟨?_, ?_, inferInstance⟩
+  · rw [AlgebraicGeometry.Flat.SpecMap_iff]
+    show RingHom.Flat ι
+    letI : Algebra K L := ι.toAlgebra
+    exact (inferInstance : Module.Flat K L)
+  · constructor
+    haveI : Subsingleton (Spec (CommRingCat.of K)) :=
+      inferInstanceAs (Subsingleton (PrimeSpectrum K))
+    haveI : Nonempty (Spec (CommRingCat.of L)) :=
+      inferInstanceAs (Nonempty (PrimeSpectrum L))
+    intro _
+    exact ⟨Classical.arbitrary _, Subsingleton.elim _ _⟩
+
+/-- **A proper extension of fields gives a `Spec` map with NO section**
+(PROVEN 2026-07-27) — the general form of the refutation above, with no
+algebraic closedness and no modular curve in it.
+
+A section `s` of `Spec.map (CommRingCat.ofHom ι)` is, by full faithfulness
+of `Spec` on affines (`Spec.map_injective`, `Spec.map_preimage`), exactly a
+ring retraction `φ : L →+* K` with `φ ∘ ι = id`.  `L` is a field and `K` is
+nontrivial, so `φ` is injective; and then for every `y : L`,
+`φ (ι (φ y)) = φ y` forces `ι (φ y) = y`.  So a section makes `ι`
+SURJECTIVE — i.e. an isomorphism of fields.
+
+Note how little is used: no finiteness, no separability, no
+characteristic.  The obstruction is not subtle, which is the point — the
+"cover of `Spec` of an algebraically closed field splits" intuition is
+importing local finite presentation without saying so. -/
+theorem not_exists_section_specMap_of_fieldHom {K L : Type} [Field K] [Field L] (ι : K →+* L)
+    (hι : ¬ Function.Surjective ι) :
+    ¬ ∃ s : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of L),
+        s ≫ Spec.map (CommRingCat.ofHom ι) = 𝟙 (Spec (CommRingCat.of K)) := by
+  rintro ⟨s, hs⟩
+  have hmap : Spec.map (CommRingCat.ofHom ι ≫ Spec.preimage s)
+      = Spec.map (𝟙 (CommRingCat.of K)) := by
+    rw [Spec.map_comp, Spec.map_id, Spec.map_preimage]
+    exact hs
+  have hcomp : (Spec.preimage s).hom.comp ι = RingHom.id K :=
+    congrArg CommRingCat.Hom.hom (Spec.map_injective hmap)
+  refine hι fun y => ⟨(Spec.preimage s).hom y, ?_⟩
+  have hinj : Function.Injective (Spec.preimage s).hom := RingHom.injective _
+  refine hinj ?_
+  show (Spec.preimage s).hom (ι ((Spec.preimage s).hom y)) = (Spec.preimage s).hom y
+  exact congrFun (congrArg (fun f : K →+* K => (f : K → K)) hcomp) _
+
+/-- **REFUTATION (2026-07-27): an fpqc cover of `Spec ℚ̄` need not split**,
+in exactly the shape the retired route audit invited — "a faithfully flat
+quasi-compact `T' ⟶ Spec ℚ̄` with `T'` nonempty admitting no section".
+
+The witness is `T' = Spec ℚ̄(t)`, presented as
+`Spec (FractionRing ℚ̄[X]) ⟶ Spec ℚ̄` with the structure map
+`algebraMap ℚ̄[X] (FractionRing ℚ̄[X]) ∘ Polynomial.C`.  `T'` is nonempty
+(a field has a prime spectrum); flatness, surjectivity and
+quasi-compactness are `fpqc_specMap_of_fieldHom`; and the absence of a
+section is `not_exists_section_specMap_of_fieldHom`, whose hypothesis is
+discharged by the one arithmetic fact in the whole argument — `C a = X` is
+false in `ℚ̄[X]`, by degree.
+
+So this is NOT a statement about `ℚ̄` being small; it holds over every
+field.  Algebraic closedness is a red herring here, and recognising that is
+the content of the refutation: closedness controls *finite* covers, and
+`cover` is not a finite cover — it is only fpqc.
+
+CONSUMED BY NOTHING, deliberately, exactly as
+`IsogenyTrace.not_exists_dual` is.  A refutation earns its place by being
+checkable by the compiler rather than by being cited; the route it closes
+is recorded in the section comment above and pointed at from
+`Gamma0Atlas.cover`. -/
+theorem exists_fpqc_no_section_specAlgClos :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+      Nonempty T' ∧ Flat p ∧ Surjective p ∧ QuasiCompact p ∧
+        ¬ ∃ s : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ T',
+            s ≫ p = 𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))) := by
+  have hns : ¬ Function.Surjective
+      ((algebraMap (Polynomial (AlgebraicClosure ℚ))
+          (FractionRing (Polynomial (AlgebraicClosure ℚ)))).comp
+        (Polynomial.C : AlgebraicClosure ℚ →+* Polynomial (AlgebraicClosure ℚ))) := by
+    intro h
+    obtain ⟨a, ha⟩ := h (algebraMap (Polynomial (AlgebraicClosure ℚ))
+      (FractionRing (Polynomial (AlgebraicClosure ℚ))) Polynomial.X)
+    have hCX : (Polynomial.C a : Polynomial (AlgebraicClosure ℚ)) = Polynomial.X :=
+      IsFractionRing.injective (Polynomial (AlgebraicClosure ℚ))
+        (FractionRing (Polynomial (AlgebraicClosure ℚ))) ha
+    have hdeg := congrArg Polynomial.natDegree hCX
+    rw [Polynomial.natDegree_C, Polynomial.natDegree_X] at hdeg
+    exact zero_ne_one hdeg
+  obtain ⟨hflat, hsurj, hqc⟩ := fpqc_specMap_of_fieldHom
+    ((algebraMap (Polynomial (AlgebraicClosure ℚ))
+        (FractionRing (Polynomial (AlgebraicClosure ℚ)))).comp
+      (Polynomial.C : AlgebraicClosure ℚ →+* Polynomial (AlgebraicClosure ℚ)))
+  exact ⟨Spec (CommRingCat.of (FractionRing (Polynomial (AlgebraicClosure ℚ)))), _,
+    inferInstanceAs
+      (Nonempty (PrimeSpectrum (FractionRing (Polynomial (AlgebraicClosure ℚ))))),
+    hflat, hsurj, hqc, not_exists_section_specMap_of_fieldHom _ hns⟩
+
 /-- **A Katz–Mazur atlas for the `Γ₀(N)`-moduli problem over `ℚ`**: the
 data Katz–Mazur (8.1.1) and (8.1.3) actually construct, before any
 universal property is asserted.
@@ -1154,7 +1319,26 @@ structure Gamma0Atlas (N : ℕ) where
   `g : T ⟶ SpecQ` in scope, because `IsCoarseModuliY0` quantifies over
   `S`-schemes throughout.  `_g` is a *hypothesis on `T`*, not data the
   field uses — hence the underscore; by `subsingleton_hom_specQ` it is
-  unique when it exists. -/
+  unique when it exists.
+
+  **ROUTE AUDIT (2026-07-27): THIS FIELD IS fpqc, NOT fppf — DO NOT
+  ASSUME IT SPLITS OVER `Spec ℚ̄`.**  The conclusion lists exactly `Flat`,
+  `Surjective` and `QuasiCompact`; there is no *locally of finite
+  presentation*, and the producer's finite étale cover is not recorded
+  here.  So the inference "at `T = Spec ℚ̄` the cover has a section,
+  because a cover of the spectrum of an algebraically closed field is
+  split" is UNAVAILABLE, and it is not merely unproven — it is false at
+  this strength.  The witness is `Spec ℚ̄(t) ⟶ Spec ℚ̄`, formalised as
+  `exists_fpqc_no_section_specAlgClos` above, together with the section
+  comment there recording where the Nullstellensatz argument breaks.
+
+  A successor who wants a section at `Spec ℚ̄` must either strengthen this
+  field to carry local finite presentation — which the Katz–Mazur
+  construction does supply, the rigidifying torsor being finite étale — or
+  avoid sections altogether, which is what the tree actually does:
+  `Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint` gets the
+  `ℚ̄`-point it needs by lifting along an INTEGRAL extension `A^G ⊆ A`
+  instead. -/
   cover : ∀ {T : Scheme.{0}} (_g : T ⟶ SpecQ) (d : Gamma0Datum N T),
     ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T') (m : T' ⟶ M),
       AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
@@ -9226,7 +9410,19 @@ would have to be produced before it could be compared.  A successor who wants
 to split that off should state it as
 `classify _ d₁ = classify _ d₂ → Nonempty (IsBaseChangeOf (𝟙 _) d₁ d₂)` and
 obtain `σ^*d` from `exists_gamma0Datum_baseChange (specGal σ) d`, both of which
-are now available. -/
+are now available.
+
+**AND WHEN YOU DO, DO NOT ROUTE IT THROUGH A SECTION OF THE RIGIDIFYING COVER
+(2026-07-27).**  The natural attack on that split — rigidify `d₁` and `d₂` over
+`ℚ̄` by pulling `Gamma0Atlas.cover` back along a section, then compare the two
+resulting `ℚ̄`-points of `M` — is NOT available.  `cover` is *fpqc*, not fppf,
+and an fpqc cover of `Spec ℚ̄` need not split: the witness is
+`Spec ℚ̄(t) ⟶ Spec ℚ̄`, proven as `exists_fpqc_no_section_specAlgClos`.  The
+rigidification over `ℚ̄` has to be ASKED FOR — it is true, an elliptic curve
+over an algebraically closed field of characteristic zero carrying a full
+level-`n` structure because `E[n](ℚ̄) ≅ (ℤ/n)²`, but it does not follow from
+the atlas fields as they stand.  See the section comment before
+`Gamma0Atlas`. -/
 theorem exists_gamma0Datum_specQ_of_ratPoint {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
     (hY : IsCoarseModuliY0 N str) (y : RelPoint str (𝟙 SpecQ))
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
