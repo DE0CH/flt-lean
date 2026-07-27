@@ -43,6 +43,24 @@ public import Mathlib.RingTheory.Flat.Domain
 -- `hasFlatProlongationAt_trivialQuotChar_of_base` is proved in this module and
 -- consumes it, so the import is public.
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
+-- CARTIER DUALITY, and specifically `(R3)` — "an extension of multiplicative
+-- type by multiplicative type is of multiplicative type" — which is the
+-- requirement `exists_unramified_grouplike_family_generating_corner` below
+-- consumes, and which `ShortExact.lean` states and assembles as
+-- `HopfAlgebra.isMultiplicativeType_of_isShortExact` over `IsMultiplicativeType`
+-- ("the Cartier dual is étale"). The assembly is written and compiles; it rests
+-- on two open leaves in that module, `HopfAlgebra.IsShortExact.cartierDual`
+-- (exactness of duality) and `HopfAlgebra.etale_of_isShortExact` (an extension
+-- of étale by étale is étale — the elementary half, whose henselian route this
+-- file's survey below records). `CartierDualExamples` supplies the dictionary
+-- between the two descriptions of the corner: `dualGroupAlgebraBialgEquiv`
+-- identifies `CartierDual R (MonoidAlgebra R G)` with `GroupFunctions R G`,
+-- which is exactly what turns the étaleness of `GroupFunctions` proved in this
+-- file (`hasFlatProlongationAt_trivialQuotChar_of_base`) into
+-- `IsMultiplicativeType` for the diagonalizable corner. Both imports are public
+-- because the consuming statements are the ones named above.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.ShortExact
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDualExamples
 -- the `μ`-typed factor of the Eisenstein member: the group-algebra Hopf
 -- structure `MonoidAlgebra.instHopfAlgebra` (the diagonalizable group scheme
 -- `Spec 𝒪ᵥ[D]`), its base change `MonoidAlgebra.scalarTensorEquiv`, and

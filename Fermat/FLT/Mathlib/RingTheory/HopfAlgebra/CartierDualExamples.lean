@@ -2,9 +2,14 @@
 Copyright (c) 2026 Deyao Chen. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
-import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
-import Mathlib.Data.ZMod.Basic
+module
+
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
+-- the third commissioned Cartier-duality example, `α_p^D ≅ α_p`; collected here so that all
+-- three are built together. Organizational, not a proof dependency — see "The third example".
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.AlphaPSelfDual
+public import Mathlib.Data.ZMod.Basic
 
 /-!
 # Cartier duality: the constant and diagonalizable examples
@@ -25,13 +30,27 @@ automatically.
 The concrete instantiations at `ZMod n` are `CartierDual.muDualEquivZMod` and
 `CartierDual.zmodDualEquivMu`.
 
-## What is NOT here
+## The third example
 
-`α_p^D ≅ α_p` is missing, and it is a THEORY gap rather than a proof gap: the Hopf algebra
-`O(𝔾_a) = R[X]` with ADDITIVE comultiplication `Δ X = X ⊗ 1 + 1 ⊗ X` exists nowhere — not in the
-mathlib pin, not in `~/cs/FLT`, not in this tree. Mathlib's only polynomial-shaped Hopf algebras
-are `(Add)MonoidAlgebra`'s, whose comultiplication is grouplike, giving `𝔾_m` rather than `𝔾_a`.
-See the "What remains" section at the end of `CartierDual.lean` for the full route.
+`α_p^D ≅ α_p` is **PROVEN** (2026-07-27), in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/AlphaPSelfDual.lean` as
+`AlphaP.selfDualBialgEquiv`, over the Hopf algebra `AlphaP R p` of
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/AlphaP.lean`.
+
+STALE NOTE CORRECTED (2026-07-27): this section previously recorded `α_p^D ≅ α_p` as missing and
+as a THEORY gap, on the ground that `O(𝔾_a) = R[X]` with ADDITIVE comultiplication exists in
+neither the mathlib pin, nor `~/cs/FLT`, nor this tree. That premise is still true and the
+conclusion drawn from it was still wrong: `𝔾_a` is not needed, because building `α_p` DIRECTLY as
+`AdjoinRoot (X^p)` skips the ambient group and the Hopf-ideal quotient entirely. The content is
+the divided-power pairing `y^m = m! · e_m`, with `m!` a unit for `m < p`.
+
+This module imports `AlphaPSelfDual` so that all three commissioned examples are collected — and
+therefore COMPILED — as one unit. That import is organizational, not a proof dependency: nothing
+below uses `AlphaP`. It is here because the whole Cartier-duality cluster was unreachable from
+`Fermat.lean` until 2026-07-27 and so was never built by `lake build` at all; a module no module
+in the root's import closure imports is invisible to the build, to the `declaration uses 'sorry'`
+warning set, and to the transitive census, and can rot silently. If a later owner gives `AlphaP` a
+real consumer, this import should move there.
 
 ## Design notes
 
@@ -55,6 +74,8 @@ Hence the `[CommGroup G]` hypothesis throughout; it is not a convenience.
 * Tate, *Finite flat group schemes*, in Cornell–Silverman–Stevens, §2.
 * Waterhouse, *Introduction to Affine Group Schemes*, ch. 2.
 -/
+
+@[expose] public section
 
 open TensorProduct Coalgebra WithConv
 

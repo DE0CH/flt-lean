@@ -2,9 +2,11 @@
 Copyright (c) 2026 Deyao Chen. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
-import Mathlib.RingTheory.RingHom.FaithfullyFlat
-import Mathlib.RingTheory.Etale.Basic
+module
+
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.CartierDual
+public import Mathlib.RingTheory.RingHom.FaithfullyFlat
+public import Mathlib.RingTheory.Etale.Basic
 
 /-!
 # Short exact sequences of finite flat commutative group schemes, and exactness of Cartier duality
@@ -109,6 +111,8 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * Takeuchi, *A correspondence between Hopf ideals and sub-Hopf algebras* (the faithfully flat
   formulation used here).
 -/
+
+@[expose] public section
 
 open TensorProduct Coalgebra
 
