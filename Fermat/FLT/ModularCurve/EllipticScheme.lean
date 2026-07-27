@@ -106,10 +106,15 @@ own branch and wrong once the others landed:
 * `isIso_projBaseChangeHom` — all that is left of `hbc`, base change for `Proj`;
 * `exists_coordinateRingEquiv_projChartRing` and `compl_basicOpen_projCoord_two`
   — the two halves of `exists_affineChart_projModel` described above;
-* `exists_weierstrassModel_of_ellipticScheme` and
+* `exists_affineComplement_zeroSection`,
+  `exists_weierstrassRingEquiv_of_affineComplement`,
+  `isElliptic_of_isOpenImmersion_coordinateRing` and
   `exists_geomFibreAddEquiv_of_weierstrassModel` — the Weierstrass-comparison
-  pair further down, which belong to a different node and are listed here only
-  so that this count matches the compiler's.
+  cluster further down, which belongs to a different node and is listed here
+  only so that this count matches the compiler's.
+  (`exists_weierstrassModel_of_ellipticScheme` was a leaf here until
+  2026-07-27 and is now PROVEN from the first three, which are its
+  affineness / Riemann–Roch / discriminant thirds.)
 
 The whole "Dehomogenisation" section is now PROVEN — `exists_projChartRingEquiv`,
 `projChart_jacobian_span_eq_top` and
@@ -4109,7 +4114,9 @@ abelian variety of higher dimension — carrying the rational point
 
 * `exists_weierstrassModel_of_ellipticScheme` is **Riemann–Roch**: the
   linear system `|3·[O]|` embeds `A` in `ℙ²` as a Weierstrass cubic, and the
-  complement of `O` is `Spec ℚ[E]`.
+  complement of `O` is `Spec ℚ[E]`.  (PROVEN 2026-07-27 from three leaves —
+  affineness of the complement, Riemann–Roch proper, and `Δ ≠ 0`; see the
+  subsection heading immediately before it.)
 * `exists_geomFibreAddEquiv_of_weierstrassModel` is **rigidity**: a group
   law on a genus-one curve is determined by its identity section, so the
   functor-of-points law `ab` and the chord–tangent law on `E` — which have
@@ -4126,11 +4133,219 @@ the rigidity theorem that `exists_projGroupLaw_geomFibreAddEquiv`'s audit
 already names as absent from mathlib and from `~/cs/FLT`.  Splitting them
 means a prover at either one need not carry the other. -/
 
-/-- **An elliptic scheme over `Spec ℚ` has a Weierstrass model** (sorry
-node, introduced 2026-07-27): the coordinate half of the reverse bridge.
+/-! #### The three leaves of `exists_weierstrassModel_of_ellipticScheme`
+
+(Cut 2026-07-27.  The node was a single `sorry` before; it is PROVEN below
+from the three declarations of this subsection.)
+
+The classical proof (Silverman *AEC* III.3.1, Hartshorne IV.1) runs
+`A` ⟶ `A ∖ O` ⟶ `Γ(A ∖ O)` ⟶ Weierstrass equation, and the cut follows
+that chain exactly, so that no two leaves share a difficulty:
+
+1. `exists_affineComplement_zeroSection` — **the complement of the zero
+   section is AFFINE**.  Pure scheme theory: the zero section of a proper
+   morphism is a closed immersion, so its complement is an open subscheme,
+   and on a curve the complement of a nonempty closed subset of the
+   (irreducible, proper) total space is affine.  No linear system and no
+   Weierstrass equation occurs.
+2. `exists_weierstrassRingEquiv_of_affineComplement` — **that affine ring
+   IS a Weierstrass coordinate ring**.  This is Riemann–Roch itself, and
+   it is where all of the mathematical content sits: `L(2[O])` and
+   `L(3[O])` supply `x` and `y`, the seven monomials of `L(6[O])` are
+   dependent in a `6`-dimensional space, and the resulting relation is a
+   Weierstrass cubic after scaling.  Nothing about `Proj`, open immersions
+   or discriminants occurs — it is a statement about one commutative ring.
+3. `isElliptic_of_isOpenImmersion_coordinateRing` — **`Δ ≠ 0`**.  A
+   Weierstrass curve whose affine chart is an open subscheme of a smooth
+   `A` is smooth, and a singular Weierstrass curve has a *rational*
+   singular point in its affine chart, so `Δ` is a unit.  Pure
+   commutative algebra about one `WeierstrassCurve ℚ`.
+
+**Two conjuncts of the goal never reach a leaf.**  The structure-morphism
+conjunct is free by `hom_ext_spec_rat` (any two morphisms to `Spec ℚ`
+agree), and the transport of the range condition along the ring
+isomorphism of leaf 2 is `Scheme.Hom.opensRange_comp_of_isIso`.  That is
+why leaf 1 does not have to carry a `ℚ`-algebra structure on its ring and
+leaf 2 produces a bare `≃+*` rather than a `≃ₐ[ℚ]`: over `ℚ` the two
+notions coincide, because `ℚ` is initial in `CommRing`.
+-/
+
+/-- **The complement of the zero section of an elliptic scheme over
+`Spec ℚ` is affine** (sorry leaf, introduced 2026-07-27 as leaf 1 of
+`exists_weierstrassModel_of_ellipticScheme`).
+
+TRUE and classical.  `ab.proper` makes `f` separated, so the section
+`ab.zero (𝟙 (Spec ℚ))` is a *closed* immersion and its range — a single
+point, since `Spec ℚ` has one point — is closed; the complement is
+therefore an open subscheme of `A`.  That open subscheme is affine
+because `A` is a proper, geometrically connected, smooth curve over `ℚ`:
+a nonempty effective divisor on such a curve is ample, so the complement
+of its support is affine (Hartshorne IV.1, or the Serre criterion applied
+to `O(n·[O])`).
+
+**`_hdim` IS LOAD-BEARING** and must NOT be dropped; it is
+underscore-prefixed only because the body is `sorry`.  It is what makes
+`A` a *curve*.  For an abelian surface the statement is FALSE: the
+complement of a point on an abelian surface has the same global sections
+as the surface itself (`ℚ`, by properness), so it is not affine — indeed
+not even quasi-affine.  Relative dimension one is exactly the hypothesis
+that separates the true case from the false one.
+
+**Why `ab` and not merely "proper smooth geometrically connected"**: the
+statement has to *name the removed point*, and the only point available
+in a bare `AbelianSchemeStruct` is the zero section.  Every field of `ab`
+except the two naturality fields is used: `proper` for closedness and for
+ampleness, `smooth` and `connected` for the curve being a smooth
+geometrically integral curve, and `zero` for the point.
+
+NOT VACUOUS: `exists_ellipticScheme_isWeierstrassModel_of_projModel`
+above produces, for every elliptic `E`, an `(A, f, ab)` satisfying every
+hypothesis, and its chart witnesses the conclusion with
+`R = E.toAffine.CoordinateRing`.  Nor is the conclusion satisfiable by
+junk: `IsOpenImmersion` alone would be discharged by the empty scheme,
+but the range clause pins the range to the *whole* complement of a point.
+
+WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: any declaration in
+`Mathlib/AlgebraicGeometry/` deducing affineness of an open subscheme
+from ampleness of the complementary divisor, or an `IsAffine` instance
+for the complement of a section of a proper curve.  Searched 2026-07-27
+over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: the pin has
+`Mathlib/AlgebraicGeometry/QuasiAffine.lean` and
+`Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean`, but no ampleness
+of divisors, no `Serre criterion`, and no genus. -/
+theorem exists_affineComplement_zeroSection {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (_hdim : SmoothOfRelativeDimension 1 f) :
+    ∃ (R : Type) (_ : CommRing R) (ι : Spec (CommRingCat.of R) ⟶ A),
+      IsOpenImmersion ι ∧
+        Set.range ι.base =
+          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ :=
+  sorry
+
+/-- **The affine complement of the zero section is a Weierstrass
+coordinate ring** (sorry leaf, introduced 2026-07-27 as leaf 2 of
+`exists_weierstrassModel_of_ellipticScheme`).  **This leaf IS
+Riemann–Roch**; the other two carry none of it.
+
+TRUE — Silverman *AEC* III.3.1.  `A` is a smooth proper geometrically
+connected curve over `ℚ` carrying a group-scheme structure, hence has
+trivial tangent bundle, hence arithmetic genus one; `O` is the rational
+point `ab.zero (𝟙 (Spec ℚ))`.  Riemann–Roch on a genus-one curve gives
+`dim L(n[O]) = n` for `n ≥ 1`, so there are `x ∈ L(2[O]) ∖ L([O])` and
+`y ∈ L(3[O]) ∖ L(2[O])`; the seven elements
+`1, x, y, x², xy, y², x³` lie in the six-dimensional `L(6[O])` and so
+satisfy a linear relation, in which `y²` and `x³` occur with nonzero
+coefficients (they are the only two of pole order exactly six).  Scaling
+`x, y` makes those coefficients `1` and `−1`, and the relation becomes
+`y² + a₁xy + a₃y = x³ + a₂x² + a₄x + a₆`.  Finally `ℚ[x, y]` exhausts
+`R = Γ(A ∖ O)` because `⋃ₙ L(n[O]) = R` and `L(n[O])` is spanned by the
+monomials `xⁱyʲ` of pole order `≤ n`, and the kernel of
+`ℚ[X, Y] ↠ R` is exactly the Weierstrass ideal because both quotients are
+one-dimensional domains and the Weierstrass ideal is prime.  That
+quotient is mathlib's `WeierstrassCurve.Affine.CoordinateRing`, which is
+`AdjoinRoot E.toAffine.polynomial`.
+
+**Genus one is a STEP OF THE PROOF, not a missing hypothesis.**  An
+auditor looking for where the genus enters should look at `ab`: a smooth
+proper geometrically connected curve carrying a group law has trivial
+canonical bundle, hence genus one.  There is no genus in the pin to state
+it with, and none is needed.
+
+**`_hopen` and `_hrange` ARE LOAD-BEARING**, and the leaf is FALSE
+without them; they are underscore-prefixed only because the body is
+`sorry`.  Dropped, `R` would be an arbitrary commutative ring — take
+`R = ℚ`, which admits no ring isomorphism to any
+`E.toAffine.CoordinateRing` (the latter is never a field: it is a
+one-dimensional domain).  `_hrange` in particular is what forces the
+removed point to be a *single rational* point, which is what makes the
+linear systems `L(n[O])` available; without it `ι` could be a chart
+missing a divisor of higher degree and the pole-order filtration would
+have the wrong dimensions.
+
+**`_hdim` IS LOAD-BEARING** for the same reason as in leaf 1: without it
+`A` is an abelian scheme of arbitrary relative dimension.
+
+NOT VACUOUS: instantiate at the `(A, f, ab, ι)` produced by
+`exists_ellipticScheme_isWeierstrassModel_of_projModel` and
+`exists_affineChart_projModel`, where the conclusion holds with the
+identity isomorphism.
+
+WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: a Riemann–Roch theorem, a
+genus, or a theory of divisors/linear systems on a relative curve, in
+`Fermat/`, `.lake/packages/mathlib` or `~/cs/FLT`.  Searched 2026-07-27:
+`Mathlib/AlgebraicGeometry/` contains no `RiemannRoch`, no `genus` and no
+`arithmeticGenus`; its only divisor-adjacent files are
+`AlgebraicCycle/Basic.lean` and `OrderOfVanishing.lean`, neither of which
+computes a cohomology dimension.  So this leaf is a genuine theory
+build — see the module docstring's note that a theory build is authorized
+at this node. -/
+theorem exists_weierstrassRingEquiv_of_affineComplement {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (_hdim : SmoothOfRelativeDimension 1 f)
+    (R : Type) [CommRing R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (_hopen : IsOpenImmersion ι)
+    (_hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    ∃ E : WeierstrassCurve ℚ, Nonempty (R ≃+* E.toAffine.CoordinateRing) :=
+  sorry
+
+/-- **A Weierstrass curve whose affine chart is an open subscheme of a
+smooth relative curve is elliptic** (sorry leaf, introduced 2026-07-27 as
+leaf 3 of `exists_weierstrassModel_of_ellipticScheme`).
+
+TRUE, and it is pure commutative algebra once the hypotheses are
+unwound.  `ι` is an open immersion, hence smooth of relative dimension
+`0`, so `ι ≫ f` is smooth of relative dimension `1`; and `ι ≫ f` IS
+`Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))`,
+by `hom_ext_spec_rat` and nothing else.  So the first move of the proof
+is to reduce to: *`E.toAffine.CoordinateRing` is a smooth `ℚ`-algebra
+implies `IsUnit E.Δ`*.
+
+For that, argue contrapositively: if `Δ = 0` then the affine Weierstrass
+curve is singular, and — this is the part worth stating, because it is
+what makes the argument work over `ℚ` rather than only over `ℚ̄` — its
+singular point is *rational* (Silverman *AEC* III.1.4: solving the two
+partial derivatives for a Weierstrass equation gives coordinates in the
+base field, in char `0` by completing the square and the cube).  A
+rational singular point of the affine chart is a `ℚ`-point at which the
+Jacobian criterion fails, contradicting smoothness.  Note the singular
+point of a singular Weierstrass curve always lies in the *affine* chart —
+`[0 : 1 : 0]` is nonsingular for every Weierstrass equation — so nothing
+is lost by working with the coordinate ring.
+
+`jacobianSpan_eq_top` above is this implication in the other direction
+(`IsElliptic → Jacobian span is everything`); its proof is a good model,
+and `Δ_mem_jacobianSpan` — `Δ` lies in the Jacobian ideal — is very
+likely the reusable half, since a failure of smoothness at a rational
+point is exactly a maximal ideal containing the Jacobian ideal.
+
+**`ab` IS DELIBERATELY ABSENT.**  This leaf needs no group law: relative
+dimension one and the open immersion are the whole input.  Keeping `ab`
+out makes it attackable by someone who knows nothing about abelian
+schemes, which is the point of separating it from leaf 2.
+
+**`_hdim` and `_hopen` ARE LOAD-BEARING** and the leaf is FALSE without
+either; they are underscore-prefixed only because the body is `sorry`.
+Drop `_hopen` and `ι` may be a constant morphism into a smooth `A` from
+the chart of a nodal cubic (`Δ = 0`), so the conclusion fails.  Drop
+`_hdim` and `f` need not be smooth at all, so nothing constrains `E`.
+
+NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
+`E`, an `(A, f, ι)` satisfying every hypothesis. -/
+theorem isElliptic_of_isOpenImmersion_coordinateRing {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of ℚ)} (_hdim : SmoothOfRelativeDimension 1 f)
+    (E : WeierstrassCurve ℚ)
+    (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
+    (_hopen : IsOpenImmersion ι) :
+    E.IsElliptic :=
+  sorry
+
+/-- **An elliptic scheme over `Spec ℚ` has a Weierstrass model** (PROVEN
+2026-07-27 from the three leaves above; a single `sorry` node before
+that): the coordinate half of the reverse bridge.
 
 TRUE, and it is Riemann–Roch.  `ab` makes `f` proper, smooth and
-geometrically connected (three of its fields), `_hdim` makes the fibre a
+geometrically connected (three of its fields), `hdim` makes the fibre a
 curve, and `ab.zero (𝟙 (Spec ℚ))` is a rational point on it.  A smooth
 proper geometrically connected curve over a field with a rational point `O`
 and arithmetic genus one is a Weierstrass cubic: the complete linear system
@@ -4143,15 +4358,15 @@ over `Spec ℚ`, which is the middle conjunct.  `E.IsElliptic` follows because
 a singular Weierstrass curve has a singular affine chart, and an open
 subscheme of the smooth `A` is smooth.
 
-**`_hdim` IS LOAD-BEARING**; it is underscore-prefixed only because the body
-is `sorry`, and it must NOT be dropped.  Without it `A` is an abelian scheme
-of arbitrary relative dimension, and an abelian surface has no Weierstrass
-model at all — the statement would be false, not merely unprovable.
+**`hdim` IS LOAD-BEARING** and must NOT be dropped.  Without it `A` is an
+abelian scheme of arbitrary relative dimension, and an abelian surface has
+no Weierstrass model at all — the statement would be false, not merely
+unprovable.  It is consumed by leaves 1, 2 and 3 alike.
 
 **Genus one is not a hypothesis and does not need to be**: a smooth proper
 geometrically connected curve carrying a group-scheme structure has trivial
-tangent bundle, hence genus one.  That is a step of the intended proof, not
-a missing pin — an auditor looking for the genus should look there.
+tangent bundle, hence genus one.  That is a step of leaf 2, not a missing
+pin — an auditor looking for the genus should look there.
 
 NOT VACUOUS: `exists_ellipticScheme_isWeierstrassModel_of_projModel` above
 produces, for every elliptic `E`, an `(A, f, ab)` satisfying every
@@ -4160,23 +4375,36 @@ supply of elliptic schemes.  Nor is it satisfiable by junk: `range_eq` pins
 the range of `ι` to the complement of the zero section, so `ι` cannot be a
 chart of some unrelated curve.
 
-WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: a declaration in
-`Mathlib/AlgebraicGeometry/` attaching a Weierstrass equation to a
-genus-one curve with a rational point, or any `EllipticCurve`-valued
-construction out of a smooth proper relative curve.  Searched 2026-07-27
-over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: mathlib's
-elliptic-curve files all START from a `WeierstrassCurve`, and no file in
-any of the three mentions an elliptic scheme's Weierstrass presentation. -/
+**How the assembly works**, since none of it is Riemann–Roch: leaf 1 gives
+a bare commutative ring `R` and an open immersion `Spec R ↪ A` onto the
+complement of the zero section; leaf 2 replaces `R` by
+`E.toAffine.CoordinateRing`, and `Spec` of that ring isomorphism is an
+isomorphism of schemes, so composing it with `ι` keeps the range
+(`Scheme.Hom.opensRange_comp_of_isIso`) and keeps the open immersion.
+Leaf 3 is then applied to the *composite*, which is exactly the chart whose
+smoothness forces `Δ ≠ 0`.  The structure-morphism conjunct is free by
+`hom_ext_spec_rat`: any two morphisms to `Spec ℚ` agree, which is why no
+leaf has to carry a `ℚ`-algebra structure. -/
 theorem exists_weierstrassModel_of_ellipticScheme {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
-    (_hdim : SmoothOfRelativeDimension 1 f) :
+    (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
       ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
         IsOpenImmersion ι ∧
           ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
           Set.range ι.base =
-            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ :=
-  sorry
+            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ := by
+  classical
+  obtain ⟨R, _, ι, hopen, hrange⟩ := exists_affineComplement_zeroSection ab hdim
+  obtain ⟨E, ⟨e⟩⟩ := exists_weierstrassRingEquiv_of_affineComplement ab hdim R ι hopen hrange
+  have hE : E.IsElliptic :=
+    isElliptic_of_isOpenImmersion_coordinateRing hdim E
+      (Spec.map e.toCommRingCatIso.hom ≫ ι) inferInstance
+  refine ⟨E, hE, Spec.map e.toCommRingCatIso.hom ≫ ι, inferInstance,
+    hom_ext_spec_rat _ _, ?_⟩
+  rw [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso,
+    Scheme.Hom.coe_opensRange]
+  exact hrange
 
 /-- **A Weierstrass model of an elliptic scheme identifies the geometric
 fibre with `E(ℚ̄)`, Galois-equivariantly** (sorry node, introduced
