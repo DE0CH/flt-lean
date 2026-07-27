@@ -142,7 +142,7 @@ kernels, all of which behave in characteristic `p`.
 
 ## Open leaves left by this file
 
-`isRationalMap_mulByHom`, `IsRationalMap.add_of_x_ne` and
+`exists_y_witness_two`, `IsRationalMap.add_of_x_ne` and
 `Isogeny.isRationalMap_dualHom`. Those THREE are the whole remaining frontier of
 this module; the list is stated from the file's actual sorry set at 2026-07-27,
 not inherited from either side of a merge. **They are mutually independent and
@@ -152,14 +152,20 @@ separately ownable.**
 its branches, `IsRationalMap.add_self` and `IsRationalMap.add_of_ne`. What is left
 of the sum is exactly two geometric atoms:
 
-* `isRationalMap_mulByHom` — multiplication by `n` is a rational map. This is the
-  DOUBLING branch, after the observation that `φ + φ = φ ∘ [2]_W` puts the
-  doubling on the SOURCE curve, where `IsRationalMap.comp` applies and
-  `[W.IsElliptic]` is available. That is what removed the awkward `[W'.IsElliptic]`
-  question the branch used to carry: the statement is now about `W`, which is
-  elliptic by hypothesis. It is also the most REUSABLE of the three — the
-  `isIsogeny` docstring notes that `[n]` being rational is what would let this
-  file's geometric inputs be consolidated.
+* `exists_y_witness_two` — the `y`-coordinate witness for DUPLICATION on `W`.
+  This is all that is left of the doubling branch, after two reductions:
+  `φ + φ = φ ∘ [2]_W` puts the doubling on the SOURCE curve, where
+  `IsRationalMap.comp` applies and `[W.IsElliptic]` is available (which is what
+  removed the awkward `[W'.IsElliptic]` question the branch used to carry), and
+  then `veluPointX_nsmul` — PROVEN, general `n`, every characteristic — supplies
+  the `x`-witness `(Φₙ, ΨSqₙ)` from `TorsionCard`. **Only `n = 2` is open**:
+  general `[n]` follows from `IsRationalMap.add` by induction on
+  `[n] = [n-1] + [1]`, which cannot reach `n = 2` and only `n = 2`.
+  The obstruction is precise and is NOT in the pin: mathlib defines every
+  division polynomial needed for the `x`-coordinate but leaves the bivariate
+  `ωₙ` carrying the `y`-coordinate as an explicit TODO, and it is absent from
+  `~/cs/FLT` and this project too. At `n = 2` no `ωₙ` theory is needed — only the
+  tangent-line formula.
 * `IsRationalMap.add_of_x_ne` — the CHORD branch with the degenerate case
   already excluded by the hypothesis `A₂B₁ - A₁B₂ ≠ 0`. Its crux is Step 3
   (`U = 0`), not the branch analysis.
@@ -1277,9 +1283,10 @@ def mulByHom (W : Affine F) (n : ℕ) : W.Point →+ W.Point :=
 /-! ### The two branches of `IsRationalMap.add`
 
 `IsRationalMap.add` below is now an ASSEMBLY, and so are both of its branches. The
-whole sum reduces to exactly TWO open statements, `isRationalMap_mulByHom` (the
-doubling branch, via `add_self`) and `IsRationalMap.add_of_x_ne` (the chord branch,
-via `add_of_ne`), plus three free reductions (`φ = 0`, `ψ = 0`, `φ + ψ = 0`).
+whole sum reduces to exactly TWO open statements, `exists_y_witness_two` (the
+doubling branch, via `add_self` and `isRationalMap_mulByHom_two`) and
+`IsRationalMap.add_of_x_ne` (the chord branch, via `add_of_ne`), plus three free
+reductions (`φ = 0`, `ψ = 0`, `φ + ψ = 0`).
 
 Why this is the right cut, and not an arbitrary one. The affine group law on `W'`
 has two formulas, and which applies at `P` is decided by whether
@@ -1297,40 +1304,95 @@ formula and is `add_self`. So the split is forced by the geometry, not chosen.
 Each branch then collapses further. The doubling branch is not a second formula to
 grind out at all: `φ + φ = φ ∘ [2]_W` puts the doubling on the SOURCE curve, where
 `IsRationalMap.comp` applies and `[W.IsElliptic]` is available — so it needs only
-`isRationalMap_mulByHom`. The chord branch keeps its formula but loses its
+`isRationalMap_mulByHom_two`, whose `x`-half is already proven, leaving
+`exists_y_witness_two`. The chord branch keeps its formula but loses its
 degenerate case to `IsRationalMap.add_of_ne`, and what is left is
 `IsRationalMap.add_of_x_ne`.
 
 The two remaining leaves are INDEPENDENT and can be owned separately. -/
 
-/-- **LEAF.** Multiplication by `n` on an elliptic curve is a rational map.
+/-- **PROVEN.** The `x`-coordinate half of "multiplication by `n` is a rational
+map": `x ([n] P) · ΨSqₙ (x P) = Φₙ (x P)`, the classical `x([n]P) = Φₙ/ψₙ²` in
+multiplied-out form, in every characteristic and with no hypothesis on the field.
 
-This is the classical division-polynomial statement
-`x ([n] Q) = Φₙ (x Q) / ΨSqₙ (x Q)` together with its `y`-companion, and it is the
-only thing the doubling branch of `IsRationalMap.add` still needs (see
-`IsRationalMap.add_self` immediately below).
+This is `TorsionCard.exists_smul_some_eq` transported from the `(W⁄F)` spelling to
+the `veluPointX` spelling this file uses, with the degenerate branch supplied by
+`TorsionCard.smul_some_eq_zero_iff`: where `ΨSqₙ (x P) = 0` we have `n • P = 0` and
+there is nothing to certify, which is exactly the shape `IsRationalMap` wants. -/
+theorem veluPointX_nsmul [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) (P : W.Point)
+    (hP : n • P ≠ 0) :
+    veluPointX (n • P) * (W.ΨSq (n : ℤ)).eval (veluPointX P)
+      = (W.Φ (n : ℤ)).eval (veluPointX P) := by
+  haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+  have hn' : (n : ℤ) ≠ 0 := Int.natCast_ne_zero.2 hn
+  cases P with
+  | zero => exact absurd (smul_zero n) hP
+  | some x y h =>
+    have h' : (W⁄F).toAffine.Nonsingular x y := h
+    have hzs : ((n : ℤ)) • (Affine.Point.some x y h' : (W⁄F).Point)
+        = (n • (Affine.Point.some x y h : W.Point) : W.Point) := natCast_zsmul _ _
+    have hne : ((n : ℤ)) • (Affine.Point.some x y h' : (W⁄F).Point) ≠ 0 := by
+      rw [hzs]; exact hP
+    have hΨ : ((W⁄F).ΨSq (n : ℤ)).eval x ≠ 0 := fun hc =>
+      hne ((TorsionCard.smul_some_eq_zero_iff W hn' h').2 hc)
+    obtain ⟨x', y', h'', hsmul, hx'⟩ := TorsionCard.exists_smul_some_eq W hn' h' hΨ
+    have hval : (n • (Affine.Point.some x y h : W.Point) : W.Point)
+        = Affine.Point.some x' y' h'' := by rw [← hzs]; exact hsmul
+    rw [hval]
+    show x' * (W.ΨSq (n : ℤ)).eval x = (W.Φ (n : ℤ)).eval x
+    exact hx'
 
-**Everything it needs is already in this file's import cone.** `WeierstrassCurve.Φ`
-and `WeierstrassCurve.ΨSq` come from
-`Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree`, which is a
-PUBLIC import here; `ΨSq_ne_zero'` above supplies the `B ≠ 0` side condition in
-every characteristic from `n ≠ 0` alone; and `TorsionCard.exists_smul_some_eq`
-already computes `n • (x₀, y₀)` as an explicit affine point in terms of them —
-it is what `zsmul_surjective_algClosed` is built on. The `y`-witness is the part
-that has no ready-made lemma: `y ([n] Q)` is affine in `y Q` with coefficients
-rational in `x Q`, which is exactly the shape `IsRationalMap` asks for, but it has
-to be extracted from `TorsionCard`'s fibre analysis rather than quoted.
+/-- **LEAF — and it is the LAST piece of `IsRationalMap.add` besides the chord
+formula.** The `y`-coordinate witness for DUPLICATION: `y ([2] P)` is affine in
+`y P` with coefficients rational in `x P`.
 
-Degenerate `n`: `n = 0` is `IsRationalMap.zero` and `n = 1` is `IsRationalMap.id`
-after rewriting `mulByHom W 0 = 0` and `mulByHom W 1 = AddMonoidHom.id _`.
+**Why this is stated at `n = 2` and not for general `n`.** General `n` is FREE once
+`IsRationalMap.add` is closed: `mulByHom W n = mulByHom W (n-1) + mulByHom W 1` and
+`mulByHom W 1 = AddMonoidHom.id _` is `IsRationalMap.id`, so induction on `n` gives
+every `[n]` from `add` alone. The one case that induction cannot produce is the one
+`add` itself consumes — `[2]`, which is exactly the doubling branch. So `[2]` is the
+atom and everything else is a corollary. Do not state or prove this for general `n`;
+it is strictly more work for nothing.
 
-**No hypothesis on the field.** Deliberately: the division-polynomial identities
-are characteristic-free and need no algebraic closure, and the one call site has
-`[IsAlgClosed F]` available anyway. Do not add it unless a proof genuinely needs
-it — and if one does, say which step, because that is a fact worth recording. -/
-theorem isRationalMap_mulByHom [W.IsElliptic] (n : ℕ) :
-    IsRationalMap (mulByHom W n) :=
+**MISSING FROM THE PIN, and this is the whole difficulty** (checked 2026-07-27; the
+check that would refute it is
+`grep -rn "ω" .lake/packages/mathlib/Mathlib/AlgebraicGeometry/EllipticCurve/DivisionPolynomial/`).
+Mathlib defines `preΨ`, `ΨSq`, `Ψ`, `Φ`, `ψ`, `φ` — everything needed for the
+`x`-coordinate, which is why `veluPointX_nsmul` above is already PROVEN — but it
+does **not** define the bivariate `ωₙ` that carries the `y`-coordinate. Its own
+module docstring lists `ωₙ := (ψ₂ₙ / ψₙ - ψₙ ⬝ (a₁φₙ + a₃ψₙ²)) / 2` and then records
+"TODO: the bivariate polynomials `ωₙ`". It is absent from `~/cs/FLT` and from this
+project's `Fermat/FLT/Mathlib/` shim tree as well.
+
+That is much less bad than it sounds HERE, precisely because only `n = 2` is
+wanted: at `n = 2` there is no general `ωₙ` theory to build, only the tangent-line
+formula. `2 • P = P + P` is `Affine.Point.add_of_Y_ne` / the doubling branch of
+mathlib's affine group law, whose `y` is `Affine.addY` at slope
+`ℓ = (3x² + 2a₂x + a₄ - a₁y) / (2y + a₁x + a₃)`. Substituting and clearing the
+denominator `ψ₂ = 2y + a₁x + a₃` gives a `y`-affine expression once `y²` is reduced
+by the Weierstrass equation — the same reduction that `add_of_x_ne` needs, so the
+two leaves share a technique even though neither depends on the other.
+
+The `E ≠ 0` side condition should come out as a power of `Ψ₂Sq` (nonzero by
+`ΨSq_ne_zero'`), and the points where `ψ₂` vanishes are the 2-torsion, where
+`2 • P = 0` and the certificate is vacuous — so no bad-locus multiplier is needed. -/
+theorem exists_y_witness_two [W.IsElliptic] :
+    ∃ C D E : F[X], E ≠ 0 ∧ ∀ P : W.Point, mulByHom W 2 P ≠ 0 →
+      veluPointY (mulByHom W 2 P) * E.eval (veluPointX P)
+        = C.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P) :=
   sorry
+
+/-- **PROVEN** (2026-07-27). Duplication is a rational map, given the `y`-witness.
+
+The `x`-witness is `(Φ 2, ΨSq 2)` by `veluPointX_nsmul`, and `ΨSq 2 ≠ 0` by
+`ΨSq_ne_zero'` in every characteristic. So the only content left in `[2]` — and
+hence, by the note on `exists_y_witness_two`, in `[n]` for every `n` — is the
+`y`-coordinate. -/
+theorem isRationalMap_mulByHom_two [W.IsElliptic] : IsRationalMap (mulByHom W 2) := by
+  obtain ⟨C, D, E, hE, hy⟩ := exists_y_witness_two (W := W)
+  exact ⟨W.Φ ((2 : ℕ) : ℤ), W.ΨSq ((2 : ℕ) : ℤ), C, D, E,
+    ΨSq_ne_zero' W (by norm_num), hE,
+    fun P hP => ⟨veluPointX_nsmul (by norm_num) P hP, hy P hP⟩⟩
 
 /-- **PROVEN** (2026-07-27). The doubling branch of `IsRationalMap.add`: twice a
 rational map is rational.
@@ -1347,11 +1409,12 @@ hypothesis this theorem does not have (or a proof that a curve admitting a nonze
 rational map FROM an elliptic curve is itself nonsingular). Pushing the doubling to
 `W` makes that question disappear.
 
-What is left is `isRationalMap_mulByHom` above, at `n = 2`. -/
+What is left is `isRationalMap_mulByHom_two` above, and inside it only the
+`y`-witness `exists_y_witness_two` — the `x`-witness is `veluPointX_nsmul`, proven. -/
 theorem IsRationalMap.add_self [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
     (hφ : IsRationalMap φ) : IsRationalMap (φ + φ) := by
   have hcomp : IsRationalMap (φ.comp (mulByHom W 2)) :=
-    IsRationalMap.comp (isRationalMap_mulByHom 2) hφ
+    IsRationalMap.comp isRationalMap_mulByHom_two hφ
   have heq : φ.comp (mulByHom W 2) = φ + φ := by
     ext P
     show φ ((2 : ℕ) • P) = φ P + φ P
