@@ -36600,8 +36600,444 @@ theorem caseI_one (n : ℕ)
             have := hK2; rw [hK0, mul_zero] at this; linarith
           exact pow_eq_zero_iff two_ne_zero |>.mp h48)
 
-/-- **CASE I, `g = 3`: `M² − e² = 3a²`, `M² − 49e² = 3b²`** (sorry leaf, cut
-2026-07-27 out of `dual_quartic`).
+/-! ### The mirror descent: the `g = 3` and `g = 16` branches of CASE I
+
+These two branches are the involution pair `(g, c) ↦ (c, g)` of the `2`-isogeny
+pairing, and they close **together**, by a descent that runs between them and
+needs no outside induction hypothesis at all (`dual_quartic`'s `ih` is unused by
+both — see the note on `caseI_three` below).
+
+The step, uniformly in `g ∈ {3, 16}` with `c = 48/g`, is:
+
+* `a² − b² = c·e²` and `49a² − b² = c·M²`, so with `s = (a−b)/gcd`, `t = (a+b)/gcd`
+  one has `st = □·e²` and `(4s+3t)(3s+4t) = □·M²`, the second pair being the
+  cofactors `7a ∓ b`.
+* Splitting both products against `IsCoprime s t` makes `4s+3t` or `3s+4t` (or,
+  for `g = 16`, its cofactor after removing the `3`) a **square congruent to
+  `3` or `5` mod `8`** in every sub-case — impossible. That kills the branch
+  outright **unless** `gcd(4s+3t, 3s+4t) = 7`, i.e. unless `7 ∣ b`.
+* With `7 ∣ b` (hence `7 ∣ M`), writing `b = 7b₁`, `M = 7M₁` gives
+  `a² − b₁² = c·M₁²` and `a² − 49b₁² = c·e²` — a CASE I point of the MIRROR
+  class `c` at `(a, b₁)`, with `48a² = c(M² − e²) ≤ 16M²`, so `|a| < |M|`.
+
+So `g = 3 ⟶ g = 16 ⟶ g = 3 ⟶ …` with `|M|` strictly decreasing: an infinite
+descent, and both branches are empty. The `|e|` measure that carries
+`dual_quartic_aux` is **not** what closes these two (it does not decrease here —
+`|b₁| > |e|` is possible); the measure that does is `|M|`, supplied internally
+by `mirror_descent`'s own strong induction. -/
+
+/-- A positive factor of a square, coprime to its cofactor, is itself a square. -/
+theorem sq_of_isCoprime_pos {A B C : ℤ} (hAB : IsCoprime A B) (hA : 0 < A)
+    (h : A * B = C ^ 2) : ∃ A0 : ℤ, 0 ≤ A0 ∧ A = A0 ^ 2 := by
+  obtain ⟨A0, hA0 | hA0⟩ := Int.sq_of_isCoprime hAB h
+  · exact ⟨|A0|, abs_nonneg _, by rw [hA0, sq_abs]⟩
+  · exfalso; rw [hA0] at hA; nlinarith [sq_nonneg A0]
+
+/-- The two cofactors `4s+3t`, `3s+4t` are coprime as soon as `s`, `t` are and `7`
+is coprime to their difference `t − s`. -/
+theorem coprime_four_three {s t X : ℤ} (hst : IsCoprime s t) (h7 : IsCoprime (7 : ℤ) X)
+    (hX : X = (3 * s + 4 * t) - (4 * s + 3 * t)) :
+    IsCoprime (4 * s + 3 * t) (3 * s + 4 * t) := by
+  obtain ⟨u, v, huv⟩ := hst
+  obtain ⟨α, β, hαβ⟩ := h7
+  exact ⟨α * (4 * u - 3 * v) - β, α * (4 * v - 3 * u) + β, by
+    subst hX; linear_combination (7 * α) * huv + hαβ⟩
+
+/-- Sign normalisation: every integer has a nonnegative partner with the same square. -/
+theorem exists_nonneg_sq (a : ℤ) : ∃ A : ℤ, 0 ≤ A ∧ A ^ 2 = a ^ 2 ∧ (A = a ∨ A = -a) := by
+  rcases le_total 0 a with h | h
+  · exact ⟨a, h, rfl, Or.inl rfl⟩
+  · exact ⟨-a, by linarith, by ring, Or.inr rfl⟩
+
+/-- **The `g = 3` four-way split is empty unless `7 ∣ b`.** -/
+theorem caseI_three_seven {M e A B : ℤ} (hAB : IsCoprime A B) (hA0 : 0 ≤ A) (hB0 : 0 ≤ B)
+    (he : 0 < e) (hAodd : Odd A) (hBodd : Odd B)
+    (h1 : A ^ 2 - B ^ 2 = 16 * e ^ 2) (h2 : 49 * A ^ 2 - B ^ 2 = 16 * M ^ 2) :
+    (7 : ℤ) ∣ B := by
+  by_contra h7
+  have hApos : 0 < A := by nlinarith [sq_nonneg B, mul_pos he he]
+  have hBlt : B < A := by nlinarith [mul_pos he he]
+  obtain ⟨k, hk⟩ := hAodd
+  obtain ⟨l, hl⟩ := hBodd
+  obtain ⟨s, t, hs, ht⟩ : ∃ s t : ℤ, A = s + t ∧ B = t - s :=
+    ⟨k - l, k + l + 1, by omega, by omega⟩
+  have hspos : 0 < s := by omega
+  have htpos : 0 < t := by omega
+  have h1' : (s + t) ^ 2 - (t - s) ^ 2 = 16 * e ^ 2 := by rw [← hs, ← ht]; exact h1
+  have h2' : 49 * (s + t) ^ 2 - (t - s) ^ 2 = 16 * M ^ 2 := by rw [← hs, ← ht]; exact h2
+  have hst : s * t = 4 * e ^ 2 :=
+    mul_left_cancel₀ (a := (4 : ℤ)) (by norm_num) (by linear_combination h1')
+  have hpq : (4 * s + 3 * t) * (3 * s + 4 * t) = (2 * M) ^ 2 :=
+    mul_left_cancel₀ (a := (4 : ℤ)) (by norm_num) (by linear_combination h2')
+  have hcopst : IsCoprime s t := by
+    obtain ⟨u, v, huv⟩ := hAB
+    rw [hs, ht] at huv
+    exact ⟨u - v, u + v, by linear_combination huv⟩
+  have hcoppq : IsCoprime (4 * s + 3 * t) (3 * s + 4 * t) :=
+    coprime_four_three hcopst (coprime_seven h7) (by linear_combination ht)
+  obtain ⟨σ, hσ0, hσ⟩ := sq_of_isCoprime_pos hcopst hspos (C := 2 * e) (by linear_combination hst)
+  obtain ⟨τ, hτ0, hτ⟩ :=
+    sq_of_isCoprime_pos hcopst.symm htpos (C := 2 * e) (by linear_combination hst)
+  have hcopστ : IsCoprime σ τ := by
+    have hc2 : IsCoprime (σ ^ 2) (τ ^ 2) := by rw [← hσ, ← hτ]; exact hcopst
+    exact (hc2.of_isCoprime_of_dvd_left (dvd_pow_self σ two_ne_zero)).of_isCoprime_of_dvd_right
+      (dvd_pow_self τ two_ne_zero)
+  have h2στ : (2 : ℤ) ∣ σ * τ := by
+    have hd : (2 : ℤ) ∣ (σ * τ) ^ 2 :=
+      ⟨2 * e ^ 2, by rw [mul_pow, ← hσ, ← hτ]; linear_combination hst⟩
+    exact Int.prime_two.dvd_of_dvd_pow hd
+  rcases Int.even_or_odd σ with hσe | hσo
+  · -- `σ` even, `τ` odd: `4s+3t ≡ 3 (mod 8)` is not a square.
+    obtain ⟨σ1, hσ1⟩ := hσe
+    have hτo : Odd τ := by
+      rcases Int.even_or_odd τ with hτe | hτo
+      · exfalso
+        obtain ⟨τ1, hτ1⟩ := hτe
+        have hd1 : (2 : ℤ) ∣ σ := ⟨σ1, by omega⟩
+        have hd2 : (2 : ℤ) ∣ τ := ⟨τ1, by omega⟩
+        have hu := hcopστ.isUnit_of_dvd' hd1 hd2
+        rw [Int.isUnit_iff] at hu; omega
+      · exact hτo
+    obtain ⟨τ1, hτ1⟩ := hτo
+    obtain ⟨P, _, hP⟩ := sq_of_isCoprime_pos hcoppq (by linarith) hpq
+    have key : ∀ x y z : ZMod 8, x ^ 2 ≠ 4 * (y + y) ^ 2 + 3 * (2 * z + 1) ^ 2 := by decide
+    refine key (P : ZMod 8) (σ1 : ZMod 8) (τ1 : ZMod 8) ?_
+    have hint : P ^ 2 = 4 * (σ1 + σ1) ^ 2 + 3 * (2 * τ1 + 1) ^ 2 := by
+      rw [← hP, hσ, hτ, hσ1, hτ1]
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+    push_cast at hcast
+    linear_combination hcast
+  · -- `σ` odd, `τ` even: `3s+4t ≡ 3 (mod 8)` is not a square.
+    obtain ⟨σ1, hσ1⟩ := hσo
+    have hτe : (2 : ℤ) ∣ τ := by
+      rcases Int.prime_two.dvd_mul.mp h2στ with h | h
+      · exfalso; obtain ⟨w, hw⟩ := h; omega
+      · exact h
+    obtain ⟨τ1, hτ1⟩ := hτe
+    obtain ⟨Q, _, hQ⟩ :=
+      sq_of_isCoprime_pos hcoppq.symm (by linarith) (C := 2 * M) (by linear_combination hpq)
+    have key : ∀ x y z : ZMod 8, x ^ 2 ≠ 3 * (2 * y + 1) ^ 2 + 4 * (2 * z) ^ 2 := by decide
+    refine key (Q : ZMod 8) (σ1 : ZMod 8) (τ1 : ZMod 8) ?_
+    have hint : Q ^ 2 = 3 * (2 * σ1 + 1) ^ 2 + 4 * (2 * τ1) ^ 2 := by
+      rw [← hQ, hσ, hτ, hσ1, hτ1]
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+    push_cast at hcast
+    linear_combination hcast
+
+/-- **The `g = 16` four-way split is empty unless `7 ∣ b`.** -/
+theorem caseI_sixteen_seven {M e A B : ℤ} (hAB : IsCoprime A B) (hA0 : 0 ≤ A) (hB0 : 0 ≤ B)
+    (he : 0 < e) (hAeven : Even A) (hBodd : Odd B)
+    (h1 : A ^ 2 - B ^ 2 = 3 * e ^ 2) (h2 : 49 * A ^ 2 - B ^ 2 = 3 * M ^ 2) :
+    (7 : ℤ) ∣ B := by
+  by_contra h7
+  have hApos : 0 < A := by nlinarith [sq_nonneg B, mul_pos he he]
+  have hBlt : B < A := by nlinarith [mul_pos he he]
+  obtain ⟨s, t, hs, ht⟩ : ∃ s t : ℤ, s = A - B ∧ t = A + B := ⟨_, _, rfl, rfl⟩
+  have hspos : 0 < s := by omega
+  have htpos : 0 < t := by omega
+  obtain ⟨aa, haa⟩ := hAeven
+  obtain ⟨bb, hbb⟩ := hBodd
+  have hsodd : Odd s := ⟨aa - bb - 1, by omega⟩
+  have htodd : Odd t := ⟨aa + bb, by omega⟩
+  have hst : s * t = 3 * e ^ 2 := by rw [hs, ht]; linear_combination h1
+  have hpq : (4 * s + 3 * t) * (3 * s + 4 * t) = 3 * M ^ 2 := by
+    rw [hs, ht]; linear_combination h2
+  have hcopst : IsCoprime s t := by
+    obtain ⟨u, v, huv⟩ := hAB
+    obtain ⟨α, β, hαβ⟩ := Int.isCoprime_two_left.mpr hsodd
+    refine ⟨α * (u - v) + β, α * (u + v), ?_⟩
+    rw [hs] at hαβ ⊢
+    rw [ht]
+    linear_combination (2 * α) * huv + hαβ
+  have hcoppq : IsCoprime (4 * s + 3 * t) (3 * s + 4 * t) := by
+    refine coprime_four_three hcopst (X := 2 * B) ?_ (by rw [hs, ht]; ring)
+    exact (Int.isCoprime_two_right.mpr (by decide : Odd (7 : ℤ))).mul_right (coprime_seven h7)
+  have hp3 : Prime (3 : ℤ) := Int.prime_iff_natAbs_prime.mpr (by norm_num)
+  have h3st : (3 : ℤ) ∣ s * t := ⟨e ^ 2, hst⟩
+  rcases hp3.dvd_mul.mp h3st with h3s | h3t
+  · -- `3 ∣ s`: then `4σ² + τ² ≡ 5 (mod 8)` would have to be a square
+    obtain ⟨s1, hs1⟩ := h3s
+    have hs1pos : 0 < s1 := by omega
+    have hcops1t : IsCoprime s1 t := hcopst.of_isCoprime_of_dvd_left ⟨3, by rw [hs1]; ring⟩
+    have hst1 : s1 * t = e ^ 2 :=
+      mul_left_cancel₀ (a := (3 : ℤ)) (by norm_num) (by rw [hs1] at hst; linear_combination hst)
+    obtain ⟨σ, hσ0, hσ⟩ := sq_of_isCoprime_pos hcops1t hs1pos (C := e) hst1
+    obtain ⟨τ, hτ0, hτ⟩ :=
+      sq_of_isCoprime_pos hcops1t.symm htpos (C := e) (by linear_combination hst1)
+    have hs1odd : Odd s1 := by
+      obtain ⟨w, hw⟩ := hsodd
+      exact ⟨(s1 - 1) / 2, by omega⟩
+    have hσodd : Odd σ := by
+      have hx : Odd (σ ^ 2) := hσ ▸ hs1odd
+      rw [pow_two, Int.odd_mul] at hx; exact hx.1
+    have hτodd : Odd τ := by
+      have hx : Odd (τ ^ 2) := hτ ▸ htodd
+      rw [pow_two, Int.odd_mul] at hx; exact hx.1
+    have hτsq : 0 < τ ^ 2 := hτ ▸ htpos
+    obtain ⟨σ1, hσ1⟩ := hσodd
+    obtain ⟨τ1, hτ1⟩ := hτodd
+    have h4s3t : 4 * s + 3 * t = 3 * (4 * σ ^ 2 + τ ^ 2) := by rw [hs1, hσ, hτ]; ring
+    have hfac : (4 * σ ^ 2 + τ ^ 2) * (3 * s + 4 * t) = M ^ 2 :=
+      mul_left_cancel₀ (a := (3 : ℤ)) (by norm_num)
+        (by linear_combination hpq - (3 * s + 4 * t) * h4s3t)
+    have hcopfac : IsCoprime (4 * σ ^ 2 + τ ^ 2) (3 * s + 4 * t) :=
+      hcoppq.of_isCoprime_of_dvd_left ⟨3, by rw [h4s3t]; ring⟩
+    obtain ⟨P, _, hP⟩ := sq_of_isCoprime_pos hcopfac (by nlinarith [sq_nonneg σ]) hfac
+    have key : ∀ x y z : ZMod 8, 4 * (2 * y + 1) ^ 2 + (2 * z + 1) ^ 2 ≠ x ^ 2 := by decide
+    refine key (P : ZMod 8) (σ1 : ZMod 8) (τ1 : ZMod 8) ?_
+    have hint : 4 * (2 * σ1 + 1) ^ 2 + (2 * τ1 + 1) ^ 2 = P ^ 2 := by
+      rw [← hP, ← hσ1, ← hτ1]
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+    push_cast at hcast
+    linear_combination hcast
+  · -- `3 ∣ t`: then `σ² + 4τ² ≡ 5 (mod 8)` would have to be a square
+    obtain ⟨t1, ht1⟩ := h3t
+    have ht1pos : 0 < t1 := by omega
+    have hcopst1 : IsCoprime s t1 := hcopst.of_isCoprime_of_dvd_right ⟨3, by rw [ht1]; ring⟩
+    have hst1 : s * t1 = e ^ 2 :=
+      mul_left_cancel₀ (a := (3 : ℤ)) (by norm_num) (by rw [ht1] at hst; linear_combination hst)
+    obtain ⟨σ, hσ0, hσ⟩ := sq_of_isCoprime_pos hcopst1 hspos (C := e) hst1
+    obtain ⟨τ, hτ0, hτ⟩ :=
+      sq_of_isCoprime_pos hcopst1.symm ht1pos (C := e) (by linear_combination hst1)
+    have ht1odd : Odd t1 := by
+      obtain ⟨w, hw⟩ := htodd
+      exact ⟨(t1 - 1) / 2, by omega⟩
+    have hσodd : Odd σ := by
+      have hx : Odd (σ ^ 2) := hσ ▸ hsodd
+      rw [pow_two, Int.odd_mul] at hx; exact hx.1
+    have hτodd : Odd τ := by
+      have hx : Odd (τ ^ 2) := hτ ▸ ht1odd
+      rw [pow_two, Int.odd_mul] at hx; exact hx.1
+    have hσsq : 0 < σ ^ 2 := hσ ▸ hspos
+    obtain ⟨σ1, hσ1⟩ := hσodd
+    obtain ⟨τ1, hτ1⟩ := hτodd
+    have h3s4t : 3 * s + 4 * t = 3 * (σ ^ 2 + 4 * τ ^ 2) := by rw [ht1, hσ, hτ]; ring
+    have hfac : (4 * s + 3 * t) * (σ ^ 2 + 4 * τ ^ 2) = M ^ 2 :=
+      mul_left_cancel₀ (a := (3 : ℤ)) (by norm_num)
+        (by linear_combination hpq - (4 * s + 3 * t) * h3s4t)
+    have hcopfac : IsCoprime (σ ^ 2 + 4 * τ ^ 2) (4 * s + 3 * t) :=
+      (hcoppq.of_isCoprime_of_dvd_right ⟨3, by rw [h3s4t]; ring⟩).symm
+    obtain ⟨P, _, hP⟩ := sq_of_isCoprime_pos hcopfac (by nlinarith [sq_nonneg τ]) (C := M)
+      (by linear_combination hfac)
+    have key : ∀ x y z : ZMod 8, (2 * y + 1) ^ 2 + 4 * (2 * z + 1) ^ 2 ≠ x ^ 2 := by decide
+    refine key (P : ZMod 8) (σ1 : ZMod 8) (τ1 : ZMod 8) ?_
+    have hint : (2 * σ1 + 1) ^ 2 + 4 * (2 * τ1 + 1) ^ 2 = P ^ 2 := by
+      rw [← hP, ← hσ1, ← hτ1]
+    have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+    push_cast at hcast
+    linear_combination hcast
+
+/-- **The common descent of the mirror pair.** Once `7 ∣ b` the point `(M, e)` of
+class `g` produces a CASE I point of the mirror class `c = 48/g` at `(a, b/7)`,
+with `|a| < |M|`. -/
+theorem mirror_descend {M e a b c : ℤ} (hcop : IsCoprime M e) (hab : IsCoprime a b)
+    (ha0 : 0 ≤ a) (hb0 : 0 ≤ b) (he : 0 < e) (hM : 7 * e < M) (hc : c = 3 ∨ c = 16)
+    (hAB : a ^ 2 - b ^ 2 = c * e ^ 2) (hCD : 49 * a ^ 2 - b ^ 2 = c * M ^ 2)
+    (h7 : (7 : ℤ) ∣ b) :
+    ∃ M' e' a' b' : ℤ, IsCoprime M' e' ∧ IsCoprime a' b' ∧ 0 < e' ∧ 7 * e' < M' ∧
+      M' ^ 2 - e' ^ 2 = c * a' ^ 2 ∧ M' ^ 2 - 49 * e' ^ 2 = c * b' ^ 2 ∧
+      M'.natAbs < M.natAbs := by
+  have hp7 : Prime (7 : ℤ) := Int.prime_iff_natAbs_prime.mpr (by norm_num)
+  have hcpos : 0 < c := by rcases hc with rfl | rfl <;> norm_num
+  have hcle : c ≤ 16 := by rcases hc with rfl | rfl <;> norm_num
+  obtain ⟨b1, rfl⟩ := h7
+  have h7M : (7 : ℤ) ∣ M := by
+    have hd : (7 : ℤ) ∣ c * M ^ 2 := ⟨7 * a ^ 2 - 7 * b1 ^ 2, by linear_combination -hCD⟩
+    rcases hp7.dvd_mul.mp hd with h | h
+    · exfalso; obtain ⟨w, hw⟩ := h; rcases hc with rfl | rfl <;> omega
+    · exact hp7.dvd_of_dvd_pow h
+  obtain ⟨M1, rfl⟩ := h7M
+  have hb10 : 0 ≤ b1 := by linarith
+  have hE1 : a ^ 2 - 49 * b1 ^ 2 = c * e ^ 2 := by linear_combination hAB
+  have hE2 : a ^ 2 - b1 ^ 2 = c * M1 ^ 2 :=
+    mul_left_cancel₀ (a := (49 : ℤ)) (by norm_num) (by linear_combination hCD)
+  have hb1ne : b1 ≠ 0 := by
+    rintro rfl
+    have hsq : c * e ^ 2 = c * M1 ^ 2 := by linarith
+    have : e ^ 2 = M1 ^ 2 := mul_left_cancel₀ (ne_of_gt hcpos) hsq
+    nlinarith
+  have hb1pos : 0 < b1 := lt_of_le_of_ne hb10 (Ne.symm hb1ne)
+  have ha2pos : 0 < a ^ 2 := by nlinarith [sq_nonneg b1]
+  have hapos : 0 < a := by
+    rcases ha0.lt_or_eq with h | h
+    · exact h
+    · exfalso; rw [← h] at ha2pos; simp at ha2pos
+  have h7lt : 7 * b1 < a := by nlinarith [mul_pos he he]
+  have hcop' : IsCoprime a b1 := hab.of_isCoprime_of_dvd_right ⟨7, by ring⟩
+  have hcop2 : IsCoprime M1 e := hcop.of_isCoprime_of_dvd_left ⟨7, by ring⟩
+  refine ⟨a, b1, M1, e, hcop', hcop2, hb1pos, h7lt, hE2, hE1, ?_⟩
+  have h48 : 48 * a ^ 2 = c * (49 * M1 ^ 2 - e ^ 2) := by linear_combination 49 * hE2 - hE1
+  have halt : a < 7 * M1 := by nlinarith [mul_pos he he, sq_nonneg M1]
+  exact Int.natAbs_lt_natAbs_of_nonneg_of_lt ha0 halt
+
+/-- **`g = 3 ⟶ g = 16`**: one step of the mirror descent. -/
+theorem caseI_three_step {M e a b : ℤ} (hcop : IsCoprime M e) (hab : IsCoprime a b)
+    (ha0 : 0 ≤ a) (hb0 : 0 ≤ b) (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 3 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 3 * b ^ 2) :
+    ∃ M' e' a' b' : ℤ, IsCoprime M' e' ∧ IsCoprime a' b' ∧ 0 < e' ∧ 7 * e' < M' ∧
+      M' ^ 2 - e' ^ 2 = 16 * a' ^ 2 ∧ M' ^ 2 - 49 * e' ^ 2 = 16 * b' ^ 2 ∧
+      M'.natAbs < M.natAbs := by
+  have h1 : a ^ 2 - b ^ 2 = 16 * e ^ 2 := by linarith
+  have h2 : 49 * a ^ 2 - b ^ 2 = 16 * M ^ 2 := by linarith
+  have hnot2 : ¬((2 : ℤ) ∣ M ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨hx, hy⟩
+    have hu := hcop.isUnit_of_dvd' hx hy
+    rw [Int.isUnit_iff] at hu; omega
+  have hMeven : Even M := by
+    rcases Int.even_or_odd M with h | h
+    · exact h
+    · exfalso
+      rcases Int.even_or_odd e with he' | he'
+      · obtain ⟨k, hk⟩ := h
+        obtain ⟨l, hl⟩ := he'
+        have key : ∀ x y z : ZMod 8, (2 * x + 1) ^ 2 - (y + y) ^ 2 ≠ 3 * z ^ 2 := by decide
+        refine key (k : ZMod 8) (l : ZMod 8) (a : ZMod 8) ?_
+        have hint : ((2 : ℤ) * k + 1) ^ 2 - (l + l) ^ 2 = 3 * a ^ 2 := by rw [← hk, ← hl]; exact hA
+        have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+        push_cast at hcast
+        linear_combination hcast
+      · obtain ⟨h8A, h8B⟩ := eight_dvd_of_odd h he'
+        have hc83 : IsCoprime (8 : ℤ) 3 := by rw [Int.isCoprime_iff_gcd_eq_one]; decide
+        have hda : (8 : ℤ) ∣ a ^ 2 := hc83.dvd_of_dvd_mul_left (by rw [← hA]; exact h8A)
+        have hdb : (8 : ℤ) ∣ b ^ 2 := hc83.dvd_of_dvd_mul_left (by rw [← hB]; exact h8B)
+        have h2a : (2 : ℤ) ∣ a := Int.prime_two.dvd_of_dvd_pow (dvd_trans (by norm_num) hda)
+        have h2b : (2 : ℤ) ∣ b := Int.prime_two.dvd_of_dvd_pow (dvd_trans (by norm_num) hdb)
+        have hu := hab.isUnit_of_dvd' h2a h2b
+        rw [Int.isUnit_iff] at hu; omega
+  have heodd : Odd e := by
+    rcases Int.even_or_odd e with h | h
+    · exact absurd ⟨hMeven.two_dvd, h.two_dvd⟩ hnot2
+    · exact h
+  obtain ⟨mm, hmm⟩ := hMeven
+  obtain ⟨ll, hll⟩ := heodd
+  have haodd : Odd a := by
+    rcases Int.even_or_odd a with h | h
+    · exfalso
+      obtain ⟨aa, haa⟩ := h
+      have key : ∀ x y z : ZMod 2, (x + x) ^ 2 - (2 * y + 1) ^ 2 ≠ 3 * (z + z) ^ 2 := by decide
+      refine key (mm : ZMod 2) (ll : ZMod 2) (aa : ZMod 2) ?_
+      have hint : (mm + mm) ^ 2 - ((2 : ℤ) * ll + 1) ^ 2 = 3 * (aa + aa) ^ 2 := by
+        rw [← hmm, ← hll, ← haa]; exact hA
+      have hcast := congrArg (fun z : ℤ => (z : ZMod 2)) hint
+      push_cast at hcast
+      linear_combination hcast
+    · exact h
+  have hbodd : Odd b := by
+    rcases Int.even_or_odd b with h | h
+    · exfalso
+      obtain ⟨bb, hbb⟩ := h
+      have key : ∀ x y z : ZMod 2, (x + x) ^ 2 - 49 * (2 * y + 1) ^ 2 ≠ 3 * (z + z) ^ 2 := by
+        decide
+      refine key (mm : ZMod 2) (ll : ZMod 2) (bb : ZMod 2) ?_
+      have hint : (mm + mm) ^ 2 - 49 * ((2 : ℤ) * ll + 1) ^ 2 = 3 * (bb + bb) ^ 2 := by
+        rw [← hmm, ← hll, ← hbb]; exact hB
+      have hcast := congrArg (fun z : ℤ => (z : ZMod 2)) hint
+      push_cast at hcast
+      linear_combination hcast
+    · exact h
+  exact mirror_descend hcop hab ha0 hb0 he hM (Or.inr rfl) h1 h2
+    (caseI_three_seven hab ha0 hb0 he haodd hbodd h1 h2)
+
+/-- **`g = 16 ⟶ g = 3`**: one step of the mirror descent. -/
+theorem caseI_sixteen_step {M e a b : ℤ} (hcop : IsCoprime M e) (hab : IsCoprime a b)
+    (ha0 : 0 ≤ a) (hb0 : 0 ≤ b) (he : 0 < e) (hM : 7 * e < M)
+    (hA : M ^ 2 - e ^ 2 = 16 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 16 * b ^ 2) :
+    ∃ M' e' a' b' : ℤ, IsCoprime M' e' ∧ IsCoprime a' b' ∧ 0 < e' ∧ 7 * e' < M' ∧
+      M' ^ 2 - e' ^ 2 = 3 * a' ^ 2 ∧ M' ^ 2 - 49 * e' ^ 2 = 3 * b' ^ 2 ∧
+      M'.natAbs < M.natAbs := by
+  have h1 : a ^ 2 - b ^ 2 = 3 * e ^ 2 :=
+    mul_left_cancel₀ (a := (16 : ℤ)) (by norm_num) (by linarith)
+  have h2 : 49 * a ^ 2 - b ^ 2 = 3 * M ^ 2 :=
+    mul_left_cancel₀ (a := (16 : ℤ)) (by norm_num) (by linarith)
+  have hnot2 : ¬((2 : ℤ) ∣ M ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨hx, hy⟩
+    have hu := hcop.isUnit_of_dvd' hx hy
+    rw [Int.isUnit_iff] at hu; omega
+  have hModdeodd : Odd M ∧ Odd e := by
+    rcases Int.even_or_odd M with hm | hm
+    · rcases Int.even_or_odd e with hf | hf
+      · exact absurd ⟨hm.two_dvd, hf.two_dvd⟩ hnot2
+      · exfalso
+        obtain ⟨k, hk⟩ := hm
+        obtain ⟨l, hl⟩ := hf
+        have key : ∀ x y z : ZMod 8, (x + x) ^ 2 - (2 * y + 1) ^ 2 ≠ 16 * z ^ 2 := by decide
+        refine key (k : ZMod 8) (l : ZMod 8) (a : ZMod 8) ?_
+        have hint : (k + k) ^ 2 - ((2 : ℤ) * l + 1) ^ 2 = 16 * a ^ 2 := by
+          rw [← hk, ← hl]; exact hA
+        have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+        push_cast at hcast
+        linear_combination hcast
+    · rcases Int.even_or_odd e with hf | hf
+      · exfalso
+        obtain ⟨k, hk⟩ := hm
+        obtain ⟨l, hl⟩ := hf
+        have key : ∀ x y z : ZMod 8, (2 * x + 1) ^ 2 - (y + y) ^ 2 ≠ 16 * z ^ 2 := by decide
+        refine key (k : ZMod 8) (l : ZMod 8) (a : ZMod 8) ?_
+        have hint : ((2 : ℤ) * k + 1) ^ 2 - (l + l) ^ 2 = 16 * a ^ 2 := by
+          rw [← hk, ← hl]; exact hA
+        have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+        push_cast at hcast
+        linear_combination hcast
+      · exact ⟨hm, hf⟩
+  obtain ⟨hModd, heodd⟩ := hModdeodd
+  obtain ⟨ll, hll⟩ := heodd
+  have haeven : Even a := by
+    rcases Int.even_or_odd a with h | h
+    · exact h
+    · exfalso
+      obtain ⟨aa, haa⟩ := h
+      -- `a` odd forces `a² − b² ≡ 1 or 5 (mod 8)`, never `3`
+      have key : ∀ x y z : ZMod 8, (2 * x + 1) ^ 2 - z ^ 2 ≠ 3 * (2 * y + 1) ^ 2 := by decide
+      refine key (aa : ZMod 8) (ll : ZMod 8) (b : ZMod 8) ?_
+      have hint : ((2 : ℤ) * aa + 1) ^ 2 - b ^ 2 = 3 * ((2 : ℤ) * ll + 1) ^ 2 := by
+        rw [← haa, ← hll]; exact h1
+      have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+      push_cast at hcast
+      linear_combination hcast
+  have hbodd : Odd b := by
+    rcases Int.even_or_odd b with h | h
+    · exfalso
+      obtain ⟨aa, haa⟩ := haeven
+      obtain ⟨bb, hbb⟩ := h
+      have key : ∀ x y z : ZMod 8, (x + x) ^ 2 - (y + y) ^ 2 ≠ 3 * (2 * z + 1) ^ 2 := by decide
+      refine key (aa : ZMod 8) (bb : ZMod 8) (ll : ZMod 8) ?_
+      have hint : (aa + aa) ^ 2 - (bb + bb) ^ 2 = 3 * ((2 : ℤ) * ll + 1) ^ 2 := by
+        rw [← haa, ← hbb, ← hll]; exact h1
+      have hcast := congrArg (fun z : ℤ => (z : ZMod 8)) hint
+      push_cast at hcast
+      linear_combination hcast
+    · exact h
+  exact mirror_descend hcop hab ha0 hb0 he hM (Or.inl rfl) h1 h2
+    (caseI_sixteen_seven hab ha0 hb0 he haeven hbodd h1 h2)
+
+/-- **The mirror descent.** The classes `g = 3` and `g = 16` of CASE I map into each
+other with `|M|` strictly decreasing, so both are empty. -/
+theorem mirror_descent (n : ℕ) : ∀ M e a b : ℤ, M.natAbs ≤ n → IsCoprime M e → IsCoprime a b →
+    0 < e → 7 * e < M →
+    ((M ^ 2 - e ^ 2 = 3 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 3 * b ^ 2) ∨
+     (M ^ 2 - e ^ 2 = 16 * a ^ 2 ∧ M ^ 2 - 49 * e ^ 2 = 16 * b ^ 2)) → False := by
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro M e a b hlen hcop hab he hM hcase
+    obtain ⟨A, hA0, hAsq, hAeq⟩ := exists_nonneg_sq a
+    obtain ⟨B, hB0, hBsq, hBeq⟩ := exists_nonneg_sq b
+    have habAB : IsCoprime A B := by
+      rcases hAeq with rfl | rfl <;> rcases hBeq with rfl | rfl
+      · exact hab
+      · exact hab.neg_right
+      · exact hab.neg_left
+      · exact hab.neg_left.neg_right
+    rcases hcase with ⟨hA, hB⟩ | ⟨hA, hB⟩
+    · obtain ⟨M', e', a', b', h1, h2, h3, h4, h5, h6, h7⟩ :=
+        caseI_three_step hcop habAB hA0 hB0 he hM (by rw [hAsq]; exact hA) (by rw [hBsq]; exact hB)
+      exact ih M'.natAbs (lt_of_lt_of_le h7 hlen) M' e' a' b' le_rfl h1 h2 h3 h4 (Or.inr ⟨h5, h6⟩)
+    · obtain ⟨M', e', a', b', h1, h2, h3, h4, h5, h6, h7⟩ :=
+        caseI_sixteen_step hcop habAB hA0 hB0 he hM (by rw [hAsq]; exact hA)
+          (by rw [hBsq]; exact hB)
+      exact ih M'.natAbs (lt_of_lt_of_le h7 hlen) M' e' a' b' le_rfl h1 h2 h3 h4 (Or.inl ⟨h5, h6⟩)
+
+/-- **CASE I, `g = 3`: `M² − e² = 3a²`, `M² − 49e² = 3b²`** (PROVEN 2026-07-27
+over `mirror_descent`, the day after it was cut out of `dual_quartic`).
 
 Equivalently `a² − b² = 16e²` and `49a² − b² = 16M²`. Established facts:
 `3 ∤ M`, `3 ∤ e`, and (mod `8`) **`M` is even with `M ≡ 2 mod 4`, `e` odd** —
@@ -36609,45 +37045,52 @@ the sub-case `M` odd, `e` even is impossible, since `3a² ≡ 3 (mod 8)` for odd
 `a` while `M² − e² ≡ 1 − e²` can never be `3` mod `8` with `e` even. A mod-`9`
 count shows `a² − b² ≡ 1 (mod 3)`, so `3 ∤ a` and `3 ∣ b`.
 
-**AXIS SEARCHED**: congruences mod `2^k`, `3^k` (they constrain but do not
-close the branch — the class `(3,3)` is genuinely in the image of the descent
-map, realised by the `2`-torsion point `(49, 0)`). **AXIS NOT SEARCHED**: the
-four-way split of `(a − b)(a + b) = 16e²` and `(7a − b)(7a + b) = 16M²`.
+**HOW IT CLOSED.** The recorded "AXIS NOT SEARCHED" — the four-way split of
+`(a − b)(a + b) = 16e²` and `(7a − b)(7a + b) = 16M²` — is exactly the axis that
+works, and it closes the mirror pair `{g = 3, g = 16}` *together*. See the
+section header above `sq_of_isCoprime_pos`: the split forces a square `≡ 3 or 5
+(mod 8)` unless `7 ∣ b`, and `7 ∣ b` descends to the mirror class at `(a, b/7)`
+with `|a| < |M|`.
 
-**MEASURE CHANGE, 2026-07-27** (bookkeeping only — the mathematical content of
-this leaf is untouched). `dual_quartic_aux` now inducts on
-`max(|M|, 7|e|)` rather than on `|e|`, so `ih` is available at
-`max M'.natAbs (7 * e'.natAbs) ≤ n` and the size hypothesis here is
-`hlen : M.natAbs ≤ n + 1`. See `caseI_fortyEight` for why. -/
+**`ih` AND `hlen` ARE UNUSED, DELIBERATELY.** This branch descends on `|M|`
+alone and supplies its own well-founded recursion (`mirror_descent`), so it is
+independent of whatever measure `dual_quartic_aux` inducts on. Both binders are
+kept only because `dual_quartic_caseI` applies the four `g`-branches uniformly.
+(The **MEASURE CHANGE, 2026-07-27** below — `|e| ⟶ max(|M|, 7|e|)`, made for
+`caseI_fortyEight` — is therefore inert here; the types are carried verbatim so
+the four branches keep one signature.) -/
 theorem caseI_three (n : ℕ)
-    (ih : ∀ M e N : ℤ, max M.natAbs (7 * e.natAbs) ≤ n → IsCoprime M e →
+    (_ih : ∀ M e N : ℤ, max M.natAbs (7 * e.natAbs) ≤ n → IsCoprime M e →
       N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
       M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
-    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : M.natAbs ≤ n + 1)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (_hlen : M.natAbs ≤ n + 1)
     (he : 0 < e) (hM : 7 * e < M)
     (hA : M ^ 2 - e ^ 2 = 3 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 3 * b ^ 2) : False :=
-  sorry
+  mirror_descent M.natAbs M e a b le_rfl hcop hab he hM (Or.inl ⟨hA, hB⟩)
 
-/-- **CASE I, `g = 16`: `M² − e² = 16a²`, `M² − 49e² = 16b²`** (sorry leaf,
-cut 2026-07-27 out of `dual_quartic`).
+/-- **CASE I, `g = 16`: `M² − e² = 16a²`, `M² − 49e² = 16b²`** (PROVEN
+2026-07-27 over `mirror_descent`, the day after it was cut out of
+`dual_quartic`).
 
 Here `M` and `e` are both odd, and dividing out gives `a² − b² = 3e²`,
 `49a² − b² = 3M²` — the mirror of `caseI_three` under `(g, c) ↦ (c, g)`.
 Mod `8`: `3e² ≡ 3`, so `a` is even and `b` is odd.
 
-**MEASURE CHANGE, 2026-07-27** (bookkeeping only — the mathematical content of
-this leaf is untouched). `dual_quartic_aux` now inducts on
-`max(|M|, 7|e|)` rather than on `|e|`, so `ih` is available at
-`max M'.natAbs (7 * e'.natAbs) ≤ n` and the size hypothesis here is
-`hlen : M.natAbs ≤ n + 1`. See `caseI_fortyEight` for why. -/
+The mirror symmetry **does** transport, and it is what closes both: the two
+branches map into each other with `|M|` strictly decreasing, so neither needs a
+separate argument and neither needs `ih`. Here `st = 3e²` splits with a factor
+`3` on one side, and the cofactor left over is `4σ² + τ²` or `σ² + 4τ²` with
+`σ`, `τ` odd — `≡ 5 (mod 8)`, never a square. As with `caseI_three`, `_ih` and
+`_hlen` are unused, and the **MEASURE CHANGE, 2026-07-27**
+(`|e| ⟶ max(|M|, 7|e|)`, made for `caseI_fortyEight`) is inert here. -/
 theorem caseI_sixteen (n : ℕ)
-    (ih : ∀ M e N : ℤ, max M.natAbs (7 * e.natAbs) ≤ n → IsCoprime M e →
+    (_ih : ∀ M e N : ℤ, max M.natAbs (7 * e.natAbs) ≤ n → IsCoprime M e →
       N ^ 2 = (M ^ 2 - e ^ 2) * (M ^ 2 - 49 * e ^ 2) →
       M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
-    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : M.natAbs ≤ n + 1)
+    (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (_hlen : M.natAbs ≤ n + 1)
     (he : 0 < e) (hM : 7 * e < M)
     (hA : M ^ 2 - e ^ 2 = 16 * a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = 16 * b ^ 2) : False :=
-  sorry
+  mirror_descent M.natAbs M e a b le_rfl hcop hab he hM (Or.inr ⟨hA, hB⟩)
 
 /-- **CASE I, `g = 48`: `M² − e² = 48a²`, `M² − 49e² = 48b²`** (PROVEN
 2026-07-27, by the measure change from `|e|` to `max(|M|, 7|e|)` that this
