@@ -142,10 +142,25 @@ kernels, all of which behave in characteristic `p`.
 
 ## Open leaves left by this file
 
-`IsRationalMap.add`, `IsRationalMap.isIsogeny`,
-`Isogeny.isRationalMap_dualHom`. Those THREE are the whole remaining frontier
-of this module; the list is stated from the file's actual sorry set at
-integration 2026-07-26, not inherited from either side of the merge.
+`IsRationalMap.add` and `Isogeny.isRationalMap_dualHom`. Those TWO are the whole
+remaining frontier of this module; the list is stated from the file's actual
+sorry set at 2026-07-27, not inherited from either side of a merge.
+
+**`IsRationalMap.isIsogeny` was on this list and is now PROVEN and axiom-clean**
+(2026-07-27), so `IsIsogeny.add` is now open only through `IsRationalMap.add`.
+Its proof rests on four new helpers collected under *Consequences of
+divisibility* below — `exists_point_veluPointX_eq`,
+`finite_veluPointX_preimage`, `finite_range_of_constX` and
+`eq_zero_of_finite_range` — and on nothing else geometric. Two of them are worth
+reusing: `finite_veluPointX_preimage` (fibres of `x` have ≤ 2 points, so a finite
+set of `x`-values pulls back to a finite set of points, over ANY Weierstrass
+curve) and `eq_zero_of_finite_range` (divisibility kills every homomorphism out
+of `W.Point` with finite image — this is the single step that both `𝔽̄₂`
+counterexamples below break).
+
+That proof also forced the `### The two geometric inputs` section to move
+ABOVE the leaves, since `eq_zero_of_finite_range` consumes `nsmul_surjective`.
+The move is verbatim; nothing in that section was edited.
 
 `IsRationalMap.neg` was on this list and is now PROVEN. So, as of 2026-07-26,
 are `nsmul_surjective`, `finite_nsmulKer` and `Isogeny.degree_comp` (see the
@@ -157,7 +172,7 @@ case) — all proven here. `IsIsogeny.add` was on this list too; it is now PROVE
 from `IsRationalMap.add` and `IsRationalMap.isIsogeny`, after being refuted and
 restated (above).
 
-**All three remaining leaves were REFUTED as originally stated, and restated, on
+**All three of those leaves were REFUTED as originally stated, and restated, on
 2026-07-26** — machine-checked counterexamples in `NotIsIsogenyAdd`,
 `NotIsRationalMapAdd` and `Isogeny.NotIsRationalMapDualHom`. Their present
 hypotheses are load-bearing, not decoration; do not weaken them without reading
@@ -606,6 +621,315 @@ theorem IsRationalMap.comp {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.
     linear_combination
       ((B.eval (veluPointX P)) ^ d' * E.eval (veluPointX P)) * hy'
         + ((B.eval (veluPointX P)) ^ d' * C'.eval (veluPointX (φ P))) * hy
+
+/-! ### The two geometric inputs -/
+
+/-! Both inputs are PROVEN (2026-07-26) from the division-polynomial development
+in `TorsionCard.lean` / `PhiPsiCoprime.lean`, over an arbitrary algebraically
+closed field and in every characteristic.
+
+Note on the `(V⁄F)` spelling below. `TorsionCard.lean` states everything for the
+base-changed curve `(E⁄k)`, and `(V⁄F) = V` holds by `rfl` — but the two are not
+*syntactically* equal, so `rw` cannot cross between them. The helpers are
+therefore written uniformly in the `(V⁄F)` form, matching `TorsionCard`, and the
+one crossing into the `W.Point` form the rest of this file uses is made by
+`exact` (which goes through `whnf`) in the two leaves themselves. -/
+
+omit [DecidableEq F] in
+/-- `ΨSqₙ ≠ 0` in ANY characteristic, needing only `n ≠ 0`.
+
+The leading-coefficient route fails at `n = p` in characteristic `p`, where
+`coeff_ΨSq n = n²` vanishes. Instead: `IsCoprime a 0` forces `a` to be a unit,
+while `Φₙ` has degree `n² > 0`. (This is `TorsionCharP.ΨSq_ne_zero`, inlined
+here so that this file's import cone need not grow by the whole
+`TorsionCharP`/`WronskianInduction` subtree.) -/
+theorem ΨSq_ne_zero' (V : Affine F) [V.IsElliptic] {n : ℤ} (hn : n ≠ 0) :
+    V.ΨSq n ≠ 0 := by
+  intro h0
+  have hcop : IsCoprime (V.Φ n) (V.ΨSq n) :=
+    WeierstrassCurve.isCoprime_Φ_ΨSq V hn V.isUnit_Δ
+  rw [h0] at hcop
+  have hdeg0 : (V.Φ n).natDegree = 0 :=
+    Polynomial.natDegree_eq_zero_of_isUnit (isCoprime_zero_right.mp hcop)
+  rw [WeierstrassCurve.natDegree_Φ V n] at hdeg0
+  exact hn (Int.natAbs_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp hdeg0))
+
+omit [DecidableEq F] in
+/-- **The fibre node over an algebraically closed field.** Given any `ξ`, there
+is a curve point `(x₀, y₀)` with `Φₙ(x₀) = ξ · ΨSqₙ(x₀)`.
+
+This is `TorsionCard.exists_point_x_smul` with its `(n : F) ≠ 0` hypothesis
+REMOVED, which is exactly what algebraic (rather than separable) closure buys.
+That hypothesis is used there only to show the derivative of `Φₙ − C ξ · ΨSqₙ`
+is nonzero, so that a root exists over a separably closed field. Here the
+polynomial is monic of degree `n² ≥ 1` — its `n²`-coefficient is `1` by
+`coeff_Φ`, and `ΨSqₙ` cannot contribute there since its degree is at most
+`n² − 1` — so `IsAlgClosed.exists_root` applies directly. The `y`-coordinate is
+then a root of the degree-`2` fibre quadratic, again with no separability. -/
+theorem exists_point_x_smul_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
+    {n : ℤ} (hn : n ≠ 0) (ξ : F) :
+    ∃ (x₀ y₀ : F) (_ : (V⁄F).toAffine.Nonsingular x₀ y₀),
+      ((V⁄F).Φ n).eval x₀ = ξ * ((V⁄F).ΨSq n).eval x₀ := by
+  classical
+  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
+  have hD1 : 1 ≤ n.natAbs ^ 2 := by
+    have hna : n.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hn
+    have := pow_ne_zero 2 hna
+    omega
+  set f : F[X] := (V⁄F).Φ n - Polynomial.C ξ * (V⁄F).ΨSq n with hf
+  have hcoeff : f.coeff (n.natAbs ^ 2) = 1 := by
+    rw [hf, Polynomial.coeff_sub, Polynomial.coeff_C_mul,
+      WeierstrassCurve.coeff_Φ,
+      Polynomial.coeff_eq_zero_of_natDegree_lt
+        (lt_of_le_of_lt ((V⁄F).natDegree_ΨSq_le n) (by omega)),
+      mul_zero, sub_zero]
+  have hf0 : f ≠ 0 := by
+    intro hc
+    rw [hc, Polynomial.coeff_zero] at hcoeff
+    exact zero_ne_one hcoeff
+  have hle : n.natAbs ^ 2 ≤ f.natDegree :=
+    Polynomial.le_natDegree_of_ne_zero (by rw [hcoeff]; exact one_ne_zero)
+  have hdeg : f.degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hf0]
+    intro hc
+    have hnd : f.natDegree = 0 := by exact_mod_cast hc
+    omega
+  obtain ⟨x₀, hx₀⟩ := IsAlgClosed.exists_root f hdeg
+  have hrel : ((V⁄F).Φ n).eval x₀ = ξ * ((V⁄F).ΨSq n).eval x₀ := by
+    have hx := hx₀
+    rw [Polynomial.IsRoot, hf, Polynomial.eval_sub, Polynomial.eval_mul,
+      Polynomial.eval_C] at hx
+    linear_combination hx
+  have hydeg : (TorsionCard.yQuad V x₀).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero V x₀),
+      TorsionCard.yQuad_natDegree]
+    norm_num
+  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root (TorsionCard.yQuad V x₀) hydeg
+  refine ⟨x₀, y₀, ?_, hrel⟩
+  exact (V⁄F).toAffine.equation_iff_nonsingular.mp
+    ((TorsionCard.eval_yQuad_eq_zero_iff_equation V x₀ y₀).mp hy₀)
+
+/-- **Divisibility of the point group over an algebraically closed field**, for
+every nonzero integer and in every characteristic.
+
+Same argument as `TorsionCard.smul_surjective`, over the stronger fibre node
+above: `ΨSqₙ(x₀) ≠ 0` by the Bézout identity `isCoprime_Φ_ΨSq` (a common root
+would contradict `A·Φ + B·ΨSq = 1`), so `TorsionCard.exists_smul_some_eq`
+computes `n • (x₀, y₀)` as an affine point with `x`-coordinate `ξ`; its
+`y`-coordinate is `η` or `negY ξ η`, and in the latter case negating the
+preimage fixes it. -/
+theorem zsmul_surjective_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
+    {n : ℤ} (hn : n ≠ 0) : Function.Surjective (fun P : (V⁄F).Point => n • P) := by
+  classical
+  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
+  have hpoint : ∀ {x₁ y₁ x₂ y₂ : F} (h₁ : (V⁄F).toAffine.Nonsingular x₁ y₁)
+      (h₂ : (V⁄F).toAffine.Nonsingular x₂ y₂), x₁ = x₂ → y₁ = y₂ →
+      (Affine.Point.some x₁ y₁ h₁ : (V⁄F).Point) = Affine.Point.some x₂ y₂ h₂ := by
+    intro x₁ y₁ x₂ y₂ h₁ h₂ hx hy
+    subst hx; subst hy; rfl
+  intro P₀
+  cases P₀ with
+  | zero => exact ⟨0, smul_zero _⟩
+  | some ξ η h₀ =>
+    obtain ⟨x₀, y₀, hns, hrel⟩ := exists_point_x_smul_algClosed V hn ξ
+    have hΨ : ((V⁄F).ΨSq n).eval x₀ ≠ 0 := by
+      intro h0
+      obtain ⟨A, B, hAB⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (V⁄F) hn (V⁄F).isUnit_Δ
+      have hev := congrArg (Polynomial.eval x₀) hAB
+      rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+        Polynomial.eval_one, hrel, h0] at hev
+      simp at hev
+    obtain ⟨x', y', h', hsmul, hx'⟩ := TorsionCard.exists_smul_some_eq V hn hns hΨ
+    have hx : x' = ξ := by
+      rw [hrel] at hx'
+      exact mul_right_cancel₀ hΨ hx'
+    rcases Affine.Y_eq_of_X_eq h'.1 h₀.1 hx with hy | hy
+    · exact ⟨Affine.Point.some x₀ y₀ hns, hsmul.trans (hpoint h' h₀ hx hy)⟩
+    · refine ⟨-(Affine.Point.some x₀ y₀ hns), ?_⟩
+      show n • (-(Affine.Point.some x₀ y₀ hns) : (V⁄F).Point) = _
+      rw [smul_neg, hsmul, Affine.Point.neg_some]
+      exact hpoint _ h₀ hx (by rw [hy, hx, Affine.negY_negY])
+
+/-- **Finiteness of the `n`-torsion over an algebraically closed field**, in
+every characteristic.
+
+A nonzero `n`-torsion point `(x, y)` has `ΨSqₙ(x) = 0`
+(`TorsionCard.smul_some_eq_zero_iff`); `ΨSqₙ ≠ 0` by `ΨSq_ne_zero'`, so there are
+finitely many such `x`, and at most two points lie over each
+(`TorsionCard.pointsAt`). -/
+theorem finite_zsmul_torsion_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
+    {n : ℤ} (hn : n ≠ 0) : {P : (V⁄F).Point | n • P = 0}.Finite := by
+  classical
+  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
+  have hΨ : (V⁄F).ΨSq n ≠ 0 := ΨSq_ne_zero' (V⁄F) hn
+  refine Set.Finite.subset (Finset.finite_toSet (insert (0 : (V⁄F).Point)
+    (((V⁄F).ΨSq n).roots.toFinset.biUnion (TorsionCard.pointsAt V)))) ?_
+  intro P hP
+  simp only [Set.mem_setOf_eq] at hP
+  rw [Finset.mem_coe]
+  cases P with
+  | zero => exact Finset.mem_insert_self _ _
+  | some x y h =>
+    refine Finset.mem_insert_of_mem (Finset.mem_biUnion.mpr ⟨x, ?_, ?_⟩)
+    · rw [Multiset.mem_toFinset, Polynomial.mem_roots hΨ, Polynomial.IsRoot]
+      exact (TorsionCard.smul_some_eq_zero_iff V hn h).mp hP
+    · exact (TorsionCard.mem_pointsAt_iff V).mpr ⟨y, h, rfl⟩
+
+/-- **PROVEN.** Multiplication by a nonzero integer is surjective on the points of
+an elliptic curve over an algebraically closed field.
+
+This is the divisibility of `E(F)`, and it is one of the two geometric inputs on
+which the degree/dual arithmetic rests. It is *not* formal: a homomorphic image
+of a divisible group need not be the whole target. -/
+theorem nsmul_surjective [IsAlgClosed F] [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) :
+    Function.Surjective (fun P : W.Point => n • P) := by
+  have h : Function.Surjective (fun P : W.Point => (n : ℤ) • P) :=
+    zsmul_surjective_algClosed W (Int.natCast_ne_zero.mpr hn)
+  intro Q
+  obtain ⟨P, hP⟩ := h Q
+  exact ⟨P, by simpa only [natCast_zsmul] using hP⟩
+
+/-- **PROVEN.** The `n`-torsion of an elliptic curve is finite.
+
+The second geometric input. Over an algebraically closed field of characteristic
+zero it is in fact `(ℤ/n)²`; only finiteness is used here — and, unlike the
+count, finiteness needs no hypothesis on the characteristic. -/
+theorem finite_nsmulKer [IsAlgClosed F] [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) :
+    {P : W.Point | n • P = 0}.Finite := by
+  have h : {P : W.Point | (n : ℤ) • P = 0}.Finite :=
+    finite_zsmul_torsion_algClosed W (Int.natCast_ne_zero.mpr hn)
+  refine h.subset ?_
+  intro P hP
+  simpa only [Set.mem_setOf_eq, natCast_zsmul] using hP
+
+/-! ### Consequences of divisibility, for the geometric leaves
+
+Four small facts that `IsRationalMap.isIsogeny` rests on. Two are about the
+`x`-map alone — every element of the base field is an `x`-coordinate, and the
+fibres of `x` have at most two points — and two convert those into statements
+about a homomorphism: a rational map with a **constant** `x`-coordinate has
+finite image, and a homomorphism out of `W.Point` with finite image is zero.
+
+The last of these is where divisibility enters, and it is the whole reason
+`[IsAlgClosed F]` and `[W.IsElliptic]` are not decoration: `n := #(im φ)` kills
+the image by Lagrange, while `nsmul_surjective` writes every `P` as `n • P'`,
+so `φ P = n • φ P' = 0`. This is exactly the step that the two FALSITY AUDITs
+above break — over the singular cuspidal cubic `W.Point` is not divisible and a
+homomorphism onto a two-element image survives. -/
+
+omit [DecidableEq F] in
+/-- Over an algebraically closed field every element of `F` is the `x`-coordinate of a
+nonzero point of an elliptic curve: the `y`-fibre quadratic `TorsionCard.yQuad` has
+degree `2`, hence a root. -/
+theorem exists_point_veluPointX_eq [IsAlgClosed F] [W.IsElliptic] (t : F) :
+    ∃ P : W.Point, P ≠ 0 ∧ veluPointX P = t := by
+  haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+  have hydeg : (TorsionCard.yQuad W t).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero W t),
+      TorsionCard.yQuad_natDegree]
+    norm_num
+  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root (TorsionCard.yQuad W t) hydeg
+  have hns : W.Nonsingular t y₀ :=
+    (W⁄F).toAffine.equation_iff_nonsingular.mp
+      ((TorsionCard.eval_yQuad_eq_zero_iff_equation W t y₀).mp hy₀)
+  exact ⟨Affine.Point.some t y₀ hns, Affine.Point.some_ne_zero _, rfl⟩
+
+omit [DecidableEq F] in
+/-- The nonzero points whose `x`-coordinate lies in a finite set form a finite set,
+because the fibres of `x` have at most two elements
+(`eq_or_eq_neg_of_veluPointX_eq`). No hypothesis on `F` or `W` is needed. -/
+theorem finite_veluPointX_preimage {T : Set F} (hT : T.Finite) :
+    {P : W.Point | P ≠ 0 ∧ veluPointX P ∈ T}.Finite := by
+  classical
+  have hsub : {P : W.Point | P ≠ 0 ∧ veluPointX P ∈ T}
+      ⊆ ⋃ t ∈ T, {P : W.Point | P ≠ 0 ∧ veluPointX P = t} := by
+    rintro P ⟨hP, hx⟩
+    exact Set.mem_biUnion hx ⟨hP, rfl⟩
+  refine Set.Finite.subset (Set.Finite.biUnion hT ?_) hsub
+  intro t _
+  by_cases hne : ∃ P₁ : W.Point, P₁ ≠ 0 ∧ veluPointX P₁ = t
+  · obtain ⟨P₁, hP₁, hx₁⟩ := hne
+    refine Set.Finite.subset ((Set.finite_singleton (-P₁)).insert P₁) ?_
+    rintro P ⟨hP, hx⟩
+    rcases eq_or_eq_neg_of_veluPointX_eq hP hP₁ (by rw [hx, hx₁]) with h | h
+    · exact Set.mem_insert_iff.2 (Or.inl h)
+    · exact Set.mem_insert_iff.2 (Or.inr h)
+  · push Not at hne
+    have hempty : {P : W.Point | P ≠ 0 ∧ veluPointX P = t} = ∅ := by
+      ext P
+      simp only [Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false, not_and]
+      exact hne P
+    rw [hempty]
+    exact Set.finite_empty
+
+/-- **A homomorphism out of `W.Point` with FINITE image is zero.**
+
+This is divisibility doing the work: with `n := #(im φ)`, Lagrange gives
+`n • Q = 0` for every `Q` in the image, while `nsmul_surjective` writes an
+arbitrary `P` as `n • P'`, so `φ P = n • φ P' = 0`.
+
+Both instance hypotheses are load-bearing here and nowhere else in the
+`isIsogeny` argument — see the FALSITY AUDIT in `NotIsRationalMapAdd`, where the
+singular cuspidal cubic has an exponent-2 point group and this conclusion
+fails. -/
+theorem eq_zero_of_finite_range [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    (hfin : (Set.range φ).Finite) : φ = 0 := by
+  classical
+  have hcoe : ((AddMonoidHom.range φ : AddSubgroup W'.Point) : Set W'.Point) = Set.range φ :=
+    AddMonoidHom.coe_range φ
+  haveI : Finite (AddMonoidHom.range φ) := by
+    have h := hfin.to_subtype
+    rwa [← hcoe] at h
+  haveI : Nonempty (AddMonoidHom.range φ) := ⟨0⟩
+  have hn0 : Nat.card (AddMonoidHom.range φ) ≠ 0 := Nat.card_pos.ne'
+  have hkill : ∀ Q ∈ AddMonoidHom.range φ,
+      Nat.card (AddMonoidHom.range φ) • Q = 0 := by
+    intro Q hQ
+    have h := card_nsmul_eq_zero' (x := (⟨Q, hQ⟩ : AddMonoidHom.range φ))
+    simpa using congrArg (Subtype.val) h
+  ext P
+  obtain ⟨P', hP'⟩ := nsmul_surjective (W := W) hn0 P
+  have hstep : φ P = Nat.card (AddMonoidHom.range φ) • φ P' := by
+    rw [← hP']
+    simp
+  rw [hstep, hkill _ ⟨P', rfl⟩]
+  simp
+
+/-- If the `x`-coordinate of the image is a single constant `c` away from the zeros of
+`B`, the image is finite: it meets `{0}`, the (at most two) points with `x = c`, and
+the image of the finitely many points where `B` vanishes. -/
+theorem finite_range_of_constX {φ : W.Point →+ W'.Point} {B : F[X]} (hB : B ≠ 0) (c : F)
+    (hc : ∀ P : W.Point, φ P ≠ 0 → B.eval (veluPointX P) ≠ 0 → veluPointX (φ P) = c) :
+    (Set.range φ).Finite := by
+  classical
+  have hbad : {P : W.Point | P ≠ 0 ∧ veluPointX P ∈ {t : F | B.eval t = 0}}.Finite :=
+    finite_veluPointX_preimage (Polynomial.finite_setOf_isRoot hB)
+  have hfib : {R : W'.Point | R ≠ 0 ∧ veluPointX R ∈ ({c} : Set F)}.Finite :=
+    finite_veluPointX_preimage (Set.finite_singleton c)
+  refine Set.Finite.subset (((hbad.image φ).union hfib).insert 0) ?_
+  rintro Q ⟨P, rfl⟩
+  by_cases hQ : φ P = 0
+  · exact Set.mem_insert_iff.2 (Or.inl hQ)
+  refine Set.mem_insert_iff.2 (Or.inr ?_)
+  have hP0 : P ≠ 0 := by rintro rfl; exact hQ (map_zero φ)
+  by_cases hBP : B.eval (veluPointX P) = 0
+  · exact Set.mem_union_left _ ⟨P, ⟨hP0, hBP⟩, rfl⟩
+  · exact Set.mem_union_right _ ⟨hQ, hc P hQ hBP⟩
+
+/-- **A rational map whose `x`-witness is a CONSTANT rational function `A = c · B` is
+zero.** The degenerate case of the two arguments below, and the reason the whole
+`isIsogeny` proof can assume `A / B` nonconstant. -/
+theorem eq_zero_of_constX [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
+    {A B : F[X]} (hB : B ≠ 0) (c : F) (hAc : A = Polynomial.C c * B)
+    (hcertx : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P)) :
+    φ = 0 := by
+  refine eq_zero_of_finite_range (finite_range_of_constX hB c ?_)
+  intro P hP hBP
+  have hx := hcertx P hP
+  rw [hAc] at hx
+  simp only [Polynomial.eval_mul, Polynomial.eval_C] at hx
+  exact mul_right_cancel₀ hBP hx
 
 /-- **LEAF.** The pointwise sum of two rational maps is rational, over an
 algebraically closed field and for an **elliptic** `W`.
@@ -1110,10 +1434,10 @@ theorem isRationalMap_add_is_false :
 
 end NotIsRationalMapAdd
 
-/-- **LEAF.** Over an **algebraically closed** field and for an **elliptic** `W`, a
-homomorphism of point groups that is given by rational functions in the coordinates
-already **is** an isogeny: the `surjective` and `finite_ker` fields of `IsIsogeny`
-come for free there.
+/-- **PROVEN** (2026-07-27). Over an **algebraically closed** field and for an
+**elliptic** `W`, a homomorphism of point groups that is given by rational functions
+in the coordinates already **is** an isogeny: the `surjective` and `finite_ker` fields
+of `IsIsogeny` come for free there.
 
 This is the honest geometric content that the unconditional `IsIsogeny.add`
 silently assumed, and the first FALSITY AUDIT above is the proof that
@@ -1127,32 +1451,219 @@ and a homomorphism onto a two-element image is rational by the constant witness
 while being wildly non-surjective. Algebraic closure does not help, because the
 obstruction is that the *curve* is singular, not that the field is small.
 
-A proof sketch, for whoever closes this. With `[IsAlgClosed F] [W.IsElliptic]`,
-`W.Point` is divisible (`nsmul_surjective`) and infinite. First, `ker φ` is finite:
-if it were infinite then, for any `P₀ ∉ ker φ`, the polynomial
-`A - C (x (φ P₀)) * B` would vanish at the infinitely many distinct `x (P₀ + k)`,
-forcing `A / B` constant; the image would then lie in `{0, Q, -Q}` and be finite, so
-`ker φ` would have index `n ≤ 3` and divisibility would give `φ = 0`. Second,
-surjectivity: with `ker φ` finite, `A / B` is a nonconstant rational function and
-its image is cofinite in `F`, so the image subgroup `H` omits only finitely many
-`x`-coordinates; if `H ≠ W'.Point` then any coset `Q + H` lies in the finite
-complement, making `H` — hence `W'.Point` — finite, which it is not.
+**The proof, as written.** Everything runs off the four helpers in
+*Consequences of divisibility* above, and the single place divisibility is used is
+`eq_zero_of_finite_range` (a homomorphism out of `W.Point` with finite image is
+zero). Note `W'` is NOT assumed elliptic and does not need to be: the target only
+ever contributes `eq_or_eq_neg_of_veluPointX_eq`, which holds for any Weierstrass
+curve.
 
-The mathematics. A nonzero homomorphism `φ` is a nonconstant morphism of curves, so
-each fibre is finite — in particular `ker φ` is. Its image is then a subgroup of
-`W'(F)` of finite index in no proper way: over an algebraically closed field
-`W'(F)` is divisible, and a divisible group has no proper subgroup of finite index,
-while a nonconstant morphism of complete curves has closed, cofinite image. Hence
-`φ` is surjective.
+*Kernel finiteness.* Fix `P₀ ∉ ker φ`. Translation by `k ∈ ker φ` does not move
+`φ P₀`, so `x (P₀ + k)` is a root of `A - C (x (φ P₀)) · B`. If that polynomial
+vanishes identically then `A / B` is constant and `eq_zero_of_constX` gives `φ = 0`;
+otherwise its root set is finite, and `k ↦ P₀ + k` is injective into
+`{0} ∪ {P ≠ 0 : x P ∈ roots}`, which is finite by `finite_veluPointX_preimage`.
+
+*Surjectivity.* Cancel `g = gcd A B` to get a **coprime** pair `(A₀, B₀)`, which is
+nonconstant (else `eq_zero_of_constX` again). Then for each `s` the polynomial
+`A₀ - C s · B₀` is nonzero; it has degree `0` for at most one `s` (a difference of
+two such is `C (s' - s) · B₀`), and by coprimality every root `t` of it has
+`B₀(t) ≠ 0`, so `s = A₀(t) / B₀(t)` is DETERMINED by `t` — distinct `s` therefore
+have disjoint root sets. Away from the finite bad locus `Z` (zeros of `g`, plus the
+`x`-coordinates of the finite kernel) a root `t` lifts to a point `P` with
+`φ P ≠ 0` and `x (φ P) = s`, via `exists_point_veluPointX_eq`. Hence the unattained
+`s` inject into `Z` through `t ↦ A₀(t) / B₀(t)` and form a finite set; pulling back
+along `x` (fibres of size ≤ 2) makes the complement of the image finite. Finally the
+image is infinite — else `eq_zero_of_finite_range` — while for `Q₀` outside it the
+coset `Q₀ + im φ` is an infinite subset of that finite complement. Contradiction.
 
 Relation to the other geometric leaves of this file: this statement SUBSUMES
 `nsmul_surjective`, and the `n`-torsion half of `finite_nsmulKer`, as soon as
-`mulByHom W n` is known to be rational (division polynomials). Those two leaves
-have a separate owner and are deliberately left in place; consolidating them is a
-cut-level decision, not one to make here. -/
+`mulByHom W n` is known to be rational (division polynomials). Consolidating them is
+a cut-level decision, not one to make here — and note the dependency runs the other
+way in the present proof, which CONSUMES `nsmul_surjective`, so the two are not
+interchangeable as written. -/
 theorem IsRationalMap.isIsogeny [IsAlgClosed F] [W.IsElliptic] {φ : W.Point →+ W'.Point}
-    (h : IsRationalMap φ) : IsIsogeny φ :=
-  sorry
+    (h : IsRationalMap φ) : IsIsogeny φ := by
+  classical
+  obtain ⟨A, B, Cp, Dp, Ep, hB, hE, hcert⟩ := h
+  have hcertx : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) :=
+    fun P hP => (hcert P hP).1
+  -- **Finiteness of the kernel.** Translating by a kernel element does not move
+  -- `x (φ P₀)`, so every `x (P₀ + k)` is a root of `A - C (x (φ P₀)) · B`; that
+  -- polynomial is nonzero unless `A / B` is constant, which forces `φ = 0`.
+  have hkerfin : φ ≠ 0 → (AddMonoidHom.ker φ : Set W.Point).Finite := by
+    intro hφ0
+    obtain ⟨P₀, hP₀⟩ : ∃ P : W.Point, φ P ≠ 0 := by
+      by_contra hcon
+      push Not at hcon
+      exact hφ0 (AddMonoidHom.ext fun P => by simpa using hcon P)
+    by_cases hAc : A = Polynomial.C (veluPointX (φ P₀)) * B
+    · exact absurd (eq_zero_of_constX hB _ hAc hcertx) hφ0
+    have hne : A - Polynomial.C (veluPointX (φ P₀)) * B ≠ 0 := sub_ne_zero.2 hAc
+    have hroots : {t : F | (A - Polynomial.C (veluPointX (φ P₀)) * B).eval t = 0}.Finite :=
+      Polynomial.finite_setOf_isRoot hne
+    have himg : ((fun k : W.Point => P₀ + k) '' (AddMonoidHom.ker φ : Set W.Point)) ⊆
+        insert (0 : W.Point) {P : W.Point | P ≠ 0 ∧ veluPointX P ∈
+          {t : F | (A - Polynomial.C (veluPointX (φ P₀)) * B).eval t = 0}} := by
+      rintro _ ⟨k, hk, rfl⟩
+      by_cases hz : P₀ + k = 0
+      · exact Set.mem_insert_iff.2 (Or.inl hz)
+      refine Set.mem_insert_iff.2 (Or.inr ⟨hz, ?_⟩)
+      have hkk : φ k = 0 := (AddMonoidHom.mem_ker).1 hk
+      have hval : φ (P₀ + k) = φ P₀ := by rw [map_add, hkk, add_zero]
+      have hx := hcertx (P₀ + k) (by rw [hval]; exact hP₀)
+      rw [hval] at hx
+      show (A - Polynomial.C (veluPointX (φ P₀)) * B).eval (veluPointX (P₀ + k)) = 0
+      simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+      linear_combination -hx
+    refine Set.Finite.of_finite_image
+      (Set.Finite.subset ((finite_veluPointX_preimage hroots).insert 0) himg) ?_
+    intro a _ b _ hab
+    exact add_left_cancel hab
+  -- **Surjectivity.** After cancelling `gcd A B` the pair `(A₀, B₀)` is coprime and
+  -- nonconstant, so `A₀ - C s · B₀` has a root for all but one `s`, and distinct `s`
+  -- have disjoint root sets. Hence all but finitely many `s` are `x`-coordinates of
+  -- the image, so the complement of the image is finite — while a coset of the
+  -- (infinite) image sits inside that complement.
+  have hsurj : φ ≠ 0 → Function.Surjective φ := by
+    intro hφ0
+    have hker := hkerfin hφ0
+    obtain ⟨g, A₀, B₀, hgne, hA, hBeq, hcop⟩ :
+        ∃ g A₀ B₀ : F[X], g ≠ 0 ∧ A = g * A₀ ∧ B = g * B₀ ∧ IsCoprime A₀ B₀ := by
+      letI : GCDMonoid F[X] := EuclideanDomain.gcdMonoid F[X]
+      exact ⟨GCDMonoid.gcd A B, A / GCDMonoid.gcd A B, B / GCDMonoid.gcd A B,
+        gcd_ne_zero_of_right hB,
+        (EuclideanDomain.mul_div_cancel' (gcd_ne_zero_of_right hB) (gcd_dvd_left A B)).symm,
+        (EuclideanDomain.mul_div_cancel' (gcd_ne_zero_of_right hB) (gcd_dvd_right A B)).symm,
+        isCoprime_div_gcd_div_gcd hB⟩
+    have hB₀ : B₀ ≠ 0 := by rintro rfl; rw [mul_zero] at hBeq; exact hB hBeq
+    have hcert₀ : ∀ P : W.Point, φ P ≠ 0 → g.eval (veluPointX P) ≠ 0 →
+        veluPointX (φ P) * B₀.eval (veluPointX P) = A₀.eval (veluPointX P) := by
+      intro P hP hg
+      have hx := hcertx P hP
+      rw [hA, hBeq] at hx
+      simp only [Polynomial.eval_mul] at hx
+      refine mul_left_cancel₀ hg ?_
+      linear_combination hx
+    have hnocommon : ∀ t : F, A₀.eval t = 0 → B₀.eval t = 0 → False := by
+      intro t h1 h2
+      obtain ⟨u, v, huv⟩ := hcop
+      have hev := congrArg (Polynomial.eval t) huv
+      simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, h1, h2,
+        mul_zero, add_zero] at hev
+      exact zero_ne_one hev
+    have hnc : ∀ s : F, A₀ ≠ Polynomial.C s * B₀ := by
+      intro s hs
+      refine hφ0 (eq_zero_of_constX hB s ?_ hcertx)
+      rw [hA, hs, hBeq]; ring
+    have hdpos : 0 < max A₀.natDegree B₀.natDegree := by
+      rcases Nat.eq_zero_or_pos (max A₀.natDegree B₀.natDegree) with h0 | h0
+      · exfalso
+        have hA0 : A₀.natDegree = 0 := by omega
+        have hB0 : B₀.natDegree = 0 := by omega
+        obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.1 hA0
+        obtain ⟨b, hb⟩ := Polynomial.natDegree_eq_zero.1 hB0
+        have hbne : b ≠ 0 := by
+          rintro rfl
+          rw [map_zero] at hb
+          exact hB₀ hb.symm
+        refine hnc (a / b) ?_
+        rw [← ha, ← hb, ← Polynomial.C_mul, div_mul_cancel₀ a hbne]
+      · exact h0
+    -- At most one `s` degenerates the degree of `A₀ - C s * B₀`.
+    have hdegs : ∀ s s' : F, (A₀ - Polynomial.C s * B₀).natDegree = 0 →
+        (A₀ - Polynomial.C s' * B₀).natDegree = 0 → s = s' := by
+      intro s s' h1 h2
+      by_contra hss
+      have hd : Polynomial.C (s' - s) * B₀ =
+          (A₀ - Polynomial.C s * B₀) - (A₀ - Polynomial.C s' * B₀) := by
+        rw [Polynomial.C_sub]; ring
+      have hle : (Polynomial.C (s' - s) * B₀).natDegree = 0 := by
+        rw [hd]
+        exact Nat.le_zero.1 (le_trans (Polynomial.natDegree_sub_le _ _) (by omega))
+      have hsub : s' - s ≠ 0 := sub_ne_zero.2 (Ne.symm hss)
+      have hB0d : B₀.natDegree = 0 := by
+        rwa [Polynomial.natDegree_C_mul hsub] at hle
+      have h3 : (Polynomial.C s * B₀).natDegree = 0 :=
+        Nat.le_zero.1 (le_trans (Polynomial.natDegree_C_mul_le s B₀) (le_of_eq hB0d))
+      have hA0d : A₀.natDegree = 0 := by
+        have heq : A₀ = (A₀ - Polynomial.C s * B₀) + Polynomial.C s * B₀ := by ring
+        rw [heq]
+        exact Nat.le_zero.1 (le_trans (Polynomial.natDegree_add_le _ _) (by omega))
+      omega
+    -- The finite "bad locus" in the source: zeros of the cancelled factor `g`,
+    -- together with the `x`-coordinates of the (finite) kernel.
+    have hZ : ({t : F | g.eval t = 0} ∪
+        veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
+      (Polynomial.finite_setOf_isRoot hgne).union (hker.image _)
+    -- The unattained `x`-coordinates form a finite set.
+    have hT : {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s}.Finite := by
+      have hsub : {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s} ⊆
+          {s : F | (A₀ - Polynomial.C s * B₀).natDegree = 0} ∪
+            (fun t : F => A₀.eval t / B₀.eval t) ''
+              ({t : F | g.eval t = 0} ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point)) := by
+        intro s hs
+        by_cases hdeg0 : (A₀ - Polynomial.C s * B₀).natDegree = 0
+        · exact Set.mem_union_left _ hdeg0
+        refine Set.mem_union_right _ ?_
+        have hdegne : (A₀ - Polynomial.C s * B₀).degree ≠ 0 := by
+          intro h0
+          exact hdeg0 (Polynomial.natDegree_eq_zero_iff_degree_le_zero.2 (le_of_eq h0))
+        obtain ⟨t, ht⟩ := IsAlgClosed.exists_root (A₀ - Polynomial.C s * B₀) hdegne
+        have hteq : A₀.eval t = s * B₀.eval t := by
+          have h := ht
+          rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_mul,
+            Polynomial.eval_C] at h
+          linear_combination h
+        have hBt : B₀.eval t ≠ 0 := by
+          intro h0
+          exact hnocommon t (by rw [hteq, h0, mul_zero]) h0
+        refine ⟨t, ?_, ?_⟩
+        · -- `t` must lie in the bad locus, else `s` would be attained.
+          by_contra htbad
+          have hg : g.eval t ≠ 0 := fun hc => htbad (Set.mem_union_left _ hc)
+          obtain ⟨P, hP0, hxP⟩ := exists_point_veluPointX_eq (W := W) t
+          have hPk : φ P ≠ 0 := by
+            intro hc
+            exact htbad (Set.mem_union_right _ ⟨P, (AddMonoidHom.mem_ker).2 hc, hxP⟩)
+          have hval := hcert₀ P hPk (by rw [hxP]; exact hg)
+          rw [hxP, hteq] at hval
+          exact hs P hPk (mul_right_cancel₀ hBt hval)
+        · field_simp
+          linear_combination hteq
+      refine Set.Finite.subset (Set.Finite.union ?_ (hZ.image _)) hsub
+      exact Set.Subsingleton.finite (fun s hs s' hs' => hdegs s s' hs hs')
+    -- Hence the complement of the image is finite.
+    have hrcfin : ((Set.range φ)ᶜ).Finite := by
+      refine Set.Finite.subset
+        (finite_veluPointX_preimage (W := W')
+          (T := {s : F | ∀ P : W.Point, φ P ≠ 0 → veluPointX (φ P) ≠ s}) hT) ?_
+      intro R hR
+      have hR0 : R ≠ 0 := by
+        rintro rfl
+        exact hR ⟨0, map_zero φ⟩
+      refine ⟨hR0, ?_⟩
+      intro P hP hxeq
+      rcases eq_or_eq_neg_of_veluPointX_eq hR0 hP hxeq.symm with hcase | hcase
+      · exact hR ⟨P, hcase.symm⟩
+      · exact hR ⟨-P, by rw [map_neg, ← hcase]⟩
+    by_contra hnsurj
+    obtain ⟨Q₀, hQ₀'⟩ : ∃ Q₀ : W'.Point, Q₀ ∉ Set.range φ := by
+      by_contra hc
+      push Not at hc
+      exact hnsurj hc
+    have hinf : (Set.range φ).Infinite := by
+      intro hfin
+      exact hφ0 (eq_zero_of_finite_range hfin)
+    have hsubset : (fun R : W'.Point => Q₀ + R) '' (Set.range φ) ⊆ (Set.range φ)ᶜ := by
+      rintro _ ⟨R, ⟨P, rfl⟩, rfl⟩
+      rintro ⟨P', hP'⟩
+      exact hQ₀' ⟨P' - P, by rw [map_sub, hP']; simp⟩
+    exact (hinf.image (Set.injOn_of_injective (add_right_injective Q₀)))
+      (hrcfin.subset hsubset)
+  exact ⟨⟨A, B, Cp, Dp, Ep, hB, hE, hcert⟩, hsurj, hkerfin⟩
 
 /-- The pointwise sum of two isogenies over an **algebraically closed** field is an
 isogeny — this is the statement that `Hom(W, W')` is a group under addition in the
@@ -1379,186 +1890,6 @@ def End.toIsogeny [IsAlgClosed F] [W.IsElliptic] (f : End W) : Isogeny W W :=
 
 @[simp] theorem End.toIsogeny_toHom [IsAlgClosed F] [W.IsElliptic] (f : End W) :
     (End.toIsogeny f).toHom = (f : AddMonoid.End W.Point) := rfl
-
-/-! ### The two geometric inputs -/
-
-/-! Both inputs are PROVEN (2026-07-26) from the division-polynomial development
-in `TorsionCard.lean` / `PhiPsiCoprime.lean`, over an arbitrary algebraically
-closed field and in every characteristic.
-
-Note on the `(V⁄F)` spelling below. `TorsionCard.lean` states everything for the
-base-changed curve `(E⁄k)`, and `(V⁄F) = V` holds by `rfl` — but the two are not
-*syntactically* equal, so `rw` cannot cross between them. The helpers are
-therefore written uniformly in the `(V⁄F)` form, matching `TorsionCard`, and the
-one crossing into the `W.Point` form the rest of this file uses is made by
-`exact` (which goes through `whnf`) in the two leaves themselves. -/
-
-omit [DecidableEq F] in
-/-- `ΨSqₙ ≠ 0` in ANY characteristic, needing only `n ≠ 0`.
-
-The leading-coefficient route fails at `n = p` in characteristic `p`, where
-`coeff_ΨSq n = n²` vanishes. Instead: `IsCoprime a 0` forces `a` to be a unit,
-while `Φₙ` has degree `n² > 0`. (This is `TorsionCharP.ΨSq_ne_zero`, inlined
-here so that this file's import cone need not grow by the whole
-`TorsionCharP`/`WronskianInduction` subtree.) -/
-theorem ΨSq_ne_zero' (V : Affine F) [V.IsElliptic] {n : ℤ} (hn : n ≠ 0) :
-    V.ΨSq n ≠ 0 := by
-  intro h0
-  have hcop : IsCoprime (V.Φ n) (V.ΨSq n) :=
-    WeierstrassCurve.isCoprime_Φ_ΨSq V hn V.isUnit_Δ
-  rw [h0] at hcop
-  have hdeg0 : (V.Φ n).natDegree = 0 :=
-    Polynomial.natDegree_eq_zero_of_isUnit (isCoprime_zero_right.mp hcop)
-  rw [WeierstrassCurve.natDegree_Φ V n] at hdeg0
-  exact hn (Int.natAbs_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp hdeg0))
-
-omit [DecidableEq F] in
-/-- **The fibre node over an algebraically closed field.** Given any `ξ`, there
-is a curve point `(x₀, y₀)` with `Φₙ(x₀) = ξ · ΨSqₙ(x₀)`.
-
-This is `TorsionCard.exists_point_x_smul` with its `(n : F) ≠ 0` hypothesis
-REMOVED, which is exactly what algebraic (rather than separable) closure buys.
-That hypothesis is used there only to show the derivative of `Φₙ − C ξ · ΨSqₙ`
-is nonzero, so that a root exists over a separably closed field. Here the
-polynomial is monic of degree `n² ≥ 1` — its `n²`-coefficient is `1` by
-`coeff_Φ`, and `ΨSqₙ` cannot contribute there since its degree is at most
-`n² − 1` — so `IsAlgClosed.exists_root` applies directly. The `y`-coordinate is
-then a root of the degree-`2` fibre quadratic, again with no separability. -/
-theorem exists_point_x_smul_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
-    {n : ℤ} (hn : n ≠ 0) (ξ : F) :
-    ∃ (x₀ y₀ : F) (_ : (V⁄F).toAffine.Nonsingular x₀ y₀),
-      ((V⁄F).Φ n).eval x₀ = ξ * ((V⁄F).ΨSq n).eval x₀ := by
-  classical
-  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
-  have hD1 : 1 ≤ n.natAbs ^ 2 := by
-    have hna : n.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hn
-    have := pow_ne_zero 2 hna
-    omega
-  set f : F[X] := (V⁄F).Φ n - Polynomial.C ξ * (V⁄F).ΨSq n with hf
-  have hcoeff : f.coeff (n.natAbs ^ 2) = 1 := by
-    rw [hf, Polynomial.coeff_sub, Polynomial.coeff_C_mul,
-      WeierstrassCurve.coeff_Φ,
-      Polynomial.coeff_eq_zero_of_natDegree_lt
-        (lt_of_le_of_lt ((V⁄F).natDegree_ΨSq_le n) (by omega)),
-      mul_zero, sub_zero]
-  have hf0 : f ≠ 0 := by
-    intro hc
-    rw [hc, Polynomial.coeff_zero] at hcoeff
-    exact zero_ne_one hcoeff
-  have hle : n.natAbs ^ 2 ≤ f.natDegree :=
-    Polynomial.le_natDegree_of_ne_zero (by rw [hcoeff]; exact one_ne_zero)
-  have hdeg : f.degree ≠ 0 := by
-    rw [Polynomial.degree_eq_natDegree hf0]
-    intro hc
-    have hnd : f.natDegree = 0 := by exact_mod_cast hc
-    omega
-  obtain ⟨x₀, hx₀⟩ := IsAlgClosed.exists_root f hdeg
-  have hrel : ((V⁄F).Φ n).eval x₀ = ξ * ((V⁄F).ΨSq n).eval x₀ := by
-    have hx := hx₀
-    rw [Polynomial.IsRoot, hf, Polynomial.eval_sub, Polynomial.eval_mul,
-      Polynomial.eval_C] at hx
-    linear_combination hx
-  have hydeg : (TorsionCard.yQuad V x₀).degree ≠ 0 := by
-    rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero V x₀),
-      TorsionCard.yQuad_natDegree]
-    norm_num
-  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root (TorsionCard.yQuad V x₀) hydeg
-  refine ⟨x₀, y₀, ?_, hrel⟩
-  exact (V⁄F).toAffine.equation_iff_nonsingular.mp
-    ((TorsionCard.eval_yQuad_eq_zero_iff_equation V x₀ y₀).mp hy₀)
-
-/-- **Divisibility of the point group over an algebraically closed field**, for
-every nonzero integer and in every characteristic.
-
-Same argument as `TorsionCard.smul_surjective`, over the stronger fibre node
-above: `ΨSqₙ(x₀) ≠ 0` by the Bézout identity `isCoprime_Φ_ΨSq` (a common root
-would contradict `A·Φ + B·ΨSq = 1`), so `TorsionCard.exists_smul_some_eq`
-computes `n • (x₀, y₀)` as an affine point with `x`-coordinate `ξ`; its
-`y`-coordinate is `η` or `negY ξ η`, and in the latter case negating the
-preimage fixes it. -/
-theorem zsmul_surjective_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
-    {n : ℤ} (hn : n ≠ 0) : Function.Surjective (fun P : (V⁄F).Point => n • P) := by
-  classical
-  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
-  have hpoint : ∀ {x₁ y₁ x₂ y₂ : F} (h₁ : (V⁄F).toAffine.Nonsingular x₁ y₁)
-      (h₂ : (V⁄F).toAffine.Nonsingular x₂ y₂), x₁ = x₂ → y₁ = y₂ →
-      (Affine.Point.some x₁ y₁ h₁ : (V⁄F).Point) = Affine.Point.some x₂ y₂ h₂ := by
-    intro x₁ y₁ x₂ y₂ h₁ h₂ hx hy
-    subst hx; subst hy; rfl
-  intro P₀
-  cases P₀ with
-  | zero => exact ⟨0, smul_zero _⟩
-  | some ξ η h₀ =>
-    obtain ⟨x₀, y₀, hns, hrel⟩ := exists_point_x_smul_algClosed V hn ξ
-    have hΨ : ((V⁄F).ΨSq n).eval x₀ ≠ 0 := by
-      intro h0
-      obtain ⟨A, B, hAB⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (V⁄F) hn (V⁄F).isUnit_Δ
-      have hev := congrArg (Polynomial.eval x₀) hAB
-      rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
-        Polynomial.eval_one, hrel, h0] at hev
-      simp at hev
-    obtain ⟨x', y', h', hsmul, hx'⟩ := TorsionCard.exists_smul_some_eq V hn hns hΨ
-    have hx : x' = ξ := by
-      rw [hrel] at hx'
-      exact mul_right_cancel₀ hΨ hx'
-    rcases Affine.Y_eq_of_X_eq h'.1 h₀.1 hx with hy | hy
-    · exact ⟨Affine.Point.some x₀ y₀ hns, hsmul.trans (hpoint h' h₀ hx hy)⟩
-    · refine ⟨-(Affine.Point.some x₀ y₀ hns), ?_⟩
-      show n • (-(Affine.Point.some x₀ y₀ hns) : (V⁄F).Point) = _
-      rw [smul_neg, hsmul, Affine.Point.neg_some]
-      exact hpoint _ h₀ hx (by rw [hy, hx, Affine.negY_negY])
-
-/-- **Finiteness of the `n`-torsion over an algebraically closed field**, in
-every characteristic.
-
-A nonzero `n`-torsion point `(x, y)` has `ΨSqₙ(x) = 0`
-(`TorsionCard.smul_some_eq_zero_iff`); `ΨSqₙ ≠ 0` by `ΨSq_ne_zero'`, so there are
-finitely many such `x`, and at most two points lie over each
-(`TorsionCard.pointsAt`). -/
-theorem finite_zsmul_torsion_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
-    {n : ℤ} (hn : n ≠ 0) : {P : (V⁄F).Point | n • P = 0}.Finite := by
-  classical
-  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
-  have hΨ : (V⁄F).ΨSq n ≠ 0 := ΨSq_ne_zero' (V⁄F) hn
-  refine Set.Finite.subset (Finset.finite_toSet (insert (0 : (V⁄F).Point)
-    (((V⁄F).ΨSq n).roots.toFinset.biUnion (TorsionCard.pointsAt V)))) ?_
-  intro P hP
-  simp only [Set.mem_setOf_eq] at hP
-  rw [Finset.mem_coe]
-  cases P with
-  | zero => exact Finset.mem_insert_self _ _
-  | some x y h =>
-    refine Finset.mem_insert_of_mem (Finset.mem_biUnion.mpr ⟨x, ?_, ?_⟩)
-    · rw [Multiset.mem_toFinset, Polynomial.mem_roots hΨ, Polynomial.IsRoot]
-      exact (TorsionCard.smul_some_eq_zero_iff V hn h).mp hP
-    · exact (TorsionCard.mem_pointsAt_iff V).mpr ⟨y, h, rfl⟩
-
-/-- **PROVEN.** Multiplication by a nonzero integer is surjective on the points of
-an elliptic curve over an algebraically closed field.
-
-This is the divisibility of `E(F)`, and it is one of the two geometric inputs on
-which the degree/dual arithmetic rests. It is *not* formal: a homomorphic image
-of a divisible group need not be the whole target. -/
-theorem nsmul_surjective [IsAlgClosed F] [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) :
-    Function.Surjective (fun P : W.Point => n • P) := by
-  have h : Function.Surjective (fun P : W.Point => (n : ℤ) • P) :=
-    zsmul_surjective_algClosed W (Int.natCast_ne_zero.mpr hn)
-  intro Q
-  obtain ⟨P, hP⟩ := h Q
-  exact ⟨P, by simpa only [natCast_zsmul] using hP⟩
-
-/-- **PROVEN.** The `n`-torsion of an elliptic curve is finite.
-
-The second geometric input. Over an algebraically closed field of characteristic
-zero it is in fact `(ℤ/n)²`; only finiteness is used here — and, unlike the
-count, finiteness needs no hypothesis on the characteristic. -/
-theorem finite_nsmulKer [IsAlgClosed F] [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) :
-    {P : W.Point | n • P = 0}.Finite := by
-  have h : {P : W.Point | (n : ℤ) • P = 0}.Finite :=
-    finite_zsmul_torsion_algClosed W (Int.natCast_ne_zero.mpr hn)
-  refine h.subset ?_
-  intro P hP
-  simpa only [Set.mem_setOf_eq, natCast_zsmul] using hP
 
 /-! ### The dual isogeny -/
 
