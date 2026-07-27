@@ -345,6 +345,11 @@ public import Mathlib.RingTheory.Int.Basic
 -- DERIVE the initiality clause of `IsCoarseModuliY0` instead of citing it;
 -- see the atlas section before `exists_coarseModuliY0_of_pos`.
 public import Mathlib.AlgebraicGeometry.Sites.Fpqc
+-- `ValuativeCommSq` and `IsProper.eq_valuativeCriterion`: the valuative criterion
+-- of properness, which is what `bijective_pre_generic_of_isProper` runs on — and
+-- through it both `properX` of `IsX0CurveModel` and `neronJ` of
+-- `IsX0JacobianModel`.
+public import Mathlib.AlgebraicGeometry.ValuativeCriterion
 
 @[expose] public section
 
@@ -5058,9 +5063,92 @@ def IsX0CurveModel.spIdent {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod �
   toEquiv := cm.spX
   nat := cm.spX_nat
 
+/-- **Every rational number, or its inverse, lies in a local subring of
+`ℚ`** (PROVEN).
+
+The arithmetic heart of `bijective_pre_generic_of_isProper`, and the
+whole reason no classification of the subrings of `ℚ` is needed.  Write
+`q = m/n` in lowest terms.  Both `m` and `n` lie in `R`, because every
+subring of `ℚ` contains `ℤ`.  If `n` is a unit of `R` then `q = m·n⁻¹ ∈
+R`; if `m` is a unit then `q⁻¹ = n·m⁻¹ ∈ R`.  Otherwise `IsReductionBase`
+puts both in `ker toF`, so Bézout's `u·m + v·n = 1` gives `toF 1 = 0` —
+and `toF 1 = 0` says `1` is a nonunit, which is false.
+
+Note where coprimality is used: only to get Bézout.  Nothing here needs
+`ℓ` prime, or even `R` to be a DVR; locality alone does it. -/
+theorem mem_or_inv_mem_of_isReductionBase {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) (q : ℚ) : q ∈ R ∨ q⁻¹ ∈ R := by
+  rcases eq_or_ne q 0 with rfl | hq
+  · exact Or.inl (zero_mem R)
+  have hcop : IsCoprime (q.num) ((q.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]; simpa [Int.gcd] using q.reduced
+  obtain ⟨u, v, huv⟩ := hcop
+  have hden : ((q.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr q.den_nz
+  have hnum : ((q.num : ℚ)) ≠ 0 := Int.cast_ne_zero.mpr (Rat.num_ne_zero.mpr hq)
+  have hqval : q * (q.den : ℚ) = (q.num : ℚ) :=
+    ((div_eq_iff hden).mp (Rat.num_div_den q)).symm
+  by_cases hn : IsUnit (((q.den : ℤ) : R))
+  · left
+    obtain ⟨w, hw⟩ := hn
+    have hwq : (q.den : ℚ) * (((w⁻¹ : Rˣ) : R) : ℚ) = 1 := by
+      have h := congrArg (fun z : R => (z : ℚ)) w.mul_inv
+      rw [hw] at h; push_cast at h; exact h
+    have hcoe : (((w⁻¹ : Rˣ) : R) : ℚ) = ((q.den : ℚ))⁻¹ :=
+      (inv_eq_of_mul_eq_one_right hwq).symm
+    have hmem : ((((q.num : ℤ) : R) * ((w⁻¹ : Rˣ) : R) : R) : ℚ) = q := by
+      push_cast [hcoe]
+      rw [← div_eq_mul_inv, div_eq_iff hden]
+      exact hqval.symm
+    exact hmem ▸ (((q.num : ℤ) : R) * ((w⁻¹ : Rˣ) : R)).2
+  by_cases hm : IsUnit (((q.num : ℤ) : R))
+  · right
+    obtain ⟨w, hw⟩ := hm
+    have hwq : (q.num : ℚ) * (((w⁻¹ : Rˣ) : R) : ℚ) = 1 := by
+      have h := congrArg (fun z : R => (z : ℚ)) w.mul_inv
+      rw [hw] at h; push_cast at h; exact h
+    have hcoe : (((w⁻¹ : Rˣ) : R) : ℚ) = ((q.num : ℚ))⁻¹ :=
+      (inv_eq_of_mul_eq_one_right hwq).symm
+    have hmem : ((((q.den : ℤ) : R) * ((w⁻¹ : Rˣ) : R) : R) : ℚ) = q⁻¹ := by
+      push_cast [hcoe]
+      rw [← div_eq_mul_inv, div_eq_iff hnum, ← hqval]
+      field_simp
+    exact hmem ▸ (((q.den : ℤ) : R) * ((w⁻¹ : Rˣ) : R)).2
+  · exfalso
+    have h1 : toF ((q.den : ℤ) : R) = 0 := (hbase.ker_eq_nonunits _).mpr hn
+    have h2 : toF ((q.num : ℤ) : R) = 0 := (hbase.ker_eq_nonunits _).mpr hm
+    have hb : ((u : R) * ((q.num : ℤ) : R) + (v : R) * ((q.den : ℤ) : R)) = 1 := by
+      exact_mod_cast congrArg (fun z : ℤ => (z : R)) huv
+    have hone : toF (1 : R) = 0 := by
+      rw [← hb]
+      simp only [map_add, map_mul, h1, h2, mul_zero, add_zero]
+    exact absurd isUnit_one ((hbase.ker_eq_nonunits 1).mp hone)
+
+/-- **A base pinned by `IsReductionBase` is a valuation ring** (PROVEN).
+
+Immediate from `mem_or_inv_mem_of_isReductionBase`: for `a ≠ 0 ≠ b` in
+`R`, either `b/a ∈ R` — and then `a · (b/a) = b` — or `a/b ∈ R`, and then
+`b · (a/b) = a`.  The two degenerate cases take `c = 0`. -/
+theorem valuationRing_of_isReductionBase {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) : ValuationRing R := by
+  haveI : PreValuationRing R := by
+    refine ⟨fun a b => ?_⟩
+    rcases eq_or_ne a 0 with rfl | ha
+    · exact ⟨0, Or.inr (by simp)⟩
+    rcases eq_or_ne b 0 with rfl | hb
+    · exact ⟨0, Or.inl (by simp)⟩
+    have ha' : (a : ℚ) ≠ 0 := fun h => ha (Subtype.ext h)
+    have hb' : (b : ℚ) ≠ 0 := fun h => hb (Subtype.ext h)
+    rcases mem_or_inv_mem_of_isReductionBase hbase ((b : ℚ) / (a : ℚ)) with hmem | hmem
+    · exact ⟨⟨_, hmem⟩, Or.inl (Subtype.ext (by push_cast; field_simp))⟩
+    · refine ⟨⟨_, hmem⟩, Or.inr (Subtype.ext ?_)⟩
+      push_cast
+      rw [inv_div]
+      field_simp
+  exact ⟨⟩
+
 /-- **The valuative criterion of properness, read on relative points: a
 `ℚ`-point of a proper `ℤ_(ℓ)`-scheme extends uniquely to a
-`ℤ_(ℓ)`-point** (sorry node).
+`ℤ_(ℓ)`-point** (PROVEN).
 
 TRUE, and it is the ONE piece of geometry both halves of the Néron datum
 need: it is `properX` of `IsX0CurveModel` for the curve, and `neronJ` of
@@ -5080,23 +5168,54 @@ maximal ideal of a ring surjecting onto `ZMod ℓ`, and the `ℤ_(p)`.  So
 of `R ↪ Frac R`, which is precisely the left edge of mathlib's
 `ValuativeCommSq`.
 
-IRREDUCIBLE at this pin ALONG THE GEOMETRY AXIS, and the CHECK THAT
-WOULD REFUTE THAT: mathlib HAS the criterion —
+**How it is proved, and why an earlier audit calling it irreducible was
+wrong.**  That audit reported the leaf blocked on "the classification of
+local subrings of `ℚ`", which sounded like a theory to build.  It is not
+needed: `mem_or_inv_mem_of_isReductionBase` gets `ValuationRing ↥R` out
+of Bézout in a dozen lines, without ever identifying `R` as `ℤ_(p)`.
+With that, everything else is mathlib —
 `AlgebraicGeometry.IsProper.eq_valuativeCriterion` presents `IsProper` as
-`ValuativeCriterion ⊓ …`, and `ValuativeCriterion` supplies a unique lift
-for every `ValuativeCommSq`.  What is missing is the ARITHMETIC input:
-nothing in this development yet derives `ValuationRing ↥R` and
-`IsFractionRing ↥R ℚ` from `IsReductionBase`, i.e. the classification of
-local subrings of `ℚ`.  Supplying those two instances refutes the claim
-and closes this leaf, and that is a statement about `ℚ` with no
-schemes in it at all. -/
+`ValuativeCriterion ⊓ …`, and `ValuativeCriterion` supplies a UNIQUE lift
+for every `ValuativeCommSq`, which is exactly surjectivity plus
+injectivity of the map on relative points.
+
+One implementation note worth keeping.  The `Algebra ↥R ℚ` used here is
+`R.subtype.toAlgebra`, supplied EXPLICITLY as the `algebra` field of the
+`ValuativeCommSq` rather than found by instance search.  That is what
+makes `algebraMap ↥R ℚ` reduce to `R.subtype`, hence
+`Spec.map (CommRingCat.ofHom (algebraMap ↥R ℚ))` reduce to
+`SpecLoc.generic R` by `rfl`; with any other algebra path the two
+`Spec.map`s print identically and are not defeq. -/
 theorem bijective_pre_generic_of_isProper (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R toF)
-    {A : Scheme.{0}} (f : A ⟶ SpecLoc R) (_hf : IsProper f) :
+    (hbase : IsReductionBase ℓ R toF)
+    {A : Scheme.{0}} (f : A ⟶ SpecLoc R) (hf : IsProper f) :
     Function.Bijective
       (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
-        RelPoint f (𝟙 (SpecLoc R)) → RelPoint f (SpecLoc.generic R)) :=
-  sorry
+        RelPoint f (𝟙 (SpecLoc R)) → RelPoint f (SpecLoc.generic R)) := by
+  letI : Algebra R ℚ := R.subtype.toAlgebra
+  haveI : FaithfulSMul R ℚ :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr Subtype.val_injective
+  haveI : IsFractionRing R ℚ := IsFractionRing.of_field _ _ (fun z =>
+    ⟨((z.num : ℤ) : R), ((z.den : ℤ) : R), by push_cast; exact (Rat.num_div_den z).symm⟩)
+  haveI : ValuationRing R := valuationRing_of_isReductionBase hbase
+  rw [IsProper.eq_valuativeCriterion] at hf
+  have hvc : ValuativeCriterion f := hf.1.1.1
+  constructor
+  · intro s₁ s₂ h
+    have hval : SpecLoc.generic R ≫ s₁.1 = SpecLoc.generic R ≫ s₂.1 := congrArg Subtype.val h
+    let sq : ValuativeCommSq f :=
+      { R := R, K := ℚ, i₁ := SpecLoc.generic R ≫ s₁.1, i₂ := 𝟙 (SpecLoc R)
+        commSq := ⟨by rw [Category.assoc, s₁.2, Category.comp_id, Category.comp_id]; rfl⟩ }
+    haveI := (hvc sq).some
+    have e : (⟨s₁.1, rfl, s₁.2⟩ : sq.commSq.LiftStruct)
+        = ⟨s₂.1, hval.symm, s₂.2⟩ := Subsingleton.elim _ _
+    exact Subtype.ext (congrArg CategoryTheory.CommSq.LiftStruct.l e)
+  · intro x
+    let sq : ValuativeCommSq f :=
+      { R := R, K := ℚ, i₁ := x.1, i₂ := 𝟙 (SpecLoc R)
+        commSq := ⟨by rw [Category.comp_id]; exact x.2⟩ }
+    obtain ⟨l, hl₁, hl₂⟩ := (hvc sq).some.default
+    exact ⟨⟨l, hl₂⟩, Subtype.ext hl₁⟩
 
 /-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists,
 with its generic fibre identified with the given `X/ℚ`** (sorry node —
@@ -5162,8 +5281,8 @@ need no moduli theory at all, and those are now discharged here:
   `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`, and `spX` / `spX_nat` are the universal property of
   that pullback — `fibreIdentPullback`, which is PROVEN;
 * `properX` is `bijective_pre_generic_of_isProper` applied to
-  `model.isProper`, whose remaining content is the ARITHMETIC fact that
-  a local subring of `ℚ` is a valuation ring with fraction field `ℚ`.
+  `model.isProper`, and that is PROVEN — mathlib's valuative criterion
+  over the observation that `IsReductionBase` makes `R` a valuation ring.
 
 So what a Deligne–Rapoport specialist is now asked for is the model and
 its generic fibre, and nothing else. -/
