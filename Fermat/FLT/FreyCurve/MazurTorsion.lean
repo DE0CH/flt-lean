@@ -30218,14 +30218,18 @@ pairwise distinct; and the derivation `X(ℚ) ↪ X(𝔽₅)` from finiteness of
 `J(ℚ)` plus torsion-freeness of the kernel of reduction.
 
 Items 1–4 above survive as the SINGLE leaf
-`Fermat.Hyperelliptic.X18.redPt_injective_five`, the injectivity of
-reduction at `5` on `X(ℚ)`. (Until 2026-07-26 that leaf was the bundled
-`X18.exists_jacobianPackage`; **that is now PROVEN** and is no longer a
-leaf. The two are equivalent — both directions are proven there — and
-the bundled form was retired because its abelian-variety structure turned
-out not to be load-bearing: once `redPt` is injective the package is met
-by free `𝔽₂`-vector spaces on the point sets. Do NOT dispatch at
-`exists_jacobianPackage`; the arithmetic is all in the injectivity.)
+`Fermat.Hyperelliptic.X18.exists_jacobianPackage` — `Pic⁰`, `rank J(ℚ) = 0`
+and a torsion-free reduction kernel, bundled. (**Corrected 2026-07-27.**
+This paragraph previously named `X18.redPt_injective_five` as the leaf
+and said the bundled form "is now PROVEN"; both statements were undone
+when route 2 was adopted and the file's dependency direction was
+inverted. The two remain EQUIVALENT — a package can be built out of
+nothing but that injectivity, taking free `𝔽₂`-vector spaces on the point
+sets — so the bundled form carries no more arithmetic than the
+injectivity does; it is the leaf because it is where the classical proof
+attaches, and its docstring records the Magma certificate and the
+refutation of the elliptic-Chabauty route that the Diophantine framing
+had depended on.)
 Two remarks worth carrying: the reduction map on
 POINTS is constructed rather than postulated (a package with an
 existentially quantified point-reduction would be discharged by the very
