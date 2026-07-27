@@ -1028,8 +1028,12 @@ the approximation leaf's PROOF, where a wrong guess costs nothing.
 is two, along the source's own seam `00R7 = approximation + 00MP`:
 
 * `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian` —
-  the APPROXIMATION half.  Open.  Whoever proves it takes the filtered-system
-  decision, and should record what they pinned.
+  the APPROXIMATION half.  **PROVEN later the same day**, over the single new
+  leaf `nonempty_flatNoetherianStage_of_essFinitePresentation`; the
+  filtered-system decision that its owner took, and the reasons, are the
+  section note "THE COLIMIT-API DECISION" immediately below.  The short form:
+  no filtered colimit is stated anywhere; the interface is a Noetherian stage
+  plus `Algebra.IsPushout`.
 * `flat_of_rTensor_injective_of_flat_quotientMap` — **10.99.10**, the local
   criterion of flatness in the Noetherian setting.  Open, and the only thing
   standing between this development and 00MP.
@@ -1282,9 +1286,231 @@ theorem flat_of_flat_of_flat_quotientMap_noetherian {R B A : Type u}
       (IsLocalRing.maximalIdeal R))
     hfib
 
-/-- **THE APPROXIMATION HALF OF 00R7** (SORRY LEAF, cut 2026-07-27; the
-section note above is the design decision that produced it and should be read
-first).
+/-! ### THE COLIMIT-API DECISION, TAKEN 2026-07-27 — and it is *no colimit API*
+
+**SECTION NOTE for `FlatNoetherianStage`, the leaf
+`nonempty_flatNoetherianStage_of_essFinitePresentation`, and the now-PROVEN
+approximation half below them.**  The note "00R7 CUT" above took the *first*
+design decision (pass 00MP as a hypothesis rather than state a filtered
+system) and explicitly deferred the *second* one to whoever proved the
+approximation half:
+
+> The correct datum is therefore a genuine filtered colimit — `Ring.DirectLimit`
+> over a directed order, or a functor from a filtered category — plus a
+> `DirectedSystem` of the two maps `g` and `v`, plus a descent lemma "a filtered
+> colimit of flat ring maps is flat over the colimit of the bases".
+
+That paragraph is a correct description of what 00R7's PROOF does.  It is
+**not** what any of 00R7's statements needs, and the decision taken here is
+therefore:
+
+**PIN: no filtered colimit appears in the statement of any leaf.  The
+interface between the approximation and everything that consumes it is
+`(a Noetherian local stage) + (`Algebra.IsPushout`)`.**  Concretely that is
+the structure `FlatNoetherianStage` below, and the filtered system stays
+where the note above put it — inside the leaf's proof, where a wrong guess
+costs nothing.
+
+**WHY, and this is an argument rather than a taste.**
+
+1. *It is the seam the source itself ends on.*  The last sentence of 00R7's
+   proof is verbatim "Then `S = S_λ ⊗_{R_λ} R` is flat over `R`, and
+   `M = M_λ ⊗_{S_λ} S` is flat over `S` (since the base change of a flat
+   module is flat)."  At `M = S' = A`, `S = B` that is exactly
+   `Algebra.IsPushout S_λ M_λ S M` plus base change, and nothing else.
+2. *The infrastructure already exists, so nothing has to be invented.*
+   `Algebra.IsPushout` is `Mathlib/RingTheory/IsTensorProduct.lean:620` and
+   `RingHom.Flat.isStableUnderBaseChange` (`Mathlib/RingTheory/RingHom/Flat.lean`)
+   is literally "`P (algebraMap R S) → P (algebraMap R' S')` given
+   `Algebra.IsPushout R S R' S'`".  The assembly below is four lines of
+   instance plumbing and one application of it.  A colimit API would have had
+   to be written, and — per the refutation in the note above — written
+   correctly on the first try or it manufactures a false leaf.
+3. *A colimit API in a statement forces a transport that a stage does not.*
+   `Ring.DirectLimit` CONSTRUCTS a ring; `R`, `B`, `A` in this development are
+   given rings carrying `IsLocalRing`, `Module.Flat` and `EssFinitePresentation`
+   hypotheses.  Stating "R = colim R_λ" as an equality of types is impossible
+   and as a `RingEquiv` means transporting every one of those hypotheses across
+   it at every use.  The predicate form (a cocone `R_λ → R` plus "every element
+   comes from some λ" plus "two elements equal downstairs become equal at some
+   μ") avoids the transport, but to be USEFUL it must also carry all six
+   properties of 10.127.13 — each of which is a separate opportunity to state
+   something false, and none of which the consumer looks at.
+4. *The free-floating rule makes the alternative impossible anyway.*  A colimit
+   API stated now would be consumed only inside the proof of a still-sorried
+   leaf, and a sorried body contributes no dependency edges — so it would be
+   free-floating, which this development forbids.  That is the same constraint
+   that forced the previous owner's decision, one level down.
+
+**WHAT THIS BUYS THE `046Y` OWNER** (`essFinitePresentation_of_essFiniteType_of_flat_quotientMap`'s
+open leaf `fg_ker_of_flat_quotientMap` is where 046Y will be stated).  046Y =
+10.128.4 has two conclusions, and the seam serves them differently — this was
+checked against the source, not assumed:
+
+* *"`N/u(M)` is flat over `R`"* — the SAME seam works verbatim.  046Y's proof
+  ends at a finite λ with `N_λ/u_λ(M_λ)` flat over `R_λ`, and
+  `N/u(M) ≅ (N_λ/u_λ(M_λ)) ⊗_{S_λ} S` because cokernels commute with base
+  change.  So `Algebra.IsPushout`/`IsBaseChange` plus
+  `Module.Flat.isBaseChange` closes it with no colimit API, exactly as here.
+* *"`u` is injective"* — the seam does **not** serve this, and pretending
+  otherwise would be the false step.  `u_λ` injective gives `u = u_λ ⊗ id`
+  injective only if `S` were flat over `S_λ`, which is NOT among 10.127.13's
+  conclusions.  The real reason is that filtered colimits are EXACT.  So the
+  one place 046Y genuinely needs colimit machinery is that exactness — and
+  even there nothing has to be invented: mathlib's
+  `Module.DirectLimit.of.zero_exact` (`Mathlib/Algebra/Colimit/Module.lean:272`)
+  is precisely the ingredient, and `Module.DirectLimit.lift_injective` is the
+  packaged form.
+
+So the recorded answer to "what colimit API did you pin" is: **none in any
+statement; `Algebra.IsPushout` at a finite Noetherian stage for every flatness
+conclusion, and mathlib's existing `Module.DirectLimit` inside proofs wherever
+exactness of the colimit is genuinely needed.**
+
+**AXIS SEARCHED.**  Ways to state the OUTPUT of Stacks 10.127.13 + 10.128.3 so
+that 00R7's endgame can consume it.  NOT searched: whether the approximation
+leaf below can be cut further.  A cut into "10.127.13" + "10.128.3" was
+considered and rejected for a mechanical reason worth recording — the
+assembly of those two is the paragraph of 00R7's proof beginning "Note that
+this also implies", which verifies that the FIBRE system
+`(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ, M_λ/𝔭_λ M_λ)` is again a system as in
+10.127.13.  That verification is itself substantial, so cutting there
+produces three leaves of which the "assembly" is not glue, and it is the
+first thing to reconsider if the leaf below turns out to be too big to prove
+in one go.
+-/
+
+/-- **THE OUTPUT OF STACKS 10.127.13 + 10.128.3, in the only form 00R7's
+endgame consumes** — a NOETHERIAN stage under `v : B →+* A` at which both of
+00R7's flatness hypotheses already hold, together with the identification of
+`A` as a base change from that stage.
+
+Read the section note above for why this, and not a filtered colimit, is what
+gets stated.  In Stacks' notation the three carriers are `R_λ`, `S_λ`, `S'_λ`
+for one sufficiently large `λ`, and `midToB`, `totToA` are the structure maps
+`S_λ → S`, `S'_λ → S'` of the colimit.
+
+**WHY IT IS SAFE — the conclusion is deliberately as WEAK as it can be while
+still discharging 00R7.**  Everything the assembly does not use has been left
+out, so this datum asks for strictly less than 10.127.13 + 10.128.3 deliver,
+and a leaf producing it can only be easier than the source lemma.  In
+particular there is deliberately **no** map `Base →+* R`, **no** locality
+requirement on `midToB`/`totToA`, **no** localization property of the
+transition maps, and **no** directed index set: the assembly needs none of
+them.  Conversely, everything that IS here is used — `isNoetherian*`,
+`isLocalRing*` and `isLocalHom*` by 00MP, `flatBase` and `flatFibre` as 00MP's
+two hypotheses, and `comm` + `isPushout` by the base-change step.
+
+**FAITHFULNESS OF `isPushout`.**  `Algebra.IsPushout Mid Tot B A` says
+`A ≅ Tot ⊗[Mid] B`, i.e. `M = M_λ ⊗_{S_λ} S` — the last line of 00R7's proof.
+The five `letI`s in its type are the algebra structures carried by the four
+ring maps of the square, and the two `IsScalarTower`s are forced by `comm`;
+they are written inline rather than assumed so that the field cannot be
+satisfied by some *other* algebra structure on the same rings, which is the
+duplicate-instance trap this development has been bitten by repeatedly. -/
+structure FlatNoetherianStage {B A : Type u} [CommRing B] [CommRing A] (v : B →+* A) where
+  /-- `R_λ`, Stacks' Noetherian local base, essentially of finite type over `ℤ`. -/
+  Base : Type u
+  /-- `S_λ`, the stage of `S = B`. -/
+  Mid : Type u
+  /-- `S'_λ`, the stage of `S' = M = A`. -/
+  Tot : Type u
+  [commRingBase : CommRing Base]
+  [commRingMid : CommRing Mid]
+  [commRingTot : CommRing Tot]
+  [isLocalRingBase : IsLocalRing Base]
+  [isLocalRingMid : IsLocalRing Mid]
+  [isLocalRingTot : IsLocalRing Tot]
+  [isNoetherianBase : IsNoetherianRing Base]
+  [isNoetherianMid : IsNoetherianRing Mid]
+  [isNoetherianTot : IsNoetherianRing Tot]
+  /-- `R_λ → S_λ`. -/
+  baseToMid : Base →+* Mid
+  /-- `S_λ → S'_λ`. -/
+  midToTot : Mid →+* Tot
+  [isLocalHomBaseToMid : IsLocalHom baseToMid]
+  [isLocalHomMidToTot : IsLocalHom midToTot]
+  /-- The colimit structure map `S_λ → S`. -/
+  midToB : Mid →+* B
+  /-- The colimit structure map `S'_λ → S'`. -/
+  totToA : Tot →+* A
+  /-- The square `R_λ → S_λ → S'_λ → S'` / `S_λ → S → S'` commutes. -/
+  comm : totToA.comp midToTot = v.comp midToB
+  /-- 00MP's hypothesis (4) at the stage: `M_λ` is flat over `R_λ`.  This is
+  the first of the two applications of Stacks 10.128.3. -/
+  flatBase : (midToTot.comp baseToMid).Flat
+  /-- 00MP's hypothesis (3) at the stage: `M_λ/𝔭_λ M_λ` is flat over
+  `S_λ/𝔭_λ S_λ`.  This is the second application of Stacks 10.128.3, to the
+  fibre system. -/
+  flatFibre : (Ideal.quotientMap
+      ((IsLocalRing.maximalIdeal Base).map (midToTot.comp baseToMid)) midToTot
+      (map_le_comap_map_comp baseToMid midToTot (IsLocalRing.maximalIdeal Base))).Flat
+  /-- `M = M_λ ⊗_{S_λ} S`, the last line of 00R7's proof. -/
+  isPushout :
+    letI : Algebra Mid Tot := midToTot.toAlgebra
+    letI : Algebra Mid B := midToB.toAlgebra
+    letI : Algebra Tot A := totToA.toAlgebra
+    letI : Algebra B A := v.toAlgebra
+    letI : Algebra Mid A := (v.comp midToB).toAlgebra
+    haveI : IsScalarTower Mid B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower Mid Tot A :=
+      IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun comm x).symm
+    Algebra.IsPushout Mid Tot B A
+
+/-- **NOETHERIAN APPROXIMATION FOR 00R7: Stacks 10.127.13 + 10.128.3**
+(SORRY LEAF, cut 2026-07-27 out of the approximation half below; read the
+section note "THE COLIMIT-API DECISION" above first, and the docstring of
+`FlatNoetherianStage` for what the datum is and why it is as weak as it is).
+
+*Under 00R7's hypotheses at `M = S' = A`, a `FlatNoetherianStage v` exists.*
+
+**THIS IS 00R7'S PROOF MINUS ITS LAST SENTENCE.**  Everything in the Stacks
+argument lives here: writing `R = colim R_λ` as a directed colimit of local
+`ℤ`-algebras essentially of finite type (10.127.11, so each `R_λ` is
+Noetherian); descending `S` to `S_λ = (R_λ[x₁,…,x_n]/(f_{1,λ},…,f_{u,λ}))_{𝔮_λ}`
+and `S'` to `S'_λ = (S_λ[y₁,…,y_m]/(ḡ_{1,λ},…,ḡ_{v,λ}))_{𝔮̄'_λ}`, which is
+where `_hfpA` and `_hfpB` are both consumed and which is why 00R7 needs
+essential finite PRESENTATION on both maps; applying **10.128.3** once to get
+`M_λ` flat over `R_λ` for large `λ`; checking that
+`(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ, M_λ/𝔭_λ M_λ)` is again a system as in 10.127.13
+and applying **10.128.3** a second time to get the fibre flatness at the
+stage.  At `M = S' = A` the presentation of `M` over `S'` may be taken to be
+`(S')^{⊕0} → (S')^{⊕1} → M → 0`, so `M_λ = S'_λ` and no separate module has to
+be carried — which is the whole reason `FlatNoetherianStage` has three
+carriers and not four.
+
+**WHAT IS STILL MISSING FROM THE PIN**, re-greped 2026-07-27 and unchanged
+from the survey in the first section note: `grep -rni "noetherian approximation"
+.lake/packages/mathlib` is empty, and `grep -rn "Ring.DirectLimit" Fermat/ ~/cs/FLT`
+finds no use anywhere in this development.  Mathlib's `Ring.DirectLimit`,
+`Module.DirectLimit` and `Mathlib/Algebra/Colimit/TensorProduct.lean` are the
+raw materials; 10.127.11, 10.127.13 and 10.128.3 all have to be written.  A hit
+on either grep means this note has gone stale.
+
+**FAITHFULNESS.**  The hypotheses are 00R7's verbatim at `M = S' = A`, and the
+conclusion is strictly weaker than what 10.127.13 + 10.128.3 produce (see the
+"WHY IT IS SAFE" paragraph of `FlatNoetherianStage`).  It is therefore true if
+00R7 is, and it cannot be vacuous: `FlatNoetherianStage` is not satisfiable by
+junk, because `isPushout` pins `A` to be the base change of `Tot` — the
+degenerate choice `Base = Mid = Tot = A` fails `isPushout` unless `B → A` is
+already an isomorphism, and fails `isNoetherianTot` unless `A` happens to be
+Noetherian. -/
+theorem nonempty_flatNoetherianStage_of_essFinitePresentation
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (_hfpA : EssFinitePresentation (v.comp g))
+    (_hfpB : EssFinitePresentation g)
+    (_hflat : (v.comp g).Flat)
+    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    Nonempty (FlatNoetherianStage v) :=
+  sorry
+
+/-- **THE APPROXIMATION HALF OF 00R7** (cut 2026-07-27; **PROVEN the same day**
+over `nonempty_flatNoetherianStage_of_essFinitePresentation`.  The section notes
+"00R7 CUT" and "THE COLIMIT-API DECISION" above are the two design decisions
+that produced it and should be read first).
 
 *Assume Stacks 00MP — the statement of
 `flat_of_flat_of_flat_quotientMap_noetherian` above, quantified over all
@@ -1301,29 +1527,35 @@ the section note above, where the cheap version of the system is REFUTED (the
 subring realisation is false for `B` and `A`, whose approximating system has
 non-injective transition maps).
 
-**WHAT A PROVER MUST DO, and what will not work.**  The hypothesis is not a
-shortcut: `Stacks`' proof of 00R7 is the approximation argument and nothing
-else, so proving this leaf means writing
-`R = colim R_λ` over local `ℤ`-algebras essentially of finite type (10.127.13,
-each `R_λ` Noetherian because essentially of finite type over `ℤ`), descending
-`B`, `A` and the two maps to a finite stage, using **10.128.3** twice — once to
-get `A_λ` flat over `R_λ` for large `λ`, once to get `A_λ/𝔪_λ A_λ` flat over
-`B_λ/𝔪_λ B_λ` — applying `_hNoeth` at that stage, and pushing flatness back up
-the colimit.  The `M = S' = A` instantiation is stable under this: `M_λ = A_λ`
-is finite over `S'_λ = A_λ` and nonzero because `A_λ` is local, so no extra
-hypothesis of 00MP has to be re-established at the finite stage.  What the
-prover chooses is exactly the shape of the system and the descent lemma
-"a filtered colimit of flat maps is flat over the colimit"; **say what you
-pinned**, because the next owner of the finite-generation half
-(`essFinitePresentation_of_essFiniteType_of_flat_quotientMap` below) needs the
-same machinery for 046Y.
+**WHAT THE PROOF IS, now that it is written.**  The hypothesis is not a
+shortcut: 00R7's proof is the approximation argument and nothing else.  All of
+that argument now sits in the single leaf
+`nonempty_flatNoetherianStage_of_essFinitePresentation`, which produces a
+`FlatNoetherianStage v` — one Noetherian local stage `R_λ → S_λ → S'_λ` at
+which 00MP's two hypotheses already hold, together with
+`Algebra.IsPushout S_λ S'_λ S S'` identifying `M = M_λ ⊗_{S_λ} S`.  What is
+left here is 00R7's LAST SENTENCE, and it is exactly two steps:
+
+1. `hNoeth` at the stage, giving `S'_λ` flat over `S_λ`;
+2. `RingHom.Flat.isStableUnderBaseChange` along that pushout, giving `A` flat
+   over `B`.
+
+The `M = S' = A` instantiation is stable under all of this: `M_λ = S'_λ` is
+finite over `S'_λ` and nonzero because `S'_λ` is local, so no extra hypothesis
+of 00MP has to be re-established at the finite stage.
+
+**WHAT WAS PINNED**, for the next owner of the finite-generation half
+(`fg_ker_of_flat_quotientMap` below), who needs the same machinery for 046Y:
+**no filtered colimit appears in any statement.**  The full argument, with the
+three reasons and the checked consequences for 046Y, is the section note "THE
+COLIMIT-API DECISION" above.
 
 **FAITHFULNESS.**  The hypotheses are 00R7's, verbatim, at `M = S' = A`; see
 the 00R7 docstring below, which is unchanged in content.  Adding a hypothesis
 can only weaken a statement, so this leaf cannot be false unless 00R7 is. -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
     {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
-    (_hNoeth : ∀ {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    (hNoeth : ∀ {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
       [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
       [IsNoetherianRing R] [IsNoetherianRing B] [IsNoetherianRing A]
       {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v],
@@ -1333,13 +1565,40 @@ theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
       v.Flat)
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
-    (_hfpA : EssFinitePresentation (v.comp g))
-    (_hfpB : EssFinitePresentation g)
-    (_hflat : (v.comp g).Flat)
-    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
         (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
-    v.Flat :=
-  sorry
+    v.Flat := by
+  obtain ⟨st⟩ := nonempty_flatNoetherianStage_of_essFinitePresentation hfpA hfpB hflat hfib
+  letI := st.commRingBase
+  letI := st.commRingMid
+  letI := st.commRingTot
+  letI := st.isLocalRingBase
+  letI := st.isLocalRingMid
+  letI := st.isLocalRingTot
+  letI := st.isNoetherianBase
+  letI := st.isNoetherianMid
+  letI := st.isNoetherianTot
+  letI := st.isLocalHomBaseToMid
+  letI := st.isLocalHomMidToTot
+  -- Step 1: 00MP at the Noetherian stage.
+  have hstage : st.midToTot.Flat := hNoeth st.flatBase st.flatFibre
+  -- Step 2: `M = M_λ ⊗_{S_λ} S`, so flatness base-changes up to `B → A`.
+  letI : Algebra st.Mid st.Tot := st.midToTot.toAlgebra
+  letI : Algebra st.Mid B := st.midToB.toAlgebra
+  letI : Algebra st.Tot A := st.totToA.toAlgebra
+  letI : Algebra B A := v.toAlgebra
+  letI : Algebra st.Mid A := (v.comp st.midToB).toAlgebra
+  haveI : IsScalarTower st.Mid B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower st.Mid st.Tot A :=
+    IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun st.comm x).symm
+  haveI : Algebra.IsPushout st.Mid st.Tot B A := st.isPushout
+  have hbc : (algebraMap B A).Flat :=
+    RingHom.Flat.isStableUnderBaseChange st.Mid st.Tot B A
+      (by rwa [RingHom.algebraMap_toAlgebra])
+  rwa [RingHom.algebraMap_toAlgebra] at hbc
 
 end FibreCriterionRingLevel
 
@@ -1402,10 +1661,16 @@ The decision was taken, and what was pinned is written out in the section note
 approximation leaf as a hypothesis**, which makes the assembly a one-liner,
 needs no new definitions, and leaves 00MP with a written consumer.  The note
 also REFUTES the cheap subring realisation of the system, so nobody has to
-rediscover that it is false.  The residue of 00R7 is now exactly two open
-leaves — `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian`
-(the approximation) and `flat_of_rTensor_injective_of_flat_quotientMap`
-(the local criterion 10.99.10) — and 00MP's other half is PROVEN. -/
+rediscover that it is false.
+
+**UPDATE, later the same day: the approximation half is itself PROVEN.**  Its
+owner took the second design decision — how, if at all, to state a filtered
+colimit — and the answer is **not to**; see the section note "THE COLIMIT-API
+DECISION" above.  So the residue of 00R7 is still exactly two open leaves, but
+they are now `nonempty_flatNoetherianStage_of_essFinitePresentation` (Stacks
+10.127.13 + 10.128.3, i.e. 00R7's proof minus its last sentence) and
+`flat_of_rTensor_injective_of_flat_quotientMap` (the local criterion 10.99.10)
+— and 00MP's other half is PROVEN. -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
