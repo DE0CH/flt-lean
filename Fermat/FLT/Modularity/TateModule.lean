@@ -7614,6 +7614,28 @@ FAITHFULNESS — THE THREE PINS, AND WHY EACH IS LOAD-BEARING.
   is the Hilbert–Blumenthal normalization of Shimura / Taylor 2002 §1,
   in which the constant coefficient over `𝒪_D` is `N w` and not `N w²`.
 
+WHERE THE `j`/`hj` PINNING WENT, since this leaf carries neither.  Every
+frame-level statement in this section must pin the real multiplication
+with `j` and `hj`, because Counterexample 2 below — the exotic frame
+`O = ℤ₁₃ × ℤ₁₃` acting by the two projections on the CM example — is a
+rank-two frame satisfying every other hypothesis whose `charFrob` is a
+SQUARE, refuting the charpoly equation outright.  That counterexample
+cannot touch this leaf, because there is no frame here to be exotic:
+`t w` acts through `m.act`, the real-multiplication datum of the abelian
+scheme ITSELF.  `hj` exists only to transport `m.act` into an abstract
+coefficient ring, so stating the relation over `m.act` directly is the
+same pinning in its primitive form, and strictly stronger — the exotic
+frame is excluded because it never enters.  Consistency check on that
+same example: `A = E × E` with `E : y² = x³ − x`, the Frobenius of the
+reduction is `F_E × F_E` and satisfies `F² − a_w F + N w = 0` with
+`a_w ∈ ℤ ⊆ 𝒪_D`, so this leaf holds there while the exotic frame's own
+coefficients are correctly refused by `IsTateFrameWeilCoeffs`.
+
+Both statements below that DO quantify over a frame —
+`weilCoeffs_fst_eq_of_frobTorsionEndo` and
+`exists_finset_weilCoeffs_fst_eq_of_mult` — carry `j` and `hj` verbatim
+through `IsTateFrameWeilCoeffs`, which is unchanged.
+
 WHAT IS NOT ASSERTED.  Nothing about `|t w| ≤ 2√(N w)` — the
 archimedean Riemann-hypothesis half is true and is needed by no consumer
 in this tree.  Nothing at a place of bad reduction, which `bad`
