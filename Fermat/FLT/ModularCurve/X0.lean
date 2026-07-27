@@ -10437,6 +10437,70 @@ structure IsJacobianOf {X J S : Scheme.{0}} (strX : X ⟶ S) {jstr : J ⟶ S}
       ∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint strX g),
         (c g x).1 = (aj g x).1 ≫ u
 
+/-- **The Abel–Jacobi MORPHISM `X ⟶ J`** (PROVEN construction — the
+Yoneda representative of the natural transformation `aj`).
+
+`IsJacobianOf.aj` is presented as a family of maps on relative points,
+one for every test object `T` and every base point `g : T ⟶ S`, natural
+in `T`.  By Yoneda in the slice category over `S` such a family is a
+single morphism of schemes, obtained by evaluating it at the *universal*
+point — the identity `X ⟶ X`, viewed as an element of
+`RelPoint strX strX`.  That is this definition, and `aj_val` below is the
+Yoneda equation that makes it a representative.
+
+Having it matters because every *geometric* statement about Abel–Jacobi
+is a statement about this one morphism, while every statement about
+points is a formal consequence — see `injective_aj_of_mono`. -/
+noncomputable def IsJacobianOf.ajHom {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) : X ⟶ J :=
+  (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).1
+
+/-- **The Yoneda equation: `aj` is precomposition with `ajHom`** (PROVEN,
+from `aj_pre` alone).
+
+For every test object `T`, every base point `g : T ⟶ S` and every
+`x : RelPoint strX g`, the underlying morphism of `aj g x` is
+`x.1 ≫ ajHom`.  The proof is naturality of `aj` along `x.1 : T ⟶ X`,
+applied to the universal point `𝟙 X`, together with `x.1 ≫ 𝟙 X = x.1`.
+
+Nothing geometric is used: this holds for *any* natural family on
+relative points, and in particular no hypothesis on the curve, on the
+base or on the genus enters. -/
+theorem IsJacobianOf.aj_val {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) {T : Scheme.{0}} (g : T ⟶ S)
+    (x : RelPoint strX g) : (jac.aj g x).1 = x.1 ≫ jac.ajHom := by
+  have h := jac.aj_pre x.1 (g := strX) (g' := g) x.2 ⟨𝟙 X, Category.id_comp strX⟩
+  have hx : RelPoint.pre x.1 x.2 (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX) = x :=
+    Subtype.ext (Category.comp_id x.1)
+  rw [hx] at h
+  rw [h]
+  rfl
+
+/-- **A monomorphic Abel–Jacobi morphism is injective on relative points,
+over every base and at every test object** (PROVEN, formally, from
+`aj_val`).
+
+This is the whole content of the two "generalisations" that the
+base-general Abel–Jacobi leaf used to carry: the arbitrary base `S` and
+the arbitrary test object `T` are *not* mathematics, they are Yoneda.
+`aj g x` is `x.1 ≫ ajHom`, so injectivity of `aj g` for **every** `g` is
+exactly left-cancellability of `ajHom`, i.e. `Mono ajHom`.
+
+Consequently the only geometric statement left downstream is that the
+Abel–Jacobi morphism of a positive-genus curve is a monomorphism — see
+`mono_ajHom_of_one_le_x0Genus`. -/
+theorem IsJacobianOf.injective_aj_of_mono {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) (hmono : Mono jac.ajHom)
+    {T : Scheme.{0}} (g : T ⟶ S) : Function.Injective (jac.aj g) := by
+  intro x y hxy
+  refine Subtype.ext ?_
+  have hval := congrArg Subtype.val hxy
+  rw [jac.aj_val g x, jac.aj_val g y] at hval
+  exact (cancel_mono jac.ajHom).mp hval
+
 /-- **`rank J_0(N)(ℚ) = 0`, together with `genus X_0(N) ≥ 1`.**
 
 The two arithmetic inputs of the reduction argument, packaged as one
@@ -10524,9 +10588,107 @@ def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
   [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (35, 3, 4), (36, 5, 6), (39, 5, 4),
     (42, 11, 8), (50, 3, 4)]
 
+/-- **`Y_0(N)` exists over an ARBITRARY field `K` with `char K ∤ N`, and
+is a geometrically connected smooth curve there** (sorry leaf — the
+MODULAR half of `exists_x0Compactification_field`).
+
+This is the base-general form of `exists_isCoarseModuliY0_isSmoothCurve`,
+which is the `K = ℚ` case and is PROVEN (over `exists_gamma0AffineModel`,
+the Katz–Mazur affine model).  As there, the five conclusions are exactly
+the hypotheses of the compactification theorem, and three of them —
+`IsIntegral`, `QuasiCompact`, `IsSeparated` — are formal for an affine
+model over the affine base `Spec K`; the content is
+`SmoothOfRelativeDimension 1` and `GeometricallyConnected`.
+
+TRUE and classical, and it is exactly the fibre at `Spec K` of the
+Deligne–Rapoport / Katz–Mazur smooth model of the `Γ₀(N)`-problem over
+`ℤ[1/N]` (Katz–Mazur 8.2 and 8.2.1 for smoothness over `ℤ[1/N]`;
+Deligne–Rapoport IV.5.5 or Shimura 6.6 for geometric connectedness, which
+holds because `det : Γ₀(N) → (ℤ/N)ˣ` is surjective).
+
+**Both hypotheses are load-bearing.**  At `N = 0` the coarse space is
+EMPTY (`isEmpty_of_isCoarseModuliY0_zero`), while `IsIntegral` and
+`GeometricallyConnected` both carry nonemptiness — so the conclusion is
+unsatisfiable, exactly as at `K = ℚ`.  At `char K = p ∣ N` the
+`Γ₀(N)`-structure degenerates (the subgroup scheme of order `N` acquires
+an infinitesimal part) and `Y_0(N)_K` is no longer smooth, so
+`SmoothOfRelativeDimension 1` is FALSE.
+
+IRREDUCIBLE at this pin, and the axis searched is the BASE one: the
+`K = ℚ` proof runs through `exists_gamma0AffineModel`, whose model is
+built from `ℚ`-specific input, and nothing in this development constructs
+the `Γ₀(N)`-model over `ℤ[1/N]` from which every fibre would follow.  The
+axis NOT searched — and the one a successor should take — is to build
+that integral model once and obtain every base by pullback, which is how
+Katz–Mazur state it; that would subsume this leaf and the `ℚ` case
+together. -/
+theorem exists_isCoarseModuliY0_isSmoothCurve_field (N : ℕ) (_hN : 0 < N) (K : Type)
+    [Field K] (_hchar : ¬ ringChar K ∣ N) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ Spec (CommRingCat.of K)) (_hc : IsCoarseModuliY0 N strY),
+      IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
+  sorry
+
+/-- **A smooth curve over an ARBITRARY field has a smooth proper
+compactification with finite complement** (sorry leaf — the general
+ALGEBRAIC-GEOMETRY half of `exists_x0Compactification_field`).
+
+This is `AlgebraicGeometry.exists_isSmoothCompactification` with the
+hypothesis `[PerfectField K]` DROPPED, and that is its entire content:
+for perfect `K` — every field of characteristic `0`, and every finite
+field, hence **both** consumers of the statement below — it is that
+theorem verbatim, so the residue here is the imperfect case alone.
+
+TRUE without perfectness, and this is worth recording because the shim
+file's own docstrings suggest otherwise.  `smoothOfRelativeDimension_one_fromNormalization`
+carries `[PerfectField K]` and cites `y^p = t x^p + t` (`t ∈ K ∖ K^p`) as
+the counterexample — a curve that is regular but not smooth and is its
+own normalization.  That curve, however, is not *geometrically reduced*:
+over `K̄` its equation becomes `(y − t^{1/p}(x + 1))^p = 0`.  So it has no
+smooth open subscheme, and it therefore does not satisfy that leaf's own
+hypothesis `hY` that `Y` is a smooth curve.  In general `Y` smooth over
+`K` forces `K(Y)/K` to be separably generated, hence the normalization
+geometrically normal, hence — in dimension one — smooth.  The perfectness
+hypothesis in the shim file is thus very likely removable given `hY`;
+that is a repair for the owner of `CurveCompactification.lean` and not
+something to do from this side, which is why this leaf is stated here
+rather than that one being weakened.
+
+AXIS SEARCHED: the field, i.e. exactly the perfectness gap.  Not searched
+is whether the modular application needs the imperfect case at all — it
+does not, and a successor who decides to add `[PerfectField K]` to
+`exists_x0Compactification_field` (nothing in the tree would notice)
+deletes this leaf outright. -/
+theorem exists_isSmoothCompactification_field (K : Type) [Field K] {Y : Scheme.{0}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y] [QuasiCompact strY]
+    [IsSeparated strY] [SmoothOfRelativeDimension 1 strY] :
+    ∃ (X : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
+      IsSmoothCompactification strY strX j :=
+  sorry
+
 /-- **Existence of the compactified coarse moduli space `X_0(N)` over an
-ARBITRARY base field whose characteristic does not divide `N`** (sorry
-node — the single remaining existence leaf for `X_0(N)`).
+ARBITRARY base field whose characteristic does not divide `N`** (PROVEN
+2026-07-27 from the two leaves above; formerly a sorry node itself).
+
+The proof is the `K = ℚ` proof of `exists_x0Compactification` verbatim,
+with `exists_coarseModuliY0` + `isSmoothCurve_of_isCoarseModuliY0`
+replaced by the single base-general leaf
+`exists_isCoarseModuliY0_isSmoothCurve_field` and
+`exists_isSmoothCompactification` replaced by its perfectness-free form.
+Note that `geometricallyConnected_of_isSmoothCompactification`, which
+carries connectedness from `Y_0(N)` to `X_0(N)`, is already general in the
+field and needs no perfectness.
+
+**The previous IRREDUCIBLE verdict here was stale in exactly the way the
+doctrine predicts**, and it is recorded for the next auditor.  It read:
+"neither modular curves nor a smooth-compactification theorem for curves
+over a general base field exists anywhere in `Mathlib`".  The first half
+is still true; the second half had ceased to be true — this project's own
+shim tree carries `AlgebraicGeometry.exists_isSmoothCompactification` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, general
+in `K`, proven over four leaves of its own, none modular.  So the
+statement was never atomic: it always split into "the modular half" and
+"the curve half", and only the modular half is deep.
 
 TRUE and classical: `Y_0(N)` is a smooth affine curve over `K` and every
 smooth curve over a field has a unique smooth projective
@@ -10562,22 +10724,32 @@ not split apart by the cyclotomic field, unlike for `Γ₁(N)` or `Γ(N)`.
 This node SUBSUMES `exists_coarseModuliY0` at the base it is stated over
 — the `coarse` field is exactly that statement.  At `K = ℚ` that half is
 PROVEN, which is why `exists_x0Compactification` below does NOT go
-through this leaf; over a general `K` the coarse space itself is still
-missing, and that is the bulk of what remains open here.
+through this statement; over a general `K` the coarse space itself is
+still missing, and that is where the depth now sits, alone, in
+`exists_isCoarseModuliY0_isSmoothCurve_field`.
 
-IRREDUCIBLE at this pin for the same reason as `exists_coarseModuliY0`:
-neither modular curves nor a smooth-compactification theorem for curves
-over a general base field exists anywhere in `Mathlib`.  AXIS SEARCHED:
-the BASE direction, which is what produced this statement; not searched
-is a cut along the moduli problem itself (generalised elliptic curves /
+The cut along the moduli problem itself (generalised elliptic curves /
 Néron polygons), which would need the Deligne–Rapoport degeneration
-theory that `Gamma0Datum` deliberately does not carry. -/
+theory that `Gamma0Datum` deliberately does not carry, is still NOT
+taken and is still not needed: the compactification is supplied by
+general curve theory, not by a modular construction of the cusps. -/
 theorem exists_x0Compactification_field (N : ℕ) (hN : 0 < N) (K : Type)
     [Field K] (hchar : ¬ ringChar K ∣ N) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
       (strY : Y ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
-      Nonempty (IsX0Compactification N strX strY j) :=
-  sorry
+      Nonempty (IsX0Compactification N strX strY j) := by
+  obtain ⟨Y, strY, hc, hint, hqc, hsep, hsmd, hconn⟩ :=
+    exists_isCoarseModuliY0_isSmoothCurve_field N hN K hchar
+  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
+  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification_field K strY
+  exact ⟨X, Y, strX, strY, j,
+    ⟨{ comm := hX.comm
+       coarse := hc
+       isOpen := hX.isOpenImmersion
+       isProper := hX.isProper
+       smooth := hX.smooth
+       connected := geometricallyConnected_of_isSmoothCompactification hX
+       finite_compl := hX.finite_compl }⟩⟩
 
 /-- **Existence of the compactified coarse moduli space `X_0(N)` over
 `ℚ`** (PROVEN, over `exists_coarseModuliY0` and the general
@@ -10585,8 +10757,9 @@ smooth-compactification theorem for curves; formerly a sorry node).
 
 This is the characteristic-`0` case of
 `exists_x0Compactification_field`, but it is deliberately **not** written
-as a corollary of it: that statement is still open, and routing a proven
-theorem through an open one would put `sorryAx` back into the whole
+as a corollary of it: that statement, though now a proven *assembly*, still
+rests on the open leaf `exists_isCoarseModuliY0_isSmoothCurve_field`, and
+routing this theorem through it would put `sorryAx` back into the whole
 `X_0(N)` cone.  The two proofs share no text and the `ℚ` one is complete:
 
 * `exists_coarseModuliY0` supplies `Y_0(N)` over `ℚ` and is proven;
@@ -11398,9 +11571,61 @@ theorem not_isIso_jacobian_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus N)
     (jac : IsJacobianOf strX ab o) : ¬ IsIso jstr :=
   sorry
 
+/-- **The Abel–Jacobi morphism of `X_0(N)` with `genus ≥ 1` is a
+MONOMORPHISM, over an arbitrary base** (sorry leaf — all that survives of
+the base-general Abel–Jacobi node, and it is pure geometry).
+
+TRUE and classical: for a smooth proper geometrically connected curve of
+genus `≥ 1` with a section, `x ↦ [x] − [o]` is a CLOSED IMMERSION into
+the Jacobian, hence a monomorphism.  Contrapositively, if `ajHom` is not
+a monomorphism then two distinct points have the same class, so their
+difference is principal, so a rational function has a single simple pole,
+giving a degree-`1` map to `ℙ¹`, i.e. genus `0`.  This is Riemann–Roch,
+and it is the *only* mathematics left here: everything the previous
+statement of this node additionally quantified over — an arbitrary base
+`S` and an arbitrary test object `T` — is discharged formally by
+`IsJacobianOf.injective_aj_of_mono`.
+
+`hg` is load-bearing: at genus `0` the statement is FALSE, `X_0(1) = ℙ¹`
+having trivial Jacobian, so `ajHom` is the constant map to the origin and
+is not monic.  `hmodel` is load-bearing twice over — it supplies the
+curve conditions (proper, smooth of relative dimension `1`,
+geometrically connected) *and* it is the only thing tying the arithmetic
+`x0Genus N` to the geometry of `xstr`.  `N` enters only through those two.
+
+**A FAITHFULNESS WARNING for anyone tempted to split this the way the
+`Spec ℚ` version is split.**  Over `SpecQ` this node factors through the
+seam `¬ IsIso jstr` ("the Jacobian is positive-dimensional"), as
+`injective_aj_of_not_isIso_jacobian` plus
+`not_isIso_jacobian_of_one_le_x0Genus`.  That seam does **NOT** survive
+to an arbitrary base, and the general Riemann–Roch half stated with
+`¬ IsIso jstrZ` in place of the genus hypothesis is FALSE.
+Counterexample: take `S = S₁ ⊔ S₂`, `XZ` a genus-`1` curve over `S₁` and
+`ℙ¹` over `S₂`.  Every fibre is a smooth proper geometrically connected
+curve, so all three curve hypotheses hold; `JZ = J₁ ⊔ S₂` is an abelian
+scheme and `jstrZ` is not an isomorphism, so `¬ IsIso jstrZ` holds; but
+`aj` collapses the whole `ℙ¹` over `S₂` and is not injective there.  What
+fails is that `¬ IsIso` is a statement about the total space and positive
+genus is a statement about every FIBRE, and the two agree only over a
+connected base.  The hypothesis `hmodel` is what rules the example out —
+it forces every fibre to be `X_0(N)` — which is why the genus hypothesis
+is kept here in its modular form rather than being abstracted.
+
+IRREDUCIBLE at this pin, along the geometric axis: Riemann–Roch, the
+genus of a scheme and `Pic⁰` are absent from `Mathlib`, from `~/cs/FLT`
+and from this development.  The functorial axis has been taken and is
+exhausted — see the note on the assembly below. -/
+theorem mono_ajHom_of_one_le_x0Genus {N : ℕ} (_hg : 1 ≤ x0Genus N)
+    {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
+    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (jacZ : IsJacobianOf xstr abZ oZ) : Mono jacZ.ajHom :=
+  sorry
+
 /-- **Positive genus makes Abel–Jacobi injective on relative points, over
-every base and at every test object** (sorry node) — the bridge from the
-arithmetic `x0Genus` to the geometry.
+every base and at every test object** (PROVEN 2026-07-27 over the single
+leaf `mono_ajHom_of_one_le_x0Genus`; formerly a sorry node) — the bridge
+from the arithmetic `x0Genus` to the geometry.
 
 TRUE and classical, and it is the ONLY thing standing between
 `one_le_x0Genus_of_kenkuLevel` (proven above, by computation) and the
@@ -11448,14 +11673,30 @@ from `~/cs/FLT` and from this development.  The ARITHMETIC axis — replace
 `1 ≤ genus` by a computable invariant of `N` so that positivity is a
 `decide` — has now been taken as far as it goes: that is exactly what
 `hg` is, and it removes the level from the statement without touching the
-Riemann–Roch residue. -/
-theorem injective_aj_of_one_le_x0Genus_general {N : ℕ} (_hg : 1 ≤ x0Genus N)
+Riemann–Roch residue.
+
+**THE FUNCTORIAL AXIS, taken 2026-07-27, and it was never searched.**
+Both audits above ranged over the *geometry* of the curve.  Neither asked
+what the two generalisations — the arbitrary base `S` and the arbitrary
+test object `T` — actually cost, and the answer is **nothing**: they are
+Yoneda.  `IsJacobianOf.aj` is a natural family on relative points, so it
+is precomposition with a single morphism `ajHom : XZ ⟶ JZ`
+(`IsJacobianOf.aj_val`), and injectivity at *every* `(T, g)` is exactly
+`Mono ajHom` (`IsJacobianOf.injective_aj_of_mono`).  Both of those are
+proven, from `aj_pre` alone, with no hypothesis on the curve, the base or
+the genus.  What is left is the statement below, about one morphism.
+
+So this statement is now a PROVEN assembly over the single leaf
+`mono_ajHom_of_one_le_x0Genus`, and the residue is exactly the sentence
+the docstring above already identified as the mathematics: "Abel–Jacobi
+is a closed immersion, hence a monomorphism". -/
+theorem injective_aj_of_one_le_x0Genus_general {N : ℕ} (hg : 1 ≤ x0Genus N)
     {XZ YZ JZ S : Scheme.{0}} {xstr : XZ ⟶ S} {ystr : YZ ⟶ S} {jZ : YZ ⟶ XZ}
     {jstrZ : JZ ⟶ S} {abZ : AbelianSchemeStruct jstrZ} {oZ : RelPoint xstr (𝟙 S)}
-    (_hmodel : IsX0Compactification N xstr ystr jZ)
+    (hmodel : IsX0Compactification N xstr ystr jZ)
     (jacZ : IsJacobianOf xstr abZ oZ) {T : Scheme.{0}} (g : T ⟶ S) :
     Function.Injective (jacZ.aj g) :=
-  sorry
+  jacZ.injective_aj_of_mono (mono_ajHom_of_one_le_x0Genus hg hmodel jacZ) g
 
 /-- **Positive genus makes Abel–Jacobi injective on rational points**
 (PROVEN, from the two leaves above) — the bridge from the arithmetic
@@ -11816,9 +12057,11 @@ and they are now three leaves rather than one:
 * `exists_x0Compactification_finiteField` — the `Γ₀(N)`-moduli problem
   has a smooth compactification over `𝔽_ℓ` (Deligne–Rapoport).  PROVEN
   2026-07-27 as a corollary of `exists_x0Compactification_field`, the
-  merge of this leaf with `exists_x0Compactification`; the open content
-  moved there, and it is now ONE leaf for both base fields rather than
-  two;
+  merge of this leaf with `exists_x0Compactification`, which was itself
+  decomposed the same day: its open content is now the modular leaf
+  `exists_isCoarseModuliY0_isSmoothCurve_field` plus the perfectness gap
+  `exists_isSmoothCompactification_field`, and it is ONE modular leaf for
+  both base fields rather than two;
 * `finite_relPoint_of_x0Compactification_finiteField` — a proper scheme
   over a finite field has finitely many rational points (no modular
   curves involved).  PROVEN 2026-07-27 by decomposition, into
@@ -17434,7 +17677,8 @@ the Jacobian and the reduction bound, and
 honestly, with the cusp count entering as a count of `X(𝔽_ℓ)` and never
 as a hypothesis about `X(ℚ)`.  Its own remaining obligations are
 `finite_jacobian_of_kenkuLevel`,
-`injective_aj_of_one_le_x0Genus_general`,
+`mono_ajHom_of_one_le_x0Genus` (the Riemann–Roch residue of what was
+`injective_aj_of_one_le_x0Genus_general`, now a proven assembly),
 `card_le_of_rankZeroJacobian` and
 `exists_x0Compactification_mod_prime`. -/
 theorem y0HasNoRationalPoint_semiprime_of_mazurPrimes {p q : ℕ} (hp : p.Prime)
