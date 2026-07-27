@@ -137,6 +137,11 @@ public import Fermat.FLT.EllipticCurve.TorsionReduction
 -- appears in SIGNATURE position there, where a merely transitive import is not
 -- re-exported, so this must be a `public import`.
 public import Fermat.FLT.EllipticCurve.KernelPolynomial
+-- the six explicit kernel-polynomial certificates at the genus-one isogeny
+-- primes, which discharge `exists_kernelPolynomial_of_genusOneJTable` below.
+-- `public` because that theorem's witnesses (`GenusOneKernel.curve₁`, …) and
+-- their `IsElliptic` instances are used in the proof term.
+public import Fermat.FLT.EllipticCurve.GenusOneKernelPolynomials
 -- mathlib's reduction theory of Weierstrass equations over a DVR
 -- (`IsMinimal`, `HasGoodReduction`, `reduction`). It already reaches this file
 -- publicly through `TorsionReduction → GoodReduction`, and is named here
@@ -23444,9 +23449,10 @@ hypothesis is load-bearing rather than decoration. -/
 theorem x0GenusOneTable_pos {p ℓ m : ℕ} (h : (p, ℓ, m) ∈ x0GenusOneTable) : p ≠ 0 := by
   fin_cases h <;> decide
 
-/-- **LEAF — the six kernel-polynomial certificates** (sorry leaf, introduced
-2026-07-27 by the cut of `exists_isogenyCurve_of_genusOneJTable`, which is
-PROVEN over it).
+/-- **The six kernel-polynomial certificates** (PROVEN 2026-07-27 over
+`Fermat/FLT/EllipticCurve/GenusOneKernelPolynomials.lean`; was a sorry leaf,
+introduced the same day by the cut of `exists_isogenyCurve_of_genusOneJTable`,
+which is PROVEN over it).
 
 For each row `(p, j₀)` of `genusOneJTable`: an elliptic curve `E/ℚ` with
 `j(E) = j₀`, a monic `f ∈ ℚ[X]` and a multiplier `m` forming a
@@ -23497,20 +23503,50 @@ twisting, so the minimal twists above (conductors `121, 121, 121, 14450,
 coefficients are what keeps the certificates writable.  All six `j₀` are
 `≠ 0, 1728`.
 
-WHAT A PROVER OWES, per row: `E.j = j₀` (rational arithmetic on an explicit
-model); `f.Monic` and `f.natDegree = (p−1)/2` (`decide`/`norm_num` on an
-explicit polynomial); `(m : ZMod p) ≠ 0` and `generates` (`decide` over `ZMod
-p`); and the two divisibilities, each of which is an identity `ΨSq p = f * q`
-resp. `∑ᵢ … = f * q'` with an explicit cofactor `q`, verifiable by `ring` once
-`ΨSq p` and `Φ m` have been unfolded to explicit polynomials.  THE COST SITS
-ENTIRELY IN THAT UNFOLDING — `ΨSq 11` has degree `120`, `ΨSq 17` degree `288`,
-`ΨSq 19` degree `360` — and the natural sub-cut, if this proves too large in
-one piece, is a per-row lemma computing `E.ΨSq p` for the explicit model. -/
+**HOW THE COST WAS AVOIDED, since the previous version of this docstring
+predicted the wrong bottleneck.**  It said "THE COST SITS ENTIRELY IN
+UNFOLDING `E.ΨSq p` — degree `120`, `288`, `360` — and the natural sub-cut, if
+this proves too large in one piece, is a per-row lemma computing `E.ΨSq p` for
+the explicit model."  That sub-cut was NOT needed and would have been the
+expensive route: those polynomials never have to be written down at all.
+
+Two observations collapse the work, and both are recorded at length in the
+supporting module:
+
+* `ΨSq p = preΨ'ₚ ²` for ODD `p` (`WeierstrassCurve.ΨSq_ofNat`), so `f ∣ ΨSq p`
+  follows from `f ∣ preΨ'ₚ` — halving the degree before anything else happens.
+* `f ∣ preΨ'ₚ` is proven MODULO `f` rather than by exhibiting the degree-`171`
+  cofactor: the remainders `rₙ := preΨ'ₙ mod f`, all of degree `< (p−1)/2`, are
+  carried along mathlib's own `preNormEDS'` recursion one lemma per `n`, and
+  the chain ends at `r_p = 0`.  Every `ring` call is then an identity in degree
+  `≤ 38` instead of `≤ 180`.  The same reduction is applied to `dvd_multComp`,
+  whose powers `Φₘ^i`, `ΨSqₘ^j` are reduced mod `f` before being multiplied.
+
+Consequence worth recording for the next leaf of this shape: **no
+`set_option maxHeartbeats` bump is used anywhere**, including at `p = 17`,
+where the unreduced `dvd_multComp` identity needs about `4·10⁶` heartbeats and
+the reduced one fits inside the default `2·10⁵`.  What DID matter is that each
+step is a separate top-level lemma: a single tactic block carrying the whole
+chain blows the default budget on `whnf` alone, and splitting it was the entire
+fix.  Both `p = 17` rows and the `p = 19` row failed as one block and passed as
+a chain, with no other change. -/
 theorem exists_kernelPolynomial_of_genusOneJTable (p : ℕ) (j₀ : ℚ)
-    (_h : (p, j₀) ∈ genusOneJTable) :
+    (h : (p, j₀) ∈ genusOneJTable) :
     ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
-      E.j = j₀ ∧ E.IsKernelPolynomial p f m :=
-  sorry
+      E.j = j₀ ∧ E.IsKernelPolynomial p f m := by
+  fin_cases h
+  · exact ⟨GenusOneKernel.curve₁, inferInstance, GenusOneKernel.ker₁, 2,
+      GenusOneKernel.curve₁_j, GenusOneKernel.curve₁_isKernelPolynomial⟩
+  · exact ⟨GenusOneKernel.curve₂, inferInstance, GenusOneKernel.ker₂, 2,
+      GenusOneKernel.curve₂_j, GenusOneKernel.curve₂_isKernelPolynomial⟩
+  · exact ⟨GenusOneKernel.curve₃, inferInstance, GenusOneKernel.ker₃, 2,
+      GenusOneKernel.curve₃_j, GenusOneKernel.curve₃_isKernelPolynomial⟩
+  · exact ⟨GenusOneKernel.curve₄, inferInstance, GenusOneKernel.ker₄, 3,
+      GenusOneKernel.curve₄_j, GenusOneKernel.curve₄_isKernelPolynomial⟩
+  · exact ⟨GenusOneKernel.curve₅, inferInstance, GenusOneKernel.ker₅, 3,
+      GenusOneKernel.curve₅_j, GenusOneKernel.curve₅_isKernelPolynomial⟩
+  · exact ⟨GenusOneKernel.curve₆, inferInstance, GenusOneKernel.ker₆, 2,
+      GenusOneKernel.curve₆_j, GenusOneKernel.curve₆_isKernelPolynomial⟩
 
 /-- **Every tabulated `j`-value is REALISED by a curve carrying a
 rational `p`-isogeny** (PROVEN 2026-07-27 over
