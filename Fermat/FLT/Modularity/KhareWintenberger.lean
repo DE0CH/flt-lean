@@ -1398,8 +1398,11 @@ characteristic three with MORE THAN THREE ELEMENTS; the discharge is
 any `Ind` machinery by writing the anticyclotomic index-two induction as
 an explicit dihedral cocycle. REFUTED as originally stated and repaired
 2026-07-26, the cardinality bound being the repair. The only class field
-theory left in it is `exists_anticyclotomicDihedralCocycle`, whose
-docstring records what has to be built) and
+theory left in it is `exists_anticyclotomicChar_of_quadraticChar` — the
+existence of an anticyclotomic ray-class character of order not dividing
+`4` — whose docstring records what has to be built; the dihedral cocycle
+itself, the oddness, the complex-conjugation involution and the index-two
+induction were all proven over it on 2026-07-27) and
 `exists_twistedHilbertBlumenthalModuliTwist_of_datum` (SORRY — the
 geometry: Rapoport's split moduli space, its fineness, and Galois descent
 along the cocycle, all of it now with the arithmetic choices moved into
@@ -9790,8 +9793,415 @@ end FinTwoIrreducibility
 
 /-! ## The class field theory behind the odd dihedral representation -/
 
-/-- **THE CLASS FIELD THEORY LEAF: an anticyclotomic dihedral cocycle over
-`ℚ` with values in `kpˣ`** (sorry node, cut 2026-07-26 — this is the ONE
+/-- **The quadratic character cut out by a square root** (PROVEN 2026-07-27).
+
+For a nonzero rational `d` and a square root `x` of `d` in `ℚᵃˡᵍ` there is a
+character `e : Γ_ℚ →* ℤˣ` with `e g = 1 ↔ g x = x`, and all its level sets are
+open.
+
+WHY IT IS TRUE, in one line each. Every `g ∈ Γ_ℚ` fixes `d`, so
+`(g x) ^ 2 = x ^ 2`, so `(g x − x)(g x + x) = 0` and `g x = ± x`; `d ≠ 0` gives
+`x ≠ 0` and characteristic zero gives `x ≠ −x`, so the sign is well defined and
+multiplicative. Openness is `stabilizer_isOpen_of_isIntegral` for the Krull
+topology (the stabilizer of an algebraic element is the fixing subgroup of a
+finite extension) together with the fact that every level set of `e` is a
+LEFT TRANSLATE `g₀ · {g | g x = x}` of that stabilizer, hence open because
+left translation is a homeomorphism. -/
+theorem exists_quadraticChar_of_sq_eq (d : ℚ) (hd : d ≠ 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d) :
+    ∃ e : Field.absoluteGaloisGroup ℚ →* ℤˣ,
+      (∀ g, e g = 1 ↔ g x = x) ∧
+      (∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | e g = e g₀}) := by
+  classical
+  have hu : (1 : ℤˣ) ≠ -1 := by decide
+  have hx0 : x ≠ 0 := by
+    intro h
+    apply hd
+    have h1 : algebraMap ℚ (AlgebraicClosure ℚ) d = 0 := by rw [← hx, h]; ring
+    exact (map_eq_zero_iff _ (algebraMap ℚ (AlgebraicClosure ℚ)).injective).mp h1
+  have hxne : ¬ (-x = x) := by
+    intro h
+    apply hx0
+    have h2 : (2 : AlgebraicClosure ℚ) * x = 0 := by linear_combination -h
+    rcases mul_eq_zero.mp h2 with h3 | h3
+    · exact absurd h3 (by norm_num)
+    · exact h3
+  have hpm : ∀ g : Field.absoluteGaloisGroup ℚ, g x = x ∨ g x = -x := by
+    intro g
+    have h2 : (g x) ^ 2 = x ^ 2 := by rw [← map_pow, hx]; exact g.commutes d
+    have key : (g x - x) * (g x + x) = 0 := by linear_combination h2
+    rcases mul_eq_zero.mp key with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (eq_neg_of_add_eq_zero_left h)
+  have hchar : ∀ g g' : Field.absoluteGaloisGroup ℚ,
+      ((if g x = x then (1 : ℤˣ) else -1) = (if g' x = x then (1 : ℤˣ) else -1)) ↔ g x = g' x := by
+    intro g g'
+    rcases hpm g with hg | hg <;> rcases hpm g' with hg' | hg' <;>
+      simp [hg, hg', hxne, hu, hu.symm, Ne.symm hxne]
+  refine ⟨{ toFun := fun g => if g x = x then 1 else -1
+            map_one' := if_pos (AlgEquiv.one_apply x)
+            map_mul' := ?_ }, ?_, ?_⟩
+  · intro g h
+    have hgh : (g * h) x = g (h x) := AlgEquiv.mul_apply g h x
+    rcases hpm g with hg | hg <;> rcases hpm h with hh | hh <;>
+      simp [hgh, hg, hh, map_neg, hxne]
+  · intro g
+    simp only [MonoidHom.coe_mk, OneHom.coe_mk]
+    by_cases hg : g x = x <;> simp [hg, hu.symm]
+  · intro g₀
+    simp only [MonoidHom.coe_mk, OneHom.coe_mk]
+    haveI hialg : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+      AlgebraicClosure.isAlgebraic (k := ℚ)
+    haveI : Algebra.IsIntegral ℚ (AlgebraicClosure ℚ) :=
+      Algebra.IsAlgebraic.isIntegral (K := ℚ) (A := AlgebraicClosure ℚ)
+    have hstab : IsOpen {g : Field.absoluteGaloisGroup ℚ | g x = x} := by
+      have hset0 : {g : Field.absoluteGaloisGroup ℚ | g x = x}
+          = (MulAction.stabilizer (Field.absoluteGaloisGroup ℚ) x :
+              Set (Field.absoluteGaloisGroup ℚ)) := by
+        ext g
+        simp [MulAction.mem_stabilizer_iff, AlgEquiv.smul_def]
+      rw [hset0]
+      exact stabilizer_isOpen_of_isIntegral x
+    have hset : {g : Field.absoluteGaloisGroup ℚ |
+          (if g x = x then (1 : ℤˣ) else -1) = (if g₀ x = x then (1 : ℤˣ) else -1)}
+        = (fun k => g₀ * k) '' {k : Field.absoluteGaloisGroup ℚ | k x = x} := by
+      ext g
+      simp only [Set.mem_setOf_eq, Set.mem_image, hchar g g₀]
+      constructor
+      · intro hg
+        refine ⟨g₀⁻¹ * g, ?_, by group⟩
+        show (g₀⁻¹ * g) x = x
+        rw [AlgEquiv.mul_apply, hg, ← AlgEquiv.mul_apply, inv_mul_cancel]
+        rfl
+      · rintro ⟨k, hk, rfl⟩
+        show (g₀ * k) x = g₀ x
+        rw [AlgEquiv.mul_apply]
+        exact congrArg _ hk
+    rw [hset]
+    exact (Homeomorph.mulLeft g₀).isOpenMap _ hstab
+
+/-- **An algebraic closure of `ULift ℝ` containing a square root of a negative
+rational is `ℂ`** (PROVEN 2026-07-27) — this is the Fundamental Theorem of
+Algebra, in the form `Real.nonempty_algEquiv_or`: an algebraic extension of `ℝ`
+is `ℝ` or `ℂ`, and the first alternative is excluded by the presence of a square
+root of `d < 0`. The `ULift` is bookkeeping: the closure is algebraic over
+`ULift ℝ`, which is finite (rank one) over `ℝ`, so it is algebraic over `ℝ` by
+transitivity, and mathlib's canonical `Algebra ℝ (AlgebraicClosure (ULift ℝ))`
+instance makes the tower commute on the nose. -/
+theorem nonempty_algEquiv_complex_of_sq_neg (d : ℚ) (hd : d < 0)
+    (y : AlgebraicClosure (ULift.{u} ℝ))
+    (hy : y ^ 2 = ((d : ℚ) : AlgebraicClosure (ULift.{u} ℝ))) :
+    Nonempty (AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] ℂ) := by
+  have hdR : ((d : ℚ) : ℝ) < 0 := by exact_mod_cast hd
+  haveI : Module.Finite ℝ (ULift.{u} ℝ) :=
+    Module.Finite.equiv (ULift.moduleEquiv (R := ℝ) (M := ℝ)).symm
+  haveI : Algebra.IsAlgebraic ℝ (ULift.{u} ℝ) := Algebra.IsAlgebraic.of_finite ℝ (ULift.{u} ℝ)
+  haveI : Algebra.IsAlgebraic (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    AlgebraicClosure.isAlgebraic (k := ULift.{u} ℝ)
+  haveI : Algebra.IsAlgebraic ℝ (AlgebraicClosure (ULift.{u} ℝ)) :=
+    Algebra.IsAlgebraic.trans ℝ (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))
+  rcases Real.nonempty_algEquiv_or (AlgebraicClosure (ULift.{u} ℝ)) with hne | hne
+  · exfalso
+    have φ := hne.some
+    have hsq : (φ y) ^ 2 = ((d : ℚ) : ℝ) := by rw [← map_pow, hy, map_ratCast]
+    nlinarith [sq_nonneg (φ y)]
+  · exact hne
+
+/-- The image of a square root of `d` under `ℚᵃˡᵍ → (ULift ℝ)ᵃˡᵍ` is a square
+root of `d` (PROVEN 2026-07-27): ring homomorphisms preserve rational casts. -/
+theorem sq_algebraicClosureMap_eq_of_sq_eq (d : ℚ) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d) :
+    (AlgebraicClosure.map (algebraMap ℚ (ULift.{u} ℝ)) x) ^ 2
+      = ((d : ℚ) : AlgebraicClosure (ULift.{u} ℝ)) := by
+  rw [← map_pow, hx, eq_ratCast (algebraMap ℚ (AlgebraicClosure ℚ)) d, map_ratCast]
+
+/-- **THE ARCHIMEDEAN FACT: a nontrivial element of `Γ_ℝ` moves a square root of
+`d < 0`** (PROVEN 2026-07-27). This is what makes the quadratic character of an
+IMAGINARY quadratic field ODD, and it is where `d < 0` is spent.
+
+The proof pushes `x` into the closure of `ULift ℝ` along
+`Field.absoluteGaloisGroup.lift_map` — the compatibility that makes the
+non-canonical `Field.absoluteGaloisGroup.map` usable at all — and then uses
+`nonempty_algEquiv_complex_of_sq_neg` to identify that closure with `ℂ`. Under
+that identification `σ` becomes an `ℝ`-algebra endomorphism of `ℂ`, so by
+`Complex.real_algHom_eq_id_or_conj` it is the identity or conjugation. If it
+fixes the square root it cannot be conjugation (a square root of `d < 0` is not
+real), so it is the identity, i.e. `σ = 1`. -/
+theorem map_realConj_ne_of_sq_eq_neg (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) :
+    Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ x ≠ x := by
+  intro hfixx
+  apply hσ
+  set y : AlgebraicClosure (ULift.{u} ℝ) :=
+    AlgebraicClosure.map (algebraMap ℚ (ULift.{u} ℝ)) x with hydef
+  have hfix : σ y = y := by
+    have hlm := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ (ULift.{u} ℝ)) σ x
+    rw [hfixx] at hlm
+    exact hlm.symm
+  have hy2 : y ^ 2 = ((d : ℚ) : AlgebraicClosure (ULift.{u} ℝ)) :=
+    sq_algebraicClosureMap_eq_of_sq_eq d x hx
+  have φ := (nonempty_algEquiv_complex_of_sq_neg d hd y hy2).some
+  have hdR : ((d : ℚ) : ℝ) < 0 := by exact_mod_cast hd
+  have hyc : (φ y) ^ 2 = ((d : ℚ) : ℂ) := by rw [← map_pow, hy2, map_ratCast]
+  have hτ := Complex.real_algHom_eq_id_or_conj
+    (((φ.toAlgHom.comp (σ.restrictScalars ℝ).toAlgHom).comp φ.symm.toAlgHom))
+  have hτy : (((φ.toAlgHom.comp (σ.restrictScalars ℝ).toAlgHom).comp φ.symm.toAlgHom))
+      (φ y) = φ y := by
+    simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, AlgEquiv.symm_apply_apply]
+    change φ (σ y) = φ y
+    rw [hfix]
+  rcases hτ with hid | hconj
+  · refine AlgEquiv.ext fun a => ?_
+    have hcf := DFunLike.congr_fun hid (φ a)
+    simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom, AlgEquiv.symm_apply_apply,
+      AlgHom.coe_id, id_eq] at hcf
+    have : σ a = a := φ.injective hcf
+    rw [this]
+    exact (AlgEquiv.one_apply a).symm
+  · exfalso
+    rw [hconj] at hτy
+    have him : (φ y).im = 0 := Complex.conj_eq_iff_im.mp hτy
+    have hre : ((φ y).re : ℝ) ^ 2 = ((d : ℚ) : ℝ) := by
+      have h1 := congrArg Complex.re hyc
+      simpa [pow_two, Complex.mul_re, him] using h1
+    nlinarith [sq_nonneg ((φ y).re)]
+
+/-- **An INVOLUTION of `Γ_ℚ` outside `Γ_{ℚ(√d)}`** (PROVEN 2026-07-27) — i.e. a
+complex conjugation. This is the datum the index-two induction needs beyond the
+character itself, and it is the reason the induced cocycle exists at all:
+`ν (c₀ * c₀) = ν c₀ * (ν c₀)⁻¹ = 1` forces the chosen coset representative to
+square into the kernel of the character, and an involution does that for free.
+
+It is not available for a REAL quadratic field: an involution of `Γ_ℚ` is a
+complex conjugation, its fixed field is a real closure of `ℚ`, and a real
+closure contains every positive square root. So this lemma is a second place
+where `d < 0` is genuinely spent.
+
+The construction transports `Complex.conjAe` back along the identification of
+`(ULift ℝ)ᵃˡᵍ` with `ℂ`, converts the resulting `ℝ`-algebra automorphism into a
+`ULift ℝ`-algebra automorphism (the two agree because `ℝ → ULift ℝ` is onto),
+and pushes it into `Γ_ℚ`; `map_realConj_ne_of_sq_eq_neg` then says it moves
+`x`. -/
+theorem exists_realConjInvolution_of_neg (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ) (he : ∀ g, e g = 1 ↔ g x = x) :
+    ∃ c₀ : Field.absoluteGaloisGroup ℚ, e c₀ = -1 ∧ c₀ * c₀ = 1 := by
+  have hy2 : (AlgebraicClosure.map (algebraMap ℚ (ULift.{0} ℝ)) x) ^ 2
+      = ((d : ℚ) : AlgebraicClosure (ULift.{0} ℝ)) :=
+    sq_algebraicClosureMap_eq_of_sq_eq d x hx
+  have φ := (nonempty_algEquiv_complex_of_sq_neg d hd _ hy2).some
+  set τ : AlgebraicClosure (ULift.{0} ℝ) ≃ₐ[ℝ] AlgebraicClosure (ULift.{0} ℝ) :=
+    φ.trans (Complex.conjAe.trans φ.symm) with hτdef
+  have hτapp : ∀ a, τ a = φ.symm ((starRingEnd ℂ) (φ a)) := fun a => rfl
+  have hcomm : ∀ r : ULift.{0} ℝ,
+      τ (algebraMap (ULift.{0} ℝ) (AlgebraicClosure (ULift.{0} ℝ)) r)
+        = algebraMap (ULift.{0} ℝ) (AlgebraicClosure (ULift.{0} ℝ)) r := by
+    intro r
+    have h0 : algebraMap ℝ (ULift.{0} ℝ) r.down = r := rfl
+    have h1 : algebraMap ℝ (AlgebraicClosure (ULift.{0} ℝ)) r.down
+        = algebraMap (ULift.{0} ℝ) (AlgebraicClosure (ULift.{0} ℝ)) r := by
+      rw [IsScalarTower.algebraMap_apply ℝ (ULift.{0} ℝ)
+        (AlgebraicClosure (ULift.{0} ℝ)) r.down, h0]
+    rw [← h1]
+    exact τ.commutes r.down
+  set σ : Field.absoluteGaloisGroup (ULift.{0} ℝ) :=
+    AlgEquiv.ofRingEquiv (R := ULift.{0} ℝ) (f := τ.toRingEquiv) hcomm with hσdef
+  have hσapp : ∀ a, σ a = φ.symm ((starRingEnd ℂ) (φ a)) := fun a => hτapp a
+  have hσne : σ ≠ 1 := by
+    intro h
+    have h1 := DFunLike.congr_fun h (φ.symm Complex.I)
+    rw [hσapp, AlgEquiv.apply_symm_apply, AlgEquiv.one_apply] at h1
+    have h2 : (starRingEnd ℂ) Complex.I = Complex.I := φ.symm.injective h1
+    rw [Complex.conj_I] at h2
+    exact Complex.I_ne_zero (by linear_combination -h2 / 2)
+  have hσ2 : σ * σ = 1 := by
+    refine AlgEquiv.ext fun a => ?_
+    rw [AlgEquiv.mul_apply, hσapp, hσapp, AlgEquiv.apply_symm_apply,
+      Complex.conj_conj, AlgEquiv.symm_apply_apply, AlgEquiv.one_apply]
+  refine ⟨Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{0} ℝ)) σ, ?_, ?_⟩
+  · have hne := map_realConj_ne_of_sq_eq_neg d hd x hx σ hσne
+    rcases Int.units_eq_one_or (e (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (ULift.{0} ℝ)) σ)) with h | h
+    · exact absurd ((he _).mp h) hne
+    · exact h
+  · rw [← map_mul, hσ2, map_one]
+
+/-- **THE INDEX-TWO INDUCTION, AS A COCYCLE** (PROVEN 2026-07-27): from an
+ANTICYCLOTOMIC character `χ` of the index-two subgroup `ker e` and an involution
+`c₀` outside it, the dihedral cocycle `ν` of the consuming node.
+
+This is the whole of "induction from an index-two subgroup", written without any
+`Ind` machinery. Set `ν g = χ g` on `ker e` and `ν g = χ (g c₀)` off it. The
+four cases of `ν (g h) = ν g · (ν h) ^ (e g)` are:
+
+* both inside — multiplicativity of `χ`;
+* `g` inside, `h` outside — `g (h c₀)` splits inside the subgroup;
+* `g` outside, `h` inside — `g h c₀ = (g c₀)(c₀⁻¹ h c₀)` and ANTICYCLOTOMY
+  turns the conjugate into `(χ h)⁻¹`, which is exactly the exponent `e g = −1`;
+* both outside — `g h = (g c₀)(c₀ (h c₀) c₀⁻¹)`, and this is the ONLY case that
+  uses `c₀ * c₀ = 1`. Without an involution the identity fails by `χ (c₀ ^ 2)`,
+  which is precisely the obstruction that `exists_realConjInvolution_of_neg`
+  removes.
+
+Local constancy: a level set of `ν` is the union of a level set of `χ` inside
+the subgroup and its RIGHT TRANSLATE by `c₀`, both open. -/
+theorem exists_dihedralCocycle_of_anticyclotomicChar
+    {C : Type*} [CommGroup C] (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (χ : Field.absoluteGaloisGroup ℚ → C) (c₀ : Field.absoluteGaloisGroup ℚ)
+    (hc₀ : e c₀ = -1) (hc₀2 : c₀ * c₀ = 1)
+    (hmul : ∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h)
+    (hanti : ∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹)
+    (hopen : ∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | e g = 1 ∧ χ g = χ g₀}) :
+    ∃ ν : Field.absoluteGaloisGroup ℚ → C,
+      (∀ g h, ν (g * h) = ν g * ν h ^ ((e g : ℤ))) ∧
+      (∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | ν g = ν g₀}) ∧
+      (∀ g, e g = 1 → ν g = χ g) := by
+  classical
+  have hc₀inv : c₀⁻¹ = c₀ := inv_eq_of_mul_eq_one_right hc₀2
+  have hc₀i : e c₀⁻¹ = -1 := by rw [map_inv, hc₀]; decide
+  have hone : ∀ g : Field.absoluteGaloisGroup ℚ, e g = 1 ∨ e g = -1 := fun g =>
+    Int.units_eq_one_or (e g)
+  set ν : Field.absoluteGaloisGroup ℚ → C :=
+    fun g => if e g = 1 then χ g else χ (g * c₀) with hνdef
+  have hval : ∀ g, e g = 1 → ν g = χ g := fun g hg => if_pos hg
+  have hval' : ∀ g, e g = -1 → ν g = χ (g * c₀) := fun g hg =>
+    if_neg (by rw [hg]; decide)
+  refine ⟨ν, ?_, ?_, hval⟩
+  · intro g h
+    rcases hone g with hg | hg <;> rcases hone h with hh | hh
+    · have hgh : e (g * h) = 1 := by rw [map_mul, hg, hh, one_mul]
+      rw [hval _ hgh, hval _ hg, hval _ hh, hg]
+      simp only [Units.val_one, zpow_one]
+      exact hmul g h hg hh
+    · have hgh : e (g * h) = -1 := by rw [map_mul, hg, hh, one_mul]
+      have hhc : e (h * c₀) = 1 := by rw [map_mul, hh, hc₀]; decide
+      rw [hval' _ hgh, hval _ hg, hval' _ hh, hg]
+      simp only [Units.val_one, zpow_one, mul_assoc]
+      exact hmul g (h * c₀) hg hhc
+    · have hgh : e (g * h) = -1 := by rw [map_mul, hg, hh, mul_one]
+      have hgc : e (g * c₀) = 1 := by rw [map_mul, hg, hc₀]; decide
+      have hconj : e (c₀⁻¹ * h * c₀⁻¹⁻¹) = 1 := by
+        rw [map_mul, map_mul, hh, hc₀i, map_inv, hc₀i]; decide
+      have hsplit : g * h * c₀ = (g * c₀) * (c₀⁻¹ * h * c₀⁻¹⁻¹) := by
+        rw [inv_inv]; group
+      rw [hval' _ hgh, hval' _ hg, hval _ hh, hg, hsplit,
+        hmul _ _ hgc hconj, hanti c₀⁻¹ h hc₀i hh]
+      norm_num
+    · have hgh : e (g * h) = 1 := by rw [map_mul, hg, hh]; decide
+      have hgc : e (g * c₀) = 1 := by rw [map_mul, hg, hc₀]; decide
+      have hhc : e (h * c₀) = 1 := by rw [map_mul, hh, hc₀]; decide
+      have hconj : e (c₀ * (h * c₀) * c₀⁻¹) = 1 := by
+        rw [map_mul, map_mul, hhc, hc₀, map_inv, hc₀]; decide
+      have hsplit : g * h = (g * c₀) * (c₀ * (h * c₀) * c₀⁻¹) := by
+        calc g * h = g * (c₀ * c₀) * h := by rw [hc₀2, mul_one]
+          _ = (g * c₀) * (c₀ * (h * c₀) * c₀⁻¹) := by group
+      rw [hval _ hgh, hval' _ hg, hval' _ hh, hg, hsplit,
+        hmul _ _ hgc hconj, hanti c₀ (h * c₀) hc₀ hhc]
+      norm_num
+  · intro g₀
+    obtain ⟨w, hw⟩ : ∃ w, ν g₀ = χ w := by
+      rcases hone g₀ with h | h
+      · exact ⟨g₀, hval _ h⟩
+      · exact ⟨g₀ * c₀, hval' _ h⟩
+    have hsplit : {g : Field.absoluteGaloisGroup ℚ | ν g = ν g₀}
+        = {g : Field.absoluteGaloisGroup ℚ | e g = 1 ∧ χ g = χ w}
+          ∪ (fun k => k * c₀) '' {g : Field.absoluteGaloisGroup ℚ | e g = 1 ∧ χ g = χ w} := by
+      ext g
+      simp only [Set.mem_setOf_eq, Set.mem_union, Set.mem_image, hw]
+      constructor
+      · intro hg
+        rcases hone g with h | h
+        · exact Or.inl ⟨h, by rwa [hval _ h] at hg⟩
+        · refine Or.inr ⟨g * c₀, ⟨by rw [map_mul, h, hc₀]; decide, ?_⟩, ?_⟩
+          · rwa [hval' _ h] at hg
+          · rw [mul_assoc, hc₀2, mul_one]
+      · rintro (⟨h1, h2⟩ | ⟨k, ⟨hk1, hk2⟩, rfl⟩)
+        · rw [hval _ h1]; exact h2
+        · have hkc : e (k * c₀) = -1 := by rw [map_mul, hk1, hc₀]; decide
+          rw [hval' _ hkc, mul_assoc, hc₀2, mul_one]
+          exact hk2
+    rw [hsplit]
+    exact (hopen w).union ((Homeomorph.mulRight c₀).isOpenMap _ (hopen w))
+
+/-- **THE CLASS FIELD THEORY LEAF: an ANTICYCLOTOMIC CHARACTER of an imaginary
+quadratic field, of order not dividing `4`** (sorry node, cut 2026-07-27 — this
+is now the ONLY class-field-theoretic content anywhere under
+`exists_dihedralOddGaloisRep_of_charThree`, and everything else in that node is
+proven over it).
+
+WHAT IT SAYS. Let `e` cut out `M = ℚ(√d)` inside `Γ_ℚ`, so `ker e = Γ_M`, and
+let `C` be any commutative group containing an element `ζ` of order `> 4`. Then
+there is `χ : Γ_ℚ → C` which is
+
+* a HOMOMORPHISM on `Γ_M` (`hmul`);
+* ANTICYCLOTOMIC: conjugation by anything outside `Γ_M` inverts it (`hanti`),
+  which is the defining property `χ^c = χ⁻¹` of a RING-CLASS character — it holds
+  for characters of `Cl(𝒪)` because complex conjugation inverts the class group;
+* locally constant on `Γ_M` (`hopen`), i.e. it cuts out a finite abelian
+  extension of `M`;
+* of order NOT DIVIDING `4`: some `χ g ^ 4 ≠ 1`.
+
+Its values off `Γ_M` are unconstrained and are never read: the consumer
+`exists_dihedralCocycle_of_anticyclotomicChar` only evaluates `χ` at elements of
+`Γ_M`.
+
+WHY THE ORDER CLAUSE IS THE QUANTITATIVE HEART. The FALSITY AUDIT of
+`exists_dihedralOddGaloisRep_of_charThree` shows the induced representation is
+irreducible over every totally real base exactly when the character ratio has an
+element of order `≥ 3`, i.e. exactly when some `χ g ^ 4 ≠ 1`. Over `𝔽₃` this is
+UNSATISFIABLE in `kpˣ` (`|𝔽₃ˣ| = 2`), which is what refuted the original,
+unrestricted statement of the consuming node; here that constraint is carried by
+the hypothesis `4 < orderOf ζ`, which the caller discharges from
+`3 < Nat.card kp` and characteristic `3` (so `Nat.card kp ≥ 9` and
+`|kpˣ| ≥ 8`).
+
+HOW IT IS TO BE PROVED, AND WHAT IS MISSING FROM THE PIN. Take a prime `𝔮` of
+`M` of large norm. Class field theory gives the RAY CLASS GROUP `Cl_𝔮(M)` and
+the Artin reciprocity map `Γ_M ↠ Cl_𝔮(M)`; the ray class group mod `𝔮` surjects
+onto `(𝒪_M/𝔮)ˣ` modulo the units of `M`, which is cyclic of order
+`(N𝔮 − 1)/w`, so choosing `N𝔮` large (Dirichlet) gives a character of
+arbitrarily large order, and composing with an embedding of its cyclic image
+into `⟨ζ⟩` gives a candidate. Anticyclotomy is then arranged by replacing `χ`
+with `χ/χ^c`, which is anticyclotomic by construction and still of order `> 4`.
+NOTHING here requires `χ` to be UNRAMIFIED, so ray class characters of the one
+fixed field `M` suffice and the Nakagawa–Horie/Yamamoto theorem is NOT needed —
+carry that simplification forward, it is what keeps a research-level input off
+this node's critical path.
+
+MISSING MACHINERY, re-confirmed 2026-07-27 by grep over this tree, mathlib and
+`~/cs/FLT`: there is no `RayClassGroup`, no Artin map, no idele class group and
+no reciprocity anywhere (`ClassGroup R` and `NumberField.classNumber` exist, but
+nothing connecting them to Galois theory). The only Artin-map object in the tree
+is the sorried `exists_artinMap_classGroup_frobeniusIdeal`
+(`Modularity/Interface.lean`), stated for the Hilbert class field of `ℚ(μ_p)`
+and not usable here. So discharging this leaf means BUILDING the ray class group
+of an imaginary quadratic field together with Artin reciprocity onto it.
+References: Neukirch ch. VI, Childress, and Cox ch. 2 and 8 for ring class
+fields.
+
+WHAT IS NO LONGER PART OF THIS LEAF, and this is the point of the 2026-07-27
+cut: the quadratic character itself, the ODDNESS at the real place, the
+existence of a complex-conjugation INVOLUTION, and the whole index-two
+INDUCTION bookkeeping are all proven above, and none of them needed class field
+theory. A prover of this leaf may work entirely inside `M` and never think about
+`Γ_ℚ`-cosets, matrices or `kp`. -/
+theorem exists_anticyclotomicChar_of_quadraticChar
+    {C : Type*} [CommGroup C] (ζ : C) (hζ : 4 < orderOf ζ)
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x) :
+    ∃ χ : Field.absoluteGaloisGroup ℚ → C,
+      (∀ g h, e g = 1 → e h = 1 → χ (g * h) = χ g * χ h) ∧
+      (∀ c g, e c = -1 → e g = 1 → χ (c * g * c⁻¹) = (χ g)⁻¹) ∧
+      (∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | e g = 1 ∧ χ g = χ g₀}) ∧
+      (∃ g, e g = 1 ∧ χ g ^ (4 : ℕ) ≠ 1) :=
+  sorry
+
+/-- **An anticyclotomic dihedral cocycle over `ℚ` with values in `kpˣ`**
+(PROVEN 2026-07-27 over the single leaf `exists_anticyclotomicChar_of_quadraticChar`,
+which is where the class field theory now lives; this used to be the ONE
 genuinely class-field-theoretic input of
 `exists_dihedralOddGaloisRep_of_charThree`, and everything else in that
 node is now derived from it).
@@ -9841,32 +10251,28 @@ has `3 ^ f` elements with `f ≥ 2`, so `kpˣ` is cyclic of order
 is UNSATISFIABLE (`|𝔽₃ˣ| = 2`), which is the counterexample that refuted
 the original statement of the consuming node.
 
-HOW IT IS TO BE PROVED (and what is missing from the pin). Fix `M = ℚ(i)`
-(any imaginary quadratic will do). One needs a continuous character of
-`Γ_M` of order divisible by something `> 4`; class field theory supplies
-it as a RAY CLASS character of `M`, and — this is the simplification
-recorded by the previous owner of the consuming node, and it is what
-removes a research-level input — nothing here requires `χ` to be
-UNRAMIFIED, so ray class characters of a single fixed `M` suffice and the
-Nakagawa–Horie/Yamamoto theorem (an imaginary quadratic whose CLASS GROUP
-has an element of order `q − 1`) is NOT needed. Concretely, for a prime
-`𝔮` of `M` of large norm the ray class group mod `𝔮` surjects onto
-`(𝒪_M/𝔮)ˣ` modulo the four units of `ℚ(i)`, which is cyclic of order
-`(N𝔮 − 1)/4`; choosing `N𝔮` large gives a character of arbitrarily large
-order, and composing with an embedding of its cyclic image into `kpˣ`
-gives `χ`. Anticyclotomy (`χ^c = χ⁻¹`) is arranged by replacing `χ` with
-`χ/χ^c`, which is anticyclotomic by construction and still of order `> 4`.
+HOW IT IS PROVED (2026-07-27), and where the remaining mathematics went.
+Take `d = -1` and `x` a root of `X ^ 2 + 1`; the quadratic character `e` is
+`exists_quadraticChar_of_sq_eq`, its ODDNESS at the real place is
+`map_realConj_ne_of_sq_eq_neg`, a complex-conjugation INVOLUTION `c₀`
+outside `ker e` is `exists_realConjInvolution_of_neg`, and the index-two
+INDUCTION that turns a character of `Γ_M` into the cocycle `ν` is
+`exists_dihedralCocycle_of_anticyclotomicChar`. None of those four needs
+class field theory. The hypothesis `3 < Nat.card kp` is spent here: with
+characteristic `3` the additive order of `1` is `3`, so `3 ∣ Nat.card kp`
+and hence `Nat.card kp ≥ 6`, so `kpˣ` — cyclic, being the unit group of a
+finite field — has a generator `ζ` of order `> 4`, which is exactly the
+hypothesis the class-field-theoretic leaf consumes.
 
-MISSING MACHINERY, precisely. Neither mathlib nor `~/cs/FLT` has ANY class
-field theory: there is no `RayClassGroup`, no Artin map, no idele class
-group, no reciprocity (`ClassGroup R` and `NumberField.classNumber` exist,
-but nothing connecting them to Galois theory). This tree's only Artin-map
-object is the sorried `exists_artinMap_classGroup_frobeniusIdeal`
-(`Modularity/Interface.lean`), which is stated for the Hilbert class field
-of `ℚ(μ_p)` and is not in a form usable here. So discharging this leaf
-means building the ray class group of an imaginary quadratic field and the
-Artin reciprocity map onto it — a genuinely new theory, and the correct
-next owner of this node.
+WHAT REMAINS. Exactly one input:
+`exists_anticyclotomicChar_of_quadraticChar`, the existence of an
+anticyclotomic (ring-class) character of `M = ℚ(√d)` of order not dividing
+`4`. That is a RAY CLASS character, and its docstring records what has to be
+built (the ray class group of an imaginary quadratic field and Artin
+reciprocity onto it — absent from mathlib, from this tree and from
+`~/cs/FLT`, re-confirmed 2026-07-27), together with the standing
+simplification that `χ` need NOT be unramified, so Nakagawa–Horie is not on
+the critical path.
 
 FAITHFULNESS. The conclusion is a statement about `Γ_ℚ` and `kpˣ` alone;
 it mentions no representation, so it cannot be discharged vacuously by a
@@ -9886,8 +10292,47 @@ theorem exists_anticyclotomicDihedralCocycle (kp : Type u) [Field kp] [Finite kp
       (∀ g, e g = 1 ↔ g x = x) ∧
       (∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
         e (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) ∧
-      (∃ g, e g = 1 ∧ ν g ^ (4 : ℕ) ≠ 1) :=
-  sorry
+      (∃ g, e g = 1 ∧ ν g ^ (4 : ℕ) ≠ 1) := by
+  classical
+  haveI : Fintype kp := Fintype.ofFinite kp
+  -- the imaginary quadratic field `ℚ(i)`, and its quadratic character
+  obtain ⟨x, hx⟩ : ∃ x : AlgebraicClosure ℚ,
+      x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) (-1 : ℚ) :=
+    IsAlgClosed.exists_pow_nat_eq _ two_pos
+  obtain ⟨e, he, heopen⟩ := exists_quadraticChar_of_sq_eq (-1) (by norm_num) x hx
+  -- a unit of `kp` of order `> 4`, which is where `3 < Nat.card kp` is spent
+  have h3dvd : 3 ∣ Nat.card kp := by
+    have h1 : (3 : ℕ) • (1 : kp) = 0 := by
+      simp only [nsmul_eq_mul, mul_one, Nat.cast_ofNat]
+      exact h3
+    have h2 : addOrderOf (1 : kp) ∣ 3 := addOrderOf_dvd_of_nsmul_eq_zero h1
+    have h3' : addOrderOf (1 : kp) ≠ 1 := by
+      intro h
+      exact one_ne_zero (AddMonoid.addOrderOf_eq_one_iff.mp h)
+    have h4 : addOrderOf (1 : kp) = 3 :=
+      ((Nat.prime_three).eq_one_or_self_of_dvd _ h2).resolve_left h3'
+    exact h4 ▸ addOrderOf_dvd_natCard (1 : kp)
+  have hcard6 : 6 ≤ Nat.card kp := by omega
+  obtain ⟨ζ, hζgen⟩ := IsCyclic.exists_generator (α := kpˣ)
+  have hζord : orderOf ζ = Nat.card kpˣ := orderOf_eq_card_of_forall_mem_zpowers hζgen
+  have hζ : 4 < orderOf ζ := by rw [hζord, Nat.card_units]; omega
+  -- the class field theory, the involution, and the index-two induction
+  obtain ⟨χ, hmul, hanti, hopen, g₁, hg₁, hg₁4⟩ :=
+    exists_anticyclotomicChar_of_quadraticChar ζ hζ (-1) (by norm_num) x hx e he
+  obtain ⟨c₀, hc₀, hc₀2⟩ := exists_realConjInvolution_of_neg (-1) (by norm_num) x hx e he
+  obtain ⟨ν, hcoc, hνopen, hνeq⟩ :=
+    exists_dihedralCocycle_of_anticyclotomicChar e χ c₀ hc₀ hc₀2 hmul hanti hopen
+  refine ⟨-1, x, ν, e, by norm_num, hx, hcoc, ?_, he, ?_, ⟨g₁, hg₁, ?_⟩⟩
+  · intro g₀
+    exact (hνopen g₀).inter (heopen g₀)
+  · intro σ hσ
+    have hne := map_realConj_ne_of_sq_eq_neg (-1) (by norm_num) x hx σ hσ
+    rcases Int.units_eq_one_or (e (Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (ULift.{u} ℝ)) σ)) with h | h
+    · exact absurd ((he _).mp h) hne
+    · exact h
+  · rw [hνeq g₁ hg₁]
+    exact hg₁4
 
 /-- **THE REAL-PLACE LEAF: over a totally real base, the whole conjugacy
 class of complex conjugation is in the image of `Γ_F`** (sorry node, cut
@@ -10158,11 +10603,14 @@ distinct eigenvalues exactly because `ν g₀ ⁴ ≠ 1`) fed to
 `L = F(√d)` comes from `exists_quadraticExtension_trivial_of_isTotallyReal`
 fed to `not_isIrreducible_finTwo_of_forall_diag`.
 
-WHERE THE REMAINING MATHEMATICS IS. Exactly one of the three leaves is
-class field theory — `exists_anticyclotomicDihedralCocycle` — and its
+WHERE THE REMAINING MATHEMATICS IS. `exists_anticyclotomicDihedralCocycle`
+was itself PROVEN on 2026-07-27, over a single class-field-theoretic leaf —
+`exists_anticyclotomicChar_of_quadraticChar`, the existence of an
+anticyclotomic ray-class character of order not dividing `4` — whose
 docstring records what has to be built (the ray class group of an
 imaginary quadratic field and the Artin map onto it; NOTHING of the kind
-exists in mathlib, in this tree, or in `~/cs/FLT`). The other two are
+exists in mathlib, in this tree, or in `~/cs/FLT`, re-confirmed
+2026-07-27). The other two leaves of this node are
 Galois-theoretic bookkeeping forced by the fact that
 `Field.absoluteGaloisGroup.map` is defined through arbitrarily chosen
 embeddings of algebraic closures and is therefore not functorial on the
