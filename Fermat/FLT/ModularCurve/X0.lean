@@ -6453,80 +6453,6 @@ statement carrying the same list is
 cannot be used here. -/
 def mazurIsogenyPrimes : Finset ℕ := {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}
 
-/-- **Mazur 1978, Theorem 1** (sorry node): for every prime
-`p ∉ mazurIsogenyPrimes`, every rational point of `X_0(p)` is a cusp.
-
-TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44
-(1978), Theorem 1: `X_0(p)(ℚ)` consists of the two cusps `0` and `∞` for
-every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
-
-**This is the statement in the shape Mazur proves it**, which is the
-point of routing `y0HasNoRationalPoint_prime` through it.  The argument
-is: the Eisenstein quotient `J̃` of `J_0(p)` has Mordell–Weil rank `0`
-(Mazur, *Modular curves and the Eisenstein ideal*, Publ. Math. IHÉS 47
-(1977)); `x ↦ [x − ∞]` embeds `X_0(p)(ℚ)` in `J̃(ℚ)`, which is therefore
-finite; and a specialisation argument at `3` forces the image to be
-cuspidal for `p ≥ 23`, `p ∉ {37, 43, 67, 163}`.  Every object in that
-sentence — `J_0(p)`, the Hecke algebra, the Eisenstein ideal, the
-Mordell–Weil theorem, reduction of an abelian variety — is a subtree that
-does not exist at this pin, and none of it can be *stated* against the
-affine `Y_0(p)`.
-
-Quantified over every model of `IsCompactificationY0`, so it is at least
-as strong as the `Y_0(p)` statement it replaces and cannot be discharged
-by a degenerate choice of `X`.
-
-Note the conclusion is genuinely stronger than the elliptic-curve
-statement `WeierstrassCurve.prime_mem_cyclicIsogenyDegrees` in
-`FreyCurve/MazurTorsion.lean` (which is downstream of this module and so
-unusable here): it rules out rational points of a COARSE space, which
-need not be represented by a pair `(E, C)` defined over `ℚ`. -/
-theorem cuspidal_x0_prime {p : ℕ} (_hp : p.Prime) (_hmem : p ∉ mazurIsogenyPrimes)
-    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 p strY) (hX : IsCompactificationY0 strY strX)
-    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
-  sorry
-
-/-- **Mazur's rational isogenies of prime degree, on the modular curve**
-(sorry node): `Y_0(p)(ℚ) = ∅` for every prime `p` outside
-`mazurIsogenyPrimes`.
-
-TRUE — this is Mazur, *Rational isogenies of prime degree*, Invent. Math.
-44 (1978), Theorem 1, in its modular-curve form: `X_0(p)(ℚ)` consists of
-the two cusps for every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43,
-67, 163}`.
-
-**This is the statement that makes the semiprime family finite**, via
-`y0HasNoRationalPoint_of_dvd` applied to `p ∣ p * q`; it is the only
-uniform input available, since every other tool here is a per-level
-computation.
-
-Relation to what is already in the tree.  The elliptic-curve phrasing,
-`WeierstrassCurve.prime_mem_cyclicIsogenyDegrees`, is PROVEN in
-`FreyCurve/MazurTorsion.lean` from the single leaf
-`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`.  That
-module *imports* this one, so the implication cannot be used in this
-direction, and in any case the modular-curve statement is genuinely
-STRONGER: it rules out rational points of the coarse moduli space, which
-need not be represented by a pair `(E, C)` defined over `ℚ`.  The two
-should be reconciled once the layer below exists — the honest route is to
-prove this node and *derive* the elliptic-curve one from it through
-`false_of_stable_of_y0HasNoRationalPoint`, which is exactly the shape
-`MazurTorsion.lean` already uses for the twelve composite levels.
-
-IRREDUCIBLE at this pin: Mazur's argument is the Eisenstein ideal in the
-Hecke algebra acting on `J_0(p)`, none of which exists here.  See the
-module docstring for the three missing subtrees.
-
-PROVEN 2026-07-26 over the compactification interface: the content is now
-`cuspidal_x0_prime`, which is Mazur's Theorem 1 in the form he states and
-proves it — a statement about `X_0(p)`, not about `Y_0(p)`. -/
-theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
-    (hmem : p ∉ mazurIsogenyPrimes) : Y0HasNoRationalPoint p := by
-  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 p
-  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
-  exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_prime hp hmem hc hX)
-
 /-- **`Y_0(N)(ℚ) = ∅` implies every rational point of `X_0(N)` is a cusp**
 (PROVEN) — the exact converse of `y0HasNoRationalPoint_of_cuspidal`, and
 the direction in which the level nodes below are consumed.
@@ -7151,111 +7077,6 @@ theorem y0HasNoRationalPoint_of_isogenyPrimeSqLevel (N : ℕ)
   · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 1849 (by decide)
   · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 4489 (by decide)
   · exact y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel 26569 (by decide)
-
-/-- **Kenku's prime-square determination, on `X_0(p²)` for `p ≥ 11`**
-(PROVEN 2026-07-27 over `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`;
-introduced as a sorry node 2026-07-26): every rational point of `X_0(p²)`
-is a cusp, for every prime `p ≥ 11`.
-
-TRUE, and it is Kenku's theorem.  The Mazur–Kenku list of levels `N` with
-`Y_0(N)(ℚ) ≠ ∅` is
-
-    1, …, 19, 21, 25, 27, 37, 43, 67, 163,
-
-whose largest element is `163`; and for a prime `p ≥ 11` the level `p²` is
-at least `121`, is a perfect square, and is therefore in the list only if
-it is one of `1, 4, 9, 16` — all of which are `< 121`.  So `p² ` is outside
-the list for EVERY prime `p ≥ 11`, uniformly.
-
-(That uniformity is a fact about the *statement*, not about its proof.
-The proof below does split on `p ∈ mazurIsogenyPrimes`, because the two
-halves are discharged by genuinely different theorems — Mazur's for the
-infinite half, Kenku's eight levels for the rest.  An earlier version of
-this docstring read "uniformly, with no case analysis", which was a claim
-about the truth and was silently taken for a claim about the route.)
-
-**Why `11 ≤ p` and not merely `p` prime.**  The bound is sharp at both
-ends of the small range: `4`, `9` and `25` are all IN the Mazur–Kenku
-list, so the statement is FALSE at `p = 2, 3, 5`.  (`p = 7` gives `49`,
-which is outside the list, so the statement happens to be true there too —
-but `49` is the separate concern of `MazurLevelFortyNine` and is left to
-it rather than folded in here.)
-
-**Why this node exists.**  It is the modular-curve form of the missing
-half of the level-`p` ⟷ level-`p²` dictionary.
-`FreyCurve/MazurTorsion.lean` already carries that dictionary in ONE
-direction: `not_cyclicIsogeny_sq_of_jInvariant` builds two distinct
-Galois-stable lines of order `p` on a Vélu quotient out of a cyclic
-`p²`-subgroup, and so is proven FROM the level-`p` leaf
-`not_two_stable_lines_of_jInvariant`.  Feeding that implication back would
-be circular.  Routing the CONVERSE through this node instead is not: the
-statement below is about the modular curve, is independent of both
-elliptic-curve leaves, and is exactly the shape in which Kenku proves it.
-
-**NOT IRREDUCIBLE — the infinite half is Mazur's, and is now discharged**
-(2026-07-27, correcting the audit this docstring previously carried,
-which read "IRREDUCIBLE at this pin, for the same reason as every other
-level node here").  That verdict was recorded before the case split below
-was tried, and it is wrong for every prime `p ∉ mazurIsogenyPrimes`:
-
-* if `p ∉ mazurIsogenyPrimes` then `Y_0(p)(ℚ) = ∅` by
-  `y0HasNoRationalPoint_prime` — Mazur's theorem, already a node here —
-  and `p ∣ p²`, so `y0HasNoRationalPoint_of_dvd` gives
-  `Y_0(p²)(ℚ) = ∅` with no reference to the geometry of `X_0(p²)` at all;
-* the new `cuspidal_of_y0HasNoRationalPoint` converts that back into
-  cuspidality of `X_0(p²)(ℚ)`, which is the shape stated here.
-
-So the genus-`≥ 6` obstruction the old audit named applies only to the
-eight levels where the descent to level `p` is unavailable — exactly
-`p ∈ mazurIsogenyPrimes` with `11 ≤ p` — and those are now the separate
-node `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`, whose docstring
-records what each of the eight still needs.  **The check that would
-refute this reading**: `y0HasNoRationalPoint_prime` is stated for `p`
-prime with `p ∉ mazurIsogenyPrimes` and nothing else, and
-`y0HasNoRationalPoint_of_dvd` needs only `N ≠ 0` and `M ∣ N`; if either
-acquired a hypothesis this proof does not supply, the split would fail to
-elaborate.
-
-Sources for the eight residual levels: Kenku, *The modular curves
-`X_0(65)` and `X_0(91)` and rational isogeny*, Math. Proc. Cambridge
-Philos. Soc. **87** (1980); *On the modular curves `X_0(125)`, `X_1(25)`
-and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981); *The modular curve
-`X_0(169)` and rational isogeny*, J. London Math. Soc. (2) **22** (1980).
-
-Quantified over every model of `IsCompactificationY0`, so it is at least
-as strong as the `Y_0(p²)` statement it carries and cannot be discharged
-by a degenerate choice of `X`. -/
-theorem cuspidal_x0_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 ≤ p)
-    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    (hc : IsCoarseModuliY0 (p ^ 2) strY) (hX : IsCompactificationY0 strY strX)
-    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x := by
-  refine cuspidal_of_y0HasNoRationalPoint hc hX ?_ x
-  by_cases hmem : p ∈ mazurIsogenyPrimes
-  · exact y0HasNoRationalPoint_of_isogenyPrimeSqLevel (p ^ 2)
-      (mem_isogenyPrimeSqLevels_of_mem_mazurIsogenyPrimes hmem hp11)
-  · exact y0HasNoRationalPoint_of_dvd (pow_ne_zero 2 hp.pos.ne')
-      (dvd_pow_self p two_ne_zero) (y0HasNoRationalPoint_prime hp hmem)
-
-/-- **`Y_0(p²)(ℚ) = ∅` for every prime `p ≥ 11`** (PROVEN 2026-07-26 over
-`cuspidal_x0_isogenyPrimeSq`, the same compactification route
-`y0HasNoRationalPoint_prime` takes).
-
-This is the node that closes
-`WeierstrassCurve.not_two_stable_lines_of_jInvariant` in
-`FreyCurve/MazurTorsion.lean`: two DISTINCT Galois-stable lines of order
-`p` on `E` produce, on the Vélu quotient `E/⟨h₁⟩`, a Galois-stable CYCLIC
-subgroup of order `p²`, which `false_of_stable_of_y0HasNoRationalPoint`
-then contradicts.  See that leaf for the construction.
-
-Note `y0HasNoRationalPoint_of_dvd` does NOT reach `p²`: its only proper
-divisor is `p`, and `Y_0(p)(ℚ) ≠ ∅` for `p ∈ {11, 17, 19, 37, 43, 67,
-163}` — which is precisely why the seven isogeny primes need Kenku and not
-merely Mazur. -/
-theorem y0HasNoRationalPoint_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 ≤ p) :
-    Y0HasNoRationalPoint (p ^ 2) := by
-  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 (p ^ 2)
-  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
-  exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_isogenyPrimeSq hp hp11 hc hX)
 
 /-! #### The `61` semiprime levels, partitioned by the method that settles each
 
@@ -8972,6 +8793,185 @@ subsection `#### The Néron pinning of the `j`-map` at the end of this
 file, where it is **PROVEN** from `exists_x0JNeronDatum`; it now consumes
 `SpecLoc`, which is declared below this point, so it cannot live here.
 See the POST-SCRIPT in the docstring of `IsX0JReductionAt` above. -/
+
+/-- **Mazur 1978, Theorem 1** (sorry node): for every prime
+`p ∉ mazurIsogenyPrimes`, every rational point of `X_0(p)` is a cusp.
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44
+(1978), Theorem 1: `X_0(p)(ℚ)` consists of the two cusps `0` and `∞` for
+every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+
+**This is the statement in the shape Mazur proves it**, which is the
+point of routing `y0HasNoRationalPoint_prime` through it.  The argument
+is: the Eisenstein quotient `J̃` of `J_0(p)` has Mordell–Weil rank `0`
+(Mazur, *Modular curves and the Eisenstein ideal*, Publ. Math. IHÉS 47
+(1977)); `x ↦ [x − ∞]` embeds `X_0(p)(ℚ)` in `J̃(ℚ)`, which is therefore
+finite; and a specialisation argument at `3` forces the image to be
+cuspidal for `p ≥ 23`, `p ∉ {37, 43, 67, 163}`.  Every object in that
+sentence — `J_0(p)`, the Hecke algebra, the Eisenstein ideal, the
+Mordell–Weil theorem, reduction of an abelian variety — is a subtree that
+does not exist at this pin, and none of it can be *stated* against the
+affine `Y_0(p)`.
+
+Quantified over every model of `IsCompactificationY0`, so it is at least
+as strong as the `Y_0(p)` statement it replaces and cannot be discharged
+by a degenerate choice of `X`.
+
+Note the conclusion is genuinely stronger than the elliptic-curve
+statement `WeierstrassCurve.prime_mem_cyclicIsogenyDegrees` in
+`FreyCurve/MazurTorsion.lean` (which is downstream of this module and so
+unusable here): it rules out rational points of a COARSE space, which
+need not be represented by a pair `(E, C)` defined over `ℚ`. -/
+theorem cuspidal_x0_prime {p : ℕ} (_hp : p.Prime) (_hmem : p ∉ mazurIsogenyPrimes)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 p strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
+  sorry
+
+/-- **Mazur's rational isogenies of prime degree, on the modular curve**
+(sorry node): `Y_0(p)(ℚ) = ∅` for every prime `p` outside
+`mazurIsogenyPrimes`.
+
+TRUE — this is Mazur, *Rational isogenies of prime degree*, Invent. Math.
+44 (1978), Theorem 1, in its modular-curve form: `X_0(p)(ℚ)` consists of
+the two cusps for every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43,
+67, 163}`.
+
+**This is the statement that makes the semiprime family finite**, via
+`y0HasNoRationalPoint_of_dvd` applied to `p ∣ p * q`; it is the only
+uniform input available, since every other tool here is a per-level
+computation.
+
+Relation to what is already in the tree.  The elliptic-curve phrasing,
+`WeierstrassCurve.prime_mem_cyclicIsogenyDegrees`, is PROVEN in
+`FreyCurve/MazurTorsion.lean` from the single leaf
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`.  That
+module *imports* this one, so the implication cannot be used in this
+direction, and in any case the modular-curve statement is genuinely
+STRONGER: it rules out rational points of the coarse moduli space, which
+need not be represented by a pair `(E, C)` defined over `ℚ`.  The two
+should be reconciled once the layer below exists — the honest route is to
+prove this node and *derive* the elliptic-curve one from it through
+`false_of_stable_of_y0HasNoRationalPoint`, which is exactly the shape
+`MazurTorsion.lean` already uses for the twelve composite levels.
+
+IRREDUCIBLE at this pin: Mazur's argument is the Eisenstein ideal in the
+Hecke algebra acting on `J_0(p)`, none of which exists here.  See the
+module docstring for the three missing subtrees.
+
+PROVEN 2026-07-26 over the compactification interface: the content is now
+`cuspidal_x0_prime`, which is Mazur's Theorem 1 in the form he states and
+proves it — a statement about `X_0(p)`, not about `Y_0(p)`. -/
+theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes) : Y0HasNoRationalPoint p := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 p
+  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
+  exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_prime hp hmem hc hX)
+
+/-- **Kenku's prime-square determination, on `X_0(p²)` for `p ≥ 11`**
+(PROVEN 2026-07-27 over `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`;
+introduced as a sorry node 2026-07-26): every rational point of `X_0(p²)`
+is a cusp, for every prime `p ≥ 11`.
+
+TRUE, and it is Kenku's theorem.  The Mazur–Kenku list of levels `N` with
+`Y_0(N)(ℚ) ≠ ∅` is
+
+    1, …, 19, 21, 25, 27, 37, 43, 67, 163,
+
+whose largest element is `163`; and for a prime `p ≥ 11` the level `p²` is
+at least `121`, is a perfect square, and is therefore in the list only if
+it is one of `1, 4, 9, 16` — all of which are `< 121`.  So `p² ` is outside
+the list for EVERY prime `p ≥ 11`, uniformly.
+
+(That uniformity is a fact about the *statement*, not about its proof.
+The proof below does split on `p ∈ mazurIsogenyPrimes`, because the two
+halves are discharged by genuinely different theorems — Mazur's for the
+infinite half, Kenku's eight levels for the rest.  An earlier version of
+this docstring read "uniformly, with no case analysis", which was a claim
+about the truth and was silently taken for a claim about the route.)
+
+**Why `11 ≤ p` and not merely `p` prime.**  The bound is sharp at both
+ends of the small range: `4`, `9` and `25` are all IN the Mazur–Kenku
+list, so the statement is FALSE at `p = 2, 3, 5`.  (`p = 7` gives `49`,
+which is outside the list, so the statement happens to be true there too —
+but `49` is the separate concern of `MazurLevelFortyNine` and is left to
+it rather than folded in here.)
+
+**Why this node exists.**  It is the modular-curve form of the missing
+half of the level-`p` ⟷ level-`p²` dictionary.
+`FreyCurve/MazurTorsion.lean` already carries that dictionary in ONE
+direction: `not_cyclicIsogeny_sq_of_jInvariant` builds two distinct
+Galois-stable lines of order `p` on a Vélu quotient out of a cyclic
+`p²`-subgroup, and so is proven FROM the level-`p` leaf
+`not_two_stable_lines_of_jInvariant`.  Feeding that implication back would
+be circular.  Routing the CONVERSE through this node instead is not: the
+statement below is about the modular curve, is independent of both
+elliptic-curve leaves, and is exactly the shape in which Kenku proves it.
+
+**NOT IRREDUCIBLE — the infinite half is Mazur's, and is now discharged**
+(2026-07-27, correcting the audit this docstring previously carried,
+which read "IRREDUCIBLE at this pin, for the same reason as every other
+level node here").  That verdict was recorded before the case split below
+was tried, and it is wrong for every prime `p ∉ mazurIsogenyPrimes`:
+
+* if `p ∉ mazurIsogenyPrimes` then `Y_0(p)(ℚ) = ∅` by
+  `y0HasNoRationalPoint_prime` — Mazur's theorem, already a node here —
+  and `p ∣ p²`, so `y0HasNoRationalPoint_of_dvd` gives
+  `Y_0(p²)(ℚ) = ∅` with no reference to the geometry of `X_0(p²)` at all;
+* the new `cuspidal_of_y0HasNoRationalPoint` converts that back into
+  cuspidality of `X_0(p²)(ℚ)`, which is the shape stated here.
+
+So the genus-`≥ 6` obstruction the old audit named applies only to the
+eight levels where the descent to level `p` is unavailable — exactly
+`p ∈ mazurIsogenyPrimes` with `11 ≤ p` — and those are now the separate
+node `y0HasNoRationalPoint_of_isogenyPrimeSqLevel`, whose docstring
+records what each of the eight still needs.  **The check that would
+refute this reading**: `y0HasNoRationalPoint_prime` is stated for `p`
+prime with `p ∉ mazurIsogenyPrimes` and nothing else, and
+`y0HasNoRationalPoint_of_dvd` needs only `N ≠ 0` and `M ∣ N`; if either
+acquired a hypothesis this proof does not supply, the split would fail to
+elaborate.
+
+Sources for the eight residual levels: Kenku, *The modular curves
+`X_0(65)` and `X_0(91)` and rational isogeny*, Math. Proc. Cambridge
+Philos. Soc. **87** (1980); *On the modular curves `X_0(125)`, `X_1(25)`
+and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981); *The modular curve
+`X_0(169)` and rational isogeny*, J. London Math. Soc. (2) **22** (1980).
+
+Quantified over every model of `IsCompactificationY0`, so it is at least
+as strong as the `Y_0(p²)` statement it carries and cannot be discharged
+by a degenerate choice of `X`. -/
+theorem cuspidal_x0_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 ≤ p)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 (p ^ 2) strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x := by
+  refine cuspidal_of_y0HasNoRationalPoint hc hX ?_ x
+  by_cases hmem : p ∈ mazurIsogenyPrimes
+  · exact y0HasNoRationalPoint_of_isogenyPrimeSqLevel (p ^ 2)
+      (mem_isogenyPrimeSqLevels_of_mem_mazurIsogenyPrimes hmem hp11)
+  · exact y0HasNoRationalPoint_of_dvd (pow_ne_zero 2 hp.pos.ne')
+      (dvd_pow_self p two_ne_zero) (y0HasNoRationalPoint_prime hp hmem)
+
+/-- **`Y_0(p²)(ℚ) = ∅` for every prime `p ≥ 11`** (PROVEN 2026-07-26 over
+`cuspidal_x0_isogenyPrimeSq`, the same compactification route
+`y0HasNoRationalPoint_prime` takes).
+
+This is the node that closes
+`WeierstrassCurve.not_two_stable_lines_of_jInvariant` in
+`FreyCurve/MazurTorsion.lean`: two DISTINCT Galois-stable lines of order
+`p` on `E` produce, on the Vélu quotient `E/⟨h₁⟩`, a Galois-stable CYCLIC
+subgroup of order `p²`, which `false_of_stable_of_y0HasNoRationalPoint`
+then contradicts.  See that leaf for the construction.
+
+Note `y0HasNoRationalPoint_of_dvd` does NOT reach `p²`: its only proper
+divisor is `p`, and `Y_0(p)(ℚ) ≠ ∅` for `p ∈ {11, 17, 19, 37, 43, 67,
+163}` — which is precisely why the seven isogeny primes need Kenku and not
+merely Mazur. -/
+theorem y0HasNoRationalPoint_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 ≤ p) :
+    Y0HasNoRationalPoint (p ^ 2) := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 (p ^ 2)
+  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
+  exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_isogenyPrimeSq hp hp11 hc hX)
 
 /-- **`ab` is the Jacobian of the curve `strX`, based at `o`.**
 
