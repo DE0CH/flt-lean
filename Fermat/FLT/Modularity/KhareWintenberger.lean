@@ -647,8 +647,23 @@ the whole descent — e.g. the compositum of the Hecke fields of all
 forms arising in the Brauer decomposition, a FINITE compositum and
 hence still a number field.
 
-Nothing in this structure has to change for that reading, which is why
-the repair is a docstring correction rather than a new field: no field
+**SUPERSEDED 2026-07-27 — THE READING IS NOW A FIELD, `descentClosed`.**
+The paragraph below concluded that "nothing in this structure has to
+change for that reading". That was wrong, and the check that refutes it
+was already written down elsewhere in this module: `E` being "understood
+as chosen large enough" is not usable inside a Lean proof of any leaf
+that universally quantifies over the carrier, and the leaf that needed it
+(`heckeField_descentClosed_of_witness`) carries NO arithmetic hypothesis
+package of its own, so it cannot even fall back on classical
+unsatisfiability of the module headline. It therefore had exactly one
+justification — a property of the carrier the inhabitation leaf CHOOSES,
+not of the arbitrary carrier it quantified over. The obligation is now
+carried by the field `descentClosed` below and discharged, at the single
+inhabitation site, by `exists_descentClosed_heckePackage`. Everything the
+paragraph says about the enlargement being FREE remains true and is
+exactly why that discharge is legitimate.
+
+The reason no consumer had to change: no field
 asserts that `heckeF` GENERATES `E`. If `(E, heckeF, ψℓ, ψ₃)` inhabits
 the structure and `E ↪ E'` is a finite extension, then
 `(E', heckeF ∘ map, ψℓ', ψ₃')` inhabits it too — `ψℓ`, `ψ₃` extend to
@@ -730,6 +745,46 @@ structure PotentialModularityWitness (ℓ : ℕ) [Fact ℓ.Prime]
   compatibility at unramified places). -/
   modularF : ∀ w ∉ badF,
     ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ
+  /-- **`E` is DESCENT-CLOSED** (added 2026-07-27; the formal content of
+  the DESCENT-CLOSURE note in this structure's docstring, which until now
+  existed only as prose).
+
+  For every subgroup `H ≤ Gal(F/ℚ)` and every realization, over a number
+  field `E'` receiving `E` compatibly with the embeddings into `ℚ̄_ℓ`, of
+  the eigensystem of `ρ|_{G_K}` at almost all places of `K = F^H`, the
+  eigenvalue function already takes values in `ι '' E` away from a
+  further finite set.
+
+  WHY IT IS A FIELD AND NOT A LEAF. The solvable-descent leaves below
+  produce their eigensystem over an EXISTENTIAL coefficient field,
+  because the Hecke field provably grows down the Brauer tower (the
+  Dickson identity `a_W = D_p(a_w, Nw)` makes the descended eigenvalue a
+  root, of degree up to `p`, over the previous field). The downstream
+  Brauer gluing must nevertheless read all `n` induced pieces in ONE
+  field. Bridging the two is not derivable from the other fields of this
+  structure for an ARBITRARY carrier — it is a genuine additional demand
+  on `E` — but it is FREE for the carrier the inhabitation leaf builds,
+  since enlarging `E` to a finite compositum preserves every other field
+  (`ψℓ`, `ψ₃` extend along a finite extension because `ℚ̄_ℓ`, `ℚ̄_3` are
+  algebraically closed of characteristic zero; `modularF`, `matchF₃` are
+  preserved by functoriality of `Polynomial.map`). So it belongs here,
+  where the choice of `E` is made, rather than at the point of use. -/
+  descentClosed : ∀ (H : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
+      [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ]) (ι : E →+* E'),
+      (∀ x : E, ψ (ι x) = ψℓ x) →
+      ∀ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField H))))
+        (a : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField H)) → E'),
+      (∀ w ∉ S,
+        ((ρ.map (algebraMap ℚ (IntermediateField.fixedField H))).charFrob w).map ιO =
+          (Polynomial.X ^ 2 - Polynomial.C (a w) * Polynomial.X +
+            Polynomial.C ((Ideal.absNorm w.asIdeal : ℕ) : E')).map ψ) →
+      ∃ (S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField H))))
+        (b : HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField H)) → E),
+        ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w
   /-- The `3`-adic coefficient ring: classically the integers of
   `E_λ`, `λ | 3`. -/
   B : Type u
@@ -26849,6 +26904,115 @@ theorem exists_threeadic_realization_of_heckePackage
   exact @free_of_finite_of_algebraMap_padicInt_injective 3 _ B hCR hDom
     hAlg hFin hBinj
 
+/-- **Descent-closed enlargement of the Hecke block** (SORRIED citation;
+the discharge of `PotentialModularityWitness.descentClosed`, added
+2026-07-27 when that field was introduced).
+
+STATEMENT.  Given the `ℓ`-adic Hecke block over `F` produced by
+`exists_heckePackage_of_seed` — a number field `E`, Hecke polynomials
+`heckeF`, a place `ψℓ : E ↪ ℚ̄_ℓ`, the coefficient embedding
+`ιO : O ↪ ℚ̄_ℓ` and the modularity clause `hmod` — the coefficient field
+may be ENLARGED to a number field `E₂` which still carries the
+eigensystem over `F` (`hmod₂`, with the SAME bad set and the same `ιO`)
+and which is in addition DESCENT-CLOSED: for every subgroup
+`H ≤ Gal(F/ℚ)` and every realization of the eigensystem of `ρ|_{G_{F^H}}`
+over a number field `E'` receiving `E₂` compatibly with the embeddings
+into `ℚ̄_ℓ`, the eigenvalue function already takes values in `ι '' E₂`
+away from a further finite set.
+
+CLASSICAL CONTENT (BLGGT §5.3; Langlands, *Base Change for GL(2)*,
+Thm 4.2; Shimura's rationality theorem).  The Brauer decomposition of the
+trivial character of `Gal(F/ℚ)` involves FINITELY many solvable subgroups
+`Hᵢ`, and the tower of cyclic steps below each `Hᵢ` is finite; solvable
+base change descends the Hilbert newform `f` over `F` to a form over each
+intermediate field, and by Shimura's rationality theorem each descended
+form has a NUMBER FIELD as its Hecke field.  Take `E₂` to be the
+compositum, inside `ℚ̄_ℓ`, of `ψℓ(E)` with the images of all those Hecke
+fields: a compositum of finitely many number fields is a number field.
+By construction every descended eigenvalue lies in `E₂`, which is the
+descent-closure clause; and `heckeF` is transported along `E ↪ E₂` with
+`hmod₂` following from `hmod` by functoriality of `Polynomial.map`, since
+no clause pins `E` as GENERATED by `heckeF`.  This is precisely the
+"enlarging `E` costs nothing" argument of the
+`PotentialModularityWitness` docstring, and this leaf is where it is
+CARRIED OUT rather than merely understood.
+
+SOUNDNESS AUDIT.  (i) Direct: the compositum construction above, which is
+a genuine classical theorem and not a vacuity.  (ii) Collapse: the
+arithmetic hypothesis package is carried in full — `hℓ5`, `hρ`, `hρbar`,
+`hirr` — and is classically unsatisfiable (the module headline), so the
+statement is classically true for every package as well.  Note that BOTH
+routes are available here, which is exactly what was NOT true of the leaf
+this replaces (`heckeField_descentClosed_of_witness` quantified over an
+arbitrary carrier with no arithmetic package at all, so only route (i)
+applied to it and route (i) is a statement about the carrier that is
+CHOSEN — the reason the obligation had to move onto the structure).
+
+WHY THE ENLARGEMENT SHAPE RATHER THAN A BARE ASSERTION ABOUT `E`.  For
+the `E` that `exists_heckePackage_of_seed` happens to return, descent
+closure is NOT classically true — the Hecke field genuinely grows down
+the tower.  Only the enlarged `E₂` satisfies it, so the statement must
+quantify existentially over the new field.  Asserting descent-closure of
+the given `E` would be a false leaf.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_descentClosed_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+    ∃ (E₂ : Type u) (_ : Field E₂) (_ : NumberField E₂)
+      (heckeF₂ : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+        Polynomial E₂)
+      (ψ₂ : E₂ →+* AlgebraicClosure ℚ_[ℓ]),
+      (∀ w ∉ badF,
+        ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF₂ w).map ψ₂) ∧
+      (∀ (H : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
+        [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
+        (ι : E₂ →+* E'),
+        (∀ x : E₂, ψ (ι x) = ψ₂ x) →
+        ∀ (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+            (IntermediateField.fixedField H))))
+          (a : HeightOneSpectrum (NumberField.RingOfIntegers
+            (IntermediateField.fixedField H)) → E'),
+        (∀ w ∉ S,
+          ((ρ.map (algebraMap ℚ
+              (IntermediateField.fixedField H))).charFrob w).map ιO =
+            (Polynomial.X ^ 2 - Polynomial.C (a w) * Polynomial.X +
+              Polynomial.C ((Ideal.absNorm w.asIdeal : ℕ) : E')).map ψ) →
+        ∃ (S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+            (IntermediateField.fixedField H))))
+          (b : HeightOneSpectrum (NumberField.RingOfIntegers
+            (IntermediateField.fixedField H)) → E₂),
+          ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w) :=
+  sorry
+
 /-- **Carrier inhabitation — potential modularity of the KW lift**
 (PROVEN — Taylor's theorem, the analytic core of pillar β): the
 Khare–Wintenberger lift `ρ` of an irreducible hardly ramified mod-`ℓ`
@@ -26897,9 +27061,12 @@ local-global, producing the ℓ-adic Hecke block `E`/`badF`/`heckeF`/
 `ψℓ`/`ιO`/`modularF`) + the Hilbert-modular `3`-adic realization
 (`exists_threeadic_realization_of_heckePackage` — Carayol 1986 /
 Taylor 1989, producing the `3`-adic block `B`/`τF`/`ψ₃`/`ιB`/
-`matchF₃`), glued by instantiating the carrier fieldwise. Those three
-leaves are now the residual sorries of the inhabitation node; the
-circularity guard above binds each of them.
+`matchF₃`), glued by instantiating the carrier fieldwise. Since
+2026-07-27 there is a FOURTH: `exists_descentClosed_heckePackage`
+(step (ii''), which enlarges the Hecke block's coefficient field to a
+descent-closed one and thereby discharges the carrier's new
+`descentClosed` field). Those four leaves are the residual sorries of
+the inhabitation node; the circularity guard above binds each of them.
 
 BAD-SET ENLARGEMENT (2026-07-26, step (ii') of the proof; extended the
 same day from `{3}` to `{2, 3, ℓ}`): the carrier is built with
@@ -26929,7 +27096,19 @@ formally — no field of the structure asserts that `heckeF` generates
 canonical choice (the compositum of the Hecke fields of the forms in
 the Brauer decomposition, a number field). Whoever discharges
 `exists_heckePackage_of_seed` should make that enlargement there, or
-enlarge here in the same style as the bad-set enlargement above. -/
+enlarge here in the same style as the bad-set enlargement above.
+
+**DONE 2026-07-27, the second way (step (ii'') of the proof), and it is
+now a FORMAL obligation rather than an understanding.** The prose above
+said "this costs nothing formally" — true of the OTHER fields of the
+carrier, and false of the descent leaves that consume `E`, which is why
+`PotentialModularityWitness` gained the field `descentClosed` and why
+this node must now supply it. It does so through the new sorried
+citation `exists_descentClosed_heckePackage`: the block returned by
+step (ii) is replaced by an enlarged block `(E₂, heckeF₂, ψ₂)` over the
+same `badF'` and the same `ιO`, carrying the descent-closure clause. The
+enlargement is free for exactly the reason recorded above, and the
+`3`-adic block of step (iii) is built over `E₂` rather than `E`. -/
 theorem exists_potentialModularityWitness_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -26997,6 +27176,20 @@ theorem exists_potentialModularityWitness_of_five_le
   have hmod' : ∀ w ∉ badF',
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ :=
     fun w hw => hmod w fun h => hw (hsub h)
+  -- (ii'') ENLARGE the coefficient field to a DESCENT-CLOSED one
+  -- (2026-07-27, when `PotentialModularityWitness.descentClosed` was
+  -- added). The `E` that step (ii) returns is the Hecke field of the
+  -- newform over `F` and is NOT closed under the solvable descent — the
+  -- Hecke field grows down the Brauer tower. `E₂` is the compositum of
+  -- `E` with the Hecke fields of all the descended forms, a finite
+  -- compositum and hence still a number field; the enlargement is free
+  -- exactly as the bad-set enlargement above is free, since no field of
+  -- the carrier asserts that `heckeF` GENERATES `E`. This is what
+  -- discharges the carrier's `descentClosed` field, and the enlarged
+  -- block is what steps (iii) and the gluing below are handed.
+  obtain ⟨E₂, hE₂, hNE₂, heckeF₂, ψ₂, hmod₂, hdc⟩ :=
+    exists_descentClosed_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal E badF' heckeF ψℓ ιO hιO hmod'
   -- (iii) the Hilbert-modular `3`-adic realization: the 3-adic block.
   -- `hirrF` — already in hand from step (i) and already consumed by step
   -- (ii) — is now also handed to the Carayol citation (round-4 narrowing,
@@ -27005,12 +27198,13 @@ theorem exists_potentialModularityWitness_of_five_le
   obtain ⟨B, hB₁, hB₂, hB₃, hB₄, hB₅, hB₆, hB₇, hB₈, τF, ψ₃, ιB, hιB,
     hmatch⟩ :=
     exists_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
-      hW hρbar hirr π hπsurj hπ F hFtr hFgal hev hirrF E badF' heckeF ψℓ ιO hιO
-      hmod' hbad2 hbad3 hbadℓ
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO
+      hmod₂ hbad2 hbad3 hbadℓ
   -- glue: instantiate the carrier fieldwise
-  exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E,
-           badF := badF', heckeF := heckeF, ψℓ := ψℓ, ιO := ιO,
-           ιO_injective := hιO, modularF := hmod', B := B, τF := τF,
+  exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E₂,
+           badF := badF', heckeF := heckeF₂, ψℓ := ψ₂, ιO := ιO,
+           ιO_injective := hιO, modularF := hmod₂, descentClosed := hdc,
+           B := B, τF := τF,
            ψ₃ := ψ₃, ιB := ιB, ιB_injective := hιB, matchF₃ := hmatch }⟩
 
 section ArtinInduction
@@ -27437,6 +27631,14 @@ is exactly the formal content of the DESCENT-CLOSURE note.  Its proper
 long-term home is a new FIELD of `PotentialModularityWitness`; that
 structure is not this owner's to edit, so the obligation is stated here
 where it is consumed.
+
+UPDATE 2026-07-27: that move HAS been made.  `PotentialModularityWitness`
+now carries the field `descentClosed`, so the sentence above about `E`
+being constrained only by `Field`/`NumberField` is no longer accurate;
+`heckeField_descentClosed_of_witness` is a proven projection onto the new
+field, and the obligation is discharged at the single inhabitation site
+by `exists_descentClosed_heckePackage`.  Nothing about this definition
+changed — the coefficient field here is still, correctly, existential.
 
 WHAT THIS BUYS, precisely: the prime step now RECEIVES the cuspidal,
 `Gal(L/M)`-invariant object Thm 4.2(d) requires and RETURNS the cuspidal
@@ -29177,6 +29379,21 @@ budgeted.
 
 CHECK THAT REFUTES (6): exhibit a clause of `PotentialModularityWitness`
 (the structure above) tying `E` to `heckeF` or to the descent; or exhibit
+a proof that `ℚ(a_w) = ℚ(D_p(a_w, Nw))`.
+
+**THAT CHECK HAS SINCE BEEN MET (2026-07-27).**  The structure now
+carries `descentClosed`, a clause tying `E` to the descent precisely as
+demanded, discharged at the inhabitation site by
+`exists_descentClosed_heckePackage`.  Finding (6) was correct when
+written and its diagnosis stands — the growth of the Hecke field is real,
+and the existential coefficient field in `HeckeSystemDescendsTo` is the
+right response to it — but its conclusion that nothing constrains `E` is
+now false, and the residual `Wit.E`-rationality it identified is
+available as `heckeField_descentClosed_of_witness` (PROVEN).  The
+original check text is retained below for the record; do not act on it.
+
+ORIGINAL: exhibit a clause of `PotentialModularityWitness`
+tying `E` to `heckeF` or to the descent; or exhibit
 a proof that `ℚ(a_w) = ℚ(D_p(a_w, Nw))`.  The latter is false already at
 `p = 2`, `Nw = 2`, `a_w = √2`, where `D_2(a_w, Nw) = a_w^2 − 2·Nw = −2`
 generates `ℚ` while `a_w` does not lie in it.
@@ -30503,9 +30720,10 @@ theorem heckeSystemDescendsTo_of_cyclic_step
           (ih E (by omega) hCE hnE hcycE)
   exact key (Nat.card D) D le_rfl hCD hnormal hcyclic
 
-/-- **Descent-closure of the carrier's Hecke field** (SORRIED; the formal
-content of the DESCENT-CLOSURE note in `PotentialModularityWitness`'s own
-docstring, which until now existed only as prose).
+/-- **Descent-closure of the carrier's Hecke field** (PROVEN 2026-07-27 —
+a one-line projection onto `PotentialModularityWitness.descentClosed`;
+see the RESOLUTION note at the end of this docstring, which supersedes
+the analysis below).
 
 STATEMENT.  If the eigensystem of `ρ|_{G_K}`, `K = F^H`, is realized over
 SOME number field `E'` containing `Wit.E` (through `ι`, compatibly with
@@ -30584,8 +30802,22 @@ finite extension; `modularF`, `matchF₃` are preserved by functoriality of
 `Polynomial.map`).  With the field present this leaf is a one-line
 projection.  The structure has another owner, so it was NOT moved here.
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+**RESOLUTION 2026-07-27 — THE MOVE WAS MADE; THIS LEAF IS NOW PROVEN.**
+`PotentialModularityWitness` gained the field `descentClosed`, stated
+exactly as the conclusion below, and this declaration is its projection.
+The obligation itself did not vanish — it moved to where the carrier's
+`E` is CHOSEN, which is the only place it can be honestly discharged:
+the single inhabitation site
+`exists_potentialModularityWitness_of_five_le` now enlarges the Hecke
+block through the new sorried citation `exists_descentClosed_heckePackage`
+(step (ii''), in the same style as the bad-set enlargement of step (ii')),
+and hands the enlarged, descent-closed field to the carrier.  That
+citation carries the FULL arithmetic package, so both soundness routes
+(i) and (ii) are available to it — which is what the CORRECTION above
+observes was NOT true here.  No consumer of this declaration changed:
+`exists_descended_heckeSystem_of_solvable` still applies it with the same
+arguments.  The paragraphs above are retained as the record of why the
+move was necessary. -/
 theorem heckeField_descentClosed_of_witness {ℓ : ℕ} [Fact ℓ.Prime]
     {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
@@ -30607,7 +30839,7 @@ theorem heckeField_descentClosed_of_witness {ℓ : ℕ} [Fact ℓ.Prime]
       (b : HeightOneSpectrum (NumberField.RingOfIntegers
         (IntermediateField.fixedField H)) → Wit.E),
       ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w :=
-  sorry
+  Wit.descentClosed H E' ψ ι hψι S a h1
 
 /-- **Solvable base change — the descended Hecke system over a fixed
 field** (PROVEN; the per-induced-piece citation leaf of the
