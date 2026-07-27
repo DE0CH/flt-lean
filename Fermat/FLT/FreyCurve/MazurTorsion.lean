@@ -16419,12 +16419,30 @@ with — an injection out of `RelPoint strX (𝟙 SpecQ)`, exactly like
 `MazurLevel32.exists_planeModel_x0ThirtyTwo` — rather than as a statement
 about an abstract abelian scheme, which nothing here can attack.
 
+**FOURTH DECOMPOSITION STEP, 2026-07-27 (same day):
+`exists_abelianSchemeStruct_of_x0Genus_eq_one` is now PROVEN too, and its
+"MISSING MACHINERY" note — *Riemann–Roch, `Pic⁰`, and the identification
+of a genus-`1` pointed curve with its own Jacobian* — is RETIRED.  Two of
+the three were already false when it was written: `Pic⁰` is
+`ModularCurve/RelativePicard.lean` and the Jacobian it represents is
+produced by the PROVEN `Fermat.exists_jacobianOf_x0`.  With the Jacobian
+in hand the group law on `X_0(N)` is not constructed but TRANSPORTED
+(`transportAlongIso`, pure category theory), so everything reduces to
+`ajHom` being an ISOMORPHISM — and that splits along the SAME seam as
+`Fermat.mono_ajHom_of_one_le_x0Genus`, whose monomorphy half is already
+proven.  What is left is `isIso_of_mono_of_relCurve` (level-free: a
+monomorphism of relative curves is an isomorphism) and
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one` (the genus bridge,
+`dim J_0(N) = 1`, the only half that mentions `N`).  Neither is
+Riemann–Roch and neither mentions `Pic⁰`.
+
 **So the open leaves of this section are `finite_relPoint_x0`,
-`exists_abelianSchemeStruct_of_x0Genus_eq_one` and
-`nonempty_relPoint_equiv_modelPoint`.**  (`finite_jacobian` still consumes
-the shared Mordell–Weil obligation `Fermat.fg_relPoint_of_abelianScheme`
-in `X0.lean`, but `isTorsion_jacobian` no longer needs it — see the
-bookkeeping note on `finite_jacobian`.)
+`nonempty_relPoint_equiv_modelPoint`, `isIso_of_mono_of_relCurve` and
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one`.**  (`finite_jacobian`
+still consumes the shared Mordell–Weil obligation
+`Fermat.fg_relPoint_of_abelianScheme` in `X0.lean`, but
+`isTorsion_jacobian` no longer needs it — see the bookkeeping note on
+`finite_jacobian`.)
 
 **The upward merge is still available and is now cheaper**, since the
 remaining pair are in verbatim the same shape as
@@ -16551,8 +16569,299 @@ implements; see `levels_spec` for the inputs at each level. -/
 theorem x0Genus_eq_one {N : ℕ} (hN : N ∈ levels) : x0Genus N = 1 := by
   fin_cases hN <;> decide
 
+/-! #### Transport of an abelian scheme along an isomorphism over the base
+
+Five formal declarations, all PROVEN, none of them geometry: an
+isomorphism `u : X ⟶ A` over `S` induces a bijection
+`RelPoint strX g ≃ RelPoint f g` at every test object, natural in it, so
+an `AbelianSchemeStruct f` transports to an `AbelianSchemeStruct strX`.
+This is what converts "`ajHom : X_0(N) ⟶ J_0(N)` is an isomorphism" into
+"`X_0(N)` carries a group law", which is
+`exists_abelianSchemeStruct_of_x0Genus_eq_one` below.
+
+**BOOKKEEPING, 2026-07-27**: these five are general facts about
+`Fermat.RelPoint` and `Fermat.AbelianSchemeStruct` and belong beside
+`Fermat.RelPoint.post` in `ModularCurve/X0.lean`, next to
+`Fermat.AbelianSchemeStruct.baseChange` (`Modularity/AbelianSchemeIsogeny.
+lean`), which is the same construction along a pullback rather than along
+an isomorphism.  They are declared here, in the namespace of their only
+consumer, only because both of those files were owned elsewhere when this
+node was cut.  Hoisting them is a pure relocation with no import change
+and no semantic change. -/
+
+/-- **Naturality of `Fermat.RelPoint.post` in the TEST object** (PROVEN —
+one application of associativity).
+
+`RelPoint.pre` precomposes in the test scheme and `RelPoint.post`
+postcomposes in the target, so the two commute for exactly the reason
+composition is associative.  `X0.lean`'s `isAdditiveOn_of_post_zero`
+proves this as an unnamed inline `have`; it is named here because the
+transport below needs it four times. -/
+theorem post_pre {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ bf = af) {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint af g) :
+    RelPoint.post u hu (RelPoint.pre h hg x) = RelPoint.pre h hg (RelPoint.post u hu x) :=
+  Subtype.ext (Category.assoc h x.1 u)
+
+section TransportAlongIso
+
+variable {A X S : Scheme.{0}} {f : A ⟶ S} {strX : X ⟶ S}
+
+/-- **The inverse of an isomorphism over the base is a morphism over the
+base** (PROVEN, from `IsIso.inv_hom_id_assoc`). -/
+theorem inv_comp_of_comp (u : X ⟶ A) [IsIso u] (hu : u ≫ f = strX) : inv u ≫ strX = f := by
+  rw [← hu]
+  exact IsIso.inv_hom_id_assoc u f
+
+/-- **Pulling a relative point back along an isomorphism over the base**
+(PROVEN construction) — `Fermat.RelPoint.post` along `inv u`, and a
+two-sided inverse of `RelPoint.post u` by the two lemmas below. -/
+noncomputable def pullIso (u : X ⟶ A) [IsIso u] (hu : u ≫ f = strX)
+    {T : Scheme.{0}} {g : T ⟶ S} (y : RelPoint f g) : RelPoint strX g :=
+  RelPoint.post (inv u) (inv_comp_of_comp u hu) y
+
+/-- **`pullIso` is a left inverse of `RelPoint.post`** (PROVEN). -/
+theorem pullIso_post (u : X ⟶ A) [IsIso u] (hu : u ≫ f = strX)
+    {T : Scheme.{0}} {g : T ⟶ S} (x : RelPoint strX g) :
+    pullIso u hu (RelPoint.post u hu x) = x := by
+  refine Subtype.ext ?_
+  show (x.1 ≫ u) ≫ inv u = x.1
+  rw [Category.assoc, IsIso.hom_inv_id, Category.comp_id]
+
+/-- **`pullIso` is a right inverse of `RelPoint.post`** (PROVEN). -/
+theorem post_pullIso (u : X ⟶ A) [IsIso u] (hu : u ≫ f = strX)
+    {T : Scheme.{0}} {g : T ⟶ S} (y : RelPoint f g) :
+    RelPoint.post u hu (pullIso u hu y) = y := by
+  refine Subtype.ext ?_
+  show (y.1 ≫ inv u) ≫ u = y.1
+  rw [Category.assoc, IsIso.inv_hom_id, Category.comp_id]
+
+/-- **`RelPoint.post` along an isomorphism is injective** (PROVEN) — the
+form in which the two naturality fields of the transport below are
+discharged, mirroring `AbelianSchemeStruct.baseChange`'s use of
+`RelPoint.baseChangeDown_injective`. -/
+theorem post_injective (u : X ⟶ A) [IsIso u] (hu : u ≫ f = strX)
+    {T : Scheme.{0}} {g : T ⟶ S} {x y : RelPoint strX g}
+    (hxy : RelPoint.post u hu x = RelPoint.post u hu y) : x = y := by
+  rw [← pullIso_post u hu x, ← pullIso_post u hu y, hxy]
+
+/-- **TRANSPORT OF AN ABELIAN-SCHEME STRUCTURE ALONG AN ISOMORPHISM OVER
+THE BASE** (PROVEN 2026-07-27; pure category theory, no geometry, no
+level, no genus).
+
+If `u : X ⟶ A` is an isomorphism with `u ≫ f = strX` and `f` carries an
+`AbelianSchemeStruct`, then so does `strX`: the group law is transported
+through the bijection `RelPoint strX g ≃ RelPoint f g` given by
+`RelPoint.post u` and `pullIso u`, which is natural in the test object by
+`post_pre`.  This is verbatim the shape of
+`Fermat.AbelianSchemeStruct.baseChange`, with `post`/`pullIso` in place of
+`baseChangeUp`/`baseChangeDown`.
+
+**The three geometric fields are ARGUMENTS rather than transported**, and
+that is deliberate.  Properness, smoothness and geometric connectedness
+*are* stable under isomorphism, but proving that here would mean invoking
+three `MorphismProperty.RespectsIso` instances for no gain: at the single
+consumer they are already in hand as fields of
+`Fermat.IsX0Compactification` (`isProper`, `smooth`, `connected`), which
+is exactly why the leaf below has no geometric content beyond the
+isomorphism itself. -/
+noncomputable def transportAlongIso (ab : AbelianSchemeStruct f) (u : X ⟶ A) [IsIso u]
+    (hu : u ≫ f = strX) (hproper : IsProper strX) (hsmooth : Smooth strX)
+    (hconn : GeometricallyConnected strX) : AbelianSchemeStruct strX where
+  add := fun {_} {_} x y =>
+    pullIso u hu (ab.add (RelPoint.post u hu x) (RelPoint.post u hu y))
+  zero := fun {_} g => pullIso u hu (ab.zero g)
+  neg := fun {_} {_} x => pullIso u hu (ab.neg (RelPoint.post u hu x))
+  add_assoc := by
+    intro T g x y z
+    rw [post_pullIso, post_pullIso, ab.add_assoc]
+  add_comm := by
+    intro T g x y
+    rw [ab.add_comm]
+  zero_add := by
+    intro T g x
+    rw [post_pullIso, ab.zero_add, pullIso_post]
+  neg_add := by
+    intro T g x
+    rw [post_pullIso, ab.neg_add]
+  pre_add := by
+    intro T' T h g g' hg x y
+    refine post_injective u hu ?_
+    simp only [post_pre, post_pullIso, ab.pre_add]
+  pre_zero := by
+    intro T' T h g g' hg
+    refine post_injective u hu ?_
+    simp only [post_pre, post_pullIso, ab.pre_zero]
+  proper := hproper
+  smooth := hsmooth
+  connected := hconn
+
+end TransportAlongIso
+
+/-! #### `X_0(N)` IS its own Jacobian at genus `1`
+
+The two leaves below are what the group law on `X_0(N)` reduces to, split
+along the SAME seam as `Fermat.mono_ajHom_of_one_le_x0Genus`: one
+level-free statement about relative curves, and one bridge from the
+arithmetic function `x0Genus` to the geometry.  Neither of them mentions
+`Pic⁰`, and neither of them is Riemann–Roch in the form
+`mono_ajHom_of_hasNoFibreAffineLine` needs it. -/
+
+/-- **A MONOMORPHISM BETWEEN TWO RELATIVE CURVES OVER THE SAME BASE IS AN
+ISOMORPHISM** (sorry leaf, 2026-07-27) — the level-free geometric half of
+`isIso_ajHom_of_x0Genus_eq_one`, and the exact analogue of
+`Fermat.mono_ajHom_of_hasNoFibreAffineLine` one step further along: it
+mentions neither `N`, nor `x0Genus`, nor `IsX0Compactification`, nor a
+Jacobian.
+
+TRUE and classical.  Fibrewise (monomorphisms are stable under base
+change, so `u_s : X_s ⟶ J_s` is a monomorphism over every point `s` of
+`S`): a monomorphism of schemes is radicial, hence injective on points, so
+the image of the irreducible `1`-dimensional `X_s` cannot be a single
+point of `J_s` — a curve has infinitely many points and a point has one.
+The image is therefore `1`-dimensional, and closed because `strX` is
+proper, hence all of the irreducible `J_s`.  So `u_s` is a proper
+surjective monomorphism, i.e. a surjective closed immersion onto a reduced
+scheme, i.e. an isomorphism.  Both sides being flat and locally of finite
+presentation over `S` (smoothness), the fibrewise criterion promotes this
+to `IsIso u`.
+
+**EVERY HYPOTHESIS IS LOAD-BEARING**, and each has a counterexample over
+`S = Spec ℚ`:
+
+* `hXsmooth` at dimension `1` on the SOURCE: `X = Spec ℚ`, `J` an
+  elliptic curve, `u` a rational point — a monomorphism, not an
+  isomorphism.  Equivalently this is what forbids the genus-`0` collapse.
+* `hJsmooth` at dimension `1` on the TARGET: `X` an elliptic curve, `J`
+  an abelian surface, `u` a closed immersion — the genus `≥ 2` case, and
+  the reason `x0Genus N = 1` below is an equality and not a bound.
+* `hXproper`: `X = 𝔸¹ ⊂ ℙ¹ = J` is an open immersion, hence a
+  monomorphism, and is not an isomorphism.
+* `hXconn` / `hJconn`: `X = ℙ¹`, `J = ℙ¹ ⊔ ℙ¹` and `u` the first
+  inclusion.
+* `hu`: without it `u` is not required to be a morphism over `S` at all,
+  and over a non-perfect base field the relative Frobenius of a curve is a
+  monomorphism of schemes that is not an isomorphism.
+* `hmono` is the whole content.
+
+IRREDUCIBLE at this pin along the axis searched (the fibrewise route
+above): it needs the dimension of a fibre, the fact that a proper
+monomorphism is a closed immersion, and the fibrewise criterion for
+`IsIso`, and `grep`ping `Mathlib`, `~/cs/FLT` and this project for
+`IsClosedImmersion.*mono`, `isIso_of_isIso_fiber` and a relative dimension
+theory returns nothing usable.  **NOT searched, and the axis a successor
+should prefer: the DEGREE one** — a nonconstant morphism of smooth proper
+curves is finite of a well-defined degree, and a monomorphism has degree
+`1`; that route replaces dimension theory by
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`'s valuative
+machinery, which is already in this file's cone.  **The check that would
+refute this verdict**: a `Mono ⟹ IsClosedImmersion` lemma, a fibrewise
+`IsIso` criterion, or a degree of a finite morphism of curves appearing in
+any of the three trees. -/
+theorem isIso_of_mono_of_relCurve {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : J ⟶ S}
+    (hXproper : IsProper strX) (hXsmooth : SmoothOfRelativeDimension 1 strX)
+    (hXconn : GeometricallyConnected strX) (hJproper : IsProper jstr)
+    (hJsmooth : SmoothOfRelativeDimension 1 jstr) (hJconn : GeometricallyConnected jstr)
+    (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : IsIso u :=
+  sorry
+
+/-- **THE GENUS BRIDGE AT GENUS `1`: `dim J_0(N) = 1`** (sorry leaf,
+2026-07-27) — the arithmetic half of `isIso_ajHom_of_x0Genus_eq_one`, and
+the ONLY half that mentions `N`.  The exact analogue of
+`Fermat.hasNoFibreAffineLine_of_one_le_x0Genus`, one genus up.
+
+TRUE and classical: the Jacobian of a smooth proper geometrically
+connected curve is an abelian scheme of relative dimension equal to the
+genus of the curve, and `hmodel` makes every fibre of `strX` the `X_0(N)`
+of its residue field, whose genus is the classically computed `x0Genus N`
+(Diamond–Shurman Thm 3.1.1).  So `hg` says the fibres of `jstr` are
+`1`-dimensional; being an abelian scheme they are already smooth, so the
+conclusion is `SmoothOfRelativeDimension 1 jstr`.
+
+**`hg` IS LOAD-BEARING IN BOTH DIRECTIONS**, which is why it is an
+equality.  At `x0Genus N = 0` (`N = 1`, `X_0(1) = ℙ¹`) the Jacobian is
+`Spec ℚ` and `jstr` is smooth of relative dimension `0`, not `1`.  At
+`x0Genus N ≥ 2` the Jacobian has dimension `≥ 2`.  `hmodel` is
+load-bearing twice over — it supplies the curve conditions AND it is the
+only thing tying the arithmetic `x0Genus N` to the geometry of `strX` —
+and `jac` is load-bearing because the conclusion is FALSE for an arbitrary
+abelian scheme `jstr` receiving `X` (take `J` an abelian surface).
+
+**WHY `SmoothOfRelativeDimension 1` AND NOT A GENUS.**  This is the same
+bundling that `mono_ajHom_of_one_le_x0Genus`'s docstring records: *the
+genus of a scheme does not exist in this development* (the check that
+refutes that is `grep -rn "genus\|arithmeticGenus\|Riemann" Fermat/ |
+grep -v x0Genus`, whose only hits are prose), so a statement relating
+`x0Genus N` to the geometry must land in a predicate that DOES exist.
+`SmoothOfRelativeDimension 1` is mathlib's, and on an abelian scheme it
+says exactly "`J` is an elliptic curve over `S`".  **If the genus of a
+scheme is ever written, this leaf splits along the same seam as
+`hasNoFibreAffineLine_of_one_le_x0Genus`, into `genus (fibre of strX) =
+x0Genus N` and `dim Jac = genus`, and BOTH should be split at once.**
+
+**NOT VACUOUS**: `SmoothOfRelativeDimension 1 jstr` is refutable — it
+fails for `J = Spec ℚ` over `Spec ℚ`, which is smooth of relative
+dimension `0` — so the conclusion really constrains the Jacobian, and this
+leaf really consumes `hg`.
+
+IRREDUCIBLE at this pin along the axis searched (the identification of
+`x0Genus N` with an invariant of the scheme `X`): that needs a genus,
+`h¹(𝒪_X)`, or Riemann–Roch, none of which exists in `Mathlib`, in
+`~/cs/FLT` or here.  **NOT searched, and the axis a successor should
+prefer: the MODULAR one** — `dim J_0(N) = dim S_2(Γ_0(N))` out of the
+`Modularity` subtree never mentions the genus of a scheme, and at these
+four levels `S_2(Γ_0(N))` is one-dimensional.  **The check that would
+refute this verdict**: a genus, an `h¹`, or a `dim S_2(Γ_0(N))` statement
+appearing in any of the three trees. -/
+theorem smoothOfRelativeDimension_one_of_x0Genus_eq_one {N : ℕ} (hg : x0Genus N = 1)
+    {X Y J S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) : SmoothOfRelativeDimension 1 jstr :=
+  sorry
+
+/-- **ABEL–JACOBI IS AN ISOMORPHISM AT GENUS `1`: `X_0(N) ≅ J_0(N)`**
+(PROVEN 2026-07-27 by decomposition, over an arbitrary base) — "the
+genus-`1` curve IS its own Jacobian", which six docstrings in this cluster
+assert informally.
+
+Three inputs, and the point of the cut is that the first is already
+proven:
+
+* `Fermat.mono_ajHom_of_one_le_x0Genus` — `ajHom` is a MONOMORPHISM, which
+  needs only `1 ≤ x0Genus N` and is PROVEN (over the two leaves
+  `mono_ajHom_of_hasNoFibreAffineLine` and
+  `hasNoFibreAffineLine_of_one_le_x0Genus`);
+* `smoothOfRelativeDimension_one_of_x0Genus_eq_one` — the genus bridge,
+  `dim J_0(N) = 1`, the only half that mentions `N`;
+* `isIso_of_mono_of_relCurve` — a monomorphism between relative curves is
+  an isomorphism, level-free.
+
+`hg` is used twice and differently: as `1 ≤ x0Genus N` for the
+monomorphism, and as `x0Genus N = 1` for the dimension of the target.
+That is exactly the asymmetry `x0Genus_eq_one`'s docstring records —
+injectivity of Abel–Jacobi needs only the bound, surjectivity needs the
+equality — and it is why this node cannot be stated with `levels_spec`'s
+`1 ≤`.
+
+The curve conditions on the SOURCE come from `hmodel`
+(`isProper`/`smooth`/`connected`) and those on the TARGET from `ab`
+(`proper`/`connected`), the one missing piece being the relative dimension
+of `jstr`, which is precisely the genus bridge.  `hu` is
+`(jac.aj strX ⟨𝟙 X, _⟩).2`, the defining property of `ajHom`. -/
+theorem isIso_ajHom_of_x0Genus_eq_one {N : ℕ} (hg : x0Genus N = 1)
+    {X Y J S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) : IsIso jac.ajHom :=
+  isIso_of_mono_of_relCurve hmodel.isProper hmodel.smooth hmodel.connected ab.proper
+    (smoothOfRelativeDimension_one_of_x0Genus_eq_one hg hmodel jac) ab.connected
+    jac.ajHom (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+    (mono_ajHom_of_one_le_x0Genus hg.ge hmodel jac)
+
 /-- **A genus-`1` modular curve with a rational point IS an abelian
-scheme, based at that point** (sorry leaf, introduced 2026-07-27) — the
+scheme, based at that point** (PROVEN 2026-07-27 by decomposition;
+introduced earlier the same day as a sorry leaf) — the
 GEOMETRIC half of `isTorsion_jacobian`, and level-generic.
 
 TRUE and classical: a smooth proper geometrically connected curve of
@@ -16572,21 +16881,24 @@ turns that assertion into a checkable obligation, and it is what
 `surjective_aj_of_abelianSchemeStruct` below converts into the missing
 half of the Abel–Jacobi bijection.
 
-**Two theories are bundled here, deliberately, and the bundling mirrors
-`Fermat.mono_ajHom_of_one_le_x0Genus` exactly.**  `x0Genus` is a purely
+**WHERE THE `x0Genus`-TO-GEOMETRY BRIDGE WENT, since an earlier version of
+this docstring said it could not be split off.**  `x0Genus` is a purely
 arithmetic function of `N` (the Diamond–Shurman formula, evaluated by
 `decide`), so any statement relating it to the geometry of `strX` must
 carry the bridge "`x0Genus N` is the genus of the fibres of `strX`"
-together with whatever geometry it then applies.  That bridge cannot be
-split off at this pin because *the genus of a scheme does not exist in
-this development* — the check that refutes this is
-`grep -rn "genus\|arithmeticGenus\|Riemann" Fermat/ | grep -v x0Genus`,
-whose only hits are prose.  So the honest shape is a single leaf carrying
-(i) the genus formula bridge and (ii) the genus-`1` group law, which is
-verbatim what `mono_ajHom_of_one_le_x0Genus` does for (i) plus
-Riemann–Roch.  If a notion of the genus of `strX` is ever written, this
-leaf splits along the same seam as that one, and BOTH should be split at
-once.
+together with whatever geometry it then applies — and *the genus of a
+scheme still does not exist in this development* (the check that refutes
+that is `grep -rn "genus\|arithmeticGenus\|Riemann" Fermat/ |
+grep -v x0Genus`, whose only hits are prose).  What was wrong was the
+inference that the bridge therefore cannot be separated from the group
+law: it can, because it can be stated in a predicate that DOES exist.
+The bridge now lives ALONE in
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one` (`dim J_0(N) = 1`), and
+the geometry lives ALONE in `isIso_of_mono_of_relCurve`, which mentions no
+level.  If a notion of the genus of `strX` is ever written, it is those
+two — not this node — that split further, along the same seam as
+`hasNoFibreAffineLine_of_one_le_x0Genus`, and all of them should be split
+at once.
 
 **`hg` is load-bearing in BOTH directions, which is why it is an equality
 and not a bound.**  At `x0Genus N = 0` the curve is `ℙ¹` (`N = 1`), which
@@ -16610,16 +16922,58 @@ and `Fermat.exists_rationalCusps` an `o` at each of the four levels, and
 the conclusion is the classical group law on `11a1`, `17a1`, `19a1`,
 `32a1`.
 
-**MISSING MACHINERY**, and it is the honest cost: Riemann–Roch, `Pic⁰` of
-a curve, and the identification of a genus-`1` pointed curve with its own
-Jacobian.  None of the three exists in `Mathlib`, in `~/cs/FLT` or in
-this project — the same absence that `mono_ajHom_of_one_le_x0Genus`
-records, and the two leaves should have the same owner. -/
-theorem exists_abelianSchemeStruct_of_x0Genus_eq_one (N : ℕ) (_hg : x0Genus N = 1)
+**THE DECOMPOSITION (2026-07-27), which retires the "MISSING MACHINERY"
+note this docstring used to close with.**  That note read: *"Riemann–Roch,
+`Pic⁰` of a curve, and the identification of a genus-`1` pointed curve
+with its own Jacobian; none of the three exists in `Mathlib`, in
+`~/cs/FLT` or in this project"*.  Two of the three were already false when
+it was written — `Pic⁰` is `ModularCurve/RelativePicard.lean`
+(`Fermat.IsRelPicZeroOf`, 2026-07-27), and the Jacobian it represents is
+produced by `Fermat.exists_jacobianOf_x0`, which is PROVEN — and the third
+does not arise on this route at all.  So the leaf is not atomic, and the
+axis its own note did not search is the one where a theory has only to be
+STATED: with the Jacobian in hand the group law is not something to be
+constructed, it is something to be TRANSPORTED.
+
+Four steps, of which only the third and fourth carry mathematics:
+
+1. `Fermat.exists_jacobianOf_x0 N h o` produces `J`, its abelian-scheme
+   structure `ab`, and `jac : IsJacobianOf strX ab o`.  PROVEN.
+2. `isIso_ajHom_of_x0Genus_eq_one hg h jac` makes `ajHom : X ⟶ J` an
+   ISOMORPHISM.  This is where `hg` is consumed, and it is where the two
+   remaining leaves of this cluster live —
+   `smoothOfRelativeDimension_one_of_x0Genus_eq_one` (the genus bridge)
+   and `isIso_of_mono_of_relCurve` (level-free geometry) — the
+   monomorphy half being already PROVEN as
+   `Fermat.mono_ajHom_of_one_le_x0Genus`.
+3. `transportAlongIso` carries `ab` back along that isomorphism.  Pure
+   category theory, PROVEN above.
+4. The origin lands on `o` because `jac.aj_base` says
+   `aj (𝟙 SpecQ) o = ab.zero (𝟙 SpecQ)` and `jac.aj_val` says
+   `(aj g x).1 = x.1 ≫ ajHom`, so `(ab.zero (𝟙 SpecQ)).1 ≫ inv ajHom =
+   o.1`.  This is why the conclusion could pin the origin at all, and it
+   is the reason `o` is an input.
+
+`hg` and `h`, which the sorried statement had to underscore, are now both
+CONSUMED — a faithfulness gain of the same kind
+`mono_ajHom_of_one_le_x0Genus` records: the previous statement of this
+node could not use either of its hypotheses anywhere. -/
+theorem exists_abelianSchemeStruct_of_x0Genus_eq_one (N : ℕ) (hg : x0Genus N = 1)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_h : IsX0Compactification N strX strY jY) (o : RelPoint strX (𝟙 SpecQ)) :
-    ∃ abX : AbelianSchemeStruct strX, abX.zero (𝟙 SpecQ) = o :=
-  sorry
+    (h : IsX0Compactification N strX strY jY) (o : RelPoint strX (𝟙 SpecQ)) :
+    ∃ abX : AbelianSchemeStruct strX, abX.zero (𝟙 SpecQ) = o := by
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 N h o
+  haveI : IsIso jac.ajHom := isIso_ajHom_of_x0Genus_eq_one hg h jac
+  have hajj : jac.ajHom ≫ jstr = strX := (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+  haveI := h.smooth
+  refine ⟨transportAlongIso ab jac.ajHom hajj h.isProper
+    (SmoothOfRelativeDimension.smooth (n := 1) (f := strX)) h.connected, ?_⟩
+  have h0 : (ab.zero (𝟙 SpecQ)).1 = o.1 ≫ jac.ajHom := by
+    rw [← jac.aj_base]
+    exact jac.aj_val (𝟙 SpecQ) o
+  refine Subtype.ext ?_
+  show (ab.zero (𝟙 SpecQ)).1 ≫ inv jac.ajHom = o.1
+  rw [h0, Category.assoc, IsIso.hom_inv_id, Category.comp_id]
 
 /-- **If the curve itself is an abelian scheme based at `o`, then
 Abel–Jacobi is SURJECTIVE on relative points — over every base point**
