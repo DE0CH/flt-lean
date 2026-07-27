@@ -23823,7 +23823,7 @@ theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
 
 /-! #### The `169` chain, relocated here by declaration order
 
-The five declarations immediately below belong, thematically, to the
+The declarations immediately below belong, thematically, to the
 prime-square block far above, beside `isogenyPrimeSqLevels` and the two
 sibling nodes `y0HasNoRationalPoint_of_not_stableCyclic` and
 `not_stableCyclic_sq_of_isogenyClassPrime` that still live there.  They sit
@@ -23892,54 +23892,210 @@ def HasRankZeroAbelianImage {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
       c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) ∧
     Finite (RelPoint astr (𝟙 SpecQ)) ∧ Function.Injective (c SpecQ (𝟙 SpecQ))
 
-/-- **`J_0(169)` has a `5`-dimensional quotient of Mordell–Weil rank `0`,
-whose induced map is injective on `X_0(169)(ℚ)`** (sorry node, introduced
-2026-07-27).
+/-- **Postcomposition of a relative point along a morphism over the base.**
+
+The companion of `RelPoint.pre`, and the operation `pre` cannot express:
+`pre` moves the TEST object `T`, this moves the TARGET.  A morphism
+`u : A ⟶ B` over `S` carries `T`-points of `A` to `T`-points of `B` over
+the SAME base point `g`, by `x ↦ x ≫ u`.
+
+Both uses below are of that shape and neither is a `pre`: the
+Atkin–Lehner involution `w : X ⟶ X` acting on `X(T)`, and the inclusion
+`A ⟶ J` of an abelian subvariety read on points. -/
+def RelPoint.post {A B S : Scheme.{u}} {f : A ⟶ S} {f' : B ⟶ S} (u : A ⟶ B)
+    (hu : u ≫ f' = f) {T : Scheme.{u}} {g : T ⟶ S} (x : RelPoint f g) :
+    RelPoint f' g :=
+  ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩
+
+/-- **The Atkin–Lehner involution `w_169` and its Prym, an abelian
+subvariety of `J_0(169)` with finite `ℚ`-points** (sorry node, introduced
+2026-07-27 as the arithmetic half of `hasRankZeroAbelianImage_x0OneSixtyNine`).
+
+TRUE, and **unconditionally so**.  This is the half of that node which is
+specific to the level and to the involution; the geometric half — that the
+map it produces is injective on `ℚ`-points — is the leaf immediately below
+and needs nothing about `w` beyond fixed-point-freeness.
+
+**What is asserted.**  There is an involution `w` of `X_0(169)` over `ℚ`
+with no `ℚ`-rational fixed point, an abelian variety `A/ℚ` with `A(ℚ)`
+FINITE, an inclusion `ι : A ⟶ J` over `ℚ`, and a natural map `c` on
+relative points factoring the degree-`0` divisor class map through `A`:
+
+`ι ∘ c = x ↦ [x] − [w x]`  (written `aj x + (−aj (w x))`, since
+`aj x = [x] − [o]` and the base point cancels).
+
+Naturality of `c` is `IsJacobianOf.aj_pre` verbatim, and no base point is
+asked of `c`: `x ↦ [x − w x]` already has degree `0`.
+
+#### The three classical facts this carries, each with its refuting check
+
+Computed with PARI/GP 2.17.4 **for this node** on 2026-07-27, and
+recomputed independently in this worktree the same day; the figures below
+are outputs, not quotations.
+
+* **The Atkin–Lehner decomposition.**  `S_2(Γ_0(169))` is `8`-dimensional
+  and entirely new (`genus X_0(13) = 0`, so the old part vanishes) and
+  splits into three newform orbits, with `w_169`-eigenvalues
+
+  | orbit | `dim` | `w_169` | `ord_{s=1} L(f^σ, s)` per embedding |
+  |-------|-------|---------|-------------------------------------|
+  | `1`   | `2`   | `−1`    | `0, 0` — `L(1) = 0.96638…, 2.26861…` |
+  | `2`   | `3`   | `−1`    | `0, 0, 0` — `L(1) = 2.24086…, 1.56775…, 0.55137…` |
+  | `3`   | `3`   | `+1`    | `1, 1, 1` — `L(1) = 0` to `58` digits |
+
+  (`mfatkineigenvalues(mfinit([169,2],0),169)` returns
+  `[[-1,-1],[-1,-1,-1],[1,1,1]]`.)  So `A` = the minus part has dimension
+  `2 + 3 = 5`, and the plus part has dimension `3` — cross-checked against
+  the fixed-point formula `g(X/w) = (g + 1 − ν/2)/2 = (8 + 1 − 3)/2 = 3`,
+  with `ν = 6` fixed points.  That cross-check is what rules out the one
+  way this could have gone wrong: the two `3`-dimensional orbits are not
+  interchangeable, and it is the `w_169 = +1` one — the one carrying ALL
+  the rank — that is the plus part.  **The check that refutes it**:
+  `mfatkineigenvalues` returning a different eigenvalue pattern, or a
+  genus of `X_0(169)/w_169` other than `3`.
+* **Rank `0`, unconditionally.**  Every embedding of every `w = −1` orbit
+  has `L(f^σ, 1) ≠ 0`, i.e. analytic rank `0` — inside the
+  Gross–Zagier–Kolyvagin range — so Kolyvagin–Logachev gives
+  `rank A(ℚ) = 0` and `A(ℚ)` is finite by Mordell–Weil.  No BSD, and no
+  `p`-adic integration.  **The check that refutes it**: `lfunorderzero` on
+  an embedding of orbit `1` or `2` returning anything nonzero.
+* **`w_169` has no `ℚ`-rational fixed point.**  `169 ≡ 1 (mod 4)`, so the
+  fixed points of `w_N` are the CM points of discriminant `−4 · 169 =
+  −676` only (the second family, discriminant `−N`, occurs for `N ≡ 3
+  (mod 4)`).  `h(−676) = 6` (`quadclassunit(-676).no`), so those points are
+  defined over a ring class field of degree `6` over the imaginary
+  quadratic field and none of them is rational.  The two rational cusps
+  `0` and `∞` are SWAPPED by `w_169`, so neither is fixed either.  **The
+  check that refutes it**: `h(−676) = 1`, or a rational point of
+  `X_0(169)` fixed by `w_169`.
+
+#### The cut this leaf is still waiting for
+
+`w` is produced existentially rather than pinned, which is what allows the
+three facts above to travel together: pinning `w` as *the* Atkin–Lehner
+involution needs its moduli description `(E, C) ↦ (E/C, E[169]/C)`, and
+until that is written the rank-`0` claim cannot be separated from the
+existence claim — an unpinned involution can be the identity, whose Prym
+is trivial and whose `c` is constant.  Once `w` IS pinned, this splits
+cleanly in two along the seam `hasRankZeroJacobian_of_kenkuLevel` already
+uses: the Prym construction (Atkin–Lehner decomposition, level-generic)
+and `Finite (RelPoint astr (𝟙 SpecQ))` (Kolyvagin–Logachev, level-specific,
+the analogue of `isTorsion_jacobian_of_kenkuLevel`).
+
+Note what is NOT needed: the universal property of the Jacobian is never
+used, only `jac.aj` and its naturality — exactly as in
+`card_le_of_rankZeroJacobian`. -/
+theorem exists_atkinLehnerPrym_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification 169 strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) :
+    ∃ (w : X ⟶ X) (hw : w ≫ strX = strX), w ≫ w = 𝟙 X ∧
+      (∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x) ∧
+      ∃ (A : Scheme.{0}) (astr : A ⟶ SpecQ) (_abA : AbelianSchemeStruct astr)
+        (ι : A ⟶ J) (hι : ι ≫ jstr = astr)
+        (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g),
+        (∀ (T' T : Scheme.{0}) (h : T' ⟶ T) (g : T ⟶ SpecQ) (g' : T' ⟶ SpecQ)
+            (hg : h ≫ g = g') (x : RelPoint strX g),
+          c T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c T g x)) ∧
+        Finite (RelPoint astr (𝟙 SpecQ)) ∧
+        ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint strX g),
+          RelPoint.post ι hι (c T g x) =
+            ab.add (jac.aj g x) (ab.neg (jac.aj g (RelPoint.post w hw x))) :=
+  sorry
+
+/-- **`x ↦ [x] − [w x]` is injective on `X_0(169)(ℚ)`** (sorry node,
+introduced 2026-07-27 as the geometric half of
+`hasRankZeroAbelianImage_x0OneSixtyNine`).
+
+TRUE.  The argument is three lines and uses NOTHING about `w` beyond the
+two hypotheses carried here — that it is an involution over `ℚ` and that
+it fixes no rational point.  The level enters through exactly one fact,
+non-hyperellipticity, and that is why this is a separate leaf from
+`exists_atkinLehnerPrym_x0OneSixtyNine`: the two halves of the node are
+different theories and neither needs the other's input.
+
+**The proof.**  Suppose `[x] − [w x] = [y] − [w y]`.  Then
+`x + w y ∼ y + w x`, two effective divisors of degree `2` in one linear
+class.  `X_0(169)` has genus `8` and is NOT hyperelliptic — `169` is not
+in Ogg's list of hyperelliptic levels — so no degree-`2` class has
+`h^0 ≥ 2`, i.e. a degree-`2` class contains at most one effective divisor.
+Hence `x + w y = y + w x` as divisors, so `{x, w y} = {y, w x}` as
+multisets.  If `x ≠ y` this forces `x = w x` and `y = w y`, contradicting
+`_hfix`.  So `x = y`.
+
+**The check that refutes it**: a hyperelliptic model of `X_0(169)`, or a
+degree-`2` linear system on it of projective dimension `≥ 1`.  (`_hfix`
+itself is refuted by a rational point fixed by `w`; it is discharged for
+`w_169` at the leaf above, where `h(−676) = 6`.)
+
+**What proving it needs**: linear equivalence of divisors on a curve, and
+the hyperelliptic dichotomy for degree-`2` classes — i.e. Riemann–Roch,
+which is the same gap `injective_aj_of_not_isIso_jacobian` records.  The
+two are worth closing together: both are "a degree-`d` class on a curve of
+genus `g` has the expected `h^0`", at `d = 1` and `d = 2`.
+
+`o` and `jY` are inert here; they are carried only because `jac` and the
+level pin `_hX` mention them. -/
+theorem injective_ajMinus_x0OneSixtyNine {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification 169 strX strY jY)
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X)
+    (_hfix : ∀ x : RelPoint strX (𝟙 SpecQ), RelPoint.post w hw x ≠ x) :
+    Function.Injective fun x : RelPoint strX (𝟙 SpecQ) =>
+      ab.add (jac.aj (𝟙 SpecQ) x) (ab.neg (jac.aj (𝟙 SpecQ) (RelPoint.post w hw x))) :=
+  sorry
+
+/-- **`J_0(169)` has a `5`-dimensional abelian subvariety of Mordell–Weil
+rank `0`, whose induced map is injective on `X_0(169)(ℚ)`** (PROVEN
+2026-07-27, over the two leaves immediately above; introduced as a sorry
+node earlier the same day).
 
 TRUE, and **unconditionally so** — this is the observation that removes the
 BSD hypothesis previously recorded at this level.
 
-**The abelian variety.**  Take `A` = the Atkin–Lehner MINUS part of
-`J_0(169)`, i.e. the Prym of `X_0(169) ⟶ X_0(169)/w_169`, and
-`c : x ↦ [x − w_169 x]`, which has degree `0` and so needs no base point.
-`S_2(Γ_0(169))` is `8`-dimensional and entirely new — `X_0(13)` has genus `0`,
-so the old part vanishes — and splits into three newform orbits.  PARI/GP
-2.17.4, 2026-07-27, computed for this node rather than quoted:
+**The assembly.**  Take a rational cusp as base point
+(`numRationalCusps 169 = 2 > 0`), the Jacobian over it
+(`exists_jacobianOf_x0`, level-generic), then `w`, `A`, `ι` and `c` from
+`exists_atkinLehnerPrym_x0OneSixtyNine`.  Naturality of `c` and finiteness
+of `A(ℚ)` come with that datum; injectivity of `c` on `ℚ`-points is the
+only thing left, and it follows from
+`injective_ajMinus_x0OneSixtyNine` because `ι` FACTORS the divisor class
+map: `c x = c y` gives `ι (c x) = ι (c y)`, i.e. `[x] − [w x] =
+[y] − [w y]`, whence `x = y`.  Injectivity of `ι` itself is never used,
+which is why the leaf above need not assert it.
 
-| orbit | `dim` | `w_169` | `ord_{s=1} L(f^σ, s)`, per embedding      |
-|-------|-------|---------|-------------------------------------------|
-| `1`   | `2`   | `−1`    | `0, 0` — `L(1) = 0.9663…, 2.2686…`        |
-| `2`   | `3`   | `−1`    | `0, 0, 0` — `L(1) = 2.2408…, 1.5677…, 0.5513…` |
-| `3`   | `3`   | `+1`    | `1, 1, 1` — `L(1) = 0`                    |
+**The abelian variety**, in one line: `A` is the Atkin–Lehner MINUS part of
+`J_0(169)`, the Prym of `X_0(169) ⟶ X_0(169)/w_169`, of dimension
+`2 + 3 = 5` and Mordell–Weil rank `0`; and `c : x ↦ [x − w_169 x]` has
+degree `0`, so it needs no base point.  The newform table, the
+Kolyvagin–Logachev step and the fixed-point count are stated with their
+refuting checks at `exists_atkinLehnerPrym_x0OneSixtyNine`; the
+non-hyperelliptic argument at `injective_ajMinus_x0OneSixtyNine`.
 
-So the minus part has dimension `2 + 3 = 5` and analytic rank `0`, hence
-Mordell–Weil rank `0` by Kolyvagin–Logachev, and `A(ℚ)` is finite.  The plus
-part is orbit `3`, of dimension `3`; consistently `genus X_0(169)/w_169 = 3`
-and `8 = 5 + 3`.
-
-**Injectivity of `c` on `ℚ`-points.**  If `[x − w x] = [y − w y]` then
-`x + w y ∼ y + w x`, two effective divisors of degree `2` in one class.
-`X_0(169)` is NOT hyperelliptic — genus `8`, and `169` is not in Ogg's list of
-hyperelliptic levels — so a degree-`2` class contains one divisor only, whence
-`{x, w y} = {y, w x}`, i.e. `x = y` or `x` and `y` are both fixed by `w_169`.
-The fixed points of `w_169` are the CM points of discriminant
-`−4 · 169 = −676`, and `h(−676) = 6` (PARI/GP), so none of them is rational
-and the second case cannot arise for two distinct rational points.  The two
-rational cusps `0` and `∞` are SWAPPED by `w_169`, so neither is fixed either.
-
-**The check that refutes this**: an `lfun` call contradicting a row of the
-table; or a hyperelliptic model of `X_0(169)`; or a rational point of
-`X_0(169)` fixed by `w_169`.
-
-**What proving it needs**, and it is not small: `J_0(169)`, its Atkin–Lehner
-decomposition, the Prym, and Kolyvagin–Logachev — none of which exists at this
-pin.  What the node supplies now is the fact that this level needs neither
-Chabauty nor BSD, which was not known here before. -/
+**What remains open, and it is not small**: `J_0(169)`, its Atkin–Lehner
+decomposition, the Prym, and Kolyvagin–Logachev on the one side, Riemann–Roch
+on the other — none of which exists at this pin.  What this node establishes
+is that the level needs neither Chabauty nor BSD, and that the two missing
+theories are INDEPENDENT of each other: the geometric leaf below knows
+nothing about `w_169` beyond fixed-point-freeness, and the arithmetic leaf
+above knows nothing about the curve's gonality. -/
 theorem hasRankZeroAbelianImage_x0OneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_hX : IsX0Compactification 169 strX strY jY) :
-    HasRankZeroAbelianImage strX :=
-  sorry
+    (hX : IsX0Compactification 169 strX strY jY) :
+    HasRankZeroAbelianImage strX := by
+  classical
+  obtain ⟨s, hs, -⟩ := exists_rationalCusps 169 hX
+  obtain ⟨o, -⟩ : s.Nonempty :=
+    Finset.card_pos.mp (by rw [hs]; exact numRationalCusps_pos (by norm_num))
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 169 hX o
+  obtain ⟨w, hw, hw2, hfix, A, astr, abA, ι, hι, c, hcnat, hfin, hfac⟩ :=
+    exists_atkinLehnerPrym_x0OneSixtyNine hX jac
+  refine ⟨A, astr, abA, c, hcnat, hfin, fun x y hxy => ?_⟩
+  have hxy' : RelPoint.post ι hι (c SpecQ (𝟙 SpecQ) x)
+      = RelPoint.post ι hι (c SpecQ (𝟙 SpecQ) y) := by rw [hxy]
+  rw [hfac, hfac] at hxy'
+  exact injective_ajMinus_x0OneSixtyNine hX jac w hw hw2 hfix hxy'
 
 /-- **`#X_0(169)(ℚ) ≤ numRationalCusps 169 = 2`, from a rank-`0` abelian
 image** (sorry node, introduced 2026-07-27): Kenku's theorem in the counting
