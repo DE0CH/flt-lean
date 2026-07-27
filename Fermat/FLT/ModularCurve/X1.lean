@@ -67,6 +67,8 @@ so `rank J_1(25)(ℚ) = 0` by Kolyvagin–Logachev (or Kato).
 * **`exists_x1Compactification_mod_prime` at `(25, 3, 10)` is SHALLOW**,
   and this corrects the impression left by the level-`25` docstring that
   `#X_1(25)(𝔽_3) = 10` is an Eichler–Shimura computation.  It is not.
+  It is now PROVEN (2026-07-27) over four leaves, three of which carry no
+  modular content at all; see its docstring for the split.
   The value equals `φ(25)/2`, which is the *cusp count*, so the content
   is "`X_1(25)` has no non-cuspidal `𝔽_3`-point" — i.e. no pair
   `(E, P)/𝔽_3` with `P` of order `25`.  A point of order `25` in
@@ -332,48 +334,349 @@ level. -/
 theorem numRationalCuspsX1_twentyFive : numRationalCuspsX1 25 = 10 := by
   rw [numRationalCuspsX1]; decide
 
-/-! ### The four leaves
+/-! ### The leaves
 
 These are the `Γ₁`-specific inputs.  Every one of them is TRUE and
 classical; none of them is available at this pin, and the module
-docstring records which are deep and which are not. -/
+docstring records which are deep and which are not.
 
-/-- **Existence of the compactified coarse moduli space `X_1(N)` over
-`ℚ`** (sorry node).
+**Reorganised 2026-07-27.**  Three of the former leaves —
+`exists_x1Compactification`, `exists_rationalCuspsX1` and
+`exists_x1Compactification_mod_prime` — are now THEOREMS, and what was
+open in them has been split along the theories it needed:
 
-TRUE and classical: `Y_1(N)` is a smooth affine curve over `ℚ` — for
-`N ≥ 4` a FINE moduli space, since a pair `(E, P)` with `P` of order
-`≥ 4` has no nontrivial automorphism — and every smooth curve over a
-field has a unique smooth projective compactification; for `Y_1(N)` it is
-the modular curve `X_1(N)` of Deligne–Rapoport, obtained directly as the
-coarse space of the moduli problem of GENERALISED elliptic curves with
-`Γ₁(N)`-structure, the added points being the cusps.
+| open leaf | theory | base |
+|---|---|---|
+| `exists_isCoarseModuliY1_isSmoothCurve` | `Y_1(N)` is a smooth geometrically connected curve (Katz–Mazur 4.7/8.2) | any `K`, `char K ∤ N` |
+| `nonempty_cuspLocusX1` | the cusp locus of `X_1(N)` (Deligne–Rapoport VI.6) | `ℚ` |
+| `exists_gamma1Datum_of_relPoint` | fineness at `N ≥ 4` / Lang | `𝔽_ℓ` |
+| `isEmpty_gamma1Datum_finiteField` | `#E(𝔽_ℓ) ≤ 2ℓ + 1` — NO modular curves | `𝔽_ℓ` |
+| `card_cusp_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
+| `exists_injective_reduction_of_rankZeroJacobian` | Abel–Jacobi, Mordell–Weil, formal groups | `ℚ → 𝔽_ℓ` |
+| `nonempty_gamma1Datum_of_ratPoint` | Galois descent of a rational point to a section | `ℚ` |
+| `hasRankZeroJacobian_x1TwentyFive` | Kolyvagin–Logachev — the DEEP one | `ℚ` |
 
-`hN : 4 ≤ N` rather than `0 < N`.  At `N ≤ 3` the pair `(E, P)` has extra
-automorphisms and the coarse space is not fine, and — more to the point
-here — at `N = 0` the problem is empty over a nonempty base, exactly as
-`isEmpty_of_gamma0Datum_zero` records on the `Γ₀` side: a section of
-infinite order on every geometric fibre cannot exist on a proper fibre.
-Only `N = 25` is used, so the stronger hypothesis costs nothing.
+Everything else in this file — the compactification geometry, the
+finiteness of `X_1(N)(𝔽_ℓ)`, the passage from the cusp locus to indexed
+rational cusps, and all three assemblies — is now sorry-free. -/
 
-IRREDUCIBLE at this pin, and for the same reason as
-`exists_x0Compactification`: neither modular curves nor a
-smooth-compactification theorem for curves exists anywhere in `Mathlib`,
-in `~/cs/FLT`, or in this project.  Refuting check for that claim: a
-`grep` over all three for `ModularCurve`, `coarse moduli`, or a
-compactification theorem for smooth curves.
+/-- **SOME coarse moduli space of the `Γ₁(N)`-problem is a geometrically
+connected smooth curve over `K`, for `4 ≤ N` and `char K ∤ N`** (sorry
+leaf — and the ONLY modular input to the existence of `X_1(N)`, over
+BOTH base fields this file uses).
 
-**This leaf is genuinely SHARED with `exists_x0Compactification`** up to
-the level structure — the compactification half is identical, and only
-the `coarse` field differs.  A successor building Deligne–Rapoport should
-close both together rather than either alone. -/
-theorem exists_x1Compactification (N : ℕ) (hN : 4 ≤ N) :
-    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X),
-      Nonempty (IsX1Compactification N strX strY jY) :=
+TRUE and classical.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid —
+a pair `(E, P)` with `P` of order `≥ 4` has no nontrivial automorphism —
+so over a base where `N` is invertible it is representable, and `Y_1(N)`
+is a smooth affine curve (Deligne–Rapoport III.1; Katz–Mazur 4.7.0 for
+rigidity, 8.2 for smoothness).
+
+**Geometric connectedness is the one clause that is not formal, and it
+is TRUE for `Γ₁(N)` — this corrects the parenthetical in
+`exists_x0Compactification`'s docstring** (`X0.lean`), which reads
+"unlike for `Γ₁(N)` or `Γ(N)`".  The criterion is that the subgroup of
+`GL₂(ℤ/N)` attached to the level structure surjects onto `(ℤ/N)ˣ` under
+`det`.  For `[Γ₁(N)]` that subgroup is `{[[1, b], [0, d]]}`, whose
+determinant is `d`, so `det` IS surjective and `Y_1(N)_ℚ` is
+geometrically connected.  What genuinely does split over `ℚ(ζ_N)` at
+level `Γ₁(N)` is the set of CUSPS, not the curve — see
+`nonempty_cuspLocusX1`, where exactly `φ(N)/2` of the `28` cusps at
+`N = 25` are rational.  `Γ(N)` is the case where the curve itself
+splits, its field of constants being `ℚ(ζ_N)`.
+
+**Stated over an arbitrary base field, deliberately**, following the
+merge recorded at `exists_x0Compactification_field`: the `ℚ` case
+(`exists_x1Compactification`) and the `𝔽_ℓ` case
+(`exists_x1Compactification_finiteField`) differ only in `K`, and both
+are one-line corollaries below.  `¬ ringChar K ∣ N` is exactly the
+condition under which the `Γ₁(N)`-problem is smooth: at `char K = p ∣ N`
+a point of exact order `N` acquires an infinitesimal part and the
+`smooth` field of `IsX1Compactification` would be FALSE.  At `char K = 0`
+the hypothesis reads `N ≠ 0`, which `hN` already gives.
+
+The five conclusions are exactly the hypotheses of
+`AlgebraicGeometry.exists_isSmoothCompactification`, and none is
+decoration: `QuasiCompact` and `IsSeparated` are what Nagata's
+compactification consumes, `IsIntegral` is what makes the relative
+normalization integral, `SmoothOfRelativeDimension 1` pins the relative
+dimension of the compactification, and `GeometricallyConnected` is what
+`geometricallyConnected_of_isSmoothCompactification` carries across.
+
+AXIS SEARCHED: the BASE-FIELD axis (taken — one leaf for `ℚ` and `𝔽_ℓ`
+at once) and the COMPACTIFICATION axis (taken — the whole
+Nagata/normalization half is now
+`AlgebraicGeometry.exists_isSmoothCompactification` and is not modular).
+NOT searched: the GIT axis, i.e. the `Γ₁` analogue of
+`exists_gamma0AffineModel`, which exhibits the Katz–Mazur affine model as
+`Spec` of a ring of invariants and reads `smooth`/`connected` off it.
+That is how `X0.lean` cut the corresponding leaf one step further, and it
+is what a successor should try next; it needs a `Gamma1Atlas`/GIT
+presentation that does not exist here yet.  This note is refuted by
+exhibiting a `Γ₁(N)`-affine model, or any construction of `Y_1(N)`, in
+`Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`; as of 2026-07-27
+`grep` over all three finds none. -/
+theorem exists_isCoarseModuliY1_isSmoothCurve (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
+    (_hchar : ¬ ringChar K ∣ N) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ Spec (CommRingCat.of K)) (_hc : IsCoarseModuliY1 N strY),
+      IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
   sorry
 
-/-- **`X_1(N)` has at least `φ(N)/2` distinct `ℚ`-rational cusps** (sorry
-node).
+/-- **Existence of the compactified coarse moduli space `X_1(N)` over an
+ARBITRARY perfect base field whose characteristic does not divide `N`**
+(PROVEN 2026-07-27, over one modular leaf plus general curve theory).
+
+TRUE and classical: `Y_1(N)` is a smooth affine curve over `K` and every
+smooth curve over a perfect field has a smooth proper compactification
+with finite complement; for `Y_1(N)` it is the modular curve `X_1(N)` of
+Deligne–Rapoport, obtained directly as the coarse space of the moduli
+problem of GENERALISED elliptic curves with `Γ₁(N)`-structure, the added
+points being the cusps.
+
+The proof is the two-step assembly `X0.lean` uses at
+`exists_x0Compactification`, and only the first step is modular:
+
+* `exists_isCoarseModuliY1_isSmoothCurve` supplies a coarse space
+  together with the five properties the compactification theorem
+  consumes;
+* `AlgebraicGeometry.exists_isSmoothCompactification` and
+  `AlgebraicGeometry.geometricallyConnected_of_isSmoothCompactification`
+  supply the compactification itself, from
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
+
+Note that `connected` and `finite_compl` — the two fields of
+`IsX1Compactification` beyond a bare compactification — come from the
+general theory and not from anything modular: geometric connectedness is
+inherited from `Y_1(N)` along a dense open immersion, and finiteness of
+the cusp locus is finiteness of the complement of a dense open in an
+irreducible curve.  Neither is assumed, which is what keeps this
+interface from smuggling in a cusp count; see `exists_rationalCuspsX1`
+for the count, which is a genuinely separate and still-open statement.
+
+`PerfectField K` is needed only by the normalization step and holds at
+both bases used here — `ℚ` by `PerfectField.ofCharZero`, `𝔽_ℓ` by
+`PerfectField.ofFinite`. -/
+theorem exists_x1Compactification_field (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K]
+    [PerfectField K] (hchar : ¬ ringChar K ∣ N) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
+      (strY : Y ⟶ Spec (CommRingCat.of K)) (jY : Y ⟶ X),
+      Nonempty (IsX1Compactification N strX strY jY) := by
+  obtain ⟨Y, strY, hc, hint, hqc, hsep, hsmd, hconn⟩ :=
+    exists_isCoarseModuliY1_isSmoothCurve N hN K hchar
+  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
+  obtain ⟨X, strX, jY, hX⟩ := exists_isSmoothCompactification (K := K) strY
+  exact ⟨X, Y, strX, strY, jY,
+    ⟨{ comm := hX.comm
+       coarse := hc
+       isOpen := hX.isOpenImmersion
+       isProper := hX.isProper
+       smooth := hX.smooth
+       connected := geometricallyConnected_of_isSmoothCompactification hX
+       finite_compl := hX.finite_compl }⟩⟩
+
+/-- **Existence of the compactified coarse moduli space `X_1(N)` over
+`ℚ`** (PROVEN 2026-07-27, as the characteristic-`0` case of
+`exists_x1Compactification_field`; formerly a sorry node).
+
+`ringChar ℚ = 0`, so the characteristic hypothesis reads `¬ 0 ∣ N`,
+i.e. `N ≠ 0`, which `hN : 4 ≤ N` supplies.
+
+`hN : 4 ≤ N` rather than `0 < N`.  At `N ≤ 3` the pair `(E, P)` has extra
+automorphisms and the moduli problem is not rigid, and — more to the
+point here — at `N = 0` the problem is empty over a nonempty base,
+exactly as `isEmpty_of_gamma0Datum_zero` records on the `Γ₀` side: a
+section of infinite order on every geometric fibre cannot exist on a
+proper fibre.  Only `N = 25` is used, so the stronger hypothesis costs
+nothing.
+
+The previous "IRREDUCIBLE at this pin" verdict on this node — "neither
+modular curves nor a smooth-compactification theorem for curves exists
+anywhere in `Mathlib`, in `~/cs/FLT`, or in this project" — was right
+about the theories and wrong about irreducibility, in the way this
+development keeps meeting.  The compactification theorem was written in
+the interim (`CurveCompactification.lean`), and the leaf split along the
+two theories: what remains modular is only
+`exists_isCoarseModuliY1_isSmoothCurve`. -/
+theorem exists_x1Compactification (N : ℕ) (hN : 4 ≤ N) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X),
+      Nonempty (IsX1Compactification N strX strY jY) := by
+  refine exists_x1Compactification_field N hN ℚ ?_
+  rw [ringChar.eq_zero]
+  simp only [Nat.zero_dvd]
+  omega
+
+/-- **`X_1(N)` exists over `𝔽_ℓ` for `ℓ ∤ N`** (PROVEN 2026-07-27, as the
+characteristic-`ℓ` case of `exists_x1Compactification_field`).
+
+For `ℓ ∤ N` the modular curve has good reduction at `ℓ` and its special
+fibre is the coarse space of the same `Γ₁(N)`-problem over `𝔽_ℓ`, so no
+integral model appears anywhere on this route — the special fibre is
+obtained directly, and the reduction map (which is what would need the
+model) is never formed.
+
+`ringChar (ZMod ℓ) = ℓ`, so `hℓN` is literally the characteristic
+hypothesis; `hℓ` is needed only to make `ZMod ℓ` a field, and
+`PerfectField (ZMod ℓ)` is then `PerfectField.ofFinite`. -/
+theorem exists_x1Compactification_finiteField (N ℓ : ℕ) (hN : 4 ≤ N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (jY : Y ⟶ X),
+      Nonempty (IsX1Compactification N strX strY jY) := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  exact exists_x1Compactification_field N hN (ZMod ℓ)
+    (by simpa only [ZMod.ringChar_zmod_n] using hℓN)
+
+/-- **The cusp locus of `X_1(N)`, as a finite `ℚ`-scheme with prescribed
+residue degrees.**
+
+The cuspidal part of the Deligne–Rapoport model of `X_1(N)`, written down
+as data: `X ∖ Y` is the disjoint union, over an index set `C` of cusps,
+of `Spec` of a residue field `K c` over `ℚ`; and `φ(N)/2` of those cusps
+— the orbit of `∞`, indexed by `(ℤ/N)ˣ/±1` — have residue degree `1`,
+i.e. are `ℚ`-rational.
+
+**Why this is the shape of the leaf, and what it avoids.**  Verbatim the
+reasoning of `IsX0Compactification.CuspLocus` (`X0.lean`), which is the
+`Γ₀` sibling of this structure.  Mathlib's
+`CuspOrbits (CongruenceSubgroup.Gamma1 N)`
+(`Mathlib/NumberTheory/ModularForms/Cusps.lean`) does describe the cusps
+— but as a `Γ_1(N)`-set of points of `OnePoint ℝ`, and turning a
+`Γ_ℚ`-fixed geometric point into an element of `RelPoint strX (𝟙 SpecQ)`
+needs a Galois-descent theorem present in none of `Fermat/`,
+`.lake/packages/mathlib/`, `~/cs/FLT/`.  Recording the cusps **over `ℚ`
+from the start**, as residue ALGEBRAS rather than as a Galois orbit,
+sidesteps that entirely: rationality becomes `finrank ℚ (K c) = 1` and
+`exists_specSection_of_finrank_eq_one` extracts the `ℚ`-point by pure
+algebra.  Descent is not defeated, it is *relocated* — absorbed into the
+Deligne–Rapoport statement, which is where the literature proves it.
+
+**`cover` is what forbids the junk witness.**  Without it, `C = Empty`
+with `infty` vacuous would satisfy everything at `N ≤ 2` and, worse, a
+family of "cusps" unrelated to `X ∖ Y` would satisfy it at every level.
+`cover` forces the `κ c` to EXHAUST `(Set.range jY.base)ᶜ`, so the datum
+determines the cusp locus exactly.  It is strictly more than
+`exists_rationalCuspsX1` consumes — that derivation uses only the `⊆`
+direction — and it is carried anyway, so that the leaf states the theorem
+the literature proves rather than the weakest thing that happens to
+suffice.
+
+**Only the EASY half of Ogg's description is asked for even so.**  The
+residue degrees of the `∞`-cusps are recorded as `1`; nothing here says
+anything about the residue fields of the OTHER cusps, so the hard
+direction — that the Galois action on the remaining `18` cusps at
+`N = 25` is exactly cyclotomic, hence that none of them is rational — is
+not an obligation.  See `numRationalCuspsX1` for why a lower bound
+suffices throughout.
+
+**Which `φ(N)/2` cusps are the rational ones is deliberately NOT pinned**
+beyond `infty_degree`.  The literature's two conventions for the
+`(E, P)` model disagree about whether the rational orbit sits over the
+cusp `0` or the cusp `∞` of `X_0(N)` — in the Deligne–Rapoport moduli
+description the rational ones are the pairs (Néron `N`-gon, generator of
+the component group `ℤ/N`), the others being (Néron `1`-gon, generator of
+`μ_N`) and defined over `ℚ(ζ_N)⁺`.  The COUNT is `φ(N)/2` on either
+convention, and the count is all that is consumed, so the field is named
+`infty` for continuity with `numRationalCuspsX1`'s prose and carries no
+claim about which orbit it is.
+
+Stated over `Spec ℚ` rather than over the general base of
+`IsX1Compactification`, deliberately: residue fields change under base
+change, so `finrank ℚ (K c) = 1` would be the wrong condition over
+`Spec 𝔽_ℓ`.  The `𝔽_ℓ` cusp count is a separate statement,
+`card_cusp_x1_finiteField`. -/
+structure IsX1Compactification.CuspLocus {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) where
+  /-- an index set for the cusps of `X_1(N)` -/
+  C : Type
+  /-- the residue field of the cusp `c` -/
+  K : C → Type
+  /-- each residue algebra is a field -/
+  [isField : ∀ c, Field (K c)]
+  /-- each residue field is a `ℚ`-algebra -/
+  [isAlgebra : ∀ c, Algebra ℚ (K c)]
+  /-- the cusp `c`, as a `ℚ`-morphism `Spec (K c) ⟶ X` -/
+  κ : ∀ c, Spec (CommRingCat.of (K c)) ⟶ X
+  /-- `κ c` is a morphism over `Spec ℚ`.  Named `comm` rather than the
+  obvious `over`, which is a reserved token in this file's notation scope
+  and silently truncates the structure. -/
+  comm : ∀ c, κ c ≫ strX = Spec.map (CommRingCat.ofHom (algebraMap ℚ (K c)))
+  /-- the cusps exhaust the complement of `Y` -/
+  cover : ⋃ c, Set.range (κ c).base = (Set.range jY.base)ᶜ
+  /-- distinct cusps are disjoint -/
+  disj : ∀ c c' : C, c ≠ c' → Disjoint (Set.range (κ c).base) (Set.range (κ c').base)
+  /-- the `φ(N)/2` cusps of the rational orbit, indexed by `(ℤ/N)ˣ/±1` -/
+  infty : Fin (numRationalCuspsX1 N) → C
+  /-- they are pairwise distinct -/
+  infty_inj : Function.Injective infty
+  /-- each of them is `ℚ`-rational -/
+  infty_degree : ∀ i, Module.finrank ℚ (K (infty i)) = 1
+
+attribute [instance] IsX1Compactification.CuspLocus.isField
+  IsX1Compactification.CuspLocus.isAlgebra
+
+/-- **The cusp locus of `X_1(N)` exists** (sorry leaf — Deligne–Rapoport,
+and all that is left of `exists_rationalCuspsX1`).
+
+TRUE and classical (Ogg 1973; Deligne–Rapoport VI.6; Diamond–Shurman
+§3.8 for the cusp count and §9.3 for the rationality): the cusps of
+`X_1(N)` over `ℚ̄` are `Γ_1(N)\ℙ¹(ℚ)`, of which there are
+`½ Σ_{d ∣ N} φ(d)φ(N/d)` for `N ≥ 5` (`28` at `N = 25`); they fall into
+Galois orbits, and the `φ(N)/2` cusps of one distinguished orbit are
+individually `ℚ`-rational, the Galois action on them being trivial.
+
+WHAT REMAINS, precisely: the identification of `X ∖ Y` with the cuspidal
+part of the Deligne–Rapoport model — i.e. the uniformisation
+`X_1(N)(ℂ) ≅ Γ_1(N)∖ℍ*` together with its `ℚ`-structure.
+`IsX1Compactification` supplies only that the complement is finite, so
+nothing weaker than that identification can produce a single cusp: the
+structure's fields do not by themselves forbid `jY` from being an
+isomorphism with no cusps at all, and that is excluded only because
+`coarse` pins `Y` as the affine curve `Y_1(N)`, which is moduli input
+rather than scheme-theoretic bookkeeping.
+
+**This leaf is the `Γ₁` sibling of `X0.lean`'s `nonempty_cuspLocus`**,
+field for field, and both are the same theorem of Deligne–Rapoport with
+different level structure.  A successor building the uniformisation
+should expect to close both.
+
+`hN` is NOT carried, unlike on the `Γ₀` side.  `numRationalCuspsX1 N =
+φ(N)/2` is already `0` at `N ∈ {0, 1, 2}`, so `infty` is vacuous there
+and no degenerate-level case has to be split off; the remaining fields
+are a statement about `X ∖ Y` that is meaningful at every `N`.
+
+AXES SEARCHED, each with the check that would refute it.
+
+1. *The count* — weakening to a lower bound.  Already done upstream:
+   `numRationalCuspsX1` is a lower bound by construction and this
+   structure asks only for `φ(N)/2` rational cusps, not for all of them.
+   It does not help — the difficulty is producing cusps, not bounding
+   them.
+2. *The index set* — `Fin (φ(N)/2)` against `(ℤ/N)ˣ/±1`.  Exhausted: the
+   two are interderivable and moving the index around cannot make either
+   side smaller.  `Fin` is taken so that no consumer inherits a
+   `Nat.card ((ZMod N)ˣ ⧸ ±1) = φ(N)/2` obligation.
+3. *The `j`-map dictionary* — characterise a cusp as a pole of an
+   extended `j`-map.  DEAD, by `X0.lean`'s axis-3 argument verbatim: such
+   an extension is definable from `IsCusp` itself, unconditionally, hence
+   carries no information about it and has a model with no rational cusp
+   at all.  Refuted by a `j`-map field that is not a function out of a
+   point set — e.g. a section of the extended map over `∞`.
+4. *An invariant-first cut* — peel the cusp invariant off as one leaf and
+   "each value is attained" as another.  UNSAFE for the reason `X0.lean`
+   records at its axis 4: quantified over an arbitrary invariant the
+   existence half is FALSE by a constant junk witness.
+5. *The RESIDUE-FIELD axis* — TAKEN; it is why this leaf carries the whole
+   obstruction while `exists_rationalCuspsX1` is proven.  Refuted by
+   exhibiting a model of `CuspLocus` over some `IsX1Compactification`
+   whose cusps are not those of `X_1(N)`; `cover` is the field that is
+   supposed to forbid it. -/
+theorem nonempty_cuspLocusX1 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (h : IsX1Compactification N strX strY jY) :
+    Nonempty h.CuspLocus :=
+  sorry
+
+/-- **`X_1(N)` has at least `φ(N)/2` distinct `ℚ`-rational cusps** (PROVEN
+2026-07-27 over `nonempty_cuspLocusX1`; formerly a sorry node).
 
 TRUE and classical (Ogg; Deligne–Rapoport VI.6, or Diamond–Shurman §3.8):
 the cusps of `X_1(N)` over `ℚ̄` are `Γ_1(N)\ℙ¹(ℚ)`, and those lying over
@@ -404,12 +707,46 @@ across the boundary — `X0.lean`'s `IsJMapOn` deliberately does not carry
 that even on the `Γ₀` side.  This note is refuted by exhibiting, in
 `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`, either a
 modular-curve cusp theory or a `Γ_1(N)\ℙ¹(ℚ)` description with its Galois
-action; as of 2026-07-27 `grep` over all three finds neither. -/
+action; as of 2026-07-27 `grep` over all three finds neither.
+
+**UPDATE 2026-07-27 — the RESIDUE-FIELD axis is now TAKEN, and it is
+what makes this a theorem.**  The obstruction recorded above is *Galois
+descent for rational points of a `ℚ`-scheme*, and it is on the route only
+while the cusps are described as a Galois SET.  Described instead as a
+finite `ℚ`-SCHEME with prescribed residue degrees —
+`IsX1Compactification.CuspLocus` below, which is how Deligne–Rapoport
+states it — rationality of a cusp becomes `finrank ℚ (K c) = 1`, and
+`exists_specSection_of_finrank_eq_one` (`X0.lean`, PROVEN) extracts the
+`ℚ`-point by pure algebra.  This is the same cut `X0.lean` made on
+2026-07-27 at `nonempty_cuspLocus`, and the derivation below is the `Γ₁`
+mirror of `nonempty_cuspIndexing_of_cuspLocus`.  A successor should NOT
+go and build descent for this leaf. -/
 theorem exists_rationalCuspsX1 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (h : IsX1Compactification N strX strY jY) :
     ∃ cusp : Fin (numRationalCuspsX1 N) → RelPoint strX (𝟙 SpecQ),
-      Function.Injective cusp ∧ ∀ i, h.IsCusp (cusp i) :=
-  sorry
+      Function.Injective cusp ∧ ∀ i, h.IsCusp (cusp i) := by
+  classical
+  obtain ⟨C⟩ := nonempty_cuspLocusX1 N h
+  choose σ hσ using fun i : Fin (numRationalCuspsX1 N) =>
+    exists_specSection_of_finrank_eq_one (C.infty_degree i)
+  refine ⟨fun i => ⟨σ i ≫ C.κ (C.infty i), ?_⟩, ?_, ?_⟩
+  · rw [Category.assoc, C.comm (C.infty i), hσ i]
+  · intro i j hij
+    by_contra hne
+    obtain ⟨P⟩ : Nonempty (PrimeSpectrum ℚ) := inferInstance
+    have heq : σ i ≫ C.κ (C.infty i) = σ j ≫ C.κ (C.infty j) := congrArg Subtype.val hij
+    have hp := congrArg (fun (f : SpecQ ⟶ X) => f.base P) heq
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at hp
+    exact Set.disjoint_left.mp (C.disj _ _ fun hh => hne (C.infty_inj hh)) ⟨_, rfl⟩ ⟨_, hp.symm⟩
+  · rintro i ⟨y, hy⟩
+    obtain ⟨P⟩ : Nonempty (PrimeSpectrum ℚ) := inferInstance
+    have heq : y.1 ≫ jY = σ i ≫ C.κ (C.infty i) := congrArg Subtype.val hy
+    have hp := congrArg (fun (f : SpecQ ⟶ X) => f.base P) heq
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at hp
+    have hout : ((C.κ (C.infty i)).base ((σ i).base P)) ∈ (Set.range jY.base)ᶜ := by
+      rw [← C.cover]
+      exact Set.mem_iUnion.mpr ⟨C.infty i, ⟨_, rfl⟩⟩
+    exact hout ⟨y.1.base P, hp⟩
 
 /-- **The witness table `(N, ℓ, #X_1(N)(𝔽_ℓ))`**, with the single row this
 development needs.
@@ -424,8 +761,190 @@ Kept as a table rather than inlined, mirroring `x0WitnessTable`, so that
 a successor adding a level adds a row rather than a theorem. -/
 def x1WitnessTable : List (ℕ × ℕ × ℕ) := [(25, 3, 10)]
 
+/-- **Every row of `x1WitnessTable` has `4 ≤ N`, `ℓ` prime, `ℓ ∤ N` and
+`2ℓ + 1 < N`** (PROVEN, by `decide` over the single row).
+
+The side conditions that `exists_x1Compactification_mod_prime` needs in
+order to hand its leaves a good prime.  `2 * ℓ + 1 < N` is the crude
+Weierstrass bound `#E(𝔽_ℓ) ≤ 2ℓ + 1` beaten by `N`, which is exactly what
+`isEmpty_gamma1Datum_finiteField` consumes; at the one row it reads
+`7 < 25`.  Note `ℓ ≠ 2` is NOT among them and is not needed — the point
+COUNT on the special fibre is a statement about good reduction only, and
+oddness enters one step later, in
+`exists_injective_reduction_of_rankZeroJacobian`, where the formal group
+of the Jacobian has to be torsion-free.
+
+Verified independently with `gp` (2026-07-27): `3` is prime, `3 ∤ 25`. -/
+theorem x1WitnessTable_spec {N ℓ m : ℕ} (h : (N, ℓ, m) ∈ x1WitnessTable) :
+    4 ≤ N ∧ ℓ.Prime ∧ ¬ ℓ ∣ N ∧ 2 * ℓ + 1 < N := by
+  fin_cases h
+  exact ⟨by decide, by decide, by decide, by decide⟩
+
+/-- **A curve proper over `𝔽_ℓ` has finitely many rational points**
+(PROVEN 2026-07-27, by a one-line appeal to `X0.lean`'s
+`finite_relPoint_of_isProper`).
+
+The one piece of this cluster that is not about modular curves at all:
+`strX` is proper, hence of finite type, over `Spec 𝔽_ℓ`, and a
+finite-type scheme over a FINITE ring has finitely many sections, because
+a section is determined by the images of finitely many generators in a
+finite ring.  The only field of `IsX1Compactification` consumed is
+`isProper`.
+
+`finite_relPoint_of_isProper` is stated in `X0.lean` over an arbitrary
+finite base ring and contains nothing `Γ₀`-specific, so this is a
+statement in that file's own vocabulary rather than a duplicate of
+`finite_relPoint_of_x0Compactification_finiteField`; nothing in `X0.lean`
+is edited.
+
+`hℓ` is `ℓ ≠ 0` rather than `ℓ.Prime` deliberately — that is the honest
+minimal hypothesis, since all that is used is that `ZMod ℓ` is finite,
+and `ZMod 0 = ℤ` is the only excluded case. -/
+theorem finite_relPoint_of_x1Compactification_finiteField (N ℓ : ℕ) (hℓ : ℓ ≠ 0)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    Finite (RelPoint strX (𝟙 (SpecF ℓ))) := by
+  haveI : NeZero ℓ := ⟨hℓ⟩
+  haveI := h.isProper
+  exact finite_relPoint_of_isProper (R := ZMod ℓ) strX
+
+/-- **An `𝔽_ℓ`-point of the coarse space `Y_1(N)_{𝔽_ℓ}` comes from an
+actual `Γ₁(N)`-datum over `𝔽_ℓ`, for `N ≥ 4`** (sorry leaf — the
+fineness/Lang half of the `𝔽_ℓ` point count).
+
+TRUE.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid, so over a base
+where `N` is invertible the coarse space is in fact FINE and its points
+ARE the data; over a finite field one may alternatively invoke Lang's
+theorem, `H¹(𝔽_ℓ, G) = 1` for connected `G`, to descend a
+`ℚ̄`-datum.  Either way the conclusion holds for every `Y` satisfying
+`IsCoarseModuliY1`, because initiality pins `(Y, classify)` up to unique
+isomorphism and representability transports along it.
+
+**Why this is a leaf and not a consequence of `IsCoarseModuliY1`.**  That
+structure records `classify` in ONE direction (a datum gives a point)
+plus initiality; it deliberately does NOT record bijectivity on points —
+see its docstring, which says so explicitly and says why.  So
+surjectivity of `classify` on `𝔽_ℓ`-points is genuinely extra input.  It
+is exactly the step the `(25, 3, 10)` docstring called "immediate", and
+isolating it is what lets the arithmetic half below be attacked on its
+own.
+
+`hN : 4 ≤ N` is load-bearing: at `N ≤ 3` the pair `(E, P)` has extra
+automorphisms, the coarse space is not fine, and a rational point of the
+coarse space need not lift to a datum over the same base — that is the
+whole content of the coarse/fine distinction. -/
+theorem exists_gamma1Datum_of_relPoint (N ℓ : ℕ) (_hN : 4 ≤ N) {Y : Scheme.{0}}
+    {strY : Y ⟶ SpecF ℓ} (_hc : IsCoarseModuliY1 N strY)
+    (_y : RelPoint strY (𝟙 (SpecF ℓ))) :
+    Nonempty (Gamma1Datum N (SpecF ℓ)) :=
+  sorry
+
+/-- **There is no `Γ₁(N)`-datum over `𝔽_ℓ` once `N` exceeds the crude
+point bound `2ℓ + 1`** (sorry leaf — the elementary arithmetic half of
+the `𝔽_ℓ` point count, and the one that needs NO modular curves).
+
+TRUE, and this is the finding that reshapes the level-`25` budget: a
+`Γ₁(N)`-datum over `𝔽_ℓ` is an elliptic curve `E/𝔽_ℓ` together with an
+`𝔽_ℓ`-RATIONAL point of exact order `N`, so `N ∣ #E(𝔽_ℓ)` and in
+particular `N ≤ #E(𝔽_ℓ)`.  Hasse gives `#E(𝔽_ℓ) ≤ ℓ + 1 + 2√ℓ`, but the
+crude Weierstrass count already suffices and is what is stated: at most
+two `y` for each of the `ℓ` values of `x`, plus the point at infinity, so
+`#E(𝔽_ℓ) ≤ 2ℓ + 1`.  At `(N, ℓ) = (25, 3)` that is `25 > 7`.  **So no
+Hasse, no Eichler–Shimura, no Hecke operators.**  Corroborated
+numerically: `G₂₅ mod 3` vanishes on `𝔽_3 × 𝔽_3` only at `(0, 0)`, which
+has `b = 0`.
+
+WHAT REMAINS is not the arithmetic but the passage from the scheme-level
+datum to a Weierstrass model: `Gamma1Datum N (SpecF ℓ)` presents `E` as
+an abelian scheme of relative dimension one over `Spec 𝔽_ℓ` with a
+section, and a bound on its `𝔽_ℓ`-points needs that presented as a plane
+cubic.  That is the `Γ₁`-side use of the converse of
+`exists_ellipticScheme_of_weierstrass` (`X0.lean`), which goes the other
+way; the direction needed here does not exist in this tree.
+
+Note the statement is about `Gamma1Datum` alone — no compactification, no
+coarse space, no cusp.  That is deliberate: it is the half a successor
+can attack with elliptic-curve theory and nothing else. -/
+theorem isEmpty_gamma1Datum_finiteField (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hN : 2 * ℓ + 1 < N) :
+    IsEmpty (Gamma1Datum N (SpecF ℓ)) :=
+  sorry
+
+/-- **`Y_1(N)` has no `𝔽_ℓ`-point once `2ℓ + 1 < N`** (PROVEN 2026-07-27,
+by joining the two halves above).
+
+`X_1(N)` has no non-cuspidal `𝔽_ℓ`-point: a rational point of the coarse
+space gives a datum (`exists_gamma1Datum_of_relPoint`), and there is no
+datum (`isEmpty_gamma1Datum_finiteField`).  The join is trivial because
+the two halves were stated to meet at `Gamma1Datum N (SpecF ℓ)`. -/
+theorem isEmpty_relPoint_y1_finiteField (N ℓ : ℕ) (hN4 : 4 ≤ N) (hℓ : ℓ.Prime)
+    (hN : 2 * ℓ + 1 < N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    IsEmpty (RelPoint strY (𝟙 (SpecF ℓ))) :=
+  ⟨fun y => (isEmpty_gamma1Datum_finiteField N ℓ hℓ hN).elim
+    (exists_gamma1Datum_of_relPoint N ℓ hN4 h.coarse y).some⟩
+
+/-- **The cusps of `X_1(N)` over `𝔽_ℓ` number exactly `m`, at the witness
+rows** (sorry leaf — the ONE genuinely modular half of the `(25, 3, 10)`
+row).
+
+TRUE.  At `(25, 3, 10)`: `ord_25(3) = 20`, so `𝔽_3(ζ₂₅) = 𝔽_{3^20}`; the
+`10` cusps of the rational orbit stay rational on the special fibre,
+while the `10` cusps defined over `ℚ(ζ₂₅)⁺` (degree `10`) reduce into
+`𝔽_{3^10}` and the remaining `8` into `𝔽_{3^4}`, so none of the other
+`18` is `𝔽_3`-rational.
+
+**Note this half needs the count EXACTLY**, unlike `exists_rationalCuspsX1`
+over `ℚ` where a lower bound suffices — the level-`25` argument compares
+`#X_1(25)(𝔽_3)` against the `10` rational cusps of `X_1(25)/ℚ` and needs
+them to be the SAME number.  So the hard direction of Ogg's description
+IS an obligation here, and only here.
+
+Quantified over every compactification rather than over a chosen one:
+`IsX1Compactification` pins `(X, Y, jY)` up to isomorphism and the cusp
+subtype is an isomorphism invariant, so the count does not depend on
+which model is supplied; non-vacuity is supplied by
+`exists_x1Compactification_finiteField`.
+
+**Where the level-`25` weight really sits.**  This leaf and
+`nonempty_cuspLocusX1` are both Deligne–Rapoport cusp theory, at the two
+bases; neither is Eichler–Shimura.  `X_1(25)` has genus `12`, so the
+Eichler–Shimura count `ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_1(25)))` looks forbidding,
+but the answer `10` is exactly `φ(25)/2 = numRationalCuspsX1 25`, so no
+Hecke operator is needed anywhere on this route.  Contrast
+`X0.lean`'s `card_relPoint_x0_finiteField`, whose counts genuinely ARE
+Eichler–Shimura and which is blocked on a module cycle through
+`Modularity/Interface.lean`; this leaf inherits none of that. -/
+theorem card_cusp_x1_finiteField (N ℓ m : ℕ) (_htable : (N, ℓ, m) ∈ x1WitnessTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    Nat.card {x : RelPoint strX (𝟙 (SpecF ℓ)) // h.IsCusp x} = m :=
+  sorry
+
+/-- **`#X_1(N)(𝔽_ℓ) = m` at the witness rows** (PROVEN 2026-07-27, by
+decomposition).
+
+The assembly of the two halves the `(25, 3, 10)` docstring names.  It is
+short for a reason worth recording: once `Y_1(N)(𝔽_ℓ)` is EMPTY, the
+predicate `h.IsCusp` — which is `¬ ∃ y : RelPoint strY (𝟙 _), …` — holds
+of EVERY rational point of `X`, so the cusp subtype is all of
+`RelPoint strX (𝟙 (SpecF ℓ))` and the split `X(𝔽_ℓ) = Y(𝔽_ℓ) ⊔ cusps`
+needs no scheme theory at all.  That is why `Equiv.subtypeUnivEquiv`
+suffices where the `Γ₀` side would need `IsOpenImmersion.lift`. -/
+theorem card_relPoint_x1_finiteField (N ℓ m : ℕ) (htable : (N, ℓ, m) ∈ x1WitnessTable)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {jY : Y ⟶ X}
+    (h : IsX1Compactification N strX strY jY) :
+    Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m := by
+  obtain ⟨hN4, hℓ, -, hNℓ⟩ := x1WitnessTable_spec htable
+  have hempty : IsEmpty (RelPoint strY (𝟙 (SpecF ℓ))) :=
+    isEmpty_relPoint_y1_finiteField N ℓ hN4 hℓ hNℓ h
+  have hall : ∀ x : RelPoint strX (𝟙 (SpecF ℓ)), h.IsCusp x := fun _ hx =>
+    hempty.elim hx.choose
+  rw [← Nat.card_congr (Equiv.subtypeUnivEquiv hall)]
+  exact card_cusp_x1_finiteField N ℓ m htable h
+
 /-- **The reduction `X_1(N)_{𝔽_ℓ}` and its point count, at the witness
-primes** (sorry node).
+primes** (PROVEN 2026-07-27, by decomposition; formerly a sorry node).
 
 TRUE: for `ℓ ∤ N` the modular curve has good reduction at `ℓ` and its
 special fibre is the coarse space of the same `Γ₁(N)`-problem over
@@ -456,20 +975,58 @@ over `∞`, so the whole content is:
    rational and the `0`-cusps (over `ℚ(ζ₂₅)⁺`, degree `10`) reduce into
    `𝔽_{3^10}` and are not rational.
 
-The two halves are not stated separately because half 1 alone is not
-consumed by anything — stating it would be free-floating — and because
-the join needs `X'(𝔽_3) = Y'(𝔽_3) ⊔ cusps`, which is a fact about this
-structure rather than about either half.
+**CORRECTION 2026-07-27 to the paragraph this docstring used to end
+with**, which said the two halves "are not stated separately because half
+1 alone is not consumed by anything … and because the join needs
+`X'(𝔽_3) = Y'(𝔽_3) ⊔ cusps`, which is a fact about this structure rather
+than about either half".  Both reasons are wrong, and the halves are now
+stated separately and consumed:
 
-IRREDUCIBLE at this pin only through half 2: neither the integral model
-of `X_1(N)` nor its reduction exists here. -/
+* half 1 IS consumed — by `card_relPoint_x1_finiteField`, through
+  `isEmpty_relPoint_y1_finiteField`, so it is not free-floating;
+* the join needs no `⊔` at all.  `IsCusp` is a NEGATIVE condition, so
+  once `Y'(𝔽_3)` is empty every point of `X'` is a cusp and the
+  disjoint-union bookkeeping collapses to `Equiv.subtypeUnivEquiv`.
+
+**The three sentences of the paragraph above are three different
+theories, and they are now four leaves rather than one**, of which only
+one still carries modular content:
+
+* `exists_x1Compactification_finiteField` — the `Γ₁(N)`-problem has a
+  smooth compactification over `𝔽_ℓ` (Deligne–Rapoport).  PROVEN as a
+  corollary of `exists_x1Compactification_field`, so this half is now
+  SHARED with the `ℚ` case and both rest on the single leaf
+  `exists_isCoarseModuliY1_isSmoothCurve`;
+* `finite_relPoint_of_x1Compactification_finiteField` — a proper scheme
+  over a finite field has finitely many rational points.  PROVEN, over
+  `X0.lean`'s `finite_relPoint_of_isProper`, with no modular content
+  whatsoever;
+* `exists_gamma1Datum_of_relPoint` (fineness/Lang) and
+  `isEmpty_gamma1Datum_finiteField` (the crude bound `#E(𝔽_ℓ) ≤ 2ℓ + 1`)
+  — half 1, now two OPEN leaves, neither of which mentions a modular
+  curve;
+* `card_cusp_x1_finiteField` — half 2, the cusp count on the special
+  fibre.  STILL OPEN, and the only one of the four that is
+  Deligne–Rapoport.
+
+Note that no integral model appears in any of them: the special fibre is
+obtained as the coarse space of the problem over `𝔽_ℓ` directly, so the
+reduction map — which is what would need the model — is never formed.
+The previous verdict "IRREDUCIBLE at this pin only through half 2:
+neither the integral model of `X_1(N)` nor its reduction exists here" was
+therefore wrong twice over: no model is needed, and the leaf splits. -/
 theorem exists_x1Compactification_mod_prime (N ℓ m : ℕ)
     (h : (N, ℓ, m) ∈ x1WitnessTable) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (jY : Y ⟶ X),
       Nonempty (IsX1Compactification N strX strY jY) ∧
         Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
-        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
-  sorry
+        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m := by
+  obtain ⟨hN, hℓ, hℓN, -⟩ := x1WitnessTable_spec h
+  obtain ⟨X, Y, strX, strY, jY, ⟨hX⟩⟩ :=
+    exists_x1Compactification_finiteField N ℓ hN hℓ hℓN
+  exact ⟨X, Y, strX, strY, jY, ⟨hX⟩,
+    finite_relPoint_of_x1Compactification_finiteField N ℓ hℓ.ne_zero hX,
+    card_relPoint_x1_finiteField N ℓ m h hX⟩
 
 /-- **The rank-`0` reduction INJECTION, `X_1(N)(ℚ) ↪ X_1(N)(𝔽_ℓ)`** (sorry
 node — this is the criterion).
