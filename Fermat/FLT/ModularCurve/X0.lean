@@ -14768,37 +14768,47 @@ theorem jt_eq_of_isBaseChangeOf (ja : IsJSectionOnAffine) (R : Type) [CommRing R
   rw [ja.jt_natural (𝟙 (Spec (CommRingCat.of R))) (Category.id_comp g') (h₁'.cancel h₂)]
   exact Subtype.ext (Category.id_comp _)
 
-/-- **THE ZARISKI GLUING** (sorry node — all that is left of
-`exists_jTransformation_of_affine`).
+/-- **THE ZARISKI GLUING** (**PROVEN 2026-07-27**; formerly the last sorry
+node of `exists_jTransformation_of_affine`).
 
 TRUE, and it is descent and nothing else: no elliptic curve, no
 `Γ₀(N)`-structure beyond the ability to restrict one, and — since
 2026-07-27 — no `IsBaseChangeOf` bookkeeping either, all of which is
 discharged above.
 
-THE ARGUMENT.  Take the affine cover `𝒰 := T.affineOpenCover`.  For each
-`i`, `hbc (𝒰.f i) d` gives `dᵢ` on `Spec (𝒰.X i)`, and
-`ja.jt (𝒰.f i ≫ g) dᵢ` is a morphism `uᵢ : Spec (𝒰.X i) ⟶ 𝔸¹_ℚ`.  These
-are compatible: on the overlap `V := Spec (𝒰.X i) ×_T Spec (𝒰.X j)` —
-which is NOT affine, so `ja` does not apply to it directly — compatibility
-is checked by `hom_ext_of_affine` on `V`, i.e. against every affine
-`m : Spec A ⟶ V`.  There `m ≫ p₁` and `m ≫ p₂` are morphisms of AFFINE
-schemes, so `ja.jt_natural` applies to each, and what remains is that the
-two restrictions of `d` to `Spec A` — one through `i`, one through `j`,
-along the SAME composite by `pullback.condition` — have the same
-`ja.jt`.  That is exactly `hwd`.  Then
-`Scheme.Cover.glueMorphisms` produces `u`, and `Scheme.Cover.ι_glueMorphisms`
-gives its restrictions.
+THE ARGUMENT, as written.  Take the canonical affine cover
+`𝒰 := T.affineCover`.  For each `i`, `hbc (𝒰.f i) d` gives `dᵢ` on
+`𝒰.X i = Spec Rᵢ`, and `uᵢ := (ja.jt (𝒰.f i ≫ g) dᵢ).1` is a morphism
+`𝒰.X i ⟶ 𝔸¹_ℚ`.
 
-Finally `IsLocallyJ ja d u`: for an affine `k : Spec R ⟶ T` and any `d'`
-over it, apply `hom_ext_of_affine` to `Spec R` again and use the pullback
-cover of `Spec R` by the `𝒰.f i`, refined to affines.
+Everything then rests on ONE comparison, isolated as the `key` step of the
+proof and used twice:
 
-WHAT IS STILL MISSING, precisely: only the two `hom_ext_of_affine`
-bookkeeping arguments above and the two `glueMorphisms` calls.  The
-mathlib API is `Scheme.Cover.glueMorphisms`, `Scheme.Cover.ι_glueMorphisms`
-and `Scheme.Cover.hom_ext` (`Mathlib/AlgebraicGeometry/Gluing.lean`),
-together with `Scheme.affineOpenCover` and `Scheme.Cover.pullbackCover`.
+> for affine `Spec A`, affine `k₁ : Spec Z₁ ⟶ T` and `k₂ : Spec Z₂ ⟶ T`
+> carrying restrictions `d₁`, `d₂` of `d`, and any
+> `a : Spec A ⟶ Spec Z₁`, `b : Spec A ⟶ Spec Z₂` with `a ≫ k₁ = b ≫ k₂`,
+> one has `a ≫ (ja.jt (k₁ ≫ g) d₁).1 = b ≫ (ja.jt (k₂ ≫ g) d₂).1`.
+
+Its proof is `hbc` twice to restrict `d₁` and `d₂` to `Spec A`,
+`IsBaseChangeOf.comp` to see both results as restrictions of `d` along the
+SAME morphism `a ≫ k₁ = b ≫ k₂`, `hwd` to identify their `ja.jt`, and
+`ja.jt_natural` at `a` and at `b` to read that identification back as the
+displayed equation.  Note the base point is threaded through `jt_natural`'s
+`hg` argument rather than rewritten afterwards — `RelPoint jLineStr g₀`
+depends on `g₀`, so a `rw` there would need a motive.
+
+* OVERLAPS.  On `V := 𝒰.X i ×_T 𝒰.X j` — which is NOT affine, so `ja` does
+  not apply to it directly — compatibility is `hom_ext_of_affine` on `V`:
+  against every affine `m : Spec A ⟶ V`, `key` applies with
+  `a = m ≫ p₁`, `b = m ≫ p₂` and `pullback.condition`.
+  `Scheme.Cover.glueMorphisms` then produces `u`, and `u ≫ jLineStr = g`
+  is `Scheme.Cover.hom_ext` against `ι_glueMorphisms` and each `(uᵢ).2`.
+* LOCAL-GIVENNESS.  For an affine `k : Spec R ⟶ T` and any restriction
+  `d'` of `d` along it, cover `Spec R` by `𝒰.pullback₁ k` — whose pieces
+  are again not affine — and on each piece run `hom_ext_of_affine` once
+  more; `key` applies with `a = m ≫ pullback.snd`, `b = m ≫ pullback.fst`.
+  No affine REFINEMENT of the pullback cover is needed, which is what
+  keeps the proof short: the second `hom_ext_of_affine` does that work.
 
 WHY `hwd` IS A HYPOTHESIS RATHER THAN A CALL: it is PROVEN, as
 `jt_eq_of_isBaseChangeOf`, and threaded in exactly as `hbc` is, so that the
@@ -14815,8 +14825,69 @@ theorem exists_isLocallyJ (ja : IsJSectionOnAffine)
       {d₁ d₂ : Gamma0Datum 1 (Spec (CommRingCat.of R))} {d₀ : Gamma0Datum 1 T₀},
       IsBaseChangeOf k d₁ d₀ → IsBaseChangeOf k d₂ d₀ → ja.jt g₀ d₁ = ja.jt g₀ d₂)
     {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum 1 T) :
-    ∃ u : RelPoint jLineStr g, IsLocallyJ ja d u :=
-  sorry
+    ∃ u : RelPoint jLineStr g, IsLocallyJ ja d u := by
+  classical
+  -- THE KEY COMPARISON, used for both the overlaps and the local-givenness.
+  have key : ∀ (A : Type) [CommRing A] {Z₁ Z₂ : Type} [CommRing Z₁] [CommRing Z₂]
+      {k₁ : Spec (CommRingCat.of Z₁) ⟶ T} {k₂ : Spec (CommRingCat.of Z₂) ⟶ T}
+      {d₁ : Gamma0Datum 1 (Spec (CommRingCat.of Z₁))}
+      {d₂ : Gamma0Datum 1 (Spec (CommRingCat.of Z₂))},
+      IsBaseChangeOf k₁ d₁ d → IsBaseChangeOf k₂ d₂ d →
+      ∀ (a : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of Z₁))
+        (b : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of Z₂)),
+        a ≫ k₁ = b ≫ k₂ →
+        a ≫ (ja.jt (k₁ ≫ g) d₁).1 = b ≫ (ja.jt (k₂ ≫ g) d₂).1 := by
+    intro A _ Z₁ Z₂ _ _ k₁ k₂ d₁ d₂ hb₁ hb₂ a b hab
+    obtain ⟨e₁, ⟨he₁⟩⟩ := hbc a d₁
+    obtain ⟨e₂, ⟨he₂⟩⟩ := hbc b d₂
+    have hg₀ : b ≫ (k₂ ≫ g) = a ≫ (k₁ ≫ g) := by
+      rw [← Category.assoc, ← Category.assoc, hab]
+    have hc₁ : IsBaseChangeOf (a ≫ k₁) e₁ d := he₁.comp hb₁
+    have hc₂ : IsBaseChangeOf (a ≫ k₁) e₂ d := by
+      rw [hab]; exact he₂.comp hb₂
+    have n₁ := ja.jt_natural a (rfl : a ≫ (k₁ ≫ g) = a ≫ (k₁ ≫ g)) he₁
+    have n₂ := ja.jt_natural b hg₀ he₂
+    exact congrArg Subtype.val
+      (n₁.symm.trans ((hwd A (g₀ := a ≫ (k₁ ≫ g)) hc₁ hc₂).trans n₂))
+  -- restrict `d` to each affine of the canonical cover
+  choose dd hdd using fun (i : T.affineCover.I₀) => hbc (T.affineCover.f i) d
+  have bc : ∀ i, IsBaseChangeOf (T.affineCover.f i) (dd i) d := fun i => (hdd i).some
+  -- the local `j`-values, as morphisms into the `j`-line
+  set uu : ∀ i, T.affineCover.X i ⟶ jLine :=
+    fun i => (ja.jt (T.affineCover.f i ≫ g) (dd i)).1
+  -- they agree on overlaps
+  have hcompat : ∀ i j,
+      Limits.pullback.fst (T.affineCover.f i) (T.affineCover.f j) ≫ uu i =
+      Limits.pullback.snd (T.affineCover.f i) (T.affineCover.f j) ≫ uu j := by
+    intro i j
+    refine hom_ext_of_affine _ _ fun A _ m => ?_
+    have hab : (m ≫ Limits.pullback.fst (T.affineCover.f i) (T.affineCover.f j)) ≫
+          T.affineCover.f i
+        = (m ≫ Limits.pullback.snd (T.affineCover.f i) (T.affineCover.f j)) ≫
+          T.affineCover.f j := by
+      simp only [Category.assoc, Limits.pullback.condition]
+    rw [← Category.assoc, ← Category.assoc]
+    exact key A (bc i) (bc j) _ _ hab
+  refine ⟨⟨T.affineCover.glueMorphisms uu hcompat, ?_⟩, ?_⟩
+  · refine T.affineCover.hom_ext _ _ fun i => ?_
+    rw [← Category.assoc, T.affineCover.ι_glueMorphisms]
+    exact (ja.jt (T.affineCover.f i ≫ g) (dd i)).2
+  · intro R _ k g' hg d' hd'
+    subst hg
+    refine Subtype.ext ?_
+    show k ≫ T.affineCover.glueMorphisms uu hcompat = (ja.jt (k ≫ g) d').1
+    refine Scheme.Cover.hom_ext (T.affineCover.pullback₁ k) _ _ fun i => ?_
+    have hcond : Limits.pullback.snd k (T.affineCover.f i) ≫ T.affineCover.f i
+        = Limits.pullback.fst k (T.affineCover.f i) ≫ k := Limits.pullback.condition.symm
+    show Limits.pullback.fst k (T.affineCover.f i) ≫ k ≫ _
+        = Limits.pullback.fst k (T.affineCover.f i) ≫ _
+    rw [← Category.assoc, ← hcond, Category.assoc, T.affineCover.ι_glueMorphisms]
+    refine hom_ext_of_affine _ _ fun A _ m => ?_
+    have hab : (m ≫ Limits.pullback.snd k (T.affineCover.f i)) ≫ T.affineCover.f i
+        = (m ≫ Limits.pullback.fst k (T.affineCover.f i)) ≫ k := by
+      simp only [Category.assoc, hcond]
+    rw [← Category.assoc, ← Category.assoc]
+    exact key A (bc i) hd' _ _ hab
 
 /-- **Zariski descent for the `j`-invariant: an affine `j`-theory extends
 to all bases** (PROVEN 2026-07-27 over `exists_isLocallyJ`; formerly a
@@ -14928,9 +14999,14 @@ by composing base changes (`IsBaseChangeOf.comp`, proven earlier in this file).
 
 **Five leaves, and each is smaller than the node it replaces.**
 
-* `exists_weierstrassModel_localization` — step (i).  This is where the
-  IRREDUCIBLE verdict of the affine leaf still applies, verbatim, and it
-  is reproduced there: no machinery attaching `ω`, `c₄`, `Δ` to an
+* `exists_weierstrassModel_localization` — step (i).  **PROVEN 2026-07-27**,
+  over the single residual leaf `exists_weierstrassModel_away_of_prime`
+  (the same statement at ONE prime, with no covering condition): the
+  passage from "a model exists off every prime" to "finitely many basic
+  opens with `Ideal.span = ⊤`" is quasi-compactness and nothing else.  It
+  is `exists_weierstrassModel_away_of_prime` that now carries the
+  IRREDUCIBLE verdict of the affine leaf, verbatim, and it is reproduced
+  there: no machinery attaching `ω`, `c₄`, `Δ` to an
   `AbelianSchemeStruct` exists in mathlib, in `~/cs/FLT` or here.
 * `weierstrassModel_j_unique` — step (ii): two Weierstrass models of one
   elliptic scheme have the same `j`.
@@ -15066,18 +15142,53 @@ def IsJValueOnAffine {R : Type} [CommRing R] {g : Spec (CommRingCat.of R) ⟶ Sp
       ∀ (W : WeierstrassCurve S) [W.IsElliptic], IsWeierstrassModel d'.ab W →
         jLineCoord (RelPoint.pre h hg x) = W.j)
 
-/-- **An elliptic scheme over an affine base is a Weierstrass model after
-inverting finitely many elements of the base ring** (sorry leaf, step (i)
-of the cut of `exists_jSectionOnAffine`).
+/-! #### The cut of `exists_weierstrassModel_localization`: one prime at a time
+
+The leaf below used to weld two obligations together, and only one of them
+is the geometry the irreducibility verdict is about:
+
+* **at a single prime**: a Weierstrass model exists over `R[1/a]` for SOME
+  `a ∉ p`.  This is the Hodge-bundle/Riemann–Roch content, and it is where
+  the verdict applies;
+* **globally**: finitely many such `a` already generate the unit ideal.
+  This is quasi-compactness of `Spec R` and nothing else — no elliptic
+  curve, no differentials — and it is now PROVEN.
+
+The second is a real part of the statement, not decoration: the `Fin n`
+and the `Ideal.span (Set.range a) = ⊤` are exactly what a consumer needs
+in order to glue, and they are precisely what
+`exists_jValueOnAffine_of_localModels` consumes through
+`Localization.existsUnique_algebraMap_eq_of_span_eq_top`.  Discharging it
+here means the surviving leaf is stated at one prime, with no covering
+condition at all.
+
+**Why the cut cannot go any further without inventing an object.**  The
+natural next split of the per-prime leaf is "(i) the Hodge bundle `ω` is
+invertible, hence free near `p`" plus "(ii) a trivialisation of `ω` gives
+a Weierstrass model".  Both halves mention `ω`, which does not exist in
+this development — and stating it as a bare "some invertible `R`-module"
+would make (ii) FALSE, since `ω = R` satisfies such a predicate over every
+`R` while a model need not exist over `R` itself.  A safe version of that
+split therefore needs `Ω¹` of a morphism of schemes and its pushforward,
+i.e. the theory the verdict below says is missing; it is not a
+restatement one can make cheaply.  (`Module.Free.away_of_finite_of_flat_of_rankAtStalk_constant`,
+`Mathlib/RingTheory/Flat/LocallyFree.lean`, is the pin-available form of
+"invertible ⟹ free after inverting one element off `p`", and is what such
+a split would consume; it is recorded here so the next owner does not
+have to find it again.) -/
+
+/-- **An elliptic scheme over an affine base acquires a Weierstrass model
+after inverting ONE element off a given prime** (sorry leaf, step (i) of
+the cut of `exists_jSectionOnAffine`, restated at a single prime by the
+cut of 2026-07-27).
 
 TRUE and classical: Deligne–Rapoport II, Katz–Mazur 2.2, or Deligne's
 *Courbes elliptiques: formulaire*.  The Hodge bundle
-`ω = f_* Ω¹_{E/Spec R}` is invertible, hence trivial on a basic-open
-cover `D(aᵢ)` of `Spec R`; a trivialisation of `ω` over `D(aᵢ)` gives the
-Weierstrass coordinates `x, y` by Riemann–Roch on the fibres, and
-`Spec R[1/aᵢ][W]` is then the complement of the zero section.  `Spec R`
-is quasi-compact, so finitely many `aᵢ` suffice, and they generate the
-unit ideal exactly because the `D(aᵢ)` cover.
+`ω = f_* Ω¹_{E/Spec R}` is invertible, so `ω_p` is free over the local
+ring `R_p`, hence `ω` is already free over `R[1/a]` for some `a ∉ p`; a
+trivialisation of `ω` over `D(a)` gives the Weierstrass coordinates `x, y`
+by Riemann–Roch on the fibres, and `Spec R[1/a][W]` is then the complement
+of the zero section.
 
 **THE IRREDUCIBILITY VERDICT OF `exists_jSection` APPLIES HERE, AND ONLY
 HERE.**  It is reproduced verbatim because this is the leaf it still
@@ -15096,12 +15207,46 @@ does NOT cover the split between the `j`-theory and the existence of
 models over `ℚ` (that was `exists_weierstrassModel_gamma0Datum`, PROVEN),
 nor the split between affine and general bases (that was
 `exists_jTransformation_of_affine`), nor the split between local models
-and their gluing, which is the cut this leaf is the residue of.
+and their gluing (that was `exists_isLocallyJ`, PROVEN), nor the split
+between one prime and a finite cover, which is the cut this leaf is the
+residue of.
 
 THE CHECK THAT WOULD REFUTE "OPEN": any construction in this project of a
 relative differential, a Hodge bundle, or a Weierstrass presentation of
 an `AbelianSchemeStruct` — equivalently a `grep` for `ω`, `c₄` or `Δ`
 attached to a relative curve rather than to a `WeierstrassCurve`.
+
+NOT VACUOUS.  `a ∉ p` forbids the degenerate witness `a = 0` (over which
+`Localization.Away 0` is the zero ring and everything holds), so the
+conclusion really is about a nonempty basic open through `p`.  And
+`IsWeierstrassModel` is not junk-satisfiable — it demands an open
+immersion whose range is exactly the complement of the zero section. -/
+theorem exists_weierstrassModel_away_of_prime {R : Type} [CommRing R]
+    (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (p : Ideal R) [p.IsPrime] :
+    ∃ a : R, a ∉ p ∧
+      ∃ (d' : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away a))))
+        (W : WeierstrassCurve (Localization.Away a)) (_ : W.IsElliptic),
+        Nonempty (IsBaseChangeOf
+          (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away a)))) d' d) ∧
+        IsWeierstrassModel d'.ab W :=
+  sorry
+
+/-- **An elliptic scheme over an affine base is a Weierstrass model after
+inverting finitely many elements of the base ring** (**PROVEN 2026-07-27**
+over `exists_weierstrassModel_away_of_prime`; formerly a sorry leaf, step
+(i) of the cut of `exists_jSectionOnAffine`).
+
+THE ARGUMENT, and it is quasi-compactness and nothing else.  Let `S ⊆ R`
+be the set of `a` over whose basic open the datum acquires a model.  The
+per-prime leaf says `S` meets the complement of every maximal ideal, so
+`Ideal.span S` lies in no maximal ideal and is therefore `⊤`; then
+`1 ∈ Ideal.span S`, and `Submodule.mem_span_set'` writes `1` as a finite
+`R`-linear combination `∑ fᵢ • aᵢ` of elements OF `S` indexed by `Fin n`
+— which is exactly the `a : Fin n → R` the statement asks for, with
+`Ideal.span (Set.range a) = ⊤` read back off that combination.
+
+Note the extraction produces the `Fin n` indexing directly, so no
+`Finset`-to-`Fin` transport is needed anywhere.
 
 NOT VACUOUS.  The conclusion is an existential over covers, but it is not
 satisfiable by a degenerate cover: `Ideal.span (Set.range a) = ⊤` forces
@@ -15117,8 +15262,30 @@ theorem exists_weierstrassModel_localization {R : Type} [CommRing R]
           (W : WeierstrassCurve (Localization.Away (a i))) (_ : W.IsElliptic),
           Nonempty (IsBaseChangeOf
             (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a i))))) d' d) ∧
-          IsWeierstrassModel d'.ab W :=
-  sorry
+          IsWeierstrassModel d'.ab W := by
+  classical
+  -- the set of elements of `R` over whose basic open a model exists
+  set S : Set R := {a : R |
+      ∃ (d' : Gamma0Datum 1 (Spec (CommRingCat.of (Localization.Away a))))
+        (W : WeierstrassCurve (Localization.Away a)) (_ : W.IsElliptic),
+        Nonempty (IsBaseChangeOf
+          (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away a)))) d' d) ∧
+        IsWeierstrassModel d'.ab W}
+  -- `S` meets the complement of every maximal ideal, so it generates the unit ideal
+  have hS : Ideal.span S = ⊤ := by
+    by_contra hne
+    obtain ⟨m, hm, hle⟩ := Ideal.exists_le_maximal _ hne
+    haveI : m.IsPrime := hm.isPrime
+    obtain ⟨a, hap, ha⟩ := exists_weierstrassModel_away_of_prime d m
+    exact hap (hle (Ideal.subset_span ha))
+  -- quasi-compactness: finitely many of them already generate it
+  obtain ⟨n, f, g, hfg⟩ :=
+    Submodule.mem_span_set'.mp (hS ▸ (Submodule.mem_top : (1 : R) ∈ (⊤ : Ideal R)))
+  refine ⟨n, fun i => (g i : R), ?_, fun i => (g i).2⟩
+  rw [Ideal.eq_top_iff_one, ← hfg]
+  refine Submodule.sum_mem _ fun i _ => ?_
+  rw [smul_eq_mul]
+  exact Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
 
 /-- **Two Weierstrass models of one elliptic scheme have the same `j`**
 (sorry leaf, step (ii) of the cut of `exists_jSectionOnAffine`).
@@ -15958,7 +16125,7 @@ theorem exists_jValueOnAffine_of_localModels
 /-- **Existence of the `j`-invariant of an elliptic scheme over an affine
 base** (PROVEN 2026-07-27, over the three-leaf cut of the subsection
 above; formerly a sorry node carrying the IRREDUCIBLE verdict, which is
-now preserved on `exists_weierstrassModel_localization`, the leaf it
+now preserved on `exists_weierstrassModel_away_of_prime`, the leaf it
 still describes).
 
 TRUE and classical — this is `Y_0(1) ≅ 𝔸¹_j`, Deligne–Rapoport VI, or
@@ -15972,15 +16139,16 @@ an elliptic scheme `f : E ⟶ Spec R` after inverting finitely many
 elements of `R`, so that `c₄³/Δ` is defined on each piece; equivalently,
 the line bundle `ω = f_* Ω¹_{E/T}` and the classical formulas for
 `c₄, c₆, Δ` as sections of its powers.  That is
-`exists_weierstrassModel_localization`, which carries the irreducibility
-verdict; the well-definedness and functoriality of `j` are
+`exists_weierstrassModel_localization` (PROVEN 2026-07-27 over
+`exists_weierstrassModel_away_of_prime`, which is where the irreducibility
+verdict now sits); the well-definedness and functoriality of `j` are
 `weierstrassModel_j_unique`,
 `isWeierstrassModel_map_of_isBaseChangeOf` (PROVEN 2026-07-27) and
 `exists_isBaseChangeOf_cancel` (PROVEN); the gluing of the local values
 is `exists_jValueOnAffine_of_localModels` (PROVEN 2026-07-27).  **So of
-the five leaves of the cut, exactly TWO remain open**: step (i),
-`exists_weierstrassModel_localization` (which carries the irreducibility
-verdict), and `weierstrassModel_j_unique`.
+the five leaves of the cut, exactly TWO remain open**: step (i), now
+narrowed to `exists_weierstrassModel_away_of_prime` (which carries the
+irreducibility verdict), and `weierstrassModel_j_unique`.
 
 HOW IT IS PROVEN, and what the assembly contributes.  The gluing leaf
 returns, for every affine base, a UNIQUE point of the `j`-line satisfying
@@ -16300,6 +16468,42 @@ structure IsEisensteinFormalImmersionAt {N q : ℕ}
   cusp_lift : ∀ x : RelPoint strX (𝟙 SpecQ), hX'.IsCusp (hjr.redX x) →
       ∃ c : RelPoint strX (𝟙 SpecQ), hX.IsCusp c ∧ hjr.redX c = hjr.redX x
 
+/-- **Points with the same reduction have the same image in `J_e(N)(ℚ)`**
+(PROVEN, and it is the whole of Mazur's rank-`0` input read as one step).
+
+`red_ajE` turns `ajE` into `ajE' ∘ redX` after reduction, so two points
+with equal reduction have equal `redE (ajE ·)`; `redE_inj` — which is Cor.
+4.3, i.e. finiteness of `J_e(N)(ℚ)` together with `q ≠ 2` — then removes
+the reduction.
+
+**Read this as an ANATOMY note, because it says exactly what
+`formalImmersion` does and does not add.**  Given the other fields, the
+hypothesis `ajE x = ajE z` of `formalImmersion` is FREE: it follows from
+`hjr.redX x = hjr.redX z` by this lemma.  So `formalImmersion` is
+equivalent, over this structure, to the bare implication
+
+> `hX'.IsCusp (redX x) → redX x = redX z → x = z`,
+
+i.e. to *injectivity of `redX` on the cuspidal locus* — the Eisenstein
+quotient has already been used up by the time that field is reached.
+
+That is also the precise reason a field-wise split of the leaf below —
+"produce `Eis`, `EisRed`, `ajE`, `ajE'`, `redE`, `red_ajE`, `redE_inj` in
+one leaf, then derive `formalImmersion` and `cusp_lift` in another" —
+manufactures a FALSE sub-leaf: the junk `redX` of the FORMAL-CONTENT AUDIT
+that is injective and sends one non-cusp to a cusp satisfies every field
+listed, and satisfies `formalImmersion` vacuously by injectivity, while
+`cusp_lift` fails for that non-cusp.  Checked 2026-07-27. -/
+theorem IsEisensteinFormalImmersionAt.ajE_eq_of_redX_eq {N q : ℕ}
+    {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY} {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'} {hj : IsJMapOn N hc}
+    {hjr : IsX0JReductionAt N q hX hX' hj} (D : IsEisensteinFormalImmersionAt hjr)
+    {x z : RelPoint strX (𝟙 SpecQ)} (h : hjr.redX x = hjr.redX z) :
+    D.ajE x = D.ajE z :=
+  D.redE_inj (by rw [D.red_ajE, D.red_ajE, h])
+
 /-- **Mazur's Cor. 4.3–4.4, PACKAGED WITH THE DATUM IT IS ABOUT** (sorry
 node, introduced 2026-07-27): for a prime `p ∉ mazurIsogenyPrimes` and a
 prime `q ∉ {2, p}` there is a good-reduction datum for `(X_0(p), j)` at `q`
@@ -16330,7 +16534,38 @@ quotient of `J_0(p)` of rank `0`.  Note that the reduction-injectivity
 input alone is NOT missing — `neronReduction_injective` (PROVEN here, over
 the single formal-group leaf `neronKernel_torsionFree`) is exactly it, so a
 prover who gets as far as building `J_e(p)` as an abelian scheme over
-`ℤ_(q)` can discharge `redE_inj` from material already in this file. -/
+`ℤ_(q)` can discharge `redE_inj` from material already in this file.
+
+## AUDIT RE-RUN 2026-07-27 (later): BOTH ESCAPE ROUTES RE-CHECKED, NEITHER IS OPEN
+
+The audit on `exists_x0JReductionDatum_formalImmersion` below prescribes a
+split of THIS leaf and records it as blocked by declaration order, with a
+one-grep refuting check.  That check was RE-RUN against the file as it
+stands, and it did **not** fire.  The evidence, so the next reader does not
+have to redo it:
+
+* `SpecLoc` is declared once, as the `noncomputable abbrev` opening the
+  integral-model subsection, and `IsX0JNeronDatum` and
+  `exists_x0JNeronDatum` are below even that.  All three are thousands of
+  lines BELOW this declaration — as is `exists_x0JReductionAt`, which was
+  itself relocated to the end of the file.  So a leaf stated over an
+  arbitrary `IsX0JNeronDatum` still cannot be written here, and neither can
+  a call to `exists_x0JReductionAt` that would let this leaf stop
+  reproducing the integral-model existence.
+* The FIELD-WISE split — "core package in one leaf, `formalImmersion` and
+  `cusp_lift` in another over an arbitrary datum carrying the core" — is
+  **FALSE**, and now mechanically so: see
+  `IsEisensteinFormalImmersionAt.ajE_eq_of_redX_eq` above, which shows the
+  core already implies `ajE x = ajE z` whenever `redX x = redX z`, so
+  `formalImmersion` reduces to injectivity of `redX` on the cuspidal locus
+  and the FORMAL-CONTENT AUDIT's junk `redX` satisfies core +
+  `formalImmersion` while failing `cusp_lift`.
+
+So the leaf keeps its bare (fully stated) `sorry` deliberately: every
+available cut either needs a declaration that cannot precede it, or
+produces a sub-leaf that is false.  **What would unblock it is a
+RELOCATION, not a proof** — and that is an integrator-level edit in a file
+with several concurrent owners, not a prover's. -/
 theorem exists_eisensteinFormalImmersionAt {p q : ℕ} (_hp : p.Prime)
     (_hmem : p ∉ mazurIsogenyPrimes) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqp : q ≠ p)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
@@ -16473,8 +16708,7 @@ theorem exists_x0JReductionDatum_formalImmersion {p q : ℕ} (hp : p.Prime)
   obtain ⟨c, hcusp, hcz⟩ := d.cusp_lift z hz
   -- `z` and `c` have the same image in `J_e(p)(ℚ)`: their images agree
   -- after reduction, and reduction is injective there (rank `0`, `q ≠ 2`)
-  have hE : d.ajE z = d.ajE c :=
-    d.redE_inj (by rw [d.red_ajE, d.red_ajE, hcz])
+  have hE : d.ajE z = d.ajE c := d.ajE_eq_of_redX_eq hcz.symm
   -- the formal immersion at the cusp then identifies them
   rw [d.formalImmersion z c hz hcz.symm hE]
   exact hcusp
