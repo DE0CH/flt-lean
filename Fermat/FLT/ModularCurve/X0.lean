@@ -261,7 +261,9 @@ this pin:
 
 * the smooth compactification of a coarse moduli space, and the cusps
   of `X_0(N)` with their field of definition
-  (`exists_x0Compactification`, `exists_rationalCusps`);
+  (`exists_x0Compactification`, `nonempty_cuspIndexing` — the latter is
+  what `exists_rationalCusps` was decomposed into on 2026-07-27, and it
+  needs only the EASY direction of the cusp classification);
 * `J_0(N)` as an actual abelian scheme, its Mordell–Weil group, and the
   reduction map with its formal-group kernel
   (`card_le_of_rankZeroJacobian`);
@@ -3642,6 +3644,47 @@ Values consumed below, each by `decide`:
 def numRationalCusps (N : ℕ) : ℕ :=
   (N.divisors.filter fun d => Nat.totient (Nat.gcd d (N / d)) = 1).card
 
+/-- **The divisors of `N` that carry a `ℚ`-rational cusp of `X_0(N)`.**
+
+The index set underlying `numRationalCusps`, named so that the cusps can
+be indexed BY it rather than merely counted — see
+`IsX0Compactification.CuspIndexing`.  `d` qualifies exactly when the
+`φ(gcd(d, N/d))` cusps above `d` form a Galois orbit of size one. -/
+def rationalCuspDivisors (N : ℕ) : Finset ℕ :=
+  N.divisors.filter fun d => Nat.totient (Nat.gcd d (N / d)) = 1
+
+/-- **`numRationalCusps` counts `rationalCuspDivisors`** (PROVEN, `rfl`).
+
+Stated rather than left to unfolding so that the two never drift apart,
+and so that consumers can rewrite without exposing the `DecidablePred`
+instance inside the `Finset.filter`. -/
+theorem numRationalCusps_eq_card (N : ℕ) :
+    numRationalCusps N = (rationalCuspDivisors N).card := rfl
+
+/-- **The divisor `1` always carries a rational cusp** (PROVEN).
+
+`gcd(1, N) = 1` and `φ(1) = 1`, so the single cusp above `d = 1` — the
+cusp `∞` of `X_0(N)` — is `ℚ`-rational at every level.  This is what
+makes `numRationalCusps` positive, and it is the one entry of the table
+that needs no computation. -/
+theorem one_mem_rationalCuspDivisors {N : ℕ} (hN : N ≠ 0) :
+    1 ∈ rationalCuspDivisors N := by
+  show (1 : ℕ) ∈ N.divisors.filter fun d => Nat.totient (Nat.gcd d (N / d)) = 1
+  refine Finset.mem_filter.mpr ⟨Nat.one_mem_divisors.mpr hN, ?_⟩
+  show Nat.totient (Nat.gcd 1 (N / 1)) = 1
+  rw [Nat.div_one, Nat.gcd_one_left, Nat.totient_one]
+
+/-- **`X_0(N)` has at least one rational cusp whenever `N ≠ 0`** (PROVEN).
+
+Immediate from `one_mem_rationalCuspDivisors`.  Recorded because the
+counting arguments below are all of the form "`s.card = numRationalCusps
+N` and one more point would exceed it", which is vacuous if the count can
+be `0`; and because `numRationalCusps 0 = 0` really is `0`
+(`Nat.divisors 0 = ∅`), so the hypothesis cannot be dropped. -/
+theorem numRationalCusps_pos {N : ℕ} (hN : N ≠ 0) : 0 < numRationalCusps N := by
+  rw [numRationalCusps_eq_card]
+  exact Finset.card_pos.mpr ⟨1, one_mem_rationalCuspDivisors hN⟩
+
 /-- **`strX : X ⟶ S` is the smooth compactification of the coarse moduli
 space `strY : Y ⟶ S`, with `j : Y ⟶ X` the open immersion.**
 
@@ -4073,8 +4116,92 @@ theorem exists_x0Compactification (N : ℕ) (hN : 0 < N) :
       Nonempty (IsX0Compactification N strX strY j) :=
   sorry
 
+/-- **The `ℚ`-rational cusps of `X_0(N)`, INDEXED by the divisors that
+carry one.**
+
+The cusps of `X_0(N)` are indexed by pairs `(d, a)` with `d ∣ N` and
+`a ∈ (ℤ/gcd(d, N/d))ˣ`, and `Γ_ℚ` permutes the `φ(gcd(d, N/d))` cusps
+above a fixed `d` transitively through the cyclotomic character; so the
+cusps above `d` are `ℚ`-rational exactly when `d ∈ rationalCuspDivisors
+N`.  This structure carries that indexing.
+
+Presented as a family of POINTS rather than as a cusp subscheme, for the
+same reason `IsX0ReductionAt` presents reduction as a bare function and
+`IsJMapOn` presents the `j`-map as a function on rational points: the
+integral/moduli-theoretic object that would produce the cusps as a closed
+subscheme does not exist at this pin, and every consumer here evaluates
+at rational points anyway.
+
+**Only an INJECTION is asked for, and that is the whole point of this
+cut.**  `exists_rationalCusps` needs *a* `Finset` of rational cusps of
+size exactly `numRationalCusps N`; it does NOT need that these are ALL
+the rational cusps, because a larger supply could simply be cut down
+(`Finset.exists_subset_card_eq`).  So the hard half of Ogg's description
+— that the Galois action on the cusps above `d` is *exactly* the
+cyclotomic one, hence that no cusp with `φ(gcd(d, N/d)) > 1` is rational
+— is **not** an obligation of this development.  A prover of
+`nonempty_cuspIndexing` needs only the easy direction: for `d` with
+`φ(gcd(d, N/d)) = 1` the unique cusp above `d` is `Γ_ℚ`-fixed, and cusps
+over distinct `d` are distinct.  That is a strictly smaller theorem than
+the cusp classification, and the previous "IRREDUCIBLE" note on
+`exists_rationalCusps` did not distinguish the two.
+
+Stated over `Spec ℚ` rather than over the general base of
+`IsX0Compactification`, deliberately: the count is base-dependent, and
+over `Spec 𝔽_ℓ` the residue fields of the cusps change, so
+`rationalCuspDivisors N` would be the wrong index set. -/
+structure IsX0Compactification.CuspIndexing {N : ℕ} {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) where
+  /-- the `ℚ`-rational cusp of `X_0(N)` lying above the divisor `d` -/
+  cusp : ∀ d ∈ rationalCuspDivisors N, RelPoint strX (𝟙 SpecQ)
+  /-- it really is a cusp: it is not the image of a rational point of `Y_0(N)` -/
+  isCusp : ∀ (d : ℕ) (hd : d ∈ rationalCuspDivisors N), h.IsCusp (cusp d hd)
+  /-- cusps above distinct divisors are distinct -/
+  inj : ∀ (d : ℕ) (hd : d ∈ rationalCuspDivisors N) (d' : ℕ)
+    (hd' : d' ∈ rationalCuspDivisors N), cusp d hd = cusp d' hd' → d = d'
+
+/-- **`X_0(N)` has a `ℚ`-rational cusp above every divisor `d ∣ N` with
+`φ(gcd(d, N/d)) = 1`, and these are pairwise distinct** (sorry node).
+
+TRUE and classical (Ogg; Deligne–Rapoport VI.6, or Diamond–Im §9.3): the
+cusps of `X_0(N)` over `ℚ̄` are `Γ_0(N)\ℙ¹(ℚ)`, the cusp `a/d` with
+`gcd(a, d) = 1` and `d ∣ N` depends only on `d` and on `a mod gcd(d,
+N/d)`, and `σ_t ∈ Gal(ℚ(ζ_n)/ℚ)` sends the class of `a` to the class of
+`t⁻¹ a`.  When `φ(gcd(d, N/d)) = 1` that action is trivial, so the cusp
+is `ℚ`-rational; and cusps above distinct `d` are distinct because `d`
+is a `Γ_0(N)`-invariant of the cusp.
+
+WHAT REMAINS, precisely.  See `IsX0Compactification.CuspIndexing` for
+why only the *easy* direction of the classification is needed here.  The
+missing input is the identification of `X ∖ Y` with `Γ_0(N)\ℙ¹(ℚ)`
+compatibly with the `Γ_ℚ`-action, which is the cuspidal part of the
+Deligne–Rapoport model.  `IsX0Compactification` supplies only that the
+complement is finite, so nothing weaker than that identification can
+produce a single cusp: note that the structure's fields do not by
+themselves forbid `j` from being an isomorphism (with no cusps at all) —
+that is excluded only because `coarse` pins `Y` as the affine curve
+`Y_0(N)`, which is moduli input, not scheme-theoretic bookkeeping.
+
+AXIS SEARCHED, and what would refute this note.  Searched: cuts along
+the *count* (weakening `=` to `≤`, which does not help — the difficulty
+is producing cusps, not bounding them) and along the *index set* (this
+cut).  NOT searched: a route through the `j`-map dictionary already in
+this file, where a cusp might be characterised as a point at which `jm`
+has a pole; that would need `jm` extended to `X`, which
+`IsJMapOn` deliberately does not carry.  This note is refuted by
+exhibiting, in `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`,
+either a modular-curve cusp theory or a `Γ_0(N)\ℙ¹(ℚ)` description with
+its Galois action; as of 2026-07-27 `grep` over all three finds neither
+in any form. -/
+theorem nonempty_cuspIndexing (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j) :
+    Nonempty h.CuspIndexing :=
+  sorry
+
 /-- **`X_0(N)` has `numRationalCusps N` rational cusps, and no cusp is
-the image of a rational point of `Y_0(N)`** (sorry node).
+the image of a rational point of `Y_0(N)`** (PROVEN 2026-07-27 over
+`nonempty_cuspIndexing`).
 
 TRUE and classical; see `numRationalCusps` for the divisor count and the
 Galois action on the cusps.  The second conjunct is immediate from the
@@ -4086,13 +4213,28 @@ Quantified over every compactification rather than over a chosen one:
 statement is invariant, and `exists_x0Compactification` supplies an
 instance so it is not vacuous.
 
-IRREDUCIBLE at this pin: the cusps of `X_0(N)` do not exist here in any
-form. -/
+The proof is the bookkeeping that turns the INDEXED cusp family of
+`IsX0Compactification.CuspIndexing` into an unindexed `Finset` of the
+right size: take the image of `(rationalCuspDivisors N).attach`, which is
+injective by `CuspIndexing.inj`, so its card is
+`(rationalCuspDivisors N).card = numRationalCusps N`.  All the modular
+content sits in `nonempty_cuspIndexing`. -/
 theorem exists_rationalCusps (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j) :
     ∃ s : Finset (RelPoint strX (𝟙 SpecQ)), s.card = numRationalCusps N ∧
-      ∀ p ∈ s, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong j h.comm y ≠ p :=
-  sorry
+      ∀ p ∈ s, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong j h.comm y ≠ p := by
+  classical
+  obtain ⟨C⟩ := nonempty_cuspIndexing N h
+  have hinj : Function.Injective
+      (fun d : {x // x ∈ rationalCuspDivisors N} => C.cusp d.1 d.2) := by
+    rintro ⟨d, hd⟩ ⟨d', hd'⟩ heq
+    exact Subtype.ext (C.inj d hd d' hd' heq)
+  refine ⟨(rationalCuspDivisors N).attach.image (fun d => C.cusp d.1 d.2), ?_, ?_⟩
+  · rw [Finset.card_image_of_injective _ hinj, Finset.card_attach,
+      numRationalCusps_eq_card]
+  · intro p hp y
+    obtain ⟨d, -, rfl⟩ := Finset.mem_image.mp hp
+    exact fun hy => C.isCusp d.1 d.2 ⟨y, hy⟩
 
 /-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the eleven Kenku
 levels** (sorry node).
