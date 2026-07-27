@@ -4770,56 +4770,134 @@ theorem section_eq_of_formallyUnramified {Z S : Scheme.{u}} (p : Z ⟶ S)
     rw [← hesnd, hu, Category.assoc, pullback.diagonal_snd, Category.comp_id]
   rw [h1, h2]
 
-/-- **`[q]` is formally unramified on an abelian scheme over a base on which
-`q` is invertible** (sorry node — and now the ONLY geometric input left in the
-`q ≠ ℓ` half of `neronKernel_torsionFree`).
+/-- **The kernel of `A(R) ⟶ A(R/I)` along a SQUARE-ZERO extension has no
+`q`-torsion when `q` is a unit of `R`** (sorry node — and, after the
+reduction below, the ONLY thing left in the whole `q ≠ ℓ` half of
+`neronKernel_torsionFree`).
 
-TRUE, and classical.  The relative differentials of an abelian scheme are
-translation-invariant, `Ω_{A/S} ≅ f^* e^* Ω_{A/S}`, and under that
-identification `[q]^* ` acts on invariant differentials as multiplication by
-`q`.  The conormal sequence of `[q]`,
+TRUE, and it is the standard first statement of deformation theory.  For a
+SMOOTH `f : A ⟶ S` (here `ab.smooth`) and a square-zero extension
+`R ↠ R/I`, the kernel of `A(R) ⟶ A(R/I)` is canonically
 
-    [q]^* Ω_{A/S} ⟶ Ω_{A/S} ⟶ Ω_{[q]} ⟶ 0,
+    Hom_{R/I}(e^* Ω_{A/S} ⊗ R/I, I)  ≅  Lie(A/S) ⊗ I,
 
-therefore has surjective first map as soon as `q ∈ Γ(S, 𝒪_S)^×`, whence
-`Ω_{[q]} = 0`, which is formal unramifiedness.  Combined with
-`AbelianSchemeStruct.flat_mulByNat` (already PROVEN in
-`AbelianSchemeIsogeny.lean`) and `Etale.of_formallyUnramified_of_flat` this
-also gives that `[q]` is étale, though only unramifiedness is used here.
+the lifts of a fixed `(R/I)`-point forming a TORSOR under it.  The point
+that matters is not the precise identification but its consequence: the
+kernel is an `R`-MODULE, not merely an abelian group (the `R`-action factors
+through `R/I` because `I² = 0`).  Multiplication by `q` on an `R`-module is
+bijective as soon as `q ∈ Rˣ`, so a `q`-torsion element of the kernel is
+`0`.
 
-**Why this is the right shape for the gap.**  The previous audit recorded the
-whole `q ≠ ℓ` leaf as irreducible along the étale axis, and named as the
-missing machinery both "the `q`-torsion subscheme `𝒥[q]` as a scheme" and
-"étaleness of `[q]`".  The first of those turned out NOT to be needed: the
-rigidity argument never mentions `𝒥[q]` as an object of study, it only forms
-the fibre square `pullback [q] e` and reads two sections off it, which
-mathlib's `pullback` supplies for free.  So the residue of that audit is
-exactly this one statement, and everything else in the leaf is now proven.
+**Why THIS is the right atom, and why the previous statement of the gap was
+not** (2026-07-27).  The gap used to be recorded as "`[q]` is formally
+unramified", with the repair plan "globalize `HopfKaehler.lean` from Hopf
+algebras to group schemes" — i.e. build translation-invariance of `Ω_{A/S}`
+for a non-affine group scheme.  That plan is sound but enormous, and it is
+not necessary.  Mathlib's `FormallyUnramified.of_hom_ext` is the
+INFINITESIMAL LIFTING CRITERION, phrased on `Spec R`-points — which is
+exactly the language `AbelianSchemeStruct` is written in — and reduces
+unramifiedness of `[q]` to this statement in about thirty lines (see
+`formallyUnramified_mulByNat_of_isUnit` immediately below, PROVEN).  So the
+differential-geometric packaging can be dropped entirely: nothing in the
+STATEMENT here mentions `Ω`, Kähler differentials, diagonals, or even
+morphisms of schemes.  It is a sentence about relative points.
 
-MISSING MACHINERY, checked on 2026-07-27 rather than assumed.  Absent from
-mathlib (`grep` over `Mathlib/`: no étaleness statement about multiplication
-on a group scheme), absent from `~/cs/FLT` (no abelian-scheme development at
-all), and absent from this project — `AbelianSchemeIsogeny.lean` proves `[n]`
-proper, locally of finite type, locally of finite presentation, flat,
-universally open, surjective and with finite fibres, but says nothing about
-differentials.  The nearest thing in the tree is
-`Fermat/FLT/GroupScheme/HopfKaehler.lean`, which proves exactly this
-invariant-differentials statement (`kaehlerEquivKerAugCotangent`,
-`exists_kaehler_equiv_baseChange_of_hopf`) via the shear trick — but for
-AFFINE group schemes, presented by Hopf ALGEBRAS, and an abelian scheme is
-proper and hence not affine.
+That is the general lesson from this leaf twice over: an irreducibility
+verdict is only as wide as the axis searched, and a gap is only as large as
+the language it happens to be stated in.
 
-THE CHECK THAT WOULD REFUTE THE IRREDUCIBILITY VERDICT, and it is a different
-one from the check the old audit recorded: produce a translation-invariance
-statement for `Ω_{A/S}` for a scheme-theoretic group scheme — i.e. globalize
-`HopfKaehler.lean` from Hopf algebras to group schemes, or find such a
-globalization in the pin.  That single ingredient closes this leaf, since the
-multiplication-by-`q` computation on invariant differentials is then a
-one-line consequence of `mulByNat_mul`. -/
-theorem formallyUnramified_mulByNat_of_isUnit (B : CommRingCat.{u}) (q : ℕ)
-    (_hq : IsUnit (q : B)) {A : Scheme.{u}} {f : A ⟶ Spec B}
-    (ab : AbelianSchemeStruct f) : FormallyUnramified (ab.mulByNat q) :=
+MISSING MACHINERY, checked rather than assumed (2026-07-27).  Mathlib has the
+AFFINE-ALGEBRA half of exactly this in
+`Mathlib/RingTheory/Smooth/Kaehler.lean`: `derivationOfSectionOfKerSqZero`
+(the difference of two sections of a square-zero extension IS a derivation),
+`retractionKerToTensorEquivSection`, `tensorKaehlerQuotKerSqEquiv`.  What is
+absent is the SCHEME-level statement, and — the harder half — the
+compatibility saying that the group law of `ab` on relative points
+corresponds to ADDITION of derivations under that identification.  This
+project's `Fermat/FLT/GroupScheme/HopfKaehler.lean` has the affine group
+scheme version; `~/cs/FLT` has no abelian-scheme development at all.
+
+THE CHECK THAT WOULD REFUTE THE VERDICT: produce, at this pin, an
+`R`-module structure (or even just an `R`-scalar action) on the kernel of
+`RelPoint.pre` along a square-zero extension, compatible with `ab.add`.  A
+single such declaration closes this leaf, since `IsUnit.map` then makes `[q]`
+bijective on it.  Note the smoothness hypothesis is already available as
+`ab.smooth` and is the only geometric input the construction needs — no
+properness, no connectedness, no abelian-ness. -/
+theorem eq_zero_of_squareZero_of_isUnit_nsmul
+    {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f) (q : ℕ)
+    {R S' : CommRingCat.{u}} (φ : R ⟶ S') (_hφ : Function.Surjective φ)
+    (_hsq : RingHom.ker φ.hom ^ 2 = ⊥) (_hq : IsUnit ((q : ℕ) : R))
+    {b : Spec R ⟶ S} (c : RelPoint f b)
+    (_htors : ab.nsmulPoint q c = ab.zero b)
+    (_hker : RelPoint.pre (Spec.map φ) rfl c = ab.zero (Spec.map φ ≫ b)) :
+    c = ab.zero b :=
   sorry
+
+/-- **`[q]` is formally unramified on an abelian scheme over a base on which
+`q` is invertible** (PROVEN, over the deformation-theoretic leaf above).
+
+The reduction is mathlib's `FormallyUnramified.of_hom_ext`: it suffices that
+along every square-zero extension `R ↠ R/I` any two `R`-points `g₁, g₂` of
+`A` that agree on `Spec (R/I)` and satisfy `[q] ∘ g₁ = [q] ∘ g₂` are equal.
+
+Everything then happens inside the group of relative points, and this is
+where the functor-of-points presentation of `AbelianSchemeStruct` pays for
+itself:
+
+* `g₁` and `g₂` lie over the SAME base point, because `[q] ≫ f = f`
+  (`mulByNat_comp`) — so they are two elements of one group `RelPoint f b`,
+  and their difference `c := g₁ − g₂` is meaningful;
+* `q • c = 0`, because `nsmul_val` says `q • gᵢ` is `gᵢ ≫ [q]` and those are
+  equal by hypothesis;
+* `c` dies on `Spec (R/I)`, because `RelPoint.pre` is a group homomorphism
+  (`pre_add`, packaged by `AddMonoidHom.mk'`) and `g₁`, `g₂` agree there;
+* `q` is a unit in `R`, transported from the base along the ring map
+  underlying `b : Spec R ⟶ Spec B` via `map_natCast` and `IsUnit.map`.
+
+The leaf then gives `c = 0`, i.e. `g₁ = g₂`. -/
+theorem formallyUnramified_mulByNat_of_isUnit (B : CommRingCat.{u}) (q : ℕ)
+    (hq : IsUnit ((q : ℕ) : B)) {A : Scheme.{u}} {f : A ⟶ Spec B}
+    (ab : AbelianSchemeStruct f) : FormallyUnramified (ab.mulByNat q) := by
+  refine FormallyUnramified.of_hom_ext _ ?_
+  intro R S' φ hφ hsq g₁ g₂ hagree hcomp
+  have hb : g₂ ≫ f = g₁ ≫ f := by
+    rw [← ab.mulByNat_comp q, ← Category.assoc, ← hcomp, Category.assoc, ab.mulByNat_comp]
+  letI := ab.addCommGroup (g₁ ≫ f)
+  letI := ab.addCommGroup (Spec.map φ ≫ (g₁ ≫ f))
+  have pre_sub : ∀ y z : RelPoint f (g₁ ≫ f),
+      RelPoint.pre (Spec.map φ) rfl (y - z)
+        = RelPoint.pre (Spec.map φ) rfl y - RelPoint.pre (Spec.map φ) rfl z :=
+    fun y z => map_sub (AddMonoidHom.mk' (RelPoint.pre (Spec.map φ)
+      (rfl : Spec.map φ ≫ (g₁ ≫ f) = Spec.map φ ≫ (g₁ ≫ f)))
+      (ab.pre_add (Spec.map φ) rfl)) y z
+  set p₁ : RelPoint f (g₁ ≫ f) := ⟨g₁, rfl⟩ with hp₁
+  set p₂ : RelPoint f (g₁ ≫ f) := ⟨g₂, hb⟩ with hp₂
+  obtain ⟨ψ, hψ⟩ := Spec.homEquiv.symm.surjective (g₁ ≫ f)
+  have hqR : IsUnit ((q : ℕ) : R) := by
+    have := hq.map ψ.hom
+    rwa [map_natCast] at this
+  have hq12 : ab.nsmulPoint q p₁ = ab.nsmulPoint q p₂ := by
+    refine Subtype.ext ?_
+    show (q • p₁ : RelPoint f (g₁ ≫ f)).1 = (q • p₂ : RelPoint f (g₁ ≫ f)).1
+    rw [ab.nsmul_val q p₁, ab.nsmul_val q p₂]
+    exact hcomp
+  have htors : ab.nsmulPoint q (p₁ - p₂) = ab.zero (g₁ ≫ f) := by
+    show (q • (p₁ - p₂) : RelPoint f (g₁ ≫ f)) = (0 : RelPoint f (g₁ ≫ f))
+    rw [nsmul_sub]
+    exact sub_eq_zero_of_eq hq12
+  have hker : RelPoint.pre (Spec.map φ) rfl (p₁ - p₂)
+      = ab.zero (Spec.map φ ≫ (g₁ ≫ f)) := by
+    rw [pre_sub p₁ p₂]
+    have h : RelPoint.pre (Spec.map φ) (rfl : Spec.map φ ≫ (g₁ ≫ f) = _) p₁
+        = RelPoint.pre (Spec.map φ) rfl p₂ := Subtype.ext hagree
+    rw [h]
+    exact sub_self _
+  have hzero := eq_zero_of_squareZero_of_isUnit_nsmul ab q φ hφ hsq hqR (p₁ - p₂) htors hker
+  have hp : p₁ = p₂ := by
+    rw [show (ab.zero (g₁ ≫ f)) = (0 : RelPoint f (g₁ ≫ f)) from rfl] at hzero
+    exact sub_eq_zero.mp hzero
+  exact congrArg Subtype.val hp
 
 /-- **`𝔽_ℓ` is nontrivial when `IsReductionBase` holds** (PROVEN).
 
