@@ -1378,6 +1378,254 @@ theorem mazurIsogeny_signatureEnumeration {e r s : ℕ}
     (s = 0 ∨ s = 4 ∨ s = 6 ∨ s = 8 ∨ s = 12) ∧ (s = 6 → e = 4 ∧ r = 2) := by
   rcases he with rfl | rfl | rfl | rfl | rfl <;> interval_cases r <;> omega
 
+/-! ##### The three-way cut of `exists_isogenyRamificationData`
+(CARRIED OUT 2026-07-27, from the plan drafted in that leaf's docstring
+the previous day)
+
+The four leaves below plus ~20 lines of glue REPLACE the single sorry at
+`exists_isogenyRamificationData`.  The split is the one its docstring
+prescribed — local theory at `N`, unramifiedness away from `N`,
+Minkowski globalization — with one correction and one addition, both
+recorded here because they change what a successor should work on.
+
+**CORRECTION to the drafted plan: leaf `C` must NOT be stated for an
+abstract character.**  The plan already flagged this ("`C` REQUIRES
+continuity of `ψ`"), and the fix it proposed — derive continuity in the
+glue and pass it to `C` as a hypothesis — is available but strictly
+worse here, because the derivation itself needs
+`isOpen_setOf_galoisRep_eq_one`, which is declared ~27000 lines BELOW
+this point (see the next paragraph).  So `C` is instead stated with the
+CURVE data `g`, `hg`, `hlam` in hand.  Continuity is then not a
+hypothesis at all: it is a consequence of `C`'s own inputs, since `lam`
+factors through the continuous `E.galoisRep N` (if
+`galoisRep N σ = galoisRep N τ` then `lam σ • g = lam τ • g`, and
+`addOrderOf g = N` cancels `g`).  This keeps `C` TRUE as stated — the
+abstract form is false, `Γ ℚ` not being topologically finitely generated,
+so Nikolov–Segal does not apply and a discontinuous character trivial on
+every inertia group is not excluded.
+
+**DECLARATION-ORDER OBSTRUCTION, and it is the whole cost of leaf `C`.**
+`C` is not missing mathematics.  Its globalization input,
+`minkowski_character_trivial`, is **PROVEN in THIS FILE** (search by
+name; it sits just after `open_normal_subgroup_eq_top_of_inertia_le`,
+around line 28285), is generic in the target group, and takes exactly
+`IsOpen χ.ker` plus triviality on every local inertia image.  The
+ideal-to-inertia bridge the 2026-07-27 MACHINERY AUDIT called "the only
+thing missing" is likewise proven there, as
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` and
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`.  All of it is
+~27000 lines BELOW this point, and Lean has no forward references, so it
+cannot be used here.
+
+So the check that would refute "C is open": none — `C` is closed
+mathematics.  The check that would DISCHARGE it is purely mechanical,
+and a successor should do exactly this and nothing else:
+
+* hoist the block from `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup`
+  through `minkowski_character_trivial`, together with
+  `isOpen_setOf_galoisRep_eq_one`, to a point above this section —
+  either in place, or (better, since this module is oversized and the
+  block is self-contained) into a new module upstream of this one, which
+  `MazurTorsion` then `public import`s so that the downstream consumers
+  in `Family.lean`, `ModThree.lean`, `HermiteMinkowski.lean`,
+  `HilbertModularity.lean` and `Modularity/Interface.lean` keep
+  resolving unchanged;
+* then `C` closes by deriving `IsOpen (ψ.ker)` for
+  `ψ := lam ^ 12 · χ^{-s}` (open kernels of `lam` and of `χ` intersect
+  to an open subgroup; a subgroup containing an open subgroup is open)
+  and applying `minkowski_character_trivial`.
+
+That block was verified self-contained here: it depends only on this
+module's imports (`AbsoluteGaloisGroup`, `LocalInertiaFixedField`,
+`Ideal.Lemmas`, `ExistsRamified`, `GoingUp`), on nothing declared
+between this section and it, and no in-flight task names any of its
+declarations.  It was NOT moved as part of this cut because relocating
+~510 lines of another owner's region in the tree's busiest file is a
+merge hazard out of proportion to the benefit; it is a separate,
+purely mechanical task.
+
+**ADDITION to the drafted plan: leaf `D`.**  The plan's glue assumed
+"general-`ℓ` triviality of `χ` on inertia away from `N`" as though it
+were available.  It is not: the only version in the tree,
+`cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`
+(`HardlyRamified/Threeadic.lean`), is hardcoded to `ℓ = 3` and lives
+DOWNSTREAM of this module.  So it is stated here as its own leaf.  Its
+`ℓ = 3` proof transcribes directly: `σ` in inertia at `q` fixes a
+primitive `N`-th root of unity, because the `N`-th roots of unity are
+integral and pairwise-distinct modulo the maximal ideal when `q ≠ N`
+(`(1 - ζ^i)` divides `N`, a unit of `𝒪ᵥ`), and
+`modularCyclotomicCharacter.unique` then evaluates the character to `1`.
+-/
+
+/-- **`A` — Serre–Raynaud local ramification data at `N`** (sorry leaf;
+Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4; Raynaud, Bull. SMF 102
+(1974), Cor. 3.4.4): the LOCAL half of `exists_isogenyRamificationData`,
+asserting the existence of the ramification index `e` and Raynaud
+exponent `r` together with the identity `λ¹² = χ^(12r/e)` ON INERTIA AT
+`N` ONLY.
+
+Note the conclusion is deliberately quantified over
+`localInertiaGroup vN` and not over `Γ ℚ`: widening it would make the
+leaf false, and globalizing it is exactly what leaves `B`, `C` and `D`
+are for.
+
+Proof (not formalised).  If `E` has potentially multiplicative reduction
+at `N` it is a Tate curve or a quadratic twist of one, so `λ²|_{I_N}` is
+`1` or `χ²|_{I_N}`; take sixth powers and read off `(e, r) = (1, 0)` or
+`(1, 1)`.  Otherwise `E` acquires good reduction over `K/ℚ_N` with
+`e = e(K/ℚ_N) ∈ {1,2,3,4,6}`; tame-inertia theory gives
+`λ|_{I_N} = χ^a|_{I_N}`, and Raynaud's classification of finite flat
+group schemes over a base of absolute ramification `e < p − 1` gives
+`λ^e|_{I'_N} = χ^r|_{I'_N}` with `0 ≤ r ≤ e` and `r` even when `e` is
+even, whence `ae ≡ r (mod N−1)`.  At `(e, r) = (4, 2)` the quartic
+ramified extension is `ℚ_N(⁴√N)`-like and its existence forces
+`N ≡ 3 (mod 4)`.
+
+MISSING MACHINERY, and this leaf is where ALL of it now sits: tame
+inertia theory at `N`, Raynaud's classification, and the Tate-curve
+description of the character at potentially multiplicative reduction.
+None of the three is in mathlib, in `~/cs/FLT`, or in this project.
+This is the only genuinely deep leaf of the four. -/
+theorem WeierstrassCurve.exists_isogenyLocalRamificationDataAt
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g) :
+    ∃ e r : ℕ, (e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6) ∧ r ≤ e ∧
+      (e % 2 = 0 → r % 2 = 0) ∧
+      (∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+        lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hN.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 12 =
+          (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ (12 * r / e)) ∧
+      (e = 4 → r = 2 → N % 4 = 3) :=
+  sorry
+
+/-- **`B` — the isogeny character has unramified twelfth power away from
+`N`** (sorry leaf): for every prime `q ≠ N`, `λ¹²` kills the inertia
+group at `q`.
+
+Proof (not formalised), and it needs no case distinction on `N`: at `q`
+the curve has either potentially multiplicative or potentially good
+reduction.  In the potentially multiplicative case `E` is a Tate curve
+over a quadratic extension, so inertia acts on the rational subgroup
+through a character of order dividing `2`, and `λ²|_{I_q} = 1`.  In the
+potentially good case `E` acquires good reduction over an extension of
+`ℚ_q` of ramification index `e ∈ {1,2,3,4,6}` — every such `e` divides
+`12` — and Néron–Ogg–Shafarevich makes inertia act on the `N`-torsion
+through the resulting cyclic quotient of order `e`, so `λ¹²|_{I_q} = 1`.
+Both halves are the same statement about the `q`-adic curve and neither
+touches `N` beyond `q ≠ N`.
+
+`exists_frobenius_reduction_model` (`WeilPairing.lean`,
+Néron–Ogg–Shafarevich, axiom-clean and already imported here) is the
+input for the potentially good half; the potentially multiplicative half
+needs the Tate-curve description, shared with leaf `A`. -/
+theorem WeierstrassCurve.isogenyCharacter_pow_twelve_eq_one_of_mem_localInertiaGroup
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 12 = 1 :=
+  sorry
+
+/-- **`D` — the mod-`N` cyclotomic character is unramified away from `N`**
+(sorry leaf): for primes `q ≠ N`, `χ_N` kills the inertia group at `q`.
+
+This is the general-`ℓ` form of
+`GaloisRepresentation.cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`
+(`HardlyRamified/Threeadic.lean`), which exists only at `ℓ = 3` and is
+DOWNSTREAM of this module, so it cannot be reused here.
+
+Proof (not formalised), transcribing the `ℓ = 3` proof: let `ι` be the
+embedding of algebraic closures underlying `absoluteGaloisGroup.map`,
+and `ζ` a primitive `N`-th root of unity in `ℚ̄`.  Then `ι ζ` is a
+primitive `N`-th root of unity, integral over `𝒪ᵥ`, and `σ` permutes the
+primitive `N`-th roots, so `σ (ι ζ) = (ι ζ)^i` for some `i` coprime to
+`N`.  If `i ≢ 1` then `(ι ζ)^i − ι ζ = ι ζ · ((ι ζ)^{i−1} − 1)` lies in
+`𝔪` with `ι ζ` a unit, so `(ι ζ)^{i−1} − 1 ∈ 𝔪`; but
+`∏_{j=1}^{N−1} (1 − ζ^j) = N`, a unit of `𝒪ᵥ` since `q ≠ N`
+(`isUnit_natCast_adicCompletionIntegers`), so every `1 − (ι ζ)^j` with
+`N ∤ j` is a unit — contradiction.  Hence `σ` fixes `ι ζ`, so `map σ`
+fixes `ζ`, and `modularCyclotomicCharacter.unique` evaluates the
+character to `1` (compare `cyclotomicCharacterModL_eq_one` in
+`Chebotarev.lean`).
+
+The `ℓ = 3` proof gets the unit statement from the special factorisation
+`(1 − ζ)(1 − ζ²) = 3`; the only new ingredient here is the general
+`∏ (1 − ζ^j) = N`, which is `Polynomial.cyclotomic` evaluated at `1`, or
+equivalently `(X^N − 1)/(X − 1)` at `1`. -/
+theorem cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne
+    {N : ℕ} (hN : N.Prime) {q : ℕ} (hq : q.Prime) (hqN : q ≠ N) :
+    ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ)) = 1 :=
+  sorry
+
+/-- **`C` — Minkowski globalization of the isogeny character** (sorry
+leaf, but see the section note above: this is CLOSED MATHEMATICS blocked
+only by declaration order): if `λ¹²` and `χ^s` agree on the inertia
+group at EVERY finite place, they agree on all of `Γ ℚ`.
+
+The statement carries the curve data `g`, `hg`, `hlam` for a reason that
+is load-bearing rather than decorative: the corresponding statement for
+an ARBITRARY `MonoidHom` `Γ ℚ →* (ZMod N)ˣ` is FALSE.  `Γ ℚ` is not
+topologically finitely generated, so Nikolov–Segal does not apply, a
+finite-index subgroup need not be open, and a discontinuous character
+trivial on every inertia group is not excluded.  With `hlam` present the
+character is forced continuous — it factors through the continuous
+`E.galoisRep N`, because `galoisRep N σ = galoisRep N τ` gives
+`lam σ • g = lam τ • g` and `addOrderOf g = N` cancels `g` — and the
+statement becomes true.
+
+Discharge (see the section note for the mechanical step it waits on):
+`ψ := λ¹² · χ^{-s}` has open kernel, since `ker lam` and `ker χ` are
+open and a subgroup containing an open subgroup is open; `ψ` is trivial
+on every local inertia image by hypothesis; so `minkowski_character_trivial`
+— PROVEN in this file, but declared ~27000 lines below — gives `ψ = 1`. -/
+theorem WeierstrassCurve.isogenyCharacter_pow_twelve_eq_of_localInertia
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (s : ℕ)
+    (hloc : ∀ (q : ℕ) (hq : q.Prime),
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ 12 =
+          (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hq.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ s) :
+    ∀ σ : Field.absoluteGaloisGroup ℚ,
+      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s :=
+  sorry
+
 /-- **Serre–Raynaud local data at `N`** (sorry leaf — the local theory at
 `N` alone; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4, and Raynaud,
 Bull. SMF 102 (1974), Cor. 3.4.4): the isogeny character satisfies
@@ -1440,37 +1688,34 @@ Genuinely missing, and unchanged from the previous audit: tame-inertia
 theory at `N`, Raynaud's classification, and the Tate-curve description
 at potentially multiplicative reduction.
 
-EXECUTABLE CUT (drafted 2026-07-27; NOT yet carried out — recorded so
-the next owner need not redo the survey). The two halves of the proof
-above separate cleanly into three sorried sub-leaves plus glue:
+EXECUTABLE CUT — **CARRIED OUT 2026-07-27**; this declaration is now
+PROVEN from the four leaves stated immediately above (see the section
+note there, which records what changed relative to the drafted plan).
+The glue is the last twenty lines of this docstring's declaration:
 
-* `A` (local at `N`, the Serre–Raynaud content): `∃ e r`, the enumerated
-  conditions `e ∈ {1,2,3,4,6}`, `r ≤ e`, `e` even → `r` even, and
-  `(e,r) = (4,2) → N ≡ 3 (mod 4)`, together with
-  `∀ σ ∈ localInertiaGroup vN, λ(map σ)¹² = χ(map σ)^(12r/e)`.
-* `B` (unramified away from `N`): for every prime `q ≠ N`,
-  `∀ σ ∈ localInertiaGroup vq, λ(map σ)¹² = 1`.
-* `C` (Minkowski, stated Galois-theoretically): a CONTINUOUS
-  `ψ : Γ ℚ →* (ZMod N)ˣ` trivial on `localInertiaGroup v` for every
-  finite place `v` is trivial. This is the leaf that
-  `ExistsRamified` should discharge once the ideal-to-inertia bridge
-  exists — it needs `ExistsRamified` only STATED against the bridge, not
-  a new theory.
+* `A` = `exists_isogenyLocalRamificationDataAt` (local at `N`, the
+  Serre–Raynaud content, and the ONLY deep leaf of the four);
+* `B` = `isogenyCharacter_pow_twelve_eq_one_of_mem_localInertiaGroup`
+  (`λ¹²` unramified away from `N`);
+* `D` = `cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne`
+  (`χ_N` unramified away from `N`) — an ADDITION to the drafted plan,
+  which had assumed this was available; it exists in the tree only at
+  `ℓ = 3` and only downstream;
+* `C` = `isogenyCharacter_pow_twelve_eq_of_localInertia` (Minkowski
+  globalization) — CLOSED MATHEMATICS, blocked only by declaration
+  order: `minkowski_character_trivial` and the ideal-to-inertia bridge
+  are PROVEN in this same file, ~27000 lines below.
 
-Glue: put `ψ σ := λ(σ)¹² · χ(σ)^{-s}` with `s := 12r/e`, feed `A` and
-`B` (plus general-`ℓ` triviality of `χ` on inertia away from `N`) into
-`C`. Two obligations the glue must discharge and that are easy to
-overlook: (i) `s * e = 12 * r` needs `e ∣ 12r`, which follows from the
-enumeration by `interval_cases`/`omega`; (ii) `C` REQUIRES continuity of
-`ψ`, and the leaf hands `lam` over as a bare `MonoidHom` — continuity
-must be DERIVED from `hlam`, by factoring `λ` through the already
-continuous `E.galoisRep N` (if `galoisRep N σ = galoisRep N τ` then
-`λ(σ)•g = λ(τ)•g`, and `addOrderOf g = N` cancels `g`). Without (ii)
-the sub-leaf `C` is FALSE as stated for an arbitrary abstract
-homomorphism: `Γ ℚ` is not topologically finitely generated, so
-Nikolov–Segal does not apply and a non-open finite-index subgroup — hence
-a discontinuous character trivial on every inertia group — is not
-excluded.
+Two obligations the glue discharges, both flagged in the drafted plan as
+easy to overlook: (i) `s * e = 12 * r` with `s := 12r/e` needs `e ∣ 12r`,
+which holds because every admissible `e` divides `12`, so
+`rcases he <;> omega` closes it; (ii) continuity of the globalized
+character.  Obligation (ii) is NOT discharged in the glue — it is
+absorbed into `C`, which carries `g`, `hg` and `hlam` and so derives it
+internally.  Stating `C` for an abstract `MonoidHom` instead would have
+made it FALSE (`Γ ℚ` is not topologically finitely generated, so
+Nikolov–Segal does not apply and a discontinuous character trivial on
+every inertia group is not excluded).
 
 This leaf is INDEPENDENT of the formal-immersion leaf: nothing here uses
 potentially good reduction away from `N`. -/
@@ -1488,8 +1733,23 @@ theorem WeierstrassCurve.exists_isogenyRamificationData
       (e % 2 = 0 → r % 2 = 0) ∧ s * e = 12 * r ∧
       (∀ σ : Field.absoluteGaloisGroup ℚ,
         lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) ∧
-      (e = 4 → r = 2 → N % 4 = 3) :=
-  sorry
+      (e = 4 → r = 2 → N % 4 = 3) := by
+  obtain ⟨e, r, he, hre, hpar, hlocN, hmod⟩ :=
+    E.exists_isogenyLocalRamificationDataAt g hN hN19 hg lam hlam
+  refine ⟨e, r, 12 * r / e, he, hre, hpar, ?_, ?_, hmod⟩
+  · -- `s * e = 12 * r`: every admissible `e` divides `12`, hence `12 * r`
+    rcases he with rfl | rfl | rfl | rfl | rfl <;> omega
+  · -- globalize the inertia-wise identity: at `N` by `A`, away from `N`
+    -- both sides are `1` by `B` and `D`
+    refine E.isogenyCharacter_pow_twelve_eq_of_localInertia g hN hg lam hlam (12 * r / e) ?_
+    intro q hq σ hσ
+    by_cases hqN : q = N
+    · subst hqN
+      exact hlocN σ hσ
+    · rw [E.isogenyCharacter_pow_twelve_eq_one_of_mem_localInertiaGroup g hN hN19 hg lam hlam
+        hq hqN σ hσ,
+        cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup_of_ne hN hq hqN σ hσ,
+        one_pow]
 
 /-- **The isogeny signature** (PROVEN 2026-07-26 from
 `exists_isogenyRamificationData` and `mazurIsogeny_signatureEnumeration`
