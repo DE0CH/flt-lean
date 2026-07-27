@@ -16,6 +16,16 @@ public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.FieldTheory.Perfect
+public import Mathlib.AlgebraicGeometry.Properties
+public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
+public import Mathlib.RingTheory.Ideal.Height
+public import Mathlib.RingTheory.Ideal.GoingUp
+public import Mathlib.RingTheory.NoetherNormalization
+public import Mathlib.RingTheory.KrullDimension.Polynomial
+public import Mathlib.RingTheory.KrullDimension.Field
+public import Mathlib.RingTheory.MvPolynomial.Basic
+public import Mathlib.Algebra.MvPolynomial.Funext
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 /-!
 # Smooth compactification of a smooth curve over a field
@@ -59,8 +69,10 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
    (`smoothOfRelativeDimension_one_fromNormalization`, LEAF);
 5. the complement of a dense open in an irreducible noetherian curve is finite — proven
    here from the one-dimensionality of `X` (`topologicalKrullDim_normalization_le_one`,
-   PROVEN over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` and
-   `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, LEAVES).
+   PROVEN over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`, which is itself
+   now PROVEN over the single ring-theoretic leaf
+   `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`, and over
+   `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, PROVEN outright 2026-07-27).
 
 Step 2, the assembly, and the whole of steps 3 and 5 apart from their two named inputs are
 PROVEN here.
@@ -78,8 +90,7 @@ Every one of the original five leaves has now been cut down; the remaining leave
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
 | `exists_isOpenImmersion_isProper` | Nagata compactification (unchanged — a single citation, no cut available) |
 | `finiteType_integralClosure_sections` | Nagata/Japanese rings: the integral closure of a finite-type `K`-algebra in the sections of `Y` over an affine chart is of finite type |
-| `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
-| `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
+| `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` | a locally standard smooth `K`-algebra of relative dimension one has Krull dimension `≤ 1` (all that is left of "a smooth curve over a field is one-dimensional", 2026-07-27) |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
 
 ## Second decomposition pass, 2026-07-27
@@ -714,7 +725,611 @@ theorem smoothOfRelativeDimension_one_fromNormalization [PerfectField K] {Y P : 
     SmoothOfRelativeDimension 1 (i.fromNormalization ≫ strP) :=
   sorry
 
-/-- **A smooth curve over a field is one-dimensional** (sorry leaf — the dimension half of the
+/-! ### Dimension theory over a general base field
+
+The two dimension leaves below are both bounds on `topologicalKrullDim`, and both are reached
+through the same three-step machine, which is proved in this block:
+
+1. *the dimension of a scheme is the supremum of the heights of its points*
+   (`topologicalKrullDim_eq_iSup_coheight`, from sobriety plus
+   `Order.krullDim_eq_iSup_coheight`), which turns a comparison of dimensions into a
+   POINTWISE one;
+2. *coheight is affine-local* — `coheight_eq_of_isOpenImmersion` moves it across an open
+   immersion and `idealHeight_eq_coheight` identifies it with `Ideal.height` on an affine
+   chart;
+3. *Noether normalization plus the easy half of Cohen–Seidenberg*, which bounds heights on a
+   chart by the number of normalizing variables.
+
+**PROVENANCE, AND THE COLLAPSE THAT IS OWED** (2026-07-27).  A `ULift ℚ`-shaped copy of this
+block is proven in `Fermat/FLT/Modularity/MoretBailly.lean` (`schemeIrreducibleClosedsOrderIso`
+… `topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType`, under
+`namespace GaloisRepresentation.Modularity`).  That file is DOWNSTREAM of this one, so the copy
+here is the hoist, not a second development: everything below is stated over an arbitrary base
+field `K`, and the `ℚ`-shaped copies there are now redundant and should be re-derived from these
+(a follow-up, deliberately not done here — `MoretBailly.lean` has many concurrent owners).
+
+**WHAT HAD TO CHANGE FOR A GENERAL `K`, AND IT IS EXACTLY ONE STEP.**  The `ℚ`-shaped proof
+produces its chain of primes in `K[X₀,…,X_{s-1}]` from a RATIONAL point at which a prescribed
+`b ≠ 0` does not vanish, and `ℚ` being infinite is what supplies it.  Over a FINITE `K` no such
+point need exist (`b = X^q - X` vanishes identically on `𝔽_q`).  The replacement is a
+two-line reduction rather than a new argument: `MvPolynomial (Fin s) (AlgebraicClosure K)` is
+INTEGRAL over `MvPolynomial (Fin s) K` (mathlib's
+`instance : Algebra.IsIntegral (MvPolynomial σ R) (MvPolynomial σ S)` for an integral `R → S`),
+so incomparability makes `PrimeSpectrum.comap` strictly monotone and the chain found over the
+(infinite) algebraic closure CONTRACTS to a chain of the same length over `K`.  See
+`exists_ltSeries_length_eq_notMem_of_mvPolynomial`. -/
+
+/-- **A scheme is sober**: its irreducible closed subsets are exactly the closures of its
+points, and the correspondence is an order isomorphism.
+
+`Mathlib`'s `irreducibleSetEquivPoints` is the same map, but it is stated under
+`attribute [local instance] specializationOrder` — a `PartialOrder`. A scheme instead carries
+the GLOBAL `instance {X : Scheme} : Preorder X := specializationPreorder X`, and every
+scheme-level coheight fact used below (`coheight_eq_of_isOpenImmersion`,
+`idealHeight_eq_coheight`) is stated against THAT one.  The two are defeq and never
+syntactically equal, so mixing them is this project's recurring "duplicate instances that print
+identically" trap; re-proving `map_rel_iff'` against the global preorder removes the whole
+class. -/
+noncomputable def schemeIrreducibleClosedsOrderIso (X : Scheme.{u}) :
+    TopologicalSpace.IrreducibleCloseds ↥X ≃o ↥X where
+  toFun s := s.2.genericPoint
+  invFun x := ⟨closure ({x} : Set ↥X), isIrreducible_singleton.closure, isClosed_closure⟩
+  left_inv s := by
+    refine TopologicalSpace.IrreducibleCloseds.ext ?_
+    simp only [IsIrreducible.genericPoint_closure_eq, TopologicalSpace.IrreducibleCloseds.coe_mk,
+      closure_eq_iff_isClosed.mpr s.3]
+    rfl
+  right_inv x := isIrreducible_singleton.closure.isGenericPoint_genericPoint_closure.eq
+      (by rw [closure_closure]; exact isGenericPoint_closure)
+  map_rel_iff' := by
+    rintro ⟨s, hs, hs'⟩ ⟨t, ht, ht'⟩
+    refine specializes_iff_closure_subset.trans ?_
+    simp
+    rfl
+
+/-- **The Krull dimension of a scheme is the supremum of the coheights of its points**:
+`topologicalKrullDim` is by definition `krullDim` of the poset of irreducible closed subsets,
+that poset is order-isomorphic to the points by sobriety, and `Order.krullDim_eq_iSup_coheight`
+rewrites a `krullDim` as a supremum of coheights.
+
+This is the bridge that turns a dimension comparison into a POINTWISE one. -/
+theorem topologicalKrullDim_eq_iSup_coheight (X : Scheme.{u}) :
+    topologicalKrullDim ↥X = ⨆ (x : ↥X), (Order.coheight x : WithBot ℕ∞) := by
+  rw [topologicalKrullDim, Order.krullDim_eq_of_orderIso (schemeIrreducibleClosedsOrderIso X),
+    Order.krullDim_eq_iSup_coheight]
+
+section Integral
+
+variable {R A : Type*} [CommRing R] [CommRing A] [Algebra R A]
+
+/-- **Cohen–Seidenberg, the easy half**: an integral extension does not raise Krull dimension.
+Incomparability (`Ideal.IsIntegral.comap_lt_comap`) makes `PrimeSpectrum.comap` strictly
+monotone, and `Order.krullDim_le_of_strictMono` does the rest.
+
+This is the item the `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` docstring
+below used to record as "MISSING (1): invariance of `ringKrullDim` under an injective integral
+ring extension".  Only the bound in this direction is ever needed, and it is four lines. -/
+theorem ringKrullDim_le_of_isIntegral [Algebra.IsIntegral R A] :
+    ringKrullDim A ≤ ringKrullDim R := by
+  refine Order.krullDim_le_of_strictMono (PrimeSpectrum.comap (algebraMap R A)) ?_
+  intro p q h
+  have hp : p.asIdeal.IsPrime := p.isPrime
+  rw [← PrimeSpectrum.asIdeal_lt_asIdeal] at h ⊢
+  exact Ideal.IsIntegral.comap_lt_comap h
+
+/-- **Going up along a chain**: given an integral extension `R → A` whose kernel is contained in
+the head of a chain of primes of `R`, there is a prime `Q` of `A` lying over the chain's last
+term whose height is at least the chain's length. -/
+theorem exists_isPrime_under_eq_and_le_height_of_isIntegral [Algebra.IsIntegral R A]
+    (l : LTSeries (PrimeSpectrum R))
+    (hker : RingHom.ker (algebraMap R A) ≤ l.head.asIdeal) :
+    ∃ Q : Ideal A, ∃ _ : Q.IsPrime, Q.under R = l.last.asIdeal ∧
+      (l.length : ℕ∞) ≤ Q.height := by
+  induction l using RelSeries.inductionOn' with
+  | singleton x =>
+      have hx : x.asIdeal.IsPrime := x.isPrime
+      obtain ⟨Q, -, hQ, hQ'⟩ :=
+        Ideal.exists_ideal_over_prime_of_isIntegral (R := R) (S := A) x.asIdeal ⊥ (by
+          simpa [← RingHom.ker_eq_comap_bot] using hker)
+      exact ⟨Q, hQ, hQ', by simp⟩
+  | snoc p x hx ih =>
+      have hhead : RingHom.ker (algebraMap R A) ≤ p.head.asIdeal := by
+        simpa using hker
+      obtain ⟨Q', hQ'p, hQ'under, hQ'ht⟩ := ih hhead
+      have hxp : x.asIdeal.IsPrime := x.isPrime
+      have hle : Q'.under R ≤ x.asIdeal := by
+        rw [hQ'under]
+        exact le_of_lt ((PrimeSpectrum.asIdeal_lt_asIdeal _ _).mpr hx)
+      obtain ⟨Q, hQge, hQ, hQunder⟩ :=
+        Ideal.exists_ideal_over_prime_of_isIntegral_of_isPrime (R := R) (S := A)
+          x.asIdeal Q' hle
+      have hne : p.last.asIdeal ≠ x.asIdeal :=
+        ne_of_lt ((PrimeSpectrum.asIdeal_lt_asIdeal _ _).mpr hx)
+      refine ⟨Q, hQ, by rw [RelSeries.last_snoc]; exact hQunder, ?_⟩
+      have hlt : Q' < Q := by
+        refine lt_of_le_of_ne hQge ?_
+        intro h
+        exact hne (by rw [← hQ'under, Ideal.under_def, h, hQunder])
+      have hstep : Q'.height + 1 ≤ Q.height :=
+        Ideal.height_add_one_le_of_lt_of_isPrime hlt
+      calc ((p.snoc x hx).length : ℕ∞) = (p.length : ℕ∞) + 1 := by
+            simp [RelSeries.snoc_length]
+        _ ≤ Q'.height + 1 := by gcongr
+        _ ≤ Q.height := hstep
+
+end Integral
+
+section Const
+
+variable {B A : Type*} [CommRing B] [CommRing A] [Algebra B A]
+
+/-- If `f` is killed by a polynomial `P` over `B`, then the image of `P`'s constant coefficient
+lies in the ideal generated by `f`: writing `P = X * P.divX + C (P.coeff 0)` and evaluating at
+`f` exhibits `algebraMap B A (P.coeff 0)` as a multiple of `f`. -/
+theorem algebraMap_coeff_zero_mem_span_singleton {f : A} (P : Polynomial B)
+    (hP : Polynomial.aeval f P = 0) :
+    algebraMap B A (P.coeff 0) ∈ Ideal.span ({f} : Set A) := by
+  have hsplit := congrArg (Polynomial.aeval f) P.X_mul_divX_add
+  rw [hP, map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C] at hsplit
+  have hval : algebraMap B A (P.coeff 0) = f * (-(Polynomial.aeval f P.divX)) := by
+    rw [mul_neg]; linear_combination hsplit
+  rw [hval]
+  exact Ideal.mem_span_singleton.mpr ⟨_, rfl⟩
+
+/-- **The `b₀` trick.** If `A` is a domain integral over `B` and `0 ≠ f ∈ A`, then the ideal
+`f · A` meets `B` in a nonzero element: strip factors of `X` from an integrality equation for
+`f` until the constant coefficient is nonzero, which the domain hypothesis permits. -/
+theorem exists_ne_zero_algebraMap_mem_span_singleton [IsDomain A] {f : A} (hf : f ≠ 0)
+    (hint : _root_.IsIntegral B f) :
+    ∃ b : B, b ≠ 0 ∧ algebraMap B A b ∈ Ideal.span ({f} : Set A) := by
+  have hntB : Nontrivial B := by
+    refine ⟨1, 0, fun h => hf ?_⟩
+    have h1 : (1 : A) = 0 := by
+      rw [← map_one (algebraMap B A), h, map_zero]
+    calc f = f * 1 := (mul_one f).symm
+      _ = f * 0 := by rw [h1]
+      _ = 0 := mul_zero f
+  obtain ⟨P, hPm, hPe⟩ := hint
+  have hPe' : Polynomial.aeval f P = 0 := by rw [Polynomial.aeval_def]; exact hPe
+  clear hPe
+  have key : ∀ (n : ℕ) (Q : Polynomial B), Q.natDegree ≤ n → Q ≠ 0 →
+      Polynomial.aeval f Q = 0 → ∃ b : B, b ≠ 0 ∧ algebraMap B A b ∈ Ideal.span ({f} : Set A) := by
+    intro n
+    induction n with
+    | zero =>
+        intro Q hdeg hQ0 hQe
+        by_cases h0 : Q.coeff 0 = 0
+        · exact absurd (by
+            have hQC : Q = Polynomial.C (Q.coeff 0) :=
+              Polynomial.eq_C_of_natDegree_eq_zero (Nat.le_zero.mp hdeg)
+            rw [h0, map_zero] at hQC; exact hQC) hQ0
+        · exact ⟨Q.coeff 0, h0, algebraMap_coeff_zero_mem_span_singleton Q hQe⟩
+    | succ n ih =>
+        intro Q hdeg hQ0 hQe
+        by_cases h0 : Q.coeff 0 = 0
+        · have hdvx : Polynomial.X * Q.divX = Q := by
+            have h := Q.X_mul_divX_add
+            rwa [h0, map_zero, add_zero] at h
+          have hdne : Q.divX ≠ 0 := by
+            intro hz
+            rw [hz, mul_zero] at hdvx
+            exact hQ0 hdvx.symm
+          have hzero : Polynomial.aeval f Q.divX = 0 := by
+            have hmul : f * Polynomial.aeval f Q.divX = 0 := by
+              have h := congrArg (Polynomial.aeval f) hdvx
+              rw [hQe, map_mul, Polynomial.aeval_X] at h
+              exact h
+            exact (mul_eq_zero.mp hmul).resolve_left hf
+          refine ih Q.divX ?_ hdne hzero
+          rw [Polynomial.natDegree_divX_eq_natDegree_tsub_one]
+          lia
+        · exact ⟨Q.coeff 0, h0, algebraMap_coeff_zero_mem_span_singleton Q hQe⟩
+  exact key P.natDegree P le_rfl hPm.ne_zero hPe'
+
+end Const
+
+section MvPoly
+
+/-- **A chain of primes of full length in a polynomial ring over an INFINITE field, avoiding a
+prescribed nonzero element.** Choose a point `a` at which `b` does not vanish (possible because
+`k` is infinite), and take the kernels of the partial substitutions `X_j ↦ a j` for `j < i`.
+Each is prime as the kernel of a map into a domain; the inclusions are strict because
+`X_i - C (a i)` enters at step `i + 1`; and `b` avoids the last one exactly because `b(a) ≠ 0`.
+
+The infinitude hypothesis is removed in `exists_ltSeries_length_eq_notMem_of_mvPolynomial`
+immediately below, which is the form actually used.  This is where "finite type over a FIELD"
+becomes load-bearing: over a general base a dense open really can drop dimension
+(`Spec ℤ_[p]` and its generic point). -/
+theorem exists_ltSeries_length_eq_notMem_of_mvPolynomial_of_infinite
+    {k : Type*} [Field k] [Infinite k] {s : ℕ} (b : MvPolynomial (Fin s) k) (hb : b ≠ 0) :
+    ∃ l : LTSeries (PrimeSpectrum (MvPolynomial (Fin s) k)),
+      l.length = s ∧ b ∉ l.last.asIdeal := by
+  classical
+  obtain ⟨a, ha⟩ : ∃ a : Fin s → k, MvPolynomial.eval a b ≠ 0 := by
+    by_contra h
+    refine hb (MvPolynomial.funext (fun x => ?_))
+    simp only [map_zero]
+    by_contra hx
+    exact h ⟨x, hx⟩
+  set φ : ℕ → (MvPolynomial (Fin s) k →ₐ[k] MvPolynomial (Fin s) k) := fun i =>
+    MvPolynomial.aeval
+      (fun j : Fin s => if (j : ℕ) < i then MvPolynomial.C (a j) else MvPolynomial.X j) with hφ
+  set ψ : ℕ → (MvPolynomial (Fin s) k →ₐ[k] MvPolynomial (Fin s) k) := fun i =>
+    MvPolynomial.aeval
+      (fun j : Fin s => if (j : ℕ) = i then MvPolynomial.C (a j) else MvPolynomial.X j) with hψ
+  have hcomp : ∀ i : ℕ, φ (i + 1) = (ψ i).comp (φ i) := by
+    intro i
+    refine MvPolynomial.algHom_ext fun j => ?_
+    simp only [hφ, hψ, AlgHom.comp_apply, MvPolynomial.aeval_X]
+    rcases lt_trichotomy (j : ℕ) i with h | h | h
+    · rw [if_pos (by lia : (j : ℕ) < i + 1), if_pos h, MvPolynomial.aeval_C,
+        MvPolynomial.algebraMap_eq]
+    · rw [if_pos (by lia : (j : ℕ) < i + 1), if_neg (by lia : ¬ (j : ℕ) < i),
+        MvPolynomial.aeval_X, if_pos h]
+    · rw [if_neg (by lia : ¬ (j : ℕ) < i + 1), if_neg (by lia : ¬ (j : ℕ) < i),
+        MvPolynomial.aeval_X, if_neg (by lia : ¬ (j : ℕ) = i)]
+  set K : ℕ → Ideal (MvPolynomial (Fin s) k) := fun i =>
+    (⊥ : Ideal (MvPolynomial (Fin s) k)).comap
+      ((φ i : MvPolynomial (Fin s) k →+* MvPolynomial (Fin s) k)) with hK
+  have hker : ∀ i : ℕ, (K i).IsPrime := fun i => Ideal.comap_isPrime _ _
+  have hmem : ∀ (i : ℕ) (g : MvPolynomial (Fin s) k), g ∈ K i ↔ φ i g = 0 := by
+    intro i g; simp [hK, Ideal.mem_comap]
+  refine ⟨⟨s, fun i => ⟨K (i : ℕ), hker (i : ℕ)⟩, ?_⟩, rfl, ?_⟩
+  · intro i
+    have hc : ((i.castSucc : Fin (s + 1)) : ℕ) = (i : ℕ) := Fin.val_castSucc i
+    have hs' : ((i.succ : Fin (s + 1)) : ℕ) = (i : ℕ) + 1 := Fin.val_succ i
+    have hmk : ∀ x y : PrimeSpectrum (MvPolynomial (Fin s) k), x.asIdeal < y.asIdeal → x < y :=
+      fun x y h => (PrimeSpectrum.asIdeal_lt_asIdeal x y).mp h
+    refine hmk _ _ ?_
+    show K ((i.castSucc : Fin (s + 1)) : ℕ) < K ((i.succ : Fin (s + 1)) : ℕ)
+    rw [hc, hs']
+    have hle : K (i : ℕ) ≤ K ((i : ℕ) + 1) := by
+      intro g hg
+      rw [hmem] at hg ⊢
+      rw [hcomp, AlgHom.comp_apply, hg, map_zero]
+    refine lt_of_le_of_ne hle ?_
+    intro heq
+    have hi : (i : ℕ) < s := i.isLt
+    set x : Fin s := ⟨(i : ℕ), hi⟩ with hx
+    set g : MvPolynomial (Fin s) k := MvPolynomial.X x - MvPolynomial.C (a x) with hg
+    have hgtop : φ ((i : ℕ) + 1) g = 0 := by
+      rw [hg, map_sub]
+      simp only [hφ, MvPolynomial.aeval_X, MvPolynomial.aeval_C, MvPolynomial.algebraMap_eq]
+      rw [if_pos (by rw [hx]; lia : ((x : Fin s) : ℕ) < (i : ℕ) + 1), sub_self]
+    have hgeq : φ (i : ℕ) g = g := by
+      rw [hg, map_sub]
+      simp only [hφ, MvPolynomial.aeval_X, MvPolynomial.aeval_C, MvPolynomial.algebraMap_eq]
+      rw [if_neg (by rw [hx]; lia : ¬ ((x : Fin s) : ℕ) < (i : ℕ))]
+    have hgne : g ≠ 0 := by
+      intro hzero
+      have hev := congrArg
+        (MvPolynomial.eval (fun j : Fin s => if j = x then a x + 1 else 0)) hzero
+      rw [hg] at hev
+      simp at hev
+    apply hgne
+    rw [← hgeq, ← hmem, heq, hmem]
+    exact hgtop
+  · have hlast : ((Fin.last s : Fin (s + 1)) : ℕ) = s := rfl
+    show b ∉ K (((Fin.last s : Fin (s + 1)) : ℕ))
+    rw [hlast, hmem]
+    have hfull : (MvPolynomial.aeval a).comp (φ s) = MvPolynomial.aeval a := by
+      refine MvPolynomial.algHom_ext fun j => ?_
+      simp only [hφ, AlgHom.comp_apply, MvPolynomial.aeval_X]
+      rw [if_pos j.isLt, MvPolynomial.aeval_C]
+      simp
+    intro hzero
+    have hb' : (MvPolynomial.aeval a) (φ s b) = (MvPolynomial.aeval a) b := by
+      rw [← AlgHom.comp_apply, hfull]
+    rw [hzero, map_zero] at hb'
+    exact ha (by simpa [MvPolynomial.aeval_eq_eval] using hb'.symm)
+
+attribute [local instance] MvPolynomial.algebraMvPolynomial in
+/-- **A chain of primes of full length in a polynomial ring over an ARBITRARY field, avoiding a
+prescribed nonzero element.**
+
+This is the general-`K` form, and it is the one step of the dense-open dimension transfer that
+the `ULift ℚ`-shaped development in `Modularity/MoretBailly.lean` could not supply: that proof
+picks a rational point at which `b` does not vanish, and over a FINITE field no such point need
+exist — `b = X^q - X` vanishes on all of `𝔽_q`.
+
+The replacement is a contraction, not a new argument.  `AlgebraicClosure K` is infinite and
+ALGEBRAIC over `K`, so `MvPolynomial (Fin s) (AlgebraicClosure K)` is INTEGRAL over
+`MvPolynomial (Fin s) K` (mathlib's
+`instance : Algebra.IsIntegral (MvPolynomial σ R) (MvPolynomial σ S)`, via `Algebra.IsPushout`).
+Incomparability (`Ideal.IsIntegral.comap_lt_comap`) then makes `PrimeSpectrum.comap` STRICTLY
+monotone, so the length-`s` chain produced over the algebraic closure contracts to a length-`s`
+chain over `K`, and the top of the contracted chain still misses `b` because the top of the
+original misses the image of `b`. -/
+theorem exists_ltSeries_length_eq_notMem_of_mvPolynomial
+    {k : Type*} [Field k] {s : ℕ} (b : MvPolynomial (Fin s) k) (hb : b ≠ 0) :
+    ∃ l : LTSeries (PrimeSpectrum (MvPolynomial (Fin s) k)),
+      l.length = s ∧ b ∉ l.last.asIdeal := by
+  classical
+  haveI : Algebra.IsIntegral (MvPolynomial (Fin s) k) (MvPolynomial (Fin s) (AlgebraicClosure k)) :=
+    inferInstance
+  have hmap : (algebraMap (MvPolynomial (Fin s) k) (MvPolynomial (Fin s) (AlgebraicClosure k)))
+      = (MvPolynomial.map (algebraMap k (AlgebraicClosure k)) :
+        MvPolynomial (Fin s) k →+* MvPolynomial (Fin s) (AlgebraicClosure k)) := rfl
+  have hb' : MvPolynomial.map (algebraMap k (AlgebraicClosure k)) b ≠ 0 := by
+    intro h
+    exact hb (MvPolynomial.map_injective _ (algebraMap k (AlgebraicClosure k)).injective
+      (by simpa using h))
+  obtain ⟨l', hlen', hnot'⟩ :=
+    exists_ltSeries_length_eq_notMem_of_mvPolynomial_of_infinite
+      (MvPolynomial.map (algebraMap k (AlgebraicClosure k)) b) hb'
+  have hsm : StrictMono (PrimeSpectrum.comap
+      (algebraMap (MvPolynomial (Fin s) k) (MvPolynomial (Fin s) (AlgebraicClosure k)))) := by
+    intro p q h
+    have hp : p.asIdeal.IsPrime := p.isPrime
+    rw [← PrimeSpectrum.asIdeal_lt_asIdeal] at h ⊢
+    exact Ideal.IsIntegral.comap_lt_comap h
+  refine ⟨l'.map _ hsm, by simpa using hlen', ?_⟩
+  have hlast : (l'.map _ hsm).last = PrimeSpectrum.comap
+      (algebraMap (MvPolynomial (Fin s) k) (MvPolynomial (Fin s) (AlgebraicClosure k)))
+      l'.last := rfl
+  rw [hlast]
+  intro hmem
+  exact hnot' (by rw [← hmap]; exact hmem)
+
+end MvPoly
+
+section Assembly
+
+/-- **The commutative-algebra core of the dense-open dimension transfer.**
+
+For a finitely generated domain `A` over a field `k`, a nonzero `f : A` and any prime `p`, the
+basic open `D(f)` carries a prime at least as high as `p`.  Equivalently
+`ringKrullDim A_f = ringKrullDim A`, which is the "dense opens of an irreducible finite-type
+scheme are equidimensional" fact.
+
+The route avoids transcendence degree entirely — which matters, because there is no
+`dim = trdeg` at this pin:
+
+1. Noether-normalize, `B = k[X₀,…,X_{s-1}] ↪ A` integral, so `p.height ≤ dim A ≤ dim B = s`
+   by incomparability (`ringKrullDim_le_of_isIntegral`).
+2. The `b₀` trick: an integrality equation for `f` with nonzero constant coefficient exhibits
+   a nonzero `b ∈ B` inside `f · A`.
+3. `B` has a chain of primes of length `s` whose top avoids `b`
+   (`exists_ltSeries_length_eq_notMem_of_mvPolynomial`).
+4. Going up lifts that chain to `A`, producing `q` over its top with `s ≤ q.height`; and
+   `f ∉ q`, since `f ∈ q` would drag `b` into `q ∩ B`.
+
+Note what this shows about the shape of the obstruction: `dim A_f = dim A` is a statement about
+SUPREMA, and proving it in that form does force equidimensionality and hence the dimension
+theorem.  The pointwise statement asked for here does not — one high enough prime suffices, and
+Noether normalization hands you one. -/
+theorem exists_isPrime_notMem_and_height_le_of_finiteType
+    {k : Type*} [Field k] {A : Type*} [CommRing A] [IsDomain A]
+    [Algebra k A] [Algebra.FiniteType k A] {f : A} (hf : f ≠ 0) (p : Ideal A) [p.IsPrime] :
+    ∃ q : Ideal A, ∃ _ : q.IsPrime, f ∉ q ∧ p.height ≤ q.height := by
+  obtain ⟨s, g, hginj, hgint⟩ := _root_.exists_integral_inj_algHom_of_fg k A
+  letI : Algebra (MvPolynomial (Fin s) k) A := g.toRingHom.toAlgebra
+  haveI : Algebra.IsIntegral (MvPolynomial (Fin s) k) A := ⟨fun x => hgint x⟩
+  have hmapg : (algebraMap (MvPolynomial (Fin s) k) A) = g.toRingHom := rfl
+  have hdimB : ringKrullDim (MvPolynomial (Fin s) k) = (s : WithBot ℕ∞) := by
+    rw [MvPolynomial.ringKrullDim_of_isNoetherianRing, ringKrullDim_eq_zero_of_field k]
+    simp
+  have hps : p.height ≤ (s : ℕ∞) := by
+    have h1 : (p.height : WithBot ℕ∞) ≤ ringKrullDim A :=
+      Ideal.height_le_ringKrullDim_of_isPrime
+    have h2 : ringKrullDim A ≤ (s : WithBot ℕ∞) :=
+      le_trans (ringKrullDim_le_of_isIntegral) (le_of_eq hdimB)
+    exact_mod_cast h1.trans h2
+  obtain ⟨b, hb0, hbmem⟩ :=
+    exists_ne_zero_algebraMap_mem_span_singleton (B := MvPolynomial (Fin s) k) (A := A)
+      hf (Algebra.IsIntegral.isIntegral (R := MvPolynomial (Fin s) k) f)
+  obtain ⟨l, hlen, hbnot⟩ := exists_ltSeries_length_eq_notMem_of_mvPolynomial b hb0
+  have hker : RingHom.ker (algebraMap (MvPolynomial (Fin s) k) A) ≤ l.head.asIdeal := by
+    rw [hmapg]
+    intro y hy
+    have : g y = 0 := hy
+    rw [show (0 : A) = g 0 by simp] at this
+    rw [hginj this]
+    exact Ideal.zero_mem _
+  obtain ⟨q, hqp, hqunder, hqht⟩ :=
+    exists_isPrime_under_eq_and_le_height_of_isIntegral (R := MvPolynomial (Fin s) k) (A := A)
+      l hker
+  refine ⟨q, hqp, ?_, ?_⟩
+  · intro hfq
+    refine hbnot ?_
+    rw [← hqunder]
+    have : algebraMap (MvPolynomial (Fin s) k) A b ∈ q :=
+      (Ideal.span_le.mpr (by simpa using hfq)) hbmem
+    exact this
+  · exact hps.trans (by rwa [hlen] at hqht)
+
+/-- Killing the nilradical does not change the prime spectrum as an ordered set. -/
+noncomputable def primeSpectrumQuotNilradicalOrderIso (R : Type*) [CommRing R] :
+    PrimeSpectrum (R ⧸ nilradical R) ≃o PrimeSpectrum R where
+  toEquiv := Equiv.ofBijective (PrimeSpectrum.comap (Ideal.Quotient.mk (nilradical R)))
+    (PrimeSpectrum.comap_quotientMk_bijective_of_le_nilradical le_rfl)
+  map_rel_iff' {a b} := by
+    simp only [Equiv.ofBijective_apply]
+    rw [← PrimeSpectrum.asIdeal_le_asIdeal, ← PrimeSpectrum.asIdeal_le_asIdeal]
+    exact Ideal.comap_le_comap_iff_of_surjective _ Ideal.Quotient.mk_surjective _ _
+
+/-- **The dense-open dimension transfer, affine form.** Drop the domain hypothesis of
+`exists_isPrime_notMem_and_height_le_of_finiteType` to irreducibility of `Spec R`, by passing
+to `R ⧸ nilradical R` — which has the same spectrum, as an ordered set, hence the same
+heights. -/
+theorem exists_isPrime_notMem_height_le_of_finiteType_of_irreducible
+    {k : Type*} [Field k] {R : Type*} [CommRing R] [Algebra k R]
+    [Algebra.FiniteType k R] (hirr : IrreducibleSpace (PrimeSpectrum R))
+    {r : R} (hr : ¬ IsNilpotent r) (p : Ideal R) [p.IsPrime] :
+    ∃ q : Ideal R, ∃ _ : q.IsPrime, r ∉ q ∧ p.height ≤ q.height := by
+  haveI hnil : (nilradical R).IsPrime :=
+    PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical.mp hirr
+  haveI : IsDomain (R ⧸ nilradical R) := Ideal.Quotient.isDomain _
+  set e := primeSpectrumQuotNilradicalOrderIso R with he
+  have hheight : ∀ z : PrimeSpectrum (R ⧸ nilradical R),
+      (e z).asIdeal.height = z.asIdeal.height := by
+    intro z
+    rw [PrimeSpectrum.height_eq_orderHeight, PrimeSpectrum.height_eq_orderHeight,
+      Order.height_orderIso]
+  set p' : PrimeSpectrum (R ⧸ nilradical R) := e.symm ⟨p, ‹p.IsPrime›⟩ with hp'
+  haveI : p'.asIdeal.IsPrime := p'.isPrime
+  have hr' : (Ideal.Quotient.mk (nilradical R)) r ≠ 0 := by
+    rw [Ne, Ideal.Quotient.eq_zero_iff_mem, mem_nilradical]
+    exact hr
+  obtain ⟨q', hq'p, hq'r, hq'ht⟩ :=
+    exists_isPrime_notMem_and_height_le_of_finiteType (k := k) hr' p'.asIdeal
+  refine ⟨(e ⟨q', hq'p⟩).asIdeal, (e ⟨q', hq'p⟩).isPrime, ?_, ?_⟩
+  · intro hmem
+    exact hq'r (by simpa [he, primeSpectrumQuotNilradicalOrderIso, Ideal.mem_comap] using hmem)
+  · calc p.height = p'.asIdeal.height := by
+          rw [← hheight p', hp', OrderIso.apply_symm_apply]
+      _ ≤ q'.height := hq'ht
+      _ = (e ⟨q', hq'p⟩).asIdeal.height := (hheight ⟨q', hq'p⟩).symm
+
+end Assembly
+
+/-- **Every point of an irreducible finite-type `K`-scheme is dominated in coheight by a point
+of any nonempty open** (PROVEN — this is the pointwise form of
+`topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` below).
+
+THE PROOF:
+
+1. Coheight is LOCAL: choose an affine open `U = Spec R` containing `x`; then
+   `coheight_X x = coheight_U x = height 𝔭ₓ` (`coheight_eq_of_isOpenImmersion`, then
+   `idealHeight_eq_coheight`).
+2. `LocallyOfFiniteType strX` makes `R` a finitely generated `K`-algebra and `U` is irreducible
+   (a nonempty open of the irreducible `X`).  Both halves are proved inline here: irreducibility
+   is `Topology.IsOpenEmbedding.irreducibleSpace`, and the algebra structure is `appTop` of
+   `f ≫ strX` conjugated by the two `Scheme.ΓSpecIso`s, `RingHom.FiniteType` surviving the
+   conjugation by `RingHom.finiteType_respectsIso`.  (In the `ULift ℚ`-shaped copy in
+   `Modularity/MoretBailly.lean` this step is still an open `sorry`.)
+3. `C ∩ U` is nonempty — two nonempty opens of an irreducible space meet — and open, so it
+   contains a nonempty basic open `D(r)` with `r` not nilpotent.
+4. `exists_isPrime_notMem_height_le_of_finiteType_of_irreducible` produces a prime of `R`
+   avoiding `r` whose height dominates that of `𝔭ₓ`; it lies in `D(r) ⊆ C`. ∎ -/
+theorem exists_coheight_le_of_isOpenImmersion_of_irreducible {C X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strX] [IrreducibleSpace ↥X]
+    (j : C ⟶ X) [IsOpenImmersion j] [Nonempty ↥C] (x : ↥X) :
+    ∃ y : ↥C, Order.coheight x ≤ Order.coheight (j.base y) := by
+  obtain ⟨R, f, hfimm, hxmem, -⟩ :=
+    Scheme.exists_affine_mem_range_and_range_subset (X := X) (x := x) (U := ⊤) trivial
+  haveI := hfimm
+  obtain ⟨x₀, rfl⟩ := hxmem
+  haveI hx₀p : x₀.asIdeal.IsPrime := x₀.isPrime
+  obtain ⟨algR, hRfin, hRirr⟩ :
+      ∃ _ : Algebra K R, Algebra.FiniteType K R ∧ IrreducibleSpace (PrimeSpectrum R) := by
+    haveI : Nonempty ↥(Spec R) := ⟨x₀⟩
+    haveI hirrR : IrreducibleSpace ↥(Spec R) := f.isOpenEmbedding.irreducibleSpace
+    haveI : LocallyOfFiniteType (f ≫ strX) := inferInstance
+    have hQ : RingHom.FiniteType (f ≫ strX).appTop.hom :=
+      HasRingHomProperty.appTop (P := @LocallyOfFiniteType) (f ≫ strX) ‹_›
+    letI : Algebra K R :=
+      RingHom.toAlgebra (((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫
+        (f ≫ strX).appTop ≫ (Scheme.ΓSpecIso R).hom).hom)
+    refine ⟨inferInstance, ?_, hirrR⟩
+    have hfin : RingHom.FiniteType (algebraMap K R) := by
+      show RingHom.FiniteType (((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫
+        (f ≫ strX).appTop ≫ (Scheme.ΓSpecIso R).hom).hom)
+      rw [CommRingCat.hom_comp, RingHom.finiteType_respectsIso.cancel_left_isIso,
+        CommRingCat.hom_comp, RingHom.finiteType_respectsIso.cancel_right_isIso]
+      exact hQ
+    exact RingHom.finiteType_algebraMap.mp hfin
+  obtain ⟨r, hr, hrsub⟩ :
+      ∃ r : R, ¬ IsNilpotent r ∧
+        ∀ z : ↥(Spec R), r ∉ z.asIdeal → f.base z ∈ Set.range j.base := by
+    have hUopen : IsOpen (Set.range f.base) := f.isOpenEmbedding.isOpen_range
+    have hVopen : IsOpen (Set.range j.base) := j.isOpenEmbedding.isOpen_range
+    have hUne : (Set.univ ∩ Set.range f.base).Nonempty := ⟨f.base x₀, trivial, ⟨x₀, rfl⟩⟩
+    have hVne : (Set.univ ∩ Set.range j.base).Nonempty :=
+      ⟨j.base (Classical.arbitrary ↥C), trivial, ⟨Classical.arbitrary ↥C, rfl⟩⟩
+    obtain ⟨w, -, hwU, hwV⟩ :=
+      (IrreducibleSpace.isIrreducible_univ ↥X).2 _ _ hUopen hVopen hUne hVne
+    obtain ⟨z, rfl⟩ := hwU
+    have hWopen : IsOpen (f.base ⁻¹' (Set.range j.base)) :=
+      hVopen.preimage f.isOpenEmbedding.continuous
+    have hzW : z ∈ f.base ⁻¹' (Set.range j.base) := hwV
+    obtain ⟨v, hvb, hzv, hvsub⟩ :=
+      PrimeSpectrum.isTopologicalBasis_basic_opens.exists_subset_of_mem_open hzW hWopen
+    obtain ⟨r, rfl⟩ := hvb
+    refine ⟨r, ?_, ?_⟩
+    · intro hnilp
+      exact (PrimeSpectrum.mem_basicOpen r z).mp hzv
+        (nilradical_le_prime z.asIdeal (mem_nilradical.mpr hnilp))
+    · intro z' hz'
+      exact hvsub ((PrimeSpectrum.mem_basicOpen r z').mpr hz')
+  obtain ⟨q, hqp, hqr, hqht⟩ :=
+    exists_isPrime_notMem_height_le_of_finiteType_of_irreducible (k := K) hRirr hr x₀.asIdeal
+  obtain ⟨y, hy⟩ := hrsub ⟨q, hqp⟩ hqr
+  refine ⟨y, ?_⟩
+  rw [hy, coheight_eq_of_isOpenImmersion (x := x₀) f,
+    coheight_eq_of_isOpenImmersion (x := (⟨q, hqp⟩ : ↥(Spec R))) f,
+    ← idealHeight_eq_coheight R x₀, ← idealHeight_eq_coheight R ⟨q, hqp⟩]
+  exact hqht
+
+/-- **A locally standard smooth `K`-algebra of relative dimension one has Krull dimension at
+most one** (sorry leaf — 2026-07-27, and it is ALL that is left of the old dimension leaf
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`, which is now a THEOREM over it).
+
+TRUE and classical.  `RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1)
+(algebraMap K R)` says there are `f₁,…,f_m` generating the unit ideal of `R` with each
+`R_{f_i} ≅ K[x₁,…,x_n]/(g₁,…,g_{n-1})` carrying an invertible Jacobian minor.  Such a ring has
+Krull dimension `1` (Stacks `02JS` for the relative dimension of a smooth morphism, `0A21` for
+dimension = transcendence degree over a field).  `R` is allowed to be trivial, in which case
+`ringKrullDim R = ⊥ ≤ 1`; only the UPPER bound is asked, so the easy direction of the dimension
+theorem is not enough.
+
+**WHY THIS IS THE LEAF AND NOT THE SCHEME STATEMENT.** Everything scheme-theoretic in the old
+leaf is now proven immediately below: the reduction of `topologicalKrullDim Y ≤ 1` to a bound on
+each affine chart is `topologicalKrullDim_eq_iSup_coheight` plus `coheight_eq_of_isOpenImmersion`
+plus `idealHeight_eq_coheight` plus `Ideal.height_le_ringKrullDim_of_isPrime`, and the transport
+of the smoothness hypothesis onto the chart is `HasRingHomProperty.appTop` for
+`SmoothOfRelativeDimension 1` (whose ring-hom property is literally `Locally
+(IsStandardSmoothOfRelativeDimension 1)`) conjugated by the two `Scheme.ΓSpecIso`s, which
+`RingHom.locally_respectsIso` lets through.  So what remains has NO scheme theory in it at all.
+
+**PIN AUDIT — RE-RUN THESE, TWO OF THEM HAVE ALREADY GONE STALE ONCE.**
+
+* **present**: `MvPolynomial.ringKrullDim_of_isNoetherianRing`
+  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean:119`) gives `ringKrullDim K[x₁…xₛ] = s` —
+  note this makes the `proof_wanted` `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`
+  at `Mathlib/RingTheory/KrullDimension/Basic.lean:94` **stale**;
+* **present**: Noether normalization, `exists_integral_inj_algHom_of_fg`
+  (`Mathlib/RingTheory/NoetherNormalization.lean:276`, ROOT namespace, not `Algebra.`);
+* **present**: `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) — `Ω` is free of rank `n`;
+* **NO LONGER MISSING**: what the previous version of this audit called "MISSING (1):
+  invariance of `ringKrullDim` under an injective integral ring extension".  The half that is
+  actually needed is `ringKrullDim_le_of_isIntegral`, **proven above in this file** (four lines,
+  from `Ideal.IsIntegral.comap_lt_comap`), and going-up in the other direction is
+  `exists_isPrime_under_eq_and_le_height_of_isIntegral`, also proven above.  Do not go looking
+  for it in `Mathlib`;
+* **MISSING**: the link from `IsStandardSmoothOfRelativeDimension 1` to `s = 1` in the Noether
+  normalization — i.e. relative dimension equals transcendence degree.  There is still **no
+  occurrence of `ringKrullDim` or `krullDim` anywhere under `Mathlib/RingTheory/Smooth/`,
+  `Mathlib/RingTheory/Extension/` or in `Mathlib/RingTheory/Presentation.lean`**, so nothing at
+  this pin connects a smooth presentation to any dimension, and mathlib has no
+  smooth-implies-regular statement either (`grep -rn "IsRegularLocalRing"
+  Mathlib/RingTheory/Smooth/ Mathlib/AlgebraicGeometry/` is empty).
+
+So the leaf is ONE named ring-theoretic statement away, not a whole dimension theory.  Finding
+that link in the pin refutes this verdict.
+
+**THE ROUTE A NEXT OWNER SHOULD PRICE FIRST**, since it is the one that does not need `dim =
+trdeg`: `~/cs/FLT/FLT/Slop/DimensionTheorem/` proves the LOCAL dimension theorem
+`ringKrullDim R = minGenPrimary R` for Noetherian local rings, sorry-free and with clean axioms
+(see its `README.md`; `Main.lean`'s `dimension_theorem`).  Vendoring it (five files, pin-drift
+audit required — its mathlib pin is `81a5d2` against our `a3364fa`) would reduce the leaf to
+exhibiting a length-`1` system of parameters in each `R_𝔭`, which the Jacobian criterion
+supplies.  That is a costing, not a proof; it has NOT been attempted here.
+
+RELATION TO `Modularity/MoretBailly.lean`: that file does NOT own this statement; it takes
+`hdim : topologicalKrullDim ↥C ≤ 1` as a HYPOTHESIS on every declaration in the cluster and
+pushes the obligation out to `X0.lean`.  So this leaf is genuinely unowned there, and whoever
+proves it here discharges that hypothesis for both files. -/
+theorem ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one
+    {R : Type u} [CommRing R] [Algebra K R]
+    (h : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1) (algebraMap K R)) :
+    ringKrullDim R ≤ 1 :=
+  sorry
+
+/-- **A smooth curve over a field is one-dimensional** (**PROVEN 2026-07-27** over the single
+ring-theoretic leaf `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`
+stated immediately above — was itself a sorry leaf, the dimension half of the
 old `topologicalKrullDim_normalization_le_one`).
 
 TRUE and classical: `SmoothOfRelativeDimension 1 strY` says that every point of `Y` has an
@@ -730,82 +1345,64 @@ Only `≤ 1` is asked, so the EASY direction of the dimension theorem is not eno
 that has to be produced is the upper one.  Note `Y` is allowed to be empty, in which case
 `topologicalKrullDim Y = ⊥ ≤ 1`.
 
-**WHAT THE PIN DOES AND DOES NOT HAVE** (checked 2026-07-27; re-run these greps before
-believing them).  `Mathlib` relates `SmoothOfRelativeDimension n` to nothing
-dimension-theoretic: `grep -rn "SmoothOfRelativeDimension" Mathlib/` returns only
-`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` (the definition, `smooth`, base change,
-composition and the open-immersion instance), and there is no smooth-implies-regular result at
-all (`grep -rn "IsRegularLocalRing" Mathlib/RingTheory/Smooth/ Mathlib/AlgebraicGeometry/` is
-empty).  That is the gap.
+**WHAT THE PROOF BELOW DOES**, and what it does NOT do.  It is pure localisation bookkeeping:
+`topologicalKrullDim_eq_iSup_coheight` turns the bound into a pointwise one; an affine chart
+`f : Spec R ⟶ Y` around each point carries the coheight to `Ideal.height` there
+(`coheight_eq_of_isOpenImmersion`, `idealHeight_eq_coheight`), which
+`Ideal.height_le_ringKrullDim_of_isPrime` bounds by `ringKrullDim R`; and
+`HasRingHomProperty.appTop` for `SmoothOfRelativeDimension 1` — whose ring-hom property is
+literally `Locally (IsStandardSmoothOfRelativeDimension 1)` — transports the smoothness onto
+that chart, `RingHom.locally_respectsIso` absorbing the two `Scheme.ΓSpecIso` conjugations.
+The mathematics is untouched and sits entirely in the leaf above.
 
-But three pieces that a proof needs ARE present, and a next owner should not go looking for
-them:
+Note no hypothesis beyond smoothness is needed: `SmoothOfRelativeDimension` already entails
+`LocallyOfFinitePresentation` and hence `LocallyOfFiniteType`.  The earlier version of this
+docstring recorded the reduction as needing `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`
+and `topologicalKrullDim_subspace_le`; the coheight route above is shorter and is what is used.
 
-* `MvPolynomial.ringKrullDim_of_isNoetherianRing`
-  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean`):
-  `ringKrullDim (MvPolynomial ι R) = ringKrullDim R + Nat.card ι`, so `dim K[x₁, …, x_m] = m`.
-* `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
-  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`): the module of differentials of a
-  standard smooth algebra of relative dimension `n` is free of rank `n`.
-* `AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` and
-  `Order.krullDim_eq_iSup_coheight`, which reduce `topologicalKrullDim Y ≤ 1` to a bound on
-  every stalk (`Modularity/KhareWintenberger.lean` packages exactly that reduction as its
-  PROVEN `krullDimLE_stalk_of_topologicalKrullDim_le` and
-  `topologicalKrullDim_eq_iSup_coheight`).
-
-So the missing step is specifically: for `S = K[x₁, …, x_m]/(f₁, …, f_{m-1})` with invertible
-Jacobian, `ringKrullDim S ≤ 1`.  The lower bound is Krull's height theorem; the upper bound is
-the one that needs the dimension theorem for finite-type `K`-algebras.
-
-RELATION TO `Modularity/KhareWintenberger.lean`: that file does NOT own this statement; it
-takes `hdim : topologicalKrullDim ↥C ≤ 1` as a HYPOTHESIS on every declaration in the cluster
-and pushes the obligation out to `X0.lean`.  So this leaf is genuinely unowned there, and
-whoever proves it here discharges that hypothesis for both files.
-
-PIN AUDIT INHERITED FROM A DUPLICATE OF THIS LEAF (dropped at integration 2026-07-27).
-A second, less general statement of this same lemma — carrying the extra hypotheses
-`[LocallyOfFiniteType strX] [QuasiCompact strX]`, which a Krull-dimension bound does not
-need — was written independently on another branch and is deleted here; its route audit is
-kept because it is about this statement and is complementary to the survey above.
-
-IRREDUCIBLE at this pin, and here is the state of the ingredients — this is the check to
-re-run before accepting the verdict, because two of the three pieces DO exist:
-
-* **present**: `MvPolynomial.ringKrullDim_of_isNoetherianRing`
-  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean:119`) gives
-  `ringKrullDim K[x₁ … xₛ] = s` — note this makes the `proof_wanted`
-  `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing` at
-  `Mathlib/RingTheory/KrullDimension/Basic.lean:94` **stale**, so do not conclude from that
-  `proof_wanted` that the polynomial dimension is unavailable;
-* **present**: Noether normalization,
-  `NoetherNormalization.exists_finite_inj_algHom_of_fg`
-  (`Mathlib/RingTheory/NoetherNormalization.lean:289`) — every f.g. `K`-algebra is finite over
-  some `K[x₁ … xₛ]`;
-* **present**: `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim` and
-  `topologicalKrullDim_subspace_le`, which is how an affine-open-local bound is assembled into
-  a bound on `X` (`IsLocallyArtinian.of_topologicalKrullDim_le_zero` in
-  `Mathlib/AlgebraicGeometry/Artinian.lean` is the worked precedent for exactly this pattern
-  one dimension down);
-* **MISSING (1)**: invariance of `ringKrullDim` under an *injective integral* ring extension
-  (lying over + going up + incomparability).  A grep for `ringKrullDim` across
-  `Mathlib/RingTheory/` turns up transport along `RingEquiv` and the surjective bound
-  `ringKrullDim_le_of_surjective`, and nothing for integral extensions;
-* **MISSING (2)**: the link from `IsStandardSmoothOfRelativeDimension 1` to `s = 1` in the
-  Noether normalization — i.e. relative dimension equals transcendence degree.  There is **no
-  occurrence of `ringKrullDim` or `krullDim` anywhere under `Mathlib/RingTheory/Smooth/`,
-  `Mathlib/RingTheory/Extension/` or in `Mathlib/RingTheory/Presentation.lean`**, so nothing
-  at this pin connects a smooth presentation to any dimension.
-
-So the leaf is two named ring-theoretic statements away, not a whole dimension theory. Either
-of the two MISSING items being found in the pin refutes this verdict. -/
+**SUPERSEDED AUDITS** (2026-07-27).  Two route audits used to live here, one of them concluding
+IRREDUCIBLE at this pin over two MISSING items.  Both have moved — corrected — into the leaf's
+own docstring above, where they belong now that the leaf is the only open thing.  The
+correction worth flagging in passing: their "MISSING (1), invariance of `ringKrullDim` under an
+injective integral extension" is **not missing**; the half that is needed is
+`ringKrullDim_le_of_isIntegral`, proven in this file. -/
 theorem topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one {Y : Scheme.{u}}
     (strY : Y ⟶ Spec (CommRingCat.of K)) [SmoothOfRelativeDimension 1 strY] :
-    topologicalKrullDim Y ≤ 1 :=
-  sorry
+    topologicalKrullDim Y ≤ 1 := by
+  rw [topologicalKrullDim_eq_iSup_coheight]
+  refine iSup_le fun y => ?_
+  obtain ⟨R, f, hfimm, hymem, -⟩ :=
+    Scheme.exists_affine_mem_range_and_range_subset (X := Y) (x := y) (U := ⊤) trivial
+  haveI := hfimm
+  obtain ⟨y₀, rfl⟩ := hymem
+  haveI : y₀.asIdeal.IsPrime := y₀.isPrime
+  haveI : SmoothOfRelativeDimension 1 (f ≫ strY) :=
+    inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (f ≫ strY))
+  have hQ : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1)
+      (f ≫ strY).appTop.hom :=
+    HasRingHomProperty.appTop (P := @SmoothOfRelativeDimension 1) (f ≫ strY) ‹_›
+  letI : Algebra K R :=
+    RingHom.toAlgebra (((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫
+      (f ≫ strY).appTop ≫ (Scheme.ΓSpecIso R).hom).hom)
+  have hloc : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1)
+      (algebraMap K R) := by
+    show RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1)
+      (((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫
+        (f ≫ strY).appTop ≫ (Scheme.ΓSpecIso R).hom).hom)
+    rw [CommRingCat.hom_comp,
+      (RingHom.locally_respectsIso
+        RingHom.isStandardSmoothOfRelativeDimension_respectsIso).cancel_left_isIso,
+      CommRingCat.hom_comp,
+      (RingHom.locally_respectsIso
+        RingHom.isStandardSmoothOfRelativeDimension_respectsIso).cancel_right_isIso]
+    exact hQ
+  rw [coheight_eq_of_isOpenImmersion (x := y₀) f, ← idealHeight_eq_coheight R y₀]
+  exact le_trans Ideal.height_le_ringKrullDim_of_isPrime
+    (ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one (K := K) hloc)
 
 /-- **A nonempty open subscheme of an irreducible scheme of finite type over a field has the
-full dimension of the ambient scheme** (sorry leaf — the transfer half of the old
-`topologicalKrullDim_normalization_le_one`).
+full dimension of the ambient scheme** (**PROVEN 2026-07-27, sorry-free** — was the transfer
+half of the old `topologicalKrullDim_normalization_le_one`).
 
 TRUE and classical.  This is the direction `Mathlib` does not supply: its whole
 `topologicalKrullDim` API (`Topology.IsInducing.topologicalKrullDim_le`,
@@ -823,25 +1420,42 @@ Both geometric hypotheses are load-bearing and neither may be dropped:
   dense open may drop dimension.
 * WITHOUT `[Nonempty C]`: an empty `C` has `dim C = ⊥`.
 
-**THIS IS THE GENERAL-`K` FORM OF A LEMMA THAT IS ALREADY PROVEN OVER `ULift ℚ`**, in
-`Modularity/KhareWintenberger.lean`, as
-`topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType`, itself over the single leaf
-`exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` there.  That proof runs
-`topologicalKrullDim_eq_iSup_coheight` (sobriety plus `Order.krullDim_eq_iSup_coheight`) to
-turn the comparison into a POINTWISE one, uses `coheight_eq_of_isOpenImmersion` to move
-coheights across the open immersion, and produces the dominating point of `C` from Noether
-normalization plus going-up on an affine chart.  Two things must be checked before that proof
-is transported here: it picks a rational point out of an infinite field (`ℚ` being infinite is
-what supplies it), so a general `K` — in particular a FINITE one — needs the standard
-replacement (pass to an infinite extension, or use a general position argument); and this
-module is UPSTREAM of `KhareWintenberger.lean`, so the transport is a hoist into this file
-rather than a citation.  Whoever proves it here should re-derive that file's copy from this
-one, per the module docstring's standing instruction not to prove the same theorem twice. -/
+**THIS IS THE GENERAL-`K` FORM OF A LEMMA THAT WAS ALREADY PROVEN OVER `ULift ℚ`**, in
+`Modularity/MoretBailly.lean`, as
+`topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType`, itself over the leaf
+`exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` there (still open at the time of
+writing).  That module is DOWNSTREAM of this one, so the transport had to be a HOIST, and it
+is: the whole machine is proved above in this file, over an arbitrary base field, and the
+`ℚ`-shaped pair there is now redundant.  **The collapse is owed and is deliberately not done
+here** — `MoretBailly.lean` has many concurrent owners; whoever does it should re-derive both
+declarations there from these two, per the module docstring's standing instruction not to prove
+the same theorem twice.
+
+TWO THINGS WERE OWED BEYOND A COPY, and both are discharged:
+
+* the `ℚ`-shaped proof picks a RATIONAL point out of an infinite field, and over a FINITE `K`
+  no such point need exist.  The replacement is a contraction along the integral extension
+  `MvPolynomial (Fin s) K → MvPolynomial (Fin s) (AlgebraicClosure K)`; see
+  `exists_ltSeries_length_eq_notMem_of_mvPolynomial` above.  It is the ONLY step that changed.
+* the `ℚ`-shaped copy leaves a sorried plumbing `have` — that the affine chart carries a
+  finitely generated `K`-algebra structure with irreducible spectrum.  It is PROVEN here,
+  inside `exists_coheight_le_of_isOpenImmersion_of_irreducible`: irreducibility from
+  `Topology.IsOpenEmbedding.irreducibleSpace`, finite type from `HasRingHomProperty.appTop`
+  conjugated by the two `Scheme.ΓSpecIso`s with `RingHom.finiteType_respectsIso`.
+
+The threading that makes this applicable at `i.toNormalization` is that `IsIntegral Y` gives
+`IsIntegral i.normalization` and hence `IrreducibleSpace` — free here, whereas the `ℚ`-shaped
+copy had to receive it from its consumer. -/
 theorem topologicalKrullDim_le_of_isOpenImmersion_of_irreducible {C X : Scheme.{u}}
     (strX : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strX] [IrreducibleSpace X]
     (j : C ⟶ X) [IsOpenImmersion j] [Nonempty C] :
-    topologicalKrullDim X ≤ topologicalKrullDim C :=
-  sorry
+    topologicalKrullDim X ≤ topologicalKrullDim C := by
+  rw [topologicalKrullDim_eq_iSup_coheight, topologicalKrullDim_eq_iSup_coheight]
+  refine iSup_le fun x => ?_
+  obtain ⟨y, hy⟩ := exists_coheight_le_of_isOpenImmersion_of_irreducible strX j x
+  refine le_trans ?_ (le_iSup (fun y : ↥C => (Order.coheight y : WithBot ℕ∞)) y)
+  rw [← coheight_eq_of_isOpenImmersion (x := y) j]
+  exact_mod_cast hy
 
 /-- **The normalized proper model of a smooth curve is one-dimensional** (PROVEN over the two
 leaves above — was itself a sorry leaf until 2026-07-27).
