@@ -36235,6 +36235,130 @@ theorem atkinLehnerOp_atkinLehnerOp {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
     (atkinLehnerOp_mul_self hM hQ hcop)
   simpa using h
 
+/-- **`W_q` COMMUTES WITH `T_r` AT EVERY PRIME `r ≠ q`, at the level of
+FUNCTIONS on `ℍ`** (sorry leaf, FOURTEENTH decomposition 2026-07-27) —
+Atkin–Lehner 1970, Lemma 17 (`W_Q` commutes with `T_p` and with `U_p`
+for every `p ∤ Q`).  This is the `r ≠ q` half of the spectral node
+below, stripped of every newform hypothesis: a pure identity between
+two finite slash-sums, true for every level-`M` weight-two cusp form.
+
+WHY IT IS TRUE, with the permutation made explicit so a successor need
+not rediscover it.  Both sides expand by `SlashAction.slash_mul` into
+sums of `⇑f ∣[2] (·)` over the products `A · α_j` (left side) and
+`α_k · A` (right side), where `α_j = heckeRep r j = !![1, j; 0, r]` and
+`α_∞ = heckeRepInf r = !![r, 0; 0, 1]`.  Since `⇑f ∣[2] γ = ⇑f` for
+`γ ∈ Γ₀(M)` (`SlashInvariantFormClass.slash_action_eq`, applied through
+`mem_Gamma0GL_iff`), it suffices to produce a PERMUTATION `π` of the
+index set together with matrices `γ_j ∈ Γ₀(M)` satisfying
+
+    A · α_j = γ_j · α_{π j} · A .
+
+The permutation is the Möbius action of `Ā⁻¹` on `ℙ¹(𝔽_r)`, and it is
+well defined exactly because `r ≠ q`.  Three steps, each elementary:
+
+1. `det A = q` and `r ≠ q` are distinct primes, so `r ∤ q` and
+   `Ā := A mod r` is INVERTIBLE over `ZMod r`.
+2. Conjugation `β ↦ A β A⁻¹` carries the set `Δ₀(M,r)` of integral
+   determinant-`r` matrices with `M ∣ β 1 0` into itself.  This is the
+   same pure `Dvd` bookkeeping as `exists_gamma0_of_smul_atkinLehner`
+   above: for `C := A * β * A.adjugate` one gets `det C = q ^ 2 * r`,
+   `q ∣ C 0 0`, `q ∣ C 0 1`, `q ∣ C 1 1` and `q * M ∣ C 1 0`, using
+   ONLY `q ∣ M`, `M ∣ A 1 0`, `M ∣ β 1 0`, `q ∣ A 0 0`, `q ∣ A 1 1` —
+   no Bézout relation anywhere.  Since `A * A.adjugate = q • 1`, this
+   says `A β A⁻¹` is again integral, determinant `r`, lower-left
+   divisible by `M`.
+3. Modulo `r`, `α_j ≡ !![1, j; 0, 0]`, which is the RANK-ONE matrix
+   `e₀ ⬝ (1, j)`.  Hence `A α_j A⁻¹ ≡ (Ā e₀) ⬝ ((1, j) Ā⁻¹)` is rank
+   one too, and writing `(s, t) := (1, j) Ā⁻¹` the class
+   `π j := t / s ∈ ℙ¹(𝔽_r)` is exactly the index `k` making
+   `γ_j := A α_j A⁻¹ α_k⁻¹` INTEGRAL: with `β := A α_j A⁻¹`, that
+   matrix is `!![β 0 0, (β 0 1 - k * β 0 0)/r; β 1 0,
+   (β 1 1 - k * β 1 0)/r]`, so integrality is the pair of
+   divisibilities `r ∣ β 0 1 - k * β 0 0` and `r ∣ β 1 1 - k * β 1 0`.
+   The two are equivalent to each other because `det β = r ≡ 0 mod r`
+   (whichever of `β 0 0`, `β 1 0` is invertible mod `r` transports one
+   to the other, and they cannot both vanish mod `r`, since then `r^2`
+   would divide `det β = r`).  `det γ_j = 1` is a determinant count and
+   `M ∣ γ_j 1 0 = β 1 0` is step 2, so `γ_j ∈ Γ₀(M)`.
+
+WHY THE `r ∣ M` CASE LOSES NOTHING.  When `r ∣ M` the sum carries no
+`α_∞` term (`heckeTransform`'s `if r ∣ N then 0`), so `π` must preserve
+`𝔽_r ⊆ ℙ¹(𝔽_r)`.  It does: `r ∣ M ∣ A 1 0`, so `Ā` is UPPER TRIANGULAR
+mod `r` and therefore fixes `∞`, hence permutes the finite points.
+That is the only place the shape of `heckeTransform` enters, and it is
+why the `U_r` case needs no extra representative.
+
+REFUTING CHECK, so the next owner need not redo the survey: exhibit a
+prime `r ≠ q` and a level-`M` weight-two cusp form with
+`T_r (f ∣[2] W_q) ≠ (T_r f) ∣[2] W_q`; equivalently, a prime `r ≠ q`
+for which conjugation by an Atkin–Lehner matrix fails to permute the
+`Γ₀(M)`-cosets inside `Δ₀(M,r)`.  At `r = q` the statement is FALSE in
+general — `U_q` and `W_q` do not commute, which is precisely why
+Atkin–Lehner restrict Lemma 17 to `p ∤ Q` and why the `r = q` half is a
+separate leaf below rather than an instance of this one. -/
+theorem heckeTransform_slash_atkinLehnerRep {M q : ℕ} (hq : q.Prime) (hqM : q ∣ M)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A)
+    {r : ℕ} (hr : r.Prime) (hrq : r ≠ q) (f : CuspForm (Gamma0GL M) 2) :
+    heckeTransform M r (⇑f ∣[(2 : ℤ)] atkinLehnerRep A)
+      = (heckeTransform M r ⇑f) ∣[(2 : ℤ)] atkinLehnerRep A :=
+  sorry
+
+/-- **`T_r` and `W_q` commute as ENDOMORPHISMS of `S₂(Γ₀(M))` for
+`r ≠ q`** (PROVEN over `heckeTransform_slash_atkinLehnerRep`).  Pure
+glue: `heckeOp_coe` and `atkinLehnerOp_coe` unfold both operators to
+the function-level identity, and a cusp form is determined by its
+underlying function.  `atkinLehnerOp_coe` holds for EVERY Atkin–Lehner
+matrix, so the particular one supplied by `exists_isAtkinLehnerMatrix`
+is harmless — that is exactly the content the operator leaf bundles. -/
+theorem heckeOp_comm_atkinLehnerOp {M : ℕ} (hM : 0 < M) {q : ℕ}
+    (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M)
+    {r : ℕ} (hr : r.Prime) (hrq : r ≠ q) (f : CuspForm (Gamma0GL M) 2) :
+    heckeOp M r (atkinLehnerOp M q f) = atkinLehnerOp M q (heckeOp M r f) := by
+  have hcop : Nat.Coprime q (M / q) := by
+    refine (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd => hqM2 ?_
+    obtain ⟨t, ht⟩ := hdvd
+    refine ⟨t, ?_⟩
+    have h := Nat.mul_div_cancel' hqM
+    rw [ht] at h
+    rw [← h]; ring
+  obtain ⟨A, hA⟩ := exists_isAtkinLehnerMatrix hqM hcop
+  apply DFunLike.coe_injective
+  have h1 : ⇑(heckeOp M r (atkinLehnerOp M q f))
+      = heckeTransform M r (⇑f ∣[(2 : ℤ)] atkinLehnerRep A) := by
+    rw [heckeOp_coe hM hr, atkinLehnerOp_coe hM hqM hcop hA]
+  have h2 : ⇑(atkinLehnerOp M q (heckeOp M r f))
+      = (heckeTransform M r ⇑f) ∣[(2 : ℤ)] atkinLehnerRep A := by
+    rw [atkinLehnerOp_coe hM hqM hcop hA, heckeOp_coe hM hr]
+  rw [h1, h2]
+  exact heckeTransform_slash_atkinLehnerRep hq hqM hA hr hrq f
+
+/-- **`U_q (W_q g) = a_q(g) · (W_q g)`** (sorry leaf, FOURTEENTH
+decomposition 2026-07-27): the `r = q` half of the spectral node below,
+and the genuinely deep one.
+
+Unlike the `r ≠ q` half this is FALSE without the newform hypothesis:
+`U_q` does NOT commute with `W_q`, which is exactly why Atkin–Lehner
+1970 restricts Lemma 17 to `p ∤ Q`.  What replaces commutation is the
+Atkin–Lehner relation on the `q`-NEW part, where at `q ‖ M` and weight
+two `U_q = −W_q`.  Granting that: `U_q (W_q g) = −W_q (W_q g) = −g` by
+involutivity (`atkinLehnerOp_atkinLehnerOp`, PROVEN), while
+`a_q(g) • W_q g = a_q · (−a_q) • g = −a_q² • g`, and the two agree
+because `a_q² = 1` there.  So this leaf and
+`qCoeff_one_atkinLehnerOp_of_newform` are two readings of the SAME
+classical relation `U_q = −W_q` on the `q`-new part, and a successor
+should expect to close them TOGETHER from that relation rather than
+separately — that is the natural next cut here, and it is a different
+axis from the operator-shaped cut that produced this leaf.
+
+Newness enters only through `hg`; `q ‖ M` is load-bearing because
+`atkinLehnerOp M q` is junk when `q² ∣ M` (its defining clause is
+guarded by `Nat.Coprime q (M / q)`), so the leaf is not vacuous. -/
+theorem heckeOp_self_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    heckeOp M q (atkinLehnerOp M q g) = qCoeff M g q • atkinLehnerOp M q g :=
+  sorry
+
 /-- **THE SPECTRAL HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
 THIRTEENTH decomposition 2026-07-27): the Atkin–Lehner transform of a
 weight-two newform is again a joint eigenvector of the complex Hecke
@@ -36265,17 +36389,26 @@ clause is guarded by `Nat.Coprime q (M / q)`), and the classical
 statement is false anyway — that regime is `qCoeff_eq_zero_of_sq_dvd`'s,
 not this one.
 
-REFUTING CHECK for the `r ≠ q` claim, so the next owner need not redo
-the survey: exhibit a prime `r ≠ q` and a newform for which
-`T_r W_q ≠ W_q T_r`; equivalently, exhibit `r ∤ q` for which
-conjugation by an Atkin–Lehner matrix fails to permute the `r + 1`
-Hecke cosets of `Γ₀(M)`. -/
+FOURTEENTH DECOMPOSITION (2026-07-27).  The cut sketched above has been
+MADE, and this node is now PROVEN over the two leaves stated
+immediately below — `heckeTransform_slash_atkinLehnerRep` (the `r ≠ q`
+commutation, stripped of every newform hypothesis) and
+`heckeOp_self_atkinLehnerOp_eigen_of_newform` (the `r = q` half).  The
+`r ≠ q` branch of the assembly consumes
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` (PROVEN), so newness
+enters only through the `r = q` leaf. -/
 theorem heckeOp_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
     ∀ r : ℕ, r.Prime →
-      heckeOp M r (atkinLehnerOp M q g) = qCoeff M g r • atkinLehnerOp M q g :=
-  sorry
+      heckeOp M r (atkinLehnerOp M q g) = qCoeff M g r • atkinLehnerOp M q g := by
+  intro r hr
+  by_cases hrq : r = q
+  · subst hrq
+    exact heckeOp_self_atkinLehnerOp_eigen_of_newform hM g hg hq hqM hqM2
+  · rw [heckeOp_comm_atkinLehnerOp hM hq hqM hqM2 hr hrq g,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hr,
+      map_smul]
 
 /-- **THE EIGENVALUE HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
 THIRTEENTH decomposition 2026-07-27): the FIRST Fourier coefficient of
