@@ -838,3 +838,29 @@ from dead"), applied to the promotion direction.
 Corollary, and the reason this was recoverable: the intruding agent **tagged the other agent's WIP**
 (`flt-lean-86-hassebound-wip`) before touching anything, and left the working tree dirty by design. When
 a collision is discovered, preserve first and report loudly; do not clean up to make `git status` tidy.
+
+## TWO INDIVIDUALLY-CORRECT REPAIRS CAN BE FATAL TOGETHER
+
+(2026-07-27.) `exists_artinDivisorNormIndex_le_ray_class` was refuted-and-restated once (making `mm` an
+OUTPUT rather than an input), and a later integration added a support clause to the conclusion
+(`∀ w, w.asIdeal ∣ mm → w.asIdeal ∣ mm₀`). **Each change is right in isolation. Together they made the
+leaf FALSE**: the support clause confines the chosen `mm` to primes already dividing `mm₀` — enlargement
+is permitted only in the EXPONENTS — while the only hypothesis on `mm₀` was `mm₀ ≠ ⊥`. A caller may then
+supply an `mm₀` missing a ramified prime, and no admissible `mm` is reachable at all.
+
+Witness: `F = ℚ`, `χ` cutting out `ℚ(i)`, `ℓ = 2`, `k = 1`, `mm₀ = ⊤`. No height-one prime divides `⊤`,
+so `mm = ⊤`, `Im = ⊤`, and `P = ⊤` (the congruence is vacuous, i.e. `h⁺(ℚ) = 1` in the formal language),
+giving `(P ⊔ N).relIndex Im = 1` against `A.relIndex Im = 2`. The conclusion reads `2 ≤ 1`. Not a
+unit-ideal corner case: `mm₀ = (3)` refutes it identically.
+
+**Why no ordinary check catches this.** Both edits pass review against the statement as it stood when each
+was made. A falsity audit performed before the second edit certifies a statement that no longer exists,
+and the audit *label* survives to say the leaf was checked. So a leaf can carry an honest, correct
+FALSITY AUDIT and still be false.
+
+**The rule: when a leaf is restated a second time, the earlier audit is VOID, not inherited.** Re-run it
+against the composite statement and write a SECOND audit; do not reason "the first audit covered the hard
+part". The repair here was one hypothesis (`hmm₀ram : ∀ w, IsRamifiedCharRayClass F χ w → w.asIdeal ∣ mm₀`)
+that the consumer **already held and was discarding** — so the fix cost nothing, and the consumer's
+statement did not change. That is the usual shape: the missing hypothesis is often already in the caller's
+hand.
