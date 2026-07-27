@@ -16294,10 +16294,169 @@ theorem natCast_eq_zero_of_residueFieldEquiv {D : Type u} [Field D] [NumberField
     exact Ideal.Quotient.eq_zero_iff_mem.mpr hn
   rw [← map_natCast e n, h0, map_zero]
 
+open CategoryTheory AlgebraicGeometry in
+/-- **LEAF A2a — Rapoport's split family, in the form Rapoport §1 actually
+proves it** (sorry node, cut 2026-07-27): the standard level modules are
+supplied as ORDINARY ARGUMENTS rather than existentially, the space is
+asserted GEOMETRICALLY CONNECTED rather than geometrically irreducible, and
+its structure morphism is asserted SMOOTH OF RELATIVE DIMENSION `[D:ℚ]`
+rather than merely smooth. All three changes make the statement closer to
+the literature and strictly cheaper to consume; see the CUT NOTE on
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` for how each
+one is discharged there.
+
+THE REFERENCE. Rapoport, *Compactifications de l'espace de modules de
+Hilbert–Blumenthal* (Compositio 36 (1978)), §1, with Deligne–Pappas
+*Singularités des espaces de modules de Hilbert* for a general `𝒪_D`; the
+same statement is quoted in this file's ARCHIMEDEAN cut docstring as "the
+split moduli space of `𝒪_D`-HBAVs with full `λ𝔭`-level structure is a FINE
+moduli space, smooth and geometrically connected over `ℚ`", which is
+verbatim what is asserted below. Taylor's §4 is the consumer.
+
+WHERE THE HYPOTHESES GO — unchanged from leaf A2, and repeated here because
+this is now the declaration a prover reads first. `hres`/`hresp` are what
+make `A[λ]` and `A[𝔭]` free of rank two over `k` and `kp`, so that the level
+structures can have source `k²` and `kp²`; `hpℓ` with `hlamℓ`, `hfrpp` and
+`hne` is the COPRIME RESIDUE CHARACTERISTIC condition that gives RIGIDITY,
+hence representability, since a nontrivial automorphism of a polarized HBAV
+acting trivially on both `A[λ]` and `A[𝔭]` would have to be trivial; total
+realness of `D` makes the Rosati involution trivial on `𝒪_D`, hence the
+induced pairing `𝒪_D`-bilinear (`Fermat.DualStruct.weil_act`).
+
+WHY `hstd`/`hstdp` ARE NEEDED AND NOT DECORATION. Each clause of
+`IsStandardLevelModule` is forced by a `Fermat.PolarizationStruct` axiom the
+moment a single `Λ`-normalized split level structure exists: bimultiplicativity
+by `pairing_add_left`/`pairing_add_right`, the alternating law by
+`pairing_self`, and `galRoot`-equivariance by `pairing_gal` composed with the
+`ρ₀`-equivariance of the level structure. So a `(ρ₀, Λ)` failing any of them
+makes the conclusion UNSATISFIABLE, and the hypotheses are exactly what rules
+that out. Nondegeneracy is the one clause the conclusion re-exports rather
+than consumes.
+
+CUT-OBSTRUCTION AUDIT (2026-07-27; searched over PROPERTY-SHAPED cuts, i.e.
+cuts of the form "produce `X₀` with some properties, then derive the rest").
+The conclusion is `∃ X₀ …, P₁ ∧ ⋯ ∧ P₈`, so such a cut needs an implication
+`Pᵢ → Pⱼ` valid for an arbitrary package. Exactly two exist and BOTH are
+already taken out below in the assembly (relative dimension ⟹ smooth;
+smooth + geometrically connected ⟹ geometrically irreducible). Every
+remaining pair is refuted by an explicit witness, so the residue is atomic
+along this axis:
+
+* *fineness cannot be derived from the rest.* `X₀ = Spec ℚ` carrying a single
+  HBAV with the two level structures satisfies smoothness, separatedness,
+  finite type, quasi-compactness, connectedness, the relative dimension and
+  the universal-level-structure clause, and is not a moduli space at all.
+  This is refutation (i) of the SPLIT/DESCENT section docstring, re-aimed at
+  this statement.
+* *connectedness cannot be derived from fineness.* `X₀ ⊔ X₀` satisfies every
+  clause including fineness — an object maps into the first copy — and is
+  disconnected. So no strengthening of the moduli clauses that stops short of
+  UNIQUENESS separates the two, and the section docstring records why an
+  unqualified uniqueness clause would itself be false.
+* *the universal-level-structure clause cannot be derived from fineness*
+  either: `X₀ ⊔ Spec ℚ` with a bare HBAV at the extra point is fine and has
+  no level structure there.
+
+THE AXIS NOT SEARCHED, recorded so the next owner starts there rather than
+repeating the above: a STAGED-CONSTRUCTION cut, in which an intermediate
+object is named as data and handed across the seam — e.g. the moduli space
+of `λ`-level structures alone, with `X₀ ⟶ Y` finite étale, or the coarse
+space plus a rigidification datum. Nothing here refutes such a cut; it needs
+a new interface written, which is cheap in the sense of "STATING a theory is
+not PROVING it", and it is the only route by which the analytic
+uniformization (which supplies connectedness) could be separated from the
+GIT/deformation-theoretic construction (which supplies representability and
+smoothness).
+
+OPEN FAITHFULNESS QUESTION — NARROW CLASS GROUP versus CONNECTEDNESS, and
+the check that settles it. Classically the Hilbert–Blumenthal moduli space
+is connected only after FIXING the polarization module `𝔠`; the union over
+`𝔠 ∈ Cl⁺(D)` has one component per class. The fineness clause here, however,
+quantifies over ALL polarized objects `(B, mB, dB, polB)` while
+connectedness allows only one component — so for `D` with `h⁺(D) > 1` the two
+clauses pull in opposite directions. What defuses the tension, and why this
+is recorded as a QUESTION rather than a refutation: the comparison `φ` the
+fineness clause demands is only an isomorphism of `𝒪_D`-`Γ_F`-modules of
+GEOMETRIC POINTS, not of polarized abelian schemes, and it does not mention
+`polB` at all. Over `F` algebraically closed it is therefore automatic — the
+point groups are divisible with `B[n] ≅ (𝒪_D/n)²`, so any two HBAVs of the
+same dimension with the same `𝒪_D`-action are abstractly isomorphic — and the
+polarization module is invisible to it.
+
+THE CHECK: fix a totally real `D` with `h⁺(D) > 1`, a number field `F`, and an
+HBAV `B/F` whose polarization module is nonprincipal and which carries split
+`Λ`-normalized level structures at `λ` and `𝔭`; decide whether some `F`-point
+of the principal component has `𝒪_D`-`Γ_F`-module of geometric points
+isomorphic to `B(F̄)`. A NO answer refutes this leaf (and leaf A, and
+`HasSplitHilbertBlumenthalModuli` itself), and the repair is to index the
+statement by a polarization module. A YES answer should be recorded here so
+nobody re-opens it.
+
+WHAT IS MISSING FROM THE PIN, so the next owner does not re-survey (checked
+2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`): moduli
+functors of abelian schemes, GIT quotients, Hilbert schemes, deformation
+theory of abelian schemes, Serre–Tate, and the complex uniformization of the
+Hilbert modular variety by `𝔥^{[D:ℚ]}` are all absent. What IS present and
+should be reused: the whole `Fermat.AbelianSchemeStruct` / `Mult` /
+`DualStruct` / `PolarizationStruct` vocabulary of
+`Modularity/AbelianScheme.lean`, including `AbelianSchemeStruct.ofMorphisms`,
+which is the only writable way to hand over a group law (see its docstring —
+the two naturality fields are free). -/
+theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
+    {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    (hlam : lam.IsMaximal) (hfrp : frp.IsMaximal)
+    (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
+    (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (hne : lam ≠ frp)
+    (k : Type u) [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+    (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
+      rootsOfUnity ℓ (AlgebraicClosure F))
+    (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
+      rootsOfUnity p (AlgebraicClosure F))
+    (hstd : IsStandardLevelModule ℓ ρ₀ Λ) (hstdp : IsStandardLevelModule p ρ₀p Λp) :
+    ∃ (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (A₀ : Scheme.{u}) (fA₀ : A₀ ⟶ X₀) (ab₀ : Fermat.AbelianSchemeStruct fA₀)
+      (m₀ : Fermat.Mult ab₀ (NumberField.RingOfIntegers D))
+      (d₀ : Fermat.DualStruct ab₀ m₀) (pol₀ : Fermat.PolarizationStruct d₀),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ ∧
+      AlgebraicGeometry.IsSeparated fX₀ ∧
+      AlgebraicGeometry.LocallyOfFiniteType fX₀ ∧ AlgebraicGeometry.QuasiCompact fX₀ ∧
+      AlgebraicGeometry.GeometricallyConnected fX₀ ∧
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fA₀ ∧
+      (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (x : Spec (CommRingCat.of F) ⟶ X₀),
+        x ≫ fX₀ = specRatMap F →
+        IsSplitLevelStructure lam ℓ hlamℓ pol₀ ρ₀ Λ x ∧
+        IsSplitLevelStructure frp p hfrpp pol₀ ρ₀p Λp x) ∧
+      (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+        (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
+        (abB : Fermat.AbelianSchemeStruct fB)
+        (mB : Fermat.Mult abB (NumberField.RingOfIntegers D))
+        (dB : Fermat.DualStruct abB mB) (polB : Fermat.PolarizationStruct dB),
+        AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
+        IsSplitLevelStructure lam ℓ hlamℓ polB ρ₀ Λ (𝟙 (Spec (CommRingCat.of F))) →
+        IsSplitLevelStructure frp p hfrpp polB ρ₀p Λp (𝟙 (Spec (CommRingCat.of F))) →
+        ∃ x : Spec (CommRingCat.of F) ⟶ X₀, x ≫ fX₀ = specRatMap F ∧
+          ∃ φ : Fermat.GeomFibrePt fB (𝟙 (Spec (CommRingCat.of F))) →
+              Fermat.GeomFibrePt fA₀ x,
+            Function.Bijective φ ∧
+            (∀ y z, φ (abB.add y z) = ab₀.add (φ y) (φ z)) ∧
+            (∀ (a : NumberField.RingOfIntegers D) y, φ (mB.act a y) = m₀.act a (φ y)) ∧
+            (∀ (σ : Field.absoluteGaloisGroup F) y,
+              φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) = ab₀.galSMul x σ (φ y))) :=
+  sorry
+
 open CategoryTheory in
 /-- **LEAF A2 — Rapoport's split moduli space, given the standard level
-modules** (sorry node, cut 2026-07-27): the geometry half of leaf A, with
-the pairing normalization supplied rather than constructed.
+modules** (**PROVEN 2026-07-27** as an assembly over
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule`; formerly the
+sorry node): the geometry half of leaf A, with the pairing normalization
+supplied rather than constructed.
 
 This is section 1 of Rapoport's *Compactifications de l'espace de modules
 de Hilbert–Blumenthal* (with Deligne–Pappas for the general `𝒪_D`):
@@ -16323,7 +16482,43 @@ A's verbatim. See the section docstring.
 NOT CLAIMED HERE: uniqueness of the point in the fineness clause, and any
 comparison finer than an isomorphism of Galois modules of geometric
 points. See the SPLIT/DESCENT section docstring for why, and for what a
-later owner would have to carry in order to strengthen it. -/
+later owner would have to carry in order to strengthen it.
+
+CUT NOTE (2026-07-27, third cut of this section, and it SUPERSEDES the
+"three remaining sorry nodes" list of the SPLIT/DESCENT section docstring
+above: this declaration is no longer one of them, and
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` now is). Leaf
+A2 is an assembly over exactly one geometric leaf, and the assembly is not
+bookkeeping — it discharges FOUR of the ten clauses of
+`HasSplitHilbertBlumenthalModuli` outright:
+
+* `AlgebraicGeometry.Smooth fX₀` comes from the STRONGER relative-dimension
+  clause `SmoothOfRelativeDimension (finrank ℚ D) fX₀` that the leaf now
+  carries, by `SmoothOfRelativeDimension.smooth`. The strengthening is
+  free — the Hilbert modular variety attached to a totally real `D` has
+  dimension `[D:ℚ]`, and Rapoport §1 proves smoothness in that form — and
+  it removes a clause from the leaf's obligations by making another one
+  more informative.
+* `AlgebraicGeometry.GeometricallyIrreducible fX₀` comes from
+  `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (line
+  ~3705 of this file, PROVEN over the single mathlib gap
+  `isDomain_stalk_of_smooth_over_field`), so the leaf need only assert
+  GEOMETRIC CONNECTEDNESS — which is what the classical statement gives,
+  irreducibility being the formal smooth-plus-connected upgrade. That
+  lemma is stated for morphisms to `Spec (ULift ℚ)`, which is exactly the
+  shape of `fX₀`, so it applies with no massaging.
+* NONDEGENERACY of `Λ` and of `Λp` are the fourth clause of
+  `IsStandardLevelModule` verbatim, so they come from `hstd`/`hstdp` and
+  never reach the geometry at all. This is the concrete payoff of the
+  MODULE/GEOMETRY cut: the normalization data arrives carrying its own
+  non-emptiness certificate.
+
+WHY THE REMAINING LEAF IS ATOMIC along the property-shaped axis, with the
+witnesses that refute each alternative cut, and which axis was NOT
+searched: see the CUT-OBSTRUCTION AUDIT on the leaf itself. It also
+carries an OPEN FAITHFULNESS QUESTION about `Cl⁺(D)` versus geometric
+connectedness, together with the check that settles it; that question is
+inherited from `HasSplitHilbertBlumenthalModuli` and is not created here. -/
 theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -16342,8 +16537,19 @@ theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     (hstdp : ∃ (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
       (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
         rootsOfUnity p (AlgebraicClosure F)), IsStandardLevelModule p ρ₀p Λp) :
-    HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp :=
-  sorry
+    HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp := by
+  obtain ⟨ρ₀, Λ, hstd'⟩ := hstd
+  obtain ⟨ρ₀p, Λp, hstdp'⟩ := hstdp
+  obtain ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, hdimX, hsep, hlft, hqc, hconn, hdimA,
+      huniv, hfine⟩ :=
+    exists_splitHilbertBlumenthalFamily_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
+      hlamℓ hfrpp hne k kp hres hresp ρ₀ ρ₀p Λ Λp hstd' hstdp'
+  haveI : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ := hdimX
+  have hsm : AlgebraicGeometry.Smooth fX₀ :=
+    AlgebraicGeometry.SmoothOfRelativeDimension.smooth (n := Module.finrank ℚ D) (f := fX₀)
+  exact ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, ρ₀, ρ₀p, Λ, Λp, hsm, hsep, hlft, hqc,
+    geometricallyIrreducible_of_smooth_of_geometricallyConnected fX₀ hsm hconn,
+    hdimA, huniv, hfine, hstd'.2.2.2.1, hstdp'.2.2.2.1⟩
 
 open CategoryTheory in
 /-- **LEAF A — Rapoport's split moduli space** (PROVEN 2026-07-27 as an
