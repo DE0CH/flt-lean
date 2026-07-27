@@ -37,10 +37,22 @@ direct images of quasi-coherent sheaves at all.
   an arbitrary `Y ⟶ S`, and `𝒪_S = f_*𝒪_X` alone does not survive that (it does under
   flatness + geometric connectedness + geometric reducedness, which is exactly what the
   main theorem below asserts).
-* `isIso_appTop_of_isProper_of_flat` — **THE LEAF** (2026-07-27): `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is
-  an isomorphism, for a single fixed `f` with the classical hypotheses.  This is all that
-  is left of the theorem: see the next item.
-* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — **PROVEN** over that leaf.  Both
+* `isIso_appTop_of_isIso_app_affineOpens` — **PROVEN**: `f.appTop` is an isomorphism as soon
+  as `f.app U` is for every *affine* open `U ⊆ S`.  Pure sheaf theory (`f.app U` is the
+  component at `U` of `𝒪_S ⟶ f_*𝒪_X`, and the affine opens are a basis), and it is what
+  lets the remaining leaf be stated over an affine base.
+* `isIso_appTop_of_isProper_over_field` — **LEAF** (2026-07-27): `H⁰(Z, 𝒪_Z) = K` for `Z`
+  proper, geometrically connected and geometrically reduced over a field `K`.  One scheme,
+  one field, no flatness and no base change — the tractable half, and the one to take first.
+* `isIso_appTop_of_isIso_appTop_fiber` — **LEAF** (2026-07-27): degree-zero cohomology and
+  base change.  For `f` proper, flat and of finite presentation over an **affine** base,
+  `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is an isomorphism as soon as `κ(s) ⟶ Γ(X_s, ⊤)` is one for every
+  `s ∈ S`.  Geometric connectedness and reducedness do not appear: they enter only through
+  the fibrewise hypothesis.  This is the genuine theory build.
+* `isIso_appTop_of_isProper_of_flat_of_isAffine` — **PROVEN** over those two, by feeding the
+  first into the second (every fibre is a base change of `f`).
+* `isIso_appTop_of_isProper_of_flat` — **PROVEN** over it, by the affine reduction.
+* `hasUniversallyTrivialPushforward_of_isProper_of_flat` — **PROVEN** over it too.  Both
   of the theorem's quantifiers turned out to be bookkeeping rather than mathematics: all
   five hypotheses are stable under base change, and an open restriction `f ∣_ U` is itself
   a base change (`isPullback_morphismRestrict`), so `∀ U, IsIso (f.app U)` *and* the
@@ -221,62 +233,231 @@ theorem HasTrivialPushforward.existsUnique_comp_eq {X S Z : Scheme.{u}} {p : X �
       ← Scheme.toSpecΓ_naturality_assoc, Scheme.toSpecΓ_isoSpec_inv, Category.comp_id]
   exact ⟨_, key, fun c hc => eq_of_comp_eq_of_isAffine (p := p) (by rw [hc, key])⟩
 
+/-! ### Reduction to an affine base
+
+`IsIso (f.app U)` is a statement about the ⊤-component of a map of **sheaves** on `S`, namely
+`f.c : 𝒪_S ⟶ f_*𝒪_X`.  So it is local on `S`, and the reduction of the theorem below to the
+case of an affine base is pure sheaf theory, with no geometry in it at all. -/
+
+/-- **`f.appTop` IS AN ISOMORPHISM AS SOON AS `f.app U` IS FOR EVERY AFFINE OPEN `U ⊆ S`**
+(PROVEN).
+
+`f.app U` is the component at `U` of `f.c : 𝒪_S ⟶ f_*𝒪_X`, a morphism of sheaves of rings on
+`S` (the target is a sheaf by `TopCat.Sheaf.pushforward_sheaf_of_sheaf`).  The affine opens are
+a basis of `S` (`Scheme.isBasis_affineOpens`), so componentwise bijectivity on them gives
+bijectivity on every stalk — injectivity by `stalkFunctor_map_injective_of_isBasis`, surjectivity
+because every germ is represented on a basis open (`exists_mem_germ_eq_of_isBasis`) — and a
+morphism of sheaves that is a stalkwise isomorphism is an isomorphism on every open, in
+particular on `⊤` (`app_isIso_of_stalkFunctor_map_iso`).
+
+This is the step that lets the cohomological content below be stated over an **affine** base,
+where `Γ(S, ⊤)` is an honest ring and `Γ(X, ⊤)` an honest module over it. -/
+theorem isIso_appTop_of_isIso_app_affineOpens (f : X ⟶ S)
+    (h : ∀ U ∈ S.affineOpens, IsIso (f.app U)) : IsIso f.appTop := by
+  let G : TopCat.Sheaf CommRingCat S :=
+    ⟨f.base _* X.presheaf, TopCat.Sheaf.pushforward_sheaf_of_sheaf f.base X.sheaf.2⟩
+  let α : S.sheaf ⟶ G := ⟨f.c⟩
+  have hb : TopologicalSpace.Opens.IsBasis S.affineOpens := S.isBasis_affineOpens
+  have hbij : ∀ x : S, Function.Bijective
+      ((TopCat.Presheaf.stalkFunctor CommRingCat x).map α.1) := by
+    intro x
+    constructor
+    · refine TopCat.Presheaf.stalkFunctor_map_injective_of_isBasis hb ?_ x
+      intro U hU
+      haveI := h U hU
+      exact (ConcreteCategory.bijective_of_isIso (f.app U)).1
+    · intro t
+      obtain ⟨U, hxU, hU, s, rfl⟩ := TopCat.Presheaf.exists_mem_germ_eq_of_isBasis hb G.1 x t
+      haveI := h U hU
+      obtain ⟨s', rfl⟩ := (ConcreteCategory.bijective_of_isIso (f.app U)).2 s
+      exact ⟨S.presheaf.germ U x hxU s',
+        TopCat.Presheaf.stalkFunctor_map_germ_apply U x hxU α.1 s'⟩
+  haveI : ∀ x : S, IsIso ((TopCat.Presheaf.stalkFunctor CommRingCat x).map α.1) :=
+    fun x => (ConcreteCategory.isIso_iff_bijective _).mpr (hbij x)
+  exact TopCat.Presheaf.app_isIso_of_stalkFunctor_map_iso α ⊤
+
+/-! ### The two leaves: the fibrewise computation, and cohomology and base change
+
+The classical proof of `f_*𝒪_X = 𝒪_S` has exactly two moving parts, and they are independent
+of one another:
+
+* **over a field** — `H⁰(Z, 𝒪_Z) = K` for `Z` proper, geometrically connected and
+  geometrically reduced over `K` (`isIso_appTop_of_isProper_over_field`).  No flatness, no
+  base change, no cohomology in positive degree: this is a statement about *one* scheme over
+  *one* field, and it is by far the more tractable half;
+* **cohomology and base change** — for `f` proper, flat and of finite presentation over an
+  affine base, `𝒪_S ⟶ f_*𝒪_X` is an isomorphism as soon as it is one on every fibre
+  (`isIso_appTop_of_isIso_appTop_fiber`).  This half never sees geometric connectedness or
+  reducedness: they enter *only* through the fibrewise hypothesis.
+
+`isIso_appTop_of_isProper_of_flat_of_isAffine` is PROVEN by feeding the first into the second,
+which is why the two are cut apart here rather than proved together. -/
+
+/-- **`H⁰(Z, 𝒪_Z) = K` FOR A PROPER, GEOMETRICALLY CONNECTED, GEOMETRICALLY REDUCED SCHEME
+OVER A FIELD** (LEAF, 2026-07-27) — the fibrewise half of the pushforward theorem, and the
+tractable one.
+
+**The classical argument.**  Write `A := Γ(Z, ⊤)`.
+
+1. `K ⟶ A` is *integral*: this is already in `Mathlib`, as
+   `AlgebraicGeometry.isIntegral_appTop_of_universallyClosed` (properness is not even needed,
+   universal closedness over an affine base suffices).
+2. `A` is *reduced*, because `Z` is (geometric reducedness over `K` in particular gives
+   `IsReduced Z`, `AlgebraicGeometry.GeometricallyReduced` instances).
+3. Hence `A` is a *field*.  Every `a ∈ A` is algebraic over `K`, so `K[a]` is a finite reduced
+   `K`-algebra, i.e. a finite product of fields; an idempotent of `K[a]` is an idempotent of
+   `A`, and `Z` is connected, so `A` has no idempotents other than `0` and `1` (a nontrivial
+   idempotent of `Γ(Z, ⊤)` is exactly a decomposition of `Z` into two nonempty opens).  So
+   `K[a]` is a field and `a` is invertible when nonzero.
+4. `A` is *finite* over `K`, by `AlgebraicGeometry.finite_appTop_of_universallyClosed` once
+   `A` is known to be a field — note that mathlib's version is stated under `[IsIntegral Z]`,
+   which is *stronger* than what is available here (connected + reduced does not give
+   irreducible: two lines meeting in a point are a standing counterexample, and they do have
+   `H⁰ = k`).  So this step needs the mathlib proof re-run without irreducibility; its actual
+   content is `RingHom.finite_of_algHom_finiteType_of_isJacobsonRing` applied to
+   `Γ(Z, ⊤) ⟶ Γ(Z, U)` for an affine open `U`, and irreducibility is used there only to know
+   `Z` is nonempty — which geometric connectedness also gives.
+5. Finally `[A : K] = 1`.  `A/K` is a finite field extension; geometric reducedness makes it
+   *separable*, so `A ⊗_K K̄ ≅ K̄^{[A:K]}` has `[A : K]` idempotents, while geometric
+   connectedness makes `Z_{K̄}` connected, hence `Γ(Z_{K̄}, 𝒪)` idempotent-free.  The one
+   nontrivial input is that `Γ` of a quasi-compact quasi-separated scheme over a field
+   commutes with the (flat) base change `K ⟶ K̄` — which for `H⁰` alone is the equalizer of a
+   finite Čech diagram of affines and the exactness of `- ⊗_K K̄`, *not* the full
+   cohomology-and-base-change theorem.
+
+**FAITHFULNESS.**  All three hypotheses are load-bearing.  Without geometric connectedness the
+statement fails for `Z = Spec (K × K)`; without geometric reducedness it fails for
+`Z = Spec (K[ε]/ε²)`; and *geometric* connectedness cannot be weakened to connectedness — for
+`K = ℝ` and `Z = Spec ℂ`, `Z` is connected, reduced and proper over `ℝ`, and
+`H⁰(Z, 𝒪) = ℂ ≠ ℝ`.  Likewise geometric reducedness cannot be weakened to reducedness, by the
+usual inseparable example `Z = Spec 𝔽_p(t^{1/p})` over `K = 𝔽_p(t)`. -/
+theorem isIso_appTop_of_isProper_over_field {K : CommRingCat.{u}} [Field K] {Z : Scheme.{u}}
+    (g : Z ⟶ Spec K) [IsProper g] [GeometricallyConnected g] [GeometricallyReduced g] :
+    IsIso g.appTop :=
+  sorry
+
+/-- **COHOMOLOGY AND BASE CHANGE IN DEGREE ZERO: `𝒪_S ⟶ f_*𝒪_X` IS AN ISOMORPHISM AS SOON AS
+IT IS ONE ON EVERY FIBRE** (LEAF, 2026-07-27; Hartshorne III.12.11, Grauert, Stacks 0E0L /
+EGA III 7.8.6) — the half of the pushforward theorem that is a genuine theory build.
+
+Note what is *not* here: no geometric connectedness, no geometric reducedness.  Those enter
+only through the hypothesis `h`, discharged by `isIso_appTop_of_isProper_over_field` above.
+What is left is exactly the classical cohomology-and-base-change statement, with the fibre
+input abstracted away.
+
+**THE ROUTE, in the vocabulary `[IsAffine S]` provides.**  Put `R := Γ(S, ⊤)`,
+`A := Γ(X, ⊤)`, `φ := f.appTop : R ⟶ A`.  Three inputs give `φ` bijective:
+
+1. *`A` is a finitely presented `R`-module* — properness plus local finite presentation.
+   Mathlib gives the weaker `isIntegral_appTop_of_universallyClosed` (`R ⟶ A` is integral) for
+   free, but not finiteness.
+2. *`A` is `R`-flat* — this is where `Flat f` enters, through cohomology and base change:
+   `f_*𝒪_X` is locally free with formation commuting with base change (Grauert).
+3. *For every maximal ideal `m ⊂ R`, `R/m ⟶ A/mA` is bijective* — degree-zero base change
+   identifies `A/mA` with `Γ(X_s, ⊤)` for the point `s` cut out by `m`, and `κ(s) = R/m`, so
+   this is precisely the hypothesis `h s`.
+
+Given those, `φ` is surjective by Nakayama applied to `coker φ` (finitely generated, and zero
+modulo every maximal ideal), and then injective because flatness of `A` keeps
+`0 ⟶ ker φ ⟶ R ⟶ A ⟶ 0` exact after `- ⊗_R R/m`, forcing `ker φ = m · ker φ` for every
+maximal `m`, with `ker φ` finitely generated by `Module.FinitePresentation.fg_ker`.
+
+**Why `[IsAffine S]` costs nothing**: `isIso_appTop_of_isIso_app_affineOpens` above reduces the
+general base to this one, because `f.app U` is the component at `U` of the sheaf map
+`𝒪_S ⟶ f_*𝒪_X` and the affine opens are a basis of `S`.  It is what makes `R` and `A` honest
+rings and the argument above expressible at all.
+
+**FAITHFULNESS.**  Flatness is essential — without it `h⁰` jumps and the conclusion is false
+(blow up a point on a surface and the exceptional fibre still has `H⁰ = κ(s)`, but a
+non-flat family does not have `f_*𝒪 = 𝒪`).  The hypothesis `h` also silently forces every
+fibre to be *nonempty*: for `X_s = ∅` one has `Γ(X_s, ⊤) = 0`, and a field never maps
+isomorphically to the zero ring.  That is correct and intended — `𝒪_S ⟶ f_*𝒪_X` is not an
+isomorphism over a point missed by `f`.
+
+**PIN STATE, checked rather than assumed (2026-07-27, re-checked at `122c02b0`).**  `Mathlib`
+has no higher direct images of quasi-coherent sheaves, no `Rⁱf_*`, no semicontinuity, no
+cohomology-and-base-change: `grep -rn 'higherDirectImage\|directImage\|
+cohomologyAndBaseChange' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/ ~/cs/FLT/FLT/
+Fermat/` returns zero hits.  So this leaf is a theory build and not a missing-lemma hunt.
+What mathlib *does* supply, and what an earlier version of this docstring did not record, is
+`AlgebraicGeometry.isIntegral_appTop_of_universallyClosed`,
+`AlgebraicGeometry.isField_of_universallyClosed` and
+`AlgebraicGeometry.finite_appTop_of_universallyClosed`
+(`Mathlib/AlgebraicGeometry/Morphisms/Proper.lean`) — the last two under `[IsIntegral X]`. -/
+theorem isIso_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    IsIso f.appTop :=
+  sorry
+
 /-! ### The theorem -/
 
 /-- **`Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY
-CONNECTED AND REDUCED FIBRES** (sorry node — Hartshorne III.12, Mumford *AV* §5, Stacks
-0E6R / 0BUG).  This is `f_*𝒪_X = 𝒪_S` read at global sections, and by
-`hasUniversallyTrivialPushforward_of_isProper_of_flat` below it is *equivalent* to the
-full sheaf-theoretic, universal statement — the reduction is recorded there.
+CONNECTED AND REDUCED FIBRES, OVER AN AFFINE BASE** — **PROVEN** (2026-07-27) over the two
+leaves above, by the one-line assembly they were cut for: every fibre
+`f.fiberToSpecResidueField s : X_s ⟶ Spec κ(s)` is a base change of `f`, hence proper,
+geometrically connected and geometrically reduced over the field `κ(s)`, so
+`isIso_appTop_of_isProper_over_field` discharges the fibrewise hypothesis of
+`isIso_appTop_of_isIso_appTop_fiber`.
 
 This is the missing classical input behind the whole Jacobian half of this development:
 `isAdditiveOn_of_post_zero` (relative rigidity), `exists_albaneseOfCurve` and
 `universal_jacobianBaseChangeAj` all reduce to it, which is why it is stated here, once,
 in the shim tree rather than inside a modular-curve file.
 
-**The proof, and what formalizing it costs.**  Let `s ∈ S`.  The fibre `X_s` is proper,
-geometrically connected and geometrically reduced over `κ(s)`, so `H⁰(X_s, 𝒪) = κ(s)`:
-a global section generates a finite `κ(s)`-subalgebra of `H⁰`, which is a field extension
-because `X_s` is reduced and connected, and is trivial because it is geometrically
-connected.  Flatness plus properness plus finite presentation then give cohomology and
-base change (Grauert / Hartshorne III.12.11): `f_*𝒪_X` is locally free of rank one and its
-formation commutes with base change, and the unit `𝒪_S ⟶ f_*𝒪_X` is an isomorphism
-because it is one on every fibre.
+**The instance plumbing, for the record.**  `f.fiberToSpecResidueField s` is by definition
+`pullback.snd f (S.fromSpecResidueField s)`, and mathlib already carries
+`GeometricallyConnected (f.fiberToSpecResidueField s)` and
+`GeometricallyReduced (f.fiberToSpecResidueField s)` as instances; only `IsProper` has to be
+produced by hand, from `MorphismProperty.pullback_snd`. -/
+theorem isIso_appTop_of_isProper_of_flat_of_isAffine (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    [GeometricallyConnected f] [GeometricallyReduced f] :
+    IsIso f.appTop := by
+  refine isIso_appTop_of_isIso_appTop_fiber f fun s => ?_
+  haveI : IsProper (f.fiberToSpecResidueField s) :=
+    MorphismProperty.pullback_snd _ _ inferInstance
+  exact isIso_appTop_of_isProper_over_field _
 
-**PIN STATE, checked rather than assumed (2026-07-27).**  `Mathlib` has no higher direct
-images of quasi-coherent sheaves, no `Rⁱf_*`, no semicontinuity, no cohomology-and-base-
-change; `grep` for `higherDirectImage`/`directImage` over `Mathlib/AlgebraicGeometry` and
-over `~/cs/FLT` returns nothing.  So this leaf is a genuine theory build, and it is the
-one whose completion unblocks three separate leaves at once.
+/-- **`Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY
+CONNECTED AND REDUCED FIBRES**, over an arbitrary base — **PROVEN** over the affine-base leaf
+`isIso_appTop_of_isProper_of_flat_of_isAffine` above.
 
-**LEAF: `Γ(S, ⊤) ⟶ Γ(X, ⊤)` IS AN ISOMORPHISM.**  This is the whole content: the two
-quantifiers that decorate it — "and after every base change", "and over every open
-`U ⊆ S`" — are both discharged by
-`hasUniversallyTrivialPushforward_of_isProper_of_flat` below, because *all five*
-hypotheses are stable under base change and an open restriction `f ∣_ U` is itself a base
-change (`AlgebraicGeometry.isPullback_morphismRestrict`).  So whoever takes this leaf owes
-**one global-sections computation and nothing else**; in particular there is no need to
-carry the `universally` wrapper or the `∀ U` through the cohomological argument.
+The base is made affine by `isIso_appTop_of_isIso_app_affineOpens`: `f.app U` is the component
+at `U` of the sheaf map `𝒪_S ⟶ f_*𝒪_X`, so it is enough to treat the affine opens, which are a
+basis of `S`.  Over an affine open `U`, `isPullback_morphismRestrict` exhibits `f ∣_ U` as a
+base change of `f`, so it inherits all five hypotheses, and `morphismRestrict_appTop` together
+with `Scheme.Opens.ι_image_top` identifies `(f ∣_ U).appTop` with `f.app U` up to the
+`eqToHom`-induced isomorphism.
 
-**THE ROUTE, restated at this reduced generality.**  `f` is proper, flat and of finite
-presentation with geometrically connected and geometrically reduced fibres.  Cohomology
-and base change (Grauert; Hartshorne III.12.11, Stacks 0E6R / 0BUG) makes `f_*𝒪_X` locally
-free with formation commuting with base change; its fibre at `s` is `H⁰(X_s, 𝒪_{X_s})`,
-which is `κ(s)` because `X_s` is proper, geometrically connected and geometrically reduced
-over `κ(s)` (a global section generates a finite `κ(s)`-subalgebra of `H⁰`, which is a
-field by reducedness and connectedness and is `κ(s)` itself by geometric connectedness).
-Hence the unit `𝒪_S ⟶ f_*𝒪_X` is an isomorphism on fibres, so an isomorphism, so an
-isomorphism on global sections.
-
-**WHAT IS MISSING, and the check that refutes it**: `grep -rn 'higherDirectImage\|
-directImage\|cohomologyAndBaseChange' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/
-~/cs/FLT/FLT/ Fermat/` — zero hits at `982e0aea`.  There is no quasi-coherent cohomology
-in the pin at all, so this is a theory build and not a missing-lemma hunt. -/
+So the affine reduction and the `universally`/`∀ U` bookkeeping of
+`hasUniversallyTrivialPushforward_of_isProper_of_flat` below are all discharged mechanically:
+the only remaining mathematics is the global-sections computation over an **affine** base. -/
 theorem isIso_appTop_of_isProper_of_flat (f : X ⟶ S)
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     [GeometricallyConnected f] [GeometricallyReduced f] :
-    IsIso f.appTop :=
-  sorry
+    IsIso f.appTop := by
+  refine isIso_appTop_of_isIso_app_affineOpens f fun U hU => ?_
+  haveI : IsAffine U := hU
+  haveI : IsProper (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip ‹IsProper f›
+  haveI : Flat (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip ‹Flat f›
+  haveI : LocallyOfFinitePresentation (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip
+      ‹LocallyOfFinitePresentation f›
+  haveI : GeometricallyConnected (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip
+      ‹GeometricallyConnected f›
+  haveI : GeometricallyReduced (f ∣_ U) :=
+    MorphismProperty.of_isPullback (isPullback_morphismRestrict f U).flip
+      ‹GeometricallyReduced f›
+  haveI hiso : IsIso (f.app (U.ι ''ᵁ ⊤) ≫
+      X.presheaf.map (eqToHom (image_morphismRestrict_preimage f U ⊤)).op) := by
+    rw [← morphismRestrict_appTop]
+    exact isIso_appTop_of_isProper_of_flat_of_isAffine (f ∣_ U)
+  haveI h2 := (isIso_comp_right_iff _ _).mp hiso
+  rwa [U.ι_image_top] at h2
 
 /-- **`f_*𝒪_X = 𝒪_S`, UNIVERSALLY, FOR A PROPER FLAT MORPHISM WITH GEOMETRICALLY CONNECTED
 AND REDUCED FIBRES** — PROVEN over `isIso_appTop_of_isProper_of_flat`.
