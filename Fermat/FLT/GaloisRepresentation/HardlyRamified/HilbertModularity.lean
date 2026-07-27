@@ -376,6 +376,13 @@ public import Mathlib.RingTheory.Nakayama
 public import Mathlib.NumberTheory.Padics.ProperSpace
 public import Mathlib.NumberTheory.Padics.RingHoms
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.LevelLimit
+-- `WittVector.exists_isIdempotentElem_isLocalRing_quotient_baseChange`,
+-- `WittVector.wittBaseChange`, `WittVector.moduleFinite_padicInt` and
+-- `WittVector.isAdicComplete_maximalIdeal_of_moduleFinite`: the `W(k)` NARROWING of
+-- `HilbertHeckeAlgebra` below, which DERIVES that structure's `isLocalRing`,
+-- `moduleFinite`, `moduleFree` and `isAdicComplete` instead of positing them.
+-- Pure commutative algebra; imports no Fermat module outside `Fermat/FLT/Mathlib/`.
+public import Fermat.FLT.Mathlib.RingTheory.WittVector.Coefficients
 -- the limit passage `HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames`:
 -- Kőnig's lemma (`nonempty_sections_of_finite_inverse_system`), the transition
 -- maps `R ⧸ Iᵐ →+* R ⧸ Iⁿ` (`Ideal.Quotient.factorPow`), and the universal
@@ -10031,6 +10038,230 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum
 
 /-! ### Items 3 and 5 — the Hecke algebra `T_F` and potential modularity -/
 
+/-! #### The presentation of `T`: a `ℤ`-form, base-changed to `W(k)`
+
+`HilbertHeckeAlgebra` below does not POSIT that its carrier `T` is local,
+module-finite and free over `ℤ_[ℓ]` and maximal-adically complete. It posits a
+PRESENTATION, and those four properties are theorems about it:
+
+* a **`ℤ`-form** `T₀` — a commutative ring module-finite and free over `ℤ`.
+  This is what Taylor–Wiles–Kisin actually builds: the Hecke algebra acting on
+  an integral lattice of Hilbert cusp forms of fixed weight and level.
+* its **`ℓ`-adic completion** `𝕋 = ℤ_[ℓ] ⊗_ℤ T₀` (`heckeZBaseChange`), which is
+  module-finite and free over `ℤ_[ℓ]` by `Module.Finite.base_change` and
+  `Module.Free.tensor` — DERIVED, not assumed;
+* its **unramified base change** `W(k) ⊗_{ℤ_[ℓ]} 𝕋` (`heckeWittBaseChange`) and
+  a maximal ideal `𝔪` of it;
+* the **local factor** at `𝔪` (`heckeLocalFactor`), cut out by the idempotent
+  `heckeLocalIdem` that `WittVector.exists_isIdempotentElem_isLocalRing_quotient_baseChange`
+  supplies.
+
+`Classical.choose` is used to name the idempotent because a bare "`e` is
+idempotent with `1 - e ∈ 𝔪`" does NOT pin it down — `e = 1` satisfies that and
+returns the whole ring, which is not local. It is the idempotent *primitive at
+`𝔪`* that is wanted, and naming the one the theorem produces is the cheapest
+way to say so; the alternative, re-positing `IsLocalRing` of the factor, would
+have narrowed nothing.
+
+## WHICH theorem the idempotent is chosen from, and why it matters (2026-07-27)
+
+`heckeLocalIdem` is `Classical.choose` of
+**`WittVector.exists_isIdempotentElem_isLocalRing_quotient_baseChange`**, NOT of
+the stronger `WittVector.exists_localFactor_wittBaseChange`, even though the
+latter is the theorem this narrowing was dispatched to consume and it packages
+everything at once. The reason is an axiom-audit result, and it was measured
+rather than guessed:
+
+* `exists_isIdempotentElem_isLocalRing_quotient_baseChange` is **axiom-clean**
+  (`propext, Classical.choice, Quot.sound`);
+* `exists_localFactor_wittBaseChange` is **`sorryAx`-tainted**, resting on the
+  three open leaves of `Coefficients.lean`.
+
+Choosing from a *sorried* theorem puts `sorryAx` into the **TYPE**
+`heckeLocalFactor`, hence into the type of `HilbertHeckeAlgebra.TEquiv`, hence
+into the `structure` itself — and then every declaration that so much as
+MENTIONS a Hecke algebra reports `sorryAx`, including ones with nothing left to
+prove. The first version of this edit did exactly that, and the audit showed
+even `HilbertHeckeAlgebra.residualT` — a completed proof — coming back tainted.
+
+That taint is spurious: the local factor at `𝔪` is a well-defined object
+independent of those three leaves, which bear only on its `ℤ_[ℓ]`-module
+structure. So the choice is made from the clean theorem, the three properties
+that genuinely need the open leaves (`moduleFinite`, `moduleFree`,
+`isAdicComplete`) are proven separately below and are tainted, and locality —
+which does not need them — stays clean.
+
+The cost of the split is that `moduleFree_heckeLocalFactor` repeats about ten
+lines of `exists_localFactor_wittBaseChange`'s proof (the direct-summand
+torsion-freeness argument), because that theorem's conclusion is about ITS
+existentially chosen idempotent and cannot be transported to this one without
+proving idempotents primitive at `𝔪` unique. Ten duplicated lines is the price
+of a truthful `#print axioms`, and it is worth paying.
+
+Everything here is `𝔪`- and `T₀`-generic commutative algebra: no Galois
+representation, no automorphic input, and no reference to `ρbar`. -/
+
+section HeckePresentation
+
+variable (ℓ : ℕ) [Fact ℓ.Prime] (k : Type u) [Field k] [Finite k] [CharP k ℓ]
+  (T₀ : Type u) [CommRing T₀] [Module.Finite ℤ T₀] [Module.Free ℤ T₀]
+
+/-- **The classical `ℤ_[ℓ]`-Hecke algebra of a `ℤ`-form**, `𝕋 = ℤ_[ℓ] ⊗_ℤ T₀`.
+Module-finite over `ℤ_[ℓ]` by `Module.Finite.base_change` and free by
+`Module.Free.tensor`; both fire as instances, which is why neither appears as a
+hypothesis anywhere below. -/
+abbrev heckeZBaseChange : Type u := TensorProduct ℤ ℤ_[ℓ] T₀
+
+/-- **The unramified base change** `W(k) ⊗_{ℤ_[ℓ]} (ℤ_[ℓ] ⊗_ℤ T₀)`. -/
+abbrev heckeWittBaseChange : Type u :=
+  _root_.WittVector.wittBaseChange ℓ k (heckeZBaseChange ℓ T₀)
+
+variable (𝔪 : Ideal (heckeWittBaseChange ℓ k T₀)) (h𝔪 : 𝔪.IsMaximal)
+
+/-- **The idempotent cutting out the local factor at `𝔪`** — the one produced by
+the AXIOM-CLEAN `WittVector.exists_isIdempotentElem_isLocalRing_quotient_baseChange`,
+named so that the local factor is a well-defined type rather than an
+existentially quantified one. See the section docstring for why the choice is
+made from that theorem and not from `exists_localFactor_wittBaseChange`. -/
+noncomputable def heckeLocalIdem : heckeWittBaseChange ℓ k T₀ :=
+  (_root_.WittVector.exists_isIdempotentElem_isLocalRing_quotient_baseChange ℓ k
+    (heckeZBaseChange ℓ T₀) 𝔪 h𝔪).choose
+
+/-- **The local factor of `W(k) ⊗_{ℤ_[ℓ]} 𝕋` at `𝔪`.** This is the ring the
+deformation-theoretic `R = T` theorem is about: the deformation functor lives on
+complete local `W(k)`-algebras with residue field `k`, so the Hecke side has to
+be an unramified base change of the classical `ℤ_[ℓ]`-Hecke algebra. -/
+abbrev heckeLocalFactor : Type u :=
+  heckeWittBaseChange ℓ k T₀ ⧸ Ideal.span {1 - heckeLocalIdem ℓ k T₀ 𝔪 h𝔪}
+
+omit [Module.Free ℤ T₀] in
+/-- The defining property of `heckeLocalIdem`, unfolded. AXIOM-CLEAN, which is
+the whole point of choosing from the weaker theorem: this is what the type
+`heckeLocalFactor` — and hence `HilbertHeckeAlgebra` itself — depends on. -/
+theorem heckeLocalFactor_spec :
+    IsIdempotentElem (heckeLocalIdem ℓ k T₀ 𝔪 h𝔪) ∧
+      1 - heckeLocalIdem ℓ k T₀ 𝔪 h𝔪 ∈ 𝔪 ∧
+      IsLocalRing (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) ∧
+      Nonempty (heckeWittBaseChange ℓ k T₀ ≃ₐ[_root_.WittVector ℓ k]
+        (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) ×
+        (heckeWittBaseChange ℓ k T₀ ⧸ Ideal.span {heckeLocalIdem ℓ k T₀ 𝔪 h𝔪})) :=
+  (_root_.WittVector.exists_isIdempotentElem_isLocalRing_quotient_baseChange ℓ k
+    (heckeZBaseChange ℓ T₀) 𝔪 h𝔪).choose_spec
+
+/-- **The local factor is LOCAL** — `HilbertHeckeAlgebra.isLocalRing`, derived,
+and AXIOM-CLEAN: locality of the factor at a maximal ideal needs only that
+`W(k)` is a complete Noetherian local ring, never that it is module-finite over
+`ℤ_[ℓ]`. -/
+instance instIsLocalRingHeckeLocalFactor :
+    IsLocalRing (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) :=
+  (heckeLocalFactor_spec ℓ k T₀ 𝔪 h𝔪).2.2.1
+
+omit [Module.Free ℤ T₀] in
+/-- **`W(k) ⊗_{ℤ_[ℓ]} 𝕋` is module-finite over `ℤ_[ℓ]`.** Deliberately a
+`theorem`, not an `instance`: it rests on the open leaf
+`WittVector.moduleFinite_padicInt`, and a `sorryAx`-dependent instance in the
+global instance set can silently taint proofs that never asked for it. -/
+theorem moduleFinite_heckeWittBaseChange :
+    Module.Finite ℤ_[ℓ] (heckeWittBaseChange ℓ k T₀) :=
+  haveI := _root_.WittVector.moduleFinite_padicInt ℓ k
+  Module.Finite.tensorProduct ..
+
+omit [Module.Finite ℤ T₀] in
+/-- **`W(k) ⊗_{ℤ_[ℓ]} 𝕋` is free over `ℤ_[ℓ]`.** A `theorem` for the same
+reason. -/
+theorem moduleFree_heckeWittBaseChange :
+    Module.Free ℤ_[ℓ] (heckeWittBaseChange ℓ k T₀) :=
+  haveI := _root_.WittVector.moduleFinite_padicInt ℓ k
+  haveI := _root_.WittVector.moduleFree_padicInt ℓ k
+  Module.Free.tensor
+
+omit [Module.Free ℤ T₀] in
+/-- **The local factor is module-finite over `ℤ_[ℓ]`** —
+`HilbertHeckeAlgebra.moduleFinite`, derived. A quotient of a module-finite
+module. Tainted by `WittVector.moduleFinite_padicInt`. -/
+theorem moduleFinite_heckeLocalFactor :
+    Module.Finite ℤ_[ℓ] (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) :=
+  haveI := moduleFinite_heckeWittBaseChange ℓ k T₀
+  Module.Finite.of_surjective
+    (Submodule.mkQ
+      ((Ideal.span {1 - heckeLocalIdem ℓ k T₀ 𝔪 h𝔪}).restrictScalars ℤ_[ℓ]))
+    (Submodule.mkQ_surjective _)
+
+/-- **The local factor is free over `ℤ_[ℓ]`** — `HilbertHeckeAlgebra.moduleFree`,
+derived. Freeness is not a separate assumption anywhere: the factor is a direct
+summand of the free module `W(k) ⊗_{ℤ_[ℓ]} 𝕋`, hence torsion-free, and it is
+finitely generated over the PID `ℤ_[ℓ]`.
+
+This repeats the corresponding step of `WittVector.exists_localFactor_wittBaseChange`
+because that theorem's conclusion is about its OWN existentially chosen
+idempotent; see the section docstring. -/
+theorem moduleFree_heckeLocalFactor :
+    Module.Free ℤ_[ℓ] (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) := by
+  haveI := _root_.WittVector.moduleFinite_padicInt ℓ k
+  haveI := _root_.WittVector.moduleFree_padicInt ℓ k
+  haveI := moduleFinite_heckeWittBaseChange ℓ k T₀
+  haveI := moduleFree_heckeWittBaseChange ℓ k T₀
+  haveI := moduleFinite_heckeLocalFactor ℓ k T₀ 𝔪 h𝔪
+  obtain ⟨eqv⟩ := (heckeLocalFactor_spec ℓ k T₀ 𝔪 h𝔪).2.2.2
+  haveI : Module.IsTorsionFree ℤ_[ℓ] (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) :=
+    Function.Injective.moduleIsTorsionFree
+      (fun x => eqv.symm (x, 0))
+      (fun x y hxy => by simpa using eqv.symm.injective hxy)
+      (fun r x => by
+        have hp : ((r • x, 0) : (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) ×
+            (heckeWittBaseChange ℓ k T₀ ⧸
+              Ideal.span {heckeLocalIdem ℓ k T₀ 𝔪 h𝔪})) = r • (x, 0) :=
+          -- `x ↦ (x, 0)` is `LinearMap.inl`, so this is its `map_smul`.
+          -- Stated this way rather than by `rw [Prod.smul_mk, smul_zero]`:
+          -- the `Zero` in the pair and the one `smul_zero` is stated over sit
+          -- on different instance paths, so the rewrite finds no pattern.
+          -- Both type arguments of `inl` are written out: left as `_` the
+          -- second stays a metavariable and `MulActionHomClass` synthesis fails.
+          map_smul (LinearMap.inl ℤ_[ℓ] (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪)
+            (heckeWittBaseChange ℓ k T₀ ⧸
+              Ideal.span {heckeLocalIdem ℓ k T₀ 𝔪 h𝔪})) r x
+        rw [hp]
+        exact map_smul (eqv.symm.restrictScalars ℤ_[ℓ]) r (x, 0))
+  exact Module.free_of_finite_type_torsion_free'
+
+omit [Module.Free ℤ T₀] in
+/-- **The local factor is maximal-adically complete** —
+`HilbertHeckeAlgebra.isAdicComplete`, derived. Module-finite over the complete
+Noetherian local `ℤ_[ℓ]` and local, so the two filtrations are cofinal. -/
+theorem isAdicComplete_heckeLocalFactor :
+    IsAdicComplete (IsLocalRing.maximalIdeal (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪))
+      (heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) :=
+  haveI := moduleFinite_heckeLocalFactor ℓ k T₀ 𝔪 h𝔪
+  _root_.WittVector.isAdicComplete_maximalIdeal_of_moduleFinite (R := ℤ_[ℓ])
+    (A := heckeLocalFactor ℓ k T₀ 𝔪 h𝔪)
+
+/-- **The `ℤ`-form maps into the local factor**: `T₀ → ℤ_[ℓ] ⊗_ℤ T₀ →
+W(k) ⊗_{ℤ_[ℓ]} 𝕋 ↠ heckeLocalFactor`. This is the map that carries the
+`ℚ`-rational structure of the Hecke operators into `T`, and it is what
+`HilbertHeckeAlgebra.heckeT_eq` is stated against. -/
+noncomputable def heckeZFormMap : T₀ →+* heckeLocalFactor ℓ k T₀ 𝔪 h𝔪 :=
+  (Ideal.Quotient.mk _).comp
+    ((Algebra.TensorProduct.includeRight (R := ℤ_[ℓ]) (A := _root_.WittVector ℓ k)
+        (B := heckeZBaseChange ℓ T₀)).toRingHom.comp
+      (Algebra.TensorProduct.includeRight (R := ℤ) (A := ℤ_[ℓ]) (B := T₀)).toRingHom)
+
+omit [Module.Free ℤ T₀] in
+/-- **Anything `ℤ_[ℓ]`-algebra-isomorphic to the local factor is local.**
+
+Stated separately, and taking the equivalence as an ordinary argument, because
+it has to be usable INSIDE the declaration of `HilbertHeckeAlgebra`: there the
+carrier `T` is a bound field, no instance has been registered for it yet, and
+the two fields `isAdic` and `isHilbertHardlyRamified` both need `IsLocalRing T`
+to state. Since `IsLocalRing` is a `Prop`, the `letI`-bound instance used there
+and the global instance registered after the structure are definitionally equal
+by proof irrelevance, so consumers read the fields with the global one. -/
+theorem isLocalRing_of_algEquiv_heckeLocalFactor {T : Type u} [CommRing T]
+    [Algebra ℤ_[ℓ] T] (e : T ≃ₐ[ℤ_[ℓ]] heckeLocalFactor ℓ k T₀ 𝔪 h𝔪) :
+    IsLocalRing T :=
+  e.symm.toRingEquiv.isLocalRing
+
+end HeckePresentation
+
 /-- **The Hecke algebra `T_F` of Hilbert modular forms over `F`**
 (interface structure): the `ℤ_ℓ`-algebra generated by the Hecke operators
 `T_w` at the places `w` away from a finite bad set, acting on the space
@@ -10039,15 +10270,19 @@ localized at the maximal ideal attached to `ρbar|_{G_F}`.
 
 The components that carry the arithmetic:
 
-* the instance fields `moduleFinite` and `moduleFree`, i.e. **`T` is a
-  finite FREE `ℤ_[ℓ]`-module**, together with `IsLocalRing T`. Finiteness
-  is the item `Modularity/Patching.lean` takes as a HYPOTHESIS and that
-  nothing in the repository supplies; classically it holds because the
-  space of Hilbert modular forms of fixed weight and level is a finitely
-  generated `ℤ_ℓ`-module on which `T` acts faithfully, and freeness because
-  `T` is then a torsion-free finitely generated module over a PID. Freeness
-  is not decoration — see the vacuity audit below, where it is what
-  distinguishes a Hecke algebra from its own residue ring.
+* the PRESENTATION `T₀` / `𝔪` / `TEquiv`, from which **`T` is a finite FREE
+  `ℤ_[ℓ]`-module** and `IsLocalRing T` are now PROVEN
+  (`HilbertHeckeAlgebra.moduleFinite`, `.moduleFree`, `.isLocalRing`,
+  `.isAdicComplete`) rather than posited — see "THE TWO REPAIRS RECONCILED"
+  below. Finiteness is the item `Modularity/Patching.lean` takes as a
+  HYPOTHESIS and that nothing in the repository supplies; classically it holds
+  because the space of Hilbert modular forms of fixed weight and level is a
+  finitely generated `ℤ_ℓ`-module on which `T` acts faithfully, and freeness
+  because `T` is then a torsion-free finitely generated module over a PID.
+  Freeness is not decoration — see the vacuity audit below, where it is what
+  distinguishes a Hecke algebra from its own residue ring; the audit survives
+  the change unaltered, because freeness is still available, merely as a
+  theorem instead of an assumption.
 * `adjoin_heckeT` — `T` is generated over `ℤ_ℓ` by the good-place Hecke
   operators. Without it the structure would be inhabited by `ℤ_ℓ` itself
   with `heckeT` arbitrary, and would record nothing.
@@ -10251,7 +10486,132 @@ it follows from `moduleFinite` by `IsNoetherianRing.of_finite ℤ_[ℓ] T`.
 
 Cost to the production leaf `nonempty_potentialHeckeDatum_of_five_le`: none
 mathematically — see the two docstrings there — and its statement is once
-again unchanged. -/
+again unchanged.
+
+## THE TWO REPAIRS RECONCILED (2026-07-27) — what was chosen and what rejected
+
+Two independent audits arrived at this binder list from opposite directions and
+pushed in different directions on the SAME four fields. They were dispatched as
+one job, to a single owner, precisely so that they would not be cut twice in
+incompatible ways. Both are made here, in one edit.
+
+**Repair A — the `W(k)` narrowing** (recorded as the third bullet of
+"NARROWINGS IDENTIFIED" in `nonempty_potentialHeckeDatum_of_five_le`).
+`πT_surjective` plus the Teichmüller half of `adjoin_heckeT` is precisely the
+assertion that `T` is the local factor of `𝕋_𝔪 ⊗_{ℤ_[ℓ]} W(k)`. That is pure
+commutative algebra, and it should be PROVEN rather than cited. It now is:
+`isLocalRing`, `moduleFinite`, `moduleFree` and `isAdicComplete` are theorems
+about a presentation, over the `Coefficients.lean` development that
+`WittVector.exists_localFactor_wittBaseChange` packages. (The idempotent is
+chosen from that theorem's AXIOM-CLEAN weaker sibling; see "What this COSTS"
+below for why, and what it buys.)
+
+**Repair B — the `ℤ`-rational structure** (obstruction 1 of
+`Modularity/KhareWintenberger.lean`'s `exists_heckeTraceAlgebra_of_congruentSeed`).
+`T` is module-finite over `ℤ_[ℓ]`, not over `ℤ`, so it carries no `ℚ`-rational
+structure — which is exactly why the `ℓ`-adic development yields only
+`IsIntegral ℤ_[ℓ]` and cannot reach a number field. Finiteness over `ℤ` is what
+makes the rationality step easy, via
+`exists_numberField_ringHom_of_moduleFinite_int`.
+
+**The conflict.** A narrows by DELETING assumptions on `T`; B strengthens by
+ADDING a base ring below `ℤ_[ℓ]`. Applied separately they collide: A's natural
+form posits `𝕋` module-finite and free over `ℤ_[ℓ]` — which is precisely the
+assumption B says is too weak — and B's natural form adds a `ℤ`-form beside a
+`T` that is still posited local, finite, free and complete, so it removes
+nothing and A's whole point is lost.
+
+**The choice: present over `ℤ`, and derive everything above it.** The structure
+carries ONE ring, the `ℤ`-form `T₀`, and the chain
+
+    T₀  ⇝  𝕋 = ℤ_[ℓ] ⊗_ℤ T₀  ⇝  W(k) ⊗_{ℤ_[ℓ]} 𝕋  ⇝  local factor at 𝔪  ≃  T
+
+is all theorem. `Module.Finite ℤ_[ℓ] 𝕋` and `Module.Free ℤ_[ℓ] 𝕋` — the very
+hypotheses `exists_localFactor_wittBaseChange` takes — are no longer posited
+either: they follow from `Module.Finite ℤ T₀` and `Module.Free ℤ T₀` by
+`Module.Finite.base_change` and `Module.Free.tensor`. So B does not merely
+coexist with A; it *deepens* it by one step, and what the citation must supply
+shrinks from "a local, module-finite, free, complete `ℤ_[ℓ]`-algebra with a
+Galois representation" to "a `ℤ`-form".
+
+**What was REJECTED, and why.**
+
+1. *Carrying `𝕋` over `ℤ_[ℓ]` as the presentation and `T₀` beside it, linked by
+   an isomorphism `𝕋 ≃ ℤ_[ℓ] ⊗_ℤ T₀`.* Redundant data: `𝕋` is then determined
+   up to isomorphism by `T₀`, and every consumer would have to carry the linking
+   equivalence. Making `𝕋` an `abbrev` for the tensor product costs nothing and
+   removes two posited instances.
+2. *Making `T` itself a `def` (the local factor) rather than a field with an
+   equivalence to it.* This looks cleaner and is not: `T` is projected in
+   dozens of places, `H.T` would stop being a projection, and every field
+   mentioning `T` would have to repeat the presentation. The equivalence
+   `TEquiv` costs one field and keeps `H.T` exactly what it was.
+3. *Positing `IsLocalRing` of the local factor instead of naming the idempotent
+   with `Classical.choose`.* An idempotent `e` with `1 - e ∈ 𝔪` is NOT pinned
+   down by those two clauses — `e = 1` satisfies them and returns the whole
+   ring — so a version that quantifies existentially over `e` has to re-posit
+   locality, and then locality is not narrowed at all. Naming the idempotent
+   the theorem produces is what makes locality a theorem.
+4. *Deriving `adjoin_heckeT` as well.* It should follow — `W(k)` is generated
+   over `ℤ_[ℓ]` by Teichmüller roots (`WittVector.adjoin_teichmullerRootSet_eq_top`)
+   and `𝕋` by the Hecke operators, so the base change is generated by both and
+   so is any quotient of it — but the second half is nowhere assumed (nothing
+   says the Hecke operators generate `T₀`), and passing `Algebra.adjoin` through
+   a tensor product and then a quotient is a separate development. Left as a
+   field, and flagged here as the next reduction of this structure.
+5. *Adding `residueCardTwo` here.* It is FALSE as a hypothesis about a given `F`
+   (`ℚ(√5)` has `2` inert), and must be arranged where `F` is born, on the
+   Moret–Bailly chain. Untouched.
+
+**What this COSTS, exactly — and the axiom audit that bounded it.** The
+commutative algebra of the local factor rests on two open leaves in
+`Fermat/FLT/Mathlib/RingTheory/WittVector/Coefficients.lean`:
+`WittVector.moduleFinite_padicInt` (`W(k)` is module-finite over `ℤ_[ℓ]`) and
+`isAdicComplete_maximalIdeal_of_moduleFinite`. So
+
+* `HilbertHeckeAlgebra.moduleFinite`, `.moduleFree` and `.isAdicComplete` are
+  now transitively `sorryAx` where before they were assumptions and therefore
+  clean. That is the correct trade and not a regression: an ASSUMPTION is not
+  cleaner than a proof over named leaves, it is merely invisible. The taint is
+  discharged by closing those leaves, and it names them.
+* `HilbertHeckeAlgebra.isLocalRing` is **clean**, and so is the `structure`
+  itself — see "WHICH theorem the idempotent is chosen from" in the
+  presentation section above. This was NOT free: the first version of this edit
+  chose the idempotent from the sorried `exists_localFactor_wittBaseChange`,
+  which put `sorryAx` into the TYPE `HilbertHeckeAlgebra` and made every
+  declaration merely MENTIONING a Hecke algebra report `sorryAx` — including
+  `HilbertHeckeAlgebra.residualT`, which is a completed proof. Choosing from the
+  axiom-clean `exists_isIdempotentElem_isLocalRing_quotient_baseChange` instead
+  confines the taint to the three properties that genuinely need those leaves.
+
+**Exactly which consumers regress, MEASURED** (both trees built, `#print axioms`
+run against each, 2026-07-27 — not inferred):
+
+| declaration | before | after |
+|---|---|---|
+| `HilbertHeckeAlgebra.residualT` | clean | **clean** |
+| `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` | clean | `sorryAx` |
+| `surjective_classifyingMap_hilbertHeckeDatum` | clean | `sorryAx` |
+| `injective_classifyingMap_hilbertHeckeDatum` | `sorryAx` | `sorryAx` |
+
+So the regression is **two declarations**, both of which consume `moduleFinite`
+or `isAdicComplete` of `T` and neither of which has anything left to prove; the
+injective half was already tainted and is not this edit's doing. Closing
+`WittVector.moduleFinite_padicInt` and
+`WittVector.isAdicComplete_maximalIdeal_of_moduleFinite` returns both to clean
+AND discharges the narrowing — that is the point of naming them.
+
+The check that refutes any claim here: `#print axioms` on the names above,
+against the BUILT module.
+
+**What this does NOT change.** No statement of any consumer moves.
+`exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` still produces
+`𝒟T.ρ = T.ρT` on the nose with `e = AlgEquiv.refl`;
+`surjective_classifyingMap_hilbertHeckeDatum` and its injective partner still
+take the classifying map explicitly, so `ρ`-compatibility is still recoverable;
+`hℓ5` is still load-bearing through `residueCardTwo` forcing `N(w) = 2`; and
+`nonempty_potentialHeckeDatum_of_five_le`'s statement is, once again,
+unchanged. -/
 structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k]
@@ -10263,13 +10623,43 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
   [commRing : CommRing T]
   [topologicalSpace : TopologicalSpace T]
   [isTopologicalRing : IsTopologicalRing T]
-  [isLocalRing : IsLocalRing T]
   [algebra : Algebra ℤ_[ℓ] T]
-  [moduleFinite : Module.Finite ℤ_[ℓ] T]
-  /-- `T` is `ℤ_[ℓ]`-FREE: with `IsLocalRing T` this is what forces the
-  Hecke algebra to be of characteristic zero, and is what no residual junk
-  witness can satisfy. -/
-  [moduleFree : Module.Free ℤ_[ℓ] T]
+  /-- **`k` is FINITE.** Part of the presentation: `W(k)` is a coefficient ring
+  only for a finite (hence perfect) residue field. Classically automatic — `k`
+  is the residual coefficient field of `ρbar`. Not a structure PARAMETER, so
+  that every existing use site `HilbertHeckeAlgebra ℓ F ρbar` is unchanged. -/
+  [finiteK : Finite k]
+  /-- **`k` has characteristic `ℓ`.** As above; `ρbar` is the mod-`ℓ`
+  representation. -/
+  [charPK : CharP k ℓ]
+  /-- **The `ℤ`-FORM of the Hecke algebra** — the object Taylor–Wiles–Kisin
+  actually builds, module-finite and free over **`ℤ`**, not over `ℤ_[ℓ]`.
+
+  Added 2026-07-27 by the `ℤ`-RATIONAL STRUCTURE repair recorded below: over
+  `ℤ_[ℓ]` alone the Hecke eigenvalues have no `ℚ`-rational structure, which is
+  exactly why the `ℓ`-adic development yields only `IsIntegral ℤ_[ℓ]`. With a
+  `ℤ`-form, `Modularity/KhareWintenberger.lean`'s
+  `exists_numberField_ringHom_of_moduleFinite_int` applies to `T₀` and puts the
+  eigenvalues in a number field. -/
+  T₀ : Type u
+  [commRingT₀ : CommRing T₀]
+  [moduleFiniteT₀ : Module.Finite ℤ T₀]
+  /-- `T₀` is `ℤ`-FREE. Classically automatic: `T₀` is a subring of the
+  endomorphisms of a finite free `ℤ`-lattice of cusp forms, hence a finitely
+  generated torsion-free `ℤ`-module. It is what makes `ℤ_[ℓ] ⊗_ℤ T₀` free over
+  `ℤ_[ℓ]`, which is in turn what the local-factor development needs. -/
+  [moduleFreeT₀ : Module.Free ℤ T₀]
+  /-- The maximal ideal of `W(k) ⊗_{ℤ_[ℓ]} (ℤ_[ℓ] ⊗_ℤ T₀)` attached to
+  `ρbar|_{G_F}` — the localization datum. -/
+  𝔪 : Ideal (heckeWittBaseChange ℓ k T₀)
+  /-- `𝔪` is maximal. -/
+  𝔪_isMaximal : 𝔪.IsMaximal
+  /-- **`T` IS the local factor at `𝔪`.** This single field replaces the four
+  that `HilbertHeckeAlgebra` used to posit — `IsLocalRing T`,
+  `Module.Finite ℤ_[ℓ] T`, `Module.Free ℤ_[ℓ] T` and `IsAdicComplete` — each of
+  which is now a theorem (`HilbertHeckeAlgebra.isLocalRing`, `.moduleFinite`,
+  `.moduleFree`, `.isAdicComplete` below). -/
+  TEquiv : T ≃ₐ[ℤ_[ℓ]] heckeLocalFactor ℓ k T₀ 𝔪 𝔪_isMaximal
   /-- **The topology of `T` is the maximal-adic one.** Added 2026-07-26 by
   the INTERFACE REPAIR below: without it the topology `T` carries is
   arbitrary, `isHilbertHardlyRamified` (which is a statement about
@@ -10279,19 +10669,29 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
   from any amount of arithmetic. Classically this is no constraint at all:
   the localized Hecke algebra is finite free over `ℤ_[ℓ]` and carries the
   `ℓ`-adic topology, which is its maximal-adic topology because `T/ℓT` is
-  Artinian local. -/
-  isAdic : IsAdic (IsLocalRing.maximalIdeal T)
-  /-- **`T` is maximal-adically complete and separated.** Added 2026-07-26
-  with `isAdic`, and for the same reason. Classically automatic from
-  `moduleFinite` + `moduleFree`: `T ≅ ℤ_[ℓ] ^ n` as a `ℤ_[ℓ]`-module is
-  `ℓ`-adically complete, and the `ℓ`-adic and maximal-adic filtrations are
-  cofinal in each other. -/
-  isAdicComplete : IsAdicComplete (IsLocalRing.maximalIdeal T) T
+  Artinian local.
+
+  The `letI` supplies `IsLocalRing T`, which is no longer a field: it is
+  `TEquiv` transported, and `IsLocalRing` being a `Prop` it is definitionally
+  the instance registered globally below. -/
+  isAdic : letI : IsLocalRing T :=
+      isLocalRing_of_algEquiv_heckeLocalFactor ℓ k T₀ 𝔪 𝔪_isMaximal TEquiv
+    IsAdic (IsLocalRing.maximalIdeal T)
   /-- The finite bad set: the level of the newform and the places over
   `2` and `ℓ`. -/
   bad : Finset (HeightOneSpectrum (𝓞 F))
+  /-- **The Hecke operator at a place, over `ℤ`.** Added 2026-07-27 with `T₀`:
+  without it the `ℤ`-form is decoration, since nothing would connect it to the
+  Frobenius traces. Together with `heckeT_eq` and `charFrobT` it says that every
+  good-place Frobenius trace of `ρT` lies in the image of a ring that is
+  module-finite over `ℤ`. -/
+  heckeT₀ : HeightOneSpectrum (𝓞 F) → T₀
   /-- The Hecke operator at a place. -/
   heckeT : HeightOneSpectrum (𝓞 F) → T
+  /-- **The Hecke operators are `ℚ`-rational**: they come from the `ℤ`-form
+  along `heckeZFormMap`. -/
+  heckeT_eq : ∀ w : HeightOneSpectrum (𝓞 F),
+    TEquiv (heckeT w) = heckeZFormMap ℓ k T₀ 𝔪 𝔪_isMaximal (heckeT₀ w)
   /-- `T` is generated over `ℤ_ℓ` by the `ℓ`-power Teichmüller roots
   (`teichmullerRootSet ℓ T`, written out here because that definition lives
   below this structure) together with the good-place Hecke operators.
@@ -10317,7 +10717,9 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
   /-- `ρT` satisfies the same `F`-level local conditions as the deformations
   of `ρbar|_{G_F}` — this is what pins the level and the weight of the
   Hilbert newform to the deformation problem. -/
-  isHilbertHardlyRamified : IsHilbertHardlyRamified ℓ F (rank_finTwoPi T) ρT
+  isHilbertHardlyRamified : letI : IsLocalRing T :=
+      isLocalRing_of_algEquiv_heckeLocalFactor ℓ k T₀ 𝔪 𝔪_isMaximal TEquiv
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi T) ρT
   /-- **Hecke = Frobenius trace**: the Hecke operator at a good place is the
   trace of `ρT` at the Frobenius there (`charFrob` is monic of degree `2`,
   so its `coeff 1` is minus that trace). -/
@@ -10329,9 +10731,73 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
 
 attribute [instance] HilbertHeckeAlgebra.commRing
   HilbertHeckeAlgebra.topologicalSpace HilbertHeckeAlgebra.isTopologicalRing
-  HilbertHeckeAlgebra.isLocalRing
-  HilbertHeckeAlgebra.algebra HilbertHeckeAlgebra.moduleFinite
-  HilbertHeckeAlgebra.moduleFree
+  HilbertHeckeAlgebra.algebra
+  HilbertHeckeAlgebra.commRingT₀ HilbertHeckeAlgebra.moduleFiniteT₀
+  HilbertHeckeAlgebra.moduleFreeT₀
+
+/-! #### The four properties that used to be posited, now PROVEN
+
+`finiteK` and `charPK` are deliberately NOT made global instances: they say
+nothing about the structure's carrier, so Lean cannot key an instance on them
+(`Finite k` mentions no `self`). They are threaded by hand with `haveI` in the
+four derivations below, which is the only place they are needed. -/
+
+section HilbertHeckeAlgebraDerived
+
+variable {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
+  {k : Type u} [Field k] [TopologicalSpace k]
+  {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+  {ρbar : GaloisRep ℚ k V} (H : HilbertHeckeAlgebra ℓ F ρbar)
+
+/-- **`T` is LOCAL** (PROVEN — this was an instance FIELD before the `W(k)`
+narrowing of 2026-07-27). `T` is the local factor of `W(k) ⊗_{ℤ_[ℓ]} 𝕋` at a
+maximal ideal, and such a factor is local.
+
+**AXIOM-CLEAN**, unlike the three below: locality of the factor needs only that
+`W(k)` is a complete Noetherian local ring, which is proven, and not that it is
+module-finite over `ℤ_[ℓ]`, which is open. -/
+instance HilbertHeckeAlgebra.isLocalRing : IsLocalRing H.T :=
+  haveI := H.finiteK; haveI := H.charPK
+  isLocalRing_of_algEquiv_heckeLocalFactor ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal H.TEquiv
+
+/-- **`T` is module-finite over `ℤ_[ℓ]`** (PROVEN — was an instance FIELD).
+`ℤ_[ℓ] ⊗_ℤ T₀` is module-finite over `ℤ_[ℓ]` because `T₀` is over `ℤ`; the base
+change to `W(k)` is module-finite over `ℤ_[ℓ]` because `W(k)` is; and a quotient
+of a module-finite module is module-finite.
+
+Transitively `sorryAx`, over `WittVector.moduleFinite_padicInt`. That is the
+narrowing working as intended: what used to be an ASSUMPTION on `T` is now a
+proof resting on a named, small, open commutative-algebra leaf. -/
+instance HilbertHeckeAlgebra.moduleFinite : Module.Finite ℤ_[ℓ] H.T :=
+  haveI := H.finiteK; haveI := H.charPK
+  haveI := moduleFinite_heckeLocalFactor ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal
+  Module.Finite.equiv H.TEquiv.symm.toLinearEquiv
+
+/-- **`T` is FREE over `ℤ_[ℓ]`** (PROVEN — was an instance FIELD). With
+`isLocalRing` this is what forces the Hecke algebra to be of characteristic
+zero, and is what no residual junk witness can satisfy; the vacuity audit in
+this structure's docstring turns on it. It is now a theorem: the local factor
+is a direct summand of the free `ℤ_[ℓ]`-module `W(k) ⊗_{ℤ_[ℓ]} 𝕋`, hence
+torsion-free and finitely generated over the PID `ℤ_[ℓ]`. -/
+instance HilbertHeckeAlgebra.moduleFree : Module.Free ℤ_[ℓ] H.T :=
+  haveI := H.finiteK; haveI := H.charPK
+  haveI := moduleFinite_heckeLocalFactor ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal
+  haveI := moduleFree_heckeLocalFactor ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal
+  Module.Free.of_equiv H.TEquiv.symm.toLinearEquiv
+
+/-- **`T` is maximal-adically complete and separated** (PROVEN — was a FIELD).
+`T` is module-finite over the complete Noetherian local ring `ℤ_[ℓ]` and local,
+so its own maximal-adic filtration is cofinal with the one induced from the
+base: `WittVector.isAdicComplete_maximalIdeal_of_moduleFinite`.
+
+Note this derivation needs neither `W(k)` nor the presentation — only
+`moduleFinite` and `isLocalRing`. So `isAdicComplete` was ALREADY redundant as
+a field, independently of the `W(k)` narrowing. -/
+theorem HilbertHeckeAlgebra.isAdicComplete :
+    IsAdicComplete (IsLocalRing.maximalIdeal H.T) H.T :=
+  _root_.WittVector.isAdicComplete_maximalIdeal_of_moduleFinite (R := ℤ_[ℓ]) (A := H.T)
+
+end HilbertHeckeAlgebraDerived
 
 /-- **The reduced Hecke eigensystem is the system of Frobenius traces of
 `ρbar|_{G_F}`** (PROVEN — this was a FIELD of the structure before the
@@ -10857,14 +11323,33 @@ are recorded rather than made:
   NOT among them — it follows from module-finiteness plus torsion-freeness
   over the PID `ℤ_[ℓ]`, both of which are settled.
 
-  So this narrowing is no longer blocked on missing theory; it is blocked
-  only on the cut-level edit to `HilbertHeckeAlgebra` that consumes the
-  above, which was deliberately not made on 2026-07-27 because
-  `HilbertHeckeAlgebra` had a concurrent owner (see `flt-lean-168`, whose
-  own dispatch names `HilbertHeckeAlgebra.T`'s base ring as its obstruction
-  1 and assigns it a spanning cut-level repair). Whoever makes that edit
-  should consume `exists_localFactor_wittBaseChange` rather than re-deriving
-  it.
+  **THE NARROWING IS NOW MADE (2026-07-27).** The cut-level edit to
+  `HilbertHeckeAlgebra` was dispatched to a single owner together with the
+  `ℤ`-rational repair that `flt-lean-168` had named as its obstruction 1, so
+  that the two would not be cut twice in incompatible ways; both are in that
+  structure now, and the reconciliation — what was chosen and what rejected —
+  is written out under "THE TWO REPAIRS RECONCILED" in its docstring. It
+  consumes the `Coefficients.lean` development rather than re-deriving it —
+  though NOT through `exists_localFactor_wittBaseChange` itself, because that
+  theorem is `sorryAx`-tainted and choosing an idempotent from it would put
+  `sorryAx` into the TYPE of every Hecke algebra. See "WHICH theorem the
+  idempotent is chosen from" in the presentation section.
+
+  What this leaf must now supply, in place of "a local, module-finite, free,
+  maximal-adically complete `ℤ_[ℓ]`-algebra": a **`ℤ`-form** `T₀`, module-finite
+  and free over `ℤ`, a maximal ideal `𝔪` of `W(k) ⊗_{ℤ_[ℓ]} (ℤ_[ℓ] ⊗_ℤ T₀)`,
+  and an identification of `T` with the local factor there. Classically that is
+  what Carayol/Taylor produce and strictly less than what was assumed before:
+  `Module.Finite ℤ_[ℓ] 𝕋` and `Module.Free ℤ_[ℓ] 𝕋` are now derived from the
+  `ℤ`-form by `Module.Finite.base_change` and `Module.Free.tensor`, and the four
+  properties of `T` from the local-factor development.
+
+  The residual arithmetic citation — Moret–Bailly/Taylor and Carayol/Taylor
+  with level lowering — is untouched by this; only the commutative algebra
+  moved. The remaining reduction of the structure is `adjoin_heckeT`, which
+  should follow from `adjoin_teichmullerRootSet_eq_top` once something asserts
+  that the Hecke operators generate the `ℤ`-form; see rejection 4 in that
+  docstring.
 
 TERMINALITY VERDICT (2026-07-26): the arithmetic residue — Moret–Bailly /
 Taylor, plus Carayol / Taylor with level lowering — is IRREDUCIBLY a
