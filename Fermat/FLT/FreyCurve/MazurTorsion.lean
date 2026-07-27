@@ -24788,14 +24788,88 @@ theorem caseI_split {M e N : ℤ} (hcop : IsCoprime M e) (he : 0 < e) (hM : 7 * 
   · push_cast at ha hb
     exact ⟨a, b, hab, Or.inr (Or.inr (Or.inr ⟨by linarith, by linarith⟩))⟩
 
-/-- **CASE I, `g = 1`: `M² − e² = a²`, `M² − 49e² = b²`** (sorry leaf, cut
-2026-07-27 out of `dual_quartic`).
+/-! ### Helpers for `caseI_one`'s descent -/
+
+/-- `7` is coprime to anything it does not divide (PROVEN 2026-07-27). -/
+theorem coprime_seven {M : ℤ} (h7 : ¬ (7 : ℤ) ∣ M) : IsCoprime (7 : ℤ) M := by
+  have hp : Nat.Prime 7 := by norm_num
+  have hnd : ¬ (7 : ℕ) ∣ M.natAbs := fun hd =>
+    h7 (Int.natAbs_dvd_natAbs.mp (by simpa using hd))
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  simpa [Int.gcd] using (Nat.Prime.coprime_iff_not_dvd hp).mpr hnd
+
+theorem not_even_odd {x : ℤ} (h1 : Even x) (h2 : Odd x) : False := by
+  obtain ⟨u, hu⟩ := h1; obtain ⟨v, hv⟩ := h2; omega
+
+/-- If `M² − c·e² = a²` with `M`, `e` coprime then `a`, `e` are coprime. -/
+theorem coprime_of_sq_sub {M e a c : ℤ} (hcop : IsCoprime M e) (h : M ^ 2 - c * e ^ 2 = a ^ 2) :
+    IsCoprime a e := by
+  have h1 : IsCoprime (M ^ 2 + e ^ 2 * (-c)) (e ^ 2) := (hcop.pow (m := 2) (n := 2)).add_mul_left_left (-c)
+  have h2 : IsCoprime (a ^ 2) (e ^ 2) := by
+    have hx : M ^ 2 + e ^ 2 * (-c) = a ^ 2 := by linear_combination h
+    rwa [hx] at h1
+  exact (h2.of_isCoprime_of_dvd_left (dvd_pow_self a two_ne_zero)).of_isCoprime_of_dvd_right
+    (dvd_pow_self e two_ne_zero)
+
+/-- `8` divides `M² − e²` and `M² − 49e²` when both `M` and `e` are odd. -/
+theorem eight_dvd_of_odd {M e : ℤ} (hM : Odd M) (he : Odd e) :
+    (8 : ℤ) ∣ M ^ 2 - e ^ 2 ∧ (8 : ℤ) ∣ M ^ 2 - 49 * e ^ 2 := by
+  obtain ⟨k, hk⟩ := hM
+  obtain ⟨l, hl⟩ := he
+  obtain ⟨s, hs⟩ : Even (k * (k + 1)) := Int.even_mul_succ_self k
+  obtain ⟨t, ht⟩ : Even (l * (l + 1)) := Int.even_mul_succ_self l
+  have h8A : (8 : ℤ) ∣ M ^ 2 - e ^ 2 :=
+    ⟨s - t, by rw [hk, hl]; linear_combination 4 * hs - 4 * ht⟩
+  refine ⟨h8A, ?_⟩
+  obtain ⟨w, hw⟩ := h8A
+  exact ⟨w - 6 * e ^ 2, by linarith⟩
+
+/-- **The four-way coprime split.** From `P·Q = R·S` with `P`, `Q` coprime and
+`R`, `S` coprime and `P ≠ 0`, there are `f, g, h, k` with `P = fg`, `Q = hk`,
+`R = fh`, `S = gk`, pairwise coprime across the two factorisations. -/
+theorem split_four {P Q R S : ℤ} (hP : P ≠ 0) (_hPQ : IsCoprime P Q) (hRS : IsCoprime R S)
+    (hprod : P * Q = R * S) :
+    ∃ f g h k : ℤ, P = f * g ∧ Q = h * k ∧ R = f * h ∧ S = g * k ∧
+      IsCoprime f g ∧ IsCoprime f k ∧ IsCoprime h g ∧ IsCoprime h k := by
+  obtain ⟨f, g, hfR, hgS, hfg⟩ :=
+    exists_dvd_and_dvd_of_dvd_mul (a := P) (b := R) (c := S) ⟨Q, hprod.symm⟩
+  obtain ⟨h, hh⟩ := hfR
+  obtain ⟨k, hk⟩ := hgS
+  have hf0 : f ≠ 0 := by rintro rfl; exact hP (by rw [hfg]; ring)
+  have hg0 : g ≠ 0 := by rintro rfl; exact hP (by rw [hfg]; ring)
+  have hQ : Q = h * k := by
+    refine mul_left_cancel₀ (mul_ne_zero hf0 hg0) ?_
+    have : P * Q = R * S := hprod
+    rw [hh, hk, hfg] at this
+    linear_combination this
+  have hfd : f ∣ R := ⟨h, hh⟩
+  have hhd : h ∣ R := ⟨f, by rw [hh]; ring⟩
+  have hgd : g ∣ S := ⟨k, hk⟩
+  have hkd : k ∣ S := ⟨g, by rw [hk]; ring⟩
+  exact ⟨f, g, h, k, hfg, hQ, hh, hk,
+    (hRS.of_isCoprime_of_dvd_left hfd).of_isCoprime_of_dvd_right hgd,
+    (hRS.of_isCoprime_of_dvd_left hfd).of_isCoprime_of_dvd_right hkd,
+    (hRS.of_isCoprime_of_dvd_left hhd).of_isCoprime_of_dvd_right hgd,
+    (hRS.of_isCoprime_of_dvd_left hhd).of_isCoprime_of_dvd_right hkd⟩
+
+/-- From `h²·U = g²·V` with `g`, `h` coprime and `g ≠ 0`: a common `K` with
+`U = g²K` and `V = h²K`. -/
+theorem common_factor {g h U V : ℤ} (hgh : IsCoprime g h) (hg0 : g ≠ 0)
+    (heq : h ^ 2 * U = g ^ 2 * V) : ∃ K : ℤ, U = g ^ 2 * K ∧ V = h ^ 2 * K := by
+  have hcop2 : IsCoprime (g ^ 2) (h ^ 2) := hgh.pow
+  obtain ⟨K, hK⟩ : g ^ 2 ∣ U := hcop2.dvd_of_dvd_mul_left ⟨V, heq⟩
+  refine ⟨K, hK, ?_⟩
+  refine mul_left_cancel₀ (pow_ne_zero 2 hg0) ?_
+  rw [hK] at heq
+  linear_combination -heq
+
+/-- **CASE I, `g = 1`: `M² − e² = a²`, `M² − 49e² = b²`** (PROVEN
+2026-07-27, the day it was cut out of `dual_quartic`).
 
 `M` is the hypotenuse of two Pythagorean triples with legs `e` and `7e`. Both
 triples force `M` odd (an even hypotenuse would give `a² + e² ≡ 2 mod 4`), so
-`e` is even. **The route is fully mapped and non-circular** — it lands back on
-`dual_quartic` at a point with strictly smaller `|e|`, which is exactly what
-the hypothesis `ih` supplies:
+`e` is even. The descent lands back on `dual_quartic` at a point with strictly
+smaller `|e|`, which is exactly what the hypothesis `ih` supplies:
 
 * `7 ∤ M`. Both triples are primitive: `M = p² + q²`, `e = 2pq` and
   `M = r² + s²`, `7e = 2rs`, hence `rs = 7pq` and `p² + q² = r² + s²`. Split
@@ -24811,8 +24885,8 @@ the hypothesis `ih` supplies:
   nonzero because `e ≠ 0`). Each of the four conclusions of `ih` at `(k, f)`
   forces `e = 0`, a contradiction.
 * `7 ∣ M`. Write `M = 7M₁`; then `b = 7b₁`, and `e` is a common leg of triples
-  with hypotenuses `M₁` and `7M₁`: `pq = rs` with `7(p² + q²) = r² + s²`. The
-  same four-way split gives `g²(7f² − k²) = h²(f² − 7k²)`, i.e.
+  with hypotenuses `7M₁` and `M₁`: `pq = rs` with `p² + q² = 7(r² + s²)`. The
+  same four-way split gives `h²(7f² − k²) = g²(f² − 7k²)`, i.e.
   `(f² − 7k²)(7f² − k²) = (Kgh)²`, which is **`dual_seven`** — already PROVEN
   above to be locally insoluble at `7`. So this sub-branch closes outright,
   with no descent. -/
@@ -24822,8 +24896,246 @@ theorem caseI_one (n : ℕ)
       M = 0 ∨ e = 0 ∨ M ^ 2 = e ^ 2 ∨ M ^ 2 = 49 * e ^ 2)
     (M e a b : ℤ) (hcop : IsCoprime M e) (hab : IsCoprime a b) (hlen : e.natAbs ≤ n + 1)
     (he : 0 < e) (hM : 7 * e < M)
-    (hA : M ^ 2 - e ^ 2 = a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = b ^ 2) : False :=
-  sorry
+    (hA : M ^ 2 - e ^ 2 = a ^ 2) (hB : M ^ 2 - 49 * e ^ 2 = b ^ 2) : False := by
+  have hMpos : (0 : ℤ) < M := by linarith
+  have he0 : e ≠ 0 := he.ne'
+  have hnot2 : ¬((2 : ℤ) ∣ M ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have hu := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at hu; omega
+  have hp2 : Prime (2 : ℤ) := Int.prime_two
+  -- `M` is odd: an even hypotenuse would force `a² ≡ 3 (mod 4)`.
+  have hMo : Odd M := by
+    rcases Int.even_or_odd M with hm | hm
+    · exfalso
+      have heo : Odd e := by
+        rcases Int.even_or_odd e with hf | hf
+        · exact absurd ⟨hm.two_dvd, hf.two_dvd⟩ hnot2
+        · exact hf
+      have sq4 : ∀ t : ZMod 4, t ^ 2 = 0 ∨ t ^ 2 = 1 := by decide
+      have hMsq : ((M : ZMod 4)) ^ 2 = 0 := by
+        obtain ⟨m, rfl⟩ := hm
+        have hz : ∀ t : ZMod 4, (t + t) ^ 2 = 0 := by decide
+        push_cast; exact hz _
+      have hesq : ((e : ZMod 4)) ^ 2 = 1 := by
+        obtain ⟨l, rfl⟩ := heo
+        have hz : ∀ t : ZMod 4, (2 * t + 1) ^ 2 = 1 := by decide
+        push_cast; exact hz _
+      have hc := congrArg (fun t : ℤ => (t : ZMod 4)) hA
+      push_cast at hc
+      rw [hMsq, hesq] at hc
+      rcases sq4 (a : ZMod 4) with hs | hs <;> rw [hs] at hc <;> revert hc <;> decide
+    · exact hm
+  -- `e` is even: `M`, `e` both odd would make `a` and `b` both even.
+  have heE : Even e := by
+    rcases Int.even_or_odd e with hf | hf
+    · exact hf
+    · exfalso
+      obtain ⟨h8A, h8B⟩ := eight_dvd_of_odd hMo hf
+      rw [hA] at h8A; rw [hB] at h8B
+      have h2a : (2 : ℤ) ∣ a := hp2.dvd_of_dvd_pow (dvd_trans ⟨4, by norm_num⟩ h8A)
+      have h2b : (2 : ℤ) ∣ b := hp2.dvd_of_dvd_pow (dvd_trans ⟨4, by norm_num⟩ h8B)
+      have hu := hab.isUnit_of_dvd' h2a h2b
+      rw [Int.isUnit_iff] at hu; omega
+  have hao : Odd a := by
+    rcases Int.even_or_odd a with ha | ha
+    · exfalso
+      have h1 : Even (M ^ 2 - e ^ 2) := by
+        rw [hA]; exact Int.even_pow.mpr ⟨ha, two_ne_zero⟩
+      have h2 : Even (M ^ 2) := by
+        have hx : Even (e ^ 2) := Int.even_pow.mpr ⟨heE, two_ne_zero⟩
+        exact (Int.even_sub.mp h1).mpr hx
+      exact not_even_odd (Int.even_pow.mp h2).1 hMo
+    · exact ha
+  have hbo : Odd b := by
+    rcases Int.even_or_odd b with hb | hb
+    · exfalso
+      have h1 : Even (M ^ 2 - 49 * e ^ 2) := by
+        rw [hB]; exact Int.even_pow.mpr ⟨hb, two_ne_zero⟩
+      have hx : Even (49 * e ^ 2) := (Int.even_pow.mpr ⟨heE, two_ne_zero⟩).mul_left 49
+      have h2 : Even (M ^ 2) := (Int.even_sub.mp h1).mpr hx
+      exact not_even_odd (Int.even_pow.mp h2).1 hMo
+    · exact hb
+  -- The first Pythagorean triple `a² + e² = M²`.
+  have hae : IsCoprime a e := coprime_of_sq_sub (c := 1) hcop (by linear_combination hA)
+  have hT1 : PythagoreanTriple a e M := by show a * a + e * e = M * M; linear_combination -hA
+  obtain ⟨p, q, hpq1, hpqM, hpqcop, _⟩ :=
+    (PythagoreanTriple.coprime_classification (x := a) (y := e) (z := M)).mp
+      ⟨hT1, Int.isCoprime_iff_gcd_eq_one.mp hae⟩
+  have hpqcop' : IsCoprime p q := Int.isCoprime_iff_gcd_eq_one.mpr hpqcop
+  have hpqe : e = 2 * p * q := by
+    rcases hpq1 with ⟨_, h⟩ | ⟨h, _⟩
+    · exact h
+    · exact absurd hao (fun hx => not_even_odd ⟨p * q, by rw [h]; ring⟩ hx)
+  have hpqMv : M = p ^ 2 + q ^ 2 := by
+    rcases hpqM with h | h
+    · exact h
+    · exfalso; rw [h] at hMpos; nlinarith [sq_nonneg p, sq_nonneg q]
+  have hp0 : p ≠ 0 := by rintro rfl; exact he0 (by rw [hpqe]; ring)
+  have hq0 : q ≠ 0 := by rintro rfl; exact he0 (by rw [hpqe]; ring)
+  by_cases h7M : (7 : ℤ) ∣ M
+  · -- `7 ∣ M`: the branch that lands on `dual_seven`.
+    obtain ⟨M₁, rfl⟩ := h7M
+    have h7p : Prime (7 : ℤ) := by rw [Int.prime_iff_natAbs_prime]; norm_num
+    have hcopM₁ : IsCoprime M₁ e := hcop.of_isCoprime_of_dvd_left ⟨7, by ring⟩
+    have h7b : (7 : ℤ) ∣ b := by
+      refine h7p.dvd_of_dvd_pow (n := 2) ?_
+      exact ⟨7 * (M₁ ^ 2 - e ^ 2), by rw [← hB]; ring⟩
+    obtain ⟨b₁, rfl⟩ := h7b
+    have hb₁ : M₁ ^ 2 - e ^ 2 = b₁ ^ 2 :=
+      mul_left_cancel₀ (by norm_num : (49 : ℤ) ≠ 0) (by linear_combination hB)
+    have hb₁e : IsCoprime b₁ e := coprime_of_sq_sub (c := 1) hcopM₁ (by linear_combination hb₁)
+    have hT2 : PythagoreanTriple b₁ e M₁ := by
+      show b₁ * b₁ + e * e = M₁ * M₁; linear_combination -hb₁
+    obtain ⟨r, s, hrs1, hrsM, hrscop, _⟩ :=
+      (PythagoreanTriple.coprime_classification (x := b₁) (y := e) (z := M₁)).mp
+        ⟨hT2, Int.isCoprime_iff_gcd_eq_one.mp hb₁e⟩
+    have hrscop' : IsCoprime r s := Int.isCoprime_iff_gcd_eq_one.mpr hrscop
+    have hb₁o : Odd b₁ := by
+      rcases Int.even_or_odd b₁ with hx | hx
+      · exfalso
+        obtain ⟨c, hc⟩ := hx
+        exact not_even_odd (⟨7 * c, by rw [hc]; ring⟩ : Even (7 * b₁)) hbo
+      · exact hx
+    have hrse : e = 2 * r * s := by
+      rcases hrs1 with ⟨_, h⟩ | ⟨h, _⟩
+      · exact h
+      · exact absurd hb₁o (fun hx => not_even_odd ⟨r * s, by rw [h]; ring⟩ hx)
+    have hM₁pos : (0 : ℤ) < M₁ := by linarith
+    have hrsMv : M₁ = r ^ 2 + s ^ 2 := by
+      rcases hrsM with h | h
+      · exact h
+      · exfalso; rw [h] at hM₁pos; nlinarith [sq_nonneg r, sq_nonneg s]
+    -- `pq = rs` and `7(p² + q²) = r² + s²`
+    have hpqrs : p * q = r * s := by linarith [hpqe, hrse]
+    have hsum : p ^ 2 + q ^ 2 = 7 * (r ^ 2 + s ^ 2) := by rw [← hpqMv, ← hrsMv]
+    obtain ⟨f, g, h', k, hpf, hqf, hrf, hsf, _hfg, hfk, hhg, _hhk⟩ :=
+      split_four hp0 hpqcop' hrscop' hpqrs
+    have hgh : IsCoprime g h' := hhg.symm
+    have hg0 : g ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+    -- `h'²(7f² − k²) = g²(f² − 7k²)`
+    have hkey : h' ^ 2 * (7 * f ^ 2 - k ^ 2) = g ^ 2 * (f ^ 2 - 7 * k ^ 2) := by
+      rw [hpf, hqf, hrf, hsf] at hsum; linear_combination -hsum
+    obtain ⟨K, hK1, hK2⟩ := common_factor hgh hg0 hkey
+    exact dual_seven f k (K * g * h') hfk (by rw [hK2, hK1]; ring)
+  · -- `7 ∤ M`: both triples are primitive and the split lands on `dual_quartic`.
+    have h7p : Prime (7 : ℤ) := by rw [Int.prime_iff_natAbs_prime]; norm_num
+    have hnb7 : ¬ (7 : ℤ) ∣ b := by
+      rintro ⟨c, rfl⟩
+      refine h7M (h7p.dvd_of_dvd_pow (n := 2) ⟨7 * c ^ 2 + 7 * e ^ 2, by linear_combination hB⟩)
+    have hbe : IsCoprime b e := coprime_of_sq_sub (c := 49) hcop (by linear_combination hB)
+    have hb7e : IsCoprime b (7 * e) := ((coprime_seven hnb7).symm).mul_right hbe
+    have hT2 : PythagoreanTriple b (7 * e) M := by
+      show b * b + 7 * e * (7 * e) = M * M; linear_combination -hB
+    obtain ⟨r, s, hrs1, hrsM, hrscop, _⟩ :=
+      (PythagoreanTriple.coprime_classification (x := b) (y := 7 * e) (z := M)).mp
+        ⟨hT2, Int.isCoprime_iff_gcd_eq_one.mp hb7e⟩
+    have hrscop' : IsCoprime r s := Int.isCoprime_iff_gcd_eq_one.mpr hrscop
+    have hrse : 7 * e = 2 * r * s := by
+      rcases hrs1 with ⟨_, h⟩ | ⟨h, _⟩
+      · exact h
+      · exact absurd hbo (fun hx => not_even_odd ⟨r * s, by rw [h]; ring⟩ hx)
+    have hrsMv : M = r ^ 2 + s ^ 2 := by
+      rcases hrsM with h | h
+      · exact h
+      · exfalso; rw [h] at hMpos; nlinarith [sq_nonneg r, sq_nonneg s]
+    have hrspq : r * s = 7 * (p * q) := by linarith [hpqe, hrse]
+    have hr0 : r ≠ 0 := by rintro rfl; exact he0 (by linarith [hrse])
+    have hs0 : s ≠ 0 := by rintro rfl; exact he0 (by linarith [hrse])
+    -- sizes: `|f| ≤ |p| < |e|` and `|k| ≤ |q| < |e|`
+    have hpn : 1 ≤ p.natAbs := Nat.one_le_iff_ne_zero.mpr (Int.natAbs_ne_zero.mpr hp0)
+    have hqn : 1 ≤ q.natAbs := Nat.one_le_iff_ne_zero.mpr (Int.natAbs_ne_zero.mpr hq0)
+    have hee : e.natAbs = 2 * p.natAbs * q.natAbs := by
+      rw [hpqe, Int.natAbs_mul, Int.natAbs_mul]; norm_num
+    have hplt : p.natAbs < e.natAbs := by rw [hee]; nlinarith [hpn, hqn]
+    have hqlt : q.natAbs < e.natAbs := by rw [hee]; nlinarith [hpn, hqn]
+    rcases (h7p.dvd_mul.mp ⟨p * q, hrspq⟩) with h7r | h7s
+    · -- `7 ∣ r`: `dual_quartic` at `(k, f)`
+      obtain ⟨r₁, rfl⟩ := h7r
+      have hr₁0 : r₁ ≠ 0 := by rintro rfl; exact hr0 (by ring)
+      have hr₁s : IsCoprime r₁ s := hrscop'.of_isCoprime_of_dvd_left ⟨7, by ring⟩
+      have hprod : r₁ * s = p * q :=
+        mul_left_cancel₀ (by norm_num : (7 : ℤ) ≠ 0) (by linear_combination hrspq)
+      obtain ⟨f, g, h', k, hr₁f, hsf, hpf, hqf, _hfg, hfk, hhg, _hhk⟩ :=
+        split_four hr₁0 hr₁s hpqcop' hprod
+      have hgh : IsCoprime g h' := hhg.symm
+      have hf0 : f ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hh0 : h' ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hg0 : g ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hk0 : k ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hsum : p ^ 2 + q ^ 2 = (7 * r₁) ^ 2 + s ^ 2 := by rw [← hpqMv, ← hrsMv]
+      have hkey : h' ^ 2 * (f ^ 2 - k ^ 2) = g ^ 2 * (49 * f ^ 2 - k ^ 2) := by
+        rw [hpf, hqf, hr₁f, hsf] at hsum; linear_combination hsum
+      obtain ⟨K, hK1, hK2⟩ := common_factor hgh hg0 hkey
+      have hfn : f.natAbs ≤ n := by
+        have hfp : f.natAbs ≤ p.natAbs :=
+          Nat.le_of_dvd hpn (Int.natAbs_dvd_natAbs.mpr ⟨h', hpf⟩)
+        omega
+      rcases ih k f (K * g * h') hfn hfk.symm (by rw [show k ^ 2 - f ^ 2 = -(f ^ 2 - k ^ 2) by ring,
+        show k ^ 2 - 49 * f ^ 2 = -(49 * f ^ 2 - k ^ 2) by ring, hK1, hK2]; ring) with
+        hc | hc | hc | hc
+      · exact hk0 hc
+      · exact hf0 hc
+      · exact hf0 (by
+          have hK0 : K = 0 := by
+            have : g ^ 2 * K = 0 := by rw [← hK1]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hg0
+            · exact hx
+          have h48 : f ^ 2 = 0 := by
+            have := hK2; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
+      · exact hf0 (by
+          have hK0 : K = 0 := by
+            have : h' ^ 2 * K = 0 := by rw [← hK2]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hh0
+            · exact hx
+          have h48 : f ^ 2 = 0 := by
+            have := hK1; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
+    · -- `7 ∣ s`: `dual_quartic` at `(f, k)`
+      obtain ⟨s₁, rfl⟩ := h7s
+      have hs₁0 : s₁ ≠ 0 := by rintro rfl; exact hs0 (by ring)
+      have hrs₁ : IsCoprime r s₁ := hrscop'.of_isCoprime_of_dvd_right ⟨7, by ring⟩
+      have hprod : r * s₁ = p * q :=
+        mul_left_cancel₀ (by norm_num : (7 : ℤ) ≠ 0) (by linear_combination hrspq)
+      obtain ⟨f, g, h', k, hrf, hs₁f, hpf, hqf, _hfg, hfk, hhg, _hhk⟩ :=
+        split_four hr0 hrs₁ hpqcop' hprod
+      have hgh : IsCoprime g h' := hhg.symm
+      have hf0 : f ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hh0 : h' ≠ 0 := by rintro rfl; exact hp0 (by rw [hpf]; ring)
+      have hg0 : g ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hk0 : k ≠ 0 := by rintro rfl; exact hq0 (by rw [hqf]; ring)
+      have hsum : p ^ 2 + q ^ 2 = r ^ 2 + (7 * s₁) ^ 2 := by rw [← hpqMv, ← hrsMv]
+      have hkey : h' ^ 2 * (f ^ 2 - 49 * k ^ 2) = g ^ 2 * (f ^ 2 - k ^ 2) := by
+        rw [hpf, hqf, hrf, hs₁f] at hsum; linear_combination hsum
+      obtain ⟨K, hK1, hK2⟩ := common_factor hgh hg0 hkey
+      have hkn : k.natAbs ≤ n := by
+        have hkq : k.natAbs ≤ q.natAbs :=
+          Nat.le_of_dvd hqn (Int.natAbs_dvd_natAbs.mpr ⟨g, by rw [hqf]; ring⟩)
+        omega
+      rcases ih f k (K * g * h') hkn hfk (by rw [hK2, hK1]; ring) with hc | hc | hc | hc
+      · exact hf0 hc
+      · exact hk0 hc
+      · exact hk0 (by
+          have hK0 : K = 0 := by
+            have : h' ^ 2 * K = 0 := by rw [← hK2]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hh0
+            · exact hx
+          have h48 : k ^ 2 = 0 := by
+            have := hK1; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
+      · exact hk0 (by
+          have hK0 : K = 0 := by
+            have : g ^ 2 * K = 0 := by rw [← hK1]; linarith
+            rcases mul_eq_zero.mp this with hx | hx
+            · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp hx) hg0
+            · exact hx
+          have h48 : k ^ 2 = 0 := by
+            have := hK2; rw [hK0, mul_zero] at this; linarith
+          exact pow_eq_zero_iff two_ne_zero |>.mp h48)
 
 /-- **CASE I, `g = 3`: `M² − e² = 3a²`, `M² − 49e² = 3b²`** (sorry leaf, cut
 2026-07-27 out of `dual_quartic`).
@@ -24908,14 +25220,6 @@ theorem abs_isCoprime {M e : ℤ} (hcop : IsCoprime M e) : IsCoprime |M| |e| := 
   · exact hcop.neg_right
   · exact hcop.neg_left
   · exact hcop.neg_left.neg_right
-
-/-- `7` is coprime to anything it does not divide (PROVEN 2026-07-27). -/
-theorem coprime_seven {M : ℤ} (h7 : ¬ (7 : ℤ) ∣ M) : IsCoprime (7 : ℤ) M := by
-  have hp : Nat.Prime 7 := by norm_num
-  have hnd : ¬ (7 : ℕ) ∣ M.natAbs := fun hd =>
-    h7 (Int.natAbs_dvd_natAbs.mp (by simpa using hd))
-  rw [Int.isCoprime_iff_gcd_eq_one]
-  simpa [Int.gcd] using (Nat.Prime.coprime_iff_not_dvd hp).mpr hnd
 
 /-- **The induction step of `dual_quartic`** (PROVEN 2026-07-27 over
 `dual_quartic_caseI`): everything outside CASE I is discharged here.
