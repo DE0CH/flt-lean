@@ -14,8 +14,17 @@ public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.MvPolynomial.Ideal
 public import Mathlib.Algebra.MvPolynomial.Division
+public import Mathlib.Algebra.MvPolynomial.Equiv
+public import Mathlib.Algebra.Polynomial.SpecificDegree
+public import Mathlib.Algebra.Prime.Lemmas
+public import Mathlib.RingTheory.Prime
+public import Mathlib.RingTheory.Polynomial.UniqueFactorization
+public import Mathlib.Tactic.ComputeDegree
 public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Scheme
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
+public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
+public import Mathlib.AlgebraicGeometry.Morphisms.Separated
+public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
 public import Mathlib.RingTheory.RingHom.StandardSmooth
@@ -42,27 +51,39 @@ under "Why this is not in `X0.lean`" below.
   which `X0.lean` transports verbatim onto
   `exists_ellipticScheme_of_weierstrass`.
 
-`isProper_projToSpec` and `nonempty_projGroupLaw` are both PROVEN, and so is
+`isProper_projToSpec` is PROVEN, and so is
 `smoothOfRelativeDimension_projToSpec` apart from ONE named leaf: its `hchart`
 step is now fully reduced, and the Jacobian criterion it rests on
 (`jacobianSpan_eq_top`, over an arbitrary commutative ring) is proven here.
 
-The open leaves are therefore EIGHT, and this list is stated from the file's ACTUAL
-sorry set as merged (2026-07-27), not inherited from any side of a merge:
-`exists_projMul` and `projMul_assoc` — the two disjoint halves into which the old
-`exists_projAdd` was decomposed, and where all the remaining gluing work for the
-group law now lives (`exists_projAdd` itself is PROVEN from them, see below) —
-`exists_projGroupLaw_geomFibreAddEquiv`; `exists_projChartRingEquiv` and
-`projChart_jacobian_span_eq_top`, the two MATHLIB-shaped leaves of the
-"Dehomogenisation" section from which `locally_isStandardSmooth_awayCoord` (the last
-direct sorry of item 7a) is now PROVEN — the first is the dehomogenisation
-isomorphism `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`, the second
-the chart Jacobian criterion, where `hjac` and hence `Δ` is consumed, and the third
-member of that section, `isStandardSmoothOfRelativeDimension_projChartAway`, is
-PROVEN; `exists_affineChart_projModel`; and the two leaves that
-`geometricallyConnected_projToSpec` now consumes (`prime_projPolynomial` and
-`nonempty_projPullbackIso`).  Each declaration carries its own docstring saying what
-is missing and where the classical argument is.
+`projMul_assoc` is PROVEN too, by the density route: mathlib's
+`ext_of_fromSpecResidueField_eq` reduces it to associativity at residue fields,
+and the two things left are `geometricallyReduced_projToSpec` (a general
+`Smooth → GeometricallyReduced` gap in MATHLIB, not elliptic-curve mathematics)
+and `projMul_assoc_pt` (associativity of the induced operation on `K`-points,
+which is where the Milne I.2.5 content sits).
+
+The open leaves are therefore SIX, and this list is READ OFF the compiler's
+`declaration uses 'sorry'` set for this file at the 2026-07-27 release, not
+inherited from any side of a merge — several earlier versions of this paragraph
+named leaves that had already been closed on a sibling branch:
+
+* `exists_projMul` — the half of the old `exists_projAdd` where all the
+  remaining gluing work for the group law lives (`exists_projAdd` itself is
+  PROVEN from it and from `projMul_assoc`, see below);
+* `geometricallyReduced_projToSpec` and `projMul_assoc_pt` — the two leaves
+  `projMul_assoc` now rests on;
+* `exists_projGroupLaw_geomFibreAddEquiv` — item 8, see below;
+* `isIso_projBaseChangeHom` — all that is left of `hbc`, base change for `Proj`;
+* `exists_affineChart_projModel`.
+
+The whole "Dehomogenisation" section is now PROVEN — `exists_projChartRingEquiv`,
+`projChart_jacobian_span_eq_top` and
+`isStandardSmoothOfRelativeDimension_projChartAway` — and with it
+`locally_isStandardSmooth_awayCoord`, the last direct sorry of item 7a.
+`prime_projPolynomial` is PROVEN too, so `geometricallyConnected_projToSpec`
+now consumes only `isIso_projBaseChangeHom`.  Each declaration carries its own
+docstring saying what is missing and where the classical argument is.
 **Item 8 was restated on 2026-07-27** and its leaf is now
 `exists_projGroupLaw_geomFibreAddEquiv`, which binds the group law
 EXISTENTIALLY.  `exists_projGeomFibreAddEquiv` survives under its own name
@@ -70,8 +91,11 @@ as a PROVEN consequence, stated about the concrete `projGroupLaw E`.  The
 old form quantified over an ARBITRARY `ProjGroupLaw`, which pins nothing
 about `m`, and was therefore provable only through the rigidity theorem;
 the audit is on `exists_projGroupLaw_geomFibreAddEquiv`.  That leaf also
-subsumes `exists_projAdd`, and the two cuts should eventually be merged
-— see the "Relation to `exists_projAdd`" section of its docstring.
+subsumes `exists_projAdd`.
+
+**The two cuts are NOT yet merged** (reconciliation attempted 2026-07-27; see
+the "Relation to `exists_projAdd`" section of that leaf's docstring for the
+obstruction that was found and why `_gl₀` therefore stays).
 
 `geometricallyConnected_projToSpec` itself has **no direct sorry** any more.  Of its
 three former steps `hbc`/`hne`/`hpre`:
@@ -80,14 +104,27 @@ three former steps `hbc`/`hne`/`hpre`:
   infinity `[0 : 1 : 0]` is the homogeneous prime `(X̄, Z̄)`; the missing mathlib piece
   was primality of the span of a SUBSET of the variables, which is supplied here by
   `span_X_Z_eq_ker_killXZ` exhibiting `(X, Z)` as a kernel.
-* `hpre` is **PROVEN** as `preconnectedSpace_proj` modulo the single leaf
-  `prime_projPolynomial`.  The general statement that `Proj` of a graded domain is
-  irreducible — also absent from mathlib — is proven here as
-  `irreducibleSpace_projectiveSpectrum`.
-* `hbc` remains open as `nonempty_projPullbackIso`; it is base change for `Proj`,
-  which exists nowhere at this pin, and its docstring records the intended route.
+* `hpre` is **PROVEN OUTRIGHT** as `preconnectedSpace_proj`, over an arbitrary base
+  field, with no remaining leaf.  Two statements absent from mathlib were needed and
+  are proven here: that `Proj` of a graded domain is irreducible
+  (`irreducibleSpace_projectiveSpectrum`), and that the projective Weierstrass cubic
+  is prime (`prime_projPolynomial`).  The latter avoids the graded machinery entirely
+  by reading `W` as a MONIC cubic in the single variable `X` over `K[Y, Z]`; see its
+  docstring.
+* `hbc` is the only remaining leaf of this cluster, and it is now CUT.
+  `nonempty_projPullbackIso` is proven from a single geometric leaf,
+  `isIso_projBaseChangeHom`.  Base change for `Proj` exists nowhere at this pin, so the
+  comparison morphism had to be built: `projBaseChangeGradedHom` (the graded hom),
+  `irrelevant_le_map_projBaseChangeGradedHom` (the hypothesis `Proj.map` demands) and
+  `projBaseChangeHom` (the pullback lift — free here, because the commuting square lands
+  in `Spec ℚ` and `hom_ext_spec_rat` applies) are all PROVEN.  What is left is that that
+  morphism is an isomorphism, whose residue is one ring statement:
+  `Away 𝒜 s ⊗_ℚ K ≅ Away ℬ (φ s)`.  See its docstring for the checked route.
 
-`nonempty_projGroupLaw` is PROVEN: two of the three data fields of a
+`nonempty_projGroupLaw` has no `sorry` of its own — but it is **REDUCED, NOT
+CLOSED**: its proof runs through `exists_projAdd` and so through the still-open
+`exists_projMul` and `projMul_assoc`, and it is therefore transitively sorried.
+Do not read it as a finished result.  Two of the three data fields of a
 `ProjGroupLaw` are constructed outright in `ProjectiveModel.lean`
 (`projNeg`, the Weierstrass involution through `Proj.map`; `projInfty`,
 the point at infinity through `Proj.fromOfGlobalSections`), and all three
@@ -233,7 +270,11 @@ so whoever writes the charts gets them essentially for free, while
 `hassoc` is not a chart identity at all and is split off into
 `projMul_assoc`.
 
-## The formulas that exist, and the one that does not
+## The formulas: both laws are now explicit
+
+(The heading here used to read "the one that does not [exist]".  As of
+2026-07-27 the second law is constructed and CAS-verified; what remains
+missing is scheme-theoretic, not polynomial.)
 
 `WeierstrassCurve.Projective.addX`/`addY`/`addZ`
 (`EllipticCurve/Projective/Formula.lean`) are honest polynomial forms
@@ -244,18 +285,108 @@ over an arbitrary `[CommRing R]`, bihomogeneous of bidegree `(2, 2)`:
 `MvPolynomial (Fin 6) ℚ` turns them into genuine bihomogeneous
 polynomials, which is the form the gluing needs.
 
-**But this is only ONE addition law, and it is very degenerate.**
-`addZ_eq'` reads `addZ P Q * (P z * Q z) = (P x * Q z - Q x * P z) ^ 3`
-and `addX_eq'` carries the same factor, so the whole triple vanishes
-identically on the bidegree-`(1, 1)` locus `x(P) = x(Q)` — which contains
-both the diagonal and the antidiagonal (`addXYZ_self P = ![0, 0, 0]`).
-By **Bosma–Lenstra** a complete addition law of bidegree `(2, 2)` on a
-Weierstrass curve does not exist and exactly TWO are needed to cover
-`E × E`; the second one is **absent from this pin and must be written**.
+### CORRECTION (2026-07-27): the exceptional locus is the DIAGONAL ONLY
 
-*`dblXYZ` is not the second law and the next owner must not reach for
-it*: `dblXYZ_smul` reads `dblXYZ (u • P) = u ^ 4 • dblXYZ P`, i.e. it is
-a single-variable form of degree `4` along the diagonal, not a
+A previous version of this docstring said the triple "vanishes identically
+on the bidegree-`(1,1)` locus `x(P) = x(Q)` — which contains both the
+diagonal and the antidiagonal".  **That is FALSE, and mathlib's own
+`negAddY_of_X_eq'` refutes it in one line**:
+
+`negAddY P Q * (P z * Q z) ^ 2 = (P y * Q z - Q y * P z) ^ 3 * (P z * Q z)`.
+
+So on `x(P) = x(Q)` we do get `addX = addZ = 0` (`addX_of_X_eq`,
+`addZ_of_X_eq`), but `addY = -negAddY` is a UNIT there whenever
+`y(P) ≠ y(Q)` — and the triple `[0 : addY : 0]` is exactly the point at
+infinity `[0 : 1 : 0]`, which is the CORRECT value of `P + Q` on the
+antidiagonal.  The standard law is perfectly good there.
+
+**The true exceptional set of the standard law is the diagonal `Δ` alone**:
+all three of `addX`, `addY`, `addZ` vanish at `(P, Q)` iff
+`x(P) = x(Q)` and `y(P) = y(Q)`, i.e. iff `P = Q`.  This matters: it is
+what makes a SECOND law suffice, and it tells the next owner what the
+second law actually has to achieve (be nonzero on `Δ`), rather than
+sending them to cover a locus that is not exceptional at all.
+
+### Bosma–Lenstra: the laws are indexed by LINES in `P²`
+
+W. Bosma and H. W. Lenstra, *Complete systems of two addition laws for
+elliptic curves*, J. Number Theory **53** (1995) 229–240.  Their
+structure theorem is the thing that makes the second law explicit rather
+than mysterious:
+
+> For a Weierstrass model `C ⊂ P²`, the addition laws of bidegree
+> `(2, 2)` form a 3-dimensional space in bijection with the lines
+> `ℓ = {aX + bY + cZ = 0}` of `P²`, and a pair `(P, Q)` is exceptional
+> for the law of `ℓ` **iff `P - Q` lies on `ℓ`**.
+
+The standard law is the law of `ℓ = {Z = 0}`: `P - Q ∈ {Z = 0}` iff
+`P - Q = O` (the line at infinity meets `C` only at the inflection `O`,
+with multiplicity 3) iff `P = Q` — which is exactly the corrected
+computation above.  Two laws therefore form a complete system as soon as
+their lines meet `C` in disjoint sets, and **any line missing
+`O = [0 : 1 : 0]` will do**.  Take `ℓ₂ = {Y = 0}`, i.e. the tuple
+`(a, b, c) = (0, 1, 0)`: then `O ∉ ℓ₂` since `O` has `Y = 1`, so no pair
+is exceptional for both.  Both laws are defined over `ℤ`, so no field
+extension and no Galois descent is needed.
+
+### The second law, explicitly (CAS-computed and CAS-verified, 2026-07-27)
+
+Write `negOf Q := ![Q x, W.negY Q, Q z]` (linear in `Q`, so composing with
+it preserves bidegree) and
+
+  `sub? P Q := add? P (negOf Q)`  for `? ∈ {X, Y, Z}`,
+
+a bidegree-`(2,2)` representative of `P - Q`.  Then:
+
+* **`subZ ≡ addZ` modulo `(W(P), W(Q))`** — verified in Magma.  Both
+  satisfy `· * (P z * Q z) = (P x * Q z - Q x * P z) ^ 3` (`negY` does not
+  change `x` or `z`), and `R/(W(P), W(Q))` is a domain.
+* Consequently the Bosma–Lenstra `(0,1,0)` law is `L₁ · subY / subZ`, and
+  **its `Z`-coordinate is simply `subY`** — no new polynomial is needed
+  for it:
+
+      add2Z P Q := W.addY P (negOf Q)
+
+* `add2X` and `add2Y` are the UNIQUE bidegree-`(2,2)` forms with
+
+      add2X P Q * addZ P Q ≡ addX P Q * add2Z P Q   mod (W(P), W(Q))
+      add2Y P Q * addZ P Q ≡ addY P Q * add2Z P Q   mod (W(P), W(Q))
+
+  Uniqueness is free and worth knowing, because it means the next owner
+  can *recompute* rather than trust a transcription: `R/(W(P), W(Q))` is
+  a domain and `addZ ≠ 0` in it, so the identities pin `add2X`, `add2Y`
+  modulo the ideal; and the ideal has NO nonzero element of bidegree
+  `(2,2)` (its generators have bidegree `(3,0)` and `(0,3)`, so a
+  cofactor would need a negative degree), so they are pinned on the nose.
+
+These identities also *are* the statement that the two laws agree where
+both are defined — the two triples are proportional — which is what the
+overlap condition of the gluing needs.
+
+**How to regenerate the polynomials** (about 5 minutes of Magma; `magma`
+is at `/opt/bin/magma`).  Work in
+`R = Q(a1..a6)[Px,Py,Pz,Qx,Qy,Qz]`, `I = (W(P), W(Q))`; note `{W(P), W(Q)}`
+is already a Gröbner basis (coprime leading terms).  Expand a generic
+bidegree-`(2,2)` form `F` over the 36 monomials
+`{Px²,PxPy,PxPz,Py²,PyPz,Pz²} × {Qx²,…,Qz²}`, reduce
+`F * addZ - addX * subY` modulo `I`, equate coefficients, and solve the
+linear system.  It is consistent and has a unique solution; `add2X` comes
+out with 27 monomials and `add2Y` with 18, with coefficients polynomial in
+`a₁, a₂, a₃, a₄, a₆`.  *Two traps that cost a cycle each*: Magma's
+`[ f(i,j) : i in I, j in J ]` varies the LEFT index fastest while
+`Matrix(K,r,c,seq)` fills row-major, so build the matrix from an explicit
+list of rows; and sanity-check the solver by first solving
+`F * addZ = addX * subZ`, which must return `F = addX`.
+
+*Do not copy the formulas out of Bosma–Lenstra's printed tables*: the
+`X` and `Y` coordinates of their `(0,1,0)` law are **misprinted** in the
+paper.  (Reported independently in M. Parada Seguí, *Elliptic curves:
+various models and their addition laws*, MSc thesis, Radboud Univ.,
+§1.2.2, which had to recompute them for the same reason.)
+
+*`dblXYZ` is still not the second law and the next owner must not reach
+for it*: `dblXYZ_smul` reads `dblXYZ (u • P) = u ^ 4 • dblXYZ P`, i.e. it
+is a single-variable form of degree `4` along the diagonal, not a
 bihomogeneous law on a neighbourhood of it, so it does not define a
 morphism on any open subset of `A ×_ℚ A`.  *Refuting check*: look for a
 `Fin 3 → R → Fin 3 → R → R` in `Formula.lean` whose `smul` lemma has the
@@ -270,6 +401,20 @@ shape `(u * v) ^ n` other than the `add?` family — there is none.
    doctrine is for — get the cofactor certificate out of `Singular` or
    `Magma` and verify the concrete witness in Lean with
    `linear_combination`.
+
+   *The Bosma–Lenstra theorem above says this certificate EXISTS*, and
+   says exactly why: a common zero would be a pair `(P, Q)` exceptional
+   for both laws, hence with `P - Q` on both `{Z = 0}` and `{Y = 0}`,
+   hence `P - Q = O` and `Y(O) = 0` — but `O = [0 : 1 : 0]`.  So this is
+   a certificate hunt with a guaranteed answer, not an open question.
+   As a smoke test before spending the search: the restrictions of the
+   second law to the diagonal are visibly nonzero, e.g. for
+   `a₁ = a₂ = a₃ = 0` one gets
+   `add2Z P P = -8 * P y ^ 3 * P z` and
+   `add2Y P P = -(P y ^ 4) - 3a₄ P x P y ^ 2 P z - 18a₆ P y ^ 2 P z ^ 2
+   + 9a₄² P x ^ 2 P z ^ 2 + 27a₄a₆ P x P z ^ 3 + (a₄³ + 27a₆²) P z ^ 4`,
+   the second of which is a unit exactly where the first is not (at
+   2-torsion, where `P y = 0`).
 2. On each piece, the morphism into `proj E`.  The only `Proj`-valued
    construction at this pin is
    `AlgebraicGeometry.Proj.fromOfGlobalSections 𝒜 f hf`, which wants a
@@ -288,11 +433,39 @@ shape `(u * v) ^ n` other than the `add?` family — there is none.
    *Refuting check*: grep `ProjectiveSpectrum/Basic.lean` for any
    congruence lemma for `fromOfGlobalSections` in its `f` argument —
    there is none; the file has only `_preimage_basicOpen`,
-   `_morphismRestrict`, `_resLE` and `_toSpecZero`.
+   `_morphismRestrict`, `_resLE` and `_toSpecZero`.  (Re-checked
+   2026-07-27 against the current pin: still absent.  This item is the
+   one piece of the leaf that is genuinely new MATHLIB work.)
+
+   The unit is now explicit, which is worth having when stating it: on
+   the overlap the identities above give
+   `(add2X, add2Y, add2Z) = (add2Z / addZ) • (addX, addY, addZ)`, so
+   `u = add2Z / addZ`, invertible exactly where both laws are
+   non-degenerate.
 4. Then `Scheme.OpenCover.glueMorphisms` assembles `m`, and `hcomm`,
-   `hunit`, `hinv` are checked chart-wise against the same forms
-   (`addX`/`addY`/`addZ` are visibly symmetric under swapping `P` and
-   `Q` up to the sign that `negY` absorbs).
+   `hunit`, `hinv` are checked chart-wise against the same forms.  All
+   three are cheap, and the polynomial facts behind them have been
+   checked (Magma, 2026-07-27) — the next owner should not re-derive
+   them:
+
+   * `hcomm`: **all three forms are ANTISYMMETRIC**,
+     `add? Q P = - add? P Q` (this is a `ring` identity — no curve
+     equation needed).  A projective triple and its negative are the same
+     point, so commutativity is immediate.  The previous wording here
+     ("visibly symmetric … up to the sign that `negY` absorbs") was
+     vaguer than the truth and pointed at the wrong mechanism.
+   * `hunit`: `(addX, addY, addZ) (P, O) = -P z • (P x, P y, P z)` on the
+     nose, where `O = ![0, 1, 0]` — again a `ring` identity, and visibly
+     `∝ P`.  It degenerates only at `P z = 0`, i.e. at `P = O`, i.e. at
+     the single pair `(O, O)`, which lies on `Δ` and so is covered by the
+     second law.
+   * `hinv`: modulo `W(P)`, `addX (P, negOf P) = addZ (P, negOf P) = 0`,
+     so the value is `[0 : addY (P, negOf P) : 0] = O` as required.  And
+     `addY (P, negOf P)` is **literally the polynomial `add2Z P P`**
+     (immediately from `add2Z P Q = addY P (negOf Q)`) — the same
+     quantity whose non-vanishing makes the second law work on `Δ`.  So
+     `hinv` and the diagonal non-degeneracy of law 2 are one fact, not
+     two, and proving either gives the other.
 
 ## What this leaf does NOT have to do any more, and why
 
@@ -330,143 +503,6 @@ theorem exists_projMul (E : WeierstrassCurve ℚ) [E.IsElliptic] :
           Limits.pullback.lift (projNeg E) (𝟙 (proj E))
               (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E :=
   sorry
-
-/-- **Associativity of any commutative unital multiplication with
-`projNeg`-inverses on the projective Weierstrass model** (sorry node —
-the ABSTRACT half of the old `exists_projAdd`).
-
-## FAITHFULNESS AUDIT: why this is TRUE for an arbitrary such `m`
-
-The hypotheses do not obviously pin `m` down, so the first question is
-whether the statement is false.  It is not, and the reason is Milne,
-*Abelian Varieties* I, Corollary 2.5: for complete varieties `V`, `W`
-with rational points and `A` an abelian variety, every morphism
-`h : V × W → A` with `h(v₀, w₀) = 0` is uniquely `f ∘ p + g ∘ q`.
-Applied to `V = W = A = E` over `ℚ̄` this says every morphism
-`E × E → E` has the form `(P, Q) ↦ φ(P) + ψ(Q) + c`.  The unit law
-`m(O, Q) = Q` forces `ψ = id` and `φ(O) + c = 0`; the unit law in the
-other argument — which follows here from `hcomm` — forces `φ = id` and
-`c = 0`.  So `m` *is* the classical group law on `ℚ̄`-points, hence
-associative.  `E` really is an abelian variety, so the appeal is sound.
-
-**But that argument is not available inside the formalization**, because
-it presupposes the group structure this node is constructing.  It settles
-faithfulness only; it is not a proof route.
-
-## ROUTE AUDIT (2026-07-27), correcting the previous one
-
-The previous audit named "a rigidity / theorem-of-the-cube route
-deriving `hassoc` from the other three axioms plus properness, without
-touching points at all" as the promising unsearched axis.  **That axis was
-searched and it does not close as stated.**  Milne I.2.1 (Rigidity) says:
-if `V` is complete and `f : V × W → U` is constant on `V × {w₀}` and on
-`{v₀} × W`, then `f` is constant.  Every corollary that turns this into a
-statement about a multiplication — I.2.2 (a morphism is a homomorphism up
-to translation), I.2.4 (commutativity), I.2.5 above — forms the
-*difference* of two morphisms and therefore **presupposes the group law
-on the target**.  To prove `hassoc` one would apply rigidity to
-`φ(x, y, z) = m(m(x, y), z) − m(x, m(y, z))`, and that subtraction is
-precisely what is not yet available.  So rigidity does not bootstrap
-associativity out of unitality; something else must pin `m` first.
-*Refuting check*: find a statement of the rigidity lemma, or of the
-theorem of the cube, whose target is a bare proper variety rather than a
-group object — Milne I.2, Mumford *AV* §II.4 and Debarre's notes all
-require the group.
-
-That leaves two routes, and the next owner should pick one deliberately:
-
-* **The density route.**  `A ×_ℚ A ×_ℚ A` is reduced and of finite type
-  over `ℚ` (characteristic `0`, and `Δ ≠ 0` makes the fibre a smooth
-  curve), so it suffices to prove the two composites agree on
-  `ℚ̄`-points, where the statement is `add_assoc` in mathlib's
-  `WeierstrassCurve.Affine.Point` — already an `AddCommGroup`.  The
-  missing input is a scheme-morphism ext lemma: *two morphisms from a
-  reduced finite-type `ℚ`-scheme into `proj E` that agree on `ℚ̄`-points
-  are equal*.  *Refuting check*: grep mathlib for a morphism ext lemma
-  over closed points of a Jacobson base.  This route needs the
-  `ℚ̄`-point description of `m`, which is the business of the sibling
-  leaf `exists_projGeomFibreAddEquiv` — so the two are naturally worked
-  together, and a prompt sending an owner here should say so.
-* **Chart-wise associativity.**  Verify the identity directly between the
-  bihomogeneous forms on the triple product cover.  This needs no new
-  theory at all, only a large `linear_combination` certificate modulo
-  `(W(P), W(Q), W(R))` obtainable from `Singular`/`Magma`, and it is
-  independent of the density statement.  It is the brute-force route and
-  it is probably the cheaper one.
-
-Note that this leaf is stated for an ARBITRARY `m` satisfying the three
-chart axioms rather than for the witness produced by `exists_projMul`.
-That is deliberate: it keeps the two halves independently dispatchable.
-An owner who finds the abstract form intractable may legitimately propose
-folding this back into `exists_projMul`, where the charts are in scope —
-that is a cut-level change and should be reported, not made silently. -/
-theorem projMul_assoc (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
-    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-      (Limits.pullback.fst (projToSpec E) (projToSpec E))
-      Limits.pullback.condition.symm ≫ m = m)
-    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
-    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E) :
-    AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
-      AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) :=
-  sorry
-
-/-- **The chord–tangent addition on the projective Weierstrass model**
-(PROVEN from `exists_projMul` and `projMul_assoc`) — what is left of
-items 5+6 once the inversion `i`, the unit section `e` and the three
-structure-morphism compatibilities have been discharged; see
-`nonempty_projGroupLaw` for the assembly.
-
-The cut is between the two halves that need completely different
-machinery, and it is why they are separate leaves: `exists_projMul` is
-scheme-theoretic gluing (an open cover of `A ×_ℚ A`, the two
-Bosma–Lenstra addition laws, and a missing congruence lemma for
-`Proj.fromOfGlobalSections`), while `projMul_assoc` is the one axiom that
-is not a chart identity and needs either a density statement about
-`ℚ̄`-points or a large polynomial certificate.  Nothing is lost or
-weakened by the split: the conjunction of the two is exactly this
-statement. -/
-theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
-      AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
-            AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) ∧
-          Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
-              (Limits.pullback.fst (projToSpec E) (projToSpec E))
-              Limits.pullback.condition.symm ≫ m = m ∧
-        Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
-              (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
-          Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E := by
-  obtain ⟨m, hcomm, hunit, hinv⟩ := exists_projMul E
-  exact ⟨m, projMul_assoc E m hcomm hunit hinv, hcomm, hunit, hinv⟩
-
-/-- **The chord–tangent law on the projective Weierstrass model, as
-morphisms of schemes** (PROVEN from `exists_projAdd`) — items 5+6 of
-the routable specification in `exists_ellipticScheme_of_weierstrass`'s
-docstring.
-
-The three data fields are supplied as follows.  `m` comes from
-`exists_projAdd`, which is where all the remaining gluing work lives.
-`e` and `i` are CONSTRUCTED rather than assumed: `projInfty E`, the point
-at infinity `[0 : 1 : 0]` via `Proj.fromOfGlobalSections`, and
-`projNeg E`, `Proj` of the graded automorphism `Y ↦ −Y − a₁X − a₃Z` of
-the homogeneous coordinate ring.  The three compatibility fields `hm`,
-`he`, `hi` are `hom_ext_spec_rat`, i.e. free over the base `Spec ℚ`. -/
-theorem nonempty_projGroupLaw (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    Nonempty (ProjGroupLaw E) := by
-  obtain ⟨m, hassoc, hcomm, hunit, hinv⟩ := exists_projAdd E
-  exact ⟨{ m := m
-           e := projInfty E
-           i := projNeg E
-           hm := hom_ext_spec_rat _ _
-           he := hom_ext_spec_rat _ _
-           hi := hom_ext_spec_rat _ _
-           hassoc := hassoc
-           hcomm := hcomm
-           hunit := hunit
-           hinv := hinv }⟩
 
 /-- **The projective Weierstrass model is proper over `Spec ℚ`** (PROVEN).
 
@@ -547,6 +583,458 @@ theorem isProper_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
   show IsProper (Proj.toSpecZero (projGrading E) ≫
     Spec.map (CommRingCat.ofHom (algebraMap ℚ (projGrading E 0))))
   infer_instance
+
+/-- **The operation `m` induces on `T`-points** (PROVEN, definitional).
+
+A pair of `T`-points `P, Q : T ⟶ proj E` automatically lies over the same
+base point (`hom_ext_spec_rat`, the base being `Spec ℚ`), so it lifts to a
+`T`-point of `A ×_ℚ A` and may be fed to `m`.  This is the operation whose
+associativity is the whole content of `projMul_assoc`, and stating it
+separately is what lets that content be written as a plain algebraic
+identity rather than as an equation between two composites out of a
+threefold fibre product. -/
+noncomputable def projMulPt (E : WeierstrassCurve ℚ)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    {T : Scheme.{0}} (P Q : T ⟶ proj E) : T ⟶ proj E :=
+  Limits.pullback.lift P Q (hom_ext_spec_rat _ _) ≫ m
+
+/-- **Naturality of `pullback.lift` into `A ×_ℚ A` in the source**
+(PROVEN, formal).
+
+Over the base `Spec ℚ` the pullback condition is automatic, so the two
+`lift`s below differ only in a proof argument and precomposition may be
+pushed inside.  This is the one piece of glue the residue-field reduction
+needs, and it is stated separately because it is used three times.
+
+*Implementation note*: the `rw` uses `Category.assoc` in the FORWARD
+direction.  `Limits.pullback.hom_ext` leaves its goals LEFT-associated —
+`(s ≫ lift P Q h) ≫ fst` — and neither `simp` nor `rw [← Category.assoc]`
+makes progress on that shape; `rw [Category.assoc]` followed by
+`lift_fst` does.  This cost a verification cycle, so it is recorded. -/
+theorem comp_lift_proj (E : WeierstrassCurve ℚ)
+    {T T' : Scheme.{0}} (s : T' ⟶ T) (P Q : T ⟶ proj E) (h h') :
+    s ≫ Limits.pullback.lift (f := projToSpec E) (g := projToSpec E) P Q h =
+      Limits.pullback.lift (s ≫ P) (s ≫ Q) h' := by
+  apply Limits.pullback.hom_ext
+  · rw [Category.assoc, Limits.pullback.lift_fst, Limits.pullback.lift_fst]
+  · rw [Category.assoc, Limits.pullback.lift_snd, Limits.pullback.lift_snd]
+
+/-- **`triAddLeft` read at a `T`-point is `(P · Q) · R`** (PROVEN, formal). -/
+theorem comp_triAddLeft_proj (E : WeierstrassCurve ℚ)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    {T : Scheme.{0}} (s : T ⟶ AbelianSchemeStruct.triProd (projToSpec E)) :
+    s ≫ AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      projMulPt E m
+        (projMulPt E m (s ≫ AbelianSchemeStruct.triFst (projToSpec E))
+          (s ≫ AbelianSchemeStruct.triSnd (projToSpec E)))
+        (s ≫ AbelianSchemeStruct.triThd (projToSpec E)) := by
+  rw [AbelianSchemeStruct.triAddLeft, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _), projMulPt, projMulPt, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _)]
+
+/-- **`triAddRight` read at a `T`-point is `P · (Q · R)`** (PROVEN, formal). -/
+theorem comp_triAddRight_proj (E : WeierstrassCurve ℚ)
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    {T : Scheme.{0}} (s : T ⟶ AbelianSchemeStruct.triProd (projToSpec E)) :
+    s ≫ AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) =
+      projMulPt E m (s ≫ AbelianSchemeStruct.triFst (projToSpec E))
+        (projMulPt E m (s ≫ AbelianSchemeStruct.triSnd (projToSpec E))
+          (s ≫ AbelianSchemeStruct.triThd (projToSpec E))) := by
+  rw [AbelianSchemeStruct.triAddRight, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _), projMulPt, projMulPt, ← Category.assoc,
+    comp_lift_proj E s _ _ _ (hom_ext_spec_rat _ _)]
+
+/-- **The projective Weierstrass model is geometrically reduced over `ℚ`**
+(sorry node — a small, general, mathlib-shaped gap).
+
+TRUE and standard: `projToSpec E` is smooth (`smoothOfRelativeDimension_projToSpec`),
+`SmoothOfRelativeDimension` is stable under base change, and a smooth scheme over
+a field is regular, hence reduced.  Every fibre `proj E ×_ℚ Spec K` is therefore
+reduced, which is the definition of `GeometricallyReduced`.
+
+## WHY THIS IS A SEPARATE LEAF: THE GAP IS IN MATHLIB, NOT HERE
+
+The statement that is actually missing is not about elliptic curves at all.
+It is
+
+    Smooth f → GeometricallyReduced f
+
+(equivalently, its fibrewise content: *a scheme smooth over a field is
+reduced*), and **it is absent from the pin**.  Verified by grep on
+2026-07-27, and the negative results are recorded so the next owner does
+not repeat them:
+
+* `AlgebraicGeometry/Morphisms/Smooth.lean` mentions `IsReduced` exactly
+  once, in the hypotheses of `Scheme.Hom.dense_smoothLocus_of_perfectField`
+  — never in a conclusion.
+* `RingTheory/Nilpotent/GeometricallyReduced.lean` defines
+  `IsGeometricallyReduced` and, outside its own file, **nothing in mathlib
+  ever instantiates it**.
+* `IsRegularLocalRing` is nowhere connected to smoothness or formal
+  smoothness: `grep -rn IsRegularLocalRing RingTheory/ | grep -i
+  'smooth\|etale\|formally'` is empty.  `RingTheory/Smooth/Local.lean`
+  contains only the three `FormallySmooth.iff_injective_*` cotangent
+  criteria, and `RingTheory/Smooth/StandardSmooth.lean` proves nothing
+  about domains, reducedness or regularity.
+* There is no perfect-field shortcut either — `PerfectField` does not
+  occur in `RingTheory/Nilpotent/GeometricallyReduced.lean` or in any
+  `AlgebraicGeometry/Geometrically/*.lean`, so the char-`0` identification
+  of "reduced" with "geometrically reduced" is also unavailable and cannot
+  be used to route around this.
+
+## TWO ROUTES
+
+1. *The general one, and the one worth writing*: prove `Smooth f →
+   GeometricallyReduced f` in `Fermat/FLT/Mathlib/`.  Base change reduces
+   it to: a scheme smooth over a field `K` is reduced.  This is a genuine
+   piece of mathlib-facing infrastructure and would be reusable
+   immediately — `GeometricallyReduced` already carries the base-change
+   instances (`AlgebraicGeometry/Geometrically/Reduced.lean`) that make
+   everything downstream of it automatic.
+2. *The parochial one*: show directly that `K[X, Y, Z] ⧸ (W)` is a domain
+   for every field `K ⊇ ℚ`, i.e. that the Weierstrass cubic is irreducible
+   — a cubic that factors has a linear factor, so the curve contains a
+   line and is singular, contradicting `Δ ≠ 0`.  This needs, in addition,
+   that `Proj` commutes with the base change `ℚ → K`, and that `Proj` of a
+   graded domain is reduced; **neither is in the pin either** (there is no
+   `IsReduced`/`IsIntegral` result anywhere in
+   `AlgebraicGeometry/ProjectiveSpectrum/`).  So route 1 is both more
+   general and strictly less work. -/
+theorem geometricallyReduced_projToSpec (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    GeometricallyReduced (projToSpec E) :=
+  sorry
+
+/-- **The threefold fibre product `A ×_ℚ A ×_ℚ A` is reduced** (PROVEN
+from `geometricallyReduced_projToSpec` and `isProper_projToSpec`).
+
+This is the `[IsReduced X]` side condition of
+`ext_of_fromSpecResidueField_eq`, and it is the reason the density route
+needs no hand-rolled irreducible-component argument: mathlib's
+
+    instance [GeometricallyReduced g] [Flat g] [IsReduced X]
+      [IsLocallyNoetherian X] : IsReduced (pullback f g)
+
+(`AlgebraicGeometry/Geometrically/Reduced.lean`) applies twice, once to
+build `A ×_ℚ A` from `A` and once to build `A ×_ℚ A ×_ℚ A` from that.  The
+four inputs it wants are supplied as follows, and all but the first are
+free:
+
+* `GeometricallyReduced (projToSpec E)` — the one open leaf;
+* `Flat (projToSpec E)` — **free, and this is worth knowing**: mathlib has
+  `instance (priority := low) [Subsingleton Y] [IsIntegral Y] : Flat f`
+  (`AlgebraicGeometry/Morphisms/Flat.lean`), and `Spec ℚ` is a one-point
+  integral scheme, so `infer_instance` discharges it.  An earlier version
+  of this proof routed flatness through smoothness instead; that made this
+  declaration depend on the still-open `locally_isStandardSmooth_awayCoord`
+  for no reason at all.  Over a field, EVERY morphism is flat;
+* `IsLocallyNoetherian` of `proj E` and of `A ×_ℚ A` —
+  `LocallyOfFiniteType.isLocallyNoetherian` applied to the structure
+  morphisms, `LocallyOfFiniteType` coming from `IsProper`;
+* `IsReduced (proj E)` — `isReduced_of_flat_of_isLocallyNoetherian`, i.e.
+  the same geometric reducedness descended along the reduced noetherian
+  base `Spec ℚ`. -/
+theorem isReduced_triProd_proj (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    IsReduced (AbelianSchemeStruct.triProd (projToSpec E)) := by
+  haveI := isProper_projToSpec E
+  haveI := geometricallyReduced_projToSpec E
+  haveI : IsLocallyNoetherian (proj E) :=
+    LocallyOfFiniteType.isLocallyNoetherian (projToSpec E)
+  haveI : IsReduced (proj E) :=
+    GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian (projToSpec E)
+  haveI : IsLocallyNoetherian (Limits.pullback (projToSpec E) (projToSpec E)) :=
+    LocallyOfFiniteType.isLocallyNoetherian
+      (Limits.pullback.fst (projToSpec E) (projToSpec E) ≫ projToSpec E)
+  haveI : IsReduced (Limits.pullback (projToSpec E) (projToSpec E)) := inferInstance
+  exact inferInstance
+
+/-- **Associativity of the operation `m` induces on `K`-points, `K` a
+field** (sorry node — this is where ALL the remaining mathematical content
+of `projMul_assoc` now sits).
+
+This is the density route's payload, and the restriction to `Spec` of a
+FIELD is essential rather than cosmetic: the same statement for an
+arbitrary test scheme `T` is `projMul_assoc` itself (take `T` to be the
+threefold product and the three projections), so nothing would have been
+gained.  What a field buys is that `proj E ×_ℚ Spec K` is a smooth
+projective genus-`1` curve over `K` with the rational point
+`projInfty E`, i.e. an honest elliptic curve, where mathlib's
+`WeierstrassCurve.Affine.Point` supplies a real `AddCommGroup`.
+
+## WHAT IT NEEDS: MILNE I.2.5, AND IT IS UNAVOIDABLE
+
+Over `K̄` the hypotheses say that `projMulPt E m` is a commutative loop
+operation with unit `projInfty E` and inverse `projNeg E`.  **A
+commutative loop with two-sided unit and inverses need not be
+associative** — that is not a gap in the write-up, it is why this leaf is
+hard: the conclusion is false for a general SET-level such operation, and
+it holds here only because `m` is a MORPHISM OF VARIETIES.
+
+The input that converts algebraicity into associativity is Milne,
+*Abelian Varieties* I.2.5: every morphism `E × E → E` of complete
+varieties into an abelian variety is `(P, Q) ↦ φ(P) + ψ(Q) + c`.  `hunit`
+then forces `ψ = id` and `φ(O) + c = 0`, and `hcomm` forces `φ = id` and
+`c = 0`, so `m` *is* the classical group law and associativity is
+`add_assoc`.  Note this is the same argument recorded above as settling
+FAITHFULNESS; the point of the present cut is that at a field it is no
+longer circular — the group law on the target is mathlib's group law on
+`E(K̄)`, which exists independently of the scheme-level `m` this cluster
+is constructing.
+
+Equivalently, and possibly cheaper in Lean, one may run the argument
+through Silverman *AEC* III.4.7 (every morphism of elliptic curves is a
+translation composed with an isogeny — proved via `Pic⁰` and Abel–Jacobi)
+applied to `P ↦ projMulPt E m P Q` for fixed `Q`, and then pin the
+resulting isogeny to `id` by connectedness of the family in `Q`, using
+`projMulPt E m P (projInfty E) = P`.  Neither `Pic⁰` for curves nor the
+rigidity lemma is in the pin or in `~/cs/FLT`, so either way this leaf
+carries a real theory-building obligation and should be dispatched as
+such, not as a proof exercise.
+
+## COORDINATE WITH `exists_projGeomFibreAddEquiv`
+
+That sibling leaf (`:583`, its own owner) is the `K̄`-point dictionary
+between `RelPoint (projToSpec E)` and `WeierstrassCurve.Affine.Point`,
+and it is exactly the interface this leaf wants for its last step.  It is
+currently existentially stated, so it cannot be consumed as an API; an
+owner taking this leaf should coordinate rather than build a second
+dictionary. -/
+theorem projMul_assoc_pt (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
+    (K : CommRingCat.{0}) [Field K] (P Q R : Spec K ⟶ proj E) :
+    projMulPt E m (projMulPt E m P Q) R = projMulPt E m P (projMulPt E m Q R) :=
+  sorry
+
+/-- **Associativity at the residue field of every point of the threefold
+product** (PROVEN from `projMul_assoc_pt`).
+
+This is the `H` hypothesis of `ext_of_fromSpecResidueField_eq`, read at
+`S = Set.univ`.  The residue field of a point of a `ℚ`-scheme is a field,
+so `projMul_assoc_pt` applies verbatim; the only work is
+`comp_triAddLeft_proj`/`comp_triAddRight_proj`, which say that the two
+composites are the two bracketings of the induced operation on the three
+projections. -/
+theorem projMul_assoc_residueField (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E)
+    (x : AbelianSchemeStruct.triProd (projToSpec E)) :
+    (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
+        AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      (AbelianSchemeStruct.triProd (projToSpec E)).fromSpecResidueField x ≫
+        AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) := by
+  rw [comp_triAddLeft_proj, comp_triAddRight_proj]
+  exact projMul_assoc_pt E m hcomm hunit hinv _ _ _ _
+
+/-- **Associativity of any commutative unital multiplication with
+`projNeg`-inverses on the projective Weierstrass model** (PROVEN from
+`geometricallyReduced_projToSpec` and `projMul_assoc_pt` — the ABSTRACT
+half of the old `exists_projAdd`).
+
+## FAITHFULNESS AUDIT: why this is TRUE for an arbitrary such `m`
+
+The hypotheses do not obviously pin `m` down, so the first question is
+whether the statement is false.  It is not, and the reason is Milne,
+*Abelian Varieties* I, Corollary 2.5: for complete varieties `V`, `W`
+with rational points and `A` an abelian variety, every morphism
+`h : V × W → A` with `h(v₀, w₀) = 0` is uniquely `f ∘ p + g ∘ q`.
+Applied to `V = W = A = E` over `ℚ̄` this says every morphism
+`E × E → E` has the form `(P, Q) ↦ φ(P) + ψ(Q) + c`.  The unit law
+`m(O, Q) = Q` forces `ψ = id` and `φ(O) + c = 0`; the unit law in the
+other argument — which follows here from `hcomm` — forces `φ = id` and
+`c = 0`.  So `m` *is* the classical group law on `ℚ̄`-points, hence
+associative.  `E` really is an abelian variety, so the appeal is sound.
+
+**But that argument is not available inside the formalization**, because
+it presupposes the group structure this node is constructing.  It settles
+faithfulness only; it is not a proof route.
+
+## ROUTE AUDIT (2026-07-27), correcting the previous one
+
+The previous audit named "a rigidity / theorem-of-the-cube route
+deriving `hassoc` from the other three axioms plus properness, without
+touching points at all" as the promising unsearched axis.  **That axis was
+searched and it does not close as stated.**  Milne I.2.1 (Rigidity) says:
+if `V` is complete and `f : V × W → U` is constant on `V × {w₀}` and on
+`{v₀} × W`, then `f` is constant.  Every corollary that turns this into a
+statement about a multiplication — I.2.2 (a morphism is a homomorphism up
+to translation), I.2.4 (commutativity), I.2.5 above — forms the
+*difference* of two morphisms and therefore **presupposes the group law
+on the target**.  To prove `hassoc` one would apply rigidity to
+`φ(x, y, z) = m(m(x, y), z) − m(x, m(y, z))`, and that subtraction is
+precisely what is not yet available.  So rigidity does not bootstrap
+associativity out of unitality; something else must pin `m` first.
+*Refuting check*: find a statement of the rigidity lemma, or of the
+theorem of the cube, whose target is a bare proper variety rather than a
+group object — Milne I.2, Mumford *AV* §II.4 and Debarre's notes all
+require the group.
+
+That leaves two routes, and the next owner should pick one deliberately:
+
+* **The density route.**  `A ×_ℚ A ×_ℚ A` is reduced and of finite type
+  over `ℚ` (characteristic `0`, and `Δ ≠ 0` makes the fibre a smooth
+  curve), so it suffices to prove the two composites agree on
+  `ℚ̄`-points, where the statement is `add_assoc` in mathlib's
+  `WeierstrassCurve.Affine.Point` — already an `AddCommGroup`.  The
+  missing input is a scheme-morphism ext lemma: *two morphisms from a
+  reduced finite-type `ℚ`-scheme into `proj E` that agree on `ℚ̄`-points
+  are equal*.  *Refuting check*: grep mathlib for a morphism ext lemma
+  over closed points of a Jacobson base.  This route needs the
+  `ℚ̄`-point description of `m`, which is the business of the sibling
+  leaf `exists_projGeomFibreAddEquiv` — so the two are naturally worked
+  together, and a prompt sending an owner here should say so.
+* **Chart-wise associativity.**  Verify the identity directly between the
+  bihomogeneous forms on the triple product cover.  This needs no new
+  theory at all, only a large `linear_combination` certificate modulo
+  `(W(P), W(Q), W(R))` obtainable from `Singular`/`Magma`, and it is
+  independent of the density statement.  It is the brute-force route and
+  it is probably the cheaper one.
+
+Note that this leaf is stated for an ARBITRARY `m` satisfying the three
+chart axioms rather than for the witness produced by `exists_projMul`.
+That is deliberate: it keeps the two halves independently dispatchable.
+An owner who finds the abstract form intractable may legitimately propose
+folding this back into `exists_projMul`, where the charts are in scope —
+that is a cut-level change and should be reported, not made silently.
+
+## ROUTE AUDIT (2026-07-27, second correction): the CHART-WISE route does NOT
+## apply to this leaf, and the audit above is wrong about that
+
+The audit above offers "chart-wise associativity … a large
+`linear_combination` certificate modulo `(W(P), W(Q), W(R))`" as the
+cheap brute-force alternative, and calls it "probably the cheaper one".
+**It is not available here at all.**  `m` is universally quantified: it
+is an arbitrary morphism satisfying `hcomm`/`hunit`/`hinv`, and it comes
+with NO charts and NO polynomial forms.  There is nothing for a CAS to
+certify, because there are no polynomials in the hypotheses.  The
+chart-wise route is a route for `exists_projMul`'s specific witness, and
+it becomes available for this statement only under the cut-level change
+that folds the two halves back together.  *Refuting check*: read the
+binders of the statement below and look for any occurrence of `addX` /
+`addY` / `addZ`, or of any hypothesis that constrains `m` on a chart —
+there is none.
+
+So **exactly one route survives for the leaf as stated: density**, and
+this docstring's job is now to say how far it has been taken.
+
+## WHAT IS DONE HERE, AND WHAT IS LEFT (2026-07-27)
+
+The density route is no longer a plan; the assembly below is WRITTEN and
+compiles, and `projMul_assoc` is PROVEN from two named sub-leaves.  The
+ext lemma the previous audit listed as "the missing input" — *two
+morphisms from a reduced finite-type `ℚ`-scheme into `proj E` that agree
+on `ℚ̄`-points are equal* — **is already in mathlib**, as
+`AlgebraicGeometry.ext_of_fromSpecResidueField_eq`
+(`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`):
+
+    lemma ext_of_fromSpecResidueField_eq (f g : X ⟶ Y) (i : Y ⟶ Z)
+      [IsSeparated i] [IsReduced X] (S : Set X) (hS' : Dense S)
+      (H : ∀ x ∈ S, X.fromSpecResidueField x ≫ f = X.fromSpecResidueField x ≫ g)
+      (H' : f ≫ i = g ≫ i) : f = g
+
+That is a strictly better instrument than the one the audit asked for:
+it wants agreement at RESIDUE FIELDS of a dense set of points, which
+subsumes closed points and needs no Jacobson-base argument, and `S` may
+be taken to be `Set.univ`.  Its three side conditions all discharge here:
+
+* `IsSeparated (projToSpec E)` — free, since `IsProper` *extends*
+  `IsSeparated` and `isProper_projToSpec` is PROVEN above;
+* `H'` — free, by `hom_ext_spec_rat`, the target being `Spec ℚ`;
+* `IsReduced` of the threefold product — `isReduced_triProd_proj` below.
+
+What is left is therefore exactly two things, and they are disjoint:
+
+1. `geometricallyReduced_projToSpec` — a small, general, mathlib-shaped
+   gap (see its docstring);
+2. `projMul_assoc_pt` — the genuine Milne content, now stated as plain
+   associativity of the operation `m` induces on `K`-points. -/
+theorem projMul_assoc (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+    (hcomm : Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+      (Limits.pullback.fst (projToSpec E) (projToSpec E))
+      Limits.pullback.condition.symm ≫ m = m)
+    (hunit : Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E))
+    (hinv : Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+      (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E) :
+    AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+      AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) := by
+  haveI := isProper_projToSpec E
+  haveI := isReduced_triProd_proj E
+  exact ext_of_fromSpecResidueField_eq _ _ (projToSpec E) Set.univ dense_univ
+    (fun x _ => projMul_assoc_residueField E m hcomm hunit hinv x) (hom_ext_spec_rat _ _)
+
+/-- **The chord–tangent addition on the projective Weierstrass model**
+(PROVEN from `exists_projMul` and `projMul_assoc`) — what is left of
+items 5+6 once the inversion `i`, the unit section `e` and the three
+structure-morphism compatibilities have been discharged; see
+`nonempty_projGroupLaw` for the assembly.
+
+The cut is between the two halves that need completely different
+machinery, and it is why they are separate leaves: `exists_projMul` is
+scheme-theoretic gluing (an open cover of `A ×_ℚ A`, the two
+Bosma–Lenstra addition laws, and a missing congruence lemma for
+`Proj.fromOfGlobalSections`), while `projMul_assoc` is the one axiom that
+is not a chart identity and needs either a density statement about
+`ℚ̄`-points or a large polynomial certificate.  Nothing is lost or
+weakened by the split: the conjunction of the two is exactly this
+statement. -/
+theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
+      AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
+            AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) ∧
+          Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+              (Limits.pullback.fst (projToSpec E) (projToSpec E))
+              Limits.pullback.condition.symm ≫ m = m ∧
+        Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+              (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
+          Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E := by
+  obtain ⟨m, hcomm, hunit, hinv⟩ := exists_projMul E
+  exact ⟨m, projMul_assoc E m hcomm hunit hinv, hcomm, hunit, hinv⟩
+
+/-- **The chord–tangent law on the projective Weierstrass model, as
+morphisms of schemes** (REDUCED to `exists_projAdd`, not closed) — items 5+6
+of the routable specification in `exists_ellipticScheme_of_weierstrass`'s
+docstring.
+
+**This declaration carries no `sorry` of its own but is transitively
+sorried**, because `exists_projAdd` is proven from `projMul_assoc` (itself
+now reduced to `geometricallyReduced_projToSpec` and `projMul_assoc_pt`) and
+from the still-open `exists_projMul`.  It is a reduction, not a result; the
+remaining work is on those leaves.
+
+The three data fields are supplied as follows.  `m` comes from
+`exists_projAdd`, which is where all the remaining gluing work lives.
+`e` and `i` are CONSTRUCTED rather than assumed: `projInfty E`, the point
+at infinity `[0 : 1 : 0]` via `Proj.fromOfGlobalSections`, and
+`projNeg E`, `Proj` of the graded automorphism `Y ↦ −Y − a₁X − a₃Z` of
+the homogeneous coordinate ring.  The three compatibility fields `hm`,
+`he`, `hi` are `hom_ext_spec_rat`, i.e. free over the base `Spec ℚ`. -/
+theorem nonempty_projGroupLaw (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    Nonempty (ProjGroupLaw E) := by
+  obtain ⟨m, hassoc, hcomm, hunit, hinv⟩ := exists_projAdd E
+  exact ⟨{ m := m
+           e := projInfty E
+           i := projNeg E
+           hm := hom_ext_spec_rat _ _
+           he := hom_ext_spec_rat _ _
+           hi := hom_ext_spec_rat _ _
+           hassoc := hassoc
+           hcomm := hcomm
+           hunit := hunit
+           hinv := hinv }⟩
 
 /-! ### The Jacobian criterion for a Weierstrass equation
 
@@ -694,7 +1182,13 @@ graded polynomial quotient with a concrete polynomial quotient.  Mathlib has
 
 The three declarations below cut the residual leaf into three independent pieces, each
 stated exactly as `locally_isStandardSmooth_awayCoord` consumes it and each carrying its own
-proof plan.  The assembly is written and PROVEN. -/
+proof plan.  The assembly is written and PROVEN, and so now are two of the three pieces:
+only `projChart_jacobian_span_eq_top` is still open.
+
+The identification itself (`exists_projChartRingEquiv`) is built here out of the material
+between `eval₂_dehomogenizeAt` and `projChartHom_ker`, and that material is written to be
+upstreamable: the only place the Weierstrass equation enters is `not_X_dvd_polynomial`,
+everything else being generic "dehomogenise a homogeneous polynomial and divide by `Xᵢ^n`". -/
 
 /-- The two affine coordinates on the standard chart `D₊(Xᵢ)` of `Proj ℚ[X, Y, Z]`, namely
 the two homogeneous coordinates OTHER than `Xᵢ` — the chart coordinates being the ratios
@@ -730,8 +1224,330 @@ noncomputable abbrev projCoord {R : Type} [CommRing R] (E : WeierstrassCurve R) 
     MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal E).toIdeal :=
   Ideal.Quotient.mk _ (MvPolynomial.X i)
 
-/-- **LEAF A — THE DEHOMOGENISATION ISOMORPHISM** (sorry node; a missing piece of MATHLIB,
-not of this development).
+open _root_.MvPolynomial in
+/-- Evaluating a dehomogenisation is evaluating the original polynomial with `Xᵢ ↦ 1`. -/
+theorem eval₂_dehomogenizeAt {S : Type} [CommRing S] (c : ℚ →+* S) (i : Fin 3)
+    (g : Fin 3 → S) (p : MvPolynomial (Fin 3) ℚ) :
+    MvPolynomial.eval₂ c (fun j : ProjChartVar i => g j.1) (dehomogenizeAt ℚ i p)
+      = MvPolynomial.eval₂ c (fun j => if j = i then 1 else g j) p := by
+  classical
+  have key : (MvPolynomial.eval₂Hom c (fun j : ProjChartVar i => g j.1)).comp
+      ((dehomogenizeAt ℚ i).toRingHom)
+      = MvPolynomial.eval₂Hom c (fun j => if j = i then 1 else g j) := by
+    apply MvPolynomial.ringHom_ext
+    · intro r; simp [dehomogenizeAt]
+    · intro j
+      by_cases h : j = i <;> simp [dehomogenizeAt, h]
+  exact congrArg (fun φ : MvPolynomial (Fin 3) ℚ →+* S => φ p) key
+
+open _root_.MvPolynomial in
+/-- **The core dehomogenisation identity** (PROVEN).  If `t i` is invertible with inverse `s`,
+then evaluating the dehomogenisation of a degree-`n` homogeneous `p` at the ratios `t j / t i`
+gives `p(t) / t i ^ n`.
+
+The proof is the one-line monomial computation made uniform: after reducing to a monomial `d`
+with `∑ⱼ dⱼ = n`, the two products over `Fin 3` are compared factorwise, the factor at `j = i`
+being `1 ^ dᵢ · t i ^ dᵢ` and the factor at `j ≠ i` being `(s · t j) ^ dⱼ · t i ^ dⱼ = t j ^ dⱼ`.
+No case split on `i` is needed. -/
+theorem eval₂_dehomogenizeAt_mul_pow {S : Type} [CommRing S] (c : ℚ →+* S) (i : Fin 3)
+    (t : Fin 3 → S) (s : S) (hs : s * t i = 1) {n : ℕ} {p : MvPolynomial (Fin 3) ℚ}
+    (hp : p.IsHomogeneous n) :
+    MvPolynomial.eval₂ c (fun j : ProjChartVar i => s * t j.1) (dehomogenizeAt ℚ i p) * t i ^ n
+      = MvPolynomial.eval₂ c t p := by
+  classical
+  rw [eval₂_dehomogenizeAt c i (fun j => s * t j)]
+  conv_lhs => rw [p.as_sum]
+  conv_rhs => rw [p.as_sum]
+  simp only [← MvPolynomial.coe_eval₂Hom, map_sum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  have hdn : ∑ j : Fin 3, d j = n := by
+    rw [← Finsupp.degree_eq_sum, Finsupp.degree_eq_weight_one]
+    exact hp (MvPolynomial.mem_support_iff.mp hd)
+  simp only [MvPolynomial.coe_eval₂Hom, MvPolynomial.eval₂_monomial]
+  rw [Finsupp.prod_fintype _ _ (fun j => pow_zero _),
+      Finsupp.prod_fintype _ _ (fun j => pow_zero _)]
+  rw [mul_assoc, ← hdn, ← Finset.prod_pow_eq_pow_sum, ← Finset.prod_mul_distrib]
+  congr 1
+  refine Finset.prod_congr rfl fun j _ => ?_
+  by_cases h : j = i
+  · subst h; simp
+  · simp only [h, if_false, ← mul_pow]
+    congr 1
+    rw [mul_right_comm, hs, one_mul]
+
+/-! #### Homogenisation, the section of `dehomogenizeAt` -/
+
+/-- The inclusion `ℚ[uⱼ : j ≠ i] → ℚ[X₀, X₁, X₂]` sending each chart variable to the
+corresponding homogeneous coordinate. -/
+noncomputable def inclChartVar (i : Fin 3) :
+    MvPolynomial (ProjChartVar i) ℚ →ₐ[ℚ] MvPolynomial (Fin 3) ℚ :=
+  MvPolynomial.aeval fun j => MvPolynomial.X j.1
+
+theorem dehomogenizeAt_inclChartVar (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    dehomogenizeAt ℚ i (inclChartVar i q) = q := by
+  have key : (dehomogenizeAt ℚ i).comp (inclChartVar i) = AlgHom.id ℚ _ := by
+    apply MvPolynomial.algHom_ext
+    intro j
+    simp [dehomogenizeAt, inclChartVar, dif_neg j.2]
+  exact congrArg (fun φ : MvPolynomial (ProjChartVar i) ℚ →ₐ[ℚ] _ => φ q) key
+
+/-- **Homogenisation at the `i`-th coordinate.**  The homogeneous component of degree `d` of
+`q` (viewed in the big polynomial ring) is multiplied by `Xᵢ^(n - d)`, where `n` is the total
+degree.  This is a section of `dehomogenizeAt` landing in a single degree, and it is the only
+thing the kernel computation needs: the *value* of `n` is irrelevant. -/
+noncomputable def homogenizeAt (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    MvPolynomial (Fin 3) ℚ :=
+  ∑ d ∈ Finset.range ((inclChartVar i q).totalDegree + 1),
+    MvPolynomial.X i ^ ((inclChartVar i q).totalDegree - d) *
+      MvPolynomial.homogeneousComponent d (inclChartVar i q)
+
+theorem isHomogeneous_homogenizeAt (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    (homogenizeAt i q).IsHomogeneous (inclChartVar i q).totalDegree := by
+  refine MvPolynomial.IsHomogeneous.sum _ _ _ fun d hd => ?_
+  have hdle : d ≤ (inclChartVar i q).totalDegree := Nat.lt_succ_iff.mp (Finset.mem_range.mp hd)
+  have h := (MvPolynomial.isHomogeneous_X_pow (R := ℚ) i
+      ((inclChartVar i q).totalDegree - d)).mul
+    (MvPolynomial.homogeneousComponent_isHomogeneous d (inclChartVar i q))
+  rwa [Nat.sub_add_cancel hdle] at h
+
+theorem dehomogenizeAt_homogenizeAt (i : Fin 3) (q : MvPolynomial (ProjChartVar i) ℚ) :
+    dehomogenizeAt ℚ i (homogenizeAt i q) = q := by
+  have hXi : dehomogenizeAt ℚ i (MvPolynomial.X i) = 1 := by simp [dehomogenizeAt]
+  rw [homogenizeAt, map_sum]
+  simp only [map_mul, map_pow, hXi, one_pow, one_mul]
+  rw [← map_sum, MvPolynomial.sum_homogeneousComponent]
+  exact dehomogenizeAt_inclChartVar i q
+
+/-! #### The chart homomorphism `ℚ[u, v] → (B_{xᵢ})₀` -/
+
+section ChartHom
+
+variable (E : WeierstrassCurve ℚ) (i : Fin 3) (hcoord : projCoord E i ∈ projGrading E 1)
+
+/-- The chart ratio `xⱼ / xᵢ`, an element of the degree-zero away-localisation. -/
+noncomputable def projChartRatio (j : ProjChartVar i) :
+    HomogeneousLocalization.Away (projGrading E) (projCoord E i) :=
+  HomogeneousLocalization.Away.mk (projGrading E) hcoord 1
+    (Ideal.Quotient.mk _ (MvPolynomial.X j.1))
+    (by
+      simpa using HomogeneousIdeal.mk_mem_quotientGrading (I := polynomialHomogeneousIdeal E)
+        ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ j.1)))
+
+/-- The base map `ℚ → (B_{xᵢ})₀`, exactly the composite appearing in the commuting triangle of
+`exists_projChartRingEquiv`. -/
+noncomputable def projChartBase :
+    ℚ →+* HomogeneousLocalization.Away (projGrading E) (projCoord E i) :=
+  (HomogeneousLocalization.fromZeroRingHom (projGrading E)
+    (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0))
+
+/-- **The chart homomorphism** `ℚ[u, v] → (B_{xᵢ})₀`, sending `uⱼ ↦ xⱼ / xᵢ`. -/
+noncomputable def projChartHom :
+    MvPolynomial (ProjChartVar i) ℚ →+*
+      HomogeneousLocalization.Away (projGrading E) (projCoord E i) :=
+  MvPolynomial.eval₂Hom (projChartBase E i) (projChartRatio E i hcoord)
+
+/-- **The chart homomorphism computes dehomogenisations** (PROVEN): a homogeneous `p` of
+degree `n` dehomogenises to a polynomial whose image is the fraction `p̄ / xᵢ^n`.
+
+This is the whole content of the identification.  It is proved by transporting both sides into
+the ordinary localisation `B_{xᵢ}` along `HomogeneousLocalization.val` — which is available as
+a ring hom, being `algebraMap (HomogeneousLocalization 𝒜 x) (Localization x)` — and then
+applying `eval₂_dehomogenizeAt_mul_pow` with `t j = xⱼ/1` and `s = 1/xᵢ`, cancelling the unit
+`xᵢ^n`. -/
+theorem projChartHom_dehomogenizeAt {n : ℕ} {p : MvPolynomial (Fin 3) ℚ}
+    (hp : p.IsHomogeneous n) (hmem : Ideal.Quotient.mk _ p ∈ projGrading E (n • 1)) :
+    projChartHom E i hcoord (dehomogenizeAt ℚ i p)
+      = HomogeneousLocalization.Away.mk (projGrading E) hcoord n
+        (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p) hmem := by
+  classical
+  set B := MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal with hB
+  set f : B := projCoord E i with hf
+  set L := Localization (Submonoid.powers f) with hL
+  set V := algebraMap (HomogeneousLocalization.Away (projGrading E) f) L with hV
+  set t : Fin 3 → L := fun j => algebraMap B L (Ideal.Quotient.mk _ (MvPolynomial.X j)) with ht
+  set s : L := Localization.mk 1 ⟨f, ⟨1, pow_one f⟩⟩ with hs'
+  set c : ℚ →+* L := V.comp (projChartBase E i) with hc
+  have hti : t i = algebraMap B L f := rfl
+  have htj : ∀ j : Fin 3, t j = Localization.mk
+      (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.X j)) 1 := fun j => by
+    rw [ht]; exact (Localization.mk_one_eq_algebraMap _).symm
+  -- `s` inverts `t i`
+  have hs : s * t i = 1 := by
+    rw [hs', hti, Localization.mk_eq_mk']
+    exact (IsLocalization.mk'_spec L 1 (⟨f, ⟨1, pow_one f⟩⟩ : Submonoid.powers f)).trans (map_one _)
+  -- the ratios are `s * t j`
+  have hratio : ∀ j : ProjChartVar i, V (projChartRatio E i hcoord j) = s * t j.1 := fun j => by
+    rw [hs', htj]
+    show Localization.mk _ ⟨f ^ 1, _⟩ = Localization.mk 1 ⟨f, _⟩ * Localization.mk _ 1
+    rw [Localization.mk_mul, one_mul, mul_one]
+    congr 1
+    exact Subtype.ext (pow_one f)
+  -- `V ∘ projChartHom` is `eval₂` into the localisation
+  have hcomp : V.comp (projChartHom E i hcoord)
+      = MvPolynomial.eval₂Hom c (fun j : ProjChartVar i => s * t j.1) := by
+    apply MvPolynomial.ringHom_ext
+    · intro r; simp [projChartHom, hc]
+    · intro j; simp [projChartHom, hratio j]
+  -- `eval₂ c t` is the quotient map followed by localisation
+  have hct : MvPolynomial.eval₂Hom c t
+      = (algebraMap B L).comp (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal) := by
+    apply MvPolynomial.ringHom_ext
+    · intro r
+      have hcr : ((algebraMap ℚ (projGrading E 0) r : B)) =
+          Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.C r) := by
+        rw [SetLike.GradeZero.coe_algebraMap,
+          IsScalarTower.algebraMap_apply ℚ (MvPolynomial (Fin 3) ℚ) B r,
+          Ideal.Quotient.algebraMap_eq, MvPolynomial.algebraMap_eq]
+      simp only [MvPolynomial.eval₂Hom_C, RingHom.comp_apply, hc]
+      show Localization.mk ((algebraMap ℚ (projGrading E 0) r : B))
+            (1 : ↥(Submonoid.powers f))
+          = algebraMap B L
+            (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.C r))
+      rw [hcr, Localization.mk_one_eq_algebraMap]
+    · intro j; simp [ht]
+  -- assemble
+  have hcore := eval₂_dehomogenizeAt_mul_pow c i t s hs hp
+  have h1 : V (projChartHom E i hcoord (dehomogenizeAt ℚ i p))
+      = MvPolynomial.eval₂ c (fun j : ProjChartVar i => s * t j.1) (dehomogenizeAt ℚ i p) :=
+    RingHom.congr_fun hcomp _
+  have h2 : MvPolynomial.eval₂ c t p
+      = algebraMap B L (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p) :=
+    RingHom.congr_fun hct p
+  have hVeq : V (projChartHom E i hcoord (dehomogenizeAt ℚ i p)) * t i ^ n
+      = algebraMap B L (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p) := by
+    rw [h1, hcore, h2]
+  have hunit : IsUnit (t i ^ n) := by
+    rw [hti]
+    exact (IsLocalization.map_units L (⟨f, ⟨1, pow_one f⟩⟩ : Submonoid.powers f)).pow n
+  apply HomogeneousLocalization.val_injective
+  apply hunit.mul_left_cancel
+  have hlhs : (projChartHom E i hcoord (dehomogenizeAt ℚ i p)).val
+      = V (projChartHom E i hcoord (dehomogenizeAt ℚ i p)) := rfl
+  rw [hlhs, mul_comm (t i ^ n) (V _), hVeq, HomogeneousLocalization.Away.val_mk, hti, ← map_pow,
+    Localization.mk_eq_mk', mul_comm]
+  exact (IsLocalization.mk'_spec L _ _).symm
+
+/-- **The chart homomorphism is surjective.**  This is the half that was already in mathlib:
+`HomogeneousLocalization.Away.mk_surjective` says every element of `(B_{xᵢ})₀` is `a / xᵢ^m`
+with `a` of degree `m`, and `projChartHom_dehomogenizeAt` exhibits `dehomogenizeAt ℚ i p` as a
+preimage. -/
+theorem projChartHom_surjective : Function.Surjective (projChartHom E i hcoord) := by
+  intro z
+  obtain ⟨m, a, ha, rfl⟩ := HomogeneousLocalization.Away.mk_surjective (projGrading E) hcoord z
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  have hp' : p.IsHomogeneous m := by
+    have h := (MvPolynomial.mem_homogeneousSubmodule _ _).mp hp
+    simpa using h
+  exact ⟨dehomogenizeAt ℚ i p, projChartHom_dehomogenizeAt E i hcoord hp' _⟩
+
+end ChartHom
+
+/-! #### `Xᵢ ∤ W`, and the kernel -/
+
+/-- **`Xᵢ` does not divide the projective Weierstrass polynomial**, for any of the three
+coordinates.  This — *not* irreducibility of `W` — is the only input the kernel computation
+needs beyond primality of `Xᵢ`.
+
+It is checked by evaluation.  If `Xᵢ ∣ W` then `eval P W = 0` for every `P` with `P i = 0`;
+for `i = 1, 2` the point `(1, 0, 0)` gives `-1 = 0`, and for `i = 0` the three points
+`(0, 0, 1)`, `(0, 1, 1)`, `(0, -1, 1)` give `-a₆ = 0`, `1 + a₃ - a₆ = 0` and
+`1 - a₃ - a₆ = 0`, whose sum of the last two forces `a₆ = 1` against the first. -/
+theorem not_X_dvd_polynomial (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    ¬ (MvPolynomial.X i ∣ polynomial E) := by
+  rintro ⟨S, hS⟩
+  have hev : ∀ P : Fin 3 → ℚ, P i = 0 → MvPolynomial.eval P (polynomial E) = 0 := by
+    intro P hP
+    rw [hS, map_mul, MvPolynomial.eval_X, hP, zero_mul]
+  fin_cases i
+  · have h0 := hev ![0, 0, 1] rfl
+    have h1 := hev ![0, 1, 1] rfl
+    have h2 := hev ![0, -1, 1] rfl
+    simp only [eval_polynomial, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      Matrix.cons_val_two, Matrix.tail_cons] at h0 h1 h2
+    norm_num at h0 h1 h2
+    linarith
+  · have h := hev ![1, 0, 0] rfl
+    simp only [eval_polynomial, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      Matrix.cons_val_two, Matrix.tail_cons] at h
+    norm_num at h
+  · have h := hev ![1, 0, 0] rfl
+    simp only [eval_polynomial, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+      Matrix.cons_val_two, Matrix.tail_cons] at h
+    norm_num at h
+
+/-- `W ∣ Xᵢ^k · P → W ∣ P`.  This is the UFD half of the kernel argument, and mathlib's
+`MvPolynomial.dvd_X_mul_iff` packages it so that a bare induction on `k` suffices: at each step
+the alternative disjunct says `Xᵢ ∣ W`, refuted by `not_X_dvd_polynomial`. -/
+theorem polynomial_dvd_of_dvd_X_pow_mul (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    ∀ (k : ℕ) (P : MvPolynomial (Fin 3) ℚ),
+      polynomial E ∣ MvPolynomial.X i ^ k * P → polynomial E ∣ P := by
+  intro k
+  induction k with
+  | zero => intro P h; simpa using h
+  | succ k ih =>
+    intro P h
+    rw [pow_succ', mul_assoc] at h
+    rcases MvPolynomial.dvd_X_mul_iff.mp h with h' | ⟨h'', -⟩
+    · exact ih P h'
+    · exact absurd h'' (not_X_dvd_polynomial E i)
+
+section Kernel
+
+variable (E : WeierstrassCurve ℚ) (i : Fin 3) (hcoord : projCoord E i ∈ projGrading E 1)
+
+/-- **The kernel of the chart homomorphism is the dehomogenised Weierstrass ideal** (PROVEN).
+
+`⊇` is immediate since `W ↦ 0`.  For `⊆`: a `q` in the kernel homogenises to some `Q` of a
+single degree `n` with `dehom Q = q`; the vanishing of `Q̄ / xᵢ^n` in the localisation says
+`xᵢ^k · Q̄ = 0` in `B`, i.e. `W ∣ Xᵢ^k · Q`, whence `W ∣ Q` by
+`polynomial_dvd_of_dvd_X_pow_mul`, and dehomogenising the factorisation gives `wᵢ ∣ q`. -/
+theorem projChartHom_ker :
+    RingHom.ker (projChartHom E i hcoord) = Ideal.span {projChartPolynomial E i} := by
+  have hW0 : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (polynomial E) = 0 :=
+    Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span rfl)
+  apply le_antisymm
+  · intro q hq
+    rw [RingHom.mem_ker] at hq
+    have hQhom : (homogenizeAt i q).IsHomogeneous (inclChartVar i q).totalDegree :=
+      isHomogeneous_homogenizeAt i q
+    have hmem : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (homogenizeAt i q)
+        ∈ projGrading E ((inclChartVar i q).totalDegree • 1) := by
+      simpa using HomogeneousIdeal.mk_mem_quotientGrading (I := polynomialHomogeneousIdeal E)
+        ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr hQhom)
+    have h0 : HomogeneousLocalization.Away.mk (projGrading E) hcoord
+        (inclChartVar i q).totalDegree
+        (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (homogenizeAt i q)) hmem = 0 := by
+      rw [← projChartHom_dehomogenizeAt E i hcoord hQhom hmem, dehomogenizeAt_homogenizeAt, hq]
+    have hval := congrArg HomogeneousLocalization.val h0
+    rw [HomogeneousLocalization.Away.val_mk, HomogeneousLocalization.val_zero,
+      Localization.mk_eq_mk', IsLocalization.mk'_eq_zero_iff] at hval
+    obtain ⟨⟨-, k, rfl⟩, hk⟩ := hval
+    have hdvd : polynomial E ∣ MvPolynomial.X i ^ k * homogenizeAt i q := by
+      rw [← Ideal.mem_span_singleton]
+      show _ ∈ (polynomialHomogeneousIdeal E).toIdeal
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_mul, map_pow]
+      exact hk
+    obtain ⟨T, hT⟩ := polynomial_dvd_of_dvd_X_pow_mul E i k _ hdvd
+    rw [Ideal.mem_span_singleton]
+    refine ⟨dehomogenizeAt ℚ i T, ?_⟩
+    rw [← dehomogenizeAt_homogenizeAt i q, hT, map_mul]
+    rfl
+  · rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, RingHom.mem_ker]
+    have hhom : (polynomial E).IsHomogeneous 3 := isHomogeneous_polynomial E
+    have hmem : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (polynomial E)
+        ∈ projGrading E (3 • 1) := by
+      simpa using HomogeneousIdeal.mk_mem_quotientGrading (I := polynomialHomogeneousIdeal E)
+        ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr hhom)
+    show projChartHom E i hcoord (dehomogenizeAt ℚ i (polynomial E)) = 0
+    rw [projChartHom_dehomogenizeAt E i hcoord hhom hmem]
+    apply HomogeneousLocalization.val_injective
+    rw [HomogeneousLocalization.Away.val_mk, HomogeneousLocalization.val_zero, hW0,
+      Localization.mk_zero]
+
+end Kernel
+
+/-- **LEAF A — THE DEHOMOGENISATION ISOMORPHISM** (PROVEN; it was a missing piece of MATHLIB,
+not of this development, and it is written above in a form fit to be upstreamed).
 
   `(ℚ[X, Y, Z] ⧸ (W))_{(Xᵢ)}` in degree `0`  ≃  `ℚ[u, v] ⧸ (wᵢ)`,
 
@@ -742,46 +1558,217 @@ into a common `Algebra ℚ` structure invites exactly the "two defeq but never s
 equal instances" trap this development has been bitten by repeatedly.  The commuting
 triangle is what the consumer actually needs, and it is instance-free.
 
-## Proof plan
+## How it is proved
 
-*Surjectivity is already in mathlib.*  `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top`
-says that if the graded ring is generated over its degree-zero part by homogeneous `vₗ` of
-degrees `dvₗ`, then `𝒜_(f)` for `f` of degree `d` is generated as a `𝒜₀`-algebra by the
-elements `(∏ vₗ^aₗ) / f^a` with `∑ aₗ dvₗ = a d` and `aₗ ≤ d`.  Here `d = 1` (that is what
-`hcoord` supplies), the `vₗ` are the three coordinates `x₀, x₁, x₂` of degree `1`, so the
-constraint `aₗ ≤ 1` forces each generator to be a product of a SUBSET of the coordinates
-divided by `xᵢ^{card}` — i.e. a product of the three ratios `xⱼ / xᵢ`, one of which is `1`.
-So the chart ring is generated over `ℚ` by the two ratios, which is exactly surjectivity of
-the map `ℚ[u, v] → (B_{xᵢ})₀` sending `u, v` to the two ratios.
+Everything is routed through the single ring hom `projChartHom E i hcoord : ℚ[u, v] → (B_{xᵢ})₀`
+sending `uⱼ ↦ xⱼ / xᵢ`, of which this is the first isomorphism theorem:
+`projChartHom_surjective` and `projChartHom_ker`, glued by
+`RingHom.quotientKerEquivOfSurjective` and `Ideal.quotEquivOfEq`.
 
-*The kernel is the one genuinely new argument.*  Let `q ∈ ℚ[u, v]` of degree `n` and let
-`Q := Xᵢ^n · q(Xⱼ/Xᵢ, Xₖ/Xᵢ)` be its homogenisation, so the image of `q` is `Q̄ / xᵢ^n`.
-That vanishes iff `Xᵢ^m · Q ∈ (W)` in `ℚ[X, Y, Z]` for some `m`.  Now `ℚ[X, Y, Z]` is a UFD,
-`Xᵢ` is prime, and `Xᵢ ∤ W` for each of the three `i` — `W` contains the monomial `-X³` (so
-`Y ∤ W` and `Z ∤ W`) and the monomial `Y²Z` (so `X ∤ W`).  Hence no prime factor of `W` is
-associate to `Xᵢ`, and `W ∣ Xᵢ^m Q` forces `W ∣ Q`.  Dehomogenising, `wᵢ ∣ q`.  The reverse
-inclusion is immediate since `W` maps to `0`.
+*Surjectivity was already in mathlib*, and more cheaply than the original plan supposed.  The
+plan called for `HomogeneousLocalization.Away.adjoin_mk_prod_pow_eq_top` at `d = 1`, which does
+force every algebra generator to be a product of a SUBSET of the coordinates over `xᵢ^card`.
+But `HomogeneousLocalization.Away.mk_surjective` is stronger and immediate: every element of
+`(B_{xᵢ})₀` is literally `ā / xᵢ^m` with `a` homogeneous of degree `m`, and
+`projChartHom_dehomogenizeAt` says `dehomogenizeAt ℚ i a` is a preimage.  So no generation
+argument is needed at all.
 
-Note this argument does NOT need `W` irreducible, only `Xᵢ ∤ W`, which is a monomial check.
-The relevant mathlib entry points are `UniqueFactorizationMonoid` and
-`MvPolynomial.prime_X` / `MvPolynomial.isDomain`.
+*The kernel is the one genuinely new argument.*  Given `q` in the kernel, `homogenizeAt i q`
+is a homogeneous `Q` of a single degree with `dehom Q = q` (built from the homogeneous
+components of `q`, each pushed up by a power of `Xᵢ` — the degree itself is never needed).
+Its image `Q̄ / xᵢ^n` vanishes iff `Xᵢ^k · Q ∈ (W)` for some `k`.  Now `ℚ[X, Y, Z]` is a UFD,
+`Xᵢ` is prime, and `Xᵢ ∤ W` for each of the three `i` — `W` contains the monomial `Y²Z` (so
+`X ∤ W`) and the monomial `-X³` (so `Y ∤ W` and `Z ∤ W`).  Hence `W ∣ Xᵢ^k Q` forces `W ∣ Q`
+(`polynomial_dvd_of_dvd_X_pow_mul`, an induction on `k` off `MvPolynomial.dvd_X_mul_iff`).
+Dehomogenising, `wᵢ ∣ q`.  The reverse inclusion is immediate since `W` maps to `0`.
+
+Note this argument does NOT need `W` irreducible, only `Xᵢ ∤ W`, which is a numerical check
+(`not_X_dvd_polynomial`, done by evaluation at three rational points).
 
 This is the piece that ought to be upstreamed: stated for an arbitrary homogeneous ideal of
 `R[X₀ .. Xₙ]` it is the standard affine chart of `Proj` of a projective scheme over `R`, and
-its absence is what has kept every `Proj`-level smoothness argument out of reach. -/
+its absence is what had kept every `Proj`-level smoothness argument out of reach.  The one
+genuinely elliptic-curve-specific input is `not_X_dvd_polynomial`; everything else above is
+stated for the Weierstrass ideal only because that is the ideal at hand. -/
 theorem exists_projChartRingEquiv (E : WeierstrassCurve ℚ) (i : Fin 3)
     (hcoord : projCoord E i ∈ projGrading E 1) :
     ∃ e : HomogeneousLocalization.Away (projGrading E) (projCoord E i) ≃+* ProjChartRing E i,
       (e : HomogeneousLocalization.Away (projGrading E) (projCoord E i) →+* ProjChartRing E i).comp
           ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
             (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0)))
-        = algebraMap ℚ (ProjChartRing E i) :=
-  sorry
+        = algebraMap ℚ (ProjChartRing E i) := by
+  have hsurj := projChartHom_surjective E i hcoord
+  have hker := projChartHom_ker E i hcoord
+  refine ⟨(RingHom.quotientKerEquivOfSurjective hsurj).symm.trans (Ideal.quotEquivOfEq hker), ?_⟩
+  refine RingHom.ext fun r => ?_
+  show Ideal.quotEquivOfEq hker ((RingHom.quotientKerEquivOfSurjective hsurj).symm
+      (projChartBase E i r)) = algebraMap ℚ (ProjChartRing E i) r
+  have h1 : projChartBase E i r = projChartHom E i hcoord (MvPolynomial.C r) :=
+    (MvPolynomial.eval₂Hom_C _ _ r).symm
+  rw [h1, RingHom.quotientKerEquivOfSurjective_symm_apply, Ideal.quotEquivOfEq_mk,
+    IsScalarTower.algebraMap_apply ℚ (MvPolynomial (ProjChartVar i) ℚ) (ProjChartRing E i) r,
+    Ideal.Quotient.algebraMap_eq, MvPolynomial.algebraMap_eq]
 
-/-- **LEAF B — THE CHART JACOBIAN CRITERION** (sorry node): on each of the three charts the
-two partial derivatives of the dehomogenised Weierstrass cubic generate the UNIT ideal of
-the chart ring.  This is what makes the chart ring locally a hypersurface with an invertible
-partial, and it is where `hjac` — hence `Δ` — is consumed.
+/-! #### The two ingredients of the chart Jacobian criterion
+
+Both are stated for an arbitrary base ring and are pure `MvPolynomial` bookkeeping; only
+`false_of_eval_pderiv_projPolynomial_eq_zero` below is elliptic-curve mathematics. -/
+
+/-- Dehomogenisation sends `Xₙ` to `1` when `n = i`, and to the `n`-th chart coordinate
+otherwise. -/
+theorem dehomogenizeAt_X {R : Type} [CommRing R] (i n : Fin 3) :
+    dehomogenizeAt R i (MvPolynomial.X n)
+      = if h : n = i then 1 else MvPolynomial.X ⟨n, h⟩ := by
+  simp [dehomogenizeAt]
+
+/-- `pderiv_dehomogenizeAt` on a single variable — the base case of the induction. -/
+theorem pderiv_dehomogenizeAt_X {R : Type} [CommRing R] (i : Fin 3) (j : ProjChartVar i)
+    (n : Fin 3) :
+    MvPolynomial.pderiv j (dehomogenizeAt R i (MvPolynomial.X n))
+      = dehomogenizeAt R i (MvPolynomial.pderiv (j : Fin 3) (MvPolynomial.X n)) := by
+  classical
+  rw [dehomogenizeAt_X]
+  rcases eq_or_ne n i with rfl | h
+  · rw [dif_pos rfl, MvPolynomial.pderiv_one,
+      MvPolynomial.pderiv_X_of_ne (Ne.symm j.2), map_zero]
+  · rw [dif_neg h]
+    rcases eq_or_ne n (j : Fin 3) with h2 | h2
+    · have hj : (⟨n, h⟩ : ProjChartVar i) = j := Subtype.ext h2
+      rw [hj, MvPolynomial.pderiv_X_self, h2, MvPolynomial.pderiv_X_self, map_one]
+    · rw [MvPolynomial.pderiv_X_of_ne (fun hc => h2 (congrArg Subtype.val hc)),
+        MvPolynomial.pderiv_X_of_ne h2, map_zero]
+
+/-- **INGREDIENT 1 — dehomogenisation commutes with the chart partials.**
+
+For a chart variable `j ≠ i` the substitution `Xᵢ ↦ 1` is a constant in the `j`-th variable,
+so `∂/∂uⱼ` may be taken before or after dehomogenising.  Consequently the two partials of
+the chart equation `wᵢ` are the dehomogenisations of two of mathlib's `polynomialX`,
+`polynomialY`, `polynomialZ`. -/
+theorem pderiv_dehomogenizeAt {R : Type} [CommRing R] (i : Fin 3) (j : ProjChartVar i)
+    (p : MvPolynomial (Fin 3) R) :
+    MvPolynomial.pderiv j (dehomogenizeAt R i p)
+      = dehomogenizeAt R i (MvPolynomial.pderiv (j : Fin 3) p) := by
+  classical
+  induction p using MvPolynomial.induction_on with
+  | C a => simp
+  | add p q hp hq => simp [hp, hq]
+  | mul_X p n h =>
+    simp only [map_mul, Derivation.leibniz, smul_eq_mul, map_add, map_mul, h,
+      pderiv_dehomogenizeAt_X]
+
+/-- Evaluating a base-changed polynomial at the image of the chart point `(…, 1, …)` is
+`φ` applied to its dehomogenisation.  This is the bridge between the `MvPolynomial (Fin 3)`
+world, where Euler's relation lives, and the chart ring. -/
+theorem eval_map_eq_dehomogenizeAt {k : Type} [CommRing k] [Algebra ℚ k] (i : Fin 3)
+    (φ : MvPolynomial (ProjChartVar i) ℚ →ₐ[ℚ] k) (p : MvPolynomial (Fin 3) ℚ) :
+    MvPolynomial.eval (fun n => φ (if h : n = i then 1 else MvPolynomial.X ⟨n, h⟩))
+        (MvPolynomial.map (algebraMap ℚ k) p)
+      = φ (dehomogenizeAt ℚ i p) := by
+  rw [MvPolynomial.eval_map, ← MvPolynomial.aeval_def, dehomogenizeAt,
+    MvPolynomial.comp_aeval_apply]
+
+/-- **INGREDIENT 2 — EULER.**  Euler's homogeneous function theorem
+`3W = X·W_X + Y·W_Y + Z·W_Z` (`WeierstrassCurve.Projective.polynomial_relation`) says the
+three partials are not independent along the curve.  So at a point `P` of the curve whose
+`i`-th coordinate is `1`, the vanishing of the two partials `∂/∂Xⱼ`, `j ≠ i`, forces the
+vanishing of the third — which is why the chart's own two partials already control all
+three. -/
+theorem eval_pderiv_projPolynomial_eq_zero (E : WeierstrassCurve ℚ) (k : Type) [Field k]
+    [Algebra ℚ k] (i : Fin 3) (P : Fin 3 → k) (hPi : P i = 1)
+    (hW : MvPolynomial.eval P (polynomial (E.map (algebraMap ℚ k))) = 0)
+    (hj : ∀ n : Fin 3, n ≠ i →
+      MvPolynomial.eval P (MvPolynomial.pderiv n (polynomial (E.map (algebraMap ℚ k)))) = 0)
+    (n : Fin 3) :
+    MvPolynomial.eval P (MvPolynomial.pderiv n (polynomial (E.map (algebraMap ℚ k)))) = 0 := by
+  have hE := WeierstrassCurve.Projective.polynomial_relation (W' := E.map (algebraMap ℚ k)) P
+  rw [hW, mul_zero] at hE
+  have eX : polynomialX (E.map (algebraMap ℚ k))
+      = MvPolynomial.pderiv (0 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) := rfl
+  have eY : polynomialY (E.map (algebraMap ℚ k))
+      = MvPolynomial.pderiv (1 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) := rfl
+  have eZ : polynomialZ (E.map (algebraMap ℚ k))
+      = MvPolynomial.pderiv (2 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) := rfl
+  rw [eX, eY, eZ] at hE
+  by_cases h : n = i
+  · subst h
+    have hsum : ∑ b : Fin 3,
+        P b * MvPolynomial.eval P (MvPolynomial.pderiv b (polynomial (E.map (algebraMap ℚ k))))
+        = 0 := by
+      rw [Fin.sum_univ_three]
+      linear_combination -hE
+    rw [Finset.sum_eq_single_of_mem n (Finset.mem_univ n)
+      (fun b _ hb => by rw [hj b hb, mul_zero]), hPi, one_mul] at hsum
+    exact hsum
+  · exact hj n h
+
+/-- **THE GEOMETRIC CORE — over a FIELD there is no singular point.**
+
+`hjac` (the affine Jacobian criterion, where `Δ` is consumed) forbids a point of the
+projective Weierstrass curve at which all three homogeneous partials vanish and some
+coordinate equals `1`.  The proof is a two-case check on whether the point is at infinity,
+and **neither case mentions a chart** — that is what makes
+`projChart_jacobian_span_eq_top` uniform in `i`.
+
+* `P z ≠ 0`: the point is affine, `hjac` applies at `S := k`, and the two affine partials
+  are `eval P W_X / P z ^ 2` and `eval P W_Y / P z ^ 2`, both zero — so `span {0, 0} = ⊤`
+  in a field, absurd.
+* `P z = 0`: the projective equation degenerates to `P x ^ 3 = 0`, so `P x = 0`, and then
+  `eval P W_Z = P y ^ 2`, forcing `P y = 0`.  Every coordinate vanishes, contradicting
+  `P i = 1`.  (The constant term of `W_Z` is what does the work here; this is the point at
+  infinity, and it is not a separate chart argument.) -/
+theorem false_of_eval_pderiv_projPolynomial_eq_zero (E : WeierstrassCurve ℚ) (k : Type)
+    [Field k] [Algebra ℚ k]
+    (hjac : ∀ (S : Type) [CommRing S] [Algebra ℚ S] (x y : S),
+      (E.map (algebraMap ℚ S)).toAffine.Equation x y →
+      Ideal.span {Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialX,
+        Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialY} = ⊤)
+    (i : Fin 3) (P : Fin 3 → k) (hPi : P i = 1)
+    (hW : MvPolynomial.eval P (polynomial (E.map (algebraMap ℚ k))) = 0)
+    (hq : ∀ n : Fin 3,
+      MvPolynomial.eval P (MvPolynomial.pderiv n (polynomial (E.map (algebraMap ℚ k)))) = 0) :
+    False := by
+  by_cases hPz : P 2 = 0
+  · -- the point lies on the line at infinity, and is then forced to be `(0 : 0 : 0)`
+    have hx : P 0 = 0 := by
+      have h3 := (WeierstrassCurve.Projective.equation_of_Z_eq_zero
+        (W' := E.map (algebraMap ℚ k)) hPz).1 hW
+      by_contra hc
+      exact pow_ne_zero 3 hc h3
+    have hy : P 1 = 0 := by
+      have h2 := hq 2
+      rw [show MvPolynomial.pderiv (2 : Fin 3) (polynomial (E.map (algebraMap ℚ k)))
+        = polynomialZ (E.map (algebraMap ℚ k)) from rfl,
+        WeierstrassCurve.Projective.eval_polynomialZ, hx, hPz] at h2
+      have hsq : P 1 ^ 2 = 0 := by linear_combination h2
+      by_contra hc
+      exact pow_ne_zero 2 hc hsq
+    have hall : ∀ n : Fin 3, P n = 0 := by intro n; fin_cases n <;> assumption
+    exact one_ne_zero (hPi.symm.trans (hall i))
+  · -- an honest affine point of the curve over the field `k`
+    have heq : (E.map (algebraMap ℚ k)).toAffine.Equation (P 0 / P 2) (P 1 / P 2) :=
+      (WeierstrassCurve.Projective.equation_of_Z_ne_zero (W := E.map (algebraMap ℚ k)) hPz).1 hW
+    have hX0 : Polynomial.evalEval (P 0 / P 2) (P 1 / P 2)
+        (E.map (algebraMap ℚ k)).toAffine.polynomialX = 0 := by
+      rw [← WeierstrassCurve.Projective.eval_polynomialX_of_Z_ne_zero
+        (W := E.map (algebraMap ℚ k)) hPz,
+        show polynomialX (E.map (algebraMap ℚ k))
+          = MvPolynomial.pderiv (0 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) from rfl,
+        hq 0, zero_div]
+    have hY0 : Polynomial.evalEval (P 0 / P 2) (P 1 / P 2)
+        (E.map (algebraMap ℚ k)).toAffine.polynomialY = 0 := by
+      rw [← WeierstrassCurve.Projective.eval_polynomialY_of_Z_ne_zero
+        (W := E.map (algebraMap ℚ k)) hPz,
+        show polynomialY (E.map (algebraMap ℚ k))
+          = MvPolynomial.pderiv (1 : Fin 3) (polynomial (E.map (algebraMap ℚ k))) from rfl,
+        hq 1, zero_div]
+    have hspan := hjac k (P 0 / P 2) (P 1 / P 2) heq
+    rw [hX0, hY0, Ideal.eq_top_iff_one] at hspan
+    simp at hspan
+
+/-- **THE CHART JACOBIAN CRITERION** (PROVEN): on each of the three charts the two partial
+derivatives of the dehomogenised Weierstrass cubic generate the UNIT ideal of the chart
+ring.  This is what makes the chart ring locally a hypersurface with an invertible partial,
+and it is where `hjac` — hence `Δ` — is consumed.
 
 ## NOT VACUOUS, and true on all three charts
 
@@ -790,40 +1777,36 @@ generated by `wᵢ` and its two partials is `(1)`.  So the statement holds for a
 merely for the affine chart, and `Δ` is genuinely doing the work (over `ℚ[a₁, …, a₆]` the
 ideal is proper — that is the content of `Δ_mem_jacobianSpan`).
 
-## Proof plan — the same two ingredients on every chart, then three easy cases
+## The proof, and why it is UNIFORM in `i`
 
-*Ingredient 1 — dehomogenisation commutes with `∂`.*  For `j ≠ i`,
-`pderiv j (dehomogenizeAt R i p) = dehomogenizeAt R i (pderiv j p)`, by
-`MvPolynomial.induction_on`; the substitution `Xᵢ ↦ 1` is a constant in the `j`-th variable.
-So the two chart partials are the dehomogenisations `pⱼ := dehom(W_{Xⱼ})`, `j ≠ i`, and
-these are the dehomogenisations of mathlib's `polynomialX`, `polynomialY`, `polynomialZ`.
+The plan recorded with this leaf while it was open had three cases: `hjac` applied directly
+on the affine chart `i = 2`; a unit `Z/X` on the chart `i = 0`; and, for the chart `i = 1`
+containing the point at infinity, a coprimality step `span {p₂, z} = ⊤` combined with
+`IsCoprime.pow_right` over the localisation away from `z`.  A Gröbner cofactor certificate
+was offered as the fallback for that last chart.
 
-*Ingredient 2 — Euler.*  `WeierstrassCurve.Projective.polynomial_relation` is Euler's
-theorem `3W = X·W_X + Y·W_Y + Z·W_Z`.  Dehomogenising at `i` and using `wᵢ = 0` in the chart
-ring gives `pᵢ = -∑_{j ≠ i} uⱼ pⱼ`.  Hence in the chart ring
-`span {pⱼ : j ≠ i} = span {p₀, p₁, p₂}`, and it suffices to show the LATTER is `⊤`.
+**None of that is needed, and there is no case split on `i` below.**  The move that removes
+it is to apply `hjac` not over the chart ring itself but over a RESIDUE FIELD of it.
+Suppose the span were proper.  Pull it back: the ideal
+`J := (wᵢ, ∂wᵢ/∂u, ∂wᵢ/∂v)` of `ℚ[u, v]` is then proper too, since its image in
+`ℚ[u, v] ⧸ (wᵢ)` is exactly the span in question.  So `J ⊆ M` for some maximal `M`, and
+`k := ℚ[u, v] ⧸ M` is a FIELD.  Let `P : Fin 3 → k` be the image of the chart point, so
+`P i = 1` and `P j = ūⱼ` for `j ≠ i`.  Then
 
-*Chart `i = 2` (`Z ≠ 0`).*  `w₂` IS the affine Weierstrass polynomial, so `hjac` applies
-directly at `S := ProjChartRing E 2` with `x, y` the images of the two chart coordinates:
-the affine `Equation` holds because the chart ring is the quotient by `w₂`.
+* `eval P W = 0`, because `W` dehomogenises to `wᵢ ∈ J ⊆ M` (`eval_map_eq_dehomogenizeAt`);
+* `eval P W_{Xⱼ} = 0` for `j ≠ i`, because dehomogenisation commutes with those partials
+  (`pderiv_dehomogenizeAt`) and `∂wᵢ/∂uⱼ ∈ J ⊆ M`;
+* `eval P W_{Xᵢ} = 0` as well, by Euler's relation together with `P i = 1`
+  (`eval_pderiv_projPolynomial_eq_zero`).
 
-*Chart `i = 0` (`X ≠ 0`).*  Here `z := Z/X` is already a UNIT of the chart ring: `w₀ = 0`
-reads `z · (v² + a₁v + a₃vz - a₂ - a₄z - a₆z²) = 1`.  So `x := 1/z` and `y := v/z` are
-honest elements satisfying the affine equation, `hjac` applies at `S := ProjChartRing E 0`,
-and the affine partials are `W_X(x,y) = x²·p₀` and `W_Y(x,y) = x²·p₁` (both partials are
-homogeneous of degree `2`, and `x = X/Z` is a unit), so `span {p₀, p₁} = ⊤`.
+So `P` is a singular point of the projective Weierstrass curve over a FIELD, which
+`false_of_eval_pderiv_projPolynomial_eq_zero` rules out in two chart-free cases.
 
-*Chart `i = 1` (`Y ≠ 0`).*  This is the only chart containing the point at infinity, `z` is
-NOT a unit there, and the argument needs one extra step.  Modulo `z` the chart relation
-`w₁` becomes `-u³`, and `p₂ = dehom(W_Z) = 1 + a₁u + 2a₃z - a₂u² - 2a₄uz - 3a₆z²` has
-constant term `1`, so `p₂` is a unit modulo `(z, u³)`: hence `span {p₂, z} = ⊤`.  On the
-localisation away from `z` the previous argument applies verbatim (`x = u/z`, `y = 1/z`),
-giving `zᵐ ∈ span {p₀, p₁}` for some `m`.  Since `span {p₂, z} = ⊤` implies
-`span {p₂, zᵐ} = ⊤` (`IsCoprime.pow_right`), the two together give `1 ∈ span {p₀, p₁, p₂}`.
-
-An explicit `Δᴺ = A·w₁ + B·p₀ + C·p₂` certificate from a Gröbner `lift` would also close
-chart `i = 1` outright and is the fallback if the localisation bookkeeping proves painful;
-the cofactors are large, which is why the structural argument is given first. -/
+The point at infinity is not a special case here: it is the `P z = 0` case there, and what
+disposes of it is the constant term of `W_Z` — precisely the fact the original plan had
+identified as operative for the chart `i = 1`.  Passing to a residue field is what lets that
+one observation serve all three charts at once, and it is why no localisation, no
+`IsCoprime.pow_right`, and no Gröbner cofactor certificate appear in the proof. -/
 theorem projChart_jacobian_span_eq_top (E : WeierstrassCurve ℚ) [E.IsElliptic] (i : Fin 3)
     (hjac : ∀ (S : Type) [CommRing S] [Algebra ℚ S] (x y : S),
       (E.map (algebraMap ℚ S)).toAffine.Equation x y →
@@ -831,8 +1814,58 @@ theorem projChart_jacobian_span_eq_top (E : WeierstrassCurve ℚ) [E.IsElliptic]
         Polynomial.evalEval x y (E.map (algebraMap ℚ S)).toAffine.polynomialY} = ⊤) :
     Ideal.span (Set.range fun j : ProjChartVar i =>
         (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
-          (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) = ⊤ :=
-  sorry
+          (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) = ⊤ := by
+  classical
+  by_contra hne
+  -- the Jacobian ideal PULLED BACK to the polynomial ring is proper
+  have hJ : Ideal.span (insert (projChartPolynomial E i)
+      (Set.range fun j : ProjChartVar i =>
+        MvPolynomial.pderiv j (projChartPolynomial E i))) ≠ ⊤ := by
+    intro htop
+    refine hne ((Ideal.eq_top_iff_one _).2 ?_)
+    have hmap : Ideal.map (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i}))
+        (Ideal.span (insert (projChartPolynomial E i)
+          (Set.range fun j : ProjChartVar i =>
+            MvPolynomial.pderiv j (projChartPolynomial E i))))
+        ≤ Ideal.span (Set.range fun j : ProjChartVar i =>
+            (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i})
+              (MvPolynomial.pderiv j (projChartPolynomial E i)) : ProjChartRing E i)) := by
+      rw [Ideal.map_span, Ideal.span_le]
+      rintro x ⟨y, hy, rfl⟩
+      rcases hy with rfl | ⟨j, rfl⟩
+      · simp only [SetLike.mem_coe]
+        rw [Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton_self _)]
+        exact Ideal.zero_mem _
+      · exact Ideal.subset_span ⟨j, rfl⟩
+    refine hmap ?_
+    rw [← map_one (Ideal.Quotient.mk (Ideal.span {projChartPolynomial E i}))]
+    exact Ideal.mem_map_of_mem _ (htop ▸ Submodule.mem_top)
+  obtain ⟨M, hM, hMle⟩ := Ideal.exists_le_maximal _ hJ
+  haveI : M.IsMaximal := hM
+  letI : Field (MvPolynomial (ProjChartVar i) ℚ ⧸ M) := Ideal.Quotient.field M
+  refine false_of_eval_pderiv_projPolynomial_eq_zero E (MvPolynomial (ProjChartVar i) ℚ ⧸ M)
+    hjac i (fun n => Ideal.Quotient.mkₐ ℚ M (if h : n = i then 1 else MvPolynomial.X ⟨n, h⟩))
+    (by simp) ?_ ?_
+  · rw [WeierstrassCurve.Projective.map_polynomial,
+      eval_map_eq_dehomogenizeAt i (Ideal.Quotient.mkₐ ℚ M)]
+    show (Ideal.Quotient.mkₐ ℚ M) (projChartPolynomial E i) = 0
+    rw [Ideal.Quotient.mkₐ_eq_mk]
+    exact Ideal.Quotient.eq_zero_iff_mem.2 (hMle (Ideal.subset_span (Set.mem_insert _ _)))
+  · refine eval_pderiv_projPolynomial_eq_zero E _ i _ (by simp) ?_ ?_
+    · rw [WeierstrassCurve.Projective.map_polynomial,
+        eval_map_eq_dehomogenizeAt i (Ideal.Quotient.mkₐ ℚ M)]
+      show (Ideal.Quotient.mkₐ ℚ M) (projChartPolynomial E i) = 0
+      rw [Ideal.Quotient.mkₐ_eq_mk]
+      exact Ideal.Quotient.eq_zero_iff_mem.2 (hMle (Ideal.subset_span (Set.mem_insert _ _)))
+    · intro n hn
+      rw [WeierstrassCurve.Projective.map_polynomial, MvPolynomial.pderiv_map,
+        eval_map_eq_dehomogenizeAt i (Ideal.Quotient.mkₐ ℚ M),
+        ← pderiv_dehomogenizeAt i (⟨n, hn⟩ : ProjChartVar i)]
+      show (Ideal.Quotient.mkₐ ℚ M)
+        (MvPolynomial.pderiv (⟨n, hn⟩ : ProjChartVar i) (projChartPolynomial E i)) = 0
+      rw [Ideal.Quotient.mkₐ_eq_mk]
+      exact Ideal.Quotient.eq_zero_iff_mem.2
+        (hMle (Ideal.subset_span (Set.mem_insert_of_mem _ ⟨⟨n, hn⟩, rfl⟩)))
 
 /-- **A PLANE CURVE IS STANDARD SMOOTH OF RELATIVE DIMENSION `1` WHERE A PARTIAL DERIVATIVE
 IS INVERTIBLE** (PROVEN; it was LEAF C of the residual item-7a leaf, and it is a piece of
@@ -1484,37 +2517,129 @@ section Leaves
 
 variable {K : Type u} [Field K] (W : WeierstrassCurve K)
 
-/-- **The projective Weierstrass cubic is prime in `K[X, Y, Z]`** (sorry leaf).
+/-- **A monic cubic over a domain with no root in the ring is irreducible.**
 
-This is all that is left of the `hpre` step: given it, the homogeneous coordinate ring is a
+`Polynomial.Monic.irreducible_iff_roots_eq_zero_of_degree_le_three` already holds over an
+arbitrary `[CommRing R] [IsDomain R]` — it is NOT a field-only statement — so no Gauss
+lemma, no fraction field and no integral-closedness argument is needed here.  This wrapper
+just packages it with the degree computation. -/
+theorem irreducible_monicCubic_of_no_root {A : Type*} [CommRing A] [IsDomain A]
+    (c₂ c₁ c₀ : A) (h : ∀ r : A, r ^ 3 + c₂ * r ^ 2 + c₁ * r + c₀ ≠ 0) :
+    Irreducible (Polynomial.X ^ 3 + Polynomial.C c₂ * Polynomial.X ^ 2
+      + Polynomial.C c₁ * Polynomial.X + Polynomial.C c₀) := by
+  set p : Polynomial A := Polynomial.X ^ 3 + Polynomial.C c₂ * Polynomial.X ^ 2
+      + Polynomial.C c₁ * Polynomial.X + Polynomial.C c₀ with hp
+  have hmonic : p.Monic := by rw [hp]; monicity!
+  have hdeg : p.natDegree = 3 := by rw [hp]; compute_degree!
+  rw [hmonic.irreducible_iff_roots_eq_zero_of_degree_le_three (by omega) (by omega)]
+  refine Multiset.eq_zero_of_forall_notMem fun r hr => ?_
+  rw [Polynomial.mem_roots hmonic.ne_zero, Polynomial.IsRoot.def] at hr
+  exact h r (by simpa [hp] using hr)
+
+/-- **`Z` is prime in `K[Y, Z]`.**  Mathlib has `Polynomial.prime_X` but no `MvPolynomial`
+analogue; transporting along `finSuccEquiv` supplies it for the variable of index `0`, and
+`renameEquiv` along `Equiv.swap 0 1` moves it to the variable of index `1`. -/
+theorem prime_X_one_fin_two : Prime (X (1 : Fin 2) : MvPolynomial (Fin 2) K) := by
+  have hswap : (X (1 : Fin 2) : MvPolynomial (Fin 2) K)
+      = MvPolynomial.renameEquiv K (Equiv.swap (0 : Fin 2) 1) (X 0) := by
+    simp
+  rw [hswap, MulEquiv.prime_iff]
+  refine (MulEquiv.prime_iff (MvPolynomial.finSuccEquiv K 1)).mp ?_
+  rw [MvPolynomial.finSuccEquiv_X_zero]
+  exact Polynomial.prime_X
+
+/-- **`Z ∤ Y` in `K[Y, Z]`** — seen by evaluating at `(Y, Z) = (1, 0)`. -/
+theorem X_one_not_dvd_X_zero_fin_two :
+    ¬ ((X (1 : Fin 2) : MvPolynomial (Fin 2) K) ∣ X 0) := by
+  rintro ⟨c, hc⟩
+  have h := congrArg (MvPolynomial.aeval (S₁ := K) ![(1 : K), 0]) hc
+  simp at h
+
+/-- **The projective Weierstrass cubic, read as a cubic in `X` over `K[Y, Z]`.**
+
+`MvPolynomial.finSuccEquiv` splits off the variable of index `0`, which for
+`WeierstrassCurve.Projective.polynomial` is exactly `X`; the cubic is then MONIC up to the
+global sign, with leading coefficient `-1`.  That is the whole point of choosing this
+splitting: no Gauss lemma and no primitivity argument is needed for a monic polynomial. -/
+theorem finSuccEquiv_projPolynomial :
+    MvPolynomial.finSuccEquiv K 2 (polynomial W)
+      = -(Polynomial.X ^ 3
+          + Polynomial.C (C W.a₂ * X 1) * Polynomial.X ^ 2
+          + Polynomial.C (C W.a₄ * X 1 ^ 2 - C W.a₁ * X 0 * X 1) * Polynomial.X
+          + Polynomial.C (C W.a₆ * X 1 ^ 3 - X 0 ^ 2 * X 1
+              - C W.a₃ * X 0 * X 1 ^ 2)) := by
+  have e0 : (MvPolynomial.finSuccEquiv K 2) (X 0 : MvPolynomial (Fin 3) K) = Polynomial.X :=
+    MvPolynomial.finSuccEquiv_X_zero
+  have e1 : (MvPolynomial.finSuccEquiv K 2) (X 1 : MvPolynomial (Fin 3) K)
+      = Polynomial.C (X 0) := by
+    rw [show (1 : Fin 3) = (0 : Fin 2).succ from rfl]
+    exact MvPolynomial.finSuccEquiv_X_succ
+  have e2 : (MvPolynomial.finSuccEquiv K 2) (X 2 : MvPolynomial (Fin 3) K)
+      = Polynomial.C (X 1) := by
+    rw [show (2 : Fin 3) = (1 : Fin 2).succ from rfl]
+    exact MvPolynomial.finSuccEquiv_X_succ
+  have eC : ∀ a : K, (MvPolynomial.finSuccEquiv K 2) (C a) = Polynomial.C (C a) := by
+    intro a; simp [MvPolynomial.finSuccEquiv_apply]
+  rw [WeierstrassCurve.Projective.polynomial]
+  simp only [map_sub, map_add, map_mul, map_pow, e0, e1, e2, eC]
+  ring
+
+/-- **The projective Weierstrass cubic is prime in `K[X, Y, Z]`** (PROVEN).
+
+This is all that was left of the `hpre` step: given it, the homogeneous coordinate ring is a
 domain and `irreducibleSpace_projectiveSpectrum` finishes the job.  It carries NO
-ellipticity hypothesis, and should not: mathlib's affine
-`WeierstrassCurve.Affine.irreducible_polynomial` holds over any `[IsDomain R]`, singular
-Weierstrass equations included.
+ellipticity hypothesis, and should not: the Weierstrass cubic is irreducible over EVERY
+field, singular ones included.
 
-## Why this is not already available, and the route
+## The route actually taken, and why it is short
 
-Mathlib has the AFFINE statement, `WeierstrassCurve.Affine.irreducible_polynomial
-[IsDomain R] : Irreducible W.polynomial`, for `W.polynomial : R[X][Y]`.  What is missing is
-the bridge to the HOMOGENEOUS trivariate polynomial:
+An earlier docstring here recorded this leaf as needing two pieces of missing mathlib —
+homogenisation of a bivariate polynomial into a trivariate one, and the fact that a factor
+of a homogeneous element of a graded domain is homogeneous — and proposed to descend from
+mathlib's AFFINE `WeierstrassCurve.Affine.irreducible_polynomial` by dehomogenising at
+`Z = 1`.  **Neither piece is needed, and neither is the affine statement.**  The graded
+machinery only ever enters if one insists on factoring a HOMOGENEOUS polynomial as such;
+reading `W` as an ordinary cubic in ONE distinguished variable avoids all of it:
 
-* `Mathlib/Algebra/Polynomial/Homogenize.lean` homogenises univariate `R[X]` into
-  `MvPolynomial (Fin 2) R` only.  It does not cover bivariate → trivariate, and it contains
-  **zero** irreducibility lemmas.
-* There is no lemma anywhere that a factor of a homogeneous element of a graded domain is
-  itself homogeneous, which is the other half of the classical argument.
+1. `MvPolynomial.finSuccEquiv K 2` presents `K[X, Y, Z]` as `(K[Y, Z])[X]`, and under it
+   `W` becomes `-q` with `q` MONIC of degree `3` (`finSuccEquiv_projPolynomial`).  The
+   index-`0` variable of `WeierstrassCurve.Projective.polynomial` is `X`, and `W` contains
+   `-X ^ 3`, so this splitting — and only this one — makes the leading coefficient a unit.
+2. Monic + degree `3` reduces irreducibility to the absence of a ROOT in `K[Y, Z]`, by
+   `Polynomial.Monic.irreducible_iff_roots_eq_zero_of_degree_le_three`, which holds over any
+   `[IsDomain A]` and not merely over a field.  So there is no Gauss lemma, no fraction
+   field, and no integral-closedness step anywhere in this proof.
+3. There is no root: if `q(r) = 0` then reducing mod `Z` gives `r ³ ≡ 0`, so `Z ∣ r` since
+   `Z` is prime (`prime_X_one_fin_two`); writing `r = Z s` and cancelling one `Z` leaves
+   `Y ² = Z · (…)`, so `Z ∣ Y ²`, so `Z ∣ Y` — and `Z ∤ Y`
+   (`X_one_not_dvd_X_zero_fin_two`).
+4. `MvPolynomial (Fin 3) K` is a UFD, so irreducible gives prime. -/
+theorem prime_projPolynomial : Prime (polynomial W) := by
+  refine (MulEquiv.prime_iff (MvPolynomial.finSuccEquiv K 2)).mp ?_
+  rw [finSuccEquiv_projPolynomial W]
+  refine Prime.neg ?_
+  rw [← UniqueFactorizationMonoid.irreducible_iff_prime]
+  refine irreducible_monicCubic_of_no_root _ _ _ ?_
+  intro r hr
+  have hz : Prime (X (1 : Fin 2) : MvPolynomial (Fin 2) K) := prime_X_one_fin_two
+  have h1 : (X (1 : Fin 2) : MvPolynomial (Fin 2) K) ∣ r ^ 3 := by
+    refine ⟨-(C W.a₂ * r ^ 2 + (C W.a₄ * X 1 - C W.a₁ * X 0) * r
+      + (C W.a₆ * X 1 ^ 2 - X 0 ^ 2 - C W.a₃ * X 0 * X 1)), ?_⟩
+    linear_combination hr
+  obtain ⟨s, rfl⟩ := hz.dvd_of_dvd_pow h1
+  have hA : (X (1 : Fin 2) : MvPolynomial (Fin 2) K) *
+      (X 1 ^ 2 * s ^ 3 + C W.a₂ * X 1 ^ 2 * s ^ 2 + C W.a₄ * X 1 ^ 2 * s
+        - C W.a₁ * X 0 * X 1 * s + C W.a₆ * X 1 ^ 2 - X 0 ^ 2 - C W.a₃ * X 0 * X 1)
+      = X 1 * 0 := by
+    linear_combination hr
+  have hA0 := mul_left_cancel₀ (MvPolynomial.X_ne_zero (R := K) (1 : Fin 2)) hA
+  have h2 : (X (1 : Fin 2) : MvPolynomial (Fin 2) K) ∣ X 0 ^ 2 :=
+    ⟨X 1 * s ^ 3 + C W.a₂ * X 1 * s ^ 2 + C W.a₄ * X 1 * s - C W.a₁ * X 0 * s
+      + C W.a₆ * X 1 - C W.a₃ * X 0, by linear_combination -hA0⟩
+  exact X_one_not_dvd_X_zero_fin_two (hz.dvd_of_dvd_pow h2)
 
-The classical argument, for the successor: suppose `W = f * g` in `K[X, Y, Z]`.  Both
-factors are homogeneous (the missing graded-domain lemma), say of degrees `d` and `3 - d`.
-Dehomogenise at `Z = 1`: the affine cubic is irreducible, so one dehomogenised factor is a
-nonzero constant, say `f(X, Y, 1) = c`.  A homogeneous `f` of degree `d` with constant
-dehomogenisation is `c * Z ^ d`; but `Z ∤ W`, since `W` contains the term `-X ^ 3`.  Hence
-`d = 0` and `f` is a unit.  So `W` is irreducible, and `K[X, Y, Z]` is a UFD, so `W` is
-prime. -/
-theorem prime_projPolynomial : Prime (polynomial W) := sorry
-
-/-- The homogeneous coordinate ring of the projective model is a domain — the content of
-`hpre`, modulo the general `Proj`-of-a-graded-domain statement. -/
+/-- The homogeneous coordinate ring of the projective model is a domain (PROVEN) — the
+content of `hpre`, modulo the general `Proj`-of-a-graded-domain statement. -/
 theorem isDomain_projCoordinateRing :
     IsDomain (MvPolynomial (Fin 3) K ⧸ (polynomialHomogeneousIdeal W).toIdeal) := by
   haveI : ((polynomialHomogeneousIdeal W).toIdeal).IsPrime := by
@@ -1523,9 +2648,9 @@ theorem isDomain_projCoordinateRing :
     exact prime_projPolynomial W
   exact Ideal.Quotient.isDomain _
 
-/-- **The projective Weierstrass model is preconnected** — the `hpre` step of
-`geometricallyConnected_projToSpec`, over an arbitrary base field.  Everything here is
-proven except `prime_projPolynomial`. -/
+/-- **The projective Weierstrass model is preconnected** (PROVEN) — the `hpre` step of
+`geometricallyConnected_projToSpec`, over an arbitrary base field, with no remaining
+leaf.  `prime_projPolynomial`, which was the last one, is proven above. -/
 theorem preconnectedSpace_proj : PreconnectedSpace (proj W) := by
   haveI := isDomain_projCoordinateRing W
   haveI := irreducibleSpace_projectiveSpectrum (projGrading W) (pointAtInfinity W)
@@ -1534,47 +2659,176 @@ theorem preconnectedSpace_proj : PreconnectedSpace (proj W) := by
 
 end Leaves
 
-/-- **`Proj` commutes with base change of the base field** (sorry leaf) — the `hbc` step of
-`geometricallyConnected_projToSpec`.
+/-! ### `hbc`: base change for `Proj`
 
-## Why there is nothing to reuse
+Everything in this block except `isIso_projBaseChangeHom` is PROVEN.  The block replaces
+what used to be a single opaque leaf `nonempty_projPullbackIso` by: the graded base-change
+hom, the irrelevant-ideal hypothesis `Proj.map` demands, the assembled comparison morphism,
+and the reduction of the leaf to that morphism being an isomorphism.
 
-There is **no base change for `Proj` at this pin, in any form**.  A search over
+**There is no base change for `Proj` at this pin, in any form.**  A search over
 `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/` for `Proj` together with `pullback`,
 `baseChange`, `IsPullback` or `TensorProduct` returns nothing; so does the same search over
 `~/cs/FLT`.  The only functoriality that exists is contravariant in the graded ring,
-`AlgebraicGeometry.Proj.map` (`ProjectiveSpectrum/Functor.lean:144`), and there is no
-functor-of-points description of `Proj` to fall back on.  Building this IS the task.
+`AlgebraicGeometry.Proj.map` (`ProjectiveSpectrum/Functor.lean:144`).  One correction to the
+earlier route note here: `Proj.pullbackAwayιIso` (`ProjectiveSpectrum/Basic.lean:256`) is
+NOT the glue for this — it compares two charts of ONE `Proj`, not two `Proj`s over
+different bases, and nothing in that file crosses a base change. -/
 
-## The route, and the two pieces it needs
+section BaseChange
 
-`Proj.map` has signature `map (f : 𝒜 →+*ᵍ ℬ) (hf : ℬ₊ ≤ 𝒜₊.map f) : Proj ℬ ⟶ Proj 𝒜`,
-where `𝒜 →+*ᵍ ℬ` is `GradedRingHom` from
-`Mathlib/RingTheory/GradedAlgebra/Homogeneous/Maps.lean`.  So the successor should:
+variable (E : WeierstrassCurve ℚ) (K : Type) [Field K] [Algebra ℚ K]
 
-1. **Build the graded ring hom.**  `MvPolynomial.map (algebraMap ℚ K)` sends `(W)` into
-   `(W_K)` — that is exactly `WeierstrassCurve.Projective.baseChange_polynomial`, i.e.
-   `(W⁄K).polynomial = MvPolynomial.map f W.polynomial`, which is already in mathlib
-   (`EllipticCurve/Projective/Basic.lean:536`) — so it descends to the quotients, and it
-   preserves `projGrading` degrees because it preserves `homogeneousSubmodule`.  The
-   hypothesis `hf` holds because the target's irrelevant ideal is generated by `X̄, Ȳ, Z̄`,
-   all of which are images.  This yields a canonical morphism
-   `proj (W.baseChange K) ⟶ proj W`, and with `projToSpec (W.baseChange K)` a canonical
-   morphism `proj (W.baseChange K) ⟶ pullback (projToSpec W) (Spec.map (algebraMap ℚ K))`.
+/-- Base change of the projective Weierstrass polynomial, `W_K = map (algebraMap ℚ K) W`. -/
+theorem polynomial_baseChange :
+    polynomial (E.baseChange K) = MvPolynomial.map (algebraMap ℚ K) (polynomial E) :=
+  WeierstrassCurve.Projective.map_polynomial (W' := E) (f := algebraMap ℚ K)
 
-2. **Prove that morphism is an isomorphism.**  This is the real content and it is local on
-   the standard affine cover `Proj.affineOpenCoverOfIrrelevantLESpan` (already used, in
-   this file, by `smoothOfRelativeDimension_projToSpec`): on the chart `D₊(f)` it becomes
-   the ring statement `(A_(f)) ⊗_ℚ K ≅ (A_K)_(f_K)`, i.e. that the degree-zero part of a
-   homogeneous localisation commutes with base change.  `Proj.pullbackAwayιIso`
-   (`ProjectiveSpectrum/Basic.lean:256`) is the mathlib lemma that says the charts of `Proj`
-   pull back to the charts, and is the intended glue.
+/-- Base change carries the ideal `(W)` into `(W_K)`, so it descends to the quotients. -/
+theorem map_mem_polynomialHomogeneousIdeal_baseChange
+    {a : MvPolynomial (Fin 3) ℚ} (ha : a ∈ (polynomialHomogeneousIdeal E).toIdeal) :
+    MvPolynomial.map (algebraMap ℚ K) a
+      ∈ (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal := by
+  have h : (polynomialHomogeneousIdeal E).toIdeal = Ideal.span {polynomial E} := rfl
+  have h' : (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal
+      = Ideal.span {polynomial (E.baseChange K)} := rfl
+  rw [h, Ideal.mem_span_singleton] at ha
+  rw [h', Ideal.mem_span_singleton]
+  obtain ⟨c, rfl⟩ := ha
+  exact ⟨MvPolynomial.map (algebraMap ℚ K) c, by
+    rw [map_mul, polynomial_baseChange, mul_comm]⟩
 
-Note this statement carries no ellipticity: it is pure base change of a graded quotient of
-a polynomial ring, true for every Weierstrass curve over every field extension. -/
-theorem nonempty_projPullbackIso (E : WeierstrassCurve ℚ) (K : Type) [Field K] [Algebra ℚ K] :
+/-- **Base change on the homogeneous coordinate rings**, `ℚ[X, Y, Z] ⧸ (W) → K[X, Y, Z] ⧸ (W_K)`. -/
+noncomputable def projBaseChangeQuot :
+    (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) →+*
+      (MvPolynomial (Fin 3) K ⧸ (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal) :=
+  Ideal.Quotient.lift _
+    ((Ideal.Quotient.mk _).comp (MvPolynomial.map (algebraMap ℚ K)))
+    fun _ ha => Ideal.Quotient.eq_zero_iff_mem.2
+      (map_mem_polynomialHomogeneousIdeal_baseChange E K ha)
+
+@[simp] theorem projBaseChangeQuot_mk (p : MvPolynomial (Fin 3) ℚ) :
+    projBaseChangeQuot E K (Ideal.Quotient.mk _ p)
+      = Ideal.Quotient.mk _ (MvPolynomial.map (algebraMap ℚ K) p) := rfl
+
+/-- **Base change as a GRADED ring hom** of homogeneous coordinate rings — the input
+`Proj.map` consumes.  Degrees are preserved because `MvPolynomial.map` preserves
+homogeneity (`MvPolynomial.IsHomogeneous.map`). -/
+noncomputable def projBaseChangeGradedHom :
+    projGrading E →+*ᵍ projGrading (E.baseChange K) where
+  __ := projBaseChangeQuot E K
+  map_mem := by
+    intro i x hx
+    obtain ⟨a, ha, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp hx
+    exact HomogeneousIdeal.mem_quotientGrading.mpr
+      ⟨MvPolynomial.map (algebraMap ℚ K) a,
+        mem_homogeneousSubmodule _ _ |>.mpr
+          ((mem_homogeneousSubmodule _ _ |>.mp ha).map _), rfl⟩
+
+@[simp] theorem projBaseChangeGradedHom_apply
+    (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) :
+    projBaseChangeGradedHom E K a = projBaseChangeQuot E K a := rfl
+
+/-- **The hypothesis `Proj.map` demands**: the irrelevant ideal downstairs is contained in
+the ideal generated by the image of the irrelevant ideal upstairs.
+
+A positive-degree homogeneous polynomial over `K` has every monomial of positive total
+degree, hence lies in the ideal of the variables (`MvPolynomial.mem_pow_idealOfVars_iff'`
+at exponent `1`), and each variable is the image of the corresponding variable over `ℚ`. -/
+theorem irrelevant_le_map_projBaseChangeGradedHom :
+    HomogeneousIdeal.irrelevant (projGrading (E.baseChange K)) ≤
+      (HomogeneousIdeal.irrelevant (projGrading E)).map (projBaseChangeGradedHom E K) := by
+  rw [HomogeneousIdeal.irrelevant_le]
+  intro i hi a ha
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  have hp' : p.IsHomogeneous i := mem_homogeneousSubmodule _ _ |>.mp hp
+  have hspan : p ∈ MvPolynomial.idealOfVars (Fin 3) K := by
+    rw [show MvPolynomial.idealOfVars (Fin 3) K = MvPolynomial.idealOfVars (Fin 3) K ^ 1 from
+      (pow_one _).symm, MvPolynomial.mem_pow_idealOfVars_iff']
+    intro x hx
+    exact hp'.coeff_eq_zero (by omega)
+  have hle : MvPolynomial.idealOfVars (Fin 3) K ≤
+      Ideal.comap (Ideal.Quotient.mk (polynomialHomogeneousIdeal (E.baseChange K)).toIdeal)
+        ((HomogeneousIdeal.irrelevant (projGrading E)).map
+          (projBaseChangeGradedHom E K)).toIdeal := by
+    rw [MvPolynomial.idealOfVars, Ideal.span_le]
+    rintro _ ⟨j, rfl⟩
+    have hXmem : (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (X j))
+        ∈ HomogeneousIdeal.irrelevant (projGrading E) :=
+      HomogeneousIdeal.mem_irrelevant_of_mem _ Nat.one_pos
+        (HomogeneousIdeal.mk_mem_quotientGrading
+          (mem_homogeneousSubmodule _ _ |>.mpr (isHomogeneous_X _ _)))
+    have h2 := Ideal.mem_map_of_mem (projBaseChangeGradedHom E K) hXmem
+    simpa using h2
+  exact hle hspan
+
+/-- **The base-change morphism of projective models** `proj (E_K) ⟶ proj E`, namely `Proj`
+applied to the graded base-change hom. -/
+noncomputable def projBaseChangeMap : proj (E.baseChange K) ⟶ proj E :=
+  Proj.map (projBaseChangeGradedHom E K) (irrelevant_le_map_projBaseChangeGradedHom E K)
+
+/-- **The canonical comparison morphism** from the projective model of the base-changed
+curve to the base change of the projective model.
+
+The commuting square this needs is FREE over this base: both composites are morphisms into
+`Spec ℚ`, and `hom_ext_spec_rat` says any two such are equal.  Over a general base it would
+be a real obligation. -/
+noncomputable def projBaseChangeHom :
+    proj (E.baseChange K) ⟶ Limits.pullback (projToSpec E)
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) :=
+  Limits.pullback.lift (projBaseChangeMap E K) (projToSpec (E.baseChange K))
+    (hom_ext_spec_rat _ _)
+
+/-- **The comparison morphism is an isomorphism** (sorry leaf) — all that is left of the
+`hbc` step of `geometricallyConnected_projToSpec`.
+
+This is the whole geometric content of base change for `Proj`, and it is the ONLY thing
+still missing: the graded hom, the irrelevant-ideal hypothesis and the pullback lift above
+are all proven, so a successor gets a concrete morphism and has only to show it is an
+isomorphism.  It carries no ellipticity: it is pure base change of a graded quotient of a
+polynomial ring, true for every Weierstrass curve over every field extension.
+
+## The route, with every named ingredient checked to exist at this pin
+
+Being an isomorphism is local on the target, so work on the standard affine cover.
+
+1. `Proj.affineOpenCoverOfIrrelevantLESpan (projGrading E) f` — already used in this file by
+   `smoothOfRelativeDimension_projToSpec`, with `f = X̄, Ȳ, Z̄` — covers `proj E` by the
+   charts `D₊(s) ≅ Spec (Away (projGrading E) s)`.  Pulling that cover back along
+   `Limits.pullback.fst` covers the pullback, and `Proj.map_preimage_basicOpen`
+   (`ProjectiveSpectrum/Functor.lean`) says `projBaseChangeMap ⁻¹ᵁ D₊(s) = D₊(φ s)`
+   ON THE NOSE, so the same three elements cover the source compatibly.
+2. On the chart over `D₊(s)` the statement becomes the RING statement
+   `Away (projGrading E) s ⊗[ℚ] K ≅ Away (projGrading (E_K)) (φ s)`: the degree-zero part
+   of a homogeneous localisation commutes with base change.  The comparison map already
+   exists — `HomogeneousLocalization.Away.map (g : 𝒜 →+*ᵍ ℬ) (s) : Away 𝒜 s →+* Away ℬ (g s)`
+   (`RingTheory/GradedAlgebra/HomogeneousLocalization.lean:724`) — and
+   `AlgebraicGeometry.pullbackSpecIso` (`AlgebraicGeometry/Pullbacks.lean:719`) turns the
+   scheme-level pullback of affines into `Spec` of a tensor product.  The compatibility of
+   `Away.map` with the chart embeddings is `Proj.awayToSection_comp_appLE` and the
+   `Spec.map (Away.map …) ≫ awayι` identity at `Functor.lean:188`.
+3. So the mathematical residue is exactly: **`Away 𝒜 s ⊗_ℚ K → Away ℬ (φ s)` is bijective**,
+   for `𝒜 = projGrading E`, `ℬ = projGrading (E_K)`, `s ∈ {X̄, Ȳ, Z̄}`.  This is elementary
+   — degree-zero fractions `a / s ^ n` with `a` homogeneous of degree `n · deg s`, and both
+   the numerator space and the relation module base-change freely because `ℚ → K` is flat
+   (indeed free) — but it is not in mathlib in any form, so it is a genuine small theory
+   build.  `MorphismProperty.isomorphisms Scheme` is the property to feed to the
+   affine/local machinery (`HasAffineProperty.iff_of_isAffine` is used this way in
+   `ValuativeCriterion.lean:292`).
+
+**What NOT to reuse**: `Proj.pullbackAwayιIso` looks relevant and is not — it compares two
+charts of one `Proj`. -/
+theorem isIso_projBaseChangeHom : IsIso (projBaseChangeHom E K) := sorry
+
+/-- **`Proj` commutes with base change of the base field** — the `hbc` step of
+`geometricallyConnected_projToSpec`.  Reduced to `isIso_projBaseChangeHom`; everything else
+is proven above. -/
+theorem nonempty_projPullbackIso :
     Nonempty (Limits.pullback (projToSpec E)
-      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) ≅ proj (E.baseChange K)) := sorry
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) ≅ proj (E.baseChange K)) :=
+  ⟨letI := isIso_projBaseChangeHom E K; (asIso (projBaseChangeHom E K)).symm⟩
+
+end BaseChange
 
 end GeometricConnectedness
 
@@ -1810,6 +3064,63 @@ the moment this restatement lands.  It costs consumers nothing
 (`nonempty_projGroupLaw` discharges it) and weakens the leaf only by a
 hypothesis that is itself available.  **Delete the argument** once
 `exists_projAdd` is reconciled as above.
+
+### RECONCILIATION ATTEMPTED 2026-07-27 — BLOCKED, and `_gl₀` therefore STAYS
+
+The two cuts were merged into one tree on this date and the end state above
+was attempted.  **It does not compose**, for a structural reason that is
+worth recording because it is not visible from either cut alone.
+
+Meanwhile `exists_projAdd` was itself decomposed (branch `flt-lean-141`) into
+`exists_projMul` — the gluing, which CONSTRUCTS `m` from
+`WeierstrassCurve.Projective.addXYZ` and yields `hcomm`/`hunit`/`hinv` — and
+`projMul_assoc`, which supplies `hassoc` for an ARBITRARY `m` carrying those
+three axioms.  `exists_projAdd` is now PROVEN from the two.  So for
+`exists_projAdd` to *gain* a chord–tangent clause, one of those two leaves
+must supply it, and neither can:
+
+* **`exists_projMul` cannot STATE the clause.**  The clause's `≃+` is an
+  additive equivalence onto `GeomFibrePt`, whose `AddCommGroup` comes from
+  `AbelianSchemeStruct.addCommGroup`, which reads the `add_assoc` field —
+  and `ProjGroupLaw.toAbelianSchemeStruct` feeds that field from `gl.hassoc`.
+  `exists_projMul` deliberately does not have `hassoc`.  So the clause is not
+  even expressible there in `≃+` form.
+* **`projMul_assoc` cannot PROVE the clause.**  It quantifies over an
+  arbitrary `m`, and an arbitrary `m` is exactly what the FALSITY-OF-CUT
+  AUDIT above shows requires the rigidity theorem.  Putting the clause there
+  reintroduces the very trap this leaf was restated to escape.
+
+So the clause needs BOTH the concrete glued `m` (only in `exists_projMul`)
+and `hassoc` (only after `projMul_assoc`), and 141's cut runs transverse to
+exactly that pairing.  The two cuts are individually correct and jointly
+non-composing; that is why this reconciliation is a cut-level decision rather
+than a merge, and it was left to the owners rather than made unilaterally.
+
+**The route that would work**, for whoever takes it: state the clause in a
+`hassoc`-FREE form on `exists_projMul`, replacing the `≃+` by a bare
+equivalence plus the raw morphism identity
+
+    ∃ eqv : (E⁄(AlgebraicClosure ℚ)).Point ≃ GeomFibrePt (projToSpec E) (𝟙 _),
+      (∀ x y, (eqv (x + y)).1 = AbelianSchemeStruct.relPair (eqv x) (eqv y) ≫ m) ∧ …
+
+`relPair` needs only the structure morphism, and `m` is the bare morphism, so
+this is expressible without any `AbelianSchemeStruct`.  `exists_projAdd` can
+then bundle it, and THIS leaf follows: `toAbelianSchemeStruct_add_val` is
+`rfl`, so the `≃+` assembles from the bare `≃` plus that identity once
+`hassoc` is in hand.  *Refuting check for the obstruction as stated*: find an
+`AddCommGroup` on `GeomFibrePt` that does not route through
+`AbelianSchemeStruct.addCommGroup`, or a `toAbelianSchemeStruct` that does not
+consume `gl.hassoc`.
+
+**Consequence for `_gl₀`: it must NOT be deleted yet.**  Checked directly —
+the only term-level consumers of `nonempty_projGroupLaw` in the whole tree are
+`projGroupLaw` and `exists_projGeomFibreAddEquiv` below, and BOTH reach it
+solely by passing it as this `_gl₀`; and the only consumer of
+`exists_projAdd` is `nonempty_projGroupLaw`.  Deleting the argument today
+therefore detaches `nonempty_projGroupLaw`, `exists_projAdd`, `exists_projMul`
+and `projMul_assoc` from the root cone all at once, making four declarations —
+two of them live, owned work — free-floating.  The anchor comes out at the
+same commit that lands the clause, not before.
 
 It is stated OUTSIDE the `open WeierstrassCurve.Projective` section
 above: that namespace carries its own scoped `⁄` notation for
