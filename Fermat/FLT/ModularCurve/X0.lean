@@ -1652,8 +1652,11 @@ other — so that neither of the four leaves below carries both:
   `GL₂(ℤ/n)`-action on `A`, together with the coequalising clause that
   pins it) and `exists_descendClassify` (the fppf descent, stated over an
   abstract finite group acting on an abstract ring), **of which the second
-  is itself now PROVEN**, leaving `exists_deckAction` as the only open leaf
-  of the GIT half.  Everything else the
+  is itself now PROVEN**.  `exists_deckAction` is now PROVEN too (still the
+  same day, via `exists_deckAction_of_torsion`), so the only open leaf of
+  the GIT half is `exists_openCover_deckTranslation` — two rigidifications
+  of one datum differ Zariski-locally by a single deck transformation.
+  Everything else the
   assembly owed — the invariant subring, `str`, `cover`, `classify_natural`
   and `classify_dM` — is discharged there.
 
@@ -3502,9 +3505,11 @@ two open leaves, and everything else it owed — the invariant subring and
 its algebra structure, the structure morphism of the coarse space, the
 `cover` field, `classify_natural`, `classify_dM` — is discharged here.
 The two leaves are `exists_deckAction` (the deck group acting on `A`) and
-`exists_descendClassify` (the fppf descent of the classifying map); the
-second of them is **PROVEN** (2026-07-27), so `exists_deckAction` is the
-only leaf the assembly still rests on.
+`exists_descendClassify` (the fppf descent of the classifying map).  **Both
+are PROVEN** (2026-07-27), the first through
+`exists_deckAction_of_torsion`, so what the assembly now rests on is a
+single leaf one level further down: `exists_openCover_deckTranslation`,
+below, which is the geometry of the coequalising clause and nothing else.
 
 **Why the split is safe.**  The junk-witness objection the section comment
 above raises against quantifying over an under-determined structure applies
@@ -3768,6 +3773,144 @@ theorem nsmul_twistQ_eq_zero [NeZero n] (L : FullLevelStructure n d)
 
 end FullLevelStructure
 
+/-! #### The coequalising clause, decomposed (2026-07-27)
+
+The second clause of `exists_deckAction` — that `π : Spec A ⟶ Spec A^G`
+coequalises any two rigidifications of one datum — was a bare sorried
+`have` inside `exists_deckAction_of_torsion`.  It is cut here into three
+pieces, of which **two are PROVEN** and one is a named leaf:
+
+* `specInvariantsQuotient_toRingHom_comp` — a deck transformation is the
+  identity on the invariant quotient.  Pure algebra, PROVEN.
+* `comp_eq_of_openCover_translation` — the Zariski gluing step, in the
+  form it is actually used: two morphisms out of `Z` that differ, on each
+  piece of an open cover, by *some* endomorphism of the target fixing
+  `π`, become equal after `π`.  Pure category theory, PROVEN.
+* `exists_openCover_deckTranslation` — the geometry, and the ONE open
+  leaf: two rigidifications of one datum differ ZARISKI-locally by a
+  single deck transformation.
+
+**Why the leaf is safe** (this is the objection the section comment above
+raises, and it is answered).  It quantifies over `RigidifiedModuli N n`,
+which `universal` pins up to unique isomorphism, and its conclusion names
+the comparison morphism `m` together with the property that pins it —
+that `m` classifies the `σ`-twist of `R.lvlM`.  So it does NOT quantify
+over an arbitrary `MulSemiringAction`, which is what would have been
+false (`σ ↦ id` satisfies the equivariance clause alone).  Inside
+`exists_deckAction_of_torsion` the uniqueness half of `R.universal`
+identifies that `m` with `mm σ`, and `hmap` rewrites `mm σ` as
+`Spec` of a ring automorphism, at which point the first bullet applies. -/
+
+/-- **A deck transformation is the identity on the invariant quotient**
+(PROVEN) — `Spec σ ≫ π = π`.
+
+`π` is `Spec` of the inclusion `A^G ↪ A`, and `Spec` is contravariant, so
+the composite is `Spec` of `A^G ↪ A →[σ] A`, i.e. of `x ↦ σ • x.val`.
+Membership in `FixedPoints.subring A G` is exactly `∀ g, g • x = x`, so
+that ring map IS the inclusion. -/
+theorem specInvariantsQuotient_toRingHom_comp (G A : Type) [Monoid G] [CommRing A]
+    [MulSemiringAction G A] (σ : G) :
+    Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ)) ≫
+        specInvariantsQuotient G A = specInvariantsQuotient G A := by
+  rw [specInvariantsQuotient, ← Spec.map_comp]
+  congr 1
+  ext x
+  exact x.2 σ
+
+/-- **Zariski gluing, in the form the coequalising clause needs** (PROVEN).
+
+If `a, b : Z ⟶ X` differ, on each piece of an open cover of `Z`, by
+*some* endomorphism `m` of `X` with `m ≫ π = π` — the piece is allowed a
+DIFFERENT `m`, which is the whole point, since a single global one need
+not exist — then `a ≫ π = b ≫ π`.
+
+`Scheme.Cover.hom_ext` does the gluing; everything else is associativity.
+This is deliberately stated with no moduli content at all, so that the
+only geometric input is `exists_openCover_deckTranslation` below. -/
+theorem comp_eq_of_openCover_translation {X Y Z : Scheme.{0}}
+    (a b : Z ⟶ X) (π : X ⟶ Y) (𝒰 : Scheme.OpenCover.{0} Z)
+    (h : ∀ i : 𝒰.I₀, ∃ m : X ⟶ X, m ≫ π = π ∧ 𝒰.f i ≫ b = 𝒰.f i ≫ a ≫ m) :
+    a ≫ π = b ≫ π := by
+  refine 𝒰.hom_ext _ _ fun i => ?_
+  obtain ⟨m, hmπ, hi⟩ := h i
+  rw [← Category.assoc, ← Category.assoc, hi]
+  simp only [Category.assoc, hmπ]
+
+/-- **Two rigidifications of one datum differ ZARISKI-locally by a single
+deck transformation** (opened 2026-07-27) — the geometric content of the
+coequalising clause of `exists_deckAction`, and the only step of it that
+is still open.
+
+## The statement
+
+`a` and `b` both exhibit `d₁` as a base change of the universal datum
+`R.dM`.  The conclusion produces an open cover of `Z` on which `b` is
+`a` followed by an endomorphism `m` of `Spec R.A` that classifies the
+`σ`-twist of the universal level structure, for a single `σ ∈ GL₂(ℤ/n)`
+depending on the piece.
+
+The pinning clause — `m` classifies `twist hn R.lvlM σ` — is what makes
+this leaf usable and what makes it faithful.  Without it the leaf would
+be junk (`m := 𝟙`, `a = b` fails); with it, the uniqueness half of
+`R.universal` forces `m = mm σ` at the use site.
+
+## THE ROUTE, and why it is ZARISKI-local rather than merely fppf-local
+
+This is the point the docstring of `exists_deckAction` records as the
+trap: **a search for a single global `σ` cannot succeed**, and the reason
+the LOCAL statement is Zariski rather than étale is that one of the two
+level structures TRIVIALISES the comparison torsor.
+
+1.  Pull `R.lvlM` back along `a` and along `b`.  Because `ha` and `hb`
+    are base changes of `R.dM` to the SAME `d₁`, this gives two full
+    level structures `L_a`, `L_b` on the one datum `d₁` over `Z`.
+2.  `n` is invertible on a `ℚ`-scheme, so `d₁.E[n]` is finite étale over
+    `Z`.  `FullLevelStructure.geom_basis` says `L_a` is a basis at every
+    geometric point, so the induced map of finite étale group schemes
+    `(ℤ/n)²_Z ⟶ d₁.E[n]` is an isomorphism on geometric fibres, hence an
+    isomorphism.  **This is the step the project does not yet have**: it
+    needs the `n`-torsion subgroup scheme of a `Gamma0Datum` as an object,
+    and `Gamma0Datum` currently carries only a functor-of-points
+    `AbelianSchemeStruct`.
+3.  Transporting `L_b` through that isomorphism makes the pair
+    `(L_b.P, L_b.Q)` a pair of sections of the CONSTANT group scheme
+    `(ℤ/n)²_Z`.  A section of a constant scheme is a locally constant
+    function, and `geom_basis` for `L_b` makes the resulting matrix
+    invertible at every point, so it is a locally constant function
+    `Z → GL₂(ℤ/n)`: a finite CLOPEN decomposition of `Z`, and `σ` is the
+    value on the piece.
+4.  On a piece `U`, `L_b|_U = twist hn L_a|_U σ`, and the map classifying
+    `(d₁|_U, twist σ L_a|_U)` is `U ↪ Z ≫ a ≫ mm σ`, because `twist` is
+    built from `RelPoint.comb` and commutes with pullback
+    (`IsBaseChangeOf.toRelPoint_comb`, `RelPoint.pre_comb`, both PROVEN
+    above).  Uniqueness in `R.universal` then gives the displayed
+    equation.
+
+## Faithfulness
+
+The `n`-torsion hypotheses that `exists_deckAction_of_torsion` carries are
+NOT needed here: this leaf never composes two twists, so `ZMod.val`'s
+failure to be multiplicative — the defect that forced `lvlM_nsmul` to
+exist — does not arise.  `hn : 3 ≤ n` is kept only because
+`FullLevelStructure.twist` takes it.
+
+*The check that would refute step 3*: exhibit a `ℚ`-scheme `Z`, a datum
+with two full level structures, and a geometric point at which the
+comparison matrix is not locally constant.  It cannot be done once step 2
+is available, because `Hom_Z(Z, S_Z)` is locally constant functions for
+any finite `S`. -/
+theorem exists_openCover_deckTranslation (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n) :
+    letI := R.commRing_A
+    ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A)) (d₁ : Gamma0Datum N Z),
+      IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
+      ∃ 𝒰 : Scheme.OpenCover.{0} Z, ∀ i : 𝒰.I₀, ∃ (σ : gamma0DeckGroup n)
+        (m : Spec (CommRingCat.of R.A) ⟶ Spec (CommRingCat.of R.A)),
+        (∃ bc : IsBaseChangeOf m R.dM R.dM,
+          (FullLevelStructure.twist hn R.lvlM σ).P.1 ≫ bc.map = m ≫ R.lvlM.P.1 ∧
+          (FullLevelStructure.twist hn R.lvlM σ).Q.1 ≫ bc.map = m ≫ R.lvlM.Q.1) ∧
+        𝒰.f i ≫ b = 𝒰.f i ≫ a ≫ m := by
+  sorry
+
 /-- **The deck action, from the `n`-torsion of the universal level
 structure** (2026-07-27) — the working form of `exists_deckAction` below,
 which is this at `R.lvlM_nsmul`.
@@ -3789,12 +3932,25 @@ Everything except the coequalising clause is PROVEN here:
   `R.universal` at `σ⁻¹` on the other, using
   `Spec.map (ofHom (toRingHom σ)) = mm σ⁻¹`.
 
-The **coequalising clause is the one open step**, and it is left as a
-sorried `have` INSIDE this proof rather than as a separate leaf, because a
-leaf quantifying over an arbitrary `MulSemiringAction` would be false —
-`σ ↦ id` satisfies the equivariance clause alone, and under it `A^G = A`,
-`π = 𝟙` and the coequalising clause fails.  See `exists_deckAction`'s
-docstring for the piecewise argument the `have` owes. -/
+The coequalising clause is now **PROVEN here too** (2026-07-27, later the
+same day), from the three-way cut in the section comment immediately above:
+`exists_openCover_deckTranslation` (the geometry, and the ONE remaining
+open leaf), `comp_eq_of_openCover_translation` (Zariski gluing, PROVEN) and
+`specInvariantsQuotient_toRingHom_comp` (`Spec σ ≫ π = π`, PROVEN).
+
+**Why the open step is a NAMED leaf now, when it could not be before.**
+The earlier note here was right that a leaf quantifying over an arbitrary
+`MulSemiringAction` would be FALSE — `σ ↦ id` satisfies the equivariance
+clause alone, and under it `A^G = A`, `π = 𝟙` and the coequalising clause
+fails.  `exists_openCover_deckTranslation` escapes that because it does not
+mention an action at all: it quantifies over `RigidifiedModuli N n`, which
+`universal` pins, and it hands back the comparison morphism `m` TOGETHER
+with the property that pins it (that `m` classifies the `σ`-twist of
+`R.lvlM`).  The uniqueness half of `R.universal` — `hmmu` below — then
+identifies that `m` with `mm σ` inside this proof, where the action is in
+hand.  Stating the geometry and receiving the pinning as part of the
+conclusion is the same
+citation-on-one-side-of-a-hypothesis device used throughout this cluster. -/
 theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedModuli N n)
     (hP : letI := R.commRing_A
           letI := R.dM.ab.addCommGroup (𝟙 (Spec (CommRingCat.of R.A)))
@@ -3911,29 +4067,56 @@ theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedM
         = Spec.preimage (mm σ⁻¹) := by
       ext x; rfl
     rw [h, Spec.map_preimage]
-  -- **the coequalising clause** — the one open step; see the docstring of
-  -- `exists_deckAction` below for the piecewise argument it owes.
+  -- **the coequalising clause**, now PROVEN from the three-way cut above:
+  -- the geometry is `exists_openCover_deckTranslation`, the gluing is
+  -- `comp_eq_of_openCover_translation`, and `Spec σ ≫ π = π` is
+  -- `specInvariantsQuotient_toRingHom_comp`.  Uniqueness in `R.universal`
+  -- (`hmmu`) is what turns the leaf's pinned `m` into `mm σ`.
   have hcoeq : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of R.A))
       (d₁ : Gamma0Datum N Z), IsBaseChangeOf a d₁ R.dM → IsBaseChangeOf b d₁ R.dM →
       a ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A
-        = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A := sorry
+        = b ≫ specInvariantsQuotient (gamma0DeckGroup n) R.A := by
+    intro Z a b d₁ ha hb
+    obtain ⟨𝒰, h𝒰⟩ := exists_openCover_deckTranslation N n hn R a b d₁ ha hb
+    refine comp_eq_of_openCover_translation a b _ 𝒰 fun i => ?_
+    obtain ⟨σ, m, hcls, hi⟩ := h𝒰 i
+    refine ⟨m, ?_, hi⟩
+    rw [hmmu σ m hcls]
+    have h1 : Spec.map (CommRingCat.ofHom
+        (MulSemiringAction.toRingHom (gamma0DeckGroup n) R.A σ⁻¹)) = mm σ := by
+      rw [hmap σ⁻¹, inv_inv]
+    rw [← h1]
+    exact specInvariantsQuotient_toRingHom_comp _ _ _
   refine ⟨act, fun σ => ⟨R.dM, ⟨IsBaseChangeOf.refl R.dM⟩, ⟨?_⟩⟩, fun {Z} a b d₁ ha hb =>
     hcoeq a b d₁ ha hb⟩
   rw [hmap σ]
   exact bcm σ⁻¹
 
 /-- **The deck group acts on the rigidified coordinate ring, and its
-quotient map coequalises rigidifications** (opened 2026-07-27; **PROVEN
-later the same day from `exists_deckAction_of_torsion`**, whose only open
-step is the coequalising clause) — the first of the two halves of
+quotient map coequalises rigidifications** (opened and **PROVEN**
+2026-07-27, from `exists_deckAction_of_torsion`, which is itself now
+sorry-free — what remains open below it is the single named geometric leaf
+`exists_openCover_deckTranslation`) — the first of the two halves of
 `exists_gamma0GITPresentation_of_rigidified`, and the one that is pure
 moduli theory.
 
-## STATUS 2026-07-27: clause (a) is PROVEN; only clause (b) is open
+## STATUS 2026-07-27: BOTH clauses are PROVEN here
 
 The proof is `exists_deckAction_of_torsion` immediately above, applied at
-`R.lvlM_nsmul`.  What follows records what that discharged and what it did
-not.
+`R.lvlM_nsmul`.  Everything this node owed is discharged: clause (a) by the
+construction recorded below, clause (b) by the three-way cut in the section
+comment before `exists_openCover_deckTranslation`.
+
+**What remains open under this node is exactly ONE leaf**, and it is not
+this one: `exists_openCover_deckTranslation`, the statement that two
+rigidifications of a single datum differ Zariski-locally by a single deck
+transformation.  Its route — including why the locality is Zariski and not
+merely fppf, which is the trap paragraph (b) below records — is written out
+in its own docstring.  The one thing this project still lacks for it is the
+`n`-torsion subgroup scheme of a `Gamma0Datum` as an OBJECT; `Gamma0Datum`
+carries only a functor-of-points `AbelianSchemeStruct`.
+
+What follows records what the construction discharged and how.
 
 **(a) The action — PROVEN.**  For `σ : GL₂(ℤ/n)` the pair
 `(R.dM, σ · R.lvlM)` is again a rigidified datum over `Spec R.A`: a matrix
@@ -4143,9 +4326,12 @@ Owed, and every step of it is available in principle from `R` alone:
   rigidifications of one datum differ by a `GL₂(ℤ/n)`-valued *comparison*
   of full level structures which is **locally constant**, not global, and
   which therefore equalises the two composites with `π` piecewise and hence
-  globally.  Both are STILL OPEN, and are `exists_deckAction` above; its
-  docstring carries the argument in full, including why the two clauses
-  must stay in one leaf.
+  globally.  Both are now **PROVEN**, as `exists_deckAction` above (via
+  `exists_deckAction_of_torsion`); its docstring carries the argument in
+  full, including why the two clauses must stay in one leaf.  What is left
+  of the second bullet is the single leaf
+  `exists_openCover_deckTranslation` — the local constancy itself, which is
+  where the finite-étale `n`-torsion group scheme is genuinely needed.
 * **`classify`, by fppf descent along the torsor** — **PROVEN**
   (2026-07-27), as `exists_descendClassify` above, stated abstractly over a
   finite group acting on a commutative ring, with the coequalising clause
