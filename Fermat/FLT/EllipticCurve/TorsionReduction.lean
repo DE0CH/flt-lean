@@ -188,10 +188,16 @@ theorem finite_affine_point_of_finite [Finite R] (W : WeierstrassCurve R) :
 `K × K`, and there is one point at infinity.
 
 This is the crude bound, not Hasse's `#W(𝔽_q) = q + 1 − a` with `|a| ≤ 2√q`
-(which mathlib does not have). It is enough wherever it is used here: at
-`K = 𝔽₅` it gives `26`, and the primes to be excluded are `≥ 37`. A sharper
-`≤ 2·#K + 1` is available at the cost of counting roots of the quadratic in
-`y` fibrewise; it was not needed. -/
+(which mathlib does not have). It is enough where it is used at `p ≥ 37`: at
+`K = 𝔽₅` it gives `26`, and the primes to be excluded there are `≥ 37`.
+
+UPDATE 2026-07-27: the sharper `≤ 2·#K + 1` this docstring used to record as
+"available … but not needed" IS needed, and is now proven as
+`natCard_affine_point_le_two_mul` below. At `K = 𝔽₅` it gives `11`, which is
+what lets the SAME reduction argument reach `p ∈ {17, 19}` — where `26` is
+useless — and so retire the explicit plane models of `X_1(17)` and `X_1(19)`
+in `MazurTorsion.lean`. Keep this cruder version: it needs no `IsDomain`
+hypothesis, and it is what the `p ≥ 37` proof is written against. -/
 theorem natCard_affine_point_le [Finite R] (W : WeierstrassCurve R) :
     Nat.card W.toAffine.Point ≤ Nat.card R * Nat.card R + 1 := by
   rw [natCard_affine_point_eq W (W.finite_affine_point_of_finite)]
@@ -206,6 +212,82 @@ theorem natCard_affine_point_pos [Finite R] (W : WeierstrassCurve R) :
     0 < Nat.card W.toAffine.Point := by
   haveI := W.finite_affine_point_of_finite
   exact Nat.card_pos
+
+/-! #### The sharper fibrewise bound `#W(K) ≤ 2·#K + 1`
+
+Added 2026-07-27. The crude bound above counts the affine points inside
+`K × K`; this one counts them fibrewise over the abscissa, where the
+Weierstrass equation is a QUADRATIC in `y` and so has at most two roots. The
+gain at `K = 𝔽₅` is `26 ↦ 11`, and that is exactly the difference between
+reaching `p ≥ 37` and reaching `p ∈ {17, 19}`.
+
+It is still not Hasse (`#W(𝔽₅) ≤ 10`), and it does not need to be. -/
+
+section Domain
+
+variable {R : Type*} [CommRing R] [IsDomain R]
+
+/-- **Two points of an affine Weierstrass curve over a domain with the same
+abscissa have equal or negated ordinates.** Subtracting the two Weierstrass
+equations factors as `(y₁ − y₂)(y₁ + y₂ + a₁x + a₃) = 0`, and the second factor
+vanishing is exactly `y₁ = negY x y₂`. Being a domain is what makes the product
+vanish factorwise; nothing else here uses it.
+
+This is the same computation as `MazurLevel13.y_eq_or_eq_negY` used to run over
+`ℚ` in `MazurTorsion.lean`; it is stated here over a general domain because the
+consumer is the point count over `𝔽_ℓ`. -/
+theorem Affine.eq_or_eq_negY_of_equation {W : Affine R} {x y₁ y₂ : R}
+    (h₁ : W.Equation x y₁) (h₂ : W.Equation x y₂) :
+    y₁ = y₂ ∨ y₁ = W.negY x y₂ := by
+  rw [Affine.equation_iff] at h₁ h₂
+  have h : (y₁ - y₂) * (y₁ + y₂ + W.a₁ * x + W.a₃) = 0 := by linear_combination h₁ - h₂
+  rcases mul_eq_zero.mp h with h | h
+  · exact Or.inl (sub_eq_zero.mp h)
+  · exact Or.inr (by rw [Affine.negY]; linear_combination h)
+
+/-- **`#W(K) ≤ 2·#K + 1`** over a finite domain — the sharper crude bound.
+
+Each fibre of `(x, y) ↦ x` on the affine points has at most two elements, by
+`Affine.eq_or_eq_negY_of_equation`: every ordinate over a given abscissa is
+either a fixed `y₀` or `negY x y₀`. Summing over the `#K` abscissae gives
+`2·#K` affine points, and the point at infinity is the `+ 1`.
+
+At `K = 𝔽₅` this gives `11`, against `26` from `natCard_affine_point_le`. -/
+theorem natCard_affine_point_le_two_mul [Finite R] (W : WeierstrassCurve R) :
+    Nat.card W.toAffine.Point ≤ 2 * Nat.card R + 1 := by
+  classical
+  haveI : Fintype R := Fintype.ofFinite R
+  rw [natCard_affine_point_eq W (W.finite_affine_point_of_finite)]
+  have hcard : Nat.card {xy : R × R // W.toAffine.Nonsingular xy.fst xy.snd}
+      ≤ 2 * Nat.card R := by
+    have hsub : Nat.card {xy : R × R // W.toAffine.Nonsingular xy.fst xy.snd}
+        = (Finset.univ.filter
+            (fun xy : R × R => W.toAffine.Nonsingular xy.fst xy.snd)).card := by
+      rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+    rw [hsub, Nat.card_eq_fintype_card, ← Finset.card_univ (α := R)]
+    refine Finset.card_le_mul_card_image_of_maps_to
+      (f := Prod.fst) (fun a _ => Finset.mem_univ _) 2 ?_
+    intro x _
+    rcases Finset.eq_empty_or_nonempty
+        ((Finset.univ.filter (fun xy : R × R => W.toAffine.Nonsingular xy.fst xy.snd)).filter
+          (fun xy : R × R => xy.fst = x)) with he | ⟨⟨x₀, y₀⟩, hmem⟩
+    · simp [he]
+    · have hmem' := Finset.mem_filter.mp hmem
+      have hx₀ : x₀ = x := hmem'.2
+      subst hx₀
+      have hns : W.toAffine.Nonsingular x₀ y₀ := (Finset.mem_filter.mp hmem'.1).2
+      refine le_trans (Finset.card_le_card
+        (t := ({(x₀, y₀), (x₀, W.toAffine.negY x₀ y₀)} : Finset (R × R))) ?_) ?_
+      · rintro ⟨x', y'⟩ hp
+        have hp' := Finset.mem_filter.mp hp
+        have hx' : x' = x₀ := hp'.2
+        subst hx'
+        have hns' : W.toAffine.Nonsingular x' y' := (Finset.mem_filter.mp hp'.1).2
+        rcases Affine.eq_or_eq_negY_of_equation hns'.1 hns.1 with h | h <;> simp [h]
+      · exact (Finset.card_insert_le _ _).trans (by simp)
+  omega
+
+end Domain
 
 /-! ### The `ℓ`-adic reduction datum over `ℚ`
 

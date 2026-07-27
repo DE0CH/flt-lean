@@ -18124,366 +18124,198 @@ lemma no_torsion_order_of_tateNormalForm {ℓ : ℕ} (h4 : 4 ≤ ℓ)
 end WeierstrassCurve
 
 /-!
-#### `MazurLevel13`: shared Tate-normal-form helpers (2026-07-26)
+#### `X_1(17)` and `X_1(19)`: plane models RETIRED, levels routed through `X_0` (2026-07-27)
 
-RETIRED HERE, 2026-07-26 — the `X_1(11)` and `X_1(13)` plane models that
-used to occupy this position, namely the `MazurLevel11` namespace in full
-and this namespace's `x1Poly13`, `no_rational_point` and
-`x1_13_equation`. They were the COARSER of two routes to levels `11` and
-`13`: their leaves `MazurLevel11.cremona_11a3_abscissa` and
-`MazurLevel13.no_rational_point` asserted the Cremona `11a3` point count
-and the `X_1(13)` statement outright, whereas the finer route, through
-the plane curves `MazurX1Plane` derives inside Lean from the `normEDS`
-recursion, reaches `curve11a3_rational_points` — decomposed in
-`EllipticCurve/MordellWeil.lean` into rank `0` plus torsion `ℤ/5` — and
-`x1Thirteen_kubert_ne_zero`. Both routes stood at exactly ONE leaf, so
-keeping the finer one costs no leaves and keeps `MordellWeil.lean` inside
-the root cone, which the coarser route left it out of. The full account
-is in the retirement note on the seven-level aggregator further down.
+RETIRED HERE, 2026-07-27 — the `MazurLevel13` helper namespace
+(`y_eq_or_eq_negY`, `b_ne_zero`), the `MazurLevel17` namespace in full
+(`x1Poly17`, `no_rational_point`, `x1_17_equation`), the `MazurLevel19`
+namespace in full (`x1Poly19`, `no_rational_point`, `x1_19_equation`), and the
+two long section notes that motivated them. Nothing outside this region ever
+consumed any of it; it is recoverable from git history.
 
-What remains in this namespace is only what levels `17` and `19` consume:
-the abscissa dichotomy `y_eq_or_eq_negY` and the nonsingularity fact
-`b_ne_zero`. Neither is specific to level `13`.
--/
-namespace MazurLevel13
+WHAT WAS HERE. The plane-model route: an explicit bidegree-`(12, 18)` curve
+`x1Poly17` and a bidegree-`(15, 22)` curve `x1Poly19` in the Tate `(b, c)`-plane,
+each derived inside Lean from the group law by `linear_combination` and citing
+nothing, leaving EXACTLY ONE leaf per level — the assertion that the plane model
+has no nondegenerate rational point.
 
-variable {W : WeierstrassCurve.Affine ℚ}
+Both leaves were audited as IRREDUCIBLE at this pin, and the audits were correct
+about the axis they searched: `X_1(17)` has genus `5` with `J_1(17)(ℚ)` of rank
+`1`, and `X_1(19)` has genus `7`, so neither admits the rank-`0` Mordell–Weil
+plus Abel–Jacobi argument that closes level `13`. The recorded verdict was that
+these two levels need Chabauty–Coleman proper, or Mazur's Eisenstein-ideal
+argument. Along the `X_1` axis that verdict still stands.
 
-/-- **Two nonsingular points with a common abscissa are equal or
-negatives** (PROVEN — pure algebra): subtracting the two Weierstrass
-equations factors as `(y₁ − y₂)(y₁ + y₂ + a₁x + a₃) = 0`, and the second
-factor vanishing is exactly `y₁ = negY x y₂`. -/
-lemma y_eq_or_eq_negY {x₁ x₂ y₁ y₂ : ℚ} (H₁ : W.Nonsingular x₁ y₁) (H₂ : W.Nonsingular x₂ y₂)
-    (hx : x₁ = x₂) : y₁ = y₂ ∨ y₁ = W.negY x₂ y₂ := by
-  subst hx
-  have e1 : W.Equation x₁ y₁ := H₁.1
-  have e2 : W.Equation x₁ y₂ := H₂.1
-  rw [Affine.equation_iff] at e1 e2
-  have h : (y₁ - y₂) * (y₁ + y₂ + W.a₁ * x₁ + W.a₃) = 0 := by linear_combination e1 - e2
-  rcases mul_eq_zero.mp h with h | h
-  · exact Or.inl (by linarith [sub_eq_zero.mp h])
-  · exact Or.inr (by rw [Affine.negY]; linarith)
+THE AXIS THE AUDITS DID NOT SEARCH is the one this file had already built, three
+sections below, for levels `37, 43, 67, 163`: route through `X_0` instead of
+`X_1`, and finish by REDUCTION rather than by descent. Every step of it was
+already present and already PROVEN:
 
-section Tate
+1. A rational point of order `p` generates a Galois-stable cyclic `p`-subgroup
+   (`exists_stable_cyclic_subgroup_of_rational_point`), i.e. a rational cyclic
+   `p`-isogeny.
+2. `jInvariant_mem_of_isogenyPrime_ge_eleven` pins `j(E)` to the eleven-entry
+   `X_0` table. Its level list ALREADY CONTAINS `17` and `19` — it is stated for
+   `p ∈ {11, 17, 19, 37, 43, 67, 163}` — and its entries at these two levels are
 
-variable {b c : ℚ}
-  (h1 : W.a₁ = 1 - c) (h2 : W.a₂ = -b) (h3 : W.a₃ = -b) (h4 : W.a₄ = 0)
+       p = 17 : −297756989 / 2      = −17 · 373³ / 2
+                −882216989 / 131072 = −17² · 101³ / 2¹⁷
+       p = 19 : −884736             = −2¹⁵ · 3³
 
-include h3 h4 in
-/-- **`b ≠ 0` on a Tate normal form whose origin is nonsingular**
-(PROVEN): with `a₄ = 0`, nonsingularity of the origin is exactly
-`a₃ = −b ≠ 0`. -/
-lemma b_ne_zero (hns : W.Nonsingular 0 0) : b ≠ 0 := by
-  intro hb
-  rcases (Affine.nonsingular_zero.mp hns).2 with h | h
-  · exact h (by rw [h3, hb]; ring)
-  · exact h h4
+3. All three values are `5`-INTEGRAL — the denominators are `2`, `2¹⁷ = 131072`
+   and `1`, none divisible by `5` — so `E` has potentially good reduction at `5`
+   and a rational point of order `p` survives into an elliptic curve over `𝔽₅`
+   (`exists_reduction_dvd_addOrderOf_of_jIntegral`). Hence `p ∣ #W(𝔽₅)`.
+4. `#W(𝔽₅) ≤ 2 · 5 + 1 = 11 < 17`. Contradiction.
 
-end Tate
+Note where the content sits: step 2 is the only place the `X_0` determination is
+used, and it is what stops this from proving the FALSE statement "no curve over
+`ℚ` has a point of order `17`". The `X_0` shortcut on its own is genuinely
+unavailable at these levels — `17` and `19` are in Kenku's list, so a rational
+cyclic isogeny of that degree is no contradiction — but that only says the table
+cannot be the LAST step, not that it cannot be the FIRST.
 
-end MazurLevel13
+WHAT WAS ACTUALLY MISSING, and it was one bound. The `p ≥ 37` route finishes on
+the crude count `#W(𝔽_q) ≤ q² + 1`, which at `q = 5` gives `26`: enough against
+`p ≥ 37`, useless against `17` and `19`. The docstring of
+`natCard_affine_point_le` recorded — correctly — that "a sharper `≤ 2·#K + 1` is
+available at the cost of counting roots of the quadratic in `y` fibrewise; it was
+not needed". It IS needed, it is now
+`WeierstrassCurve.natCard_affine_point_le_two_mul` in
+`Fermat/FLT/EllipticCurve/TorsionReduction.lean`, and it is four lines of
+mathematics: over a domain the two Weierstrass equations at a common abscissa
+subtract to `(y₁ − y₂)(y₁ + y₂ + a₁x + a₃) = 0`, so each fibre of `(x, y) ↦ x`
+has at most the two elements `y₀` and `negY x y₀`. That is `26 ↦ 11`, and `11`
+clears both `17` and `19`. It is NOT Hasse — which would give `≤ 10` and is
+still absent from mathlib — and it does not need to be.
 
-/-!
-#### `X_1(17)`, cut down to one explicit Diophantine leaf (2026-07-26)
+LEAF ACCOUNTING. The rewire adds NO new sorried leaf to the root cone. Both
+families it depends on are already in the cone through
+`no_torsion_order_of_isogenyPrime_ge_thirtySeven`, which levels `37, 43, 67, 163`
+have gone through since 2026-07-26: `jInvariant_mem_of_isogenyPrime_genusOne`
+under step 2 (that node's proof cases on all seven levels, so the `{11, 17, 19}`
+regime is a dependency of `_ge_eleven` unconditionally), and
+`TorsionReduction.lean`'s reduction leaves under step 3. So this removes two open
+leaves and adds none. Verified by `#print axioms` on both nodes before the
+rewire: each already reported `sorryAx`.
 
-Same treatment as `X_1(13)` above: the bare literature citation is
-replaced by an EXPLICIT plane model, so that what is left open is a
-statement about ONE polynomial in TWO rational unknowns. EXACTLY ONE
-leaf remains — `MazurLevel17.no_rational_point`. `X_1(17)` has genus
-`5`, so as at level `13` there is no elliptic curve to reduce to and the
-plane model IS the leaf.
+WHAT IT COSTS. The plane models were also cited as an independent cross-check on
+`tateNormalForm_origin_preΨ'_residual`, whose docstring declines to expand `F₁₇`
+and `F₁₉` as "`~60` and `~90` terms" and states their bidegrees as `(12, 18)` and
+`(15, 22)` — which `x1Poly17` and `x1Poly19` matched exactly, from a completely
+independent derivation (group law plus `linear_combination`, versus the `normEDS`
+recursion). That cross-check becomes historical rather than live. The bidegrees
+are recorded here, and the polynomials are in git history.
 
-The chain, all PROVEN below. With `P = (0,0)` on
-`E(b,c) : y² + (1 − c)xy − by = x³ − bx²` the group law gives
-`2P = (b, bc)`, `3P = (c, b − c)`,
-`4P = (b(b−c)/c², b²(c²+c−b)/c³)` and
-`5P = (bc(c²+c−b)/(b−c)², bc²(b²−bc−c³)/(b−c)³)`. Since `17` is prime
-and `P ≠ 0`, `addOrderOf P = 17` is exactly `17 • P = 0`, i.e.
-`(4P + 5P) + (4P + 4P) = 0`, i.e. `8P = −9P`, whose first coordinate is
-one equation. Clearing the denominators gives `x1Poly17 b c = 0`
-(`MazurLevel17.x1_17_equation`), of degree `12` in `b` and `18` in `c`.
-
-The four side conditions are consequences of the order, not smuggled-in
-hypotheses — each is one of the four smaller modular curves that the
-construction passes through:
-
-* `c = 0` makes `3P = −P`, hence `4P = 0` — `X_1(4)`;
-* `b = c` makes `2P = −3P`, hence `5P = 0` — `X_1(5)`;
-* `(b−1)c² + 3bc − 2b² = 0` makes `4P` two-torsion, hence `8P = 0` —
-  `X_1(8)`; this polynomial is exactly `c³(y(4P) − negY(4P))/b`;
-* `ψ₃(c) = c⁵ + c⁴ + (1−b)c³ − 3bc² + 3b²c − b³ = 0` makes
-  `x(4P) = x(5P)`, hence — by `MazurLevel13.y_eq_or_eq_negY` — either
-  `4P = 5P` (so `P = 0`) or `9P = 0` — `X_1(9)`. This is the SAME
-  `ψ₃` that `MazurLevel18.psi3_eq_zero` derives independently as the
-  order-`9` condition, which is a useful cross-check on both.
-
-All four are impossible at a prime order `17 > 9`.
-
-Provenance of the model: PARI/GP, an UNTRUSTED SEARCHER, used only to
-guess the polynomial and the two slopes; the derivation below is a Lean
-`linear_combination` from the group law and cites nothing.
+METHODOLOGICAL NOTE, since this is the second time it has paid here. An
+irreducibility verdict is only as wide as the axis its author searched. Both
+audits ranged over the `X_1` plane-model axis, where they were right; neither
+tried the `X_0`-plus-reduction axis, where the machinery was already sitting in
+the same file, three sections down, needing one sharper inequality.
 -/
 
-namespace MazurLevel17
+/-- **The `X_0`-table entries at `p ∈ {17, 19}` carry no rational point of that
+order** (PROVEN 2026-07-27): if `E/ℚ` has a rational point of exact order `p` and
+the pair `(p, j(E))` is one of the three entries of the `X_0` table at
+`p ∈ {17, 19}`, then `False`.
 
-/-- **The plane model of `X_1(17)` in Tate coordinates**: the curve of
-degree `12` in `b` and `18` in `c` cut out in the `(b, c)`-plane by the
-condition that the origin of `tateNormalForm b c` have order `17`. -/
-def x1Poly17 (b c : ℚ) : ℚ :=
-  b ^ 12 - 10 * b ^ 11 * c + 45 * b ^ 10 * c ^ 2 + (10 * b ^ 10 - 120 * b ^ 9) * c ^ 3
-    + (-75 * b ^ 9 + 210 * b ^ 8) * c ^ 4
-    + (-39 * b ^ 9 + 246 * b ^ 8 - 252 * b ^ 7) * c ^ 5
-    + (249 * b ^ 8 - 461 * b ^ 7 + 210 * b ^ 6) * c ^ 6
-    + (50 * b ^ 8 - 681 * b ^ 7 + 540 * b ^ 6 - 120 * b ^ 5) * c ^ 7
-    + (-246 * b ^ 7 + 1035 * b ^ 6 - 405 * b ^ 5 + 45 * b ^ 4) * c ^ 8
-    + (-31 * b ^ 7 + 485 * b ^ 6 - 945 * b ^ 5 + 190 * b ^ 4 - 10 * b ^ 3) * c ^ 9
-    + (105 * b ^ 6 - 469 * b ^ 5 + 519 * b ^ 4 - 51 * b ^ 3 + b ^ 2) * c ^ 10
-    + (9 * b ^ 6 - 120 * b ^ 5 + 195 * b ^ 4 - 159 * b ^ 3 + 6 * b ^ 2) * c ^ 11
-    + (-15 * b ^ 5 + 30 * b ^ 4 + 20 * b ^ 3 + 21 * b ^ 2) * c ^ 12
-    + (-b ^ 5 + 45 * b ^ 3 - 49 * b ^ 2) * c ^ 13
-    + (15 * b ^ 3 - 39 * b ^ 2 + 15 * b) * c ^ 14
-    + (-15 * b ^ 2 + 10 * b - 1) * c ^ 15
-    + (-2 * b ^ 2 + 6 * b) * c ^ 16 + 3 * b * c ^ 17 + b * c ^ 18
+This is the level-`17`/`19` analogue of
+`no_rational_point_of_isogenyPrime_jInvariant`, and it runs on exactly the same
+input — reduction at `5` — differing only in the point-count bound it finishes
+on. There the crude `#W(𝔽₅) ≤ 5·5 + 1 = 26` suffices because the primes are
+`≥ 37`; here it does not, and the fibrewise `#W(𝔽₅) ≤ 2·5 + 1 = 11` does.
 
-/-- **THE `X_1(17)` LEAF: the plane model of `X_1(17)` has no
-nondegenerate rational point** (sorry node, cut 2026-07-26 out of
-`WeierstrassCurve.tateNormalForm_origin_order_ne_17`; IRREDUCIBLE at
-this mathlib pin).
+**NOT vacuous.** The hypothesis on `j` alone is satisfiable at both primes: each
+of the three values is realised by a curve carrying a rational `p`-ISOGENY, which
+is what `jInvariant_mem_of_isogenyPrime_ge_eleven` asserts. What this adds is
+that no curve with those `j`-invariants, and no quadratic twist of one, carries
+a rational `p`-TORSION POINT — the rational `p`-subgroup is there, it is just not
+pointwise rational. That is precisely the passage from `X_0` to `X_1` at these
+two levels, and it is the whole reason the levels were previously believed to
+need `X_1`.
 
-`X_1(17)` has genus `5` and its only rational points are its cusps
-(Mazur 1977, Thm 7).
+The `5`-integrality in step 1 is where the `X_0` table is used, and it is the
+only place: without it the argument would be proving the false statement "no
+curve over `ℚ` has a point of order `17`". -/
+theorem WeierstrassCurve.no_rational_point_of_isogenyPrime_jInvariant_seventeen_nineteen
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
+    (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = p)
+    (hj : (p, E.j) ∈ ([(17, -297756989 / 2), (17, -882216989 / 131072),
+        (19, -884736)] : List (ℕ × ℚ))) :
+    False := by
+  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  -- Each of the three entries is prime, `≥ 17`, and has `5`-free denominator.
+  have key : p.Prime ∧ 17 ≤ p ∧ ¬ ((5 : ℕ) ∣ E.j.den) := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, Prod.mk.injEq] at hj
+    rcases hj with ⟨hp, hjv⟩ | ⟨hp, hjv⟩ | ⟨hp, hjv⟩ <;> subst hp <;>
+      exact ⟨by norm_num, by norm_num, by rw [hjv]; norm_num⟩
+  obtain ⟨hp, h17, hjd⟩ := key
+  have hne5 : p ≠ 5 := by omega
+  -- Potentially good reduction at `5`; the point of order `p` survives.
+  obtain ⟨W, -, hdvd⟩ := WeierstrassCurve.exists_reduction_dvd_addOrderOf_of_jIntegral
+    E (ℓ := 5) (by norm_num) hp hne5 hjd Q hQ
+  -- The fibrewise bound: `11`, not `26`. This is the only new ingredient.
+  have hle : Nat.card W.toAffine.Point ≤ 2 * 5 + 1 := by
+    have h := W.natCard_affine_point_le_two_mul
+    rwa [Nat.card_eq_fintype_card (α := ZMod 5), ZMod.card] at h
+  have hpos : 0 < Nat.card W.toAffine.Point := W.natCard_affine_point_pos
+  have := Nat.le_of_dvd hpos hdvd
+  omega
 
-The `X_0` shortcut of `mem_cyclicIsogenyDegrees` is NOT available at
-this level: `17` is in Kenku's list, and `X_0(17)` — a genus-`1` curve
-of Mordell–Weil rank `0` — has non-cuspidal rational points,
-`j = −17 · 373³ / 2¹⁷` and `j = −17² · 101³ / 2` (PARI/GP `ellisomat`,
-untrusted searcher), so a rational cyclic `17`-isogeny is no
-contradiction and only the finer `X_1(17)` statement excludes the point.
+/-- **No rational point of order `p` for `p ∈ {17, 19}`** (PROVEN 2026-07-27):
+assembly of the three steps in the section note above, and the exact analogue of
+`no_torsion_order_of_isogenyPrime_ge_thirtySeven` one level list down — the
+rational point generates a Galois-stable cyclic `p`-subgroup, so `j(E)` lies in
+the `X_0` table, whose entries at these two primes are the three pairs excluded
+by `no_rational_point_of_isogenyPrime_jInvariant_seventeen_nineteen`.
 
-WHY THE `Δ ≠ 0` HYPOTHESIS IS THERE: as at level `13`, the classical
-theorem is about NON-CUSPIDAL points and the cusps are exactly where the
-family `tateNormalForm b c` degenerates. Dropping it would assert
-something strictly stronger than Mazur, which this development has no
-warrant for; it costs the consumer nothing, since the consumer has
-`IsElliptic`.
+The middle step is the only place the eleven-entry table is narrowed to three:
+at `p = 17` the entries paired with `11, 19, 37, 43, 67, 163` are killed by the
+first coordinate, and symmetrically at `19`. -/
+theorem WeierstrassCurve.no_torsion_order_of_isogenyPrime_seventeen_nineteen
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
+    (hp : p ∈ ({17, 19} : Finset ℕ))
+    (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ p := by
+  intro hQ
+  obtain ⟨g, hgord, hstable⟩ := E.exists_stable_cyclic_subgroup_of_rational_point Q hQ
+  have hp' : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ) := by
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hp ⊢
+    tauto
+  have hj := E.jInvariant_mem_of_isogenyPrime_ge_eleven g hp' hgord hstable
+  refine E.no_rational_point_of_isogenyPrime_jInvariant_seventeen_nineteen Q hQ ?_
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hp
+  simp only [List.mem_cons, List.not_mem_nil, or_false, Prod.mk.injEq] at hj ⊢
+  rcases hp with rfl | rfl <;> norm_num at hj ⊢ <;> tauto
 
-MISSING MACHINERY, in dependency order — mathlib has NONE of it, and
-level `17` needs strictly more than level `13`:
-1. Jacobians of curves of genus `> 1` over `ℚ`;
-2. Mordell–Weil for abelian varieties;
-3. at genus `5` the rank of `J_1(17)(ℚ)` is `1`, NOT `0`, so the cheap
-   route that exists at level `13` (a finite Mordell–Weil group plus
-   Abel–Jacobi) is unavailable here: this level needs Chabauty–Coleman
-   proper, or Mazur's Eisenstein-ideal argument. 
-RELATION TO `WeierstrassCurve.tateNormalForm_origin_preΨ'_residual`
-(landed on main 2026-07-26, far below in this file): that node covers
-levels `17, 19, 25, 27` uniformly in `preΨ'` form, and its docstring
-explicitly declines to expand `F₁₇` and `F₁₉` because they are "`~60`
-and `~90` terms". `x1Poly17` and `x1Poly19` ARE those expansions. Their
-bidegrees, `(12, 18)` and `(15, 22)`, match the bidegrees main states
-for `F₁₇` and `F₁₉` exactly, from a completely independent derivation
-(group law plus `linear_combination`, versus the `normEDS` recursion) —
-a cross-check on both routes.
+/-- **No rational point of order `17`** (PROVEN 2026-07-27 over the `X_0` table
+and the shared node `no_torsion_order_of_isogenyPrime_seventeen_nineteen`).
+`X_1(17)` has genus `5` and no non-cuspidal rational point.
 
--/
-theorem no_rational_point (b c : ℚ)
-    (hΔ : (WeierstrassCurve.tateNormalForm b c).Δ ≠ 0) (hc : c ≠ 0) (hbc : b - c ≠ 0)
-    (h8 : (b - 1) * c ^ 2 + 3 * b * c - 2 * b ^ 2 ≠ 0)
-    (h9 : c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 ≠ 0) :
-    x1Poly17 b c ≠ 0 :=
-  sorry
+REWIRED 2026-07-27. This node used to be PROVEN over the single leaf
+`MazurLevel17.no_rational_point` — the assertion that the explicit
+bidegree-`(12, 18)` plane model of `X_1(17)` has no nondegenerate rational point
+— which was audited as irreducible because `J_1(17)(ℚ)` has rank `1`, putting the
+level out of reach of the rank-`0` argument that closes level `13`. It now goes
+through `X_0` and reduction at `5` instead, the plane model is retired, and the
+leaf is gone. See the section note above for the full account.
 
-variable {W : WeierstrassCurve.Affine ℚ}
-
-section Tate
-
-variable {b c : ℚ}
-  (h1 : W.a₁ = 1 - c) (h2 : W.a₂ = -b) (h3 : W.a₃ = -b) (h4 : W.a₄ = 0)
-
-include h1 h2 h3 h4 in
-lemma x1_17_equation (hns : W.Nonsingular 0 0)
-    (h17 : addOrderOf (Point.some 0 0 hns) = 17) :
-    c ≠ 0 ∧ b - c ≠ 0 ∧ (b - 1) * c ^ 2 + 3 * b * c - 2 * b ^ 2 ≠ 0 ∧
-      c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 ≠ 0 ∧
-      x1Poly17 b c = 0 := by
-  have hb : b ≠ 0 := MazurLevel13.b_ne_zero h3 h4 hns
-  have hn0 : W.negY 0 0 = b := by rw [Affine.negY, h3]; ring
-  have hy0 : (0 : ℚ) ≠ W.negY 0 0 := by rw [hn0]; exact fun h => hb h.symm
-  have hL : W.slope 0 0 0 0 = 0 := by
-    rw [Affine.slope_of_Y_ne rfl hy0, h4]; simp
-  obtain ⟨x₂, y₂, h₂, hdbl, hx₂, hy₂⟩ :
-      ∃ (x₂ y₂ : ℚ) (h₂ : W.Nonsingular x₂ y₂),
-        Point.some 0 0 hns + Point.some 0 0 hns = Point.some x₂ y₂ h₂ ∧
-          x₂ = b ∧ y₂ = b * c :=
-    ⟨_, _, _, Point.add_self_of_Y_ne hy0, by simp only [Affine.addX, hL, h2]; ring,
-      by simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hL, h1, h2, h3]; ring⟩
-  have hx₂ne : x₂ ≠ 0 := by rw [hx₂]; exact hb
-  have hL3 : W.slope x₂ 0 y₂ 0 = c := by
-    rw [Affine.slope_of_X_ne hx₂ne, hx₂, hy₂]; field_simp; ring
-  obtain ⟨x₃, y₃, h₃, hR, hx₃, hy₃⟩ :
-      ∃ (x₃ y₃ : ℚ) (h₃ : W.Nonsingular x₃ y₃),
-        Point.some x₂ y₂ h₂ + Point.some 0 0 hns = Point.some x₃ y₃ h₃ ∧
-          x₃ = c ∧ y₃ = b - c :=
-    ⟨_, _, _, Point.add_of_X_ne hx₂ne, by rw [hL3]; simp only [Affine.addX, hx₂, h1, h2]; ring,
-      by rw [hL3]
-         simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hx₂, hy₂, h1, h2, h3]
-         ring⟩
-  have hord : ∀ n : ℕ, 0 < n → n < 17 → (n : ℕ) • Point.some 0 0 hns ≠ 0 := by
-    intro n hn0' hn17 hn
-    have := Nat.le_of_dvd hn0' (h17 ▸ addOrderOf_dvd_of_nsmul_eq_zero hn)
-    omega
-  have h4sum : Point.some x₃ y₃ h₃ + Point.some 0 0 hns
-      = (4 : ℕ) • Point.some 0 0 hns := by rw [← hR, ← hdbl]; abel
-  have h5sum : Point.some x₂ y₂ h₂ + Point.some x₃ y₃ h₃
-      = (5 : ℕ) • Point.some 0 0 hns := by rw [← hR, ← hdbl]; abel
-  -- `c = 0` is `X_1(4)`
-  have hc : c ≠ 0 := by
-    intro h
-    refine hord 4 (by norm_num) (by norm_num) ?_
-    rw [← h4sum]
-    refine Point.add_of_Y_eq (by rw [hx₃, h]) ?_
-    rw [Affine.negY, hy₃, h3, h]; ring
-  -- `b = c` is `X_1(5)`
-  have hbc : b - c ≠ 0 := by
-    intro h
-    refine hord 5 (by norm_num) (by norm_num) ?_
-    rw [← h5sum]
-    refine Point.add_of_Y_eq (by rw [hx₂, hx₃]; linarith) ?_
-    rw [Affine.negY, hy₂, hx₃, hy₃, h1, h3]; linear_combination c * h
-  have hcb : c - b ≠ 0 := fun h => hbc (by linarith)
-  have hx₃ne : x₃ ≠ 0 := by rw [hx₃]; exact hc
-  have hx23 : x₂ ≠ x₃ := by rw [hx₂, hx₃]; intro h; exact hbc (by linarith)
-  have hL4 : W.slope x₃ 0 y₃ 0 = (b - c) / c := by
-    rw [Affine.slope_of_X_ne hx₃ne, hx₃, hy₃, sub_zero, sub_zero]
-  -- `4 • (0,0)`
-  obtain ⟨x₄, y₄, h₄', h4pt, hx₄, hy₄⟩ :
-      ∃ (x₄ y₄ : ℚ) (h₄' : W.Nonsingular x₄ y₄),
-        Point.some x₃ y₃ h₃ + Point.some 0 0 hns = Point.some x₄ y₄ h₄' ∧
-          x₄ = b * (b - c) / c ^ 2 ∧ y₄ = b ^ 2 * (c ^ 2 + c - b) / c ^ 3 :=
-    ⟨_, _, _, Point.add_of_X_ne hx₃ne,
-      by rw [hL4]; simp only [Affine.addX, hx₃, h1, h2]; field_simp; ring,
-      by rw [hL4]
-         simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hx₃, hy₃, h1, h2, h3]
-         field_simp; ring⟩
-  have hL5 : W.slope x₂ x₃ y₂ y₃ = (b * c - b + c) / (b - c) := by
-    rw [Affine.slope_of_X_ne hx23, hx₂, hy₂, hx₃, hy₃]
-    rw [div_eq_div_iff hbc hbc]; ring
-  -- `5 • (0,0)`
-  obtain ⟨x₅, y₅, h₅, h5pt, hx₅, hy₅⟩ :
-      ∃ (x₅ y₅ : ℚ) (h₅ : W.Nonsingular x₅ y₅),
-        Point.some x₂ y₂ h₂ + Point.some x₃ y₃ h₃ = Point.some x₅ y₅ h₅ ∧
-          x₅ = b * c * (c ^ 2 + c - b) / (b - c) ^ 2 ∧
-          y₅ = b * c ^ 2 * (b ^ 2 - b * c - c ^ 3) / (b - c) ^ 3 :=
-    ⟨_, _, _, Point.add_of_X_ne hx23,
-      by rw [hL5]; simp only [Affine.addX, hx₂, hx₃, h1, h2]; field_simp; ring,
-      by rw [hL5]
-         simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hx₂, hy₂, hx₃,
-           h1, h2, h3]
-         field_simp; ring⟩
-  have h8sum : Point.some x₄ y₄ h₄' + Point.some x₄ y₄ h₄'
-      = (8 : ℕ) • Point.some 0 0 hns := by rw [← h4pt, ← hR, ← hdbl]; abel
-  have h9sum : Point.some x₄ y₄ h₄' + Point.some x₅ y₅ h₅
-      = (9 : ℕ) • Point.some 0 0 hns := by rw [← h4pt, ← h5pt, ← hR, ← hdbl]; abel
-  -- `4P` is not `2`-torsion, else `8P = 0` (`X_1(8)`)
-  have hne4 : y₄ ≠ W.negY x₄ y₄ := fun h =>
-    hord 8 (by norm_num) (by norm_num) (h8sum ▸ Point.add_self_of_Y_eq h)
-  have h8 : (b - 1) * c ^ 2 + 3 * b * c - 2 * b ^ 2 ≠ 0 := by
-    intro h
-    refine hne4 ?_
-    rw [Affine.negY, hx₄, hy₄, h1, h3]
-    field_simp
-    linear_combination h
-  -- `x(4P) ≠ x(5P)`, else `P = 0` or `9P = 0` (`X_1(9)`)
-  have hx45 : x₄ ≠ x₅ := by
-    intro hxe
-    rcases MazurLevel13.y_eq_or_eq_negY h₄' h₅ hxe with hyy | hyy
-    · have heq : Point.some x₄ y₄ h₄' = Point.some x₅ y₅ h₅ := by
-        subst hxe; subst hyy; rfl
-      have hsucc : Point.some x₄ y₄ h₄' + Point.some 0 0 hns = Point.some x₅ y₅ h₅ := by
-        rw [← h5pt, ← h4pt, ← hR, ← hdbl]; abel
-      refine Point.some_ne_zero hns (add_left_cancel (a := Point.some x₄ y₄ h₄') ?_)
-      rw [add_zero, hsucc, ← heq]
-    · exact hord 9 (by norm_num) (by norm_num) (h9sum ▸ Point.add_of_Y_eq hxe hyy)
-  have h9 : c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 ≠ 0 := by
-    intro h
-    refine hx45 ?_
-    rw [hx₄, hx₅, div_eq_div_iff (pow_ne_zero 2 hc) (pow_ne_zero 2 hbc)]
-    linear_combination (-b) * h
-  have hD8 : y₄ - W.negY x₄ y₄
-      = b * ((b - 1) * c ^ 2 + 3 * b * c - 2 * b ^ 2) / c ^ 3 := by
-    rw [Affine.negY, h1, h3, hx₄, hy₄]; field_simp; ring
-  have hD8ne : b * ((b - 1) * c ^ 2 + 3 * b * c - 2 * b ^ 2) / c ^ 3 ≠ 0 :=
-    div_ne_zero (mul_ne_zero hb h8) (pow_ne_zero 3 hc)
-  have hL8 : W.slope x₄ x₄ y₄ y₄
-      = (b * c ^ 4 + 2 * b * c ^ 3 + (2 * b - 3 * b ^ 2) * c ^ 2 - 5 * b ^ 2 * c + 3 * b ^ 3)
-          / (c * ((b - 1) * c ^ 2 + 3 * b * c - 2 * b ^ 2)) := by
-    rw [Affine.slope_of_Y_ne rfl hne4, hD8, hx₄, hy₄, h1, h2, h4]
-    rw [div_eq_div_iff hD8ne (mul_ne_zero hc h8)]
-    field_simp
-    ring
-  have hsub9 : b * (b - c) / c ^ 2 - b * c * (c ^ 2 + c - b) / (b - c) ^ 2
-      = -(b * (c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3)) / (c ^ 2 * (b - c) ^ 2) := by
-    field_simp; ring
-  have hsub9ne : b * (b - c) / c ^ 2 - b * c * (c ^ 2 + c - b) / (b - c) ^ 2 ≠ 0 := by
-    rw [hsub9]
-    exact div_ne_zero (neg_ne_zero.mpr (mul_ne_zero hb h9))
-      (mul_ne_zero (pow_ne_zero 2 hc) (pow_ne_zero 2 hbc))
-  have hL9 : W.slope x₄ x₅ y₄ y₅
-      = (c ^ 8 + b * c ^ 6 - (b ^ 2 + b) * c ^ 5 + (3 * b ^ 2 - b) * c ^ 4
-          + (4 * b ^ 2 - 3 * b ^ 3) * c ^ 3 + (b ^ 4 - 6 * b ^ 3) * c ^ 2 + 4 * b ^ 4 * c - b ^ 5)
-          / (c * (c - b) * (c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3)) := by
-    rw [Affine.slope_of_X_ne hx45, hx₄, hy₄, hx₅, hy₅]
-    rw [div_eq_div_iff hsub9ne (mul_ne_zero (mul_ne_zero hc hcb) h9)]
-    field_simp
-    ring
-  have hsum : (Point.some x₄ y₄ h₄' + Point.some x₅ y₅ h₅)
-      + (Point.some x₄ y₄ h₄' + Point.some x₄ y₄ h₄') = 0 := by
-    rw [h8sum, h9sum, ← add_nsmul]
-    show (17 : ℕ) • Point.some 0 0 hns = 0
-    rw [← h17]
-    exact addOrderOf_nsmul_eq_zero _
-  rw [Point.add_of_X_ne hx45, Point.add_self_of_Y_ne hne4] at hsum
-  have hneg := eq_neg_of_add_eq_zero_right hsum
-  rw [Point.neg_some] at hneg
-  have hcond := (Point.some.inj hneg).1
-  have h8a : c * (c * (b - 1) + b * 3) - b ^ 2 * 2 ≠ 0 := fun h => h8 (by linear_combination h)
-  have h9a : c * (c * (c * (c * (c + 1) + (1 - b)) - b * 3) + b ^ 2 * 3) - b ^ 3 ≠ 0 :=
-    fun h => h9 (by linear_combination h)
-  rw [Affine.addX, Affine.addX, hL8, hL9, hx₄, hx₅, h1, h2] at hcond
-  field_simp at hcond
-  have hFc : (b - c) ^ 4 * x1Poly17 b c = 0 := by
-    rw [x1Poly17]
-    linear_combination hcond
-  exact ⟨hc, hbc, h8, h9, (mul_eq_zero.mp hFc).resolve_left (pow_ne_zero 4 hbc)⟩
-
-end Tate
-
-end MazurLevel17
-
-/-- **No rational point of order `17`** (PROVEN 2026-07-26 over the
-single leaf `MazurLevel17.no_rational_point`, which is the assertion
-that the explicit plane model of `X_1(17)` — degree `12` in `b`, degree
-`18` in `c` — has no nondegenerate rational point).
-
-STATED IN TATE COORDINATES. The general form of this level — no
-rational point of order `17` on ANY elliptic curve over `ℚ` — is
-`no_torsion_order_17` just below, and is PROVEN from this node through
-the PROVEN `exists_tateNormalForm`.
-
-The proof: `MazurLevel17.x1_17_equation` turns `addOrderOf (0,0) = 17`
-into `x1Poly17 b c = 0` together with the four `X_1(4)`, `X_1(5)`,
-`X_1(8)`, `X_1(9)` exclusions, and the leaf says no such `(b, c)` exists
-on a nondegenerate member of the family. See the section note above. -/
+STATED IN TATE COORDINATES. The general form of this level — no rational point of
+order `17` on ANY elliptic curve over `ℚ` — is `no_torsion_order_17` just below.
+Note the mathematical content now flows the other way from before: the general
+statement is what is proven, and this node is one application of it, with the
+passage from `(tateNormalForm b c).toAffine.Point` to `(E⁄ℚ).Point` by
+definitional unfolding (`algebraMap ℚ ℚ` is the identity and structure eta closes
+the gap; only the `IsElliptic` instance needs the explicit `inferInstanceAs`
+hint). `no_torsion_order_17` is left routed through this node so that the level's
+external interface is unchanged. -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_17 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 17 := by
-  intro h17
-  obtain ⟨hc, hbc, h8, h9, hF⟩ :=
-    MazurLevel17.x1_17_equation (W := (WeierstrassCurve.tateNormalForm b c).toAffine)
-      rfl rfl rfl rfl h00 h17
-  exact MazurLevel17.no_rational_point b c
-    (WeierstrassCurve.tateNormalForm b c).isUnit_Δ.ne_zero hc hbc h8 h9 hF
+  haveI : ((WeierstrassCurve.tateNormalForm b c)⁄ℚ).IsElliptic :=
+    inferInstanceAs (((WeierstrassCurve.tateNormalForm b c).map (algebraMap ℚ ℚ)).IsElliptic)
+  exact WeierstrassCurve.no_torsion_order_of_isogenyPrime_seventeen_nineteen
+    (WeierstrassCurve.tateNormalForm b c) (by decide) (Affine.Point.some 0 0 h00)
 
 /-- **No rational point of order `17`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -18497,305 +18329,28 @@ theorem WeierstrassCurve.no_torsion_order_17 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_17 b c hell h00) E Q
 
-/-!
-#### `X_1(19)`, cut down to one explicit Diophantine leaf (2026-07-26)
+/-- **No rational point of order `19`** (PROVEN 2026-07-27 over the `X_0` table
+and the shared node `no_torsion_order_of_isogenyPrime_seventeen_nineteen`).
+`X_1(19)` has genus `7` and no non-cuspidal rational point.
 
-Same treatment as `X_1(13)` and `X_1(17)` above; `X_1(19)` has genus
-`7`, so the plane model IS the leaf. EXACTLY ONE leaf remains —
-`MazurLevel19.no_rational_point`.
+REWIRED 2026-07-27, exactly as at level `17` and in the same commit. This node
+used to be PROVEN over the single leaf `MazurLevel19.no_rational_point` — the
+bidegree-`(15, 22)` plane model — audited as irreducible at genus `7`. The
+`X_0`-plus-reduction route settles both levels at once: the single `X_0`-table
+entry here, `j = −884736 = −2¹⁵·3³`, is an INTEGER, so the `5`-integrality step
+is immediate. See the section note above.
 
-The chain, all PROVEN below, reuses the `4P` and `5P` coordinates
-already established at level `17`. Since `19` is prime and `P ≠ 0`,
-`addOrderOf P = 19` is exactly `(4P + 5P) + (5P + 5P) = 0`, i.e.
-`10P = −9P`, whose first coordinate clears to `x1Poly19 b c = 0`
-(`MazurLevel19.x1_19_equation`), of degree `15` in `b` and `22` in `c`.
-
-Compared with level `17` only the second summand changes: `17 = 9 + 8`
-used the tangent at `4P`, while `19 = 9 + 10` uses the tangent at `5P`.
-Accordingly the `X_1(8)` exclusion is replaced by an `X_1(10)` one, and
-the four side conditions — all consequences of the order, none of them
-added hypotheses — are
-
-* `c = 0`, which makes `3P = −P` hence `4P = 0` — `X_1(4)`;
-* `b = c`, which makes `2P = −3P` hence `5P = 0` — `X_1(5)`;
-* `ψ₃(c) = c⁵ + c⁴ + (1−b)c³ − 3bc² + 3b²c − b³ = 0`, which makes
-  `x(4P) = x(5P)`, hence `P = 0` or `9P = 0` — `X_1(9)`;
-* `φ₁₀(b,c) = c⁵ + bc⁴ + 3bc³ + (b−3b²)c² − 2b²c + b³ = 0`, which makes
-  `5P` two-torsion, hence `10P = 0` — `X_1(10)`. This polynomial is
-  exactly `(c−b)³(y(5P) − negY(5P))/b`.
-
-All four are impossible at a prime order `19 > 10`.
-
-Provenance: PARI/GP as an untrusted searcher for the plane model and the
-two slopes; the derivation below is a Lean `linear_combination` from the
-group law, with cofactor `c²(b−c)²`.
--/
-
-namespace MazurLevel19
-
-/-- **The plane model of `X_1(19)` in Tate coordinates**: the curve of
-degree `15` in `b` and `22` in `c` cut out in the `(b, c)`-plane by the
-condition that the origin of `tateNormalForm b c` have order `19`. -/
-def x1Poly19 (b c : ℚ) : ℚ :=
-  b ^ 15 - 10 * b ^ 14 * c + 45 * b ^ 13 * c ^ 2
-    + (-20 * b ^ 13 - 120 * b ^ 12) * c ^ 3
-    + (195 * b ^ 12 + 210 * b ^ 11) * c ^ 4
-    + (69 * b ^ 12 - 861 * b ^ 11 - 252 * b ^ 10) * c ^ 5
-    + (-588 * b ^ 11 + 2275 * b ^ 10 + 210 * b ^ 9) * c ^ 6
-    + (-121 * b ^ 11 + 2235 * b ^ 10 - 4005 * b ^ 9 - 120 * b ^ 8) * c ^ 7
-    + (870 * b ^ 10 - 4995 * b ^ 9 + 4950 * b ^ 8 + 45 * b ^ 7) * c ^ 8
-    + (105 * b ^ 10 - 2720 * b ^ 9 + 7290 * b ^ 8 - 4410 * b ^ 7 - 10 * b ^ 6) * c ^ 9
-    + (-585 * b ^ 9 + 4851 * b ^ 8 - 7308 * b ^ 7 + 2862 * b ^ 6 + b ^ 5) * c ^ 10
-    + (-48 * b ^ 9 + 1320 * b ^ 8 - 5466 * b ^ 7 + 5166 * b ^ 6 - 1350 * b ^ 5) * c ^ 11
-    + (183 * b ^ 8 - 1531 * b ^ 7 + 4117 * b ^ 6 - 2610 * b ^ 5 + 455 * b ^ 4) * c ^ 12
-    + (11 * b ^ 8 - 231 * b ^ 7 + 990 * b ^ 6 - 2190 * b ^ 5 + 945 * b ^ 4 - 105 * b ^ 3) * c ^ 13
-    + (-21 * b ^ 7 + 120 * b ^ 6 - 465 * b ^ 5 + 885 * b ^ 4 - 240 * b ^ 3 + 15 * b ^ 2) * c ^ 14
-    + (-b ^ 7 - 165 * b ^ 5 + 320 * b ^ 4 - 281 * b ^ 3 + 39 * b ^ 2 - b) * c ^ 15
-    + (-34 * b ^ 5 + 363 * b ^ 4 - 225 * b ^ 3 + 61 * b ^ 2 - 3 * b) * c ^ 16
-    + (150 * b ^ 4 - 333 * b ^ 3 + 81 * b ^ 2 - 6 * b) * c ^ 17
-    + (25 * b ^ 4 - 161 * b ^ 3 + 126 * b ^ 2 - 10 * b) * c ^ 18
-    + (-45 * b ^ 3 + 56 * b ^ 2 - 15 * b) * c ^ 19
-    + (-6 * b ^ 3 + 21 * b ^ 2) * c ^ 20 + (6 * b ^ 2 - 1) * c ^ 21 + b ^ 2 * c ^ 22
-
-/-- **THE `X_1(19)` LEAF: the plane model of `X_1(19)` has no
-nondegenerate rational point** (sorry node, cut 2026-07-26 out of
-`WeierstrassCurve.tateNormalForm_origin_order_ne_19`; IRREDUCIBLE at
-this mathlib pin).
-
-`X_1(19)` has genus `7` and its only rational points are its cusps
-(Mazur 1977, Thm 7).
-
-The `X_0` shortcut of `mem_cyclicIsogenyDegrees` is NOT available at
-this level: `19` is in Kenku's list. The witness is the CM curve of
-discriminant `−19`, `j = −884736`, whose cyclic isogeny degrees are
-exactly `{1, 19}` (PARI/GP `ellisomat`, untrusted searcher) — the class
-number of the order of discriminant `−19` is `1`, which is precisely why
-that `19`-isogeny is rational. So only the finer `X_1(19)` statement
-excludes the point.
-
-WHY THE `Δ ≠ 0` HYPOTHESIS IS THERE: as at levels `13` and `17`, the
-classical theorem is about NON-CUSPIDAL points and the cusps are exactly
-where `tateNormalForm b c` degenerates; the consumer supplies it for
-free from `IsElliptic`.
-
-MISSING MACHINERY, in dependency order — mathlib has NONE of it, and at
-genus `7` this is the hardest of the three plane-model leaves:
-1. Jacobians of curves of genus `> 1` over `ℚ`;
-2. Mordell–Weil for abelian varieties;
-3. Chabauty–Coleman, or Mazur's Eisenstein-ideal argument. As at level
-   `17` the rank is positive, so the finite-Mordell–Weil shortcut that
-   exists at level `13` is unavailable. 
-RELATION TO `WeierstrassCurve.tateNormalForm_origin_preΨ'_residual`
-(landed on main 2026-07-26, far below in this file): that node covers
-levels `17, 19, 25, 27` uniformly in `preΨ'` form, and its docstring
-explicitly declines to expand `F₁₇` and `F₁₉` because they are "`~60`
-and `~90` terms". `x1Poly17` and `x1Poly19` ARE those expansions. Their
-bidegrees, `(12, 18)` and `(15, 22)`, match the bidegrees main states
-for `F₁₇` and `F₁₉` exactly, from a completely independent derivation
-(group law plus `linear_combination`, versus the `normEDS` recursion) —
-a cross-check on both routes.
-
--/
-theorem no_rational_point (b c : ℚ)
-    (hΔ : (WeierstrassCurve.tateNormalForm b c).Δ ≠ 0) (hc : c ≠ 0) (hbc : b - c ≠ 0)
-    (h9 : c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 ≠ 0)
-    (h10 : c ^ 5 + b * c ^ 4 + 3 * b * c ^ 3 + (b - 3 * b ^ 2) * c ^ 2 - 2 * b ^ 2 * c + b ^ 3 ≠ 0) :
-    x1Poly19 b c ≠ 0 :=
-  sorry
-
-variable {W : WeierstrassCurve.Affine ℚ}
-
-section Tate
-
-variable {b c : ℚ}
-  (h1 : W.a₁ = 1 - c) (h2 : W.a₂ = -b) (h3 : W.a₃ = -b) (h4 : W.a₄ = 0)
-
-include h1 h2 h3 h4 in
-lemma x1_19_equation (hns : W.Nonsingular 0 0)
-    (h19 : addOrderOf (Point.some 0 0 hns) = 19) :
-    c ≠ 0 ∧ b - c ≠ 0 ∧ c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 ≠ 0 ∧
-      c ^ 5 + b * c ^ 4 + 3 * b * c ^ 3 + (b - 3 * b ^ 2) * c ^ 2 - 2 * b ^ 2 * c + b ^ 3 ≠ 0 ∧
-      x1Poly19 b c = 0 := by
-  have hb : b ≠ 0 := MazurLevel13.b_ne_zero h3 h4 hns
-  have hn0 : W.negY 0 0 = b := by rw [Affine.negY, h3]; ring
-  have hy0 : (0 : ℚ) ≠ W.negY 0 0 := by rw [hn0]; exact fun h => hb h.symm
-  have hL : W.slope 0 0 0 0 = 0 := by
-    rw [Affine.slope_of_Y_ne rfl hy0, h4]; simp
-  obtain ⟨x₂, y₂, h₂, hdbl, hx₂, hy₂⟩ :
-      ∃ (x₂ y₂ : ℚ) (h₂ : W.Nonsingular x₂ y₂),
-        Point.some 0 0 hns + Point.some 0 0 hns = Point.some x₂ y₂ h₂ ∧
-          x₂ = b ∧ y₂ = b * c :=
-    ⟨_, _, _, Point.add_self_of_Y_ne hy0, by simp only [Affine.addX, hL, h2]; ring,
-      by simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hL, h1, h2, h3]; ring⟩
-  have hx₂ne : x₂ ≠ 0 := by rw [hx₂]; exact hb
-  have hL3 : W.slope x₂ 0 y₂ 0 = c := by
-    rw [Affine.slope_of_X_ne hx₂ne, hx₂, hy₂]; field_simp; ring
-  obtain ⟨x₃, y₃, h₃, hR, hx₃, hy₃⟩ :
-      ∃ (x₃ y₃ : ℚ) (h₃ : W.Nonsingular x₃ y₃),
-        Point.some x₂ y₂ h₂ + Point.some 0 0 hns = Point.some x₃ y₃ h₃ ∧
-          x₃ = c ∧ y₃ = b - c :=
-    ⟨_, _, _, Point.add_of_X_ne hx₂ne, by rw [hL3]; simp only [Affine.addX, hx₂, h1, h2]; ring,
-      by rw [hL3]
-         simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hx₂, hy₂, h1, h2, h3]
-         ring⟩
-  have hord : ∀ n : ℕ, 0 < n → n < 19 → (n : ℕ) • Point.some 0 0 hns ≠ 0 := by
-    intro n hn0' hn19 hn
-    have := Nat.le_of_dvd hn0' (h19 ▸ addOrderOf_dvd_of_nsmul_eq_zero hn)
-    omega
-  have h4sum : Point.some x₃ y₃ h₃ + Point.some 0 0 hns
-      = (4 : ℕ) • Point.some 0 0 hns := by rw [← hR, ← hdbl]; abel
-  have h5sum : Point.some x₂ y₂ h₂ + Point.some x₃ y₃ h₃
-      = (5 : ℕ) • Point.some 0 0 hns := by rw [← hR, ← hdbl]; abel
-  -- `c = 0` is `X_1(4)`
-  have hc : c ≠ 0 := by
-    intro h
-    refine hord 4 (by norm_num) (by norm_num) ?_
-    rw [← h4sum]
-    refine Point.add_of_Y_eq (by rw [hx₃, h]) ?_
-    rw [Affine.negY, hy₃, h3, h]; ring
-  -- `b = c` is `X_1(5)`
-  have hbc : b - c ≠ 0 := by
-    intro h
-    refine hord 5 (by norm_num) (by norm_num) ?_
-    rw [← h5sum]
-    refine Point.add_of_Y_eq (by rw [hx₂, hx₃]; linarith) ?_
-    rw [Affine.negY, hy₂, hx₃, hy₃, h1, h3]; linear_combination c * h
-  have hcb : c - b ≠ 0 := fun h => hbc (by linarith)
-  have hx₃ne : x₃ ≠ 0 := by rw [hx₃]; exact hc
-  have hx23 : x₂ ≠ x₃ := by rw [hx₂, hx₃]; intro h; exact hbc (by linarith)
-  have hL4 : W.slope x₃ 0 y₃ 0 = (b - c) / c := by
-    rw [Affine.slope_of_X_ne hx₃ne, hx₃, hy₃, sub_zero, sub_zero]
-  -- `4 • (0,0)`
-  obtain ⟨x₄, y₄, h₄', h4pt, hx₄, hy₄⟩ :
-      ∃ (x₄ y₄ : ℚ) (h₄' : W.Nonsingular x₄ y₄),
-        Point.some x₃ y₃ h₃ + Point.some 0 0 hns = Point.some x₄ y₄ h₄' ∧
-          x₄ = b * (b - c) / c ^ 2 ∧ y₄ = b ^ 2 * (c ^ 2 + c - b) / c ^ 3 :=
-    ⟨_, _, _, Point.add_of_X_ne hx₃ne,
-      by rw [hL4]; simp only [Affine.addX, hx₃, h1, h2]; field_simp; ring,
-      by rw [hL4]
-         simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hx₃, hy₃, h1, h2, h3]
-         field_simp; ring⟩
-  have hL5 : W.slope x₂ x₃ y₂ y₃ = (b * c - b + c) / (b - c) := by
-    rw [Affine.slope_of_X_ne hx23, hx₂, hy₂, hx₃, hy₃]
-    rw [div_eq_div_iff hbc hbc]; ring
-  -- `5 • (0,0)`
-  obtain ⟨x₅, y₅, h₅, h5pt, hx₅, hy₅⟩ :
-      ∃ (x₅ y₅ : ℚ) (h₅ : W.Nonsingular x₅ y₅),
-        Point.some x₂ y₂ h₂ + Point.some x₃ y₃ h₃ = Point.some x₅ y₅ h₅ ∧
-          x₅ = b * c * (c ^ 2 + c - b) / (b - c) ^ 2 ∧
-          y₅ = b * c ^ 2 * (b ^ 2 - b * c - c ^ 3) / (b - c) ^ 3 :=
-    ⟨_, _, _, Point.add_of_X_ne hx23,
-      by rw [hL5]; simp only [Affine.addX, hx₂, hx₃, h1, h2]; field_simp; ring,
-      by rw [hL5]
-         simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hx₂, hy₂, hx₃,
-           h1, h2, h3]
-         field_simp; ring⟩
-  have h10sum : Point.some x₅ y₅ h₅ + Point.some x₅ y₅ h₅
-      = (10 : ℕ) • Point.some 0 0 hns := by rw [← h5pt, ← hR, ← hdbl]; abel
-  have h9sum : Point.some x₄ y₄ h₄' + Point.some x₅ y₅ h₅
-      = (9 : ℕ) • Point.some 0 0 hns := by rw [← h4pt, ← h5pt, ← hR, ← hdbl]; abel
-  -- `5P` is not `2`-torsion, else `10P = 0` (`X_1(10)`)
-  have hne5 : y₅ ≠ W.negY x₅ y₅ := fun h =>
-    hord 10 (by norm_num) (by norm_num) (h10sum ▸ Point.add_self_of_Y_eq h)
-  have h10 : c ^ 5 + b * c ^ 4 + 3 * b * c ^ 3 + (b - 3 * b ^ 2) * c ^ 2 - 2 * b ^ 2 * c + b ^ 3 ≠ 0 := by
-    intro h
-    refine hne5 ?_
-    rw [Affine.negY, hx₅, hy₅, h1, h3]
-    field_simp
-    linear_combination -h
-  -- `x(4P) ≠ x(5P)`, else `P = 0` or `9P = 0` (`X_1(9)`)
-  have hx45 : x₄ ≠ x₅ := by
-    intro hxe
-    rcases MazurLevel13.y_eq_or_eq_negY h₄' h₅ hxe with hyy | hyy
-    · have heq : Point.some x₄ y₄ h₄' = Point.some x₅ y₅ h₅ := by
-        subst hxe; subst hyy; rfl
-      have hsucc : Point.some x₄ y₄ h₄' + Point.some 0 0 hns = Point.some x₅ y₅ h₅ := by
-        rw [← h5pt, ← h4pt, ← hR, ← hdbl]; abel
-      refine Point.some_ne_zero hns (add_left_cancel (a := Point.some x₄ y₄ h₄') ?_)
-      rw [add_zero, hsucc, ← heq]
-    · exact hord 9 (by norm_num) (by norm_num) (h9sum ▸ Point.add_of_Y_eq hxe hyy)
-  have h9 : c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 ≠ 0 := by
-    intro h
-    refine hx45 ?_
-    rw [hx₄, hx₅, div_eq_div_iff (pow_ne_zero 2 hc) (pow_ne_zero 2 hbc)]
-    linear_combination (-b) * h
-  have hD10 : y₅ - W.negY x₅ y₅ = b * (c ^ 5 + b * c ^ 4 + 3 * b * c ^ 3 + (b - 3 * b ^ 2) * c ^ 2 - 2 * b ^ 2 * c + b ^ 3) / (c - b) ^ 3 := by
-    rw [Affine.negY, h1, h3, hx₅, hy₅]; field_simp; ring
-  have hD10ne : b * (c ^ 5 + b * c ^ 4 + 3 * b * c ^ 3 + (b - 3 * b ^ 2) * c ^ 2 - 2 * b ^ 2 * c + b ^ 3) / (c - b) ^ 3 ≠ 0 :=
-    div_ne_zero (mul_ne_zero hb h10) (pow_ne_zero 3 hcb)
-  have hL10 : W.slope x₅ x₅ y₅ y₅
-      = (c ^ 7 + (2 * b - 1) * c ^ 6 + 6 * b * c ^ 5 - 4 * b ^ 2 * c ^ 4
-          + (2 * b ^ 2 - b ^ 3) * c ^ 3 - 4 * b ^ 3 * c ^ 2 + 2 * b ^ 4 * c)
-          / ((c - b) * (c ^ 5 + b * c ^ 4 + 3 * b * c ^ 3 + (b - 3 * b ^ 2) * c ^ 2 - 2 * b ^ 2 * c + b ^ 3)) := by
-    rw [Affine.slope_of_Y_ne rfl hne5, hD10, hx₅, hy₅, h1, h2, h4]
-    rw [div_eq_div_iff hD10ne (mul_ne_zero hcb h10)]
-    field_simp
-    ring
-  have hsub9 : b * (b - c) / c ^ 2 - b * c * (c ^ 2 + c - b) / (b - c) ^ 2
-      = -(b * (c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3)) / (c ^ 2 * (b - c) ^ 2) := by
-    field_simp; ring
-  have hsub9ne : b * (b - c) / c ^ 2 - b * c * (c ^ 2 + c - b) / (b - c) ^ 2 ≠ 0 := by
-    rw [hsub9]
-    exact div_ne_zero (neg_ne_zero.mpr (mul_ne_zero hb h9))
-      (mul_ne_zero (pow_ne_zero 2 hc) (pow_ne_zero 2 hbc))
-  have hL9 : W.slope x₄ x₅ y₄ y₅
-      = (c ^ 8 + b * c ^ 6 - (b ^ 2 + b) * c ^ 5 + (3 * b ^ 2 - b) * c ^ 4
-          + (4 * b ^ 2 - 3 * b ^ 3) * c ^ 3 + (b ^ 4 - 6 * b ^ 3) * c ^ 2 + 4 * b ^ 4 * c - b ^ 5)
-          / (c * (c - b) * (c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3)) := by
-    rw [Affine.slope_of_X_ne hx45, hx₄, hy₄, hx₅, hy₅]
-    rw [div_eq_div_iff hsub9ne (mul_ne_zero (mul_ne_zero hc hcb) h9)]
-    field_simp
-    ring
-  have hsum : (Point.some x₄ y₄ h₄' + Point.some x₅ y₅ h₅)
-      + (Point.some x₅ y₅ h₅ + Point.some x₅ y₅ h₅) = 0 := by
-    rw [h10sum, h9sum, ← add_nsmul]
-    show (19 : ℕ) • Point.some 0 0 hns = 0
-    rw [← h19]
-    exact addOrderOf_nsmul_eq_zero _
-  rw [Point.add_of_X_ne hx45, Point.add_self_of_Y_ne hne5] at hsum
-  have hneg := eq_neg_of_add_eq_zero_right hsum
-  rw [Point.neg_some] at hneg
-  have hcond := (Point.some.inj hneg).1
-  have h9a : c * (c * (c * (c * (c + 1) + (1 - b)) - b * 3) + b ^ 2 * 3) - b ^ 3 ≠ 0 :=
-    fun h => h9 (by linear_combination h)
-  have h10a : c * (c * (c * (c * (c + b) + b * 3) + b * (1 - b * 3)) - 2 * b ^ 2) + b ^ 3 ≠ 0 :=
-    fun h => h10 (by linear_combination h)
-  rw [Affine.addX, Affine.addX, hL10, hL9, hx₄, hx₅, h1, h2] at hcond
-  field_simp at hcond
-  have hFc : c ^ 2 * (b - c) ^ 2 * x1Poly19 b c = 0 := by
-    rw [x1Poly19]
-    linear_combination hcond
-  exact ⟨hc, hbc, h9, h10, (mul_eq_zero.mp hFc).resolve_left
-    (mul_ne_zero (pow_ne_zero 2 hc) (pow_ne_zero 2 hbc))⟩
-
-end Tate
-
-end MazurLevel19
-
-/-- **No rational point of order `19`** (PROVEN 2026-07-26 over the
-single leaf `MazurLevel19.no_rational_point`, which is the assertion
-that the explicit plane model of `X_1(19)` — degree `15` in `b`, degree
-`22` in `c` — has no nondegenerate rational point).
-
-STATED IN TATE COORDINATES. The general form of this level — no
-rational point of order `19` on ANY elliptic curve over `ℚ` — is
-`no_torsion_order_19` just below, and is PROVEN from this node through
-the PROVEN `exists_tateNormalForm`.
-
-The proof: `MazurLevel19.x1_19_equation` turns `addOrderOf (0,0) = 19`
-into `x1Poly19 b c = 0` together with the `X_1(4)`, `X_1(5)`, `X_1(9)`,
-`X_1(10)` exclusions, and the leaf says no such `(b, c)` exists on a
-nondegenerate member of the family. See the section note above. -/
+STATED IN TATE COORDINATES; the general form is `no_torsion_order_19` just
+below, and as at level `17` the content now flows from the general statement to
+this one rather than the reverse. -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_19 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 19 := by
-  intro h19
-  obtain ⟨hc, hbc, h9, h10, hF⟩ :=
-    MazurLevel19.x1_19_equation (W := (WeierstrassCurve.tateNormalForm b c).toAffine)
-      rfl rfl rfl rfl h00 h19
-  exact MazurLevel19.no_rational_point b c
-    (WeierstrassCurve.tateNormalForm b c).isUnit_Δ.ne_zero hc hbc h9 h10 hF
+  haveI : ((WeierstrassCurve.tateNormalForm b c)⁄ℚ).IsElliptic :=
+    inferInstanceAs (((WeierstrassCurve.tateNormalForm b c).map (algebraMap ℚ ℚ)).IsElliptic)
+  exact WeierstrassCurve.no_torsion_order_of_isogenyPrime_seventeen_nineteen
+    (WeierstrassCurve.tateNormalForm b c) (by decide) (Affine.Point.some 0 0 h00)
 
 /-- **No rational point of order `19`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -27388,6 +26943,11 @@ Two independent derivations agreeing on ~`130` integer coefficients is
 strong evidence for both, and it is why the `G₂₅` written out below
 should be trusted to the same standard.
 
+(`x1Poly17` and `x1Poly19` were RETIRED 2026-07-27, when levels `17` and
+`19` were rewired through the `X_0` table and reduction at `5`; they are
+in git history. The agreement recorded above was checked while both were
+in the tree and is not affected — but it can no longer be re-run here.)
+
 Nothing between the old and the new position uses any declaration of the
 block, and the block uses nothing declared between them, so the move is
 purely positional.
@@ -27749,13 +27309,20 @@ could never have become those levels' route without circularity; and
 NOTHING MATHEMATICAL WAS LOST, and every level still stands at exactly
 one leaf, each in its own proof term: `curve11a3_rational_points` (`11`,
 through `x1Eleven_plane_ne_zero`), `x1Thirteen_kubert_ne_zero` (`13`,
-through `x1Thirteen_plane_ne_zero`), `MazurLevel17.no_rational_point`
-(`17`), `MazurLevel19.no_rational_point` (`19`), `no_torsion_order_21`
+through `x1Thirteen_plane_ne_zero`), `no_torsion_order_21`
 (`21`, proven outright), `x1TwentyFive_plane_ne_zero` (`25`, through
 `x1TwentyFive_plane_eq_line`), and `no_torsion_order_27` (`27`, proven
 outright). Levels `11` and `13` moved onto the FINER of the two plane
 routes they had; the coarser `MazurLevel11`/`MazurLevel13` models, whose
 leaves asserted the point counts outright, were retired with them.
+
+UPDATED 2026-07-27: levels `17` and `19` are no longer in that list.
+They stood at `MazurLevel17.no_rational_point` and
+`MazurLevel19.no_rational_point` when it was written; both plane models
+have since been RETIRED and both levels rewired through the `X_0` table
+plus reduction at `5` (`no_torsion_order_of_isogenyPrime_seventeen_nineteen`),
+so they now carry NO leaf of their own. Five of the seven levels stand at
+one leaf each; `17` and `19` stand at none.
 
 **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
 coordinates the origin never has order `N`, for
@@ -28243,6 +27810,12 @@ levels is now proven from its own single leaf in its own proof term:
 decomposed further in `EllipticCurve/MordellWeil.lean`),
 `x1Thirteen_kubert_ne_zero` (`13`, through `x1Thirteen_plane_ne_zero`),
 and `MazurLevel17`/`MazurLevel19`'s `no_rational_point` (`17`, `19`).
+
+UPDATED 2026-07-27: the last clause is stale. `17` and `19` left the
+plane-model route entirely — both `no_rational_point` leaves are RETIRED
+and both levels now go through the `X_0` table and reduction at `5`
+(`no_torsion_order_of_isogenyPrime_seventeen_nineteen`), carrying no leaf
+of their own. Only `11` and `13` are still on plane models.
 
 `flt-lean-29` had proposed replacing all four by one-line instantiations
 of the uniform node `tateNormalForm_origin_order_ne_of_cuspidalRankZero`,
