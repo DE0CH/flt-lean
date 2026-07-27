@@ -101,13 +101,32 @@ REGENERATED at integration (2026-07-27) from the merged source rather than taken
 from any side of the merges — several branches each carried a list that was
 correct on its own branch and wrong once the others landed:
 
-* `ProjCoords.toHom_smul`, `ProjCoords.exists_of_specField`,
-  `ProjCoords.toHom_eq_of_addXYZ_not_span` and `exists_projMulOfCoords` — the
-  four successors of `exists_projMul`, which is now PROVEN over the `ProjCoords`
-  interface (the fifth successor,
-  `WeierstrassCurve.Projective.equation_addXYZ`, is PROVEN in
-  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`).
-  `exists_projAdd` is in turn PROVEN from `exists_projMul` and `projMul_assoc`;
+* **`exists_projMul` is PROVEN as of 2026-07-27** and is no longer a leaf.  It
+  was decomposed over a new interface, `ProjCoords` — three sections of
+  `Γ(X, ⊤)` satisfying the Weierstrass equation and generating the unit ideal,
+  i.e. a TRIVIALISED `Proj`-coordinate datum — together with
+  `ProjCoords.toHom`, the morphism `X ⟶ proj E` it determines through
+  `Proj.fromOfGlobalSections`.  Of its five successor leaves, two are now
+  CLOSED and one has been cut in two (2026-07-27):
+  `ProjCoords.toHom_eq_of_addXYZ_not_span` is **PROVEN** over the new ring-level
+  `ProjCoords.exists_units_smul_of_addXYZ_not_span`;
+  `WeierstrassCurve.Projective.equation_addXYZ` is PROVEN in
+  `Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`;
+  `ProjCoords.toHom_smul` is **PROVEN as a reduction** to
+  `ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul` (the chart identity,
+  the only genuinely new MATHLIB work left) and
+  `ProjCoords.ringHom_smul_apply_of_mem_projGrading` (a `MvPolynomial`
+  computation), the gluing half having been discharged by
+  `ProjCoords.openCover_eq_of_gradedSmul` and
+  `ProjCoords.fromOfGlobalSections_eq_of_gradedSmul`;
+  `ProjCoords.exists_of_specField` and `exists_projMulOfCoords` (the gluing)
+  remain open.  **The `[Field K]` binder on the `K`-point leaves was REFUTED and
+  replaced by `(hK : IsField ↥K)` on 2026-07-27** — see the FALSITY AUDIT on
+  `ProjCoords.exists_of_specField`.  `hcomm` is now PROVEN rather than assumed, from antisymmetry of the
+  chord–tangent forms plus a residue-field density argument; `hunit` and `hinv`
+  stayed with the constructor because — correcting this file's earlier prose —
+  they are NOT chart identities of the standard law, which degenerates exactly
+  where each of them is asserted;
 * `exists_projPtAddEquiv_algClosed` — the one leaf `projMul_assoc` still rests
   on, the algebraic `K`-point dictionary (`projMul_assoc_pt_algClosed` was this
   leaf until 2026-07-27 and is now PROVEN from it, `projMul_assoc_pt` was a
@@ -525,9 +544,155 @@ noncomputable def smul (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) : ProjCoords E 
 @[simp] theorem smul_coord (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) :
     (smul u c).coord = (u : Γ(X, ⊤)) • c.coord := rfl
 
+section GradedSmul
+
+/-! ### The `fromOfGlobalSections` congruence, cut into three (2026-07-27)
+
+`ProjCoords.toHom_smul` was a single opaque leaf described as "the one piece of
+genuinely new MATHLIB work".  It is now a REDUCTION: the scheme-theoretic half
+below is PROVEN, and what is left is two much smaller statements, one of them a
+plain computation in `MvPolynomial`.
+
+The general shape is stated for an arbitrary graded ring, because nothing in the
+scheme-theoretic half is special to the Weierstrass ring; `g` is the rescaled map
+`f_u`, characterised by `g a = u ^ n * f a` on `𝒜 n`, and no sum over graded
+pieces is needed because that characterisation is all the proof uses. -/
+
+/-- **Rescaling by a unit does not move the basic opens of the
+`fromOfGlobalSections` cover** (PROVEN, and the whole reason the two covers
+coincide on the nose). -/
+theorem basicOpen_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {a : A} (ha : a ∈ 𝒜 n) :
+    X.basicOpen (g a) = X.basicOpen (f a) := by
+  rw [h n a ha, Scheme.basicOpen_mul, Scheme.basicOpen_of_isUnit _ ((u.isUnit).pow n),
+    top_inf_eq]
+
+/-- **The two `fromOfGlobalSections` covers are EQUAL**, not merely isomorphic
+(PROVEN) — the index type is the same and the opens agree by
+`basicOpen_eq_of_gradedSmul`, so the two `Scheme.OpenCover` structures differ
+only in proof fields. -/
+theorem openCover_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
+    Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg = Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf := by
+  have key : (fun ir : Σ' i r, 0 < i ∧ r ∈ 𝒜 i ↦ X.basicOpen (g ir.2.1)) =
+      (fun ir : Σ' i r, 0 < i ∧ r ∈ 𝒜 i ↦ X.basicOpen (f ir.2.1)) :=
+    funext fun ir ↦ basicOpen_eq_of_gradedSmul 𝒜 u f g h ir.2.2.2
+  unfold Proj.openCoverOfMapIrrelevantEqTop
+  congr 1
+
+/-- **The chart-level half of the congruence** (sorry node — this is where ALL
+the remaining content of `ProjCoords.toHom_smul` now sits, and it is the piece
+that lives in `HomogeneousLocalization` rather than in scheme theory).
+
+`Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht` is, after composing with
+`Proj.basicOpenIsoSpec`, the map determined by the ring homomorphism
+
+    Away 𝒜 t →+* Localization.Away (f t),   mk (a, t ^ k) ↦ f a / (f t) ^ k
+
+(`IsLocalization.map` composed with `algebraMap (Away 𝒜 t) (Localization.Away t)`
+in mathlib's definition).  For `g` the same formula reads, on `a ∈ 𝒜 (k * n)`,
+
+    g a / (g t) ^ k = u ^ (k * n) * f a / (u ^ n * f t) ^ k = f a / (f t) ^ k,
+
+so the two ring maps are literally equal once `Localization.Away (g t)` is
+identified with `Localization.Away (f t)` — which is legitimate because
+`g t = u ^ n * f t` and `u ^ n` is a unit, so the two `Submonoid.powers` invert
+the same elements.  **That is the whole mathematical content**: `Away` is the
+degree-`0` part and the rescaling is by `u` to the power of the degree, so it
+cancels between numerator and denominator.
+
+The `Scheme.isoOfEq` on the left is `basicOpen_eq_of_gradedSmul`: the two charts
+have equal — but not syntactically equal — domains.
+
+*What is NOT missing.*  The gluing is already done: `openCover_eq_of_gradedSmul`
+shows the two covers are equal, and `fromOfGlobalSections_eq_of_gradedSmul` below
+derives the full congruence from this leaf by `Scheme.Cover.hom_ext` plus
+`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory.  So an owner of
+this leaf never has to touch `glueMorphisms`. -/
+theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι =
+      (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+  sorry
+
+/-- **The missing mathlib congruence for `Proj.fromOfGlobalSections`** (PROVEN
+from `openCover_eq_of_gradedSmul` and
+`toBasicOpenOfGlobalSections_eq_of_gradedSmul`).
+
+This is the statement `ProjCoords.toHom_smul` needs, and — modulo the one chart
+leaf above — it is done.  Note that no hypothesis says `g` is *built* from `f` by
+rescaling; only the degreewise identity `g a = u ^ n * f a` is used, which is
+exactly what `ProjCoords.smul` provides. -/
+theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
+    Proj.fromOfGlobalSections 𝒜 g hg = Proj.fromOfGlobalSections 𝒜 f hf := by
+  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).hom_ext _ _ fun i ↦ ?_
+  obtain ⟨n, t, hn, ht⟩ := i
+  have hopen : X.basicOpen (g t) = X.basicOpen (f t) :=
+    basicOpen_eq_of_gradedSmul 𝒜 u f g h ht
+  have hfeq : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ =
+      (X.isoOfEq hopen).hom ≫ (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).f ⟨n, t, hn, ht⟩ := by
+    simp [Proj.openCoverOfMapIrrelevantEqTop]
+  have hL : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 g hg =
+      Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
+  have hR : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 f hf =
+      (X.isoOfEq hopen).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+    rw [hfeq]
+    exact (Category.assoc _ _ _).trans (congrArg ((X.isoOfEq hopen).hom ≫ ·)
+      ((Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩))
+  rw [hL, hR]
+  exact toBasicOpenOfGlobalSections_eq_of_gradedSmul 𝒜 u f g h hn ht
+
+end GradedSmul
+
+/-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
+`n`** (sorry node — the arithmetic half of `ProjCoords.toHom_smul`).
+
+`ProjCoords.ringHom` is `Ideal.Quotient.lift` of `MvPolynomial.eval₂Hom base coord`,
+so on the class of a polynomial `p` this says
+
+    eval₂ base (u • coord) p = u ^ n * eval₂ base coord p   for `p` homogeneous of degree `n`,
+
+which is a monomial-by-monomial computation: a monomial of total degree `n`
+picks up exactly `u ^ n`.  The one step that is not literally that computation
+is passing from `a ∈ projGrading E n` — membership in the quotient grading — to
+a homogeneous representative of degree `n`, i.e. surjectivity of
+`HomogeneousIdeal.quotientGrading` onto its graded pieces; `Ideal.Quotient.mk`
+is surjective and the quotient grading is defined as the image, so this is
+`HomogeneousIdeal.mk_mem_quotientGrading` read backwards.
+
+This is deliberately stated in the exact form
+`fromOfGlobalSections_eq_of_gradedSmul` consumes. -/
+theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X)
+    (n : ℕ) (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
+    (ha : a ∈ projGrading E n) :
+    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a :=
+  sorry
+
 /-- **Rescaling the coordinates by a unit does not change the morphism**
-(sorry node — this is item 3 of `exists_projMul`'s plan, the one piece of
-genuinely new MATHLIB work, now stated in its concrete form).
+(**PROVEN 2026-07-27** from `fromOfGlobalSections_eq_of_gradedSmul` and
+`ringHom_smul_apply_of_mem_projGrading` — it is a REDUCTION, not a result: the
+two leaves above still carry the content, and this declaration has no `sorry`
+of its own).
 
 The general statement is: for `u : Γ(X, ⊤)ˣ` and `f : A →+* Γ(X, ⊤)` with
 `A` graded, the rescaled map `f_u : a ↦ ∑ n, u ^ n * f aₙ` satisfies
@@ -558,7 +723,9 @@ Bosma–Lenstra laws on their overlap (where the unit is `add2Z / addZ`),
 and for the identification of a degenerate sum with the point at
 infinity. -/
 theorem toHom_smul (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) : (smul u c).toHom = c.toHom :=
-  sorry
+  fromOfGlobalSections_eq_of_gradedSmul (projGrading E) u c.ringHom (smul u c).ringHom
+    c.map_irrelevant_eq_top (smul u c).map_irrelevant_eq_top
+    (ringHom_smul_apply_of_mem_projGrading u c)
 
 /-- **The chord–tangent sum of two coordinate data**, where it is
 non-degenerate (PROVEN from `equation_addXYZ`). -/
@@ -596,13 +763,174 @@ is a unit, so `span_coord` holds.  Mathlib supplies the factorisation as
 
 *What it is used for*: it is the bridge from the residue-field ext lemma
 `ext_of_fromSpecResidueField_eq` to the polynomial identities.  Without it
-no `K`-point argument in this cluster can start. -/
-theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0}) [Field K]
-    (a : Spec K ⟶ proj E) : ∃ c : ProjCoords E (Spec K), c.toHom = a :=
+no `K`-point argument in this cluster can start.
+
+## FALSITY AUDIT (2026-07-27): the hypothesis is `IsField ↥K`, NOT `[Field K]`
+
+This leaf, `toHom_eq_of_addXYZ_not_span` and `projMulCoords_comm` were all
+stated with `(K : CommRingCat.{0}) [Field K]`, and that binder is **false-shaped**
+— not merely awkward.  `[Field K]` elaborates to `Field ↥K`, an arbitrary field
+structure ON THE CARRIER TYPE, and `Field` extends `CommRing`, so it supplies a
+SECOND ring structure unrelated to `K.str`.  Everything the statement is about —
+`Spec K`, `Γ(Spec K, ⊤)`, `ProjCoords E (Spec K)` — is built from `K.str`, so the
+hypothesis constrains nothing about the ring whose spectrum is being taken.
+
+This was verified, not guessed.  The transport
+
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField (Field.toIsField _)
+
+fails with *"synthesized type class instance is not definitionally equal"*,
+`Field.toSemifield.toDivisionSemiring.toSemiring` against
+`CommRing.toCommSemiring.toSemiring`, exactly because the two ring structures on
+`↥K` are different terms.  With `(hK : IsField ↥K)` the same line elaborates, and
+it also elaborates at the one instantiation site, `Scheme.residueField x`, where
+the `Field` instance genuinely IS `K.str` — so the repair costs the consumers a
+`Field.toIsField _` and nothing else.
+
+Under the old binder the statement is not just unprovable but FALSE.  Take
+`K := CommRingCat.of ℚ[X]` with a junk `Field ℚ[X]` transported along a bijection
+`ℚ[X] ≃ ℚ` (`Equiv.field`; both types are denumerable): every hypothesis holds,
+`Spec K = 𝔸¹_ℚ`, and `c := ![0,1,0]`, `d := ![x₀,y₀,t]` have
+`addXYZ c d = t • d` (`addXYZ_of_Z_eq_zero_left`), whose span is `(t) ≠ ⊤`, while
+`c.toHom ≠ d.toHom`.  The earlier note claiming the binder is false-shaped "only
+when a proof needs `AlgebraicClosure K` or `algebraMap K _`" is too narrow: it is
+false-shaped whenever the proof needs the field structure to BE `K.str`, which
+"a proper ideal of a field is zero" does. -/
+theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0})
+    (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
+    ∃ c : ProjCoords E (Spec K), c.toHom = a :=
   sorry
 
+/-- **Over a FIELD the chord–tangent triple degenerates exactly on the
+diagonal** (PROVEN) — the ring-level content of
+`ProjCoords.toHom_eq_of_addXYZ_not_span`, stated over an arbitrary
+commutative ring that happens to be a field so that it can be instantiated
+at `Γ(Spec K, ⊤)` without transporting the ambient `CommRing` structure.
+
+`IsField` is taken as a HYPOTHESIS rather than as an instance on purpose:
+`Γ(Spec K, ⊤)` is a field only through `Scheme.ΓSpecIso`, and installing a
+`Field` instance obtained by transport would create a second `CommRing`
+path on the same type, which is exactly the "instances that print
+identically" trap.  Everything below is therefore phrased with the
+`[NoZeroDivisors]`-general forms of mathlib's addition lemmas.
+
+The conclusion is the strongest possible one: not merely that the two
+points agree, but that the two coordinate triples differ by a UNIT, which
+is what `ProjCoords.toHom_smul` consumes. -/
+theorem exists_units_smul_of_addXYZ_not_span {R : Type*} [CommRing R] (hR : IsField R)
+    (W' : WeierstrassCurve R) {P Q : Fin 3 → R}
+    (hP : Equation W' P) (hQ : Equation W' Q)
+    (hPs : Ideal.span (Set.range P) = ⊤) (hQs : Ideal.span (Set.range Q) = ⊤)
+    (h : Ideal.span (Set.range (addXYZ W' P Q)) ≠ ⊤) :
+    ∃ u : Rˣ, (u : R) • P = Q := by
+  haveI : Nontrivial R := ⟨hR.exists_pair_ne⟩
+  have hunit : ∀ a : R, a ≠ 0 → IsUnit a := fun a ha =>
+    isUnit_iff_exists_inv.mpr (hR.mul_inv_cancel ha)
+  haveI : NoZeroDivisors R := by
+    refine ⟨fun {a b} hab => ?_⟩
+    by_cases ha : a = 0
+    · exact Or.inl ha
+    · obtain ⟨a', ha'⟩ := hR.mul_inv_cancel ha
+      refine Or.inr ?_
+      calc b = a' * (a * b) := by rw [← mul_assoc, mul_comm a' a, ha', one_mul]
+        _ = 0 := by rw [hab, mul_zero]
+  -- a triple with a nonzero entry spans the unit ideal
+  have hspan_top : ∀ (v : Fin 3 → R) (i : Fin 3), v i ≠ 0 →
+      Ideal.span (Set.range v) = ⊤ := fun v i hvi =>
+    Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span ⟨i, rfl⟩) (hunit _ hvi)
+  -- a spanning triple whose outer entries vanish has a nonzero middle entry
+  have hmid : ∀ (v : Fin 3 → R), Ideal.span (Set.range v) = ⊤ →
+      v 0 = 0 → v 2 = 0 → v 1 ≠ 0 := by
+    intro v hv h0 h2 h1
+    have hle : Ideal.span (Set.range v) ≤ ⊥ := by
+      rw [Ideal.span_le]
+      rintro _ ⟨i, rfl⟩
+      fin_cases i <;> simp [h0, h1, h2]
+    rw [hv] at hle
+    exact one_ne_zero (Ideal.mem_bot.mp (hle Submodule.mem_top))
+  -- the hypothesis says all three chord–tangent forms vanish
+  have hzero : ∀ i, addXYZ W' P Q i = 0 := fun i => by
+    by_contra hi
+    exact h (hspan_top _ i hi)
+  have hY : addY W' P Q = 0 := by have := hzero 1; rwa [addXYZ_Y] at this
+  have hZ : addZ W' P Q = 0 := by have := hzero 2; rwa [addXYZ_Z] at this
+  -- packaging: a cross-multiplication identity produces the rescaling unit
+  have hmk : ∀ p q : R, p ≠ 0 → q ≠ 0 → (∀ i, q * P i = p * Q i) →
+      ∃ u : Rˣ, (u : R) • P = Q := by
+    intro p q hp hq hpq
+    obtain ⟨up, hup⟩ := hunit p hp
+    obtain ⟨uq, huq⟩ := hunit q hq
+    refine ⟨uq * up⁻¹, ?_⟩
+    funext i
+    simp only [Pi.smul_apply, smul_eq_mul, Units.val_mul]
+    refine mul_left_cancel₀ hp ?_
+    calc p * ((uq : R) * (up⁻¹ : Rˣ) * P i)
+        = ((up : R) * (up⁻¹ : Rˣ)) * ((uq : R) * P i) := by rw [← hup]; ring
+      _ = (uq : R) * P i := by rw [Units.mul_inv, one_mul]
+      _ = q * P i := by rw [huq]
+      _ = p * Q i := hpq i
+  by_cases hPz : P 2 = 0
+  · -- `P` is at infinity, and `addZ = 0` forces `Q` to be there too
+    have hPx : P 0 = 0 := X_eq_zero_of_Z_eq_zero hP hPz
+    have hPy : P 1 ≠ 0 := hmid P hPs hPx hPz
+    have hQz : Q 2 = 0 := by
+      have h0 : P 1 ^ 2 * Q 2 * Q 2 = 0 := by
+        rw [← addZ_of_Z_eq_zero_left hP hPz]; exact hZ
+      rcases mul_eq_zero.mp h0 with h' | h'
+      · rcases mul_eq_zero.mp h' with h'' | h''
+        · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h'') hPy
+        · exact h''
+      · exact h'
+    have hQx : Q 0 = 0 := X_eq_zero_of_Z_eq_zero hQ hQz
+    have hQy : Q 1 ≠ 0 := hmid Q hQs hQx hQz
+    refine hmk (P 1) (Q 1) hPy hQy ?_
+    intro i
+    fin_cases i
+    · show Q 1 * P 0 = P 1 * Q 0
+      rw [hPx, hQx, mul_zero, mul_zero]
+    · show Q 1 * P 1 = P 1 * Q 1
+      ring
+    · show Q 1 * P 2 = P 1 * Q 2
+      rw [hPz, hQz, mul_zero, mul_zero]
+  · by_cases hQz : Q 2 = 0
+    · -- impossible: `Q` at infinity and `P` not
+      exfalso
+      have hQx : Q 0 = 0 := X_eq_zero_of_Z_eq_zero hQ hQz
+      have hQy : Q 1 ≠ 0 := hmid Q hQs hQx hQz
+      have h0 : -(Q 1 ^ 2 * P 2) * P 2 = 0 := by
+        rw [← addZ_of_Z_eq_zero_right hQ hQz]; exact hZ
+      rw [neg_mul, neg_eq_zero] at h0
+      rcases mul_eq_zero.mp h0 with h' | h'
+      · rcases mul_eq_zero.mp h' with h'' | h''
+        · exact hQy (pow_eq_zero_iff two_ne_zero |>.mp h'')
+        · exact hPz h''
+      · exact hPz h'
+    · -- both affine: `addZ = 0` forces equal `x`, then `addY = 0` forces equal `y`
+      have hx : P 0 * Q 2 - Q 0 * P 2 = 0 := by
+        refine pow_eq_zero_iff three_ne_zero |>.mp ?_
+        rw [← addZ_eq' hP hQ, hZ, zero_mul]
+      have hy : P 1 * Q 2 - Q 1 * P 2 = 0 := by
+        refine pow_eq_zero_iff three_ne_zero |>.mp ?_
+        have h1 : -(P 1 * Q 2 - Q 1 * P 2) ^ 3 * (P 2 * Q 2) ^ 2 = 0 := by
+          rw [← addY_of_X_eq' hP hQ hPz hQz (sub_eq_zero.mp hx), hY, zero_mul]
+        have hne : (P 2 * Q 2) ^ 2 ≠ 0 := pow_ne_zero _ (mul_ne_zero hPz hQz)
+        rcases mul_eq_zero.mp h1 with h' | h'
+        · exact neg_eq_zero.mp h'
+        · exact absurd h' hne
+      refine hmk (P 2) (Q 2) hPz hQz ?_
+      intro i
+      fin_cases i
+      · show Q 2 * P 0 = P 2 * Q 0
+        linear_combination hx
+      · show Q 2 * P 1 = P 2 * Q 1
+        linear_combination hy
+      · show Q 2 * P 2 = P 2 * Q 2
+        ring
+
 /-- **Over a field the standard addition law degenerates exactly on the
-DIAGONAL** (sorry node) — the Lean form of the 2026-07-27 correction
+DIAGONAL** (**PROVEN 2026-07-27** from
+`ProjCoords.exists_units_smul_of_addXYZ_not_span` and
+`ProjCoords.toHom_smul`) — the Lean form of the 2026-07-27 correction
 recorded in `exists_projMul`'s docstring.
 
 Over a field, `Ideal.span (Set.range v) ≠ ⊤` says precisely that all three
@@ -629,11 +957,22 @@ by a unit" into "the morphisms are equal".
 `exists_projMul`'s docstring asserted that the standard law vanishes on the
 whole locus `x(P) = x(Q)`; mathlib's `negAddY_of_X_eq'` refutes that — on
 the antidiagonal `addY` is a unit and `[0 : addY : 0]` is the point at
-infinity, the correct value of `P + Q`. -/
-theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} [Field K] (c d : ProjCoords E (Spec K))
+infinity, the correct value of `P + Q`.
+
+**The `[Field K]` binder was replaced by `(hK : IsField ↥K)` on 2026-07-27**; see
+the FALSITY AUDIT on `ProjCoords.exists_of_specField` for why the old one made
+this statement false rather than merely unprovable. -/
+theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} (hK : _root_.IsField ↥K)
+    (c d : ProjCoords E (Spec K))
     (h : ¬ Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤) :
-    c.toHom = d.toHom :=
-  sorry
+    c.toHom = d.toHom := by
+  have hR : _root_.IsField Γ(Spec K, ⊤) :=
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField hK
+  have hQ : Equation (E.map c.base) d.coord := by rw [c.base_eq d]; exact d.equation
+  obtain ⟨u, hu⟩ := exists_units_smul_of_addXYZ_not_span hR (E.map c.base) c.equation hQ
+    c.span_coord d.span_coord h
+  have hd : smul u c = d := ProjCoords.ext (by rw [smul_coord]; exact hu)
+  rw [← toHom_smul u c, hd]
 
 end ProjCoords
 
@@ -738,17 +1077,23 @@ addition law:
   trivial.
 
 This is the precise sense in which `hcomm` — alone among the three axioms
-of the old leaf — is genuinely cheap. -/
+of the old leaf — is genuinely cheap.
+
+**The `[Field K]` binder was replaced by `(hK : IsField ↥K)` on 2026-07-27**, in
+step with the two `ProjCoords` leaves this consumes; see the FALSITY AUDIT on
+`ProjCoords.exists_of_specField`.  The one caller, `exists_projMul`, supplies
+`Field.toIsField _` at `Scheme.residueField x`, where the `Field` instance really
+is the `CommRingCat` structure. -/
 theorem projMulCoords_comm (E : WeierstrassCurve ℚ)
     (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
     (hlaw : ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
       (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤),
       Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m = (c.add d h).toHom)
-    (K : CommRingCat.{0}) [Field K] (a b : Spec K ⟶ proj E) :
+    (K : CommRingCat.{0}) (hK : _root_.IsField ↥K) (a b : Spec K ⟶ proj E) :
     Limits.pullback.lift b a (hom_ext_spec_rat _ _) ≫ m =
       Limits.pullback.lift a b (hom_ext_spec_rat _ _) ≫ m := by
-  obtain ⟨c, rfl⟩ := ProjCoords.exists_of_specField E K a
-  obtain ⟨d, rfl⟩ := ProjCoords.exists_of_specField E K b
+  obtain ⟨c, rfl⟩ := ProjCoords.exists_of_specField E K hK a
+  obtain ⟨d, rfl⟩ := ProjCoords.exists_of_specField E K hK b
   by_cases h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤
   · have hcomm : addXYZ (E.map d.base) d.coord c.coord =
         ((-1 : (Γ(Spec K, ⊤))ˣ) : Γ(Spec K, ⊤)) • addXYZ (E.map c.base) c.coord d.coord := by
@@ -761,7 +1106,7 @@ theorem projMulCoords_comm (E : WeierstrassCurve ℚ)
     have hEq : ProjCoords.smul (-1 : (Γ(Spec K, ⊤))ˣ) (c.add d h) = d.add c h' :=
       ProjCoords.ext (by simp [hcomm])
     rw [← hEq, ProjCoords.toHom_smul]
-  · rw [ProjCoords.toHom_eq_of_addXYZ_not_span c d h]
+  · rw [ProjCoords.toHom_eq_of_addXYZ_not_span hK c d h]
 
 /-- **The projective Weierstrass model is proper over `Spec ℚ`** (PROVEN).
 
@@ -3196,7 +3541,7 @@ theorem exists_projMul (E : WeierstrassCurve ℚ) [E.IsElliptic] :
   rw [comp_swap_eq_lift_comp, comp_eq_lift_comp E m
     ((Limits.pullback (projToSpec E) (projToSpec E)).fromSpecResidueField x)]
   exact projMulCoords_comm E m hlaw
-    ((Limits.pullback (projToSpec E) (projToSpec E)).residueField x) _ _
+    ((Limits.pullback (projToSpec E) (projToSpec E)).residueField x) (Field.toIsField _) _ _
 
 
 /-- **Associativity of any commutative unital multiplication with
