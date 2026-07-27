@@ -38193,19 +38193,72 @@ mathematical:
    mathematical — this is the one no audit above names). The conclusion
    `HasConductorExponentAt τ v_q (ord_q M₀)` unfolds to
    `ord_q M₀ = τ.tameExponent v_q + τ.swanExponent v_q`, and
-   `swanExponent` is `if IsUnramifiedAt v then 0 else swanExponentAux v`
-   with `GaloisRep.swanExponentAux` declared `opaque`. NO hypothesis of
-   this leaf mentions `swanExponentAux`, and `ArtinConductor.lean`
-   forbids equations about it on purpose ("Do not state or prove any
-   equation about `swanExponentAux` itself"). The leaf's own conclusion
-   forces `τ` RAMIFIED at `q` (`not_isUnramifiedAt_of_ne_zero`), so the
-   `if` can never be discharged either. Hence the statement is
-   **INDEPENDENT of the theory** — neither provable nor refutable — and
-   a *completed* item 1 would leave it exactly as unprovable as it is
-   today. Closing it requires giving the Swan conductor a real
-   DEFINITION: the higher ramification filtration in the UPPER
-   numbering, absent from mathlib and not replaceable by the lower
-   numbering over `ℚ_qᵃˡᵍ`, whose value group is divisible.
+   `swanExponent` is an `if` whose else-branch is
+   `GaloisRep.swanExponentAux`, declared `opaque`. NO hypothesis of this
+   leaf mentions `swanExponentAux`, and `ArtinConductor.lean` forbids
+   equations about it on purpose ("Do not state or prove any equation
+   about `swanExponentAux` itself"). So unless the `if` can be
+   discharged, the statement is **INDEPENDENT of the theory** — neither
+   provable nor refutable — and a *completed* item 1 would leave it
+   exactly as unprovable as it is today. Closing it then requires giving
+   the Swan conductor a real DEFINITION: the higher ramification
+   filtration in the UPPER numbering, absent from mathlib and not
+   replaceable by the lower numbering over `ℚ_qᵃˡᵍ`, whose value group
+   is divisible.
+
+   **THE BRANCH CONDITION IS NOW TAMENESS, NOT UNRAMIFIEDNESS — the
+   verdict survives but the stated REASON above did not** (2026-07-27,
+   eleventh owner; re-checked against `ArtinConductor.lean` BY NAME).
+   When the paragraph above was written, `swanExponent ρ v` was
+   `if ρ.IsUnramifiedAt v then 0 else swanExponentAux ρ v`, and the
+   argument closed by observing that this leaf's own conclusion forces
+   `τ` RAMIFIED at `q` (`not_isUnramifiedAt_of_ne_zero`), so the `if`
+   could never fire. **That argument is now unsound**: as of 2026-07-26
+   the definition is
+
+     `swanExponent ρ v = if ρ.IsTamelyRamifiedAt v then 0 else swanExponentAux ρ v`
+
+   (`ArtinConductor.lean`, `GaloisRep.swanExponent`), and tameness is
+   strictly WEAKER than unramifiedness — `IsUnramifiedAt` implies it
+   (`GaloisRep.isTamelyRamifiedAt_of_isUnramifiedAt`) but not
+   conversely. Ramifiedness therefore no longer blocks the then-branch,
+   and the re-branching is precisely what turned the sibling
+   `swanExponent_two_eq_zero_of_inertia_sq_eq_zero` from
+   definitionally-unprovable into PROVEN.
+
+   **The verdict for THIS leaf is unchanged, for a different reason.**
+   The hypotheses here are `q.Prime`, `q ≠ p`, `q ∣ M₀`, newform-ness of
+   `g₀` and irreducibility of `τ` — and *nothing else constrains the
+   local behaviour of `τ` at `q`*. In particular `q² ∣ M₀` is permitted,
+   which is exactly the ramified-principal-series/supercuspidal range
+   where the local component can be WILDLY ramified and `Sw_q(τ) ≠ 0`
+   genuinely. So tameness is not derivable, the else-branch stands, and
+   the leaf remains independent of the theory.
+
+   **THE CHECK THAT WOULD REFUTE THIS VERDICT**, stated so the next
+   owner does not have to redo the survey: exhibit a derivation of
+   `τ.IsTamelyRamifiedAt v_q` from these hypotheses alone. It does not
+   exist while `q² ∣ M₀` is allowed — a supercuspidal `π_q` of
+   conductor `≥ 2` with nontrivial wild inertia refutes it — so the
+   honest route is to SPLIT the leaf by `ord_q M₀`:
+
+   * `ord_q M₀ = 1`: local type Steinberg or ramified principal series,
+     `q ≠ p`, hence TAME at `q`. Here `swanExponent = 0` is reachable
+     through `GaloisRep.swanExponent_eq_zero_of_isTamelyRamifiedAt` and
+     the leaf reduces to the purely tame `tameExponent v_q = 1` — an
+     `inertiaInvariants` codimension computation of the same shape as
+     the PROVEN `tameExponent_two_le_one_of_inertia_sq_eq_zero` below.
+     The three supporting lemmas for this half were already written and
+     verified sorry-free once; see WHAT WAS TRIED AND DELIBERATELY NOT
+     LANDED below, and note the circularity warning there.
+   * `2 ≤ ord_q M₀`: still (2)-blocked, genuinely and permanently until
+     `swanExponentAux` gets a real definition.
+
+   AXIS SEARCHED for this verdict: the *branch-condition* axis (can the
+   `if` be discharged from the hypotheses) and the *hypothesis-strength*
+   axis (do the hypotheses pin the local type at `q`). NOT searched: any
+   route that redefines `swanExponentAux`, which is item 2 proper and
+   belongs to `ArtinConductor.lean`'s owner.
 
 The docstring above already observes that "nothing is provable about
 `swanExponent` by construction", but draws from it only the narrower
@@ -38217,12 +38270,43 @@ built by the owner of `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`
 below (the at-`2` wild leaf, blocked on exactly the same absence);
 item 1 by the owner of `nonempty_modularTateGaloisData`.
 
-GENERALISATION WORTH CHECKING BEFORE ANY DISPATCH: *every* leaf whose
-conclusion is `HasConductorExponentAt ρ v a` at a place where `ρ` is
-ramified inherits this independence, so no such leaf is closable until
-item 2 lands, however much of item 1 exists. That is a cheap filter —
-unfold the conclusion and look for `swanExponentAux` — and it is worth
-applying to the whole conductor cluster of this file.
+GENERALISATION WORTH CHECKING BEFORE ANY DISPATCH — **CORRECTED FILTER,
+AND THE SWEEP HAS NOW BEEN RUN** (2026-07-27, eleventh owner). The
+paragraph that stood here said: *every* leaf whose conclusion is
+`HasConductorExponentAt ρ v a` at a place where `ρ` is RAMIFIED inherits
+this independence. Under the tameness re-branching that filter is too
+WIDE — it condemns leaves that are now perfectly attackable, since a
+ramified-but-TAME place discharges the `if` to `0`. The correct filter
+is:
+
+  a leaf concluding `HasConductorExponentAt ρ v a` (or `swanExponent`,
+  or `conductorExponent`) is independent of the theory exactly when its
+  hypotheses do NOT suffice to establish `ρ.IsTamelyRamifiedAt v`.
+
+Ramifiedness is no longer the discriminator; **non-tameness** is. Applied
+mechanically: unfold the conclusion, and if `swanExponentAux` survives,
+ask whether tameness is derivable before concluding anything.
+
+THE SWEEP, so nobody repeats it: across the WHOLE tree
+(`Fermat/**`, both files that mention these names — this one and
+`ArtinConductor.lean`) there is **exactly ONE open leaf whose conclusion
+is `HasConductorExponentAt`, namely this declaration**. Every other
+`HasConductorExponentAt` / `swanExponent` / `conductorExponent`
+declaration is PROVEN: `ArtinConductor.lean` is entirely sorry-free
+(items `eq`, `tameExponent_le`, `le_of_conductorExponent_le`,
+`eq_zero_of_isUnramifiedAt`, `not_isUnramifiedAt_of_ne_zero`,
+`swanExponent_eq_zero_of_isTamelyRamifiedAt`,
+`swanExponent_eq_zero_of_isUnramifiedAt`), and in this file
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`,
+`swanExponent_two_eq_zero_of_inertia_sq_eq_zero` and
+`conductorExponent_two_le_one_of_inertia_sq_eq_zero` all have real
+proofs. So "the whole conductor cluster of this file" is not a cluster
+of blocked leaves — it is one blocked leaf and a proven neighbourhood,
+and the residual open content of the at-`2` half sits on
+`isTamelyRamifiedAt_two_of_inertia_sq_eq_zero`, whose conclusion
+contains **no opaque constant at all** and which is therefore genuinely
+attackable rather than gated. Do not dispatch a prover at any other
+member of this cluster expecting to find work.
 
 WHAT WAS TRIED AND DELIBERATELY NOT LANDED (same owner, same day, so
 the next owner does not repeat it). Before this release the two
@@ -39218,13 +39302,22 @@ PINNED and upper bounds transfer
 (`GaloisRep.HasConductorExponentAt.le_of_conductorExponent_le`). Two
 deviations from the plan above, both improvements:
 
-* step 2 did NOT need a new sorry. `swanExponent ρ v` is defined as
+* step 2 did NOT need a new sorry. `swanExponent ρ v` was defined as
   `if ρ.IsUnramifiedAt v then 0 else swanExponentAux ρ v`, which bakes in
   the one Swan property this development uses and keeps
   `GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt` a THEOREM. This is
   conservative: the true Swan conductor does vanish at an unramified
   place, so the intended interpretation `swanExponentAux := Sw_v` still
   gives `swanExponent = Sw_v` on the nose.
+
+  **SUPERSEDED 2026-07-26, tense corrected 2026-07-27**: the branch
+  condition is now `ρ.IsTamelyRamifiedAt v`, not `ρ.IsUnramifiedAt v`
+  (`ArtinConductor.lean`, `GaloisRep.swanExponent`). The paragraph is
+  kept as the record of the original repair; read it in the past tense.
+  The widening is conservative in the same sense — the true Swan
+  conductor vanishes on a tamely ramified representation — and it is
+  what makes `swanExponent_two_eq_zero_of_inertia_sq_eq_zero` below
+  PROVEN rather than definitionally unprovable.
 * step 3 is split into the two honest halves as separate declarations
   rather than one leaf, so that `hpodd` is visibly consumed by the WILD
   half only.
@@ -39513,27 +39606,42 @@ attempt at the Swan conductor as a NUMBER will meet them:
   Deciding whether it VANISHES does not, and that is all this cut ever
   needed.
 
-TERMINALITY RE-CONFIRMED **DEFINITIONALLY**, not by literature search
-(2026-07-26, ninth owner — this is a stronger statement than the two
-dead ends above, and it should end the mis-dispatching for good).
-`GaloisRep.swanExponent ρ v` is by definition
-`if ρ.IsUnramifiedAt v then 0 else ρ.swanExponentAux v`, and
-`swanExponentAux` is `opaque`, so the kernel will not unfold it and NO
-equation about the else-branch is derivable. Hence every proof of this
-leaf's conclusion `swanExponent τ v₂ = 0` must go through the
-then-branch, i.e. must prove `τ.IsUnramifiedAt v₂`. But `hsq` does not
-imply that, and the SOUNDNESS AUDIT below exhibits the counterexample
-itself: for `E/ℚ` of conductor `14` and `p := 5`, inertia at `2` acts by
-a nontrivial transvection, `hsq` holds, and `τ` is RAMIFIED at `2`. So
-this leaf is not merely unproven at this pin — it is UNPROVABLE at this
-pin, and no amount of searching mathlib or `~/cs/FLT` can change that.
-It becomes provable only when `swanExponentAux` is replaced by a real
-definition, which is the upper-numbering filtration named above.
+RETRACTED 2026-07-27 (eleventh owner): "TERMINALITY RE-CONFIRMED
+**DEFINITIONALLY**". **The paragraph that stood here declared THIS
+THEOREM UNPROVABLE, and it is PROVEN twenty lines below.** It is
+retracted rather than deleted because the shape of the error is worth
+keeping: it was written by the ninth owner, dated the SAME DAY as — and
+placed AFTER — the RETRACTED block above that had already recorded the
+fix, so it reads as the newest and most authoritative note in the
+docstring while being the only wrong one.
 
-This is the intended and correct state for a citation leaf built on an
-`opaque` constant, and it is what keeps `#print axioms` clean; it is
-recorded here only so that the next owner recognises it in seconds
-instead of spending a cycle rediscovering it.
+What it said: `GaloisRep.swanExponent ρ v` is by definition
+`if ρ.IsUnramifiedAt v then 0 else ρ.swanExponentAux v`; `swanExponentAux`
+is `opaque`; hence every proof of `swanExponent τ v₂ = 0` must establish
+`τ.IsUnramifiedAt v₂`; but the SOUNDNESS AUDIT below exhibits `E/ℚ` of
+conductor `14` at `p := 5`, genuinely ramified at `2` and satisfying
+`hsq`; so the leaf is "UNPROVABLE at this pin".
+
+Why it is wrong: **the first premise is stale.** Since 2026-07-26
+`swanExponent` branches on TAMENESS, not unramifiedness —
+
+  `swanExponent ρ v = if ρ.IsTamelyRamifiedAt v then 0 else swanExponentAux ρ v`
+
+(`ArtinConductor.lean`, `GaloisRep.swanExponent`). Every later step
+inherits the staleness: the then-branch demands only tameness, which
+`hsq` DOES give in odd residue characteristic, and the conductor-`14`
+curve refutes unramifiedness while satisfying tameness, so it is not a
+counterexample at all. The RETRACTED block above already explains the
+re-branching and even says "This leaf is proven from that criterion";
+this paragraph simply did not incorporate it.
+
+The general lesson, which is why this stays on the record: **a
+definitional terminality verdict is only as current as the definition it
+quotes.** Quoting a definition is what makes such a verdict feel
+airtight, and it is exactly what goes stale. When you record one, name
+the declaration you read it from so the next owner can re-check it in
+one grep — and when you READ one, re-check it before believing it. Cost
+of not doing so here: a "do not attempt" note sitting on a closed goal.
 
 PROVENANCE OF THE HYPOTHESIS SHAPE: `hsq` is stated over `Γ ℚ_[2]` (via
 `Z2bar`) because that is the spelling the at-`2` consumers already use,
