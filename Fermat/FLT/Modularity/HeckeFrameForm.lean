@@ -43,10 +43,24 @@ extension `k ⊆ F` and an arbitrary `k`-algebra `T`, exactly as
 * `frameSymplectic_map_of_commuting` — **the multiplier formula**:
   `⟨g x, g y⟩ = θ (det g · (x₀y₁ − x₁y₀))` for `A`-linear `g`, with
   `det g` read off the images of the standard frame.
+* `exists_frobeniusForm_of_baseChange` — **Frobenius DESCENT**, the
+  converse of `tensorFunctional_frobenius`: a finite-dimensional algebra
+  over an INFINITE field that becomes Frobenius after base change to a
+  field extension was already Frobenius. Proved through the Gram
+  determinant `gramDet`, a single polynomial in the coordinates of the
+  functional whose non-vanishing is the Frobenius condition over every
+  extension at once.
 * `frobenius_of_frameSymplectic_nondegenerate` — the converse of
   `frameSymplectic_nondegenerate`, completing the equivalence
   "nondegenerate alternating self-adjoint form on `A²`" ↔ "Frobenius
   form on `A`".
+* `frameCayleyHamilton` — **Cayley–Hamilton on the frame**:
+  `g² − tr(g)·g + det(g) = 0` for `A`-linear `g`, with trace and
+  determinant read off the images of the standard frame exactly as in
+  `frameSymplectic_map_of_commuting`. This is what turns the
+  Eichler–Shimura *congruence relation* — a quadratic operator identity —
+  into the classical *trace* condition `tr (τJ Frob_q) = T_q`, and is
+  used for exactly that in `Interface.lean`.
 -/
 module
 
@@ -57,6 +71,8 @@ public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 public import Mathlib.LinearAlgebra.Dimension.Free
 public import Mathlib.Algebra.Algebra.Bilinear
 public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.LinearAlgebra.Matrix.BilinearForm
+public import Mathlib.Algebra.MvPolynomial.Funext
 
 @[expose] public section
 
@@ -400,6 +416,68 @@ theorem frameSymplectic_map_of_commuting
     { (inferInstance : Ring (F ⊗[k] T)) with mul_comm := hcomm }
   ring
 
+/-- **Cayley–Hamilton on the Hecke frame.** For an `A`-linear
+endomorphism `g` of `A²` (`A := F ⊗ₖ T`, commutative),
+
+  `g² − (a + d)·g + (ad − bc) = 0`,   `g e₁ = (a, c)`, `g e₂ = (b, d)`,
+
+where the scalars act through `frameMul`. The trace and determinant are
+read off the images of the standard frame in exactly the same shape as in
+`frameSymplectic_map_of_commuting`, so the two lemmas compose without a
+translation step.
+
+WHAT IT IS FOR. The Eichler–Shimura clause of
+`ModularTateGaloisData.congruence` is the quadratic operator identity
+`τJ(Frob_q)² − T_q·τJ(Frob_q) + q = 0`. Given the determinant condition
+`det (τJ Frob_q) = q`, this lemma shows that identity is *equivalent* to
+the single scalar equation
+
+  `tr (τJ Frob_q) = T_q`,
+
+which is the form the classical statement and the geometry both produce
+("`ρ_f(Frob_q)` has trace `a_q` and determinant `q`"). So it is what lets
+`exists_galoisRep_modularTateFrame_det` in `Interface.lean` be glue over a
+leaf carrying the trace condition instead of the operator identity.
+
+The two directions are not quite symmetric and only one of them is proved
+here: Cayley–Hamilton gives congruence from trace-and-determinant with no
+side condition. The converse needs `τJ(Frob_q)` invertible to cancel it
+from `(tr − T_q)·τJ(Frob_q) = 0`, which holds in the application because
+`det = q` is a unit of `A`, but is not part of this statement.
+
+No commutativity instance is installed on `F ⊗ₖ T`; as everywhere in this
+file it is supplied as the hypothesis `hcomm`, so no instance diamond
+enters any type. -/
+theorem frameCayleyHamilton
+    (hcomm : ∀ x y : F ⊗[k] T, x * y = y * x)
+    (g : Module.End F (HeckeFrame k F T))
+    (hg : ∀ (r : F ⊗[k] T) (x : HeckeFrame k F T),
+      g (frameMul (k := k) (F := F) (T := T) r x) =
+        frameMul (k := k) (F := F) (T := T) r (g x)) :
+    g * g
+        - frameMul (k := k) (F := F) (T := T)
+            (g frameBasis₁ 0 + g frameBasis₂ 1) * g
+        + frameMul (k := k) (F := F) (T := T)
+            (g frameBasis₁ 0 * g frameBasis₂ 1 - g frameBasis₂ 0 * g frameBasis₁ 1) = 0 := by
+  classical
+  letI : CommRing (F ⊗[k] T) :=
+    { (inferInstance : Ring (F ⊗[k] T)) with mul_comm := hcomm }
+  have hcoord : ∀ (z : HeckeFrame k F T) (i : Fin 2),
+      g z i = z 0 * g frameBasis₁ i + z 1 * g frameBasis₂ i := by
+    intro z i
+    conv_lhs => rw [frame_span z]
+    rw [map_add, hg, hg]
+    show frameMul (k := k) (F := F) (T := T) (z 0) (g frameBasis₁) i +
+      frameMul (k := k) (F := F) (T := T) (z 1) (g frameBasis₂) i = _
+    rw [frameMul_apply_coord, frameMul_apply_coord]
+  refine LinearMap.ext fun x => ?_
+  funext i
+  simp only [LinearMap.add_apply, LinearMap.sub_apply,
+    LinearMap.zero_apply, Pi.add_apply, Pi.sub_apply, Pi.zero_apply,
+    Module.End.mul_apply, frameMul_apply_coord]
+  rw [hcoord (g x) i, hcoord x 0, hcoord x 1, hcoord x i]
+  fin_cases i <;> simp only [Fin.zero_eta, Fin.mk_one] <;> ring
+
 /-- **The converse of `frameSymplectic_nondegenerate`**: if the form
 attached to `θ` is nondegenerate then `θ` is a Frobenius form. With
 `frameSymplectic_nondegenerate` this closes the equivalence recorded in
@@ -420,5 +498,160 @@ theorem frobenius_of_frameSymplectic_nondegenerate (θ : (F ⊗[k] T) →ₗ[F] 
   simpa using this
 
 end FrameForm
+
+section FrobeniusDescent
+
+open MvPolynomial
+
+/-! ### Frobenius descent along a field extension
+
+`tensorFunctional_frobenius` above pushes a Frobenius form UP a field
+extension `k ⊆ F`. This section proves the converse — the direction that
+is *not* formal — so that a Frobenius form may be produced over a large
+field where the mathematics is available and then descended to the small
+field where the statement is wanted.
+
+The argument is the one recorded in the docstring of
+`exists_frobeniusForm_modularHeckeAlgebraQ` (`Modularity/Interface.lean`).
+Fix a `k`-basis `e` of `T`. For a functional `θ` the Gram matrix of the
+trace form is `(θ (eᵢ eⱼ))`, whose entries are `k`-LINEAR in `θ`; so its
+determinant is the evaluation, at the coordinate vector of `θ`, of one
+fixed polynomial `gramDet e ∈ k[X₀, …, X_{n-1}]` built from the structure
+constants of `T`. Base change to `F` replaces that polynomial by its
+image under `k → F` and nothing else, because `1 ⊗ eᵢ` is an `F`-basis of
+`F ⊗ₖ T` with the SAME structure constants. A Frobenius form over `F` is
+therefore an `F`-point where `gramDet e` does not vanish, so `gramDet e`
+is not the zero polynomial; and over an INFINITE field a nonzero
+polynomial has a `k`-point where it does not vanish
+(`MvPolynomial.funext`). That point is the required `θ`.
+
+Infiniteness of `k` is essential and not a technicality: over `𝔽_q` a
+nonzero polynomial can vanish at every point. -/
+
+/-- **The trace form of a linear functional** on a `k`-algebra:
+`(a, b) ↦ θ (a * b)`. The *Frobenius* condition on `θ` — the one used
+throughout this development — is exactly left-nondegeneracy of this
+form. -/
+noncomputable def frobeniusTraceForm {k : Type*} [CommRing k] {T : Type*} [Ring T]
+    [Algebra k T] (θ : T →ₗ[k] k) : LinearMap.BilinForm k T :=
+  LinearMap.mk₂ k (fun a b => θ (a * b))
+    (fun a₁ a₂ b => by simp [add_mul])
+    (fun c a b => by simp)
+    (fun a b₁ b₂ => by simp [mul_add])
+    (fun c a b => by simp)
+
+@[simp] theorem frobeniusTraceForm_apply {k : Type*} [CommRing k] {T : Type*} [Ring T]
+    [Algebra k T] (θ : T →ₗ[k] k) (a b : T) :
+    frobeniusTraceForm θ a b = θ (a * b) := rfl
+
+section GramDet
+
+variable {k : Type*} [Field k] {T : Type*} [Ring T] [Algebra k T] {n : ℕ}
+
+/-- **The Gram determinant as a polynomial in the functional.** Given a
+`k`-basis `b` of `T`, this is the determinant of the matrix whose `(i, j)`
+entry is the linear form `∑ₗ cᵢⱼₗ Xₗ`, where `bᵢ bⱼ = ∑ₗ cᵢⱼₗ bₗ`. Its
+value at the coordinate vector `(θ (bₗ))ₗ` is the determinant of the Gram
+matrix of `frobeniusTraceForm θ` — see `eval_map_gramDet`. -/
+noncomputable def gramDet (b : Module.Basis (Fin n) k T) : MvPolynomial (Fin n) k :=
+  (Matrix.of fun i j => ∑ l, C (b.repr (b i * b j) l) * X l).det
+
+/-- Evaluating `gramDet`, after transporting its coefficients along any
+ring map `ψ`, reproduces the Gram determinant. Stated for a general `ψ`
+because it is used twice: at `ψ = id` over the small field, and at
+`ψ = algebraMap k F` over the big one. -/
+theorem eval_map_gramDet {R : Type*} [CommRing R] (b : Module.Basis (Fin n) k T)
+    (ψ : k →+* R) (y : Fin n → R) :
+    eval y (MvPolynomial.map ψ (gramDet b))
+      = (Matrix.of fun i j => ∑ l, ψ (b.repr (b i * b j) l) * y l).det := by
+  classical
+  rw [gramDet, RingHom.map_det (MvPolynomial.map ψ), RingHom.map_det (eval y)]
+  congr 1
+  ext i j
+  simp [Matrix.map_apply]
+
+/-- **A functional whose Gram determinant is nonzero is a Frobenius
+form.** -/
+theorem frobenius_of_gramDet_ne_zero (b : Module.Basis (Fin n) k T)
+    (θ : T →ₗ[k] k) (h : eval (fun l => θ (b l)) (gramDet b) ≠ 0) :
+    ∀ a : T, (∀ c : T, θ (a * c) = 0) → a = 0 := by
+  classical
+  have hmat : LinearMap.BilinForm.toMatrix b (frobeniusTraceForm θ)
+      = Matrix.of fun i j => ∑ l, (RingHom.id k) (b.repr (b i * b j) l) * θ (b l) := by
+    ext i j
+    rw [LinearMap.BilinForm.toMatrix_apply, frobeniusTraceForm_apply]
+    conv_lhs => rw [show b i * b j = ∑ l, b.repr (b i * b j) l • b l from (b.sum_repr _).symm]
+    rw [map_sum]
+    simp
+  have hdet : (LinearMap.BilinForm.toMatrix b (frobeniusTraceForm θ)).det ≠ 0 := by
+    rw [hmat, ← eval_map_gramDet b (RingHom.id k) (fun l => θ (b l))]
+    simpa using h
+  exact ((LinearMap.BilinForm.nondegenerate_iff_det_ne_zero b).mpr hdet).1
+
+end GramDet
+
+variable {k : Type*} [Field k] [Infinite k] {F : Type*} [Field F] [Algebra k F]
+variable {T : Type*} [Ring T] [Algebra k T] [FiniteDimensional k T]
+
+/-- **FROBENIUS DESCENT ALONG A FIELD EXTENSION** — the converse of
+`tensorFunctional_frobenius`, and the check named in the docstring of
+`exists_frobeniusForm_modularHeckeAlgebraQ` as the one that justifies
+attacking the Frobenius property of a `k`-algebra over a LARGER field.
+
+If the finite-dimensional `k`-algebra `T` becomes a Frobenius algebra
+after base change to a field extension `F`, it already was one over `k`.
+
+`Infinite k` is genuinely needed (see the section note); it holds for
+every field of characteristic zero, in particular for `k = ℚ`, which is
+the only instance used here. NO commutativity of `T` is required. -/
+theorem exists_frobeniusForm_of_baseChange
+    (Θ : (F ⊗[k] T) →ₗ[F] F)
+    (hΘ : ∀ a : F ⊗[k] T, (∀ c : F ⊗[k] T, Θ (a * c) = 0) → a = 0) :
+    ∃ θ : T →ₗ[k] k, ∀ a : T, (∀ c : T, θ (a * c) = 0) → a = 0 := by
+  classical
+  set n := Module.finrank k T with hn
+  set b : Module.Basis (Fin n) k T := Module.finBasis k T with hb
+  set bF : Module.Basis (Fin n) F (F ⊗[k] T) := b.baseChange F with hbF
+  haveI : Module.Free F (F ⊗[k] T) := Module.Free.of_basis bF
+  haveI : Module.Finite F (F ⊗[k] T) := Module.Finite.of_basis bF
+  -- the base-changed basis has the SAME structure constants
+  have hstruct : ∀ i j, bF i * bF j
+      = ∑ l, (algebraMap k F) (b.repr (b i * b j) l) • bF l := by
+    intro i j
+    have hbFi : ∀ i, bF i = (1 : F) ⊗ₜ[k] b i := by
+      intro i; simp [hbF, Module.Basis.baseChange_apply]
+    rw [hbFi, hbFi, Algebra.TensorProduct.tmul_mul_tmul, one_mul]
+    conv_lhs => rw [show b i * b j = ∑ l, b.repr (b i * b j) l • b l from (b.sum_repr _).symm]
+    rw [TensorProduct.tmul_sum]
+    refine Finset.sum_congr rfl fun l _ => ?_
+    rw [hbFi, TensorProduct.tmul_smul, algebraMap_smul]
+  have hmatF : LinearMap.BilinForm.toMatrix bF (frobeniusTraceForm Θ)
+      = Matrix.of fun i j =>
+          ∑ l, (algebraMap k F) (b.repr (b i * b j) l) * Θ (bF l) := by
+    ext i j
+    rw [LinearMap.BilinForm.toMatrix_apply, frobeniusTraceForm_apply, hstruct i j, map_sum]
+    exact Finset.sum_congr rfl fun l _ => by rw [map_smul, smul_eq_mul]
+  have hdetF : (LinearMap.BilinForm.toMatrix bF (frobeniusTraceForm Θ)).det ≠ 0 :=
+    (LinearMap.BilinForm.nondegenerate_iff_det_ne_zero bF).mp
+      (LinearMap.BilinForm.Nondegenerate.ofSeparatingLeft hΘ)
+  have hmapne : MvPolynomial.map (algebraMap k F) (gramDet b) ≠ 0 := by
+    intro hzero
+    apply hdetF
+    rw [hmatF, ← eval_map_gramDet b (algebraMap k F) (fun l => Θ (bF l)), hzero]
+    simp
+  have hPne : gramDet b ≠ 0 := fun hz => hmapne (by rw [hz]; simp)
+  -- a nonzero polynomial over an infinite field has a nonvanishing point
+  have hx : ∃ x : Fin n → k, eval x (gramDet b) ≠ 0 := by
+    by_contra hcon
+    refine hPne (MvPolynomial.funext fun x => ?_)
+    simpa using not_not.mp (not_exists.mp hcon x)
+  obtain ⟨x, hxne⟩ := hx
+  refine ⟨b.constr k x, frobenius_of_gramDet_ne_zero b _ ?_⟩
+  have hval : (fun l => (b.constr k x) (b l)) = x := by
+    funext l; simp
+  rw [hval]
+  exact hxne
+
+end FrobeniusDescent
 
 end GaloisRepresentation.Modularity
