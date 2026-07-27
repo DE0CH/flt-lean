@@ -181,6 +181,22 @@ public import Fermat.FLT.Modularity.RegularStalks
 -- mathlib-shaped, reusable, and (mathlib having no `Tor` long exact sequence at
 -- this pin) needs a theory build that must not happen inside this file.
 public import Fermat.FLT.Mathlib.RingTheory.Flat.LocalCriterion
+-- The dimension theory consumed by `topologicalKrullDim_lt_top_of_isProper`
+-- below.  `CurveCompactification` already carries the ONE scheme-level bridge
+-- that leaf needs — `AlgebraicGeometry.topologicalKrullDim_eq_iSup_coheight`,
+-- "the Krull dimension of a scheme is the supremum of the coheights of its
+-- points", proven there over `schemeIrreducibleClosedsOrderIso` — so it is
+-- imported rather than re-derived.  Its own project cone is exactly one further
+-- module (`CurveExtension`) and there is no cycle: neither file imports
+-- anything under `Fermat/FLT/Modularity/`.  The three `Mathlib` lines after it
+-- are the ring-level inputs (`MvPolynomial.ringKrullDim_of_isNoetherianRing`,
+-- `ringKrullDim_eq_zero_of_field`, `Algebra.FiniteType.iff_quotient_mvPolynomial''`);
+-- they arrive through `CurveCompactification` as well, but are named here
+-- because they occur in the SIGNATURES of the two declarations below.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
+public import Mathlib.RingTheory.KrullDimension.Polynomial
+public import Mathlib.RingTheory.KrullDimension.Field
+public import Mathlib.RingTheory.FiniteType
 
 @[expose] public section
 
@@ -3907,7 +3923,11 @@ the docstring on the consumer for why this is the cut.
 frontier of this block is THREE NEW LEAVES, none of them geometric:**
 
 * `topologicalKrullDim_lt_top_of_isProper` — a proper scheme over a field is
-  finite-dimensional.  Noether normalisation; absent from the pin.
+  finite-dimensional.  **PROVEN 2026-07-27**, and the note that stood here
+  ("Noether normalisation; absent from the pin") was wrong on both counts: the
+  pin carries `Mathlib/RingTheory/NoetherNormalization.lean` AND
+  `MvPolynomial.ringKrullDim_of_isNoetherianRing`, and the leaf does not need
+  the former.  See `exists_ringKrullDim_le_of_finiteType` below.
 * `height_map_le_of_isFinite` — a finite morphism does not drop the height of an
   irreducible closed set.  Cohen–Seidenberg, `@[stacks 00OK]`, in poset form.
 * `isIntegrallyClosed_of_isRegularRing` — a regular ring is normal.  The single
@@ -4355,41 +4375,160 @@ theorem isIntegral_of_smooth_geometricallyConnected {X : Scheme.{u}} {K : Type u
   haveI := irreducibleSpace_of_smooth_geometricallyConnected g
   exact isIntegral_of_irreducibleSpace_of_isReduced X
 
-/-- **A PROPER SCHEME OVER A FIELD IS FINITE-DIMENSIONAL** (sorry leaf, created
-2026-07-27 — the FIRST of the two sub-leaves of `isDominant_of_isFinite_endo`
-below, and the one that carries the genuinely missing theory.  Pure dimension
-theory: no smoothness, no connectedness, no endomorphism.)
+/-- **A FINITELY GENERATED ALGEBRA OVER A FIELD HAS FINITE KRULL DIMENSION**
+(**PROVEN 2026-07-27**, four lines — the ring-theoretic half of
+`topologicalKrullDim_lt_top_of_isProper` below.)
+
+`A` is a quotient of `K[X₁, …, Xₙ]` for some `n`
+(`Algebra.FiniteType.iff_quotient_mvPolynomial''`); a surjection cannot raise
+Krull dimension (`ringKrullDim_le_of_surjective`); and
+`dim K[X₁, …, Xₙ] = dim K + n = n` by
+`MvPolynomial.ringKrullDim_of_isNoetherianRing` (a field is noetherian) together
+with `ringKrullDim_eq_zero_of_field`.
+
+**THE PREVIOUS NOTE ON THE LEAF BELOW SAID THIS WAS MISSING FROM THE PIN.  IT
+IS NOT, AND THE RECORD IS CORRECTED HERE** (2026-07-27, each item re-checked
+against `.lake/packages/mathlib` at our pin `a3364fa`):
+
+* `Mathlib/RingTheory/KrullDimension/Polynomial.lean` does **not** stop at
+  `dim R[X] = dim R + 1`.  It ends with
+  `MvPolynomial.ringKrullDim_of_isNoetherianRing :
+  ringKrullDim (MvPolynomial ι R) = ringKrullDim R + Nat.card ι` for `[Finite ι]`
+  and `[IsNoetherianRing R]` — the multivariate statement, in full.
+* The quotient step is `ringKrullDim_le_of_surjective` /
+  `ringKrullDim_quotient_le`, both in `KrullDimension/Basic.lean`, three lines
+  above the `proof_wanted` that the old note quoted.  The `proof_wanted`
+  `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing` really is open, but
+  it is a `Fin n`-indexed *restatement* of a theorem that is already there, so
+  its openness says nothing about availability.
+* **Noether normalisation is in the pin too**, as
+  `Mathlib/RingTheory/NoetherNormalization.lean`
+  (`exists_integral_inj_algHom_of_fg`, `exists_finite_inj_algHom_of_fg`), and it
+  is already used by this project in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.  It is not
+  needed for the bound proved here — a surjection from a polynomial ring
+  suffices when only FINITENESS, not the exact value, is wanted — but the claim
+  that a grep "returns nothing" was simply wrong.
+
+The moral is the standing one: a "this is absent from the pin" note is a
+hypothesis to re-run, not a fact. -/
+theorem exists_ringKrullDim_le_of_finiteType (K A : Type*) [Field K] [CommRing A]
+    [Algebra K A] [Algebra.FiniteType K A] :
+    ∃ n : ℕ, ringKrullDim A ≤ (n : WithBot ℕ∞) := by
+  obtain ⟨n, f, hf⟩ := Algebra.FiniteType.iff_quotient_mvPolynomial''.mp ‹_›
+  refine ⟨n, ?_⟩
+  refine (ringKrullDim_le_of_surjective f.toRingHom hf).trans (le_of_eq ?_)
+  rw [MvPolynomial.ringKrullDim_of_isNoetherianRing, ringKrullDim_eq_zero_of_field K]
+  simp
+
+/-- **COHEIGHT IS LOCALLY BOUNDED ON A SCHEME LOCALLY OF FINITE TYPE OVER A
+FIELD** (**PROVEN 2026-07-27** — the local half of
+`topologicalKrullDim_lt_top_of_isProper` below; no properness, no
+quasi-compactness, so the two halves are cleanly separated).
+
+Every point has an open neighbourhood on which `Order.coheight` is bounded by a
+single natural number.  Properness contributes nothing here; it is used only in
+the assembly, to turn "locally bounded" into "bounded" by compactness.
+
+THE PROOF.  Take an affine open immersion `f : Spec R ⟶ X` whose range contains
+`x` (`Scheme.exists_affine_mem_range_and_range_subset`).  Then `R` is a finitely
+generated `K`-algebra — `HasRingHomProperty.appTop` applied to `f ≫ g`,
+conjugated by the two `Scheme.ΓSpecIso`s, with `RingHom.FiniteType` surviving
+the conjugation by `RingHom.finiteType_respectsIso`; this is the same step as in
+`AlgebraicGeometry.exists_coheight_le_of_isOpenImmersion_of_irreducible`.  For a
+point of the range, `coheight` is computed in the chart
+(`coheight_eq_of_isOpenImmersion`), where it is the height of the corresponding
+prime (`idealHeight_eq_coheight`), and every prime's height is at most
+`ringKrullDim R` (`Ideal.height_le_ringKrullDim_of_isPrime`), which is finite by
+`exists_ringKrullDim_le_of_finiteType` above. -/
+theorem exists_coheight_le_of_locallyOfFiniteType {X : Scheme.{u}} {K : Type u} [Field K]
+    (g : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType g] (x : ↥X) :
+    ∃ V : Set ↥X, IsOpen V ∧ x ∈ V ∧ ∃ n : ℕ, ∀ y ∈ V, Order.coheight y ≤ (n : ℕ∞) := by
+  obtain ⟨R, f, hfimm, hxmem, -⟩ :=
+    Scheme.exists_affine_mem_range_and_range_subset (X := X) (x := x) (U := ⊤) trivial
+  haveI := hfimm
+  refine ⟨Set.range f.base, f.isOpenEmbedding.isOpen_range, hxmem, ?_⟩
+  haveI : LocallyOfFiniteType (f ≫ g) := inferInstance
+  have hQ : RingHom.FiniteType (f ≫ g).appTop.hom :=
+    HasRingHomProperty.appTop (P := @LocallyOfFiniteType) (f ≫ g) ‹_›
+  letI : Algebra K R := RingHom.toAlgebra (((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫
+    (f ≫ g).appTop ≫ (Scheme.ΓSpecIso R).hom).hom)
+  haveI : Algebra.FiniteType K R := by
+    have hfin : RingHom.FiniteType (algebraMap K R) := by
+      show RingHom.FiniteType (((Scheme.ΓSpecIso (CommRingCat.of K)).inv ≫
+        (f ≫ g).appTop ≫ (Scheme.ΓSpecIso R).hom).hom)
+      rw [CommRingCat.hom_comp, RingHom.finiteType_respectsIso.cancel_left_isIso,
+        CommRingCat.hom_comp, RingHom.finiteType_respectsIso.cancel_right_isIso]
+      exact hQ
+    exact RingHom.finiteType_algebraMap.mp hfin
+  obtain ⟨n, hn⟩ := exists_ringKrullDim_le_of_finiteType K R
+  refine ⟨n, ?_⟩
+  rintro y ⟨z, rfl⟩
+  haveI : z.asIdeal.IsPrime := z.isPrime
+  have h2 : (z.asIdeal.height : WithBot ℕ∞) ≤ (n : WithBot ℕ∞) :=
+    Ideal.height_le_ringKrullDim_of_isPrime.trans hn
+  have h3 : z.asIdeal.height ≤ (n : ℕ∞) := by exact_mod_cast h2
+  rw [coheight_eq_of_isOpenImmersion f, ← idealHeight_eq_coheight R z]
+  exact h3
+
+/-- **A PROPER SCHEME OVER A FIELD IS FINITE-DIMENSIONAL** (**PROVEN
+2026-07-27**, over the two statements immediately above; created as a sorry leaf
+earlier the same day, as the FIRST of the two sub-leaves of
+`isDominant_of_isFinite_endo` below.  Pure dimension theory: no smoothness, no
+connectedness, no endomorphism.)
 
 `topologicalKrullDim X` is the Krull dimension of the poset
 `TopologicalSpace.IrreducibleCloseds X` — the length of the longest chain of
 irreducible closed subsets.  For `X` proper over a field it is finite.
 
-**WHY THIS IS THE MISSING PIECE** (checked 2026-07-27, and each check is what
-would refute the claim).  `IsProper g` gives quasi-compactness and finite type,
-so `X` is a NOETHERIAN scheme covered by finitely many `Spec A` with `A` a
-finitely generated `K`-algebra, and the statement reduces to
+THE PROOF, in three moves, none of which needed a theory build:
 
-> a finitely generated algebra over a field has finite Krull dimension
+1. **`X` is quasi-compact as a space.**  `IsProper g` extends
+   `UniversallyClosed g`, and mathlib has
+   `instance (priority := 900) [UniversallyClosed f] : QuasiCompact f`
+   (`@[stacks 04XU]`); `Spec K` is compact, so
+   `QuasiCompact.compactSpace_of_compactSpace` gives `CompactSpace ↥X`.  This is
+   the ONLY use of properness — everything else needs just
+   `LocallyOfFiniteType g`.
+2. **Coheight is locally bounded** — `exists_coheight_le_of_locallyOfFiniteType`
+   above, whose ring-theoretic input is `exists_ringKrullDim_le_of_finiteType`.
+3. **Assembly.**  Compactness turns the pointwise neighbourhoods of (2) into a
+   finite subcover, so a single `N := s.sup n` bounds every coheight; and
+   `AlgebraicGeometry.topologicalKrullDim_eq_iSup_coheight` (in
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, proven
+   there from sobriety) rewrites `topologicalKrullDim X` as `⨆ x, coheight x`,
+   which is therefore `≤ N < ⊤`.
 
-which is **Noether normalisation**, and the pin does not have it:
-`ls Mathlib/RingTheory/KrullDimension/` is
-`Basic Field LocalRing Module NonZeroDivisors PID Polynomial Regular Zero`, and
-`Polynomial.lean` computes `dim R[X] = dim R + 1` only for `R` NOETHERIAN — it
-says nothing about a quotient of a polynomial ring, which is what a finitely
-generated algebra is.  `grep -rn "noetherNormalization\|NoetherNormalization"
-Mathlib/` returns nothing.  There is also no `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`:
-it is a `proof_wanted` in `KrullDimension/Basic.lean:94`.
-
-A hit on Noether normalisation, on "`dim` of a finite type algebra over a field
-is finite", or on a scheme-level `Dimension.lean` means this note has gone stale
-and the leaf is much cheaper than it looks.
+**THE OLD "WHY THIS IS THE MISSING PIECE" NOTE WAS WRONG AND HAS BEEN DELETED.**
+It asserted that the statement reduces to Noether normalisation and that the pin
+has neither Noether normalisation nor the Krull dimension of a multivariate
+polynomial ring.  Both halves are false; see the corrected record on
+`exists_ringKrullDim_le_of_finiteType` above.  The note also missed that the
+scheme-level bridge it despaired of was already PROVEN inside this project.
+Nothing about this leaf was hard once the three greps it prescribed were
+actually re-run — which is exactly what it invited a reader to do, so it failed
+in its conclusion rather than in its method.
 
 **THE EMPTY SCHEME IS NOT AN EXCEPTION**: `topologicalKrullDim` of an empty
-space is `⊥ : WithBot ℕ∞`, which is `< ⊤`. -/
+space is `⊥ : WithBot ℕ∞`, which is `< ⊤`, and the proof below never assumes a
+point exists. -/
 theorem topologicalKrullDim_lt_top_of_isProper {X : Scheme.{u}} {K : Type u} [Field K]
     (g : X ⟶ Spec (CommRingCat.of K)) [IsProper g] :
-    topologicalKrullDim X < ⊤ :=
-  sorry
+    topologicalKrullDim X < ⊤ := by
+  haveI : CompactSpace ↥X := QuasiCompact.compactSpace_of_compactSpace g
+  choose V hVo hxV n hn using exists_coheight_le_of_locallyOfFiniteType g
+  obtain ⟨s, hs⟩ := CompactSpace.isCompact_univ.elim_finite_subcover V hVo
+    (fun x _ => Set.mem_iUnion.mpr ⟨x, hxV x⟩)
+  have hbound : ∀ y : ↥X, Order.coheight y ≤ ((s.sup n : ℕ) : ℕ∞) := by
+    intro y
+    obtain ⟨x, hxs, hyV⟩ := Set.mem_iUnion₂.mp (hs (Set.mem_univ y))
+    exact (hn x y hyV).trans (by exact_mod_cast Finset.le_sup hxs)
+  have hle : (⨆ x : ↥X, (Order.coheight x : WithBot ℕ∞)) ≤ ((((s.sup n : ℕ) : ℕ∞)) : WithBot ℕ∞) :=
+    iSup_le fun x => WithBot.coe_le_coe.mpr (hbound x)
+  have htop : ((((s.sup n : ℕ) : ℕ∞)) : WithBot ℕ∞) < ⊤ :=
+    WithBot.coe_lt_coe.mpr (by simp)
+  rw [AlgebraicGeometry.topologicalKrullDim_eq_iSup_coheight X]
+  exact lt_of_le_of_lt hle htop
 
 /-- **A FINITE MORPHISM DOES NOT DROP THE HEIGHT OF AN IRREDUCIBLE CLOSED SET**
 (sorry leaf, created 2026-07-27 — the SECOND sub-leaf of
@@ -4426,8 +4565,9 @@ theorem height_map_le_of_isFinite {X Y : Scheme.{u}} (f : X ⟶ Y) [IsFinite f]
   sorry
 
 /-- **A FINITE ENDOMORPHISM OF A PROPER GEOMETRICALLY CONNECTED SMOOTH SCHEME
-OVER A FIELD IS DOMINANT** (**PROVEN 2026-07-27** over the two leaves
-`topologicalKrullDim_lt_top_of_isProper` and `height_map_le_of_isFinite`
+OVER A FIELD IS DOMINANT** (**PROVEN 2026-07-27** over
+`topologicalKrullDim_lt_top_of_isProper` (itself PROVEN later the same day) and
+the single remaining leaf `height_map_le_of_isFinite`
 immediately above; created as a single sorry leaf earlier the same day — step 2
 of the route recorded on `ringKrullDim_stalk_eq_of_isFinite_endo` below.
 General scheme theory over a field, NO abelian varieties, no group law, no
@@ -4755,9 +4895,10 @@ commutative algebra; irreducibility of `X`
 they can be attacked independently.
 
 **UPDATE 2026-07-27 (second pass): ALL THREE OF THOSE ARE NOW PROVEN**, and the
-open frontier under this declaration is instead the three leaves they were cut
-over — `topologicalKrullDim_lt_top_of_isProper`, `height_map_le_of_isFinite`
-and `isIntegrallyClosed_of_isRegularRing`.  Read the block header above for what
+open frontier under this declaration is instead the leaves they were cut
+over — `height_map_le_of_isFinite` and `isIntegrallyClosed_of_isRegularRing`
+(the third, `topologicalKrullDim_lt_top_of_isProper`, was PROVEN later the same
+day).  Read the block header above for what
 each of them is.  Note in particular that irreducibility turned out NOT to need
 the disjoint-components argument predicted here: see
 `irreducibleSpace_of_connected_of_isDomain_stalk`. -/
@@ -4889,9 +5030,13 @@ local — is integrally closed), reached from the geometry by the proven
 `isRegularRing_sections_of_smooth`.  Moving the hypothesis into the class is what
 keeps the Serre-free character of the geometric statement while restoring a
 mathlib-shaped leaf.  The dimension theory that step 2 needed did NOT go away: it
-is `topologicalKrullDim_lt_top_of_isProper` (Noether normalisation) together with
+is `topologicalKrullDim_lt_top_of_isProper` together with
 `height_map_le_of_isFinite` (Cohen–Seidenberg), which is far less than "a
-dimension theory of schemes" but is not nothing.
+dimension theory of schemes" but is not nothing.  (The first of those is now
+PROVEN, 2026-07-27, and NOT over Noether normalisation as this sentence
+originally said — a surjection from a polynomial ring plus
+`MvPolynomial.ringKrullDim_of_isNoetherianRing` is enough when only finiteness
+is wanted.)
 
 Note this route ALSO discards steps 1–3 of the survey above: irreducibility is
 still wanted (to make the charts domains), but SURJECTIVITY of `u` is not used,
