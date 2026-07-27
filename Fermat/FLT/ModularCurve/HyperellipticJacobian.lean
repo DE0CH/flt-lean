@@ -68,43 +68,44 @@ the kernel:
   of `ℤ → ℚ`, and comparing points through their raw data (`ptData`, which
   drops the `Subtype` proof) removes the motive failures that otherwise block
   every rewrite.
-* `X18.red_sixPts` and `X18.sixPtsData_injective` (PROVEN, the latter by
-  `decide`) — the six cusps reduce mod `5` to six DISTINCT points.  With
-  `card_X18_F5` this says the cusps fill `X(𝔽₅)` exactly.
-* `X18.redPt_injective_five` (PROVEN from the leaf below) — reduction at `5` is
-  injective on `X(ℚ)`.
+* `X18.red_sixPts` / `X13.red_sixPts` and `X18.sixPtsData_injective` /
+  `X13.sixPtsData_injective` (PROVEN, the latter pair by `decide`) — the six
+  cusps reduce mod `5` (resp. mod `3`) to six DISTINCT points.  With
+  `card_X18_F5` (resp. `card_X13_F3`) this says the cusps fill `X(𝔽ₚ)` exactly.
+* `X18.redPt_injective_five` and `X13.redPt_injective_three` (both PROVEN from
+  the leaves below) — reduction is injective on `X(ℚ)` at each level.
 
 ## The remaining leaves — one per level, and the SAME statement shape
 
 `X18.affine_rational_points` — the affine rational points of `X_1(18)` are
 `(0, ±1)` and `(1, ±1)`.
 
-`X13.redPt_injective_three : Function.Injective (redPt 1 4 6 2 1 2 (p := 3))`
+`X13.affine_rational_points` — the affine rational points of `X_1(13)` are
+`(0, ±1)` and `(−1, ±1)`.
 
-**Both of these replaced former `exists_jacobianPackage` leaves, which are now
-PROVEN** (2026-07-26; level `18` first, level `13` the same day by the identical
-route).  At each level the two are equivalent — `redPt_injective` is one
-direction and `nonempty_jacobianPackage_of_redPt_injective` the other, both
-proven here and both stated for an ARBITRARY sextic and prime — so no statement
-was weakened; what was removed is the obligation to exhibit a *structure*.
+The two chains are now identical, level `18` having reached this form on
+2026-07-26 and level `13` on 2026-07-27 by the same route.  Each replacement
+below is an EQUIVALENCE, so no statement was weakened at any step:
 
-**At level `18` the chain then went one step further: `X18.redPt_injective_five`
-is itself now PROVEN** (2026-07-26), leaving `X18.affine_rational_points`.  That
-step is an equivalence too: `redPt_injective_five ↔ affine_rational_points` by
-`red_sixPts` plus `sixPtsData_injective` forwards, and by `sevenPts_injective`
-plus `card_X18_F5` backwards (the argument of `no_noncuspidal_point`, plus
-`y² = 1 ⟹ y = ±1` at `x ∈ {0, 1}`); the backwards direction is written out in
-`affine_rational_points`' docstring rather than as a declaration, since nothing
-in the root cone consumes it.  What that step removed is the obligation to
-reason about a `Classical.choose`n reduction map; what is left at level `18` is
-one sextic Diophantine equation.
+* `exists_jacobianPackage ↔ redPt_injective` (at either prime) by
+  `redPt_injective` and `nonempty_jacobianPackage_of_redPt_injective`, both
+  proven here and both stated for an ARBITRARY sextic and prime;
+* `redPt_injective ↔ affine_rational_points` by `red_sixPts` plus
+  `sixPtsData_injective` forwards, and by `sevenPts_injective` plus the point
+  count backwards (the argument of `no_noncuspidal_point`, plus
+  `y² = 1 ⟹ y = ±1` at the two cuspidal abscissae); the backwards direction is
+  written out in `affine_rational_points`' docstring rather than as a
+  declaration, since nothing in the root cone consumes it.
 
-**No step here is progress on abelian varieties, and no step changed the sorry
-COUNT**: one leaf closed, one opened, every time.  The point is what the
-surviving obligations are made of.  At level `13` the obligation is still a
-statement about `redPt`, so **a future genus-`2` Jacobian development discharges
-it** — and until that lands, nobody needs to design a Lean interface for `Pic⁰`
-in order to work on it.  At level `18` not even that is needed any more.
+What each step removed is a layer of Lean-specific interface: first the
+obligation to exhibit a *structure*, then the obligation to reason about a
+`Classical.choose`n reduction map.  What is left at each level is one sextic
+Diophantine equation.  **No step is progress on abelian varieties**, and the
+leaf count is unchanged at one per level throughout — the value is that the two
+surviving obligations now mention neither `redPt` nor `Classical.choose` nor
+weighted-projective coordinates, and that the machinery computing `redPt` at a
+concrete point is generic in `(sextic, p)`, so it served both levels unchanged
+and will serve any further genus-`2` modular curve in this development.
 
 Note that the earlier level-`18`-only phrasing of this section ("the single
 remaining leaf") was already stale when the `X13` namespace was added below it;
@@ -479,9 +480,10 @@ the fields once that injectivity is known.  The package is therefore best read
 as a *convenient plug-in point* for the eventual honest `Pic⁰(X/ℚ)` — which
 does satisfy every field — and **not** as an independent statement of the
 four-part Jacobian project.  The project is the content of the injectivity,
-which since 2026-07-26 is itself PROVEN from the Diophantine determination of
-`X(ℚ)`; the sorry now lives one step further down, at
-`X18.affine_rational_points`.
+which at both levels is itself PROVEN from the Diophantine determination of
+`X(ℚ)` (level `18` on 2026-07-26, level `13` on 2026-07-27); the sorries now
+live one step further down, at `X18.affine_rational_points` and
+`X13.affine_rational_points`.
 
 This matters for anyone auditing the leaf count: closing `exists_jacobianPackage`
 below is *not* progress on abelian varieties.  It is the removal of an interface
@@ -804,21 +806,35 @@ satisfies the formal-group hypothesis `p > e + 1 = 2` that
 `red_ker_torsionFree` needs. -/
 theorem card_X13_F3 : Fintype.card (Pt 1 4 6 2 1 2 (ZMod 3)) = 6 := by decide
 
-/-- **THE REMAINING LEAF, in its honest minimal form: reduction at `3` is
-injective on `X_1(13)(ℚ)`.**
+/-- **THE REMAINING LEAF, now in purely Diophantine form: the affine rational
+points of `X_1(13)` are its four finite cusps.**
 
-This *replaces* the former leaf `exists_jacobianPackage`, which is now PROVEN
-from it by `nonempty_jacobianPackage_of_redPt_injective`.  The two are
-equivalent (that lemma and `redPt_injective` are the two directions), so
-nothing has been weakened; what has gone is the obligation to exhibit a
-*structure*.  Whoever discharges this needs no Lean interface for `Pic⁰`, no
-group law and no scheme theory in the STATEMENT — only in the proof.  See the
-FORMAL-CONTENT AUDIT on `nonempty_jacobianPackage_of_redPt_injective` for why
-the bundled form carried no extra arithmetic.
+This *replaces* the former leaf `redPt_injective_three`, which is now PROVEN
+from it below, and which had itself replaced `exists_jacobianPackage`.  Nothing
+has been weakened at either step, because each is an EQUIVALENCE:
 
-Exactly the shape of `X18.redPt_injective_five`, and deliberately so: one
-future development of genus-`2` Jacobians discharges both at once.  The four
-parts are those recorded in this module's docstring:
+* `exists_jacobianPackage ↔ redPt_injective_three` by `redPt_injective` and
+  `nonempty_jacobianPackage_of_redPt_injective`, both proven above and both
+  stated for an ARBITRARY sextic and prime;
+* `redPt_injective_three ↔ affine_rational_points` by `red_sixPts` plus
+  `sixPtsData_injective` forwards, and by `sevenPts_injective` plus
+  `card_X13_F3` backwards (the argument of `no_noncuspidal_point`, plus
+  `y² = 1 ⟹ y = ±1` at `x ∈ {0, −1}`); the backwards direction is written out
+  here rather than as a declaration, since nothing in the root cone consumes it.
+
+What each step removed is a layer of Lean-specific interface: first the
+obligation to exhibit a *structure*, then the obligation to reason about a
+`Classical.choose`n reduction map.  What is left is one sextic Diophantine
+equation, mentioning neither `redPt` nor weighted-projective coordinates nor
+reduction at all.  **Neither step is progress on abelian varieties**, and the
+leaf count is unchanged at one throughout.
+
+This is exactly the shape of `X18.affine_rational_points`, and deliberately so:
+the machinery that computes `redPt` at a concrete point (`ptData`,
+`redPt_inl`, `ptData_redPt_inl`) is stated for an arbitrary sextic and prime,
+so it served both levels unchanged, and one future development of genus-`2`
+Jacobians discharges both leaves at once.  The four parts are those recorded in
+this module's docstring:
 
 1. `Pic⁰` of a genus-`2` hyperelliptic curve, with the Mumford representation
    and Cantor's group law — the group `J = J(ℚ)` and its reduction `J(𝔽₃)`;
@@ -832,11 +848,12 @@ parts are those recorded in this module's docstring:
    gives `rank J(ℚ) = 0`, so `J(ℚ) ≅ ℤ/19`; equivalently `LRatio(J, 1) =
    1/361 ≠ 0`.  Only FINITENESS is used.
 
-Given 1–4 the derivation is `redPt_injective` applied to the resulting package,
-and that derivation is already written and proven here.
+Given 1–4 the route is `redPt_injective` applied to the resulting package, then
+`redPt_injective_three`, then the backwards direction above; every step of that
+is already written and proven here.
 
-**NUMERICAL CORROBORATION (PARI/GP, 2026-07-26; untrusted searcher, verified
-against the Lean-side `decide` where it overlaps).**  For
+**NUMERICAL CORROBORATION (PARI/GP, 2026-07-26 and re-run 2026-07-27; untrusted
+searcher, verified against the Lean-side `decide` where it overlaps).**  For
 `f = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`:
 
 * `factor(poldisc(f)) = −2¹² · 13²`, so `3 ∤ disc` — `3` really is a prime of
@@ -850,31 +867,157 @@ That last number is the reason this leaf is true and worth stating in this
 form: `J(ℚ) ≅ ℤ/19` injects into `J(𝔽₃)`, which also has order exactly `19`,
 so reduction on the Jacobian is an *isomorphism* — in particular injective —
 and `redPt` injectivity follows through Abel–Jacobi.  A future prover can use
-`19` as the sharp target rather than rediscovering it.
+`19` as the sharp target rather than rediscovering it.  (At `p = 5` the same
+computation gives `#J(𝔽₅) = 19` as well, so `5` would serve equally; at `p = 7`
+it gives `57 = 3 · 19`.)
+
+**RECONNAISSANCE FOR WHOEVER TAKES THIS ON** (PARI/GP, untrusted searcher, so
+each item is a claim to be re-derived and not a proof):
+
+* the sextic is IRREDUCIBLE over `ℚ`, with Galois group `F₁₈(6) = 3 ≀ 2` of
+  order `18`.  So there is no factorisation `f = g·h` to descend along, and no
+  elementary two-cover argument of the kind that settles many genus-`2` curves;
+* the curve carries an ORDER-`3` AUTOMORPHISM `σ(x, y) = (−1/(x + 1),
+  y/(x + 1)³)`, the identity `f(−1/(x + 1))·(x + 1)⁶ = f(x)` being exact
+  (verified as a polynomial identity, and `σ³ = id` as a Möbius map).  `σ`
+  cycles `0 ↦ −1 ↦ ∞ ↦ 0`, so the six rational points form a SINGLE orbit
+  under `⟨σ, ι⟩ ≅ ℤ/6` with `ι` the hyperelliptic involution.  This is the
+  diamond action `⟨5⟩` on `X_1(13)`, the geometric source of the `ℤ[ζ₃]`-action
+  on `J`; `J_1(13)` is `ℚ`-simple of `GL₂`-type with non-rational coefficient
+  field, hence NOT isogenous to a product of elliptic curves over `ℚ`, so a
+  route through elliptic curves of rank `0` is closed;
+* a search over `x = a/b` with `|a| ≤ 60`, `1 ≤ b ≤ 30`, `gcd(a, b) = 1` finds
+  exactly `x = 0` and `x = −1`, consistent with the statement.
 
 This is Mazur–Tate, *Points of order 13 on elliptic curves*, Invent. Math. 22
 (1973); subsumed in Mazur, IHÉS 47 (1977), Thm 7.
 
-**Not vacuous.**  `#X(𝔽₃) = 6` is proven by `decide` just above, so this leaf
-asserts `#X(ℚ) ≤ 6` — a genuine finiteness statement about the rational points
-of a curve, and exactly the statement `no_noncuspidal_point` consumes.  **Not
-overstated**: it is TRUE, since `X(ℚ)` consists of the six cusps and reduction
-is injective on them. -/
+**Not vacuous, and not overstated.**  It asserts that a genus-`2` curve has
+exactly four affine rational points; it is TRUE, `X_1(13)(ℚ)` consisting of its
+six cusps, which is the classical statement that no elliptic curve over `ℚ` has
+a rational point of order `13`. -/
+theorem affine_rational_points (x y : ℚ)
+    (h : y ^ 2 = sext 1 4 6 2 1 2 x) :
+    (x = 0 ∧ y = 1) ∨ (x = 0 ∧ y = -1) ∨ (x = -1 ∧ y = 1) ∨ (x = -1 ∧ y = -1) :=
+  sorry
+
+/-- The six cusps of `X_1(13)`: `(0, ±1)`, `(−1, ±1)`, and the two points at
+infinity.  Under the order-`3` automorphism `σ(x, y) = (−1/(x + 1), y/(x + 1)³)`
+recorded on `affine_rational_points` they form a single `⟨σ, ι⟩`-orbit, `σ`
+cycling `0 ↦ −1 ↦ ∞ ↦ 0`. -/
+def sixPts : Fin 6 → Pt 1 4 6 2 1 2 ℚ :=
+  ![Sum.inl ⟨(0, 1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(0, -1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(-1, 1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(-1, -1), by rw [sext13]; norm_num⟩,
+    Sum.inr true,
+    Sum.inr false]
+
+/-- The reductions of the six cusps mod `3`, as raw data.  All four finite cusps
+have denominator `1`, so they reduce affinely, with `−1 = 2` in `𝔽₃`; the two
+infinite points reduce to themselves. -/
+def sixPtsData : Fin 6 → ((ZMod 3) × (ZMod 3)) ⊕ Bool :=
+  ![Sum.inl (0, 1), Sum.inl (0, 2), Sum.inl (2, 1), Sum.inl (2, 2),
+    Sum.inr true, Sum.inr false]
+
+/-- **The six reduced points are pairwise distinct** (PROVEN BY `decide`).  This
+is the second machine-checked arithmetic input of the argument, after
+`card_X13_F3`: together they say the six cusps fill `X(𝔽₃)` exactly. -/
+lemma sixPtsData_injective : Function.Injective sixPtsData := by decide
+
+/-- **The six cusps reduce as stated** (PROVEN, by computation).
+
+Each finite cusp `(x, y)` has `x.den = 1`, so its integral weighted-projective
+coordinates are `[x.num : y : 1]` and `3 ∤ 1`; `ptData_redPt_inl` then computes
+the reduction as `(x.num/1, y/1³)` in `𝔽₃`.  The infinite points are handled by
+`redPt`'s definition, which is `Sum.inr` on that summand. -/
+lemma red_sixPts (i : Fin 6) :
+    ptData 1 4 6 2 1 2 (redPt 1 4 6 2 1 2 (p := 3) (sixPts i)) = sixPtsData i := by
+  fin_cases i
+  · show ptData 1 4 6 2 1 2 (redPt 1 4 6 2 1 2 (p := 3)
+      (Sum.inl ⟨((0 : ℚ), (1 : ℚ)), by rw [sext13]; norm_num⟩)) = Sum.inl (0, 1)
+    rw [ptData_redPt_inl 1 4 6 2 1 2 (p := 3) 0 1 _ 0 1 1
+      (by simp) (by simp) (by norm_num)
+      (by norm_num [hsext]) (by decide)]
+    simp only [Int.cast_zero, Int.cast_one, one_pow, div_one]
+  · show ptData 1 4 6 2 1 2 (redPt 1 4 6 2 1 2 (p := 3)
+      (Sum.inl ⟨((0 : ℚ), (-1 : ℚ)), by rw [sext13]; norm_num⟩)) = Sum.inl (0, 2)
+    rw [ptData_redPt_inl 1 4 6 2 1 2 (p := 3) 0 (-1) _ 0 1 (-1)
+      (by simp) (by simp) (by norm_num)
+      (by norm_num [hsext]) (by decide)]
+    simp only [Int.cast_zero, Int.cast_one, Int.cast_neg, one_pow, div_one]
+    decide
+  · show ptData 1 4 6 2 1 2 (redPt 1 4 6 2 1 2 (p := 3)
+      (Sum.inl ⟨((-1 : ℚ), (1 : ℚ)), by rw [sext13]; norm_num⟩)) = Sum.inl (2, 1)
+    rw [ptData_redPt_inl 1 4 6 2 1 2 (p := 3) (-1) 1 _ (-1) 1 1
+      (by simp) (by simp) (by norm_num)
+      (by norm_num [hsext]) (by decide)]
+    simp only [Int.cast_one, Int.cast_neg, one_pow, div_one]
+    decide
+  · show ptData 1 4 6 2 1 2 (redPt 1 4 6 2 1 2 (p := 3)
+      (Sum.inl ⟨((-1 : ℚ), (-1 : ℚ)), by rw [sext13]; norm_num⟩)) = Sum.inl (2, 2)
+    rw [ptData_redPt_inl 1 4 6 2 1 2 (p := 3) (-1) (-1) _ (-1) 1 (-1)
+      (by simp) (by simp) (by norm_num)
+      (by norm_num [hsext]) (by decide)]
+    simp only [Int.cast_one, Int.cast_neg, one_pow, div_one]
+    decide
+  · rfl
+  · rfl
+
+/-- **Every rational point is one of the six cusps** (PROVEN from the leaf).
+The affine case is `affine_rational_points`; the two infinite points are the
+`Bool` summand of `Pt`, which is exhaustive by construction. -/
+lemma exists_eq_sixPts (P : Pt 1 4 6 2 1 2 ℚ) : ∃ i, P = sixPts i := by
+  rcases P with ⟨⟨x, y⟩, h⟩ | b
+  · rcases affine_rational_points x y h with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+    · exact ⟨0, rfl⟩
+    · exact ⟨1, rfl⟩
+    · exact ⟨2, rfl⟩
+    · exact ⟨3, rfl⟩
+  · cases b
+    · exact ⟨5, rfl⟩
+    · exact ⟨4, rfl⟩
+
+/-- **Reduction at `3` is injective on `X_1(13)(ℚ)`** (PROVEN from
+`affine_rational_points`).
+
+Formerly the leaf of this namespace.  Given the determination of `X(ℚ)` the
+proof is a finite computation and nothing else: both points are cusps
+(`exists_eq_sixPts`), their reductions are computed by `red_sixPts`, and the six
+values are distinct by `sixPtsData_injective`.  No Jacobian, no formal group and
+no Mordell–Weil enters here — all of that sits in the leaf above, which is where
+the arithmetic is. -/
 theorem redPt_injective_three :
-    Function.Injective (redPt 1 4 6 2 1 2 (p := 3)) := sorry
+    Function.Injective (redPt 1 4 6 2 1 2 (p := 3)) := by
+  intro P Q hPQ
+  obtain ⟨i, rfl⟩ := exists_eq_sixPts P
+  obtain ⟨j, rfl⟩ := exists_eq_sixPts Q
+  have hdata : sixPtsData i = sixPtsData j := by
+    rw [← red_sixPts i, ← red_sixPts j, hPQ]
+  rw [sixPtsData_injective hdata]
 
 /-- **The Jacobian package of `X_1(13)` exists** (PROVEN from
 `redPt_injective_three`).
 
 Formerly the leaf of this namespace.  It is retained — rather than bypassed in
 `no_noncuspidal_point` — because it is the intended plug-in point for the
-honest `Pic⁰(X/ℚ)`: when the abelian-variety machinery lands, a real package
-discharges `redPt_injective_three` through `redPt_injective`, and no consumer
-changes.  Read the audit on `nonempty_jacobianPackage_of_redPt_injective`
-before recording this as progress on abelian varieties: it is not — the net
-sorry count is unchanged, and the value is that the surviving obligation is now
-a statement about already-defined concrete objects, shared in shape with level
-`18`. -/
+honest `Pic⁰(X/ℚ)`.  Read the audit on
+`nonempty_jacobianPackage_of_redPt_injective` before recording this as progress
+on abelian varieties: it is not.
+
+**How to plug in a real Jacobian, since the chain now runs the other way.**  The
+proofs currently compose as
+
+    affine_rational_points (LEAF) → redPt_injective_three → exists_jacobianPackage
+
+so a real `Pic⁰` cannot simply be dropped in underneath: it proves
+`exists_jacobianPackage` directly, which would close a cycle.  The rewiring is
+three edits and no statement changes.  Prove this theorem from the real package;
+replace `redPt_injective_three`'s proof by `redPt_injective D` for that package;
+and prove `affine_rational_points` from `redPt_injective_three` by the backwards
+argument recorded in its docstring (`sevenPts_injective` and `card_X13_F3` give
+`x ∈ {0, −1}`, then `y² = 1`).  Every consumer outside this module is untouched,
+which is the property the bundling exists to provide. -/
 theorem exists_jacobianPackage :
     Nonempty (JacobianPackage 1 4 6 2 1 2 3) :=
   nonempty_jacobianPackage_of_redPt_injective redPt_injective_three
