@@ -63,23 +63,27 @@ and the two things left are `geometricallyReduced_projToSpec` (a general
 and `projMul_assoc_pt` (associativity of the induced operation on `K`-points,
 which is where the Milne I.2.5 content sits).
 
-The open leaves are therefore NINE, and this list is stated from the file's ACTUAL
-sorry set as merged (2026-07-27), not inherited from any side of a merge:
-`exists_projMul` — the half of the old `exists_projAdd` where all the remaining
-gluing work for the group law lives (`exists_projAdd` itself is PROVEN from it
-and from `projMul_assoc`, see below) — `geometricallyReduced_projToSpec` and
-`projMul_assoc_pt`, the two leaves `projMul_assoc` now rests on;
-`exists_projGroupLaw_geomFibreAddEquiv`; `exists_projChartRingEquiv` and
-`projChart_jacobian_span_eq_top`, the two MATHLIB-shaped leaves of the
-"Dehomogenisation" section from which `locally_isStandardSmooth_awayCoord` (the last
-direct sorry of item 7a) is now PROVEN — the first is the dehomogenisation
-isomorphism `(ℚ[X, Y, Z] ⧸ (W))_{(xᵢ)}` in degree `0` ≃ `ℚ[u, v] ⧸ (wᵢ)`, the second
-the chart Jacobian criterion, where `hjac` and hence `Δ` is consumed, and the third
-member of that section, `isStandardSmoothOfRelativeDimension_projChartAway`, is
-PROVEN; `exists_affineChart_projModel`; and the two leaves that
-`geometricallyConnected_projToSpec` now consumes (`prime_projPolynomial` and
-`nonempty_projPullbackIso`).  Each declaration carries its own docstring saying what
-is missing and where the classical argument is.
+The open leaves are therefore SIX, and this list is READ OFF the compiler's
+`declaration uses 'sorry'` set for this file at the 2026-07-27 release, not
+inherited from any side of a merge — several earlier versions of this paragraph
+named leaves that had already been closed on a sibling branch:
+
+* `exists_projMul` — the half of the old `exists_projAdd` where all the
+  remaining gluing work for the group law lives (`exists_projAdd` itself is
+  PROVEN from it and from `projMul_assoc`, see below);
+* `geometricallyReduced_projToSpec` and `projMul_assoc_pt` — the two leaves
+  `projMul_assoc` now rests on;
+* `exists_projGroupLaw_geomFibreAddEquiv` — item 8, see below;
+* `isIso_projBaseChangeHom` — all that is left of `hbc`, base change for `Proj`;
+* `exists_affineChart_projModel`.
+
+The whole "Dehomogenisation" section is now PROVEN — `exists_projChartRingEquiv`,
+`projChart_jacobian_span_eq_top` and
+`isStandardSmoothOfRelativeDimension_projChartAway` — and with it
+`locally_isStandardSmooth_awayCoord`, the last direct sorry of item 7a.
+`prime_projPolynomial` is PROVEN too, so `geometricallyConnected_projToSpec`
+now consumes only `isIso_projBaseChangeHom`.  Each declaration carries its own
+docstring saying what is missing and where the classical argument is.
 **Item 8 was restated on 2026-07-27** and its leaf is now
 `exists_projGroupLaw_geomFibreAddEquiv`, which binds the group law
 EXISTENTIALLY.  `exists_projGeomFibreAddEquiv` survives under its own name
