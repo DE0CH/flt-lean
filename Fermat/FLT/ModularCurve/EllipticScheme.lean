@@ -89,14 +89,18 @@ GROUP-LAW-FREE halves of the chart: a commutative-algebra one
 (`ProjChartRing E 2 ≃+* E.toAffine.CoordinateRing`) and a topological one
 (`V₊(Z̄)` is the image of `projInfty`).
 
-The open leaves of this FILE are therefore EIGHT, and this list was REGENERATED
-at integration (2026-07-27) from the merged source rather than taken from any
-side of the merges — three branches each carried a list that was correct on its
-own branch and wrong once the others landed:
+The open leaves of this FILE are therefore THIRTEEN, and this list was
+REGENERATED at integration (2026-07-27) from the merged source rather than taken
+from any side of the merges — several branches each carried a list that was
+correct on its own branch and wrong once the others landed:
 
-* `exists_projMul` — the half of the old `exists_projAdd` where all the
-  remaining gluing work for the group law lives (`exists_projAdd` itself is
-  PROVEN from it and from `projMul_assoc`, see below);
+* `ProjCoords.toHom_smul`, `ProjCoords.exists_of_specField`,
+  `ProjCoords.toHom_eq_of_addXYZ_not_span` and `exists_projMulOfCoords` — the
+  four successors of `exists_projMul`, which is now PROVEN over the `ProjCoords`
+  interface (the fifth successor,
+  `WeierstrassCurve.Projective.equation_addXYZ`, is PROVEN in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`).
+  `exists_projAdd` is in turn PROVEN from `exists_projMul` and `projMul_assoc`;
 * `projMul_assoc_pt_algClosed` — the one leaf `projMul_assoc` still rests on
   (`projMul_assoc_pt` was a second one until 2026-07-27 and is now PROVEN from
   the algebraically-closed form, and `geometricallyReduced_projToSpec` was a
@@ -104,19 +108,22 @@ own branch and wrong once the others landed:
 * `exists_projGroupLaw_geomFibreEquivVal` — item 8, see below
   (`exists_projGroupLaw_geomFibreAddEquiv` was the leaf here until
   2026-07-27 and is now PROVEN from it);
-* `isIso_projBaseChangeHom` — all that is left of `hbc`, base change for `Proj`;
 * `exists_coordinateRingEquiv_projChartRing` and `compl_basicOpen_projCoord_two`
   — the two halves of `exists_affineChart_projModel` described above;
 * the Weierstrass-comparison cluster further down, which belongs to a different
-  node and is listed here only so that this count matches the compiler's.  Both
+  node and is listed here only so that this count matches the compiler's:
+  `exists_affineComplement_zeroSection`,
+  `exists_weierstrassRingEquiv_of_affineComplement`,
+  `isElliptic_of_isOpenImmersion_coordinateRing`, `relPointPost_add` and
+  `exists_isIso_of_affineChart`.  Both
   `exists_weierstrassModel_of_ellipticScheme` and
   `exists_geomFibreAddEquiv_of_weierstrassModel` were leaves here until
-  2026-07-27 and are now PROVEN — the first from
-  `exists_affineComplement_zeroSection`,
-  `exists_weierstrassRingEquiv_of_affineComplement` and
-  `isElliptic_of_isOpenImmersion_coordinateRing` (its affineness / Riemann–Roch
-  / discriminant thirds), the second from `exists_isIso_of_affineChart`,
-  `relPointPost_add` and `hom_specRat_eq_of_range_eq`.
+  2026-07-27 and are now PROVEN — the first from the affineness /
+  Riemann–Roch / discriminant thirds (the first three of those five), the
+  second from the last two plus `hom_specRat_eq_of_range_eq`.
+
+`isIso_projBaseChangeHom` — base change for `Proj`, the last of `hbc` — was on
+this list until 2026-07-27 and is now PROVEN.
 
 The whole "Dehomogenisation" section is now PROVEN — `exists_projChartRingEquiv`,
 `projChart_jacobian_span_eq_top` and

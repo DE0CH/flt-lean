@@ -16665,10 +16665,17 @@ leaf each; the seam is "`X` contains a dense open copy of `𝔸¹_ℚ`", which
 is how rationality of a curve is expressible at a pin that has affine but
 not projective space.
 
-The open leaves under this node, and the single theory each one
-needs, are (`lFunction_apply_one_ne_zero_of_kenkuLevel` was itself
-decomposed along the period on 2026-07-27 and is now PROVEN; its two
-successors are the fifth and sixth rows):
+The open leaves under this node, and the single theory each one needs, are the
+TEN below.  **This table was REGENERATED at integration (2026-07-27) from a
+comment-stripped scan of the merged source, not merged as prose** — two branches
+edited it in the same release.  `lFunction_apply_one_ne_zero_of_kenkuLevel` was
+decomposed along the period and is now PROVEN (its two successors are rows five
+and six), and `exists_isLFunctionOf_of_isWeightTwoEigenform` was the eleventh
+row and is now PROVEN too, in
+`ModularCurve/WeightTwoEigenform.lean`, over the four modular leaves
+`exists_frickeInvolution`, `isBigO_atTop_axisRestrict`,
+`locallyIntegrableOn_axisRestrict` and `isBigO_atTop_coeff` — mathlib's
+`AbstractFuncEq` / `MellinEqDirichlet` supply the analysis.
 
 | leaf | theory | level-specific? |
 |---|---|---|
@@ -16676,7 +16683,6 @@ successors are the fifth and sixth rows):
 | `isJacobianOf_of_isRelPicZeroOf` | autoduality / biduality | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
-| `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |

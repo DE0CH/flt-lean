@@ -13946,30 +13946,39 @@ five-item route is realised in the file rather than merely described):
   The base-change bridge `irreducible_of_irreducible_map` is PROVEN, which is what
   lets the counting leaf be stated with no algebraic closure in its signature.
 
-So after the 2026-07-27 work the remaining open leaves under this node are
-`exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz`,
+So after the 2026-07-27 work the remaining open leaves under this node are FIVE:
+`exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz` and
 `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the three children of the
 now-proven `exists_stepanovAuxiliaryFunction`),
-`stepanov_pow_sub_dvd_resultant`, `exists_bertiniNoetherWitness_of_three_le`,
-`exists_integralHypersurfaceCertificate` and `exists_bound_badLocusCount`; all the
-glue between them is written and compiles, and this leaf itself has nothing left to
-prove.  (This list is stated from the file's ACTUAL sorry set as merged,
-2026-07-27.  `exists_stepanovDiscriminant` and `exists_stepanovNormalisation` were
-on it and are now PROVEN, and so is
-`exists_stepanovNormPolynomial`, over the two sub-leaves
-`exists_stepanovAuxiliaryFunction` and `stepanov_pow_sub_dvd_resultant` — and
-`exists_stepanovAuxiliaryFunction` is now PROVEN in turn, over the three named
-above; so is
-`exists_bertiniGoodPlaneCount`, over `exists_bertiniNoetherWitness`, which is
-itself PROVEN over `exists_bertiniNoetherWitness_of_three_le`; so is
-`exists_birationalHypersurfaceModel`, over `exists_spreadOutHypersurfaceModel` and
-`exists_bound_badLocusCount`; and so is `exists_spreadOutHypersurfaceModel` itself,
-over the single new leaf `exists_integralHypersurfaceCertificate` — Schmidt's
-Theorem 4D and the spreading out written as polynomial identities over `ℤ`, with
-the evaluation, injectivity and counting argument PROVEN on top of it; items 4 and
-5 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and
-`exists_bound_forall_zmodSolvable_of_hypersurfaceCount` — are PROVEN over the last
-two names above, so it is those sub-leaves and not the items that are open.)
+`exists_bertiniNoetherWitness_of_three_le`, and
+`exists_integralHypersurfaceCertificate`.  All the glue between them is written
+and compiles, and this leaf itself has nothing left to prove.
+
+**This list was REGENERATED at integration (2026-07-27) from the merged source,
+not merged as prose.**  Six branches in this batch each rewrote it and each was
+correct on its own branch; a comment-stripped scan attributing every `sorry` to
+its enclosing declaration settles it.  What the branches closed, and what it
+leaves:
+
+* `exists_stepanovDiscriminant`, `exists_stepanovNormalisation` and
+  `stepanov_pow_sub_dvd_resultant` are PROVEN (the last by Schmidt Lemma 5A(i),
+  via the Hensel splitting step `schmidt_splits_of_henselian`);
+* `exists_stepanovNormPolynomial` is PROVEN over
+  `exists_stepanovAuxiliaryFunction` and `stepanov_pow_sub_dvd_resultant`, and
+  `exists_stepanovAuxiliaryFunction` is PROVEN in turn over the three children
+  named above;
+* `exists_bertiniGoodPlaneCount` is PROVEN over `exists_bertiniNoetherWitness`,
+  which is itself PROVEN over `exists_bertiniNoetherWitness_of_three_le` (the
+  `N = 0, 1, 2` branches were discharged directly);
+* `exists_bound_badLocusCount` is PROVEN (Schmidt Lemma 3C: shear, resultant,
+  Schwartz–Zippel), so `exists_birationalHypersurfaceModel` now rests only on
+  `exists_spreadOutHypersurfaceModel`, which is itself PROVEN over the single
+  new leaf `exists_integralHypersurfaceCertificate` — Schmidt's Theorem 4D and
+  the spreading out written as polynomial identities over `ℤ`, with the
+  evaluation, injectivity and counting argument PROVEN on top of it;
+* items 4 and 5 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`
+  and `exists_bound_forall_zmodSolvable_of_hypersurfaceCount` — are PROVEN over
+  the names above, so it is those sub-leaves and not the items that are open.
 
 NOTE ON THE FREE-FLOATING RULE, and how it was discharged: proven bricks stacked
 in front of a sorried consumer are free-floating and not allowed here, so item 1
