@@ -2442,17 +2442,20 @@ THE FIBRE STEP is `smooth_quotient_of_smooth_localizationAway`, also proven:
 `B ⧸ (ker φ)B ≃ₐ[R ⧸ ker φ] (R ⧸ ker φ) ⊗[R] B`, and `Algebra.Smooth.comp`
 lands the result over `k`.
 
-THE ONE REMAINING LEAF is
-`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` — the
-generic fibre is smooth — which is where and where alone `CharZero` is used,
-and which is exactly the classical statement "a regular local ring
-essentially of finite type over a PERFECT field is formally smooth over it"
-(Stacks 07EC / EGA IV 22.5.8), applied to `B_q` (regular, being a
-localization of the regular ring `B`) over `Frac R` (characteristic zero,
-hence perfect). It is genuinely absent from the pin — the check that would
-refute that: `grep -rln "IsRegularLocalRing" .lake/packages/mathlib/Mathlib`
-returns only `RegularLocalRing/{Defs,Polynomial}.lean`, neither of which
-mentions smoothness. -/
+**NOTHING REMAINS OPEN BELOW THIS NODE (2026-07-27).** What used to be recorded
+here as "THE ONE REMAINING LEAF",
+`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` — the generic
+fibre is smooth, and where and where alone `CharZero` is used — is now PROVEN,
+its last input `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`
+having closed the same day. It is exactly the classical statement "a regular
+local ring essentially of finite type over a PERFECT field is formally smooth
+over it" (Stacks 07EC / EGA IV 22.5.8), applied to `B_q` (regular, being a
+localization of the regular ring `B`) over `Frac R` (characteristic zero, hence
+perfect). That statement is indeed absent from the pin — the check:
+`grep -rln "IsRegularLocalRing" .lake/packages/mathlib/Mathlib` returns only
+`RegularLocalRing/{Defs,Polynomial}.lean`, neither of which mentions smoothness
+— and it is supplied HERE, by
+`formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`. -/
 theorem exists_ne_zero_smooth_localizationAway_of_smoothAt_generic
     {R B : Type u} [CommRing R] [IsDomain R] [CommRing B] [Algebra R B]
     [Algebra.FinitePresentation R B]
@@ -2600,192 +2603,6 @@ theorem smooth_quotient_of_smooth_localizationAway
       rw [h2]
       rfl
   exact Algebra.Smooth.comp k (R ⧸ J) _
-
-/-- **REGULAR LOCAL ⟹ DOMAIN, BY INDUCTION ON THE EMBEDDING DIMENSION**
-(**PROVEN 2026-07-26** — this is mathlib's own open TODO, closed here).
-
-The induction hypothesis has to quantify over the RING as well as the
-dimension, because the inductive step passes to `R ⧸ (x)`; hence the
-`∀ (R : Type u) [CommRing R] [IsRegularLocalRing R]` shape rather than a
-statement about one fixed `R`.
-
-THE PROOF (Atiyah–Macdonald 11.23 / Matsumura 14.3), by strong induction on
-`d = (maximalIdeal R).spanFinrank`, which regularity identifies with
-`ringKrullDim R`.
-
-* `d = 0`: `spanFinrank 𝔪 = 0` forces `𝔪 = ⊥`, so `R` is a field.
-* `d = m + 1`: `𝔪 ⊄ 𝔪²` (else Nakayama gives `𝔪 = ⊥` and `d = 0`) and `𝔪` is
-  not a minimal prime (else `𝔪.height = 0 = ringKrullDim R`, contradicting
-  `d = m + 1`). Since `R` is noetherian, `minimalPrimes R` is FINITE, so prime
-  avoidance applies to the finite family `{𝔪²} ∪ minimalPrimes R` — with `𝔪²`
-  in one of the two exceptional slots of `Ideal.subset_union_prime`, which is
-  exactly why that non-prime member is allowed. It yields
-  `x ∈ 𝔪`, `x ∉ 𝔪²`, `x` in no minimal prime.
-* `R' = R ⧸ (x)` is regular local of embedding dimension `m`: the exchange
-  lemma above gives `spanFinrank (𝔪 R') ≤ m`, and Krull's height theorem in the
-  form `ringKrullDim_le_ringKrullDim_quotient_add_encard` gives the reverse
-  dimension bound `ringKrullDim R ≤ ringKrullDim R' + 1`. Cancelling the `+ 1`
-  in `WithBot ℕ∞` is `ENat.WithBot.add_le_add_one_right_iff`.
-* By induction `R'` is a domain, i.e. `(x)` is PRIME. Some minimal prime
-  `q ≤ (x)`; for `y ∈ q` write `y = c x`, and `x ∉ q` with `q` prime forces
-  `c ∈ q`, so `q ≤ (x) · q` and Nakayama gives `q = ⊥`. So `⊥` is prime.
-
-Both halves of Krull's height theorem are already in mathlib
-(`Mathlib/RingTheory/Ideal/KrullsHeightTheorem.lean`); what was missing was
-only this induction, and it is what the `RegularLocalRing/Defs.lean` docstring
-records as an open TODO. -/
-theorem isDomain_of_isRegularLocalRing_aux (n : ℕ) :
-    ∀ (R : Type u) [CommRing R] [IsRegularLocalRing R],
-      (IsLocalRing.maximalIdeal R).spanFinrank = n → IsDomain R := by
-  classical
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    intro R _ _ hn
-    match n, hn, ih with
-    | 0, hn, _ =>
-      have hbot : IsLocalRing.maximalIdeal R = ⊥ :=
-        (Submodule.spanFinrank_eq_zero_iff_eq_bot (IsNoetherian.noetherian _)).1 hn
-      have hfield : IsField R := IsLocalRing.isField_iff_maximalIdeal_eq.2 hbot
-      letI := hfield.toField
-      infer_instance
-    | (m + 1), hn, ih =>
-      have hdim : ringKrullDim R = ((m + 1 : ℕ) : WithBot ℕ∞) := by
-        rw [← IsRegularLocalRing.spanFinrank_maximalIdeal (R := R), hn]
-      have hm2 : ¬ (IsLocalRing.maximalIdeal R ≤ (IsLocalRing.maximalIdeal R) ^ 2) := by
-        intro hle
-        have hb : IsLocalRing.maximalIdeal R = ⊥ := by
-          refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot (IsLocalRing.maximalIdeal R) _
-            (IsNoetherian.noetherian _) ?_ ?_
-          · rwa [smul_eq_mul, ← pow_two]
-          · rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
-        rw [hb] at hn
-        simp at hn
-      have hmp : ∀ p ∈ minimalPrimes R, ¬ (IsLocalRing.maximalIdeal R ≤ p) := by
-        intro p hp hle
-        haveI := IsMinimalPrime.isPrime hp
-        have hpm : p = IsLocalRing.maximalIdeal R :=
-          le_antisymm (IsLocalRing.le_maximalIdeal Ideal.IsPrime.ne_top') hle
-        have h0 : (IsLocalRing.maximalIdeal R).height = 0 := Ideal.height_eq_zero_iff.2 (hpm ▸ hp)
-        rw [← IsLocalRing.maximalIdeal_height_eq_ringKrullDim, h0] at hdim
-        have hz : ((0 : ℕ) : WithBot ℕ∞) = ((m + 1 : ℕ) : WithBot ℕ∞) := by simpa using hdim
-        have h2 : (0 : ℕ) = m + 1 := by exact_mod_cast hz
-        omega
-      have hfin : (minimalPrimes R).Finite := minimalPrimes.finite_of_isNoetherianRing R
-      set s : Finset (Ideal R) := insert ((IsLocalRing.maximalIdeal R) ^ 2) hfin.toFinset with hs
-      have hnotsub :
-          ¬ ((IsLocalRing.maximalIdeal R : Set R) ⊆ ⋃ i ∈ (↑s : Set (Ideal R)), (i : Set R)) := by
-        intro hsub
-        obtain ⟨i, his, hle⟩ :=
-          (Ideal.subset_union_prime (s := s) (f := fun i => i)
-            ((IsLocalRing.maximalIdeal R) ^ 2) ((IsLocalRing.maximalIdeal R) ^ 2)
-            (fun i hi _ hne => by
-              rw [hs, Finset.mem_insert] at hi
-              rcases hi with rfl | hi
-              · exact absurd rfl hne
-              · exact IsMinimalPrime.isPrime (hfin.mem_toFinset.1 hi))).1 hsub
-        rw [hs, Finset.mem_insert] at his
-        rcases his with rfl | his
-        · exact hm2 hle
-        · exact hmp i (hfin.mem_toFinset.1 his) hle
-      obtain ⟨x, hxm, hxni⟩ := Set.not_subset.1 hnotsub
-      simp only [Set.mem_iUnion, not_exists] at hxni
-      have hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2 := fun h =>
-        hxni _ (by rw [hs, Finset.coe_insert]; exact Set.mem_insert _ _) h
-      have hxmin : ∀ p ∈ minimalPrimes R, x ∉ p := fun p hp h =>
-        hxni p (by
-          rw [hs, Finset.coe_insert]
-          exact Set.mem_insert_of_mem _ (Finset.mem_coe.2 (hfin.mem_toFinset.2 hp))) h
-      obtain ⟨T, hTcard, hTspan⟩ :=
-        exists_finset_card_span_insert_eq_maximalIdeal hxm hx2 hn
-      set I : Ideal R := Ideal.span {x} with hI
-      have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using hxm
-      have hInt : I ≠ ⊤ := fun h =>
-        (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
-      haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
-      haveI : IsLocalRing (R ⧸ I) :=
-        IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
-      have hmapmax : (IsLocalRing.maximalIdeal R).map (Ideal.Quotient.mk I)
-          = IsLocalRing.maximalIdeal (R ⧸ I) :=
-        IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
-      have hsr : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank ≤ m := by
-        have himg : IsLocalRing.maximalIdeal (R ⧸ I)
-            = Ideal.span ((Ideal.Quotient.mk I) '' (T : Set R)) := by
-          rw [← hmapmax, ← hTspan, Ideal.map_span, Set.image_insert_eq]
-          have hx0 : (Ideal.Quotient.mk I) x = 0 := by
-            rw [Ideal.Quotient.eq_zero_iff_mem, hI]
-            exact Ideal.subset_span rfl
-          rw [hx0, Ideal.span_insert_zero]
-        rw [himg]
-        refine le_trans (Submodule.spanFinrank_span_le_ncard_of_finite
-          ((T : Set R).toFinite.image _)) ?_
-        exact le_trans (Set.ncard_image_le (T : Set R).toFinite) (by simp [hTcard])
-      have hjac : ({x} : Set R) ⊆ Ring.jacobson R := by
-        intro y hy
-        rw [Set.mem_singleton_iff] at hy
-        subst hy
-        show y ∈ Ring.jacobson R
-        rw [IsLocalRing.ringJacobson_eq_maximalIdeal]
-        exact hxm
-      have hkey : ringKrullDim R ≤ ringKrullDim (R ⧸ I) + 1 := by
-        have h := ringKrullDim_le_ringKrullDim_quotient_add_encard ({x} : Set R) hjac
-        simpa [hI] using h
-      have hdimq : ((m : ℕ) : WithBot ℕ∞) ≤ ringKrullDim (R ⧸ I) := by
-        rw [hdim] at hkey
-        push_cast at hkey
-        exact ENat.WithBot.add_le_add_one_right_iff.mp hkey
-      have hreg : IsRegularLocalRing (R ⧸ I) :=
-        IsRegularLocalRing.of_spanFinrank_maximalIdeal_le _
-          (le_trans (by exact_mod_cast hsr) hdimq)
-      have hsrq : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank = m := by
-        refine le_antisymm hsr ?_
-        have hfr := hreg.spanFinrank_maximalIdeal
-        have h2 : ((m : ℕ) : WithBot ℕ∞)
-            ≤ (((IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank : ℕ) : WithBot ℕ∞) := by
-          rw [hfr]; exact hdimq
-        exact_mod_cast h2
-      haveI : IsDomain (R ⧸ I) := ih m (Nat.lt_succ_self m) (R ⧸ I) hsrq
-      haveI hIprime : I.IsPrime := (Ideal.Quotient.isDomain_iff_prime I).1 inferInstance
-      obtain ⟨q, hq, hqI⟩ := Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal R)) (J := I) bot_le
-      haveI hqp : q.IsPrime := IsMinimalPrime.isPrime hq
-      have hxq : x ∉ q := hxmin q hq
-      have hqq : q ≤ I • q := by
-        intro y hy
-        obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.1 (hqI hy)
-        have hcq : c ∈ q := by
-          rcases hqp.mem_or_mem (show c * x ∈ q from hc ▸ hy) with h | h
-          · exact h
-          · exact absurd h hxq
-        rw [← hc, smul_eq_mul, mul_comm]
-        exact Ideal.mul_mem_mul hcq (Ideal.subset_span rfl)
-      have hqbot : q = ⊥ := by
-        refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot I q
-          (IsNoetherian.noetherian _) hqq ?_
-        rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
-        exact hIm
-      have hbp : (⊥ : Ideal R).IsPrime := hqbot ▸ hqp
-      haveI : NoZeroDivisors R := ⟨fun {a b} h => by
-        have hm := hbp.mem_or_mem (show a * b ∈ (⊥ : Ideal R) by simpa using h)
-        simpa using hm⟩
-      exact NoZeroDivisors.to_isDomain R
-
-/-- **REGULAR LOCAL RINGS ARE INTEGRAL DOMAINS** (**PROVEN 2026-07-26**).
-
-This is the second of the two mathlib gaps named in the docstring of
-`isDomain_stalk_of_smooth_over_field`, and it is no longer a gap: mathlib's
-`Mathlib/RingTheory/RegularLocalRing/Defs.lean` records only
-`IsRegularLocalRing`/`IsRegularRing` with a handful of instances, and its own
-"TODO" is precisely this direction. The proof is
-`isDomain_of_isRegularLocalRing_aux` instantiated at `n = spanFinrank 𝔪`.
-
-Note the route taken is NOT the associated-graded one the earlier docstring
-sketched — no `gr_𝔪(R)`, no filtered ring, no Krull intersection theorem. The
-induction above uses only Nakayama, prime avoidance over the finitely many
-minimal primes of a noetherian ring, and Krull's height theorem, all of which
-mathlib already had. This is general, reusable, and a genuine mathlib
-contribution. -/
-theorem isDomain_of_isRegularLocalRing (R : Type u) [CommRing R] [IsRegularLocalRing R] :
-    IsDomain R :=
-  isDomain_of_isRegularLocalRing_aux _ R rfl
 
 
 /-- **THE SPECIAL FIBRE OF `R → A` IS `A ⧸ (x)`, AND IT IS SMOOTH OVER `𝓀[R]`**
@@ -3222,58 +3039,58 @@ theorem formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField
     Algebra.FormallySmooth K A :=
   formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField_aux K _ A rfl
 
+open AlgebraicGeometry in
 /-- **A LOCALIZATION OF A SMOOTH ALGEBRA OVER A FIELD IS A REGULAR LOCAL RING**
-(SORRY LEAF, cut 2026-07-27 — **and it is NOT new mathematics: it is BLOCKED
-ONLY BY LEAN'S DECLARATION ORDER**).
+(**PROVEN 2026-07-27**, in five lines — it was never new mathematics, only
+Lean's declaration order, and the hoist that unblocked it has landed).
 
-This is the AFFINE form of this file's own **PROVEN**
-`isRegularLocalRing_stalk_of_smooth_over_field` (~1600 lines below this point,
-sorry-free over `exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`
-and `isRegularLocalRing_quotient_span_list_aux`, both PROVEN 2026-07-26). The
-only reason it is a separate declaration here is that its consumer,
-`formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` immediately
-below, sits ~1600 lines ABOVE the proof, and Lean has no forward references.
+This is the AFFINE form of the scheme-level
+`isRegularLocalRing_stalk_of_smooth_over_field`, which since 2026-07-27 lives
+in `Fermat/FLT/Modularity/RegularStalks.lean` (`public import`ed above, so it
+is in scope HERE, above this line, unqualified). It is sorry-free there over
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and
+`isRegularLocalRing_quotient_span_list_aux`, both PROVEN 2026-07-26.
 
-**THE RECIPE THAT CLOSES IT, once the proof is reachable** — this is scheme
-bookkeeping with no mathematical content, and it is written out here so that
-nobody dispatches a proof effort at it:
+**HISTORICAL NOTE, kept because it explains the shape of this declaration.**
+The whole tower was originally proven ~1600 lines BELOW this point, inside this
+file, so its consumer `formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero`
+(immediately below) could not reach it and this affine restatement had to be a
+separate, sorried declaration. The hoist to `RegularStalks.lean` — done for
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, which is UPSTREAM of this
+module and needs the same theorem — removed the order obstruction, and the
+three-step recipe recorded here was then executed verbatim:
 
 1. `Algebra.Smooth k B` gives `AlgebraicGeometry.Smooth (Spec.map (algebraMap k B))`
    through `HasRingHomProperty @Smooth RingHom.Smooth` together with
-   `AlgebraicGeometry.HasRingHomProperty.iff_of_isAffine`;
-2. `Spec (CommRingCat.of B)` has a point `y` with `y.asIdeal = q`, and
-   `AlgebraicGeometry.Spec.stalkIso` (or `IsAffineOpen.isLocalization_stalk` at
-   `⊤`) identifies `(Spec (CommRingCat.of B)).presheaf.stalk y` with
-   `Localization.AtPrime q` as a ring;
+   `AlgebraicGeometry.HasRingHomProperty.Spec_iff` (the `Spec.map` form of
+   `iff_of_isAffine`, which saves the `ΓSpecIso` bookkeeping) and
+   `RingHom.smooth_algebraMap`;
+2. `Spec (CommRingCat.of B)` has the point `⟨q, _⟩ : PrimeSpectrum B`, and
+   `AlgebraicGeometry.Spec.stalkIso` identifies
+   `(Spec (CommRingCat.of B)).presheaf.stalk ⟨q, _⟩` with `Localization.AtPrime q`
+   as a ring, via `Iso.commRingCatIsoToRingEquiv`;
 3. `isRegularLocalRing_stalk_of_smooth_over_field` applied to that morphism and
-   that point, then `IsRegularLocalRing.of_ringEquiv` across the iso of (2).
-
-**THE PROPER REPAIR IS A HOIST, AND ONE IS ALREADY IN FLIGHT.** As of
-2026-07-27 the worker on `flt-lean-149` is hoisting
-`isRegularLocalRing_stalk_of_smooth_over_field` (with the block it depends on:
-`isDomain_of_isRegularLocalRing`, `isRegularLocalRing_quotient_span_singleton`,
-`isRegularLocalRing_quotient_span_list_aux` and the standard-smooth
-presentation lemmas) into a module UPSTREAM of
-`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, because a leaf there wants
-the same theorem. Once that lands, the hoisted theorem is in scope at THIS line
-too, and this leaf closes by the three steps above. **Do not hoist it a second
-time, and do not re-prove it** — check `git log --oneline -S
-isRegularLocalRing_stalk_of_smooth_over_field` first.
-
-The check that would refute the "already proven" claim:
-`grep -n "theorem isRegularLocalRing_stalk_of_smooth_over_field" \
-Fermat/FLT/Modularity/KhareWintenberger.lean` and then `#print axioms` on it. -/
+   that point, then `IsRegularLocalRing.of_ringEquiv` across the iso of (2). -/
 theorem isRegularLocalRing_localizationAtPrime_of_smooth_over_field
     {k B : Type u} [Field k] [CommRing B] [Algebra k B] [Algebra.Smooth k B]
     (q : Ideal B) [q.IsPrime] :
-    IsRegularLocalRing (Localization.AtPrime q) :=
-  sorry
+    IsRegularLocalRing (Localization.AtPrime q) := by
+  have hsm : Smooth (Spec.map (CommRingCat.ofHom (algebraMap k B))) := by
+    rw [HasRingHomProperty.Spec_iff (P := @Smooth)]
+    exact RingHom.smooth_algebraMap.mpr inferInstance
+  let z : Spec (CommRingCat.of B) := (⟨q, inferInstance⟩ : PrimeSpectrum B)
+  haveI : IsRegularLocalRing ((Spec (CommRingCat.of B)).presheaf.stalk z) :=
+    isRegularLocalRing_stalk_of_smooth_over_field
+      (K := k) (Spec.map (CommRingCat.ofHom (algebraMap k B))) hsm z
+  exact IsRegularLocalRing.of_ringEquiv
+    (Spec.stalkIso (CommRingCat.of B) z).commRingCatIsoToRingEquiv
 
-/-- **THE GENERIC FIBRE IS SMOOTH** (**PROVEN 2026-07-27** over the shared
-classical leaf `formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField`
-and the order-blocked `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`,
-both stated immediately above; it remains the only place where `CharZero` is
-used in the algebraic-Sard chain).
+/-- **THE GENERIC FIBRE IS SMOOTH** (**PROVEN 2026-07-27**, and as of the same
+day it is FULLY sorry-free: both of its inputs —
+`formallySmooth_of_isRegularLocalRing_of_essFiniteType_of_perfectField` and
+`isRegularLocalRing_localizationAtPrime_of_smooth_over_field`, stated
+immediately above — are now PROVEN. It remains the only place where `CharZero`
+is used in the algebraic-Sard chain).
 
 If `B` is smooth over a characteristic-zero field `k` and finite type over a
 `k`-subalgebra `R` which is a domain, then every prime `q` of `B` lying over
@@ -3323,7 +3140,7 @@ statement is `K`-algebra bookkeeping, and it is written out here:
   `charZero_of_injective_algebraMap` (`k ↪ R` because `k` is a field and `R`
   nontrivial, then `R ↪ Frac R`), and `PerfectField.ofCharZero` is an instance.
 * Regularity of `B_q` is `isRegularLocalRing_localizationAtPrime_of_smooth_over_field`,
-  which is order-blocked rather than open — see its docstring.
+  PROVEN immediately above (2026-07-27) — see its docstring.
 * Finally `Algebra.FormallySmooth.of_isLocalization (nonZeroDivisors R)` gives
   `FormallySmooth R (Frac R)` and `Algebra.FormallySmooth.comp` composes. -/
 theorem formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero
