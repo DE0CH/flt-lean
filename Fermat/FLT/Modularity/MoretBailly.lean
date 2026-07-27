@@ -13177,9 +13177,465 @@ theorem irreducible_of_irreducible_map {N p : ℕ} [Fact p.Prime]
     · exact Or.inl (key a hu)
     · exact Or.inr (key b hu)
 
-/-- **THE INTEGRAL HYPERSURFACE CERTIFICATE** (SORRY LEAF, cut 2026-07-27 out of
-`exists_spreadOutHypersurfaceModel`) — Schmidt Chapter VI, Theorem 4D together
+/-! #### The integral hypersurface certificate: the two-way cut
+
+`exists_integralHypersurfaceCertificate` below was a bare `sorry` until
+2026-07-27. It is now PROVEN over exactly TWO leaves, split along the line that
+separates characteristic-zero birational geometry from arithmetic spreading out:
+
+* `exists_rationalHypersurfaceCertificate` — Schmidt Chapter VI Theorem 4D and
+  the `ℤ`-descent, with NO PRIME IN ITS STATEMENT;
+* `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` — the DEGENERATE
+  half of EGA IV 9.7.7: a generic fibre that is *not* geometrically irreducible
+  has no geometrically irreducible fibre mod `p` for large `p`.
+
+Everything else the parent needs is proven in this block:
+`exists_bound_totalDegree_map_intCastRingHom_zmod` (total degree survives
+reduction),
+`map_algebraMap_map_intCastRingHom_zmod` (reduce-then-close = close),
+`exists_divisibilityCertificates` and `exists_bound_not_dvd_map_algClosureZMod`
+(non-divisibility spreads out — the same coefficient-space technique as
+`exists_reducibilityCertificates` above, with the second factor FIXED, which is
+why no normalisation and no extra unknown are needed here), and
+`exists_bound_not_isPrime_radical_of_eq_top` (the EMPTY branch of the degenerate
+case, which needs no constructibility at all: it is the Nullstellensatz plus the
+already-proven `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`).
+Absolute irreducibility mod `p` is `exists_inverted_irreducible_map_algClosureZMod`
+(Noether–Ostrowski), PROVEN above. -/
+
+/-- **The total degree of an integral polynomial survives reduction modulo all but
+finitely many primes** (PROVEN). A monomial realising the total degree has a
+nonzero integer coefficient, and any prime exceeding its absolute value keeps
+that coefficient nonzero; the reverse inequality is `totalDegree_map_le'`. -/
+theorem exists_bound_totalDegree_map_intCastRingHom_zmod {N : ℕ}
+    (S₀ : MvPolynomial (Fin N) ℤ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀).totalDegree = S₀.totalDegree := by
+  classical
+  by_cases h0 : S₀ = 0
+  · exact ⟨0, fun p _ _ => by simp [h0]⟩
+  have hsupp : S₀.support.Nonempty := MvPolynomial.support_nonempty.mpr h0
+  obtain ⟨m₀, hm₀, hm₀eq⟩ :=
+    Finset.exists_mem_eq_sup S₀.support hsupp (fun s => s.sum fun _ e => e)
+  have htot : S₀.totalDegree = m₀.sum fun _ e => e := hm₀eq
+  refine ⟨(S₀.coeff m₀).natAbs, fun p _ hp => ?_⟩
+  have hc : S₀.coeff m₀ ≠ 0 := MvPolynomial.mem_support_iff.mp hm₀
+  have hpc : (Int.castRingHom (ZMod p)) (S₀.coeff m₀) ≠ 0 := by
+    simp only [eq_intCast, Ne, ZMod.intCast_zmod_eq_zero_iff_dvd]
+    intro hdvd
+    have h1 : p ∣ (S₀.coeff m₀).natAbs := by
+      simpa using Int.natAbs_dvd_natAbs.mpr hdvd
+    exact absurd (Nat.le_of_dvd (Int.natAbs_pos.mpr hc) h1) (not_le.mpr hp)
+  have hmem : m₀ ∈ (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀).support := by
+    rw [MvPolynomial.mem_support_iff, MvPolynomial.coeff_map]
+    exact hpc
+  refine le_antisymm (totalDegree_map_le' _ _) ?_
+  rw [htot]
+  exact MvPolynomial.le_totalDegree hmem
+
+/-- **Reducing to `ZMod p` and then extending to the algebraic closure is reducing
+to the algebraic closure** (PROVEN), because a ring map out of `ℤ` is unique. -/
+theorem map_algebraMap_map_intCastRingHom_zmod {N p : ℕ} [Fact p.Prime]
+    (S₀ : MvPolynomial (Fin N) ℤ) :
+    MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+        (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀)
+      = MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) S₀ := by
+  rw [MvPolynomial.map_map,
+    RingHom.ext_int ((algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).comp
+      (Int.castRingHom (ZMod p))) (Int.castRingHom (AlgebraicClosure (ZMod p)))]
+
+/-- **Divisibility of one integral polynomial by another, over a field, is cut out
+by ONE system of integral polynomial equations, uniformly in the field** (PROVEN).
+
+This is the fixed-second-factor analogue of `exists_reducibilityCertificates`
+above, and it is strictly simpler: because the divisor `S` is FIXED rather than
+an unknown, there is no scaling freedom to normalise and no nonconstancy to turn
+into an equation, so the certificate family is a single system rather than one
+indexed by a pair of exponent vectors.
+
+If `S * q = g` over a field with `g ≠ 0`, then `q ≠ 0` and
+`MvPolynomial.totalDegree_mul_of_isDomain` bounds `q.totalDegree` by
+`g.totalDegree`, hence bounds every coordinatewise degree of `q`; so `q` is
+`coeffPoly N D` of a coefficient vector indexed by the finite set
+`Fin N → Fin (D+1)`. Multiplying out `S` with the generic `q` and comparing
+coefficients with `g` gives the system. -/
+theorem exists_divisibilityCertificates {N : ℕ} (S g : MvPolynomial (Fin N) ℤ) :
+    ∃ (V ι : Type) (_ : Fintype V) (_ : Fintype ι) (r : ι → MvPolynomial V ℤ),
+      ∀ (K : Type) [Field K],
+        MvPolynomial.map (Int.castRingHom K) g ≠ 0 →
+        (MvPolynomial.map (Int.castRingHom K) S ∣ MvPolynomial.map (Int.castRingHom K) g ↔
+          ∃ x : V → K, ∀ i : ι,
+            MvPolynomial.eval₂ (Int.castRingHom K) x (r i) = 0) := by
+  classical
+  set D := g.totalDegree with hD
+  set Quniv : MvPolynomial (Fin N) (MvPolynomial (Fin N → Fin (D + 1)) ℤ) :=
+    coeffPoly N D (fun e => MvPolynomial.X e) with hQuniv
+  set U : MvPolynomial (Fin N) (MvPolynomial (Fin N → Fin (D + 1)) ℤ) :=
+    MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin N → Fin (D + 1)) ℤ)) S * Quniv
+      - MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin N → Fin (D + 1)) ℤ)) g with hU
+  refine ⟨Fin N → Fin (D + 1), {m : Fin N →₀ ℕ // m ∈ U.support}, inferInstance, inferInstance,
+    fun m => U.coeff m.1, ?_⟩
+  intro K _ hgK0
+  -- THE BRIDGE: the coefficient relations say exactly that `S` times the generic
+  -- quotient multiplies out to `g`.
+  have hbridge : ∀ x : (Fin N → Fin (D + 1)) → K,
+      (∀ m ∈ U.support, MvPolynomial.eval₂ (Int.castRingHom K) x (U.coeff m) = 0) ↔
+        MvPolynomial.map (Int.castRingHom K) S * coeffPoly N D x
+          = MvPolynomial.map (Int.castRingHom K) g := by
+    intro x
+    have hcomp : (MvPolynomial.eval₂Hom (Int.castRingHom K) x).comp
+        (Int.castRingHom (MvPolynomial (Fin N → Fin (D + 1)) ℤ)) = Int.castRingHom K :=
+      Subsingleton.elim _ _
+    have hmapU : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U =
+        MvPolynomial.map (Int.castRingHom K) S * coeffPoly N D x
+          - MvPolynomial.map (Int.castRingHom K) g := by
+      rw [hU, _root_.map_sub, _root_.map_mul, hQuniv, map_coeffPoly,
+        MvPolynomial.map_map, MvPolynomial.map_map, hcomp]
+      simp
+    constructor
+    · intro hzero
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        ext m
+        rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
+        by_cases hm : m ∈ U.support
+        · simpa using hzero m hm
+        · rw [MvPolynomial.notMem_support_iff.mp hm, _root_.map_zero]
+      rw [hmapU] at hz
+      exact sub_eq_zero.mp hz
+    · intro hprod m hm
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        rw [hmapU, hprod, sub_self]
+      have hzz := congrArg (MvPolynomial.coeff m) hz
+      rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero] at hzz
+      simpa using hzz
+  constructor
+  · rintro ⟨q, hq⟩
+    have hq0 : q ≠ 0 := by
+      rintro rfl; rw [mul_zero] at hq; exact hgK0 hq
+    have hS0 : MvPolynomial.map (Int.castRingHom K) S ≠ 0 := by
+      intro h; rw [h, zero_mul] at hq; exact hgK0 hq
+    have hsum : (MvPolynomial.map (Int.castRingHom K) S).totalDegree + q.totalDegree
+        = (MvPolynomial.map (Int.castRingHom K) g).totalDegree := by
+      rw [hq, MvPolynomial.totalDegree_mul_of_isDomain hS0 hq0]
+    have hle : (MvPolynomial.map (Int.castRingHom K) g).totalDegree ≤ D := by
+      rw [hD]; exact totalDegree_map_le' _ _
+    have hdeg : q.totalDegree ≤ D := by omega
+    refine ⟨fun e => q.coeff (boundedExpo N D e), ?_⟩
+    rintro ⟨m, hm⟩
+    refine (hbridge _).mpr ?_ m hm
+    rw [coeffPoly_coeff_self N D
+      (fun i => le_trans (MvPolynomial.degreeOf_le_totalDegree q i) hdeg)]
+    exact hq.symm
+  · rintro ⟨x, hx⟩
+    exact ⟨coeffPoly N D x, ((hbridge x).mp (fun m hm => hx ⟨m, hm⟩)).symm⟩
+
+/-- **NON-DIVISIBILITY SPREADS OUT** (PROVEN). If `S₀ ∤ g₀` over `ℚ̄` then
+`S₀ ∤ g₀` over `𝔽̄_p` for all but finitely many `p`.
+
+The proof is the Noether–Ostrowski pattern of this file, with the *reducibility*
+system replaced by the *divisibility* system of `exists_divisibilityCertificates`:
+that system has no `ℚ̄`-solution, so by the already-proven
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` it has no `𝔽̄_p`-solution
+for `p` outside one integer. One extra exclusion is needed, because the
+certificate is only equivalent to divisibility when the dividend is nonzero:
+`g₀` is nonzero (everything divides `0`, so `hdvd` forces it), and a prime
+exceeding the absolute value of one of its nonzero coefficients keeps it
+nonzero mod `p`. -/
+theorem exists_bound_not_dvd_map_algClosureZMod {N : ℕ} (S₀ g₀ : MvPolynomial (Fin N) ℤ)
+    (hdvd : ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) S₀ ∣
+          MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g₀ := by
+  classical
+  obtain ⟨V, ι, _, _, r, hr⟩ := exists_divisibilityCertificates S₀ g₀
+  have hgQ0 : MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ ≠ 0 := by
+    intro h0; exact hdvd (by rw [h0]; exact dvd_zero _)
+  have hg0 : g₀ ≠ 0 := by rintro rfl; exact hgQ0 (by simp)
+  obtain ⟨m₁, hm₁⟩ := MvPolynomial.support_nonempty.mpr hg0
+  have hc : g₀.coeff m₁ ≠ 0 := MvPolynomial.mem_support_iff.mp hm₁
+  have hnoQ : ∀ x : V → AlgebraicClosure ℚ, ∃ i,
+      MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (r i) ≠ 0 := by
+    intro x
+    by_contra hcon
+    push Not at hcon
+    exact hdvd ((hr (AlgebraicClosure ℚ) hgQ0).mpr ⟨x, hcon⟩)
+  obtain ⟨N₀, hN₀pos, hall⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero r hnoQ
+  refine ⟨max N₀ (g₀.coeff m₁).natAbs, fun p _ hp => ?_⟩
+  have hp1 : N₀ < p := lt_of_le_of_lt (le_max_left _ _) hp
+  have hp2 : (g₀.coeff m₁).natAbs < p := lt_of_le_of_lt (le_max_right _ _) hp
+  have hpN : ¬ (p ∣ N₀) := fun hd => absurd (Nat.le_of_dvd hN₀pos hd) (not_le.mpr hp1)
+  haveI : CharP (AlgebraicClosure (ZMod p)) p :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective p
+  have hgp0 : MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g₀ ≠ 0 := by
+    intro h0
+    have hz := congrArg (MvPolynomial.coeff m₁) h0
+    rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero, eq_intCast,
+      CharP.intCast_eq_zero_iff (AlgebraicClosure (ZMod p)) p] at hz
+    have h1 : p ∣ (g₀.coeff m₁).natAbs := by simpa using Int.natAbs_dvd_natAbs.mpr hz
+    exact absurd (Nat.le_of_dvd (Int.natAbs_pos.mpr hc) h1) (not_le.mpr hp2)
+  intro hcon
+  obtain ⟨x, hx⟩ := (hr (AlgebraicClosure (ZMod p)) hgp0).mp hcon
+  obtain ⟨i, hi⟩ := hall p hpN x
+  exact hi (hx i)
+
+/-- **An integral system whose base change to `ℚ̄` is the unit ideal has no
+`ℚ̄`-solution** (PROVEN): the evaluation at a solution would kill the whole
+ideal, hence would send `1` to `0`. -/
+theorem forall_exists_eval_ne_zero_of_integralSystemIdeal_eq_top {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (htop : integralSystemIdeal f (AlgebraicClosure ℚ) = ⊤) :
+    ∀ x : Fin n → AlgebraicClosure ℚ, ∃ i,
+      MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (f i) ≠ 0 := by
+  intro x
+  by_contra hcon
+  push Not at hcon
+  have hle : integralSystemIdeal f (AlgebraicClosure ℚ) ≤
+      RingHom.ker (MvPolynomial.eval x : MvPolynomial (Fin n) (AlgebraicClosure ℚ) →+* _) := by
+    rw [integralSystemIdeal, Ideal.span_le]
+    rintro y ⟨i, rfl⟩
+    simp only [SetLike.mem_coe, RingHom.mem_ker, MvPolynomial.eval_map]
+    exact hcon i
+  have h1 : (1 : MvPolynomial (Fin n) (AlgebraicClosure ℚ)) ∈
+      integralSystemIdeal f (AlgebraicClosure ℚ) := by rw [htop]; trivial
+  have hker := hle h1
+  rw [RingHom.mem_ker, map_one] at hker
+  exact one_ne_zero hker
+
+/-- **THE EMPTY BRANCH OF THE DEGENERATE CASE** (PROVEN, and it needs NO
+constructibility argument). If the system has no `ℚ̄`-point at all then it has no
+`𝔽̄_p`-point for large `p` — that is the already-proven
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` — so by the
+Nullstellensatz its mod-`p` ideal has radical `⊤`, which is not prime.
+
+This is the half of `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`
+that can be discharged with the tools in this file, and peeling it off is what
+lets that leaf carry the hypothesis `integralSystemIdeal f ℚ̄ ≠ ⊤`. -/
+theorem exists_bound_not_isPrime_radical_of_eq_top {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (htop : integralSystemIdeal f (AlgebraicClosure ℚ) = ⊤) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime := by
+  obtain ⟨N₀, hN₀pos, hall⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero f
+    (forall_exists_eval_ne_zero_of_integralSystemIdeal_eq_top f htop)
+  refine ⟨N₀, fun p _ hp => ?_⟩
+  have hpN : ¬ (p ∣ N₀) := fun h => absurd (Nat.le_of_dvd hN₀pos h) (not_le.mpr hp)
+  have hno := hall p hpN
+  have hzl : MvPolynomial.zeroLocus (AlgebraicClosure (ZMod p))
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))) = ∅ := by
+    ext x
+    simp only [integralSystemIdeal, MvPolynomial.zeroLocus_span, Set.mem_setOf_eq,
+      Set.mem_empty_iff_false, iff_false]
+    intro hx
+    obtain ⟨i, hi⟩ := hno x
+    refine hi ?_
+    have hgen := hx _ ⟨i, rfl⟩
+    rwa [MvPolynomial.aeval_def, MvPolynomial.eval₂_map,
+      RingHom.ext_int ((algebraMap (AlgebraicClosure (ZMod p)) (AlgebraicClosure (ZMod p))).comp
+        (Int.castRingHom (AlgebraicClosure (ZMod p))))
+        (Int.castRingHom (AlgebraicClosure (ZMod p)))] at hgen
+  have hrad := MvPolynomial.vanishingIdeal_zeroLocus_eq_radical
+    (k := AlgebraicClosure (ZMod p)) (K := AlgebraicClosure (ZMod p))
+    (integralSystemIdeal f (AlgebraicClosure (ZMod p)))
+  rw [hzl, MvPolynomial.vanishingIdeal_empty] at hrad
+  intro hpr
+  exact hpr.ne_top hrad.symm
+
+/-- **LEAF (A): THE DEGENERATE HALF OF EGA IV 9.7.7 OVER `Spec ℤ`** (SORRY LEAF,
+cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
+
+WHAT IT SAYS. If the geometric generic fibre of an integral system is NONEMPTY
+but NOT irreducible, then for all but finitely many `p` the geometric fibre mod
+`p` is not irreducible either.
+
+WHY IT IS TRUE. Geometric irreducibility of the fibres of a finitely presented
+morphism is a CONSTRUCTIBLE condition on the base (EGA IV 9.7.7; Poonen,
+*Rational Points on Varieties*, §3.2). Here the base is `Spec ℤ`, and the
+hypothesis says the constructible set of primes with irreducible geometric fibre
+does NOT contain the generic point. A constructible subset of `Spec ℤ` missing
+`(0)` is FINITE — the constructible subsets of `Spec ℤ` are exactly the finite
+and the cofinite ones — so it is contained in `V(N)` for one integer `N`, and
+any `D ≥ N` works.
+
+THIS IS THE MIRROR IMAGE OF
+`exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`
+ABOVE, which is the same constructibility statement read at the generic point
+from the other side, and is PROVEN over its own three leaves. The two are NOT
+interderivable: that one says the good locus contains a nonempty open, this one
+says the good locus is finite. A prover should read that leaf's chain first —
+`exists_inverted_irreducibleSpace_integralSystemModel` and
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` — since
+the same spreading-out apparatus is what this leaf needs, run the other way.
+
+WHY THE `⊤` CASE IS NOT PART OF THIS LEAF. The empty fibre is the one branch of
+non-primality that needs no constructibility at all, and it is discharged by
+`exists_bound_not_isPrime_radical_of_eq_top` immediately above, over the proven
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`. So `hne` costs the leaf
+nothing and removes a case that is already done.
+
+WHY THE OBVIOUS CERTIFICATE ROUTE DOES NOT WORK HERE, recorded so the next owner
+does not spend a cycle on it. The technique that proves
+`exists_bound_not_dvd_map_algClosureZMod` and
+`exists_inverted_irreducible_map_algClosureZMod` above — rewrite the condition as
+SOLVABILITY of a system of integral equations, then spread out non-solvability —
+does not apply. Non-primality of the radical is
+`∃ a b, a * b ∈ I.radical ∧ a ∉ I.radical ∧ b ∉ I.radical`, and membership in the
+RADICAL carries an unbounded exponent `k` with `a ^ k ∈ I`; there is no degree
+bound on `k`, so the condition is not cut out by a fixed finite system. That is
+exactly the "unbounded degrees" objection recorded against route 2 of the parent
+chain above, and it is why the ordinary constructibility machinery (generic
+flatness / Chevalley via `PrimeSpectrum.isConstructible_comap_image`,
+`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`, PRESENT in the pin) is
+genuinely needed here rather than avoidable.
+
+FAITHFULNESS. Not vacuous: `hne` makes the geometric generic fibre nonempty and
+`hQ` makes it reducible, and both are satisfiable (take `f = (x * y)` in two
+variables). The conclusion is a genuine constraint — it is exactly what makes
+the degenerate branch of the parent honest, and without it the parent would have
+to claim `Irreducible 1`, which is false.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ`, `ℚ̄` and
+`𝔽̄_p` only, no Galois representation, no modular form, nothing from
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_bound_not_isPrime_radical_integralSystemIdeal_zmod {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hne : integralSystemIdeal f (AlgebraicClosure ℚ) ≠ ⊤)
+    (hQ : ¬ (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime :=
+  sorry
+
+/-- **LEAF (B): SCHMIDT'S THEOREM 4D OVER `ℚ`, DESCENDED TO `ℤ`** (SORRY LEAF,
+cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
+
+**NO PRIME APPEARS IN THIS STATEMENT.** That is the point of the cut: this is
+characteristic-zero birational geometry plus one denominator-clearing step, and
+everything arithmetic — reduction mod `p`, absolute irreducibility mod `p`,
+non-divisibility mod `p` — is proven separately above and glued by the consumer.
+
+WHAT IT SAYS. For an integral system whose geometric generic fibre is irreducible
+there is a hypersurface `S₀ ⊆ 𝔸^{e+1}_ℤ`, absolutely irreducible over `ℚ̄`, an
+auxiliary `g₀` not divisible by it, and POLYNOMIAL data `P`, `R`, `w` over `ℤ`
+satisfying the three identities in the localised ideal
+`J = (S₀, g₀ · T − 1) ⊆ ℤ[X₀ … X_e, T]`, which presents the coordinate ring of
+`V(S₀) ∖ V(g₀)`. The identities say: `φ = P ∘ Fin.castSucc` lands in `V(f)`; the
+last coordinate of `P` is pinned to `1 / w(φ(x))`; and `ψ ∘ φ = id`, i.e. `φ` is
+INJECTIVE on that open set. That is Schmidt's §7 eq. (7.3) in the single
+direction the consumer needs, the injection `S ∖ M ↪ V`.
+
+WHY IT IS TRUE — SCHMIDT, LNM 536.
+
+*Chapter VI, Theorem 4D (p. 248).* "Suppose `V` is a variety defined over a
+perfect ground field `k`. Then `V` is birationally equivalent to a hypersurface."
+The proof is an induction on `n − d` using the theorem of the primitive element:
+pick a transcendence base `x₁ … x_e`; perfectness of `k` makes the extension
+separably generated, so a primitive element replaces two coordinates by one and
+drops the ambient dimension. Since `k(x) = k(y)`, Theorem 4B makes the two
+varieties birationally equivalent OVER `k` — this is what makes the maps
+`ℚ`-rational, and hence integral after clearing denominators.
+
+*Chapter VI §6, Remark (1) (pp. 259–260).* The hypersurface produced is again an
+ABSOLUTE variety when `V` is, because `k(x) = k(y)` and `k` is algebraically
+closed in that common field. That is where `hirr` comes from; in this pin the
+same fact is the char-0 criterion "geometrically integral ⟺ `ℚ` algebraically
+closed in the function field", and Gauss's lemma on the PRIMITIVE `S₀` moves
+absolute irreducibility from `ℚ̄(t)[y]` back to `ℚ̄[t, y]`.
+
+*Chapter VI §7, eq. (7.3) (p. 262).* Theorem 4A gives proper closed `L ⊆ V`,
+`M ⊆ S` with `V ∖ L ≅ S ∖ M`; only the injection is recorded here.
+
+WHY THE THREE IDENTITIES ARE IDEAL MEMBERSHIPS AND NOT MERE VANISHING. With `S₀`
+absolutely irreducible and `S₀ ∤ g₀`, the ideal `J` is PRIME in `ℚ[X, T]` —
+`ℚ[X, T] ⧸ J` is the localisation `(ℚ[X] ⧸ (S₀))[1/g₀]` of a domain, and it is
+nonzero exactly because `g₀ ∉ (S₀)`. So a regular function vanishing identically
+on the open set lies in `J` by the Nullstellensatz, with no radical to take.
+
+WHY THE `ℤ`-DESCENT IS LEGITIMATE (the one step where clearing denominators is
+not automatic). Over `ℚ` the identities hold with `A, B ∈ ℚ[X, T]`, so
+`N · q ∈ J_ℤ` for some nonzero integer `N`. Choose `S₀` PRIMITIVE; by Gauss it is
+then irreducible in `ℤ[X]`, so `ℤ[X] ⧸ (S₀)` is a domain of characteristic `0`,
+hence `ℤ`-torsion-free, and so is its localisation at `g₀`. Therefore
+`N · q ∈ J_ℤ` with `N ≠ 0` already forces `q ∈ J_ℤ`.
+
+`g₀` IS THE PROVER'S TO ENLARGE, AND IT MUST BE. Three separate denominators have
+to be inverted: those of the components of `φ`, that of `w ∘ φ` (so that the
+`U`-slot really is `1 / w(φ(x))`, which is what makes assertion 3 give
+INJECTIVITY rather than merely a left inverse on a smaller set), and that of `ψ`.
+Enlarging `g₀` shrinks the open set but keeps it dense, since `V(S₀)` is
+irreducible and none of those denominators vanishes identically on it.
+
+`e` IS NOT FREE: it is `dim V` over `ℚ̄`, so `e ≤ n`. Inflating it makes the
+CONSUMER's chain false rather than easier, since item 4 downstream forces
+`N(S) ≥ p^e / c` while `N(f) ≤ p^n`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ` and `ℚ̄` only,
+no prime `p`, no Galois representation, no modular form, nothing from
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_rationalHypersurfaceCertificate {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ (e : ℕ) (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℤ)
+      (P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ)
+      (R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ)
+      (w : MvPolynomial (Fin n) ℤ),
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀) ∧
+      ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+          MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ ∧
+      (∀ i : Fin m, ∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) (f i)
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∀ l : Fin (e + 1), ∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C P (R l)
+              - MvPolynomial.X l.castSucc
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) w
+              * P (Fin.last n) - 1
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
+  sorry
+
+/-- **THE INTEGRAL HYPERSURFACE CERTIFICATE** (**PROVEN 2026-07-27** over the two
+leaves immediately above — `exists_rationalHypersurfaceCertificate`, which is
+Theorem 4D and the `ℤ`-descent with no prime in its statement, and
+`exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`, the degenerate half
+of EGA IV 9.7.7 — together with four PROVEN lemmas in this block and
+`exists_inverted_irreducible_map_algClosureZMod` (Noether–Ostrowski) far above.
+It was a bare `sorry`, cut 2026-07-27 out of `exists_spreadOutHypersurfaceModel`)
+— Schmidt Chapter VI, Theorem 4D together
 with the spreading out, packaged as a FINITE ALGEBRAIC CERTIFICATE over `ℤ`.
+
+WHAT THE ASSEMBLY BELOW DISCHARGES, so nobody redoes it. The proof is a classical
+case split on whether the geometric generic fibre is irreducible.
+
+* HONEST BRANCH (`(integralSystemIdeal f ℚ̄).radical.IsPrime`). Theorem 4D over
+  `ℚ`, descended, supplies `S₀, g₀, P, R, w` and the three identities VERBATIM —
+  they contain no prime and are handed straight through. Assertion 1 is then
+  three separate spreading-out facts, each proven: the total degree survives
+  (`exists_bound_totalDegree_map_intCastRingHom_zmod`, so `d := S₀.totalDegree`),
+  absolute irreducibility survives (Noether–Ostrowski), and non-divisibility
+  survives (`exists_bound_not_dvd_map_algClosureZMod`). The degree bound on `g₀`
+  is FREE with `c := g₀.totalDegree`, because reduction can only lower the total
+  degree (`totalDegree_map_le'`). The bound `D` is the max of the three.
+* DEGENERATE BRANCH. `S₀ = g₀ = 1` makes `J` the unit ideal, so assertions 2–4
+  hold with `A` the left-hand side and `B = 0` — that is why they are stated
+  unconditionally. Assertion 1 is then discharged by showing its HYPOTHESIS
+  fails for `p > D`, which is where the two degenerate leaves come in: the empty
+  case is PROVEN (`exists_bound_not_isPrime_radical_of_eq_top`) and only the
+  nonempty-reducible case is left open.
+
+THE DEGENERATE BRANCH IS NOT A CHEAT, and it is worth seeing why the statement
+cannot be gamed. Assertions 2–4 with an ABSOLUTELY IRREDUCIBLE `S₀` would force
+`V(f)(𝔽̄_p)` to be nonempty for every large `p` (the open set
+`V(S₀) ∖ V(g₀)` is nonempty and injects into it), whereas a system with no
+`ℚ̄`-point has no `𝔽̄_p`-point for large `p`. So `S₀ = 1` is forced there, and
+`Irreducible 1` is false — meaning assertion 1 can only be met by refuting its
+hypothesis, which is exactly the honest content of the degenerate leaves.
 
 This is the whole geometric content of item 5. It is stated with no geometry in
 it at all: the data are polynomials over `ℤ`, and the assertions are polynomial
@@ -13272,9 +13728,18 @@ empty, `1 ∈ I·ℤ[x][1/N]` for some `N`, so the ideal over `𝔽̄_p` is the 
 and its radical is not prime; if reducible, the components spread out). Assertions
 2–4 are unconditional, so they must still be witnessed — and they are, trivially,
 by `S₀ = 1`: then `J` is the unit ideal and every identity holds with `A` the
-left-hand side and `B = 0`. Assertion 1 is then vacuous because `Irreducible 1` is
-false, which is exactly the branch just described. So the degenerate case is
-discharged by the statement itself and costs the prover nothing.
+left-hand side and `B = 0`.
+
+**CORRECTION (2026-07-27), because the original wording here misled the cut.** It
+said assertion 1 is "then vacuous because `Irreducible 1` is false" and that the
+degenerate case "costs the prover nothing". `Irreducible 1` being false does NOT
+make assertion 1 vacuous — it makes assertion 1 FALSE unless its HYPOTHESIS is
+refuted, so the degenerate branch owes a proof that no `p > D` has an irreducible
+geometric fibre. That is a real obligation and it is where the two degenerate
+leaves come from: the EMPTY case is now PROVEN
+(`exists_bound_not_isPrime_radical_of_eq_top`, over
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`), and the NONEMPTY-reducible
+case is the open leaf `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`.
 
 In the honest branch nothing can be gamed either: `d = 0` is impossible because a
 constant is never irreducible; inflating `c` is capped by
@@ -13316,8 +13781,52 @@ theorem exists_integralHypersurfaceCertificate {n m : ℕ}
               * P (Fin.last n) - 1
             = A * MvPolynomial.rename Fin.castSucc S₀
               + B * (MvPolynomial.rename Fin.castSucc g₀
-                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
-  sorry
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) := by
+  classical
+  by_cases hgen : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime
+  · -- HONEST BRANCH: the geometric generic fibre is irreducible, so Theorem 4D
+    -- applies over `ℚ` and the three identities are handed straight through.
+    obtain ⟨e, S₀, g₀, P, R, w, hirr, hdvd, hsys, hinv, hden⟩ :=
+      exists_rationalHypersurfaceCertificate f hgen
+    obtain ⟨D₁, hD₁⟩ := exists_bound_totalDegree_map_intCastRingHom_zmod S₀
+    obtain ⟨N₂, hN₂pos, hN₂⟩ := exists_inverted_irreducible_map_algClosureZMod S₀ hirr
+    obtain ⟨D₃, hD₃⟩ := exists_bound_not_dvd_map_algClosureZMod S₀ g₀ hdvd
+    refine ⟨max (max D₁ N₂) D₃, e, S₀.totalDegree, g₀.totalDegree, S₀, g₀, P, R, w,
+      ?_, hsys, hinv, hden⟩
+    intro p _ hp _
+    have hp1 : D₁ < p := lt_of_le_of_lt (le_trans (le_max_left _ _) (le_max_left _ _)) hp
+    have hp2 : N₂ < p := lt_of_le_of_lt (le_trans (le_max_right _ _) (le_max_left _ _)) hp
+    have hp3 : D₃ < p := lt_of_le_of_lt (le_max_right _ _) hp
+    have hpN₂ : ¬ (p ∣ N₂) := fun h => absurd (Nat.le_of_dvd hN₂pos h) (not_le.mpr hp2)
+    -- The degree bound on `g₀` is free: reduction can only lower the total degree.
+    refine ⟨hD₁ p hp1, ?_, totalDegree_map_le' _ _, ?_⟩
+    · rw [map_algebraMap_map_intCastRingHom_zmod S₀]
+      exact hN₂ p hpN₂
+    · intro hcon
+      refine hD₃ p hp3 ?_
+      have hmap := map_dvd (MvPolynomial.map
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) hcon
+      rwa [map_algebraMap_map_intCastRingHom_zmod S₀,
+        map_algebraMap_map_intCastRingHom_zmod g₀] at hmap
+  · -- DEGENERATE BRANCH: `S₀ = g₀ = 1` makes `J` the unit ideal, so the three
+    -- identities are trivial; assertion 1 is met by refuting its hypothesis.
+    have hD : ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+        ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime := by
+      by_cases htop : integralSystemIdeal f (AlgebraicClosure ℚ) = ⊤
+      · exact exists_bound_not_isPrime_radical_of_eq_top f htop
+      · exact exists_bound_not_isPrime_radical_integralSystemIdeal_zmod f htop hgen
+    obtain ⟨D, hDp⟩ := hD
+    refine ⟨D, 0, 0, 0, 1, 1, fun _ => 0, fun _ => 0, 0, ?_, ?_, ?_, ?_⟩
+    · intro p _ hp hprime
+      exact absurd hprime (hDp p hp)
+    · intro i
+      exact ⟨MvPolynomial.eval₂ MvPolynomial.C (fun _ => (0 : MvPolynomial (Fin 2) ℤ)) (f i),
+        0, by simp⟩
+    · intro l
+      exact ⟨MvPolynomial.eval₂ MvPolynomial.C (fun _ => (0 : MvPolynomial (Fin 2) ℤ))
+          (0 : MvPolynomial (Fin (n + 1)) ℤ) - MvPolynomial.X l.castSucc, 0, by simp⟩
+    · exact ⟨MvPolynomial.eval₂ MvPolynomial.C (fun _ => (0 : MvPolynomial (Fin 2) ℤ))
+        (0 : MvPolynomial (Fin n) ℤ) * 0 - 1, 0, by simp⟩
 
 /-- **SUB-LEAF (A): SCHMIDT'S THEOREM 4D, SPREAD OUT OVER `ℤ[1/D]`** (PROVEN
 2026-07-27 over `exists_integralHypersurfaceCertificate`) — the GEOMETRY half.
@@ -14236,7 +14745,14 @@ NAMED LEAVES, split along the line the literature itself draws:
   the geometry, and all of the birational equivalence, is in there. It is itself
   **PROVEN** (2026-07-27) over `exists_integralHypersurfaceCertificate`, which
   packages Theorem 4D and the spreading out as polynomial IDENTITIES OVER `ℤ`;
-  the evaluation-and-counting argument on top of them is proven.
+  the evaluation-and-counting argument on top of them is proven. That certificate
+  is now **ALSO PROVEN** (2026-07-27), over exactly two leaves:
+  `exists_rationalHypersurfaceCertificate` (Theorem 4D over `ℚ` plus the
+  `ℤ`-descent, no prime in its statement) and
+  `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` (the degenerate
+  half of EGA IV 9.7.7). Everything arithmetic between them — total degree,
+  absolute irreducibility and non-divisibility under reduction, and the EMPTY
+  degenerate case — is proven in the block above it.
 * `exists_bound_badLocusCount` — Lemma 7C, via the Chapter IV §3 elementary upper
   bounds. A pure finite-field point count over `𝔽_p`, with no algebraic closure in
   its signature; the bridge is `irreducible_of_irreducible_map`, PROVEN above.
@@ -14590,13 +15106,16 @@ five-item route is realised in the file rather than merely described):
   The base-change bridge `irreducible_of_irreducible_map` is PROVEN, which is what
   lets the counting leaf be stated with no algebraic closure in its signature.
 
-So after the 2026-07-27 work the remaining open leaves under this node are FIVE:
+So after the 2026-07-27 work the remaining open leaves under this node are SIX:
 `exists_stepanovJetSolution`, `stepanov_not_dvd_stepanovAnsatz` and
 `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the three children of the
 now-proven `exists_stepanovAuxiliaryFunction`),
-`exists_bertiniNoetherWitness_of_three_le`, and
-`exists_integralHypersurfaceCertificate`.  All the glue between them is written
-and compiles, and this leaf itself has nothing left to prove.
+`exists_bertiniNoetherWitness_of_three_le`, and — LATER THE SAME DAY, replacing
+`exists_integralHypersurfaceCertificate`, which is now PROVEN —
+`exists_rationalHypersurfaceCertificate` and
+`exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`.  All the glue
+between them is written and compiles, and this leaf itself has nothing left to
+prove.
 
 **This list was REGENERATED at integration (2026-07-27) from the merged source,
 not merged as prose.**  Six branches in this batch each rewrote it and each was
@@ -14619,7 +15138,11 @@ leaves:
   `exists_spreadOutHypersurfaceModel`, which is itself PROVEN over the single
   new leaf `exists_integralHypersurfaceCertificate` — Schmidt's Theorem 4D and
   the spreading out written as polynomial identities over `ℤ`, with the
-  evaluation, injectivity and counting argument PROVEN on top of it;
+  evaluation, injectivity and counting argument PROVEN on top of it.  That
+  certificate was itself PROVEN later on 2026-07-27, over
+  `exists_rationalHypersurfaceCertificate` (char-0 birational geometry) and
+  `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` (the degenerate
+  half of the spreading out); the arithmetic in between is proven;
 * items 4 and 5 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`
   and `exists_bound_forall_zmodSolvable_of_hypersurfaceCount` — are PROVEN over
   the names above, so it is those sub-leaves and not the items that are open.
