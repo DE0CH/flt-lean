@@ -4851,6 +4851,84 @@ theorem neronReduction_injective (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZM
       exact addOrderOf_nsmul_eq_zero x
   exact hinj
 
+/-! ### Two base-independent notions: a relative curve, and a fibre
+
+Both halves of the Néron datum are assembled out of the same two shapes,
+and neither mentions `X_0(N)`, `ℤ_(ℓ)` or even a number field.  Naming
+them is what lets the sub-leaves below be stated over an ARBITRARY base,
+which is the difference between a decomposition and a repartition of
+fields: `exists_relativeJacobian` and `isSmoothProperCurve_of_fibreIdent`
+are statements about smooth proper curves in general, and are reusable
+anywhere in the reduction-theory subtree. -/
+
+/-- **A smooth proper curve over a base**: proper, smooth of relative
+dimension `1`, with geometrically connected fibres.
+
+These are exactly the three geometric fields `IsX0Compactification`
+carries about `strX`, and exactly the hypotheses under which the relative
+Picard functor `Pic⁰` is representable by an abelian scheme.  Naming them
+is what lets `exists_relativeJacobian` be stated without reference to
+modular curves. -/
+structure IsSmoothProperCurve {C S : Scheme.{0}} (f : C ⟶ S) : Prop where
+  /-- the curve is proper over the base -/
+  isProper : IsProper f
+  /-- the curve is smooth of relative dimension `1` -/
+  smooth : SmoothOfRelativeDimension 1 f
+  /-- the fibres are geometrically connected -/
+  connected : GeometricallyConnected f
+
+/-- **`f' : A' ⟶ S'` is the fibre of `f : A ⟶ S` along `s : S' ⟶ S`,
+as functors of points.**
+
+This is the shape that occurs FOUR times in `IsX0NeronDatum` — as
+`(genX, genX_nat)`, `(spX, spX_nat)`, `(genJ, genJ_nat)` and
+`(spJ, spJ_nat)` — with `s` the generic or the closed point.  The
+equivalence is natural in the test scheme, stated in the "identified
+base" form used throughout this file, so `RelPoint f (g ≫ s)` is the
+functor of points of the base change `A ×_S S'` and the two fields
+together say, by Yoneda in `Over S'`, that `A' ≅ A ×_S S'` over `S'`.
+
+Factoring it out is not cosmetic.  It is what makes
+`fibreIdentPullback` — the observation that the pullback IS a fibre —
+expressible at all, and that single lemma removes the special fibre of
+the curve model from the list of things that have to be POSITED: below,
+`X'` is *constructed* as `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ` rather than assumed to
+exist. -/
+structure IsFibreIdent {S S' A A' : Scheme.{0}} (s : S' ⟶ S) (f : A ⟶ S) (f' : A' ⟶ S') where
+  /-- the identification of relative points, over an identified base point -/
+  toEquiv : ∀ {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S), g ≫ s = g₀ →
+    RelPoint f' g ≃ RelPoint f g₀
+  /-- naturality in the test scheme -/
+  nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S'} {g' : T' ⟶ S'}
+    (hg : h ≫ g = g') {g₀ : T ⟶ S} {g₀' : T' ⟶ S}
+    (h₀ : g ≫ s = g₀) (h₀' : g' ≫ s = g₀') (x : RelPoint f' g),
+    toEquiv g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (toEquiv g g₀ h₀ x)
+
+/-- **The pullback is a fibre** (PROVEN).
+
+`A ×_S S' ⟶ S'` satisfies `IsFibreIdent s f`, by nothing but the
+universal property of the pullback: a `T`-point of `A ×_S S'` over
+`g : T ⟶ S'` is exactly a `T`-point of `A` over `g ≫ s`, and
+precomposition is composition, which is associative.
+
+This is the lemma that turns the special fibre from an assumption into a
+construction — see `exists_x0CurveModel_of_base`, where `X'` is no
+longer existentially quantified over but is literally
+`Limits.pullback xstr (SpecLoc.special toF)`. -/
+noncomputable def fibreIdentPullback {S S' A : Scheme.{0}} (s : S' ⟶ S) (f : A ⟶ S) :
+    IsFibreIdent s f (Limits.pullback.snd f s) where
+  toEquiv g g₀ h :=
+    { toFun := fun x => ⟨x.1 ≫ Limits.pullback.fst f s, by
+        rw [Category.assoc, Limits.pullback.condition, ← Category.assoc, x.2, h]⟩
+      invFun := fun y => ⟨Limits.pullback.lift y.1 g (y.2.trans h.symm),
+        Limits.pullback.lift_snd _ _ _⟩
+      left_inv := fun x => Subtype.ext (Limits.pullback.hom_ext
+        (by rw [Limits.pullback.lift_fst])
+        (by rw [Limits.pullback.lift_snd, x.2]))
+      right_inv := fun y => Subtype.ext (Limits.pullback.lift_fst _ _ _) }
+  nat := by intros; exact Subtype.ext (Category.assoc _ _ _)
+
 /-- **The CURVE half of a Néron datum: the integral model of `X_0(N)`
 over `ℤ_(ℓ)` together with its two fibres.**
 
@@ -4960,15 +5038,86 @@ structure IsX0JacobianModel {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod 
     (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
       RelPoint jstrZ (𝟙 (SpecLoc R)) → RelPoint jstrZ (SpecLoc.generic R))
 
-/-- **The integral CURVE model of `X_0(N)` over `ℤ_(ℓ)` exists, at every
-`ℓ ∤ N`** (sorry node — Deligne–Rapoport / Igusa).
+/-- **The generic fibre identification of a curve model, as an
+`IsFibreIdent`** (PROVEN — pure field copying). -/
+def IsX0CurveModel.genIdent {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF ℓ}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    IsFibreIdent (SpecLoc.generic R) xstr strX where
+  toEquiv := cm.genX
+  nat := cm.genX_nat
 
-TRUE: `X_0(N)` has a smooth proper model over `ℤ[1/N]`, hence over
-`ℤ_(ℓ)` for `ℓ ∤ N`, and the fibre identifications are the definition of
-a model.  `properX` is the valuative criterion of properness for it.
+/-- **The special fibre identification of a curve model, as an
+`IsFibreIdent`** (PROVEN — pure field copying). -/
+def IsX0CurveModel.spIdent {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF ℓ}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    IsFibreIdent (SpecLoc.special toF) xstr strX' where
+  toEquiv := cm.spX
+  nat := cm.spX_nat
 
-Note there is NO sharpness claim and no hypothesis `ℓ ≠ 2`: this leaf is
-universal in `ℓ ∤ N` and says only that the model exists.
+/-- **The valuative criterion of properness, read on relative points: a
+`ℚ`-point of a proper `ℤ_(ℓ)`-scheme extends uniquely to a
+`ℤ_(ℓ)`-point** (sorry node).
+
+TRUE, and it is the ONE piece of geometry both halves of the Néron datum
+need: it is `properX` of `IsX0CurveModel` for the curve, and `neronJ` of
+`IsX0JacobianModel` for the Jacobian — the Néron mapping property of an
+abelian scheme over a DVR is nothing but properness plus the valuative
+criterion, since an abelian scheme is proper (`AbelianSchemeStruct.proper`).
+Stating it once and citing it twice is why neither of those is a separate
+leaf.
+
+**Why `IsReductionBase` is exactly the right hypothesis.**  It says `R`
+is a local subring of `ℚ` with residue field `𝔽_ℓ`.  Every subring of
+`ℚ` contains `ℤ`, so `Frac R = ℚ`; and a local subring of `ℚ` is a
+valuation ring of `ℚ` — the only ones are `ℚ` itself, which is excluded
+because a field's only nonunit is `0` while `ker toF` is the whole
+maximal ideal of a ring surjecting onto `ZMod ℓ`, and the `ℤ_(p)`.  So
+`R` is a DVR with fraction field `ℚ` and `SpecLoc.generic R` is `Spec`
+of `R ↪ Frac R`, which is precisely the left edge of mathlib's
+`ValuativeCommSq`.
+
+IRREDUCIBLE at this pin ALONG THE GEOMETRY AXIS, and the CHECK THAT
+WOULD REFUTE THAT: mathlib HAS the criterion —
+`AlgebraicGeometry.IsProper.eq_valuativeCriterion` presents `IsProper` as
+`ValuativeCriterion ⊓ …`, and `ValuativeCriterion` supplies a unique lift
+for every `ValuativeCommSq`.  What is missing is the ARITHMETIC input:
+nothing in this development yet derives `ValuationRing ↥R` and
+`IsFractionRing ↥R ℚ` from `IsReductionBase`, i.e. the classification of
+local subrings of `ℚ`.  Supplying those two instances refutes the claim
+and closes this leaf, and that is a statement about `ℚ` with no
+schemes in it at all. -/
+theorem bijective_pre_generic_of_isProper (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF)
+    {A : Scheme.{0}} (f : A ⟶ SpecLoc R) (_hf : IsProper f) :
+    Function.Bijective
+      (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+        RelPoint f (𝟙 (SpecLoc R)) → RelPoint f (SpecLoc.generic R)) :=
+  sorry
+
+/-- **The smooth proper integral model of `X_0(N)` over `ℤ_(ℓ)` exists,
+with its generic fibre identified with the given `X/ℚ`** (sorry node —
+Deligne–Rapoport / Igusa).
+
+This is `exists_x0CurveModel_of_base` with everything FORMAL removed.
+What is left is the one citation: `X_0(N)` has a smooth proper model over
+`ℤ[1/N]`, hence over `ℤ_(ℓ)` for `ℓ ∤ N`, and its generic fibre is the
+`X_0(N)` we started with — the second half being the uniqueness of the
+coarse moduli space and of the smooth compactification of a curve over
+`ℚ`, both of which are determined up to unique isomorphism by
+`IsCoarseModuliY0`'s initiality clause.
+
+Three things this leaf NO LONGER carries, and each is a genuine
+reduction rather than a repackaging:
+
+* the SPECIAL fibre `X'` — it is the pullback `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`, by
+  `fibreIdentPullback`, which is PROVEN;
+* `spX` and `spX_nat` — same lemma;
+* `properX` — that is `bijective_pre_generic_of_isProper` applied to
+  `model.isProper`.
 
 IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
 REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
@@ -4981,27 +5130,85 @@ refutes the claim.  The nearest usable foothold in this file is
 `Gamma0Atlas` / `exists_coarseModuliY0_of_pos`, whose base was
 deliberately left general — extending that construction from `Spec ℚ` to
 `Spec ℤ_(ℓ)` is the concrete attack. -/
-theorem exists_x0CurveModel_of_base (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+theorem exists_x0CompactificationModel (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (_hX : IsX0Compactification N strX strY j) :
-    ∃ (X' XZ YZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R)
-      (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
-      Nonempty (IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ) :=
+    ∃ (XZ YZ : Scheme.{0}) (xstr : XZ ⟶ SpecLoc R) (ystr : YZ ⟶ SpecLoc R)
+      (jZ : YZ ⟶ XZ) (_ : IsX0Compactification N xstr ystr jZ),
+      Nonempty (IsFibreIdent (SpecLoc.generic R) xstr strX) :=
   sorry
 
-/-- **The relative JACOBIAN of a given integral curve model exists**
-(sorry node — Grothendieck's relative Picard scheme).
+/-- **The integral CURVE model of `X_0(N)` over `ℤ_(ℓ)` exists, at every
+`ℓ ∤ N`** (PROVEN, over the integral model and the valuative criterion).
 
-TRUE: for a smooth proper curve with a section over a base, `Pic⁰` is
-representable by an abelian scheme, its formation commutes with base
-change, and Abel–Jacobi is defined over the base.  An abelian scheme
-with the right generic fibre IS the Néron model, which is `neronJ`.
+TRUE: `X_0(N)` has a smooth proper model over `ℤ[1/N]`, hence over
+`ℤ_(ℓ)` for `ℓ ∤ N`, and the fibre identifications are the definition of
+a model.  `properX` is the valuative criterion of properness for it.
 
-Note what this leaf does NOT need: it is stated for an arbitrary
-`IsX0CurveModel`, so it knows nothing about modular curves.  It is a
-statement about smooth proper curves in general, and proving it that way
-is the intended route.
+Note there is NO sharpness claim and no hypothesis `ℓ ≠ 2`: this leaf is
+universal in `ℓ ∤ N` and says only that the model exists.
+
+**The cut (2026-07-27), and what it removed.**  The previous audit here
+recorded the node as irreducible along the MODULI axis, citing the
+absence of a Deligne–Rapoport integral model from mathlib, `~/cs/FLT`
+and this project.  That citation is still correct — it now sits on
+`exists_x0CompactificationModel`, which is the only part of this
+statement that needs it — but it covered three further obligations that
+need no moduli theory at all, and those are now discharged here:
+
+* the SPECIAL fibre `X'` is no longer existentially quantified over.  It
+  is `Limits.pullback xstr (SpecLoc.special toF)`, i.e. literally
+  `𝒳 ×_{ℤ_(ℓ)} 𝔽_ℓ`, and `spX` / `spX_nat` are the universal property of
+  that pullback — `fibreIdentPullback`, which is PROVEN;
+* `properX` is `bijective_pre_generic_of_isProper` applied to
+  `model.isProper`, whose remaining content is the ARITHMETIC fact that
+  a local subring of `ℚ` is a valuation ring with fraction field `ℚ`.
+
+So what a Deligne–Rapoport specialist is now asked for is the model and
+its generic fibre, and nothing else. -/
+theorem exists_x0CurveModel_of_base (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY j) :
+    ∃ (X' XZ YZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (xstr : XZ ⟶ SpecLoc R)
+      (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ) := by
+  obtain ⟨XZ, YZ, xstr, ystr, jZ, hmodel, ⟨eGen⟩⟩ :=
+    exists_x0CompactificationModel N ℓ hℓ hℓN R toF hbase hX
+  -- the special fibre is not posited: it is the pullback along the closed point
+  exact ⟨Limits.pullback xstr (SpecLoc.special toF), XZ, YZ,
+    Limits.pullback.snd xstr (SpecLoc.special toF), xstr, ystr, jZ,
+    ⟨{ model := hmodel
+       genX := eGen.toEquiv
+       spX := (fibreIdentPullback (SpecLoc.special toF) xstr).toEquiv
+       genX_nat := eGen.nat
+       spX_nat := (fibreIdentPullback (SpecLoc.special toF) xstr).nat
+       properX := bijective_pre_generic_of_isProper ℓ R toF hbase xstr hmodel.isProper }⟩⟩
+
+/-! ### The Jacobian half: three base-independent leaves
+
+None of the three mentions `X_0(N)`, `ℚ` or `ℤ_(ℓ)`.  That is the point:
+the Jacobian half of a Néron datum is a statement about smooth proper
+curves over an arbitrary base, and everything specific to this file
+happens in the assembly `exists_x0JacobianModel_of_curveModel`, which
+instantiates them at the generic and the closed point. -/
+
+/-- **The relative Jacobian of a smooth proper curve with a section
+exists** (sorry node — Grothendieck's relative Picard scheme).
+
+TRUE: for `f : C ⟶ S` smooth and proper with geometrically connected
+fibres of dimension `1` and a section `o`, the relative Picard functor
+`Pic⁰_{C/S}` is representable by an abelian scheme over `S`, and
+Abel–Jacobi `x ↦ [x] − [o]` is the universal map to an abelian scheme —
+which is exactly `IsJacobianOf`.  (FGA, exposé 232; BLR *Néron Models*
+ch. 8–9; the section is what makes `Pic` representable rather than only
+its fppf sheafification.)
+
+Note the base is ARBITRARY: this is the level-free, curve-only content
+of the Jacobian half, so it benefits the whole reduction-theory subtree
+and not only `X_0`.  It is applied TWICE below, once over `Spec ℤ_(ℓ)`
+and once over `Spec 𝔽_ℓ`.
 
 IRREDUCIBLE at this pin ALONG THE PICARD AXIS, and the CHECK THAT WOULD
 REFUTE THAT: a survey on 2026-07-27 found no Picard SCHEME and no
@@ -5011,9 +5218,108 @@ relative Jacobian in mathlib, `~/cs/FLT` or this project — mathlib's
 `JacobianPackage` / `ModularJacobianPackage` are axiomatized interfaces,
 not constructions.  Producing a representing scheme for the relative
 `Pic⁰` functor refutes the claim. -/
+theorem exists_relativeJacobian {C S : Scheme.{0}} (f : C ⟶ S)
+    (_hf : IsSmoothProperCurve f) (o : RelPoint f (𝟙 S)) :
+    ∃ (J : Scheme.{0}) (jf : J ⟶ S) (ab : AbelianSchemeStruct jf),
+      Nonempty (IsJacobianOf f ab o) :=
+  sorry
+
+/-- **A fibre of a smooth proper curve is a smooth proper curve**
+(sorry node).
+
+TRUE, and it is pure base change: `IsFibreIdent s f f'` says by Yoneda in
+`Over S'` that `f'` is isomorphic to `f ×_S S'`, and `IsProper`,
+`SmoothOfRelativeDimension 1` and `GeometricallyConnected` are each
+stable under base change and invariant under isomorphism over the base.
+
+It is needed because the special fibre `X'` of a curve model is
+constrained by NOTHING but its functor of points — `IsX0CurveModel`
+carries `spX`/`spX_nat` and no geometric field about `strX'` — so
+`exists_relativeJacobian` cannot be applied to it until its geometry is
+recovered from the identification.
+
+IRREDUCIBLE at this pin ALONG THE YONEDA AXIS, and the CHECK THAT WOULD
+REFUTE THAT: mathlib has the three base-change stability results, so what
+is missing is only the passage from a natural equivalence of
+`RelPoint`-functors to an isomorphism of schemes over `S'`, i.e. Yoneda
+for the over-category presentation used in this file.  Producing that
+transport — from `IsFibreIdent s f f'` to `Arrow.mk f' ≅ Arrow.mk
+(Limits.pullback.snd f s)` — closes this leaf, and `fibreIdentPullback`
+supplies the other half of the comparison. -/
+theorem isSmoothProperCurve_of_fibreIdent {S S' A A' : Scheme.{0}} {s : S' ⟶ S}
+    {f : A ⟶ S} {f' : A' ⟶ S'} (_e : IsFibreIdent s f f')
+    (_hf : IsSmoothProperCurve f) : IsSmoothProperCurve f' :=
+  sorry
+
+/-- **Formation of the Jacobian commutes with base change** (sorry node).
+
+TRUE: if `jac` presents `J/S` as the Jacobian of `C/S` and `jac'`
+presents `J'/S'` as the Jacobian of the fibre `C'/S'`, based at the point
+`o'` lying over `o`, then `J'` is the fibre of `J` — and the
+identification is additive and intertwines the two Abel–Jacobi maps.
+This is "cohomology and base change" for `Pic⁰` (BLR ch. 8.1, 9.4).
+
+**`_ho` is load-bearing, not decoration.**  The Jacobian is only defined
+up to translation once the base point moves: if `o'` were not the fibre
+of `o`, `jac'` would differ from the base change of `jac` by translation
+by `[o'] − [o|_{S'}]`, and the `aj`-compatibility clause would be FALSE.
+So the hypothesis that the base points correspond is exactly what makes
+this statement true rather than merely plausible.
+
+Note also that this leaf does NOT assert existence — `jac'` is a
+hypothesis, supplied below by `exists_relativeJacobian` over `𝔽_ℓ` and by
+the ambient `jac` over `ℚ`.  Stating it this way is what avoids needing
+uniqueness of the Jacobian as a separate obligation: the given `J/ℚ` of
+`exists_x0JacobianModel_of_curveModel` is used directly rather than
+compared with a freshly constructed one.
+
+IRREDUCIBLE at this pin ALONG THE PICARD AXIS, for the same reason as
+`exists_relativeJacobian`, and with the same refuting check. -/
+theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
+    {C C' J J' : Scheme.{0}} {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o)
+    {jf' : J' ⟶ S'} {ab' : AbelianSchemeStruct jf'} {o' : RelPoint f' (𝟙 S')}
+    (jac' : IsJacobianOf f' ab' o')
+    (eX : IsFibreIdent s f f')
+    (_ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o) :
+    ∃ eJ : IsFibreIdent s jf jf',
+      (∀ {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
+          (x y : RelPoint jf' g),
+        eJ.toEquiv g g₀ h (ab'.add x y)
+          = ab.add (eJ.toEquiv g g₀ h x) (eJ.toEquiv g g₀ h y)) ∧
+      (∀ {T : Scheme.{0}} (g : T ⟶ S') (g₀ : T ⟶ S) (h : g ≫ s = g₀)
+          (x : RelPoint f' g),
+        eJ.toEquiv g g₀ h (jac'.aj g x) = jac.aj g₀ (eX.toEquiv g g₀ h x)) :=
+  sorry
+
+/-- **The relative JACOBIAN of a given integral curve model exists**
+(PROVEN, over the three base-independent leaves above).
+
+The ten fields of `IsX0JacobianModel` come from exactly three inputs,
+none of which mentions a modular curve:
+
+* `exists_relativeJacobian` over `Spec ℤ_(ℓ)` builds `𝒥` and `jacZ`, and
+  over `Spec 𝔽_ℓ` builds `J'` and `jac'` — the latter needs
+  `isSmoothProperCurve_of_fibreIdent`, because the special fibre of a
+  curve model carries no geometric field of its own;
+* `exists_jacobianFibreIdent` at the generic point gives
+  `genJ`, `genJ_nat`, `genJ_add`, `genX_aj`, and at the closed point
+  gives `spJ`, `spJ_nat`, `spJ_add`, `spX_aj`;
+* `bijective_pre_generic_of_isProper` applied to `abZ.proper` gives
+  `neronJ` — an abelian scheme is proper, and the Néron mapping property
+  over a DVR is the valuative criterion.
+
+**The two base points are CONSTRUCTED, not chosen.**  `oZ` is the
+integral point extending `o`, by `cm.properX`; `o'` is its reduction, by
+`cm.spX`.  That is forced: `_ho` of `exists_jacobianFibreIdent` requires
+the base points to correspond at both ends, and any other choice would
+translate the Abel–Jacobi map and break `genX_aj` / `spX_aj`.  So the
+assembly has no freedom left in it. -/
 theorem exists_x0JacobianModel_of_curveModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
     (_hℓN : ¬ ℓ ∣ N) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R toF)
+    (hbase : IsReductionBase ℓ R toF)
     {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF ℓ}
     {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (cm : IsX0CurveModel N ℓ R toF (strX := strX) (strX' := strX') xstr ystr jZ)
@@ -5023,8 +5329,38 @@ theorem exists_x0JacobianModel_of_curveModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
       (o' : RelPoint strX' (𝟙 (SpecF ℓ))) (jac' : IsJacobianOf strX' ab' o')
       (jstrZ : JZ ⟶ SpecLoc R) (abZ : AbelianSchemeStruct jstrZ)
       (oZ : RelPoint xstr (𝟙 (SpecLoc R))) (jacZ : IsJacobianOf xstr abZ oZ),
-      Nonempty (IsX0JacobianModel cm jac jac' jacZ) :=
-  sorry
+      Nonempty (IsX0JacobianModel cm jac jac' jacZ) := by
+  have hcurve : IsSmoothProperCurve xstr :=
+    ⟨cm.model.isProper, cm.model.smooth, cm.model.connected⟩
+  -- the integral point extending `o`, by the valuative criterion
+  obtain ⟨oZ, hoZ⟩ : ∃ oZ : RelPoint xstr (𝟙 (SpecLoc R)),
+      cm.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) o
+        = RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) oZ :=
+    ⟨(Equiv.ofBijective _ cm.properX).symm _,
+      ((Equiv.ofBijective _ cm.properX).apply_symm_apply _).symm⟩
+  -- its reduction, the base point of the special fibre
+  obtain ⟨o', ho'⟩ : ∃ o' : RelPoint strX' (𝟙 (SpecF ℓ)),
+      cm.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) o'
+        = RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) oZ :=
+    ⟨(cm.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm _,
+      Equiv.apply_symm_apply _ _⟩
+  obtain ⟨JZ, jstrZ, abZ, ⟨jacZ⟩⟩ := exists_relativeJacobian xstr hcurve oZ
+  obtain ⟨J', jstr', ab', ⟨jac'⟩⟩ :=
+    exists_relativeJacobian strX' (isSmoothProperCurve_of_fibreIdent cm.spIdent hcurve) o'
+  obtain ⟨eGen, eGen_add, eGen_aj⟩ :=
+    exists_jacobianFibreIdent (SpecLoc.generic R) jacZ jac cm.genIdent hoZ
+  obtain ⟨eSp, eSp_add, eSp_aj⟩ :=
+    exists_jacobianFibreIdent (SpecLoc.special toF) jacZ jac' cm.spIdent ho'
+  exact ⟨J', JZ, jstr', ab', o', jac', jstrZ, abZ, oZ, jacZ,
+    ⟨{ genJ := eGen.toEquiv
+       spJ := eSp.toEquiv
+       genJ_nat := eGen.nat
+       spJ_nat := eSp.nat
+       genJ_add := eGen_add
+       spJ_add := eSp_add
+       genX_aj := eGen_aj
+       spX_aj := eSp_aj
+       neronJ := bijective_pre_generic_of_isProper ℓ R toF hbase jstrZ abZ.proper }⟩⟩
 
 /-- **The good-reduction datum exists over a GIVEN `ℤ_(ℓ)`, at every odd
 `ℓ ∤ N`** (PROVEN, over the curve half and the Jacobian half).
