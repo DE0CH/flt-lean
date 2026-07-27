@@ -68,9 +68,10 @@ arbitrary field — is now PROVEN from it, by descent along `Spec K̄ ⟶ Spec K
 `geometricallyReduced_projToSpec` is PROVEN as well: the general
 `Smooth → GeometricallyReduced` gap it named was a MATHLIB gap and not
 elliptic-curve mathematics, and it has been filled in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`, whose own
-single leaf `Algebra.Smooth.isReduced_of_isField` (*a smooth algebra over a
-field is reduced*) carries the residue.  **That relocation forced a
+`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`, which is
+**sorry-free as of 2026-07-27**: its former leaf
+`Algebra.Smooth.isReduced_of_isField` (*a smooth algebra over a field is
+reduced*) is PROVEN.  **That relocation forced a
 reordering**: `geometricallyReduced_projToSpec`, `isReduced_triProd_proj`,
 `projMul_assoc`, `exists_projAdd` and `nonempty_projGroupLaw` now sit AFTER
 `smoothOfRelativeDimension_projToSpec`, since the first of them consumes it;
@@ -2525,18 +2526,22 @@ Route 1 below was taken.  `Smooth f → GeometricallyReduced f` is now a
 general theorem of this development,
 `AlgebraicGeometry.GeometricallyReduced.of_smooth` in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`, and
-this declaration is a two-line consequence of it.  **The residual gap is
-one general, mathlib-shaped ring-theoretic leaf**,
+this declaration is a two-line consequence of it.  **There is no residual
+gap: that file is sorry-free as of 2026-07-27.**  Its former leaf
 `Algebra.Smooth.isReduced_of_isField` (*a smooth algebra over a field is
-reduced*) in the same file: everything scheme-theoretic — the base change,
-the affine cover, and the passage from `Γ` back to the scheme — is proven
-there.  Nothing about elliptic curves is left in the gap, which is the
-whole point of moving it.
+reduced*) is PROVEN, over the standard-open reduction to
+`Algebra.IsStandardSmooth.isReduced_of_field`; everything
+scheme-theoretic — the base change, the affine cover, and the passage from
+`Γ` back to the scheme — was already proven there.
 
-The recorded absence audit above is superseded by the fuller one in that
-file's docstring, which additionally rules out `IsRegularLocalRing →
-IsDomain` (also absent) and explains why no lifting-property argument can
-work.  Note route 1 pays for itself immediately: all of
+The recorded absence audit above is **superseded and partly refuted** by the
+one in that file's docstring: the regular-local-ring absences it lists are
+real, but they do not block the route, because mathlib's
+`RingHom.IsStandardSmooth.exists_etale_mvPolynomial`
+(`Mathlib/RingTheory/RingHom/StandardSmooth.lean`, in neither directory the
+audit searched) factors a standard smooth map through a polynomial ring
+étale-ly, and reducedness then descends from the generic fibre.  Note route 1
+pays for itself immediately: all of
 `GeometricallyReduced`'s base-change instances now apply to *any* smooth
 morphism in this development.
 
