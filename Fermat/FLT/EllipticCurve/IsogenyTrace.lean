@@ -69,21 +69,25 @@ outright and `End.exists_dual` becomes a theorem over additivity of the dual,
 `End.dualEnd_add`. Rationality of the dual is no longer bundled in here; it is
 `Isogeny.isRationalMap_dualHom`, owned in `Isogeny.lean`.
 
-## The two open leaves, and a 2026-07-27 correction
+## The ONE open leaf, and a 2026-07-27 correction to the correction
 
-`End.dualEnd_add` is now PROVEN, over the two leaves it decomposes into:
+`End.dualEnd_add` is PROVEN, and so — as of the second pass of 2026-07-27 — is the
+trace formula `End.self_add_dualEnd`. This file's single remaining leaf is
 
-* `End.degree_add_add_degree_sub` — the parallelogram law, *AEC* III.6.3;
-* `End.self_add_dualEnd` — the trace formula `ψ + ψ̂ = [deg(ψ+1) − deg ψ − 1]`,
-  *AEC* III.6.2.
+* `End.degree_add_add_degree_sub` — the parallelogram law, *AEC* III.6.3.
 
-They are jointly equivalent to additivity and **neither alone suffices**: the
-previous docstring's "additivity is equivalent to the parallelogram law" is wrong
-in the direction it was being used. The CUT note above `End.degree_add_add_degree_sub`
-records the circularity, the quantitative form of the obstruction, and the route —
-through the torsion representation `End W → M₂(ZMod N)`, whose two inputs
-`n_torsion_card` and `n_torsion_dimension` are already PROVEN in
-`Fermat/FLT/EllipticCurve/Torsion.lean`.
+An earlier version of this docstring recorded the trace formula as a SECOND,
+independent leaf, on the ground that the two are "jointly equivalent to additivity
+and **neither alone suffices**". The *jointly equivalent* half is right; the
+*neither alone suffices* half is **wrong**, and correcting it is the substance of
+the second pass. That analysis ranged only over `deg` regarded as an abstract
+`ℤ`-valued function on the additive group `End W` — and `deg` is also
+**multiplicative** (`Isogeny.degree_comp`, PROVEN, pure group theory). With
+multiplicativity in hand the trace formula is a THEOREM over the parallelogram
+law, by the classical composition-algebra argument; see
+`charPoly_of_multiplicative_parallelogram` below, which is stated `End`-free
+precisely so that `#print axioms` can certify it, and does
+(`[propext, Classical.choice, Quot.sound]`).
 -/
 
 @[expose] public section
@@ -359,34 +363,46 @@ theorem End.dualEnd_comp [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : End W
     rw [End.dualEnd_of_ne_zero h]
     exact Isogeny.dualHom_comp (End.toIsogeny ψ) h P
 
-/-! ### CUT (2026-07-27): additivity of the dual splits into TWO independent leaves
+/-! ### CUT (2026-07-27, revised the same day): additivity reduces to ONE leaf
 
 `End.dualEnd_add` was a single leaf whose docstring recorded it as "equivalent to
 the parallelogram law". **That equivalence is false in the direction it was being
-used**, and the correction is the substance of this cut.
+used** — verifying the defining property for `φ̂ + ψ̂` reduces, after expanding
+`(φ̂ + ψ̂)(φ + ψ)` and cancelling the surjective `φ + ψ`, to the bilinear identity
+`φ̂ψ + ψ̂φ = [deg (φ+ψ) − deg φ − deg ψ]`, whose left-hand side is additive in each
+slot **only if `ψ ↦ ψ̂` already is**. That circularity is real and is what this cut
+exists to route around.
 
-Additivity of `ψ ↦ ψ̂` is now PROVEN below over exactly two leaves:
+The first pass therefore split additivity into two leaves, the parallelogram law
+and the trace formula. **The second pass proved the trace formula**, and the file
+now stands on exactly one open leaf:
 
 * `End.degree_add_add_degree_sub` — the **parallelogram law** for the degree,
-  Silverman *AEC* III.6.3;
+  Silverman *AEC* III.6.3. OPEN.
+
+with
+
 * `End.self_add_dualEnd` — the **trace formula** `ψ + ψ̂ = [deg (ψ+1) − deg ψ − 1]`,
-  Silverman *AEC* III.6.2, i.e. that `ψ` satisfies a monic quadratic over `ℤ`.
+  Silverman *AEC* III.6.2, i.e. that `ψ` satisfies a monic quadratic over `ℤ` —
+  PROVEN below, over the parallelogram law.
 
-**These two are JOINTLY equivalent to `End.dualEnd_add`, and neither alone
-suffices.** The trace formula follows from additivity by the very computation
-`End.exists_charPoly` performs below (`hsum`), and the parallelogram law follows
-from additivity together with the trace formula; conversely the assembly below
-derives additivity from the two. So this is a conjunction split, not a renaming.
+**WHY THE FIRST PASS THOUGHT THE TRACE FORMULA WAS INDEPENDENT, AND WHY IT IS
+NOT.** Its independence argument is reproduced below and every line of it is
+correct; the defect is the SEARCH SPACE. It ranges only over `deg` regarded as an
+abstract `ℤ`-valued function on the additive group `End W`, using nothing but the
+parallelogram law and the characteristic polynomial. But `deg` carries a third
+property that argument never touches: it is **multiplicative**,
+`deg (φ ∘ ψ) = deg φ · deg ψ` (`Isogeny.degree_comp` — PROVEN, and pure group
+theory, so not itself an independence input). A multiplicative parallelogram form
+on a ring is a classical composition-algebra situation, and in that situation the
+characteristic polynomial is forced. See
+`charPoly_of_multiplicative_parallelogram`.
 
-**Why the parallelogram law ALONE does not give additivity.** The natural attempt
-is to verify the defining property for `φ̂ + ψ̂`, which after expanding
-`(φ̂ + ψ̂)(φ + ψ)` and cancelling the surjective `φ + ψ` reduces to the bilinear
-identity `φ̂ψ + ψ̂φ = [deg (φ+ψ) − deg φ − deg ψ]`. That identity's left-hand side
-is additive in each slot **only if `ψ ↦ ψ̂` already is** — so the reduction is
-circular, and no amount of parallelogram law repairs it.
+The moral, and it is the one the fleet doctrine states: an irreducibility verdict
+is only as wide as the axis its author searched, so record the axis. The axis here
+was *additive*; the missing one was *multiplicative*.
 
-The obstruction can be made quantitative, and it is worth recording because it
-also shows the parallelogram law is not derivable from the trace formula alone.
+**The first pass's argument, preserved, and still valid on its own axis.**
 Write `q χ := deg χ` and `t χ := q (χ+1) − q χ − 1`. The trace formula plus
 right-cancellation gives the characteristic polynomial `χ² = [t χ] χ − [q χ]` for
 every `χ`. Summing that at `φ+ψ` and `φ−ψ` and subtracting twice its values at
@@ -399,8 +415,10 @@ every `χ`. Summing that at `φ+ψ` and `φ−ψ` and subtracting twice its valu
 with `C` precisely the parallelogram defect. Substituting `ψ ↦ −ψ` or `φ ↦ −φ`
 reproduces the same equation (`A`, `C` are even and `B` is odd under those), and
 the one-parameter family `φ + mψ` gives back the `m = ±1` case; so no substitution
-separates the three integers, and `C = 0` does not follow. An independence input
-is genuinely required. (The diagonal `ψ = φ` *is* closable this way: there
+of that shape separates the three integers, and `C = 0` does not follow **from the
+characteristic polynomial alone**. That is still a correct obstruction, and it is
+the reason the parallelogram law remains open: the trace formula does not give it
+back. (The diagonal `ψ = φ` *is* closable this way: there
 `C = 4 q φ − q(2φ) = 0` because `q(2φ) = deg[2] · q φ = 4 q φ` by
 `Isogeny.degree_comp` and `deg[2] = 4`.)
 
@@ -417,18 +435,24 @@ torsion structure theorem is already PROVEN in this tree**:
   `Nonempty (E.nTorsion n ≃+ ZMod n × ZMod n)`.
 
 So `End W` acts on the free rank-`2` `ZMod N`-module `E[N]`, giving a *ring*
-homomorphism `ρ_N : End W → M₂(ZMod N)`. Over that representation both leaves are
-formal:
+homomorphism `ρ_N : End W → M₂(ZMod N)`. Over that representation the one
+remaining leaf is formal: `det` on `2 × 2` matrices is a quadratic form over any
+commutative ring (`Matrix.det_fin_two` and `ring`), so it satisfies the
+parallelogram law identically, and
 
-* `Matrix.adjugate` in dimension two is `adj A = (tr A) • 1 − A`
-  (`Matrix.adjugate_fin_two`), which is **additive**; and `ρ_N ψ̂ = adj (ρ_N ψ)`
-  because `ρ_N ψ̂ · ρ_N ψ = deg ψ · 1` and `adj A · A = det A · 1`;
-* `det` on `2 × 2` matrices is a quadratic form over any commutative ring, so it
-  satisfies the parallelogram law identically.
+    deg (φ+ψ) + deg (φ−ψ) − 2 deg φ − 2 deg ψ ≡ 0  (mod N)
 
-Both then transfer back because an element of `End W` killing every `E[N]` kills
-an infinite set and so is `0` (an isogeny has finite kernel,
-`IsIsogeny.finite_ker`, and `infinite_point` gives the contradiction).
+for every `N`; an integer congruent to `0` modulo every `N` is `0`. Note the
+second-pass proof means the adjugate half of the old plan — `ρ_N ψ̂ = adj (ρ_N ψ)`,
+`Matrix.adjugate_fin_two`, additivity of `adj` in dimension two — is **no longer
+needed for anything**: additivity of the dual now follows from the parallelogram
+law alone. Only `det = deg` is wanted.
+
+The congruence transfers back because an element of `End W` killing every `E[N]`
+kills an infinite set and so is `0` (an isogeny has finite kernel,
+`IsIsogeny.finite_ker`, and `infinite_point` gives the contradiction) — but for
+the parallelogram law even that is unnecessary, since the conclusion is an
+identity between integers rather than between endomorphisms.
 
 **The single remaining input is therefore `deg ψ ≡ det (ρ_N ψ) (mod N)`** — the
 classical `deg = det` on the Tate module — and the standard proof of *that* is the
@@ -455,10 +479,15 @@ degree is a quadratic form on `End W`.
 Stated in `ℕ` because `Isogeny.degree` is `Nat.card (ker ·)`; every term is a
 cardinality, and the assembly below casts to `ℤ` once.
 
-This is one of the two leaves the additivity of the dual splits into — see the
-CUT note above for why it is not sufficient by itself, and for the route through
-`ρ_N : End W → M₂(ZMod N)` where it becomes the `2 × 2` determinant identity
-`det (A+B) + det (A−B) = 2 det A + 2 det B`.
+**This is the file's ONLY open leaf.** Everything else in the trace layer —
+`End.self_add_dualEnd`, `End.dualEnd_add`, `End.exists_dual`,
+`End.exists_charPoly`, `End.sq_eq_neg_natCast_of_atkinLehner` — is proven over it.
+The first pass recorded it as one of *two* leaves; see the CUT note above for why
+that was wrong (the second leaf, the trace formula, follows from this one once
+multiplicativity of the degree is used) and for the route through
+`ρ_N : End W → M₂(ZMod N)`, where it becomes the `2 × 2` determinant identity
+`det (A+B) + det (A−B) = 2 det A + 2 det B` and the single missing input is
+`deg ψ ≡ det (ρ_N ψ) (mod N)`.
 
 **Sanity check of the statement**, from the CM case: over `ℚ̄` with `End W ⊇ ℤ[i]`
 and `deg = N` the field norm, `φ = 1`, `ψ = i` gives `N(1+i) + N(1−i) = 2 + 2 = 4`
@@ -471,22 +500,178 @@ theorem End.degree_add_add_degree_sub [IsAlgClosed F] [CharZero F] [W.IsElliptic
       = 2 * Isogeny.degree (End.toIsogeny φ) + 2 * Isogeny.degree (End.toIsogeny ψ) :=
   sorry
 
-/-- **LEAF — the trace formula.** Silverman *AEC* III.6.2: `ψ + ψ̂` is an integer,
+/-- **Cayley–Hamilton for a multiplicative parallelogram form**, and the reason the
+trace formula is not a second leaf.
+
+Let `R` be a ring and `q : R → ℤ` satisfy
+
+* `q 0 = 0`, `q 1 = 1`;
+* the **parallelogram law** `q (a+c) + q (a−c) = 2 q a + 2 q c`;
+* **multiplicativity** `q (a c) = q a · q c`;
+* **positive definiteness in the weak form** `q a = 0 → a = 0`.
+
+Then every `x : R` satisfies its characteristic polynomial
+
+    x² + [q x] = [q (x+1) − q x − 1] · x.
+
+This is the classical composition-algebra argument, and it is what refutes the
+first pass's "the parallelogram law alone does not suffice". Writing
+`b u v := q (u+v) − q u − q v` for the polar form:
+
+1. the parallelogram law makes `b` **biadditive** (polarisation: `q (u+v+w)` has
+   the symmetric three-variable expansion, whence `b (u+v) w = b u w + b v w`, and
+   `b` is symmetric by `add_comm`);
+2. linearising `q (u (v+w)) = q u · q (v+w)` in the second slot gives
+   `b (u v) (u w) = q u · b v w`;
+3. linearising *that* in `u` gives the four-term identity
+   `b (u v) (w z) + b (w v) (u z) = b u w · b v z`;
+4. specialising (3) at `w = 1, v := u, z := v` and (2) at `v = 1` gives
+   `b (x²) v = b x 1 · b x v − q x · b 1 v`, so the element
+   `u := x² − [b x 1] x + [q x]` satisfies `b u v = 0` for **every** `v`;
+5. taking `v = u` and using `b a a = 2 q a` (parallelogram at `a, a`) gives
+   `q u = 0`, hence `u = 0`.
+
+Only step 5 uses definiteness, and only steps 2–3 use multiplicativity — which is
+exactly the hypothesis the first pass's independence analysis did not have in view.
+
+**Stated `End`-free on purpose.** Everything mentioning `End W` reports `sorryAx`
+under `#print axioms` at carrier level (see `not_isRationalMap_leftInverse_frob`
+above for why), so a certificate for the mathematical content has to live in a
+statement that does not mention it. This one reports
+`[propext, Classical.choice, Quot.sound]`. -/
+theorem charPoly_of_multiplicative_parallelogram {R : Type*} [Ring R] (q : R → ℤ)
+    (hq0 : q 0 = 0) (hq1 : q 1 = 1)
+    (hpar : ∀ a c : R, q (a + c) + q (a - c) = 2 * q a + 2 * q c)
+    (hmul : ∀ a c : R, q (a * c) = q a * q c)
+    (hzero : ∀ a : R, q a = 0 → a = 0) (x : R) :
+    x * x + ((q x : ℤ) : R) = ((q (x + 1) - q x - 1 : ℤ) : R) * x := by
+  obtain ⟨b, hbv⟩ : ∃ b : R → R → ℤ, ∀ u v : R, b u v = q (u + v) - q u - q v :=
+    ⟨_, fun _ _ => rfl⟩
+  -- `q` is even.
+  have hneg : ∀ a : R, q (-a) = q a := by
+    intro a
+    have h := hpar 0 a
+    rw [zero_add, zero_sub, hq0] at h
+    linarith
+  -- the symmetric three-variable polarisation identity
+  have hthree : ∀ u v w : R,
+      q (u + v + w) = q (u + v) + q (v + w) + q (u + w) - q u - q v - q w := by
+    intro u v w
+    have h3 := hpar (u + w) v
+    have h5 := hpar u v
+    have h7 := hpar (v + w) u
+    have h2 := hpar (u - v) w
+    have e3a : u + w + v = u + v + w := by abel
+    have e3b : u + w - v = u - v + w := by abel
+    have e7a : v + w + u = u + v + w := by abel
+    have e7b : v + w - u = -(u - v - w) := by abel
+    rw [e3a, e3b] at h3
+    rw [e7a, e7b, hneg] at h7
+    linarith
+  -- the polar form is biadditive
+  have hbaddl : ∀ u v w : R, b (u + v) w = b u w + b v w := by
+    intro u v w
+    rw [hbv, hbv, hbv, hthree]
+    ring
+  have hbsymm : ∀ u v : R, b u v = b v u := by
+    intro u v
+    rw [hbv, hbv, add_comm u v]; ring
+  have hbaddr : ∀ u v w : R, b u (v + w) = b u v + b u w := by
+    intro u v w
+    rw [hbsymm u (v + w), hbaddl, hbsymm v u, hbsymm w u]
+  have hb0 : ∀ v : R, b 0 v = 0 := by
+    intro v; rw [hbv, zero_add, hq0]; ring
+  have hbnegl : ∀ a v : R, b (-a) v = -b a v := by
+    intro a v
+    have h := hbaddl a (-a) v
+    rw [add_neg_cancel, hb0] at h
+    linarith
+  have hbsubl : ∀ a c v : R, b (a - c) v = b a v - b c v := by
+    intro a c v
+    rw [sub_eq_add_neg, hbaddl, hbnegl]; ring
+  have hhom : ∀ (n : ℤ) (a v : R), b (n • a) v = n * b a v := by
+    intro n a v
+    let f : R →+ ℤ := AddMonoidHom.mk' (fun u : R => b u v) (fun p r => hbaddl p r v)
+    have hf : ∀ u : R, f u = b u v := fun _ => rfl
+    have h := map_zsmul f n a
+    rw [hf, hf] at h
+    simpa [zsmul_eq_mul] using h
+  -- first linearisation of multiplicativity
+  have hE1 : ∀ u v w : R, b (u * v) (u * w) = q u * b v w := by
+    intro u v w
+    have h := hmul u (v + w)
+    rw [mul_add] at h
+    rw [hbv, hbv, h, hmul, hmul]
+    ring
+  -- second linearisation
+  have hE2 : ∀ u w v z : R, b (u * v) (w * z) + b (w * v) (u * z) = b u w * b v z := by
+    intro u w v z
+    have h := hE1 (u + w) v z
+    have hq : q (u + w) = b u w + q u + q w := by rw [hbv]; ring
+    rw [add_mul, add_mul, hbaddl, hbaddr, hbaddr, hE1 u v z, hE1 w v z, hq] at h
+    linear_combination h
+  -- the key identity for `b (x * x) ·`
+  have hE3 : ∀ u v : R, b (u * u) v = b u 1 * b u v - q u * b 1 v := by
+    intro u v
+    have h := hE2 u 1 u v
+    rw [one_mul, one_mul] at h
+    have h2 := hE1 u 1 v
+    rw [mul_one] at h2
+    linarith
+  -- the candidate is `b`-orthogonal to everything
+  have hkey : ∀ v : R,
+      b (x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R)) v = 0 := by
+    intro v
+    have htx : b (((b x 1 : ℤ) : R) * x) v = b x 1 * b x v := by
+      rw [← zsmul_eq_mul]; exact hhom (b x 1) x v
+    have hqx : b (((q x : ℤ) : R)) v = q x * b 1 v := by
+      have hc : ((q x : ℤ) : R) = (q x) • (1 : R) := by rw [zsmul_eq_mul, mul_one]
+      rw [hc]; exact hhom (q x) 1 v
+    rw [hbaddl, hbsubl, hE3 x v, htx, hqx]
+    ring
+  -- hence it is `0`
+  have hdiag : ∀ a : R, b a a = 2 * q a := by
+    intro a
+    have hp := hpar a a
+    rw [sub_self, hq0] at hp
+    rw [hbv]
+    linarith
+  have hzeroU : x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R) = 0 := by
+    refine hzero _ ?_
+    have h := hkey (x * x - ((b x 1 : ℤ) : R) * x + ((q x : ℤ) : R))
+    rw [hdiag] at h
+    linarith
+  have hbx1 : b x 1 = q (x + 1) - q x - 1 := by rw [hbv, hq1]
+  rw [← hbx1]
+  have h : x * x + ((q x : ℤ) : R) - ((b x 1 : ℤ) : R) * x = 0 := by
+    rw [← hzeroU]; abel
+  exact sub_eq_zero.mp h
+
+/-- **The trace formula.** Silverman *AEC* III.6.2: `ψ + ψ̂` is an integer,
 and that integer is `deg (ψ + 1) − deg ψ − 1`:
 
     ψ + ψ̂ = [deg (ψ + 1) − deg ψ − 1].
 
 Equivalently — multiply on the right by `ψ` and use `End.dualEnd_comp` — every
 endomorphism satisfies the monic quadratic `ψ² − [t] ψ + [deg ψ] = 0` over `ℤ`.
-This is the content `End.exists_charPoly` below currently obtains *from*
-additivity; the cut turns it into an input, which is what makes the split honest
-rather than a renaming (see the CUT note above).
+
+**PROVEN (2026-07-27, second pass)** over the parallelogram law
+`End.degree_add_add_degree_sub` alone. The first pass recorded this as an
+independent second leaf; it is not. The proof is
+`charPoly_of_multiplicative_parallelogram` applied to
+`q χ := (Isogeny.degree (End.toIsogeny χ) : ℤ)`, whose five hypotheses are
+discharged here by, in order: `Isogeny.degree_zero`; `Isogeny.degree_id` (side
+condition `∃ P ≠ 0` from `infinite_point`); the leaf; `Isogeny.degree_comp`; and
+`Isogeny.degree_eq_zero_iff`. That yields `ψ² + [deg ψ] = [t] ψ`, and then
+`([t] − ψ) ψ = [deg ψ] = ψ̂ ψ` with `ψ` surjective on points
+(`IsIsogeny.surjective`), so `ψ` right-cancels and `ψ̂ = [t] − ψ`. The zero case is
+separate and degenerate: `dualEnd 0 = 0` and `t = deg 1 − deg 0 − 1 = 0`.
 
 **The formula is stated with an explicit trace rather than existentially** on
 purpose: `∃ t, ψ + ψ̂ = [t]` would leave the assembly needing to know that `t` is
-additive in `ψ`, which is exactly the missing content. Pinning `t = deg(ψ+1) − deg ψ − 1`
-makes additivity of `t` a consequence of the parallelogram law alone, by
-polarisation.
+additive in `ψ`. Pinning `t = deg(ψ+1) − deg ψ − 1` makes additivity of `t` a
+consequence of the parallelogram law alone, by polarisation — which is exactly how
+`End.dualEnd_add` below consumes it.
 
 **Sanity checks**, all four of which the statement passes:
 `ψ = 0` gives `0 = deg 1 − 0 − 1 = 0`; `ψ = [k]` gives `2k = (k+1)² − k² − 1`;
@@ -495,19 +680,76 @@ polarisation.
 Atkin–Lehner witness recalled under `End.sq_eq_neg_natCast_of_atkinLehner` — gives
 `ψ + ψ̄ = 22` against `N(12+2i) − 125 − 1 = 148 − 126 = 22`.
 
-`[CharZero F]` is required: `End.dualEnd` does not exist without it, the leaf
+`[CharZero F]` is required: `End.dualEnd` does not exist without it, the statement
 being false over `𝔽̄₂` (see the FALSITY AUDIT above). -/
 theorem End.self_add_dualEnd [IsAlgClosed F] [CharZero F] [W.IsElliptic] (ψ : End W) :
     ψ + End.dualEnd ψ
       = (((Isogeny.degree (End.toIsogeny (ψ + 1)) : ℤ)
-          - (Isogeny.degree (End.toIsogeny ψ) : ℤ) - 1 : ℤ) : End W) :=
-  sorry
+          - (Isogeny.degree (End.toIsogeny ψ) : ℤ) - 1 : ℤ) : End W) := by
+  classical
+  haveI := infinite_point W
+  have hq0 : ((Isogeny.degree (End.toIsogeny (0 : End W)) : ℤ)) = 0 := by
+    have hz : End.toIsogeny (0 : End W) = Isogeny.zero := rfl
+    rw [hz, Isogeny.degree_zero]; norm_num
+  have hq1 : ((Isogeny.degree (End.toIsogeny (1 : End W)) : ℤ)) = 1 := by
+    have hid : End.toIsogeny (1 : End W) = Isogeny.id W := Isogeny.ext (fun _ => rfl)
+    rw [hid, Isogeny.degree_id (exists_ne (0 : W.Point))]; norm_num
+  have hpar : ∀ a c : End W,
+      (Isogeny.degree (End.toIsogeny (a + c)) : ℤ) + (Isogeny.degree (End.toIsogeny (a - c)) : ℤ)
+        = 2 * (Isogeny.degree (End.toIsogeny a) : ℤ)
+          + 2 * (Isogeny.degree (End.toIsogeny c) : ℤ) := by
+    intro a c
+    exact_mod_cast congrArg (fun n : ℕ => (n : ℤ)) (End.degree_add_add_degree_sub a c)
+  have hmul : ∀ a c : End W,
+      (Isogeny.degree (End.toIsogeny (a * c)) : ℤ)
+        = (Isogeny.degree (End.toIsogeny a) : ℤ) * (Isogeny.degree (End.toIsogeny c) : ℤ) := by
+    intro a c
+    have hc : End.toIsogeny (a * c) = (End.toIsogeny a).comp (End.toIsogeny c) :=
+      Isogeny.ext (fun _ => rfl)
+    rw [hc, Isogeny.degree_comp]
+    push_cast; ring
+  have hzero : ∀ a : End W, (Isogeny.degree (End.toIsogeny a) : ℤ) = 0 → a = 0 := by
+    intro a ha
+    have h0 : Isogeny.degree (End.toIsogeny a) = 0 := by exact_mod_cast ha
+    exact Subtype.ext ((Isogeny.degree_eq_zero_iff _).1 h0)
+  have hCH : ψ * ψ + ((Isogeny.degree (End.toIsogeny ψ) : ℤ) : End W)
+      = (((Isogeny.degree (End.toIsogeny (ψ + 1)) : ℤ)
+          - (Isogeny.degree (End.toIsogeny ψ) : ℤ) - 1 : ℤ) : End W) * ψ :=
+    charPoly_of_multiplicative_parallelogram
+      (fun χ : End W => (Isogeny.degree (End.toIsogeny χ) : ℤ)) hq0 hq1 hpar hmul hzero ψ
+  by_cases h0 : ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) = 0
+  · have hψ0 : ψ = 0 := Subtype.ext h0
+    subst hψ0
+    rw [End.dualEnd_of_eq_zero h0, add_zero, zero_add, hq1, hq0]
+    norm_num
+  · have hsurj : Function.Surjective ((ψ : AddMonoid.End W.Point) : W.Point →+ W.Point) :=
+      ψ.2.surjective h0
+    have hcancel : ∀ f g : End W, f * ψ = g * ψ → f = g := by
+      intro f g hfg
+      refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+      obtain ⟨Q, hQ⟩ := hsurj P
+      have hc := congrArg (fun h : End W => (h : AddMonoid.End W.Point) Q) hfg
+      simp only [End.mul_apply] at hc
+      rw [← hQ]
+      exact hc
+    have hcast : (((Isogeny.degree (End.toIsogeny ψ) : ℕ)) : End W)
+        = (((Isogeny.degree (End.toIsogeny ψ) : ℤ)) : End W) := by push_cast; rfl
+    have hmul2 : ((((Isogeny.degree (End.toIsogeny (ψ + 1)) : ℤ)
+          - (Isogeny.degree (End.toIsogeny ψ) : ℤ) - 1 : ℤ) : End W) - ψ) * ψ
+        = End.dualEnd ψ * ψ := by
+      rw [End.dualEnd_comp, hcast, sub_mul, ← hCH]
+      abel
+    have hfin := hcancel _ _ hmul2
+    rw [← hfin]
+    abel
 
 /-- **The dual isogeny is ADDITIVE** — Silverman *AEC* III.6.2(b).
 
-**PROVEN (2026-07-27)** over the two leaves `End.degree_add_add_degree_sub` (the
-parallelogram law) and `End.self_add_dualEnd` (the trace formula); see the CUT
-note above for why both are needed and for the route to closing them.
+**PROVEN (2026-07-27)** over the single leaf `End.degree_add_add_degree_sub` (the
+parallelogram law), through the trace formula `End.self_add_dualEnd` — itself
+proven over that same leaf in the second pass. See the CUT note above for why the
+first pass believed the trace formula was independent, and for the route to
+closing the parallelogram law.
 
 The proof is polarisation and nothing else. Write `q χ := deg χ`. The trace
 formula rearranges to `ψ̂ = [q (ψ+1) − q ψ − 1] − ψ`, so additivity of `ψ ↦ ψ̂` is
@@ -591,15 +833,15 @@ satisfying it is unique.
 
 **PROVEN (2026-07-27)** by taking `D = End.dualEnd`: `End.dualEnd_comp` supplies
 the defining property outright and `End.dualEnd_add` the additivity, itself PROVEN
-over the two leaves `End.degree_add_add_degree_sub` (the parallelogram law) and
-`End.self_add_dualEnd` (the trace formula). `[CharZero F]` is REQUIRED — without
+over the single leaf `End.degree_add_add_degree_sub` (the parallelogram law), via
+the trace formula `End.self_add_dualEnd`. `[CharZero F]` is REQUIRED — without
 it the statement is false, refuted over `𝔽̄₂` in `NotExistsDual` above. -/
 theorem End.exists_dual [IsAlgClosed F] [CharZero F] [W.IsElliptic] :
     ∃ D : End W →+ End W,
       ∀ ψ : End W, D ψ * ψ = ((Isogeny.degree (End.toIsogeny ψ) : ℕ) : End W) :=
   ⟨AddMonoidHom.mk' End.dualEnd End.dualEnd_add, End.dualEnd_comp⟩
 
-/-- **LEAF.** Every endomorphism of an elliptic curve satisfies a monic quadratic
+/-- Every endomorphism of an elliptic curve satisfies a monic quadratic
 over `ℤ` whose constant term is its degree and whose linear coefficient — the
 **trace** `t` — obeys the Hasse bound `t² ≤ 4 · deg ψ`:
 
@@ -614,11 +856,14 @@ non-negativity of the discriminant of the binary quadratic form
 Cauchy–Schwarz inequality for that form; it is the same computation that gives
 the Hasse bound for Frobenius, with Frobenius replaced by `ψ`.
 
-**PROVEN (2026-07-27)** over the two leaves `End.degree_add_add_degree_sub` (the
-parallelogram law) and `End.self_add_dualEnd` (the trace formula), reached through
-`End.dualEnd_add` and `End.exists_dual`. Note the `hsum` step below is exactly the
-trace formula recovered from additivity — which is why the two are jointly
-equivalent to it, and why the split is a conjunction split rather than a renaming.
+**PROVEN (2026-07-27)** over the single leaf `End.degree_add_add_degree_sub` (the
+parallelogram law), reached through `End.self_add_dualEnd`, `End.dualEnd_add` and
+`End.exists_dual`. Note the `hsum` step below recovers the trace formula *from*
+additivity — which is why the two are equivalent given the rest, and why the
+first pass could see no way to get either without the other. (The direct route is
+`charPoly_of_multiplicative_parallelogram` applied to `deg`, which reaches the
+first conjunct here without going through `D` at all; this proof is left as it
+stands because it also produces the Hasse bound.)
 Given an additive `D` with
 `D ψ ∘ ψ = [deg ψ]`, everything here is formal ring arithmetic in `End W`:
 
