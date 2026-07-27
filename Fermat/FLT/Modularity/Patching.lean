@@ -4007,21 +4007,277 @@ theorem taylorWilesLevelIdeal_le_maximalIdeal_pow (p : ℕ) [Fact p.Prime]
   exact Ideal.pow_le_pow_right (le_trans (he i) (Nat.le_succ _))
     (onePlus_pow_primePow_sub_one_mem hp hpI (hXI i) (e i))
 
+open scoped Classical in
+/-- **A padded finite generating family for `𝔪_R`** (PROVEN 2026-07-27;
+helper for the Cohen decomposition below): in a Noetherian local ring,
+for EVERY `q₀` there is a `q ≥ q₀` and a family `t : Fin q → R` whose
+range spans `𝔪_R`.
+
+The padding is the whole point and it is free: `𝔪_R` is finitely
+generated because `R` is Noetherian (`Ideal.fg_of_isNoetherianRing`), and
+extra generators may be taken to be `0`, which changes neither the span
+(`Submodule.span_insert_zero`) nor anything downstream.  This is what
+makes the `q₀ ≤ q` clause of
+`exists_taylorWilesCoefficientsPresentation` — the Taylor–Wiles padding
+hazard recorded in the FORMAL-CONTENT AUDIT of
+`exists_taylorWilesBottomPresentation` — cost nothing to honour: one
+never has to return the MINIMAL number of generators of `𝔪_R`. -/
+theorem exists_fin_span_range_eq_maximalIdeal
+    {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R] (q₀ : ℕ) :
+    ∃ (q : ℕ) (t : Fin q → R), q₀ ≤ q ∧
+      Ideal.span (Set.range t) = IsLocalRing.maximalIdeal R := by
+  obtain ⟨s, hs⟩ := Ideal.fg_of_isNoetherianRing (IsLocalRing.maximalIdeal R)
+  refine ⟨q₀ + s.card, fun i => if h : (i : ℕ) < s.card then
+    ((s.equivFin.symm ⟨(i : ℕ), h⟩ : { x // x ∈ s }) : R) else 0, Nat.le_add_right _ _, ?_⟩
+  set t : Fin (q₀ + s.card) → R := fun i => if h : (i : ℕ) < s.card then
+    ((s.equivFin.symm ⟨(i : ℕ), h⟩ : { x // x ∈ s }) : R) else 0 with ht
+  have hsub : Set.range t ⊆ insert (0 : R) (s : Set R) := by
+    rintro _ ⟨i, rfl⟩
+    by_cases h : (i : ℕ) < s.card
+    · exact Set.mem_insert_of_mem _ (by simp only [ht, dif_pos h]; exact
+        (s.equivFin.symm ⟨(i : ℕ), h⟩).2)
+    · simp [ht, dif_neg h]
+  have hsup : (s : Set R) ⊆ Set.range t := by
+    intro x hx
+    refine ⟨⟨(s.equivFin ⟨x, hx⟩ : ℕ), ?_⟩, ?_⟩
+    · exact lt_of_lt_of_le (s.equivFin ⟨x, hx⟩).2 (Nat.le_add_left _ _)
+    · have h : ((s.equivFin ⟨x, hx⟩ : Fin s.card) : ℕ) < s.card := (s.equivFin ⟨x, hx⟩).2
+      simp only [ht, dif_pos h]
+      have : (⟨((s.equivFin ⟨x, hx⟩ : Fin s.card) : ℕ), h⟩ : Fin s.card) =
+          s.equivFin ⟨x, hx⟩ := rfl
+      rw [this, Equiv.symm_apply_apply]
+  refine le_antisymm ?_ ?_
+  · rw [← hs]
+    calc Ideal.span (Set.range t) ≤ Ideal.span (insert (0 : R) (s : Set R)) :=
+          Ideal.span_mono hsub
+      _ = Ideal.span (s : Set R) := Submodule.span_insert_zero
+  · rw [← hs]
+    exact Ideal.span_mono hsup
+
+/-- **The substitution homomorphism into a complete local ring exists**
+(PROVEN 2026-07-27; the CONVERGENCE half of Cohen's structure theorem,
+and it turned out to need no new theory at all): for `R` local and
+`𝔪_R`-adically complete, ANY ring map `ι : O →+* R` and ANY family
+`t : Fin q → R` of elements of `𝔪_R` extend to a ring homomorphism
+`φ : O[[x_1, …, x_q]] →+* R` with `φ (C a) = ι a` and `φ (X i) = t i`.
+
+Note there is NO topological hypothesis on `O`: the proof gives `O` the
+DISCRETE uniformity, which makes `ι` continuous for free
+(`continuous_of_discreteTopology`), and that is legitimate because a
+power series in the `t_i` converges on the strength of the `t_i` alone.
+This is why the leaf is stated for an arbitrary `O` rather than for the
+`TaylorWilesCoefficients` bundle: the coefficient ring's own topology
+plays no role here.
+
+PROOF (as written).  `WithIdeal R := ⟨𝔪_R⟩` installs the `𝔪`-adic
+topology on `R` together with its uniformity, `NonarchimedeanRing`,
+`IsUniformAddGroup` and `IsLinearTopology` instances (all of them
+`priority 100` instances of `WithIdeal` in
+`Mathlib/Topology/Algebra/Nonarchimedean/AdicTopology.lean`).
+`IsAdic.isAdicComplete_iff` — the bridge added in
+`Mathlib/RingTheory/AdicCompletion/Topology.lean` — turns `hcomplete`
+into `CompleteSpace R` and `T2Space R`, which is exactly the hypothesis
+package of `MvPowerSeries.eval₂Hom`.  `HasEval t` needs each `t i`
+topologically nilpotent — `WithIdeal.isTopologicallyNilpotent_of_mem`
+applied to `ht i` — and `t → 0` along the cofinite filter, which is
+vacuous because `Fin q` is finite.  The two defining identities are then
+`MvPowerSeries.eval₂_C` and `MvPowerSeries.eval₂_X` transported through
+`MvPowerSeries.coe_eval₂Hom`.
+
+CORRECTION to the earlier MISSING MACHINERY note (which said to reuse
+`MvPowerSeries.subst`): `subst` maps into another power series ring,
+never into an abstract complete ring, so it is the wrong tool.
+`MvPowerSeries.eval₂Hom` is the right one, and it is `subst`'s own
+underlying construction. -/
+theorem exists_ringHom_mvPowerSeries_of_isAdicComplete
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {O : Type*} [CommRing O] (ι : O →+* R)
+    {q : ℕ} (t : Fin q → R) (ht : ∀ i, t i ∈ IsLocalRing.maximalIdeal R) :
+    ∃ φ : MvPowerSeries (Fin q) O →+* R,
+      (∀ a : O, φ (MvPowerSeries.C a) = ι a) ∧
+      (∀ i, φ (MvPowerSeries.X i) = t i) := by
+  letI : WithIdeal R := ⟨IsLocalRing.maximalIdeal R⟩
+  letI : UniformSpace O := ⊥
+  have hadicR : IsAdic (R := R) (IsLocalRing.maximalIdeal R) := rfl
+  obtain ⟨hcs, ht2⟩ := hadicR.isAdicComplete_iff.mp hcomplete
+  have hcont : Continuous ι := continuous_of_discreteTopology
+  have hev : MvPowerSeries.HasEval t := by
+    constructor
+    · intro s
+      exact WithIdeal.isTopologicallyNilpotent_of_mem (ht s)
+    · simp
+  refine ⟨MvPowerSeries.eval₂Hom hcont hev, ?_, ?_⟩
+  · intro a
+    rw [MvPowerSeries.coe_eval₂Hom hcont hev]
+    exact MvPowerSeries.eval₂_C _ _ _
+  · intro i
+    rw [MvPowerSeries.coe_eval₂Hom hcont hev]
+    exact MvPowerSeries.eval₂_X _ _ _
+
+/-- **Cohen's COEFFICIENT RING, with its map into `R`** (sorry node,
+LEAF B1a-i of the 2026-07-27 decomposition of
+`exists_taylorWilesCoefficientsPresentation`; this is the substantial
+half): for `R` local and `𝔪_R`-adically complete with finite residue
+field `k`, there is a `TaylorWilesCoefficients` `𝒪` and a ring map
+`ι : 𝒪 →+* R` lifting the residue field, i.e. with `π ∘ ι` surjective.
+
+Classically `𝒪 = W(k)`, the Witt vectors of `k` (Cohen 1946; Matsumura,
+*Commutative Ring Theory*, Thm. 29.1–29.4; Eisenbud, *Commutative
+Algebra*, Thm. 7.7).  `k` is finite hence perfect of characteristic `p`,
+so `W(k)` is the unique absolutely unramified complete DVR with residue
+field `k`, and it is formally smooth over `ℤ_p`; since `R` is
+`𝔪_R`-adically complete and `p ∈ 𝔪_R`, the map `W(k) → R` is built by
+lifting `k = R/𝔪_R` successively through `R/𝔪_R^{n+1} ↠ R/𝔪_R^n` and
+passing to the limit.  Equivalently, and this is usually the cheaper
+formalisation: the Teichmüller section `k → R` obtained from
+`x ↦ lim_n (x̃_n)^{p^n}` (well defined by completeness and perfectness)
+is multiplicative, and `W(k)`'s universal property in the OTHER
+direction from `WittVector.lift` — a multiplicative section of
+`R ↠ k` induces `W(k) → R` — is what has to be written.
+
+WHAT IS OWED, precisely.  Two independent obligations:
+
+1. **The bundle.** `W(k)` must be exhibited as a `TaylorWilesCoefficients`.
+   `carrier` is declared `Type`, so a universe-`0` copy of `k` is needed
+   first; `k` is finite, so `k ≃ Fin (Nat.card k)` transports the field
+   structure into `Type 0` and this costs nothing.  Then:
+   `IsLocalRing`, `IsNoetherianRing` and `exists_isRegular_maximalIdeal`
+   come from `WittVector.isDiscreteValuationRing`
+   (`Mathlib/RingTheory/WittVector/DiscreteValuationRing.lean:149`) —
+   copy the pattern of `exists_isRegular_ofList_eq_maximalIdeal_padicInt`
+   in `PatchingCore.lean`, which discharges exactly this field for
+   `ℤ_[p]`.  `finite_residueField` is `W(k)/p ≃ k`.  The TOPOLOGICAL
+   half (`TopologicalSpace`, `IsTopologicalRing`, `CompactSpace`,
+   `T2Space`, `TotallyDisconnectedSpace`) should be taken to be the
+   `p`-adic i.e. `𝔪`-adic topology — `WithIdeal (W k) := ⟨𝔪⟩` supplies
+   the first two instantly — and compactness/total disconnectedness
+   follow from `W(k) = lim W_n(k)` being an inverse limit of FINITE
+   rings (`WittVector.TruncatedWittVector` is finite for `k` finite).
+   `Algebra.TopologicallyFG ℤ (W k)` holds because `W(k) = ℤ_p[ζ]` is
+   the closure of `ℤ[ζ]` for `ζ` a Teichmüller lift of a generator of
+   `kˣ`; compare `topologicallyFG_int_padicInt`.
+2. **The lift `ι : W(k) →+* R`.** This is the genuinely missing theorem.
+   Mathlib's `WittVector.lift` maps *into* `𝕎 k` and is therefore the
+   wrong direction, as the earlier note correctly recorded.
+
+MISSING MACHINERY (re-checked 2026-07-27 against our pin, `~/cs/FLT` and
+`Fermat/FLT/Mathlib/`; the refuting check for each is a grep for the
+name):
+
+* **Cohen's structure theorem is absent from mathlib.** The only file
+  matching `Cohen` is `Mathlib/RingTheory/Noetherian/OfPrime.lean`,
+  which is Cohen's *other* theorem ("Noetherian iff every prime is
+  finitely generated") and is unrelated.
+  `grep -rln 'Cohen' .lake/packages/mathlib/Mathlib ~/cs/FLT Fermat`
+* The coefficient-ring map `W(k) → R` is absent from all three trees.
+
+WHAT IS **NOT** OWED ANY MORE, and this is the correction that shrank
+this leaf.  The convergence and surjectivity halves of Cohen have been
+split off and are NOT part of this leaf:
+`exists_ringHom_mvPowerSeries_of_isAdicComplete` (PROVEN above) builds
+the substitution homomorphism, and
+`surjective_of_span_range_eq_maximalIdeal` (below) is its surjectivity.
+Neither needs Witt vectors.
+
+FAITHFULNESS.  The statement asks only for SOME coefficient ring lifting
+the residue field; it does not pin `𝒪 = W(k)`, and it must not, because
+`TaylorWilesCoefficients` is a bundle rather than a characterisation.  A
+prover is free to return any DVR bundle that maps to `R` and hits `k`.
+Note the leaf would be FALSE if `[Finite k]` were dropped: the
+`finite_residueField` field of `TaylorWilesCoefficients` forces `𝒪` to
+have a finite residue field, and `π ∘ ι` surjective then forces `k`
+itself to be finite.
+
+CIRCULARITY GUARD: none applies — this leaf mentions no `ρbar`, no
+deformation functor and no Hecke algebra, so no route to the odd-prime
+dichotomy can even be stated against it. -/
+theorem exists_taylorWilesCoefficients_ringHom
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {k : Type*} [Field k] [Finite k] {π : R →+* k}
+    (hπ : Function.Surjective π) :
+    ∃ (coeff : TaylorWilesCoefficients) (ι : coeff.carrier →+* R),
+      Function.Surjective (π.comp ι) :=
+  sorry
+
+/-- **Complete Nakayama: the substitution homomorphism is surjective**
+(sorry node, LEAF B1a-ii of the 2026-07-27 decomposition of
+`exists_taylorWilesCoefficientsPresentation`): if `ι : O →+* R` hits the
+residue field and `t : Fin q → R` spans `𝔪_R`, then ANY ring
+homomorphism `φ : O[[x_1, …, x_q]] →+* R` with `φ (C a) = ι a` and
+`φ (X i) = t i` is surjective.
+
+# WHY IT IS SAFE TO QUANTIFY OVER AN ARBITRARY `φ`
+
+This looked at first like a faithfulness hazard — `φ` is a BARE
+`RingHom` with no continuity hypothesis, so how can it be forced to hit
+the limits that surjectivity needs?  The answer is that CONTINUITY IS
+AUTOMATIC here, for a purely algebraic reason, and it is the load-bearing
+observation of this leaf:
+
+> in finitely many variables, the set of power series all of whose terms
+> have total degree `≥ n` is exactly the ideal `(X_1, …, X_q)^n`.
+
+That is an algebraic characterisation, so `φ` — being a ring
+homomorphism — must map it into `(φ X_1, …, φ X_q)^n · R = (t_1, …,
+t_q)^n · R = 𝔪_R^n` by `hspan`.  So every such `φ` is automatically
+`𝔪`-adically continuous, and no continuity hypothesis is needed or
+would add anything.
+
+# ROUTE, and it cuts cleanly in two if a successor wants that
+
+* **(a) The approximation step.**  For every `n` and every `r ∈ 𝔪_R^n`
+  there is `f ∈ (X_1, …, X_q)^n` with `r - φ f ∈ 𝔪_R^{n+1}`.  Reason:
+  `𝔪_R^n` is generated by the degree-`n` monomials in the `t_i`
+  (`hspan` plus `Ideal.span_pow`-style bookkeeping), and modulo
+  `𝔪_R^{n+1}` the coefficients may be taken in the image of `ι`, since
+  `ι` hits `R/𝔪_R ≅ k` by `hι`.  Take `f` to be the corresponding
+  degree-`n` polynomial.  Note the refinement `f ∈ (X)^n` — plain
+  density `∃ f, r - φ f ∈ 𝔪^n` is NOT enough, because the successive
+  approximations must agree to higher and higher order for the limit to
+  exist.
+* **(b) The limit.**  Iterate (a) from `r₀ := r` to get `f_n ∈ (X)^n`
+  with `r - φ (f_0 + ⋯ + f_{n-1}) ∈ 𝔪_R^n`.  The partial sums are
+  coefficientwise eventually constant (each `f_n` has no term of degree
+  `< n`), so they converge to some `f : O[[x]]`, with
+  `f - (f_0 + ⋯ + f_{n-1}) ∈ (X)^n`; applying the observation above,
+  `r - φ f ∈ 𝔪_R^n` for every `n`, and `IsHausdorff` — the other half of
+  `hcomplete` — gives `r = φ f`.
+
+Both halves are pure commutative algebra over an arbitrary `O`; neither
+mentions Witt vectors, so this leaf is independent of
+`exists_taylorWilesCoefficients_ringHom` and the two can be worked
+concurrently.
+
+FAITHFULNESS.  `hπ` and `hι` are used only through their consequence
+"`ι` hits `R/𝔪_R`"; `k` being a field with `π` surjective is what forces
+`RingHom.ker π = 𝔪_R` (the kernel is maximal, and `R` is local).
+`[Finite k]` is deliberately NOT assumed — it plays no role in this
+half.
+
+CIRCULARITY GUARD: none applies, as for the sibling. -/
+theorem surjective_of_span_range_eq_maximalIdeal
+    {R : Type*} [CommRing R] [IsLocalRing R]
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {k : Type*} [Field k] {π : R →+* k} (hπ : Function.Surjective π)
+    {O : Type*} [CommRing O] {ι : O →+* R}
+    (hι : Function.Surjective (π.comp ι))
+    {q : ℕ} {t : Fin q → R}
+    (hspan : Ideal.span (Set.range t) = IsLocalRing.maximalIdeal R)
+    {φ : MvPowerSeries (Fin q) O →+* R}
+    (hC : ∀ a : O, φ (MvPowerSeries.C a) = ι a)
+    (hX : ∀ i, φ (MvPowerSeries.X i) = t i) :
+    Function.Surjective φ :=
+  sorry
+
 /-- **Cohen's structure theorem, in exactly the form the bottom ring leaf
-consumes** (sorry node, LEAF B1a of the 2026-07-27 decomposition of
+consumes** (PROVEN 2026-07-27 from the two leaves above; was the whole of
+LEAF B1a of the 2026-07-27 decomposition of
 `exists_taylorWilesBottomPresentation`): a complete Noetherian local ring
 with finite residue field is a quotient of a power series ring in finitely
-many variables over a `TaylorWilesCoefficients`.
-
-Classically this is Cohen's structure theorem (Cohen 1946; Matsumura,
-*Commutative Ring Theory*, Thm. 29.4; Eisenbud, *Commutative Algebra*,
-Thm. 7.7): pick a coefficient ring `𝒪 ⊆ R` — for `k` finite, hence
-perfect of characteristic `p`, the ring of Witt vectors `𝒪 = W(k)`, which
-maps to `R` because `R` is complete and `k` is perfect — and then send the
-variables to a finite generating set `t_1, …, t_q` of `𝔪_R`, which exists
-because `R` is Noetherian.  The resulting substitution homomorphism
-converges because the `t_i` lie in `𝔪_R` and `R` is `𝔪_R`-adically
-complete, and it is surjective by the complete version of Nakayama.
+many variables over a `TaylorWilesCoefficients` — and the number of
+variables may be taken ARBITRARILY LARGE.
 
 WHAT THIS LEAF IS AND IS NOT.  It is PURE COMMUTATIVE ALGEBRA: there is
 no Galois representation, no deformation functor, no Hecke algebra and no
@@ -4030,35 +4286,62 @@ the patching subtree therefore cannot even be stated against it.  It is
 also the ENTIRE remaining content of `exists_taylorWilesBottomPresentation`
 — see the FORMAL-CONTENT AUDIT there.
 
-MISSING MACHINERY (checked 2026-07-27 against our pin, `~/cs/FLT` and this
-project's own `Fermat/FLT/Mathlib/` shim tree; the refuting check for each
-is a grep for the name):
+# THE `q₀` PARAMETER IS THE TAYLOR–WILES PADDING REPAIR (2026-07-27)
 
-* **Cohen's structure theorem is absent from mathlib.** The only file
-  matching `Cohen` is `Mathlib/RingTheory/Noetherian/OfPrime.lean`, which
-  is Cohen's *other* theorem ("Noetherian iff every prime is finitely
-  generated") and is unrelated.
-* The **coefficient-ring map** `W(k) → R` for `R` complete local with
-  perfect residue field `k` is the substantial half and is likewise
-  absent; mathlib's Witt vector universal property (`WittVector.lift`)
-  maps *into* `𝕎 k`, which is the wrong direction.
-* What IS available and should be reused: `MvPowerSeries.subst` for the
-  substitution homomorphism, `IsAdicComplete`/`IsPrecomplete` for its
-  convergence, and `WittVector.isDiscreteValuationRing` for the DVR half
-  of the `TaylorWilesCoefficients` obligations.  The topological half of
-  those obligations (`CompactSpace`, `T2Space`,
-  `TotallyDisconnectedSpace`, `IsTopologicalRing`,
-  `Algebra.TopologicallyFG ℤ`) is genuinely owed: for `k` finite,
-  `W(k) = lim W_n(k)` is an inverse limit of FINITE rings, hence
-  profinite, which supplies all four at once. -/
+The FORMAL-CONTENT AUDIT of `exists_taylorWilesBottomPresentation`
+records a hazard that no compiler and no axiom audit can see: `q` is
+chosen HERE and consumed by `exists_taylorWilesAuxLevelData`, where it
+must be at least the Taylor–Wiles number
+`dim_k H¹_{∅^*}(ℚ, ad⁰ρbar(1))`.  A proof of this leaf returning Cohen's
+`q` — the minimal number of generators of `𝔪_R` — satisfies this leaf
+while making the auxiliary leaf FALSE.
+
+The repair implemented here is the strongest thing statable at an
+interface that has no vocabulary for Galois cohomology: the leaf takes a
+LOWER BOUND `q₀` and returns a presentation with `q₀ ≤ q`.  Padding
+upward is free — `exists_fin_span_range_eq_maximalIdeal` simply sends the
+extra variables to `0` — so what this delivers is
+`max(Cohen's q, q₀)` for whatever `q₀` a consumer can supply, never the
+minimal `q`.
+
+**What remains owed, and it is NOT this leaf's to discharge.** The
+Taylor–Wiles number itself is nameable only where Galois cohomology is
+in scope.  Neither this leaf nor its direct consumer
+`exists_taylorWilesBottomPresentation` has that vocabulary (`hTWq` there
+supplies prime sets of every size but no lower bound), so the call site
+below passes `q₀ := 0` and is flagged accordingly.  Threading a genuine
+bound down from `exists_taylorWilesBottomLevel` — the first declaration
+in the chain that could compute one — is a one-argument change now that
+the parameter exists, and that is exactly what this parameter was added
+for.
+
+# THE CUT
+
+Three pieces, of which the first two are PROVEN:
+
+* `exists_fin_span_range_eq_maximalIdeal` (PROVEN) — `q₀`-padded finite
+  generators of `𝔪_R`, from Noetherianness.
+* `exists_ringHom_mvPowerSeries_of_isAdicComplete` (PROVEN) — the
+  substitution homomorphism, from `MvPowerSeries.eval₂Hom` and the adic
+  topology.  This needed no new theory.
+* `exists_taylorWilesCoefficients_ringHom` (LEAF) — the coefficient ring
+  `W(k)` and its map into `R`.  The substantial half.
+* `surjective_of_span_range_eq_maximalIdeal` (LEAF) — complete
+  Nakayama. -/
 theorem exists_taylorWilesCoefficientsPresentation
     {R : Type*} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
     (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
     {k : Type*} [Field k] [Finite k] {π : R →+* k}
-    (hπ : Function.Surjective π) :
+    (hπ : Function.Surjective π) (q₀ : ℕ) :
     ∃ (q : ℕ) (coeff : TaylorWilesCoefficients)
-      (φ : MvPowerSeries (Fin q) coeff.carrier →+* R), Function.Surjective φ :=
-  sorry
+      (φ : MvPowerSeries (Fin q) coeff.carrier →+* R),
+      q₀ ≤ q ∧ Function.Surjective φ := by
+  obtain ⟨coeff, ι, hι⟩ := exists_taylorWilesCoefficients_ringHom hcomplete hπ
+  obtain ⟨q, t, hq, hspan⟩ := exists_fin_span_range_eq_maximalIdeal (R := R) q₀
+  have ht : ∀ i, t i ∈ IsLocalRing.maximalIdeal R := fun i =>
+    hspan ▸ Ideal.subset_span ⟨i, rfl⟩
+  obtain ⟨φ, hC, hX⟩ := exists_ringHom_mvPowerSeries_of_isAdicComplete hcomplete ι t ht
+  exact ⟨q, coeff, φ, hq, surjective_of_span_range_eq_maximalIdeal hcomplete hπ hι hspan hC hX⟩
 
 set_option linter.checkUnivs false in
 /-- **The Taylor–Wiles presentation of the universal deformation ring**
@@ -4199,8 +4482,18 @@ theorem exists_taylorWilesBottomPresentation.{s, t, uK, uW, uR}
       Function.Surjective pres ∧ Nonempty (R ≃+* Runiv) := by
   -- LEAF B1a: Cohen's structure theorem supplies the coefficient ring and
   -- a surjection from a power series ring over it onto `Runiv`.
-  obtain ⟨q, coeff, φ, hφ⟩ :=
-    exists_taylorWilesCoefficientsPresentation hcomplete hπuniv
+  -- THE `0` IS THE UNDISCHARGED HALF OF THE TAYLOR–WILES PADDING REPAIR.
+  -- `exists_taylorWilesCoefficientsPresentation` now takes a LOWER BOUND on
+  -- the number of variables and returns `q₀ ≤ q`, precisely so that a
+  -- consumer able to name the Taylor–Wiles number
+  -- `dim_k H¹_{∅^*}(ℚ, ad⁰ρbar(1))` can force `q` above it.  THIS
+  -- declaration cannot: `hTWq` supplies Taylor–Wiles prime sets of every
+  -- size but no lower bound, and nothing else here mentions Galois
+  -- cohomology.  So `0` is passed, the hazard recorded in the
+  -- FORMAL-CONTENT AUDIT below is unchanged, and discharging it is now a
+  -- one-argument edit at whichever ancestor first computes the bound.
+  obtain ⟨q, coeff, φ, _hq₀, hφ⟩ :=
+    exists_taylorWilesCoefficientsPresentation hcomplete hπuniv 0
   -- The universe-`0` model is then FREE: `MvPowerSeries (Fin q) coeff.carrier`
   -- already lives in `Type`, because `TaylorWilesCoefficients.carrier` does,
   -- and so does its quotient by `ker φ`, which the first isomorphism theorem
