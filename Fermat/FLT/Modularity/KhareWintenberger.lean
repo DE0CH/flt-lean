@@ -9911,6 +9911,217 @@ theorem exists_projectiveCompactification_of_affine_curve
   exact ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi,
     nonempty_compl_range_of_isProper_of_isAffine fC fX j hjimm hjcomm hXpr hpos⟩
 
+/-! ##### The dense-open dimension transfer — the CUT AUDIT's budgeted obligation
+
+(2026-07-27.) The CUT AUDIT on `exists_totallySplitPoint_of_projectiveCompactification`
+below records that the pin supplies `dim C ≤ dim X̄` and NOT the direction Moret–Bailly's
+§3 actually consumes — `dim X̄ ≤ dim C` for a DENSE OPEN `C ⊆ X̄` — and leaves that
+transfer as an obligation on whoever proves the leaf. This block discharges the
+SCHEME-THEORETIC half of it outright and isolates the residue as ONE named
+commutative-algebra leaf, `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`,
+which needs no knowledge of Moret–Bailly and is separately ownable.
+
+THE AUDIT'S SURVEY OF THE PIN IS RE-VERIFIED AND STILL CORRECT, and here are the two
+greps that would REFUTE it — a hit from either one kills the costing below:
+
+* `grep -rn "transcendenceDegree\|trdeg" --include=*.lean Mathlib/ | grep -i "krull\|dim"`
+  — EMPTY: no `dim = trdeg` for finitely generated algebras over a field. Note this is
+  a statement about the LINK, not about the notion: `Algebra.trdeg` itself is present
+  (`Mathlib/RingTheory/AlgebraicIndependent/Basic.lean:45`, Stacks 030G), so a prover
+  does not have to define transcendence degree, only to connect it to `ringKrullDim`.
+* `grep -rn "ringKrullDim" --include=*.lean Mathlib/ | grep -i integral`
+  — EMPTY: no Cohen–Seidenberg "an injective integral extension preserves Krull
+  dimension".
+
+**A CORRECTION TO A SIBLING SURVEY IN THIS FILE, which is load-bearing for the costing
+here and is REPORTED rather than edited because it is another owner's region.** The
+docstring of `exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` says,
+twice, that "even `dim k[x₁..xₙ] = n` is still a `proof_wanted`
+(`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`,
+`Mathlib/RingTheory/KrullDimension/Basic.lean:94`)", and uses that to conclude
+"dimension theory over a field is barely present at this pin — do NOT start there".
+**The premise is false.** That `proof_wanted` is a leftover duplicate stub for the
+`Fin n` special case; the general statement is PROVEN, as
+`MvPolynomial.ringKrullDim_of_isNoetherianRing :
+ringKrullDim (MvPolynomial ι R) = ringKrullDim R + Nat.card ι`
+in `Mathlib/RingTheory/KrullDimension/Polynomial.lean`, on top of a proven
+`Polynomial.ringKrullDim_of_isNoetherianRing`. The refuting grep is
+`grep -rn "ringKrullDim_of_isNoetherianRing" --include=*.lean Mathlib/RingTheory/KrullDimension/`.
+(That survey's own CONCLUSION — take the smooth-ascent route — may still be the right
+one for its own leaf; what is wrong is the reason given, and the reason is what a
+dispatcher acts on.)
+
+**AND A FOOTHOLD THE PIN DOES NOT HAVE BUT THE REFERENCE PROJECT DOES.**
+`~/cs/FLT/FLT/Slop/DimensionTheorem/` is a complete development of the LOCAL DIMENSION
+THEOREM (Stacks 00KQ) — `DimensionTheorem.ringKrullDim_eq_growthDeg`,
+`ringKrullDim_eq_minGenPrimary`, `growthDeg_eq_minGenPrimary` and the `dimension_theorem`
+assembly, over Hilbert–Samuel growth — for a Noetherian local ring. That is the standard
+engine underneath every equidimensionality statement, it is exactly what step 4 below is
+missing, and it is vendorable subject to the usual pin-drift audit (`81a5d2` there
+against `a3364fa` here). Whoever takes the leaf should read it BEFORE writing dimension
+theory from scratch.
+
+WHAT *IS* AT THE PIN, and is why the packaging turned out cheap rather than expensive —
+the audit did not look here, and this is the correction it invites:
+
+* `Topology.IsOpenEmbedding.coheight_map` (`Mathlib/Topology/KrullDimension.lean`) and
+  `AlgebraicGeometry.coheight_eq_of_isOpenImmersion` (`AlgebraicGeometry/Properties.lean`):
+  coheight is INVARIANT under an open immersion, in both the `IrreducibleCloseds` and the
+  point formulations.
+* `Order.krullDim_eq_iSup_coheight` (`Mathlib/Order/KrullDimension.lean`).
+* `irreducibleSetEquivPoints` (`Mathlib/Topology/Sober.lean`), for sober spaces.
+* `AlgebraicGeometry.ringKrullDim_stalk_eq_coheight`: `coheight x = dim 𝒪_{X,x}`, which is
+  what makes the residual leaf a statement about LOCAL RINGS rather than about chains.
+
+So the transfer is not a monolith: everything except one localisation statement about
+finitely generated algebras over a field is already available. -/
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The irreducible closed subsets of a scheme, order-isomorphic to its points**
+(PROVEN; sobriety, restated against the GLOBAL scheme preorder).
+
+Mathlib's `irreducibleSetEquivPoints` is the same map, but it is stated under
+`attribute [local instance] specializationOrder` — a `PartialOrder`. A scheme instead
+carries the GLOBAL `instance {X : Scheme} : Preorder X := specializationPreorder X`
+(`Mathlib/AlgebraicGeometry/Scheme.lean:158`), and every scheme-level coheight fact we
+need — `coheight_eq_of_isOpenImmersion`, `ringKrullDim_stalk_eq_coheight` — is stated
+against THAT one. The two are defeq and never syntactically equal, so mixing them is
+this project's recurring "duplicate instances that print identically" trap. Re-proving
+`map_rel_iff'` against the global preorder is three lines and removes the whole class;
+mathlib's own proof script transfers verbatim, because `specializationOrder` is built
+from `specializationPreorder` and so has the same `le`. -/
+noncomputable def schemeIrreducibleClosedsOrderIso (X : AlgebraicGeometry.Scheme.{u}) :
+    TopologicalSpace.IrreducibleCloseds ↥X ≃o ↥X where
+  toFun s := s.2.genericPoint
+  invFun x := ⟨closure ({x} : Set ↥X), isIrreducible_singleton.closure, isClosed_closure⟩
+  left_inv s := by
+    refine TopologicalSpace.IrreducibleCloseds.ext ?_
+    simp only [IsIrreducible.genericPoint_closure_eq, TopologicalSpace.IrreducibleCloseds.coe_mk,
+      closure_eq_iff_isClosed.mpr s.3]
+    rfl
+  right_inv x := isIrreducible_singleton.closure.isGenericPoint_genericPoint_closure.eq
+      (by rw [closure_closure]; exact isGenericPoint_closure)
+  map_rel_iff' := by
+    rintro ⟨s, hs, hs'⟩ ⟨t, ht, ht'⟩
+    refine specializes_iff_closure_subset.trans ?_
+    simp
+    rfl
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The Krull dimension of a scheme is the supremum of the coheights of its points**
+(PROVEN): `topologicalKrullDim` is by definition `krullDim` of the poset of irreducible
+closed subsets, that poset is order-isomorphic to the points by sobriety, and
+`Order.krullDim_eq_iSup_coheight` rewrites a `krullDim` as a supremum of coheights.
+
+This is the bridge that turns a dimension comparison into a POINTWISE one, and with
+`ringKrullDim_stalk_eq_coheight` it reads `dim X = ⨆ x, dim 𝒪_{X,x}`. -/
+theorem topologicalKrullDim_eq_iSup_coheight (X : AlgebraicGeometry.Scheme.{u}) :
+    topologicalKrullDim ↥X = ⨆ (x : ↥X), (Order.coheight x : WithBot ℕ∞) := by
+  rw [topologicalKrullDim, Order.krullDim_eq_of_orderIso (schemeIrreducibleClosedsOrderIso X),
+    Order.krullDim_eq_iSup_coheight]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Every point of an irreducible finite-type `ℚ`-scheme is dominated in coheight by a
+point of any nonempty open** (SORRY LEAF — this is the whole commutative-algebra content
+of the dense-open dimension transfer, and the ONLY thing in that transfer that is missing
+from the pin).
+
+Equivalently, via `ringKrullDim_stalk_eq_coheight`: for every `x ∈ X̄` there is a `y` in
+the open subscheme `C` with `dim 𝒪_{X̄,x} ≤ dim 𝒪_{X̄,y}`.
+
+THE PROOF, and exactly where the pin runs out:
+
+1. Coheight is LOCAL: choose an affine open `U = Spec A` containing `x`; then
+   `coheight_{X̄} x = coheight_U x = height 𝔭ₓ`
+   (`AlgebraicGeometry.coheight_eq_of_isOpenImmersion`, then `idealHeight_eq_coheight`).
+2. `hft` makes `A` a finitely generated `ℚ`-algebra, and `U` is irreducible (a nonempty
+   open of the irreducible `X̄`), so `A ⧸ nilradical A` is a finitely generated
+   `ℚ`-DOMAIN with the same `PrimeSpectrum` and hence the same heights.
+3. `C ∩ U` is nonempty — two nonempty opens of an irreducible space meet — and open, so
+   it contains a nonempty basic open `D(f) ≅ Spec A_f` with `f` not nilpotent.
+4. **THE MISSING STEP.** `ringKrullDim A_f = ringKrullDim A` for `A` a finitely generated
+   domain over a field and `f ≠ 0`. Both sides are `trdeg_ℚ (Frac A)`, since `Frac A_f =
+   Frac A`. The route, with what the pin does and does not give:
+   * Noether normalization IS at the pin, as
+     `Algebra.exists_integral_inj_algHom_of_fg` / `exists_finite_inj_algHom_of_fg`
+     (`Mathlib/RingTheory/NoetherNormalization.lean`), presenting `A` as integral over
+     `MvPolynomial (Fin s) ℚ`;
+   * `ringKrullDim (MvPolynomial (Fin s) ℚ) = s` IS at the pin, from
+     `MvPolynomial.ringKrullDim_of_isNoetherianRing` and `ringKrullDim_eq_zero_of_field`;
+   * `ringKrullDim A = s` is NOT at the pin — it is Cohen–Seidenberg (lying over, going
+     up, incomparability), and see the section docstring's second grep;
+   * `s = trdeg_ℚ (Frac A)` is NOT at the pin either — see the first grep — though
+     `Algebra.trdeg` itself IS. It is the statement that the Noether-normalization rank
+     is the transcendence degree, which follows from `Frac A` being algebraic over
+     `ℚ(x₁,…,x_s)`.
+
+   START FROM `~/cs/FLT/FLT/Slop/DimensionTheorem/`, NOT FROM SCRATCH: the reference
+   project already carries the local dimension theorem (Stacks 00KQ) in the form
+   `ringKrullDim R = growthDeg R = minGenPrimary R` for Noetherian local `R`, which is
+   the engine this step wants. See the section docstring above for the pin-drift caveat
+   and for a correction to a sibling survey in this file that wrongly records
+   `dim k[x₁..xₙ] = n` as unproven.
+5. Then `dim A_f = dim A ≥ height 𝔭ₓ`, and `dim A_f = ⨆_{𝔮 ∈ Spec A_f} height 𝔮`
+   (`topologicalKrullDim_eq_iSup_coheight` again, or `Order.krullDim_eq_iSup_height`), so
+   some `y ∈ D(f) ⊆ C` has `coheight y ≥ coheight x`. ∎
+
+FAITHFULNESS — both geometric hypotheses are load-bearing and neither may be dropped:
+
+* WITHOUT `hirr`: take `X̄ = Spec (ℚ[s] × ℚ[u,v])`, two components of dimensions `1` and
+  `2`, and `C` the first component. `C` is a nonempty open, `dim C = 1`, `dim X̄ = 2`, and
+  a closed point `x` of the second component has `coheight x = 2 > 1 ≥ coheight y` for
+  every `y ∈ C`.
+* WITHOUT `hft` (finite type over a FIELD): take `X̄ = Spec ℤ_[p]` and `C` its generic
+  point, a nonempty — indeed dense — open with `dim C = 0` while `dim X̄ = 1`. This is
+  why the base being `Spec ℚ` is not decoration: over a general base a dense open may
+  drop dimension.
+
+Note `hne` is genuinely needed too, and only for the trivial reason that an EMPTY `C`
+makes the conclusion false for any nonempty `X̄`. -/
+theorem exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType
+    {C Xbar : AlgebraicGeometry.Scheme.{u}}
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hirr : IrreducibleSpace ↥Xbar)
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hne : Nonempty ↥C) (x : ↥Xbar) :
+    ∃ y : ↥C, Order.coheight x ≤ Order.coheight (j.base y) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The dense-open dimension transfer** (PROVEN over the leaf above): a nonempty open
+subscheme of an irreducible `ℚ`-scheme of finite type has the FULL dimension of the
+ambient scheme, so `dim X̄ ≤ dim C`.
+
+This is the direction mathlib does not supply — its whole `topologicalKrullDim` API
+(`Topology.IsInducing.topologicalKrullDim_le`, `IsHomeomorph.topologicalKrullDim_eq`,
+`topologicalKrullDim_subspace_le`, `topologicalKrullDim_zero_of_discreteTopology`, and
+`PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`) gives only `dim(subspace) ≤
+dim(ambient)`. Combined with `topologicalKrullDim_subspace_le` it upgrades to an
+EQUALITY, which is the "dense opens are equidimensional" fact §3.1's genus and degree
+computations are carried out under.
+
+The proof is pure packaging: rewrite both sides as suprema of coheights over points
+(`topologicalKrullDim_eq_iSup_coheight`), and note that an open immersion PRESERVES
+coheight (`coheight_eq_of_isOpenImmersion`), so the leaf's pointwise domination is
+exactly what bounds one supremum by the other. -/
+theorem topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType
+    {C Xbar : AlgebraicGeometry.Scheme.{u}}
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hirr : IrreducibleSpace ↥Xbar)
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hne : Nonempty ↥C) :
+    topologicalKrullDim ↥Xbar ≤ topologicalKrullDim ↥C := by
+  haveI : AlgebraicGeometry.IsOpenImmersion j := hjimm
+  rw [topologicalKrullDim_eq_iSup_coheight, topologicalKrullDim_eq_iSup_coheight]
+  refine iSup_le fun x => ?_
+  obtain ⟨y, hy⟩ :=
+    exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType fX hft hirr j hjimm hne x
+  refine le_trans ?_ (le_iSup (fun y : ↥C => (Order.coheight y : WithBot ℕ∞)) y)
+  rw [← AlgebraicGeometry.coheight_eq_of_isOpenImmersion (x := y) j]
+  exact_mod_cast hy
+
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
 compactification** (SORRY — the whole Picard-theoretic argument).
@@ -10005,13 +10216,25 @@ the direction the first bullet above needs, which is `dim X̄ ≤ dim C` for
 a dense open. There is no "a nonempty open of an irreducible finite-type
 scheme is dense and equidimensional" lemma at this pin.
 
-That is an obligation on whoever proves this leaf, not a defect in the
-statement: `hdim` is still the correct and cheapest hypothesis, because
-it is the one the call site already holds, and the transfer to `X̄` is a
-step INSIDE the §3 argument rather than something the consumer should be
-made to pay. A prover who wants `dim X̄ ≤ 1` as a usable fact must
-establish the dense-open equidimensionality himself. Recording it here so
-that the step is budgeted rather than discovered.
+**THAT OBLIGATION IS NOW DISCHARGED (2026-07-27), AND THE PARAGRAPH ABOVE
+IS RETAINED ONLY AS THE PROVENANCE OF `hXdim`.** A prover no longer has to
+establish the dense-open equidimensionality himself: this leaf now CARRIES
+`hXdim : topologicalKrullDim X̄ ≤ 1` alongside `hdim`, and the sole call
+site `exists_totallySplitPoint_of_affine_curve` discharges it through
+`topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType`, proven
+above. `hdim` is kept as well, since §3 uses both forms.
+
+The costing paragraph above was also incomplete in one direction worth
+recording, because it is the reason the repair was cheap: it surveyed only
+`Mathlib/Topology/KrullDimension.lean`, and the useful material is
+elsewhere. `Order.krullDim_eq_iSup_coheight`,
+`AlgebraicGeometry.coheight_eq_of_isOpenImmersion` and
+`AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` together reduce the whole
+transfer to ONE statement about localisations of finitely generated algebras
+over a field, which is the named leaf
+`exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`. Everything
+else in the transfer is proven. See the section docstring "The dense-open
+dimension transfer" above for the two greps that would refute what remains.
 
 PROVENANCE. This repair CLOSES the "SCOPE NOTE — the statement is strictly
 more general than the route documented above" audit of 2026-07-26, which
@@ -10039,6 +10262,7 @@ theorem exists_totallySplitPoint_of_projectiveCompactification
     (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
     (hZ : (Set.range j.base)ᶜ.Nonempty)
     (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hXdim : topologicalKrullDim ↥Xbar ≤ 1)
     (hreal : HasRationalPoint fC (ULift.{u} ℝ))
     (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
     (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
@@ -10208,8 +10432,21 @@ theorem exists_totallySplitPoint_of_affine_curve
   · exact exists_totallySplitPoint_of_krullDim_le_zero fC hsmooth hft hgi hzero S
   · obtain ⟨Xbar, fX, j, hjimm, hjcomm, hXsmooth, hXproper, hXgi, hZ⟩ :=
       exists_projectiveCompactification_of_affine_curve fC hsmooth hsep hft hqc hgi hdim hzero
+    haveI : AlgebraicGeometry.IsOpenImmersion j := hjimm
+    haveI : AlgebraicGeometry.IsProper fX := hXproper
+    haveI : AlgebraicGeometry.GeometricallyIrreducible fX := hXgi
+    have hCne : Nonempty ↥C := by
+      obtain ⟨pt, -⟩ := hreal
+      obtain ⟨w⟩ : Nonempty ↥(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))) :=
+        inferInstance
+      exact ⟨pt.base w⟩
+    haveI hXirr : IrreducibleSpace ↥Xbar :=
+      AlgebraicGeometry.GeometricallyIrreducible.irreducibleSpace_of_subsingleton fX
+    have hXdim : topologicalKrullDim ↥Xbar ≤ 1 :=
+      le_trans (topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType fX
+        inferInstance hXirr j hjimm hCne) hdim
     exact exists_totallySplitPoint_of_projectiveCompactification fC fX j hjimm hjcomm
-      hXsmooth hXproper hXgi hZ hdim hreal S hSprime hSpt
+      hXsmooth hXproper hXgi hZ hdim hXdim hreal S hSprime hSpt
 
 /-- **The normal closure of a totally real, totally split number field is
 again totally real and totally split** (**PROVEN 2026-07-26** — pure algebraic
