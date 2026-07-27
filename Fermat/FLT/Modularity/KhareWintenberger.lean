@@ -6387,9 +6387,283 @@ theorem exists_bound_forall_formallySmooth_integralSystemModel
   exact formallySmooth_integralSystemModel_baseChange f
     (Localization.Away ((N : ℕ) : ℤ)) ℤ_[p]
 
+/-- **Irreducibility of the prime spectrum transports along a ring isomorphism**
+(PROVEN glue, 2026-07-27).
+
+DUPLICATION NOTE. `irrSpec_of_ringEquiv` further down this file says the same
+thing, but it is declared ~1300 lines BELOW the geometric-irreducibility leaf
+that needs it, so declaration order forbids reuse. This version is also
+cheaper — it goes through `Ideal.comap` rather than `Ideal.map`, so it needs no
+kernel hypothesis. If the file is ever reorganised the two should be merged. -/
+theorem irreducibleSpace_primeSpectrum_of_ringEquiv {R : Type*} {S : Type*}
+    [CommRing R] [CommRing S] (e : R ≃+* S)
+    (h : IrreducibleSpace (PrimeSpectrum R)) : IrreducibleSpace (PrimeSpectrum S) := by
+  rw [PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical] at h ⊢
+  have hnil : nilradical S = Ideal.comap (e.symm : S →+* R) (nilradical R) := by
+    ext x
+    constructor
+    · intro hx
+      exact Ideal.mem_comap.2 (mem_nilradical.2 ((mem_nilradical.1 hx).map (e.symm : S →+* R)))
+    · intro hx
+      have := (mem_nilradical.1 (Ideal.mem_comap.1 hx)).map (e : R →+* S)
+      simpa using mem_nilradical.2 this
+  rw [hnil]
+  haveI := h
+  exact Ideal.comap_isPrime _ _
+
+/-- **Topological irreducibility of `Spec (R ⧸ I)` is primality of `I.radical`**
+(PROVEN glue, 2026-07-27) — the bridge between the topological statement that
+`GeometricallyIrreducible` delivers and the ideal-theoretic form in which the
+arithmetic leaves are stated.
+
+`IrreducibleSpace (PrimeSpectrum (R ⧸ I))` is primality of `nilradical (R ⧸ I)`
+(`PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`), and `I.radical` is
+literally the contraction of that nilradical along `R ↠ R ⧸ I`: `xᵏ ∈ I` says
+exactly that the class of `x` is nilpotent. A contraction of a prime is prime. -/
+theorem isPrime_radical_of_irreducibleSpace_quotient {R : Type*} [CommRing R] (I : Ideal R)
+    (h : IrreducibleSpace (PrimeSpectrum (R ⧸ I))) : I.radical.IsPrime := by
+  haveI hnil : (nilradical (R ⧸ I)).IsPrime :=
+    PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical.1 h
+  have hcomap : I.radical = Ideal.comap (Ideal.Quotient.mk I) (nilradical (R ⧸ I)) := by
+    ext x
+    constructor
+    · rintro ⟨k, hk⟩
+      refine Ideal.mem_comap.2 (mem_nilradical.2 ⟨k, ?_⟩)
+      rw [← map_pow]
+      exact Ideal.Quotient.eq_zero_iff_mem.2 hk
+    · intro hx
+      obtain ⟨k, hk⟩ := mem_nilradical.1 (Ideal.mem_comap.1 hx)
+      refine ⟨k, ?_⟩
+      rw [← map_pow] at hk
+      exact Ideal.Quotient.eq_zero_iff_mem.1 hk
+  rw [hcomap]
+  exact Ideal.comap_isPrime _ _
+
+/-- **The model is insensitive to a ring isomorphism of the base** (PROVEN,
+2026-07-27). Used to descend the `Type u` copy `ULift.{u} (AlgebraicClosure ℚ)`,
+forced on us by `Scheme.{u}`, back to `AlgebraicClosure ℚ` in `Type 0`, where the
+arithmetic leaves live.
+
+The generators are insensitive because a ring map out of `ℤ` is unique
+(`RingHom.ext_int`), exactly as in `integralSystem_map_map_intCast`; so
+`MvPolynomial.mapEquiv` carries the generating set onto the generating set and
+`Ideal.quotientEquiv` descends it to the quotients. -/
+noncomputable def integralSystemModelCongr {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    {R : Type*} {R' : Type*} [CommRing R] [CommRing R'] (e : R ≃+* R') :
+    IntegralSystemModel f R ≃+* IntegralSystemModel f R' := by
+  refine Ideal.quotientEquiv _ _ (MvPolynomial.mapEquiv (Fin n) e) ?_
+  have hgen : ∀ i, (MvPolynomial.mapEquiv (Fin n) e)
+      (MvPolynomial.map (Int.castRingHom R) (f i)) =
+      MvPolynomial.map (Int.castRingHom R') (f i) := by
+    intro i
+    rw [MvPolynomial.mapEquiv_apply, MvPolynomial.map_map,
+      RingHom.ext_int ((e : R →+* R').comp (Int.castRingHom R)) (Int.castRingHom R')]
+  simp only [integralSystemIdeal, Ideal.map_span, ← Set.range_comp]
+  exact congrArg Ideal.span (congrArg Set.range (funext fun i => (hgen i).symm))
+
+open _root_.TensorProduct in
+/-- **Base change of a tensor product along a ring isomorphism of the base**
+(PROVEN glue, 2026-07-27).
+
+DUPLICATION NOTE. This is `nonempty_ringEquiv_tensor_of_ringEquiv`, which is
+declared ~1300 lines BELOW and therefore unavailable here; the statement and
+proof are the same and the two should be merged if this file is reorganised.
+Its docstring records WHY the statement is over a VARIABLE base pair rather
+than directly at `ULift.{u} ℚ` / `ℚ`: at the concrete pair the two
+`Module (ULift.{u} ℚ) S` instances (`ULift.module`, `Algebra.toModule`) are
+defeq but never syntactically equal, instance search picks the first and
+`pullbackSpecIso` bakes in the second, and every `CompatibleSMul` obligation
+then fails in both directions. Over an abstract base pair `ULift.module` does
+not apply at all and the ambiguity disappears. -/
+theorem nonempty_ringEquiv_tensor_of_baseRingEquiv
+    {R R' : Type*} [CommRing R] [CommRing R'] (e : R ≃+* R')
+    (S T : Type*) [CommRing S] [CommRing T]
+    [Algebra R S] [Algebra R T] [Algebra R' S] [Algebra R' T]
+    (hS : ∀ r : R, algebraMap R S r = algebraMap R' S (e r))
+    (hT : ∀ r : R, algebraMap R T r = algebraMap R' T (e r)) :
+    Nonempty (S ⊗[R] T ≃+* S ⊗[R'] T) := by
+  have hS' : ∀ r' : R', algebraMap R' S r' = algebraMap R S (e.symm r') := by
+    intro r'; rw [hS (e.symm r'), RingEquiv.apply_symm_apply]
+  have hT' : ∀ r' : R', algebraMap R' T r' = algebraMap R T (e.symm r') := by
+    intro r'; rw [hT (e.symm r'), RingEquiv.apply_symm_apply]
+  have smS : ∀ (r : R') (m : S), r • m = (e.symm r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hS']
+  have smT : ∀ (r : R') (m : T), r • m = (e.symm r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hT']
+  have smS2 : ∀ (r : R) (m : S), r • m = (e r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hS]
+  have smT2 : ∀ (r : R) (m : T), r • m = (e r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hT]
+  haveI : SMulCommClass R R' S := ⟨fun a b s => by rw [smS, smS, smul_comm]⟩
+  haveI : SMulCommClass R' R S := ⟨fun a b s => by rw [smS, smS, smul_comm]⟩
+  haveI : TensorProduct.CompatibleSMul R R' S T :=
+    ⟨fun r m n => by rw [smS, smT]; exact TensorProduct.smul_tmul _ _ _⟩
+  haveI : TensorProduct.CompatibleSMul R' R S T :=
+    ⟨fun r m n => by rw [smS2, smT2]; exact TensorProduct.smul_tmul _ _ _⟩
+  exact ⟨(Algebra.TensorProduct.equivOfCompatibleSMul R R' R S T).symm.toRingEquiv⟩
+
+set_option maxSynthPendingDepth 4 in
+open CategoryTheory AlgebraicGeometry _root_.TensorProduct in
+/-- **The GEOMETRIC GENERIC FIBRE is irreducible** (PROVEN 2026-07-27 — the
+SCHEME layer and the UNIVERSE gap removed, exactly as
+`formallySmooth_integralSystemModel_rat` does for the smoothness branch).
+
+`hgi` is a property of a morphism of `Scheme.{u}`; what the arithmetic needs is
+the statement that the ideal cut out by `f` over an algebraic closure of `ℚ` has
+PRIME RADICAL — a statement about one ring in `Type 0`. This lemma is that
+conversion, done ONCE, so that the spreading-out leaf below carries no schemes
+and no universes.
+
+THE PROOF, in five steps.
+
+1. Read `hgi` at the field `K = ULift.{u} (AlgebraicClosure ℚ)` — the `Type u`
+   copy of an algebraic closure, forced by `Scheme.{u}` — via
+   `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms`. That says the
+   pullback `Spec A ×_{Spec (ULift.{u} ℚ)} Spec K` is irreducible.
+2. `pullbackSpecIso` identifies that pullback with `Spec (A ⊗[ULift.{u} ℚ] K)`.
+3. `nonempty_ringEquiv_tensor_of_baseRingEquiv` moves the base of the tensor
+   product from `ULift.{u} ℚ` down to `ℚ`.
+4. `hπ` and `hker` present `A` as the `ℚ`-model
+   (`Ideal.quotientKerAlgEquivOfSurjective` composed with
+   `Ideal.quotientEquivAlgOfEq`), and `integralSystemModelBaseChange` — the
+   PROVEN base-change comparison above — recognises `K ⊗[ℚ] (P_ℚ ⧸ I_ℚ)` as the
+   model `P_K ⧸ I_K` itself.
+5. `integralSystemModelCongr` descends the `ULift`, and
+   `isPrime_radical_of_irreducibleSpace_quotient` converts topological
+   irreducibility of `Spec (P ⧸ I)` into primality of `I.radical`.
+
+NOTE THAT SMOOTHNESS IS NOT NEEDED and is absent from this signature. -/
+theorem isPrime_radical_integralSystemIdeal_algClosureRat
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (π : MvPolynomial (Fin n) ℚ →ₐ[ℚ] A) (hπ : Function.Surjective π)
+    (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A)) :
+    (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime := by
+  classical
+  letI algA : Algebra (ULift.{u} ℚ) A :=
+    ((algebraMap ℚ A).comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom).toAlgebra
+  letI algK : Algebra (ULift.{u} ℚ) (ULift.{u} (AlgebraicClosure ℚ)) :=
+    ((algebraMap ℚ (ULift.{u} (AlgebraicClosure ℚ))).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom).toAlgebra
+  -- `ULift.module` competes with `Algebra.toModule` for `Module (ULift ℚ) ·`; the two are
+  -- defeq but not syntactically equal, and `pullbackSpecIso` uses the algebra-derived one.
+  letI modA : Module (ULift.{u} ℚ) A := Algebra.toModule
+  letI modK : Module (ULift.{u} ℚ) (ULift.{u} (AlgebraicClosure ℚ)) := Algebra.toModule
+  have hspecA : specRatMap A = Spec.map (CommRingCat.ofHom (algebraMap (ULift.{u} ℚ) A)) := rfl
+  -- STEP 1. Geometric irreducibility read at `K = ULift (AlgebraicClosure ℚ)`.
+  have hgeo : geometrically (fun X => IrreducibleSpace ↥X)
+      (Spec.map (CommRingCat.ofHom (algebraMap (ULift.{u} ℚ) A))) := by
+    rw [← hspecA]; exact GeometricallyIrreducible.eq_geometrically ▸ hgi
+  have hpb := (geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms
+      (P := fun X => IrreducibleSpace ↥X) (R := ULift.{u} ℚ)).mp hgeo
+      (ULift.{u} (AlgebraicClosure ℚ))
+  -- STEP 2. The pullback is `Spec` of the tensor product.
+  have h1 := ObjectProperty.prop_of_iso (P := (fun X : Scheme.{u} => IrreducibleSpace ↥X))
+      (pullbackSpecIso (ULift.{u} ℚ) A (ULift.{u} (AlgebraicClosure ℚ))) hpb
+  have h2 : IrreducibleSpace
+      (PrimeSpectrum (A ⊗[ULift.{u} ℚ] (ULift.{u} (AlgebraicClosure ℚ)))) := h1
+  -- STEP 3. Move the base of the tensor product from `ULift ℚ` down to `ℚ`.
+  obtain ⟨ering⟩ := nonempty_ringEquiv_tensor_of_baseRingEquiv
+    (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ) A (ULift.{u} (AlgebraicClosure ℚ))
+    (fun _ => rfl) (fun _ => rfl)
+  have h3 : IrreducibleSpace (PrimeSpectrum (A ⊗[ℚ] (ULift.{u} (AlgebraicClosure ℚ)))) :=
+    irreducibleSpace_primeSpectrum_of_ringEquiv ering h2
+  -- STEP 4. Replace `A` by the `ℚ`-model and recognise the base change as the `K`-model.
+  have eA : A ≃ₐ[ℚ] IntegralSystemModel f ℚ :=
+    (Ideal.quotientKerAlgEquivOfSurjective hπ).symm.trans (Ideal.quotientEquivAlgOfEq ℚ hker)
+  have h4 : IrreducibleSpace
+      (PrimeSpectrum (IntegralSystemModel f (ULift.{u} (AlgebraicClosure ℚ)))) := by
+    refine irreducibleSpace_primeSpectrum_of_ringEquiv ?_ h3
+    exact (((Algebra.TensorProduct.comm ℚ A (ULift.{u} (AlgebraicClosure ℚ))).toRingEquiv.trans
+      (Algebra.TensorProduct.congr
+        (AlgEquiv.refl (R := ℚ) (A₁ := ULift.{u} (AlgebraicClosure ℚ))) eA).toRingEquiv).trans
+      (integralSystemModelBaseChange f ℚ (ULift.{u} (AlgebraicClosure ℚ))).toRingEquiv)
+  -- STEP 5. Descend the `ULift` and convert to primality of the radical.
+  have h5 : IrreducibleSpace (PrimeSpectrum (IntegralSystemModel f (AlgebraicClosure ℚ))) :=
+    irreducibleSpace_primeSpectrum_of_ringEquiv
+      (integralSystemModelCongr f
+        (ULift.ringEquiv : ULift.{u} (AlgebraicClosure ℚ) ≃+* AlgebraicClosure ℚ)) h4
+  exact isPrime_radical_of_irreducibleSpace_quotient _ h5
+
+/-- **SPREADING OUT OF GEOMETRIC IRREDUCIBILITY, SCHEME-FREE AND UNIVERSE-FREE**
+(SORRY LEAF, cut 2026-07-27 out of
+`exists_bound_forall_irreducibleFibre_of_geometricallyIrreducible` below, which
+is PROVEN over it). This is the whole mathematical content of that leaf; a
+prover here needs NOTHING from this file except `integralSystemIdeal` and
+`IntegralSystemModel`, so it is dispatchable to a commutative algebraist in
+isolation — exactly like its Lang–Weil sibling
+`exists_bound_forall_zmodSolvable_of_irreducibleFibre`.
+
+WHAT WAS ALREADY DISCHARGED, and is therefore NOT part of this leaf: the scheme
+layer, the universe gap, and the `A`/`π`/`hker` packaging, all of them in
+`isPrime_radical_integralSystemIdeal_algClosureRat` immediately above. The
+hypothesis `hQ` below is precisely the output of that lemma.
+
+WHY IT IS TRUE (EGA IV 9.7.7; Poonen, *Rational Points on Varieties*, §3.2).
+`ℤ[x₁..xₙ] ⧸ (f)` is a finitely presented `ℤ`-algebra, and geometric
+irreducibility of the fibres of a finitely presented morphism is a
+CONSTRUCTIBLE condition on the base (EGA IV 9.7.7). By `hQ` that constructible
+subset of `Spec ℤ` contains the generic point; a constructible subset of
+`Spec ℤ` containing the generic point contains a nonempty open, hence omits only
+finitely many closed points. Take `B` past the largest of them.
+
+WHY `radical.IsPrime` AND NOT `IsPrime`. `Ideal.IsPrime I.radical` says exactly
+that `Spec` of the quotient is an irreducible topological space, which is the
+literal meaning of irreducibility and the only thing Lang–Weil consumes — point
+counts do not see nilpotents. `IsPrime` of the ideal itself would additionally
+assert reducedness of the fibre; that is also true here for large `p`, but it is
+strictly more than the consumer needs and would require spreading out
+REDUCEDNESS as well. The weaker form is the faithful one, and strengthening it
+is taking on extra work for nothing.
+
+ON `hsm`. Formal smoothness of the `ℚ`-model is carried because the parent knows
+it (`formallySmooth_integralSystemModel_rat`) and because one plausible route
+uses it: a smooth fibre is geometrically reduced, so "irreducible" upgrades to
+"integral" and the classical criterion — `k` algebraically closed in the
+function field of `X_k` — becomes available. EGA IV 9.7.7 does NOT need it, so a
+prover who does not use `hsm` should underscore it and say so; dropping it
+strengthens the leaf and is a welcome outcome, not a deviation.
+
+WHAT IS ACTUALLY MISSING FROM THE PIN, and the greps that would refute each
+claim (checked 2026-07-27 with `.lake/packages` seeded, on the host owning
+`.lake`, over `Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT/`):
+
+* PRESENT, and this leaf should be built on them, not around them:
+  `PrimeSpectrum.isConstructible_range_comap` and `isConstructible_comap_image`
+  (Chevalley's theorem, `Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean`),
+  `Mathlib/Topology/Constructible.lean`,
+  `Mathlib/RingTheory/Spectrum/Prime/ConstructibleSet.lean`,
+  `Mathlib/AlgebraicGeometry/SpreadingOut.lean`, and the whole
+  `Mathlib/AlgebraicGeometry/Geometrically/` directory.
+  REFUTE BY: `grep -rn "isConstructible_range_comap" .lake/packages/mathlib/`.
+* ABSENT: the statement that geometric irreducibility of the FIBRES of a
+  finitely presented morphism is constructible on the base (EGA IV 9.7.7
+  itself). This is the one genuinely new theorem.
+  REFUTE BY: `grep -rn "GeometricallyIrreducible" .lake/packages/mathlib/`
+  returning a file other than `Geometrically/{Basic,Integral,Irreducible,
+  Reduced,Connected}.lean` and `AffineSpace.lean`, or any hit for
+  `IsConstructible` together with `GeometricallyIrreducible` in one file.
+
+A REDUCTION WORTH TRYING BEFORE THE FULL EGA ARGUMENT: only `Spec ℤ` is at
+stake, which is one-dimensional and whose constructible sets are exactly the
+finite and the cofinite ones, so the "constructible + contains the generic point
+⟹ cofinite" half is elementary here. The work is entirely in the first half. -/
+theorem exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime :=
+  sorry
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Spreading out of GEOMETRIC IRREDUCIBILITY** (SORRY LEAF, cut 2026-07-26 out
-of `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` below).
+/-- **Spreading out of GEOMETRIC IRREDUCIBILITY** (**PROVEN 2026-07-27** over
+the two lemmas immediately above: the scheme-and-universe transport
+`isPrime_radical_integralSystemIdeal_algClosureRat`, which is PROVEN, and the
+scheme-free spreading-out leaf
+`exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`,
+which is the one remaining SORRY and carries the whole of EGA IV 9.7.7).
 
 For all but finitely many primes `p`, the geometric fibre of the integral model
 is irreducible: the ideal cut out by `f` over an algebraic closure of `𝔽_p` has
@@ -6438,7 +6712,11 @@ theorem exists_bound_forall_irreducibleFibre_of_geometricallyIrreducible
     (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A)) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
       (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime :=
-  sorry
+  -- The scheme layer, the universe gap and the `A`/`π`/`hker` packaging come off first;
+  -- what is left over is one statement about ideals in polynomial rings.
+  exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre f
+    (formallySmooth_integralSystemModel_rat f A π hπ hker hsmooth)
+    (isPrime_radical_integralSystemIdeal_algClosureRat f A π hπ hker hgi)
 
 /-- **LANG–WEIL, NONEMPTINESS FORM, WITH THE SCHEME LAYER STRIPPED OFF** (SORRY
 LEAF, cut 2026-07-26 out of
