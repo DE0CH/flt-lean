@@ -263,7 +263,19 @@ the passage to chains is missing.
   prime `I` of `S` with `comap I ≤ P` and produces `Q ≥ I` over `P`).  Turning a
   chain `p₀ < ⋯ < p_n` of `R` into a chain of `S` is an induction on the chain
   using the second, i.e. an `RelSeries`/`LTSeries` induction; that induction is the
-  work.
+  work, and **mathlib says so itself** — the comment above
+  `exists_ideal_over_prime_of_isIntegral_of_isPrime` reads *"TODO: Version of
+  going-up theorem with arbitrary length chains (by induction on this)?  Not sure
+  how best to write an ascending chain in Lean"*.
+
+A dead end worth recording so it is not re-explored: the `≥` direction does **not**
+follow from `Order.krullDim_le_of_strictComono_and_surj` even though
+`Algebra.IsIntegral.comap_surjective` supplies its surjectivity hypothesis, because
+`PrimeSpectrum.comap` is not strictly comonotone.  Counterexample: `R = k[x]`,
+`S = k[x] × k[x]`, `q₁ = 0 × k[x]`, `q₂ = k[x] × (x)`; then
+`comap q₁ = (0) < (x) = comap q₂` while `q₁ ⊄ q₂` (as `(0,1) ∈ q₁ \ q₂`).  So the
+lifted chain really has to be built step by step, each prime chosen above the
+previous one.
 
 *The check that would refute this*: `grep -rn "krullDim" Mathlib/RingTheory/Ideal/GoingUp.lean`
 or `grep -rn "IsIntegral" Mathlib/RingTheory/KrullDimension/` returning anything —
