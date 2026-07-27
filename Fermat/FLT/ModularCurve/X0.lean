@@ -8969,8 +8969,9 @@ construction is real but whose closing step is again
 
 The consequence for a successor is the important part: **the arithmetic
 content of Kenku's prime-square theorem lives nowhere in this tree except in
-those two elementary nodes** — at `169` it has since moved one step down,
-into `exists_x0AbelianSieve_oneSixtyNine` and
+those two elementary nodes** — at `169` it has since moved two steps down,
+into `exists_sharpAbelianSievePrime_oneSixtyNine` (through the now-proven
+`exists_x0AbelianSieve_oneSixtyNine`) and
 `hasRankZeroAbelianImage_x0OneSixtyNine` — and it cannot be imported from
 `MazurTorsion.lean`, which imports this module.  So the elementary statements
 have to be restated HERE — which is what
@@ -25376,7 +25377,11 @@ to `y0HasNoRationalPoint_isogenyPrimeSq`, together with the `169`-specific
 apparatus that now precedes it (`HasRankZeroAbelianImage`,
 `IsX0AbelianReductionAt`, `card_le_of_abelianSieve` and their two leaves) —
 belongs, thematically, to the
-prime-square block far above, beside `isogenyPrimeSqLevels` and the two
+prime-square block far above (the leaf count there is now four:
+`exists_atkinLehnerPrym_x0OneSixtyNine`, `injective_ajMinus_x0OneSixtyNine`,
+`exists_x0AbelianNeronDatum_oneSixtyNine` and
+`exists_sharpAbelianSievePrime_oneSixtyNine`), beside `isogenyPrimeSqLevels`
+and the two
 sibling nodes `y0HasNoRationalPoint_of_not_stableCyclic` and
 `not_stableCyclic_sq_of_isogenyClassPrime` that still live there.  They sit
 here instead for exactly the reason the semiprime chain below does, and it is
@@ -25725,9 +25730,403 @@ theorem card_le_of_abelianSieve {X A X' A' : Scheme.{0}} {strX : X ⟶ SpecQ}
   calc t.card = (t.image red.redX).card := (Finset.card_image_of_injOn hinjOn).symm
     _ ≤ s.card := Finset.card_le_card hsub
 
-/-- **The Mordell–Weil sieve at level `169`** (sorry node, introduced
-2026-07-27): some prime, together with a reduction square onto a rank-`0`
-abelian image, cuts `X_0(169)(𝔽_ℓ)` down to at most
+/-- **A Néron-pinned reduction datum for the pair `(X_0(N), A)`, where `A`
+is an abelian IMAGE of the curve rather than its Jacobian.**
+
+This is `IsX0NeronDatum` with the Jacobian data `jac`, `jac'`, `jacZ`
+replaced by a natural family `c` and its two fibres `c'`, `cZ` — the port
+that the previous audit of `exists_x0AbelianSieve_oneSixtyNine` recorded
+as the check that would refute its blockage, and judged mechanical.  It
+is: nothing in `IsX0NeronDatum`, nor in its `redJ`/`red_aj`/`toReduction`
+block, uses the UNIVERSAL property of the Jacobian or its base point —
+only `aj`, `aj_pre` and the naturality of the identifications — and
+`neronReduction_injective`, which supplies `redA_inj`, was already stated
+for an arbitrary abelian scheme over `SpecLoc R`.
+
+Two presentational differences from `IsX0NeronDatum`, both simplifications:
+
+* the four `(gen*, gen*_nat)` field pairs are written as `IsFibreIdent`s,
+  the abstraction introduced further up for exactly this shape;
+* there is no base point and no `aj_base`, because `c` — in the intended
+  witness `x ↦ [x − w_169 x]` — already has degree `0`.
+
+`cZ_pre` is the analogue of `IsJacobianOf.aj_pre` for the integral map; it
+is the one naturality statement the assembly actually consumes (in
+`intA_c`), and it is not derivable from the fibre identifications because
+`cZ` is free data rather than a Jacobian.
+
+**Why the pinning is the load-bearing part**, exactly as for
+`IsX0NeronDatum`: with it, `redA` is the genuine reduction induced by
+morphisms of models over `ℤ_(ℓ)` rather than an arbitrary injective
+homomorphism, so `redA_add` and `red_c` become theorems
+(`IsX0AbelianNeronDatum.redA_add`, `.red_c`) and the sharpness leaf below
+may quantify universally over the MODELS without being false.  What it does
+NOT pin is the pair `(A, c)` itself — see the FAITHFULNESS AUDIT under
+`exists_sharpAbelianSievePrime_oneSixtyNine`, which is where the residual
+freedom lives. -/
+structure IsX0AbelianNeronDatum (N ℓ : ℕ) (R : Subring ℚ) (toF : R →+* ZMod ℓ)
+    {X A X' A' XZ YZ AZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {astr : A ⟶ SpecQ} (ab : AbelianSchemeStruct astr)
+    {strX' : X' ⟶ SpecF ℓ} {astr' : A' ⟶ SpecF ℓ} (ab' : AbelianSchemeStruct astr')
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {astrZ : AZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct astrZ)
+    (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g)
+    (c' : ∀ (T : Scheme.{0}) (g : T ⟶ SpecF ℓ), RelPoint strX' g → RelPoint astr' g)
+    (cZ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecLoc R), RelPoint xstr g → RelPoint astrZ g) where
+  /-- the base is the local ring of `ℤ` at `ℓ` -/
+  base : IsReductionBase ℓ R toF
+  /-- the integral model is the smooth model of `X_0(N)` over that base -/
+  model : IsX0Compactification N xstr ystr jZ
+  /-- the generic fibre of the curve model is `X`, functorially -/
+  genX : IsFibreIdent (SpecLoc.generic R) xstr strX
+  /-- the special fibre of the curve model is `X'`, functorially -/
+  spX : IsFibreIdent (SpecLoc.special toF) xstr strX'
+  /-- the generic fibre of the abelian model is `A`, functorially -/
+  genA : IsFibreIdent (SpecLoc.generic R) astrZ astr
+  /-- the special fibre of the abelian model is `A'`, functorially -/
+  spA : IsFibreIdent (SpecLoc.special toF) astrZ astr'
+  /-- the generic identification of abelian schemes is additive -/
+  genA_add : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (x y : RelPoint astr g),
+    genA.toEquiv g g₀ h (ab.add x y)
+      = abZ.add (genA.toEquiv g g₀ h x) (genA.toEquiv g g₀ h y)
+  /-- the special identification of abelian schemes is additive -/
+  spA_add : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (x y : RelPoint astr' g),
+    spA.toEquiv g g₀ h (ab'.add x y)
+      = abZ.add (spA.toEquiv g g₀ h x) (spA.toEquiv g g₀ h y)
+  /-- the integral map to the abelian model is natural -/
+  cZ_pre : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecLoc R} {g' : T' ⟶ SpecLoc R}
+    (hg : h ≫ g = g') (x : RelPoint xstr g),
+    cZ T' g' (RelPoint.pre h hg x) = RelPoint.pre h hg (cZ T g x)
+  /-- the map to the abelian image is defined over the base: generic fibre -/
+  genX_c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (x : RelPoint strX g),
+    genA.toEquiv g g₀ h (c T g x) = cZ T g₀ (genX.toEquiv g g₀ h x)
+  /-- the map to the abelian image is defined over the base: special fibre -/
+  spX_c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF ℓ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (x : RelPoint strX' g),
+    spA.toEquiv g g₀ h (c' T g x) = cZ T g₀ (spX.toEquiv g g₀ h x)
+  /-- **Néron mapping property**: every rational point of `A` extends
+  uniquely to an integral point of the model -/
+  neronA : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint astrZ (𝟙 (SpecLoc R)) → RelPoint astrZ (SpecLoc.generic R))
+  /-- **valuative criterion of properness**: every rational point of `X`
+  extends uniquely to an integral point of the model -/
+  properX : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint xstr (𝟙 (SpecLoc R)) → RelPoint xstr (SpecLoc.generic R))
+
+namespace IsX0AbelianNeronDatum
+
+variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X A X' A' XZ YZ AZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {astr : A ⟶ SpecQ} {ab : AbelianSchemeStruct astr}
+    {strX' : X' ⟶ SpecF ℓ} {astr' : A' ⟶ SpecF ℓ} {ab' : AbelianSchemeStruct astr'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {astrZ : AZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct astrZ}
+    {c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g}
+    {c' : ∀ (T : Scheme.{0}) (g : T ⟶ SpecF ℓ), RelPoint strX' g → RelPoint astr' g}
+    {cZ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecLoc R), RelPoint xstr g → RelPoint astrZ g}
+    (d : IsX0AbelianNeronDatum N ℓ R toF ab ab' abZ c c' cZ (ystr := ystr) (jZ := jZ))
+
+/-- **The integral point of the abelian model** attached to a rational
+point, by the Néron mapping property. -/
+noncomputable def intA (x : RelPoint astr (𝟙 SpecQ)) : RelPoint astrZ (𝟙 (SpecLoc R)) :=
+  (Equiv.ofBijective _ d.neronA).symm
+    (d.genA.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x)
+
+/-- **The integral point of the curve model** attached to a rational
+point, by the valuative criterion of properness. -/
+noncomputable def intX (x : RelPoint strX (𝟙 SpecQ)) : RelPoint xstr (𝟙 (SpecLoc R)) :=
+  (Equiv.ofBijective _ d.properX).symm
+    (d.genX.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x)
+
+/-- **Reduction of rational points of the abelian image**: extend to the
+integral model, then restrict to the special fibre. -/
+noncomputable def redA (x : RelPoint astr (𝟙 SpecQ)) : RelPoint astr' (𝟙 (SpecF ℓ)) :=
+  (d.spA.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+    (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intA x))
+
+/-- **Reduction of rational points of the curve.** -/
+noncomputable def redX (x : RelPoint strX (𝟙 SpecQ)) : RelPoint strX' (𝟙 (SpecF ℓ)) :=
+  (d.spX.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+    (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x))
+
+theorem redA_def (x : RelPoint astr (𝟙 SpecQ)) :
+    d.redA x = (d.spA.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intA x)) := rfl
+
+theorem redX_def (x : RelPoint strX (𝟙 SpecQ)) :
+    d.redX x = (d.spX.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x)) := rfl
+
+theorem pre_intA (z : RelPoint astr (𝟙 SpecQ)) :
+    RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) (d.intA z)
+      = d.genA.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) z :=
+  (Equiv.ofBijective _ d.neronA).apply_symm_apply _
+
+theorem pre_intX (z : RelPoint strX (𝟙 SpecQ)) :
+    RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) (d.intX z)
+      = d.genX.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) z :=
+  (Equiv.ofBijective _ d.properX).apply_symm_apply _
+
+/-- Extending a rational point to the integral model is additive. -/
+theorem intA_add (x y : RelPoint astr (𝟙 SpecQ)) :
+    d.intA (ab.add x y) = abZ.add (d.intA x) (d.intA y) := by
+  apply d.neronA.1
+  rw [d.pre_intA, abZ.pre_add, d.pre_intA, d.pre_intA, d.genA_add]
+
+/-- Extending a rational point to the integral model commutes with the map
+to the abelian image. -/
+theorem intA_c (x : RelPoint strX (𝟙 SpecQ)) :
+    d.intA (c SpecQ (𝟙 SpecQ) x) = cZ (SpecLoc R) (𝟙 (SpecLoc R)) (d.intX x) := by
+  apply d.neronA.1
+  rw [d.pre_intA, d.genX_c, ← d.pre_intX, d.cZ_pre]
+
+/-- **`redA_add` of `IsX0AbelianReductionAt`, as a theorem.** -/
+theorem redA_add (x y : RelPoint astr (𝟙 SpecQ)) :
+    d.redA (ab.add x y) = ab'.add (d.redA x) (d.redA y) := by
+  apply (d.spA.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
+  rw [d.spA_add, redA_def, redA_def, redA_def, Equiv.apply_symm_apply,
+    Equiv.apply_symm_apply, Equiv.apply_symm_apply, d.intA_add, abZ.pre_add]
+
+/-- **`red_c` of `IsX0AbelianReductionAt`, as a theorem.** -/
+theorem red_c (x : RelPoint strX (𝟙 SpecQ)) :
+    d.redA (c SpecQ (𝟙 SpecQ) x) = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) (d.redX x) := by
+  apply (d.spA.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
+  rw [d.spX_c, redA_def, Equiv.apply_symm_apply, redX_def, Equiv.apply_symm_apply,
+    d.intA_c, d.cZ_pre]
+
+include d in
+/-- **Rank `0` transports to the integral model**, along `𝒜(ℤ_(ℓ)) ≅ A(ℚ)`. -/
+theorem finite_intPoints (hfin : Finite (RelPoint astr (𝟙 SpecQ))) :
+    Finite (RelPoint astrZ (𝟙 (SpecLoc R))) := by
+  haveI := hfin
+  exact Finite.of_equiv _
+    ((d.genA.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).trans
+      (Equiv.ofBijective _ d.neronA).symm)
+
+/-- **A Néron-pinned abelian datum is an abelian reduction datum** (PROVEN),
+given injectivity of reduction on integral points — which is
+`neronReduction_injective`, already stated for an arbitrary abelian scheme
+over `SpecLoc R` and therefore reusable here verbatim.
+
+This is the whole point of the pinning: `redA_add` and `red_c` are no longer
+assumptions about an arbitrary map but consequences of the maps being induced
+by morphisms of models over `ℤ_(ℓ)`. -/
+noncomputable def toAbelianReduction
+    (hinj : Function.Injective
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id (SpecLoc.special toF)) :
+        RelPoint astrZ (𝟙 (SpecLoc R)) → RelPoint astrZ (SpecLoc.special toF))) :
+    IsX0AbelianReductionAt ab ab' (c SpecQ (𝟙 SpecQ)) (c' (SpecF ℓ) (𝟙 (SpecF ℓ))) where
+  redX := d.redX
+  redA := d.redA
+  redA_add := d.redA_add
+  redA_inj := by
+    intro a b hab
+    have h1 : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intA a)
+        = RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intA b) := by
+      have h := congrArg
+        (d.spA.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)) hab
+      rwa [redA_def, redA_def, Equiv.apply_symm_apply, Equiv.apply_symm_apply] at h
+    have h2 := congrArg (RelPoint.pre (SpecLoc.generic R)
+      (Category.comp_id (SpecLoc.generic R))) (hinj h1)
+    rw [d.pre_intA, d.pre_intA] at h2
+    exact (d.genA.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective h2
+  red_c := d.red_c
+
+end IsX0AbelianNeronDatum
+
+/-- **The rank-`0` abelian image of `X_0(169)` has GOOD REDUCTION away from
+`169`, and its Néron datum exists at every odd `ℓ ∤ 169`** (sorry node,
+introduced 2026-07-27 as the GEOMETRIC half of
+`exists_x0AbelianSieve_oneSixtyNine`).
+
+TRUE.  This is `exists_x0NeronDatum` for the abelian image in place of the
+Jacobian, together with the one arithmetic fact that makes it applicable:
+the image is a quotient of `J_0(169)`, which has good reduction outside
+`169`.
+
+**Why `hA` alone does not give it, and why it is nevertheless enough.**
+`HasRankZeroAbelianImage` constrains `(A, c)` only by finiteness of `A(ℚ)`
+and injectivity of `c` on `ℚ`-points, and those do NOT force good
+reduction: `A` may be `B × C` with `B` the Prym and `C` any rank-`0`
+abelian variety of bad reduction, with `c` constant in the second
+coordinate.  So a prover may not simply take `hA`'s pair and build models
+for it.  It may, however, REPAIR it, and that is the intended route: let
+`B ⊆ A` be the abelian subvariety generated by `{c x − c x₀}`, and replace
+`c` by `x ↦ c x − c x₀`.  Then `B(ℚ) ⊆ A(ℚ)` is still finite, the
+translated `c` is still injective on `ℚ`-points, and `B` is now a quotient
+of the Albanese `J_0(169)` — hence has good reduction at every `ℓ ∤ 169`
+by Néron–Ogg–Šafarevič, the `ℓ`-adic Tate module of a quotient being a
+quotient of an unramified one.  `hA` is therefore load-bearing and is
+consumed exactly there.
+
+**What proving it needs.**  Three inputs, none of which mentions the sieve:
+
+* the CURVE half is already available — `exists_x0CurveModel_of_base` is
+  PROVEN, and its fibre identifications are `IsFibreIdent`s, which are the
+  `genX`/`spX` fields verbatim;
+* the ABELIAN half is the Néron model of `B` over `ℤ_(ℓ)` — an abelian
+  scheme, by good reduction — with its two fibres, `genA`/`spA`, and
+  `neronA` free from `abZ.proper` through
+  `bijective_pre_generic_of_isProper`, exactly as `neronJ` is in
+  `exists_x0JacobianModel_of_curveModel`;
+* `cZ` together with `cZ_pre`, `genX_c`, `spX_c` — that `c` itself spreads
+  out over `ℤ_(ℓ)`, which is the Néron mapping property applied to the
+  morphism `X ⟶ B` on the generic fibre.
+
+**Universal in `ℓ`, hence safe.**  There is no sharpness claim here: the
+leaf says only that the reduction machinery exists at every good odd prime,
+which is what lets the arithmetic leaf below choose its own prime.  It is
+the abelian-image analogue of `exists_x0NeronDatum`, and the reason the two
+halves compose is that this one is `∀ ℓ` while that one is `∃ ℓ`.
+
+**The check that refutes it**: a rank-`0` abelian image of `X_0(169)` whose
+generated abelian subvariety has bad reduction at some `ℓ ∤ 169` — which
+would contradict Néron–Ogg–Šafarevič — or a smooth proper model of
+`X_0(169)` over `ℤ_(ℓ)` failing the valuative criterion. -/
+theorem exists_x0AbelianNeronDatum_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY)
+    (hA : HasRankZeroAbelianImage strX) :
+    ∃ (A : Scheme.{0}) (astr : A ⟶ SpecQ) (ab : AbelianSchemeStruct astr)
+      (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g),
+      Finite (RelPoint astr (𝟙 SpecQ)) ∧ Function.Injective (c SpecQ (𝟙 SpecQ)) ∧
+        ∀ ℓ : ℕ, ℓ.Prime → ℓ ≠ 2 → ¬ ℓ ∣ 169 →
+          ∃ (R : Subring ℚ) (toF : R →+* ZMod ℓ) (X' A' XZ YZ AZ : Scheme.{0})
+            (strX' : X' ⟶ SpecF ℓ) (astr' : A' ⟶ SpecF ℓ)
+            (ab' : AbelianSchemeStruct astr') (xstr : XZ ⟶ SpecLoc R)
+            (ystr : YZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ) (astrZ : AZ ⟶ SpecLoc R)
+            (abZ : AbelianSchemeStruct astrZ)
+            (c' : ∀ (T : Scheme.{0}) (g : T ⟶ SpecF ℓ), RelPoint strX' g → RelPoint astr' g)
+            (cZ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecLoc R), RelPoint xstr g → RelPoint astrZ g),
+            Nonempty (IsX0AbelianNeronDatum 169 ℓ R toF ab ab' abZ c c' cZ
+              (ystr := ystr) (jZ := jZ)) :=
+  sorry
+
+/-- **Some good odd prime makes the abelian sieve at `169` sharp** (sorry
+node, introduced 2026-07-27 as the ARITHMETIC half of
+`exists_x0AbelianSieve_oneSixtyNine`): given a rank-`0` abelian image
+`(A, c)` of `X_0(169)`, there is an odd prime `ℓ ∤ 169` at which, for EVERY
+Néron-pinned datum, at most `numRationalCusps 169 = 2` points of the special
+fibre have `c'`-class in `Set.range redA`.
+
+TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
+Math. Soc. (2) **22** (1980).  This is the whole arithmetic content of the
+level; everything else in the chain is now transport.
+
+**Why the point count of the special fibre is NOT enough**, so that nobody
+tries `card_le_of_rankZeroJacobian` here.  By Eichler–Shimura
+`#X_0(169)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(169)))`, and every newform of
+level `169` carries an inner twist by the quadratic character mod `13`, so
+`Tr T_ℓ = 0` at every non-residue `ℓ`.  PARI/GP 2.17.4, 2026-07-27:
+
+| `ℓ`               | `2` | `3` | `5` | `7` | `11` | `17` | `19` | `23` | `29` | `43` |
+|-------------------|-----|-----|-----|-----|------|------|------|------|------|------|
+| `Tr T_ℓ`          | `0` | `0` | `0` | `0` | `0`  | `2`  | `0`  | `2`  | `4`  | `10` |
+| `#X_0(169)(𝔽_ℓ)` | `3` | `4` | `6` | `8` | `12` | `16` | `20` | `22` | `26` | `34` |
+
+The minimum over admissible `ℓ` is `4`, at `ℓ = 3`, against a target of `2`;
+`ℓ = 2` is excluded because reduction is injective on torsion only for odd
+`ℓ`.  What this leaf counts is not the special fibre but the SURVIVORS —
+the points whose `c'`-class lies in the finite subgroup
+`Set.range redA ≅ A(ℚ)`.
+
+**The check that refutes "no single prime is sharp" for the point count**:
+an odd prime `ℓ ∤ 169` with `Tr(T_ℓ ∣ S_2(Γ_0(169))) = ℓ − 1`.  The Weil
+bound `|Tr T_ℓ| ≤ 2 · 8 · √ℓ` confines the search to `ℓ ≤ 260`, so it is
+finite and one `mfheckemat` line per prime settles it.
+
+## FAITHFULNESS AUDIT: what the `∀` ranges over, and where the risk is
+
+The universal quantifier over the MODELS is safe for exactly the reason it
+is safe in `exists_sharpSievePrime`: `base` pins the base as `Spec ℤ_(ℓ)`,
+`model` pins the integral curve as the smooth model of `X_0(169)` there,
+`genX`/`spX`/`genA`/`spA` pin the fibres, and `neronA` pins `redA` as the
+genuine reduction.  Any two data at the same `ℓ` over the same `(A, c)` are
+therefore isomorphic, and the survivor count is an isomorphism invariant.
+
+**The residual freedom is `(A, c)`, and it is NOT pinned.**  Unlike the
+Jacobian — which its universal property determines up to unique isomorphism
+— a rank-`0` abelian image is only constrained by `hfin` and `hcinj`.  This
+leaf is therefore a `∀` over an unpinned pair, which is precisely the shape
+that made the `IsX0ReductionAt` version of the Jacobian sieve FALSE.  It is
+asserted here anyway, and the reasons are worth stating so that a successor
+can check them rather than rediscover them:
+
+* `c` is non-constant (it separates the two rational cusps), so its image
+  generates an abelian subvariety of `J_0(169)`; a rank-`0` such quotient
+  lies in the Atkin–Lehner MINUS part, whose simple factors have dimension
+  `2` and `3`.  Hence `dim ≥ 2`, `#A(𝔽_ℓ) ≫ ℓ²` against `#X_0(169)(𝔽_ℓ) ~ ℓ`,
+  and the expected number of survivors beyond the forced two is
+  `O(#A(ℚ) · ℓ^{-1})`.
+* A factor of `A` that `c` ignores contributes nothing: if `A = B × C` with
+  `c` constant in the second coordinate, the survivor set for `(A, c)` is
+  contained in the survivor set for `(B, c_B)` with a subgroup no larger.
+* The only SYSTEMATIC mechanism for a survivor that persists at every prime
+  is a factorisation `c = c₀ ∘ φ` through a map `φ` of degree `≥ 2`, since
+  then whole fibres of `φ` survive together.  A degree-`2` map out of a
+  curve is Galois, hence given by an involution, and
+  `Aut(X_0(169)) = ⟨w_169⟩` (Kenku–Momose, *Automorphism groups of the
+  modular curves `X_0(N)`*, 1988).  But `w_169` SWAPS the two rational
+  cusps `0` and `∞`, so `c ∘ w = c` contradicts `hcinj`.  The mechanism is
+  therefore unavailable at this level.
+
+**The check that refutes the leaf**: an abelian variety `A/ℚ` with `A(ℚ)`
+finite and a natural `c` injective on `X_0(169)(ℚ)` such that at EVERY odd
+`ℓ ∤ 169` carrying a datum, three or more points of `X_0(169)(𝔽_ℓ)` have
+`c'`-class in `Set.range redA`.  **The repair if it is ever refuted**, and
+it is cheap: add the Atkin–Lehner pin as hypotheses — `w` an involution
+over `ℚ` with no rational fixed point, `ι : A ⟶ J` and
+`ι ∘ c = aj − aj ∘ w` — which are exactly what
+`exists_atkinLehnerPrym_x0OneSixtyNine` produces and what
+`hasRankZeroAbelianImage_x0OneSixtyNine` then discards.  With them `(A, c)`
+is pinned as the Prym itself and the `∀` collapses to a single pair.
+
+One further mitigation, which costs the consumer nothing: for an `(A, c)`
+admitting no datum at the chosen `ℓ` the conclusion is VACUOUS there, so a
+prover may legitimately answer a badly-behaved pair with a prime of bad
+reduction.  The assembly is unaffected, because
+`exists_x0AbelianNeronDatum_oneSixtyNine` supplies a datum at EVERY odd
+`ℓ ∤ 169` for the pair it produces.
+
+**What proving it needs**: `J_0(169)`, its Atkin–Lehner decomposition, the
+Prym, Kolyvagin–Logachev for finiteness of `A(ℚ)`, and the sieve
+computation proper — a count of an intersection inside the finite abelian
+group `A(𝔽_ℓ)`.  `hfin` is load-bearing and is the rank-`0` input: without
+it `A(ℚ)` is infinite, `Set.range redA` is unconstrained, and no prime cuts
+anything. -/
+theorem exists_sharpAbelianSievePrime_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY)
+    {A : Scheme.{0}} {astr : A ⟶ SpecQ} (ab : AbelianSchemeStruct astr)
+    (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g)
+    (hfin : Finite (RelPoint astr (𝟙 SpecQ)))
+    (hcinj : Function.Injective (c SpecQ (𝟙 SpecQ))) :
+    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ 169 ∧
+      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ} {X' A' XZ YZ AZ : Scheme.{0}}
+        {strX' : X' ⟶ SpecF ℓ} {astr' : A' ⟶ SpecF ℓ} {ab' : AbelianSchemeStruct astr'}
+        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+        {astrZ : AZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct astrZ}
+        {c' : ∀ (T : Scheme.{0}) (g : T ⟶ SpecF ℓ), RelPoint strX' g → RelPoint astr' g}
+        {cZ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecLoc R), RelPoint xstr g → RelPoint astrZ g}
+        (d : IsX0AbelianNeronDatum 169 ℓ R toF ab ab' abZ c c' cZ
+          (ystr := ystr) (jZ := jZ)),
+        ∃ s : Finset (RelPoint strX' (𝟙 (SpecF ℓ))),
+          (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+              (∃ a : RelPoint astr (𝟙 SpecQ),
+                d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x') → x' ∈ s) ∧
+            s.card ≤ numRationalCusps 169 :=
+  sorry
+
+/-- **The Mordell–Weil sieve at level `169`** (PROVEN by decomposition
+2026-07-27, over `exists_x0AbelianNeronDatum_oneSixtyNine` and
+`exists_sharpAbelianSievePrime_oneSixtyNine`; introduced as a sorry node
+earlier the same day): some prime, together with a reduction square onto a
+rank-`0` abelian image, cuts `X_0(169)(𝔽_ℓ)` down to at most
 `numRationalCusps 169 = 2` surviving points.
 
 TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
@@ -25774,32 +26173,46 @@ statement is already a proof of Kenku's bound at `169`.  The objection
 recorded under `IsX0ReductionAt` — that a `∀` over unpinned reduction data
 is FALSE, a differently placed subgroup of the right order giving an
 admissible datum with more survivors — does not apply, for the same reason:
-the quantifier here is EXISTENTIAL.  That is also what makes this one leaf
-rather than two.
+the quantifier here is EXISTENTIAL.  (The two leaves this is now proven from
+DO quantify universally over data, which is why they quantify over
+`IsX0AbelianNeronDatum` rather than over `IsX0AbelianReductionAt`.)
 
-**How it would decompose, and the one object that blocks the cut.**  The
-natural split is the one `exists_x0Sieve` has: geometry (the Néron models
-over `ℤ_(ℓ)` that produce the square) separated from arithmetic (sharpness
-at a good prime).  It is blocked by exactly one missing object — the
-abelian-image analogue of `IsX0NeronDatum`.  Without a pinning of `redA` as
-the map induced by Néron models, the sharpness half has to be stated
-universally over data, and one junk datum then makes it false.  **The check
-that would refute this blockage**: an `IsX0NeronDatum`-style structure for
-`(X_0(N), A)`, i.e. `IsX0NeronDatum` with `jac`, `jac'`, `jacZ` replaced by
-a natural family `c` and its two fibres.  Nothing in `IsX0NeronDatum`, nor
-in its `redJ`/`red_aj`/`toReduction` block, uses the UNIVERSAL property of
-the Jacobian or its base point — only `aj`, `aj_pre` and the naturality of
-the identifications — so that port is mechanical, and
-`neronReduction_injective`, which would supply `redA_inj`, is already stated
-for an arbitrary abelian scheme over `SpecLoc R`.  It is not done here
-because it is a second interface in a shared file, not because it is hard.
+**THE CUT HAS BEEN TAKEN** (2026-07-27), and the paragraph below is the
+record of the prediction that licensed it, not a live obstruction.  It said
+the natural split — geometry (the Néron models over `ℤ_(ℓ)` that produce the
+square) separated from arithmetic (sharpness at a good prime) — was blocked
+by exactly one missing object, the abelian-image analogue of
+`IsX0NeronDatum`, since without a pinning of `redA` as the map induced by
+Néron models the sharpness half must be stated universally over data and one
+junk datum makes it false.  It named the refuting check: `IsX0NeronDatum`
+with `jac`, `jac'`, `jacZ` replaced by a natural family `c` and its two
+fibres, observing that nothing in the `redJ`/`red_aj`/`toReduction` block
+uses the Jacobian's universal property or base point and that
+`neronReduction_injective` was already stated for an arbitrary abelian
+scheme over `SpecLoc R`.  Both observations held: the port is
+`IsX0AbelianNeronDatum` above, its `redA_add`/`red_c` are theorems, and
+`toAbelianReduction` assembles them — no line of the Jacobian version's
+proofs needed changing beyond renaming.
 
-**What proving the leaf itself needs**: `J_0(169)`, its Atkin–Lehner
+**What the cut did NOT remove, and it is the one thing to watch.**  Pinning
+the models does not pin the PAIR `(A, c)`: unlike the Jacobian, an abelian
+image has no universal property, so the sharpness leaf is universal over an
+unpinned pair.  That is exactly the shape the `IsX0ReductionAt` warning
+identifies as dangerous, and it is discussed, with its refuting check and
+its cheap repair (the Atkin–Lehner pin), in the FAITHFULNESS AUDIT under
+`exists_sharpAbelianSievePrime_oneSixtyNine`.  It is the only place in this
+chain where a false sub-leaf could hide.
+
+**What proving the two leaves needs**: `J_0(169)`, its Atkin–Lehner
 decomposition, the Prym, Kolyvagin–Logachev for finiteness of `A(ℚ)`, and
-the sieve computation proper.  The first three are
-`hasRankZeroAbelianImage_x0OneSixtyNine`; `hA` is exactly their packaged
-output and is load-bearing here, since without finiteness of `A(ℚ)` every
-point of `X_0(169)(𝔽_ℓ)` survives and no prime cuts anything. -/
+the sieve computation proper — all of that is now in
+`exists_sharpAbelianSievePrime_oneSixtyNine` — plus the integral models,
+which are `exists_x0AbelianNeronDatum_oneSixtyNine` and whose curve half
+already exists (`exists_x0CurveModel_of_base`, PROVEN).  `hA` remains
+load-bearing: it is consumed by the geometric leaf, which repairs it to a
+pair with good reduction, and its finiteness clause is what the arithmetic
+leaf sieves against — without it `A(ℚ)` is infinite and no prime cuts
+anything. -/
 theorem exists_x0AbelianSieve_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification 169 strX strY jY)
@@ -25813,8 +26226,17 @@ theorem exists_x0AbelianSieve_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ Spec
       (s : Finset (RelPoint strX' (𝟙 (SpecF ℓ)))),
       (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
           (∃ a : RelPoint astr (𝟙 SpecQ), red.redA a = c' x') → x' ∈ s) ∧
-        s.card ≤ numRationalCusps 169 :=
-  sorry
+        s.card ≤ numRationalCusps 169 := by
+  obtain ⟨A, astr, ab, c, hfin, hcinj, hmod⟩ :=
+    exists_x0AbelianNeronDatum_oneSixtyNine hX hA
+  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hsharp⟩ :=
+    exists_sharpAbelianSievePrime_oneSixtyNine hX ab c hfin hcinj
+  obtain ⟨R, toF, X', A', XZ, YZ, AZ, strX', astr', ab', xstr, ystr, jZ, astrZ, abZ,
+    c', cZ, ⟨d⟩⟩ := hmod ℓ hℓ hℓ2 hℓN
+  have hinj := neronReduction_injective ℓ R toF d.base hℓ2 abZ (d.finite_intPoints hfin)
+  obtain ⟨s, hs, hscard⟩ := hsharp d
+  exact ⟨ℓ, A, X', A', astr, ab, strX', astr', ab', c SpecQ (𝟙 SpecQ),
+    c' (SpecF ℓ) (𝟙 (SpecF ℓ)), hcinj, d.toAbelianReduction hinj, s, hs, hscard⟩
 
 /-- **`#X_0(169)(ℚ) ≤ numRationalCusps 169 = 2`, from a rank-`0` abelian
 image** (PROVEN 2026-07-27 over `exists_x0AbelianSieve_oneSixtyNine`;
