@@ -129,6 +129,11 @@ public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 public import Mathlib.RingTheory.Ideal.GoingUp
 public import Mathlib.RingTheory.Ideal.Height
 public import Mathlib.RingTheory.NoetherNormalization
+-- public: `MvPolynomial.schwartz_zippel_totalDegree`, the zero-count bound for a
+-- nonzero multivariate polynomial over a finite field. It is the counting half of
+-- item 4's Bertini step (`exists_bertiniGoodPlaneCount`), used in the statement-facing
+-- form `schwartzZippel_card_zeros_mul_le` below.
+public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 -- proof-only: `RingHom.injective` (a ring hom out of a field is
 -- injective), the descent step of the automorphic joint's transport
 import Mathlib.RingTheory.SimpleRing.Basic
@@ -7464,9 +7469,195 @@ theorem card_zeros_of_totalDegree_one {N p : ℕ} [Fact p.Prime]
     · have hjj := congrFun hEq j
       simpa [Function.update_of_ne hj] using hjj
 
-/-- **BERTINI OVER FINITE FIELDS, IN COUNTING FORM** (SORRY LEAF, cut
+/-- **SCHWARTZ–ZIPPEL IN `ℕ` FORM** (PROVEN 2026-07-27) — a nonzero polynomial
+in finitely many variables over `𝔽_p` has at most `deg(F)·p^{n−1}` zeros.
+
+Stated multiplicatively as `#zeros · p ≤ deg(F) · p^n` so that the truncated
+subtraction `n − 1` never appears: the `n = 0` case is then true on the nose
+rather than by accident. `mathlib`'s `MvPolynomial.schwartz_zippel_totalDegree`
+is stated over `Fin n` with a `ℚ≥0`-valued probability, so this wrapper does two
+things — it transports along `Fintype.equivFin` to an arbitrary finite variable
+type (which is what lets the caller index by `Fin N ⊕ Fin N ⊕ Fin N` rather than
+by `Fin (3 * N)`), and it clears denominators.
+
+This is the COUNTING half of Bertini over finite fields; the geometric half is
+`exists_bertiniNoetherWitness`. -/
+theorem schwartzZippel_card_zeros_mul_le {σ : Type*} [Fintype σ] [DecidableEq σ]
+    {p : ℕ} [Fact p.Prime] (F : MvPolynomial σ (ZMod p)) (hF : F ≠ 0) :
+    (Finset.univ.filter (fun x : σ → ZMod p => MvPolynomial.eval x F = 0)).card * p
+      ≤ F.totalDegree * p ^ (Fintype.card σ) := by
+  classical
+  set n := Fintype.card σ
+  set e := Fintype.equivFin σ
+  set G := MvPolynomial.rename (R := ZMod p) e F with hGdef
+  have hG : G ≠ 0 := by
+    intro hc
+    exact hF (MvPolynomial.rename_injective (R := ZMod p) e e.injective
+      (by rw [← hGdef, hc, map_zero]))
+  have hdeg : G.totalDegree = F.totalDegree := by
+    rw [hGdef]
+    simpa using MvPolynomial.totalDegree_renameEquiv (R := ZMod p) e F
+  -- the induced coordinate change on points
+  let E : (σ → ZMod p) ≃ (Fin n → ZMod p) :=
+    { toFun := fun x => x ∘ e.symm
+      invFun := fun y => y ∘ e
+      left_inv := fun x => by funext i; simp
+      right_inv := fun y => by funext j; simp }
+  have hEeval : ∀ x : σ → ZMod p, MvPolynomial.eval (E x) G = MvPolynomial.eval x F := by
+    intro x
+    show MvPolynomial.eval (x ∘ e.symm) (MvPolynomial.rename e F) = _
+    rw [MvPolynomial.eval_rename]
+    have hcomp : (x ∘ ⇑e.symm) ∘ ⇑e = x := by funext i; simp
+    rw [hcomp]
+  have hcard : (Finset.univ.filter (fun x : σ → ZMod p => MvPolynomial.eval x F = 0)).card
+      = (Finset.univ.filter (fun y : Fin n → ZMod p => MvPolynomial.eval y G = 0)).card := by
+    refine Finset.card_equiv E ?_
+    intro x
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, hEeval x]
+  rw [hcard, ← hdeg]
+  have hSZ := MvPolynomial.schwartz_zippel_totalDegree (R := ZMod p) hG
+    (S := (Finset.univ : Finset (ZMod p)))
+  rw [Fintype.piFinset_univ] at hSZ
+  have hcardZ : (Finset.univ : Finset (ZMod p)).card = p := by
+    rw [Finset.card_univ, ZMod.card]
+  rw [hcardZ] at hSZ
+  have hp0 : (0 : ℚ≥0) < (p : ℚ≥0) := by
+    exact_mod_cast (Fact.out : p.Prime).pos
+  rw [div_le_div_iff₀ (by positivity) hp0] at hSZ
+  exact_mod_cast hSZ
+
+/-- The parameter space of the affine planes `(s, t) ↦ v + s·u₁ + t·u₂`, read as
+functions on a threefold sum type so that a polynomial condition on `(v, u₁, u₂)`
+is an honest `MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N)`.
+
+Using `Fin N ⊕ Fin N ⊕ Fin N` rather than `Fin (3 * N)` is what makes the
+evaluation point literally `Sum.elim v (Sum.elim u₁ u₂)`, with no index
+arithmetic anywhere in the statement of `exists_bertiniNoetherWitness`. -/
+def planeParamEquiv (N : ℕ) (R : Type*) :
+    ((Fin N → R) × (Fin N → R) × (Fin N → R)) ≃ ((Fin N ⊕ Fin N ⊕ Fin N) → R) where
+  toFun w := Sum.elim w.1 (Sum.elim w.2.1 w.2.2)
+  invFun x := (fun i => x (Sum.inl i), fun i => x (Sum.inr (Sum.inl i)),
+    fun i => x (Sum.inr (Sum.inr i)))
+  left_inv w := rfl
+  right_inv x := by funext j; rcases j with i | i | i <;> rfl
+
+/-- **PROVEN 2026-07-27**: `schwartzZippel_card_zeros_mul_le` transported to the
+plane-parameter space, where `Fintype.card (Fin N ⊕ Fin N ⊕ Fin N) = 3 * N`. -/
+theorem schwartzZippel_card_zeros_planeParam_mul_le {N p : ℕ} [Fact p.Prime]
+    (F : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) (ZMod p)) (hF : F ≠ 0) :
+    (Finset.univ.filter (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+        MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F = 0)).card * p
+      ≤ F.totalDegree * p ^ (3 * N) := by
+  classical
+  have hcard : Fintype.card (Fin N ⊕ Fin N ⊕ Fin N) = 3 * N := by
+    simp [Fintype.card_sum]
+    ring
+  have hbase := schwartzZippel_card_zeros_mul_le F hF
+  rw [hcard] at hbase
+  refine le_trans (le_of_eq ?_) hbase
+  congr 1
+  refine Finset.card_equiv (planeParamEquiv N (ZMod p)) ?_
+  intro w
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+  rfl
+
+/-- **BERTINI OVER FINITE FIELDS, AS A HYPERSURFACE WITNESS** (SORRY LEAF, cut
 2026-07-27) — Schmidt Chapter V, Theorem 4C together with E. Noether's Theorem
-2A; this is ALL of the genuinely missing content of item 4.
+2A. After the cut below this carries ALL of the genuinely missing content of
+item 4: everything else in the Bertini step is now proven.
+
+WHAT IT SAYS. For each `(N, d)` there is a degree bound `D`, DEPENDING ONLY ON
+`N` AND `d` AND NOT ON `p`, such that for every absolutely irreducible `h` of
+total degree `d` over `𝔽_p` the BAD planes are confined to a single hypersurface
+of degree `≤ D` in the `3N`-dimensional parameter space: there is a nonzero
+`F ∈ 𝔽_p[v, u₁, u₂]` of total degree `≤ D` with
+
+  `F(v, u₁, u₂) ≠ 0  ⟹  planeSection h v u₁ u₂` is absolutely irreducible of
+  total degree exactly `d`.
+
+WHY THE WITNESS FORM, AND NOT A COUNT. Schmidt's Theorem 4C is the count
+`#bad ≤ ψ(d)·p^{3N−1}` with `ψ(d) = 2d^κ`. That count cannot be STATED directly
+here without a `Finset` of bad planes, i.e. without deciding `Irreducible`, which
+is undecidable. The witness form says strictly more, is what the proof actually
+produces, and is decidable at every point — and the count then follows from
+Schwartz–Zippel, which is PROVEN above as
+`schwartzZippel_card_zeros_planeParam_mul_le`. So this leaf is exactly the
+GEOMETRIC content, with the counting split off.
+
+THE PROOF, IN TWO HALVES.
+
+* **Noether's Theorem 2A** (Schmidt Chapter V §2). In the coefficient space of
+  plane polynomials of total degree `≤ d`, the locus of those that FAIL to be
+  absolutely irreducible of total degree exactly `d` is Zariski CLOSED, cut out
+  by forms whose degrees are bounded in terms of `d` alone. Closedness is
+  elimination theory, not schemes: "degree drops below `d`" is the vanishing of
+  the degree-`d` part, and "factors nontrivially" is the image of the
+  multiplication maps `(g₁, g₂) ↦ g₁·g₂` over the finitely many splittings
+  `d₁ + d₂ = d` with `d₁, d₂ ≥ 1`, each image closed because the projectivised
+  factor spaces are complete. Uniformity of the degree bound in `p` is the
+  crucial point and is what Noether's theorem supplies.
+* **Bertini's irreducibility theorem** (Schmidt Chapter V §1, again by
+  elimination theory — no schemes and no generic smoothness). Over `𝔽̄_p` SOME
+  plane section of an absolutely irreducible `h` of degree `d` is absolutely
+  irreducible of degree `d`. Note this is the IRREDUCIBILITY Bertini, which holds
+  in every characteristic; the classical characteristic-`p` failure of Bertini
+  concerns SMOOTHNESS and is irrelevant here.
+
+ASSEMBLING THE TWO. The coefficients of `planeSection h v u₁ u₂` are polynomials
+in `(v, u₁, u₂)` of total degree `≤ d`, so pulling the Noether forms back along
+`w ↦ coefficients of planeSection h w` gives forms in `(v, u₁, u₂)` of total
+degree `≤ d · (Noether degree)` — a bound in `N` and `d` only, which is `D`.
+Bertini says these pullbacks do not ALL vanish identically over `𝔽̄_p`, hence not
+over `𝔽_p` either since `𝔽_p[v, u₁, u₂] → 𝔽̄_p[v, u₁, u₂]` is injective. Take
+`F` to be one that does not vanish identically.
+
+DEGENERATE TRIPLES ARE NOT EXCLUDED and need not be: for `d ≥ 2` a section along
+a parametrisation with `u₁, u₂` dependent is a univariate polynomial in a linear
+form, hence reducible over `𝔽̄_p`, so such triples automatically satisfy
+`F(w) = 0` for any `F` with the stated property. Dropping the independence
+condition is what makes the averaging identity `sum_zeroCount_planeSection` a
+single translation bijection.
+
+SMALL `N` — the statement is TRUE and elementary there, so the Bertini content is
+genuinely a statement about `N ≥ 3`:
+
+* `N = 0`: vacuous. Every polynomial in no variables is constant, and
+  `not_irreducible_map_of_totalDegree_zero` says a constant is never absolutely
+  irreducible, so the hypotheses are contradictory.
+* `N = 1`: absolute irreducibility over `𝔽̄_p[X]` forces `d = 1`, say
+  `h = a·X + b` with `a ≠ 0`. Then
+  `planeSection h v u₁ u₂ = (a·v + b) + a·u₁·s + a·u₂·t`, which has total degree
+  `1` and is irreducible exactly when `(u₁, u₂) ≠ (0, 0)`. Witness: `F = u₁`,
+  of degree `1`.
+* `N = 2`: when `u₁, u₂` are independent the parametrisation is an affine
+  automorphism of `𝔸²`, which preserves both total degree and absolute
+  irreducibility. Witness: `F = det [u₁ u₂]`, of degree `2`.
+
+THE `D < p` HYPOTHESIS is not needed for the mathematics — Bertini
+irreducibility and Noether's forms are characteristic-free — but it costs the
+consumer nothing (`exists_bertiniGoodPlaneCount` already assumes `2 * D < p`) and
+is left as slack for a proof that prefers to avoid small-characteristic
+bookkeeping.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_bertiniNoetherWitness (N d : ℕ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ∀ h : MvPolynomial (Fin N) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        ∃ F : MvPolynomial (Fin N ⊕ Fin N ⊕ Fin N) (ZMod p),
+          F ≠ 0 ∧ F.totalDegree ≤ D ∧
+          ∀ w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p),
+            MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F ≠ 0 →
+              (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
+              Irreducible (MvPolynomial.map
+                (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+                (planeSection h w.1 w.2.1 w.2.2)) :=
+  sorry
+
+/-- **BERTINI OVER FINITE FIELDS, IN COUNTING FORM** (PROVEN 2026-07-27 over
+`exists_bertiniNoetherWitness`) — Schmidt Chapter V, Theorem 4C together with E.
+Noether's Theorem 2A.
 
 For `p` past a bound depending only on `N` and `d`, at least half of the `p^{3N}`
 parametrised affine planes `(s, t) ↦ v + s·u₁ + t·u₂` cut an absolutely
@@ -7481,6 +7672,23 @@ carries no `ψ` to thread through the assembly. The good set is delivered as a
 `Finset` rather than as a filter of a decidable predicate, which is what keeps
 `Irreducible` (undecidable) out of the statement.
 
+WHAT THIS PROOF DOES, now that the leaf has been cut. `exists_bertiniNoetherWitness`
+supplies a nonzero `F` of total degree `≤ D`, with `D` independent of `p`, whose
+non-vanishing certifies a good plane. Take
+
+  `G := {w | F(w) ≠ 0}`,
+
+which is a `Finset` because `F(w) ≠ 0` is decidable over `ZMod p` — that is the
+whole reason the leaf was stated with a polynomial witness rather than as a count.
+Writing `T = p^{3N}` for the number of parametrised planes and `Z = T − |G|` for
+the number of zeros of `F`, Schwartz–Zippel
+(`schwartzZippel_card_zeros_planeParam_mul_le`) gives
+
+  `Z · p ≤ deg(F) · T ≤ D · T`,
+
+so with `B₀ := 2·D` and `B₀ < p` we get `2·Z·p ≤ 2·D·T ≤ p·T`, hence `2·Z ≤ T`
+after cancelling `p`, hence `2·|G| = 2·T − 2·Z ≥ T`. That is the conclusion.
+
 DEGENERATE TRIPLES ARE NOT EXCLUDED and need not be: for `d ≥ 2` a section along
 a parametrisation with `u₁, u₂` dependent is a univariate polynomial in a linear
 form, hence reducible over `𝔽̄_p`, so such triples are automatically outside any
@@ -7489,11 +7697,12 @@ the `p^{3N}/2` slack for `N ≥ 2`; for `N ≤ 1` the conclusion is reached in t
 consumer without this leaf (`N = 0` forces `d = 0`, and `N = 1` forces `d ≤ 1`
 by absolute irreducibility, both handled by the degenerate branches).
 
-WHAT IS ACTUALLY MISSING: Bertini's irreducibility theorem proved by ELIMINATION
-THEORY (Schmidt Chapter V §1 — no schemes, no generic smoothness), and E.
-Noether's Theorem 2A on the forms cutting out the absolutely-irreducible locus,
-which is what makes "bad plane" a constructible condition of bounded degree and
-hence countable by the Lang–Weil-free upper bounds of his Chapter IV §3.
+WHAT IS ACTUALLY MISSING, after this proof: ONLY `exists_bertiniNoetherWitness` —
+Bertini's irreducibility theorem proved by ELIMINATION THEORY (Schmidt Chapter V
+§1 — no schemes, no generic smoothness), and E. Noether's Theorem 2A on the forms
+cutting out the absolutely-irreducible locus. The Lang–Weil-free counting that
+Schmidt's Chapter IV §3 supplies is no longer needed: `mathlib`'s Schwartz–Zippel
+lemma does that job, and the reduction to it is proven above.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_bertiniGoodPlaneCount (N d : ℕ) :
@@ -7506,8 +7715,50 @@ theorem exists_bertiniGoodPlaneCount (N d : ℕ) :
             Irreducible (MvPolynomial.map
               (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
               (planeSection h w.1 w.2.1 w.2.2))) ∧
-          p ^ (3 * N) ≤ 2 * G.card :=
-  sorry
+          p ^ (3 * N) ≤ 2 * G.card := by
+  classical
+  obtain ⟨D, hD⟩ := exists_bertiniNoetherWitness N d
+  refine ⟨2 * D, ?_⟩
+  intro p _ hp h hdeg hirr
+  have hp0 : 0 < p := (Fact.out : p.Prime).pos
+  obtain ⟨F, hF0, hFdeg, hFgood⟩ := hD p (by omega) h hdeg hirr
+  refine ⟨Finset.univ.filter (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+      ¬ MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F = 0), ?_, ?_⟩
+  · intro w hw
+    exact hFgood w (Finset.mem_filter.mp hw).2
+  · have hcardT : Fintype.card ((Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p))
+        = p ^ (3 * N) := by
+      have h1 : Fintype.card (Fin N → ZMod p) = p ^ N := by simp [ZMod.card]
+      rw [Fintype.card_prod, Fintype.card_prod, h1, ← pow_add, ← pow_add]
+      congr 1
+      ring
+    have hsplit : (Finset.univ.filter
+          (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+            MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F = 0)).card
+        + (Finset.univ.filter
+          (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+            ¬ MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F = 0)).card
+        = p ^ (3 * N) := by
+      rw [Finset.card_filter_add_card_filter_not, Finset.card_univ, hcardT]
+    have hZ := schwartzZippel_card_zeros_planeParam_mul_le F hF0
+    have h2deg : 2 * F.totalDegree ≤ p := by omega
+    have hcancel : 2 * (Finset.univ.filter
+          (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+            MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F = 0)).card * p
+        ≤ p ^ (3 * N) * p := by
+      calc 2 * (Finset.univ.filter
+            (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+              MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F = 0)).card * p
+          = 2 * ((Finset.univ.filter
+            (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+              MvPolynomial.eval (Sum.elim w.1 (Sum.elim w.2.1 w.2.2)) F = 0)).card * p) := by
+              ring
+        _ ≤ 2 * (F.totalDegree * p ^ (3 * N)) := Nat.mul_le_mul_left _ hZ
+        _ = (2 * F.totalDegree) * p ^ (3 * N) := by ring
+        _ ≤ p * p ^ (3 * N) := Nat.mul_le_mul_right _ h2deg
+        _ = p ^ (3 * N) * p := by ring
+    have h2Z := Nat.le_of_mul_le_mul_right hcancel hp0
+    omega
 
 /-- **ITEM 4: BERTINI OVER FINITE FIELDS** (PROVEN 2026-07-27 over
 `exists_bertiniGoodPlaneCount` and `card_zeros_of_totalDegree_one`) —
@@ -7519,8 +7770,10 @@ WHAT IS PROVEN HERE, and what was cut off. The averaging is carried out in full
 is `ℕ`-arithmetic with `c = 4`. The `d = 1` branch, which the plane-curve
 hypothesis cannot reach because it needs `d ≥ 2`, is
 `card_zeros_of_totalDegree_one` and is PROVEN. Exactly ONE sub-leaf is left open:
-`exists_bertiniGoodPlaneCount`, which carries all of the Bertini/Noether
-content.
+`exists_bertiniNoetherWitness`, which carries all of the Bertini/Noether
+content. (`exists_bertiniGoodPlaneCount` was itself cut and PROVEN on
+2026-07-27: its counting half is `mathlib`'s Schwartz–Zippel lemma, wrapped as
+`schwartzZippel_card_zeros_planeParam_mul_le`.)
 
 THE ARITHMETIC, in full, so it can be checked without reading the proof. Write
 `T = p^{3N}` for the number of parametrised planes, `G` for the good ones, `S`
@@ -7550,11 +7803,13 @@ existential here because `ψ(d)` is Schmidt's `2d^κ` and pinning it buys nothin
 — every consumer only needs SOME constant.
 
 WHAT IS ACTUALLY MISSING, after this proof: ONLY
-`exists_bertiniGoodPlaneCount` — Bertini's irreducibility theorem in the
-counting form of Schmidt's Theorem 4C (proved by ELIMINATION THEORY in his §1 —
-no schemes, no generic smoothness) together with E. Noether's Theorem 2A on the
-forms cutting out the absolutely-irreducible locus, which is what makes "bad
-plane" a constructible condition of bounded degree.
+`exists_bertiniNoetherWitness` — Bertini's irreducibility theorem (proved by
+ELIMINATION THEORY in Schmidt's Chapter V §1 — no schemes, no generic
+smoothness) together with E. Noether's Theorem 2A on the forms cutting out the
+absolutely-irreducible locus, which is what makes "bad plane" a hypersurface
+condition of `p`-independent degree. The counting form of Schmidt's Theorem 4C,
+`exists_bertiniGoodPlaneCount`, is PROVEN from that witness by Schwartz–Zippel;
+Schmidt's Lang–Weil-free upper bounds of Chapter IV §3 are not needed.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_bound_forall_hypersurfaceCount_of_planeCurveCount
@@ -7906,7 +8161,9 @@ five-item route is realised in the file rather than merely described):
   `exists_stepanovAuxiliary` data gives the count once `2d² ≤ M` is used.
 * item 4 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`:
   **PROVEN** (2026-07-27) over the single sub-leaf
-  `exists_bertiniGoodPlaneCount`; its `d = 1` branch,
+  `exists_bertiniNoetherWitness`; the counting form
+  `exists_bertiniGoodPlaneCount` is itself now **PROVEN** (2026-07-27) from that
+  witness by Schwartz–Zippel; its `d = 1` branch,
   `card_zeros_of_totalDegree_one`, is proven too. The averaging over 2-dimensional linear
   manifolds is carried out in full as `sum_zeroCount_planeSection`, an exact
   double count over ALL `p^{3N}` parametrised planes (no linear-independence
@@ -7921,7 +8178,7 @@ five-item route is realised in the file rather than merely described):
 
 So after the 2026-07-27 work the remaining open leaves under this node are
 `exists_stepanovNormalisation`, `exists_stepanovDiscriminant`,
-`exists_stepanovNormPolynomial`, `exists_bertiniGoodPlaneCount` and
+`exists_stepanovNormPolynomial`, `exists_bertiniNoetherWitness` and
 `exists_birationalHypersurfaceModel`; all the glue between them is written and
 compiles, and this leaf itself has nothing left to prove.
 
