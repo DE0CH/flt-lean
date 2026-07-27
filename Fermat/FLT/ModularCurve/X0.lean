@@ -8886,23 +8886,40 @@ opens on which models exist, and `R` injects into the product of the
 corresponding localizations.  It is also what makes NATURALITY provable,
 by composing base changes (`IsBaseChangeOf.comp`, proven below).
 
-**Three leaves, and each is smaller than the node it replaces.**
+**Five leaves, and each is smaller than the node it replaces.**
 
 * `exists_weierstrassModel_localization` — step (i).  This is where the
   IRREDUCIBLE verdict of the affine leaf still applies, verbatim, and it
   is reproduced there: no machinery attaching `ω`, `c₄`, `Δ` to an
   `AbelianSchemeStruct` exists in mathlib, in `~/cs/FLT` or here.
-* `weierstrassModel_j_eq_of_isBaseChangeOf` — step (ii), stated in the
-  form that also covers base change, so that the two are one leaf rather
-  than two.  Taking `φ` an isomorphism recovers "two models of one
-  elliptic scheme have the same `j`"; taking `W'` the pullback of `W`
-  recovers `WeierstrassCurve.map_j`.
+* `weierstrassModel_j_unique` — step (ii): two Weierstrass models of one
+  elliptic scheme have the same `j`.
+* `isWeierstrassModel_map_of_isBaseChangeOf` — the productive half of
+  step (ii): a base change of a model is a model of the base-changed
+  datum.  Pure scheme theory, no `j`.
+* `exists_isBaseChangeOf_cancel` — the converse of `IsBaseChangeOf.comp`.
+  Shared with `exists_jTransformation_of_affine`, whose docstring
+  records its `h₁ = 𝟙` case as the step it is missing; proving it
+  unblocks both.
 * `exists_jValueOnAffine_of_localModels` — step (iii), the gluing,
-  stated with (i) and (ii) as HYPOTHESES.  They are hypotheses and not
+  stated with the other four as HYPOTHESES.  They are hypotheses and not
   calls for the same reason `exists_jTransformation_of_affine` takes
   `hbc`: a sorried body contributes no dependency edges, so a leaf that
-  merely *called* them would leave them free-floating, and the three can
+  merely *called* them would leave them free-floating, and the five can
   be worked on by different owners without any of them waiting.
+
+**The hypothesis list of the gluing leaf was derived by writing its
+proof, not guessed.**  A first version of this cut had three leaves, with
+step (ii) stated as the single comparison `W'.j = φ (W.j)`.  Running the
+argument for the second clause of `IsJValueOnAffine` showed that form to
+be insufficient in two independent ways — it cannot PRODUCE a model over
+a localization of the target ring, and it cannot identify two base
+changes of one datum along one morphism — so the comparison was split
+into `weierstrassModel_j_unique` + `isWeierstrassModel_map_of_isBaseChangeOf`
+and `exists_isBaseChangeOf_cancel` was added.  Both requirements are
+invisible in the statement of `exists_jSectionOnAffine` and would have
+been found only by whoever tried to prove it; surfacing them is what this
+cut is for.  The full argument is written out on the gluing leaf.
 
 **What is NOT claimed.**  This cut does not make step (i) any easier; it
 isolates it.  The affine-versus-general-base axis was the previous cut's
@@ -9108,46 +9125,109 @@ theorem exists_weierstrassModel_localization {R : Type} [CommRing R]
           IsWeierstrassModel d'.ab W :=
   sorry
 
-/-- **The `j`-invariant of a Weierstrass model is well defined and
-natural** (sorry leaf, step (ii) of the cut of `exists_jSectionOnAffine`).
+/-- **Two Weierstrass models of one elliptic scheme have the same `j`**
+(sorry leaf, step (ii) of the cut of `exists_jSectionOnAffine`).
 
-TRUE.  Two statements in one, deliberately:
-
-* taking `φ` an isomorphism (in particular `φ = id` and `d' = d`) this
-  says two Weierstrass models of ONE elliptic scheme have the same `j`;
-* taking `W'` a pullback of `W` it is `WeierstrassCurve.map_j`.
-
-THE ARGUMENT, which is written out in the docstring of
-`IsWeierstrassModel` above and is only summarised here.  `W.map φ` is
-again a Weierstrass model of `d'`, because `IsWeierstrassModel`'s open
-immersion base-changes along the cartesian square of `hb` and its range
-condition is preserved (open immersions are stable under base change, and
-the complement of the zero section pulls back to the complement of the
-zero section by `hb.map_zero`).  So it suffices to know that two models
-over the SAME base have the same `j`: both open immersions have the same
-range, so they identify `Spec S[W']` with `Spec S[W.map φ]` over `S`;
-over a field such an isomorphism extends to the smooth completions
-carrying the single point at infinity of each to the other, hence is a
+TRUE, and the argument is written out in the docstring of
+`IsWeierstrassModel` above; it is only summarised here.  Both open
+immersions have the same range — the complement of the zero section — so
+they identify `Spec R[W]` with `Spec R[W']` as schemes over `Spec R`.
+The smooth projective completion of such a curve is unique and adds
+exactly the removed point, so the identification carries the point at
+infinity of one to the point at infinity of the other, hence is a
 `VariableChange`, and `WeierstrassCurve.variableChange_j`
-(`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`)
-finishes.  `WeierstrassCurve.map_j` (`Weierstrass.lean:470`) is already
-in the pin, so what is genuinely missing is only "two models of one
-elliptic scheme differ by a variable change".
+(`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`,
+`(C • W).j = W.j`) finishes.
 
-WHY IT IS ONE LEAF AND NOT TWO.  The base-change half and the uniqueness
-half share the whole of that argument, and the base-change half has no
-consumer of its own — stated separately it would be free-floating.
+WHAT IS GENUINELY MISSING is only the middle step, "two models of one
+elliptic scheme differ by a variable change".  Both `j`-invariance
+lemmas it feeds are already in the pin: `variableChange_j` above and
+`WeierstrassCurve.map_j` (`Weierstrass.lean:470`, `(W.map f).j = f W.j`).
 
-NOT VACUOUS: the conclusion is an equation between two elements of `S`
-that both hypotheses genuinely constrain, and it is FALSE for a junk
-`W'` — `IsWeierstrassModel` is what excludes those. -/
-theorem weierstrassModel_j_eq_of_isBaseChangeOf {R S : Type} [CommRing R] [CommRing S]
+NOT VACUOUS: `IsWeierstrassModel` demands an open immersion whose range
+is exactly the complement of the zero section, so it is not satisfiable
+by a junk `W'`, and the conclusion is an equation the hypotheses
+genuinely constrain. -/
+theorem weierstrassModel_j_unique {R : Type} [CommRing R] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
+    (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic]
+    (hW : IsWeierstrassModel ab W) (hW' : IsWeierstrassModel ab W') :
+    W.j = W'.j :=
+  sorry
+
+/-- **A base change of a Weierstrass model is a Weierstrass model of the
+base-changed datum** (sorry leaf, the productive half of step (ii)).
+
+TRUE, and it is pure scheme theory — no `j` and no Weierstrass algebra
+enter.  `IsWeierstrassModel`'s three conjuncts each base-change along the
+cartesian square of `hb`:
+
+* `Spec S[W.map φ] = Spec (S ⊗_R R[W])` is the pullback of
+  `Spec R[W] ⟶ Spec R` along `Spec φ` (`AlgebraicGeometry.pullbackSpecIso`,
+  already imported by this file), so the open immersion `ι` base-changes
+  to an open immersion into `d'.E` — `IsOpenImmersion` is stable under
+  base change;
+* the compatibility with the structure morphisms is the pullback square;
+* the range condition is preserved because the range of a base-changed
+  open immersion is the preimage of the range, and the zero section of
+  `d'` pulls back to the zero section of `d` by `hb.map_zero`, so
+  complements go to complements.
+
+WHY IT IS A LEAF SEPARATE FROM `weierstrassModel_j_unique`.  Those two
+are the two halves of "the `j` of a model is well defined and natural",
+and it is tempting to state them as one implication `W'.j = φ (W.j)`.
+That form is strictly WEAKER than what the gluing leaf needs: it can only
+COMPARE two models that both already exist, whereas the gluing argument
+has to PRODUCE a model upstairs — over the localization
+`S[1/φ aᵢ]` — out of one downstairs.  The combined form was tried first
+and had to be split for exactly that reason; see the "WHAT ITS PROVER
+WILL ALSO NEED" note on `exists_jValueOnAffine_of_localModels`.
+
+NOT VACUOUS: the conclusion is `IsWeierstrassModel`, which is an
+existence-of-open-immersion statement with a range condition, not an
+equation that could hold degenerately. -/
+theorem isWeierstrassModel_map_of_isBaseChangeOf {R S : Type} [CommRing R] [CommRing S]
     (φ : R →+* S) {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
     {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))}
     (hb : IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d)
-    (W : WeierstrassCurve R) [W.IsElliptic] (W' : WeierstrassCurve S) [W'.IsElliptic]
-    (hW : IsWeierstrassModel d.ab W) (hW' : IsWeierstrassModel d'.ab W') :
-    W'.j = φ W.j :=
+    (W : WeierstrassCurve R) (hW : IsWeierstrassModel d.ab W) :
+    IsWeierstrassModel d'.ab (W.map φ) :=
+  sorry
+
+/-- **Base changes cancel** (sorry leaf) — the exact converse of
+`IsBaseChangeOf.comp`, which is proven above.
+
+TRUE.  `e` and `d'` are both pullbacks of `d`, so the cartesian square
+for `h₁` is `IsPullback.of_right` applied to the pasting; the induced
+`e.E ⟶ d'.E` exists by the universal property of `d'.E`.  For the three
+remaining axioms, note that `RelPoint.along hb₂.map` is INJECTIVE — that
+is what cartesianness buys, and it is already available in this project
+as `RelPoint.baseChangeDown` / `RelPoint.baseChangeUp`
+(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), consumed the same
+way by `exists_gamma0Datum_baseChange`.  Each axiom then follows by
+composing with `hb₂`'s corresponding axiom and cancelling.
+
+**THIS LEAF IS SHARED, AND PROVING IT UNBLOCKS TWO NODES.**  Taking
+`h₁ = 𝟙` it says that two base changes of one datum along the SAME
+morphism are related by an `IsBaseChangeOf 𝟙` — which is verbatim the
+step recorded as missing in the docstring of
+`exists_jTransformation_of_affine` above ("two base changes along the
+same morphism differ by an `IsBaseChangeOf 𝟙`, which is
+`IsBaseChangeOf.isPullback` plus `IsPullback.isoIsPullback` — available
+at this pin, but the transport of `map_zero`, `map_add` and `liesIn_iff`
+across that isomorphism has to be written").  It is stated in the
+cancellation form rather than the `𝟙` form because that is the form
+`exists_jValueOnAffine_of_localModels` consumes, and the `𝟙` form is the
+special case.
+
+NOT VACUOUS: the hypotheses are two genuine cartesian squares and the
+conclusion is a third, with three axioms to transport; it is not
+satisfiable by shape alone. -/
+theorem exists_isBaseChangeOf_cancel {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    Nonempty (IsBaseChangeOf h₁ e d') :=
   sorry
 
 /-- **The local `j`-values glue to a unique `j`-value over the affine
@@ -9158,34 +9238,61 @@ enters the argument, which is the point of cutting here.
 
 THE ARGUMENT.  `hloc` gives `a₁, …, aₙ` generating the unit ideal and, on
 each `R[1/aᵢ]`, a datum `dᵢ` base-changing `d` with a Weierstrass model
-`Wᵢ`.  Put `jᵢ := Wᵢ.j ∈ R[1/aᵢ]`.  On the overlap `R[1/(aᵢaⱼ)]`, apply
-`hloc` again to the base-changed datum and `hjeq` twice, once through
-`dᵢ` and once through `dⱼ`: the images of `jᵢ` and `jⱼ` agree in every
-localization of a cover of the overlap, hence agree.  So the `jᵢ` are a
-compatible family, `R ⟶ ∏ R[1/aᵢ]` is an equalizer over a cover by basic
-opens, and they glue to a unique `r ∈ R`.  The point `x` is the ring map
-`ℚ[X] ⟶ R` sending `X ↦ r` — `Spec` is fully faithful, so that is a
-morphism `Spec R ⟶ jLine`, and it lies over `g` because the map is a
-`ℚ`-algebra map.  Both clauses of `IsJValueOnAffine` then follow from
-`hjeq`, and uniqueness follows from `hloc` plus `jLineCoord_injective`:
-two values with the pinning have the same image in each `R[1/aᵢ]`, and
-`R` injects into the product because the `aᵢ` generate the unit ideal.
+`Wᵢ`.  Put `jᵢ := Wᵢ.j ∈ R[1/aᵢ]`.  On the overlap `R[1/(aᵢaⱼ)]`, push
+`Wᵢ` and `Wⱼ` up with `hmodel`, identify the two base-changed data with
+`hcancel`, and apply `huniq`: the images of `jᵢ` and `jⱼ` in
+`R[1/(aᵢaⱼ)]` agree.  So the `jᵢ` are a compatible family and glue to a
+unique `r ∈ R`.  The point `x` is the ring map `ℚ[X] ⟶ R` sending
+`X ↦ r` — `Spec` is fully faithful, so that is a morphism
+`Spec R ⟶ jLine`, and it lies over `g` because the map is a
+`ℚ`-algebra map.
 
-WHY `hloc` AND `hjeq` ARE HYPOTHESES RATHER THAN CALLS.  A sorried body
-contributes no dependency edges, so a leaf that merely CALLED
-`exists_weierstrassModel_localization` and
-`weierstrassModel_j_eq_of_isBaseChangeOf` would leave both of them
-free-floating until it was proven.  As hypotheses they are visibly
-consumed at the assembly site, `exists_jSectionOnAffine` below, and the
-three leaves can be owned independently — the same reason
-`exists_jTransformation_of_affine` takes `hbc`.
+THE GLUING STEP IS IN THE PIN, and it is worth naming because the whole
+leaf was cut on the assumption that it might not be:
+`IsLocalization.Away.existsUnique_algebraMap_eq_of_span_eq_top`
+(`Mathlib/RingTheory/Localization/Away/Basic.lean:568`) is exactly the
+sheaf condition for the structure sheaf on `Spec R` over a cover by basic
+opens, with `IsLocalization.Away.algebraMap_injective_of_span_eq_top`
+(`:557`) for the uniqueness half.  So step (iii) is bookkeeping around a
+lemma that exists, not a missing theory.
 
-WHAT IS MISSING, precisely: the equalizer property of
-`R ⟶ ∏ᵢ R[1/aᵢ]` for a family generating the unit ideal.  This is the
-affine sheaf condition; `AlgebraicGeometry.StructureSheaf` and
-`IsLocalization.Away` are the relevant mathlib API, and it is much
-lighter than the scheme-level gluing, which was already factored out into
-`exists_jTransformation_of_affine`.
+THE FIRST PINNING CLAUSE, given a model `W` over `R` itself: `hmodel`
+sends `W` to a model of `dᵢ`, `huniq` identifies it with `Wᵢ`, so
+`algebraMap R R[1/aᵢ] (W.j) = jᵢ = algebraMap R R[1/aᵢ] r` for every `i`,
+and injectivity gives `r = W.j`.
+
+THE SECOND PINNING CLAUSE is the one that forced `hmodel` and `hcancel`
+to be hypotheses, and the reasoning is worth recording because a shorter
+hypothesis list looks sufficient and is not.  Given `h : Spec S ⟶ Spec R`
+— write `φ` for `Spec.preimage h`, using that `Spec` is fully faithful —
+a base change `d'` of `d` along `h` and a model `W'` of `d'` over `S`,
+we must show `φ r = W'.j`.  The `φ aᵢ` generate the unit ideal of `S`, so
+it suffices to check this in each `S[1/φ aᵢ]`.  There `hmodel` gives two
+models: `Wᵢ` pushed along `R[1/aᵢ] ⟶ S[1/φ aᵢ]`, and `W'` pushed along
+`S ⟶ S[1/φ aᵢ]`.  They are models of two data which are both base
+changes of `d` along the SAME composite `R ⟶ S[1/φ aᵢ]` (by
+`IsBaseChangeOf.comp`, twice, and the square `βᵢ ∘ α = γ ∘ φ` of
+localizations), so `hcancel` at `h₁ = 𝟙` identifies them and `huniq`
+applies.  `WeierstrassCurve.map_j` then reads off
+`γ (W'.j) = βᵢ (Wᵢ.j) = βᵢ (αᵢ r) = γ (φ r)`, and injectivity finishes.
+
+WHAT ITS PROVER WILL ALSO NEED, and why the hypothesis list is what it
+is.  An earlier version of this cut carried a single comparison
+hypothesis `W'.j = φ (W.j)` in place of `huniq` and `hmodel`.  That is
+strictly weaker and the proof above cannot be run with it: the second
+clause has to PRODUCE a model over `S[1/φ aᵢ]`, and a comparison
+principle can only compare models that already exist.  Likewise
+`hcancel` is not decoration — without it the two data over
+`S[1/φ aᵢ]` cannot be identified, and there is nothing else at this pin
+that relates two base changes of one datum along one morphism.
+
+WHY THE FOUR ARE HYPOTHESES RATHER THAN CALLS.  A sorried body
+contributes no dependency edges, so a leaf that merely CALLED the four
+leaves above would leave all of them free-floating until it was proven.
+As hypotheses they are visibly consumed at the assembly site,
+`exists_jSectionOnAffine` below, and the five leaves can be owned
+independently — the same reason `exists_jTransformation_of_affine` takes
+`hbc`.
 
 NOT VACUOUS, and the UNIQUENESS half is where the content is.  Existence
 alone would be satisfiable by junk at any base with no global Weierstrass
@@ -9203,12 +9310,19 @@ theorem exists_jValueOnAffine_of_localModels
             Nonempty (IsBaseChangeOf
               (Spec.map (CommRingCat.ofHom (algebraMap R (Localization.Away (a i))))) d' d) ∧
             IsWeierstrassModel d'.ab W)
-    (hjeq : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
+    (huniq : ∀ {R : Type} [CommRing R] {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of R)}
+      (ab : AbelianSchemeStruct f) (W W' : WeierstrassCurve R) [W.IsElliptic] [W'.IsElliptic],
+      IsWeierstrassModel ab W → IsWeierstrassModel ab W' → W.j = W'.j)
+    (hmodel : ∀ {R S : Type} [CommRing R] [CommRing S] (φ : R →+* S)
       {d : Gamma0Datum 1 (Spec (CommRingCat.of R))}
       {d' : Gamma0Datum 1 (Spec (CommRingCat.of S))},
       IsBaseChangeOf (Spec.map (CommRingCat.ofHom φ)) d' d →
-      ∀ (W : WeierstrassCurve R) [W.IsElliptic] (W' : WeierstrassCurve S) [W'.IsElliptic],
-        IsWeierstrassModel d.ab W → IsWeierstrassModel d'.ab W' → W'.j = φ W.j)
+      ∀ (W : WeierstrassCurve R), IsWeierstrassModel d.ab W →
+        IsWeierstrassModel d'.ab (W.map φ))
+    (hcancel : ∀ {T'' T' T : Scheme.{0}} {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T}
+      {e : Gamma0Datum 1 T''} {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+      IsBaseChangeOf (h₁ ≫ h₂) e d → IsBaseChangeOf h₂ d' d →
+      Nonempty (IsBaseChangeOf h₁ e d'))
     {R : Type} [CommRing R] (g : Spec (CommRingCat.of R) ⟶ SpecQ)
     (d : Gamma0Datum 1 (Spec (CommRingCat.of R))) :
     ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x :=
@@ -9232,9 +9346,11 @@ elements of `R`, so that `c₄³/Δ` is defined on each piece; equivalently,
 the line bundle `ω = f_* Ω¹_{E/T}` and the classical formulas for
 `c₄, c₆, Δ` as sections of its powers.  That is
 `exists_weierstrassModel_localization`, which carries the irreducibility
-verdict; the well-definedness of `j` is
-`weierstrassModel_j_eq_of_isBaseChangeOf`; the gluing of the local values
-is `exists_jValueOnAffine_of_localModels`.
+verdict; the well-definedness and functoriality of `j` are
+`weierstrassModel_j_unique`,
+`isWeierstrassModel_map_of_isBaseChangeOf` and
+`exists_isBaseChangeOf_cancel`; the gluing of the local values is
+`exists_jValueOnAffine_of_localModels`.
 
 HOW IT IS PROVEN, and what the assembly contributes.  The gluing leaf
 returns, for every affine base, a UNIQUE point of the `j`-line satisfying
@@ -9269,8 +9385,10 @@ theorem exists_jSectionOnAffine : Nonempty IsJSectionOnAffine := by
       ∃! x : RelPoint jLineStr g, IsJValueOnAffine d x := fun {R} _ g d =>
     exists_jValueOnAffine_of_localModels
       (fun {_} _ d₀ => exists_weierstrassModel_localization d₀)
-      (fun {_} {_} _ _ φ {_} {_} hb W _ W' _ hW hW' =>
-        weierstrassModel_j_eq_of_isBaseChangeOf φ hb W W' hW hW') g d
+      (fun {_} _ {_} {_} ab W W' _ _ hW hW' => weierstrassModel_j_unique ab W W' hW hW')
+      (fun {_} {_} _ _ φ {_} {_} hb W hW =>
+        isWeierstrassModel_map_of_isBaseChangeOf φ hb W hW)
+      (fun {_} {_} {_} {_} {_} {_} {_} {_} hb hb₂ => exists_isBaseChangeOf_cancel hb hb₂) g d
   refine ⟨{ jt := fun {R} _ g d => (H g d).choose, jt_natural := ?_, jt_model := ?_ }⟩
   · intro R' R _ _ h g g' hg d' d hbc
     refine ((H g' d').choose_spec.2 _ ?_).symm
