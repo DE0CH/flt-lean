@@ -39581,8 +39581,15 @@ theorem isOpen_charKernel_inter_muFixer_ray_class (F : Type u) [Field F] [Number
   exact hker.inter hfix
 
 set_option maxHeartbeats 1000000 in
-/-- **THE ARITHMETIC CHOICE OF THE MODULUS: CHILDRESS 2.3–2.7 AND
-MINKOWSKI, AND NOTHING ELSE** (sorry node, created 2026-07-27 as sub-leaf
+/-- **THE ARITHMETIC CHOICE OF THE MODULUS *AND OF THE GENERATOR*:
+CHILDRESS 2.3–2.7 AND MINKOWSKI, AND NOTHING ELSE** (sorry node,
+**REFUTED AND RESTATED 2026-07-27** — the earlier form, which took the
+generator `w` as an INPUT and constrained ITS action on `μ_m`, was FALSE,
+with a counterexample needing no arithmetic at all; the generator is now
+an OUTPUT `w'`, exactly as in Childress 2.6, and the FALSITY AUDIT at the
+end of this docstring carries the counterexample, the reason a stronger
+hypothesis on `n` does not rescue it, and the check that the repair is
+satisfiable. Created 2026-07-27 as sub-leaf
 (A3a-1-1-b-2) of `exists_artinModulus_of_generator_ray_class` just below,
 which is now glue over this leaf and the two universally-quantified
 lemmas (A3a-1-1-b-0) `commute_muAction_ray_class` and (A3a-1-1-b-1)
@@ -39593,16 +39600,26 @@ lemmas (A3a-1-1-b-0) `commute_muAction_ray_class` and (A3a-1-1-b-1)
 parent this leaf has SHED exactly the two clauses that are true for every
 `m > 0` — the abelian action on `μ_m` and the openness of
 `ker χ ⊓ Γ_{F(ζ_m)}` — so every clause below is a genuine CONSTRAINT ON
-THE CHOICE of `m`, and none of them can be discharged by general
-nonsense. Concretely a witness must supply:
+THE CHOICE of `m` **and of the generator `w'`**, and none of them can be
+discharged by general nonsense. (That last three words are load-bearing
+in both directions: the clauses constraining `w'` cannot be discharged by
+general nonsense either, but neither could they be discharged AT ALL
+while `w'` was the given `w` — that is the falsity repaired below.)
+Concretely a witness must supply:
 
 * `m` avoiding the primes of `S` and the residue characteristic of `p`
   (Childress 2.6 over 2.3–2.5: elementary number theory in `ℕ`, whose own
   input is Dirichlet on primes in arithmetic progressions, which IS in
   the pin as `Nat.forall_exists_prime_gt_and_eq_mod`);
 * clause (iii) `ker χ · Γ_{F(ζ_m)} = Γ F`, i.e. `K ∩ F(ζ_m) = F`;
+* a generator `w'` — an OUTPUT, not the input `w`: any element of the
+  coset `w · ker χ` still generates the image of `χ`, and clause (i) is
+  exactly what lets its image in `Gal(F(ζ_m)/F)` be prescribed. This is
+  Childress's `b`, produced by 2.6 and realised in `Γ F` by 2.7. **The
+  earlier form of this leaf, which constrained the INPUT `w`, was FALSE —
+  see the FALSITY AUDIT at the end;**
 * the divisibility and INDEPENDENCE conditions of Childress 2.7(ii),(iii)
-  relating the given `w` and `globalFrob p` inside `Gal(F(ζ_m)/F)`.
+  relating that `w'` and `globalFrob p` inside `Gal(F(ζ_m)/F)`.
 
 **The Minkowski step is the one genuinely global input.** Because `m` is
 prime to every prime ramifying in `F/ℚ`, the field `F ∩ ℚ(ζ_m)` is
@@ -39642,7 +39659,83 @@ hence its fixed field `K` a FINITE extension of `F` — without which
 direction follows the dependence order of the data: if a future owner
 believes the modulus can be chosen before the exponent, the check is
 whether Childress 2.6's choice of `m` can be made without reference to
-`n` — it cannot, since `ℓᵢ ≡ 1 (mod n)` is the defining condition. -/
+`n` — it cannot, since `ℓᵢ ≡ 1 (mod n)` is the defining condition.
+
+**FALSITY AUDIT (2026-07-27, second owner — THE LEAF WAS FALSE AS
+STATED, AND IS REPAIRED ABOVE; the same defect was in
+`exists_artinModulus_of_generator_ray_class` below and is repaired
+there too).**
+
+*The defect.* The original statement took the generator `w` as an INPUT
+and then asserted, of that very `w`, that `n` divides the order of its
+action on `μ_m` (clause (ii)) and that its action is independent of
+`globalFrob p` (clause (iv)). Those are conditions on the image of `w`
+under the CYCLOTOMIC character, and nothing in `hgen`/`hexp` constrains
+that image at all: `hgen` and `hexp` see only `χ`, whose kernel cuts out
+`K`, and `w`'s image in `Gal(F(ζ_m)/F)` is an independent coordinate.
+Choosing `m` cannot repair it, because `w` is already fixed.
+
+*The counterexample, machine-checked before the repair.* Take `χ` the
+CONSTANT function `1`, `V = ⊤`, `S = ∅`, `n = 2` and `w = 1`. Then
+`hmul` is `one_mul`, `hVopen` is `isOpen_univ` after `Subgroup.coe_top`,
+`hVker` and `hexp` are `rfl`, and `hgen` holds with `i = 0` — every
+hypothesis is satisfied. But `w = 1` acts trivially on every root of
+unity for every `m`, so clause (ii)'s antecedent holds for EVERY `i`,
+and instantiating at `i = 1` yields `(2 : ℤ) ∣ 1`. The whole existential
+was therefore unsatisfiable, not merely hard. (The counterexample needs
+no arithmetic input whatsoever — `zpow_one` and `AlgEquiv` application
+close it — which is why it is worth stating as the first check on any
+future restatement of this cluster.)
+
+*It is not a `n`-is-not-the-exact-order artefact, and adding that
+hypothesis does NOT repair it.* Suppose one strengthens the interface to
+pin `n` as the exact order of `w` modulo `ker χ`. Take `F = ℚ(ζ₃)`,
+`K = F(∛2)` — cyclic of degree `3` over `F` by Kummer theory — and `χ`
+cutting out `K`, so `n = 3`. `K/ℚ` is `S₃`, hence non-abelian, so
+`K ⊄ ℚᵃᵇ = F^cyc`; therefore `K ∩ F^cyc = F` (the degree is prime), and
+`Gal(F^cyc/F) ↠ Gal(K/F)` is onto. Pick `w` in the preimage of a
+generator that ALSO lies in `Γ_{F^cyc}`, i.e. fixes every root of unity.
+Then `w` acts trivially on `μ_m` for every `m` and clause (ii) fails
+again at `i = 1`. So the defect is in the QUANTIFIER PLACEMENT, not in
+the strength of the hypotheses. (Over `ℚ` this second counterexample is
+unavailable — Kronecker–Weber puts every cyclic `K/ℚ` inside `ℚ^cyc` —
+which is presumably why the shape was not noticed.)
+
+*The repair, and it is exactly what the book does.* Childress 2.6 is
+stated as: given `n > 1`, `a > 1` and a finite set of primes, there is
+`m` prime to that set such that `n` divides the order of `a` mod `m` AND
+**there is `b`** with `n` dividing the order of `b` mod `m` and
+`⟨a⟩ ∩ ⟨b⟩ = 1` in `(ℤ/mℤ)ˣ`. Here `a = N p` is given — that is
+`globalFrob p`, and clause (iii) is genuinely a constraint on `m` — but
+`b` is PRODUCED, and `b` is precisely the image of the generator. Lemma
+2.7 then realises `b` by an element `w'` of `Γ F` which restricts to the
+generator on `K` and to `b` on `F(ζ_m)`; that element exists exactly
+because clause (i) says `K ∩ F(ζ_m) = F`, so `ker χ = Γ_K` still surjects
+onto `Gal(F(ζ_m)/F)` and `w` may be moved within its coset `w · ker χ`
+without changing `χ ∘ w`. So the generator is an OUTPUT of the modulus
+construction, not an input to it.
+
+Accordingly the conclusion now reads `∃ (m : ℕ) (w' : Γ F), …` and
+carries its own generation clause `∀ x, ∃ i, χ (x * w' ^ (-i)) = 1`,
+with clauses (ii) and (iv) stated for `w'`. The input `w` is RETAINED
+and still load-bearing: `hgen` is what says the image of `χ` is cyclic
+generated by `χ w`, which is what makes `K/F` cyclic of degree dividing
+`n` and is the hypothesis Childress 2.7 consumes. What changed is only
+that the element whose cyclotomic image is constrained is the one the
+construction chooses.
+
+*Both counterexamples die under the repair,* which is the check to run
+on any further restatement: with `χ` trivial and `n = 2` one may take
+`m` a prime `ℓ ≡ 1 (mod 2)` avoiding `p`, and `w'` any element with
+`χ_cyc(w')` of even order — free, since `χ` is trivial so the generation
+clause is vacuous there; with `n = 1` take `m = 1` and `w' = 1`, whose
+generation clause follows from `hexp` at `n = 1`.
+
+*Nothing downstream changed.* `exists_artinModulus_ray_class` below
+already quantified `w` existentially, so its STATEMENT is untouched; only
+its glue now discharges that existential with `w'` rather than with the
+`w` it got from `exists_cyclicGenerator_ray_class`. The two universally
+quantified lemmas above are unaffected — they never mention `w`. -/
 theorem exists_artinModulusCore_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -39654,22 +39747,34 @@ theorem exists_artinModulusCore_ray_class
     (n : ℕ) (w : Γ F) (hn : 0 < n)
     (hgen : ∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1)
     (hexp : ∀ x : Γ F, χ (x ^ n) = 1) :
-    ∃ m : ℕ, 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+    ∃ (m : ℕ) (w' : Γ F), 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
       (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
-      (∀ i : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) → (n : ℤ) ∣ i) ∧
+      (∀ x : Γ F, ∃ i : ℤ, χ (x * w' ^ (-i)) = 1) ∧
+      (∀ i : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w' ^ i) ζ = ζ) → (n : ℤ) ∣ i) ∧
       (∀ j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ) →
         (n : ℤ) ∣ j) ∧
       (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
-          (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
-        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
+          (w' ^ i * (globalFrob p) ^ j) ζ = ζ) →
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w' ^ i) ζ = ζ) ∧
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) :=
   sorry
 
 set_option maxHeartbeats 1000000 in
-/-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, GIVEN THE GENERATOR AND
-THE EXPONENT** (**PROVEN 2026-07-27** as glue over its three sub-leaves
+/-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, GIVEN THE EXPONENT AND *A*
+GENERATOR — AND PRODUCING THE ONE THAT WORKS**
+(**RESTATED 2026-07-27**, second owner: the earlier conclusion `∃ m : ℕ`
+constrained the action on `μ_m` of the INPUT generator `w`, and in that
+form BOTH this leaf and its core sub-leaf were FALSE — the full
+counterexample, the reason no strengthening of the hypotheses on `n`
+rescues it, and the book citation showing the generator is an output are
+in the FALSITY AUDIT on `exists_artinModulusCore_ray_class` just above.
+The conclusion now reads `∃ (m : ℕ) (w' : Γ F)` and carries a generation
+clause for `w'`. **`exists_artinModulus_ray_class` below is UNCHANGED**:
+it already quantified the generator existentially, so the repair is
+entirely internal to this pair. **PROVEN 2026-07-27** as glue over its
+three sub-leaves
 (A3a-1-1-b-0) `commute_muAction_ray_class`, (A3a-1-1-b-1)
 `isOpen_charKernel_inter_muFixer_ray_class` — both PROVEN the same day —
 and (A3a-1-1-b-2) `exists_artinModulusCore_ray_class`, which carries all
@@ -39712,7 +39817,9 @@ A witness must supply:
   closed by mathlib's `stabilizer_isOpen_of_isIntegral`, which is
   materially shorter;
 * the divisibility and INDEPENDENCE conditions of Childress 2.7(ii),(iii)
-  relating the given `w` and `globalFrob p` inside `Gal(F(ζ_m)/F)`.
+  relating the PRODUCED generator `w'` — not the given `w` — and
+  `globalFrob p` inside `Gal(F(ζ_m)/F)`, together with the generation
+  clause certifying that `w'` still generates the image of `χ`.
 
 **The Minkowski step is the one genuinely global input.** Because `m` is
 prime to every prime ramifying in `F/ℚ`, the field `F ∩ ℚ(ζ_m)` is
@@ -39751,7 +39858,10 @@ theorems waiting to be proved:
 * (A3a-1-1-b-2) `exists_artinModulusCore_ray_class` — the residue: the
   same statement with those two clauses REMOVED. It is Childress 2.3–2.7
   plus Minkowski, and every one of its remaining clauses is a genuine
-  constraint on the choice of `m`.
+  constraint on the choice of `m` and of the generator `w'`. **Since
+  2026-07-27 it also PRODUCES that generator**, which is what makes it —
+  and this leaf — true; the input `w` only certifies that the image of
+  `χ` is cyclic.
 
 The glue below is the obvious re-association and nothing else is proved
 here. **The cut is forced in this direction** because the two lemmas are
@@ -39760,9 +39870,10 @@ has been chosen; a cut that made them depend on the core's `m` would be
 strictly weaker for no gain.
 
 **Note for the next owner: this did NOT close the hard part.** The
-arithmetic — Dirichlet, the two auxiliary primes, Minkowski, and the
-independence of `w` and `globalFrob p` in `Gal(F(ζ_m)/F)` — is untouched
-and lives entirely in `exists_artinModulusCore_ray_class`. What changed
+arithmetic — Dirichlet, the two auxiliary primes, Minkowski, the choice
+of the generator `w'` inside `w · ker χ`, and the independence of `w'`
+and `globalFrob p` in `Gal(F(ζ_m)/F)` — is untouched and lives entirely
+in `exists_artinModulusCore_ray_class`. What changed
 is that it is no longer entangled with two clauses that never needed the
 arithmetic at all. -/
 theorem exists_artinModulus_of_generator_ray_class
@@ -39776,27 +39887,30 @@ theorem exists_artinModulus_of_generator_ray_class
     (n : ℕ) (w : Γ F) (hn : 0 < n)
     (hgen : ∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1)
     (hexp : ∀ x : Γ F, χ (x ^ n) = 1) :
-    ∃ m : ℕ, 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+    ∃ (m : ℕ) (w' : Γ F), 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
       (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
       (∀ x y : Γ F, ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (x * y) ζ = (y * x) ζ) ∧
       IsOpen {x : Γ F | χ x = 1 ∧ ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → x ζ = ζ} ∧
-      (∀ i : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) → (n : ℤ) ∣ i) ∧
+      (∀ x : Γ F, ∃ i : ℤ, χ (x * w' ^ (-i)) = 1) ∧
+      (∀ i : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w' ^ i) ζ = ζ) → (n : ℤ) ∣ i) ∧
       (∀ j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ) →
         (n : ℤ) ∣ j) ∧
       (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
-          (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
-        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
+          (w' ^ i * (globalFrob p) ^ j) ζ = ζ) →
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w' ^ i) ζ = ζ) ∧
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) := by
-  -- (A3a-1-1-b-2): the arithmetic choice of `m` — Childress 2.3–2.7 plus Minkowski
-  obtain ⟨m, hm0, hmS, hmp, hiii, hwB, hfB, hind⟩ :=
+  -- (A3a-1-1-b-2): the arithmetic choice of `m`, together with the ADJUSTED
+  -- generator `w'` whose image in `Gal(F(ζ_m)/F)` the construction pins —
+  -- Childress 2.3–2.7 plus Minkowski
+  obtain ⟨m, w', hm0, hmS, hmp, hiii, hgen', hwB, hfB, hind⟩ :=
     exists_artinModulusCore_ray_class F χ hmul V hVopen hVker p S n w hn hgen hexp
   -- (A3a-1-1-b-0) and (A3a-1-1-b-1): the two clauses that hold for EVERY `m > 0`
-  exact ⟨m, hm0, hmS, hmp, hiii,
+  exact ⟨m, w', hm0, hmS, hmp, hiii,
     fun x y ζ hζ => commute_muAction_ray_class F m hm0 x y ζ hζ,
     isOpen_charKernel_inter_muFixer_ray_class F χ hmul V hVopen hVker m hm0,
-    hwB, hfB, hind⟩
+    hgen', hwB, hfB, hind⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, WITH NO GROUP-THEORETIC
@@ -39871,14 +39985,29 @@ cut is
   of a field). This half mentions no modulus, no root of unity, no prime
   and no `S`;
 * (A3a-1-1-b) `exists_artinModulus_of_generator_ray_class`: given that
-  `n` and `w`, produce `m`. This half is Childress 2.3–2.7 plus
-  Minkowski, and it is where every remaining difficulty lives.
+  `n` and `w`, produce `m` **and the generator `w'` that the modulus is
+  built around**. This half is Childress 2.3–2.7 plus Minkowski, and it
+  is where every remaining difficulty lives.
 
 The glue below is the obvious re-association — obtain `n, w` from the
 first leaf, feed them to the second, reassemble the eleven clauses — and
 nothing else is proved here. Note the ordering is forced: Childress 2.6
 chooses `m` in terms of `n` and of the Frobenius at `p`, so the cut
-cannot be made the other way round. -/
+cannot be made the other way round.
+
+**AMENDED 2026-07-27 (statement UNCHANGED, glue changed).** The second
+leaf was refuted and restated: it now returns its own generator `w'`,
+and it is `w'`, not the `w` that came out of `exists_cyclicGenerator_ray_class`,
+that discharges this statement's `∃ w`. The two are interchangeable for
+the generation and exponent clauses — `w'` lies in `w · ker χ` — but not
+for the clauses about the action on `μ_m`, which is the whole content of
+the repair. **The moral for anyone cutting this cluster further: an
+element of `Γ F` fixed BEFORE the modulus can be constrained only through
+`χ`, never through the cyclotomic character**, because those are
+independent coordinates once `K ∩ F(ζ_m) = F`. A cut that hands a Galois
+element across the seam and then asks something cyclotomic of it is false
+for that reason alone, and the one-line check is: does the receiving leaf
+still have the freedom to move that element within its `ker χ`-coset? -/
 theorem exists_artinModulus_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -39902,12 +40031,15 @@ theorem exists_artinModulus_ray_class
           (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
         (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) := by
-  -- (A3a-1-1-a): the exponent and the generator, depending on `χ` alone
+  -- (A3a-1-1-a): the exponent and A generator, depending on `χ` alone
   obtain ⟨n, w, hn, hgen, hexp⟩ := exists_cyclicGenerator_ray_class F χ hmul V hVopen hVker
-  -- (A3a-1-1-b): the modulus, depending on `n`, `w`, `p` and `S`
-  obtain ⟨m, hm0, hmS, hmp, hiii, hcomm, hopencap, hwB, hfB, hind⟩ :=
+  -- (A3a-1-1-b): the modulus, depending on `n`, `w`, `p` and `S`, together with
+  -- the ADJUSTED generator `w'` — it is `w'`, not `w`, that satisfies the two
+  -- divisibility clauses and the independence clause, and `w'` is the witness
+  -- this statement's existential is discharged with
+  obtain ⟨m, w', hm0, hmS, hmp, hiii, hcomm, hopencap, hgen', hwB, hfB, hind⟩ :=
     exists_artinModulus_of_generator_ray_class F χ hmul V hVopen hVker p S n w hn hgen hexp
-  exact ⟨m, n, w, hm0, hmS, hmp, hiii, hcomm, hopencap, hgen, hexp, hwB, hfB, hind⟩
+  exact ⟨m, n, w', hm0, hmS, hmp, hiii, hcomm, hopencap, hgen', hexp, hwB, hfB, hind⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **The arithmetic package behind Artin's Lemma**
