@@ -3332,6 +3332,215 @@ theorem exists_ellipticScheme_isWeierstrassModel_of_projModel
     exists_affineChart_projModel E (projGroupLaw E),
     exists_projGeomFibreAddEquiv E⟩
 
+/-! ### The REVERSE bridge: an elliptic scheme over `Spec ℚ` HAS a Weierstrass model
+
+Everything above runs from a `WeierstrassCurve ℚ` to a scheme.  The three
+declarations below run the other way, and they exist because two leaves of
+`Fermat/FLT/ModularCurve/X0.lean` — `exists_weierstrass_jm_of_gamma0Datum`
+and, through it, `exists_weierstrass_jm_of_relPointY0` — start from a
+`Gamma0Datum p SpecQ`, i.e. from a bare `AbelianSchemeStruct` of relative
+dimension one, and have to produce the curve.  `X0.lean`'s own docstring at
+`exists_weierstrass_jm_of_gamma0Datum` records the gap in as many words:
+"the tree has only the FORWARD bridge `exists_ellipticScheme_of_weierstrass`
+… there is no declaration anywhere in `Fermat/` producing a
+`WeierstrassCurve ℚ` from an `AbelianSchemeStruct`".  This subsection is
+that declaration.
+
+**Why it lives HERE and not in `X0.lean`.**  Same reason as everything else
+in this module: the intended proof is projective-model geometry, and the
+`Proj` machinery reaches the reserved atom `over` (see the module docstring).
+The STATEMENTS below are written so that none of them mentions `proj` or
+`projToSpec` — the model conjunct is spelled out as an open immersion of
+`Spec ℚ[E]`, exactly as in `exists_ellipticScheme_isWeierstrassModel_of_projModel`
+above — so `X0.lean` consumes them in a PROOF BODY under its existing
+non-public `import`, and nothing has to become `public`.
+
+**Why the conjunct is spelled out rather than named.**  It is
+`Fermat.IsWeierstrassModel ab E` with its two abbreviations
+(`weierstrassAffine`, `weierstrassAffineStr`) unfolded.  That relation lives
+in `X0.lean`, which imports this module, so naming it here would be
+circular; it is definitionally this term, so `X0.lean` consumes the
+conclusion by `exact` with no transport lemma.  This is the same device, and
+the same spelling, as the forward theorem above.
+
+**The cut, and the two ingredients.**  `A` is a proper, smooth,
+geometrically connected curve over `ℚ` — properness, smoothness and
+geometric connectedness are fields of `AbelianSchemeStruct`, and
+`SmoothOfRelativeDimension 1` is what makes it a curve rather than an
+abelian variety of higher dimension — carrying the rational point
+`ab.zero (𝟙 (Spec ℚ))`.  So:
+
+* `exists_weierstrassModel_of_ellipticScheme` is **Riemann–Roch**: the
+  linear system `|3·[O]|` embeds `A` in `ℙ²` as a Weierstrass cubic, and the
+  complement of `O` is `Spec ℚ[E]`.
+* `exists_geomFibreAddEquiv_of_weierstrassModel` is **rigidity**: a group
+  law on a genus-one curve is determined by its identity section, so the
+  functor-of-points law `ab` and the chord–tangent law on `E` — which have
+  the SAME identity, because the model conjunct's `range_eq` forces the
+  removed point to be the range of `ab.zero` — agree on `ℚ̄`-points.  Galois
+  equivariance is then automatic, exactly as in the forward direction:
+  `galSMul` is precomposition with `Spec σ` (`galSMul_def`, which is `rfl`),
+  and under the coordinate description that is the coordinatewise action of
+  `σ`, i.e. `WeierstrassCurve.Affine.Point.map`.
+
+The two are separated because the difficulties are unrelated and neither is
+available at this pin: the first is a linear-systems argument, the second is
+the rigidity theorem that `exists_projGroupLaw_geomFibreAddEquiv`'s audit
+already names as absent from mathlib and from `~/cs/FLT`.  Splitting them
+means a prover at either one need not carry the other. -/
+
+/-- **An elliptic scheme over `Spec ℚ` has a Weierstrass model** (sorry
+node, introduced 2026-07-27): the coordinate half of the reverse bridge.
+
+TRUE, and it is Riemann–Roch.  `ab` makes `f` proper, smooth and
+geometrically connected (three of its fields), `_hdim` makes the fibre a
+curve, and `ab.zero (𝟙 (Spec ℚ))` is a rational point on it.  A smooth
+proper geometrically connected curve over a field with a rational point `O`
+and arithmetic genus one is a Weierstrass cubic: the complete linear system
+`|3·[O]|` is very ample of degree three and embeds it in `ℙ²` with image
+`Y²Z + a₁XYZ + a₃YZ² = X³ + a₂X²Z + a₄XZ² + a₆Z³`, `O ↦ [0 : 1 : 0]`.
+Removing `O` leaves the affine chart `Z ≠ 0`, which is
+`Spec ℚ[X, Y]/(Y² + a₁XY + a₃Y − X³ − a₂X² − a₄X − a₆)` — mathlib's
+`WeierstrassCurve.Affine.CoordinateRing` — and the embedding is a morphism
+over `Spec ℚ`, which is the middle conjunct.  `E.IsElliptic` follows because
+a singular Weierstrass curve has a singular affine chart, and an open
+subscheme of the smooth `A` is smooth.
+
+**`_hdim` IS LOAD-BEARING**; it is underscore-prefixed only because the body
+is `sorry`, and it must NOT be dropped.  Without it `A` is an abelian scheme
+of arbitrary relative dimension, and an abelian surface has no Weierstrass
+model at all — the statement would be false, not merely unprovable.
+
+**Genus one is not a hypothesis and does not need to be**: a smooth proper
+geometrically connected curve carrying a group-scheme structure has trivial
+tangent bundle, hence genus one.  That is a step of the intended proof, not
+a missing pin — an auditor looking for the genus should look there.
+
+NOT VACUOUS: `exists_ellipticScheme_isWeierstrassModel_of_projModel` above
+produces, for every elliptic `E`, an `(A, f, ab)` satisfying every
+hypothesis, so the hypothesis set is inhabited by the whole of `X_0`'s
+supply of elliptic schemes.  Nor is it satisfiable by junk: `range_eq` pins
+the range of `ι` to the complement of the zero section, so `ι` cannot be a
+chart of some unrelated curve.
+
+WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: a declaration in
+`Mathlib/AlgebraicGeometry/` attaching a Weierstrass equation to a
+genus-one curve with a rational point, or any `EllipticCurve`-valued
+construction out of a smooth proper relative curve.  Searched 2026-07-27
+over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: mathlib's
+elliptic-curve files all START from a `WeierstrassCurve`, and no file in
+any of the three mentions an elliptic scheme's Weierstrass presentation. -/
+theorem exists_weierstrassModel_of_ellipticScheme {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (_hdim : SmoothOfRelativeDimension 1 f) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
+      ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+        IsOpenImmersion ι ∧
+          ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+          Set.range ι.base =
+            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ :=
+  sorry
+
+/-- **A Weierstrass model of an elliptic scheme identifies the geometric
+fibre with `E(ℚ̄)`, Galois-equivariantly** (sorry node, introduced
+2026-07-27): the rigidity half of the reverse bridge.
+
+TRUE, and it is the **rigidity theorem** — a group law on a genus-one curve
+is determined by its identity section.  The model hypothesis gives an open
+immersion `Spec ℚ[E] ↪ A` over `Spec ℚ` whose range is the complement of the
+zero section.  Over `ℚ̄` that is a bijection of `ℚ̄`-points off `O`, and the
+single missing point on each side is the origin, so it extends to a
+bijection `E(ℚ̄) ≃ A(ℚ̄)` matching the two identities.  Rigidity then makes it
+a group isomorphism: both the chord–tangent law and `ab`'s functor-of-points
+law are group laws on the same genus-one curve with the same identity, hence
+equal.  Galois equivariance is free — `galSMul` is precomposition with
+`Spec σ` (`AbelianSchemeStruct.galSMul_def`, which is `rfl`), and under the
+coordinate description of `ℚ̄`-points that is the coordinatewise action of
+`σ`, which is `WeierstrassCurve.Affine.Point.map`.
+
+**`_hmodel` IS LOAD-BEARING and the leaf is FALSE without it.**  It is
+underscore-prefixed only because the body is `sorry`.  Dropped, the
+statement would assert a Galois-equivariant `≃+` between `E(ℚ̄)` and the
+geometric fibre of an *arbitrary* elliptic scheme for an *arbitrary* `E` —
+take `A` the projective model of a curve of rank `0` and `E` one of rank
+`1` and there is no such isomorphism at all.
+
+**The `range_eq` conjunct of `_hmodel` is the load-bearing part of it**, and
+an auditor should check that a weakening does not quietly drop it: it is
+what forces the point removed by the chart to BE the identity of `ab`, and
+that is the hypothesis rigidity consumes.  With only "some open immersion"
+the two group laws would differ by a translation and the conclusion would be
+false as stated (it would hold only after composing with one).
+
+IRREDUCIBLE at this pin in the sense that matters: the rigidity theorem is
+in neither mathlib nor `~/cs/FLT` — the same verdict recorded at
+`exists_projGroupLaw_geomFibreAddEquiv` above, which is why that leaf was
+restated to bind its group law existentially rather than prove rigidity.
+**The axis that verdict ranges over**: theorems about morphisms of abelian
+schemes.  It does NOT cover the possibility of proving this leaf for the
+CONCRETE projective model first and transporting along the chart
+isomorphism, which is where an attack should start. -/
+theorem exists_geomFibreAddEquiv_of_weierstrassModel (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (_hmodel : ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+      IsOpenImmersion ι ∧
+        ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+        Set.range ι.base =
+          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+    ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+
+        GeomFibrePt f (𝟙 (Spec (CommRingCat.of ℚ))),
+      ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+        e (WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+          = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x) :=
+  sorry
+
+/-- **THE REVERSE WEIERSTRASS BRIDGE: every elliptic scheme over `Spec ℚ` is
+the Weierstrass model of a curve, compatibly on geometric points** (PROVEN
+2026-07-27 from the two leaves above).
+
+This is the exact converse of
+`exists_ellipticScheme_isWeierstrassModel_of_projModel`: there the curve is
+given and the scheme produced, here the scheme is given and the curve
+produced, and the two conjuncts are the same two conjuncts.  It is the
+declaration `X0.lean` was missing.
+
+**How `X0.lean` consumes it.**  Given `d : Gamma0Datum N SpecQ`, apply this
+to `d.ab` and `d.relativeDimensionOne`.  The first conjunct is
+`Fermat.IsWeierstrassModel d.ab E` with `weierstrassAffine` and
+`weierstrassAffineStr` unfolded, so it is accepted by `exact` wherever that
+relation is asked for — in particular by `IsJSection.jt_model`, and by the
+`jm_classify` field that `exists_weierstrass_jm_of_gamma0Datum`'s docstring
+proposes for `IsJMapOn`.  The second conjunct transports the level structure:
+`d.cyc.geom_cyclic` supplies a generator of the geometric fibre subgroup, and
+`e.symm` carries it to a point of `E(ℚ̄)` of the same order whose
+`zmultiples` is Galois-stable, because `RelPoint.LiesIn` is preserved by
+precomposition and `galSMul` IS precomposition.
+
+**Neither conjunct mentions `proj` or `projToSpec`**, which is what keeps
+`X0.lean`'s `import Fermat.FLT.ModularCurve.EllipticScheme` non-public — see
+the subsection docstring, and the module docstring for why that matters. -/
+theorem exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
+      (∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
+        IsOpenImmersion ι ∧
+          ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+          Set.range ι.base =
+            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) ∧
+        (letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 (Spec (CommRingCat.of ℚ)))
+         ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+
+             GeomFibrePt f (𝟙 (Spec (CommRingCat.of ℚ))),
+           ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+             e (WeierstrassCurve.Affine.Point.map
+                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+               = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x)) := by
+  obtain ⟨E, hE, hmodel⟩ := exists_weierstrassModel_of_ellipticScheme ab hdim
+  haveI := hE
+  exact ⟨E, hE, hmodel, exists_geomFibreAddEquiv_of_weierstrassModel E ab hmodel⟩
+
 end Fermat
 
 end

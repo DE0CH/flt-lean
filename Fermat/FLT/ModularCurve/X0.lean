@@ -11711,21 +11711,62 @@ So the repair is a two-step job, each step with a different owner:
    leaf's last conjunct becomes free and only the Weierstrass bridge
    survives.
 
-**The check that would refute step 1's premise**: a scheme-level
-identification already present in `exists_ellipticScheme_of_projModel`'s
-conclusion.  RUN 2026-07-27 — the conclusion is
-`∃ (A : Scheme.{0}) (f : A ⟶ SpecQ) (ab : AbelianSchemeStruct f),
-SmoothOfRelativeDimension 1 f ∧ (∃ e : (E⁄ℚ̄).Point ≃+ GeomFibrePt f (𝟙
-SpecQ), <Galois equivariance>)`: a point-group equivalence and nothing
-more.
+## STEP 1 HAS LANDED (2026-07-27), AND STEP 2 IS THE WHOLE RESIDUE
 
-**The Weierstrass bridge half is also unbuilt**, and that is worth saying
-plainly since the paragraph above calls it bookkeeping: the tree has only
-the FORWARD bridge `exists_ellipticScheme_of_weierstrass`.  `grep -rn
-'WeierstrassCurve' Fermat/FLT/Modularity/AbelianScheme.lean
-Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` returns nothing, and
-there is no declaration anywhere in `Fermat/` producing a
-`WeierstrassCurve ℚ` from an `AbelianSchemeStruct`.  Checked 2026-07-27.
+The two paragraphs that followed here — "the check that would refute step
+1's premise", answered by quoting `exists_ellipticScheme_of_projModel`'s
+conclusion, and "the Weierstrass bridge half is also unbuilt" — were both
+correct when written and are both now OUT OF DATE.  Recorded rather than
+deleted, because the shape of the correction is the reusable part.
+
+* **The scheme-level relation exists, and it is spelled out rather than
+  named.**  `IsWeierstrassModel` (this file, above) is the coordinate-level
+  pinning, and it DOES determine `E.j` — see its own docstring, and note
+  that `IsJSection.jt_model` already quantifies over it universally for
+  exactly that reason.  The check quoted the wrong theorem: the conclusion
+  of `exists_ellipticScheme_of_projModel` is indeed a point-group
+  equivalence and nothing more, but its sibling
+  `exists_ellipticScheme_isWeierstrassModel_of_projModel` is the SAME
+  statement with `IsWeierstrassModel` retained as an extra conjunct, with
+  `weierstrassAffine` / `weierstrassAffineStr` unfolded so that it names
+  neither `proj` nor `projToSpec`.  That is what makes it consumable here
+  under the non-public `import`, and `exists_weierstrassModel_gamma0Datum`
+  above already consumes it.
+* **The REVERSE bridge now exists too**, which is what this leaf needed and
+  what the deleted paragraph correctly said was missing:
+  `Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`
+  (`EllipticScheme.lean`) produces, from an `AbelianSchemeStruct` of
+  relative dimension one over `Spec ℚ`, a `WeierstrassCurve ℚ` together with
+  BOTH conjuncts — the model and the Galois-equivariant `≃+` on geometric
+  points.  Its statement mentions neither `proj` nor `projToSpec`, so it too
+  is consumed here in a proof body.  It is itself open, over two named
+  leaves in that module: `exists_weierstrassModel_of_ellipticScheme`
+  (Riemann–Roch) and `exists_geomFibreAddEquiv_of_weierstrassModel`
+  (rigidity).
+
+**So the proof below is now written**, and everything the old docstring
+called "bookkeeping" is discharged: `d.cyc.geom_cyclic` supplies a generator
+`y` of the geometric-fibre subgroup, `e.symm` carries it to a point of
+`E(ℚ̄)` of the same order, and its `zmultiples` is Galois-stable because
+`RelPoint.LiesIn` is preserved by precomposition while `galSMul` IS
+precomposition (`AbelianSchemeStruct.galSMul_def`, `rfl`).
+
+**WHAT REMAINS IS EXACTLY STEP 2, AND IT IS THE `have hjm` BELOW.**  It is
+stated in the shape the `jm_classify` field will take —
+`IsWeierstrassModel d.ab E → jm (hc.classify (𝟙 SpecQ) d) = E.j` — so that
+adding the field discharges it by `exact hj.jm_classify …` with nothing else
+to change.
+
+**DO NOT HOIST `have hjm` INTO A TOP-LEVEL THEOREM: it would be FALSE.**
+This is the same refutation as the one recorded above, and it is the reason
+step 2 must be a FIELD and not a lemma.  Quantified over an arbitrary
+`hj : IsJMapOn p hc`, the statement is refuted by the `N = 5` witness: with
+only the two fields `jm` and `classify_jm`, `jm` may be junk at one
+classified point `y₀` while `classify_jm` is still satisfied elsewhere, and
+then no curve realises the value.  Inside this proof the hypothesis is
+harmless only because the enclosing statement is itself true only through
+its vacuity.  A prover dispatched at `hjm` in isolation would be dispatched
+at a false statement.
 
 **VACUITY, inherited and now sharper.**  `Gamma0Datum p SpecQ` is itself
 empty for `p ∉ mazurIsogenyPrimes` — that is Mazur's theorem again — so
@@ -11742,8 +11783,58 @@ theorem exists_weierstrass_jm_of_gamma0Datum {p : ℕ} (_hp : p.Prime)
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) ∧
-      hj.jm (hc.classify (𝟙 SpecQ) d) = E.j :=
-  sorry
+      hj.jm (hc.classify (𝟙 SpecQ) d) = E.j := by
+  -- The elliptic scheme underlying `d` has a Weierstrass model, and its
+  -- geometric fibre IS `E(ℚ̄)`, Galois-equivariantly.  Both conjuncts are
+  -- spelled out in `EllipticScheme.lean` without naming `proj`, which is what
+  -- lets this file consume the theorem under its non-public import.
+  obtain ⟨E, hE, hmodel, hequiv⟩ :=
+    exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme d.ab d.relativeDimensionOne
+  haveI := hE
+  letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  obtain ⟨e, he⟩ := hequiv
+  -- the level structure gives a generator of the geometric fibre subgroup
+  obtain ⟨y, -, hyOrd, hyGen⟩ :=
+    d.cyc.geom_cyclic (AlgebraicClosure ℚ) (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- its preimage under `e` has the same order
+  have hord : addOrderOf (e.symm y) = p := by
+    rw [AddEquiv.addOrderOf_eq]; exact hyOrd
+  -- and its `zmultiples` is Galois-stable, because `LiesIn` is preserved by
+  -- precomposition and `galSMul` is precomposition
+  have hstab : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples (e.symm y),
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples (e.symm y) := by
+    intro σ x hx
+    have hex : e x ∈ AddSubgroup.zmultiples y := by
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+      exact AddSubgroup.mem_zmultiples_iff.mpr
+        ⟨k, by rw [← hk, map_zsmul, AddEquiv.apply_symm_apply]⟩
+    obtain ⟨w, hw⟩ := (hyGen (e x)).mpr hex
+    have hIn : RelPoint.LiesIn d.cyc.ι (d.ab.galSMul (𝟙 SpecQ) σ (e x)) := by
+      refine ⟨specGal σ ≫ w, ?_⟩
+      show (specGal σ ≫ w) ≫ d.cyc.ι = specGal σ ≫ (e x).1
+      rw [Category.assoc, hw]
+    have hmem : d.ab.galSMul (𝟙 SpecQ) σ (e x) ∈ AddSubgroup.zmultiples y :=
+      (hyGen _).mp hIn
+    rw [← he σ x] at hmem
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+    apply e.injective
+    rw [map_zsmul, AddEquiv.apply_symm_apply]
+    exact hk
+  /- **THE RESIDUE, AND IT IS `IsJMapOn.jm_classify`** (sorry step).  `jm` is
+  pinned by `IsJMapOn` only through the EXISTENTIAL `classify_jm`, so the
+  value of `jm` at the classifying point of a GIVEN `d` is not available from
+  the structure.  This is the missing field, stated in the shape it will
+  take.  It is **not** a standalone theorem — see the docstring above: over an
+  arbitrary `IsJMapOn` the statement is refuted by an explicit `N = 5`
+  witness, and it is admissible here only because the enclosing leaf is true
+  through its vacuity. -/
+  have hjm : IsWeierstrassModel d.ab E → hj.jm (hc.classify (𝟙 SpecQ) d) = E.j := by
+    sorry
+  exact ⟨E, hE, e.symm y, hord, hstab, hjm hmodel⟩
 
 /-- **The coarse-to-fine descent on `Y_0(p)`** (PROVEN 2026-07-27 over
 `exists_gamma0Datum_classify_eq` and `exists_weierstrass_jm_of_gamma0Datum`;
