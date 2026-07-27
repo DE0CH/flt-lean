@@ -2110,8 +2110,321 @@ theorem exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible
     rw [biUnion_associatedPrimes_eq_compl_nonZeroDivisors A] at hout
     simpa using hout
 
+/-- **THE INCIDENCE FAMILY OF THE BERTINI CUT, IN COORDINATES** (2026-07-27).
+
+The incidence variety of the hyperplane family is
+`Z = {(p, v) ∈ Spec S × 𝔸^{n+1} : ℓ_v(p) = 0}`, and the whole point of the
+Bertini cut is that `Z` is not a hypersurface one has to analyse but a
+TRIVIAL BUNDLE: the constant term `v_last` of `ℓ_v = ∑ vᵢ xᵢ − v_last` is a
+free parameter, so `v_last` may be ELIMINATED and
+
+  `Z ≅ Spec S × 𝔸ⁿ = Spec (S[Y₀,…,Y_{n−1}])`.
+
+`bertiniParam x` is the resulting map `Z ⟶ 𝔸^{n+1}`, written as the `n+1`
+coordinate functions on `S[Y]`: the first `n` are `Y₀,…,Y_{n−1}` (the
+hyperplane's linear coefficients, which are unconstrained) and the last is
+`∑ Yᵢ xᵢ` (the constant term, forced by the incidence condition). Its fibre
+over `v` is `S ⧸ (ℓ_v)`, which is `nonempty_bertiniFibreAlgEquiv` below.
+
+Consequence, and this is why the definition is worth making: neither Bertini
+leaf needs the incidence variety to be CONSTRUCTED as a quotient, because it
+is a polynomial ring. Both leaves become statements about the generic fibre
+of a map `Spec (S[Y]) ⟶ 𝔸^{n+1}` out of a SMOOTH affine variety. -/
+noncomputable def bertiniParam {S : Type u} [CommRing S] {n : ℕ} (x : Fin n → S) :
+    Fin (n + 1) → MvPolynomial (Fin n) S :=
+  Fin.snoc MvPolynomial.X (∑ i : Fin n, MvPolynomial.X i * MvPolynomial.C (x i))
+
+/-- **THE FIBRE OF THE INCIDENCE FAMILY IS THE HYPERPLANE SECTION**
+(**PROVEN 2026-07-27**).
+
+`S[Y₀,…,Y_{n−1}] ⧸ (Yᵢ − vᵢ , ∑ Yᵢ xᵢ − v_last) ≃ₐ[k] S ⧸ (ℓ_v)`, where
+`ℓ_v = ∑ vᵢ xᵢ − v_last`. This is the elimination described on
+`bertiniParam`, done by hand rather than by a base-change/tensor argument, so
+that no `Algebra.TensorProduct` instance ever enters the Bertini cut.
+
+THE PROOF is a pair of mutually inverse `S`-algebra maps written down
+explicitly (`AlgEquiv.ofAlgHom`), then `restrictScalars k`.
+
+* Forwards: `S[Y] → S ⧸ (ℓ_v)`, `Yᵢ ↦ vᵢ` — i.e. `MvPolynomial.aeval` at the
+  point `v` followed by `Ideal.Quotient.mkₐ`. It kills each `Yᵢ − vᵢ`
+  trivially and kills `∑ Yᵢ xᵢ − v_last` because that maps to `ℓ_v` itself.
+* Backwards: `S → S[Y] ⧸ J` is `Algebra.ofId`. It kills `ℓ_v` because, modulo
+  `J`, `C vᵢ ≡ Yᵢ`, hence `C ℓ_v ≡ ∑ Yᵢ C(xᵢ) − C v_last ≡ 0` — the identity
+  `C ℓ_v = ∑ (C vᵢ − Yᵢ)·C xᵢ + (∑ Yᵢ C xᵢ − C v_last)` makes this a one-line
+  ideal membership.
+* The two composites are checked on generators, `Ideal.Quotient.algHom_ext`
+  followed by `MvPolynomial.algHom_ext` in the one direction that needs it.
+
+NOTE the equivalence needs NO hypothesis on `x` — in particular not that the
+`xᵢ` generate `S`. Both Bertini leaves inherit that. -/
+theorem nonempty_bertiniFibreAlgEquiv {k : Type u} [Field k] {S : Type u} [CommRing S]
+    [Algebra k S] {n : ℕ} (x : Fin n → S) (v : Fin (n + 1) → k) :
+    Nonempty ((MvPolynomial (Fin n) S ⧸
+        Ideal.span (Set.range fun j : Fin (n + 1) =>
+          bertiniParam x j - algebraMap k (MvPolynomial (Fin n) S) (v j)))
+      ≃ₐ[k] (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+          - algebraMap k S (v (Fin.last n))})) := by
+  classical
+  set ℓ : S := (∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+      - algebraMap k S (v (Fin.last n)) with hℓ
+  set I : Ideal S := Ideal.span {ℓ} with hI
+  set J : Ideal (MvPolynomial (Fin n) S) := Ideal.span (Set.range fun j : Fin (n + 1) =>
+      bertiniParam x j - algebraMap k (MvPolynomial (Fin n) S) (v j)) with hJ
+  have halg : ∀ c : k, algebraMap k (MvPolynomial (Fin n) S) c
+      = MvPolynomial.C (algebraMap k S c) := fun c => by
+    rw [IsScalarTower.algebraMap_apply k S (MvPolynomial (Fin n) S), MvPolynomial.algebraMap_eq]
+  have hgenX : ∀ i : Fin n, (MvPolynomial.X i : MvPolynomial (Fin n) S)
+      - MvPolynomial.C (algebraMap k S (v i.castSucc)) ∈ J := by
+    intro i
+    have : bertiniParam x i.castSucc
+        - algebraMap k (MvPolynomial (Fin n) S) (v i.castSucc) ∈ J := by
+      rw [hJ]; exact Ideal.subset_span ⟨i.castSucc, rfl⟩
+    simpa [bertiniParam, Fin.snoc_castSucc, halg] using this
+  have hgenL : (∑ i : Fin n, MvPolynomial.X i * MvPolynomial.C (x i))
+      - MvPolynomial.C (algebraMap k S (v (Fin.last n))) ∈ J := by
+    have : bertiniParam x (Fin.last n)
+        - algebraMap k (MvPolynomial (Fin n) S) (v (Fin.last n)) ∈ J := by
+      rw [hJ]; exact Ideal.subset_span ⟨Fin.last n, rfl⟩
+    simpa [bertiniParam, Fin.snoc_last, halg] using this
+  set e : MvPolynomial (Fin n) S →ₐ[S] S :=
+      MvPolynomial.aeval (fun i : Fin n => algebraMap k S (v i.castSucc)) with he
+  have heX : ∀ i : Fin n, e (MvPolynomial.X i) = algebraMap k S (v i.castSucc) := by
+    intro i; rw [he]; simp
+  have heC : ∀ a : S, e (MvPolynomial.C a) = a := by
+    intro a; rw [he]; simp
+  have hfwd : ∀ z ∈ J, ((Ideal.Quotient.mkₐ S I).comp e) z = 0 := by
+    have hle : J ≤ RingHom.ker (((Ideal.Quotient.mkₐ S I).comp e).toRingHom) := by
+      rw [hJ, Ideal.span_le]
+      rintro w ⟨j, rfl⟩
+      simp only [SetLike.mem_coe, RingHom.mem_ker]
+      simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe, AlgHom.coe_comp, Function.comp_apply]
+      refine Fin.lastCases ?_ ?_ j
+      · have hrw : bertiniParam x (Fin.last n)
+            - algebraMap k (MvPolynomial (Fin n) S) (v (Fin.last n))
+            = (∑ i : Fin n, MvPolynomial.X i * MvPolynomial.C (x i))
+              - MvPolynomial.C (algebraMap k S (v (Fin.last n))) := by
+          simp [bertiniParam, Fin.snoc_last, halg]
+        have hev : e ((∑ i : Fin n, MvPolynomial.X i * MvPolynomial.C (x i))
+            - MvPolynomial.C (algebraMap k S (v (Fin.last n)))) = ℓ := by
+          rw [map_sub, map_sum, hℓ, heC]
+          simp only [map_mul, heX, heC]
+        rw [hrw, hev]
+        exact (Ideal.Quotient.eq_zero_iff_mem).2 (by rw [hI]; exact Ideal.subset_span rfl)
+      · intro i
+        have hrw : bertiniParam x i.castSucc
+            - algebraMap k (MvPolynomial (Fin n) S) (v i.castSucc)
+            = MvPolynomial.X i - MvPolynomial.C (algebraMap k S (v i.castSucc)) := by
+          simp [bertiniParam, Fin.snoc_castSucc, halg]
+        rw [hrw, map_sub, heX, heC, sub_self, map_zero]
+    intro z hz
+    exact hle hz
+  have hbwd : ∀ a ∈ I, ((Ideal.Quotient.mkₐ S J).comp
+      (Algebra.ofId S (MvPolynomial (Fin n) S))) a = 0 := by
+    have hCℓ : MvPolynomial.C ℓ ∈ J := by
+      have key : (MvPolynomial.C ℓ : MvPolynomial (Fin n) S) =
+          (∑ i : Fin n, (MvPolynomial.C (algebraMap k S (v i.castSucc))
+              - MvPolynomial.X i) * MvPolynomial.C (x i))
+          + ((∑ i : Fin n, MvPolynomial.X i * MvPolynomial.C (x i))
+              - MvPolynomial.C (algebraMap k S (v (Fin.last n)))) := by
+        rw [hℓ]
+        simp only [map_sub, map_sum, map_mul, sub_mul, Finset.sum_sub_distrib]
+        ring
+      rw [key]
+      refine Ideal.add_mem _ (Ideal.sum_mem _ fun i _ => Ideal.mul_mem_right _ _ ?_) hgenL
+      have := neg_mem (hgenX i)
+      simpa using this
+    have hle : I ≤ RingHom.ker (((Ideal.Quotient.mkₐ S J).comp
+        (Algebra.ofId S (MvPolynomial (Fin n) S))).toRingHom) := by
+      rw [hI, Ideal.span_le]
+      rintro w (rfl : w = ℓ)
+      simp only [SetLike.mem_coe, RingHom.mem_ker, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
+        AlgHom.coe_comp, Function.comp_apply]
+      have : (Algebra.ofId S (MvPolynomial (Fin n) S)) ℓ = MvPolynomial.C ℓ := by
+        simp [Algebra.ofId_apply, MvPolynomial.algebraMap_eq]
+      rw [this]
+      exact (Ideal.Quotient.eq_zero_iff_mem).2 hCℓ
+    intro a ha
+    exact hle ha
+  set Ffwd : (MvPolynomial (Fin n) S ⧸ J) →ₐ[S] (S ⧸ I) :=
+    Ideal.Quotient.liftₐ J ((Ideal.Quotient.mkₐ S I).comp e) hfwd with hFfwd
+  set Gbwd : (S ⧸ I) →ₐ[S] (MvPolynomial (Fin n) S ⧸ J) :=
+    Ideal.Quotient.liftₐ I ((Ideal.Quotient.mkₐ S J).comp
+      (Algebra.ofId S (MvPolynomial (Fin n) S))) hbwd with hGbwd
+  refine ⟨(AlgEquiv.ofAlgHom Ffwd Gbwd ?_ ?_).restrictScalars k⟩
+  · refine Ideal.Quotient.algHom_ext S (AlgHom.ext fun a => ?_)
+    simp only [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk, hFfwd, hGbwd,
+      Ideal.Quotient.liftₐ_apply, Ideal.Quotient.lift_mk,
+      AlgHom.id_apply, Ideal.Quotient.mkₐ_eq_mk, Algebra.ofId_apply, MvPolynomial.algebraMap_eq,
+      RingHom.coe_coe]
+    rw [heC]
+  · refine Ideal.Quotient.algHom_ext S (MvPolynomial.algHom_ext fun i => ?_)
+    simp only [AlgHom.comp_apply, Ideal.Quotient.mkₐ_eq_mk, hFfwd, hGbwd,
+      Ideal.Quotient.liftₐ_apply, Ideal.Quotient.lift_mk,
+      AlgHom.id_apply, Algebra.ofId_apply, MvPolynomial.algebraMap_eq,
+      RingHom.coe_coe, heX]
+    exact ((Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).2 (hgenX i)).symm
+
+/-- **GENERIC SMOOTHNESS ON THE TARGET — THE ALGEBRAIC SARD THEOREM**
+(sorry node, 2026-07-27; cut out of
+`exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible`, which is now
+PROVEN over this leaf).
+
+If `B` is a SMOOTH algebra over a field `k` of characteristic zero and
+`t : Fin m → B` is any family of elements — equivalently, any `k`-morphism
+`π : Spec B ⟶ 𝔸ᵐ_k` — then there is a nonzero `F ∈ k[X₀,…,X_{m−1}]` such
+that every `k`-rational `v` with `F(v) ≠ 0` has SMOOTH fibre
+`B ⧸ (t₀ − v₀, …, t_{m−1} − v_{m−1})` over `k`.
+
+WHY THIS IS THE RIGHT LEAF, AND WHY IT IS NOT ABOUT BERTINI. Bertini
+smoothness is the special case where `π` is the incidence family
+`bertiniParam` of a hyperplane pencil; nothing in the proof of that case uses
+the hyperplane structure, the generators, or irreducibility, so all of it has
+been removed here. What is left is Sard's theorem in its algebraic form
+(Hartshorne III.10.7 "generic smoothness"; EGA IV 6.9.1 + 17.7.11), which is
+a general-purpose statement about arbitrary morphisms out of a smooth variety
+and is reusable far beyond this development.
+
+THE CLASSICAL PROOF, in the shape that would formalize here.
+* `R := k[X₀,…,X_{m−1}]` is a noetherian DOMAIN and `B` is a finite-type
+  `R`-algebra (it is finite type over `k`, being smooth, hence a fortiori
+  over `R`).
+* GENERIC FREENESS (Grothendieck; `EGA IV 6.9.1`, Stacks 051R): there is
+  `0 ≠ f₁ ∈ R` with `B_{f₁}` FREE, hence flat, over `R_{f₁}`.
+* THE GENERIC FIBRE IS SMOOTH: `B ⊗_R Frac R` is a LOCALIZATION of `B`, so it
+  is regular (a smooth algebra over a field is regular), it is of finite type
+  over `Frac R`, and `Frac R` has characteristic zero hence is PERFECT — so
+  regular = smooth. This is the only step that uses `CharZero`, and it is
+  exactly where the theorem fails in characteristic `p` (Frobenius
+  `𝔸¹ → 𝔸¹` satisfies every other hypothesis and has no smooth fibre).
+* SPREADING OUT: smooth at the generic fibre + flat + finitely presented ⟹
+  smooth over a nonempty open `D(f₂)` of `Spec R`. Take `F = f₁ f₂`.
+* Finally the fibre over a `k`-RATIONAL `v ∈ D(F)` is the base change of a
+  smooth `R_F`-algebra along `R_F → k`, so it is smooth over `k`
+  (`Algebra.Smooth.baseChange`, already in mathlib).
+
+DEGENERATE CASES ARE COVERED AND ARE NOT EXCEPTIONS. If `m = 0` the only
+nonzero `F` are the nonzero constants, every `v` qualifies, and the assertion
+is `Algebra.Smooth k (B ⧸ ⊥)`, i.e. `B` itself. If `π` is not dominant — for
+instance whenever `dim B < m` — the generic fibre is the ZERO ring, whose
+`Spec` is empty and which is smooth over `k`; the theorem is then true with
+`F` cutting out the complement of the closure of the image.
+
+ABSENCE AUDIT 2026-07-27, measured on this pin (and the check that would
+refute it: `grep -rn "genericFreeness\|generic_freeness" .lake/packages/mathlib`,
+which returns nothing, and `ls Mathlib/RingTheory/Flat/`, which has no
+`Generic.lean`). Mathlib has `Algebra.smoothLocus` and
+`Algebra.isOpen_smoothLocus` — openness of the locus in the SOURCE for one
+FIXED algebra — and `Algebra.Smooth.baseChange`, but it has neither generic
+freeness nor any statement about the locus in the BASE over which the fibres
+of a family are smooth. `~/cs/FLT` has nothing either. So generic freeness is
+the single largest missing prerequisite, and it is worth building on its own
+account. -/
+theorem exists_genericSmoothFibre_of_smooth_of_charZero {k : Type u} [Field k] [CharZero k]
+    {B : Type u} [CommRing B] [Algebra k B] [Algebra.Smooth k B] {m : ℕ} (t : Fin m → B) :
+    ∃ F : MvPolynomial (Fin m) k, F ≠ 0 ∧
+      ∀ v : Fin m → k, MvPolynomial.eval v F ≠ 0 →
+        Algebra.Smooth k (B ⧸ Ideal.span (Set.range fun i : Fin m =>
+          t i - algebraMap k B (v i))) :=
+  sorry
+
+/-- **BERTINI SMOOTHNESS, IN PURE COMMUTATIVE ALGEBRA** (**PROVEN 2026-07-27**
+over `exists_genericSmoothFibre_of_smooth_of_charZero`).
+
+For a smooth algebra `S` over a characteristic-zero field `k` and ANY family
+`x : Fin n → S`, a generic `ℚ`-rational hyperplane section `S ⧸ (ℓ_v)` is
+smooth over `k`.
+
+THE PROOF IS THE ELIMINATION, AND NOTHING ELSE. Apply generic smoothness to
+the incidence family `bertiniParam x` on `B = S[Y₀,…,Y_{n−1}]` — which is
+smooth over `k` because `S` is and a polynomial algebra is — and rewrite its
+fibre with `nonempty_bertiniFibreAlgEquiv`. `Algebra.Smooth.of_equiv` moves
+smoothness across.
+
+HYPOTHESES DELIBERATELY ABSENT. Neither `x` generating `S`, nor irreducibility
+of `Spec S`, nor any dimension bound is used or needed; the classical
+statement's "base-point-free linear system" hypothesis is discharged
+structurally by the elimination of the constant term, not assumed. -/
+theorem exists_bertiniSmoothLocus_algebra {k : Type u} [Field k] [CharZero k]
+    {S : Type u} [CommRing S] [Algebra k S] [Algebra.Smooth k S] {n : ℕ} (x : Fin n → S) :
+    ∃ F : MvPolynomial (Fin (n + 1)) k, F ≠ 0 ∧
+      ∀ v : Fin (n + 1) → k, MvPolynomial.eval v F ≠ 0 →
+        Algebra.Smooth k (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+          - algebraMap k S (v (Fin.last n))}) := by
+  haveI : Algebra.Smooth S (MvPolynomial (Fin n) S) := {}
+  haveI : Algebra.Smooth k (MvPolynomial (Fin n) S) := Algebra.Smooth.comp k S _
+  obtain ⟨F, hF0, hF⟩ := exists_genericSmoothFibre_of_smooth_of_charZero (k := k)
+    (B := MvPolynomial (Fin n) S) (bertiniParam x)
+  refine ⟨F, hF0, fun v hv => ?_⟩
+  obtain ⟨E⟩ := nonempty_bertiniFibreAlgEquiv x v
+  haveI := hF v hv
+  exact Algebra.Smooth.of_equiv E
+
+/-- **BERTINI CONNECTEDNESS, IN PURE COMMUTATIVE ALGEBRA** (sorry node,
+2026-07-27; cut out of
+`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`, which is
+now PROVEN over this leaf).
+
+The same statement as the scheme-level connectedness leaf, but over a
+VARIABLE characteristic-zero base field `k` and an ordinary commutative ring
+`S`, with no `CommRingCat`, no `ULift ℚ`, and no `Spec.preimage` in sight.
+The scheme-level leaf follows from this by `Spec.map_comp` and
+`Spec.map_preimage` alone.
+
+WHY THE TRANSLATION IS WORTH A LEAF, not merely cosmetic. Everything the
+eventual proof must do — projective closure, the Enriques–Severi–Zariski /
+Grothendieck connectedness theorem, openness of the geometrically-connected
+locus of a family — is stated for varieties over a field, and every one of
+those arguments passes to `k̄` and back. Carrying `ULift ℚ` through them is
+pure friction, and worse: `ULift ℚ` is precisely the base at which this
+development has repeatedly hit duplicate-instance diamonds (`ULift.module`
+versus `Algebra.toModule`), which is why the standing rule here is to state
+helpers over a variable base field and instantiate at the end. `hgi` and
+`hdim` are carried across unchanged.
+
+`hdim` REMAINS LOAD-BEARING and the statement is still FALSE without it, by
+the same counterexample as before: `S = k[s,t]/(s²+t²−1)`, `x = (s,t)`, is
+smooth, geometrically irreducible and of dimension `1`, and a general
+`k`-rational line meets the conic in two distinct geometric points, so the
+section is nonempty but DISCONNECTED.
+
+THE ROUTE, and the check that would refute the obstruction. Pass to `k̄`,
+where `GeometricallyConnected` collapses to `ConnectedSpace`; take the
+projective closure `X̄ ⊆ ℙⁿ` of `Spec S`; a general hyperplane section of an
+irreducible projective variety of dimension `≥ 2` is connected, and
+`X̄ ∩ H ∩ H_∞` has dimension `dim X − 2 < dim X − 1`, so the affine part is a
+nonempty dense open of a connected set. The obstruction recorded here is that
+mathlib has no projective closure of an affine scheme and no
+Enriques–Severi–Zariski statement; the check that would refute it is
+`grep -rn "projectiveClosure\|EnriquesSeveri\|Bertini" .lake/packages/mathlib`
+together with a search for an openness statement about
+`AlgebraicGeometry.GeometricallyConnected` in
+`Mathlib/AlgebraicGeometry/Geometrically/`, all of which returned nothing on
+2026-07-27.
+
+NOTE the contrast with the smoothness half, which was NOT blocked this way:
+generic smoothness needed only the affine incidence family, so the whole
+projective apparatus was avoidable there. It is genuinely unavoidable here,
+because connectedness of an AFFINE section is deduced from connectedness of
+its projective closure's section — the affine statement has no self-contained
+proof. -/
+theorem exists_bertiniConnectedLocus_algebra {k : Type u} [Field k] [CharZero k]
+    {S : Type u} [CommRing S] [Algebra k S] [Algebra.Smooth k S]
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible
+      (AlgebraicGeometry.Spec.map (CommRingCat.ofHom (algebraMap k S))))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec (CommRingCat.of S)))
+    {n : ℕ} (x : Fin n → S) :
+    ∃ F : MvPolynomial (Fin (n + 1)) k, F ≠ 0 ∧
+      ∀ v : Fin (n + 1) → k, MvPolynomial.eval v F ≠ 0 →
+        AlgebraicGeometry.GeometricallyConnected (AlgebraicGeometry.Spec.map
+          (CommRingCat.ofHom (algebraMap k
+            (S ⧸ Ideal.span {(∑ i : Fin n, algebraMap k S (v i.castSucc) * x i)
+              - algebraMap k S (v (Fin.last n))})))) :=
+  sorry
+
 open CategoryTheory AlgebraicGeometry in
-/-- **BERTINI SMOOTHNESS: the generic hyperplane section is smooth** (sorry
+/-- **BERTINI SMOOTHNESS: the generic hyperplane section is smooth**
+(**PROVEN 2026-07-27** over `exists_bertiniSmoothLocus_algebra`, hence over
+the single leaf `exists_genericSmoothFibre_of_smooth_of_charZero`; sorry
 node, 2026-07-26 — the first of the two classical Bertini theorems, cut out
 of `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` on the same
 day; that theorem is PROVEN over this one, the connectedness leaf below and
@@ -2150,12 +2463,34 @@ this half — generic smoothness does not use irreducibility — but it is kept
 so that the two Bertini leaves have parallel hypotheses and the assembly can
 pass the same arguments to both.
 
-MACHINERY MISSING AT THIS PIN: Bertini's smoothness theorem in any form, and
-the openness of the smooth locus of a family (mathlib has the ABSOLUTE
-statement `Algebra.isOpen_smoothLocus` for a single algebra, not the relative
-one for the fibres of a morphism). A prover should expect to build the
-incidence variety `Z` and generic smoothness (the algebraic Sard theorem) —
-both reusable well beyond this leaf.
+HOW IT IS NOW PROVEN (2026-07-27), and what is left. The paragraph below this
+one used to say a prover "should expect to build the incidence variety `Z`
+and generic smoothness". `Z` turned out to need no building at all: the
+constant term `v_last` of `ℓ_v` is a free parameter, so it can be ELIMINATED
+and `Z ≅ Spec A × 𝔸ⁿ = Spec (A[Y₀,…,Y_{n−1}])` — a polynomial ring, smooth
+over `ℚ` because `A` is. That is `bertiniParam` above, its fibre is computed
+by the PROVEN `nonempty_bertiniFibreAlgEquiv`, and the base-point-freeness
+hypothesis of the classical statement is discharged structurally rather than
+assumed. What is left is exactly ONE leaf, and it is not about Bertini:
+`exists_genericSmoothFibre_of_smooth_of_charZero`, the algebraic Sard
+theorem. The chain here is
+`exists_bertiniSmoothLocus_algebra` (pure algebra, variable base field)
+followed by `Spec.map_comp` / `Spec.map_preimage` /
+`HasRingHomProperty.Spec_iff` glue.
+
+`_hft`, `_hgi` AND `_hx` ARE UNUSED, and the underscores record it
+mechanically. Smoothness of `A` over `ℚ` already implies finite presentation,
+so `hft` is redundant; and as the note above predicted, generic smoothness
+uses neither irreducibility nor the fact that the `xᵢ` generate. They are
+kept in the signature only so the two Bertini leaves stay parallel and the
+assembly can pass the same arguments to both.
+
+MACHINERY STILL MISSING AT THIS PIN: generic freeness (Grothendieck) and the
+spreading-out of smoothness, both consumed by
+`exists_genericSmoothFibre_of_smooth_of_charZero` and both reusable well
+beyond this leaf; see its docstring for the measured absence audit. Mathlib
+has the ABSOLUTE statement `Algebra.isOpen_smoothLocus` for a single algebra,
+not the relative one for the fibres of a morphism.
 
 ABSENCE AUDIT 2026-07-26 (measured on this pin, not inherited — CLAUDE.md's
 "absent from the pin is often wrong" rule says to check before building, so
@@ -2179,16 +2514,63 @@ smooth. Neither degenerate case needs an exception, which is why omitting
 `hdim` here is a genuine strengthening and not an oversight. -/
 theorem exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
-    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (_hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     {n : ℕ} (x : Fin n → A)
-    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+    (_hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
       Set.range x) = ⊤) :
     ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
       ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
         AlgebraicGeometry.Smooth (specQuotSpanSingleton
-          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
-  sorry
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) := by
+  classical
+  letI : Algebra (ULift.{u} ℚ) A := (AlgebraicGeometry.Spec.preimage g).hom.toAlgebra
+  haveI hAsm : Algebra.Smooth (ULift.{u} ℚ) A := by
+    have h1 : AlgebraicGeometry.Smooth (Spec.map (AlgebraicGeometry.Spec.preimage g)) := by
+      rwa [Spec.map_preimage]
+    exact HasRingHomProperty.Spec_iff.mp h1
+  haveI : CharZero (ULift.{u} ℚ) := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom.charZero
+  obtain ⟨F₀, hF₀0, hF₀⟩ := exists_bertiniSmoothLocus_algebra (k := ULift.{u} ℚ) (S := A) x
+  set f : ULift.{u} ℚ →+* ℚ := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom with hf
+  have hfinj : Function.Injective f := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).injective
+  refine ⟨MvPolynomial.map f F₀, ?_, ?_⟩
+  · intro h
+    exact hF₀0 (MvPolynomial.map_injective f hfinj (by simpa using h))
+  · intro v hv
+    have hev : MvPolynomial.eval v (MvPolynomial.map f F₀)
+        = f (MvPolynomial.eval (fun i => ULift.up (v i)) F₀) := by
+      rw [MvPolynomial.eval_map]
+      rw [show (MvPolynomial.eval (fun i => ULift.up (v i)) F₀)
+          = MvPolynomial.eval₂ (RingHom.id (ULift.{u} ℚ)) (fun i => ULift.up (v i)) F₀ from rfl]
+      rw [MvPolynomial.eval₂_comp_left f (RingHom.id (ULift.{u} ℚ))
+        (fun i => ULift.up (v i)) F₀]
+      rfl
+    have hv0 : MvPolynomial.eval (fun i => ULift.up (v i)) F₀ ≠ 0 := by
+      intro h; rw [hev, h, map_zero] at hv; exact hv rfl
+    haveI hsm := hF₀ (fun i => ULift.up (v i)) hv0
+    have hlform : (∑ i : Fin n, algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+        - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))
+        = affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v := rfl
+    rw [← hlform]
+    have hcomp : specQuotSpanSingleton
+        ((∑ i : Fin n, algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+          - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))) ≫ g
+        = Spec.map (AlgebraicGeometry.Spec.preimage g ≫ CommRingCat.ofHom
+            (Ideal.Quotient.mk (Ideal.span {(∑ i : Fin n,
+              algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+              - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))}))) := by
+      rw [Spec.map_comp, specQuotSpanSingleton, Spec.map_preimage]
+    rw [hcomp]
+    refine HasRingHomProperty.Spec_iff.mpr ?_
+    have heq : (AlgebraicGeometry.Spec.preimage g ≫ CommRingCat.ofHom
+        (Ideal.Quotient.mk (Ideal.span {(∑ i : Fin n,
+          algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+          - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))}))).hom
+        = algebraMap (ULift.{u} ℚ) (A ⧸ Ideal.span {(∑ i : Fin n,
+          algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+          - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))}) := rfl
+    rw [heq]
+    exact RingHom.smooth_algebraMap.mpr hsm
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI CONNECTEDNESS: the generic hyperplane section of a variety of
@@ -2235,10 +2617,31 @@ or the incidence-variety plus Stein-factorization argument — and
 connected. Openness of the good locus in the parameter space `𝔸^{n+1}` and
 the descent to a basic open `D(F)` are as in the smoothness leaf.
 
+STATUS 2026-07-27: this theorem is now PROVEN over
+`exists_bertiniConnectedLocus_algebra`, which is the SAME statement over a
+variable characteristic-zero base field and an ordinary commutative ring —
+no `CommRingCat`, no `ULift ℚ`, no `Spec.preimage`. That is a translation,
+not a mathematical advance, and it is recorded as such: the Lefschetz content
+is untouched and lives entirely in that leaf. It is worth doing only because
+every argument the eventual proof must run is stated for varieties over a
+field and passes to `k̄`, and because `ULift ℚ` is exactly the base at which
+this development keeps hitting duplicate-instance diamonds.
+
+Contrast with the smoothness half, which the same day was reduced to a leaf
+that is NOT about Bertini at all (the algebraic Sard theorem): that worked
+because the affine incidence family is a polynomial ring, so no projective
+apparatus is needed there. It is genuinely needed here — connectedness of an
+affine section is deduced from connectedness of its projective closure's
+section, and the affine statement has no self-contained proof.
+
 MACHINERY MISSING AT THIS PIN: the projective closure of an affine scheme,
 the connectedness theorem, and openness of the geometrically-connected locus
 of a family (EGA IV 9.7.7). This is the deepest of the surviving geometric
 leaves.
+
+`_hft` AND `_hx` ARE UNUSED here too — `hsmooth`, `hgi` and `hdim` are all
+passed through to the algebra leaf, but finite type follows from smoothness
+and the generation hypothesis is not needed to state the hyperplane family.
 
 ABSENCE AUDIT 2026-07-26 (measured on this pin). `GeometricallyConnected`
 exists (`Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`) and is
@@ -2264,17 +2667,62 @@ nonempty — an inequality that degenerates at `dim X = 1` and is a second,
 independent reason the `dim = 1` case fails. -/
 theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
-    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (_hft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
     {n : ℕ} (x : Fin n → A)
-    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+    (_hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
       Set.range x) = ⊤) :
     ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
       ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
         AlgebraicGeometry.GeometricallyConnected (specQuotSpanSingleton
-          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
-  sorry
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) := by
+  classical
+  letI : Algebra (ULift.{u} ℚ) A := (AlgebraicGeometry.Spec.preimage g).hom.toAlgebra
+  haveI hAsm : Algebra.Smooth (ULift.{u} ℚ) A := by
+    have h1 : AlgebraicGeometry.Smooth (Spec.map (AlgebraicGeometry.Spec.preimage g)) := by
+      rwa [Spec.map_preimage]
+    exact HasRingHomProperty.Spec_iff.mp h1
+  haveI : CharZero (ULift.{u} ℚ) := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom.charZero
+  have hgi' : AlgebraicGeometry.GeometricallyIrreducible
+      (Spec.map (CommRingCat.ofHom (algebraMap (ULift.{u} ℚ) A))) := by
+    have hof : CommRingCat.ofHom (algebraMap (ULift.{u} ℚ) A)
+        = AlgebraicGeometry.Spec.preimage g := rfl
+    rw [hof, Spec.map_preimage]; exact hgi
+  obtain ⟨F₀, hF₀0, hF₀⟩ := exists_bertiniConnectedLocus_algebra (k := ULift.{u} ℚ) (S := A)
+    hgi' hdim x
+  set f : ULift.{u} ℚ →+* ℚ := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom with hf
+  have hfinj : Function.Injective f := (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).injective
+  refine ⟨MvPolynomial.map f F₀, ?_, ?_⟩
+  · intro h
+    exact hF₀0 (MvPolynomial.map_injective f hfinj (by simpa using h))
+  · intro v hv
+    have hev : MvPolynomial.eval v (MvPolynomial.map f F₀)
+        = f (MvPolynomial.eval (fun i => ULift.up (v i)) F₀) := by
+      rw [MvPolynomial.eval_map]
+      rw [show (MvPolynomial.eval (fun i => ULift.up (v i)) F₀)
+          = MvPolynomial.eval₂ (RingHom.id (ULift.{u} ℚ)) (fun i => ULift.up (v i)) F₀ from rfl]
+      rw [MvPolynomial.eval₂_comp_left f (RingHom.id (ULift.{u} ℚ))
+        (fun i => ULift.up (v i)) F₀]
+      rfl
+    have hv0 : MvPolynomial.eval (fun i => ULift.up (v i)) F₀ ≠ 0 := by
+      intro h; rw [hev, h, map_zero] at hv; exact hv rfl
+    have hcn := hF₀ (fun i => ULift.up (v i)) hv0
+    have hlform : (∑ i : Fin n, algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+        - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))
+        = affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v := rfl
+    rw [← hlform]
+    have hcomp : specQuotSpanSingleton
+        ((∑ i : Fin n, algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+          - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))) ≫ g
+        = Spec.map (CommRingCat.ofHom (algebraMap (ULift.{u} ℚ)
+            (A ⧸ Ideal.span {(∑ i : Fin n,
+              algebraMap (ULift.{u} ℚ) A (ULift.up (v i.castSucc)) * x i)
+              - algebraMap (ULift.{u} ℚ) A (ULift.up (v (Fin.last n)))}))) := by
+      rw [specQuotSpanSingleton, ← Spec.map_preimage g, ← Spec.map_comp]
+      rfl
+    rw [hcomp]
+    exact hcn
 
 /-- **CONNECTED + LOCALLY IRREDUCIBLE ⟹ IRREDUCIBLE** (**PROVEN 2026-07-26** —
 pure point-set topology, no scheme theory and no noetherian hypothesis).
