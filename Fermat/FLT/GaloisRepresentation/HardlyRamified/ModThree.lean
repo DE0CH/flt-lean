@@ -13182,14 +13182,16 @@ theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
 
 /-! ### The unramified twist: trace machinery for a cyclic unramified extension
 
-The four declarations below are the decomposition of the geometric half of
+The declarations below are the decomposition of the geometric half of
 Fontaine's Prop. 1.5 (ii) (leaf (Y-3-a), `exists_not_le_sub_mem_of_ne_one_of_mem_inertia`
-further down), created 2026-07-27 by its second owner.  Two of them are PROVEN,
-two are open, and the open ones are exactly the two pieces of ORDINARY LOCAL
-FIELD THEORY that this file does not have: the unramified extensions of `ℚ₃ᵥ`
-inside `ℚ₃ᵥᵃˡᵍ` with their Frobenius, and surjectivity of the trace of an
-unramified extension of local rings.  Nothing Fontaine-specific remains in
-either. -/
+further down), created 2026-07-27 by its second owner.  All but one are PROVEN;
+the single remaining open one is `exists_orderOf_restrictToLEHom_eq_of_mem_inertia`,
+the piece of ORDINARY LOCAL FIELD THEORY that this file does not have: the
+unramified extensions of `ℚ₃ᵥ` inside `ℚ₃ᵥᵃˡᵍ` with their Frobenius.
+Surjectivity of the trace of an unramified extension of local rings is now done
+(`exists_sum_range_smul_notMem_maximalIdeal` and
+`exists_sum_range_smul_eq_one_of_span_three_eq`).  Nothing Fontaine-specific
+remains in either. -/
 
 /-- **A FULL ORBIT SUM UNDER A CYCLIC GROUP IS INVARIANT** (PROVEN 2026-07-27).
 Purely group-theoretic, stated for an arbitrary `ρ` of exponent dividing `n`
@@ -13243,8 +13245,43 @@ theorem integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 1000000 in
+/-- **`e(M/E) = 1` IN IDEAL FORM: `𝔪_E·𝒪_M = 𝔪_M`** (PROVEN 2026-07-27 — the
+form of "no ramification is created" that mathlib's ramification-index API
+consumes, as opposed to the membership form
+`integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq` above).
+PROOF: `exists_addVal_integralClosureLE` gives the comparison factor `a` with
+`a·g = g`, so `a = 1` and `addVal_M ∘ φ = addVal_E` on the nose.  A uniformizer
+`ϖ` of `𝒪_E` therefore has `addVal_M (φ ϖ) = 1`, i.e. `span {φ ϖ} = 𝔪_M`
+(`addVal_eq_natCast_iff_span_eq`), and `𝔪_E = span {ϖ}` transports along
+`Ideal.map_span`. -/
+theorem integralClosureLE_map_maximalIdeal_of_span_three_eq
+    (E M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hEM : E ≤ M)
+    [FiniteDimensional ℚ₃ᵥ E] [FiniteDimensional ℚ₃ᵥ M]
+    (g : ℕ) (hg : 0 < g)
+    (hE : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ g)
+    (hM : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ M)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ g) :
+    Ideal.map (integralClosureLE E M hEM)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) := by
+  obtain ⟨a, _, haeq, hval⟩ := exists_addVal_integralClosureLE E M hEM g g hE hM hg
+  have ha1 : a = 1 := Nat.eq_of_mul_eq_mul_right hg (by rw [haeq, one_mul])
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪₃ᵥ E)
+  have hspan : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) = Ideal.span {ϖ} :=
+    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+  have h1 : IsDiscreteValuationRing.addVal (IntegralClosure 𝒪₃ᵥ M)
+      (integralClosureLE E M hEM ϖ) = ((1 : ℕ) : ℕ∞) := by
+    rw [hval ϖ, ha1, Nat.cast_one, one_mul, IsDiscreteValuationRing.addVal_uniformizer hϖ]
+  rw [hspan, Ideal.map_span, Set.image_singleton,
+    ← pow_one (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M))]
+  exact (addVal_eq_natCast_iff_span_eq _ _ 1).mp h1
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
 /-- **THE TRACE OF A CYCLIC UNRAMIFIED EXTENSION IS NONZERO ON THE RESIDUE
-FIELD** (sorry node, created 2026-07-27 — leaf (Y-3-a-ii), the residue-level
+FIELD** (PROVEN 2026-07-27 — leaf (Y-3-a-ii), the residue-level
 core of trace surjectivity, and the ONLY arithmetic input to
 `exists_sum_range_smul_eq_one_of_span_three_eq` below).
 
@@ -13253,29 +13290,37 @@ WHAT IT ASSERTS.  `E ≤ M` are finite subextensions of `ℚ₃ᵥᵃˡᵍ/ℚ�
 order `n` with fixed ring exactly `𝒪_E` inside `𝒪_M` (`hfix`).  Then some
 `c ∈ 𝒪_M` has `Tr(c) := Σ_{i<n} ρ^i•c` a UNIT of `𝒪_M`.
 
-THE INTENDED PROOF, which is standard local field theory and touches nothing in
-this file.
-1. `hfix` says the fixed RING of `⟨ρ⟩` in `𝒪_M` is `𝒪_E`; passing to fraction
-   fields (`IsIntegralClosure.isFractionRing_of_finite_extension`, which this
-   file already uses in `integralClosureLE_injective`) gives `M^{⟨ρ⟩} = E`, so
-   Artin's theorem gives `[M : E] = n` with `Gal(M/E) = ⟨ρ⟩` cyclic.
-2. `e(M/E)·e(E/ℚ₃ᵥ) = e(M/ℚ₃ᵥ)` together with `hE`/`hM` and `hg` forces
-   `e(M/E) = 1`: `M/E` is UNRAMIFIED of degree `n`.  Hence the residue extension
-   `k_M/k_E` has degree `n` and `⟨ρ̄⟩ = Gal(k_M/k_E)`, the reduction map
-   `⟨ρ⟩ → Aut(k_M)` being injective because the inertia group of `M/E` is
-   trivial (`#I = e`, which this file has at the absolute level as
-   `card_inertia_finite_level` / `span_three_eq_maximalIdeal_pow_card_inertia`).
-3. `k_M/k_E` is an extension of FINITE fields, hence separable, so
-   `Tr_{k_M/k_E} = Σ_{i<n} ρ̄^i` is surjective — equivalently nonzero, by Artin's
-   linear independence of characters.  Lift any `c̄` with `Tr(c̄) ≠ 0`.
+THE PROOF, and note that NO `reifySubextension`/`reifyEquiv` plumbing is needed:
+`⟨ρ⟩` itself is a Galois group for `𝒪_M/𝒪_E` in mathlib's ring-theoretic sense
+(`IsGaloisGroup`, which asks only for a FAITHFUL action with fixed ring `𝒪_E`),
+so mathlib's relative Hilbert theory applies verbatim to the pair of integral
+closures — there is no need to realise `E` as an intermediate field of `↥M`, and
+no need for `M/ℚ₃ᵥ` to be Galois.
 
-WHAT IS ACTUALLY MISSING, and it is nothing Fontaine-specific: the relative
-ramification bookkeeping for `E ≤ M` as intermediate fields of `ℚ₃ᵥᵃˡᵍ`.  The
-file has the pieces only in REIFIED form, for `M' : IntermediateField ℚ₃ᵥ ↥L`
-(`card_inertia_inf_fixingSubgroup_eq_card_inertia_base`,
-`map_maximalIdeal_eq_maximalIdeal_pow_card_inertia_inf`), so the work is the
-`reifySubextension`/`reifyEquiv` plumbing that `restrictToLEHom` already
-performs for automorphisms, plus the residue-field trace.
+1. `(integralClosureLE E M hEM).toRingHom.toAlgebra` makes `𝒪_M` an
+   `𝒪_E`-algebra; it is module-finite (`Module.Finite.of_restrictScalars_finite`
+   from finiteness over `𝒪₃ᵥ`), faithful (`integralClosureLE_injective`), hence
+   FREE over the DVR `𝒪_E` (`Module.free_of_finite_type_torsion_free'`) and flat.
+2. `G := Subgroup.zpowers ρ` is finite (`Nat.card_zpowers`, `hord`, `hn`), acts
+   faithfully on `𝒪_M` (an automorphism of `M` fixing `𝒪_M` pointwise is trivial,
+   since `M = Frac(𝒪_M)` by `IsIntegralClosure.isFractionRing_of_finite_extension`),
+   commutes with `𝒪_E` (every power of `ρ` fixes `φ(𝒪_E)`, because the stabiliser
+   of `φ a` is a SUBGROUP containing `ρ` by `hfix`), and has invariants exactly
+   `𝒪_E` (`hfix` again).  So `IsGaloisGroup ↥G 𝒪_E 𝒪_M`.
+3. `hE`/`hM`/`hg` give `e(M/E) = 1` in the ideal form
+   `integralClosureLE_map_maximalIdeal_of_span_three_eq`, so
+   `Ideal.ramificationIdx' 𝔪_E 𝔪_M = 1` (`ramificationIdx'_spec`, the strictness
+   half being `maximalIdeal_pow_le_pow_iff`).  Hilbert's `#I = e`
+   (`Ideal.card_inertia_eq_ramificationIdxIn`, whose `PerfectField` hypothesis is
+   discharged by finiteness of the residue field of `𝔪_E`) then makes the inertia
+   subgroup of `⟨ρ⟩` TRIVIAL.
+4. Each `ρ^i` descends to a ring endomorphism `r i` of `k_M = 𝒪_M/𝔪_M`
+   (`Ideal.Quotient.lift`), and triviality of the inertia makes `r 0, …, r (n−1)`
+   pairwise DISTINCT: `r i = r j` with `j ≤ i` says `ρ^(i−j)` acts trivially mod
+   `𝔪_M`, hence `ρ^(i−j) = 1`, hence `n ∣ i − j`.
+5. Dedekind's linear independence of characters (`linearIndependent_monoidHom`)
+   over the FIELD `k_M` therefore forbids `Σ_{i<n} r i = 0`; but that sum is
+   exactly the reduction of `c ↦ Σ_{i<n} ρ^i•c`, so some `c` has `Tr(c) ∉ 𝔪_M`.
 
 NOT VACUOUS: `E = ℚ₃ᵥ`, `M` the unramified extension of degree `n`, `g = 1`
 satisfies every hypothesis, and the conclusion there is the classical
@@ -13294,7 +13339,198 @@ theorem exists_sum_range_smul_notMem_maximalIdeal
     ∃ c : IntegralClosure 𝒪₃ᵥ M,
       (∑ i ∈ Finset.range n, (ρ ^ i) • c) ∉
         IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) := by
-  sorry
+  classical
+  -- ### the `𝒪_E`-algebra structure on `𝒪_M`
+  letI : Algebra (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M) :=
+    (integralClosureLE E M hEM).toRingHom.toAlgebra
+  haveI : IsScalarTower 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M) :=
+    IsScalarTower.of_algebraMap_eq' (RingHom.ext fun x =>
+      ((integralClosureLE E M hEM).commutes x).symm)
+  haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ M) :=
+    IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ M (IntegralClosure 𝒪₃ᵥ M)
+  haveI : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) :=
+    IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ E (IntegralClosure 𝒪₃ᵥ E)
+  haveI : Module.Finite (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M) :=
+    Module.Finite.of_restrictScalars_finite 𝒪₃ᵥ _ _
+  haveI : FaithfulSMul (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M) :=
+    (faithfulSMul_iff_algebraMap_injective _ _).mpr (integralClosureLE_injective E M hEM)
+  haveI : Module.Free (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M) :=
+    Module.free_of_finite_type_torsion_free'
+  haveI : Algebra.IsIntegral (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M) :=
+    Algebra.IsIntegral.tower_top (R := 𝒪₃ᵥ)
+  -- ### `𝔪_M` lies over `𝔪_E`
+  haveI : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)).LiesOver
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) := by
+    constructor
+    have hmax : ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)).comap
+        (algebraMap (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M))).IsMaximal :=
+      Ideal.isMaximal_comap_of_isIntegral_of_isMaximal _
+    exact (hmax.eq_of_le (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (IsLocalRing.le_maximalIdeal hmax.ne_top)).symm
+  -- ### the residue field of `𝔪_E` is finite, hence perfect
+  haveI : Finite ((IntegralClosure 𝒪₃ᵥ E) ⧸ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) :=
+    finite_residueField_integralClosure E
+  have hsurj : Function.Surjective
+      (algebraMap ((IntegralClosure 𝒪₃ᵥ E) ⧸ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)))
+        ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)).ResidueField)) :=
+    IsFractionRing.surjective_iff_isField.mpr
+      ((Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp
+        (IsLocalRing.maximalIdeal.isMaximal _))
+  haveI : Finite ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)).ResidueField) :=
+    Finite.of_surjective _ hsurj
+  haveI : PerfectField ((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)).ResidueField) :=
+    PerfectField.ofFinite
+  -- ### the cyclic group `G = ⟨ρ⟩` is a Galois group for `𝒪_M/𝒪_E`
+  haveI : Finite ↥(Subgroup.zpowers ρ) :=
+    Nat.finite_of_card_ne_zero (by rw [Nat.card_zpowers, hord]; omega)
+  have hρmem : ρ ∈ Subgroup.zpowers ρ := Subgroup.mem_zpowers ρ
+  have hfixG : ∀ (σ : ↥(Subgroup.zpowers ρ)) (a : IntegralClosure 𝒪₃ᵥ E),
+      (σ : M ≃ₐ[ℚ₃ᵥ] M) • (integralClosureLE E M hEM a) = integralClosureLE E M hEM a := by
+    intro σ a
+    have hst : Subgroup.zpowers ρ ≤ MulAction.stabilizer (M ≃ₐ[ℚ₃ᵥ] M)
+        (integralClosureLE E M hEM a) :=
+      Subgroup.zpowers_le.mpr ((hfix _).mpr ⟨a, rfl⟩)
+    exact hst σ.2
+  haveI : SMulCommClass ↥(Subgroup.zpowers ρ) (IntegralClosure 𝒪₃ᵥ E)
+      (IntegralClosure 𝒪₃ᵥ M) := by
+    constructor
+    intro σ a b
+    have h1 : (σ : M ≃ₐ[ℚ₃ᵥ] M) • (integralClosureLE E M hEM a * b) =
+        integralClosureLE E M hEM a * ((σ : M ≃ₐ[ℚ₃ᵥ] M) • b) := by
+      rw [MulSemiringAction.smul_mul, hfixG σ a]
+    exact h1
+  haveI : Algebra.IsInvariant (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M)
+      ↥(Subgroup.zpowers ρ) := by
+    constructor
+    intro b hb
+    exact (hfix b).mp (hb ⟨ρ, hρmem⟩)
+  haveI : FaithfulSMul ↥(Subgroup.zpowers ρ) (IntegralClosure 𝒪₃ᵥ M) := by
+    haveI : IsFractionRing (IntegralClosure 𝒪₃ᵥ M) M :=
+      IsIntegralClosure.isFractionRing_of_finite_extension 𝒪₃ᵥ ℚ₃ᵥ M (IntegralClosure 𝒪₃ᵥ M)
+    constructor
+    intro σ τ h
+    apply Subtype.ext
+    apply AlgEquiv.ext
+    intro y
+    have key : ∀ x : IntegralClosure 𝒪₃ᵥ M,
+        (σ : M ≃ₐ[ℚ₃ᵥ] M) (algebraMap (IntegralClosure 𝒪₃ᵥ M) M x)
+          = (τ : M ≃ₐ[ℚ₃ᵥ] M) (algebraMap (IntegralClosure 𝒪₃ᵥ M) M x) :=
+      fun x => congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ M) M) (h x)
+    obtain ⟨u, w, _, rfl⟩ := IsFractionRing.div_surjective (A := IntegralClosure 𝒪₃ᵥ M) y
+    rw [map_div₀, map_div₀, key u, key w]
+  haveI : IsGaloisGroup ↥(Subgroup.zpowers ρ) (IntegralClosure 𝒪₃ᵥ E)
+      (IntegralClosure 𝒪₃ᵥ M) := ⟨‹_›, ‹_›, ‹_›⟩
+  -- ### the inertia subgroup of `⟨ρ⟩` is trivial, because `e(M/E) = 1`
+  haveI : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  haveI : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)).IsMaximal :=
+    IsLocalRing.maximalIdeal.isMaximal _
+  have hmapeq : Ideal.map (algebraMap (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ M))
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) :=
+    integralClosureLE_map_maximalIdeal_of_span_three_eq E M hEM g hg hE hM
+  have hcard : Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)).inertia
+      ↥(Subgroup.zpowers ρ)) = 1 := by
+    rw [Ideal.card_inertia_eq_ramificationIdxIn (G := ↥(Subgroup.zpowers ρ))
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)),
+      Ideal.ramificationIdxIn_eq_ramificationIdx
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)) ↥(Subgroup.zpowers ρ),
+      ← Ideal.ramificationIdx'_eq_ramificationIdx
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M))
+        (IsDiscreteValuationRing.not_a_field (IntegralClosure 𝒪₃ᵥ E))]
+    refine Ideal.ramificationIdx'_spec ?_ ?_
+    · rw [hmapeq, pow_one]
+    · rw [hmapeq]
+      intro hle2
+      have h := (maximalIdeal_pow_le_pow_iff (IntegralClosure 𝒪₃ᵥ M) 1 2).mp (by rwa [pow_one])
+      omega
+  -- ### the induced endomorphisms of the residue field
+  have hmemq : ∀ (σ : M ≃ₐ[ℚ₃ᵥ] M) (x : IntegralClosure 𝒪₃ᵥ M),
+      x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) →
+      σ • x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) := by
+    intro σ x hx
+    have h1 := smul_mem_maximalIdeal_pow_of_mem σ 1 (x := x) (by rwa [pow_one])
+    rwa [pow_one] at h1
+  let r : ℕ → IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M) →+*
+      IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M) := fun i =>
+    Ideal.Quotient.lift (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M))
+      ((IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M)).comp
+        (MulSemiringAction.toRingHom (M ≃ₐ[ℚ₃ᵥ] M) (IntegralClosure 𝒪₃ᵥ M) (ρ ^ i)))
+      (fun x hx => by
+        show IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) ((ρ ^ i) • x) = 0
+        rw [IsLocalRing.residue_eq_zero_iff]
+        exact hmemq (ρ ^ i) x hx)
+  by_contra hcon₀
+  have hcon : ∀ c : IntegralClosure 𝒪₃ᵥ M,
+      (∑ i ∈ Finset.range n, (ρ ^ i) • c) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) :=
+    fun c => not_not.mp fun h => hcon₀ ⟨c, h⟩
+  -- an element of `⟨ρ⟩` trivial on the residue field is trivial
+  have hkey : ∀ k : ℕ,
+      (∀ y : IntegralClosure 𝒪₃ᵥ M,
+        (ρ ^ k) • y - y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)) → ρ ^ k = 1 := by
+    intro k hk
+    have hmem : (⟨ρ ^ k, pow_mem hρmem k⟩ : ↥(Subgroup.zpowers ρ)) ∈
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M)).inertia ↥(Subgroup.zpowers ρ) := hk
+    rw [Subgroup.eq_bot_of_card_eq _ hcard, Subgroup.mem_bot] at hmem
+    exact congrArg Subtype.val hmem
+  -- the `r i`, `i < n`, are pairwise distinct
+  have hle : ∀ i j : ℕ, j ≤ i → i < n →
+      (∀ x : IntegralClosure 𝒪₃ᵥ M,
+        IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) ((ρ ^ i) • x) =
+          IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) ((ρ ^ j) • x)) → i = j := by
+    intro i j hji hin hfun
+    have h1 : ρ ^ (i - j) = 1 := by
+      apply hkey
+      intro y
+      have h2 := hfun ((ρ ^ j)⁻¹ • y)
+      have hpow : ρ ^ i * (ρ ^ j)⁻¹ = ρ ^ (i - j) := by
+        have : ρ ^ i = ρ ^ (i - j) * ρ ^ j := by
+          rw [← pow_add]; congr 1; omega
+        rw [this, mul_inv_cancel_right]
+      have h4 : (ρ ^ i) • ((ρ ^ j)⁻¹ • y) = (ρ ^ (i - j)) • y := by
+        rw [smul_smul, hpow]
+      have h3 : (ρ ^ j) • ((ρ ^ j)⁻¹ • y) = y := smul_inv_smul _ _
+      rw [h4, h3] at h2
+      rw [← IsLocalRing.residue_eq_zero_iff, map_sub, h2, sub_self]
+    have h5 : n ∣ (i - j) := hord ▸ orderOf_dvd_iff_pow_eq_one.mpr h1
+    have h6 : i - j < n := by omega
+    have h7 : i - j = 0 := Nat.eq_zero_of_dvd_of_lt h5 h6
+    omega
+  have hdistinct : Function.Injective (fun i : Fin n => (r (i : ℕ)).toMonoidHom) := by
+    intro i j hij
+    have hfun : ∀ x : IntegralClosure 𝒪₃ᵥ M,
+        IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) ((ρ ^ (i : ℕ)) • x) =
+          IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) ((ρ ^ (j : ℕ)) • x) := by
+      intro x
+      exact congrArg (fun f => f (IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) x)) hij
+    apply Fin.ext
+    rcases le_total (j : ℕ) (i : ℕ) with hle' | hle'
+    · exact hle i j hle' i.2 hfun
+    · exact (hle j i hle' j.2 (fun x => (hfun x).symm)).symm
+  -- Dedekind's linear independence of characters
+  have hli : LinearIndependent (IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M))
+      (fun i : Fin n => ⇑((r (i : ℕ)).toMonoidHom)) :=
+    (linearIndependent_monoidHom (IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M))
+      (IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M))).comp _ hdistinct
+  have hsum : (∑ i : Fin n, (1 : IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M)) •
+      (⇑((r (i : ℕ)).toMonoidHom) :
+        IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M) →
+          IsLocalRing.ResidueField (IntegralClosure 𝒪₃ᵥ M))) = 0 := by
+    funext z
+    obtain ⟨x, rfl⟩ := IsLocalRing.residue_surjective (R := IntegralClosure 𝒪₃ᵥ M) z
+    have h1 : ∀ i : Fin n, ((r (i : ℕ)).toMonoidHom)
+        (IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) x) =
+        IsLocalRing.residue (IntegralClosure 𝒪₃ᵥ M) ((ρ ^ (i : ℕ)) • x) := fun _ => rfl
+    simp only [Finset.sum_apply, one_smul, h1, Pi.zero_apply]
+    rw [← map_sum, Fin.sum_univ_eq_sum_range (fun i => (ρ ^ i) • x) n,
+      IsLocalRing.residue_eq_zero_iff]
+    exact hcon x
+  exact one_ne_zero (linearIndependent_iff'.mp hli Finset.univ (fun _ => 1) hsum
+    ⟨0, hn⟩ (Finset.mem_univ _))
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -13497,8 +13733,8 @@ every `E ⊇ L` and the depth statement fails for `E = ℚ₃ᵥ` already at
 `L = ℚ₃(ζ₉)` (see the numerical checks recorded on the consumer).
 
 **DECOMPOSED 2026-07-27 (second owner).  THIS IS NO LONGER A LEAF**: the body
-below is complete glue over the four declarations of the "unramified twist"
-block above, of which TWO ARE PROVEN and two remain open.  The route recorded
+below is complete glue over the declarations of the "unramified twist"
+block above, of which ALL BUT ONE ARE NOW PROVEN.  The route recorded
 above was implemented verbatim; nothing about it needed correcting.
 
 * `exists_orderOf_restrictToLEHom_eq_of_mem_inertia` (SORRY) — the pure field
@@ -13506,7 +13742,7 @@ above was implemented verbatim; nothing about it needed correcting.
   the route needs lives there and nowhere else.
 * `exists_sum_range_smul_eq_one_of_span_three_eq` (PROVEN) — trace surjectivity,
   over the single residue-level statement
-  `exists_sum_range_smul_notMem_maximalIdeal` (SORRY).  The Nakayama half is
+  `exists_sum_range_smul_notMem_maximalIdeal` (PROVEN 2026-07-27).  The Nakayama half is
   done: `Tr(𝒪_M)` is an ideal of the LOCAL ring `𝒪_E`, so a trace avoiding
   `𝔪_E` can be scaled to `1` outright, with no completeness argument.
 * `integralClosureLE_mem_maximalIdeal_pow_of_span_three_eq` (PROVEN) — the
