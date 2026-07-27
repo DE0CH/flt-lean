@@ -308,6 +308,16 @@ import Mathlib.Analysis.PSeries
 import Mathlib.Analysis.SpecialFunctions.Log.Deriv
 import Mathlib.Analysis.Complex.Convex
 import Mathlib.Analysis.SpecificLimits.Normed
+-- Localization of the first cotangent cohomology
+-- (`Algebra.H1Cotangent.isLocalizedModule`), the engine of
+-- `subsingleton_h1Cotangent_of_flat_cotangent`: it is what turns generic-fibre
+-- étaleness into "`H¹(L_{S/R})` is a torsion module".
+public import Mathlib.RingTheory.Etale.Kaehler
+-- `Module.Flat.isSMulRegular_of_nonZeroDivisors` (flat ⟹ torsion-free) and
+-- `Module.Flat.trans`, which convert the conormal leaf into the torsion-freeness
+-- that kills that torsion.
+public import Mathlib.RingTheory.Flat.TorsionFree
+public import Mathlib.RingTheory.Flat.Stability
 
 /-!
 # Mod-3 hardly ramified representations
@@ -12028,11 +12038,163 @@ theorem exists_kaehler_linearEquiv_baseChange_of_hopf_package
       Nonempty (Ω[G⁄𝒪₃ᵥ] ≃ₗ[G] G ⊗[𝒪₃ᵥ] M) :=
   _root_.FontaineTranslation.exists_kaehler_equiv_baseChange_of_hopf 𝒪₃ᵥ G
 
+/-- **Generic-fibre vanishing makes `H¹(L_{S/R})` a TORSION module**
+(PROVEN 2026-07-27): if `T` is a localization of `S` at a submonoid `M` and
+`H¹(L_{T/R})` vanishes, then every class in `H¹(L_{S/R})` is killed by some
+element of `M`.
+
+The engine is mathlib's `Algebra.H1Cotangent.isLocalizedModule`
+(`Mathlib/RingTheory/Etale/Kaehler.lean`), which says that
+`Algebra.H1Cotangent.map R R S T` EXHIBITS `H¹(L_{T/R})` as the localization of
+`H¹(L_{S/R})` at `M`.  Vanishing downstairs therefore does not merely say the
+map is zero — it says every class dies after multiplication by some `m ∈ M`,
+which is exactly `IsLocalizedModule.exists_of_eq`. -/
+theorem exists_smul_eq_zero_h1Cotangent_of_isLocalization
+    {R S T : Type*} [CommRing R] [CommRing S] [CommRing T]
+    [Algebra R S] [Algebra S T] [Algebra R T] [IsScalarTower R S T]
+    (M : Submonoid S) [IsLocalization M T]
+    [Subsingleton (Algebra.H1Cotangent R T)]
+    (x : Algebra.H1Cotangent R S) :
+    ∃ m : M, (m : S) • x = 0 := by
+  have h : Algebra.H1Cotangent.map R R S T x = Algebra.H1Cotangent.map R R S T 0 :=
+    Subsingleton.elim _ _
+  obtain ⟨c, hc⟩ :=
+    IsLocalizedModule.exists_of_eq (S := M) (f := Algebra.H1Cotangent.map R R S T) h
+  refine ⟨c, ?_⟩
+  have hc' : (c : S) • x = (c : S) • (0 : Algebra.H1Cotangent R S) := hc
+  simpa only [smul_zero] using hc'
+
+/-- **`H¹(L_{S/R}) = 0` from a TORSION-FREE CONORMAL MODULE plus generic-fibre
+vanishing** (PROVEN 2026-07-27).  `H¹(L_{S/R})` is by definition a SUBMODULE of
+the conormal module `I/I²` of the canonical presentation
+(`Algebra.H1Cotangent R S = LinearMap.ker (Generators.self R S).cotangentComplex`).
+The previous lemma makes every class `R`-torsion; `R`-flatness of `I/I²` makes
+`I/I²` torsion-free (`Module.Flat.isSMulRegular_of_nonZeroDivisors`).  A torsion
+element of a torsion-free module is zero.
+
+Both hypotheses are LOAD-BEARING, and there is an explicit witness for each —
+see the FALSITY note on the special-fibre route in
+`projective_cotangent_of_hopf_package` below. -/
+theorem subsingleton_h1Cotangent_of_flat_cotangent
+    {R S T : Type*} [CommRing R] [IsDomain R] [CommRing S] [CommRing T]
+    [Algebra R S] [Algebra S T] [Algebra R T] [IsScalarTower R S T]
+    [IsLocalization (Algebra.algebraMapSubmonoid S (nonZeroDivisors R)) T]
+    [Subsingleton (Algebra.H1Cotangent R T)]
+    [Module.Flat R (Algebra.Generators.self R S).toExtension.Cotangent] :
+    Subsingleton (Algebra.H1Cotangent R S) := by
+  constructor
+  intro x y
+  suffices h : ∀ z : Algebra.H1Cotangent R S, z = 0 by rw [h x, h y]
+  intro z
+  obtain ⟨⟨m, hm⟩, hz⟩ :=
+    exists_smul_eq_zero_h1Cotangent_of_isLocalization (T := T)
+      (Algebra.algebraMapSubmonoid S (nonZeroDivisors R)) z
+  obtain ⟨r, hr, rfl⟩ := hm
+  have hreg : IsSMulRegular (Algebra.Generators.self R S).toExtension.Cotangent r :=
+    Module.Flat.isSMulRegular_of_nonZeroDivisors hr
+  apply Algebra.Extension.h1Cotangentι_ext
+  apply hreg
+  have hsm : (algebraMap R S r) • z = r • z := by rw [algebraMap_smul]
+  rw [hsm] at hz
+  simpa using congrArg Subtype.val hz
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra in
+/-- **The packaged reduction: LCI (conormal projectivity) + étale generic fibre
+⟹ `H¹(L_{S/R}) = 0`** (PROVEN 2026-07-27, and this is the whole homological
+half of clause (1) of `IsFontaineAlgebra`).
+
+Let `R` be a domain with fraction field `K` and `S` a FLAT `R`-algebra whose
+generic fibre `K ⊗[R] S` is formally étale over `K`.  If the conormal module of
+the canonical presentation is `S`-PROJECTIVE — which is precisely the classical
+local-complete-intersection condition, see
+`projective_cotangent_of_hopf_package` — then `H¹(L_{S/R})` vanishes.
+
+The three steps: `K ⊗[R] S` is a localization of `S` at the image of `R⁰`
+(`IsLocalization.tensorRight`, which is stated under mathlib's LOCAL instance
+`Algebra.TensorProduct.rightAlgebra` — hence the `attribute` line, without which
+the instance simply is not found); `R → K` is formally étale because it is a
+localization, so `R → K ⊗[R] S` is formally étale by composition and
+`H¹(L_{K⊗S/R}) = 0`; and projective over `S` plus `S` flat over `R` gives
+`I/I²` flat over `R` by `Module.Flat.trans`. -/
+theorem subsingleton_h1Cotangent_of_projective_cotangent
+    {R : Type*} [CommRing R] [IsDomain R] {K : Type*} [Field K] [Algebra R K]
+    [IsFractionRing R K]
+    (S : Type*) [CommRing S] [Algebra R S] [Module.Flat R S]
+    [Algebra.FormallyEtale K (K ⊗[R] S)]
+    [Module.Projective S (Algebra.Generators.self R S).toExtension.Cotangent] :
+    Subsingleton (Algebra.H1Cotangent R S) := by
+  haveI : Algebra.FormallyEtale R K :=
+    Algebra.FormallyEtale.of_isLocalization (M := nonZeroDivisors R)
+  haveI : Algebra.FormallyEtale R (K ⊗[R] S) :=
+    Algebra.FormallyEtale.comp R K (K ⊗[R] S)
+  haveI : Module.Flat S (Algebra.Generators.self R S).toExtension.Cotangent :=
+    Module.Flat.of_projective
+  haveI : Module.Flat R (Algebra.Generators.self R S).toExtension.Cotangent :=
+    Module.Flat.trans R S _
+  exact subsingleton_h1Cotangent_of_flat_cotangent (T := K ⊗[R] S)
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE LCI CORE: the conormal module of a finite flat Hopf order is
+PROJECTIVE** (SORRY LEAF, cut 2026-07-27 out of
+`subsingleton_h1Cotangent_of_hopf_package`, which is now PROVEN over this leaf
+alone via `subsingleton_h1Cotangent_of_projective_cotangent`).
+
+`I/I²` for the canonical presentation `𝒪₃ᵥ[x_g : g ∈ G] ↠ G` is a projective
+`G`-module.  This IS the classical local-complete-intersection statement in
+conormal form: `A = P/I` is LCI over the base exactly when `I/I²` is projective
+and `H¹` vanishes (Quillen; Stacks 09Q9), and in the present situation — `G`
+flat over `𝒪₃ᵥ` with étale generic fibre — the `H¹` half is FREE, supplied by
+the reduction lemma above.  So this leaf is equivalent to "G is LCI over `𝒪₃ᵥ`"
+and is strictly STRONGER than the theorem it feeds.
+
+WHY IT IS TRUE.  A finite flat commutative group scheme over any base is a local
+complete intersection: embed `G` in the smooth affine `GL(G)` by the regular
+representation; the fppf quotient `GL(G)/G` is smooth of the same dimension, and
+`G` is the fibre of the flat surjection `GL(G) → GL(G)/G` over the identity
+section, whose ideal is generated by a regular sequence.  References: Raynaud,
+*Schémas en groupes de type (p,…,p)*, Bull. SMF 102 (1974), §1; Avramov,
+*Complete intersections and symmetric algebras*, J. Algebra 73 (1981);
+Mazur–Roberts; Fontaine §1.7 cites it as standard.  Nothing about group-scheme
+QUOTIENTS exists at this pin, which is what makes this the substantial half.
+
+**FALSITY NOTE — THE SPECIAL-FIBRE ROUTE PREVIOUSLY RECORDED HERE CANNOT WORK,
+AND HERE IS THE COUNTEREXAMPLE** (2026-07-27).  The audit that stood in this
+docstring proposed reducing LCI to the closed fibre and finishing with
+Demazure–Gabriel over `𝔽₃`.  That reduction is sound for LCI but it does NOT
+deliver the `H¹` vanishing, because **`H¹(L) = 0` is strictly stronger than LCI
+over a field**.  Witness: `μ₃` over `𝔽₃` is `A = 𝔽₃[y]/(y³)`, visibly a complete
+intersection, yet with `P = 𝔽₃[y]`, `I = (y³)` one has `I/I² ≅ A` generated by
+`y³`, and the cotangent complex sends `y³ ↦ d(y³) = 3y² dy = 0` in
+characteristic `3`.  The map is identically zero, so `H¹(L_{A/𝔽₃}) ≅ A ≠ 0`.
+Any argument that passes through the closed fibre must therefore lose the
+conclusion there; the same computation over `𝒪₃ᵥ` gives `x³-1 ↦ 3x² dx`, which
+is injective precisely because `3` is a nonzerodivisor on the `𝒪₃ᵥ`-free module
+`G` — i.e. the vanishing is a MIXED-CHARACTERISTIC phenomenon that comes from
+the ÉTALE GENERIC FIBRE, not from the special fibre.  That is exactly the shape
+the reduction lemma above exploits, and it is why the hypothesis
+`[Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]` is load-bearing rather than decorative.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a finite flat commutative Hopf
+`𝒪₃ᵥ`-algebra with étale generic fibre whose conormal module has a
+non-projective summand — equivalently, one whose minimal presentation needs
+strictly more relations than generators.  Since `H¹` vanishes here, `I/I²`
+injects into a free module, so any refutation must produce a non-projective
+submodule of a free `G`-module, and `G` is a finite product of complete local
+rings; this is the concrete form the search should take. -/
+theorem projective_cotangent_of_hopf_package
+    (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
+    [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
+    [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
+    Module.Projective G (Algebra.Generators.self 𝒪₃ᵥ G).toExtension.Cotangent :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **A finite flat Hopf order over `𝒪₃ᵥ` is a LOCAL COMPLETE
-INTERSECTION** (SORRY LEAF, cut 2026-07-26 out of
+INTERSECTION** (PROVEN 2026-07-27 over the single leaf
+`projective_cotangent_of_hopf_package`; cut 2026-07-26 out of
 `isFontaineAlgebra_of_hopf_package`, which is now PROVEN over this leaf
 and its sibling `exists_kaehler_linearEquiv_baseChange_of_hopf_package`;
 this is the SUBSTANTIAL half of the two).
@@ -12064,35 +12226,40 @@ here, since `G` is finite flat over `𝒪₃ᵥ` and NOT smooth (already
 `G = μ₃ = 𝒪₃ᵥ[x]/(x³-1)` is not).  `hkill` is absent because LCI is a
 property of the underlying scheme, independent of the exponent.
 
-RE-CHECKED 2026-07-26 (the audit above is accurate; two additions).
+STATUS 2026-07-27 — PROVEN, over the single leaf
+`projective_cotangent_of_hopf_package`.  The homological half is DONE and the
+paragraph above needs two corrections, both of which cost real time to find:
 
-*The concrete handle at this pin.*  `Algebra.Smooth.Basic` has
-`Algebra.Smooth.kerCotangentToTensor_injective_iff`:
-for a surjection `P ↠ A`, `Subsingleton (Algebra.H1Cotangent R A)` is
-EQUIVALENT to injectivity of `KaehlerDifferential.kerCotangentToTensor R P A`.
-So the goal is not to build a `CompleteIntersection` predicate (there is none —
-`grep -rl "CompleteIntersection" Mathlib/` returns nothing) but to CHOOSE a
-presentation `P = 𝒪₃ᵥ[x₁..xₙ] ↠ G` and prove that one map injective.  A
-successor should start there rather than from the Koszul-complex formulation.
+*The route recorded here on 2026-07-26 — reduce LCI to the special fibre and
+finish with Demazure–Gabriel over `𝔽₃` — CANNOT WORK, and the counterexample is
+`μ₃` itself.*  Over `𝔽₃`, `μ₃` is `𝔽₃[y]/(y³)`, a complete intersection whose
+`H¹(L)` is nevertheless `≅ 𝔽₃[y]/(y³) ≠ 0`, because `d(y³) = 3y²dy = 0` in
+characteristic `3`.  So `H¹(L) = 0` is STRICTLY STRONGER than LCI over a field,
+and no argument routed through the closed fibre can deliver it.  The full
+computation is in the FALSITY NOTE on `projective_cotangent_of_hopf_package`.
+`ConnectedEtale.lean` is therefore NOT consumed here, and a successor should not
+go looking for the connected–étale splitting on this branch.
 
-*What is genuinely missing is the structure theory, not the homological
-algebra.*  The classical proof reduces LCI to the SPECIAL fibre — a finite flat
-algebra over a DVR is LCI iff its closed fibre is, by the relative-complete-
-intersection criterion — and over the perfect field `𝔽₃` the connected part of a
-finite commutative group scheme is `k[x₁..xₙ]/(x₁^{p^{e₁}},…,xₙ^{p^{eₙ}})` AS AN
-ALGEBRA (Demazure–Gabriel), which is visibly a complete intersection.  Neither
-half is in mathlib.  The connected–étale splitting this needs is partly
-available already: `Fermat/FLT/GroupScheme/ConnectedEtale.lean` proves the
-connected counit-idempotent package over a complete Noetherian local base.
-The check that would refute this route: if the closed fibre of `G` were not
-of that shape, i.e. if `Bialgebra.exists_connected_counit_idempotent` did not
-apply at `𝒪₃ᵥ`, the reduction to the special fibre buys nothing. -/
+*What actually makes the vanishing true is the ÉTALE GENERIC FIBRE, and that
+half is now proven outright.*  `ℚ₃ᵥ ⊗ G` is the localization of `G` at the
+image of `𝒪₃ᵥ⁰`, so `Algebra.H1Cotangent.isLocalizedModule` makes every class in
+`H¹(L_{G/𝒪₃ᵥ})` killed by a nonzerodivisor of `𝒪₃ᵥ`; `H¹` sits inside the
+conormal module `I/I²`; so once `I/I²` is torsion-free the group vanishes.  The
+same computation that kills `μ₃` over `𝔽₃` succeeds over `𝒪₃ᵥ`:
+`x³-1 ↦ 3x²dx` is injective exactly because `3` is a nonzerodivisor on the free
+`𝒪₃ᵥ`-module `G`.  See `subsingleton_h1Cotangent_of_projective_cotangent`.
+
+So the only thing still open is the CLASSICAL LCI THEOREM in conormal form,
+isolated as the one leaf; and the earlier remark that mathlib has no
+`CompleteIntersection` predicate is no longer an obstruction, since projectivity
+of `I/I²` expresses it directly. -/
 theorem subsingleton_h1Cotangent_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
     Subsingleton (Algebra.H1Cotangent 𝒪₃ᵥ G) :=
-  sorry
+  haveI := projective_cotangent_of_hopf_package G
+  subsingleton_h1Cotangent_of_projective_cotangent (K := ℚ₃ᵥ) G
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
