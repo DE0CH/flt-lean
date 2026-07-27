@@ -11716,6 +11716,26 @@ so — whoever builds it there gets this leaf for the same price:
   `2`-division cubic — which none of the five curves has.  Cheapest of
   the `25`, and the right place to start.
 
+**A WORKED TEMPLATE FOR THE POLYNOMIAL SIDE NOW EXISTS IN THIS TREE**
+(noted 2026-07-27, from the release that landed hours after this leaf was
+cut): `Fermat/FLT/EllipticCurve/GenusOneKernelPolynomials.lean` carries
+six explicit `IsKernelPolynomial` certificates at `p ∈ {11, 17, 19}`,
+including the `dvd_ΨSq` and `dvd_multComp` divisibilities, and it records
+how to make them fit in a default elaboration budget: verify **modulo
+`f`**, walking mathlib's own `preNormEDS'` recursion one step at a time
+rather than expanding a degree-`360` identity.  Its models are exactly the
+minimal twists of conductor `121`, `14450`, `361` used above.  That is the
+POSITIVE direction (a certificate exists); this leaf needs the NEGATIVE one
+at `q ≤ 13` on the five CM curves, but the reduction-mod-`f` technique and
+the `ZMod`-based `generates` lemmas transfer directly.  Read it before
+writing anything here.
+
+Two warnings it records that apply here as well: a kernel polynomial can
+be REDUCIBLE (at `j = −882216989/131072` the degree-`8` one is a product of
+two quartics), so a search for an irreducible factor of degree `(q−1)/2`
+can wrongly report a row as false; and the multiplier `m` must generate
+`(ℤ/q)ˣ/±1`, which `m = 2` fails to do at `q = 17`.
+
 **CIRCULARITY WARNING.**  Do NOT discharge this by citing Kenku's list of
 cyclic isogeny degrees over `ℚ`: that list is what this subtree is
 proving.  Using `_hqm` is not circular by contrast — it is Mazur's
