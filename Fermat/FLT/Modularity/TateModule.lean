@@ -2834,7 +2834,11 @@ with `pairing_nondegenerate` and `exists_pairing_ne_one` as its usable
 forms. (It was added 2026-07-27 because without it the whole structure
 was satisfied by the CONSTANT ZERO MAP and so carried no content at all
 over `DualStruct`; the standing refutation test is the proven
-`PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`.) The gap that
+`PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`. Note the axiom is
+LEVEL-GUARDED — `PolarizationStruct d 𝒩` asserts it only at `I ∈ 𝒩` —
+after a second repair the same day; an unguarded version forces a
+PRINCIPAL polarization, see the docstring of
+`exists_tateWeilPairing_of_mult` below.) The gap that
 REMAINS is EXISTENCE: nothing asserts that a
 `DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`. That
 remaining gap is the second bullet above, and it is now the content of
@@ -6509,10 +6513,13 @@ the vocabulary for its first two steps now exists in
 1. a `DualStruct ab m` — the dual abelian scheme with its canonical
    `A[I] × A^∨[I] ⟶ μ_n` pairing.  Existence is Grothendieck
    representability of `Pic⁰` and is asserted nowhere in this tree;
-2. a `PolarizationStruct` for it — an `𝒪_D`-linear symmetric isogeny
-   `A ⟶ A^∨` whose induced pairing on `A[I]` is nondegenerate.  Since
-   2026-07-27 that structure has content (`weil_hom_nondegenerate`), so
-   this is a genuine existence obligation and not a formality;
+2. a `PolarizationStruct d {I}` for it — an `𝒪_D`-linear symmetric
+   isogeny `A ⟶ A^∨` whose induced pairing on `A[I]` is nondegenerate.
+   Since 2026-07-27 that structure has content
+   (`weil_hom_nondegenerate`), so this is a genuine existence obligation
+   and not a formality.  Ask for the level set `{I}` and nothing wider:
+   the unindexed form is the principal-polarization falsity analysed at
+   the end of this docstring;
 3. the TRACE-DUALITY refinement of the resulting `μ_{q^k}`-valued
    pairing to an `𝒪_D/I^k`-valued one, along the inverse different
    `𝔡_D⁻¹`.  Mathlib has the ingredients (`Submodule.traceDual`,
@@ -6551,20 +6558,34 @@ for `I` ramified over `q`, or find a `DualStruct` field relating levels
 that does not mention the different.
 
 WHY THIS LEAF IS NOT `∃ d : DualStruct ab m, Nonempty (PolarizationStruct d)`,
-WHICH WOULD BE FALSE (checked 2026-07-27).  That is the obvious shape for
-step 2, and it must not be used, because `PolarizationStruct` is strictly
-stronger than "a polarization exists".  Its content field
-`weil_hom_nondegenerate` quantifies over ALL ideals `I` of `𝒪_D`.  By
-nondegeneracy of the canonical `A[I] × A^∨[I]` pairing, the left kernel
-of `weil (·) (hom ·)` on `A[I]` is `hom (A[I])^⊥`, so the axiom at `I`
-says exactly `ker hom ∩ A[I] = 0`; imposing it at every `I` says `ker hom`
-has no torsion geometric points at all, and in characteristic zero
-`ker hom` is finite étale, so this forces `hom` to be an ISOMORPHISM.
-A `PolarizationStruct` is therefore a PRINCIPAL `𝒪_D`-polarization, and
-not every abelian variety with real multiplication by `𝒪_D` admits one —
-the `𝒪_D`-polarizations of a Hilbert–Blumenthal abelian variety are
-classified by a polarization module, which need not be principal.
-So an existence leaf in that shape would be a FALSE leaf.
+WHICH WOULD HAVE BEEN FALSE (checked 2026-07-27; the defect this analysis
+found has since been REPAIRED in `Modularity/AbelianScheme.lean` — see the
+STATUS line at the end of this paragraph, and do not re-derive the
+refutation from the current source, where the over-strength is gone).
+That was the obvious shape for step 2 and it had to be avoided, because
+`PolarizationStruct` was strictly stronger than "a polarization exists".
+Its content field `weil_hom_nondegenerate` quantified over ALL ideals `I`
+of `𝒪_D`.  By nondegeneracy of the canonical `A[I] × A^∨[I]` pairing, the
+left kernel of `weil (·) (hom ·)` on `A[I]` is `hom (A[I])^⊥`, so the
+axiom at `I` says exactly `ker hom ∩ A[I] = 0`; imposing it at every `I`
+says `ker hom` has no torsion geometric points at all, and in
+characteristic zero `ker hom` is finite étale, so this forced `hom` to be
+an ISOMORPHISM.  A `PolarizationStruct` was therefore a PRINCIPAL
+`𝒪_D`-polarization, and not every abelian variety with real
+multiplication by `𝒪_D` admits one — the `𝒪_D`-polarizations of a
+Hilbert–Blumenthal abelian variety are classified by a polarization
+module, which need not be principal.  So an existence leaf in that shape
+would have been a FALSE leaf.
+
+STATUS (2026-07-27, later the same day): `PolarizationStruct` now takes a
+SET `𝒩 : Set (Ideal 𝒪_D)` of levels and asserts `weil_hom_nondegenerate`
+only at `I ∈ 𝒩`.  So `∃ d, Nonempty (PolarizationStruct d {I})` is the
+`I`-local shape and is NOT false — it is the global-geometry counterpart
+of this leaf, and a successor pursuing step 2 through
+`Modularity/AbelianScheme.lean` should use that shape and no wider one.
+`𝒩 = ⊤` (equivalently, dropping the guard) reinstates the falsity above
+verbatim; the paragraph is kept in full because it is the reason the
+guard exists.
 
 `IsTateWeilPairing` avoids this by being an `I`-LOCAL statement, and that
 is not a dodge but the mathematically correct scope: the classical
@@ -7293,6 +7314,15 @@ re-run each REFUTING CHECK rather than trust this list:
    The isogeny/finite-kernel alternative this item also floats was NOT
    taken: surjectivity of `A[I] → A^∨[I]` needs `#A[I] = #A^∨[I]`,
    which nothing in this development audits.
+   **SECOND REPAIR, same day**: the axiom is now LEVEL-GUARDED. The
+   structure reads `PolarizationStruct d 𝒩` for a set `𝒩` of ideals and
+   asserts nondegeneracy only at `I ∈ 𝒩`; `pairing_nondegenerate`,
+   `exists_pairing_ne_one` and `torsion_eq_zero_of_hom_eq_zero` each take
+   `hI : I ∈ 𝒩`. The unguarded form forced `ker hom = 0`, i.e. a
+   PRINCIPAL `𝒪_D`-polarization, which an HBAV need not admit — see the
+   docstring of `exists_tateWeilPairing_of_mult` above. A successor
+   pursuing gap 2 must therefore ask for `PolarizationStruct d {I}` at
+   the level it needs, never for an unindexed one.
 
 The same remaining gaps block the sibling `card_torsion_of_isMaximal`,
 where gap 1 does NOT bite (that leaf is level one), and where the layer
