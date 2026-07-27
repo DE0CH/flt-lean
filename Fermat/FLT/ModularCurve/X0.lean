@@ -14761,7 +14761,13 @@ theorem nonempty_cuspLocus_of_residueIndexing {N : ℕ} {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j)
     (e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X))
-    (hcyc : ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1))) :
+    (hcyc : ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1)))
+    (hrat : ∀ x : RelPoint strX (𝟙 SpecQ), h.IsCusp x →
+      ∃ d : N.divisors,
+        letI := residueQAlgebra strX (e d).1
+        ∃ f : X.residueField (e d).1 →ₐ[ℚ] ℚ,
+          Spec.map (CommRingCat.ofHom f.toRingHom) ≫
+            X.fromSpecResidueField (e d).1 = x.1) :
     Nonempty h.CuspLocus := by
   have hdvd : ∀ d : N.divisors, Nat.gcd d.1 (N / d.1) ≠ 0 := fun d hg =>
     (Nat.pos_of_mem_divisors d.2).ne' (Nat.eq_zero_of_gcd_eq_zero_left hg)
@@ -14775,7 +14781,8 @@ theorem nonempty_cuspLocus_of_residueIndexing {N : ℕ} {X Y : Scheme.{0}}
             κ := fun d => X.fromSpecResidueField (e d).1
             comm := fun d => (Spec.map_preimage _).symm
             cover := ?_
-            disj := ?_ }⟩
+            disj := ?_
+            ratPoint := hrat }⟩
   · simp only [hr]
     ext p
     simp only [Set.mem_iUnion, Set.mem_singleton_iff]
@@ -14907,10 +14914,19 @@ is now CLOSED, negatively, and two more are added.
    `Scheme.range_fromSpecResidueField`, `Spec.map_preimage`) manufactures
    `Spec κ(x) ⟶ X` and its `ℚ`-structure from the point alone, and
    `IsCyclotomicExtension.finrank` supplies the degree.  What is irreducibly
-   modular is only the INDEXING — which points, and which residue fields —
-   and that is all this leaf now says.  The axis is refuted by a field of
-   `CuspLocus` that cannot be recovered from `(e, hcyc)`;
-   `nonempty_cuspLocus_of_residueIndexing` shows there is none.
+   modular is only the INDEXING — which points, and which residue fields, and
+   which of them a rational point of `X` can land on.
+
+   **CORRECTED AT INTEGRATION (2026-07-27).**  The previous version of this
+   paragraph said the axis "is refuted by a field of `CuspLocus` that cannot be
+   recovered from `(e, hcyc)`; `nonempty_cuspLocus_of_residueIndexing` shows
+   there is none."  A branch in the same release added exactly such a field —
+   `ratPoint`, the `ℚ`-POINT half of the identification, which `cover` (a
+   statement about underlying SETS) does not imply and which
+   `card_le_numRationalCusps` needs.  So this leaf now carries a third
+   conjunct, and the constructor a third hypothesis `hrat`.  Both branches were
+   right on their own base; the claim was simply written before the field
+   existed.
 
 REFERENCES A PROVER CAN ACTUALLY OPEN (checked 2026-07-27).  The two halves
 of this leaf are in two different places, and only one of them is downloaded:
@@ -14998,7 +15014,13 @@ theorem exists_cuspResidueIndexing (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
     ∃ e : N.divisors ≃ ((Set.range j.base)ᶜ : Set X),
-      ∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1)) :=
+      (∀ d : N.divisors, IsResidueCyclotomic strX (e d).1 (Nat.gcd d.1 (N / d.1))) ∧
+        ∀ x : RelPoint strX (𝟙 SpecQ), h.IsCusp x →
+          ∃ d : N.divisors,
+            letI := residueQAlgebra strX (e d).1
+            ∃ f : X.residueField (e d).1 →ₐ[ℚ] ℚ,
+              Spec.map (CommRingCat.ofHom f.toRingHom) ≫
+                X.fromSpecResidueField (e d).1 = x.1 :=
   sorry
 
 /-- **The cusp locus of `X_0(N)` exists: `X ∖ Y` is `∐_{d ∣ N} Spec
@@ -15015,8 +15037,8 @@ theorem nonempty_cuspLocus (N : ℕ) (hN : N ≠ 0) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
     Nonempty h.CuspLocus :=
-  let ⟨e, hcyc⟩ := exists_cuspResidueIndexing N hN h
-  nonempty_cuspLocus_of_residueIndexing h e hcyc
+  let ⟨e, hcyc, hrat⟩ := exists_cuspResidueIndexing N hN h
+  nonempty_cuspLocus_of_residueIndexing h e hcyc hrat
 
 /-- **`X_0(N)` has a `ℚ`-rational cusp above every divisor `d ∣ N` with
 `φ(gcd(d, N/d)) = 1`, and these are pairwise distinct** (PROVEN

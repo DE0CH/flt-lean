@@ -416,6 +416,15 @@ public import Mathlib.RingTheory.AdicCompletion.Noetherian
 -- carries the `IsAdicComplete (span {X}) (PowerSeries R)` instance that feeds it.
 public import Mathlib.RingTheory.Henselian
 public import Mathlib.RingTheory.AdicCompletion.Completeness
+-- `IsDomain K⟦X⟧` (`Mathlib/RingTheory/PowerSeries/NoZeroDivisors.lean`, the
+-- instance `[Ring R] [IsDomain R] : IsDomain R⟦X⟧`).  Needed by
+-- `stepanov_pow_sub_dvd_resultant`'s `Polynomial.resultant_eq_prod_eval` step,
+-- which runs in `K⟦X⟧`.  This import is HERE and not only in
+-- `KhareWintenberger.lean` because that is where the declaration lives after
+-- release 4's relocation: the branch that proved it was cut before the split,
+-- reached the instance transitively through KhareWintenberger's larger import
+-- set, and the release build found the gap the moment the code moved.
+public import Mathlib.RingTheory.PowerSeries.NoZeroDivisors
 import Mathlib.RingTheory.Ideal.Quotient.Index
 -- proof-only (2026-07-25, `exists_degreeOnePlace_of_brauer`): the arithmetic
 -- Frobenius `arithFrobAt` of a prime of a Dedekind domain acted on by a finite
