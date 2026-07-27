@@ -8961,18 +8961,62 @@ Consequently this leaf is strictly STRONGER than `exists_x0JReductionAt` at
 the same `q` — it produces the same datum and more — and a prover should
 expect to discharge both together.
 
-**STALE-NOTE CORRECTION (2026-07-27).**  The previous version of this
-paragraph, and the FORMAL-CONTENT AUDIT on `IsX0JReductionAt` above, said
-the remedy was "in flight on branch `flt-lean-12`".  It has LANDED: the
-whole `IsX0NeronDatum` layer is in THIS FILE (structure at the head of the
-Néron subsection below, with `redX`, `redJ`, `red_aj`, `redJ_add`,
-`toReduction` and `neronReduction_injective`), and there `redX` really is
-induced by a morphism of integral models.  So the re-founding of
-`IsX0JReductionAt` on it — which would let this implication be stated
-against an ARBITRARY datum, and would split this leaf in two — is available
-work TODAY, not future work.  It is deliberately not done here: it edits a
-structure that is concurrently owned, and the bundled form above is true
-either way. -/
+**STALE-NOTE CORRECTION, SECOND ROUND (2026-07-27).**  Two earlier versions
+of this paragraph said the remedy was "in flight on branch `flt-lean-12`",
+then that it "has LANDED as `IsX0NeronDatum`, so re-founding
+`IsX0JReductionAt` on it is available work TODAY".  Both are now out of
+date, and in opposite directions:
+
+* **The pinning has landed, and in a better shape than either note
+  predicted.**  It is not a re-founding of `IsX0JReductionAt` at all —
+  which would have edited a concurrently-owned structure — but a SEPARATE
+  pinned datum, `IsX0JNeronDatum`, in the integral-model subsection below.
+  There `redX` and `jm'` are induced by morphisms of models over `ℤ_(q)`,
+  `red_jm` is a **THEOREM** (`IsX0JNeronDatum.red_jm`) rather than a field,
+  `IsX0JNeronDatum.toJReduction` produces an `IsX0JReductionAt`, and
+  `exists_x0JReductionAt` is consequently **PROVEN** from
+  `exists_x0JNeronDatum`.  So the junk witness for `redX` is dead for every
+  datum that arrives through that route.
+* **The split of THIS leaf is nevertheless still blocked, for a completely
+  different reason: DECLARATION ORDER.**  `IsX0JNeronDatum` consumes
+  `SpecLoc` and therefore cannot be declared before the integral-model
+  subsection, which sits some two thousand lines BELOW this point.  A leaf
+  stated over an arbitrary `IsX0JNeronDatum` — which is what the split
+  needs, and what would finally let the implication be stated against a
+  datum taken as a hypothesis — cannot be written here.
+
+**Why relocation is not a local fix, measured rather than guessed.**  This
+leaf's consumer chain is `exists_x0JReductionDatum_formalImmersion` →
+`cuspidal_x0_prime` → `y0HasNoRationalPoint_prime`, and the last of those
+is consumed further up this very section by `cuspidal_x0_isogenyPrimeSq`
+and by the semiprime nodes.  So moving the split below the integral-model
+subsection drags essentially the whole tail of the prime-levels section
+with it — in a file with several concurrent owners, and one that has
+already taken one relocation of this exact section.  The cost is an
+integration conflict, not a proof.
+
+**The check that would refute this, and it is one grep**: a declaration of
+`SpecLoc` (or of `IsX0JNeronDatum`) ABOVE this point, or any consumer-free
+route from `y0HasNoRationalPoint_prime` to the prime-square and semiprime
+nodes.  If either appears, the split becomes a local edit and should be
+done: state `exists_eisensteinQuotient_of_x0JNeronDatum` (the DEEP half —
+Eisenstein quotient, `redE_inj`, `formalImmersion`) and
+`cuspLift_of_x0JNeronDatum` (the SHALLOW half, attackable against
+`exists_rationalCusps`) over an arbitrary `IsX0JNeronDatum`, and prove
+`exists_eisensteinFormalImmersionAt` from those two plus
+`exists_x0JNeronDatum` — which also deletes this leaf's duplication of the
+integral-model existence, since it would then share it with
+`exists_x0JReductionAt`.
+
+**Do not attempt the split by weakening the pin instead.**  Neither
+`formalImmersion` nor `cusp_lift` is true over an unpinned
+`IsX0JReductionAt`, and the witnesses are explicit.  For `formalImmersion`:
+`red_ajE` forces `redE = ajE' ∘ redX` on the image of `ajE`, so `redE_inj`
+forces `redX` injective, and a junk `redX` collapsing two rational points
+makes the structure unsatisfiable rather than vacuous.  For `cusp_lift`:
+take a junk `redX` that is injective and sends exactly one NON-cusp to a
+cusp of the special fibre, and no rational cusp `c` has `redX c = redX x`.
+That is why the bundled form above is the correct statement today. -/
 theorem exists_x0JReductionDatum_formalImmersion {p q : ℕ} (hp : p.Prime)
     (hmem : p ∉ mazurIsogenyPrimes) (hq : q.Prime) (hq2 : q ≠ 2) (hqp : q ≠ p)
     {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
@@ -8995,8 +9039,117 @@ theorem exists_x0JReductionDatum_formalImmersion {p q : ℕ} (hp : p.Prime)
   rw [d.formalImmersion z c hz hcz.symm hE]
   exact hcusp
 
-/-- **The coarse-to-fine descent on `Y_0(p)`** (sorry node, introduced
-2026-07-27): a rational point of the COARSE space `Y_0(p)` for a prime
+/-- **Every rational point of the coarse space is classified by a
+`Γ₀(p)`-datum over `ℚ` itself** (sorry node, introduced 2026-07-27): for a
+prime `p ∉ mazurIsogenyPrimes` the map `hc.classify (𝟙 SpecQ)` is
+surjective on rational points.
+
+TRUE, and this is the **field-of-moduli half** of
+`exists_weierstrass_jm_of_relPointY0` below, isolated from it.  A rational
+point of the coarse space is a `ℚ̄`-isomorphism class of pairs `(E, C)`
+fixed by `Gal(ℚ̄/ℚ)`; the field of moduli of such a class is `ℚ`, and when
+`Aut(E, C) = {±1}` — i.e. `j ≠ 0, 1728` — the field of moduli is a field of
+definition, so the class contains a pair defined over `ℚ`.  That pair is a
+`Gamma0Datum p SpecQ`, and it classifies the point we started from.
+
+## WHY `hmem` IS HERE AND NOT ON THE SIBLING
+
+`hmem` is doing exactly one job, and it is this leaf's job: at `j = 0` and
+`j = 1728` the automorphism group of the pair is larger than `{±1}` and the
+descent obstruction lives in `Br(ℚ)[n]`, which does not vanish.  With
+`p ∉ mazurIsogenyPrimes` those values do not arise — a curve with CM by
+`ℤ[ζ₃]` or `ℤ[i]` has a rational `p`-isogeny only for `p` in the list — so
+the hypothesis buys the descent honestly rather than by assumption.  The
+sibling `exists_weierstrass_jm_of_gamma0Datum` does not need it for descent
+and carries it only to state the same vacuity.
+
+**Quadratic twists are not an obstruction here.**  Descent produces the
+pair only up to quadratic twist, and a twist changes neither `j` nor the
+Galois-stability of `C`; and it maps to the SAME point of the coarse space,
+which is all this statement asks for.  So the twist ambiguity is invisible
+to this leaf — that is the point of stating it as a bare surjectivity.
+
+**VACUITY, inherited.**  By Mazur's theorem `Y_0(p)(ℚ) = ∅` for these `p`,
+so `y` cannot exist and the leaf is vacuously true.  That is inherent to
+the whole node (see `exists_weierstrass_jm_of_relPointY0`), not introduced
+by this cut; a prover must not "prove" it by an argument that quietly
+assumes the conclusion of `cuspidal_x0_prime`.  The non-vacuous statement
+it specialises is the surjectivity for `p` prime, `p ≥ 5` and
+`j ≠ 0, 1728`, which is where a proof should start.
+
+IRREDUCIBLE at this pin: it needs the `ℚ̄`-points of `Y_0(p)` identified
+with `ℚ̄`-isomorphism classes of pairs, and the field-of-moduli/twisting
+theory, neither of which exists here.  **The check that would refute
+that**: a declaration in the tree giving a surjection onto
+`RelPoint strY (𝟙 SpecQ)` from data over `ℚ`, or any statement of
+`IsCoarseModuliY0` beyond the categorical-quotient clause it already
+carries. -/
+theorem exists_gamma0Datum_classify_eq {p : ℕ} (_hp : p.Prime)
+    (_hmem : p ∉ mazurIsogenyPrimes)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
+    (y : RelPoint strY (𝟙 SpecQ)) :
+    ∃ d : Gamma0Datum p SpecQ, hc.classify (𝟙 SpecQ) d = y :=
+  sorry
+
+/-- **A `Γ₀(p)`-datum over `ℚ` is a Weierstrass curve with a stable cyclic
+subgroup, and `jm` reads its `j`-invariant** (sorry node, introduced
+2026-07-27).
+
+This is the **`jm`-pinning half** of `exists_weierstrass_jm_of_relPointY0`,
+isolated from the descent.  It is the converse of
+`nonempty_gamma0Datum_of_stable`, which is the only direction this module
+has had, together with the assertion that `hj.jm` takes the expected value
+at the classifying point.
+
+## THE WHOLE DIFFICULTY IS THE LAST CONJUNCT, AND IT IS A GAP IN `IsJMapOn`
+
+Turning the datum into a Weierstrass curve is the ordinary Weierstrass
+bridge: an elliptic scheme over `Spec ℚ` has a Weierstrass model, and the
+cyclic subgroup scheme of order `p` gives a `ℚ̄`-point `g` of order `p`
+whose `zmultiples` are Galois-stable.  That half is bookkeeping.
+
+The conjunct `hj.jm (hc.classify (𝟙 SpecQ) d) = E.j` is not.  `IsJMapOn`
+pins `jm` **only** through `classify_jm`, which is an EXISTENCE statement —
+"for every `(E, g)` there is SOME `d` with `jm (hc.classify _ d) = E.j`" —
+and deliberately not the equation `jm (hc.classify _ d) = E.j` for a GIVEN
+`d`.  So going from a given `d` to a curve realising `jm` at that specific
+point is not available from the structure, and this leaf is where that gap
+now lives, by name.
+
+**This is a gap in `IsJMapOn`, not in this leaf.**  The repair is a field
+on `IsJMapOn` pinning `jm` at every classifying point rather than at some
+one of them — roughly `jm_classify : ∀ (E) [E.IsElliptic] (g) …
+(d : Gamma0Datum N SpecQ), IsGamma0DatumOf d E g → jm (hc.classify _ d) =
+E.j` — whereupon this leaf's last conjunct becomes free and only the
+Weierstrass bridge survives.  `IsJMapOn` is owned elsewhere, so that field
+is deliberately not added here.  **The check that would refute this
+diagnosis**: any field of `IsJMapOn` constraining `jm` at a point given in
+advance.  There is none today.
+
+**VACUITY, inherited and now sharper.**  `Gamma0Datum p SpecQ` is itself
+empty for `p ∉ mazurIsogenyPrimes` — that is Mazur's theorem again — so
+this leaf is vacuously true, exactly like its parent.  Note the vacuity is
+NOT visible from the type: `Gamma0Datum p SpecQ` is a perfectly ordinary
+structure, and its emptiness is the deep theorem.  The non-vacuous
+statement to aim at is the same one with `p ≥ 5`, `j ≠ 0, 1728` and no
+membership hypothesis. -/
+theorem exists_weierstrass_jm_of_gamma0Datum {p : ℕ} (_hp : p.Prime)
+    (_hmem : p ∉ mazurIsogenyPrimes)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} {hc : IsCoarseModuliY0 p strY}
+    (hj : IsJMapOn p hc) (d : Gamma0Datum p SpecQ) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = p ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) ∧
+      hj.jm (hc.classify (𝟙 SpecQ) d) = E.j :=
+  sorry
+
+/-- **The coarse-to-fine descent on `Y_0(p)`** (PROVEN 2026-07-27 over
+`exists_gamma0Datum_classify_eq` and `exists_weierstrass_jm_of_gamma0Datum`;
+a sorry node from 2026-07-27 until then): a rational point of the COARSE
+space `Y_0(p)` for a prime
 `p ∉ mazurIsogenyPrimes` is represented by a Weierstrass curve over `ℚ`
 carrying a Galois-stable cyclic subgroup of order `p`, whose `j`-invariant
 is the value of the `j`-map at the point.
@@ -9008,27 +9161,36 @@ is a `ℚ̄`-isomorphism class of pairs `(E, C)` fixed by `Gal(ℚ̄/ℚ)`, and 
 definition, so the pair descends to `ℚ` up to quadratic twist and a twist
 changes neither `j` nor the Galois-stability of `C`.
 
-## WHY `hmem` IS A HYPOTHESIS, AND WHAT IT IS COVERING
+## THE CUT (2026-07-27): THE TWO GAPS ARE NOW TWO LEAVES
 
-Two distinct gaps, and both are real:
+The docstring below used to list two distinct gaps and note that they are
+independent.  They are now two named leaves, and the three lines of proof
+are the whole of the assembly:
 
-* **the CM values.**  At `j = 0` and `j = 1728` the automorphism group of
-  the pair can be larger than `{±1}` and descent from the field of moduli
-  is not automatic — the obstruction lives in `Br(ℚ)[n]`, which does not
-  vanish.  With `p ∉ mazurIsogenyPrimes` those values do not arise (a curve
-  with CM by `ℤ[ζ₃]` or `ℤ[i]` has a rational `p`-isogeny only for `p` in
-  the list), so the hypothesis buys the descent honestly rather than by
-  assumption.
-* **`jm` at an unclassified point.**  `IsJMapOn` pins `jm` only through
-  `classify_jm`, which is an EXISTENCE statement about points classifying a
-  curve — see the subsection docstring for why it deliberately is not the
-  equation `jm (hc.classify d) = E.j`.  So `jm y` for a general `y` is
-  unconstrained by the structure, and the final conjunct `hj.jm y = E.j` is
-  the one clause here that needs `jm` to be the genuine `j`-map rather than
-  merely an `IsJMapOn`.  **This is a gap in `IsJMapOn`, not in this leaf**,
-  and it is the thing to repair if this leaf resists: a field pinning `jm`
-  at every rational point, not just at classified ones, would make the
-  conjunct free.
+* **the CM values / field of moduli** — `exists_gamma0Datum_classify_eq`.
+  At `j = 0` and `j = 1728` the automorphism group of the pair can be
+  larger than `{±1}` and descent from the field of moduli is not automatic;
+  the obstruction lives in `Br(ℚ)[n]`, which does not vanish.  With
+  `p ∉ mazurIsogenyPrimes` those values do not arise (a curve with CM by
+  `ℤ[ζ₃]` or `ℤ[i]` has a rational `p`-isogeny only for `p` in the list),
+  so the hypothesis buys the descent honestly rather than by assumption.
+  **`hmem` is consumed there and nowhere else.**
+* **`jm` at an unclassified point** —
+  `exists_weierstrass_jm_of_gamma0Datum`.  `IsJMapOn` pins `jm` only
+  through `classify_jm`, which is an EXISTENCE statement about points
+  classifying a curve — see the subsection docstring for why it
+  deliberately is not the equation `jm (hc.classify d) = E.j`.  So `jm y`
+  for a general `y` is unconstrained by the structure, and the final
+  conjunct `hj.jm y = E.j` is the one clause here that needs `jm` to be the
+  genuine `j`-map rather than merely an `IsJMapOn`.  **This is a gap in
+  `IsJMapOn`, not in this leaf**, and the repair — a field pinning `jm` at
+  a classifying point given in advance — is owned elsewhere.  The cut makes
+  that gap a NAMED leaf, so the `IsJMapOn` owner can see it.
+
+What the cut buys is that a repair to `IsJMapOn` collapses the second leaf
+to the Weierstrass bridge without touching the first, and an advance on the
+field-of-moduli theory closes the first without touching the second.  What
+it does not buy is a smaller total: the sum is still this statement.
 
 **VACUITY, stated plainly.**  By Mazur's theorem itself `Y_0(p)(ℚ) = ∅` for
 these `p`, so this leaf is vacuously true and cannot be tested against an
@@ -9039,11 +9201,12 @@ by an argument that quietly assumes the conclusion of `cuspidal_x0_prime`.
 The non-vacuous statement it specialises is the descent for `p` prime,
 `p ≥ 5` and `j ≠ 0, 1728`, which is where a proof should start.
 
-IRREDUCIBLE at this pin: it needs `Y_0(p)` as a coarse space with its
-`ℚ̄`-points identified with pairs `(E, C)`, and the twisting/field-of-moduli
-theory, none of which exists here. -/
-theorem exists_weierstrass_jm_of_relPointY0 {p : ℕ} (_hp : p.Prime)
-    (_hmem : p ∉ mazurIsogenyPrimes)
+The residual irreducibility is now recorded on the two leaves, not here:
+the coarse space with its `ℚ̄`-points identified with pairs `(E, C)` and the
+twisting/field-of-moduli theory on the first, the `IsJMapOn` gap on the
+second. -/
+theorem exists_weierstrass_jm_of_relPointY0 {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes)
     {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} {hc : IsCoarseModuliY0 p strY}
     (hj : IsJMapOn p hc) (y : RelPoint strY (𝟙 SpecQ)) :
     ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
@@ -9052,8 +9215,13 @@ theorem exists_weierstrass_jm_of_relPointY0 {p : ℕ} (_hp : p.Prime)
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) ∧
-      hj.jm y = E.j :=
-  sorry
+      hj.jm y = E.j := by
+  -- the point is classified by a `Γ₀(p)`-datum over `ℚ` itself: this is the
+  -- field-of-moduli descent, and the only place `hmem` is used
+  obtain ⟨d, hd⟩ := exists_gamma0Datum_classify_eq hp hmem hc y
+  subst hd
+  -- and such a datum is a Weierstrass curve whose `j` is the value of `jm`
+  exact exists_weierstrass_jm_of_gamma0Datum hp hmem hj d
 
 /-- **Mazur 1978 §5 on the elliptic-curve side** (sorry node, introduced
 2026-07-27): no elliptic curve over `ℚ` with a Galois-stable cyclic subgroup
