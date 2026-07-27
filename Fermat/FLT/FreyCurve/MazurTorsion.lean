@@ -19648,13 +19648,23 @@ end MazurEndLattice
 
 end EndLattice
 
-/-- **LEAF — `End(W)` IS COMMUTATIVE in characteristic `0`** (introduced
-2026-07-27 by the re-cut of `End.exists_zsmul_rel`, which is now PROVEN over
-this and nothing else).
+/-- **LEAF — the COTANGENT CHARACTER `End(W) → F` exists** (re-cut 2026-07-27
+out of `End.mul_comm_charZero`, which is now PROVEN over this and nothing else;
+`mul_comm_charZero` in turn carries `End.exists_zsmul_rel` and
+`End.exists_intBasis`).
+
+This asks only for a ring homomorphism to the base field. **Injectivity is NOT
+part of the leaf**: it is proven unconditionally in characteristic zero just
+below (`End.injective_ringHomToBase`), from the characteristic polynomial alone.
+So the statement is strictly weaker than the `∃ c, Function.Injective c` that
+the route audit below proposes, and it is the whole of what Route A must
+deliver.
 
 This is Silverman *AEC* III.9.4 together with Deuring: over an algebraically
 closed field of characteristic `0`, `End(E)` is `ℤ` or an order in an imaginary
-quadratic field, and in both cases it is commutative.
+quadratic field, and in both cases it embeds in `F` — `ℤ ↪ F` since `F` has
+characteristic `0`, and an imaginary quadratic field embeds in the
+algebraically closed `F`.
 
 **`[CharZero F]` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** In
 characteristic `p` a supersingular curve has `End(W)` a maximal order in a
@@ -19689,15 +19699,33 @@ function field, which is where the two live options below sit.)
 characteristic `0` every nonzero isogeny is separable, so its action on the
 `1`-dimensional space of invariant differentials is nonzero; `φ*ω = c_φ ω`
 defines `c : End(W) → F` which is multiplicative (functoriality of pullback) and
-ADDITIVE (Silverman *AEC* III.5.2 — the genuinely hard input), hence an
-INJECTIVE ring map into a commutative field. Commutativity is then three lines.
-The statement to introduce, in this file's idiom, is
+ADDITIVE (Silverman *AEC* III.5.2 — the genuinely hard input), hence a ring map
+into a commutative field. That map IS the leaf stated here, and
+`mul_comm_charZero` follows from it below.
 
-    theorem End.exists_cotangentChar : ∃ c : WeierstrassCurve.End W →+* F,
-      Function.Injective c
+**A CONCRETE POINTWISE FORM OF `φ*ω = c φ · ω`, in this file's idiom, so that a
+prover need not build differentials abstractly.** With `ω = dx/(2y + a₁x + a₃)`
+and `IsRationalMap` witnesses `x(φP)·B(xP) = A(xP)`,
+`y(φP)·E(xP) = C(xP)·y(P) + D(xP)`, the identity `d(A/B) = (A'B − AB')/B² · dx`
+clears denominators to
 
-and `mul_comm_charZero` follows from it by `c (φ * ψ) = c φ * c ψ = c ψ * c φ
-= c (ψ * φ)` plus injectivity. **What is missing at this pin is the action
+    (A'B − AB')(x P) · (2·y P + a₁·x P + a₃)
+      = c · B(x P)² · (2·y (φ P) + a₁·x (φ P) + a₃)
+
+for every `P ≠ 0` with `φ P ≠ 0` and `B(x P) ≠ 0` — a statement about
+`veluPointX`/`veluPointY` and `Polynomial.derivative`, with no function field
+in sight. Sanity checks: `φ = id` (`A = X`, `B = 1`, `C = 1`, `D = 0`, `E = 1`)
+forces `c = 1`; `φ = [−1]` (`C = −1`, `D = −a₁X − a₃`) forces `c = −1`. The
+three obligations that remain are then EXISTENCE of `c` for each `φ` (this is
+the `1`-dimensionality of the holomorphic differentials, the genuinely
+geometric part), MULTIPLICATIVITY (the chain rule for the composite rational
+map), and ADDITIVITY (*AEC* III.5.2, or equivalently that `c φ` is the linear
+coefficient of `φ` on the formal group, where additivity is immediate from
+`F(z, w) = z + w + …`). Uniqueness of `c` is cheap: `2y + a₁x + a₃` vanishes
+only at `2`-torsion, so the two sides agree at infinitely many points.
+
+Note the decomposition deliberately does NOT ask for injectivity — see
+`End.injective_ringHomToBase`. **What is missing at this pin is the action
 itself**, and it is a subtree rather than a lemma: `IsRationalMap` certifies an
 isogeny only POINTWISE (`x(φP)·B(xP) = A(xP)` and
 `y(φP)·E(xP) = C(xP)·y(P) + D(xP)`), so building `φ*` requires the function
@@ -19720,10 +19748,66 @@ form), and a definite quaternion algebra over `ℚ` is ramified at `∞` hence a
 some finite `p`, contradicting `End ⊗ ℚ_p ↪ End(T_p W) ⊗ ℚ_p = M₂(ℚ_p)`" is a
 correct proof, but its last step is the parity of the Hasse invariants — class
 field theory, far heavier than Route A. -/
+theorem WeierstrassCurve.End.exists_ringHomToBase {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic] :
+    Nonempty (WeierstrassCurve.End W →+* F) :=
+  sorry
+
+/-- **EVERY ring homomorphism `End(W) → F` is automatically INJECTIVE in
+characteristic zero** (PROVEN 2026-07-27, and it is why the leaf above asks only
+for existence).
+
+The docstring on `exists_ringHomToBase` proposed
+`∃ c : End W →+* F, Function.Injective c` as the statement to introduce. The
+injectivity clause is free: `ker c` is a two-sided ideal, and every nonzero
+`ψ ∈ End W` satisfies `ψ² + [n] = [t]ψ` with `n ≠ 0`
+(`MazurEndLattice.exists_charPolyRing`; if `n = 0` the Hasse bound `t² ≤ 4n`
+forces `t = 0`, hence `ψ² = 0`, hence `ψ = 0` since `End W` has no zero divisors).
+Applying `c` to that identity at `c ψ = 0` gives `(n : F) = 0`, contradicting
+`CharZero F`.
+
+So the geometric leaf is exactly "the cotangent character exists at all", and
+nothing has to be proven about its kernel. Note the argument uses only the
+characteristic polynomial and `end_mul_ne_zero`, both already proven here — it
+is not a disguised second copy of the missing differential input. -/
+theorem WeierstrassCurve.End.injective_ringHomToBase {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
+    (c : WeierstrassCurve.End W →+* F) : Function.Injective c := by
+  refine (injective_iff_map_eq_zero c).mpr ?_
+  intro ψ hψ
+  by_contra hne
+  obtain ⟨t, n, hn0, hchar, hb⟩ := MazurEndLattice.exists_charPolyRing ψ
+  have hnne : n ≠ 0 := by
+    rintro rfl
+    have ht : t = 0 := by nlinarith [sq_nonneg t]
+    refine hne ?_
+    have hsq : ψ * ψ = 0 := by
+      have hz := hchar
+      rw [ht] at hz
+      simpa using hz
+    by_contra hψ0
+    exact MazurEndLattice.end_mul_ne_zero hψ0 hψ0 hsq
+  have hcast := congrArg (fun x => c x) hchar
+  simp only [map_mul, map_add, map_intCast, hψ, mul_zero, zero_add] at hcast
+  have hzero : (n : F) = 0 := hcast
+  exact hnne (by exact_mod_cast hzero)
+
+/-- **`End(W)` IS COMMUTATIVE in characteristic `0`** (**PROVEN 2026-07-27** over
+the single leaf `End.exists_ringHomToBase` above).
+
+Silverman *AEC* III.9.4 with Deuring. The proof is the last three lines of
+Route A: a ring map to a commutative ring makes `c (φψ) = c φ · c ψ = c ψ · c φ
+= c (ψφ)`, and injectivity — free in characteristic zero, by
+`End.injective_ringHomToBase` — transports the identity back.
+
+`[CharZero F]` is load-bearing and the statement is FALSE without it: in
+characteristic `p` a supersingular curve has `End(W)` a maximal order in a
+QUATERNION algebra. See the FALSITY AUDIT on `exists_ringHomToBase`. -/
 theorem WeierstrassCurve.End.mul_comm_charZero {F : Type*} [Field F] [DecidableEq F]
     [IsAlgClosed F] [CharZero F] {W : WeierstrassCurve.Affine F} [W.IsElliptic]
-    (φ ψ : WeierstrassCurve.End W) : φ * ψ = ψ * φ :=
-  sorry
+    (φ ψ : WeierstrassCurve.End W) : φ * ψ = ψ * φ := by
+  obtain ⟨c⟩ := WeierstrassCurve.End.exists_ringHomToBase (W := W)
+  exact WeierstrassCurve.End.injective_ringHomToBase c (by rw [map_mul, map_mul, mul_comm])
 
 /-- **`End(W) ⊗ ℚ` has `ℚ`-dimension at most `2`** (introduced 2026-07-27 by the
 decomposition of `End.exists_intBasis`, which it carries in full; **PROVEN
@@ -25200,8 +25284,16 @@ theorem not_intMul_of_cyclic_ker (E : WeierstrassCurve ℚ) [E.IsElliptic]
   rw [hm7] at hdm
   omega
 
-/-- **LEAF (cut 2026-07-27): the trace of a `Gal`-stable cyclic `49`-endomorphism
-vanishes.**
+/-! ### The level-`49` CM step: the trace vanishes
+
+**HISTORY.** This was a single leaf, `trace_eq_zero_of_stable_cyclic`, cut
+2026-07-27; later the same day it was re-cut and is now PROVEN over the two
+smaller leaves `isIsogeny_galoisConj` and `exists_galoisConj_ne` below. The
+route note that follows was written for the original leaf and is kept because
+it is still the argument being formalised; the annotations mark what has since
+closed.
+
+**THE ORIGINAL LEAF STATEMENT.**
 
 `Ψ` is a self-isogeny of `E_ℚ̄` (`E` over `ℚ`) whose kernel is the
 `Gal(ℚ̄/ℚ)`-stable cyclic group `⟨h⟩` of order `49`; `t` is its trace, supplied
@@ -25229,16 +25321,289 @@ in `~/cs/FLT`, or elsewhere in `Fermat/` (re-checked 2026-07-27 by grepping for
 
 1. the Galois action on `End(E_ℚ̄)` — that `σ ∘ Ψ ∘ σ⁻¹` is again an isogeny (its
    defining rational functions are the `σ`-conjugates of `Ψ`'s), and that the
-   action is by ring automorphisms;
+   action is by ring automorphisms. **First half still OPEN, as
+   `isIsogeny_galoisConj`; second half CLOSED** (it is formal, once the first
+   half gives an element of the endomorphism ring — see `galoisConj_eq_or`);
 2. `End_ℚ(E) = ℤ` for `E/ℚ`, equivalently that a curve over `ℚ` has no
-   `ℚ`-rational complex multiplication.
+   `ℚ`-rational complex multiplication. **Still OPEN, as
+   `exists_galoisConj_ne`.**
 
 Reference: Silverman *AEC* III.9 and *ATAEC* II.2; Serre, *Propriétés galoisiennes
 des points d'ordre fini*, Invent. Math. 15 (1972), §4.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ`, a
 `Gal`-stable cyclic `⟨h⟩` of order `49`, and an isogeny with that kernel whose
-trace is nonzero. -/
+trace is nonzero.
+
+**CUT 2026-07-27 — this leaf is now PROVEN over two smaller ones**, see
+`galoisConj`, `isIsogeny_galoisConj` and `exists_galoisConj_ne` below. Only item
+1 of the MISSING MACHINERY list survives, and only its first half (that
+`σ ∘ Ψ ∘ σ⁻¹` is again an isogeny); "the action is by ring automorphisms" and
+the two-roots dichotomy are now proven from the endomorphism ring's
+commutativity. -/
+
+/-- A group element killed by `49` but not by `7` has order exactly `49`. -/
+theorem addOrderOf_eq_fortyNine {A : Type*} [AddGroup A] {h : A}
+    (h49 : (49 : ℕ) • h = 0) (h7 : (7 : ℕ) • h ≠ 0) : addOrderOf h = 49 := by
+  have hd : addOrderOf h ∣ 7 ^ 2 := by
+    have hz := addOrderOf_dvd_of_nsmul_eq_zero h49
+    simpa using hz
+  obtain ⟨k, hk, hkk⟩ := (Nat.dvd_prime_pow (p := 7) (by norm_num)).mp hd
+  interval_cases k
+  · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+  · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+  · simpa using hkk
+
+/-- **The Galois conjugate `σ ∘ Ψ ∘ σ⁻¹` of an endomorphism of `E_ℚ̄`**, for `E`
+defined over `ℚ` (introduced 2026-07-27 by the cut of
+`trace_eq_zero_of_stable_cyclic`).
+
+This is a homomorphism of point groups for free, since `Affine.Point.map` is
+additive; what is NOT free — and is the surviving leaf `isIsogeny_galoisConj` —
+is that it is again an ISOGENY. -/
+noncomputable def galoisConj (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (σ : Field.absoluteGaloisGroup ℚ) :
+    (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point :=
+  ((Affine.Point.map (W' := E)
+      ((σ : Field.absoluteGaloisGroup ℚ) :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom).comp Ψ).comp
+    (Affine.Point.map (W' := E)
+      ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+
+/-- Unfolding of `galoisConj` on a point. -/
+theorem galoisConj_apply (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (σ : Field.absoluteGaloisGroup ℚ) (P : (E⁄(AlgebraicClosure ℚ)).Point) :
+    galoisConj E Ψ σ P =
+      Affine.Point.map (W' := E)
+        ((σ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        (Ψ (Affine.Point.map (W' := E)
+          ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)) := rfl
+
+/-- **LEAF (cut 2026-07-27): the Galois conjugate of an isogeny is an isogeny.**
+
+This is the FIRST HALF of item 1 of the MISSING MACHINERY list on
+`trace_eq_zero_of_stable_cyclic`, and after the cut it is all that survives of
+it: the second half ("the action is by ring automorphisms") is a formal
+consequence of `Affine.Point.map` being an additive bijection, and is discharged
+inside `galoisConj_eq_or` below.
+
+**THE ARGUMENT, and why it is elementary.** `IsIsogeny` bundles three clauses.
+`IsRationalMap` holds with the `σ`-conjugated witnesses: if
+`x(Ψ P)·B(x P) = A(x P)` and `y(Ψ P)·E(x P) = C(x P)·y P + D(x P)` for all
+`P ≠ 0`, then applying the field automorphism `σ` — which commutes with
+`Polynomial.eval` after mapping coefficients, and with `veluPointX`/`veluPointY`
+because `Affine.Point.map` is given coordinatewise (`Affine.Point.map_some`) —
+gives the same identities for `galoisConj E Ψ σ` with witnesses
+`A.map σ, B.map σ, C.map σ, D.map σ, E.map σ`; these are nonzero because
+`Polynomial.map` along an injective ring map is injective. Surjectivity and
+finiteness of the kernel are transported along the bijections
+`Affine.Point.map σ`, `Affine.Point.map σ⁻¹` (mutually inverse by
+`Affine.Point.map_map` plus the identity acting trivially), so they need no
+geometry at all.
+
+Note `E` is defined over `ℚ`, which is what makes `Affine.Point.map σ` an
+endomorphism of the SAME point group rather than a map to a twist.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an isogeny of `E_ℚ̄` and a
+`σ ∈ Gal(ℚ̄/ℚ)` for which `σ ∘ Ψ ∘ σ⁻¹` fails to be given by rational functions,
+or fails to be surjective. -/
+theorem isIsogeny_galoisConj (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ) (σ : Field.absoluteGaloisGroup ℚ) :
+    WeierstrassCurve.IsIsogeny (galoisConj E Ψ σ) :=
+  sorry
+
+/-- **Each `σ` sends `Ψ` to `Ψ` or to `[t] − Ψ`** (PROVEN 2026-07-27 over
+`isIsogeny_galoisConj` and `WeierstrassCurve.End.mul_comm_charZero`).
+
+This is the step the MISSING MACHINERY note called "the action is by ring
+automorphisms", and it costs no Galois theory beyond `isIsogeny_galoisConj`:
+
+* `galoisConj E Ψ σ` satisfies the SAME characteristic polynomial as `Ψ`, by a
+  purely formal computation — `Point.map σ⁻¹ ∘ Point.map σ = id`
+  (`Affine.Point.map_map` and the identity acting trivially), and `Point.map σ`
+  is additive and commutes with `ℤ`- and `ℕ`-scalars;
+* so both `Ψ` and its conjugate are roots of `Z² − [t]Z + [49]` inside
+  `End(E_ℚ̄)`, which is COMMUTATIVE (`End.mul_comm_charZero`) and has NO ZERO
+  DIVISORS (`MazurEndLattice.end_mul_ne_zero`);
+* in a commutative domain `Z² − tZ + 49 = (Z − Ψ)(Z − ([t] − Ψ))` — the
+  identity `Ψ·([t] − Ψ) = [49]` is exactly the characteristic polynomial of `Ψ`
+  — so a root is `Ψ` or `[t] − Ψ`.
+
+No irreducibility or strictness of the Hasse bound is needed: the factorisation
+is valid even when `t² = 4·49`, where the two roots coincide. -/
+theorem galoisConj_eq_or (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (t : ℤ)
+    (hchar : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = t • Ψ P)
+    (σ : Field.absoluteGaloisGroup ℚ) :
+    (∀ P, galoisConj E Ψ σ P = Ψ P) ∨ (∀ P, galoisConj E Ψ σ P = t • P - Ψ P) := by
+  classical
+  haveI hell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- The Galois action on points is a monoid action, and `σ⁻¹` undoes `σ`.
+  have hcomp : ∀ τ ρ : Field.absoluteGaloisGroup ℚ,
+      ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+          ((τ * ρ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P =
+        Affine.Point.map (W' := E)
+          ((τ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (Affine.Point.map (W' := E)
+            ((ρ : Field.absoluteGaloisGroup ℚ) :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) := by
+    intro τ ρ P
+    have hc : ((τ * ρ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom =
+        ((τ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp
+          ((ρ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom :=
+      AlgHom.ext fun x => rfl
+    rw [Affine.Point.map_map, hc]
+  have hmap1 : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+        ((1 : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P = P := by
+    intro P; cases P <;> rfl
+  have hinv : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+          ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (Affine.Point.map (W' := E)
+            ((σ : Field.absoluteGaloisGroup ℚ) :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) = P := by
+    intro P
+    rw [← hcomp σ⁻¹ σ P, inv_mul_cancel, hmap1]
+  -- The conjugate satisfies the same characteristic polynomial, pointwise.
+  have hcharσ : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      galoisConj E Ψ σ (galoisConj E Ψ σ P) + (49 : ℕ) • P = t • galoisConj E Ψ σ P := by
+    intro P
+    simp only [galoisConj_apply]
+    rw [hinv]
+    set Q := Affine.Point.map (W' := E)
+      ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P with hQ
+    have hPQ : Affine.Point.map (W' := E)
+        ((σ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q = P := by
+      rw [hQ, ← hcomp σ σ⁻¹ P, mul_inv_cancel, hmap1]
+    have hQc : Ψ (Ψ Q) = t • Ψ Q - (49 : ℕ) • Q := by
+      rw [← hchar Q]; abel
+    rw [hQc, map_sub, map_zsmul, map_nsmul, hPQ]
+    abel
+  -- Move to the endomorphism ring, where the factorisation lives.
+  let ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)) := ⟨Ψ, hΨiso⟩
+  let ψσ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)) :=
+    ⟨galoisConj E Ψ σ, isIsogeny_galoisConj E Ψ hΨiso σ⟩
+  haveI : NoZeroDivisors (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) :=
+    ⟨fun {a b} hab => by
+      by_cases ha : a = 0
+      · exact Or.inl ha
+      by_cases hb : b = 0
+      · exact Or.inr hb
+      exact absurd hab (MazurEndLattice.end_mul_ne_zero ha hb)⟩
+  letI : CommRing (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) :=
+    { (inferInstance : Ring (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)))) with
+      mul_comm := WeierstrassCurve.End.mul_comm_charZero }
+  have hring : ψ * ψ + ((49 : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)))
+      = ((t : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) * ψ := by
+    refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+    have hp := hchar P
+    rw [← natCast_zsmul] at hp
+    show Ψ (Ψ P) + (49 : ℤ) • P = (t : ℤ) • Ψ P
+    simpa using hp
+  have hringσ : ψσ * ψσ + ((49 : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)))
+      = ((t : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) * ψσ := by
+    refine Subtype.ext (AddMonoidHom.ext fun P => ?_)
+    have hp := hcharσ P
+    rw [← natCast_zsmul] at hp
+    show galoisConj E Ψ σ (galoisConj E Ψ σ P) + (49 : ℤ) • P
+        = (t : ℤ) • galoisConj E Ψ σ P
+    simpa using hp
+  have hfact : (ψσ - ψ)
+      * (ψσ - (((t : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) - ψ)) = 0 := by
+    have h1 : ψ * ψ = ((t : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) * ψ
+        - ((49 : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) := by
+      rw [← hring]; abel
+    have h2 : ψσ * ψσ = ((t : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) * ψσ
+        - ((49 : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) := by
+      rw [← hringσ]; abel
+    have hc := mul_comm ψ ψσ
+    linear_combination (norm := ring_nf) h2 - h1 + hc
+  rcases mul_eq_zero.1 hfact with hh | hh
+  · left
+    intro P
+    have heq : ψσ = ψ := sub_eq_zero.1 hh
+    exact congrArg (fun f : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)) =>
+      (f : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).Point) P) heq
+  · right
+    intro P
+    have heq : ψσ + ψ = ((t : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) := by
+      have hs : ψσ = ((t : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ))) - ψ :=
+        sub_eq_zero.1 hh
+      rw [hs]; abel
+    have hap := congrArg (fun f : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)) =>
+      (f : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).Point) P) heq
+    simp only [WeierstrassCurve.End.coe_add_apply, WeierstrassCurve.End.intCast_apply] at hap
+    exact eq_sub_of_add_eq hap
+
+/-- **LEAF (cut 2026-07-27): `Ψ` does not commute with all of `Gal(ℚ̄/ℚ)`.**
+
+This is item 2 of the MISSING MACHINERY list on
+`trace_eq_zero_of_stable_cyclic` — `End_ℚ(E) = ℤ` for `E/ℚ`, i.e. no curve over
+`ℚ` has `ℚ`-rational complex multiplication — packaged in exactly the form the
+consumer needs and with no Galois-cohomological dressing.
+
+**THE ARGUMENT.** If `σ ∘ Ψ ∘ σ⁻¹ = Ψ` for every `σ`, then the rational
+functions defining `Ψ` have `Gal(ℚ̄/ℚ)`-invariant coefficients, hence lie in
+`ℚ`, so `Ψ ∈ End_ℚ(E)`. Its `ℚ`-algebra `ℚ(Ψ)` acts `ℚ`-linearly on the
+`1`-dimensional cotangent space `H⁰(E, Ω¹_{E/ℚ})`, giving an embedding
+`ℚ(Ψ) ↪ ℚ`; so `Ψ` satisfies a LINEAR equation over `ℚ` and, being integral
+over `ℤ` (`WeierstrassCurve.End.exists_charPoly`), is an integer. That
+contradicts `hnotint`.
+
+Equivalently and more memorably: the CM field is imaginary quadratic and cannot
+embed in the base field `ℚ`. Reference: Silverman *ATAEC* II.2, and *AEC*
+III.9 for the cotangent action.
+
+**RELATION TO `End.exists_ringHomToBase`.** The cotangent action is the same
+missing layer that leaf asks for, one level down — there over `F = ℚ̄`, here
+over `ℚ`. A prover who builds the invariant-differential character in the
+general form
+`c : {isogenies defined over k} → k` closes BOTH, and that is the single
+highest-leverage construction in this cluster.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a curve `E/ℚ` and an endomorphism of
+`E_ℚ̄` that is not multiplication by an integer yet commutes with every element
+of `Gal(ℚ̄/ℚ)`. -/
+theorem exists_galoisConj_ne (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt) :
+    ∃ σ : Field.absoluteGaloisGroup ℚ,
+      ∃ P : (E⁄(AlgebraicClosure ℚ)).Point, galoisConj E Ψ σ P ≠ Ψ P :=
+  sorry
+
+/-- **The trace of a `Gal`-stable cyclic `49`-endomorphism vanishes** (**PROVEN
+2026-07-27** over `isIsogeny_galoisConj` and `exists_galoisConj_ne`).
+
+Given some `σ` with `σΨσ⁻¹ ≠ Ψ` (`exists_galoisConj_ne`), the dichotomy
+`galoisConj_eq_or` forces `σΨσ⁻¹ = [t] − Ψ`. Now `σ⁻¹` carries `h` back into
+`⟨h⟩` (`hstable`), which `Ψ` kills (`hker`), so `σΨσ⁻¹ h = 0`; and `Ψ h = 0`;
+hence `[t] h = 0`. With `addOrderOf h = 49` that gives `49 ∣ t`, and the Hasse
+bound `t² ≤ 196` leaves only `t = 0`.
+
+Note the degenerate branch of the original argument — "if every `σ` fixes `Ψ`
+then `Ψ ∈ End_ℚ(E) = ℤ`" — is exactly what `exists_galoisConj_ne` now carries,
+and the arithmetic branch needs no CM theory at all. -/
 theorem trace_eq_zero_of_stable_cyclic (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
     (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
@@ -25254,8 +25619,25 @@ theorem trace_eq_zero_of_stable_cyclic (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (t : ℤ)
     (hchar : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = t • Ψ P)
     (hbound : t ^ 2 ≤ 4 * 49) :
-    t = 0 :=
-  sorry
+    t = 0 := by
+  obtain ⟨σ, P₀, hne⟩ := exists_galoisConj_ne E Ψ hΨiso hnotint
+  rcases galoisConj_eq_or E Ψ hΨiso t hchar σ with hfix | hflip
+  · exact absurd (hfix P₀) hne
+  · have hΨh : Ψ h = 0 := (hker h).mpr (AddSubgroup.mem_zmultiples h)
+    have hconjh : galoisConj E Ψ σ h = 0 := by
+      rw [galoisConj_apply, (hker _).mpr (hstable σ⁻¹ h (AddSubgroup.mem_zmultiples h)),
+        map_zero]
+    have ht : t • h = 0 := by
+      have hh := hflip h
+      rw [hconjh, hΨh, sub_zero] at hh
+      exact hh.symm
+    have hord : addOrderOf h = 49 := addOrderOf_eq_fortyNine h49 h7
+    have hdvd : (49 : ℤ) ∣ t := by
+      have hz := addOrderOf_dvd_iff_zsmul_eq_zero.mpr ht
+      rwa [hord] at hz
+    obtain ⟨k, rfl⟩ := hdvd
+    have hk : k = 0 := by nlinarith [sq_nonneg k]
+    simp [hk]
 
 /-- **LEAF (cut 2026-07-27): no curve over `ℚ` carries a `Gal`-stable cyclic
 `49`-endomorphism with `Ψ² = [−49]`.**
