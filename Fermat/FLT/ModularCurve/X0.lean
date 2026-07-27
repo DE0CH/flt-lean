@@ -4571,9 +4571,11 @@ FLATNESS is the fourth conjunct and it was FALSE as originally stated;
 `flat_torsionι` now carries `[Etale (c.ι ≫ f)]` and is PROVEN.  Its
 docstring keeps the counterexample that forced the hypothesis, together
 with a record of the repair and of which consumers were threaded.  The
-only leaf left in this section is
-`CyclicSubgroupOfOrder.etale_of_specQBase` — Cartier's theorem, which is
-what supplies that hypothesis over a `ℚ`-scheme. -/
+only open work left in this section is Cartier's theorem, which is what
+supplies that hypothesis over a `ℚ`-scheme:
+`CyclicSubgroupOfOrder.etale_of_specQBase` is now PROVEN, over the two
+leaves `CyclicSubgroupOfOrder.locallyOfFinitePresentation_of_specQBase`
+and `CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero`. -/
 
 /-- **The zero section of an abelian scheme is a closed immersion**
 (PROVEN).  It is a section of `f`, and `f` is proper hence separated, so
@@ -4893,7 +4895,11 @@ proof actually consumes, and because `Etale` is a `Prop`-valued class, so
 proof irrelevance makes the threading through `Gamma0Datum.ofDvd` and
 `IsBaseChangeOf.ofDvd` free.  Its ℚ-base instance is
 `CyclicSubgroupOfOrder.etale_of_specQBase` below, which is where
-Cartier's theorem now sits as a single named leaf.
+Cartier's theorem now sits.  That node is itself PROVEN, over the two
+leaves `CyclicSubgroupOfOrder.locallyOfFinitePresentation_of_specQBase`
+(finite locally free) and
+`CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero` (Cartier proper,
+in infinitesimal form).
 
 `CyclicSubgroupOfOrder.ofTorsion` was deliberately NOT changed: it takes
 flatness as the explicit argument `hflat` and never forms `C[M]` itself,
@@ -4919,17 +4925,134 @@ theorem CyclicSubgroupOfOrder.flat_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
   rw [Category.assoc]
   exact (AlgebraicGeometry.Etale.iff_flat_and_formallyUnramified.mp inferInstance).1
 
-/-- **Cartier's theorem: over a `ℚ`-scheme a finite flat commutative group
-scheme is étale** (sorry leaf, and the ONLY thing the étale repair of
-`flat_torsionι` left open).
+/-- **`C ⟶ T` is locally of finite presentation over a `ℚ`-base** (sorry
+leaf; ONE of the two leaves `etale_of_specQBase` below is proven over).
 
-`ι ≫ f` is finite (`c.isFinite`) and flat (`c.flat`), hence finite
-locally free, hence of finite presentation; `C` is a subgroup scheme of
-`E` because `ι` is a monomorphism and `zero_liesIn` / `add_liesIn` /
-`neg_liesIn` make its points a subgroup at every base.  Étaleness of a
-finite flat morphism of finite presentation may be checked fibrewise, and
-every fibre of `T ⟶ Spec ℚ` has characteristic-zero residue field, where
-a finite group scheme is reduced (Cartier) hence étale.
+`ι ≫ f` is finite (`c.isFinite`) and flat (`c.flat`); "finite locally
+free" is exactly finite + flat + FINITELY PRESENTED, and it is the last
+conjunct that this leaf asserts.
+
+**DO NOT PROVE THIS BY "FINITE + FLAT ⟹ FINITELY PRESENTED" — THAT
+IMPLICATION IS FALSE**, and the counterexample is a `ℚ`-algebra, so
+restricting to a `ℚ`-base does not rescue it.  Take `R = ∏_{n : ℕ} ℚ`,
+which is von Neumann regular, so *every* `R`-module is flat; let
+`I ⊆ R` be the ideal of finitely-supported sequences and `M = R ⧸ I`.
+Then `M` is cyclic (hence module-finite) and flat, so
+`Spec (R ⧸ I) ⟶ Spec R` is finite and flat — and `I` is not finitely
+generated, so `M` is not finitely presented and the morphism is NOT
+locally of finite presentation.  Concretely its rank function is `1` on
+`V I` and `0` off it, a set that is closed and not open.
+
+**WHAT A PROOF MUST USE, AND THE ENTANGLEMENT IT CARRIES.**  The missing
+input is that the RANK is locally constant; given that, finite flat is
+finite locally free by an elementary argument (choose `p`, lift a basis
+of the free module `M_p` to `x₁ … x_r ∈ M`, which generate `M_g` for some
+`g ∉ p` since `M` is finite; the surjection `R_g^r ↠ M_g` has kernel `K`,
+and flatness makes the rank upper semicontinuous, so a locally CONSTANT
+rank forces `K_q = 0` at every `q` — a surjection between free modules of
+equal finite rank over a local ring is injective — whence `K = 0`).
+
+Here the rank is constant `= N`, but the only known reason is Cartier
+itself, in its fibrewise form: the rank at a geometric point `t` is
+`dim_κ` of the fibre algebra, which is `≥ #C_t(κ) = N` by `geom_cyclic`,
+with EQUALITY iff that fibre is reduced — and over a `ℚ`-base every fibre
+is a finite group scheme over a characteristic-zero field, where Cartier
+gives reducedness.
+
+**So this leaf is NOT elementary commutative algebra**, and it is
+entangled with `eq_zero_of_liesIn_of_squareZero` below: both consume
+Cartier, this one in its fibrewise form and that one in its
+infinitesimal form.  Whoever takes one should take both.  The check that
+refutes the elementary reading is the `∏ ℚ` example above; the check that
+would refute the entanglement is a proof of local constancy of the rank
+that does not pass through reducedness of the fibres.
+
+`q` is load-bearing to the extent that the only route known needs
+characteristic zero; the statement is deliberately given the `ℚ`-base
+rather than stated over a general base, since that is all the consumer
+needs and it is the weakest form that suffices. -/
+theorem CyclicSubgroupOfOrder.locallyOfFinitePresentation_of_specQBase
+    {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+    (c : CyclicSubgroupOfOrder ab N) (q : T ⟶ SpecQ) :
+    LocallyOfFinitePresentation (c.ι ≫ f) :=
+  sorry
+
+/-- **Cartier's theorem in functor-of-points form: over a `ℚ`-base `C` has
+no nonzero INFINITESIMAL points** (sorry leaf; the mathematical heart of
+`etale_of_specQBase` below).
+
+For a square-zero surjection `φ : R ↠ R₀`, a relative point `d` of `E`
+over `g : Spec R ⟶ T` which lies in `C` and dies on restriction along
+`Spec R₀ ⟶ Spec R` is zero.  Equivalently `Lie(C) = 0`, which is exactly
+what makes the finite flat group scheme `C` étale rather than merely
+flat.
+
+**EVERY HYPOTHESIS IS LOAD-BEARING; three of them make the difference
+between this statement and a false one.**
+
+* `hd : RelPoint.LiesIn c.ι d` is ESSENTIAL.  Dropped, the statement
+  asserts that `E ⟶ T` itself is formally unramified, which is FALSE for
+  an abelian scheme of relative dimension one — its infinitesimal kernel
+  is `Lie(E) ⊗ ker φ ≠ 0`.
+* `hker : RingHom.ker φ.hom ^ 2 = ⊥` is ESSENTIAL: this IS the
+  infinitesimal criterion, and without square-zero-ness there is no
+  reason for a point that dies on `Spec R₀` to vanish.
+* `q : T ⟶ SpecQ` is ESSENTIAL: in residue characteristic `p` the
+  statement is FALSE, and the witnesses are the very ones the FALSITY
+  AUDIT of `flat_torsionι` above exhibits — `ker F` and its subgroups are
+  finite flat subgroup schemes with a NONZERO infinitesimal kernel.
+
+`N` plays no role whatever: Cartier needs finite, flat, subgroup and
+characteristic zero, and not cyclicity.  It is present only because `c`
+bundles it.  Note also that this leaf does NOT need
+`LocallyOfFinitePresentation`, so it and the leaf above may be attacked
+independently even though both consume Cartier.
+
+**THE ROUTE, INCLUDING THE ONE TO AVOID.**
+
+1. `AbelianSchemeStruct.nonempty_module_infKernel_of_squareZero`
+   (`AbelianSchemeIsogeny.lean`) gives a `Module K` structure on
+   `ab.infKernel (Spec.map φ) rfl` over a FIELD base, and its own
+   docstring records — as a generalisation that is TRUE and is explicitly
+   offered to a prover — that the kernel is a module over `R₀` itself,
+   over an arbitrary base and without `ab.smooth`.  Over a `ℚ`-scheme
+   that yields a `Module ℚ` structure, hence torsion-freeness of the
+   ambient infinitesimal kernel.
+2. **Torsion-freeness alone does NOT close this leaf**, and the tempting
+   completion of it is circular: one would still need the infinitesimal
+   points lying in `C` to be TORSION, and "`C` is killed by `N`"
+   scheme-theoretically is equivalent to étaleness of `C ⟶ T` (two
+   morphisms `C ⇉ C` agreeing at every geometric point are equal exactly
+   when `C` is reduced).  Recorded so it is not re-tried.
+3. The non-circular route is the classical one.  Over a `ℚ`-algebra the
+   formal completion of `C` along its unit section `e_C` is a formal
+   group admitting a logarithm, hence is a formal additive group and its
+   ring is a power-series ring; `C ⟶ T` being FINITE forces that formal
+   group to have dimension zero, i.e. `Lie(C) = 0`, which is this
+   statement.  This is where finiteness of `C` enters and where the
+   characteristic-zero hypothesis is consumed.
+
+REFERENCES: SGA 3, VI_B 1.6.1 (the relative form); Oort, *Commutative
+group schemes*; Waterhouse, *Introduction to Affine Group Schemes*,
+Thm. 11.4; Tate, *Finite flat group schemes*, §3.7 in
+Cornell–Silverman–Stevens; Katz–Mazur ch. 1. -/
+theorem CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero {E T : Scheme.{0}}
+    {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+    (c : CyclicSubgroupOfOrder ab N) (q : T ⟶ SpecQ)
+    {R R₀ : CommRingCat.{0}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
+    (hker : RingHom.ker φ.hom ^ 2 = ⊥)
+    {g : Spec R ⟶ T} (d : RelPoint f g) (hd : RelPoint.LiesIn c.ι d)
+    (hres : letI := ab.addCommGroup (Spec.map φ ≫ g)
+      RelPoint.pre (Spec.map φ) rfl d = 0) :
+    letI := ab.addCommGroup g
+    d = 0 :=
+  sorry
+
+/-- **Cartier's theorem: over a `ℚ`-scheme a finite flat commutative group
+scheme is étale** (PROVEN 2026-07-27 over the two leaves
+`locallyOfFinitePresentation_of_specQBase` and
+`eq_zero_of_liesIn_of_squareZero` above; this was the ONLY thing the étale
+repair of `flat_torsionι` left open).
 
 Faithfulness: this is NOT vacuous and NOT circular — it is the exact
 mathematical content that `geom_cyclic` was silently being asked to
@@ -4937,12 +5060,64 @@ supply, isolated so that it has a name and an owner.  It is the reason
 the repair costs nothing at the twelve level nodes, all of which work
 over `ℚ`.
 
+**THE ASSEMBLY, WHICH IS ALL THAT IS PROVEN HERE.**  Mathlib's
+`Etale.of_formallyUnramified_of_flat` splits étaleness into `Flat`,
+`FormallyUnramified` and `LocallyOfFinitePresentation`.  Flatness is
+`c.flat` verbatim — that field is exactly what the Katz–Mazur moduli
+problem carries — and finite presentation is the first leaf.  Formal
+unramifiedness is proven here from the second leaf by the INFINITESIMAL
+CRITERION: `FormallyUnramified.of_hom_ext` reduces it to showing that two
+`C`-points `g₁, g₂ : Spec R ⟶ C` lying over one base point and agreeing
+modulo a square-zero ideal are equal.  Composing with `ι` reads them as
+relative points `x₁, x₂` of `E` over the single base point
+`g₁ ≫ (ι ≫ f)`; `zero_liesIn` / `add_liesIn` / `neg_liesIn` put their
+difference in `C`, `ab.pre_sub` puts it in the infinitesimal kernel, the
+leaf kills it, and `ι` being a MONOMORPHISM cancels `g₁ ≫ ι = g₂ ≫ ι`
+back to `g₁ = g₂`.  So the whole geometric glue is discharged and only
+Cartier proper is left open.
+
+**A ROUTE THAT LOOKS AVAILABLE AND IS CIRCULAR — do not re-try it.**
+`AbelianSchemeStruct.formallyUnramified_mulByNat` (`AbelianSchemeIsogeny.
+lean`) is PROVEN, so `[N]` is unramified over a field base and one is
+tempted to factor `C` through `E[N] = ker [N]` and inherit
+unramifiedness by `FormallyUnramified.of_comp`.  That factorisation needs
+`ι ≫ [N] = (ι ≫ f) ≫ e` — "`C` is killed by `N`" as an equation of
+MORPHISMS — and over a general base that equation is equivalent to `C`
+being reduced, i.e. to the very étaleness being proven.  `geom_cyclic`
+gives it only at geometric POINTS.  The infinitesimal route above avoids
+this because it never needs `N` at all.
+
 REFERENCES: Oort, *Commutative group schemes*, and Katz–Mazur ch. 1;
 Cartier's theorem in the relative form is SGA 3, VI_B 1.6.1. -/
 theorem CyclicSubgroupOfOrder.etale_of_specQBase {E T : Scheme.{0}} {f : E ⟶ T}
     {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N)
-    (_q : T ⟶ SpecQ) : AlgebraicGeometry.Etale (c.ι ≫ f) :=
-  sorry
+    (q : T ⟶ SpecQ) : AlgebraicGeometry.Etale (c.ι ≫ f) := by
+  haveI : AlgebraicGeometry.Flat (c.ι ≫ f) := c.flat
+  haveI : LocallyOfFinitePresentation (c.ι ≫ f) :=
+    c.locallyOfFinitePresentation_of_specQBase q
+  haveI : AlgebraicGeometry.FormallyUnramified (c.ι ≫ f) := by
+    refine AlgebraicGeometry.FormallyUnramified.of_hom_ext _ ?_
+    intro R R₀ φ hφ hker g₁ g₂ hres hcomp
+    haveI := c.isClosedImmersion
+    letI := ab.addCommGroup (g₁ ≫ (c.ι ≫ f))
+    letI := ab.addCommGroup (Spec.map φ ≫ (g₁ ≫ (c.ι ≫ f)))
+    set x₁ : RelPoint f (g₁ ≫ (c.ι ≫ f)) := ⟨g₁ ≫ c.ι, by rw [Category.assoc]⟩
+    set x₂ : RelPoint f (g₁ ≫ (c.ι ≫ f)) :=
+      ⟨g₂ ≫ c.ι, by rw [Category.assoc]; exact hcomp.symm⟩
+    have hl₁ : RelPoint.LiesIn c.ι x₁ := ⟨g₁, rfl⟩
+    have hl₂ : RelPoint.LiesIn c.ι x₂ := ⟨g₂, rfl⟩
+    have hsub : x₁ - x₂ = 0 := by
+      refine c.eq_zero_of_liesIn_of_squareZero q φ hφ hker _ ?_ ?_
+      · rw [sub_eq_add_neg]
+        exact c.add_liesIn hl₁ (c.neg_liesIn hl₂)
+      · rw [ab.pre_sub, sub_eq_zero]
+        exact Subtype.ext (by
+          show Spec.map φ ≫ (g₁ ≫ c.ι) = Spec.map φ ≫ (g₂ ≫ c.ι)
+          rw [← Category.assoc, ← Category.assoc, hres])
+    have hx : x₁ = x₂ := sub_eq_zero.mp hsub
+    have hι : g₁ ≫ c.ι = g₂ ≫ c.ι := congrArg Subtype.val hx
+    exact (cancel_mono c.ι).mp hι
+  exact AlgebraicGeometry.Etale.of_formallyUnramified_of_flat _
 
 /-- **The `M`-torsion of a cyclic subgroup scheme is again cut out by a
 closed subscheme, finite over the base** (PROVEN 2026-07-27 over the one
@@ -7234,6 +7409,12 @@ theorem exists_jLine : Nonempty IsJLine := by
   refine ⟨{ jt := js.jt, jt_natural := js.jt_natural, jt_weierstrass := ?_ }⟩
   intro E _ N hN g hg hstable
   obtain ⟨d, hd⟩ := exists_weierstrassModel_gamma0Datum E N hN g hg hstable
+  -- `Gamma0Datum.ofDvd` acquired an `[Etale (d.cyc.ι ≫ d.f)]` hypothesis at the
+  -- cut-level repair of `flat_torsionι`; over the base `SpecQ` it is supplied by
+  -- `CyclicSubgroupOfOrder.etale_of_specQBase`, exactly as in the statement of
+  -- `IsJLine.jt_weierstrass` itself.  `Etale` is `Prop`-valued, so this instance
+  -- and the `letI` in that field's statement agree by proof irrelevance.
+  haveI := d.cyc.etale_of_specQBase (𝟙 SpecQ)
   exact ⟨d, js.jt_model E (d.ofDvd hN (one_dvd N)) hd⟩
 
 /-- **Existence of the `j`-map on `Y_0(N)`** (PROVEN 2026-07-27, over
