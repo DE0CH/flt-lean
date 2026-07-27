@@ -2250,6 +2250,81 @@ a generic-point argument, which needs precisely the fibre-dimension theory
 refuted in 1 — so the existential form would be more attackable in appearance
 only.  A prover who first builds fibre dimension should take this cut instead.
 
+**CORRECTION 3 (2026-07-27): the whole equivalence loop is FREE at this pin, and
+the survey above missed the one lemma that makes it so.**
+`Mathlib/AlgebraicGeometry/Limits.lean:699` carries
+`instance (priority := low) [Finite X] [DiscreteTopology X] : IsAffine X` — a
+scheme with finite discrete underlying space is AFFINE.  Together with
+`IsArtinianScheme.finite` and `IsLocallyArtinian.discreteTopology` (both in
+`Artinian.lean`) that closes the circle: `topologicalKrullDim ≤ 0` ⟹
+`IsLocallyArtinian` ⟹ discrete, and with `CompactSpace` ⟹ `Finite` ⟹ `IsAffine`
+⟹ `IsQuasiAffine`.  So the ARTINIAN ROUTE IS STRICTLY CHEAPER as a bridge: it
+needs no hand-written EGA step at all, where the (correct, and worth keeping)
+`isAffine_of_isQuasiAffine_of_universallyClosed` above had to be proved by hand.
+Consequence for a prover: all of {`𝒪_Z` ample, `IsQuasiAffine`, `IsAffine`,
+`Finite`, `DiscreteTopology`, `topologicalKrullDim ≤ 0`} are interchangeable for
+this `Z`, so prove whichever your argument produces — and do NOT spend a cycle
+re-cutting the leaf into another of them.  Two shape changes have already been
+made here; a third would buy nothing.  Refute by exhibiting a member of that
+list that does not reach the others.
+
+**Why "ample line bundles are absent" UNDERSTATES the blocker, and why this leaf
+is NOT of the "state the interface and cut" kind** (2026-07-27).  The survey
+above is right that `Ample`, `Pic` and invertible sheaves are missing, but the
+operative fact is stronger and it is what decides feasibility: **there is no
+monoidal structure on sheaves of modules over a scheme, so `L^{⊗n}` cannot even
+be WRITTEN.**  `Mathlib/Algebra/Category/ModuleCat/Presheaf/Monoidal.lean` builds
+`MonoidalCategoryStruct (PresheafOfModules …)` and it is never transported to
+sheaves: `grep -rn 'MonoidalCategory\|tensorObj'
+Mathlib/Algebra/Category/ModuleCat/Sheaf/` is EMPTY, and that directory's
+`LocallyFree.lean` supplies `IsLocallyFree` with no rank and no tensor product
+(`grep -n 'rank\|Rank'` there is EMPTY too).  This matters because the standing
+rule "an audit saying *atomic until theory T exists* must be asked whether the
+cut needs T PROVEN or only STATED" resolves here in the unusual direction: every
+step of Mumford's Application 2 puts `L`, `L^{p²}` and `𝒪_Z` in ONE equation, so
+stating the interface faithfully means defining tensor powers of invertible
+sheaves — a mathlib-scale build (monoidal `SheafOfModules`, then invertibility,
+then ampleness), not a task-scale one.  Refute by exhibiting a faithful
+sheaf-FREE encoding of "`L` is ample and `L^{p²} ≅ 𝒪_Z`", or by finding a tensor
+product of sheaves of modules at this pin.
+
+**ROUTE 9, searched 2026-07-27 over the axis the first two sweeps never ranged
+over — BASE CHANGE — and blocked by a defect in this leaf's own STATEMENT.**
+Every classical route (Mumford §6, and refuted route 7's reduction to
+`((ker[p])_red)⁰`) is written over an ALGEBRAICALLY CLOSED field, so the missing
+step is "WLOG `K` algebraically closed".  That reduction is otherwise entirely
+available and needs no new theory: `AbelianSchemeStruct.baseChange` and
+`baseChange_mulByNat` already exist above, `ker[p]` of a base change is the base
+change of `ker[p]` (pullback pasting), `Surjective` is stable under base change
+(`Mathlib/AlgebraicGeometry/PullbackCarrier.lean:431`), and the descent re-enters
+through declarations already in this file — `IsQuasiAffine` over `K̄` gives
+`IsAffine` (the bridge above) gives `IsFinite` gives a finite point set, which
+transports along the surjection into
+`isFinite_ker_mulByNat_of_finite_preimage`.
+
+What blocks it is that **`Spec K` is not known to be a ONE-POINT scheme here**, so
+`Spec K̄ ⟶ Spec K` is not known to be surjective.  `(K : CommRingCat.{u})
+[Field K]` puts a `Field` structure on the CARRIER `↑K` that Lean cannot connect
+to `K`'s own `CommRing` instance, and at this pin the two are genuinely
+independent: under `[Field K]`, `Subsingleton ↥(Spec K)` and `Unique ↥(Spec K)`
+both FAIL to synthesize while `Nonempty ↥(Spec K)` succeeds — whereas all three
+succeed for `Spec (CommRingCat.of F)` with `(F : Type u) [Field F]` and for
+`Spec (S.residueField s)`, which is how `locallyQuasiFinite_mulByNat` below
+actually instantiates this family.  So `hchar : ringChar K = p` constrains a
+field structure that need not be the one `Spec K` is built from, and as written
+the leaf asks for `ker[p]` over a base not known to be a field at all.
+
+That is a FAITHFULNESS defect that makes the leaf HARDER than the theorem it is
+meant to be, so a prover cannot repair it from inside.  The repair is a
+cut-level restatement of the whole `_of_field`/`_of_field_char` family
+(`finite_preimage_mulByNat_of_field`, this leaf,
+`isAffine_ker_mulByNat_of_field_char`, `finite_ker_mulByNat_of_field_char`,
+`isFinite_ker_mulByNat_of_field_char`) from `(K : CommRingCat.{u}) [Field K]` to
+`(F : Type u) [Field F]` with base `Spec (CommRingCat.of F)`, after which route 9
+goes through exactly as described above and this leaf becomes "the cube over an
+ALGEBRAICALLY CLOSED field".  Refute by synthesizing `Subsingleton ↥(Spec K)`
+from `[Field K]` alone — that is a one-line `example`.
+
 **`hp` and `hchar` are deliberately carried even though the statement is true
 without them** (`ker[n]` is quasi-affine for every `n ≠ 0`): without them this
 leaf would silently duplicate the content the prime-to-characteristic sibling
