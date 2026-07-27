@@ -2849,6 +2849,157 @@ particular `hprim₀`/`hcomul₀` (the connectedness of `e₀`) cannot be
 dropped: the good-ORDINARY-reduction computation on `11a1` recorded
 below refutes the `e₀`-free statement.
 
+---
+
+**ROUTE AUDIT, 2026-07-27 (this leaf's owner; the leaf is still OPEN
+and nothing below is proven here).** The parent's inventory ends with
+"what is genuinely missing is the higher-rank case", which reads as
+"all of Raynaud" and sent this owner at the whole classification.
+That is too coarse. Five findings, each refutable by a named check.
+
+**(1) THE CONTENT BEGINS AT SOCLE ORDER `9`, and the good-ORDINARY
+case of the intended application needs NO finite-flat input.** Write
+`S := {φ | φ ^ 3 = 1 ∧ φ (1 ⊗ e₀) = 1}` for the connected socle (the
+parent below builds it as a `SubMulAction`). Suppose `σ • φ ≠ φ` for
+some `φ ∈ S`. Then `1`, `φ`, `σ • φ`, `σ ^ 2 • φ` are FOUR DISTINCT
+elements of `S`:
+
+* `φ ≠ 1` because `σ • 1 = 1`, and `σ • φ ≠ 1 ≠ σ ^ 2 • φ` because
+  `σ •` is injective;
+* `σ ^ 2 • φ = φ` would give `σ • φ = σ ^ 3 • φ = φ` using `_hcube`;
+* `σ • φ = σ ^ 2 • φ` would give `φ = σ • φ` by injectivity.
+
+So a violation forces `4 ≤ Nat.card S`. For `E / ℚ₃` with good
+ORDINARY reduction the connected socle `E[3]⁰(ℚ̄₃)` has exactly `3`
+elements, so this leaf is VACUOUSLY in range there: the `11a1`
+computation recorded below is not merely a bracket, it is a case that
+connectedness has already removed. The whole finite-flat content of
+this leaf lives at socle order `≥ 9`, i.e. in the SUPERSINGULAR and
+higher-rank regime.
+
+**(2) THE CYCLIC-ORBIT CASE IS UNCONDITIONAL — no arithmetic, two
+lines.** If `σ • φ = φ ^ m` for some `m : ℕ`, then
+`σ ^ 3 • φ = φ ^ (m ^ 3)` by `MulDistribMulAction`
+(`σ • φ ^ k = (σ • φ) ^ k`, iterated), so `_hcube` gives
+`φ ^ (m ^ 3) = φ`; with `φ ^ 3 = 1` that is `3 ∣ m ^ 3 - 1`, and
+Fermat's little theorem `m ^ 3 ≡ m [MOD 3]` upgrades it to `3 ∣ m - 1`,
+whence `φ ^ m = φ`. Three consequences:
+
+* the entire content of this leaf is points that are moved OUT of their
+  own cyclic subgroup `⟨φ⟩`;
+* this is why `37a1` is NOT a counterexample even though inertia does
+  move points out of `⟨φ⟩` there — its inertia image is `𝔽₉ˣ ≅ ℤ/8`
+  and `gcd(3, 8) = 1`, so no `σ` satisfies `_hcube` nontrivially;
+* **restating this leaf as "`∀ φ ∈ S, ∃ m, σ • φ = φ ^ m`" is an
+  EQUIVALENCE, not a decomposition.** Do not cut there. (It is also one
+  underscore away from the shape that was REFUTED as
+  `exists_inertia_scalar_on_connected_locus_of_hopf_package`: quantified
+  over all `τ ∈ I₃` rather than over the single `σ` with `_hcube`, it is
+  FALSE in the supersingular case.)
+
+**(3) THE MACHINERY THE INVENTORY ABOVE CALLS MISSING IS LARGELY
+PRESENT, and it is not the `OortTate` cyclotomic node.** Two clusters,
+neither in this file's import cone today, both checkable with one grep.
+**And the cone-growth objection is nil, measured 2026-07-27**: this
+file's cone is `60` project modules; `FlatPointsGroup.lean`'s own cone
+is `33`, of which `32` are already here, so importing it adds exactly
+ONE module; `ShortExact.lean` adds two and `CartierDual.lean` one.
+
+* `Fermat/FLT/Deformations/RepresentationTheory/FlatPointsGroup.lean`
+  carries RAYNAUD'S CLOSURE on the representation-free carrier
+  `IsFlatPointsGroupAt v X` ("`X` is `Γ Kᵥ`-equivariantly the geometric
+  point group of the generic fibre of a finite flat `𝒪ᵥ`-Hopf algebra
+  with étale generic fibre"): `IsFlatPointsGroupAt.of_injective`
+  (schematic closure of an equivariant SUBGROUP),
+  `.of_surjective`, `.prod`, `.pi` — all PROVEN. So "the schematic
+  closure of a `Γ`-stable subgroup of the socle is again a finite flat
+  Hopf order" does NOT have to be built.
+* `Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean` carries
+  `HopfAlgebra.IsMultiplicativeType R A` (*defined* as "the Cartier
+  dual is étale"), `etale_of_isShortExact` and — the one that matters —
+  **`isMultiplicativeType_of_isShortExact`, PROVEN**: an extension of
+  multiplicative type by multiplicative type is of multiplicative type.
+
+**(4) THE ROUTE, and exactly how far it reaches.** With (1)–(3) the
+attack is Cartier duality, not the Raynaud normal form:
+
+  a. `_hcube` plus `σ • φ ≠ φ` gives a UNIPOTENT configuration: in
+     `char 3`, `(σ - 1) ^ 3 = σ ^ 3 - 1 = 0` on the socle, so `σ` acts
+     unipotently and nontrivially, and `φ`, `(σ - 1) φ` span a
+     `σ`-stable subgroup of order exactly `9` (if `(σ - 1) φ = c φ`
+     then `(1 + c) ^ 3 = 1` in `𝔽₃` forces `c = 0`).
+  b. Take a `Γ ℚ₃ᵥ`-stable filtration of the socle and push it through
+     `IsFlatPointsGroupAt.of_injective` / `.of_surjective` to a short
+     exact sequence of finite flat Hopf orders.
+  c. If every graded piece is of MULTIPLICATIVE TYPE, then so is the
+     whole (`isMultiplicativeType_of_isShortExact`), its Cartier dual is
+     étale hence UNRAMIFIED, and inertia acts on the socle by the SCALAR
+     `χ(σ)` — which is never a nontrivial unipotent. Contradiction with
+     (a).
+  d. Graded pieces of order `3` ARE of multiplicative type: a connected
+     finite flat group scheme of order `p` over `ℤ₃` is `μ₃` up to
+     unramified twist (Oort–Tate with `v(a) + v(b) = 1` and `v(a) > 0`
+     forcing `v(a) = 1`), and its dual is the corresponding twist of
+     `ℤ/3`, which is étale. This is the *dual-side* statement and it is
+     TRUE, unlike the coordinate-side statement `exists_muType_closure`
+     that was refuted by exactly those twists — cf. the development's
+     rule that VALUES descend from `𝒪^nr` while COORDINATES do not.
+
+  **How far it reaches, stated honestly: step (c) covers precisely the
+  case where the socle admits a `Γ`-stable filtration with graded pieces
+  of order `3`.** It does NOT cover the supersingular piece: for
+  `E = 37a1` the socle is `𝔽₉` with `I₃` acting irreducibly through
+  `𝔽₉ˣ`, so its only `Γ`-stable filtration is trivial and `E[3]` is
+  self-dual, hence connected-dual, hence NOT of multiplicative type. The
+  residue after this route is therefore the sharper leaf **"an extension
+  of one connected simple killed-by-`3` object by another, over
+  `e = 1 < p − 1`, carries no wild inertia"** — which is a bounded
+  statement about `Ext¹` in the flat category, not the whole
+  classification. (Note the supersingular case itself is free by (2):
+  there `gcd(3, 8) = 1`.)
+
+**(5) TWO THINGS NOT TO DO.**
+
+* **The wild/tame split is a NET LOSS.** It is tempting to cut this leaf
+  into "`P₃` acts trivially on the socle" (Raynaud) plus "the tame
+  quotient is uniquely `3`-divisible" (pure local Galois theory, in the
+  idiom of `exists_localInertia_generator_mod_pow_wildInertiaGroup`); the
+  assembly is four lines, since `σ = θ ^ 3 · w` makes cubing SURJECTIVE
+  hence injective on the finite image. But the arithmetic half is not
+  made one step easier, a brand-new obligation is created, and the
+  `∃ n` parent below plus
+  `wildInertia_fixes_connected_threeTorsion_of_hopf_package` become a
+  detour around a statement that would then imply them directly. Refuting
+  check: find a proof of "`P₃` acts trivially" that does not also prove
+  this leaf.
+* **COCOMMUTATIVITY IS NOT ASSUMED HERE, AND EVERY STEP OF (4) NEEDS
+  IT.** `G` is a bare `HopfAlgebra 𝒪₃ᵥ G`, i.e. an affine group scheme
+  that is not assumed COMMUTATIVE; the convolution structure on
+  `ℚ₃ᵥ ⊗ G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ` (`Deformations/RepresentationTheory/Etale.lean`)
+  is only a `Monoid`, so the socle `S` is not known to be a GROUP, let
+  alone an `𝔽₃`-vector space. Raynaud's classification is for commutative
+  group schemes, `ShortExact.lean` carries `[IsCocomm R A]` throughout,
+  and `IsFlatPointsGroupAt` takes an `AddCommGroup`. The eventual
+  consumer has commutativity for free — in
+  `wildInertia_fixes_connected_threeTorsion_of_hopf_package` below, `fG`
+  is a BIJECTION from `Additive (points)` onto an `AddCommGroup` — so the
+  repair is to thread `[IsCocomm 𝒪₃ᵥ G]` (or the weaker
+  `CommMonoid (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ)`) through this leaf and the
+  `∃ n` parent. That is a CUT-LEVEL repair spanning three declarations
+  and was deliberately not made here; it should be made by whoever
+  attacks (4), since without it step (a) cannot even be stated.
+
+**AXIS SEARCHED.** This audit ranged over: permutation/group-theoretic
+cuts (exhausted by the parent, and (2) shows the natural remaining one is
+an equivalence); the `OortTate` cyclotomic node (blocked — its `hstab`
+hypothesis is exactly the refuted scalar leaf); the wild/tame Galois
+split (net loss, above); and Fontaine's ramification bound (computed
+insufficient: for `n = 1`, `e = 1`, `p = 3` it kills `u > 3/2`, while a
+`ℤ/3`-extension of `ℚ₃ⁿʳ` has upper break exactly `1 ≤ 3/2` — the bound
+permits precisely the configuration that must be excluded). NOT searched,
+and the axis that (4) opens: the Cartier-duality/`IsMultiplicativeType`
+route, and the `Ext¹` residue named at the end of (4).
+
 Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
 (1974), 3.3.2–3.3.5 and 3.4.3; Fontaine, *Il n'y a pas de variété
 abélienne sur `ℤ`*, §1; Serre, *Propriétés galoisiennes…*, Invent.
@@ -3083,6 +3234,16 @@ elsewhere), and the convolution-filtration toolkit
 RANK-ONE case of this leaf is essentially assembled from those, with
 `n = 2`; what is genuinely missing is the higher-rank case, i.e. the
 level-`r` fundamental characters.
+
+**SHARPENED 2026-07-27 — read the ROUTE AUDIT on the element-form leaf
+above before acting on the sentence just written.** "The higher-rank
+case" reads as "all of Raynaud" and is too coarse: the socles of order
+`≤ 3` are free, the cyclic-orbit case is free, the schematic closure of
+a `Γ`-stable subgroup already exists
+(`IsFlatPointsGroupAt.of_injective`, `FlatPointsGroup.lean`), and the
+extension step already exists and is PROVEN
+(`isMultiplicativeType_of_isShortExact`, `ShortExact.lean`). The audit
+also records a COCOMMUTATIVITY gap that spans this statement too.
 
 WHAT DEFEATS THE `S₃` CONFIGURATION, MECHANICALLY. For `A = 𝔽₃²` with
 `I` acting through a copy of `S₃` by `σ ↦ [[1,1],[0,1]]` and
