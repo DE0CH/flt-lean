@@ -85,8 +85,13 @@ That leaf was in turn DECOMPOSED on 2026-07-27 and is now PROVEN, over
 * `exists_tameGoodModel_of_jIntegral` — the arithmetic: `E` acquires good
   reduction over an extension in which `ℓ` is TOTALLY RAMIFIED. OPEN.
 * `redHom_eq_zero_of_nsmul_eq_zero` — Lutz–Nagell: the kernel of reduction
-  contains no point killed by an integer prime to `ℓ`. OPEN, and it SUBSUMES
-  `redHom_ne_zero_of_prime_order_ne` above; see its docstring.
+  contains no point killed by an integer prime to `ℓ`. **PROVEN 2026-07-27**,
+  directly from Cassels' division-polynomial argument at the stated generality
+  (an arbitrary valuation subring with residue field `𝔽_ℓ`) — no DVR, no
+  separable closure, no formal group. It SUBSUMES
+  `redHom_ne_zero_of_prime_order_ne` above, which is now a six-line corollary;
+  see its docstring for the derivation, which was NOT applied here only because
+  that declaration is stated earlier in the file and belongs to another owner.
 
 The key structural discovery, made while cutting it, is worth repeating here:
 **brick 1's `RatAdic` bookkeeping generalises verbatim from `ℚ` to any number
@@ -123,6 +128,17 @@ public import Mathlib.Data.ZMod.Basic
 public import Mathlib.Algebra.Field.ZMod
 public import Mathlib.RingTheory.DedekindDomain.AdicValuation
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
+-- The three imports below are what `redHom_eq_zero_of_nsmul_eq_zero` consumes:
+-- `ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem` (GoodReduction), the
+-- division-polynomial torsion dictionary `TorsionCard.smul_some_eq_zero_iff`, and
+-- the degree/leading-coefficient facts about `ΨSq`. All three are PUBLIC on purpose:
+-- `TorsionCard` and `Degree` are already in this module's cone, but only through
+-- `PointReduction → Flat`, which imports them PRIVATELY — and a private import
+-- upstream makes the names unavailable even in proof bodies. `GoodReduction` is the
+-- only module this adds to the cone; its own imports are all present already.
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
+public import Fermat.FLT.EllipticCurve.TorsionCard
+public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 
 @[expose] public section
 
@@ -668,12 +684,66 @@ theorem exists_tameGoodModel_of_jIntegral
   sorry
 
 /-- **The kernel of reduction contains no point killed by an integer prime to
-`ℓ`** (sorry leaf, opened 2026-07-27 by decomposing
-`exists_goodReductionHom_of_jIntegral`). Lutz–Nagell, in the generality of an
-arbitrary valuation subring with residue field `𝔽_ℓ`.
+`ℓ`** (opened 2026-07-27 by decomposing `exists_goodReductionHom_of_jIntegral`;
+**PROVEN 2026-07-27**). Lutz–Nagell, in the generality of an arbitrary valuation
+subring with residue field `𝔽_ℓ`.
+
+**THE ROUTE THAT WORKED, and it is the one this docstring predicted** — the four
+ingredients below compose with no descent and no DVR. The whole proof is: the
+`aᵢ` of `V` lie in `A` (that IS `IsReductionAlong`), so `V` is the base change
+along `A ↪ L` of a Weierstrass curve `VA` over `A`, and `Wred = VA.map ρ`. That
+single observation discharges three obligations at once:
+
+* `V.ΨSqₙ = (VA.ΨSqₙ).map (A ↪ L)` by `map_ΨSq`, so every coefficient is in `A`;
+* `Wred.Δ = ρ VA.Δ` by `map_Δ`, so `hΔ` says `ρ VA.Δ ≠ 0`, so `VA.Δ` is a UNIT of
+  `A` by `ValuationSubring.isUnit_of_map_ne_zero` — which is where `V.IsElliptic`
+  comes from. It is not a hypothesis of this leaf and does not need to be: good
+  reduction of `Wred` forces it;
+* `ρ (n : A) = (n : 𝔽_ℓ) ≠ 0` exactly when `¬ ℓ ∣ n`, so `(n : A)` is a unit by
+  the same lemma — giving both `(n : L) ≠ 0` and `(n : L)⁻¹ ∈ A`, i.e. the
+  inverse of the leading coefficient `n²`.
+
+Then `TorsionCard.smul_some_eq_zero_iff` turns `n • P = 0` into "the abscissa is
+a root of `ΨSqₙ`", and `ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem`
+puts that abscissa in `A` — contradicting `IsReductionAlong.redFun_eq_zero_iff`,
+which says the kernel of reduction is exactly the NON-integral locus.
+
+**THE REFUTATION CHECK THIS DOCSTRING ASKED FOR WAS RUN, AND IT PASSED.** It
+read: "if `mem_of_root_of_inv_leadingCoeff_mem` or the division-polynomial API
+turns out to need a DISCRETE or COMPLETE valuation, the general form is not
+available and the leaf must be restated for a DVR." Neither does.
+`mem_of_root_of_inv_leadingCoeff_mem` is stated for an arbitrary
+`ValuationSubring` of an arbitrary field, and `ΨSq`'s degree and leading
+coefficient (`natDegree_ΨSq`, `leadingCoeff_ΨSq`, `ΨSq_ne_zero`, `map_ΨSq`) are
+mathlib lemmas over an arbitrary `CommRing`/`NoZeroDivisors`. So the leaf stands
+as stated, and the recommended route — "proving it directly from the four
+ingredients above may well be shorter" — was the right one: the descent along
+`L → Lˢᵉᵖ` and the `HasGoodReduction` instance that `torsion_abscissa_mem` would
+have cost are both avoided entirely.
 
 **THIS SUBSUMES `redHom_ne_zero_of_prime_order_ne` ABOVE, AND THE TWO SHOULD BE
-UNIFIED.** That leaf is this statement specialised to `L = ℚ`,
+UNIFIED — and now that this one is PROVEN, that leaf is a six-line corollary.**
+It is left open here for ONE reason only, which is bookkeeping and not
+mathematics: it is declared EARLIER in this file, so closing it in place would
+mean moving one of the two declarations past the other, and that region has a
+separate owner. Whoever owns it should paste:
+
+    theorem redHom_ne_zero_of_prime_order_ne ... := by
+      intro hker
+      have hqℓ' : ¬ (ℓ ∣ q) := fun hdvd =>
+        hqℓ (((Nat.prime_dvd_prime_iff_eq (Fact.out) hq).mp hdvd).symm)
+      have hq0 : q • P = 0 := hP ▸ addOrderOf_nsmul_eq_zero P
+      have : P = 0 := redHom_eq_zero_of_nsmul_eq_zero (isReductionAlong_ratAdic ℓ W)
+        (map_zmod_Δ_ne_zero W hΔ) hqℓ' hq0 hker
+      rw [this, addOrderOf_zero] at hP
+      exact hq.one_lt.ne hP
+
+(after moving this theorem above it), and delete the three-obligation audit in
+its docstring: the separable-closure descent and the `HasGoodReduction` instance
+it lists are BOTH avoided by the route taken here, so that audit is now stale
+rather than merely unfinished.
+
+That leaf is this statement specialised to `L = ℚ`,
 `A = RatAdic.valuationSubring ℓ`, `V = W⁄ℚ` for an integral `W`, and `n = q` a
 prime `≠ ℓ`; the general-order case follows from the prime case by the same
 `minFac` argument `redHom_eq_zero_iff_of_isOfFinAddOrder` already uses. They were
@@ -721,8 +791,67 @@ theorem redHom_eq_zero_of_nsmul_eq_zero {ℓ : ℕ} [Fact ℓ.Prime] {L : Type*}
     (hred : IsReductionAlong A ρ V Wred) (hΔ : Wred.Δ ≠ 0)
     {P : V.toAffine.Point} {n : ℕ} (hn : ¬ (ℓ ∣ n)) (hP : n • P = 0)
     (hker : hred.redHom hΔ P = 0) :
-    P = 0 :=
-  sorry
+    P = 0 := by
+  classical
+  -- ### The integral model of `V` over `A`
+  -- `IsReductionAlong` says exactly that the `aᵢ` lie in `A`, so `V` is the base change
+  -- of a Weierstrass curve `VA` over `A`, and `Wred` is its reduction along `ρ`.
+  set ι : A →+* L := SubringClass.subtype A with hι
+  set VA : WeierstrassCurve A :=
+    ⟨⟨V.a₁, hred.a₁_mem⟩, ⟨V.a₂, hred.a₂_mem⟩, ⟨V.a₃, hred.a₃_mem⟩,
+      ⟨V.a₄, hred.a₄_mem⟩, ⟨V.a₆, hred.a₆_mem⟩⟩ with hVA
+  have hVmap : VA.map ι = V := rfl
+  have hWmap : VA.map ρ = Wred :=
+    WeierstrassCurve.ext hred.a₁_eq.symm hred.a₂_eq.symm hred.a₃_eq.symm
+      hred.a₄_eq.symm hred.a₆_eq.symm
+  -- ### `n` is a unit of `A`, hence nonzero in `L` and invertible there
+  have hnZMod : ((n : ℕ) : ZMod ℓ) ≠ 0 := by
+    rw [show ((n : ℕ) : ZMod ℓ) = ((n : ℤ) : ZMod ℓ) by push_cast; ring, Ne,
+      ZMod.intCast_zmod_eq_zero_iff_dvd]
+    exact_mod_cast hn
+  have hnA : IsUnit (n : A) :=
+    ValuationSubring.isUnit_of_map_ne_zero ρ (by rwa [map_natCast])
+  have hnL : (n : L) ≠ 0 := by
+    have := ValuationSubring.coe_ne_zero_of_isUnit hnA
+    rwa [show (((n : A) : L)) = (n : L) from map_natCast ι n] at this
+  have hinvmem : ((n : L))⁻¹ ∈ A := by
+    obtain ⟨u, hu⟩ := hnA
+    have hmul : (n : L) * ((u⁻¹ : Aˣ) : A) = 1 := by
+      have h1 : ((n : A)) * ((u⁻¹ : Aˣ) : A) = 1 := by rw [← hu]; exact u.mul_inv
+      have := congrArg ι h1
+      rwa [map_mul, map_one, show ι (n : A) = (n : L) from map_natCast ι n] at this
+    rw [inv_eq_of_mul_eq_one_right hmul]
+    exact SetLike.coe_mem _
+  -- ### `V` is elliptic: `Δ` is a unit of `A` because its residue `Wred.Δ` is nonzero
+  have hΔA : IsUnit VA.Δ :=
+    ValuationSubring.isUnit_of_map_ne_zero ρ (by rw [← map_Δ, hWmap]; exact hΔ)
+  haveI : V.IsElliptic := ⟨by rw [← hVmap, map_Δ]; exact hΔA.map ι⟩
+  -- ### The Cassels division-polynomial argument
+  cases P with
+  | zero => rfl
+  | some x y hns =>
+    exfalso
+    -- the kernel of reduction is exactly the NON-integral locus
+    have hxnot : x ∉ A := (hred.redFun_eq_zero_iff hΔ hns).mp hker
+    -- `n ≠ 0`, since `ℓ ∣ 0`
+    have hnne : n ≠ 0 := by rintro rfl; exact hn (dvd_zero ℓ)
+    have hnZ : (n : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hnne
+    have hnL' : (((n : ℤ)) : L) ≠ 0 := by push_cast; exact hnL
+    -- the division-polynomial torsion dictionary
+    have hΨ0 : (V.ΨSq (n : ℤ)).eval x = 0 :=
+      (TorsionCard.smul_some_eq_zero_iff V hnZ hns).mp (by rw [natCast_zsmul]; exact hP)
+    -- its coefficients are integral, because `V` is the base change of `VA`
+    have hcoeff : ∀ i, (V.ΨSq (n : ℤ)).coeff i ∈ A := by
+      intro i
+      rw [← hVmap, map_ΨSq, Polynomial.coeff_map]
+      exact SetLike.coe_mem _
+    -- its leading coefficient is `n²`, whose inverse is integral
+    have hlc : (V.ΨSq (n : ℤ)).leadingCoeff = ((n : L)) ^ 2 := by
+      rw [V.leadingCoeff_ΨSq hnL']; push_cast; ring
+    have hlcinv : ((V.ΨSq (n : ℤ)).leadingCoeff)⁻¹ ∈ A := by
+      rw [hlc, ← inv_pow]
+      exact pow_mem hinvmem 2
+    exact hxnot (A.mem_of_root_of_inv_leadingCoeff_mem (V.ΨSq_ne_zero hnL') hcoeff hlcinv hΨ0)
 
 /-- **Potentially good reduction at a tame prime, packaged as a reduction
 homomorphism injective on prime-to-`ℓ` torsion** (PROVEN 2026-07-27 over
