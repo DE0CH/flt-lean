@@ -339,6 +339,13 @@ public import Mathlib.RingTheory.Spectrum.Prime.Topology
 -- `proj` nor `projToSpec`, which is exactly what makes a non-public import
 -- sufficient.
 import Fermat.FLT.ModularCurve.EllipticScheme
+-- The statement layer for weight-two Hecke eigenforms on `Γ₀(N)` and their
+-- `L`-functions (`IsWeightTwoEigenform`, `IsLFunctionOf`, `Gamma0GL`), which is
+-- what makes the analytic input to Kolyvagin–Logachev statable.  PUBLIC: those
+-- three names occur in SIGNATURE position, in
+-- `lFunction_apply_one_ne_zero_of_kenkuLevel` and
+-- `isTorsion_jacobian_of_lFunction_ne_zero`.
+public import Fermat.FLT.ModularCurve.WeightTwoEigenform
 -- The smooth-compactification theorem for curves over a field, which is what
 -- turns `Y_0(N)` into `X_0(N)`; see `exists_compactificationY0` and
 -- `exists_x0Compactification` below.
@@ -13928,9 +13935,11 @@ theorem fg_relPoint_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
   exact fg_of_descentHeight dh
     (finite_quotient_nsmul_of_abelianScheme ab dh.m dh.two_le)
 
-/-- **`rank J_0(N)(ℚ) = 0` at the thirteen Kenku levels** (sorry node) —
-the DEEP half of `hasRankZeroJacobian_of_kenkuLevel`, and now stated as
-what it actually is: `J_0(N)(ℚ)` is a TORSION group.
+/-- **`L(f, 1) ≠ 0` for every weight-two eigenform at the thirteen Kenku
+levels** (sorry node) — the ANALYTIC half of
+`isTorsion_jacobian_of_kenkuLevel`, and the ONLY one of its three leaves
+that mentions `kenkuLevels`.  It contains no arithmetic geometry at all:
+no scheme, no Jacobian, no abelian variety.
 
 TRUE, by the reconnaissance recorded below: decomposing the cuspidal
 subspace `S_2(Γ_0(N))` into newform factors and evaluating `L(A, 1)` on
@@ -13939,7 +13948,53 @@ each, EVERY factor at EVERY one of the thirteen levels has
 so `J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
 Kolyvagin–Logachev, hence `J_0(N)(ℚ)` is torsion.
 
-**Why torsion and not finiteness.**  Rank `0` and finiteness are the
+**What has to be proven, precisely.**  `hf` ranges over the normalized
+Hecke eigenforms of `S_2(Γ_0(N))`, which by Atkin–Lehner theory are the
+newforms `g` of every level `M ∣ N` together with their
+`p`-stabilizations.  For a stabilization,
+`L(f, s) = L(g, s) ∏_{p ∣ N} (1 - β_p p^{-s})` with `β_p` a root of
+`X² - a_p(g) X + p` (or `0`), so `|β_p| ≤ √p < p` by Deligne and every
+correction factor at `s = 1` is nonzero.  The statement therefore
+reduces EXACTLY to the newform statement that the reconnaissance below
+checks, and the reduction is the first thing a prover should write.  A
+second, cheaper reduction is available if the analytic continuation of
+`exists_isLFunctionOf_of_isWeightTwoEigenform` is built through the
+Mellin transform: `L(f, 1) = 2π ∫₀^∞ f(iy) dy`, so the whole leaf
+becomes non-vanishing of a period integral.
+
+`hN` is load-bearing: `L(f, 1) = 0` for the newform of level `37`, and
+for every level of positive analytic rank.
+
+**RE-VERIFIED END-TO-END 2026-07-27 (PARI/GP, `lfunmf` + `lfun`).**  For
+each of the thirteen levels, EVERY newform of EVERY divisor `M ∣ N` was
+enumerated (`mfinit([M,2],0)`, newspace) and `|L(f, 1)|` computed at
+every complex embedding.  `vanishing = 0` in all thirteen cases:
+
+| `N` | embeddings over all `M ∣ N` | smallest `abs (L f 1)` |
+|---|---|---|
+| 20 | 1 | 0.4707 |
+| 24 | 1 | 0.5391 |
+| 28 | 1 | 0.3302 |
+| 30 | 2 | 0.3502 |
+| 35 | 3 | 0.4601 |
+| 36 | 1 | 0.7011 |
+| 39 | 3 | 0.4797 |
+| 42 | 3 | 0.3302 |
+| 45 | 2 | 0.3502 |
+| 50 | 2 | 0.7132 |
+| 54 | 3 | 0.5889 |
+| 63 | 4 | 0.4511 |
+| 75 | 4 | 0.3502 |
+
+Controls, run in the same session and behaving as they must: `N = 37`
+has `2` embeddings of which `1` vanishes, `N = 65` has `5` of which `1`
+vanishes, `N = 91` has `7` of which `2` vanish — which is exactly why
+`65` and `91` are NOT in `kenkuLevels`.  PARI/GP is an untrusted
+searcher: this establishes that the statement is not false, and is not a
+proof.
+
+**Why torsion and not finiteness** (recorded here because it explains
+the shape of the whole cluster).  Rank `0` and finiteness are the
 same statement only *given* Mordell–Weil, and Mordell–Weil is a
 general theorem about abelian varieties that has nothing to do with
 modular curves.  Keeping them together made one leaf carrying two
@@ -13961,16 +14016,140 @@ and all six embeddings give `L(f, 1) ≠ 0` (PARI/GP:
 `39`).  Contrast `65` and `91`, which are deliberately NOT in
 `kenkuLevels` because their ranks are `1` and `2`.
 
-`jac` is load-bearing and may not be dropped: the conclusion is FALSE
-for an arbitrary abelian scheme over `ℚ` receiving `X` — it is true only
-because `jac` pins `J` as the Jacobian of this particular curve, whose
-`L`-function is the one being evaluated.  `hN` is likewise load-bearing:
-`J_0(N)(ℚ)` has positive rank for many `N` (the first is `N = 37`).
+The old "`jac` is load-bearing" audit has MOVED, with the geometry, to
+`isTorsion_jacobian_of_lFunction_ne_zero` below; nothing in the present
+statement mentions a Jacobian.
 
-IRREDUCIBLE at this pin, and this is where the depth of the original
-leaf now lives, alone: it needs `S_2(Γ_0(N))`, the Hecke algebra,
-`L`-functions of modular abelian varieties, and Gross–Zagier/Kolyvagin.
-Nothing else in the decomposition below depends on any of that. -/
+**DECOMPOSED 2026-07-27** — this docstring is kept because it records
+the reconnaissance, but the node is no longer a leaf.  The seam is
+`L(f, 1) ≠ 0`: the leaf was carrying *three* unrelated theories, and
+they are now three named leaves, only ONE of which mentions
+`kenkuLevels`.  See `isTorsion_jacobian_of_lFunction_ne_zero` for the
+Kolyvagin–Logachev half, `lFunction_apply_one_ne_zero_of_kenkuLevel` for
+the numerical half, and `exists_isLFunctionOf_of_isWeightTwoEigenform`
+(in `ModularCurve/WeightTwoEigenform.lean`) for Hecke's analytic
+continuation. -/
+theorem lFunction_apply_one_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a)
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) : L 1 ≠ 0 :=
+  sorry
+
+/-- **Kolyvagin–Logachev: analytic rank `0` forces `J₀(N)(ℚ)` to be
+torsion** (sorry node) — LEVEL-FREE in the arithmetic sense that matters:
+`hN : N ∈ kenkuLevels` has been REPLACED by the analytic input `hL`, so
+nothing here knows which thirteen levels are special, and nothing here
+evaluates an `L`-function.
+
+TRUE, and it is the deepest single statement in this file.  The proof is
+the composite of three classical theorems:
+
+* **Eichler–Shimura.**  `J₀(N)` is `ℚ`-isogenous to `∏ A_g^{σ₀(N/M)}`,
+  the product running over the newforms `g` of every level `M ∣ N`,
+  where `A_g` is the modular abelian variety `J₀(M) / I_g J₀(M)` cut out
+  by the kernel `I_g` of the Hecke algebra acting through `g`.  Its
+  `L`-function is `∏_{σ} L(g^σ, s)` over the Galois conjugates of `g`.
+* **Gross–Zagier and Kolyvagin–Logachev** (Kolyvagin–Logachev,
+  *Finiteness of the Shafarevich–Tate group and the group of rational
+  points for some modular abelian varieties*, 1989).  If `L(g, 1) ≠ 0`
+  then `A_g(ℚ)` is finite: the Heegner point construction over an
+  imaginary quadratic field satisfying the Heegner hypothesis produces
+  an Euler system whose derived classes bound the Selmer group, and the
+  Gross–Zagier formula converts the analytic hypothesis into
+  non-triviality of the Heegner class.
+* **Isogeny invariance.**  A `ℚ`-isogeny `φ : J₀(N) → ∏ A_g` has finite
+  kernel, so if every `A_g(ℚ)` is torsion then for `x ∈ J₀(N)(ℚ)` some
+  `m ≠ 0` has `φ(m • x) = 0`, hence `m • x` lies in the finite group
+  `ker φ (ℚ)` and is torsion, hence `x` is.  This last step is the only
+  one that is elementary, and it is the reason the conclusion is
+  `IsTorsion` rather than `Finite` — finiteness would additionally need
+  Mordell–Weil, which is `fg_relPoint_of_abelianScheme` above and is
+  deliberately NOT re-absorbed here.
+
+**FAITHFULNESS AUDIT (2026-07-27).**
+
+*`hL` quantifies over the right set.*  `hL` ranges over every normalized
+Hecke eigenform in `S₂(Γ₀(N))` — which by Atkin–Lehner theory is the
+newforms of every level `M ∣ N` TOGETHER WITH their `p`-stabilizations,
+a strictly larger set than the newforms.  That is correct for this
+statement in both directions.  It is not too weak, because every newform
+of level `M ∣ N` is literally an element of `S₂(Γ₀(N))` and so is
+covered.  It is not too strong, because a `p`-stabilization of `g` has
+`L(f, s) = L(g, s) ∏ (1 - β_p p^{-s})` with `|β_p| ≤ √p < p` by Deligne,
+so its value at `1` differs from `L(g, 1)` by a nonzero factor: the
+enlarged hypothesis is *equivalent* to the one about newforms.  The same
+computation is what makes `lFunction_apply_one_ne_zero_of_kenkuLevel`
+provable, and it is written out in `WeightTwoEigenform.lean`.
+
+*Not vacuous.*  The hypothesis is satisfiable: it holds at all thirteen
+Kenku levels, which is exactly what
+`lFunction_apply_one_ne_zero_of_kenkuLevel` asserts, and it holds
+trivially at every `N` with `S₂(Γ₀(N)) = 0` — where the conclusion is
+also true, `J₀(N)` being a point.  It is FALSE at `N = 37` and at every
+other level of positive rank, which is what makes it the honest carrier
+of the arithmetic.
+
+*`jac` may not be dropped.*  Without it `J` is an arbitrary abelian
+scheme over `ℚ` receiving nothing, and the conclusion is false for, say,
+an elliptic curve of rank `1`.  `h` may not be dropped either: it is
+what makes `X` the modular curve whose Jacobian the `L`-functions in
+`hL` belong to.  `N` enters only through `h` and `hL`.
+
+IRREDUCIBLE at this pin, and here is the axis searched, so the next
+reader need not redo it.  *Cuts along the arithmetic* were tried:
+
+* "isogeny decomposition of `J₀(N)`" + "each factor is torsion" is NOT a
+  cut — the degenerate witness `n = 0` (empty product) makes the first
+  half assert exactly the conclusion, so no content moves across the
+  seam.  Any decomposition that keeps both halves geometric has this
+  defect; the seam has to be analytic, which is why it is `L(f, 1)`.
+* "`A_g(ℚ)` is torsion when `L(g, 1) ≠ 0`" as a separate leaf requires
+  the modular abelian variety `A_g`, hence the Hecke algebra acting on
+  `J₀(M)` and its quotients — none of which exists in `Mathlib`, in
+  `~/cs/FLT`, or here.  Stating it is a real, statable next step and is
+  the correct further decomposition of THIS leaf; it is not attempted
+  now because it needs a Hecke-algebra interface, not because it is
+  impossible.  The check that would refute this:
+  `grep -rn "heckeAlgebra\|HeckeAlgebra\|AbelianVarietyAttachedTo"
+  Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+
+The *axis not searched*: a `p`-adic / Iwasawa route (Kato's Euler
+system, which also gives rank `0` from `L(f, 1) ≠ 0` and might factor
+through the same seam), and Mazur's Eisenstein-ideal argument, which
+proves finiteness of `J₀(N)(ℚ)` for `N` prime by an entirely different
+route and does not obviously extend to composite `N`. -/
+theorem isTorsion_jacobian_of_lFunction_ne_zero (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      ∃ L : ℂ → ℂ, IsLFunctionOf a L ∧ L 1 ≠ 0) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
+  sorry
+
+/-- **`rank J_0(N)(ℚ) = 0` at the thirteen Kenku levels** (PROVEN
+2026-07-27, from three leaves) — `J₀(N)(ℚ)` is a TORSION group.
+
+The assembly is the whole of the classical argument's *shape*:
+
+1. `exists_isLFunctionOf_of_isWeightTwoEigenform` (Hecke) produces the
+   `L`-function of each normalized eigenform in `S₂(Γ₀(N))` as an entire
+   function;
+2. `lFunction_apply_one_ne_zero_of_kenkuLevel` (numerics) says that at
+   the thirteen Kenku levels it does not vanish at `s = 1`;
+3. `isTorsion_jacobian_of_lFunction_ne_zero` (Eichler–Shimura plus
+   Kolyvagin–Logachev) converts that analytic input into the arithmetic
+   conclusion.
+
+The `L`-function is well defined — any two entire functions agreeing
+with the Dirichlet series on `Re s > 2` agree everywhere by the identity
+theorem, and that argument is machine-checked and recorded verbatim on
+`IsLFunctionOf` — so step 2 is a statement about a number, not about a
+chosen witness.  See the previous docstring for the
+reconnaissance that establishes step 2 numerically, and
+`WeightTwoEigenform.lean` for why quantifying over eigenforms rather
+than newforms costs nothing. -/
 theorem isTorsion_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -13978,7 +14157,9 @@ theorem isTorsion_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     (jac : IsJacobianOf strX ab o) :
     letI := ab.addCommGroup (𝟙 SpecQ)
     AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
-  sorry
+  isTorsion_jacobian_of_lFunction_ne_zero N h jac fun f a hf =>
+    let ⟨L, hL⟩ := exists_isLFunctionOf_of_isWeightTwoEigenform N f a hf
+    ⟨L, hL, lFunction_apply_one_ne_zero_of_kenkuLevel N hN f a hf L hL⟩
 
 /-- **`J_0(N)(ℚ)` is finite at the thirteen Kenku levels** (PROVEN, from
 the two leaves above).
@@ -14453,8 +14634,8 @@ separated:
   genus formula, and `numRationalCusps_pos_of_kenkuLevel` likewise
   supplies the base point.  No sorry, no table lookup: the index,
   elliptic points and cusps are computed from `N`.
-* **The rank half is Kolyvagin–Logachev** and stays open, alone, in
-  `isTorsion_jacobian_of_kenkuLevel`.
+* **The rank half is Kolyvagin–Logachev** and is itself now a PROVEN
+  assembly, `isTorsion_jacobian_of_kenkuLevel`, over three leaves.
 
 **Second round of splitting (2026-07-27).**  Both remaining halves were
 each still carrying two unrelated theories, and both have been split
@@ -14477,7 +14658,14 @@ autoduality that identifies it with the Jacobian are separate leaves,
 over the `IsRelPicZeroOf` / `RelPicEquiv` infrastructure in
 `Fermat/FLT/ModularCurve/RelativePicard.lean`.
 
-The seven open leaves under this node, and the single theory each one
+**Fifth round, on the rank half, same release.**
+`isTorsion_jacobian_of_kenkuLevel` was carrying THREE theories — the
+analytic continuation of an `L`-function, a numerical non-vanishing, and
+Kolyvagin–Logachev — and is now a proven assembly over one leaf each.
+The seam is `L(f, 1) ≠ 0`, stated through the interface in
+`ModularCurve/WeightTwoEigenform.lean`.
+
+The nine open leaves under this node, and the single theory each one
 needs, are:
 
 | leaf | theory | level-specific? |
@@ -14486,14 +14674,16 @@ needs, are:
 | `isJacobianOf_of_isRelPicZeroOf` | autoduality / biduality | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
-| `isTorsion_jacobian_of_kenkuLevel` | Kolyvagin–Logachev | **yes** |
+| `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
+| `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
 | `ajMor_eq_const_of_not_injective` | Riemann–Roch | no |
 | `hasNonconstantAbelianMap_of_one_le_x0Genus` | genus formula | **yes** |
 
-Only two of the seven mention `N` at all, and each of the other five is
-a named classical theorem stated for an arbitrary object — which is what
-makes them dispatchable independently, and reusable by the rest of the
-modular-curve subtree. -/
+Only two of the nine mention `N` or `kenkuLevels` at all, and each of
+the other seven is a named classical theorem stated for an arbitrary
+object — which is what makes them dispatchable independently, and
+reusable by the rest of the modular-curve subtree. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) : HasRankZeroJacobian strX := by
