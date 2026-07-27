@@ -1832,9 +1832,10 @@ transport along that identification. -/
 The node below is ASSEMBLED (2026-07-27) and is no longer a single
 `sorry`.  Its proof is `exists_ellipticScheme_of_projModel`, and that
 theorem together with the five open leaves it rests on —
-`nonempty_projGroupLaw`, `isProper_projToSpec`,
+`exists_projAdd`, `isProper_projToSpec`,
 `smoothOfRelativeDimension_projToSpec`,
-`geometricallyConnected_projToSpec`, `exists_projGeomFibreAddEquiv` —
+`geometricallyConnected_projToSpec`,
+`exists_projGroupLaw_geomFibreAddEquiv` —
 lives in `Fermat/FLT/ModularCurve/EllipticScheme.lean`.
 
 They are in a separate module because the projective Weierstrass model
@@ -2009,18 +2010,26 @@ open work is the five leaves in
 `Fermat/FLT/ModularCurve/EllipticScheme.lean`, which are mutually
 independent and separately dispatchable:
 
-* `nonempty_projGroupLaw` — items 5+6, the chord–tangent law as
-  morphisms plus associativity.  This is the substantial geometric work.
+* `exists_projAdd` — items 5+6, the chord–tangent law `m` as a morphism
+  plus the four group axioms.  This is the substantial geometric work.
+  (`nonempty_projGroupLaw` is PROVEN from it: `e` and `i` are constructed
+  outright as `projInfty` and `projNeg`.)
 * `smoothOfRelativeDimension_projToSpec` — item 7a, descending the local
   Jacobian criterion along the affine cover of `Proj`.
 * `geometricallyConnected_projToSpec` — item 7b.
 * `isProper_projToSpec` — properness, which is `Proj.toSpecZero`'s
   properness plus the identification of the degree-zero part with `ℚ`.
-* `exists_projGeomFibreAddEquiv` — item 8, the equivariant `≃+`.
+* `exists_projGroupLaw_geomFibreAddEquiv` — item 8, the equivariant `≃+`,
+  RESTATED 2026-07-27 with the group law bound EXISTENTIALLY.
 
-Only `exists_projGeomFibreAddEquiv` depends on another of them (it takes
-the `ProjGroupLaw` data as an argument); the other four are independent
-of each other. -/
+All five are independent of each other.  The item-8 leaf no longer takes
+a `ProjGroupLaw` argument: the earlier form quantified over an ARBITRARY
+one, which pins nothing about `m`, and was therefore provable only
+through the rigidity theorem.  `exists_projGeomFibreAddEquiv` survives
+under its own name as a PROVEN consequence about the concrete
+`projGroupLaw E`.  The item-8 leaf as restated SUBSUMES `exists_projAdd`
+— a witness supplies `m` and `hassoc` too — so the two are candidates to
+be merged into one cut; until then they are separately dispatchable. -/
 theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ (A : Scheme.{0}) (f : A ⟶ SpecQ) (ab : AbelianSchemeStruct f),
       SmoothOfRelativeDimension 1 f ∧
