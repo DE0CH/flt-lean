@@ -11457,13 +11457,6 @@ theorem injective_aj_of_one_le_x0Genus_general {N : ℕ} (_hg : 1 ≤ x0Genus N)
     Function.Injective (jacZ.aj g) :=
   sorry
 
-/-- **Positive genus makes Abel–Jacobi injective on `ℚ`-rational points**
-(PROVEN 2026-07-27, as the `S = T = Spec ℚ`, `g = 𝟙` case of
-`injective_aj_of_one_le_x0Genus_general`).
-
-Kept as a separate name because `hasRankZeroJacobian_of_kenkuLevel` and
-the `HasRankZeroJacobian` interface are written over `Spec ℚ` at the
-identity test object; no call site moves. -/
 /-- **Positive genus makes Abel–Jacobi injective on rational points**
 (PROVEN, from the two leaves above) — the bridge from the arithmetic
 `x0Genus` to the geometry.
