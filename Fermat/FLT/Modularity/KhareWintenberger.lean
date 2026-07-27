@@ -377,6 +377,15 @@ public import Mathlib.LinearAlgebra.Pi
 -- matrix-charpoly bridges
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
+-- PUBLIC (2026-07-27): `HilbertHeckeAlgebra` and `heckeZFormMap` now appear in
+-- STATEMENT position, in the two leaves of the modularity-lifting cut
+-- (`nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`,
+-- `exists_classifyingHom_hilbertHeckeAlgebra`) below.  A proof-only import does
+-- not re-export, so `import Deformation` alone — through which this module
+-- already reaches it — does not suffice.  This adds NO module to any cone:
+-- `Deformation.lean` already `public import`s `HilbertModularity`, so the
+-- module was in this file's import closure before this line was written.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity
 -- the `charFrob` transport API (`GaloisRep.charFrob_map_algEquiv`,
 -- `GaloisRep.exists_finset_isUnramifiedAt_map`), which discharges the base
 -- of the solvable-descent chain (`heckeSystemDescendsTo_bot`)
@@ -1392,10 +1401,231 @@ theorem exists_numberField_ringHom_of_moduleFinite_int
     E₀.subtype.comp (ULift.ringEquiv (R := E₀)).toRingHom,
     fun t => ULift.up ⟨ιT t, hmem t⟩, fun t => rfl⟩
 
-/-- **`R = 𝕋` over the totally real base, in Hecke-algebra form** (SORRY
-node, cut 2026-07-26 out of `exists_heckeEigensystem_of_congruentSeed`
-below — it carries ALL of that node's automorphic content and none of its
-commutative algebra).
+/-! #### The modularity-lifting cut, SPLIT AT ITS TWO LITERATURE JOINTS
+(2026-07-27)
+
+`exists_heckeTraceAlgebra_of_congruentSeed` below is no longer a sorry node:
+it is an assembly over the two leaves in this section plus
+`exists_finset_superset_of_places_mem`.  The split is the one the ROUTE AUDIT
+in that node's docstring describes, taken at the joint the literature itself
+uses:
+
+* **potential modularity at the GIVEN `F`** — the seed newform's Hecke algebra
+  exists, at minimal level (`nonempty_hilbertHeckeAlgebra_of_moretBaillySeed`);
+* **modularity lifting over `F`, i.e. `R_F = T_F`** — the lift `ρ|_{G_F}`, being
+  a deformation of the same residual representation, is a point of that Hecke
+  algebra (`exists_classifyingHom_hilbertHeckeAlgebra`).
+
+Everything else that node used to assert — the `ℤ`-form and hence
+`Module.Finite ℤ T`, the level `badF ⊇ {w ∣ ℓ}`, and the `coeff 1`/sign
+bookkeeping between a Frobenius characteristic polynomial and a Hecke
+eigenvalue — is now DISCHARGED, from `HilbertHeckeAlgebra`'s own fields
+(`T₀`, `moduleFiniteT₀`, `heckeT₀`, `heckeT_eq`, `charFrobT`) and from
+`exists_finset_superset_of_places_mem`.  This is the consumption of the
+`ℤ`-RATIONAL STRUCTURE repair of 2026-07-27 that item 3 of that audit
+announced was available and that nothing had yet used.
+
+WHY THE `HilbertHeckeAlgebra` VOCABULARY.  Stating the residue in the
+abstract-Hecke-algebra language of `HardlyRamified/HilbertModularity.lean`
+rather than in raw `∃ T, ∃ ιT, …` form is what makes the in-tree `R_F = T_F`
+stack directly applicable: `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`,
+`surjective_classifyingMap_hilbertHeckeDatum` and
+`injective_classifyingMap_hilbertHeckeDatum` all take a
+`HilbertHeckeAlgebra ℓ F ρbar` as an ordinary argument, so the second leaf
+below is one composition away from them.  It costs the `public import` of that
+module added at the head of this file, and no module in any cone. -/
+
+/-- **Potential modularity at the GIVEN totally real base `F`** (SORRY leaf,
+cut 2026-07-27 out of `exists_heckeTraceAlgebra_of_congruentSeed` below):
+the Moret–Bailly seed over `F` is the eigensystem of a Hilbert newform whose
+localized Hecke algebra, at MINIMAL level, exists as a
+`HilbertHeckeAlgebra ℓ F ρbar`.
+
+Note what this leaf does NOT mention: the lift `ρ`, its coefficient ring `O`,
+the reduction `π` and the congruence `hcong` are all absent.  Producing the
+seed's Hecke algebra is a statement about `ρbar` and the seed alone; the lift
+enters only in `exists_classifyingHom_hilbertHeckeAlgebra` below.  Keeping the
+two hypothesis packages disjoint is what makes each half independently
+attackable.
+
+CLASSICAL CONTENT.  `seed.modular₀` says the seed representation `σ` has the
+Frobenius characteristic polynomials of a Hilbert newform `g` of parallel
+weight `2` over `F`, and `seed.residual₀` says `σ` reduces to
+`ρbar|_{G_F}`.  What has to be produced is the localization at the maximal
+ideal of the Hecke algebra of `g`'s level attached to `ρbar|_{G_F}`, together
+with the Galois representation `ρT` valued in it (Carayol/Taylor attachment
+with local–global compatibility), the `ℤ`-form `T₀` (the classical rational
+structure of the space of Hilbert cusp forms), and — this is the arithmetic
+step, not the bookkeeping one — `isHilbertHardlyRamified` for `ρT`.  That last
+field is what makes this LEVEL LOWERING over a totally real field: a
+`HilbertHeckeAlgebra` is of the minimal level BY FIAT (see the FORMAL-CONTENT
+AUDIT of `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`), so the passage
+from the seed's level — which `MoretBaillySeed` constrains only through the
+finite set `bad₀` — to the minimal one is Fujiwara/Jarvis/Rajaei.  The same
+obligation is recorded, for the `F` that `HilbertModularity.lean` produces
+itself, in `nonempty_potentialHeckeDatum_of_five_le`; this leaf is its twin
+for an `F` handed in from outside.
+
+RELATION TO `nonempty_potentialHeckeDatum_of_five_le`, and why that leaf does
+NOT discharge this one.  That leaf produces its own `F` together with the
+extra field `residueCardTwo`; this one is handed an `F` that carries no such
+guarantee.  A `PotentialHeckeDatum` therefore cannot be substituted — its `F`
+is not this `F`, and this leaf's consumer states its conclusion about the
+places of the `F` it is given.  See item 4 of the ROUTE AUDIT below.
+
+Literature: Taylor, *Remarks on a conjecture of Fontaine and Mazur*, J. Inst.
+Math. Jussieu 1 (2002), Theorem B; Carayol, Ann. Sci. ÉNS 19 (1986); Taylor,
+*On Galois representations associated to Hilbert modular forms*, Invent. Math.
+98 (1989); Fujiwara, *Deformation rings and Hecke algebras in the totally real
+case*; Jarvis, Math. Ann. 313 (1999); Rajaei, J. reine angew. Math. 537 (2001).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem nonempty_hilbertHeckeAlgebra_of_moretBaillySeed
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) :
+    Nonempty (HilbertHeckeAlgebra ℓ F ρbar) :=
+  sorry
+
+/-- **`R_F = T_F` at the given `F`, in classifying-map form** (SORRY leaf, cut
+2026-07-27 out of `exists_heckeTraceAlgebra_of_congruentSeed` below): the
+hardly ramified lift `ρ`, restricted to `G_F` and residually congruent to
+`ρbar|_{G_F}`, is a POINT of any Hilbert Hecke algebra of `ρbar` over `F` —
+i.e. there is a ring homomorphism `φ : T → O` carrying the characteristic
+polynomial of `ρT` to that of `ρ|_{G_F}`, at every element of `G_F`.
+
+Taking `charpoly` at every `g` rather than `charFrob` at good places is
+deliberate and matches `HilbertDeformationDatum.resid`,
+`HilbertHeckeAlgebra.residT` and the three `IsWeaklyUniversal`
+compatibilities, all of which are stated that way; the good-place Frobenius
+statement is the instance at
+`Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+(Field.AbsoluteGaloisGroup.adicArithFrob w)`, which is how the assembly below
+consumes it (the same instantiation `HilbertHeckeAlgebra.residualT` uses).
+
+## THE IN-TREE ROUTE, and it is a composition of PROVEN pieces
+
+Quantifying over an ARBITRARY `H` is not a strengthening this leaf cannot
+afford: `surjective_classifyingMap_hilbertHeckeDatum` and
+`injective_classifyingMap_hilbertHeckeDatum` both take the Hecke algebra as an
+ordinary argument, so the in-tree `R_F = T_F` already asserts `R ≃ T` for every
+`H` satisfying the structure's axioms.  Concretely, with `𝒟'` the `F`-level
+datum of `ρ|_{G_F}` (coefficients `O`), `𝒟` a weakly universal
+trace-generated datum and `(𝒟T, e)` the datum of `H` from
+`exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`:
+
+* `𝒟.IsWeaklyUniversal` supplies BOTH `f : 𝒟.R → O` and `ψ : 𝒟.R → 𝒟T.R`,
+  each carrying `∀ g, ((𝒟.ρ g).charpoly).map · = (·.ρ g).charpoly`;
+* `ψ` is bijective by the two `classifyingMap` lemmas;
+* `φ := f ∘ ψ⁻¹ ∘ e⁻¹` is the conclusion, the charpoly clause composing.
+
+Building `𝒟'` from `ρ` needs `IsNoetherianRing O` (`IsNoetherianRing.of_finite`),
+`IsAdic (maximalIdeal O)` and `IsAdicComplete` (from `[Module.Finite ℤ_[ℓ] O]`
+and `[IsModuleTopology ℤ_[ℓ] O]` through
+`ProfiniteLocalNoetherian.isAdic_isAdicComplete_of_isOpen_of_fg`, whose `hopen`
+is mathlib's `IsLocalRing.isOpen_maximalIdeal`), and its `resid` clause in the
+`∀ σ` form, which is `forall_charpoly_map_eq_of_charFrob_map_eq` above applied
+to `hcong`.  Only the `hbasis` clause — that `nhds 0` in `O` has a basis of
+open IDEALS, witnessed by `Ideal.map (algebraMap ℤ_[ℓ] O) ((maximalIdeal ℤ_[ℓ]) ^ n)`
+— still has to be written out; the basis homeomorphism `O ≃ₜ (ι → ℤ_[ℓ])` used
+at `Threeadic.lean`'s `exists_residue_package` is the intended input, `O` being
+`ℤ_[ℓ]`-free as a domain with `hZinj` (`Module.free_of_finite_type_torsion_free'`).
+
+## THE ONE REAL BLOCKER: the splitting condition at `2`, and it is NOT here
+
+`exists_isWeaklyUniversal_hilbertDeformationDatum` and
+`exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` both carry
+
+    hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1))
+
+and this leaf is handed an `F` with no such constraint.  `hw2` CANNOT be added
+as a hypothesis about a given totally real Galois `F` and then discharged
+downstream — it is simply false for many of them (`F = ℚ(√5)` has `2` inert,
+`N(w) = 4`, `N(w)² − 1 = 15`, divisible by `ℓ = 5`; the refutation block above
+`isHilbertTameAtTwo_of_fibreProduct` records a machine-checked counterexample
+at `ℓ = 5`, `F = ℚ(μ₅)`, `N(w) = 16`).  It has to be arranged where `F` is
+BORN, i.e. by demanding `2 ∈ S` in the Moret–Bailly geometric chain
+`exists_moretBailly_seed_of_five_le` → `exists_hilbertBlumenthalPoint_of_five_le`
+→ … → `exists_normalSplitPoint_of_affine_curve`, which already produces an `F`
+split completely at a prescribed finite set `S` — the obstruction being that
+`S` is chosen ABOVE the Weil–Hensel bound `B` of
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible`, and `2` is below
+it, so `2 ∈ S` costs a genuine `ℚ₂`-point of the twisted Hilbert–Blumenthal
+variety lying on the Bertini curve.  That is the `Ω_2 ⊆ X(ℚ_2)` of
+`PotentialHeckeDatum.residueCardTwo`.  **Refuting check: read
+`exists_normalSplitPoint_of_affine_curve` in `Modularity/MoretBailly.lean` and
+see whether its `S` is still constrained to lie above `B`.**
+
+Consequently a discharge of THIS leaf along the in-tree route needs the
+geometric chain repaired first, and the repair is a cut-level change to
+`MoretBaillySeed`'s production, not to this statement.  Route (ii) — collapse,
+the hypothesis package being classically unsatisfiable at `ℓ ≥ 5`, this
+module's headline — remains available as it is for every leaf in this cluster.
+
+WARNING ON THE INJECTIVITY HALF (2026-07-27, from the owner of the
+Taylor–Wiles-prime cluster).  `injective_classifyingMap_hilbertHeckeDatum` is
+the Taylor–Wiles patching half and rests on the open leaves
+`exists_hilbertTaylorWilesPrimeSet` and `exists_hilbertPatchedModule`; on
+branch `flt-lean-59` those are decomposed further and that decomposition
+contains a FALSE leaf (`exists_hilbertFixing_rootsOfUnity_discrim_isSquare`,
+refuted at `ℓ = 7`, curve 54b1).  Nothing here is tainted — none of those
+declarations is in this tree and the two `classifyingMap` bricks are
+axiom-clean — but expect the injectivity half to arrive with an ENLARGED
+residual field `k`, and check that `HilbertHeckeAlgebra.πT`'s target survives
+that enlargement before building on it.
+
+Literature: Kisin, *Moduli of finite flat group schemes, and modularity*, Ann.
+of Math. 170 (2009), Theorem (0.1); Taylor, *On the meromorphic continuation of
+degree two L-functions*, Doc. Math. Extra Vol. (2006), Theorem 5.4; Fujiwara,
+*Deformation rings and Hecke algebras in the totally real case*;
+Skinner–Wiles; the FLT blueprint ch. 4.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_classifyingHom_hilbertHeckeAlgebra
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (hcong : ∀ w ∉ badρ,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
+        (ρbar.map (algebraMap ℚ F)).charFrob w)
+    (H : HilbertHeckeAlgebra ℓ F ρbar) :
+    ∃ φ : H.T →+* O, ∀ g : Field.absoluteGaloisGroup F,
+      ((H.ρT g).charpoly).map φ = ((ρ.map (algebraMap ℚ F)) g).charpoly :=
+  sorry
+
+/-- **`R = 𝕋` over the totally real base, in Hecke-algebra form** (PROVEN
+2026-07-27 as an ASSEMBLY over the two leaves immediately above — it was a
+sorry node from its cut on 2026-07-26 until then; the audit that follows is
+kept because it is what the two leaves inherit).
 
 Same hypotheses as `exists_heckeEigensystem_of_congruentSeed`; the
 conclusion produces, instead of a number field and an `E`-valued
@@ -1586,6 +1816,46 @@ Taylor 2002 uses it with `2 ∈ S`).  Anyone attacking this leaf should start
 at (4), because (1)–(3) are cheap and (4) is what actually decides whether
 the in-tree route exists.
 
+## ASSEMBLY (2026-07-27) — THIS NODE IS NO LONGER A SORRY NODE
+
+The audit above is now the docstring of two leaves rather than of this one.
+Its item (3) is CONSUMED here — nothing further to do — and its item (4) is
+inherited verbatim by `exists_classifyingHom_hilbertHeckeAlgebra`, where it
+belongs, because it is the `F`-level DEFORMATION category that needs the
+splitting condition at `2` and not the production of the Hecke algebra.  The
+proof is:
+
+* `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` (SORRY — potential
+  modularity at the given `F`, i.e. the seed newform's minimal-level Hecke
+  algebra) gives `H : HilbertHeckeAlgebra ℓ F ρbar`;
+* `exists_classifyingHom_hilbertHeckeAlgebra` (SORRY — `R_F = T_F`) gives
+  `φ : H.T →+* O` with `∀ g, ((H.ρT g).charpoly).map φ = ((ρ|_{G_F}) g).charpoly`;
+* `T := H.T₀`, whose `Module.Finite ℤ` is the structure field
+  `moduleFiniteT₀` added by the `ℤ`-RATIONAL STRUCTURE repair of 2026-07-27;
+* `ιT := ιO ∘ φ ∘ TEquiv.symm ∘ heckeZFormMap`, so that `ιT (heckeT₀ w)` is
+  `ιO (φ (heckeT w))` by `heckeT_eq`;
+* `badF` from `exists_finset_superset_of_places_mem H.bad ℓ`, which is what
+  supplies the `{w ∣ ℓ} ⊆ badF` clause;
+* the trace identity is `charFrobT` (`(ρT.charFrob w).coeff 1 = -heckeT w`)
+  fed through `φ` at `coeff 1`, exactly as `HilbertHeckeAlgebra.residualT`
+  does with `πT`.
+
+FORMAL-CONTENT NOTE.  Two hypotheses of this statement are NOT used by the
+assembly and are underscore-prefixed so that the fact is mechanically visible
+rather than merely asserted:
+
+* `_hπ`, the `ℚ`-level residual congruence at the good rational primes, is
+  subsumed by `hcong`, the `F`-level congruence, which is also handed in and
+  is the one the deformation-theoretic argument consumes;
+* `_hιO`, injectivity of the coefficient embedding, is not needed once the
+  Hecke algebra is produced with its own embedding — the conclusion is an
+  identity of elements of `ℚ̄_ℓ`, true for any ring map `ιO`.
+
+Neither is removed from the signature: the consumer
+`exists_heckeEigensystem_of_congruentSeed` applies this node positionally, and
+a future owner who reinstates a stronger conclusion (say one asserting that
+`ιT` is injective) inherits the binders it will need.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_heckeTraceAlgebra_of_congruentSeed
@@ -1605,7 +1875,7 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
     (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+    (_hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
@@ -1616,7 +1886,7 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
     (hcong : ∀ w ∉ badρ,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
         (ρbar.map (algebraMap ℚ F)).charFrob w)
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO) :
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_hιO : Function.Injective ιO) :
     ∃ (T : Type u) (_ : CommRing T) (_ : Module.Finite ℤ T)
       (ιT : T →+* AlgebraicClosure ℚ_[ℓ])
       (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -1624,8 +1894,39 @@ theorem exists_heckeTraceAlgebra_of_congruentSeed
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
           (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
       ∀ w ∉ badF,
-        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ιT (t w) :=
-  sorry
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ιT (t w) := by
+  classical
+  -- potential modularity at the given `F`: the seed newform's Hecke algebra
+  obtain ⟨H⟩ := nonempty_hilbertHeckeAlgebra_of_moretBaillySeed hℓodd hℓ5 hW
+    hρbar hirr F hFtr hFgal hirrF seed
+  -- `R_F = T_F`: the lift `ρ|_{G_F}` is a point of that Hecke algebra
+  obtain ⟨φ, hφ⟩ := exists_classifyingHom_hilbertHeckeAlgebra hℓodd hℓ5 hZinj
+    hrank hρ hW hρbar hirr π hπsurj F hFtr hFgal hirrF badρ hcong H
+  haveI := H.charPK
+  have hℓne : ((ℓ : ℕ) : NumberField.RingOfIntegers F) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out (p := ℓ.Prime)).ne_zero
+  obtain ⟨badF, hsub, hbadℓ⟩ :=
+    exists_finset_superset_of_places_mem H.bad ((ℓ : ℕ) : NumberField.RingOfIntegers F) hℓne
+  refine ⟨H.T₀, inferInstance, inferInstance,
+    ιO.comp (φ.comp (H.TEquiv.symm.toAlgHom.toRingHom.comp
+      (heckeZFormMap ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal))),
+    badF, H.heckeT₀, hbadℓ, ?_⟩
+  intro w hw
+  have hwbad : w ∉ H.bad := fun h => hw (hsub h)
+  -- the charpoly compatibility at the arithmetic Frobenius over `w`
+  have key : (H.ρT.charFrob w).map φ = (ρ.map (algebraMap ℚ F)).charFrob w :=
+    hφ (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+      (Field.AbsoluteGaloisGroup.adicArithFrob w))
+  have hc : φ ((H.ρT.charFrob w).coeff 1) =
+      ((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1 := by
+    rw [← key, Polynomial.coeff_map]
+  -- the `ℤ`-form's Hecke operator is the Hecke operator
+  have hZ : H.TEquiv.symm (heckeZFormMap ℓ k H.T₀ H.𝔪 H.𝔪_isMaximal (H.heckeT₀ w)) =
+      H.heckeT w := by
+    rw [← H.heckeT_eq w, H.TEquiv.symm_apply_apply]
+  simp only [RingHom.comp_apply, AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom,
+    AlgEquiv.coe_toAlgHom, hZ]
+  rw [← hc, H.charFrobT w hwbad, map_neg, map_neg]
 
 /-- **`R = 𝕋` over the totally real base** (sub-leaf (a) of
 the modularity-lifting cut — Kisin 2009 / Taylor 2006, the
@@ -1792,7 +2093,10 @@ discharged by the shape of `charFrob`, and it has no junk witness:
 ASSEMBLY (2026-07-26 — THIS NODE IS NO LONGER A SORRY NODE).  It is now
 a two-line assembly over the cut immediately above:
 
-* `exists_heckeTraceAlgebra_of_congruentSeed` (SORRY — the citation)
+* `exists_heckeTraceAlgebra_of_congruentSeed` (PROVEN 2026-07-27 as an
+  assembly over `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` and
+  `exists_classifyingHom_hilbertHeckeAlgebra`, the two SORRY leaves that now
+  carry the citation between them)
   produces the Hecke algebra `T`, **module-finite over `ℤ`**, its
   embedding `ιT : T ↪ ℚ̄_ℓ`, the level `badF ⊇ {w ∣ ℓ}`, and the Hecke
   operators whose images are the Frobenius traces;
@@ -1825,16 +2129,18 @@ and Hilbert basis) and of `~/cs/FLT`, but it is FALSE of this project:
 through `HardlyRamified/Deformation.lean` — carries (4) as
 `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` (PROVEN over its own
 leaves) and (2) in abstract `ℤ_[ℓ]` form as `HilbertHeckeAlgebra`.  The
-two obstructions that remain — the absent `ℚ`-rational structure of the
-Hecke algebra, and the SPLITTING CONDITION AT `2` that the `F`-level
-deformation category needs and the Moret–Bailly geometric chain does not
-produce — are stated precisely in the ROUTE AUDIT on
-`exists_heckeTraceAlgebra_of_congruentSeed` above, which is where the
-remaining sorry now lives.  Anyone attacking this cluster should read that
-audit FIRST; note in particular that its 2026-07-26 SECOND PASS retracts
-the earlier "re-plumb `F` from `PotentialHeckeDatum`" diagnosis, which is
-not possible (this leaf's conclusion is about the places of the `F` it is
-handed) and was not the repair.
+first of the two obstructions that used to remain — the absent `ℚ`-rational
+structure of the Hecke algebra — is GONE, supplied by `HilbertHeckeAlgebra`'s
+`T₀`/`heckeT₀`/`heckeT_eq` fields and consumed by
+`exists_heckeTraceAlgebra_of_congruentSeed`'s assembly above.  The second —
+the SPLITTING CONDITION AT `2` that the `F`-level deformation category needs
+and the Moret–Bailly geometric chain does not produce — survives, and it now
+sits on exactly one leaf, `exists_classifyingHom_hilbertHeckeAlgebra`, whose
+docstring states it with its refuting check.  Anyone attacking this cluster
+should read that leaf and the ROUTE AUDIT above it FIRST; note in particular
+that the audit's 2026-07-26 SECOND PASS retracts the earlier "re-plumb `F`
+from `PotentialHeckeDatum`" diagnosis, which is not possible (the conclusion
+is about the places of the `F` that is handed in) and was not the repair.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
