@@ -5604,8 +5604,220 @@ refutes this correction**, if it is wrong: exhibit a prime among
 is that check, and it is one `gp` line per entry. -/
 def isogenyClassPrimeSqLevels : List ℕ := [121, 289, 361, 1369, 1849, 4489, 26569]
 
+/-! ### The descent bridge: from a rational point of `Y_0(N)` back to a curve
+
+**The exact converse of `false_of_stable_of_y0HasNoRationalPoint`**, and the
+only obligation in the two prime-square nodes below that is about the modular
+CURVE rather than about elliptic curves.  Introduced 2026-07-27 while cutting
+those two nodes; it is stated once here because it is uniform in `N` and
+therefore serves every level node in this file, not only the eight
+prime squares.
+
+#### Why the tree needs it, stated bluntly (2026-07-27)
+
+`false_of_stable_of_y0HasNoRationalPoint` runs *modular ⟹ elementary*: from
+`Y_0(N)(ℚ) = ∅` it concludes that no elliptic curve over `ℚ` carries a
+Galois-stable cyclic subgroup of order `N`.  Every consumer in
+`FreyCurve/MazurTorsion.lean` uses it in that direction, and consequently
+**all of that module's prime-square material is `ex falso` from the two
+sorried nodes below.**  This is checkable in one read:
+`WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169`
+derives `Fermat.Y0HasNoRationalPoint 169` from
+`y0HasNoRationalPoint_isogenyPrimeSq` at `p = 13`, feeds it to
+`false_of_stable_of_y0HasNoRationalPoint`, and finishes with `.elim` — so the
+Atkin–Lehner endomorphism, the class polynomial of discriminant `-676`, and
+`not_cyclicIsogeny_oneHundredSixtyNine` above it are all consequences of a
+contradiction, carrying no arithmetic of their own.  The same holds at the
+seven other primes through
+`WeierstrassCurve.not_two_stable_lines_of_jInvariant`, whose Vélu
+construction is real but whose closing step is again
+`y0HasNoRationalPoint_isogenyPrimeSq`.
+
+The consequence for a successor is the important part: **the arithmetic
+content of Kenku's prime-square theorem lives nowhere in this tree except in
+the two sorried nodes below**, and it cannot be imported from
+`MazurTorsion.lean`, which imports this module.  So the elementary statements
+have to be restated HERE — which is what
+`not_stableCyclic_sq_of_isogenyClassPrime` and
+`not_stableCyclic_oneHundredSixtyNine` do — and `MazurTorsion.lean`'s
+`not_cyclicIsogeny_sq_of_isogenyPrime_ge_eleven` and
+`not_cyclicIsogeny_oneHundredSixtyNine` should be re-based onto them, which
+would delete the `ex falso` laundering and let that module's genuine work (the
+`j`-invariant table `jInvariant_mem_of_isogenyPrime_ge_eleven` and the Vélu
+quotient) discharge them instead.  That re-basing is a cut-level repair across
+two modules and two owners' regions; it is recorded here rather than performed. -/
+
+/-- **A rational point of `Y_0(N)` comes from an elliptic curve over `ℚ`**
+(sorry node, introduced 2026-07-27), in the contrapositive form that its
+consumers want: if no elliptic curve over `ℚ` carries a Galois-stable cyclic
+subgroup of order `N`, then `Y_0(N)` has no rational point.
+
+The hypothesis is *verbatim* the hypothesis list of
+`false_of_stable_of_y0HasNoRationalPoint`, so the two together say that the
+modular and the elementary statements are EQUIVALENT for every `N`.
+
+#### FAITHFULNESS AUDIT — this is TRUE unconditionally, and the standard
+#### `j = 0, 1728` caveat does NOT apply to it
+
+The docstring of `y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel` below
+warned, correctly, that a bridge of this kind must not be stated "as a
+universally quantified leaf without the descent hypothesis", because at a pair
+with extra automorphisms it is false as a bare implication.  **That warning is
+about a strictly stronger statement than this one and does not refute it.**
+The distinction is exactly which object is required to be defined over `ℚ`:
+
+* FALSE as a bare implication: *the pair `(E, C)` itself descends to `ℚ`*.  A
+  `ℚ`-point of `Y_0(N)` carries only a `ℚ̄`-pair whose field of moduli is `ℚ`,
+  and demanding that this particular pair be `ℚ`-rational is Weil descent with
+  a possibly non-trivial obstruction.
+* TRUE, and what is stated here: *SOME elliptic curve over `ℚ` carries a stable
+  cyclic subgroup of order `N`*.  A quadratic/quartic/sextic TWIST is allowed,
+  and that is what makes the obstruction vanish.
+
+The computation, which is the check that would refute this if it were wrong.
+Let `y ∈ Y_0(N)(ℚ)`.  Coarse moduli gives a `ℚ̄`-pair `(E, C)` with
+`(E^σ, C^σ) ≅ (E, C)` for every `σ ∈ G_ℚ`; in particular `j(E) ∈ ℚ`, so `E`
+already has a model over `ℚ` and we may take `E^σ = E`.  Then for each `σ`
+there is `α_σ ∈ Aut_ℚ̄(E)` with `α_σ(σ C) = C`, well defined modulo
+`A := Aut(E, C)`, and `σ ↦ ᾱ_σ` is a cocycle in `Z¹(G_ℚ, Aut(E)/A)`.  Now
+`Aut(E) ≅ μ_n` as a `G_ℚ`-module with `n ∈ {2, 4, 6}`, and `−1 ∈ A` always,
+since `−C = C`; so `A ∈ {μ₂, μ_n}` and the quotient is `1` or `μ_{n/2}`, the
+isomorphism being induced by `x ↦ x²`.  Under Kummer theory that map on
+cohomology is
+
+`H¹(G_ℚ, μ_n) = ℚˣ/(ℚˣ)ⁿ ⟶ H¹(G_ℚ, μ_{n/2}) = ℚˣ/(ℚˣ)^{n/2}`, `a ↦ a`,
+
+because `δ_n(a)(σ)² = (σ(a^{1/n})/a^{1/n})² = σ(a^{1/(n/2)})/a^{1/(n/2)}`.
+That map is SURJECTIVE, so the cocycle is realised by a twist `E^{(d)}` of `E`
+by some `d ∈ ℚˣ`, and the accompanying `ψ : E ≅ E^{(d)}` carries `C` to a
+`G_ℚ`-stable subgroup — `μ₂` acting trivially on subgroups is what makes the
+quotient by `A` harmless.  `E^{(d)}` is defined over `ℚ`.  ∎
+
+Note the argument needs no case split on `j`: at `n = 2` the quotient is
+already trivial, and the only inputs at `n = 4, 6` are surjectivity of
+`ℚˣ/(ℚˣ)⁴ ↠ ℚˣ/(ℚˣ)²` and `ℚˣ/(ℚˣ)⁶ ↠ ℚˣ/(ℚˣ)³`.  **The check that refutes
+this**: exhibit `n ∈ {4, 6}` and a class in `ℚˣ/(ℚˣ)^{n/2}` not in the image
+of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being induced by the identity on
+representatives.
+
+#### What proving it needs
+
+Precisely the half of the coarse-moduli definition that `IsCoarseModuliY0`
+deliberately omits — bijectivity of `classify` on geometric points, i.e.
+`Y(ℚ̄) ↔ {(E, C)/ℚ̄}/≅`, `G_ℚ`-equivariantly — together with the descent
+computation above.  The first is reachable from `Gamma0Atlas` /
+`Gamma0GITPresentation`, which present `Y_0(N)` concretely and are already in
+this file; initiality alone can never supply it, since it determines `Y` only
+up to isomorphism and says nothing about which points of `Y` are hit.
+
+Cusps are not an obstacle and need no hypothesis: `Y_0(N)` is the coarse space
+of the moduli problem `[Γ₀(N)]`, whose objects are genuine elliptic schemes, so
+it has no cuspidal points to begin with — the cusps appear only on the
+compactification `X_0(N)` of `IsX0Compactification`. -/
+theorem y0HasNoRationalPoint_of_not_stableCyclic {N : ℕ}
+    (h : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic]
+        (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = N →
+        (∀ σ : Field.absoluteGaloisGroup ℚ,
+          ∀ x ∈ AddSubgroup.zmultiples g,
+            WeierstrassCurve.Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+              AddSubgroup.zmultiples g) → False) :
+    Y0HasNoRationalPoint N :=
+  sorry
+
+/-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
+`p²`, for the seven isogeny primes with `genus X_0(p) ≥ 1`** (sorry node,
+introduced 2026-07-27): `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
+
+TRUE, and it is the elementary half of Kenku's prime-square theorem: the
+Mazur–Kenku list of `N` admitting a rational cyclic `N`-isogeny is
+`1, …, 19, 21, 25, 27, 37, 43, 67, 163`, and each of
+`121, 289, 361, 1369, 1849, 4489, 26569` exceeds `163`.
+
+**The route, and why it terminates at exactly these seven primes.**  A
+Galois-stable cyclic `⟨g⟩` of order `p²` gives the stable line `⟨p·g⟩ ⊂ E[p]`;
+the Vélu quotient `E' := E/⟨p·g⟩` then carries TWO DISTINCT stable lines,
+namely the image of `⟨g⟩` and the kernel of the dual isogeny `E' → E`, distinct
+because `g` has order `p²` rather than `p`.  So the statement is equivalent to
+*no elliptic curve over `ℚ` has two independent rational `p`-isogenies*, and
+that terminates as soon as `Y_0(p)(ℚ)` is finite and listable.  See
+`isogenyClassPrimeSqLevels` for the genus table that decides this: `X_0(p)` has
+genus `1` and analytic rank `0` at `p = 11, 17, 19` (so `3, 2, 1` non-cuspidal
+points, checked by enumeration), and genus `≥ 2` at `p = 37, 43, 67, 163` (so
+finiteness by Faltings, with `1` non-cuspidal point at `43, 67, 163` — CM by
+the class-number-one order of `ℚ(√-p)`, in which `p` RAMIFIES, so `E[p]` has a
+unique stable line and two independent `p`-isogenies are impossible with no
+enumeration at all — and the two explicit non-CM `j`-invariants `-7·11³` and
+`-7·137³·2083³` at `p = 37`).
+
+`p = 13` is excluded because `genus X_0(13) = 0` makes `Y_0(13)(ℚ)` infinite
+and the reduction vacuous; that level is
+`not_stableCyclic_oneHundredSixtyNine`.
+
+DUPLICATES A DOWNSTREAM STATEMENT, DELIBERATELY.  This is the same assertion as
+`WeierstrassCurve.not_cyclicIsogeny_sq_of_isogenyPrime_ge_eleven` in
+`FreyCurve/MazurTorsion.lean`, which is marked PROVEN there — but that proof
+routes through `y0HasNoRationalPoint_isogenyPrimeSq`, i.e. through the very
+node this leaf is being used to prove, so it carries no content that can be
+reused here, and that module imports this one in any case.  See the section
+note above `y0HasNoRationalPoint_of_not_stableCyclic` for the re-basing that
+removes the duplication.
+
+Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), Theorem 1 and Table 1; Kenku, *On the modular curves `X_0(125)`,
+`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981). -/
+theorem not_stableCyclic_sq_of_isogenyClassPrime {p : ℕ}
+    (_hp : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = p ^ 2)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
+`169`** (sorry node, introduced 2026-07-27).
+
+TRUE: `169 > 163`, so it is outside the Mazur–Kenku list.
+
+**Why this is a node of its own** and not an instance of
+`not_stableCyclic_sq_of_isogenyClassPrime`: `genus X_0(13) = 0`, so
+`X_0(13) ≅ ℙ¹_ℚ`, `Y_0(13)(ℚ)` is INFINITE — a one-parameter family of curves
+with a rational `13`-isogeny — and the two-independent-lines reduction that
+handles the other seven primes degenerates into a tautology.  Level `169` must
+be settled on `X_0(169)` itself, of genus `8`.  This is Kenku, *The modular
+curve `X_0(169)` and rational isogeny*, J. London Math. Soc. (2) **22** (1980).
+
+The reconnaissance and the two warnings recorded at
+`y0HasNoRationalPoint_oneSixtyNine` below apply verbatim to this leaf, since
+the two are now equivalent through `y0HasNoRationalPoint_of_not_stableCyclic`:
+`rank J_0(169) < 8` is BSD-conditional, and the CRUDE Chabauty–Coleman counting
+bounds cannot close the level for any prime.
+
+DUPLICATES A DOWNSTREAM STATEMENT, DELIBERATELY — this is
+`WeierstrassCurve.not_cyclicIsogeny_oneHundredSixtyNine` of
+`FreyCurve/MazurTorsion.lean`, whose proof is `ex falso` from
+`y0HasNoRationalPoint_oneSixtyNine` and therefore reusable nowhere.  See the
+section note above `y0HasNoRationalPoint_of_not_stableCyclic`. -/
+theorem not_stableCyclic_oneHundredSixtyNine
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = 169)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
 /-- **Kenku's prime-square determination at the seven levels with a
-finite isogeny classification** (sorry node, introduced 2026-07-27):
+finite isogeny classification** (PROVEN 2026-07-27 over
+`y0HasNoRationalPoint_of_not_stableCyclic` and
+`not_stableCyclic_sq_of_isogenyClassPrime`; introduced as a sorry node
+earlier the same day):
 `Y_0(N)(ℚ) = ∅` for `N = p²`, `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
 
 TRUE: none of `121, 289, 361, 1369, 1849, 4489, 26569` lies in the
@@ -5628,27 +5840,41 @@ in how the finite set is obtained and checked:
   finiteness by Faltings, and at `43, 67, 163` the CM argument needs no
   enumeration.
 
-**The one obligation the reduction does not discharge, and it is
-shared by both sub-families.**  `Y0HasNoRationalPoint` is a statement
-about the COARSE moduli space, and `IsCoarseModuliY0` deliberately omits
-bijectivity on geometric points (see its docstring).  So a rational point
-of `Y_0(p²)` does not come with a pair `(E, C)` defined over `ℚ`: what it
-carries is a `ℚ̄`-pair whose field of moduli is `ℚ`, and descending it to
-`ℚ` is Weil descent against `Aut(E, C)`.  This is exactly the gap the
-module docstring names when it says the modular-curve statement is
-STRONGER than the elliptic-curve one — and it is why
-`nonempty_gamma0Datum_of_stable` (curve ⟶ point) exists here while its
-converse does not.  A successor must build that bridge, or else run the
-whole argument on `X_0(p²)` itself.  **Do not state the bridge as a
-universally quantified leaf without the descent hypothesis**: for a pair
-with extra automorphisms it is false as a bare implication, which is the
-standard `j = 0, 1728` caveat.
+**~~The one obligation the reduction does not discharge~~ — NOW A NAMED
+NODE, and the "do not state it" half of this paragraph is REFUTED**
+(2026-07-27).  The paragraph read, correctly, that `Y0HasNoRationalPoint`
+is a statement about the COARSE moduli space, that `IsCoarseModuliY0`
+deliberately omits bijectivity on geometric points, and that a rational
+point of `Y_0(p²)` therefore carries only a `ℚ̄`-pair with field of moduli
+`ℚ`, whose descent to `ℚ` is Weil descent against `Aut(E, C)`.  All of
+that is retained and is now the content of
+`y0HasNoRationalPoint_of_not_stableCyclic`.
 
-IRREDUCIBLE at this pin: it needs the classification of `Y_0(p)(ℚ)` for
-the seven primes (Mazur's Theorem 1 in its sharp, point-listing form —
-`cuspidal_x0_prime` above is only the emptiness half, which says nothing
-at these seven), the Vélu quotient at the modular-curve level, and the
-field-of-moduli descent above.
+What is struck out is the injunction that followed — *"do not state the
+bridge as a universally quantified leaf without the descent hypothesis;
+for a pair with extra automorphisms it is false as a bare implication"*.
+It conflates two statements, and only the stronger one is false:
+
+* FALSE: *the pair `(E, C)` itself is defined over `ℚ`.*  That is where
+  the `j = 0, 1728` caveat bites.
+* TRUE: *SOME elliptic curve over `ℚ` carries a stable cyclic subgroup of
+  order `p²`.*  A TWIST is permitted, and permitting it kills the
+  obstruction — `−1 ∈ Aut(E, C)` always, `Aut(E) ≅ μ_n` with
+  `n ∈ {2, 4, 6}`, and `ℚˣ/(ℚˣ)ⁿ ↠ ℚˣ/(ℚˣ)^{n/2}` is surjective, so the
+  obstruction class is always realised by a twist.  The full computation
+  is the FAITHFULNESS AUDIT of
+  `y0HasNoRationalPoint_of_not_stableCyclic`.
+
+Consumers only ever need the weaker form, so the bridge is stated
+unconditionally and this node is proven from it.
+
+NO LONGER IRREDUCIBLE, but the remaining content is unchanged and now
+sits in `not_stableCyclic_sq_of_isogenyClassPrime`: the classification of
+`Y_0(p)(ℚ)` for the seven primes (Mazur's Theorem 1 in its sharp,
+point-listing form — `cuspidal_x0_prime` above is only the emptiness
+half, which says nothing at these seven) and the Vélu quotient.  What the
+cut removes from that leaf is the field-of-moduli descent, which is
+uniform in `N` and is now shared with every other level node.
 
 Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
 (1978), Theorem 1 and Table 1; Kenku, *The modular curves `X_0(65)` and
@@ -5656,11 +5882,30 @@ Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
 (1980); *On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`*,
 J. London Math. Soc. (2) **23** (1981). -/
 theorem y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel (N : ℕ)
-    (_hN : N ∈ isogenyClassPrimeSqLevels) : Y0HasNoRationalPoint N :=
-  sorry
+    (hN : N ∈ isogenyClassPrimeSqLevels) : Y0HasNoRationalPoint N := by
+  refine y0HasNoRationalPoint_of_not_stableCyclic (fun E _ g hg hstable => ?_)
+  simp only [isogenyClassPrimeSqLevels, List.mem_cons, List.not_mem_nil,
+    or_false] at hN
+  rcases hN with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 11) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 17) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 19) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 37) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 43) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 67) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 163) (by decide) E g
+      (hg.trans (by norm_num)) hstable
 
-/-- **Kenku's determination at level `169`** (sorry node, introduced
-2026-07-27): `Y_0(169)(ℚ) = ∅`.
+/-- **Kenku's determination at level `169`** (PROVEN 2026-07-27 over
+`y0HasNoRationalPoint_of_not_stableCyclic` and
+`not_stableCyclic_oneHundredSixtyNine`; introduced as a sorry node
+earlier the same day): `Y_0(169)(ℚ) = ∅`.
 
 TRUE: `169 > 163`, so it is outside the Mazur–Kenku list.
 
@@ -5710,12 +5955,20 @@ reaching for it.
   `#X_0(169)(𝔽_ℓ) + 2·3 ≤ 2`, which is impossible since point counts are
   positive.
 
-IRREDUCIBLE at this pin, and strictly harder than the eleven
-`kenkuLevels`: it needs `p`-adic integration on curves, which exists in
-no form here, on top of the integral model and Jacobian machinery the
-rank-`0` route already lacks. -/
+NO LONGER IRREDUCIBLE, but not one step easier either (2026-07-27).  The
+node is now PROVEN from `y0HasNoRationalPoint_of_not_stableCyclic` and
+`not_stableCyclic_oneHundredSixtyNine`, which strips off the
+field-of-moduli descent — uniform in `N`, and shared with every other
+level node — and leaves the arithmetic exactly as it was.  Both warnings
+above transfer verbatim to
+`not_stableCyclic_oneHundredSixtyNine` and neither is weakened by the
+cut: the level still needs `p`-adic integration on curves, which exists
+in no form here, on top of the integral model and Jacobian machinery the
+rank-`0` route already lacks, and `rank J_0(169) < 8` is still available
+only conditionally on BSD. -/
 theorem y0HasNoRationalPoint_oneSixtyNine : Y0HasNoRationalPoint 169 :=
-  sorry
+  y0HasNoRationalPoint_of_not_stableCyclic
+    (fun E _ g hg hstable => not_stableCyclic_oneHundredSixtyNine E g hg hstable)
 
 /-- **Kenku's determination at the eight prime-square levels** (PROVEN
 2026-07-27 over `y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel` and
