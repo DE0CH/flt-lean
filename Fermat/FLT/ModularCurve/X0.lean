@@ -11401,10 +11401,142 @@ theorem finite_jacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
   exact AddCommGroup.finite_of_fg_torsion _
     (isTorsion_jacobian_of_kenkuLevel N hN h jac)
 
+/-- **The morphism of schemes `X ⟶ J` inducing the Abel–Jacobi natural
+transformation** (PROVEN 2026-07-27), obtained by Yoneda: it is the
+value of `aj` at the universal point `𝟙 X ∈ X(X)`.
+
+`IsJacobianOf.aj` is presented as a natural transformation of functors
+of points rather than as a morphism, because that is the form the
+Albanese universal property is stated in.  Yoneda says the two are the
+same datum, and `aj_eq_ajMor` below is that identification.  Having it
+matters for the leaf `ajMor_eq_const_of_not_injective`: it turns a
+condition quantified over *every* test scheme into a single equation
+between two morphisms `X ⟶ J`, which is what a geometric argument can
+actually attack. -/
+noncomputable def IsJacobianOf.ajMor {X J : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) : X ⟶ J :=
+  (jac.aj strX ⟨𝟙 X, Category.id_comp _⟩).1
+
+/-- **Yoneda: `aj` is precomposition with `ajMor`** (PROVEN 2026-07-27).
+
+Immediate from `aj_pre` (naturality) applied to `h := x.1`, since every
+relative point `x : RelPoint strX g` is the image of the universal point
+`𝟙 X` under `RelPoint.pre x.1`.  No hypothesis on `X` is used; this is
+pure naturality. -/
+theorem IsJacobianOf.aj_eq_ajMor {X J : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g) :
+    (jac.aj g x).1 = x.1 ≫ jac.ajMor := by
+  have hx : x = RelPoint.pre x.1 x.2 (⟨𝟙 X, Category.id_comp _⟩ : RelPoint strX strX) := by
+    apply Subtype.ext
+    simp [RelPoint.pre]
+  rw [hx, jac.aj_pre x.1 x.2]
+  rfl
+
+/-- **A CONSTANT Abel–Jacobi map forces the Jacobian to be `Spec ℚ`**
+(PROVEN 2026-07-27) — the purely formal half of
+`injective_aj_of_not_isIso_jacobian`, using nothing but the Albanese
+universal property.  No geometric hypothesis on `X` appears.
+
+Write `z := (ab.zero (𝟙 SpecQ)).1 : Spec ℚ ⟶ J` for the zero section, so
+`z ≫ jstr = 𝟙 (Spec ℚ)` by definition of a relative point.  The claim is
+that `hconst` upgrades this to a two-sided inverse.
+
+Apply `jac.universal` with the target abelian scheme taken to be `J`
+ITSELF and the natural transformation taken to be `aj`: it returns a
+UNIQUE `u : J ⟶ J` with `u ≫ jstr = jstr` and `(aj g x).1 = (aj g x).1 ≫ u`
+for all `g, x`.  Two morphisms satisfy that description:
+
+* `𝟙 J`, trivially;
+* `jstr ≫ z`, because `hconst` plus `aj_eq_ajMor` plus `x.2` give
+  `(aj g x).1 = g ≫ z`, and `(aj g x).1 ≫ jstr = g` since `aj g x` is a
+  relative point over `g`.
+
+Uniqueness therefore gives `jstr ≫ z = 𝟙 J`, which together with
+`z ≫ jstr = 𝟙 (Spec ℚ)` is exactly `IsIso jstr`.
+
+This is the step that makes the seam below worth cutting: it is the
+entire "trivial Albanese ⟹ trivial Jacobian scheme" direction, and it
+costs no geometry at all. -/
+theorem IsJacobianOf.isIso_of_ajMor_eq_const {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (hconst : jac.ajMor = strX ≫ (ab.zero (𝟙 SpecQ)).1) : IsIso jstr := by
+  set z : SpecQ ⟶ J := (ab.zero (𝟙 SpecQ)).1 with hzdef
+  have hz : z ≫ jstr = 𝟙 SpecQ := (ab.zero (𝟙 SpecQ)).2
+  have key : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      (jac.aj g x).1 = g ≫ z := by
+    intro T g x
+    rw [jac.aj_eq_ajMor g x, hconst, ← Category.assoc, x.2]
+  obtain ⟨u, -, huniq⟩ := jac.universal ab jac.aj jac.aj_pre jac.aj_base
+  have h1 : (𝟙 J) = u := huniq _ ⟨Category.id_comp _, fun g x => (Category.comp_id _).symm⟩
+  have h2 : jstr ≫ z = u := by
+    refine huniq _ ⟨by rw [Category.assoc, hz, Category.comp_id], fun {T} g x => ?_⟩
+    rw [← Category.assoc, (jac.aj g x).2, key g x]
+  exact ⟨⟨z, h2.trans h1.symm, hz⟩⟩
+
+/-- **A curve whose Abel–Jacobi map is not injective on `ℚ`-points has a
+CONSTANT Abel–Jacobi map** (sorry node) — LEVEL-FREE, and after the
+2026-07-27 split this is where the whole Riemann–Roch content of
+`injective_aj_of_not_isIso_jacobian` now lives, alone.
+
+TRUE and classical, in two named steps:
+
+1. **Riemann–Roch.**  If `aj x = aj y` with `x ≠ y` two rational points,
+   then `[x] − [o] = [y] − [o]` in `Pic⁰`, so `x − y` is a principal
+   divisor: some `f ∈ ℚ(X)ˣ` has divisor `x − y`, i.e. a single simple
+   pole.  That `f` is a degree-`1` morphism `X → ℙ¹`, hence an
+   isomorphism, so `X ≅ ℙ¹_ℚ` and `genus X = 0`.
+2. **Rigidity / no rational curves in an abelian variety.**  Every
+   morphism `ℙ¹ → A` to an abelian scheme is constant, so `ajMor` is the
+   constant morphism at `ajMor ∘ o = 0`, which is `strX ≫ zero`.
+
+**The three geometric hypotheses may NOT be dropped**, and the statement
+is FALSE without them — `X` must be a *curve*.  Counterexample with `X`
+smooth, proper and geometrically connected but of dimension `2`: take
+`X = ℙ¹ × E` for an elliptic curve `E`, `o = (0, 0)`.  Its Albanese is
+`E`, so `aj (t, e) = e` is not injective (it collapses every
+`ℙ¹`-fibre), yet `ajMor` is the projection `ℙ¹ × E → E` and is very far
+from constant.  This is why `h.isProper`, `h.smooth` (relative dimension
+`1` — the curve condition) and `h.connected` are all passed through, and
+why they must be passed through *here* rather than kept upstream: the
+formal half `isIso_of_ajMor_eq_const` needs none of them.
+
+**Why `ajMor` and not `aj`.**  `aj` is a natural transformation over all
+test schemes; `ajMor` is a single morphism of schemes over `ℚ`, and by
+`aj_eq_ajMor` they carry the same information.  Both steps above are
+statements about morphisms of schemes, so the leaf is stated in the form
+they produce.
+
+IRREDUCIBLE at this pin, ALONG THE AXIS SEARCHED (divisors and linear
+systems on `X`): Riemann–Roch for curves does not exist in `Mathlib`.
+What mathlib *does* have, and what a prover should start from, is
+`Mathlib/AlgebraicGeometry/AlgebraicCycle`, `.../OrderOfVanishing.lean`,
+`.../FunctionField.lean` and `.../RationalMap.lean` — divisors, orders
+of vanishing and the function field are all present; the sheaf
+cohomology that computes `h⁰(D)` is what is missing.
+
+**The axis NOT searched**, and where the next owner should start: a
+further cut at "`X ≅ ℙ¹_ℚ`", separating step 1 from step 2 above into two
+independent classical theorems.  That was deliberately not taken here,
+because it needs `ℙ¹_ℚ` written down as a scheme over `ℚ` (mathlib has
+`Proj` but no projective space at this pin) and it produces two leaves
+each of which still needs a theory absent from mathlib — so it would
+split the node without making either half closable.  It becomes the
+right cut the moment either Riemann–Roch or `ℙ¹` lands. -/
+theorem ajMor_eq_const_of_not_injective {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (hni : ¬ Function.Injective (jac.aj (𝟙 SpecQ))) :
+    jac.ajMor = strX ≫ (ab.zero (𝟙 SpecQ)).1 :=
+  sorry
+
 /-- **A curve with a NONTRIVIAL Jacobian has injective Abel–Jacobi**
-(sorry node) — LEVEL-FREE: this is the Riemann–Roch half of
-`injective_aj_of_one_le_x0Genus`, and it mentions neither `N` nor
-`x0Genus` nor `IsX0Compactification`.
+(PROVEN 2026-07-27, by decomposition) — LEVEL-FREE: this is the
+Riemann–Roch half of `injective_aj_of_one_le_x0Genus`, and it mentions
+neither `N` nor `x0Genus` nor `IsX0Compactification`.
 
 TRUE and classical.  `hJ : ¬ IsIso jstr` says `J ≠ Spec ℚ`, i.e. the
 Jacobian is positive-dimensional, which for the Jacobian of a curve is
@@ -11420,29 +11552,28 @@ scheme at this pin, but `dim J = genus X` for the Jacobian, and
 field.  So `¬ IsIso jstr` is a faithful, pin-available rendering of
 `genus ≥ 1`, and it needs no dimension theory.
 
-**The three geometric hypotheses may NOT be dropped**, and the leaf is
-FALSE without them — `X` must be a *curve*.  Counterexample with `X`
-smooth, proper and geometrically connected but of dimension `2`: take
-`X = ℙ¹ × E` for an elliptic curve `E`, `o = (0, 0)`.  Its Albanese is
-`E`, so `jstr` is not an iso and `hJ` holds, while
-`aj (t, e) = e` collapses every `ℙ¹`-fibre and is very far from
-injective.  This is why `h.isProper`, `h.smooth` (relative dimension
-`1` — the curve condition) and `h.connected` are all passed through.
+**The split (2026-07-27).**  The contrapositive is taken, and the
+resulting implication "`aj` not injective on `ℚ`-points ⟹ `IsIso jstr`"
+factors through the constancy of the Abel–Jacobi *morphism*:
 
-IRREDUCIBLE at this pin, along the axis searched (divisors and linear
-systems): Riemann–Roch for curves does not exist in `Mathlib`.  What
-mathlib *does* have, and what a prover should start from, is
-`Mathlib/AlgebraicGeometry/AlgebraicCycle`, `.../OrderOfVanishing.lean`,
-`.../FunctionField.lean` and `.../RationalMap.lean` — divisors, orders
-of vanishing and the function field are all present; the sheaf
-cohomology that computes `h⁰(D)` is what is missing. -/
+* `ajMor_eq_const_of_not_injective` — Riemann–Roch plus rigidity, and it
+  is where the depth now lives, alone.  It is the only half that uses
+  `hproper`, `hcurve`, `hconn`, and it is FALSE without them (see its
+  docstring for the `ℙ¹ × E` counterexample).
+* `IsJacobianOf.isIso_of_ajMor_eq_const` — PROVEN here from the Albanese
+  universal property alone, with no geometry whatsoever.
+
+So `hproper`, `hcurve` and `hconn` are consumed by being handed to the
+geometric leaf, and `hJ` is consumed by `by_contra`. -/
 theorem injective_aj_of_not_isIso_jacobian {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (hJ : ¬ IsIso jstr) :
-    Function.Injective (jac.aj (𝟙 SpecQ)) :=
-  sorry
+    Function.Injective (jac.aj (𝟙 SpecQ)) := by
+  by_contra hni
+  exact hJ (jac.isIso_of_ajMor_eq_const
+    (ajMor_eq_const_of_not_injective hproper hcurve hconn jac hni))
 
 /-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` makes
 the Jacobian nontrivial** (sorry node) — the arithmetic half of
@@ -11576,7 +11707,7 @@ theory each one needs, are:
 | `exists_jacobianOf_x0` | Albanese / `Pic⁰` | no |
 | `fg_relPoint_of_abelianScheme` | Mordell–Weil | no |
 | `isTorsion_jacobian_of_kenkuLevel` | Kolyvagin–Logachev | **yes** |
-| `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no |
+| `ajMor_eq_const_of_not_injective` | Riemann–Roch | no |
 | `not_isIso_jacobian_of_one_le_x0Genus` | genus formula | **yes** |
 
 Only two of the five mention `N` at all, and each of the other three is
