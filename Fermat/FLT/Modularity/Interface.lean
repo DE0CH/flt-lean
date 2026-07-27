@@ -35300,6 +35300,81 @@ reason it is left sorried: no proof of Carayol's identity avoids the
 modular-curve geometry that `nonempty_modularTateModuleData` is still
 assuming.
 
+**TWO BLOCKERS, AND THE GEOMETRY IS NOT THE BINDING ONE** (2026-07-26,
+tenth owner — this CORRECTS the last sentence above, which is the
+sentence dispatchers act on). That sentence is true and incomplete, and
+the omission is expensive: it names the modular-curve geometry as *the*
+reason this leaf is sorried, which reads as "close
+`nonempty_modularTateModuleData` and this becomes attackable". **It will
+not.** There are two independent blockers and only one of them is
+mathematical:
+
+1. **THE GEOMETRIC CARRIER** (necessary). Deligne–Rapoport's integral
+   model of `X₀(M₀)` at `q`, its Jacobian, the Hecke correspondences
+   over `ℚ`, and Eichler–Shimura — the missing theories listed on
+   `nonempty_modularTateGaloisData` / `nonempty_modularTateModuleData`
+   — plus, on the automorphic side, Casselman's newvector theory
+   (`cond(π_q) = ord_q M₀`) and Deligne's compatibility of local
+   Langlands with conductors, joined to the Galois side at `q` by
+   Néron–Ogg–Shafarevich on the Néron model of `J₀(M₀)`.
+
+2. **THE CONDUCTOR CARRIER** (necessary, and DEFINITIONAL rather than
+   mathematical — this is the one no audit above names). The conclusion
+   `HasConductorExponentAt τ v_q (ord_q M₀)` unfolds to
+   `ord_q M₀ = τ.tameExponent v_q + τ.swanExponent v_q`, and
+   `swanExponent` is `if IsUnramifiedAt v then 0 else swanExponentAux v`
+   with `GaloisRep.swanExponentAux` declared `opaque`. NO hypothesis of
+   this leaf mentions `swanExponentAux`, and `ArtinConductor.lean`
+   forbids equations about it on purpose ("Do not state or prove any
+   equation about `swanExponentAux` itself"). The leaf's own conclusion
+   forces `τ` RAMIFIED at `q` (`not_isUnramifiedAt_of_ne_zero`), so the
+   `if` can never be discharged either. Hence the statement is
+   **INDEPENDENT of the theory** — neither provable nor refutable — and
+   a *completed* item 1 would leave it exactly as unprovable as it is
+   today. Closing it requires giving the Swan conductor a real
+   DEFINITION: the higher ramification filtration in the UPPER
+   numbering, absent from mathlib and not replaceable by the lower
+   numbering over `ℚ_qᵃˡᵍ`, whose value group is divisible.
+
+The docstring above already observes that "nothing is provable about
+`swanExponent` by construction", but draws from it only the narrower
+conclusion that the COMPONENTS cannot prove this leaf. The same fact
+applies to this leaf's own provability, and that is the operative
+consequence: **item 1 and item 2 are co-requisites, and item 2 is
+currently the harder and less visible of the two.** Item 2 is being
+built by the owner of `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`
+below (the at-`2` wild leaf, blocked on exactly the same absence);
+item 1 by the owner of `nonempty_modularTateGaloisData`.
+
+GENERALISATION WORTH CHECKING BEFORE ANY DISPATCH: *every* leaf whose
+conclusion is `HasConductorExponentAt ρ v a` at a place where `ρ` is
+ramified inherits this independence, so no such leaf is closable until
+item 2 lands, however much of item 1 exists. That is a cheap filter —
+unfold the conclusion and look for `swanExponentAux` — and it is worth
+applying to the whole conductor cluster of this file.
+
+WHAT WAS TRIED AND DELIBERATELY NOT LANDED (same owner, same day, so
+the next owner does not repeat it). Before this release the two
+components were still sorried, and an attempt was made to run the cut
+the OTHER way at `ord_q M₀ = 1`: derive `tameExponent = 1` from the
+component's ramifiedness-plus-fixed-line and cite only `Sw_q = 0`. The
+three supporting lemmas were written and verified sorry-free —
+`isUnramifiedAt_of_inertiaInvariants_eq_top` (the converse of
+`GaloisRep.inertiaInvariants_eq_top_of_isUnramifiedAt`, which
+`ArtinConductor.lean` states one way only),
+`one_le_tameExponent_of_not_isUnramifiedAt` (the tame LOWER bound that
+file lacks) and `tameExponent_eq_one_of_fixed_of_not_isUnramifiedAt` —
+and the assembly compiled. It is **not landed**, for two reasons that
+are worth recording rather than rediscovering: (a) this release reversed
+the cut, so consuming the component here would now be CIRCULAR, and (b)
+under the reversed cut nothing in the tree consumes those three lemmas,
+so they would be free-floating code. They are recoverable from this
+worktree's reflog if item 2 ever makes the tame/wild split live again;
+the mathematically substantive one is (b)'s middle lemma, since
+`ArtinConductor.lean` has `tameExponent_eq_zero_of_isUnramifiedAt`, an
+upper bound from a fixed vector, and `tameExponent_le_finrank`, but
+nothing deducing POSITIVITY of the tame exponent from ramifiedness.
+
 ⚠ ADJACENT FALSITY, REPORTED NOT REPAIRED (2026-07-26, ninth owner —
 this is OUTSIDE the region of this task and has two live consumers, so
 it is flagged here rather than edited). The eigenform-level descendant
