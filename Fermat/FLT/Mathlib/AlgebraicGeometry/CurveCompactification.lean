@@ -53,13 +53,14 @@ Given a smooth curve `strY : Y ⟶ Spec K`:
    and dominant **by construction** — both free from `Mathlib`;
 3. `i.fromNormalization : X ⟶ P` is integral, and it is *finite* because normalization is of
    finite type for schemes of finite type over a field
-   (`locallyOfFiniteType_fromNormalization`, LEAF); finite ⟹ proper, so `X` is proper
-   over `K`;
+   (`locallyOfFiniteType_fromNormalization`, PROVEN over the affine-local ring statement
+   `finiteType_integralClosure_sections`, LEAF); finite ⟹ proper, so `X` is proper over `K`;
 4. `X` is normal of dimension one over a perfect field, hence smooth
    (`smoothOfRelativeDimension_one_fromNormalization`, LEAF);
 5. the complement of a dense open in an irreducible noetherian curve is finite — proven
    here from the one-dimensionality of `X` (`topologicalKrullDim_normalization_le_one`,
-   LEAF).
+   PROVEN over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` and
+   `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, LEAVES).
 
 Step 2, the assembly, and the whole of steps 3 and 5 apart from their two named inputs are
 PROVEN here.
@@ -75,11 +76,30 @@ Every one of the original five leaves has now been cut down; the remaining leave
 | `exists_isOpenImmersion_isProper_of_affineCase` | Nagata's gluing induction (all that is left of Nagata) |
 | `locallyOfFiniteType_fromNormalization` | Nagata/Japanese rings: the normalization of a finite-type `K`-algebra is of finite type |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
+| `exists_isOpenImmersion_isProper` | Nagata compactification (unchanged — a single citation, no cut available) |
+| `finiteType_integralClosure_sections` | Nagata/Japanese rings: the integral closure of a finite-type `K`-algebra in the sections of `Y` over an affine chart is of finite type |
+| `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
+| `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
 
-`exists_isOpenImmersion_isProper`, `isFinite_fromNormalization`,
-`finite_compl_range_toNormalization`, `universallyOpen_of_specField`, `denseRange_of_isPullback`
-and `geometricallyConnected_of_isSmoothCompactification` are now THEOREMS over those.  What was
+## Second decomposition pass, 2026-07-27
+
+Two more of the leaves in the table above are gone, replaced by the three sharper ones now in
+it:
+
+* `locallyOfFiniteType_fromNormalization` is a THEOREM over `finiteType_integralClosure_sections`.
+  What came out of it is the entire `IsZariskiLocalAtTarget` descent — a transcription of
+  `Mathlib`'s own proof of `instance : IsIntegralHom f.fromNormalization` — leaving a statement
+  with no scheme theory in it at all.
+* `topologicalKrullDim_normalization_le_one` is a THEOREM over the two dimension leaves.  What
+  came out of it is the identification of `i.toNormalization` as an open immersion into an
+  irreducible scheme of finite type over `K` — Zariski's Main Theorem plus
+  `IsIntegral Y ⟹ IsIntegral i.normalization` plus `isFinite_fromNormalization` — which is
+  exactly the hypothesis threading the `ULift ℚ`-shaped copy of the statement in
+  `Modularity/KhareWintenberger.lean` had to receive from its consumer.
+
+`isFinite_fromNormalization`, `finite_compl_range_toNormalization`, `denseRange_of_isPullback`
+and `geometricallyConnected_of_isSmoothCompactification` are also THEOREMS over these.  What was
 removed from them was, in each case, real: the integrality half of finiteness (free from
 `Mathlib`), the entire noetherian-ness bookkeeping and point-set argument behind the finite
 complement, the closure-of-a-connected-set half of geometric connectedness, and — as of the
@@ -532,33 +552,106 @@ theorem exists_isOpenImmersion_isProper {Y : Scheme.{u}}
     letI := hZ; letI := hft
     exact exists_isOpenImmersion_isProper_of_isAffine strZ
 
-/-- **The normalization of a scheme of finite type over a field is of finite type over it**
-(sorry leaf — the Nagata/Japanese input, and all that is left of the old
-`isFinite_fromNormalization`).
+/-- **The integral closure of an affine chart of `P` in the sections of `Y` over its preimage is
+a finite-type algebra** (sorry leaf — the Nagata/Japanese input, and, after the 2026-07-27 cut
+below, all that is left of the old `isFinite_fromNormalization`).
 
-TRUE and classical: a domain of finite type over a field is a Nagata (universally Japanese)
-ring, so its integral closure in a finite extension of its fraction field is a finite module,
-in particular a finite-type algebra.  Stacks tag `032E` (Nagata ⟸ finite type over a field)
-and `03GH` (finiteness of the relative normalization over a Nagata base).
+TRUE and classical.  Write `A := Γ(P, U)` and `B := Γ(Y, i ⁻¹ᵁ U)`.  A domain of finite type
+over a field is a Nagata (universally Japanese) ring, so its integral closure in a finite
+extension of its fraction field is a finite module, in particular a finite-type algebra.
+Stacks tag `032E` (Nagata ⟸ finite type over a field) and `03GH` (finiteness of the relative
+normalization over a Nagata base).
 
-**Why the leaf is stated as `LocallyOfFiniteType` rather than `IsFinite`** (2026-07-27): the
-integrality half of `IsFinite` is FREE — `IsIntegralHom i.fromNormalization` is a `Mathlib`
-instance for every relative normalization, and
+**Why the ambient leaf is stated as `LocallyOfFiniteType` rather than `IsFinite`**
+(2026-07-27): the integrality half of `IsFinite` is FREE — `IsIntegralHom i.fromNormalization`
+is a `Mathlib` instance for every relative normalization, and
 `IsFinite.iff_isIntegralHom_and_locallyOfFiniteType` says the two together are exactly
 `IsFinite`.  So the entire content of the old leaf is this one, and
 `isFinite_fromNormalization` below is now a two-line consequence.  Anyone attacking it should
 know that only finite-*type*-ness has to be produced; integrality is not in play.
 
-The affine-local shape of what remains: for `U = Spec A` an affine open of `P`, the ring
-`Γ(i.normalization, i.fromNormalization ⁻¹ᵁ U)` is by construction the integral closure of `A`
-in `Γ(Y, i ⁻¹ᵁ U)` (`AlgebraicGeometry.Scheme.Hom.normalizationObjIso`), and the claim is that
-this integral closure is a finite-type `A`-algebra.  `Mathlib` has no Nagata/Japanese-ring
-theory at this pin, which is why this is a leaf. -/
+**WHY THIS IS THE LEAF AND NOT THE SCHEME-LEVEL STATEMENT** (2026-07-27).  For `U = Spec A` an
+affine open of `P`, the ring `Γ(i.normalization, i.fromNormalization ⁻¹ᵁ U)` is by construction
+the integral closure of `A` in `B` (`AlgebraicGeometry.Scheme.Hom.normalizationObjIso`), and
+`LocallyOfFiniteType` is Zariski-local at the target, so the scheme-level statement is exactly
+this one over every affine `U`.  That descent is now PROVEN — see
+`locallyOfFiniteType_fromNormalization` immediately below — so no scheme theory is owed here.
+
+**THE FURTHER CUT THIS ADMITS, and everything a next owner needs to know.**  Only one classical
+theorem is genuinely missing from the pin; the rest is available and is named here.
+
+* `B` is a DOMAIN whenever `i ⁻¹ᵁ U` is nonempty: `IsIntegral Y` gives
+  `IsIntegral.component_integral`, i.e. `IsDomain Γ(Y, V)` for every nonempty open `V`.  When
+  `i ⁻¹ᵁ U` is EMPTY, `B` is the trivial ring — `instance {X : Scheme.{u}} : Subsingleton Γ(X, ⊥)`
+  in `Mathlib/AlgebraicGeometry/Scheme.lean` — the integral closure is everything, and the
+  algebra map is surjective, so the statement is immediate; that case must be split off first.
+* `B` embeds in the FUNCTION FIELD `L := Y.functionField`, injectively, by
+  `Scheme.germToFunctionField_injective` (`Mathlib/AlgebraicGeometry/FunctionField.lean`).
+* `L` is the fraction field of the image `A'` of `A` in `B`: `i` is an open immersion, so
+  `i ⁻¹ᵁ U` is an open subscheme of the affine `U`, dense in `Spec A'` because `Y` is
+  irreducible, and the stalk of `Spec A` at the generic point is `A'`-localized to a field,
+  which is `L`.  `functionField_isFractionRing_of_isAffineOpen` is the affine form of this.
+* `A` is of FINITE TYPE over `K`, hence NOETHERIAN: `IsProper strP` gives
+  `LocallyOfFiniteType strP`, and `HasRingHomProperty.appLE` reads that off at `U`.
+* Hence `integralClosure A B` injects, as an `A`-module, into `integralClosure A L` — the map is
+  `AlgHom.mapIntegralClosure`, which is already in the pin — and it is enough to know that the
+  latter is a FINITE `A`-module, since a submodule of a finite module over a Noetherian ring is
+  finite.
+* The final conversion is `RingHom.finiteType_algebraMap`
+  (`Mathlib/RingTheory/FiniteType.lean`): `(algebraMap A C).FiniteType ↔ Algebra.FiniteType A C`,
+  and `Module.Finite A C → Algebra.FiniteType A C`.
+
+So the one missing classical input, and the only thing a next owner has to import or prove, is
+
+    A a finite-type algebra over a field, L a field which is the fraction field of the image
+    of A  ⟹  `Module.Finite A (integralClosure A L)`
+
+(Noether's finiteness of the integral closure; Stacks `0335`, `032E`).  `Mathlib` has it only
+in the SEPARABLE case, as `IsIntegralClosure.finite`
+(`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean`, which needs `[IsIntegrallyClosed A]`,
+`[IsNoetherianRing A]` and separability of the residue extension); the general case needs
+Noether normalization — which IS at the pin, `Mathlib/RingTheory/NoetherNormalization.lean`,
+`exists_finite_inj_algHom_of_fg` — plus the inseparable descent.  That is the genuine gap. -/
+theorem finiteType_integralClosure_sections {Y P : Scheme.{u}}
+    (strP : P ⟶ Spec (CommRingCat.of K)) [IsProper strP]
+    (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y] (U : P.affineOpens) :
+    letI := (i.app U.1).hom.toAlgebra
+    RingHom.FiniteType
+      (algebraMap Γ(P, U.1) (integralClosure Γ(P, U.1) Γ(Y, i ⁻¹ᵁ U.1))) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The normalization of a scheme of finite type over a field is of finite type over it**
+(PROVEN over `finiteType_integralClosure_sections`).
+
+The whole content is now the affine-local ring statement; what is proven here is the descent
+from it, and it is a transcription of `Mathlib`'s own proof of
+`instance : IsIntegralHom f.fromNormalization` (`Mathlib/AlgebraicGeometry/Normalization.lean`)
+with `IsIntegralHom` replaced by `LocallyOfFiniteType`: both are
+`IsZariskiLocalAtTarget`, the affine opens of `P` cover it, and over such a `U` the restriction
+of `i.fromNormalization` is — after transporting along
+`IsOpenImmersion.isoOfRangeEq … (i.normalizationOpenCover.f U)` and `U.2.isoSpec` — literally
+`Spec.map (i.normalizationDiagramMap.app (.op U))`, i.e. `Spec` of the inclusion
+`Γ(P, U) ⟶ integralClosure Γ(P, U) Γ(Y, i ⁻¹ᵁ U)`.  `HasRingHomProperty.Spec_iff` then turns
+the morphism property into `RingHom.FiniteType`, which is the leaf. -/
 theorem locallyOfFiniteType_fromNormalization {Y P : Scheme.{u}}
     (strP : P ⟶ Spec (CommRingCat.of K)) [IsProper strP]
     (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y] :
-    LocallyOfFiniteType i.fromNormalization :=
-  sorry
+    LocallyOfFiniteType i.fromNormalization := by
+  rw [IsZariskiLocalAtTarget.iff_of_iSup_eq_top (P := @LocallyOfFiniteType) _
+    (iSup_affineOpens_eq_top P)]
+  intro U
+  let e := IsOpenImmersion.isoOfRangeEq (i.fromNormalization ⁻¹ᵁ U).ι
+      (i.normalizationOpenCover.f U)
+      (by simpa using congr($(i.fromNormalization_preimage U).1))
+  rw [← MorphismProperty.cancel_left_of_respectsIso @LocallyOfFiniteType e.inv,
+    ← MorphismProperty.cancel_right_of_respectsIso @LocallyOfFiniteType _ U.2.isoSpec.hom]
+  have h : RingHom.FiniteType (i.normalizationDiagramMap.app (.op U.1)).hom :=
+    finiteType_integralClosure_sections strP i U
+  convert! HasRingHomProperty.Spec_iff.mpr h
+  · rw [← cancel_mono U.2.fromSpec]
+    simp [IsAffineOpen.isoSpec_hom, e, Scheme.Hom.ι_fromNormalization]
+  · infer_instance
 
 /-- **The normalization of a scheme of finite type over a field is finite over it**
 (PROVEN over `locallyOfFiniteType_fromNormalization`).
@@ -621,9 +714,137 @@ theorem smoothOfRelativeDimension_one_fromNormalization [PerfectField K] {Y P : 
     SmoothOfRelativeDimension 1 (i.fromNormalization ≫ strP) :=
   sorry
 
-/-- **The normalized proper model of a smooth curve is one-dimensional** (sorry leaf — the
-dimension-theoretic input, and all that is left of the old
-`finite_compl_range_toNormalization`).
+/-- **A smooth curve over a field is one-dimensional** (sorry leaf — the dimension half of the
+old `topologicalKrullDim_normalization_le_one`).
+
+TRUE and classical: `SmoothOfRelativeDimension 1 strY` says that every point of `Y` has an
+affine neighbourhood on which `strY` is *standard* smooth of relative dimension `1`, i.e.
+`Γ(Y, V) ≅ K[x₁, …, x_m] / (f₁, …, f_{m-1})` with invertible Jacobian; such a ring has Krull
+dimension `1` (Stacks `02JS` for the relative dimension of a smooth morphism, `0A21` for
+dimension = transcendence degree over a field), and `topologicalKrullDim` of a scheme is the
+supremum of the Krull dimensions of its local rings.  No hypothesis beyond smoothness is
+needed: `SmoothOfRelativeDimension` already entails `LocallyOfFinitePresentation` and hence
+`LocallyOfFiniteType`, which is what makes the dimension finite at all.
+
+Only `≤ 1` is asked, so the EASY direction of the dimension theorem is not enough — the bound
+that has to be produced is the upper one.  Note `Y` is allowed to be empty, in which case
+`topologicalKrullDim Y = ⊥ ≤ 1`.
+
+**WHAT THE PIN DOES AND DOES NOT HAVE** (checked 2026-07-27; re-run these greps before
+believing them).  `Mathlib` relates `SmoothOfRelativeDimension n` to nothing
+dimension-theoretic: `grep -rn "SmoothOfRelativeDimension" Mathlib/` returns only
+`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` (the definition, `smooth`, base change,
+composition and the open-immersion instance), and there is no smooth-implies-regular result at
+all (`grep -rn "IsRegularLocalRing" Mathlib/RingTheory/Smooth/ Mathlib/AlgebraicGeometry/` is
+empty).  That is the gap.
+
+But three pieces that a proof needs ARE present, and a next owner should not go looking for
+them:
+
+* `MvPolynomial.ringKrullDim_of_isNoetherianRing`
+  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean`):
+  `ringKrullDim (MvPolynomial ι R) = ringKrullDim R + Nat.card ι`, so `dim K[x₁, …, x_m] = m`.
+* `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`): the module of differentials of a
+  standard smooth algebra of relative dimension `n` is free of rank `n`.
+* `AlgebraicGeometry.ringKrullDim_stalk_eq_coheight` and
+  `Order.krullDim_eq_iSup_coheight`, which reduce `topologicalKrullDim Y ≤ 1` to a bound on
+  every stalk (`Modularity/KhareWintenberger.lean` packages exactly that reduction as its
+  PROVEN `krullDimLE_stalk_of_topologicalKrullDim_le` and
+  `topologicalKrullDim_eq_iSup_coheight`).
+
+So the missing step is specifically: for `S = K[x₁, …, x_m]/(f₁, …, f_{m-1})` with invertible
+Jacobian, `ringKrullDim S ≤ 1`.  The lower bound is Krull's height theorem; the upper bound is
+the one that needs the dimension theorem for finite-type `K`-algebras.
+
+RELATION TO `Modularity/KhareWintenberger.lean`: that file does NOT own this statement; it
+takes `hdim : topologicalKrullDim ↥C ≤ 1` as a HYPOTHESIS on every declaration in the cluster
+and pushes the obligation out to `X0.lean`.  So this leaf is genuinely unowned there, and
+whoever proves it here discharges that hypothesis for both files.
+
+PIN AUDIT INHERITED FROM A DUPLICATE OF THIS LEAF (dropped at integration 2026-07-27).
+A second, less general statement of this same lemma — carrying the extra hypotheses
+`[LocallyOfFiniteType strX] [QuasiCompact strX]`, which a Krull-dimension bound does not
+need — was written independently on another branch and is deleted here; its route audit is
+kept because it is about this statement and is complementary to the survey above.
+
+IRREDUCIBLE at this pin, and here is the state of the ingredients — this is the check to
+re-run before accepting the verdict, because two of the three pieces DO exist:
+
+* **present**: `MvPolynomial.ringKrullDim_of_isNoetherianRing`
+  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean:119`) gives
+  `ringKrullDim K[x₁ … xₛ] = s` — note this makes the `proof_wanted`
+  `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing` at
+  `Mathlib/RingTheory/KrullDimension/Basic.lean:94` **stale**, so do not conclude from that
+  `proof_wanted` that the polynomial dimension is unavailable;
+* **present**: Noether normalization,
+  `NoetherNormalization.exists_finite_inj_algHom_of_fg`
+  (`Mathlib/RingTheory/NoetherNormalization.lean:289`) — every f.g. `K`-algebra is finite over
+  some `K[x₁ … xₛ]`;
+* **present**: `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim` and
+  `topologicalKrullDim_subspace_le`, which is how an affine-open-local bound is assembled into
+  a bound on `X` (`IsLocallyArtinian.of_topologicalKrullDim_le_zero` in
+  `Mathlib/AlgebraicGeometry/Artinian.lean` is the worked precedent for exactly this pattern
+  one dimension down);
+* **MISSING (1)**: invariance of `ringKrullDim` under an *injective integral* ring extension
+  (lying over + going up + incomparability).  A grep for `ringKrullDim` across
+  `Mathlib/RingTheory/` turns up transport along `RingEquiv` and the surjective bound
+  `ringKrullDim_le_of_surjective`, and nothing for integral extensions;
+* **MISSING (2)**: the link from `IsStandardSmoothOfRelativeDimension 1` to `s = 1` in the
+  Noether normalization — i.e. relative dimension equals transcendence degree.  There is **no
+  occurrence of `ringKrullDim` or `krullDim` anywhere under `Mathlib/RingTheory/Smooth/`,
+  `Mathlib/RingTheory/Extension/` or in `Mathlib/RingTheory/Presentation.lean`**, so nothing
+  at this pin connects a smooth presentation to any dimension.
+
+So the leaf is two named ring-theoretic statements away, not a whole dimension theory. Either
+of the two MISSING items being found in the pin refutes this verdict. -/
+theorem topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one {Y : Scheme.{u}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [SmoothOfRelativeDimension 1 strY] :
+    topologicalKrullDim Y ≤ 1 :=
+  sorry
+
+/-- **A nonempty open subscheme of an irreducible scheme of finite type over a field has the
+full dimension of the ambient scheme** (sorry leaf — the transfer half of the old
+`topologicalKrullDim_normalization_le_one`).
+
+TRUE and classical.  This is the direction `Mathlib` does not supply: its whole
+`topologicalKrullDim` API (`Topology.IsInducing.topologicalKrullDim_le`,
+`IsHomeomorph.topologicalKrullDim_eq`, `topologicalKrullDim_subspace_le`) gives only
+`dim (subspace) ≤ dim (ambient)`.  Combined with `topologicalKrullDim_subspace_le` this
+upgrades to an EQUALITY, which is the "dense opens of a variety are equidimensional" fact.
+
+Both geometric hypotheses are load-bearing and neither may be dropped:
+
+* WITHOUT `IrreducibleSpace X`: take `X = Spec (K[s] × K[u,v])`, two components of dimensions
+  `1` and `2`, and `C` the first component.  `C` is a nonempty open, `dim C = 1`,
+  `dim X = 2`.
+* WITHOUT finite type over a FIELD: take `X = Spec ℤ_[p]` and `C` its generic point, a
+  nonempty — indeed dense — open with `dim C = 0` while `dim X = 1`.  Over a general base a
+  dense open may drop dimension.
+* WITHOUT `[Nonempty C]`: an empty `C` has `dim C = ⊥`.
+
+**THIS IS THE GENERAL-`K` FORM OF A LEMMA THAT IS ALREADY PROVEN OVER `ULift ℚ`**, in
+`Modularity/KhareWintenberger.lean`, as
+`topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType`, itself over the single leaf
+`exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` there.  That proof runs
+`topologicalKrullDim_eq_iSup_coheight` (sobriety plus `Order.krullDim_eq_iSup_coheight`) to
+turn the comparison into a POINTWISE one, uses `coheight_eq_of_isOpenImmersion` to move
+coheights across the open immersion, and produces the dominating point of `C` from Noether
+normalization plus going-up on an affine chart.  Two things must be checked before that proof
+is transported here: it picks a rational point out of an infinite field (`ℚ` being infinite is
+what supplies it), so a general `K` — in particular a FINITE one — needs the standard
+replacement (pass to an infinite extension, or use a general position argument); and this
+module is UPSTREAM of `KhareWintenberger.lean`, so the transport is a hoist into this file
+rather than a citation.  Whoever proves it here should re-derive that file's copy from this
+one, per the module docstring's standing instruction not to prove the same theorem twice. -/
+theorem topologicalKrullDim_le_of_isOpenImmersion_of_irreducible {C X : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strX] [IrreducibleSpace X]
+    (j : C ⟶ X) [IsOpenImmersion j] [Nonempty C] :
+    topologicalKrullDim X ≤ topologicalKrullDim C :=
+  sorry
+
+/-- **The normalized proper model of a smooth curve is one-dimensional** (PROVEN over the two
+leaves above — was itself a sorry leaf until 2026-07-27).
 
 TRUE: `i.normalization` contains the smooth curve `Y` as a dense open (Zariski's Main
 Theorem), and is finite over the finite-type `K`-scheme `P`, so it is itself of finite type
@@ -639,15 +860,33 @@ see `finite_of_isClosed_of_ne_univ_of_topologicalKrullDim_le_one` above and the 
 below — so the ONLY thing an attacker has to produce is this bound.  Only `≤ 1` is needed;
 the matching lower bound is never used.
 
-IRREDUCIBLE at this pin: `Mathlib` has `topologicalKrullDim` and `Order.coheight`, and
-`Scheme.functionField`, but no dimension-equals-transcendence-degree theorem and no link at
-all between `SmoothOfRelativeDimension n` and any dimension of the source. -/
+**DECOMPOSED 2026-07-27 — this is no longer a leaf.** It splits, with all the glue proven,
+along the obvious seam: the dimension of `Y` itself, and the transfer of a dimension bound
+from a dense open to the ambient scheme.  The two halves are
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` and
+`topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, stated immediately above; the
+paragraph below records what mathlib does and does not supply for each.  The threading that
+makes the second one applicable is that `IsIntegral Y` gives `IsIntegral i.normalization` and
+hence `IrreducibleSpace`, which is precisely the hypothesis the transfer needs and which the
+`ULift ℚ`-shaped copy of this statement in `Modularity/KhareWintenberger.lean` had to have
+threaded in from its consumer.
+
+`Mathlib` has `topologicalKrullDim` and `Order.coheight`, and `Scheme.functionField`, but no
+dimension-equals-transcendence-degree theorem and no link at all between
+`SmoothOfRelativeDimension n` and any dimension of the source — which is why both halves are
+leaves rather than one of them being free. -/
 theorem topologicalKrullDim_normalization_le_one {Y P : Scheme.{u}}
     {strP : P ⟶ Spec (CommRingCat.of K)} [IsProper strP]
     (i : Y ⟶ P) [IsOpenImmersion i] [QuasiCompact i] [IsIntegral Y]
     (_hY : SmoothOfRelativeDimension 1 (i ≫ strP)) :
-    topologicalKrullDim i.normalization ≤ 1 :=
-  sorry
+    topologicalKrullDim i.normalization ≤ 1 := by
+  haveI : IsFinite i.fromNormalization := isFinite_fromNormalization strP i
+  haveI : IsIntegral i.normalization := inferInstance
+  haveI : LocallyOfFiniteType (i.fromNormalization ≫ strP) := inferInstance
+  haveI : Nonempty Y := inferInstance
+  refine le_trans (topologicalKrullDim_le_of_isOpenImmersion_of_irreducible
+    (i.fromNormalization ≫ strP) i.toNormalization) ?_
+  exact topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one (i ≫ strP)
 
 /-- **The complement of a curve in its compactification is finite** (PROVEN over
 `topologicalKrullDim_normalization_le_one`).
@@ -931,12 +1170,19 @@ that the two leaves already dispatched here (`locallyOfFiniteType_fromNormalizat
 docstring's leaf table above therefore does NOT list the two leaves added here; see the two
 declarations themselves.
 
-Note `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` is a genuinely different
-statement from the file's existing `topologicalKrullDim_normalization_le_one`: that one bounds
-the dimension of a relative *normalization*, about which no smoothness is known, from the
-smoothness of a dense open inside it; this one bounds the dimension of a scheme that is itself
-smooth of relative dimension one.  Neither implies the other at this pin, though a future
-dimension theory would prove both at once. -/
+DUPLICATION CORRECTION (integration, 2026-07-27).  An earlier version of this note claimed
+that the `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` written here was a new
+statement, distinct from anything else in the file.  That was WRONG, and it was wrong at the
+moment it was written: the same declaration, under the same name, was being added in the same
+batch to the earlier part of this file with strictly FEWER hypotheses.  The two collided at
+integration and the copy that lived here was DELETED; its route audit was moved into the
+surviving declaration's docstring.  What the note says about
+`topologicalKrullDim_normalization_le_one` remains true and is kept: that one bounds the
+dimension of a relative *normalization*, about which no smoothness is known, from the
+smoothness of a dense open inside it, so neither implies the other at this pin.
+
+So this subsection now adds ONE leaf, `smoothOfRelativeDimension_of_isDominant`; the dimension
+bound it also needs is the one already stated above. -/
 
 /-- **A space with a dense irreducible image is irreducible.**
 
@@ -1002,57 +1248,9 @@ theorem smoothOfRelativeDimension_of_isDominant {S Y X : Scheme.{u}} {n : ℕ}
     SmoothOfRelativeDimension n strX :=
   sorry
 
-/-- **A smooth curve over a field is one-dimensional** (sorry leaf — the dimension-theoretic
-input behind the second half of
-`Fermat.smoothOfRelativeDimension_finite_compl_of_compactificationY0`).
-
-TRUE and classical: a scheme of finite type over a field `K` which is smooth of relative
-dimension `1` has all of its local rings of dimension `≤ 1`, so its topological Krull
-dimension is `≤ 1`.  Stacks tags `0A21` (dimension = transcendence degree) and `02JS`
-(relative dimension of a smooth morphism).  Only `≤ 1` is needed; the matching lower bound is
-never used, and is anyway false for the empty scheme.
-
-`QuasiCompact` and `LocallyOfFiniteType` are exactly the two instances `IsProper` supplies at
-the call site, and no more: properness itself plays no part in the dimension count.
-
-IRREDUCIBLE at this pin, and here is the state of the ingredients — this is the check to
-re-run before accepting the verdict, because two of the three pieces DO exist:
-
-* **present**: `MvPolynomial.ringKrullDim_of_isNoetherianRing`
-  (`Mathlib/RingTheory/KrullDimension/Polynomial.lean:119`) gives
-  `ringKrullDim K[x₁ … xₛ] = s` — note this makes the `proof_wanted`
-  `MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing` at
-  `Mathlib/RingTheory/KrullDimension/Basic.lean:94` **stale**, so do not conclude from that
-  `proof_wanted` that the polynomial dimension is unavailable;
-* **present**: Noether normalization,
-  `NoetherNormalization.exists_finite_inj_algHom_of_fg`
-  (`Mathlib/RingTheory/NoetherNormalization.lean:289`) — every f.g. `K`-algebra is finite over
-  some `K[x₁ … xₛ]`;
-* **present**: `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim` and
-  `topologicalKrullDim_subspace_le`, which is how an affine-open-local bound is assembled into
-  a bound on `X` (`IsLocallyArtinian.of_topologicalKrullDim_le_zero` in
-  `Mathlib/AlgebraicGeometry/Artinian.lean` is the worked precedent for exactly this pattern
-  one dimension down);
-* **MISSING (1)**: invariance of `ringKrullDim` under an *injective integral* ring extension
-  (lying over + going up + incomparability).  A grep for `ringKrullDim` across
-  `Mathlib/RingTheory/` turns up transport along `RingEquiv` and the surjective bound
-  `ringKrullDim_le_of_surjective`, and nothing for integral extensions;
-* **MISSING (2)**: the link from `IsStandardSmoothOfRelativeDimension 1` to `s = 1` in the
-  Noether normalization — i.e. relative dimension equals transcendence degree.  There is **no
-  occurrence of `ringKrullDim` or `krullDim` anywhere under `Mathlib/RingTheory/Smooth/`,
-  `Mathlib/RingTheory/Extension/` or in `Mathlib/RingTheory/Presentation.lean`**, so nothing
-  at this pin connects a smooth presentation to any dimension.
-
-So the leaf is two named ring-theoretic statements away, not a whole dimension theory. Either
-of the two MISSING items being found in the pin refutes this verdict. -/
-theorem topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one {X : Scheme.{u}}
-    (strX : X ⟶ Spec (CommRingCat.of K)) [LocallyOfFiniteType strX] [QuasiCompact strX]
-    (_hX : SmoothOfRelativeDimension 1 strX) :
-    topologicalKrullDim X ≤ 1 :=
-  sorry
-
-/-- **The complement of a dense open in a one-dimensional proper curve is finite** (PROVEN
-over `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`).
+/-- **The complement of a dense open in a one-dimensional proper curve is finite** (PROVEN;
+it takes the dimension bound as the hypothesis `hdim`, which a consumer discharges from
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` above).
 
 The same three-line assembly as `finite_compl_range_toNormalization` above, but for an
 ARBITRARY dominant open immersion `j : Y ⟶ X` rather than for `i.toNormalization`, and taking
