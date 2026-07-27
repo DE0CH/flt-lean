@@ -10285,15 +10285,58 @@ Zariski's Main Theorem for the open immersion), so `X̄` and `C` share a
 function field. `B` normal therefore puts `z ∈ B`, and `z` integral over `A`
 and lying in `B` puts `z ∈ A'`. So `A'` is integrally closed.
 
-WHAT THIS LEAF ACTUALLY OWES IN LEAN, and it is bookkeeping rather than
-theory: mathlib has NO notion of a normal scheme — `grep -rn
-"IsIntegrallyClosed" .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is
-EMPTY, which is the check that would refute this — so the statement is made
-directly about the stalks, and the proof has to descend from the affine
-sections `A'` of `Scheme.Hom.normalizationObjIso` to the stalk at `x` through
+WHAT THIS LEAF ACTUALLY OWES IN LEAN. The bookkeeping half is as recorded:
+mathlib has NO notion of a normal scheme — `grep -rn "IsIntegrallyClosed"
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is EMPTY, which is the check
+that would refute this — so the statement is made directly about the stalks, and
+the proof descends from the affine sections `A'` of
+`Scheme.Hom.normalizationObjIso` to the stalk at `x` through
 `IsAffineOpen.isLocalization_stalk`, using that a localization of an
 integrally closed domain is integrally closed
 (`IsIntegrallyClosed.of_isLocalization` / `IsLocalization.isIntegrallyClosed`).
+That half really is bookkeeping, and the scheme-side inputs it needs are all
+instances at this pin: `IsIntegralHom f.fromNormalization` (hence `IsAffineHom`,
+hence the preimage of an affine open is affine), `IsDominant f.toNormalization`,
+and — under exactly this statement's `hgqf`/`hgft`/`hgsep`/`hgqc` —
+`IsOpenImmersion f.toNormalization` from
+`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean`. `normalizationObjIso` and
+`toNormalization_app_preimage` are in `Mathlib/AlgebraicGeometry/Normalization.lean`.
+
+**BUT THE SENTENCE "BOOKKEEPING RATHER THAN THEORY" WAS WRONG, AND THIS IS THE
+CORRECTION (2026-07-27, measured).** The argument above turns on `B = Γ(C, g⁻¹U)`
+being NORMAL, which it gets from "`C` smooth over `ℚ` ⟹ `B` regular ⟹ `B`
+integrally closed". The second implication — **regular ⟹ integrally closed** —
+is NOT at this pin in any form, and it is a genuine theorem, not glue:
+
+* `grep -rn "IsRegularLocalRing" .lake/packages/mathlib/Mathlib/` returns ONLY
+  `RegularLocalRing/{Defs,Polynomial}.lean`, and neither mentions
+  `IsIntegrallyClosed`, normality, or `UniqueFactorizationMonoid`;
+* `grep -rn "AuslanderBuchsbaum\|auslander"` over all of mathlib is **EMPTY**, so
+  the classical route "regular local ⟹ UFD ⟹ integrally closed" is missing at
+  its first step — though its SECOND step is present, as
+  `UniqueFactorizationMonoid.instIsIntegrallyClosed`;
+* there is no Serre criterion and no `IsNormalRing`: `Mathlib/RingTheory/Regular/`
+  contains only `Category, Depth, Flat, Free, IsSMulRegular, LinearMap,
+  ProjectiveDimension, RegularSequence`.
+
+So whoever takes this leaf owes a real commutative-algebra theorem in addition to
+the descent, and should NOT expect to finish it with `IsLocalization` lemmas.
+
+**THE CHEAP REPAIR, AND IT IS A CUT-LEVEL ONE (not this prover's to make
+unilaterally, but it is the thing to do).** In dimension `≤ 1` the missing
+theorem is easy: a regular local ring of dimension `0` is a FIELD and of
+dimension `1` is a DVR, and mathlib takes DVR ⟹ PID ⟹ UFD ⟹
+`IsIntegrallyClosed` all the way. This file already carries the CONVERSE
+(`isRegularLocalRing_of_isIntegrallyClosed_of_krullDimLE_one`, PROVEN, just
+above `krullDimLE_stalk_of_topologicalKrullDim_le`), which is exactly the shape
+the forward direction would take. And the sole consumer,
+`smooth_normalizationModel_of_smooth_affine_curve` below, HAS the hypothesis
+`hdim : topologicalKrullDim ↥C ≤ 1` and simply does not pass it here. **Adding
+`hdim` to this statement and threading it through from the consumer converts
+this leaf from "needs Auslander–Buchsbaum or Serre's criterion" into "needs
+regular local of dimension ≤ 1 is a field or a DVR", which is a different order
+of difficulty.** The general form was presumably stated for reusability; nothing
+in this development consumes it in dimension `> 1`.
 
 `hsmooth` is what makes `B` normal and is therefore load-bearing; `hgqf`,
 `hgsep`, `hgft`, `hgqc` are the Zariski's-Main-Theorem hypotheses that make
@@ -10339,16 +10382,59 @@ that `X̄` is of finite type over a field, where dimension is computed by the
 transcendence degree of the function field. Mathlib has no dimension =
 transcendence degree theorem; the check that would refute this is
 `grep -rn "transcendence\|trdeg" .lake/packages/mathlib/Mathlib/RingTheory/KrullDimension/`,
-which is empty at this pin. That theorem, not the scheme-theoretic
-bookkeeping, is what this leaf owes.
+which is empty at this pin.
 
-A CHEAPER ROUTE WORTH TRYING FIRST: `X̄ \ C` is a closed subset missing the
-generic point of the irreducible `X̄`, and `g.fromNormalization` is FINITE
-(`hfin`), so `X̄ → P` has finite fibres; a chain of length `2` in `X̄` would
-have to meet the open `C` in a chain of length `2` unless two of its members
-lie in `X̄ \ C`, which is where finiteness of the fibres can be used to
-contradict `hdim` directly. That argument avoids transcendence degree
-entirely and is the first thing to attempt. -/
+**THE PARAGRAPH ABOVE IS STILL TRUE OF MATHLIB AND IS NO LONGER TRUE OF THIS
+FILE (correction, 2026-07-27 — re-run its checks before believing it).** The
+dense-open dimension transfer it says this leaf owes is **already PROVEN here**,
+~550 lines BELOW this point, as
+
+    topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType
+
+(PROVEN, over the single leaf `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType`,
+via `topologicalKrullDim_eq_iSup_coheight` and `schemeIrreducibleClosedsOrderIso`,
+also PROVEN here). Its conclusion is literally `dim X̄ ≤ dim C` for an open
+immersion `j : C ⟶ X̄` into an irreducible `ℚ`-scheme of finite type. Instantiated
+at `j = g.toNormalization` it discharges this leaf outright, because that map is
+an OPEN IMMERSION under exactly this statement's four hypotheses — the instance
+`[LocallyQuasiFinite f] [LocallyOfFiniteType f] [IsSeparated f] [QuasiCompact f] :
+IsOpenImmersion f.toNormalization` in
+`Mathlib/AlgebraicGeometry/ZariskisMainTheorem.lean` — and `X̄` is locally of
+finite type over `ℚ` from `hfin` plus `hPproper`, exactly as the consumer below
+already derives it. **So no transcendence-degree theory is owed here, and the
+"cheaper route" that used to be proposed in this docstring — a finite-fibres
+argument on `X̄ \ C` — should NOT be attempted; it would re-derive a lemma this
+file already has.**
+
+TWO THINGS DO BLOCK IT, and neither is mathematical content of this leaf:
+
+1. **DECLARATION ORDER.** The transfer lemma is ~550 lines below its consumer
+   here, and Lean has no forward references. The repair is a HOIST of four
+   declarations — `schemeIrreducibleClosedsOrderIso`,
+   `topologicalKrullDim_eq_iSup_coheight`,
+   `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` and
+   `topologicalKrullDim_le_of_isOpenImmersion_of_locallyOfFiniteType` — to above
+   `smooth_of_isRegularLocalRing_stalk_of_perfectField`. It is a pure relocation
+   with no content change. **It must be COORDINATED**: as of 2026-07-27 the
+   worker on `flt-lean-36` owns
+   `exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` and is actively
+   proving it, so hoisting it out from under that agent buys a conflict for
+   nothing. Whoever closes that leaf should do the hoist in the same commit.
+2. **A MISSING HYPOTHESIS.** The transfer lemma needs `IrreducibleSpace X̄`, and
+   THIS statement cannot supply it: `hsmooth` gives reducedness of `C` (smooth
+   over a field ⟹ the stalks are domains ⟹ `IsReduced`) but nothing gives
+   irreducibility, and mathlib's `instance [IsIntegral X] : IsIntegral f.normalization`
+   needs `IsIntegral C`. The sole consumer,
+   `smooth_normalizationModel_of_smooth_affine_curve` below, HAS
+   `hgi : GeometricallyIrreducible fC` — from which it already derives
+   `IrreducibleSpace ↥C`, `IsIntegral C` and `IsIntegral g.normalization` in its
+   own proof — and simply does not pass it here. So the cut repair is to thread
+   `hgi` (or `IsIntegral C`) into this signature. Without it the leaf is still
+   TRUE — `g.toNormalization` is dominant, so `C` is a DENSE open, and the
+   dimension of a dense open equals that of the ambient space componentwise for
+   a finite-type scheme over a field — but proving it then additionally needs the
+   reduction to irreducible components, which is strictly more work than the
+   consumer requires. -/
 theorem topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve
     {C P : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
