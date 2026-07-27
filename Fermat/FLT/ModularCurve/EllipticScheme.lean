@@ -2009,11 +2009,17 @@ theorem exists_ellipticScheme_isWeierstrassModel_of_projModel
              e (WeierstrassCurve.Affine.Point.map
                  (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
                = ab.galSMul (𝟙 (Spec (CommRingCat.of ℚ))) σ (e x)) := by
-  obtain ⟨gl⟩ := nonempty_projGroupLaw E
+  -- The group law must be the CONCRETE `projGroupLaw E`, not an arbitrary one
+  -- from `nonempty_projGroupLaw`: `exists_projGeomFibreAddEquiv` was restated on
+  -- 2026-07-27 to be about `projGroupLaw E` specifically (the old form quantified
+  -- over an arbitrary `ProjGroupLaw`, which pins nothing about `m` — see
+  -- `exists_projGroupLaw_geomFibreAddEquiv`), so it no longer takes a `gl`.
   exact ⟨_root_.WeierstrassCurve.Projective.proj E,
-    _root_.WeierstrassCurve.Projective.projToSpec E, gl.toAbelianSchemeStruct,
-    smoothOfRelativeDimension_projToSpec E, exists_affineChart_projModel E gl,
-    exists_projGeomFibreAddEquiv E gl⟩
+    _root_.WeierstrassCurve.Projective.projToSpec E,
+    (projGroupLaw E).toAbelianSchemeStruct,
+    smoothOfRelativeDimension_projToSpec E,
+    exists_affineChart_projModel E (projGroupLaw E),
+    exists_projGeomFibreAddEquiv E⟩
 
 end Fermat
 
