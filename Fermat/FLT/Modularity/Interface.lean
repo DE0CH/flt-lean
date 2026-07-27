@@ -38441,9 +38441,193 @@ theorem norm_le_mul_succ_of_norm_sub_natCast_mul_le {q : ℕ} (a : ℕ → ℂ) 
         convert hfinal using 2
   exact fun r => (key r).1
 
-/-- **The Frobenius power-sum bound at a good prime** (sorry node,
-FOURTEENTH decomposition 2026-07-27 — the geometric residue of
-`exists_const_norm_qCoeff_prime_pow_le` below, which is now PROVEN over
+/-- **Newton's identity for a two-term power sum, read off a second-order
+linear recursion** (PROVEN 2026-07-27, FIFTEENTH decomposition): if a
+sequence `A` starts `A₀ = 1`, `A₁ = α + β` and obeys
+`A_{r+2} = (α+β)·A_{r+1} − αβ·Aᵣ`, then
+
+  `A_{s+2} − αβ·A_s = α^{s+2} + β^{s+2}`  for every `s`.
+
+Equivalently `Aᵣ = Σ_{k ≤ r} αᵏ·β^{r−k}` is the complete homogeneous
+symmetric function and the combination on the left telescopes to the
+power sum. Stated for a bare sequence over `ℂ` because that is all the
+consumer needs: it is instantiated at `Aᵣ = a_{q^r}`, where the
+hypothesis is exactly the weight-two good-prime Hecke recursion
+`IsWeightTwoEigenform.qCoeff_prime_pow_of_not_dvd` with `αβ = q`.
+
+PROOF: two-step induction. Both `Aₛ₊₂ − αβ·Aₛ` and `α^{s+2} + β^{s+2}`
+satisfy the SAME second-order recursion `xₛ₊₂ = (α+β)·xₛ₊₁ − αβ·xₛ` —
+the first because it is a fixed linear combination of three consecutive
+terms of `A`, the second by Newton — and they agree at `s = 0, 1`. -/
+theorem sub_mul_eq_add_pow_of_rec (A : ℕ → ℂ) (α β : ℂ) (h0 : A 0 = 1)
+    (h1 : A 1 = α + β)
+    (hrec : ∀ r : ℕ, A (r + 2) = (α + β) * A (r + 1) - α * β * A r) :
+    ∀ s : ℕ, A (s + 2) - α * β * A s = α ^ (s + 2) + β ^ (s + 2) := by
+  have key : ∀ s : ℕ,
+      (A (s + 2) - α * β * A s = α ^ (s + 2) + β ^ (s + 2)) ∧
+      (A (s + 3) - α * β * A (s + 1) = α ^ (s + 3) + β ^ (s + 3)) := by
+    intro s
+    induction s with
+    | zero =>
+        have e0 : A 2 = (α + β) * A 1 - α * β * A 0 := hrec 0
+        have e1 : A 3 = (α + β) * A 2 - α * β * A 1 := hrec 1
+        refine ⟨?_, ?_⟩
+        · show A 2 - α * β * A 0 = α ^ 2 + β ^ 2
+          rw [e0, h1, h0]; ring
+        · show A 3 - α * β * A 1 = α ^ 3 + β ^ 3
+          rw [e1, e0, h1, h0]; ring
+    | succ m ih =>
+        obtain ⟨k2, k3⟩ := ih
+        refine ⟨k3, ?_⟩
+        show A (m + 4) - α * β * A (m + 2) = α ^ (m + 4) + β ^ (m + 4)
+        have e4 : A (m + 4) = (α + β) * A (m + 3) - α * β * A (m + 2) := hrec (m + 2)
+        have e2 : A (m + 2) = (α + β) * A (m + 1) - α * β * A m := hrec m
+        linear_combination e4 + (α + β) * k3 - α * β * k2 - α * β * e2
+  exact fun s => (key s).1
+
+/-- **The analytic half of the Riemann hypothesis for curves: a
+point-count bound on ALL the power sums pins every Frobenius eigenvalue
+inside the disc of radius `√q`** (sorry node, FIFTEENTH decomposition
+2026-07-27 — one of the two residues of
+`exists_const_norm_qCoeff_frobPowerSum_le` below, which is now PROVEN
+over it).
+
+STATEMENT. Given finitely many complex numbers `γ₀, …, γ_{n−1}` and a
+constant `B` with `‖Σₖ γₖ^s‖ ≤ B·q^{s/2}` for EVERY `s ≥ 1`, each
+`‖γₖ‖ ≤ √q`.
+
+WHY THIS IS THE RIGHT SHAPE. For a smooth projective curve `X/𝔽_q` the
+Lefschetz trace formula reads `#X(𝔽_{q^s}) = q^s + 1 − Σₖ γₖ^s`, so the
+hypothesis is *literally* the Hasse–Weil point-count estimate
+`|#X(𝔽_{q^s}) − q^s − 1| ≤ B·q^{s/2}` over all finite extensions, and
+the conclusion is the individual-eigenvalue bound `|γ| ≤ √q` that the
+point count does NOT give term by term. Splitting the Weil bound here is
+what keeps the geometric leaf below purely geometric: the geometry
+produces counts, and the passage from counts to eigenvalues is this
+lemma, which mentions no curve, no modular form and no Galois action.
+
+NOTHING IS ASSUMED ABOUT WHERE THE `γₖ` COME FROM — no functional
+equation, no integrality, no pairing into `q`. The bound over all `s`
+alone suffices, which is why the leaf can be handed to a prover with no
+geometric input at all.
+
+FAITHFULNESS. TRUE, and not vacuous. Proof sketch (Hasse's original
+argument in generating-function form): the power series
+`f(T) = Σ_{s ≥ 1} (Σₖ γₖ^s)·T^s = Σₖ γₖT/(1 − γₖT)` has, by the
+hypothesis, coefficients bounded by `B·q^{s/2}`, hence radius of
+convergence at least `q^{−1/2}`. But `f` is a rational function whose
+poles are exactly the `1/γₖ` (poles at distinct `γₖ` cannot cancel: the
+residue at `1/γ` is `−(multiplicity of γ)/γ ≠ 0`). A pole at distance
+`1/‖γₖ‖ < q^{−1/2}` would sit strictly inside the disc of convergence,
+which is impossible; so `1/‖γₖ‖ ≥ q^{−1/2}`, i.e. `‖γₖ‖ ≤ √q`.
+Degenerate cases are fine: `n = 0` is vacuous, `γₖ = 0` satisfies the
+conclusion outright, and a NEGATIVE `B` makes the hypothesis
+contradictory (a norm is nonnegative) so the statement holds trivially.
+
+A SECOND ROUTE, if the generating-function argument proves awkward on
+this pin: let `R = maxₖ ‖γₖ‖` and suppose `R > √q`. Write the maximal
+`γₖ = R·e^{iθₖ}`. Simultaneous Diophantine approximation on the torus
+(pigeonhole / Weyl recurrence) supplies infinitely many `s` with every
+`e^{isθₖ}` within `1/2` of `1`, whence `‖Σₖ γₖ^s‖ ≥ (m/2)·R^s` for the
+`m ≥ 1` maximal indices once the non-maximal terms are absorbed —
+contradicting `B·q^{s/2}` since `R > √q`. Both routes are elementary and
+neither needs any algebraic geometry.
+
+WHAT IS *NOT* CLAIMED. Only `≤ √q`, not `= √q`. Equality is recovered by
+the consumer from the product relation `γ_i·γ_j = q`, which pins both
+factors once each is bounded above — that is a one-line argument and
+belongs there, not here. -/
+theorem norm_le_sqrt_of_forall_norm_sum_pow_le {q : ℕ} (hq : 0 < q) {n : ℕ}
+    (γ : Fin n → ℂ) (B : ℝ)
+    (h : ∀ s : ℕ, 0 < s → ‖∑ k, γ k ^ s‖ ≤ B * Real.sqrt q ^ s) :
+    ∀ k, ‖γ k‖ ≤ Real.sqrt q :=
+  sorry
+
+/-- **Eichler–Shimura in point-count shape: the Frobenius eigenvalues of
+a modular curve with good reduction, two of them attached to a given
+newform** (sorry node, FIFTEENTH decomposition 2026-07-27 — the
+GEOMETRIC residue of `exists_const_norm_qCoeff_frobPowerSum_le` below,
+which is now PROVEN over it).
+
+STATEMENT. At `q ∤ M` there are finitely many complex numbers
+`γ₀, …, γ_{n−1}`, a sequence of natural numbers `Npt : ℕ → ℕ` and a
+constant `B` such that
+
+* `Σₖ γₖ^s = q^s + 1 − Npt s` for every `s ≥ 1`   (Lefschetz),
+* `|Npt s − q^s − 1| ≤ B·q^{s/2}` for every `s ≥ 1`  (Hasse–Weil), and
+* two of the `γ`'s satisfy `γ_i + γ_j = a_q`, `γ_i·γ_j = q`.
+
+WHAT IT PACKAGES, CLASSICALLY. `Npt s = #X₀(M)(𝔽_{q^s})` for the
+reduction mod `q` of an integral model of `X₀(M)`, which is smooth
+because `q ∤ M` (Igusa); the `γₖ` are the `n = 2·genus` eigenvalues of
+`Frob_q` on `H¹`; the first clause is the Lefschetz trace formula, the
+second is the Weil bound with `B = 2·genus`, and the third is the
+Eichler–Shimura relation `T_q = Frob + q·Frob^{−1}`, which puts the two
+roots of `X² − a_q·X + q` among the eigenvalues (with multiplicity one,
+`g` being a newform of level exactly `M`).
+
+WHY THE POINT COUNTS ARE STATED AND NOT ELIMINATED. `Npt` is a `ℕ`-valued
+sequence, and that integrality is doing real work: it is what forbids the
+cheap junk solutions in which the `γ`'s are chosen freely. More
+importantly, stating the geometry in the shape it natively produces —
+counts of points over every finite extension — is what lets the
+analytic passage to individual eigenvalues be factored out into
+`norm_le_sqrt_of_forall_norm_sum_pow_le` above, which is pure complex
+analysis. So the two residues of the parent are cleanly separated:
+everything geometric is here, nothing geometric is there.
+
+FAITHFULNESS, AND WHY THIS IS NOT VACUOUS. It is TRUE, by the classical
+package just described. It is also not weaker than it looks: ANY witness
+forces `|a_q| ≤ 2√q`. Indeed the two displayed clauses feed
+`norm_le_sqrt_of_forall_norm_sum_pow_le` to give `‖γₖ‖ ≤ √q` for every
+`k`; then `‖γ_i‖·‖γ_j‖ = |q| = √q·√q` forces `‖γ_i‖ = ‖γ_j‖ = √q`, and
+`a_q = γ_i + γ_j` gives the Hasse bound. So this leaf is Weil-strength —
+it cannot be discharged by bookkeeping.
+
+Note `i = j` is PERMITTED, deliberately: nothing downstream needs the
+two indices distinct, and the classical witness supplies distinct ones
+anyway (a repeated root occurs with multiplicity two in `H¹`). Leaving
+the weaker existential makes the leaf easier to discharge without
+costing the consumer anything.
+
+STILL MISSING FROM THE PIN, and this leaf is exactly the place where
+that debt is now concentrated: an integral model of `X₀(M)` with good
+reduction at `q ∤ M` (Igusa), the Eichler–Shimura relation in its
+geometric form (Diamond–Shurman §8.7), and the Weil bound for curves
+over `𝔽_q` in point-count form.
+
+ROUTING, CHECKED 2026-07-27 (and this corrects, in place, the advice a
+previous cut recorded). The Stepanov/Lang–Weil subtree of
+`Modularity/KhareWintenberger.lean` is importable from here
+(`Interface.lean` imports that file directly), but its curve-level output
+`exists_zero_of_absolutelyIrreducible_plane` deliberately produces only
+NONEMPTINESS — `∃ a, eval a g = 0` — and its parent states in as many
+words that the quantitative Lang–Weil estimate is not needed anywhere in
+this development. So there is no estimate there to consume, and the
+owner of this leaf must build the point-count bound itself. What IS
+genuinely shared sits one level lower: `exists_stepanovAuxiliary` (still
+OPEN there) and `stepanov_sum_le_natDegree` (PROVEN there) are precisely
+the inputs a Stepanov-method estimate needs. Build on those; a second
+independent Stepanov development is the most expensive duplication
+available in this tree. Refutable in one grep: if
+`exists_zero_of_absolutelyIrreducible_plane`'s conclusion ever becomes an
+inequality on a point count, this paragraph is stale. -/
+theorem exists_frobEigenvalues_pointCount_of_not_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (B : ℝ) (i j : Fin n),
+      (∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (Npt s : ℂ)) ∧
+      (∀ s : ℕ, 0 < s → |(Npt s : ℝ) - (q : ℝ) ^ s - 1| ≤ B * Real.sqrt q ^ s) ∧
+      γ i + γ j = qCoeff M g q ∧ γ i * γ j = (q : ℂ) :=
+  sorry
+
+/-- **The Frobenius power-sum bound at a good prime** (PROVEN 2026-07-27
+by the FIFTEENTH decomposition, over
+`exists_frobEigenvalues_pointCount_of_not_dvd`,
+`norm_le_sqrt_of_forall_norm_sum_pow_le` and `sub_mul_eq_add_pow_of_rec`
+above; opened as a sorry node by the FOURTEENTH decomposition
+2026-07-27 as the geometric residue of
+`exists_const_norm_qCoeff_prime_pow_le` below, which is PROVEN over
 it): at `q ∤ M` the power sums of the two Frobenius roots attached to a
 weight-two newform are bounded by `C·q^{s/2}`, with a constant and NO
 linear factor.
@@ -38479,12 +38663,19 @@ vacuous — it is Weil-strength, being equivalent (via the two elementary
 lemmas above) to `|a_q| ≤ 2√q`. The `1 ≤ C` clause is free at `C = 2`
 and is what discharges `‖a_{q^0}‖ = ‖a_1‖ = 1 ≤ C`.
 
-STILL MISSING, and this leaf does not pretend otherwise: an integral
-model of `X₀(M)` with good reduction at `q ∤ M` (Igusa), the
-Eichler–Shimura relation in its geometric form (Diamond–Shurman §8.7),
-and the Weil bound for curves over `𝔽_q`. The FOURTEENTH cut removes
-only the linear-factor bookkeeping from the geometric obligation; the
-THIRTEENTH removed the extremal constant.
+STILL MISSING (as of the FIFTEENTH cut this debt is no longer HERE — it
+has been relocated wholesale onto
+`exists_frobEigenvalues_pointCount_of_not_dvd` above, which is now the
+single geometric leaf of this cluster): an integral model of `X₀(M)`
+with good reduction at `q ∤ M` (Igusa), the Eichler–Shimura relation in
+its geometric form (Diamond–Shurman §8.7), and the Weil bound for
+curves over `𝔽_q` in point-count form. The FOURTEENTH cut removed the
+linear-factor bookkeeping from the geometric obligation; the THIRTEENTH
+removed the extremal constant; the FIFTEENTH removes the passage from
+point counts to individual eigenvalues (into
+`norm_le_sqrt_of_forall_norm_sum_pow_le`, pure complex analysis) and the
+Hecke-recursion-to-power-sum step (into `sub_mul_eq_add_pow_of_rec`,
+PROVEN), leaving the geometric leaf carrying geometry and nothing else.
 
 CORRECTION TO THE THIRTEENTH CUT'S COORDINATION NOTE (checked
 2026-07-27 by the owner of this cut, and it changes what a successor
@@ -38509,14 +38700,88 @@ estimate needs, so build the estimate ON those rather than starting a
 second Stepanov development. Refutable in one grep: if
 `exists_zero_of_absolutelyIrreducible_plane`'s conclusion ever becomes an
 inequality on a point count rather than a bare existential, this
-paragraph is stale. -/
+paragraph is stale. **That routing note now lives, in fuller form, on
+`exists_frobEigenvalues_pointCount_of_not_dvd` above, which is the leaf
+it actually governs; read it there.**
+
+PROOF (FIFTEENTH cut, 2026-07-27 — `C = 2`, and note the linear factor
+never appears). Take the geometric package
+`exists_frobEigenvalues_pointCount_of_not_dvd`: eigenvalues `γₖ`, point
+counts `Npt`, a constant `B`, and two indices with `γ_i + γ_j = a_q`,
+`γ_i·γ_j = q`.
+
+1. *Counts bound power sums.* The Lefschetz clause rewrites
+   `Σₖ γₖ^s = q^s + 1 − Npt s`, a REAL number, so its norm is
+   `|Npt s − q^s − 1|`, which the Hasse–Weil clause bounds by `B·q^{s/2}`.
+2. *Power sums bound each eigenvalue.*
+   `norm_le_sqrt_of_forall_norm_sum_pow_le` turns that into
+   `‖γₖ‖ ≤ √q` for every `k` — this is the only analytic step, and it is
+   isolated in its own leaf.
+3. *The pair is extremal.* `‖γ_i‖·‖γ_j‖ = ‖γ_i·γ_j‖ = |q| = √q·√q` with
+   both factors `≤ √q` forces `‖γ_i‖ = ‖γ_j‖ = √q` exactly.
+4. *Coefficients are power sums.* `a_{q^0} = a_1 = 1`, `a_{q^1} = a_q =
+   γ_i + γ_j`, and the good-prime Hecke recursion
+   `qCoeff_prime_pow_of_not_dvd` is `A_{r+2} = (γ_i+γ_j)·A_{r+1} −
+   γ_iγ_j·Aᵣ`; so `sub_mul_eq_add_pow_of_rec` gives
+   `a_{q^{s+2}} − q·a_{q^s} = γ_i^{s+2} + γ_j^{s+2}`.
+5. *Conclude with `C = 2`.* The triangle inequality on `γ_i + γ_j` and on
+   `γ_i^{s+2} + γ_j^{s+2}`, with both norms exactly `√q`, gives
+   `‖a_q‖ ≤ 2√q` and `‖a_{q^{s+2}} − q·a_{q^s}‖ ≤ 2·q^{(s+2)/2}`, and
+   `1 ≤ 2` discharges the normalisation clause. -/
 theorem exists_const_norm_qCoeff_frobPowerSum_le {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
     ∃ C : ℝ, 1 ≤ C ∧ ‖qCoeff M g q‖ ≤ C * Real.sqrt q ∧
       ∀ s : ℕ, ‖qCoeff M g (q ^ (s + 2)) - (q : ℂ) * qCoeff M g (q ^ s)‖
-        ≤ C * Real.sqrt q ^ (s + 2) :=
-  sorry
+        ≤ C * Real.sqrt q ^ (s + 2) := by
+  obtain ⟨n, γ, Npt, B, i, j, hlef, hweil, hsum, hprod⟩ :=
+    exists_frobEigenvalues_pointCount_of_not_dvd hM g hg hq hqM
+  have hqpos : 0 < q := hq.pos
+  have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hqpos
+  have hsqpos : 0 < Real.sqrt q := Real.sqrt_pos.mpr hqR
+  -- 1. the point counts bound the Frobenius power sums
+  have hps : ∀ s : ℕ, 0 < s → ‖∑ k, γ k ^ s‖ ≤ B * Real.sqrt q ^ s := by
+    intro s hs
+    have hcast : ((q : ℂ) ^ s + 1 - (Npt s : ℂ))
+        = ((((q : ℝ) ^ s + 1 - (Npt s : ℝ)) : ℝ) : ℂ) := by push_cast; ring
+    rw [hlef s hs, hcast, Complex.norm_real, Real.norm_eq_abs,
+      show ((q : ℝ) ^ s + 1 - (Npt s : ℝ)) = -((Npt s : ℝ) - (q : ℝ) ^ s - 1) by ring,
+      abs_neg]
+    exact hweil s hs
+  -- 2. and hence each eigenvalue individually
+  have hbnd := norm_le_sqrt_of_forall_norm_sum_pow_le hqpos γ B hps
+  -- 3. the pair `γ_i, γ_j` is extremal because its product is `q`
+  have hnp : ‖γ i‖ * ‖γ j‖ = Real.sqrt q * Real.sqrt q := by
+    rw [← norm_mul, hprod, Complex.norm_natCast, Real.mul_self_sqrt hqR.le]
+  have hi : ‖γ i‖ = Real.sqrt q := by
+    refine le_antisymm (hbnd i) ?_
+    nlinarith [hbnd j, norm_nonneg (γ i), norm_nonneg (γ j), hsqpos, hnp]
+  have hj : ‖γ j‖ = Real.sqrt q := by
+    refine le_antisymm (hbnd j) ?_
+    nlinarith [hbnd i, norm_nonneg (γ i), norm_nonneg (γ j), hsqpos, hnp]
+  -- 4. the Hecke recursion turns the coefficients into the power sums
+  have hpow : ∀ s : ℕ, qCoeff M g (q ^ (s + 2)) - γ i * γ j * qCoeff M g (q ^ s)
+      = γ i ^ (s + 2) + γ j ^ (s + 2) := by
+    refine sub_mul_eq_add_pow_of_rec (fun r => qCoeff M g (q ^ r)) (γ i) (γ j) ?_ ?_ ?_
+    · show qCoeff M g (q ^ 0) = 1
+      rw [pow_zero]; exact hg.toIsWeightTwoEigenform.qCoeff_one
+    · show qCoeff M g (q ^ 1) = γ i + γ j
+      rw [pow_one]; exact hsum.symm
+    · intro r
+      show qCoeff M g (q ^ (r + 2))
+        = (γ i + γ j) * qCoeff M g (q ^ (r + 1)) - γ i * γ j * qCoeff M g (q ^ r)
+      rw [hg.toIsWeightTwoEigenform.qCoeff_prime_pow_of_not_dvd q hq hqM r, hsum, hprod]
+  -- 5. assemble with `C = 2`
+  refine ⟨2, by norm_num, ?_, ?_⟩
+  · rw [← hsum]
+    calc ‖γ i + γ j‖ ≤ ‖γ i‖ + ‖γ j‖ := norm_add_le _ _
+      _ = 2 * Real.sqrt q := by rw [hi, hj]; ring
+  · intro s
+    rw [← hprod, hpow s]
+    calc ‖γ i ^ (s + 2) + γ j ^ (s + 2)‖ ≤ ‖γ i ^ (s + 2)‖ + ‖γ j ^ (s + 2)‖ :=
+          norm_add_le _ _
+      _ = 2 * Real.sqrt q ^ (s + 2) := by
+          rw [norm_pow, norm_pow, hi, hj]; ring
 
 /-- **The crude Weil bound along the powers of a good prime** (PROVEN
 2026-07-27 over `exists_const_norm_qCoeff_frobPowerSum_le` above,
@@ -38556,9 +38821,10 @@ obligation.
 
 WHERE THE WEIL BOUND IS BEING BUILT, AND THAT IT IS REACHABLE FROM HERE
 (checked 2026-07-27; this is the load-bearing coordination fact, and its
-mathematical half was CORRECTED the same day — see the CORRECTION
-paragraph on `exists_const_norm_qCoeff_frobPowerSum_le` above, which is
-where a successor should read it). A Stepanov–Bombieri development is in
+mathematical half was CORRECTED the same day, and the FIFTEENTH cut then
+MOVED the note to the leaf it governs — see the ROUTING paragraph on
+`exists_frobEigenvalues_pointCount_of_not_dvd` above, which is where a
+successor should read it). A Stepanov–Bombieri development is in
 flight in `Modularity/KhareWintenberger.lean`, beneath
 `exists_bound_forall_zmodSolvable_of_irreducibleFibre`, for the
 Lang–Weil needs of Khare–Wintenberger. **That file is UPSTREAM of this
