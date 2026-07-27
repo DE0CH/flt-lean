@@ -407,21 +407,19 @@ and `c` of the halving carry no arithmetic, and `halving_norm_relation`,
     e²·(p'⁴ − 128p'e'⁶ + 256e'⁸)  =  4·p·e'²·n'² ,
 
 i.e. `p/e² = F(p', e'²)/(4e'²·G(p', e'²))` for the binary forms
-`F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`. So the TWO
-open statements at level `11` are now:
+`F(X, Y) = X⁴ − 128XY³ + 256Y⁴` and `G(X, Y) = X³ − 4X²Y + 16Y³`. So the ONE
+open statement at level `11` is now `exists_halving_witness` — the `2`-descent
+over `ℤ[s]` (PID + units + the local conditions killing the nontrivial classes).
 
-* `exists_halving_witness` — the `2`-descent over `ℤ[s]` (PID + units + the
-  local conditions killing the nontrivial classes);
-* `smallPoints` — the finite check `|p| ≤ 512`, `1 ≤ e ≤ 22` that
-  `height_drop_or_small` leaves behind.
-
-`height_drop_or_small` itself is PROVEN, over three proven ingredients: the
+`height_drop_or_small` is PROVEN, over three proven ingredients: the
 coprimality bookkeeping (`reduced_fraction`), the resultant divisibility
 (`forms_common_dvd`, two integral Bezout identities) and the archimedean bound
-(`forms_archimedean`, an exact factorisation tight at `X = 4Y`). So the ENTIRE
-height half of level `11` is closed except for the finite search, and the two
-remaining statements are as different as they could be: a `2`-descent over a
-cubic field, and a bounded integer search. -/
+(`forms_archimedean`, an exact factorisation tight at `X = 4Y`). And the finite
+check it leaves behind, `smallPoints` (`|p| ≤ 512`, `1 ≤ e ≤ 22`), is PROVEN
+too, as of 2026-07-27, by a bitmask quadratic-residue sieve discharged with one
+`decide +kernel` — see its section docstring. So the ENTIRE height half of
+level `11` is closed, and what remains is purely the `2`-descent over the cubic
+field. -/
 
 namespace MazurLevel11
 
@@ -465,8 +463,8 @@ The auxiliary variables `m` and `c` carry no arithmetic — they are the
 coordinates of the halving, and they can be removed outright. The three lemmas
 below do that by pure `linear_combination`, and what is left is a statement
 about the two binary forms alone. See `halving_relation` for the resulting
-`c`-free identity and `height_drop_or_small` / `smallPoints` for the two open
-leaves it splits into.
+`c`-free identity and `height_drop_or_small` / `smallPoints` for the two leaves
+it splits into — both of which are now PROVEN.
 -/
 
 /-- **The norm half of the halving, with `c` eliminated** (PROVEN 2026-07-27):
@@ -861,38 +859,178 @@ theorem height_drop_or_small {p e p' e' n' : ℤ} (he : 0 < e) (hcop : IsCoprime
     have hle2H : p.natAbs + (e ^ 2).natAbs ≤ 2 * H := by rw [hH]; omega
     omega
 
-/-- **THE FINITE BASE CASE at level `11`** (sorry leaf, 2026-07-27): the only
-SMALL coprime integral points of `W² = U³ − 4U² + 16` are the two real ones.
+/-! ### The finite base case, by a bitmask quadratic-residue sieve
+
+The four declarations below are the machinery of `smallPoints`, and they are
+worth reading as a template: the same shape closes ANY "no solutions in a box"
+statement in this development, at a cost of seconds rather than the hours a
+per-pair generated proof would take.
+
+THE ONE DESIGN DECISION THAT MAKES IT WORK is the representation of "is a
+quadratic residue mod `q`". The obvious `∃ x : ZMod q, x² = c` costs `q` kernel
+multiplications *per test*, and a `List` of residues costs a linear membership
+scan; at `22550` cells × `8` moduli either one is hopeless. Instead the residue
+SET is packed into a single natural-number BITMASK and the test is
+
+    (mask / 2 ^ r) % 2 = 1,
+
+which is three GMP-accelerated `Nat` operations — `pow`, `div`, `mod` — and so
+is O(1) in `q`. That is what lets `q = 169` be as cheap as `q = 5`, and it is
+why the whole `22550`-cell search is decided by the KERNEL in seconds.
+
+Do NOT reach for `Nat.sqrt`: it is well-founded recursion and the kernel cannot
+unfold it at these sizes. `native_decide` is banned outright (undue axiom). -/
+
+/-- `qrMaskBad q mask N` is `true` exactly when `N mod q` is NOT a square mod
+`q`, where `mask` is the bitmask whose `r`-th bit records "`r` is a square mod
+`q`". Three GMP-accelerated `Nat` operations, independent of `q`. -/
+def qrMaskBad (q mask : ℕ) (N : ℤ) : Bool := (mask / 2 ^ (N % (q : ℤ)).toNat) % 2 == 0
+
+/-- **The soundness half of the sieve**: a square is never rejected. The
+hypothesis `hm` — "every `x*x mod q` has its bit set in `mask`" — is a `q`-step
+`decide`, and it is the ONLY thing the mask has to satisfy; the mask may be as
+sparse or as generous as one likes, since a generous mask merely sieves less.
+So no arithmetic claim about the masks below needs to be trusted: each is
+re-derived inside Lean by `decide` from `hm`. -/
+theorem qrMaskBad_sq {q mask : ℕ} (hq : 0 < q)
+    (hm : ∀ x ∈ List.range q, (mask / 2 ^ ((x * x) % q)) % 2 = 1)
+    (n : ℤ) : qrMaskBad q mask (n ^ 2) = false := by
+  have hq0 : ((q : ℤ)) ≠ 0 := by exact_mod_cast hq.ne'
+  have hnn : 0 ≤ n % (q : ℤ) := Int.emod_nonneg n hq0
+  set x : ℕ := (n % (q : ℤ)).toNat with hxdef
+  have hx : ((x : ℤ)) = n % (q : ℤ) := Int.toNat_of_nonneg hnn
+  have hxlt : x < q := by
+    have h1 : n % (q : ℤ) < (q : ℤ) := Int.emod_lt_of_pos n (by exact_mod_cast hq)
+    rw [← hx] at h1; exact_mod_cast h1
+  have hval : (n ^ 2 % (q : ℤ)).toNat = (x * x) % q := by
+    have h2 : n ^ 2 % (q : ℤ) = ((((x * x) % q : ℕ) : ℤ)) := by
+      calc n ^ 2 % (q : ℤ) = (n * n) % (q : ℤ) := by rw [sq]
+        _ = (n % (q : ℤ)) * (n % (q : ℤ)) % (q : ℤ) := Int.mul_emod n n _
+        _ = ((x : ℤ) * (x : ℤ)) % (q : ℤ) := by rw [hx]
+        _ = (((x * x : ℕ) : ℤ)) % ((q : ℕ) : ℤ) := by push_cast; ring_nf
+        _ = ((((x * x) % q : ℕ) : ℤ)) := (Int.natCast_mod _ _).symm
+    rw [h2, Int.toNat_natCast]
+  have hbit := hm x (List.mem_range.mpr hxlt)
+  simp [qrMaskBad, hval, hbit]
+
+/-- **The sieve itself**: `N` is rejected if it is negative or a quadratic
+non-residue modulo any of eight moduli.
+
+THE MODULI WERE FOUND, NOT GUESSED. A greedy search (an untrusted searcher, in
+the doctrine's sense) over prime powers up to `256` picked at each step the
+modulus killing the most survivors; `169` alone kills `4372` of the `6523`
+non-negative cells, and `16`, `31`, `61`, `109`, `107`, `89`, `5` finish the
+job in that order. **All eight are load-bearing**: deleting the last one makes
+`sieveComplete` false, and Lean's kernel says so rather than merely failing —
+which is the check that this list is exactly right, and it was run. -/
+def sieveBad (N : ℤ) : Bool :=
+  decide (N < 0)
+  || qrMaskBad 169 516886613011517927009227417550539545172651979003419 N
+  || qrMaskBad 16 531 N
+  || qrMaskBad 31 303908791 N
+  || qrMaskBad 61 1662926210933060155 N
+  || qrMaskBad 109 473022961816146413042658758988475 N
+  || qrMaskBad 107 50079290986288516948354744811035 N
+  || qrMaskBad 89 526807005835216593886842679 N
+  || qrMaskBad 5 19 N
+
+set_option maxRecDepth 20000 in
+/-- A perfect square survives the sieve. `maxRecDepth` is raised only for the
+eight `q`-step `decide`s that check the masks (`q = 169` is the binding one);
+it guards no failure and hides no defect. -/
+theorem sieveBad_sq (n : ℤ) : sieveBad (n ^ 2) = false := by
+  have h0 : decide ((n : ℤ) ^ 2 < 0) = false := by
+    simp only [decide_eq_false_iff_not, not_lt]; positivity
+  simp only [sieveBad, h0,
+    qrMaskBad_sq (q := 169) (mask := 516886613011517927009227417550539545172651979003419)
+      (by norm_num) (by decide) n,
+    qrMaskBad_sq (q := 16) (mask := 531) (by norm_num) (by decide) n,
+    qrMaskBad_sq (q := 31) (mask := 303908791) (by norm_num) (by decide) n,
+    qrMaskBad_sq (q := 61) (mask := 1662926210933060155) (by norm_num) (by decide) n,
+    qrMaskBad_sq (q := 109) (mask := 473022961816146413042658758988475) (by norm_num) (by decide) n,
+    qrMaskBad_sq (q := 107) (mask := 50079290986288516948354744811035) (by norm_num) (by decide) n,
+    qrMaskBad_sq (q := 89) (mask := 526807005835216593886842679) (by norm_num) (by decide) n,
+    qrMaskBad_sq (q := 5) (mask := 19) (by norm_num) (by decide) n,
+    Bool.or_false]
+
+/-- One cell of the search: `true` means "this `(e, p)` is disposed of" — either
+it is outside the box, or not coprime, or one of the two genuine points, or its
+value is sieved out. -/
+def sieveCell (e p : ℤ) : Bool :=
+  decide (512 < p.natAbs + (e ^ 2).natAbs)
+  || decide (Int.gcd p e ≠ 1)
+  || decide (p = 0 ∧ e = 1)
+  || decide (p = 4 ∧ e = 1)
+  || sieveBad (p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6)
+
+/-- The whole search: `e = i + 1` for `i < 22` (since `e² ≤ 512`) and
+`p = j − 512` for `j < 1025` (since `|p| ≤ 512`). `22 × 1025 = 22550` cells. -/
+def sieveComplete : Bool :=
+  (List.range 22).all fun i =>
+    (List.range 1025).all fun j => sieveCell ((i : ℤ) + 1) ((j : ℤ) - 512)
+
+set_option maxRecDepth 10000 in
+/-- **THE FINITE SEARCH, DISCHARGED BY THE KERNEL** (2026-07-27). `decide
++kernel` keeps the elaborator out of it and hands the whole `22550`-cell
+reduction to the kernel, where the `Nat` operations are GMP-accelerated; the
+whole file elaborates in well under a minute. Axiom audit: `[propext]`. -/
+theorem sieveComplete_true : sieveComplete = true := by decide +kernel
+
+/-- **THE FINITE BASE CASE at level `11`** (PROVEN 2026-07-27 by a bitmask
+quadratic-residue sieve): the only SMALL coprime integral points of
+`W² = U³ − 4U² + 16` are the two real ones.
 
 This is `integral_leaf` restricted to `|p| + e² ≤ 512`, and unlike that
 statement it is a FINITE check: `|p| ≤ 512` and `e² ≤ 512`, so `1 ≤ e ≤ 22`,
-about `1.5·10⁴` coprime pairs, each decided by whether `p³ − 4p²e² + 16e⁶` is a
-perfect square. On that box `|p³ − 4p²e² + 16e⁶| < 1.3·10⁸`, and the value is
-negative — hence instantly not a square — over most of it.
+`9403` coprime pairs in the box out of `22550` cells, each decided by whether
+`p³ − 4p²e² + 16e⁶` is a perfect square. On that box the value has absolute
+value `< 1.3·10⁸`, and it is negative — hence instantly not a square — on `2878`
+of the coprime pairs.
 
-HOW TO PROVE IT, and what NOT to try. `native_decide` is banned (undue axiom)
-and kernel-reducing `Nat.sqrt` is hopeless (it is well-founded recursion, so
-`decide` cannot unfold it at these sizes). Two routes that do work:
+HOW IT IS PROVED. `sieveComplete_true` is one `decide +kernel` over the whole
+box; `sieveBad_sq` says a perfect square is never sieved out; and the plumbing
+below turns a hypothetical solution into a cell that `sieveComplete` claims is
+disposed of, leaving only the two genuine points. See the section docstring
+above for why the bitmask representation is what makes the kernel run affordable.
 
-* **Modular sieve.** For each surviving pair exhibit a modulus `q` for which
-  `p³ − 4p²e² + 16e⁶` is a quadratic non-residue. `decide` over `ZMod q` with
-  `q` small is kernel-cheap, and a handful of moduli (`8`, `9`, `5`, `7`, `11`,
-  `13`, …) eliminates all but the two genuine points; the residue data is what
-  `gp`/`Singular` should be used to FIND, and Lean then re-checks each concrete
-  witness.
-* **Bracketing witnesses.** For each pair give `k` with `k² < N < (k+1)²`,
-  closed by `omega`/`norm_num` plus "no square strictly between consecutive
-  squares". Mechanical, but ~10⁴ witnesses; generate the file.
-
-Either way, consider sharpening first: the bound `512` in
-`height_drop_or_small` is stated above even the crudest route's `502`, and that
-docstring records sharpenings bringing it to `398` (`e ≤ 19`), `178` (`e ≤ 13`,
-~3400 pairs) and then `70` (`e ≤ 8`, ~800 pairs). Lowering it there lowers it
-here in step, and the true bound is `1`. -/
+**NO SHARPENING OF `height_drop_or_small` WAS NEEDED.** Its docstring offers to
+bring the bound `512` down to `398`, `178` or `70` (via the `11264` and `704`
+sharpenings of `forms_common_dvd`) to shrink this search, and records that the
+true bound is `1`. None of that is necessary: the sieve costs seconds on the
+full `512` box, so the two-adic and per-prime analyses of `forms_common_dvd`
+can stay unwritten. They remain correct and remain available if anything else
+ever wants a smaller box. -/
 theorem smallPoints {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6)
     (hsmall : p.natAbs + (e ^ 2).natAbs ≤ 512) :
-    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := sorry
+    (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := by
+  have hgcd : Int.gcd p e = 1 := Int.isCoprime_iff_gcd_eq_one.mp hcop
+  have hesq : e ^ 2 ≤ 512 := by
+    have h1 : (e ^ 2).natAbs ≤ 512 := le_trans (Nat.le_add_left _ _) hsmall
+    have h2 : (0 : ℤ) ≤ e ^ 2 := sq_nonneg e
+    omega
+  have he22 : e ≤ 22 := by nlinarith
+  have hpb : p.natAbs ≤ 512 := le_trans (Nat.le_add_right _ _) hsmall
+  have hple : -512 ≤ p ∧ p ≤ 512 := by omega
+  set i : ℕ := (e - 1).toNat with hidef
+  set j : ℕ := (p + 512).toNat with hjdef
+  have hie : ((i : ℤ)) + 1 = e := by omega
+  have hjp : ((j : ℤ)) - 512 = p := by omega
+  have hi : i < 22 := by omega
+  have hj : j < 1025 := by omega
+  have hcell : sieveCell ((i : ℤ) + 1) ((j : ℤ) - 512) = true :=
+    List.all_eq_true.mp
+      (List.all_eq_true.mp sieveComplete_true i (List.mem_range.mpr hi)) j
+      (List.mem_range.mpr hj)
+  rw [hie, hjp] at hcell
+  have hbad : sieveBad (p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6) = false := by
+    rw [← h]; exact sieveBad_sq n
+  simp only [sieveCell, hbad, Bool.or_false, Bool.or_eq_true, decide_eq_true_eq] at hcell
+  rcases hcell with ((h1 | h1) | h1) | h1
+  · omega
+  · exact absurd hgcd h1
+  · exact Or.inl h1
+  · exact Or.inr h1
 
 /-- **THE HEIGHT STEP at level `11`** (PROVEN 2026-07-27 over
 `height_drop_or_small` and `smallPoints`): the halving supplied by
@@ -1071,13 +1209,13 @@ DECOMPOSED 2026-07-27, twice. It is no longer a leaf: it is the infinite descent
 `smallPoints` once `halving_relation` eliminates the halving coordinates `m`
 and `c`. `height_drop_or_small` — the resultant/archimedean height bound, where
 the finite-generation content lives — is PROVEN too, over `reduced_fraction`,
-`forms_common_dvd` and `forms_archimedean`. So exactly TWO open statements
-remain, and they are as different from each other as they could be:
-`exists_halving_witness` (the `2`-descent over `ℤ[s]`: PID, units, and the local
-conditions) and `smallPoints` (the finite base case the height bound leaves
-behind, `|p| ≤ 512` and `1 ≤ e ≤ 22`). See the section docstring for the
-computed evidence behind that split, including why the earlier routing note —
-which called the cubic field's class group the obstruction — was wrong.
+`forms_common_dvd` and `forms_archimedean`. And `smallPoints` — the finite base
+case the height bound leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22` — is PROVEN
+as of 2026-07-27 by a bitmask quadratic-residue sieve. So exactly ONE open
+statement remains: `exists_halving_witness`, the `2`-descent over `ℤ[s]` (PID,
+units, and the local conditions). See the section docstring for the computed
+evidence behind that split, including why the earlier routing note — which
+called the cubic field's class group the obstruction — was wrong.
 
 Verified by exhaustive search (`|p| < 6000`, `1 ≤ e < 260`, coprime): `(0, 1)`
 and `(4, 1)` are the only solutions, so the statement is true as written.
@@ -1172,10 +1310,11 @@ infinite descent (`MazurLevel11.integral_leaf_aux`) over
 `halving_descends` is now PROVEN in turn, over
 `MazurLevel11.height_drop_or_small` (the resultant/archimedean height bound)
 and `MazurLevel11.smallPoints` (the finite base case `|p| ≤ 512`, `e ≤ 22`);
-and `height_drop_or_small` is itself PROVEN, over `reduced_fraction`,
-`forms_common_dvd` and `forms_archimedean`. So level `11` stands on exactly
-TWO open statements: `exists_halving_witness` and `smallPoints`. See the
-`MazurLevel11` section docstring.
+and BOTH of those are themselves PROVEN — `height_drop_or_small` over
+`reduced_fraction`, `forms_common_dvd` and `forms_archimedean`, and
+`smallPoints` (2026-07-27) by a bitmask quadratic-residue sieve decided in the
+kernel. So level `11` stands on exactly ONE open statement:
+`exists_halving_witness`. See the `MazurLevel11` section docstring.
 
 Note the sentence above — "finite generation alone never yields rank `0`, so it
 was never the hard half" — is true but was read the wrong way round when
@@ -1183,8 +1322,9 @@ was never the hard half" — is true but was read the wrong way round when
 not OPTIONAL: a complete `2`-descent here gives only `E(ℚ)/2E(ℚ) = 0`, which
 without a height theory is satisfied by infinite groups. The height content is
 now explicit, named, quantitative and PROVEN: see
-`MazurLevel11.height_drop_or_small` and the three ingredients below it. What
-survives of it is only the finite search `MazurLevel11.smallPoints`. -/
+`MazurLevel11.height_drop_or_small` and the three ingredients below it. The
+finite search it left behind, `MazurLevel11.smallPoints`, is PROVEN too, so
+nothing of the height half survives as a leaf. -/
 theorem curve11a3_rational_points (x y : ℚ)
     (h : curve11a3.toAffine.Nonsingular x y) :
     (x, y) = ((0 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
