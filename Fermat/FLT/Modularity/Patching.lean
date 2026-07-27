@@ -351,7 +351,14 @@ public import Mathlib.Topology.Connected.TotallyDisconnected
 -- `IsUltrametricDist ℤ_[p] → TotallySeparatedSpace → TotallyDisconnectedSpace`
 -- is unavailable and `TotallyDisconnectedSpace ℤ_[p]` fails to synthesize
 -- with no hint of the cause
-import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
+-- PROMOTED TO `public import` 2026-07-27 by the `IsTaylorWilesPrimeSet`
+-- dual-Selmer repair: that predicate's global clause is stated in the
+-- Galois-cohomology vocabulary of this module (`adZeroTwist`,
+-- `locResTwist1`, `hardlyRamifiedPlaces`), and a plain `import` does not
+-- re-export, so the names would be unavailable in signature position.
+-- No cycle: the import closure of `HardlyRamified/Deformation.lean`
+-- contains no `Modularity/*` (re-checked 2026-07-27).
 -- PROOF-ONLY (added 2026-07-25 for the quotient-tower leaf
 -- `exists_ringHom_quotient_padicTower_of_finiteTests`):
 -- `isHardlyRamified_baseChange_quotient`, the transfer of the four hardly
@@ -3408,6 +3415,79 @@ permutation lemmas, and the freeness dévissage
 section below, with only two concrete power-series facts
 (Noetherianity, the regular system of parameters) left as leaves. -/
 
+/-! ### The dual-Selmer vocabulary for `IsTaylorWilesPrimeSet`
+
+Three short definitions, added 2026-07-27 as the CUT-LEVEL repair of the
+interface defect recorded at `exists_taylorWilesAuxLevelPresentedDatum`
+below: `IsTaylorWilesPrimeSet` was a conjunction of purely LOCAL
+conditions, so it admitted prime sets for which the Taylor–Wiles method
+does not work and the arithmetic leaves were quantified over all of them.
+
+Everything the global clause needs already exists in
+`HardlyRamified/Deformation.lean` (`adZeroTwist = ad⁰ρbar(1)`,
+`adZeroTwistLocal`, `locResTwist1`, `hardlyRamifiedPlaces`, all
+sorry-free); the ONLY thing missing was the *unramified at `v`*
+condition, which is restriction along the inertia subgroup rather than
+along the whole decomposition group.  That is what the three definitions
+below supply, mirroring `adZeroLocal`/`locResTwist1` verbatim with
+`decompHom v` replaced by its restriction to `localInertiaGroup v`.
+
+**Why the unramifiedness clause is not optional.**  `Sha1Twist (S ∪ Q) = 0`
+alone is unachievable over the full `Γ ℚ`: a class ramified at some large
+auxiliary prime outside `S ∪ Q` is invisible to every localisation in the
+family, so the source is infinite-dimensional and no finite `Q` can cut it
+to zero.  (This is the phenomenon audited at length on `Sha1Twist` itself;
+the `μ_ℓ` shadow is `H¹(Γ ℚ, μ_ℓ) ≅ ℚˣ/(ℚˣ)^ℓ`, infinite, against the
+`S`-unit group of dimension 2 over `G_{ℚ,S}`.)  Restricting to classes
+UNRAMIFIED OUTSIDE `{2, p}` is what replaces the missing `G_{ℚ,S}` here,
+and it is statable today precisely because `localInertiaGroup` exists.
+
+**The local Tate pairing is NOT needed.**  The classical clause is
+`H¹_{Q*}(ℚ, ad⁰ρbar(1)) = 0`, whose `Q*` condition at `q ∈ Q` is the
+ANNIHILATOR of the unramified local condition under the local pairing.
+The clause written below drops the pairing and asks for the FULL local
+restriction to vanish at each `q ∈ Q`, which is a SMALLER (indeed empty
+at each `q`) local condition, hence a LARGER kernel: the group it kills
+CONTAINS `H¹_{Q*}`.  So the clause is stronger than the classical one and
+therefore sufficient for every consumer, while needing no duality theory
+at all. -/
+
+/-- **Inertia at `v` inside the global Galois group** — the composite
+`I_v ↪ Γ ℚ_v → Γ ℚ` of the inclusion of `localInertiaGroup v` with
+`decompHom v`, as a continuous group homomorphism.  Continuity of the
+inclusion is `continuous_subtype_val`; `decompHom` is already continuous
+by construction. -/
+noncomputable def inertiaToGlobalHom
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ↥(localInertiaGroup v) →ₜ* Field.absoluteGaloisGroup ℚ :=
+  (decompHom v).comp ⟨(localInertiaGroup v).subtype, continuous_subtype_val⟩
+
+/-- `ad⁰ρbar(1)` restricted to the INERTIA group at `v` — the analogue of
+`adZeroTwistLocal` along `inertiaToGlobalHom v` instead of
+`decompHom v`. -/
+noncomputable def adZeroTwistInertia.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k ↥(localInertiaGroup v) :=
+  TopRep.res (inertiaToGlobalHom v).toMonoidHom (adZeroTwist p ρbar)
+
+/-- The restriction `H¹(ℚ, ad⁰ρbar(1)) → H¹(I_v, ad⁰ρbar(1))`.  A class in
+its kernel is exactly a class UNRAMIFIED at `v`; that is the notion the
+global clause of `IsTaylorWilesPrimeSet` below quantifies over. -/
+noncomputable def locResInertiaTwist1.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    continuousCohomology 1 (adZeroTwist p ρbar) ⟶
+      continuousCohomology 1 (adZeroTwistInertia p ρbar v) :=
+  ContinuousCohomology.map (inertiaToGlobalHom v)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistInertia p ρbar v)) 1
+
 /-- **Taylor–Wiles prime sets.**  A finite set `Q` of rational primes
 is a Taylor–Wiles set of level `n` for the residual representation
 `ρbar` if every `q ∈ Q` is a prime that is `≡ 1 (mod p^n)` and whose
@@ -3426,17 +3506,74 @@ Hecke modules that patching feeds on (Taylor–Wiles, Ann. of Math. 141
 (1995), §2; Diamond–Darmon–Taylor (1995), §5.3; the eigenvalue
 rationality over the FIXED `k` follows classically after the harmless
 scalar enlargement built into the choice of `k`, and abstractly is
-part of the audited hypothesis set). -/
-def IsTaylorWilesPrimeSet.{uK, uW}
-    {k : Type uK} [CommRing k] [TopologicalSpace k] [IsTopologicalRing k]
+part of the audited hypothesis set).
+
+# THE GLOBAL CLAUSE (ADDED 2026-07-27 — THE CUT-LEVEL REPAIR)
+
+The second conjunct is the DUAL-SELMER VANISHING condition, and without
+it this predicate is not the Taylor–Wiles hypothesis at all.  The
+Taylor–Wiles construction does not work for an arbitrary set of primes
+satisfying the local conditions: it works for a `Q` chosen so that
+
+    H¹_{Q*}(ℚ, ad⁰ρbar(1)) = 0 ,
+
+which by Greenberg–Wiles is exactly what forces
+`dim_k H¹_Q(ℚ, ad⁰ρbar) = #Q`, hence what makes the auxiliary
+deformation ring `R_Q` generated by `#Q` elements over `𝒪` — i.e. what
+makes the presentation `pres` exist at all.  With only the local
+conjunct, the arithmetic leaves below were universally quantified over
+sets `Q` for which `dim_k H¹_Q > #Q` and for which NO such presentation
+exists, so they were STRICTLY STRONGER than the classical theorem and
+unreachable by any classical route.  That defect is what this clause
+removes; see the INTERFACE REPAIR section of
+`exists_taylorWilesAuxLevelPresentedDatum` below for the full history,
+including the weaker "thread the supply down" repair that was tried
+first and does not suffice (the supply's members are not known to kill
+the dual Selmer group, so the freedom it grants is empty).
+
+As written the clause says: every class in `H¹(ℚ, ad⁰ρbar(1))` that is
+UNRAMIFIED OUTSIDE `{2, p}` and dies under restriction to every `q ∈ Q`
+is zero.  Two deliberate deviations from the classical `H¹_{Q*}`, both
+recorded in the section note above and both making the clause STRONGER,
+hence safe for every consumer: the local condition imposed at `q ∈ Q` is
+the full restriction rather than the annihilator of the unramified
+condition under the local Tate pairing (so no duality theory is needed),
+and the unramified-outside-`{2, p}` restriction stands in for the
+missing `G_{ℚ,S}` (without it the clause is unachievable — see the
+section note).
+
+**MONOTONICITY.**  Both conjuncts are monotone in `Q` in the direction
+that matters: the local one is a `∀ q ∈ Q` condition and so is
+ANTI-monotone, while the global one is MONOTONE INCREASING (a larger `Q`
+imposes more vanishing on `c`, so the antecedent is harder and the
+implication easier).  Consequently the predicate is preserved by
+ENLARGING `Q` with further primes satisfying the local conditions — that
+is `IsTaylorWilesPrimeSet.exists_insert` below — and is NOT preserved by
+shrinking.  The old proof of `exists_taylorWilesPrimeSet_card_eq`, which
+cut a supplied `Q` down to an exact cardinality with
+`Finset.exists_subset_card_eq`, is therefore unsound under this
+definition and has been removed; that is why the exact-cardinality supply
+now carries a lower bound `q0 ≤ r`. -/
+def IsTaylorWilesPrimeSet.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
-    (ρbar : GaloisRep ℚ k W) (p n : ℕ) (Q : Finset ℕ) : Prop :=
-  ∀ q ∈ Q, ∃ hq : q.Prime,
+    (ρbar : GaloisRep ℚ k W) (n : ℕ) (Q : Finset ℕ) : Prop :=
+  (∀ q ∈ Q, ∃ hq : q.Prime,
     q ≡ 1 [MOD p ^ n] ∧
     ∃ α β : k, α ≠ β ∧
       ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
-        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)) ∧
+  ∀ c : continuousCohomology 1 (adZeroTwist p ρbar),
+    (∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ),
+        v ∉ hardlyRamifiedPlaces p →
+        c ∈ LinearMap.ker (locResInertiaTwist1 p ρbar v).hom.toLinearMap) →
+    (∀ q ∈ Q, ∀ hq : q.Prime,
+        c ∈ LinearMap.ker
+          (locResTwist1 p ρbar
+            hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap) →
+    c = 0
 
 /-- **The Taylor–Wiles Galois element** (PROVEN 2026-07-24 by the
 sanctioned odd-prime dichotomy, see ROUTE below): in the absolute
@@ -3713,14 +3850,87 @@ theorem exists_taylorWilesPrime.{uK, uW}
   rw [GaloisRep.charFrob_eq_charpoly_globalFrob, ← hconj]
   exact hxpoly
 
-/-- **Existence of Taylor–Wiles primes** (patching leaf 1; PROVEN
-2026-07-24 over the group-theoretic leaf
-`exists_fixing_rootsOfUnity_charpoly_split`): for the irreducible
-hardly ramified residual `ρbar` there are Taylor–Wiles prime sets of
-every level `n` and every size `r`.  DERIVED by iterating the
-single-prime Chebotarev extraction `exists_taylorWilesPrime`, at each
-step excluding the (finitely many) places of the primes already
-chosen, so the set grows by a genuinely fresh prime.
+/-- **Enlarging a Taylor–Wiles set by one prime** (PROVEN 2026-07-27):
+given a Taylor–Wiles set `Q` of level `n`, a fresh Taylor–Wiles prime
+adjoined to it is again one.  This is the monotonicity recorded in
+`IsTaylorWilesPrimeSet`'s docstring, made usable: the local conjunct is
+checked at the new prime by `exists_taylorWilesPrime` and inherited on
+`Q`, and the global conjunct transfers because the antecedent for
+`insert q Q` implies the antecedent for `Q`.
+
+It is what lets the supply leaf below pad a dual-Selmer-killing core of
+the level-independent size `q0` up to any exact cardinality `r ≥ q0` —
+the direction that *is* sound, as against the shrinking the old
+`exists_taylorWilesPrimeSet_card_eq` performed. -/
+theorem IsTaylorWilesPrimeSet.exists_insert.{uK, uW}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) (n : ℕ) {Q : Finset ℕ}
+    (hQ : IsTaylorWilesPrimeSet p ρbar n Q) :
+    ∃ Q' : Finset ℕ, Q'.card = Q.card + 1 ∧ IsTaylorWilesPrimeSet p ρbar n Q' := by
+  classical
+  obtain ⟨q, hq, hqS, hqmod, α, β, hαβ, hqpoly⟩ :=
+    exists_taylorWilesPrime hpodd hW hρbar hirr n
+      (Q.image fun q' =>
+        if h : q'.Prime then h.toHeightOneSpectrumRingOfIntegersRat
+        else (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat)
+  have hqQ : q ∉ Q := fun hmem => hqS (Finset.mem_image.mpr
+    ⟨q, hmem, dif_pos hq⟩)
+  refine ⟨insert q Q, Finset.card_insert_of_notMem hqQ, ?_, ?_⟩
+  · intro q' hq'
+    rcases Finset.mem_insert.mp hq' with rfl | hmem
+    · exact ⟨hq, hqmod, α, β, hαβ, hqpoly⟩
+    · exact hQ.1 q' hmem
+  · intro c hunr hloc
+    exact hQ.2 c hunr fun q' hq' => hloc q' (Finset.mem_insert_of_mem hq')
+
+/-- **Existence of Taylor–Wiles prime sets** (patching leaf 1; **RE-OPENED
+2026-07-27** by the dual-Selmer repair of `IsTaylorWilesPrimeSet` above —
+it was PROVEN 2026-07-24 against the purely local predicate, and that
+proof is exactly the half that survives): for the irreducible hardly
+ramified residual `ρbar` there is a LEVEL-INDEPENDENT `q0` such that at
+every level `n` and every size `r ≥ q0` there is a Taylor–Wiles set of
+exactly `r` primes.
+
+# WHAT CHANGED, AND WHY THE STATEMENT NEEDED A LOWER BOUND
+
+The old statement produced sets of size at least `r` for EVERY `r`,
+including `r = 0`.  Under the repaired predicate that is FALSE at small
+`r`: no set of fewer than `dim_k` of the unramified-outside-`{2, p}` part
+of `H¹(ℚ, ad⁰ρbar(1))` primes can cut a group of that dimension to zero,
+one prime killing at most one dimension.  So the lower bound `q0 ≤ r` is
+not a convenience, it is what makes the statement true; and `q0` must be
+independent of `n` because the tower consumes ONE `q` at every level.
+
+# WHAT IS PROVEN HERE AND WHAT IS THE LEAF
+
+* **PROVEN — the padding.**  From a dual-Selmer-killing core of size `q0`
+  the exact sizes `r ≥ q0` are reached by `Nat.le_induction` over
+  `IsTaylorWilesPrimeSet.exists_insert`, i.e. by adjoining fresh
+  Taylor–Wiles primes from the Chebotarev extraction
+  `exists_taylorWilesPrime`.  This is the old proof's content, in the
+  only direction that remains sound: ENLARGING preserves the predicate,
+  SHRINKING does not.
+* **LEAF `hcore` — the dual-Selmer-killing core.**  That there is a
+  level-independent `q0` and, at each level `n`, a set of exactly `q0`
+  Taylor–Wiles primes killing every unramified-outside-`{2, p}` class of
+  `H¹(ℚ, ad⁰ρbar(1))`.  This is Taylor–Wiles / Wiles Ann. of Math. 141
+  (1995) ch. 3, in the form of DDT Thm. 2.49 (with Lemma 2.48 as the
+  single-class separation step): for a nonzero class `c` the primes with
+  `loc_q c ≠ 0` have positive density among those satisfying the local
+  conditions — a Chebotarev argument in the field cut out by `ρbar` and
+  the class — so one may kill a basis of the (finite-dimensional) space
+  one prime at a time, and `q0` is its dimension.
+
+  Two inputs it needs that this tree does not yet have: finiteness of the
+  unramified-outside-`S` part of `H¹(ℚ, ad⁰ρbar(1))`, and the Chebotarev
+  separation itself.  Note it does NOT need Poitou–Tate or the local Tate
+  pairing — see the deviation note on `IsTaylorWilesPrimeSet`.
 
 Both-ways audit: at the intended instantiation this is the cited
 Taylor–Wiles prime existence; abstractly the hypothesis set contains
@@ -3737,51 +3947,60 @@ theorem exists_taylorWilesPrimeSet.{uK, uW}
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hpodd hW ρbar)
-    (hirr : ρbar.IsIrreducible) (n r : ℕ) :
-    ∃ Q : Finset ℕ, r ≤ Q.card ∧ IsTaylorWilesPrimeSet ρbar p n Q := by
+    (hirr : ρbar.IsIrreducible) :
+    ∃ q0 : ℕ, ∀ n r : ℕ, q0 ≤ r →
+      ∃ Q : Finset ℕ, Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q := by
   classical
-  induction r with
-  | zero =>
-    exact ⟨∅, Nat.zero_le _, fun q hq => absurd hq (Finset.notMem_empty q)⟩
-  | succ r ih =>
-    obtain ⟨Q, hQcard, hQ⟩ := ih
-    -- exclude the places of the primes already chosen
-    obtain ⟨q, hq, hqS, hqmod, α, β, hαβ, hqpoly⟩ :=
-      exists_taylorWilesPrime hpodd hW hρbar hirr n
-        (Q.image fun q' =>
-          if h : q'.Prime then h.toHeightOneSpectrumRingOfIntegersRat
-          else (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat)
-    have hqQ : q ∉ Q := fun hmem => hqS (Finset.mem_image.mpr
-      ⟨q, hmem, dif_pos hq⟩)
-    refine ⟨insert q Q, ?_, fun q' hq' => ?_⟩
-    · rw [Finset.card_insert_of_notMem hqQ]
-      omega
-    · rcases Finset.mem_insert.mp hq' with rfl | hmem
-      · exact ⟨hq, hqmod, α, β, hαβ, hqpoly⟩
-      · exact hQ q' hmem
+  -- LEAF: the dual-Selmer-killing CORE, at the level-INDEPENDENT size `q0`.
+  have hcore : ∃ q0 : ℕ, ∀ n : ℕ, ∃ Q : Finset ℕ, Q.card = q0 ∧
+      IsTaylorWilesPrimeSet p ρbar n Q := sorry
+  obtain ⟨q0, hcore⟩ := hcore
+  refine ⟨q0, fun n r hr => ?_⟩
+  -- PADDING (proven): enlarge the core to the exact size `r ≥ q0`, one
+  -- fresh Taylor–Wiles prime at a time.
+  induction r, hr using Nat.le_induction with
+  | base => exact hcore n
+  | succ r _ ih =>
+    obtain ⟨Q, hcard, hQ⟩ := ih
+    obtain ⟨Q', hcard', hQ'⟩ :=
+      IsTaylorWilesPrimeSet.exists_insert hpodd hW hρbar hirr n hQ
+    exact ⟨Q', by rw [hcard', hcard], hQ'⟩
 
-/-- **Exact-size Taylor–Wiles prime supply** (PROVEN): the prime supply
-`hTW` of the pillar produces, at every level `n`, Taylor–Wiles sets of
-every size `r` — not merely of size at least `r`.  Immediate from
-subset-closure of `IsTaylorWilesPrimeSet` (a `∀ q ∈ Q` condition) and
-`Finset.exists_subset_card_eq`.
+/-- **Exact-size Taylor–Wiles prime supply, in the order the tower
+consumes it** (PROVEN): the argument order of the supply produced by
+`exists_taylorWilesPrimeSet` is `(n, r)`; the tower's `hTWq` is written
+`(r, n)`.  This adapter is the swap, and nothing else.
 
-This is the shape the tower construction consumes: the Taylor–Wiles
-number `q = dim_k H¹_{Q_n}(ℚ, ad⁰ρbar)` is determined by the
-cohomology, not chosen, so the tower leaf must be handed prime sets of
-whatever exact size its own dual-Selmer count dictates. -/
-theorem exists_taylorWilesPrimeSet_card_eq.{uK, uW}
-    {k : Type uK} [CommRing k] [TopologicalSpace k] [IsTopologicalRing k]
+# WHAT THIS DECLARATION USED TO DO, AND WHY THAT IS NOW UNSOUND
+
+Until 2026-07-27 it converted a supply of sets of size AT LEAST `r` into
+one of size EXACTLY `r`, by `Finset.exists_subset_card_eq` — it SHRANK a
+supplied `Q`.  That was sound while `IsTaylorWilesPrimeSet` was a
+`∀ q ∈ Q` condition, hence subset-closed.  With the dual-Selmer clause it
+is not: the global conjunct is MONOTONE INCREASING in `Q`, so a subset of
+a Taylor–Wiles set is in general not one, and the shrunk statement is
+outright FALSE for `r` below the Taylor–Wiles number.  The supply
+therefore carries the lower bound `q0 ≤ r` instead, and the exact size is
+reached by ENLARGING (`IsTaylorWilesPrimeSet.exists_insert`) rather than
+by cutting down.
+
+This is the same `q0` the standing hazard on
+`exists_taylorWilesBottomPresentation` prescribes: Cohen's number of
+generators may sit BELOW the Taylor–Wiles number, and the correct value
+is `max` of the two.  Threading `q0` from here is what finally makes that
+`max` expressible. -/
+theorem exists_taylorWilesPrimeSet_card_eq.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
-    (ρbar : GaloisRep ℚ k W) (p : ℕ)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset ℕ,
-      r ≤ Q.card ∧ IsTaylorWilesPrimeSet ρbar p n Q)
-    (r n : ℕ) :
-    ∃ Q : Finset ℕ, Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q := by
-  obtain ⟨Q, hcard, hQ⟩ := hTW n r
-  obtain ⟨Q', hsub, hcard'⟩ := Finset.exists_subset_card_eq hcard
-  exact ⟨Q', hcard', fun q hq => hQ q (hsub hq)⟩
+    (ρbar : GaloisRep ℚ k W)
+    (hTW : ∃ q0 : ℕ, ∀ n r : ℕ, q0 ≤ r →
+      ∃ Q : Finset ℕ, Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q) :
+    ∃ q0 : ℕ, ∀ r n : ℕ, q0 ≤ r →
+      ∃ Q : Finset ℕ, Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q := by
+  obtain ⟨q0, h⟩ := hTW
+  exact ⟨q0, fun r n hr => h n r hr⟩
 
 /-- **The residual input of Taylor–Wiles patching** (ADDED 2026-07-26
 as the cut-level repair of the circular discharge recorded at
@@ -4301,16 +4520,17 @@ extra variables to `0` — so what this delivers is
 `max(Cohen's q, q₀)` for whatever `q₀` a consumer can supply, never the
 minimal `q`.
 
-**What remains owed, and it is NOT this leaf's to discharge.** The
-Taylor–Wiles number itself is nameable only where Galois cohomology is
-in scope.  Neither this leaf nor its direct consumer
-`exists_taylorWilesBottomPresentation` has that vocabulary (`hTWq` there
-supplies prime sets of every size but no lower bound), so the call site
-below passes `q₀ := 0` and is flagged accordingly.  Threading a genuine
-bound down from `exists_taylorWilesBottomLevel` — the first declaration
-in the chain that could compute one — is a one-argument change now that
-the parameter exists, and that is exactly what this parameter was added
-for.
+**DISCHARGED 2026-07-27 — the bound is now supplied.**  The paragraph
+that stood here said the Taylor–Wiles number is nameable only where
+Galois cohomology is in scope, that `exists_taylorWilesBottomPresentation`
+lacked that vocabulary, and that its call site therefore passed
+`q₀ := 0`.  All three are now stale.  The dual-Selmer repair of
+`IsTaylorWilesPrimeSet` made exact-size Taylor–Wiles sets exist only
+above a level-independent `q0`, `exists_taylorWilesPrimeSet` returns that
+`q0`, and it is threaded down the chain; the consumer passes it here as
+`q₀`.  So this leaf now really does deliver `max(Cohen's q, q0)`, which is
+the value the auxiliary levels need — exactly what this parameter was
+added for.
 
 # THE CUT
 
@@ -4409,37 +4629,37 @@ bound says `q` may be taken to be `dim_k H¹_f(ℚ, ad⁰ρbar)`, and nothing
 in this statement asks for the minimal `q`, so `hfact` is not needed and
 cannot be needed.
 
-**CONSEQUENCE, and it is the same hazard class as the vacuity recorded on
-the sibling `exists_taylorWilesBottomHeckeModule`.**  `q` is chosen here
-and consumed by `exists_taylorWilesAuxLevelData`, where it must be at
+**THE `q` HAZARD — RECORDED HERE SINCE 2026-07-27, AND NOW DISCHARGED BY
+THE STATEMENT ITSELF.**  `q` is chosen here and consumed by
+`exists_taylorWilesAuxLevelData` at every level, where it must be at
 least the Taylor–Wiles number `dim_k H¹_{∅^*}(ℚ, ad⁰ρbar(1))`.  A proof
-of THIS leaf that returns Cohen's `q` — the minimal number of generators
-of `𝔪_Runiv` — satisfies this leaf while making the auxiliary leaf FALSE,
-with no compiler warning and no axiom-audit signal.  The interface cannot
-prevent this: the Taylor–Wiles number is a Galois-cohomological quantity
-and this statement has no vocabulary for it (`hTWq` supplies prime sets
-of every size but no lower bound on `q`).  Padding `q` UPWARD is safe on
-both sides — extra variables may be sent to `0` — so the honest
-instruction to any prover of the leaf below is: **return
-`max(Cohen's q, the Taylor–Wiles number)`, never Cohen's `q` alone.**
-Enforcing this is a cut-level repair, not a prover's decision.
+of this leaf returning Cohen's `q` — the minimal number of generators of
+`𝔪_Runiv` — would satisfy the old statement while making the auxiliary
+leaf FALSE, with no compiler warning and no axiom-audit signal.  The
+interface could not prevent it, because the Taylor–Wiles number is a
+Galois-cohomological quantity and this statement has no vocabulary for
+it.
 
-WHY `q` IS SHARED, AND THE COUPLING THIS INHERITS.  `q` is produced here
-and consumed by `exists_taylorWilesAuxLevelData` at every level, so a
-prover who picks `q` too small — below the dual-Selmer bound
-`dim_k H¹_{∅^*}(ℚ, ad⁰ρbar(1))` — makes the auxiliary leaf FALSE rather
-than merely hard.  Padding UPWARD is safe on both sides (a power series
-ring in more variables still surjects, and `hTWq` supplies prime sets of
-every size, each extra Taylor–Wiles prime raising `dim H¹_Q` by one while
-keeping the dual Selmer group zero), so the honest instruction is: choose
-`q` at least the Taylor–Wiles number, never the minimal number of
-generators of `Runiv`.  This coupling is inherited verbatim from the
-parent leaf's own statement — it is not introduced by the decomposition —
-and it cannot be removed at this interface, which has no vocabulary for
-Galois cohomology.  `hTWq` is carried here for exactly that reason: it is
-the only handle the hypothesis package offers on the Taylor–Wiles primes,
-and the choice of `q` is the one place in the bottom level where they
-matter.  (At `Q = ∅` nothing else in the bottom datum consumes it.)
+**That gap is closed at the interface rather than left to a prover's
+discipline.**  The repaired supply carries a LOWER BOUND: since the
+dual-Selmer clause was added to `IsTaylorWilesPrimeSet`, exact-size
+Taylor–Wiles sets exist only above a level-independent `q0`, and
+`exists_taylorWilesPrimeSet` returns that `q0`.  It is now an explicit
+argument here, `hTWq` is stated relative to it, and the CONCLUSION
+asserts `q0 ≤ q`.  Padding `q` UPWARD is safe on both sides — extra
+variables may be sent to `0`, and each extra Taylor–Wiles prime raises
+`dim H¹_Q` by one while keeping the dual Selmer group zero — so the
+proof simply passes `q0` as the lower bound to
+`exists_taylorWilesCoefficientsPresentation`, which already accepted one.
+The returned `q` is therefore `max(Cohen's q, q0)` by construction, and
+**a prover of a downstream leaf may rely on `hq0 : q0 ≤ q`** instead of
+on an instruction in prose.
+
+`hTWq` is still carried here unused (see the audit above): with `q0`
+explicit, the bound rather than the supply is what this statement
+consumes.  It is kept for shape uniformity along the chain and because it
+is the only handle the hypothesis package offers on the Taylor–Wiles
+primes.  (At `Q = ∅` nothing else in the bottom datum consumes it.)
 
 CIRCULARITY GUARD: inherited unchanged from
 `exists_taylorWilesBottomLevel`.  `not_isIrreducible_of_isHardlyRamified_of_five_le`,
@@ -4474,30 +4694,32 @@ theorem exists_taylorWilesBottomPresentation.{s, t, uK, uW, uR}
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
       ρuniv πuniv)
-    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
-      Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
-    ∃ (q : ℕ) (coeff : TaylorWilesCoefficients) (R : Type) (_ : CommRing R)
+    (q0 : ℕ)
+    (hTWq : ∀ r n : ℕ, q0 ≤ r → ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q) :
+    ∃ (q : ℕ), q0 ≤ q ∧
+      ∃ (coeff : TaylorWilesCoefficients) (R : Type) (_ : CommRing R)
       (pres : MvPowerSeries (Fin q) coeff.carrier →+* R),
       Function.Surjective pres ∧ Nonempty (R ≃+* Runiv) := by
   -- LEAF B1a: Cohen's structure theorem supplies the coefficient ring and
   -- a surjection from a power series ring over it onto `Runiv`.
-  -- THE `0` IS THE UNDISCHARGED HALF OF THE TAYLOR–WILES PADDING REPAIR.
-  -- `exists_taylorWilesCoefficientsPresentation` now takes a LOWER BOUND on
-  -- the number of variables and returns `q₀ ≤ q`, precisely so that a
-  -- consumer able to name the Taylor–Wiles number
-  -- `dim_k H¹_{∅^*}(ℚ, ad⁰ρbar(1))` can force `q` above it.  THIS
-  -- declaration cannot: `hTWq` supplies Taylor–Wiles prime sets of every
-  -- size but no lower bound, and nothing else here mentions Galois
-  -- cohomology.  So `0` is passed, the hazard recorded in the
-  -- FORMAL-CONTENT AUDIT below is unchanged, and discharging it is now a
-  -- one-argument edit at whichever ancestor first computes the bound.
-  obtain ⟨q, coeff, φ, _hq₀, hφ⟩ :=
-    exists_taylorWilesCoefficientsPresentation hcomplete hπuniv 0
+  -- **THE TAYLOR–WILES PADDING HAZARD IS DISCHARGED HERE (2026-07-27).**
+  -- `exists_taylorWilesCoefficientsPresentation` takes a LOWER BOUND on the
+  -- number of variables and returns `q₀ ≤ q`.  Until the dual-Selmer repair
+  -- of `IsTaylorWilesPrimeSet` this declaration had no way to name the
+  -- Taylor–Wiles number, so `0` was passed and Cohen's `q` — the number of
+  -- minimal generators of `𝔪_Runiv` — could silently sit BELOW it, which
+  -- makes the auxiliary levels unconstructible.  The supply now carries the
+  -- bound `q0` explicitly, so `q0` is what is passed, and the returned `q`
+  -- satisfies `max(Cohen's q, q0) ≥ q0` by construction.  That bound is
+  -- propagated all the way to the arithmetic leaves as `hq0`.
+  obtain ⟨q, coeff, φ, hq₀, hφ⟩ :=
+    exists_taylorWilesCoefficientsPresentation hcomplete hπuniv q0
   -- The universe-`0` model is then FREE: `MvPowerSeries (Fin q) coeff.carrier`
   -- already lives in `Type`, because `TaylorWilesCoefficients.carrier` does,
   -- and so does its quotient by `ker φ`, which the first isomorphism theorem
   -- identifies with `Runiv`.
-  refine ⟨q, coeff, MvPowerSeries (Fin q) coeff.carrier ⧸ RingHom.ker φ,
+  refine ⟨q, hq₀, coeff, MvPowerSeries (Fin q) coeff.carrier ⧸ RingHom.ker φ,
     inferInstance, Ideal.Quotient.mk _, Ideal.Quotient.mk_surjective, ?_⟩
   exact ⟨RingHom.quotientKerEquivOfSurjective hφ⟩
 
@@ -4808,83 +5030,106 @@ classical construction proves the constant-exponent form directly.
 Consequence for dispatch: **do not send anyone at "compute
 `v_p(q_i − 1)`".**  That computation is not in this leaf and never was.
 
-# INTERFACE DEFECT — THIS LEAF IS NOT PROVABLE BY THE CLASSICAL ROUTE AS
-# ITS PRIME SET IS SUPPLIED (2026-07-27, and it is a CUT-LEVEL repair)
+# INTERFACE REPAIR — THE PRIME SET IS NOW CHOSEN HERE, NOT HANDED IN
+# (2026-07-27; supersedes the INTERFACE DEFECT section this replaces)
 
-The Taylor–Wiles construction does not work for an arbitrary set of
-Taylor–Wiles primes.  It works for a set `Q` chosen so that the DUAL
-Selmer group vanishes,
+**What the defect was.**  The Taylor–Wiles construction does not work
+for an arbitrary set of Taylor–Wiles primes.  It works for a set `Q`
+chosen so that the DUAL Selmer group vanishes,
 
     H¹_{Q*}(ℚ, ad⁰ρbar(1)) = 0 ,
 
 which by Greenberg–Wiles is exactly what forces
 `dim_k H¹_Q(ℚ, ad⁰ρbar) = #Q` and hence what makes `R_Q` generated by
 `#Q = q` elements over `𝒪` — i.e. what makes `pres` exist at all.
-
-**`IsTaylorWilesPrimeSet` does not say this.**  Unfolded (its definition
-is above, in this file) it is
+`IsTaylorWilesPrimeSet` does not say this; unfolded (its definition is
+above, in this file) it is
 
     ∀ q ∈ Q, ∃ hq : q.Prime, q ≡ 1 [MOD p^n] ∧
       ∃ α β : k, α ≠ β ∧ ρbar.charFrob … = (X − C α) * (X − C β) ,
 
-a conjunction of purely LOCAL conditions at each `q ∈ Q`, with no
-global cohomological clause anywhere.  So the hypothesis `hQ` admits
-sets `Q` for which `dim_k H¹_Q > #Q` and for which NO `q`-generator
-presentation of the auxiliary deformation ring exists.  The leaf
-quantifies over all of them.
+a conjunction of purely LOCAL conditions at each `q ∈ Q`, with no global
+cohomological clause anywhere.  This leaf used to receive `Q` as a FIXED
+hypothesis satisfying only that, so it was universally quantified over
+sets for which `dim_k H¹_Q > #Q` and for which no `q`-generator
+presentation exists — a statement strictly stronger than the classical
+theorem, and one no classical route can reach.  That is the "a datum
+handed across a seam can only be constrained by what already saw it"
+failure mode.
 
-**And the leaf cannot re-choose.**  `exists_taylorWilesLevelRaw`'s proof
-comments, at its `obtain ⟨Q, hQcard, hQ⟩ := hTWq q n`, that the
-cohomological sharpening "stays inside the arithmetic leaf, which is
-free to re-choose within the supply".  That is false as the signatures
-stand: `hTWq` is **not** among this leaf's hypotheses (compare
-`exists_taylorWilesBottomPresentation`, which does carry it), so `Q`
-arrives fixed and the leaf has no supply to re-choose from.  This is the
-"a datum handed across a seam can only be constrained by what already
-saw it" failure mode.
+**The repair taken.**  `Q` does not occur in this leaf's CONCLUSION.  So
+the fixed `(Q) (hQcard) (hQ)` have been replaced by the SUPPLY
 
-Handing `hTWq` down would NOT repair it, and that is the important half:
-`hTWq` supplies sets satisfying the same purely local conditions, in
-every cardinality, and no member of that supply is known to kill the
-dual Selmer group either.  The freedom would be empty.
+    hTWq : ∀ r n : ℕ, q0 ≤ r → ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q ,
 
-**The repair is to `IsTaylorWilesPrimeSet` (and to `hTWq`), not here**:
-the predicate needs the global clause, which needs Galois-cohomology
-vocabulary (`H¹` of `ad⁰ρbar`, the Selmer and dual-Selmer conditions)
-that is absent from this tree.  Until then this leaf is dischargeable
-only through the classically empty arithmetic hypotheses, which the
-CIRCULARITY GUARD bans.
+threaded down from `exists_taylorWilesTower` through
+`exists_taylorWilesLevelRaw` (which no longer consumes it) and
+`exists_taylorWilesAuxLevelData`.  This mirrors the shape already
+working on the Hilbert side and at `exists_taylorWilesBottomPresentation`
+in this file, and it touches no predicate and no other construction site.
+The statement changes from `∀ Q, local(Q) → C` to `(∀ r n, ∃ Q, …) → C`,
+which is the classical shape: a prover now MAKES the choice, at the
+cardinality `q` the ring side forces, and is free to refine within the
+supply.
 
-*The refuting check for this audit*, so the next reader need not redo
-the survey: `grep -n 'def IsTaylorWilesPrimeSet' -A 10` on this file.
-If a cohomological clause has since been added to it, this objection is
-dead and the leaf becomes attackable.
+**Why the supply, and not `hres`/`hirr`, is what has to be threaded.**
+This leaf cannot manufacture prime sets for itself.  The tree's supplier
+`exists_taylorWilesPrimeSet` needs `IsHardlyRamified hpodd hW ρbar`, and
+this leaf deliberately carries only `IsTaylorWilesResidual` (see that
+structure's WHAT IS DELIBERATELY ABSENT section — the full package is
+classically unsatisfiable and would hand the leaf a free discharge).  So
+without `hTWq` there is no way to obtain even one admissible `Q`, and the
+existential form would be unreachable rather than merely open.
 
-# THE `q` HAZARD RECORDED ON `exists_taylorWilesBottomPresentation` IS
-# NOT MITIGATED IN THIS TREE (2026-07-27, checked)
+**Threading alone would NOT have sufficed, and that is why the predicate
+was repaired too.**  Before 2026-07-27 `hTWq`'s payload was the purely
+local predicate, universally quantified over sizes.  Dual-Selmer
+vanishing is not implied by those conditions: the primes detecting a
+given nonzero class `c ∈ H¹(ℚ, ad⁰ρbar(1))` form a proper (positive
+density) subset of those satisfying `q ≡ 1 mod p^n` with split distinct
+Frobenius eigenvalues, so the supply provably contains sets of EVERY size
+whose dual Selmer group does not vanish.  Threading such a supply moves
+the leaf from "no freedom" to EMPTY freedom — it builds green and the
+leaf stays unprovable.  So both halves were done: the supply is threaded
+(above) **and** `IsTaylorWilesPrimeSet` now carries the dual-Selmer
+clause (see its docstring).  With both, the `Q` this leaf picks is one
+for which the classical `q`-generator presentation exists.
 
-That leaf's FORMAL-CONTENT AUDIT records the hazard that `q` may be
-returned as Cohen's `μ(𝔪_Runiv)`, below the Taylor–Wiles number, and
-instructs a prover to return `max(Cohen's q, the Taylor–Wiles number)`.
-**The sibling that actually chooses `q` cannot follow that
-instruction.**  `exists_taylorWilesCoefficientsPresentation`'s signature
+*The refuting check for this section*, so the next reader need not redo
+the survey: `grep -n 'def IsTaylorWilesPrimeSet' -A 40` on this file.  The
+second conjunct is the global clause; if it is ever removed, this leaf
+becomes unprovable again and this section is the reason.
+
+# THE `q` HAZARD IS NOW DISCHARGED TOO — `hq0 : q0 ≤ q` (2026-07-27)
+
+`exists_taylorWilesBottomPresentation`'s FORMAL-CONTENT AUDIT records the
+hazard that `q` may be returned as Cohen's `μ(𝔪_Runiv)`, BELOW the
+Taylor–Wiles number, and instructs a prover to return
+`max(Cohen's q, the Taylor–Wiles number)`.  That instruction used to be
+unimplementable: `exists_taylorWilesCoefficientsPresentation`'s signature
 is
 
     {R} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
     (hcomplete : IsAdicComplete (maximalIdeal R) R)
-    {k} [Field k] [Finite k] {π : R →+* k} (hπ : Surjective π) →
-    ∃ q coeff φ, Surjective φ
+    {k} [Field k] [Finite k] {π : R →+* k} (hπ : Surjective π) (q₀ : ℕ) →
+    ∃ q coeff φ, q₀ ≤ q ∧ Surjective φ
 
-— there is no `ρbar`, no `p`-adic representation and no Galois object of
-any kind in scope, so the Taylor–Wiles number is not even nameable
-there, let alone returnable.  The padding instruction is unimplementable
-at that statement's shape, and `exists_taylorWilesBottomPresentation`
-consumes that `q` verbatim.
+— there is no `ρbar` and no Galois object of any kind in scope, so the
+Taylor–Wiles number was not nameable there.  It takes a LOWER BOUND `q₀`,
+though, and the repaired supply now carries exactly such a bound:
+`exists_taylorWilesPrimeSet` returns a level-independent `q0` below which
+no exact-size Taylor–Wiles set exists at all.  That `q0` is threaded down
+this chain, passed to Cohen's presentation as `q₀`, and arrives here as
 
-This is the same defect as the one above seen from the other side: `q`
-and `Q` are chosen by statements that cannot see the cohomology that
-constrains them.  Both are fixed by the same interface repair, and
-neither is fixable by a prover of this leaf.
+    hq0 : q0 ≤ q
+
+so `q` really is `max(Cohen's q, the Taylor–Wiles number)`.  **This is one
+repair with the `Q` one, not two**: both defects were "a datum chosen by a
+statement that cannot see the cohomology constraining it", and both are
+fixed by making the cohomology part of `IsTaylorWilesPrimeSet` and letting
+the supply carry the bound.  A prover of this leaf may and should use
+`hq0`; it is what makes the `q` variables enough.
 
 # ROUTE NOTE FOR THE NEXT OWNER — `M0` IS PINNED BY `hbot`
 
@@ -4949,9 +5194,22 @@ Confirmed absent from `Fermat/`, from our mathlib pin and from
   `𝒪`, and the control theorem `R_Q/𝔞_Q ≅ R_univ`;
 * **local class field theory at the Taylor–Wiles primes** — the tame
   characters at `q ∈ Q` giving the `Δ_Q`-action, hence `diamond`;
-* **Galois cohomology of `ad⁰ρbar`** — Selmer and dual-Selmer groups and
-  the Greenberg–Wiles formula, which is what the INTERFACE DEFECT above
-  is really blocked on.
+* **Galois cohomology of `ad⁰ρbar`** — the Greenberg–Wiles formula
+  relating `dim H¹_Q` to `dim H¹_{Q*}`.  **CORRECTED 2026-07-27: the
+  VOCABULARY is no longer missing** and this bullet used to send
+  dispatchers at a subtree that already exists.
+  `HardlyRamified/Deformation.lean` carries `AdZero`, `adZeroTopRep`,
+  `adZeroCycloChar`, `adZeroTwistRep`, `adZeroTwist = ad⁰(1)`,
+  `adZeroTwistLocal`, `locRes`, `locResTwist1`, `Sha2`, `Sha1Twist` and
+  `hardlyRamifiedPlaces`, all sorry-free, over mathlib's
+  `continuousCohomology` at every degree; this file `public import`s it,
+  and the *unramified at `v`* condition it lacked is supplied above by
+  `locResInertiaTwist1`.  What is still missing is the THEORY, not the
+  language: finiteness of the unramified-outside-`S` part of
+  `H¹(ℚ, ad⁰ρbar(1))`, the Chebotarev separation of a single class by a
+  Taylor–Wiles prime (DDT Lemma 2.48), and Greenberg–Wiles itself.  The
+  first two are the leaf `hcore` inside `exists_taylorWilesPrimeSet`
+  above; the third is what a prover of THIS leaf needs.
 
 CIRCULARITY GUARD: inherited verbatim from
 `exists_taylorWilesAuxLevelData` and hence from
@@ -5009,13 +5267,15 @@ theorem exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR}
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (q d : ℕ) (coeff : TaylorWilesCoefficients)
+    (q0 : ℕ)
+    (hTWq : ∀ r n : ℕ, q0 ≤ r → ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q)
+    (q d : ℕ) (hq0 : q0 ≤ q) (coeff : TaylorWilesCoefficients)
     (M0 : Type) [AddCommGroup M0] [Module T M0]
     (hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
     (hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))
-    (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
-    (hQ : IsTaylorWilesPrimeSet ρbar p n Q) :
+    (n : ℕ) :
     ∃ (I : Ideal (MvPowerSeries (Fin q) coeff.carrier))
       (diamond : MvPowerSeries (Fin q) ℤ_[p] →+*
         (MvPowerSeries (Fin q) coeff.carrier ⧸ I))
@@ -5041,15 +5301,17 @@ set_option linter.checkUnivs false in
 /-- **The auxiliary Taylor–Wiles level at a GIVEN prime set** (sorry
 node, LEAF A2 of the 2026-07-27 decomposition of
 `exists_taylorWilesLevelRaw`): the arithmetic core of the Taylor–Wiles
-construction — ingredients 2, 3 and 4, at a prime set `Q` that the
-assembly has already chosen from `hTWq`.
+construction — ingredients 2, 3 and 4, at a prime set `Q` that this leaf
+(and not the assembly) chooses from the supply `hTWq`.
 
 What has been stripped off relative to the parent leaf, and where it
 went:
 
-* the CHOICE of the level-`n` prime set `Q` with `#Q = q` — now made in
-  the assembly by `hTWq q n`, so it arrives here as the hypotheses
-  `hQcard` and `hQ`;
+* the CHOICE of the level-`n` prime set `Q` with `#Q = q` — **kept here**
+  since the 2026-07-27 interface repair: the SUPPLY `hTWq` is threaded in
+  rather than consumed above, because a `Q` chosen in the assembly
+  arrives fixed and the leaf would have nothing to re-choose from.  The
+  bound `hq0 : q0 ≤ q` is what makes `hTWq q n` applicable;
 * the SHAPE of the level ideal — instead of an arbitrary
   `bIdeal : Ideal Λ`, this leaf produces only the exponent vector
   `e : Fin q → ℕ` (classically `e i = v_p(q_i − 1)` for the `i`-th prime
@@ -5109,13 +5371,15 @@ carrier of the auxiliary deformation ring (an explicit quotient of
 together with `coordM` (the module is produced ON the coordinate model
 `taylorWilesCoordModel`, so `coordM` is `LinearEquiv.refl`).
 
-**Read that leaf's INTERFACE DEFECT section before dispatching anyone at
-it.**  Its prime set `Q` is supplied through `IsTaylorWilesPrimeSet`,
-which contains only LOCAL conditions at each `q ∈ Q` and no dual-Selmer
-vanishing clause, so the classical Taylor–Wiles route does not apply to
-an arbitrary `Q` satisfying `hQ`, and the leaf has no `hTWq` with which
-to re-choose one.  That is a cut-level repair to
-`IsTaylorWilesPrimeSet`, not work for a prover.
+**Read that leaf's INTERFACE REPAIR section before dispatching anyone at
+it.**  Until 2026-07-27 its prime set arrived FIXED and
+`IsTaylorWilesPrimeSet` contained only LOCAL conditions at each `q ∈ Q`,
+so the classical Taylor–Wiles route did not apply and the leaf was
+unprovable in principle.  Both halves are now repaired at the cut: the
+predicate carries the dual-Selmer vanishing clause, and the supply
+`hTWq` (with its bound `hq0 : q0 ≤ q`) is threaded down so the leaf makes
+the choice itself.  What remains there is missing mathematics, not a
+broken interface.
 
 **MULTIPLICITY-ONE PIN THREADED 2026-07-27.**  The hypothesis
 `hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T))` — Eichler–Shimura plus Mazur
@@ -5175,13 +5439,15 @@ theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (q d : ℕ) (coeff : TaylorWilesCoefficients)
+    (q0 : ℕ)
+    (hTWq : ∀ r n : ℕ, q0 ≤ r → ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q)
+    (q d : ℕ) (hq0 : q0 ≤ q) (coeff : TaylorWilesCoefficients)
     (M0 : Type) [AddCommGroup M0] [Module T M0]
     (hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
     (hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))
-    (n : ℕ) (Q : Finset ℕ) (hQcard : Q.card = q)
-    (hQ : IsTaylorWilesPrimeSet ρbar p n Q) :
+    (n : ℕ) :
     ∃ e : Fin q → ℕ, (∀ i, n ≤ e i) ∧
       ∃ (R : Type) (_ : CommRing R)
         (pres : MvPowerSeries (Fin q) coeff.carrier →+* R)
@@ -5209,7 +5475,7 @@ theorem exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR}
       hctrl⟩ :=
     exists_taylorWilesAuxLevelPresentedDatum.{s, t, uK, uW, uR} hpodd hW hres
       hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ
-      hred ψ hψalg hψπ hψ q d coeff M0 hM0 hbot hM0T n Q hQcard hQ
+      hred ψ hψalg hψπ hψ q0 hTWq q d hq0 coeff M0 hM0 hbot hM0T n
   -- The exponent vector is the constant one; `pres` is the quotient map and
   -- `coordM` is the identity, both free at the presented shape.
   exact ⟨fun _ => n, fun _ => le_rfl,
@@ -5601,19 +5867,23 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
-      Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
+    (q0 : ℕ)
+    (hTWq : ∀ r n : ℕ, q0 ≤ r → ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q) :
     ∃ (q d : ℕ) (coeff : TaylorWilesCoefficients) (M0 : Type)
       (_ : AddCommGroup M0) (_ : Module T M0) (_ : Nontrivial M0),
+      q0 ≤ q ∧
       Nonempty (M0 ≃ₗ[T] (Fin 2 → T)) ∧
       Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0) := by
   classical
   -- LEAF B1 (`exists_taylorWilesBottomPresentation`): the coefficient
   -- ring `𝒪 = W(k)`, the Taylor–Wiles number `q`, and the `q`-generator
   -- presentation of `Runiv` over `𝒪` in a universe-`0` model.
-  obtain ⟨q, coeff, R, instR, pres, hpres, ⟨eR⟩⟩ :=
+  -- `hq0q : q0 ≤ q` is the Taylor–Wiles padding bound; it is propagated
+  -- into this leaf's conclusion so the auxiliary levels can consume it.
+  obtain ⟨q, hq0q, coeff, R, instR, pres, hpres, ⟨eR⟩⟩ :=
     exists_taylorWilesBottomPresentation.{s, t, uK, uW, uR} hpodd hW hres hirr
-      hadic hcomplete hranku hρuniv hπuniv hunivred hfact hTWq
+      hadic hcomplete hranku hρuniv hπuniv hunivred hfact q0 hTWq
   -- LEAF B2 (`exists_taylorWilesBottomHeckeModule`): the bottom Hecke
   -- module `M₀ = H¹(X₀(N), ℤ_p)_𝔪`, `Λ`-free of rank `d` through the
   -- augmentation.
@@ -5628,7 +5898,7 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
   -- is trivial), so it is `Λ ↠ ℤ_p → Runiv`.
   letI : Module R M0 := Module.compHom M0 (ψ.comp eR.toRingHom)
   have hRsmul : ∀ (x : R) (m : M0), x • m = ψ (eR x) • m := fun _ _ => rfl
-  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, hM0T, ⟨?_⟩⟩
+  refine ⟨q, d, coeff, M0, instM0add, instM0T, instM0nt, hq0q, hM0T, ⟨?_⟩⟩
   refine { R := R
            commRingR := instR
            pres := pres
@@ -5711,9 +5981,10 @@ ring and neither is characterized without the other:
    `#Q_n = q = dim_k H¹_{Q_n}(ℚ, ad⁰ρbar)` for which the DUAL Selmer
    group `H¹_{Q_n^*}(ℚ, ad⁰ρbar(1))` vanishes; Wiles's product formula
    then makes the level-`n` tangent space exactly `q`-dimensional,
-   which is the `q` fixed by the bottom leaf.  `hTWq` records the
-   Chebotarev skeleton of the choice (`exists_taylorWilesPrimeSet`,
-   PROVEN); the cohomological sharpening is internal to this leaf.
+   which is the `q` fixed by the bottom leaf.  Since 2026-07-27 `hTWq`
+   supplies sets satisfying the dual-Selmer clause too — it is
+   `exists_taylorWilesPrimeSet`, now a LEAF — so what is internal here is
+   only the choice of size and level, made against `hq0 : q0 ≤ q`.
 2. **The auxiliary Mazur package at `Q_n`**: the hardly ramified
    deformation problem augmented by allowed ramification at `Q_n` is
    representable, giving `R` with the `q`-generator presentation
@@ -5850,11 +6121,15 @@ outright and carries the arithmetic listed above.
 The body below is complete.  It does two things and leaves the rest to
 the arithmetic leaf:
 
-* it makes ingredient 1's CHOICE, `obtain ⟨Q, hQcard, hQ⟩ := hTWq q n`,
-  so the level-`n` Taylor–Wiles set of exact size `q` arrives at the
-  arithmetic leaf as a hypothesis rather than an obligation (the
-  cohomological sharpening — dual-Selmer vanishing — stays inside that
-  leaf, which may re-choose within the same supply);
+* it THREADS ingredient 1's supply `hTWq` (with its bound `hq0 : q0 ≤ q`)
+  down to the arithmetic leaf rather than consuming it.  **Until
+  2026-07-27 it made the choice here** — `obtain ⟨Q, hQcard, hQ⟩ :=
+  hTWq q n` — and handed the leaf a FIXED `Q`, with a comment claiming
+  the leaf could still "re-choose within the same supply".  It could not:
+  `hTWq` was not among its hypotheses, so the choice was final and the
+  leaf was quantified over prime sets the Taylor–Wiles method does not
+  work for.  The choice now happens inside the leaf, against a predicate
+  that carries the dual-Selmer clause;
 * it fixes the SHAPE of the level ideal.  Instead of an arbitrary
   `bIdeal : Ideal Λ` the arithmetic leaf now produces only the exponent
   vector `e : Fin q → ℕ` with `∀ i, n ≤ e i` — classically
@@ -5924,9 +6199,10 @@ theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
-      Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q)
-    (q d : ℕ) (coeff : TaylorWilesCoefficients)
+    (q0 : ℕ)
+    (hTWq : ∀ r n : ℕ, q0 ≤ r → ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q)
+    (q d : ℕ) (hq0 : q0 ≤ q) (coeff : TaylorWilesCoefficients)
     (M0 : Type) [AddCommGroup M0] [Module T M0]
     (hM0 : Nontrivial M0)
     (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
@@ -5934,19 +6210,20 @@ theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
     (n : ℕ) :
     Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d n coeff M0) := by
   classical
-  -- Ingredient 1's Chebotarev skeleton: an exact-size level-`n`
-  -- Taylor–Wiles set.  (The cohomological sharpening — dual-Selmer
-  -- vanishing — stays inside the arithmetic leaf, which is free to
-  -- re-choose within the supply.)
-  obtain ⟨Q, hQcard, hQ⟩ := hTWq q n
   -- LEAF A2 (`exists_taylorWilesAuxLevelData`): ingredients 2–4 and the
-  -- level-`n` half of ingredient 5, at that prime set.
+  -- level-`n` half of ingredient 5.  Ingredient 1's prime-set CHOICE is
+  -- made inside that leaf, not here: the supply `hTWq` is handed down
+  -- rather than consumed, because the cohomological sharpening
+  -- (dual-Selmer vanishing) is the leaf's own business and a set chosen
+  -- here would arrive there fixed, with nothing to re-choose from.  See
+  -- the INTERFACE REPAIR section of
+  -- `exists_taylorWilesAuxLevelPresentedDatum`.
   obtain ⟨e, he, R, instR, pres, diamond, toRuniv, M, instMadd, instMR, instML,
     projM, hpres, htoRuniv, hker, hdsmul, ⟨coord⟩, hprojsurj, hprojsmul,
     hprojzero⟩ :=
     exists_taylorWilesAuxLevelData.{s, t, uK, uW, uR} hpodd hW hres hirr hadic
       hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred ψ hψalg
-      hψπ hψ q d coeff M0 hM0 hbot hM0T n Q hQcard hQ
+      hψπ hψ q0 hTWq q d hq0 coeff M0 hM0 hbot hM0T n
   -- The two level-ideal bounds are discharged off the arithmetic leaf,
   -- from the explicit shape of `𝔟_n`.
   exact ⟨{ R := R
@@ -6140,17 +6417,18 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
-      Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
+    (q0 : ℕ)
+    (hTWq : ∀ r n : ℕ, q0 ≤ r → ∃ Q : Finset ℕ,
+      Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q) :
     Nonempty (TaylorWilesTower.{0, 0, 0, s, uR} p ψ) := by
   -- the two arithmetic leaves take only the Taylor–Wiles residual input,
   -- not the full hardly ramified package (see their RE-OPENING sections)
   have hres : IsTaylorWilesResidual hpodd hW ρbar :=
     ⟨hρbar.det, fun q hq h2 hpne => hρbar.isUnramified q hq ⟨h2, hpne⟩⟩
-  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hM0T, hbot⟩ :=
+  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hq0, hM0T, hbot⟩ :=
     exists_taylorWilesBottomLevel.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred
-      ψ hψalg hψπ hψ hTWq
+      ψ hψalg hψπ hψ q0 hTWq
   letI := iAG
   letI := iMod
   exact ⟨{ q := q
@@ -6164,8 +6442,8 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
              (nonempty_taylorWilesLevel_of_raw iNt
                (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hW hres
                  hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact
-                 hrankT hρT hπ hred ψ hψalg hψπ hψ hTWq q d coeff M0 iNt
-                 hbot hM0T n).some).some }⟩
+                 hrankT hρT hπ hred ψ hψalg hψπ hψ q0 hTWq q d hq0 coeff M0
+                 iNt hbot hM0T n).some).some }⟩
 
 /-- **Existence of the Taylor–Wiles system** (patching leaf 2a;
 ASSEMBLED 2026-07-24 as bookkeeping over the tower leaf): under the
@@ -6275,13 +6553,14 @@ theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset ℕ,
-      r ≤ Q.card ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
+    (hTW : ∃ q0 : ℕ, ∀ n r : ℕ, q0 ≤ r →
+      ∃ Q : Finset ℕ, Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q) :
     Nonempty (TaylorWilesSystem.{0, 0, 0, s, uR} p ψ) := by
   classical
+  obtain ⟨q0, hTWq⟩ := exists_taylorWilesPrimeSet_card_eq p ρbar hTW
   obtain ⟨tw⟩ := exists_taylorWilesTower.{s, t, uK, uW, uR} hpodd hW hρbar hirr
     hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred
-    ψ hψalg hψπ hψ (exists_taylorWilesPrimeSet_card_eq ρbar p hTW)
+    ψ hψalg hψπ hψ q0 hTWq
   letI := tw.addCommGroupM0
   letI := tw.moduleM0
   letI iR : ∀ n, CommRing (tw.level n).R := fun n => (tw.level n).commRingR
@@ -6454,8 +6733,8 @@ theorem exists_patchedModule.{v, w, s, t, uK, uW, uR}
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (hTW : ∀ n r : ℕ, ∃ Q : Finset ℕ,
-      r ≤ Q.card ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
+    (hTW : ∃ q0 : ℕ, ∀ n r : ℕ, q0 ≤ r →
+      ∃ Q : Finset ℕ, Q.card = r ∧ IsTaylorWilesPrimeSet p ρbar n Q) :
     Nonempty (PatchedModule.{v, w, s, uR} p ψ) := by
   have hres : Finite (Runiv ⧸ IsLocalRing.maximalIdeal Runiv) := by
     have hker : RingHom.ker πuniv = IsLocalRing.maximalIdeal Runiv :=
