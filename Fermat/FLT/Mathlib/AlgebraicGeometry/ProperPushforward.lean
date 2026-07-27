@@ -11,6 +11,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
 public import Mathlib.AlgebraicGeometry.GammaSpecAdjunction
+public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
@@ -490,6 +491,114 @@ the two leaves below, without ever forming an open subscheme of `X ×_S Y`. -/
 noncomputable def sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
     pullback p (V.ι ≫ q) ⟶ pullback p q :=
   pullback.map p (V.ι ≫ q) p q (𝟙 X) V.ι (𝟙 S) (by simp) (by simp)
+
+/-! ### Ranges: the two point-set facts the covering step needs
+
+Everything in this block is PROVEN and axiom-clean.  It is stated here rather than inside
+`exists_isAffineOver_cover_of_slice_const` because it is exactly the part of that leaf's
+argument that a diagram chase on points CANNOT supply, and because it is reusable:
+
+**the underlying set of a fibre product of schemes is NOT the fibre product of the
+underlying sets.**  So "the fibre of `pullback.snd p q` over `σ.base s` is covered by the
+slice" — which is what turns `hconst` (a statement about the slice) into a statement about a
+whole fibre, and hence what makes `m ⁻¹ (Z ∖ U)` miss that fibre — is a real theorem and not
+bookkeeping.  What supplies it is that `sliceIncl` is a BASE CHANGE of `σ`, together with
+`Scheme.Pullback.range_map`: the range of a base change is the preimage of the range.
+
+`sliceOverMap` below is `sliceOverOpen` generalised from an open immersion to an arbitrary
+morphism, which is needed because the slice is the base change of the SECTION `σ : S ⟶ Y` —
+an immersion, but not an open one. -/
+
+/-- **The canonical map `X ×_S V ⟶ X ×_S Y` induced by an arbitrary `g : V ⟶ Y`.**
+`sliceOverOpen p q V` is the special case `g = V.ι`, definitionally. -/
+noncomputable def sliceOverMap {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) : pullback p (g ≫ q) ⟶ pullback p q :=
+  pullback.map p (g ≫ q) p q (𝟙 X) g (𝟙 S) (by simp) (by simp)
+
+theorem sliceOverOpen_eq_sliceOverMap {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    (V : Y.Opens) : sliceOverOpen p q V = sliceOverMap p q V.ι :=
+  rfl
+
+@[reassoc (attr := simp)]
+theorem sliceOverMap_fst {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    sliceOverMap p q g ≫ pullback.fst p q = pullback.fst p (g ≫ q) :=
+  (pullback.lift_fst _ _ _).trans (Category.comp_id _)
+
+@[reassoc (attr := simp)]
+theorem sliceOverMap_snd {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    sliceOverMap p q g ≫ pullback.snd p q = pullback.snd p (g ≫ q) ≫ g :=
+  pullback.lift_snd _ _ _
+
+/-- **THE RANGE OF `sliceOverMap` IS THE PREIMAGE OF THE RANGE OF `g`** (PROVEN), because
+`sliceOverMap p q g` is the base change of `g` along `pullback.snd p q`. -/
+theorem range_sliceOverMap {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    Set.range (sliceOverMap p q g).base = (pullback.snd p q).base ⁻¹' Set.range g.base := by
+  rw [sliceOverMap, Scheme.Pullback.range_map]
+  simp
+
+/-- **THE RANGE OF `sliceOverOpen p q V` IS `(pullback.snd p q) ⁻¹ V`** (PROVEN).
+
+This is what says that "the part of `X ×_S Y` lying over `V`", as written by
+`sliceOverOpen`, really is the part lying over `V`. -/
+theorem range_sliceOverOpen {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
+    Set.range (sliceOverOpen p q V).base = (pullback.snd p q).base ⁻¹' (V : Set Y) := by
+  rw [sliceOverOpen_eq_sliceOverMap, range_sliceOverMap, Scheme.Opens.range_ι]
+
+section Slice
+
+variable {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+
+/-- **The canonical isomorphism `X ≅ X ×_S S` supplied by the section `σ`.**
+
+`σ ≫ q = 𝟙 S` makes `pullback p (σ ≫ q)` a pullback along an identity, hence a copy of `X`.
+Composing it with `sliceOverMap p q σ` is `sliceIncl`, which is what exhibits the slice as
+the base change of `σ`. -/
+noncomputable def sliceIso : X ⟶ pullback p (σ ≫ q) :=
+  pullback.lift (𝟙 X) p (by rw [Category.id_comp, hσ, Category.comp_id])
+
+@[reassoc (attr := simp)]
+theorem sliceIso_fst : sliceIso p q σ hσ ≫ pullback.fst p (σ ≫ q) = 𝟙 X :=
+  pullback.lift_fst _ _ _
+
+@[reassoc (attr := simp)]
+theorem sliceIso_snd : sliceIso p q σ hσ ≫ pullback.snd p (σ ≫ q) = p :=
+  pullback.lift_snd _ _ _
+
+instance : IsIso (sliceIso p q σ hσ) := by
+  refine ⟨pullback.fst p (σ ≫ q), sliceIso_fst p q σ hσ, ?_⟩
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sliceIso_fst, Category.comp_id, Category.id_comp]
+  · rw [Category.assoc, sliceIso_snd, Category.id_comp, pullback.condition, hσ,
+      Category.comp_id]
+
+/-- **THE SLICE IS THE BASE CHANGE OF THE SECTION** (PROVEN). -/
+theorem sliceIso_comp : sliceIso p q σ hσ ≫ sliceOverMap p q σ = sliceIncl p q σ hσ := by
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sliceOverMap_fst, sliceIso_fst, sliceIncl_fst]
+  · rw [Category.assoc, sliceOverMap_snd, sliceIso_snd_assoc, sliceIncl_snd]
+
+/-- **THE SLICE IS EXACTLY THE PART OF `X ×_S Y` LYING OVER `σ(S)`** (PROVEN).
+
+This is the fact the covering step turns on: because the fibre of `pullback.snd p q` over
+`σ.base s` is entirely covered by the slice, `hconst` — which constrains `m` only on the
+slice — pins `m` on that whole fibre, and so the closed set `m ⁻¹ (Z ∖ U)` misses it.
+
+It is NOT a diagram chase: the underlying set of a fibre product of schemes is not the fibre
+product of the underlying sets, and the fibre of `pullback.snd p q` over a point `y` is
+`X ×_S Spec κ(y)`, which is larger than `X_{q y}` for a general `y`.  It is the fact that `σ`
+is a SECTION — so that `κ(σ.base s) = κ(s)` — that collapses it, and that is exactly the
+content of `sliceIncl` being a base change of `σ`. -/
+theorem range_sliceIncl :
+    Set.range (sliceIncl p q σ hσ).base = (pullback.snd p q).base ⁻¹' Set.range σ.base := by
+  rw [← sliceIso_comp p q σ hσ, ← range_sliceOverMap p q σ]
+  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
+  rw [Set.range_eq_univ.mpr (fun z => ((ConcreteCategory.bijective_of_isIso
+    (sliceIso p q σ hσ).base).surjective z)), Set.image_univ]
+
+end Slice
 
 /-- **THE COVERING STEP OF THE RIGIDITY LEMMA** (sorry node) — the whole topological content,
 and the ONLY place where `σ`, `hconst` and `[GeometricallyConnected q]` are used.
