@@ -512,9 +512,17 @@ public import Mathlib.Algebra.Category.CommAlgCat.Basic
 -- `Fermat.DescentHeight` and `Fermat.fg_of_descentHeight`: Silverman's descent
 -- theorem (AEC VIII.3.1), PROVEN there for an arbitrary `AddCommGroup`.  It is
 -- the whole proof of `fg_relPoint_of_abelianScheme` — Mordell–Weil — from its
--- two leaves `exists_descentHeight_of_abelianScheme` (heights) and
--- `finite_quotient_nsmul_of_abelianScheme` (weak Mordell–Weil).
+-- two leaves `exists_projectiveHeightSource_of_abelianScheme` (heights) and
+-- `finite_quotient_nsmul_of_abelianScheme` (weak Mordell–Weil).  It also
+-- carries `Fermat.ParallelogramHeight`, the interface a theory of heights
+-- actually produces, and `ParallelogramHeight.toDescentHeight`.
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
+-- `Fermat.ProjectiveHeightSource` and `Fermat.finite_setOf_logHeight_coords_le`:
+-- Northcott's theorem in projective space over `ℚ`, PROVEN there from
+-- `Mathlib`'s own heights development (`Mathlib/NumberTheory/Height/`, which
+-- DOES exist at this pin — see `exists_projectiveHeightSource_of_abelianScheme`
+-- below, whose old "MISSING MACHINERY" note claimed otherwise and was wrong).
+public import Fermat.FLT.Mathlib.NumberTheory.ProjectiveHeight
 -- The relative Picard functor: `IsRelPicZeroOf`, `RelPicEquiv`, `modTensor`,
 -- `sectionIdeal`.  This is the infrastructure the IRREDUCIBILITY audit of
 -- `exists_jacobianOf_x0` named as missing — line bundles on `X ×_S T` modulo
@@ -15394,61 +15402,116 @@ theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
   exact ⟨J, jstr, ab,
     isJacobianOf_of_isRelPicZeroOf h.isProper h.smooth h.connected P⟩
 
-/-- **A height function with the Northcott property exists on `A(ℚ)`,
-for every abelian scheme `A` over `ℚ`** (sorry node) — the GEOMETRIC
-half of Mordell–Weil, and the only half that needs a theory of heights.
+/-- **`A` embeds in projective space over `ℚ` with a naïve height obeying
+the parallelogram law** (sorry node) — the GEOMETRIC half of
+Mordell–Weil, and after the split recorded below it is the ONLY half of
+the height theory that is not already available.
 
-TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
-case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
+TRUE and classical (Silverman, *AEC* VIII.6.2 for the elliptic case;
+Hindry–Silverman, *Diophantine Geometry* Theorem B.5.1, for abelian
 varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
 variety over `ℚ`, so it is projective and carries a symmetric ample line
-bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀`.  Let
-`height` be the associated Weil height `h_L`.  The three fields of
-`DescentHeight` are then three standard theorems about `h_L`:
+bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀`.  A
+sufficiently high power of `L` embeds `A` in `ℙⁿ_ℚ`; on rational points
+that is `ProjectiveHeightSource.coords` together with
+`injective_of_smul`, and the **approximate parallelogram law**
 
-* `translate` is the **quasi-parallelogram law**
-  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)`, which gives
-  `h_L(P + Q) ≤ 2 h_L(P) + C(Q)` because `h_L` is bounded below for `L`
-  ample;
-* `double` is **quadraticity**, `h_L(m • P) = m² h_L(P) + O(1)` for
-  symmetric `L`, of which only the `≥` direction is used;
-* `northcott` is **Northcott's theorem**: a projective variety over a
-  number field has only finitely many rational points of bounded height.
+`|h(P + Q) + h(P − Q) − 2 h(P) − 2 h(Q)| ≤ C`
 
-`m` may be taken to be any integer `≥ 2`, and the descent theorem uses
-whichever one this leaf supplies — which is why the sibling leaf
-`finite_quotient_nsmul_of_abelianScheme` is stated for every `n ≥ 2`
-rather than for one fixed `n`.
+for the naïve logarithmic height of those coordinates is the theorem of
+the cube.  Symmetry of `L` is what makes the law hold, which is why the
+statement quantifies existentially over the embedding rather than
+universally.
 
-**FAITHFULNESS AUDIT.**  *Not vacuous in general.*  `DescentHeight`
-cannot be met by a junk height when `A(ℚ)` is infinite: `northcott`
-alone forces every level set to be finite, so a constant or bounded
-`height` is immediately excluded.  It *is* cheap exactly when `A(ℚ)` is
-finite — `height = 0`, `m = 2` works — and that is correct rather than a
-defect, since a finite group is finitely generated and the conclusion of
-the consumer holds for that reason.  So the leaf carries content exactly
-where the theorem it feeds needs content.
-
-*The conclusion is `Nonempty`, not a chosen height*, because nothing
-downstream depends on WHICH height is used; only its existence is
-consumed.  A prover may pick any `m ≥ 2`.
-
-**MISSING MACHINERY**, and it is the honest cost of this leaf: Weil
-heights on projective space, functoriality of heights along morphisms,
-the theory of the canonical (Néron–Tate) height, and Northcott's
-theorem.  None of these exists in `Mathlib`, in `~/cs/FLT`, or in this
-project — the check that refutes this is
+**THE STALE "MISSING MACHINERY" NOTE THAT USED TO STAND HERE IS
+WITHDRAWN (2026-07-27), AND ITS CENTRAL CLAIM WAS FALSE AT THIS PIN.**
+It read: "Weil heights on projective space, functoriality of heights
+along morphisms, the theory of the canonical (Néron–Tate) height, and
+Northcott's theorem.  None of these exists in `Mathlib`, in `~/cs/FLT`,
+or in this project — the check that refutes this is
 `grep -rn "Northcott\|WeilHeight\|NeronTate" Fermat/
 .lake/packages/mathlib/Mathlib/ ~/cs/FLT/`, whose only hit is
-`Mathlib/Order/Northcott.lean`, the *class* `Northcott` (a function all
-of whose level sets are finite) with no instance for any height.  That
-class is precisely the `northcott` field below, so the statement of this
-leaf is pin-available even though its proof is not. -/
+`Mathlib/Order/Northcott.lean`."  Running exactly that check on a
+worktree with `.lake/packages` seeded refutes it: `Mathlib` carries a
+whole heights development at
+
+* `Mathlib/NumberTheory/Height/Basic.lean` — `Height.mulHeight` and
+  `Height.logHeight` of a tuple, `Height.mulHeight₁` / `logHeight₁` of a
+  field element, over any field with `Height.AdmissibleAbsValues`;
+* `Mathlib/NumberTheory/Height/NumberField.lean` — that instance for a
+  number field, **and Northcott's theorem**
+  (`NumberField.finite_setOf_mulHeight₁_le`), with the instances
+  `Northcott (mulHeight₁ (K := K))` and `Northcott (logHeight₁ (K := K))`;
+* `Mathlib/NumberTheory/Height/Projectivization.lean` — the height of a
+  point of `Projectivization K (ι → K)`;
+* `Mathlib/NumberTheory/Height/EllipticCurve.lean` — work in progress
+  towards this very parallelogram law for Weierstrass curves.
+
+So *Northcott's theorem is not a cost of this leaf at all.*  It is a
+theorem about any projective embedding, proven in
+`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`
+(`Fermat.finite_setOf_logHeight_coords_le`) from `Mathlib`'s Northcott
+property for `ℚ` — which fills the gap `Mathlib`'s own
+`Height/Northcott.lean` still lists as "(TODO) for
+`Projectivization.mulHeight`".  What remains genuinely missing, and is
+all this leaf now asks for, is the **algebraic geometry**: projectivity
+of an abelian variety, a symmetric ample line bundle, and the theorem of
+the cube.
+
+**FAITHFULNESS AUDIT.**  *Not vacuous in general.*  `coords_ne_zero` and
+`injective_of_smul` force `A(ℚ)` to inject into `ℙⁿ(ℚ)`, and
+`finite_setOf_logHeight_coords_le` then makes every bounded-height set
+finite, so no constant or bounded height can satisfy the package.  It
+*is* cheap exactly when `A(ℚ)` is finite, and that is correct rather than
+a defect: a finite group is finitely generated, so the consumer's
+conclusion holds for that reason.  The leaf carries content exactly where
+the theorem it feeds needs content.
+
+*The conclusion is `Nonempty`, not a chosen embedding*, because nothing
+downstream depends on WHICH embedding is used; only its existence is
+consumed. -/
+theorem exists_projectiveHeightSource_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (ProjectiveHeightSource (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
+/-- **A height function with the Northcott property exists on `A(ℚ)`,
+for every abelian scheme `A` over `ℚ`** (PROVEN, over the leaf above) —
+the `DescentHeight` package that Silverman's descent theorem consumes.
+
+**SPLIT, 2026-07-27.**  This used to be a `sorry` node bundling three
+genuinely different things: Northcott's theorem, the parallelogram law,
+and the bookkeeping that converts the law into the asymmetric form
+(`translate`, `double`, a choice of `m`) that the *proof* of descent
+happens to want.  Only the second is geometry.  The other two are now
+proven:
+
+* `Fermat.ParallelogramHeight.toDescentHeight`
+  (`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) derives `translate`,
+  `double` and `m = 2` from the single two-sided parallelogram estimate.
+  It is pure group theory over `ℝ` — in particular the lower bound on
+  the height that `translate` needs is *not* an extra hypothesis, since
+  `Northcott` already forces it (`ParallelogramHeight.exists_lowerBound`).
+* `Fermat.ProjectiveHeightSource.toParallelogramHeight`
+  (`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`) supplies
+  `Northcott` for the naïve height of a projective embedding, from
+  `Mathlib`'s Northcott property for `ℚ`.
+
+So the geometry is isolated in `exists_projectiveHeightSource_of_abelianScheme`
+above, and `m = 2` is now what this leaf always produces.  Note that the
+sibling leaf `finite_quotient_nsmul_of_abelianScheme` is nevertheless
+still stated for every `n ≥ 2`: the assembly
+`fg_relPoint_of_abelianScheme` passes `dh.m`, which is opaque to it, so
+the general form is what keeps that assembly honest against any future
+height with a different `m`. -/
 theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
+    Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨ps⟩ := exists_projectiveHeightSource_of_abelianScheme ab
+  exact ⟨ps.toParallelogramHeight.toDescentHeight⟩
 
 /-- **Weak Mordell–Weil: `A(ℚ) / n A(ℚ)` is finite, for every abelian
 scheme `A` over `ℚ` and every `n ≥ 2`** (sorry node) — the ARITHMETIC
@@ -15525,21 +15588,41 @@ lemma is pure group theory: it holds for an arbitrary `AddCommGroup`
 carrying a height function, and it is now PROVEN, in
 `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`
 (`Fermat.fg_of_descentHeight`, Silverman *AEC* Theorem VIII.3.1).  So
-this node is now a two-line assembly over the two leaves above —
+this node is now a two-line assembly over the two nodes above —
 `exists_descentHeight_of_abelianScheme` and
 `finite_quotient_nsmul_of_abelianScheme` — and neither of them is the
 descent argument.
 
-The retired verdict, kept because its *check* is still the right one:
-"neither heights on abelian varieties, nor the weak Mordell–Weil
-theorem, nor the descent lemma exists in `Mathlib`, in `~/cs/FLT`, or in
-this project.  The check that would refute this:
-`grep -rn "MordellWeil\|NeronTateHeight"` over the three trees.
-(`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a counterexample —
-despite the name it contains no Mordell–Weil theorem and no descent
-machinery; it is an explicit `2`-descent computation for the two named
-curves `11a3` and `14a4`, done by hand over `ℤ`.)"  Two of the three are
-still absent, and they are exactly the two leaves above. -/
+**SPLIT AGAIN, 2026-07-27, later: the first of those two is now PROVEN
+as well**, over `exists_projectiveHeightSource_of_abelianScheme`.  The
+only OPEN leaves under this node are therefore
+
+* `exists_projectiveHeightSource_of_abelianScheme` — a projective
+  embedding of `A` over `ℚ` whose naïve height obeys the approximate
+  parallelogram law (projectivity + symmetric ample bundle + theorem of
+  the cube), and
+* `finite_quotient_nsmul_of_abelianScheme` — weak Mordell–Weil.
+
+**And the retired verdict below is not merely retired: one of its three
+clauses was FALSE at this pin.**  It read: "neither heights on abelian
+varieties, nor the weak Mordell–Weil theorem, nor the descent lemma
+exists in `Mathlib`, in `~/cs/FLT`, or in this project.  The check that
+would refute this: `grep -rn "MordellWeil\|NeronTateHeight"` over the
+three trees.  (`Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
+counterexample — despite the name it contains no Mordell–Weil theorem and
+no descent machinery; it is an explicit `2`-descent computation for the
+two named curves `11a3` and `14a4`, done by hand over `ℤ`.)"
+
+Its parenthesis about `MordellWeil.lean` is still correct.  Its *check*
+is what failed: `MordellWeil` and `NeronTateHeight` are the wrong search
+terms, and grepping for them misses `Mathlib/NumberTheory/Height/`, six
+modules containing `Height.mulHeight`, `Height.logHeight`, the
+`AdmissibleAbsValues` instance for number fields and **Northcott's
+theorem** — none of which uses either word.  That is the general lesson
+worth carrying: an absence verdict is only as good as the *names* it
+searched, and a theory can be present under a name nobody guessed.  So
+heights are NOT absent; only their application to abelian varieties is.
+Weak Mordell–Weil genuinely is absent, and it is the second leaf above. -/
 theorem fg_relPoint_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
@@ -16687,6 +16770,23 @@ leaf each; the seam is "`X` contains a dense open copy of `𝔸¹_ℚ`", which
 is how rationality of a curve is expressible at a pin that has affine but
 not projective space.
 
+**Seventh round (2026-07-27).**  `exists_descentHeight_of_abelianScheme` was
+carrying THREE things and only one of them is geometry, so it is now a PROVEN
+assembly too.  The two that are not geometry are proven in the shim tree:
+`ParallelogramHeight.toDescentHeight`
+(`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) turns the single two-sided
+parallelogram estimate into the asymmetric `translate` / `double` / `m = 2`
+form descent consumes, and `ProjectiveHeightSource.toParallelogramHeight`
+(`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`) supplies Northcott
+for the naïve height of a projective embedding.  **The premise of the old
+audit here was false at this pin**: `Mathlib` HAS heights
+(`Mathlib/NumberTheory/Height/`, six modules, including Northcott's theorem
+for a number field), which its docstring asserted it did not.  Only
+`Mathlib`'s "(TODO)" projective upgrade had to be written, and it is now
+proven as `Fermat.finite_setOf_logHeight_coords_le`.  The residue is
+`exists_projectiveHeightSource_of_abelianScheme`: projectivity of an abelian
+variety, a symmetric ample line bundle, and the theorem of the cube.
+
 The open leaves under this node, and the single theory each one needs, are the
 TEN below.  **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — two branches
@@ -16703,7 +16803,7 @@ row and is now PROVEN too, in
 |---|---|---|
 | `exists_relPicZeroOf` | representability of `Pic⁰` | no |
 | `isJacobianOf_of_isRelPicZeroOf` | autoduality / biduality | no |
-| `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
+| `exists_projectiveHeightSource_of_abelianScheme` | projective embedding + theorem of the cube | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
