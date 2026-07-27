@@ -40,10 +40,11 @@ finite flat commutative group schemes: a group scheme is a commutative ring `A` 
   `A ≃ₐc[R] CartierDual R (CartierDual R A)`; `bidualityAlgEquiv` is its algebra half.
 * `CartierDual.finrank_cartierDual` — the dual is finite flat of the same rank.
 
-The standard examples `μ_n^D ≅ ℤ/n` and `(ℤ/n)^D ≅ μ_n` are in
-`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDualExamples.lean`. See the section
-"What remains" at the end of this file for the two pieces that are still open (exactness on
-short exact sequences, and `α_p^D ≅ α_p`) and what each is blocked on.
+All three standard examples are proven elsewhere: `μ_n^D ≅ ℤ/n` and `(ℤ/n)^D ≅ μ_n` in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/CartierDualExamples.lean`, and `α_p^D ≅ α_p` in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/AlphaPSelfDual.lean` (over
+`.../HopfAlgebra/AlphaP.lean`). See the section "What remains" at the end of this file for the
+one piece that is still open — exactness on short exact sequences — and what it is blocked on.
 
 ## Design notes
 
@@ -733,20 +734,16 @@ diagonalizable/constant examples are proven in
 * `CartierDual.groupAlgebraBialgEquivDual : MonoidAlgebra R G ≃ₐc[R]
   CartierDual R (GroupFunctions R G)` — `(ℤ/n)^D ≅ μ_n`, same instantiation.
 
-**Only `α_p^D ≅ α_p` is still open, and it is a THEORY gap, not a proof gap.** `α_p` is
-`Spec R[x]/(x^p)` in characteristic `p`, with `Δ x = x ⊗ 1 + 1 ⊗ x` — the *additive* Hopf
-structure. Nothing in the mathlib pin, in `~/cs/FLT`, or in this tree carries it: mathlib's only
-Hopf structures on polynomial-shaped algebras are `(Add)MonoidAlgebra`'s, whose comultiplication
-is GROUPLIKE (`Δ (single g a) = single g a₍₁₎ ⊗ single g a₍₂₎`), so `AddMonoidAlgebra R ℕ = R[X]`
-receives `Δ X = X ⊗ X` — the multiplicative group `𝔾_m`-shaped structure, not `𝔾_a`. So the
-prerequisite is the Hopf algebra `O(𝔾_a) = R[X]` with additive comultiplication, plus the Hopf
-ideal `(X^p)` (mathlib's `HopfAlgebra.Quotient`/`Ideal.IsHopfIdeal` can then take the quotient;
-`Δ(X)^p = X^p ⊗ 1 + 1 ⊗ X^p` needs `add_pow_char` in `A ⊗ A`). Only then is the self-duality
-statable, and its content is the divided-power pairing `⟨x^i, x^j⟩ = i! δ_{ij}`: the dual basis
-satisfies `e_i * e_j = C(i+j, i) e_{i+j}`, so `y := e_1` has `y^i = i! e_i` with `i!` invertible
-for `i < p`, giving `A^D ≅ R[y]/(y^p)` and `Δ y = y ⊗ 1 + 1 ⊗ y`. Refuting check for the
-"absent" claim: any `HopfAlgebra` instance on a quotient of `Polynomial R`, or any occurrence of
-`add_pow_char` in a coalgebra context, in `Fermat/`, the pin, or `~/cs/FLT`. -/
+**`α_p^D ≅ α_p` is also DONE** (2026-07-27), and the "theory gap" recorded here is closed.
+`O(𝔾_a) = R[X]` with additive comultiplication was indeed absent from the pin, from `~/cs/FLT`
+and from this tree — but it turned out not to be needed: building `α_p` DIRECTLY as
+`AdjoinRoot (X^p)` skips `𝔾_a` and the Hopf-ideal quotient entirely. See
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/AlphaP.lean` for the Hopf algebra and
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/AlphaPSelfDual.lean` for
+`AlphaP.selfDualBialgEquiv : AlphaP R p ≃ₐc[R] CartierDual R (AlphaP R p)`, whose content is
+the divided-power pairing `y^m = m! · e_m` with `y := e_1` and `m!` a unit for `m < p`.
+
+So all three commissioned examples are proven, and only piece 1 above (exactness) remains. -/
 
 end Bialg
 

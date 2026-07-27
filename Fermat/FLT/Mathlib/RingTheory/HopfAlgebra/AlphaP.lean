@@ -58,19 +58,15 @@ one means proving `algebraMap R (A ⊗ A)` injective. It is cheaper and more rob
 `p` makes each binomial coefficient vanish in any `R`-algebra, since it factors through
 `(· : R)` and `CharP R p`.
 
-## What is still open
+## Cartier self-duality
 
-The **self-duality `α_p^D ≅ α_p`** is not here. With this file it is now a well-posed single
-leaf rather than a missing theory: `CartierDual R (AlphaP R p)` is well-formed (every instance
-it needs is established above), and `CartierDual.finrank_cartierDual` already gives it the
-right rank. The content of the remaining leaf is the divided-power pairing. Writing `e_i` for
-the basis of `CartierDual R (AlphaP R p)` dual to `x^i`, the convolution product reads
-`e_i * e_j = C(i+j, i) • e_{i+j}` (zero when `i + j ≥ p`), because `Δ (x^n) = ∑_k C(n,k) x^k ⊗
-x^{n-k}`. Hence `y := e_1` satisfies `y^m = m! • e_m`, and `m!` is a unit in `R` for `m < p`
-(its image lies in the prime field and is nonzero mod `p`), so `{y^m}_{m<p}` is again a basis
-and `y^p = 0`. `AlphaP.lift` applied to `y` is then the isomorphism, and
-`⟨Δ y, x^a ⊗ x^b⟩ = y (x^{a+b}) = δ_{a+b,1} = ⟨y ⊗ 1 + 1 ⊗ y, x^a ⊗ x^b⟩` is the
-comultiplication half — so `BialgEquiv.ofAlgEquiv` closes it with `algHom_ext` at `x`.
+`α_p^D ≅ α_p` is PROVEN, in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/AlphaPSelfDual.lean`, as
+`AlphaP.selfDualBialgEquiv : AlphaP R p ≃ₐc[R] CartierDual R (AlphaP R p)`. The content is the
+divided-power pairing: writing `e_m` for the basis of the dual dual to `x^m`, the binomial
+expansion `Δ (x^n) = ∑_k x^k ⊗ C(n,k) x^{n-k}` gives `y^m = m! · e_m` for `y := e_1`; `m!` is a
+unit for `m < p`, so `{y^m}` is again a basis and `y^p = 0`; and `y` is primitive. See that
+file's module docstring for the full argument.
 
 ## References
 
