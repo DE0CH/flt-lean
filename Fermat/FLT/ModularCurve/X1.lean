@@ -121,6 +121,10 @@ module
 
 public import Fermat.FLT.ModularCurve.X0
 public import Mathlib.NumberTheory.DirichletCharacter.Basic
+-- infinite Galois theory: `InfiniteGalois.mem_range_algebraMap_iff_fixed`, the field-theoretic
+-- half of `exists_specSection_of_specGal_invariant` below.  `public` because that theorem's
+-- statement mentions `Field.absoluteGaloisGroup`; see the private-import trap in the doctrine.
+public import Mathlib.FieldTheory.Galois.Infinite
 
 @[expose] public section
 
@@ -368,12 +372,11 @@ open in them has been split along the theories it needed:
 | `locallyStandardSmooth_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2 | any `K`, `char K ∤ N` |
 | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
-| `exists_gamma1Datum_of_relPoint` | fineness at `N ≥ 4`, `ℓ ∤ N` / Lang | `𝔽_ℓ` |
+| `nonempty_relPoint_atlas_of_relPoint` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` / Lang, on the atlas map `M ⟶ Y` | `𝔽_ℓ` |
+| `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
-| `exists_inverse_of_smoothCompactification` | the inverse of the compactification comparison | `ℚ` |
 | `exists_x1ReductionAt` | the integral model and its reduction map | `ℚ → 𝔽_ℓ` |
-| `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` | Eichler-Shimura + Kolyvagin-Logachev, shape-free | `ℚ` |
 | `exists_isLFunctionOf_of_isWeightTwoEigenformOn` | Hecke continuation, shape-free | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
@@ -1762,9 +1765,14 @@ theorem finite_relPoint_of_x1Compactification_finiteField (N ℓ : ℕ) (hℓ : 
   haveI := h.isProper
   exact finite_relPoint_of_isProper (R := ZMod ℓ) strX (𝟙 (SpecF ℓ))
 
-/-- **An `𝔽_ℓ`-point of the coarse space `Y_1(N)_{𝔽_ℓ}` comes from an
-actual `Γ₁(N)`-datum over `𝔽_ℓ`, for `N ≥ 4`** (sorry leaf — the
-fineness/Lang half of the `𝔽_ℓ` point count).
+/-! #### An `𝔽_ℓ`-point of `Y_1(N)_{𝔽_ℓ}` comes from a `Γ₁(N)`-datum
+
+The standing discussion of `exists_gamma1Datum_of_relPoint` — why it is a leaf
+rather than a consequence of `IsCoarseModuliY1`, what each hypothesis does, the
+FAITHFULNESS AUDIT that added `ℓ.Prime`, and the five axes searched — lives
+here rather than on the theorem, because the node is now DECOMPOSED and the
+discussion is about the whole cluster, not about any one of its three
+declarations.  It is the fineness/Lang half of the `𝔽_ℓ` point count.
 
 TRUE.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid, so over a base
 where `N` is invertible the coarse space is in fact FINE and its points
@@ -1810,6 +1818,41 @@ unprovable nor weaken anything downstream, whereas omitting a necessary one
 leaves a leaf nobody can close.  A successor who establishes the `ℓ ∣ N` case
 independently may drop it again.
 
+**FAITHFULNESS AUDIT, 2026-07-27 (LATER): `hℓ : ℓ.Prime` ADDED, because the
+repair above was HALF-DONE and `¬ ℓ ∣ N` does not say what it was meant to
+say.**  The paragraph above is right that both routes need `N` invertible on
+the base — and `¬ ℓ ∣ N` is equivalent to `IsUnit (N : ZMod ℓ)` only when `ℓ`
+is PRIME, which this statement did not assume.  `SpecF ℓ` is `Spec (ZMod ℓ)`
+for a bare natural number `ℓ`, so before this repair the leaf ranged over
+three regimes its justification does not cover:
+
+* **`ℓ` composite.**  Take `ℓ = 9`, `N = 6`: `¬ 9 ∣ 6` holds, yet `6` is a
+  zero divisor in `ℤ/9`, so `[Γ₁(6)]` over `ℤ/9` is again the Drinfeld
+  problem and not the naive one.  This is precisely the failure the paragraph
+  above describes, reached without `ℓ ∣ N`.
+* **`ℓ = 0`.**  `ZMod 0 = ℤ`, so the base is `Spec ℤ`, `¬ 0 ∣ N` is just
+  `N ≠ 0`, and the conclusion asks for an elliptic scheme over `Spec ℤ`
+  carrying a section of exact order `N ≥ 4`.  Neither offered route applies —
+  `ℤ` is not a field, so Lang's theorem is not available and the finite-field
+  descent is meaningless — and the conclusion is one that Shafarevich–Tate
+  makes very hard to satisfy, since no elliptic curve over `ℚ` has everywhere
+  good reduction.  Whether the HYPOTHESES are satisfiable at `ℓ = 0` is NOT
+  settled here (it would take building a coarse `Y_1(N)` over `Spec ℤ` and a
+  section of it); what is settled is that the leaf's own justification says
+  nothing there, so a successor could not close it.
+* **`ℓ = 1`** is already excluded, but only accidentally: `ZMod 1` is the zero
+  ring and `Spec` of it is the empty scheme, so `_y` exists for free — and
+  `¬ 1 ∣ N` is false, which is what rules it out.  Relying on that is fragile.
+
+So `ℓ.Prime` is added, in exactly the conservative direction the paragraph
+above argues for: the sole consumer, `isEmpty_relPoint_y1_finiteField`,
+already carries `hℓ : ℓ.Prime` and passes it on for free, so nothing
+downstream is weakened, and the leaf now matches its stated justification
+regime — a base that is a FIELD in which `N` is invertible.  With `ℓ` prime,
+`¬ ℓ ∣ N` and `IsUnit (N : ZMod ℓ)` are equivalent, so no third hypothesis is
+wanted.  A successor who wants the general base should state invertibility
+directly (`IsUnit (N : ZMod ℓ)`) rather than dropping primality.
+
 AXES SEARCHED.
 
 1. *Initiality* — deriving surjectivity of `classify` on points from
@@ -1847,12 +1890,157 @@ AXES SEARCHED.
    isomorphism-classes quotient), which is a strictly larger construction than
    the leaf it would discharge.  This is the axis a successor should take if
    the `Γ₁` moduli layer is ever built out; it is refuted — i.e. becomes cheap
-   — the moment a functor-valued form of `Gamma1Datum` exists. -/
-theorem exists_gamma1Datum_of_relPoint (N ℓ : ℕ) (_hN : 4 ≤ N) (_hℓN : ¬ ℓ ∣ N)
-    {Y : Scheme.{0}} {strY : Y ⟶ SpecF ℓ} (_hc : IsCoarseModuliY1 N strY)
-    (_y : RelPoint strY (𝟙 (SpecF ℓ))) :
-    Nonempty (Gamma1Datum N (SpecF ℓ)) :=
+   — the moment a functor-valued form of `Gamma1Datum` exists.
+5. *THE ATLAS* — the axis none of the four above searched, and the one the
+   decomposition below takes.  See the next paragraph.
+
+#### The atlas cut (2026-07-27), and why the four axes above missed it
+
+The AXES SEARCHED list above ranges over ways of attacking the coarse space
+`Y` directly — initiality, transport between models, Lang, a moduli functor.
+It never asks what `Y` is BUILT from, and in this file it is built from
+something with a much better handle: `Gamma1Atlas`, whose `M` carries an
+actual universal family `dM : Gamma1Datum N M` and whose `Y` is the
+categorical quotient of `M`.  That is the axis taken here, and it splits the
+leaf in two:
+
+* `nonempty_relPoint_atlas_of_relPoint` — the atlas map `M ⟶ Y` is surjective
+  on `𝔽_ℓ`-points.  This is where ALL of the fineness/Lang content goes, and
+  it is a statement about ONE concrete morphism rather than about a coarse
+  space in the abstract.
+* `nonempty_gamma1Datum_baseChange` — a `Γ₁(N)`-datum base-changes along an
+  arbitrary morphism of schemes.  Formal, moduli-free, level-free, base-free;
+  no arithmetic and no finite fields.
+
+The assembly is then three citations, all PROVEN: `exists_gamma1AffineModel`
+produces an atlas over `𝔽_ℓ` (this is where `hℓ` and `hℓN` are consumed, as
+`¬ ringChar (ZMod ℓ) ∣ N`), `Gamma1Atlas.toIsCoarseModuliY1` makes its `Y` a
+coarse space, and `IsCoarseModuliY1.exists_inverse` transports the given point
+`y` onto it — which is axis 2 above, used not as a cut but as the glue, which
+is exactly the role it can play.
+
+**This does not contradict axis 4's verdict**: no moduli functor is written,
+and neither sub-leaf mentions representability.  What it does contradict is
+the implicit premise that the leaf is atomic; it is not, and the reason the
+list missed it is that every one of its four axes searched the same space
+(properties of `IsCoarseModuliY1`), while the atlas is a property of the
+CONSTRUCTION.  Recorded here because "an irreducibility verdict is only as
+wide as the axis the auditor searched". -/
+
+/-- **A `Γ₁(N)`-datum base-changes along an arbitrary morphism** (sorry leaf —
+formal, and the easy half of the atlas cut).
+
+TRUE for every `h : T' ⟶ T`, with no hypothesis at all.  Form the fibre
+product `E ×_T T'`; it is proper, smooth and has geometrically connected
+fibres because each of those is stable under base change, and the section
+`pt.sec` pulls back to a section of it.  Exactness of the order is preserved
+because a geometric fibre of `d'` over `t : Spec K ⟶ T'` IS the geometric
+fibre of `d` over `t ≫ h` — `PointOfExactOrder.geom_order` is quantified over
+exactly those, so the condition transports with no computation.
+
+**Nothing arithmetic is here.**  No level, no base field, no finiteness: this
+is the base-change bookkeeping that `IsBaseChangeOfGamma1` was written to
+state and that nothing in this file has yet had to construct.  It is worth
+having on its own — `IsBaseChangeOfGamma1` is currently only ever *consumed*,
+by `classify_natural` and by `Gamma1Atlas.cover`, and never *produced*, so
+this is the missing constructor of that relation.
+
+**Why it is not free at this pin.**  `AbelianSchemeStruct` has no base-change
+operation anywhere in this tree (a `grep` for `baseChange` over
+`Modularity/AbelianScheme.lean` is empty), so the transport of `zero`, `add`
+and the three geometric fields has to be written.  That is the whole content,
+and it is `Γ₀`-usable verbatim once written.
+
+**Non-vacuity.**  The conclusion produces `d'` TOGETHER WITH the cartesian
+square `IsBaseChangeOfGamma1 h d' d`, so a junk datum over `T'` does not
+discharge it: `isPullback` pins `d'.E` as the fibre product and `map_sec`
+pins the level structure.  The consumer below uses only the datum, but the
+square is what makes the statement the right one and what a successor
+producing a naturality argument will need. -/
+theorem nonempty_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{0}}
+    (_d : Gamma1Datum N T) (_h : T' ⟶ T) :
+    ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 _h d' _d) :=
   sorry
+
+/-- **The atlas map `M ⟶ Y` is surjective on `𝔽_ℓ`-points** (sorry leaf —
+this is where the whole fineness/Lang content of the `Γ₁` point count now
+sits).
+
+TRUE for `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`, and it is the same mathematics the
+parent leaf carried, relocated onto a single concrete morphism.  `Y` is the
+categorical quotient of `M` by the deck group `GL₂(ℤ/n)` of the rigidification
+(`Gamma1Atlas.quotient`), and the claim is that an `𝔽_ℓ`-point of the quotient
+lifts to an `𝔽_ℓ`-point of `M`.  Both classical routes survive the relocation
+and are now statements about a torsor rather than about a moduli functor:
+
+* *fineness* — for `N ≥ 4` the problem `[Γ₁(N)]` is rigid, so `M ⟶ Y` is a
+  torsor under a finite étale group scheme and the point lifts after no
+  extension at all;
+* *Lang* — over a FINITE field, `H¹(𝔽_ℓ, G) = 1` for connected `G`, so a
+  `𝔽̄_ℓ`-lift descends.
+
+`_y` is used only for NONEMPTINESS — the conclusion does not ask the lift to
+sit over `y`, because the parent leaf does not ask the datum to classify to
+`y` either.  That is deliberate and it is what the consumer
+(`isEmpty_relPoint_y1_finiteField`) needs: it derives a contradiction from the
+mere EXISTENCE of a datum over `𝔽_ℓ`, via
+`isEmpty_gamma1Datum_finiteField`.  Stating the stronger "lifts over `y`" form
+would be more faithful to the mathematics and strictly harder; a successor who
+proves the stronger form has proven this one, and should feel free to
+strengthen the statement rather than weaken the proof.
+
+**NOT VACUOUS.**  At `2ℓ + 1 < N` the conclusion is FALSE unless the
+hypotheses are unsatisfiable — that is exactly
+`isEmpty_gamma1Datum_finiteField` composed with the base change below — so a
+junk witness cannot discharge it and the leaf is at least as hard as "`Y_1(N)`
+has no `𝔽_ℓ`-point when `#E(𝔽_ℓ) ≤ 2ℓ + 1 < N`", which is the whole point of
+the witness row `(25, 3, 10)`.
+
+**All three arithmetic hypotheses are load-bearing**, and each is consumed by
+one of the two routes: `_hN` is rigidity (at `N ≤ 3` the pair `(E, P)` has
+extra automorphisms and `M ⟶ Y` is not a torsor), `_hℓ` is what makes the base
+a FIELD — see the FAITHFULNESS AUDIT on the parent leaf, where the `ℓ = 0` and
+`ℓ` composite regimes are worked out — and `_hℓN` is invertibility of `N`,
+without which `[Γ₁(N)]` is the Drinfeld problem and the atlas is a different
+scheme. -/
+theorem nonempty_relPoint_atlas_of_relPoint (N ℓ : ℕ) (_hN : 4 ≤ N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) (A : Gamma1Atlas N (SpecF ℓ))
+    (_y : RelPoint A.str (𝟙 (SpecF ℓ))) :
+    Nonempty (RelPoint A.strM (𝟙 (SpecF ℓ))) :=
+  sorry
+
+/-- **An `𝔽_ℓ`-point of `Y_1(N)_{𝔽_ℓ}` comes from a `Γ₁(N)`-datum**
+(**PROVEN 2026-07-27 by the atlas cut**, over
+`nonempty_relPoint_atlas_of_relPoint` and `nonempty_gamma1Datum_baseChange`;
+formerly a single sorry leaf).
+
+The assembly, and it is three citations and no geometry:
+
+1. `exists_gamma1AffineModel N hN (ZMod ℓ)` produces a `Gamma1AffineModel`,
+   hence a `Gamma1Atlas`, over `𝔽_ℓ` — this is where `hℓ` (making `ZMod ℓ` a
+   field) and `hℓN` (as `¬ ringChar (ZMod ℓ) ∣ N`) are consumed;
+2. `hc.universal` — the initiality clause of the GIVEN coarse space, applied to
+   the atlas's own classifying map — produces the comparison morphism
+   `u : Y ⟶ A.Y` over the base, and carries `y` across.  (`IsCoarseModuliY1.exists_inverse`
+   packages the same step as an inverse PAIR, but it is declared later in this
+   file, and only one direction is wanted here.);
+3. the atlas leaf lifts that point to `M`, and the base-change leaf pulls the
+   universal family `A.dM` back along it.
+
+`hc` is consumed at step 2 and `y` at step 3; `hN` is consumed twice (once at
+step 1, once inside the atlas leaf). -/
+theorem exists_gamma1Datum_of_relPoint (N ℓ : ℕ) (hN : 4 ≤ N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N)
+    {Y : Scheme.{0}} {strY : Y ⟶ SpecF ℓ} (hc : IsCoarseModuliY1 N strY)
+    (y : RelPoint strY (𝟙 (SpecF ℓ))) :
+    Nonempty (Gamma1Datum N (SpecF ℓ)) := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  obtain ⟨A⟩ := exists_gamma1AffineModel N hN (ZMod ℓ) (by rwa [ZMod.ringChar_zmod_n])
+  obtain ⟨u, ⟨hu, -⟩, -⟩ := hc.universal A.str A.classify A.classify_natural
+  obtain ⟨m⟩ := nonempty_relPoint_atlas_of_relPoint N ℓ hN hℓ hℓN A.toGamma1Atlas
+    ⟨y.1 ≫ u, by rw [Category.assoc, hu]; exact y.2⟩
+  obtain ⟨d', -⟩ := nonempty_gamma1Datum_baseChange A.dM m.1
+  exact ⟨d'⟩
 
 /-! #### The crude Weierstrass point count, and the one thing it needs from geometry
 
@@ -2107,7 +2295,7 @@ theorem isEmpty_relPoint_y1_finiteField (N ℓ : ℕ) (hN4 : 4 ≤ N) (hℓ : �
     (h : IsX1Compactification N strX strY jY) :
     IsEmpty (RelPoint strY (𝟙 (SpecF ℓ))) :=
   ⟨fun y => (isEmpty_gamma1Datum_finiteField N ℓ hℓ hN).elim
-    (exists_gamma1Datum_of_relPoint N ℓ hN4 hℓN h.coarse y).some⟩
+    (exists_gamma1Datum_of_relPoint N ℓ hN4 hℓ hℓN h.coarse y).some⟩
 
 /-! ### `𝔽_ℓ`-points as points of residue degree one
 
@@ -2514,7 +2702,7 @@ declaration, the chain that PROVES `card_le_of_rankZeroJacobian` in
 | `X0.lean` | here |
 |---|---|
 | `IsCoarseModuliY0.exists_inverse` (PROVEN) | `IsCoarseModuliY1.exists_inverse` (PROVEN) |
-| `exists_inverse_of_isX0Compactification` (leaf) | `exists_inverse_of_smoothCompactification` (leaf, and it SUBSUMES the `Γ₀` one) |
+| `exists_inverse_of_isX0Compactification` (PROVEN) | `exists_inverse_of_smoothCompactification` (PROVEN 2026-07-27, and it SUBSUMES the `Γ₀` one — both now cite `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`) |
 | `nonempty_relPointEquiv_of_isX0Compactification` (PROVEN) | `nonempty_relPointEquiv_of_isX1Compactification` (PROVEN) |
 | `exists_x0NeronDatum` + `exists_isX0Compactification_specialFibre` + `neronReduction_injective` | `exists_x1ReductionAt` (one leaf) |
 
@@ -2565,13 +2753,50 @@ theorem IsCoarseModuliY1.exists_inverse {N : ℕ} {Y₁ Y₂ S : Scheme.{u}}
       exact (Category.comp_id _).symm
 
 /-- **A smooth proper geometrically connected curve over `𝔽_ℓ` is
-determined by a dense open** (sorry leaf).
+determined by a dense open** (**PROVEN 2026-07-27**, over
+`AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`;
+formerly a sorry leaf).
 
 TRUE, and classical: two smooth proper geometrically connected curves
-over a field containing a common dense open glue along it, the closure of
-the graph in `X₁ ×_k X₂` being proper and birational over both, hence an
-isomorphism.  This is what `IsX1Compactification`'s docstring means by
-"`finite_compl` is what pins `X` as the genuine `X_1(N)`".
+over a field containing a common dense open glue along it.  This is what
+`IsX1Compactification`'s docstring means by "`finite_compl` is what pins
+`X` as the genuine `X_1(N)`".
+
+**HOW IT IS PROVEN, AND WHY THE GRAPH CLOSURE IS NOT NEEDED.**  The
+argument recorded here previously — take the closure of the graph of `u`
+in `X₁ ×_k X₂` and show both projections are proper and birational — is
+not the cheapest route and is not the one taken.  The whole geometric
+content is already available in this tree as
+`AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN over
+three sharper leaves): a morphism from a dense open of a smooth proper
+curve over a field into ANY proper scheme extends UNIQUELY.  Applying it
+four times finishes the statement with no geometry of its own:
+
+* twice for EXISTENCE — extend `u ≫ jY₂ : Y₁ ⟶ X₂` to `w : X₁ ⟶ X₂` and
+  `v ≫ jY₁ : Y₂ ⟶ X₁` to `w' : X₂ ⟶ X₁`, the target being proper in each
+  case;
+* twice for the ROUND TRIPS — `w ≫ w'` and `𝟙 X₁` are both extensions of
+  `jY₁ : Y₁ ⟶ X₁` over the base (`huv` is exactly what makes the first one
+  restrict to `jY₁`), so the UNIQUENESS clause of the same theorem, taken
+  at the target `Z = X₁`, identifies them; symmetrically for `w' ≫ w` and
+  `𝟙 X₂`.
+
+That is the whole proof, and it is why the target of the extension
+theorem is only assumed PROPER rather than assumed to be another
+compactification: the identity case is what supplies uniqueness of the
+round trip.  Note the density of `Y_i` in `X_i` is DERIVED there from
+`smooth`, `connected` and `finite_compl` jointly, so `_hf₁`/`_hf₂` are
+consumed and not decorative.
+
+**`_hℓ` IS LOAD-BEARING AND IS NOW CONSUMED**: it is what makes `ZMod ℓ`
+a field, via `Fact ℓ.Prime`, and the extension theorem is stated over
+`Spec` of a field.  It is renamed `hℓ` accordingly.
+
+**WHAT THIS CLOSES ELSEWHERE.**  The leaf still SUBSUMES `X0.lean`'s
+`exists_inverse_of_isX0Compactification`, and that one is now PROVEN too,
+by the same citation — so the sharing recorded below was real and both
+sides have cashed it in.  Nothing in `X0.lean` is edited here.
 
 **THIS LEAF IS MODULI-FREE, AND THAT IS THE POINT.**  It is stated over
 the raw geometric fields — `IsOpenImmersion`, `IsProper`,
@@ -2585,9 +2810,8 @@ touch: a successor proving this one has proven that one, and the two
 should close together.  (Nothing in `X0.lean` is edited to say so — that
 file has many concurrent owners — so the sharing is recorded here.)
 
-**NOT VACUOUS, despite every hypothesis being underscore-prefixed.**  The
-underscores mean only that a `sorry` consumes nothing; every one of them
-is load-bearing for the conclusion:
+**NOT VACUOUS.**  Every hypothesis is load-bearing for the conclusion,
+and every one of them is now consumed by the proof:
 
 * drop properness of `strX₁` and take `X₁ = Y₁` an affine curve, `X₂` its
   smooth compactification — then `Y₁ ≅ Y₂` but `X₁ ≇ X₂`;
@@ -2595,34 +2819,52 @@ is load-bearing for the conclusion:
   function field, e.g. a nodal model, again not isomorphic to `X₁`;
 * drop finiteness of the complements and `Y` need not be dense in `X`, so
   `X₁` may carry a whole extra component that `X₂` lacks;
-* drop `_hu`/`_hv` and the isomorphism `Y₁ ≅ Y₂` is not over the base, so
+* drop `hu`/`hv` and the isomorphism `Y₁ ≅ Y₂` is not over the base, so
   no `w` over the base can exist;
 * the conclusion's last conjunct `jY₁ ≫ w = u ≫ jY₂` is what says `w`
   EXTENDS `u` rather than being some unrelated isomorphism, and it is
   what a consumer that cares about cusps needs.
 
-`_hℓ` is carried because the argument wants a FIELD base: over a
-non-normal or non-reduced base the closure-of-the-graph argument fails,
-and stating the leaf there would risk a false statement for a generality
-nothing consumes.  Refuting check for the claim that this is absent from
-the pin: a declaration in `Mathlib`, `~/cs/FLT` or `Fermat/` producing an
-isomorphism of smooth proper curves from an isomorphism of dense opens;
-as of 2026-07-27 `grep` over all three finds none. -/
-theorem exists_inverse_of_smoothCompactification {ℓ : ℕ} (_hℓ : ℓ.Prime)
+`hℓ` is carried because the argument wants a FIELD base: over a
+non-normal or non-reduced base the extension theorem fails — the
+valuative criterion is applied at `Spec 𝒪_{X,x}`, legitimate exactly
+because that is a valuation ring, which over a one-dimensional base fails
+at the closed points of the special fibre. -/
+theorem exists_inverse_of_smoothCompactification {ℓ : ℕ} (hℓ : ℓ.Prime)
     {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecF ℓ} {strY₁ : Y₁ ⟶ SpecF ℓ}
     {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecF ℓ} {strY₂ : Y₂ ⟶ SpecF ℓ} {jY₂ : Y₂ ⟶ X₂}
-    (_hc₁ : jY₁ ≫ strX₁ = strY₁) (_hc₂ : jY₂ ≫ strX₂ = strY₂)
-    (_ho₁ : IsOpenImmersion jY₁) (_ho₂ : IsOpenImmersion jY₂)
-    (_hp₁ : IsProper strX₁) (_hp₂ : IsProper strX₂)
-    (_hs₁ : SmoothOfRelativeDimension 1 strX₁) (_hs₂ : SmoothOfRelativeDimension 1 strX₂)
-    (_hg₁ : GeometricallyConnected strX₁) (_hg₂ : GeometricallyConnected strX₂)
-    (_hf₁ : (Set.range jY₁.base)ᶜ.Finite) (_hf₂ : (Set.range jY₂.base)ᶜ.Finite)
-    {u : Y₁ ⟶ Y₂} {v : Y₂ ⟶ Y₁} (_hu : u ≫ strY₂ = strY₁) (_hv : v ≫ strY₁ = strY₂)
-    (_huv : u ≫ v = 𝟙 Y₁) (_hvu : v ≫ u = 𝟙 Y₂) :
+    (hc₁ : jY₁ ≫ strX₁ = strY₁) (hc₂ : jY₂ ≫ strX₂ = strY₂)
+    (ho₁ : IsOpenImmersion jY₁) (ho₂ : IsOpenImmersion jY₂)
+    (hp₁ : IsProper strX₁) (hp₂ : IsProper strX₂)
+    (hs₁ : SmoothOfRelativeDimension 1 strX₁) (hs₂ : SmoothOfRelativeDimension 1 strX₂)
+    (hg₁ : GeometricallyConnected strX₁) (hg₂ : GeometricallyConnected strX₂)
+    (hf₁ : (Set.range jY₁.base)ᶜ.Finite) (hf₂ : (Set.range jY₂.base)ᶜ.Finite)
+    {u : Y₁ ⟶ Y₂} {v : Y₂ ⟶ Y₁} (hu : u ≫ strY₂ = strY₁) (hv : v ≫ strY₁ = strY₂)
+    (huv : u ≫ v = 𝟙 Y₁) (hvu : v ≫ u = 𝟙 Y₂) :
     ∃ (w : X₁ ⟶ X₂) (w' : X₂ ⟶ X₁),
       w ≫ strX₂ = strX₁ ∧ w' ≫ strX₁ = strX₂ ∧
-      w ≫ w' = 𝟙 X₁ ∧ w' ≫ w = 𝟙 X₂ ∧ jY₁ ≫ w = u ≫ jY₂ :=
-  sorry
+      w ≫ w' = 𝟙 X₁ ∧ w' ≫ w = 𝟙 X₂ ∧ jY₁ ≫ w = u ≫ jY₂ := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  haveI := ho₁; haveI := ho₂; haveI := hp₁; haveI := hp₂; haveI := hs₁; haveI := hs₂
+  obtain ⟨w, ⟨hw, hjw⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strZ := strX₂) hg₁ hf₁ hc₁ (u ≫ jY₂) (by rw [Category.assoc, hc₂, hu])
+  obtain ⟨w', ⟨hw', hjw'⟩, -⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strZ := strX₁) hg₂ hf₂ hc₂ (v ≫ jY₁) (by rw [Category.assoc, hc₁, hv])
+  obtain ⟨Φ₁, -, huniq₁⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strZ := strX₁) hg₁ hf₁ hc₁ jY₁ hc₁
+  obtain ⟨Φ₂, -, huniq₂⟩ :=
+    _root_.AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve
+      (strZ := strX₂) hg₂ hf₂ hc₂ jY₂ hc₂
+  refine ⟨w, w', hw, hw', ?_, ?_, hjw⟩
+  · refine (huniq₁ (w ≫ w') ⟨by rw [Category.assoc, hw', hw], ?_⟩).trans
+      (huniq₁ (𝟙 X₁) ⟨Category.id_comp _, Category.comp_id _⟩).symm
+    rw [← Category.assoc, hjw, Category.assoc, hjw', ← Category.assoc, huv, Category.id_comp]
+  · refine (huniq₂ (w' ≫ w) ⟨by rw [Category.assoc, hw, hw'], ?_⟩).trans
+      (huniq₂ (𝟙 X₂) ⟨Category.id_comp _, Category.comp_id _⟩).symm
+    rw [← Category.assoc, hjw', Category.assoc, hjw, ← Category.assoc, hvu, Category.id_comp]
 
 /-- **`X_1(N)` over `𝔽_ℓ` is unique up to isomorphism, hence its rational
 points up to bijection** (PROVEN).
@@ -2690,8 +2932,50 @@ Abel–Jacobi, the Néron mapping property, the valuative criterion — is
 moduli-free and would be copied character for character.  A successor
 should therefore NOT re-mirror `IsX0NeronDatum`; the honest work is
 either to prove Deligne–Rapoport for `Γ₁` and reuse the `Γ₀` machinery,
-or (better) to hoist that structure to a moduli-free form in `X0.lean`
-and instantiate it twice.
+or (better) to hoist that structure to a moduli-free form and instantiate
+it twice.
+
+**CUT AUDIT, 2026-07-27 — the claim above is now MECHANICALLY CHECKED, and
+the check is what a successor should re-run rather than take on trust.**
+The load-bearing assertion is "`model` is the only moduli-carrying field,
+and nothing in the reduction machinery touches it".  Verified by reading
+`X0.lean` between `structure IsX0NeronDatum` and `end IsX0NeronDatum`:
+
+* `namespace IsX0NeronDatum` runs from the structure to `end IsX0NeronDatum`,
+  and contains `intJ`, `intX`, `redJ`, `redX`, `redJ_def`, `redX_def`,
+  `pre_intJ`, `pre_intX`, `intJ_add`, `intJ_aj`, `redJ_add`, `red_aj`,
+  `finite_intPoints` and `toReduction`;
+* `grep -n '\.model\b' Fermat/FLT/ModularCurve/X0.lean` has **no hit inside
+  that range** — every one of its 63 hits is downstream of `end
+  IsX0NeronDatum`, in the CONSTRUCTION of a datum (`exists_x0NeronDatum`) or
+  in other `Γ₀`-specific derivations, never in the production of the
+  `IsX0ReductionAt`.
+
+**So `toReduction` is moduli-free outright**, and the hoist is mechanical
+rather than mathematical: delete `model` from the structure (or make it a
+`Prop` parameter), and `toReduction` compiles unchanged.  That is the
+refutation criterion for this audit — if a `d.model` ever appears inside
+that namespace, this paragraph is wrong and the hoist is not mechanical.
+
+**WHERE THE HOIST SHOULD LIVE, and why not `X0.lean`.**  `X0.lean` has
+several concurrent owners and a 200-line structure move is the worst shape
+of conflict.  The moduli-free structure and its whole namespace belong in a
+NEW file under `Fermat/FLT/Mathlib/AlgebraicGeometry/` — it mentions no
+modular curve, only a smooth proper curve over `ℚ`, its Jacobian, an
+`ℓ`-local base, and a model — which has no owner to collide with, and both
+`X0.lean` and this file then instantiate it.  With that done, the residue
+of THIS leaf is exactly one statement, and it is the only genuinely
+`Γ₁`-specific one: **Deligne–Rapoport / Igusa for `Γ₁(N)`**, i.e. that an
+`IsX1Compactification N strX strY jY` over `ℚ` extends to an
+`IsX1Compactification N xstr ystr jZ` over `SpecLoc R` with generic fibre
+the given one.  Nothing else here is new mathematics.
+
+**WHAT IS NOT A ROUTE.**  Discharging `model` with an `IsX0Compactification`
+at some other level `N'` is dead: `X_1(N)` is not `X_0(N')` for any `N'` in
+the range that matters (at `N = 25`, `X_0(25)` has genus `0` and `X_1(25)`
+genus `12`), and `N' = 0` is refuted by `isEmpty_of_gamma0Datum_zero`, which
+forces the coarse space empty while `finite_compl` then makes a smooth
+proper curve over a field finite.
 
 **Every hypothesis is load-bearing**, and each fails the conclusion on
 its own — the underscore prefixes record only that a `sorry` consumes
@@ -2817,16 +3101,141 @@ field; a `Γ₁`-structure is a single SECTION, so all that is needed is
 that a Galois-invariant `ℚ̄`-point of a `ℚ`-scheme is a `ℚ`-point.
 -/
 
+/-! #### Galois descent of a point, over a variable base field
+
+The two declarations below are the whole content of
+`exists_section_of_galoisInvariant`, and they are stated over a VARIABLE
+perfect base field `F` rather than at the literal `ℚ`.  That is
+`isIntegralHom_specAlgClos'`'s discipline (`X0.lean`) applied in a fresh
+spot, and it is load-bearing rather than stylistic: at the concrete base
+`ℚ` the two `Algebra ℚ (AlgebraicClosure ℚ)` instances
+(`DivisionRing.toRatAlgebra` and `AlgebraicClosure.instAlgebra`) form a
+DIAMOND, elaboration of `_ ≃ₐ[ℚ] _` picks the former, and
+`IsAlgClosure ℚ ℚ̄` — hence `Normal`, `Algebra.IsSeparable`, `IsGalois` —
+then fails to synthesise.  With `F` a variable there is one instance and
+the proofs are short.  Verified: at the literal `ℚ`,
+`inferInstance : IsAlgClosure ℚ (AlgebraicClosure ℚ)` FAILS. -/
+
+/-- **An element of `F̄` fixed by the whole absolute Galois group lies in
+`F`** (PROVEN, from `Mathlib` alone).
+
+`F̄/F` is normal (`IsAlgClosure.normal`) and separable (`PerfectField F`
+plus algebraicity), hence Galois, and
+`InfiniteGalois.mem_range_algebraMap_iff_fixed` is exactly this statement
+for an arbitrary infinite Galois extension.  No finiteness anywhere: the
+fixed field of the full group is `⊥` in the infinite setting too, which is
+the theorem in `Mathlib/FieldTheory/Galois/Infinite.lean`.
+
+`PerfectField F` is what cannot be dropped — over `𝔽_p(t)` the extension
+`F̄/F` is not separable and the fixed field of `Aut(F̄/F)` is the perfect
+closure, strictly larger than `F`. -/
+theorem mem_range_algebraMap_of_absoluteGaloisGroup_fixed {F : Type} [Field F] [PerfectField F]
+    (x : AlgebraicClosure F)
+    (h : ∀ σ : Field.absoluteGaloisGroup F,
+      (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) x = x) :
+    x ∈ Set.range (algebraMap F (AlgebraicClosure F)) := by
+  haveI : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  exact (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr h
+
+/-- **Galois descent of a point: a `Γ_F`-invariant `F̄`-point of ANY
+scheme comes from an `F`-point** (PROVEN, sorry-free).
+
+This is `A(F) ≃ A(F̄)^{Γ_F}` in the only direction that has content, and
+it is stated for an arbitrary `A : Scheme.{0}` with no structure morphism,
+no properness and no group law — none of which the argument uses.  That
+generality is deliberate: `exists_section_of_galoisInvariant` below is the
+one-line specialisation, and a successor wanting descent for a `Γ₀`-style
+object can cite this rather than redo it.
+
+**THE PROOF, IN FOUR STEPS.**
+
+1. `Scheme.SpecToEquivOfField` (`Mathlib`) writes `p : Spec F̄ ⟶ A` as a
+   point `a : A` together with an embedding `φ : κ(a) ⟶ F̄`, via
+   `p = Spec.map φ ≫ A.fromSpecResidueField a`.
+2. `specGal σ ≫ p = p` becomes `φ ≫ σ = φ`: compose the factorisation with
+   `Spec.map σ`, cancel the MONO `A.fromSpecResidueField a` (it is a
+   preimmersion), and use full faithfulness of `Spec` (`Spec.map_inj`).
+   So every value of `φ` is `Γ_F`-fixed.
+3. `mem_range_algebraMap_of_absoluteGaloisGroup_fixed` puts the image of
+   `φ` inside the range of `algebraMap F F̄`, which is a subring on which
+   `algebraMap` is a bijection onto its range (it is injective, `F` being a
+   field), so `φ` factors as `algebraMap F F̄ ∘ ψ` for a ring map
+   `ψ : κ(a) ⟶ F`.
+4. `Spec.map ψ ≫ A.fromSpecResidueField a` is the descended point, and
+   `specAlgClos F ≫ (-) = p` is step 1 read backwards.
+
+**No separatedness is used, and the conclusion is correspondingly only
+EXISTENCE.**  Uniqueness of the descended section is what would need `A`
+separated over `F`; nothing downstream asks for it, so it is not claimed.
+The docstring of `exists_section_of_galoisInvariant` previously said
+properness (through `ab.proper`) was needed — that is true of uniqueness
+and false of existence, and the corrected version below records it. -/
+theorem exists_specSection_of_specGal_invariant {F : Type} [Field F] [PerfectField F]
+    {A : Scheme.{0}} (p : Spec (CommRingCat.of (AlgebraicClosure F)) ⟶ A)
+    (hinv : ∀ σ : Field.absoluteGaloisGroup F, specGal σ ≫ p = p) :
+    ∃ s : Spec (CommRingCat.of F) ⟶ A, specAlgClos F ≫ s = p := by
+  set d := Scheme.SpecToEquivOfField (AlgebraicClosure F) A p with hd
+  have hp : Spec.map d.2 ≫ A.fromSpecResidueField d.1 = p :=
+    (Scheme.SpecToEquivOfField (AlgebraicClosure F) A).symm_apply_apply p
+  have hfix : ∀ (σ : Field.absoluteGaloisGroup F) (t : A.residueField d.1),
+      (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (d.2.hom t) = d.2.hom t := by
+    intro σ t
+    have h1 : Spec.map (d.2 ≫ CommRingCat.ofHom
+        ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom))
+        ≫ A.fromSpecResidueField d.1 = Spec.map d.2 ≫ A.fromSpecResidueField d.1 := by
+      rw [Spec.map_comp, Category.assoc, hp, ← specGal, hinv σ]
+    have h3 := Spec.map_inj.mp ((cancel_mono (A.fromSpecResidueField d.1)).mp h1)
+    exact congrArg (fun (m : A.residueField d.1 ⟶ _) => m.hom t) h3
+  have hmem : ∀ t : A.residueField d.1,
+      d.2.hom t ∈ (algebraMap F (AlgebraicClosure F)).range := fun t =>
+    mem_range_algebraMap_of_absoluteGaloisGroup_fixed _ (fun σ => hfix σ t)
+  set ι : F →+* AlgebraicClosure F := algebraMap F (AlgebraicClosure F) with hιdef
+  have hιinj : Function.Injective ι := ι.injective
+  let eR : F ≃+* ι.range := RingEquiv.ofBijective ι.rangeRestrict
+    ⟨fun x y hxy => hιinj (congrArg Subtype.val hxy), ι.rangeRestrict_surjective⟩
+  let ψ : A.residueField d.1 →+* F :=
+    (eR.symm : ι.range →+* F).comp (d.2.hom.codRestrict ι.range hmem)
+  have hψ : ∀ t, ι (ψ t) = d.2.hom t := fun t =>
+    congrArg Subtype.val (eR.apply_symm_apply ⟨d.2.hom t, hmem t⟩)
+  refine ⟨Spec.map (CommRingCat.ofHom ψ) ≫ A.fromSpecResidueField d.1, ?_⟩
+  rw [specAlgClos, ← Category.assoc, ← Spec.map_comp]
+  refine Eq.trans ?_ hp
+  congr 2
+  exact CommRingCat.hom_ext (RingHom.ext hψ)
+
+/-- **Every endomorphism of `Spec ℚ` is the identity** (PROVEN).
+
+`Spec` is fully faithful and `ℚ` is initial in `CommRing`
+(`Rat.subsingleton_ringHom`), so `Spec ℚ ⟶ Spec ℚ` is a singleton.  The
+`Γ₁` mirror of `specF_hom_eq_id` above, and what makes the `RelPoint` side
+condition of a descended section automatic. -/
+theorem specQ_hom_eq_id (f : SpecQ ⟶ SpecQ) : f = 𝟙 SpecQ := by
+  rw [← Spec.map_preimage f, ← Spec.map_preimage (𝟙 SpecQ)]
+  congr 1
+  exact CommRingCat.hom_ext (Subsingleton.elim _ _)
+
 /-- **A Galois-invariant geometric point of an abelian scheme over `ℚ` is
-a section** (sorry leaf).
+a section** (**PROVEN 2026-07-27**, sorry-free, over
+`exists_specSection_of_specGal_invariant`; formerly a sorry leaf).
 
 TRUE, and it is Galois descent for points in its most basic form: for any
 scheme `A` over a field `k` with separable closure `k^s`, the natural map
 `A(k) → A(k^s)^{Γ_k}` is a bijection.  A `Γ_ℚ`-fixed `ℚ̄`-point has image
-a closed point of `A` whose residue field is fixed by `Γ_ℚ`, hence equal
-to `ℚ`, so the point is already defined over `ℚ`; and `A` is separated
-over `ℚ` (it is proper, by `ab.proper`), so the descended morphism is
-unique.
+a point of `A` whose residue field embeds in `ℚ̄` with `Γ_ℚ`-fixed image,
+hence lands in `ℚ`, so the point is already defined over `ℚ`.
+
+**CORRECTION to what this docstring used to claim.**  It said separatedness
+of `A` over `ℚ` (through `ab.proper`) was needed "so the descended morphism
+is unique".  That is right about UNIQUENESS and irrelevant here: the
+conclusion is an existence statement, and the proof uses no property of `f`
+at all.  `ab` survives in the signature only because `_hinv` is phrased with
+`ab.galSMul`; the abelian-scheme structure contributes nothing else, which is
+why the general form above is stated for a bare `Scheme`.
+
+**The `RelPoint` side condition is free.**  `sec ≫ f` is an endomorphism of
+`Spec ℚ`, and `specQ_hom_eq_id` makes every such endomorphism the identity —
+`ℚ` is initial in `CommRing`.  So the descended morphism is automatically a
+SECTION and no compatibility has to be checked.
 
 **WHAT IS AND IS NOT SHARED WITH `X0.lean`.**  The `Γ₀` side never
 descends a POINT: `exists_cyclicSubgroupOfOrder_of_galoisStable` descends
@@ -2839,18 +3248,18 @@ easier half of what that subsection does, exactly as
 the group law has to be transported, and the descent is of one morphism
 rather than of an ideal sheaf.
 
-The `spanScheme` apparatus is nevertheless the right place to look for a
-proof.  `ratPoint_liesIn_spanScheme` shows the shape the argument takes
-in this development — a comparison of KERNEL IDEAL SHEAVES, closed by
-`app_injective_specAlgClos` (every `app` of `Spec ℚ̄ ⟶ Spec ℚ` is
-injective) — and `exists_specGal_factor_span` is where the Galois action
-is turned into an equality of kernels.  A successor should build the
-descent as: the scheme-theoretic image of `y` is a closed subscheme of
-`A` finite over `ℚ`, Galois-invariance makes its kernel ideal sheaf
-`Γ_ℚ`-stable, hence defined over `ℚ` with residue field `ℚ`, and the
-factorisation of `y` through it descends.
+**THE `spanScheme` ROUTE WAS NOT NEEDED, and this corrects the plan this
+docstring used to record.**  It proposed building the descent through
+scheme-theoretic images and a comparison of kernel ideal sheaves, in the
+style of `ratPoint_liesIn_spanScheme`.  That is a correct but much heavier
+route: the residue field of the image point is already the whole of the
+"scheme-theoretic image finite over `ℚ`" idea, and `Mathlib`'s
+`Scheme.SpecToEquivOfField` hands it over directly, so no ideal sheaf and
+no `app_injective_specAlgClos` appear in the proof.  A successor who wants
+descent of something LARGER than a point (a subscheme, a subgroup) will
+still want that apparatus; for a point it is not needed.
 
-**`_hinv` is INVARIANCE, not stability, and the difference is the whole
+**`hinv` is INVARIANCE, not stability, and the difference is the whole
 `Γ₀`/`Γ₁` distinction.**  `exists_cyclicSubgroupOfOrder_of_galoisStable`
 asks only `galSMul σ y ∈ zmultiples y`, which is what a rational
 SUBGROUP needs; asking only that here would make the statement FALSE —
@@ -2860,16 +3269,20 @@ such curves exist), and no section of `A` over `ℚ` restricts to it.
 
 Note that no hypothesis on the ORDER of `y` appears: descent of a point
 has nothing to do with torsion, and the order is transported separately
-by `exists_pointOfExactOrder_of_geomPt` below.  Nor is `ab` used for its
-group law — only `A` and `f` matter — but it is taken because the
-consumer has it and because properness of `f`, which the argument needs,
-is one of its fields. -/
+by `exists_pointOfExactOrder_of_geomPt` below.  `ab` is taken because the
+consumer has it and because `hinv` is phrased with `ab.galSMul`; the proof
+uses none of its fields. -/
 theorem exists_section_of_galoisInvariant {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (y : GeomFibrePt f (𝟙 SpecQ))
-    (_hinv : ∀ σ : Field.absoluteGaloisGroup ℚ, ab.galSMul (𝟙 SpecQ) σ y = y) :
+    (hinv : ∀ σ : Field.absoluteGaloisGroup ℚ, ab.galSMul (𝟙 SpecQ) σ y = y) :
     ∃ (sec : SpecQ ⟶ A) (hsec : sec ≫ f = 𝟙 SpecQ),
-      RelPoint.ofSection sec hsec (specAlgClos ℚ ≫ 𝟙 SpecQ) = y :=
-  sorry
+      RelPoint.ofSection sec hsec (specAlgClos ℚ ≫ 𝟙 SpecQ) = y := by
+  obtain ⟨s, hs⟩ := exists_specSection_of_specGal_invariant (F := ℚ) y.1
+    (fun σ => congrArg Subtype.val (hinv σ))
+  refine ⟨s, specQ_hom_eq_id (s ≫ f), Subtype.ext ?_⟩
+  refine Eq.trans ?_ hs
+  rw [Category.comp_id]
+  rfl
 
 /-- **A Galois-invariant geometric point of exact order `N` is a
 `Γ₁(N)`-level structure** (PROVEN over the descent leaf above).
@@ -3937,11 +4350,12 @@ theorem hasRankZeroJacobian_x1TwentyFive {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
       (not_isIso_jacobian_of_one_le_x1Genus 25 (by norm_num) one_le_x1Genus_twentyFive h jac)
 
 /-- **Mazur's counting datum for `X_1(25)`, with the schemes eliminated**
-(PROVEN over the leaves above — six of them as of 2026-07-27:
+(PROVEN over the leaves above — four of them as of 2026-07-27:
 `exists_x1Compactification`, `exists_rationalCuspsX1`,
 `exists_x1Compactification_mod_prime`, `hasRankZeroJacobian_x1TwentyFive`,
-`exists_inverse_of_smoothCompactification` and `exists_x1ReductionAt`,
-plus `exists_section_of_galoisInvariant` through the moduli dictionary).
+together with `exists_x1ReductionAt`.  The other two rows of this list are
+now THEOREMS: `exists_inverse_of_smoothCompactification` and — through the
+moduli dictionary — `exists_section_of_galoisInvariant`.)
 
 This is the whole `Γ₁` layer as `FreyCurve/MazurTorsion.lean` consumes
 it, and the point of stating it here is that its statement mentions no
