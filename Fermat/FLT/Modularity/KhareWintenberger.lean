@@ -472,6 +472,15 @@ import Mathlib.FieldTheory.KummerPolynomial
 -- `Module.IsTorsionFree` side conditions of `IsAlgClosure.equivOfEquiv` used in
 -- `exists_ringEquiv_algebraicClosure_uliftReal_complex`.
 import Mathlib.Algebra.Module.Torsion.Field
+-- `Proj`, `Proj.toSpecZero`, `Proj.awayι` and the `IsProper (Proj.toSpecZero 𝒜)`
+-- instance, together with the total-degree grading on `MvPolynomial` and the
+-- degree-zero part `HomogeneousLocalization.Away 𝒜 f`. These build `ℙⁿ_ℚ` in
+-- `exists_properCompactification_affineSpace` (LEAF A1). PUBLIC because
+-- `projSpaceGrading`, `projSpaceAwayEquiv` and friends mention
+-- `homogeneousSubmodule` and `HomogeneousLocalization.Away` in their SIGNATURES.
+public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
+public import Mathlib.RingTheory.GradedAlgebra.HomogeneousLocalization
+public import Mathlib.RingTheory.MvPolynomial.Homogeneous
 
 @[expose] public section
 
@@ -9632,35 +9641,313 @@ theorem isProper_of_isAffine_of_krullDim_le_zero
       (P := @AlgebraicGeometry.IsFinite)).mpr ⟨inferInstance, hMF⟩
   infer_instance
 
+section ProjectiveSpaceChart
+
+open _root_.MvPolynomial _root_.HomogeneousLocalization
+
+attribute [local instance] MvPolynomial.gradedAlgebra
+
+variable (n : ℕ) (R : Type u) [CommRing R]
+
+/-- The total-degree grading on `R[X₀, …, Xₙ]`, used to build `ℙⁿ_R` as `Proj`. -/
+abbrev projSpaceGrading : ℕ → Submodule R (MvPolynomial (Fin (n + 1)) R) :=
+  MvPolynomial.homogeneousSubmodule (Fin (n + 1)) R
+
+lemma projSpaceGrading_def :
+    projSpaceGrading n R = MvPolynomial.homogeneousSubmodule (Fin (n + 1)) R := rfl
+
+lemma projSpaceGrading_X_zero_mem :
+    (X 0 : MvPolynomial (Fin (n + 1)) R) ∈ projSpaceGrading n R 1 :=
+  MvPolynomial.isHomogeneous_X R 0
+
+/-- The localization map `R[X₀,…,Xₙ] → R[X₀,…,Xₙ][1/X₀]`. -/
+noncomputable abbrev projSpaceLocMap :
+    MvPolynomial (Fin (n + 1)) R →+*
+      Localization.Away (X 0 : MvPolynomial (Fin (n + 1)) R) :=
+  algebraMap _ _
+
+/-- The degree-zero part of `R[X₀,…,Xₙ]` is exactly the constants. -/
+lemma bijective_algebraMap_projSpaceGradeZero :
+    Function.Bijective (algebraMap R ↥(projSpaceGrading n R 0)) := by
+  constructor
+  · intro a b hab
+    have h : (MvPolynomial.C a : MvPolynomial (Fin (n + 1)) R)
+        = (MvPolynomial.C b : MvPolynomial (Fin (n + 1)) R) := by
+      simpa using congrArg Subtype.val hab
+    exact MvPolynomial.C_injective (Fin (n + 1)) R h
+  · rintro ⟨a, ha⟩
+    rw [projSpaceGrading_def, MvPolynomial.homogeneousSubmodule_zero,
+      Submodule.mem_one] at ha
+    obtain ⟨r, hr⟩ := ha
+    exact ⟨r, Subtype.ext (by simpa using hr)⟩
+
+/-- `R ≃+* 𝒜 0`, the identification of the base with the degree-zero part. -/
+noncomputable def projSpaceGradeZeroEquiv : R ≃+* ↥(projSpaceGrading n R 0) :=
+  RingEquiv.ofBijective (algebraMap R ↥(projSpaceGrading n R 0))
+    (bijective_algebraMap_projSpaceGradeZero n R)
+
+lemma adjoin_range_X_projSpaceGradeZero :
+    Algebra.adjoin ↥(projSpaceGrading n R 0)
+      (Set.range (X : Fin (n + 1) → MvPolynomial (Fin (n + 1)) R)) = ⊤ := by
+  rw [eq_top_iff]
+  rintro p -
+  refine MvPolynomial.induction_on p ?_ ?_ ?_
+  · intro r
+    have h : (C r : MvPolynomial (Fin (n + 1)) R)
+        = algebraMap ↥(projSpaceGrading n R 0) (MvPolynomial (Fin (n + 1)) R)
+            ⟨C r, MvPolynomial.isHomogeneous_C (Fin (n + 1)) r⟩ := rfl
+    rw [h]
+    exact Subalgebra.algebraMap_mem _ _
+  · intro p q hp hq
+    exact Subalgebra.add_mem _ hp hq
+  · intro p i hp
+    exact Subalgebra.mul_mem _ hp (Algebra.subset_adjoin ⟨i, rfl⟩)
+
+/-- `R[X₀,…,Xₙ]` is of finite type over its own degree-zero part; this is what
+mathlib's `IsProper (Proj.toSpecZero 𝒜)` instance asks for. -/
+lemma finiteType_projSpaceGradeZero :
+    Algebra.FiniteType ↥(projSpaceGrading n R 0) (MvPolynomial (Fin (n + 1)) R) := by
+  classical
+  refine ⟨⟨Finset.univ.image (X : Fin (n + 1) → MvPolynomial (Fin (n + 1)) R), ?_⟩⟩
+  rw [Finset.coe_image, Finset.coe_univ, Set.image_univ]
+  exact adjoin_range_X_projSpaceGradeZero n R
+
+/-- Dehomogenization: set `X₀ = 1`, `Xⱼ₊₁ ↦ Yⱼ`. -/
+noncomputable def projSpaceDehom :
+    MvPolynomial (Fin (n + 1)) R →ₐ[R] MvPolynomial (Fin n) R :=
+  MvPolynomial.aeval (fun i : Fin (n + 1) =>
+    Fin.cases (motive := fun _ => MvPolynomial (Fin n) R) 1 (fun j => X j) i)
+
+@[simp] lemma projSpaceDehom_X_zero : projSpaceDehom n R (X 0) = 1 := by
+  simp [projSpaceDehom]
+
+@[simp] lemma projSpaceDehom_X_succ (j : Fin n) :
+    projSpaceDehom n R (X j.succ) = X j := by simp [projSpaceDehom]
+
+@[simp] lemma projSpaceDehom_C (r : R) :
+    projSpaceDehom n R (MvPolynomial.C r) = (MvPolynomial.C r : MvPolynomial (Fin n) R) := by
+  simp [projSpaceDehom]
+
+/-- `Xⱼ₊₁/X₀`, as an element of the standard affine chart `(R[X₀,…,Xₙ]_{X₀})₀`. -/
+noncomputable def projSpaceChartGen (j : Fin n) :
+    Away (projSpaceGrading n R) (X 0) :=
+  Away.mk (projSpaceGrading n R) (projSpaceGrading_X_zero_mem n R) 1 (X j.succ) (by
+    simpa using MvPolynomial.isHomogeneous_X R j.succ)
+
+/-- `ψ : R[Y₀,…,Yₙ₋₁] → (R[X₀,…,Xₙ]_{X₀})₀`, sending `Yⱼ ↦ Xⱼ₊₁/X₀`.
+This is the chart identification `𝔸ⁿ ≅ D₊(X₀) ⊆ ℙⁿ`, and it is shown to be a
+ring isomorphism as `projSpaceAwayEquiv` below. -/
+noncomputable def toProjSpaceAway :
+    MvPolynomial (Fin n) R →+* Away (projSpaceGrading n R) (X 0) :=
+  MvPolynomial.eval₂Hom
+    ((algebraMap ↥(projSpaceGrading n R 0) (Away (projSpaceGrading n R) (X 0))).comp
+      (algebraMap R ↥(projSpaceGrading n R 0)))
+    (projSpaceChartGen n R)
+
+@[simp] lemma toProjSpaceAway_C (r : R) :
+    toProjSpaceAway n R (C r) =
+      algebraMap ↥(projSpaceGrading n R 0) (Away (projSpaceGrading n R) (X 0))
+        (algebraMap R ↥(projSpaceGrading n R 0) r) := by
+  simp [toProjSpaceAway]
+
+@[simp] lemma toProjSpaceAway_X (j : Fin n) :
+    toProjSpaceAway n R (X j) = projSpaceChartGen n R j := by
+  simp [toProjSpaceAway]
+
+lemma val_toProjSpaceAway_C (r : R) :
+    (toProjSpaceAway n R (C r)).val = projSpaceLocMap n R (C r) := by
+  rw [toProjSpaceAway_C]
+  show (HomogeneousLocalization.mk
+      (⟨0, algebraMap R ↥(projSpaceGrading n R 0) r, 1, one_mem _⟩ :
+        HomogeneousLocalization.NumDenSameDeg (projSpaceGrading n R)
+          (Submonoid.powers (X 0)))).val = _
+  rw [HomogeneousLocalization.val_mk]
+  simp only [projSpaceLocMap, ← Localization.mk_one_eq_algebraMap,
+    SetLike.GradeZero.coe_algebraMap, MvPolynomial.algebraMap_eq]
+  rfl
+
+/-- The degree-`1` case of the key identity: for `a` homogeneous of degree `1`,
+`ψ(dehom a) · X₀ = a` in `R[X₀,…,Xₙ][1/X₀]`. -/
+lemma projSpaceKey_one (a : MvPolynomial (Fin (n + 1)) R)
+    (ha : a ∈ projSpaceGrading n R 1) :
+    (toProjSpaceAway n R (projSpaceDehom n R a)).val * projSpaceLocMap n R (X 0)
+      = projSpaceLocMap n R a := by
+  rw [projSpaceGrading_def, MvPolynomial.homogeneousSubmodule_one_eq_span_X] at ha
+  induction ha using Submodule.span_induction with
+  | mem x hx =>
+    obtain ⟨i, rfl⟩ := hx
+    refine Fin.cases ?_ ?_ i
+    · simp
+    · intro j
+      rw [projSpaceDehom_X_succ, toProjSpaceAway_X, projSpaceChartGen]
+      rw [HomogeneousLocalization.Away.val_mk]
+      simp only [projSpaceLocMap, ← Localization.mk_one_eq_algebraMap, Localization.mk_mul,
+        pow_one]
+      rw [Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+      refine ⟨1, ?_⟩
+      push_cast
+      ring
+  | zero => simp
+  | add x y _ _ hx hy =>
+    rw [map_add, map_add, HomogeneousLocalization.val_add, map_add, add_mul, hx, hy]
+  | smul r x _ hx =>
+    rw [MvPolynomial.smul_eq_C_mul, map_mul, map_mul, HomogeneousLocalization.val_mul,
+      map_mul, projSpaceDehom_C, val_toProjSpaceAway_C]
+    rw [mul_assoc, hx]
+
+/-- **The key identity.** For `a` homogeneous of degree `k`,
+`ψ(dehom a) · X₀ᵏ = a`; equivalently `ψ(dehom a) = a/X₀ᵏ`. -/
+lemma projSpaceKey (k : ℕ) (a : MvPolynomial (Fin (n + 1)) R)
+    (ha : a ∈ projSpaceGrading n R k) :
+    (toProjSpaceAway n R (projSpaceDehom n R a)).val * projSpaceLocMap n R (X 0) ^ k
+      = projSpaceLocMap n R a := by
+  induction k generalizing a with
+  | zero =>
+    rw [projSpaceGrading_def, MvPolynomial.homogeneousSubmodule_zero,
+      Submodule.mem_one] at ha
+    obtain ⟨r, rfl⟩ := ha
+    rw [pow_zero, mul_one, MvPolynomial.algebraMap_eq, projSpaceDehom_C,
+      val_toProjSpaceAway_C]
+  | succ k ih =>
+    have hsplit : projSpaceGrading n R (k + 1)
+        = projSpaceGrading n R k * projSpaceGrading n R 1 := by
+      rw [projSpaceGrading_def, ← MvPolynomial.homogeneousSubmodule_one_pow
+          (σ := Fin (n + 1)) (R := R) (k + 1), pow_succ,
+        MvPolynomial.homogeneousSubmodule_one_pow]
+    rw [hsplit] at ha
+    refine Submodule.mul_induction_on ha ?_ ?_
+    · intro x hx y hy
+      have h1 := ih x hx
+      have h2 := projSpaceKey_one n R y hy
+      rw [map_mul, map_mul, HomogeneousLocalization.val_mul, map_mul, pow_succ, ← h1, ← h2]
+      ring
+    · intro x y hx hy
+      rw [map_add, map_add, HomogeneousLocalization.val_add, map_add, add_mul, hx, hy]
+
+lemma toProjSpaceAway_dehom_eq_mk (k : ℕ) (a : MvPolynomial (Fin (n + 1)) R)
+    (ha : a ∈ projSpaceGrading n R (k • 1)) :
+    toProjSpaceAway n R (projSpaceDehom n R a)
+      = Away.mk (projSpaceGrading n R) (projSpaceGrading_X_zero_mem n R) k a ha := by
+  apply HomogeneousLocalization.val_injective
+  have hk : a ∈ projSpaceGrading n R k := by simpa using ha
+  have hkey := projSpaceKey n R k a hk
+  have hu : IsUnit (projSpaceLocMap n R (X 0)) :=
+    IsLocalization.Away.algebraMap_isUnit (X 0 : MvPolynomial (Fin (n + 1)) R)
+  refine (hu.pow k).mul_left_cancel ?_
+  rw [mul_comm _ ((toProjSpaceAway n R (projSpaceDehom n R a)).val), hkey]
+  rw [HomogeneousLocalization.Away.val_mk]
+  simp only [projSpaceLocMap, ← Localization.mk_one_eq_algebraMap, Localization.mk_pow,
+    Localization.mk_mul]
+  rw [Localization.mk_eq_mk_iff, Localization.r_iff_exists]
+  refine ⟨1, ?_⟩
+  push_cast
+  ring
+
+lemma surjective_toProjSpaceAway : Function.Surjective (toProjSpaceAway n R) := by
+  intro z
+  obtain ⟨k, a, ha, rfl⟩ :=
+    Away.mk_surjective (projSpaceGrading n R) (projSpaceGrading_X_zero_mem n R) z
+  exact ⟨projSpaceDehom n R a, toProjSpaceAway_dehom_eq_mk n R k a ha⟩
+
+/-- `θ`, the left inverse of `ψ` obtained by inverting `X₀` in the dehomogenization. -/
+noncomputable def fromProjSpaceAway :
+    Away (projSpaceGrading n R) (X 0) →+* MvPolynomial (Fin n) R :=
+  (Localization.awayLift
+      ((projSpaceDehom n R : MvPolynomial (Fin (n + 1)) R →ₐ[R] MvPolynomial (Fin n) R) :
+        MvPolynomial (Fin (n + 1)) R →+* MvPolynomial (Fin n) R)
+      (X 0) (by simp)).comp
+    (algebraMap (Away (projSpaceGrading n R) (X 0))
+      (Localization.Away (X 0 : MvPolynomial (Fin (n + 1)) R)))
+
+lemma fromProjSpaceAway_mk (k : ℕ) (a : MvPolynomial (Fin (n + 1)) R)
+    (ha : a ∈ projSpaceGrading n R (k • 1)) :
+    fromProjSpaceAway n R
+        (Away.mk (projSpaceGrading n R) (projSpaceGrading_X_zero_mem n R) k a ha)
+      = projSpaceDehom n R a := by
+  simp only [fromProjSpaceAway, RingHom.comp_apply,
+    HomogeneousLocalization.algebraMap_apply, HomogeneousLocalization.Away.val_mk]
+  rw [Localization.awayLift_mk (v := 1) (hv := by simp)]
+  simp
+
+lemma injective_toProjSpaceAway : Function.Injective (toProjSpaceAway n R) := by
+  have h : (fromProjSpaceAway n R).comp (toProjSpaceAway n R)
+      = RingHom.id (MvPolynomial (Fin n) R) := by
+    apply MvPolynomial.ringHom_ext
+    · intro r
+      simp only [RingHom.comp_apply, RingHom.id_apply]
+      have hCr : (C r : MvPolynomial (Fin n) R) = projSpaceDehom n R (C r) := by simp
+      rw [hCr]
+      have hmem : (C r : MvPolynomial (Fin (n + 1)) R)
+          ∈ projSpaceGrading n R (0 • 1) := by simp
+      rw [toProjSpaceAway_dehom_eq_mk n R 0 (C r) hmem, fromProjSpaceAway_mk]
+    · intro j
+      simp only [RingHom.comp_apply, RingHom.id_apply, toProjSpaceAway_X,
+        projSpaceChartGen]
+      rw [fromProjSpaceAway_mk]
+      simp
+  intro a b hab
+  have ha := RingHom.congr_fun h a
+  have hb := RingHom.congr_fun h b
+  simp only [RingHom.comp_apply, RingHom.id_apply] at ha hb
+  rw [← ha, ← hb, hab]
+
+/-- **The chart isomorphism** `R[Y₀,…,Yₙ₋₁] ≃+* (R[X₀,…,Xₙ]_{X₀})₀`.
+
+This is the entire mathematical content of LEAF A1: it identifies the
+degree-zero part of `R[X₀,…,Xₙ][1/X₀]` with a polynomial ring in `n`
+variables, i.e. the standard affine chart of `ℙⁿ` with `𝔸ⁿ`. -/
+noncomputable def projSpaceAwayEquiv :
+    MvPolynomial (Fin n) R ≃+* Away (projSpaceGrading n R) (X 0) :=
+  RingEquiv.ofBijective (toProjSpaceAway n R)
+    ⟨injective_toProjSpaceAway n R, surjective_toProjSpaceAway n R⟩
+
+lemma projSpaceAwayEquiv_C (r : R) :
+    projSpaceAwayEquiv n R (C r) =
+      algebraMap ↥(projSpaceGrading n R 0) (Away (projSpaceGrading n R) (X 0))
+        (algebraMap R ↥(projSpaceGrading n R 0) r) :=
+  toProjSpaceAway_C n R r
+
+end ProjectiveSpaceChart
+
 open CategoryTheory AlgebraicGeometry in
-/-- **LEAF A1 — projective `n`-space over `ℚ` exists** (SORRY LEAF, and after
-the decomposition below it is the ONLY residual content of LEAF A).
+/-- **LEAF A1 — projective `n`-space over `ℚ` exists** (**PROVEN 2026-07-27**;
+with it, LEAF A below is fully proven).
 
 Precisely: affine `n`-space over `ℚ`, in its bare affine form
 `Spec ℚ[x₁, …, xₙ]`, is an OPEN subscheme of a PROPER `ℚ`-scheme, compatibly
 with the two structure morphisms to `Spec ℚ`.
 
-WHAT THIS COSTS AT THIS PIN, checked rather than guessed (2026-07-27):
+THE PROOF, exactly as the earlier costing predicted:
 
-* `Proj` exists (`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/`), and
-  `instance [Algebra.FiniteType (𝒜 0) A] : IsProper (Proj.toSpecZero 𝒜)`
-  gives properness for free, so `P := Proj ℚ[x₀, …, xₙ]` with the total-degree
-  grading discharges `IsProper fP` with no work;
-* `AlgebraicGeometry.Proj.awayι 𝒜 f f_deg hm : Spec (Away 𝒜 f) ⟶ Proj 𝒜` is
-  an OPEN IMMERSION (`instance : IsOpenImmersion (Proj.awayι …)`), so the
-  standard chart map is free too;
-* what is NOT free, and is the whole of this leaf, is the RING ISOMORPHISM
-  `HomogeneousLocalization.Away 𝒜 x₀ ≅ MvPolynomial (Fin n) ℚ`
-  sending `xᵢ/x₀ ↦ Yᵢ` — i.e. identifying the degree-`0` part of
-  `ℚ[x₀, …, xₙ][1/x₀]` with a polynomial ring in `n` variables. **A grep for
-  `MvPolynomial`/`Polynomial` in
-  `Mathlib/RingTheory/GradedAlgebra/HomogeneousLocalization.lean` returns
-  NOTHING**, and there is no `ProjectiveSpace`/`projectiveSpace` anywhere in
-  `Mathlib/AlgebraicGeometry/` — that grep is the check that would refute this
-  costing.
+* `P := Proj 𝒜` for `𝒜 = projSpaceGrading n ℚ`, the total-degree grading on
+  `ℚ[X₀, …, Xₙ]`. Properness is mathlib's
+  `instance [Algebra.FiniteType (𝒜 0) A] : IsProper (Proj.toSpecZero 𝒜)`;
+  its hypothesis is `finiteType_projSpaceGradeZero` above, which in turn is
+  `adjoin_range_X_projSpaceGradeZero` (`ℚ[X₀,…,Xₙ]` is generated over its own
+  degree-zero part by the variables).
+* The structure morphism is `Proj.toSpecZero 𝒜 ≫ Spec.map e₀`, where
+  `e₀ : ℚ ≃+* 𝒜 0` is `projSpaceGradeZeroEquiv` — the degree-zero part is
+  exactly the constants (`homogeneousSubmodule_zero` says `𝒜 0 = 1`). Being an
+  iso, `Spec.map e₀` is proper, so the composite is.
+* The chart map is `Spec.map ψ⁻¹ ≫ Proj.awayι 𝒜 X₀ _ one_pos`, an open
+  immersion because `Proj.awayι` is one and `Spec.map` of an iso is an iso.
+* The one piece of real content is the RING ISOMORPHISM `ψ`,
+  `projSpaceAwayEquiv : ℚ[Y₀,…,Yₙ₋₁] ≃+* HomogeneousLocalization.Away 𝒜 X₀`,
+  `Yⱼ ↦ Xⱼ₊₁/X₀`. It is bijective by:
+  - INJECTIVE via an explicit left inverse `fromProjSpaceAway`, namely
+    dehomogenization `X₀ ↦ 1` pushed through `Localization.awayLift` (legitimate
+    because `dehom X₀ = 1` is a unit);
+  - SURJECTIVE via `Away.mk_surjective` together with `projSpaceKey`, the key
+    identity `ψ(dehom a)·X₀ᵏ = a` for `a` homogeneous of degree `k`. That is
+    proved by induction on `k` using `𝒜 (k+1) = 𝒜 k * 𝒜 1`
+    (`homogeneousSubmodule_one_pow`) and `Submodule.mul_induction_on`, with the
+    degree-`1` base case `projSpaceKey_one` handled by span induction over
+    `𝒜 1 = span ℚ (range X)` (`homogeneousSubmodule_one_eq_span_X`).
 
-So this leaf is graded-ring bookkeeping of bounded size, with no missing
-mathematics. Note it is stated with the BARE `Spec (MvPolynomial (Fin n) ℚ)`
+The commuting triangle reduces, via `Proj.awayι_toSpecZero`, to the ring
+identity `ψ(C r) = fromZeroRingHom (e₀ r)`, which is `projSpaceAwayEquiv_C`.
+
+Note it is stated with the BARE `Spec (MvPolynomial (Fin n) ℚ)`
 rather than mathlib's `𝔸(n; S)` (`Mathlib/AlgebraicGeometry/AffineSpace.lean`)
 deliberately: the consumer below produces a closed immersion out of a
 `Spec`-of-a-surjection, so the affine form is what is actually needed and the
@@ -9672,8 +9959,36 @@ theorem exists_properCompactification_affineSpace (n : ℕ) :
         (CommRingCat.of (MvPolynomial (Fin n) (ULift.{u} ℚ))) ⟶ P),
       AlgebraicGeometry.IsProper fP ∧ AlgebraicGeometry.IsOpenImmersion ι ∧
         ι ≫ fP = AlgebraicGeometry.Spec.map (CommRingCat.ofHom
-          (algebraMap (ULift.{u} ℚ) (MvPolynomial (Fin n) (ULift.{u} ℚ)))) :=
-  sorry
+          (algebraMap (ULift.{u} ℚ) (MvPolynomial (Fin n) (ULift.{u} ℚ)))) := by
+  letI : GradedAlgebra (projSpaceGrading n (ULift.{u} ℚ)) := MvPolynomial.gradedAlgebra
+  haveI := finiteType_projSpaceGradeZero n (ULift.{u} ℚ)
+  haveI hiso0 :
+      IsIso (CommRingCat.ofHom (projSpaceGradeZeroEquiv n (ULift.{u} ℚ)).toRingHom) :=
+    (projSpaceGradeZeroEquiv n (ULift.{u} ℚ)).toCommRingCatIso.isIso_hom
+  haveI hisoA :
+      IsIso (CommRingCat.ofHom (projSpaceAwayEquiv n (ULift.{u} ℚ)).symm.toRingHom) :=
+    (projSpaceAwayEquiv n (ULift.{u} ℚ)).symm.toCommRingCatIso.isIso_hom
+  refine ⟨AlgebraicGeometry.Proj (projSpaceGrading n (ULift.{u} ℚ)),
+    AlgebraicGeometry.Proj.toSpecZero (projSpaceGrading n (ULift.{u} ℚ)) ≫
+      AlgebraicGeometry.Spec.map
+        (CommRingCat.ofHom (projSpaceGradeZeroEquiv n (ULift.{u} ℚ)).toRingHom),
+    AlgebraicGeometry.Spec.map
+        (CommRingCat.ofHom (projSpaceAwayEquiv n (ULift.{u} ℚ)).symm.toRingHom) ≫
+      AlgebraicGeometry.Proj.awayι (projSpaceGrading n (ULift.{u} ℚ)) (MvPolynomial.X 0)
+        (projSpaceGrading_X_zero_mem n (ULift.{u} ℚ)) Nat.one_pos,
+    ?_, ?_, ?_⟩
+  · infer_instance
+  · infer_instance
+  · rw [Category.assoc, AlgebraicGeometry.Proj.awayι_toSpecZero_assoc,
+      ← AlgebraicGeometry.Spec.map_comp, ← AlgebraicGeometry.Spec.map_comp]
+    congr 1
+    apply CommRingCat.hom_ext
+    apply RingHom.ext
+    intro r
+    simp only [CommRingCat.hom_comp, CommRingCat.hom_ofHom, RingHom.comp_apply,
+      RingEquiv.toRingHom_eq_coe, RingEquiv.coe_toRingHom]
+    rw [RingEquiv.symm_apply_eq, MvPolynomial.algebraMap_eq, projSpaceAwayEquiv_C]
+    rfl
 
 open CategoryTheory AlgebraicGeometry in
 /-- **LEAF A — quasi-projectivity: an affine `ℚ`-scheme of finite type admits
@@ -10377,8 +10692,8 @@ WHAT IS PROVEN HERE.
   `IsProper fX` is likewise discharged here, modulo LEAF B, from
   `[IsFinite f] : IsProper f` and stability of properness under composition.
 
-WHAT REMAINS (updated 2026-07-27 — LEAF D is PROVEN and LEAF A is proven
-modulo the strictly smaller LEAF A1), in decreasing order of expected cost:
+WHAT REMAINS (updated 2026-07-27 — LEAF D, LEAF A1 and hence LEAF A are all
+PROVEN; only B and C are open), in decreasing order of expected cost:
 
 * LEAF C `smooth_normalizationModel_of_smooth_affine_curve` — normal of
   dimension `≤ 1` over a perfect field implies smooth. The one place where
@@ -10388,13 +10703,14 @@ modulo the strictly smaller LEAF A1), in decreasing order of expected cost:
   CUT-OBSTRUCTION AUDIT in its docstring: this needs NAGATA, which is absent
   from the pin, and the `IsIntegralClosure.finite` foothold once recorded
   there does not apply. It is NOT cheaper than LEAF A.
-* LEAF A1 `exists_properCompactification_affineSpace` — projective `n`-space
-  over `ℚ`, i.e. `Spec ℚ[x₁, …, xₙ]` as an open subscheme of a proper
-  `ℚ`-scheme. Pure graded-ring bookkeeping: `Proj` is already known proper
-  and `Proj.awayι` is already known an open immersion, so the whole content
-  is `HomogeneousLocalization.Away 𝒜 x₀ ≅ MvPolynomial (Fin n) ℚ`.
+* ~~LEAF A1 `exists_properCompactification_affineSpace`~~ — PROVEN 2026-07-27.
+  `P := Proj ℚ[X₀,…,Xₙ]`; the costing was accurate, the whole content being
+  the ring isomorphism `HomogeneousLocalization.Away 𝒜 X₀ ≅ MvPolynomial
+  (Fin n) ℚ`, built as `projSpaceAwayEquiv` above (injective by an explicit
+  dehomogenization left inverse, surjective by the key identity
+  `ψ(dehom a)·X₀ᵏ = a`).
 * ~~LEAF A `exists_quasiFinite_toProper_of_isAffine_finiteType`~~ — PROVEN
-  over LEAF A1.
+  over LEAF A1, which is itself now proven.
 * ~~LEAF D `geometricallyIrreducible_normalizationModel_of_smooth_affine_curve`~~
   — PROVEN outright, out of mathlib, using that base change along
   `Spec K → Spec ℚ` is an OPEN map because the base is a field.
