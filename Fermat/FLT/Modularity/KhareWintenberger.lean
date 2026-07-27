@@ -112,6 +112,15 @@ done 2026-07-24, as proof-only (non-public) imports.)
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- The VENDORED quaternionic automorphic-forms development (weight-2 forms on a
+-- totally definite quaternion algebra over a totally real field, with their
+-- Hecke algebras).  It is imported HERE, and only here, because
+-- `carayol_threeadic_realization_of_heckePackage` below is its FIRST and
+-- currently ONLY consumer inside the cone of `fermat_last_theorem`; before this
+-- import the whole 109-module subtree was free-floating.  See that leaf's
+-- "JACQUET–LANGLANDS CONSUMER" docstring block for what is consumed and why the
+-- parity hypothesis `hFeven` is what makes the consumption sound.
+public import Fermat.FLT.AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete
 public import Mathlib.NumberTheory.NumberField.Basic
 -- `Ideal.absNorm`: the absolute norm `Nw` is the constant coefficient of
 -- the parallel-weight-`2` Hecke polynomials in the STATEMENTS of the two
@@ -11419,6 +11428,66 @@ theorem exists_totallyReal_point_of_affine_geometricallyIrreducible
     { to_isSeparable := hsep', to_normal := hnorm }, hsup,
     HasRationalPoint.of_comp g fX hpt⟩
 
+/-- **Even-degree enlargement of a totally real Galois field, preserving
+disjointness** (sorry leaf, 2026-07-27 — elementary algebraic number
+theory; Neukirch I §§2, 8 and the standard disjointness criterion via
+ramification).
+
+Given `F` totally real and Galois over `ℚ`, and an OPEN subgroup
+`N ≤ Γ ℚ` with `N ⊔ (Γ F → Γ ℚ).range = ⊤`, there is a totally real
+Galois `F' ⊇ F` with the same disjointness property and with
+`[F' : ℚ]` EVEN.
+
+WHY THIS NODE EXISTS. The vendored quaternionic automorphic-forms
+development works with a quaternion algebra over `F` that is split at
+every FINITE place (this is exactly the content of
+`IsQuaternionAlgebra.NumberField.WithRigidification`). By the
+Albert–Brauer–Hasse–Noether reciprocity law the ramification set of a
+quaternion algebra has EVEN cardinality; for a TOTALLY DEFINITE algebra
+split at all finite places that set is exactly the set of infinite
+places of `F`, of cardinality `[F : ℚ]`. So such an algebra exists **iff
+`[F : ℚ]` is even**. Recording the parity here — where `F` is CHOSEN by
+the Moret–Bailly construction, which is free to make it — is what lets
+`carayol_threeadic_realization_of_heckePackage` consume that development
+without either asserting something FALSE for odd-degree `F` or blurring
+its own hypothesis set. See that leaf's "JACQUET–LANGLANDS CONSUMER"
+block.
+
+PROOF (classical, and the reason this is a leaf and not a citation to
+something deeper). If `[F : ℚ]` is already even take `F' = F`. Otherwise
+let `L` be the fixed field of `N`, a FINITE extension of `ℚ` because `N`
+is open. Choose a rational prime `p` unramified in the compositum `L·F`
+and with `p ≡ 1 mod 4` (so `ℚ(√p)` is REAL), and put `K = ℚ(√p)`,
+`F' = F·K`. Then:
+
+* `F'` is totally real (a compositum of totally real fields is totally
+  real) and Galois over `ℚ` (a compositum of Galois extensions is
+  Galois);
+* `K ⊄ L·F` since `K` ramifies at `p` and `L·F` does not, so
+  `[F' : F] = 2` and `[F' : ℚ] = 2·[F : ℚ]` is EVEN;
+* the disjointness survives: `K` is linearly disjoint from `L·F`, so
+  `[L·F·K : L·F] = 2`, hence `L·F ∩ F' = F` (it is `F` or `F'`, and `F'`
+  would force `K ⊆ L·F`), hence `L ∩ F' ⊆ L ∩ F = ℚ` — which is the
+  displayed join condition again.
+
+FAITHFULNESS NOTE. The conclusion is deliberately an ENLARGEMENT
+(`F →+* F'`) rather than a re-choice: the consumer needs to transport an
+already-obtained `F`-rational point up to `F'`, which
+`HasRationalPoint.of_ringHom` does along exactly such a hom. Nothing
+here constrains `X`, which is why this node is pure field theory. -/
+theorem exists_evenDegree_totallyReal_of_sup_eq_top
+    (F : Type u) [Field F] [NumberField F]
+    [NumberField.IsTotallyReal F] [IsGalois ℚ F]
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hsup : N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤) :
+    ∃ (F' : Type u) (_ : Field F') (_ : NumberField F')
+      (_ : NumberField.IsTotallyReal F') (_ : IsGalois ℚ F')
+      (_ : F →+* F'),
+      Even (Module.finrank ℚ F') ∧
+      N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F')).toMonoidHom.range = ⊤ :=
+  sorry
+
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly's existence theorem for global points with prescribed
 local behaviour** (PROVEN 2026-07-25 as the affine reduction over
@@ -11488,6 +11557,7 @@ theorem exists_totallyReal_point_of_geometricallyIrreducible
     (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      Even (Module.finrank ℚ F) ∧
       N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
       HasRationalPoint fX F := by
   classical
@@ -11512,7 +11582,19 @@ theorem exists_totallyReal_point_of_geometricallyIrreducible
       (MorphismProperty.comp_mem _ _ _ inferInstance hft)
       inferInstance inferInstance hUreal N hNopen
   -- (v) a point of the open subscheme is a point of `X`
-  exact ⟨F, hF, hNF, hFtr, hFgal, hsup, HasRationalPoint.of_comp U.ι fX hFpt⟩
+  have hFptX : HasRationalPoint fX F := HasRationalPoint.of_comp U.ι fX hFpt
+  -- (vi) PARITY (2026-07-27): enlarge `F` to a totally real Galois `F'` of EVEN
+  -- degree, carrying the point up along the inclusion `F →+* F'`. Moret–Bailly
+  -- constrains `F` only through disjointness from the fixed field of `N`, and
+  -- that survives the enlargement, so this costs nothing here and is what makes
+  -- the quaternionic (hence even-degree) automorphic development usable
+  -- downstream — see `exists_evenDegree_totallyReal_of_sup_eq_top`.
+  haveI := hFtr
+  haveI := hFgal
+  obtain ⟨F', hF', hNF', hFtr', hFgal', ιFF', hev, hsup'⟩ :=
+    exists_evenDegree_totallyReal_of_sup_eq_top F N hNopen hsup
+  exact ⟨F', hF', hNF', hFtr', hFgal', hev, hsup',
+    HasRationalPoint.of_ringHom fX F F' hF hNF hF' hNF' ιFF' hFptX⟩
 
 /-! #### The moduli cut, recut over an abelian scheme (2026-07-25)
 
@@ -18342,6 +18424,7 @@ theorem exists_hilbertBlumenthalPoint_of_five_le
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
+      Even (Module.finrank ℚ F) ∧
       (∀ g : Field.absoluteGaloisGroup ℚ,
         ∃ h : Field.absoluteGaloisGroup F,
           (ρbar.map (algebraMap ℚ F)) h = ρbar g) ∧
@@ -18351,8 +18434,10 @@ theorem exists_hilbertBlumenthalPoint_of_five_le
   obtain ⟨X, fX, hsm, hsep, hft, hqc, hgi, hreal, htrans⟩ :=
     exists_twistedHilbertBlumenthalModuli_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ
-  -- (ii) Moret–Bailly, with the splitting field of `ρbar` as avoidance datum
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hsup, hFpt⟩ :=
+  -- (ii) Moret–Bailly, with the splitting field of `ρbar` as avoidance datum.
+  -- Since 2026-07-27 it also delivers the PARITY of `[F : ℚ]`, which is carried
+  -- through untouched here and consumed only at the Carayol joint.
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hsup, hFpt⟩ :=
     exists_totallyReal_point_of_geometricallyIrreducible fX hsm hsep hft hqc hgi
       hreal ρbar.ker (isOpen_ker_of_finite_discrete ρbar)
   -- (iii) the avoidance join IS image preservation
@@ -18360,7 +18445,7 @@ theorem exists_hilbertBlumenthalPoint_of_five_le
       ∃ h : Field.absoluteGaloisGroup F,
         (ρbar.map (algebraMap ℚ F)) h = ρbar g :=
     fun g => forall_exists_map_eq_of_ker_sup_range_eq_top ρbar (algebraMap ℚ F) hsup g
-  exact ⟨F, hF, hNF, hFtr, hFgal, hrestr,
+  exact ⟨F, hF, hNF, hFtr, hFgal, hev, hrestr,
     htrans F hF hNF hFtr hFgal hrestr hFpt⟩
 
 /-- **Irreducibility descends along an image-preserving restriction**
@@ -19742,12 +19827,13 @@ theorem exists_moretBailly_seed_of_five_le
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
+      (_ : Even (Module.finrank ℚ F))
       (_ : (ρbar.map (algebraMap ℚ F)).IsIrreducible),
       Nonempty (MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))) := by
   classical
-  -- (i) the geometric joint: the totally real Galois base `F`, the
-  -- image-preserving restriction, and the Hilbert–Blumenthal point
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hrestr, ⟨pt⟩⟩ :=
+  -- (i) the geometric joint: the totally real Galois base `F`, its DEGREE
+  -- PARITY, the image-preserving restriction, and the Hilbert–Blumenthal point
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hrestr, ⟨pt⟩⟩ :=
     exists_hilbertBlumenthalPoint_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ
   -- irreducibility over `F` is PROVEN from image preservation
@@ -19759,7 +19845,7 @@ theorem exists_moretBailly_seed_of_five_le
     exists_heckeEigensystem_of_hilbertBlumenthalPoint hℓodd hℓ5 hZinj hrank
       hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal pt
   -- glue: unite the bad sets and transport the match along `matchℓ`
-  refine ⟨F, hF, hNF, hFtr, hFgal, hirrF,
+  refine ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF,
     ⟨{ E₀ := E₀, bad₀ := pt.bad ∪ S, hecke₀ := hecke₀, O₀ := pt.O₀,
        σ := pt.σ, ψ₀ := ψ₀, ι₀ := pt.ιO₀, ι₀_injective := pt.ιO₀_injective,
        π₀ := pt.π₀, modular₀ := ?_, residual₀ := ?_ }⟩⟩
@@ -22693,10 +22779,67 @@ from `ℚ(ζ_ℓ)`) — i.e. a new field on `MoretBaillySeed` threaded through
 `exists_potentialModularityWitness_of_five_le`, which is the same
 cut-level change the paragraph above already names, now with a much
 smaller residue: no longer "define Hilbert modular forms", but "record one
-parity bit and cite Jacquet–Langlands". **Until that lands, the vendored
-subtree is FREE-FLOATING** — nothing in the cone of `fermat_last_theorem`
-consumes it — and it should be released together with its first consumer,
-not before.
+parity bit and cite Jacquet–Langlands".
+
+**JACQUET–LANGLANDS CONSUMER — THAT LANDED (2026-07-27). The paragraph
+above is now HISTORY, and the "FREE-FLOATING" warning it used to end with
+is RETIRED.** The parity route was taken, in the form the paragraph names.
+Three things changed and they are worth stating precisely, because the
+next auditor will otherwise re-derive them:
+
+*(1) Where the parity bit is recorded.* NOT on `MoretBaillySeed` — one
+level deeper, and cheaper. `exists_evenDegree_totallyReal_of_sup_eq_top`
+(a new sorry leaf, elementary field theory: adjoin a real quadratic
+`ℚ(√p)` ramified at a prime unramified in `L·F`) enlarges the field that
+`exists_totallyReal_point_of_geometricallyIrreducible` returns, carrying
+the `F`-rational point up along `HasRationalPoint.of_ringHom` and the
+disjointness join along with it. `Even (Module.finrank ℚ F)` is then a
+plain existential conjunct threaded through
+`exists_hilbertBlumenthalPoint_of_five_le` and
+`exists_moretBailly_seed_of_five_le`, obtained in
+`exists_potentialModularityWitness_of_five_le`, and handed down through
+the two `*_threeadic_realization_*` assemblies to `hFeven` here. No
+structure field was added and no carrier changed shape.
+
+*(2) Why this is NOT the route-(3) blurring rejected just above.* The
+sharp test asks whether a hypothesis DELETES INSTANCES the literature
+covers. It does not, because this leaf is not universally quantified in
+practice: it has exactly ONE call site, and that call site now PRODUCES
+an even-degree `F` rather than receiving an arbitrary one. The bit is
+recorded where `F` is chosen, which is precisely the disposition the
+rejected reading lacked. An auditor who wants to re-open this should
+attack `exists_evenDegree_totallyReal_of_sup_eq_top` (is the enlargement
+really free?), not `hFeven`.
+
+*(3) What the skeleton below actually consumes, and what it does NOT
+claim.* STEP 1 asserts the EXISTENCE of a division ring `D/F` with
+`IsQuaternionAlgebra F D` and a
+`IsQuaternionAlgebra.NumberField.WithRigidification F D` — the latter is
+the vendored development's own encoding of "split at every finite place",
+and by Albert–Brauer–Hasse–Noether a totally definite such `D` exists
+exactly when `[F : ℚ]` is even, which is the sole use of `hFeven` in the
+whole node. It then asserts an `E`-algebra character `θ` of
+`TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮` matching the traces
+of `heckeF`. **`D`, `𝒮` and `θ` are all existentially quantified.** That
+is load-bearing, not stylistic: the vendored development has NO
+`IsTotallyDefinite` predicate — definiteness is a source COMMENT there
+("if `D` isn't totally definite all the definitions below are garbage
+mathematically but they typecheck"), not a hypothesis — so any clause
+asserting something about an ARBITRARY rigidified `D` would be false.
+Quantifying existentially says only "a good `D` exists and its Hecke
+character sees this eigensystem", which is Jacquet–Langlands and is true.
+The residual faithfulness gap that this does NOT close is therefore
+narrow and named: nothing in the formal statement PINS the witnessing `D`
+to be totally definite, so a future owner discharging STEP 1 must supply
+definiteness from outside the formalism (or add the predicate). That is
+the honest successor task, and it is much smaller than the gap this block
+used to record.
+
+STEP 2 is Carayol's Théorème (A) proper, stated as an IMPLICATION from
+STEP 1's package to this node's conclusion, so that `hJL` is consumed and
+`D`/`𝒮`/`θ` genuinely appear in the proof term — which is what puts the
+109-module vendored subtree into the used-constant cone of
+`fermat_last_theorem`. Before this, that subtree was free-floating.
 
 ROUTE AUDIT (dichotomy, 2026-07-24; unchanged — do not re-litigate
 without new evidence). Two routes to the `3`-adic member of the
@@ -22762,6 +22905,16 @@ theorem carayol_threeadic_realization_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- PARITY (2026-07-27): `[F : ℚ]` EVEN. This is NOT a narrowing of the
+    -- literature statement smuggled in here — it is a bit RECORDED UPSTREAM,
+    -- where `F` is CHOSEN by the Moret–Bailly construction
+    -- (`exists_evenDegree_totallyReal_of_sup_eq_top`, threaded through
+    -- `exists_hilbertBlumenthalPoint_of_five_le` and
+    -- `exists_moretBailly_seed_of_five_le`), exactly as `F` is already chosen
+    -- linearly disjoint from the fixed field of `ker ρbar`. The sole call site
+    -- supplies it, so no instance the literature covers is lost. See the
+    -- "JACQUET–LANGLANDS CONSUMER" block in the docstring.
+    (hFeven : Even (Module.finrank ℚ F))
     -- CUSPIDALITY (round-4 narrowing, 2026-07-26): Carayol's Théorème (A)
     -- is a theorem about CUSPIDAL `π`, and `hmod` alone does not exclude an
     -- Eisenstein eigensystem. See the docstring's round-4 block.
@@ -22789,8 +22942,63 @@ theorem carayol_threeadic_realization_of_heckePackage
       ∃ (τF : GaloisRep F B (Fin 2 → B))
         (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
         (ιB : B →+* AlgebraicClosure ℚ_[3]),
-        ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ :=
-  sorry
+        ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
+  classical
+  -- STEP 1 — JACQUET–LANGLANDS, and the ONLY step that uses `hFeven`.
+  -- `[F : ℚ]` even ⟹ there is a quaternion algebra `D/F` ramified exactly at
+  -- the infinite places: totally definite, and SPLIT AT EVERY FINITE PLACE, so
+  -- it admits a rigidification `D ⊗_F 𝔸_F^∞ ≅ M₂(𝔸_F^∞)` — which is exactly the
+  -- datum `IsQuaternionAlgebra.NumberField.WithRigidification` the vendored
+  -- development runs on.  Jacquet–Langlands then transfers the Hilbert-newform
+  -- eigensystem underlying `(E, heckeF)` to a weight-`2` automorphic form on
+  -- `Dˣ`, i.e. to an `E`-algebra CHARACTER `θ` of the Hecke algebra, whose
+  -- `T_w`-eigenvalue is the trace `a_w = -(heckeF w).coeff 1` of the Hecke
+  -- polynomial at every good `w`.
+  --
+  -- Note the shape: `D`, its definiteness and the level datum `𝒮` are all
+  -- EXISTENTIALLY quantified here.  That is deliberate and it is what keeps the
+  -- statement true — the vendored development has no `IsTotallyDefinite`
+  -- predicate (definiteness is a comment in its source, not a hypothesis), so
+  -- asserting anything about an ARBITRARY `D` would be false.  Asserting the
+  -- existence of a good one is exactly Jacquet–Langlands.
+  have hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
+    sorry
+  -- STEP 2 — CARAYOL, Théorème (A) (Carayol 1986; Taylor 1989 §1): attach to the
+  -- Hecke character `θ` of STEP 1 its `3`-adic Galois realization, with the
+  -- local–global compatibility that identifies Frobenius characteristic
+  -- polynomials with Hecke polynomials at the places outside `badF`.  This is
+  -- the genuine literature joint of the node; `hbad2`, `hbad3` and `hbadℓ` are
+  -- what entitle it to a matching clause exactly outside `badF`, and `hirrF` is
+  -- the cuspidality/non-Eisenstein condition without which (A) is not a theorem
+  -- about this eigensystem at all.
+  have hcar : (∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) →
+      ∃ (B : Type u) (_ : CommRing B)
+        (_ : Algebra ℤ_[3] B) (_ : Module.Finite ℤ_[3] B),
+        letI : TopologicalSpace B := moduleTopology ℤ_[3] B
+        letI : IsTopologicalRing B :=
+          isTopologicalRing_moduleTopology_of_finite 3 B
+        ∃ (τF : GaloisRep F B (Fin 2 → B))
+          (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+          (ιB : B →+* AlgebraicClosure ℚ_[3]),
+          ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
+    sorry
+  exact hcar hJL
 
 /-- **The Hilbert-modular `3`-adic realization, integral-domain form**
 (PROVEN assembly, 2026-07-25 — Carayol 1986 / Taylor 1989 at one
@@ -22872,6 +23080,10 @@ theorem exists_threeadic_realization_domain_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- PARITY (2026-07-27): carried through untouched to the Carayol core, which
+    -- is the only node that consumes it. See
+    -- `carayol_threeadic_realization_of_heckePackage`.
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -22904,8 +23116,8 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   -- injectivity of the comparison embedding asserted
   obtain ⟨B₀, hCR₀, hAlg₀, hFin₀, τ₀, ψ₃, ι₀, hmatch₀⟩ :=
     carayol_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
-      hbad2 hbad3 hbadℓ
+      hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO
+      hmod hbad2 hbad3 hbadℓ
   -- (a') DOMAIN NORMALIZATION: `ker ι₀` is prime, so the whole package
   -- descends to `B₀ ⧸ ker ι₀` without moving any `ι₀`-image of a Frobenius
   -- characteristic polynomial. This is why the citation no longer has to
@@ -23028,6 +23240,10 @@ theorem exists_threeadic_realization_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- PARITY (2026-07-27): carried through untouched to the Carayol core, which
+    -- is the only node that consumes it. See
+    -- `carayol_threeadic_realization_of_heckePackage`.
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -23058,8 +23274,8 @@ theorem exists_threeadic_realization_of_heckePackage
   obtain ⟨B, hCR, hDom, hTS, hTR, hAlg, hLR, hFin, hMT, hBinj, τF, ψ₃,
     ιB, hιB, hmatch⟩ :=
     exists_threeadic_realization_domain_of_heckePackage hℓodd hℓ5 hZinj
-      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
-      ιO hιO hmod hbad2 hbad3 hbadℓ
+      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF
+      heckeF ψℓ ιO hιO hmod hbad2 hbad3 hbadℓ
   -- (c) the eigensystem-match transport: the normalization below does
   -- not move the coefficient ring, so `hmatch` is carried verbatim and
   -- only the `Module.Free` component remains to be supplied
@@ -23174,7 +23390,7 @@ theorem exists_potentialModularityWitness_of_five_le
   classical
   -- (i) the Moret–Bailly base: totally real Galois `F`, irreducibility
   -- preservation, and the modular congruent seed (Taylor 2002 Thm B)
-  obtain ⟨F, hF, hNF, hFtr, hFgal, hirrF, ⟨seed⟩⟩ :=
+  obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, ⟨seed⟩⟩ :=
     exists_moretBailly_seed_of_five_le hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ
   -- (ii) modularity lifting over `F`: the ℓ-adic Hecke block
@@ -23225,7 +23441,7 @@ theorem exists_potentialModularityWitness_of_five_le
   obtain ⟨B, hB₁, hB₂, hB₃, hB₄, hB₅, hB₆, hB₇, hB₈, τF, ψ₃, ιB, hιB,
     hmatch⟩ :=
     exists_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
-      hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF' heckeF ψℓ ιO hιO
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal hev hirrF E badF' heckeF ψℓ ιO hιO
       hmod' hbad2 hbad3 hbadℓ
   -- glue: instantiate the carrier fieldwise
   exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E,
