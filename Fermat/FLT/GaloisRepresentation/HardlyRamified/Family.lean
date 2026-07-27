@@ -3657,7 +3657,83 @@ that would unblock it. Nothing here changes the statement.
        `p` form — a dévissage in `k`, NOT in the group scheme, so it is a
        different and much smaller problem than (R1). Then (P1) is again the
        only leaf left.
-     Both are cheap to re-test and neither was available on 2026-07-27. -/
+     Both are cheap to re-test and neither was available on 2026-07-27.
+
+(C4) THE ROUTE DECISION, and it goes AGAINST (C3)'s second refuting check
+     (2026-07-27, a later owner). Both of (C3)'s checks were re-run; both
+     still fail, so the (P1) narrowing remains unharvestable. But the second
+     one is not merely unavailable, it is MISPRICED, and a worker who acted
+     on it as written would have spent a task discovering that. Nothing here
+     changes the statement.
+
+     CHECK 1 RE-RUN — still no consumer pins `k = 1`. `hρ.isFlat.cond` is
+     quantified over an ARBITRARY open ideal, and the only consumer of this
+     cluster reaches it through
+     `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`,
+     which calls `hρ.isFlat.cond (IsLocalRing.maximalIdeal R ^ k)` INSIDE a
+     `∀ k` and then collapses the levels with
+     `Ideal.iInf_pow_eq_bot_of_isLocalRing`. Since `p ∈ 𝔪`, the exponent `k`
+     of `φ ^ (p ^ k) = 1` is exactly that level index and is unbounded by
+     construction. Refuting check: a consumer instantiating the cluster at
+     an `I` with `p ∈ I`.
+
+     CHECK 2 RE-RUN, AND CORRECTED. (C3) called the exponent-`p ^ k` form of
+     `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` "a
+     dévissage in `k`, NOT in the group scheme, so a different and much
+     smaller problem than (R1)". It is not. Everything the `p`-form can say
+     about a `φ` of exact order `p ^ k` is obtained by applying it to the
+     `p`-torsion point `φ ^ (p ^ (k − 1))` — which is again connected
+     (`convPow_apply_one_of_comul_absorbs_p`, PROVEN below) and again
+     inertia-stable, since `τ • φ = φ ^ m` powers up — and that yields
+     exactly `m(σ) ≡ χ_cyc(σ) [MOD p]`, no more. It CANNOT yield more, and
+     the witness is concrete: the abstract inertia character
+
+       ψ := χ_cyc ^ p  read as  I_p → (ZMod (p ^ 2))ˣ
+
+     satisfies `ψ ≡ χ_cyc mod p` (Fermat's little theorem) while
+     `ψ ≢ χ_cyc mod p ^ 2`. Indeed `ℚ_p(μ_{p²})/ℚ_p` is TOTALLY ramified, so
+     `χ_cyc mod p ^ 2` is already surjective on inertia and
+     `χ_cyc ^ (p − 1)` is a RAMIFIED character of order `p` valued in
+     `1 + p ZMod (p ^ 2)`. Concretely at `p = 5`: `2 ^ 5 = 32 ≡ 7 [MOD 25]`,
+     and `7 ≢ 2 [MOD 25]` while `7 ≡ 2 [MOD 5]`. So the cyclic Galois module
+     `ZMod (p ^ 2)` with inertia acting through `ψ` passes every level-one
+     test the `p`-form can impose and violates the level-`p ^ 2` conclusion.
+
+     What excludes it is that `(ZMod (p ^ 2))(ψ)` has NO connected finite
+     flat model over `ℤ_p` — equivalently, that the extension class of its
+     two `μ_p` graded pieces is UNRAMIFIED. That is the IDENTICAL input
+     already recorded in (S2) as the reason (S2) is not harvestable. So
+     check 2 does not reach a smaller problem: it reaches Raynaud–Fontaine
+     at level `p ^ k`, and it reaches it through (S2)'s missing statement.
+     Refuting checks: a proof of the `p ^ k` form consuming only the `p`
+     form plus group theory (ruled out by the witness above), or a
+     classification of finite flat group schemes over `ℤ_p` killed by
+     `p ^ k` anywhere in the pin. As of 2026-07-27,
+     `grep -rn 'fppf\|CartierDual\|cartierDual'` over `Fermat/`,
+     `.lake/packages/mathlib` and `~/cs/FLT` returns only docstring PROSE
+     plus mathlib's fpqc/flat-descent SITE definitions — no cohomology of
+     group schemes and no duality.
+
+     DECISION (the dispatch asked for one): BUILD THE RAYNAUD INPUT. Closing
+     the exponent gap is not the cheaper half of the choice; it is the same
+     missing statement plus a second leaf.
+
+     WHERE THE NEXT WORKER SHOULD GO, sharpened. Of the live requirements
+     (R1)–(R3), it is (R3) whose cost is overstated above. Its ÉTALE side —
+     *an extension of étale by étale over a HENSELIAN local base is étale* —
+     is elementary and needs no flat cohomology at all: the connected
+     component `H°` maps to the étale quotient by a homomorphism out of a
+     connected scheme, hence trivially, so `H° ⊆ H'`, and `H'` étale gives
+     `H'° = 0`. Both halves of the machinery are already in this cone —
+     `Bialgebra.exists_connected_counit_idempotent` for the connected
+     idempotent, and the henselian splitting of a finite algebra recorded in
+     the SUPPLY SURVEY above. What (R3) actually costs is the passage from
+     that étale statement to the MULTIPLICATIVE one, i.e. CARTIER DUALITY
+     for finite flat commutative group schemes, which the same grep shows is
+     absent from all three trees. So the dispatchable next target is Cartier
+     duality — a self-contained classical construction — and NOT "Raynaud"
+     as an undifferentiated whole. Refuting check: a proof of (R3) on the
+     multiplicative side that never dualizes. -/
 theorem exists_unramified_grouplike_family_generating_corner
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
