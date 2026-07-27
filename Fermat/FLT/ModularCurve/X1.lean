@@ -362,7 +362,10 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_isCoarseModuliY1_isSmoothCurve` | `Y_1(N)` is a smooth geometrically connected curve (Katz–Mazur 4.7/8.2) | any `K`, `char K ∤ N` |
+| `exists_gamma1GITPresentation` | Katz–Mazur (8.1.1)/(8.1.3): the rigidified moduli scheme and its deck group | any `K`, `char K ∤ N` |
+| `isDomain_of_gamma1GITPresentation` | irreducibility of `Y_1(N)` (Katz–Mazur 8.1.1's integrality half) | any `K`, `char K ∤ N` |
+| `smoothOfRelativeDimension_of_gamma1GITPresentation` | Deligne–Rapoport III.1, Katz–Mazur 8.2 | any `K`, `char K ∤ N` |
+| `geometricallyConnected_of_gamma1GITPresentation` | Deligne–Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]` | any `K`, `char K ∤ N` |
 | `nonempty_cuspLocusX1` | the cusp locus of `X_1(N)` (Deligne–Rapoport VI.6) | `ℚ` |
 | `exists_gamma1Datum_of_relPoint` | fineness at `N ≥ 4` / Lang | `𝔽_ℓ` |
 | `isEmpty_gamma1Datum_finiteField` | `#E(𝔽_ℓ) ≤ 2ℓ + 1` — NO modular curves | `𝔽_ℓ` |
@@ -375,10 +378,504 @@ Everything else in this file — the compactification geometry, the
 finiteness of `X_1(N)(𝔽_ℓ)`, the passage from the cusp locus to indexed
 rational cusps, and all three assemblies — is now sorry-free. -/
 
+/-! ### The Katz–Mazur atlas for `[Γ₁(N)]`, over an arbitrary base
+
+**Added 2026-07-27**, cutting `exists_isCoarseModuliY1_isSmoothCurve`
+along the GIT axis its own docstring named as NOT SEARCHED.  This is the
+`Γ₁` analogue of `X0.lean`'s `Gamma0Atlas` / `Gamma0GITPresentation` /
+`Gamma0AffineModel` tower, declaration for declaration:
+
+| `X0.lean` (over `ℚ`) | here (over an arbitrary base scheme `S`) |
+|---|---|
+| `Gamma0Atlas` | `Gamma1Atlas` |
+| `Gamma0Atlas.toIsCoarseModuliY0` (PROVEN) | `Gamma1Atlas.toIsCoarseModuliY1` (PROVEN) |
+| `Gamma0GITPresentation` | `Gamma1GITPresentation` |
+| `Gamma0GITPresentation.toGamma0Atlas` (PROVEN) | `Gamma1GITPresentation.toGamma1Atlas` (PROVEN) |
+| `exists_gamma0GITPresentation` (leaf) | `exists_gamma1GITPresentation` (leaf) |
+| `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
+| `isDomain_of_gamma0Atlas` (leaf) | `isDomain_of_gamma1GITPresentation` (leaf) |
+| `smoothOfRelativeDimension_of_gamma0Atlas` (leaf) | `smoothOfRelativeDimension_of_gamma1GITPresentation` (leaf) |
+| `geometricallyConnected_of_gamma0Atlas` (leaf) | `geometricallyConnected_of_gamma1GITPresentation` (leaf) |
+| `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
+
+`specInvariants_universal` (`X0.lean`, PROVEN and sorry-free) is REUSED
+verbatim: it is a statement about a finite group acting on a commutative
+ring and mentions no moduli problem and no base field, so the `Γ₁` side
+needs no analogue of it.
+
+**THE ONE PLACE THIS IS NOT A TRANSCRIPTION: the base.**  `Gamma0Atlas`
+is stated over `SpecQ`, and its `toIsCoarseModuliY0` leans three times on
+`subsingleton_hom_specQ` — `Hom(Z, Spec ℚ)` is a subsingleton because `ℚ`
+is initial among rings.  **That is FALSE over a general field**: for
+`K = ℚ(i)` and `Z = Spec K` there are two morphisms `Z ⟶ Spec K`, the
+identity and complex conjugation.  So each of the three uses is replaced
+by an explicit hypothesis, and the two structures carry the resulting
+"over `S`" clauses that `Gamma0Atlas` gets for free:
+
+* `Gamma1Atlas.cover` carries `p ≫ g = m ≫ strM` — the rigidifying cover
+  is a cover **of `S`-schemes**;
+* `Gamma1Atlas.quotient` is the categorical quotient in the category of
+  `S`-schemes: it takes `φ ≫ str' = strM`, its separation hypothesis is
+  restricted to pairs `a, b` with `a ≫ strM = b ≫ strM`, and it returns
+  `ψ` together with `ψ ≫ str' = str`;
+* `Gamma1GITPresentation.strM_invariant` says the deck group acts over
+  `S`, which is what discharges the restricted separation hypothesis at
+  `a = 𝟙`, `b = Spec σ` and what pins `ψ ≫ str' = str` through the
+  uniqueness half of `specInvariants_universal`.
+
+All three are true of the Katz–Mazur construction and none of them is a
+strengthening in disguise over `ℚ`, where `subsingleton_hom_specQ` makes
+each of them automatic.
+
+**A CORRECTION to `isDomain_of_gamma0Atlas`'s docstring, which matters
+exactly because the base is now general.**  That docstring proposes
+folding `IsDomain A` — integrality of the RIGIDIFIED moduli scheme — into
+the GIT presentation, whereupon `Function.Injective.isDomain` closes the
+leaf.  Over `ℚ` that is right.  Over a general `K` it is **FALSE**:
+`𝔐([Γ₁(N)], [Γ(n)])` acquires `φ(n)` geometric components permuted by
+`Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing, so as soon as `ζ_n ∈ K` the
+scheme is disconnected and `A` is not a domain.  What survives base
+change is `IsDomain B` for the INVARIANTS, since `G = GL₂(ℤ/n)` permutes
+those components transitively — and that is the fold that would close
+`isDomain_of_gamma1GITPresentation`.  It is deliberately not folded in here, for
+the reason `X0.lean` gives: a prover sent at `exists_gamma1GITPresentation`
+should have to build the construction and nothing else. -/
+
+/-- **A Katz–Mazur atlas for the `Γ₁(N)`-problem over a base scheme `S`.**
+
+The `Γ₁` analogue of `Gamma0Atlas`, over an arbitrary base rather than
+over `Spec ℚ`; see the section comment for the field-by-field
+correspondence and for the three "over `S`" clauses that replace
+`subsingleton_hom_specQ`.
+
+The data is: a candidate coarse space `(Y, str)` with a natural
+classifying map, a rigidified moduli scheme `(M, strM)` carrying a
+universal family `dM`, the statement that `dM` rigidifies every datum
+after an fpqc base change, and the categorical-quotient property of the
+classifying map of `dM`.  `Y` is `M/GL₂(ℤ/n)`; the structure does not
+name the group, because only the two properties are used. -/
+structure Gamma1Atlas (N : ℕ) (S : Scheme.{0}) where
+  /-- the coarse space to be -/
+  Y : Scheme.{0}
+  /-- its structure morphism to the base -/
+  str : Y ⟶ S
+  /-- the classifying map of the moduli problem, Katz–Mazur (8.1.3) -/
+  classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma1Datum N T → RelPoint str g
+  /-- the classifying map is natural in the base -/
+  classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') {d' : Gamma1Datum N T'} {d : Gamma1Datum N T},
+    IsBaseChangeOfGamma1 h d' d → classify g' d' = RelPoint.pre h hg (classify g d)
+  /-- the rigidified moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` -/
+  M : Scheme.{0}
+  /-- its structure morphism -/
+  strM : M ⟶ S
+  /-- the universal family it carries -/
+  dM : Gamma1Datum N M
+  /-- **rigidification**: every datum over an `S`-scheme is, after a
+  faithfully flat quasi-compact base change **of `S`-schemes**, a base
+  change of `dM`.
+
+  The clause `p ≫ g = m ≫ strM` is what `Gamma0Atlas.cover` gets for
+  free from `subsingleton_hom_specQ`, and it is load-bearing in
+  `toIsCoarseModuliY1`: without it the two naturality equations for `c`
+  and for `classify` are stated at unrelated base points and cannot be
+  compared.  Note also the binder `g`, whose necessity is the subject of
+  the FALSITY AUDIT on `Gamma0Atlas.cover`: dropping it makes the field
+  false and the structure empty. -/
+  cover : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T') (m : T' ⟶ M),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      p ≫ g = m ≫ strM ∧
+      Nonempty (IsBaseChangeOfGamma1 p d' d) ∧ Nonempty (IsBaseChangeOfGamma1 m d' dM)
+  /-- **categorical quotient in the category of `S`-schemes**: an
+  `S`-morphism out of `M` that does not separate two rigidifications of
+  one datum factors uniquely, and over `S`, through the classifying map
+  of `dM`. -/
+  quotient : ∀ {Y' : Scheme.{0}} (str' : Y' ⟶ S) (φ : M ⟶ Y'), φ ≫ str' = strM →
+    (∀ {Z : Scheme.{0}} (a b : Z ⟶ M) (d₁ : Gamma1Datum N Z), a ≫ strM = b ≫ strM →
+      IsBaseChangeOfGamma1 a d₁ dM → IsBaseChangeOfGamma1 b d₁ dM → a ≫ φ = b ≫ φ) →
+    ∃! ψ : Y ⟶ Y', ψ ≫ str' = str ∧ (classify strM dM).1 ≫ ψ = φ
+
+/-- **An atlas IS a coarse moduli space** (PROVEN 2026-07-27) — the
+initiality clause of `IsCoarseModuliY1` derived from Katz–Mazur's
+construction rather than cited alongside it.
+
+Verbatim the proof of `Gamma0Atlas.toIsCoarseModuliY0` with the three
+appeals to `subsingleton_hom_specQ` replaced by the explicit "over `S`"
+clauses of `cover` and `quotient`.  The argument: a cocone cannot
+separate two rigidifications of one datum, because its own naturality
+equates both composites with its value at that datum; so it factors
+through the quotient, uniquely; and the factorisation computes the
+cocone at an arbitrary datum after pulling back along the fpqc
+rigidifying cover, which is an epimorphism and may be cancelled. -/
+def Gamma1Atlas.toIsCoarseModuliY1 {N : ℕ} {S : Scheme.{0}} (A : Gamma1Atlas N S) :
+    IsCoarseModuliY1 N A.str where
+  classify := A.classify
+  classify_natural := A.classify_natural
+  universal := by
+    intro Y' str' c hc
+    -- A cocone cannot separate two rigidifications of one datum.
+    have hconst : ∀ {Z : Scheme.{0}} (a b : Z ⟶ A.M) (d₁ : Gamma1Datum N Z),
+        a ≫ A.strM = b ≫ A.strM →
+        IsBaseChangeOfGamma1 a d₁ A.dM → IsBaseChangeOfGamma1 b d₁ A.dM →
+        a ≫ (c A.strM A.dM).1 = b ≫ (c A.strM A.dM).1 := by
+      intro Z a b d₁ hab ha hb
+      have h1 : (c (a ≫ A.strM) d₁).1 = a ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc a rfl ha)
+      have h2 : (c (b ≫ A.strM) d₁).1 = b ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc b rfl hb)
+      rw [← h1, ← h2, hab]
+    -- so it factors through the quotient, over `S`, uniquely.
+    obtain ⟨u, ⟨hu0, hu⟩, huniq⟩ :=
+      A.quotient str' (c A.strM A.dM).1 (c A.strM A.dM).2 hconst
+    refine ⟨u, ⟨hu0, ?_⟩, ?_⟩
+    · -- `u` computes `c` at an arbitrary datum: pull back to the
+      -- rigidifying cover, where both sides are statements about `dM`,
+      -- and cancel the cover.
+      intro T g d
+      obtain ⟨T', p, d', m, hflat, hsurj, hqc, hst, ⟨hbp⟩, ⟨hbm⟩⟩ := A.cover g d
+      haveI := hflat
+      haveI := hsurj
+      haveI := hqc
+      have hcp : (c (p ≫ g) d').1 = p ≫ (c g d).1 :=
+        congrArg Subtype.val (hc p rfl hbp)
+      have hcm : (c (m ≫ A.strM) d').1 = m ≫ (c A.strM A.dM).1 :=
+        congrArg Subtype.val (hc m rfl hbm)
+      have hAp : (A.classify (p ≫ g) d').1 = p ≫ (A.classify g d).1 :=
+        congrArg Subtype.val (A.classify_natural p rfl hbp)
+      have hAm : (A.classify (m ≫ A.strM) d').1 = m ≫ (A.classify A.strM A.dM).1 :=
+        congrArg Subtype.val (A.classify_natural m rfl hbm)
+      rw [hst] at hcp hAp
+      have key : p ≫ (c g d).1 = p ≫ ((A.classify g d).1 ≫ u) := by
+        rw [← hcp, hcm, ← hu, ← Category.assoc, ← hAm, hAp, Category.assoc]
+      exact (cancel_epi p).mp key
+    · -- uniqueness: a rival `u₁` factors `c dM` through the quotient too.
+      rintro u₁ ⟨h₀, h₁⟩
+      exact huniq u₁ ⟨h₀, (h₁ A.strM A.dM).symm⟩
+
+/-- **A Katz–Mazur atlas presented the way (8.1.1) actually builds it**:
+the rigidified moduli scheme as `Spec A` with a finite group `G` acting,
+and the coarse space as `Spec` of the invariants.
+
+The `Γ₁` analogue of `Gamma0GITPresentation`, over an arbitrary base.
+This is `Gamma1Atlas` with its `quotient` field replaced by the data that
+*produces* it; the fields it shares with `Gamma1Atlas` are documented
+there.  What differs:
+
+* `A`, `B`, `G` with `Algebra.IsInvariant B A G`: the rigidified moduli
+  scheme is `M = Spec A`, affine, the deck group `G = GL₂(ℤ/n)` is
+  finite, and the coarse space is `Y = Spec B` with `B = A^G`.
+* `classify_dM`: the classifying map of the universal family IS the
+  quotient map `π = Spec (B → A)`.
+* `strM_invariant`: `G` acts over the base — the clause that has no
+  counterpart on the `Γ₀` side, where `Hom(Spec A, Spec ℚ)` is a
+  subsingleton and it is automatic.
+* `dM_equivariant`: `σ^*dM ≅ dM`, phrased through `IsBaseChangeOfGamma1`
+  at `𝟙` and at `Spec σ` because that is the only comparison of
+  `Γ₁(N)`-data this development has. -/
+structure Gamma1GITPresentation (N : ℕ) (S : Scheme.{0}) where
+  /-- the coordinate ring of the rigidified moduli scheme -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the ring of invariants, whose spectrum is the coarse space -/
+  B : Type
+  [commRing_B : CommRing B]
+  [algebra_BA : Algebra B A]
+  /-- the deck group `GL₂(ℤ/n)` of the rigidification -/
+  G : Type
+  [group_G : Group G]
+  [finite_G : Finite G]
+  [action_GA : MulSemiringAction G A]
+  [smulComm_GBA : SMulCommClass G B A]
+  [isInvariant_BAG : Algebra.IsInvariant B A G]
+  /-- `B` is a subring of `A`, not merely an algebra over it -/
+  injective_algebraMap : Function.Injective (algebraMap B A)
+  /-- the structure morphism of the coarse space -/
+  str : Spec (CommRingCat.of B) ⟶ S
+  /-- the structure morphism of the rigidified moduli scheme -/
+  strM : Spec (CommRingCat.of A) ⟶ S
+  /-- the classifying map of the moduli problem, Katz–Mazur (8.1.3) -/
+  classify : ∀ {T : Scheme.{0}} (g : T ⟶ S), Gamma1Datum N T → RelPoint str g
+  /-- the classifying map is natural in the base -/
+  classify_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') {d' : Gamma1Datum N T'} {d : Gamma1Datum N T},
+    IsBaseChangeOfGamma1 h d' d → classify g' d' = RelPoint.pre h hg (classify g d)
+  /-- the universal family carried by the rigidified moduli scheme -/
+  dM : Gamma1Datum N (Spec (CommRingCat.of A))
+  /-- the classifying map of the universal family is the quotient map -/
+  classify_dM : (classify strM dM).1 = Spec.map (CommRingCat.ofHom (algebraMap B A))
+  /-- **rigidification**, exactly as in `Gamma1Atlas.cover` -/
+  cover : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T')
+      (m : T' ⟶ Spec (CommRingCat.of A)),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      p ≫ g = m ≫ strM ∧
+      Nonempty (IsBaseChangeOfGamma1 p d' d) ∧ Nonempty (IsBaseChangeOfGamma1 m d' dM)
+  /-- **the deck group acts over the base** -/
+  strM_invariant : ∀ σ : G,
+    Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ)) ≫ strM = strM
+  /-- **`G`-equivariance of the universal family**: `σ^*dM ≅ dM` -/
+  dM_equivariant : ∀ σ : G, ∃ d₁ : Gamma1Datum N (Spec (CommRingCat.of A)),
+    Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
+    Nonempty (IsBaseChangeOfGamma1
+      (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+
+/-- **A GIT presentation IS an atlas** (PROVEN 2026-07-27): the
+`quotient` field of `Gamma1Atlas` derived from the affine presentation
+and `specInvariants_universal`.
+
+Two steps have content.  Turning the separation hypothesis into
+`G`-invariance of `φ` is `dM_equivariant` together with
+`strM_invariant`, which is what makes `𝟙` and `Spec σ` an admissible
+pair for the restricted hypothesis.  Producing the "over `S`" half of
+the conclusion is the uniqueness clause of `specInvariants_universal`
+applied a SECOND time, with target `S` and `φ := strM`: both `ψ ≫ str'`
+and `str` are factorisations of `strM` through `π`, hence equal.  On the
+`Γ₀` side that second application is invisible, because
+`Subsingleton (Spec B ⟶ Spec ℚ)` closes the same goal. -/
+noncomputable def Gamma1GITPresentation.toGamma1Atlas {N : ℕ} {S : Scheme.{0}}
+    (P : Gamma1GITPresentation N S) : Gamma1Atlas N S :=
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  letI := P.smulComm_GBA
+  letI := P.isInvariant_BAG
+  { Y := Spec (CommRingCat.of P.B)
+    str := P.str
+    classify := P.classify
+    classify_natural := P.classify_natural
+    M := Spec (CommRingCat.of P.A)
+    strM := P.strM
+    dM := P.dM
+    cover := P.cover
+    quotient := by
+      intro Y' str' φ hφ hsep
+      -- the quotient map is a morphism over `S`
+      have hπ : Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) ≫ P.str = P.strM := by
+        rw [← P.classify_dM]; exact (P.classify P.strM P.dM).2
+      -- `𝟙` and `Spec σ` are two rigidifications of the SAME datum, and
+      -- they agree over `S`, so the separation hypothesis applies.
+      have hinv : ∀ σ : P.G,
+          Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom P.G P.A σ)) ≫ φ = φ := by
+        intro σ
+        obtain ⟨d₁, ⟨h1⟩, ⟨h2⟩⟩ := P.dM_equivariant σ
+        have h := hsep (𝟙 _) _ d₁ (by rw [Category.id_comp, P.strM_invariant σ]) h1 h2
+        rw [Category.id_comp] at h
+        exact h.symm
+      obtain ⟨ψ, hψ, huniq⟩ := specInvariants_universal P.G P.injective_algebraMap φ hinv
+      -- the SECOND application, with target `S`, is what pins `ψ` over `S`
+      obtain ⟨w, -, huniq2⟩ :=
+        specInvariants_universal P.G P.injective_algebraMap P.strM P.strM_invariant
+      rw [P.classify_dM]
+      refine ⟨ψ, ⟨?_, hψ⟩, ?_⟩
+      · rw [huniq2 (ψ ≫ str')
+            (show Spec.map (CommRingCat.ofHom (algebraMap P.B P.A)) ≫ (ψ ≫ str') = P.strM by
+              rw [← Category.assoc, hψ, hφ]),
+          huniq2 P.str hπ]
+      · rintro ψ' ⟨-, h⟩
+        exact huniq ψ' h }
+
+/-- **The Katz–Mazur GIT presentation of `Y_1(N)` over a field in which
+`N` is invertible exists** (sorry leaf — Katz–Mazur (8.1.1) + (8.1.3),
+and the ONLY modular EXISTENCE input below `X_1(N)` over either base).
+
+TRUE and classical, and this is the construction itself rather than any
+of its properties.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid
+(Katz–Mazur 4.7.0: a pair `(E, P)` with `P` of order `≥ 4` has no
+nontrivial automorphism), so over a base where `N` is invertible it is
+representable; adjoining a full level-`n` structure for some auxiliary
+`n ≥ 3` prime to `N · char K` makes `[Γ₁(N)], [Γ(n)]` representable by an
+AFFINE scheme `Spec A` (8.1.1), with `G = GL₂(ℤ/n)` acting through the
+level-`n` structure, and the coarse space of `[Γ₁(N)]` is `Spec (A^G)`.
+`classify_natural` is (8.1.3)'s independence of the auxiliary level `n`.
+
+**What a prover has to build, and what it does NOT have to build.**  The
+four properties of the resulting curve — affine, integral, smooth,
+geometrically connected — are NOT part of this leaf: `isAffine` is a
+consequence of the presentation being `Spec` of a ring, and the other
+three are the three per-presentation leaves below.  So this leaf is the
+representability statement and the torsor that rigidifies it, and
+nothing else.
+
+`_hchar` is what makes `[Γ₁(N)]` representable at all: at
+`char K = p ∣ N` a point of exact order `N` acquires an infinitesimal
+part, `Spec A` is not smooth, and the whole tower fails.  `_hN` is
+rigidity. -/
+theorem exists_gamma1GITPresentation (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
+    (_hchar : ¬ ringChar K ∣ N) :
+    Nonempty (Gamma1GITPresentation N (Spec (CommRingCat.of K))) :=
+  sorry
+
+/-! #### The geometry, stated for the PRESENTATION rather than per-atlas
+
+`X0.lean` states its three geometric leaves for an ARBITRARY
+`Gamma0Atlas`, and justifies that with `gamma0Atlas_isIso`: any two
+atlases have isomorphic coarse spaces, so the per-atlas and
+per-model forms are equivalent.  The three below are instead stated for
+an arbitrary `Gamma1GITPresentation`, which is the strictly WEAKER —
+hence easier — form, since `Gamma1GITPresentation.toGamma1Atlas` maps
+presentations to atlases.
+
+Two reasons, and the second is mechanical.  Mathematically, "exhibit one
+model and read the properties off it" is exactly what
+`exists_isCoarseModuliY1_isSmoothCurve` needs, and the model it exhibits
+IS the one the presentation gives; the per-atlas form buys generality
+that nothing consumes.  Mechanically, the per-atlas form needs
+`gamma1Atlas_isIso`, hence `IsCoarseModuliY1.exists_inverse`, which is
+declared some six hundred lines BELOW this point in the file — and
+hoisting it would be a relocation in a region with several concurrent
+owners, for no gain here.  A successor who wants the per-atlas form has
+`IsCoarseModuliY1.exists_inverse` available at its own site and can add
+it there.
+
+Note `isAffine` needs no leaf at all in this form: the presentation's
+coarse space is literally `Spec (CommRingCat.of P.B)`, so
+`AlgebraicGeometry.isAffine_Spec` supplies it — and it is what discharges
+`QuasiCompact` and `IsSeparated` at
+`exists_isCoarseModuliY1_isSmoothCurve`, so two of that node's five
+conclusions cost the tree nothing at all. -/
+
+/-- **The ring of global functions of the coarse space is a DOMAIN**
+(sorry leaf — the integrality half of Katz–Mazur (8.1.1)).
+
+TRUE and classical: `Y_1(N)` is geometrically irreducible over any field
+in which `N` is invertible (Deligne–Rapoport IV.5.5 — the subgroup
+`{[[1, b], [0, d]]}` of `GL₂(ℤ/N)` has surjective determinant), so its
+coordinate ring `B = A^G` is a domain.
+
+**The cheapest of the three, and the fold that closes it is `IsDomain B`,
+NOT `IsDomain A`.**  `isDomain_of_gamma0Atlas`'s docstring proposes
+folding `IsDomain A` — integrality of the RIGIDIFIED moduli scheme — into
+the presentation and finishing with `Function.Injective.isDomain` on
+`injective_algebraMap`.  That is correct over `ℚ` and **FALSE over a
+general `K`**: `𝔐([Γ₁(N)], [Γ(n)])` has `φ(n)` geometric components
+permuted by `Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing, so as soon as
+`ζ_n ∈ K` it is disconnected.  What is stable under base change is
+integrality of the INVARIANTS, since `G = GL₂(ℤ/n)` permutes those
+components transitively.  So the fold to make, when the owner of
+`Gamma1GITPresentation` wants it, is `IsDomain B`; then this leaf is
+`Scheme.ΓSpecIso` alone, since the coarse space here IS `Spec B`.
+
+The hypotheses are REQUIRED: at `N = 0`, or at `char K ∣ N`, a coarse
+space of `[Γ₁(N)]` is empty and `Γ(∅, ⊤)` is the zero ring, which is not
+`Nontrivial`. -/
+theorem isDomain_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N) {K : Type} [Field K]
+    (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    IsDomain Γ(P.toGamma1Atlas.Y, ⊤) :=
+  sorry
+
+/-- **The coarse space is smooth of relative dimension `1` over `K`**
+(sorry leaf — Deligne–Rapoport III.1, Katz–Mazur 8.2).
+
+TRUE and classical, and one of the two genuinely modular geometric
+inputs.  `[Γ₁(N)]` is a smooth Deligne–Mumford stack of relative
+dimension one over `ℤ[1/N]` (Katz–Mazur 8.2.1 proves that
+`ℤ[1/N]`-smoothness directly, and it specialises to every field in which
+`N` is invertible); for `N ≥ 4` it is moreover representable, so the
+coarse space is the fine one and smoothness is immediate from 8.2.1.
+At the level of the GIT presentation the same argument reads: `A` is a
+smooth `K`-algebra of relative dimension one, and for `N ≥ 4` the action
+of `G` on `Spec A` is free, so `Spec (A^G)` is smooth as well.
+
+**Note the `N ≥ 4` hypothesis is doing real work here and is not merely
+inherited.**  At `N ≤ 3` the moduli problem is not rigid, the quotient
+acquires elliptic points, and the coarse space — while still a smooth
+curve over a field of characteristic `0` — is not the quotient of a
+free action, so this route to smoothness is unavailable.  Only `N = 25`
+is used.
+
+Concretely: the conclusion is `SmoothOfRelativeDimension 1 P.str` with
+`P.str : Spec (CommRingCat.of P.B) ⟶ Spec (CommRingCat.of K)`, so it is
+smoothness of the `K`-algebra `B = A^G` and nothing more abstract. -/
+theorem smoothOfRelativeDimension_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    SmoothOfRelativeDimension 1 P.toGamma1Atlas.str :=
+  sorry
+
+/-- **The coarse space is geometrically connected over `K`** (sorry leaf
+— Deligne–Rapoport IV.5.5).
+
+TRUE and classical, and the second genuinely modular geometric input.
+The criterion is that the subgroup of `GL₂(ℤ/N)` attached to the level
+structure surjects onto `(ℤ/N)ˣ` under `det`; for `[Γ₁(N)]` that subgroup
+is `{[[1, b], [0, d]]}`, whose determinant is `d`, so `det` IS surjective
+and the geometric fibres of `Y_1(N)` over `ℤ[1/N]` are connected.  Base
+change of a geometrically connected scheme is geometrically connected, so
+the statement holds over every `K` with `char K ∤ N` and not merely over
+the prime fields.
+
+**This is where the parenthetical in `exists_x0Compactification`'s
+docstring — "unlike for `Γ₁(N)` or `Γ(N)`" — is WRONG**, and the
+correction is recorded at length on
+`exists_isCoarseModuliY1_isSmoothCurve` below.  What genuinely splits at
+level `Γ₁(N)` is the set of CUSPS, not the curve; `Γ(N)` is the case
+where the curve itself splits, its field of constants being `ℚ(ζ_N)`.
+Note this is exactly where the rigidified moduli scheme cannot be used
+directly: `𝔐([Γ₁(N)], [Γ(n)])` is NOT geometrically connected for
+`n ≥ 3`, and connectedness is recovered only after quotienting by
+`G = GL₂(ℤ/n)`.
+
+The hypotheses are REQUIRED: at `N = 0` or at `char K ∣ N` the coarse
+space is empty, and `GeometricallyConnected` carries nonemptiness through
+`ConnectedSpace`. -/
+theorem geometricallyConnected_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    GeometricallyConnected P.toGamma1Atlas.str :=
+  sorry
+
+/-- **The affine integral Katz–Mazur model of `Y_1(N)`** — an atlas
+together with the four geometric properties read off it.
+
+The `Γ₁` analogue of `Gamma0AffineModel`.  It is stated over an arbitrary
+atlas rather than over a presentation because that is the form its only
+consumer, `exists_isCoarseModuliY1_isSmoothCurve`, uses: the consumer
+never looks at `A`, `B` or `G` again, only at the coarse space and its
+four properties.  Nothing here is a strengthening — the only inhabitant
+this development builds comes from a presentation. -/
+structure Gamma1AffineModel (N : ℕ) (S : Scheme.{0}) extends Gamma1Atlas N S where
+  /-- the coarse space is affine — Katz–Mazur (8.1.1)'s `Spec (A^G)` -/
+  isAffine : IsAffine toGamma1Atlas.Y
+  /-- its ring of global functions is a domain -/
+  isDomain : IsDomain Γ(toGamma1Atlas.Y, ⊤)
+  /-- it is smooth of relative dimension `1` over the base -/
+  smooth : SmoothOfRelativeDimension 1 toGamma1Atlas.str
+  /-- and geometrically connected -/
+  connected : GeometricallyConnected toGamma1Atlas.str
+
+/-- **Existence of the affine integral Katz–Mazur model of `Y_1(N)` over
+`K`** (PROVEN 2026-07-27).
+
+The atlas half is `exists_gamma1GITPresentation` followed by
+`Gamma1GITPresentation.toGamma1Atlas` — which is where
+`specInvariants_universal` is consumed.  Of the four geometric fields,
+`isAffine` is `AlgebraicGeometry.isAffine_Spec` because the presentation's
+coarse space is literally `Spec (CommRingCat.of P.B)`, and the other
+three are the three leaves above. -/
+theorem exists_gamma1AffineModel (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K]
+    (hchar : ¬ ringChar K ∣ N) :
+    Nonempty (Gamma1AffineModel N (Spec (CommRingCat.of K))) :=
+  (exists_gamma1GITPresentation N hN K hchar).map fun P =>
+    { toGamma1Atlas := P.toGamma1Atlas
+      isAffine := by
+        letI := P.commRing_B
+        show IsAffine (Spec (CommRingCat.of P.B))
+        infer_instance
+      isDomain := isDomain_of_gamma1GITPresentation hN hchar P
+      smooth := smoothOfRelativeDimension_of_gamma1GITPresentation hN hchar P
+      connected := geometricallyConnected_of_gamma1GITPresentation hN hchar P }
+
 /-- **SOME coarse moduli space of the `Γ₁(N)`-problem is a geometrically
-connected smooth curve over `K`, for `4 ≤ N` and `char K ∤ N`** (sorry
-leaf — and the ONLY modular input to the existence of `X_1(N)`, over
-BOTH base fields this file uses).
+connected smooth curve over `K`, for `4 ≤ N` and `char K ∤ N`** (PROVEN
+2026-07-27 over `exists_gamma1AffineModel`, by exhibiting the Katz–Mazur
+model and reading the five properties off it; formerly a sorry leaf, and
+still the ONLY place the modular content enters the existence of
+`X_1(N)`, over BOTH base fields this file uses).
 
 TRUE and classical.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid —
 a pair `(E, P)` with `P` of order `≥ 4` has no nontrivial automorphism —
@@ -417,25 +914,50 @@ normalization integral, `SmoothOfRelativeDimension 1` pins the relative
 dimension of the compactification, and `GeometricallyConnected` is what
 `geometricallyConnected_of_isSmoothCompactification` carries across.
 
-AXIS SEARCHED: the BASE-FIELD axis (taken — one leaf for `ℚ` and `𝔽_ℓ`
-at once) and the COMPACTIFICATION axis (taken — the whole
-Nagata/normalization half is now
-`AlgebraicGeometry.exists_isSmoothCompactification` and is not modular).
-NOT searched: the GIT axis, i.e. the `Γ₁` analogue of
-`exists_gamma0AffineModel`, which exhibits the Katz–Mazur affine model as
-`Spec` of a ring of invariants and reads `smooth`/`connected` off it.
-That is how `X0.lean` cut the corresponding leaf one step further, and it
-is what a successor should try next; it needs a `Gamma1Atlas`/GIT
-presentation that does not exist here yet.  This note is refuted by
-exhibiting a `Γ₁(N)`-affine model, or any construction of `Y_1(N)`, in
-`Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`; as of 2026-07-27
-`grep` over all three finds none. -/
-theorem exists_isCoarseModuliY1_isSmoothCurve (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
-    (_hchar : ¬ ringChar K ∣ N) :
+**Why the statement is EXISTENTIAL, and this is the whole point of the
+cut.**  Initiality (`IsCoarseModuliY1.exists_inverse`) makes all coarse
+spaces of one level over one base isomorphic over that base, so it
+suffices to exhibit ONE model.  The model exhibited is
+`Gamma1AffineModel.Y`, and the five properties are read off it rather
+than off the universal property — which is the form Deligne–Rapoport
+III.1 and Katz–Mazur 8.2 state them in.  Three of the five are then NOT
+modular: the model is affine over the affine `Spec K`, so `QuasiCompact`
+and `IsSeparated` come from `isAffineHom_of_isAffine`, and `IsIntegral`
+from `isIntegral_of_isAffine_of_isDomain`.
+
+AXIS SEARCHED: the BASE-FIELD axis (taken — one node for `ℚ` and `𝔽_ℓ`
+at once), the COMPACTIFICATION axis (taken — the whole
+Nagata/normalization half is
+`AlgebraicGeometry.exists_isSmoothCompactification` and is not modular),
+and, as of 2026-07-27, the GIT axis: the `Γ₁` analogue of
+`exists_gamma0AffineModel` is now built above, the previous "NOT
+searched" note is DISCHARGED, and what remains open below this node is
+the four leaves `exists_gamma1GITPresentation`,
+`isDomain_of_gamma1GITPresentation`,
+`smoothOfRelativeDimension_of_gamma1GITPresentation` and
+`geometricallyConnected_of_gamma1GITPresentation` — a representability
+statement plus three properties of one curve, in place of one
+statement asserting a curve with five properties exists. -/
+theorem exists_isCoarseModuliY1_isSmoothCurve (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K]
+    (hchar : ¬ ringChar K ∣ N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ Spec (CommRingCat.of K)) (_hc : IsCoarseModuliY1 N strY),
       IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
-        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
-  sorry
+        SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
+  obtain ⟨M⟩ := exists_gamma1AffineModel N hN K hchar
+  haveI := M.isAffine
+  haveI := M.isDomain
+  haveI := M.smooth
+  haveI := M.connected
+  -- `Γ(Y, ⊤)` is a domain, hence nontrivial, so `Spec Γ(Y, ⊤) ≅ Y` is nonempty.
+  haveI : Nonempty M.toGamma1Atlas.Y :=
+    Nonempty.map M.toGamma1Atlas.Y.isoSpec.inv.base inferInstance
+  haveI : IsIntegral M.toGamma1Atlas.Y :=
+    isIntegral_of_isAffine_of_isDomain (X := M.toGamma1Atlas.Y)
+  -- affine source over the affine `Spec K`: the structure morphism is affine,
+  -- hence quasi-compact and separated.
+  haveI : IsAffineHom M.toGamma1Atlas.str := inferInstance
+  exact ⟨_, M.toGamma1Atlas.str, M.toGamma1Atlas.toIsCoarseModuliY1,
+    inferInstance, inferInstance, IsSeparated.of_isAffineHom _, inferInstance, inferInstance⟩
 
 /-- **Existence of the compactified coarse moduli space `X_1(N)` over an
 ARBITRARY perfect base field whose characteristic does not divide `N`**
