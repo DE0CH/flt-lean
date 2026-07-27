@@ -250,11 +250,19 @@ ARITHMETIC half — and **only the arithmetic half is still open**:
 * `exists_openNormal_subset_of_mem_nhds_one`,
   `isClosed_wildInertiaGroup` — the topological inputs the profinite
   half needs at `Γ Kᵥ`, both PROVEN.
-* `coprime_card_quotient_wildInertiaGroup` — **the one open leaf**: `P_v`
-  is pro-`ℓ`. This is genuine local field theory (the residue field of
-  `Kᵥᵗᵃᵐᵉ` is separably closed and its value group is `n`-divisible for
-  every `n` prime to `ℓ`, so a finite extension of `Kᵥᵗᵃᵐᵉ` has trivial
-  residue extension and ramification index an `ℓ`-power).
+* `coprime_card_quotient_wildInertiaGroup` — PROVEN 2026-07-27, from the
+  leaf below: the reduction of "coprime to `n` for every open normal `U`"
+  to a single prime and a single element, via finiteness of the quotient
+  (compactness of `Γ Kᵥ` plus the second isomorphism theorem) and
+  Cauchy's theorem.
+* `mem_of_pow_prime_mem_of_mem_wildInertiaGroup` — **the one open leaf**,
+  and the only piece of this block carrying any arithmetic: `P_v` is
+  pro-`ℓ`, in the element-level form "`σ ∈ P_v` and `σ ^ q ∈ U` force
+  `σ ∈ U`, for `q` prime to the residue characteristic". This is genuine
+  local field theory; its docstring records the KUMMER-THEORETIC route
+  (`Kᵥᵗᵃᵐᵉ` contains `μ_q` and has `q`-divisible multiplicative group, so
+  it admits no cyclic degree-`q` extension), which is the route that
+  AVOIDS Ostrowski's defect theorem.
 -/
 
 open scoped Topology in
@@ -452,51 +460,184 @@ theorem isClosed_wildInertiaGroup
   rw [wildInertiaGroup, Subgroup.coe_inf]
   exact (isClosed_localInertiaGroup v).inter (isClosed_tameFixingSubgroup v)
 
-/-- **THE WILD INERTIA IS PRO-`ℓ`** (SORRY LEAF, cut 2026-07-27; this is
-the ONLY thing still open in the `n`-th-root block, and the only piece of
-it that carries any arithmetic).
+/-- **THE WILD INERTIA IS PRO-`ℓ`, IN ITS ELEMENT-LEVEL FORM** (SORRY
+LEAF; RE-CUT 2026-07-27 out of `coprime_card_quotient_wildInertiaGroup`
+below, which is now PROVEN from it). This is the ONLY thing still open in
+the `n`-th-root block, and the only piece of it that carries any
+arithmetic whatsoever.
 
-`P_v = Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)` is the (unique) Sylow pro-`ℓ` subgroup of the
-inertia, `ℓ` the residue characteristic of `v`. Being pro-`ℓ` means every
-finite continuous quotient has `ℓ`-power order, and the form in which
-that fact is CONSUMED is the coprimality below: `n` is prime to `ℓ`
-(spelled `(n : 𝓞 K) ∉ v.asIdeal`, which also forces `n ≠ 0` since
-`0 ∈ v.asIdeal`), so it is coprime to every `ℓ`-power.
+STATEMENT IN WORDS: if `σ` lies in the wild inertia `P_v` and its `q`-th
+power already lies in the open normal subgroup `U`, then `σ` itself lies
+in `U` — i.e. the finite quotient `P_v ⧸ (U ∩ P_v)` has NO ELEMENT OF
+ORDER `q`, for `q` any prime other than the residue characteristic `ℓ`
+(spelled `(q : 𝓞 K) ∉ v.asIdeal`).
 
-Quantifying over the open normal `U ≤ Γ Kᵥ` and taking `U.subgroupOf P_v`
-is exactly "every finite continuous quotient of `P_v`": `U` open makes
-`P_v ⧸ (U ∩ P_v)` finite, and open normal subgroups are cofinal
-(`exists_openNormal_subset_of_mem_nhds_one` above).
+This is EXACTLY the classical assertion that `P_v = Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)`
+is pro-`ℓ` — "every finite continuous quotient of `P_v` is an `ℓ`-group"
+— restated one prime and one element at a time, which is the only form
+the consumer needs. Everything that surrounded that assertion (the
+reduction from an arbitrary `n` to a single prime `q`, the finiteness of
+the quotient, Cauchy's theorem) is now DISCHARGED in
+`coprime_card_quotient_wildInertiaGroup`; what is left here is
+irreducibly local field theory.
 
-WHAT IS MISSING, and it is a genuine subtree rather than a lemma. This is
-local field theory: the residue field of `Kᵥᵗᵃᵐᵉ` is separably closed and
-its value group is `n`-divisible for every `n` prime to `ℓ`, so a finite
-extension of `Kᵥᵗᵃᵐᵉ` has trivial residue extension and ramification
-index an `ℓ`-power, whence `[L : Kᵥᵗᵃᵐᵉ]` is an `ℓ`-power for every
-finite `L`.
+### THE ROUTE TO PROVE IT — Kummer theory, NOT the defect theorem
 
-VERIFIED ABSENT 2026-07-27, and here is the check that would refute it:
+Recorded because the obvious route runs into Ostrowski's lemma and this
+one does not. Write `T := Kᵥᵗᵃᵐᵉ` for the fixed field of `P_v` (mathlib's
+infinite Galois correspondence applies: `P_v` is closed, by
+`isClosed_wildInertiaGroup` above).
+
+1. `T` contains `μ_q`. This is IMMEDIATE FROM THE DEFINITION of
+   `tameFixingSubgroup` and needs no arithmetic: take `n := q` and
+   `a := 1` there, so every `x` with `x ^ q = 1` is fixed by `P_v`.
+2. `Tˣ` is `q`-DIVISIBLE. This is the arithmetic core, and it splits in
+   two along the valuation: the value group of `T` is
+   `ℤ[1/m : ℓ ∤ m] ⊆ ℚ`, which is `q`-divisible by construction (the
+   `m`-th roots of a uniformiser are adjoined); and the units are
+   `q`-divisible by HENSEL, because the residue field of `T` is the
+   algebraic closure of a finite field — so `X ^ q - ū` has a root there
+   — and `X ^ q - u` is separable since `q ≠ ℓ`.
+3. Therefore `Tˣ / (Tˣ) ^ q` is TRIVIAL, and by KUMMER THEORY (mathlib
+   has this: `Mathlib/FieldTheory/KummerExtension.lean`, using `μ_q ⊆ T`
+   from step 1) `T` admits NO cyclic extension of degree `q`. Hence
+   `P_v = Gal(Kᵥᵃˡᵍ / T)` has no open subgroup of index `q`, which is the
+   statement above.
+
+**Why this route and not the textbook one.** The direct valuation-theoretic
+argument — "`e · f = [L : T]` with `f = 1` and `e` an `ℓ`-power" — needs
+the extension to be DEFECTLESS, and `T` is neither complete nor discretely
+valued, so that is Ostrowski's lemma (the defect of a finite extension of
+a henselian field is an `ℓ`-power). Step 2 above sidesteps it entirely:
+`q`-divisibility of `Tˣ` is elementary given Hensel, and Kummer theory
+then does the work that defectlessness would have done.
+
+**What step 3 still needs care about**, and it is the one gap in the
+sketch: Cauchy gives an element of order `q` in `P_v ⧸ (U ∩ P_v)`, and
+turning that into a CYCLIC DEGREE-`q` EXTENSION OF `T` itself (rather
+than of some intermediate finite extension `E/T`, where the `q`-divisibility
+of step 2 is not directly available) is the step to get right. Passing to
+a Sylow-`q` subgroup of the finite quotient produces such an `E`; the fix
+is either to prove step 2 for every finite extension of `T` inside
+`Kᵥᵃˡᵍ` — the invariants are inherited — or to run the argument on the
+procyclic closed subgroup generated by `σ`, which is abelian and so needs
+no Sylow step at all. The second is probably the cheaper formalization.
+
+### ABSENCE RE-VERIFIED 2026-07-27 — and the check that would refute it
+
 `grep -rn "IsProP\|isProP\|ProfiniteGrp" Fermat/ .lake/packages/mathlib/`
 plus `~/cs/FLT`. Mathlib's `Topology/Algebra/Category/ProfiniteGrp/` has
 only `Basic`, `Completion` and `Limits` — no Sylow theory for topological
 groups and no pro-`ℓ` predicate — and mathlib's `RamificationGroup.lean`
 defines only `decompositionSubgroup`/`inertiaSubgroup` and ends in a TODO
 for the higher ramification groups. Neither this project nor `~/cs/FLT`
-defines "pro-`ℓ`" anywhere.
+defines "pro-`ℓ`" anywhere. NOTE this is an absence of the PREDICATE; the
+route above needs none of it, only Kummer theory and Hensel, both present.
 
 NOTE FOR THE NEXT OWNER: everything else on this route is already proven,
 so a proof of THIS statement closes
-`exists_pow_eq_of_mem_wildInertiaGroup` below, and with it step 3 — the
+`coprime_card_quotient_wildInertiaGroup` and
+`exists_pow_eq_of_mem_wildInertiaGroup` below, and with them step 3 — the
 last open step — of `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` in
-`Fermat/FLT/Modularity/Interface.lean`. Nothing else is in the way. -/
+`Fermat/FLT/Modularity/Interface.lean`. Nothing else is in the way.
+
+Every hypothesis is underscore-prefixed because the body is `sorry`; they
+are all genuinely needed and must be consumed by a real proof. -/
+theorem mem_of_pow_prime_mem_of_mem_wildInertiaGroup
+    (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
+    {q : ℕ} (_hq : q.Prime) (_hqv : (q : 𝓞 K) ∉ v.asIdeal)
+    (U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))) [U.Normal]
+    (_hU : IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K))))
+    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
+    (_hσ : σ ∈ wildInertiaGroup v) (_hpow : σ ^ q ∈ U) :
+    σ ∈ U :=
+  sorry
+
+/-- **Every finite continuous quotient of the wild inertia has order
+coprime to `n`, for `n` prime to the residue characteristic** (PROVEN
+2026-07-27 from the single leaf
+`mem_of_pow_prime_mem_of_mem_wildInertiaGroup` above, which carries all
+the arithmetic; everything here is group theory and topology).
+
+Quantifying over the open normal `U ≤ Γ Kᵥ` and taking `U.subgroupOf P_v`
+is exactly "every finite continuous quotient of `P_v`": `U` open makes
+`P_v ⧸ (U ∩ P_v)` finite, and open normal subgroups are cofinal
+(`exists_openNormal_subset_of_mem_nhds_one` above).
+
+THE PROOF, in five steps, and note that the FINITENESS is not a side
+condition one may skip — `Nat.Coprime 0 n` is false for `n ≠ 1`, so the
+statement is genuinely wrong without it:
+
+1. `Γ Kᵥ` is COMPACT and `U` is open, so `Γ ⧸ U` is finite
+   (`Subgroup.quotient_finite_of_isOpen`).
+2. `Nat.card (P_v ⧸ U.subgroupOf P_v)` is by definition the RELATIVE
+   index `U.relIndex P_v`, which divides `U.index` because `U` is normal
+   (`Subgroup.relIndex_dvd_index_of_normal` — the second isomorphism
+   theorem). So it is nonzero, and the quotient is finite.
+3. If it were not coprime to `n`, a common PRIME `q` exists
+   (`Nat.Prime.not_coprime_iff_dvd`). From `q ∣ n` and `hn` we get
+   `(q : 𝓞 K) ∉ v.asIdeal`, i.e. `q ≠ ℓ` — this is the ONLY place `hn` is
+   used, and it is used exactly once.
+4. CAUCHY (`exists_prime_orderOf_dvd_card'`) produces an element of order
+   exactly `q` in that finite quotient; lift it to `σ ∈ P_v` with
+   `σ ^ q ∈ U`.
+5. The pro-`ℓ` leaf then puts `σ` itself in `U`, so its class is trivial,
+   contradicting `orderOf … = q > 1`. -/
 theorem coprime_card_quotient_wildInertiaGroup
     (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K))
     {n : ℕ} (hn : (n : 𝓞 K) ∉ v.asIdeal)
     (U : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))) [U.Normal]
     (hU : IsOpen (U : Set (Field.absoluteGaloisGroup (v.adicCompletion K)))) :
     Nat.Coprime
-      (Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))) n :=
-  sorry
+      (Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))) n := by
+  classical
+  -- STEP 1. `Γ ⧸ U` is FINITE: `U` is open in the compact group `Γ Kᵥ`.
+  haveI hfinΓ : Finite (Field.absoluteGaloisGroup (v.adicCompletion K) ⧸ U) :=
+    Subgroup.quotient_finite_of_isOpen U hU
+  -- STEP 2. hence `P_v ⧸ (U ∩ P_v)` is finite too: its cardinality is the
+  -- RELATIVE index `U.relIndex P_v`, which divides `U.index ≠ 0`.
+  have hdvd : U.relIndex (wildInertiaGroup v) ∣ U.index :=
+    Subgroup.relIndex_dvd_index_of_normal _ _
+  have hidx : U.index ≠ 0 := Subgroup.index_ne_zero_of_finite
+  have hcard : Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v))
+      = U.relIndex (wildInertiaGroup v) := rfl
+  have hne : Nat.card (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) ≠ 0 := by
+    rw [hcard]
+    exact fun h => hidx (Nat.eq_zero_of_zero_dvd (h ▸ hdvd))
+  haveI : Finite (wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) :=
+    Nat.finite_of_card_ne_zero hne
+  -- STEP 3. a failure of coprimality produces a COMMON PRIME `q`.
+  by_contra hcon
+  obtain ⟨q, hq, hqcard, hqn⟩ := Nat.Prime.not_coprime_iff_dvd.mp hcon
+  haveI : Fact q.Prime := ⟨hq⟩
+  -- `q ∣ n` and `n ∉ v` force `q ∉ v`, i.e. `q ≠ ℓ`: this is where `hn` is used.
+  have hqv : (q : 𝓞 K) ∉ v.asIdeal := by
+    intro hmem
+    refine hn ?_
+    obtain ⟨m, rfl⟩ := hqn
+    push_cast
+    exact Ideal.mul_mem_right _ _ hmem
+  -- STEP 4. CAUCHY gives an element of order exactly `q` in the finite quotient.
+  obtain ⟨x, hx⟩ := exists_prime_orderOf_dvd_card'
+    (G := wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) q hqcard
+  obtain ⟨σ, rfl⟩ := QuotientGroup.mk_surjective x
+  have hpow : ((σ : Field.absoluteGaloisGroup (v.adicCompletion K))) ^ q ∈ U := by
+    have h1 : (QuotientGroup.mk (σ ^ q) :
+        wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) = 1 := by
+      rw [QuotientGroup.mk_pow, ← hx]
+      exact pow_orderOf_eq_one _
+    rw [QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf] at h1
+    simpa using h1
+  -- STEP 5. the pro-`ℓ` leaf says such an element is already in `U` — so its
+  -- class is trivial, contradicting `orderOf … = q > 1`.
+  have hmem : (σ : Field.absoluteGaloisGroup (v.adicCompletion K)) ∈ U :=
+    mem_of_pow_prime_mem_of_mem_wildInertiaGroup v hq hqv U hU σ.2 hpow
+  have htriv : (QuotientGroup.mk σ :
+      wildInertiaGroup v ⧸ U.subgroupOf (wildInertiaGroup v)) = 1 := by
+    rw [QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf]
+    exact hmem
+  rw [htriv, orderOf_one] at hx
+  exact hq.one_lt.ne hx
 
 /-- **The wild inertia is pro-`ℓ`: an `n`-th root exists INSIDE `P_v`
 whenever `n` is prime to the residue characteristic** (PROVEN 2026-07-27

@@ -741,11 +741,28 @@ theorem map_le_comap_map_comp {R B A : Type u} [CommRing R] [CommRing B] [CommRi
   rw [Ideal.map_le_iff_le_comap, Ideal.comap_comap]
   exact Ideal.le_comap_map
 
-/-- **CRITÈRE DE PLATITUDE PAR FIBRES, ring level** (sorry leaf — PURE
-COMMUTATIVE ALGEBRA, no schemes, no group schemes: **Stacks 05UV** = Algebra
-Lemma 10.128.9, the non-Noetherian local-ring form; Noetherian case Stacks
-00MP; Matsumura *Commutative Ring Theory* §23 and EGA IV 11.3.10 for the
-classical account).
+/-!
+### CRITÈRE DE PLATITUDE PAR FIBRES, ring level — Stacks 05UV
+
+**SECTION NOTE for the three declarations that follow.**  This block used to
+be the docstring of a single sorry leaf `flat_of_flat_of_flat_quotientMap`.
+On 2026-07-27 that leaf was CUT along the source's own seam into
+
+* `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` — **00R7**, the
+  engine, still open;
+* `essFinitePresentation_of_essFiniteType_of_flat_quotientMap` — the
+  **finite-generation of `J`**, 05UV's other conclusion, still open;
+* `flat_of_flat_of_flat_quotientMap` — now **PROVEN**, a two-line assembly of
+  those two, exactly as 05UV's proof ends.
+
+Everything below is the route audit that produced that cut, retained verbatim
+because each of its claims is paired with the grep that refutes it if it goes
+stale.  Read the two leaves' own docstrings for what each now costs.
+
+PURE COMMUTATIVE ALGEBRA, no schemes, no group schemes: **Stacks 05UV** =
+Algebra Lemma 10.128.9, the non-Noetherian local-ring form; Noetherian case
+Stacks 00MP; Matsumura *Commutative Ring Theory* §23 and EGA IV 11.3.10 for
+the classical account.
 
 *Let `R → B → A` be local homomorphisms of local rings, with `R → A`
 essentially of finite presentation and `R → B` essentially of finite type.
@@ -897,7 +914,150 @@ cut-level restatement, not a simplification of this leaf.  05UV stands.
 * `~/cs/FLT` has none of it either.
 
 A hit on any of those greps means this note has gone stale and the leaf is
-cheaper than it looks. -/
+cheaper than it looks.
+-/
+
+/-- **THE ENGINE: Stacks 00R7** = Algebra Lemma 10.128.8, at `M = S' = A`
+(SORRY LEAF, cut out of `flat_of_flat_of_flat_quotientMap` on 2026-07-27
+along the source's own seam).
+
+*Let `R → B → A` be local homomorphisms of local rings with **both** `R → A`
+and `R → B` essentially of finite **presentation**.  If `A` is flat over `R`
+and `A/𝔪_R A` is flat over `B/𝔪_R B`, then `A` is flat over `B`.*
+
+This is the SAME statement as `flat_of_flat_of_flat_quotientMap` below except
+that `R → B` is assumed essentially of finite PRESENTATION rather than merely
+of finite TYPE.  That single strengthening is the whole difference between
+05UV and 00R7, and it is what makes this the reusable half: 05UV's proof
+invokes 00R7 twice, and the corrected route audit in the section note above
+records that "00R7 is the engine, not a wrong turn".
+
+**FAITHFULNESS.**  00R7's hypotheses are (1) `R → S` and `R → S'` essentially
+of finite presentation, (2) `M` of finite presentation over `S'`, (3) `M ≠ 0`,
+(4) `M/𝔪M` flat over `S/𝔪S`, (5) `M` flat over `R`.  At `M = S' = A`, (2) and
+(3) are theorems rather than assumptions — `A` is finitely presented over
+itself, and `[IsLocalRing A]` already supplies `Nontrivial A` — so they are
+omitted exactly as in the leaf below.  00R7's conclusion also asserts `S` flat
+over `R`; only `M` flat over `S` is kept, because only that is consumed.
+Fewer hypotheses and a weaker conclusion cannot turn a true statement false.
+
+**WHAT PROVING IT COSTS, read off the Stacks proof.**  `00R7 = Noetherian
+approximation (10.127.13 / 10.128.3) + 00MP (10.99.15)`.  So the non-Noetherian
+content is ENTIRELY in the approximation, and the local criterion of flatness
+is only ever needed in the Noetherian setting — which is why the "ideally
+separated" hazard (Matsumura 22.3) flagged in the section note is real for a
+DIRECT attack and absent from this route.  Concretely a prover needs:
+
+* **00MP** — self-contained and Noetherian: `R`, `S`, `S'` Noetherian local,
+  `M` finite over `S'`, `M ≠ 0`, `M/𝔪M` flat over `S/𝔪S`, `M` flat over `R`
+  ⟹ `S` flat over `R` and `M` flat over `S`.  Its own proof cites only
+  Nakayama and the local-criterion family (10.99.7 / 10.99.10 / 10.39.15).
+  The audit's judgement that this is "writable today over `IsNoetherianRing`
+  and `IsLocalRing` with no new definitions" stands.
+* **The approximation half** — writing an essentially-of-finite-type local
+  ring map as a filtered colimit of such maps of NOETHERIAN local rings, plus
+  descent of flatness along that colimit.
+
+**THE APPROXIMATION HALF IS DELIBERATELY NOT CUT HERE, and this is the pin.**
+Stating a filtered system of rings is a design decision, and a wrong one
+manufactures a false or useless sub-leaf; so 00R7 is left ATOMIC rather than
+split into `00MP + approximation`, because the assembly of those two is
+exactly the piece that cannot be written without first making that decision.
+Stating 00MP alone would leave it FREE-FLOATING — no consumer could be
+written — which this development forbids.  Whoever takes the design decision
+should cut here first, and say what they pinned. -/
+theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (_hfpA : EssFinitePresentation (v.comp g))
+    (_hfpB : EssFinitePresentation g)
+    (_hflat : (v.comp g).Flat)
+    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    v.Flat :=
+  sorry
+
+/-- **THE FINITE-GENERATION HALF: 05UV's OTHER conclusion** (SORRY LEAF, cut
+2026-07-27).  Under exactly the hypotheses of
+`flat_of_flat_of_flat_quotientMap`, the map `R → B` is essentially of finite
+PRESENTATION and not merely of finite type.
+
+This is the *first* of 05UV's two conclusions, stated verbatim; the leaf below
+is the second.  Splitting them is what makes the assembly a two-line
+application, and it is the source's own structure: 05UV's proof ends "*Thus we
+see that `S` is essentially of finite presentation over `R`.  Lemma 10.128.8
+[00R7] applies to `R → S → S'` and we conclude.*"
+
+**THE PROOF, from the Stacks argument.**  Write `S = C_q̄` with
+`C = R[x₁,…,xₙ]/I`, put `B' = R[x₁,…,xₙ]_q` and `J = I·B'`, so `S = B'/J` and
+`B'` IS essentially of finite presentation over `R`.  The content is that `J`
+is FINITELY GENERATED:
+
+1. Choose `f₁,…,f_k ∈ J` whose images generate `J̄ ⊂ B'/𝔪B'`.
+2. For each finitely generated `J' ⊆ J` with
+   `(B'/J') ⊗_R R/𝔪 ≅ (B'/J) ⊗_R R/𝔪`, apply **00R7** — i.e.
+   `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above — to
+   `R → B'/J' → S'`, which yields `B'/J'` flat over `R`.
+3. For two such ideals `J'`, `J''`, the surjection `B'/J' → B'/J''` is a map
+   of `R`-flat, essentially-of-finite-presentation algebras that is an
+   isomorphism modulo `𝔪`.  **046Y** (10.128.4) then forces `J' = J''`.
+4. Hence `J` equals the finitely generated `J'` generated by the `fᵢ`.
+
+**046Y is the one genuinely new tool this half needs**, and it is worth
+stating separately when someone attacks this: *`R → S` local with `S`
+essentially of finite presentation over `R`, `u : M → N` a map of `S`-modules
+with `M`, `N` finitely presented over `S`, `N` flat over `R`, and
+`ū : M/𝔪M → N/𝔪N` injective; then `u` is injective and `N/u(M)` is flat over
+`R`.*  Its own proof is again approximation (10.127.13 / 10.128.3) plus the
+Noetherian 10.99.1, so it shares the engine's missing machinery.
+
+It is NOT stated here, deliberately: with step 1's choice of generators and
+the presentation bookkeeping of steps 2–4 unwritten, a stated 046Y would have
+no consumer and would be FREE-FLOATING.  The next owner of this half should
+state it together with the presentation, in one cut.
+
+**WHY THIS SPLIT IS SAFE.**  Both halves are literal Stacks statements
+instantiated at `M = S' = A`, and their conjunction is exactly 05UV — so
+neither can be false unless 05UV is, and the assembly below consumes both
+with no glue that could hide a gap. -/
+theorem essFinitePresentation_of_essFiniteType_of_flat_quotientMap {R B A : Type u}
+    [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (_hfp : EssFinitePresentation (v.comp g))
+    (_hft : g.EssFiniteType)
+    (_hflat : (v.comp g).Flat)
+    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    EssFinitePresentation g :=
+  sorry
+
+/-- **CRITÈRE DE PLATITUDE PAR FIBRES, ring level — Stacks 05UV** (PROVEN
+2026-07-27 from the two leaves above; see the section note for the route
+audit that produced the cut).
+
+*Let `R → B → A` be local homomorphisms of local rings, with `R → A`
+essentially of finite presentation and `R → B` essentially of finite type.
+If `A` is flat over `R` and `A/𝔪_R A` is flat over `B/𝔪_R B`, then `A` is
+flat over `B`.*
+
+**FAITHFULNESS — this is 05UV instantiated at `M = S' = A`, with the source
+quoted in the section note above.**  Hypotheses (3) `M` of finite
+presentation over `S'` and (4) `M ≠ 0` are omitted because at `M = S' = A`
+they are theorems, not assumptions: `A` is finitely presented over itself,
+and `[IsLocalRing A]` already gives `Nontrivial A`.  The conclusion is
+likewise *weaker* than 05UV's, which also asserts that `B` is essentially of
+finite presentation and flat over `R`; only `A` flat over `B` is kept,
+because only that is consumed.  A weaker conclusion and fewer hypotheses
+cannot turn a true statement false, so this statement is safe in both
+directions.
+
+**THE PROOF is the last two sentences of 05UV**: the finite-generation half
+upgrades `R → B` from essentially of finite TYPE to essentially of finite
+PRESENTATION, and 00R7 then applies to `R → B → A` unchanged.  Note that
+`hfp`, `hflat` and `hfib` are each consumed TWICE — once by each half — which
+is why neither leaf may drop them. -/
 theorem flat_of_flat_of_flat_quotientMap {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
@@ -908,7 +1068,11 @@ theorem flat_of_flat_of_flat_quotientMap {R B A : Type u}
     (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
         (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
     v.Flat :=
-  sorry
+  -- Stacks 05UV, final two sentences: upgrade `R → B` from essentially of
+  -- finite TYPE to essentially of finite PRESENTATION, then apply 00R7.
+  flat_of_flat_of_flat_quotientMap_of_essFinitePresentation hfp
+    (essFinitePresentation_of_essFiniteType_of_flat_quotientMap hfp hft hflat hfib)
+    hflat hfib
 
 /-- **A finitely presented ring map followed by a localization is essentially
 of finite presentation.**  This is `EssFinitePresentation` read off its own
