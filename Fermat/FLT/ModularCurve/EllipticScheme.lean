@@ -100,9 +100,15 @@ own branch and wrong once the others landed:
   (`projMul_assoc_pt` was a second one until 2026-07-27 and is now PROVEN from
   the algebraically-closed form, and `geometricallyReduced_projToSpec` was a
   third and is now PROVEN outright);
-* `exists_projGroupLaw_geomFibreEquivVal` — item 8, see below
-  (`exists_projGroupLaw_geomFibreAddEquiv` was the leaf here until
-  2026-07-27 and is now PROVEN from it);
+* `exists_projMul_geomFibreEquivVal` — item 8, see below.  This is the third
+  statement of item 8's leaf in one day and the chain is worth recording, since
+  each step strictly shrank what a witness has to produce:
+  `exists_projGroupLaw_geomFibreAddEquiv` (an `≃+` for an arbitrary
+  `ProjGroupLaw` — refuted as a CUT, it needed rigidity) →
+  `exists_projGroupLaw_geomFibreEquivVal` (a bare `≃` plus the raw morphism
+  identity, `gl` existentially bound) → this leaf (the same clause alongside the
+  CONSTRUCTION of `m`, with `hassoc` split off to `projMul_assoc`).  Both
+  earlier forms are now PROVEN from it;
 * `isIso_projBaseChangeHom` — all that is left of `hbc`, base change for `Proj`;
 * `exists_coordinateRingEquiv_projChartRing` and `compl_basicOpen_projCoord_two`
   — the two halves of `exists_affineChart_projModel` described above;
@@ -133,14 +139,18 @@ about `m`, and was therefore provable only through the rigidity theorem;
 the audit is on `exists_projGroupLaw_geomFibreAddEquiv`.  That leaf also
 subsumes `exists_projAdd`.
 
-**The two cuts are HALF merged** (2026-07-27).  The `hassoc`-entanglement that
-blocked the reconciliation is gone from every remaining OPEN statement — that
-is the downstream half, and it landed.  The upstream half, putting the same
-`hassoc`-free clause on `exists_projMul` so that
-`exists_projGroupLaw_geomFibreEquivVal` becomes plumbing, has NOT landed; the
-compiler-checked signature for it, and why `_gl₀` therefore still stays, are
-in the "Relation to `exists_projAdd`" section of
-`exists_projGroupLaw_geomFibreAddEquiv`'s docstring.
+**The two cuts are now fully merged on the DOWNSTREAM side** (2026-07-27).  The
+`hassoc`-entanglement is gone from every remaining OPEN statement, and
+`exists_projGroupLaw_geomFibreEquivVal` has itself become plumbing: it is
+PROVEN from `exists_projMul_geomFibreEquivVal` (which binds `m` and the
+identification together) plus `projMul_assoc` (which supplies `hassoc` for that
+`m`).  What is still NOT done is the last step — proving
+`exists_projMul_geomFibreEquivVal` from `exists_projMul` itself once
+`exists_projMul` carries the chord–tangent clause.  Until then the tree holds
+TWO leaves asserting the existence of `m`, and they must be reconciled at
+integration rather than both proven; see
+`exists_projMul_geomFibreEquivVal`'s own docstring for the route and for why
+`_gl₀` still stays.
 
 `geometricallyConnected_projToSpec` itself has **no direct sorry** any more.  Of its
 three former steps `hbc`/`hne`/`hpre`:
@@ -3352,10 +3362,106 @@ noncomputable def ProjGroupLaw.geomFibreAddEquivOfVal {E : WeierstrassCurve ℚ}
       rw [hadd x y]
       exact (gl.addCommGroup_add_val (eqv x) (eqv y)).symm) }
 
+open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
+/-- **The chord–tangent multiplication `m`, its three chart axioms, AND the
+identification of the geometric fibre with `E(ℚ̄)`, produced together**
+(sorry node — this is `exists_projMul` strengthened by the `hassoc`-free
+chord–tangent clause, and it is the whole remaining content of item 8).
+
+## Why this leaf exists, and what it replaced
+
+`exists_projGroupLaw_geomFibreEquivVal` below used to carry this content
+directly, and had to produce a whole `ProjGroupLaw` — associativity
+included — in order to state it.  That was wasteful: `hassoc` is already
+reduced, for an ARBITRARY `m` carrying `hcomm`/`hunit`/`hinv`, by
+`projMul_assoc` (whose own residue is `projMul_assoc_pt`, the Milne
+content).  Splitting the associativity off is therefore free, and it is
+what the RESOLVING ROUTE recorded in
+`exists_projGroupLaw_geomFibreAddEquiv`'s docstring prescribes: state the
+chord–tangent clause in `hassoc`-free form, alongside the construction of
+`m`, and let the consumer assemble the `ProjGroupLaw`.
+
+**The `gl` stays existentially bound downstream because `m` is bound
+here.**  That is what keeps the FALSITY-OF-CUT AUDIT on
+`exists_projGroupLaw_geomFibreAddEquiv` discharged: a witness constructs
+`m` and the coordinate identification *together*, so no rigidity theorem
+is needed.  Stating the clause for an arbitrary `m` — or for an arbitrary
+`ProjGroupLaw` — is exactly the shape that audit refutes.  Do not weaken
+this leaf by moving `m` into the binders.
+
+## Why it is a SIBLING of `exists_projMul` rather than an amendment to it
+
+The route the audit prescribes is to put this clause ON `exists_projMul`.
+That was not done, and deliberately: `exists_projMul` is under
+construction (branch `flt-lean-76`, which restates it over a new
+`ProjCoords` interface), and appending a conjunct to its existential
+invalidates the witness being built.  So the strengthening is written
+here instead, where it is inert.
+
+**The two are not independent, and should be reconciled at integration.**
+This leaf implies `exists_projMul` verbatim (drop the last conjunct), so
+when the `ProjCoords` route lands, `exists_projMul` should NOT be proven
+twice: prove THIS leaf from it, and delete nothing.
+
+## The route to a witness, in the `ProjCoords` vocabulary
+
+On branch `flt-lean-76` `exists_projMul` acquires a first conjunct
+
+    ∀ (X : Scheme.{0}) (c d : ProjCoords E X)
+        (h : Ideal.span (Set.range (addXYZ (E.map c.base) c.coord d.coord)) = ⊤),
+      Limits.pullback.lift c.toHom d.toHom (hom_ext_spec_rat _ _) ≫ m = (c.add d h).toHom
+
+— the chart-wise chord–tangent identity, for the glued `m`.  Together with
+`ProjCoords.exists_of_specField` (every `Spec K`-point of `proj E` has
+homogeneous coordinates, because `Pic (Spec K) = 0`) and
+`ProjCoords.toHom_smul` (rescaling coordinates by a unit does not change
+the morphism), that conjunct is exactly what this leaf needs:
+
+* `eqv` is `ProjCoords E (Spec ℚ̄) ⧸ (rescaling) → GeomFibrePt`, i.e.
+  `c ↦ c.toHom`, transported along mathlib's
+  `WeierstrassCurve.Projective.Point.toAffineAddEquiv`
+  (`W.Point ≃+ W.toAffine.Point` over a field), which is what identifies
+  the coordinate classes with `(E⁄ℚ̄).Point`;
+* the additivity clause is the `hlaw` conjunct read at `X = Spec ℚ̄`,
+  together with `ProjCoords.toHom_eq_of_addXYZ_not_span` for the
+  degenerate (diagonal) pairs where `addXYZ` fails to generate;
+* Galois equivariance is then formal: `RelPoint.pre (specGal σ)` is
+  precomposition with `Spec σ`, and precomposing `c.toHom` with `Spec σ`
+  is `(σ • c).toHom` — the coordinatewise action of `σ` on `[x : y : z]`,
+  which under `toAffineAddEquiv` is `WeierstrassCurve.Affine.Point.map`.
+
+*Refuting check for that route*: exhibit a `Spec ℚ̄`-point of `proj E`
+admitting no `ProjCoords` datum, or a pair of `ProjCoords` over `Spec ℚ̄`
+with the same `toHom` that are not related by `ProjCoords.smul`.
+
+**Nothing here needs `hassoc`**, which is the point: `AbelianSchemeStruct.relPair`
+is built from the structure morphism alone and `m` is a bare morphism, so
+the clause is expressible with no `AbelianSchemeStruct` anywhere. -/
+theorem exists_projMul_geomFibreEquivVal (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
+      Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
+              (Limits.pullback.fst (projToSpec E) (projToSpec E))
+              Limits.pullback.condition.symm ≫ m = m ∧
+        Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+              (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
+          (Limits.pullback.lift (projNeg E) (𝟙 (proj E))
+                (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E) ∧
+            ∃ eqv : (E⁄(AlgebraicClosure ℚ)).Point ≃
+                GeomFibrePt (projToSpec E) (𝟙 (Spec (CommRingCat.of ℚ))),
+              (∀ x y : (E⁄(AlgebraicClosure ℚ)).Point,
+                  (eqv (x + y)).1 = AbelianSchemeStruct.relPair (eqv x) (eqv y) ≫ m) ∧
+                ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+                  eqv (WeierstrassCurve.Affine.Point.map
+                      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+                    = RelPoint.pre (specGal σ)
+                        (specGal_comp_base (𝟙 (Spec (CommRingCat.of ℚ))) σ) (eqv x) :=
+  sorry
+
 /-- **The projective Weierstrass model carries a group law whose geometric
-fibre IS `E(ℚ̄)`, equivariantly — the `hassoc`-FREE form** (sorry node —
-item 8, RESTATED 2026-07-27, and this is now the *only* open leaf of item
-8; `exists_projGroupLaw_geomFibreAddEquiv` below is PROVEN from it).
+fibre IS `E(ℚ̄)`, equivariantly — the `hassoc`-FREE form** (PROVEN
+2026-07-27 from `exists_projMul_geomFibreEquivVal` and `projMul_assoc`;
+it was the last open leaf of item 8 until then, and the geometric content
+has moved to that leaf).
 
 This is `exists_projGroupLaw_geomFibreAddEquiv` with the two pieces of
 `AbelianSchemeStruct` structure stripped out of the CONCLUSION:
@@ -3372,21 +3478,41 @@ The `gl : ProjGroupLaw E` is still EXISTENTIALLY bound, which is what
 keeps the FALSITY-OF-CUT AUDIT below discharged: it is bound because a
 statement over an arbitrary `ProjGroupLaw` needs the rigidity theorem.
 
-## Why this shape, and what it is the interface FOR
+## Why this shape, and how it became plumbing
 
 `exists_projAdd` was decomposed (branch `flt-lean-141`) into
 `exists_projMul` — which CONSTRUCTS `m` by gluing the chord–tangent forms
 — and `projMul_assoc`, which supplies `hassoc` for an ARBITRARY `m`.  The
 chord–tangent clause needs the concrete glued `m` (only `exists_projMul`
 has it) *and*, in `≃+` form, `hassoc` (only available after
-`projMul_assoc`).  Stated in the form above it needs only the first, so
-`exists_projMul` can carry it and this leaf becomes pure plumbing; see
-the reconciliation section of the next declaration's docstring for the
-exact signature.  Until that lands, this leaf is the interface, and it is
-where the geometric content of item 8 lives.
+`projMul_assoc`).  Stated in the `hassoc`-free form above it needs only
+the first — which is what makes the assembly below possible.
+
+**The assembly (2026-07-27).**  `exists_projMul_geomFibreEquivVal` binds
+`m` together with `hcomm`/`hunit`/`hinv` and the chord–tangent clause;
+`projMul_assoc E m hcomm hunit hinv` then supplies `hassoc` for that same
+`m`, and `projInfty E` / `projNeg E` / `hom_ext_spec_rat` supply the
+remaining six fields of `ProjGroupLaw`.  So this declaration is now three
+lines and carries no mathematical content: the geometry lives one level
+up, and the associativity lives in `projMul_assoc_pt`.
+
+Note the assembly does NOT go through `nonempty_projGroupLaw`, and could
+not: that produces an ARBITRARY `ProjGroupLaw`, and the chord–tangent
+clause holds only for the glued `m` (this is the FALSITY-OF-CUT AUDIT on
+the next declaration).  `m` and the identification must be bound by ONE
+existential, which is what the leaf above does.
+
+## `_gl₀` STILL STAYS — and what changed about the anchor chain
 
 `_gl₀` is the same CONE ANCHOR as on the next declaration and is unused
-for the same reason; see there. -/
+for the same reason; see there.  **Re-checked after this assembly landed
+(2026-07-27):** `projMul_assoc` now reaches the root cone through a REAL
+dependency edge — this proof applies it — so it no longer depends on the
+anchor.  `nonempty_projGroupLaw`, `exists_projAdd` and `exists_projMul`
+still reach it ONLY through `_gl₀`, so deleting the argument today would
+still make those three free-floating.  The anchor comes out when
+`exists_projMul` carries the chord–tangent clause itself and
+`exists_projMul_geomFibreEquivVal` is proven from it. -/
 theorem exists_projGroupLaw_geomFibreEquivVal (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (_gl₀ : ProjGroupLaw E) :
     ∃ gl : ProjGroupLaw E,
@@ -3399,8 +3525,18 @@ theorem exists_projGroupLaw_geomFibreEquivVal (E : WeierstrassCurve ℚ) [E.IsEl
             eqv (WeierstrassCurve.Affine.Point.map
                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
               = RelPoint.pre (specGal σ)
-                  (specGal_comp_base (𝟙 (Spec (CommRingCat.of ℚ))) σ) (eqv x) :=
-  sorry
+                  (specGal_comp_base (𝟙 (Spec (CommRingCat.of ℚ))) σ) (eqv x) := by
+  obtain ⟨m, hcomm, hunit, hinv, eqv, hadd, hgal⟩ := exists_projMul_geomFibreEquivVal E
+  exact ⟨{ m := m
+           e := _root_.WeierstrassCurve.Projective.projInfty E
+           i := _root_.WeierstrassCurve.Projective.projNeg E
+           hm := hom_ext_spec_rat _ _
+           he := hom_ext_spec_rat _ _
+           hi := hom_ext_spec_rat _ _
+           hassoc := projMul_assoc E m hcomm hunit hinv
+           hcomm := hcomm
+           hunit := hunit
+           hinv := hinv }, eqv, hadd, hgal⟩
 
 /-- **The projective Weierstrass model carries a group law whose geometric
 fibre IS `E(ℚ̄)`, equivariantly** (PROVEN from
@@ -3547,12 +3683,23 @@ THIS declaration is PROVEN from those two, in three lines.  So the
 `hassoc`-entanglement is gone from every remaining OPEN statement in item 8,
 which was the whole obstruction.
 
+**What landed next (2026-07-27, same day).**  The clause was put on a SIBLING
+of `exists_projMul` rather than on `exists_projMul` itself —
+`exists_projMul_geomFibreEquivVal`, stated just above
+`exists_projGroupLaw_geomFibreEquivVal` — for exactly the reason recorded in
+the paragraph below: `exists_projMul` had a live owner mid-construction and
+appending a conjunct to its existential would have invalidated the witness
+being built.  With `m` and the identification bound by ONE existential,
+`projMul_assoc` supplies `hassoc` for that same `m` and
+`exists_projGroupLaw_geomFibreEquivVal` became a three-line assembly.  So item
+8's geometric content now sits in `exists_projMul_geomFibreEquivVal`, and both
+statements below it are PROVEN.
+
 **What has NOT landed, and the exact signature for whoever takes it.**  The
-upstream half — putting the same clause on `exists_projMul`, whence
-`exists_projAdd` bundles it and `exists_projGroupLaw_geomFibreEquivVal`
-becomes pure plumbing — was NOT done here, because `exists_projMul` had a
-live owner mid-construction and rewriting its existential would have
-invalidated the witness being built.  The signature below is compiler-checked
+last step — putting the clause on `exists_projMul` proper, whence
+`exists_projMul_geomFibreEquivVal` is proven from it rather than being a
+second, independent assertion that `m` exists.  **Do not prove
+`exists_projMul` twice**: reconcile.  The signature below is compiler-checked
 in situ (it elaborates inside the `open _root_.WeierstrassCurve.Projective`
 section, with `sorry`):
 
@@ -3589,14 +3736,17 @@ solely by passing it as this `_gl₀`; and the only consumer of
 `exists_projAdd` is `nonempty_projGroupLaw`.  Deleting the argument today
 therefore detaches `nonempty_projGroupLaw`, `exists_projAdd`, `exists_projMul`
 and `projMul_assoc` from the root cone all at once, making four declarations —
-two of them live, owned work — free-floating.  **Re-checked after the
-downstream half landed (2026-07-27): still true, and unchanged by it.**  This
-declaration now passes its `_gl₀` straight through to
-`exists_projGroupLaw_geomFibreEquivVal`, so the anchor chain is exactly as
-long as before and no new dependency edge on `exists_projMul` was created —
-the edge appears only when the UPSTREAM half lands, i.e. when
-`exists_projMul` itself carries the clause and this cluster consumes it.  The
-anchor comes out at that commit, not at this one.
+two of them live, owned work — free-floating.  **Re-checked twice on
+2026-07-27, after each half landed; still true, with ONE change.**
+`projMul_assoc` now reaches the cone by a REAL edge —
+`exists_projGroupLaw_geomFibreEquivVal`'s proof applies it — so the anchor
+carries three declarations rather than four.  `nonempty_projGroupLaw`,
+`exists_projAdd` and `exists_projMul` still reach the cone only through
+`_gl₀`, which this declaration passes straight through to
+`exists_projGroupLaw_geomFibreEquivVal`.  The remaining edge appears when
+`exists_projMul` itself carries the chord–tangent clause and
+`exists_projMul_geomFibreEquivVal` consumes it; the anchor comes out at that
+commit, not at this one.
 
 It is stated OUTSIDE the `open WeierstrassCurve.Projective` section
 above: that namespace carries its own scoped `⁄` notation for
