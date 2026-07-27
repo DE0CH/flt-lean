@@ -16457,9 +16457,212 @@ theorem IsX0CurveModel.spX_specialOpen {N q : ℕ} {R : Subring ℚ} {toF : R �
     (⟨cm.spX, cm.spX_nat⟩ : IsFibreIdent (SpecLoc.special toF) xstr strX')
     cm.model.comm g g₀ h y')
 
+/-! #### The special fibre's coarse-moduli structure, cut down to initiality
+
+The node below used to ask for the WHOLE `IsCoarseModuliY0` of the special
+fibre together with the finiteness of its cusp locus.  Three of those four
+obligations are discharged here, leaving exactly one:
+
+* `classify` and `classify_natural` are the universal property of the
+  PULLBACK, not moduli theory at all.  A `Γ₀(N)`-datum over an
+  `𝔽_q`-scheme `g : T ⟶ 𝔽_q` is in particular a datum over the
+  `ℤ_(q)`-scheme `g ≫ SpecLoc.special toF`, so the integral coarse space
+  `cm.model.coarse` already classifies it; pairing that point with `g`
+  through `RelPoint.baseChangeUp` lands it in `𝒴 ×_{ℤ_(q)} 𝔽_q`.
+  Naturality descends the same way, by `baseChangeDown_injective`.
+* the finiteness of the cusp locus is PROVEN outright below, and needs no
+  moduli input either: `SpecLoc.special toF` is `Spec` of the SURJECTIVE
+  ring map `toF` (`IsReductionBase.surjective`), hence a closed immersion,
+  hence so is its base change `pullback.fst`, which is therefore INJECTIVE
+  on points.  The special-fibre cusp locus is the preimage of the integral
+  one under that injection, and `cm.model.finite_compl` makes the latter
+  finite.
+
+* what genuinely remains is `universal` — INITIALITY of the special fibre,
+  and that is exactly the Deligne–Rapoport good-reduction statement.  It is
+  NOT formal: coarse moduli spaces do not commute with base change in
+  general, and the reason it holds here is that at `q ∤ N` the
+  `Γ₀(N)`-problem is relatively representable and étale over `ℤ[1/N]`
+  (Deligne–Rapoport III.1, VI.6.7; Katz–Mazur 8.6.8).  Concretely, a
+  cocone `c` defined only on `𝔽_q`-schemes cannot be fed to
+  `cm.model.coarse.universal`, which quantifies over ALL `ℤ_(q)`-schemes —
+  a datum over the GENERIC fibre has no `𝔽_q`-structure — so no
+  rearrangement of the integral initiality proves the special one. -/
+
+/-- **`openSection` is the base change of `jZ` followed by the comparison
+isomorphism** (PROVEN).
+
+Already established inside the proof of `isOpenImmersion_openSection`;
+exported here because the cusp-locus count needs the factorisation itself,
+not merely the open-immersion consequence. -/
+theorem IsFibreIdent.openSection_eq {S S' A A' B : Scheme.{0}} {s : S' ⟶ S} {f : A ⟶ S}
+    {f' : A' ⟶ S'} {fY : B ⟶ S} {jZ : B ⟶ A} (e : IsFibreIdent s f f')
+    (hjZ : jZ ≫ f = fY) :
+    IsFibreIdent.openSection e hjZ = fibreBaseChangeMap hjZ s ≫ e.compareInv := by
+  have hfac : IsFibreIdent.openSection e hjZ ≫ e.compareHom = fibreBaseChangeMap hjZ s := by
+    apply Limits.pullback.hom_ext
+    · rw [Category.assoc, e.compareHom_fst, IsFibreIdent.openSection_universalPoint e hjZ,
+        fibreBaseChangeMap_fst]
+    · rw [Category.assoc, e.compareHom_snd, IsFibreIdent.openSection_comp e hjZ,
+        fibreBaseChangeMap_snd]
+  rw [← hfac, Category.assoc, e.compareHom_compareInv, Category.comp_id]
+
+/-- **`fibreBaseChangeMap` is `Limits.pullback.map`** (PROVEN) — the form in
+which mathlib's `Scheme.Pullback.range_map` computes its range. -/
+theorem fibreBaseChangeMap_eq_map {S S' A B : Scheme.{0}} {f : A ⟶ S} {fY : B ⟶ S}
+    {jZ : B ⟶ A} (hjZ : jZ ≫ f = fY) (s : S' ⟶ S) :
+    fibreBaseChangeMap hjZ s
+      = Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) := by
+  apply Limits.pullback.hom_ext
+  · rw [fibreBaseChangeMap_fst]
+    exact (Limits.pullback.lift_fst _ _ _).symm
+  · rw [fibreBaseChangeMap_snd, show Limits.pullback.map fY s f s jZ (𝟙 S') (𝟙 S)
+          (by rw [Category.comp_id, hjZ]) (by simp) ≫ Limits.pullback.snd f s
+          = Limits.pullback.snd fY s ≫ 𝟙 S' from Limits.pullback.lift_snd _ _ _,
+      Category.comp_id]
+
+/-- **The classifying map of the special fibre** (PROVEN) — the universal
+property of the pullback, not moduli theory.
+
+A `Γ₀(N)`-datum over `g : T ⟶ 𝔽_q` is a datum over the `ℤ_(q)`-scheme
+`g ≫ SpecLoc.special toF`, which `cm.model.coarse` classifies; pairing that
+point with `g` is `RelPoint.baseChangeUp`. -/
+noncomputable def IsX0CurveModel.specialClassify {N q : ℕ} {R : Subring ℚ}
+    {toF : R →+* ZMod q} {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    {T : Scheme.{0}} (g : T ⟶ SpecF q) (d : Gamma0Datum N T) :
+    RelPoint (Limits.pullback.snd ystr (SpecLoc.special toF)) g :=
+  RelPoint.baseChangeUp (SpecLoc.special toF)
+    (cm.model.coarse.classify (g ≫ SpecLoc.special toF) d)
+
+/-- **`specialClassify` is natural** (PROVEN) — `baseChangeDown` is injective
+and carries both sides to the integral `classify_natural`. -/
+theorem IsX0CurveModel.specialClassify_natural {N q : ℕ} {R : Subring ℚ}
+    {toF : R →+* ZMod q} {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF q} {g' : T' ⟶ SpecF q}
+    (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hbc : IsBaseChangeOf h d' d) :
+    cm.specialClassify g' d' = RelPoint.pre h hg (cm.specialClassify g d) := by
+  apply RelPoint.baseChangeDown_injective (SpecLoc.special toF)
+  rw [IsX0CurveModel.specialClassify, RelPoint.baseChangeDown_baseChangeUp,
+    IsX0CurveModel.specialClassify, RelPoint.baseChangeDown_pre,
+    RelPoint.baseChangeDown_baseChangeUp]
+  exact cm.model.coarse.classify_natural h
+    (show h ≫ (g ≫ SpecLoc.special toF) = g' ≫ SpecLoc.special toF by
+      rw [← Category.assoc, hg]) hbc
+
+/-- **The cusp locus of the special fibre is finite** (PROVEN).
+
+`toF` is surjective (`IsReductionBase.surjective`), so
+`SpecLoc.special toF = Spec.map toF` is a CLOSED IMMERSION; closed
+immersions are stable under base change, so `pullback.fst` is one too and
+is therefore injective on points.  `Scheme.Pullback.range_map` identifies
+the range of the base-changed open immersion with the preimage of
+`Set.range jZ.base` under that injection, and the complement of a preimage
+is the preimage of the complement — finite by `cm.model.finite_compl`.
+
+Note this needs no moduli input at all, and in particular does not depend
+on the Deligne–Rapoport leaf below. -/
+theorem finite_compl_range_fibreBaseChangeMap_special (N q : ℕ) (_hN : N ≠ 0)
+    (_hq : q.Prime) (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
+    {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
+    (Set.range
+      (fibreBaseChangeMap cm.model.comm (SpecLoc.special toF)).base)ᶜ.Finite := by
+  haveI hci : IsClosedImmersion (SpecLoc.special toF) :=
+    IsClosedImmersion.spec_of_surjective (CommRingCat.ofHom toF) hbase.surjective
+  haveI : IsClosedImmersion (Limits.pullback.fst xstr (SpecLoc.special toF)) :=
+    MorphismProperty.pullback_fst (P := @IsClosedImmersion) xstr _ hci
+  have hinj : Function.Injective (Limits.pullback.fst xstr (SpecLoc.special toF)).base :=
+    (Limits.pullback.fst xstr (SpecLoc.special toF)).isClosedEmbedding.injective
+  have hrange : Set.range (fibreBaseChangeMap cm.model.comm (SpecLoc.special toF)).base
+      = (Limits.pullback.fst xstr (SpecLoc.special toF)).base ⁻¹' Set.range jZ.base := by
+    rw [fibreBaseChangeMap_eq_map, Scheme.Pullback.range_map]
+    simp
+  rw [hrange, ← Set.preimage_compl]
+  exact cm.model.finite_compl.preimage hinj.injOn
+
+/-- **The cusp locus of `specialOpen` is finite, given the same for the
+honest base change** (PROVEN) — transport along `IsFibreIdent.compareIso`.
+
+`X'` is pinned only by its functor of points, so its cusp locus cannot be
+counted directly; `compareIso` turns it into the pullback, where the count
+is `finite_compl_range_fibreBaseChangeMap_special`.  A homeomorphism carries
+complements to complements, which is the whole argument. -/
+theorem IsX0CurveModel.finite_compl_specialOpen_of_fibre {N q : ℕ} {R : Subring ℚ}
+    {toF : R →+* ZMod q} {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    (hfin : (Set.range
+      (fibreBaseChangeMap cm.model.comm (SpecLoc.special toF)).base)ᶜ.Finite) :
+    (Set.range cm.specialOpen.base)ᶜ.Finite := by
+  set e : IsFibreIdent (SpecLoc.special toF) xstr strX' := ⟨cm.spX, cm.spX_nat⟩ with he
+  have hcm : cm.specialOpen
+      = fibreBaseChangeMap cm.model.comm (SpecLoc.special toF) ≫ e.compareInv :=
+    IsFibreIdent.openSection_eq e cm.model.comm
+  have hrange : Set.range cm.specialOpen.base
+      = ⇑(Scheme.homeoOfIso e.compareIso.symm) ''
+        Set.range (fibreBaseChangeMap cm.model.comm (SpecLoc.special toF)).base := by
+    rw [← Set.range_comp, hcm]
+    rfl
+  rw [hrange, ← Set.image_compl_eq
+    (Scheme.homeoOfIso e.compareIso.symm).bijective]
+  exact hfin.image _
+
+/-- **INITIALITY of the special fibre of `Y_0(N)`'s integral model** (sorry
+leaf — good reduction of the `Γ₀(N)`-moduli problem at `q ∤ N`).
+
+This is the entire residue of `isX0CoarseModuli_specialOpen_of_curveModel`:
+`classify`, `classify_natural` and the cusp-locus count are PROVEN above, so
+what is left is the one clause that is genuinely Deligne–Rapoport.
+
+TRUE for `q ∤ N`, and NOT formal.  Coarse moduli spaces do not commute with
+base change in general; the reason this one does is that at `q ∤ N` the
+`Γ₀(N)`-problem is relatively representable and étale over `ℤ[1/N]`
+(Deligne–Rapoport III.1 and VI.6.7; Katz–Mazur 8.6.8, the `[Γ₀(N)]`-case),
+so its coarse space is a categorical quotient whose formation is compatible
+with the base change `ℤ_(q) → 𝔽_q`.
+
+**Why no rearrangement of `cm.model.coarse.universal` proves it**, which is
+the first thing an attacker should check and the reason this is a leaf
+rather than a `have`: `cm.model.coarse.universal` quantifies over cocones
+defined on ALL `ℤ_(q)`-schemes, while `c` here is defined only on
+`𝔽_q`-schemes.  There is no way to extend `c` — a `Γ₀(N)`-datum over the
+GENERIC fibre lives on a scheme with no `𝔽_q`-structure, so `c` assigns it
+nothing.  The integral initiality is therefore strictly weaker input than
+the conclusion, and the gap is exactly the étale/relative-representability
+theory named above.
+
+`_hqN` is the load-bearing hypothesis: at `q ∣ N` the Deligne–Rapoport model
+acquires a crossing of two components in the special fibre, the problem is
+no longer étale, and the conclusion is FALSE.  `_hbase` pins the base as
+`ℤ_(q)` with residue field `𝔽_q`, and `_hq` makes `ZMod q` a field. -/
+theorem exists_unique_specialFibre_universal (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
+    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (_hbase : IsReductionBase q R toF)
+    {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ)
+    {Y' : Scheme.{0}} (str' : Y' ⟶ SpecF q)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q), Gamma0Datum N T → RelPoint str' g)
+    (_hc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF q} {g' : T' ⟶ SpecF q}
+      (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+      IsBaseChangeOf h d' d → c g' d' = RelPoint.pre h hg (c g d)) :
+    ∃! u : Limits.pullback ystr (SpecLoc.special toF) ⟶ Y',
+      u ≫ str' = Limits.pullback.snd ystr (SpecLoc.special toF) ∧
+        ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (d : Gamma0Datum N T),
+          (c g d).1 = (cm.specialClassify g d).1 ≫ u :=
+  sorry
+
 /-- **The special fibre of `Y_0(N)`'s integral model is `Y_0(N)` over
-`𝔽_q`, with finite cusp locus** (sorry node — good reduction of the
-`Γ₀(N)`-moduli problem).
+`𝔽_q`, with finite cusp locus** (ASSEMBLED — three of its four obligations
+are now PROVEN; see the subsection above).
 
 TRUE for `q ∤ N`: this is exactly the statement that the Deligne–Rapoport
 model has good reduction at a prime not dividing the level — the special
@@ -16482,19 +16685,34 @@ and the initiality clause), not a proposition.  The consumer's own goal
 is a `Prop`, so eliminating this existential to build the coarse-space
 field of an `IsX0Compactification` is legitimate.
 
-Every hypothesis is underscored only because the proof is a `sorry`;
-`_hqN` is the load-bearing one — at `q ∣ N` the model is not smooth and
-the conclusion is FALSE, which is the whole reason `q ∤ N` runs through
-this subsection. -/
-theorem isX0CoarseModuli_specialOpen_of_curveModel (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime)
-    (_hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
-    (_hbase : IsReductionBase q R toF)
+**What is open here is now exactly one clause.**  `classify` is
+`IsX0CurveModel.specialClassify`, `classify_natural` is
+`IsX0CurveModel.specialClassify_natural`, and the cusp-locus finiteness is
+`finite_compl_range_fibreBaseChangeMap_special` transported by
+`IsX0CurveModel.finite_compl_specialOpen_of_fibre` — all PROVEN.  The single
+remaining sorry is `exists_unique_specialFibre_universal`, the INITIALITY of
+the special fibre, which is the genuine Deligne–Rapoport content; its
+docstring records why the integral initiality cannot supply it.
+
+`hqN` is the load-bearing hypothesis — at `q ∣ N` the model is not smooth
+and the conclusion is FALSE, which is the whole reason `q ∤ N` runs through
+this subsection.  It, `hN`, `hq` and `hbase` are all consumed (`hbase` twice:
+the cusp count needs `toF` surjective). -/
+theorem isX0CoarseModuli_specialOpen_of_curveModel (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime)
+    (hqN : ¬ q ∣ N) (R : Subring ℚ) (toF : R →+* ZMod q)
+    (hbase : IsReductionBase q R toF)
     {X X' XZ YZ : Scheme.{0}} {strX : X ⟶ SpecQ} {strX' : X' ⟶ SpecF q}
     {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (cm : IsX0CurveModel N q R toF (strX := strX) (strX' := strX') xstr ystr jZ) :
     ∃ _ : IsCoarseModuliY0 N (Limits.pullback.snd ystr (SpecLoc.special toF)),
       (Set.range cm.specialOpen.base)ᶜ.Finite :=
-  sorry
+  ⟨{ classify := fun {_} g d => cm.specialClassify g d
+     classify_natural := fun {_ _} h {_ _} hg {_ _} hbc =>
+       cm.specialClassify_natural h hg hbc
+     universal := fun {_} str' c hc =>
+       exists_unique_specialFibre_universal N q hN hq hqN R toF hbase cm str' c hc },
+   cm.finite_compl_specialOpen_of_fibre
+     (finite_compl_range_fibreBaseChangeMap_special N q hN hq hqN R toF hbase cm)⟩
 
 /-- **The GENERIC fibre of the open part, and the integral `j`-invariant.**
 
