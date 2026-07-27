@@ -40,12 +40,23 @@ leaf is a NAMED theorem with a textbook proof, it is shared between two
 leaves instead of belonging to one, and every step downstream of it is
 now machine-checked.
 
-Note the leaf's specialization at `(m, n) = (1, 1)`: it reads
-`#ker(1 − F) = 1 − a + q = #Wbar(𝔽_q)`, i.e. the fixed-point identity
-`Wbar(𝔽̄_q)^F = Wbar(𝔽_q)`.  That is a consistency check on the sign
-convention, and it is also the "cheap first step" that
-`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd`'s docstring
-points its owner at.
+SECOND CUT, 2026-07-27.  The `(m, n) = (1, 1)` evaluation is no longer a
+consequence of the leaf but an INPUT to it, and it is PROVEN.  It reads
+`#ker([1] − F) = #Wbar(𝔽_q)`, i.e. the fixed-point identity
+`Wbar(𝔽̄_q)^F = Wbar(𝔽_q)`, and it is
+`natCard_ker_one_sub_frobeniusPointEnd` below.  Proving it lets the
+surviving leaf, `exists_natCard_ker_degreeFormEnd`, quantify its middle
+coefficient EXISTENTIALLY: the leaf asserts only that the kernel count is
+a binary quadratic form `m² − c·m·n + n²q` in `(m, n)`, and the pinning
+`c = q + 1 − #Wbar(𝔽_q) = frobeniusTrace` is then a theorem, obtained by
+evaluating at `(1, 1)`.  So `frobeniusTrace` no longer occurs anywhere in
+the frontier, and `natCard_ker_degreeFormEnd` — the statement two other
+leaves consume — is PROVEN.
+
+`natCard_ker_one_sub_frobeniusPointEnd` is also the "cheap first step"
+that `natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd`'s
+docstring points its owner at, and it is now available to that owner
+without waiting for the degree theory.
 -/
 module
 
@@ -84,28 +95,144 @@ over `𝔽_q`, as a rational integer.  Hasse's bound is `a² ≤ 4q`. -/
 noncomputable def frobeniusTrace (q : ℕ) (Wbar : WeierstrassCurve (ZMod q)) : ℤ :=
   (q : ℤ) + 1 - (Nat.card Wbar.toAffine.Point : ℤ)
 
-/-- **The degree of `[m] − [n]∘F` is `m² − a·m·n + n²q`, counted by its
-kernel** (sorry leaf, opened 2026-07-27 as the ONLY remaining input of
-Hasse's bound `hasse_bound_natCard_affine_point`): for `q ∤ m` the
-endomorphism `[m] − [n]∘F` of `Wbar(𝔽̄_q)` is separable, so its degree is
-the cardinality of its kernel, and that degree is the binary quadratic
-form `m² − a·m·n + n²q` with `a = q + 1 − #Wbar(𝔽_q)`.
+/-! ### The rational points are the Frobenius-fixed points
+
+This section proves the `(m, n) = (1, 1)` evaluation of the degree form,
+`#ker([1] − F) = #Wbar(𝔽_q)`.  It is an INPUT of the leaf below, not a
+specialization of it: it is exactly what pins the middle coefficient of
+the quadratic form to the Frobenius trace, and it is what lets the leaf
+be stated with an *unnamed* coefficient (see `exists_natCard_ker_degreeFormEnd`).
+-/
+
+/-- **The `q`-power map fixes exactly the prime field of `𝔽̄_q`**: an
+element with `x ^ q = x` lies in the image of `ZMod q`.
+
+Counting, through `WeilPairing.frobFixedFinset`: the image of
+`algebraMap (ZMod q) 𝔽̄_q` is a `q`-element subset of the `q`-element
+root set of `X ^ q − X`, hence all of it. -/
+theorem exists_algebraMap_eq_of_pow_card_eq (q : ℕ) [Fact q.Prime]
+    {x : AlgebraicClosure (ZMod q)} (hx : x ^ q = x) :
+    ∃ c : ZMod q, algebraMap (ZMod q) (AlgebraicClosure (ZMod q)) c = x := by
+  classical
+  haveI : NeZero q := ⟨(Fact.out : q.Prime).pos.ne'⟩
+  have hinj : Function.Injective (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) :=
+    (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))).injective
+  have key : Finset.image (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) Finset.univ
+      = WeilPairing.frobFixedFinset q 1 := by
+    refine Finset.eq_of_subset_of_card_le ?_ ?_
+    · intro z hz
+      rw [Finset.mem_image] at hz
+      obtain ⟨c, -, rfl⟩ := hz
+      rw [WeilPairing.mem_frobFixedFinset_iff q one_ne_zero, WeilPairing.mem_frobFixed_iff,
+        pow_one, ← map_pow, ZMod.pow_card]
+    · rw [Finset.card_image_of_injective _ hinj, Finset.card_univ, ZMod.card,
+        WeilPairing.card_frobFixedFinset q one_ne_zero, pow_one]
+  have hxmem : x ∈ WeilPairing.frobFixedFinset q 1 := by
+    rw [WeilPairing.mem_frobFixedFinset_iff q one_ne_zero, WeilPairing.mem_frobFixed_iff,
+      pow_one]
+    exact hx
+  rw [← key, Finset.mem_image] at hxmem
+  obtain ⟨c, -, hc⟩ := hxmem
+  exact ⟨c, hc⟩
+
+/-- Membership in the kernel of `degreeFormEnd q Wbar 1 1 = [1] − F` is
+being fixed by the `q`-power Frobenius. -/
+theorem mem_ker_degreeFormEnd_one_one_iff (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q))
+    {P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point} :
+    P ∈ LinearMap.ker (degreeFormEnd q Wbar 1 1) ↔ frobeniusPointEnd q Wbar P = P := by
+  rw [LinearMap.mem_ker]
+  have hval : (degreeFormEnd q Wbar 1 1) P = P - frobeniusPointEnd q Wbar P := by
+    show (1 : ℤ) • P - (1 : ℤ) • (frobeniusPointEnd q Wbar) P = _
+    rw [one_smul, one_smul]
+  rw [hval, sub_eq_zero, eq_comm]
+
+/-- **`#ker([1] − F) = #Wbar(𝔽_q)`** (PROVEN 2026-07-27): the points of
+`Wbar(𝔽̄_q)` fixed by the `q`-power Frobenius are exactly the
+`𝔽_q`-rational points.
+
+This is the `(m, n) = (1, 1)` value of the degree form, and the whole
+arithmetic content of the Frobenius trace: `Wbar(𝔽_q) ↪ Wbar(𝔽̄_q)` is
+injective (`Point.map_injective`) with image inside the fixed points
+(`Point.map_baseChange`), and a fixed affine point has both coordinates
+in `{x | x ^ q = x}`, which is the prime field
+(`exists_algebraMap_eq_of_pow_card_eq`), so the inclusion is onto. -/
+theorem natCard_ker_one_sub_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) :
+    Nat.card (LinearMap.ker (degreeFormEnd q Wbar 1 1))
+      = Nat.card Wbar.toAffine.Point := by
+  classical
+  have hmem : ∀ P : Wbar.toAffine.Point,
+      WeierstrassCurve.Affine.Point.baseChange (W' := Wbar) (ZMod q)
+        (AlgebraicClosure (ZMod q)) P ∈ LinearMap.ker (degreeFormEnd q Wbar 1 1) := by
+    intro P
+    rw [mem_ker_degreeFormEnd_one_one_iff]
+    exact WeierstrassCurve.Affine.Point.map_baseChange (W' := Wbar)
+      (F := ZMod q) (K := AlgebraicClosure (ZMod q)) (L := AlgebraicClosure (ZMod q))
+      (WeilPairing.frobAlgHom q) P
+  refine (Nat.card_congr (Equiv.ofBijective
+      (fun P : Wbar.toAffine.Point =>
+        (⟨WeierstrassCurve.Affine.Point.baseChange (W' := Wbar) (ZMod q)
+            (AlgebraicClosure (ZMod q)) P, hmem P⟩ :
+          LinearMap.ker (degreeFormEnd q Wbar 1 1))) ⟨?_, ?_⟩)).symm
+  · intro P₁ P₂ hP
+    exact WeierstrassCurve.Affine.Point.map_injective _ (congrArg Subtype.val hP)
+  · rintro ⟨P, hP⟩
+    rw [mem_ker_degreeFormEnd_one_one_iff] at hP
+    cases P with
+    | zero => exact ⟨0, Subtype.ext (map_zero _)⟩
+    | some x y h =>
+      have hP' : WeierstrassCurve.Affine.Point.map (W' := Wbar) (S := ZMod q)
+          (WeilPairing.frobAlgHom q) (WeierstrassCurve.Affine.Point.some x y h)
+          = WeierstrassCurve.Affine.Point.some x y h := hP
+      rw [WeierstrassCurve.Affine.Point.map_some] at hP'
+      obtain ⟨hx, hy⟩ := WeierstrassCurve.Affine.Point.some.inj hP'
+      have hx' : x ^ q = x := hx
+      have hy' : y ^ q = y := hy
+      obtain ⟨c, hc⟩ := exists_algebraMap_eq_of_pow_card_eq q hx'
+      obtain ⟨d, hd⟩ := exists_algebraMap_eq_of_pow_card_eq q hy'
+      subst hc
+      subst hd
+      have hns : (Wbar⁄(ZMod q)).Nonsingular c d :=
+        (WeierstrassCurve.Affine.baseChange_nonsingular (W := Wbar)
+          (f := Algebra.ofId (ZMod q) (AlgebraicClosure (ZMod q)))
+          (Algebra.ofId (ZMod q) (AlgebraicClosure (ZMod q))).injective c d).mp h
+      exact ⟨WeierstrassCurve.Affine.Point.some c d hns, Subtype.ext rfl⟩
+
+/-! ### The degree form -/
+
+/-- **The degree of `[m] − [n]∘F` is a binary quadratic form of
+discriminant `c² − 4q`, counted by its kernel** (sorry leaf, opened
+2026-07-27; the ONLY remaining input of Hasse's bound
+`hasse_bound_natCard_affine_point`): for `q ∤ m` the endomorphism
+`[m] − [n]∘F` of `Wbar(𝔽̄_q)` is separable, so its degree is the
+cardinality of its kernel, and that degree is `m² − c·m·n + n²q` for a
+coefficient `c` independent of `(m, n)`.
 
 Silverman *AEC*: III.6.2 (`deg` is a positive definite quadratic form on
 `End(E)`, via the dual isogeny), III.5.5/V.1.1 (`[m] − [n]∘F` is
-separable iff `char ∤ m`), V.1.1 (the evaluation `deg F = q`,
-`deg(1 − F) = #E(𝔽_q)`, hence the displayed form).
+separable iff `char ∤ m`), V.1.1 (the evaluation `deg F = q`, hence the
+displayed form).
 
-CLASSICAL DECOMPOSITION, recorded rather than cut, because every piece of
-it needs the same missing theory and cutting it would only spread that
-theory over three leaves instead of one:
+WHY THE COEFFICIENT IS EXISTENTIALLY QUANTIFIED, and this is the whole
+cut of 2026-07-27.  The classical statement names `c = q + 1 − #Wbar(𝔽_q)`,
+and naming it there bundles *two* separate things: the SHAPE of the form
+(a quadratic form in `(m, n)` with leading coefficients `1` and `q`),
+which needs the whole missing degree theory, and the VALUE of its middle
+coefficient, which needs only the `(m, n) = (1, 1)` evaluation
+`deg(1 − F) = #ker(1 − F) = #Wbar(𝔽_q)`.  The second half is PROVEN, as
+`natCard_ker_one_sub_frobeniusPointEnd`, so `natCard_ker_degreeFormEnd`
+below is now a theorem over this leaf.  That is a genuine reduction: the
+Frobenius trace, `frobeniusTrace`, no longer appears anywhere in the
+frontier.
 
-* `deg` exists on `End(E)` and satisfies the parallelogram law
-  `deg(φ + ψ) + deg(φ − ψ) = 2 deg φ + 2 deg ψ` (III.6.2).  This is the
-  dual-isogeny input and it is the whole difficulty.
-* `deg F = q` and `deg(1 − F) = #E(𝔽_q)` (V.1.1); the latter is the
-  separability of `1 − F` together with `ker(1 − F) = E(𝔽_q)`.
-* `#ker φ = deg φ` for separable `φ` (III.4.10).
+An earlier version of this docstring recorded the classical three-way
+decomposition (parallelogram law; `deg F = q` and `deg(1 − F) = #E(𝔽_q)`;
+`#ker φ = deg φ` for separable `φ`) and rejected cutting along it,
+because every piece needs the same absent `deg`.  That reasoning is still
+correct **on that axis** — and the axis it did not search is the one taken
+here, which splits off not a piece of the degree theory but the arithmetic
+NORMALISATION of its output.
 
 THE HYPOTHESIS `q ∤ m` IS EXACTLY SEPARABILITY AND IS LOAD-BEARING.  At
 `m = 0` the endomorphism `−[n]∘F` is purely inseparable with trivial
@@ -125,19 +252,107 @@ present and PROVEN (`natCard_affine_point_eq`, `natCard_affine_point_le`,
 `EllipticCurve/TorsionReduction.lean`).  What is absent from all three
 trees is the degree of an isogeny.  In particular
 `EllipticCurve/Isogeny.lean`'s `degree` is `Nat.card (ker ·)` — the
-SEPARABLE degree, which `Isogeny.frobIsog_degree` proves is `1` for
-Frobenius — so it cannot serve, and neither can
-`WeierstrassCurve.End.exists_charPoly` (`EllipticCurve/IsogenyTrace.lean`),
-which reads like this statement but whose `n` is that same separable
-degree.  THE CHECK THAT WOULD REFUTE THE "absent" CLAIM: a degree
-function on isogenies in any of those trees that is not `Nat.card (ker ·)`,
-or a statement of the parallelogram law for it. -/
+SEPARABLE degree, which is `1` for Frobenius — so it cannot serve, and
+neither can `WeierstrassCurve.End.exists_charPoly`
+(`EllipticCurve/IsogenyTrace.lean`), whose `n` is that same separable
+degree.  Note also that `Isogeny.lean`'s whole `End`/`dual` layer carries
+`[CharZero F]`, refuted without it by the Frobenius of `y² + y = x³` over
+`𝔽̄₂`, so it is unavailable here on principle and not merely by accident.
+THE CHECK THAT WOULD REFUTE THE "absent" CLAIM: a degree function on
+isogenies in any of those trees that is not `Nat.card (ker ·)`, or a
+statement of the parallelogram law for it, valid in characteristic `p`.
+
+ROUTE NOTES, and the axis each one was searched on (2026-07-27).  TWO
+routes were examined; the second is NOT blocked by the missing `deg` and
+is the one to try first.
+
+* *Degree axis* (Silverman III.6.2).  Build `deg` on `End(E)` and prove
+  it is a quadratic form, via the dual isogeny.  Blocked exactly as the
+  MACHINERY AUDIT above says.  It is worth noting WHY the block is
+  structural rather than accidental: `Isogeny.lean` refutes its own dual
+  construction in characteristic `p` (`Isogeny.NotIsRationalMapDualHom`,
+  the Frobenius of `y² + y = x³` over `𝔽̄₂`), so the existing layer cannot
+  simply have its `[CharZero F]` dropped — the dual has to be built
+  differently, carrying inseparability.
+
+* *Endomorphism-algebra axis*, which needs no `deg` at all.  Four steps,
+  of which only the first and last are open:
+
+  1. The Frobenius characteristic equation ON POINTS (*AEC* V.2.3.1):
+     `∃ c : ℤ, ∀ P, F (F P) - c • F P + q • P = 0`.  The `c` produced
+     here is exactly the `c` this leaf asks for, so a successor should
+     state it with the SAME existential and not name it.
+  2. Pure ring algebra, no geometry: with `ψ = [m] − [n]F` and the
+     conjugate `ψ' = [m − n·c] + [n]F`, step 1 gives
+     `ψ ∘ ψ' = ψ' ∘ ψ = [d]` with `d = m² − c·m·n + n²q`.  This is one
+     `noncomm_ring`-shaped expansion.
+  3. `Isogeny.card_ker_comp` (`EllipticCurve/Isogeny.lean`, PROVEN, pure
+     group theory over `AddMonoidHom` — no curve, no characteristic
+     hypothesis) then gives `#ker ψ · #ker ψ' = #ker [d] = #E[d]`,
+     and `TorsionCard.card_torsionBy` (in
+     `EllipticCurve/TorsionCardSep.lean`; PROVEN, `#E(k̄)[n] = n²` for
+     `(n : k) ≠ 0`) evaluates the right-hand side when `q ∤ d`.  The side
+     condition of `card_ker_comp` is surjectivity of `ψ'` on
+     `𝔽̄_q`-points.
+  4. What is left is the SEPARATION — deducing `#ker ψ = d` from
+     `#ker ψ · #ker ψ' = d²` — together with the case `q ∣ d`.  The
+     classical separation is `ℓ`-adic: for `ℓ ≠ q` the `ℓ`-part of
+     `#ker ψ` is `|det(ψ | T_ℓ E)|_ℓ⁻¹` by Smith normal form over `ℤ_ℓ`,
+     with `det(F | T_ℓ) = q` and `tr(F | T_ℓ) = c`; and at `ℓ = q` it is
+     the ordinary/supersingular dichotomy (`q ∤ c` gives
+     `E[q^∞] ≅ ℚ_q/ℤ_q` with `F` acting by the unit root `u`, so
+     `v_q(d) = v_q(m − n·u)`; `q ∣ c` forces `E[q^∞] = 0`, and then
+     `v_q(d) = 0` because `q ∤ m`).
+
+  So this axis reduces the leaf to TORSION STRUCTURE plus `ℤ_ℓ` linear
+  algebra, not to the dual isogeny.  THE CHECK THAT WOULD REFUTE the
+  claim that step 4 is the hard part: a Tate module `T_ℓ E ≅ ℤ_ℓ²` or a
+  statement of the `q`-primary structure `E[q^∞] ≅ ℚ_q/ℤ_q ∨ 0` already
+  in this tree — neither was found by a name-level grep.
+
+NON-VACUITY, two independent evaluations.  At `n = 0` the statement reads
+`#ker [m] = m²`, which is `TorsionCard.card_torsionBy` — so the leaf
+is consistent with a PROVEN theorem at one boundary.  At `(m, n) = (1, 1)`
+it reads `#ker([1] − F) = 1 − c + q`, and
+`natCard_ker_one_sub_frobeniusPointEnd` evaluates the left-hand side
+independently as `#Wbar(𝔽_q)`; that is what pins `c`, and it is why the
+existential here carries arithmetic rather than being satisfiable by
+junk. -/
+theorem exists_natCard_ker_degreeFormEnd (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
+    ∃ c : ℤ, ∀ m n : ℤ, ¬ ((q : ℤ) ∣ m) →
+      (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
+        = m ^ 2 - c * m * n + n ^ 2 * (q : ℤ) :=
+  sorry
+
+/-- **The degree of `[m] − [n]∘F` is `m² − a·m·n + n²q`, counted by its
+kernel** (PROVEN 2026-07-27 over `exists_natCard_ker_degreeFormEnd` and
+`natCard_ker_one_sub_frobeniusPointEnd`): for `q ∤ m` the endomorphism
+`[m] − [n]∘F` of `Wbar(𝔽̄_q)` is separable, so its degree is the
+cardinality of its kernel, and that degree is the binary quadratic form
+`m² − a·m·n + n²q` with `a = q + 1 − #Wbar(𝔽_q)`.
+
+The proof is the coefficient pinning: the leaf supplies *some* `c`, and
+evaluating at `(m, n) = (1, 1)` — legitimate because `q ≥ 2` gives
+`q ∤ 1` — reads `#ker([1] − F) = 1 − c + q`.  Since `#ker([1] − F)` is
+`#Wbar(𝔽_q)`, that is `c = q + 1 − #Wbar(𝔽_q) = frobeniusTrace`. -/
 theorem natCard_ker_degreeFormEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {m n : ℤ}
     (hm : ¬ ((q : ℤ) ∣ m)) :
     (Nat.card (LinearMap.ker (degreeFormEnd q Wbar m n)) : ℤ)
-      = m ^ 2 - frobeniusTrace q Wbar * m * n + n ^ 2 * (q : ℤ) :=
-  sorry
+      = m ^ 2 - frobeniusTrace q Wbar * m * n + n ^ 2 * (q : ℤ) := by
+  obtain ⟨c, hc⟩ := exists_natCard_ker_degreeFormEnd q Wbar
+  have hq2 : 2 ≤ (q : ℤ) := by exact_mod_cast (Fact.out : q.Prime).two_le
+  have hone : ¬ ((q : ℤ) ∣ (1 : ℤ)) := fun hdvd => by
+    have := Int.le_of_dvd one_pos hdvd
+    linarith
+  have hpin := hc 1 1 hone
+  rw [natCard_ker_one_sub_frobeniusPointEnd] at hpin
+  have hcval : c = frobeniusTrace q Wbar := by
+    rw [frobeniusTrace]
+    linarith [hpin]
+  rw [← hcval]
+  exact hc m n hm
 
 /-- **Positivity of the degree form** (PROVEN 2026-07-27, and this is the
 entire point of the cut): the value `m² − a·m·n + n²q` is a cardinality,
