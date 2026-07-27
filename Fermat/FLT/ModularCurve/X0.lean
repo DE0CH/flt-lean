@@ -334,10 +334,12 @@ public import Mathlib.RingTheory.Spectrum.Prime.Topology
 -- the import.  A non-public import confines the token to THIS file, where the
 -- single affected field is written `«over»`.
 --
--- The only thing consumed from it is `exists_ellipticScheme_of_projModel`, in a
--- PROOF BODY; its statement is existential over the scheme and mentions neither
--- `proj` nor `projToSpec`, which is exactly what makes a non-public import
--- sufficient.
+-- Two things are consumed from it, both in PROOF BODIES:
+-- `exists_ellipticScheme_of_projModel` (the forward bridge) and
+-- `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` (the reverse
+-- one, consumed by `exists_weierstrassCurve_of_abelianSchemeStruct` below).
+-- Both statements are existential over the scheme and mention neither `proj`
+-- nor `projToSpec`, which is exactly what makes a non-public import sufficient.
 import Fermat.FLT.ModularCurve.EllipticScheme
 -- The statement layer for weight-two Hecke eigenforms on `Γ₀(N)` and their
 -- `L`-functions (`IsWeightTwoEigenform`, `IsLFunctionOf`, `Gamma0GL`), which is
@@ -9013,9 +9015,14 @@ ingredients its own docstring listed:
 What is left over is the translation back from a `Γ₀(N)`-datum over `ℚ` to a
 Weierstrass curve, `exists_stableCyclic_of_gamma0Datum`: the exact converse of
 `nonempty_gamma0Datum_of_stable`, and a statement with no modular curve in it
-at all.  That one is now PROVEN (2026-07-27) over the single leaf
+at all.  That one is now PROVEN (2026-07-27) over
 `exists_weierstrassCurve_of_abelianSchemeStruct` — a Weierstrass model of an
-abelian scheme of relative dimension one over a field.
+abelian scheme of relative dimension one over a field — which is itself PROVEN
+the same day by citing `EllipticScheme.lean`'s reverse bridge
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`.  So this
+subsection leaves exactly ONE open leaf in this module,
+`exists_gamma0Datum_specQ_of_ratPoint`; the Riemann–Roch geometry is open
+in `EllipticScheme.lean`, not here.
 
 The degenerate level is separated as everywhere else in this file:
 `y0HasNoRationalPoint_zero` is PROVEN (from `isEmpty_of_gamma0Datum_zero` and
@@ -9258,8 +9265,9 @@ theorem liesIn_galSMul {A S C : Scheme.{u}} {f : A ⟶ S}
   exact ⟨specGal σ ≫ w, by rw [Category.assoc, hw]; rfl⟩
 
 /-- **An abelian scheme of relative dimension `1` over `ℚ` has a
-Weierstrass model** (sorry node, introduced 2026-07-27): the exact CONVERSE
-of `exists_ellipticScheme_of_weierstrass`, and the larger half of
+Weierstrass model** (introduced as a sorry node 2026-07-27; **PROVEN the
+same day**, by citation — see WHERE THE GEOMETRY LIVES below): the exact
+CONVERSE of `exists_ellipticScheme_of_weierstrass`, and the larger half of
 `exists_stableCyclic_of_gamma0Datum` below.
 
 TRUE.  `f : A ⟶ Spec ℚ` proper, smooth, geometrically connected of relative
@@ -9302,16 +9310,52 @@ not a defect of this statement: `exists_stableCyclic_of_gamma0Datum`'s
 conclusion mentions no coordinate either, so nothing downstream of it wants
 one.
 
-**WHERE THIS BELONGS.**  Nothing in this statement is about modular curves:
-it is a fact about `AbelianSchemeStruct` and `SmoothOfRelativeDimension`,
-and its natural home is `Fermat/FLT/Modularity/AbelianScheme.lean`, whose
-vocabulary it is written in.  It is stated *here* only because that module
-had a live owner in the merge batch (`flt-lean-121`, carrying the
-polarization module as data) when this leaf was cut, and a concurrent edit
-there would have cost the integrator a conflict for no mathematical gain.
-**A successor should hoist it**, unchanged, once that batch has landed; the
-only consumer is `exists_stableCyclic_of_gamma0Datum` immediately below, so
-the hoist is a move plus one import that already exists. -/
+**WHERE THE GEOMETRY LIVES — and it is NOT here** (2026-07-27, and this
+paragraph replaces a "a successor should hoist this into
+`Fermat/FLT/Modularity/AbelianScheme.lean`" instruction that was written
+when the leaf was cut and is now wrong in both of its halves).
+
+This node is a DUPLICATE CUT.  The whole reverse bridge had already been
+assembled, on the same day and independently, in
+`Fermat/FLT/ModularCurve/EllipticScheme.lean`, whose
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` is this
+statement with one extra conjunct — the affine chart
+`Spec E.toAffine.CoordinateRing ↪ A` onto the complement of the zero
+section — and whose own docstring says, correctly, "it is the declaration
+`X0.lean` was missing".  So the body below is a citation, and the
+Riemann–Roch content sits where it belongs, on that module's three named
+leaves:
+
+* `exists_affineComplement_zeroSection` — the complement of the zero
+  section is affine;
+* `exists_weierstrassRingEquiv_of_affineComplement` — **this one IS
+  Riemann–Roch** (`AEC` III.3.1: `dim L(n[O]) = n`, the seven monomials of
+  `L(6[O])`, the linear relation);
+* `isElliptic_of_isOpenImmersion_coordinateRing` — smoothness of the chart
+  forces `IsUnit E.Δ` (`AEC` III.1.4, the singular point of a singular
+  Weierstrass equation being rational in characteristic zero).
+
+The `≃+` half is *proven* there, in
+`exists_geomFibreAddEquiv_of_weierstrassModel`, by transporting
+`exists_projGeomFibreAddEquiv` along an isomorphism of proper models; its
+own open inputs are `exists_isIso_of_affineChart` and `relPointPost_add`
+(rigidity).  Nothing above is restated in this module.
+
+**And the hoist is impossible, not merely unnecessary.**
+`AbelianScheme.lean` is UPSTREAM of every Weierstrass module in the tree —
+`EllipticScheme.lean` imports it — so a statement mentioning
+`WeierstrassCurve ℚ`, `E.IsElliptic` and `WeierstrassCurve.Affine.Point.map`
+cannot be stated there without inverting that dependency.  (The stated
+reason for deferring the hoist has in the meantime been discharged:
+`flt-lean-121`'s `PolarizationStruct` has landed.  It does not help, for the
+reason just given.)
+
+What this declaration is still FOR, and why it is not deleted: it is the
+local name that `exists_stableCyclic_of_gamma0Datum` immediately below
+consumes, phrased in `SpecQ` and carrying only the conjunct that consumer
+uses, so that the coordinate conjunct — and with it any temptation to read
+an `IsWeierstrassModel` out of this node, see the warning above — stays
+out of this module. -/
 theorem exists_weierstrassCurve_of_abelianSchemeStruct {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
@@ -9320,8 +9364,10 @@ theorem exists_weierstrassCurve_of_abelianSchemeStruct {A : Scheme.{0}} {f : A �
         ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
           e (WeierstrassCurve.Affine.Point.map
               (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
-            = ab.galSMul (𝟙 SpecQ) σ (e x) :=
-  sorry
+            = ab.galSMul (𝟙 SpecQ) σ (e x) := by
+  obtain ⟨E, hE, -, he⟩ :=
+    exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme ab hdim
+  exact ⟨E, hE, he⟩
 
 /-- **A `Γ₀(N)`-datum over `Spec ℚ` IS an elliptic curve over `ℚ` with a
 Galois-stable cyclic subgroup of order `N`** (introduced as a sorry node
@@ -9340,10 +9386,11 @@ scheme) and `exists_cyclicSubgroupOfOrder_of_galoisStable` (Galois descent for
 the level structure).  This node needs the two converses, and they turned out to
 be of very unequal size:
 
-1. *elliptic scheme ⟹ Weierstrass model* is the LEAF
+1. *elliptic scheme ⟹ Weierstrass model* is
    `exists_weierstrassCurve_of_abelianSchemeStruct` above — Riemann–Roch on
-   `𝒪(3·O)`, stated in `AbelianSchemeStruct` vocabulary and carrying its own
-   route, reference and refuting check.  It is where all the geometry is.
+   `𝒪(3·O)`, stated in `AbelianSchemeStruct` vocabulary.  It is where all the
+   geometry is, and it is **not a leaf**: it cites `EllipticScheme.lean`'s
+   reverse bridge, on whose three Riemann–Roch leaves the geometry is open.
 2. *level structure ⟹ stable generator* is PROVEN here, and is three steps:
    `cyc.geom_cyclic` at `K = ℚ̄` and `t = specAlgClos ℚ ≫ 𝟙` supplies `y` of
    order `N` whose `zmultiples` are EXACTLY the relative points lying in
@@ -9440,9 +9487,12 @@ refute it.
 
 The leaves above, plus the two steps that are genuinely about this statement and
 are carried out here.  **`exists_stableCyclic_of_gamma0Datum` is now PROVEN**
-over the single leaf `exists_weierstrassCurve_of_abelianSchemeStruct`, so the
-open frontier of this assembly is `exists_gamma0Datum_specQ_of_ratPoint` and
-that Weierstrass-model leaf:
+over `exists_weierstrassCurve_of_abelianSchemeStruct`, which is itself PROVEN
+(2026-07-27) by citation of `EllipticScheme.lean`'s reverse bridge — so the
+open frontier of this assembly **inside this module** is exactly one leaf,
+`exists_gamma0Datum_specQ_of_ratPoint`.  The Weierstrass-model geometry is open
+elsewhere, on `EllipticScheme.lean`'s three named Riemann–Roch leaves; see the
+docstring of `exists_weierstrassCurve_of_abelianSchemeStruct` for the list:
 
 1. `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (PROVEN) gives the
    SURJECTIVITY half of geometric bijectivity at an arbitrary coarse space —
