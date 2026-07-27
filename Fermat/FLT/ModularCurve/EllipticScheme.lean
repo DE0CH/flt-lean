@@ -13,6 +13,8 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Proper
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.MvPolynomial.Ideal
+public import Mathlib.Algebra.MvPolynomial.Division
+public import Mathlib.AlgebraicGeometry.ProjectiveSpectrum.Scheme
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.AlgebraicGeometry.EllipticCurve.VariableChange
@@ -45,10 +47,23 @@ commutative ring) is proven here.  The four open leaves are therefore
 `nonempty_projGroupLaw`, `exists_projGeomFibreAddEquiv`,
 `locally_isStandardSmooth_awayCoord` (all that is left of item 7a — and what it
 wants is a missing piece of MATHLIB, the dehomogenisation isomorphism for a chart
-of `Proj` of a polynomial quotient), and the interior of
-`geometricallyConnected_projToSpec`, which still carries three named sorried
-steps `hbc`/`hne`/`hpre`.  Each declaration carries its own docstring saying what
-is missing and where the classical argument is.
+of `Proj` of a polynomial quotient), and the two leaves that
+`geometricallyConnected_projToSpec` now consumes.  Each declaration carries its own
+docstring saying what is missing and where the classical argument is.
+
+`geometricallyConnected_projToSpec` itself has **no direct sorry** any more.  Of its
+three former steps `hbc`/`hne`/`hpre`:
+
+* `hne` is **PROVEN** as `nonempty_proj`, over an arbitrary base field.  The point at
+  infinity `[0 : 1 : 0]` is the homogeneous prime `(X̄, Z̄)`; the missing mathlib piece
+  was primality of the span of a SUBSET of the variables, which is supplied here by
+  `span_X_Z_eq_ker_killXZ` exhibiting `(X, Z)` as a kernel.
+* `hpre` is **PROVEN** as `preconnectedSpace_proj` modulo the single leaf
+  `prime_projPolynomial`.  The general statement that `Proj` of a graded domain is
+  irreducible — also absent from mathlib — is proven here as
+  `irreducibleSpace_projectiveSpectrum`.
+* `hbc` remains open as `nonempty_projPullbackIso`; it is base change for `Proj`,
+  which exists nowhere at this pin, and its docstring records the intended route.
 
 ## Why this is not in `X0.lean`
 
@@ -558,6 +573,330 @@ theorem smoothOfRelativeDimension_projToSpec (E : WeierstrassCurve ℚ) [E.IsEll
     (Proj.affineOpenCoverOfIrrelevantLESpan (projGrading E) f (m := fun _ => 1) f_deg
       (fun _ => Nat.one_pos) hf).openCover hchart
 
+section GeometricConnectedness
+
+open _root_.MvPolynomial
+
+/-! ### The ideal `(X, Z)` of `K[X, Y, Z]`, and the point at infinity
+
+Everything in this block is what `geometricallyConnected_projToSpec` consumes for its
+`hne` step, and it is fully proven.  The point at infinity `[0 : 1 : 0]` is the
+homogeneous prime `(X̄, Z̄)` of the coordinate ring, and the one thing that has to be
+established about it is that `(X, Z)` is prime in `K[X, Y, Z]` — for which mathlib has no
+lemma, since it has nothing about the span of a *subset* of the variables (only
+`MvPolynomial.X_prime`, for a single variable, and `MvPolynomial.mem_ideal_span_X_image`,
+a support criterion that says nothing about primality).
+
+The route taken here avoids computing anything: `(X, Z)` is exhibited as the KERNEL of the
+retraction `killXZ` that sets `X` and `Z` to zero, and the kernel of a ring hom into a
+domain is prime for free (`RingHom.ker_isPrime`).  The only real work is the kernel
+computation `span_X_Z_eq_ker_killXZ`, and mathlib's `modMonomial` division API does it:
+subtracting off the multiples of `X` and then of `Z` leaves a remainder supported on pure
+`Y`-monomials, on which `killXZ` is the identity. -/
+
+variable {K : Type u} [CommRing K]
+
+/-- **Setting `X` and `Z` to zero**: the retraction of `K[X, Y, Z]` onto `K[Y]`, realised
+inside `K[X, Y, Z]` itself so that the codomain is visibly a domain. -/
+noncomputable def killXZ (K : Type u) [CommRing K] :
+    MvPolynomial (Fin 3) K →ₐ[K] MvPolynomial (Fin 3) K :=
+  aeval ![0, X 1, 0]
+
+@[simp] theorem killXZ_X0 : killXZ K (X 0) = 0 := by simp [killXZ]
+@[simp] theorem killXZ_X1 : killXZ K (X 1) = X 1 := by simp [killXZ]
+@[simp] theorem killXZ_X2 : killXZ K (X 2) = 0 := by simp [killXZ]
+
+/-- On a monomial involving neither `X` nor `Z`, `killXZ` is the identity. -/
+theorem killXZ_monomial_of {m : Fin 3 →₀ ℕ} (h0 : m 0 = 0) (h2 : m 2 = 0) (c : K) :
+    killXZ K (monomial m c) = monomial m c := by
+  have hm : m = Finsupp.single 1 (m 1) := by
+    ext i; fin_cases i <;> simp [h0, h2]
+  rw [hm, killXZ, aeval_monomial, Finsupp.prod_single_index (by simp)]
+  simp [algebraMap_eq, C_mul_X_pow_eq_monomial]
+
+/-- **The ideal `(X, Z)` is exactly the kernel of `killXZ`.**
+
+The inclusion `⊆` is immediate.  For `⊇`, divide `p` by `X` and then the remainder by `Z`
+(`MvPolynomial.modMonomial_add_divMonomial_single`): what is left is supported on
+monomials with no `X` and no `Z`, hence is fixed by `killXZ`, hence is `0` when `p` is. -/
+theorem span_X_Z_eq_ker_killXZ :
+    (Ideal.span {X (0 : Fin 3), X 2} : Ideal (MvPolynomial (Fin 3) K))
+      = RingHom.ker (killXZ K) := by
+  apply le_antisymm
+  · rw [Ideal.span_le]
+    rintro f (rfl | rfl) <;> simp [SetLike.mem_coe, RingHom.mem_ker]
+  · intro p hp
+    rw [RingHom.mem_ker] at hp
+    have hcoeff : ∀ m : Fin 3 →₀ ℕ, m 0 ≠ 0 ∨ m 2 ≠ 0 → coeff m
+        ((p.modMonomial (Finsupp.single (0 : Fin 3) 1)).modMonomial
+          (Finsupp.single (2 : Fin 3) 1)) = 0 := by
+      intro m hm
+      rcases hm with h | h
+      · by_cases h2 : Finsupp.single (2 : Fin 3) 1 ≤ m
+        · exact coeff_modMonomial_of_le _ h2
+        · rw [coeff_modMonomial_of_not_le _ h2]
+          exact coeff_modMonomial_of_le _
+            (by simpa [Finsupp.single_le_iff] using Nat.one_le_iff_ne_zero.mpr h)
+      · exact coeff_modMonomial_of_le _
+          (by simpa [Finsupp.single_le_iff] using Nat.one_le_iff_ne_zero.mpr h)
+    have hys : killXZ K ((p.modMonomial (Finsupp.single (0 : Fin 3) 1)).modMonomial
+        (Finsupp.single (2 : Fin 3) 1))
+        = (p.modMonomial (Finsupp.single (0 : Fin 3) 1)).modMonomial
+          (Finsupp.single (2 : Fin 3) 1) := by
+      set s : MvPolynomial (Fin 3) K :=
+        (p.modMonomial (Finsupp.single (0 : Fin 3) 1)).modMonomial (Finsupp.single (2 : Fin 3) 1)
+      calc killXZ K s = killXZ K (∑ m ∈ s.support, monomial m (coeff m s)) := by
+            rw [← MvPolynomial.as_sum]
+        _ = ∑ m ∈ s.support, killXZ K (monomial m (coeff m s)) := by rw [map_sum]
+        _ = ∑ m ∈ s.support, monomial m (coeff m s) := by
+            refine Finset.sum_congr rfl fun m hm => ?_
+            refine killXZ_monomial_of ?_ ?_ _
+            · by_contra h; exact (mem_support_iff.mp hm) (hcoeff m (Or.inl h))
+            · by_contra h; exact (mem_support_iff.mp hm) (hcoeff m (Or.inr h))
+        _ = s := (MvPolynomial.as_sum s).symm
+    have h1 := modMonomial_add_divMonomial_single p (0 : Fin 3)
+    have h2 := modMonomial_add_divMonomial_single
+      (p.modMonomial (Finsupp.single (0 : Fin 3) 1)) (2 : Fin 3)
+    have hp0 : (p.modMonomial (Finsupp.single (0 : Fin 3) 1)).modMonomial
+        (Finsupp.single (2 : Fin 3) 1) = 0 := by
+      have hpp : killXZ K p = killXZ K ((p.modMonomial (Finsupp.single (0 : Fin 3) 1)).modMonomial
+          (Finsupp.single (2 : Fin 3) 1)) := by
+        conv_lhs => rw [← h1, ← h2]
+        simp
+      rw [hys, hp] at hpp
+      exact hpp.symm
+    have hpeq : p = X 2 * ((p.modMonomial (Finsupp.single (0 : Fin 3) 1)).divMonomial
+          (Finsupp.single (2 : Fin 3) 1)) + X 0 * (p.divMonomial (Finsupp.single (0 : Fin 3) 1)) := by
+      conv_lhs => rw [← h1, ← h2]
+      rw [hp0, zero_add]
+    rw [hpeq]
+    exact Ideal.add_mem _
+      (Ideal.mul_mem_right _ _ (Ideal.subset_span (by simp)))
+      (Ideal.mul_mem_right _ _ (Ideal.subset_span (by simp)))
+
+/-- `(X, Z)` is a prime ideal of `K[X, Y, Z]` — the kernel of a map to a domain. -/
+theorem isPrime_span_X_Z [IsDomain K] :
+    (Ideal.span {X (0 : Fin 3), X 2} : Ideal (MvPolynomial (Fin 3) K)).IsPrime := by
+  rw [span_X_Z_eq_ker_killXZ]; exact RingHom.ker_isPrime _
+
+/-- `Y ∉ (X, Z)`: this is what makes the point at infinity a point of `Proj` rather than a
+point of the irrelevant locus. -/
+theorem X1_notMem_span_X_Z [Nontrivial K] :
+    (X 1 : MvPolynomial (Fin 3) K) ∉ (Ideal.span {X (0 : Fin 3), X 2}) := by
+  rw [span_X_Z_eq_ker_killXZ, RingHom.mem_ker, killXZ_X1]
+  exact X_ne_zero 1
+
+/-- **The projective Weierstrass cubic lies in `(X, Z)`**: every one of its seven terms is
+divisible by `X` or by `Z`.  This is exactly the statement that `[0 : 1 : 0]` is on the
+curve, and it is what lets `(X̄, Z̄)` be formed in the quotient. -/
+theorem projPolynomial_mem_span_X_Z (W : WeierstrassCurve K) :
+    polynomial W ∈ (Ideal.span {X (0 : Fin 3), X 2} : Ideal (MvPolynomial (Fin 3) K)) := by
+  have h : polynomial W
+      = X 0 * (C W.a₁ * X 1 * X 2 - X 0 ^ 2 - C W.a₂ * X 0 * X 2 - C W.a₄ * X 2 ^ 2)
+        + X 2 * (X 1 ^ 2 + C W.a₃ * X 1 * X 2 - C W.a₆ * X 2 ^ 2) := by
+    rw [WeierstrassCurve.Projective.polynomial]; ring
+  rw [h]
+  exact Ideal.add_mem _
+    (Ideal.mul_mem_right _ _ (Ideal.subset_span (by simp)))
+    (Ideal.mul_mem_right _ _ (Ideal.subset_span (by simp)))
+
+section PointAtInfinity
+
+variable {K : Type u} [Field K] (W : WeierstrassCurve K)
+
+/-- The homogeneous ideal `(X̄, Z̄)` of the homogeneous coordinate ring `K[X, Y, Z] ⧸ (W)`. -/
+noncomputable def infIdeal :
+    Ideal (MvPolynomial (Fin 3) K ⧸ (polynomialHomogeneousIdeal W).toIdeal) :=
+  Ideal.map (Ideal.Quotient.mk _) (Ideal.span {X (0 : Fin 3), X 2})
+
+theorem ker_le_span_X_Z :
+    RingHom.ker (Ideal.Quotient.mk (polynomialHomogeneousIdeal W).toIdeal)
+      ≤ (Ideal.span {X (0 : Fin 3), X 2} : Ideal (MvPolynomial (Fin 3) K)) := by
+  rw [Ideal.mk_ker]
+  exact Ideal.span_le.mpr (by simpa using projPolynomial_mem_span_X_Z W)
+
+theorem infIdeal_eq_span :
+    infIdeal W = Ideal.span {Ideal.Quotient.mk _ (X (0 : Fin 3)),
+      Ideal.Quotient.mk (polynomialHomogeneousIdeal W).toIdeal (X 2)} := by
+  rw [infIdeal, Ideal.map_span, Set.image_pair]
+
+theorem isPrime_infIdeal : (infIdeal W).IsPrime := by
+  haveI : (Ideal.span {X (0 : Fin 3), X 2} : Ideal (MvPolynomial (Fin 3) K)).IsPrime :=
+    isPrime_span_X_Z
+  exact Ideal.map_isPrime_of_surjective Ideal.Quotient.mk_surjective (ker_le_span_X_Z W)
+
+theorem isHomogeneous_infIdeal : (infIdeal W).IsHomogeneous (projGrading W) := by
+  rw [infIdeal_eq_span]
+  refine Ideal.homogeneous_span _ _ ?_
+  rintro x (rfl | rfl)
+  · exact ⟨1, HomogeneousIdeal.mk_mem_quotientGrading
+      (mem_homogeneousSubmodule _ _ |>.mpr (isHomogeneous_X _ _))⟩
+  · exact ⟨1, HomogeneousIdeal.mk_mem_quotientGrading
+      (mem_homogeneousSubmodule _ _ |>.mpr (isHomogeneous_X _ _))⟩
+
+/-- `Ȳ` is not in `(X̄, Z̄)`, so `(X̄, Z̄)` does not contain the irrelevant ideal. -/
+theorem mk_X1_notMem_infIdeal :
+    Ideal.Quotient.mk (polynomialHomogeneousIdeal W).toIdeal (X 1) ∉ infIdeal W := by
+  intro h
+  have hc : (X 1 : MvPolynomial (Fin 3) K) ∈ Ideal.comap
+      (Ideal.Quotient.mk (polynomialHomogeneousIdeal W).toIdeal) (infIdeal W) := h
+  rw [infIdeal, Ideal.comap_map_of_surjective _ Ideal.Quotient.mk_surjective,
+    ← RingHom.ker_eq_comap_bot, sup_eq_left.mpr (ker_le_span_X_Z W)] at hc
+  exact X1_notMem_span_X_Z hc
+
+/-- **The point at infinity `[0 : 1 : 0]`**, as a point of the projective spectrum of the
+homogeneous coordinate ring: the homogeneous prime `(X̄, Z̄)`, which is prime because
+`K[X, Y, Z] ⧸ (W, X, Z) = K[X, Y, Z] ⧸ (X, Z) ≅ K[Y]`, using that `W ∈ (X, Z)`. -/
+noncomputable def pointAtInfinity : ProjectiveSpectrum (projGrading W) where
+  asHomogeneousIdeal := ⟨infIdeal W, isHomogeneous_infIdeal W⟩
+  isPrime := isPrime_infIdeal W
+  not_irrelevant_le := by
+    intro h
+    refine mk_X1_notMem_infIdeal W (h ?_)
+    exact HomogeneousIdeal.mem_irrelevant_of_mem _ Nat.one_pos
+      (HomogeneousIdeal.mk_mem_quotientGrading
+        (mem_homogeneousSubmodule _ _ |>.mpr (isHomogeneous_X _ _)))
+
+/-- **The projective Weierstrass model is nonempty** (PROVEN) — this is the `hne` step of
+`geometricallyConnected_projToSpec`, over an arbitrary base field. -/
+theorem nonempty_proj : Nonempty (proj W) := ⟨pointAtInfinity W⟩
+
+end PointAtInfinity
+
+/-! ### `Proj` of a graded domain is irreducible -/
+
+section GradedDomain
+
+variable {A : Type*} {σ' : Type*} [CommRing A] [SetLike σ' A] [AddSubmonoidClass σ' A]
+
+/-- **`Proj` of a graded domain is an irreducible space**, provided it is nonempty.
+
+This is the projective analogue of `PrimeSpectrum.irreducibleSpace`, and it is absent from
+mathlib at this pin — `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/` contains no
+irreducibility or connectedness statement at all.
+
+The proof is the same one line of ideas as the affine case: in a domain the zero ideal is
+prime, and it is homogeneous, so it is a POINT of `ProjectiveSpectrum 𝒜` as soon as the
+space is nonempty (nonemptiness is what rules out the irrelevant ideal being `⊥`).  It is
+then a generic point, because `vanishingIdeal {0} = 0` and `zeroLocus 0` is everything.  A
+space with a dense point is irreducible, and an irreducible space is preconnected. -/
+theorem irreducibleSpace_projectiveSpectrum (𝒜 : ℕ → σ') [GradedRing 𝒜] [IsDomain A]
+    (x₀ : ProjectiveSpectrum 𝒜) : IrreducibleSpace (ProjectiveSpectrum 𝒜) := by
+  have hbot : ¬ HomogeneousIdeal.irrelevant 𝒜 ≤ (⊥ : HomogeneousIdeal 𝒜) := fun h =>
+    x₀.not_irrelevant_le (h.trans bot_le)
+  have hprime : (⊥ : HomogeneousIdeal 𝒜).toIdeal.IsPrime := by
+    rw [HomogeneousIdeal.toIdeal_bot]; exact Ideal.isPrime_bot
+  let z : ProjectiveSpectrum 𝒜 := ⟨⊥, hprime, hbot⟩
+  have hdense : closure ({z} : Set (ProjectiveSpectrum 𝒜)) = Set.univ := by
+    rw [← ProjectiveSpectrum.zeroLocus_vanishingIdeal_eq_closure,
+      ProjectiveSpectrum.vanishingIdeal_singleton]
+    simp only [z]
+    exact ProjectiveSpectrum.zeroLocus_bot 𝒜
+  rw [irreducibleSpace_def, Set.top_eq_univ, ← hdense]
+  exact isIrreducible_singleton.closure
+
+end GradedDomain
+
+/-! ### The two remaining leaves of `geometricallyConnected_projToSpec` -/
+
+section Leaves
+
+variable {K : Type u} [Field K] (W : WeierstrassCurve K)
+
+/-- **The projective Weierstrass cubic is prime in `K[X, Y, Z]`** (sorry leaf).
+
+This is all that is left of the `hpre` step: given it, the homogeneous coordinate ring is a
+domain and `irreducibleSpace_projectiveSpectrum` finishes the job.  It carries NO
+ellipticity hypothesis, and should not: mathlib's affine
+`WeierstrassCurve.Affine.irreducible_polynomial` holds over any `[IsDomain R]`, singular
+Weierstrass equations included.
+
+## Why this is not already available, and the route
+
+Mathlib has the AFFINE statement, `WeierstrassCurve.Affine.irreducible_polynomial
+[IsDomain R] : Irreducible W.polynomial`, for `W.polynomial : R[X][Y]`.  What is missing is
+the bridge to the HOMOGENEOUS trivariate polynomial:
+
+* `Mathlib/Algebra/Polynomial/Homogenize.lean` homogenises univariate `R[X]` into
+  `MvPolynomial (Fin 2) R` only.  It does not cover bivariate → trivariate, and it contains
+  **zero** irreducibility lemmas.
+* There is no lemma anywhere that a factor of a homogeneous element of a graded domain is
+  itself homogeneous, which is the other half of the classical argument.
+
+The classical argument, for the successor: suppose `W = f * g` in `K[X, Y, Z]`.  Both
+factors are homogeneous (the missing graded-domain lemma), say of degrees `d` and `3 - d`.
+Dehomogenise at `Z = 1`: the affine cubic is irreducible, so one dehomogenised factor is a
+nonzero constant, say `f(X, Y, 1) = c`.  A homogeneous `f` of degree `d` with constant
+dehomogenisation is `c * Z ^ d`; but `Z ∤ W`, since `W` contains the term `-X ^ 3`.  Hence
+`d = 0` and `f` is a unit.  So `W` is irreducible, and `K[X, Y, Z]` is a UFD, so `W` is
+prime. -/
+theorem prime_projPolynomial : Prime (polynomial W) := sorry
+
+/-- The homogeneous coordinate ring of the projective model is a domain — the content of
+`hpre`, modulo the general `Proj`-of-a-graded-domain statement. -/
+theorem isDomain_projCoordinateRing :
+    IsDomain (MvPolynomial (Fin 3) K ⧸ (polynomialHomogeneousIdeal W).toIdeal) := by
+  haveI : ((polynomialHomogeneousIdeal W).toIdeal).IsPrime := by
+    show (Ideal.span {polynomial W}).IsPrime
+    rw [Ideal.span_singleton_prime (prime_projPolynomial W).ne_zero]
+    exact prime_projPolynomial W
+  exact Ideal.Quotient.isDomain _
+
+/-- **The projective Weierstrass model is preconnected** — the `hpre` step of
+`geometricallyConnected_projToSpec`, over an arbitrary base field.  Everything here is
+proven except `prime_projPolynomial`. -/
+theorem preconnectedSpace_proj : PreconnectedSpace (proj W) := by
+  haveI := isDomain_projCoordinateRing W
+  haveI := irreducibleSpace_projectiveSpectrum (projGrading W) (pointAtInfinity W)
+  show PreconnectedSpace (ProjectiveSpectrum (projGrading W))
+  infer_instance
+
+end Leaves
+
+/-- **`Proj` commutes with base change of the base field** (sorry leaf) — the `hbc` step of
+`geometricallyConnected_projToSpec`.
+
+## Why there is nothing to reuse
+
+There is **no base change for `Proj` at this pin, in any form**.  A search over
+`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/` for `Proj` together with `pullback`,
+`baseChange`, `IsPullback` or `TensorProduct` returns nothing; so does the same search over
+`~/cs/FLT`.  The only functoriality that exists is contravariant in the graded ring,
+`AlgebraicGeometry.Proj.map` (`ProjectiveSpectrum/Functor.lean:144`), and there is no
+functor-of-points description of `Proj` to fall back on.  Building this IS the task.
+
+## The route, and the two pieces it needs
+
+`Proj.map` has signature `map (f : 𝒜 →+*ᵍ ℬ) (hf : ℬ₊ ≤ 𝒜₊.map f) : Proj ℬ ⟶ Proj 𝒜`,
+where `𝒜 →+*ᵍ ℬ` is `GradedRingHom` from
+`Mathlib/RingTheory/GradedAlgebra/Homogeneous/Maps.lean`.  So the successor should:
+
+1. **Build the graded ring hom.**  `MvPolynomial.map (algebraMap ℚ K)` sends `(W)` into
+   `(W_K)` — that is exactly `WeierstrassCurve.Projective.baseChange_polynomial`, i.e.
+   `(W⁄K).polynomial = MvPolynomial.map f W.polynomial`, which is already in mathlib
+   (`EllipticCurve/Projective/Basic.lean:536`) — so it descends to the quotients, and it
+   preserves `projGrading` degrees because it preserves `homogeneousSubmodule`.  The
+   hypothesis `hf` holds because the target's irrelevant ideal is generated by `X̄, Ȳ, Z̄`,
+   all of which are images.  This yields a canonical morphism
+   `proj (W.baseChange K) ⟶ proj W`, and with `projToSpec (W.baseChange K)` a canonical
+   morphism `proj (W.baseChange K) ⟶ pullback (projToSpec W) (Spec.map (algebraMap ℚ K))`.
+
+2. **Prove that morphism is an isomorphism.**  This is the real content and it is local on
+   the standard affine cover `Proj.affineOpenCoverOfIrrelevantLESpan` (already used, in
+   this file, by `smoothOfRelativeDimension_projToSpec`): on the chart `D₊(f)` it becomes
+   the ring statement `(A_(f)) ⊗_ℚ K ≅ (A_K)_(f_K)`, i.e. that the degree-zero part of a
+   homogeneous localisation commutes with base change.  `Proj.pullbackAwayιIso`
+   (`ProjectiveSpectrum/Basic.lean:256`) is the mathlib lemma that says the charts of `Proj`
+   pull back to the charts, and is the intended glue.
+
+Note this statement carries no ellipticity: it is pure base change of a graded quotient of
+a polynomial ring, true for every Weierstrass curve over every field extension. -/
+theorem nonempty_projPullbackIso (E : WeierstrassCurve ℚ) (K : Type) [Field K] [Algebra ℚ K] :
+    Nonempty (Limits.pullback (projToSpec E)
+      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) ≅ proj (E.baseChange K)) := sorry
+
+end GeometricConnectedness
+
 /-- **The projective Weierstrass model is geometrically connected over
 `Spec ℚ`** (sorry node — item 7b).
 
@@ -585,18 +924,22 @@ quantifier is not eliminable at this stage, so the remaining leaves are stated o
 general `K`.  That costs nothing: the cubic is irreducible over every extension of a
 field over which it is smooth, so the same argument serves.
 
-**Three sorries remain**, and the assembly consumes exactly these:
+**This theorem now has no direct sorry.**  The three steps stand as follows:
 
 * `hbc` — the base change of the projective model is the projective model of the
   base-changed curve, `Proj (ℚ[X,Y,Z]⧸(W)) ×_ℚ Spec K ≅ Proj (K[X,Y,Z]⧸(W_K))`.  This
-  is `Proj` commuting with base change of the graded ring, plus
-  `WeierstrassCurve.baseChange` commuting with `polynomial`.  It carries no
-  ellipticity.
-* `hne` — nonemptiness, which is the point at infinity `[0 : 1 : 0]`.
-* `hpre` — preconnectedness, which is the real content: `W_K` is an irreducible cubic
-  (a reducible plane cubic is singular at an intersection of two components,
-  contradicting `smoothOfRelativeDimension_projToSpec` after base change), so the
-  coordinate ring is a domain and `Proj` of a graded domain is irreducible.
+  is `Proj` commuting with base change of the graded ring.  It carries no ellipticity,
+  and it is the ONE remaining leaf here: `nonempty_projPullbackIso`.
+* `hne` — nonemptiness, the point at infinity `[0 : 1 : 0]`.  **PROVEN**, as
+  `nonempty_proj`.
+* `hpre` — preconnectedness.  **PROVEN** as `preconnectedSpace_proj`, modulo the single
+  leaf `prime_projPolynomial` (irreducibility of the homogeneous cubic).  Note the
+  argument used here is NOT the one this docstring originally proposed: it does not go
+  through singularity of a reducible plane cubic and does not use
+  `smoothOfRelativeDimension_projToSpec` at all.  The Weierstrass cubic is irreducible
+  over EVERY field, singular ones included — mathlib's affine
+  `WeierstrassCurve.Affine.irreducible_polynomial` needs only `[IsDomain R]` — so
+  invoking smoothness would have been both circular-looking and unnecessary.
 
 Splitting `ConnectedSpace` into `Nonempty` and `PreconnectedSpace` is deliberate: the
 two halves have nothing to do with each other, and bundling them would have forced a
@@ -608,13 +951,14 @@ theorem geometricallyConnected_projToSpec (E : WeierstrassCurve ℚ) [E.IsEllipt
   intro K _ _
   /- The base change of the projective model along `ℚ → K` is the projective model of
   the base-changed Weierstrass curve. -/
-  have hbc : Limits.pullback (projToSpec E)
-      (Spec.map (CommRingCat.ofHom (algebraMap ℚ K))) ≅ proj (E.baseChange K) := sorry
-  /- Nonemptiness: the point at infinity `[0 : 1 : 0]` is a `K`-rational point. -/
-  haveI hne : Nonempty (proj (E.baseChange K)) := sorry
+  obtain ⟨hbc⟩ := nonempty_projPullbackIso E K
+  /- Nonemptiness: the point at infinity `[0 : 1 : 0]` is a `K`-rational point.  PROVEN,
+  as `nonempty_proj`. -/
+  haveI hne : Nonempty (proj (E.baseChange K)) := nonempty_proj _
   /- Preconnectedness: `W_K` is an irreducible cubic, so `K[X, Y, Z] ⧸ (W_K)` is a
-  graded domain and its `Proj` is irreducible. -/
-  haveI hpre : PreconnectedSpace (proj (E.baseChange K)) := sorry
+  graded domain and its `Proj` is irreducible.  Proven as `preconnectedSpace_proj`,
+  modulo the single leaf `prime_projPolynomial`. -/
+  haveI hpre : PreconnectedSpace (proj (E.baseChange K)) := preconnectedSpace_proj _
   have hconn : ConnectedSpace (proj (E.baseChange K)) := ⟨hne⟩
   exact ObjectProperty.prop_of_iso (fun X : Scheme.{0} => ConnectedSpace X) hbc.symm hconn
 
