@@ -3783,8 +3783,10 @@ theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral
 This is the curve `Wbar₀` that the Galois leaf below produces, and PINNING it
 here rather than leaving it existential is what makes the cut of that leaf safe
 — see the ATOMICITY AUDIT on
-`exists_reductionFrame_of_potentiallyGoodModel`, which exhibits the falsity that
-appears as soon as the curve is handed over as a free variable. -/
+`WeierstrassCurve.PotentiallyGoodModel.exists_torsionFrame` below (it was
+written for `exists_reductionFrame_of_potentiallyGoodModel` and moved to that
+leaf when the latter was cut into three on 2026-07-27), which exhibits the
+falsity that appears as soon as the curve is handed over as a free variable. -/
 noncomputable def WeierstrassCurve.PotentiallyGoodModel.redCurve
     {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime]
     (D : E.PotentiallyGoodModel q) : WeierstrassCurve (ZMod q) :=
@@ -3805,10 +3807,380 @@ instance WeierstrassCurve.PotentiallyGoodModel.instIsEllipticRedCurve
   rw [WeierstrassCurve.PotentiallyGoodModel.redCurve, WeierstrassCurve.map_Δ]
   exact h.isUnit.map _
 
+/-- **The valuation subring of `ℚ̄` above `q` pinned by the fixed embedding
+`ℚ̄ ↪ ℚ̄_q`** (definition, opened 2026-07-27 while cutting
+`exists_reductionFrame_of_potentiallyGoodModel` below into three leaves).
+
+`localValuationSubring v`
+(`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`) is the integral
+closure of `𝒪_v` inside `ℚ̄_q`, packaged as a valuation subring; and
+`Field.absoluteGaloisGroup.map` transports `Γ ℚ_q → Γ ℚ` along the SAME
+arbitrary-but-fixed embedding
+`AlgebraicClosure.map (algebraMap ℚ ℚ_q) : ℚ̄ →+* ℚ̄_q` — that is exactly the
+content of `Field.absoluteGaloisGroup.lift_map`. Pulling the local subring back
+along that embedding therefore yields the valuation subring of `ℚ̄` whose
+decomposition group inside `Γ ℚ` contains the image of the whole of `Γ ℚ_q`,
+hence contains `globalFrob v` and the image of `localInertiaGroup v`.
+
+WHY THIS IS A DEFINITION AND NOT A FIELD OF `LocalFrame` BELOW: the primes of
+`ℚ̄` above `q` form a single `Γ ℚ`-orbit and `globalFrob v` lies in the
+decomposition group of exactly ONE of them, so a frame carrying an ARBITRARY
+valuation subring above `R` would make `exists_frobeniusLift` below FALSE — the
+refutation is `g • 𝒪` for any `g` outside the decomposition group, at which
+`globalFrob v` does not even act. Only the embedding of `K` is free; the subring
+of `ℚ̄` is not. -/
+noncomputable def GaloisRepresentation.globalValuationSubring
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    ValuationSubring (AlgebraicClosure ℚ) :=
+  (localValuationSubring v).comap
+    (AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+
+/-- **A local frame for a potentially-good model: an embedding of `K` into `ℚ̄`
+placing the prime of `R` at the pinned valuation subring, with an identification
+of its residue field with `𝔽̄_q`** (interface, opened 2026-07-27 while cutting
+`exists_reductionFrame_of_potentiallyGoodModel` below into three leaves).
+
+THE CONTENT. `D` gives a good model `V` of `E` over a number field `K` with a
+DVR `R ⊂ K` whose residue field is `𝔽_q`; nothing in `D` says WHERE `K` sits
+inside `ℚ̄`, and every Galois statement below is about `Γ ℚ` acting on `ℚ̄`. A
+frame supplies that placement:
+
+* `emb`, `emb_comm` — a `ℚ`-embedding `K ↪ ℚ̄`. Every embedding of `K` into
+  `ℚ̄_q` is of this shape followed by the fixed `ℚ̄ ↪ ℚ̄_q`, because `K/ℚ` is
+  algebraic and `ℚ̄` is the algebraic closure of `ℚ` inside `ℚ̄_q`.
+* `comap_eq` — that placement puts the prime of `R` at the PINNED subring
+  `globalValuationSubring q`, in the exact form `h𝒪` that
+  `torsion_unramified_of_good_reduction` and its companions ask for. Choosing
+  `emb` within its `Γ ℚ`-orbit is the only freedom a frame has, and this
+  equation is what uses it up.
+* `resIso`, `resIso_comm` — the residue field of that subring, identified with
+  `𝔽̄_q` compatibly with `D.resEquiv`. This is not extra content: `ℚ̄` is
+  algebraically closed, so the residue field of any valuation subring of it is
+  algebraically closed; `ℚ̄/K` is algebraic, so that residue field is algebraic
+  over the residue field of `R`, which `D.resEquiv` identifies with `𝔽_q`.
+  Hence it IS an algebraic closure of `𝔽_q`, and `resIso` is a choice among the
+  `Gal(𝔽̄_q/𝔽_q)`-torsor of isomorphisms.
+
+THE NON-UNIQUENESS IS HARMLESS, and this is worth checking rather than
+assuming, because the analogous non-uniqueness of `ψ₀` is FATAL (see the
+atomicity audit on `exists_torsionFrame`). Two choices of `resIso` differ by a
+power of the `q`-Frobenius; conjugation by that carries
+`WeilPairing.frobeniusTorsionEnd` to itself, and permutes the image of
+`autTorsionEnd` because `Aut(Ẽ)` is defined over `𝔽_q` and Frobenius therefore
+normalises it. Both conclusions of `exists_torsionFrame` are consequently
+invariant under the choice, whereas the free-`ψ₀` conjugator ranges over the
+whole centraliser of `F` and moves the image of `Aut(Ẽ)`.
+
+`resIso_comm` quantifies over the membership proof `h` rather than deriving it.
+That is not vacuous: `comap_eq` supplies such an `h` for every `r`, which is
+precisely what `WeierstrassCurve.RtoO` constructs from the same equation. -/
+structure WeierstrassCurve.PotentiallyGoodModel.LocalFrame
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) where
+  /-- The chosen `ℚ`-embedding of the good-model field into `ℚ̄`. -/
+  emb : D.K →+* AlgebraicClosure ℚ
+  /-- `emb` is a map of `ℚ`-algebras. -/
+  emb_comm : ∀ x : ℚ, emb (algebraMap ℚ D.K x) = algebraMap ℚ (AlgebraicClosure ℚ) x
+  /-- `emb` places the prime of `R` at the pinned valuation subring — the
+  hypothesis `h𝒪` of the Néron–Ogg–Shafarevich machinery, verbatim. -/
+  comap_eq : ((GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).comap emb).toSubring
+      = (algebraMap D.R D.K).range
+  /-- The residue field of the pinned valuation subring, identified with `𝔽̄_q`. -/
+  resIso : IsLocalRing.ResidueField (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat) ≃+* AlgebraicClosure (ZMod q)
+  /-- and that identification restricts to `D.resEquiv` on the residue field
+  of `R`, which is what makes the reduction land on `D.redCurve`. -/
+  resIso_comm : ∀ (r : D.R) (h : emb (algebraMap D.R D.K r) ∈
+      GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat),
+      resIso (IsLocalRing.residue _ ⟨emb (algebraMap D.R D.K r), h⟩)
+        = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
+            (D.resEquiv (IsLocalRing.residue D.R r))
+
+/-- **Every potentially-good model admits a local frame** (sorry leaf, opened
+2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel` below into
+three).
+
+Pure algebraic number theory; no elliptic curve appears, and `E` enters only as
+an index. What has to be proven:
+
+1. the primes of `K` above `q` are exactly the pullbacks of
+   `globalValuationSubring q` along the `ℚ`-embeddings `K ↪ ℚ̄`, so `R` is hit
+   by some embedding. `Γ ℚ` acts transitively on the valuation subrings of `ℚ̄`
+   above `q`, and `K/ℚ` algebraic puts every embedding `K ↪ ℚ̄_q` inside the
+   image of `ℚ̄`;
+2. the residue field of a valuation subring of an ALGEBRAICALLY CLOSED field is
+   algebraically closed, and here it is algebraic over the residue field of `R`;
+   hence it is an algebraic closure of `𝔽_q` and `resIso` exists by uniqueness
+   of algebraic closures, `resIso_comm` being the extension property.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` whose `R` is
+induced by no embedding `K ↪ ℚ̄` — which would need a prime of `K` above `q`
+outside the single `Γ ℚ`-orbit, i.e. a failure of going-up plus conjugacy. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.nonempty_localFrame
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) : Nonempty (D.LocalFrame hq) :=
+  sorry
+
+/-- **Residue degree one produces a Frobenius lift inside the decomposition
+group of `K`** (sorry leaf, opened 2026-07-27 by cutting
+`exists_reductionFrame_of_potentiallyGoodModel` below into three).
+
+WHAT IT SAYS, writing `𝒪 := globalValuationSubring q` and `t` for the image of
+`ι` in `Γ ℚ`: there is an inertia element `ι` of `Γ ℚ_q` such that
+`σ := t⁻¹ · Frob_q` (i) fixes `emb K` pointwise and (ii) induces `x ↦ x^q` on
+the residue field of `𝒪`; and `t` itself lies in the inertia subgroup of `𝒪`.
+Everything is phrased so that `exists_torsionFrame` below never has to mention
+`ℚ_q` again.
+
+WHY IT IS TRUE, and where each hypothesis is used. `D.resEquiv` makes the
+residue field of `R` the PRIME field, so the completion `K_𝔮/ℚ_q` has residue
+degree one and `Gal(ℚ̄_q/K_𝔮)` still surjects onto `Gal(𝔽̄_q/𝔽_q)` — THIS IS
+WHAT RESIDUE DEGREE ONE BUYS. Pick `g ∈ Gal(ℚ̄_q/K_𝔮)` inducing the `q`-power
+map on residues and set `ι := Frob_q · g⁻¹`; then `ι` acts trivially on
+residues, hence lies in `localInertiaGroup q`, and `ι⁻¹ · Frob_q = g` by
+construction. `Field.absoluteGaloisGroup.map` is a monoid homomorphism and
+`globalFrob` is BY DEFINITION the image of the local arithmetic Frobenius, so
+the identity survives transport into `Γ ℚ`.
+
+NOTHING ABOUT ELLIPTIC CURVES APPEARS: `D` enters only through `D.K` and
+`D.resEquiv`, and `Fr` only through `Fr.emb`.
+
+THE FIRST STEP A PROVER SHOULD TAKE is the transport of the two subgroups along
+`Field.absoluteGaloisGroup.map`: the image of `Γ ℚ_q` lands in
+`𝒪.decompositionSubgroup ℚ`, which follows from
+`mem_decompositionSubgroup_localValuationSubring` and
+`Field.absoluteGaloisGroup.lift_map` because `𝒪` is a comap; and the image of
+`localInertiaGroup q` lands in `𝒪.inertiaSubgroup ℚ` by the same route through
+`mem_inertiaSubgroup_localValuationSubring`, plus the fact that the maximal
+ideal of a comap valuation subring is the comap of the maximal ideal. Both were
+attempted while this leaf was opened and both are routine; the only friction is
+that `Γ ℚ` and `AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ` are reducibly but
+not syntactically equal, so `rw [MulAction.mem_stabilizer_iff]` fails on the
+membership with an instance-mismatch error and the ascription has to be written
+out by hand.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` at which every
+`ι ∈ localInertiaGroup q` leaves `t⁻¹ Frob_q` moving `K` — which needs the
+image of `Gal(ℚ̄_q/K_𝔮)` in `Gal(𝔽̄_q/𝔽_q)` to be proper, i.e. residue degree
+`> 1`, which is exactly what `resEquiv` excludes. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_frobeniusLift
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) (Fr : D.LocalFrame hq) :
+    ∃ (ι : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+      (_ : ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hdecT : Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ι ∈
+        (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+      (hdecS : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+          GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat ∈
+        (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ),
+      (⟨_, hdecT⟩ : (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) ∈
+        (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).inertiaSubgroup ℚ ∧
+      (∀ x : D.K, ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+          GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) (Fr.emb x) = Fr.emb x) ∧
+      (∀ z : GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat,
+        (⟨_, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
+            hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
+          IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :=
+  sorry
+
+/-- **THE ATOM: the reduction map on `N`-torsion, and its two equivariances**
+(sorry leaf, opened 2026-07-27 by cutting
+`exists_reductionFrame_of_potentiallyGoodModel` below into three; this is the
+piece that survives the cut, and the audits that used to sit on the parent live
+here now because they describe THIS statement's content).
+
+WHAT IT SAYS. Given the placement `Fr` of `K` inside `ℚ̄`, a Frobenius lift `σ`
+— in the decomposition group of the pinned subring `𝒪`, fixing `emb K`
+pointwise, inducing `x ↦ x^q` on `κ(𝒪)` — and an inertia element `τ` at `𝒪`,
+there is a `ZMod N`-linear identification `ψ₀ : E[N](ℚ̄) ≃ Ẽ[N](𝔽̄_q)` with
+`Ẽ := D.redCurve` through which `σ` acts as the `q`-power Frobenius of `Ẽ` and
+`τ` acts as an automorphism of `Ẽ_{𝔽̄_q}`.
+
+`ℚ_q` DOES NOT APPEAR. The statement is entirely about the good model, the
+valuation subring `𝒪` of `ℚ̄`, and `Γ ℚ`. That separation is the point of the
+cut: `exists_frobeniusLift` above carries all of the local-field theory and
+this leaf carries all of the elliptic-curve theory.
+
+ATOMICITY AUDIT — WHY `ψ₀` IS PRODUCED HERE RATHER THAN HANDED OVER, AND WHY
+EVERY CUT THAT HANDS IT OVER IS **FALSE**. (Written 2026-07-27 for the parent
+leaf; it applies verbatim here, and it is what forces the two conclusions to
+share ONE `ψ₀`.) The axis searched was *cuts that hand `Wbar₀`, `ψ₀` or the
+Frobenius lift over as data* — as free hypotheses, or equivalently as fields of
+a shared structure, since bundling free data changes nothing. Say the cut is
+"leaf 1 produces `Wbar₀, ψ₀, σK` with `ψ₀ ρ(σK) ψ₀⁻¹ = F`; leaf 2 turns that
+into the automorphism". Leaf 2 then quantifies over ALL data satisfying that
+intertwining, and:
+
+* *Free `Wbar₀` is fatal.* Only the mod-`N` Frobenius of `Wbar₀` is
+  constrained, so `Wbar₀` may be replaced by any elliptic curve over `𝔽_q` with
+  the same trace mod `N`. Choose the true reduction to have `j = 0` (so
+  `Aut = μ₆` and the automorphism `C` has order `3`) and the substitute to have
+  `j ∉ {0, 1728}` (so `Aut = {±1}` and `autTorsionEnd` lands in `{±id}`). The
+  conclusion then demands an order-`3` element of `{±id}`.
+* *Free `ψ₀` is fatal even with `Wbar₀` pinned.* Two solutions of the
+  intertwining differ by `β` in the CENTRALIZER of `F`, and
+  `ψ₀ ρ(τ) ψ₀⁻¹ ∈ image (autTorsionEnd ·)` is not invariant under conjugating
+  by that centraliser: at `q ≡ 1 mod N` the Frobenius is a scalar, its
+  centraliser is all of `GL₂(ZMod N)`, and the image of `Aut(Ẽ)` is a cyclic
+  subgroup of order `3`, `4` or `6` whose `GL₂`-conjugates are different
+  subgroups.
+* *Free `σK` is fatal even with `Wbar₀` and `ψ₀` pinned.* The hypothesis
+  `ψ₀ ρ(σK) ψ₀⁻¹ = F` does not force `σK` to be a Frobenius LIFT — whenever the
+  image of `ρ` is large there are many elements with that image — and then
+  `Frob_q · σK⁻¹` need not lie in inertia at all.
+
+HOW THE PRESENT CUT DODGES ALL THREE, which is the check any FURTHER proposal
+must also pass. `Wbar₀` is pinned to `D.redCurve`. `ψ₀` is not handed over: this
+leaf CONSTRUCTS it and states both equivariances about the same one. And `σ` is
+not constrained by a representation-level identity but by VALUATION-THEORETIC
+ones (`hdecS`, `hσK`, `hσres`), which do force it to be a genuine Frobenius lift
+inside the decomposition group of `K` — strictly stronger than
+`ψ₀ ρ(σK) ψ₀⁻¹ = F`, and that is what kills the third counterexample.
+
+THE CHECK THAT WOULD REFUTE THE AUDIT, unchanged: a formulation whose
+hypotheses pin `ψ₀` up to the image of `Aut(Ẽ)` — for instance a statement of
+the reduction map by its coordinatewise definition — under which the split
+becomes two independently true statements. Note that the frame makes such a
+formulation WRITABLE for the first time: with `Fr.emb`, `Fr.comap_eq` and
+`Fr.resIso` in hand one can say "`ψ₀` sends a torsion point whose coordinates
+lie in `𝒪` to the point with the residue coordinates", and that IS a pinning up
+to `Aut(Ẽ)`. Splitting this leaf along that line is the recommended next step if
+it proves too large; it was not done at the cut because writing the
+coordinatewise characterisation first requires transporting `E`-points to
+`V`-points along `D.C`.
+
+**THE `N = 2` OBLIGATION IS LIVE AND MUST NOT BE LEFT SILENT.** `q ≠ 2` and
+`q ≠ N` do NOT exclude `N = 2`, and the tree's Néron–Ogg–Shafarevich criterion
+`torsion_unramified_of_good_reduction` requires `Odd n`; the oddness is used
+only inside `torsion_abscissa_residue_ne` and
+`torsion_ordinate_eq_of_residue_eq`, through the coprimality of `Ψ₂²` with
+`preΨ'ₙ`. The statement here is TRUE at `N = 2` — good reduction gives an
+unramified action on `E[ℓ]` for every `ℓ ≠ q`, and `q ≠ 2` keeps `2` invertible
+in the residue field — so this is a proving-effort obligation, not a
+faithfulness defect. A prover must either supply the `n = 2` case of those two
+lemmas in `KnownIn1980s/EllipticCurves/GoodReduction.lean` (the `2`-torsion
+abscissae are the roots of the `2`-division polynomial, separable mod `q`
+exactly because `q ≠ 2` and the reduction is elliptic), or restate this leaf
+with `Odd N` and push the restriction up the chain. NOT NARROWED AT THE CUT:
+the ultimate consumer `hasseWeil_trace_frobeniusTorsionEnd_of_jIntegral` carries
+`23 ≤ N`, so no downstream use actually reaches `N = 2`, but every statement
+between here and there is quantified over all primes `N` and narrowing them is
+another owner's edit.
+
+MACHINERY, GREPPED 2026-07-27 OVER ALL THREE TREES (`Fermat/`,
+`.lake/packages/mathlib/`, `~/cs/FLT/`).
+
+* **Néron–Ogg–Shafarevich is PARTLY PRESENT and must not be rebuilt.**
+  `WeierstrassCurve.torsion_unramified_of_good_reduction`
+  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free) is
+  precisely "good reduction over a DVR `R` ⟹ inertia at a valuation subring
+  above `R` acts trivially on the `n`-torsion", for odd `n` invertible in the
+  residue field — stated over a GENERAL `R`, `k`, `ksep` and `𝒪`, with the
+  hypothesis `h𝒪` that `Fr.comap_eq` is written to match verbatim. Its
+  companions `torsion_abscissa_mem`, `torsion_ordinate_mem`,
+  `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq` are the
+  reduction-injectivity half, and `WeierstrassCurve.RtoO` /
+  `isLocalHom_RtoO` are the `R → 𝒪` plumbing built from the same `h𝒪`. Take
+  `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra`; it is a separable
+  closure of `D.K` because the characteristic is zero. The assembly pattern to
+  copy is the PROVEN `WeilPairing.exists_frobenius_reduction_model`, a ~2800-line
+  monolith that does exactly this work at the good primes of a global integral
+  model over `ℚ` — including the construction of `redFun`, its additivity, its
+  injectivity on torsion and its surjectivity by counting. The only new
+  ingredients here are that the base is `K` rather than `ℚ` and that the
+  Frobenius lift arrives as a hypothesis rather than from unramifiedness.
+* **Serre–Tate is ABSENT from all three trees.** What is available and should be
+  used rather than rebuilt is the point-level transport of a `VariableChange` —
+  `Affine.Point.equivVariableChange` and its Galois-equivariant base-changed
+  form `equivVariableChangeBaseChange_galois`, in the project shim
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` — and
+  the definition `WeierstrassCurve.autTorsionEnd` above, which is already built
+  on it. THE ELEMENTARY ROUTE, avoiding Néron models, and the shape to try
+  first: `τ` carries the variable change `D.C` to `D.C^τ`, and
+  `D_τ := D.C^τ (D.C)⁻¹` is a variable change between two integral models of the
+  same curve with unit discriminant, hence has unit entries in `𝒪`, hence
+  reduces to a variable change over `κ(𝒪)`, which is the automorphism `C`. Note
+  `τ` need NOT fix `K` — inertia over `ℚ` moves `K` when `K/ℚ` is ramified at
+  `q` — but it fixes `κ(𝒪)` pointwise (`hτin`), which is what makes both models
+  reduce to the same `Ẽ`.
+
+THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END HERE, and the reason is structural
+rather than technical — recorded so that nobody spends a cycle re-searching it
+(the axis searched, 2026-07-27, was: imitate
+`WeilPairing.det_galoisRep_eq_cyclotomic`, which pins the DETERMINANT at every
+Frobenius globally and so avoids any integral model). `det ρ` is the cyclotomic
+CHARACTER, hence unramified at `q ≠ N`, so its value at `σ_q` does not depend on
+the choice of lift and a global identity of characters determines it. The trace
+is not a character: at potentially-good-but-not-good reduction `ρ` is genuinely
+RAMIFIED at `q`, and the trace really does change with the lift (`a ↦ ζ_e a` for
+semistability defect `e`). A global argument cannot see inside a Frobenius
+coset, so it cannot produce a lift-dependent value. The LOCAL axis is the only
+one.
+
+NOT VACUOUS: `ψ₀` is a linear EQUIVALENCE and the two conclusions are
+conjugation identities, so together they pin `ρ(σ)` and `ρ(τ)` into
+`Aut · F` and `Aut`; in particular they force `det ρ(σ) = q` via
+`WeilPairing.det_frobeniusTorsionEnd`, which is independently PROVEN, so a junk
+witness would have to reprove that. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_torsionFrame
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
+    (D : E.PotentiallyGoodModel q) (Fr : D.LocalFrame hq)
+    (σ τ : Field.absoluteGaloisGroup ℚ)
+    (hdecS : σ ∈ (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+    (hdecT : τ ∈ (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+    (hτin : (⟨τ, hdecT⟩ : (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) ∈
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).inertiaSubgroup ℚ)
+    (hσK : ∀ x : D.K, σ (Fr.emb x) = Fr.emb x)
+    (hσres : ∀ z : GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat,
+      (⟨σ, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
+        IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :
+    ∃ (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+        ((D.redCurve.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N))
+      (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+      (hC : C • ((D.redCurve.map
+              (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+          = (D.redCurve.map
+              (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))),
+      (∀ x, ψ₀ (E.galoisRep N hN.pos σ x) =
+        WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x)) ∧
+      (∀ x, ψ₀ (E.galoisRep N hN.pos τ x) =
+        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) :=
+  sorry
+
 /-- **The reduction frame at `q`: Néron–Ogg–Shafarevich and Serre–Tate,
-packaged against the PINNED reduction curve** (sorry leaf, opened 2026-07-27 by
-decomposing `exists_frobeniusAut_of_potentiallyGoodModel` immediately below,
-which is PROVEN over it).
+packaged against the PINNED reduction curve** (PROVEN 2026-07-27 over the three
+leaves immediately above, by a cut along the LOCAL FRAME; opened as a single
+sorry leaf earlier the same day by decomposing
+`exists_frobeniusAut_of_potentiallyGoodModel` immediately below, which is PROVEN
+over it).
 
 WHAT IT SAYS. Write `Ẽ := D.redCurve` for the reduction of the good model.
 There are
@@ -3827,94 +4199,34 @@ There are
 The consumer is then one multiplication: `Frob_q = t · (t⁻¹ · Frob_q)`, and
 `galoisRep` is a monoid homomorphism.
 
-ATOMICITY AUDIT — WHY THE THREE COMPONENTS ARE BUNDLED INTO ONE LEAF, AND WHY
-EVERY NATURAL TWO-WAY CUT PRODUCES A **FALSE** LEAF. This is the whole reason
-the statement looks bigger than it needs to, so do not "simplify" it by
-splitting it; the axis searched was *cuts that hand `Wbar₀`, `ψ₀` or the
-Frobenius lift over as data* (as free hypotheses, or equivalently as fields of
-a shared structure — bundling changes nothing).
+THE PROOF HERE is the three-leaf assembly opened 2026-07-27. All of the
+mathematics lives in the leaves above and none of it lives here — the body is
+three `obtain`s and an anonymous constructor:
 
-Say the cut is "leaf 1 produces `Wbar₀, ψ₀, σK` with `ψ₀ ρ(σK) ψ₀⁻¹ = F`; leaf
-2 turns that into the automorphism". Leaf 2 then quantifies over ALL data
-satisfying that intertwining, and:
+* `nonempty_localFrame` places `K` inside `ℚ̄` so that the prime of `R` becomes
+  the PINNED valuation subring `GaloisRepresentation.globalValuationSubring q`,
+  and identifies its residue field with `𝔽̄_q`;
+* `exists_frobeniusLift` produces the inertia element `ι` together with the
+  valuation-theoretic facts about `t` and `σ := t⁻¹ Frob_q`. This is the whole
+  of the local-field theory, and RESIDUE DEGREE ONE is consumed exactly here;
+* `exists_torsionFrame` constructs `ψ₀` and proves both equivariances. This is
+  the whole of the elliptic-curve theory, and it is where the ATOMICITY AUDIT,
+  the `N = 2` obligation, the machinery survey and the Chebotarev dead-end note
+  now live. **A prover should read THAT docstring, not this one.**
 
-* *Free `Wbar₀` is fatal.* Only the mod-`N` Frobenius of `Wbar₀` is
-  constrained, so `Wbar₀` may be replaced by any elliptic curve over `𝔽_q` with
-  the same trace mod `N`. Choose the true reduction to have `j = 0` (so
-  `Aut = μ₆` and the automorphism `C` has order `3`) and the substitute to have
-  `j ∉ {0, 1728}` (so `Aut = {±1}` and `autTorsionEnd` lands in `{±id}`). The
-  conclusion then demands an order-`3` element of `{±id}`.
-* *Free `ψ₀` is fatal even with `Wbar₀` pinned.* Two solutions of the
-  intertwining differ by `β` in the CENTRALIZER of `F`, and the conclusion
-  `ψ₀ ρ(τ) ψ₀⁻¹ ∈ image (autTorsionEnd ·)` is not invariant under conjugating
-  by that centralizer: at `q ≡ 1 mod N` the Frobenius is a scalar, its
-  centralizer is all of `GL₂(ZMod N)`, and the image of `Aut(Ẽ)` is a cyclic
-  subgroup of order `3`, `4` or `6` whose `GL₂`-conjugates are different
-  subgroups.
-* *Free `σK` is fatal even with `Wbar₀` and `ψ₀` pinned.* The hypothesis
-  `ψ₀ ρ(σK) ψ₀⁻¹ = F` does not force `σK` to be a Frobenius LIFT — whenever the
-  image of `ρ` is large there are many elements with that image — and then
-  `Frob_q · σK⁻¹` need not lie in inertia at all, so nothing makes its image an
-  automorphism.
-
-Hence the only safe cut is one that PINS all three, and pinning `ψ₀` means
-constructing the reduction map on `N`-torsion, which is precisely the bulk of
-the Néron–Ogg–Shafarevich work. `Wbar₀` IS pinned here (to `D.redCurve`,
-proven elliptic above), which is as far as the pinning can be pushed without
-building that map. THE CHECK THAT WOULD REFUTE THIS AUDIT: a formulation whose
-hypotheses pin `ψ₀` up to the image of `Aut(Ẽ)` — for instance a statement of
-the reduction map by its coordinatewise definition — under which the split
-above becomes two independently true statements.
-
-MACHINERY, GREPPED 2026-07-27 OVER ALL THREE TREES (`Fermat/`,
-`.lake/packages/mathlib/`, `~/cs/FLT/`).
-
-* **Néron–Ogg–Shafarevich is PARTLY PRESENT and must not be rebuilt.**
-  `WeierstrassCurve.torsion_unramified_of_good_reduction`
-  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free) is
-  precisely "good reduction over a DVR `R` ⟹ inertia at a valuation subring
-  above `R` acts trivially on the `n`-torsion", for odd `n` invertible in the
-  residue field — stated over a GENERAL `R`, which is why the datum is phrased
-  with a DVR. Its companions `torsion_abscissa_mem`, `torsion_ordinate_mem`,
-  `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq` are the
-  reduction-injectivity half. The assembly pattern to copy is the PROVEN
-  `WeilPairing.exists_frobenius_reduction_model`, which does exactly this work
-  at the primes of good reduction of a global integral model; the only new
-  ingredients here are that the base is `K` rather than `ℚ` and that the
-  Frobenius lift must be produced from residue degree one rather than from an
-  unramified prime.
-* **THE `N = 2` EDGE CASE IS REAL AND IS NOT EXCLUDED BY THE HYPOTHESES.**
-  `torsion_unramified_of_good_reduction` needs `Odd n`; `q ≠ 2` and `q ≠ N` do
-  NOT rule out `N = 2`. So a prover must either split on `N` and supply the
-  `n = 2` case of the criterion separately (it is true — good reduction gives
-  an unramified action on `E[ℓ]` for every `ℓ ≠ q` — the tree's proof merely
-  assumes oddness, in `torsion_abscissa_residue_ne`), or establish that the
-  consumers never reach `N = 2`. It cannot be left silent.
-* **Serre–Tate is ABSENT from all three trees.** What is available and should
-  be used rather than rebuilt is the point-level transport of a
-  `VariableChange` — `Affine.Point.equivVariableChange` and its
-  Galois-equivariant base-changed form `equivVariableChangeBaseChange_galois`,
-  in the project shim
-  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` — and
-  the definition `WeierstrassCurve.autTorsionEnd` above, which is already built
-  on it. An elementary route avoiding Néron models: `τ ∈ I_q` carries the
-  variable change `C` of the datum to `C^τ`, and `D_τ := C^τ C⁻¹` is then a
-  variable change between two good models of the same curve, hence has unit
-  entries, hence reduces to a variable change over the residue field, which is
-  the automorphism `φ`. That is the shape a prover should try first.
-
-THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END HERE, and the reason is structural
-rather than technical — recorded so that nobody spends a cycle re-searching it
-(the axis searched, 2026-07-27, was: imitate
-`WeilPairing.det_galoisRep_eq_cyclotomic`, which pins the DETERMINANT at every
-Frobenius globally and so avoids any integral model). `det ρ` is the cyclotomic
-CHARACTER, hence unramified at `q ≠ N`, so its value at `σ_q` does not depend
-on the choice of lift and a global identity of characters determines it. The
-trace is not a character: at potentially-good-but-not-good reduction `ρ` is
-genuinely RAMIFIED at `q`, and the trace really does change with the lift
-(`a ↦ ζ_e a` for semistability defect `e`). A global argument cannot see inside
-a Frobenius coset, so it cannot produce a lift-dependent value. The LOCAL axis
-is the only one.
+WHY THIS CUT IS SAFE, against the audit that shows every cut handing `Wbar₀`,
+`ψ₀` or `σK` over as free data is FALSE (the audit stands; it is reproduced in
+full on `exists_torsionFrame`). No leaf here RECEIVES `ψ₀`: it is produced by
+`exists_torsionFrame`, which states both identities about the same one, so the
+two conclusions never come apart. `Wbar₀` is pinned to `D.redCurve` throughout.
+And the Frobenius element handed to `exists_torsionFrame` is constrained
+VALUATION-theoretically (decomposition-group membership, fixing `emb K`,
+inducing `x ↦ x^q` on residues) rather than representation-theoretically, which
+is strictly stronger than `ψ₀ ρ(σK) ψ₀⁻¹ = F` and is what defeats the third
+counterexample. The valuation subring is pinned by a DEFINITION rather than
+carried as a frame field, because `globalFrob q` lies in the decomposition group
+of exactly one subring above `q` and a free one would make
+`exists_frobeniusLift` false.
 
 NOT VACUOUS: `ψ₀` is a linear EQUIVALENCE and the two conclusions are
 conjugation identities, so together they pin `ρ(Frob_q)` into the coset
@@ -3950,8 +4262,12 @@ theorem WeierstrassCurve.exists_reductionFrame_of_potentiallyGoodModel
           (Field.absoluteGaloisGroup.map (algebraMap ℚ
             (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
               hq.toHeightOneSpectrumRingOfIntegersRat)) ι) x) =
-        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) :=
-  sorry
+        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) := by
+  obtain ⟨Fr⟩ := D.nonempty_localFrame hq
+  obtain ⟨ι, hι, hdecT, hdecS, hτin, hσK, hσres⟩ := D.exists_frobeniusLift hq Fr
+  obtain ⟨ψ₀, C, hC, hfrob, haut⟩ :=
+    D.exists_torsionFrame hN hq hq2 hqN Fr _ _ hdecS hdecT hτin hσK hσres
+  exact ⟨ψ₀, ι, C, hC, hι, hfrob, haut⟩
 
 /-- **The GALOIS half: from a good model with residue degree one, `ρ(σ_q)` is an
 automorphism composed with the Frobenius of the reduction** (PROVEN 2026-07-27
@@ -3969,12 +4285,14 @@ two identities compose into the conclusion. The reduction curve is `D.redCurve`,
 whose ellipticity is the instance proven above — so no existential choice of
 `Wbar₀` is made here.
 
-THE AUDITS BELOW DESCRIBE THE OPEN SUB-LEAF, NOT THIS DECLARATION. They are
-kept in place because they were written for this statement's content, which now
-lives entirely in `exists_reductionFrame_of_potentiallyGoodModel`; a prover
-should read that declaration's docstring FIRST — in particular its ATOMICITY
-AUDIT, which explains why the remaining leaf cannot be split further without
-constructing the reduction map on `N`-torsion.
+THE AUDITS BELOW DESCRIBE AN OPEN SUB-LEAF, NOT THIS DECLARATION. They are kept
+in place because they were written for this statement's content, which since
+2026-07-27 lives in `WeierstrassCurve.PotentiallyGoodModel.exists_torsionFrame`
+— `exists_reductionFrame_of_potentiallyGoodModel` above is now PROVEN, over
+that leaf plus `nonempty_localFrame` and `exists_frobeniusLift`. A prover should
+read `exists_torsionFrame`'s docstring FIRST: it carries the ATOMICITY AUDIT
+(why `ψ₀` must be constructed rather than received), the live `N = 2`
+obligation, the machinery survey and the Chebotarev dead-end note.
 
 THE CONTENT. Write `K`, `R`, `V` for the datum's field, DVR and good model, and
 choose a valuation subring `𝒪` of `ℚ̄` above `R`; its residue field is `𝔽̄_q`
