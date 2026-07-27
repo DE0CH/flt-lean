@@ -66,6 +66,7 @@ on `F̄`-points" is proven here once and for all.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+public import Fermat.FLT.Modularity.AmpleSheaf
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
 public import Mathlib.AlgebraicGeometry.Morphisms.UniversallyOpen
 public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
@@ -143,6 +144,14 @@ public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
 public import Mathlib.RingTheory.Ideal.AssociatedPrime.Basic
 public import Mathlib.RingTheory.Regular.IsSMulRegular
 public import Mathlib.RingTheory.Depth.Rees
+-- Ischebeck (`ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux`)
+-- needs exactly three more mathlib modules: `ringKrullDim_quotient`
+-- (`Spec (R ⧸ I) ≃o V(I)`) from `KrullDimension/NonZeroDivisors`, Nakayama
+-- (`Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`) from `Nakayama`, and the
+-- colon ideal `(0 : p)` from `Ideal/Colon`.
+public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
+public import Mathlib.RingTheory.Nakayama
+public import Mathlib.RingTheory.Ideal.Colon
 -- The going-down half of `ringKrullDim_stalk_eq_of_isFinite_endo` below.
 -- `Ideal.GoingDown` supplies `Algebra.HasGoingDown`, which occurs in the
 -- SIGNATURE of the leaf `hasGoingDown_stalkMap_of_isFinite_endo`, so it is
@@ -165,6 +174,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 -- one — and was HOISTED into `Modularity/RegularStalks.lean` on 2026-07-27
 -- precisely so that it could be consumed here.
 public import Fermat.FLT.Modularity.RegularStalks
+-- `flat_quotientMap_pow_of_flat_quotientMap` below is the nilpotent half of the
+-- one-element local criterion of flatness, and it is PROVEN over the single
+-- general statement `Module.Flat.of_flat_quotient_of_pow_eq_bot` — the local
+-- criterion for a nilpotent ideal — which lives in the shim tree because it is
+-- mathlib-shaped, reusable, and (mathlib having no `Tor` long exact sequence at
+-- this pin) needs a theory build that must not happen inside this file.
+public import Fermat.FLT.Mathlib.RingTheory.Flat.LocalCriterion
 
 @[expose] public section
 
@@ -787,19 +803,22 @@ On 2026-07-27 that leaf was CUT along the source's own seam into
   before touching the approximation leaf;
 * `essFinitePresentation_of_essFiniteType_of_flat_quotientMap` — the
   **finite-generation of `J`**, 05UV's other conclusion.  **PROVEN
-  2026-07-27** by writing out 05UV's own presentation step; its whole
-  remaining content is the new leaf `fg_ker_of_flat_quotientMap` ("`J` is
-  finitely generated"), and the presentation bookkeeping around it —
-  `exists_essFinitePresentation_surjective_of_essFiniteType` and
+  2026-07-27** by writing out 05UV's own presentation step; the presentation
+  bookkeeping — `exists_essFinitePresentation_surjective_of_essFiniteType` and
   `essFinitePresentation_comp_of_fg_ker` — is proven, needing nothing that
-  was missing from the pin;
+  was missing from the pin, and so, later the same day, is
+  `fg_ker_of_flat_quotientMap` ("`J` is finitely generated") itself;
 * `flat_of_flat_of_flat_quotientMap` — now **PROVEN**, a two-line assembly of
   those two, exactly as 05UV's proof ends.
 
-So the two OPEN leaves of this block are now
-`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` (00R7) and
-`fg_ker_of_flat_quotientMap` (finite generation of `J`), and the survey below
-applies to both.
+So the ONE open node of this block is now
+`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` (00R7), i.e. its two
+leaves `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian`
+(approximation) and `flat_of_rTensor_injective_of_flat_quotientMap` (the
+Noetherian local criterion), and the survey below applies to them.  **The
+finite-generation half is closed**: it needed neither Noetherian approximation
+nor `Tor` — see the section note "05UV's FINITE-GENERATION ARGUMENT" below,
+which records the specific claim of the survey below that is false for it.
 
 Everything below is the route audit that produced that cut, retained verbatim
 because each of its claims is paired with the grep that refutes it if it goes
@@ -847,6 +866,13 @@ it goes stale; all re-run against the pin on 2026-07-27):
   (`LocalRing/Module.lean:248`) is the local criterion itself in the
   finitely-*presented* case: `𝔪 ⊗ M → M` injective plus `FinitePresentation`
   gives `Free`.
+  **STILL TRUE OF MATHLIB, NO LONGER TRUE OF THIS FILE (2026-07-27):** the
+  Noetherian local criterion `flat_of_rTensor_injective_of_flat_quotientMap`
+  (Stacks 10.99.10) is now PROVEN below, over a single homological leaf.  Its
+  Noetherian content — Artin–Rees + Krull, which is what the "ideally
+  separated" hazard in the next bullet is really about — is written out; see the
+  section note "10.99.10 CUT".  A sweep that concludes "the local criterion is
+  missing" should say *missing from the pin*, not *missing here*.
 
 **ROUTE AUDIT, 2026-07-27 — a CORRECTION to the sentence that used to end
 that bullet.**  It read: "The gap is precisely that a stalk is essentially,
@@ -1013,11 +1039,18 @@ the approximation leaf's PROOF, where a wrong guess costs nothing.
 is two, along the source's own seam `00R7 = approximation + 00MP`:
 
 * `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian` —
-  the APPROXIMATION half.  Open.  Whoever proves it takes the filtered-system
-  decision, and should record what they pinned.
+  the APPROXIMATION half.  **PROVEN later the same day**, over the single new
+  leaf `nonempty_flatNoetherianStage_of_essFinitePresentation`; the
+  filtered-system decision that its owner took, and the reasons, are the
+  section note "THE COLIMIT-API DECISION" immediately below.  The short form:
+  no filtered colimit is stated anywhere; the interface is a Noetherian stage
+  plus `Algebra.IsPushout`.
 * `flat_of_rTensor_injective_of_flat_quotientMap` — **10.99.10**, the local
-  criterion of flatness in the Noetherian setting.  Open, and the only thing
-  standing between this development and 00MP.
+  criterion of flatness in the Noetherian setting.  **PROVEN 2026-07-27**; it
+  was itself cut in two along Matsumura 22.3's own seam, and what remains under
+  it is the single leaf `lTensor_subtype_injective_of_pow_le` — the HOMOLOGICAL
+  half, which needs no Noetherian hypothesis at all.  See the section note
+  "10.99.10 CUT" below.
 
 and 00MP itself (`flat_of_flat_of_flat_quotientMap_noetherian`) is PROVEN
 here, because its OTHER half is proven outright:
@@ -1037,6 +1070,15 @@ ideal" written without Tor, and that is enough to prove the whole step.  The
 audit itself flags this lemma as "an ingredient a naive survey misses"; it was
 right, and the ingredient was sufficient.  What is genuinely missing is only
 the local criterion (10.99.10) and the approximation.
+
+**AND A SECOND CORRECTION, 2026-07-27, to the sentence immediately above.**  The
+local criterion is no longer missing either: it is PROVEN below, and its own
+Noetherian content (Artin–Rees + Krull) is written out.  What is missing under
+it is one purely homological leaf, `lTensor_subtype_injective_of_pow_le`, which
+carries none of the hypotheses that made this route look expensive — no
+Noetherian, no finiteness, no locality.  So of the three items in the original
+survey — Tor, the local criterion, Noetherian approximation — only the third
+remains, plus the `I`-adic induction inside that one leaf.
 
 **AXIS SEARCHED.**  Cuts of 00R7 along the Stacks proof's own structure.  Not
 searched: whether a *different* proof of 00R7 exists that avoids approximation
@@ -1177,8 +1219,211 @@ theorem rTensor_map_subtype_injective_of_flat {R B A : Type u}
   rw [(Module.Flat.iff_rTensor_injective'.mp inferInstance I).eq_iff' (map_zero _) |>.mp hw]
   exact map_zero _
 
-/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (SORRY
-LEAF, cut out of `flat_of_flat_of_flat_quotientMap_noetherian` on 2026-07-27).
+/-! ### 10.99.10 CUT — the Noetherian half is Artin–Rees + Krull, and it is PROVEN
+
+**SECTION NOTE for the three declarations that follow and for the local criterion
+itself** (2026-07-27).  Stacks **10.99.10** — the local criterion of flatness in
+the Noetherian setting — was left ATOMIC when 00R7 was cut, with a docstring
+saying only that `grep -rin "local criterion"` over the pin is empty and that the
+textbook route is "Matsumura 22.3 via the `I`-adic filtration and Artin–Rees".
+That is right, and it hides a clean seam that the classical proof itself uses.
+
+**THE SEAM.**  Matsumura 22.3 / Stacks 10.99.6–10.99.7 prove the criterion in two
+independent halves:
+
+1. *(Homological, and it needs NO finiteness, NO Noetherian hypothesis and NO
+   locality.)*  `Tor₁^B(B/I, A) = 0` together with flatness of `A/IA` over `B/I`
+   propagates up the `I`-adic filtration: for every `n`, `Tor₁^B(B/Iⁿ, A) = 0`
+   and `A/IⁿA` is flat over `B/Iⁿ`.
+2. *(Noetherian, and it is where every hypothesis of the leaf is consumed.)*
+   Artin–Rees plus Krull's intersection theorem turn (1) into flatness: for a
+   finitely generated ideal `𝔞 ⊆ B`, an element of `ker(A ⊗_B 𝔞 → A)` lies in
+   `Iⁿ·(A ⊗_B 𝔞)` for every `n`, and the intersection of those is zero because
+   `A ⊗_B 𝔞` is a FINITE `A`-module and `I·A ⊆ 𝔪_A`.
+
+Half (2) is proven below in full; half (1) is the single remaining leaf
+`lTensor_subtype_injective_of_pow_le`.  Both halves are stated with `B`-modules
+only — no quotient rings occur in any statement — which is the design decision
+recorded in that leaf's docstring.
+
+**WHAT MATHLIB SUPPLIES, checked 2026-07-27.**  `Ideal.exists_pow_inf_eq_pow_smul`
+(**Artin–Rees**, `Mathlib/RingTheory/Filtration.lean:387`) and
+`Ideal.iInf_pow_smul_eq_bot_of_isLocalRing` (**Krull's intersection theorem** for
+a finite module over a Noetherian local ring, same file).  Both arrive in this
+file's cone already.  `Module.Finite.base_change`
+(`Mathlib/RingTheory/TensorProduct/Finite.lean:82`) supplies
+`Module.Finite A (A ⊗[B] ↥𝔞)`, which is what makes Krull applicable — and it is
+exactly the "ideally separated" hypothesis of Matsumura 22.3, discharged rather
+than assumed.  This is why the section note above is right that
+`IsNoetherianRing` must not be dropped: without it neither Artin–Rees nor Krull
+is available, and half (2) is FALSE for a general local ring.
+
+**ORIENTATION.**  Everything below is written with `lTensor` (`A ⊗_B N`) rather
+than `rTensor` (`N ⊗_B A`), because the `A`-module structure on `A ⊗[B] N` is a
+global instance (`TensorProduct.leftModule`) whereas the one on `N ⊗[B] A` is
+only available through `Algebra.TensorProduct.rightAlgebra`, which mathlib
+declares as a *local* instance.  Krull's theorem is applied over `A`, so the
+`A`-module structure has to be the ambient one.  `_htor` is stated with `rTensor`
+because that is the shape `rTensor_map_subtype_injective_of_flat` produces; the
+two are interchangeable by `LinearMap.lTensor_inj_iff_rTensor_inj`, and the leaf
+below takes the `rTensor` form verbatim so that the consumer needs no bridge.
+-/
+
+/-- `a ⊗ₜ m` with `m ∈ K • ⊤` lies in `(K·A) • ⊤`.
+
+The `B`-action of an ideal `K` on `M` is absorbed, along `M → A ⊗[B] M`, by the
+`A`-action of the extended ideal `K·A` on `A ⊗[B] M`.  This is the step that
+converts the Artin–Rees bound (a statement about `B`-ideals) into a statement
+about the `A`-submodule filtration on which Krull's intersection theorem is run,
+and it is the only place where the scalar tower `B → A → A ⊗[B] M` is used. -/
+lemma tmul_mem_map_smul_top {B A : Type u} [CommRing B] [CommRing A] [Algebra B A]
+    {M : Type u} [AddCommGroup M] [Module B M] (K : Ideal B) (a : A) (m : M)
+    (hm : m ∈ K • (⊤ : Submodule B M)) :
+    a ⊗ₜ[B] m ∈ (K.map (algebraMap B A)) • (⊤ : Submodule A (A ⊗[B] M)) := by
+  refine Submodule.smul_induction_on (p := fun m => a ⊗ₜ[B] m ∈
+    (K.map (algebraMap B A)) • (⊤ : Submodule A (A ⊗[B] M))) hm ?_ ?_
+  · intro r hr x _
+    rw [TensorProduct.tmul_smul, ← IsScalarTower.algebraMap_smul A r]
+    exact Submodule.smul_mem_smul (Ideal.mem_map_of_mem _ hr) Submodule.mem_top
+  · intro x y hx hy
+    rw [TensorProduct.tmul_add]
+    exact Submodule.add_mem _ hx hy
+
+/-- **THE HOMOLOGICAL HALF OF THE LOCAL CRITERION** (SORRY LEAF, cut out of
+`flat_of_rTensor_injective_of_flat_quotientMap` on 2026-07-27; read the section
+note above first).
+
+*Let `B → A` be a ring map and `I ⊆ B` an ideal, `J = I·A`.  Assume
+`Tor₁^B(B/I, A) = 0` and that `A/J` is flat over `B/I`.  Then for every `n : ℕ`
+and every ideal `𝔠 ⊆ B` with `Iⁿ ⊆ 𝔠`, the multiplication map `A ⊗_B 𝔠 → A` is
+injective.*
+
+**WHAT THIS SAYS IN CLASSICAL TERMS — it is Stacks 10.99.6 / Matsumura 22.3's
+step (2) ⟹ (3), packed into one quantifier.**  The ideals `𝔠 ⊇ Iⁿ` are exactly
+the preimages of the ideals of `B/Iⁿ`, so the conclusion is the conjunction of
+
+* `Tor₁^B(B/Iⁿ, A) = 0`  — the case `𝔠 = Iⁿ`; and
+* `A/IⁿA` is FLAT over `B/Iⁿ`  — the remaining `𝔠`, via
+  `A ⊗_B (𝔠/Iⁿ) ≅ (A/IⁿA) ⊗_{B/Iⁿ} (𝔠/Iⁿ)`.
+
+At `n = 1` it is exactly the two hypotheses again, so the leaf is an induction
+starting from its own hypotheses, not a strengthening of them.
+
+**WHY IT IS STATED THIS WAY AND NOT WITH QUOTIENT RINGS.**  The classical form
+("`A/IⁿA` is flat over `B/Iⁿ` for every `n`") forces its CONSUMER to cross the
+change-of-rings identification `A ⊗_B N ≅ (A/IⁿA) ⊗_{B/Iⁿ} N` for `B/Iⁿ`-modules
+`N`, which is a base-change cancellation that mathlib states only through
+`TensorProduct.AlgebraTensorModule` and that would have to be carried through the
+Artin–Rees argument.  In the `∀ 𝔠 ⊇ Iⁿ` form the identification is part of the
+PROOF of this leaf and never appears downstream; the two forms are equivalent by
+the diagram chase on `0 → Iⁿ → 𝔠 → 𝔠/Iⁿ → 0` tensored with `A`.  Nothing is
+weakened: the equivalence is an equivalence, in both directions.
+
+**NO NOETHERIAN, NO FINITENESS, NO LOCALITY.**  The statement carries none of the
+four hypotheses that the consumer needs (`IsNoetherianRing B`, `IsNoetherianRing
+A`, `IsLocalRing`, `IsLocalHom`), because half (1) of the classical proof uses
+none of them.  A prover who finds a use for them should say so — it would mean
+the seam is in the wrong place.
+
+**WHAT PROVING IT COSTS.**  Induction on `n`.
+
+* `n = 0`: `I⁰ = ⊤` forces `𝔠 = ⊤`, and `A ⊗_B B → A` is an isomorphism.
+* `n = 1`: the chase above.  From `0 → I → 𝔠 → 𝔠/I → 0` one gets the exact
+  `A ⊗ I → A ⊗ 𝔠 → A ⊗ (𝔠/I) → 0`; an `x` killed in `A` dies in `A/IA`, hence in
+  `A ⊗ (𝔠/I) ≅ (A/IA) ⊗_{B/I} (𝔠/I)` by `_hquot`, hence comes from `A ⊗ I`,
+  hence is `0` by `_htor`.
+* `n → n+1`: the graded step of 10.99.6.  The content is that
+  `Iⁿ/Iⁿ⁺¹ ⊗_{B/I} A/IA → IⁿA/Iⁿ⁺¹A` is an isomorphism, proved from the `n = 1`
+  data by Nakayama; that identification is what upgrades `A/IⁿA` flat over
+  `B/Iⁿ` to `A/Iⁿ⁺¹A` flat over `B/Iⁿ⁺¹`.
+
+The only piece of infrastructure that is not already in this file's cone is the
+change-of-rings isomorphism `A ⊗_B N ≅ (A/I^nA) ⊗_{B/I^n} N`; mathlib's
+`Mathlib.RingTheory.TensorProduct.Quotient` (already imported here) and
+`TensorProduct.AlgebraTensorModule.cancelBaseChange` are the intended route.
+
+**READ `section LocalCriterionOfFlatness` FURTHER DOWN THIS FILE BEFORE
+STARTING — it is the SAME theorem at a principal ideal, and it already carries a
+worked Lean attack.**  `flat_quotientMap_pow_of_flat_quotientMap` there is
+precisely this leaf specialised to `I = (t)` with `t` a nonzerodivisor on both
+rings (in that case `Tor₁^B(B/(t), A) = 0` is exactly regularity of `φ t` on
+`A`, which is why it appears as a hypothesis rather than as a `Tor` statement),
+and it is open with the same owner-less status.  More usefully,
+`mem_baseChange_sup_of_flat_quotientMap_pow`'s docstring works out the
+change-of-rings chase in Lean-level detail — the two `TensorProduct.lift`s `F`
+and `G`, why a kernel must NOT be computed directly, and the `Module Rₙ Q`
+instance hazard.  That plan transfers to a general `I` verbatim.
+
+**So these two leaves should have ONE owner**: a proof of this leaf specialises
+to `flat_quotientMap_pow_of_flat_quotientMap`, and the principal case is
+strictly easier to attack first because `(t)/(t^n)` is nilpotent in `B/(t^n)`,
+which is the case of the local criterion that needs no separatedness. -/
+theorem lTensor_subtype_injective_of_pow_le {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
+    (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
+    (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
+    (_hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ).Flat)
+    (n : ℕ) {𝔠 : Ideal B} (_h : I ^ n ≤ 𝔠) :
+    Function.Injective (LinearMap.lTensor A 𝔠.subtype) :=
+  sorry
+
+/-- **PROVEN** — the form of the leaf above that the Artin–Rees descent actually
+consumes: for EVERY ideal `𝔞` (no containment hypothesis), an element of
+`ker(A ⊗_B 𝔞 → A)` already comes from `A ⊗_B (𝔞 ∩ Iⁿ)`.
+
+The reduction to the leaf is the second isomorphism theorem.  Write `L = Iⁿ` and
+`𝔠 = 𝔞 + L ⊇ L`.  Then
+
+* `x ∈ ker(A ⊗ 𝔞 → A)` pushes to an element of `A ⊗ 𝔠` still killed in `A`, so it
+  is `0` there by the leaf at `𝔠`;
+* `↥𝔞 ↠ ↥𝔠 / L` is surjective with kernel `𝔞 ∩ L` (mathlib's
+  `LinearMap.subToSupQuotient`, surjective by
+  `LinearMap.quotientInfEquivSupQuotient_surjective`), so right-exactness of
+  `A ⊗_B -` identifies `ker(A ⊗ 𝔞 → A ⊗ (𝔠/L))` with the image of `A ⊗ (𝔞 ∩ L)`;
+* and the first bullet says exactly that `x` is in that kernel, because
+  `↥𝔞 → ↥𝔠/L` factors through `↥𝔠`.
+
+Note the second isomorphism theorem is used only through its SURJECTIVITY half,
+so the `⊤ ⊓ _` shape of `LinearMap.quotientInfEquivSupQuotient`'s domain never
+has to be normalised. -/
+theorem ker_lTensor_subtype_le_range_lTensor_comap_pow {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
+    (hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
+    (htor : Function.Injective (LinearMap.rTensor A I.subtype))
+    (hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) hIJ).Flat)
+    (n : ℕ) (𝔞 : Ideal B) :
+    LinearMap.ker (LinearMap.lTensor A 𝔞.subtype) ≤
+      LinearMap.range (LinearMap.lTensor A
+        (Submodule.comap 𝔞.subtype (I ^ n)).subtype) := by
+  set L : Ideal B := I ^ n
+  set N : Submodule B ↥𝔞 := Submodule.comap 𝔞.subtype L with hNdef
+  have hker : LinearMap.ker (LinearMap.subToSupQuotient 𝔞 L) = N := by
+    ext y
+    simp [LinearMap.subToSupQuotient, hNdef]
+  have hex : Function.Exact N.subtype (LinearMap.subToSupQuotient 𝔞 L) := by
+    rw [LinearMap.exact_iff, hker, Submodule.range_subtype]
+  have hsurj : Function.Surjective (LinearMap.subToSupQuotient 𝔞 L) := by
+    intro z
+    obtain ⟨w, hw⟩ := LinearMap.quotientInfEquivSupQuotient_surjective 𝔞 L z
+    obtain ⟨v, rfl⟩ := Submodule.mkQ_surjective _ w
+    exact ⟨v, hw⟩
+  have hexT := _root_.lTensor_exact A hex hsurj
+  intro x hx
+  refine (hexT x).mp ?_
+  have h1 : LinearMap.lTensor A (Submodule.inclusion (le_sup_left : 𝔞 ≤ 𝔞 ⊔ L)) x = 0 := by
+    refine (injective_iff_map_eq_zero _).mp
+      (lTensor_subtype_injective_of_pow_le hIJ htor hquot n (𝔠 := 𝔞 ⊔ L) le_sup_right) _ ?_
+    rw [← LinearMap.comp_apply, ← LinearMap.lTensor_comp]
+    exact LinearMap.mem_ker.mp hx
+  show LinearMap.lTensor A
+    ((Submodule.comap (𝔞 ⊔ L).subtype L).mkQ.comp
+      (Submodule.inclusion (le_sup_left : 𝔞 ≤ 𝔞 ⊔ L))) x = 0
+  rw [LinearMap.lTensor_comp, LinearMap.comp_apply, h1, map_zero]
+
+/-- **THE LOCAL CRITERION OF FLATNESS, Noetherian: Stacks 10.99.10** (**PROVEN**
+2026-07-27 over the single leaf `lTensor_subtype_injective_of_pow_le`; the
+section note "10.99.10 CUT" above is the design decision that produced it.  Cut
+out of `flat_of_flat_of_flat_quotientMap_noetherian` on 2026-07-27).
 
 *Let `B → A` be a local homomorphism of NOETHERIAN local rings and `I ⊆ 𝔪_B`
 an ideal, `J = I·A`.  If `Tor₁^B(B/I, A) = 0` and `A/J` is flat over `B/I`,
@@ -1204,11 +1449,29 @@ type because `J` occurs inside `A ⧸ J`, and the consumer supplies `J` as
 `Ideal.map_map`, but only propositionally, and a dependent rewrite there is
 gratuitous friction.
 
-**WHAT PROVING IT COSTS.**  `grep -rin "local criterion" .lake/packages/mathlib`
-returns nothing, re-run 2026-07-27, so this is genuinely new.  Its own Stacks
-proof cites Nakayama (10.20.1), 10.99.7 and 10.39.15; the standard textbook
-route is Matsumura 22.3 via the `I`-adic filtration and Artin–Rees.  Note that
-mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
+**THE PROOF, now written**, is half (2) of the section note above: Artin–Rees
+plus Krull, over the leaf `lTensor_subtype_injective_of_pow_le`.  For a finitely
+generated ideal `𝔞 ⊆ B` and `x ∈ ker(A ⊗_B 𝔞 → A)`, fix `n`; Artin–Rees
+(`Ideal.exists_pow_inf_eq_pow_smul`) gives `k` with `𝔞 ∩ I^{n+k} ⊆ Iⁿ·𝔞`, the
+leaf (through `ker_lTensor_subtype_le_range_lTensor_comap_pow` at `n+k`) puts `x`
+in the image of `A ⊗_B (𝔞 ∩ I^{n+k})`, and `tmul_mem_map_smul_top` then places it
+in `(I·A)ⁿ · (A ⊗_B 𝔞)`.  As `n` was arbitrary and `A ⊗_B 𝔞` is a finite
+`A`-module (`Module.Finite.base_change`, using `IsNoetherianRing B` for
+`Module.Finite B ↥𝔞`) with `I·A ≠ ⊤` (using `_hI` and `IsLocalHom`), Krull's
+intersection theorem `Ideal.iInf_pow_smul_eq_bot_of_isLocalRing` gives `x = 0`.
+
+**WHERE EACH HYPOTHESIS IS CONSUMED**, since the note above warns against
+dropping any of them: `IsNoetherianRing B` for Artin–Rees and for finiteness of
+`𝔞`; `IsNoetherianRing A` + `IsLocalRing A` for Krull; `_hI` + `IsLocalHom` for
+`I·A ≠ ⊤`, which is what makes the Krull filtration separating and is the
+formal content of "`A` is `I`-adically ideally separated"; `_htor` and `_hquot`
+only through the leaf.  `IsLocalRing B` is used nowhere in this proof — it is
+kept because the consumer has it and because dropping it from a leaf's signature
+is a restatement, not a simplification.
+
+**WHAT WAS MISSING FROM THE PIN.**  `grep -rin "local criterion"
+.lake/packages/mathlib` returns nothing, re-run 2026-07-27, so this is genuinely
+new.  Note that mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
 (`Mathlib/RingTheory/LocalRing/Module.lean:248`) is the NON-Noetherian
 criterion for a finitely presented MODULE, and does not apply: `A` is not a
 finite `B`-module here. -/
@@ -1222,8 +1485,46 @@ theorem flat_of_rTensor_injective_of_flat_quotientMap {B A : Type u}
     (hIJ : I ≤ J.comap (algebraMap B A))
     (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
     (_hquot : (Ideal.quotientMap J (algebraMap B A) hIJ).Flat) :
-    Module.Flat B A :=
-  sorry
+    Module.Flat B A := by
+  subst _hJ
+  have hmapne : I.map (algebraMap B A) ≠ ⊤ := by
+    refine ne_top_of_le_ne_top (IsLocalRing.maximalIdeal.isMaximal A).ne_top ?_
+    exact (Ideal.map_mono _hI).trans (IsLocalRing.map_maximalIdeal_le (algebraMap B A))
+  rw [Module.Flat.iff_lTensor_injective]
+  intro 𝔞 h𝔞
+  haveI : Module.Finite B ↥𝔞 := Module.Finite.iff_fg.mpr h𝔞
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  have hKrull : (⨅ i : ℕ, (I.map (algebraMap B A)) ^ i •
+      (⊤ : Submodule A (A ⊗[B] ↥𝔞))) = ⊥ :=
+    Ideal.iInf_pow_smul_eq_bot_of_isLocalRing _ hmapne
+  have hx' : x ∈ (⨅ i : ℕ, (I.map (algebraMap B A)) ^ i •
+      (⊤ : Submodule A (A ⊗[B] ↥𝔞))) := by
+    rw [Submodule.mem_iInf]
+    intro n
+    obtain ⟨k, hk⟩ := Ideal.exists_pow_inf_eq_pow_smul I (M := B) 𝔞
+    have hAR : 𝔞 ⊓ I ^ (n + k) ≤ I ^ n • 𝔞 := by
+      have h := hk (n + k) (Nat.le_add_left k n)
+      rw [Nat.add_sub_cancel] at h
+      have htop : ∀ m : ℕ, (I ^ m) • (⊤ : Submodule B B) = I ^ m := by
+        intro m; rw [smul_eq_mul, ← Ideal.one_eq_top, mul_one]
+      rw [htop, htop] at h
+      rw [inf_comm, h]
+      exact Submodule.smul_mono le_rfl inf_le_right
+    obtain ⟨y, hy⟩ := ker_lTensor_subtype_le_range_lTensor_comap_pow hIJ _htor _hquot
+      (n + k) 𝔞 (LinearMap.mem_ker.mpr hx)
+    rw [← hy]
+    clear hy hx
+    induction y with
+    | zero => simp
+    | add z w hz hw => rw [map_add]; exact Submodule.add_mem _ hz hw
+    | tmul a m =>
+        rw [LinearMap.lTensor_tmul, ← Ideal.map_pow]
+        refine tmul_mem_map_smul_top (I ^ n) a _ ?_
+        rw [Submodule.mem_smul_top_iff]
+        exact hAR ⟨(m : ↥𝔞).2, m.2⟩
+  rw [hKrull] at hx'
+  simpa using hx'
 
 /-- **Stacks 00MP** = Algebra Lemma 10.99.15, at `M = S' = A` (**PROVEN**
 2026-07-27 over `rTensor_map_subtype_injective_of_flat` and the local
@@ -1267,9 +1568,231 @@ theorem flat_of_flat_of_flat_quotientMap_noetherian {R B A : Type u}
       (IsLocalRing.maximalIdeal R))
     hfib
 
-/-- **THE APPROXIMATION HALF OF 00R7** (SORRY LEAF, cut 2026-07-27; the
-section note above is the design decision that produced it and should be read
-first).
+/-! ### THE COLIMIT-API DECISION, TAKEN 2026-07-27 — and it is *no colimit API*
+
+**SECTION NOTE for `FlatNoetherianStage`, the leaf
+`nonempty_flatNoetherianStage_of_essFinitePresentation`, and the now-PROVEN
+approximation half below them.**  The note "00R7 CUT" above took the *first*
+design decision (pass 00MP as a hypothesis rather than state a filtered
+system) and explicitly deferred the *second* one to whoever proved the
+approximation half:
+
+> The correct datum is therefore a genuine filtered colimit — `Ring.DirectLimit`
+> over a directed order, or a functor from a filtered category — plus a
+> `DirectedSystem` of the two maps `g` and `v`, plus a descent lemma "a filtered
+> colimit of flat ring maps is flat over the colimit of the bases".
+
+That paragraph is a correct description of what 00R7's PROOF does.  It is
+**not** what any of 00R7's statements needs, and the decision taken here is
+therefore:
+
+**PIN: no filtered colimit appears in the statement of any leaf.  The
+interface between the approximation and everything that consumes it is
+`(a Noetherian local stage) + (`Algebra.IsPushout`)`.**  Concretely that is
+the structure `FlatNoetherianStage` below, and the filtered system stays
+where the note above put it — inside the leaf's proof, where a wrong guess
+costs nothing.
+
+**WHY, and this is an argument rather than a taste.**
+
+1. *It is the seam the source itself ends on.*  The last sentence of 00R7's
+   proof is verbatim "Then `S = S_λ ⊗_{R_λ} R` is flat over `R`, and
+   `M = M_λ ⊗_{S_λ} S` is flat over `S` (since the base change of a flat
+   module is flat)."  At `M = S' = A`, `S = B` that is exactly
+   `Algebra.IsPushout S_λ M_λ S M` plus base change, and nothing else.
+2. *The infrastructure already exists, so nothing has to be invented.*
+   `Algebra.IsPushout` is `Mathlib/RingTheory/IsTensorProduct.lean:620` and
+   `RingHom.Flat.isStableUnderBaseChange` (`Mathlib/RingTheory/RingHom/Flat.lean`)
+   is literally "`P (algebraMap R S) → P (algebraMap R' S')` given
+   `Algebra.IsPushout R S R' S'`".  The assembly below is four lines of
+   instance plumbing and one application of it.  A colimit API would have had
+   to be written, and — per the refutation in the note above — written
+   correctly on the first try or it manufactures a false leaf.
+3. *A colimit API in a statement forces a transport that a stage does not.*
+   `Ring.DirectLimit` CONSTRUCTS a ring; `R`, `B`, `A` in this development are
+   given rings carrying `IsLocalRing`, `Module.Flat` and `EssFinitePresentation`
+   hypotheses.  Stating "R = colim R_λ" as an equality of types is impossible
+   and as a `RingEquiv` means transporting every one of those hypotheses across
+   it at every use.  The predicate form (a cocone `R_λ → R` plus "every element
+   comes from some λ" plus "two elements equal downstairs become equal at some
+   μ") avoids the transport, but to be USEFUL it must also carry all six
+   properties of 10.127.13 — each of which is a separate opportunity to state
+   something false, and none of which the consumer looks at.
+4. *The free-floating rule makes the alternative impossible anyway.*  A colimit
+   API stated now would be consumed only inside the proof of a still-sorried
+   leaf, and a sorried body contributes no dependency edges — so it would be
+   free-floating, which this development forbids.  That is the same constraint
+   that forced the previous owner's decision, one level down.
+
+**WHAT THIS BUYS THE `046Y` OWNER** (`essFinitePresentation_of_essFiniteType_of_flat_quotientMap`'s
+open leaf `fg_ker_of_flat_quotientMap` is where 046Y will be stated).  046Y =
+10.128.4 has two conclusions, and the seam serves them differently — this was
+checked against the source, not assumed:
+
+* *"`N/u(M)` is flat over `R`"* — the SAME seam works verbatim.  046Y's proof
+  ends at a finite λ with `N_λ/u_λ(M_λ)` flat over `R_λ`, and
+  `N/u(M) ≅ (N_λ/u_λ(M_λ)) ⊗_{S_λ} S` because cokernels commute with base
+  change.  So `Algebra.IsPushout`/`IsBaseChange` plus
+  `Module.Flat.isBaseChange` closes it with no colimit API, exactly as here.
+* *"`u` is injective"* — the seam does **not** serve this, and pretending
+  otherwise would be the false step.  `u_λ` injective gives `u = u_λ ⊗ id`
+  injective only if `S` were flat over `S_λ`, which is NOT among 10.127.13's
+  conclusions.  The real reason is that filtered colimits are EXACT.  So the
+  one place 046Y genuinely needs colimit machinery is that exactness — and
+  even there nothing has to be invented: mathlib's
+  `Module.DirectLimit.of.zero_exact` (`Mathlib/Algebra/Colimit/Module.lean:272`)
+  is precisely the ingredient, and `Module.DirectLimit.lift_injective` is the
+  packaged form.
+
+So the recorded answer to "what colimit API did you pin" is: **none in any
+statement; `Algebra.IsPushout` at a finite Noetherian stage for every flatness
+conclusion, and mathlib's existing `Module.DirectLimit` inside proofs wherever
+exactness of the colimit is genuinely needed.**
+
+**AXIS SEARCHED.**  Ways to state the OUTPUT of Stacks 10.127.13 + 10.128.3 so
+that 00R7's endgame can consume it.  NOT searched: whether the approximation
+leaf below can be cut further.  A cut into "10.127.13" + "10.128.3" was
+considered and rejected for a mechanical reason worth recording — the
+assembly of those two is the paragraph of 00R7's proof beginning "Note that
+this also implies", which verifies that the FIBRE system
+`(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ, M_λ/𝔭_λ M_λ)` is again a system as in
+10.127.13.  That verification is itself substantial, so cutting there
+produces three leaves of which the "assembly" is not glue, and it is the
+first thing to reconsider if the leaf below turns out to be too big to prove
+in one go.
+-/
+
+/-- **THE OUTPUT OF STACKS 10.127.13 + 10.128.3, in the only form 00R7's
+endgame consumes** — a NOETHERIAN stage under `v : B →+* A` at which both of
+00R7's flatness hypotheses already hold, together with the identification of
+`A` as a base change from that stage.
+
+Read the section note above for why this, and not a filtered colimit, is what
+gets stated.  In Stacks' notation the three carriers are `R_λ`, `S_λ`, `S'_λ`
+for one sufficiently large `λ`, and `midToB`, `totToA` are the structure maps
+`S_λ → S`, `S'_λ → S'` of the colimit.
+
+**WHY IT IS SAFE — the conclusion is deliberately as WEAK as it can be while
+still discharging 00R7.**  Everything the assembly does not use has been left
+out, so this datum asks for strictly less than 10.127.13 + 10.128.3 deliver,
+and a leaf producing it can only be easier than the source lemma.  In
+particular there is deliberately **no** map `Base →+* R`, **no** locality
+requirement on `midToB`/`totToA`, **no** localization property of the
+transition maps, and **no** directed index set: the assembly needs none of
+them.  Conversely, everything that IS here is used — `isNoetherian*`,
+`isLocalRing*` and `isLocalHom*` by 00MP, `flatBase` and `flatFibre` as 00MP's
+two hypotheses, and `comm` + `isPushout` by the base-change step.
+
+**FAITHFULNESS OF `isPushout`.**  `Algebra.IsPushout Mid Tot B A` says
+`A ≅ Tot ⊗[Mid] B`, i.e. `M = M_λ ⊗_{S_λ} S` — the last line of 00R7's proof.
+The five `letI`s in its type are the algebra structures carried by the four
+ring maps of the square, and the two `IsScalarTower`s are forced by `comm`;
+they are written inline rather than assumed so that the field cannot be
+satisfied by some *other* algebra structure on the same rings, which is the
+duplicate-instance trap this development has been bitten by repeatedly. -/
+structure FlatNoetherianStage {B A : Type u} [CommRing B] [CommRing A] (v : B →+* A) where
+  /-- `R_λ`, Stacks' Noetherian local base, essentially of finite type over `ℤ`. -/
+  Base : Type u
+  /-- `S_λ`, the stage of `S = B`. -/
+  Mid : Type u
+  /-- `S'_λ`, the stage of `S' = M = A`. -/
+  Tot : Type u
+  [commRingBase : CommRing Base]
+  [commRingMid : CommRing Mid]
+  [commRingTot : CommRing Tot]
+  [isLocalRingBase : IsLocalRing Base]
+  [isLocalRingMid : IsLocalRing Mid]
+  [isLocalRingTot : IsLocalRing Tot]
+  [isNoetherianBase : IsNoetherianRing Base]
+  [isNoetherianMid : IsNoetherianRing Mid]
+  [isNoetherianTot : IsNoetherianRing Tot]
+  /-- `R_λ → S_λ`. -/
+  baseToMid : Base →+* Mid
+  /-- `S_λ → S'_λ`. -/
+  midToTot : Mid →+* Tot
+  [isLocalHomBaseToMid : IsLocalHom baseToMid]
+  [isLocalHomMidToTot : IsLocalHom midToTot]
+  /-- The colimit structure map `S_λ → S`. -/
+  midToB : Mid →+* B
+  /-- The colimit structure map `S'_λ → S'`. -/
+  totToA : Tot →+* A
+  /-- The square `R_λ → S_λ → S'_λ → S'` / `S_λ → S → S'` commutes. -/
+  comm : totToA.comp midToTot = v.comp midToB
+  /-- 00MP's hypothesis (4) at the stage: `M_λ` is flat over `R_λ`.  This is
+  the first of the two applications of Stacks 10.128.3. -/
+  flatBase : (midToTot.comp baseToMid).Flat
+  /-- 00MP's hypothesis (3) at the stage: `M_λ/𝔭_λ M_λ` is flat over
+  `S_λ/𝔭_λ S_λ`.  This is the second application of Stacks 10.128.3, to the
+  fibre system. -/
+  flatFibre : (Ideal.quotientMap
+      ((IsLocalRing.maximalIdeal Base).map (midToTot.comp baseToMid)) midToTot
+      (map_le_comap_map_comp baseToMid midToTot (IsLocalRing.maximalIdeal Base))).Flat
+  /-- `M = M_λ ⊗_{S_λ} S`, the last line of 00R7's proof. -/
+  isPushout :
+    letI : Algebra Mid Tot := midToTot.toAlgebra
+    letI : Algebra Mid B := midToB.toAlgebra
+    letI : Algebra Tot A := totToA.toAlgebra
+    letI : Algebra B A := v.toAlgebra
+    letI : Algebra Mid A := (v.comp midToB).toAlgebra
+    haveI : IsScalarTower Mid B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+    haveI : IsScalarTower Mid Tot A :=
+      IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun comm x).symm
+    Algebra.IsPushout Mid Tot B A
+
+/-- **NOETHERIAN APPROXIMATION FOR 00R7: Stacks 10.127.13 + 10.128.3**
+(SORRY LEAF, cut 2026-07-27 out of the approximation half below; read the
+section note "THE COLIMIT-API DECISION" above first, and the docstring of
+`FlatNoetherianStage` for what the datum is and why it is as weak as it is).
+
+*Under 00R7's hypotheses at `M = S' = A`, a `FlatNoetherianStage v` exists.*
+
+**THIS IS 00R7'S PROOF MINUS ITS LAST SENTENCE.**  Everything in the Stacks
+argument lives here: writing `R = colim R_λ` as a directed colimit of local
+`ℤ`-algebras essentially of finite type (10.127.11, so each `R_λ` is
+Noetherian); descending `S` to `S_λ = (R_λ[x₁,…,x_n]/(f_{1,λ},…,f_{u,λ}))_{𝔮_λ}`
+and `S'` to `S'_λ = (S_λ[y₁,…,y_m]/(ḡ_{1,λ},…,ḡ_{v,λ}))_{𝔮̄'_λ}`, which is
+where `_hfpA` and `_hfpB` are both consumed and which is why 00R7 needs
+essential finite PRESENTATION on both maps; applying **10.128.3** once to get
+`M_λ` flat over `R_λ` for large `λ`; checking that
+`(S_λ/𝔭_λ S_λ → S'_λ/𝔭_λ S'_λ, M_λ/𝔭_λ M_λ)` is again a system as in 10.127.13
+and applying **10.128.3** a second time to get the fibre flatness at the
+stage.  At `M = S' = A` the presentation of `M` over `S'` may be taken to be
+`(S')^{⊕0} → (S')^{⊕1} → M → 0`, so `M_λ = S'_λ` and no separate module has to
+be carried — which is the whole reason `FlatNoetherianStage` has three
+carriers and not four.
+
+**WHAT IS STILL MISSING FROM THE PIN**, re-greped 2026-07-27 and unchanged
+from the survey in the first section note: `grep -rni "noetherian approximation"
+.lake/packages/mathlib` is empty, and `grep -rn "Ring.DirectLimit" Fermat/ ~/cs/FLT`
+finds no use anywhere in this development.  Mathlib's `Ring.DirectLimit`,
+`Module.DirectLimit` and `Mathlib/Algebra/Colimit/TensorProduct.lean` are the
+raw materials; 10.127.11, 10.127.13 and 10.128.3 all have to be written.  A hit
+on either grep means this note has gone stale.
+
+**FAITHFULNESS.**  The hypotheses are 00R7's verbatim at `M = S' = A`, and the
+conclusion is strictly weaker than what 10.127.13 + 10.128.3 produce (see the
+"WHY IT IS SAFE" paragraph of `FlatNoetherianStage`).  It is therefore true if
+00R7 is, and it cannot be vacuous: `FlatNoetherianStage` is not satisfiable by
+junk, because `isPushout` pins `A` to be the base change of `Tot` — the
+degenerate choice `Base = Mid = Tot = A` fails `isPushout` unless `B → A` is
+already an isomorphism, and fails `isNoetherianTot` unless `A` happens to be
+Noetherian. -/
+theorem nonempty_flatNoetherianStage_of_essFinitePresentation
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (_hfpA : EssFinitePresentation (v.comp g))
+    (_hfpB : EssFinitePresentation g)
+    (_hflat : (v.comp g).Flat)
+    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    Nonempty (FlatNoetherianStage v) :=
+  sorry
+
+/-- **THE APPROXIMATION HALF OF 00R7** (cut 2026-07-27; **PROVEN the same day**
+over `nonempty_flatNoetherianStage_of_essFinitePresentation`.  The section notes
+"00R7 CUT" and "THE COLIMIT-API DECISION" above are the two design decisions
+that produced it and should be read first).
 
 *Assume Stacks 00MP — the statement of
 `flat_of_flat_of_flat_quotientMap_noetherian` above, quantified over all
@@ -1286,29 +1809,35 @@ the section note above, where the cheap version of the system is REFUTED (the
 subring realisation is false for `B` and `A`, whose approximating system has
 non-injective transition maps).
 
-**WHAT A PROVER MUST DO, and what will not work.**  The hypothesis is not a
-shortcut: `Stacks`' proof of 00R7 is the approximation argument and nothing
-else, so proving this leaf means writing
-`R = colim R_λ` over local `ℤ`-algebras essentially of finite type (10.127.13,
-each `R_λ` Noetherian because essentially of finite type over `ℤ`), descending
-`B`, `A` and the two maps to a finite stage, using **10.128.3** twice — once to
-get `A_λ` flat over `R_λ` for large `λ`, once to get `A_λ/𝔪_λ A_λ` flat over
-`B_λ/𝔪_λ B_λ` — applying `_hNoeth` at that stage, and pushing flatness back up
-the colimit.  The `M = S' = A` instantiation is stable under this: `M_λ = A_λ`
-is finite over `S'_λ = A_λ` and nonzero because `A_λ` is local, so no extra
-hypothesis of 00MP has to be re-established at the finite stage.  What the
-prover chooses is exactly the shape of the system and the descent lemma
-"a filtered colimit of flat maps is flat over the colimit"; **say what you
-pinned**, because the next owner of the finite-generation half
-(`essFinitePresentation_of_essFiniteType_of_flat_quotientMap` below) needs the
-same machinery for 046Y.
+**WHAT THE PROOF IS, now that it is written.**  The hypothesis is not a
+shortcut: 00R7's proof is the approximation argument and nothing else.  All of
+that argument now sits in the single leaf
+`nonempty_flatNoetherianStage_of_essFinitePresentation`, which produces a
+`FlatNoetherianStage v` — one Noetherian local stage `R_λ → S_λ → S'_λ` at
+which 00MP's two hypotheses already hold, together with
+`Algebra.IsPushout S_λ S'_λ S S'` identifying `M = M_λ ⊗_{S_λ} S`.  What is
+left here is 00R7's LAST SENTENCE, and it is exactly two steps:
+
+1. `hNoeth` at the stage, giving `S'_λ` flat over `S_λ`;
+2. `RingHom.Flat.isStableUnderBaseChange` along that pushout, giving `A` flat
+   over `B`.
+
+The `M = S' = A` instantiation is stable under all of this: `M_λ = S'_λ` is
+finite over `S'_λ` and nonzero because `S'_λ` is local, so no extra hypothesis
+of 00MP has to be re-established at the finite stage.
+
+**WHAT WAS PINNED**, for the next owner of the finite-generation half
+(`fg_ker_of_flat_quotientMap` below), who needs the same machinery for 046Y:
+**no filtered colimit appears in any statement.**  The full argument, with the
+three reasons and the checked consequences for 046Y, is the section note "THE
+COLIMIT-API DECISION" above.
 
 **FAITHFULNESS.**  The hypotheses are 00R7's, verbatim, at `M = S' = A`; see
 the 00R7 docstring below, which is unchanged in content.  Adding a hypothesis
 can only weaken a statement, so this leaf cannot be false unless 00R7 is. -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
     {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
-    (_hNoeth : ∀ {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    (hNoeth : ∀ {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
       [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
       [IsNoetherianRing R] [IsNoetherianRing B] [IsNoetherianRing A]
       {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v],
@@ -1318,13 +1847,40 @@ theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
       v.Flat)
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
-    (_hfpA : EssFinitePresentation (v.comp g))
-    (_hfpB : EssFinitePresentation g)
-    (_hflat : (v.comp g).Flat)
-    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
         (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
-    v.Flat :=
-  sorry
+    v.Flat := by
+  obtain ⟨st⟩ := nonempty_flatNoetherianStage_of_essFinitePresentation hfpA hfpB hflat hfib
+  letI := st.commRingBase
+  letI := st.commRingMid
+  letI := st.commRingTot
+  letI := st.isLocalRingBase
+  letI := st.isLocalRingMid
+  letI := st.isLocalRingTot
+  letI := st.isNoetherianBase
+  letI := st.isNoetherianMid
+  letI := st.isNoetherianTot
+  letI := st.isLocalHomBaseToMid
+  letI := st.isLocalHomMidToTot
+  -- Step 1: 00MP at the Noetherian stage.
+  have hstage : st.midToTot.Flat := hNoeth st.flatBase st.flatFibre
+  -- Step 2: `M = M_λ ⊗_{S_λ} S`, so flatness base-changes up to `B → A`.
+  letI : Algebra st.Mid st.Tot := st.midToTot.toAlgebra
+  letI : Algebra st.Mid B := st.midToB.toAlgebra
+  letI : Algebra st.Tot A := st.totToA.toAlgebra
+  letI : Algebra B A := v.toAlgebra
+  letI : Algebra st.Mid A := (v.comp st.midToB).toAlgebra
+  haveI : IsScalarTower st.Mid B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower st.Mid st.Tot A :=
+    IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun st.comm x).symm
+  haveI : Algebra.IsPushout st.Mid st.Tot B A := st.isPushout
+  have hbc : (algebraMap B A).Flat :=
+    RingHom.Flat.isStableUnderBaseChange st.Mid st.Tot B A
+      (by rwa [RingHom.algebraMap_toAlgebra])
+  rwa [RingHom.algebraMap_toAlgebra] at hbc
 
 end FibreCriterionRingLevel
 
@@ -1387,10 +1943,19 @@ The decision was taken, and what was pinned is written out in the section note
 approximation leaf as a hypothesis**, which makes the assembly a one-liner,
 needs no new definitions, and leaves 00MP with a written consumer.  The note
 also REFUTES the cheap subring realisation of the system, so nobody has to
-rediscover that it is false.  The residue of 00R7 is now exactly two open
-leaves — `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian`
-(the approximation) and `flat_of_rTensor_injective_of_flat_quotientMap`
-(the local criterion 10.99.10) — and 00MP's other half is PROVEN. -/
+rediscover that it is false.
+
+**UPDATE, later the same day: both halves moved, on two branches at once.**  The
+approximation half is PROVEN — its owner took the second design decision, how if
+at all to state a filtered colimit, and the answer is **not to**; see the section
+note "THE COLIMIT-API DECISION" above.  The local criterion 10.99.10 is PROVEN
+too, down to one homological leaf; see the section note "10.99.10 CUT".  So the
+residue of 00R7 is still exactly two open leaves, but they are now
+`nonempty_flatNoetherianStage_of_essFinitePresentation` (Stacks 10.127.13 +
+10.128.3, i.e. 00R7's proof minus its last sentence) and
+`lTensor_subtype_injective_of_pow_le` — and 00MP's other half is PROVEN.
+(This paragraph was rewritten at integration from the merged source: each branch
+named the other's leaf as still open under its own predecessor's name.) -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
@@ -1436,12 +2001,12 @@ Consequently the leaf that used to stand here is now a THREE-LINE ASSEMBLY,
 and all of its remaining mathematical content sits in the single new leaf
 `fg_ker_of_flat_quotientMap`.
 
-**046Y is still not stated, for the unchanged reason**: its only consumer
-would be inside `fg_ker_of_flat_quotientMap`'s proof, which is still open, so
-stating it now would be free-floating.  But the obstruction the old note
-named — "with the presentation bookkeeping unwritten" — is gone: 046Y may be
-stated the moment someone decomposes `fg_ker_of_flat_quotientMap`, and it can
-then be stated against a presentation that already exists and is proven.
+**046Y IS NOW STATED AND PROVEN** (2026-07-27; this paragraph replaces "046Y is
+still not stated, for the unchanged reason: its only consumer would be inside
+`fg_ker_of_flat_quotientMap`'s proof, which is still open").  That consumer got
+written, so 046Y stopped being free-floating; it is
+`eq_of_fg_of_flat_quotient_of_le_sup`, in the section immediately below, and it
+costs no Noetherian approximation — see that section's note for why.
 -/
 
 /-- **Every essentially-of-finite-type LOCAL homomorphism is a surjection out
@@ -1602,8 +2167,464 @@ theorem essFinitePresentation_comp_of_fg_ker {R P B : Type u}
     · rw [Ideal.mk_ker, ← hJmap]
       exact le_of_eq rfl
 
+/-! ### 05UV's FINITE-GENERATION ARGUMENT — and a CORRECTION to what 046Y costs
+
+**SECTION NOTE for the six declarations that follow** (2026-07-27).  The note
+above this one said "046Y is still not stated, for the unchanged reason: its
+only consumer would be inside `fg_ker_of_flat_quotientMap`'s proof, which is
+still open".  That consumer is now written, so 046Y is stated — and the
+surprise is that **in the shape 05UV consumes it, 046Y needs NO Noetherian
+approximation at all.**
+
+The route audit above records `046Y (10.128.4) = the same approximation +
+10.99.1`, and concludes that 046Y "shares the engine's missing machinery".
+That is true of 046Y in FULL generality and **false of the instance 05UV
+uses**, because 05UV never has to *prove* that `B/J'` is flat over `R` —
+**00R7 hands it that**, since flatness of the base is 00R7's other conclusion.
+Once `R`-flatness is an INPUT rather than an output, the entire content of 046Y
+at this instance is
+
+    Tor₁^R(P/J, R/𝔪) = 0     +     Nakayama,
+
+and the Tor half is the **equational criterion of flatness**, which IS in the
+pin (`Module.Flat.isTrivialRelation_of_sum_smul_eq_zero`,
+`Mathlib/RingTheory/Flat/EquationalCriterion.lean`).  So the survey's "Tor for
+modules is ABSENT" item does not obstruct this half either — exactly as it did
+not obstruct `rTensor_map_subtype_injective_of_flat` above.
+
+**The refuting check**, if this note goes stale: read the hypotheses of
+`inf_map_le_mul_of_flat_quotient` below and ask whether any of them has to be
+*proven* rather than *supplied* inside `fg_ker_of_flat_quotientMap`.  If one
+does, approximation is back.
+
+The one thing that had to be recovered is 00R7's SECOND conclusion, which the
+statement of `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above
+deliberately discards ("only `M` flat over `S` is kept, because only that is
+consumed") — it is consumed now.  It is recovered rather than re-sorried,
+because a flat local homomorphism of local rings is FAITHFULLY flat and
+flatness descends along a faithfully flat tower.
+
+The six declarations, in dependency order:
+
+* `isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation` — the
+  fibre `P/𝔪P` of an essentially-of-finite-presentation local map is
+  NOETHERIAN.  This is what lets 05UV choose its `f₁,…,f_k`;
+* `flat_of_faithfullyFlat_tower` — flatness DESCENDS along a faithfully flat
+  tower.  General commutative algebra, absent from the pin
+  (`grep -rn "FaithfullyFlat" .lake/packages/mathlib/Mathlib/RingTheory/` finds
+  transitivity and base-change descent, not tower descent);
+* `flat_base_of_flat_of_flat_quotientMap_of_essFinitePresentation` — **00R7's
+  SECOND conclusion**;
+* `inf_map_le_mul_of_flat_quotient` — the Tor-vanishing statement, in ideal
+  form;
+* `eq_of_fg_of_flat_quotient_of_le_sup` — **046Y**, in the shape 05UV consumes
+  it;
+* `eq_of_fg_le_ker_of_le_sup` — 05UV's comparison step: 00R7 and 046Y applied
+  to `R → P/J'' → A`.
+
+All six are PROVEN, and the first, second, fourth and fifth are AXIOM-CLEAN
+(`#print axioms` returns `[propext, Classical.choice, Quot.sound]`); the third
+and sixth carry `sorryAx` only through the 00R7 leaf they consume.
+-/
+
+/-- **THE FIBRE OF AN ESSENTIALLY-OF-FINITE-PRESENTATION LOCAL MAP IS
+NOETHERIAN** (PROVEN 2026-07-27).  If `R → P` is essentially of finite
+presentation and `R` is local with maximal ideal `𝔪`, then `P/𝔪P` is a
+Noetherian ring.
+
+This is the step of 05UV's proof that reads "*we can find `f₁,…,f_k ∈ J` such
+that the images `f̄ᵢ ∈ B/𝔪B` generate the image `J̄` of `J` in the **Noetherian
+ring** `B/𝔪B`*".  The source gets Noetherianness from the explicit shape
+`B = R[x₁,…,xₙ]_𝔮`; here `P` is only abstractly essentially of finite
+presentation, so it is proved from the definition.
+
+**The proof.**  Unfold `EssFinitePresentation gP` as `P = M⁻¹T` with `R → T`
+finitely presented.  Then `T/𝔪T` is a finite-type algebra over the residue
+FIELD `R/𝔪` — hence Noetherian by `Algebra.FiniteType.isNoetherianRing` — and
+`P/𝔪P` is a localization of it at the image of `M`, which is
+`IsLocalization.of_surjective` applied to the square `T → P`, `T/𝔪T → P/𝔪P`.
+`IsLocalization.isNoetherianRing` finishes.  Only finite TYPE of `R → T` is
+used, so this holds verbatim for `Algebra.EssFiniteType`; it is stated for
+`EssFinitePresentation` because that is what the consumer has. -/
+theorem isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation
+    {R P : Type u} [CommRing R] [CommRing P] [IsLocalRing R]
+    {gP : R →+* P} (hfpP : EssFinitePresentation gP) :
+    IsNoetherianRing (P ⧸ (IsLocalRing.maximalIdeal R).map gP) := by
+  classical
+  obtain ⟨T, _, gT, vT, M, hgT, hvT, hloc⟩ := hfpP
+  letI : Algebra T P := vT.toAlgebra
+  haveI : IsLocalization M P := hloc
+  letI : Algebra R T := gT.toAlgebra
+  have hIK : ((IsLocalRing.maximalIdeal R).map gT).map vT
+      = (IsLocalRing.maximalIdeal R).map gP := by
+    rw [Ideal.map_map, hvT]
+  haveI : (IsLocalRing.maximalIdeal R).IsMaximal := IsLocalRing.maximalIdeal.isMaximal R
+  haveI : IsNoetherianRing (R ⧸ IsLocalRing.maximalIdeal R) :=
+    inferInstanceAs (IsNoetherianRing (IsLocalRing.ResidueField R))
+  have hle₁ : IsLocalRing.maximalIdeal R
+      ≤ ((IsLocalRing.maximalIdeal R).map gT).comap gT := Ideal.le_comap_map
+  letI : Algebra (R ⧸ IsLocalRing.maximalIdeal R) (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map gT) gT hle₁).toAlgebra
+  haveI : IsScalarTower R (R ⧸ IsLocalRing.maximalIdeal R)
+      (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  haveI : Algebra.FiniteType R T := RingHom.FiniteType.of_finitePresentation hgT
+  haveI : Algebra.FiniteType R (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    Algebra.FiniteType.of_surjective
+      (Ideal.Quotient.mkₐ R ((IsLocalRing.maximalIdeal R).map gT))
+      Ideal.Quotient.mk_surjective
+  haveI : Algebra.FiniteType (R ⧸ IsLocalRing.maximalIdeal R)
+      (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    Algebra.FiniteType.of_restrictScalars_finiteType R _ _
+  haveI : IsNoetherianRing (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    Algebra.FiniteType.isNoetherianRing (R ⧸ IsLocalRing.maximalIdeal R) _
+  have hle₂ : (IsLocalRing.maximalIdeal R).map gT
+      ≤ ((IsLocalRing.maximalIdeal R).map gP).comap vT := by
+    rw [← hIK]; exact Ideal.le_comap_map
+  letI : Algebra (T ⧸ (IsLocalRing.maximalIdeal R).map gT)
+      (P ⧸ (IsLocalRing.maximalIdeal R).map gP) :=
+    (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map gP) vT hle₂).toAlgebra
+  haveI : IsLocalization (M.map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gT)))
+      (P ⧸ (IsLocalRing.maximalIdeal R).map gP) := by
+    refine IsLocalization.of_surjective M P
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gT)) Ideal.Quotient.mk_surjective
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP)) Ideal.Quotient.mk_surjective
+      ?_ ?_
+    · exact RingHom.ext fun _ => rfl
+    · rw [Ideal.mk_ker, Ideal.mk_ker]
+      exact le_of_eq hIK.symm
+  exact IsLocalization.isNoetherianRing
+    (M.map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gT))) _ inferInstance
+
+open scoped TensorProduct in
+/-- **FLATNESS DESCENDS ALONG A FAITHFULLY FLAT TOWER** (PROVEN 2026-07-27).
+For a tower `R → C → A` with `A` FAITHFULLY flat over `C` and flat over `R`,
+the intermediate `C` is flat over `R`.
+
+Absent from the pin: `Mathlib/RingTheory/Flat/FaithfullyFlat/` has transitivity
+(`Module.FaithfullyFlat.trans`) and base-change descent
+(`Module.Flat.of_flat_tensorProduct`), and neither is this.
+
+**The proof** is the one-line classical argument, mechanised: for an ideal `I`
+of `R`, `A ⊗_C (C ⊗_R I) ≅ A ⊗_R I` naturally
+(`TensorProduct.AlgebraTensorModule.cancelBaseChange`), so `A ⊗_C (−)` carries
+`C ⊗_R I → C ⊗_R R` to `A ⊗_R I → A ⊗_R R`, which is injective because `A` is
+`R`-flat; and a faithfully flat `A` REFLECTS injectivity
+(`Module.FaithfullyFlat.lTensor_injective_iff_injective`).  The ideal criterion
+`Module.Flat.iff_lTensor_injective'` then gives `Module.Flat R C`. -/
+theorem flat_of_faithfullyFlat_tower {R C A : Type u} [CommRing R] [CommRing C] [CommRing A]
+    [Algebra R C] [Algebra C A] [Algebra R A] [IsScalarTower R C A]
+    [Module.FaithfullyFlat C A] [Module.Flat R A] : Module.Flat R C := by
+  rw [Module.Flat.iff_lTensor_injective']
+  intro I
+  set F : C ⊗[R] ↥I →ₗ[C] C ⊗[R] R :=
+    TensorProduct.AlgebraTensorModule.map (LinearMap.id : C →ₗ[C] C) I.subtype with hF
+  have hFfun : ⇑F = ⇑(LinearMap.lTensor C I.subtype) := rfl
+  rw [← hFfun, ← Module.FaithfullyFlat.lTensor_injective_iff_injective (R := C) (M := A) F]
+  set cbcI := TensorProduct.AlgebraTensorModule.cancelBaseChange R C A A ↥I with hcbcI
+  set cbcR := TensorProduct.AlgebraTensorModule.cancelBaseChange R C A A R with hcbcR
+  have hnat : ∀ z, cbcR (LinearMap.lTensor A F z)
+      = LinearMap.lTensor A I.subtype (cbcI z) := by
+    intro z
+    induction z with
+    | zero => simp
+    | tmul a y =>
+        induction y with
+        | zero => simp
+        | tmul c i => simp [hF, hcbcI, hcbcR]
+        | add y₁ y₂ h₁ h₂ =>
+            simp only [LinearMap.lTensor_tmul] at h₁ h₂
+            simp only [TensorProduct.tmul_add, map_add, LinearMap.lTensor_tmul, h₁, h₂]
+    | add z₁ z₂ h₁ h₂ => simp [h₁, h₂]
+  have hcomp : Function.Injective (fun z => cbcR (LinearMap.lTensor A F z)) := by
+    simp only [hnat]
+    exact fun x y h => cbcI.injective
+      ((Module.Flat.iff_lTensor_injective'.mp inferInstance I) h)
+  exact fun x y h => hcomp (by simp only [h])
+
+/-- **00R7's SECOND CONCLUSION: `R → B` is FLAT** (PROVEN 2026-07-27).
+
+`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above states 00R7
+with only the conclusion "`M` is flat over `S`", because at the time that was
+all any consumer used.  05UV's finite-generation argument uses the OTHER half —
+"*Hence we conclude that `B/J'` is flat over `R` for any choice `J'`*" — so it
+is recovered here.
+
+**It is a corollary, not a new leaf.**  00R7 gives `A` flat over `B`; `B → A` is
+a local homomorphism of local rings, so `A` is FAITHFULLY flat over `B`
+(`Module.FaithfullyFlat.of_flat_of_isLocalHom`); and `A` is flat over `R` by
+hypothesis.  `flat_of_faithfullyFlat_tower` then descends flatness to `B`.
+
+So this consumes exactly the same leaf as 00R7 does and adds no open
+mathematics of its own. -/
+theorem flat_base_of_flat_of_flat_quotientMap_of_essFinitePresentation
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    g.Flat := by
+  have hvflat : v.Flat :=
+    flat_of_flat_of_flat_quotientMap_of_essFinitePresentation hfpA hfpB hflat hfib
+  algebraize [g, v, v.comp g]
+  haveI : IsLocalHom (algebraMap B A) := ‹IsLocalHom v›
+  haveI : Module.FaithfullyFlat B A := Module.FaithfullyFlat.of_flat_of_isLocalHom
+  exact flat_of_faithfullyFlat_tower (R := R) (C := B) (A := A)
+
+/-- **`Tor₁^R(P/J, R/I) = 0`, WRITTEN WITHOUT `Tor`** (PROVEN 2026-07-27).
+
+*Let `R → P` be a ring map and `J ⊆ P` an ideal with `P/J` FLAT over `R`.  Then
+for every ideal `I ⊆ R`,*  `J ∩ I·P ⊆ I·J`.
+
+That containment (the reverse is trivial) is precisely the vanishing of
+`Tor₁^R(P/J, R/I)`, read off the exact sequence `0 → J → P → P/J → 0`, and it is
+the only place flatness enters 046Y at the instance 05UV uses.
+
+**This closes another "Tor is absent" item without Tor.**  The proof is the
+**equational criterion of flatness**, which the pin does have
+(`Module.Flat.isTrivialRelation_of_sum_smul_eq_zero`): write `m ∈ J ∩ I·P` as
+`m = Σᵢ aᵢ • cᵢ` with `aᵢ ∈ I`; its image in `P/J` vanishes, so the criterion
+produces `y_j ∈ P/J` and `b_{ij} ∈ R` with `c̄ᵢ = Σⱼ b_{ij} yⱼ` and
+`Σᵢ aᵢ b_{ij} = 0`.  Lifting `yⱼ` to `P` makes `dᵢ := cᵢ − Σⱼ b_{ij} yⱼ'` lie in
+`J`, and `m = Σᵢ aᵢ • dᵢ` because the correction term is `Σⱼ (Σᵢ aᵢ b_{ij}) yⱼ' = 0`.
+Each `aᵢ • dᵢ = gP(aᵢ)·dᵢ` lies in `(I·P)·J`.
+
+No local, Noetherian or finiteness hypothesis is used, and none is available —
+this is the general statement. -/
+theorem inf_map_le_mul_of_flat_quotient {R P : Type u} [CommRing R] [CommRing P]
+    {gP : R →+* P} {J : Ideal P} {I : Ideal R}
+    (hflat : ((Ideal.Quotient.mk J).comp gP).Flat) :
+    J ⊓ I.map gP ≤ (I.map gP) * J := by
+  classical
+  letI : Algebra R P := gP.toAlgebra
+  letI : Algebra R (P ⧸ J) := ((Ideal.Quotient.mk J).comp gP).toAlgebra
+  haveI : Module.Flat R (P ⧸ J) := hflat
+  have hsmul : ∀ (a : R) (p : P),
+      (Ideal.Quotient.mk J) (a • p) = a • (Ideal.Quotient.mk J) p := by
+    intro a p
+    simp only [Algebra.smul_def]
+    rfl
+  rintro m ⟨hmJ, hmI⟩
+  obtain ⟨n, c, gg, hsum⟩ := Submodule.mem_span_set'.mp hmI
+  choose a ha hgg using fun i : Fin n => (gg i).2
+  have hac : ∀ i, a i • c i = c i • ((gg i : P)) := by
+    intro i
+    rw [Algebra.smul_def, smul_eq_mul, ← hgg i]
+    show gP (a i) * c i = c i * gP (a i)
+    ring
+  have hsum' : ∑ i, a i • c i = m := by
+    rw [← hsum]; exact Finset.sum_congr rfl fun i _ => hac i
+  have hrel : ∑ i, a i • (Ideal.Quotient.mk J (c i)) = 0 := by
+    calc ∑ i, a i • (Ideal.Quotient.mk J (c i))
+        = Ideal.Quotient.mk J (∑ i, a i • c i) := by
+          rw [map_sum]; exact (Finset.sum_congr rfl fun i _ => hsmul _ _).symm
+      _ = Ideal.Quotient.mk J m := by rw [hsum']
+      _ = 0 := Ideal.Quotient.eq_zero_iff_mem.mpr hmJ
+  obtain ⟨k, b, y, hy, hb⟩ := Module.Flat.isTrivialRelation_of_sum_smul_eq_zero hrel
+  choose y' hy' using fun j : Fin k => Ideal.Quotient.mk_surjective (y j)
+  have hdJ : ∀ i, c i - ∑ j, b i j • y' j ∈ J := by
+    intro i
+    have hyi : Ideal.Quotient.mk J (c i) = ∑ j, b i j • y j := hy i
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_sum, hyi, sub_eq_zero]
+    exact Finset.sum_congr rfl fun j _ => by rw [hsmul, hy' j]
+  have hm : m = ∑ i, a i • (c i - ∑ j, b i j • y' j) := by
+    have hexp : ∀ i : Fin n, a i • (c i - ∑ j, b i j • y' j)
+        = a i • c i - ∑ j, (a i * b i j) • y' j := by
+      intro i
+      rw [smul_sub, Finset.smul_sum]
+      congr 1
+      exact Finset.sum_congr rfl fun j _ => smul_smul _ _ _
+    rw [Finset.sum_congr rfl fun i _ => hexp i, Finset.sum_sub_distrib, hsum',
+      Finset.sum_comm]
+    have hzero : ∀ j : Fin k, ∑ i, (a i * b i j) • y' j = 0 := by
+      intro j
+      rw [← Finset.sum_smul, hb j, zero_smul]
+    rw [Finset.sum_congr rfl fun j _ => hzero j]
+    simp
+  rw [hm]
+  exact Ideal.sum_mem _ fun i _ => by
+    rw [Algebra.smul_def]
+    exact Ideal.mul_mem_mul (Ideal.mem_map_of_mem _ (ha i)) (hdJ i)
+
+/-- **046Y = Stacks 10.128.4, in the shape 05UV consumes it** (PROVEN
+2026-07-27 — see the section note above for why this instance costs no
+Noetherian approximation).
+
+*Let `R → P` be a LOCAL homomorphism of local rings and `J' ⊆ J''` ideals of `P`
+with `J''` finitely generated.  If `P/J''` is flat over `R` and
+`J'' ⊆ J' + 𝔪_R·P`, then `J' = J''`.*
+
+05UV writes this as "*`B/J' → B/J''` is a surjective map between flat
+`R`-algebras which are essentially of finite presentation which is an
+isomorphism modulo `𝔪`.  Hence Lemma 10.128.4 implies that `B/J' = B/J''`*".
+The essential-finite-presentation hypothesis is not needed for THIS direction —
+finite generation of `J''` is what Nakayama consumes — so it is omitted;
+omitting a hypothesis cannot make a true statement false.
+
+**THE PROOF.**  `J'' ⊆ J' + 𝔪·P` and `J' ⊆ J''` put `J'' − J' ⊆ J'' ∩ 𝔪·P`, so
+`inf_map_le_mul_of_flat_quotient` gives `J'' ⊆ J' + (𝔪·P)·J''`; since `R → P` is
+local, `𝔪·P ⊆ 𝔪_P`, and Nakayama in the form
+`Submodule.le_of_le_smul_of_le_jacobson_bot` (Stacks 00DV (4)) concludes
+`J'' ⊆ J'`. -/
+theorem eq_of_fg_of_flat_quotient_of_le_sup {R P : Type u} [CommRing R] [CommRing P]
+    [IsLocalRing R] [IsLocalRing P] {gP : R →+* P} [IsLocalHom gP]
+    {J' J'' : Ideal P} (hle : J' ≤ J'') (hfg : J''.FG)
+    (hflat : ((Ideal.Quotient.mk J'').comp gP).Flat)
+    (hmod : J'' ≤ J' ⊔ (IsLocalRing.maximalIdeal R).map gP) :
+    J' = J'' := by
+  refine le_antisymm hle ?_
+  refine Submodule.le_of_le_smul_of_le_jacobson_bot (I := IsLocalRing.maximalIdeal P)
+    hfg (IsLocalRing.maximalIdeal_le_jacobson ⊥) ?_
+  have h1 : J'' ≤ J' ⊔ ((IsLocalRing.maximalIdeal R).map gP) * J'' := by
+    intro x hx
+    obtain ⟨y, hy, z, hz, rfl⟩ := Submodule.mem_sup.mp (hmod hx)
+    have hzJ : z ∈ J'' := by
+      have hsub := Ideal.sub_mem J'' hx (hle hy)
+      simpa using hsub
+    exact Submodule.mem_sup.mpr ⟨y, hy, z, inf_map_le_mul_of_flat_quotient hflat ⟨hzJ, hz⟩, rfl⟩
+  refine h1.trans (sup_le_sup_left ?_ _)
+  rw [Ideal.smul_eq_mul]
+  exact Ideal.mul_mono (IsLocalRing.map_maximalIdeal_le gP) le_rfl
+
+/-- **05UV's COMPARISON STEP: any two finitely generated `J' ⊆ J'' ⊆ ker w`
+with the same image modulo `𝔪` are EQUAL** (PROVEN 2026-07-27).
+
+This is steps 2–3 of 05UV's finite-generation argument: 00R7 applied to
+`R → P/J'' → A` makes `P/J''` flat over `R`, and 046Y then forces `J' = J''`.
+
+**The bookkeeping, which is the whole proof.**  `J'' ⊆ ker w ⊆ 𝔪_P`, so `P/J''`
+is local; `essFinitePresentation_comp_of_fg_ker` makes `R → P/J''` essentially
+of finite presentation because `J''` is finitely generated (this is the second
+of the two uses that lemma was written for); and the fibre hypothesis transports
+because the natural map
+
+    (P/J'') / 𝔪·(P/J'')  ⟶  B / 𝔪·B
+
+is BIJECTIVE — surjective since `w` is, and injective because
+`w⁻¹(𝔪·B) = 𝔪·P + ker w = 𝔪·P + J''` by `Ideal.comap_map_of_surjective`
+together with `hkerle`.  A bijective ring map is flat, so the transported
+fibre map is flat by `RingHom.Flat.comp`.
+
+**FAITHFULNESS.**  `hkerle` (`ker w ⊆ J'' + 𝔪·P`) is load-bearing and is exactly
+05UV's condition that `J'` induce an isomorphism `(B/J')⊗R/𝔪 ≅ B/𝔪B`; without
+it the two fibres differ and the transport is false. -/
+theorem eq_of_fg_le_ker_of_le_sup {R P B A : Type u}
+    [CommRing R] [CommRing P] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing P] [IsLocalRing B] [IsLocalRing A]
+    {gP : R →+* P} {w : P →+* B} {v : B →+* A}
+    [IsLocalHom gP] [IsLocalHom w] [IsLocalHom v]
+    (hfpP : EssFinitePresentation gP)
+    (hw : Function.Surjective w)
+    (hfp : EssFinitePresentation (v.comp (w.comp gP)))
+    (hflat : (v.comp (w.comp gP)).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
+        (map_le_comap_map_comp (w.comp gP) v (IsLocalRing.maximalIdeal R))).Flat)
+    {J' J'' : Ideal P} (hle : J' ≤ J'') (hJ''le : J'' ≤ RingHom.ker w) (hfg : J''.FG)
+    (hkerle : RingHom.ker w ≤ J'' ⊔ (IsLocalRing.maximalIdeal R).map gP)
+    (hmod : J'' ≤ J' ⊔ (IsLocalRing.maximalIdeal R).map gP) :
+    J' = J'' := by
+  classical
+  have hkerP : RingHom.ker w ≤ IsLocalRing.maximalIdeal P := by
+    refine IsLocalRing.le_maximalIdeal ?_
+    rw [Ideal.ne_top_iff_one]
+    intro h
+    rw [RingHom.mem_ker, map_one] at h
+    exact one_ne_zero h
+  have hJ''P : J'' ≤ IsLocalRing.maximalIdeal P := hJ''le.trans hkerP
+  have hJ''top : J'' ≠ ⊤ := fun h =>
+    (IsLocalRing.maximalIdeal.isMaximal P).ne_top (top_le_iff.mp (h ▸ hJ''P))
+  haveI : Nontrivial (P ⧸ J'') := Ideal.Quotient.nontrivial_iff.mpr hJ''top
+  haveI hlmk : IsLocalHom (Ideal.Quotient.mk J'') :=
+    IsLocalHom.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : IsLocalRing (P ⧸ J'') :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk J'') Ideal.Quotient.mk_surjective
+  haveI : IsLocalHom ((Ideal.Quotient.mk J'').comp gP) := RingHom.isLocalHom_comp _ _
+  have hw₂ker : ∀ a ∈ J'', w a = 0 := fun a ha => hJ''le ha
+  have hw₂surj : Function.Surjective (Ideal.Quotient.lift J'' w hw₂ker) := by
+    intro b
+    obtain ⟨p, rfl⟩ := hw b
+    exact ⟨Ideal.Quotient.mk J'' p, rfl⟩
+  haveI : IsLocalHom (Ideal.Quotient.lift J'' w hw₂ker) :=
+    IsLocalHom.of_surjective _ hw₂surj
+  haveI : IsLocalHom (v.comp (Ideal.Quotient.lift J'' w hw₂ker)) := RingHom.isLocalHom_comp _ _
+  -- the comparison map between the two fibres, and its bijectivity
+  have hle_e : (IsLocalRing.maximalIdeal R).map ((Ideal.Quotient.mk J'').comp gP)
+      ≤ ((IsLocalRing.maximalIdeal R).map (w.comp gP)).comap
+        (Ideal.Quotient.lift J'' w hw₂ker) :=
+    map_le_comap_map_comp ((Ideal.Quotient.mk J'').comp gP)
+      (Ideal.Quotient.lift J'' w hw₂ker) (IsLocalRing.maximalIdeal R)
+  have hebij : Function.Bijective
+      (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (w.comp gP))
+        (Ideal.Quotient.lift J'' w hw₂ker) hle_e) := by
+    constructor
+    · rw [injective_iff_map_eq_zero]
+      intro x hx
+      obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective x
+      obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective c
+      have hx' : w p ∈ (IsLocalRing.maximalIdeal R).map (w.comp gP) := by
+        rw [show Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (w.comp gP))
+              (Ideal.Quotient.lift J'' w hw₂ker) hle_e
+              (Ideal.Quotient.mk _ (Ideal.Quotient.mk J'' p))
+            = Ideal.Quotient.mk _ (w p) from rfl,
+          Ideal.Quotient.eq_zero_iff_mem] at hx
+        exact hx
+      have h1 : (IsLocalRing.maximalIdeal R).map (w.comp gP)
+          = ((IsLocalRing.maximalIdeal R).map gP).map w := (Ideal.map_map gP w).symm
+      have h2 : p ∈ ((IsLocalRing.maximalIdeal R).map gP) ⊔ RingHom.ker w := by
+        have hcm := Ideal.comap_map_of_surjective w hw ((IsLocalRing.maximalIdeal R).map gP)
+        rw [← RingHom.ker_eq_comap_bot] at hcm
+        rw [← hcm]
+        rw [h1] at hx'
+        exact hx'
+      have h3 : p ∈ J'' ⊔ (IsLocalRing.maximalIdeal R).map gP :=
+        sup_le (le_sup_right) hkerle h2
+      rw [Ideal.Quotient.eq_zero_iff_mem, ← Ideal.map_map]
+      obtain ⟨y, hy, z, hz, rfl⟩ := Submodule.mem_sup.mp h3
+      have hyz : (Ideal.Quotient.mk J'') (y + z) = (Ideal.Quotient.mk J'') z := by
+        rw [map_add, Ideal.Quotient.eq_zero_iff_mem.mpr hy, zero_add]
+      rw [hyz]
+      exact Ideal.mem_map_of_mem _ hz
+    · intro y
+      obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+      obtain ⟨p, rfl⟩ := hw b
+      exact ⟨Ideal.Quotient.mk _ (Ideal.Quotient.mk J'' p), rfl⟩
+  have hEq : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
+        (map_le_comap_map_comp (w.comp gP) v (IsLocalRing.maximalIdeal R))).comp
+      (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (w.comp gP))
+        (Ideal.Quotient.lift J'' w hw₂ker) hle_e)
+      = Ideal.quotientMap
+          ((IsLocalRing.maximalIdeal R).map
+            ((v.comp (Ideal.Quotient.lift J'' w hw₂ker)).comp
+              ((Ideal.Quotient.mk J'').comp gP)))
+          (v.comp (Ideal.Quotient.lift J'' w hw₂ker))
+          (map_le_comap_map_comp ((Ideal.Quotient.mk J'').comp gP)
+            (v.comp (Ideal.Quotient.lift J'' w hw₂ker)) (IsLocalRing.maximalIdeal R)) := by
+    apply Ideal.Quotient.ringHom_ext
+    refine RingHom.ext fun c => ?_
+    obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective c
+    rfl
+  have hfib₂ : (Ideal.quotientMap
+          ((IsLocalRing.maximalIdeal R).map
+            ((v.comp (Ideal.Quotient.lift J'' w hw₂ker)).comp
+              ((Ideal.Quotient.mk J'').comp gP)))
+          (v.comp (Ideal.Quotient.lift J'' w hw₂ker))
+          (map_le_comap_map_comp ((Ideal.Quotient.mk J'').comp gP)
+            (v.comp (Ideal.Quotient.lift J'' w hw₂ker))
+            (IsLocalRing.maximalIdeal R))).Flat :=
+    hEq ▸ RingHom.Flat.comp (RingHom.Flat.of_bijective hebij) hfib
+  have hfpB₂ : EssFinitePresentation ((Ideal.Quotient.mk J'').comp gP) :=
+    essFinitePresentation_comp_of_fg_ker hfpP Ideal.Quotient.mk_surjective
+      (by rw [Ideal.mk_ker]; exact hfg)
+  have hflat₂ : ((Ideal.Quotient.mk J'').comp gP).Flat :=
+    flat_base_of_flat_of_flat_quotientMap_of_essFinitePresentation
+      (v := v.comp (Ideal.Quotient.lift J'' w hw₂ker)) hfp hfpB₂ hflat hfib₂
+  exact eq_of_fg_of_flat_quotient_of_le_sup hle hfg hflat₂ hmod
+
 /-- **THE WHOLE REMAINING CONTENT OF 05UV's FIRST CONCLUSION: the ideal `J` is
-FINITELY GENERATED** (SORRY LEAF, cut 2026-07-27 out of
+FINITELY GENERATED** (PROVEN 2026-07-27; cut 2026-07-27 out of
 `essFinitePresentation_of_essFiniteType_of_flat_quotientMap` once the
 presentation bookkeeping above was proven).
 
@@ -1619,30 +2640,37 @@ above supply `P` (from `R → B` essentially of finite type) and convert this
 conclusion back into `EssFinitePresentation`, so the leaf below is now pure
 assembly and **nothing else in 05UV's first conclusion is open**.
 
-**THE PROOF, from the Stacks argument.**
+**THE PROOF, from the Stacks argument, now written out.**
 
-1. Choose `f₁,…,f_k ∈ J` whose images generate `J̄ ⊂ P/𝔪P`.
-2. For each finitely generated `J' ⊆ J` with
-   `(P/J') ⊗_R R/𝔪 ≅ (P/J) ⊗_R R/𝔪`, apply **00R7** — i.e.
-   `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above — to
-   `R → P/J' → A`, which yields `P/J'` flat over `R`.  Its hypotheses are
-   available: `P/J'` is essentially of finite presentation by
-   `essFinitePresentation_comp_of_fg_ker` above (this is why that lemma is
-   needed twice over), the fibre hypothesis is `hfib` transported along
-   `(P/J')/𝔪 ≅ B/𝔪B`, and `hfp`/`hflat` are unchanged.
-3. For two such ideals `J'`, `J''`, the surjection `P/J' → P/J''` is a map of
-   `R`-flat, essentially-of-finite-presentation algebras that is an
-   isomorphism modulo `𝔪`.  **046Y** (10.128.4) then forces `J' = J''`.
-4. Hence `J` equals the finitely generated `J'` generated by the `fᵢ`.
+1. Choose `f₁,…,f_k ∈ J` whose images generate `J̄ ⊂ P/𝔪P`.  This is possible
+   because `P/𝔪P` is NOETHERIAN
+   (`isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation`), and
+   it is the only place the essential finite presentation of `R → P` is used
+   outside 00R7.  Let `J₀ = (f₁,…,f_k)`, so `J₀ ⊆ J` and `J₀ + 𝔪P = J + 𝔪P`.
+2. For each finitely generated `J'' ⊆ J` with `J'' + 𝔪P = J + 𝔪P`, apply
+   **00R7** to `R → P/J'' → A`; `P/J''` is then flat over `R`.
+3. **046Y** forces `J₀ = J''`.  Steps 2 and 3 are the single lemma
+   `eq_of_fg_le_ker_of_le_sup` above.
+4. Take `J'' = J₀ + (x)` for `x ∈ J`: it satisfies 2's hypotheses, so `x ∈ J₀`.
+   Hence `J = J₀`, which is finitely generated.
 
-**046Y is the one genuinely new tool this leaf needs**, and it should be
-stated in the same cut as any decomposition of this leaf: *`R → S` local with
-`S` essentially of finite presentation over `R`, `u : M → N` a map of
-`S`-modules with `M`, `N` finitely presented over `S`, `N` flat over `R`, and
-`ū : M/𝔪M → N/𝔪N` injective; then `u` is injective and `N/u(M)` is flat over
-`R`.*  Its own proof is approximation (10.127.13 / 10.128.3) plus the
-Noetherian 10.99.1, so it shares the engine's missing machinery — see the
-section note above for the survey of what is and is not in the pin.
+**A CORRECTION about what 046Y costs.**  The previous version of this docstring
+said: "*046Y is the one genuinely new tool this leaf needs … its own proof is
+approximation (10.127.13 / 10.128.3) plus the Noetherian 10.99.1, so it shares
+the engine's missing machinery.*"  That is right about 046Y in full generality
+and **wrong about the instance 05UV uses**, and the difference is the whole
+reason this leaf closed: 05UV never has to PROVE that `P/J''` is flat over `R`,
+because **00R7 hands it that** as its second conclusion.  With `R`-flatness an
+input, 046Y at this instance is `Tor₁^R(P/J'', R/𝔪) = 0` plus Nakayama, and the
+Tor half is the equational criterion of flatness, which is in the pin.  See the
+section note "05UV's FINITE-GENERATION ARGUMENT" above, and
+`inf_map_le_mul_of_flat_quotient` / `eq_of_fg_of_flat_quotient_of_le_sup` for
+the two halves.
+
+**So the only leaf under this declaration is 00R7**, i.e.
+`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` and the two open
+leaves beneath it (the approximation half and the Noetherian local criterion).
+Nothing in the finite-generation argument is open.
 
 **FAITHFULNESS.**  Every hypothesis here is one of 05UV's, transported along
 the presentation rather than weakened: `hfpP` is "`B'` is essentially of
@@ -1656,14 +2684,79 @@ theorem fg_ker_of_flat_quotientMap {R P B A : Type u}
     [IsLocalRing R] [IsLocalRing P] [IsLocalRing B] [IsLocalRing A]
     {gP : R →+* P} {w : P →+* B} {v : B →+* A}
     [IsLocalHom gP] [IsLocalHom w] [IsLocalHom v]
-    (_hfpP : EssFinitePresentation gP)
-    (_hw : Function.Surjective w)
-    (_hfp : EssFinitePresentation (v.comp (w.comp gP)))
-    (_hflat : (v.comp (w.comp gP)).Flat)
-    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
+    (hfpP : EssFinitePresentation gP)
+    (hw : Function.Surjective w)
+    (hfp : EssFinitePresentation (v.comp (w.comp gP)))
+    (hflat : (v.comp (w.comp gP)).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
         (map_le_comap_map_comp (w.comp gP) v (IsLocalRing.maximalIdeal R))).Flat) :
-    (RingHom.ker w).FG :=
-  sorry
+    (RingHom.ker w).FG := by
+  classical
+  haveI := isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation hfpP
+  -- Step 1: the image of `J` in the NOETHERIAN fibre `P/𝔪P` is finitely generated,
+  -- and its generators lift to elements of `J`.
+  obtain ⟨t, ht⟩ := Ideal.fg_of_isNoetherianRing
+    ((RingHom.ker w).map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP)))
+  have hlift : ∀ y ∈ t, ∃ x, x ∈ RingHom.ker w ∧
+      Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP) x = y := by
+    intro y hy
+    exact (Ideal.mem_map_iff_of_surjective _ Ideal.Quotient.mk_surjective).mp
+      (ht ▸ Ideal.subset_span hy)
+  choose f hfJ hfmk using hlift
+  refine ⟨t.attach.image (fun y => f y.1 y.2), ?_⟩
+  set J₀ : Ideal P := Ideal.span ↑(t.attach.image (fun y => f y.1 y.2)) with hJ₀
+  have hJ₀le : J₀ ≤ RingHom.ker w := by
+    rw [hJ₀, Ideal.span_le]
+    rintro x hx
+    simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_attach] at hx
+    obtain ⟨y, -, rfl⟩ := hx
+    exact hfJ y.1 y.2
+  have hJ₀map : J₀.map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP))
+      = (RingHom.ker w).map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP)) := by
+    rw [hJ₀, Ideal.map_span, ← ht]
+    congr 1
+    ext y
+    simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_attach,
+      Set.image_image, true_and, Subtype.exists]
+    constructor
+    · rintro ⟨z, hz, rfl⟩
+      rw [hfmk z hz]
+      exact hz
+    · intro hy
+      exact ⟨y, hy, hfmk y hy⟩
+  -- Step 1': hence `J₀` and `J` have the same image modulo `𝔪P`.
+  have hsup : RingHom.ker w ⊔ (IsLocalRing.maximalIdeal R).map gP
+      = J₀ ⊔ (IsLocalRing.maximalIdeal R).map gP := by
+    have h1 := Ideal.comap_map_of_surjective
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP))
+      Ideal.Quotient.mk_surjective (RingHom.ker w)
+    have h2 := Ideal.comap_map_of_surjective
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP))
+      Ideal.Quotient.mk_surjective J₀
+    rw [← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at h1 h2
+    rw [← h1, ← h2, hJ₀map]
+  -- Steps 2–4: the comparison step at `J₀ ⊆ J₀ + (x)` puts every `x ∈ J` into `J₀`.
+  have hkey : RingHom.ker w ≤ J₀ := by
+    intro x hx
+    have hx' : x ∈ J₀ ⊔ (IsLocalRing.maximalIdeal R).map gP := by
+      rw [← hsup]; exact Ideal.mem_sup_left hx
+    have hfg₀ : J₀.FG := ⟨_, rfl⟩
+    have h := eq_of_fg_le_ker_of_le_sup (J' := J₀) (J'' := J₀ ⊔ Ideal.span {x})
+      hfpP hw hfp hflat hfib
+      le_sup_left
+      (sup_le hJ₀le (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hx)))
+      (Submodule.FG.sup hfg₀ ⟨{x}, by simp⟩)
+      (by
+        calc RingHom.ker w ≤ RingHom.ker w ⊔ (IsLocalRing.maximalIdeal R).map gP := le_sup_left
+          _ = J₀ ⊔ (IsLocalRing.maximalIdeal R).map gP := hsup
+          _ ≤ (J₀ ⊔ Ideal.span {x}) ⊔ (IsLocalRing.maximalIdeal R).map gP :=
+              sup_le_sup_right le_sup_left _)
+      (sup_le le_sup_left (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hx')))
+    have hmem : x ∈ J₀ ⊔ Ideal.span {x} :=
+      Ideal.mem_sup_right (Ideal.subset_span rfl)
+    rw [← h] at hmem
+    exact hmem
+  exact le_antisymm hJ₀le hkey
 
 /-- **THE FINITE-GENERATION HALF: 05UV's OTHER conclusion** (PROVEN
 2026-07-27 from the presentation lemmas above and the single leaf
@@ -3666,11 +4759,205 @@ theorem exists_isWeaklyRegular_span_eq_maximalIdeal (R : Type u) [CommRing R]
   obtain ⟨rs, hspan, hlen, hreg⟩ := exists_isWeaklyRegular_span_eq_maximalIdeal_aux _ R rfl
   exact ⟨rs, hspan, by rw [hlen, IsRegularLocalRing.spanFinrank_maximalIdeal], hreg⟩
 
+/-- **THE DIMENSION OF `T ⧸ p` IS THE COHEIGHT OF `p` IN `Spec T`**
+(**PROVEN 2026-07-27**; pure order theory over `ringKrullDim_quotient`).
+
+`Spec (T ⧸ p) ≃o V(p)` (`ringKrullDim_quotient`), and for `p` PRIME the closed
+set `V(p)` is literally the up-set `Set.Ici ⟨p⟩`, whose Krull dimension is the
+coheight of `⟨p⟩` by `Order.coheight_eq_krullDim_Ici`.  Mathlib has no
+`Ideal.coheight`, so this bridge has to be written by hand; it is the only
+thing needed to get at `Order.coheight_add_one_le`, which is where the
+dimension drop below actually comes from. -/
+theorem ringKrullDim_quotient_eq_coheight {T : Type u} [CommRing T] (r : Ideal T)
+    (hr : r.IsPrime) :
+    ringKrullDim (T ⧸ r) = ((Order.coheight (⟨r, hr⟩ : PrimeSpectrum T) : ℕ∞) : WithBot ℕ∞) := by
+  have hset : PrimeSpectrum.zeroLocus (R := T) (r : Set T)
+      = Set.Ici (⟨r, hr⟩ : PrimeSpectrum T) := by
+    ext x
+    rw [PrimeSpectrum.mem_zeroLocus, Set.mem_Ici]
+    exact SetLike.coe_subset_coe
+  rw [ringKrullDim_quotient, hset]
+  exact (Order.coheight_eq_krullDim_Ici _).symm
+
+/-- **A STRICTLY LARGER PRIME DROPS THE DIMENSION OF THE QUOTIENT BY AT LEAST
+ONE** (**PROVEN 2026-07-27**).
+
+`dim (T ⧸ q) + 1 ≤ dim (T ⧸ p)` whenever `p < q` are primes: prepending `p` to
+a chain out of `q` lengthens it by one.  In coheight form that is exactly
+`Order.coheight_add_one_le`, which — unlike `Order.coheight_strictAnti` —
+carries NO finiteness side condition, so no Noetherian or local hypothesis is
+needed here. -/
+theorem ringKrullDim_quotient_succ_le_of_lt {T : Type u} [CommRing T] {p q : Ideal T}
+    (hp : p.IsPrime) (hq : q.IsPrime) (hlt : p < q) :
+    ringKrullDim (T ⧸ q) + 1 ≤ ringKrullDim (T ⧸ p) := by
+  rw [ringKrullDim_quotient_eq_coheight q hq, ringKrullDim_quotient_eq_coheight p hp]
+  have hlt' : (⟨p, hp⟩ : PrimeSpectrum T) < ⟨q, hq⟩ := hlt
+  exact_mod_cast Order.coheight_add_one_le hlt'
+
+/-- **ISCHEBECK'S INEQUALITY `depth T ≤ dim (T ⧸ p)`, BY INDUCTION ON THE LENGTH
+OF THE REGULAR SEQUENCE** (**PROVEN 2026-07-27**; this is the whole content of
+`ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime` below).
+
+The induction is over `n`, the length of a weakly regular sequence lying in
+`𝔪_T` — the RING varies, so `T` is universally quantified INSIDE the statement
+and the step instantiates it at `T ⧸ xT`.
+
+* `n = 0`: `T ⧸ p` is nontrivial because `p` is prime, so `0 ≤ dim (T ⧸ p)`.
+* `n + 1`, sequence `x :: rest`.  `x` is `T`-regular
+  (`isWeaklyRegular_cons_iff`), so `x ∉ p`: the union of the associated primes
+  is exactly the set of zerodivisors
+  (`biUnion_associatedPrimes_eq_compl_regular`).  Write `N = (0 : p)` for the
+  annihilator of `p`, i.e. `Submodule.colon ⊥ ↑p`.
+
+  **The one genuinely missing step was `Ass (T ⧸ xT) ∩ V(p + (x)) ≠ ∅`, and
+  NAKAYAMA is what supplies it.**  `N ≠ 0`, since `p = (0 : y)` for some `y`
+  (`isAssociatedPrime_iff`, using Noetherianness) and that `y` lies in `N`.  If
+  `N ⊆ (x)` then every `z = wx ∈ N` has `w ∈ N` — because `x(ws) = (wx)s = 0`
+  for `s ∈ p` and `x` is regular — so `N ⊆ (x) • N`, whence `N = 0` by
+  `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot` (`x ∈ 𝔪 = jacobson ⊥`).
+  Contradiction.  So pick `z ∈ N \ (x)`; its image in `T ⧸ xT` is nonzero, and
+  `exists_le_isAssociatedPrime_of_isNoetherianRing` gives an associated prime
+  `P` of `T ⧸ xT` containing `(0 : z̄) ⊇ p·(T ⧸ xT)`.
+
+  Pull `P` back to `q ⊆ T`.  Then `p ≤ q` and `x ∈ q`, so `p < q`.  The
+  induction hypothesis at `T ⧸ xT` (Noetherian local, with the tail sequence
+  `rest.map (mk (x))` of length `n` inside its maximal ideal, by
+  `isWeaklyRegular_map_algebraMap_iff`) gives
+  `n ≤ dim ((T ⧸ xT) ⧸ P) = dim (T ⧸ q)` (`DoubleQuot.quotQuotEquivQuotOfLE`),
+  and `ringKrullDim_quotient_succ_le_of_lt` adds the missing `+ 1`. -/
+theorem ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux (n : ℕ) :
+    ∀ (T : Type u) [CommRing T] [IsLocalRing T] [IsNoetherianRing T]
+    (zs : List T), zs.length = n → (∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T) →
+    RingTheory.Sequence.IsWeaklyRegular T zs →
+    ∀ {p : Ideal T}, IsAssociatedPrime p T → (n : WithBot ℕ∞) ≤ ringKrullDim (T ⧸ p) := by
+  induction n with
+  | zero =>
+    intro T _ _ _ zs _ _ _ p hp
+    haveI : Nontrivial (T ⧸ p) := Ideal.Quotient.nontrivial_iff.mpr hp.isPrime.ne_top
+    simpa using ringKrullDim_nonneg_of_nontrivial (R := T ⧸ p)
+  | succ n ih =>
+    intro T _ _ _ zs hlen hmem hreg p hp
+    obtain ⟨x, rest, rfl⟩ : ∃ x rest, zs = x :: rest := by
+      cases zs with
+      | nil => simp at hlen
+      | cons a l => exact ⟨a, l, rfl⟩
+    have hlen' : rest.length = n := by simpa using hlen
+    obtain ⟨hxreg, hstep⟩ := (RingTheory.Sequence.isWeaklyRegular_cons_iff T x rest).1 hreg
+    have hxmem : x ∈ IsLocalRing.maximalIdeal T := hmem x (List.mem_cons_self)
+    haveI hpp : p.IsPrime := hp.isPrime
+    -- `x` is a nonzerodivisor, so it escapes every associated prime
+    have hxnp : x ∉ p := by
+      intro hxp
+      have hmem2 : x ∈ ⋃ P ∈ associatedPrimes T T, (P : Set T) := Set.mem_biUnion hp hxp
+      rw [biUnion_associatedPrimes_eq_compl_regular T T] at hmem2
+      exact hmem2 hxreg
+    have hspanle : Ideal.span {x} ≤ IsLocalRing.maximalIdeal T :=
+      (Ideal.span_singleton_le_iff_mem _).2 hxmem
+    have hIne : Ideal.span {x} ≠ ⊤ := fun h =>
+      (IsLocalRing.maximalIdeal.isMaximal T).ne_top (top_le_iff.1 (h ▸ hspanle))
+    -- `N = (0 : p)`, the annihilator of `p`
+    set N : Ideal T := Submodule.colon (⊥ : Submodule T T) (p : Set T) with hN
+    obtain ⟨y, hy⟩ : ∃ y : T, p = Submodule.colon (⊥ : Submodule T T) {y} :=
+      (isAssociatedPrime_iff.1 hp).2
+    have hy0 : y ≠ 0 := by
+      rintro rfl
+      exact hpp.ne_top (hy.trans Submodule.colon_singleton_zero)
+    have hyN : y ∈ N := by
+      rw [hN, Submodule.mem_colon]
+      intro s hs
+      rw [SetLike.mem_coe, hy, Submodule.mem_colon_singleton, Submodule.mem_bot] at hs
+      simpa [smul_eq_mul, mul_comm] using hs
+    -- NAKAYAMA: `N` is not contained in `(x)`
+    have hNnotle : ¬ N ≤ Ideal.span {x} := by
+      intro hsub
+      have hFG : N.FG := IsNoetherian.noetherian N
+      have hle : N ≤ Ideal.span {x} • N := by
+        intro z hz
+        obtain ⟨w, rfl⟩ := Ideal.mem_span_singleton'.1 (hsub hz)
+        have hwN : w ∈ N := by
+          rw [hN, Submodule.mem_colon]
+          intro s hs
+          rw [Submodule.mem_bot, smul_eq_mul]
+          have hzs : w * x * s = 0 := by
+            have h1 := (Submodule.mem_colon.1 hz) s hs
+            rw [Submodule.mem_bot, smul_eq_mul] at h1
+            exact h1
+          have h0 : x • (w * s) = x • (0 : T) := by
+            simp only [smul_eq_mul, mul_zero]
+            linear_combination hzs
+          exact hxreg h0
+        have hmul : x • w ∈ Ideal.span {x} • N :=
+          Submodule.smul_mem_smul (Ideal.mem_span_singleton_self x) hwN
+        simpa [smul_eq_mul, mul_comm] using hmul
+      have hjac : Ideal.span {x} ≤ Ideal.jacobson (⊥ : Ideal T) := by
+        rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal T) bot_ne_top]
+        exact hspanle
+      have hbot : N = ⊥ := Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ N hFG hle hjac
+      exact hy0 (by simpa [hbot] using hyN)
+    obtain ⟨z, hzN, hzI⟩ := SetLike.not_le_iff_exists.1 hNnotle
+    -- pass to `T ⧸ xT`
+    haveI : Nontrivial (T ⧸ Ideal.span {x}) := Ideal.Quotient.nontrivial_iff.mpr hIne
+    haveI : IsLocalRing (T ⧸ Ideal.span {x}) :=
+      IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+    have hzne : (Ideal.Quotient.mk (Ideal.span {x})) z ≠ 0 := fun h =>
+      hzI (Ideal.Quotient.eq_zero_iff_mem.1 h)
+    obtain ⟨P, hP, hPle⟩ := exists_le_isAssociatedPrime_of_isNoetherianRing
+      (T ⧸ Ideal.span {x}) ((Ideal.Quotient.mk (Ideal.span {x})) z) hzne
+    haveI hPp : P.IsPrime := hP.isPrime
+    have hpP : p.map (Ideal.Quotient.mk (Ideal.span {x})) ≤ P := by
+      refine le_trans ?_ hPle
+      rw [Ideal.map_le_iff_le_comap]
+      intro a ha
+      rw [Ideal.mem_comap, Submodule.mem_colon_singleton, Submodule.mem_bot,
+        smul_eq_mul, ← map_mul, Ideal.Quotient.eq_zero_iff_mem]
+      have haz := (Submodule.mem_colon.1 hzN) a ha
+      rw [Submodule.mem_bot, smul_eq_mul] at haz
+      rw [show a * z = z * a from mul_comm _ _, haz]
+      exact Ideal.zero_mem _
+    set q : Ideal T := P.comap (Ideal.Quotient.mk (Ideal.span {x})) with hq
+    haveI hqp : q.IsPrime := Ideal.IsPrime.comap _
+    have hpq : p ≤ q := Ideal.map_le_iff_le_comap.1 hpP
+    have hxq : x ∈ q := by
+      have hx0 : (Ideal.Quotient.mk (Ideal.span {x})) x = 0 :=
+        Ideal.Quotient.eq_zero_iff_mem.2 (Ideal.mem_span_singleton_self x)
+      rw [hq, Ideal.mem_comap, hx0]
+      exact P.zero_mem
+    have hpqlt : p < q := lt_of_le_of_ne hpq (fun h => hxnp (h ▸ hxq))
+    -- the tail is a weakly regular sequence inside `𝔪_{T ⧸ xT}`
+    have hstep' : RingTheory.Sequence.IsWeaklyRegular (R := T) (T ⧸ Ideal.span {x}) rest := by
+      have he : QuotSMulTop x T ≃ₗ[T] (T ⧸ Ideal.span {x}) :=
+        Submodule.quotEquivOfEq _ _ (by
+          rw [← Submodule.ideal_span_singleton_smul, Ideal.smul_eq_mul, Ideal.mul_top])
+      exact (he.isWeaklyRegular_congr rest).1 hstep
+    have hreg' : RingTheory.Sequence.IsWeaklyRegular (R := T ⧸ Ideal.span {x})
+        (T ⧸ Ideal.span {x}) (rest.map (algebraMap T (T ⧸ Ideal.span {x}))) :=
+      (RingTheory.Sequence.isWeaklyRegular_map_algebraMap_iff (T ⧸ Ideal.span {x})
+        (T ⧸ Ideal.span {x}) rest).2 hstep'
+    have hmem' : ∀ w ∈ rest.map (algebraMap T (T ⧸ Ideal.span {x})),
+        w ∈ IsLocalRing.maximalIdeal (T ⧸ Ideal.span {x}) := by
+      intro w hw
+      obtain ⟨v, hv, rfl⟩ := List.mem_map.1 hw
+      rw [← IsLocalRing.map_maximalIdeal_of_surjective (Ideal.Quotient.mk (Ideal.span {x}))
+        Ideal.Quotient.mk_surjective, Ideal.Quotient.algebraMap_eq]
+      exact Ideal.mem_map_of_mem _ (hmem v (List.mem_cons_of_mem _ hv))
+    have hIH := ih (T ⧸ Ideal.span {x}) (rest.map (algebraMap T (T ⧸ Ideal.span {x})))
+      (by simpa using hlen') hmem' hreg' hP
+    -- identify `(T ⧸ xT) ⧸ P` with `T ⧸ q`
+    have hPeq : P = q.map (Ideal.Quotient.mk (Ideal.span {x})) :=
+      (Ideal.map_comap_of_surjective _ Ideal.Quotient.mk_surjective P).symm
+    have hxle : Ideal.span {x} ≤ q := (Ideal.span_singleton_le_iff_mem _).2 hxq
+    have hiso : ringKrullDim ((T ⧸ Ideal.span {x}) ⧸ P) = ringKrullDim (T ⧸ q) := by
+      rw [hPeq]
+      exact ringKrullDim_eq_of_ringEquiv (DoubleQuot.quotQuotEquivQuotOfLE hxle)
+    rw [hiso] at hIH
+    calc ((n + 1 : ℕ) : WithBot ℕ∞) = (n : WithBot ℕ∞) + 1 := by push_cast; ring
+      _ ≤ ringKrullDim (T ⧸ q) + 1 := by gcongr
+      _ ≤ ringKrullDim (T ⧸ p) := ringKrullDim_quotient_succ_le_of_lt hpp hqp hpqlt
+
 /-- **ISCHEBECK: IN A COHEN–MACAULAY LOCAL RING EVERY ASSOCIATED PRIME HAS A
-FULL-DIMENSIONAL QUOTIENT** (sorry leaf — pure commutative algebra; Matsumura
-*Commutative Ring Theory* 17.2 (Ischebeck) together with 17.3, Bruns–Herzog
-1.2.13 / 2.1.2, Stacks 00N6.  **This is now the ONLY open statement under the
-unmixedness node**, and everything else below is proven over it.)
+FULL-DIMENSIONAL QUOTIENT** (**PROVEN 2026-07-27** — pure commutative algebra;
+Matsumura *Commutative Ring Theory* 17.2 (Ischebeck) together with 17.3,
+Bruns–Herzog 1.2.13 / 2.1.2, Stacks 00N6.)
 
 Read `depth T ≥ dim T` for the hypothesis: `hCM` says some weakly regular
 sequence of length `dim T` lies in `𝔪_T`.  The conclusion says every associated
@@ -3705,15 +4992,21 @@ previous version of this block asserted, see the correction in
   including `ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim` and
   `ringKrullDim_add_length_eq_ringKrullDim_of_isRegular`.
 
-What is genuinely missing is only the step "`Ass (T ⧸ xT)` meets
-`V(p + (x))`" together with the induction itself. -/
+The step that was recorded here as "genuinely missing" — "`Ass (T ⧸ xT)` meets
+`V(p + (x))`" — is supplied by NAKAYAMA applied to the annihilator `(0 : p)`;
+see `ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux` above,
+which carries the whole induction.  All this wrapper does is feed it
+`n = dim T`. -/
 theorem ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime {T : Type u} [CommRing T]
     [IsLocalRing T] [IsNoetherianRing T]
     (hCM : ∃ zs : List T, (∀ z ∈ zs, z ∈ IsLocalRing.maximalIdeal T) ∧
       (zs.length : WithBot ℕ∞) = ringKrullDim T ∧ RingTheory.Sequence.IsWeaklyRegular T zs)
     {p : Ideal T} (hp : IsAssociatedPrime p T) :
-    ringKrullDim T ≤ ringKrullDim (T ⧸ p) :=
-  sorry
+    ringKrullDim T ≤ ringKrullDim (T ⧸ p) := by
+  obtain ⟨zs, hzm, hzlen, hzreg⟩ := hCM
+  rw [← hzlen]
+  exact ringKrullDim_le_ringKrullDim_quotient_of_isAssociatedPrime_aux zs.length T zs rfl
+    hzm hzreg hp
 
 /-- **THE HEAD OF A SYSTEM OF PARAMETERS OF A COHEN–MACAULAY LOCAL RING IS A
 NONZERODIVISOR** (**PROVEN 2026-07-27** over
@@ -4125,9 +5418,12 @@ open scoped TensorProduct
 
 variable {R T : Type u} [CommRing R] [CommRing T] [Algebra R T]
 
-/-- **THE POWER STEP OF THE LOCAL CRITERION OF FLATNESS** (sorry leaf — pure
-commutative algebra; Stacks 051C + 00MK in the NILPOTENT case, Matsumura
-*Commutative Ring Theory* 22.1/22.2).
+/-- **THE POWER STEP OF THE LOCAL CRITERION OF FLATNESS** (**PROVEN 2026-07-27**
+over the single general leaf `Module.Flat.of_flat_quotient_of_pow_eq_bot` —
+the local criterion of flatness for a NILPOTENT ideal — which now lives in the
+shim tree at `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`; Stacks
+051C + 00MK in the NILPOTENT case, Matsumura *Commutative Ring Theory*
+22.1/22.2).
 
 `t` a nonzerodivisor on `R` and on `T` with `T ⧸ (φ t)` flat over `R ⧸ (t)`;
 then `T ⧸ (φ t)^n` is flat over `R ⧸ (t)^n` for every `n`.
@@ -4139,28 +5435,53 @@ separatedness and NO Artin–Rees: inside `A := R ⧸ (t^n)` the ideal
 `(t)/(t^n)` is NILPOTENT, and for a nilpotent ideal the local criterion of
 flatness is unconditional.
 
-**THE ROUTE.**  Induct on `n`.  The classical formulation is: for `A` a ring,
-`J ⊆ A` nilpotent and `M` an `A`-module, `M` is `A`-flat as soon as `M ⧸ JM`
-is `A ⧸ J`-flat and `Tor₁^A(A ⧸ J, M) = 0`.  Instantiated at `A = R ⧸ (t^n)`,
-`J = (t)/(t^n)`, `M = T ⧸ (φ t)^n`:
+**THE ROUTE, AS ACTUALLY TAKEN — AND THERE IS NO INDUCTION ON `n`.**  The
+previous version of this docstring said "induct on `n`"; that is unnecessary,
+and noticing it is what made the reduction short.  The local criterion applies
+ONCE, at the given `n`, with `A = R ⧸ (t^n)`, `J = (t)/(t^n)`,
+`M = B = T ⧸ (φ t)^n`.  Its three inputs are discharged here as follows.
 
-* `M ⧸ JM = T ⧸ (φ t)` is flat over `A ⧸ J = R ⧸ (t)` — that is `hflat`;
-* the `Tor₁` vanishing is exactly regularity.  Over `A` the module `A ⧸ J`
-  has the periodic-style presentation `A --(t^{n-1})--> A --t--> A → A ⧸ J → 0`,
-  so `Tor₁^A(A ⧸ J, M) = (0 :ₘ t) / t^{n-1} M`; and `φ t` being a
-  nonzerodivisor on `T` gives `(0 :_{T ⧸ (φ t)^n} φ t) = (φ t)^{n-1} T ⧸ (φ t)^n`,
-  which is precisely `t^{n-1} M`.  So the quotient is `0`.
+* `J ^ n = ⊥`, since `J = (t̄)` and `t̄^n = 0` in `A`.
+* `B ⧸ JB` is flat over `A ⧸ J` — this is `hflat` transported along the THIRD
+  ISOMORPHISM THEOREM.  `DoubleQuot.quotQuotEquivQuotOfLE` (applied twice,
+  once over `R` and once over `T`, using `(t^n) ≤ (t)` and `(φt)^n ≤ (φt)`)
+  identifies `A ⧸ J ≃+* R ⧸ (t)` and `B ⧸ JB ≃+* T ⧸ (φ t)`, and the induced
+  map is `ψ` conjugated by those two isomorphisms — so the flatness transports
+  by `RingHom.Flat.comp` and `RingHom.Flat.of_bijective`, no module theory
+  needed.
+* `Tor₁^A(A ⧸ J, B) = 0`, i.e. `J ⊗[A] B → B` is injective.  **This is the one
+  place regularity is spent**, and it is elementary because `J` is PRINCIPAL:
+  every element of `J ⊗[A] B` is `t̄ ⊗ b` for a single `b` (pull the scalar
+  across the tensor), so injectivity says exactly `t̄ b = 0 → t̄ ⊗ b = 0`.  And
+  `t̄ b = 0` means `(φ t) x ∈ ((φ t)^n)` for a lift `x`, whence `x ∈ ((φ t)^{n-1})`
+  BY `hTt`; so `b = t̄^{n-1} b'` and
+  `t̄ ⊗ b = t̄ ⊗ t̄^{n-1} b' = (t̄^{n-1} t̄) ⊗ b' = t̄^n ⊗ b' = 0 ⊗ b' = 0`.
 
-**THERE IS NO `Tor` TO USE.**  Mathlib has no `Tor` long exact sequence for
-modules (checked 2026-07-27: `Mathlib/RingTheory/Flat/` has no `Tor` at all,
-and there is no `LocalCriterion` file anywhere in the library).  So a prover
-must run the argument through `Module.Flat.iff_rTensor_injective` /
-`iff_lTensor_injective`, which expresses `Tor₁(R ⧸ I, M) = 0` as injectivity
-of `I ⊗ M → M`, exactly as the atom's original docstring already advised.
-`Mathlib/RingTheory/TensorProduct/Quotient.lean` (already in this file's import
-cone) supplies the identifications that replace the change-of-rings
-isomorphisms: `Algebra.TensorProduct.quotIdealMapEquivQuotTensor`,
-`quotientTensorEquiv`, `tensorQuotientEquiv`, `Ideal.subtype_rTensor_range`.
+**`hRt` IS NOT USED, AND THAT IS A CORRECTION, NOT AN OVERSIGHT** (2026-07-27).
+The task that produced this proof was told that both `hRt` and `hTt` are
+load-bearing, "checked by re-deriving the chase".  That is true of the chase the
+docstring above used to prescribe — computing `Tor₁^A(A ⧸ J, B)` as the homology
+of the PERIODIC PRESENTATION `A --(t^{n-1})--> A --t--> A → A ⧸ J → 0`, whose
+exactness at the middle is precisely `ker(t̄ ·) = (t̄^{n-1})` on `A` and therefore
+does need `t` regular on `R`.  Equivalently: in the form
+"`Ann_B(t̄) = Ann_A(t̄) · B`", the right-hand side is `(t̄^{n-1}) B` only because of
+`hRt`.  But the injectivity of `J ⊗[A] B → B` can be checked DIRECTLY, without
+ever naming `Ann_A(t̄)` or a resolution of `A ⧸ J`, and then only `hTt` is
+needed.  The hypothesis is kept in the signature (it costs the caller nothing —
+`mem_pow_smul_of_lTensor_ideal_eq_zero` has it anyway) and is underscored so the
+non-use is mechanically visible.
+
+**WHAT IS LEFT, AND WHY IT IS NOT HERE.**  The one general statement consumed is
+`Module.Flat.of_flat_quotient_of_pow_eq_bot` in
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, whose module docstring
+records the two available routes and the measurement behind the cut: **mathlib
+has no `Tor` long exact sequence at this pin** (`CategoryTheory/Monoidal/Tor.lean`
+defines `Tor` but proves only that higher `Tor` of a projective vanishes, and
+`CategoryTheory/Abelian/LeftDerived.lean` has no connecting map at all), so the
+classical two-step argument needs a small `Tor₁` theory built first, or the
+successive-approximation proof over `Module.Flat.iff_forall_isTrivialRelation`.
+Either is a THEORY BUILD, which is exactly why it belongs in the shim tree and
+not inside this 7000-line module.
 
 **FAITHFULNESS.**  `ψn` is passed as DATA together with its intertwining
 `hψn`, for the same reason `ψ` is in the atom: the map is
@@ -4170,7 +5491,7 @@ the call site.  Since `Ideal.Quotient.mk` is surjective, `hψn` determines `ψn`
 uniquely, so this is not a weakening. -/
 theorem flat_quotientMap_pow_of_flat_quotientMap
     [IsNoetherianRing R] [IsNoetherianRing T]
-    {t : R} (hRt : IsSMulRegular R t) (hTt : IsSMulRegular T (algebraMap R T t))
+    {t : R} (_hRt : IsSMulRegular R t) (hTt : IsSMulRegular T (algebraMap R T t))
     (ψ : R ⧸ Ideal.span {t} →+* T ⧸ Ideal.span {algebraMap R T t})
     (hψ : ψ.comp (Ideal.Quotient.mk (Ideal.span {t}))
       = (Ideal.Quotient.mk (Ideal.span {algebraMap R T t})).comp (algebraMap R T))
@@ -4178,11 +5499,166 @@ theorem flat_quotientMap_pow_of_flat_quotientMap
     (ψn : R ⧸ Ideal.span {t ^ n} →+* T ⧸ Ideal.span {(algebraMap R T t) ^ n})
     (hψn : ψn.comp (Ideal.Quotient.mk (Ideal.span {t ^ n}))
       = (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ n})).comp (algebraMap R T)) :
-    ψn.Flat :=
-  sorry
+    ψn.Flat := by
+  rcases n with _ | m
+  · -- `n = 0`: `(t^0) = (1) = ⊤`, so both quotients are the zero ring and every
+    -- module over the zero ring is flat.
+    have hR0 : Ideal.span {t ^ 0} = (⊤ : Ideal R) := by
+      rw [pow_zero]; exact Ideal.span_singleton_one
+    have hT0 : Ideal.span {(algebraMap R T t) ^ 0} = (⊤ : Ideal T) := by
+      rw [pow_zero]; exact Ideal.span_singleton_one
+    haveI : Subsingleton (R ⧸ Ideal.span {t ^ 0}) := Ideal.Quotient.subsingleton_iff.mpr hR0
+    haveI : Subsingleton (T ⧸ Ideal.span {(algebraMap R T t) ^ 0}) :=
+      Ideal.Quotient.subsingleton_iff.mpr hT0
+    algebraize [ψn]
+    exact Module.Flat.of_linearEquiv (M := R ⧸ Ideal.span {t ^ 0})
+      { toFun := fun _ => 0
+        map_add' := fun _ _ => Subsingleton.elim _ _
+        map_smul' := fun _ _ => Subsingleton.elim _ _
+        invFun := fun _ => 0
+        left_inv := fun _ => Subsingleton.elim _ _
+        right_inv := fun _ => Subsingleton.elim _ _ }
+  · algebraize [ψn]
+    have hle : Ideal.span {t ^ (m + 1)} ≤ Ideal.span {t} := by
+      rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, Ideal.mem_span_singleton]
+      exact dvd_pow_self t (Nat.succ_ne_zero m)
+    have hleT : Ideal.span {(algebraMap R T t) ^ (m + 1)}
+        ≤ Ideal.span {algebraMap R T t} := by
+      rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, Ideal.mem_span_singleton]
+      exact dvd_pow_self _ (Nat.succ_ne_zero m)
+    have hJspan : (Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))
+        = Ideal.span {(Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)} := by
+      rw [Ideal.map_span, Set.image_singleton]
+    have hθmem : (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)
+        ∈ (Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) := by
+      rw [hJspan]; exact Ideal.mem_span_singleton_self _
+    have hψnt : (algebraMap (R ⧸ Ideal.span {t ^ (m + 1)})
+          (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+          (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)
+        = Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)}) (algebraMap R T t) := by
+      rw [RingHom.algebraMap_toAlgebra]
+      exact RingHom.congr_fun hψn t
+    have hJT : Ideal.map (algebraMap (R ⧸ Ideal.span {t ^ (m + 1)})
+          (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+          ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))
+        = (Ideal.span {algebraMap R T t}).map
+            (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})) := by
+      rw [RingHom.algebraMap_toAlgebra, Ideal.map_map, hψn, ← Ideal.map_map, Ideal.map_span,
+        Set.image_singleton]
+    refine Module.Flat.of_flat_quotient_of_pow_eq_bot
+      ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))) (m + 1) ?_ ?_ ?_
+    · -- `J ^ n = ⊥`, because `J = (t̄)` and `t̄ ^ n = 0`.
+      have h0 : (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) (t ^ (m + 1)) = 0 :=
+        Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+      rw [hJspan, Ideal.span_singleton_pow, ← map_pow, h0]
+      exact Ideal.span_singleton_eq_bot.mpr rfl
+    · -- `B ⧸ JB` is flat over `A ⧸ J`: this is `hflat` conjugated by the two
+      -- third-isomorphism-theorem identifications.
+      rw [← RingHom.flat_algebraMap_iff]
+      have heq : (algebraMap ((R ⧸ Ideal.span {t ^ (m + 1)}) ⧸
+            (Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))
+          ((T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}) ⧸
+            Ideal.map (algebraMap (R ⧸ Ideal.span {t ^ (m + 1)})
+              (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+              ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))))) =
+          (Ideal.quotEquivOfEq hJT).symm.toRingHom.comp
+            ((DoubleQuot.quotQuotEquivQuotOfLE hleT).symm.toRingHom.comp
+              (ψ.comp (DoubleQuot.quotQuotEquivQuotOfLE hle).toRingHom)) := by
+        refine Ideal.Quotient.ringHom_ext (Ideal.Quotient.ringHom_ext (RingHom.ext fun r => ?_))
+        simp only [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingEquiv.coe_toRingHom]
+        have h1 : (DoubleQuot.quotQuotEquivQuotOfLE hle)
+              ((Ideal.Quotient.mk
+                  ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))))
+                ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) r))
+            = Ideal.Quotient.mk (Ideal.span {t}) r :=
+          DoubleQuot.quotQuotEquivQuotOfLE_quotQuotMk r hle
+        have h2 : ψ (Ideal.Quotient.mk (Ideal.span {t}) r)
+            = Ideal.Quotient.mk (Ideal.span {algebraMap R T t}) (algebraMap R T r) :=
+          RingHom.congr_fun hψ r
+        have h3 : (DoubleQuot.quotQuotEquivQuotOfLE hleT).symm
+              (Ideal.Quotient.mk (Ideal.span {algebraMap R T t}) (algebraMap R T r))
+            = Ideal.Quotient.mk
+                ((Ideal.span {algebraMap R T t}).map
+                  (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})))
+                (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})
+                  (algebraMap R T r)) :=
+          DoubleQuot.quotQuotEquivQuotOfLE_symm_mk _ hleT
+        rw [h1, h2, h3, Ideal.quotEquivOfEq_symm, Ideal.quotEquivOfEq_mk]
+        show Ideal.Quotient.mk _ (ψn ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) r)) = _
+        exact congrArg _ (RingHom.congr_fun hψn r)
+      rw [heq]
+      exact RingHom.Flat.comp
+        (RingHom.Flat.comp
+          (RingHom.Flat.comp
+            (RingHom.Flat.of_bijective (f := (DoubleQuot.quotQuotEquivQuotOfLE hle).toRingHom)
+              (DoubleQuot.quotQuotEquivQuotOfLE hle).bijective)
+            hflat)
+          (RingHom.Flat.of_bijective
+            (f := (DoubleQuot.quotQuotEquivQuotOfLE hleT).symm.toRingHom)
+            (DoubleQuot.quotQuotEquivQuotOfLE hleT).symm.bijective))
+        (RingHom.Flat.of_bijective (f := (Ideal.quotEquivOfEq hJT).symm.toRingHom)
+          (Ideal.quotEquivOfEq hJT).symm.bijective)
+    · -- `Tor₁^A(A ⧸ J, B) = 0`: `J ⊗[A] B → B` is injective.  This is the only
+      -- step that uses regularity, and it uses only `hTt`.
+      set θ := (⟨Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t, hθmem⟩ :
+        ↥((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))) with hθ
+      -- `J` is principal, so every element of `J ⊗ B` is `t̄ ⊗ b` for a single `b`.
+      have hgen : ∀ ξ : (↥((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))
+          ⊗[R ⧸ Ideal.span {t ^ (m + 1)}] (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)})),
+          ∃ b, ξ = θ ⊗ₜ[R ⧸ Ideal.span {t ^ (m + 1)}] b := by
+        intro ξ
+        induction ξ using TensorProduct.induction_on with
+        | zero => exact ⟨0, (TensorProduct.tmul_zero _ _).symm⟩
+        | tmul x b =>
+            obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp
+              (show (x : R ⧸ Ideal.span {t ^ (m + 1)})
+                ∈ Ideal.span {(Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)} by
+                rw [← hJspan]; exact x.2)
+            refine ⟨c • b, ?_⟩
+            have hx : x = c • θ := Subtype.ext (by rw [hθ]; exact hc.symm)
+            rw [hx, TensorProduct.smul_tmul]
+        | add x y hx hy =>
+            obtain ⟨b₁, rfl⟩ := hx
+            obtain ⟨b₂, rfl⟩ := hy
+            exact ⟨b₁ + b₂, (TensorProduct.tmul_add _ _ _).symm⟩
+      rw [injective_iff_map_eq_zero]
+      intro ξ hξ
+      obtain ⟨b, rfl⟩ := hgen ξ
+      rw [TensorProduct.lift.tmul] at hξ
+      simp only [LinearMap.coe_comp, Function.comp_apply, Submodule.coe_subtype,
+        LinearMap.lsmul_apply] at hξ
+      obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective b
+      rw [hθ] at hξ
+      rw [Algebra.smul_def, hψnt, ← map_mul, Ideal.Quotient.eq_zero_iff_mem,
+        Ideal.mem_span_singleton'] at hξ
+      obtain ⟨c, hc⟩ := hξ
+      -- `(φ t) x ∈ ((φ t)^{m+1})` and `φ t` regular on `T` give `x ∈ ((φ t)^m)`.
+      have hx : x = c * (algebraMap R T t) ^ m := by
+        apply hTt
+        show (algebraMap R T t) • x = (algebraMap R T t) • (c * (algebraMap R T t) ^ m)
+        simp only [smul_eq_mul]
+        rw [← hc]; ring
+      subst hx
+      have hb : (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+            (c * (algebraMap R T t) ^ m)
+          = ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) ^ m) •
+            (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)}) c) := by
+        rw [Algebra.smul_def, map_pow, hψnt,
+          ← map_pow (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})), ← map_mul]
+        congr 1
+        ring
+      rw [hb, ← TensorProduct.smul_tmul]
+      have hzero : ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) ^ m) • θ = 0 := by
+        refine Subtype.ext ?_
+        rw [hθ]
+        show ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) ^ m) •
+          (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) = (0 : R ⧸ Ideal.span {t ^ (m + 1)})
+        rw [smul_eq_mul, ← pow_succ, ← map_pow]
+        exact Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+      rw [hzero, TensorProduct.zero_tmul]
 
-/-- **THE DESCENT MODULO `t ^ n`** (sorry leaf — pure commutative algebra;
-the elementwise core of Stacks 00MK / Matsumura 22.3).
+/-- **THE DESCENT MODULO `t ^ n`** (**PROVEN 2026-07-27**; pure commutative
+algebra, the elementwise core of Stacks 00MK / Matsumura 22.3).
 
 Write `I = (t) ⊆ R`, `𝔞 ⊆ R` an ideal, and let `ξ ∈ T ⊗[R] 𝔞` map to `0` in
 `T` under `𝔞 ⊗ T → T`.  Given only that `T ⧸ (φ t)^n` is FLAT over
@@ -4261,7 +5737,32 @@ time: `Q` is a `T`-module, and `G`'s source is an `Rₙ`-module, so a bare
 (`Module Rₙ M` from `Module Tₙ M` and `Algebra Rₙ Tₙ` does not fire on its
 own).  Either supply it explicitly from `ψn.toAlgebra` and note `J' • ⊤ ≤ N`
 makes `Q` a `Tₙ`-module, or build `F` and `G` as bare `AddMonoidHom`s — only
-additivity is used above. -/
+additivity is used above.
+
+**HOW IT WAS ACTUALLY PROVED (2026-07-27), and the two facts worth keeping.**
+The plan above was executed VERBATIM, with `F` and `G` built as bare
+`AddMonoidHom`s through `TensorProduct.liftAddHom` (which asks only for
+additivity in each slot plus the `R`-balancing `f (r • m) n = f m (r • n)`).
+Two concrete points that the plan leaves implicit and that are where the
+Lean work actually sits:
+
+* **`Module T (X →ₗ[R] Q)` does NOT synthesise, but `Module T (X →+ Q)`
+  does.**  So the descent of `y ↦ (a ↦ ⟦y ⊗ a⟧)` along `T ↠ Tₙ` — done with
+  `Submodule.liftQ` over `T` — must be valued in the ADDITIVE hom type.  It
+  is then merely `y ↦ y • W` for the single `W : 𝔞ₙ →+ Q`, so `T`-linearity
+  is `add_smul`/`mul_smul` and the vanishing on `J'` is
+  `J' • ⊤ ≤ N`.
+* **Mapping OUT of `↥𝔞ₙ` needs `↥𝔞ₙ` presented as a quotient.**
+  `𝔞ₙ = 𝔞.map (Ideal.Quotient.mk J)` is a submodule, not a quotient, so `W`
+  is built as `(P.liftQ … ) ∘ E.symm` for the `R`-linear equivalence
+  `E : (↥𝔞 ⧸ P) ≃ₗ[R] ↥𝔞ₙ` obtained from `LinearEquiv.ofBijective`, where
+  `P = comap 𝔞.subtype J` is exactly `ker (𝔞 → 𝔞ₙ)`.  That kernel
+  computation is the FIRST summand of the conclusion, appearing here rather
+  than in a right-exactness argument.
+
+Flatness enters exactly once, as advertised: `Module.Flat`'s
+`lTensor_preserves_injective_linearMap` applied to `𝔞ₙ.subtype`, composed
+with `TensorProduct.rid`.  No `Tor`, no exact sequence, no Artin–Rees. -/
 theorem mem_baseChange_sup_of_flat_quotientMap_pow
     {t : R} (n : ℕ)
     (hpow : ∀ ψn : R ⧸ Ideal.span {t ^ n} →+* T ⧸ Ideal.span {(algebraMap R T t) ^ n},
@@ -4270,8 +5771,186 @@ theorem mem_baseChange_sup_of_flat_quotientMap_pow
         ψn.Flat)
     {𝔞 : Ideal R} (ξ : T ⊗[R] ↥𝔞) (hξ : LinearMap.lTensor T 𝔞.subtype ξ = 0) :
     ξ ∈ (Submodule.comap 𝔞.subtype (Ideal.span {t ^ n} : Ideal R)).baseChange T
-      ⊔ (Ideal.span {(algebraMap R T t) ^ n} • (⊤ : Submodule T (T ⊗[R] ↥𝔞))) :=
-  sorry
+      ⊔ (Ideal.span {(algebraMap R T t) ^ n} • (⊤ : Submodule T (T ⊗[R] ↥𝔞))) := by
+  classical
+  set J : Ideal R := Ideal.span {t ^ n} with hJdef
+  set J' : Ideal T := Ideal.span {(algebraMap R T t) ^ n} with hJ'def
+  -- the induced map on the quotients, and its flatness
+  have hcomap : J ≤ J'.comap (algebraMap R T) := by
+    rw [hJdef, Ideal.span_le]
+    rintro x hx
+    rw [Set.mem_singleton_iff] at hx
+    subst hx
+    simp only [SetLike.mem_coe, Ideal.mem_comap, map_pow, hJ'def]
+    exact Ideal.subset_span rfl
+  set ψn : R ⧸ J →+* T ⧸ J' := Ideal.quotientMap J' (algebraMap R T) hcomap with hψndef
+  have hψncomp : ψn.comp (Ideal.Quotient.mk J) = (Ideal.Quotient.mk J').comp (algebraMap R T) :=
+    Ideal.quotientMap_comp_mk hcomap
+  have hflat : ψn.Flat := hpow ψn hψncomp
+  letI : Algebra (R ⧸ J) (T ⧸ J') := ψn.toAlgebra
+  haveI : Module.Flat (R ⧸ J) (T ⧸ J') := hflat
+  have hsmulT : ∀ (s : R ⧸ J) (x : T ⧸ J'), s • x = ψn s * x := fun s x => by
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra]
+  have hψnmk : ∀ r : R, ψn (Ideal.Quotient.mk J r) = Ideal.Quotient.mk J' (algebraMap R T r) :=
+    fun r => by rw [hψndef]; exact Ideal.quotientMap_mk
+  -- abbreviations
+  set 𝔞n : Ideal (R ⧸ J) := 𝔞.map (Ideal.Quotient.mk J) with h𝔞ndef
+  set P : Submodule R ↥𝔞 := Submodule.comap 𝔞.subtype J with hPdef
+  set N : Submodule T (T ⊗[R] ↥𝔞) :=
+    P.baseChange T ⊔ (J' • (⊤ : Submodule T (T ⊗[R] ↥𝔞))) with hNdef
+  -- the surjection `𝔞 → 𝔞ₙ`, whose kernel is the first summand of the conclusion
+  let qmap : ↥𝔞 →ₗ[R] ↥𝔞n :=
+    { toFun := fun a => ⟨Ideal.Quotient.mk J (a : R), Ideal.mem_map_of_mem _ a.2⟩
+      map_add' := by intro a b; ext; simp
+      map_smul' := by
+        intro r a
+        ext
+        simp [Algebra.smul_def, Ideal.Quotient.algebraMap_eq] }
+  have hqmap : ∀ a : ↥𝔞, (qmap a : R ⧸ J) = Ideal.Quotient.mk J (a : R) := fun a => rfl
+  have hqsurj : Function.Surjective qmap := by
+    rintro ⟨x, hx⟩
+    obtain ⟨a, ha, rfl⟩ :=
+      (Ideal.mem_map_iff_of_surjective (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective).1 hx
+    exact ⟨⟨a, ha⟩, rfl⟩
+  have hqker : LinearMap.ker qmap = P := by
+    ext a
+    rw [LinearMap.mem_ker, Subtype.ext_iff, hqmap]
+    simp [hPdef, Ideal.Quotient.eq_zero_iff_mem]
+  let ebar : (↥𝔞 ⧸ P) →ₗ[R] ↥𝔞n := P.liftQ qmap hqker.ge
+  have hebij : Function.Bijective ebar := by
+    refine ⟨?_, ?_⟩
+    · rw [← LinearMap.ker_eq_bot]
+      exact Submodule.ker_liftQ_eq_bot' P qmap hqker.symm
+    · intro y
+      obtain ⟨a, rfl⟩ := hqsurj y
+      exact ⟨P.mkQ a, rfl⟩
+  let E : (↥𝔞 ⧸ P) ≃ₗ[R] ↥𝔞n := LinearEquiv.ofBijective ebar hebij
+  have hEsymm : ∀ a : ↥𝔞, E.symm (qmap a) = P.mkQ a := by
+    intro a
+    have h : E (P.mkQ a) = qmap a := rfl
+    rw [← h, E.symm_apply_apply]
+  -- `J'` annihilates `Q := (T ⊗[R] 𝔞) ⧸ N`: that is the second summand
+  have hJQ : ∀ y ∈ J', ∀ q : (T ⊗[R] ↥𝔞) ⧸ N, y • q = 0 := by
+    intro y hy q
+    obtain ⟨w, rfl⟩ := N.mkQ_surjective q
+    rw [← map_smul, Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+    exact Submodule.mem_sup_right (Submodule.smul_mem_smul hy Submodule.mem_top)
+  -- `G : Tₙ ⊗[Rₙ] 𝔞ₙ → Q`
+  let b1 : ↥𝔞 →ₗ[R] ((T ⊗[R] ↥𝔞) ⧸ N) :=
+    (N.mkQ.restrictScalars R).comp (TensorProduct.mk R T ↥𝔞 1)
+  have hb1 : P ≤ LinearMap.ker b1 := by
+    intro a ha
+    rw [LinearMap.mem_ker]
+    show N.mkQ ((1 : T) ⊗ₜ[R] a) = 0
+    rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+    exact Submodule.mem_sup_left (Submodule.tmul_mem_baseChange_of_mem 1 ha)
+  let W : ↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N) :=
+    (P.liftQ b1 hb1).toAddMonoidHom.comp E.symm.toLinearMap.toAddMonoidHom
+  have hW : ∀ a : ↥𝔞, W (qmap a) = N.mkQ ((1 : T) ⊗ₜ[R] a) := by
+    intro a
+    show (P.liftQ b1 hb1) (E.symm (qmap a)) = _
+    rw [hEsymm, Submodule.mkQ_apply, Submodule.liftQ_apply]
+    rfl
+  let bl0 : T →ₗ[T] (↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N)) :=
+    { toFun := fun y => y • W
+      map_add' := fun y y' => add_smul y y' W
+      map_smul' := fun c y => mul_smul c y W }
+  have hbl0 : ∀ (y : T) (x : ↥𝔞n), bl0 y x = y • W x := fun y x => rfl
+  have hbl0ker : J' ≤ LinearMap.ker bl0 := by
+    intro y hy
+    rw [LinearMap.mem_ker]
+    ext x
+    rw [hbl0]
+    exact hJQ y hy _
+  let g0 : (T ⧸ J') →ₗ[T] (↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N)) := J'.liftQ bl0 hbl0ker
+  let g' : (T ⧸ J') →+ (↥𝔞n →+ ((T ⊗[R] ↥𝔞) ⧸ N)) := g0.toAddMonoidHom
+  have hg0val : ∀ (y : T) (a : ↥𝔞),
+      g' (Ideal.Quotient.mk J' y) (qmap a) = N.mkQ (y ⊗ₜ[R] (a : ↥𝔞)) := by
+    intro y a
+    show g0 (Submodule.Quotient.mk y) (qmap a) = _
+    rw [Submodule.liftQ_apply, hbl0, hW, ← map_smul]
+    congr 1
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  have hgbal : ∀ (s : R ⧸ J) (y : T ⧸ J') (x : ↥𝔞n), g' (s • y) x = g' y (s • x) := by
+    intro s y x
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective s
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨a, rfl⟩ := hqsurj x
+    have hs : (Ideal.Quotient.mk J r) • (Ideal.Quotient.mk J' y)
+        = Ideal.Quotient.mk J' (algebraMap R T r * y) := by
+      rw [hsmulT, hψnmk, map_mul]
+    have hx : (Ideal.Quotient.mk J r) • qmap a = qmap (r • a) := by
+      ext
+      rw [hqmap]
+      show (Ideal.Quotient.mk J r) * (qmap a : R ⧸ J) = _
+      rw [hqmap, ← map_mul]
+      rfl
+    rw [hs, hx, hg0val, hg0val, ← Algebra.smul_def, TensorProduct.smul_tmul]
+  let G : ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n) →+ ((T ⊗[R] ↥𝔞) ⧸ N) :=
+    TensorProduct.liftAddHom (R := R ⧸ J) g' hgbal
+  -- `F : T ⊗[R] 𝔞 → Tₙ ⊗[Rₙ] 𝔞ₙ`
+  let mkAdd : (T ⧸ J') →+ (↥𝔞n →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) :=
+    LinearMap.toAddMonoidHom'.comp (TensorProduct.mk (R ⧸ J) (T ⧸ J') ↥𝔞n).toAddMonoidHom
+  let precompQ : (↥𝔞n →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) →+ (↥𝔞 →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) :=
+    AddMonoidHom.mk' (fun h => h.comp qmap.toAddMonoidHom) (fun _ _ => rfl)
+  let f : T →+ (↥𝔞 →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n)) :=
+    precompQ.comp (mkAdd.comp (Ideal.Quotient.mk J' : T →+* T ⧸ J').toAddMonoidHom)
+  have hfval : ∀ (y : T) (a : ↥𝔞),
+      f y a = (Ideal.Quotient.mk J' y) ⊗ₜ[R ⧸ J] (qmap a) := fun y a => rfl
+  have hfbal : ∀ (r : R) (y : T) (a : ↥𝔞), f (r • y) a = f y (r • a) := by
+    intro r y a
+    rw [hfval, hfval]
+    have h1 : (Ideal.Quotient.mk J' (r • y))
+        = (Ideal.Quotient.mk J r) • (Ideal.Quotient.mk J' y) := by
+      rw [hsmulT, hψnmk, ← map_mul, Algebra.smul_def]
+    have h2 : qmap (r • a) = (Ideal.Quotient.mk J r) • qmap a := by
+      ext
+      rw [hqmap]
+      show _ = (Ideal.Quotient.mk J r) * (qmap a : R ⧸ J)
+      rw [hqmap, ← map_mul]
+      rfl
+    rw [h1, h2, TensorProduct.smul_tmul]
+  let F : (T ⊗[R] ↥𝔞) →+ ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n) := TensorProduct.liftAddHom f hfbal
+  have hFval : ∀ (y : T) (a : ↥𝔞),
+      F (y ⊗ₜ[R] a) = (Ideal.Quotient.mk J' y) ⊗ₜ[R ⧸ J] (qmap a) := fun y a => rfl
+  -- `G ∘ F = mkQ N`, so `F ξ = 0` will give `ξ ∈ N` with no kernel computation
+  have hGF : ∀ z : T ⊗[R] ↥𝔞, G (F z) = N.mkQ z := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rw [map_zero, map_zero, map_zero]
+    | tmul y a =>
+      rw [hFval]
+      show g' (Ideal.Quotient.mk J' y) (qmap a) = _
+      exact hg0val y a
+    | add z z' hz hz' => rw [map_add, map_add, hz, hz', map_add]
+  -- the ONLY use of flatness: `c` is injective
+  let c : ((T ⧸ J') ⊗[R ⧸ J] ↥𝔞n) →ₗ[R ⧸ J] (T ⧸ J') :=
+    (TensorProduct.rid (R ⧸ J) (T ⧸ J')).toLinearMap.comp
+      (LinearMap.lTensor (T ⧸ J') 𝔞n.subtype)
+  have hcinj : Function.Injective c := by
+    intro x y hxy
+    exact Module.Flat.lTensor_preserves_injective_linearMap (M := T ⧸ J') 𝔞n.subtype
+      𝔞n.injective_subtype ((TensorProduct.rid (R ⧸ J) (T ⧸ J')).injective hxy)
+  have hcF : ∀ z : T ⊗[R] ↥𝔞, c (F z)
+      = Ideal.Quotient.mk J' ((TensorProduct.rid R T) (LinearMap.lTensor T 𝔞.subtype z)) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rw [map_zero, map_zero, map_zero, map_zero, map_zero]
+    | tmul y a =>
+      rw [hFval]
+      show (TensorProduct.rid (R ⧸ J) (T ⧸ J'))
+        (LinearMap.lTensor (T ⧸ J') 𝔞n.subtype
+          ((Ideal.Quotient.mk J' y) ⊗ₜ[R ⧸ J] (qmap a))) = _
+      rw [LinearMap.lTensor_tmul, TensorProduct.rid_tmul, LinearMap.lTensor_tmul,
+        TensorProduct.rid_tmul]
+      show (qmap a : R ⧸ J) • (Ideal.Quotient.mk J' y) = _
+      rw [hsmulT, hqmap, hψnmk, ← map_mul, Submodule.subtype_apply, Algebra.smul_def]
+    | add z z' hz hz' => rw [map_add, map_add, hz, hz', map_add, map_add, map_add]
+  have hFxi : F ξ = 0 := by
+    apply hcinj
+    rw [hcF, hξ, map_zero, map_zero, map_zero]
+  have hmk : N.mkQ ξ = 0 := by rw [← hGF, hFxi, map_zero]
+  rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at hmk
 
 /-- The base change of `t ^ m · 𝔞` sits inside `(φ t)^m · (T ⊗[R] 𝔞)`
 (**PROVEN 2026-07-27**).  Pure bookkeeping: `1 ⊗ (r • x) = φ r • (1 ⊗ x)`,
@@ -4416,7 +6095,8 @@ at exactly one place, and both halves are stated above:
    `R ⧸ (t)^n` for all `n`.  This is the local criterion for a NILPOTENT
    ideal; no separatedness, no Artin–Rees.
 2. `mem_baseChange_sup_of_flat_quotientMap_pow` — the elementwise descent of
-   `ker(𝔞 ⊗ T → T)` modulo `t^n`, granted (1).
+   `ker(𝔞 ⊗ T → T)` modulo `t^n`, granted (1).  **PROVEN 2026-07-27**; (1) is
+   the only half of the cut still open.
 
 Everything else is now written out and PROVEN:
 `mem_pow_smul_of_lTensor_ideal_eq_zero` feeds Artin–Rees
@@ -6457,8 +8137,66 @@ theorem isPullback_ker_baseChange (ab : AbelianSchemeStruct f) {T : Scheme.{u}} 
 
 end AbelianSchemeStruct
 
+/-- **AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD CARRIES A SYMMETRIC
+AMPLE INVERTIBLE SHEAF SATISFYING THE CUBE IDENTITY `[n]^* L ≅ L^{⊗ n²}`**
+(sorry leaf, cut 2026-07-27 — this is Mumford *Abelian Varieties* §6,
+Application 2 of the THEOREM OF THE CUBE, together with the projectivity of an
+abelian variety, and it is the whole mathematical residue of
+`isQuasiAffine_ker_mulByNat_of_isAlgClosed` below).
+
+**What each conjunct is.**
+
+* `IsInvertibleSheaf L` — `L` is locally free of rank one.
+* `IsAmpleSheaf L` — `A` is PROJECTIVE.  Classically this is the theta
+  divisor: a symmetric ample `L` exists on any abelian variety over an
+  algebraically closed field.
+* `modPullback ab.zeroSection L ≅ modUnit _` — `L` is NORMALIZED along the
+  origin, `e^* L ≅ 𝒪_{Spec K}`.  This is free classically (`Pic(Spec K) = 0`
+  for a field `K`), and it is folded into this leaf rather than made a seventh
+  one because the classical construction produces a normalized `L` anyway.
+  The consumer uses it to identify `([p]^* L)|_{ker[p]}` with `𝒪`.
+* `modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)` — THE CUBE, in the
+  form Application 2 uses.  Note this form REQUIRES `L` symmetric: for a
+  general `L` the cube only gives
+  `[n]^* L ≅ L^{(n²+n)/2} ⊗ ([−1]^* L)^{(n²−n)/2}`.  Symmetry is therefore
+  asserted implicitly, by asserting the conclusion it buys; a prover
+  constructs `L := L₀ ⊗ [−1]^* L₀` from any ample `L₀`, which is symmetric and
+  still ample.
+
+**Why the statement is expressible at all** — and this is the change that made
+the cut available on 2026-07-27.  `Fermat.modTensor`
+(`ModularCurve/RelativePicard.lean`) is the object part of the tensor product
+of sheaves of modules, obtained by SHEAFIFYING the presheaf tensor product;
+`Fermat.modTensorPow`, `Fermat.IsAmpleSheaf` and the six sheaf-theoretic
+obligations live in `Modularity/AmpleSheaf.lean`.  Before that landed, the
+consumer's docstring recorded — correctly for mathlib, and incorrectly for
+this project after the fact — that `L^{⊗n}` "cannot even be WRITTEN".
+
+**`n` is arbitrary and no characteristic hypothesis appears.**  The cube is
+characteristic-blind; the consumer instantiates it at `n = p = ringChar K`.
+Do not add `hp`/`hchar` here — they would record a dependence that does not
+exist, and the Lie-algebra route's inability to reach `n = p` is a fact about
+the CONSUMER, not about this statement.
+
+**Do not attempt this leaf before reading
+`isQuasiAffine_ker_mulByNat_of_field_char` below**: nine cube-free routes are
+refuted there, each with the check that would refute the refutation, and the
+survey of what `Mathlib/AlgebraicGeometry/` does and does not have
+(`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY) is re-verified there.
+This is a mathlib-scale build: theta divisors need divisors, linear systems
+and cohomology, none of which exist at this pin. -/
+theorem exists_isAmpleSheaf_cube_of_isAlgClosed {X : Scheme.{u}}
+    (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (ab : AbelianSchemeStruct fK) (n : ℕ) :
+    ∃ L : X.Modules, IsInvertibleSheaf L ∧ IsAmpleSheaf L ∧
+      Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of K))) ∧
+      Nonempty (modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)) :=
+  sorry
+
 /-- **`ker[p]` is a QUASI-AFFINE SCHEME over an ALGEBRAICALLY CLOSED field of
-characteristic `p`** (sorry leaf — the theorem of the cube; cut 2026-07-27 out of
+characteristic `p`** (PROVEN 2026-07-27 over
+`exists_isAmpleSheaf_cube_of_isAlgClosed` above and the six sheaf-theoretic
+leaves of `Modularity/AmpleSheaf.lean`; cut 2026-07-27 out of
 `isQuasiAffine_ker_mulByNat_of_field_char` below by ROUTE 9, "WLOG `K`
 algebraically closed", which that leaf's docstring had recorded as the axis
 nobody had ranged over).
@@ -6479,15 +8217,33 @@ is written over an algebraically closed field, and two of them become
   classical argument expects only over a perfect — here algebraically closed —
   field.
 
-**The residue is still the theorem of the cube, and it is still hard.**  Nobody
-should read this cut as progress on the mathematics; it removes a genuine
-obstruction (the classical arguments were not even statable) without supplying
-any of the missing machinery.  In particular the blocker recorded at the
-consumer is UNCHANGED and is the thing to attack: at this pin there is **no
-monoidal structure on `SheafOfModules`**, so `L^{⊗n}` cannot be written at all,
-and ampleness, `Pic` and invertible sheaves are all absent.  Do not re-survey
-that; do not re-cut this leaf into `IsAffine` / `Finite` / `topologicalKrullDim
-≤ 0`, all of which are interchangeable with it here.
+**THIS DECLARATION IS NO LONGER A LEAF (2026-07-27, second revision).**  It is
+now PROVEN over Mumford's Application 2 itself, stated as
+`exists_isAmpleSheaf_cube_of_isAlgClosed` immediately above plus six
+sheaf-theoretic leaves in `Modularity/AmpleSheaf.lean`.  Everything from here
+down is the history of how it got here; read it for the refuted routes, not
+for the current state.
+
+**THE RECORDED BLOCKER WAS HALF-FALSE, AND THE CHECK THAT REFUTED IT IS ONE
+GREP.**  The paragraph that used to stand here said the blocker "is UNCHANGED
+and is the thing to attack: at this pin there is **no monoidal structure on
+`SheafOfModules`**, so `L^{⊗n}` cannot be written at all".  The first half is
+right about mathlib and WRONG about this project: `Fermat.modTensor`
+(`ModularCurve/RelativePicard.lean`, landed 2026-07-27) supplies the object
+part by sheafifying the presheaf tensor product, and with `Fermat.modPullback`
+and `Fermat.IsInvertibleSheaf` beside it, `L^{⊗n}` (`Fermat.modTensorPow`) and
+the cube's output `[n]^* L ≅ L^{⊗ n²}` are both WRITABLE — verified by
+elaborating them, 2026-07-27.  Ampleness was the one statement-level gap that
+really did remain; `Fermat.IsAmpleSheaf` closes it.
+
+So the standing rule applied here in the direction the old note denied: the cut
+needed the ample-sheaf theory only STATED, not proven.  What is NOT disputed is
+the old note's conclusion that PROVING it is a theory build — the six leaves in
+`AmpleSheaf.lean` are that theory, and each says what it is waiting on.
+
+Still true, and still worth obeying: do not re-cut this statement into
+`IsAffine` / `Finite` / `topologicalKrullDim ≤ 0`, all of which are
+interchangeable with it here.
 
 **Routes already refuted for the general-`K` form apply verbatim here**, with
 one exception worth naming: route 5 (quasi-finiteness at the origin, spread by
@@ -6504,9 +8260,50 @@ with the check that would refute the refutation. -/
 theorem isQuasiAffine_ker_mulByNat_of_isAlgClosed {X : Scheme.{u}}
     (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
     (ab : AbelianSchemeStruct fK)
-    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
-    Scheme.IsQuasiAffine (pullback (ab.mulByNat p) ab.zeroSection) :=
-  sorry
+    (p : ℕ) (hp : p.Prime) (_hchar : ringChar K = p) :
+    Scheme.IsQuasiAffine (pullback (ab.mulByNat p) ab.zeroSection) := by
+  classical
+  -- 1.  `ker[p] ↪ A` is a CLOSED IMMERSION: it is a base change of the zero
+  --     section, which is a section of the separated `fK`.
+  haveI : IsProper fK := ab.proper
+  haveI : IsClosedImmersion ab.zeroSection := by
+    haveI : IsClosedImmersion (ab.zeroSection ≫ fK) := by
+      rw [show ab.zeroSection ≫ fK = 𝟙 _ from (ab.zero (𝟙 _)).2]; infer_instance
+    exact IsClosedImmersion.of_comp _ fK
+  haveI : IsClosedImmersion (pullback.fst (ab.mulByNat p) ab.zeroSection) :=
+    MorphismProperty.pullback_fst _ _ inferInstance
+  -- 2.  `ker[p]` is QUASI-COMPACT: `ker[p] ⟶ Spec K` is a base change of the
+  --     proper `[p]`, and `Spec K` is compact.
+  haveI : IsProper (ab.mulByNat p) := ab.isProper_mulByNat p
+  haveI : IsProper (pullback.snd (ab.mulByNat p) ab.zeroSection) :=
+    MorphismProperty.pullback_snd _ _ inferInstance
+  haveI : CompactSpace ↥(pullback (ab.mulByNat p) ab.zeroSection : Scheme.{u}) :=
+    QuasiCompact.compactSpace_of_compactSpace (pullback.snd (ab.mulByNat p) ab.zeroSection)
+  -- 3.  Mumford §6, Application 2: a normalized symmetric ample `L` with the cube.
+  obtain ⟨L, -, hLamp, ⟨htriv⟩, ⟨hcube⟩⟩ :=
+    exists_isAmpleSheaf_cube_of_isAlgClosed K ab p
+  set ι : (pullback (ab.mulByNat p) ab.zeroSection : Scheme.{u}) ⟶ X :=
+    pullback.fst (ab.mulByNat p) ab.zeroSection with hι
+  set st : (pullback (ab.mulByNat p) ab.zeroSection : Scheme.{u}) ⟶
+      Spec (CommRingCat.of K) := pullback.snd (ab.mulByNat p) ab.zeroSection with hst
+  obtain ⟨etens⟩ := nonempty_modPullback_modTensorPow ι L (p ^ 2)
+  obtain ⟨eunit⟩ := nonempty_modPullback_modUnit st
+  -- 4.  `[p]` is CONSTANT on `ker[p]` — that is `pullback.condition` — so
+  --     `(L|_{ker[p]})^{⊗ p²} ≅ ([p]^* L)|_{ker[p]} ≅ (str)^* (e^* L) ≅ 𝒪`.
+  have e : modTensorPow (modPullback ι L) (p ^ 2) ≅
+      modUnit (pullback (ab.mulByNat p) ab.zeroSection) :=
+    etens.symm ≪≫
+      modPullbackMapIso ι hcube.symm ≪≫
+      modPullbackCompIso ι (ab.mulByNat p) L ≪≫
+      modPullbackCongrIso pullback.condition L ≪≫
+      (modPullbackCompIso st ab.zeroSection L).symm ≪≫
+      modPullbackMapIso st htriv ≪≫
+      eunit
+  -- 5.  `L|_{ker[p]}` is ample, hence so is its `p²`-th power, hence so is
+  --     `𝒪_{ker[p]}` — and a scheme with ample structure sheaf is QUASI-AFFINE.
+  exact isQuasiAffine_of_isAmpleSheaf_modUnit _
+    (isAmpleSheaf_of_iso e (isAmpleSheaf_modTensorPow (pow_pos hp.pos 2)
+      (isAmpleSheaf_modPullback ι hLamp)))
 
 /-- **`ker[p]` is a QUASI-AFFINE SCHEME in characteristic `p`** (PROVEN
 2026-07-27 over `isQuasiAffine_ker_mulByNat_of_isAlgClosed` above, by ROUTE 9 —
