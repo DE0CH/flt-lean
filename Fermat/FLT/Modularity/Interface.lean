@@ -28855,51 +28855,439 @@ theorem exists_heckeOp_eigen_of_mem_oldSubspace {M : ℕ} (hM : 0 < M) {c : ℕ 
     rw [← heckeOp_degeneracyOp hpos hM hpp.pos hdvd hq hqM u, hu, hvsmul, ← hu,
       map_smul]
 
-/-- **EIGENSYSTEM REALIZATION AT A DIVISOR LEVEL** (sorry leaf — cut
+/-- **A FINITE COMMUTING FAMILY OF ENDOMORPHISMS HAS A COMMON EIGENVECTOR IN
+EVERY NONZERO INVARIANT SUBSPACE** (PROVEN 2026-07-27): pure linear algebra
+over an arbitrary finite-dimensional complex vector space — no modular-forms
+input enters, deliberately, so that the modular application below is a one-line
+instantiation.
+
+Induction on the finset.  At the step, `A` restricts to an endomorphism of the
+invariant `W`, which is finite-dimensional and nontrivial, so over the
+algebraically closed `ℂ` it has an eigenvalue `μ`
+(`Module.End.exists_eigenvalue`); the smaller subspace `W ⊓ eigenspace A μ` is
+again nonzero (it contains the eigenvector) and is still invariant under every
+`B` in the rest of the family, because `B` commutes with `A` and preserves `W`.
+The induction hypothesis applied there returns a vector that is simultaneously
+an eigenvector of the rest AND, by construction, of `A`. -/
+theorem exists_ne_zero_mem_forall_eq_smul_of_commuting_finset
+    {V : Type u} [AddCommGroup V] [Module ℂ V] [FiniteDimensional ℂ V] :
+    ∀ S : Finset (Module.End ℂ V), (∀ A ∈ S, ∀ B ∈ S, A * B = B * A) →
+      ∀ W : Submodule ℂ V, W ≠ ⊥ → (∀ A ∈ S, ∀ x ∈ W, A x ∈ W) →
+      ∃ w ∈ W, w ≠ 0 ∧ ∀ A ∈ S, ∃ μ : ℂ, A w = μ • w := by
+  classical
+  intro S
+  induction S using Finset.induction_on with
+  | empty =>
+    intro _ W hW _
+    obtain ⟨w, hw, hw0⟩ := (Submodule.ne_bot_iff W).mp hW
+    exact ⟨w, hw, hw0, by simp⟩
+  | insert A S hAS ih =>
+    intro hcomm W hW hstab
+    have hAW : ∀ x ∈ W, A x ∈ W := hstab A (Finset.mem_insert_self A S)
+    haveI : Nontrivial W := (Submodule.nontrivial_iff_ne_bot (p := W)).mpr hW
+    obtain ⟨μ, hμ⟩ := Module.End.exists_eigenvalue (LinearMap.restrict A hAW)
+    obtain ⟨v, hvmem, hv0⟩ := hμ.exists_hasEigenvector
+    have hvA : A (v : V) = μ • (v : V) := by
+      have h1 : LinearMap.restrict A hAW v = μ • v := Module.End.mem_eigenspace_iff.mp hvmem
+      have h2 := congrArg (fun z : W => (z : V)) h1
+      simpa using h2
+    have hv0' : (v : V) ≠ 0 := fun h => hv0 (Submodule.coe_eq_zero.mp h)
+    have hvW' : (v : V) ∈ W ⊓ Module.End.eigenspace A μ :=
+      Submodule.mem_inf.mpr ⟨v.2, Module.End.mem_eigenspace_iff.mpr hvA⟩
+    have hW'bot : W ⊓ Module.End.eigenspace A μ ≠ ⊥ :=
+      (Submodule.ne_bot_iff _).mpr ⟨_, hvW', hv0'⟩
+    have hstab' : ∀ B ∈ S, ∀ x ∈ W ⊓ Module.End.eigenspace A μ,
+        B x ∈ W ⊓ Module.End.eigenspace A μ := by
+      intro B hB x hx
+      obtain ⟨hxW, hxe⟩ := Submodule.mem_inf.mp hx
+      have hxe' : A x = μ • x := Module.End.mem_eigenspace_iff.mp hxe
+      have hcm : A * B = B * A :=
+        hcomm A (Finset.mem_insert_self A S) B (Finset.mem_insert_of_mem hB)
+      have hAB : A (B x) = B (A x) := by
+        have h : (A * B) x = (B * A) x := by rw [hcm]
+        simpa using h
+      refine Submodule.mem_inf.mpr ⟨hstab B (Finset.mem_insert_of_mem hB) x hxW, ?_⟩
+      exact Module.End.mem_eigenspace_iff.mpr (by rw [hAB, hxe', map_smul])
+    obtain ⟨w, hwW', hw0, hws⟩ :=
+      ih (fun B hB C hC =>
+        hcomm B (Finset.mem_insert_of_mem hB) C (Finset.mem_insert_of_mem hC))
+        (W ⊓ Module.End.eigenspace A μ) hW'bot hstab'
+    obtain ⟨hwW, hwe⟩ := Submodule.mem_inf.mp hwW'
+    refine ⟨w, hwW, hw0, ?_⟩
+    intro C hC
+    rcases Finset.mem_insert.mp hC with rfl | hC'
+    · exact ⟨μ, Module.End.mem_eigenspace_iff.mp hwe⟩
+    · exact hws C hC'
+
+/-- **SIMULTANEOUS DIAGONALISATION OF THE FULL HECKE FAMILY** (PROVEN
+2026-07-27): a nonzero subspace `W ⊆ S₂(Γ₀(N))` stable under EVERY Hecke
+operator `T_q` — the good ones `q ∤ N` and the bad ones `U_q`, `q ∣ N`, alike —
+contains a nonzero common eigenvector of all of them.
+
+The family is infinite, so the finset lemma above does not apply directly.  The
+bridge is that `End ℂ S₂(Γ₀(N))` is FINITE-DIMENSIONAL
+(`cuspForm_finiteDimensional`), so the set `{T_q : q prime}` has a finite subset
+`b` with the same span (`exists_linearIndependent` plus
+`LinearIndependent.setFinite`).  A common eigenvector of `b` is automatically an
+eigenvector of everything in `span b`, since for fixed `w ≠ 0` the operators
+having `w` as an eigenvector form a SUBMODULE of `End ℂ S₂(Γ₀(N))` —
+`Submodule.span_induction`.  Commutativity of the whole family is
+`heckeOp_mul_comm`, which holds for ALL pairs of primes, bad ones included. -/
+theorem exists_ne_zero_mem_forall_prime_heckeOp_eq_smul {N : ℕ} (hN : 0 < N)
+    {W : Submodule ℂ (CuspForm (Gamma0GL N) 2)} (hW : W ≠ ⊥)
+    (hstab : ∀ q : ℕ, q.Prime → ∀ x ∈ W, heckeOp N q x ∈ W) :
+    ∃ w ∈ W, w ≠ 0 ∧ ∃ lam : ℕ → ℂ,
+      ∀ q : ℕ, q.Prime → heckeOp N q w = lam q • w := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  obtain ⟨b, hbP, hspan, hli⟩ :=
+    exists_linearIndependent ℂ
+      ((fun q : ℕ => heckeOp N q) '' {q : ℕ | q.Prime})
+  have hbfin : b.Finite := hli.setFinite
+  have hSb : ∀ A ∈ hbfin.toFinset, ∃ q : ℕ, q.Prime ∧ heckeOp N q = A := by
+    intro A hA
+    obtain ⟨q, hq, hqA⟩ := hbP (hbfin.mem_toFinset.mp hA)
+    exact ⟨q, hq, hqA⟩
+  have hcomm : ∀ A ∈ hbfin.toFinset, ∀ B ∈ hbfin.toFinset, A * B = B * A := by
+    intro A hA B hB
+    obtain ⟨q, hq, rfl⟩ := hSb A hA
+    obtain ⟨r, hr, rfl⟩ := hSb B hB
+    exact heckeOp_mul_comm hN hq hr
+  have hstabS : ∀ A ∈ hbfin.toFinset, ∀ x ∈ W, A x ∈ W := by
+    intro A hA x hx
+    obtain ⟨q, hq, rfl⟩ := hSb A hA
+    exact hstab q hq x hx
+  obtain ⟨w, hwW, hw0, hws⟩ :=
+    exists_ne_zero_mem_forall_eq_smul_of_commuting_finset hbfin.toFinset hcomm W hW hstabS
+  have hkey : ∀ A ∈ Submodule.span ℂ b, ∃ μ : ℂ, A w = μ • w := by
+    intro A hA
+    induction hA using Submodule.span_induction with
+    | mem A hA => exact hws A (hbfin.mem_toFinset.mpr hA)
+    | zero => exact ⟨0, by simp⟩
+    | add x y _ _ hx hy =>
+      obtain ⟨a, ha⟩ := hx
+      obtain ⟨c, hc⟩ := hy
+      exact ⟨a + c, by simp [ha, hc, add_smul]⟩
+    | smul c x _ hx =>
+      obtain ⟨a, ha⟩ := hx
+      exact ⟨c * a, by simp [ha, mul_smul]⟩
+  have hprime : ∀ q : ℕ, q.Prime → ∃ μ : ℂ, heckeOp N q w = μ • w := by
+    intro q hq
+    refine hkey _ ?_
+    rw [hspan]
+    exact Submodule.subset_span ⟨q, hq, rfl⟩
+  refine ⟨w, hwW, hw0, fun q => if h : q.Prime then (hprime q h).choose else 0, ?_⟩
+  intro q hq
+  simp only [dif_pos hq]
+  exact (hprime q hq).choose_spec
+
+/-- **THE COEFFICIENT RECURSION CARRIED BY A JOINT HECKE EIGENVECTOR** (PROVEN
+2026-07-27): reading `T_q w = λ_q · w` in the `m`-th `q`-expansion coefficient
+through `qCoeff_heckeOp` gives
+
+  `a_{qm}(w) + 1_{q∤N} 1_{q∣m} · q · a_{m/q}(w) = λ_q · a_m(w)`,
+
+for EVERY prime `q`, bad primes included (where the correction term is absent).
+This one identity drives both consequences below. -/
+theorem qCoeff_heckeOp_eigen_rel {N : ℕ} (hN : 0 < N) {lam : ℕ → ℂ}
+    {w : CuspForm (Gamma0GL N) 2}
+    (hw : ∀ q : ℕ, q.Prime → heckeOp N q w = lam q • w)
+    {q : ℕ} (hq : q.Prime) (m : ℕ) :
+    qCoeff N w (q * m) +
+        (if q ∣ N then 0 else if q ∣ m then (q : ℂ) * qCoeff N w (m / q) else 0)
+      = lam q * qCoeff N w m := by
+  have h : qCoeff N (heckeOp N q w) m = qCoeff N (lam q • w) m := by rw [hw q hq]
+  rw [qCoeff_heckeOp hN hq w m, qCoeff_smul] at h
+  exact h
+
+/-- **A JOINT EIGENVECTOR OF EVERY HECKE OPERATOR WITH `a₁ = 0` IS ZERO**
+(PROVEN 2026-07-27).  Strong induction on `m`: for `m ≥ 2` pick a prime `q ∣ m`,
+write `m = q·m'`, and solve `qCoeff_heckeOp_eigen_rel` at `m'` for the top
+index; both `m'` and `m'/q` are smaller, so the induction hypothesis kills the
+right-hand side.  A cusp form is determined by its `q`-expansion
+(`cuspForm_eq_of_forall_qCoeff_eq`).
+
+This is what makes the normalisation step below unconditional: the eigenvector
+produced by simultaneous diagonalisation NEVER has vanishing first
+coefficient. -/
+theorem eq_zero_of_forall_heckeOp_eq_smul_of_qCoeff_one_eq_zero {N : ℕ} (hN : 0 < N)
+    {lam : ℕ → ℂ} {w : CuspForm (Gamma0GL N) 2}
+    (hw : ∀ q : ℕ, q.Prime → heckeOp N q w = lam q • w)
+    (h1 : qCoeff N w 1 = 0) : w = 0 := by
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  rw [qCoeff_zero_cuspForm]
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    rcases eq_or_ne m 0 with rfl | hm0
+    · exact qCoeff_zero N w
+    rcases eq_or_ne m 1 with rfl | hm1
+    · exact h1
+    obtain ⟨q, hq, hqm⟩ := Nat.exists_prime_and_dvd hm1
+    obtain ⟨m', rfl⟩ := hqm
+    have hq2 : 2 ≤ q := hq.two_le
+    have hm'pos : 0 < m' := by
+      rcases Nat.eq_zero_or_pos m' with rfl | h
+      · exact absurd (by ring) hm0
+      · exact h
+    have hm'lt : m' < q * m' := by
+      have h2 : 2 * m' ≤ q * m' := Nat.mul_le_mul_right m' hq2
+      omega
+    have hdivlt : m' / q < q * m' := lt_of_le_of_lt (Nat.div_le_self _ _) hm'lt
+    have hrel := qCoeff_heckeOp_eigen_rel hN hw hq m'
+    have e1 := ih m' hm'lt
+    have e2 := ih (m' / q) hdivlt
+    simp only [e1, e2, mul_zero, ite_self, add_zero] at hrel
+    exact hrel
+
+/-- **A NORMALIZED JOINT EIGENVECTOR OF EVERY HECKE OPERATOR IS A WEIGHT-TWO
+EIGENFORM** (PROVEN 2026-07-27 — the converse of
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`, and the step that makes the
+Atkin–Lehner apparatus unnecessary at the node below).
+
+The point is that `IsWeightTwoEigenform` on this pin is the FULL-Hecke
+coefficient condition of Diamond–Shurman Prop. 5.8.5 — normalisation,
+multiplicativity at coprime indices, and BOTH prime-power recursions, the good
+one at `q ∤ N` and the `U_q` one at `q ∣ N`.  It does NOT demand newness.  So
+an eigenvector of the whole family, normalized, satisfies it verbatim, and the
+inhabitant produced here is in general OLD — a `q`-stabilisation of a newform
+of smaller level — which is exactly what the consumers of this notion allow.
+
+The four fields all fall out of `qCoeff_heckeOp_eigen_rel`:
+
+* `a_q(w) = λ_q` at `m = 1` (a prime divides no `1`), so the eigenvalues ARE
+  the prime coefficients;
+* the two prime-power recursions are the relation at `m = q^{r+1}` resp.
+  `m = q^r`;
+* multiplicativity is a two-stage induction: first
+  `a_{q^r n} = a_{q^r}·a_n` for `q ∤ n` — proved by a simple induction on `r`
+  carrying the pair `(r, r+1)`, since the relation at `q^{r+1}n` refers back to
+  both `q^{r+1}n` and `q^r n` — and then the general coprime statement by
+  `Nat.recOnPrimePow`, peeling one prime power at a time. -/
+theorem isWeightTwoEigenform_of_forall_heckeOp_eq_smul {N : ℕ} (hN : 0 < N)
+    {lam : ℕ → ℂ} {w : CuspForm (Gamma0GL N) 2}
+    (hw : ∀ q : ℕ, q.Prime → heckeOp N q w = lam q • w)
+    (h1 : qCoeff N w 1 = 1) :
+    IsWeightTwoEigenform N w := by
+  have hdvd1 : ∀ q : ℕ, q.Prime → ¬ q ∣ 1 := fun q hq h => hq.ne_one (Nat.dvd_one.mp h)
+  have hlam : ∀ q : ℕ, q.Prime → lam q = qCoeff N w q := by
+    intro q hq
+    have h := qCoeff_heckeOp_eigen_rel hN hw hq 1
+    simp only [mul_one, h1, if_neg (hdvd1 q hq), ite_self, add_zero] at h
+    exact h.symm
+  have hbad : ∀ q : ℕ, q.Prime → q ∣ N → ∀ m : ℕ,
+      qCoeff N w (q * m) = lam q * qCoeff N w m := by
+    intro q hq hqN m
+    have h := qCoeff_heckeOp_eigen_rel hN hw hq m
+    rwa [if_pos hqN, add_zero] at h
+  have hgood : ∀ q : ℕ, q.Prime → ¬ q ∣ N → ∀ m : ℕ, q ∣ m →
+      qCoeff N w (q * m) = lam q * qCoeff N w m - (q : ℂ) * qCoeff N w (m / q) := by
+    intro q hq hqN m hqm
+    have h := qCoeff_heckeOp_eigen_rel hN hw hq m
+    rw [if_neg hqN, if_pos hqm] at h
+    linear_combination h
+  have hgood' : ∀ q : ℕ, q.Prime → ¬ q ∣ N → ∀ m : ℕ, ¬ q ∣ m →
+      qCoeff N w (q * m) = lam q * qCoeff N w m := by
+    intro q hq hqN m hqm
+    have h := qCoeff_heckeOp_eigen_rel hN hw hq m
+    rwa [if_neg hqN, if_neg hqm, add_zero] at h
+  have hppbad : ∀ q : ℕ, q.Prime → q ∣ N → ∀ r : ℕ,
+      qCoeff N w (q ^ (r + 1)) = lam q * qCoeff N w (q ^ r) := by
+    intro q hq hqN r
+    have e : q * q ^ r = q ^ (r + 1) := by ring
+    rw [← e]
+    exact hbad q hq hqN (q ^ r)
+  have hppgood : ∀ q : ℕ, q.Prime → ¬ q ∣ N → ∀ r : ℕ,
+      qCoeff N w (q ^ (r + 1 + 1)) =
+        lam q * qCoeff N w (q ^ (r + 1)) - (q : ℂ) * qCoeff N w (q ^ r) := by
+    intro q hq hqN r
+    have e : q * q ^ (r + 1) = q ^ (r + 1 + 1) := by ring
+    have e2 : q ^ (r + 1) / q = q ^ r := by
+      rw [pow_succ, Nat.mul_div_cancel _ hq.pos]
+    have hd : q ∣ q ^ (r + 1) := dvd_pow_self q (Nat.succ_ne_zero r)
+    have h := hgood q hq hqN (q ^ (r + 1)) hd
+    rw [e, e2] at h
+    exact h
+  -- Multiplicativity across a prime power and a factor prime to it.
+  have hD1 : ∀ q : ℕ, q.Prime → ∀ n : ℕ, ¬ q ∣ n → ∀ r : ℕ,
+      qCoeff N w (q ^ r * n) = qCoeff N w (q ^ r) * qCoeff N w n ∧
+      qCoeff N w (q ^ (r + 1) * n) = qCoeff N w (q ^ (r + 1)) * qCoeff N w n := by
+    intro q hq n hn r
+    induction r with
+    | zero =>
+      refine ⟨by simp [h1], ?_⟩
+      simp only [zero_add, pow_one]
+      by_cases hqN : q ∣ N
+      · rw [hbad q hq hqN n, hlam q hq]
+      · rw [hgood' q hq hqN n hn, hlam q hq]
+    | succ s ihs =>
+      obtain ⟨ih0, ih1⟩ := ihs
+      refine ⟨ih1, ?_⟩
+      have e1 : q ^ (s + 1 + 1) * n = q * (q ^ (s + 1) * n) := by ring
+      by_cases hqN : q ∣ N
+      · rw [e1, hbad q hq hqN (q ^ (s + 1) * n), ih1, hppbad q hq hqN (s + 1)]
+        ring
+      · have hd : q ∣ q ^ (s + 1) * n :=
+          dvd_mul_of_dvd_left (dvd_pow_self q (Nat.succ_ne_zero s)) n
+        have e2 : q ^ (s + 1) * n / q = q ^ s * n := by
+          rw [pow_succ, mul_right_comm, Nat.mul_div_cancel _ hq.pos]
+        rw [e1, hgood q hq hqN (q ^ (s + 1) * n) hd, e2, ih1, ih0,
+          hppgood q hq hqN s]
+        ring
+  have hD1' : ∀ q : ℕ, q.Prime → ∀ r n : ℕ, ¬ q ∣ n →
+      qCoeff N w (q ^ r * n) = qCoeff N w (q ^ r) * qCoeff N w n :=
+    fun q hq r n hn => (hD1 q hq n hn r).1
+  -- Full multiplicativity at coprime arguments.
+  have hD2 : ∀ m n : ℕ, Nat.Coprime m n →
+      qCoeff N w (m * n) = qCoeff N w m * qCoeff N w n := by
+    intro m
+    induction m using Nat.recOnPrimePow with
+    | zero => intro n _; simp [qCoeff_zero]
+    | one => intro n _; simp [h1]
+    | prime_pow_mul a p k hp hpa hk iha =>
+      intro n hcop
+      have hpd : p ∣ p ^ k * a := dvd_mul_of_dvd_left (dvd_pow_self p hk.ne') a
+      have hpn : ¬ p ∣ n :=
+        (Nat.Prime.coprime_iff_not_dvd hp).mp (Nat.Coprime.coprime_dvd_left hpd hcop)
+      have hcopa : Nat.Coprime a n :=
+        Nat.Coprime.coprime_dvd_left (dvd_mul_left a (p ^ k)) hcop
+      have hpan : ¬ p ∣ a * n := by
+        intro hd
+        rcases (Nat.Prime.dvd_mul hp).mp hd with h | h
+        · exact hpa h
+        · exact hpn h
+      calc qCoeff N w (p ^ k * a * n)
+          = qCoeff N w (p ^ k * (a * n)) := by rw [mul_assoc]
+        _ = qCoeff N w (p ^ k) * qCoeff N w (a * n) := hD1' p hp k (a * n) hpan
+        _ = qCoeff N w (p ^ k) * (qCoeff N w a * qCoeff N w n) := by rw [iha n hcopa]
+        _ = qCoeff N w (p ^ k) * qCoeff N w a * qCoeff N w n := by ring
+        _ = qCoeff N w (p ^ k * a) * qCoeff N w n := by rw [hD1' p hp k a hpa]
+  refine ⟨h1, hD2, ?_, ?_⟩
+  · intro q hq hqN r
+    have h := hppgood q hq hqN r
+    rw [hlam q hq] at h
+    exact h
+  · intro q hq hqN r
+    have h := hppbad q hq hqN r
+    rw [hlam q hq] at h
+    exact h
+
+/-- **EIGENSYSTEM REALIZATION AT A DIVISOR LEVEL** (PROVEN 2026-07-27 — cut
 2026-07-26 out of `exists_weightTwoEigenform_of_mem_oldSubspace`;
 Diamond–Shurman Theorem 5.8.2 together with Proposition 5.8.5): a NONZERO
 `u ∈ S₂(Γ₀(N))`, with `N ∣ M`, which is an honest eigenvector of every Hecke
 operator `T_q` at a prime `q ∤ M`, with eigenvalues `c q`, has `c` realized on
 those primes by a normalized weight-2 eigenform of some level `M' ∣ N`.
 
-This is what is left of the ALGEBRAIC half of Atkin–Lehner once the spectral
-descent (`exists_heckeOp_eigen_of_mem_oldSubspace`, PROVEN above) and the
-degeneracy calculus (`heckeOp_degeneracyOp`, `degeneracyOp_injective`, both
-PROVEN above) are removed.  It is stated at a level `N` DIVIDING an ambient
-`M` because that is the shape descent produces and the shape induction needs:
-the hypothesis constrains `u` only at the primes `q ∤ M`, which is FEWER
-primes than the primes good for `N`, and any proof by induction on the level
-must carry that gap.
+**CORRECTION OF THIS NODE'S OWN 2026-07-26 ROUTE AUDIT**, which is why the
+proof is short.  The audit recorded here said the leaf "is genuinely downstream
+of the analytic half; it is not dischargeable by coefficient bookkeeping
+alone", because it read the conclusion as demanding a NEWFORM and therefore the
+newform decomposition — i.e. the Main Lemma
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` at every level dividing `N`.  That
+is false of the statement as written: `IsWeightTwoEigenform M'` is the
+FULL-Hecke coefficient condition, with no minimality clause, so an OLD form —
+a `q`-stabilisation — is a perfectly good witness, and `M' = N` always works.
+Neither the old subspace, nor the degeneracy maps, nor the Petersson product
+appears anywhere below.  (The sibling
+`exists_weightTwoEigenform_of_mem_oldSubspace` does still need the descent, but
+only for its extra conclusion `M' ≠ M`, which it obtains ARITHMETICALLY from
+`M' ∣ M/p < M` — not from newness either.)
 
-CLASSICAL PROOF.  `S₂(Γ₀(N))` is the direct sum, over divisors `M' ∣ N` and
-newforms `f` of level `M'`, of the blocks `span{V_d f : d ∣ N/M'}`; every
-`T_q` with `q ∤ M` preserves each block and acts on it by the SCALAR `a_q(f)`
-(because `V_d` commutes with `T_q` for `q ∤ d`, which is
-`heckeOp_degeneracyOp` above).  So a nonzero joint eigenvector has a nonzero
-component in some block, and comparing eigenvalues there gives
-`a_q(f) = c q` for every `q ∤ M`.  A newform is in particular a normalized
-weight-2 eigenform (Prop. 5.8.5), i.e. an inhabitant of
-`IsWeightTwoEigenform M'`.
+PROOF, in three moves.
 
-WHAT IT STILL NEEDS, and why it is NOT elementary.  The block decomposition
-is the newform decomposition itself, and establishing it needs the Main
-Lemma `mem_oldSubspace_of_qCoeff_coprime_eq_zero` AT EVERY LEVEL DIVIDING
-`N` — not merely at the top level.  So this leaf is genuinely downstream of
-the analytic half; it is not dischargeable by coefficient bookkeeping alone.
+1. The joint `c`-eigenspace `E` of the good operators `{T_q : q ∤ M}` is
+   nonzero (it contains `u`) and is stable under EVERY `T_q`, because the
+   Hecke operators commute (`heckeOp_mul_comm`, valid at bad primes too).
+2. `E` therefore contains a nonzero common eigenvector `w` of the WHOLE Hecke
+   family — good `T_q` and bad `U_q` alike — by
+   `exists_ne_zero_mem_forall_prime_heckeOp_eq_smul`.  This is the move the
+   audit missed: the bad-prime eigenvalues are not read off the arithmetic,
+   they are MANUFACTURED by diagonalising a commuting family over `ℂ`.
+3. `a_1(w) ≠ 0`, since otherwise every coefficient vanishes
+   (`eq_zero_of_forall_heckeOp_eq_smul_of_qCoeff_one_eq_zero`) and `w = 0`.  So
+   `g = a_1(w)⁻¹ · w` is normalized, hence an eigenform
+   (`isWeightTwoEigenform_of_forall_heckeOp_eq_smul`), and its prime
+   coefficients are its eigenvalues, which at `q ∤ M` are `c q` because `w ∈ E`.
 
-FAITHFULNESS.  `hu : u ≠ 0` is load-bearing: for `u = 0` the conclusion
-asserts an eigenform matching an unconstrained `c`, and at `N = 1` there is
-no eigenform at all (`S₂(Γ₀(1)) = 0`, `isWeightTwoEigenform_one_elim`).  The
+FAITHFULNESS.  `hu : u ≠ 0` is load-bearing: for `u = 0` the conclusion asserts
+an eigenform matching an unconstrained `c`, and at `N = 1` there is no
+eigenform at all (`S₂(Γ₀(1)) = 0`, `isWeightTwoEigenform_one_elim`).  The
 statement is NOT vacuous: `N = M'` with `u = f` a newform and `c q = a_q(f)`
-satisfies every hypothesis. -/
+satisfies every hypothesis.
+
+`_hNM : N ∣ M` is UNUSED and underscored to make that mechanically visible.
+It is not a sign of weakness: the divisibility was recorded because it is the
+shape the descent produces, and the audit expected an induction on the level
+that would need it.  The route above never inducts on the level, so it never
+consumes the relation between `N` and `M`; the leaf is simply true without
+it.  Callers keep passing it — the signature is unchanged — so nothing
+downstream moves. -/
 theorem exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd {N M : ℕ}
-    (hN : 0 < N) (hNM : N ∣ M) {c : ℕ → ℂ} {u : CuspForm (Gamma0GL N) 2}
+    (hN : 0 < N) (_hNM : N ∣ M) {c : ℕ → ℂ} {u : CuspForm (Gamma0GL N) 2}
     (hu : u ≠ 0)
     (hue : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp N q u = c q • u) :
     ∃ M' : ℕ, M' ∣ N ∧ ∃ g' : CuspForm (Gamma0GL M') 2,
       IsWeightTwoEigenform M' g' ∧
-        ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q :=
-  sorry
+        ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q := by
+  classical
+  have hmemE : ∀ x : CuspForm (Gamma0GL N) 2,
+      x ∈ (⨅ p : {p : ℕ // p.Prime ∧ ¬ p ∣ M},
+            Module.End.eigenspace (heckeOp N p.1) (c p.1)) ↔
+        ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp N q x = c q • x := by
+    intro x
+    rw [Submodule.mem_iInf]
+    constructor
+    · intro h q hq hqM
+      exact Module.End.mem_eigenspace_iff.mp (h ⟨q, hq, hqM⟩)
+    · intro h i
+      exact Module.End.mem_eigenspace_iff.mpr (h i.1 i.2.1 i.2.2)
+  have huE := (hmemE u).mpr hue
+  have hEbot : (⨅ p : {p : ℕ // p.Prime ∧ ¬ p ∣ M},
+      Module.End.eigenspace (heckeOp N p.1) (c p.1)) ≠ ⊥ :=
+    (Submodule.ne_bot_iff _).mpr ⟨u, huE, hu⟩
+  have hstab : ∀ q : ℕ, q.Prime → ∀ x ∈ (⨅ p : {p : ℕ // p.Prime ∧ ¬ p ∣ M},
+      Module.End.eigenspace (heckeOp N p.1) (c p.1)),
+      heckeOp N q x ∈ (⨅ p : {p : ℕ // p.Prime ∧ ¬ p ∣ M},
+        Module.End.eigenspace (heckeOp N p.1) (c p.1)) := by
+    intro q hq x hx
+    refine (hmemE _).mpr fun r hr hrM => ?_
+    have hxr : heckeOp N r x = c r • x := (hmemE x).mp hx r hr hrM
+    have hcm : heckeOp N r * heckeOp N q = heckeOp N q * heckeOp N r :=
+      heckeOp_mul_comm hN hr hq
+    have h1 : heckeOp N r (heckeOp N q x) = heckeOp N q (heckeOp N r x) := by
+      have h := congrArg (fun T : Module.End ℂ (CuspForm (Gamma0GL N) 2) => T x) hcm
+      simpa using h
+    rw [h1, hxr, map_smul]
+  obtain ⟨w, hwE, hw0, lam, hlam⟩ :=
+    exists_ne_zero_mem_forall_prime_heckeOp_eq_smul hN hEbot hstab
+  have hone : qCoeff N w 1 ≠ 0 := fun h0 =>
+    hw0 (eq_zero_of_forall_heckeOp_eq_smul_of_qCoeff_one_eq_zero hN hlam h0)
+  have hg1 : qCoeff N ((qCoeff N w 1)⁻¹ • w) 1 = 1 := by
+    rw [qCoeff_smul, inv_mul_cancel₀ hone]
+  have hgl : ∀ q : ℕ, q.Prime →
+      heckeOp N q ((qCoeff N w 1)⁻¹ • w) = lam q • ((qCoeff N w 1)⁻¹ • w) := by
+    intro q hq
+    rw [map_smul, hlam q hq, smul_comm]
+  have hgE : IsWeightTwoEigenform N ((qCoeff N w 1)⁻¹ • w) :=
+    isWeightTwoEigenform_of_forall_heckeOp_eq_smul hN hgl hg1
+  refine ⟨N, dvd_refl N, (qCoeff N w 1)⁻¹ • w, hgE, ?_⟩
+  intro q hq hqM
+  have h1 : heckeOp N q w = c q • w := (hmemE w).mp hwE q hq hqM
+  have h2 : lam q = c q := by
+    have h3 : (lam q - c q) • w = 0 := by
+      rw [sub_smul, ← hlam q hq, h1, sub_self]
+    rcases smul_eq_zero.mp h3 with h | h
+    · linear_combination h
+    · exact absurd h hw0
+  have h4 : heckeOp N q ((qCoeff N w 1)⁻¹ • w) =
+      qCoeff N ((qCoeff N w 1)⁻¹ • w) q • ((qCoeff N w 1)⁻¹ • w) :=
+    heckeOp_apply_eq_smul_of_isWeightTwoEigenform hN hgE hq
+  have hg0 : ((qCoeff N w 1)⁻¹ • w) ≠ 0 := ne_zero_of_isWeightTwoEigenform hgE
+  have h5 : (qCoeff N ((qCoeff N w 1)⁻¹ • w) q - lam q) • ((qCoeff N w 1)⁻¹ • w) = 0 := by
+    rw [sub_smul, ← h4, hgl q hq, sub_self]
+  rcases smul_eq_zero.mp h5 with h | h
+  · linear_combination h + h2
+  · exact absurd h hg0
 
 /-- **A STABLE SUBSPACE IS THE SUM OF ITS SIMULTANEOUS GENERALIZED
 EIGENCOMPONENTS** (PROVEN 2026-07-26, pure linear algebra over an
