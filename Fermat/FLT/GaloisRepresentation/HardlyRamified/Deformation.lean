@@ -16830,30 +16830,215 @@ noncomputable def decompHom (v : IsDedekindDomain.HeightOneSpectrum
   Field.absoluteGaloisGroup.map
     (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
 
-/-- `ad⁰ ρbar` restricted to the decomposition group at `v`. -/
+/-! #### `G_{ℚ,S} = Gal(ℚ_S/ℚ)`, the group of restricted ramification
+
+Added 2026-07-27 as the CUT-LEVEL REPAIR of `Sha2`, which was originally
+written over the FULL `Γ ℚ`. That convention made
+`rank_sha1_twist_le_of_tangent_span` below FALSE and
+`rank_sha2_le_rank_sha1_twist` below true-but-vacuous: over `Γ ℚ` the groups
+`H¹(Γ ℚ, ad⁰(1))` and `H²(Γ ℚ, ad⁰)` are INFINITE-dimensional over the finite
+field `k` (a class may ramify at any auxiliary prime outside `S`, and
+Chebotarev supplies infinitely many), while `S = hardlyRamifiedPlaces ℓ` has
+two elements and each `H^n(ℚ_v, −)` is finite — so both `Ш` groups had
+FINITE CODIMENSION in an infinite-dimensional space and rank exactly `ℵ₀`.
+The `μ_ℓ` shadow is the one-line version: `H¹(Γ ℚ, μ_ℓ) ≅ ℚˣ/(ℚˣ)^ℓ` is
+infinite, against the `S`-unit group `ℚ(S, ℓ)` of dimension `2` over
+`G_{ℚ,S}`. Poitou–Tate (NSW VIII.6.7) and Greenberg–Wiles are theorems about
+`G_{ℚ,S}`, and this module's own machinery audit on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below always
+specified `Ш²_S = ker(H²(G_S, ad⁰) → ⨁_{v ∈ S} H²(ℚ_v, ad⁰))` with `G_S`; the
+old definition was an implementation slip against that written spec.
+
+**How `G_{ℚ,S}` is built, and why this is the cheap construction.** `ℚ_S` is
+the maximal subextension of `ℚᵃˡᵍ/ℚ` unramified outside `S`, so
+`Gal(ℚ_S/ℚ) = Γ ℚ / N_S` where `N_S` is the smallest CLOSED NORMAL subgroup of
+`Γ ℚ` containing the inertia at every `v ∉ S`. Taking that quotient as the
+DEFINITION avoids constructing the field `ℚ_S` altogether: the quotient of a
+topological group by a normal subgroup already carries a topological group
+structure in mathlib (`QuotientGroup.instIsTopologicalGroup`), which is all
+`continuousCohomology` asks for.
+
+**Coefficients: the `N_S`-invariants, so that the definition is TOTAL.** A
+`Γ ℚ`-representation is a `G_{ℚ,S}`-representation exactly when `N_S` acts
+trivially, which for `ad⁰ ρbar` says that `ρbar` is unramified outside `S`.
+Rather than carry that as a hypothesis — which would make the TYPE of `Sha2`
+depend on a proof, and would oblige every consumer to discharge it — we take
+coefficients in the submodule `unramInvariants` of `N_S`-invariants, on which
+`N_S` acts trivially by construction. It equals the whole module precisely
+when `ρbar` is unramified outside `S`, which is the case at every use site
+here (`IsHardlyRamified` forces ramification only at `2` and `ℓ`, and
+`S = hardlyRamifiedPlaces ℓ` is exactly `{(2), (ℓ)}`). No leaf below depends on
+that identification; it is recorded so that a reader knows the definition is
+the intended `Ш²_S(ad⁰)` and not a weakening of it.
+
+The construction is generic in `X : TopRep k (Γ ℚ)` so that the degree-`1`
+twist `ad⁰(1)` below reuses it verbatim. -/
+
+/-- The inertia subgroup at a finite place `v`, transported into `Γ ℚ` along
+the decomposition map `decompHom v`. Only its normal closure matters below, so
+the arbitrary choice of embedding implicit in `decompHom` is harmless. -/
+noncomputable def globalInertia
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    Subgroup (Field.absoluteGaloisGroup ℚ) :=
+  (localInertiaGroup v).map (decompHom v).toMonoidHom
+
+/-- **`N_S = Gal(ℚᵃˡᵍ/ℚ_S)`** — the smallest closed normal subgroup of `Γ ℚ`
+containing the inertia at every place OUTSIDE `S`. Its fixed field is the
+maximal extension of `ℚ` unramified outside `S`, and `Γ ℚ ⧸ N_S` is `G_{ℚ,S}`.
+
+The archimedean place is deliberately not in play: `S` ranges over
+`HeightOneSpectrum`, i.e. over FINITE places only, so complex conjugation is
+never killed. That is the standard convention (`S` is understood to contain
+`∞`) and it is what makes the Greenberg–Wiles archimedean term `−1` available
+to the leaves below. -/
+noncomputable def ramificationKernel
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Subgroup (Field.absoluteGaloisGroup ℚ) :=
+  (Subgroup.normalClosure
+    (⋃ v ∈ Sᶜ, (globalInertia v : Set (Field.absoluteGaloisGroup ℚ)))).topologicalClosure
+
+instance ramificationKernel_normal
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    (ramificationKernel S).Normal :=
+  Subgroup.is_normal_topologicalClosure _
+
+/-- **`G_{ℚ,S} = Gal(ℚ_S/ℚ)`** — the Galois group of the maximal extension of
+`ℚ` unramified outside `S`, realised as `Γ ℚ ⧸ N_S`. An `abbrev` so that the
+group, topology and `IsTopologicalGroup` instances of a quotient group are
+found by instance search rather than transported by hand. -/
+abbrev restrictedGaloisGroup
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) : Type :=
+  Field.absoluteGaloisGroup ℚ ⧸ ramificationKernel S
+
+/-- The projection `Γ ℚ ↠ G_{ℚ,S}` as a continuous group homomorphism —
+continuous because the quotient carries the quotient topology. -/
+noncomputable def restrictedProj
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Field.absoluteGaloisGroup ℚ →ₜ* restrictedGaloisGroup S where
+  __ := QuotientGroup.mk' (ramificationKernel S)
+  continuous_toFun := continuous_quotient_mk'
+
+/-- The decomposition map at `v`, followed into `G_{ℚ,S}`: this is what
+localises a class of `H^n(G_{ℚ,S}, −)` at the place `v`. -/
+noncomputable def decompHomRestricted
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) →ₜ*
+      restrictedGaloisGroup S :=
+  (restrictedProj S).comp (decompHom v)
+
+/-- The `N_S`-invariants of a `Γ ℚ`-representation — the largest submodule on
+which `G_{ℚ,S}` acts, and all of `X` exactly when `X` is unramified outside
+`S`. -/
+noncomputable def unramInvariants (X : TopRep k (Field.absoluteGaloisGroup ℚ))
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Submodule k X.V :=
+  (X.ρ.restrict (ramificationKernel S).subtype).invariants
+
+omit [Finite k] [DiscreteTopology k] in
+lemma mem_unramInvariants {X : TopRep k (Field.absoluteGaloisGroup ℚ)}
+    {S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    {x : X.V} :
+    x ∈ unramInvariants X S ↔ ∀ n ∈ ramificationKernel S, X.ρ n x = x :=
+  ⟨fun h n hn => h ⟨n, hn⟩, fun h n => h n n.2⟩
+
+omit [Finite k] [DiscreteTopology k] in
+/-- `N_S` is NORMAL, so the whole of `Γ ℚ` preserves its invariants: for
+`n ∈ N_S` one has `n σ = σ (σ⁻¹ n σ)` with `σ⁻¹ n σ ∈ N_S`. -/
+lemma unramInvariants_stable (X : TopRep k (Field.absoluteGaloisGroup ℚ))
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (σ : Field.absoluteGaloisGroup ℚ) {x : X.V} (hx : x ∈ unramInvariants X S) :
+    X.ρ σ x ∈ unramInvariants X S := by
+  rw [mem_unramInvariants] at hx ⊢
+  intro n hn
+  have hconj : σ⁻¹ * n * σ ∈ ramificationKernel S := by
+    have := (ramificationKernel_normal S).conj_mem n hn σ⁻¹
+    simpa using this
+  have hσ : n * σ = σ * (σ⁻¹ * n * σ) := by group
+  calc X.ρ n (X.ρ σ x) = X.ρ (n * σ) x := by rw [map_mul]; rfl
+    _ = X.ρ (σ * (σ⁻¹ * n * σ)) x := by rw [hσ]
+    _ = X.ρ σ (X.ρ (σ⁻¹ * n * σ) x) := by rw [map_mul]; rfl
+    _ = X.ρ σ x := by rw [hx _ hconj]
+
+/-- The `Γ ℚ`-action on the `N_S`-invariants, before descending to `G_{ℚ,S}`.
+Continuity is the restriction of the ambient continuity to a subspace, so it
+costs nothing. -/
+noncomputable def unramRepAux (X : TopRep k (Field.absoluteGaloisGroup ℚ))
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Field.absoluteGaloisGroup ℚ →*
+      (↥(unramInvariants X S) →L[k] ↥(unramInvariants X S)) where
+  toFun σ :=
+    { __ := LinearMap.restrict (X.ρ σ).toLinearMap
+        (fun _ hx => unramInvariants_stable X S σ hx)
+      cont := Continuous.subtype_mk ((X.ρ σ).continuous.comp continuous_subtype_val) _ }
+  map_one' := by
+    refine ContinuousLinearMap.ext fun x => Subtype.ext ?_
+    simp [LinearMap.restrict_apply]
+  map_mul' σ τ := by
+    refine ContinuousLinearMap.ext fun x => Subtype.ext ?_
+    simp [LinearMap.restrict_apply, map_mul]
+
+/-- The `N_S`-invariants of `X` as a continuous `G_{ℚ,S}`-representation: the
+action of `Γ ℚ` on them kills `N_S` BY CONSTRUCTION, so it descends along the
+quotient. -/
+noncomputable def unramRep (X : TopRep k (Field.absoluteGaloisGroup ℚ))
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    ContRepresentation k (restrictedGaloisGroup S) ↥(unramInvariants X S) where
+  toMonoidHom :=
+    QuotientGroup.lift (ramificationKernel S) (unramRepAux X S) <| by
+      intro n hn
+      refine ContinuousLinearMap.ext fun x => Subtype.ext ?_
+      simpa [unramRepAux, LinearMap.restrict_apply] using mem_unramInvariants.mp x.2 n hn
+
+/-- `unramRep` as an object of `TopRep k (G_{ℚ,S})`, so that
+`continuousCohomology n (unramTopRep X S)` is `Hⁿ(G_{ℚ,S}, X^{N_S})`. -/
+noncomputable def unramTopRep (X : TopRep k (Field.absoluteGaloisGroup ℚ))
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    TopRep k (restrictedGaloisGroup S) :=
+  TopRep.of (unramRep X S)
+
+/-- **`ad⁰ ρbar` as a `G_{ℚ,S}`-representation** — the coefficient module of
+`Ш²_S(ad⁰)` below, and the group that Poitou–Tate is actually stated for. -/
+noncomputable def adZeroRestricted (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    TopRep k (restrictedGaloisGroup S) :=
+  unramTopRep (adZeroTopRep ρbar) S
+
+/-- `ad⁰ ρbar` restricted to the decomposition group at `v`, along
+`decompHomRestricted`. -/
 noncomputable def adZeroLocal (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
     TopRep k (Field.absoluteGaloisGroup
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
-  TopRep.res (decompHom v).toMonoidHom (adZeroTopRep ρbar)
+  TopRep.res (decompHomRestricted S v).toMonoidHom (adZeroRestricted ρbar S)
 
-/-- The localisation map `H²(ℚ, ad⁰) → H²(ℚ_v, ad⁰)`. -/
+/-- The localisation map `H²(G_{ℚ,S}, ad⁰) → H²(ℚ_v, ad⁰)`. -/
 noncomputable def locRes (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
-    continuousCohomology 2 (adZeroTopRep ρbar) ⟶
-      continuousCohomology 2 (adZeroLocal ρbar v) :=
-  ContinuousCohomology.map (decompHom v)
-    (CategoryTheory.CategoryStruct.id (adZeroLocal ρbar v)) 2
+    continuousCohomology 2 (adZeroRestricted ρbar S) ⟶
+      continuousCohomology 2 (adZeroLocal ρbar S v) :=
+  ContinuousCohomology.map (decompHomRestricted S v)
+    (CategoryTheory.CategoryStruct.id (adZeroLocal ρbar S v)) 2
 
 /-- **`Ш²_S(ad⁰)`** — the Tate–Šafarevič group in degree `2`: the classes in
-`H²(ℚ, ad⁰)` that die in `H²(ℚ_v, ad⁰)` for every `v ∈ S`. Written as the
-INTERSECTION of the kernels rather than the kernel of the map into
+`H²(G_{ℚ,S}, ad⁰)` that die in `H²(ℚ_v, ad⁰)` for every `v ∈ S`. Written as
+the INTERSECTION of the kernels rather than the kernel of the map into
 `⨁_{v ∈ S}`, which is the same submodule and avoids building the product
-object. -/
+object.
+
+**RESTATED 2026-07-27 over `G_{ℚ,S}`** — see the section header above for the
+computation that refuted the previous `Γ ℚ` version, for why the coefficients
+are the `N_S`-invariants, and for the reference (NSW VIII.6.7) this definition
+is matched to. The argument shape `Sha2 ρbar S` is unchanged, so every
+consumer's STATEMENT is textually the same; what changed is which group the
+`H²` is taken over, and that is the whole repair. -/
 noncomputable def Sha2 (ρbar : GaloisRep ℚ k V)
     (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
-    Submodule k (continuousCohomology 2 (adZeroTopRep ρbar)) :=
-  ⨅ v ∈ S, LinearMap.ker (locRes ρbar v).hom.toLinearMap
+    Submodule k (continuousCohomology 2 (adZeroRestricted ρbar S)) :=
+  ⨅ v ∈ S, LinearMap.ker (locRes ρbar S v).hom.toLinearMap
 
 variable (ℓ) in
 /-- The FINITE places of the hardly ramified problem: those above `2` and
@@ -17190,10 +17375,13 @@ theorem exists_obstructionCocycle_relationSpace_sha2
               (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
                 (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
             ↥(TopModuleCat.ker
-              ((TopRep.homogeneousCochains (adZeroTopRep ρbar)).d 2 3)),
-          (∀ ψ, ContinuousCohomology.cocycleClass (adZeroTopRep ρbar) 2 (oc ψ) ∈
+              ((TopRep.homogeneousCochains
+                (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ))).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2 (oc ψ) ∈
             Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
-          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer (adZeroTopRep ρbar) 2).hom.range →
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer
+              (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).hom.range →
             ∃ K : Ideal (MvPowerSeries (Fin g) Λ),
               K ≤ RingHom.ker φ ∧
               IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) *
@@ -17360,7 +17548,8 @@ theorem exists_obstructionHom_relationSpace_sha2
     exists_obstructionCocycle_relationSpace_sha2 hℓOdd hdim hℓ5 h hirr D hw ht
       Λ iCR iID iLR iNo iAl iMF hΛ g φ hsurj hcomp hmin
   refine ⟨LinearMap.codRestrict (Sha2 ρbar (hardlyRamifiedPlaces ℓ))
-    ((ContinuousCohomology.cocycleClass (adZeroTopRep ρbar) 2).comp oc) hmem, ?_⟩
+    ((ContinuousCohomology.cocycleClass
+      (adZeroRestricted ρbar (hardlyRamifiedPlaces ℓ)) 2).comp oc) hmem, ?_⟩
   intro ψ hψ
   refine hcob ψ ?_
   rw [← ContinuousCohomology.cocycleClass_eq_zero_iff]
@@ -17762,76 +17951,77 @@ noncomputable def adZeroTwist (ρbar : GaloisRep ℚ k V) :
   TopRep.of (adZeroTwistRep ℓ ρbar)
 
 variable (ℓ) in
+/-- **`ad⁰(1)` as a `G_{ℚ,S}`-representation** — the exact analogue of
+`adZeroRestricted` above, reusing the same generic `unramTopRep`. -/
+noncomputable def adZeroTwistRestricted (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    TopRep k (restrictedGaloisGroup S) :=
+  unramTopRep (adZeroTwist ℓ ρbar) S
+
+variable (ℓ) in
 /-- `ad⁰(1)` restricted to the decomposition group at `v` — the analogue of
-`adZeroLocal` above, along the same `decompHom v`. -/
+`adZeroLocal` above, along the same `decompHomRestricted S v`. -/
 noncomputable def adZeroTwistLocal (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
     TopRep k (Field.absoluteGaloisGroup
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
-  TopRep.res (decompHom v).toMonoidHom (adZeroTwist ℓ ρbar)
+  TopRep.res (decompHomRestricted S v).toMonoidHom (adZeroTwistRestricted ℓ ρbar S)
 
 variable (ℓ) in
-/-- The localisation map `H¹(ℚ, ad⁰(1)) → H¹(ℚ_v, ad⁰(1))` — the analogue of
-`locRes` above with `2` replaced by `1` and `ad⁰` by its twist. -/
+/-- The localisation map `H¹(G_{ℚ,S}, ad⁰(1)) → H¹(ℚ_v, ad⁰(1))` — the
+analogue of `locRes` above with `2` replaced by `1` and `ad⁰` by its twist. -/
 noncomputable def locResTwist1 (ρbar : GaloisRep ℚ k V)
+    (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
-    continuousCohomology 1 (adZeroTwist ℓ ρbar) ⟶
-      continuousCohomology 1 (adZeroTwistLocal ℓ ρbar v) :=
-  ContinuousCohomology.map (decompHom v)
-    (CategoryTheory.CategoryStruct.id (adZeroTwistLocal ℓ ρbar v)) 1
+    continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S) ⟶
+      continuousCohomology 1 (adZeroTwistLocal ℓ ρbar S v) :=
+  ContinuousCohomology.map (decompHomRestricted S v)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistLocal ℓ ρbar S v)) 1
 
 variable (ℓ) in
 /-- **`Ш¹_S(ad⁰(1))`** — item (2) of the cut named on
-`rank_sha2_le_of_tangent_span` below: the classes in `H¹(ℚ, ad⁰(1))` that die
-in `H¹(ℚ_v, ad⁰(1))` for every `v ∈ S`.
+`rank_sha2_le_of_tangent_span` below: the classes in `H¹(G_{ℚ,S}, ad⁰(1))`
+that die in `H¹(ℚ_v, ad⁰(1))` for every `v ∈ S`.
 
 Written as the INTERSECTION of the kernels rather than the kernel of the map
 into `⨁_{v ∈ S}`, verbatim as `Sha2` above, and for the same reason — same
 submodule, no product object to build.
 
-**A CONVENTION THAT THIS DEFINITION INHERITS FROM `Sha2`, AND THAT A FUTURE
-OWNER OF EITHER LEAF MUST CHECK.** Both `Sha2` and this take cohomology of the
-FULL `Γ ℚ` (`adZeroTopRep`/`adZeroTwist` are representations of
-`Field.absoluteGaloisGroup ℚ`), whereas Poitou–Tate duality — NSW VIII.6.7,
-the theorem the leaf below invokes — is stated for the restricted group
-`G_{ℚ,S} = Gal(ℚ_S/ℚ)`. For a module unramified outside `S` the two agree in
-the degrees at issue, which is why the classical statement is quoted for
-`G_S`; but that agreement is a THEOREM, not a definitional identity, and it is
-not in this tree.
+**HISTORY, AND WHY THE GROUP IS `G_{ℚ,S}` AND NOT `Γ ℚ`.** Both this and
+`Sha2` were originally written over the FULL `Γ ℚ`, this one deliberately, to
+stay coherent with `Sha2`. That convention was refuted on 2026-07-27 and both
+definitions were restated together; the computation is recorded in the section
+header `G_{ℚ,S} = Gal(ℚ_S/ℚ)` above `globalInertia`. In one line: over `Γ ℚ`
+the source `H¹_cont(Γ ℚ, ad⁰(1))` is INFINITE-dimensional over the finite field
+`k` — a class may ramify at any auxiliary prime outside `S`, and Chebotarev
+supplies infinitely many — while `S = hardlyRamifiedPlaces ℓ` has two elements
+and each `H¹(ℚ_v, −)` is finite, so `Sha1Twist` had FINITE CODIMENSION in an
+infinite-dimensional space and rank exactly `ℵ₀`. That made
+`rank_sha2_le_rank_sha1_twist` below true-but-vacuous (`ℵ₀ ≤ ℵ₀`) and
+`rank_sha1_twist_le_of_tangent_span` below outright FALSE (`ℵ₀ ≤ g` for a
+natural number `g`, with the span hypothesis genuinely satisfiable via
+`HardlyRamifiedDeformation.isNoetherianRing`). The `μ_ℓ` shadow is the
+one-line witness: `H¹(Γ ℚ, μ_ℓ) ≅ ℚˣ/(ℚˣ)^ℓ` is infinite, against the `S`-unit
+group `ℚ(S, ℓ)` of dimension `2` over `G_{ℚ,S}`.
 
-This is deliberately matched rather than corrected: `Sha2` is another owner's
-declaration with a proven consumer above, so the two sides of
-`rank_sha2_le_rank_sha1_twist` use ONE convention and the leaf is at least
-internally coherent. If the `Γ ℚ` convention turns out to make that leaf false,
-the defect is in `Sha2`'s definition and the repair is a cut-level restatement
-of BOTH, not a proof attempt at either. The check that settles it:
-`grep -rn "G_S\|restrictedGaloisGroup\|ramifiedOutside" Fermat/` — currently no
-hit, i.e. `G_{ℚ,S}` does not exist in this development at all.
+Over `G_{ℚ,S}` — which is what Poitou–Tate (NSW VIII.6.7) and Greenberg–Wiles
+are stated for — the source is FINITE-dimensional (NSW VIII.3) and both leaves
+below are the theorems they were meant to be. Note that finiteness is NOT
+proven here and is not needed to STATE anything; it is part of
+`rank_sha2_le_rank_sha1_twist`'s proof obligation, where it was already
+itemised.
 
-**ANSWERED 2026-07-27, AND THE ANSWER IS THAT THE CONVENTION IS FATAL. The
-paragraph above is now settled, not open — read it as history.** Over the full
-`Γ ℚ` the source `H¹_cont(Γ ℚ, ad⁰(1))` is INFINITE-dimensional over `k` (a
-class may ramify at any auxiliary prime outside `S`), while `S` has two
-elements and each `H¹(ℚ_v, −)` is finite, so `Module.rank k (Sha1Twist …) = ℵ₀`
-— and identically `Module.rank k (Sha2 …) = ℵ₀`. Consequently
-`rank_sha2_le_rank_sha1_twist` is true but VACUOUS (`ℵ₀ ≤ ℵ₀`, by cardinality,
-with no Poitou–Tate content) and `rank_sha1_twist_le_of_tangent_span` is FALSE
-(`ℵ₀ ≤ g` for a natural number `g`, with the span hypothesis genuinely
-satisfiable via `HardlyRamifiedDeformation.isNoetherianRing`). Both leaves now
-carry the full audit; the `μ_ℓ` shadow of the phenomenon —
-`H¹(Γ ℚ, μ_ℓ) ≅ ℚˣ/(ℚˣ)^ℓ`, infinite, against the `S`-unit group `ℚ(S, ℓ)` of
-dimension `2` over `G_{ℚ,S}` — is the one-line version.
-
-The repair is asymmetric and is NOT made here: in degree `1` the missing
-unramified-outside-`S` condition is statable today with the tree's existing
-inertia subgroups, but in degree `2` `Sha2` genuinely needs `G_{ℚ,S}` as a
-group object, which still does not exist. Since that spans another owner's
-definition and two of their PROVEN consumers, it is left to a cut-level
-repair. -/
+The degree-`1` half could alternatively have been stated over `Γ ℚ` with an
+unramified-outside-`S` condition imposed on cocycles, since inflation is
+injective in degree `1`. It is stated over `G_{ℚ,S}` instead so that the two
+sides of `rank_sha2_le_rank_sha1_twist` live over ONE group — degree `2` has
+no unramified description and genuinely needs `G_{ℚ,S}`, so building it was
+unavoidable and reusing it here is free. -/
 noncomputable def Sha1Twist (ρbar : GaloisRep ℚ k V)
     (S : Set (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
-    Submodule k (continuousCohomology 1 (adZeroTwist ℓ ρbar)) :=
-  ⨅ v ∈ S, LinearMap.ker (locResTwist1 ℓ ρbar v).hom.toLinearMap
+    Submodule k (continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S)) :=
+  ⨅ v ∈ S, LinearMap.ker (locResTwist1 ℓ ρbar S v).hom.toLinearMap
 
 /-- **Poitou–Tate: `dim_k Ш²_S(ad⁰) ≤ dim_k Ш¹_S(ad⁰(1))`** (sorry leaf, cut
 out 2026-07-27 as the DUALITY half of `rank_sha2_le_of_tangent_span` below).
@@ -17908,17 +18098,31 @@ it keeps `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to
 the prime `3`) inapplicable, so that route stays closed mathematically rather
 than merely by import scope.
 
-**FAITHFULNESS AUDIT, 2026-07-27 — THE `Γ ℚ` CONVENTION IS NOT BENIGN, AND
-THIS LEAF IS VACUOUS. DO NOT ATTEMPT IT; THE REPAIR IS UPSTREAM, IN `Sha2`.**
+**FAITHFULNESS AUDIT, 2026-07-27 — THE `Γ ℚ` CONVENTION WAS NOT BENIGN; IT HAS
+BEEN REPAIRED, AND THIS LEAF IS NOW THE POITOU–TATE STATEMENT IT NAMES.**
 
-This answers the question the `Sha1Twist` docstring above explicitly hands to
-"a future owner of either leaf". The answer is worse than that docstring's two
-alternatives allowed for: the convention does not leave this leaf false, it
-leaves it **true and empty**, and dumps the entire falsity onto
-`rank_sha1_twist_le_of_tangent_span` below. So the two leaves must be repaired
-TOGETHER, and neither in isolation.
+**STATUS: the audit below is HISTORY, not a live warning.** It said this leaf
+was true-but-VACUOUS and `rank_sha1_twist_le_of_tangent_span` below outright
+FALSE, both because `Sha2` took `H²` of the full `Γ ℚ`; it prescribed a
+cut-level restatement of both definitions and declined to make it. That
+restatement WAS made, later the same day: `restrictedGaloisGroup S`
+(`= Γ ℚ ⧸ N_S`, with `N_S` the closed normal subgroup generated by the inertia
+outside `S`) is now defined above `adZeroRestricted`, and both `Sha2` and
+`Sha1Twist` take cohomology over it. See the section header
+`G_{ℚ,S} = Gal(ℚ_S/ℚ)` above `globalInertia` for the construction and for why
+the coefficients are the `N_S`-invariants.
 
-*The computation.* `S = hardlyRamifiedPlaces ℓ` has exactly TWO elements, and
+So `Module.rank k (Sha1Twist …)` is no longer `ℵ₀`: over `G_{ℚ,S}` the source
+`H¹(G_{ℚ,S}, ad⁰(1))` is finite-dimensional (NSW VIII.3), and this leaf reads
+`dim Ш²_S(ad⁰) ≤ dim Ш¹_S(ad⁰(1))` — the perfect Poitou–Tate pairing, with
+content. **It remains OPEN**, and the porting audit above (cup product, local
+invariant map, finiteness of `H¹(G_S, M)`) is what it still costs. Nothing in
+the audit's *computation* was wrong; it was a correct refutation of a
+definition that no longer exists, and it is kept because it is the reason the
+group below the `H` is `G_{ℚ,S}` and must stay that way.
+
+*The computation, as it applied to the OLD `Γ ℚ` definitions.*
+`S = hardlyRamifiedPlaces ℓ` has exactly TWO elements, and
 `k` is `Finite`, so `ad⁰` and `ad⁰(1)` are finite discrete `Γ ℚ`-modules
 (`dim_k ad⁰ = 3`). Then:
 
@@ -17966,33 +18170,37 @@ restricted-ramification setting". That qualifier is load-bearing and is exactly
 what `Sha2` dropped. So this is an implementation slip against a correct
 written spec, not a considered convention.
 
-*Consequences, which reach past these two leaves.* `rank_sha2_le_of_tangent_span`
-and `rank_sha2_le_of_minimal_mvPowerSeries_presentation` below both conclude
-`rank Sha2 ≤ g` and are therefore false in the same way, notwithstanding that
-they are marked PROVEN — they are proven OVER these leaves, so they inherit,
-and each is another owner's declaration. `rank_relationSpace_le_of_rank_sha2_le`
-above is unaffected in form, since it takes `rank Sha2 ≤ n` as a HYPOTHESIS —
-but that hypothesis is now unsatisfiable for finite `n`, so it too is unusable
-until the repair lands.
+*Consequences, which reached past these two leaves — ALL DISCHARGED BY THE
+RESTATEMENT.* `rank_sha2_le_of_tangent_span` and
+`rank_sha2_le_of_minimal_mvPowerSeries_presentation` below both conclude
+`rank Sha2 ≤ g`, and while `Sha2` was the `Γ ℚ` object they were false despite
+being marked PROVEN, because they are proven OVER these leaves and inherited.
+`rank_relationSpace_le_of_rank_sha2_le` above kept its form, since it takes
+`rank Sha2 ≤ n` as a HYPOTHESIS — but that hypothesis was unsatisfiable for
+finite `n`. All three now read over `G_{ℚ,S}` and none of that applies: their
+STATEMENTS did not change a character (`Sha2 ρbar (hardlyRamifiedPlaces ℓ)` is
+the same expression), only the definition underneath.
 
-*The repair, and it is asymmetric.* Both `Sha2` and `Sha1Twist` must add the
-unramified-outside-`S` condition. In degree `1` that is statable TODAY without
-building `G_{ℚ,S}`: intersect additionally with `⨅_{v ∉ S}` of the kernel of
-restriction to the inertia subgroup at `v`, and `ValuationSubring.inertiaSubgroup`
-and `localInertiaGroup` already exist in this tree. In degree `2` there is no
-unramified description, so `Sha2` genuinely needs `G_{ℚ,S} = Gal(ℚ_S/ℚ)` as a
-group object, which `grep -rn "G_S\|restrictedGaloisGroup\|ramifiedOutside" Fermat/`
-confirms exists nowhere here (only in prose). That is a cut-level restatement
-spanning another owner's definition and two of their PROVEN consumers, so it is
-deliberately NOT done from this leaf.
+*How the repair was made, and why it is asymmetric.* Both `Sha2` and
+`Sha1Twist` needed the unramified-outside-`S` condition. In degree `1` it was
+statable without `G_{ℚ,S}` at all — intersect additionally with `⨅_{v ∉ S}` of
+the kernel of restriction to inertia, using the tree's `localInertiaGroup`,
+since inflation is injective in degree `1`. In degree `2` there is NO
+unramified description, so `Sha2` genuinely needed `G_{ℚ,S} = Gal(ℚ_S/ℚ)` as a
+group object. It was therefore built (`restrictedGaloisGroup` above, as the
+quotient `Γ ℚ ⧸ N_S` — which avoids constructing the field `ℚ_S`), and since it
+had to exist for degree `2` anyway, degree `1` uses it too, so that both sides
+of this inequality live over ONE group.
 
-*The checks that would refute this audit*, in decreasing order of cheapness:
-(a) `grep -rn "def Sha2" Fermat/` — if it ever names anything but
-`Field.absoluteGaloisGroup ℚ`, the audit is stale; (b) exhibit a finite bound
-on `dim_𝔽_ℓ ℚˣ/(ℚˣ)^ℓ`, which Kummer theory forbids; (c) show `hardlyRamifiedPlaces ℓ`
-is infinite — it is the two-element set `{(2), (ℓ)}`; (d) show
-`HardlyRamifiedDeformation` does not carry `isNoetherianRing` — it does, at the
-structure definition above.
+*The checks that would refute the OLD audit*, all of which now pass in the
+"stale" direction: (a) `grep -rn "def Sha2" Fermat/` — it now names
+`adZeroRestricted`, i.e. `restrictedGaloisGroup`, not
+`Field.absoluteGaloisGroup ℚ`, which is exactly the condition the audit gave
+for itself being stale; (b) a finite bound on `dim_𝔽_ℓ ℚˣ/(ℚˣ)^ℓ` — still
+forbidden by Kummer theory, and no longer relevant, since the `S`-unit group
+`ℚ(S, ℓ)` is what appears over `G_{ℚ,S}`; (c) `hardlyRamifiedPlaces ℓ` is still
+the two-element set `{(2), (ℓ)}`; (d) `HardlyRamifiedDeformation` still carries
+`isNoetherianRing`.
 
 References: Neukirch–Schmidt–Wingberg, *Cohomology of Number Fields*, VIII.6.7
 (the nine-term sequence) and VII.2 (local duality), and VIII.3 for the
@@ -18069,27 +18277,31 @@ is the check that would refute this. (The DISCRETE `groupCohomology` does have
 it binds `rank_sha2_le_rank_sha1_twist` above; see there for the BANNED INPUTS
 clause and for what `hℓ5` is doing.
 
-**FALSITY AUDIT, 2026-07-27 — THIS LEAF IS FALSE AS STATED. DO NOT ATTEMPT IT.
-The `Γ ℚ` convention inherited from `Sha2` is what makes it false, and the
-repair is a cut-level restatement of BOTH this leaf and
-`rank_sha2_le_rank_sha1_twist` above, driven by a restatement of `Sha2`
-itself.** The full computation is recorded on that leaf; only the part specific
-to this one is repeated here, since the split is exactly where a future owner
-may read one leaf without the other.
+**FALSITY AUDIT, 2026-07-27 — REFUTED AND REPAIRED THE SAME DAY. READ THIS AS
+HISTORY: the leaf below is no longer the false statement this audit describes,
+and the reason is that `Sha1Twist` no longer means what it meant when the audit
+was written.** The audit said this leaf was FALSE because `Sha1Twist` — matching
+`Sha2` — took cohomology of the full `Γ ℚ`, and it prescribed a cut-level
+restatement of both definitions. That restatement was made:
+`restrictedGaloisGroup S = Γ ℚ ⧸ N_S` is defined above `adZeroRestricted`, and
+`Sha1Twist` is now `Ш¹_S` over it. The leaf is OPEN, not false. The audit is
+kept because it is the record of WHY the group is `G_{ℚ,S}`, and a future owner
+who "simplifies" it back to `Γ ℚ` will reintroduce a false statement.
 
-*Why it is false.* `Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)` is the kernel of
-a map out of `H¹_cont(Γ ℚ, ad⁰(1))` — cohomology of the FULL absolute Galois
-group — into a product over the TWO places `{(2), (ℓ)}`. The source is
-infinite-dimensional over `k` (a class may ramify at any auxiliary prime
-outside `S`; Chebotarev supplies infinitely many usable ones), the target is
-finite-dimensional, so `Module.rank k (Sha1Twist …) = ℵ₀`. The conclusion
-demands `ℵ₀ ≤ (g : Cardinal)` for a natural number `g`. It fails for every `g`.
+*Why it WAS false, over the old definition.*
+`Sha1Twist ℓ ρbar (hardlyRamifiedPlaces ℓ)` was the kernel of a map out of
+`H¹_cont(Γ ℚ, ad⁰(1))` — cohomology of the FULL absolute Galois group — into a
+product over the TWO places `{(2), (ℓ)}`. The source is infinite-dimensional
+over `k` (a class may ramify at any auxiliary prime outside `S`; Chebotarev
+supplies infinitely many usable ones), the target is finite-dimensional, so
+`Module.rank k (Sha1Twist …) = ℵ₀`. The conclusion demands
+`ℵ₀ ≤ (g : Cardinal)` for a natural number `g`. It failed for every `g`.
 
-Over `G_{ℚ,S} = Gal(ℚ_S/ℚ)`, which is what Greenberg–Wiles is stated for, the
-source is FINITE-dimensional and the bound is the theorem it is meant to be.
-The gap between the two groups is not the harmless one the `Sha1Twist`
-docstring above hoped for: it is the gap between a finite and an infinite
-dimension.
+Over `G_{ℚ,S} = Gal(ℚ_S/ℚ)`, which is what Greenberg–Wiles is stated for — and
+which is what `Sha1Twist` now uses — the source is FINITE-dimensional and the
+bound is the theorem it is meant to be. The gap between the two groups was not
+the harmless one the `Sha1Twist` docstring originally hoped for: it was the gap
+between a finite and an infinite dimension.
 
 *Why this is genuine falsity and not vacuity — the point that decides the
 verdict, and it does NOT go through the banned inputs.* One might hope the span
@@ -18101,32 +18313,40 @@ generating family `ts : Fin g → D.R` satisfies both `∀ i, ts i ∈ 𝔪` and
 field alone — not from `not_isIrreducible_of_isHardlyRamified_of_five_le`, not
 from `not_isIrreducible_of_isHardlyRamified_of_odd`, and not from anything
 proven over them. So the hypotheses of this leaf ARE reachable and the
-conclusion still fails: the leaf is false, not empty.
+conclusion still failed: the leaf was false, not empty. **That half of the
+audit stands unchanged and is the reason a "the hypotheses are probably
+unreachable, so it is vacuously true" defence must not be attempted here
+either.**
 
-The corollary matters for whoever repairs it. Since the ambient hypotheses
+The corollary mattered for whoever repaired it. Since the ambient hypotheses
 `h`/`hirr`/`hℓ5` are exactly what this subtree exists to refute, the ONLY route
-that could ever close this leaf as written is the contradiction it is supposed
-to feed — which is precisely what the circularity guard below forbids. A leaf
-whose sole proof is the banned one is not a hard leaf; it is a mis-stated one.
+that could ever have closed the leaf AS THEN STATED is the contradiction it is
+supposed to feed — which is precisely what the circularity guard below forbids.
+A leaf whose sole proof is the banned one is not a hard leaf; it is a mis-stated
+one, and that is what triggered the restatement rather than a proof effort.
 
-*What a proof attempt would look like from the inside*, recorded because the
-docstring above makes it sound merely expensive: the first bullet
+*What a proof attempt would have looked like from the inside*, recorded because
+the cost audit above makes it sound merely expensive: the first bullet
 (`Ш¹_S ⊆ H¹_{L^⊥}`) and the Greenberg–Wiles formula are both fine as
 mathematics and both silently assume the `G_S` source. Building the local Tate
 pairing, the `oneCocycles` that `ContCohomology/LowDegree.lean` lacks, and the
-Euler characteristic formula would ALL succeed and still not close this leaf,
-because the object on the left of the inequality is the wrong one. That is why
-the cost audit above, though accurate, points at the wrong obstruction: the
-missing machinery is necessary and not sufficient, and no amount of it changes
-the verdict.
+Euler characteristic formula would ALL have succeeded and still not closed the
+old leaf, because the object on the left of the inequality was the wrong one.
+That is why the cost audit above, though accurate, pointed at the wrong
+obstruction: the missing machinery was necessary and not sufficient. **With the
+source now `G_{ℚ,S}`, that machinery becomes both necessary AND the whole of
+what is left**, so the cost audit above is once again the live one.
 
-*The refuting checks*: (a) `grep -rn "def Sha1Twist" -A6 Fermat/` — the source
-is `continuousCohomology 1 (adZeroTwist ℓ ρbar)` and `adZeroTwist` is a
-`TopRep k (Field.absoluteGaloisGroup ℚ)`, the full group; (b) show
-`hardlyRamifiedPlaces ℓ` is infinite — it is `{(2), (ℓ)}`; (c) show
-`HardlyRamifiedDeformation` lacks `isNoetherianRing` — it has it; (d) exhibit a
-finite bound on `dim_𝔽_ℓ ℚˣ/(ℚˣ)^ℓ`, the `μ_ℓ` shadow of the same phenomenon,
-which Kummer theory forbids.
+*The refuting checks, as they read NOW*: (a) `grep -rn "def Sha1Twist" -A6 Fermat/`
+— the source is `continuousCohomology 1 (adZeroTwistRestricted ℓ ρbar S)` and
+`adZeroTwistRestricted` is a `TopRep k (restrictedGaloisGroup S)`, i.e. over
+`G_{ℚ,S}`, NOT the full group. That is the single check that separates the
+repaired statement from the refuted one; (b) `hardlyRamifiedPlaces ℓ` is still
+the two-element set `{(2), (ℓ)}`; (c) `HardlyRamifiedDeformation` still carries
+`isNoetherianRing`; (d) the `μ_ℓ` shadow, a finite bound on `dim_𝔽_ℓ ℚˣ/(ℚˣ)^ℓ`,
+is still forbidden by Kummer theory — and no longer bears on this leaf, because
+over `G_{ℚ,S}` the corresponding group is the `S`-unit Selmer group `ℚ(S, ℓ)`,
+of dimension `2`.
 
 References: Washington's article in Cornell–Silverman–Stevens (the
 Greenberg–Wiles formula, and the local computations at `2`, `ℓ` and `∞`);
@@ -18185,20 +18405,31 @@ archimedean term `−1`. Finally weak universality plus trace generation makes
 `D.R` pro-represents the hardly ramified functor and its mod-`ℓ` tangent
 space IS `H¹_L`; the hypothesis then reads `dim_k H¹_L ≤ g`.
 
-**WARNING, ADDED 2026-07-27 BY THE OWNER OF THE TWO LEAVES IMMEDIATELY ABOVE:
-THIS NODE IS MARKED PROVEN, BUT IT IS PROVEN OVER A LEAF THAT IS FALSE, SO ITS
-CONCLUSION IS NOT TO BE RELIED ON.** `Module.rank k (Sha2 ρbar (hardlyRamifiedPlaces ℓ))`
-is `ℵ₀`, because `Sha2` takes `H²` of the FULL `Γ ℚ` and cuts by only the two
-places of `hardlyRamifiedPlaces ℓ`; so `… ≤ (g : Cardinal)` for a natural
-number `g` is false here for exactly the reason it is false on
-`rank_sha1_twist_le_of_tangent_span` above. The `le_trans` below is valid, and
-what it transports is a false bound. The defect is `Sha2`'s use of `Γ ℚ` where
-this module's own machinery audit (item (3) on
-`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below) specifies
-`G_S`; the full computation, the explicit `μ_ℓ` witness and the refuting checks
-are on `rank_sha2_le_rank_sha1_twist` above. The same warning applies to
+**WARNING RETIRED 2026-07-27 (same day it was raised) — THE DEFECT IT NAMED HAS
+BEEN REPAIRED UPSTREAM AND THIS NODE IS SOUND AGAIN.** The warning said: this
+node is marked PROVEN but is proven over a leaf that is FALSE, because
+`Module.rank k (Sha2 ρbar (hardlyRamifiedPlaces ℓ))` was `ℵ₀` — `Sha2` took
+`H²` of the FULL `Γ ℚ` while cutting by only the two places of
+`hardlyRamifiedPlaces ℓ` — so `… ≤ (g : Cardinal)` for a natural number `g` was
+false for exactly the reason it was false on
+`rank_sha1_twist_le_of_tangent_span` above. That was correct, and the `le_trans`
+below was a valid transport of a false bound.
+
+`Sha2` has since been RESTATED over `restrictedGaloisGroup S = Γ ℚ ⧸ N_S`
+(defined above `adZeroRestricted`), which is the `G_S` this module's own
+machinery audit — item (3) on
+`rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below — always
+specified. **This node's statement did not change by a single character**: it
+still reads `Module.rank k ↥(Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ≤ (g : Cardinal)`,
+and the `le_trans` proof below is unchanged and still compiles. What changed is
+the definition underneath, and with it the truth of the two leaves it stands on.
+The same retirement applies to
 `rank_sha2_le_of_minimal_mvPowerSeries_presentation` below, which consumes this
-node. Repairing it is a cut-level restatement of `Sha2`, not a leaf edit.
+node, and to `rank_relationSpace_le_of_rank_sha2_le` above, whose hypothesis
+`rank Sha2 ≤ n` was unsatisfiable for finite `n` and is now the ordinary
+finite-dimensionality one expects. The computation that refuted the old
+convention, the explicit `μ_ℓ` witness and the refuting checks are kept, marked
+as history, on `rank_sha2_le_rank_sha1_twist` above.
 
 **STATUS 2026-07-27 (LATER THE SAME DAY): THIS NODE IS NO LONGER A LEAF, AND
 THE CUT THAT ITS OWN DOCSTRING PROPOSED HAS BEEN MADE.** The proposal was to
@@ -18394,12 +18625,17 @@ these two corrections:
   `LowDegree.lean` stops at `H⁰`; the theory does not. The claim that mathlib
   "stops at `H⁰`" came from reading that one file. Cost: one `public import`.
 * **Items (2) and (3) are DONE**, as `AdZero.rep` / `adZeroTopRep` (the
-  adjoint module) and `decompHom` / `locRes` / `Sha2` (restriction to the
-  places and the Tate–Šafarevič group) above — short definitions, not a
-  development, once (1) is in scope. What items (2)–(3) do NOT yet supply is
-  the FINITENESS of `Hⁱ_cont(Γ ℚ, ad⁰)`; neither of the two leaves above
-  assumes it, so it is an obligation of whoever proves them, not a gap in the
-  statements.
+  adjoint module) and `decompHomRestricted` / `locRes` / `Sha2` (restriction
+  to the places and the Tate–Šafarevič group) above — short definitions, not a
+  development, once (1) is in scope. **Item (3)'s `G_S` is now honoured
+  literally** (2026-07-27): `Sha2` was first written over the full `Γ ℚ`, which
+  made the Poitou–Tate leaves respectively vacuous and false, and it has been
+  restated over `restrictedGaloisGroup S = Γ ℚ ⧸ N_S`, defined above
+  `adZeroRestricted`. What items (2)–(3) do NOT supply is the FINITENESS of
+  `Hⁱ_cont(G_{ℚ,S}, ad⁰)` — the "restricted-ramification setting" qualifier of
+  item (2), which is exactly what the old `Γ ℚ` version had dropped. Neither of
+  the two leaves above assumes it, so it is an obligation of whoever proves
+  them, not a gap in the statements.
 
 So the genuinely open arithmetic is items (4)–(7), and it now sits on two
 separately ownable leaves rather than one monolith. Everything below is
