@@ -5323,11 +5323,144 @@ structure IsJLine where
       ∃ d : Gamma0Datum N SpecQ,
         jLineVal (jt (𝟙 SpecQ) (d.ofDvd hN (one_dvd N))) = E.j
 
+/-! #### The cut of `exists_jLine`: the `j`-theory and the Weierstrass model
+
+`exists_jLine` was recorded IRREDUCIBLE on 2026-07-27, and the verdict
+was retired the same day.  What the audit established is correct and is
+kept below verbatim in `exists_jSection`: the `j`-invariant of an
+elliptic scheme does not exist at this pin, in mathlib or in `~/cs/FLT`
+or here.  What it did **not** establish is that the LEAF is irreducible,
+and the axis it did not search is the one that matters.
+
+**Which axis was searched, and which was not.**  The audit searched the
+axis of *presentations of elliptic schemes* — is there machinery
+attaching `c₄, Δ` to an `AbelianSchemeStruct`?  There is not.  It did not
+search the axis along which `exists_jLine` actually splits, which is the
+split between
+
+* the `j`-invariant AS A NATURAL TRANSFORMATION, defined for every
+  elliptic scheme over every base and pinned by agreement with
+  `WeierstrassCurve.j` on Weierstrass models — `exists_jSection`; and
+* the existence over `ℚ` of a `Γ₀(N)`-datum whose elliptic scheme IS the
+  Weierstrass model of a given `E` — `exists_weierstrassModel_gamma0Datum`.
+
+The second is not a `j`-statement at all.  It is the projective
+Weierstrass construction, which is *already* an owned, in-flight item:
+it is exactly what `exists_ellipticScheme_of_weierstrass` is blocked on
+(its ITEM 1, the graded quotient ring needed to form `Proj`), recorded
+there in detail.  So the cut moves one of the two halves of this leaf
+onto work that is already being done, and leaves behind a leaf that is
+purely the moduli-theoretic `j`-theory.
+
+**Why the pinning is by MODELS and not by the Galois-module relation.**
+`nonempty_gamma0Datum_of_stable` does supply a datum built from `E`, but
+it is pinned to `E` only through the Galois-equivariant `≃+` of
+`exists_ellipticScheme_of_weierstrass`, which — as the docstring at
+`IsJMapOn.classify_jm` records — is not known to determine `E.j`.  Using
+it here would make `jt_model` risk being FALSE.  `IsWeierstrassModel`
+pins the scheme by COORDINATES instead, and that determines `j`: see its
+own docstring.
+
+**What is still missing after the cut**, and it is the honest residue:
+Zariski-local Weierstrass presentations of an elliptic scheme, the
+independence of `j` from the presentation, and gluing.  Two of the three
+ingredients for the middle step are already in the pin —
+`WeierstrassCurve.variableChange_j`
+(`Mathlib/AlgebraicGeometry/EllipticCurve/VariableChange.lean:246`,
+`(C • W).j = W.j`) and `WeierstrassCurve.map_j`
+(`Weierstrass.lean:470`, `(W.map f).j = f W.j`, which is naturality of
+`j` under base change) — so the missing piece there is only "two models
+of one elliptic scheme differ by a variable change", not the invariance
+itself. -/
+
+/-- **The affine Weierstrass curve `Spec R[W]` as a scheme.**
+
+`WeierstrassCurve.Affine.CoordinateRing` is mathlib's `R[X,Y]/(W)`; its
+spectrum is the affine Weierstrass curve, which is the projective one
+with the point at infinity removed.  That last sentence is the whole
+content of `IsWeierstrassModel` below. -/
+noncomputable def weierstrassAffine {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    Scheme.{0} :=
+  Spec (CommRingCat.of W.toAffine.CoordinateRing)
+
+/-- **The structure morphism of the affine Weierstrass curve**, `Spec` of
+`R → R[W]`. -/
+noncomputable def weierstrassAffineStr {R : Type} [CommRing R] (W : WeierstrassCurve R) :
+    weierstrassAffine W ⟶ Spec (CommRingCat.of R) :=
+  Spec.map (CommRingCat.ofHom (algebraMap R W.toAffine.CoordinateRing))
+
+/-- **`W` is a Weierstrass model of the elliptic scheme carrying `ab`**:
+the complement of the zero section is the affine Weierstrass curve of
+`W`, as a scheme over the base.
+
+This is the coordinate-level pinning that the moduli-level `≃+` of
+`exists_ellipticScheme_of_weierstrass` cannot provide, and it is stated
+in the only form available at this pin — an OPEN IMMERSION of
+`Spec R[W]` whose set-theoretic range is the complement of the range of
+the zero section — because `Proj` of a graded quotient ring, and hence
+the projective Weierstrass scheme itself, cannot yet be formed.
+
+**Why this determines `j`, which is what keeps `IsJSection.jt_model`
+from being false.**  Over a field the smooth projective completion of an
+integral affine curve is unique, and it adds exactly the missing points.
+So if `W` and `W'` are both models of one `ab`, the two open immersions
+identify `Spec K[W] ≅ A ∖ {O} ≅ Spec K[W']`, hence identify the
+completions carrying the single point at infinity of each to the other,
+i.e. give an isomorphism of the two Weierstrass curves matching their
+origins.  Such an isomorphism is a `VariableChange`, and
+`WeierstrassCurve.variableChange_j` then gives `W.j = W'.j`.  Note the
+`range_eq` field is what forces the removed point to BE the origin; the
+weaker "some open immersion" would still determine `j` (by translation)
+but only after an argument, so the stronger form is stated.
+
+**`W` is not required to be elliptic here.**  It cannot be: `Δ` is
+invertible automatically, since a singular `Spec R[W]` cannot be an open
+subscheme of the smooth `A`.  Consumers that need `W.j` supply
+`[W.IsElliptic]` themselves. -/
+def IsWeierstrassModel {R : Type} [CommRing R] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of R)} (ab : AbelianSchemeStruct f)
+    (W : WeierstrassCurve R) : Prop :=
+  ∃ ι : weierstrassAffine W ⟶ A, IsOpenImmersion ι ∧
+    ι ≫ f = weierstrassAffineStr W ∧
+    Set.range ι.base = (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of R)))).1.base)ᶜ
+
+/-- **The `j`-invariant of an elliptic scheme, pinned by Weierstrass
+models rather than by a chosen datum.**
+
+The first two fields are those of `IsJLine` verbatim — the natural
+transformation and its naturality.  The third replaces `IsJLine`'s
+existential `jt_weierstrass` by the statement that actually says "`jt`
+IS the `j`-invariant": wherever the elliptic scheme has a Weierstrass
+model `W`, the value is `W.j`.
+
+**Why the universal form is safe here where it was not at
+`jt_weierstrass`.**  The subsection docstring at `IsJMapOn.classify_jm`
+warns against quantifying over every datum "modelling `E`", because the
+only modelling relation available there is a Galois-equivariant `≃+`
+that is not known to determine `E.j` — so the `∀` form risks being
+false.  `IsWeierstrassModel` is a different relation: it pins the scheme
+by coordinates and DOES determine `j` (see its docstring).  So here the
+`∀` form is the correct one, and it is what makes this field usable
+without knowing which datum a producer will hand over.
+
+**This is strictly weaker than `IsJLine` in the direction that matters
+for cutting**: it says nothing about which elliptic schemes over `ℚ`
+exist.  That half is `exists_weierstrassModel_gamma0Datum`. -/
+structure IsJSection where
+  /-- the `j`-invariant of an elliptic scheme, as a point of the `j`-line -/
+  jt : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum 1 T → RelPoint jLineStr g
+  /-- `j` is natural: a base change of data is sent to the precomposed point -/
+  jt_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+    IsBaseChangeOf h d' d → jt g' d' = RelPoint.pre h hg (jt g d)
+  /-- `j` agrees with `WeierstrassCurve.j` on every Weierstrass model -/
+  jt_model : ∀ (W : WeierstrassCurve ℚ) [W.IsElliptic] (d : Gamma0Datum 1 SpecQ),
+    IsWeierstrassModel d.ab W → jLineVal (jt (𝟙 SpecQ) d) = W.j
+
 /-- **Existence of the `j`-invariant of an elliptic scheme** (sorry node).
 
 TRUE and classical — this is `Y_0(1) ≅ 𝔸¹_j`, Deligne–Rapoport VI, or
-Silverman *AEC* III.1 plus descent.  It is the whole of what
-`exists_jMap` was blocked on, and it is what remains after the cut.
+Silverman *AEC* III.1 plus descent.
 
 WHAT IT NEEDS.  A Weierstrass presentation of an elliptic scheme
 `f : E ⟶ T` Zariski-locally on `T`, so that `c₄³/Δ` glues to a global
@@ -5336,26 +5469,90 @@ classical formulas for `c₄, c₆, Δ` as sections of its powers.  None of
 that exists at this pin: `AbelianSchemeStruct` is a functor-of-points
 presentation with no coordinates anywhere, and mathlib's
 `WeierstrassCurve.j` is defined only for a Weierstrass EQUATION over a
-ring, not for a scheme.  So this leaf is genuinely irreducible here, and
-that verdict is about the AXIS of presentations of elliptic schemes.
+ring, not for a scheme.  Searched 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`: mathlib has NO file mentioning
+an elliptic scheme at all, `~/cs/FLT` has no `jInvariant`, and the only
+`j` anywhere is `WeierstrassCurve.j`
+(`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`).
+
+THE AXIS THIS VERDICT RANGES OVER, stated so the next reader can see what
+it does not cover: presentations of elliptic schemes.  It does NOT cover
+the split between the `j`-theory and the existence of models over `ℚ`;
+that split is the cut recorded in the subsection docstring above, and it
+is what removed `exists_weierstrassModel_gamma0Datum` from this node.
 
 THE CHECK THAT WOULD REFUTE THIS.  Any construction attaching a global
 section of `𝒪_T` to an `AbelianSchemeStruct` of relative dimension `1`,
 natural in `T`; equivalently, a `grep` for a Weierstrass presentation of
-`AbelianSchemeStruct` or for `ω`/`c₄`/`Δ` on a relative curve. Searched
-2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`:
-mathlib has NO file mentioning an elliptic scheme at all, `~/cs/FLT` has
-no `jInvariant`, and the only `j` anywhere is
-`WeierstrassCurve.j` (`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`),
-which takes a Weierstrass equation over a commutative ring and returns an
-element of that ring.  `jt_weierstrass` additionally needs the datum built from `E`
-itself, which `nonempty_gamma0Datum_of_stable` supplies from
-`exists_ellipticScheme_of_weierstrass` — but with no control on `j`,
-which is exactly the missing compatibility.
+`AbelianSchemeStruct` or for `ω`/`c₄`/`Δ` on a relative curve.
 
-NOT VACUOUS, and not satisfiable by junk: see `jLineVal`. -/
-theorem exists_jLine : Nonempty IsJLine :=
+THE FURTHER CUT, when someone attacks this.  Three steps, of which the
+middle one is nearly free at this pin: (i) Zariski-locally on `T` an
+elliptic scheme is a Weierstrass model; (ii) two models of one elliptic
+scheme differ by a `VariableChange`, so `WeierstrassCurve.variableChange_j`
+makes the local `j`'s agree on overlaps, and `WeierstrassCurve.map_j`
+makes them compatible with base change; (iii) the local sections glue.
+Only (i) and the variable-change half of (ii) are genuinely missing.
+
+NOT VACUOUS, and not satisfiable by junk.  Two independent reasons.
+First, `jLineVal` is the honest coordinate (see its docstring), so the
+value condition has content.  Second — and this is the sharper one — a
+`jt` whose value is a CONSTANT section cannot satisfy `jt_model`: pull a
+model back along the fibres of any nonisotrivial family and naturality
+forces every fibre to take the same value, while `jt_model` demands the
+fibre's own `j`.  So `jt` must genuinely vary. -/
+theorem exists_jSection : Nonempty IsJSection :=
   sorry
+
+/-- **Existence of a `Γ₀(N)`-datum over `ℚ` with a prescribed Weierstrass
+model** (sorry node).
+
+TRUE: take the projective Weierstrass curve of `E`, whose complement of
+the point at infinity is `Spec ℚ[E]` by construction, with the subgroup
+scheme generated by `g` — which descends to `ℚ` precisely because
+`hstable` says the Galois action preserves `⟨g⟩`.
+
+This is the SAME missing construction as
+`exists_ellipticScheme_of_weierstrass`, not a new one: both need the
+projective Weierstrass scheme, i.e. that theorem's ITEM 1, the grading on
+a graded quotient ring needed to form `Proj`, recorded there as in flight
+and unreleased.  The difference is only in what is remembered about the
+result — that theorem remembers a Galois-equivariant `≃+` on geometric
+points, this one remembers the coordinates.  **Whoever closes one should
+close both**, and the datum's level structure is exactly the one
+`nonempty_gamma0Datum_of_stable` already builds.
+
+The hypotheses are load-bearing and are the same three as everywhere else
+in this file: without a Galois-stable cyclic subgroup of order `N` there
+is no `Γ₀(N)`-structure on `E` over `ℚ` at all, so the statement would be
+false.  They are underscore-prefixed only because the sorry does not
+consume them. -/
+theorem exists_weierstrassModel_gamma0Datum (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (N : ℕ) (_hN : N ≠ 0) (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = N)
+    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    ∃ d : Gamma0Datum N SpecQ, IsWeierstrassModel d.ab E :=
+  sorry
+
+/-- **Existence of the `j`-invariant of an elliptic scheme, in the form
+`exists_jMap` consumes it** (PROVEN 2026-07-27, over `exists_jSection`
+and `exists_weierstrassModel_gamma0Datum`).
+
+The proof is the whole content of the cut and is three lines: the first
+two fields of `IsJLine` are the first two fields of `IsJSection`
+verbatim, and `jt_weierstrass` is `jt_model` applied to the datum that
+`exists_weierstrassModel_gamma0Datum` produces.  `Gamma0Datum.ofDvd`
+leaves the elliptic scheme, its structure morphism and its
+`AbelianSchemeStruct` untouched, so the model hypothesis transports
+across `ofDvd` definitionally and no transport lemma is needed. -/
+theorem exists_jLine : Nonempty IsJLine := by
+  obtain ⟨js⟩ := exists_jSection
+  refine ⟨{ jt := js.jt, jt_natural := js.jt_natural, jt_weierstrass := ?_ }⟩
+  intro E _ N hN g hg hstable
+  obtain ⟨d, hd⟩ := exists_weierstrassModel_gamma0Datum E N hN g hg hstable
+  exact ⟨d, js.jt_model E (d.ofDvd hN (one_dvd N)) hd⟩
 
 /-- **Existence of the `j`-map on `Y_0(N)`** (PROVEN 2026-07-27, over
 `exists_jLine`).
