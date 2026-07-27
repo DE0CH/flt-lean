@@ -3488,6 +3488,44 @@ noncomputable def locResInertiaTwist1.{uK, uW} (p : ℕ) [Fact p.Prime]
   ContinuousCohomology.map (inertiaToGlobalHom v)
     (CategoryTheory.CategoryStruct.id (adZeroTwistInertia p ρbar v)) 1
 
+/-- `ad⁰ρbar(1)` restricted to the DECOMPOSITION group at `v` — the analogue of
+`adZeroTwistInertia` along `decompHom v` instead of `inertiaToGlobalHom v`.
+
+INTEGRATION NOTE (2026-07-27).  The clause below used to call
+`Deformation.lean`'s `locResTwist1`, which has since been RESTATED over
+`G_{ℚ,S}`: it now takes the ramification set `S` and lives on
+`adZeroTwistRestricted`, not on `adZeroTwist`.  That restatement is correct and
+is not undone here — but this file deliberately works over the FULL `Γ ℚ` (see
+the subsection docstring above: "restricting to classes unramified outside
+`{2, p}` is what replaces the missing `G_{ℚ,S}` here"), so the right repair is
+to give this file its own `Γ ℚ`-level decomposition restriction rather than to
+thread an `S` it does not have.  These two definitions are the exact analogues
+of `adZeroTwistInertia` / `locResInertiaTwist1` immediately above, with the
+decomposition group in place of inertia. -/
+noncomputable def adZeroTwistDecomp.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    TopRep k (Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  TopRep.res (decompHom v).toMonoidHom (adZeroTwist p ρbar)
+
+/-- The restriction `H¹(ℚ, ad⁰ρbar(1)) → H¹(ℚ_v, ad⁰ρbar(1))` — the FULL local
+restriction the dual-Selmer clause of `IsTaylorWilesPrimeSet` asks to vanish at
+each `q ∈ Q`. -/
+noncomputable def locResDecompTwist1.{uK, uW} (p : ℕ) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    continuousCohomology 1 (adZeroTwist p ρbar) ⟶
+      continuousCohomology 1 (adZeroTwistDecomp p ρbar v) :=
+  ContinuousCohomology.map (decompHom v)
+    (CategoryTheory.CategoryStruct.id (adZeroTwistDecomp p ρbar v)) 1
+
 /-- **Taylor–Wiles prime sets.**  A finite set `Q` of rational primes
 is a Taylor–Wiles set of level `n` for the residual representation
 `ρbar` if every `q ∈ Q` is a prime that is `≡ 1 (mod p^n)` and whose
@@ -3571,7 +3609,7 @@ def IsTaylorWilesPrimeSet.{uK, uW} (p : ℕ) [Fact p.Prime]
         c ∈ LinearMap.ker (locResInertiaTwist1 p ρbar v).hom.toLinearMap) →
     (∀ q ∈ Q, ∀ hq : q.Prime,
         c ∈ LinearMap.ker
-          (locResTwist1 p ρbar
+          (locResDecompTwist1 p ρbar
             hq.toHeightOneSpectrumRingOfIntegersRat).hom.toLinearMap) →
     c = 0
 
