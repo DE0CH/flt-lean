@@ -10040,8 +10040,90 @@ theorem exists_x0JReductionDatum_formalImmersion {p q : ℕ} (hp : p.Prime)
   rw [d.formalImmersion z c hz hcz.symm hE]
   exact hcusp
 
+/-- **SOME coarse moduli space of the `Γ₀(N)`-problem has a classifying
+map that is surjective on `ℚ̄`-points, for `N ≥ 1`** (sorry leaf, opened
+2026-07-27): the geometric-points clause that `IsCoarseModuliY0`
+deliberately omits, stated EXISTENTIALLY on one exhibited model rather
+than as a field of the structure.
+
+TRUE and classical.  This is the second half of the usual definition of a
+coarse moduli space, read on Katz–Mazur (8.1.1)'s construction
+`Y = 𝔐([Γ₀(N)], [Γ(n)])/G`: over an algebraically closed field the points
+of the coarse space ARE the isomorphism classes of objects of the moduli
+problem, so a `ℚ̄`-point of `Y` is a `ℚ̄`-isomorphism class of pairs
+`(E, C)` and any representative is the datum asked for.  Katz–Mazur
+(8.1.1); Mumford *GIT* Ch. 0 §2 (condition (ii) in the definition of a
+coarse moduli scheme, the one a bare categorical quotient does not carry).
+
+## WHY THE STATEMENT IS EXISTENTIAL, AND THAT IS THE WHOLE CUT
+
+The consumer `exists_gamma0Datum_geomClassify` quantifies over *every*
+coarse space, and in that form the clause is not attackable: a scheme
+presented only by a universal property carries no extractable geometry, so
+a prover has nothing to grip.  That objection dies here, by exactly the
+move `exists_isCoarseModuliY0_isSmoothCurve` already makes for the five
+curve properties — initiality (`IsCoarseModuliY0.universal`) identifies
+any two coarse spaces **compatibly with `classify`**, so it suffices to
+exhibit ONE model and transport.  The transport is written out in
+`exists_gamma0Datum_geomClassify` below and uses nothing but the
+`universal` field.
+
+`hN : 0 < N` matches `exists_isCoarseModuliY0_isSmoothCurve`: at `N = 0`
+the coarse space is EMPTY (`isEmpty_of_isCoarseModuliY0_zero`) so the
+clause holds vacuously there, and the branches are deliberately not merged.
+
+## THE RECOMMENDED NEXT DECOMPOSITION — THE MODULI HALF IS ALREADY DONE
+
+Do not attack this against an abstract `IsCoarseModuliY0`.  Exhibit the
+atlas: `exists_gamma0AffineModel` produces a `Gamma0AffineModel N`, hence
+a `Gamma0Atlas N` with its rigidified moduli scheme `A.M`, its universal
+family `A.dM`, and `A.Y` the categorical quotient.  Against that the leaf
+reduces to a statement carrying no moduli content at all —
+
+> `(A.classify A.strM A.dM).1 : A.M ⟶ A.Y` is surjective on `ℚ̄`-points.
+
+Given a lift `m : Spec ℚ̄ ⟶ A.M` of `y.1`, `exists_gamma0Datum_baseChange`
+(**PROVEN**, above in this file) produces the datum `d'` over `Spec ℚ̄`
+together with `IsBaseChangeOf m d' A.dM`, and `A.classify_natural m _`
+applied to it says exactly
+`(A.classify _ d').1 = m ≫ (A.classify A.strM A.dM).1 = y.1`
+(the base points agree by `subsingleton_hom_specQ`).  So the moduli half
+of this leaf is already discharged in this file, and what is left is
+commutative algebra: in Katz–Mazur's construction `A.M = Spec A` is affine
+and `A.Y = Spec (A^G)` with `G = GL₂(ℤ/n)` finite, so `A^G ⊆ A` is an
+integral extension and a `ℚ̄`-point of `Spec (A^G)` — a ring map
+`A^G ⟶ ℚ̄` — extends along it by lying-over together with `ℚ̄` being
+algebraically closed.
+
+**Do NOT state that reduction over an ARBITRARY `Gamma0Atlas`.**  The
+`quotient` field is a *categorical* quotient property.  It does force the
+scheme-theoretic image of `(classify strM dM).1` to be all of `Y` — a
+proper subscheme through which the map factors receives the classifying
+map, so initiality makes its inclusion a split epimorphism and hence an
+isomorphism — but scheme-theoretic dominance is strictly weaker than
+surjectivity on `ℚ̄`-points.  Surjectivity is a property of the
+CONSTRUCTION, which is precisely why this leaf is existential.
+
+## RELATION TO THE STRUCTURE FIELD THIS CLAUSE "SHOULD" BE
+
+`IsCoarseModuliY0`'s docstring records the geometric bijection as
+"deliberately omitted", and the natural consolidation is a fourth field on
+`IsCoarseModuliY0` — or on `Gamma0Atlas`, since
+`Gamma0Atlas.toIsCoarseModuliY0` is where `IsCoarseModuliY0`s come from.
+That is deliberately NOT done here: both structures have other live owners,
+and a new field falls due at every construction site at once.  The
+existential form is equivalent (transport recovers the universal form, and
+that transport is the proof below) and costs no other owner an edit. -/
+theorem exists_isCoarseModuliY0_geomSurjective (N : ℕ) (hN : 0 < N) :
+    ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (hc : IsCoarseModuliY0 N strY),
+      ∀ y : RelPoint strY (specAlgClos ℚ ≫ 𝟙 SpecQ),
+        ∃ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
+          hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = y :=
+  sorry
+
 /-- **Every `ℚ̄`-point of the coarse space is classified by a `Γ₀(p)`-datum
-over `ℚ̄`** (sorry node, introduced 2026-07-27): the geometric half of
+over `ℚ̄`** (PROVEN 2026-07-27 over `exists_isCoarseModuliY0_geomSurjective`;
+a sorry node from 2026-07-27 until then): the geometric half of
 `exists_gamma0Datum_classify_eq` below.
 
 TRUE, and **this is the one non-vacuous statement in the cluster** — that
@@ -10055,9 +10137,9 @@ because there is no descent to obstruct.
 ## THIS IS THE CLAUSE `IsCoarseModuliY0` DELIBERATELY OMITS
 
 Its own docstring says so: "the bijectivity on geometric points — the
-second half of the usual definition — deliberately omitted".  So this leaf
-is not mathematics awaiting a prover; it is the missing half of a
-DEFINITION, and it closes in one of two ways:
+second half of the usual definition — deliberately omitted".  So this was
+never mathematics awaiting a prover; it was the missing half of a
+DEFINITION, and it could close in one of two ways:
 
 1. the `IsCoarseModuliY0` owner adds the geometric-points clause (or
    `Gamma0Atlas` gains it, since `Gamma0Atlas.toIsCoarseModuliY0` is where
@@ -10065,18 +10147,51 @@ DEFINITION, and it closes in one of two ways:
 2. it is cited directly from Katz–Mazur (8.1.1)/Mumford *GIT* Ch. 0 §2,
    which is what the omitted clause states.
 
+**Route 2 is what was taken (2026-07-27), and route 1 was deliberately
+declined.**  `exists_isCoarseModuliY0_geomSurjective` above states the
+omitted clause EXISTENTIALLY, on one exhibited model; the proof here is
+the transport of that clause to an arbitrary coarse space along
+initiality, and it is the same two-step reduction
+`isSmoothCurve_of_isCoarseModuliY0` uses for the five curve properties.
+Route 1 was declined because `IsCoarseModuliY0` and `Gamma0Atlas` both
+have other live owners, and adding a field falls due at every construction
+site simultaneously; the two forms are equivalent, since the transport
+below turns the existential one back into the universal one.
+
+**Why the transport needs more than `exists_isIso_of_isCoarseModuliY0`.**
+That lemma returns only `∃ u, IsIso u ∧ u ≫ strY' = strY`; it drops the
+compatibility `(hc'.classify g d).1 = (hc.classify g d).1 ≫ u` that
+`universal` supplies, and the compatibility is exactly what carries a
+DATUM back across the isomorphism.  So the proof calls `universal`
+directly in both directions rather than reusing that lemma — the argument
+for `u ≫ v = 𝟙` is otherwise verbatim the one there.
+
 **The check that would refute the diagnosis**: any field of
 `IsCoarseModuliY0` or of `Gamma0Atlas` relating points of `Y` back to
 data.  RUN 2026-07-27 — `IsCoarseModuliY0` has `classify`,
 `classify_natural`, `universal`; `Gamma0Atlas` adds `cover` and
 `quotient`, and both run FROM data TO `Y`, never back.  See the extended
 note on `exists_gamma0Datum_classify_eq` below. -/
-theorem exists_gamma0Datum_geomClassify {p : ℕ} (_hp : p.Prime)
+theorem exists_gamma0Datum_geomClassify {p : ℕ} (hp : p.Prime)
     {Y : Scheme.{0}} {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 p strY)
     (y : RelPoint strY (specAlgClos ℚ ≫ 𝟙 SpecQ)) :
     ∃ d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
-      hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = y :=
-  sorry
+      hc.classify (specAlgClos ℚ ≫ 𝟙 SpecQ) d = y := by
+  obtain ⟨Y', strY', hc', hsurj⟩ := exists_isCoarseModuliY0_geomSurjective p hp.pos
+  -- initiality in both directions, compatibly with `classify`
+  obtain ⟨u, ⟨hus, huc⟩, -⟩ := hc.universal strY' hc'.classify hc'.classify_natural
+  obtain ⟨v, ⟨hvs, hvc⟩, -⟩ := hc'.universal strY hc.classify hc.classify_natural
+  obtain ⟨w, -, hYuniq⟩ := hc.universal strY hc.classify hc.classify_natural
+  -- `u ≫ v` and `𝟙 Y` both solve the initiality problem of `hc` against itself
+  have huv : u ≫ v = 𝟙 Y :=
+    (hYuniq (u ≫ v) ⟨by rw [Category.assoc, hvs, hus],
+        fun {_T} g d => by rw [← Category.assoc, ← huc g d, ← hvc g d]⟩).trans
+      (hYuniq (𝟙 Y) ⟨Category.id_comp _, fun {_T} _g _d => (Category.comp_id _).symm⟩).symm
+  -- push `y` across to the exhibited model, classify it there, keep the datum
+  obtain ⟨d, hd⟩ := hsurj ⟨y.1 ≫ u, by rw [Category.assoc, hus, y.2]⟩
+  refine ⟨d, Subtype.ext ?_⟩
+  rw [hvc (specAlgClos ℚ ≫ 𝟙 SpecQ) d, congrArg Subtype.val hd, Category.assoc, huv,
+    Category.comp_id]
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` whose moduli point is defined over `ℚ`
 descends to `ℚ`** (sorry node, introduced 2026-07-27): the field-of-moduli
@@ -10215,6 +10330,13 @@ are the whole assembly:
   `IsCoarseModuliY0`/`Gamma0Atlas` or as a direct Katz–Mazur citation.  It
   carries **no** membership hypothesis and, crucially, **it is NOT
   vacuous** — `Y_0(p)(ℚ̄)` is large for every `p`.
+  **UPDATE 2026-07-27: it is now PROVEN**, by the citation route, over the
+  new existential leaf `exists_isCoarseModuliY0_geomSurjective` — the
+  omitted clause stated on ONE exhibited model and transported to an
+  arbitrary coarse space along initiality, so no owned structure gained a
+  field.  The paragraph below saying "neither leaf is a prover's task
+  until a structure owner moves" is therefore correct only for the
+  DESCENT half now.
 * `exists_gamma0Datum_descent` — the field-of-moduli/twisting descent from
   `ℚ̄` to `ℚ`.  **`hmem` is consumed there and nowhere else**, which is
   right: `hmem` exists to exclude `j = 0, 1728`, and that exclusion is
