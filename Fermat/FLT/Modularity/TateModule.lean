@@ -6728,18 +6728,257 @@ The remaining algebra splits at a clean seam:
   ring: `q`-adic completeness (hence a `ℤ_q`-algebra structure through
   `padicIntLiftHom`), finiteness and freeness over `ℤ_q` of the SAME
   rank as `O₁`, and an injective ring map `ρ : O₁ →+* O` with
-  `ρ ∘ j₁ = j`.
+  `ρ ∘ j₁ = j`.  **`[IsDomain O₁]` was ADDED to it on 2026-07-27,
+  after the leaf was REFUTED without it by an explicit
+  counterexample** — see the FALSITY AUDIT in its docstring.  The
+  hypothesis is free at the only call site, `exists_ringEquiv_of_frameComparison`
+  below, which already assumes it.  The leaf is now PROVEN over three
+  sub-leaves, `exists_padicAlgebra_of_additiveEquiv_sq`,
+  `span_range_eq_top_of_adicPin` and `exists_ringHom_of_span_range_eq_top`.
 * `surjective_of_finrank_eq_of_isIntegrallyClosed` — CLOSURE.  Such a
   `ρ` is automatically surjective.  Pure commutative algebra over
-  `ℤ_q`, with no `𝒪_D`, no frame and no `g`.
+  `ℤ_q`, with no `𝒪_D`, no frame and no `g`.  **PROVEN 2026-07-27.**
 
 Together they give `O ≃+* 𝒪_{D,I}` over `𝒪_D`, which is exactly the
 conclusion the FAITHFULNESS AUDIT below demands be DERIVED rather than
 assumed. -/
 
+/-- **An additive bijection of squares transports the `ℤ_q`-structure**
+(sorry leaf — pure `ℤ_q`-module theory; no `𝒪_D`, no frame, no number
+field, no pinning appears).
+
+If `O₁` is a finite free `ℤ_q`-algebra and
+`g : (Fin 2 → O₁) → (Fin 2 → O)` is an additive bijection onto the
+square of an ARBITRARY commutative ring `O`, then `O` is itself a finite
+free `ℤ_q`-algebra of the same rank, and `g` is `ℤ_q`-LINEAR for that
+structure.
+
+THE ARGUMENT.
+
+1. *`Fin 2 → O` is `q`-adically complete and separated as an abelian
+   group.*  `O₁` is finite free over `ℤ_q`, so `Fin 2 → O₁` is
+   `ℤ_q`-free of finite rank, hence `q`-adically complete and separated;
+   `g` is additive and bijective, hence `ℤ`-linear and carrying
+   `qⁿ · (Fin 2 → O₁)` ONTO `qⁿ · (Fin 2 → O)`, so it transports both
+   properties.  `O` is an additive direct summand of `Fin 2 → O`, and
+   both properties pass to summands.
+2. *Hence `Algebra ℤ_[q] O`*, namely `padicIntLiftHom` of the
+   `PadicIntLift` section above, whose only hypothesis is exactly
+   `IsAdicComplete (Ideal.span {(q : O)}) O`.  This is the same
+   construction that gives `𝒪ᵥ` its `ℤ_q`-structure in
+   `padicIntAlgebra`.
+3. *`g` is `ℤ_q`-linear.*  For `c : ℤ_q` with natural approximants `cₖ`
+   (`PadicInt.appr`, and `appr_sub_natCast_mem` above), one has
+   `c • u - cₖ • u ∈ qᵏ · (Fin 2 → O₁)` and
+   `c • g u - cₖ • g u ∈ qᵏ · (Fin 2 → O)`, while
+   `g (cₖ • u) = cₖ • g u` because `g` is additive and `cₖ` is a NATURAL
+   number.  Subtracting, `g (c • u) - c • g u ∈ qᵏ · (Fin 2 → O)` for
+   every `k`, hence is `0` by separatedness.
+4. *Rank.*  `g` is then a `ℤ_q`-linear bijection, so
+   `(Fin 2 → O) ≃ₗ[ℤ_q] (Fin 2 → O₁)` and
+   `2 · finrank O = 2 · finrank O₁`; `O` is a `ℤ_q`-direct summand of
+   `Fin 2 → O`, hence finite over `ℤ_q`, and torsion-free over the PID
+   `ℤ_q`, hence free.
+
+This is the half of `exists_padicAlgebra_ringHom_of_frameComparison`
+that survives verbatim when the pinning hypotheses are dropped.
+
+MISSING MACHINERY, scouted 2026-07-27 — and it is SHARED with
+`span_range_eq_top_of_adicPin` below, so prove it once:
+
+    IsAdicComplete (Ideal.span {(q : O₁)}) O₁   for `O₁` finite free over `ℤ_q`.
+
+Mathlib has `IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]`
+(`Mathlib/NumberTheory/Padics/PadicIntegers.lean`) and
+`IsAdicComplete.henselianRing` (`Mathlib/RingTheory/Henselian.lean`), but
+it does **not** transfer `IsAdicComplete` through a finite free module
+structure: a grep of `Mathlib/RingTheory/AdicCompletion/` turns up
+instances only for `⊥`, `⊤`, subsingletons, `PowerSeries`, and the
+completion of a Noetherian local ring — nothing for `ι → M`, for a
+product, or for a finite free module.  So the route is: transport along
+`Module.Free.chooseBasis` to `ι → ℤ_[q]`, prove `IsHausdorff` /
+`IsPrecomplete` there coordinatewise from `ℤ_q`'s own instance, and note
+that `Ideal.span {(q : O₁)} ^ n • ⊤` and `Ideal.span {(q : ℤ_[q])} ^ n • ⊤`
+are the SAME submodule `qⁿ · O₁`, so the base ring of the filtration may
+be switched freely.  Do not look for this in mathlib again; it is not
+there at this pin.
+
+Once it exists, step 2 here is `padicIntLiftHom` verbatim, and step 2 of
+`span_range_eq_top_of_adicPin` is `IsAdicComplete.henselianRing` applied
+to `X² - X` (whose derivative `2X - 1` is a unit at an idempotent, since
+`(2e-1)² = 1`). -/
+theorem exists_padicAlgebra_of_additiveEquiv_sq
+    (q : ℕ) [Fact q.Prime]
+    (O₁ : Type u) [CommRing O₁] [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁]
+    [Module.Free ℤ_[q] O₁]
+    (O : Type u) [CommRing O]
+    (g : (Fin 2 → O₁) → (Fin 2 → O))
+    (hgadd : ∀ u u' : Fin 2 → O₁, g (u + u') = g u + g u')
+    (hgbij : Function.Bijective g) :
+    ∃ (_ : Algebra ℤ_[q] O) (_ : Module.Finite ℤ_[q] O) (_ : Module.Free ℤ_[q] O),
+      Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁ ∧
+      ∀ (c : ℤ_[q]) (u : Fin 2 → O₁), g (c • u) = c • g u :=
+  sorry
+
+open _root_.NumberField in
+/-- **The pinned image SPANS: `𝒪_{D,I}` is the `ℤ_q`-span of `j₁(𝒪_D)`**
+(sorry leaf — commutative algebra over a complete local domain).
+
+`hdense` says `j₁(𝒪_D)` is dense in the `(j₁ π)`-adic topology.  That is
+NOT the `q`-adic topology in general, and this is precisely where
+`[IsDomain O₁]` is load-bearing: the counterexample recorded in the
+FALSITY AUDIT of `exists_padicAlgebra_ringHom_of_frameComparison` below
+satisfies `hdense` and `hker` verbatim, and there `j₁(𝒪_D)` spans a
+PROPER `ℤ_q`-submodule of `O₁`.  So the "complete Nakayama" step of the
+original argument was wrong as stated, and the domain hypothesis is what
+repairs it.
+
+THE ARGUMENT.
+
+1. *`j₁ π` is a non-unit, and nonzero.*  If `j₁ π` were a unit then
+   `(j₁ π)ⁿ = ⊤` for every `n`, and `hker` would read "`a ∈ Iⁿ` for
+   every `a`" — false at `a = 1`, `n = 1`, since a maximal `I` is
+   proper.  If `j₁ π` were `0` then `hker` at `n = 2` would give
+   `π ∈ I²`, contradicting `hπ2`.
+2. *`O₁` is local, with `𝔪ᴺ ⊆ (q)`.*  `O₁` is finite free over `ℤ_q`,
+   hence `q`-adically complete, so idempotents lift from `O₁ ⧸ (q)`;
+   `O₁` is a DOMAIN, so it has none but `0` and `1`, so the finite
+   `𝔽_q`-algebra `O₁ ⧸ (q)` is connected.  A finite-dimensional
+   commutative algebra over a field is Artinian, hence a finite product
+   of local rings, and connectedness leaves exactly one factor.  So
+   `O₁ ⧸ (q)` is local with NILPOTENT maximal ideal, `O₁` is local, and
+   `𝔪ᴺ ⊆ (q)` for some `N`.
+3. *The two filtrations are cofinal.*  `(q) ⊆ (j₁ π)` by `hqI` and
+   `hker` at `n = 1`, and step 2 with step 1 gives
+   `(j₁ π)ᴺ ⊆ 𝔪ᴺ ⊆ (q)`.  So `hdense` at precision `N` produces, for
+   every `z : O₁`, an `a : 𝒪_D` with `z - j₁ a ∈ (q)`.
+4. *Nakayama.*  Let `M` be the `ℤ_q`-span of `j₁(𝒪_D)`.  Step 3 says
+   `M + q · O₁ = O₁`; `O₁ ⧸ M` is a finite `ℤ_q`-module with
+   `q · (O₁ ⧸ M) = O₁ ⧸ M`, and `q` lies in the Jacobson radical of the
+   local ring `ℤ_q`, so `O₁ ⧸ M = 0`.
+
+`hI` and `hπ2` are consumed in step 1, `hqI` in step 3, `hπ` only
+through `hdense`/`hker`.
+
+MISSING MACHINERY, scouted 2026-07-27.  Step 2 needs
+`IsAdicComplete (Ideal.span {(q : O₁)}) O₁` — the SAME gap as
+`exists_padicAlgebra_of_additiveEquiv_sq` above, where the route is
+spelled out; it is not in mathlib at this pin.  With it in hand,
+idempotent lifting is `IsAdicComplete.henselianRing` at `X² - X`, and the
+Artinian decomposition of the finite `𝔽_q`-algebra `O₁ ⧸ (q)` is
+`IsArtinianRing.equivPi` / `IsArtinianRing.isNilpotent_jacobson_bot`.
+Step 4 is `Submodule.eq_top_of_smul_eq_top`-style Nakayama over the
+local ring `ℤ_q` (`Submodule.eq_top_of_le_smul_add` / `IsLocalRing`). -/
+theorem span_range_eq_top_of_adicPin
+    {D : Type u} [Field D] [NumberField D]
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (𝓞 D)) (hI : I.IsMaximal) (hqI : (q : 𝓞 D) ∈ I)
+    (π : 𝓞 D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O₁ : Type u) [CommRing O₁] [IsDomain O₁] [Algebra ℤ_[q] O₁]
+    [Module.Finite ℤ_[q] O₁] [Module.Free ℤ_[q] O₁]
+    (j₁ : 𝓞 D →+* O₁)
+    (hdense : ∀ (n : ℕ) (z : O₁), ∃ a : 𝓞 D, z - j₁ a ∈ Ideal.span {j₁ π} ^ n)
+    (hker : ∀ (n : ℕ) (a : 𝓞 D), j₁ a ∈ Ideal.span {j₁ π} ^ n ↔ a ∈ I ^ n) :
+    Submodule.span ℤ_[q] (Set.range (j₁ : 𝓞 D → O₁)) = ⊤ :=
+  sorry
+
+open _root_.NumberField in
+/-- **A SPANNING pinned image turns the frame comparison into a ring
+map** (PROVEN 2026-07-27 — a conjugation argument; no topology, no
+completion, no pinning).
+
+Given the `ℤ_q`-linearity of `g` (supplied by
+`exists_padicAlgebra_of_additiveEquiv_sq`) and the spanning statement
+(supplied by `span_range_eq_top_of_adicPin`), the ring map `ρ` is
+FORCED, and no further input about `O` is needed.
+
+THE ARGUMENT.  `O₁` acts faithfully on `Fin 2 → O₁` by scalars — test on
+`u = 1` — and likewise `O` on `Fin 2 → O`.  Conjugation by `g` is a ring
+isomorphism `Φ` between the `ℤ_q`-endomorphism rings of the two squares,
+and it carries "multiplication by `j₁ a`" to "multiplication by `j a`"
+(that is `hgj`).  The set of `b : O₁` for which `Φ (b • ·)` is again a
+scalar multiplication is a `ℤ_q`-SUBMODULE of `O₁` containing
+`j₁(𝒪_D)`, hence is all of `O₁` by `hspan`; `ρ b` is the scalar.  It is
+additive and multiplicative because `Φ` is, injective because the
+`O`-action is faithful, and it sends `algebraMap c = c • 1` to
+`c • 1 = algebraMap c` by `hgsmul`. -/
+theorem exists_ringHom_of_span_range_eq_top
+    {D : Type u} [Field D] [NumberField D]
+    (q : ℕ) [Fact q.Prime]
+    (O₁ : Type u) [CommRing O₁] [Algebra ℤ_[q] O₁]
+    (j₁ : 𝓞 D →+* O₁)
+    (hspan : Submodule.span ℤ_[q] (Set.range (j₁ : 𝓞 D → O₁)) = ⊤)
+    (O : Type u) [CommRing O] [Algebra ℤ_[q] O] (j : 𝓞 D →+* O)
+    (g : (Fin 2 → O₁) → (Fin 2 → O))
+    (hgadd : ∀ u u' : Fin 2 → O₁, g (u + u') = g u + g u')
+    (hgbij : Function.Bijective g)
+    (hgsmul : ∀ (c : ℤ_[q]) (u : Fin 2 → O₁), g (c • u) = c • g u)
+    (hgj : ∀ (a : 𝓞 D) (u : Fin 2 → O₁), g (j₁ a • u) = j a • g u) :
+    ∃ ρ : O₁ →+* O, Function.Injective ρ ∧
+      (∀ c : ℤ_[q], ρ (algebraMap ℤ_[q] O₁ c) = algebraMap ℤ_[q] O c) ∧
+      (∀ a : 𝓞 D, ρ (j₁ a) = j a) := by
+  classical
+  have hg0 : g 0 = 0 := by
+    have h := hgadd 0 0
+    simpa using h.symm
+  -- the transported scalar is unique, because `g` is onto and `Fin 2 → O` has a `1`
+  have huniq : ∀ z z' : O, (∀ u : Fin 2 → O₁, z • g u = z' • g u) → z = z' := by
+    intro z z' h
+    obtain ⟨u, hu⟩ := hgbij.2 (1 : Fin 2 → O)
+    have h1 := h u
+    rw [hu] at h1
+    have h2 := congrFun h1 0
+    simpa using h2
+  -- the `ℤ_q`-submodule of those `b` whose conjugate is again a scalar multiplication
+  set S : Submodule ℤ_[q] O₁ :=
+    { carrier := {b : O₁ | ∃ z : O, ∀ u : Fin 2 → O₁, g (b • u) = z • g u}
+      zero_mem' := ⟨0, fun u => by simpa using hg0⟩
+      add_mem' := by
+        rintro b b' ⟨z, hz⟩ ⟨z', hz'⟩
+        refine ⟨z + z', fun u => ?_⟩
+        rw [add_smul, hgadd, hz, hz', add_smul]
+      smul_mem' := by
+        rintro c b ⟨z, hz⟩
+        refine ⟨c • z, fun u => ?_⟩
+        rw [smul_assoc, hgsmul, hz, smul_assoc] }
+  have hmemS : ∀ b : O₁, ∃ z : O, ∀ u : Fin 2 → O₁, g (b • u) = z • g u := by
+    have htop : S = ⊤ := by
+      rw [← top_le_iff, ← hspan, Submodule.span_le]
+      rintro _ ⟨a, rfl⟩
+      exact ⟨j a, hgj a⟩
+    intro b
+    have hb : b ∈ S := by rw [htop]; exact Submodule.mem_top
+    exact hb
+  choose f hf using hmemS
+  refine ⟨{ toFun := f
+            map_one' := huniq _ _ fun u => by rw [← hf 1 u, one_smul, one_smul]
+            map_mul' := fun b b' => huniq _ _ fun u => by
+              rw [← hf (b * b') u, mul_smul, mul_smul, ← hf b' u, ← hf b (b' • u)]
+            map_zero' := huniq _ _ fun u => by
+              rw [← hf 0 u, zero_smul, zero_smul, hg0]
+            map_add' := fun b b' => huniq _ _ fun u => by
+              rw [← hf (b + b') u, add_smul, hgadd, hf b, hf b', add_smul] },
+    ?_, ?_, ?_⟩
+  · intro b b' hbb
+    have hbb' : f b = f b' := hbb
+    have hgg : ∀ u : Fin 2 → O₁, g (b • u) = g (b' • u) := fun u => by
+      rw [hf b u, hf b' u, hbb']
+    have hb1 : b • (1 : Fin 2 → O₁) = b' • (1 : Fin 2 → O₁) := hgbij.1 (hgg 1)
+    have h0 := congrFun hb1 0
+    simpa using h0
+  · intro c
+    refine huniq _ _ fun u => ?_
+    show f (algebraMap ℤ_[q] O₁ c) • g u = algebraMap ℤ_[q] O c • g u
+    rw [← hf (algebraMap ℤ_[q] O₁ c) u, algebraMap_smul, hgsmul, algebraMap_smul]
+  · intro a
+    refine huniq _ _ fun u => ?_
+    show f (j₁ a) • g u = j a • g u
+    rw [← hf (j₁ a) u, hgj]
+
 open _root_.NumberField in
 /-- **Transport of the coefficient-ring structure along a frame
-comparison** (sorry leaf).
+comparison** (PROVEN 2026-07-27 over the three sub-leaves above — and
+REPAIRED the same day: it is FALSE without `[IsDomain O₁]`).
 
 Let `O₁` be a `ℤ_q`-algebra, finite and free over `ℤ_q`, carrying
 `j₁ : 𝒪_D →+* O₁` which is `π`-adically dense (`hdense`) and detects the
@@ -6773,25 +7012,76 @@ THE ARGUMENT.
 4. *`ρ` exists.*  `O` acts faithfully on `Fin 2 → O` by scalars (test on
    `u = 1`), so `O` embeds in the additive endomorphism ring, and `g`
    conjugates "multiplication by `j₁ a`" to "multiplication by `j a`".
-   By `hdense` the `ℤ_q`-submodule spanned by `j₁ (𝒪_D)` satisfies
-   `M + (j₁ π) O₁ = O₁`, and `(j₁ π)` is a proper ideal by `hker` at
-   `n = 1` (`1 ∈ I` is false); `O₁` is a finite `ℤ_q`-algebra, so some
-   power of `(j₁ π)` lies in `(q)` and Nakayama over the local ring
-   `ℤ_q` gives `M = O₁`.  So the subring of endomorphisms generated by
-   `j₁ (𝒪_D)` over `ℤ_q` is all of `O₁`, and its image under the
-   conjugation is a subring of `O`.  That is `ρ`, injective and
-   satisfying `ρ ∘ j₁ = j` and `ρ ∘ algebraMap = algebraMap` by
-   construction.
+   The `ℤ_q`-submodule `M` spanned by `j₁ (𝒪_D)` is ALL of `O₁`
+   (`span_range_eq_top_of_adicPin`), so the conjugation carries every
+   scalar multiplication by `O₁` to a scalar multiplication by `O`.
+   That is `ρ`, injective and satisfying `ρ ∘ j₁ = j` and
+   `ρ ∘ algebraMap = algebraMap` by construction.
 
 `hI`, `hqI`, `hπ` and `hπ2` are carried because the `π`-adic bookkeeping
 of step 4 is stated relative to them; `hqI` in particular is what makes
-`(q)` and `(j₁ π)` cofinal filtrations of `O₁`. -/
+`(q)` and `(j₁ π)` cofinal filtrations of `O₁`.
+
+## FALSITY AUDIT (2026-07-27) — the leaf is FALSE without `[IsDomain O₁]`
+
+The instance binder `[IsDomain O₁]` was ADDED on 2026-07-27.  Without
+it the statement is refuted by an explicit counterexample, and step 4
+of the argument above was wrong in its original form: it asserted that
+"`O₁` is a finite `ℤ_q`-algebra, so some power of `(j₁ π)` lies in
+`(q)`", which is FALSE for a non-local `O₁`, and with it fell the
+Nakayama conclusion `M = O₁`.
+
+THE COUNTEREXAMPLE.  Take `D = ℚ(i)`, `q = 5`, which SPLITS:
+`5 = (2+i)(2−i)`.  Put `I = (2+i)` and `I' = (2−i)`, both of residue
+degree and ramification index `1`, so `𝒪_{D,I} = 𝒪_{D,I'} = ℤ₅`, with
+`σ, σ' : 𝒪_D → ℤ₅` the two completions.  Take `π = 2+i`, so `π ∈ I`,
+`π ∉ I²`, and `π ∉ I'` — hence `σ π` is a uniformizer of `ℤ₅` and
+`σ' π` is a UNIT.  Now set
+
+    O₁ := ℤ₅ × ℤ₅ × ℤ₅ ,   j₁ a := (σ a, σ' a, σ' a) .
+
+*Every hypothesis holds.*  `O₁` is a finite free `ℤ₅`-algebra of rank
+`3`.  `j₁ π = (σ π, unit, unit)`, so
+`Ideal.span {j₁ π} ^ n = 5ⁿℤ₅ × ℤ₅ × ℤ₅`: the last two coordinates are
+UNCONSTRAINED at every precision.  Hence `hdense` reduces to density of
+`𝒪_D` in the first `ℤ₅`, which holds, and `hker` reduces to
+`σ a ∈ 5ⁿℤ₅ ↔ a ∈ Iⁿ`, which is `mem_span_uniformizer_pow_iff`.
+
+*But `j₁(𝒪_D)` does not span.*  Its `ℤ₅`-span is
+`ℤ₅ × {(t, t)}`, of rank `2 < 3`, because the second and third
+coordinates of `j₁ a` are EQUAL by construction.  So the Nakayama step
+has no chance: the `(j₁ π)`-adic topology simply does not see the last
+two factors.
+
+*And the conclusion fails.*  Take
+
+    O := ℤ₅ × ℤ₅[ε]/(ε²) ,   j a := (σ a, σ' a) ,
+
+again of `ℤ₅`-rank `3`.  As `𝒪_D`-modules both squares are
+`(ℤ₅ via σ)² ⊕ (ℤ₅ via σ')⁴` — for `O` because `𝒪_D` acts on
+`ℤ₅[ε]/(ε²)` through the SCALAR `σ' a` — so an additive bijection `g`
+with `g (j₁ a • u) = j a • g u` exists.  Yet there is NO injective ring
+map `ρ : O₁ →+* O` at all: a ring map sends the three orthogonal
+idempotents of `ℤ₅³` to three orthogonal idempotents of `O` summing to
+`1`, and `O` has only the four idempotents `(0,0), (1,0), (0,1), (1,1)`
+because both of its factors are local.  So one of the three must be
+`0`, and `ρ` then kills a whole nonzero factor.
+
+WHY `[IsDomain O₁]` IS THE RIGHT REPAIR, and why it is free.  A domain
+has no nontrivial idempotents, and — being finite over the complete
+local `ℤ_q` — is then LOCAL, which is exactly what makes `(j₁ π)ᴺ`
+land inside `(q)` and restores the Nakayama step; this is
+`span_range_eq_top_of_adicPin` above.  The only consumer,
+`exists_ringEquiv_of_frameComparison` below, already assumes
+`[IsDomain O₁]` (it needs `[IsIntegrallyClosed O₁]` too), so the added
+binder costs nothing at the call site.  In the real application
+`O₁ = 𝒪_{D,I}` is a complete DVR. -/
 theorem exists_padicAlgebra_ringHom_of_frameComparison
     {D : Type u} [Field D] [NumberField D]
     (q : ℕ) [Fact q.Prime]
     (I : Ideal (𝓞 D)) (hI : I.IsMaximal) (hqI : (q : 𝓞 D) ∈ I)
     (π : 𝓞 D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
-    (O₁ : Type u) [CommRing O₁] [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁]
+    (O₁ : Type u) [CommRing O₁] [IsDomain O₁] [Algebra ℤ_[q] O₁] [Module.Finite ℤ_[q] O₁]
     [Module.Free ℤ_[q] O₁]
     (j₁ : 𝓞 D →+* O₁)
     (hdense : ∀ (n : ℕ) (z : O₁), ∃ a : 𝓞 D, z - j₁ a ∈ Ideal.span {j₁ π} ^ n)
@@ -6805,23 +7095,56 @@ theorem exists_padicAlgebra_ringHom_of_frameComparison
       (ρ : O₁ →+* O), Function.Injective ρ ∧
       (∀ c : ℤ_[q], ρ (algebraMap ℤ_[q] O₁ c) = algebraMap ℤ_[q] O c) ∧
       (∀ a : 𝓞 D, ρ (j₁ a) = j a) ∧
-      Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁ :=
-  sorry
+      Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁ := by
+  obtain ⟨iAlg, iFin, iFree, hrank, hgsmul⟩ :=
+    exists_padicAlgebra_of_additiveEquiv_sq q O₁ O g hgadd hgbij
+  letI := iAlg; letI := iFin; letI := iFree
+  obtain ⟨ρ, hρinj, hρZ, hρj⟩ :=
+    exists_ringHom_of_span_range_eq_top q O₁ j₁
+      (span_range_eq_top_of_adicPin q I hI hqI π hπ hπ2 O₁ j₁ hdense hker) O j g
+      hgadd hgbij hgsmul hgj
+  exact ⟨iAlg, iFin, iFree, ρ, hρinj, hρZ, hρj, hrank⟩
 
 /-- **An injection of `ℤ_q`-algebras of equal rank out of an integrally
-closed domain is surjective** (sorry leaf — pure commutative algebra;
-Serre, *Local Fields* I, or Neukirch I.2 for the integral-closure step).
+closed domain is surjective** (PROVEN 2026-07-27 — pure commutative
+algebra; Serre, *Local Fields* I, or Neukirch I.2 for the
+integral-closure step).
 
-THE ARGUMENT.  Write `n` for the common rank and `K` for the fraction
-field of `O₁`.  Since `O₁` is a domain finite over `ℤ_q`, the
-localization `O₁ ⊗_{ℤ_q} ℚ_q` is a field, hence equal to `K`, of
-`ℚ_q`-dimension `n`.  Now `ρ` is an injection of finite free
+THE ARGUMENT ORIGINALLY RECORDED.  Write `n` for the common rank and
+`K` for the fraction field of `O₁`.  Since `O₁` is a domain finite over
+`ℤ_q`, the localization `O₁ ⊗_{ℤ_q} ℚ_q` is a field, hence equal to
+`K`, of `ℚ_q`-dimension `n`.  Now `ρ` is an injection of finite free
 `ℤ_q`-modules of equal rank `n`, so `ρ ⊗ ℚ_q : K → O ⊗_{ℤ_q} ℚ_q` is an
 injection of `ℚ_q`-spaces of equal dimension, hence an ISOMORPHISM.
 `O` is `ℤ_q`-free, so `O → O ⊗_{ℤ_q} ℚ_q ≅ K` is injective: `O` is a
 domain, and a subring of `K` containing `O₁`.  Being finite over `ℤ_q`
 it is integral over `O₁`, and `O₁` is integrally closed in `K`, so
 `O ⊆ O₁`.  With `O₁ ⊆ O` that is surjectivity.
+
+THE ARGUMENT ACTUALLY EXECUTED, which avoids tensor products entirely
+and never constructs the embedding `O ↪ K` as a map.  Fix `x : O`.
+
+* *A denominator exists.*  `ρ` is `ℤ_q`-linear, so its range `N` is a
+  `ℤ_q`-submodule of `O` with `finrank N = finrank O₁ = finrank O`;
+  `Module.finrank_quotient_add_finrank_le` then forces
+  `finrank (O ⧸ N) = 0`, and `Module.finrank_eq_zero_iff` turns that
+  into: some `c ≠ 0` in `ℤ_q` has `c • x = ρ a`, `a : O₁`.  This is the
+  only place the rank equality is used.
+* *The numerator is divisible by the denominator.*  `O` is module-finite
+  over `O₁` along `ρ` (`Module.Finite.of_restrictScalars_finite`), so
+  `x` is integral: `p` monic over `O₁` with `p(x) = 0`.  Writing
+  `cc := algebraMap ℤ_q O₁ c`, `Polynomial.scaleRoots_eval₂_mul` at
+  `ρ cc * x = ρ a` gives `ρ ((p.scaleRoots cc).eval a) = 0`, hence
+  `(p.scaleRoots cc).eval a = 0` by injectivity.  Read in
+  `K = FractionRing O₁`, the SAME identity says `p (ι a / ι cc) = 0`,
+  so `ι a / ι cc` is integral over `O₁` and
+  `IsIntegrallyClosed.isIntegral_iff` produces `y : O₁` with
+  `cc * y = a`.
+* *Cancel.*  `ρ (cc * y) = ρ a = c • x` reads `c • ρ y = c • x`, and `O`
+  is `ℤ_q`-torsion-free (it is free), so `ρ y = x`.
+
+Note this route never needs `IsDomain O`, and in particular does not
+have to prove it first.
 
 WHY EACH HYPOTHESIS IS NEEDED, since each excludes a genuine
 counterexample.  Drop `IsIntegrallyClosed O₁` and take `O₁ = ℤ_q[q√d]`
@@ -6831,11 +7154,14 @@ and the fraction field of the first paragraph does not exist.  Drop
 `hρZ` and `ρ` need not be `ℤ_q`-linear, so the rank comparison says
 nothing.
 
-Note that `IsDomain O` is NOT a hypothesis — it is part of what the
-argument PROVES, which is the whole point of the leaf as far as
-`exists_algebraicClosureEmbedding_of_tateFrame_mult` is concerned: the
-audit there rejects `IsDomain O` as an ad-hoc assumption and requires it
-to be derived. -/
+Note that `IsDomain O` is NOT a hypothesis, which is the whole point of
+the leaf as far as `exists_algebraicClosureEmbedding_of_tateFrame_mult`
+is concerned: the audit there rejects `IsDomain O` as an ad-hoc
+assumption and requires it to be DERIVED.  The executed proof does not
+prove it either — it does not need to.  The consumer gets it for free
+from the ring isomorphism `O ≃+* O₁` that this leaf and
+`exists_padicAlgebra_ringHom_of_frameComparison` assemble in
+`exists_ringEquiv_of_frameComparison`, transporting `IsDomain O₁`. -/
 theorem surjective_of_finrank_eq_of_isIntegrallyClosed
     (q : ℕ) [Fact q.Prime]
     (O₁ : Type u) [CommRing O₁] [IsDomain O₁] [IsIntegrallyClosed O₁]
@@ -6845,8 +7171,79 @@ theorem surjective_of_finrank_eq_of_isIntegrallyClosed
     (ρ : O₁ →+* O) (hρinj : Function.Injective ρ)
     (hρZ : ∀ c : ℤ_[q], ρ (algebraMap ℤ_[q] O₁ c) = algebraMap ℤ_[q] O c)
     (hrank : Module.finrank ℤ_[q] O = Module.finrank ℤ_[q] O₁) :
-    Function.Surjective ρ :=
-  sorry
+    Function.Surjective ρ := by
+  classical
+  -- `O` is an `O₁`-algebra through `ρ`, and the two `ℤ_q`-structures agree.
+  letI : Algebra O₁ O := ρ.toAlgebra
+  haveI : IsScalarTower ℤ_[q] O₁ O :=
+    IsScalarTower.of_algebraMap_eq fun c => (hρZ c).symm
+  haveI : Module.Finite O₁ O := Module.Finite.of_restrictScalars_finite ℤ_[q] O₁ O
+  -- STEP 1.  `O ⧸ ρ(O₁)` has `finrank` zero: every element of `O` has a nonzero
+  -- `ℤ_q`-multiple in the image of `ρ`.  This is the only use of `hrank`.
+  have hkey : ∀ x : O, ∃ c : ℤ_[q], c ≠ 0 ∧ ∃ a : O₁, ρ a = c • x := by
+    have hL : Function.Injective ⇑(IsScalarTower.toAlgHom ℤ_[q] O₁ O).toLinearMap := hρinj
+    have hNrank : Module.finrank ℤ_[q]
+        (LinearMap.range (IsScalarTower.toAlgHom ℤ_[q] O₁ O).toLinearMap)
+        = Module.finrank ℤ_[q] O₁ := LinearMap.finrank_range_of_inj hL
+    have hle := Module.finrank_quotient_add_finrank_le (R := ℤ_[q]) (M := O)
+      (LinearMap.range (IsScalarTower.toAlgHom ℤ_[q] O₁ O).toLinearMap)
+    have hquot0 : Module.finrank ℤ_[q]
+        (O ⧸ LinearMap.range (IsScalarTower.toAlgHom ℤ_[q] O₁ O).toLinearMap) = 0 := by
+      omega
+    intro x
+    obtain ⟨c, hc0, hc⟩ :=
+      (Module.finrank_eq_zero_iff (R := ℤ_[q])).mp hquot0 (Submodule.Quotient.mk x)
+    refine ⟨c, hc0, ?_⟩
+    rw [← Submodule.Quotient.mk_smul, Submodule.Quotient.mk_eq_zero] at hc
+    obtain ⟨a, ha⟩ := hc
+    exact ⟨a, ha⟩
+  -- STEP 2.  Surjectivity, one element at a time.
+  intro x
+  obtain ⟨c, hc0, a, ha⟩ := hkey x
+  set cc : O₁ := algebraMap ℤ_[q] O₁ c with hcc
+  have hcc0 : cc ≠ 0 := by
+    rw [hcc, Algebra.algebraMap_eq_smul_one]
+    intro h
+    exact one_ne_zero (smul_right_injective O₁ hc0 (by simpa using h))
+  have hrcc : ρ cc = algebraMap ℤ_[q] O c := hρZ c
+  have hax : ρ cc * x = ρ a := by rw [hrcc, ← Algebra.smul_def, ha]
+  -- `x` is integral over `O₁`, and the scaled polynomial kills the numerator `a`.
+  obtain ⟨p, hpm, hpe⟩ : IsIntegral O₁ x := IsIntegral.of_finite O₁ x
+  have hscaled : Polynomial.eval₂ ρ (ρ a) (p.scaleRoots cc) = 0 := by
+    have hmul := Polynomial.scaleRoots_eval₂_mul (p := p) (f := ρ) (r := x) (s := cc)
+    rw [hax] at hmul
+    rw [hmul]
+    have hzero : Polynomial.eval₂ ρ x p = 0 := hpe
+    rw [hzero, mul_zero]
+  have hscaled' : Polynomial.eval a (p.scaleRoots cc) = 0 := by
+    rw [Polynomial.eval₂_at_apply] at hscaled
+    exact hρinj (by simpa using hscaled)
+  -- Read in the fraction field: `a / cc` is integral over `O₁`, hence lies in `O₁`.
+  set K := FractionRing O₁
+  set ι : O₁ →+* K := algebraMap O₁ K with hι
+  have hιinj : Function.Injective ι := IsFractionRing.injective O₁ K
+  have hιcc : ι cc ≠ 0 := fun h => hcc0 (hιinj (by simpa using h))
+  set t : K := ι a / ι cc with ht
+  have htmul : ι cc * t = ι a := by
+    rw [ht, mul_div_cancel₀]
+    exact hιcc
+  have hpt : Polynomial.eval₂ ι t p = 0 := by
+    have h := Polynomial.scaleRoots_eval₂_mul (p := p) (f := ι) (r := t) (s := cc)
+    rw [htmul] at h
+    rw [Polynomial.eval₂_at_apply, hscaled', map_zero] at h
+    rcases mul_eq_zero.mp h.symm with h' | h'
+    · exact absurd h' (pow_ne_zero _ hιcc)
+    · exact h'
+  obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp (⟨p, hpm, hpt⟩ : IsIntegral O₁ t)
+  have hcy : cc * y = a := by
+    apply hιinj
+    rw [map_mul, hy, htmul]
+  -- Cancel the denominator: `O` is `ℤ_q`-torsion-free because it is free.
+  have hfin : c • ρ y = c • x := by
+    have hmul : ρ (cc * y) = ρ a := by rw [hcy]
+    rw [map_mul, hrcc, ← Algebra.smul_def] at hmul
+    rw [hmul, ha]
+  exact ⟨y, smul_right_injective O hc0 hfin⟩
 
 open _root_.NumberField in
 /-- **An `𝒪_D`-frame comparison identifies the coefficient rings**
