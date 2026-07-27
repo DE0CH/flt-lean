@@ -19581,7 +19581,139 @@ maximal (see the SPLIT/DESCENT section docstring): build the `Γ`-action on
 is NOT by itself enough, so the descent will need either a functorial
 strengthening of leaf A or a direct construction — then descend, then read
 the level structures and the archimedean point off Lemma 4.4. The
-translation into the seam is already done and is not this leaf's problem. -/
+translation into the seam is already done and is not this leaf's problem.
+READ THE TWO AUDITS BELOW FIRST: the first says this leaf cannot be closed
+as stated, and the second says the sentence just written names the wrong
+object.
+
+COUPLING AUDIT (2026-07-27) — THIS LEAF ENTAILS `det ρbarp = χ̄_p`, AND NO
+HYPOTHESIS OF IT SUPPLIES THAT. It is therefore DIRECTLY UNATTACKABLE: not
+false, but provable only through the module's collapse. Do not spend a task
+attempting it before the repair below has landed.
+
+THE DERIVATION, entirely from this leaf's own conclusion:
+
+1. The conclusion gives `X`, `fX`, `fA`, `ab`, `m` with `Smooth fX` and
+   `IsFormOver K fX fX₀` for an algebraically closed `K` and a
+   geometrically irreducible `fX₀`. By
+   `geometricallyIrreducible_of_isFormOver_isAlgClosed` (proven, this file)
+   `fX` is geometrically irreducible, and `Smooth fX` makes `X` reduced.
+   So `X` is INTEGRAL and non-empty and has a generic point: a field
+   `F₀` in `Type u`, a `ℚ`-algebra, with `xη : Spec F₀ ⟶ X` satisfying
+   `xη ≫ fX = specRatMap F₀`.
+2. Geometric irreducibility says `ℚ` is algebraically closed in `F₀`,
+   so `Field.absoluteGaloisGroup.map (algebraMap ℚ F₀)` is SURJECTIVE.
+3. The level-structure clause quantifies over EVERY `ℚ`-algebra field
+   point, and the generic point is one, so it fires at `F₀` and yields
+   `IsTwistedLevelStructure frp m ρbarp xη`: an additive injective
+   `e : kp² → A[𝔭]` onto the `𝔭`-torsion of the fibre, equivariant for
+   `ρbarp` restricted along the map of step 2.
+4. `Fermat.AbelianSchemeStruct` carries `proper`, `smooth` and
+   `connected`, and the conclusion carries
+   `SmoothOfRelativeDimension (Module.finrank ℚ D) fA`; so the fibre at
+   `xη` is an abelian variety over `F₀` of dimension `[D:ℚ]` with
+   `𝒪_D`-multiplication, and its `𝔭`-Weil pairing computes
+   `det_{kp} A[𝔭]` as `χ̄_p` times the Galois character of the
+   polarization module. Instantiate the leaf at `D = ℚ` — legitimate,
+   since `D` is universally quantified — where `𝒪_D = ℤ`, `lam = (ℓ)`,
+   `frp = (p)`, `Module.finrank ℚ ℚ = 1` and the objects are elliptic
+   curves: the polarization module is trivial and step 4 is the
+   CLASSICAL WEIL PAIRING on `E[p]`.
+5. Steps 3 and 4 give `det (ρbarp restricted) = χ̄_p restricted`, and
+   step 2 upgrades that to `det ρbarp = χ̄_p` on all of `Γ_ℚ`.
+
+NO HYPOTHESIS SUPPLIES IT, and the check is one line: every hypothesis
+mentioning `ρbarp` is INVARIANT under twisting `ρbarp ↦ ρbarp ⊗ μ` by a
+character `μ : Γ_ℚ → kpˣ`, while `det` changes by `μ²`. For `hdih` this is
+because a dihedral `Ind_M ψ` twists to `Ind_M (ψ · μ|_M)` and both of its
+clauses depend only on the anticyclotomic ratio `ψ/ψ^σ`, which is
+unchanged; `hresp` constrains only `kp`; `hsplit` constrains `ρ₀p`, never
+`ρbarp`. So whenever `|kpˣ| > 2` there is a `μ` with `μ² ≠ 1`, and the
+hypotheses hold of a `ρbarp` for which the conclusion is unreachable.
+
+WHY THIS IS NOT A FALSITY. The module's standing collapse audit (see
+`exists_twistedHilbertBlumenthalModuliTwist_of_five_le`) records that the
+package `hρbar ∧ hirr` at `ℓ ≥ 5` is classically unsatisfiable, so the
+leaf stays vacuously sound. What the audit rules out is a DIRECT proof:
+any proof must first derive the collapse, i.e. prove the headline theorem.
+
+THE ASYMMETRY THAT SHOWS IT IS AN OVERSIGHT. The identical derivation run
+at `λ` forces `det ρbar = χ̄_ℓ` — and that IS supplied, by
+`IsHardlyRamified.det`. The `𝔭` side has no counterpart. One side of the
+same geometry carries its determinant condition and the other does not.
+
+WHERE IT WENT MISSING. It is Taylor's own compatibility condition. §4
+defines `Γ = {(γ,ε) ∈ GL₂(𝒪_E/b₀) × 𝒪_{E,≫0}ˣ/(𝒪_{E,≡1(b₀)}ˣ)² :
+ε det γ ≡ 1}` and puts the twists in bijection with the pairs `(R,ψ)`
+subject to `ε⁻¹ det R ≡ ψ⁻¹` — quoted verbatim in the FORM-cut docstring
+of this file. Without it the twisting cocycle does not land in `Γ` and
+there is nothing to twist by. The FAITHFULNESS NOTE of the DATUM cut says
+the Weil-pairing normalization survives the twist only as a coupling that
+"belongs in `exists_totallyRealCoefficientDatum_of_residueField` and not
+here". That is half right: the coupling is PRODUCED there and CONSUMED
+here, and the DESCENT/SEAM cut kept only the producing half.
+
+THE REPAIR, AND WHY IT IS NOT PERFORMED HERE. Add to this leaf the
+hypothesis in the vocabulary this file already has for exactly this
+condition, namely `hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp` — the
+`galRoot`-equivariance clause of `IsStandardLevelModule` composed with its
+nondegeneracy clause IS `det ρbarp = χ̄_p`, as the MODULE/GEOMETRY cut
+docstring above states, and it is the same object leaf A1 produces for
+`ρ₀p`. It must then be threaded through the two PROVEN assemblies above
+(`exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split` and
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum`) to
+`exists_twistedHilbertBlumenthalModuliTwist_of_five_le`, where it has to be
+discharged by the leaf that CHOOSES `ρbarp`,
+`exists_dihedralOddGaloisRep_of_charThree` — whose witness
+`dihedralMat (ν ·) (e ·)` has an unpinned determinant `ν`, so that leaf's
+conclusion has to be strengthened too. That leaf is PROVEN and belongs to
+another owner, so the repair is a CUT-LEVEL one and is reported rather than
+made: THE SIGNATURE BELOW IS DELIBERATELY LEFT UNCHANGED.
+
+THE CHECK THAT WOULD REFUTE THIS AUDIT: exhibit a hypothesis of this leaf
+that is NOT invariant under `ρbarp ↦ ρbarp ⊗ μ` with `μ² ≠ 1`; or exhibit
+a model of the conclusion whose `X` has no `ℚ`-algebra field point — which
+step 1 rules out, since an integral scheme has a generic point.
+
+Γ-ACTION AUDIT (2026-07-27) — "BUILD THE `Γ`-ACTION ON `X₀`" NAMES THE
+WRONG OBJECT, and a prover following it literally will state something
+false. There is no action of `Γ` on `X₀` OVER `ℚ` compatible with the
+universal level structures. If `α ∈ Γ` acted that way it would act on
+`X₀(F)` for every `F`; a point of `X₀(F)` carries a level structure `e`
+that is `Γ_F`-equivariant for the STANDARD module `ρ₀`, and `e ∘ α` is
+equivariant for `α⁻¹ ρ₀ α`, so `α` would have to centralize `ρ₀(Γ_F)` —
+false for any `α` outside that centralizer, and at `F = ℚ` the centralizer
+of an `ρ₀` with cyclotomic determinant is a torus, not `Γ`.
+
+What is true is the classical picture: `Γ` acts on `X₀ ⊗ ℚ̄` (where the
+equivariance condition is vacuous because `Γ_{ℚ̄} = 1`), and `Γ_ℚ` acts on
+that action by `ρ₀`-CONJUGATION rather than trivially — `X₀`'s `ℚ`-form is
+the `ρ₀` one, so the Galois action on the constant group is twisted by it.
+The twisting datum is correspondingly a 1-COCYCLE for that action,
+`σ ↦ ρbar(σ) ρ₀(σ)⁻¹` at `λ` (after transporting `ρbar` along a `k`-basis
+`W ≃ k²`, which `hW` supplies) and `σ ↦ ρbarp(σ) ρ₀p(σ)⁻¹` at `𝔭` — NOT a
+homomorphism, which is why "a continuous homomorphism `Γ_ℚ → Γ`" is the
+wrong shape for the twisting datum as well.
+
+The two audits are one statement. A cocycle lands in the subgroup that
+preserves the pairing normalization exactly when the two determinants
+agree: at `λ` that is `det ρbar = det ρ₀ = χ̄_ℓ`, available from
+`IsHardlyRamified.det`, and at `𝔭` it is `det ρbarp = det ρ₀p = χ̄_p`,
+which is the hypothesis the COUPLING AUDIT says is missing.
+
+RE-CHECKED AND CONFIRMED (2026-07-27), since the COUPLING AUDIT above turns
+on twisting `ρbarp` and the section docstring's reason for keeping `hdih`
+turns on oddness: `hdih` DOES force `ρbarp` odd, so that reason stands.
+Read `hdih` at `F = ℚ`: `ρbarp` is irreducible and becomes reducible over a
+quadratic `L/ℚ`, so (in the residue characteristic `≠ 2` this development
+works in) `ρbarp = Ind_L^ℚ ψ`. If `L` were REAL quadratic then `L` is itself
+a totally real number field, and `hdih` at `F = L` would demand
+irreducibility of a representation that is reducible by construction; so `L`
+is imaginary quadratic, and an induction from an imaginary quadratic field
+is odd. Note this is consistent with the COUPLING AUDIT rather than in
+tension with it: twisting by `μ` changes `det` by `μ²` and `μ(c)² = 1` at
+complex conjugation, so the twist that breaks the determinant condition
+PRESERVES oddness, and preserves `hdih` as well. -/
 theorem exists_twistedHilbertBlumenthalDescent_of_split
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
