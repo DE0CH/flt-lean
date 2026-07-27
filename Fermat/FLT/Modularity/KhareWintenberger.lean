@@ -409,6 +409,15 @@ import Mathlib.RingTheory.DedekindDomain.Factorization
 -- prime (`RingHom.ker_isPrime`).
 import Mathlib.LinearAlgebra.TensorProduct.Basis
 import Mathlib.RingTheory.Ideal.Maps
+-- proof-only (2026-07-26, `exists_invIdeal_generator`, the fractional-ideal
+-- half of the archimedean node): invertibility of a nonzero ideal in a
+-- Dedekind domain (`FractionalIdeal.coe_ideal_mul_inv`), the fact that `I⁻¹`
+-- strictly contains `𝒪` for `I` proper and nonzero
+-- (`FractionalIdeal.not_inv_le_one_of_ne_bot`), and the `CommGroupWithZero`
+-- structure on fractional ideals that supplies the cancellation step. Nothing
+-- from either module appears in a SIGNATURE here, so a plain import suffices.
+import Mathlib.RingTheory.DedekindDomain.Ideal.Basic
+import Mathlib.RingTheory.FractionalIdeal.Operations
 -- SIGNATURE-BEARING (2026-07-26, the Euclidean chart on `X(ℝ)`): the implicit
 -- function theorem in the form that returns an `OpenPartialHomeomorph`
 -- (`HasStrictFDerivAt.implicitToOpenPartialHomeomorph`), which is what supplies
@@ -11736,8 +11745,368 @@ theorem exists_realConj_equiv_of_involution
     · rw [hb1]; simpa using hMe₁
 
 
+/-! ### `realConj` is an INTEGRAL involution, and that is what makes one level
+structure serve every maximal ideal
+
+`realConj R ε` is stated for a commutative RING `R`, but `realConjMatrix R ε`
+has entries `0`, `1`, `-1` only, so the involution it defines never touches the
+multiplication of `R` and makes sense on `M²` for an arbitrary abelian group
+`M`. `realConjAdd` is that integral form; `realConj_eq_realConjAdd` identifies
+the two where both are defined, and `realConjAdd_map` says that ANY additive map
+intertwines them.
+
+Those three are exactly what lets the archimedean node be cut in two. The
+geometric leaf below produces ONE level structure, over the divisible module
+`(D / 𝒪_D)²` — which is the torsion of `E ⊗_ℤ 𝒪_D` for a real elliptic curve
+`E` — and complex conjugation acts on it by `realConjAdd ε`. The residue-level
+structures at the individual maximal ideals `I` are then obtained by composing
+with the algebraic leaf's parametrization `𝒪_D / I ≃ (D / 𝒪_D)[I]`, and
+`realConjAdd_map` transports the conjugation action along it for free. No
+geometry is reproved per ideal, which is the strength the consumer
+`exists_realHilbertBlumenthalObject_of_odd` needs. -/
+
+/-- **The integral form of `realConj`**: the involution
+`(x, y) ↦ (x + [ε] y, -y)` of `M²`, for an arbitrary abelian group `M`. -/
+def realConjAdd (M : Type*) [AddCommGroup M] (ε : Bool) (v : Fin 2 → M) : Fin 2 → M :=
+  ![v 0 + (if ε then v 1 else 0), -v 1]
+
+/-- **Over a commutative ring `realConjAdd` IS `realConj`** — the matrix
+entries of `realConjMatrix` lie in the prime ring, so the two agree. -/
+theorem realConj_eq_realConjAdd (R : Type*) [CommRing R] (ε : Bool) (v : Fin 2 → R) :
+    realConj R ε v = realConjAdd R ε v := realConj_apply R ε v
+
+/-- **Every additive map intertwines `realConjAdd`.** Only additivity is
+required — no linearity over any ring — because the matrix is integral. This is
+what transports the archimedean level structure from the divisible module
+`D / 𝒪_D` down to a residue ring `𝒪_D / I`. -/
+theorem realConjAdd_map {M N : Type*} [AddCommGroup M] [AddCommGroup N]
+    (t : M → N) (ht : ∀ x y, t (x + y) = t x + t y) (ε : Bool) (v : Fin 2 → M) :
+    (fun i => t (realConjAdd M ε v i)) = realConjAdd N ε (fun i => t (v i)) := by
+  have h0 : t 0 = 0 := by
+    have h := ht 0 0
+    rw [add_zero] at h
+    have h' : t 0 + 0 = t 0 + t 0 := by rw [add_zero]; exact h
+    exact (add_left_cancel h').symm
+  have hneg : ∀ x : M, t (-x) = -t x := by
+    intro x
+    have h := ht x (-x)
+    rw [add_neg_cancel, h0] at h
+    exact (neg_eq_of_add_eq_zero_right h.symm).symm
+  funext i
+  fin_cases i <;> cases ε <;> simp [realConjAdd, ht, hneg]
+
+/-! ### Crossing between `AbelianSchemeStruct`'s fields and the instances it
+builds
+
+`AbelianSchemeStruct.addCommGroup` and `Mult.module` are `@[reducible]` defs
+rather than instances, deliberately (see `Modularity/AbelianScheme.lean`), so a
+proof that mixes the bundled fields `ab.add` / `ab.zero` / `m.act` with the
+`+` / `0` / `•` of the induced structures has to cross between the two
+presentations. Every such crossing is definitional, so a `show` suffices and no
+bridging lemma is needed for `+` and `0`. Only the `Mult.torsion` membership
+below is worth naming, because it also has to see through
+`Submodule.torsionBySet`. -/
+
 open CategoryTheory in
-/-- **One real elliptic curve, tensored with `𝒪_D`** (sorry leaf, cut
+/-- **Membership in the `I`-torsion of a geometric fibre, unbundled**: it is
+exactly the condition that every element of `I` annihilates the point. This is
+`Submodule.mem_torsionBySet_iff` read through `Mult.module`. -/
+theorem mem_multTorsion_iff {A S : AlgebraicGeometry.Scheme.{u}} {f : A ⟶ S}
+    {ab : Fermat.AbelianSchemeStruct f} {R : Type u} [CommRing R] (m : Fermat.Mult ab R)
+    {F : Type u} [Field F] (x : AlgebraicGeometry.Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal R) (y : Fermat.GeomFibrePt f x) :
+    y ∈ (m.torsion x I).1 ↔ ∀ a ∈ I, m.act a y = ab.zero _ := by
+  letI := ab.addCommGroup (Fermat.specAlgClos F ≫ x)
+  letI := m.module (Fermat.specAlgClos F ≫ x)
+  constructor
+  · intro hy a ha
+    exact (Submodule.mem_torsionBySet_iff (R := R) (M := Fermat.GeomFibrePt f x)
+      ((I : Set R)) y).mp hy ⟨a, ha⟩
+  · intro h
+    refine SetLike.mem_coe.mpr ((Submodule.mem_torsionBySet_iff _ _).mpr ?_)
+    intro a
+    exact h a a.2
+
+open CategoryTheory in
+/-- **THE GEOMETRIC LEAF of the archimedean node** (sorry leaf, cut 2026-07-26
+out of `exists_realAbelianSchemeWithRealMultiplication`): one real abelian
+scheme with real multiplication by `𝒪_D`, carrying ONE level structure over the
+divisible module `(D / 𝒪_D)²` rather than a family of them over the residue
+rings.
+
+CLASSICALLY this is `B = E ⊗_ℤ 𝒪_D` for a real elliptic curve `E` whose
+discriminant has the sign prescribed by `ε`. Then `B(ℂ) = E(ℂ) ⊗_ℤ 𝒪_D`, whose
+torsion subgroup is `(ℚ/ℤ)² ⊗_ℤ 𝒪_D = (D / 𝒪_D)²`; the map `e` is that
+identification, and complex conjugation acts on it by `C ⊗ 1` where
+`C = realConjMatrix ℤ ε` in a `ℤ`-basis of `H₁(E(ℂ), ℤ)` adapted to it. There
+are exactly two conjugacy classes of such `C` over `ℤ`, realized by the two
+signs of `Δ(E)`, which is where `ε` is consumed.
+
+WHY THE STATEMENT IS SHAPED THIS WAY. The consumer needs a level structure at
+every maximal ideal `I` of `𝒪_D`, with the SAME `ε` throughout; that uniformity
+is the whole strength of the node, and it is a property of `E` alone. Stating
+the leaf over `D / 𝒪_D` — a single `𝒪_D`-module, independent of `I` — records
+the uniformity in the statement rather than leaving it to be re-established for
+each `I`. The passage to `I` is then pure commutative algebra
+(`exists_residueTorsionParam_of_isMaximal`) plus `realConjAdd_map`.
+
+The final clause asks only that the image of `e` CONTAIN each `I`-torsion, not
+that it be the whole torsion subgroup; that is all the assembly uses, and it is
+the weaker and hence more easily discharged requirement.
+
+MISSING MACHINERY, in dependency order (all archimedean and elementary, and
+none of it present at this pin — a 2026-07-25 survey of
+`.lake/packages/mathlib` found no `AbelianVariety`, no `AbelianScheme` and no
+scheme model of an elliptic curve, and `~/cs/FLT` has none either; re-checked
+2026-07-26 against `Fermat/` itself, which has `Fermat.AbelianSchemeStruct` but
+no example of one):
+1. Elliptic curves as abelian schemes in the `Fermat.AbelianSchemeStruct`
+   presentation — mathlib has `WeierstrassCurve` and the group law on its
+   point SETS, and `Proj` of a graded ring, but no functorial group structure
+   on `Hom_S(T, E)`, no properness and no geometric connectedness. This is
+   the bulk of the work.
+2. The tensor construction `E ⊗_ℤ 𝒪_D` with its `Fermat.Mult` by `𝒪_D`.
+   Concretely `B = E^g` for `g = [D:ℚ]` with `𝒪_D` acting through its regular
+   representation `𝒪_D → M_g(ℤ)` on a `ℤ`-basis, so this needs the `g`-fold
+   fibre product, `RelPoint` of a product as a product of `RelPoint`s, and
+   stability of `IsProper` / `Smooth` / `GeometricallyConnected` and additivity
+   of `SmoothOfRelativeDimension` under it.
+3. The action of complex conjugation on `E(ℂ)_tors`, and the identification of
+   `E(ℂ)_tors ⊗_ℤ 𝒪_D` with `(D / 𝒪_D)²`.
+
+NOT NEEDED, and recorded here because an earlier plan said otherwise: complex
+multiplication, Shimura theory, and the moduli space `X_Dih` play no part; and
+NO DUAL ABELIAN SCHEME, NO POLARIZATION and NO WEIL PAIRING are required —
+this node asks only for torsion with a prescribed Galois action, never for a
+pairing on it. That distinguishes it from the sibling
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum`, which is blocked on
+exactly that missing duality layer.
+
+FAITHFULNESS: `[D:ℚ] ≥ 1`, so the conclusion cannot be met by a point — `e` is
+injective on a divisible module of infinite cardinality, so `B` must be a
+genuine abelian variety.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be discharged
+by the independent construction — never through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
+theorem exists_realAbelianSchemeWithDivisibleLevelStructure
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D] (ε : Bool) :
+    ∃ (B : AlgebraicGeometry.Scheme.{u})
+      (fB : B ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))
+      (abB : Fermat.AbelianSchemeStruct fB)
+      (m : Fermat.Mult abB (NumberField.RingOfIntegers D))
+      (e : (Fin 2 → (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D))) →
+        Fermat.GeomFibrePt fB (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB ∧
+      (∀ v w, e (v + w) = abB.add (e v) (e w)) ∧
+      (∀ (a : NumberField.RingOfIntegers D) v, e (a • v) = m.act a (e v)) ∧
+      Function.Injective e ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) v, σ ≠ 1 →
+        e (realConjAdd _ ε v) =
+          abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e v)) ∧
+      (∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        ∀ y ∈ (Fermat.Mult.torsion m
+            (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I).1,
+          ∃ v, e v = y) :=
+  sorry
+
+open scoped nonZeroDivisors in
+/-- **`I⁻¹ = 𝒪_D + α 𝒪_D` for some `α ∉ 𝒪_D`** (PROVEN 2026-07-26): the whole
+fractional-ideal content of the archimedean node's algebraic half, stated
+without ever mentioning a fractional ideal so that its consumer needs none.
+
+The three clauses say, in order, that `α I ⊆ 𝒪_D` (so `α` lies in `I⁻¹`), that
+`α ∉ 𝒪_D` (so it is a NEW element), and that `𝒪_D + α 𝒪_D` already exhausts
+`I⁻¹` — every `z` with `z I ⊆ 𝒪_D` is `b + α x` with `b, x ∈ 𝒪_D`.
+
+PROOF. `𝒪_D` is a Dedekind domain and is not a field, so a maximal `I` is
+nonzero and `I I⁻¹ = 1` (`FractionalIdeal.coe_ideal_mul_inv`). `I⁻¹ ⊄ 𝒪_D`
+(`FractionalIdeal.not_inv_le_one_of_ne_bot`, which needs `I ≠ ⊥` and
+`I ≠ ⊤`) supplies `α`. Put `N = 1 ⊔ ⟨α⟩`. Then `1 ≤ N ≤ I⁻¹`, so `I N ≤ 1`,
+so `I N` is an integral ideal `K` with `I ≤ K`. If `K ≠ ⊤` then maximality
+gives `K = I`, i.e. `I N = I 1`, and CANCELLATION in the group of fractional
+ideals of a Dedekind domain gives `N = 1`, i.e. `α ∈ 𝒪_D` — contradiction.
+So `K = ⊤`, `I N = 1`, and hence `N = I⁻¹`.
+
+Note that cancellation replaces the textbook step "`α I ⊆ I` forces `α`
+integral over `𝒪_D`, hence `α ∈ 𝒪_D` by integral closedness". Both are
+available at this pin; the group-cancellation form is two lines. -/
+theorem exists_invIdeal_generator (D : Type u) [Field D] [NumberField D]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
+    ∃ α : D,
+      (∀ a ∈ I, α * algebraMap (NumberField.RingOfIntegers D) D a ∈
+        (1 : Submodule (NumberField.RingOfIntegers D) D)) ∧
+      α ∉ (1 : Submodule (NumberField.RingOfIntegers D) D) ∧
+      (∀ z : D, (∀ a ∈ I, algebraMap (NumberField.RingOfIntegers D) D a * z ∈
+          (1 : Submodule (NumberField.RingOfIntegers D) D)) →
+        ∃ b x : NumberField.RingOfIntegers D,
+          z = algebraMap _ D b + α * algebraMap _ D x) := by
+  classical
+  set 𝒪 := NumberField.RingOfIntegers D with h𝒪
+  have hNF : ¬ IsField 𝒪 := NumberField.RingOfIntegers.not_isField D
+  have hI0 : I ≠ ⊥ := (I.bot_lt_of_maximal hNF).ne'
+  set J : FractionalIdeal 𝒪⁰ D := (I : FractionalIdeal 𝒪⁰ D) with hJdef
+  have hJ0 : J ≠ 0 := FractionalIdeal.coeIdeal_ne_zero.mpr hI0
+  have hcancel : J * J⁻¹ = 1 := FractionalIdeal.coe_ideal_mul_inv I hI0
+  obtain ⟨α, hαJ, hα1⟩ : ∃ α : D, α ∈ J⁻¹ ∧ α ∉ (1 : FractionalIdeal 𝒪⁰ D) :=
+    SetLike.not_le_iff_exists.mp
+      (FractionalIdeal.not_inv_le_one_of_ne_bot (K := D) hI0 hI.ne_top)
+  set N : FractionalIdeal 𝒪⁰ D := 1 ⊔ FractionalIdeal.spanSingleton 𝒪⁰ α with hNdef
+  have h1N : (1 : FractionalIdeal 𝒪⁰ D) ≤ N := le_sup_left
+  have hNinv : N ≤ J⁻¹ := by
+    refine sup_le ?_ (FractionalIdeal.spanSingleton_le_iff_mem.mpr hαJ)
+    have h := FractionalIdeal.inv_anti_mono (I := J) (J := (1 : FractionalIdeal 𝒪⁰ D))
+      hJ0 one_ne_zero FractionalIdeal.coeIdeal_le_one
+    rwa [inv_one] at h
+  have hJNle : J * N ≤ 1 := le_of_le_of_eq (mul_le_mul_right hNinv J) hcancel
+  obtain ⟨K, hK⟩ := FractionalIdeal.le_one_iff_exists_coeIdeal.mp hJNle
+  have hIK : I ≤ K := by
+    rw [← FractionalIdeal.coeIdeal_le_coeIdeal (K := D), hK, ← hJdef]
+    exact le_of_eq_of_le (mul_one J).symm (mul_le_mul_right h1N J)
+  have hKtop : K = ⊤ := by
+    by_contra hne
+    have hIKeq : I = K := hI.eq_of_le hne hIK
+    have hmul : J * N = J * 1 := by rw [mul_one, ← hK, ← hIKeq, ← hJdef]
+    have hN1 : N = 1 := mul_left_cancel₀ hJ0 hmul
+    exact hα1 (hN1 ▸ (le_sup_right : FractionalIdeal.spanSingleton 𝒪⁰ α ≤ N)
+      (FractionalIdeal.mem_spanSingleton_self _ α))
+  have hJN : J * N = 1 := by rw [← hK, hKtop, FractionalIdeal.coeIdeal_top]
+  have hNeq : N = J⁻¹ := eq_inv_of_mul_eq_one_right hJN
+  have hone : ∀ w : D, w ∈ (1 : FractionalIdeal 𝒪⁰ D) ↔ w ∈ (1 : Submodule 𝒪 D) := by
+    intro w
+    rw [FractionalIdeal.mem_one_iff, Submodule.mem_one]
+  refine ⟨α, ?_, ?_, ?_⟩
+  · intro a ha
+    rw [← hone]
+    exact (FractionalIdeal.mem_inv_iff hJ0).mp hαJ _
+      (FractionalIdeal.mem_coeIdeal_of_mem 𝒪⁰ ha)
+  · rw [← hone]; exact hα1
+  · intro z hz
+    have hzinv : z ∈ J⁻¹ := by
+      refine (FractionalIdeal.mem_inv_iff hJ0).mpr ?_
+      intro y hy
+      obtain ⟨a, ha, rfl⟩ := (FractionalIdeal.mem_coeIdeal 𝒪⁰).mp hy
+      rw [hone, mul_comm]
+      exact hz a ha
+    rw [← hNeq, hNdef] at hzinv
+    rw [← FractionalIdeal.mem_coe, FractionalIdeal.coe_sup, FractionalIdeal.coe_one,
+      FractionalIdeal.coe_spanSingleton] at hzinv
+    obtain ⟨b', hb', w, hw, rfl⟩ := Submodule.mem_sup.mp hzinv
+    obtain ⟨b, rfl⟩ := Submodule.mem_one.mp hb'
+    obtain ⟨x, rfl⟩ := Submodule.mem_span_singleton.mp hw
+    exact ⟨b, x, by rw [Algebra.smul_def]; ring⟩
+
+/-- **THE ALGEBRAIC LEAF of the archimedean node** (PROVEN 2026-07-26 over
+`exists_invIdeal_generator`; cut 2026-07-26
+out of `exists_realAbelianSchemeWithRealMultiplication`): for a maximal ideal
+`I` of `𝒪_D` the `I`-torsion of `D / 𝒪_D` is a free rank-one `𝒪_D / I`-module.
+
+Equivalently `I⁻¹ / 𝒪_D ≅ 𝒪_D / I`. This is pure commutative algebra — it
+mentions no scheme and no elliptic curve — and it is the ONLY place where the
+passage from the divisible level structure of
+`exists_realAbelianSchemeWithDivisibleLevelStructure` down to the residue level
+`𝒪_D / I` happens. Note that RAMIFICATION is invisible here: the statement is
+about `I` and not about the rational prime under it, which is why the geometric
+leaf needs no compatibility hypothesis between the two primes its consumer
+supplies.
+
+PROOF. `exists_invIdeal_generator` supplies `α ∈ I⁻¹ \ 𝒪_D` with
+`I⁻¹ = 𝒪_D + α 𝒪_D`; then `t` is `x ↦ [α x]`, obtained as `Submodule.liftQ` of
+the `𝒪_D`-linear map `𝒪_D → D / 𝒪_D`, `x ↦ [α x]`, whose kernel contains `I`
+by the first clause of that lemma. The kernel is EXACTLY `I`, which is the
+injectivity: `x ∉ I` and `I` maximal give `1 = i + c x` with `i ∈ I`, whence
+`α = α i + c (α x) ∈ 𝒪_D` as soon as `α x ∈ 𝒪_D`, contradicting `α ∉ 𝒪_D`.
+Surjectivity onto the `I`-torsion is the third clause: `[z]` is killed by `I`
+exactly when `z I ⊆ 𝒪_D`, and then `z = b + α x` gives `[z] = [α x] = t [x]`.
+
+`t` is stated as a bare function with its additivity and `𝒪_D`-linearity as
+side conditions rather than as a bundled `LinearMap`, because the consumer
+feeds it to `realConjAdd_map`, which asks only for additivity. -/
+theorem exists_residueTorsionParam_of_isMaximal
+    (D : Type u) [Field D] [NumberField D]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
+    ∃ t : (NumberField.RingOfIntegers D ⧸ I) →
+        (D ⧸ (1 : Submodule (NumberField.RingOfIntegers D) D)),
+      (∀ x y, t (x + y) = t x + t y) ∧
+      (∀ (a : NumberField.RingOfIntegers D) x, t (a • x) = a • t x) ∧
+      Function.Injective t ∧
+      (∀ y, (∀ a ∈ I, a • y = 0) ↔ ∃ x, t x = y) := by
+  classical
+  obtain ⟨α, hαI, hα1, hgen⟩ := exists_invIdeal_generator D I hI
+  set 𝒪 := NumberField.RingOfIntegers D
+  -- the `𝒪`-linear map `x ↦ [α x]`
+  set φ : 𝒪 →ₗ[𝒪] (D ⧸ (1 : Submodule 𝒪 D)) :=
+    (Submodule.mkQ (1 : Submodule 𝒪 D)).comp
+      ((LinearMap.mulLeft 𝒪 α).comp (Algebra.linearMap 𝒪 D)) with hφ
+  have hφapply : ∀ x : 𝒪, φ x = Submodule.Quotient.mk (α * algebraMap 𝒪 D x) := fun _ => rfl
+  have hker : I ≤ LinearMap.ker φ := by
+    intro a ha
+    simp only [LinearMap.mem_ker, hφapply]
+    exact (Submodule.Quotient.mk_eq_zero _).mpr (hαI a ha)
+  refine ⟨Submodule.liftQ I φ hker, ?_, ?_, ?_, ?_⟩
+  · intro x y; exact map_add _ _ _
+  · intro a x; exact map_smul _ _ _
+  · -- injectivity: the kernel of `φ` is exactly `I`
+    rw [← LinearMap.ker_eq_bot (M := 𝒪 ⧸ I)]
+    rw [Submodule.ker_liftQ_eq_bot']
+    refine le_antisymm hker ?_
+    intro x hx
+    by_contra hxI
+    rw [LinearMap.mem_ker, hφapply, Submodule.Quotient.mk_eq_zero] at hx
+    -- `x ∉ I` and `I` maximal give `1 ∈ I + (x)`
+    have htop : I ⊔ Ideal.span {x} = ⊤ := by
+      by_contra hne
+      exact hxI (by
+        have heq := hI.eq_of_le hne le_sup_left
+        rw [heq]
+        exact Ideal.mem_sup_right (Ideal.subset_span (Set.mem_singleton _)))
+    have h1 : (1 : 𝒪) ∈ I ⊔ Ideal.span {x} := by rw [htop]; trivial
+    obtain ⟨i, hi, s, hs, hsum⟩ := Submodule.mem_sup.mp h1
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hs
+    apply hα1
+    have hexp : α = α * algebraMap 𝒪 D i +
+        algebraMap 𝒪 D c * (α * algebraMap 𝒪 D x) := by
+      have hs' := congrArg (algebraMap 𝒪 D) hsum
+      rw [map_add, map_one, map_mul] at hs'
+      linear_combination (-α) * hs'
+    rw [hexp]
+    exact Submodule.add_mem _ (hαI i hi) (Submodule.smul_mem _ c hx)
+  · -- the image is exactly the `I`-torsion
+    intro y
+    constructor
+    · intro hy
+      induction y using Submodule.Quotient.induction_on with
+      | H z =>
+        have hz : ∀ a ∈ I, algebraMap 𝒪 D a * z ∈ (1 : Submodule 𝒪 D) := by
+          intro a ha
+          have hya := hy a ha
+          rw [← Submodule.Quotient.mk_smul, Submodule.Quotient.mk_eq_zero] at hya
+          simpa [Algebra.smul_def] using hya
+        obtain ⟨b, x, hbx⟩ := hgen z hz
+        refine ⟨Submodule.Quotient.mk x, ?_⟩
+        rw [Submodule.liftQ_apply, hφapply]
+        rw [Submodule.Quotient.eq, hbx]
+        have hring : α * algebraMap 𝒪 D x - (algebraMap 𝒪 D b + α * algebraMap 𝒪 D x)
+            = -algebraMap 𝒪 D b := by ring
+        rw [hring]
+        exact Submodule.neg_mem _ (Submodule.mem_one.mpr ⟨b, rfl⟩)
+    · rintro ⟨x, rfl⟩
+      intro a ha
+      induction x using Submodule.Quotient.induction_on with
+      | H x =>
+        rw [Submodule.liftQ_apply, hφapply, ← Submodule.Quotient.mk_smul,
+          Submodule.Quotient.mk_eq_zero]
+        have hmul : a • (α * algebraMap 𝒪 D x)
+            = (α * algebraMap 𝒪 D a) * algebraMap 𝒪 D x := by
+          rw [Algebra.smul_def]; ring
+        rw [hmul]
+        obtain ⟨c, hc⟩ := Submodule.mem_one.mp (hαI a ha)
+        rw [← hc, ← map_mul]
+        exact Submodule.mem_one.mpr ⟨c * x, rfl⟩
+
+open CategoryTheory in
+/-- **One real elliptic curve, tensored with `𝒪_D`** (PROVEN 2026-07-26 as an
+assembly over two leaves; formerly the sorry leaf cut
 2026-07-26 out of `exists_realHilbertBlumenthalObject_of_odd`): the ENTIRE
 remaining geometric content of the archimedean half of Taylor §4, with every
 representation-theoretic and Galois-theoretic ingredient already discharged.
@@ -11763,19 +12132,43 @@ and the reason the consumer needs no compatibility hypothesis between its two
 primes: the class of `C` is a property of `E` ALONE, fixed once a `ℤ`-basis
 of `H₁` adapted to `C` is chosen, and the action on `B[I]` is its reduction.
 
-MISSING MACHINERY, in dependency order (all archimedean and elementary, and
-none of it present at this pin — a 2026-07-25 survey of
-`.lake/packages/mathlib` found no `AbelianVariety`, no `AbelianScheme` and no
-scheme model of an elliptic curve, and `~/cs/FLT` has none either):
-1. *Elliptic curves as abelian schemes in the `Fermat.AbelianSchemeStruct`
-   presentation* — mathlib has `WeierstrassCurve` and the group law on its
-   point SETS, and `Proj` of a graded ring, but no functorial group structure
-   on `Hom_S(T, E)`, no properness and no geometric connectedness. This is
-   the bulk of the work.
-2. *The tensor construction* `E ⊗_ℤ 𝒪_D` with its `Fermat.Mult` by `𝒪_D`,
-   and `SmoothOfRelativeDimension [D:ℚ]` for it.
-3. *The action of complex conjugation on `E[m]`*, and the identification
-   `B[I] ≅ E[m] ⊗ 𝒪_D/I` of `Fermat.Mult.torsion` values.
+PROOF (2026-07-26 — the DIVISIBLE-LEVEL cut; this node is no longer a sorry
+node). Everything that is not geometry, and everything that is not about the
+single ideal `I`, is discharged here, over exactly two leaves:
+
+1. `exists_realAbelianSchemeWithDivisibleLevelStructure D ε` supplies `B`, its
+   real multiplication, and ONE level structure `e` over the divisible
+   `𝒪_D`-module `(D / 𝒪_D)²` — which is the full torsion of `E ⊗_ℤ 𝒪_D` —
+   together with the statement that complex conjugation acts on it by
+   `realConjAdd ε`. This is where all the geometry now lives.
+2. `exists_residueTorsionParam_of_isMaximal D I` supplies the parametrization
+   `t : 𝒪_D / I → (D / 𝒪_D)[I]` of the `I`-torsion of that module, which is
+   `I⁻¹ / 𝒪_D ≅ 𝒪_D / I`. This is pure commutative algebra, and it is PROVEN
+   (2026-07-26) over `exists_invIdeal_generator`; it is NOT an open leaf.
+3. The level structure at `I` is `e ∘ t` componentwise. Additivity and
+   injectivity are immediate; equivariance is `realConjAdd_map` (the matrix is
+   integral, so ANY additive map intertwines the involution) composed with
+   `realConj_eq_realConjAdd`; and the image is exactly the `I`-torsion because
+   `e` is `𝒪_D`-linear and injective, so `e w` is killed by `a` precisely when
+   `w` is — which turns the image computation into the surjectivity half of
+   leaf 2.
+
+Note what the cut buys: leaf 1 is quantified over NO ideal, so the uniformity
+of `ε` across all maximal ideals — the strength of this statement, and the
+reason its consumer needs no compatibility hypothesis between its two primes —
+is recorded once, in a statement about `E` alone, instead of being reproved for
+each `I`. Leaf 2 knew nothing about schemes and was discharged against mathlib's
+Dedekind-domain library alone. So exactly ONE open leaf remains under this
+node — `exists_realAbelianSchemeWithDivisibleLevelStructure` — and it is pure
+geometry.
+
+MISSING MACHINERY: all of it moved onto the geometric leaf
+`exists_realAbelianSchemeWithDivisibleLevelStructure` — elliptic curves as
+abelian schemes, the tensor construction `E ⊗_ℤ 𝒪_D`, and the action of
+complex conjugation on `E(ℂ)_tors`. Nothing about individual ideals, and
+nothing representation-theoretic, remains. NO DUAL ABELIAN SCHEME, NO
+POLARIZATION and NO WEIL PAIRING are needed anywhere in this subtree: the node
+asks for torsion with a prescribed Galois action, never for a pairing on it.
 
 NOT NEEDED, and recorded here because an earlier plan said otherwise:
 complex multiplication, Shimura theory, and the moduli space `X_Dih` play no
@@ -11806,8 +12199,86 @@ theorem exists_realAbelianSchemeWithRealMultiplication
             e (realConj _ ε v) =
               abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e v)) ∧
           (∀ y, y ∈ (m.torsion
-            (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I).1 ↔ ∃ v, e v = y) :=
-  sorry
+            (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I).1 ↔ ∃ v, e v = y) := by
+  classical
+  obtain ⟨B, fB, abB, m, e, hsm, hadd, hlin, hinj, hgal, himg⟩ :=
+    exists_realAbelianSchemeWithDivisibleLevelStructure D ε
+  refine ⟨B, fB, abB, m, hsm, ?_⟩
+  -- `e` is additive, hence kills zero
+  have he0 : e 0 = abB.zero _ := by
+    letI := abB.addCommGroup
+      (Fermat.specAlgClos (ULift.{u} ℝ) ≫
+        𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))
+    have h : e 0 + e 0 = e 0 := by
+      show abB.add (e 0) (e 0) = e 0
+      simpa using (hadd 0 0).symm
+    have h' : e 0 + e 0 = e 0 + 0 := by rw [add_zero]; exact h
+    exact add_left_cancel h'
+  -- an element of `I` annihilates the residue ring `𝒪_D / I`
+  have hIsmul : ∀ (I : Ideal (NumberField.RingOfIntegers D)) (a : NumberField.RingOfIntegers D),
+      a ∈ I → ∀ x : NumberField.RingOfIntegers D ⧸ I, a • x = 0 := by
+    intro I a ha x
+    induction x using Quotient.inductionOn' with
+    | h x =>
+      have hmem : a • x ∈ I := I.mul_mem_right _ ha
+      exact (Submodule.Quotient.mk_eq_zero I).mpr hmem
+  intro I hI
+  obtain ⟨t, htadd, htlin, htinj, htimg⟩ := exists_residueTorsionParam_of_isMaximal D I hI
+  refine ⟨fun v => e (fun i => t (v i)), ?_, ?_, ?_, ?_⟩
+  · -- additivity
+    intro v w
+    show e (fun i => t ((v + w) i)) = abB.add (e fun i => t (v i)) (e fun i => t (w i))
+    have hfun : (fun i => t ((v + w) i))
+        = (fun i => t (v i)) + (fun i => t (w i)) := by
+      funext i
+      simpa using htadd (v i) (w i)
+    rw [hfun]
+    exact hadd _ _
+  · -- injectivity
+    intro v w hvw
+    have h1 : (fun i => t (v i)) = (fun i => t (w i)) := hinj hvw
+    funext i
+    exact htinj (congrFun h1 i)
+  · -- equivariance: the involution is integral, so `t` intertwines it
+    intro σ v hσ
+    show e (fun i => t (realConj (NumberField.RingOfIntegers D ⧸ I) ε v i)) = _
+    have h0 : (fun i => t (realConj (NumberField.RingOfIntegers D ⧸ I) ε v i))
+        = (fun i => t (realConjAdd (NumberField.RingOfIntegers D ⧸ I) ε v i)) := by
+      rw [realConj_eq_realConjAdd]
+    rw [h0, realConjAdd_map t htadd ε v]
+    exact hgal σ _ hσ
+  · -- the image is exactly the `I`-torsion
+    intro y
+    constructor
+    · intro hy
+      obtain ⟨w, hw⟩ := himg I hI y hy
+      have hwt : ∀ i, ∀ a ∈ I, a • w i = 0 := by
+        intro i a ha
+        have h1 : e (a • w) = m.act a (e w) := hlin a w
+        rw [hw] at h1
+        have h2 : m.act a y = abB.zero _ := (mem_multTorsion_iff m _ I y).mp hy a ha
+        have h3 : e (a • w) = e 0 := by rw [h1, h2, he0]
+        have h4 : (a • w) = 0 := hinj h3
+        simpa using congrFun h4 i
+      choose v hv using fun i => (htimg (w i)).mp (hwt i)
+      refine ⟨v, ?_⟩
+      show e (fun i => t (v i)) = y
+      have hvw : (fun i => t (v i)) = w := funext hv
+      rw [hvw]
+      exact hw
+    · rintro ⟨v, rfl⟩
+      refine (mem_multTorsion_iff m _ I _).mpr ?_
+      intro a ha
+      have hz : (a • (fun i => t (v i)) : Fin 2 → (D ⧸ (1 : Submodule _ D))) = 0 := by
+        funext i
+        show a • t (v i) = 0
+        rw [← htlin a (v i), hIsmul I a ha (v i)]
+        have h := htadd 0 0
+        rw [add_zero] at h
+        have h' : t 0 + 0 = t 0 + t 0 := by rw [add_zero]; exact h
+        exact (add_left_cancel h').symm
+      show m.act a (e (fun i => t (v i))) = abB.zero _
+      rw [← hlin a (fun i => t (v i)), hz, he0]
 
 /-! ### In odd characteristic the two classes coincide -/
 
