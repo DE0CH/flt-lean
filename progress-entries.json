@@ -3098,18 +3098,6 @@
   "wip": true
  },
  {
-  "name": "X18.sq_ne_of_zero_lt_lt",
-  "module": "Fermat.FLT.ModularCurve.HyperellipticJacobian",
-  "text": "`Fermat.Hyperelliptic.X18.sq_ne_of_zero_lt_lt` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/HyperellipticJacobian.lean:786): **THE LEAF, \u03c3-NORMALISED: no coprime `0 < a < b` makes `C\u0303\u00b2 + 8B\u0303\u00b2` a square.** `abd_eq_zero_of_sq_eq` below is PROVEN from this, and the two are EQUIVALENT. **HONEST ACCOUNTING: this is a NORMALISATION, not a reduction in difficulty.** It is equivalent for a reason that costs nothing. The order-`3` automorphism `\u03c3(x) = 1/(1 \u2212 x)` acts on homogeneous coordinates by `M : (a, b) \u21a6 (b, b \u2212 a)`, and both semi-invariants change sign under it: C\u0303(b, b \u2212 a) = \u2212C\u0303(a, b), B\u0303(b, b \u2212 a) = \u2212B\u0303(a, b) C\u0303(\u2212a, \u2212b) = \u2212C\u0303(a, b), B\u0303(\u2212a, \u2212b) = \u2212B\u0303(a, b) (four `ring` identities, all four used in the proof of `abd_eq_zero_of_sq_eq`). \u2026",
-  "fullname": "Fermat.Hyperelliptic.X18.sq_ne_of_zero_lt_lt"
- },
- {
-  "name": "X13.abd_eq_zero_of_sq_eq",
-  "module": "Fermat.FLT.ModularCurve.HyperellipticJacobian",
-  "text": "`Fermat.Hyperelliptic.X13.abd_eq_zero_of_sq_eq` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/HyperellipticJacobian.lean:1413): **THE LEAF, in integral homogeneous form: a coprime integral point of `X_1(13)` is degenerate.** `t\u00b2 = C\u0303(a, b)\u00b2 + 4\u00b7B\u0303(a, b)\u00b2` with `gcd(a, b) = 1` forces `ab(a + b) = 0`, i.e. `x = a/b \u2208 {0, \u22121, \u221e}`. Its consumer `affine_rational_points` is PROVEN over it and discharges the whole `\u211a`-to-`\u2124` passage (through the generic bridge `holds_num_den_of_sq_eq_sext`), so what remains is a statement about INTEGERS only: no rationals, no denominators, no `redPt`, no `Classical.choose`, no weighted-projective coordinates. **HONEST ACCOUNTING.** This is *equivalent* to `affine_rational_points`, not weaker; it is the same \u2026",
-  "fullname": "Fermat.Hyperelliptic.X13.abd_eq_zero_of_sq_eq"
- },
- {
   "name": "specInvariants_universal",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.specInvariants_universal` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:1183): **GIT: `Spec` of a ring of invariants is a categorical quotient in the category of ALL schemes** (sorry node \u2014 entirely mathlib-facing; the AFFINE case is already PROVEN below, so what is open is the reduction of an arbitrary target to affine ones). Let a finite group `G` act on a commutative ring `A` by ring automorphisms and let `B` be its invariant ring: `Algebra.IsInvariant B A G` says every `G`-fixed element of `A` comes from `B`, and `SMulCommClass G B A` says conversely that everything from `B` is `G`-fixed (mathlib's own `smul_algebraMap`, since `\u03c3 \u2022 (b \u2022 1) = b \u2022 (\u03c3 \u2022 1) = b \u2022 1`). Then every \u2026",
@@ -3760,12 +3748,6 @@
   "module": "Fermat.FLT.ModularCurve.EllipticScheme",
   "text": "`Fermat.locally_isStandardSmooth_awayCoord` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/EllipticScheme.lean:554): **THE RESIDUAL LEAF OF ITEM 7a** \u2014 the degree-zero part of the localisation of the homogeneous coordinate ring at a coordinate is locally standard smooth of relative dimension `1` over `\u211a`. Everything else in `smoothOfRelativeDimension_projToSpec` is now proven: the reduction to the three coordinate charts, the identification of each chart composite with a `Spec.map` (`away\u03b9_projToSpec_eq_specMap`), the passage to the ring-hom property (`smoothOfRelativeDimension_specMap_of_locally`), and the Jacobian criterion itself (`jacobianSpan_eq_top`, supplied here as `hjac` and therefore genuinely consumed). ## What is \u2026",
   "fullname": "Fermat.locally_isStandardSmooth_awayCoord"
- },
- {
-  "name": "X18.descent_system_no_solution",
-  "module": "Fermat.FLT.ModularCurve.HyperellipticJacobian",
-  "text": "`Fermat.Hyperelliptic.X18.descent_system_no_solution` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/HyperellipticJacobian.lean:1059): **THE LEAF, AFTER THE `\u221a\u22122` DESCENT** (opened 2026-07-27, replacing the `t`-form directly above, which is PROVEN over it by `descent_sq_add_eight_sq`). For coprime `0 < a < b` there are no coprime `u, v` with ab(a \u2212 b) = uv and C\u0303(a, b) = \u00b1(v\u00b2 \u2212 2u\u00b2). **HONEST ACCOUNTING: this is EQUIVALENT to the `t`-form, not weaker.** Given such `u, v` the identity `(v\u00b2 + 2u\u00b2)\u00b2 = (v\u00b2 \u2212 2u\u00b2)\u00b2 + 8(uv)\u00b2` (`ring`) returns a `t`. The leaf count at this level is unchanged at one and **no Diophantine content was disposed of**; what changed is that the two facts the descent needs \u2014 `C\u0303` odd and `gcd(C\u0303, B\u0303) = 1` \u2014 are now THEOREMS \u2026",
-  "fullname": "Fermat.Hyperelliptic.X18.descent_system_no_solution"
  },
  {
   "name": "exists_fullLevelStructure_cover",
