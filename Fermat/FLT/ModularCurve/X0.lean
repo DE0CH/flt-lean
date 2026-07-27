@@ -14090,55 +14090,80 @@ theorem exists_isCoarseModuliY0_isSmoothCurve_field (N : ℕ) (_hN : 0 < N) (K :
         SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
   sorry
 
-/-- **A smooth curve over an ARBITRARY field has a smooth proper
-compactification with finite complement** (sorry leaf — the general
-ALGEBRAIC-GEOMETRY half of `exists_x0Compactification_field`).
-
-This is `AlgebraicGeometry.exists_isSmoothCompactification` with the
-hypothesis `[PerfectField K]` DROPPED, and that is its entire content:
-for perfect `K` — every field of characteristic `0`, and every finite
-field, hence **both** consumers of the statement below — it is that
-theorem verbatim, so the residue here is the imperfect case alone.
-
-TRUE without perfectness, and this is worth recording because the shim
-file's own docstrings suggest otherwise.  `smoothOfRelativeDimension_one_fromNormalization`
-carries `[PerfectField K]` and cites `y^p = t x^p + t` (`t ∈ K ∖ K^p`) as
-the counterexample — a curve that is regular but not smooth and is its
-own normalization.  That curve, however, is not *geometrically reduced*:
-over `K̄` its equation becomes `(y − t^{1/p}(x + 1))^p = 0`.  So it has no
-smooth open subscheme, and it therefore does not satisfy that leaf's own
-hypothesis `hY` that `Y` is a smooth curve.  In general `Y` smooth over
-`K` forces `K(Y)/K` to be separably generated, hence the normalization
-geometrically normal, hence — in dimension one — smooth.  The perfectness
-hypothesis in the shim file is thus very likely removable given `hY`;
-that is a repair for the owner of `CurveCompactification.lean` and not
-something to do from this side, which is why this leaf is stated here
-rather than that one being weakened.
-
-AXIS SEARCHED: the field, i.e. exactly the perfectness gap.  Not searched
-is whether the modular application needs the imperfect case at all — it
-does not, and a successor who decides to add `[PerfectField K]` to
-`exists_x0Compactification_field` (nothing in the tree would notice)
-deletes this leaf outright. -/
-theorem exists_isSmoothCompactification_field (K : Type) [Field K] {Y : Scheme.{0}}
-    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y] [QuasiCompact strY]
-    [IsSeparated strY] [SmoothOfRelativeDimension 1 strY] :
-    ∃ (X : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
-      IsSmoothCompactification strY strX j :=
-  sorry
-
-/-- **Existence of the compactified coarse moduli space `X_0(N)` over an
-ARBITRARY base field whose characteristic does not divide `N`** (PROVEN
-2026-07-27 from the two leaves above; formerly a sorry node itself).
+/-- **Existence of the compactified coarse moduli space `X_0(N)` over a
+PERFECT base field whose characteristic does not divide `N`** (PROVEN
+2026-07-27 from the modular leaf above; formerly a sorry node itself).
 
 The proof is the `K = ℚ` proof of `exists_x0Compactification` verbatim,
 with `exists_coarseModuliY0` + `isSmoothCurve_of_isCoarseModuliY0`
 replaced by the single base-general leaf
-`exists_isCoarseModuliY0_isSmoothCurve_field` and
-`exists_isSmoothCompactification` replaced by its perfectness-free form.
-Note that `geometricallyConnected_of_isSmoothCompactification`, which
-carries connectedness from `Y_0(N)` to `X_0(N)`, is already general in the
-field and needs no perfectness.
+`exists_isCoarseModuliY0_isSmoothCurve_field`; the compactification is
+`AlgebraicGeometry.exists_isSmoothCompactification` itself, which is the
+sole source of the `[PerfectField K]` hypothesis.  Note that
+`geometricallyConnected_of_isSmoothCompactification`, which carries
+connectedness from `Y_0(N)` to `X_0(N)`, is already general in the field
+and needs no perfectness.
+
+## FALSITY AUDIT (2026-07-27): `[PerfectField K]` is LOAD-BEARING, and the
+## perfectness-free form that used to stand here was FALSE
+
+This declaration formerly carried no `[PerfectField K]`, at the cost of a
+separate sorry leaf `exists_isSmoothCompactification_field` asserting
+`AlgebraicGeometry.exists_isSmoothCompactification` *without* perfectness.
+That leaf is now **DELETED, as REFUTED**: a smooth curve over an imperfect
+field need not admit any smooth proper compactification.
+
+The counterexample is the classical **quasi-elliptic** one (Bombieri–Mumford;
+it exists only in characteristics `2` and `3`).  Take `k = 𝔽₃(t)`, which is
+imperfect, and
+
+  `C : y² = x³ + t ⊆ 𝔸²_k`.
+
+* `C` is integral, and it is **regular**.  The only candidate singular point
+  needs `∂/∂y = 2y = 0` (`∂/∂x = −3x² = 0` identically in characteristic `3`),
+  i.e. `y = 0` and `x³ = −t`; that is a single closed point `P` with residue
+  field `k(t^{1/3})`, and in `𝒪_{C,P}` the maximal ideal `(y, x³ + t)` equals
+  `(y)` because `x³ + t = y²` there.  A one-dimensional local ring with
+  principal maximal ideal is a DVR, so `C` is regular, hence normal, hence its
+  own normalization.
+* `C` is **not smooth** at `P`: over `k̄`, `x³ + t = (x + t^{1/3})³`, so
+  `C ⊗ k̄` is the **cuspidal** cubic `y² = (x + t^{1/3})³` — reduced, but
+  singular at the cusp.
+* Nevertheless `Y := C ∖ {P}` **is** a smooth affine curve over `k`
+  (`Y ⊗ k̄` is the cuspidal cubic minus its cusp), integral, quasi-compact and
+  separated: it satisfies every hypothesis of the deleted leaf.
+* `Y` has **no** smooth proper compactification over `k`.  Any `X` as in
+  `IsSmoothCompactification` is irreducible (its smooth locus has dimension
+  `1`, so no component can sit inside the finite complement) and reduced,
+  hence an integral normal proper curve with function field `k(Y)`; that model
+  is unique up to isomorphism, so `X ≅ C̄`, the regular proper model — which is
+  not smooth, since it is not smooth already at `P`.
+
+Machine-checked with Magma (2026-07-27): the function field `k(C)` has genus
+`1` over `𝔽₃(t)`, and genus `0` after the purely inseparable base change
+`t = s³` that adjoins `t^{1/3}` — a genus drop of `1 = (p−1)/2`, exactly what
+Tate's genus-change theorem permits at `p = 3`.  A geometrically regular
+(= smooth) proper model would preserve the genus, so none exists.
+
+**This also refutes the analysis that used to justify the deleted leaf.**
+It argued that `smoothOfRelativeDimension_one_fromNormalization`'s cited
+counterexample `y^p = t x^p + t` is not geometrically reduced — which is
+TRUE (over `k̄` it becomes `(y − t^{1/p}(x+1))^p = 0`) and so that particular
+curve indeed cannot serve, since it has no smooth open subscheme.  But the
+conclusion drawn from it — that smoothness of `Y` forces the normalization to
+be smooth — is FALSE: `k(C)` above **is** separably generated over `k`
+(`k(C)/k(x)` is separable of degree `2`), and its regular proper model is
+still not smooth.  Separable generation of the function field is strictly
+weaker than conservativity, and it is conservativity that smooth
+compactification needs.  So the `[PerfectField K]` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` is correct
+and is **not** removable given `hY`.
+
+Nothing in the tree notices the added hypothesis: the only consumer is
+`exists_x0Compactification_finiteField` at `K = ZMod ℓ`, perfect by
+`PerfectField.ofFinite`, and the `ℚ` case is `PerfectField.ofCharZero`.
+The `Γ₁` sibling `exists_x1Compactification_field` in `ModularCurve/X1.lean`
+already carried `[PerfectField K]` for exactly this reason.
 
 **The previous IRREDUCIBLE verdict here was stale in exactly the way the
 doctrine predicts**, and it is recorded for the next auditor.  It read:
@@ -14195,14 +14220,14 @@ theory that `Gamma0Datum` deliberately does not carry, is still NOT
 taken and is still not needed: the compactification is supplied by
 general curve theory, not by a modular construction of the cusps. -/
 theorem exists_x0Compactification_field (N : ℕ) (hN : 0 < N) (K : Type)
-    [Field K] (hchar : ¬ ringChar K ∣ N) :
+    [Field K] [PerfectField K] (hchar : ¬ ringChar K ∣ N) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
       (strY : Y ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
       Nonempty (IsX0Compactification N strX strY j) := by
   obtain ⟨Y, strY, hc, hint, hqc, hsep, hsmd, hconn⟩ :=
     exists_isCoarseModuliY0_isSmoothCurve_field N hN K hchar
   haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
-  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification_field K strY
+  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := K) strY
   exact ⟨X, Y, strX, strY, j,
     ⟨{ comm := hX.comm
        coarse := hc
@@ -17346,10 +17371,15 @@ and they are now three leaves rather than one:
   has a smooth compactification over `𝔽_ℓ` (Deligne–Rapoport).  PROVEN
   2026-07-27 as a corollary of `exists_x0Compactification_field`, the
   merge of this leaf with `exists_x0Compactification`, which was itself
-  decomposed the same day: its open content is now the modular leaf
-  `exists_isCoarseModuliY0_isSmoothCurve_field` plus the perfectness gap
-  `exists_isSmoothCompactification_field`, and it is ONE modular leaf for
-  both base fields rather than two;
+  decomposed the same day: its open content is now the single modular
+  leaf `exists_isCoarseModuliY0_isSmoothCurve_field`, one leaf for both
+  base fields rather than two.  The second half — the compactification
+  of a smooth curve — is not a leaf at all: it is
+  `AlgebraicGeometry.exists_isSmoothCompactification`, over a PERFECT
+  base field.  A perfectness-free restatement of it was briefly a leaf
+  here and was REFUTED and deleted on 2026-07-27; see the FALSITY AUDIT
+  on `exists_x0Compactification_field` for the quasi-elliptic
+  counterexample over `𝔽₃(t)`;
 * `finite_relPoint_of_x0Compactification_finiteField` — a proper scheme
   over a finite field has finitely many rational points (no modular
   curves involved).  PROVEN 2026-07-27 by decomposition, into
