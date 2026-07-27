@@ -81,6 +81,7 @@ Every one of the original five leaves has now been cut down; the remaining leave
 | `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` | a smooth curve over a field is one-dimensional |
 | `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible` | a nonempty open of an irreducible finite-type `K`-scheme carries the full dimension |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
+| `infinite_of_smoothOfRelativeDimension_one` | a nonempty smooth curve over a field has infinitely many points (added 2026-07-27; the only input to the density subsection at the end of this file) |
 
 ## Second decomposition pass, 2026-07-27
 
@@ -1281,5 +1282,90 @@ theorem finite_compl_range_of_topologicalKrullDim_le_one {Y X : Scheme.{u}}
   obtain ⟨y⟩ : Nonempty Y := inferInstance
   intro h
   exact (h ▸ Set.mem_univ (j.base y) : j.base y ∈ (Set.range j.base)ᶜ) (Set.mem_range_self y)
+
+/-! ### The converse direction: a finite complement is already dense
+
+`finite_compl_range_of_topologicalKrullDim_le_one` above goes from DENSITY to a finite
+complement.  The two statements are *not* interchangeable, and the other direction is what
+`Fermat.IsX0Compactification` needs, because — unlike `IsSmoothCompactification` here — it
+carries `finite_compl` as a field and does **not** carry `isDominant`.  So every consumer of
+it that needs density has to derive it, and this subsection is that derivation.
+
+The whole point-set content is one line: a range is dense exactly when the interior of its
+complement is empty, so on a space with *no nonempty finite open subset* a finite complement
+is automatically dense.  All the geometry sits in that parenthesis, and it is isolated as
+the single leaf below. -/
+
+/-- **A nonempty smooth curve over a field has infinitely many points** (sorry leaf — the
+one-dimensionality of a smooth curve, in its point-counting form).
+
+TRUE and classical.  On an affine chart `Spec A` the algebra `A` is standard smooth of
+relative dimension `1` over `K` (`Smooth.exists_isStandardSmooth`, and `A` is of finite type
+over `K`), so `dim A = 1`; a finite-type `K`-algebra is Jacobson, and a Jacobson ring of
+dimension one has infinitely many maximal ideals — a chain `p ⊊ m` forces the Jacobson
+radical (an intersection of *finitely many* maximals, were there only finitely many) to
+differ from the nilradical, which is contained in the minimal prime `p`.
+
+**`Nonempty X` is load-bearing**, not decoration: the empty scheme satisfies
+`SmoothOfRelativeDimension 1` vacuously and is finite.
+
+**Why this and not a `topologicalKrullDim` statement.**  The sibling leaf
+`topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` above bounds the dimension
+from ABOVE, and its companion lower bound `1 ≤ topologicalKrullDim X` would **not** suffice
+for the consumer below: `Spec` of a discrete valuation ring has Krull dimension one and just
+two points, so a finite nonempty open of Krull dimension one is not by itself a
+contradiction.  Finiteness of the point set is the property that actually has to fail, so it
+is the property that is stated.  (What rules the DVR out here is `LocallyOfFiniteType`, which
+is why the argument above goes through Jacobson-ness rather than through dimension alone.)
+
+**Where the missing input lives.**  This is the same class of fact as
+`AlgebraicGeometry.geometricallyReduced_of_smooth` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — a property of smooth
+morphisms over a field that `Mathlib` does not derive from smoothness at this pin — and, as
+there, the route is through the local structure theorem
+`Algebra.Smooth.exists_span_eq_top_isStandardSmooth`
+(`Mathlib/RingTheory/Smooth/StandardSmoothOfFree.lean`), which IS present and should not be
+re-derived. -/
+theorem infinite_of_smoothOfRelativeDimension_one {X : Scheme.{u}}
+    (f : X ⟶ Spec (CommRingCat.of K)) [SmoothOfRelativeDimension 1 f] [Nonempty X] :
+    Infinite X :=
+  sorry
+
+/-- **On a smooth curve over a field, an open immersion with finite complement is dense**
+(PROVEN, over the single leaf above).
+
+This is the exact converse of `finite_compl_range_of_topologicalKrullDim_le_one`, and it is
+what `Fermat.isDominant_of_isX0Compactification` is.
+
+**The proof, and what it does NOT need.**  `DenseRange j.base` says
+`closure (Set.range j.base) = ⊤`, which by `interior_compl` is the same as
+`interior ((Set.range j.base)ᶜ) = ∅`.  That interior is an OPEN subset of a FINITE set, so
+if it were nonempty it would be a nonempty finite open subscheme `U ⊆ X`; and `U.ι ≫ strX`
+is smooth of relative dimension `0 + 1 = 1`, because an open immersion is smooth of relative
+dimension `0`.  The leaf then makes `U` infinite, contradicting its finiteness.
+
+Note what is absent: **no irreducibility, no connectedness, and no nonemptiness of `Y`**.
+The obvious route — "`X` is irreducible, and a nonempty open of an irreducible space is
+dense" — would need `X` normal (smooth over a field) and connected, i.e. two further
+missing implications, *and* a separate argument that `Y` is nonempty at all.  Passing
+through the interior of the complement avoids all three: if `Y` is empty the complement is
+everything, and then `X` itself is a nonempty finite open, which the same leaf refutes. -/
+theorem isDominant_of_finite_compl_of_smoothOfRelativeDimension_one {X Y : Scheme.{u}}
+    (strX : X ⟶ Spec (CommRingCat.of K)) [SmoothOfRelativeDimension 1 strX]
+    {j : Y ⟶ X} [IsOpenImmersion j] (hfin : (Set.range j.base)ᶜ.Finite) :
+    IsDominant j := by
+  have hint : interior ((Set.range j.base)ᶜ) = ∅ := by
+    by_contra hne
+    obtain ⟨x, hx⟩ := Set.nonempty_iff_ne_empty.mpr hne
+    let U : X.Opens := ⟨interior ((Set.range j.base)ᶜ), isOpen_interior⟩
+    have hUfin : (U : Set X).Finite := hfin.subset interior_subset
+    haveI : Finite U.toScheme := hUfin.to_subtype
+    haveI : Nonempty U.toScheme := ⟨⟨x, hx⟩⟩
+    haveI : SmoothOfRelativeDimension 1 (U.ι ≫ strX) :=
+      inferInstanceAs (SmoothOfRelativeDimension (0 + 1) (U.ι ≫ strX))
+    haveI := infinite_of_smoothOfRelativeDimension_one (U.ι ≫ strX)
+    exact not_finite U.toScheme
+  refine ⟨?_⟩
+  rw [DenseRange, dense_iff_closure_eq, ← Set.compl_empty_iff, ← interior_compl, hint]
 
 end AlgebraicGeometry
