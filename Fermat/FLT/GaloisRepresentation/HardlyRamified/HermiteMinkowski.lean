@@ -1384,8 +1384,277 @@ theorem differentIdeal_exponent_le_wild_of_residueDegreeOne
   exact differentIdeal_exponent_le_of_intEisenstein_approx K q hq v hmem e he x hgen hx hc0 c
     (d + 2 * e + 2) hc d le_rfl hd
 
-/-- **The trace witness for Serre's different bound** (SORRY LEAF, cut
-2026-07-27 out of `differentIdeal_exponent_le_wild_of_residueDegreeGtOne`
+/-- **`Q^{e·k} ∩ ℤ = (q^k)`** (PROVEN 2026-07-27).
+
+The contraction to `ℤ` of the `Q`-primary ideal `Q^{e·k}` is exactly
+`q^k·ℤ`.  Immediate from `intValuation_natCast_eq_exp_ramificationIdx`
+above — `ord_Q(a) = e·v_q(|a|)` for a rational integer `a` — together
+with `e > 0`: `a ∈ Q^{e·k}` iff `e·k ≤ e·v_q(|a|)` iff `k ≤ v_q(|a|)`
+iff `q^k ∣ a`.  No hypothesis on `k` is needed (at `k = 0` both sides
+are `⊤`).
+
+**Why this ideal and not `Ideal.span {(q : ℤ)^k}` is what the two cuts
+below are stated over.**  mathlib's only *global* instance putting a
+`R ⧸ p`-algebra structure on a quotient `B ⧸ P` is
+`Ideal.quotientAlgebra` (`Mathlib/RingTheory/Ideal/Quotient/Operations.lean:742`),
+and it is indexed by `p = P.comap (algebraMap R B)` — the general
+`Ideal.Quotient.algebraQuotientOfLEComap` (`:730`) is an `abbrev`, not
+an instance, so writing the base as `ℤ ⧸ Ideal.span {(q:ℤ)^k}` would
+force a `letI` into the *statements* of the cuts.  Stating them over
+the contraction keeps every instance automatic; this lemma is the
+bridge back to the span form that the consumer needs. -/
+theorem comap_pow_ramificationIdx_eq_span
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (k : ℕ) :
+    (v.asIdeal ^ (e * k)).comap (algebraMap ℤ (NumberField.RingOfIntegers K))
+      = Ideal.span {((q : ℤ)) ^ k} := by
+  classical
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  ext a
+  simp only [Ideal.mem_comap, Ideal.mem_span_singleton]
+  rw [show algebraMap ℤ (NumberField.RingOfIntegers K) a = (a : NumberField.RingOfIntegers K) from
+    rfl, ← v.intValuation_le_pow_iff_mem]
+  rcases eq_or_ne a 0 with rfl | ha0
+  · simp
+  · have hva : v.intValuation (a : NumberField.RingOfIntegers K)
+        = v.intValuation ((a.natAbs : ℕ) : NumberField.RingOfIntegers K) := by
+      rcases Int.natAbs_eq a with h | h
+      · have hc : (a : NumberField.RingOfIntegers K)
+            = (((a.natAbs : ℕ) : ℤ) : NumberField.RingOfIntegers K) :=
+          congrArg (Int.cast : ℤ → NumberField.RingOfIntegers K) h
+        rw [hc, Int.cast_natCast]
+      · have hc : (a : NumberField.RingOfIntegers K)
+            = ((-((a.natAbs : ℕ) : ℤ) : ℤ) : NumberField.RingOfIntegers K) :=
+          congrArg (Int.cast : ℤ → NumberField.RingOfIntegers K) h
+        rw [hc, Int.cast_neg, Int.cast_natCast]
+        exact Valuation.map_neg _ _
+    have hna : a.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr ha0
+    rw [hva, intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem a.natAbs hna, ← he,
+      WithZero.exp_le_exp, neg_le_neg_iff, Nat.cast_le, Nat.mul_le_mul_left_iff he0,
+      ← Nat.Prime.pow_dvd_iff_le_factorization hq hna,
+      show ((q : ℤ)) ^ k = (((q ^ k : ℕ)) : ℤ) by push_cast; ring,
+      ← Int.natAbs_dvd_natAbs, Int.natAbs_natCast]
+
+/-- **CUT 1 of the trace witness: base change to `ℤ/q^k`, then CRT**
+(SORRY LEAF, cut 2026-07-27 out of
+`exists_intTrace_not_mem_span_of_ramificationIdx` below, which is
+PROVEN over this together with `exists_mem_cofactor_trace_quotient_ne_zero`).
+
+For `x` in the cofactor `J` of `Q^{e·k}` in `q^k·𝓞_K`, the rational
+integer `Tr_{K/ℚ}(x)`, reduced modulo `q^k`, is computed by the trace
+of the image of `x` in the SINGLE finite ring `𝓞_K/Q^{e·k}` over
+`ℤ/q^k`.
+
+**This leaf carries no arithmetic — it is trace bookkeeping.**  The
+three steps, and the mathlib input for each:
+
+1. *Base change of the trace along `ℤ ↠ ℤ/q^k`.*  `𝓞_K` is free of
+   rank `n = [K:ℚ]` over `ℤ`, so `𝓞_K/q^k𝓞_K` is free of rank `n` over
+   `ℤ/q^k` on the reduced basis, and the left-multiplication matrix
+   reduces entrywise; hence
+   `Tr_{𝓞_K/ℤ}(x) mod q^k = Tr_{(𝓞_K/q^k)/(ℤ/q^k)}(x̄)`.
+
+   mathlib has EXACTLY this proof but only for a MAXIMAL base ideal:
+   `Algebra.trace_quotient_mk` (`Mathlib/RingTheory/Trace/Quotient.lean:40`),
+   stated for `p = IsLocalRing.maximalIdeal R` because the quotient
+   basis it uses, `Module.basisQuotient`
+   (`Mathlib/RingTheory/LocalRing/Quotient.lean:85`), is built under
+   `attribute [local instance] Ideal.Quotient.field` and goes through
+   `finrank`.  **The statement is true for an arbitrary ideal `I` when
+   `S` is free over `R`**, and the intended repair is to build the
+   quotient basis without fields, via
+   `Algebra.TensorProduct.basis` together with
+   `TensorProduct.quotTensorEquivQuotSMul`
+   (`Mathlib/LinearAlgebra/TensorProduct/Quotient.lean:153`) upgraded to
+   `R⧸I`-linearity by `LinearEquiv.extendScalarsOfSurjective` (the
+   idiom used at `Mathlib/Algebra/Module/SpanRankOperations.lean:85`),
+   plus `Ideal.smul_top_eq_map`.  Then copy `trace_quotient_mk`'s proof
+   verbatim: `Algebra.trace_eq_matrix_trace` on both sides and
+   `AddMonoidHom.map_trace`.
+
+2. *CRT.*  `q^k·𝓞_K = Q^{e·k}·J` with `Q^{e·k}` and `J` COPRIME — `J`
+   is prime to `Q` because `ord_Q(q^k) = e·k` exactly
+   (`intValuation_natCast_eq_exp_ramificationIdx`), so `Q ∤ J` and, `Q`
+   being maximal, `Q^{e·k} ⊔ J = ⊤`.  Hence
+   `𝓞_K/q^k𝓞_K ≅ (𝓞_K/Q^{e·k}) × (𝓞_K/J)` as `ℤ/q^k`-algebras
+   (`Ideal.quotientInfRingEquivPiQuotient`, or
+   `Ideal.quotientMulEquivQuotientProd` for the two-factor case).
+
+3. *The trace of a product algebra, at an element supported on one
+   factor.*  Both factors are free over `ℤ/q^k` (direct summands of a
+   free module over the artinian local ring `ℤ/q^k`), and
+   `Tr_{(S×T)/Z}(s, t) = Tr_{S/Z}(s) + Tr_{T/Z}(t)` by taking the
+   product basis (`Algebra.trace_eq_matrix_trace`, block-diagonal
+   matrix).  For `x ∈ J` the second coordinate is `0`, so only the
+   first term survives.  Transport along the CRT isomorphism with
+   `Algebra.trace_eq_of_equiv_equiv` (used at
+   `Mathlib/RingTheory/Trace/Quotient.lean:79`).
+
+FAITHFULNESS: an equation between two elements of `ℤ/q^k`, both sides
+genuinely defined; nothing here is vacuous.  The hypothesis `hx` is
+load-bearing (step 3), and so is `hJ` (steps 2 and 3). -/
+theorem trace_quotient_pow_eq_of_mem_cofactor
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (k : ℕ)
+    (J : Ideal (NumberField.RingOfIntegers K))
+    (hJ : Ideal.span {(q : NumberField.RingOfIntegers K) ^ k}
+      = v.asIdeal ^ (e * k) * J)
+    (x : NumberField.RingOfIntegers K) (hx : x ∈ J) :
+    Ideal.Quotient.mk ((v.asIdeal ^ (e * k)).comap
+        (algebraMap ℤ (NumberField.RingOfIntegers K)))
+        (Algebra.trace ℤ (NumberField.RingOfIntegers K) x)
+      = Algebra.trace
+          (ℤ ⧸ (v.asIdeal ^ (e * k)).comap (algebraMap ℤ (NumberField.RingOfIntegers K)))
+          (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k))
+          (Ideal.Quotient.mk _ x) :=
+  sorry
+
+/-- **CUT 2 of the trace witness: the trace form of the finite local
+ring `𝓞_K/Q^{e·k}` over `ℤ/q^k` is not identically zero, witnessed
+inside the cofactor `J`** (SORRY LEAF, cut 2026-07-27 out of
+`exists_intTrace_not_mem_span_of_ramificationIdx` below).
+
+**This is the whole mathematical content of Serre's wild different
+bound.**  Everything else in the chain is bookkeeping.
+
+## THE STATEMENT IS EXACTLY "TRACE NONZERO", AND THAT IS WHY `k` IS `v_q(e)+1`
+
+The consumer needs `v_q(Tr x) ≤ v_q(e)`.  With `k = v_q(e) + 1` that
+is literally `q^k ∤ Tr x`, i.e. `Tr x ≠ 0` in `ℤ/q^k`.  So no
+"exactly `v_q(e)`" claim is needed anywhere — nonvanishing is the
+whole target, and the hypothesis `hk` enters the proof only through
+`(e : ℤ/q^k) ≠ 0`, which is `v_q(e) = k − 1 < k`.
+
+## THE PROOF TO WRITE (elementary finite commutative algebra)
+
+Write `S = 𝓞_K/Q^{e·k}`, `Z = ℤ/q^k`, `κ = 𝓞_K/Q = 𝔽_{q^f}`.  `S` is a
+finite local ring with nilpotent maximal ideal and `q^k = 0`; it is
+free of rank `e·f` over `Z` (a direct factor of the free module
+`𝓞_K/q^k𝓞_K`, hence projective, hence free over the artinian local
+ring `Z`, with rank forced by `|S| = q^{efk}`).
+
+1. *An unramified subring `A ⊆ S`.*  Let `h ∈ ℤ[X]` be monic of degree
+   `f` reducing to the minimal polynomial of a generator `ω̄` of `κ`
+   over `𝔽_q`.  `h mod q` is separable, so `h'(ω₀)` is a unit in `S`
+   for any lift `ω₀`; `S` is local with NILPOTENT maximal ideal, hence
+   Henselian, so Newton iteration produces `ω ∈ S` with `h(ω) = 0`,
+   `ω ≡ ω₀`.  Put `A = Z[X]/(h) → S`, `X ↦ ω`.
+2. *`A` is free of rank `f` over `Z` and `A → S` is injective.*
+   Freeness holds by construction.  Injectivity: if `∑ c_j ω^j = 0`
+   with `μ = min_j v_q(c_j) < k`, then `∑ (c_j/q^μ) ω^j` reduces to a
+   nonzero element of `κ` by `𝔽_q`-independence of `1, …, ω̄^{f−1}`,
+   hence is a unit of `S`, forcing `q^μ = 0` in `S`, i.e. `μ ≥ k`.
+3. *`S` is free of rank `e` over `A`, BY COUNTING.*  `𝔪_A = qA` and
+   `S/qS = 𝓞_K/Q^e` has `κ`-dimension `e`, so Nakayama gives a
+   surjection `A^e ↠ S`; and `|A^e| = q^{kfe} = |S|`, so it is
+   bijective (`Fintype.bijective_iff_surjective_and_card`), whence
+   `Module.Free A S` by `Module.Free.of_equiv`.  **This is what
+   replaces local monogenicity `𝓞_L = W[π]`** — freeness is all the
+   classical argument ever used, and freeness is free.
+4. *Trace tower.*  `Algebra.trace_trace` (`Mathlib/RingTheory/Trace/Defs.lean:138`,
+   hypotheses exactly `Free`+`Finite` at both levels, which is what 2
+   and 3 supply) and `Algebra.trace_algebraMap` (`Defs.lean:111`) give
+   `Tr_{S/Z}(a) = e · Tr_{A/Z}(a)` for `a ∈ A`.
+5. *A unit trace upstairs.*  `Z` is a LOCAL ring, so mathlib's
+   `Algebra.trace_quotient_mk` (`Mathlib/RingTheory/Trace/Quotient.lean:40`)
+   applies verbatim at base `Z` and gives
+   `Tr_{A/Z}(a) mod q = Tr_{κ/𝔽_q}(ā)`; the residue trace is surjective
+   because `κ/𝔽_q` is separable (`Algebra.trace_surjective`,
+   `Mathlib/RingTheory/Trace/Basic.lean:521`).  Pick `a` with `Tr_A(a)`
+   a unit of `Z`.
+6. *Conclusion.*  `Tr_{S/Z}(a) = e·Tr_A(a) ≠ 0` in `Z` because
+   `(e : Z) ≠ 0` (that is `hk`) and `Tr_A(a)` is a unit.  Finally lift
+   `a` to `x ∈ 𝓞_K` lying in `J`: the composite `J → 𝓞_K → S` is
+   SURJECTIVE because `J ⊔ Q^{e·k} = ⊤` (see step 2 of
+   `trace_quotient_pow_eq_of_mem_cofactor`'s docstring for why `J` is
+   prime to `Q`).
+
+## THE ONE MATHLIB GAP, RE-CHECKED 2026-07-27 — IT IS STILL OPEN
+
+Henselianity comes from `IsAdicComplete.henselianRing`
+(`Mathlib/RingTheory/Henselian.lean:170`), and the pin has **no
+`IsAdicComplete I R` instance for a NILPOTENT `I`**.  The grep the
+previous docstring asked for was run: the only instances in the pin are
+`𝓞[K]`/`𝓂[K]` (`NumberTheory/LocalField/Basic.lean:176`), `ℤ_[p]`
+(`Padics/PadicIntegers.lean:532`), complete Noetherian local
+(`AdicCompletion/LocalRing.lean:127`), power series
+(`AdicCompletion/Completeness.lean:226`), Witt vectors
+(`WittVector/Complete.lean:116`), `⊥` and `Subsingleton`
+(`AdicCompletion/Basic.lean:857,862`).  None covers a nilpotent ideal.
+
+Supplying it is a few lines, and it is the whole of the gap.  With
+`I^N = ⊥`: `IsHausdorff` — take `n = N` in the hypothesis and the
+modulus is `⊥`.  `IsPrecomplete` — the limit is `L = f N`; for `n ≤ N`
+compatibility gives `f n ≡ f N`, and for `n > N` the modulus `I^n ≤ I^N`
+is `⊥` while compatibility at `m = N ≤ n` gives `f N = f n` on the nose.
+
+**A fallback for step 1's lift, if Hensel is awkward — pure finite
+group theory.**  `S^×` is the product of its `q`-part `1 + 𝔪` with a
+cyclic group of order `m = q^f − 1` mapping isomorphically to `κ^×`; so
+`ω = u^{q^a}` (`a = f(ek−1)`, `u` any lift of a generator of `κ^×`)
+satisfies `ω^m = 1` and still generates the residue field.  Note this
+gives the Teichmüller ELEMENT but NOT the monic degree-`f` relation
+that makes `A` free of rank `f`, which is why Hensel is primary.
+
+An alternative to Hensel with no new instance:
+`Algebra.FormallySmooth.lift` (`Mathlib/RingTheory/Smooth/Basic.lean:151`)
+already takes `IsNilpotent I` and lifts an algebra map along a
+nilpotent-kernel surjection — it needs `Algebra.FormallySmooth Z A`
+for `A = Z[X]/(h)`, i.e. standard étaleness of `h` with `h'` a unit.
+
+## WHAT DOES NOT APPLY, CHECKED — DO NOT SPEND A CYCLE REDISCOVERING IT
+
+`Algebra.trace_quotient_eq_of_isDedekindDomain` and
+`Algebra.trace_quotient_mk` at base `ℤ`, and `Module.basisQuotient`
+(`Mathlib/RingTheory/LocalRing/Quotient.lean:85`), all require the base
+ideal to be MAXIMAL.  At step 5 the base `Z = ℤ/q^k` IS local, so
+`trace_quotient_mk` *does* apply there — it is only the passage from
+`ℤ` to `ℤ/q^k` (cut 1, step 1) where maximality fails.
+
+FAITHFULNESS: not vacuous — the conclusion asserts a nonvanishing, and
+the extremal witness is NOT `1` (whose trace `e·f` is useless when
+`q ∣ f`) but an element of the unramified subring with unit residue
+trace.  Sanity-checked on `K = ℚ(√2,√5)`, `q = 2`, `e = f = 2`, `k = 2`,
+where `x = (1+√5)/2` is a unit at the unique prime above `2` with
+`Tr_{K/ℚ}(x) = 2`, so `v_2(Tr x) = 1 = v_2(e) < k`, matching the sharp
+`d = 3 = e − 1 + e·v_2(e)`. -/
+theorem exists_mem_cofactor_trace_quotient_ne_zero
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (k : ℕ) (hk : k = e.factorization q + 1)
+    (J : Ideal (NumberField.RingOfIntegers K))
+    (hJ : Ideal.span {(q : NumberField.RingOfIntegers K) ^ k}
+      = v.asIdeal ^ (e * k) * J) :
+    ∃ x : NumberField.RingOfIntegers K, x ∈ J ∧
+      Algebra.trace
+        (ℤ ⧸ (v.asIdeal ^ (e * k)).comap (algebraMap ℤ (NumberField.RingOfIntegers K)))
+        (NumberField.RingOfIntegers K ⧸ v.asIdeal ^ (e * k))
+        (Ideal.Quotient.mk _ x) ≠ 0 :=
+  sorry
+
+/-- **The trace witness for Serre's different bound** (PROVEN 2026-07-27
+over the two cuts `trace_quotient_pow_eq_of_mem_cofactor` (trace
+bookkeeping: base change plus CRT) and
+`exists_mem_cofactor_trace_quotient_ne_zero` (the finite-ring content),
+with `comap_pow_ramificationIdx_eq_span` as the bridge; cut 2026-07-27
+out of `differentIdeal_exponent_le_wild_of_residueDegreeGtOne`
 below, which is PROVEN over it).
 
 With `k = v_q(e) + 1` and `J` the cofactor of `Q^{e·k}` in `q^k·𝓞_K`,
@@ -1410,7 +1679,15 @@ exactly that `x` is supported on the `Q`-factor.  So the leaf says:
 **the trace form of the finite ring `S = 𝓞_K/Q^{e·k}` over `ℤ/q^k` is
 not identically zero.**  There is no room for a cheaper reformulation.
 
-## THE PROOF TO WRITE: A FINITE-RING ARGUMENT, NO LOCAL FIELDS
+## THE PROOF PLAN — NOW OWNED BY THE TWO CUTS ABOVE
+
+**Retained here for context only.  The LIVE version, with every mathlib
+input re-checked on 2026-07-27 (including the `IsAdicComplete` grep,
+which still finds no nilpotent instance), is the docstring of
+`exists_mem_cofactor_trace_quotient_ne_zero` above — edit THAT one.**
+Steps 1–6 below are its steps 1–6; the CRT and base-change bookkeeping
+they gesture at is now the separate leaf
+`trace_quotient_pow_eq_of_mem_cofactor`.
 
 (Derived 2026-07-27.  This supersedes BOTH routes recorded on the
 consumer before that date — the trace-dual route's "hard case needs
@@ -1531,8 +1808,18 @@ theorem exists_intTrace_not_mem_span_of_ramificationIdx
       = v.asIdeal ^ (e * k) * J) :
     ∃ x : NumberField.RingOfIntegers K, x ∈ J ∧
       Algebra.intTrace ℤ (NumberField.RingOfIntegers K) x
-        ∉ Ideal.span {((q : ℤ) ^ k)} :=
-  sorry
+        ∉ Ideal.span {((q : ℤ) ^ k)} := by
+  classical
+  obtain ⟨x, hxJ, hne⟩ :=
+    exists_mem_cofactor_trace_quotient_ne_zero K q hq v hmem e he k hk J hJ
+  refine ⟨x, hxJ, ?_⟩
+  intro hcon
+  refine hne ?_
+  rw [← trace_quotient_pow_eq_of_mem_cofactor K q hq v hmem e he k J hJ x hxJ,
+    Ideal.Quotient.eq_zero_iff_mem,
+    comap_pow_ramificationIdx_eq_span K q hq v hmem e he k]
+  rw [Algebra.intTrace_eq_trace] at hcon
+  exact hcon
 
 -- `hwild` and `hres` are unused: the leaf this is proven over is the
 -- general statement of Serre's bound.  See the docstring below.
