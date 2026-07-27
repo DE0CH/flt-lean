@@ -135,6 +135,7 @@ module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 public import Fermat.FLT.Modularity.HeckeFrame
+public import Fermat.FLT.Modularity.HeckeFrameForm
 public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
@@ -2891,21 +2892,136 @@ CIRCLE. This leaf is STRICTLY WEAKER than the node
   untouched — as it must, since discreteness is where the integral model
   is unavoidable.
 
-**REDUNDANCY TO COLLECT, for the owner of the `q`-expansion cluster
-below.** `exists_qCoeff_rational_relations` (and hence
-`exists_rational_qExpansion_spanning`) is currently proven from
-`integralCuspForms_span_eq_top`, i.e. THROUGH `exists_heckeSubring_zForm`
-— it obtains a `ℚ`-statement by way of the `ℤ`-form, the most expensive
-available route, exactly as `heckeSubring_moduleFinite` does for
-finiteness. Its proof extracts a `ℂ`-basis from the integral lattice and
-then only ever uses that the selected forms have RATIONAL coefficients,
-so replacing `exists_linearIndependent ℂ (integralCuspForms N)` +
-`integralCuspForms_span_eq_top hN` by `exists_linearIndependent ℂ
-(rationalCuspForms N)` + `rationalCuspForms_span_eq_top hN` re-proves it
-verbatim from THIS leaf and removes the `ℤ`-form from the whole
-rationality cluster's cone. That rewiring is left to that declaration's
-owner; it is not done here because this owner's mandate is the two
-`ℤ`-form leaves.
+**REDUNDANCY COLLECTED (2026-07-27).** `exists_qCoeff_rational_relations`
+below was proven from `integralCuspForms_span_eq_top`, i.e. THROUGH
+`exists_heckeSubring_zForm` — a `ℚ`-statement obtained by way of the
+`ℤ`-form, the most expensive available route. Its proof extracts a
+`ℂ`-basis from the lattice and then only ever uses that the selected
+forms have RATIONAL coefficients, so `exists_linearIndependent ℂ
+(integralCuspForms N)` + `integralCuspForms_span_eq_top hN` has been
+replaced by `exists_linearIndependent ℂ (rationalCuspForms N)` +
+`rationalCuspForms_span_eq_top hN`, re-proving it verbatim from THIS
+leaf (the coordinates are now rational rather than integral, which is
+all the argument ever consumed). Consequence, and the point of the
+exercise: `heckeSubring_moduleFinite_int` — the DISCRETENESS leaf — is
+no longer in the cone of `exists_qCoeff_rational_relations`,
+`exists_rational_qExpansion_spanning` or anything downstream of them.
+The whole rationality cluster now rests on THIS leaf alone.
+
+**ATOMICITY / ROUTE AUDIT (2026-07-27, by the owner who collected the
+redundancy). Four axes searched. Along three of them the leaf is
+irreducible; the fourth is a genuine decomposition and is named.**
+
+*Axis 1 — `ℚ`-structure-shaped cuts: every candidate is EQUIVALENT, i.e.
+DEAD END 8.* Write `𝕋_ℚ` for the `ℚ`-subalgebra of `End_ℂ(S₂)` generated
+by the `T_q`, and `W ⊆ S₂^∨` for the `ℚ`-span of the coefficient
+functionals `a_m`. All of the following are equivalent to this leaf, so
+none of them is a cut:
+
+1. `dim_ℚ 𝕋_ℚ ≤ D`;
+2. `𝕋_ℚ ⊗_ℚ ℂ → End_ℂ(S₂)` is injective (`𝕋` is DEFINED OVER `ℚ`);
+3. `dim_ℚ W ≤ D` — this is `exists_qCoeff_rational_relations` below,
+   which since today is proven FROM this leaf;
+4. `∃ V ⊆ S₂` a `ℚ`-subspace, `T_q`-stable, having a `ℚ`-basis that is
+   also a `ℂ`-basis of `S₂`.
+
+The chain, each step checkable: (4) ⟹ `𝕋_ℚ ↪ End_ℚ(V) ≅ M_D(ℚ)` so
+`dim_ℚ 𝕋_ℚ ≤ D²`, and `−⊗_ℚ ℂ` is exact so
+`𝕋_ℚ ⊗ ℂ ↪ End_ℚ(V) ⊗ ℂ = End_ℂ(S₂)`, which is (2); (2) ⟹
+`dim_ℚ 𝕋_ℚ = dim_ℂ (ℂ-span of 𝕋) ≤ D`, the last inequality FREE from
+left-nondegeneracy (`heckeSubring_eq_zero_of_forall_qCoeff_one` above,
+via `T ↦ (a₁(T e_j))_j`), which is (1); (1) ⟹ (3) because `W` is the
+`ℚ`-linear image of `𝕋_ℚ` under `T ↦ a₁(T ·)` (surjective by
+`exists_mem_heckeSubring_qCoeff`); (3) ⟹ this leaf is the predual-basis
+argument already written in `exists_rational_qExpansion_spanning`; and
+this leaf ⟹ (4) with `V = rationalCuspForms N`, which IS a `ℚ`-subspace
+(`a_m(c f) = c · a_m(f)` for `c ∈ ℚ`) even though it is declared as a
+`ℤ`-submodule.
+
+**Warning for anyone cutting at (4): drop the basis clause and it goes
+VACUOUS.** `V = S₂` viewed as a `ℚ`-subspace is `T_q`-stable and
+`ℂ`-spans. The content is entirely in `dim_ℚ V = D`.
+
+*Axis 2 — the TRACE FORM / Eichler–Selberg: blocked by an OPEN problem,
+not by a missing formalization.* Suppose one had `Tr(T_n) ∈ ℤ` (the
+Eichler–Selberg trace formula; absent from this pin and from mathlib —
+`grep -rn 'Eichler' .lake/packages/mathlib` is empty). Since `T_n T_m`
+is a `ℤ`-combination of `T_k`, the form `⟨x, y⟩ = Tr(xy)` on `𝕋_ℚ` is
+then `ℚ`-valued, and `x ↦ (Tr(x T_{n_i}))_i ∈ ℚ^D` for `T_{n_i}`
+`ℂ`-spanning the `ℂ`-span of `𝕋` would give `dim_ℚ 𝕋_ℚ ≤ D` — EXCEPT
+that its kernel is the radical of the trace form, which vanishes iff
+`𝕋 ⊗ ℂ` is SEMISIMPLE. For `Γ₀(N)` that is exactly the semisimplicity
+of `U_q` on the `q`-old part, which is a known-hard and in general OPEN
+question (Coleman–Edixhoven, *On the semi-simplicity of the
+`U_p`-operator on modular forms*, Math. Ann. 310 (1998), 119–127). So
+this axis does not merely need a theory nobody has written; it needs a
+theorem nobody has proven, and the `ℚ`-dimension of the radical is
+unbounded a priori. **Do not spend a slot on the trace formula for the
+sake of THIS leaf.**
+
+*Axis 3 — `H¹(Γ₀(N), ℚ)` / group cohomology: gives `≤ 2D`, and the
+factor `2` is the whole remaining content.* mathlib does have group
+cohomology, so this looks like the cheap route, and it is not. A
+Hecke-stable `ℚ`-structure on `H¹_par ≅ S₂ ⊕ S̄₂` makes
+`𝕋_ℚ ⊗ ℂ ↪ End_ℂ(S₂ ⊕ S̄₂)`. Writing `J` for the kernel of
+`𝕋_ℚ ⊗ ℂ → End_ℂ(S₂)`, the second factor is the COMPLEX CONJUGATE
+action, so it contributes only `J ∩ J̄ = 0`, whence `dim J ≤ ½ dim_ℚ 𝕋_ℚ`
+and `dim_ℚ 𝕋_ℚ ≤ 2D` — finite, but NOT `≤ D`, and finiteness alone is
+useless here (`ℚ(√2) ⊆ ℂ` is finite over `ℚ` at `D = 1`, the standing
+counterexample of this cluster). Closing the factor `2` is precisely
+"`H¹_par(Γ₀(N), ℚ)` is FREE OF RANK `2` over `𝕋_ℚ`", the substantive
+half of Eichler–Shimura, which is not weaker than this leaf.
+
+*Axis 4 — NEWFORMS: a genuine decomposition, the only one found, and
+the most promising of the four.*
+`S₂(Γ₀(N)) = ⊕_{M ∣ N} ⊕_{d ∣ N/M} V_d(S₂(Γ₀(M))^{new})`, where the
+degeneracy map `V_d : f(z) ↦ f(dz)` acts on coefficients by
+`a_m(V_d f) = a_{m/d}(f)` (`0` unless `d ∣ m`) and therefore PRESERVES
+rationality by inspection. So this leaf decomposes into (i) rationality
+on the NEW subspace at each `M ∣ N` — strictly weaker, being a
+statement about a subspace — and (ii) the Atkin–Lehner decomposition
+itself.
+
+**CORRECTION to a claim this audit made in its first draft (same day),
+recorded because it is exactly the "stale impossible note" the doctrine
+warns about.** The first draft said (ii) "exists NOWHERE", on the
+strength of a grep that was truncated by `head`. That is FALSE. What is
+true, and what the next owner should check by name rather than take from
+here:
+
+* mathlib really has none of it —
+  `grep -rn 'newform\|oldform\|AtkinLehner' .lake/packages/mathlib` is
+  empty — and `~/cs/FLT` is quaternionic. That half of the draft stands.
+* But THIS FILE already has the degeneracy operators, PROVEN:
+  `degeneracyOp N M d` (~30889) with `qCoeff_degeneracyOp` (~30901) —
+  literally `a_m(V_d f) = if d ∣ m then a_{m/d}(f) else 0`, i.e. the
+  rationality-preservation above is one `rw` away — together with
+  `degeneracyOp_injective` (~30982) and `heckeOp_degeneracyOp` (~30964),
+  `T_q ∘ V_d = V_d ∘ T_q` at `q ∤ M`. The file's own line ~27673, "no
+  Petersson product and no oldform degeneracy maps", is itself STALE:
+  that block was built 2026-07-26.
+* `atkinLehnerOp M Q` (~36221) exists too, though `exists_atkinLehnerOp`
+  (~36191) and `atkinLehnerOp_apply_eq_neg_qCoeff_smul` (~36272) are
+  still OPEN leaves.
+
+So what axis 4 is actually missing is narrower than "the whole
+Atkin–Lehner theory": it is the DIRECT-SUM decomposition (old ⊕ new,
+with multiplicity one) plus rationality on the new part. The nearest
+existing statement is the OPEN leaf
+`mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (~31779).
+
+**Second obstacle on axis 4, and it is real: DECLARATION ORDER.** All of
+that machinery sits ~28000 lines BELOW this leaf, so consuming it here
+needs the degeneracy block hoisted above `rationalCuspForms` — the same
+shape of large relocation that route B of `integralCuspForms_span_eq_top`
+needed for the `heckeEndo` block, and it belongs to whoever executes
+axis 4 rather than to this audit.
+
+**Net verdict**: the arithmetic residue is `dim_ℚ 𝕋_ℚ ≤ D`, and on this
+pin it is reachable only by building one of: the `ℚ`-model of `X₀(N)`
+(route A), Eichler–Shimura freeness of `H¹_par` over `𝕋` (axis 3), or
+Atkin–Lehner newform theory (axis 4). A successor should pick one and
+build it, and should NOT expect a further cut of this statement.
 
 SOUNDNESS: `0 < N` is inherited from the consumer. At genus-zero levels
 `S₂(Γ₀(N)) = 0` and the statement is `⊥ = ⊤` in the zero module, i.e.
@@ -3305,10 +3421,18 @@ those four may be used here; in particular
 `exists_integral_qExpansion_spanning` is a repackaging of this very
 statement and is the trap to avoid.
 
-THIS NODE ALSO DISCHARGES THE `ℚ`-LEAF (done 2026-07-26). The former
-citation `exists_qCoeff_rational_relations` immediately below is now
-PROVEN from this one, entirely non-circularly since it is stated above
-it, by the following linear algebra: fix a `ℂ`-basis `e₁,…,e_D`
+THIS NODE ONCE DISCHARGED THE `ℚ`-LEAF — **NO LONGER, AS OF
+2026-07-27, AND THAT IS AN IMPROVEMENT.** The paragraph below is kept
+because its linear algebra is still exactly the proof of
+`exists_qCoeff_rational_relations`; only its INPUT changed. That node
+is now proven from `rationalCuspForms_span_eq_top` — Shimura
+rationality, stated far above and STRICTLY WEAKER than this one — so
+this node is no longer in the `ℚ`-cluster's cone at all, and neither
+is the discreteness leaf `heckeSubring_moduleFinite_int` beneath it.
+Read `ℤ^D` as `ℚ^D` and "integral" as "rational" throughout the
+paragraph and it describes the current proof verbatim; that is the
+whole of the change, and it is why the rewiring was free. Historical
+form, 2026-07-26: fix a `ℂ`-basis `e₁,…,e_D`
 of `S₂(Γ₀(N))` drawn from `S₂(Γ₀(N); ℤ)` (possible by this node), so
 that every `a_m` has INTEGER coordinates `(a_m(e_j))_j ∈ ℤ^D`; extract
 from `{(a_m(e_j))_j : m ∈ ℕ} ⊆ ℚ^D` a maximal `ℚ`-independent
@@ -3320,16 +3444,16 @@ subfamily, indexed by `n₁,…,n_d`; it has `d ≤ D` by independence and
 functionals because they agree on a basis. That makes this node the
 SINGLE citation of the whole `q`-expansion cluster.
 
-TRADE-OFF THIS CREATES, recorded so it can be undone deliberately.
+TRADE-OFF THIS CREATED — **RESOLVED 2026-07-27, no action outstanding.**
 Classically, rationality (Shimura Thm 3.52) needs only the `ℚ`-model of
 `X₀(N)`, while bounded denominators needs the INTEGRAL model — the
 literature keeps them apart, and the 2026-07-25 cut did too. Routing
-the `ℚ`-statement through this node cites the STRONGER of the two for
-both. That is a strict reduction in the number of open leaves and no
-loss in practice on a pin that has neither model; but an owner who
-later proves rationality from the `ℚ`-model alone should restore
-`exists_qCoeff_rational_relations` to a citation and delete the
-derivation, which is self-contained and touches nothing else.
+the `ℚ`-statement through this node cited the STRONGER of the two for
+both, and this paragraph asked a successor to undo that once a
+`ℚ`-only citation existed. One now does — `rationalCuspForms_span_eq_top`,
+opened 2026-07-27 — and `exists_qCoeff_rational_relations` has been
+rewired onto it. The literature's separation is restored: the
+`ℚ`-statement cites the `ℚ`-model and this node cites the integral one.
 
 SOUNDNESS: `0 < N` is required only because the Sturm bound and the
 Hecke operators are junk at `N = 0`; at genus-zero levels
@@ -3494,11 +3618,11 @@ theorem integralCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
   exact Submodule.span_mono hsub
 
 /-- **The `ℚ`-structure of the `q`-expansion coefficient functionals**
-(PROVEN, 2026-07-26, over the single `q`-expansion-principle citation
-`integralCuspForms_span_eq_top` above — formerly itself a citation, the
-ARITHMETIC RESIDUE of Shimura's rationality theorem isolated 2026-07-25
-as the single input of the assembly `exists_rational_qExpansion_spanning`
-below):
+(PROVEN, 2026-07-26; REWIRED 2026-07-27 to the strictly weaker
+`ℚ`-citation `rationalCuspForms_span_eq_top` above — formerly itself a
+citation, the ARITHMETIC RESIDUE of Shimura's rationality theorem
+isolated 2026-07-25 as the single input of the assembly
+`exists_rational_qExpansion_spanning` below):
 writing `D = dim_ℂ S₂(Γ₀(N))` (finite by `cuspForm_finiteDimensional`),
 there are `D` indices `n 0, …, n (D−1)` such that EVERY coefficient
 functional `a_m` is a `ℚ`-linear combination of
@@ -3542,12 +3666,13 @@ the `ℚ`-span of `{a_1, a_2}` while no cusp form has rational
 exactly what rules this out, and it is also what the classical proof
 gives — `dim_ℚ W = D` is the `ℚ`-form statement.
 
-ASSEMBLY (2026-07-26). The arithmetic is now supplied entirely by
-`integralCuspForms_span_eq_top` — `S₂(Γ₀(N); ℤ)` has full rank — and
-the rest is linear algebra over `ℚ ⊆ ℂ`, with no modular-curve input:
-(i) extract from the integral lattice a `ℂ`-basis `e₁,…,e_D` of
+ASSEMBLY (2026-07-26; rewired to the `ℚ`-citation 2026-07-27). The
+arithmetic is supplied entirely by `rationalCuspForms_span_eq_top` —
+`S₂(Γ₀(N); ℚ)` has full rank — and the rest is linear algebra over
+`ℚ ⊆ ℂ`, with no modular-curve input:
+(i) extract from the rational forms a `ℂ`-basis `e₁,…,e_D` of
 `S₂(Γ₀(N))`, so that the coordinate vector `v_m = (a_m(e_j))_j` of
-every coefficient functional lies in `ℤ^D ⊆ ℚ^D`; (ii) the `v_m` span
+every coefficient functional lies in `ℚ^D`; (ii) the `v_m` span
 `ℚ^D` over `ℚ` — otherwise a nonzero `u ∈ ℚ^D` kills all of them, and
 then `∑_j u_j e_j` is killed by every `a_m`, hence is `0` by the
 `q`-expansion principle `cuspForm_eq_of_forall_qCoeff_eq`,
@@ -3594,34 +3719,32 @@ theorem exists_qCoeff_rational_relations {N : ℕ} (hN : 0 < N) :
     refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
     rw [qCoeff_zero_cuspForm]
     exact hf m
-  -- (1) a `ℂ`-basis of `S₂(Γ₀(N))` drawn from the integral lattice
+  -- (1) a `ℂ`-basis of `S₂(Γ₀(N))` drawn from the RATIONAL forms
   obtain ⟨b, hbsub, hbspan, hbli⟩ :=
     exists_linearIndependent ℂ
-      ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2)))
-  rw [integralCuspForms_span_eq_top hN] at hbspan
+      ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2)))
+  rw [rationalCuspForms_span_eq_top hN] at hbspan
   let B0 : Module.Basis b ℂ (CuspForm (Gamma0GL N) 2) :=
     Module.Basis.mk hbli (by rw [Subtype.range_coe, hbspan])
   haveI : Fintype b := FiniteDimensional.fintypeBasisIndex B0
   have hcard : Fintype.card b = D := (Module.finrank_eq_card_basis B0).symm
   let e : Module.Basis (Fin D) ℂ (CuspForm (Gamma0GL N) 2) :=
     B0.reindex (Fintype.equivFinOfCardEq hcard)
-  have hein : ∀ i : Fin D, e i ∈ integralCuspForms N := by
+  have hein : ∀ i : Fin D, e i ∈ rationalCuspForms N := by
     intro i
     have hval : e i
         = (((Fintype.equivFinOfCardEq hcard).symm i : b) : CuspForm (Gamma0GL N) 2) := by
       simp [e, Module.Basis.reindex_apply, B0, Module.Basis.mk_apply]
     rw [hval]
     exact hbsub ((Fintype.equivFinOfCardEq hcard).symm i).2
-  -- (2) the coefficient functionals have INTEGER coordinates in that basis
-  have hval : ∀ (m : ℕ) (j : Fin D), ∃ z : ℤ, qCoeffL N m (e j) = (z : ℂ) :=
+  -- (2) the coefficient functionals have RATIONAL coordinates in that basis
+  have hval : ∀ (m : ℕ) (j : Fin D), ∃ z : ℚ, qCoeffL N m (e j) = (z : ℂ) :=
     fun m j => hein j m
   choose z hz using hval
-  set v : ℕ → (Fin D → ℚ) := fun m j => ((z m j : ℤ) : ℚ) with hv
+  set v : ℕ → (Fin D → ℚ) := fun m j => z m j with hv
   have hvC : ∀ (m : ℕ) (j : Fin D), ((v m j : ℚ) : ℂ) = qCoeffL N m (e j) := by
     intro m j
     rw [hv, hz m j]
-    push_cast
-    ring
   -- (3) those rational coordinate vectors span `ℚ^D`
   have hvspan : Submodule.span ℚ (Set.range v) = ⊤ := by
     by_contra hne
@@ -23664,9 +23787,144 @@ theorem span_singleton_le_pow_of_mul_eq_of_exact_val {A : Type*} [CommRing A]
   rw [pow_mul] at hdvd3
   exact Ideal.dvd_iff_le.mp ((UniqueFactorizationMonoid.pow_dvd_pow_iff_dvd hk).mp hdvd3)
 
-/-- **STICKELBERGER FOR GAUSS SUMS, PACKAGED INSIDE `𝓞 CF`** (SORRY
-LEAF, cut 2026-07-27 out of `span_jacobiSum_le_decompCarryPow_of_two_le`
-below, which is now PROVEN over it — with `htwo` unused, see below).
+/-- **AN EXACT `q`-VALUATION IS MULTIPLIED BY A POWER** (PROVEN
+2026-07-27; Dedekind bookkeeping, no arithmetic input).
+
+If `c ∈ q^n` and `c ∉ q^{n+1}` — i.e. `v_q(c) = n` exactly — then
+`c^k ∉ q^{kn+1}`. Proof: `Ideal.dvd_iff_le` moves into the ideal
+monoid, `(c) = q^n·T` with `q ∤ T` (that is what `c ∉ q^{n+1}` says),
+so `(c^k) = q^{nk}·T^k`; cancelling `q^{nk}` (`mul_dvd_mul_iff_left`,
+legitimate since `q ≠ ⊥`) would give `q ∣ T^k`, hence `q ∣ T` since `q`
+is prime.
+
+This is the "upper half" of `v_q(c^k) = k·v_q(c)`; the lower half is
+`Ideal.pow_mem_pow` and is not needed by the consumer below. -/
+theorem pow_not_mem_pow_succ_of_exact_val {A : Type*} [CommRing A] [IsDedekindDomain A]
+    {q : Ideal A} (hq : q.IsPrime) (hq0 : q ≠ ⊥) {c : A} {n k : ℕ}
+    (hc : c ∈ q ^ n) (hc' : c ∉ q ^ (n + 1)) :
+    c ^ k ∉ q ^ (k * n + 1) := by
+  classical
+  have hqp : Prime q := Ideal.prime_of_isPrime hq0 hq
+  have hd : q ^ n ∣ Ideal.span {c} :=
+    Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hc)
+  obtain ⟨T, hT⟩ := hd
+  have hTnd : ¬ q ∣ T := by
+    rintro ⟨T', rfl⟩
+    apply hc'
+    have hdd : q ^ (n + 1) ∣ Ideal.span {c} := ⟨T', by rw [hT, pow_succ]; ring⟩
+    exact (Ideal.span_singleton_le_iff_mem _).mp (Ideal.dvd_iff_le.mp hdd)
+  intro hmem
+  have hdvd : q ^ (k * n + 1) ∣ Ideal.span {c ^ k} :=
+    Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hmem)
+  rw [← Ideal.span_singleton_pow, hT, mul_pow, ← pow_mul] at hdvd
+  have hkn : k * n + 1 = n * k + 1 := by ring_nf
+  rw [hkn, pow_succ] at hdvd
+  have hne : (q : Ideal A) ^ (n * k) ≠ 0 := pow_ne_zero _ (by simpa using hq0)
+  exact hTnd (hqp.dvd_of_dvd_pow ((mul_dvd_mul_iff_left hne).mp hdvd))
+
+/-- **EXACTNESS OF `v_q(x)` FROM A REFLECTION IDENTITY AND TWO LOWER
+BOUNDS** (PROVEN 2026-07-27; Dedekind bookkeeping, no arithmetic
+input).
+
+This is the step that removes the `∉ q^{N+1}` obligation from the
+Gauss-sum leaf below. Given `x·y = c^k` with `v_q(c) = n` EXACT, and
+lower bounds `v_q(x) ≥ Na`, `v_q(y) ≥ Nb` whose sum is FORCED —
+`Na + Nb = k·n` — both lower bounds are automatically equalities:
+`x ∈ q^{Na+1}` would put `x·y = c^k` in `q^{Na+1+Nb} = q^{kn+1}`,
+contradicting `pow_not_mem_pow_succ_of_exact_val`.
+
+For the Gauss sums this reads: `g(χᵃ)^p · g(χ^{−a})^p = (#F)^p` with
+`v_q(#F) = #D` exact, and `N a + N (−a) = p·#D` because
+`⟨x⟩ + ⟨−x⟩ = p` for `x ≠ 0` in `ZMod p`. So *only the lower bound*
+`v_q(g(χᵃ)^p) ≥ N a` has to be proven by Stickelberger's congruence;
+the matching upper bound is free. -/
+theorem not_mem_pow_succ_of_mul_eq_pow_of_exact_val {A : Type*} [CommRing A]
+    [IsDedekindDomain A] {q : Ideal A} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    {x y c : A} {Na Nb n k : ℕ}
+    (heq : x * y = c ^ k)
+    (hc : c ∈ q ^ n) (hc' : c ∉ q ^ (n + 1))
+    (hy : y ∈ q ^ Nb) (hsum : Na + Nb = k * n) :
+    x ∉ q ^ (Na + 1) := by
+  intro hx
+  refine pow_not_mem_pow_succ_of_exact_val hq hq0 hc hc' (k := k) ?_
+  have hmul : x * y ∈ q ^ (Na + 1) * q ^ Nb := Ideal.mul_mem_mul hx hy
+  rw [← pow_add, heq] at hmul
+  have hidx : Na + 1 + Nb = k * n + 1 := by omega
+  rwa [hidx] at hmul
+
+/-- **THE REFLECTION IDENTITY FOR THE STICKELBERGER EXPONENTS** (PROVEN
+2026-07-27; pure `ZMod m` arithmetic, no number theory whatever).
+
+Writing `⟨x⟩ := (x : ZMod m).val` and `N a := ∑_{u ∈ D} ⟨−a·u⁻¹⟩` as in
+`sum_decompVal_add_eq_add_mul_carryCard` above, whenever `m ∤ a` and
+`m ∣ a + b` — so `b ≡ −a` — one has
+
+  `N a + N b = m · #D`.
+
+Pointwise this is `⟨−x⟩ + ⟨x⟩ = m` for `x ≠ 0` (`ZMod.neg_val`), and
+`(a : ZMod m)·u⁻¹ ≠ 0` because `u⁻¹` is a unit. No hypothesis on `D` is
+needed. -/
+theorem sum_decompVal_add_neg_eq_mul_card {m : ℕ} [NeZero m] (D : Finset (ZMod m)ˣ) (a b : ℕ)
+    (ha : ¬ (m ∣ a)) (hab : m ∣ (a + b)) :
+    (∑ u ∈ D, ((-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)
+      + (∑ u ∈ D, ((-(b : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)
+      = m * D.card := by
+  classical
+  have hane : ((a : ZMod m)) ≠ 0 := fun h => ha ((ZMod.natCast_eq_zero_iff _ _).mp h)
+  have hbneg : (-(b : ZMod m)) = ((a : ZMod m)) := by
+    have h0 : (((a + b : ℕ)) : ZMod m) = 0 := (ZMod.natCast_eq_zero_iff _ _).mpr hab
+    push_cast at h0
+    linear_combination -h0
+  have hterm : ∀ u ∈ D, ((-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val
+      + (((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val = m := by
+    intro u _
+    have hwne : ((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m) ≠ 0 := fun h =>
+      hane ((Units.mul_left_eq_zero u⁻¹).mp h)
+    have hneg : (-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)
+        = -(((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)) := by ring
+    rw [hneg, ZMod.neg_val, if_neg hwne]
+    have hlt : (((a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val < m := ZMod.val_lt _
+    omega
+  rw [hbneg, ← Finset.sum_add_distrib, Finset.sum_congr rfl hterm, Finset.sum_const, smul_eq_mul,
+    mul_comm]
+
+/-- **`v_q(#(𝓞 CF ⧸ q)) = #D`: THE RESIDUE CARDINALITY HAS `q`-VALUATION
+THE ORDER OF THE DECOMPOSITION GROUP** (SORRY LEAF, cut 2026-07-27 out
+of `exists_gaussSumPow_of_jacobiSum` below).
+
+`#(𝓞 CF ⧸ q) = ℓ^f`, where `ℓ` is the rational prime under `q` and `f`
+the residue degree. The decomposition group
+`D = {u : σ_u q = q} ≤ Gal(CF/ℚ) ≅ (ZMod p)ˣ` has order `e·f`. The
+hypothesis `hpq : (p : 𝓞 CF) ∉ q` says `ℓ ≠ p`, and `CF = ℚ(ζ_p)` is
+ramified ONLY at `p`, so `e = 1`; hence `#D = f` and
+`v_q(ℓ^f) = f·v_q(ℓ) = f = #D`.
+
+**This is pure algebraic number theory — no Gauss sums, no Jacobi sums,
+no Stickelberger.** It is separated from the Gauss-sum leaf below
+precisely so that it can be attacked from mathlib's ramification API
+(`Ideal.ramificationIdx`, `Ideal.inertiaDeg`, the `IsGalois` sum
+formula, and `IsCyclotomicExtension`'s discriminant/ramification
+results) by an owner who never has to look at a character.
+
+**FAITHFULNESS.** `hpq` is load-bearing and cannot be dropped: at
+`ℓ = p` the prime `q = (1 − ζ_p)` is totally ramified, `e = p − 1`,
+`f = 1`, `#D = p − 1`, while `v_q(#(𝓞 CF ⧸ q)) = v_q(p) = p − 1`. That
+happens to agree here, but the intermediate claim `e = 1` does not, and
+the Gauss-sum theory below is empty at `ℓ = p` anyway (`χ` cannot have
+order `p`). -/
+theorem natCard_mem_pow_decompCard (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) :
+    ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ∈ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card ∧
+      ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ∉ q ^ ((Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).card + 1) :=
+  sorry
+
+/-- **STICKELBERGER FOR GAUSS SUMS — THE LOWER BOUND ONLY** (SORRY LEAF,
+cut 2026-07-27 out of `exists_gaussSumPow_of_jacobiSum` below, which is
+now PROVEN over it and `natCard_mem_pow_decompCard`).
 
 `G a` is `g(χᵃ)^p`, the `p`-th power of the Gauss sum of `χᵃ` against a
 primitive additive character of `F = 𝓞 CF ⧸ q`. The Gauss sum itself
@@ -23678,37 +23936,58 @@ That is the whole point of this cut: it is the largest piece of the
 Gauss-sum route that can be stated without building `L`, `𝓞 L`, the
 prime `𝒬 ∣ q` and the Teichmüller character into the interface.
 
-**(i) the multiplicative relation** is mathlib's
-`jacobiSum_mul_nontrivial : jacobiSum χ φ * gaussSum (χ*φ) ψ =
-gaussSum χ ψ * gaussSum φ ψ` (valid because `χᵃ·χᶜ ≠ 1`, which is
-exactly `p ∤ a+c`), raised to the `p`-th power. Note it is an EQUATION
-in `𝓞 CF`, with no division and no invertibility side condition.
+**WHAT CHANGED ON 2026-07-27 (this is the reason the leaf was
+recut).** The predecessor asked for the EXACT valuation
+`G a ∈ q^{N a} ∧ G a ∉ q^{N a + 1}`. The `∉` half is now FREE:
+`not_mem_pow_succ_of_mul_eq_pow_of_exact_val` above derives it from the
+lower bound together with the reflection identity, because
+`N a + N b = p·#D` is forced (`sum_decompVal_add_neg_eq_mul_card`) and
+`v_q(#F) = #D` is exact (`natCard_mem_pow_decompCard`). So this leaf
+now carries only
 
-**(ii) the valuation** is Stickelberger's congruence. With `d :=
-(ℓ^f − 1)/p`, `f := #D` the residue degree, `ω` the Teichmüller
-character of `F` and `π := ζ_ℓ − 1` (a uniformiser at `𝒬`, `e(𝒬/q) =
-ℓ − 1`), the congruence `g(ω^{−k}) ≡ −π^{s_ℓ(k)}/γ(k) (mod 𝒬^{s_ℓ(k)+1})`
-gives `v_𝒬(g(ω^{−k})) = s_ℓ(k)`, the base-`ℓ` digit sum. Here `χ = ω^d`,
-so `v_𝒬(g(χᵃ)) = s_ℓ(⟨−a⟩_p·d)`; the classical digit identity
-`s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f} ⟨mℓ^i⟩_p` and `v_𝒬 = (ℓ−1)·v_q` on
-`𝓞 CF` then give, after multiplying by `p`,
+* **(i) the multiplicative relation**, mathlib's
+  `jacobiSum_mul_nontrivial : gaussSum (χ*φ) ψ * jacobiSum χ φ =
+  gaussSum χ ψ * gaussSum φ ψ` (valid because `χᵃ·χᶜ ≠ 1`, which is
+  exactly `p ∤ a+c`), raised to the `p`-th power. Note it is an
+  EQUATION with no division and no invertibility side condition, and
+  mathlib requires no primitivity of `ψ` for it — only `[IsDomain]` on
+  the coefficient ring, which `𝓞 L` satisfies;
+* **(ii) the reflection identity**, mathlib's
+  `gaussSum_mul_gaussSum_eq_card : gaussSum χ ψ * gaussSum χ⁻¹ ψ =
+  χ(−1) * #F` for PRIMITIVE `ψ`, raised to the `p`-th power: the factor
+  `χᵃ(−1)^p` is `1` because `χ` is `p`-torsion and `−1 ≠ 0` in a field,
+  so the identity is exactly `G a · G b = (#F)^p` whenever `p ∣ a + b`.
+  This is a one-liner from the pin once `L` exists;
+* **(iii) the valuation LOWER BOUND**, which is Stickelberger's
+  congruence and is the only deep step left. With `d := (ℓ^f − 1)/p`,
+  `f := #D` the residue degree, `ω` the Teichmüller character of `F`
+  and `π := ζ_ℓ − 1` (a uniformiser at `𝒬`, `e(𝒬/q) = ℓ − 1`), the
+  congruence `g(ω^{−k}) ≡ −π^{s_ℓ(k)}/γ(k) (mod 𝒬^{s_ℓ(k)+1})` gives
+  `v_𝒬(g(ω^{−k})) = s_ℓ(k)`, the base-`ℓ` digit sum. Here `χ = ω^d`,
+  so `v_𝒬(g(χᵃ)) = s_ℓ(⟨−a⟩_p·d)`; the classical digit identity
+  `s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f} ⟨mℓ^i⟩_p` and
+  `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF` then give, after multiplying by `p`,
 
-  `v_q(g(χᵃ)^p) = ∑_{i<f} ⟨−a·ℓ^i⟩_p = ∑_{u ∈ D} ⟨−a·u⟩_p`,
+    `v_q(g(χᵃ)^p) = ∑_{i<f} ⟨−a·ℓ^i⟩_p = ∑_{u ∈ D} ⟨−a·u⟩_p`,
 
-the last step because `D`, the decomposition group of `q`, is generated
-by the Frobenius `ℓ` and has order `f`. Since `D` is a group, summing
-`⟨−a·u⟩` and `⟨−a·u⁻¹⟩` over `D` give the same number, so the
-`u⁻¹` written below (matching the parent's carry predicate) is not a
-different normalisation.
+  the last step because `D`, the decomposition group of `q`, is
+  generated by the Frobenius `ℓ` and has order `f`. Since `D` is a
+  group, summing `⟨−a·u⟩` and `⟨−a·u⁻¹⟩` over `D` give the same number,
+  so the `u⁻¹` written below (matching the parent's carry predicate) is
+  not a different normalisation.
 
 **FOUR SUB-STEPS FOR WHOEVER TAKES THIS LEAF**, in dependency order —
 none of them exists in mathlib or in `~/cs/FLT` (surveyed 2026-07-26,
 re-checked 2026-07-27: `Mathlib/NumberTheory/GaussSum.lean` has only
-`gaussSum_mul_gaussSum_eq_card`, `gaussSum_sq`, `gaussSum_frob`, and
-there is no Teichmüller character anywhere in the pin):
+`gaussSum_mulShift`, `gaussSum_mul_gaussSum_eq_card`, `gaussSum_sq`,
+`gaussSum_frob`, and there is no Teichmüller character anywhere in the
+pin). Only step 3 is needed for clause (iii); steps 1–2 are shared
+scaffolding that clauses (i) and (ii) also need:
 
 1. the compositum `L = CF(ζ_ℓ)`, a prime `𝒬 ∣ q` of `𝓞 L` with
-   `e(𝒬/q) = ℓ − 1`, and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`;
+   `e(𝒬/q) = ℓ − 1`, and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`; plus the DESCENT
+   `g(χᵃ)^p ∈ 𝓞 CF`, which is `gaussSum_mulShift` (`σ_t(g) =
+   χᵃ(t)⁻¹ g`) together with `Gal(L/CF)`-invariance;
 2. the Teichmüller character `ω : Fˣ → 𝓞 L` with `ω(x) ≡ x (mod 𝒬)`,
    and the identification `χ = ω^d`;
 3. **Stickelberger's congruence** `v_𝒬(g(ω^{−k})) = s_ℓ(k)` — the deep
@@ -23721,7 +24000,9 @@ there is no Teichmüller character anywhere in the pin):
 and rules out an off-by-`⟨a⟩` error): `g(χᵃ)·g(χ^{−a}) = χᵃ(−1)·#F`, so
 `v_q(G a) + v_q(G (−a)) = p·f`; and the formula above gives
 `∑_{u ∈ D}(⟨−a·u⟩ + ⟨a·u⟩) = ∑_{u ∈ D} p = p·#D = p·f`. The two agree
-identically, for every `a` prime to `p`.
+identically, for every `a` prime to `p`. Note that clause (ii) of this
+leaf is now exactly that check, promoted from a comment to an
+obligation — which is what makes the `∉` half free.
 
 **THREE EXPLICIT VERIFICATIONS OF THE VALUATION CLAUSE** (2026-07-27;
 computed in closed form, not sampled — the sign convention is the one
@@ -23736,21 +24017,88 @@ wrong sign would make this leaf FALSE rather than merely hard).
   `N 1 = ⟨−1⟩ + ⟨−1·2⟩ = 2 + 1 = 3`. ✓ (Same for `a = 2`, by symmetry.)
   The relation then reads `J(χ,χ)·g(χ²) = g(χ)²`, i.e. `2·J = 4`, so
   `J = 2` and `v_q(J) = 1` — and the carry count is `1` (carry at
-  `u = 1` only). ✓
+  `u = 1` only). ✓ Reflection: `G 1 · G 2 = 8 · 8 = 64 = 4³ = (#F)^p`,
+  and `v_q(64) = 6 = p·#D = 3·2`. ✓
 * `p = 3`, `ℓ = 7`, `f = 1`, `d = 2`, `D = {1}`. Classically
   `g(χ)³ = 7·J(χ,χ)` for a cubic character, and `7 = q·q̄` with
   `v_q(7) = 1`, `v_q(J) = 1`; so `v_q(G 1) = 2`. The formula:
   `N 1 = ⟨−1⟩_3 = 2`. ✓ Cross-checked against Stickelberger directly:
   `v_𝒬(g(χ)) = s_7(⟨−1⟩_3·d) = s_7(4) = 4`, and `3·4/(ℓ−1) = 12/6 = 2`.
   ✓ This is the case that pins the `e = ℓ − 1` factor, which the first
-  example cannot see.
+  example cannot see. Reflection: `v_q(G 1) + v_q(G 2) = 2 + 1 = 3 =
+  p·#D = 3·1`, and `#F = 7` with `v_q(7) = 1 = #D`. ✓
 * `p = 5`, `ℓ = 11`, `f = 1`, `d = 2`, `D = {1}`: `N a = 5 − a`, and
   `v_𝒬(g(χᵃ)) = s_11(⟨−a⟩·2) = 2(5−a)`, so
-  `v_q(G a) = 5·2(5−a)/10 = 5 − a`. ✓
+  `v_q(G a) = 5·2(5−a)/10 = 5 − a`. ✓ Reflection:
+  `N a + N (5−a) = (5−a) + a = 5 = p·#D`. ✓
 
 Each of the three also reproduces the parent's carry formula
 `v_q(J) = #carries` through the assembly below, which is the
-independent check that the two clauses fit together.
+independent check that the two clauses fit together. -/
+theorem exists_gaussSumPow_lowerBound_of_jacobiSum (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    ∃ G : ℕ → 𝓞 CF,
+      (∀ a c : ℕ, ¬ (p ∣ a) → ¬ (p ∣ c) → ¬ (p ∣ (a + c)) →
+          jacobiSum (χ ^ a) (χ ^ c) ^ p * G (a + c) = G a * G c) ∧
+      (∀ a b : ℕ, ¬ (p ∣ a) → p ∣ (a + b) →
+          G a * G b = ((Nat.card (𝓞 CF ⧸ q) : ℕ) : 𝓞 CF) ^ p) ∧
+      (∀ a : ℕ, ¬ (p ∣ a) →
+          G a ∈ q ^ (∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
+              Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
+              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)) :=
+  sorry
+
+/-- **STICKELBERGER FOR GAUSS SUMS, PACKAGED INSIDE `𝓞 CF`** (PROVEN
+2026-07-27 over `exists_gaussSumPow_lowerBound_of_jacobiSum` and
+`natCard_mem_pow_decompCard` above; cut 2026-07-27 out of
+`span_jacobiSum_le_decompCarryPow_of_two_le`
+below, which is PROVEN over it — with `htwo` unused, see below).
+
+`G a` is `g(χᵃ)^p`, the `p`-th power of the Gauss sum of `χᵃ` against a
+primitive additive character of `F = 𝓞 CF ⧸ q`. The Gauss sum itself
+lives in the compositum `L = CF(ζ_ℓ)`, `ℓ` the rational prime under
+`q`; its `p`-th power is `Gal(L/CF)`-invariant, because
+`σ_t(g(χᵃ)) = χᵃ(t)⁻¹·g(χᵃ)` and `χ` is `p`-torsion — **so `G a` is an
+element of `𝓞 CF` and the compositum never appears in this statement.**
+That is the whole point of this cut: it is the largest piece of the
+Gauss-sum route that can be stated without building `L`, `𝓞 L`, the
+prime `𝒬 ∣ q` and the Teichmüller character into the interface.
+
+The construction of `G`, the normalisation audit that fixes the sign,
+and the three closed-form verifications all live on
+`exists_gaussSumPow_lowerBound_of_jacobiSum` above, which is where the
+remaining mathematical content is. What is proven HERE is the
+bookkeeping that turns that leaf's ONE-SIDED valuation bound into the
+two-sided one this statement asserts.
+
+**THE PROOF: THE `∉ q^{N a + 1}` HALF IS FREE.** Given the lower bound
+`G a ∈ q^{N a}` and the reflection identity `G a · G b = (#F)^p` for
+`p ∣ a + b` — both supplied by the leaf above:
+
+* take `b := a·(p−1)`, so `a + b = a·p` is divisible by `p` while
+  `p ∤ b` (`p` prime, `p ∤ a`, and `0 < p−1 < p`);
+* `sum_decompVal_add_neg_eq_mul_card` gives `N a + N b = p·#D`, because
+  pointwise `⟨x⟩ + ⟨−x⟩ = p` for `x ≠ 0` in `ZMod p`, and
+  `(a : ZMod p)·u⁻¹ ≠ 0`;
+* `natCard_mem_pow_decompCard` gives `v_q(#F) = #D` exactly, hence
+  `(#F)^p ∉ q^{p·#D + 1}` by `pow_not_mem_pow_succ_of_exact_val`;
+* so `G a ∈ q^{N a + 1}` would force
+  `(#F)^p = G a · G b ∈ q^{(N a + 1) + N b} = q^{p·#D + 1}`, a
+  contradiction. That is
+  `not_mem_pow_succ_of_mul_eq_pow_of_exact_val`.
+
+No arithmetic input whatever: Dedekind bookkeeping plus `ZMod`
+arithmetic. The point of the cut is that Stickelberger's congruence
+naturally produces a LOWER bound on `v_𝒬(g(ω^{−k}))`, and the matching
+upper bound — which is where a formalisation would otherwise have to
+track the unit `γ(k)` in the congruence — is now supplied for free by
+the reflection formula.
 
 **WHAT THIS BUYS.** `span_jacobiSum_le_decompCarryPow_of_two_le` follows
 from this leaf plus `sum_decompVal_add_eq_add_mul_carryCard` and
@@ -23778,8 +24126,27 @@ theorem exists_gaussSumPow_of_jacobiSum (CF : Type) [Field CF] [NumberField CF]
               ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) ∧
           G a ∉ q ^ ((∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
               Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
-              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) + 1)) :=
-  sorry
+              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) + 1)) := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  obtain ⟨G, hmul, hrefl, hlow⟩ :=
+    exists_gaussSumPow_lowerBound_of_jacobiSum CF hq hq0 hpq χ hχ1 hχp hχcong
+  obtain ⟨hc, hc'⟩ := natCard_mem_pow_decompCard CF hq hq0 hpq
+  refine ⟨G, hmul, fun a ha => ⟨hlow a ha, ?_⟩⟩
+  have hp2 : 2 ≤ p := hp.out.two_le
+  have hpb : ¬ (p ∣ a * (p - 1)) := by
+    intro h
+    rcases (Nat.Prime.dvd_mul hp.out).mp h with h' | h'
+    · exact ha h'
+    · have hle' := Nat.le_of_dvd (by omega) h'
+      omega
+  have hmul1 : a * (p - 1) = a * p - a := by rw [Nat.mul_sub, mul_one]
+  have hle : a ≤ a * p := Nat.le_mul_of_pos_right a (by omega)
+  have habeq : a + a * (p - 1) = a * p := by rw [hmul1]; omega
+  have hab : p ∣ (a + a * (p - 1)) := by rw [habeq]; exact dvd_mul_left p a
+  exact not_mem_pow_succ_of_mul_eq_pow_of_exact_val hq hq0
+    (hrefl a (a * (p - 1)) ha hab) hc hc' (hlow _ hpb)
+    (sum_decompVal_add_neg_eq_mul_card _ a (a * (p - 1)) ha hab)
 
 /-- **STICKELBERGER PROPER — THE JACOBI-SUM CARRY FORMULA AT CARRY
 COUNT `≥ 2`** (PROVEN 2026-07-27 over
@@ -26774,9 +27141,280 @@ theorem exists_frobeniusIdeal_cyclotomic
             ((g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι))
     rw [cycGalRingOfIntegersEquiv_coe, ← hcm, Ideal.map_comap_of_surjective _ hsurj]
 
+/-- **THE EXISTENCE HALF: an everywhere-unramified abelian extension of
+`ℚ(μ_p)` of degree EXACTLY the class number** (E3c support leaf
+(ii-a-1-i-B-1); SORRY NODE, cut 2026-07-27 out of
+`exists_artinMap_classGroup_of_frobeniusIdeal` below): for `χ` the
+mod-`p` cyclotomic character `ω` of `Γℚ` (`hχcyc`, so
+`ker χ = Γ_{ℚ(μ_p)}`) and any model `CF` of `ℚ(μ_p)`, there is a
+subgroup `N ≤ Γℚ` with
+
+* (a) `N` NORMAL in `Γℚ` and OPEN — i.e. `N = Γ_H` for a finite Galois
+  `H/ℚ`;
+* (b) `N ≤ ker χ` — i.e. `H ⊇ ℚ(μ_p)`;
+* (c) `N` lands inside `localSplitSubgroup χ p` — i.e. `H` contains the
+  everywhere-unramified, split-at-`{2, p}` abelian extension of
+  `ℚ(μ_p)` that the consumer's clause (v) is stated in terms of;
+* (d) `N` CONTAINS every `Γℚ`-conjugate of a local inertia element that
+  happens to lie in `ker χ` — i.e. `H/ℚ(μ_p)` is UNRAMIFIED at every
+  finite place, `p` and `2` included (note the intersection with
+  `ker χ` is what makes this the inertia of `Γ_{ℚ(μ_p)}` rather than of
+  `Γℚ`, which matters exactly at the ramified place `p`);
+* (e) `ker χ / N` is ABELIAN, written as the first-order condition that
+  every commutator of `ker χ` lies in `N`;
+* (f) `N.relIndex (ker χ) = Nat.card (Cl(𝓞 CF))` — the degree
+  `[H : ℚ(μ_p)]` is EXACTLY the class number.
+
+**THIS IS THE EXISTENCE HALF OF UNRAMIFIED CLASS FIELD THEORY, AND
+NOTHING ELSE.** No Artin map, no Frobenius element, no
+ideal-to-Galois dictionary and no `frobIdeal` occur anywhere in the
+statement: it asks only that an unramified abelian extension of the
+RIGHT DEGREE exist. That is the deep half of Neukirch VI (6.9) —
+the two inequalities `[H : K] ≤ h_K` and `≥ h_K`, or equivalently the
+existence theorem applied to the congruence subgroup `P_K ⊆ I_K` — and
+it is where the genuinely class-field-theoretic machinery is needed
+(Childress ch. 4–5; Lang, *Algebraic Number Theory*, ch. X; the
+analytic route runs through `ζ_K` and Dirichlet density). The Artin
+SYMBOL is the *other* half, and is
+`exists_artinMap_of_unramifiedAbelianSubgroup` below.
+
+**WHY THIS CUT IS NOT THE CUT THAT WAS REFUSED.** The standing refusal
+(recorded on `exists_artinMap_classGroup_frobeniusIdeal` further below,
+and reaffirmed 2026-07-27) is of "write an Artin-package INTERFACE and
+prove the six clauses over it", on the ground that the three live
+ray-class efforts would produce a rival API. That reasoning is accepted
+and untouched here: **this cut introduces no `structure`, no `def` and
+no class** — two existential theorems, stated about a bare
+`Subgroup (Field.absoluteGaloisGroup ℚ)` and a bare function into
+`ClassGroup (𝓞 CF)` — so there is nothing for a later ray-class Artin
+map to be a rival of, and the re-cut instruction (consume a
+base-field-general ray-class Artin map once one lands) remains
+available verbatim on the reciprocity leaf below.
+
+The axis this cut searched is the CLASSICAL one, which the previous
+notes did not: not "which interface", and not "which half is CFT-free"
+(that axis was already used, and produced `exists_frobeniusIdeal_cyclotomic`
+above), but **which of the two classical theorems of unramified CFT** —
+EXISTENCE (here) versus RECIPROCITY/the Artin symbol (below). Both
+halves are genuinely class-field-theoretic; the gain is that each is a
+separately attackable theorem of the literature rather than one
+undivided obligation, and that this one mentions neither Frobenius
+elements nor ideals and so can be worked by the analytic route in
+isolation.
+
+Soundness — the intended inhabitant, clause by clause. Let `K = ι(CF)`
+be a copy of `ℚ(μ_p)` inside `ℚ̄`, `H` its Hilbert class field, and
+`N = Gal(ℚ̄/H)`. (a) `H/ℚ` is finite, so `N` is open; it is normal in
+`Γℚ` because `H` is canonical over `K` and `K/ℚ` is Galois. (b) `H ⊇ K`
+gives `N ≤ Γ_K = ker χ`. (d) `H/K` is unramified everywhere, so `N`
+contains the inertia subgroup of `Γ_K` at every finite place, and those
+subgroups are exactly the `Γℚ`-conjugates of local inertia intersected
+with `ker χ`. (e) `Gal(H/K)` is abelian. (f) `[H : K] = h_K` is the
+defining property. (c) is then a THEOREM rather than a choice:
+`N = Γ_H` is the closed subgroup generated by all inertia of `Γ_K`
+together with the commutators (that is what "maximal unramified
+abelian" means), and every one of those generators lies in
+`localSplitSubgroup χ p`, whose generating set additionally contains
+the FULL decomposition groups at `p` and at `2`. For `p = 2` take
+`CF = ℚ`, `Cl(ℤ) = 1`, `H = ℚ`, `N = Γℚ`: every clause holds with
+`relIndex = 1`.
+
+**The check that would refute clause (c)** — the only clause here that
+is not immediate from the textbook statement: exhibit an inertia
+element of `Γ_K`, or a commutator of `Γ_K`, that is NOT in
+`localSplitSubgroup χ p`. Impossible by inspection of
+`localSplitGenerators`: inertia at `ℓ ∉ {2, p}` is a generator
+outright, inertia at `p` and at `2` is contained in the decomposition
+group there, which is a generator, and commutators are adjoined
+explicitly in `localSplitSubgroup`'s definition.
+
+**The check that would refute clause (f), and with it the whole leaf**:
+produce an unramified abelian `H/ℚ(μ_p)` of degree `> h_K`, or show
+none of degree `h_K` exists. Either would contradict Neukirch VI (6.9);
+recording it here so the leaf is falsifiable rather than merely
+asserted. -/
+theorem exists_unramifiedAbelianSubgroup_relIndex_classGroup
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ N : Subgroup (Field.absoluteGaloisGroup ℚ),
+      N.Normal ∧
+      IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      (∀ x ∈ N, χ x = 1) ∧
+      (∀ (x : Field.absoluteGaloisGroup ℚ) (hx : x ∈ MonoidHom.ker χ),
+        x ∈ N → (⟨x, hx⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) ∧
+      (∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+          (n : Field.absoluteGaloisGroup
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat))
+          (σ : Field.absoluteGaloisGroup ℚ),
+        n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+        χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+        σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N) ∧
+      (∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+        a * b * a⁻¹ * b⁻¹ ∈ N) ∧
+      N.relIndex (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF)) :=
+  sorry
+
+/-- **THE RECIPROCITY HALF: the Artin map of the unramified class
+field, computed on Frobenius elements by the class of the underlying
+prime** (E3c support leaf (ii-a-1-i-B-2); SORRY NODE, cut 2026-07-27
+out of `exists_artinMap_classGroup_of_frobeniusIdeal` below): given a
+subgroup `N ≤ Γℚ` with all the properties produced by
+`exists_unramifiedAbelianSubgroup_relIndex_classGroup` above, and given
+the Frobenius-to-ideal dictionary `(ι, frobIdeal, hfrob)` of
+`exists_frobeniusIdeal_cyclotomic`, there is a map
+`art : Γℚ → Cl(𝓞 CF)` that
+
+* is a homomorphism on `ker χ`,
+* is TRIVIAL on `N`,
+* is SURJECTIVE onto `Cl(𝓞 CF)` from `ker χ`, and
+* satisfies the ARTIN SYMBOL FORMULA
+  `art (g · Frob_v · g⁻¹) = [frobIdeal g v]` whenever the conjugate
+  lies in `ker χ`.
+
+**`N` IS PINNED BY THE HYPOTHESES — this leaf is NOT a statement about
+an arbitrary subgroup, and it would be FALSE if it were.** Write
+`K = ℚ(μ_p)`, so `ker χ = Γ_K`. `N` is open, hence closed; by `hNinert`
+it contains every inertia subgroup of `Γ_K`, and by `hNab` every
+commutator of `Γ_K`; hence it contains the closed subgroup they
+generate, which is `Γ_H` for `H` the Hilbert class field of `K`. By
+`hNcard` its relative index is `h_K = [ker χ : Γ_H]`. A closed subgroup
+containing `Γ_H` with the same finite index IS `Γ_H`. So the
+hypotheses determine `N = Γ_H`, and `art` is the Artin map of `H/K`
+composed with `Gal(H/K) ≅ Cl(𝓞 CF)` (Neukirch VI (6.8), (6.9)).
+
+**`hNinert` AND `hNab` ARE LOAD-BEARING, NOT DECORATION — the check
+that shows it.** Drop `hNinert`. Then `N` may be `Γ_L` for `L/K`
+abelian of degree `h_K`, containing the split-at-`{2,p}` unramified
+field (so `hNsplit`-style clause (c) still holds) but RAMIFIED at some
+`ℓ`. For such an `N` the conclusion is FALSE: triviality of `art` on
+`N` plus the Artin symbol formula forces `[frobIdeal g v] = 1` for
+every `g · Frob_v · g⁻¹ ∈ N`, while Chebotarev applied to `L` produces
+such a conjugate whose ideal class is nontrivial as soon as `L ≠ H`.
+The same argument kills `hNab`. **Anyone re-cutting this leaf must
+carry both hypotheses forward.**
+
+**WHAT REMAINS TO BE PROVEN HERE, in dependency order, each claim
+stated so it can be rechecked.**
+
+1. *Artin reciprocity*: the Artin symbol of a principal ideal of `𝓞 CF`
+   is trivial in `Gal(H/K)`, so the symbol descends to `Cl(𝓞 CF)`. This
+   is the one piece for which this tree ALREADY has a formalization of
+   the classical proof: `Fermat/FLT/GaloisRepresentation/HardlyRamified/
+   ModThree.lean` (~lines 37000–41500, in this file's import cone)
+   formalizes Artin's own proof following Childress ch. 5 —
+   `exists_artinPackage_ray_class`, `exists_artinAuxiliaryField_ray_class`,
+   `artinSymbol_span_eq_one_of_cyclotomic_ray_class`,
+   `artinSymbol_ray_class_descend_unramified_prime`,
+   `exists_conductor_artinSymbol_span_eq_one_ray_class`. It is general
+   in the base number field but its characters are valued in
+   `Dickson.K 3 = AlgebraicClosure (ZMod 3)`. **Price generalizing that
+   value group before writing reciprocity again from scratch** — a
+   second independent reciprocity development is the most expensive
+   object this fleet can produce.
+2. *Surjectivity*: `art` is a homomorphism on `ker χ`, so its image is
+   a subgroup; by the symbol formula that image contains the class of
+   every degree-one prime of `𝓞 CF` arising as a `frobIdeal g v`, and
+   Chebotarev makes those classes generate. The tree has Chebotarev
+   material in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`.
+3. *Consuming `hfrob`*: `hfrob` delivers `IsArithFrobAt (𝓞 ℚ) …`, an
+   arithmetic Frobenius over `ℚ`; the Artin symbol of `H/K` needs one
+   over `K`. The bridging sub-lemma — **"an arithmetic Frobenius over
+   `ℚ` that fixes `K` pointwise is an arithmetic Frobenius over `K` at
+   the same prime"**, which is where `χ (g Frob_v g⁻¹) = 1` forcing
+   residue degree `1` enters — is stated in neither mathlib's
+   `Frobenius.lean` nor this project. **The check that would refute
+   that obstruction:**
+   `grep -rn 'IsArithFrobAt' Fermat/ .lake/packages/mathlib/Mathlib/RingTheory/`
+   turning up a restriction/base-change lemma; the axis searched was
+   `IsArithFrobAt`'s own API (`IsArithFrobAt.conj`,
+   `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`) plus `Ideal.under` /
+   `Ideal.LiesOver`, and NOT the `Ideal.primesOver` transitivity route,
+   which may give it more cheaply. It is the same missing sub-lemma
+   family that `exists_frobeniusIdeal_cyclotomic` above records.
+
+**RE-CUT INSTRUCTION (inherited).** Once any live ray-class effort
+lands a base-field-general Artin map for a ray class group, THIS leaf
+is the one to re-cut to consume it — and that cut is then cheap.
+`exists_unramifiedAbelianSubgroup_relIndex_classGroup` above is
+independent of it and needs no change.
+
+Soundness: the hypothesis set is inhabited — take `χ = ω`, `CF` the
+cyclotomic field, `ι` any embedding, `frobIdeal` as constructed in
+`exists_frobeniusIdeal_cyclotomic`, and `N = Γ_H` as in the soundness
+note of the existence leaf — and the conclusion holds for every
+inhabitant, `art` being the Artin map of `H/K` transported along
+`Gal(H/K) ≅ Cl(𝓞 CF)`. For `p = 2`: `CF = ℚ`, `Cl(ℤ) = 1`, `N = Γℚ`,
+`art ≡ 1`. -/
+theorem exists_artinMap_of_unramifiedAbelianSubgroup
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (frobIdeal : Field.absoluteGaloisGroup ℚ →
+      IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰)
+    (hfrob : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+      χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+      ∀ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) [FiniteDimensional ℚ M]
+        [Normal ℚ M] (jj : CF →ₐ[ℚ] M),
+        (∀ x : CF, algebraMap M (AlgebraicClosure ℚ) (jj x) = ι x) →
+        ∃ Q : Ideal (𝓞 M), Q.IsPrime ∧
+          IsArithFrobAt (𝓞 ℚ)
+            (AlgEquiv.restrictNormalHom M
+              (g * GaloisRepresentation.globalFrob v * g⁻¹)) Q ∧
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (frobIdeal g v : Ideal (𝓞 CF)))
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNnorm : N.Normal)
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ)))
+    (hNker : ∀ x ∈ N, χ x = 1)
+    (hNinert : ∀ (ℓ : ℕ) (hℓ : ℓ.Prime)
+        (n : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat))
+        (σ : Field.absoluteGaloisGroup ℚ),
+      n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat →
+      χ (σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) = 1 →
+      σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹ ∈ N)
+    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+      a * b * a⁻¹ * b⁻¹ ∈ N)
+    (hNcard : N.relIndex (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF))) :
+    ∃ art : Field.absoluteGaloisGroup ℚ → ClassGroup (𝓞 CF),
+      (∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+        art (g * h) = art g * art h) ∧
+      (∀ x ∈ N, art x = 1) ∧
+      (∀ c : ClassGroup (𝓞 CF), ∃ n : Field.absoluteGaloisGroup ℚ,
+        χ n = 1 ∧ art n = c) ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        art (g * GaloisRepresentation.globalFrob v * g⁻¹) =
+          ClassGroup.mk0 (frobIdeal g v)) :=
+  sorry
+
 /-- **The Hilbert class field of `ℚ(μ_p)` EXISTS: the Artin map, over a
 given Frobenius-to-ideal dictionary** (E3c support leaf (ii-a-1-i-B);
-SORRY NODE, cut 2026-07-27 out of
+**PROVEN 2026-07-27** over the two leaves
+`exists_unramifiedAbelianSubgroup_relIndex_classGroup` and
+`exists_artinMap_of_unramifiedAbelianSubgroup` above, which split it
+along the classical EXISTENCE / RECIPROCITY axis; itself cut
+2026-07-27 out of
 `exists_artinMap_classGroup_frobeniusIdeal` below): given `ι` and
 `frobIdeal` as produced by `exists_frobeniusIdeal_cyclotomic` above —
 i.e. given that `g · Frob_v · g⁻¹` is the arithmetic Frobenius at
@@ -26786,8 +27424,55 @@ onto the class group, trivial on an open normal subgroup of `Γℚ`, sends
 each Frobenius conjugate to the class of its ideal, and whose kernel is
 contained in `localSplitSubgroup χ p`.
 
-**THIS IS THE LOAD-BEARING CLASS-FIELD-THEORETIC GAP, AND IT IS NOW THE
-ONLY ONE.** Clause (ii) demands SURJECTIVITY onto `Cl(𝓞 CF)`: an
+**DECOMPOSED 2026-07-27 ALONG THE EXISTENCE / RECIPROCITY AXIS.** The
+paragraph beginning "THIS IS THE LOAD-BEARING…" just below described
+this declaration while it carried the undivided class-field-theoretic
+obligation. Its mathematics is exactly right and is retained verbatim,
+but the obligation now lives in the two leaves above and that paragraph
+should be read as describing THEM. The axis searched here is not the
+one either previous note searched: the refused cut asked *which
+interface*, the 2026-07-27 cut that produced
+`exists_frobeniusIdeal_cyclotomic` asked *which half is CFT-FREE*, and
+this one asks **which of the two classical theorems of unramified class
+field theory** is being demanded. There are exactly two, and the leaf
+demanded both:
+
+* the EXISTENCE theorem — an everywhere-unramified abelian extension of
+  `ℚ(μ_p)` of degree exactly the class number exists — now
+  `exists_unramifiedAbelianSubgroup_relIndex_classGroup`, whose
+  statement mentions no Artin map, no Frobenius element and no ideal at
+  all, and which can therefore be attacked by the analytic route
+  (`ζ_K`, Dirichlet density) in complete isolation;
+* RECIPROCITY together with the Artin SYMBOL formula — that extension's
+  Galois group IS `Cl(𝓞 CF)`, via `Frob_𝔮 ↦ [𝔮]` — now
+  `exists_artinMap_of_unramifiedAbelianSubgroup`, which is where this
+  tree's EXISTING reciprocity development (`ModThree.lean`, Artin's own
+  proof after Childress ch. 5) becomes citable once its `Dickson.K 3`
+  value group is generalized.
+
+Neither leaf introduces a `structure`, a `def` or a class — they are
+existential statements about a bare `Subgroup (absoluteGaloisGroup ℚ)`
+and a bare function into `ClassGroup (𝓞 CF)` — so the rival-API hazard
+recorded below does not arise, and the standing refusal of the
+"Artin-package interface" cut is untouched.
+
+**WHAT THIS ASSEMBLY PROVES, i.e. the mathematics that is in NEITHER
+leaf.** Clause (v), `ker art ∩ ker χ ⊆ localSplitSubgroup χ p`, is
+derived here by COUNTING, and that is exactly why neither leaf has to
+state "the kernel of `art` is precisely `N`". The existence leaf
+supplies `N` with `N.relIndex (ker χ) = |Cl(𝓞 CF)|`; the reciprocity
+leaf supplies an `art` that is a homomorphism on `ker χ`, trivial on
+`N`, and surjective. So `art` descends to a surjection
+`ker χ ⧸ N ↠ Cl(𝓞 CF)` between finite sets of EQUAL cardinality, hence
+a bijection; `art n = 1` therefore forces `n ∈ N`, and `N` sits inside
+`localSplitSubgroup χ p` by the existence leaf's clause (c). The
+finiteness of `ker χ ⧸ N` is itself read off the cardinality equation
+(`Nat.card` of an infinite type is `0`, and `|Cl(𝓞 CF)| ≠ 0`), so no
+compactness argument about `Γℚ` is needed.
+
+**THIS IS THE LOAD-BEARING CLASS-FIELD-THEORETIC GAP** — as of
+2026-07-27 it is the pair of leaves above, not this declaration.
+Clause (ii) demands SURJECTIVITY onto `Cl(𝓞 CF)`: an
 unramified abelian extension whose group IS the class group. That is
 the EXISTENCE theorem for the Hilbert class field, and nothing in the
 pin, in `~/cs/FLT`, or in this project supplies it (see the pin audit
@@ -26879,8 +27564,49 @@ theorem exists_artinMap_classGroup_of_frobeniusIdeal
         art (g * GaloisRepresentation.globalFrob v * g⁻¹) =
           ClassGroup.mk0 (frobIdeal g v)) ∧
       (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
-        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
-  sorry
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) := by
+  obtain ⟨N, hNnorm, hNopen, hNker, hNsplit, hNinert, hNab, hNcard⟩ :=
+    exists_unramifiedAbelianSubgroup_relIndex_classGroup χ hχcyc CF
+  obtain ⟨art, hhom, hN1, hsurj, hfrobfmla⟩ :=
+    exists_artinMap_of_unramifiedAbelianSubgroup χ hχcyc CF ι frobIdeal hfrob N
+      hNnorm hNopen hNker hNinert hNab hNcard
+  refine ⟨art, hhom, hsurj,
+    ⟨N, hNnorm, hNopen, fun x hx => ⟨hNker x hx, hN1 x hx⟩⟩, hfrobfmla, ?_⟩
+  -- Clause (v), by COUNTING: `art` descends to a surjection
+  -- `ker χ / N ↠ Cl(𝓞 CF)` between finite sets of equal cardinality,
+  -- hence a bijection, so `ker art ∩ ker χ = N ⊆ localSplitSubgroup χ p`.
+  intro n hn hart
+  refine hNsplit n hn ?_
+  set φ : MonoidHom.ker χ →* ClassGroup (𝓞 CF) :=
+    MonoidHom.mk' (fun x => art (x : Field.absoluteGaloisGroup ℚ))
+      (fun a b => hhom _ _ (MonoidHom.mem_ker.mp a.2) (MonoidHom.mem_ker.mp b.2)) with hφ
+  haveI : (N.subgroupOf (MonoidHom.ker χ)).Normal := hNnorm.subgroupOf _
+  have hle : N.subgroupOf (MonoidHom.ker χ) ≤ φ.ker := by
+    intro x hx
+    exact MonoidHom.mem_ker.mpr (hN1 _ (Subgroup.mem_subgroupOf.mp hx))
+  set f := QuotientGroup.lift (N.subgroupOf (MonoidHom.ker χ)) φ hle with hf
+  have hfmk : ∀ x : MonoidHom.ker χ,
+      f (QuotientGroup.mk x) = art (x : Field.absoluteGaloisGroup ℚ) := fun _ => rfl
+  have hcard : Nat.card (MonoidHom.ker χ ⧸ N.subgroupOf (MonoidHom.ker χ))
+      = Nat.card (ClassGroup (𝓞 CF)) := hNcard
+  haveI : Finite (MonoidHom.ker χ ⧸ N.subgroupOf (MonoidHom.ker χ)) := by
+    refine Nat.finite_of_card_ne_zero ?_
+    rw [hcard]
+    exact Nat.card_ne_zero.mpr ⟨⟨1⟩, inferInstance⟩
+  have hfsurj : Function.Surjective f := by
+    intro c
+    obtain ⟨m, hm, hmc⟩ := hsurj c
+    exact ⟨QuotientGroup.mk ⟨m, MonoidHom.mem_ker.mpr hm⟩, by rw [hfmk]; exact hmc⟩
+  have hbij : Function.Bijective f :=
+    (Nat.bijective_iff_surjective_and_card f).mpr ⟨hfsurj, hcard⟩
+  have hq : (QuotientGroup.mk ⟨n, hn⟩ :
+      MonoidHom.ker χ ⧸ N.subgroupOf (MonoidHom.ker χ)) = 1 := by
+    refine hbij.1 ?_
+    show f (QuotientGroup.mk ⟨n, hn⟩) = f 1
+    rw [hfmk, map_one]
+    exact hart
+  rw [QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf] at hq
+  exact hq
 
 /-- **Global class field theory: the Artin map of the Hilbert class
 field of `ℚ(μ_p)`, together with its FROBENIUS-TO-IDEAL dictionary**
@@ -27052,7 +27778,17 @@ HALF*. Piece (2) of the pin audit above — the Frobenius-to-ideal
 dictionary — contains no class field theory at all, and it is now
 `exists_frobeniusIdeal_cyclotomic` above, workable immediately by an
 owner who needs no CFT; the entire class-field-theoretic obligation
-stays undivided in `exists_artinMap_classGroup_of_frobeniusIdeal`.
+stayed undivided in `exists_artinMap_classGroup_of_frobeniusIdeal`.
+**Amended 2026-07-27, later the same day:** that declaration is now
+PROVEN too, over `exists_unramifiedAbelianSubgroup_relIndex_classGroup`
+(the EXISTENCE theorem) and `exists_artinMap_of_unramifiedAbelianSubgroup`
+(RECIPROCITY plus the Artin symbol formula) — the two classical
+theorems of unramified class field theory, split along that axis rather
+than by an interface. Those two leaves, and not
+`exists_artinMap_classGroup_of_frobeniusIdeal`, are where the pin audit
+and the `ModThree.lean` audit correction above now attach; the
+reciprocity leaf is the one to re-cut when a base-field-general
+ray-class Artin map lands.
 Neither leaf introduces a `structure`, a `def` or a class — they are
 existential statements only — so the rival-API hazard the note names
 does not arise, and the re-cut it asks for (consume a ray-class Artin
@@ -28504,6 +29240,30 @@ theorem exists_ringHom_heckeField_of_qCoeff_eq {N M : ℕ} (hM : 0 < M)
     Algebra.IsAlgebraic.of_finite ℚ _
   haveI : Algebra.IsAlgebraic E₀ (heckeField M g) :=
     Algebra.IsAlgebraic.tower_top (K := ℚ) E₀
+  -- MERGE REGRESSION REPAIR (2026-07-27, twelfth owner of the `3`-adic gate
+  -- cluster; NOT a resource bump). `IsAlgClosed.lift` needs
+  -- `[IsTorsionFree E₀ (AlgebraicClosure ℚ_[p])]`. The instance is TRUE and
+  -- trivial — `E₀` is a field, so `algebraMap` out of it is injective — but the
+  -- SEARCH for it goes through the mutually recursive pair
+  -- `FaithfulSMul.to_isTorsionFree` (prio 100) / `IsTorsionFree.to_faithfulSMul`
+  -- (prio 101) with the `Algebra E₀ (AlgebraicClosure ℚ_[p])` instance supplied
+  -- locally by `.toAlgebra`, which makes unification expensive. That search fit
+  -- inside the default 20000 `synthInstance` heartbeats until this module's
+  -- import cone grew: `Interface.lean` imports `Modularity.KhareWintenberger`,
+  -- which as of the quaternionic vendoring `public import`s
+  -- `AutomorphicForm.QuaternionAlgebra.HeckeOperators.Concrete` and its 109-module
+  -- closure. `Interface.lean` itself was NOT edited by that merge (its diff
+  -- across it is empty) — only its instance set changed, and this synthesis
+  -- tipped over into `(deterministic) timeout at typeclass`.
+  --
+  -- Supplying the instance by an explicit term removes the search rather than
+  -- widening its budget, so it is stable against further cone growth. Do NOT
+  -- replace this with `set_option synthInstance.maxHeartbeats`.
+  haveI : FaithfulSMul E₀ (AlgebraicClosure ℚ_[p]) :=
+    (faithfulSMul_iff_algebraMap_injective E₀ (AlgebraicClosure ℚ_[p])).2
+      (RingHom.injective _)
+  haveI : Module.IsTorsionFree E₀ (AlgebraicClosure ℚ_[p]) :=
+    FaithfulSMul.to_isTorsionFree E₀ (AlgebraicClosure ℚ_[p])
   let κa : heckeField M g →ₐ[E₀] AlgebraicClosure ℚ_[p] := IsAlgClosed.lift
   refine ⟨κa.toRingHom, fun q hq hqN => ?_⟩
   have hmem : qCoeff N f q ∈ E₀ :=
@@ -30436,6 +31196,24 @@ theorem volume_gamma0Domain_ne_top (M : ℕ) [NeZero M] :
   rw [volume_smul_specialLinearGroup]
   exact volume_modularFd_ne_top.lt_top
 
+/-- **THE `Γ₀(M)` DOMAIN IS MEASURABLE** (PROVEN 2026-07-27): a FINITE union
+(`[SL(2,ℤ) : Γ₀(M)] < ∞`) of images of the CLOSED set `𝒟`
+(`ModularGroup.isClosed_fd`) under the measurable embeddings `τ ↦ γ • τ`
+(`measurableEmbedding_const_smul`).
+
+This is what `setIntegral_heckeRep_unfold` below consumes as its `hDmeas`
+hypothesis; see the MEASURABILITY AUDIT there for why that hypothesis is
+genuinely needed rather than cosmetic. -/
+theorem measurableSet_gamma0Domain (M : ℕ) [NeZero M] :
+    MeasurableSet (gamma0Domain M) := by
+  classical
+  refine MeasurableSet.iUnion (fun c => ?_)
+  have h : ((gamma0Rep M c)⁻¹ • (ModularGroup.fd) : Set ℍ)
+      = (Matrix.SpecialLinearGroup.mapGL ℝ ((gamma0Rep M c)⁻¹)) • (ModularGroup.fd) := rfl
+  rw [h, ← Set.image_smul]
+  exact (measurableEmbedding_const_smul _).measurableSet_image.mpr
+    ModularGroup.isClosed_fd.measurableSet
+
 /-- `𝒟 ⊆ gamma0Domain M` — the trivial coset contributes `1⁻¹ 𝒟 = 𝒟`.  This is
 exactly what `gamma0Rep`'s normalisation at the trivial coset buys. -/
 theorem modularFd_subset_gamma0Domain (M : ℕ) :
@@ -30743,7 +31521,7 @@ theorem det_heckeRepInf_pos {q : ℕ} (hq : q.Prime) :
   rw [dif_pos hq0]
   simpa [Matrix.GeneralLinearGroup.val_det_apply, Matrix.det_fin_two_of] using hq'
 
-/-- **INTEGRABILITY OF THE SLASHED PETERSSON INTEGRAND** (sorry leaf — cut
+/-- **INTEGRABILITY OF THE SLASHED PETERSSON INTEGRAND** (PROVEN 2026-07-27; cut
 2026-07-27 out of `peterssonSelfAdjoint_of_gamma0FundamentalDomain` below,
 which is PROVEN over it and over `setIntegral_heckeRep_unfold`): the
 generalisation of `peterssonIntegrableOn` above from a pair of cusp forms to a
@@ -30771,13 +31549,64 @@ needed.  The integrand is the product of two such factors, so
 
 The lemma is stated with a slash in BOTH slots, with `δ = 1` (and
 `SlashAction.slash_one`) recovering the one-sided cases; that is what makes a
-single leaf cover all four uses in the assembly below. -/
+single leaf cover all four uses in the assembly below.
+
+HOW THE EXACT IDENTITY IS OBTAINED, which is the one trick in the proof.
+Rather than expanding `ModularForm.slash_def` and juggling `denom` and
+`im_smul_eq_div_normSq` by hand, take NORMS in `petersson_slash_two` with the
+SAME function in both slots: it reads
+`‖(u∣δ)(τ)‖² · y² = ‖u(δ•τ)‖² · Im(δ•τ)²`, i.e. the squares of the two
+nonnegative quantities `‖(u∣δ)(τ)‖·y` and `‖u(δ•τ)‖·Im(δ•τ)` agree, whence
+`mul_self_inj` gives the identity itself.  The global bound `‖u τ‖·y ≤ √C` for
+a weight-`2` cusp form is `CuspFormClass.petersson_bounded_left` applied to the
+DIAGONAL pair `(u, u)`, since `‖petersson 2 u u τ‖ = (‖u τ‖·y)²`. -/
 theorem peterssonIntegrableOn_slash {M : ℕ} (hM : 0 < M) {D : Set ℍ}
     (hD : volume D ≠ ⊤) (f g : CuspForm (Gamma0GL M) 2)
     {δ₁ δ₂ : GL (Fin 2) ℝ} (hδ₁ : 0 < δ₁.det.val) (hδ₂ : 0 < δ₂.det.val) :
     IntegrableOn
-      (petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ₁) (⇑f ∣[(2 : ℤ)] δ₂)) D volume :=
-  sorry
+      (petersson (2 : ℤ) (⇑g ∣[(2 : ℤ)] δ₁) (⇑f ∣[(2 : ℤ)] δ₂)) D volume := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  -- At weight `2` the norm of the Petersson integrand factors as the product of
+  -- the two quantities `‖·‖ · y`.
+  have hnorm : ∀ (u v : ℍ → ℂ) (τ : ℍ),
+      ‖petersson (2 : ℤ) u v τ‖ = (‖u τ‖ * τ.im) * (‖v τ‖ * τ.im) := by
+    intro u v τ
+    simp only [petersson, norm_mul, Complex.norm_conj, Complex.norm_real,
+      Real.norm_of_nonneg τ.im_pos.le, zpow_two]
+    ring
+  -- `‖(u∣δ)(τ)‖ · Im τ = ‖u(δ•τ)‖ · Im (δ•τ)`, EXACTLY.
+  have hslash : ∀ (u : ℍ → ℂ) {δ : GL (Fin 2) ℝ}, 0 < δ.det.val → ∀ τ : ℍ,
+      ‖(u ∣[(2 : ℤ)] δ) τ‖ * τ.im = ‖u (δ • τ)‖ * (δ • τ).im := by
+    intro u δ hδ τ
+    have h := congrArg norm (petersson_slash_two u u hδ τ)
+    rw [hnorm, hnorm] at h
+    exact (mul_self_inj (mul_nonneg (norm_nonneg _) τ.im_pos.le)
+      (mul_nonneg (norm_nonneg _) (δ • τ).im_pos.le)).mp h
+  -- The global bound for a weight-`2` cusp form, from the DIAGONAL Petersson bound.
+  have hbound : ∀ h : CuspForm (Gamma0GL M) 2,
+      ∃ C : ℝ, ∀ τ : ℍ, ‖(h : ℍ → ℂ) τ‖ * τ.im ≤ C := by
+    intro h
+    obtain ⟨C, hC⟩ := CuspFormClass.petersson_bounded_left (2 : ℤ) (Gamma0GL M) h h
+    refine ⟨Real.sqrt C, fun τ => ?_⟩
+    have hCτ := hC τ
+    rw [hnorm] at hCτ
+    have hnn : (0 : ℝ) ≤ ‖(h : ℍ → ℂ) τ‖ * τ.im := mul_nonneg (norm_nonneg _) τ.im_pos.le
+    calc ‖(h : ℍ → ℂ) τ‖ * τ.im
+        = Real.sqrt ((‖(h : ℍ → ℂ) τ‖ * τ.im) ^ 2) := (Real.sqrt_sq hnn).symm
+      _ ≤ Real.sqrt C := Real.sqrt_le_sqrt (by rw [sq]; exact hCτ)
+  obtain ⟨Cg, hCg⟩ := hbound g
+  obtain ⟨Cf, hCf⟩ := hbound f
+  refine Measure.integrableOn_of_bounded hD ?_ (M := Cg * Cf) ?_
+  · have hc1 : Continuous (⇑g ∣[(2 : ℤ)] δ₁) :=
+      ((ModularFormClass.holo g).slash (2 : ℤ) δ₁).continuous
+    have hc2 : Continuous (⇑f ∣[(2 : ℤ)] δ₂) :=
+      ((ModularFormClass.holo f).slash (2 : ℤ) δ₂).continuous
+    exact (UpperHalfPlane.petersson_continuous (2 : ℤ) hc1 hc2).aestronglyMeasurable
+  · refine Filter.Eventually.of_forall fun τ => ?_
+    rw [hnorm, hslash _ hδ₁, hslash _ hδ₂]
+    exact mul_le_mul (hCg _) (hCf _)
+      (mul_nonneg (norm_nonneg _) (δ₂ • τ).im_pos.le)
+      (le_trans (mul_nonneg (norm_nonneg _) (δ₁ • τ).im_pos.le) (hCg (δ₁ • τ)))
 
 /-- **THE UNFOLDING IDENTITY** (sorry leaf — cut 2026-07-27 out of
 `peterssonSelfAdjoint_of_gamma0FundamentalDomain` below, which is PROVEN over
@@ -30826,9 +31655,66 @@ FAITHFULNESS.  This leaf is EQUIVALENT to the consumer given
 `peterssonIntegrableOn_slash`: the assembly below derives the consumer from it
 by proven equalities only, so it can be neither weaker nor stronger, and it
 carries every hypothesis of the consumer.  In particular `hqM` is
-LOAD-BEARING and the identity is FALSE at `q ∣ M`. -/
+LOAD-BEARING and the identity is FALSE at `q ∣ M`.
+
+**MEASURABILITY AUDIT (2026-07-27) — WHY `hDmeas` WAS ADDED, with the explicit
+construction that forces it.**  `hcov`/`hdisj`/`hDvol` alone do NOT make `D`
+behave like a fundamental domain, because for a NON-measurable `D` the
+hypothesis `hdisj` is not an invariant of `volume.restrict D` — which is the
+only thing the conclusion sees.  Concretely, let `𝒟` be mathlib's standard
+domain, let `V ⊆ 𝒟` be a Vitali-style set of inner measure `0` and outer
+measure `volume 𝒟`, fix `γ₀ ∈ Γ₀(M)`, `γ₀ ≠ ±1`, and put
+
+  `D = (𝒟 \ V) ∪ γ₀ • V`.
+
+Then `D` satisfies `hDvol`, `hcov` (it contains a transversal: `z ∈ 𝒟 \ V`
+stays, `z ∈ V` is moved by `γ₀`) and `hdisj` (every cross term is contained in
+`γ 𝒟 ∩ 𝒟` for some `γ ≠ ±1`, or is literally empty by `V ∩ (𝒟 \ V) = ∅`).
+Yet outer measure is superadditive across the two non-measurable pieces, so
+`volume.restrict D = volume.restrict (𝒟 ∪ γ₀ • 𝒟)` and `∫_D H = 2 ∫_𝒟 H` for
+every `Γ₀(M)`-invariant `H` — twice a fundamental-domain integral, from a set
+that satisfies every hypothesis.  (The CONCLUSION survives this, both sides
+being scaled by the same `2`; what does not survive is any proof route through
+"`D` is a.e. a fundamental domain", and in particular the natural auxiliary
+lemma *"any two such `D` give the same integral of a `Γ₀(M)`-invariant
+function"* is FALSE — `𝒟` itself is another such set and gives half.)
+
+So `hDmeas` is not a convenience: without it every measure-theoretic step
+below (a.e.-disjoint additivity, `Measure.restrict_iUnion₀`, all of which need
+at least `NullMeasurableSet`) is unavailable, and the pathological `D` above is
+a live counterexample to the natural reduction.  It costs the consumer nothing:
+`measurableSet_gamma0Domain` above discharges it for the only witness ever used.
+
+**ROUTE AUDIT (2026-07-27), stated so that each claim is refutable by one
+check.**  With `hDmeas` in hand the classical proof factors into four steps,
+of which the first and the third are ALREADY PROVEN here:
+
+1. (PROVEN) Each right-hand term folds back onto `D`:
+   `setIntegral_petersson_slash_adjoint` read backwards gives
+   `∫_{δ • D} petersson 2 g (f∣δ⁻¹) = ∫_D petersson 2 (g∣δ) f`.  So the leaf is
+   equivalent to `Σ_i ∫_D petersson 2 g (f∣δ_i) = Σ_i ∫_D petersson 2 (g∣δ_i) f`
+   — no translated domains occur in the real content.
+2. (OPEN, group theory) `Γ = ⊔_{i} Γ' γ_i` with `Γ' = Γ ∩ α⁻¹Γα`,
+   `α = heckeRep q 0`, the index set `Option (Fin q)` and `Γ α γ_i = Γ δ_i`.
+   **This is hoistable, not new**: `heckeRep_conj_mem_iff`,
+   `heckeConj_isFiniteRelIndex` and the `have`s `hcrit`/`hEval`/`hEinj`/`hfind`
+   inside `exists_cuspForm_heckeTransform` (§HeckeStability) already carry out
+   exactly this enumeration, over exactly this index type.  Check that refutes
+   this claim: grep those names and confirm the index type is `Option (Fin q)`.
+3. (PROVEN) The `α`-move `∫_{D'} petersson 2 g (f∣α) = ∫_{α • D'} petersson 2
+   (g∣α⁻¹) f` is `setIntegral_petersson_slash_adjoint` plus `petersson_symm`;
+   and at weight `2` scalars act trivially, so `α⁻¹` may be replaced by the
+   INTEGRAL adjugate `α' = det(α)·α⁻¹ = heckeRepInf q`.
+4. (OPEN, measure theory) `⊔_i γ_i • D` is a `Γ'`-domain and the integral of a
+   `Γ'`-invariant function over it is `Σ_i ∫_{γ_i • D}`.  Pairwise
+   a.e.-disjointness of the `γ_i • D` reduces to `hdisj` at `γ_i⁻¹γ_j`, which
+   is `≠ ±1` because `−1 ∈ Γ'` so distinct `Γ'`-cosets cannot differ by `±1`.
+   This is the step that consumes `hDmeas`.
+
+The last arithmetic input, `α' ∈ ΓαΓ`, is `qu − Mv = 1`, solvable exactly at
+`q ∤ M` — which is where `hqM` enters and why the identity fails at `q ∣ M`. -/
 theorem setIntegral_heckeRep_unfold {M : ℕ} (hM : 0 < M)
-    {D : Set ℍ} (hDvol : volume D ≠ ⊤)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
     (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
     (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
@@ -30909,7 +31795,7 @@ consumer `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` below: at
 exclusions in `hdisj` are forced, not cosmetic — see
 `volume_smul_inter_gamma0Domain_eq_zero` above. -/
 theorem peterssonSelfAdjoint_of_gamma0FundamentalDomain {M : ℕ} (hM : 0 < M)
-    {D : Set ℍ} (hDvol : volume D ≠ ⊤)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) (hDmeas : MeasurableSet D)
     (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
     (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
@@ -30975,7 +31861,7 @@ theorem peterssonSelfAdjoint_of_gamma0FundamentalDomain {M : ℕ} (hM : 0 < M)
     setIntegral_petersson_slash_adjoint _ _ (det_heckeRepInf_pos hq) D
   rw [Finset.sum_congr rfl hadjj, hadjinf]
   -- What remains is exactly the coset tiling.
-  exact setIntegral_heckeRep_unfold hM hDvol hcov hdisj hq hqM f g
+  exact setIntegral_heckeRep_unfold hM hDvol hDmeas hcov hdisj hq hqM f g
 
 end PeterssonSlashAdjoint
 
@@ -30993,15 +31879,15 @@ interior by `exists_open_subset_gamma0Domain`, and self-adjointness by
 property `exists_mem_gamma0Domain` and the a.e.-disjointness
 `volume_smul_inter_gamma0Domain_eq_zero` (PROVEN 2026-07-27).
 
-CURRENT LEAF INVENTORY BELOW THIS NODE (2026-07-27).  The whole subtree is now
-proven except for the two leaves cut out of
-`peterssonSelfAdjoint_of_gamma0FundamentalDomain`:
-`peterssonIntegrableOn_slash` (a boundedness statement — `|g∣δ|·y` equals
-`|g|·y` at another point, so the constant from
-`CuspFormClass.petersson_bounded_left` is reused verbatim) and
+CURRENT LEAF INVENTORY BELOW THIS NODE (2026-07-27, updated).  The whole
+subtree is now proven except for the SINGLE leaf
 `setIntegral_heckeRep_unfold` (the coset tiling, which is where `hcov`,
-`hdisj` and `q ∤ M` are consumed).  The geometry and ALL of the weight-2
-analysis are done.
+`hdisj` and `q ∤ M` are consumed).  Its sibling
+`peterssonIntegrableOn_slash` is PROVEN (the boundedness statement — `|g∣δ|·y`
+equals `|g|·y` at another point, so the constant from
+`CuspFormClass.petersson_bounded_left` is reused verbatim).  The geometry,
+the measurability of the domain (`measurableSet_gamma0Domain`) and ALL of the
+weight-2 analysis are done.
 
 Everything ELSE that the Petersson product needs — integrability, additivity,
 homogeneity, conjugate symmetry and DEFINITENESS — is proven below from the
@@ -31027,7 +31913,8 @@ theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
   refine ⟨gamma0Domain M, volume_gamma0Domain_ne_top M,
     exists_open_subset_gamma0Domain M, fun q hq hqM f g => ?_⟩
   exact peterssonSelfAdjoint_of_gamma0FundamentalDomain hM
-    (volume_gamma0Domain_ne_top M) (exists_mem_gamma0Domain M)
+    (volume_gamma0Domain_ne_top M) (measurableSet_gamma0Domain M)
+    (exists_mem_gamma0Domain M)
     (fun γ hγ hne1 hne2 => volume_smul_inter_gamma0Domain_eq_zero hM hγ hne1 hne2)
     hq hqM f g
 
@@ -32876,8 +33763,12 @@ theorem mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd {M p : ℕ}
   · rw [if_pos hn, hg (n / p), Nat.mul_div_cancel' hn]
   · rw [if_neg hn, (hf n hn).symm]
 
-/-- **MIYAKE'S PEELING STEP: ONE PRIME COMES OFF THE MAIN LEMMA'S MODULUS**
-(sorry leaf — cut 2026-07-27 out of
+/-! ### Miyake's peeling step, and the trace bookkeeping it reduces to
+
+**MIYAKE'S PEELING STEP: ONE PRIME COMES OFF THE MAIN LEMMA'S MODULUS**
+(the statement itself is `exists_sub_degeneracyOp_qCoeff_coprime_eq_zero` at the
+END of this block, PROVEN there over the three Miyake leaves cut below; cut
+2026-07-27 out of
 `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` below; Miyake,
 *Modular Forms*, the induction step in the proof of Theorem 4.6.8, pp. 160–162):
 let `p ∣ M` be prime and let `L > 1` be prime to `p`.  If every `q`-expansion
@@ -32917,8 +33808,23 @@ route audit above.)  Move 2 is likewise DONE: it is
 `mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` above, now PROVEN.  What
 remains of this leaf is exactly moves 3 and 4 — the coefficient bookkeeping of
 the trace — and that residue is isolated below as
-`exists_smul_traceOp_qCoeff_coprime_eq_zero`, which this leaf then discharges in
-one line.
+`exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero`, which this leaf then
+discharges in one line.
+
+**CORRECTION 2026-07-27 — THE FIRST CUT OF THAT RESIDUE WAS FALSE.**  The residue
+was originally isolated as `exists_smul_traceOp_qCoeff_coprime_eq_zero`, pinning
+the witness to a scalar multiple of `traceOp M (M/p) f`, the trace of `f` ITSELF.
+That statement is FALSE; it is now REFUTED IN LEAN by
+`not_exists_smul_traceOp_qCoeff_coprime_eq_zero` below.  The error was a misread
+of Miyake's operator: his witness is the double coset
+`Γ₀(M) · [1, 0; 0, p] · Γ₀(M/p)`, NOT `Γ₀(M) · 1 · Γ₀(M/p)`.  The `δ_p` in the
+middle is not decoration — `Γ₀(M) δ_p Γ₀(M) = ⊔_{j<p} Γ₀(M)[1, j; 0, p]` is
+exactly `U_p`, so Miyake's operator is `U_p` FOLLOWED BY the descent to level
+`M/p`, whereas the honest trace is `U_p`-free.  The repaired leaf therefore
+traces `U_p f = heckeOp M p f`, not `f`; since
+`Tr ∘ U_p = p · [Γ₀(M) δ_p Γ₀(M/p)]` (one double coset in the product, with
+multiplicity `p·(d+1)/(d+1)`), that is Miyake's witness up to the constant, which
+is existential here anyway.
 
 FAITHFULNESS.  `1 < L` is what makes this the COMPOSITE case of Miyake's
 induction; at `L = 1` the statement degenerates to
@@ -32928,19 +33834,407 @@ and is the base case of the induction.  `¬ p ∣ L` is Miyake's square-freeness
 reduction and is used in move 3.  The statement is NOT vacuous: `f = 0` gives
 `g = 0`, and for `f = V_p u + V_q w` with `q ∣ L` the witness `g = u` is
 forced. -/
-theorem exists_smul_traceOp_qCoeff_coprime_eq_zero {M p L : ℕ}
+section MiyakeTraceBookkeeping
+
+open UpperHalfPlane ModularForm Matrix.SpecialLinearGroup CongruenceSubgroup
+
+/-! ### Miyake §4.6, moves 3–4: the coefficient bookkeeping of the trace
+
+Everything in this block was written 2026-07-27 while REFUTING the first cut of
+the residue (see `not_exists_smul_traceOp_qCoeff_coprime_eq_zero`) and replacing
+it by the faithful one (`exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero`).
+The small lemmas here — `V_1` is the level-raising inclusion, and the trace of a
+form induced from the smaller level is `[Γ₀(B) : Γ₀(A)]` times it — are the two
+facts that make the trace computable at all, and both are reusable. -/
+
+/-- `V_1` is the identity transform on functions: `heckeRepInf 1` is the identity
+matrix and the slash by it is trivial. -/
+theorem degeneracyTransform_one (f : ℍ → ℂ) : degeneracyTransform 1 f = f := by
+  have hne : ((1 : ℕ) : ℝ) ≠ 0 := by norm_num
+  have h1 : heckeRepInf 1 = 1 := by
+    have hc := heckeRepInf_coe hne
+    ext i j
+    rw [hc]
+    fin_cases i <;> fin_cases j <;> simp
+  unfold degeneracyTransform
+  rw [h1]
+  simp
+
+/-- **`V_1` IS THE LEVEL-RAISING INCLUSION, ON COEFFICIENTS**: `a_m(V_1 f) =
+a_m(f)`.  This is the operator that views a level-`N` form at the larger level
+`M`, and it is how Miyake's argument moves `f` up to level `M L²` and the answer
+back down. -/
+theorem qCoeff_degeneracyOp_one {N M : ℕ} (hdvd : N ∣ M)
+    (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff M (degeneracyOp N M 1 f) m = qCoeff N f m := by
+  rw [qCoeff_degeneracyOp one_pos (by simpa using hdvd) f m]
+  simp
+
+/-- `V_1` does not change the underlying function either. -/
+theorem coe_degeneracyOp_one {N M : ℕ} (hdvd : N ∣ M) (f : CuspForm (Gamma0GL N) 2) :
+    ⇑(degeneracyOp N M 1 f) = ⇑f := by
+  rw [degeneracyOp_coe one_pos (by simpa using hdvd) f, degeneracyTransform_one]
+
+/-- Additivity of the `q`-expansion coefficients, through `qCoeffL`. -/
+theorem qCoeff_add {N : ℕ} (f g : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (f + g) m = qCoeff N f m + qCoeff N g m := by
+  have h := (qCoeffL N m).map_add f g
+  simpa using h
+
+/-- Subtractivity of the `q`-expansion coefficients, through `qCoeffL`. -/
+theorem qCoeff_sub {N : ℕ} (f g : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (f - g) m = qCoeff N f m - qCoeff N g m := by
+  have h := (qCoeffL N m).map_sub f g
+  simpa using h
+
+/-- **THE TRACE OF A FORM INDUCED FROM THE SMALLER LEVEL IS A NONZERO MULTIPLE OF
+IT** (PROVEN): `Tr^A_B (V_1 u) = [Γ₀(B) : Γ₀(A)] · u`.
+
+`CuspForm.trace` sums `⇑F ∣[2] γ⁻¹` over `Γ₀(B) ⧸ Γ₀(A).subgroupOf Γ₀(B)`, and
+when `F` is induced from level `B` every summand is `⇑u` itself, so the sum is
+the index times `u`.  The index is a nonzero natural number because the quotient
+is finite (`isFiniteRelIndex_of_isArithmetic`) and nonempty.
+
+This is the lemma that makes the trace COMPUTABLE at the one place Miyake needs
+it, and it is also exactly what refutes the `traceOp`-pinned leaf below: a form
+that is already `Γ₀(M/p)`-invariant has trace a multiple of ITSELF, which is far
+too little information to recover `a_{pm}(f)`. -/
+theorem exists_smul_traceOp_degeneracyOp_one {A B : ℕ} [NeZero A] [NeZero B]
+    (hdvd : B ∣ A) :
+    ∃ κ : ℂ, κ ≠ 0 ∧ ∀ u : CuspForm (Gamma0GL B) 2,
+      traceOp A B (degeneracyOp B A 1 u) = κ • u := by
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL A) (Gamma0GL B) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  letI : Fintype (Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B)) := Fintype.ofFinite _
+  refine ⟨(Fintype.card (Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B)) : ℂ), ?_, ?_⟩
+  · have : 0 < Fintype.card (Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B)) :=
+      Fintype.card_pos
+    exact_mod_cast this.ne'
+  · intro u
+    refine DFunLike.coe_injective ?_
+    have hcoe : ⇑(degeneracyOp B A 1 u) = ⇑u := coe_degeneracyOp_one hdvd u
+    show ⇑(CuspForm.trace (Gamma0GL B) (degeneracyOp B A 1 u)) = _
+    rw [CuspForm.coe_trace, CuspForm.IsGLPos.coe_smul]
+    have hq : ∀ q : Gamma0GL B ⧸ (Gamma0GL A).subgroupOf (Gamma0GL B),
+        SlashInvariantForm.quotientFunc (degeneracyOp B A 1 u) q = ⇑u := by
+      intro q
+      induction q using Quotient.inductionOn with
+      | h r =>
+        rw [SlashInvariantForm.quotientFunc_mk, hcoe]
+        exact SlashInvariantFormClass.slash_action_eq u r.val⁻¹ (inv_mem r.2)
+    rw [Finset.sum_congr rfl fun q _ => hq q]
+    funext x
+    simp [Finset.sum_apply, Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
+
+/-- **FALSITY AUDIT (2026-07-27): THE `traceOp`-PINNED RESIDUE IS FALSE, AND HERE
+IS THE COUNTEREXAMPLE, MACHINE-CHECKED.**
+
+The residue of Miyake's peeling step was first cut as
+
+    exists_smul_traceOp_qCoeff_coprime_eq_zero :
+      ∃ c : ℂ, ∀ n, (n, L) = 1 →
+        a_n (f − V_p (c · Tr^M_{M/p} f)) = 0
+
+pinning the witness to a scalar multiple of the trace of `f` ITSELF.  That is a
+misreading of Miyake (4.6.13): his witness is
+`f_p = p(d+1)⁻¹ · (f ∣ Γ₀(M) · [1, 0; 0, p] · Γ₀(M/p))`, and the middle matrix
+`δ_p = [1, 0; 0, p]` is load-bearing — `Γ₀(M) δ_p Γ₀(M) = ⊔_{j<p} Γ₀(M)[1, j; 0, p]`
+is `U_p`, so Miyake's operator is `U_p` followed by the descent, while
+`Γ₀(M) · 1 · Γ₀(M/p)` is the `U_p`-free honest trace.  No scalar repairs the
+difference.
+
+THE COUNTEREXAMPLE.  Take `p = 2`, `K = 11`, `M = p²K = 44`, `L = 3`
+(so `1 < L` and `p ∤ L`), and let `u ∈ S₂(Γ₀(11))` be the newform `f₁₁`, whose
+first coefficient is `1`.  Put `f = V_p u = u(pz)`, which lies in
+`S₂(Γ₀(22)) ⊆ S₂(Γ₀(44))`, so `f` is already `Γ₀(M/p)`-invariant.  Then
+
+* `f` SATISFIES the hypothesis: `a_n(f) = 0` for every `n` with `p ∤ n`, hence in
+  particular for every such `n` coprime to `L`;
+* `Tr^M_{M/p} f = κ · f` with `κ = [Γ₀(22) : Γ₀(44)] = 2`, by
+  `exists_smul_traceOp_degeneracyOp_one` above — the trace of an already-invariant
+  form is just the index times it;
+* so `a_1(Tr f) = κ · a_1(f) = 0`, because `p ∤ 1`;
+* while `a_p(f) = a_1(u) = 1 ≠ 0`.
+
+At `n = p` (coprime to `L = 3`) the conclusion therefore reads
+`a_p(f) − c · a_1(Tr f) = 1 − c · 0 = 1 ≠ 0` for EVERY `c`.  Refuted.
+
+The theorem below is that argument in Lean, stated conditionally on the one input
+it needs from the analytic theory — a level-`K` cusp form with `a_1 ≠ 0`, which
+`K = 11` supplies.  It is proven, sorry-free, and axiom-clean.
+
+Note the refutation does not use `1 < L` at all, so it kills the leaf for every
+admissible `L`, not just for `L = 3`.
+
+WHAT SURVIVES.  Only the OPERATOR was wrong, not the route: Miyake's moves 3–4
+are correct, and the repaired leaf
+`exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero` below traces `U_p f` instead
+of `f`.  Since `Tr ∘ U_p` and `[Γ₀(M) δ_p Γ₀(M/p)]` differ by the factor `p`
+(their product is a single double coset, with multiplicity
+`p(d+1)/(d+1) = p`), and the constant is existential, that leaf IS Miyake's
+statement. -/
+theorem not_exists_smul_traceOp_qCoeff_coprime_eq_zero {M p L K : ℕ}
+    [NeZero M] [NeZero (M / p)]
+    (hp : p.Prime) (hpL : ¬ p ∣ L)
+    (hK : M = p * p * K)
+    (u : CuspForm (Gamma0GL K) 2) (hu : qCoeff K u 1 ≠ 0) :
+    ∃ f : CuspForm (Gamma0GL M) 2,
+      (∀ n : ℕ, ¬ p ∣ n → Nat.Coprime n L → qCoeff M f n = 0) ∧
+      ¬ ∃ c : ℂ, ∀ n : ℕ, Nat.Coprime n L →
+        qCoeff M (f - degeneracyOp (M / p) M p (c • traceOp M (M / p) f)) n = 0 := by
+  have hpM : p ∣ M := ⟨p * K, by rw [hK]; ring⟩
+  have hpMd : p * (M / p) = M := Nat.mul_div_cancel' hpM
+  have hMp : M / p = p * K := by rw [hK, mul_assoc, Nat.mul_div_cancel_left _ hp.pos]
+  have hdvdMp : M / p ∣ M := ⟨p, by rw [mul_comm]; exact hpMd.symm⟩
+  have hpMdvd : p * (M / p) ∣ M := ⟨1, by rw [mul_one]; exact hpMd.symm⟩
+  have hpK : p * K ∣ M / p := by rw [hMp]
+  have hp1 : ¬ p ∣ 1 := fun hd => absurd (Nat.le_of_dvd one_pos hd) (by have := hp.two_le; omega)
+  set v : CuspForm (Gamma0GL (M / p)) 2 := degeneracyOp K (M / p) p u with hvdef
+  have hv : ∀ n : ℕ, qCoeff (M / p) v n = if p ∣ n then qCoeff K u (n / p) else 0 :=
+    fun n => qCoeff_degeneracyOp hp.pos hpK u n
+  set f : CuspForm (Gamma0GL M) 2 := degeneracyOp (M / p) M 1 v with hfdef
+  have hfc : ∀ n : ℕ, qCoeff M f n = qCoeff (M / p) v n :=
+    fun n => qCoeff_degeneracyOp_one hdvdMp v n
+  refine ⟨f, fun n hn _ => by rw [hfc n, hv n, if_neg hn], ?_⟩
+  rintro ⟨c, hc⟩
+  obtain ⟨κ, hκ0, hκ⟩ := exists_smul_traceOp_degeneracyOp_one (A := M) (B := M / p) hdvdMp
+  have hfp : qCoeff M f p = qCoeff K u 1 := by
+    rw [hfc p, hv p, if_pos dvd_rfl, Nat.div_self hp.pos]
+  have htr : traceOp M (M / p) f = κ • v := by rw [hfdef]; exact hκ v
+  have h := hc p ((Nat.Prime.coprime_iff_not_dvd hp).mpr hpL)
+  rw [qCoeff_sub, qCoeff_degeneracyOp hp.pos hpMdvd _ p, if_pos dvd_rfl,
+    Nat.div_self hp.pos, qCoeff_smul, htr, qCoeff_smul, hv 1, if_neg hp1,
+    mul_zero, mul_zero, sub_zero, hfp] at h
+  exact hu h
+
+/-- **MIYAKE LEMMA 4.6.5 — THE `L`-SIEVE RAISES THE LEVEL BY `L²`** (sorry leaf,
+cut 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.5, pp. 157–158): for
+`f ∈ S₂(Γ₀(A))` and `L ≥ 1`, the series obtained by KEEPING ONLY the coefficients
+at indices coprime to `L`,
+
+    g(z) = Σ_{(n, L) = 1} a_n(f) qⁿ,
+
+is again a cusp form, of level `A L²`.
+
+Miyake's level is the sharper `A · Π_{p ∣ L, p ∣ A} p · Π_{p ∣ L, p ∤ A} p²`,
+which divides `A L²`; `A L²` is all the peeling step needs and it keeps the
+statement free of factorization bookkeeping.  The level is passed as a VARIABLE
+`B` with the defining equation `A * L ^ 2 = B` so that consumers can instantiate
+it at whatever normal form their arithmetic produces, without a dependent-type
+rewrite of `CuspForm (Gamma0GL ·) 2`.
+
+PROOF (Miyake, pp. 157–158).  Reduce to `L = p` prime.  The sieve is then
+`g = f − (f ∣ T(p))(pz)`, where `f ∣ T(p)` is the Hecke double-coset operator at
+level `A'` (`A' = A` if `p ∣ A`, else `A' = pA`) — the identity
+`(f ∣ T(p))(z) = p⁻¹ Σ_{m<p} Σ_n a_n e^{2πi(n+mA'/p)z/p}` collapses the inner sum
+to `p` at `p ∣ n` and to `0` otherwise, so `(f ∣ T(p))(pz) = Σ_{p ∣ n} a_n qⁿ` is
+exactly the part being REMOVED.  Both terms are cusp forms of level `A' p ∣ A p²`,
+and the general `L` follows by iterating over its prime factors.
+
+WHY THE LEVEL MUST GO UP, and why the naive inclusion–exclusion sieve fails: this
+is the only step of Miyake's induction that leaves level `A`, and move 3 is what
+brings the answer back down.  Recorded because two audits of the peeling step
+mistook it for avoidable. -/
+theorem exists_cuspForm_qCoeff_sieve {A B L : ℕ} (hA : 0 < A) (hL : 0 < L)
+    (hB : A * L ^ 2 = B) (f : CuspForm (Gamma0GL A) 2) :
+    ∃ g : CuspForm (Gamma0GL B) 2,
+      ∀ n : ℕ, qCoeff B g n = if Nat.Coprime n L then qCoeff A f n else 0 :=
+  sorry
+
+/-- **MIYAKE LEMMA 4.6.6(1) — THE TRACE COMMUTES WITH LEVEL-RAISING BY `L²` WHEN
+`p ∤ L`** (sorry leaf, cut 2026-07-27; Miyake, *Modular Forms*, Lemma 4.6.6(1),
+p. 158, and the step (4.6.13) that uses it):
+
+    Tr^{A L²}_{Ap L²} ∘ V_1  =  V_1 ∘ Tr^A_{Ap}        (`A = p · Ap`,  `p ∤ L`).
+
+This is the move that lets Miyake compute the trace at the RAISED level `A L²`
+— where Theorem 4.6.4 is available — and read the answer off at level `A`, where
+the peeling step's witness must live.
+
+`p ∤ L` is exactly what makes it true, and is the only place in the peeling step
+where that hypothesis is consumed: the index is `[Γ₀(Ap) : Γ₀(A)] = p` if
+`p² ∣ A` and `p + 1` otherwise, and since `p ∤ L` the same dichotomy holds at
+level `A L²` (`p² ∣ A L² ↔ p² ∣ A`), so the two traces have the same number of
+cosets and the coset representatives match up.  Drop `p ∤ L` and the two indices
+can differ, so no diagram commutes on the nose.
+
+The four levels are passed as VARIABLES with defining equations rather than as
+`A / p`, `A * L ^ 2`, … so that instantiating this needs no rewriting inside
+`CuspForm (Gamma0GL ·) 2`. -/
+theorem traceOp_degeneracyOp_one_comm {A Ap B Bp L p : ℕ}
+    [NeZero A] [NeZero Ap] [NeZero B] [NeZero Bp]
+    (hA : 0 < A) (hp : p.Prime) (hpL : ¬ p ∣ L) (hL : 0 < L)
+    (hAp : p * Ap = A) (hB : A * L ^ 2 = B) (hBp : Ap * L ^ 2 = Bp)
+    (F : CuspForm (Gamma0GL A) 2) :
+    traceOp B Bp (degeneracyOp A B 1 F) = degeneracyOp Ap Bp 1 (traceOp A Ap F) :=
+  sorry
+
+/-- **MIYAKE LEMMA 4.6.7 + LEMMA 4.6.6(2) — THE TRACE OF THE COMPLEMENTARY PART
+STILL HAS NO PRIME-TO-`L` COEFFICIENTS** (sorry leaf, cut 2026-07-27; Miyake,
+*Modular Forms*, Lemma 4.6.7 p. 159 and the estimate closing (4.6.14),
+pp. 161–162): if every `q`-expansion coefficient of `h ∈ S₂(Γ₀(B))` at an index
+COPRIME TO `L` vanishes, then the same is true of `Tr^B_{Bp}(U_p h)`.
+
+This is move 4, and it is the whole reason the peeling step's error term is
+invisible: `h` is `f` minus its `L`-sieve, so by construction `h` is supported on
+the indices NOT coprime to `L`, and the claim is that neither `U_p` nor the trace
+can move mass back onto the coprime indices.
+
+PROOF (Miyake).  By Lemma 4.6.7, `h = Σ_{q ∣ L, q prime} h_q(qz)` with
+`h_q ∈ S₂(Γ₀(B L))` — a form supported off the prime-to-`L` indices is a sum of
+`V_q`-images over the primes `q ∣ L`.  Lemma 4.6.6(1) then commutes the trace past
+each `V_q` (legitimate because `q ∣ L` and `p ∤ L`, so `q ≠ p`), and Lemma 4.6.6(2)
+identifies the result as `V_q` of a trace at the smaller level.  Every summand is
+therefore again a `V_q`-image with `q ∣ L`, and a `V_q`-image has vanishing
+coefficients at every index prime to `q`, hence at every index coprime to `L`.
+
+Note `U_p` is spelled `heckeOp B p` here, which is legitimate exactly because
+`p ∣ B`: `qCoeff_heckeOp` then reads `a_m(heckeOp B p h) = a_{pm}(h)` with no
+correction term, i.e. `heckeOp B p` IS `U_p` at that level. -/
+theorem qCoeff_traceOp_heckeOp_eq_zero {B Bp p L : ℕ} [NeZero B] [NeZero Bp]
+    (hB : 0 < B) (hp : p.Prime) (hBp : p * Bp = B) (hL : 1 < L) (hpL : ¬ p ∣ L)
+    {h : CuspForm (Gamma0GL B) 2}
+    (hh : ∀ n : ℕ, Nat.Coprime n L → qCoeff B h n = 0) :
+    ∀ m : ℕ, Nat.Coprime m L →
+      qCoeff Bp (traceOp B Bp (heckeOp B p h)) m = 0 :=
+  sorry
+
+/-- **MIYAKE'S PEELING RESIDUE, REPAIRED: MOVES 3–4, THE COEFFICIENT BOOKKEEPING
+OF THE TRACE** (PROVEN 2026-07-27 over the three Miyake leaves above; Miyake,
+*Modular Forms*, (4.6.12)–(4.6.14), pp. 160–162).
+
+This replaces `exists_smul_traceOp_qCoeff_coprime_eq_zero`, which was FALSE — see
+the FALSITY AUDIT on `not_exists_smul_traceOp_qCoeff_coprime_eq_zero` above.  The
+witness traces `U_p f = heckeOp M p f`, not `f`: Miyake's operator is the double
+coset `Γ₀(M) [1, 0; 0, p] Γ₀(M/p)`, and `Tr ∘ U_p` is `p` times it (their product
+is a single double coset, with multiplicity `p(d+1)/(d+1) = p`), so with the
+constant existential this IS Miyake's witness.
+
+PROOF, in Miyake's four moves, with only moves 1, 3-partial and 4 left open:
+
+1. `g` = the `L`-sieve of `f` at level `B = M L²`
+   (`exists_cuspForm_qCoeff_sieve`, LEAF).  Its coefficients vanish at every
+   `p ∤ n`: at `(n, L) = 1` by the hypothesis `hf`, and off that by construction.
+2. Theorem 4.6.4 at level `B` — `mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd`
+   above, PROVEN — writes `g = V_p g_p` with `g_p ∈ S₂(Γ₀(Bp))`, `Bp = (M/p) L²`.
+3. `U_p g = V_1 g_p` (a two-line coefficient computation: `a_m(U_p g) = a_{pm}(g)
+   = a_m(g_p)`), so `Tr^B_{Bp}(U_p g) = κ · g_p` with `κ ≠ 0` by
+   `exists_smul_traceOp_degeneracyOp_one`.  This is (4.6.12), and it is where the
+   level comes back DOWN.  Lemma 4.6.6(1) (`traceOp_degeneracyOp_one_comm`, LEAF)
+   then identifies the trace computed at level `B` with the one at level `M`,
+   which is (4.6.13) and the only place `p ∤ L` is used.
+4. `h = V_1 f − g` is the complementary part, supported off the indices coprime to
+   `L`; `qCoeff_traceOp_heckeOp_eq_zero` (LEAF) says its trace contributes nothing
+   at those indices.  That is (4.6.14), and it closes the estimate.
+
+Assembling: for `m` coprime to `L`, `a_m(Tr^M_{M/p}(U_p f)) = κ · a_{pm}(f)`, so
+`c = κ⁻¹` works — at `p ∤ n` the conclusion is the hypothesis `hf` itself, and at
+`n = pm` it is that identity.
+
+FAITHFULNESS.  The constant is left existential deliberately, so no normalization
+convention can make the leaf false; the OPERATOR is what the previous cut got
+wrong, and `not_exists_smul_traceOp_qCoeff_coprime_eq_zero` is the machine-checked
+record of that.  `1 < L` marks the composite case of Miyake's induction and `¬ p ∣ L`
+is his square-freeness reduction, consumed in move 3.  NOT vacuous: `f = 0` gives
+`c` arbitrary, and for `f = V_p u + V_q w` with `q ∣ L` the trace genuinely
+recovers `u`. -/
+theorem exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero {M p L : ℕ}
     [NeZero M] [NeZero (M / p)]
     (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M) (hL : 1 < L) (hpL : ¬ p ∣ L)
     {f : CuspForm (Gamma0GL M) 2}
     (hf : ∀ n : ℕ, ¬ p ∣ n → Nat.Coprime n L → qCoeff M f n = 0) :
     ∃ c : ℂ, ∀ n : ℕ, Nat.Coprime n L →
-      qCoeff M (f - degeneracyOp (M / p) M p (c • traceOp M (M / p) f)) n = 0 :=
-  sorry
+      qCoeff M (f - degeneracyOp (M / p) M p
+        (c • traceOp M (M / p) (heckeOp M p f))) n = 0 := by
+  have hL0 : 0 < L := by omega
+  set N := M / p with hNdef
+  have hpN : p * N = M := Nat.mul_div_cancel' hpM
+  have hN0 : 0 < N := Nat.div_pos (Nat.le_of_dvd hM hpM) hp.pos
+  set B := M * L ^ 2 with hBdef
+  set Bp := N * L ^ 2 with hBpdef
+  have hB0 : 0 < B := by rw [hBdef]; positivity
+  have hBp0 : 0 < Bp := by rw [hBpdef]; positivity
+  haveI : NeZero B := ⟨hB0.ne'⟩
+  haveI : NeZero Bp := ⟨hBp0.ne'⟩
+  have hpBp : p * Bp = B := by rw [hBdef, hBpdef, ← hpN]; ring
+  have hpB : p ∣ B := ⟨Bp, hpBp.symm⟩
+  have hBdiv : B / p = Bp := by rw [← hpBp, Nat.mul_div_cancel_left _ hp.pos]
+  have hBpdvdB : Bp ∣ B := ⟨p, by rw [← hpBp]; ring⟩
+  have hMB : M ∣ B := ⟨L ^ 2, hBdef⟩
+  have hNBp : N ∣ Bp := ⟨L ^ 2, hBpdef⟩
+  have hpcop : Nat.Coprime p L := (Nat.Prime.coprime_iff_not_dvd hp).mpr hpL
+  -- MOVE 1: the `L`-sieve of `f`, at level `B = M L²`
+  obtain ⟨g, hg⟩ := exists_cuspForm_qCoeff_sieve hM hL0 hBdef.symm f
+  have hgz : ∀ n : ℕ, ¬ p ∣ n → qCoeff B g n = 0 := by
+    intro n hn
+    rw [hg n]
+    split_ifs with hc
+    · exact hf n hn hc
+    · rfl
+  -- MOVE 2: Theorem 4.6.4 at level `B`
+  have hmem := mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd hB0 hp hpB hgz
+  rw [hBdiv] at hmem
+  obtain ⟨gp, hgp⟩ := hmem
+  have hpBpdvd : p * Bp ∣ B := ⟨1, by rw [mul_one]; exact hpBp.symm⟩
+  -- MOVE 3: `U_p g` is induced from level `Bp`, so its trace is `κ · g_p`
+  have hUg : heckeOp B p g = degeneracyOp Bp B 1 gp := by
+    refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+    rw [qCoeff_heckeOp hB0 hp g m, if_pos hpB, add_zero, ← hgp,
+      qCoeff_degeneracyOp hp.pos hpBpdvd gp (p * m), if_pos ⟨m, rfl⟩,
+      Nat.mul_div_cancel_left m hp.pos, qCoeff_degeneracyOp_one hBpdvdB gp m]
+  obtain ⟨κ, hκ0, hκ⟩ := exists_smul_traceOp_degeneracyOp_one (A := B) (B := Bp) hBpdvdB
+  have htrg : traceOp B Bp (heckeOp B p g) = κ • gp := by rw [hUg, hκ]
+  -- MOVE 4: the complementary part contributes nothing at indices coprime to `L`
+  set h := degeneracyOp M B 1 f - g with hhdef
+  have hh : ∀ n : ℕ, Nat.Coprime n L → qCoeff B h n = 0 := by
+    intro n hc
+    rw [hhdef, qCoeff_sub, qCoeff_degeneracyOp_one hMB f n, hg n, if_pos hc, sub_self]
+  have hC := qCoeff_traceOp_heckeOp_eq_zero hB0 hp hpBp hL hpL hh
+  have hsplit : degeneracyOp M B 1 f = g + h := by rw [hhdef]; abel
+  have hkey : traceOp B Bp (heckeOp B p (degeneracyOp M B 1 f))
+      = κ • gp + traceOp B Bp (heckeOp B p h) := by
+    rw [hsplit, map_add, map_add, htrg]
+  -- (4.6.13): the trace at level `B` is the trace at level `M`, since `p ∤ L`
+  have hB6 := traceOp_degeneracyOp_one_comm (A := M) (Ap := N) (B := B) (Bp := Bp)
+    (L := L) (p := p) hM hp hpL hL0 hpN hBdef.symm hBpdef.symm (heckeOp M p f)
+  have hcomm : heckeOp B p (degeneracyOp M B 1 f)
+      = degeneracyOp M B 1 (heckeOp M p f) := by
+    refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+    rw [qCoeff_heckeOp hB0 hp _ m, if_pos hpB, add_zero,
+      qCoeff_degeneracyOp_one hMB f (p * m),
+      qCoeff_degeneracyOp_one hMB (heckeOp M p f) m,
+      qCoeff_heckeOp hM hp f m, if_pos hpM, add_zero]
+  have hmain : ∀ m : ℕ, Nat.Coprime m L →
+      qCoeff N (traceOp M N (heckeOp M p f)) m = κ * qCoeff M f (p * m) := by
+    intro m hm
+    have h1 : qCoeff Bp (degeneracyOp N Bp 1 (traceOp M N (heckeOp M p f))) m
+        = qCoeff N (traceOp M N (heckeOp M p f)) m :=
+      qCoeff_degeneracyOp_one hNBp _ m
+    have hpm : Nat.Coprime (p * m) L := Nat.coprime_mul_iff_left.mpr ⟨hpcop, hm⟩
+    have hgpm : qCoeff Bp gp m = qCoeff M f (p * m) := by
+      have h2 := hg (p * m)
+      rw [if_pos hpm] at h2
+      rw [← h2, ← hgp, qCoeff_degeneracyOp hp.pos hpBpdvd gp (p * m), if_pos ⟨m, rfl⟩,
+        Nat.mul_div_cancel_left m hp.pos]
+    rw [← h1, ← hB6, ← hcomm, hkey, qCoeff_add, qCoeff_smul, hC m hm, add_zero, hgpm]
+  refine ⟨κ⁻¹, fun n hn => ?_⟩
+  rw [qCoeff_sub, qCoeff_degeneracyOp hp.pos ⟨1, by rw [mul_one]; exact hpN.symm⟩ _ n]
+  by_cases hpn : p ∣ n
+  · rw [if_pos hpn, qCoeff_smul]
+    obtain ⟨m, rfl⟩ := hpn
+    rw [Nat.mul_div_cancel_left m hp.pos]
+    have hm : Nat.Coprime m L := Nat.Coprime.coprime_dvd_left ⟨p, mul_comm p m⟩ hn
+    rw [hmain m hm, ← mul_assoc, inv_mul_cancel₀ hκ0, one_mul, sub_self]
+  · rw [if_neg hpn, sub_zero]
+    exact hf n hpn hn
+
+end MiyakeTraceBookkeeping
 
 /-- **MIYAKE'S PEELING STEP** (Theorem 4.6.8's induction step), assembled from
 the residual leaf above: the witness is Miyake's own,
-`f_p = p(d+1)⁻¹ · (f ∣ Γ₀(M) · 1 · Γ₀(M/p))` — a scalar multiple of the TRACE of
-`f` itself, not of anything built from the sieve. -/
+`f_p = p(d+1)⁻¹ · (f ∣ Γ₀(M) · [1, 0; 0, p] · Γ₀(M/p))` — a scalar multiple of the
+trace of `U_p f`, not of `f` itself (see the FALSITY AUDIT above) and not of
+anything built from the sieve. -/
 theorem exists_sub_degeneracyOp_qCoeff_coprime_eq_zero {M p L : ℕ}
     (hM : 0 < M) (hp : p.Prime) (hpM : p ∣ M) (hL : 1 < L) (hpL : ¬ p ∣ L)
     {f : CuspForm (Gamma0GL M) 2}
@@ -32952,8 +34246,8 @@ theorem exists_sub_degeneracyOp_qCoeff_coprime_eq_zero {M p L : ℕ}
   haveI : NeZero (M / p) :=
     ⟨(Nat.div_pos (Nat.le_of_dvd hM hpM) hp.pos).ne'⟩
   obtain ⟨c, hc⟩ :=
-    exists_smul_traceOp_qCoeff_coprime_eq_zero hM hp hpM hL hpL hf
-  exact ⟨c • traceOp M (M / p) f, hc⟩
+    exists_smul_traceOp_heckeOp_qCoeff_coprime_eq_zero hM hp hpM hL hpL hf
+  exact ⟨c • traceOp M (M / p) (heckeOp M p f), hc⟩
 
 /-- **THE MAIN LEMMA, INDUCTED OVER THE PRIME FACTORS OF A DIVISOR OF THE LEVEL**
 (PROVEN 2026-07-27 over the two leaves above; Miyake, *Modular Forms*, Theorem
@@ -37074,8 +38368,160 @@ theorem abs_le_two_mul_sqrt_of_forall_norm_pow_le
   have hNdpos : (0 : ℝ) < (N : ℝ) * d := mul_pos (by linarith) hd0
   linarith [hchain, hexp, hexp2, hA, hCN, hNdpos]
 
-/-- **The crude Weil bound along the powers of a good prime** (sorry
-node, THIRTEENTH decomposition 2026-07-27 — the geometric residue of
+/-- **From a Frobenius power-sum bound to the coefficient growth bound**
+(PROVEN 2026-07-27, FOURTEENTH decomposition): a sequence whose "second
+difference against `q`", `a_{s+2} − q·aₛ`, is bounded by `C·q^{(s+2)/2}`
+— with NO linear factor — and whose first two terms are bounded by `C`
+and `C·√q`, satisfies `‖aᵣ‖ ≤ C·(r+1)·q^{r/2}` for every `r`.
+
+WHY THIS IS THE RIGHT INTERMEDIARY, AND WHERE THE LINEAR FACTOR COMES
+FROM. When `aᵣ = a_{q^r}` are the Hecke coefficients at a good prime and
+`α, β` are the roots of `X² − a_q·X + q`, one has the complete
+homogeneous expansion `aᵣ = Σ_{j ≤ r} αʲ·β^{r−j}`, and the combination
+appearing in `hstep` is exactly the POWER SUM
+
+  `a_{s+2} − q·aₛ = α^{s+2} + β^{s+2}`,
+
+because `αβ = q` makes the two sums telescope against each other. Power
+sums are precisely what a point count bounds — the Hasse–Weil estimate
+`|#X(𝔽_{q^s}) − q^s − 1| ≤ 2g·q^{s/2}` carries a constant and NO linear
+factor. So the linear factor `(r+1)` in the conclusion is not part of
+the geometric input at all: it is manufactured HERE, by unrolling
+`aᵣ = pᵣ + q·a_{r−2}` roughly `r/2` times. Putting `(r+1)` into the
+geometric hypothesis would state something WEAKER than a point count
+actually delivers while making this step no easier, which is why the
+sorried leaf below does not carry it.
+
+Note the hypotheses do NOT include the Hecke recursion, and the proof
+does not use it; the statement is pure telescoping and holds for any
+sequence. That is deliberate — it keeps the recursion in exactly one
+place, the amplification lemma
+`abs_le_two_mul_sqrt_of_forall_norm_pow_le` above.
+
+PROOF: two-step induction. `‖a_{r+2}‖ ≤ ‖a_{r+2} − q·aᵣ‖ + q·‖aᵣ‖ ≤
+C·q^{(r+2)/2} + q·C·(r+1)·q^{r/2} = C·(r+2)·q^{(r+2)/2}`, which is below
+the claimed `C·(r+3)·q^{(r+2)/2}` with a whole term to spare. -/
+theorem norm_le_mul_succ_of_norm_sub_natCast_mul_le {q : ℕ} (a : ℕ → ℂ) (C : ℝ)
+    (h0 : ‖a 0‖ ≤ C) (h1 : ‖a 1‖ ≤ C * Real.sqrt q)
+    (hstep : ∀ s : ℕ, ‖a (s + 2) - (q : ℂ) * a s‖ ≤ C * Real.sqrt q ^ (s + 2)) :
+    ∀ r : ℕ, ‖a r‖ ≤ C * ((r : ℝ) + 1) * Real.sqrt q ^ r := by
+  have hC0 : 0 ≤ C := le_trans (norm_nonneg _) h0
+  have hs0 : (0 : ℝ) ≤ Real.sqrt q := Real.sqrt_nonneg _
+  have hsq : Real.sqrt q ^ 2 = (q : ℝ) := Real.sq_sqrt (by positivity)
+  have key : ∀ r : ℕ, ‖a r‖ ≤ C * ((r : ℝ) + 1) * Real.sqrt q ^ r ∧
+      ‖a (r + 1)‖ ≤ C * ((r : ℝ) + 1 + 1) * Real.sqrt q ^ (r + 1) := by
+    intro r
+    induction r with
+    | zero =>
+        refine ⟨by simpa using h0, ?_⟩
+        have hgoal : C * Real.sqrt q ≤ C * ((0 : ℝ) + 1 + 1) * Real.sqrt q := by nlinarith
+        simpa using le_trans h1 hgoal
+    | succ n ih =>
+        obtain ⟨hn, hn1⟩ := ih
+        refine ⟨by push_cast; linarith, ?_⟩
+        have hpow0 : (0 : ℝ) ≤ Real.sqrt q ^ n := by positivity
+        have hpow : (q : ℝ) * Real.sqrt q ^ n = Real.sqrt q ^ (n + 2) := by
+          rw [pow_add, hsq]; ring
+        have hqnorm : ‖(q : ℂ) * a n‖ = (q : ℝ) * ‖a n‖ := by
+          rw [norm_mul, Complex.norm_natCast]
+        have hsplit : ‖a (n + 2)‖ ≤ ‖a (n + 2) - (q : ℂ) * a n‖ + ‖(q : ℂ) * a n‖ := by
+          simpa using norm_add_le (a (n + 2) - (q : ℂ) * a n) ((q : ℂ) * a n)
+        have hqle : (q : ℝ) * ‖a n‖ ≤ C * ((n : ℝ) + 1) * Real.sqrt q ^ (n + 2) := by
+          have hq0 : (0 : ℝ) ≤ (q : ℝ) := Nat.cast_nonneg q
+          calc (q : ℝ) * ‖a n‖
+              ≤ (q : ℝ) * (C * ((n : ℝ) + 1) * Real.sqrt q ^ n) :=
+                mul_le_mul_of_nonneg_left hn hq0
+            _ = C * ((n : ℝ) + 1) * ((q : ℝ) * Real.sqrt q ^ n) := by ring
+            _ = C * ((n : ℝ) + 1) * Real.sqrt q ^ (n + 2) := by rw [hpow]
+        have hpow2 : (0 : ℝ) ≤ Real.sqrt q ^ (n + 2) := by positivity
+        have hfinal : ‖a (n + 2)‖ ≤ C * ((n : ℝ) + 1 + 1 + 1) * Real.sqrt q ^ (n + 2) := by
+          have hh := hstep n
+          nlinarith [hsplit, hqle, hh, hqnorm, hpow2, hC0]
+        push_cast
+        convert hfinal using 2
+  exact fun r => (key r).1
+
+/-- **The Frobenius power-sum bound at a good prime** (sorry node,
+FOURTEENTH decomposition 2026-07-27 — the geometric residue of
+`exists_const_norm_qCoeff_prime_pow_le` below, which is now PROVEN over
+it): at `q ∤ M` the power sums of the two Frobenius roots attached to a
+weight-two newform are bounded by `C·q^{s/2}`, with a constant and NO
+linear factor.
+
+WHAT THE HYPOTHESES SAY, IN CLASSICAL TERMS. Write `α, β` for the roots
+of `X² − a_q·X + q`. The good-prime Hecke recursion makes
+`a_{q^r} = Σ_{j ≤ r} αʲ·β^{r−j}` the complete homogeneous symmetric
+function, and `αβ = q` telescopes it into the Newton identity
+
+  `a_{q^{s+2}} − q·a_{q^s} = α^{s+2} + β^{s+2}`,
+
+which is the trace of `Frob_q^{s+2}` on the `g`-isotypic part. So the
+second clause is literally "the traces of all the Frobenius powers are
+bounded by `C·q^{s/2}`", and the first clause is the same statement at
+`s = 1`, where the power sum is `α + β = a_q`. Nothing here mentions a
+Galois representation: everything is phrased in the `q`-expansion
+coefficients, so Route 1's circularity (see
+`norm_qCoeff_le_two_mul_sqrt_of_not_dvd` below) does not arise.
+
+WHY THIS SHAPE AND NOT THE PARENT'S. This leaf is strictly STRONGER than
+`exists_const_norm_qCoeff_prime_pow_le` below, because it has no linear
+factor — and that is the point. The `(r+1)` in the parent is an artifact
+of unrolling `a_{q^r} = p_r + q·a_{q^{r−2}}` about `r/2` times, NOT of
+the geometry; a point count delivers `|#X(𝔽_{q^s}) − q^s − 1| ≤ 2g·q^{s/2}`
+with no such factor. Stating the geometric obligation with a linear
+factor would ask the geometry for less than it gives while leaving the
+elementary step exactly as hard, so the factor is manufactured in
+`norm_le_mul_succ_of_norm_sub_natCast_mul_le` above instead.
+
+FAITHFULNESS. The statement is TRUE with `C = 2`: `|α| = |β| = √q` gives
+`|α^s + β^s| ≤ 2·q^{s/2}` for every `s`, and `|a_q| ≤ 2√q`. It is not
+vacuous — it is Weil-strength, being equivalent (via the two elementary
+lemmas above) to `|a_q| ≤ 2√q`. The `1 ≤ C` clause is free at `C = 2`
+and is what discharges `‖a_{q^0}‖ = ‖a_1‖ = 1 ≤ C`.
+
+STILL MISSING, and this leaf does not pretend otherwise: an integral
+model of `X₀(M)` with good reduction at `q ∤ M` (Igusa), the
+Eichler–Shimura relation in its geometric form (Diamond–Shurman §8.7),
+and the Weil bound for curves over `𝔽_q`. The FOURTEENTH cut removes
+only the linear-factor bookkeeping from the geometric obligation; the
+THIRTEENTH removed the extremal constant.
+
+CORRECTION TO THE THIRTEENTH CUT'S COORDINATION NOTE (checked
+2026-07-27 by the owner of this cut, and it changes what a successor
+should do). The note below said a curve-level Weil bound is in flight in
+`Modularity/KhareWintenberger.lean` and should simply be consumed here.
+The ROUTING half is correct — `Interface.lean` does import that file
+directly (line 330), so anything landing there is reachable — but the
+MATHEMATICAL half is wrong: that subtree deliberately produces only
+NONEMPTINESS, never an estimate. Its curve-level output
+`exists_zero_of_absolutelyIrreducible_plane` concludes
+`∃ a : Fin 2 → ZMod p, MvPolynomial.eval a g = 0`, and its parent
+`exists_bound_forall_zmodSolvable_of_irreducibleFibre` records in as many
+words that "the full Lang–Weil estimate `|#X(𝔽_q) − q^d| ≤ C·q^{d−1/2}`
+is not needed anywhere in this development, and a route that merely
+produces `#X(𝔽_p) > 0` past an explicit threshold is enough". So NO
+quantitative bound will appear there to be consumed, and the owner of
+this leaf must build the curve-level estimate itself. What IS genuinely
+shared is one level lower: Stepanov's auxiliary polynomial
+(`exists_stepanovAuxiliary`, still OPEN there) and the zero-counting core
+(`stepanov_sum_le_natDegree`, PROVEN there) are exactly the inputs an
+estimate needs, so build the estimate ON those rather than starting a
+second Stepanov development. Refutable in one grep: if
+`exists_zero_of_absolutelyIrreducible_plane`'s conclusion ever becomes an
+inequality on a point count rather than a bare existential, this
+paragraph is stale. -/
+theorem exists_const_norm_qCoeff_frobPowerSum_le {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ∃ C : ℝ, 1 ≤ C ∧ ‖qCoeff M g q‖ ≤ C * Real.sqrt q ∧
+      ∀ s : ℕ, ‖qCoeff M g (q ^ (s + 2)) - (q : ℂ) * qCoeff M g (q ^ s)‖
+        ≤ C * Real.sqrt q ^ (s + 2) :=
+  sorry
+
+/-- **The crude Weil bound along the powers of a good prime** (PROVEN
+2026-07-27 over `exists_const_norm_qCoeff_frobPowerSum_le` above,
+FOURTEENTH decomposition; opened by the THIRTEENTH decomposition
+2026-07-27 as the geometric residue of
 `norm_qCoeff_le_two_mul_sqrt_of_not_dvd` below, which is now PROVEN over
 it): at `q ∤ M` the coefficients `a_{q^r}` of a weight-two newform grow
 no faster than `q^{r/2}`, up to an arbitrary constant and a linear
@@ -37109,26 +38555,43 @@ removes only the extremal-constant extraction from the geometric
 obligation.
 
 WHERE THE WEIL BOUND IS BEING BUILT, AND THAT IT IS REACHABLE FROM HERE
-(checked 2026-07-27; this is the load-bearing coordination fact). A
-Stepanov–Bombieri development is in flight in
-`Modularity/KhareWintenberger.lean`, beneath
+(checked 2026-07-27; this is the load-bearing coordination fact, and its
+mathematical half was CORRECTED the same day — see the CORRECTION
+paragraph on `exists_const_norm_qCoeff_frobPowerSum_le` above, which is
+where a successor should read it). A Stepanov–Bombieri development is in
+flight in `Modularity/KhareWintenberger.lean`, beneath
 `exists_bound_forall_zmodSolvable_of_irreducibleFibre`, for the
 Lang–Weil needs of Khare–Wintenberger. **That file is UPSTREAM of this
-one** — `Interface.lean` imports it directly — so whatever curve-level
-Weil bound lands there is usable at this leaf with no shared module
-above the two, and no second Weil development is needed. The refutable
-form of that claim, which costs one grep: if
+one** — `Interface.lean` imports it directly — so anything landing there
+is reachable from this leaf with no shared module above the two. The
+refutable form of that claim, which costs one grep: if
 `grep -n 'import Fermat.FLT.Modularity.KhareWintenberger'
 Fermat/FLT/Modularity/Interface.lean` ever returns empty, this paragraph
-is wrong. Two independent Weil developments are the most expensive
-duplication available in this tree; the owner of this leaf should
-consume that one rather than start over. -/
+is wrong. **But what lands there is only NONEMPTINESS of a point set,
+not an estimate**, so it cannot be consumed as a Weil bound; only its
+Stepanov infrastructure one level down can. Two independent Stepanov
+developments are the most expensive duplication available in this tree,
+so build on that one rather than start over.
+
+PROOF (FOURTEENTH cut): the power-sum leaf above supplies `‖a_q‖ ≤ C√q`
+and `‖a_{q^{s+2}} − q·a_{q^s}‖ ≤ C·q^{(s+2)/2}`; `a_{q^0} = a_1 = 1 ≤ C`
+is normalisation; and `norm_le_mul_succ_of_norm_sub_natCast_mul_le`
+above turns those into the claimed growth by two-step induction. Note
+the Hecke recursion is not used here — it is consumed once, higher up,
+by the amplification lemma. -/
 theorem exists_const_norm_qCoeff_prime_pow_le {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
     ∃ C : ℝ, ∀ r : ℕ,
-      ‖qCoeff M g (q ^ r)‖ ≤ C * (r + 1) * Real.sqrt q ^ r :=
-  sorry
+      ‖qCoeff M g (q ^ r)‖ ≤ C * (r + 1) * Real.sqrt q ^ r := by
+  obtain ⟨C, hC1, hCq, hCstep⟩ := exists_const_norm_qCoeff_frobPowerSum_le hM g hg hq hqM
+  refine ⟨C, norm_le_mul_succ_of_norm_sub_natCast_mul_le (q := q)
+    (fun r => qCoeff M g (q ^ r)) C ?_ ?_ ?_⟩
+  · rw [pow_zero, hg.toIsWeightTwoEigenform.qCoeff_one, norm_one]
+    exact hC1
+  · rw [pow_one]
+    exact hCq
+  · exact hCstep
 
 /-- **The Hasse–Weil bound at a good prime** (PROVEN 2026-07-27 over
 `exists_const_norm_qCoeff_prime_pow_le`; ELEVENTH
@@ -38065,6 +39528,154 @@ theorem atkinLehnerOp_atkinLehnerOp {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
     (atkinLehnerOp_mul_self hM hQ hcop)
   simpa using h
 
+/-- **`W_q` COMMUTES WITH `T_r` AT EVERY PRIME `r ≠ q`, at the level of
+FUNCTIONS on `ℍ`** (sorry leaf, FOURTEENTH decomposition 2026-07-27) —
+Atkin–Lehner 1970, Lemma 17 (`W_Q` commutes with `T_p` and with `U_p`
+for every `p ∤ Q`).  This is the `r ≠ q` half of the spectral node
+below, stripped of every newform hypothesis: a pure identity between
+two finite slash-sums, true for every level-`M` weight-two cusp form.
+
+WHY IT IS TRUE, with the permutation made explicit so a successor need
+not rediscover it.  Both sides expand by `SlashAction.slash_mul` into
+sums of `⇑f ∣[2] (·)` over the products `A · α_j` (left side) and
+`α_k · A` (right side), where `α_j = heckeRep r j = !![1, j; 0, r]` and
+`α_∞ = heckeRepInf r = !![r, 0; 0, 1]`.  Since `⇑f ∣[2] γ = ⇑f` for
+`γ ∈ Γ₀(M)` (`SlashInvariantFormClass.slash_action_eq`, applied through
+`mem_Gamma0GL_iff`), it suffices to produce a PERMUTATION `π` of the
+index set together with matrices `γ_j ∈ Γ₀(M)` satisfying
+
+    A · α_j = γ_j · α_{π j} · A .
+
+The permutation is the Möbius action of `Ā⁻¹` on `ℙ¹(𝔽_r)`, and it is
+well defined exactly because `r ≠ q`.  Three steps, each elementary:
+
+1. `det A = q` and `r ≠ q` are distinct primes, so `r ∤ q` and
+   `Ā := A mod r` is INVERTIBLE over `ZMod r`.
+2. Conjugation `β ↦ A β A⁻¹` carries the set `Δ₀(M,r)` of integral
+   determinant-`r` matrices with `M ∣ β 1 0` into itself.  This is the
+   same pure `Dvd` bookkeeping as `exists_gamma0_of_smul_atkinLehner`
+   above: for `C := A * β * A.adjugate` one gets `det C = q ^ 2 * r`,
+   `q ∣ C 0 0`, `q ∣ C 0 1`, `q ∣ C 1 1` and `q * M ∣ C 1 0`, using
+   ONLY `q ∣ M`, `M ∣ A 1 0`, `M ∣ β 1 0`, `q ∣ A 0 0`, `q ∣ A 1 1` —
+   no Bézout relation anywhere.  Since `A * A.adjugate = q • 1`, this
+   says `A β A⁻¹` is again integral, determinant `r`, lower-left
+   divisible by `M`.
+3. Modulo `r`, `α_j ≡ !![1, j; 0, 0]`, which is the RANK-ONE matrix
+   `e₀ ⬝ (1, j)`.  Hence `A α_j A⁻¹ ≡ (Ā e₀) ⬝ ((1, j) Ā⁻¹)` is rank
+   one too, and writing `(s, t) := (1, j) Ā⁻¹` the class
+   `π j := t / s ∈ ℙ¹(𝔽_r)` is exactly the index `k` making
+   `γ_j := A α_j A⁻¹ α_k⁻¹` INTEGRAL: with `β := A α_j A⁻¹`, that
+   matrix is `!![β 0 0, (β 0 1 - k * β 0 0)/r; β 1 0,
+   (β 1 1 - k * β 1 0)/r]`, so integrality is the pair of
+   divisibilities `r ∣ β 0 1 - k * β 0 0` and `r ∣ β 1 1 - k * β 1 0`.
+   The two are equivalent to each other because `det β = r ≡ 0 mod r`
+   (whichever of `β 0 0`, `β 1 0` is invertible mod `r` transports one
+   to the other, and they cannot both vanish mod `r`, since then `r^2`
+   would divide `det β = r`).  `det γ_j = 1` is a determinant count and
+   `M ∣ γ_j 1 0 = β 1 0` is step 2, so `γ_j ∈ Γ₀(M)`.
+
+WHY THE `r ∣ M` CASE LOSES NOTHING.  When `r ∣ M` the sum carries no
+`α_∞` term (`heckeTransform`'s `if r ∣ N then 0`), so `π` must preserve
+`𝔽_r ⊆ ℙ¹(𝔽_r)`.  It does: `r ∣ M ∣ A 1 0`, so `Ā` is UPPER TRIANGULAR
+mod `r` and therefore fixes `∞`, hence permutes the finite points.
+That is the only place the shape of `heckeTransform` enters, and it is
+why the `U_r` case needs no extra representative.
+
+REFUTING CHECK, so the next owner need not redo the survey: exhibit a
+prime `r ≠ q` and a level-`M` weight-two cusp form with
+`T_r (f ∣[2] W_q) ≠ (T_r f) ∣[2] W_q`; equivalently, a prime `r ≠ q`
+for which conjugation by an Atkin–Lehner matrix fails to permute the
+`Γ₀(M)`-cosets inside `Δ₀(M,r)`.  At `r = q` the statement is FALSE in
+general — `U_q` and `W_q` do not commute, which is precisely why
+Atkin–Lehner restrict Lemma 17 to `p ∤ Q` and why the `r = q` half is a
+separate leaf below rather than an instance of this one. -/
+theorem heckeTransform_slash_atkinLehnerRep {M q : ℕ} (hq : q.Prime) (hqM : q ∣ M)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A)
+    {r : ℕ} (hr : r.Prime) (hrq : r ≠ q) (f : CuspForm (Gamma0GL M) 2) :
+    heckeTransform M r (⇑f ∣[(2 : ℤ)] atkinLehnerRep A)
+      = (heckeTransform M r ⇑f) ∣[(2 : ℤ)] atkinLehnerRep A :=
+  sorry
+
+/-- **`T_r` and `W_q` commute as ENDOMORPHISMS of `S₂(Γ₀(M))` for
+`r ≠ q`** (PROVEN over `heckeTransform_slash_atkinLehnerRep`).  Pure
+glue: `heckeOp_coe` and `atkinLehnerOp_coe` unfold both operators to
+the function-level identity, and a cusp form is determined by its
+underlying function.  `atkinLehnerOp_coe` holds for EVERY Atkin–Lehner
+matrix, so the particular one supplied by `exists_isAtkinLehnerMatrix`
+is harmless — that is exactly the content the operator leaf bundles. -/
+theorem heckeOp_comm_atkinLehnerOp {M : ℕ} (hM : 0 < M) {q : ℕ}
+    (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M)
+    {r : ℕ} (hr : r.Prime) (hrq : r ≠ q) (f : CuspForm (Gamma0GL M) 2) :
+    heckeOp M r (atkinLehnerOp M q f) = atkinLehnerOp M q (heckeOp M r f) := by
+  have hcop : Nat.Coprime q (M / q) := by
+    refine (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd => hqM2 ?_
+    obtain ⟨t, ht⟩ := hdvd
+    refine ⟨t, ?_⟩
+    have h := Nat.mul_div_cancel' hqM
+    rw [ht] at h
+    rw [← h]; ring
+  obtain ⟨A, hA⟩ := exists_isAtkinLehnerMatrix hqM hcop
+  apply DFunLike.coe_injective
+  have h1 : ⇑(heckeOp M r (atkinLehnerOp M q f))
+      = heckeTransform M r (⇑f ∣[(2 : ℤ)] atkinLehnerRep A) := by
+    rw [heckeOp_coe hM hr, atkinLehnerOp_coe hM hqM hcop hA]
+  have h2 : ⇑(atkinLehnerOp M q (heckeOp M r f))
+      = (heckeTransform M r ⇑f) ∣[(2 : ℤ)] atkinLehnerRep A := by
+    rw [atkinLehnerOp_coe hM hqM hcop hA, heckeOp_coe hM hr]
+  rw [h1, h2]
+  exact heckeTransform_slash_atkinLehnerRep hq hqM hA hr hrq f
+
+/-- **`U_q (W_q g) = a_q(g) · (W_q g)`** (sorry leaf, FOURTEENTH
+decomposition 2026-07-27): the `r = q` half of the spectral node below,
+and the genuinely deep one.
+
+Unlike the `r ≠ q` half this is FALSE without the newform hypothesis:
+`U_q` does NOT commute with `W_q`, which is exactly why Atkin–Lehner
+1970 restricts Lemma 17 to `p ∤ Q`.  What replaces commutation is the
+Atkin–Lehner relation on the `q`-NEW part, where at `q ‖ M` and weight
+two `U_q = −W_q`.  Granting that: `U_q (W_q g) = −W_q (W_q g) = −g` by
+involutivity (`atkinLehnerOp_atkinLehnerOp`, PROVEN), while
+`a_q(g) • W_q g = a_q · (−a_q) • g = −a_q² • g`, and the two agree
+because `a_q² = 1` there.  So this leaf and
+`qCoeff_one_atkinLehnerOp_of_newform` are two readings of the SAME
+classical relation `U_q = −W_q` on the `q`-new part, and a successor
+should expect to close them TOGETHER from that relation rather than
+separately — on a different axis from the operator-shaped cut that
+produced this leaf.
+
+**BUT DO NOT CUT TO `U_q = −W_q` AT `g` — IT IS A RESTATEMENT, NOT A
+REDUCTION** (checked 2026-07-27, so the next owner need not rediscover
+it).  The tempting move is to introduce
+`atkinLehnerOp M q g = -(heckeOp M q g)` as a single common parent.
+It does imply both leaves cheaply — this one because
+`U_q (−U_q g) = −a_q • U_q g = −a_q² • g = a_q • (−a_q • g)`, and
+`qCoeff_one_atkinLehnerOp_of_newform` because `qCoeff_heckeOp` gives
+`a₁(U_q g) = a_q(g)` at `q ∣ M` and `hg.qCoeff_one` gives `a₁(g) = 1`.
+The trouble is the other direction: `heckeOp M q g = a_q • g` is
+already PROVEN (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`), so
+`-(heckeOp M q g) = (−a_q) • g` and the proposed parent is
+DEFINITIONALLY the conclusion of
+`atkinLehnerOp_apply_eq_neg_qCoeff_smul` itself.  Cutting there would
+move the whole node into one leaf and prove nothing.
+
+Note also that the sibling `r ≠ q` leaf does NOT help here even in
+principle: the bridge `eq_qCoeff_one_smul_of_heckeOp_eigen` runs
+through `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen`, whose induction on
+`m` descends along an ARBITRARY prime divisor of `m` — including
+divisors of `M` — so it genuinely consumes the eigenvalue at `q`.  A
+strong-multiplicity-one variant quantified only over `r ∤ M` would make
+this leaf removable, and no such variant exists in this file or in the
+pin; building one is a real alternative route, not a restatement.
+
+Newness enters only through `hg`; `q ‖ M` is load-bearing because
+`atkinLehnerOp M q` is junk when `q² ∣ M` (its defining clause is
+guarded by `Nat.Coprime q (M / q)`), so the leaf is not vacuous. -/
+theorem heckeOp_self_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    heckeOp M q (atkinLehnerOp M q g) = qCoeff M g q • atkinLehnerOp M q g :=
+  sorry
+
 /-- **THE SPECTRAL HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
 THIRTEENTH decomposition 2026-07-27): the Atkin–Lehner transform of a
 weight-two newform is again a joint eigenvector of the complex Hecke
@@ -38095,17 +39706,26 @@ clause is guarded by `Nat.Coprime q (M / q)`), and the classical
 statement is false anyway — that regime is `qCoeff_eq_zero_of_sq_dvd`'s,
 not this one.
 
-REFUTING CHECK for the `r ≠ q` claim, so the next owner need not redo
-the survey: exhibit a prime `r ≠ q` and a newform for which
-`T_r W_q ≠ W_q T_r`; equivalently, exhibit `r ∤ q` for which
-conjugation by an Atkin–Lehner matrix fails to permute the `r + 1`
-Hecke cosets of `Γ₀(M)`. -/
+FOURTEENTH DECOMPOSITION (2026-07-27).  The cut sketched above has been
+MADE, and this node is now PROVEN over the two leaves stated
+immediately below — `heckeTransform_slash_atkinLehnerRep` (the `r ≠ q`
+commutation, stripped of every newform hypothesis) and
+`heckeOp_self_atkinLehnerOp_eigen_of_newform` (the `r = q` half).  The
+`r ≠ q` branch of the assembly consumes
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` (PROVEN), so newness
+enters only through the `r = q` leaf. -/
 theorem heckeOp_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
     ∀ r : ℕ, r.Prime →
-      heckeOp M r (atkinLehnerOp M q g) = qCoeff M g r • atkinLehnerOp M q g :=
-  sorry
+      heckeOp M r (atkinLehnerOp M q g) = qCoeff M g r • atkinLehnerOp M q g := by
+  intro r hr
+  by_cases hrq : r = q
+  · subst hrq
+    exact heckeOp_self_atkinLehnerOp_eigen_of_newform hM g hg hq hqM hqM2
+  · rw [heckeOp_comm_atkinLehnerOp hM hq hqM hqM2 hr hrq g,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hr,
+      map_smul]
 
 /-- **THE EIGENVALUE HALF of Atkin–Lehner at `q ‖ M`** (sorry node,
 THIRTEENTH decomposition 2026-07-27): the FIRST Fourier coefficient of
@@ -40025,38 +41645,91 @@ theorem exists_characters_of_reducible_charFrob {M : ℕ} (hM : 0 < M)
   linear_combination h4
 
 
-/-- **Serre type A₀ for the two Frobenius characters** (sorry leaf,
-TWELFTH decomposition 2026-07-27, cut out of
-`not_exists_characters_charFrob_weilBound` below): the classification
-step, and **the only genuinely missing content of that leaf**. From a
-pair of continuous nowhere-vanishing multiplicative `δ₁, δ₂ : Γℚ → ℚ̄_p`
-with `δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q`
-off `S`, produce ONE prime `q ≥ 6` at which the Frobenius value is a
-root of unity times an integral power of `q`.
+/-- **A prime of any prescribed size outside a finite set of places**
+(PROVEN 2026-07-27, THIRTEENTH decomposition): for every finite set `S`
+of finite places of `ℚ` and every bound `B` there is a rational prime
+`q ≥ B` whose place lies outside `S`.
 
-THE NORMALISATION IN THE CONCLUSION, and why it is the convenient one.
-Serre's classification delivers `δ₁(Frob_q) = ζ₁ q^n`,
-`δ₂(Frob_q) = ζ₂ q^(1−n)` with `n : ℤ` and `ζᵢ` roots of unity (and
-`ζ₁ζ₂ = 1`, forced by `δ₁δ₂(Frob_q) = q`). Both `n` and `1 − n` cannot
-be `≤ 0`, so after swapping `δ₁ ↔ δ₂` we may assume the larger exponent
-is `n = j + 1` with `j : ℕ`; multiplying by `q^j` clears the negative
-power and gives the shape below, with **no `zpow` and no `ℕ`-subtraction**:
-`κ(a_q)·q^j = ζ₁·q^(2j+1) + ζ₂`. That is a purely cosmetic packaging of
-`a_q = ζ₁q^n + ζ₂q^(1−n)`, chosen so the two consumers below are
-elementary.
+Elementary, and stated as its own declaration because it is exactly the
+`Finset`-avoidance step that every "pick a good prime" argument in this
+file re-derives by hand. The proof is Euclid
+(`Nat.exists_infinite_primes`) above `max B (T.sup id + 1)`, where `T`
+is the finite set of rational primes underlying `S`; the two directions
+of the primes ↔ places dictionary are
+`exists_prime_toHeightOneSpectrum` (surjectivity) and
+`toHeightOneSpectrumRingOfIntegersRat_injective` (injectivity), both
+PROVEN in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`. The
+`B`-parameter — rather than a bare "outside `S`" — is what lets a
+consumer dodge `p` as well as `S` by asking for `q > p`. -/
+theorem exists_prime_ge_notMem_finset
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) (B : ℕ) :
+    ∃ (q : ℕ) (hq : q.Prime), B ≤ q ∧
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := by
+  classical
+  set T : Finset ℕ :=
+    S.image (fun v => (exists_prime_toHeightOneSpectrum v).choose) with hT
+  obtain ⟨q, hqge, hq⟩ := Nat.exists_infinite_primes (max B (T.sup id + 1))
+  refine ⟨q, hq, le_trans (le_max_left _ _) hqge, fun hmem => ?_⟩
+  obtain ⟨hq', heq⟩ :=
+    (exists_prime_toHeightOneSpectrum
+      (hq.toHeightOneSpectrumRingOfIntegersRat)).choose_spec
+  have hqeq : q = (exists_prime_toHeightOneSpectrum
+      (hq.toHeightOneSpectrumRingOfIntegersRat)).choose :=
+    toHeightOneSpectrumRingOfIntegersRat_injective hq hq' heq
+  have hmemT : (exists_prime_toHeightOneSpectrum
+      (hq.toHeightOneSpectrumRingOfIntegersRat)).choose ∈ T :=
+    Finset.mem_image_of_mem _ hmem
+  have hle : q ≤ T.sup id := by
+    rw [hqeq]; exact Finset.le_sup (f := id) hmemT
+  have hge2 : max B (T.sup id + 1) ≤ q := hqge
+  omega
+
+/-- **Serre type A₀ for ONE Frobenius character** (sorry leaf,
+THIRTEENTH decomposition 2026-07-27, cut out of
+`exists_frobValue_eq_rootOfUnity_mul_pow` below): a continuous
+nowhere-vanishing multiplicative `δ₁ : Γℚ → ℚ̄_p` whose Frobenius values
+are, together with those of a partner character `δ₂`, the two roots of
+the Hecke polynomial `X² − κ(a_q)X + q`, takes the shape
+`δ₁(Frob_q) = ζ·q^n` with `ζ` a root of unity of a FIXED order `m` and
+`n : ℤ` a FIXED integer, simultaneously at every good `q`.
+
+**This is the whole of the missing mathematics of the twelfth
+decomposition's open leaf.** Everything the consumer below used to
+carry besides this — choosing a prime, the `δ₁ ↔ δ₂` swap, and all the
+exponent bookkeeping that converts `n : ℤ` into the `zpow`-free
+packaging — is now PROVEN there as glue over this leaf.
+
+THE PACKAGING, and why it is `ℕ`-only. `n : ℤ` is presented as the
+difference `a − b` of two naturals: the conclusion asks for
+`δ₁(Frob_q)·q^b = ζ·q^a`, which says `δ₁(Frob_q) = ζ·q^(a−b)` with **no
+`zpow` and no `ℕ`-subtraction**, and it is an equation between products
+so it never has to divide. `a`, `b`, `m` are chosen ONCE, before `q` —
+that uniformity is the whole content, since for a single `q` the
+statement is vacuous (take `a = b = 0` and `ζ = δ₁(Frob_q)`… which is
+not a root of unity, but the point stands: nothing is pinned pointwise).
+
+WHY `q ≠ p` IS IN THE GUARD. The classification reads
+`δ₁ = ε·χ_cyc^n` with `ε` of finite order, and `χ_cyc(Frob_q) = q`
+holds exactly at the primes `q` where `χ_cyc` is unramified — which
+excludes `p`, since `p` ramifies in `ℚ(μ_{p^∞})` and `globalFrob` at
+`p` is then not a Frobenius for `χ_cyc` at all. Excluding `p` costs the
+consumer nothing: it selects `q > p` through
+`exists_prime_ge_notMem_finset` above.
 
 THE ROUTE. By Chebotarev density (`dense_conjClasses_globalFrob`, PROVEN
 in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) and continuity,
 `δ₁δ₂` IS the `p`-adic cyclotomic character, since the two agree at
-every `Frob_q` with `q ∉ S`. The classification of each `δᵢ` then needs
+every `Frob_q` with `q ∉ S`. The classification of `δ₁` then needs
 Serre, *Abelian ℓ-adic Representations and Elliptic Curves*, Ch. III
 §§1–3 (type `A₀`): continuity alone does NOT suffice — `⟨χ_cyc⟩^s` for
 `s ∈ ℤ_p ∖ ℤ` is continuous, unramified outside `{p}`, and neither
 finite-order nor an integral power. The extra input is ALGEBRAICITY of
 the Frobenius values: `δ₁(Frob_q)`, `δ₂(Frob_q)` are the two roots of
 `X² − κ(a_q)X + q`, whose coefficients come from the number field
-`heckeField M g`. Hodge–Tate-ness, Ribet's own route, is deliberately
-NOT available here.
+`heckeField M g` — which is why `g`, `hg`, `κ` and the FULL `hfrob`
+(both the sum and the product clause) are hypotheses here even though
+only `δ₁` appears in the conclusion. Hodge–Tate-ness, Ribet's own
+route, is deliberately NOT available here.
 
 **THE RAMIFICATION OBSTRUCTION RECORDED ON THE CONSUMER IS RESOLVED —
 FINITENESS IS AUTOMATIC, AND NOTHING NEED BE ADDED ONE LEVEL UP**
@@ -40098,6 +41771,84 @@ valuations of `ζ_{p^k} − 1`. Consequently **the repair contemplated on
 the consumer — pushing a ramification hypothesis up onto `τJ` — is
 unnecessary, and should not be done**: it would add a hypothesis that
 is automatically satisfied, at the cost of a wider cut. -/
+theorem exists_frobValue_eq_rootOfUnity_mul_pow_single {M : ℕ} (hM : 0 < M)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (δ₁ δ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδ₁cont : Continuous δ₁) (hδ₂cont : Continuous δ₂)
+    (hδ₁ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ ≠ 0)
+    (hδ₂ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₂ γ ≠ 0)
+    (hδ₁mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₁ (γ * γ') = δ₁ γ * δ₁ γ')
+    (hδ₂mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₂ (γ * γ') = δ₂ γ * δ₂ γ')
+    (hfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = κ (heckeCoeff M g q) ∧
+        δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p])) :
+    ∃ a b m : ℕ, 0 < m ∧
+      ∀ (q : ℕ) (hq : q.Prime), hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        q ≠ p →
+        ∃ ζ : AlgebraicClosure ℚ_[p], ζ ^ m = 1 ∧
+          δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+              * (q : AlgebraicClosure ℚ_[p]) ^ b
+            = ζ * (q : AlgebraicClosure ℚ_[p]) ^ a :=
+  sorry
+
+/-- **Serre type A₀ for the two Frobenius characters** (PROVEN
+2026-07-27 as glue over the THIRTEENTH decomposition; was the open leaf
+of the TWELFTH decomposition, cut out of
+`not_exists_characters_charFrob_weilBound` below): from a pair of
+continuous nowhere-vanishing multiplicative `δ₁, δ₂ : Γℚ → ℚ̄_p` with
+`δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q` off
+`S`, produce ONE prime `q ≥ 6` at which the Frobenius value is a root
+of unity times an integral power of `q`.
+
+**THE THIRTEENTH DECOMPOSITION (2026-07-27) — what is now proven here,
+and where the missing content went.** The single remaining sorry is
+`exists_frobValue_eq_rootOfUnity_mul_pow_single` above: Serre's type
+`A₀` classification for ONE character. Everything else this leaf used
+to carry is discharged below and is worth listing, because each piece
+was a genuine obstacle to attacking the classification in isolation:
+
+* *the prime is chosen here*, via `exists_prime_ge_notMem_finset`
+  above, at `B := max 6 (p+1)` — which simultaneously delivers the
+  `6 ≤ q` the archimedean sibling needs (the threshold is SHARP) and
+  the `q ≠ p` the classification needs (`χ_cyc` has no Frobenius at
+  `p`);
+* *the `δ₁ ↔ δ₂` swap is executed here*, by invoking the classification
+  twice — once at `(δ₁, δ₂)` and once at `(δ₂, δ₁)`, the hypothesis
+  being symmetric — and then case-splitting on which exponent is the
+  positive one;
+* *the exponent relation `n₁ + n₂ = 1` is PROVEN here*, not assumed:
+  multiplying the two shapes gives `q^(1+b+b') = ζ₁ζ₂·q^(a+a')`, and
+  raising to the power `m·m'` kills the roots of unity, leaving
+  `q^((1+b+b')mm') = q^((a+a')mm')`. Since `q ≥ 2` and the target has
+  characteristic zero, `q` has infinite multiplicative order, so the
+  EXPONENTS are equal: `1 + b + b' = a + a'` in `ℕ`. That is the only
+  place the product clause of `hfrob` is used, and it is what forces
+  the two characters' weights to be complementary rather than merely
+  bounded.
+
+THE NORMALISATION IN THE CONCLUSION, and why it is the convenient one.
+Serre's classification delivers `δ₁(Frob_q) = ζ₁ q^n`,
+`δ₂(Frob_q) = ζ₂ q^(1−n)` with `n : ℤ` and `ζᵢ` roots of unity (and
+`ζ₁ζ₂ = 1`, forced by `δ₁δ₂(Frob_q) = q`). Both `n` and `1 − n` cannot
+be `≤ 0`, so after swapping `δ₁ ↔ δ₂` we may assume the larger exponent
+is `n = j + 1` with `j : ℕ`; multiplying by `q^j` clears the negative
+power and gives the shape below, with **no `zpow` and no `ℕ`-subtraction**:
+`κ(a_q)·q^j = ζ₁·q^(2j+1) + ζ₂`. That is a purely cosmetic packaging of
+`a_q = ζ₁q^n + ζ₂q^(1−n)`, chosen so the two consumers below are
+elementary. Note the assembly never divides: each of the two shape
+equations is multiplied up to a common power of `q` and then cancelled
+with `mul_right_cancel₀`, which is why the whole glue is `ring`-level.
+
+A common order `m·m'` is used for the two roots of unity because the
+conclusion asks for a SINGLE `m`; the classification is free to return
+different orders for the two characters. -/
 theorem exists_frobValue_eq_rootOfUnity_mul_pow {M : ℕ} (hM : 0 < M)
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
@@ -40119,8 +41870,103 @@ theorem exists_frobValue_eq_rootOfUnity_mul_pow {M : ℕ} (hM : 0 < M)
     ∃ (q : ℕ) (_ : q.Prime), 6 ≤ q ∧
       ∃ (j m : ℕ) (ζ₁ ζ₂ : AlgebraicClosure ℚ_[p]), 0 < m ∧ ζ₁ ^ m = 1 ∧ ζ₂ ^ m = 1 ∧
         κ (heckeCoeff M g q) * (q : AlgebraicClosure ℚ_[p]) ^ j
-          = ζ₁ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) + ζ₂ :=
-  sorry
+          = ζ₁ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) + ζ₂ := by
+  classical
+  haveI : CharZero (AlgebraicClosure ℚ_[p]) :=
+    charZero_of_injective_algebraMap
+      (algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p])).injective
+  -- the Frobenius hypothesis is symmetric in the two characters
+  have hfrob' : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = κ (heckeCoeff M g q) ∧
+        δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p]) := by
+    intro q hq hqS
+    obtain ⟨h1, h2⟩ := hfrob q hq hqS
+    exact ⟨by rw [add_comm]; exact h1, by rw [mul_comm]; exact h2⟩
+  -- Serre type `A₀`, applied to each of the two characters in turn
+  obtain ⟨a, b, m, hm, h₁⟩ := exists_frobValue_eq_rootOfUnity_mul_pow_single
+    hM S g hg κ δ₁ δ₂ hδ₁cont hδ₂cont hδ₁ne hδ₂ne hδ₁mul hδ₂mul hfrob
+  obtain ⟨a', b', m', hm', h₂⟩ := exists_frobValue_eq_rootOfUnity_mul_pow_single
+    hM S g hg κ δ₂ δ₁ hδ₂cont hδ₁cont hδ₂ne hδ₁ne hδ₂mul hδ₁mul hfrob'
+  -- one prime, large enough for the archimedean sibling and away from `p`
+  obtain ⟨q, hq, hqB, hqS⟩ := exists_prime_ge_notMem_finset S (max 6 (p + 1))
+  have hq6 : 6 ≤ q := le_trans (le_max_left _ _) hqB
+  have hqp : q ≠ p := by
+    have := le_trans (le_max_right 6 (p + 1)) hqB
+    omega
+  obtain ⟨ζ, hζ, hζeq⟩ := h₁ q hq hqS hqp
+  obtain ⟨ξ, hξ, hξeq⟩ := h₂ q hq hqS hqp
+  obtain ⟨hsum, hprod⟩ := hfrob q hq hqS
+  refine ⟨q, hq, hq6, ?_⟩
+  have hQ0 : (q : AlgebraicClosure ℚ_[p]) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  -- `q` has infinite multiplicative order, so equal powers have equal exponents
+  have hQpow : ∀ s t : ℕ, (q : AlgebraicClosure ℚ_[p]) ^ s
+      = (q : AlgebraicClosure ℚ_[p]) ^ t → s = t := by
+    intro s t h
+    have hcast : ((q ^ s : ℕ) : AlgebraicClosure ℚ_[p])
+        = ((q ^ t : ℕ) : AlgebraicClosure ℚ_[p]) := by push_cast; exact h
+    exact Nat.pow_right_injective hq.two_le (Nat.cast_injective hcast)
+  have hζmm : ζ ^ (m * m') = 1 := by rw [pow_mul, hζ, one_pow]
+  have hξmm : ξ ^ (m * m') = 1 := by rw [mul_comm, pow_mul, hξ, one_pow]
+  -- the product relation pins the two weights as complementary
+  have hmulEq : (q : AlgebraicClosure ℚ_[p]) ^ (1 + b + b')
+      = ζ * ξ * (q : AlgebraicClosure ℚ_[p]) ^ (a + a') := by
+    have h : (δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * (q : AlgebraicClosure ℚ_[p]) ^ b)
+        * (δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * (q : AlgebraicClosure ℚ_[p]) ^ b')
+        = (ζ * (q : AlgebraicClosure ℚ_[p]) ^ a)
+          * (ξ * (q : AlgebraicClosure ℚ_[p]) ^ a') := by
+      rw [hζeq, hξeq]
+    linear_combination h
+      - ((q : AlgebraicClosure ℚ_[p]) ^ b * (q : AlgebraicClosure ℚ_[p]) ^ b') * hprod
+  have hexp : 1 + b + b' = a + a' := by
+    have hpw : ((q : AlgebraicClosure ℚ_[p]) ^ (1 + b + b')) ^ (m * m')
+        = ((q : AlgebraicClosure ℚ_[p]) ^ (a + a')) ^ (m * m') := by
+      rw [hmulEq, mul_pow, mul_pow, hζmm, hξmm, one_mul, one_mul]
+    have hpw2 : (q : AlgebraicClosure ℚ_[p]) ^ ((1 + b + b') * (m * m'))
+        = (q : AlgebraicClosure ℚ_[p]) ^ ((a + a') * (m * m')) := by
+      rw [pow_mul (q : AlgebraicClosure ℚ_[p]) (1 + b + b') (m * m'),
+        pow_mul (q : AlgebraicClosure ℚ_[p]) (a + a') (m * m')]
+      exact hpw
+    exact Nat.eq_of_mul_eq_mul_right (Nat.mul_pos hm hm') (hQpow _ _ hpw2)
+  by_cases hcase : b + 1 ≤ a
+  · -- `δ₁` carries the positive power `q^(j+1)`, so `δ₂` carries `q^(-j)`
+    obtain ⟨j, hja⟩ : ∃ j : ℕ, a = j + b + 1 := ⟨a - b - 1, by omega⟩
+    have hjb' : b' = a' + j := by omega
+    rw [hja] at hζeq
+    rw [hjb'] at hξeq
+    have g1 : δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j
+        = ζ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) := by
+      refine mul_right_cancel₀ (pow_ne_zero b hQ0) ?_
+      linear_combination ((q : AlgebraicClosure ℚ_[p]) ^ j) * hζeq
+    have g2 : δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j = ξ := by
+      refine mul_right_cancel₀ (pow_ne_zero a' hQ0) ?_
+      linear_combination hξeq
+    exact ⟨j, m * m', ζ, ξ, Nat.mul_pos hm hm', hζmm, hξmm, by
+      linear_combination g1 + g2 - ((q : AlgebraicClosure ℚ_[p]) ^ j) * hsum⟩
+  · -- `δ₂` carries the positive power `q^(j+1)`, so `δ₁` carries `q^(-j)`
+    obtain ⟨j, hja'⟩ : ∃ j : ℕ, a' = j + b' + 1 := ⟨a' - b' - 1, by omega⟩
+    have hjb : b = a + j := by omega
+    rw [hja'] at hξeq
+    rw [hjb] at hζeq
+    have g1 : δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j
+        = ξ * (q : AlgebraicClosure ℚ_[p]) ^ (2 * j + 1) := by
+      refine mul_right_cancel₀ (pow_ne_zero b' hQ0) ?_
+      linear_combination ((q : AlgebraicClosure ℚ_[p]) ^ j) * hξeq
+    have g2 : δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        * (q : AlgebraicClosure ℚ_[p]) ^ j = ζ := by
+      refine mul_right_cancel₀ (pow_ne_zero a hQ0) ?_
+      linear_combination hζeq
+    exact ⟨j, m * m', ξ, ζ, Nat.mul_pos hm hm', hξmm, hζmm, by
+      linear_combination g1 + g2 - ((q : AlgebraicClosure ℚ_[p]) ^ j) * hsum⟩
 
 /-- **Transfer of an algebraic Frobenius identity from `ℚ̄_p` to `ℂ`**
 (PROVEN 2026-07-27, TWELFTH decomposition): if a Hecke coefficient `a`
@@ -40251,9 +42097,15 @@ lives.** The leaf is proven here as three-line glue over three siblings
 declared immediately above, and the genuinely missing mathematics has
 been isolated into exactly ONE of them:
 
-* `exists_frobValue_eq_rootOfUnity_mul_pow` — **SORRIED, and the only
-  open content**: Serre type `A₀`, producing a prime `q ≥ 6` at which
-  `κ(a_q)·q^j = ζ₁q^(2j+1) + ζ₂` with `ζᵢ` roots of unity;
+* `exists_frobValue_eq_rootOfUnity_mul_pow` — **PROVEN 2026-07-27 by
+  the THIRTEENTH decomposition** (it was the twelfth's only open leaf):
+  Serre type `A₀`, producing a prime `q ≥ 6` at which
+  `κ(a_q)·q^j = ζ₁q^(2j+1) + ζ₂` with `ζᵢ` roots of unity. **The only
+  open content of this whole cluster is now one declaration further
+  down the cut**, `exists_frobValue_eq_rootOfUnity_mul_pow_single`:
+  Serre type `A₀` for a SINGLE character. Prime selection, the
+  `δ₁ ↔ δ₂` swap and the complementary-weight relation `n₁ + n₂ = 1`
+  are all proven there;
 * `exists_complex_of_heckeCoeff_eq_rootOfUnity_mul_pow` — **PROVEN**:
   transfers that identity from `ℚ̄_p` to `ℂ` *at the tautological
   embedding*, via the integral closure and `IsAlgClosed.lift`;
@@ -40715,9 +42567,82 @@ structure ModularTateGaloisData (M : ℕ) where
           (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
         (q : AlgebraicClosure ℚ_[p]) * pair x y
 
-/-- **The rational Hecke algebra is a FROBENIUS algebra** (sorry leaf,
-the TWELFTH decomposition, 2026-07-27): `𝕋_ℚ ⊗ ℚ̄_p` carries a `ℚ̄_p`-linear
-functional `θ` whose trace form `(a, b) ↦ θ(ab)` is nondegenerate.
+/-- **`𝕋_ℚ` ITSELF IS A FROBENIUS `ℚ`-ALGEBRA** (sorry leaf, the
+THIRTEENTH decomposition, 2026-07-27): the honest rational Hecke algebra
+`modularHeckeAlgebraQ M ⊆ End_ℂ S₂(Γ₀(M))` carries a `ℚ`-linear
+functional whose trace form `(a, b) ↦ θ(ab)` is nondegenerate.
+
+THIS IS THE SAME MATHEMATICS AS `exists_frobeniusForm_modularTateFrame`
+BELOW, WITH `ℚ̄_p` AND THE TENSOR PRODUCT REMOVED. That leaf is now glue
+over this one via `tensorFunctional_frobenius`
+(`Modularity/HeckeFrameForm.lean`), which base-changes a Frobenius form
+along any field extension: pick a `ℚ`-basis `eᵢ` of `𝕋_ℚ` and the family
+`tⱼ` dual to it under the (injective, hence bijective) map
+`x ↦ θ(x · −) : 𝕋_ℚ → 𝕋_ℚ^∨`; then the `ℚ̄_p`-coordinates of any
+`a ∈ ℚ̄_p ⊗ 𝕋_ℚ` are read off as `θ_{ℚ̄_p}(a · (1 ⊗ tⱼ))`, so a killing
+`a` is zero. That argument needs `𝕋_ℚ` finite-dimensional
+(`finiteDimensional_modularHeckeAlgebraQ`) and commutative
+(`modularHeckeAlgebraQ_mul_comm`), both PROVEN.
+
+WHY STATE IT OVER `ℚ` RATHER THAN OVER `ℚ̄_p`. Three reasons, and the
+first is the only one that matters mathematically:
+
+1. It is the CLASSICAL statement. "The Hecke algebra is Gorenstein",
+   equivalently "`S₂(Γ₀(M))` is free of rank one over `𝕋`", is a
+   statement about the rational algebra (Mazur, *Modular curves and the
+   Eisenstein ideal*, ch. II §15; Ribet, *Invent. Math.* 100 (1990),
+   §2). It is TRUE over `ℚ`: the `q`-expansion pairing
+   `𝕋_ℚ × S₂(Γ₀(M); ℚ) → ℚ`, `(T, f) ↦ a₁(Tf)`, is perfect
+   (Diamond–Shurman §5.5), so `𝕋_ℚ^∨ ≅ S₂(Γ₀(M); ℚ)`, and freeness of
+   rank one identifies that with `𝕋_ℚ`.
+2. It is a genuine STRENGTHENING of the `ℚ̄_p` form (base change goes
+   only one way, and the reverse — descent of a Frobenius form along a
+   field extension — is a separate Zariski-density argument that is NOT
+   formalized here; see the note below). Strengthening is sound because
+   the strengthened statement is the true classical one.
+3. Every object in it is already in this file's cone as a concrete
+   definition, with no `AlgebraicClosure ℚ_[p]` instance paths to fight.
+
+WHAT A SUCCESSOR SHOULD KNOW BEFORE STARTING. The obvious route through
+the `ℂ`-side material of this file — `modularHeckeAlgebraQ_linearIndependent_complex`
+embeds `ℂ ⊗_ℚ 𝕋_ℚ` faithfully in `End_ℂ S₂(Γ₀(M))`, and Atkin–Lehner
+theory decomposes `S₂ ⊗ ℂ` into oldform blocks that are cyclic over the
+corresponding factors of `𝕋` — produces a Frobenius form over `ℂ`, not
+over `ℚ`. Going from there to here needs DESCENT, and descent is a real
+obligation, not a formality:
+
+  *Frobenius descent.* Fix a `k`-basis of `A₀`; `θ ↦ det (θ(eᵢeⱼ))` is a
+  homogeneous polynomial function on `A₀^∨ ≅ k^n`, defined over `k` and
+  unchanged by base change. A Frobenius form over `K` is a `K`-point
+  where it is nonzero, hence the polynomial is not identically zero,
+  hence (as `k = ℚ` is infinite) it has a `k`-point where it is nonzero.
+
+That is the check that would justify attacking the `ℂ` side first. If a
+successor formalizes it, the statement below can be REPLACED by its `ℂ`
+analogue with no change to any consumer, since the glue below only needs
+*some* base field over which `𝕋_ℚ` is Frobenius.
+
+NON-VACUITY is inherited verbatim from the leaf below: `θ = 0` fails at
+once, and so does any `θ` vanishing on a nonzero ideal, because what is
+demanded is nondegeneracy of the TRACE form and not mere non-vanishing
+of `θ`. `M = 1` is the one degenerate case and it is honest rather than
+vacuous — `S₂(Γ₀(1)) = 0`, so `𝕋_ℚ = 0` and `θ = 0` discharges it. -/
+theorem exists_frobeniusForm_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M) :
+    ∃ θ : ↥(modularHeckeAlgebraQ M) →ₗ[ℚ] ℚ,
+      ∀ a : ↥(modularHeckeAlgebraQ M),
+        (∀ b : ↥(modularHeckeAlgebraQ M), θ (a * b) = 0) → a = 0 :=
+  sorry
+
+/-- **The rational Hecke algebra is a FROBENIUS algebra** (opened as a
+sorry leaf by the TWELFTH decomposition, 2026-07-27; PROVEN the same day
+as glue over `exists_frobeniusForm_modularHeckeAlgebraQ` above by the
+THIRTEENTH): `𝕋_ℚ ⊗ ℚ̄_p` carries a `ℚ̄_p`-linear functional `θ` whose
+trace form `(a, b) ↦ θ(ab)` is nondegenerate.
+
+Everything below describes the MATHEMATICS of this statement and is
+unchanged; what changed is only where it is now demanded. The content
+has moved one step up, to the same statement about `𝕋_ℚ` over `ℚ`, and
+this declaration is base change (`tensorFunctional_frobenius`).
 
 THIS IS THE WHOLE OF THE PAIRING SIDE OF `ModularTateGaloisData`, AND IT
 CONTAINS NO GALOIS THEORY AND NO MODULAR CURVE. The four fields `pair`,
@@ -40787,13 +42712,87 @@ theorem exists_frobeniusForm_modularTateFrame {M : ℕ} (hM : 0 < M) :
         AlgebraicClosure ℚ_[p],
       ∀ a : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
         (∀ b : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
-          θ (a * b) = 0) → a = 0 :=
+          θ (a * b) = 0) → a = 0 := by
+  haveI : FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+    finiteDimensional_modularHeckeAlgebraQ hM
+  obtain ⟨θ, hθ⟩ := exists_frobeniusForm_modularHeckeAlgebraQ hM
+  refine ⟨tensorFunctional (F := AlgebraicClosure ℚ_[p]) θ, ?_⟩
+  exact tensorFunctional_frobenius (F := AlgebraicClosure ℚ_[p])
+    (fun a b => Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2)) θ hθ
+
+/-- **EICHLER–SHIMURA, IN DETERMINANT FORM** (sorry leaf, the THIRTEENTH
+decomposition, 2026-07-27): the Galois action on `(𝕋_ℚ ⊗ ℚ̄_p)²` with the
+congruence relation, and the Weil-pairing multiplier written as the
+DETERMINANT condition `det (τJ Frob_q) = q` rather than through a
+pairing.
+
+This is `exists_galoisRep_modularTateSpace` below with the pairing
+removed from both its hypotheses and its conclusion. That leaf's own
+docstring already recommended attacking this form; the reduction is now
+formalized, so nothing here is a claim about a route — it is glue that
+compiles.
+
+WHAT CHANGED, PRECISELY. `pair_frob` said `⟨τJ γ x, τJ γ y⟩ = q ⟨x, y⟩`
+for a supplied form. Since `τJ γ` commutes with the Hecke operators and
+those generate the multiplication algebra of `A := 𝕋_ℚ ⊗ ℚ̄_p`
+(`adjoin_frameAction_eq_range`), `τJ γ` is `A`-linear on the free
+rank-two module `A²`, hence a `2 × 2` matrix over `A` whose columns are
+the images of the standard frame. `frameSymplectic_map_of_commuting`
+(`Modularity/HeckeFrameForm.lean`) then computes
+
+  `⟨τJ γ x, τJ γ y⟩ = θ (det (τJ γ) · (x₀y₁ − x₁y₀))`,
+
+so `pair_frob` at `q` is exactly `θ ((det − q) · z) = 0` for all `z` in
+the image of `(x, y) ↦ x₀y₁ − x₁y₀`, which is all of `A`. The condition
+below is that determinant identity, and it mentions no form at all.
+
+THE THREE CLAUSES, in the language of the seven missing theories listed
+in `ModularTateGaloisData`, are unchanged from the leaf below: this is
+still items **4** and **6** — Hecke correspondences with `ℚ`-models
+(Diamond–Shurman §7.9, §8.5) and the Eichler–Shimura congruence relation
+(Igusa; D–S Theorems 8.6.1 and 8.7.2) — together with the fact that the
+Weil pairing on `J₀(M)[p^∞]` has multiplier the cyclotomic character.
+Nothing has been weakened: the leaf below is *equivalent* to this one
+given the Frobenius form, by the "only if" direction now proved as
+`exists_frameSymplectic_of_alternating`.
+
+WHERE THE DETERMINANT CLAUSE COMES FROM GEOMETRICALLY, and why it is the
+right thing to ask a successor for: the Weil pairing
+`V_p J₀(M) × V_p J₀(M) → ℚ_p(1)` is Galois-equivariant with multiplier
+the cyclotomic character, and `χ_cyc(Frob_q) = q` at a good prime `q`.
+That is the same statement, in the same shape, as the PROVEN
+`det_galoisRep_eq_cyclotomic` for elliptic curves in
+`Fermat/FLT/EllipticCurve/WeilPairing.lean` — so a successor has a
+worked precedent for the multiplier half, and the genuinely missing
+input is the Jacobian's Tate module and its Hecke correspondences, not
+the pairing formalism. -/
+theorem exists_galoisRep_modularTateFrame_det {M : ℕ} (hM : 0 < M) :
+    ∃ (τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M))
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      (∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+        modularTatePadic (p := p) M (modularTateGen M m) * τJ γ =
+          τJ γ * modularTatePadic (p := p) M (modularTateGen M m)) ∧
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+          - modularTatePadic (p := p) M (modularTateGen M q) *
+            τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + (q : AlgebraicClosure ℚ_[p]) • 1 = 0) ∧
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₁ 0 *
+              τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₂ 1 -
+            τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₂ 0 *
+              τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) frameBasis₁ 1 =
+          (q : AlgebraicClosure ℚ_[p]) •
+            (1 : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))) :=
   sorry
 
-/-- **The Galois residue of the geometric leaf** (sorry leaf, the
-TWELFTH decomposition, 2026-07-27): given the pairing, the Galois action
-on the concrete Tate space with the Eichler–Shimura congruence and the
-Frobenius multiplier.
+/-- **The Galois residue of the geometric leaf** (PROVEN 2026-07-27 as
+glue over `exists_galoisRep_modularTateFrame_det`; until then it was
+itself a sorry leaf of the TWELFTH decomposition): given the pairing,
+the Galois action on the concrete Tate space with the Eichler–Shimura
+congruence and the Frobenius multiplier.
 
 This is what is left of `ModularTateGaloisData` once the pairing side is
 removed, and it is EXACTLY items **4** and **6** of that structure's
@@ -40840,7 +42839,19 @@ A successor should attack the determinant form, not this statement: it
 is smaller, it is what the geometry actually produces (the Weil pairing
 of `J₀(M)` has multiplier the cyclotomic character), and it is the same
 shape as the PROVEN `det_galoisRep_eq_cyclotomic` for elliptic curves in
-`Fermat/FLT/EllipticCurve/WeilPairing.lean`. -/
+`Fermat/FLT/EllipticCurve/WeilPairing.lean`.
+
+**DONE, 2026-07-27 (THIRTEENTH decomposition).** That advice is now
+carried out: this statement is glue over
+`exists_galoisRep_modularTateFrame_det` below, which IS the determinant
+form, and the elimination of `θ` sketched above is formalized rather
+than asserted — see `exists_frameSymplectic_of_alternating` and
+`frameSymplectic_map_of_commuting` in `Modularity/HeckeFrameForm.lean`.
+Note that `_hnondeg` is NOT consumed by the glue: `pair_frob` follows
+from `det = q` for *any* alternating Hecke-self-adjoint form, degenerate
+or not. It is kept in the signature because the consumer
+`nonempty_modularTateGaloisData` supplies it and the interface is
+cheaper to leave alone than to renegotiate. -/
 theorem exists_galoisRep_modularTateSpace {M : ℕ} (hM : 0 < M)
     (pair : modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
       modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p])
@@ -40867,8 +42878,52 @@ theorem exists_galoisRep_modularTateSpace {M : ℕ} (hM : 0 < M)
         ∀ x y : modularTateSpace (p := p) M,
           pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
               (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
-            (q : AlgebraicClosure ℚ_[p]) * pair x y) :=
-  sorry
+            (q : AlgebraicClosure ℚ_[p]) * pair x y) := by
+  classical
+  have hcomm : ∀ x y : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M),
+      x * y = y * x :=
+    mul_comm_tensor fun a b =>
+      Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2)
+  have hgenset : Algebra.adjoin ℚ
+      {x : ↥(modularHeckeAlgebraQ M) | ∃ n : ℕ, n.Prime ∧ x = modularTateGen M n} = ⊤ :=
+    adjoin_modularTateGen_eq_top M
+  -- Self-adjointness upgrades from the Hecke generators to every element of
+  -- `𝕋_ℚ ⊗ ℚ̄_p`, because those generate it (`adjoin_includeRight_eq_top`).
+  have hadj : ∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (x y : modularTateSpace (p := p) M),
+      pair (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+          (T := ↥(modularHeckeAlgebraQ M)) r x) y =
+        pair x (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+          (T := ↥(modularHeckeAlgebraQ M)) r y) := by
+    refine forall_frameMul_selfAdjoint hcomm pair _ hgenset ?_
+    rintro s ⟨n, hn, rfl⟩ x y
+    exact _hhecke n hn x y
+  -- Hence `pair` IS `frameSymplectic θ`, which is the converse direction the
+  -- section note of `HeckeFrame.lean` records and this cut depends on.
+  obtain ⟨θ, hθ⟩ := exists_frameSymplectic_of_alternating pair _hself hadj
+  obtain ⟨τJ, S, hheckecomm, hcong, hdet⟩ :=
+    exists_galoisRep_modularTateFrame_det (p := p) hM
+  refine ⟨τJ, S, hheckecomm, hcong, ?_⟩
+  intro q hq hqS x y
+  -- `τJ (Frob_q)` is `𝕋_ℚ ⊗ ℚ̄_p`-linear, again by propagation from the
+  -- generators, so the multiplier formula applies to it.
+  have hlin : ∀ (r : (AlgebraicClosure ℚ_[p]) ⊗[ℚ] ↥(modularHeckeAlgebraQ M))
+      (z : modularTateSpace (p := p) M),
+      τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+            (T := ↥(modularHeckeAlgebraQ M)) r z) =
+        frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+          (T := ↥(modularHeckeAlgebraQ M)) r
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) z) := by
+    refine commute_frameMul_of_adjoin
+      (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)) _ hgenset ?_
+    rintro s ⟨n, hn, rfl⟩ z
+    have h := congrArg
+      (fun f : Module.End (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M) => f z)
+      (hheckecomm n (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat))
+    exact h.symm
+  rw [hθ, hθ, frameSymplectic_map_of_commuting hcomm θ _ hlin, hdet q hq hqS,
+    smul_mul_assoc, one_mul, map_smul, frameSymplectic_apply, smul_eq_mul]
 
 /-- **Inhabitation of the residual arithmetic** (PROVEN 2026-07-27 as
 glue over the two leaves of the TWELFTH decomposition; until then it was
@@ -44807,9 +46862,35 @@ theorem localInertia_two_sq_eq_zero_of_padic_inertia_sq_eq_zero
     simp only [mul_assoc]
   rw [h1, ha', mul_one, ← pow_two, hN, mul_zero, zero_mul]
 
-/-- **The wild inertia is pro-`ℓ`: an `n`-th root exists INSIDE `P_v`
-whenever `n` is prime to the residue characteristic** (SORRY LEAF, cut
-2026-07-27). This is STEP 3 of the four-step route recorded on
+/-!
+### STEP 3 lives in `ArtinConductor.lean` now
+
+**`exists_pow_eq_of_mem_wildInertiaGroup` was HOISTED out of this file on
+2026-07-27**, to `Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`,
+beside `wildInertiaGroup` itself — which is where its own docstring said
+it belonged, and the hoist was cheap while the declaration was new. This
+file `public import`s that module, so the consumer below still refers to
+it by the same unqualified name.
+
+It was also DECOMPOSED in the move, and it is **no longer a sorry leaf**:
+the profinite half (`exists_pow_eq_of_forall_openNormal`), the
+finite-level step (`exists_pow_mem_of_coprime_card_quotient`), the
+neighbourhood basis (`exists_openNormal_subset_of_mem_nhds_one`) and the
+closedness of `P_v` (`isClosed_wildInertiaGroup`) are all PROVEN there,
+and `exists_pow_eq_of_mem_wildInertiaGroup` is their assembly. Exactly
+ONE leaf remains on the route, `coprime_card_quotient_wildInertiaGroup`
+("the wild inertia is pro-`ℓ`"), which is the purely arithmetic half and
+the genuine local-field-theory subtree.
+
+The old docstring is preserved below for the mathematical content it
+records, with its status corrected.
+-/
+
+/- **The wild inertia is pro-`ℓ`: an `n`-th root exists INSIDE `P_v`
+whenever `n` is prime to the residue characteristic** (HOISTED and
+DECOMPOSED 2026-07-27 — see the note above; the statement now lives in
+`ArtinConductor.lean` and is PROVEN there modulo the pro-`ℓ` leaf). This
+is STEP 3 of the four-step route recorded on
 `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` below, and after that cut
 it is the ONLY step still open there — steps 1, 2 and 4 are proven.
 
@@ -44826,48 +46907,47 @@ Note the conclusion must place `θ` back in `P_v`, not merely in `I_v`:
 the consumer iterates this lemma to extract a `pᵏ`-th root, and an
 `I_v`-valued root would break the induction at the second step.
 
-WHAT IS MISSING, and it is a genuine subtree rather than a lemma. The
-statement splits cleanly in two, and only the first half is arithmetic:
+HOW IT SPLIT, 2026-07-27. The statement divides cleanly in two, and only
+the first half is arithmetic — the cut in `ArtinConductor.lean` is
+exactly along this seam, and the SECOND half is now proven:
 
 * `P_v` is pro-`ℓ`, i.e. every finite continuous quotient of
   `Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)` has `ℓ`-power order. This is local field theory:
   the residue field of `Kᵥᵗᵃᵐᵉ` is separably closed and its value group
   is `n`-divisible for every `n` prime to `ℓ`, so a finite extension of
   `Kᵥᵗᵃᵐᵉ` has trivial residue extension and ramification index an
-  `ℓ`-power.
+  `ℓ`-power. STILL OPEN, as
+  `coprime_card_quotient_wildInertiaGroup` — the one remaining leaf on
+  this route, and a genuine subtree rather than a lemma.
 * In a profinite group all of whose finite quotients have `ℓ`-power
   order, `x ↦ xⁿ` is surjective for `ℓ ∤ n`. This half is pure profinite
-  group theory and carries no arithmetic at all.
+  group theory and carries no arithmetic at all. **PROVEN**, as
+  `exists_pow_eq_of_forall_openNormal` (Cantor's intersection theorem
+  over the open normal subgroups) together with
+  `exists_pow_mem_of_coprime_card_quotient` at the finite level.
 
 VERIFIED ABSENT 2026-07-27, and here is the check that would refute it:
 `grep -rn "IsProP\|pro_p\|ProfiniteGrp" Fermat/ .lake/packages/mathlib/`
 plus `~/cs/FLT`. Mathlib's `Topology/Algebra/Category/ProfiniteGrp/` has
 only `Basic`, `Completion` and `Limits` — no Sylow theory for
 topological groups, no pro-`ℓ` predicate — and mathlib's
-`RamificationGroup.lean` is 54 lines ending in a TODO with zero
-`ramificationGroup` hits library-wide. Neither this project nor
-`~/cs/FLT` defines "pro-`ℓ`" anywhere. If a later release adds a pro-`ℓ`
-predicate with the finite-quotient characterisation, this leaf reduces
-to the two bullets above and nothing else.
+`RamificationGroup.lean` defines only `decompositionSubgroup` and
+`inertiaSubgroup`, ending in a TODO for the higher ramification groups.
+Neither this project nor `~/cs/FLT` defines "pro-`ℓ`" anywhere. This
+remains true of the arithmetic half; it is no longer a reason to treat
+the whole statement as opaque.
 
-The closest EXISTING approximation in this tree is
-`exists_mem_localInertiaGroup_pow_pro_of_forall_finite_level` (above in
-this file). It delivers only a pro-statement (`∀ open H, ∃ n, … ∈ H`)
-rather than an equality of group elements, so it does not discharge this
-leaf as stated — but it is the right template for the compactness half.
-
-This is stated for a general number field and place so that it can be
-hoisted to `ArtinConductor.lean`, next to `wildInertiaGroup` itself,
-once it has an owner; it is parked here only because that is where its
-single consumer lives. -/
-theorem exists_pow_eq_of_mem_wildInertiaGroup {K : Type*} [Field K]
-    [NumberField K]
-    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers K))
-    {n : ℕ} (hn : (n : NumberField.RingOfIntegers K) ∉ v.asIdeal)
-    {σ : Field.absoluteGaloisGroup (v.adicCompletion K)}
-    (hσ : σ ∈ wildInertiaGroup v) :
-    ∃ θ ∈ wildInertiaGroup v, θ ^ n = σ :=
-  sorry
+CORRECTION to a claim this docstring used to make: the compactness half
+was said to need a template. It did not — the topological inputs were
+already in the tree and are what made it fall in one pass. `P_v` is
+closed because `ContinuousSMulDiscrete` (from
+`Fermat/FLT/Deformations/RepresentationTheory/IntegralClosure.lean`)
+makes `{σ | σ • x = y}` open for every `x, y` of the integral closure,
+so both `localInertiaGroup` and `tameFixingSubgroup` are intersections
+of CLOPEN conditions; and open normal subgroups are a neighbourhood
+basis of `1` by mathlib's `krullTopology_mem_nhds_one_iff_of_normal`,
+whose intermediate field is Galois here because `Kᵥ` has characteristic
+zero. -/
 
 /-- **STEP 4 of the at-`2` wild half: an infinitely `p`-divisible value
 of `σ ↦ τσ − 1` VANISHES** (PROVEN 2026-07-27). This is the step that
@@ -44895,8 +46975,10 @@ to `0` and `ev x = 0`. Ranging over `u` and `i` gives `x = 0`.
 Note the hypothesis does NOT constrain `θ` to the wild inertia: the
 bound is uniform over all of `Γ Kᵥ`, so the compactness argument never
 needs to know where `θ` came from. That is deliberate — it keeps this
-lemma independent of the one genuinely missing input, the pro-`2` leaf
-`exists_pow_eq_of_mem_wildInertiaGroup` above. -/
+lemma independent of the one genuinely missing input, the pro-`2`
+statement `exists_pow_eq_of_mem_wildInertiaGroup` (since 2026-07-27 in
+`ArtinConductor.lean`, and PROVEN there modulo its own pro-`ℓ` leaf
+`coprime_card_quotient_wildInertiaGroup`). -/
 theorem eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
@@ -44987,14 +47069,17 @@ Fields* IV §2; this is the residual local content of the at-`2` wild
 half, and the ONLY thing that still stands between `hsq` and
 `Sw₂(τ) = 0`).
 
-STATUS after the 2026-07-27 cut. The four-step route below is now
-written out in full, and steps **1, 2 and 4 are PROVEN right here**. The
-single remaining input is step 3, cut out as the sorry leaf
-`exists_pow_eq_of_mem_wildInertiaGroup` above — the assertion that the
-wild inertia is pro-`ℓ`, which is the one piece of genuine local field
-theory this tree does not have. Nothing else in this proof is open, and
-in particular the analytic step 4, which the previous owner recorded as
-the delicate one, is discharged by
+STATUS after the 2026-07-27 cut, updated the same day. The four-step
+route below is written out in full, and steps **1, 2 and 4 are PROVEN
+right here**. Step 3 was cut out as `exists_pow_eq_of_mem_wildInertiaGroup`
+and then HOISTED to `ArtinConductor.lean` and decomposed there, so it is
+no longer a leaf either: its profinite half, its finite-level step, and
+the two topological side conditions are all proven, and the single thing
+still open on the whole route is the purely arithmetic
+`coprime_card_quotient_wildInertiaGroup` — "the wild inertia is pro-`ℓ`",
+the one piece of genuine local field theory this tree does not have.
+Nothing else in this proof is open, and in particular the analytic step
+4, which an earlier owner recorded as the delicate one, is discharged by
 `eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one` above.
 
 `GaloisRep.IsTamelyRamifiedAt τ v₂` says the WILD inertia
@@ -45020,9 +47105,11 @@ every `σ ∈ I₂` (this is `hloc`):
 3. *`P₂` is pro-`2`*, so for every `n` prime to `2` the `n`-th power map
    is a bijection on it; in particular every `σ ∈ P₂` is a `p`-th power
    in `P₂` (here `p` is ODD — this is the ONLY use of `hpodd`).
-   Iterating, `N(σ) ∈ pᵏ · N(P₂)` for every `k`. This is the sorry leaf
-   `exists_pow_eq_of_mem_wildInertiaGroup` above, and `hpodd` enters the
-   present proof only through its side condition `(p : 𝓞 ℚ) ∉ v₂`.
+   Iterating, `N(σ) ∈ pᵏ · N(P₂)` for every `k`. This is
+   `exists_pow_eq_of_mem_wildInertiaGroup` (in `ArtinConductor.lean`
+   since 2026-07-27, and proven there modulo the pro-`ℓ` leaf), and
+   `hpodd` enters the present proof only through its side condition
+   `(p : 𝓞 ℚ) ∉ v₂`.
 4. *`N(P₂)` is BOUNDED*, being the continuous image of the compact `P₂`
    in `(ℚ̄_p, +)`. Bounded and infinitely `p`-divisible forces
    `N(σ) = 0`, i.e. `τσ = 1`.
@@ -45315,10 +47402,11 @@ vacuously true — `τ` unramified at `2` satisfies `hsq` and has
 case is the Steinberg configuration (`τ` RAMIFIED at `2`, inertia acting
 by a nontrivial transvection, e.g. `V₅(E)` for `E/ℚ` of conductor `14`),
 where `τ` is genuinely ramified at `2` — so the vanishing is NOT read
-off the unramified branch, and `swanExponent` would reduce to the opaque
-`swanExponentAux` were the wild inertia not shown to act trivially. That
-is exactly the content the proof supplies, and it is why the statement
-is not vacuous. -/
+off unramifiedness. The `if` in `swanExponent` branches on TAMENESS, and
+in that configuration it fires only because the wild inertia is shown to
+act trivially; without that, `swanExponent` reduces to the opaque
+`swanExponentAux`. Supplying it is exactly what the proof does, and it
+is why the statement is not vacuous. -/
 theorem swanExponent_two_eq_zero_of_inertia_sq_eq_zero
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
@@ -46600,14 +48688,95 @@ the `s = 1` shape the audit below shows ramification cannot exclude:
 Cross-checked in Magma: over the degree-`72` field defined by `h`,
 `Factorization(Y³ − 3)` returns one irreducible factor of degree `3`.
 
-THE CHECK THAT WOULD REFUTE THIS SECOND ITEM, stated because a bare
-"family ruled out" is not refutable: the computation above covers
-`ℚ_3(x)` for ONE primitive `9`-torsion point, not the full
-`ℚ_3(F[9])`, which is its Galois closure and has degree up to
-`|GL₂(ℤ/9)| = 3888`. A Magma `SplittingField` of `[9](X)/X` did not
-finish in 9 minutes and was abandoned; whether `3^{1/3} ∈ ℚ_3(F[9])`
-is therefore still OPEN, and a positive answer would REFUTE this leaf.
-That is the single cheapest experiment a next owner can run.
+THAT OPEN CHECK IS NOW **RESOLVED, NEGATIVELY** — AND THE WHOLE
+LUBIN–TATE FAMILY IS RULED OUT AT `s = 1`, FOR EVERY `p` AND EVERY `n`
+(twelfth owner, 2026-07-27; structural, no CAS needed, and it also
+retires the abandoned Magma `SplittingField` run). The paragraph that
+stood here recorded `3^{1/3} ∈ ℚ_3(F[9])` as OPEN, because the
+computation above covers `ℚ_3(x)` for ONE primitive `9`-torsion point
+rather than the full Galois closure `ℚ_3(F[9])`, whose degree it
+bounded by `|GL₂(ℤ/9)| = 3888`. Both halves of that are superseded.
+
+**The degree bound was far too generous.** `f(X) = 3X + X⁹` satisfies
+the Lubin–Tate conditions for the UNRAMIFIED QUADRATIC extension
+`ℚ_9 = W(𝔽_9)[1/3]`: `𝒪 = ℤ_9`, `π = 3`, `q = 9`, `f ≡ πX` mod
+`deg 2` and `f ≡ X^q` mod `π`. So `F` is the LT formal `ℤ_9`-module
+for `(ℚ_9, 3)`, of height 1 over `ℤ_9` and hence height 2 over `ℤ_3`,
+and it is defined over `ℤ_3` because `f` is. Consequently
+`L := ℚ_9(F[9]) = ℚ_9(F[π²])` is ABELIAN over `ℚ_9` with
+`Gal(L/ℚ_9) ≅ (ℤ_9/9)ˣ` of order `81 − 9 = 72`, acting simply
+transitively on the 72 primitive points; so `L = ℚ_9(x)` for the very
+`x` used above, `[L : ℚ_3] = 144`, and
+
+    ℚ_3(F[9]) ⊆ L,     [ℚ_3(F[9]) : ℚ_3] ∣ 144,
+
+not 3888. (The image of `Γ_{ℚ_3}` lands in the normaliser of the
+nonsplit Cartan `(ℤ_9/9)ˣ ⋊ Gal(ℚ_9/ℚ_3)`, which is why.)
+
+**The refutation then dies on upper numbering, in one line.** Lubin–Tate
+theory gives the upper ramification breaks of `E(F[π^n])/E` exactly:
+`G^{(u)} = U^{(i)}/U^{(n)}` for `i − 1 < u ≤ i` (Serre, *Local Fields*
+XV §2), so the breaks are `0, 1, …, n − 1` and `G^{(u)} = 1` for
+`u > n − 1`. At `n = 2`: `G^{(u)} = 1` for `u > 1`. And the upper
+filtration of `L/ℚ_3` COINCIDES with that of `L/ℚ_9`, because
+`ℚ_9/ℚ_3` is unramified: `L/ℚ_9` is totally ramified of degree
+`72 = e(L/ℚ_3)`, so `G_0(L/ℚ_3) = Gal(L/ℚ_9)`, the lower groups
+`G_i = {σ : v_L(σa − a) ≥ i + 1}` are literally the same subgroups for
+every `i ≥ 0`, hence so is `φ` and hence so is `G^{(u)}`. Therefore
+
+    max upper break of `L/ℚ_3` = 1.
+
+But `ℚ_3(μ_3, 3^{1/3})` has max upper break `φ(3) = 3/2` (the très
+ramifiée computation above: `d = 11`, `G_0 = S₃`, `G_1 = G_2 = G_3 =
+ℤ/3`, `G_4 = 1`). Upper numbering passes to QUOTIENTS (Herbrand), so
+no subfield of `L` can have a break above 1.
+
+Now run the contradiction INSIDE `L`, not inside `ℚ_3(F[9])` — that is
+what keeps the argument free of any determinant/Weil-pairing input.
+`L/ℚ_3` is Galois (`ℚ_9/ℚ_3` is, and `F[9]` is a `Γ_{ℚ_3}`-stable set
+because `f ∈ ℤ_3[[X]]`). So if `3^{1/3} ∈ ℚ_3(F[9]) ⊆ L`, then `L`
+contains every conjugate of `3^{1/3}`, hence `μ_3`, hence the whole of
+`ℚ_3(μ_3, 3^{1/3})` — a subfield of break `3/2 > 1`. Contradiction.
+**So `3^{1/3} ∉ ℚ_3(F[9])`: the height-2 Lubin–Tate family produces no
+counterexample at `n = 2`, and this leaf survives it.**
+
+INDEPENDENT NUMERICAL CONFIRMATION of the filtration used (arithmetic
+only, from the Eisenstein `h` above, so it does not reuse the LT
+theorem it checks). With `v(x) = 1`, `v(3) = 72`, `g(X) = X⁹ + 3X`:
+`v(g(x)) = 9` (matching `π⁸ = −3`), and `g'(x) = 9x⁸ + 3 = 3(3x⁸ + 1)`
+with `3x⁸ + 1` a unit, so `v(g'(x)) = 72`. From
+`h'(X) = 8·g(X)⁷·g'(X)` the different exponent is
+`d = 7·9 + 72 = 135`. That is exactly `Σ_i (|G_i| − 1)` for
+`G_0 = 72`, `G_1 = ⋯ = G_8 = 9`, `G_9 = 1` — i.e. `71 + 8·8 = 135` —
+whose Herbrand transform is `φ(8) = (9/72)·8 = 1`. Max upper break 1,
+as claimed.
+
+**GENERALISATION, and this is the part worth carrying forward.** The
+argument used nothing special about `p = 3` or `n = 2`. For any `E`
+unramified over `ℚ_p` and any LT module for `(E, p)`, the field
+`ℚ_p(F[p^n])` has max upper break `n − 1` — the SAME as `ℚ_p(μ_{p^n})`,
+and short of Fontaine's threshold `n − 1 + 1/(p−1)` by exactly the
+constant `1/(p−1)`. Combining with the level-`j` très ramifiée core
+computed in the next block (`j = n − s`, top break `j + 1/(p−1)`):
+`ℚ_p(q^{1/p^n}) ⊆ ℚ_p(F[p^n])` forces
+`n − s + 1/(p−1) ≤ n − 1`, i.e. `s ≥ 1 + 1/(p−1)`. Hence
+
+* `s = 1` — **the whole Lubin–Tate family is excluded, every `p`,
+  every `n`.** In particular at `n = 2` it is excluded outright, since
+  `0 < s < n` leaves only `s = 1`.
+* `s ≥ 2` (so `n ≥ 3`) — NOT excluded by upper numbering. That, not
+  `n = 2`, is where a next counterexample search should go; the
+  smallest case is `p = 3`, `n = 3`, `s = 2`, i.e. `v₃(q) = 9m` with
+  `3 ∤ m` inside `ℚ_3(F[27])`.
+
+THE CHECK THAT WOULD REFUTE THE ABOVE: exhibit a subfield of
+`L = ℚ_9(F[π²])` with an upper ramification break exceeding 1; or show
+`f = 3X + X⁹` fails the Lubin–Tate conditions for `(𝒪, π, q) =
+(ℤ_9, 3, 9)`; or show `[L : ℚ_9] ≠ 72`, which would break the
+identification `L = ℚ_9(x)` and with it the different check `d = 135`.
+Any one of the three reopens `n = 2`. Note that NONE of them is a
+statement about `ℚ_3(F[9])` itself: the argument deliberately never
+computes that field, only the Galois `L` above it.
 
 WHY NO SHARPENING OF FONTAINE'S CONSTANT CAN CLOSE THE `s ≥ 1` CASE
 (third owner, 2026-07-26 — the structural form of the numerical gap the
@@ -47078,23 +49247,335 @@ theorem exists_zpow_of_pow_eq_of_tateTorsion_fixed
   have hval := congrArg (Units.val) hmain
   simpa [hru, hQu] using hval
 
+/-- **From "`σ` fixes `μ_N`" and "`σ` fixes ONE `N`-th root of `q` up to
+`q ^ ℤ`" to "`σ` fixes the `N`-torsion of `E_q`"** (PROVEN 2026-07-27 —
+the CONVERSE of `exists_zpow_of_pow_eq_of_tateTorsion_fixed` just above,
+and the assembly that makes the ELEVENTH cut below EXACT rather than
+lossy).
+
+Stated over a VARIABLE nonarchimedean local base field `k` and
+instantiated at `k = ℚᵖᵥ` below, for the instance-path reason recorded
+at the previous theorem.
+
+THE MATHEMATICS, and why the two inputs are exactly the right ones.
+Tate's uniformisation `Ωˣ ⧸ q ^ ℤ ≅ E_q(Ω)`
+(`WeierstrassCurve.exists_tateCurveEquivSepClosure`, PROVEN in
+`TateSepClosure.lean`) identifies the `N`-torsion of `E_q(Ω)` with the
+classes of those `u : Ωˣ` whose `N`-th power is an integer power of `q`.
+`TateSepClosure.lean`'s own module docstring states the consequence:
+"the `N`-torsion of `Ωˣ/qᶻ` is generated by the `N`-th roots of unity
+and (the classes of) the `N`-th roots of `q`". So the torsion is
+generated by TWO subgroups and no more, and `σ` fixes it exactly when it
+fixes each:
+
+* `μ_N ⊂ Ωˣ` — the CYCLOTOMIC half, arithmetic, with no elliptic curve
+  in it at all; and
+* the class of one `N`-th root `r` of `q` — the KUMMER half.
+
+Concretely, a torsion class is represented by `u` with `u ^ N = q ^ a`
+(`exists_rep_pow_eq_zpow_of_torsion`, PROVEN in `TateSepClosure.lean`),
+and then `ζ := u · r ^ (-a)` satisfies `ζ ^ N = q ^ a · q ^ (-a) = 1`,
+so `u = ζ · r ^ a` splits the representative into a cyclotomic and a
+Kummer part. Hence
+
+    σ u = σ ζ · (σ r) ^ a = ζ · (r · q ^ b) ^ a = u · q ^ (b a),
+
+so `σ u` and `u` have the SAME class in `Ωˣ ⧸ q ^ ℤ`, and equivariance
+of the uniformisation carries that to `σ P = P`.
+
+WHY ONE ROOT SUFFICES, which is the whole point. The hypothesis asks for
+a SINGLE `N`-th root `r` of `q` moved by `σ` inside `q ^ ℤ`, not for all
+of them. That costs nothing: any two `N`-th roots of `q` differ by an
+element of `μ_N`, which `hcyc` fixes, so the one-root form together with
+`hcyc` returns the all-roots form. Asking the geometric leaf below for
+one root only is what makes the cut EXACT — the cyclotomic content is
+carried by its own node rather than smuggled into the citation. -/
+theorem tateTorsion_fixed_of_cyclotomicFixed_of_exists_zpow
+    {k : Type*} [Field k] [ValuativeRel k] [TopologicalSpace k]
+    [IsNonarchimedeanLocalField k] [CharZero k]
+    (Ω : Type*) [Field Ω] [Algebra k Ω] [Algebra.IsSeparable k Ω]
+    [DecidableEq Ω]
+    (q : kˣ) (hq : ValuativeRel.valuation k (q : k) < 1) {N : ℕ} (hN : 0 < N)
+    (σ : Ω ≃ₐ[k] Ω)
+    (hcyc : ∀ ζ : Ω, ζ ^ N = 1 → σ ζ = ζ)
+    (r : Ω) (hrpow : r ^ N = algebraMap k Ω (q : k)) (b : ℤ)
+    (hrσ : σ r = r * (algebraMap k Ω (q : k)) ^ b)
+    (P : (((WeierstrassCurve.tateCurve ((q : k) : k))⁄Ω)).Point)
+    (hP : (N : ℤ) • P = 0) :
+    WeierstrassCurve.Affine.Point.map
+      (W' := WeierstrassCurve.tateCurve ((q : k) : k)) σ.toAlgHom P = P := by
+  classical
+  have hQ0 : algebraMap k Ω (q : k) ≠ 0 := by
+    rw [Ne, map_eq_zero]
+    exact Units.ne_zero q
+  have hr0 : r ≠ 0 := by
+    intro h
+    rw [h, zero_pow hN.ne'] at hrpow
+    exact hQ0 hrpow.symm
+  set Qu : Ωˣ := Units.map (algebraMap k Ω).toMonoidHom q with hQu
+  set ru : Ωˣ := Units.mk0 r hr0 with hru
+  have hruN : ru ^ N = Qu := by
+    apply Units.ext
+    simpa [hru, hQu] using hrpow
+  have hruσ : Units.map σ.toAlgHom.toRingHom.toMonoidHom ru = ru * Qu ^ b := by
+    apply Units.ext
+    simpa [hru, hQu] using hrσ
+  -- Tate's uniformisation of `E_q` over `Ω`
+  obtain ⟨e, he⟩ :=
+    WeierstrassCurve.exists_tateCurveEquivSepClosure (k := k) Ω q hq
+  set t : Additive (Ωˣ ⧸ Subgroup.zpowers Qu) := e.symm P with ht
+  have hPt : e t = P := e.apply_symm_apply P
+  have httor : (N : ℤ) • t = 0 := by
+    rw [ht, ← map_zsmul e.symm, hP, map_zero]
+  obtain ⟨u, a, hut, hupow⟩ :=
+    exists_rep_pow_eq_zpow_of_torsion Qu t httor
+  -- the cyclotomic part of the representative, `ζ = u · r ^ (-a)`
+  have hexp : (u * ru ^ (-a)) ^ N = u ^ N * (ru ^ N) ^ (-a) := by
+    rw [mul_pow, ← zpow_natCast (ru ^ (-a)) N, ← zpow_mul,
+      ← zpow_natCast ru N, ← zpow_mul, mul_comm (-a) (N : ℤ)]
+  have hζN : (u * ru ^ (-a)) ^ N = 1 := by
+    rw [hexp, hupow, hruN, ← zpow_add, add_neg_cancel, zpow_zero]
+  have hζfix : Units.map σ.toAlgHom.toRingHom.toMonoidHom (u * ru ^ (-a)) =
+      u * ru ^ (-a) := by
+    apply Units.ext
+    refine hcyc ((u * ru ^ (-a) : Ωˣ) : Ω) ?_
+    have hv := congrArg (Units.val) hζN
+    rwa [Units.val_pow_eq_pow_val, Units.val_one] at hv
+  have huζ : u = (u * ru ^ (-a)) * ru ^ a := by group
+  -- so `σ` moves `u` by an integer power of `q`
+  have huσ : Units.map σ.toAlgHom.toRingHom.toMonoidHom u =
+      u * Qu ^ (b * a) := by
+    conv_lhs => rw [huζ]
+    rw [map_mul, hζfix, map_zpow, hruσ, mul_zpow, ← zpow_mul, mul_assoc,
+      ← mul_assoc (ru ^ (-a)), ← zpow_add, neg_add_cancel, zpow_zero, one_mul]
+  have hclass : ((Units.map σ.toAlgHom.toRingHom.toMonoidHom u : Ωˣ) :
+      Ωˣ ⧸ Subgroup.zpowers Qu) = ((u : Ωˣ) : Ωˣ ⧸ Subgroup.zpowers Qu) := by
+    refine QuotientGroup.eq.mpr ?_
+    have hrw : (Units.map σ.toAlgHom.toRingHom.toMonoidHom u)⁻¹ * u =
+        Qu ^ (-(b * a)) := by
+      rw [huσ]
+      group
+    rw [hrw]
+    exact Subgroup.zpow_mem_zpowers _ _
+  rw [← hPt, ← hut, he σ u, hclass]
+
+/-- **The level-`k` kernel acts trivially on `p ^ n`-th roots of unity**
+(sorry leaf — the CYCLOTOMIC half of the 2026-07-27 ELEVENTH cut, and a
+node that contains NO modular-curve geometry whatsoever).
+
+WHAT THIS IS. If `σ ∈ G_{ℚ_p}` acts trivially on the level-`k` reduction
+`ρ ⊗ R ⧸ 𝔪 ^ k` of the lattice, and `p ^ n` is the exact characteristic
+of `R ⧸ 𝔪 ^ k`, then `σ` fixes `μ_{p ^ n}` pointwise.
+
+WHY IT IS TRUE, in the form a successor should follow. Three steps, none
+of them geometric:
+
+1. `hdet` says `det τ = χ_cyc` as characters of `G_ℚ`, and `e`/`he`
+   intertwine `τ` with `ρ ⊗ ℚ̄_p`, so `det ρ = χ_cyc` after `hlat`'s
+   injective `R → ℚ̄_p` (determinants are conjugation-invariant, so the
+   linear equivalence `e` contributes nothing).
+2. Triviality of `σ` at level `k` therefore forces
+   `χ_cyc(σ) ≡ 1 (mod 𝔪 ^ k)`. Now `CharP (R ⧸ 𝔪 ^ k) (p ^ n)` says
+   exactly that `ℤ ⧸ p ^ n ↪ R ⧸ 𝔪 ^ k`, so the congruence descends to
+   `χ_cyc(σ) ≡ 1 (mod p ^ n)` in `ℤ_p` — this is the ONLY place the
+   exact-exponent hypothesis is used, and it is why the hypothesis is
+   `CharP` and not "killed by `p ^ n`" (see the consumer's discussion).
+3. `σ` acts on `μ_{p ^ n}` through `ζ ↦ ζ ^ χ_cyc(σ)`, so `χ_cyc(σ) ≡ 1`
+   mod `p ^ n` gives `σ ζ = ζ`.
+
+WHAT IS MISSING, STATED AS A REFUTABLE CHECK rather than a verdict. Step
+3 needs the compatibility of `cyclotomicCharacter (AlgebraicClosure ℚ) p`
+with `cyclotomicCharacter (AlgebraicClosure ℚᵖᵥ) p` along the
+decomposition embedding `G_{ℚᵖᵥ} → G_ℚ` that `toLocal 𝔭ᵥ` uses. The grep
+that would settle it:
+`grep -rn 'cyclotomicCharacter' Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`
+— a compatibility lemma for a field embedding would close step 3 outright,
+and its absence is the only reason this is a leaf rather than a proof.
+
+FAITHFULNESS: this is IMPLIED BY the node it was split off from, so the
+cut adds no strength. Under Tate's uniformisation `μ_{p ^ n}` embeds in
+`E_q[p ^ n]` (a root of unity has `ζ ^ (p ^ n) = 1 ∈ q ^ ℤ`), so a `σ`
+fixing `E_q[p ^ n]` fixes the class of `ζ`, i.e. `σ ζ · ζ⁻¹ ∈ q ^ ℤ`;
+and `σ ζ · ζ⁻¹` is itself a `p ^ n`-th root of unity, while
+`q ^ ℤ ∩ μ = 1` because `v(q) < 1` makes `v(q ^ b) ≠ 1` for `b ≠ 0`.
+Hence `σ ζ = ζ`. -/
+theorem cyclotomicFixed_of_localLevelTrivial
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    {k n : ℕ}
+    (hchar : CharP (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) (p ^ n))
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1)
+    (ζ : AlgebraicClosure ℚᵖᵥ) (hζ : ζ ^ p ^ n = 1) :
+    (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) ζ = ζ :=
+  sorry
+
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
-OF THE TOWER, IN TORIC-CURVE FORM** (sorry leaf — THE residual
-AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-27 TATE-CURVE CUT of the
-tenth owner; Tilouine, *Hecke algebras and the Gorenstein property*, in
+OF THE TOWER, IN ONE-ROOT KUMMER FORM** (sorry leaf — THE residual
+AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-27 ELEVENTH cut;
+Tilouine, *Hecke algebras and the Gorenstein property*, in
 Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
 forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
 local–global compatibility at `p` in general; Deligne–Rapoport for the
 models of `X₀(Mp)`).
 
-THIS IS THE STATEMENT THE CITED GEOMETRY ACTUALLY PROVES. Under the
-consumer's hypotheses the restriction of `τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the
-Tate module of a curve `E_q` with purely TORIC reduction, so what the
-`p`-adic geometry delivers is an assertion about `E_q`'S TORSION: an
-element `σ` that acts trivially at level `k` of the `𝔪`-adic tower acts
-trivially on `E_q[p ^ n]`, where `p ^ n` is the exact characteristic of
-`R ⧸ 𝔪 ^ k`. The leaf says exactly that and nothing else.
+WHAT THE ELEVENTH CUT REMOVED FROM THIS LEAF. Its predecessor
+(`…_torsionFixed_…`, now PROVEN below) asked for the whole `p ^ n`-torsion
+of `E_q` to be fixed. By `TateSepClosure.lean`'s torsion analysis that
+group is generated by `μ_{p ^ n}` and the `p ^ n`-th roots of `q`, so the
+predecessor was carrying a CYCLOTOMIC assertion — that the level-`k`
+kernel acts trivially on `μ_{p ^ n}` — which is pure arithmetic and has
+nothing to do with `X₀(Mp)`. That half is now
+`cyclotomicFixed_of_localLevelTrivial` just above, and this leaf keeps
+only the Kummer half, for ONE root rather than all of them (all roots
+come back from one root plus the cyclotomic node; see
+`tateTorsion_fixed_of_cyclotomicFixed_of_exists_zpow`). The split is
+EXACT: the two leaves together are equivalent to the predecessor, neither
+stronger nor weaker.
+
+WHY `Valued.v q < 1` AND NOT `≠ 1`. Unchanged from the predecessor: `< 1`
+is the standard normalisation of the Tate parameter (Silverman, *ATAEC*
+V.3.1 — `E_q` is defined for `|q| < 1`, and `v(q) = -v(j) > 0` for a
+curve with multiplicative reduction) and is what the Tate-curve framework
+consumes. It IS formally stronger than the `≠ 1` the eventual consumer
+needs, which is recovered by `ne_of_lt`, and recording that is the honest
+accounting.
+
+WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT. The geometry:
+Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
+at the `p`-new part of `J₀(Mp)`, absent from this pin and from
+`~/cs/FLT`. `nonempty_modularTateGaloisData` above does NOT supply it,
+and this was checked rather than assumed: that leaf is about `J₀(M)` at
+GOOD primes — its `congruence` field is the Eichler–Shimura relation OFF
+the level — whereas what is needed here is the fibre at `p` itself, where
+the reduction is toric.
+
+THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
+`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — re-run 2026-07-27 by the
+eleventh owner, and the only hits are this docstring and the identical
+note in `ModularCurve/X0.lean`, i.e. still zero in signature position.
+
+WHY THE HYPOTHESIS IS `CharP … (p ^ n)` AND NOT `(p ^ n) = 0`
+(unchanged, and the point that makes this leaf FAITHFUL rather than
+convenient). The consumer's tower is indexed by the IDEALS `𝔪 ^ k`, but
+Serre's criterion is indexed by the EXPONENT `p ^ n` of the module, and
+the two are NOT interchangeable when `R ≠ ℤ_p`: demanding both
+`p ^ n ∈ 𝔪 ^ k` and `𝔪 ^ k ⊆ p ^ n R` would force `𝔪 ^ k = p ^ n R`,
+which holds only for `R = ℤ_p`. What is true is that `n` may be taken to
+be the EXACT exponent of `R ⧸ 𝔪 ^ k`, so that the level ring is a
+FAITHFUL `ℤ ⧸ p ^ n`-module and the field it cuts out is
+`ℚ_p(E[p ^ n]) = ℚ_p(μ_{p ^ n}, q^{1/p ^ n})` on the nose.
+
+SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
+weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
+`v_p(q) = 1 ≠ 0`, so the `p ^ n`-th roots of `q` generate a genuinely
+ramified extension and the statement is not vacuous.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged: they are exactly what the cited automorphic
+theory assumes about its coefficient ring. -/
+theorem exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ q : (ℚᵖᵥ)ˣ,
+      (Valued.v (q : ℚᵖᵥ) : WithZero (Multiplicative ℤ)) < 1 ∧
+      ∀ k n : ℕ, CharP (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) (p ^ n) →
+        ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+          (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
+            ∃ (r : AlgebraicClosure ℚᵖᵥ) (b : ℤ),
+              r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
+              (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) r =
+                r * algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ^ b :=
+  sorry
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
+OF THE TOWER, IN TORIC-CURVE FORM** (PROVEN 2026-07-27 by the ELEVENTH
+cut, which splits the torsion statement into its CYCLOTOMIC and KUMMER
+halves; formerly THE residual AUTOMORPHIC-TO-GALOIS BRIDGE after the
+2026-07-27 TATE-CURVE CUT of the tenth owner; Tilouine, *Hecke algebras
+and the Gorenstein property*, in Cornell–Silverman–Stevens §5 Step 1(a),
+for `p ∥ M`; Saito, *Modular forms and `p`-adic Hodge theory*, Invent.
+Math. 129 (1997), for local–global compatibility at `p` in general;
+Deligne–Rapoport for the models of `X₀(Mp)`).
+
+WHAT THIS NODE ASSERTS. Under the consumer's hypotheses the restriction
+of `τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve `E_q` with purely
+TORIC reduction, and the assertion is about `E_q`'S TORSION: an element
+`σ` acting trivially at level `k` of the `𝔪`-adic tower acts trivially on
+`E_q[p ^ n]`, where `p ^ n` is the exact characteristic of `R ⧸ 𝔪 ^ k`.
+
+THE ELEVENTH CUT (2026-07-27 — what this node now IS). `TateSepClosure`'s
+torsion analysis says `E_q[N]` is generated by `μ_N` together with the
+classes of the `N`-th roots of `q`, and NOTHING ELSE. So the torsion
+statement is the conjunction of two independent assertions, which this
+node now assembles rather than cites:
+
+1. `cyclotomicFixed_of_localLevelTrivial` (sorry leaf, above) — the
+   CYCLOTOMIC half: the level-`k` kernel fixes `μ_{p ^ n}` pointwise.
+   This is `det ρ = χ_cyc` plus the exact-exponent hypothesis, and it
+   contains NO modular curve, NO Deligne–Rapoport model and NO toric
+   reduction. It was previously invisible, fused into the citation.
+2. `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew` (sorry
+   leaf, above) — the KUMMER half, for ONE `p ^ n`-th root of `q`. This
+   is where the missing `p`-adic geometry now lives, alone.
+3. `tateTorsion_fixed_of_cyclotomicFixed_of_exists_zpow` (PROVEN, above)
+   — the assembly, over Tate's uniformisation
+   `WeierstrassCurve.exists_tateCurveEquivSepClosure`.
+
+THE CUT IS EXACT, in both directions, which is why it loses nothing.
+Forwards is the proof term below. Backwards: this node implies (1)
+because `μ_{p ^ n}` sits inside `E_q[p ^ n]` and `q ^ ℤ ∩ μ = 1` when
+`v(q) < 1`; and it implies (2) through the tenth owner's
+`exists_zpow_of_pow_eq_of_tateTorsion_fixed`, which even gives the
+stronger all-roots form. So `(1) ∧ (2)` is EQUIVALENT to this node, and
+the gain is that (1) is no longer gated on the missing geometry: it can
+be dispatched at, and proven, today.
 
 WHAT THE TATE-CURVE CUT MOVED OUT OF THE CITATION. The previous form of
 this leaf (`…_kummerClass_…`, now PROVEN below) concluded with a
@@ -47122,20 +49603,17 @@ insensitive to the choice — but it IS formally stronger than the `≠ 1`
 the consumer needs, and recording that here is the honest accounting:
 the consumer's `≠ 1` is derived from it by `ne_of_lt`.
 
-WHAT IS STILL MISSING, AND WHAT CANNOT SUPPLY IT. The geometry itself:
+WHAT IS STILL MISSING, AND WHERE IT NOW LIVES. The geometry itself —
 Deligne–Rapoport models of `X₀(Mp)` and the toric-reduction computation
 at the `p`-new part of `J₀(Mp)`, absent from this pin and from
-`~/cs/FLT`. `nonempty_modularTateGaloisData` above does NOT supply it,
-and this was checked rather than assumed: that leaf is about `J₀(M)` at
-GOOD primes — its `congruence` field is the Eichler–Shimura relation
-OFF the level — whereas what is needed here is the fibre at `p` itself,
-where the reduction is toric.
-
-THE GREP THAT WOULD REFUTE THIS OBSTRUCTION:
-`grep -rn 'DeligneRapoport\|deligneRapoport\|toricReduction\|IsToricAt'
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` — a hit in signature
-position would mean the models are present after all and this leaf
-should be decomposed over them rather than cited.
+`~/cs/FLT` — is now confined to
+`exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew` above,
+where the refuting grep is recorded and was re-run on 2026-07-27. The
+cyclotomic half needs none of it. `nonempty_modularTateGaloisData` above
+still does NOT supply the geometry, and this was checked rather than
+assumed: that leaf is about `J₀(M)` at GOOD primes — its `congruence`
+field is the Eichler–Shimura relation OFF the level — whereas what is
+needed is the fibre at `p` itself, where the reduction is toric.
 
 WHY THE HYPOTHESIS IS `CharP … (p ^ n)` AND NOT `(p ^ n) = 0`
 (unchanged from the predecessor, and the point that makes this leaf
@@ -47203,8 +49681,22 @@ theorem exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew
               WeierstrassCurve.Affine.Point.map
                 (W' := WeierstrassCurve.tateCurve ((q : ℚᵖᵥ) : ℚᵖᵥ))
                 (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ]
-                  AlgebraicClosure ℚᵖᵥ).toAlgHom P = P :=
-  sorry
+                  AlgebraicClosure ℚᵖᵥ).toAlgHom P = P := by
+  -- `ℚᵖᵥ` has characteristic zero, which the Tate-curve framework needs
+  haveI : CharZero ℚᵖᵥ :=
+    charZero_of_injective_algebraMap ((algebraMap ℚ ℚᵖᵥ).injective)
+  -- the KUMMER half: the geometry, for ONE `p ^ n`-th root of `q`
+  obtain ⟨q, hq, hroot⟩ :=
+    exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew hpodd hM hpM hg
+      hpnew κ hτ hirr e he hdet hpne hpmem hkfin hlat
+  refine ⟨q, hq, fun k n hchar σ hσ P hP => ?_⟩
+  obtain ⟨r, b, hrpow, hrσ⟩ := hroot k n hchar σ hσ
+  -- the CYCLOTOMIC half, plus Tate's uniformisation, give the whole torsion
+  exact tateTorsion_fixed_of_cyclotomicFixed_of_exists_zpow _ q
+    (valuativeRel_valuation_lt_one_of_valued_lt_one hq) (pow_pos hp.out.pos n)
+    (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ)
+    (fun ζ hζ => cyclotomicFixed_of_localLevelTrivial e he hdet hlat hchar σ hσ ζ hζ)
+    r hrpow b hrσ P hP
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
@@ -47223,8 +49715,12 @@ local–global compatibility at `p` in general).
 THE TATE-CURVE CUT (2026-07-27, TENTH owner — what this node now IS).
 The node is PROVEN, as a two-step assembly:
 
-1. `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew` (sorry
-   leaf, just above): the automorphic-to-Galois bridge in the form the
+1. `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew`
+   (itself PROVEN, just above, by the ELEVENTH cut of 2026-07-27, which
+   split it into the cyclotomic leaf `cyclotomicFixed_of_localLevelTrivial`
+   and the geometric leaf
+   `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew`): the
+   automorphic-to-Galois bridge in the form the
    `p`-adic geometry actually proves it — an assertion about the TORSION
    OF THE TORIC CURVE `E_q`. Under the consumer's hypotheses the
    restriction of `τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve
@@ -47460,8 +49956,12 @@ THE KUMMER-CLASS CUT (2026-07-26, NINTH owner — what this node now IS).
 The node is PROVEN, as a two-step assembly:
 
 1. `exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew` (itself
-   PROVEN 2026-07-27 by the TENTH owner's TATE-CURVE CUT, over the sorry
-   leaf `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew`;
+   PROVEN 2026-07-27 by the TENTH owner's TATE-CURVE CUT, over
+   `exists_tateParameter_torsionFixed_of_weightTwoEigenform_pNew`, which
+   the ELEVENTH cut of the same day then PROVED in turn, over the
+   cyclotomic leaf `cyclotomicFixed_of_localLevelTrivial` and the
+   geometric leaf
+   `exists_tateParameter_kummerRoot_of_weightTwoEigenform_pNew`;
    it was a sorry leaf when this docstring was first written, and the
    label is corrected rather than left to mislead the next dispatch):
    the automorphic-to-Galois bridge in the form Tate's

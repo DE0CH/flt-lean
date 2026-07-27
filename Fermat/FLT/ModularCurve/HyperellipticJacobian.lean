@@ -150,8 +150,16 @@ Every replacement is an EQUIVALENCE, so no statement was weakened at any step:
   over the level-specific `C_odd` and `C_isCoprime`.  Reversible in one `ring`
   identity each, so again an equivalence.  **This is the step at which the
   route's elliptic curve becomes visible**, and both levels' Chabauty
-  computations were run and CLOSE the leaves — see the audits on the two
-  `descent_system_no_solution` declarations.
+  computations were run — see the audits on the two
+  `descent_system_no_solution` declarations, and the GAP recorded on each of
+  them on 2026-07-27: the covering collection is not established, so the
+  Chabauty runs close the leaves modulo a descent step that is not on record.
+* `<level>.descent_system_no_solution` → `<level>.descent_system_no_solution_pos`
+  and `..._neg` (BOTH levels, 2026-07-27) by `rcases` on the sign disjunct.
+  The two branches carry DIFFERENT theories and are independently
+  dispatchable: at level `18` the `+` branch is rank `1` and needs `p`-adic
+  elliptic Chabauty while the `−` branch is rank `0` and needs none; at level
+  `13` both live on one rank-`1` curve and need a Chabauty run each.
 
 What each step removed is a layer of Lean-specific interface: first the
 obligation to exhibit a *structure*, then the obligation to reason about a
@@ -594,10 +602,12 @@ does satisfy every field — and **not** as an independent statement of the
 four-part Jacobian project.  The project is the content of the injectivity,
 which at both levels is itself PROVEN from the Diophantine determination of
 `X(ℚ)` (level `18` on 2026-07-26, level `13` on 2026-07-27); the sorries now
-live further down, at `X18.descent_system_no_solution` and
-`X13.descent_system_no_solution` — the descended integral forms of that
-determination, three steps beyond `X18.affine_rational_points` and two beyond
-`X13.affine_rational_points` since 2026-07-27.
+live further down, at the FOUR sign branches
+`X18.descent_system_no_solution_pos` / `_neg` and
+`X13.descent_system_no_solution_pos` / `_neg` (opened 2026-07-27) — the
+descended integral forms of that determination, split along the sign of the
+descent, four steps beyond `X18.affine_rational_points` and three beyond
+`X13.affine_rational_points`.
 
 This matters for anyone auditing the leaf count: closing `exists_jacobianPackage`
 below is *not* progress on abelian varieties.  It is the removal of an interface
@@ -1006,9 +1016,65 @@ theorem C_isCoprime (a b : ℤ) (hab : IsCoprime a b) :
     rw [e]; exact ((hab'.pow_right).neg_right).add_mul_left_right _
   exact ((hca.symm).mul_right (hcb.symm)).mul_right (hcd.symm)
 
-/-- **THE LEAF, AFTER THE `√−2` DESCENT** (opened 2026-07-27, replacing the
-`t`-form directly above, which is PROVEN over it by
-`descent_sq_add_eight_sq`).
+/-- **THE `δ = +1` BRANCH OF THE DESCENDED SYSTEM** (opened 2026-07-27 by
+splitting `descent_system_no_solution` below along the sign of `hC`; read that
+declaration's docstring for the full route audit and for the GAP recorded on
+it).
+
+`C̃ = v² − 2u²` together with `B̃ = uv` says exactly that the homogeneous cubic
+is a SQUARE in `ℤ[√−2]`:
+
+    C̃(a, b) + 2√−2·B̃(a, b) = (v + u√−2)².
+
+**Why this branch is separated from its sibling: the two need DIFFERENT
+theories, so they are independently dispatchable.**  This is the branch whose
+elliptic curve over `K = ℚ(√−2)` is `E : w² = g(x)` with
+`g(x) = x³ + (2√−2 − 2)x² − (2√−2 + 1)x + 1`, and Magma reports `rank E(K) = 1`
+(sharp `1 ≤ r ≤ 1`), torsion trivial, `Norm(𝔣_E) = 1296`, generator
+`(1 − √−2, −1)`.  Rank `1 < 2 = [K : ℚ]`, so elliptic Chabauty applies and
+succeeds with bound `N = 12`, returning `x ∈ {∞, 0}` — both degenerate, and
+both excluded here by `0 < a < b`.  **So this branch, and only this branch,
+needs `p`-adic elliptic Chabauty: a rank-1 Mordell–Weil group over a quadratic
+field, the formal group / elliptic logarithm at a prime of `K`, and a
+Strassmann-type zero bound.**  None of that exists in this pin, in mathlib, or
+in `~/cs/FLT`.
+
+Subject to the same GAP recorded on `descent_system_no_solution` below: the
+step from `F(a, b) = +Z²` to a point of `E(K)` needs `b` to be a square times a
+power of `2`, because `g(a/b) = F(a, b)/b³ ≡ b (mod K*²)`. -/
+theorem descent_system_no_solution_pos (a b u v : ℤ) (hab : Int.gcd a b = 1)
+    (ha : 0 < a) (hb : a < b) (huv : IsCoprime u v)
+    (hB : a * b * (a - b) = u * v)
+    (hC : a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3 = v ^ 2 - 2 * u ^ 2) : False := sorry
+
+/-- **THE `δ = −1` BRANCH OF THE DESCENDED SYSTEM** (opened 2026-07-27; sibling
+of `descent_system_no_solution_pos` above).
+
+`C̃ = 2u² − v²` together with `B̃ = uv` says that the homogeneous cubic is
+MINUS a square in `ℤ[√−2]`:
+
+    C̃(a, b) + 2√−2·B̃(a, b) = −(v − u√−2)².
+
+**This is the CHEAP branch of the pair, and that is the reason for the split.**
+Its curve is the twist `E_d : w² = −g(−x)`, for which Magma returns
+`rank E_d(K) = 0` and torsion `ℤ/3`, `Norm(𝔣) = 324`.  Rank `0` means NO
+Chabauty is needed: `E_d(K)` is finite, the three points have affine
+`x`-coordinate `−1` twice (i.e. `x = 1` after `x ↦ −x`) and `x = ∞` once, all
+degenerate and all excluded here by `0 < a < b`.  So what this branch needs is
+strictly less than its sibling — a rank-`0` statement over a quadratic field
+plus the finiteness of `E_d(K)` — and no `p`-adic analysis at all.  **A worker
+dispatched here should not be dispatched at elliptic Chabauty.**
+
+Subject to the same GAP recorded on `descent_system_no_solution` below. -/
+theorem descent_system_no_solution_neg (a b u v : ℤ) (hab : Int.gcd a b = 1)
+    (ha : 0 < a) (hb : a < b) (huv : IsCoprime u v)
+    (hB : a * b * (a - b) = u * v)
+    (hC : a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3 = 2 * u ^ 2 - v ^ 2) : False := sorry
+
+/-- **THE DESCENDED SYSTEM, AFTER THE `√−2` DESCENT** (opened 2026-07-27,
+replacing the `t`-form directly above, which is PROVEN over it by
+`descent_sq_add_eight_sq`; itself PROVEN since 2026-07-27 from the two sign
+branches above).
 
 For coprime `0 < a < b` there are no coprime `u, v` with
 
@@ -1042,8 +1108,9 @@ computation itself is Bruin's algorithm and not a search):
   i.e. `x = 1` after the substitution.  No Chabauty needed, as predicted.
 
 Together: `x ∈ {∞, 0, 1}`, which is exactly `ab(a − b) = 0`.  So the leaf is
-TRUE, the route is complete end-to-end, and what remains is FORMALISATION of
-elliptic Chabauty — not mathematics.  **The refuting check on this paragraph**
+TRUE and the route is real.  **It is not, however, complete end-to-end — see
+the GAP section below, added 2026-07-27, which is the correction to the
+sentence that used to stand here.**  **The refuting check on this paragraph**
 is to re-run `RankBounds` and `Chabauty` on those two curves; a rank `≥ 2` on
 the first, or a Chabauty run returning a fourth element, overturns it.
 
@@ -1055,12 +1122,62 @@ and `gcd(C̃, B̃) = 1` throughout (both now proven above anyway).
 **What is NOT available in this pin**, and is therefore the real obstruction:
 elliptic curves over a number field with Mordell–Weil rank machinery, and
 Bruin's elliptic Chabauty on top of it.  Neither mathlib, nor `~/cs/FLT`, nor
-this project has any of it. -/
+this project has any of it.
+
+**GAP IN THE ROUTE ABOVE (found 2026-07-27): the passage from this INTEGRAL
+statement to a point of `E(K)` is not the identity map, and the audit records
+it as though it were.**
+
+What the descent proves is the integral statement `F(a, b) = ±Z²` for a
+COPRIME pair `(a, b)`, where `F(a, b) := C̃(a, b) + 2√−2·B̃(a, b)` is the
+homogeneous cubic.  The curve of the route is `E : w² = g(x)` at `x = a/b ∈ ℚ`,
+and the two are related by the homogenisation identity (a `ring` identity,
+re-checked in PARI 2026-07-27):
+
+    g(a/b) = F(a, b) / b³,      hence      g(a/b) ≡ ± b   (mod `K*²`).
+
+So `F(a, b) = ±Z²` produces a point not of `E(K)` but of its QUADRATIC TWIST BY
+`b`.  One lands on `E` (or on its `δ = −1` twist) exactly when `b` is a square
+times a power of `2` — note `2 = −(√−2)²`, so `2 ≡ −1` mod `K*²`.  Every
+solution actually known is degenerate with `b ∈ {0, 1}`, so the discrepancy is
+invisible both to the executed Magma runs and to every numerical search; but a
+proof cannot step over it.
+
+**What this changes.**  A complete route needs a FOURTH item beside the three
+the audit lists: the COVERING COLLECTION — the finitely many `δ ∈ K*/K*²` for
+which `δw² = g(x)` can carry a point with `x ∈ ℚ`, equivalently a bound on `b`
+modulo squares — plus a Chabauty run on EACH member.  The audit ran Chabauty on
+exactly two curves, `δ = ±1`, without recording the descent showing that those
+two are the whole collection.  Finiteness of the collection is not in doubt:
+`F₁F₂` is a square and `gcd(F₁(a,b), F₂(a,b)) ∣ Res(F₁, F₂)` for coprime
+`(a, b)`.  What is missing is the recorded computation of it.
+
+**The refuting check, which would retire this note cheaply**: exhibit the
+covering-collection computation — Magma's `TwoCoverDescent`, or Bruin's
+covering-collection construction for `y² = f₁f₂` — showing the collection is
+exactly `{δ = 1, δ = −1}`; or exhibit the elementary argument bounding `b`
+modulo `K*²`.  Either one turns this from a gap into a step.
+
+**A narrowing proven in passing (PARI-checked 2026-07-27; `decide` over
+`ZMod 8` would prove it in Lean if a consumer ever wants it).**  For coprime
+`u, v` with `v² − 2u²` odd, `v² − 2u² ≡ ±1 (mod 8)`.  So the hypotheses below
+force `C̃(a, b) ≡ ±1 (mod 8)`, which excludes exactly 24 of the 48 residue
+classes of coprime `(a, b)` mod `8`.  It is not carried as a hypothesis,
+because `hC` already implies it; it is recorded because it is the cheapest
+nontrivial necessary condition on `(a, b)` that an elementary attack would
+want.  **Level `13` has no analogue**: `v² − u²` with `gcd(u, v) = 1` takes
+every odd residue mod `8`.
+
+**PROVEN since 2026-07-27** from the two sign branches above, which is a
+`rcases` on `hC` and nothing more. -/
 theorem descent_system_no_solution (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (ha : 0 < a) (hb : a < b) (huv : IsCoprime u v)
     (hB : a * b * (a - b) = u * v)
     (hC : a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3 = v ^ 2 - 2 * u ^ 2 ∨
-          a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3 = 2 * u ^ 2 - v ^ 2) : False := sorry
+          a ^ 3 - 2 * a ^ 2 * b - a * b ^ 2 + b ^ 3 = 2 * u ^ 2 - v ^ 2) : False := by
+  rcases hC with h | h
+  · exact descent_system_no_solution_pos a b u v hab ha hb huv hB h
+  · exact descent_system_no_solution_neg a b u v hab ha hb huv hB h
 
 /-- **THE σ-NORMALISED FORM: no coprime `0 < a < b` makes `C̃² + 8B̃²` a
 square.**  **PROVEN since 2026-07-27** from `descent_system_no_solution` above
@@ -1779,8 +1896,60 @@ theorem C_isCoprime (a b : ℤ) (hab : IsCoprime a b) :
     rw [e]; exact ((hab'.pow_right)).add_mul_left_right _
   exact ((hca.symm).mul_right (hcb.symm)).mul_right (hcd.symm)
 
-/-- **THE LEAF, AFTER THE `ℤ[i]` DESCENT** (opened 2026-07-27, replacing the
-`t`-form below, which is PROVEN over it by `descent_sq_add_four_sq`).
+/-- **THE `δ = +1` BRANCH OF THE DESCENDED SYSTEM** (opened 2026-07-27 by
+splitting `descent_system_no_solution` below along the sign of `hC`; that
+declaration's docstring carries the full route audit and the GAP recorded on
+it).
+
+`C̃ = v² − u²` with `B̃ = uv` says exactly that the homogeneous cubic is a
+SQUARE in `ℤ[i]`:
+
+    C̃(a, b) + 2i·B̃(a, b) = (v + u·i)².
+
+Over `K = ℚ(i)` the sextic splits as `f = g·ḡ` with
+`g(x) = x³ + (1 + 2i)x² + (−2 + 2i)x − 1`, and this branch is the cover on
+which Magma's `Chabauty` succeeds with bound `N = 4`, returning five group
+elements whose rational `x`-coordinates are exactly `∞`, `0` and `−1` — all
+three degenerate, i.e. `ab(a + b) = 0`.
+
+**Cost note, and the reason the level-`13` pair is NOT the cheaper one.**
+Unlike level `18`, where the sibling branch has rank `0`, here BOTH branches
+sit on the same rank-`1` curve `E(K) ≅ ℤ` (torsion trivial, `RankBounds` sharp
+at `1 ≤ r ≤ 1`, generator with `x = −1 − i`, `Norm(𝔣) = 1352`,
+`j = 768 − 512i`).  So `p`-adic elliptic Chabauty is needed for this branch AND
+for its sibling — two runs, not one. -/
+theorem descent_system_no_solution_pos (a b u v : ℤ) (hab : Int.gcd a b = 1)
+    (huv : IsCoprime u v) (hB : a * b * (a + b) = u * v)
+    (hC : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = v ^ 2 - u ^ 2) :
+    a * b * (a + b) = 0 := sorry
+
+/-- **THE `δ = −1` BRANCH OF THE DESCENDED SYSTEM** (opened 2026-07-27; sibling
+of `descent_system_no_solution_pos` above).
+
+`C̃ = u² − v²` with `B̃ = uv` says that the homogeneous cubic is MINUS a square
+in `ℤ[i]`:
+
+    C̃(a, b) + 2i·B̃(a, b) = −(v − u·i)².
+
+Magma's `Chabauty` on this cover succeeds with bound `N = 12` and returns only
+`x = ∞`, i.e. `b = 0`; with `gcd(a, b) = 1` that forces `a = ±1` and
+`ab(a + b) = 0`.  **The conclusion is stated in the common weak form
+`ab(a + b) = 0` rather than the stronger `b = 0` that the computation actually
+gives**, so that the two branches assemble uniformly and so that nothing rests
+on the stronger reading being correctly transcribed.
+
+Note `−1 = i²` is a square in `K = ℚ(i)`, so `δ = −1` and `δ = +1` are the same
+class here and this cover lives on the SAME rank-`1` curve as its sibling —
+which is why level `13` needs two Chabauty runs where level `18` needs one. -/
+theorem descent_system_no_solution_neg (a b u v : ℤ) (hab : Int.gcd a b = 1)
+    (huv : IsCoprime u v) (hB : a * b * (a + b) = u * v)
+    (hC : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = u ^ 2 - v ^ 2) :
+    a * b * (a + b) = 0 := sorry
+
+/-- **THE DESCENDED SYSTEM, AFTER THE `ℤ[i]` DESCENT** (opened 2026-07-27,
+replacing the `t`-form below, which is PROVEN over it by
+`descent_sq_add_four_sq`; itself PROVEN since 2026-07-27 from the two sign
+branches above).
 
 For coprime `a, b`, if there are coprime `u, v` with `ab(a + b) = uv` and
 `C̃(a, b) = ±(v² − u²)`, then `ab(a + b) = 0`.
@@ -1814,10 +1983,12 @@ search):
   exactly `∞`, `0` and `−1`; on the `δ = −1` branch it succeeds with `N = 12`
   and returns only `x = ∞`.
 
-Union: `x ∈ {∞, 0, −1}`, which is exactly `ab(a + b) = 0`.  **The leaf is TRUE
-and the mathematics is complete**; what remains is formalising elliptic
-Chabauty.  Refuting check: re-run `RankBounds`/`Chabauty`; rank `≥ 2`, or a
-sixth element with rational `x`, overturns this.
+Union: `x ∈ {∞, 0, −1}`, which is exactly `ab(a + b) = 0`.  **The leaf is
+TRUE** and the route is real; it is **not** complete end-to-end, and the
+sentence that used to claim it was has been corrected — see the GAP section
+below, added 2026-07-27, which applies verbatim at this level too.  Refuting
+check: re-run `RankBounds`/`Chabauty`; rank `≥ 2`, or a sixth element with
+rational `x`, overturns this.
 
 **CORRECTION to "the two levels are structurally parallel", which is how this
 pair is usually dispatched.**  They are parallel in shape but NOT in cost.  At
@@ -1828,12 +1999,54 @@ the more expensive of the two to formalise, not the easier one.
 
 **Numerical corroboration, extended 2026-07-27** to all coprime `(a, b)` with
 `|a|, |b| ≤ 2000` (previously `400`): no non-degenerate solution at either
-level. -/
+level.
+
+**GAP IN THE ROUTE ABOVE (found 2026-07-27, the same one recorded at level
+`18` on `X18.descent_system_no_solution`): the passage from this INTEGRAL
+statement to a point of `E(K)` is not the identity map.**
+
+The descent proves `F(a, b) = ±Z²` for a COPRIME pair `(a, b)`, where
+`F(a, b) := C̃(a, b) + 2i·B̃(a, b)` is the homogeneous cubic; the curve of the
+route is `E : w² = g(x)` at `x = a/b ∈ ℚ`.  The homogenisation identity (a
+`ring` identity) is
+
+    g(a/b) = F(a, b) / b³,      hence      g(a/b) ≡ b   (mod `K*²`),
+
+so a solution gives a point of the QUADRATIC TWIST BY `b`, not of `E` itself,
+unless `b` is a square in `K = ℚ(i)` — i.e. unless `b` or `−b` is a rational
+square, `−1 = i²` being a square here.  That `−1` is a square in `ℚ(i)` is
+also exactly why the two branches are isomorphic over `K`, as the audit above
+observes: at this level `δ = +1` and `δ = −1` are the SAME class, so the two
+Chabauty runs are two covers of one curve rather than two curves.  Every known
+solution is degenerate with `b ∈ {0, 1}`, so the discrepancy is invisible to
+the executed computation and to every search.
+
+**What this changes.**  A complete route needs a further item: the COVERING
+COLLECTION — the finitely many `δ ∈ K*/K*²` for which `δw² = g(x)` can carry a
+point with `x ∈ ℚ`, equivalently a bound on `b` modulo squares — with a
+Chabauty run on each member.  Finiteness is not in doubt (`F₁F₂` is a square
+and `gcd(F₁(a,b), F₂(a,b)) ∣ Res(F₁, F₂)` for coprime `(a, b)`); the recorded
+computation of the collection is what is missing.  **Refuting check**: exhibit
+Magma's `TwoCoverDescent` / Bruin's covering-collection output showing the
+collection is exactly the two covers already run, or the elementary argument
+bounding `b` modulo `K*²`.
+
+**No congruence narrowing exists at this level**, unlike at level `18`: there
+`C̃ = ±(v² − 2u²)` with `gcd(u, v) = 1` forces `C̃ ≡ ±1 (mod 8)` and kills half
+the residue classes, whereas here `v² − u²` with `gcd(u, v) = 1` takes every
+odd residue mod `8` (PARI, 2026-07-27).  Recorded so nobody spends the cycle
+looking for the level-`13` analogue.
+
+**PROVEN since 2026-07-27** from the two sign branches above, by `rcases` on
+`hC` and nothing more. -/
 theorem descent_system_no_solution (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (huv : IsCoprime u v) (hB : a * b * (a + b) = u * v)
     (hC : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = v ^ 2 - u ^ 2 ∨
           a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = u ^ 2 - v ^ 2) :
-    a * b * (a + b) = 0 := sorry
+    a * b * (a + b) = 0 := by
+  rcases hC with h | h
+  · exact descent_system_no_solution_pos a b u v hab huv hB h
+  · exact descent_system_no_solution_neg a b u v hab huv hB h
 
 /-- **THE LEAF, in integral homogeneous form: a coprime integral point of
 `X_1(13)` is degenerate.**  **PROVEN since 2026-07-27** from
