@@ -4101,8 +4101,8 @@ the special fibre rather than an arbitrary function, and is stated as
 that it needs no side condition — `q`-integrality, the first conjunct,
 already makes `den` invertible mod `q`.
 
-## FORMAL-CONTENT AUDIT (2026-07-27) — READ THIS BEFORE STATING THE
-## FORMAL-IMMERSION LEAF OVER THIS STRUCTURE
+## FORMAL-CONTENT AUDIT (2026-07-27) — STILL TRUE OF *THIS* STRUCTURE,
+## AND THE REMEDY HAS NOW LANDED.  SEE THE POST-SCRIPT.
 
 **`redX` is NOT pinned to be the genuine reduction, and there is an
 explicit junk witness.**  Take `redX` to send *every* rational point to a
@@ -4111,36 +4111,54 @@ of the special fibre.  Then the hypothesis of `red_jm` is never
 satisfiable, so `red_jm` holds vacuously for any `jm` and any `jm'`, and
 the structure is inhabited with no arithmetic content whatever.
 
-Two consequences, and the second is the one that costs a task if missed.
-
 *The dictionary is unaffected.*  `isCusp_redX_of_padicValRat_neg` is a
 true implication for every datum, junk included — under the junk witness
 its conclusion is simply true for trivial reasons.  Nothing downstream of
 it is weakened by the junk witness alone.
 
-*The formal-immersion leaf MUST NOT be universally quantified over this
-structure.*  That leaf is "a rational point whose reduction is a cusp is
-itself a cusp", i.e. `hX'.IsCusp (redX x) → hX.IsCusp x`.  Under the junk
-witness above its hypothesis holds for EVERY `x` while its conclusion
-fails for every `x` coming from `Y`, so the universally quantified form
-is **FALSE**, not merely unsupported.  This is the same defect the
-`WHY THIS LEAF DOES NOT DECOMPOSE` note under `exists_x0Sieve` records
-for `IsX0ReductionAt` and `redJ`, in a new place; it is recorded here so
-that it is found before, not after, someone writes the leaf.
+**POST-SCRIPT (2026-07-27) — THE PINNING EXISTS NOW: `IsX0JNeronDatum`.**
+The audit above predicted that the repair would be to re-found this
+structure on the `IsX0NeronDatum` layer.  That layer has landed, and the
+`j`-map analogue of it is `IsX0JNeronDatum`, in the subsection
+`#### The Néron pinning of the `j`-map` at the end of this file.  There
+`redX` is *defined* from the valuative criterion plus the special-fibre
+identification, `red_jm` is a **THEOREM**
+(`IsX0JNeronDatum.red_jm`), and `IsX0JNeronDatum.toJReduction` produces
+this structure.  `exists_x0JReductionAt` — also moved there, since it now
+consumes `SpecLoc`, which is declared below — is **PROVEN** from
+`exists_x0JNeronDatum`.
 
-**The check that would refute this audit**, and it is one grep: a field
-on this structure pinning `redX` as the map induced by a morphism of
-integral models.  There is none today because no integral model of
-`X_0(N)` exists at this pin.  **The remedy is already in flight**: the
-`IsX0NeronDatum` layer being built on branch `flt-lean-12` carries the
-integral models with both fibres identified as equivalences of functors
-of points, which is exactly the object that turns `redX` from an
-arbitrary function into an induced map — the same repair that made
-`red_aj` and `redJ_add` theorems rather than assumptions there.  When it
-lands, `IsX0JReductionAt` should be re-founded on it and `red_jm` should
-become a theorem; until then the formal-immersion leaf must be stated
-against a datum produced by `exists_x0JReductionAt`, never against an
-arbitrary one. -/
+So this structure survives unchanged as the *interface* that
+`isCusp_redX_of_padicValRat_neg` and
+`exists_cuspidalReduction_of_padicValRat_neg` are stated over, and every
+datum reaching them through `exists_x0JReductionAt` is now a genuine
+reduction.  **Anything that needs `redX` to BE the reduction must be
+stated over `IsX0JNeronDatum`, not over this structure.**
+
+**CORRECTION TO THE OLD AUDIT'S "FORMAL-IMMERSION LEAF" (2026-07-27).**
+The audit above said the leaf `hX'.IsCusp (redX x) → hX.IsCusp x` is
+false *because of the junk witness*, implying that pinning `redX` would
+rescue it.  **It would not: that implication is false for the GENUINE
+reduction too**, and this file already contains the counterexample.
+`exists_cuspidalReduction_of_padicValRat_neg` produces, from any elliptic
+curve over `ℚ` with a Galois-stable cyclic subgroup of order `N` and
+`v_q(j(E)) < 0`, a point `y` of `Y_0(N)(ℚ)` with
+`hX'.IsCusp (redX (sectionAlong hX.j hX.over y))` — while
+`sectionAlong hX.j hX.over y` is by construction NOT a cusp (take
+`y.1` itself as the witness in `IsCompactificationY0.IsCusp`).  A
+non-cusp reducing to a cusp is not a pathology; it is the whole point of
+Mazur's Cor. 4.4.
+
+**The check that refutes the old reading**: instantiate
+`exists_cuspidalReduction_of_padicValRat_neg` at any Frey curve at a
+prime `q` of potentially multiplicative reduction and unfold
+`IsCompactificationY0.IsCusp` at the resulting point.
+
+What Mazur actually needs is the *two-point* statement — a rational point
+and the cusp `∞` having the SAME reduction forces them equal — and that
+is a theorem about the rank-`0` Eisenstein quotient and a formal
+immersion at `∞`, neither of which is in this module.  A one-point
+"reduction of a cusp is a cusp" leaf should not be written at all. -/
 structure IsX0JReductionAt (N q : ℕ)
     {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -4401,35 +4419,11 @@ theorem exists_jMap (N : ℕ) (hN : N ≠ 0) {Y : Scheme.{0}} {strY : Y ⟶ Spec
   congr 1
   exact Subtype.ext (hu2 (𝟙 SpecQ) d).symm
 
-/-- **Existence of the good reduction of `(X_0(N), j)` at a prime
-`q ∤ N`** (sorry node).
-
-TRUE — Deligne–Rapoport: for `q ∤ N` the modular curve `X_0(N)` has a
-smooth proper model over `ℤ_(q)` whose special fibre is `X_0(N)_{𝔽_q}`,
-the cusps form a relative divisor, and the `j`-map extends to a morphism
-of models.  Reduction of rational points is the valuative criterion
-applied to that proper model: a `ℚ`-point extends uniquely to a
-`ℤ_(q)`-point, which is then evaluated on the closed fibre.  `red_jm` is
-the extension of `j` read on points.
-
-Note what is NOT assumed: `q` is not required to be odd.  Mazur needs
-`q ≠ 2` for the FORMAL IMMERSION, which is a different statement and is
-not part of this module; the model and the `j`-map extension are fine at
-`q = 2` as long as `q ∤ N`, and keeping the hypothesis out is the
-direction that leaves the leaf weakest.
-
-IRREDUCIBLE at this pin, and strictly harder than
-`exists_x0Compactification`: on top of the compactification over `ℚ` it
-needs the integral model, which is the same missing object that makes
-`exists_x0Sieve` atomic. -/
-theorem exists_x0JReductionAt (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime) (_hqN : ¬ q ∣ N)
-    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    {hc : IsCoarseModuliY0 N strY} (hX : IsCompactificationY0 strY strX)
-    (hj : IsJMapOn N hc) :
-    ∃ (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
-      (hX' : IsX0Compactification N strX' strY' jY'),
-      Nonempty (IsX0JReductionAt N q hX hX' hj) :=
-  sorry
+/- `exists_x0JReductionAt` used to stand here.  It has MOVED to the
+subsection `#### The Néron pinning of the `j`-map` at the end of this
+file, where it is **PROVEN** from `exists_x0JNeronDatum`; it now consumes
+`SpecLoc`, which is declared below this point, so it cannot live here.
+See the POST-SCRIPT in the docstring of `IsX0JReductionAt` above. -/
 
 /-- **`ab` is the Jacobian of the curve `strX`, based at `o`.**
 
@@ -6103,6 +6097,552 @@ theorem y0HasNoRationalPoint_of_sieveLevel (N : ℕ) (hN : 0 < N)
     card_le_of_sieve hsieve hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX) _
   rw [Finset.card_insert_of_notMem hp, hscard] at hle
   omega
+
+/-! #### The Néron pinning of the `j`-map, and `red_jm` as a theorem
+
+The FORMAL-CONTENT AUDIT in the docstring of `IsX0JReductionAt` records
+that `redX` there is pinned by nothing — send every rational point to a
+cusp of the special fibre and `red_jm`'s hypothesis becomes unsatisfiable,
+so the structure is inhabited with no arithmetic content.  It also
+records the remedy: re-found the structure on an integral model, exactly
+as `IsX0NeronDatum` did for `redJ` in the subsection above.
+
+This subsection carries that out.  `IsX0JNeronDatum` is the `j`-map
+analogue of `IsX0NeronDatum`: it holds the smooth model of `X_0(N)` and
+of `Y_0(N)` over `ℤ_(q)`, identifies both fibres of each as equivalences
+of FUNCTORS of points (so Yoneda pins them as fibre products rather than
+as bare point sets — the naturality fields are what make that true, and
+without them a point-set relabelling would reintroduce exactly the junk
+`redX` the audit describes), and carries the `j`-invariant as a function
+on integral points with values in `ℤ_(q)` itself.
+
+Three things then stop being assumptions:
+
+* `redX` is DEFINED — extend a rational point to the integral model by
+  the valuative criterion (`properX`), then restrict to the special
+  fibre;
+* the `q`-integrality half of `red_jm` becomes the statement that an
+  element of `ℤ_(q)` has non-negative `q`-adic valuation, which is
+  `IsReductionBase.padicValRat_nonneg` (PROVEN here from the two axioms
+  of `IsReductionBase`, by an explicit Bézout construction of `1/q`);
+* the congruence half becomes the image under `toF` of the identity
+  `j · den = num` inside `ℤ_(q)`.
+
+`red_jm` is therefore a THEOREM (`IsX0JNeronDatum.red_jm`), and
+`IsX0JNeronDatum.toJReduction` produces an `IsX0JReductionAt`.
+`exists_x0JReductionAt` — moved here from the `j`-map subsection, since
+it now consumes `SpecLoc` — is PROVEN from `exists_x0JNeronDatum`.
+
+**Exactly ONE leaf is left open, and the net sorry count is unchanged.**
+`exists_x0JNeronDatum` — the Deligne–Rapoport / Igusa smooth model over
+`ℤ_(q)` for `q ∤ N`, together with its two fibres — is the same missing
+object as `exists_x0NeronDatum` above, and it is where all the arithmetic
+now sits.  Everything else this subsection needs is PROVEN here,
+including the two facts that would most naturally have been posited:
+
+* `exists_relSectionAlong_of_special` — an integral section of the proper
+  model whose SPECIAL value lies in the open part `𝒴` lies in `𝒴`
+  throughout.  Not modular at all: `jZ` is an open immersion, so the
+  section's preimage of `𝒴` is open in `Spec ℤ_(q)`; the image of the
+  closed point lies in it (`IsReductionBase.comap_eq_closedPoint`); and
+  the only open of the spectrum of a local ring containing the closed
+  point is the whole space.  `IsOpenImmersion.lift` then factors the
+  section.
+* `IsReductionBase.isLocalRing` and `IsReductionBase.nontrivialResidue` —
+  the two consequences of `IsReductionBase` its own docstring asserts
+  informally, now derived. -/
+
+/-- **`sectionAlong` at an arbitrary base point.**
+
+`sectionAlong` is hardwired to the base point `𝟙 S`, which is all its
+consumers above need.  The pinning below has to push a section of the
+integral model down to BOTH fibres, i.e. along the base points
+`SpecLoc.generic R` and `SpecLoc.special toF`, so the same construction
+is needed at a general `g`.  At `g = 𝟙 S` the two agree definitionally
+(`sectionAlong_eq_relSectionAlong`), so nothing above is disturbed. -/
+def relSectionAlong {X Y S T : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} (j : Y ⟶ X)
+    (hj : j ≫ strX = strY) {g : T ⟶ S} (y : RelPoint strY g) : RelPoint strX g :=
+  ⟨y.1 ≫ j, by rw [Category.assoc, hj, y.2]⟩
+
+/-- `relSectionAlong` extends `sectionAlong`, definitionally. -/
+theorem sectionAlong_eq_relSectionAlong {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    (j : Y ⟶ X) (hj : j ≫ strX = strY) (y : RelPoint strY (𝟙 S)) :
+    sectionAlong j hj y = relSectionAlong j hj y := rfl
+
+/-- Pushing a section into the ambient curve commutes with change of base
+point.  This is what lets one integral section of `𝒴` be read on both
+fibres. -/
+theorem pre_relSectionAlong {X Y S T' T : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    (j : Y ⟶ X) (hj : j ≫ strX = strY) {h : T' ⟶ T} {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (y : RelPoint strY g) :
+    RelPoint.pre h hg (relSectionAlong j hj y) = relSectionAlong j hj (RelPoint.pre h hg y) :=
+  Subtype.ext (Category.assoc _ _ _).symm
+
+/-- **An open immersion is a monomorphism**, so a point of the ambient
+curve comes from at most one point of the open part.  This is the
+uniqueness that makes the integral lift produced by
+`exists_relSectionAlong_of_special` well determined on both fibres. -/
+theorem relSectionAlong_injective {X Y S T : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    (j : Y ⟶ X) [Mono j] (hj : j ≫ strX = strY) {g : T ⟶ S} :
+    Function.Injective (relSectionAlong (strX := strX) j hj (g := g)) := fun _ _ hab =>
+  Subtype.ext ((cancel_mono j).mp (congrArg Subtype.val hab))
+
+/-- **`ℓ` does not divide the denominator of any element of `R`**
+(PROVEN), for `R` pinned by `IsReductionBase`.
+
+Exactly the content of "`R = ℤ_(ℓ)`", in the only form the `j`-map
+dictionary needs, and derived from the two axioms of `IsReductionBase`
+rather than from any localization API.
+
+The proof is Bézout run backwards.  Write `r = a/b` in lowest terms and
+suppose `ℓ ∣ b`, say `b = ℓ c`.  Coprimality of `a` and `b` gives
+`u a + v b = 1`, and then
+
+`ℓ · (u r c + v c) = u (ℓ c) r + v (ℓ c) = u (b r) + v b = u a + v b = 1`,
+
+with `u r c + v c` visibly an element of `R` — `r ∈ R`, and `R` contains
+`ℤ` because it is a subring of `ℚ`.  So `ℓ` is a UNIT of `R`.  But
+`toF (ℓ : R) = 0` in `ZMod ℓ`, and `ker_eq_nonunits` turns that into
+`¬ IsUnit (ℓ : R)`.  Contradiction.
+
+Note both axioms are used: `ker_eq_nonunits` supplies the contradiction,
+and it is also what forces `ZMod ℓ` to be nontrivial (were `ℓ = 1`, then
+`toF 1 = 0` would make `1` a non-unit). -/
+theorem IsReductionBase.not_dvd_den {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) (r : R) : ¬ q ∣ ((r : ℚ)).den := by
+  intro hdvd
+  obtain ⟨c, hc⟩ := hdvd
+  have hbezZ : IsCoprime ((r : ℚ)).num (((r : ℚ)).den : ℤ) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    exact (r : ℚ).reduced
+  obtain ⟨u, v, hbezZ⟩ := hbezZ
+  have hbez : (u : ℚ) * (((r : ℚ)).num : ℚ) + (v : ℚ) * (((r : ℚ)).den : ℚ) = 1 := by
+    exact_mod_cast congrArg (fun z : ℤ => (z : ℚ)) hbezZ
+  have hx : (r : ℚ) * (((r : ℚ)).den : ℚ) = (((r : ℚ)).num : ℚ) := Rat.mul_den_eq_num _
+  have hqc : (q : ℚ) * (c : ℚ) = (((r : ℚ)).den : ℚ) := by exact_mod_cast congrArg Nat.cast hc.symm
+  set s : R := (u : R) * r * (c : R) + (v : R) * (c : R) with hs
+  have hunit : ((q : ℕ) : R) * s = 1 := by
+    apply Subtype.ext
+    push_cast [hs]
+    linear_combination hbez + (u : ℚ) * hx + ((u : ℚ) * (r : ℚ) + (v : ℚ)) * hqc
+  have h1 : IsUnit ((q : ℕ) : R) := IsUnit.of_mul_eq_one _ hunit
+  have h2 : toF ((q : ℕ) : R) = 0 := by rw [map_natCast, ZMod.natCast_self]
+  exact ((h.ker_eq_nonunits _).mp h2) h1
+
+/-- **Every element of `ℤ_(q)` is `q`-integral** (PROVEN): the first
+conjunct of `red_jm`, once the `j`-invariant is known to be the value of
+a function with values in `R`. -/
+theorem IsReductionBase.padicValRat_nonneg {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) (r : R) : 0 ≤ padicValRat q ((r : ℚ)) := by
+  have hz : padicValNat q ((r : ℚ)).den = 0 :=
+    padicValNat.eq_zero_of_not_dvd (h.not_dvd_den r)
+  simp only [padicValRat, hz]
+  simp
+
+/-- **The residue ring is nontrivial** (PROVEN).  Were `ZMod ℓ` trivial —
+i.e. `ℓ = 1` — then `toF 1 = 0`, and `ker_eq_nonunits` would make `1` a
+non-unit.  So `ℓ ≠ 1` is a consequence of `IsReductionBase`, not a
+hypothesis, exactly as its docstring claims. -/
+theorem IsReductionBase.nontrivialResidue {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) : Nontrivial (ZMod q) := by
+  rcases subsingleton_or_nontrivial (ZMod q) with _ | hn
+  · exact absurd isUnit_one ((h.ker_eq_nonunits 1).mp (Subsingleton.elim _ _))
+  · exact hn
+
+/-- **`R` is a LOCAL ring** (PROVEN), which is the half of
+`IsReductionBase` that `exists_relSectionAlong_of_special` needs: it is
+what makes `Spec R` have a unique closed point, so that an open
+containing that point is everything.
+
+`ker_eq_nonunits` is exactly "the non-units are an ideal", read
+backwards: if `a` is not a unit then `toF a = 0`, so `toF (1 - a) = 1`,
+which is nonzero because the residue ring is nontrivial, so `1 - a` IS a
+unit. -/
+theorem IsReductionBase.isLocalRing {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) : IsLocalRing R := by
+  haveI := h.nontrivialResidue
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self (fun a => ?_)
+  by_cases ha : IsUnit a
+  · exact Or.inl ha
+  · refine Or.inr ?_
+    by_contra hb
+    have h1 : toF a = 0 := (h.ker_eq_nonunits a).mpr ha
+    have h2 : toF (1 - a) = 0 := (h.ker_eq_nonunits _).mpr hb
+    rw [map_sub, map_one, h1, sub_zero] at h2
+    exact one_ne_zero h2
+
+/-- **`Spec 𝔽_ℓ ⟶ Spec R` hits the CLOSED point** (PROVEN).
+
+Every point of `Spec 𝔽_ℓ` pulls back to the maximal ideal of `R`: the
+pullback of a prime is prime, hence proper, hence contained in the
+maximal ideal; and it contains `ker toF`, which IS the maximal ideal by
+`ker_eq_nonunits`.  Note `ℓ` is not assumed prime anywhere — the
+statement is about an arbitrary point of `Spec (ZMod ℓ)`, and
+`nontrivialResidue` is what guarantees there is one. -/
+theorem IsReductionBase.comap_eq_closedPoint {q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (h : IsReductionBase q R toF) (P : PrimeSpectrum (ZMod q)) :
+    letI := h.isLocalRing
+    PrimeSpectrum.comap toF P = IsLocalRing.closedPoint R := by
+  letI := h.isLocalRing
+  apply PrimeSpectrum.ext
+  apply le_antisymm
+  · exact IsLocalRing.le_maximalIdeal (PrimeSpectrum.comap toF P).2.ne_top
+  · intro x hx
+    have hx0 : toF x = 0 := (h.ker_eq_nonunits x).mpr (IsLocalRing.mem_maximalIdeal x |>.mp hx)
+    show toF x ∈ P.asIdeal
+    rw [hx0]
+    exact Ideal.zero_mem _
+
+/-- **A Néron-pinned `j`-reduction datum for `X_0(N)` at `q`.**
+
+This is `IsX0JReductionAt` with `redX` no longer free, in exactly the way
+`IsX0NeronDatum` is `IsX0ReductionAt` with `redJ` no longer free.
+Instead of positing a reduction map and an axiom relating it to the
+`j`-map, the datum carries the INTEGRAL MODELS over `ℤ_(q)` and reads
+both off them.
+
+The data:
+
+* `base` pins the base as `Spec ℤ_(q)` — see `IsReductionBase`;
+* `model` pins the integral curve, together with its open part, as the
+  smooth model of `X_0(N)` over that base; for `q ∤ N` this is the
+  Deligne–Rapoport / Igusa model, and reusing `IsX0Compactification`
+  (whose base was left general for exactly this purpose) is what makes
+  `jZ` an open immersion, hence a mono, hence the lift below unique;
+* `genX`, `genY`, `spX`, `spY` identify the two fibres of each of the two
+  models.  They are equivalences of FUNCTORS of points — for every `T`
+  and every base point, natural in the "identified base" form used
+  throughout this file — so by Yoneda they say `X ≅ 𝒳 ×_{ℤ_(q)} ℚ` and
+  `X' ≅ 𝒳 ×_{ℤ_(q)} 𝔽_q`, and likewise for `Y`.  **The `_nat` fields are
+  load-bearing for faithfulness, not decoration**: without them the
+  identifications are bare bijections of point sets, and composing `spX`
+  with a permutation of `X'(𝔽_q)` that preserves the open part would
+  satisfy every other field while changing `redX` — which is the junk
+  witness of the audit, reintroduced one level up;
+* `genX_j` and `spX_j` say the identifications carry the open immersion
+  `Y ⊆ X` to the open immersion `𝒴 ⊆ 𝒳`, i.e. that cuspidality is
+  preserved by the identifications;
+* `properX` is the **valuative criterion of properness** for the curve,
+  `𝒳(ℤ_(q)) ≅ X(ℚ)`.  It is what turns a rational point into an integral
+  one, and hence the only reason a reduction map exists at all;
+* `jmZ`, `jmGen`, `jmSp` are the `j`-invariant on integral sections, on
+  the generic fibre and on the special fibre.  `jmZ` lands in `R`
+  ITSELF — that is the whole `q`-integrality statement, and it is the one
+  place the classical fact "`j` is a regular function on the integral
+  model of the open part" enters;
+* `jmGen_pre`, `jmSp_pre` say those three agree, and `jm_gen` identifies
+  the generic one with the `j`-map `hj.jm` the consumers use.
+
+**What is deliberately NOT a field**: a Jacobian, the Néron mapping
+property, or anything about `redJ`.  This datum and `IsX0NeronDatum`
+share no field and can be carried side by side, which is the same
+separation `IsX0JReductionAt` already keeps from `IsX0ReductionAt`. -/
+structure IsX0JNeronDatum (N q : ℕ) (R : Subring ℚ) (toF : R →+* ZMod q)
+    {Y X Y' X' YZ XZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX)
+    (hX' : IsX0Compactification N strX' strY' jY')
+    (hj : IsJMapOn N hc)
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} (jZ : YZ ⟶ XZ) where
+  /-- the base is the local ring of `ℤ` at `q` -/
+  base : IsReductionBase q R toF
+  /-- the integral model is the smooth model of `X_0(N)` over that base,
+  together with its open part -/
+  model : IsX0Compactification N xstr ystr jZ
+  /-- the generic fibre of the curve model is `X`, functorially -/
+  genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀
+  /-- the generic fibre of the open model is `Y`, functorially -/
+  genY : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.generic R = g₀ → RelPoint strY g ≃ RelPoint ystr g₀
+  /-- the special fibre of the curve model is `X'`, functorially -/
+  spX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint strX' g ≃ RelPoint xstr g₀
+  /-- the special fibre of the open model is `Y'`, functorially -/
+  spY : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (g₀ : T ⟶ SpecLoc R),
+    g ≫ SpecLoc.special toF = g₀ → RelPoint strY' g ≃ RelPoint ystr g₀
+  /-- naturality of the generic identification of curves -/
+  genX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+    (x : RelPoint strX g),
+    genX g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genX g g₀ h₀ x)
+  /-- naturality of the generic identification of open parts -/
+  genY_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.generic R = g₀) (h₀' : g' ≫ SpecLoc.generic R = g₀')
+    (x : RelPoint strY g),
+    genY g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (genY g g₀ h₀ x)
+  /-- naturality of the special identification of curves -/
+  spX_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF q} {g' : T' ⟶ SpecF q}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.special toF = g₀) (h₀' : g' ≫ SpecLoc.special toF = g₀')
+    (x : RelPoint strX' g),
+    spX g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (spX g g₀ h₀ x)
+  /-- naturality of the special identification of open parts -/
+  spY_nat : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecF q} {g' : T' ⟶ SpecF q}
+    (hg : h ≫ g = g') {g₀ : T ⟶ SpecLoc R} {g₀' : T' ⟶ SpecLoc R}
+    (h₀ : g ≫ SpecLoc.special toF = g₀) (h₀' : g' ≫ SpecLoc.special toF = g₀')
+    (x : RelPoint strY' g),
+    spY g' g₀' h₀' (RelPoint.pre h hg x)
+      = RelPoint.pre h (by rw [← h₀, ← Category.assoc, hg, h₀']) (spY g g₀ h₀ x)
+  /-- the generic identification carries the open immersion -/
+  genX_j : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.generic R = g₀) (y : RelPoint strY g),
+    genX g g₀ h (relSectionAlong hX.j hX.over y)
+      = relSectionAlong jZ model.comm (genY g g₀ h y)
+  /-- the special identification carries the open immersion -/
+  spX_j : ∀ {T : Scheme.{0}} (g : T ⟶ SpecF q) (g₀ : T ⟶ SpecLoc R)
+    (h : g ≫ SpecLoc.special toF = g₀) (y' : RelPoint strY' g),
+    spX g g₀ h (relSectionAlong jY' hX'.comm y')
+      = relSectionAlong jZ model.comm (spY g g₀ h y')
+  /-- **valuative criterion of properness**: every rational point of `X`
+  extends uniquely to an integral point of the model -/
+  properX : Function.Bijective
+    (RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) :
+      RelPoint xstr (𝟙 (SpecLoc R)) → RelPoint xstr (SpecLoc.generic R))
+  /-- the `j`-invariant of an integral point, INTEGRAL: `j` is a regular
+  function on the integral model of the open part -/
+  jmZ : RelPoint ystr (𝟙 (SpecLoc R)) → R
+  /-- the `j`-invariant on the generic fibre -/
+  jmGen : RelPoint ystr (SpecLoc.generic R) → ℚ
+  /-- the `j`-invariant on the special fibre -/
+  jmSp : RelPoint ystr (SpecLoc.special toF) → ZMod q
+  /-- the generic `j`-invariant of an integral point is its integral one -/
+  jmGen_pre : ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+    jmGen (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ) = ((jmZ yZ : R) : ℚ)
+  /-- the special `j`-invariant of an integral point is the reduction of
+  its integral one -/
+  jmSp_pre : ∀ yZ : RelPoint ystr (𝟙 (SpecLoc R)),
+    jmSp (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) yZ) = toF (jmZ yZ)
+  /-- the generic `j`-invariant is the `j`-map the consumers use -/
+  jm_gen : ∀ y : RelPoint strY (𝟙 SpecQ),
+    hj.jm y = jmGen (genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y)
+
+/-- **An integral section of the proper model whose special value lies in
+the open part lies in the open part throughout** (PROVEN).
+
+Pure topology of a local base — no modular input at all, and the reason
+`red_jm` needs no further geometric assumption.  `jZ` is an open
+immersion, so `jZ.opensRange` is open; the hypothesis puts the image of
+the CLOSED point of `Spec R` inside it (the image of
+`SpecLoc.special toF` is the closed point by
+`IsReductionBase.comap_eq_closedPoint`); and the only open subset of the
+spectrum of a LOCAL ring containing the closed point is the whole space
+(`Scheme.preimage_eq_top_of_closedPoint_mem`).  So
+`Set.range xZ.1.base ⊆ Set.range jZ.base`, and
+`AlgebraicGeometry.IsOpenImmersion.lift` factors the section through
+`𝒴`.
+
+`hbase` is load-bearing twice over: it is what makes `R` local (so that
+"open and contains the closed point" implies "everything"), and it is
+what identifies the image of `SpecLoc.special toF` with the closed
+point.  Drop it and the statement is FALSE — over a base with two closed
+points, a section can meet `𝒴` at one of them and a cusp at the other.
+
+Only the factorisation is asserted.  That the lift restricts to `y'` on
+the special fibre is NOT a second conjunct because it is a consequence:
+`jZ` is a mono, so `relSectionAlong jZ` is injective
+(`relSectionAlong_injective`), and `red_jm` derives it that way. -/
+theorem exists_relSectionAlong_of_special {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    (hbase : IsReductionBase q R toF)
+    {YZ XZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (model : IsX0Compactification N xstr ystr jZ)
+    (xZ : RelPoint xstr (𝟙 (SpecLoc R))) (y' : RelPoint ystr (SpecLoc.special toF))
+    (hh : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) xZ
+        = relSectionAlong jZ model.comm y') :
+    ∃ yZ : RelPoint ystr (𝟙 (SpecLoc R)), relSectionAlong jZ model.comm yZ = xZ := by
+  haveI := model.isOpen
+  haveI := hbase.nontrivialResidue
+  haveI := hbase.isLocalRing
+  obtain ⟨P⟩ : Nonempty (PrimeSpectrum (ZMod q)) := inferInstance
+  have heq : SpecLoc.special toF ≫ xZ.1 = y'.1 ≫ jZ := congrArg Subtype.val hh
+  have hclosed : (SpecLoc.special toF).base P = IsLocalRing.closedPoint R :=
+    hbase.comap_eq_closedPoint P
+  have hmem : xZ.1.base (IsLocalRing.closedPoint R) ∈ jZ.opensRange := by
+    rw [← hclosed]
+    have hp := congrArg (fun (f : SpecF q ⟶ XZ) => f.base P) heq
+    simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at hp
+    exact ⟨y'.1.base P, hp.symm⟩
+  have hsub : Set.range xZ.1.base ⊆ Set.range jZ.base := by
+    rintro _ ⟨z, rfl⟩
+    have htop := Scheme.preimage_eq_top_of_closedPoint_mem xZ.1 hmem
+    have hz : z ∈ xZ.1 ⁻¹ᵁ jZ.opensRange := by rw [htop]; trivial
+    exact hz
+  refine ⟨⟨IsOpenImmersion.lift jZ xZ.1 hsub, ?_⟩, ?_⟩
+  · rw [← model.comm, ← Category.assoc, IsOpenImmersion.lift_fac, xZ.2]
+  · exact Subtype.ext (IsOpenImmersion.lift_fac _ _ _)
+
+namespace IsX0JNeronDatum
+
+variable {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+
+/-- **The integral point of the curve model** attached to a rational
+point, by the valuative criterion of properness. -/
+noncomputable def intX (x : RelPoint strX (𝟙 SpecQ)) : RelPoint xstr (𝟙 (SpecLoc R)) :=
+  (Equiv.ofBijective _ d.properX).symm
+    (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x)
+
+theorem pre_intX (x : RelPoint strX (𝟙 SpecQ)) :
+    RelPoint.pre (SpecLoc.generic R) (Category.comp_id (SpecLoc.generic R)) (d.intX x)
+      = d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) x :=
+  (Equiv.ofBijective _ d.properX).apply_symm_apply _
+
+/-- **Reduction of rational points of the curve**: extend to the integral
+model, then restrict to the special fibre.  This is `redX` of
+`IsX0JReductionAt`, no longer posited. -/
+noncomputable def redX (x : RelPoint strX (𝟙 SpecQ)) : RelPoint strX' (𝟙 (SpecF q)) :=
+  (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)).symm
+    (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x))
+
+theorem redX_def (x : RelPoint strX (𝟙 SpecQ)) :
+    d.redX x = (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX x)) := rfl
+
+/-- **The `j`-map on the rational points of the special fibre**, read off
+the model.  This is `jm'` of `IsX0JReductionAt`, no longer posited. -/
+noncomputable def jm' (y' : RelPoint strY' (𝟙 (SpecF q))) : ZMod q :=
+  d.jmSp (d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y')
+
+theorem jm'_def (y' : RelPoint strY' (𝟙 (SpecF q))) :
+    d.jm' y' = d.jmSp (d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y') := rfl
+
+/-- **`red_jm` of `IsX0JReductionAt`, as a THEOREM** — the repair the
+FORMAL-CONTENT AUDIT of that structure asked for.
+
+The proof is the classical one, read on points.  Push the hypothesis
+through `spX`: the integral extension of `sectionAlong hX.j hX.over y`
+restricts on the special fibre to a point of the OPEN part `𝒴`.  By
+`exists_relSectionAlong_of_special` the whole integral section therefore
+lies in `𝒴`, giving an integral point `yZ` of the open model; since `jZ`
+is a mono, `yZ` restricts to `y` generically and to `y'` specially.  Then
+
+* `hj.jm y` is `jmZ yZ`, an element of `R = ℤ_(q)`, so it has
+  non-negative `q`-adic valuation — `IsReductionBase.padicValRat_nonneg`;
+* `jm' y'` is `toF (jmZ yZ)`, and the congruence is the image under `toF`
+  of the identity `jmZ yZ · den = num`, which holds in `R` because it
+  holds in `ℚ` and `R ⊆ ℚ`.
+
+Note where the pinning is used: nowhere is `redX` assumed to do anything.
+Every step is a consequence of `properX`, `spX_j`, `genX_j` and the
+model. -/
+theorem red_jm (y : RelPoint strY (𝟙 SpecQ)) (y' : RelPoint strY' (𝟙 (SpecF q)))
+    (hred : d.redX (sectionAlong hX.j hX.over y) = sectionAlong jY' hX'.comm y') :
+    0 ≤ padicValRat q (hj.jm y) ∧
+      d.jm' y' * ((hj.jm y).den : ZMod q) = ((hj.jm y).num : ZMod q) := by
+  haveI := d.model.isOpen
+  have hA : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _)
+        (d.intX (sectionAlong hX.j hX.over y))
+      = relSectionAlong jZ d.model.comm
+        (d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y') := by
+    have hcong := congrArg (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)) hred
+    rwa [d.redX_def, Equiv.apply_symm_apply,
+      sectionAlong_eq_relSectionAlong jY' hX'.comm y', d.spX_j] at hcong
+  obtain ⟨yZ, hyZ⟩ := exists_relSectionAlong_of_special d.base d.model _ _ hA
+  have hgen : RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ
+      = d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _) y := by
+    apply relSectionAlong_injective jZ d.model.comm
+    rw [← pre_relSectionAlong, hyZ, d.pre_intX,
+      sectionAlong_eq_relSectionAlong hX.j hX.over y, d.genX_j]
+  have hsp : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) yZ
+      = d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y' := by
+    apply relSectionAlong_injective jZ d.model.comm
+    rw [← pre_relSectionAlong, hyZ, hA]
+  have hjm : hj.jm y = ((d.jmZ yZ : R) : ℚ) := by
+    rw [d.jm_gen y, ← hgen, d.jmGen_pre]
+  have hjm' : d.jm' y' = toF (d.jmZ yZ) := by
+    rw [d.jm'_def, ← hsp, d.jmSp_pre]
+  refine ⟨?_, ?_⟩
+  · rw [hjm]; exact d.base.padicValRat_nonneg _
+  · rw [hjm', hjm]
+    have hR : (d.jmZ yZ) * ((((d.jmZ yZ : R) : ℚ)).den : R)
+        = ((((d.jmZ yZ : R) : ℚ)).num : R) := by
+      apply Subtype.ext
+      push_cast
+      exact Rat.mul_den_eq_num _
+    have hF := congrArg toF hR
+    rwa [map_mul, map_natCast, map_intCast] at hF
+
+/-- **A Néron-pinned `j`-datum is a `j`-reduction datum** (PROVEN).
+
+This is the whole point of the pinning: `redX` is no longer an arbitrary
+function and `red_jm` is no longer an assumption about it, but a
+consequence of both maps being induced by morphisms of models over
+`ℤ_(q)`.  Exactly the shape of `IsX0NeronDatum.toReduction`. -/
+noncomputable def toJReduction : IsX0JReductionAt N q hX hX' hj where
+  redX := d.redX
+  jm' := d.jm'
+  red_jm := d.red_jm
+
+end IsX0JNeronDatum
+
+/-- **Existence of the Néron-pinned `j`-reduction datum at a prime
+`q ∤ N`** (sorry node).
+
+TRUE — Deligne–Rapoport: for `q ∤ N` the modular curve `X_0(N)` has a
+smooth proper model over `ℤ_(q)` whose special fibre is `X_0(N)_{𝔽_q}`,
+the cusps form a relative divisor, and the `j`-map extends to a morphism
+of models.  Reduction of rational points is the valuative criterion
+applied to that proper model; `jmZ` is the extension of `j`, read on
+points and valued in `ℤ_(q)` itself.
+
+Note what is NOT assumed: `q` is not required to be odd.  Mazur needs
+`q ≠ 2` for the FORMAL IMMERSION, which is a different statement and is
+not part of this module; the model and the `j`-map extension are fine at
+`q = 2` as long as `q ∤ N`, and keeping the hypothesis out is the
+direction that leaves the leaf weakest.
+
+IRREDUCIBLE at this pin, for the same reason as `exists_x0NeronDatum`:
+it needs the integral model, which no development at this pin has.  What
+the pinning bought is not that this leaf became easier — it is that
+`red_jm` stopped being an assumption, so the datum can no longer be
+satisfied by junk, and consumers that need `redX` to BE the reduction can
+now be stated. -/
+theorem exists_x0JNeronDatum (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime) (_hqN : ¬ q ∣ N)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {hc : IsCoarseModuliY0 N strY} (hX : IsCompactificationY0 strY strX)
+    (hj : IsJMapOn N hc) :
+    ∃ (R : Subring ℚ) (toF : R →+* ZMod q) (Y' X' YZ XZ : Scheme.{0})
+      (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
+      (hX' : IsX0Compactification N strX' strY' jY')
+      (ystr : YZ ⟶ SpecLoc R) (xstr : XZ ⟶ SpecLoc R) (jZ : YZ ⟶ XZ),
+      Nonempty (IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :=
+  sorry
+
+/-- **Existence of the good reduction of `(X_0(N), j)` at a prime
+`q ∤ N`** (PROVEN, was a sorry node until 2026-07-27).
+
+Moved here from the `j`-map subsection — it consumes `SpecLoc`, which is
+declared in the integral-model subsection above — and re-founded on
+`IsX0JNeronDatum` exactly as the FORMAL-CONTENT AUDIT of
+`IsX0JReductionAt` asked.  The whole content is now in
+`exists_x0JNeronDatum`, and the three hypotheses that used to be
+decoration (`hN`, `hq`, `hqN`, formerly underscored) are passed straight
+through to it. -/
+theorem exists_x0JReductionAt (N q : ℕ) (hN : N ≠ 0) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {hc : IsCoarseModuliY0 N strY} (hX : IsCompactificationY0 strY strX)
+    (hj : IsJMapOn N hc) :
+    ∃ (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
+      (hX' : IsX0Compactification N strX' strY' jY'),
+      Nonempty (IsX0JReductionAt N q hX hX' hj) := by
+  obtain ⟨R, toF, Y', X', YZ, XZ, strY', strX', jY', hX', ystr, xstr, jZ, ⟨d⟩⟩ :=
+    exists_x0JNeronDatum N q hN hq hqN hX hj
+  exact ⟨Y', X', strY', strX', jY', hX', ⟨d.toJReduction⟩⟩
 
 /-! ### The twelve levels of Kenku's non-prime-power determination
 
