@@ -2023,4 +2023,162 @@ theorem degree_comp (φ : Isogeny W W') (ψ : Isogeny W' W'') :
 
 end Isogeny
 
+/-! ### The Vélu quotient map is a rational map
+
+**The bridge from `Velu.lean` to `IsIsogeny`, PROVEN 2026-07-27.** Everything in
+this section is closed; nothing here rests on the three open leaves of this file
+(`IsRationalMap.add`, `IsRationalMap.isIsogeny`, `Isogeny.isRationalMap_dualHom`)
+except the last declaration, `isIsogeny_of_veluMap`, which consumes
+`IsRationalMap.isIsogeny` deliberately and is marked as such.
+
+**Why this is the missing link.** `Velu.lean` builds the quotient of a curve by a
+finite subgroup and proves its map on points is an additive, Galois-equivariant
+homomorphism with prescribed kernel — but it never certifies that the map is given
+by *rational functions*, which is the entire content of `IsRationalMap` and hence
+of `IsIsogeny`. Without that certificate the Vélu route has no composition
+theorem, because `IsIsogeny.comp` (proven, in this file) is the only composition
+theorem in the tree; a Vélu-specific one would need Vélu-sum additivity
+`veluT ⟨h⟩ = t₁ + t₂`, which is a theory rather than a lemma. With the certificate,
+composites of Vélu quotients compose for free.
+
+**The certificate, explicitly.** All five polynomials already exist in `Velu.lean`;
+this section only assembles them. Writing `H = veluH S`, `Ξ = veluXi S`,
+`N = veluXNum S`, `x = veluPointX P`, `y = veluPointY P`, and `X'`, `Y'` for the
+Vélu coordinates `veluCoordX S P`, `veluCoordY S P`:
+
+* `A = N`, `B = H`, from `veluXNum_eval : N(x) = H(x)·X'`;
+* `C = 2Ξ`, `E = 2H²`, and
+  `D = (a₁·T + a₃)·Ξ − a₁·H·N − a₃·H²`.
+
+The `y`-half is Vélu's completed square. `velu_pole_V` gives
+`2Y' + a₁X' + a₃ = (2y + a₁x + a₃)·(1 − ΣV)` and `veluXi_eval` gives
+`Ξ(x) = H(x)²·(1 − ΣV)`; eliminating `(1 − ΣV)` between them and substituting
+`X' = N(x)/H(x)` yields `Y'·2H(x)² = 2Ξ(x)·y + D(x)` — which is exactly the
+`y`-clause with no division anywhere. So the whole section is `linear_combination`
+over three already-proven `Velu.lean` identities.
+
+`B ≠ 0` and `E ≠ 0` are free: `veluH` is a product of monic linear factors, hence
+monic, hence nonzero, and `2 ≠ 0` in characteristic zero. This is worth noting
+because the module docstring records the `B ≠ 0` side condition as "the whole
+difficulty" in the *composition* lemma — it is no difficulty at all here, since
+the Vélu denominator is monic by construction.
+
+**Faithfulness.** No hypothesis is weakened anywhere below. `[CharZero F]` is
+genuine (`veluT`, `veluW` and `veluCoordX` are defined by halving `±`-invariant
+sums), and `[IsAlgClosed F]`/`[W.IsElliptic]` appear only on
+`isIsogeny_of_veluMap`, inherited verbatim from `IsRationalMap.isIsogeny` — the
+stronger side, as the refutations recorded above require. -/
+
+/-- **PROVEN: the Vélu-quotient bridge, in its most general form.** Any
+homomorphism whose coordinates, away from its kernel, are Vélu's coordinates for a
+finite point subgroup `S` of odd order is an `IsRationalMap`.
+
+Stated for an arbitrary target curve `W'` rather than for `W.veluCurve S` itself,
+because every consumer in this development transports the Vélu map along an
+equality of curves (`pointAddEquivOfEq`) before using it, and transport preserves
+coordinates. -/
+theorem isRationalMap_of_veluCoords [CharZero F] {S : Finset W.Point}
+    (hS : IsPointSubgroup S) (hodd : Odd S.card) {φ : W.Point →+ W'.Point}
+    (hcoord : ∀ P : W.Point, φ P ≠ 0 →
+      P ∉ S ∧ veluPointX (φ P) = W.veluCoordX S P ∧
+        veluPointY (φ P) = W.veluCoordY S P) :
+    IsRationalMap φ := by
+  refine ⟨veluXNum S, veluH S,
+    Polynomial.C (2 : F) * veluXi S,
+    (Polynomial.C W.a₁ * Polynomial.X + Polynomial.C W.a₃) * veluXi S
+      - Polynomial.C W.a₁ * veluH S * veluXNum S
+      - Polynomial.C W.a₃ * (veluH S) ^ 2,
+    Polynomial.C (2 : F) * (veluH S) ^ 2,
+    (veluH_monic S).ne_zero,
+    mul_ne_zero (Polynomial.C_ne_zero.mpr two_ne_zero)
+      (pow_ne_zero 2 (veluH_monic S).ne_zero),
+    fun P hP => ?_⟩
+  obtain ⟨hPS, hx, hy⟩ := hcoord P hP
+  have hXNum := veluXNum_eval hS hodd hPS
+  have hXi := veluXi_eval hS hodd hPS
+  have hV : 2 * W.veluCoordY S P + W.a₁ * W.veluCoordX S P + W.a₃
+      = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+        * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
+    rw [velu_coordX_eq hS hPS, velu_coordY_eq hS hPS]
+    exact velu_pole_V hS hPS
+  refine ⟨?_, ?_⟩
+  · rw [hx]
+    linear_combination -hXNum
+  · rw [hy]
+    simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+    linear_combination ((veluH S).eval (veluPointX P)) ^ 2 * hV
+      - (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) * hXi
+      + (W.a₁ * (veluH S).eval (veluPointX P)) * hXNum
+
+/-- **PROVEN.** The form of `isRationalMap_of_veluCoords` that a consumer actually
+holds: the kernel is known to be exactly `S`, and the two coordinate identities are
+known outside `S`. This is precisely the shape produced by
+`exists_velu_quotient_isogeny_model` once its `φ` is unfolded — see the note on
+`isRationalMap_veluMap` below. -/
+theorem isRationalMap_of_veluMap [CharZero F] {S : Finset W.Point}
+    (hS : IsPointSubgroup S) (hodd : Odd S.card) {φ : W.Point →+ W'.Point}
+    (hker : ∀ P : W.Point, φ P = 0 ↔ P ∈ S)
+    (hx : ∀ P : W.Point, P ∉ S → veluPointX (φ P) = W.veluCoordX S P)
+    (hy : ∀ P : W.Point, P ∉ S → veluPointY (φ P) = W.veluCoordY S P) :
+    IsRationalMap φ :=
+  isRationalMap_of_veluCoords hS hodd fun P hP =>
+    have h : P ∉ S := fun hc => hP ((hker P).mpr hc)
+    ⟨h, hx P h, hy P h⟩
+
+/-- **PROVEN: the canonical Vélu quotient map is an `IsRationalMap`.** This is the
+bridge instantiated at `Velu.lean`'s own `veluMap`, so it is the literal statement
+"the Vélu quotient map is a rational map" rather than a statement about an abstract
+map satisfying coordinate hypotheses.
+
+`φ` is taken as a hypothesised `AddMonoidHom` agreeing pointwise with `veluMap`,
+rather than `veluMap` being bundled here, because bundling needs `velu_map_add` —
+additivity — which is a separate concern this lemma does not depend on. Every
+consumer already has the bundled hom in hand (both `exists_velu_quotient_isogeny_model`
+and `exists_velu_quotient_isogeny_model_of_subgroup` build one with
+`AddMonoidHom.mk'`), so `hφ` is discharged by `rfl` at each. -/
+theorem isRationalMap_veluMap [CharZero F] [W.IsElliptic] {S : Finset W.Point}
+    (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {φ : W.Point →+ (W.veluCurve S).Point}
+    (hφ : ∀ P : W.Point, φ P = W.veluMap S hS hodd P) :
+    IsRationalMap φ := by
+  haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+  refine isRationalMap_of_veluMap hS hodd (fun P => ?_) (fun P hP => ?_) (fun P hP => ?_)
+  · rw [hφ]; exact W.veluMap_eq_zero_iff S hS hodd P
+  · rw [hφ, W.veluMap_of_notMem hS hodd hP]; rfl
+  · rw [hφ, W.veluMap_of_notMem hS hodd hP]; rfl
+
+/-- **PROVEN, unconditionally.** A homomorphism whose kernel is a `Finset` has
+finite kernel. Trivial, and recorded because it pins down exactly how much of
+`IsIsogeny` the Vélu map still owes to an open leaf: of the three fields,
+`isRationalMap` is `isRationalMap_veluMap` above and `finite_ker` is this, so
+**`surjective` is the only one that is not already available** — and surjectivity
+on `F`-points is a property of the base field, not of the morphism, which is why
+it is gated on `[IsAlgClosed F]` in `IsRationalMap.isIsogeny`. -/
+theorem finite_ker_of_ker_eq {S : Finset W.Point} {φ : W.Point →+ W'.Point}
+    (hker : ∀ P : W.Point, φ P = 0 ↔ P ∈ S) :
+    (AddMonoidHom.ker φ : Set W.Point).Finite := by
+  have h : (AddMonoidHom.ker φ : Set W.Point) = (S : Set W.Point) := by
+    ext P
+    exact hker P
+  rw [h]
+  exact S.finite_toSet
+
+/-- **The payoff: the Vélu quotient map is an `IsIsogeny`**, hence composes with
+any other isogeny through the proven `IsIsogeny.comp`.
+
+**This declaration consumes the open leaf `IsRationalMap.isIsogeny`** and is the
+only one in this section that does; the three above are closed outright. The
+dependence is exactly on the `surjective` field, as `finite_ker_of_ker_eq` records.
+`[IsAlgClosed F]` and `[W.IsElliptic]` are inherited verbatim from that leaf, both
+of which were established as necessary by the refutations earlier in this file; the
+consumers of interest work over `AlgebraicClosure ℚ` with `E` elliptic, so neither
+costs anything downstream. -/
+theorem isIsogeny_of_veluMap [CharZero F] [IsAlgClosed F] [W.IsElliptic]
+    {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {φ : W.Point →+ (W.veluCurve S).Point}
+    (hφ : ∀ P : W.Point, φ P = W.veluMap S hS hodd P) :
+    IsIsogeny φ :=
+  (isRationalMap_veluMap hS hodd hφ).isIsogeny
+
 end WeierstrassCurve
