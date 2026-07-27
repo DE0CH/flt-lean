@@ -44980,8 +44980,377 @@ theorem exists_cyclotomicChar_ray_class (F : Type u) [Field F] [NumberField F]
     rw [hgt]
     exact pow_eq_pow_val_ray_class htm' k
 
-/-- **CHILDRESS 2.6, IN PURE ELEMENTARY NUMBER THEORY** (sorry node,
-created 2026-07-27 as sub-leaf (A3a-1-1-b-2-A) of
+/-- **`a ^ k ≡ 1 (mod c)` READ INSIDE `ZMod c`** (PROVEN 2026-07-27; the
+bookkeeping bridge used throughout the Childress 2.3–2.6 development
+below, where the arithmetic is done with `Nat.ModEq` and the order theory
+inside `ZMod`/`(ZMod c)ˣ`). -/
+theorem pow_modEq_one_iff_ray_class (x k c : ℕ) :
+    ((x : ZMod c)) ^ k = 1 ↔ x ^ k ≡ 1 [MOD c] := by
+  have h : ((x ^ k : ℕ) : ZMod c) = ((1 : ℕ) : ZMod c) ↔ x ^ k ≡ 1 [MOD c] :=
+    ZMod.natCast_eq_natCast_iff _ _ _
+  simpa using h
+
+/-- **THE SAME BRIDGE FOR THE UNIT `ZMod.unitOfCoprime`** (PROVEN
+2026-07-27).  A unit is trivial iff its underlying residue is, so
+`orderOf` computed in the group `(ZMod c)ˣ` is the classical
+multiplicative order of `x` modulo `c`. -/
+theorem unitOfCoprime_pow_eq_one_iff_ray_class {c : ℕ} (x : ℕ) (h : Nat.Coprime x c) (k : ℕ) :
+    (ZMod.unitOfCoprime x h) ^ k = 1 ↔ x ^ k ≡ 1 [MOD c] := by
+  rw [Units.ext_iff]
+  push_cast [ZMod.coe_unitOfCoprime]
+  exact pow_modEq_one_iff_ray_class x k c
+
+/-- **THE TWO-TERM BINOMIAL CONGRUENCE `(1+x)^i ≡ 1 + i·x (mod x²)`**
+(PROVEN 2026-07-27 by induction on `i`).  This is the entire content of
+Childress's "two-line congruence mod `q²`" in Lemma 2.3: with `x = q·c`
+it pins the `q`-adic valuation of the geometric sum below to be exactly
+`1`, which is what forces that sum to have a prime factor other than
+`q`. -/
+theorem binom_sq_dvd_ray_class (x : ℤ) (i : ℕ) :
+    (x ^ 2 : ℤ) ∣ (1 + x) ^ i - 1 - (i : ℤ) * x := by
+  induction i with
+  | zero => simp
+  | succ i ih =>
+      obtain ⟨c, hc⟩ := ih
+      refine ⟨(1 + x) * c + i, ?_⟩
+      have h2 : (1 + x) ^ i = 1 + (i : ℤ) * x + x ^ 2 * c := by linarith
+      have h3 : (1 + x) ^ (i + 1) = (1 + x) * (1 + x) ^ i := by ring
+      rw [h3, h2]
+      push_cast
+      ring
+
+/-- **`q²` NEVER DIVIDES `1 + b + ⋯ + b^(q-1)`** (PROVEN 2026-07-27), for
+a prime `q`, provided `b` is a perfect SQUARE when `q = 2`.
+
+This is the combinatorial heart of Childress *Class Field Theory* Lemma
+2.3.  Write `t = ∑_{i<q} bⁱ`, so that `(b − 1)·t = b^q − 1`.
+
+* If `q` is ODD and `q ∣ t`, then `q ∣ b^q − 1`, so Fermat's little
+  theorem (`ZMod.pow_card`) gives `b ≡ 1 (mod q)`; writing `b = 1 + q·c`
+  and summing `binom_sq_dvd_ray_class` over `i < q` gives
+  `q² ∣ t − q − (∑_{i<q} i)·q·c`, and `∑_{i<q} i = q·m` because `q = 2m+1`
+  is odd — so `q² ∣ t − q`.  Together with `q² ∣ t` that forces
+  `q² ∣ q`, impossible for `q ≥ 3`.
+* If `q = 2` then `t = 1 + b` with `b` a square, and `4 ∣ 1 + b` would
+  make `b ≡ 3 (mod 4)`, which no square is.
+
+**The `q = 2` hypothesis is not cosmetic**: it is exactly the Zsygmondy
+exception.  For `a = 3`, `q = 2`, `r = 1` one has `b = 3`, `t = 4`, whose
+only prime factor IS `q`; correspondingly no prime `P` has
+`ord_P(3) = 2`.  The caller dodges this by only ever applying the lemma
+with `r ≥ 2`, which makes `b = a^(2^(r-1))` a square. -/
+theorem not_sq_dvd_geomSum_ray_class (b q : ℕ) (hq : q.Prime)
+    (hsquare : q = 2 → ∃ c : ℕ, b = c ^ 2) :
+    ¬ (q ^ 2 ∣ ∑ i ∈ Finset.range q, b ^ i) := by
+  classical
+  intro hsq
+  have hq2 : 2 ≤ q := hq.two_le
+  have hsqZ : ((q : ℤ)) ^ 2 ∣ ((∑ i ∈ Finset.range q, b ^ i : ℕ) : ℤ) := by exact_mod_cast hsq
+  rcases eq_or_ne q 2 with hq2eq | hqne
+  · obtain ⟨c, hc⟩ := hsquare hq2eq
+    have htn : (∑ i ∈ Finset.range q, b ^ i) = 1 + c ^ 2 := by
+      rw [hq2eq]
+      simp [Finset.sum_range_succ, hc]
+    have h4 : (4 : ℤ) ∣ 1 + (c : ℤ) ^ 2 := by
+      rw [htn, hq2eq] at hsqZ
+      push_cast at hsqZ
+      exact hsqZ
+    have hz : ((1 + (c : ℤ) ^ 2 : ℤ) : ZMod 4) = 0 :=
+      (ZMod.intCast_zmod_eq_zero_iff_dvd _ 4).mpr h4
+    push_cast at hz
+    have hcontra : ∀ y : ZMod 4, (1 + y ^ 2 : ZMod 4) ≠ 0 := by decide
+    exact hcontra _ hz
+  · have hq3 : 3 ≤ q := by
+      rcases Nat.lt_or_ge q 3 with h | h
+      · omega
+      · omega
+    have hgeom : ((∑ i ∈ Finset.range q, b ^ i : ℕ) : ℤ) * ((b : ℤ) - 1) = (b : ℤ) ^ q - 1 := by
+      push_cast
+      exact geom_sum_mul (b : ℤ) q
+    have hqt : (q : ℤ) ∣ (b : ℤ) ^ q - 1 := by
+      rw [← hgeom]
+      exact Dvd.dvd.mul_right (dvd_trans (dvd_pow_self (q : ℤ) two_ne_zero) hsqZ) _
+    -- Fermat's little theorem gives `b ≡ 1 (mod q)`
+    have hb1q : (q : ℤ) ∣ (b : ℤ) - 1 := by
+      haveI : Fact q.Prime := ⟨hq⟩
+      have hz : ((((b : ℤ)) ^ q - 1 : ℤ) : ZMod q) = 0 :=
+        (ZMod.intCast_zmod_eq_zero_iff_dvd _ q).mpr hqt
+      push_cast at hz
+      have hcard : ((b : ZMod q)) ^ q = (b : ZMod q) := ZMod.pow_card _
+      rw [hcard] at hz
+      refine (ZMod.intCast_zmod_eq_zero_iff_dvd ((b : ℤ) - 1) q).mp ?_
+      push_cast
+      exact hz
+    obtain ⟨c, hc⟩ := hb1q
+    have hbx : (b : ℤ) = 1 + (q : ℤ) * c := by linarith
+    have hq2x : ((q : ℤ)) ^ 2 ∣ ((q : ℤ) * c) ^ 2 := ⟨c ^ 2, by ring⟩
+    have key : ∀ i : ℕ, ((q : ℤ)) ^ 2 ∣ ((b : ℤ) ^ i - 1 - (i : ℤ) * ((q : ℤ) * c)) := by
+      intro i
+      rw [hbx]
+      exact dvd_trans hq2x (binom_sq_dvd_ray_class ((q : ℤ) * c) i)
+    have hd : ((q : ℤ)) ^ 2 ∣
+        ∑ i ∈ Finset.range q, ((b : ℤ) ^ i - 1 - (i : ℤ) * ((q : ℤ) * c)) :=
+      Finset.dvd_sum (fun i _ => key i)
+    -- Gauss: `∑_{i < q} i = q * m` when `q = 2m+1`
+    obtain ⟨m, hm⟩ := hq.odd_of_ne_two hqne
+    have hs2 : (∑ i ∈ Finset.range q, i) * 2 = (q * m) * 2 := by
+      rw [Finset.sum_range_id_mul_two q, hm]
+      simp
+      ring
+    have hs : (∑ i ∈ Finset.range q, i) = q * m := by omega
+    have heq : ∑ i ∈ Finset.range q, ((b : ℤ) ^ i - 1 - (i : ℤ) * ((q : ℤ) * c))
+        = ((∑ i ∈ Finset.range q, b ^ i : ℕ) : ℤ) - (q : ℤ)
+          - ((q : ℤ) * m) * ((q : ℤ) * c) := by
+      rw [Finset.sum_sub_distrib, Finset.sum_sub_distrib, ← Finset.sum_mul]
+      have hcast : (∑ i ∈ Finset.range q, ((i : ℕ) : ℤ)) = ((q * m : ℕ) : ℤ) := by
+        rw [← hs]
+        push_cast
+        rfl
+      rw [hcast]
+      simp only [Finset.sum_const, Finset.card_range, nsmul_eq_mul, mul_one]
+      push_cast
+      ring
+    rw [heq] at hd
+    have hqq : ((q : ℤ)) ^ 2 ∣ (q : ℤ) := by
+      have h1 : ((q : ℤ)) ^ 2 ∣ ((q : ℤ) * m) * ((q : ℤ) * c) := ⟨(m : ℤ) * c, by ring⟩
+      have h2 : ((q : ℤ)) ^ 2 ∣
+          (((∑ i ∈ Finset.range q, b ^ i : ℕ) : ℤ) - (q : ℤ)
+            - ((q : ℤ) * m) * ((q : ℤ) * c)) + ((q : ℤ) * m) * ((q : ℤ) * c) := hd.add h1
+      have h3 : ((q : ℤ)) ^ 2 ∣ ((∑ i ∈ Finset.range q, b ^ i : ℕ) : ℤ) - (q : ℤ) := by
+        simpa using h2
+      have h5 := dvd_sub hsqZ h3
+      simpa using h5
+    have hle : ((q : ℤ)) ^ 2 ≤ (q : ℤ) := Int.le_of_dvd (by exact_mod_cast by omega) hqq
+    nlinarith [hle, (by exact_mod_cast hq3 : (3 : ℤ) ≤ (q : ℤ))]
+
+/-- **CHILDRESS 2.3: A PRIME OF ORDER EXACTLY `q ^ r`** (PROVEN
+2026-07-27).  For `a > 1`, a prime `q` and `r ≥ 2` there is a prime `P`
+with `ord_P(a) = q ^ r` exactly — stated here as the pair "`q ^ r`
+divides every exponent killing `a` mod `P`" and "`q ^ r` is itself such
+an exponent", which is what the callers use and which pins `r` from `P`.
+
+Put `b = a^(q^(r-1))` and `t = ∑_{i<q} bⁱ`, so `(b−1)·t = b^q − 1` and
+`t ≡ q (mod b−1)`.  By `not_sq_dvd_geomSum_ray_class` the sum `t` has a
+prime factor `P ≠ q`; since `P ∣ t` and `P ≠ q`, `P ∤ b − 1`.  Hence
+`a^(q^r) ≡ 1` but `a^(q^(r-1)) ≢ 1 (mod P)`, so the order of `a` in
+`ZMod P` divides `q^r` without dividing `q^(r-1)` — being a power of `q`
+it is `q^r`.
+
+`r ≥ 2` is load-bearing, not a convenience: it makes `b` a square, which
+is what excludes the genuine Zsygmondy exception `a = 3, q = 2, r = 1`
+(there `t = 4` and no prime has order `2`). -/
+theorem exists_prime_orderOf_prime_pow_ray_class (a : ℕ) (ha : 1 < a) (q : ℕ) (hq : q.Prime)
+    (r : ℕ) (hr : 2 ≤ r) :
+    ∃ P : ℕ, P.Prime ∧ ¬ P ∣ a ∧ (∀ k : ℕ, a ^ k ≡ 1 [MOD P] → q ^ r ∣ k) ∧
+      a ^ q ^ r ≡ 1 [MOD P] := by
+  classical
+  have hq2 : 2 ≤ q := hq.two_le
+  have hqpow : 0 < q ^ (r - 1) := pow_pos (by omega) _
+  set b : ℕ := a ^ q ^ (r - 1) with hb_def
+  have hb2 : 2 ≤ b := by
+    calc 2 ≤ a := ha
+      _ = a ^ 1 := (pow_one a).symm
+      _ ≤ a ^ q ^ (r - 1) := Nat.pow_le_pow_right (by omega) hqpow
+  set t : ℕ := ∑ i ∈ Finset.range q, b ^ i with ht_def
+  have hgeom : ((t : ℤ)) * ((b : ℤ) - 1) = (b : ℤ) ^ q - 1 := by
+    rw [ht_def]
+    push_cast
+    exact geom_sum_mul (b : ℤ) q
+  have htq : q < t := by
+    have h1 : (∑ _i ∈ Finset.range q, 1) < ∑ i ∈ Finset.range q, b ^ i := by
+      refine Finset.sum_lt_sum (fun i _ => Nat.one_le_pow _ _ (by omega)) ⟨1, ?_, ?_⟩
+      · exact Finset.mem_range.mpr (by omega)
+      · simp only [pow_one]
+        omega
+    simpa [ht_def] using h1
+  have hdvd_tq : ((b : ℤ) - 1) ∣ ((t : ℤ) - (q : ℤ)) := by
+    have hrw : ((t : ℤ) - (q : ℤ)) = ∑ i ∈ Finset.range q, ((b : ℤ) ^ i - 1) := by
+      rw [Finset.sum_sub_distrib, ht_def]
+      push_cast
+      simp
+    rw [hrw]
+    refine Finset.dvd_sum (fun i _ => ?_)
+    simpa using sub_dvd_pow_sub_pow (b : ℤ) 1 i
+  -- a prime factor of `t` other than `q`
+  have hexP : ∃ P : ℕ, P.Prime ∧ P ∣ t ∧ P ≠ q := by
+    by_cases hqt : q ∣ t
+    · have hnsq : ¬ (q ^ 2 ∣ t) := by
+        rw [ht_def]
+        refine not_sq_dvd_geomSum_ray_class b q hq (fun hq2eq => ⟨a ^ 2 ^ (r - 2), ?_⟩)
+        rw [hb_def, hq2eq, ← pow_mul]
+        congr 1
+        conv_lhs => rw [show r - 1 = (r - 2) + 1 by omega]
+        rw [pow_succ]
+      obtain ⟨w, hw⟩ := hqt
+      have hw1 : 1 < w := by nlinarith [hq2, htq, hw]
+      have hqw : ¬ q ∣ w := by
+        intro ⟨v, hv⟩
+        exact hnsq ⟨v, by rw [hw, hv]; ring⟩
+      refine ⟨w.minFac, Nat.minFac_prime (by omega), ?_, ?_⟩
+      · exact dvd_trans w.minFac_dvd ⟨q, by rw [hw]; ring⟩
+      · intro h
+        exact hqw (h ▸ w.minFac_dvd)
+    · exact ⟨t.minFac, Nat.minFac_prime (by omega), t.minFac_dvd,
+        fun h => hqt (h ▸ t.minFac_dvd)⟩
+  obtain ⟨P, hP, hPt, hPq⟩ := hexP
+  have hPtZ : (P : ℤ) ∣ (t : ℤ) := Int.natCast_dvd_natCast.mpr hPt
+  have hPbq : (P : ℤ) ∣ (a : ℤ) ^ q ^ r - 1 := by
+    have hbq : (P : ℤ) ∣ (b : ℤ) ^ q - 1 := by
+      rw [← hgeom]
+      exact hPtZ.mul_right _
+    rw [hb_def] at hbq
+    calc (P : ℤ) ∣ ((a : ℤ) ^ q ^ (r - 1)) ^ q - 1 := by
+          simpa [hb_def] using hbq
+      _ = (a : ℤ) ^ q ^ r - 1 := by
+          rw [← pow_mul]
+          congr 2
+          conv_rhs => rw [show r = (r - 1) + 1 by omega]
+          rw [pow_succ]
+  have hPb1 : ¬ (P : ℤ) ∣ (b : ℤ) - 1 := by
+    intro h
+    have h1 : (P : ℤ) ∣ (t : ℤ) - (q : ℤ) := h.trans hdvd_tq
+    have h2 : (P : ℤ) ∣ (q : ℤ) := by
+      have h4 := hPtZ.sub h1
+      simpa using h4
+    have h3 : P ∣ q := Int.ofNat_dvd.mp (by exact_mod_cast h2)
+    exact hPq ((Nat.prime_dvd_prime_iff_eq hP hq).mp h3)
+  -- pass to `ZMod P`
+  have hmodeq_iff : ∀ k : ℕ, (a ^ k ≡ 1 [MOD P]) ↔ (P : ℤ) ∣ (a : ℤ) ^ k - 1 := by
+    intro k
+    rw [Nat.modEq_iff_dvd]
+    push_cast
+    exact dvd_sub_comm
+  have hx1 : ((a : ZMod P)) ^ q ^ r = 1 := by
+    rw [pow_modEq_one_iff_ray_class]
+    exact (hmodeq_iff _).mpr hPbq
+  have hx2 : ((a : ZMod P)) ^ q ^ (r - 1) ≠ 1 := by
+    intro h
+    rw [pow_modEq_one_iff_ray_class] at h
+    exact hPb1 (by simpa [hb_def] using (hmodeq_iff _).mp h)
+  have hord : orderOf ((a : ZMod P)) = q ^ r := by
+    have hdvd : orderOf ((a : ZMod P)) ∣ q ^ r := orderOf_dvd_of_pow_eq_one hx1
+    obtain ⟨s, hs, hseq⟩ := (Nat.dvd_prime_pow hq).mp hdvd
+    rcases Nat.lt_or_ge s r with hlt | hge
+    · exfalso
+      apply hx2
+      refine orderOf_dvd_iff_pow_eq_one.mp ?_
+      rw [hseq]
+      exact pow_dvd_pow q (by omega)
+    · rw [hseq]
+      congr 1
+      omega
+  refine ⟨P, hP, ?_, ?_, ?_⟩
+  · intro hPa
+    have h1 : (P : ℤ) ∣ (a : ℤ) ^ q ^ r :=
+      dvd_pow (Int.natCast_dvd_natCast.mpr hPa) (pow_pos (show 0 < q by omega) r).ne'
+    have h2 : (P : ℤ) ∣ 1 := by
+      have h3 := h1.sub hPbq
+      simpa using h3
+    have h4 : P ∣ 1 := by exact_mod_cast h2
+    exact absurd (Nat.dvd_one.mp h4) hP.ne_one
+  · intro k hk
+    rw [← hord]
+    exact orderOf_dvd_iff_pow_eq_one.mpr ((pow_modEq_one_iff_ray_class a k P).mpr hk)
+  · exact (hmodeq_iff _).mpr hPbq
+
+/-- **CHILDRESS 2.4: THE PRIME CAN BE CHOSEN OUTSIDE ANY FINITE SET**
+(PROVEN 2026-07-27).  For `a > 1`, a prime `q`, any exponent `e` and any
+finite `S ⊆ ℕ` there is a prime `P ∉ S` not dividing `a` with
+`q ^ e ∣ ord_P(a)`.
+
+Childress gets this from the INFINITUDE of the primes produced by 2.3;
+formalised, the pigeonhole is direct.  The primes
+`P_j` supplied by `exists_prime_orderOf_prime_pow_ray_class` at
+`r = e + j + 2` have pairwise distinct orders `q^(e+j+2)`, hence are
+pairwise distinct; taking `j` over `range (S.card + 1)` produces
+`S.card + 1` distinct primes, so one of them lies outside `S`.  Each has
+`q^e ∣ q^(e+j+2) ∣ ord`, which is all the caller needs.
+
+Starting at `r = e + j + 2 ≥ 2` is what keeps 2.3 applicable (see the
+Zsygmondy remark there). -/
+theorem exists_prime_notMem_orderOf_ray_class (a : ℕ) (ha : 1 < a) (q : ℕ) (hq : q.Prime)
+    (e : ℕ) (S : Finset ℕ) :
+    ∃ P : ℕ, P.Prime ∧ P ∉ S ∧ ¬ P ∣ a ∧ (∀ k : ℕ, a ^ k ≡ 1 [MOD P] → q ^ e ∣ k) := by
+  classical
+  have hex : ∀ j : ℕ, ∃ P : ℕ, P.Prime ∧ ¬ P ∣ a ∧
+      (∀ k : ℕ, a ^ k ≡ 1 [MOD P] → q ^ (e + j + 2) ∣ k) ∧ a ^ q ^ (e + j + 2) ≡ 1 [MOD P] :=
+    fun j => exists_prime_orderOf_prime_pow_ray_class a ha q hq (e + j + 2) (by omega)
+  choose f hf1 hf2 hf3 hf4 using hex
+  have hinj : Function.Injective f := by
+    intro j j' hjj'
+    have h1 : q ^ (e + j' + 2) ∣ q ^ (e + j + 2) := by
+      refine hf3 j' _ ?_
+      rw [← hjj']
+      exact hf4 j
+    have h2 : q ^ (e + j + 2) ∣ q ^ (e + j' + 2) := by
+      refine hf3 j _ ?_
+      rw [hjj']
+      exact hf4 j'
+    have e1 := (Nat.pow_dvd_pow_iff_le_right hq.one_lt).mp h1
+    have e2 := (Nat.pow_dvd_pow_iff_le_right hq.one_lt).mp h2
+    omega
+  have hcard : ((Finset.range (S.card + 1)).image f).card = S.card + 1 := by
+    rw [Finset.card_image_of_injective _ hinj, Finset.card_range]
+  have hnotsub : ¬ ((Finset.range (S.card + 1)).image f ⊆ S) := by
+    intro h
+    have hle := Finset.card_le_card h
+    omega
+  obtain ⟨P, hPmem, hPS⟩ := Finset.not_subset.mp hnotsub
+  obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp hPmem
+  exact ⟨f j, hf1 j, hPS, hf2 j, fun k hk => dvd_trans (pow_dvd_pow q (by omega)) (hf3 j k hk)⟩
+
+/-- **CHILDRESS 2.5: A MODULUS `d` PRIME TO `S` WITH `n ∣ ord_d(a)`**
+(PROVEN 2026-07-27).
+
+Take `d = ∏_{p ∣ n} P_p` where `P_p ∉ S` is the prime supplied by
+`exists_prime_notMem_orderOf_ray_class` at `e = v_p(n)`.  If
+`a^k ≡ 1 (mod d)` then `a^k ≡ 1 (mod P_p)` for every `p`, so
+`p^{v_p(n)} ∣ k` for every prime `p ∣ n`, i.e. `n ∣ k`.  Applying this to
+`k = ord_d(a)` is the form the consumer uses.
+
+No Chinese remainder theorem is needed for the order statement: it is
+enough that each `P_p` divides `d`, since the conclusion is a
+divisibility of `k` and not an equality of orders. -/
+theorem exists_modulus_dvd_order_ray_class (a n : ℕ) (ha : 1 < a) (hn : 1 < n) (S : Finset ℕ) :
+    ∃ d : ℕ, 1 < d ∧ Nat.Coprime a d ∧ (∀ p ∈ S, p.Prime → ¬ p ∣ d) ∧
+      (∀ k : ℕ, a ^ k ≡ 1 [MOD d] → n ∣ k) := by
+  classical
+  have key : ∀ p : ℕ, p.Prime → ∃ P : ℕ, P.Prime ∧ P ∉ S ∧ ¬ P ∣ a ∧
+      (∀ k : ℕ, a ^ k ≡ 1 [MOD P] → p ^ (n.factorization p) ∣ k) :=
+    fun p hp => exists_prime_notMem_orderOf_ray_class a ha p hp (n.factorization p) S
+  choose! g hg1 hg2 hg3 hg4 using key
+  refine ⟨∏ p ∈ n.primeFactors, g p, ?_, ?_, ?_, ?_⟩
+  · obtain ⟨p₀, hp₀⟩ := Nat.nonempty_primeFactors.mpr hn
+    have hp₀p : p₀.Prime := Nat.prime_of_mem_primeFactors hp₀
+    have hdvd : g p₀ ∣ ∏ p ∈ n.primeFactors, g p := Finset.dvd_prod_of_mem _ hp₀
+    have hpos : 0 < ∏ p ∈ n.primeFactors, g p :=
+      Finset.prod_pos (fun p hp => (hg1 p (Nat.prime_of_mem_primeFactors hp)).pos)
+    have hle := Nat.le_of_dvd hpos hdvd
+    have h2 := (hg1 p₀ hp₀p).two_le
+    omega
+  · refine Nat.Coprime.prod_right (fun p hp => ?_)
+    exact ((hg1 p (Nat.prime_of_mem_primeFactors hp)).coprime_iff_not_dvd.mpr
+      (hg3 p (Nat.prime_of_mem_primeFactors hp))).symm
+  · intro p hpS hpp hdvd
+    obtain ⟨i, hi, hpi⟩ := (Nat.Prime.prime hpp).dvd_finsetProd_iff _ |>.mp hdvd
+    have hgi : (g i).Prime := hg1 i (Nat.prime_of_mem_primeFactors hi)
+    have hpeq : p = g i := (Nat.prime_dvd_prime_iff_eq hpp hgi).mp hpi
+    exact hg2 i (Nat.prime_of_mem_primeFactors hi) (hpeq ▸ hpS)
+  · intro k hk
+    rcases Nat.eq_zero_or_pos k with rfl | hkpos
+    · exact dvd_zero n
+    rw [← Nat.factorization_le_iff_dvd (by omega) (by omega)]
+    refine (Finsupp.le_iff _ _).mpr (fun p hp => ?_)
+    have hpF : p ∈ n.primeFactors := by
+      rwa [Nat.support_factorization] at hp
+    have hpp : p.Prime := Nat.prime_of_mem_primeFactors hpF
+    have hgd : g p ∣ ∏ p ∈ n.primeFactors, g p := Finset.dvd_prod_of_mem _ hpF
+    have hk' : a ^ k ≡ 1 [MOD g p] := hk.of_dvd hgd
+    have hfin := hg4 p hpp k hk'
+    exact (Nat.Prime.pow_dvd_iff_le_factorization hpp (by omega)).mp hfin
+
+/-- **CHILDRESS 2.6, IN PURE ELEMENTARY NUMBER THEORY** (PROVEN
+2026-07-27; created the same day as sub-leaf (A3a-1-1-b-2-A) of
 `exists_artinModulusCore_ray_class` below, which is now GLUE over this
 leaf, `exists_cyclotomicRealization_ray_class` just below, and the
 cyclotomic dictionary just above).
@@ -45020,6 +45389,26 @@ elementary throughout and needs neither Dirichlet nor Zsygmondy:
   (mod d')` forces `n' ∣ i`, hence `aⁱ ≡ 1 (mod d)` and so `aⁱ ≡ 1
   (mod m)` — independence.
 
+**AS FORMALISED.** 2.3 is `exists_prime_orderOf_prime_pow_ray_class`
+(with the mod-`q²` computation isolated as
+`not_sq_dvd_geomSum_ray_class` over `binom_sq_dvd_ray_class`), 2.4 is
+`exists_prime_notMem_orderOf_ray_class`, 2.5 is
+`exists_modulus_dvd_order_ray_class`, and 2.6 is this theorem.  Two
+deviations from the book, both simplifications:
+
+* 2.4's "infinitely many primes" is replaced by a PIGEONHOLE over
+  `S.card + 1` explicitly indexed primes `P_j` of pairwise distinct
+  orders `q^(e+j+2)`.  No infinitude statement is needed.
+* 2.5 needs no Chinese remainder theorem: its conclusion `n ∣ k` follows
+  from `P_p ∣ d` alone, one prime power at a time.  CRT enters only here
+  in 2.6, to build `β` and to glue `a^{N'} ≡ 1` from `d` and `d'`.
+
+The independence clause is proved by pushing `β ^ i * α ^ j = 1` through
+`Units.map (ZMod.castHom (d' ∣ m))`: `β ↦ 1`, so `α^j = 1` in
+`(ZMod d')ˣ`, i.e. `N' = ord_{d'}(a)` divides `j`; and `ord_m(a) ∣ N'`
+because `n' = ord_d(a)` divides `N'`, so `α ^ j = 1` already in
+`(ZMod m)ˣ` and then `β ^ i = 1`.
+
 `1 < m` is free from the construction (`n > 1` divides an order, so the
 unit group is nontrivial) and is REQUIRED by the consumer, which uses it
 to know `(1 : ZMod m).val = 1` when translating "acts trivially on `μ_m`"
@@ -45038,8 +45427,108 @@ theorem exists_modulus_independentOrders_ray_class (a n : ℕ) (ha : 1 < a) (hn 
       ((α : ZMod m) = (a : ZMod m)) ∧
       (∀ i : ℤ, α ^ i = 1 → (n : ℤ) ∣ i) ∧
       (∀ j : ℤ, β ^ j = 1 → (n : ℤ) ∣ j) ∧
-      (∀ i j : ℤ, β ^ i * α ^ j = 1 → β ^ i = 1 ∧ α ^ j = 1) :=
-  sorry
+      (∀ i j : ℤ, β ^ i * α ^ j = 1 → β ^ i = 1 ∧ α ^ j = 1) := by
+  classical
+  obtain ⟨d, hd1, hdcop, hdS, hdord⟩ := exists_modulus_dvd_order_ray_class a n ha hn S
+  haveI : NeZero d := ⟨by omega⟩
+  -- `n' = ord_d(a)`; all that is used downstream is `a ^ n' ≡ 1 (mod d)` and `1 < n'`
+  obtain ⟨n', hn'pow, hn'1⟩ : ∃ n' : ℕ, (a ^ n' ≡ 1 [MOD d]) ∧ 1 < n' := by
+    refine ⟨orderOf (ZMod.unitOfCoprime a hdcop),
+      (unitOfCoprime_pow_eq_one_iff_ray_class a hdcop _).mp (pow_orderOf_eq_one _), ?_⟩
+    have h1 : n ∣ orderOf (ZMod.unitOfCoprime a hdcop) :=
+      hdord _ ((unitOfCoprime_pow_eq_one_iff_ray_class a hdcop _).mp (pow_orderOf_eq_one _))
+    exact lt_of_lt_of_le hn (Nat.le_of_dvd (orderOf_pos _) h1)
+  obtain ⟨d', hd'1, hd'cop, hd'S, hd'ord⟩ :=
+    exists_modulus_dvd_order_ray_class a n' ha hn'1 (S ∪ d.primeFactors)
+  have hd0 : d ≠ 0 := by omega
+  have hdd' : Nat.Coprime d d' := by
+    rw [Nat.coprime_iff_gcd_eq_one]
+    by_contra hne
+    have hg1 : (Nat.gcd d d').minFac.Prime := Nat.minFac_prime hne
+    have hgd : (Nat.gcd d d').minFac ∣ d :=
+      dvd_trans (Nat.minFac_dvd _) (Nat.gcd_dvd_left d d')
+    have hgd' : (Nat.gcd d d').minFac ∣ d' :=
+      dvd_trans (Nat.minFac_dvd _) (Nat.gcd_dvd_right d d')
+    refine hd'S _ (Finset.mem_union_right _ ?_) hg1 hgd'
+    exact Nat.mem_primeFactors.mpr ⟨hg1, hgd, hd0⟩
+  -- the CRT element `b ≡ a (mod d)`, `b ≡ 1 (mod d')`
+  obtain ⟨b, hbd, hbd'⟩ := Nat.chineseRemainder hdd' a 1
+  have hbcopd : Nat.Coprime b d := by
+    have h : Nat.gcd d b = Nat.gcd d a := by rw [Nat.gcd_rec d b, Nat.gcd_rec d a, hbd]
+    have h2 : Nat.Coprime d b := by rw [Nat.Coprime, h]; exact hdcop.symm
+    exact h2.symm
+  have hbcopd' : Nat.Coprime b d' := by
+    have h : Nat.gcd d' b = Nat.gcd d' 1 := by rw [Nat.gcd_rec d' b, Nat.gcd_rec d' 1, hbd']
+    have h2 : Nat.Coprime d' b := by rw [Nat.Coprime, h]; simp
+    exact h2.symm
+  have hacopm : Nat.Coprime a (d * d') := Nat.Coprime.mul_right hdcop hd'cop
+  have hbcopm : Nat.Coprime b (d * d') := Nat.Coprime.mul_right hbcopd hbcopd'
+  have hdm : d ∣ d * d' := ⟨d', rfl⟩
+  have hd'm : d' ∣ d * d' := ⟨d, mul_comm d d'⟩
+  have hm1 : 1 < d * d' := by nlinarith
+  refine ⟨d * d', ZMod.unitOfCoprime a hacopm, ZMod.unitOfCoprime b hbcopm, hm1,
+    ?_, ?_, ?_, ?_, ?_⟩
+  · intro q hqS hqp hqm
+    rcases (Nat.Prime.dvd_mul hqp).mp hqm with h | h
+    · exact hdS q hqS hqp h
+    · exact hd'S q (Finset.mem_union_left _ hqS) hqp h
+  · exact ZMod.coe_unitOfCoprime a hacopm
+  · -- `n ∣ ord_m(a)`, because `d ∣ m`
+    have hordα_n : n ∣ orderOf (ZMod.unitOfCoprime a hacopm) := by
+      refine hdord _ ?_
+      exact Nat.ModEq.of_dvd hdm
+        ((unitOfCoprime_pow_eq_one_iff_ray_class a hacopm _).mp (pow_orderOf_eq_one _))
+    intro i hi
+    exact dvd_trans (Int.natCast_dvd_natCast.mpr hordα_n) (orderOf_dvd_iff_zpow_eq_one.mpr hi)
+  · -- `n ∣ ord_m(b)`, because `b ≡ a (mod d)`
+    have hordβ_n : n ∣ orderOf (ZMod.unitOfCoprime b hbcopm) := by
+      refine hdord _ ?_
+      have h1 : b ^ (orderOf (ZMod.unitOfCoprime b hbcopm)) ≡ 1 [MOD d] :=
+        Nat.ModEq.of_dvd hdm
+          ((unitOfCoprime_pow_eq_one_iff_ray_class b hbcopm _).mp (pow_orderOf_eq_one _))
+      exact ((Nat.ModEq.pow _ hbd).symm).trans h1
+    intro j hj
+    exact dvd_trans (Int.natCast_dvd_natCast.mpr hordβ_n) (orderOf_dvd_iff_zpow_eq_one.mpr hj)
+  · -- independence: reduce mod `d'`, where `β` is trivial
+    intro i j hij
+    have hN'pow : a ^ (orderOf (ZMod.unitOfCoprime a hd'cop)) ≡ 1 [MOD d'] :=
+      (unitOfCoprime_pow_eq_one_iff_ray_class a hd'cop _).mp (pow_orderOf_eq_one _)
+    have hn'N' : n' ∣ orderOf (ZMod.unitOfCoprime a hd'cop) := hd'ord _ hN'pow
+    have hN'd : a ^ (orderOf (ZMod.unitOfCoprime a hd'cop)) ≡ 1 [MOD d] := by
+      obtain ⟨s, hs⟩ := hn'N'
+      calc a ^ (orderOf (ZMod.unitOfCoprime a hd'cop)) = (a ^ n') ^ s := by
+            rw [← pow_mul, ← hs]
+        _ ≡ 1 ^ s [MOD d] := Nat.ModEq.pow s hn'pow
+        _ = 1 := one_pow s
+    have hN'm : a ^ (orderOf (ZMod.unitOfCoprime a hd'cop)) ≡ 1 [MOD d * d'] :=
+      (Nat.modEq_and_modEq_iff_modEq_mul hdd').mp ⟨hN'd, hN'pow⟩
+    have hordα_N' : orderOf (ZMod.unitOfCoprime a hacopm)
+        ∣ orderOf (ZMod.unitOfCoprime a hd'cop) :=
+      orderOf_dvd_iff_pow_eq_one.mpr
+        ((unitOfCoprime_pow_eq_one_iff_ray_class a hacopm _).mpr hN'm)
+    set φ : (ZMod (d * d'))ˣ →* (ZMod d')ˣ :=
+      Units.map (ZMod.castHom hd'm (ZMod d')).toMonoidHom with hφ
+    have hφβ : φ (ZMod.unitOfCoprime b hbcopm) = 1 := by
+      refine Units.ext ?_
+      show (ZMod.castHom hd'm (ZMod d')) ((ZMod.unitOfCoprime b hbcopm : ZMod (d * d'))) = 1
+      rw [ZMod.coe_unitOfCoprime, map_natCast]
+      have hb1 := (ZMod.natCast_eq_natCast_iff b 1 d').mpr hbd'
+      simpa using hb1
+    have hφα : φ (ZMod.unitOfCoprime a hacopm) = ZMod.unitOfCoprime a hd'cop := by
+      refine Units.ext ?_
+      show (ZMod.castHom hd'm (ZMod d')) ((ZMod.unitOfCoprime a hacopm : ZMod (d * d'))) = _
+      rw [ZMod.coe_unitOfCoprime, map_natCast, ZMod.coe_unitOfCoprime]
+    have hproj : (ZMod.unitOfCoprime a hd'cop) ^ j = 1 := by
+      have hc := congrArg φ hij
+      rw [map_mul, map_zpow, map_zpow, hφβ, hφα, one_zpow, one_mul, map_one] at hc
+      exact hc
+    have hjα : (ZMod.unitOfCoprime a hacopm) ^ j = 1 := by
+      refine orderOf_dvd_iff_zpow_eq_one.mp ?_
+      exact dvd_trans (Int.natCast_dvd_natCast.mpr hordα_N')
+        (orderOf_dvd_iff_zpow_eq_one.mpr hproj)
+    refine ⟨?_, hjα⟩
+    rw [hjα, mul_one] at hij
+    exact hij
 
 /-- **CHILDRESS 2.7 AND MINKOWSKI: THE GALOIS SIDE OF THE ARTIN MODULUS**
 (sorry node, created 2026-07-27 as sub-leaf (A3a-1-1-b-2-B) of
