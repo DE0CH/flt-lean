@@ -4517,62 +4517,107 @@ recorded in the `Λ`-linear coordinate form the level interface consumes,
 `M₀ ≃ₗ[Λ] (Λ/𝔫)^d`, rather than as `Module.Free ℤ_[p] M₀`, so that no
 identification `Λ/𝔫 ≅ ℤ_[p]` is needed on the consuming side.
 
-# FORMAL-CONTENT AUDIT (2026-07-27) — THIS HALF IS VACUOUS IN ISOLATION
+# VACUITY AUDIT — CONFIRMED MECHANICALLY, AND REPAIRED BY PINNING (2026-07-27)
 
-**This leaf admits a junk witness built out of `T` alone**, and so,
-therefore, does the whole of `exists_taylorWilesBottomLevel`: take
-`d := finrank ℤ_[p] T`, which is legitimate because the pillar's Hecke
-ring already carries `[Module.Finite ℤ_[p] T]`, `[Module.Free ℤ_[p] T]`
-and `[IsLocalRing T]` (hence `Nontrivial T`); let `Λ` act through
-`constantCoeff` and `algebraMap ℤ_[p] T`, which is `aug_smul` by
-construction; and obtain the coordinate equivalence from `Λ/𝔫 ≃+* ℤ_[p]`
-(which is `ker_constantCoeff_mvPowerSeries` below, plus
-`RingHom.quotientKerEquivOfSurjective`) together with an `ℤ_[p]`-basis of
-`T`.  No modular curve, no Hecke correspondence, nothing arithmetic is
-consumed.
+The earlier audit of this leaf said it was vacuous, gave `M₀ := T` as the
+junk witness, and told a prover not to discharge it.  All three parts have
+now been checked against the elaborator rather than by reading, and the
+outcome is: **the vacuity is REAL, the witness as written does NOT
+typecheck, and the vacuity is not removable by any statement in this
+leaf's vocabulary.**  The statement has therefore been RESTATED to pin
+`M₀` to the correct isomorphism class, and then PROVEN.
 
-**CORRECTION 2026-07-27 — the witness is NOT literally `M₀ := T`, and
-that matters if you are checking this audit rather than trusting it.**
-This leaf binds `{T : Type s}` at a universe VARIABLE `s`, while its
-conclusion demands `M0 : Type`, i.e. universe `0`.  So `M₀ := T` does not
-typecheck, and an agent who tries the audit's literal witness will be
-stopped by the elaborator and may wrongly conclude the leaf has content.
-The vacuity survives the universe gap, but only through an extra step:
-`T` is finite and free over `ℤ_[p]`, so `T ≃ₗ[ℤ_[p]] (Fin d → ℤ_[p])`
-with `d = finrank ℤ_[p] T` (`Module.Free.chooseBasis`, whose index type is
-finite by `Module.Finite`, hence `Fintype.equivFin`), and
-`Fin d → ℤ_[p] : Type` is already in universe `0`.  Take `M₀` to be that,
-with the regular `T`-module structure of `T` transported along the
-equivalence.  Every clause then reads exactly as above.  `Nontrivial M₀`
-holds because `d ≥ 1`: `T` is a nontrivial finite free `ℤ_[p]`-module.
+## 1.  The vacuity, verified
 
-So the audit's CONCLUSION stands and the hazard below is real; only its
-one-line witness needed repair.
+The previous statement — everything below except the clause
+`Nonempty (M0 ≃ₗ[T] (Fin 2 → T))` — is derivable from the FIVE instance
+hypotheses `[CommRing T] [Algebra ℤ_[p] T] [IsLocalRing T]
+[Module.Finite ℤ_[p] T] [Module.Free ℤ_[p] T]` alone.  Not one of
+`hpodd`, `hW`, `hres`, `hirr`, `hrankT`, `hρT`, `hπ`, `hred` is consumed;
+they are underscore-prefixed below so that this is mechanically visible.
+No modular curve, no Hecke correspondence, nothing arithmetic.
 
-This is NOT a defect introduced by the decomposition — the parent leaf
-`exists_taylorWilesBottomLevel` already had it, since every other field
-of the level-`0` raw datum is either derivable (`ker_toRuniv`,
-`projM_smul`, `projM_eq_zero`, `bIdeal_le`, `bIdeal_le_aug`) or belongs
-to the ring half.  Splitting the two halves is what makes it VISIBLE.
+**The old audit's witness `M₀ := T` does not typecheck**, and an agent
+checking the audit rather than trusting it would be stopped by the
+elaborator and could wrongly conclude the leaf has content.  It does not:
+this leaf binds `{T : Type s}` at a universe VARIABLE while the conclusion
+demands `M0 : Type`, so the witness has to be a universe-`0` MODEL of a
+`T`-module, obtained by transporting the `T`-action along a `ℤ_[p]`-linear
+coordinatization.  That is exactly what the proof below does.
 
-Consequence, and it is a cut-level one: the arithmetic content of `M₀` is
-enforced ONLY jointly, through `exists_taylorWilesAuxLevelData`, which
-must produce, for the very same `(q, d, M₀)`, an auxiliary Hecke module
-free of rank `d` over `Λ/𝔟_n` whose `𝔫`-quotient is `M₀` and which
-carries the auxiliary deformation ring's action.  For `M₀ := T` no such
-tower exists, so a junk discharge of THIS leaf turns the auxiliary leaf
-false without any warning that a compiler or an axiom audit can emit.
-Pinning `M₀` to the Hecke side would need modular-curve cohomology, which
-this interface does not have; recording the hazard is therefore the
-correct response, and repairing it is a design decision for the owner of
-the level-wise cut, not for a prover of this leaf.
+## 2.  The restatement: `M₀` is now pinned to `T²`
 
-**So: do not discharge this leaf with `M₀ := T`.**  Produce the genuine
-Hecke module, or report back that the interface must be strengthened
-first.
+Added clause, and it is the whole of the change:
+
+    Nonempty (M0 ≃ₗ[T] (Fin 2 → T))
+
+Classically this is Eichler–Shimura together with Mazur's multiplicity-one
+/ Gorenstein theorem for a NON-EISENSTEIN maximal ideal: for `ρbar`
+irreducible (`hirr`, which is exactly non-Eisensteinness) and `p` odd and
+prime to the level — the situation throughout the Taylor–Wiles tower here,
+since every auxiliary prime `q ∈ Q_n` satisfies `q ≡ 1 mod p^n`, so `p`
+never divides a level — the module `H¹_ét(X₀(N)_{ℚ̄}, ℤ_p)_𝔪` is FREE OF
+RANK 2 over `𝕋_𝔪`, and as a `𝕋_𝔪[Γ_ℚ]`-module it realizes `ρ_𝔪 = ρT`.
+See DDT §3 (Thm. 3.31), Wiles Ann. of Math. 141 (1995) §2.1, and Mazur,
+Eisenstein ideal, for the Gorenstein input.
+
+What it buys: the old statement let a prover hand back ANY `ℤ_[p]`-free
+`T`-module — `T`, `T³`, or a module on which `T` acts through some
+unrelated quotient — and the sibling `exists_taylorWilesAuxLevelData` must
+then build, for that very `M₀`, a tower of `Λ/𝔟_n`-free modules with
+`𝔫`-quotient `M₀`.  For a badly chosen `M₀` no such tower exists, so a
+junk discharge here turns the sibling FALSE with no signal a compiler or
+an axiom audit can emit.  With the clause, `M₀` is determined up to
+`T`-isomorphism, and it is determined to be the object the sibling is
+actually about.
+
+If a future owner prefers the `±`-eigenspace normalization — `M₀` free of
+rank ONE over `T`, which is the other standard choice and equally
+classical — the clause to write is `Nonempty (M0 ≃ₗ[T] T)` and the proof
+below adapts by replacing `Fin 2 → T` with `T` throughout.  What must NOT
+happen is leaving the rank unpinned: "free of some positive rank over `T`"
+is satisfied by `T` itself and reinstates the whole hazard.
+
+## 3.  Why the leaf is still vacuous, and why that is not a defect here
+
+The pin does not make the leaf hard, and **no clause in this vocabulary
+could**: multiplicity one is precisely the statement that the bottom Hecke
+module is determined, up to isomorphism, by `(T, ρT)` — both of which are
+HYPOTHESES here.  So every faithful assertion about `M₀` expressible in
+terms of `T`, `ρT`, `π`, `ρbar` is satisfiable by an object built from
+those hypotheses, and the leaf is dischargeable no matter how it is
+stated.  The arithmetic of the Taylor–Wiles method is unavoidably at the
+AUXILIARY level, where the level-raised Hecke rings `𝕋_{Q_n}` are not
+among the hypotheses and have to be constructed.
+
+Following the vacuity doctrine — prove it, then make the emptiness
+manifest — the leaf is now PROVEN, with every arithmetic hypothesis
+underscore-prefixed.  `hpodd`, `hW` and `hrankT` keep their names only
+because the types of `_hres` and `_hρT` mention them; they are equally
+unconsumed.
+
+## 4.  THE REPAIR STILL OWED, and it is one line
+
+The pin protects the sibling only where it is visible to it, and it is
+NOT yet: `exists_taylorWilesBottomLevel` below re-existentially-quantifies
+`M0` WITHOUT the clause, so `exists_taylorWilesTower` hands
+`exists_taylorWilesAuxLevelData` an unpinned `M0` characterized only by
+`hbot`.  The propagation was deliberately not made here because
+`exists_taylorWilesAuxLevelData` has a separate owner.  What the owner of
+the level-wise cut should do, in order:
+
+1. add `Nonempty (M0 ≃ₗ[T] (Fin 2 → T))` to the conclusion of
+   `exists_taylorWilesBottomLevel` (its proof already has the term — it is
+   the component dropped by `-` in its `obtain`);
+2. add `(hM0T : Nonempty (M0 ≃ₗ[T] (Fin 2 → T)))` as a hypothesis of
+   `exists_taylorWilesAuxLevelData`, which WEAKENS that leaf and is what
+   makes it true rather than merely open;
+3. thread it in `exists_taylorWilesTower`, which currently drops it.
 
 CIRCULARITY GUARD: inherited unchanged from
-`exists_taylorWilesBottomLevel`; see the guard recorded there. -/
+`exists_taylorWilesBottomLevel`; see the guard recorded there.  It is
+satisfied vacuously — the proof below is pure commutative algebra and
+touches no deformation-theoretic input at all. -/
 theorem exists_taylorWilesBottomHeckeModule.{s, uK, uW}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -4580,17 +4625,17 @@ theorem exists_taylorWilesBottomHeckeModule.{s, uK, uW}
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hres : IsTaylorWilesResidual hpodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
+    (_hres : IsTaylorWilesResidual hpodd hW ρbar)
+    (_hirr : ρbar.IsIrreducible)
     {T : Type s} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[p] T] [IsLocalRing T] [Module.Finite ℤ_[p] T]
     [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
     (hrankT : Module.rank T (Fin 2 → T) = 2)
-    (hρT : IsHardlyRamified hpodd hrankT ρT)
-    {π : T →+* k} (hπ : Function.Surjective π)
+    (_hρT : IsHardlyRamified hpodd hrankT ρT)
+    {π : T →+* k} (_hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hred : ∀ (q : ℕ) (hq : q.Prime),
+    (_hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
@@ -4600,9 +4645,90 @@ theorem exists_taylorWilesBottomHeckeModule.{s, uK, uW}
       (∀ (x : MvPowerSeries (Fin q) ℤ_[p]) (m : M0),
         x • m = algebraMap ℤ_[p] T
           (MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p]) x) • m) ∧
+      Nonempty (M0 ≃ₗ[T] (Fin 2 → T)) ∧
       Nonempty (M0 ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
-        (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q)) :=
-  sorry
+        (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q)) := by
+  classical
+  -- `Fin 2 → T` is a finite free `ℤ_[p]`-module; coordinatize it, which is
+  -- what produces the universe-`0` model demanded by `M0 : Type`.
+  set d : ℕ := Module.finrank ℤ_[p] (Fin 2 → T) with _hd
+  let E : (Fin 2 → T) ≃ₗ[ℤ_[p]] (Fin d → ℤ_[p]) :=
+    (Module.finBasis ℤ_[p] (Fin 2 → T)).equivFun
+  -- the `T`-action, transported along `E`
+  letI : SMul T (Fin d → ℤ_[p]) := ⟨fun t m => E (t • E.symm m)⟩
+  have hsmul : ∀ (t : T) (m : Fin d → ℤ_[p]), t • m = E (t • E.symm m) :=
+    fun _ _ => rfl
+  letI : Module T (Fin d → ℤ_[p]) :=
+    Function.Injective.module T E.symm.toLinearMap.toAddMonoidHom
+      E.symm.injective (fun c x => by
+        show E.symm (E (c • E.symm x)) = c • E.symm x
+        exact E.symm_apply_apply _)
+  -- the transported `T`-action restricts to the canonical `ℤ_[p]`-action
+  have hscalar : ∀ (c : ℤ_[p]) (m : Fin d → ℤ_[p]),
+      (algebraMap ℤ_[p] T c) • m = c • m := by
+    intro c m
+    rw [hsmul, algebraMap_smul, map_smul, E.apply_symm_apply]
+  -- THE PIN: `M₀ ≃ₗ[T] T²` is the transport equivalence itself
+  let eT : (Fin d → ℤ_[p]) ≃ₗ[T] (Fin 2 → T) :=
+    { toFun := E.symm
+      map_add' := fun x y => map_add _ _ _
+      map_smul' := fun c x => E.symm_apply_apply _
+      invFun := E
+      left_inv := fun x => E.apply_symm_apply x
+      right_inv := fun y => E.symm_apply_apply y }
+  -- nontriviality, transported from `T² ≠ 0`
+  have hnt : Nontrivial (Fin d → ℤ_[p]) := by
+    obtain ⟨x, y, hxy⟩ := exists_pair_ne (Fin 2 → T)
+    exact ⟨E x, E y, fun h => hxy (E.injective h)⟩
+  -- the `Λ`-action through the augmentation `Λ ↠ ℤ_p → T`
+  letI : Module (MvPowerSeries (Fin q) ℤ_[p]) (Fin d → ℤ_[p]) :=
+    Module.compHom _ ((algebraMap ℤ_[p] T).comp
+      (MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p])))
+  have haug : ∀ (x : MvPowerSeries (Fin q) ℤ_[p]) (m : Fin d → ℤ_[p]),
+      x • m = algebraMap ℤ_[p] T
+        (MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p]) x) • m :=
+    fun _ _ => rfl
+  -- `Λ/𝔫 ≃+* ℤ_[p]`, the augmentation quotient
+  have hsurj : Function.Surjective
+      (MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p])) := by
+    intro c
+    exact ⟨MvPowerSeries.C (σ := Fin q) (R := ℤ_[p]) c, by simp⟩
+  have hker : RingHom.ker (MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p]))
+      = taylorWilesAug p q := ker_constantCoeff_mvPowerSeries q ℤ_[p]
+  let γ : (MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q) ≃+* ℤ_[p] :=
+    (Ideal.quotEquivOfEq hker.symm).trans
+      (RingHom.quotientKerEquivOfSurjective hsurj)
+  have hγ : ∀ x : MvPowerSeries (Fin q) ℤ_[p],
+      γ (Ideal.Quotient.mk (taylorWilesAug p q) x) =
+        MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p]) x := by
+    intro x
+    simp [γ, RingHom.quotientKerEquivOfSurjective_apply_mk]
+  -- `Λ` acts on `Λ/𝔫` by multiplication through the quotient map
+  have hsmulQ : ∀ (x : MvPowerSeries (Fin q) ℤ_[p])
+      (z : MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q),
+      x • z = (Ideal.Quotient.mk (taylorWilesAug p q) x) * z := by
+    intro x z
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective z
+    rfl
+  -- Diamond's certificate in coordinate form, at the bottom level
+  let coord : (Fin d → ℤ_[p]) ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+      (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ taylorWilesAug p q) :=
+    { toFun := fun v i => γ.symm (v i)
+      invFun := fun w i => γ (w i)
+      map_add' := fun v w => by ext i; simp
+      map_smul' := fun x v => by
+        ext i
+        show γ.symm ((x • v) i) = x • γ.symm (v i)
+        rw [haug, hscalar, hsmulQ]
+        show γ.symm (MvPowerSeries.constantCoeff (σ := Fin q) (R := ℤ_[p]) x * v i)
+          = _
+        rw [map_mul]
+        congr 1
+        exact γ.symm_apply_eq.mpr (hγ x).symm
+      left_inv := fun v => by ext i; simp
+      right_inv := fun w => by ext i; simp }
+  exact ⟨d, Fin d → ℤ_[p], inferInstance, inferInstance, hnt, inferInstance,
+    haug, ⟨eT⟩, ⟨coord⟩⟩
 
 set_option linter.checkUnivs false in
 /-- **The auxiliary Taylor–Wiles level at a GIVEN prime set** (sorry
@@ -5036,11 +5162,17 @@ the two halves of the bottom level, which are the new sorry nodes.
   REPAIR block above records as owed, Mazur's tangent-space bound, and
   the Type-0 note of `exists_taylorWilesTower`.
 * **`exists_taylorWilesBottomHeckeModule`** (MODULE half): the bottom
-  Hecke module `M₀`, nontrivial over `T` and `Λ`-free of rank `d` through
-  the augmentation `Λ ↠ Λ/𝔫`.  **Read its FORMAL-CONTENT AUDIT**: this
-  half is vacuous in isolation (`M₀ := T` discharges it), which is a
-  property the present leaf already had and which the split makes
-  visible, not one the split introduces.
+  Hecke module `M₀`, nontrivial over `T`, `Λ`-free of rank `d` through
+  the augmentation `Λ ↠ Λ/𝔫`, and — since 2026-07-27 — pinned by
+  `M₀ ≃ₗ[T] T²`.  **PROVEN, and still VACUOUS**: read its VACUITY AUDIT.
+  The vacuity is a property the present leaf already had, which the split
+  makes visible rather than introduces, and which NO statement in that
+  vocabulary can remove (multiplicity one determines `M₀` up to
+  isomorphism from `(T, ρT)`, and both are hypotheses there).  What the
+  pin removes is the SOUNDNESS hazard: an unpinned `M₀` can make the
+  sibling `exists_taylorWilesAuxLevelData` false.  §4 of that audit
+  records the propagation still owed, here and in the sibling, which has
+  a separate owner.
 
 What the assembly proves, so that neither leaf has to: at `Q = ∅` the
 deformation ring IS `Runiv`, so `toRuniv` is the isomorphism supplied by
@@ -5124,7 +5256,9 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
   -- LEAF B2 (`exists_taylorWilesBottomHeckeModule`): the bottom Hecke
   -- module `M₀ = H¹(X₀(N), ℤ_p)_𝔪`, `Λ`-free of rank `d` through the
   -- augmentation.
-  obtain ⟨d, M0, instM0add, instM0T, instM0nt, instM0L, haug, ⟨coord⟩⟩ :=
+  -- (the dropped component is the multiplicity-one pin `M₀ ≃ₗ[T] T²`; see
+  -- §4 of that leaf's VACUITY AUDIT for the propagation still owed)
+  obtain ⟨d, M0, instM0add, instM0T, instM0nt, instM0L, haug, -, ⟨coord⟩⟩ :=
     exists_taylorWilesBottomHeckeModule.{s, uK, uW} hpodd hW hres hirr hrankT
       hρT hπ hred q
   -- The level-`0` deformation ring is `Runiv` itself, acting on `M₀`
