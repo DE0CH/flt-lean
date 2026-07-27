@@ -464,7 +464,10 @@ below a two-line case split instead of a point-set argument.
 
 **No perfectness is needed in this direction.**  Smooth implies regular over ANY field; it is
 only the converse (`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`) that
-needs `PerfectField K`, and the module docstring records the counterexample.
+needs `PerfectField K`; the counterexample justifying that hypothesis is written out on the
+converse itself (the quasi-elliptic curve `y² = x³ + t` over `𝔽₃(t)`).  This pointer used to
+say "the module docstring records the counterexample", which was a dangling reference — no
+counterexample was recorded there.
 
 **THE PROOF, in four steps, and where each input lives.**  The old version of this docstring
 listed the pin's regularity API and concluded that the residue was
@@ -841,11 +844,41 @@ type over perfect `K` is equally true, and a prover who finds that shape more na
 prove it and derive this one, since `IsDiscreteValuationRing R` gives
 `IsPrincipalIdealRing R` and hence `IsRegularLocalRing R` for free at this pin.
 
-**`PerfectField F` is load-bearing and the statement is FALSE without it.**  Over an
-imperfect field `k` of characteristic `p` with `t ∈ k ∖ k^p`, the coordinate ring of
-`y^p = t x^p + t` localized at the singular-looking point is a DVR (the curve is REGULAR)
-and is not formally smooth over `k`.  This is the same counterexample the module docstring
-records, localized.
+**`PerfectField F` is load-bearing and the statement is FALSE without it.**
+
+**COUNTEREXAMPLE CORRECTED, 2026-07-28.**  The first version of this docstring cited
+`y^p = t x^p + t` (`t ∈ k ∖ k^p`) as "regular, so its local rings are DVRs, and not
+smooth".  **That witness is invalid and justified nothing**, and the failure is exactly on
+the hypothesis it was cited to illustrate: in characteristic `p`,
+`t x^p + t = t (x + 1)^p`, so with `u = x + 1` the equation is `y^p = t u^p`, whose
+defining polynomial lies in `𝔪²` at the `k`-rational point `u = y = 0` (checked in
+`Singular`: `reduce(g, std(m^2)) == 0`).  That local ring has `dim_k 𝔪/𝔪² = 2` in
+dimension one, so it is **singular, not a DVR**; its integral closure `k(t^{1/p})[u]` is
+strictly larger.  It is also not geometrically reduced — over `k̄` it is
+`(y − t^{1/p}(x+1))^p = 0`.
+
+The correct witness is the classical **quasi-elliptic** curve, localized.  Over
+`k = 𝔽₃(t)`, take `C : y² = x³ + t` and let `R := 𝒪_{C,P}` at the unique
+Jacobian-degenerate point `P : y = 0, x³ = −t` (residue field `k(t^{1/3})`).
+
+* `R` **is a DVR essentially of finite type over `k`**: `C` is integral, and at `P` the
+  maximal ideal is `𝔪 = (y, x³ + t) = (y)` because `x³ + t = y²` — a one-dimensional local
+  ring with principal maximal ideal.  So `R` satisfies **every hypothesis of this leaf**,
+  which the old witness did not.
+* `R` is **not formally smooth over `k`**: over `k̄`, `x³ + t = (x + t^{1/3})³`, so
+  `C ⊗ k̄` is the cuspidal cubic `y² = (x + t^{1/3})³` and `P` becomes the cusp.  Formal
+  smoothness is stable under base change, so it fails already over `k`.
+
+Machine-checked in `Magma` (2026-07-28) on the same example: `k(C)` has genus `1` over
+`𝔽₃(t)` with exact constant field `k`, and genus `0` after the purely inseparable base
+change `t = s³` — a drop of `(p−1)/2 = 1`, exactly what Tate's genus-change theorem permits
+at `p = 3`.  A geometrically regular model would preserve the genus.
+
+**The tempting repair fails too**: `k(C)/k` **is** separably generated (`k(C)/k(x)` is
+separable of degree `2`), so "separably generated function field ⟹ formally smooth" is
+FALSE; separable generation is strictly weaker than conservativity.  The full worked
+version of this counterexample, with the same correction, is on
+`smoothOfRelativeDimension_one_fromNormalization` in `CurveCompactification.lean`.
 
 **THE ROUTE, and what the pin already supplies for it.**
 
@@ -862,7 +895,9 @@ records, localized.
   a minimal generating set of `I` linearly independent in `𝔪_P/𝔪_P²` — the Jacobian matrix
   has full rank — and perfectness of `F` is what makes `κ` separable over `F`, so that
   `H₁(L_{κ⁄F}) = 0` and no relation is created by inseparability.  It is precisely that last
-  vanishing which the imperfect counterexample violates.
+  vanishing which the quasi-elliptic counterexample violates: there `κ = k(t^{1/3})` is
+  purely INSEPARABLE over `k = 𝔽₃(t)`, so `H₁(L_{κ⁄k}) ≠ 0` and the Jacobian criterion's
+  injectivity fails even though `R` is a DVR.
 * `GaloisRepresentation.Modularity.exists_isRegularLocalRing_quotient_indepList_of_submersivePresentation`
   (`Modularity/RegularStalks.lean`, PROVEN) is the *converse* bookkeeping — it turns a
   standard smooth presentation into regularity — and its Jacobian manipulation is the
@@ -996,10 +1031,47 @@ at this pin), so `hdvr` says exactly that `X` is regular; over a perfect field a
 scheme of finite type is smooth, and the relative dimension is `1` because a dense open of `X`
 is already smooth of relative dimension `1`.
 
-**`PerfectField K` is load-bearing and the statement is FALSE without it.**  Over an imperfect
-field `k` of characteristic `p` the curve `y^p = t x^p + t` with `t ∈ k ∖ k^p` is regular —
-so all its local rings are DVRs — and is not smooth.  `ℚ` and `𝔽_ℓ` are perfect, which is all
-either consumer needs.
+**`PerfectField K` is load-bearing and the statement is FALSE without it.**  `ℚ` and `𝔽_ℓ`
+are perfect, which is all either consumer needs.
+
+**COUNTEREXAMPLE CORRECTED, 2026-07-28 — the witness this docstring used to cite was FALSE
+IN BOTH CLAUSES.**  It read: "over an imperfect field `k` of characteristic `p` the curve
+`y^p = t x^p + t` with `t ∈ k ∖ k^p` is regular — so all its local rings are DVRs — and is
+not smooth."  In characteristic `p`, `t x^p + t = t (x + 1)^p`, so with `u = x + 1` the
+equation is `y^p = t u^p`; the defining polynomial lies in `𝔪²` at the `k`-rational point
+`u = y = 0` (checked in `Singular`), so that local ring has `dim_k 𝔪/𝔪² = 2` in dimension
+one — it is **singular, not a DVR**, and the curve is not its own normalization
+(its integral closure is the strictly larger `k(t^{1/p})[u]`).  It is also not
+geometrically reduced (`(y − t^{1/p}(x+1))^p = 0` over `k̄`), so it has no smooth open
+subscheme and cannot satisfy `hY` either.  **The failure is precisely on `hdvr`, the
+hypothesis it was cited to illustrate**, so it justified nothing.
+
+The correct witness is the classical **quasi-elliptic** curve (these exist only in
+characteristics `2` and `3`).  Over `k = 𝔽₃(t)`, take `C : y² = x³ + t ⊆ 𝔸²_k`, let `X` be
+its regular proper model and `Y := C ∖ {P}` where `P : y = 0, x³ = −t` is the unique
+Jacobian-degenerate point (residue field `k(t^{1/3})`).
+
+* `hdvr` **holds**: `C` is integral (`x³ + t` has odd degree, so it is not a square) and
+  regular — in characteristic `3` the partials are `∂/∂y = 2y` and `∂/∂x = −3x² = 0`, so
+  `P` is the only candidate, and there `𝔪 = (y, x³ + t) = (y)` because `x³ + t = y²`.  A
+  one-dimensional local ring with principal maximal ideal is a DVR.
+* `hY` and dominance **hold**: `Y` is a smooth affine curve over `k`, integral, and dense.
+* The conclusion **fails**: over `k̄`, `x³ + t = (x + t^{1/3})³`, so `C ⊗ k̄` is the cuspidal
+  cubic `y² = (x + t^{1/3})³` and `X` is not smooth at `P`.
+
+Machine-checked in `Magma` (2026-07-28): `k(C)` has genus `1` over `𝔽₃(t)` with exact
+constant field `k` — so `C` is geometrically integral, which the genus-preservation argument
+needs — and genus `0` after the purely inseparable base change `t = s³`, a drop of
+`(p−1)/2 = 1`, exactly what Tate's genus-change theorem permits at `p = 3`.
+
+**The tempting repair is wrong too**, which is why `hY` does not let one drop the
+hypothesis: `k(C)/k` **is** separably generated (`k(C)/k(x)` is separable of degree `2`), so
+"smooth `Y` ⟹ separably generated function field ⟹ smooth `X`" is FALSE.  Separable
+generation is strictly weaker than conservativity.  The same correction was applied to the
+two unowned occurrences of the old witness, in
+`smoothOfRelativeDimension_one_fromNormalization` (`CurveCompactification.lean`, where the
+full worked version lives) and `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`
+(`SmoothConnectedCriteria.lean`), on branch `flt-lean-272` (`45e2a43c`).
 
 **Why `j` and `hY` rather than a bare dimension hypothesis.**  `hdvr` alone does not pin the
 RELATIVE dimension: `Spec K` itself satisfies it vacuously (its only stalk is a field) and is
