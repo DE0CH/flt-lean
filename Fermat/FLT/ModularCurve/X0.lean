@@ -283,6 +283,26 @@ strengthening of `card_le_of_rankZeroJacobian` rather than a new theory.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+-- `Fermat.FLT.ModularCurve.EllipticScheme`: the assembly of
+-- `exists_ellipticScheme_of_weierstrass` below, out of the projective
+-- Weierstrass model as a `Scheme`.
+--
+-- **This import is deliberately NON-public, and it must stay that way.**  That
+-- module reaches `Mathlib/AlgebraicGeometry/EllipticCurve/Projective/Basic.lean`
+-- and through it `Mathlib/Tactic/Ring/NamePolyVars.lean`, which reserves the
+-- ATOM `over` as a global token — Lean's token table is global, so a reserved
+-- atom is a keyword whether or not its notation is opened.  A `public import`
+-- would propagate that token to `MazurTorsion.lean` and its whole dependent
+-- cone, where `ModThree.lean` uses mathlib's `Ideal.LiesOver.over`, breaking
+-- files several modules downstream at their `over` occurrence rather than at
+-- the import.  A non-public import confines the token to THIS file, where the
+-- single affected field is written `«over»`.
+--
+-- The only thing consumed from it is `exists_ellipticScheme_of_projModel`, in a
+-- PROOF BODY; its statement is existential over the scheme and mentions neither
+-- `proj` nor `projToSpec`, which is exactly what makes a non-public import
+-- sufficient.
+import Fermat.FLT.ModularCurve.EllipticScheme
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
@@ -1156,8 +1176,26 @@ stated for an arbitrary abelian scheme over `Spec ℚ`.  So neither leaf
 mentions the other's subject matter, and the assembly below is pure
 transport along that identification. -/
 
+/-! ### Assembling the elliptic scheme: where the residual leaves live
+
+The node below is ASSEMBLED (2026-07-27) and is no longer a single
+`sorry`.  Its proof is `exists_ellipticScheme_of_projModel`, and that
+theorem together with the five open leaves it rests on —
+`nonempty_projGroupLaw`, `isProper_projToSpec`,
+`smoothOfRelativeDimension_projToSpec`,
+`geometricallyConnected_projToSpec`, `exists_projGeomFibreAddEquiv` —
+lives in `Fermat/FLT/ModularCurve/EllipticScheme.lean`.
+
+They are in a separate module because the projective Weierstrass model
+drags in a mathlib module that reserves the ATOM `over` as a global
+token, which would break `IsCompactificationY0.over` here and, through
+`MazurTorsion.lean`, several modules downstream.  The import comment at
+the top of this file and that module's own docstring give the full
+reasoning and the refuting check. -/
+
 /-- **The projective Weierstrass model of `E/ℚ` as an elliptic scheme
-over `Spec ℚ`** (sorry node — theory (a) of the bridge).
+over `Spec ℚ`** (ASSEMBLED 2026-07-27 — no longer a single `sorry`; see
+the five leaves in `Fermat/FLT/ModularCurve/EllipticScheme.lean`).
 
 TRUE, and classical: a Weierstrass equation with invertible discriminant
 over `ℚ` cuts out a smooth projective plane curve `A ⊆ ℙ²_ℚ` of relative
@@ -1188,10 +1226,16 @@ ARBITRARY test scheme `T`, and there is no functor-of-points description
 of `Proj` anywhere at this pin — `ProjectiveSpectrum/Functor.lean` is
 only functoriality `Proj ℬ ⟶ Proj 𝒜` in the graded ring, not a
 description of `Hom(T, Proj 𝒜)`.  So `add` cannot be written by hand on
-`T`-points, and that, rather than the geometry, is why no glue-first
-skeleton is writable here: what remains after the definitions is a chain
-of existentials, which is the shape this development forbids.  The node
-therefore stays a single `sorry` until the items below land.
+`T`-points, and that, rather than the geometry, was why no glue-first
+skeleton was writable here for as long as the node was a single `sorry`.
+
+**That obstruction is now ROUTED AROUND rather than removed** (2026-07-27).
+`Hom(T, Proj 𝒜)` is still not described at this pin — the refuting check
+below still returns exactly the eight functoriality declarations — but
+`AbelianSchemeStruct.ofMorphisms` accepts the group law as EQUATIONS OF
+MORPHISMS, which is writable, and derives the `T`-point presentation from
+it.  So the skeleton exists and is the proof below; what remains are the
+five leaves in `Fermat/FLT/ModularCurve/EllipticScheme.lean`.
 
 PRESENT and directly usable, each verified BY NAME at this pin:
 
@@ -1211,7 +1255,13 @@ PRESENT and directly usable, each verified BY NAME at this pin:
   `W.Point ≃+ W.toAffine.Point` over a field — the field-level half of
   the identification in the last conjunct.
 
-ABSENT, as exact statements to route:
+The eight-item survey below is kept as the routing record, but items 1,
+2, 3 and 4 have since LANDED and are no longer absent — see the preceding
+subsection for where each of them now lives.  Items 5, 6, 7 and 8 are the
+open ones, and each is now a NAMED leaf rather than a bullet in a
+docstring.
+
+ABSENT WHEN WRITTEN, as exact statements to route:
 
 1. `GradedRing` on a quotient by a homogeneous ideal.  All of
    `Mathlib/RingTheory/GradedAlgebra/` was searched: `Ideal.IsHomogeneous`
@@ -1299,15 +1349,27 @@ restatement: the Jacobian criterion is NOT absent from the pin.
 an affine cover of `Proj`", not "build a Jacobian criterion from
 nothing".  That is a materially smaller and better-posed task.
 
-OWNERSHIP AT THIS DATE, recorded so no fifth owner manufactures a rival
-API — a second independent version of an in-flight interface is the most
-expensive object this fleet produces.  Item 1 and items 3+4 are both IN
-FLIGHT and unreleased; items 2, 5, 6, 7, 8 are all downstream of item 1,
-because without it the scheme `A` cannot be FORMED.  So there is at this
-date NO independent sub-item at this node to dispatch a prover at: the
-correct action is to WAIT for items 1 and 4 to land and then assemble.
-Confirming that, and confirming the audit is not stale, is the whole
-deliverable of a visit here until then. -/
+STATUS 2026-07-27 — this node has been ASSEMBLED and is no longer a
+dispatch target.  The previous version of this paragraph recorded items 1
+and 3+4 as in flight and instructed the reader to WAIT; both have landed,
+so the instruction is retired.  The node's own proof is now real code and
+carries no `sorry` of its own.  **Do not dispatch a prover here.**  The
+open work is the five leaves in
+`Fermat/FLT/ModularCurve/EllipticScheme.lean`, which are mutually
+independent and separately dispatchable:
+
+* `nonempty_projGroupLaw` — items 5+6, the chord–tangent law as
+  morphisms plus associativity.  This is the substantial geometric work.
+* `smoothOfRelativeDimension_projToSpec` — item 7a, descending the local
+  Jacobian criterion along the affine cover of `Proj`.
+* `geometricallyConnected_projToSpec` — item 7b.
+* `isProper_projToSpec` — properness, which is `Proj.toSpecZero`'s
+  properness plus the identification of the degree-zero part with `ℚ`.
+* `exists_projGeomFibreAddEquiv` — item 8, the equivariant `≃+`.
+
+Only `exists_projGeomFibreAddEquiv` depends on another of them (it takes
+the `ProjGroupLaw` data as an argument); the other four are independent
+of each other. -/
 theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ (A : Scheme.{0}) (f : A ⟶ SpecQ) (ab : AbelianSchemeStruct f),
       SmoothOfRelativeDimension 1 f ∧
@@ -1317,7 +1379,7 @@ theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsEll
              e (WeierstrassCurve.Affine.Point.map
                  (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
                = ab.galSMul (𝟙 SpecQ) σ (e x)) :=
-  sorry
+  exists_ellipticScheme_of_projModel E
 
 /-! ### The group law of an abelian scheme as a MORPHISM (Yoneda)
 
@@ -3269,8 +3331,33 @@ against. -/
 structure IsCompactificationY0 {Y X : Scheme.{0}} (strY : Y ⟶ SpecQ) (strX : X ⟶ SpecQ) where
   /-- the inclusion of the affine coarse space -/
   j : Y ⟶ X
-  /-- the inclusion is a morphism over `ℚ` -/
-  over : j ≫ strX = strY
+  /-- the inclusion is a morphism over `ℚ`.
+
+  **The name is written `«over»`, and it must stay escaped** (2026-07-27).
+  This module imports `Fermat.FLT.ModularCurve.EllipticScheme`, whose cone
+  reaches `Mathlib/AlgebraicGeometry/EllipticCurve/Projective/Basic.lean` and
+  through it `Mathlib/Tactic/Ring/NamePolyVars.lean`, which declares the
+  command syntax `name_poly_vars … " over " …`.  Lean's TOKEN TABLE IS GLOBAL —
+  an atom reserved by any imported module is a keyword in this file whether or
+  not the notation is ever opened — so the bare identifier `over` stops parsing
+  here, with the maximally confusing error
+  `unexpected token 'over'; expected 'lemma'` reported at the FIELD DECLARATION
+  rather than at the import.
+
+  Escaping preserves the declaration name exactly: this is still
+  `Fermat.IsCompactificationY0.over`, so docstrings, other branches and other
+  modules that refer to it by name are unaffected.  Only the surface syntax
+  changes.  Use sites in this file are therefore written `hX.«over»`.
+
+  That the import is NON-public is what stops this spreading: `MazurTorsion.lean`
+  and its dependent cone (`ModThree.lean` among them, which uses mathlib's
+  `Ideal.LiesOver.over`) do not inherit the token.  Do not make it public.
+
+  The refuting check, if you think this can be reverted: after removing the
+  `EllipticScheme` import,
+  `grep -rln "Tactic.Ring.NamePolyVars" .lake/packages/mathlib/Mathlib/`
+  must no longer name any module in this file's import cone. -/
+  «over» : j ≫ strX = strY
   /-- `Y` is an open subscheme of `X` -/
   isOpenImmersion : IsOpenImmersion j
   /-- `Y` is DENSE in `X`: `X` is a compactification of `Y`, not of
@@ -3309,7 +3396,7 @@ theorem y0HasNoRationalPoint_of_cuspidal {N : ℕ} {Y X : Scheme.{0}} {strY : Y 
     (hX : IsCompactificationY0 strY strX)
     (hall : ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x) : Y0HasNoRationalPoint N := by
   refine y0HasNoRationalPoint_of_isEmpty hc ⟨fun y => ?_⟩
-  exact hall ⟨y.1 ≫ hX.j, by rw [Category.assoc, hX.over, y.2]⟩ ⟨y.1, rfl⟩
+  exact hall ⟨y.1 ≫ hX.j, by rw [Category.assoc, hX.«over», y.2]⟩ ⟨y.1, rfl⟩
 
 /-- **Existence of the smooth compactification `X_0(N)`** (sorry node).
 
@@ -3843,7 +3930,7 @@ structure IsX0JReductionAt (N q : ℕ)
   rational point whose reduction lies in the open part has `q`-integral
   `j`-invariant, reducing to the `j`-invariant of the reduced point -/
   red_jm : ∀ (y : RelPoint strY (𝟙 SpecQ)) (y' : RelPoint strY' (𝟙 (SpecF q))),
-      redX (sectionAlong hX.j hX.over y) = sectionAlong jY' hX'.comm y' →
+      redX (sectionAlong hX.j hX.«over» y) = sectionAlong jY' hX'.comm y' →
       0 ≤ padicValRat q (hj.jm y) ∧
         jm' y' * ((hj.jm y).den : ZMod q) = ((hj.jm y).num : ZMod q)
 
@@ -3872,7 +3959,7 @@ theorem isCusp_redX_of_padicValRat_neg {N q : ℕ}
     {hX' : IsX0Compactification N strX' strY' jY'}
     {hj : IsJMapOn N hc} (hjr : IsX0JReductionAt N q hX hX' hj)
     (y : RelPoint strY (𝟙 SpecQ)) (hv : padicValRat q (hj.jm y) < 0) :
-    hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.over y)) := by
+    hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.«over» y)) := by
   rintro ⟨y', hy'⟩
   exact absurd (hjr.red_jm y y' hy'.symm).1 (not_le.mpr hv)
 
@@ -3906,7 +3993,7 @@ theorem exists_cuspidalReduction_of_padicValRat_neg
     {hj : IsJMapOn N hc} (hjr : IsX0JReductionAt N q hX hX' hj)
     (hv : padicValRat q E.j < 0) :
     ∃ y : RelPoint strY (𝟙 SpecQ), hj.jm y = E.j ∧
-      hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.over y)) := by
+      hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.«over» y)) := by
   obtain ⟨d, hd⟩ := hj.classify_jm E g hg hstable
   exact ⟨hc.classify (𝟙 SpecQ) d, hd,
     isCusp_redX_of_padicValRat_neg hjr _ (by rw [hd]; exact hv)⟩
