@@ -618,6 +618,21 @@ def main():
                  "not exist — create the staging worktree first "
                  "(`git worktree add /home/chend/flt-staging staging-worker`, "
                  "then symlink .lake into /scratch on its assigned host).")
+        # NEVER TWO MERGERS. This check must live here, on the DIRECT path, not
+        # only in the queue-pop branch: a direct dispatch resolves before the
+        # pool lock and would otherwise skip the guard entirely. That is exactly
+        # how two workers ended up in staging on 2026-07-27 — the orchestrator
+        # wrongly concluded none was running and dispatched a second, which
+        # merged a 23k-line relocation whose staged resolution was then swept
+        # into the other worker's commit. They share one .lake; two builds in it
+        # produce kernel errors that look like real defects.
+        busy = staging_owner()
+        if busy is not None:
+            deny(f"a merge worker already holds {STAGING_WORKTREE} ({busy}) — "
+                 f"NEVER run two. If you believe it is dead, confirm with "
+                 f"`git reflog merger | head` (are the top entries recent?) and "
+                 f"a live-process check, then delete {MERGE_CLAIM} to release "
+                 f"the claim. Do not dispatch past this message.")
         tool_input["prompt"] = prompt.replace(
             STAGING_PLACEHOLDER, STAGING_WORKTREE)
         # Recorded in the inflight registry like any other dispatch, so the
