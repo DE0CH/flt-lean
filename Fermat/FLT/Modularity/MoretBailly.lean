@@ -26369,17 +26369,48 @@ the subsection "The standard level module, constructed" below, and the
 declaration's own docstring for what its earlier route note got wrong. So
 the count above is two, not three.
 
-**FALSITY UPDATE 2026-07-27 (latest): the geometry half of leaf A is FALSE
-AS STATED.** `HasSplitHilbertBlumenthalModuli` cannot hold for
-`D = ℚ(√3)`, because it asserts `GeometricallyIrreducible fX₀` while
-quantifying fineness over every polarized object, and the components of a
-Hilbert–Blumenthal moduli space are indexed by the NARROW class group
-`Cl⁺(D) ≅ ℤ/2` there. `Fermat.PolarizationStruct` carries no positivity,
-so it constrains only the wide class `Cl(D) = 1` and admits objects from
-both components. So `exists_splitHilbertBlumenthalFamily_of_standardLevelModule`
-is not a dispatchable leaf; read the FALSITY VERDICT on
-`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` first. The one
-live leaf of this section is `exists_twistedHilbertBlumenthalDescent_of_split`. -/
+POSITIVITY REPAIR, 2026-07-27 (same day, and it changes the SIGNATURES in
+this section rather than only its prose). `HasSplitHilbertBlumenthalModuli`
+as first written was **FALSE** once `Fermat.PolarizationStruct` stopped
+forcing a principal polarization: its fineness clause ranged over every
+polarization class while `GeometricallyIrreducible fX₀` permits one
+geometric component, and the components of a Hilbert–Blumenthal space are
+indexed by `Cl⁺(D)`. `Fermat.PolarizationStruct` now carries POSITIVITY AS
+DATA — the polarization module `𝔞`, a positivity cone, an isomorphism
+`𝔞 ≅ Hom^sym_{𝒪_D}(A, A^∨)` and the datum that `hom = λ_a` for a positive
+`a` — and every moduli statement here is indexed by `(𝔞,
+totallyPositiveElts D)`, which is what Rapoport §1 and Deligne–Pappas do.
+The full refutation (`D = ℚ(√3)`, `h = 1`, `h⁺ = 2`), three repairs that do
+NOT work, and why `h⁺(D) = 1` cannot be pushed upstream are on
+`HasSplitHilbertBlumenthalModuli` and on `Fermat.PolarizationStruct`. The
+two descent consumers take `𝔞` implicitly, inferred from `hsplit`, so
+nothing in the DESCENT/SEAM half changed except one binder. -/
+
+/-- **The totally positive elements of `𝒪_D`** — the positivity cone
+that `Fermat.PolarizationStruct` takes as its parameter `𝔞pos` in this
+section.
+
+`Fermat.PolarizationStruct` is stated over an arbitrary `CommRing R`, so
+it cannot itself know what "positive" means; it takes the cone as a
+`Set R` and requires only that the polarization be `λ_a` for an `a` in
+it. Here `R = 𝒪_D` with `D` totally real, and the cone is the classical
+one: `a` is totally positive when every real embedding sends it to a
+positive real. This is the same spelling the project already uses in
+`exists_totallyPositive_sub_mem_ray_class`
+(`GaloisRepresentation/HardlyRamified/ModThree.lean`), namely
+`∀ φ : D →+* ℝ, 0 < φ (algebraMap _ D a)` — there is no
+`IsTotallyPositive` predicate in the pin (checked 2026-07-27 over
+`.lake/packages/mathlib`, `Fermat/` and `~/cs/FLT`).
+
+Fixing the pair `(𝔞, totallyPositiveElts D)` across the universal family
+and the fineness clause is what pins the component of the
+Hilbert–Blumenthal space to ONE narrow class `[𝔞] ∈ Cl⁺(D)`, which is
+what makes `HasSplitHilbertBlumenthalModuli` compatible with
+`GeometricallyIrreducible`. Rapoport §1 and Deligne–Pappas index the
+moduli problem by exactly this pair. -/
+def totallyPositiveElts (D : Type u) [Field D] [NumberField D] :
+    Set (NumberField.RingOfIntegers D) :=
+  {a | ∀ φ : D →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers D) D a)}
 
 open CategoryTheory AlgebraicGeometry in
 /-- **A split, pairing-normalized level structure at the ideal `I`.**
@@ -26410,7 +26441,14 @@ to every downstream consumer by nondegeneracy of `Λ` together with the
 surjectivity clause `∀ y, y ∈ A[I] ↔ ∃ w, e w = y`. Adding `I ∈ 𝒩` as a
 hypothesis here would therefore be redundant strength, and the place the
 levels are actually pinned is `HasSplitHilbertBlumenthalModuli`, which
-instantiates `𝒩 := {lam, frp}`. -/
+instantiates `𝒩 := {lam, frp}`.
+
+The polarization module `𝔞` and its positivity cone `𝔞pos` are implicit
+here for the SAME reason and with the same division of labour: this
+definition consumes only `pairing`, which is blind to them, and the place
+they are pinned is again `HasSplitHilbertBlumenthalModuli`, which
+instantiates them with a fixed `𝔞` and `totallyPositiveElts D`. Leaving
+them implicit keeps every call site of this definition unchanged. -/
 def IsSplitLevelStructure
     {D : Type u} [Field D] [NumberField D]
     (I : Ideal (NumberField.RingOfIntegers D)) (n : ℕ)
@@ -26420,7 +26458,9 @@ def IsSplitLevelStructure
     {m : Fermat.Mult ab (NumberField.RingOfIntegers D)}
     {d : Fermat.DualStruct ab m}
     {𝒩 : Set (Ideal (NumberField.RingOfIntegers D))}
-    (pol : Fermat.PolarizationStruct d 𝒩)
+    {𝔞 : Ideal (NumberField.RingOfIntegers D)}
+    {𝔞pos : Set (NumberField.RingOfIntegers D)}
+    (pol : Fermat.PolarizationStruct d 𝒩 𝔞 𝔞pos)
     {kI : Type u} [Field kI] [TopologicalSpace kI]
     (ρ : GaloisRep ℚ kI (Fin 2 → kI))
     (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
@@ -26482,43 +26522,67 @@ supplies: for an invertible polarization module `𝔠` one may choose
 `c ∈ 𝔠` generating `𝔠` locally at `λ` and at `𝔭`, and `λ_c` is then
 nondegenerate at both whatever the class of `𝔠` in `Cl⁺(D)`.
 
-**⚠ THIS PREDICATE IS FALSE FOR SOME `D` — FALSITY VERDICT 2026-07-27.**
-`GeometricallyIrreducible fX₀` allows ONE geometric component, while the
-fineness clause quantifies over EVERY `(B, mB, dB, polB)` over every
-`ℚ`-algebra field. Classically the components are indexed by the NARROW
-class `Cl⁺(D)` of the polarization module, and by Faltings the comparison
-`φ` this clause demands (an `𝒪_D`-`Γ_F`-module isomorphism of geometric
-points over a NUMBER field) forces an `𝒪_D`-linear isogeny, under which the
-narrow class moves only by squares. For `D = ℚ(√3)`, `Cl⁺(D) ≅ ℤ/2` with
-`Cl(D) = 1`: an HBAV in the nontrivial narrow class satisfies every
-hypothesis of the fineness clause and can be received by no `F`-point of
-`X₀`. So `HasSplitHilbertBlumenthalModuli ℚ(√3) …` is unsatisfiable.
+**THE POLARIZATION MODULE `𝔞` IS A PARAMETER, AND THAT IS WHAT MAKES
+THIS DEFINITION SATISFIABLE AT ALL** (2026-07-27, the POSITIVITY repair;
+it settles the OPEN FAITHFULNESS QUESTION that used to be recorded on
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule`, and the
+answer is the one that REFUTES the previous form of this definition).
 
-The `𝒩` parameter is NOT the cause and changing it is NOT the cure: with
-`𝒩 = ⊤`, `polB` says `hom` is a symmetric `𝒪_D`-linear ISOMORPHISM
-`B ≃ B^∨`, which exists exactly when the polarization module is trivial in
-the WIDE class group `Cl(D) = 1` — the witness passes that too. Carrying
-Rapoport's `𝔞` as data does not cure it either, for the same reason: a
-module isomorphism `𝔞 ≃ Hom^{sym}_{𝒪_D}(B, B^∨)` sees `Cl(D)`, and the
-components are indexed by `Cl⁺(D)`. What is missing is POSITIVITY —
-`Fermat.PolarizationStruct` is a symmetric homomorphism, not a
-polarization, and `hom`/`-hom` satisfy all of its fields alike.
+The `𝒩`-repair immediately above released `Fermat.PolarizationStruct`
+onto every polarization class. That made this definition **FALSE**: its
+fineness clause quantifies over EVERY polarized object
+`(B, mB, dB, polB)` over every `ℚ`-algebra field, while
+`GeometricallyIrreducible fX₀` permits ONE geometric component — and the
+components of a Hilbert–Blumenthal moduli space are indexed by `Cl⁺(D)`.
+The refutation, in full: over a number field `F` the demanded `φ`
+restricts to torsion, so it gives `T_ℓB ≅ T_ℓA` as
+`𝒪_D ⊗ ℤ_ℓ[Γ_F]`-modules for every `ℓ`; by Faltings that forces an
+`𝒪_D`-linear isogeny `B → A`, under which the narrow class of the
+polarization module moves only by SQUARES (`A = B ⊗_{𝒪_D} 𝔟` gives
+`P(A) ≅ P(B) ⊗ 𝔟⁻²`). At `D = ℚ(√3)` — `h = 1`, `h⁺ = 2`, fundamental
+unit `2 + √3` of norm `+1` — `Cl⁺(D) ≅ ℤ/2` has no nontrivial squares,
+so an HBAV in the nontrivial narrow class is `Γ_F`-module-isomorphic to
+NOTHING over the principal component, and the fineness clause fails.
 
-The full argument, the alternatives considered and rejected, and the check
-that would refute the verdict are on
-`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` below. Any
-repair to this predicate must start there. -/
+The repair is the classical one: **fix the polarization module together
+with its positivity cone** (Rapoport, *Compactifications de l'espace de
+modules de Hilbert–Blumenthal*, Compositio 36 (1978), §1;
+Deligne–Pappas; Goren's *Lectures on Hilbert Modular Varieties* for the
+`Cl⁺` indexing spelled out). `𝔞` is now a PARAMETER, and BOTH `pol₀` and
+`polB` read `Fermat.PolarizationStruct · {lam, frp} 𝔞
+(totallyPositiveElts D)`. So `X₀` is the class-`𝔞` component and the
+fineness clause ranges over exactly the objects of class `𝔞`; the two
+clauses are now about the SAME component and pull in the same direction.
+
+Note the pair `(𝔞, totallyPositiveElts D)` and not `𝔞` alone. Carrying
+the module without the cone would pin only the WIDE class `Cl(D)`, which
+is TRIVIAL for the witness `ℚ(√3)` and so would not separate its two
+components at all. Positivity is what turns `Cl` into `Cl⁺`; it enters
+`Fermat.PolarizationStruct` as DATA, and the reasons a `Prop`-valued
+positivity field and a bare module isomorphism both fail are recorded in
+that structure's docstring.
+
+WHY NOT PUSH `h⁺(D) = 1` UPSTREAM INSTEAD. Because `D` is produced by
+`exists_totallyRealCoefficientDatum_of_residueField`, which must hit a
+PRESCRIBED residue field `𝔽_{ℓ^r}`, and the Khare–Wintenberger route
+quantifies over ALL `ℓ`. The hypothesis would therefore have to be *"for
+every `ℓ` and every `r` there is a totally real `D` with a degree-`r`
+prime above `ℓ` and `h⁺(D) = 1"`, whose real-quadratic special case is
+Gauss's class-number-one problem for real quadratic fields — OPEN. That
+trades a false leaf for an open problem rather than closing anything. -/
 def HasSplitHilbertBlumenthalModuli
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
     (ℓ p : ℕ) (lam frp : Ideal (NumberField.RingOfIntegers D))
     (hlamℓ : (ℓ : NumberField.RingOfIntegers D) ∈ lam)
     (hfrpp : (p : NumberField.RingOfIntegers D) ∈ frp)
+    (𝔞 : Ideal (NumberField.RingOfIntegers D))
     (k : Type u) [Field k] [TopologicalSpace k]
     (kp : Type u) [Field kp] [TopologicalSpace kp] : Prop :=
   ∃ (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
     (A₀ : Scheme.{u}) (fA₀ : A₀ ⟶ X₀) (ab₀ : Fermat.AbelianSchemeStruct fA₀)
     (m₀ : Fermat.Mult ab₀ (NumberField.RingOfIntegers D))
-    (d₀ : Fermat.DualStruct ab₀ m₀) (pol₀ : Fermat.PolarizationStruct d₀ {lam, frp})
+    (d₀ : Fermat.DualStruct ab₀ m₀)
+    (pol₀ : Fermat.PolarizationStruct d₀ {lam, frp} 𝔞 (totallyPositiveElts D))
     (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
     (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
       rootsOfUnity ℓ (AlgebraicClosure F))
@@ -26536,7 +26600,8 @@ def HasSplitHilbertBlumenthalModuli
       (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
       (abB : Fermat.AbelianSchemeStruct fB)
       (mB : Fermat.Mult abB (NumberField.RingOfIntegers D))
-      (dB : Fermat.DualStruct abB mB) (polB : Fermat.PolarizationStruct dB {lam, frp}),
+      (dB : Fermat.DualStruct abB mB)
+      (polB : Fermat.PolarizationStruct dB {lam, frp} 𝔞 (totallyPositiveElts D)),
       AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
       IsSplitLevelStructure lam ℓ hlamℓ polB ρ₀ Λ (𝟙 (Spec (CommRingCat.of F))) →
       IsSplitLevelStructure frp p hfrpp polB ρ₀p Λp (𝟙 (Spec (CommRingCat.of F))) →
@@ -27268,36 +27333,81 @@ uniformization (which supplies connectedness) could be separated from the
 GIT/deformation-theoretic construction (which supplies representability and
 smoothness).
 
-**FALSITY VERDICT — NARROW CLASS GROUP versus CONNECTEDNESS (2026-07-27;
-this REPLACES the OPEN FAITHFULNESS QUESTION that stood here, and the CHECK
-that question posed has been RUN and answered NO). THIS LEAF IS FALSE AS
-STATED. Do not attempt to prove it; it needs a cut-level repair that is
-recorded, in full, in the FALSITY VERDICT on
-`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` below.**
+**FAITHFULNESS QUESTION — NARROW CLASS GROUP versus CONNECTEDNESS:
+SETTLED 2026-07-27, and the answer was NO. The previous form of this leaf
+was FALSE and has been repaired by indexing on `𝔞`.** The question, its
+check and its two successive (wrong) defusals are kept below because the
+repair is only intelligible against them.
 
-In one paragraph. Classically the Hilbert–Blumenthal moduli space is
-connected only after FIXING the polarization module together with its
-POSITIVITY CONE; the union over `Cl⁺(D)` has one component per NARROW class.
-The fineness clause here quantifies over ALL `(B, mB, dB, polB)` while
-`GeometricallyConnected fX₀` allows one component. The comparison `φ` is
-only an isomorphism of `𝒪_D`-`Γ_F`-modules of geometric points, which is
-what made this look defusable — but over a NUMBER field such a `φ` restricts
-to torsion, gives `T_ℓ B ≅ T_ℓ A` as `𝒪_D ⊗ ℤ_ℓ[Γ_F]`-modules for every `ℓ`,
-and by Faltings forces an `𝒪_D`-linear isogeny, under which the narrow class
-moves only by SQUARES. `D = ℚ(√3)` has `Cl⁺(D) ≅ ℤ/2` (so no nontrivial
-squares) with `Cl(D) = 1`, and an HBAV in the nontrivial narrow class
-satisfies every hypothesis of the fineness clause — `Fermat.PolarizationStruct`
-carries no positivity, so it constrains only the WIDE class, which is trivial
-here. Hence no `F`-point of a geometrically connected `X₀` can receive it.
+THE TENSION. Classically the Hilbert–Blumenthal moduli space is connected
+only after FIXING the polarization module `𝔠`; the union over
+`𝔠 ∈ Cl⁺(D)` has one component per class. The fineness clause, however,
+quantified over ALL polarized objects `(B, mB, dB, polB)` while
+connectedness allows only one component — so for `D` with `h⁺(D) > 1` the
+two clauses pulled in opposite directions.
 
-The `Fermat.PolarizationStruct` level-set (`𝒩`) repair landed against this
-question is INNOCENT: the same witness refutes the leaf in the pre-repair
-form `𝒩 = ⊤` as well, since a symmetric `𝒪_D`-linear ISOMORPHISM `B ≃ B^∨`
-exists exactly when the polarization module is trivial in `Cl(D)`, not in
-`Cl⁺(D)`. Reverting `𝒩` would not repair this leaf, and indexing the
-statement by a polarization module `𝔞` would not either, because a module
-isomorphism `𝔞 ≃ Hom^{sym}` also sees only `Cl(D)`. The missing ingredient
-is AMPLENESS.
+THE FIRST DEFUSAL, AND WHY IT WAS WRONG. It said the comparison `φ` is
+only an isomorphism of `𝒪_D`-`Γ_F`-modules of GEOMETRIC POINTS, never
+mentions `polB`, and is therefore blind to the polarization module. That
+is true over an ALGEBRAICALLY CLOSED `F` and FALSE in general, and the
+clause quantifies over every `ℚ`-algebra field. Over a number field `F` a
+bijection `φ : B(F̄) ≃ A(F̄)` that is additive, `𝒪_D`-equivariant and
+`Γ_F`-equivariant restricts to torsion, hence gives `T_ℓB ≅ T_ℓA` as
+`𝒪_D ⊗ ℤ_ℓ[Γ_F]`-modules for EVERY `ℓ`; by Faltings that forces an
+`𝒪_D`-linear isogeny `B → A`, whose kernel is `𝒪_D`- and `Γ_F`-stable
+and finite. The polarization module then moves only by the Steinitz class
+of that kernel — `A = B ⊗_{𝒪_D} 𝔟` gives `P(A) ≅ P(B) ⊗ 𝔟⁻²` — i.e. only
+by a SQUARE.
+
+THE ANSWER TO THE CHECK. Fix `D = ℚ(√3)`: `h(D) = 1` but `h⁺(D) = 2`
+(PARI/GP `bnrinit` at the infinite modulus, the fundamental unit `2 + √3`
+having norm `+1`; likewise `√6, √7, √11, √14, √19, √21, √22, √23`, and
+`h⁺(ℚ(√15)) = 4`). Take `B` with `End_{F̄} B = 𝒪_D` and `B[𝔮]`
+residually irreducible for all `𝔮` — the generic member of the family —
+whose narrow class `[𝔞] ∉ (Cl⁺ D)²`, which holds for the nontrivial class
+of `Cl⁺(ℚ(√3)) ≅ ℤ/2`. Then NO object over the principal component is
+`Γ_F`-module-isomorphic to `B`. **Answer: NO** — so the leaf, leaf A, and
+`HasSplitHilbertBlumenthalModuli` itself were all false as they stood.
+
+THE SECOND DEFUSAL, AND WHY IT EXPIRED. It observed that a
+nonprincipal-module HBAV could not instantiate the fineness hypothesis at
+all, because `Fermat.PolarizationStruct.weil_hom_nondegenerate` was then
+quantified over EVERY ideal and so forced `ker hom = 0`, i.e. a PRINCIPAL
+`𝒪_D`-polarization. That was correct while it was written, and it also
+recorded its own expiry condition: *"if `weil_hom_nondegenerate` is
+repaired towards its classical form then `HasSplitHilbertBlumenthalModuli`
+becomes FALSE; the repair that keeps it true is to carry the polarization
+module as DATA (Rapoport's `𝔞`)."* That repair to `PolarizationStruct`
+landed the same day — nondegeneracy is now asserted only on the level set
+`{lam, frp}` — so the contingency FIRED, and this note is the repair it
+called for.
+
+Two further reasons the second defusal was never a good place to stand,
+recorded so nobody restores it: it is *not* enough to revert the level
+set, because `Fermat.PolarizationStruct` carried no positivity, so
+`ker hom = 0` yields only a symmetric `𝒪_D`-linear ISOMORPHISM
+`B ≃ B^∨` — which exists exactly when the module is trivial in the WIDE
+class group `Cl(D)`, and `Cl(ℚ(√3))` is TRIVIAL. So the pre-repair
+structure did *not* pin the narrow class either, and the second defusal
+was already wrong on its own terms; the conflation of `Cl⁺` with `Cl` is
+the trap. And carrying `𝔞` as data with a bare module isomorphism
+`𝔞 ≃ Hom^sym_{𝒪_D}(B, B^∨)` has exactly the same defect.
+
+THE REPAIR, AS LANDED. `Fermat.PolarizationStruct` now carries POSITIVITY
+AS DATA — the polarization module `𝔞`, its cone `𝔞pos`, an isomorphism
+`𝔞 ≅ Hom^sym_{𝒪_D}(A, A^∨)`, and the datum that `hom` is `λ_a` for a
+POSITIVE `a` — and this leaf takes `𝔞` as a PARAMETER, with `pol₀` and
+`polB` sharing it and sharing `totallyPositiveElts D`. Fineness then
+ranges over the objects of narrow class `[𝔞]` only, `X₀` is the
+class-`𝔞` component, and the two clauses are about the same component.
+`h𝔞 : 𝔞 ≠ ⊥` is not decoration: the polarization module of an abelian
+scheme carrying a polarization is a nonzero invertible module, so `𝔞 = ⊥`
+would make the conclusion false rather than merely empty.
+
+Note the statement is asserted for EVERY `𝔞 ≠ ⊥`, which is the true
+classical statement — each narrow class gives its own component, and two
+ideals in one narrow class give isomorphic moduli. Consumers that do not
+care which component they get instantiate `𝔞 := ⊤`, the principal class.
 
 WHAT IS MISSING FROM THE PIN, so the next owner does not re-survey (checked
 2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`): moduli
@@ -27321,6 +27431,7 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
     (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
     (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
     (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (𝔞 : Ideal (NumberField.RingOfIntegers D)) (h𝔞 : 𝔞 ≠ ⊥)
     (ρ₀ : GaloisRep ℚ k (Fin 2 → k)) (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
     (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
       rootsOfUnity ℓ (AlgebraicClosure F))
@@ -27330,7 +27441,8 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
     ∃ (X₀ : Scheme.{u}) (fX₀ : X₀ ⟶ Spec (CommRingCat.of (ULift.{u} ℚ)))
       (A₀ : Scheme.{u}) (fA₀ : A₀ ⟶ X₀) (ab₀ : Fermat.AbelianSchemeStruct fA₀)
       (m₀ : Fermat.Mult ab₀ (NumberField.RingOfIntegers D))
-      (d₀ : Fermat.DualStruct ab₀ m₀) (pol₀ : Fermat.PolarizationStruct d₀ {lam, frp}),
+      (d₀ : Fermat.DualStruct ab₀ m₀)
+      (pol₀ : Fermat.PolarizationStruct d₀ {lam, frp} 𝔞 (totallyPositiveElts D)),
       AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ ∧
       AlgebraicGeometry.IsSeparated fX₀ ∧
       AlgebraicGeometry.LocallyOfFiniteType fX₀ ∧ AlgebraicGeometry.QuasiCompact fX₀ ∧
@@ -27344,7 +27456,8 @@ theorem exists_splitHilbertBlumenthalFamily_of_standardLevelModule
         (B : Scheme.{u}) (fB : B ⟶ Spec (CommRingCat.of F))
         (abB : Fermat.AbelianSchemeStruct fB)
         (mB : Fermat.Mult abB (NumberField.RingOfIntegers D))
-        (dB : Fermat.DualStruct abB mB) (polB : Fermat.PolarizationStruct dB {lam, frp}),
+        (dB : Fermat.DualStruct abB mB)
+        (polB : Fermat.PolarizationStruct dB {lam, frp} 𝔞 (totallyPositiveElts D)),
         AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB →
         IsSplitLevelStructure lam ℓ hlamℓ polB ρ₀ Λ (𝟙 (Spec (CommRingCat.of F))) →
         IsSplitLevelStructure frp p hfrpp polB ρ₀p Λp (𝟙 (Spec (CommRingCat.of F))) →
@@ -27427,14 +27540,10 @@ carries a FALSITY VERDICT about `Cl⁺(D)` versus geometric connectedness;
 that defect is inherited from `HasSplitHilbertBlumenthalModuli` and is not
 created here.
 
-**FALSITY VERDICT — POLARIZATION MODULE vs GEOMETRIC IRREDUCIBILITY
-(2026-07-27; supersedes the FAITHFULNESS AUDIT of the same day, whose
-first two paragraphs are kept verbatim below because they are correct and
-whose third — "WHY THE LEAF NEVERTHELESS STANDS" — is REFUTED). This leaf
-is FALSE as stated, it was ALREADY false before the `𝒩` repair of
-`Fermat.PolarizationStruct`, and it is NOT repairable by carrying the
-polarization module `𝔞` as data. See the verdict at the end of this
-docstring.**
+**FAITHFULNESS AUDIT — POLARIZATION MODULE vs GEOMETRIC IRREDUCIBILITY:
+the CONTINGENCY this note recorded has FIRED, the statement WAS false,
+and it has been repaired by indexing on the polarization module
+(2026-07-27).**
 
 THE TENSION. Classically the Hilbert–Blumenthal moduli space has one
 geometric component per class of `Cl⁺(D)` — the narrow class of the
@@ -27445,12 +27554,8 @@ that the two classes exist: `D = ℚ(√3)` has `h(D) = 1` but `h⁺(D) = 2`
 (PARI/GP `bnrinit` at the infinite modulus; likewise `√6, √7, √11, √14,
 √19, √21, √22, √23`, and `h⁺(ℚ(√15)) = 4`).
 
-THE RECORDED DEFUSAL IS WRONG. It says the comparison `φ` is only an
-isomorphism of `𝒪_D`-`Γ_F`-modules of GEOMETRIC points and never mentions
-`polB`, hence is blind to the polarization module. That is true over an
-ALGEBRAICALLY CLOSED `F` and false in general, and the clause quantifies
-over every `ℚ`-algebra field. Over a number field `F`, a bijection
-`φ : B(F̄) ≃ A(F̄)` that is additive, `𝒪_D`-equivariant and
+THE COMPARISON IS NOT BLIND TO THE MODULE, over a number field. A
+bijection `φ : B(F̄) ≃ A(F̄)` that is additive, `𝒪_D`-equivariant and
 `Γ_F`-equivariant restricts to torsion, hence gives `T_ℓB ≅ T_ℓA` as
 `𝒪_D ⊗ ℤ_ℓ[Γ_F]`-modules for EVERY `ℓ`; by Faltings that forces an
 `𝒪_D`-linear isogeny `B → A`, whose kernel is an `𝒪_D`- and
@@ -27464,75 +27569,37 @@ principal component is `Γ_F`-module-isomorphic to `B`. Answer to the
 question "is a nonprincipal-module HBAV Galois-module-isomorphic to a
 fibre over the principal component": **NO.**
 
-THE PARAGRAPH THAT SAID "THE LEAF NEVERTHELESS STANDS" IS WRONG, AND SO
-IS THE `𝒩`-CONTINGENCY DRAWN FROM IT. It argued that a nonprincipal-module
-HBAV cannot instantiate the fineness hypothesis, because the pre-repair
-`weil_hom_nondegenerate` (quantified over EVERY ideal `I`) forces
-`ker hom = 0`, "i.e. `hom` is a PRINCIPAL `𝒪_D`-polarization", pinning the
-narrow class to the trivial one. The first half is right and the
-conclusion does not follow: `Fermat.PolarizationStruct` HAS NO POSITIVITY.
-`ker hom = 0` makes `hom` a symmetric `𝒪_D`-linear ISOMORPHISM
-`B ≃ B^∨`, and such an isomorphism is `λ_c` for a GENERATOR `c` of
-`𝔠 = Hom^{sym}_{𝒪_D}(B, B^∨)`, so it exists exactly when `[𝔠]` is trivial
-in the WIDE class group `Cl(D)`. Nothing constrains the sign of `c`, hence
-nothing constrains `[𝔠]` in `Cl⁺(D)`. (See the POSITIVITY GAP section of
-`Fermat.PolarizationStruct`'s own docstring: `hom` and `-hom` satisfy
-every field of that structure simultaneously, and exactly one of the two
-is a polarization.)
+WHY THE LEAF USED TO STAND, AND WHY IT STOPPED. The previous version of
+this note argued that a nonprincipal-module HBAV could not instantiate
+the fineness hypothesis at all, because
+`PolarizationStruct.weil_hom_nondegenerate` was quantified over EVERY
+ideal `I`, which forces `ker hom = 0` in characteristic zero. It then
+recorded its own expiry: *"if `weil_hom_nondegenerate` is repaired
+towards its classical form … `HasSplitHilbertBlumenthalModuli` becomes
+FALSE. The repair that keeps it true is to carry the polarization module
+as DATA (Rapoport's `𝔞`, fixed alongside `D`, `λ`, `𝔭`)."* The
+`𝒩`-repair landed exactly that weakening the same day, so the leaf became
+false, and this is the repair it asked for.
 
-**THE VERDICT, and the witness that decides it.** `D = ℚ(√3)` has
-`h(D) = 1` and `h⁺(D) = 2`; the fundamental unit `2 + √3` has norm `+1`,
-so every unit is totally positive or totally negative, and `(√3)` —
-principal, with only mixed-signature generators — represents the
-nontrivial class of `Cl⁺(D) ≅ ℤ/2`. An HBAV `B/F` whose polarization
-module lies in that class therefore
+It is worth adding that the old defusal was ALREADY defective on its own
+terms, because it conflated `Cl⁺` with `Cl`. `Fermat.PolarizationStruct`
+carried no positivity — `hom` and `−hom` satisfied every field alike — so
+`ker hom = 0` gives only a symmetric `𝒪_D`-linear ISOMORPHISM
+`B ≃ B^∨`, i.e. triviality in the WIDE class group `Cl(D)`. And
+`Cl(ℚ(√3))` is TRIVIAL while `Cl⁺(ℚ(√3)) ≅ ℤ/2`, so the nontrivial-class
+HBAVs of the witness carried a `PolarizationStruct` for every level set,
+`⊤` included. Reverting the `𝒩` guard would therefore have fixed nothing;
+the guard is innocent.
 
-* DOES admit `polB : Fermat.PolarizationStruct dB 𝒩` for every `𝒩`,
-  including the pre-repair `𝒩 = ⊤` (its `𝔠` is wide-trivial, so a
-  symmetric `𝒪_D`-linear isomorphism `B ≃ B^∨` exists — and `dB` need not
-  even be the true dual, so the hypothesis is easier still); and
-* CANNOT be `𝒪_D`-`Γ_F`-module-isomorphic to any fibre of `A₀`, by the
-  two paragraphs above, since `(Cl⁺ D)² = 1` here.
-
-Both split level structures are available for such a `B` over a large
-enough number field `F`: `IsSplitLevelStructure`'s `e` is required only to
-be ADDITIVE (not `𝒪_D`-linear), so `Λ`-normalization is the statement that
-two nondegenerate alternating `𝔽_ℓ`-forms on a `2f`-dimensional space are
-equivalent, which they always are. So `HasSplitHilbertBlumenthalModuli`,
-this leaf, and `exists_splitHilbertBlumenthalFamily_of_standardLevelModule`
-are **FALSE for `D = ℚ(√3)`** — and were false BEFORE the `𝒩` repair as
-well. The repair neither created the defect nor widened it past this
-witness; reverting it would not remove the defect.
-
-**WHY "CARRY `𝔞` AS DATA" DOES NOT REPAIR IT.** Rapoport fixes the
-polarization module as `(𝔞, 𝔞⁺)` — the module TOGETHER WITH ITS POSITIVITY
-CONE — and it is the cone that indexes the components: `M_𝔞` depends on
-`𝔞` only through `[𝔞] ∈ Cl⁺(D)`. A datum consisting of an `𝒪_D`-module
-isomorphism `𝔞 ≃ Hom^{sym}_{𝒪_D}(B, B^∨)` pins only `[𝔞] ∈ Cl(D)`, and the
-witness above has `Cl(D) = 1`, so it survives that restriction untouched.
-Adding the cone means saying which symmetric homs are POLARIZATIONS, i.e.
-ampleness — and an abstract `Prop`-valued field for it is junk-satisfiable
-(take `isPol h := ∃ a ∈ 𝔞⁺, h = λ_a`), so it must be a real definition.
-
-Nothing in this development's vocabulary — torsion subgroups, Weil
-pairings, kernels of isogenies, Galois actions — sees the sign of a
-symmetric homomorphism, so no choice of `𝒩` and no `𝔞`-indexing can
-recover the narrow class. **The repair therefore requires new machinery
-(ampleness of a line bundle on `AbelianSchemeStruct`, or an equivalent
-Rosati-positivity notion), and it is a CUT-LEVEL decision with no owner.**
-Two alternatives were considered and rejected: restricting to `𝒩 = ⊤`
-(refuted above), and hypothesising `h⁺(D) = 1` (expressible, and it does
-restore truth — but the `D` here is produced by
-`exists_totallyRealCoefficientDatum_of_residueField`, and narrow class
-number one is not a condition that construction can be asked to arrange).
-
-Do NOT dispatch a prover at this leaf or at
-`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` until the
-statement is repaired; the check that would refute this verdict is to
-exhibit, for `D = ℚ(√3)`, a `Fermat.PolarizationStruct`-carrying HBAV in
-the nontrivial narrow class that IS `𝒪_D`-`Γ_F`-module-isomorphic to a
-fibre over a geometrically irreducible family — equivalently, to find a
-clause of `HasSplitHilbertBlumenthalModuli` that sees the sign of `hom`. -/
+THE REPAIR, AS LANDED. `Fermat.PolarizationStruct` now carries POSITIVITY
+AS DATA (module `𝔞`, cone `𝔞pos`, the isomorphism
+`𝔞 ≅ Hom^sym_{𝒪_D}(A, A^∨)`, and `hom = λ_a` for a positive `a`), and
+`HasSplitHilbertBlumenthalModuli` takes `𝔞` as a PARAMETER shared by
+`pol₀` and `polB`, with `𝔞pos := totallyPositiveElts D`. Fineness and
+`GeometricallyIrreducible` are then about the same class-`𝔞` component.
+See that definition's docstring for the full argument and for why pushing
+`h⁺(D) = 1` upstream is unavailable (it is Gauss's class-number-one
+problem for real quadratic fields). -/
 theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     {ℓ : ℕ} [Fact ℓ.Prime] {p : ℕ} (hp : p.Prime) (hpℓ : p ≠ ℓ)
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -27545,19 +27612,20 @@ theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
     (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
     (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (𝔞 : Ideal (NumberField.RingOfIntegers D)) (h𝔞 : 𝔞 ≠ ⊥)
     (hstd : ∃ (ρ₀ : GaloisRep ℚ k (Fin 2 → k))
       (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → k) → (Fin 2 → k) →
         rootsOfUnity ℓ (AlgebraicClosure F)), IsStandardLevelModule ℓ ρ₀ Λ)
     (hstdp : ∃ (ρ₀p : GaloisRep ℚ kp (Fin 2 → kp))
       (Λp : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kp) → (Fin 2 → kp) →
         rootsOfUnity p (AlgebraicClosure F)), IsStandardLevelModule p ρ₀p Λp) :
-    HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp := by
+    HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 k kp := by
   obtain ⟨ρ₀, Λ, hstd'⟩ := hstd
   obtain ⟨ρ₀p, Λp, hstdp'⟩ := hstdp
   obtain ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, hdimX, hsep, hlft, hqc, hconn, hdimA,
       huniv, hfine⟩ :=
     exists_splitHilbertBlumenthalFamily_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
-      hlamℓ hfrpp hne k kp hres hresp ρ₀ ρ₀p Λ Λp hstd' hstdp'
+      hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞 ρ₀ ρ₀p Λ Λp hstd' hstdp'
   haveI : AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fX₀ := hdimX
   have hsm : AlgebraicGeometry.Smooth fX₀ :=
     AlgebraicGeometry.SmoothOfRelativeDimension.smooth (n := Module.finrank ℚ D) (f := fX₀)
@@ -27610,10 +27678,11 @@ theorem exists_splitHilbertBlumenthalModuli
     (k : Type u) [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp] [DiscreteTopology kp]
     (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
-    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp)) :
-    HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp :=
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (𝔞 : Ideal (NumberField.RingOfIntegers D)) (h𝔞 : 𝔞 ≠ ⊥) :
+    HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 k kp :=
   exists_splitHilbertBlumenthalModuli_of_standardLevelModule hp hpℓ D lam frp hlam hfrp
-    hlamℓ hfrpp hne k kp hres hresp
+    hlamℓ hfrpp hne k kp hres hresp 𝔞 h𝔞
     (exists_standardLevelModule ℓ (Fact.out : ℓ.Prime).one_lt k
       (natCast_eq_zero_of_residueFieldEquiv hlamℓ hres))
     (exists_standardLevelModule p hp.one_lt kp
@@ -27983,7 +28052,8 @@ theorem exists_twistedHilbertBlumenthalDescent_of_split
       ∃ (L : Type u) (_ : Field L) (_ : Algebra F L),
         Module.finrank F L = 2 ∧
         ¬ ((ρbarp.map (algebraMap ℚ F)).map (algebraMap F L)).IsIrreducible)
-    (hsplit : HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp) :
+    {𝔞 : Ideal (NumberField.RingOfIntegers D)}
+    (hsplit : HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 k kp) :
     HasTwistedHilbertBlumenthalDescent ρbar D lam frp ρbarp :=
   sorry
 
@@ -28063,7 +28133,8 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split
       ∃ (L : Type u) (_ : Field L) (_ : Algebra F L),
         Module.finrank F L = 2 ∧
         ¬ ((ρbarp.map (algebraMap ℚ F)).map (algebraMap F L)).IsIrreducible)
-    (hsplit : HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp k kp) :
+    {𝔞 : Ideal (NumberField.RingOfIntegers D)}
+    (hsplit : HasSplitHilbertBlumenthalModuli D ℓ p lam frp hlamℓ hfrpp 𝔞 k kp) :
     ∃ (X : AlgebraicGeometry.Scheme.{u})
       (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
       (A : AlgebraicGeometry.Scheme.{u}) (fA : A ⟶ X)
@@ -28451,9 +28522,17 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum
       (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
         HasRationalPoint fX (ULift.{u} ℝ)) :=
   exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split hℓodd hℓ5 hW hρbar hirr
-    D p hp hpℓ lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hstdp hdih
+    D p hp hpℓ lam frp hlam hfrp hlamℓ hfrpp hne hres ρbarp hresp hdih
+    -- the PRINCIPAL narrow class: this assembly needs *a* split moduli space and
+    -- does not care which component, so it takes `𝔞 = ⊤ = 𝒪_D`. See
+    -- `HasSplitHilbertBlumenthalModuli` for why the class must be pinned at all.
     (exists_splitHilbertBlumenthalModuli hp hpℓ D lam frp hlam hfrp hlamℓ hfrpp hne
-      k kp hres hresp)
+      k kp hres hresp ⊤ (by
+        intro h
+        have h1 : (1 : NumberField.RingOfIntegers D) ∈
+            (⊥ : Ideal (NumberField.RingOfIntegers D)) := by
+          rw [← h]; exact Submodule.mem_top
+        exact one_ne_zero (Ideal.mem_bot.mp h1)))
 
 /-- **The twisted Hilbert–Blumenthal moduli space as a twist** (PROVEN
 2026-07-26 as an assembly over the DATUM cut — see the section docstring
