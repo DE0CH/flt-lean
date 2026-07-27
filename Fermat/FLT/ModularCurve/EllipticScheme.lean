@@ -250,7 +250,11 @@ so whoever writes the charts gets them essentially for free, while
 `hassoc` is not a chart identity at all and is split off into
 `projMul_assoc`.
 
-## The formulas that exist, and the one that does not
+## The formulas: both laws are now explicit
+
+(The heading here used to read "the one that does not [exist]".  As of
+2026-07-27 the second law is constructed and CAS-verified; what remains
+missing is scheme-theoretic, not polynomial.)
 
 `WeierstrassCurve.Projective.addX`/`addY`/`addZ`
 (`EllipticCurve/Projective/Formula.lean`) are honest polynomial forms
@@ -261,18 +265,108 @@ over an arbitrary `[CommRing R]`, bihomogeneous of bidegree `(2, 2)`:
 `MvPolynomial (Fin 6) ℚ` turns them into genuine bihomogeneous
 polynomials, which is the form the gluing needs.
 
-**But this is only ONE addition law, and it is very degenerate.**
-`addZ_eq'` reads `addZ P Q * (P z * Q z) = (P x * Q z - Q x * P z) ^ 3`
-and `addX_eq'` carries the same factor, so the whole triple vanishes
-identically on the bidegree-`(1, 1)` locus `x(P) = x(Q)` — which contains
-both the diagonal and the antidiagonal (`addXYZ_self P = ![0, 0, 0]`).
-By **Bosma–Lenstra** a complete addition law of bidegree `(2, 2)` on a
-Weierstrass curve does not exist and exactly TWO are needed to cover
-`E × E`; the second one is **absent from this pin and must be written**.
+### CORRECTION (2026-07-27): the exceptional locus is the DIAGONAL ONLY
 
-*`dblXYZ` is not the second law and the next owner must not reach for
-it*: `dblXYZ_smul` reads `dblXYZ (u • P) = u ^ 4 • dblXYZ P`, i.e. it is
-a single-variable form of degree `4` along the diagonal, not a
+A previous version of this docstring said the triple "vanishes identically
+on the bidegree-`(1,1)` locus `x(P) = x(Q)` — which contains both the
+diagonal and the antidiagonal".  **That is FALSE, and mathlib's own
+`negAddY_of_X_eq'` refutes it in one line**:
+
+`negAddY P Q * (P z * Q z) ^ 2 = (P y * Q z - Q y * P z) ^ 3 * (P z * Q z)`.
+
+So on `x(P) = x(Q)` we do get `addX = addZ = 0` (`addX_of_X_eq`,
+`addZ_of_X_eq`), but `addY = -negAddY` is a UNIT there whenever
+`y(P) ≠ y(Q)` — and the triple `[0 : addY : 0]` is exactly the point at
+infinity `[0 : 1 : 0]`, which is the CORRECT value of `P + Q` on the
+antidiagonal.  The standard law is perfectly good there.
+
+**The true exceptional set of the standard law is the diagonal `Δ` alone**:
+all three of `addX`, `addY`, `addZ` vanish at `(P, Q)` iff
+`x(P) = x(Q)` and `y(P) = y(Q)`, i.e. iff `P = Q`.  This matters: it is
+what makes a SECOND law suffice, and it tells the next owner what the
+second law actually has to achieve (be nonzero on `Δ`), rather than
+sending them to cover a locus that is not exceptional at all.
+
+### Bosma–Lenstra: the laws are indexed by LINES in `P²`
+
+W. Bosma and H. W. Lenstra, *Complete systems of two addition laws for
+elliptic curves*, J. Number Theory **53** (1995) 229–240.  Their
+structure theorem is the thing that makes the second law explicit rather
+than mysterious:
+
+> For a Weierstrass model `C ⊂ P²`, the addition laws of bidegree
+> `(2, 2)` form a 3-dimensional space in bijection with the lines
+> `ℓ = {aX + bY + cZ = 0}` of `P²`, and a pair `(P, Q)` is exceptional
+> for the law of `ℓ` **iff `P - Q` lies on `ℓ`**.
+
+The standard law is the law of `ℓ = {Z = 0}`: `P - Q ∈ {Z = 0}` iff
+`P - Q = O` (the line at infinity meets `C` only at the inflection `O`,
+with multiplicity 3) iff `P = Q` — which is exactly the corrected
+computation above.  Two laws therefore form a complete system as soon as
+their lines meet `C` in disjoint sets, and **any line missing
+`O = [0 : 1 : 0]` will do**.  Take `ℓ₂ = {Y = 0}`, i.e. the tuple
+`(a, b, c) = (0, 1, 0)`: then `O ∉ ℓ₂` since `O` has `Y = 1`, so no pair
+is exceptional for both.  Both laws are defined over `ℤ`, so no field
+extension and no Galois descent is needed.
+
+### The second law, explicitly (CAS-computed and CAS-verified, 2026-07-27)
+
+Write `negOf Q := ![Q x, W.negY Q, Q z]` (linear in `Q`, so composing with
+it preserves bidegree) and
+
+  `sub? P Q := add? P (negOf Q)`  for `? ∈ {X, Y, Z}`,
+
+a bidegree-`(2,2)` representative of `P - Q`.  Then:
+
+* **`subZ ≡ addZ` modulo `(W(P), W(Q))`** — verified in Magma.  Both
+  satisfy `· * (P z * Q z) = (P x * Q z - Q x * P z) ^ 3` (`negY` does not
+  change `x` or `z`), and `R/(W(P), W(Q))` is a domain.
+* Consequently the Bosma–Lenstra `(0,1,0)` law is `L₁ · subY / subZ`, and
+  **its `Z`-coordinate is simply `subY`** — no new polynomial is needed
+  for it:
+
+      add2Z P Q := W.addY P (negOf Q)
+
+* `add2X` and `add2Y` are the UNIQUE bidegree-`(2,2)` forms with
+
+      add2X P Q * addZ P Q ≡ addX P Q * add2Z P Q   mod (W(P), W(Q))
+      add2Y P Q * addZ P Q ≡ addY P Q * add2Z P Q   mod (W(P), W(Q))
+
+  Uniqueness is free and worth knowing, because it means the next owner
+  can *recompute* rather than trust a transcription: `R/(W(P), W(Q))` is
+  a domain and `addZ ≠ 0` in it, so the identities pin `add2X`, `add2Y`
+  modulo the ideal; and the ideal has NO nonzero element of bidegree
+  `(2,2)` (its generators have bidegree `(3,0)` and `(0,3)`, so a
+  cofactor would need a negative degree), so they are pinned on the nose.
+
+These identities also *are* the statement that the two laws agree where
+both are defined — the two triples are proportional — which is what the
+overlap condition of the gluing needs.
+
+**How to regenerate the polynomials** (about 5 minutes of Magma; `magma`
+is at `/opt/bin/magma`).  Work in
+`R = Q(a1..a6)[Px,Py,Pz,Qx,Qy,Qz]`, `I = (W(P), W(Q))`; note `{W(P), W(Q)}`
+is already a Gröbner basis (coprime leading terms).  Expand a generic
+bidegree-`(2,2)` form `F` over the 36 monomials
+`{Px²,PxPy,PxPz,Py²,PyPz,Pz²} × {Qx²,…,Qz²}`, reduce
+`F * addZ - addX * subY` modulo `I`, equate coefficients, and solve the
+linear system.  It is consistent and has a unique solution; `add2X` comes
+out with 27 monomials and `add2Y` with 18, with coefficients polynomial in
+`a₁, a₂, a₃, a₄, a₆`.  *Two traps that cost a cycle each*: Magma's
+`[ f(i,j) : i in I, j in J ]` varies the LEFT index fastest while
+`Matrix(K,r,c,seq)` fills row-major, so build the matrix from an explicit
+list of rows; and sanity-check the solver by first solving
+`F * addZ = addX * subZ`, which must return `F = addX`.
+
+*Do not copy the formulas out of Bosma–Lenstra's printed tables*: the
+`X` and `Y` coordinates of their `(0,1,0)` law are **misprinted** in the
+paper.  (Reported independently in M. Parada Seguí, *Elliptic curves:
+various models and their addition laws*, MSc thesis, Radboud Univ.,
+§1.2.2, which had to recompute them for the same reason.)
+
+*`dblXYZ` is still not the second law and the next owner must not reach
+for it*: `dblXYZ_smul` reads `dblXYZ (u • P) = u ^ 4 • dblXYZ P`, i.e. it
+is a single-variable form of degree `4` along the diagonal, not a
 bihomogeneous law on a neighbourhood of it, so it does not define a
 morphism on any open subset of `A ×_ℚ A`.  *Refuting check*: look for a
 `Fin 3 → R → Fin 3 → R → R` in `Formula.lean` whose `smul` lemma has the
@@ -287,6 +381,20 @@ shape `(u * v) ^ n` other than the `add?` family — there is none.
    doctrine is for — get the cofactor certificate out of `Singular` or
    `Magma` and verify the concrete witness in Lean with
    `linear_combination`.
+
+   *The Bosma–Lenstra theorem above says this certificate EXISTS*, and
+   says exactly why: a common zero would be a pair `(P, Q)` exceptional
+   for both laws, hence with `P - Q` on both `{Z = 0}` and `{Y = 0}`,
+   hence `P - Q = O` and `Y(O) = 0` — but `O = [0 : 1 : 0]`.  So this is
+   a certificate hunt with a guaranteed answer, not an open question.
+   As a smoke test before spending the search: the restrictions of the
+   second law to the diagonal are visibly nonzero, e.g. for
+   `a₁ = a₂ = a₃ = 0` one gets
+   `add2Z P P = -8 * P y ^ 3 * P z` and
+   `add2Y P P = -(P y ^ 4) - 3a₄ P x P y ^ 2 P z - 18a₆ P y ^ 2 P z ^ 2
+   + 9a₄² P x ^ 2 P z ^ 2 + 27a₄a₆ P x P z ^ 3 + (a₄³ + 27a₆²) P z ^ 4`,
+   the second of which is a unit exactly where the first is not (at
+   2-torsion, where `P y = 0`).
 2. On each piece, the morphism into `proj E`.  The only `Proj`-valued
    construction at this pin is
    `AlgebraicGeometry.Proj.fromOfGlobalSections 𝒜 f hf`, which wants a
@@ -305,11 +413,39 @@ shape `(u * v) ^ n` other than the `add?` family — there is none.
    *Refuting check*: grep `ProjectiveSpectrum/Basic.lean` for any
    congruence lemma for `fromOfGlobalSections` in its `f` argument —
    there is none; the file has only `_preimage_basicOpen`,
-   `_morphismRestrict`, `_resLE` and `_toSpecZero`.
+   `_morphismRestrict`, `_resLE` and `_toSpecZero`.  (Re-checked
+   2026-07-27 against the current pin: still absent.  This item is the
+   one piece of the leaf that is genuinely new MATHLIB work.)
+
+   The unit is now explicit, which is worth having when stating it: on
+   the overlap the identities above give
+   `(add2X, add2Y, add2Z) = (add2Z / addZ) • (addX, addY, addZ)`, so
+   `u = add2Z / addZ`, invertible exactly where both laws are
+   non-degenerate.
 4. Then `Scheme.OpenCover.glueMorphisms` assembles `m`, and `hcomm`,
-   `hunit`, `hinv` are checked chart-wise against the same forms
-   (`addX`/`addY`/`addZ` are visibly symmetric under swapping `P` and
-   `Q` up to the sign that `negY` absorbs).
+   `hunit`, `hinv` are checked chart-wise against the same forms.  All
+   three are cheap, and the polynomial facts behind them have been
+   checked (Magma, 2026-07-27) — the next owner should not re-derive
+   them:
+
+   * `hcomm`: **all three forms are ANTISYMMETRIC**,
+     `add? Q P = - add? P Q` (this is a `ring` identity — no curve
+     equation needed).  A projective triple and its negative are the same
+     point, so commutativity is immediate.  The previous wording here
+     ("visibly symmetric … up to the sign that `negY` absorbs") was
+     vaguer than the truth and pointed at the wrong mechanism.
+   * `hunit`: `(addX, addY, addZ) (P, O) = -P z • (P x, P y, P z)` on the
+     nose, where `O = ![0, 1, 0]` — again a `ring` identity, and visibly
+     `∝ P`.  It degenerates only at `P z = 0`, i.e. at `P = O`, i.e. at
+     the single pair `(O, O)`, which lies on `Δ` and so is covered by the
+     second law.
+   * `hinv`: modulo `W(P)`, `addX (P, negOf P) = addZ (P, negOf P) = 0`,
+     so the value is `[0 : addY (P, negOf P) : 0] = O` as required.  And
+     `addY (P, negOf P)` is **literally the polynomial `add2Z P P`**
+     (immediately from `add2Z P Q = addY P (negOf Q)`) — the same
+     quantity whose non-vanishing makes the second law work on `Δ`.  So
+     `hinv` and the diagonal non-degeneracy of law 2 are one fact, not
+     two, and proving either gives the other.
 
 ## What this leaf does NOT have to do any more, and why
 
