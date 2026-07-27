@@ -10627,6 +10627,167 @@ theorem exists_isGalois_inertia_pow_two_eq_bot_lt_card_inertia (d : ℕ) :
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **KRASNER'S LEMMA IN IDEAL FORM, WITH NO NORMS ANYWHERE** (PROVEN
+2026-07-27).  Let `M/ℚ₃ᵥ` be finite Galois and let `θ β ∈ 𝒪_M`.  If `β`
+approximates `θ` to level `j` — `θ − β ∈ 𝔪_M^j` — while every
+substitution genuinely moving `θ` moves it by MORE than level `j` —
+`σ•θ ≠ θ ⟹ θ − σ•θ ∉ 𝔪_M^j` — then `θ ∈ ℚ₃ᵥ(β)`.
+
+CORRECTING THE MACHINERY AUDIT ON THE LEAF BELOW, which sent three
+owners looking for a NORM.  That audit says Krasner is in the pin
+(`Mathlib/Analysis/Normed/Field/Krasner.lean`, `IsKrasner` +
+`IsKrasner.of_completeSpace`) and that "the ONE load-bearing sub-task is
+the BRIDGE: either equip the finite subextensions of `ℚ₃ᵥᵃˡᵍ` with their
+spectral norms and translate `x ∈ 𝔪^j` into a norm bound, or restate
+Krasner in ideal form".  Both halves of that need amending:
+
+* **The spectral-norm route has a gap the audit does not name.**
+  Mathlib's `IsKrasner` requires `[NormedField L]`, and while
+  `spectralNorm.normedField` / `spectralNorm.nontriviallyNormedField`
+  do build one on an algebraic extension, they need the BASE to be a
+  `NontriviallyNormedField` with `CompleteSpace` and `IsUltrametricDist`
+  — and **`ℚ₃ᵥ = adicCompletion ℚ 𝔭₃` carries no `NormedField` instance
+  in the pin at all**; it is a `Valued … ℤₘ₀` field.  Refuting check:
+  `grep -rn "NormedField" .lake/packages/mathlib/Mathlib/RingTheory/`
+  `DedekindDomain/AdicValuation.lean` — it returns NOTHING.  So that
+  route must first manufacture the missing `Valued ⇒ Normed` bridge,
+  which is strictly more work than the audit suggests.
+* **The ideal-form route needs no bridge, and no Krasner, at all.**
+  The audit lists it as an alternative but never evaluates it; it is in
+  fact a four-line Galois argument, and this declaration is it.  Nothing
+  analytic survives: if `σ` fixes `β` then
+  `σ•θ − θ = σ•(θ − β) − (θ − β)`, both terms in `𝔪_M^j` because ring
+  automorphisms preserve `𝔪_M^j` (the file's own
+  `smul_mem_maximalIdeal_pow_of_mem`).  So `hfar` forces `σ•θ = θ`,
+  i.e. `θ` is fixed by the whole of `Gal(M/ℚ₃ᵥ(β))`, and the finite
+  Galois correspondence (`IsGalois.fixedField_fixingSubgroup`) puts `θ`
+  in `ℚ₃ᵥ(β)`.  The ultrametric inequality that the classical proof
+  spends its effort on is doing no work here, because the hypotheses are
+  already stated as ideal memberships.
+
+WHY THIS IS THE RIGHT SHAPE FOR THE CONSUMER.  `hfar` quantifies over
+`σ•θ ≠ θ` rather than `σ ≠ 1`, which is what makes the lemma true
+without assuming `θ` generates `M`: substitutions fixing `θ` are
+harmless and must be excluded, and for a `θ` that DOES generate `M` the
+two conditions coincide.  The arithmetic — that a lift `β` of `η(θ)`
+really is this close, and that tameness really does keep the conjugates
+this far apart — is the separate leaf
+`exists_sub_mem_forall_not_mem_of_algHom_quotient` below. -/
+theorem mem_adjoin_of_sub_mem_of_forall_not_mem
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ M]
+    (θ β : IntegralClosure 𝒪₃ᵥ ↥M) (j : ℕ)
+    (hclose : θ - β ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ j)
+    (hfar : ∀ σ : ↥M ≃ₐ[ℚ₃ᵥ] ↥M, σ • θ ≠ θ →
+      θ - σ • θ ∉ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ j) :
+    algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M θ ∈
+      IntermediateField.adjoin ℚ₃ᵥ
+        ({algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β} : Set ↥M) := by
+  classical
+  set K' : IntermediateField ℚ₃ᵥ ↥M :=
+    IntermediateField.adjoin ℚ₃ᵥ
+      ({algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β} : Set ↥M) with hK'
+  rw [← IsGalois.fixedField_fixingSubgroup K', IntermediateField.mem_fixedField_iff]
+  intro σ hσ
+  -- `σ` fixes `β`, because it fixes `K' ∋ β` pointwise
+  have hβfix : σ • β = β := by
+    have hmem : algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β ∈ K' := by
+      rw [hK']
+      exact IntermediateField.subset_adjoin _ _ rfl
+    have h1 := hσ ⟨algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β, hmem⟩
+    apply Subtype.ext
+    rw [IntegralClosure.coe_smul]
+    exact h1
+  -- hence `θ − σ•θ = (θ − β) − σ•(θ − β)` lies in `𝔪_M^j`
+  have hkey : θ - σ • θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ j := by
+    have hexp : θ - σ • θ = (θ - β) - σ • (θ - β) := by
+      rw [smul_sub, hβfix]; ring
+    rw [hexp]
+    exact Ideal.sub_mem _ hclose (smul_mem_maximalIdeal_pow_of_mem σ j hclose)
+  have hfix : σ • θ = θ := by
+    by_contra hne
+    exact hfar σ hne hkey
+  have h2 : algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M (σ • θ) =
+      σ • (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M θ) := rfl
+  rw [hfix] at h2
+  exact h2.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE ARITHMETIC HALF OF FONTAINE'S PROP. 1.5 (i): A LIFT OF `η(θ)`
+IS CLOSER TO `θ` THAN THE CONJUGATES OF `θ` ARE TO EACH OTHER** (sorry
+node, created 2026-07-27 — leaf (Y-2-a), the residue left after
+`mem_adjoin_of_sub_mem_of_forall_not_mem` above absorbs the Krasner
+half).  Everything analytic in the tame case of Fontaine's Prop. 1.5 (i)
+is concentrated here, and nothing else remains: the consumer below is
+pure glue.
+
+WHAT MUST BE PRODUCED.  A finite Galois `M/ℚ₃ᵥ` containing (a copy of)
+both `F` and `E`, a monogenic generator `θ ∈ 𝒪_M` of `F` and a lift
+`β ∈ 𝒪_M` of `η(θ)` that actually lies in `E`, together with ONE level
+`j` at which `β` is close to `θ` while every conjugate of `θ` distinct
+from `θ` is far.
+
+THE INTENDED PROOF, in the numerology already checked on the consumer's
+docstring.  Take `θ` from `exists_inertia_generator F` — it satisfies
+`𝒪_F = 𝒪₃ᵥ[θ]` and the inertia criterion
+`σ ∈ inertia(𝔪_F^i) ↔ σ•θ − θ ∈ 𝔪_F^i`.  Tameness `G_1 = ⊥` says
+exactly `σ ≠ 1 ⟹ σ•θ − θ ∉ 𝔪_F^2`, so each nontrivial conjugate sits at
+`v_F = 1` at most, giving `Σ_{σ≠1} v_K(θ − σ•θ) ≤ (e_F − 1)/e_F` through
+`aeval_derivative_minpoly_eq_prod_sub_smul_local`
+(`P′(θ) = ∏_{σ≠1}(θ − σ•θ)`).  A lift `β ∈ 𝒪_E` of `η(θ)` has
+`P(β) ∈ 𝔪_E^k`, i.e. `v_K(P(β)) ≥ k/e`, and `P(β) = ∏_σ (β − σ•θ)`;
+choosing `σ₀` NEAREST to `β` and using that for `σ ≠ σ₀` the ultrametric
+forces `v(β − σ•θ) ≤ v(σ₀•θ − σ•θ)`, one gets
+`v_K(β − σ₀•θ) ≥ k/e − (e_F − 1)/e_F > 1/e_F ≥ v_K(σ₀•θ − σ•θ)`.
+**`hk : e < k` is consumed at exactly this inequality and nowhere else**,
+which is why the threshold is sharp (see the consumer's witness at
+`k = e`).  Replacing `θ` by `σ₀•θ` — legitimate since `F` is normal, so
+`ℚ₃ᵥ(σ₀•θ) = F` — puts the conclusion in the stated form.
+
+THE ONE PIECE OF BOOKKEEPING THIS LEAF STILL OWES, and it is the reason
+the leaf is not smaller: the estimate above is stated in `v_K`, i.e. it
+compares levels across THREE rings (`𝒪_F`, `𝒪_E`, `𝒪_M`), whereas the
+conclusion needs a SINGLE ideal-power level `j` in `𝒪_M`.  The transport
+is `𝔪_E^k · 𝒪_M = 𝔪_M^(k·e_{M/E})` and `𝔪_F^i · 𝒪_M = 𝔪_M^(i·e_{M/F})`,
+and `IsDiscreteValuationRing.addVal` on `𝒪_M` (mathlib, with
+`addVal_mul`, `addVal_add` and `addVal_le_iff_dvd`) is the cheapest way
+to run the whole comparison, since `x ∈ 𝔪_M^j ↔ j ≤ addVal x`.  Note the
+file's own `span_three_eq_maximalIdeal_pow_card_inertia` supplies
+`e_F = #G_0` as a PROVEN EQUATION, so no ramification theory need be
+redeveloped to evaluate the right-hand sides.
+
+FAITHFULNESS.  The hypotheses are exactly the consumer's, and `htame`,
+`he`, `hk` and `η` are all genuinely used in the intended proof (`htame`
+for the conjugate spacing, `he` to convert `𝔪_E^k` into a `v_K` level,
+`hk` for the strict inequality, `η` to produce `β`).  This leaf is NOT
+vacuous: at `F = ℚ₃ᵥ(√3)`, `E = ℚ₃ᵥ`, `e = k = 1` — the consumer's
+sharpness witness — no such `θ, β, j` can exist, and indeed `hk` fails
+there, so the leaf is not asserting something available for free. -/
+theorem exists_sub_mem_forall_not_mem_of_algHom_quotient
+    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
+    (htame : (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ F) ^ 2).inertia (F ≃ₐ[ℚ₃ᵥ] F) = ⊥)
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E]
+    (e k : ℕ)
+    (he : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e)
+    (hk : e < k)
+    (η : IntegralClosure 𝒪₃ᵥ F →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) :
+    ∃ (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ M)
+      (_ : IsGalois ℚ₃ᵥ M) (θ β : IntegralClosure 𝒪₃ᵥ ↥M) (j : ℕ),
+      M.val (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β) ∈ E ∧
+      F ≤ IntermediateField.adjoin ℚ₃ᵥ
+        ({M.val (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M θ)} : Set ℚ₃ᵥᵃˡᵍ) ∧
+      θ - β ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ j ∧
+      (∀ σ : ↥M ≃ₐ[ℚ₃ᵥ] ↥M, σ • θ ≠ θ →
+        θ - σ • θ ∉ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ j) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **FONTAINE'S PROPERTY `(P_m)` HOLDS FOR A TAME EXTENSION AT EVERY
 LEVEL `m > 1`** (sorry node, created 2026-07-26 — leaf (Y-2) of the
 Yoshida cut; this is the EASY half of Fontaine, *Il n'y a pas de variété
@@ -10709,7 +10870,36 @@ take `F = ℚ₃ᵥ(√3)` (tame, `e_F = 2`), `E = ℚ₃ᵥ`, so `e = 1`, and
 conclusion genuinely fails at `k = e` and `hk` cannot be weakened.
 (Consistency check one level up, at `k = 2`: `b² ≡ 3 mod 9` has no
 solution, since the squares mod `9` are `{0, 1, 4, 7}` — so no `η`
-exists there, exactly as the leaf asserts.) -/
+exists there, exactly as the leaf asserts.)
+
+DECOMPOSED AND PARTLY CLOSED, 2026-07-27 (fifth owner).  This is no
+longer a leaf: the body above is now complete glue over exactly TWO
+declarations, and the Krasner half is PROVEN.
+
+* `mem_adjoin_of_sub_mem_of_forall_not_mem` (PROVEN, just above) —
+  Krasner's lemma in ideal form.  **The MACHINERY AUDIT above is
+  superseded on its central point.**  It named "the NORM/ideal bridge"
+  as the one load-bearing sub-task and offered two routes; the route it
+  did not evaluate — restating Krasner in ideal form — turns out to need
+  no bridge, no norm and no appeal to mathlib's `IsKrasner` at all, and
+  is a four-line Galois-correspondence argument.  It also records why
+  the norm route is worse than advertised: mathlib's `IsKrasner` demands
+  `[NormedField L]`, and `ℚ₃ᵥ = adicCompletion ℚ 𝔭₃` **has no
+  `NormedField` instance in the pin**, so that route must first build a
+  `Valued ⇒ Normed` bridge that the audit does not mention.
+* `exists_sub_mem_forall_not_mem_of_algHom_quotient` (SORRY, just above)
+  — the arithmetic half, where `htame`, `he`, `hk` and `η` are all
+  consumed.  Everything genuinely analytic in Fontaine's Prop. 1.5 (i)
+  now lives there and nowhere else.
+
+The audit's other claims were CHECKED AND STAND: Krasner really is in
+the pin, and the file's own `exists_inertia_generator` /
+`aeval_derivative_minpoly_eq_prod_sub_smul_local` /
+`span_three_eq_maximalIdeal_pow_card_inertia` /
+`le_of_nonempty_algHom_of_normal` really do cover the algebra — though
+note the assembly above ended up NOT needing
+`le_of_nonempty_algHom_of_normal`, because the ideal-form Krasner
+conclusion already lands inside a subfield of `E`. -/
 theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
     (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
     (htame : (IsLocalRing.maximalIdeal
@@ -10722,7 +10912,31 @@ theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
     (η : IntegralClosure 𝒪₃ᵥ F →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) :
     Nonempty (F →ₐ[ℚ₃ᵥ] E) := by
-  sorry
+  classical
+  obtain ⟨M, hfdM, hgalM, θ, β, j, hβE, hFadj, hclose, hfar⟩ :=
+    exists_sub_mem_forall_not_mem_of_algHom_quotient F htame E e k he hk η
+  haveI : FiniteDimensional ℚ₃ᵥ M := hfdM
+  haveI : IsGalois ℚ₃ᵥ M := hgalM
+  -- STEP 1: Krasner's lemma in ideal form, inside the compositum `M`
+  have hkr := mem_adjoin_of_sub_mem_of_forall_not_mem M θ β j hclose hfar
+  -- STEP 2: push the containment forward along `M.val : ↥M →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ`
+  have hmapped : M.val (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M θ) ∈
+      IntermediateField.adjoin ℚ₃ᵥ
+        ({M.val (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β)} : Set ℚ₃ᵥᵃˡᵍ) := by
+    have h1 : M.val (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M θ) ∈
+        (IntermediateField.adjoin ℚ₃ᵥ
+          ({algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β} : Set ↥M)).map M.val :=
+      ⟨_, hkr, rfl⟩
+    rwa [IntermediateField.adjoin_map, Set.image_singleton] at h1
+  -- STEP 3: `ℚ₃ᵥ(β̄) ≤ E`, because `β̄` itself lies in `E`
+  have hadjE : IntermediateField.adjoin ℚ₃ᵥ
+      ({M.val (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M β)} : Set ℚ₃ᵥᵃˡᵍ) ≤ E :=
+    IntermediateField.adjoin_le_iff.mpr (by rintro x rfl; exact hβE)
+  -- STEP 4: chain `F ≤ ℚ₃ᵥ(θ̄) ≤ ℚ₃ᵥ(β̄) ≤ E`
+  have hFE : F ≤ E := by
+    refine hFadj.trans (le_trans ?_ hadjE)
+    exact IntermediateField.adjoin_le_iff.mpr (by rintro x rfl; exact hmapped)
+  exact ⟨IntermediateField.inclusion hFE⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -10793,6 +11007,20 @@ CONSTRUCT the affinoid point `x` rather than merely recognise one.
   (`∈ 𝔪^j`, `∉ 𝔪^{j+1}`) does express that — so the bridge is stateable
   without introducing norms at all.  That is the cheapest route to try
   first, and it is the one this file's valuation-free idiom supports.
+  **CONFIRMED AND PARTLY BUILT, 2026-07-27**: that route is correct, and
+  the ideal-form statement now EXISTS and is PROVEN as
+  `mem_adjoin_of_sub_mem_of_forall_not_mem` above — with no norm, no
+  `IsKrasner`, and no analysis, just the Galois correspondence.  Read it
+  before starting here.  Its contrapositive is exactly the negative use
+  this leaf needs: to certify `IsEmpty (L →ₐ[ℚ₃ᵥ] E)` it suffices to
+  exhibit, for the constructed `x`, a substitution `τ` with `τ•α ≠ α`
+  and `α − τ•α ∈ 𝔪^j` at the SAME level `j` at which `α − x ∈ 𝔪^j` —
+  i.e. `x` equidistant from `α` and `τα` — since that is precisely the
+  hypothesis `hfar` failing.  Note also, from that lemma's docstring,
+  that the spectral-norm route is worse than this audit assumes:
+  `ℚ₃ᵥ` carries **no `NormedField` instance in the pin**, so mathlib's
+  `IsKrasner` cannot be invoked here without first building a
+  `Valued ⇒ Normed` bridge.
 * `le_of_nonempty_algHom_of_normal` (PROVEN, just above) is what turns
   the required `IsEmpty (L →ₐ[ℚ₃ᵥ] E)` into the statement that `E`
   contains no root of `P`: contrapositively, an embedding would force
