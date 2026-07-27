@@ -21808,6 +21808,50 @@ and the input has therefore been written down where it belongs, as
 `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`.
 `isAdditiveOn_of_post_zero` is PROVEN over it. -/
 
+/-! #### The Abel–Jacobi map GENERATES the Jacobian — over its own base, for free
+
+The uniqueness half of `IsJacobianOf.universal` already says that an
+`S`-morphism out of `J` is determined by its restriction along `aj`.
+Read that way it is a GENERATION statement — `aj(C)` generates `J` — and
+it costs nothing, because it is literally the `∃!` the structure
+carries.
+
+It is written out below because it is the exact shape the base-change
+leaf needs, and having it in that shape is what makes the two halves of
+that leaf visibly INDEPENDENT: over the base `S` that `IsJacobianOf` is
+stated over, generation is FREE; over `S'` it is not, and that gap is
+one of the two things the base-change leaf still has to buy. -/
+
+/-- **A morphism out of the Jacobian is determined by its restriction
+along Abel–Jacobi** (PROVEN, from the uniqueness half of
+`IsJacobianOf.universal` and nothing else — no rigidity, no coherent
+sheaf, no hypothesis on the curve).
+
+The proof is one line of bookkeeping: `c g x := w₁ ∘ aj g x` is a natural
+family into `ab'` sending the base point to the origin (that is `h0`), so
+`jac.universal` produces a UNIQUE morphism extending it — and `w₁` and
+`w₂` both extend it, `w₁` by definition and `w₂` by `hw`.
+
+**Why it is here.**  This is exactly the uniqueness half of
+`universal_jacobianBaseChangeAj`, but for the base `S` instead of `S'`.
+Comparing the two is the sharpest available description of what that leaf
+is missing: nothing at all over `S`, and over `S'` the base change of the
+epimorphism `C^g ⟶ J`, which no symmetric power in this development can
+express yet. -/
+theorem IsJacobianOf.eq_of_comp_aj {X Y B : Scheme.{0}} {strX : X ⟶ B} {jstr : Y ⟶ B}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 B)}
+    (jac : IsJacobianOf strX ab o) {A : Scheme.{0}} {astr : A ⟶ B}
+    (ab' : AbelianSchemeStruct astr) {w₁ w₂ : Y ⟶ A}
+    (h₁ : w₁ ≫ astr = jstr) (h₂ : w₂ ≫ astr = jstr)
+    (h0 : RelPoint.post w₁ h₁ (jac.aj (𝟙 B) o) = ab'.zero (𝟙 B))
+    (hw : ∀ {T : Scheme.{0}} (g : T ⟶ B) (x : RelPoint strX g),
+      (jac.aj g x).1 ≫ w₁ = (jac.aj g x).1 ≫ w₂) :
+    w₁ = w₂ := by
+  obtain ⟨w, -, huniq⟩ :=
+    jac.universal ab' (fun g x => RelPoint.post w₁ h₁ (jac.aj g x))
+      (by intro T' T h g g' hg x; rw [jac.aj_pre, RelPoint.post_pre]) h0
+  exact (huniq w₁ ⟨h₁, fun g x => rfl⟩).trans (huniq w₂ ⟨h₂, fun g x => hw g x⟩).symm
+
 /-! #### The base change of a Jacobian, as a Jacobian
 
 `J ×_S S'` carries the base-changed group law for free
@@ -21876,45 +21920,100 @@ theorem jacobianBaseChangeAj_base (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
     (eX.toEquiv_base_congr (𝟙 S') rfl (Category.id_comp s) o').symm]
   rw [ho, jac.aj_pre, jac.aj_base, ab.pre_zero]
 
-/-- **FORMATION OF THE JACOBIAN COMMUTES WITH BASE CHANGE, in Albanese
-form: `(J ×_S S', jacobianBaseChangeAj)` is INITIAL among abelian
-schemes under `C'`** (sorry node — FGA exposé 232; BLR *Néron Models*
-8.1/8.4, 9.4).
+/-! #### The base-change statement, split into its two independent halves
 
-TRUE.  This is the honest content of "cohomology and base change" for
-`Pic⁰`: the relative Picard functor is compatible with base change
-because `R¹f_*𝒪` is, and the Albanese property transports with it.
+`(J ×_S S', jacobianBaseChangeAj)` is INITIAL among abelian schemes under
+`C'` — FGA exposé 232; BLR *Néron Models* 8.1/8.4, 9.4.  TRUE: this is
+the honest content of "cohomology and base change" for `Pic⁰`, since the
+relative Picard functor is compatible with base change because `R¹f_*𝒪`
+is, and the Albanese property transports with it.
 
 **This statement is strictly weaker and more canonical than the leaf it
-replaces.**  It does not mention a second Jacobian, an `IsFibreIdent`
-of Jacobians, or an additivity clause; it is a statement about ONE
-smooth proper curve, ONE base change, and the object `J ×_S S'` that is
+replaced.**  It does not mention a second Jacobian, an `IsFibreIdent` of
+Jacobians, or an additivity clause; it is a statement about ONE smooth
+proper curve, ONE base change, and the object `J ×_S S'` that is
 CONSTRUCTED rather than posited.  Everything else that
-`exists_jacobianFibreIdent` used to assert is now derived from it:
+`exists_jacobianFibreIdent` used to assert is derived from it:
 
 * the comparison `u : J' ⟶ J ×_S S'` and its inverse both come from
   initiality, so **`IsIso u` is FREE** — it is uniqueness of an
-  endomorphism of an initial object, not a second geometric input.  The
-  previous audit of `exists_jacobianFibreIdent` listed `IsIso u` as a
-  residual obligation; that was wrong, and this is the correction;
+  endomorphism of an initial object, not a second geometric input.  An
+  earlier audit listed `IsIso u` as a residual obligation of
+  `exists_jacobianFibreIdent`; that was wrong, and this is the
+  correction.  Do not reintroduce it there;
 * additivity of `u` is `isAdditiveOn_of_post_zero` (rigidity), the same
   leaf `exists_relativeJacobian` consumes — this route adds no rigidity
   statement of its own;
 * the additivity of the pullback identification itself is
   `fibreIdentPullback_toEquiv_add`, which is free.
 
-IRREDUCIBLE at this pin ALONG THE COHERENT-SHEAF AXIS, with the same
-refuting check as `exists_relativeJacobian` and the same survey behind
-it: no Picard scheme, no higher direct image, no
-cohomology-and-base-change in this project, in mathlib at our pin, or in
-`~/cs/FLT`.  Note honestly that this leaf and `isAdditiveOn_of_post_zero`
-are NOT independent — both reduce to coherent pushforward — so the
-number of leaves went from one to two while the amount of missing
-mathematics did not change.  What did change is that the ~150 lines of
-glue between them are now written and compiler-checked, and that both
-residual statements are textbook statements reusable outside this
-file. -/
-theorem universal_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+**GATE VERDICT, 2026-07-27 — COHERENT PUSHFORWARD HAS LANDED, AND IT DOES
+NOT CLOSE THIS STATEMENT.**  The previous version of this audit said that
+this leaf and `isAdditiveOn_of_post_zero` "both reduce to coherent
+pushforward".  For the rigidity leaf that was right, and it is now PROVEN
+over `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`.  For
+THIS statement the claim is **necessary but not sufficient**, which is
+the worst shape an audit can have: it points a dispatcher at a subtree
+whose completion would leave the work here exactly as open as before.
+
+* `f_*𝒪_X = 𝒪_S` buys RIGIDITY (Mumford *AV* §4) — that a pointed
+  `S`-morphism of abelian schemes is a homomorphism.  That is real, and
+  it is consumed by the uniqueness half below.
+* It does **not** buy REPRESENTABILITY of the relative Picard functor,
+  and it does not buy compatibility of `Pic⁰` with base change.  Those
+  are Grothendieck FGA 232 / Artin, a strictly larger theory, and they
+  are what the existence half below actually needs.
+
+So `ProperPushforward.lean` is NOT the gate for the existence half.  The
+survey behind that is unchanged and was re-run on 2026-07-27: nothing in
+this development, in mathlib at our pin, or in `~/cs/FLT` represents
+`Pic`, and mathlib has no higher direct images at all.
+
+**THE SPLIT, and why the two halves are genuinely independent.**  The
+`∃!` is assembled below from `exists_comp_jacobianBaseChangeAj`
+(EXISTENCE) and `eq_of_comp_jacobianBaseChangeAj` (UNIQUENESS).  Neither
+implies the other.  Write `jac' : IsJacobianOf f' ab' o'` for an Albanese
+of the fibre — that is what `exists_albaneseOfCurve` supplies, with
+`IsSmoothProperCurve f'` coming from `isSmoothProperCurve_of_fibreIdent`
+— and let `u : J' ⟶ J ×_S S'` be the comparison from initiality of `J'`.
+
+* EXISTENCE applied to `(ab', jac'.aj)` produces `v : J ×_S S' ⟶ J'`
+  with `jac'.aj = ajBC ≫ v`, whence `jac'.aj ≫ (u ≫ v) = jac'.aj` and
+  therefore `u ≫ v = 𝟙` by `IsJacobianOf.eq_of_comp_aj` for `jac'`.  So
+  EXISTENCE alone makes `u` a SPLIT MONO and no more; a retract does not
+  give `v ≫ u = 𝟙`.
+* UNIQUENESS is exactly `v ≫ u = 𝟙`, the other half of `IsIso u`.  Over
+  the base that an `IsJacobianOf` is stated over, the corresponding
+  statement is FREE — it is `IsJacobianOf.eq_of_comp_aj` above.  What is
+  missing over `S'` is the base change of the epimorphism `C^g ⟶ J`.
+  Epimorphy IS stable under base change, so the mathematics is soft; it
+  cannot be transported at this pin only because no symmetric power of a
+  relative curve exists anywhere in this development.
+
+THE CHECKS THAT WOULD REFUTE THESE VERDICTS, and they are different,
+which is the point of splitting: for UNIQUENESS, produce `Sym^g` of a
+relative curve — or any other witness that `aj(C')` generates
+`J ×_S S'` — and combine it with the rigidity that has already landed;
+for EXISTENCE, represent the rigidified relative Picard functor. -/
+
+/-- **THE COMPARISON MORPHISM EXISTS** (sorry node — FGA exposé 232; BLR
+*Néron Models* 8.1, 9.4): every abelian scheme under `C'` receives an
+`S'`-morphism from `J ×_S S'` compatible with Abel–Jacobi.
+
+This is the EXISTENCE half of `universal_jacobianBaseChangeAj`.  See the
+block docstring above for the gate verdict on coherent pushforward — it
+is **not** the gate for this half — and for why this half is independent
+of the uniqueness half.
+
+**The classical proof.**  `Pic⁰_{C/S}` represents the relative Picard
+functor rigidified along `o`, and the formation of that FUNCTOR commutes
+with base change BY INSPECTION: its value at `T ⟶ S` depends on `T` only
+through `C ×_S T`, and `C ×_S T = C' ×_{S'} T` whenever `T ⟶ S` factors
+through `S'`.  Initiality identifies `J` with `Pic⁰_{C/S}`, so
+`J ×_S S'` represents the corresponding functor for `C'/S'` and `d` is
+classified by it.  Every step of that is representability; none of it is
+`f_*𝒪_X = 𝒪_S`. -/
+theorem exists_comp_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
     {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
     (jac : IsJacobianOf f ab o) (_hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
     {o' : RelPoint f' (𝟙 S')}
@@ -21926,10 +22025,94 @@ theorem universal_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶
       (hg : h ≫ g = g') (x : RelPoint f' g),
       d g' (RelPoint.pre h hg x) = RelPoint.pre h hg (d g x))
     (_hd0 : d (𝟙 S') o' = ab₂.zero (𝟙 S')) :
-    ∃! w : Limits.pullback jf s ⟶ A, w ≫ astr = Limits.pullback.snd jf s ∧
+    ∃ w : Limits.pullback jf s ⟶ A, w ≫ astr = Limits.pullback.snd jf s ∧
       ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
         (d g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ w :=
   sorry
+
+/-- **THE COMPARISON MORPHISM IS UNIQUE** (sorry node — Mumford *AV* §4
+Cor. 1, plus generation of the Jacobian by the curve): two `S'`-morphisms
+out of `J ×_S S'` that carry the origin to the origin and agree on every
+Abel–Jacobi point are equal.
+
+This is the UNIQUENESS half of `universal_jacobianBaseChangeAj`, and read
+correctly it is a GENERATION statement: `aj(C')` generates `J ×_S S'`.
+
+**What of the classical proof has already landed.**  `hz₁` and `hz₂` say
+each `wᵢ` is pointed, so `isAdditiveOn_of_post_zero` — PROVEN, over the
+coherent-pushforward shim — makes each of them a HOMOMORPHISM of abelian
+schemes.  Their difference is then a homomorphism killing `aj(C')`, and
+it vanishes because `C'` generates.  **So rigidity is no longer the
+obstruction to this half; generation is**, and generation over the base
+an `IsJacobianOf` is stated over is free (`IsJacobianOf.eq_of_comp_aj`).
+
+**`hz₁` and `hz₂` are not decoration.**  Without them the statement is
+FALSE as soon as the genus is `≥ 2`: two `S'`-morphisms out of `J ×_S S'`
+that are not pointed may agree on the curve `aj(C')` — a divisor, not the
+whole abelian scheme — and differ elsewhere.  It is precisely rigidity,
+i.e. being pointed, that upgrades "agree on `aj(C')`" to "agree". -/
+theorem eq_of_comp_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (_hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
+    {o' : RelPoint f' (𝟙 S')}
+    (_ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o)
+    {A : Scheme.{0}} {astr : A ⟶ S'} (ab₂ : AbelianSchemeStruct astr)
+    {w₁ w₂ : Limits.pullback jf s ⟶ A}
+    (h₁ : w₁ ≫ astr = Limits.pullback.snd jf s)
+    (h₂ : w₂ ≫ astr = Limits.pullback.snd jf s)
+    (_hz₁ : RelPoint.post w₁ h₁ ((ab.baseChange s).zero (𝟙 S')) = ab₂.zero (𝟙 S'))
+    (_hz₂ : RelPoint.post w₂ h₂ ((ab.baseChange s).zero (𝟙 S')) = ab₂.zero (𝟙 S'))
+    (_hw : ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+      (jacobianBaseChangeAj s jac eX g x).1 ≫ w₁
+        = (jacobianBaseChangeAj s jac eX g x).1 ≫ w₂) :
+    w₁ = w₂ :=
+  sorry
+
+/-- **FORMATION OF THE JACOBIAN COMMUTES WITH BASE CHANGE, in Albanese
+form: `(J ×_S S', jacobianBaseChangeAj)` is INITIAL among abelian schemes
+under `C'`** (PROVEN 2026-07-27, as the conjunction of the two halves
+above — see the block docstring for the provenance of the statement, the
+gate verdict on coherent pushforward, and the proof that the halves are
+independent).
+
+The assembly is `∃!` bookkeeping, with one step that is not.  The
+uniqueness half needs each candidate to be POINTED, and that is not
+hypothesized here — it is DERIVED: a `w` compatible with `d` carries the
+origin of `J ×_S S'` to `d (𝟙 S') o'`, which is the origin of `A`.  That
+is exactly what `jacobianBaseChangeAj_base` and `hd0` say between them,
+and it is the second place — after `jacobianBaseChangeAj_base` itself —
+where the hypothesis `ho` that the base points correspond is doing real
+work rather than decorating the statement. -/
+theorem universal_jacobianBaseChangeAj (s : S' ⟶ S) {f : C ⟶ S} {f' : C' ⟶ S'}
+    {jf : J ⟶ S} {ab : AbelianSchemeStruct jf} {o : RelPoint f (𝟙 S)}
+    (jac : IsJacobianOf f ab o) (hf : IsSmoothProperCurve f) (eX : IsFibreIdent s f f')
+    {o' : RelPoint f' (𝟙 S')}
+    (ho : eX.toEquiv (𝟙 S') s (Category.id_comp s) o'
+      = RelPoint.pre s (Category.comp_id s) o)
+    {A : Scheme.{0}} {astr : A ⟶ S'} (ab₂ : AbelianSchemeStruct astr)
+    (d : ∀ {T : Scheme.{0}} (g : T ⟶ S'), RelPoint f' g → RelPoint astr g)
+    (hd : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S'} {g' : T' ⟶ S'}
+      (hg : h ≫ g = g') (x : RelPoint f' g),
+      d g' (RelPoint.pre h hg x) = RelPoint.pre h hg (d g x))
+    (hd0 : d (𝟙 S') o' = ab₂.zero (𝟙 S')) :
+    ∃! w : Limits.pullback jf s ⟶ A, w ≫ astr = Limits.pullback.snd jf s ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+        (d g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ w := by
+  obtain ⟨w, hwa, hwd⟩ := exists_comp_jacobianBaseChangeAj s jac hf eX ho ab₂ d hd hd0
+  -- POINTEDNESS, derived from `hd0`: a `w` compatible with `d` fixes the origin
+  have hzero : ∀ {v : Limits.pullback jf s ⟶ A} (hv : v ≫ astr = Limits.pullback.snd jf s),
+      (∀ {T : Scheme.{0}} (g : T ⟶ S') (x : RelPoint f' g),
+        (d g x).1 = (jacobianBaseChangeAj s jac eX g x).1 ≫ v) →
+      RelPoint.post v hv ((ab.baseChange s).zero (𝟙 S')) = ab₂.zero (𝟙 S') := by
+    intro v hv hvd
+    refine Subtype.ext ?_
+    show ((ab.baseChange s).zero (𝟙 S')).1 ≫ v = (ab₂.zero (𝟙 S')).1
+    rw [← jacobianBaseChangeAj_base s jac eX ho, ← hvd (𝟙 S') o', hd0]
+  refine ⟨w, ⟨hwa, fun g x => hwd g x⟩, ?_⟩
+  rintro w' ⟨hw'a, hw'd⟩
+  exact eq_of_comp_jacobianBaseChangeAj s jac hf eX ho ab₂ hw'a hwa
+    (hzero hw'a hw'd) (hzero hwa hwd) (fun g x => by rw [← hw'd g x, hwd g x])
 
 /-- **The base change of the Jacobian IS a Jacobian of the base-changed
 curve** (PROVEN, over `universal_jacobianBaseChangeAj`).
