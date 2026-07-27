@@ -3829,12 +3829,14 @@ theorem le_span_singleton_sup_smul_pow_of_displacement_surjective
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Local inertia acts on the connected locus by a SCALAR** (SORRY
-LEAF, cut 2026-07-27 out of
+/-- **Local inertia acts on the connected locus by a SCALAR** (cut
+2026-07-27 out of
 `connected_locus_displacement_surjective_of_hopf_package` just below,
 which is PROVEN over it. **REFUTED IN ITS FIRST FORM AND RESTATED
 2026-07-27** — see the FALSITY AUDIT below; the conclusion is unchanged,
-the hypothesis list is not.)
+the hypothesis list is not. The assembly below is WRITTEN AND COMPILING
+over TWO sorried `have`s, `hordinary` and `hclosure`, described under
+THE REPAIR.)
 
 For `σ ∈ I₃` with image `g₀` in `Γ ℚ` there is a SINGLE scalar `c : R`
 such that `ρ g₀` acts on the WHOLE connected locus as multiplication by
@@ -3930,22 +3932,33 @@ multiplicative part of the model and `G ⧸ G⁰` is étale, so —
 prolongations being unique at `e = 1 < p − 1 = 2` — the connected locus
 of `M` is exactly the image of `L`.
 
-Those are two genuinely separate inputs, and whoever cuts this next
-should cut it there:
+Those are two genuinely separate inputs, and the body below is CUT along
+exactly that line: the assembly is written and compiles, and the two
+sorried `have`s are
 
-1. ORDINARITY: `∃ L : Submodule R V, ∃ c : R`, with `L` stable under
-   `ρ g` for every `g : Γ ℚ`, `ρ g₀ y − c • y ∈ 𝔪ⁿ⁺² • ⊤` for `y ∈ L`,
-   and `ρ g₀ x − x ∈ L ⊔ 𝔪ⁿ⁺² • ⊤` for every `x : V` (inertia trivial on
-   `V ⧸ L`);
-2. CONNECTED-ÉTALE: the connected locus is contained in
-   `L ⊔ 𝔪ⁿ⁺² • ⊤`.
+1. `hordinary` — ORDINARITY: `∃ L : Submodule R V, ∃ c : R` with
+   `ρ g₀ y − c • y ∈ 𝔪ⁿ⁺² • ⊤` for `y ∈ L`, and
+   `ρ (τ̃) w − w ∈ L ⊔ 𝔪ⁿ⁺² • ⊤` for every `w : V` and every
+   `τ ∈ I₃` (inertia trivial on `V ⧸ L`). This is flat-implies-ordinary
+   and it is where the residual package is spent.
+2. `hclosure` — CONNECTED-ÉTALE: every connected vector lies in any
+   submodule `W` that contains `𝔪ⁿ⁺² • ⊤` and all the inertia
+   displacements. Applied at `W := L ⊔ 𝔪ⁿ⁺² • ⊤` with the second clause
+   of (1).
 
-The assembly from those two is three lines — write `x = y + m`,
-`y ∈ L`, `m ∈ 𝔪ⁿ⁺² • ⊤`, and kill the tail with `apply_mem_smul_top`.
-**Do not cut (2) off from (1)**: for an arbitrary `L` satisfying only
-the first two clauses of (1) it is FALSE (`L = 0` satisfies them with
-any `c`), so the clause pinning the action on `V ⧸ L` has to travel
-with it.
+`hclosure` is stated in that quantified form on purpose, for two
+reasons. First, it makes the second clause of (1) genuinely CONSUMED
+rather than decorative — and without it (2) would be FALSE, since
+`L = 0` satisfies (1)'s first clause with any `c`. Second, in that form
+it is not a Raynaud statement at all but a transport of
+`connected_locus_mem_displacement_closure_of_hopf_package` above (which
+already says a connected vector lies in the `AddSubmonoid` closure of
+the inertia displacements) from `M` down to `V`, across the surjection
+`x ↦ 1 ⊗ x` whose kernel is `𝔪ⁿ⁺² • ⊤` — hence the `𝔪ⁿ⁺² • ⊤ ≤ W`
+hypothesis, and hence `hclosure` should be the cheaper of the two.
+
+The assembly itself is three lines — write `x = y + m` with `y ∈ L` and
+`m ∈ 𝔪ⁿ⁺² • ⊤`, and kill the tail with `apply_mem_smul_top`.
 
 DEGENERATE CASES ARE FINE: if `G` is étale then `M⁰ = 0` and any `c`
 works; if `G` is connected then `M⁰ = M` and `c = χ_cyc σ` acts on
@@ -4025,7 +4038,50 @@ theorem exists_inertia_scalar_on_connected_locus_of_hopf_package
         ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
       ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x - c • x ∈
         (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := by
-  sorry
+  classical
+  -- ## (1) FLAT IMPLIES ORDINARY (SORRY LEAF): the multiplicative line `L`,
+  -- ## the scalar `c` by which inertia acts on it, and the triviality of the
+  -- ## inertia action on `V ⧸ L` that pins `L` down
+  have hordinary : ∃ (L : Submodule R V) (c : R),
+      (∀ y ∈ L,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) y - c • y ∈
+          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) ∧
+      (∀ τ ∈ localInertiaGroup 𝔭₃, ∀ w : V,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) w - w ∈
+          L ⊔ (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) := by
+    sorry
+  obtain ⟨L, c, hLc, hLquot⟩ := hordinary
+  -- ## (2) CONNECTED-ÉTALE (SORRY LEAF): a connected vector lies in every
+  -- ## submodule that contains `𝔪ⁿ⁺² • ⊤` and all the inertia displacements —
+  -- ## the transport of `connected_locus_mem_displacement_closure_of_hopf_package`
+  -- ## from `M` down to `V` along `x ↦ 1 ⊗ x`
+  have hclosure : ∀ W : Submodule R V,
+      (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) ≤ W →
+      (∀ τ ∈ localInertiaGroup 𝔭₃, ∀ w : V,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) w - w ∈ W) →
+      ∀ z : V,
+        (Additive.toMul ((Equiv.ofBijective fG hfG).symm
+            ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] z)))
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 → z ∈ W := by
+    sorry
+  -- ## assembly: split `x = y + m` along `L ⊔ 𝔪ⁿ⁺² • ⊤` and absorb the tail
+  refine ⟨c, fun x hx => ?_⟩
+  have hxmem : x ∈ L ⊔
+      (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) :=
+    hclosure _ le_sup_right hLquot x hx
+  obtain ⟨y, hyL, m, hm, hym⟩ := Submodule.mem_sup.1 hxmem
+  have hxy : x = y + m := hym.symm
+  have hmm : ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) m - c • m ∈
+      (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) :=
+    Submodule.sub_mem _
+      (apply_mem_smul_top (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ)) hm)
+      (Submodule.smul_mem _ c hm)
+  have hsplit : ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) x - c • x =
+      (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) y - c • y) +
+      (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) m - c • m) := by
+    rw [hxy, map_add, smul_add]; abel
+  rw [hsplit]
+  exact Submodule.add_mem _ (hLc y hyL) hmm
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
