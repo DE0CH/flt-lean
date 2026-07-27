@@ -117,10 +117,20 @@ and the tautological point.  That is exactly the check that the trivial
 witness failed for `exists_jacobianOf_x0` itself, transported to the new
 node.
 
-Everything in this module is PROVEN; it contains no `sorry`.  The two
-sorried leaves the cut creates live next to their consumer in
-`ModularCurve/X0.lean`: `exists_relPicZeroOf_x0` (representability) and
-`isJacobianOf_of_isRelPicZeroOf` (autoduality).
+## What is PROVEN here, and the one leaf that is not (amended 2026-07-27)
+
+Everything in the *infrastructure* part of this module is PROVEN.  Since
+2026-07-27 the module also carries ONE sorried leaf, `exists_relPicZero`
+— Grothendieck representability itself — and it is here rather than next
+to a consumer for a reason that is forced by Lean's declaration order:
+it has **two** consumers, in two different places in
+`ModularCurve/X0.lean`, and only a declaration upstream of both can serve
+them.  See its own docstring for the inventory.
+
+The autoduality half of the cut still lives next to its consumer in
+`ModularCurve/X0.lean` (`isJacobianOf_of_isRelPicZeroOf` over `Spec ℚ`,
+`IsRelPicZeroOf.exists_albaneseFactorisation` and
+`IsRelPicZeroOf.eq_of_aj_eq` over an arbitrary base).
 -/
 module
 
@@ -310,5 +320,73 @@ structure IsRelPicZeroOf {X J S : Scheme.{u}} (strX : X ⟶ S) {jstr : J ⟶ S}
     aj (RelPoint.pre h hg x) = RelPoint.pre h hg (aj x)
   /-- the base point goes to the origin -/
   aj_base : aj o = ab.zero (𝟙 S)
+
+/-- **GROTHENDIECK REPRESENTABILITY: `Pic⁰_{X/S}` is an abelian scheme,
+for a smooth proper geometrically connected curve with a section, over an
+ARBITRARY base** (sorry node).
+
+TRUE and classical: FGA, exposé 232 (representability of `Pic_{X/S}` for
+a projective flat morphism with integral geometric fibres);
+Bosch–Lütkebohmert–Raynaud, *Néron Models*, 8.2/1 (existence) and 9.4/4
+(`Pic⁰` of a relative curve is an abelian scheme); Stacks 0D2C.  The
+section `o` is what makes the naive quotient `Pic(X_T)/Pic(T)` —
+`RelPicEquiv` above — already equal to the relative Picard functor (BLR
+8.1/4), which is the only reason `IsRelPicZeroOf` is statable at a pin
+with no site theory; and it is what the Abel–Jacobi fields `aj`,
+`aj_spec`, `aj_base` are based at.
+
+Each of the three geometric hypotheses is load-bearing.  Without
+properness `Pic⁰` is not proper; without smoothness it is not smooth;
+without geometric connectedness `f_*𝒪_X = 𝒪_S` fails universally, so the
+quotient presentation is not the Picard functor at all and `inj` becomes
+a false demand rather than a strong one.
+
+**WHY THIS LEAF LIVES HERE AND NOT NEXT TO A CONSUMER.**  It has two
+consumers, both in `ModularCurve/X0.lean` and separated by ~4700 lines:
+
+* `exists_relPicZeroOf` — the `S = SpecQ` instance, stated verbatim with
+  the same three unbundled hypotheses.  It is **exactly**
+  `exists_relPicZero strX hproper hsmooth hconn o` and nothing else; it
+  should be reduced to this declaration rather than proven a second time.
+* `exists_albaneseOfCurve` — the general-base Albanese of a curve, which
+  needs `S = Spec ℤ_(ℓ)` and `S = Spec 𝔽_ℓ` and so cannot use the
+  `SpecQ` version at all.  That is what forced the general statement.
+
+Lean's declaration order is the whole of the argument: a leaf placed at
+either consumer is unreachable from the other, and two independently
+sorried copies of one classical theorem is the most expensive object
+this development can produce.  Universe-polymorphic for the same reason —
+nothing here is specific to `Scheme.{0}`.
+
+**WHAT THIS LEAF STILL NEEDS**, none of which exists at this pin
+(surveyed 2026-07-27, and note that the survey the *older* docstrings
+record — "no monoidal structure on `SheafOfModules`, hence no `Pic` of a
+scheme at all" — is now REFUTED by `modTensor` and `sectionIdeal`
+above, which is exactly what made this statement writable):
+
+* cohomology and base change for a proper morphism (Hartshorne III.12,
+  Stacks 0E6R) — the source of both the smoothness criterion
+  (`H²` vanishes on a relative curve, so `Pic` is smooth) and the
+  formal-deformation argument behind representability;
+* the `𝒪(D)` dictionary on a relative curve — relative effective Cartier
+  divisors and the map `Div ⟶ Pic` — of which only the section case
+  (`sectionIdeal`) is available here;
+* properness of `Pic⁰`, i.e. the valuative criterion for line bundles on
+  a relative curve;
+* the connected-component-of-identity construction that cuts `Pic⁰` out
+  of `Pic`.
+
+A refutation of the first item would be a proof of
+`HasUniversallyTrivialPushforward`-style base change in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean`, which is
+where the neighbouring `f_*𝒪 = 𝒪` statement already lives; that module is
+the natural home for the missing input and is the check that would refute
+this note. -/
+theorem exists_relPicZero {X S : Scheme.{u}} (strX : X ⟶ S)
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S)) :
+    ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr),
+      Nonempty (IsRelPicZeroOf strX ab o) :=
+  sorry
 
 end Fermat
