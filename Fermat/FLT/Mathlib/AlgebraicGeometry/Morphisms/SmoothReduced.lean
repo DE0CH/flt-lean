@@ -7,6 +7,12 @@ module
 
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
+public import Mathlib.RingTheory.Flat.TorsionFree
+public import Mathlib.RingTheory.Localization.FractionRing
+public import Mathlib.RingTheory.RingHom.StandardSmooth
+public import Mathlib.RingTheory.Smooth.Locus
+public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
+public import Mathlib.RingTheory.Unramified.Field
 
 /-!
 # Smooth morphisms are geometrically reduced
@@ -17,14 +23,17 @@ the single classical fact
 
     a scheme smooth over a field is reduced
 
-and it is **absent from the mathlib pin** — see the audit in the docstring of
-`Algebra.Smooth.isReduced_of_isField` below, which is the one open leaf of this
-file.
+and it is absent from the mathlib pin *as a statement* — but, as the docstring
+of `Algebra.IsStandardSmooth.isReduced_of_field` records, every ingredient of
+its proof is present, and this file is now **sorry-free**.
 
 ## Main results
 
-* `Algebra.Smooth.isReduced_of_isField` — *(open leaf)* a smooth algebra over a
-  field is reduced.  This is the entire mathematical content.
+* `Algebra.IsStandardSmooth.isReduced_of_field` — a *standard* smooth algebra
+  over a field is reduced.  This is the mathematical content.
+* `Algebra.Smooth.isReduced_of_isField` — a smooth algebra over a field is
+  reduced (from the previous item, since smooth is standard smooth on a
+  standard open cover).
 * `RingHom.Smooth.isReduced_of_isField` — the `RingHom` restatement.
 * `AlgebraicGeometry.isReduced_of_smooth_over_field` — a scheme smooth over a
   field is reduced (proven from the leaf by an affine cover).
@@ -55,76 +64,134 @@ universe u v
 
 open CategoryTheory Limits
 
-/-- **A smooth algebra over a field is reduced** (sorry leaf — a general gap in
-the mathlib pin, with no elliptic-curve or even scheme-theoretic content).
+/-- **A standard smooth algebra over a field is reduced.**
 
-TRUE and classical: a smooth `K`-algebra is regular (Jacobian criterion), and a
-regular ring is reduced.  Both halves are missing here, and this is the whole
-mathematical content of `AlgebraicGeometry.GeometricallyReduced.of_smooth`.
+PROVEN.  This is the whole mathematical content of
+`AlgebraicGeometry.GeometricallyReduced.of_smooth`, and it is *not* obtained
+through regular local rings — see the audit below for why that route is a dead
+end at this pin and what replaces it.
 
-## ABSENCE AUDIT (2026-07-27, and the checks that would refute it)
+## THE PROOF
 
-Each bullet names the grep that refutes it, so the next owner re-runs a command
-rather than a survey.
+Write `P := K[X₁, …, Xₙ]` for the polynomial ring in `n = ` the relative
+dimension, and `M := P⁰` for its non-zero-divisors.
 
-* `grep -rn 'IsReduced\|IsRegularLocalRing\|IsRegularRing\|IsDomain'
-  Mathlib/RingTheory/Smooth/ Mathlib/RingTheory/Etale/` is **empty**.  So no
-  file in the smooth/étale ring-theory development says anything at all about
-  reducedness, regularity or domains.  In particular
-  `RingTheory/Smooth/Local.lean` contains only the three
-  `FormallySmooth.iff_injective_*` cotangent criteria, and
-  `RingTheory/Smooth/StandardSmooth.lean` and `StandardSmoothCotangent.lean`
-  prove freeness of `Ω` and vanishing of `H¹` of the cotangent complex, never a
-  ring-theoretic property of the algebra.
-* `grep -rln 'IsRegularLocalRing\|IsRegularRing' Mathlib/` returns exactly two
-  files, `RingTheory/RegularLocalRing/{Defs,Polynomial}.lean`.  That development
-  has `IsRegularLocalRing`, `IsRegularRing`, the DVR and Dedekind instances, and
-  `MvPolynomial.isRegularRing_of_isRegularRing` — but **no `IsRegularLocalRing →
-  IsDomain`** and no connection to smoothness or formal smoothness whatsoever.
-  So even "smooth ⟹ regular" would not finish the job at this pin.
-* There is **no perfect-field shortcut**, although the base here is `ℚ`.
-  `Mathlib/RingTheory/Smooth/Field.lean` runs the *other* way: it proves
-  separably generated field extensions are formally smooth
-  (`Algebra.FormallySmooth.of_perfectField`), never that a formally smooth
-  algebra is reduced.  And `PerfectField` does not occur in
-  `RingTheory/Nilpotent/GeometricallyReduced.lean` or in any
-  `AlgebraicGeometry/Geometrically/*.lean`, so the characteristic-zero
-  identification of "reduced" with "geometrically reduced" is unavailable too.
-* The converse direction *is* present, which is why a search can look
-  deceptively successful: `AlgebraicGeometry/Group/Smooth.lean` proves
-  `smooth_of_grpObj [GeometricallyReduced f] : Smooth f` (Cartier).  That is
-  Cartier's theorem, and it consumes exactly the hypothesis this file produces;
-  it cannot be run backwards.
+1. `RingHom.IsStandardSmooth.exists_etale_mvPolynomial` factors `K → T` as
+   `K → P → T` with `P → T` **étale**.  This is the Jacobian criterion,
+   already done in mathlib: a submersive presentation with `c` relations
+   among `n + c` variables is a submersive presentation of relative dimension
+   `0` over the polynomial ring on the `n` variables *not* hit by
+   `P.map`, and `Algebra.Etale.iff_isStandardSmoothOfRelativeDimension_zero`
+   converts that to étaleness.
+2. Étale ⟹ smooth ⟹ `Module.Flat P T` (`Algebra.Smooth.flat`), and `P` is a
+   domain, so every `t ∈ M` acts injectively on `T`
+   (`Module.Flat.isSMulRegular_of_nonZeroDivisors`).
+3. Pass to the generic fibre `Tₘ := M⁻¹T`.  By
+   `Algebra.FormallyEtale.localization_map` it is formally étale over
+   `Frac P = M⁻¹P`, and essentially of finite type over it, so
+   `Algebra.FormallyUnramified.isReduced_of_field` gives `IsReduced Tₘ`.
+   (Concretely `Tₘ` is a finite product of finite separable extensions of
+   `Frac P`, by `Algebra.FormallyEtale.iff_exists_algEquiv_prod`.)
+4. A nilpotent `x : T` dies in the reduced ring `Tₘ`, so `t * x = 0` for some
+   `t ∈ M`; by step 2, `x = 0`.
 
-## WHY IT IS NOT SOFT — do not look for a lifting-property proof
+## AUDIT CORRECTION (2026-07-27)
 
-Formal smoothness alone does not visibly force reducedness, and the obvious
-attempt fails in a way worth recording, because it is the first thing anyone
-tries.  Let `N` be the nilradical (nilpotent, as `A` is noetherian) and apply
-the lifting property to `B = A`, `J = N`: it produces a `K`-algebra
-endomorphism `σ : A → A` with `π ∘ σ = π`, i.e. `σ ≡ id (mod N)`.  Nothing
-about that contradicts `N ≠ 0`.  The content really does sit in the Jacobian
-criterion — a standard-smooth presentation `K[x₁…x_n] ⧸ (f₁…f_c)` with an
-invertible `c × c` Jacobian minor — via the fact that `f₁, …, f_c` is then a
-regular sequence.  That is genuinely new commutative algebra at this pin.
+An earlier version of this docstring recorded the leaf as needing *new
+commutative algebra*: "smooth ⟹ regular ⟹ domain", with both halves absent.
+The **absence claims about regular local rings are all still true** —
+`grep -rln 'IsRegularLocalRing\|IsRegularRing' Mathlib/` returns exactly
+`RingTheory/RegularLocalRing/{Defs,Polynomial}.lean`, which contain no
+`IsRegularLocalRing → IsDomain` and no link to smoothness; and
+`grep -rn 'IsReduced\|IsRegularLocalRing\|IsRegularRing\|IsDomain'
+Mathlib/RingTheory/Smooth/ Mathlib/RingTheory/Etale/` is indeed empty.
 
-## ROUTE, for whoever takes this leaf
+The audit was nevertheless **wrong about the conclusion**, and in an
+instructive way: it searched the two directories where the *statement* would
+live and inferred that the *route* was unavailable.  The decisive lemma is in
+neither of them.  It is
+`RingHom.IsStandardSmooth.exists_etale_mvPolynomial`, in
+`Mathlib/RingTheory/RingHom/StandardSmooth.lean`, and it makes the regular
+local ring theory unnecessary: reducedness is inherited from the *generic
+fibre*, which is étale over a field and therefore a product of separable field
+extensions, rather than from regularity of the local rings.
 
-1. Reduce to the local case (`IsReduced` is a local property).
-2. Get a standard-smooth presentation.  `Algebra.Smooth → Locally
-   IsStandardSmooth` is available as
-   `RingHom.smooth_iff_locally_isStandardSmooth`, so this step is *not* a gap.
-3. The genuinely missing step is the Jacobian criterion proper: the `c`
-   equations of a submersive presentation form a regular sequence, hence the
-   quotient is a complete intersection in a regular ring, hence regular, hence
-   a domain locally.  Mathlib has `SubmersivePresentation` and
-   `Extension.H1Cotangent` vanishing (`StandardSmoothCotangent.lean`) as
-   inputs, and `MvPolynomial.isRegularRing_of_isRegularRing` for the ambient
-   ring; what is absent is any bridge from those to `IsRegularLocalRing`, and
-   `IsRegularLocalRing → IsDomain` on top of it. -/
+Two of the audit's other observations survive unchanged and are worth keeping:
+
+* `AlgebraicGeometry/Group/Smooth.lean`'s
+  `smooth_of_grpObj [GeometricallyReduced f] : Smooth f` (Cartier) is the
+  **converse**; a name-based search hits it and cannot run it backwards.
+* A lifting-property proof really does fail: applying formal smoothness to
+  `B = A`, `J = nilradical` produces only an endomorphism `σ ≡ id (mod N)`,
+  which is no contradiction with `N ≠ 0`.  The content is genuinely the
+  Jacobian criterion — mathlib just already has it. -/
+theorem Algebra.IsStandardSmooth.isReduced_of_field (K : Type u) (T : Type v) [Field K]
+    [CommRing T] [Algebra K T] [Algebra.IsStandardSmooth K T] : IsReduced T := by
+  obtain ⟨n, g, _, hg⟩ := RingHom.IsStandardSmooth.exists_etale_mvPolynomial
+    (RingHom.isStandardSmooth_algebraMap.mpr ‹Algebra.IsStandardSmooth K T›)
+  algebraize [g]
+  haveI : IsDomain (MvPolynomial (Fin n) K) := inferInstance
+  haveI : Module.Flat (MvPolynomial (Fin n) K) T := inferInstance
+  haveI : IsLocalization (Submonoid.map (algebraMap (MvPolynomial (Fin n) K) T)
+      (nonZeroDivisors (MvPolynomial (Fin n) K)))
+      (Localization (Algebra.algebraMapSubmonoid T
+        (nonZeroDivisors (MvPolynomial (Fin n) K)))) :=
+    inferInstanceAs (IsLocalization (Algebra.algebraMapSubmonoid T
+      (nonZeroDivisors (MvPolynomial (Fin n) K))) _)
+  haveI : Algebra.FormallyEtale (FractionRing (MvPolynomial (Fin n) K))
+      (Localization (Algebra.algebraMapSubmonoid T
+        (nonZeroDivisors (MvPolynomial (Fin n) K)))) :=
+    Algebra.FormallyEtale.localization_map (R := MvPolynomial (Fin n) K) (S := T)
+      (nonZeroDivisors (MvPolynomial (Fin n) K))
+  haveI : Algebra.EssFiniteType (FractionRing (MvPolynomial (Fin n) K))
+      (Localization (Algebra.algebraMapSubmonoid T
+        (nonZeroDivisors (MvPolynomial (Fin n) K)))) :=
+    Algebra.EssFiniteType.of_comp (MvPolynomial (Fin n) K) _ _
+  haveI : IsReduced (Localization (Algebra.algebraMapSubmonoid T
+      (nonZeroDivisors (MvPolynomial (Fin n) K)))) :=
+    Algebra.FormallyUnramified.isReduced_of_field (FractionRing (MvPolynomial (Fin n) K)) _
+  refine ⟨fun x hx => ?_⟩
+  have h0 : algebraMap T (Localization (Algebra.algebraMapSubmonoid T
+      (nonZeroDivisors (MvPolynomial (Fin n) K)))) x = 0 := (hx.map _).eq_zero
+  rw [IsLocalization.map_eq_zero_iff (Algebra.algebraMapSubmonoid T
+    (nonZeroDivisors (MvPolynomial (Fin n) K)))] at h0
+  obtain ⟨⟨y, t, ht, hty⟩, hmx⟩ := h0
+  refine Module.Flat.isSMulRegular_of_nonZeroDivisors (M := T) ht ?_
+  simpa [Algebra.smul_def, hty] using hmx
+
+/-- **A smooth algebra over a field is reduced.**
+
+PROVEN from `Algebra.IsStandardSmooth.isReduced_of_field` by the standard
+open cover on which a smooth algebra is standard smooth.
+
+Concretely: let `x` be nilpotent and nonzero.  Its annihilator is a proper
+ideal, so it lies in a maximal ideal `m`; `Algebra.smoothLocus_eq_univ` says
+`S` is smooth at `m`, so `Algebra.IsSmoothAt.exists_notMem_isStandardSmooth`
+supplies `f ∉ m` with `S_f` standard smooth, hence reduced.  Then `x` dies in
+`S_f`, i.e. `fᵏ * x = 0` for some `k`, i.e. `fᵏ` annihilates `x`, so
+`fᵏ ∈ m` and `f ∈ m` — contradiction. -/
 theorem Algebra.Smooth.isReduced_of_isField {R : Type u} {S : Type v} [CommRing R] [CommRing S]
-    [Algebra R S] (hR : IsField R) [Algebra.Smooth R S] : IsReduced S :=
-  sorry
+    [Algebra R S] (hR : IsField R) [Algebra.Smooth R S] : IsReduced S := by
+  letI : Field R := hR.toField
+  refine ⟨fun x hx => ?_⟩
+  by_contra hx0
+  have hne : (Submodule.span S {x}).annihilator ≠ ⊤ := by
+    intro h
+    refine hx0 ?_
+    have h1 : (1 : S) ∈ (Submodule.span S {x}).annihilator := h ▸ Submodule.mem_top
+    simpa using (Submodule.mem_annihilator_span_singleton x (1 : S)).mp h1
+  obtain ⟨m, hm, hle⟩ := Ideal.exists_le_maximal _ hne
+  haveI : m.IsPrime := hm.isPrime
+  haveI : Algebra.IsSmoothAt R m :=
+    Set.eq_univ_iff_forall.mp (Algebra.smoothLocus_eq_univ (R := R) (A := S)) ⟨m, ‹_›⟩
+  obtain ⟨f, hf, hfs⟩ := Algebra.IsSmoothAt.exists_notMem_isStandardSmooth R m
+  haveI : IsReduced (Localization.Away f) := Algebra.IsStandardSmooth.isReduced_of_field R _
+  have h0 : algebraMap S (Localization.Away f) x = 0 := (hx.map _).eq_zero
+  rw [IsLocalization.map_eq_zero_iff (Submonoid.powers f)] at h0
+  obtain ⟨⟨y, k, hk⟩, hmx⟩ := h0
+  refine hf (hm.isPrime.mem_of_pow_mem k (hle ?_))
+  rw [Submodule.mem_annihilator_span_singleton, smul_eq_mul, show f ^ k = y from hk]
+  exact hmx
 
 /-- **A smooth ring homomorphism out of a field has reduced target** — the
 `RingHom` restatement of `Algebra.Smooth.isReduced_of_isField`, which is the
