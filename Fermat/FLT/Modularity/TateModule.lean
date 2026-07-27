@@ -142,6 +142,12 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+-- `GaloisRepresentation.globalFrob` and `dense_conjClasses_globalFrob`: the
+-- Chebotarev density input of `det_eq_cyclotomicCharacter_of_globalFrob`.
+-- Adds only `Chebotarev` and `BrauerNesbitt` to this module's import cone,
+-- and this module's sole consumer (`Modularity.KhareWintenberger`) already
+-- has both; there is no cycle (`Chebotarev`'s cone does not meet `Modularity`).
+public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`: the residue
 -- cardinality at `w` in the Frobenius specification of
 -- `adicArithFrob_rootsOfUnity_pow_absNorm`
@@ -4840,11 +4846,15 @@ merged onto the assembly of that leaf on 2026-07-26 as a single opaque
 sorried `have`. It is cut here into five statements, of which exactly
 ONE is open and it is the only deep one:
 
-* `det_eq_cyclotomicCharacter_of_tateFrame` (SORRY NODE — the geometric
-  input, and the only open leaf of the clause): the determinant of the
-  frame representation IS the `q`-adic cyclotomic character, as a
-  character of the whole of `Γ_F`. No exceptional set and nothing local
-  appears: the bad places enter only at the second step.
+* `det_eq_cyclotomicCharacter_of_tateFrame` (PROVEN 2026-07-27 — the
+  determinant of the frame representation IS the `q`-adic cyclotomic
+  character, as a character of the whole of `Γ_F`; no exceptional set and
+  nothing local appears in ITS statement). Its geometric content was cut
+  out on 2026-07-27 along the CHEBOTAREV axis into
+  `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` (SORRY NODE — the
+  same identity at the global Frobenius elements away from a finite set
+  of places, which is where the bad places really live), the propagation
+  being `det_eq_cyclotomicCharacter_of_globalFrob` (PROVEN, density).
 * `exists_weilPairing_of_tateFrame` (PROVEN 2026-07-26 over the leaf
   above): the frame carries an alternating `O`-bilinear form with unit
   discriminant on which `Γ_F` acts through the cyclotomic character.
@@ -5224,9 +5234,283 @@ theorem bilin_alternating_apply_det_apply {R : Type*} [CommRing R]
     bilin_alternating_apply_det E halt M, key u v]
   ring
 
+/-! ### Chebotarev density: from the Frobenius determinants to all of `Γ_F`
+
+The determinant identity below is NOT proven from a characteristic-zero
+Weil pairing.  It is CUT along the axis the elliptic analogue in this
+tree already uses (`EllipticCurve/WeilPairing.lean`'s
+`det_galoisRep_eq_cyclotomic`, and, in the exact continuity/density
+spelling copied here, `Modularity/Interface.lean`'s
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`): the geometry is
+asked for ONLY at the global Frobenius elements away from a finite set of
+places, and the value at a general `σ ∈ Γ_F` is then forced, because both
+sides are continuous class functions and the Frobenius conjugacy classes
+are DENSE (`GaloisRepresentation.dense_conjClasses_globalFrob`).
+
+This is a genuine weakening, not a repackaging: the remaining leaf
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` constrains `τ` only
+at Frobenius elements, and everything below it here is PROVEN. -/
+
+/-- **A free module carrying the module topology over a `T2Space` ring is
+a `T2Space`** (PROVEN; vendored in argument from the reference project
+`~/cs/FLT`'s `FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean`,
+re-checked against our pin).
+
+`{0}` is the preimage of the closed set `{0}` under the continuous
+injective linear map `M → (ι → R)` given by the coordinates of a basis,
+and a topological additive group with `{0}` closed is Hausdorff.
+
+This is what supplies `T2Space O` for the coefficient ring `O` of a Tate
+frame: `exists_adicCoefficientRing` produces `O` together with
+`Module.Free ℤ_[q] O` and `IsModuleTopology ℤ_[q] O`, and `ℤ_[q]` is a
+metric space.  Without it the agreement locus of the two characters below
+is not closed and the density argument does not start. -/
+theorem t2Space_of_free_isModuleTopology (R : Type*) {M : Type*} [CommRing R]
+    [AddCommGroup M] [Module R M] [Module.Free R M]
+    [TopologicalSpace R] [TopologicalSpace M] [T2Space R] [IsTopologicalRing R]
+    [IsModuleTopology R M] : T2Space M := by
+  have := IsModuleTopology.topologicalAddGroup R M
+  rw [IsTopologicalAddGroup.t2Space_iff_zero_closed]
+  let f := (Module.Free.chooseBasis R M).repr.toLinearMap
+  let g : (Module.Free.ChooseBasisIndex R M →₀ R) →ₗ[R]
+      (Module.Free.ChooseBasisIndex R M → R) :=
+    { __ := Finsupp.coeFnAddHom
+      map_smul' := fun _ _ => rfl }
+  suffices hpre : (g.comp f) ⁻¹' {0} = {0} by
+    rw [← hpre]
+    exact IsClosed.preimage
+      (IsModuleTopology.continuous_of_linearMap (g.comp f)) isClosed_singleton
+  ext x
+  simp only [Set.mem_preimage, Set.mem_singleton_iff]
+  constructor
+  · intro hx
+    have h0 : (Module.Free.chooseBasis R M).repr x = 0 :=
+      Finsupp.ext fun i => congrFun hx i
+    have := congrArg (Module.Free.chooseBasis R M).repr.symm h0
+    simpa using this
+  · rintro rfl
+    simp [g, f]
+
+/-- **Two continuous characters of `Γ K` that agree at almost every global
+Frobenius agree everywhere** (PROVEN, Chebotarev density in abstract
+form).
+
+The agreement locus is CLOSED because both sides are continuous into the
+Hausdorff ring `O`; it is CONJUGATION-INVARIANT because a multiplicative
+`O`-valued function on a group is a class function when `O` is
+commutative (`f (g x g⁻¹) = f x` after cancelling `f g · f g⁻¹ = 1`); and
+it contains the union of the Frobenius conjugacy classes away from `S`,
+which is DENSE by `GaloisRepresentation.dense_conjClasses_globalFrob`.
+Hence it is everything.
+
+Stated for bare multiplicative FUNCTIONS rather than bundled monoid homs,
+so that a consumer need not build a `MonoidHom` out of a composite of
+coercions in order to apply it. -/
+theorem eq_of_eq_globalFrob_of_continuous {K : Type u} [Field K] [NumberField K]
+    {O : Type*} [CommRing O] [TopologicalSpace O] [T2Space O]
+    (f₁ f₂ : Field.absoluteGaloisGroup K → O)
+    (hm₁ : ∀ a b, f₁ (a * b) = f₁ a * f₁ b) (ho₁ : f₁ 1 = 1)
+    (hm₂ : ∀ a b, f₂ (a * b) = f₂ a * f₂ b) (ho₂ : f₂ 1 = 1)
+    (hc₁ : Continuous f₁) (hc₂ : Continuous f₂)
+    (Sbad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers K)))
+    (h : ∀ v ∉ Sbad, f₁ (GaloisRepresentation.globalFrob v) =
+      f₂ (GaloisRepresentation.globalFrob v))
+    (σ : Field.absoluteGaloisGroup K) : f₁ σ = f₂ σ := by
+  classical
+  have hconj : ∀ (f : Field.absoluteGaloisGroup K → O)
+      (_ : ∀ a b, f (a * b) = f a * f b) (_ : f 1 = 1)
+      (g x : Field.absoluteGaloisGroup K), f (g * x * g⁻¹) = f x := by
+    intro f hm ho g x
+    have hgg : f g * f g⁻¹ = 1 := by rw [← hm, mul_inv_cancel, ho]
+    calc f (g * x * g⁻¹) = f g * f x * f g⁻¹ := by rw [hm, hm]
+      _ = f x * (f g * f g⁻¹) := by ring
+      _ = f x := by rw [hgg, mul_one]
+  have hclosed : IsClosed {x : Field.absoluteGaloisGroup K | f₁ x = f₂ x} :=
+    isClosed_eq hc₁ hc₂
+  have hsub : {x : Field.absoluteGaloisGroup K |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers K), v ∉ Sbad ∧
+        ∃ g, x = g * GaloisRepresentation.globalFrob v * g⁻¹} ⊆
+      {x : Field.absoluteGaloisGroup K | f₁ x = f₂ x} := by
+    rintro x ⟨v, hv, g, rfl⟩
+    simp only [Set.mem_setOf_eq, hconj f₁ hm₁ ho₁, hconj f₂ hm₂ ho₂]
+    exact h v hv
+  have hσ : σ ∈ closure {x : Field.absoluteGaloisGroup K |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers K), v ∉ Sbad ∧
+        ∃ g, x = g * GaloisRepresentation.globalFrob v * g⁻¹} := by
+    rw [(GaloisRepresentation.dense_conjClasses_globalFrob (K := K) Sbad).closure_eq]
+    trivial
+  exact closure_minimal hsub hclosed hσ
+
+/-- **The determinant of a framed representation is the cyclotomic
+character as soon as it is so at almost every global Frobenius** (PROVEN).
+
+The specialization of `eq_of_eq_globalFrob_of_continuous` to the two
+characters of the determinant clause.  Continuity of the left side is
+`GaloisRep.det`, which is a `ContinuousMonoidHom` by
+`IsModuleTopology.continuous_det`; continuity of the right side is
+mathlib's `cyclotomicCharacter.continuous` pushed along the continuous
+`Field.absoluteGaloisGroup.map` and the continuous `algebraMap ℤ_[q] O`
+(continuous because `O` carries the `ℤ_[q]`-module topology).
+
+Note where the topological pin is used: `Module.Free ℤ_[q] O` and
+`IsModuleTopology ℤ_[q] O` are needed ONLY to know that `O` is Hausdorff,
+which is what makes the agreement locus closed.  Both are supplied by
+`exists_adicCoefficientRing`, so no consumer has to prove anything new. -/
+theorem det_eq_cyclotomicCharacter_of_globalFrob
+    {F : Type u} [Field F] [NumberField F]
+    (q : ℕ) [Fact q.Prime]
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [Algebra ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O]
+    (τ : GaloisRep F O (Fin 2 → O))
+    (Sbad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (h : ∀ v ∉ Sbad,
+      LinearMap.det (τ (GaloisRepresentation.globalFrob v)) =
+        algebraMap ℤ_[q] O
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+              (GaloisRepresentation.globalFrob v)).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q]))
+    (σ : Field.absoluteGaloisGroup F) :
+    LinearMap.det (τ σ) =
+      algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+            ℤ_[q]ˣ) : ℤ_[q]) := by
+  haveI : T2Space O := t2Space_of_free_isModuleTopology ℤ_[q]
+  refine eq_of_eq_globalFrob_of_continuous
+    (fun γ => LinearMap.det (τ γ))
+    (fun γ => algebraMap ℤ_[q] O
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) γ).toRingEquiv) :
+          ℤ_[q]ˣ) : ℤ_[q]))
+    ?_ ?_ ?_ ?_ ?_ ?_ Sbad h σ
+  · intro a b
+    show τ.det (a * b) = τ.det a * τ.det b
+    rw [map_mul]
+  · show τ.det 1 = 1
+    rw [map_one]
+  · intro a b
+    have hmul : ∀ x y : Field.absoluteGaloisGroup ℚ,
+        (x * y).toRingEquiv = x.toRingEquiv * y.toRingEquiv := fun _ _ => rfl
+    rw [map_mul, hmul, map_mul, Units.val_mul, map_mul]
+  · have hone : (1 : Field.absoluteGaloisGroup ℚ).toRingEquiv = 1 := rfl
+    rw [map_one, hone, map_one, Units.val_one, map_one]
+  · exact (ContinuousMonoidHom.continuous_toFun τ.det).congr fun _ => rfl
+  · exact ((continuous_algebraMap ℤ_[q] O).comp
+      (Units.continuous_val.comp
+        ((cyclotomicCharacter.continuous q ℚ (AlgebraicClosure ℚ)).comp
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).continuous_toFun))).congr
+      fun _ => rfl
+
+/-- **The determinant of a Tate frame at the global Frobenius elements**
+(SORRY NODE, cut 2026-07-27 out of
+`det_eq_cyclotomicCharacter_of_tateFrame` along the CHEBOTAREV axis —
+THE geometric input of the determinant clause; Silverman *AEC* III.8 for
+the elliptic case, Mumford *Abelian Varieties* §16/§20 for the polarized
+case in general, Taylor 2002 §2 and Carayol for the Hilbert–Blumenthal
+normalization used here).
+
+For a Tate frame `φ`/`τ` as in `exists_tateFrame_of_adicCoefficientRing`,
+there is a FINITE set of finite places of `F` outside which
+
+  `det (τ (Frob_v)) = χ_cyc(Frob_v)`.
+
+The general identity at every `σ ∈ Γ_F` follows from this by
+`det_eq_cyclotomicCharacter_of_globalFrob` (Chebotarev density), which is
+PROVEN; so this leaf is all that remains of the determinant clause.
+
+WHY THIS AXIS, AND NOT THE POLARIZATION AXIS.  The classical char-0 route
+— choose an `𝒪_D`-linear polarization, transport the canonical Weil
+pairing `T_I A × T_I A^∨ → 𝒪_{D,I}(1)` along it, refine to an
+`𝒪_D`-bilinear form by trace duality along the inverse different, and
+read the determinant off the second exterior power — is REAL but needs a
+theory that does not exist here.  Checked 2026-07-27, and each of these
+is refutable by one grep:
+
+* `Modularity/AbelianScheme.lean` DOES now carry `DualStruct`,
+  `PolarizationStruct` and `PolarizationStruct.pairing` with its six
+  proven lemmas, and this IS on `main` (an earlier version of this
+  docstring said it was only on branch `flt-lean-169`; that is stale).
+  REFUTING CHECK: `grep -n 'structure DualStruct' Fermat/FLT/Modularity/AbelianScheme.lean`.
+* But NO existence theorem for either structure exists anywhere in the
+  tree, and this leaf's hypotheses supply neither.  REFUTING CHECK: grep
+  `DualStruct` outside `AbelianScheme.lean` — every hit is prose.
+* And `PolarizationStruct` is satisfiable by the CONSTANT ZERO map: all
+  six of its fields hold for `hom := fun _ => d.dualAb.zero _`
+  (`hom_add` by `zero_add`, `pre_hom` by `pre_zero`, `hom_act` by the
+  `act a 0 = 0` derivation already written at `Mult.module`,
+  `hom_torsion` because a `Submodule` contains `0`, and `weil_self`
+  because `weil_add_right` at `z = z' = 0` gives `w = w * w` in a group).
+  So `PolarizationStruct` adds NOTHING over `DualStruct` until a
+  nondegeneracy axiom is added to it, and the polarized pairing it
+  induces may be identically `1`.  REFUTING CHECK: exhibit a field of
+  `PolarizationStruct` that the zero map fails.
+* Trace duality along the inverse different is fully available in mathlib
+  (`Submodule.traceDual`, `FractionalIdeal.dual`, `differentIdeal` and
+  `traceForm_nondegenerate`) but is used NOWHERE in this project or in
+  `~/cs/FLT` except as an ideal-theoretic black box.
+
+The Chebotarev axis relocates the burden to characteristic `q` instead,
+which is where the elliptic proof in this tree actually went
+(`det_frobeniusTorsionEnd` computes `det Frob = q` from the
+divisor-theoretic pairing ON THE REDUCTION).  What it needs, and what a
+successor must build, is an INTEGRAL MODEL for `f : A ⟶ S`: a
+good-reduction hypothesis at almost all `v`, the reduction `A_v`, and the
+comparison of `A[I^n]` with the torsion of that reduction.  Néron models
+are in neither mathlib nor `~/cs/FLT` nor this project — but note that a
+statement, not a proof, of the model may be all a further cut needs (see
+`exists_x0Sieve`'s history for the same pattern).
+
+FAITHFULNESS.  The exceptional set is genuinely necessary here and is NOT
+an artifact: `χ_cyc` is ramified at `q`, so the identity at `Frob_v` is
+false for `v ∣ q`, exactly as in
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`, whose `Sp` inserts
+the place of `p` for this reason.  No exceptional set survives into the
+consumer, because density removes it.
+
+The pinning hypotheses `j`, `hφj`, `hcplt`, `hdense`, `hker` are carried
+verbatim from the consumer and are load-bearing there for the reason
+recorded below it: without them the `O`-structure transported to `T` is
+an arbitrary embedding `O ↪ End_{ℤ_q[Γ_F]}(T)` and the determinant
+becomes `χ₁ · ψ⁻¹(χ₂)` rather than `χ_cyc`.  Do not weaken them. -/
+theorem det_globalFrob_eq_cyclotomicCharacter_of_tateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hφj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∃ Sbad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ v ∉ Sbad,
+        LinearMap.det (τ (GaloisRepresentation.globalFrob v)) =
+          algebraMap ℤ_[q] O
+            ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+                (GaloisRepresentation.globalFrob v)).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q]) :=
+  sorry
+
 /-- **The determinant of a Tate frame is the cyclotomic character**
-(SORRY NODE since 2026-07-26 — THE geometric input of the determinant
-clause, and the only open leaf of this section; Silverman *AEC* III.8 for
+(PROVEN 2026-07-27 over `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`
+by Chebotarev density; Silverman *AEC* III.8 for
 the elliptic case, Mumford *Abelian Varieties* §16/§20 for the polarized
 case in general, Taylor 2002 §2 and Carayol for the Hilbert–Blumenthal
 normalization used here).
@@ -5238,6 +5522,27 @@ multiplication through `j` — the determinant of `τ` is the `q`-adic
 cyclotomic character:
 
   `det (τ σ) = χ_cyc(σ)` for EVERY `σ ∈ Γ_F`.
+
+WHERE THE LEAF WENT (2026-07-27). This declaration is no longer sorried.
+It is PROVEN from `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`,
+which asserts the same identity ONLY at the global Frobenius elements
+outside a finite set of places, by
+`det_eq_cyclotomicCharacter_of_globalFrob` (Chebotarev density; both
+sides are continuous class functions and the Frobenius conjugacy classes
+are dense). Everything below in this docstring describes the CLASSICAL
+char-0 route and the state of the polarization layer; it is retained
+because it remains the honest account of the OTHER axis, but the open
+obligation now lives at the Frobenius leaf, whose own docstring says what
+a successor must build (an integral model for `f : A ⟶ S`).
+
+Note the cut is a genuine weakening rather than the kind of equivalent
+repackaging the audit below rightly complains about: the Frobenius leaf
+constrains `τ` only on a set of elements, and recovering the rest is a
+real argument. Note also the two INSTANCE hypotheses `Module.Free ℤ_[q] O`
+and `IsModuleTopology ℤ_[q] O` added 2026-07-27: they are used only to
+know `O` is Hausdorff, without which the agreement locus is not closed
+and the density argument does not start. They cost consumers nothing —
+`exists_adicCoefficientRing` already produces both.
 
 WHY THIS, AND NOT THE PAIRING, IS THE LEAF (FORMAL-CONTENT AUDIT,
 2026-07-26). Until this date the open leaf of the clause was
@@ -5304,23 +5609,31 @@ pairing on `I`-torsion: bi-additive, `Γ_F`-equivariant through
 `PolarizationStruct.pairing` with `pairing_add_left`,
 `pairing_add_right`, `pairing_self` (alternating), `galSMul_hom`,
 `pairing_gal` (equivariance through the cyclotomic character) and
-`pairing_act` (`R`-bilinearity) — all proven from the axioms. As of
-2026-07-27 this is commit `4ff8dde1` on branch `flt-lean-169` and is NOT
-yet on `main`; check `git log --all --oneline -- Fermat/FLT/Modularity/AbelianScheme.lean`
-before concluding it is absent.
+`pairing_act` (`R`-bilinearity) — all proven from the axioms.
 
-WHY THAT LAYER STILL DOES NOT CLOSE THIS LEAF — three gaps, each
-checkable in one reading of the structure, and a successor should
-confirm all three are still open before building anything:
+SECOND CORRECTION, 2026-07-27 (the paragraph above said this layer was
+"commit `4ff8dde1` on branch `flt-lean-169` and NOT yet on `main`"):
+IT IS ON `main`. Verified by
+`grep -n 'structure DualStruct' Fermat/FLT/Modularity/AbelianScheme.lean`
+against `origin/main`. Do not go looking for a branch to merge.
 
-1. IT IS LEVEL ONE. `DualStruct.weil` is a pairing on `I`-TORSION,
-   `GeomFibrePt f x → GeomFibrePt dualMap x → rootsOfUnity n (F̄)` for
-   an integer `n ∈ I`. The determinant identity is a statement about the
-   whole `I`-adic tower: it needs pairings on `A[I^k]` valued in
-   `μ_(q^k)`, COMPATIBLE with the transition maps `·π`, so that they
-   assemble into `∧²_O T_I A ≅ O(1)`. Nothing at level one gives that.
-   REFUTING CHECK: find a `weil`-like field indexed by `I ^ k` with a
-   compatibility axiom, or a lemma deriving one.
+WHY THAT LAYER STILL DOES NOT CLOSE THIS LEAF — three gaps. Gap 1 as
+previously written was WRONG and is corrected below; a successor should
+re-run each REFUTING CHECK rather than trust this list:
+
+1. THE LEVELS EXIST; THE COMPATIBILITY DOES NOT. The previous version of
+   this item said "IT IS LEVEL ONE … nothing at level one gives that",
+   and its own refuting check refutes it: `DualStruct.weil` quantifies
+   the ideal INSIDE the field —
+   `weil : ∀ {F} [Field F] (x) (I : Ideal R) (n : ℕ), (n : R) ∈ I → …` —
+   so `weil x (I ^ k) (q ^ k)` is available for every `k` (the side
+   condition `(q ^ k : R) ∈ I ^ k` follows from `hqI`), as are all five
+   axioms at `I ^ k`. The whole tower of pairings on `A[I^k]` valued in
+   `μ_(q^k)` is therefore already there. What is genuinely absent is any
+   axiom relating consecutive levels along the transition maps `·π`,
+   without which they do not assemble into `∧²_O T_I A ≅ O(1)`.
+   REFUTING CHECK for what remains: find a field or lemma relating
+   `weil x (I ^ (k+1)) (q ^ (k+1))` to `weil x (I ^ k) (q ^ k)`.
 2. NO EXISTENCE IS ASSERTED. Both structures are bundled DATA, by
    deliberate design ("the dual is a BUNDLED DATUM, not a construction"
    — representing `Pic⁰` is Grothendieck representability). This leaf's
@@ -5330,12 +5643,27 @@ confirm all three are still open before building anything:
    to take a `PolarizationStruct` hypothesis — and the latter is a cut
    decision, not a repair, since it relocates the burden onto every
    consumer.
-3. THE POLARIZED PAIRING IS NOT ASSERTED NONDEGENERATE. Only
-   `DualStruct.weil_nondegenerate` is an axiom, and it is about the
-   canonical `A × A^∨` pairing. `PolarizationStruct.pairing` is
-   `weil (·) (hom ·)`, which is degenerate exactly on `ker λ`; perfection
-   of the pairing is what the classical argument above uses when it says
-   "the pairing is perfect".
+3. THE POLARIZED PAIRING IS NOT ASSERTED NONDEGENERATE — and this is
+   much worse than it sounds. Only `DualStruct.weil_nondegenerate` is an
+   axiom, and it is about the canonical `A × A^∨` pairing.
+   `PolarizationStruct.pairing` is `weil (·) (hom ·)`, which is
+   degenerate exactly on `ker λ`; perfection is what the classical
+   argument above uses when it says "the pairing is perfect".
+   SHARPENED 2026-07-27, checked field by field: `PolarizationStruct` is
+   satisfiable by the CONSTANT ZERO map `hom := fun _ => d.dualAb.zero _`
+   — `hom_add` by `zero_add`, `pre_hom` by `pre_zero`, `hom_act` by the
+   `act a 0 = 0` derivation already written inside `Mult.module`,
+   `hom_torsion` because `Mult.torsion` is a `Submodule` and so contains
+   `0`, and `weil_self` because `weil_add_right` at `z = z' = 0` gives
+   `w = w * w` in a group. So `PolarizationStruct d` is INHABITED for
+   every `DualStruct d` and adds no mathematical content whatever over
+   it; under that witness every `pairing_*` lemma degenerates to the
+   trivial pairing `≡ 1`. The repair belongs in
+   `Modularity/AbelianScheme.lean` (a nondegeneracy field on
+   `PolarizationStruct`, or an isogeny/finite-kernel condition on `hom`)
+   and is NOT this leaf's to make.
+   REFUTING CHECK: exhibit a field of `PolarizationStruct` that the
+   constant zero map fails to satisfy.
 
 The same three gaps block the sibling `card_torsion_of_isMaximal`,
 where gap 1 does NOT bite (that leaf is level one), and where the layer
@@ -5430,7 +5758,7 @@ theorem det_eq_cyclotomicCharacter_of_tateFrame
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
-    [Algebra ℤ_[q] O]
+    [Algebra ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O]
     (j : NumberField.RingOfIntegers D →+* O)
     (hcplt : IsAdicComplete (Ideal.span {j π}) O)
     (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
@@ -5450,8 +5778,13 @@ theorem det_eq_cyclotomicCharacter_of_tateFrame
         algebraMap ℤ_[q] O
           ((cyclotomicCharacter (AlgebraicClosure ℚ) q
             ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
-              ℤ_[q]ˣ) : ℤ_[q]) :=
-  sorry
+              ℤ_[q]ˣ) : ℤ_[q]) := by
+  -- The geometry is asked for only at the global Frobenius elements …
+  obtain ⟨Sbad, hSbad⟩ :=
+    det_globalFrob_eq_cyclotomicCharacter_of_tateFrame m x hdim q I hI hqI π hπ hπ2 O j
+      hcplt hdense hker τ φ hφadd hφbij hφequiv hφj
+  -- … and Chebotarev density propagates the identity to all of `Γ_F`.
+  exact fun σ => det_eq_cyclotomicCharacter_of_globalFrob q O τ Sbad hSbad σ
 
 /-- **A Tate frame carries the `𝒪_D`-linear Weil pairing** (PROVEN
 2026-07-26 over `det_eq_cyclotomicCharacter_of_tateFrame`,
@@ -5527,7 +5860,7 @@ theorem exists_weilPairing_of_tateFrame
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
-    [Algebra ℤ_[q] O]
+    [Algebra ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O]
     (j : NumberField.RingOfIntegers D →+* O)
     (hcplt : IsAdicComplete (Ideal.span {j π}) O)
     (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
