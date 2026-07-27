@@ -399,6 +399,10 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.FinitePresentationOfFinrank
 -- `AlgebraicGeometry.fibrePointEquivAlgHom` (the `RelPoint`-to-fibre-algebra
 -- translation, which needs no hypothesis at all).
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.FinrankGeometricPoints
+-- `CartierTheorem.isReduced_of_charZero`: Cartier's theorem for a finite
+-- commutative Hopf algebra over a field of characteristic zero, which is what
+-- `CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase` below consumes
+public import Fermat.FLT.GroupScheme.Cartier
 -- `AlgebraicGeometry.Etale`: the hypothesis carried by every declaration in the
 -- torsion-subscheme section below.  It is what repairs the FALSE leaf
 -- `flat_torsionι` (see the REPAIR RECORD there): `geom_cyclic` pins the
@@ -8375,27 +8379,93 @@ theorem CyclicSubgroupOfOrder.flat_torsionι {E T : Scheme.{u}} {f : E ⟶ T}
   rw [Category.assoc]
   exact (AlgebraicGeometry.Etale.iff_flat_and_formallyUnramified.mp inferInstance).1
 
-/-- **CARTIER'S THEOREM, in the one form the rest of this section needs:
-over a `ℚ`-base every GEOMETRIC FIBRE of `C` is reduced** (sorry leaf, and
-after the 2026-07-27 cut this is *all* that is left — `finrank_eq_of_specQBase`
-below is now PROVEN over it, and the counting that used to be tangled up
-with it is discharged).
+/-- **The geometric fibre of `C` is `Spec` of a finite commutative HOPF
+ALGEBRA over `K`** (sorry leaf, cut out of Cartier's theorem 2026-07-27;
+it is the whole remaining content of `isReduced_geomFibre_of_specQBase`
+below).
 
 `Limits.pullback (c.ι ≫ f) g` is `C ×_T Spec K`, the fibre of `C` at the
-geometric point `g`.  It is a finite flat `K`-scheme, and it is a
-**subgroup scheme** of `E ×_T Spec K`: for every `K`-scheme `T'`,
-`Hom_K(T', C_K) = Hom_T(T', C)`, and `zero_liesIn` / `add_liesIn` /
-`neg_liesIn` say exactly that this subfunctor of the points of `E_K` is a
-subgroup at every `T'`.  Cartier's theorem — a group scheme locally of
-finite type over a field of characteristic zero is reduced (indeed smooth)
-— then gives the conclusion.  Formalising it is the one piece of
-mathematics still missing here; `Fermat/FLT/GroupScheme/HopfKaehler.lean`
-(sorry-free) already supplies the standard input `Ω[G⁄R] ≅ G ⊗_R ω_G`.
+geometric point `g`.  Three things are asserted at once, and every one of
+them is purely formal — **there is no characteristic hypothesis here and
+none is needed**:
 
-**`q` IS LOAD-BEARING.**  In residue characteristic `p` this is FALSE, and
-the witnesses are the `ker F`-type subgroup schemes exhibited in the
-FALSITY AUDIT of `flat_torsionι` above: `ker F ⊆ 𝔾_a` over `𝔽̄_p` is finite
-flat of rank `p` with a single, non-reduced, geometric point.
+* the fibre is AFFINE: `ι ≫ f` is finite (`c.isFinite`), finite morphisms
+  are affine and stable under base change, and `Spec K` is affine;
+* its coordinate ring is FINITE as a `K`-module, again by `c.isFinite`;
+* that coordinate ring is a HOPF ALGEBRA, because `zero_liesIn`,
+  `add_liesIn` and `neg_liesIn` make the functor of points of the fibre a
+  GROUP functor: for every `K`-scheme `T'`, `Hom_K(T', C_K) = Hom_T(T', C)`,
+  and those three fields say exactly that this subfunctor of the points of
+  `E_K` is a subgroup at every `T'`.  Yoneda turns that natural group law
+  into morphisms `m : C_K ×_K C_K ⟶ C_K`, `e : Spec K ⟶ C_K` and
+  `inv : C_K ⟶ C_K`, and `Γ` of those three (through the affine
+  `Γ ⊣ Spec` anti-equivalence, which also turns the fibre product into the
+  tensor product) is the comultiplication, the counit and the antipode.
+
+**WHY THE CUT IS HERE.**  Everything in Cartier's theorem that is
+*mathematics*, and in particular the entire role of characteristic zero, is
+now `CartierTheorem.isReduced_of_charZero`
+(`Fermat/FLT/GroupScheme/Cartier.lean`), which is **PROVEN and sorry-free**:
+a commutative Hopf algebra finite-dimensional over a field of characteristic
+zero is reduced.  What is left in this leaf is only the dictionary between
+the scheme-theoretic data bundled in `CyclicSubgroupOfOrder` and the
+algebraic data of a Hopf algebra — Yoneda plus `Γ ⊣ Spec` — and carries no
+arithmetic at all.
+
+`N` plays no role, and neither does algebraic closedness of `K`; both are
+deliberately absent from the statement.  The statement is discharged
+VACUOUSLY when the fibre is empty (take `A` the zero ring, which is a finite
+Hopf algebra), which is what happens over an empty `T`. -/
+theorem CyclicSubgroupOfOrder.exists_hopfAlgebra_geomFibre
+    {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
+    (c : CyclicSubgroupOfOrder ab N)
+    (K : Type) [Field K] (g : Spec (CommRingCat.of K) ⟶ T) :
+    ∃ (A : Type) (_ : CommRing A) (_ : _root_.HopfAlgebra K A)
+      (_ : Module.Finite K A),
+      Nonempty (Limits.pullback (c.ι ≫ f) g ≅ Spec (CommRingCat.of A)) :=
+  sorry
+
+/-- **CARTIER'S THEOREM, in the one form the rest of this section needs:
+over a `ℚ`-base every GEOMETRIC FIBRE of `C` is reduced** (**PROVEN
+2026-07-27**, over the single leaf
+`CyclicSubgroupOfOrder.exists_hopfAlgebra_geomFibre` above; this used to be
+the sorry leaf itself).
+
+`Limits.pullback (c.ι ≫ f) g` is `C ×_T Spec K`, the fibre of `C` at the
+geometric point `g`.  It is a finite flat `K`-scheme and a **subgroup
+scheme** of `E ×_T Spec K`, so it is `Spec` of a finite commutative Hopf
+`K`-algebra `A`; and `q` makes `K` a `ℚ`-algebra, hence of characteristic
+zero.  Cartier's theorem in Hopf-algebraic form,
+`CartierTheorem.isReduced_of_charZero`
+(`Fermat/FLT/GroupScheme/Cartier.lean`, **sorry-free**), says `A` is
+reduced, and reducedness transports along the isomorphism.
+
+**WHAT THE PROOF OF CARTIER'S THEOREM ACTUALLY DOES**, since this node used
+to be the place where that was open.  Write `ε` for the counit and
+`I = ker ε`.  A `K`-linear functional killing `I²` and `1` is a POINT
+DERIVATION, `D(ab) = ε a · Db + Da · ε b`, and translating it by the
+comultiplication turns it into a genuine `K`-derivation `∂` of `A` with
+`ε ∘ ∂ = D` (the composite `A ⟶ A ⊗ A ⟶ A[t]/(t²)` is an algebra map, and
+*that* is why `∂` satisfies Leibniz).  With `J = (x)` for `x ∈ I` normalised
+so that `D x = 1`, a derivation lowers the `J`-adic filtration by one step,
+so `ε(∂ⁿ(xᵐ)) = 0` for `m > n`, while an induction gives
+`∂ⁿ(xⁿ·y) ≡ n!·(∂x)ⁿ·y (mod J)`, hence `ε(∂ⁿ(xⁿ)) = n!`.  In characteristic
+zero `n! ≠ 0`, the pairing is triangular, the powers of `x` are `K`-linearly
+independent and `Module.Finite K A` is contradicted.  So `I = I²`; Fontaine's
+translation isomorphism `Ω[A⁄K] ≅ A ⊗_K (I/I²)`
+(`Fermat/FLT/GroupScheme/HopfKaehler.lean`, sorry-free) makes `Ω[A⁄K] = 0`,
+i.e. `A` formally unramified over `K`, and mathlib's
+`Algebra.FormallyUnramified.isReduced_of_field` concludes.
+
+**`q` IS LOAD-BEARING**, and this is exactly where it is spent: it supplies
+a ring map `ℚ → K` (`nonempty_ringHom_of_hom_specQ`) and hence `CharZero K`,
+which is the single hypothesis of `isReduced_of_charZero`.  In residue
+characteristic `p` the statement is FALSE, and the witnesses are the
+`ker F`-type subgroup schemes exhibited in the FALSITY AUDIT of
+`flat_torsionι` above: `ker F ⊆ 𝔾_a` over `𝔽̄_p` is finite flat of rank `p`
+with a single, non-reduced, geometric point — Hopf-algebraically it is
+`𝔽̄_p[t]/(tᵖ)` with `t` primitive, which is precisely where the `n!` above
+degenerates.
 
 `N` plays no role: Cartier needs finite, flat, subgroup and characteristic
 zero, and not cyclicity.  It is present only because `c` bundles it.  The
@@ -8411,8 +8481,14 @@ theorem CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase
     {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
     (c : CyclicSubgroupOfOrder ab N) (q : T ⟶ SpecQ)
     (K : Type) [Field K] [IsAlgClosed K] (g : Spec (CommRingCat.of K) ⟶ T) :
-    AlgebraicGeometry.IsReduced (Limits.pullback (c.ι ≫ f) g) :=
-  sorry
+    AlgebraicGeometry.IsReduced (Limits.pullback (c.ι ≫ f) g) := by
+  haveI : CharZero K := by
+    obtain ⟨ψ⟩ := nonempty_ringHom_of_hom_specQ (g ≫ q)
+    letI : Algebra ℚ K := ψ.toAlgebra
+    exact charZero_of_injective_algebraMap ψ.injective
+  obtain ⟨A, _, _, _, ⟨e⟩⟩ := c.exists_hopfAlgebra_geomFibre K g
+  haveI : _root_.IsReduced A := _root_.CartierTheorem.isReduced_of_charZero K A
+  exact AlgebraicGeometry.isReduced_of_isOpenImmersion e.hom
 
 /-- **The rank of `C` over a `ℚ`-base is `N` everywhere** (PROVEN
 2026-07-27 over the single leaf `isReduced_geomFibre_of_specQBase` above,
