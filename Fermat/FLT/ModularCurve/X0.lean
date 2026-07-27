@@ -17915,7 +17915,7 @@ theorem finite_quotient_psmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Sp
           rw [hQfix P _ hab]
       _ = ab.galSMul (𝟙 SpecQ) (a * (a⁻¹ * b)) (Q P) := (hmul _ _ _).symm
       _ = ab.galSMul (𝟙 SpecQ) b (Q P) := by rw [hb]
-  set T := {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0} with hT'
+  set T := {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0}
   -- the Kummer cocycle of `P`, as a map on the FINITE coset space `Γ_ℚ / H`
   set Φ : RelPoint jstr (𝟙 SpecQ) → ((Field.absoluteGaloisGroup ℚ ⧸ H) → T) :=
     fun P c => Quotient.liftOn' c
@@ -17926,7 +17926,7 @@ theorem finite_quotient_psmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Sp
         have hmem : a⁻¹ * b ∈ H := QuotientGroup.leftRel_apply.mp hab
         apply Subtype.ext
         show ab.galSMul (𝟙 SpecQ) a (Q P) - Q P = ab.galSMul (𝟙 SpecQ) b (Q P) - Q P
-        rw [hcoset P a b hmem]) with hΦ
+        rw [hcoset P a b hmem])
   have hΦapp : ∀ (P : RelPoint jstr (𝟙 SpecQ)) (σ : Field.absoluteGaloisGroup ℚ),
       ((Φ P (QuotientGroup.mk σ) : T) : GeomFibrePt jstr (𝟙 SpecQ))
         = ab.galSMul (𝟙 SpecQ) σ (Q P) - Q P := fun _ _ => rfl
