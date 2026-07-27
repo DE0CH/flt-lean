@@ -856,16 +856,131 @@ rank-`0` layer is about `J_0(N)` itself, which has POSITIVE rank for many
 rank `0` for EVERY `N`. So that layer does not apply here, and this leaf
 is not reducible to it.
 
-**FAITHFULNESS AUDIT A (2026-07-26), sharpness of the bound.** The statement is true and the bound
-`19 < N` is SHARP at `N = 17`: the two `17`-isogeny `j`-invariants are
-`−297756989/2` and `−882216989/131072 = −882216989/2¹⁷`, both with
-`v₂(j) < 0` — which is simultaneously why `hN19` cannot be relaxed to
-`17 ≤ N` and why `q ≠ 2` cannot be dropped. For `N > 19` the only `N` that
-occur are `37, 43, 67, 163`, and all eight of their `j`-invariants are
+**STATUS OF THE FIVE INPUTS, RE-VERIFIED BY NAME 2026-07-27.** Mazur's
+Cor. 4.4 needs five things. Three are now in scope here at zero import
+cost — this module carries `public import Fermat.FLT.ModularCurve.X0` —
+one is owned by another worktree, and one is genuinely absent.
+
+(1) *The non-cuspidal rational point of `X_0(N)`.* LANDED.
+`nonempty_gamma0Datum_of_stable` (`X0.lean:1661`) turns the pair
+`(E, ⟨g⟩)` into a `Gamma0Datum`; `exists_coarseModuliY0` (`X0.lean:1632`)
+and `exists_compactificationY0` (`X0.lean:2241`) produce `Y_0(N) ↪
+X_0(N)`; and `IsCompactificationY0.IsCusp` (`X0.lean:2202`) is the
+cuspidality predicate, with the proof of `y0HasNoRationalPoint_of_cuspidal`
+supplying the step "a point coming from `Y` is not a cusp".
+
+(5) *Injectivity of reduction on the rational points of a rank-`0`
+Jacobian.* LANDED, as DATA rather than as a theorem: `IsX0ReductionAt`
+(`X0.lean:2856`), with fields `redX` (`:2862`), `redJ` (`:2865`),
+`redJ_add`, `redJ_inj` (`:2869`) and `red_aj` (`:2871`). Note that
+`redX` and `redJ` are honest maps out of `RelPoint _ (𝟙 SpecQ)`, so
+nothing along this route needs `ℤ_q`-points or a formal group: the
+formal-immersion conclusion can be stated purely on rational points.
+
+(2) *The dictionary "`v_q(j) < 0` implies the point reduces to a cusp mod
+`q`".* ABSENT, and it is THE TRUE BLOCKER. There is no `j`-map on
+`X_0(N)` anywhere in the tree, and `IsX0ReductionAt.redX` is
+unconstrained apart from `red_aj`, so it cannot be pinned to send a
+potentially-multiplicative point to a cusp. **This is owned by another
+worktree as of 2026-07-27** — do not restate it here; a second,
+independently designed `j`-map is the most expensive object this fleet
+produces.
+
+(3) *The Eisenstein quotient `J_e(N)`, with Mordell–Weil rank `0` over
+`ℚ`* (Mazur, IHÉS 47 (1977), Thm 4). ABSENT — checked 2026-07-27 in this
+project, in mathlib, and in `~/cs/FLT`, which carries only
+`FLT/Assumptions/Mazur.lean` (it assumes Mazur's torsion theorem outright
+and has no modular-curve, Jacobian or Eisenstein material). Nothing to
+vendor.
+
+(4) *The formal immersion of `X_0(N) → J_e(N)` at `∞` in characteristic
+`q ≠ 2`.* ABSENT, but now STATABLE with no new geometry — see the
+assembly below.
+
+**RE-CHECK OF THE "does not apply here" CLAIM IMMEDIATELY ABOVE — it
+SURVIVES, and now for a precise reason.** That paragraph was written
+before `IsX0ReductionAt` existed, so it had to be re-run rather than
+believed. It holds: `IsX0ReductionAt` is indexed by
+`jac : IsJacobianOf strX ab o`, which pins `ab` to be THE Jacobian of
+`X`. The Eisenstein quotient is an optimal QUOTIENT of `J_0(N)`, not a
+Jacobian of `X_0(N)`, so the structure cannot be instantiated at it and
+`redJ_inj` — which is exactly the rank-`0` input — is unavailable at
+`J_e(N)`. The check that would refute this: produce an
+`IsJacobianOf strX ab o` whose `ab` is a proper quotient of `J_0(N)`;
+`IsJacobianOf`'s universal property (`X0.lean:2531`) forbids it.
+
+**WHAT WOULD MAKE IT APPLY, stated precisely so the successor need not
+re-derive it.** Generalise the structure by replacing the single
+`jac.aj` with a composite `f = π ∘ aj` into an arbitrary abelian scheme:
+keep `redX`, `redJ_add`, `redJ_inj` and `red_aj` verbatim with `jac.aj`
+replaced by `f`, and drop the `IsJacobianOf` index on the target. The
+result is a strictly WEAKER datum than `IsX0ReductionAt` — so every
+existing witness still supplies one, and no consumer of the current
+structure is disturbed — and it is exactly what the Eisenstein quotient
+provides.
+
+**THE ASSEMBLY, once (2) lands.** Two leaves, and the glue is three
+lines. Write `o` for the cusp `∞`, `x` for the point attached to
+`(E, ⟨g⟩)`, and `red` for a reduction datum at `q` in the generalised
+sense just described.
+
+* A (owned elsewhere — the dictionary):
+  `padicValRat q E.j < 0 → red.redX x = red.redX o`.
+* B (the Eisenstein half, rank `0` and formal immersion fused into one
+  statement): `∀ y, red.redX y = red.redX o → y = o`.
+* Glue: `by_contra` on the goal `0 ≤ padicValRat q E.j`; A gives
+  `red.redX x = red.redX o`; B gives `x = o`; but `x` comes from
+  `Y_0(N)`, so `¬ hX.IsCusp x`, while `o` is a cusp. Contradiction.
+
+B is where all of (3) and (4) live, and note what its STATEMENT does not
+mention: no `j`, no valuation, no `ℤ_q`-point, no formal group. Its proof
+is `red_aj` together with `redJ_inj` (giving `f y = f o`) followed by the
+formal immersion at `o` in characteristic `q ≠ 2` (giving `y = o`).
+
+**B is deliberately NOT written here.** With (2) absent there is no
+consumer for it, so it would be free-floating and the free-floating check
+would demand its deletion; and any statement of Cor. 4.4 that inlines the
+dictionary is a restatement of this very leaf rather than a decomposition
+of it. The moment A exists, write B and the three-line glue together in
+ONE commit. The check that would refute this obstruction: find a
+consumer for B in the released tree that does not itself need the
+`j`-map — i.e. some already-stated node asserting that a rational point
+of `X_0(N)` reduces to a cusp mod `q`.
+
+**FAITHFULNESS AUDIT A (2026-07-26; CORRECTED 2026-07-27), sharpness of
+the bound.** The statement is true, and `N = 17` is where it would fail
+if `q = 2` were allowed: the two `17`-isogeny `j`-invariants are
+`−297756989/2` and `−882216989/131072 = −882216989/2¹⁷`, with
+`v₂(j) = −1` and `v₂(j) = −17` respectively.
+
+CORRECTION (2026-07-27, re-verified in PARI/GP as an untrusted searcher:
+`factor` of the two denominators returns `Mat([2,1])` and `Mat([2,17])`,
+i.e. nothing but `2`). The previous version of this paragraph said that
+`N = 17` is "simultaneously why `hN19` cannot be relaxed to `17 ≤ N` and
+why `q ≠ 2` cannot be dropped". That is WRONG, and it is worth recording
+because it overstates how tightly the statement is pinned: **`2` is the
+ONLY prime occurring in either denominator**, so with `q ≠ 2` retained
+the conclusion is TRUE at `N = 17` as well, and `19 < N` could be relaxed
+to `17 ≤ N` without making the leaf false. The two hypotheses are
+therefore NOT independently sharp; only `q ≠ 2` is sharp, and it alone
+carries the whole exclusion at `N = 17`.
+
+**Do not act on that.** Relaxing `19 < N` to `17 ≤ N` buys nothing — the
+sole consumer, `not_isogenyCharacter_of_prime_ge_twentyThree`, supplies
+`23 ≤ N` — and would make the leaf strictly harder to prove, since
+Mazur's own argument is stated for `N > 19`. It is recorded for accuracy
+only. The check that would refute this correction: exhibit a prime
+`q ≠ 2` with `v_q(j) < 0` for one of the two `17`-isogeny
+`j`-invariants, i.e. a prime other than `2` dividing `2` or `2¹⁷`.
+
+For `N > 19` the only `N` that occur are `37, 43, 67, 163`, and all FIVE
+of their `j`-invariants — two at `37`, one each at `43, 67, 163` — are
 rational INTEGERS (see the table in
-`jInvariant_mem_of_isogenyPrime_ge_eleven`), so the conclusion holds with
-room to spare; the content of the leaf is that no OTHER pair `(E, N)`
-exists.
+`jInvariant_mem_of_isogenyPrime_ge_eleven`, which is PROVEN), so the
+conclusion holds with room to spare; the content of the leaf is that no
+OTHER pair `(E, N)` exists. (The previous version said "eight"; the
+table has five rows with `N > 19`, and FAITHFULNESS AUDIT B below already
+counted them correctly.)
 
 **ROUTE AUDIT (2026-07-26): the purely LOCAL argument at `q` provably does
 not suffice, so do not attempt it.** Over `ℚ_q` with potentially
@@ -980,7 +1095,36 @@ retained the hypothesis `19 < N` could in fact be relaxed to `17 ≤ N` and
 the statement would remain true. The two hypotheses are therefore not
 independently sharp — `N = 17` witnesses the necessity of `q ≠ 2` only.
 This is recorded for accuracy, NOT as a suggested restatement: relaxing
-it buys nothing, since every `N` in range still needs Mazur. -/
+it buys nothing, since every `N` in range still needs Mazur.
+
+**A TEMPTING CUT, REFUTED (2026-07-27).**
+`jInvariant_mem_of_isogenyPrime_ge_eleven` (PROVEN, below in this file)
+determines `E.j` outright for `N ∈ {37, 43, 67, 163}`, and every value it
+returns there is a rational INTEGER, so the conclusion of THIS leaf is
+provable on the nose for those four `N`. Nor is that circular: that
+theorem is proven from `jInvariant_mem_of_isogenyPrime_genusOne`,
+`_thirtySeven` and `_classNumberOne`, none of which is Mazur's Cor. 4.4
+or his Theorem 1. So it is tempting to split this leaf into
+"`N ∈ {37,43,67,163}`: PROVEN" plus a residual leaf carrying the extra
+hypothesis `N ∉ {37,43,67,163}`.
+
+**Do not.** The split has zero benefit and a real cost.
+
+* Zero benefit: the sole consumer,
+  `not_isogenyCharacter_of_prime_ge_twentyThree`, already supplies
+  `hNexc : N ∉ ({37,43,67,163} : Finset ℕ)`, so it never uses the four
+  exceptional cases at all.
+* Real cost: by AUDIT B just above, those four `N` are the ONLY ones for
+  which the hypotheses of this leaf are satisfiable. Removing them makes
+  the residual leaf VACUOUS — its hypotheses become contradictory, by
+  Mazur — and that is exactly what AUDIT B's non-vacuity finding exists
+  to protect against: a leaf with unsatisfiable hypotheses can be
+  discharged by an argument that quietly contradicts them, and no build
+  and no census would notice.
+
+The check that would refute this refutation: exhibit a consumer of this
+leaf that does NOT assume `N ∉ {37,43,67,163}`. There is exactly one call
+site, in `not_isogenyCharacter_of_prime_ge_twentyThree`. -/
 theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
