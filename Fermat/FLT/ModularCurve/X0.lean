@@ -3008,9 +3008,63 @@ theorem exists_negHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
   exact ⟨Scheme.IdealSheafData.subschemeMap _ _ (negHom ab) key.ge,
     Scheme.IdealSheafData.subschemeMap_subschemeι _ _ _ _⟩
 
+/-- **A ring map into an algebraically closed field extends along an
+algebraic closure** (PROVEN).
+
+STATED OVER A VARIABLE BASE FIELD, for the reason recorded at
+`isIntegralHom_specAlgClos`: at the literal `ℚ` the `Rat`-algebra diamond
+beats `AlgebraicClosure.instAlgebra` and
+`Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` fails to synthesise. -/
+theorem exists_ringHom_algebraicClosure {F : Type} [Field F] {K : Type} [Field K]
+    [IsAlgClosed K] (ψ : F →+* K) : Nonempty (AlgebraicClosure F →+* K) := by
+  letI : Algebra F K := ψ.toAlgebra
+  exact ⟨(IsAlgClosed.lift (R := F) (S := AlgebraicClosure F) (M := K)).toRingHom⟩
+
+/-- **`Spec` of a ring map between FIELDS is an epimorphism of schemes**
+(PROVEN).
+
+This is the lemma whose absence the audit of `exists_injective_pre_geomBase`
+recorded, and the audit searched for the wrong hypothesis: `Spec.map φ` is
+NOT an epimorphism for a general injective `φ` (take `ℤ ↪ ℚ`, whose `Spec`
+is a monomorphism onto a non-closed point), and it IS one whenever `φ` is
+faithfully flat and quasi-compact.  A map of fields is both for free — `K`
+is a nonzero `F`-vector space, hence free, hence flat, and both spectra are
+single points, so surjectivity is `Subsingleton.elim`.  Then
+`AlgebraicGeometry.Flat.epi_of_flat_of_surjective` (stacks 02VW) finishes.
+
+CHECK THAT WOULD REFUTE THIS BEING AVAILABLE: `Flat.SpecMap_iff`,
+`AlgebraicGeometry.Surjective` and `Flat.epi_of_flat_of_surjective` must all
+resolve at this pin — they do, and this declaration is the demonstration. -/
+theorem epi_specMap_of_fieldHom {F : Type} [Field F] {K : Type} [Field K]
+    (φ : F →+* K) : Epi (Spec.map (CommRingCat.ofHom φ)) := by
+  haveI : Flat (Spec.map (CommRingCat.ofHom φ)) := by
+    rw [AlgebraicGeometry.Flat.SpecMap_iff]
+    show RingHom.Flat φ
+    letI : Algebra F K := φ.toAlgebra
+    exact (inferInstance : Module.Flat F K)
+  haveI : Surjective (Spec.map (CommRingCat.ofHom φ)) := by
+    constructor
+    haveI : Subsingleton (Spec (CommRingCat.of F)) :=
+      inferInstanceAs (Subsingleton (PrimeSpectrum F))
+    haveI : Nonempty (Spec (CommRingCat.of K)) :=
+      inferInstanceAs (Nonempty (PrimeSpectrum K))
+    intro _
+    exact ⟨Classical.arbitrary _, Subsingleton.elim _ _⟩
+  exact Flat.epi_of_flat_of_surjective _
+
+/-- **A `ℚ`-scheme structure on `Spec K` is a ring map `ℚ → K`** (PROVEN):
+`ΓSpecIso` on both sides of `t.appTop`.
+
+This is what supplies characteristic zero: `K` carries no `CharZero`
+instance a priori, and it is `t` that forces one. -/
+theorem nonempty_ringHom_of_hom_specQ {K : Type} [Field K]
+    (t : Spec (CommRingCat.of K) ⟶ SpecQ) : Nonempty (ℚ →+* K) :=
+  ⟨((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv ≫ t.appTop ≫
+    (Scheme.ΓSpecIso (CommRingCat.of K)).hom).hom⟩
+
 /-- **A geometric base point over an arbitrary algebraically closed base,
-inducing an injection on relative points** (sorry leaf (v-a), split out
-2026-07-27).
+inducing an injection on relative points** (leaf (v-a), split out
+2026-07-27; **PROVEN 2026-07-27**).
 
 Two things at once, because they are proven by the same object.  `K` is
 algebraically closed and `t : Spec K ⟶ Spec ℚ` makes it a `ℚ`-algebra, so
@@ -3035,20 +3089,256 @@ this development:
   faithfulness, or `ΓSpecIso` and `t.appTop`); `K` carries no `CharZero`
   instance a priori, and it is `t` that supplies it.
 
-CHECK THAT WOULD REFUTE THE INJECTIVITY HALF being genuine work: find a
-mathlib lemma giving `Epi (Spec.map φ)` for `φ` an injective ring map, or
-`Function.Injective ((· ≫ ·) (Spec.map φ))`; a grep for `Epi` together
-with `Spec.map` found none at this pin. -/
+HOW IT CLOSED, and both halves came in cheaper than predicted.
+
+* **The identification `he` is FREE.**  It is an equality of two morphisms
+  `Spec K ⟶ Spec ℚ`, and `subsingleton_hom_specQ` (already in this file,
+  for the atlas) says there is at most one.  So `e` needs no compatibility
+  construction at all — nothing has to be checked about the embedding
+  beyond its existence, and the "read the `ℚ`-algebra structure off `t`"
+  trap below applies only to *producing* `e`, not to `he`.
+* **The injectivity half was recorded as needing a lemma that does not
+  exist, and the audit searched on the wrong hypothesis.**  It asked for
+  `Epi (Spec.map φ)` for `φ` INJECTIVE — which is false in general
+  (`ℤ ↪ ℚ`) and is why the grep found nothing.  The true hypothesis is
+  FAITHFUL FLATNESS, which a map of fields satisfies for free; see
+  `epi_specMap_of_fieldHom` above.  `cancel_epi` then does the whole job,
+  and neither the one-point-scheme argument nor the affine-open
+  factorisation sketched below is used anywhere.
+
+The recorded traps were real and are still worth reading: the embedding
+lemma `exists_ringHom_algebraicClosure` IS stated over a variable base
+field, and the `ℚ`-algebra structure on `K` IS read off `t`, by
+`nonempty_ringHom_of_hom_specQ`. -/
 theorem exists_injective_pre_geomBase {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ SpecQ) :
     ∃ (e : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
       (he : e ≫ (specAlgClos ℚ ≫ 𝟙 SpecQ) = t),
-      Function.Injective (fun x : GeomFibrePt f (𝟙 SpecQ) => RelPoint.pre e he x) :=
+      Function.Injective (fun x : GeomFibrePt f (𝟙 SpecQ) => RelPoint.pre e he x) := by
+  haveI := subsingleton_hom_specQ (Spec (CommRingCat.of K))
+  obtain ⟨ψ⟩ := nonempty_ringHom_of_hom_specQ t
+  obtain ⟨φ⟩ := exists_ringHom_algebraicClosure (F := ℚ) ψ
+  haveI : Epi (Spec.map (CommRingCat.ofHom φ)) := epi_specMap_of_fieldHom φ
+  refine ⟨Spec.map (CommRingCat.ofHom φ), Subsingleton.elim _ _, ?_⟩
+  intro a b hab
+  exact Subtype.ext ((cancel_epi (Spec.map (CommRingCat.ofHom φ))).mp
+    (congrArg Subtype.val hab))
+
+/-- **An element integral over an algebraically closed subfield lies in
+it** (PROVEN) — the POINTWISE form of
+`IsAlgClosed.algebraMap_bijective_of_isIntegral`.
+
+Mathlib's version asks for `Algebra.IsIntegral k K`, i.e. that ALL of `K`
+be integral over `k`, and that is exactly what fails in the application
+below: `K` is an arbitrary algebraically closed field containing `ℚ̄`, and
+`K = ℂ` is not integral over `ℚ̄`.  Only the individual values of a ring
+map out of a finite `ℚ`-algebra are.  The proof is mathlib's, restricted
+to one element: over an algebraically closed field an irreducible
+polynomial is linear, so `minpoly k a = X + C c` and `a = -c`. -/
+theorem exists_algebraMap_eq_of_isIntegral {k K : Type} [Field k] [Field K]
+    [IsAlgClosed k] [Algebra k K] {a : K} (ha : IsIntegral k a) :
+    ∃ c : k, algebraMap k K c = a := by
+  refine ⟨-(minpoly k a).coeff 0, ?_⟩
+  have hq : (minpoly k a).leadingCoeff = 1 := minpoly.monic ha
+  have h : (minpoly k a).degree = 1 :=
+    IsAlgClosed.degree_eq_one_of_irreducible k (minpoly.irreducible ha)
+  have h0 : Polynomial.aeval a (minpoly k a) = 0 := minpoly.aeval k a
+  rw [Polynomial.eq_X_add_C_of_degree_eq_one h, hq, Polynomial.C_1, one_mul, map_add,
+    Polynomial.aeval_X, Polynomial.aeval_C, add_eq_zero_iff_eq_neg] at h0
+  rw [map_neg]
+  exact h0.symm
+
+/-- **A ring map out of an integral `ℚ`-algebra into an algebraically
+closed field factors through any copy of `ℚ̄` inside it** (PROVEN).  This
+is the ring core of leaf (v-b-i).
+
+NOTE WHAT IS NOT HYPOTHESISED: no compatibility between `χ`, `φ` and `ψ`
+over `ℚ`.  None is needed, and this is the step that makes the leaf
+cheap.  `χ ∘ ψ` and `φ ∘ (algebraMap ℚ ℚ̄)` are both ring maps `ℚ → K`,
+and `Rat.subsingleton_ringHom` says there is at most one — so they are
+equal on the nose.  Hence the monic `ℚ`-polynomial killing `r` maps to a
+monic `ℚ̄`-polynomial killing `χ r`, and
+`exists_algebraMap_eq_of_isIntegral` puts `χ r` in the image of `φ`.
+Injectivity of `φ` (a map of fields) then makes the pointwise preimage a
+ring map. -/
+theorem exists_ringHom_factor_of_isIntegral {R : Type} [CommRing R]
+    (ψ : ℚ →+* R) (hint : ψ.IsIntegral)
+    {K : Type} [Field K] [IsAlgClosed K]
+    (φ : AlgebraicClosure ℚ →+* K) (χ : R →+* K) :
+    ∃ ρ : R →+* AlgebraicClosure ℚ, φ.comp ρ = χ := by
+  letI : Algebra (AlgebraicClosure ℚ) K := φ.toAlgebra
+  have hmap : (algebraMap (AlgebraicClosure ℚ) K) = φ := rfl
+  have hmem : ∀ r : R, ∃ c : AlgebraicClosure ℚ, φ c = χ r := by
+    intro r
+    obtain ⟨q, hqm, hq⟩ := hint r
+    have hsub : χ.comp ψ = φ.comp (algebraMap ℚ (AlgebraicClosure ℚ)) :=
+      Subsingleton.elim _ _
+    have hint2 : IsIntegral (AlgebraicClosure ℚ) (χ r) := by
+      refine ⟨q.map (algebraMap ℚ (AlgebraicClosure ℚ)), hqm.map _, ?_⟩
+      rw [hmap, Polynomial.eval₂_map, ← hsub, ← Polynomial.hom_eval₂, hq, map_zero]
+    obtain ⟨c, hc⟩ := exists_algebraMap_eq_of_isIntegral hint2
+    exact ⟨c, by rw [← hmap]; exact hc⟩
+  choose g hg using hmem
+  have hinj : Function.Injective φ := φ.injective
+  refine ⟨{ toFun := g
+            map_one' := hinj (by rw [hg, map_one, map_one])
+            map_mul' := fun a b => hinj (by rw [hg, map_mul, map_mul, hg, hg])
+            map_zero' := hinj (by rw [hg, map_zero, map_zero])
+            map_add' := fun a b => hinj (by rw [hg, map_add, map_add, hg, hg]) }, ?_⟩
+  ext r
+  exact hg r
+
+/-- **A finite `ℚ`-scheme acquires no new points over a larger
+algebraically closed field** (leaf (v-b-i), split out and **PROVEN**
+2026-07-27).
+
+Every `K`-point of the span factors through the given embedding
+`e : Spec K ⟶ Spec ℚ̄`, for `K` any algebraically closed field.
+
+NOTE WHAT IS *NOT* ASSUMED.  `e` is arbitrary: no compatibility over `ℚ`
+is hypothesised, because none is needed — every morphism
+`Spec K ⟶ Spec ℚ̄` is `Spec` of a ring map `ℚ̄ → K`, which is injective
+(source a field) and `ℚ`-linear automatically.  And the family `p` is
+arbitrary: neither the group law nor Galois stability appears, exactly as
+in leaf (i).
+
+THE ROUTE, which needs no product decomposition of `Γ(C)`.  `C` is
+AFFINE (`isAffine_spanScheme`) and FINITE over `ℚ`
+(`isFinite_spanSchemeι`), so `R := Γ(C, ⊤)` is a finite — hence integral
+— `ℚ`-algebra.  A `K`-point of `C` is a ring map `χ : R → K`
+(`Scheme.isoSpec` plus `ΓSpec.adjunction.homEquiv`).  Give `K` its
+`ℚ̄`-algebra structure through `e`; then every `χ r` is integral over `ℚ`,
+hence over `ℚ̄`, so `Algebra.adjoin ℚ̄ (Set.range χ)` is an integral domain
+integral over the algebraically closed `ℚ̄` and
+`IsAlgClosed.algebraMap_surjective_of_isIntegral` puts every `χ r` in the
+image of `ℚ̄`.  That image map is the required `ρ : R → ℚ̄`, and
+`v := Spec.map ρ` transported back along `isoSpec`.
+
+HOW IT CLOSED, correcting the route above in one place.  The `Algebra.adjoin`
+detour is unnecessary: mathlib's
+`IsAlgClosed.algebraMap_bijective_of_isIntegral` demands `Algebra.IsIntegral ℚ̄ K`
+— FALSE here, since `K` may be `ℂ` — but its proof is pointwise, and
+`exists_algebraMap_eq_of_isIntegral` above is exactly that proof restricted
+to one element.  With it, `exists_ringHom_factor_of_isIntegral` is the whole
+mathematical content, and the scheme half is six rewrites: `Spec.map_surjective`
+turns `w`, `e` and the structure morphism into ring maps, `IsIntegralHom.SpecMap_iff`
+turns `IsFinite` into `RingHom.IsIntegral`, and `Spec.map_comp` reassembles.
+
+Note `IsFinite` — not merely finiteness of the SPACE — is what is used: a
+`ℚ`-algebra with a one-point spectrum need not be algebraic over `ℚ` (take
+`ℚ(x)`), so `isAffine_spanScheme` alone would not do.  `isFinite_spanSchemeι`
+is leaf (i), and this leaf therefore consumes it. -/
+theorem exists_geomPt_factor_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ)
+    (K : Type) [Field K] [IsAlgClosed K]
+    (e : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+    (w : Spec (CommRingCat.of K) ⟶ spanScheme p) :
+    ∃ v : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ spanScheme p, e ≫ v = w := by
+  haveI := isAffine_spanScheme ab p hp
+  haveI := isFinite_spanSchemeι ab p hp
+  haveI : IsFinite ((spanScheme p).isoSpec.inv ≫ spanSchemeι p ≫ f) := inferInstance
+  obtain ⟨ψ, hψ⟩ := Spec.map_surjective ((spanScheme p).isoSpec.inv ≫ spanSchemeι p ≫ f)
+  obtain ⟨χ, hχ⟩ := Spec.map_surjective (w ≫ (spanScheme p).isoSpec.hom)
+  obtain ⟨φ, hφ⟩ := Spec.map_surjective e
+  have hint : ψ.hom.IsIntegral := by
+    rw [← IsIntegralHom.SpecMap_iff, hψ]
+    infer_instance
+  obtain ⟨ρ, hρ⟩ := exists_ringHom_factor_of_isIntegral ψ.hom hint φ.hom χ.hom
+  refine ⟨Spec.map (CommRingCat.ofHom ρ) ≫ (spanScheme p).isoSpec.inv, ?_⟩
+  have hcomp : CommRingCat.ofHom ρ ≫ φ = χ := CommRingCat.hom_ext hρ
+  rw [← hφ, ← Category.assoc, ← Spec.map_comp, hcomp, hχ, Category.assoc,
+    Iso.hom_inv_id, Category.comp_id]
+
+/-- **Every `ℚ̄`-point of the span is a Galois translate of a member of the
+family** (sorry leaf (v-b-ii), split out 2026-07-27 — the arithmetic half
+of the crux).
+
+Again the family is arbitrary: this is the statement that the
+scheme-theoretic image of finitely many geometric points has no geometric
+points beyond the `Γ_ℚ`-orbits of those it was built from.  Galois
+stability of the family is NOT assumed and is not needed; it is the
+PARENT that consumes stability, to turn the orbit back into `⟨y⟩`.
+
+THE ROUTE.  Write `R := Γ(C, ⊤)` and `χ_j : R → ℚ̄` for the `J` coordinate
+maps induced by the family.  Four steps, none of which needs the group
+law:
+
+* `R ↪ ∏_J ℚ̄`, i.e. `⋂_j ker χ_j = 0` — this is schematic dominance of
+  `toImage`, the defining property of the scheme-theoretic image, and it
+  is the ONLY place the construction of `C` enters;
+* `R` is a finite `ℚ`-algebra (`isFinite_spanSchemeι`), hence artinian,
+  so every prime of `R` is MAXIMAL;
+* for `χ : R → ℚ̄`, `ker χ` is prime and contains `⋂_j ker χ_j = 0 ⊇
+  ∏_j ker χ_j`, so `ker χ ⊇ ker χ_j` for some `j` by primality of a
+  finite product, and maximality of both forces `ker χ = ker χ_j`;
+* `χ` and `χ_j` are then two `ℚ`-embeddings of the residue field
+  `κ := R ⧸ ker χ_j` into `ℚ̄`, so they differ by an automorphism:
+  view `ℚ̄` as a `κ`-algebra through `χ_j`, lift `χ` with
+  `IsAlgClosed.lift` to a `ℚ`-algebra endomorphism of `ℚ̄`, and make it an
+  `AlgEquiv` — an element of `Field.absoluteGaloisGroup ℚ` — with
+  `Algebra.IsAlgebraic.algHom_bijective`.
+
+`Spec` is contravariant, so `χ = σ ∘ χ_j` becomes
+`v = specGal σ ≫ q_j` and hence `v ≫ ι = specGal σ ≫ p j`, which is the
+conclusion.
+
+**PIN SURVEY, 2026-07-27 — EVERY INGREDIENT RESOLVES; NO THEORY IS
+MISSING.**  Each of the four steps was looked up by name against a seeded
+`.lake`, and two of them came back cheaper than the sketch above, so the
+sketch is corrected here rather than left to mislead:
+
+1. Schematic dominance is **already a lemma**, and it is not the
+   `SchemeTheoreticallyDominant` property this docstring first reached
+   for: it is `AlgebraicGeometry.Scheme.Hom.toImage_app_injective`
+   (`Mathlib/AlgebraicGeometry/IdealSheaf/Subscheme.lean`), which says
+   every `app` of `f.toImage` is injective, under `[QuasiCompact f]`.
+   And `QuasiCompact (geomPtDesc p)` is ALREADY DERIVED in this file, in
+   the proof of `range_spanSchemeι_subset` — `geomPtDesc p ≫ f` is a
+   morphism of affines, and `QuasiCompact.of_comp` cancels `f`.  So step
+   one costs a citation, not a development.
+2. **Artinian theory is NOT needed** — the sketch above overshot.  `R` is
+   a finite, hence integral, `ℚ`-algebra, so `R ⧸ ker χ_j` is a DOMAIN
+   integral over the field `ℚ`, and `Algebra.IsIntegral.isField_iff_isField`
+   / `isField_of_isIntegral_of_isField'`
+   (`Mathlib/RingTheory/IntegralClosure/IsIntegralClosure/Basic.lean`)
+   make it a field directly.  So `ker χ_j` is maximal with no reference
+   to `IsArtinianRing` and no `Ring.KrullDimLE` at all.
+3. "A prime containing a finite intersection contains a factor" is
+   `Ideal.IsPrime.inf_le'` (or `IsPrime.prod_le`),
+   `Mathlib/RingTheory/Ideal/Operations.lean`.
+4. `Algebra.IsAlgebraic.algHom_bijective`
+   (`Mathlib/RingTheory/Algebraic/Basic.lean`) plus `AlgEquiv.ofBijective`
+   gives the automorphism.  `IsAlgClosure.equiv` in
+   `Mathlib/FieldTheory/IsAlgClosed/Basic.lean` is a two-line worked
+   example of exactly this assembly and is the thing to copy.
+
+CHECK THAT WOULD REFUTE THIS SURVEY: any one of those five names failing
+to resolve, or `Hom.toImage_app_injective` turning out to be stated only
+for opens of the form `f.imageι ⁻¹ᵁ U` in a way that does not cover `⊤`
+(it is stated for exactly those opens, and `f.imageι ⁻¹ᵁ ⊤ = ⊤`).
+
+What remains is therefore PLUMBING, not mathematics: transporting `v`,
+the `q_j` and the structure morphism across `(spanScheme p).isoSpec` into
+ring maps, as `exists_geomPt_factor_span` already does, and identifying
+`Γ(∐_J Spec ℚ̄, ⊤)` with `∏_J ℚ̄` so that the `χ_j` are literally the
+coordinates.  That last identification is the one step with no lemma
+found by name and is where a successor should expect the work to be. -/
+theorem exists_specGal_factor_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ)
+    (v : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ spanScheme p) :
+    ∃ (σ : Field.absoluteGaloisGroup ℚ) (j : J),
+      v ≫ spanSchemeι p = specGal σ ≫ p j :=
   sorry
 
 /-- **Every `K`-point of the span is an integer multiple of the geometric
-generator** (sorry leaf (v-b), split out 2026-07-27 — THE CRUX of leaf
-(v), and the only half of it that carries arithmetic).
+generator** (leaf (v-b), split out 2026-07-27 — THE CRUX of leaf (v), and
+the only half of it that carries arithmetic; **DECOMPOSED and its assembly
+PROVEN 2026-07-27** over `exists_geomPt_factor_span` and
+`exists_specGal_factor_span`).
 
 The reverse inclusion is proven in `geom_cyclic_zmulPts` below from
 `exists_fin_zsmul` and `geomPt_liesIn_spanScheme`; this is the hard
@@ -3078,10 +3368,29 @@ decomposition `R ≅ ∏ κ_i` in the pin — grep for
 `Algebra.equivProdOfIsArtinian`-style splittings of reduced artinian
 algebras, or for `IsArtinianRing.equivPi`; if such a splitting is
 available for a reduced finite `ℚ`-algebra, the rest of this leaf is
-finite bookkeeping. -/
+finite bookkeeping.
+
+**DECOMPOSED 2026-07-27 into the two leaves `exists_geomPt_factor_span`
+and `exists_specGal_factor_span` below.**  The split is along the two
+independent halves of the argument above, and NEITHER half mentions the
+group law, `hstable`, `hy` or `hN` — they are statements about an
+arbitrary finite family of geometric points, exactly like leaf (i).  The
+full `R ≅ ∏ κ_i` splitting is NOT needed for either: the first half needs
+only that `R` is a finite `ℚ`-algebra, the second only that the primes of
+an artinian ring are maximal.
+
+**AUDIT: `hN` AND `hy` ARE NOT USED, and are underscored to say so.**
+That is not an oversight and it is not vacuity — the conclusion is a
+statement about `zmulPts ab N y`, every member of which is a multiple of
+`y` by construction, so no order information is needed to see that a
+Galois translate of a member is again a multiple of `y`.  `hN` and `hy`
+remain in the signature because the PARENT `geom_cyclic_zmulPts` needs
+them for its other two conjuncts, and removing them here would cost a
+call-site edit for no gain.  (At `N = 0` the family is empty and the
+hypothesis `hx` is what carries the weight; the statement stays true.) -/
 theorem mem_zmultiples_of_liesIn_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
-    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
-    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    (ab : AbelianSchemeStruct f) (N : ℕ) (_hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (_hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           addOrderOf y = N)
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -3091,8 +3400,40 @@ theorem mem_zmultiples_of_liesIn_span {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (he : e ≫ (specAlgClos ℚ ≫ 𝟙 SpecQ) = t)
     (x : RelPoint f t) (hx : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x) :
     letI := ab.addCommGroup t
-    x ∈ AddSubgroup.zmultiples (RelPoint.pre e he y) :=
-  sorry
+    x ∈ AddSubgroup.zmultiples (RelPoint.pre e he y) := by
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  letI := ab.addCommGroup t
+  -- `RelPoint.pre e he` is additive: that is the naturality of the group law.
+  let Φ : GeomFibrePt f (𝟙 SpecQ) →+ RelPoint f t :=
+    { toFun := fun x => RelPoint.pre e he x
+      map_zero' := ab.pre_zero e he
+      map_add' := fun a b => ab.pre_add e he a b }
+  -- descend the `K`-point of the span to a `ℚ̄`-point, then to the family
+  obtain ⟨w, hw⟩ := hx
+  obtain ⟨v, hv⟩ := exists_geomPt_factor_span ab (zmulPts ab N y)
+    (zmulPts_comp ab N y) K e w
+  obtain ⟨σ, j, hσ⟩ := exists_specGal_factor_span ab (zmulPts ab N y)
+    (zmulPts_comp ab N y) v
+  set z : GeomFibrePt f (𝟙 SpecQ) := ((j : ℕ) • y) with hz
+  have hxeq : x = Φ (ab.galSMul (𝟙 SpecQ) σ z) := by
+    apply Subtype.ext
+    show x.1 = e ≫ (specGal σ ≫ z.1)
+    rw [← hw, ← hv, Category.assoc, hσ]
+    rfl
+  -- the Galois action is by additive maps, so it commutes with `j • -`
+  let Ψ : GeomFibrePt f (𝟙 SpecQ) →+ GeomFibrePt f (𝟙 SpecQ) :=
+    { toFun := ab.galSMul (𝟙 SpecQ) σ
+      map_zero' := ab.pre_zero (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ)
+      map_add' := fun a b => ab.pre_add (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ) a b }
+  obtain ⟨k, hk⟩ := hstable σ
+  have hgal : ab.galSMul (𝟙 SpecQ) σ z = ((j : ℕ) : ℤ) • (k • y) := by
+    show Ψ z = _
+    rw [hz, map_nsmul Ψ]
+    show ((j : ℕ)) • (ab.galSMul (𝟙 SpecQ) σ y) = _
+    rw [← hk, natCast_zsmul]
+  refine ⟨((j : ℕ) : ℤ) * k, ?_⟩
+  rw [hxeq, hgal, smul_smul, map_zsmul Φ]
+  rfl
 
 /-- **The geometric fibres of the span are cyclic of order exactly `N`**
 (sorry leaf (v) of the descent decomposition — THE CRUX).
@@ -3131,7 +3472,10 @@ embedding over `ℚ`.  Of the three conjuncts,
   (every `ℤ`-multiple of an element of order `N` is one of its `N`
   natural multiples) followed by `geomPt_liesIn_spanScheme`.
 
-Only the `→` direction — `C(K) ⊆ ⟨z⟩` — is left, as leaf (v-b).
+Only the `→` direction — `C(K) ⊆ ⟨z⟩` — is left; it is leaf (v-b),
+`mem_zmultiples_of_liesIn_span`, which since 2026-07-27 is itself proven
+over the two leaves `exists_geomPt_factor_span` and
+`exists_specGal_factor_span`.  Leaf (v-a) is PROVEN.
 
 CORRECTION TO THE PREVIOUS AUDIT.  This docstring used to record as
 MISSING "the identification of the base change of a scheme-theoretic image
@@ -3329,15 +3673,17 @@ and (v) are proven over four smaller leaves.  The state of the five is:
 
 | leaf | status |
 |---|---|
-| (i) `isFinite_spanSchemeι` | open |
-| (ii) `ratPoint_liesIn_spanScheme` | open |
+| (i) `isFinite_spanSchemeι` | **PROVEN** 2026-07-27 — no leaf |
+| (ii) `ratPoint_liesIn_spanScheme` | **PROVEN** 2026-07-27 — no leaf |
 | (iii) `exists_addHom_factor_zmulPts` | PROVEN over (iii-a), (iii-b) |
 | (iv) `exists_negHom_factor_zmulPts` | **PROVEN** — no leaf |
 | (v) `geom_cyclic_zmulPts` | PROVEN over (v-a), (v-b) |
 | (iii-a) `ker_sqCover_spanScheme` | **PROVEN** 2026-07-27 — flat base change of `IsSchemeTheoreticallyDominant`; needed one added hypothesis `[Finite J]` |
 | (iii-b) `exists_addHom_factor_geomSq` | open — the addition law on `∐ Spec (ℚ̄ ⊗_ℚ ℚ̄)`; the only consumer of `hstable`; see its ROUTE AUDIT of 2026-07-27 |
-| (v-a) `exists_injective_pre_geomBase` | open — `ℚ̄ ↪ K` and injectivity of precomposition |
-| (v-b) `mem_zmultiples_of_liesIn_span` | open — `C(K) ⊆ ⟨y⟩`; the crux |
+| (v-a) `exists_injective_pre_geomBase` | **PROVEN** — no leaf; `he` is `subsingleton_hom_specQ`, injectivity is `epi_specMap_of_fieldHom` |
+| (v-b) `mem_zmultiples_of_liesIn_span` | PROVEN over (v-b-i), (v-b-ii) |
+| (v-b-i) `exists_geomPt_factor_span` | **PROVEN** — no leaf; consumes leaf (i) `isFinite_spanSchemeι` |
+| (v-b-ii) `exists_specGal_factor_span` | open — the `ℚ̄`-points of the span are the `Γ_ℚ`-orbits of the family; the arithmetic crux |
 
 The route recorded here before that date said "(iii) and (iv) are the
 rigidity of morphisms out of a reduced scheme into a separated one; (v) is
