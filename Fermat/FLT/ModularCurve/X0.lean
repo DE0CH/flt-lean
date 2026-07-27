@@ -461,6 +461,11 @@ public import Mathlib.RingTheory.Etale.Field
 public import Mathlib.RingTheory.TensorProduct.Pi
 -- `PerfectField.ofCharZero`: `ℚ` is perfect, which is why `ℚ̄/ℚ` is separable.
 public import Mathlib.FieldTheory.Perfect
+-- `CommAlgCat` bundles "a finite-type `R`-algebra" as ONE object, which is what
+-- `exists_finiteType_algHom_injection_of_isProper` existentially quantifies over;
+-- an unbundled `∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be
+-- written, since the later binders need the earlier ones as instances.
+public import Mathlib.Algebra.Category.CommAlgCat.Basic
 
 @[expose] public section
 
@@ -10008,12 +10013,32 @@ def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
 `ℚ`** (PROVEN, over `exists_coarseModuliY0` and one modular leaf;
 formerly a sorry node).
 
-TRUE and classical: `Y_0(N)` is a smooth affine curve over `ℚ` and every
+TRUE and classical: `Y_0(N)` is a smooth affine curve over `K` and every
 smooth curve over a field has a unique smooth projective
 compactification; for `Y_0(N)` it is the modular curve `X_0(N)` of
 Deligne–Rapoport, obtained directly as the coarse space of the moduli
 problem of GENERALISED elliptic curves with `Γ₀(N)`-structure, the added
-points being the cusps.
+points being the cusps.  Deligne–Rapoport construct the smooth proper
+model over `ℤ[1/N]`, and this statement is its fibre at `Spec K` for any
+`K` with `char K ∤ N`; `IsX0Compactification` was written with a general
+base `S` for exactly this reason (see its docstring).
+
+**This leaf is the MERGE of two former ones** (2026-07-27, authorized):
+`exists_x0Compactification` (base `ℚ`) and
+`exists_x0Compactification_finiteField` (base `𝔽_ℓ`, `ℓ ∤ N`) differed
+only in the base field, and both are now one-line corollaries below.  The
+two names are kept so no call site moves.
+
+**Why `¬ ringChar K ∣ N` and not something weaker.**  It is exactly the
+condition under which the `Γ₀(N)`-problem is smooth: at `char K = p ∣ N`
+the `Γ₀(N)`-structure degenerates (the subgroup scheme of order `N`
+acquires an infinitesimal part) and `X_0(N)_K` is no longer smooth, so
+the `smooth` field of `IsX0Compactification` would be FALSE.  At
+`char K = 0` the hypothesis reads `¬ 0 ∣ N`, i.e. `N ≠ 0`, which is why
+`hN` alone suffices at `K = ℚ`.  Geometric connectedness — the
+`connected` field — is the one clause that is not formal: it holds for
+`Γ₀(N)` because `det : Γ₀(N) → (ℤ/N)ˣ` is surjective, so the cusps are
+not split apart by the cyclotomic field, unlike for `Γ₁(N)` or `Γ(N)`.
 
 This node SUBSUMES `exists_coarseModuliY0` — its `coarse` field is
 exactly that statement — and that half is now PROVEN, so the proof below
@@ -10036,7 +10061,46 @@ along a dense open immersion, and finiteness of the cusp locus is
 finiteness of the complement of a dense open in an irreducible curve.
 Neither is assumed here, which is what keeps the interface from
 smuggling in a cusp count; see `exists_rationalCusps` for the count
-itself, which is a genuinely separate and still-open statement. -/
+itself, which is a genuinely separate and still-open statement.
+
+The GENERAL-BASE leaf `exists_x0Compactification_field` is stated first;
+this ℚ statement does NOT go through it (see the integration note there). -/
+
+/-- **Existence of the compactified coarse moduli space `X_0(N)` over an
+ARBITRARY base field whose characteristic does not divide `N`** (sorry
+node — the single remaining existence leaf for `X_0(N)` in POSITIVE
+characteristic).
+
+IRREDUCIBLE at this pin for the same reason as `exists_coarseModuliY0`:
+neither modular curves nor a smooth-compactification theorem for curves
+exists anywhere in `Mathlib`.  AXIS SEARCHED: the BASE direction, which
+is what produced this merge; not searched is a cut along the moduli
+problem itself (generalised elliptic curves / Néron polygons), which
+would need the Deligne–Rapoport degeneration theory that
+`Gamma0Datum` deliberately does not carry.
+
+INTEGRATION NOTE (2026-07-27).  As introduced, this leaf also carried the
+characteristic-`0` case, and `exists_x0Compactification` was derived from
+it.  That derivation is NOT kept: the ℚ case was PROVEN independently, from
+`exists_isSmoothCompactification` in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, and
+routing it through a sorry node would have REGRESSED a proven declaration.
+So this leaf's remaining consumer is
+`exists_x0Compactification_finiteField`, i.e. characteristic `ℓ` only —
+which is also where the generality was wanted.  A prover who closes it may
+optionally re-derive the ℚ case from it, but must not delete the direct
+proof below in the process. -/
+theorem exists_x0Compactification_field (N : ℕ) (hN : 0 < N) (K : Type)
+    [Field K] (hchar : ¬ ringChar K ∣ N) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
+      (strY : Y ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY j) :=
+  sorry
+
+/-- **Existence of the compactified coarse moduli space `X_0(N)` over
+`ℚ`** (PROVEN, over `exists_coarseModuliY0` and the general
+smooth-compactification theorem for curves — NOT over
+`exists_x0Compactification_field`). -/
 theorem exists_x0Compactification (N : ℕ) (hN : 0 < N) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (j : Y ⟶ X),
       Nonempty (IsX0Compactification N strX strY j) := by
@@ -10904,58 +10968,154 @@ theorem x0WitnessTable_spec {N ℓ m : ℕ} (h : (N, ℓ, m) ∈ x0WitnessTable)
     0 < N ∧ ℓ.Prime ∧ ¬ ℓ ∣ N := by
   fin_cases h <;> exact ⟨by decide, by decide, by decide⟩
 
-/-- **`X_0(N)` exists over `𝔽_ℓ` for `ℓ ∤ N`** (sorry node — the
-good-reduction half of the point count).
+/-- **`X_0(N)` exists over `𝔽_ℓ` for `ℓ ∤ N`** (PROVEN 2026-07-27, as the
+characteristic-`ℓ` case of `exists_x0Compactification_field`).
 
-TRUE and classical.  `IsX0Compactification` was written with a GENERAL
-base for exactly this purpose (see its docstring), and the statement
-here is `exists_x0Compactification` with `Spec ℚ` replaced by
-`Spec 𝔽_ℓ`: the `Γ₀(N)`-problem over `𝔽_ℓ` has a coarse space, and a
-smooth affine curve over a field has a unique smooth projective
-compactification.  For `ℓ ∤ N` the Deligne–Rapoport / Igusa smooth model
-over `ℤ[1/N]` exhibits it as the special fibre, which is why `hℓN` is a
-hypothesis; but the statement itself is about the moduli problem over
-`𝔽_ℓ` and does not mention the model.
-
-**Available for the taking: this leaf and `exists_x0Compactification`
-differ only in the base**, and a single statement over an arbitrary base
-field of characteristic prime to `N` would subsume both.  That merge is
-not made here only because `exists_x0Compactification` is another
-owner's declaration; a successor holding both should make it.
-
-IRREDUCIBLE at this pin, for the same reason as
-`exists_x0Compactification`: neither modular curves nor a
-smooth-compactification theorem for curves exists anywhere in
-`Mathlib`. -/
-theorem exists_x0Compactification_finiteField (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) :
+The merge flagged in the previous version of this docstring as "available
+for the taking" HAS BEEN MADE: this leaf and `exists_x0Compactification`
+differed only in the base field, and both are now corollaries of one
+statement over an arbitrary base field of characteristic prime to `N`.
+`ringChar (ZMod ℓ) = ℓ`, so `hℓN` is literally the characteristic
+hypothesis; `hℓ` is needed only to make `ZMod ℓ` a field. -/
+theorem exists_x0Compactification_finiteField (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (j : Y ⟶ X),
-      Nonempty (IsX0Compactification N strX strY j) :=
+      Nonempty (IsX0Compactification N strX strY j) := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  exact exists_x0Compactification_field N hN (ZMod ℓ)
+    (by simpa only [ZMod.ringChar_zmod_n] using hℓN)
+
+/-- **`R`-algebra homomorphisms from a finite-type algebra into a FINITE
+ring form a finite set** (PROVEN 2026-07-27).
+
+The algebra half of `finite_relPoint_of_x0Compactification_finiteField`,
+and the only half of it that is not scheme theory.  A finite-type algebra
+is a quotient of `R[x_1, …, x_n]`
+(`Algebra.FiniteType.iff_quotient_mvPolynomial''`), so an `R`-algebra map
+out of it is pinned by the `n` images of the variables — an injection into
+`Fin n → R`, which is finite because `R` is.
+
+Stated for a general finite `R` rather than for `ZMod ℓ`: nothing here
+needs `R` to be a field, let alone `ℤ/ℓ`. -/
+theorem finite_algHom_of_finiteType (R A : Type) [CommRing R] [CommRing A] [Algebra R A]
+    [Finite R] [Algebra.FiniteType R A] : Finite (A →ₐ[R] R) := by
+  obtain ⟨n, p, hp⟩ :=
+    (Algebra.FiniteType.iff_quotient_mvPolynomial'' (R := R) (S := A)).mp inferInstance
+  have hinj : Function.Injective
+      (fun φ : A →ₐ[R] R => fun i : Fin n => φ (p (MvPolynomial.X i))) := by
+    intro φ ψ hφψ
+    have hcomp : φ.comp p = ψ.comp p :=
+      MvPolynomial.algHom_ext fun i => congrFun hφψ i
+    refine AlgHom.ext fun a => ?_
+    obtain ⟨q, rfl⟩ := hp a
+    simpa only [AlgHom.comp_apply] using
+      congrArg (fun t : MvPolynomial (Fin n) R →ₐ[R] R => t q) hcomp
+  exact Finite.of_injective _ hinj
+
+/-- **The sections of a proper morphism to `Spec R` are cut out by ONE
+finite-type `R`-algebra** (sorry node — the scheme-theoretic half of
+`finite_relPoint_of_x0Compactification_finiteField`).
+
+TRUE, and this is the standard "finitely many points over a finite field"
+argument with the algebra factored out:
+
+1. `IsProper f` gives `UniversallyClosed f`, hence `QuasiCompact f`
+   (`AlgebraicGeometry.UniversallyClosed`'s instance at priority `900`),
+   and `Spec R` is compact, so `X` is a compact space;
+2. so `X.affineCover` has a FINITE subfamily of affine opens
+   `U_1, …, U_n` covering `X`, and `LocallyOfFiniteType f` makes each
+   `Γ(X, U_i)` a finite-type `R`-algebra;
+3. every section `s : Spec R ⟶ X` factors through some `U_i`.  For `R`
+   LOCAL this is exactly
+   `AlgebraicGeometry.Scheme.preimage_eq_top_of_closedPoint_mem`: pick
+   `U_i` containing the image of the closed point, and the preimage of
+   `U_i` is already all of `Spec R`.  For general finite `R`, `Spec R` is
+   a finite discrete space (`R` is Artinian) and the argument is run on
+   each connected component;
+4. take `A := ∏_i Γ(X, U_i)` — a finite product of finite-type algebras
+   is finite type — and send `s` to the projection onto the factor of the
+   LEAST `i` through which it factors, composed with the induced
+   `Γ(X, U_i) →ₐ[R] R`.  That is injective: two sections through the same
+   chart differ already on that chart, and two sections through different
+   least charts kill different idempotents of the product.
+
+Stated as ONE bundled algebra rather than as a family precisely so that
+step 4's product bookkeeping lives inside this leaf and not in the
+assembly.  `CommAlgCat.{0} R` is used because an unbundled
+`∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be written —
+the third binder needs the second as an instance.
+
+REMAINING WORK is entirely items 2–4; nothing modular appears anywhere in
+it, and nothing about `R` beyond `Finite R` is used.  The one place a
+real gap could hide is step 3 for NON-LOCAL `R`, i.e. composite `ℓ`; the
+consumer only ever supplies a prime `ℓ`, but the statement is kept at
+`Finite R` because that is the honest hypothesis and the component
+argument is routine. -/
+theorem exists_finiteType_algHom_injection_of_isProper {R : Type} [CommRing R] [Finite R]
+    {X : Scheme.{0}} (f : X ⟶ Spec (CommRingCat.of R)) [IsProper f] :
+    ∃ A : CommAlgCat.{0} R, Algebra.FiniteType R A ∧
+      ∃ g : RelPoint f (𝟙 (Spec (CommRingCat.of R))) → (A →ₐ[R] R), Function.Injective g :=
   sorry
 
-/-- **A curve proper over a finite field has finitely many rational
-points** (sorry node — the finiteness half of the point count).
+/-- **A scheme proper over `Spec R` with `R` finite has finitely many
+sections** (PROVEN 2026-07-27, by decomposition).
 
-TRUE, and it is the one piece of this leaf that is not about modular
+The assembly of `exists_finiteType_algHom_injection_of_isProper` (scheme
+theory) with `finite_algHom_of_finiteType` (algebra).  Stated over a
+general finite base ring, since neither half uses anything else.
+
+**Note for the owner of `finite_specialFibre_of_x0NeronDatum`**, whose
+docstring records that it is "the SAME mathematics" as
+`finite_relPoint_of_x0Compactification_finiteField` but not shareable.
+It IS shareable, through this lemma rather than through that one — but it
+needs one generalisation, from SECTIONS to `R`-POINTS: what that leaf has
+is `d.spX (𝟙 _) (SpecLoc.special toF) rfl :
+RelPoint strX' (𝟙 (SpecF ℓ)) ≃ RelPoint xstr (SpecLoc.special toF)`,
+whose right-hand side is `Hom_{Spec ℤ_(ℓ)}(Spec 𝔽_ℓ, XZ)`, not a set of
+sections.  The general statement — `Finite (RelPoint f g)` for `f` proper
+and `g : Spec R ⟶ S` with `R` finite — reduces to this one by base
+change along `g`, since `IsProper` is stable under base change
+(`AlgebraicGeometry.IsProper.isStableUnderBaseChange`) and sections of
+the pullback are exactly the `R`-points of `f` over `g`.  So that leaf
+does NOT need "a lemma deducing `IsX0Compactification` from `d`", which
+is what its docstring names as the refuting check; it needs a pullback. -/
+theorem finite_relPoint_of_isProper {R : Type} [CommRing R] [Finite R]
+    {X : Scheme.{0}} (f : X ⟶ Spec (CommRingCat.of R)) [IsProper f] :
+    Finite (RelPoint f (𝟙 (Spec (CommRingCat.of R)))) := by
+  obtain ⟨A, hA, g, hg⟩ := exists_finiteType_algHom_injection_of_isProper f
+  haveI := hA
+  haveI : Finite ((A : Type) →ₐ[R] R) := finite_algHom_of_finiteType R A
+  exact Finite.of_injective g hg
+
+/-- **A curve proper over a finite field has finitely many rational
+points** (PROVEN 2026-07-27, by decomposition).
+
+TRUE, and it is the one piece of this cluster that is not about modular
 curves at all: `strX` is proper, hence of finite type, over
 `Spec 𝔽_ℓ`; a finite-type scheme over a FINITE ring has finitely many
 sections, because a section is determined by the images of finitely many
 generators in a finite ring.  The only property of `IsX0Compactification`
-consumed is `isProper`.
+consumed is `isProper` — which is why the proof is a one-line appeal to
+`finite_relPoint_of_isProper`, a statement with no modular content at
+all.
 
 `hℓ` is `ℓ ≠ 0` rather than `ℓ.Prime` deliberately — that is the honest
 minimal hypothesis, since all that is used is that `ZMod ℓ` is finite,
-and `ZMod 0 = ℤ` is the only excluded case.  The hypotheses carry
-underscores only because the body is `sorry`.
+and `ZMod 0 = ℤ` is the only excluded case.
 
-IRREDUCIBLE at this pin: `IsProper` here is this development's own
-predicate, and there is no "finite type over a finite ring implies
-finitely many points" lemma to appeal to. -/
-theorem finite_relPoint_of_x0Compactification_finiteField (N ℓ : ℕ) (_hℓ : ℓ ≠ 0)
+The previous docstring's verdict "IRREDUCIBLE at this pin: there is no
+'finite type over a finite ring implies finitely many points' lemma to
+appeal to" was right about `Mathlib` and wrong about irreducibility: the
+statement splits cleanly into scheme theory
+(`exists_finiteType_algHom_injection_of_isProper`, still open) and
+algebra (`finite_algHom_of_finiteType`, proven). -/
+theorem finite_relPoint_of_x0Compactification_finiteField (N ℓ : ℕ) (hℓ : ℓ ≠ 0)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
-    (_h : IsX0Compactification N strX strY j) :
-    Finite (RelPoint strX (𝟙 (SpecF ℓ))) :=
-  sorry
+    (h : IsX0Compactification N strX strY j) :
+    Finite (RelPoint strX (𝟙 (SpecF ℓ))) := by
+  haveI : NeZero ℓ := ⟨hℓ⟩
+  haveI := h.isProper
+  exact finite_relPoint_of_isProper (R := ZMod ℓ) strX
 
 /-- **Eichler–Shimura: the special fibre has exactly `m` rational
 points, at the seven witness rows** (sorry node — the arithmetic half of
@@ -10987,9 +11147,62 @@ an empty class.
 The good-prime side conditions are not repeated as hypotheses: they are
 consequences of `htable` through `x0WitnessTable_spec`.
 
-IRREDUCIBLE at this pin: it needs `S_2(Γ_0(N))`, the Hecke operator
-`T_ℓ` and the Eichler–Shimura congruence relation, none of which exist
-here. -/
+**ROUTE AUDIT, 2026-07-27 — the previous verdict "it needs `S_2(Γ_0(N))`,
+the Hecke operator `T_ℓ` and the Eichler–Shimura congruence relation,
+none of which exist here" is HALF WRONG, and the correction is
+actionable.**
+
+Two of the three DO exist in this development, with real definitions and
+no `opaque` constant anywhere in them:
+
+* `S_2(Γ_0(N))` is `CuspForm (Gamma0GL N) 2`, with
+  `Gamma0GL` at `Fermat/FLT/Modularity/Interface.lean:485`;
+* `T_ℓ` is `heckeOp N ℓ : Module.End ℂ (CuspForm (Gamma0GL N) 2)`
+  (`Interface.lean:28709`), pinned to the Hecke slash-sum by
+  `heckeOp_coe`, so `LinearMap.trace ℂ _ (heckeOp N ℓ)` is a genuine
+  complex number and not a placeholder.  `EichlerShimuraPackage`
+  (`Interface.lean:28157`) is already the seam this leaf wants.
+
+So the cut is available in principle and is the obvious one:
+
+1. **Eichler–Shimura / Lefschetz** —
+   `(Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) : ℤ) = ℓ + 1
+   − LinearMap.trace ℂ _ (heckeOp N ℓ)` (needs the trace to be an
+   integer, which is the integrality of the Hecke action);
+2. **The Magma table** — `(N, ℓ, m) ∈ x0WitnessTable →
+   LinearMap.trace ℂ _ (heckeOp N ℓ) = ((ℓ : ℤ) + 1 − m)`, the seven
+   rows above.
+
+**WHAT ACTUALLY BLOCKS IT IS A MODULE CYCLE, not missing mathematics.**
+`heckeOp` lives in `Modularity/Interface.lean`, and
+
+    Interface → HardlyRamified/ModThree → FreyCurve/MazurTorsion → ModularCurve/X0
+
+so `X0.lean` cannot import it.  (Verified 2026-07-27 by reading the
+import lines, not the docstrings: `Interface.lean:302` imports
+`ModThree`, `ModThree` imports `MazurTorsion`, and `MazurTorsion:190`
+is the ONLY `import` of this module anywhere in the tree.)
+
+**The repair, stated so it can be checked rather than merely believed:**
+hoist `Gamma0GL` and the `heckeTransform`/`exists_heckeOpLinear`/`heckeOp`
+block out of `Interface.lean` into a small upstream module depending only
+on `Mathlib.NumberTheory.ModularForms` — they use nothing else — and
+import THAT here.  This note is refuted by exhibiting `heckeOp`, or any
+Hecke operator on `CuspForm`, in a module that `X0.lean` may import;
+as of 2026-07-27 `grep` over `Fermat/`, `.lake/packages/mathlib/` and
+`~/cs/FLT/` finds a Hecke operator on `CuspForm` only in `Interface.lean`.
+
+Do NOT work around this by introducing a local `traceHeckeT : ℕ → ℕ → ℤ`
+with no definition: that would make item 2 an equation in an `opaque`
+constant and hence unprovable in principle, which is strictly worse than
+the present open leaf.
+
+AXIS SEARCHED: the theory axis (which theories are missing) and the
+module axis (where they live).  NOT searched: a route that counts
+`X_0(N)(𝔽_ℓ)` directly from the seven levels' explicit plane models,
+avoiding modular forms entirely — at genus `1`–`5` and `ℓ ≤ 17` that is a
+finite computation, and it is the one direction that would make this leaf
+independent of `Interface.lean`. -/
 theorem card_relPoint_x0_finiteField (N ℓ m : ℕ) (_htable : (N, ℓ, m) ∈ x0WitnessTable)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
     (_h : IsX0Compactification N strX strY j) :
@@ -11013,12 +11226,20 @@ trace form of the cuspidal space (`Tr(T_3 ∣ S_2(Γ_0(35))) = 0` and
 and they are now three leaves rather than one:
 
 * `exists_x0Compactification_finiteField` — the `Γ₀(N)`-moduli problem
-  has a smooth compactification over `𝔽_ℓ` (Deligne–Rapoport);
+  has a smooth compactification over `𝔽_ℓ` (Deligne–Rapoport).  PROVEN
+  2026-07-27 as a corollary of `exists_x0Compactification_field`, the
+  merge of this leaf with `exists_x0Compactification`; the open content
+  moved there, and it is now ONE leaf for both base fields rather than
+  two;
 * `finite_relPoint_of_x0Compactification_finiteField` — a proper scheme
   over a finite field has finitely many rational points (no modular
-  curves involved);
+  curves involved).  PROVEN 2026-07-27 by decomposition, into
+  `finite_algHom_of_finiteType` (algebra, proven) and
+  `exists_finiteType_algHom_injection_of_isProper` (scheme theory, open,
+  and with no modular content whatsoever);
 * `card_relPoint_x0_finiteField` — Eichler–Shimura evaluates the count
-  (Hecke operators and `S_2(Γ_0(N))`).
+  (Hecke operators and `S_2(Γ_0(N))`).  STILL OPEN, and the only one of
+  the three that still carries modular content.
 
 The old docstring's verdict "IRREDUCIBLE at this pin: neither the
 integral model of `X_0(N)`, nor its reduction, nor the Hecke operators
