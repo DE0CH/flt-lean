@@ -1391,25 +1391,143 @@ Two further dead ends checked the same day, both mirroring level `18`:
   `gcd(u, v) = 1` only splits each of them between the two.  So the tempting
   eight-case enumeration is a proper SUBSET of the solutions, not a case
   division;
-* the sextic is irreducible with Galois group `F₁₈(6) = 3 ≀ 2`, so there is no
-  factorisation to descend along and no elementary two-cover route; and
-  `J_1(13)` is `ℚ`-simple of `GL₂`-type, so no quotient to a rank-`0` elliptic
-  curve exists.
+* the sextic is irreducible OVER `ℚ` with Galois group of order `18` (Magma
+  names it `C3*S3`), so there is no factorisation over `ℚ` to descend along;
+  and `J_1(13)` is `ℚ`-simple of `GL₂`-type, so no quotient to a rank-`0`
+  elliptic curve over `ℚ` exists.  The clause "and no elementary two-cover
+  route", which this bullet used to carry, is too strong and is withdrawn:
+  over `ℚ(i)` the sextic DOES factor, and that factorisation is exactly the
+  descent a machine uses.  See the `ℚ(i)` item in the last section.
 
-**NUMERICAL CORROBORATION** (exact integer arithmetic, untrusted searcher, so a
-claim to be re-derived and not a proof): over all coprime `(a, b)` with
-`|a| ≤ 400` and `1 ≤ b ≤ 400`, the only solutions of `t² = C̃² + 4B̃²` have
-`B̃ = ab(a + b) = 0`.  That is a considerably wider search than the
-`|a| ≤ 60`, `b ≤ 30` one recorded on `affine_rational_points`.  The same run
-confirms the two structural claims above: `C̃` is odd, and `gcd(C̃, B̃) = 1`,
-on every coprime pair in the range.
+**AUDIT EXTENSION, 2026-07-27 (second pass).**  Four further routes were
+searched and each is now closed by a stated, cheap, refutable check rather than
+left as an invitation.  The axes searched were: *other quadratic-form
+descents*; *the `ℤ[ζ₃]` descent at the level of the CURVE*; *bielliptic /
+elliptic-Chabauty*; and *congruences*.  The axis deliberately NOT searched, and
+the only one still open, is a descent on the JACOBIAN — for which the last
+section now names the cheapest known certificate.
 
-**What is still needed** is unchanged and is the four-part project recorded on
-`affine_rational_points` and in the module docstring: `Pic⁰` of a genus-`2`
-curve, Abel–Jacobi, good reduction at `3` with torsion-free kernel, and
-`rank J(ℚ) = 0` — with `#J(𝔽₃) = 19 = #J(ℚ)` as the sharp target.  Equivalently
-a Chabauty–Coleman or Mordell–Weil-sieve argument.  Nothing shorter is known to
-the author of this docstring. -/
+**(1) THE `ℤ[i]` REPRESENTATION IS THE ONLY ONE OF ITS SHAPE.**  This is
+strictly stronger than "the descent it invites is reversible": there is no
+*other* quadratic order to try instead.  Write `C = x³ + c₂x² + c₁x + c₀`;
+matching `x⁵` forces `c₂ = 1`, and demanding `f − C² = k·D²` with `D` quadratic
+is then two conditions on `(c₁, c₀)`.  Eliminating `c₀` between them (PARI
+`polresultant`) gives
+
+    c₁⁴ · (c₁ + 2)² · P₉(c₁) · Q₉(c₁),
+    P₉ = 64c₁⁹ − 256c₁⁸ − 160c₁⁷ + 2416c₁⁶ − 3132c₁⁵ − 2140c₁⁴ + 2889c₁³
+           + 2134c₁² + 364c₁ + 8,
+    Q₉ = 64c₁⁹ − 256c₁⁸ + 224c₁⁷ + 16c₁⁶ + 84c₁⁵ + 516c₁⁴ − 295c₁³
+           + 278c₁² + 172c₁ + 8,
+
+and **`P₉` and `Q₉` are both IRREDUCIBLE over `ℚ`** (PARI `factor`).  The root
+`c₁ = 0` is the degenerate branch: it forces `deg D ≤ 1` and `c₀ = 1`, giving
+`C = x³ + x² + 1` and `f − C² = 4x(x + 1)`, which is not a constant times a
+square — precisely the computation the refuted "NOT ANALOGOUS AT LEVEL 13"
+paragraph performed, and precisely why stopping there was wrong.  The root
+`c₁ = −2` is the representation above.  So `k = 4`, i.e. `ℤ[i]`, is the only
+quadratic-form descent that exists here at all.
+*Refuting check*: exhibit a rational root of `P₉` or of `Q₉`.
+
+**(2) THE `ℤ[ζ₃]` DESCENT ON THE CURVE IS REVERSIBLE TOO.**  This corrects the
+sentence above which says a gainful descent "must come from the `ℤ[ζ₃]`-action,
+i.e. a `(1 − ζ₃)`-descent on `J`".  The `J` half of that is still the live
+route; what is now ruled out is the tempting curve-level version, which the
+Shanks fibration makes explicit enough to test outright.  For
+`X³ − sX² − (s + 3)X − 1` with `t = s + 3`, the Lagrange resolvent satisfies
+
+    R³ = N(λ)·λ,        λ := t + 3ω,   ω := ζ₃,
+
+from `e₁ = s`, `e₂ = −(s + 3)`, `e₃ = 1`: `R³ + S³ = 2s³ + 9s² + 27s + 27`,
+`RS = s² + 3s + 9 = N(λ)`, `(R³ − S³)² = −27·disc`, and the factorisation
+`s³ + 6s² + 18s + 27 = (s + 3)(s² + 3s + 9)`.  Hence the cubic is reducible
+over `ℚ` **iff** `λ̄/λ` is a cube in `ℚ(ω)*`, iff `t + 3ω ∈ ℚ*·(ℚ(ω)*)³`.
+Writing `t + 3ω = r·ν³` with `ν = (x + y√−3)/2` and imposing the conic
+condition `(t − 2)² + 4 = z²` clears — the free parameter `r` cancelling
+identically, which is the tell — to
+
+    G(x, y) := (x³ − x²y − 9xy² + y³)² + 16y²(x² − y²)²    must be a square,
+
+i.e. to the genus-`2` curve `w² = x⁶ − 2x⁵ − x⁴ + 20x³ + 47x² − 18x + 17`, of
+discriminant `−2⁴²·13²`.  Magma's `IsIsomorphic` returns TRUE: that curve is
+**isomorphic to the original over `ℚ`** (same conductor `13²`, torsion `ℤ/19`,
+rank `0`; its six rational points are `(±1, ±8)` and `∞±`).  A bijection again,
+and for the same structural reason as at `√−1`: `h(−3) = 1` with units `μ₆`.
+*Refuting check*: run `IsIsomorphic` on the two hyperelliptic curves.
+
+**(3) BIELLIPTIC / ELLIPTIC-CHABAUTY IS CLOSED — although `X` IS geometrically
+bielliptic.**  `#GeometricAutomorphismGroup(X) = 12` (dihedral) against
+`#Aut_ℚ(X) = 6`, so over `ℚ̄` there are three extra involutions and `J` does
+split geometrically.  But they are not defined even over the SPLITTING field of
+the sextic: for `L'` that field, of degree `18` and discriminant `2¹⁸·13¹²`,
+Magma gives `#Aut(X_{L'}) = 6`.  So a bielliptic quotient is an elliptic curve
+over a field of degree `≥ 36`, and the elementary-descent template of
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` — which proves `rank = 0` for the
+level-`14` curve by explicit Fermat descent, with no Mordell–Weil theorem and
+no Selmer group anywhere in it — has nothing here to attach to.
+*Refuting check*: exhibit a degree-`2` map from `X` to an elliptic curve over a
+field of small degree.
+
+**(4) NO CONGRUENCE CAN EVER PROVE THIS LEAF**, so "find a modulus, then
+`decide`" should not be attempted.  A brute-force scan of every prime power
+`≤ 2100` for a coprime residue solution of `t² ≡ F(a, b)` with
+`ab(a + b) ≢ 0 (mod p)` finds an obstruction at exactly the powers of `2`, `3`
+and `5`, and at nothing else.  Those carry no new information: `2 ∣ ab(a + b)`
+holds for every coprime pair outright, and the `3` and `5` obstructions are
+exactly `#X(𝔽₃) = 6` and `#X(𝔽₅) = 6` — the former being `card_X13_F3`, already
+proven above by `decide`.  (By hand at `3`: `3 ∤ ab(a + b)` forces `a ≡ b ≢ 0`,
+and `F(1, 1) = 17 ≡ 2 (mod 3)`, a non-residue.)
+
+The approach is moreover structurally incapable of working, which is the part
+worth remembering.  `X` is smooth and `X(ℚ_p)` is infinite for every `p`, so
+non-degenerate `p`-adic points exist at every `p`; Hensel-lifting one and
+truncating gives, for EVERY modulus `m`, integers `(a, b, t)` with
+`gcd(a, b) = 1`, `ab(a + b) ≠ 0` and `t² ≡ F(a, b) (mod m)`.  The exceptional
+set `ab(a + b) = 0` is not cut out by any congruence, because this is a global
+statement about a curve that has points everywhere locally.
+
+**NUMERICAL CORROBORATION.**  (i) Exact integer arithmetic over all coprime
+`(a, b)` with `|a| ≤ 400`, `1 ≤ b ≤ 400`: the only solutions of
+`t² = C̃² + 4B̃²` have `B̃ = ab(a + b) = 0`; the same run confirms `C̃` odd and
+`gcd(C̃, B̃) = 1` on every coprime pair in the range.  (ii) Magma's point search
+on `y² = f(x)` to height bound `10⁴` — a `25×` wider sweep — returns exactly the
+six known points `(0, ±1)`, `(−1, ±1)`, `∞±`.  Untrusted searchers both, so
+claims to be re-derived and not proofs.
+
+**THE CHEAPEST KNOWN CERTIFICATE, AND WHAT A LEAN PROOF SHOULD TARGET**
+(Magma, untrusted searcher; every number here is a claim to be re-derived).
+The leaf is exactly a NORM EQUATION.  With `L := ℚ[x]/(f)` and `θ` the image of
+`x`, the sextic being monic of degree `6` gives `F(a, b) = N_{L/ℚ}(a − bθ)`, so
+the statement reads
+
+    N_{L/ℚ}(a − bθ) = t²,    gcd(a, b) = 1    ⟹    ab(a + b) = 0.
+
+The descent therefore lives over `L`, and `L` is about as friendly as such a
+field ever gets:
+
+* `[L : ℚ] = 6`, `disc L = 2⁶·13²`, totally complex (signature `(0, 3)`);
+* **`h(L) = 1`** — this removes the single most infeasible ingredient of a
+  formalised descent, namely a class-group computation;
+* `rank O_L^* = 2`, and `i ∈ L`, since `ℚ(√(disc f)) = ℚ(i)`;
+* over `ℚ(i)` the sextic FACTORS, into the two conjugate cubics
+  `z³ + (1 ∓ 2i)z² − (2 ± 2i)z − 1`.  That is the sum-of-two-squares identity
+  re-read as the block decomposition of the order-`18` Galois action, the two
+  blocks being swapped by `Gal(ℚ(i)/ℚ)`; so the descent may equally be run on
+  the relative cubic `L/ℚ(i)`.
+
+And the certificate itself: **the `2`-Selmer group of `J` is TRIVIAL**,
+`#Sel₂(J/ℚ) = 1`.  That one fact delivers more than item `4` of the four-part
+project asks for: it gives `rank J(ℚ) = 0` *and* `J(ℚ)[2] = 0` simultaneously,
+so `J(ℚ)` has odd order and injects into `J(𝔽₃) ≅ ℤ/19`.  With items `1`–`3`
+(`Pic⁰`, Abel–Jacobi, good reduction at `3` with torsion-free kernel) the leaf
+then follows, `#J(𝔽₃) = #J(𝔽₅) = 19` remaining the sharp targets.
+
+So the honest summary of where the difficulty sits has MOVED, and this is the
+one thing to carry away from this pass: it is **not** the rank computation —
+that is a trivial-Selmer statement over a class-number-one sextic field, which
+is the friendliest shape such a computation can have — but items `1`–`3`, the
+genus-`2` Jacobian itself.  Nothing shorter is known to the author of this
+docstring. -/
 theorem abd_eq_zero_of_sq_eq (a b t : ℤ) (hab : Int.gcd a b = 1)
     (ht : t ^ 2 = (a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3) ^ 2
               + 4 * (a * b * (a + b)) ^ 2) :
