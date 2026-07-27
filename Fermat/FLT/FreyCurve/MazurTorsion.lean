@@ -11759,10 +11759,65 @@ theorem q4_ne_zero (u : ℚ) : u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7 ≠ 
   have hlow : -7 ≤ u.num := by omega
   interval_cases h' : u.num <;> norm_num at key
 
+/-- **`q₆ = u⁶ + 23u⁵ + 214u⁴ + 939u³ + 1654u² − 73u + 1` has no rational
+root.**  It is monic with integer coefficients and constant term `1`, so a
+rational root is an integer dividing `1`, and neither `1` (value `2759`) nor
+`−1` (value `981`) is a root.  In fact `q₆` is irreducible over `ℚ`, but only
+the absence of a rational root is needed.
+
+`q₆` is the last factor of the elimination ideal `(Φ₄₉, Ψ) ∩ ℚ[u]`; see
+`psi_ne_zero`, where it is what rules out the degeneracy locus of the
+level-`49` inversion.  The proof is the same rational-root argument as
+`q4_ne_zero`. -/
+theorem q6_ne_zero (u : ℚ) :
+    u ^ 6 + 23 * u ^ 5 + 214 * u ^ 4 + 939 * u ^ 3 + 1654 * u ^ 2 - 73 * u + 1 ≠ 0 := by
+  intro h
+  have hdenQ : ((u.den : ℚ)) ≠ 0 := by exact_mod_cast u.den_ne_zero
+  have hnum : u * ((u.den : ℚ)) = (u.num : ℚ) :=
+    ((div_eq_iff hdenQ).mp (Rat.num_div_den u)).symm
+  have key : u.num ^ 6 + 23 * u.num ^ 5 * (u.den : ℤ)
+      + 214 * u.num ^ 4 * (u.den : ℤ) ^ 2 + 939 * u.num ^ 3 * (u.den : ℤ) ^ 3
+      + 1654 * u.num ^ 2 * (u.den : ℤ) ^ 4 - 73 * u.num * (u.den : ℤ) ^ 5
+      + (u.den : ℤ) ^ 6 = 0 := by
+    have hQ : (u.num : ℚ) ^ 6 + 23 * (u.num : ℚ) ^ 5 * ((u.den : ℚ))
+        + 214 * (u.num : ℚ) ^ 4 * ((u.den : ℚ)) ^ 2
+        + 939 * (u.num : ℚ) ^ 3 * ((u.den : ℚ)) ^ 3
+        + 1654 * (u.num : ℚ) ^ 2 * ((u.den : ℚ)) ^ 4
+        - 73 * (u.num : ℚ) * ((u.den : ℚ)) ^ 5 + ((u.den : ℚ)) ^ 6 = 0 := by
+      rw [← hnum]; linear_combination ((u.den : ℚ)) ^ 6 * h
+    exact_mod_cast hQ
+  have hdvd : (u.den : ℤ) ∣ u.num ^ 6 :=
+    ⟨-(23 * u.num ^ 5 + 214 * u.num ^ 4 * (u.den : ℤ) + 939 * u.num ^ 3 * (u.den : ℤ) ^ 2
+        + 1654 * u.num ^ 2 * (u.den : ℤ) ^ 3 - 73 * u.num * (u.den : ℤ) ^ 4
+        + (u.den : ℤ) ^ 5), by linarith [key]⟩
+  have hcop : IsCoprime (u.num) ((u.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]; simpa [Int.gcd] using u.reduced
+  have hd1 : (u.den : ℤ) = 1 := by
+    have hcp : IsCoprime (u.num ^ 6) ((u.den : ℤ)) := hcop.pow_left
+    have hu1 : IsUnit ((u.den : ℤ)) := by
+      obtain ⟨a, b, hab⟩ := hcp
+      obtain ⟨c, hc⟩ := hdvd
+      exact isUnit_of_dvd_one ⟨a * c + b, by rw [← hab, hc]; ring⟩
+    rcases Int.isUnit_iff.mp hu1 with h1 | h1
+    · exact h1
+    · omega
+  rw [hd1] at key
+  have hn1 : u.num ∣ 1 :=
+    ⟨-(u.num ^ 5 + 23 * u.num ^ 4 + 214 * u.num ^ 3 + 939 * u.num ^ 2 + 1654 * u.num - 73),
+      by linarith [key]⟩
+  rcases Int.isUnit_iff.mp (isUnit_of_dvd_one hn1) with h1 | h1 <;> rw [h1] at key <;>
+    norm_num at key
+
 /-- **The degeneracy locus of the level-`49` inversion is empty over `ℚ`**
-(sorry leaf, introduced 2026-07-27).  Writing `Ψ(u,v) = 49u(uv+5v+49)² −
-v(v−49u)²`, no rational point of the residual curve `Φ₄₉ = 0` with `u ≠ 0`
-lies on `Ψ = 0`.
+(PROVEN 2026-07-27; introduced as a sorry leaf the same day).  Writing
+`Ψ(u,v) = 49u(uv+5v+49)² − v(v−49u)²`, no rational point of the residual
+curve `Φ₄₉ = 0` with `u ≠ 0` lies on `Ψ = 0`.
+
+**The backtracking hypothesis is not needed.**  `_hnb : u * v ≠ 49` is
+underscore-prefixed because the proof never uses it: the elimination below
+kills `Ψ = 0` on the WHOLE of `Φ₄₉ = 0` off `u = 0`, backtracking locus
+included.  It is kept in the signature only so that the consumer
+`x0FortyNine_point_of_residual` can pass its hypotheses through unchanged.
 
 **What it is for.**  The inverse of the birational map `Φ₄₉ = 0 → 49a1` is
 built in two steps (see `x0FortyNine_point_of_residual`): first the square
@@ -11788,12 +11843,29 @@ is irreducible with no rational root — its only candidates are `±1`, giving
 `2759` and `981`.  The remaining factor is `u³`, killed by `hu`.  So the
 system has no rational solution off `u = 0`.
 
-A Lean proof therefore needs the Bezout cofactors of that resultant:
-polynomials `a, b` with `a·Φ₄₉ + b·Ψ = Res_v(Φ₄₉, Ψ)`, where `a` has
-`v`-degree `≤ 2` and `b` has `v`-degree `≤ 6`, both of `u`-degree about `27`
-(the resultant has `u`-degree `3 + 18 + 6 = 27`).  That is roughly `280`
-terms, which is large for `linear_combination` but well within reach; the
-alternative is to run the elimination as a chain of small remainder steps.
+**The certificate actually used, which is SMALLER than the resultant.**  The
+resultant is not the cheapest witness: the elimination ideal
+`(Φ₄₉, Ψ) ∩ ℚ[u]` is principal with generator
+
+  `g(u) = u · (u² + 5u + 1)⁵ · (u⁶ + 23u⁵ + 214u⁴ + 939u³ + 1654u² − 73u + 1)`
+
+of `u`-degree `17`, against the resultant's `27` (the resultant is
+`7³⁶ · u³ · (u²+5u+1)⁹ · q₆`, so it is `g` with the multiplicities inflated).
+Singular's `lift` returns integral Bezout cofactors `a` (`v`-degree `3`,
+`u`-degree `16`, `61` terms) and `b` (`v`-degree `7`, `u`-degree `20`, `138`
+terms) with
+
+  `a·Φ₄₉ + b·Ψ = 893864862802991907166563 · g(u)`,
+
+which is the single `linear_combination` below — `199` terms, and `ring`
+closes it in a few seconds with no resource bump.  The CAS was used only to
+FIND `a`, `b` and `g`; the identity itself is re-proved by `ring`, and it was
+independently re-expanded in exact integer arithmetic outside Lean before
+being transcribed.
+
+Given `g(u) = 0`, the three factors are killed in turn: `u ≠ 0` is `hu`,
+`u² + 5u + 1 = 0` would make `(2u+5)² = 21` contrary to `sq_ne_21`, and the
+sextic has no rational root by `q6_ne_zero`.
 
 **Independent confirmation that the conclusion is right.**  The singular
 locus of the plane model `Φ₄₉ = 0` is `0`-dimensional of degree `22`, and its
@@ -11804,7 +11876,7 @@ exactly `(2, −1)` by `rational_point_x0FortyNine`.  That is the conceptual
 reason the leaf below is true, and it independently predicts that the
 degeneracy locus carries no rational point. -/
 theorem psi_ne_zero (u v : ℚ) (hu : u ≠ 0) (_hnb : u * v ≠ 49)
-    (_hres : u ^ 7 * v ^ 6
+    (hres : u ^ 7 * v ^ 6
       + (28 * v ^ 6 + 49 * v ^ 5) * u ^ 6
       + (322 * v ^ 6 + 1372 * v ^ 5 + 2401 * v ^ 4) * u ^ 5
       + (1904 * v ^ 6 + 15778 * v ^ 5 + 67228 * v ^ 4 + 117649 * v ^ 3) * u ^ 4
@@ -11815,8 +11887,153 @@ theorem psi_ne_zero (u v : ℚ) (hu : u ≠ 0) (_hnb : u * v ≠ 49)
       + (4018 * v ^ 6 + 422576 * v ^ 5 + 14201915 * v ^ 4 + 224003696 * v ^ 3
           + 1856265922 * v ^ 2 + 7909306972 * v + 13841287201) * u
       = v ^ 7) :
-    49 * u * (u * v + 5 * v + 49) ^ 2 - v * (v - 49 * u) ^ 2 ≠ 0 :=
-  sorry
+    49 * u * (u * v + 5 * v + 49) ^ 2 - v * (v - 49 * u) ^ 2 ≠ 0 := by
+  intro hpsi
+  -- `u² + 5u + 1 = 0` would give a rational square root of `21`
+  have hq2 : u ^ 2 + 5 * u + 1 ≠ 0 := fun h =>
+    sq_ne_21 (2 * u + 5) (by linear_combination 4 * h)
+  -- the Bezout certificate for the elimination ideal `(Φ₄₉, Ψ) ∩ ℚ[u]`
+  have key : (893864862802991907166563 : ℚ) *
+      (u * ((u ^ 2 + 5 * u + 1) ^ 5 *
+        (u ^ 6 + 23 * u ^ 5 + 214 * u ^ 4 + 939 * u ^ 3 + 1654 * u ^ 2 - 73 * u + 1))) = 0 := by
+    linear_combination
+      ((-50878831332979692) * v ^ 3 * u ^ 11 + (-2359840015105962968) * v ^ 3 * u ^ 10 +
+        (-46577535048244048376) * v ^ 3 * u ^ 9 + (-504543474815028415508) * v ^ 3 * u ^ 8 +
+        (-3182741837544617616644) * v ^ 3 * u ^ 7 + (-10929090899031582897196) * v ^ 3 * u ^ 6 +
+        (-11659730077482835486612) * v ^ 3 * u ^ 5 + 48609448269455809022736 * v ^ 3 * u ^ 4 +
+        179857820511371194140096 * v ^ 3 * u ^ 3 + 176822927210579488017780 * v ^ 3 * u ^ 2 +
+        (-5802212688671201197140) * v ^ 3 * u + 28090572391465835940 * v ^ 3 +
+        2493062735316004908 * v ^ 2 * u ^ 14 + 140562788631291469772 * v ^ 2 * u ^ 13 +
+        3505933545462580196734 * v ^ 2 * u ^ 12 + 50667691361181066233908 * v ^ 2 * u ^ 11 +
+        464802738713915657933290 * v ^ 2 * u ^ 10 + 2762580025950527794772418 * v ^ 2 * u ^ 9 +
+        10137349025163336906026468 * v ^ 2 * u ^ 8 + 17790592780525985205795184 * v ^ 2 * u ^ 7 +
+        (-17205838861653343468256718) * v ^ 2 * u ^ 6 +
+        (-161104955257196882151547278) * v ^ 2 * u ^ 5 +
+        (-324310823331893808608833320) * v ^ 2 * u ^ 4 +
+        (-231095025059778030010138524) * v ^ 2 * u ^ 3 + 7662563144363437729394346 * v ^ 2 * u ^ 2 +
+        (-37163831017267057352382) * v ^ 2 * u + 12426396334506 * v ^ 2 +
+        (-26359022527740) * v * u ^ 16 + (-1578905449411626) * v * u ^ 15 +
+        (-42364221006583728) * v * u ^ 14 + 121489409558750814189 * v * u ^ 13 +
+        6880643777176907932796 * v * u ^ 12 + 168443618450690480887423 * v * u ^ 11 +
+        2329499653210521849821554 * v * u ^ 10 + 19755087390699825942083824 * v * u ^ 9 +
+        102656833368458332293586032 * v * u ^ 8 + 290400925944132081599735291 * v * u ^ 7 +
+        163238893898123371640617690 * v * u ^ 6 + (-1598950239421222441039429164) * v * u ^ 5 +
+        (-4742937985326937144459593708) * v * u ^ 4 + (-4231587545845513438701710307) * v * u ^ 3 +
+        139243685018933632185305586 * v * u ^ 2 + (-674454636717806100057741) * v * u +
+        (-36902631538836) * v + 64579605192963 * u ^ 16 + 3099821049262224 * u ^ 15 +
+        51534524943984474 * u ^ 14 + 126834344598979332 * u ^ 13 + 5977870629436604572128 * u ^ 12 +
+        277493578754559362399414 * u ^ 11 + 5478616993878118138239317 * u ^ 10 +
+        59353023635469441356651480 * u ^ 9 + 374427784958094568615731677 * u ^ 8 +
+        1285763962268536439717256550 * u ^ 7 + 1371730117065001391388198235 * u ^ 6 +
+        (-5718854761189014644318726544) * u ^ 5 + (-21160094895610592216990870826) * u ^ 4 +
+        (-20803042456366865408501146338) * u ^ 3 + 682624588891367528712699687 * u ^ 2 +
+        (-3304828130495005825583796) * u + 64579605192963) * hres +
+      (50878831332979692 * v ^ 7 * u ^ 11 + 2359840015105962968 * v ^ 7 * u ^ 10 +
+        46577535048244048376 * v ^ 7 * u ^ 9 + 504543474815028415508 * v ^ 7 * u ^ 8 +
+        3182741837544617616644 * v ^ 7 * u ^ 7 + 10929090899031582897196 * v ^ 7 * u ^ 6 +
+        11659730077482835486612 * v ^ 7 * u ^ 5 + (-48609448269455809022736) * v ^ 7 * u ^ 4 +
+        (-179857820511371194140096) * v ^ 7 * u ^ 3 + (-176822927210579488017780) * v ^ 7 * u ^ 2 +
+        5802212688671201197140 * v ^ 7 * u + (-28090572391465835940) * v ^ 7 +
+        (-50878831332979692) * v ^ 6 * u ^ 18 + (-3784447292429394344) * v ^ 6 * u ^ 17 +
+        (-129036039160430472304) * v ^ 6 * u ^ 16 + (-2665456235887975179300) * v ^ 6 * u ^ 15 +
+        (-37102009093996325197192) * v ^ 6 * u ^ 14 + (-365589720703882021119496) * v ^ 6 * u ^ 13 +
+        (-2599229734259324583316702) * v ^ 6 * u ^ 12 +
+        (-13252511875622450630882668) * v ^ 6 * u ^ 11 +
+        (-46386749223500574455455930) * v ^ 6 * u ^ 10 +
+        (-95455835834117789680548298) * v ^ 6 * u ^ 9 +
+        (-20596192825670350277439348) * v ^ 6 * u ^ 8 + 542282125295713237382312928 * v ^ 6 * u ^ 7 +
+        1771021421105512256692355498 * v ^ 6 * u ^ 6 + 2781275853605212942235477262 * v ^ 6 * u ^ 5 +
+        2213323044358980817082221080 * v ^ 6 * u ^ 4 + 660602395180286538274142904 * v ^ 6 * u ^ 3 +
+        (-23071037624500141846150686) * v ^ 6 * u ^ 2 + 112867923612267485210682 * v ^ 6 * u +
+        (-12426396334506) * v ^ 6 + 537939235260 * v ^ 5 * u ^ 20 + 41905466426754 * v ^ 5 * u ^ 19 +
+        1506445034422104 * v ^ 5 * u ^ 18 + (-2459963603140074738) * v ^ 5 * u ^ 17 +
+        (-184941934503052655978) * v ^ 5 * u ^ 16 + (-6317413320562480437658) * v ^ 5 * u ^ 15 +
+        (-130564562358721744747116) * v ^ 5 * u ^ 14 + (-1817741923777802990755585) * v ^ 5 * u ^ 13 +
+        (-17912744304903554537714626) * v ^ 5 * u ^ 12 +
+        (-127348418989487022588867949) * v ^ 5 * u ^ 11 +
+        (-648899419304302702325354012) * v ^ 5 * u ^ 10 +
+        (-2263766153465970663697206194) * v ^ 5 * u ^ 9 +
+        (-4577987930844664286574704402) * v ^ 5 * u ^ 8 +
+        (-382587397016640814330636507) * v ^ 5 * u ^ 7 +
+        28723558416965025483855496504 * v ^ 5 * u ^ 6 +
+        89075636708005628026913366688 * v ^ 5 * u ^ 5 +
+        126712192035286446578869120080 * v ^ 5 * u ^ 4 +
+        73042062229332252152020961925 * v ^ 5 * u ^ 3 +
+        (-2443734211894363863160295652) * v ^ 5 * u ^ 2 + 11870401745983916588813451 * v ^ 5 * u +
+        36902631538836 * v ^ 5 + (-1317951126387) * v ^ 4 * u ^ 20 +
+        (-86984774341542) * v ^ 4 * u ^ 19 + (-2341999151589699) * v ^ 4 * u ^ 18 +
+        (-28436113502925912) * v ^ 4 * u ^ 17 + (-122133700510494110235) * v ^ 4 * u ^ 16 +
+        (-9079784706558988709042) * v ^ 4 * u ^ 15 + (-309694771244502266540176) * v ^ 4 * u ^ 14 +
+        (-6398492960319305699254968) * v ^ 4 * u ^ 13 +
+        (-89072845162107742149108223) * v ^ 4 * u ^ 12 +
+        (-876680979705622394391450838) * v ^ 4 * u ^ 11 +
+        (-6191226038827232586358414848) * v ^ 4 * u ^ 10 +
+        (-30831633389743902754221922480) * v ^ 4 * u ^ 9 +
+        (-100477321732869301979259104485) * v ^ 4 * u ^ 8 +
+        (-158418806063266688340683124052) * v ^ 4 * u ^ 7 +
+        207553403645201082115595425309 * v ^ 4 * u ^ 6 +
+        1648883382718096676795850579744 * v ^ 4 * u ^ 5 +
+        3358188256320920666149507027131 * v ^ 4 * u ^ 4 +
+        2484721114102435350278865686244 * v ^ 4 * u ^ 3 +
+        (-82274116747807798265675848464) * v ^ 4 * u ^ 2 + 398939926637442458578459212 * v ^ 4 * u +
+        (-64579605192963) * v ^ 4 + 11172271698382599 * v ^ 3 * u ^ 17 +
+        779346675468677484 * v ^ 3 * u ^ 16 + (-5960867465185349343858) * v ^ 3 * u ^ 15 +
+        (-444750153659171489542070) * v ^ 3 * u ^ 14 +
+        (-15174565585074640057592146) * v ^ 3 * u ^ 13 +
+        (-313528653285124748019895080) * v ^ 3 * u ^ 12 +
+        (-4329207198716224937640225838) * v ^ 3 * u ^ 11 +
+        (-41315509178634008728368908922) * v ^ 3 * u ^ 10 +
+        (-270958871941195291099583363285) * v ^ 3 * u ^ 9 +
+        (-1159648328544658110851834901060) * v ^ 3 * u ^ 8 +
+        (-2708556262431158778559791173898) * v ^ 3 * u ^ 7 +
+        (-157060015178767816022649355838) * v ^ 3 * u ^ 6 +
+        18284041953162131817251209134492 * v ^ 3 * u ^ 5 +
+        46968285338788451850189043274208 * v ^ 3 * u ^ 4 +
+        39389278178009776552579924411524 * v ^ 3 * u ^ 3 +
+        (-1298652976625920526604218550948) * v ^ 3 * u ^ 2 +
+        6292392198926485298984442945 * v ^ 3 * u + 31644006544551870 * v ^ 2 * u ^ 17 +
+        2525191722255239226 * v ^ 2 * u ^ 16 + 94894046825802147756 * v ^ 2 * u ^ 15 +
+        (-291097351924734511211454) * v ^ 2 * u ^ 14 +
+        (-21781568613628533216593366) * v ^ 2 * u ^ 13 +
+        (-743475023435358001863212200) * v ^ 2 * u ^ 12 +
+        (-14804238244032409052447226324) * v ^ 2 * u ^ 11 +
+        (-186231059225853512573085355581) * v ^ 2 * u ^ 10 +
+        (-1513242372746774111874695998784) * v ^ 2 * u ^ 9 +
+        (-7739169236525961370735749248938) * v ^ 2 * u ^ 8 +
+        (-21888869310812997667000544020184) * v ^ 2 * u ^ 7 +
+        (-12760306226856330930626036872807) * v ^ 2 * u ^ 6 +
+        120283015426937845563367194670482 * v ^ 2 * u ^ 5 +
+        362372272722624942672853334635308 * v ^ 2 * u ^ 4 +
+        327293993407019745144254326992336 * v ^ 2 * u ^ 3 +
+        (-10765916028904458633007134247623) * v ^ 2 * u ^ 2 +
+        52143574549303538003244107538 * v ^ 2 * u + (-155055632068304163) * v * u ^ 17 +
+        (-8683115395825033128) * v * u ^ 16 + (-184516202161281953970) * v * u ^ 15 +
+        (-955762916069026860732) * v * u ^ 14 + (-14337302431763375000884899) * v * u ^ 13 +
+        (-1068133292618871066906920504) * v * u ^ 12 + (-31811383269756978870484390987) * v * u ^ 11 +
+        (-510843406424540070669438740572) * v * u ^ 10 +
+        (-4889298354372992319510898611961) * v * u ^ 9 +
+        (-28259515404976794029650738568004) * v * u ^ 8 +
+        (-89733547080989847419449598360807) * v * u ^ 7 +
+        (-78488336535607700072666843665264) * v * u ^ 6 +
+        435272358321291405273470749601166 * v * u ^ 5 +
+        1472498891686421436447874046581428 * v * u ^ 4 +
+        1396907932021627853732553887045115 * v * u ^ 3 +
+        (-45883549781622448809472568857176) * v * u ^ 2 + 222176975773217979396491360514 * v * u +
+        1869040588951338380802 * u ^ 14 + 87677757709343272009980 * u ^ 13 +
+        (-702419543963587710314641314) * u ^ 12 + (-32641791443360249629809491462) * u ^ 11 +
+        (-644533633462295518758186745781) * u ^ 10 + (-6982769258549063409837555905960) * u ^ 9 +
+        (-44050958643062998012136714875268) * u ^ 8 + (-151268744012736419772461278012150) * u ^ 7 +
+        (-161382620844441416252297083467163) * u ^ 6 + 672817560513272575543851777328512 * u ^ 5 +
+        2489464007038927248129424799023752 * u ^ 4 + 2447457142139230843151736290890050 * u ^ 3 +
+        (-80310100257842289403927265540955) * u ^ 2 + 388809724359916093749456624228 * u) * hpsi
+  have key0 : u * ((u ^ 2 + 5 * u + 1) ^ 5 *
+      (u ^ 6 + 23 * u ^ 5 + 214 * u ^ 4 + 939 * u ^ 3 + 1654 * u ^ 2 - 73 * u + 1)) = 0 :=
+    (mul_eq_zero.mp key).resolve_left (by norm_num)
+  rcases mul_eq_zero.mp key0 with h | h
+  · exact hu h
+  · rcases mul_eq_zero.mp h with h | h
+    · exact hq2 (pow_eq_zero_iff (n := 5) (by norm_num) |>.mp h)
+    · exact q6_ne_zero u h
 
 /-- **From a rational point of the residual `X_0(49)` curve to a
 non-cuspidal rational point of `49a1`** (PROVEN 2026-07-27 over the single
