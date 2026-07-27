@@ -173,6 +173,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.SchemeTheoreticallyDominant
 -- one — and was HOISTED into `Modularity/RegularStalks.lean` on 2026-07-27
 -- precisely so that it could be consumed here.
 public import Fermat.FLT.Modularity.RegularStalks
+-- `flat_quotientMap_pow_of_flat_quotientMap` below is the nilpotent half of the
+-- one-element local criterion of flatness, and it is PROVEN over the single
+-- general statement `Module.Flat.of_flat_quotient_of_pow_eq_bot` — the local
+-- criterion for a nilpotent ideal — which lives in the shim tree because it is
+-- mathlib-shaped, reusable, and (mathlib having no `Tor` long exact sequence at
+-- this pin) needs a theory build that must not happen inside this file.
+public import Fermat.FLT.Mathlib.RingTheory.Flat.LocalCriterion
 
 @[expose] public section
 
@@ -4333,9 +4340,12 @@ open scoped TensorProduct
 
 variable {R T : Type u} [CommRing R] [CommRing T] [Algebra R T]
 
-/-- **THE POWER STEP OF THE LOCAL CRITERION OF FLATNESS** (sorry leaf — pure
-commutative algebra; Stacks 051C + 00MK in the NILPOTENT case, Matsumura
-*Commutative Ring Theory* 22.1/22.2).
+/-- **THE POWER STEP OF THE LOCAL CRITERION OF FLATNESS** (**PROVEN 2026-07-27**
+over the single general leaf `Module.Flat.of_flat_quotient_of_pow_eq_bot` —
+the local criterion of flatness for a NILPOTENT ideal — which now lives in the
+shim tree at `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`; Stacks
+051C + 00MK in the NILPOTENT case, Matsumura *Commutative Ring Theory*
+22.1/22.2).
 
 `t` a nonzerodivisor on `R` and on `T` with `T ⧸ (φ t)` flat over `R ⧸ (t)`;
 then `T ⧸ (φ t)^n` is flat over `R ⧸ (t)^n` for every `n`.
@@ -4347,28 +4357,53 @@ separatedness and NO Artin–Rees: inside `A := R ⧸ (t^n)` the ideal
 `(t)/(t^n)` is NILPOTENT, and for a nilpotent ideal the local criterion of
 flatness is unconditional.
 
-**THE ROUTE.**  Induct on `n`.  The classical formulation is: for `A` a ring,
-`J ⊆ A` nilpotent and `M` an `A`-module, `M` is `A`-flat as soon as `M ⧸ JM`
-is `A ⧸ J`-flat and `Tor₁^A(A ⧸ J, M) = 0`.  Instantiated at `A = R ⧸ (t^n)`,
-`J = (t)/(t^n)`, `M = T ⧸ (φ t)^n`:
+**THE ROUTE, AS ACTUALLY TAKEN — AND THERE IS NO INDUCTION ON `n`.**  The
+previous version of this docstring said "induct on `n`"; that is unnecessary,
+and noticing it is what made the reduction short.  The local criterion applies
+ONCE, at the given `n`, with `A = R ⧸ (t^n)`, `J = (t)/(t^n)`,
+`M = B = T ⧸ (φ t)^n`.  Its three inputs are discharged here as follows.
 
-* `M ⧸ JM = T ⧸ (φ t)` is flat over `A ⧸ J = R ⧸ (t)` — that is `hflat`;
-* the `Tor₁` vanishing is exactly regularity.  Over `A` the module `A ⧸ J`
-  has the periodic-style presentation `A --(t^{n-1})--> A --t--> A → A ⧸ J → 0`,
-  so `Tor₁^A(A ⧸ J, M) = (0 :ₘ t) / t^{n-1} M`; and `φ t` being a
-  nonzerodivisor on `T` gives `(0 :_{T ⧸ (φ t)^n} φ t) = (φ t)^{n-1} T ⧸ (φ t)^n`,
-  which is precisely `t^{n-1} M`.  So the quotient is `0`.
+* `J ^ n = ⊥`, since `J = (t̄)` and `t̄^n = 0` in `A`.
+* `B ⧸ JB` is flat over `A ⧸ J` — this is `hflat` transported along the THIRD
+  ISOMORPHISM THEOREM.  `DoubleQuot.quotQuotEquivQuotOfLE` (applied twice,
+  once over `R` and once over `T`, using `(t^n) ≤ (t)` and `(φt)^n ≤ (φt)`)
+  identifies `A ⧸ J ≃+* R ⧸ (t)` and `B ⧸ JB ≃+* T ⧸ (φ t)`, and the induced
+  map is `ψ` conjugated by those two isomorphisms — so the flatness transports
+  by `RingHom.Flat.comp` and `RingHom.Flat.of_bijective`, no module theory
+  needed.
+* `Tor₁^A(A ⧸ J, B) = 0`, i.e. `J ⊗[A] B → B` is injective.  **This is the one
+  place regularity is spent**, and it is elementary because `J` is PRINCIPAL:
+  every element of `J ⊗[A] B` is `t̄ ⊗ b` for a single `b` (pull the scalar
+  across the tensor), so injectivity says exactly `t̄ b = 0 → t̄ ⊗ b = 0`.  And
+  `t̄ b = 0` means `(φ t) x ∈ ((φ t)^n)` for a lift `x`, whence `x ∈ ((φ t)^{n-1})`
+  BY `hTt`; so `b = t̄^{n-1} b'` and
+  `t̄ ⊗ b = t̄ ⊗ t̄^{n-1} b' = (t̄^{n-1} t̄) ⊗ b' = t̄^n ⊗ b' = 0 ⊗ b' = 0`.
 
-**THERE IS NO `Tor` TO USE.**  Mathlib has no `Tor` long exact sequence for
-modules (checked 2026-07-27: `Mathlib/RingTheory/Flat/` has no `Tor` at all,
-and there is no `LocalCriterion` file anywhere in the library).  So a prover
-must run the argument through `Module.Flat.iff_rTensor_injective` /
-`iff_lTensor_injective`, which expresses `Tor₁(R ⧸ I, M) = 0` as injectivity
-of `I ⊗ M → M`, exactly as the atom's original docstring already advised.
-`Mathlib/RingTheory/TensorProduct/Quotient.lean` (already in this file's import
-cone) supplies the identifications that replace the change-of-rings
-isomorphisms: `Algebra.TensorProduct.quotIdealMapEquivQuotTensor`,
-`quotientTensorEquiv`, `tensorQuotientEquiv`, `Ideal.subtype_rTensor_range`.
+**`hRt` IS NOT USED, AND THAT IS A CORRECTION, NOT AN OVERSIGHT** (2026-07-27).
+The task that produced this proof was told that both `hRt` and `hTt` are
+load-bearing, "checked by re-deriving the chase".  That is true of the chase the
+docstring above used to prescribe — computing `Tor₁^A(A ⧸ J, B)` as the homology
+of the PERIODIC PRESENTATION `A --(t^{n-1})--> A --t--> A → A ⧸ J → 0`, whose
+exactness at the middle is precisely `ker(t̄ ·) = (t̄^{n-1})` on `A` and therefore
+does need `t` regular on `R`.  Equivalently: in the form
+"`Ann_B(t̄) = Ann_A(t̄) · B`", the right-hand side is `(t̄^{n-1}) B` only because of
+`hRt`.  But the injectivity of `J ⊗[A] B → B` can be checked DIRECTLY, without
+ever naming `Ann_A(t̄)` or a resolution of `A ⧸ J`, and then only `hTt` is
+needed.  The hypothesis is kept in the signature (it costs the caller nothing —
+`mem_pow_smul_of_lTensor_ideal_eq_zero` has it anyway) and is underscored so the
+non-use is mechanically visible.
+
+**WHAT IS LEFT, AND WHY IT IS NOT HERE.**  The one general statement consumed is
+`Module.Flat.of_flat_quotient_of_pow_eq_bot` in
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, whose module docstring
+records the two available routes and the measurement behind the cut: **mathlib
+has no `Tor` long exact sequence at this pin** (`CategoryTheory/Monoidal/Tor.lean`
+defines `Tor` but proves only that higher `Tor` of a projective vanishes, and
+`CategoryTheory/Abelian/LeftDerived.lean` has no connecting map at all), so the
+classical two-step argument needs a small `Tor₁` theory built first, or the
+successive-approximation proof over `Module.Flat.iff_forall_isTrivialRelation`.
+Either is a THEORY BUILD, which is exactly why it belongs in the shim tree and
+not inside this 7000-line module.
 
 **FAITHFULNESS.**  `ψn` is passed as DATA together with its intertwining
 `hψn`, for the same reason `ψ` is in the atom: the map is
@@ -4378,7 +4413,7 @@ the call site.  Since `Ideal.Quotient.mk` is surjective, `hψn` determines `ψn`
 uniquely, so this is not a weakening. -/
 theorem flat_quotientMap_pow_of_flat_quotientMap
     [IsNoetherianRing R] [IsNoetherianRing T]
-    {t : R} (hRt : IsSMulRegular R t) (hTt : IsSMulRegular T (algebraMap R T t))
+    {t : R} (_hRt : IsSMulRegular R t) (hTt : IsSMulRegular T (algebraMap R T t))
     (ψ : R ⧸ Ideal.span {t} →+* T ⧸ Ideal.span {algebraMap R T t})
     (hψ : ψ.comp (Ideal.Quotient.mk (Ideal.span {t}))
       = (Ideal.Quotient.mk (Ideal.span {algebraMap R T t})).comp (algebraMap R T))
@@ -4386,8 +4421,163 @@ theorem flat_quotientMap_pow_of_flat_quotientMap
     (ψn : R ⧸ Ideal.span {t ^ n} →+* T ⧸ Ideal.span {(algebraMap R T t) ^ n})
     (hψn : ψn.comp (Ideal.Quotient.mk (Ideal.span {t ^ n}))
       = (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ n})).comp (algebraMap R T)) :
-    ψn.Flat :=
-  sorry
+    ψn.Flat := by
+  rcases n with _ | m
+  · -- `n = 0`: `(t^0) = (1) = ⊤`, so both quotients are the zero ring and every
+    -- module over the zero ring is flat.
+    have hR0 : Ideal.span {t ^ 0} = (⊤ : Ideal R) := by
+      rw [pow_zero]; exact Ideal.span_singleton_one
+    have hT0 : Ideal.span {(algebraMap R T t) ^ 0} = (⊤ : Ideal T) := by
+      rw [pow_zero]; exact Ideal.span_singleton_one
+    haveI : Subsingleton (R ⧸ Ideal.span {t ^ 0}) := Ideal.Quotient.subsingleton_iff.mpr hR0
+    haveI : Subsingleton (T ⧸ Ideal.span {(algebraMap R T t) ^ 0}) :=
+      Ideal.Quotient.subsingleton_iff.mpr hT0
+    algebraize [ψn]
+    exact Module.Flat.of_linearEquiv (M := R ⧸ Ideal.span {t ^ 0})
+      { toFun := fun _ => 0
+        map_add' := fun _ _ => Subsingleton.elim _ _
+        map_smul' := fun _ _ => Subsingleton.elim _ _
+        invFun := fun _ => 0
+        left_inv := fun _ => Subsingleton.elim _ _
+        right_inv := fun _ => Subsingleton.elim _ _ }
+  · algebraize [ψn]
+    have hle : Ideal.span {t ^ (m + 1)} ≤ Ideal.span {t} := by
+      rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, Ideal.mem_span_singleton]
+      exact dvd_pow_self t (Nat.succ_ne_zero m)
+    have hleT : Ideal.span {(algebraMap R T t) ^ (m + 1)}
+        ≤ Ideal.span {algebraMap R T t} := by
+      rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe, Ideal.mem_span_singleton]
+      exact dvd_pow_self _ (Nat.succ_ne_zero m)
+    have hJspan : (Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))
+        = Ideal.span {(Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)} := by
+      rw [Ideal.map_span, Set.image_singleton]
+    have hθmem : (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)
+        ∈ (Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) := by
+      rw [hJspan]; exact Ideal.mem_span_singleton_self _
+    have hψnt : (algebraMap (R ⧸ Ideal.span {t ^ (m + 1)})
+          (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+          (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)
+        = Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)}) (algebraMap R T t) := by
+      rw [RingHom.algebraMap_toAlgebra]
+      exact RingHom.congr_fun hψn t
+    have hJT : Ideal.map (algebraMap (R ⧸ Ideal.span {t ^ (m + 1)})
+          (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+          ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))
+        = (Ideal.span {algebraMap R T t}).map
+            (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})) := by
+      rw [RingHom.algebraMap_toAlgebra, Ideal.map_map, hψn, ← Ideal.map_map, Ideal.map_span,
+        Set.image_singleton]
+    refine Module.Flat.of_flat_quotient_of_pow_eq_bot
+      ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))) (m + 1) ?_ ?_ ?_
+    · -- `J ^ n = ⊥`, because `J = (t̄)` and `t̄ ^ n = 0`.
+      have h0 : (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) (t ^ (m + 1)) = 0 :=
+        Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+      rw [hJspan, Ideal.span_singleton_pow, ← map_pow, h0]
+      exact Ideal.span_singleton_eq_bot.mpr rfl
+    · -- `B ⧸ JB` is flat over `A ⧸ J`: this is `hflat` conjugated by the two
+      -- third-isomorphism-theorem identifications.
+      rw [← RingHom.flat_algebraMap_iff]
+      have heq : (algebraMap ((R ⧸ Ideal.span {t ^ (m + 1)}) ⧸
+            (Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))
+          ((T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}) ⧸
+            Ideal.map (algebraMap (R ⧸ Ideal.span {t ^ (m + 1)})
+              (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+              ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))))) =
+          (Ideal.quotEquivOfEq hJT).symm.toRingHom.comp
+            ((DoubleQuot.quotQuotEquivQuotOfLE hleT).symm.toRingHom.comp
+              (ψ.comp (DoubleQuot.quotQuotEquivQuotOfLE hle).toRingHom)) := by
+        refine Ideal.Quotient.ringHom_ext (Ideal.Quotient.ringHom_ext (RingHom.ext fun r => ?_))
+        simp only [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingEquiv.coe_toRingHom]
+        have h1 : (DoubleQuot.quotQuotEquivQuotOfLE hle)
+              ((Ideal.Quotient.mk
+                  ((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}))))
+                ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) r))
+            = Ideal.Quotient.mk (Ideal.span {t}) r :=
+          DoubleQuot.quotQuotEquivQuotOfLE_quotQuotMk r hle
+        have h2 : ψ (Ideal.Quotient.mk (Ideal.span {t}) r)
+            = Ideal.Quotient.mk (Ideal.span {algebraMap R T t}) (algebraMap R T r) :=
+          RingHom.congr_fun hψ r
+        have h3 : (DoubleQuot.quotQuotEquivQuotOfLE hleT).symm
+              (Ideal.Quotient.mk (Ideal.span {algebraMap R T t}) (algebraMap R T r))
+            = Ideal.Quotient.mk
+                ((Ideal.span {algebraMap R T t}).map
+                  (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})))
+                (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})
+                  (algebraMap R T r)) :=
+          DoubleQuot.quotQuotEquivQuotOfLE_symm_mk _ hleT
+        rw [h1, h2, h3, Ideal.quotEquivOfEq_symm, Ideal.quotEquivOfEq_mk]
+        show Ideal.Quotient.mk _ (ψn ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})) r)) = _
+        exact congrArg _ (RingHom.congr_fun hψn r)
+      rw [heq]
+      exact RingHom.Flat.comp
+        (RingHom.Flat.comp
+          (RingHom.Flat.comp
+            (RingHom.Flat.of_bijective (f := (DoubleQuot.quotQuotEquivQuotOfLE hle).toRingHom)
+              (DoubleQuot.quotQuotEquivQuotOfLE hle).bijective)
+            hflat)
+          (RingHom.Flat.of_bijective
+            (f := (DoubleQuot.quotQuotEquivQuotOfLE hleT).symm.toRingHom)
+            (DoubleQuot.quotQuotEquivQuotOfLE hleT).symm.bijective))
+        (RingHom.Flat.of_bijective (f := (Ideal.quotEquivOfEq hJT).symm.toRingHom)
+          (Ideal.quotEquivOfEq hJT).symm.bijective)
+    · -- `Tor₁^A(A ⧸ J, B) = 0`: `J ⊗[A] B → B` is injective.  This is the only
+      -- step that uses regularity, and it uses only `hTt`.
+      set θ := (⟨Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t, hθmem⟩ :
+        ↥((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))) with hθ
+      -- `J` is principal, so every element of `J ⊗ B` is `t̄ ⊗ b` for a single `b`.
+      have hgen : ∀ ξ : (↥((Ideal.span {t}).map (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)})))
+          ⊗[R ⧸ Ideal.span {t ^ (m + 1)}] (T ⧸ Ideal.span {(algebraMap R T t) ^ (m + 1)})),
+          ∃ b, ξ = θ ⊗ₜ[R ⧸ Ideal.span {t ^ (m + 1)}] b := by
+        intro ξ
+        induction ξ using TensorProduct.induction_on with
+        | zero => exact ⟨0, (TensorProduct.tmul_zero _ _).symm⟩
+        | tmul x b =>
+            obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp
+              (show (x : R ⧸ Ideal.span {t ^ (m + 1)})
+                ∈ Ideal.span {(Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t)} by
+                rw [← hJspan]; exact x.2)
+            refine ⟨c • b, ?_⟩
+            have hx : x = c • θ := Subtype.ext (by rw [hθ]; exact hc.symm)
+            rw [hx, TensorProduct.smul_tmul]
+        | add x y hx hy =>
+            obtain ⟨b₁, rfl⟩ := hx
+            obtain ⟨b₂, rfl⟩ := hy
+            exact ⟨b₁ + b₂, (TensorProduct.tmul_add _ _ _).symm⟩
+      rw [injective_iff_map_eq_zero]
+      intro ξ hξ
+      obtain ⟨b, rfl⟩ := hgen ξ
+      rw [TensorProduct.lift.tmul] at hξ
+      simp only [LinearMap.coe_comp, Function.comp_apply, Submodule.coe_subtype,
+        LinearMap.lsmul_apply] at hξ
+      obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective b
+      rw [hθ] at hξ
+      rw [Algebra.smul_def, hψnt, ← map_mul, Ideal.Quotient.eq_zero_iff_mem,
+        Ideal.mem_span_singleton'] at hξ
+      obtain ⟨c, hc⟩ := hξ
+      -- `(φ t) x ∈ ((φ t)^{m+1})` and `φ t` regular on `T` give `x ∈ ((φ t)^m)`.
+      have hx : x = c * (algebraMap R T t) ^ m := by
+        apply hTt
+        show (algebraMap R T t) • x = (algebraMap R T t) • (c * (algebraMap R T t) ^ m)
+        simp only [smul_eq_mul]
+        rw [← hc]; ring
+      subst hx
+      have hb : (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)}))
+            (c * (algebraMap R T t) ^ m)
+          = ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) ^ m) •
+            (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)}) c) := by
+        rw [Algebra.smul_def, map_pow, hψnt,
+          ← map_pow (Ideal.Quotient.mk (Ideal.span {(algebraMap R T t) ^ (m + 1)})), ← map_mul]
+        congr 1
+        ring
+      rw [hb, ← TensorProduct.smul_tmul]
+      have hzero : ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) ^ m) • θ = 0 := by
+        refine Subtype.ext ?_
+        rw [hθ]
+        show ((Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) ^ m) •
+          (Ideal.Quotient.mk (Ideal.span {t ^ (m + 1)}) t) = (0 : R ⧸ Ideal.span {t ^ (m + 1)})
+        rw [smul_eq_mul, ← pow_succ, ← map_pow]
+        exact Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+      rw [hzero, TensorProduct.zero_tmul]
 
 /-- **THE DESCENT MODULO `t ^ n`** (**PROVEN 2026-07-27**; pure commutative
 algebra, the elementwise core of Stacks 00MK / Matsumura 22.3).
