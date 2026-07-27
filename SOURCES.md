@@ -39,6 +39,18 @@ Populated 2026-07-22 on the shared-terminal machine.
   (md5 `3900c4cf249e1bd00b326f4632dfb02f`; downloaded 2026-07-26 —
   domain_index 0 gave a self-signed-certificate TLS error, index 2
   worked.)
+- `katzmazur1985ameq.pdf` — Katz & Mazur, *Arithmetic Moduli of
+  Elliptic Curves*, Annals of Math. Studies 108 (1985).  (md5
+  `62957af02d03e4ff13459c92e05cda93`; downloaded 2026-07-27 —
+  domain_index 0 gave a self-signed-certificate TLS error and index 1
+  returned a non-https URL, index 2 worked.)  **No text layer**, and it
+  is a 2-up scan: 263 PDF pages for a ~520-page book, so
+  `pdftotext` returns 263 bytes of nothing.  OCR page by page with
+  `pdftoppm -r 200 -png -f A -l B … && tesseract` — `ocrmypdf`/docker are
+  not available on this host, but `tesseract` is.  **Page map**: book page
+  `P` ≈ PDF page `6.5 + P/2`; the front matter runs i–xiv over PDF pages
+  1–6.  Sections consumed so far: 4.7 (PDF 64), 5.1 (PDF 70), 5.2
+  (PDF 71), 6.6 (PDF 89), 8.1 (PDF 118).
 - `mazur1977eisenstein.pdf` — Mazur, *Modular curves and the
   Eisenstein ideal*, Publ. IHÉS 47. Open access from Numdam
   (`PMIHES_1977__47__33_0.pdf`). Has a text layer from Numdam.
