@@ -82,11 +82,15 @@ direct images of quasi-coherent sheaves at all.
   `pullback.snd p q` via `isPullback_sliceOverOpen`.
 * `exists_isAffineOver_cover_of_slice_const` — **PROVEN** from the pointwise form below, by
   indexing the cover by the points of `Y`.
-* `exists_isAffineOver_nbhd_of_slice_const` — **THE ONE REMAINING LEAF of the rigidity
-  lemma**: at each point `y : Y` there is an open `V ∋ y` over which `m` factors through a
-  scheme affine over the base.  This is where properness of `pullback.snd`, the section `σ`
-  and `[GeometricallyConnected q]` are consumed, and it is now the *whole* of what is
-  missing — every index-set, gluing and uniqueness obligation around it has been
+* `exists_isAffineOver_nbhd_of_slice_const` — **PROVEN** from the leaf below by
+  `IsOpenImmersion.lift`: at each point `y : Y` there is an open `V ∋ y` over which `m`
+  factors through a scheme affine over the base.
+* `exists_isAffineOpen_slice_nbhd_of_slice_const` — **THE ONE REMAINING LEAF of the
+  rigidity lemma**, and it is now a bare statement about OPENS: at each `y : Y` there are
+  an open `V ∋ y` in `Y` and an open `U ⊆ Z` with `V ×_S U` affine and
+  `range (X ×_S V ⟶ Z) ⊆ U`.  This is where properness of `pullback.snd`, the section `σ`
+  and `[GeometricallyConnected q]` are consumed, and it is the *whole* of what is missing
+  — every morphism, index-set, gluing and uniqueness obligation around it has been
   discharged.
 
 ## `geometricallyReduced_of_smooth` WAS A DUPLICATE LEAF, and has been deleted (2026-07-27)
@@ -142,12 +146,16 @@ preimage of each affine open of `Z`.  So the `∃!` in the affine case is not me
 convenient — the general uniqueness is a theorem with real content, and it is now
 `eq_of_comp_snd_eq`.
 
-(1) has in turn been split into `exists_isAffineOver_nbhd_of_slice_const` — the same
-statement at ONE point of `Y` — plus a proven assembly that indexes the cover by the points
-of `Y`.  The remaining leaf therefore carries exactly the geometry (properness ⟹ closed
-map; the `GeometricallyConnected` clopen argument) and none of the bookkeeping.
+(1) has in turn been peeled twice.  First to `exists_isAffineOver_nbhd_of_slice_const` —
+the same statement at ONE point of `Y` — plus a proven assembly that indexes the cover by
+the points of `Y`; then to `exists_isAffineOpen_slice_nbhd_of_slice_const`, which drops the
+morphism data entirely and asks only for two OPENS (`V ∋ y` in `Y` and `U` in `Z`) with
+`V ×_S U` affine and `m(X ×_S V) ⊆ U`, the factorizing morphism being recovered by
+`IsOpenImmersion.lift`.  The remaining leaf therefore carries exactly the geometry
+(properness ⟹ closed map; the `GeometricallyConnected` clopen argument) and none of the
+bookkeeping.
 
-Both leaves are stated with `sliceOverOpen p q V : X ×_S V ⟶ X ×_S Y`, the canonical map
+The leaves are stated with `sliceOverOpen p q V : X ×_S V ⟶ X ×_S Y`, the canonical map
 induced by an open `V ⊆ Y`.
 
 ## FAITHFULNESS NOTE on the rigidity lemma: the second factor MUST be connected
@@ -697,19 +705,24 @@ instance {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (V : Y.Opens) :
     IsOpenImmersion (sliceOverOpen p q V) :=
   MorphismProperty.of_isPullback (isPullback_sliceOverOpen p q V).flip inferInstance
 
-/-- **THE COVERING STEP, LOCALISED AT A POINT** (sorry node) — the whole topological
-content of the rigidity lemma, and the ONLY place where `σ`, `hconst` and
-`[GeometricallyConnected q]` are used.
+/-- **THE ONE REMAINING LEAF OF THE RIGIDITY LEMMA** (sorry node) — the whole topological
+content, and the ONLY place where `σ`, `hconst` and `[GeometricallyConnected q]` are used.
 
-`exists_isAffineOver_cover_of_slice_const` below is PROVEN from this by taking `Y` itself
-as index set: a family of neighbourhoods, one per point, covers automatically.  So the
-covering/indexing bookkeeping is discharged and what is left here is exactly the geometry
-at ONE point `y`.
+Everything else is discharged: `exists_isAffineOver_nbhd_of_slice_const` below turns this
+into the morphism-level factorization (by `IsOpenImmersion.lift`, since the containment
+below is exactly the hypothesis that lift needs),
+`exists_isAffineOver_cover_of_slice_const` turns THAT into an open cover (by indexing on
+the points of `Y`), and `exists_comp_snd_eq_of_open_cover` glues.  So what is left here is
+a bare statement about opens and set-theoretic images — no morphism plumbing, no index
+set, no uniqueness.
 
-**What has to be produced at `y`.**  An open `V ∋ y`, a scheme `W` affine over the base in
-the sense that `V ×_S W` is an affine scheme, and a factorization of `m ∣_ (X ×_S V)`
-through `W` as an `S`-morphism.  In the intended construction `W` is an affine open
-`U ⊆ Z`, `w = U.ι ≫ r` and `j = U.ι`.
+**What has to be produced at `y`.**  An open `V ∋ y` in `Y` and an open `U ⊆ Z` such that
+
+* `m` maps the whole of `X ×_S V` into `U` — written as the containment of set-theoretic
+  ranges, which is precisely `IsOpenImmersion.lift`'s hypothesis; and
+* `V ×_S U` is an AFFINE SCHEME — "`U` is affine over the base, over `V`".  In the
+  intended construction `V` and `U` are affine opens lying over one affine open
+  `S₀ ⊆ S`, so `V ×_S U = V ×_{S₀} U` is a fibre product of affines over an affine.
 
 **The proof** (Mumford *AV* §4; BLR 8.4), in two halves.
 
@@ -744,6 +757,30 @@ the `GeometricallyConnected` clopen argument.  The étale axis
 (`section_eq_of_formallyUnramified`, diagonal simultaneously open and closed) is searched
 and DEAD: `Δ_{B/S}` is an open immersion iff `Ω_{B/S} = 0`, which fails in relative
 dimension `> 0`. -/
+theorem exists_isAffineOpen_slice_nbhd_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S}
+    {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
+    (hpush : HasUniversallyTrivialPushforward p)
+    (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+    {m : pullback p q ⟶ Z} (hm : m ≫ r = pullback.fst p q ≫ p)
+    (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) (y : Y) :
+    ∃ (V : Y.Opens) (U : Z.Opens), y ∈ V ∧
+      IsAffine (pullback (V.ι ≫ q) (U.ι ≫ r)) ∧
+      Set.range (sliceOverOpen p q V ≫ m) ⊆ (U : Set Z) :=
+  sorry
+
+/-- **THE COVERING STEP, LOCALISED AT A POINT** — PROVEN over
+`exists_isAffineOpen_slice_nbhd_of_slice_const`.
+
+At each point `y : Y` there is an open `V ∋ y` over which `m` factors through a scheme
+affine over the base.  Given the leaf's opens `V` and `U`, the factorizing morphism is
+`IsOpenImmersion.lift U.ι (sliceOverOpen p q V ≫ m)`: `U.ι` is an open immersion and the
+leaf's range containment is literally the hypothesis that `lift` requires, so `W = U`,
+`w = U.ι ≫ r` and `j = U.ι`.  That `n` is an `S`-morphism is `hm` together with
+`sliceOverOpen p q V ≫ pullback.fst p q = pullback.fst p (V.ι ≫ q)`.
+
+Neither `σ`, `hconst`, `hpush` nor any of the three instance hypotheses is used HERE —
+they are all consumed inside the leaf; they are carried only so the statement matches
+what the covering step needs. -/
 theorem exists_isAffineOver_nbhd_of_slice_const {X Y Z S : Scheme.{u}} {p : X ⟶ S}
     {q : Y ⟶ S} {r : Z ⟶ S} [IsProper p] [GeometricallyConnected q] [IsSeparated r]
     (hpush : HasUniversallyTrivialPushforward p)
@@ -754,8 +791,17 @@ theorem exists_isAffineOver_nbhd_of_slice_const {X Y Z S : Scheme.{u}} {p : X �
       (n : pullback p (V.ι ≫ q) ⟶ W),
       y ∈ V ∧ IsAffine (pullback (V.ι ≫ q) w) ∧
       n ≫ w = pullback.fst p (V.ι ≫ q) ≫ p ∧
-      n ≫ j = sliceOverOpen p q V ≫ m :=
-  sorry
+      n ≫ j = sliceOverOpen p q V ≫ m := by
+  obtain ⟨V, U, hy, haff, hrange⟩ :=
+    exists_isAffineOpen_slice_nbhd_of_slice_const hpush σ hσ hm c hconst y
+  have hrange' : Set.range (sliceOverOpen p q V ≫ m) ⊆ Set.range U.ι := by
+    rwa [Scheme.Opens.range_ι]
+  refine ⟨V, U.toScheme, U.ι ≫ r, U.ι,
+    IsOpenImmersion.lift U.ι (sliceOverOpen p q V ≫ m) hrange', hy, haff, ?_,
+    IsOpenImmersion.lift_fac _ _ _⟩
+  rw [← Category.assoc, IsOpenImmersion.lift_fac, Category.assoc, hm, ← Category.assoc]
+  congr 1
+  simp [sliceOverOpen, pullback.map, pullback.lift_fst]
 
 /-- **THE COVERING STEP OF THE RIGIDITY LEMMA** — PROVEN over
 `exists_isAffineOver_nbhd_of_slice_const`.
@@ -899,9 +945,11 @@ topology, split into `exists_isAffineOver_cover_of_slice_const` (the covering �
 **STATUS (2026-07-27, later).**  The gluing is now PROVEN — over `eq_of_comp_snd_eq`, the
 epimorphism property of the projection, which is itself proven from the universal
 pushforward hypothesis via surjectivity of `p`.  The covering is PROVEN over
-`exists_isAffineOver_nbhd_of_slice_const`, its pointwise form.  So this theorem now rests
-on exactly ONE open leaf, and that leaf is purely `IsProper ⟹ IsClosedMap` plus the
-`GeometricallyConnected` clopen argument at a single point of `Y`.
+`exists_isAffineOver_nbhd_of_slice_const` (its pointwise form), which is in turn PROVEN
+over `exists_isAffineOpen_slice_nbhd_of_slice_const` (its opens-only form).  So this
+theorem now rests on exactly ONE open leaf, and that leaf is purely
+`IsProper ⟹ IsClosedMap` plus the `GeometricallyConnected` clopen argument at a single
+point of `Y`.
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
 what that leaf has to get past: the reduction to an affine target cannot be done
