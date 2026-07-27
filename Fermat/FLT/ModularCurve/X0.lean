@@ -13663,6 +13663,74 @@ the Hodge-bundle route (`ω = dx/(2y + a₁x + a₃)` generates `Ω¹_{A'/R}`,
 and `A'ˣ = Rˣ`, so `Φ_*ω = uω'` produces the unit `u` directly) — that
 axis is unsearched and may be shorter.
 
+**VERIFIED PLUMBING FOR THE BOOKKEEPING STEP, so nobody has to find it
+twice.**  The four declarations below were written and COMPILED against
+this file's cone on 2026-07-27 (in a scratch module, hence not committed —
+a proven lemma with no consumer would be free-floating).  They reduce the
+bookkeeping step to a polynomial identity plus one coefficient
+extraction, and the last of them is the non-obvious one: it never expands
+`W.polynomial` at all.
+
+```lean
+open Polynomial in
+open scoped Polynomial.Bivariate in
+-- the substitution `(X, Y) ↦ (aX + r, bY + cX + t)` on `R[X][Y]`
+noncomputable def wsubst (a r b c t : R) : R[X][Y] →+* R[X][Y] :=
+  Polynomial.eval₂RingHom
+    (Polynomial.eval₂RingHom ((C : R[X] →+* R[X][Y]).comp (C : R →+* R[X]))
+      (C (C a * X + C r)))
+    (C (C b) * Y + C (C c * X + C t))
+
+-- `simp [wsubst]` proves each of
+--   wsubst a r b c t (C (C v)) = C (C v)
+--   wsubst a r b c t (C X)     = C (C a * X + C r)
+--   wsubst a r b c t Y         = C (C b) * Y + C (C c * X + C t)
+
+-- two ring maps out of `R[X][Y]` agreeing on `R`, `X`, `Y` are equal
+theorem bivariate_ringHom_ext {S : Type} [CommRing S] {f g : R[X][Y] →+* S}
+    (h₀ : ∀ v : R, f (C (C v)) = g (C (C v)))
+    (h₁ : f (C X) = g (C X)) (h₂ : f Y = g Y) : f = g := by
+  refine Polynomial.ringHom_ext ?_ h₂
+  intro p
+  have : f.comp (C : R[X] →+* R[X][Y]) = g.comp (C : R[X] →+* R[X][Y]) :=
+    Polynomial.ringHom_ext h₀ h₁
+  exact congrArg (fun u : R[X] →+* S => u p) this
+```
+
+and then, for `e : R[W] →ₐ[R] R[W']` with
+`e (of W.polynomial X) = a·x' + r` and
+`e (root W.polynomial) = b·y' + c·x' + t` (all scalars via `algebraMap`),
+
+```lean
+theorem mk_wsubst_polynomial … :
+    AdjoinRoot.mk W'.toAffine.polynomial
+      (wsubst a r b c t W.toAffine.polynomial) = 0 := by
+  have hEq : (AdjoinRoot.mk W'.toAffine.polynomial).comp (wsubst a r b c t)
+      = (e : _ →+* _).comp (AdjoinRoot.mk W.toAffine.polynomial) := by
+    refine bivariate_ringHom_ext ?_ ?_ ?_ <;> …   -- three `show`/`rw [hx]`/`rw [hy]` cases
+  simpa [AdjoinRoot.mk_self] using
+    congrArg (fun u : R[X][Y] →+* _ => u W.toAffine.polynomial) hEq
+```
+
+Two things that cost time and are worth copying: `algebraMap R R[W] v` is
+DEFEQ to `AdjoinRoot.of W.polynomial (C v)` (so `rfl` discharges the
+constants case, and `AlgHom.commutes` moves `e` past it), and the `Y`
+case closes with `exact (add_assoc _ _ _).symm` rather than `rfl` because
+`hy` is bracketed `(· + ·) + ·`.
+
+**WHAT REMAINS AFTER THAT PLUMBING**, in order: `AdjoinRoot.mk_eq_zero`
+turns it into `W'.polynomial ∣ wsubst a r b c t W.polynomial`; the
+right-hand side has `Y`-degree `≤ 2` with `Y²`-coefficient `C (b ^ 2)`
+while `W'.polynomial` is `monic_polynomial` of `natDegree 2`, so the
+cofactor is the constant `C (C (b ^ 2))` (`Subsingleton R` is a separate
+trivial case); expanding `wsubst a r b c t W.polynomial` and comparing
+with `C (C (b ^ 2)) * W'.polynomial` gives, from the `X³` coefficient,
+`a ^ 3 = b ^ 2` — which is where `u := b * a⁻¹` comes from — and the
+remaining coefficients ARE the five identities of `variableChange_def`.
+The only genuinely new lemma needed at the end is injectivity of
+`WeierstrassCurve.Affine.polynomial` (from `coeff 1` and `coeff 0`), which
+is also absent from the pin.
+
 NOT VACUOUS: an `R`-algebra isomorphism of the two coordinate rings is
 exactly the hypothesis the geometry delivers, and the conclusion pins
 `W'` to a single `VariableChange`-orbit representative of `W`. -/
