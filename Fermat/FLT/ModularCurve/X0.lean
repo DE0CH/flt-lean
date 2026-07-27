@@ -3911,32 +3911,182 @@ theorem exists_cuspidalReduction_of_padicValRat_neg
   exact ⟨hc.classify (𝟙 SpecQ) d, hd,
     isCusp_redX_of_padicValRat_neg hjr _ (by rw [hd]; exact hv)⟩
 
-/-- **Existence of the `j`-map on `Y_0(N)`** (sorry node).
+/-! #### The `j`-line, and the cut of `exists_jMap`
 
-TRUE and classical.  Two halves, both already visible in this module:
+`exists_jMap` was a leaf until 2026-07-27, recorded IRREDUCIBLE.  It is
+not: only ONE of its two halves is missing, and the missing half can be
+*stated* without being proved, which is all a safe cut needs.
 
-* the degeneracy map `Y_0(N) ⟶ Y_0(1)` exists — `Gamma0Datum.ofDvd`,
-  `IsBaseChangeOf.ofDvd` and `liesIn_ofDvd_iff` are PROVEN here, and
-  `d ↦ classify₁ (d.ofDvd hN (one_dvd N))` is a natural transformation
-  out of the `Γ₀(N)`-problem, so `hc.universal` yields the morphism (this
-  is exactly the argument `y0HasNoRationalPoint_of_dvd` already runs);
-* `Y_0(1)` is the `j`-line: the coarse space of the level-`1` problem is
-  `𝔸¹_ℚ` with coordinate the `j`-invariant (Deligne–Rapoport VI, or
-  Silverman *AEC* III.1 over `ℚ̄` plus descent).  This half is what
-  `classify_jm` records, and it is the genuinely missing input — the
-  `j`-invariant of an elliptic SCHEME does not exist at this pin, only
-  `WeierstrassCurve.j` of a Weierstrass equation does.
+* The half that is PRESENT is the degeneracy map `Y_0(N) ⟶ Y_0(1)` —
+  `Gamma0Datum.ofDvd`, `IsBaseChangeOf.ofDvd` and `liesIn_ofDvd_iff` are
+  proven above, so `d ↦ jt (d.ofDvd hN (one_dvd N))` is a natural
+  transformation out of the `Γ₀(N)`-problem whenever `jt` is one out of
+  the `Γ₀(1)`-problem, and `hc.universal` converts it into a morphism.
+  This is verbatim the argument `y0HasNoRationalPoint_of_dvd` runs.
+* The half that is MISSING is the `j`-invariant of an elliptic SCHEME:
+  a natural transformation from `[Γ₀(1)]` to the affine line, agreeing
+  with `WeierstrassCurve.j` on curves given by an equation.  That is
+  `IsJLine` below, and `exists_jLine` is the single new leaf.
+
+**One leaf for every level.**  `IsJLine` mentions no `N` in its first two
+fields, so the same witness serves every level; `exists_jMap` consumes it
+at each `N` through `ofDvd`.  That is the gain over cutting at level `N`,
+where the natural transformation would have to be produced again for each
+level. -/
+
+/-- **The `j`-line `𝔸¹_ℚ = Spec ℚ[X]`**, the target of the `j`-map.
+
+Presented as `Spec` of the polynomial ring rather than as an abstract
+scheme so that the cut below is not a tautology: were the target left as
+a *field* of `IsJLine`, the structure would be satisfiable by taking it
+to be `Y` itself with `jt := hc.classify`, and `exists_jLine` would be a
+restatement of `exists_jMap` rather than a reduction of it.  Fixing the
+target to the honest `j`-line, with the honest coordinate `jLineVal`, is
+what makes `IsJLine` STRICTLY STRONGER: it asks for the `j`-invariant
+over every base `T`, not only over `Spec ℚ`. -/
+noncomputable abbrev jLine : Scheme.{0} := Spec (CommRingCat.of (Polynomial ℚ))
+
+/-- **The structure morphism `𝔸¹_ℚ ⟶ Spec ℚ`**, `Spec` of `ℚ ↪ ℚ[X]`. -/
+noncomputable def jLineStr : jLine ⟶ SpecQ :=
+  Spec.map (CommRingCat.ofHom (algebraMap ℚ (Polynomial ℚ)))
+
+/-- **The rational number carried by a rational point of the `j`-line.**
+
+A `ℚ`-point of `Spec ℚ[X]` is `Spec` of a ring map `ℚ[X] → ℚ`
+(`Spec.homEquiv`, which is available because `Scheme.Spec` is fully
+faithful), and its coordinate is the image of `X`.
+
+**Checked to be the genuine coordinate, not a degenerate reading.**  For
+every `a : ℚ` the point `Spec.map (CommRingCat.ofHom (aeval a))` — whose
+section condition is `Spec.map_comp` plus `aeval a ∘ algebraMap = id` —
+satisfies `jLineVal … = a`, by `simp [jLineVal, Spec.homEquiv]`.  So
+`jLineVal` is ONTO `ℚ`.  This matters for faithfulness in the direction
+that is easy to miss: a junk `jLineVal` (say the constant `0`) would not
+make `exists_jLine` vacuous, it would make it **FALSE**, since
+`jt_weierstrass` demands the value `E.j`.  The check is not kept as a
+declaration because nothing consumes it and it would be free-floating. -/
+noncomputable def jLineVal (x : RelPoint jLineStr (𝟙 SpecQ)) : ℚ :=
+  (Spec.homEquiv x.1).hom Polynomial.X
+
+/-- **The `j`-invariant as a natural transformation out of the
+`[Γ₀(1)]`-moduli problem, valued in the `j`-line.**
+
+This is the moduli-theoretic content that `exists_jMap` was blocked on,
+isolated: `Y_0(1)` is `𝔸¹` with coordinate `j` (Deligne–Rapoport VI;
+Katz–Mazur; Silverman *AEC* III.1 over `ℚ̄` together with descent),
+and `[Γ₀(1)]` is the bare elliptic-scheme problem because a cyclic
+subgroup scheme of order `1` is the zero section.
+
+Three remarks on the axioms, each load-bearing.
+
+**Why the level is `1` and not `N`.**  `Gamma0Datum.ofDvd` forgets the
+level structure without touching the elliptic scheme, and
+`IsBaseChangeOf.ofDvd` says it does so compatibly with base change.  So a
+natural transformation at level `1` restricts to one at every level, and
+`exists_jMap` needs only this one object however large `N` is.
+
+**Why `jt_weierstrass` is EXISTENTIAL in `d`, and quantified over `N`.**
+The tempting field is "for every datum `d` whose elliptic scheme is a
+model of `E`, the value is `E.j`".  It is avoided for exactly the reason
+recorded in the subsection docstring for `IsJMapOn.classify_jm`: the only
+"is a model of" relation available at this pin is the Galois-equivariant
+`≃+` of `exists_ellipticScheme_of_weierstrass`, which is not known to
+determine `E.j`, so the universal form risks being FALSE.  The
+existential form is what `classify_jm` consumes, is true of the genuine
+`j`-map (take `d` built from `E` itself), and cannot be contradictory
+whatever that relation turns out to pin.  `N` and `hN` are quantified
+INSIDE the field rather than being parameters of the structure precisely
+so that one witness serves all levels; `hN : N ≠ 0` is needed only to
+form `d.ofDvd`.
+
+**Why this is not a repackaging of `exists_jMap`.**  `jt` is asked for
+over EVERY `ℚ`-scheme `T`, and lands in a FIXED scheme — the honest
+`j`-line — whereas `IsJMapOn.jm` is a bare function on the rational
+points of one `Y`.  Recovering `jt` from `jm` would require inverting the
+universal property, which initiality does not provide.  See `jLineVal`
+for why the fixed target is what makes the difference. -/
+structure IsJLine where
+  /-- the `j`-invariant of an elliptic scheme, as a point of the `j`-line -/
+  jt : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ), Gamma0Datum 1 T → RelPoint jLineStr g
+  /-- `j` is natural: a base change of data is sent to the precomposed point -/
+  jt_natural : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ SpecQ} {g' : T' ⟶ SpecQ}
+    (hg : h ≫ g = g') {d' : Gamma0Datum 1 T'} {d : Gamma0Datum 1 T},
+    IsBaseChangeOf h d' d → jt g' d' = RelPoint.pre h hg (jt g d)
+  /-- `j` agrees with `WeierstrassCurve.j`: every Weierstrass curve over `ℚ`
+  carrying a Galois-stable cyclic subgroup of order `N` admits a
+  `Γ₀(N)`-datum whose underlying elliptic scheme has `j`-invariant `E.j` -/
+  jt_weierstrass : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic] (N : ℕ) (hN : N ≠ 0)
+      (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = N →
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) →
+      ∃ d : Gamma0Datum N SpecQ,
+        jLineVal (jt (𝟙 SpecQ) (d.ofDvd hN (one_dvd N))) = E.j
+
+/-- **Existence of the `j`-invariant of an elliptic scheme** (sorry node).
+
+TRUE and classical — this is `Y_0(1) ≅ 𝔸¹_j`, Deligne–Rapoport VI, or
+Silverman *AEC* III.1 plus descent.  It is the whole of what
+`exists_jMap` was blocked on, and it is what remains after the cut.
+
+WHAT IT NEEDS.  A Weierstrass presentation of an elliptic scheme
+`f : E ⟶ T` Zariski-locally on `T`, so that `c₄³/Δ` glues to a global
+function; equivalently, the line bundle `ω = f_* Ω¹_{E/T}` and the
+classical formulas for `c₄, c₆, Δ` as sections of its powers.  None of
+that exists at this pin: `AbelianSchemeStruct` is a functor-of-points
+presentation with no coordinates anywhere, and mathlib's
+`WeierstrassCurve.j` is defined only for a Weierstrass EQUATION over a
+ring, not for a scheme.  So this leaf is genuinely irreducible here, and
+that verdict is about the AXIS of presentations of elliptic schemes.
+
+THE CHECK THAT WOULD REFUTE THIS.  Any construction attaching a global
+section of `𝒪_T` to an `AbelianSchemeStruct` of relative dimension `1`,
+natural in `T`; equivalently, a `grep` for a Weierstrass presentation of
+`AbelianSchemeStruct` or for `ω`/`c₄`/`Δ` on a relative curve. Searched
+2026-07-27 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`:
+mathlib has NO file mentioning an elliptic scheme at all, `~/cs/FLT` has
+no `jInvariant`, and the only `j` anywhere is
+`WeierstrassCurve.j` (`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`),
+which takes a Weierstrass equation over a commutative ring and returns an
+element of that ring.  `jt_weierstrass` additionally needs the datum built from `E`
+itself, which `nonempty_gamma0Datum_of_stable` supplies from
+`exists_ellipticScheme_of_weierstrass` — but with no control on `j`,
+which is exactly the missing compatibility.
+
+NOT VACUOUS, and not satisfiable by junk: see `jLineVal`. -/
+theorem exists_jLine : Nonempty IsJLine :=
+  sorry
+
+/-- **Existence of the `j`-map on `Y_0(N)`** (PROVEN 2026-07-27, over
+`exists_jLine`).
+
+The proof is the universal property and the degeneracy map, and nothing
+else.  `d ↦ jt (d.ofDvd hN (one_dvd N))` is a natural transformation from
+the `Γ₀(N)`-problem to the points of the `j`-line — naturality is
+`IsJLine.jt_natural` applied to `IsBaseChangeOf.ofDvd` — so `hc.universal`
+yields `u : Y ⟶ 𝔸¹_ℚ` over `ℚ` with `(jt g (d.ofDvd …)).1 =
+(hc.classify g d).1 ≫ u`.  Then `jm y := jLineVal (y.1 ≫ u)`, and
+`classify_jm` is `IsJLine.jt_weierstrass` transported across that
+equation by `Subtype.ext`.
 
 `hN : N ≠ 0` is REQUIRED, not decoration: see the subsection docstring —
 `IsJMapOn 0 hc` is unsatisfiable, so this statement is FALSE without it.
-
-IRREDUCIBLE at this pin, and for the same reason as
-`exists_coarseModuliY0`: it needs the level-`1` coarse space identified
-with `𝔸¹` compatibly with `WeierstrassCurve.j`, which is a statement
-about a moduli space that does not exist here. -/
-theorem exists_jMap (N : ℕ) (_hN : N ≠ 0) {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
-    (hc : IsCoarseModuliY0 N strY) : Nonempty (IsJMapOn N hc) :=
-  sorry
+It is now also USED, twice, by `Gamma0Datum.ofDvd` — the hypothesis was
+load-bearing before it was consumed, and is now load-bearing visibly. -/
+theorem exists_jMap (N : ℕ) (hN : N ≠ 0) {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 N strY) : Nonempty (IsJMapOn N hc) := by
+  obtain ⟨jl⟩ := exists_jLine
+  obtain ⟨u, ⟨hu, hu2⟩, -⟩ :=
+    hc.universal jLineStr (fun g d => jl.jt g (d.ofDvd hN (one_dvd N)))
+      (by intro _ _ h _ _ hg _ _ hb; exact jl.jt_natural h hg (hb.ofDvd hN (one_dvd N)))
+  refine ⟨{ jm := fun y => jLineVal ⟨y.1 ≫ u, by rw [Category.assoc, hu, y.2]⟩
+            classify_jm := ?_ }⟩
+  intro E _ g hg hstable
+  obtain ⟨d, hd⟩ := jl.jt_weierstrass E N hN g hg hstable
+  refine ⟨d, Eq.trans ?_ hd⟩
+  congr 1
+  exact Subtype.ext (hu2 (𝟙 SpecQ) d).symm
 
 /-- **Existence of the good reduction of `(X_0(N), j)` at a prime
 `q ∤ N`** (sorry node).
