@@ -33,19 +33,11 @@ under "Why this is not in `X0.lean`" below.
   which `X0.lean` transports verbatim onto
   `exists_ellipticScheme_of_weierstrass`.
 
-The open leaves are `exists_projAdd`, `isProper_projToSpec`,
+The open leaves are `nonempty_projGroupLaw`, `isProper_projToSpec`,
 `smoothOfRelativeDimension_projToSpec`,
 `geometricallyConnected_projToSpec` and
 `exists_projGeomFibreAddEquiv`; each carries its own docstring saying what
 is missing and where the classical argument is.
-
-`nonempty_projGroupLaw` is PROVEN: two of the three data fields of a
-`ProjGroupLaw` are constructed outright in `ProjectiveModel.lean`
-(`projNeg`, the Weierstrass involution through `Proj.map`; `projInfty`,
-the point at infinity through `Proj.fromOfGlobalSections`), and all three
-"lies over the base" fields are free over this base
-(`hom_ext_spec_rat`).  What remains is `exists_projAdd`: the group law
-`m` itself, together with the four group axioms.
 
 ## Why this is not in `X0.lean`
 
@@ -161,9 +153,9 @@ structure ProjGroupLaw (E : WeierstrassCurve ℚ) where
   hinv : Limits.pullback.lift i (𝟙 (proj E)) (by rw [hi, Category.id_comp]) ≫ m =
     projToSpec E ≫ e
 
-/-- **The chord–tangent addition on the projective Weierstrass model**
-(sorry node — what is left of items 5+6 once the inversion `i`, the unit
-section `e` and the three structure-morphism compatibilities have been
+/-- **The chord–tangent addition and unit section on the projective
+Weierstrass model** (sorry node — what is left of items 5+6 once the
+inversion `i` and the three structure-morphism compatibilities have been
 discharged; see `nonempty_projGroupLaw` for the assembly).
 
 TRUE and classical.  The addition FORMULAS are already at this pin over
@@ -173,6 +165,9 @@ an arbitrary `[CommRing R]` —
 what is missing is the *gluing*.  The formulas degenerate on the locus
 where the naive chart fails, so `m` is obtained from the standard
 three-chart cover of `A ×_ℚ A` together with agreement on the overlaps.
+`e` is the point at infinity `[0 : 1 : 0]`, a section over `Spec ℚ`
+because that point is rational.
+
 `hassoc` (item 6) is the one axiom that is not a chart computation: as an
 equation of morphisms out of `A ×_ℚ A ×_ℚ A` it is classically the
 rigidity lemma, or the theorem of the cube, or — since `A ×_ℚ A ×_ℚ A` is
@@ -188,13 +183,13 @@ and are the easy half.
 
 ## What this leaf does NOT have to do any more, and why
 
-Five obligations were removed from the original single leaf, and the
+Three obligations were removed from the original single leaf, and the
 statement below is the residue.  **This is a strengthening, not a
-weakening**: `hunit` and `hinv` are now demanded against the specific,
-named `projInfty E` and `projNeg E` rather than against an existentially
-quantified `e` and `i`, so a witness for this leaf is strictly harder to
-produce than a witness for the old one, and the old statement follows from
-it (see `nonempty_projGroupLaw`).
+weakening**: `hinv` is now demanded against the specific, named inversion
+`projNeg E` rather than against an existentially quantified `i`, so a
+witness for this leaf is strictly harder to produce than a witness for the
+old one, and the old statement follows from it (see
+`nonempty_projGroupLaw`).
 
 * `i` is now **constructed**, as
   `WeierstrassCurve.Projective.projNeg E` — the substitution
@@ -203,11 +198,6 @@ it (see `nonempty_projGroupLaw`).
   descends to a graded automorphism of the homogeneous coordinate ring and
   `Proj` is a functor of that (`AlgebraicGeometry.Proj.map`).  No gluing,
   no charts.  It is an involution: `projNeg_comp_projNeg`.
-* `e` is now **constructed**, as
-  `WeierstrassCurve.Projective.projInfty E` — the point at infinity
-  `[0 : 1 : 0]`, obtained from `Proj.fromOfGlobalSections`, whose
-  hypothesis is exactly that the chosen coordinates have no common zero.
-  Again no gluing.
 * `hm`, `he`, `hi` are **free over this base** (`hom_ext_spec_rat`): each
   is an equation between morphisms whose target is `Spec ℚ`, and a scheme
   has at most one morphism to `Spec ℚ`.
@@ -239,36 +229,36 @@ The axis NOT searched: a rigidity/theorem-of-the-cube route that would
 derive `hassoc` from `hcomm`, `hunit`, `hinv` and properness without
 touching points.  That would be a genuinely different cut and it is where
 the next owner should start if the gluing proves too expensive. -/
-theorem exists_projAdd (E : WeierstrassCurve ℚ) [E.IsElliptic] :
-    ∃ m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E,
+theorem exists_projAddUnit (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ (m : Limits.pullback (projToSpec E) (projToSpec E) ⟶ proj E)
+      (e : Spec (CommRingCat.of ℚ) ⟶ proj E),
       AbelianSchemeStruct.triAddLeft (projToSpec E) m (hom_ext_spec_rat _ _) =
             AbelianSchemeStruct.triAddRight (projToSpec E) m (hom_ext_spec_rat _ _) ∧
           Limits.pullback.lift (Limits.pullback.snd (projToSpec E) (projToSpec E))
               (Limits.pullback.fst (projToSpec E) (projToSpec E))
               Limits.pullback.condition.symm ≫ m = m ∧
-        Limits.pullback.lift (projToSpec E ≫ projInfty E) (𝟙 (proj E))
+        Limits.pullback.lift (projToSpec E ≫ e) (𝟙 (proj E))
               (hom_ext_spec_rat _ _) ≫ m = 𝟙 (proj E) ∧
           Limits.pullback.lift (projNeg E) (𝟙 (proj E))
-              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ projInfty E :=
+              (hom_ext_spec_rat _ _) ≫ m = projToSpec E ≫ e :=
   sorry
 
 /-- **The chord–tangent law on the projective Weierstrass model, as
-morphisms of schemes** (PROVEN from `exists_projAdd`) — items 5+6 of
+morphisms of schemes** (PROVEN from `exists_projAddUnit`) — items 5+6 of
 the routable specification in `exists_ellipticScheme_of_weierstrass`'s
 docstring.
 
-The three data fields are supplied as follows.  `m` comes from
-`exists_projAdd`, which is where all the remaining gluing work lives.
-`e` and `i` are CONSTRUCTED rather than assumed: `projInfty E`, the point
-at infinity `[0 : 1 : 0]` via `Proj.fromOfGlobalSections`, and
-`projNeg E`, `Proj` of the graded automorphism `Y ↦ −Y − a₁X − a₃Z` of
-the homogeneous coordinate ring.  The three compatibility fields `hm`,
-`he`, `hi` are `hom_ext_spec_rat`, i.e. free over the base `Spec ℚ`. -/
+The three data fields are supplied as follows.  `m` and `e` come from
+`exists_projAddUnit`, which is where the remaining gluing work lives.
+`i` is `WeierstrassCurve.Projective.projNeg E`, CONSTRUCTED rather than
+assumed: `Proj` of the graded automorphism `Y ↦ −Y − a₁X − a₃Z` of the
+homogeneous coordinate ring.  The three compatibility fields `hm`, `he`,
+`hi` are `hom_ext_spec_rat`, i.e. free over the base `Spec ℚ`. -/
 theorem nonempty_projGroupLaw (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     Nonempty (ProjGroupLaw E) := by
-  obtain ⟨m, hassoc, hcomm, hunit, hinv⟩ := exists_projAdd E
+  obtain ⟨m, e, hassoc, hcomm, hunit, hinv⟩ := exists_projAddUnit E
   exact ⟨{ m := m
-           e := projInfty E
+           e := e
            i := projNeg E
            hm := hom_ext_spec_rat _ _
            he := hom_ext_spec_rat _ _
