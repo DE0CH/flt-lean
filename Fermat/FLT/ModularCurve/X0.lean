@@ -5565,21 +5565,118 @@ themselves forbid `j` from being an isomorphism (with no cusps at all) —
 that is excluded only because `coarse` pins `Y` as the affine curve
 `Y_0(N)`, which is moduli input, not scheme-theoretic bookkeeping.
 
-AXIS SEARCHED, and what would refute this note.  Searched: cuts along
-the *count* (weakening `=` to `≤`, which does not help — the difficulty
-is producing cusps, not bounding them) and along the *index set* (this
-cut).  NOT searched: a route through the `j`-map dictionary already in
-this file, where a cusp might be characterised as a point at which `jm`
-has a pole; that would need `jm` extended to `X`, which
-`IsJMapOn` deliberately does not carry.  This note is refuted by
-exhibiting, in `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`,
-either a modular-curve cusp theory or a `Γ_0(N)\ℙ¹(ℚ)` description with
-its Galois action; as of 2026-07-27 `grep` over all three finds neither
-in any form. -/
-theorem nonempty_cuspIndexing (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j) :
+AXES SEARCHED (2026-07-27, second pass), each with the check that would
+refute it.  The first pass searched two and left one open; the open one
+is now CLOSED, negatively, and two more are added.
+
+1. *The count* — weakening `=` to `≤`.  Does not help: the difficulty is
+   producing cusps, not bounding them.
+
+2. *The index set* — this cut.  Exhausted: `CuspIndexing` and
+   `exists_rationalCusps` are interderivable (the proof below is one
+   direction, `Finset.exists_subset_card_eq` the other), so moving the
+   index set around cannot make either side smaller.
+
+3. *The `j`-map dictionary* — the axis the first pass left open.  The
+   route characterises a cusp as a pole of `jm`, which needs `jm`
+   extended to `X`.  **That extension is free, and useless for the same
+   reason.**  Write the obvious interface
+
+       jmX : RelPoint strX (𝟙 SpecQ) → OnePoint ℚ
+       jmX_section : ∀ y, jmX (sectionAlong j h.comm y) = (hj.jm y : OnePoint ℚ)
+       isCusp_iff  : ∀ x, h.IsCusp x ↔ jmX x = ∞
+
+   and it is inhabited for EVERY `h`, unconditionally, by
+   `jmX x := if hx : ∃ y, sectionAlong j h.comm y = x then hj.jm hx.choose
+   else ∞`.  `j` is an open immersion, hence a monomorphism, so
+   `sectionAlong` is injective and `jmX_section` holds; `isCusp_iff` is
+   then `(q : OnePoint ℚ) ≠ ∞` against the definition of `IsCusp`.  So the
+   extended `j`-map is DEFINABLE FROM `IsCusp` and carries no information
+   about it — it has a model with no rational cusp at all, hence cannot
+   prove this leaf.  The general objection, which kills the whole axis:
+   every field of `IsJMapOn` and `IsX0JReductionAt` is a function OUT of a
+   point set plus equations between values, so such a datum can only
+   RECOGNISE points that already exist, and this leaf asks for points to
+   EXIST.  Refuted by a `j`-map field not of that shape — e.g. a section
+   of the extended map over `∞`.
+
+4. *An invariant-first cut* — peel off the `Γ_0(N)`-divisor invariant
+   `dinv` of a cusp as one leaf and "for each `d` some cusp has invariant
+   `d`" as another, making `inj` free.  UNSAFE, for exactly the reason the
+   FORMAL-CONTENT AUDIT at `IsX0JReductionAt` records for `redX`:
+   quantified over an arbitrary `dinv` the existence half is FALSE — take
+   `dinv ≡ 1`, and no cusp has invariant `d ≠ 1`.  Pinning `dinv` is the
+   Deligne–Rapoport input again, so the halves do not separate; that is
+   why `CuspIndexing` bundles them.  Refuted by a pinning of `dinv` that
+   does not already produce the cusps.
+
+5. *Level induction / degeneracy* — get cusps of `X_0(N)` from `X_0(N')`
+   for `N' ∣ N`.  Wrong direction: the degeneracy map `X_0(N) ⟶ X_0(N')`
+   pushes points forward and this leaf needs them pulled back.
+
+CORRECTION to the first pass's refuting check (2026-07-27).  It claimed
+`grep` over `Fermat/`, `.lake/packages/mathlib/` and `~/cs/FLT/` finds
+neither a modular-curve cusp theory nor a `Γ_0(N)\ℙ¹(ℚ)` description "in
+any form".  **The first half is wrong.**  This pin carries
+`Mathlib/NumberTheory/ModularForms/Cusps.lean`, which defines `IsCusp c 𝒢`
+for `c : OnePoint ℝ`, proves the cusps of `SL(2, ℤ)` are exactly `ℙ¹(ℚ)`
+(`isCusp_SL2Z_iff`), and builds `CuspOrbits 𝒢` — literally `Γ∖ℙ¹(ℚ)` —
+with `Finite (CuspOrbits 𝒢)` for arithmetic `𝒢`, plus cusp widths.
+`CongruenceSubgroup.Gamma0 N` has finite index in `SL(2, ℤ)`, so
+`CuspOrbits (Gamma0 N)` is available and finite.
+
+Why the leaf survives that.  Those cusps are points of `OnePoint ℝ` with a
+group action: no Galois action, no `(d, a)` classification, no count, and
+— decisively — no relation of any kind to `RelPoint strX (𝟙 SpecQ)`.
+Bridging the two is the uniformisation `X_0(N)(ℂ) ≅ Γ_0(N)∖ℍ*` together
+with the `ℚ`-structure, i.e. Deligne–Rapoport again.  `grep` over the same
+three trees for Galois descent of scheme points (`X(K^sep)^Γ = X(K)`)
+finds nothing — `Mathlib/CategoryTheory/Galois/` is the
+Galois-category/fundamental-group theory, not this.  So the refuting check
+is re-stated: this note falls to a bridge from `CuspOrbits (Gamma0 N)` to
+`RelPoint strX (𝟙 SpecQ)`, or to Galois descent for rational points of a
+`ℚ`-scheme.
+
+`_hN : N ≠ 0` is NOT load-bearing for truth — at `N = 0` the statement is
+true and vacuous, and `nonempty_cuspIndexing` discharges that case
+outright.  It is carried because every construction of a cusp needs it
+(`Nat.divisors 0 = ∅`, so there is nothing to index at `N = 0`), and
+because `N = 0` is a recurring trap in this module — see `exists_jMap`,
+where the same hypothesis IS load-bearing. -/
+theorem nonempty_cuspIndexing_of_ne_zero (N : ℕ) (_hN : N ≠ 0) {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) :
     Nonempty h.CuspIndexing :=
   sorry
+
+/-- **`X_0(N)` has a `ℚ`-rational cusp above every divisor `d ∣ N` with
+`φ(gcd(d, N/d)) = 1`, and these are pairwise distinct** (PROVEN at
+`N = 0`, otherwise `nonempty_cuspIndexing_of_ne_zero`).
+
+The degenerate level is discharged here rather than left inside the leaf:
+`Nat.divisors 0 = ∅`, so `rationalCuspDivisors 0 = ∅` and every field of
+`CuspIndexing` is vacuous.  Splitting it off follows the module's own
+idiom — `exists_coarseModuliY0_zero` against
+`exists_coarseModuliY0_of_pos` — and it matters here for the same reason
+it matters there: `N = 0` satisfies the hypotheses of several statements
+in this file while admitting none of their intended objects, so a leaf
+that silently includes it invites a prover to look for a cusp that is not
+being asked for.
+
+All the modular content is in `nonempty_cuspIndexing_of_ne_zero`; see its
+docstring for the five axes searched and for the correction to the pin
+survey. -/
+theorem nonempty_cuspIndexing (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j) :
+    Nonempty h.CuspIndexing := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · have hz : ∀ d : ℕ, d ∉ rationalCuspDivisors 0 := fun d => by
+      simp only [rationalCuspDivisors, Nat.divisors_zero, Finset.filter_empty,
+        Finset.notMem_empty, not_false_eq_true]
+    exact ⟨{ cusp := fun d hd => absurd hd (hz d)
+             isCusp := fun d hd => absurd hd (hz d)
+             inj := fun d hd _ _ _ => absurd hd (hz d) }⟩
+  · exact nonempty_cuspIndexing_of_ne_zero N hN h
 
 /-- **`X_0(N)` has `numRationalCusps N` rational cusps, and no cusp is
 the image of a rational point of `Y_0(N)`** (PROVEN 2026-07-27 over
