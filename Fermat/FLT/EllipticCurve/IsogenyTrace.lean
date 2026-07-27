@@ -271,12 +271,22 @@ theorem toIsogeny_frobEnd : End.toIsogeny frobEnd = frobIsog := rfl
 
 /-- **The `End`-free core of the refutation: no rational map inverts Frobenius.**
 
-Stated without mentioning `End` on purpose. Everything mentioning `End` reports
-`sorryAx` under `#print axioms` at carrier level — `endSubring`'s `add_mem'` field
-routes through the still-open `IsIsogeny.add`, so even a literal `rfl` such as
-`End.coe_add_apply` reports it. This statement therefore carries the mathematical
-content of the refutation in a form where `#print axioms` is informative, and it
-comes back `[propext, Classical.choice, Quot.sound]`.
+Stated without mentioning `End` on purpose, and it comes back
+`[propext, Classical.choice, Quot.sound]`.
+
+**RETIRED JUSTIFICATION (2026-07-27, fourth pass).** This paragraph used to say
+that "everything mentioning `End` reports `sorryAx` under `#print axioms` at
+carrier level", because `endSubring`'s `add_mem'` field routed through a then-open
+`IsIsogeny.add`, so even a literal `rfl` such as `End.coe_add_apply` reported it.
+**That is no longer true**: `IsIsogeny.add` is PROVEN, and all three of
+`#print axioms WeierstrassCurve.IsIsogeny.add`,
+`#print axioms WeierstrassCurve.End.coe_add_apply` and
+`#print axioms WeierstrassCurve.End.torsionRep` return
+`[propext, Classical.choice, Quot.sound]` (checked 2026-07-27). So `#print axioms`
+is now informative on `End`-mentioning statements too, and the `End`-free phrasing
+here — and in `charPoly_of_multiplicative_parallelogram` below — is preserved for
+readability rather than out of necessity. Do not cite this file as evidence that
+`End` statements cannot be axiom-audited.
 
 The argument is the one in `Isogeny.isRationalMap_dualHom_is_false`, run against
 an arbitrary rational left inverse rather than against `dualHom` specifically. -/
@@ -931,11 +941,12 @@ first pass's "the parallelogram law alone does not suffice". Writing
 Only step 5 uses definiteness, and only steps 2–3 use multiplicativity — which is
 exactly the hypothesis the first pass's independence analysis did not have in view.
 
-**Stated `End`-free on purpose.** Everything mentioning `End W` reports `sorryAx`
-under `#print axioms` at carrier level (see `not_isRationalMap_leftInverse_frob`
-above for why), so a certificate for the mathematical content has to live in a
-statement that does not mention it. This one reports
-`[propext, Classical.choice, Quot.sound]`. -/
+**Stated `End`-free on purpose** — for readability, and because the statement is
+about any ring with a multiplicative parallelogram form, not about curves. This one
+reports `[propext, Classical.choice, Quot.sound]`. (An earlier version justified the
+`End`-free phrasing by the claim that everything mentioning `End W` reports
+`sorryAx` at carrier level. That justification is RETIRED and was stale; see the
+retraction on `not_isRationalMap_leftInverse_frob` above.) -/
 theorem charPoly_of_multiplicative_parallelogram {R : Type*} [Ring R] (q : R → ℤ)
     (hq0 : q 0 = 0) (hq1 : q 1 = 1)
     (hpar : ∀ a c : R, q (a + c) + q (a - c) = 2 * q a + 2 * q c)
