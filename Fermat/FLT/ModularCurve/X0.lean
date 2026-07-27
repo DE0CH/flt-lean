@@ -35105,6 +35105,34 @@ noncomputable def toAbelianReduction
     exact (d.genA.toEquiv (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective h2
   red_c := d.red_c
 
+include d in
+/-- **The special fibre of an abelian Néron-pinned datum has finitely many
+rational points** (PROVEN 2026-07-27, over
+`finite_relPoint_of_isProper_finiteField`).
+
+The abelian-image counterpart of `finite_specialFibre_of_x0NeronDatum`, and
+its proof is the same two lines for the same reason: none of it is about the
+abelian image at all.  `spX` identifies `X_0(N)(𝔽_ℓ)` with the `𝔽_ℓ`-points
+of the integral curve model `xstr` taken over the CLOSED POINT
+`SpecLoc.special toF`, and `model.isProper` makes that model proper over
+`Spec ℤ_(ℓ)`; what is left is the general fact that a proper morphism has
+finitely many points valued in a finite field, with no modular curve, no `N`
+and no datum in it.
+
+`ℓ ≠ 0` comes from `base` (`IsReductionBase.ne_zero`); `ℓ.Prime` is not
+needed.
+
+This is what lets the sharpness leaf below be stated as a bare `Set.ncard`
+bound and the `Finset` packaging be discharged here rather than inside the
+arithmetic — exactly the split `exists_sharpSievePrime` uses on the Jacobian
+side. -/
+theorem finite_specialFibre : Finite (RelPoint strX' (𝟙 (SpecF ℓ))) :=
+  haveI : Finite (RelPoint xstr (SpecLoc.special toF)) :=
+    finite_relPoint_of_isProper_finiteField d.base.ne_zero d.model.isProper
+      (SpecLoc.special toF)
+  Finite.of_equiv _
+    (d.spX.toEquiv (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+
 end IsX0AbelianNeronDatum
 
 /-! #### The abelian half, cut into three leaves
@@ -35476,8 +35504,103 @@ theorem exists_x0AbelianNeronDatum_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶
       neronA := bijective_pre_generic_of_isProper ℓ R toF hbase astrZ abZ.proper
       properX := cm.properX }
 
-/-- **Some good odd prime makes the abelian sieve at `169` sharp** (sorry
-node, introduced 2026-07-27 as the ARITHMETIC half of
+/-- **The survivor COUNT at a good odd prime — the arithmetic residue of the
+abelian sieve at `169`** (sorry node, introduced 2026-07-27 by decomposing
+`exists_sharpAbelianSievePrime_oneSixtyNine`, which is now PROVEN from it):
+given a rank-`0` abelian image `(A, c)` of `X_0(169)`, there is an odd prime
+`ℓ ∤ 169` at which, for EVERY Néron-pinned datum, at most
+`numRationalCusps 169 = 2` points of the special fibre have `c'`-class in
+`Set.range redA`.
+
+TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
+Math. Soc. (2) **22** (1980).  This is the whole arithmetic content of the
+level; everything else in the chain is now transport.
+
+**What this leaf is, relative to its consumer.**  It is
+`exists_sharpAbelianSievePrime_oneSixtyNine` with the `Finset` packaging
+removed: the conclusion is a bare `Set.ncard` bound on the survivor set
+rather than the existence of a `Finset` containing it.  The two are
+equivalent given `IsX0AbelianNeronDatum.finite_specialFibre` (PROVEN above),
+which is exactly the geometry the split takes out — properness of the
+integral model over a finite residue field, universal in `ℓ`, with no
+arithmetic in it.  This is the abelian-image analogue of the
+`exists_sharpSievePrime` / `exists_sharpSievePrime_classCount` split.
+
+**Why the residue is a POINT count and NOT a class count**, unlike
+`exists_sharpSievePrime_classCount` — this is the one place where the
+abelian-image sieve genuinely differs from the Jacobian sieve, and getting
+it wrong would produce a FALSE leaf.  On the Jacobian side the point count
+is converted into a count of Abel–Jacobi CLASSES by
+`aj_injective_of_x0NeronDatum`: `aj` is injective on the points of a curve
+of positive genus, over any field, so counting points and counting classes
+agree.  Here `c` is an ARBITRARY morphism to an abelian image, constrained
+only by `hcinj`, which speaks about `X_0(169)(ℚ)` — a two-element set — and
+says nothing about `𝔽_ℓ`-points.  `c` may perfectly well be a degree-`d`
+cover onto its image for `d ≥ 3` (see the audit below), and then `c'` is
+`d`-to-one on part of `X_0(169)(𝔽_ℓ)`.  A class-count residue would
+therefore silently drop the fibres of `c'` and could be true while the leaf
+it is supposed to imply is false.  So the residue counts POINTS, and no
+injectivity leaf accompanies it.
+
+## RECONNAISSANCE, re-run and EXTENDED 2026-07-27 (PARI/GP 2.17.4)
+
+Every numerical claim this cluster rests on was recomputed, and two that
+were previously asserted are now checked.
+
+* `dim S_2(Γ_0(169)) = 8`, entirely NEW (`dim S_2(Γ_0(13)) = 0`).
+* The newform Galois orbits have coefficient fields `y² − 3`,
+  `y³ − y² − 2y + 1`, `y³ − y² − 2y + 1`, i.e. **dimensions `2, 3, 3`.
+  There is NO orbit of dimension `1`**, so `J_0(169)` has no elliptic-curve
+  factor and every simple factor has dimension `≥ 2`.  This is the
+  load-bearing input of the first bullet of the audit below, which had been
+  asserted rather than computed; it is what rules out the cheapest
+  potential counterexample to this leaf, namely `A` an elliptic curve with
+  large `A(ℚ)_tors`, where `#A(𝔽_ℓ) ~ ℓ` is the same order as
+  `#X_0(169)(𝔽_ℓ)` and the survivor count would not be forced down.
+* Atkin–Lehner `w_169` eigenvalues on the three orbits: `[−1, −1]`,
+  `[−1, −1, −1]`, `[+1, +1, +1]`.  So the MINUS part is `2 + 3 = 5`
+  dimensional with simple factors of dimension `2` and `3` — exactly as the
+  audit states — and the PLUS part is `3`-dimensional.
+* Analytic ranks of the eigenforms: `0, 0` / `0, 0, 0` / `1, 1, 1`.  The
+  minus part therefore has analytic rank `0`, hence Mordell–Weil rank `0`
+  by Kolyvagin–Logachev, and `rank J_0(169)(ℚ) = 3` comes entirely from the
+  plus part.  Both figures quoted under `HasRankZeroAbelianImage` are
+  confirmed.
+* The Eichler–Shimura table below reproduces exactly at `ℓ ≤ 43`, and the
+  refutation check it records — an odd `ℓ ∤ 169` with
+  `Tr(T_ℓ ∣ S_2(Γ_0(169))) = ℓ − 1`, i.e. `#X_0(169)(𝔽_ℓ) = 2` — is now
+  **complete and negative**.  Every prime `ℓ ≤ 293` was tested; the minimum
+  of `#X_0(169)(𝔽_ℓ)` over odd `ℓ ∤ 169` is `4`, at `ℓ = 3`.  Beyond that
+  the Weil bound `|Tr T_ℓ| ≤ 2 · 8 · √ℓ` already gives
+  `#X_0(169)(𝔽_ℓ) ≥ ℓ + 1 − 16√ℓ > 2` for `ℓ > 258`.  So "no single prime
+  is sharp" is settled, not conjectured, and the sieve is not optional. -/
+theorem exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY)
+    {A : Scheme.{0}} {astr : A ⟶ SpecQ} (ab : AbelianSchemeStruct astr)
+    (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g)
+    (hfin : Finite (RelPoint astr (𝟙 SpecQ)))
+    (hcinj : Function.Injective (c SpecQ (𝟙 SpecQ))) :
+    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ 169 ∧
+      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ} {X' A' XZ YZ AZ : Scheme.{0}}
+        {strX' : X' ⟶ SpecF ℓ} {astr' : A' ⟶ SpecF ℓ} {ab' : AbelianSchemeStruct astr'}
+        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+        {astrZ : AZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct astrZ}
+        {c' : ∀ (T : Scheme.{0}) (g : T ⟶ SpecF ℓ), RelPoint strX' g → RelPoint astr' g}
+        {cZ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecLoc R), RelPoint xstr g → RelPoint astrZ g}
+        (d : IsX0AbelianNeronDatum 169 ℓ R toF ab ab' abZ c c' cZ
+          (ystr := ystr) (jZ := jZ)),
+        {x' : RelPoint strX' (𝟙 (SpecF ℓ)) |
+            ∃ a : RelPoint astr (𝟙 SpecQ),
+              d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'}.ncard ≤ numRationalCusps 169 :=
+  sorry
+
+/-- **Some good odd prime makes the abelian sieve at `169` sharp** (PROVEN
+by decomposition 2026-07-27, over
+`exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount` and
+`IsX0AbelianNeronDatum.finite_specialFibre`; introduced as a sorry node
+earlier the same day as the ARITHMETIC half of
 `exists_x0AbelianSieve_oneSixtyNine`): given a rank-`0` abelian image
 `(A, c)` of `X_0(169)`, there is an odd prime `ℓ ∤ 169` at which, for EVERY
 Néron-pinned datum, at most `numRationalCusps 169 = 2` points of the special
@@ -35486,6 +35609,25 @@ fibre have `c'`-class in `Set.range redA`.
 TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
 Math. Soc. (2) **22** (1980).  This is the whole arithmetic content of the
 level; everything else in the chain is now transport.
+
+**The cut taken here**, and it is the abelian-image copy of the one
+`exists_sharpSievePrime` takes: the `Finset` in the conclusion is pure
+packaging, and it is discharged from
+`IsX0AbelianNeronDatum.finite_specialFibre` (properness of the integral
+model over a finite residue field, universal in `ℓ`).  What remains is a
+bare cardinality bound on the survivor set, which is the form a computation
+produces, and that is
+`exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount`.  Note the
+Jacobian version needs a `Finset.exists_superset_card_eq` padding step and a
+second conjunct `numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)` to reach it, because
+`IsSharpSieve` demands a `Finset` of size EXACTLY `numRationalCusps N`; this
+statement asks only for `≤`, so no padding bound is carried and no
+same-`ℓ` obstruction arises.
+
+The numerical reconnaissance behind the level — the newform dimensions
+`2, 3, 3`, the Atkin–Lehner signs, the analytic ranks, and the now-complete
+verification that no single prime is sharp — is recorded under
+`exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount`.
 
 **Why the point count of the special fibre is NOT enough**, so that nobody
 tries `card_le_of_rankZeroJacobian` here.  By Eichler–Shimura
@@ -35542,7 +35684,25 @@ can check them rather than rediscover them:
   `Aut(X_0(169)) = ⟨w_169⟩` (Kenku–Momose, *Automorphism groups of the
   modular curves `X_0(N)`*, 1988).  But `w_169` SWAPS the two rational
   cusps `0` and `∞`, so `c ∘ w = c` contradicts `hcinj`.  The mechanism is
-  therefore unavailable at this level.
+  therefore unavailable at this level **in degree `2`**.
+
+  **REFINEMENT, 2026-07-27** — the bullet as originally written covers
+  degree `2` only, and it is worth saying what it does and does not settle,
+  because the gap is real and the repair is different in kind.  A cover of
+  degree `d ≥ 3` need NOT be Galois, so `Aut(X_0(169)) = ⟨w_169⟩` does not
+  exclude one; nothing here rules out `c` being a degree-`3` map onto its
+  image (Riemann–Hurwitz permits a target of genus `≤ 3` from
+  `g(X_0(169)) = 8`).  What saves the leaf is that the quantifier over `ℓ`
+  is EXISTENTIAL.  The fibre of `φ` through a rational cusp contains no
+  second RATIONAL point of `X_0(169)` — a second rational point in that
+  fibre would have the same `c`-value as the cusp, contradicting `hcinj` —
+  so the extra points of that fibre are defined over a field `K ≠ ℚ` and
+  become `𝔽_ℓ`-rational only for `ℓ` in a set of density `< 1`.  A witness
+  prime is chosen outside it.  So the degree-`≥ 3` mechanism does not
+  produce a survivor at EVERY prime, which is what a refutation would need;
+  it only removes some primes from the candidate list.  This is also the
+  reason the arithmetic residue below counts POINTS rather than classes:
+  `c'` may genuinely be `d`-to-one on part of `X_0(169)(𝔽_ℓ)`.
 
 **The check that refutes the leaf**: an abelian variety `A/ℚ` with `A(ℚ)`
 finite and a natural `c` injective on `X_0(169)(ℚ)` such that at EVERY odd
@@ -35588,8 +35748,25 @@ theorem exists_sharpAbelianSievePrime_oneSixtyNine {X Y : Scheme.{0}} {strX : X 
           (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
               (∃ a : RelPoint astr (𝟙 SpecQ),
                 d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x') → x' ∈ s) ∧
-            s.card ≤ numRationalCusps 169 :=
-  sorry
+            s.card ≤ numRationalCusps 169 := by
+  classical
+  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hcount⟩ :=
+    exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount hX ab c hfin hcinj
+  refine ⟨ℓ, hℓ, hℓ2, hℓN, ?_⟩
+  intro R toF X' A' XZ YZ AZ strX' astr' ab' xstr ystr jZ astrZ abZ c' cZ d
+  haveI : Finite (RelPoint strX' (𝟙 (SpecF ℓ))) := d.finite_specialFibre
+  haveI : Fintype (RelPoint strX' (𝟙 (SpecF ℓ))) := Fintype.ofFinite _
+  refine ⟨Finset.univ.filter
+      (fun x' => ∃ a : RelPoint astr (𝟙 SpecQ), d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'),
+    fun x' hx' => Finset.mem_filter.mpr ⟨Finset.mem_univ _, hx'⟩, ?_⟩
+  have hcoe : ↑(Finset.univ.filter
+      (fun x' => ∃ a : RelPoint astr (𝟙 SpecQ), d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'))
+      = {x' : RelPoint strX' (𝟙 (SpecF ℓ)) |
+          ∃ a : RelPoint astr (𝟙 SpecQ), d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'} := by
+    ext x'
+    simp
+  rw [← Set.ncard_coe_finset, hcoe]
+  exact hcount d
 
 /-- **The Mordell–Weil sieve at level `169`** (PROVEN by decomposition
 2026-07-27, over `exists_x0AbelianNeronDatum_oneSixtyNine` and
@@ -35675,7 +35852,9 @@ chain where a false sub-leaf could hide.
 **What proving the two leaves needs**: `J_0(169)`, its Atkin–Lehner
 decomposition, the Prym, Kolyvagin–Logachev for finiteness of `A(ℚ)`, and
 the sieve computation proper — all of that is now in
-`exists_sharpAbelianSievePrime_oneSixtyNine` — plus the integral models,
+`exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount`, the arithmetic
+residue of `exists_sharpAbelianSievePrime_oneSixtyNine`, which is itself
+PROVEN — plus the integral models,
 which are `exists_x0AbelianNeronDatum_oneSixtyNine` and whose curve half
 already exists (`exists_x0CurveModel_of_base`, PROVEN).  `hA` remains
 load-bearing: it is consumed by the geometric leaf, which repairs it to a
