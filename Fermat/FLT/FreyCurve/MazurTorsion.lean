@@ -4871,41 +4871,336 @@ theorem nonempty_basis_nTorsion (q : ℕ) [Fact q.Prime]
     { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
   exact ⟨(Module.Basis.finTwoProd (ZMod N)).map ψ.symm⟩
 
-/-- **The Frobenius determinant on the `N`-torsion for `N` coprime to `q`**
-(sorry leaf, opened 2026-07-27 by decomposing
-`trace_frobeniusTorsionEnd_eq_natCard` below): `det F = q` on `Wbar[N]`.
+set_option backward.isDefEq.respectTransparency false in
+/-- **Rank-two pairing transformation over a COMMUTATIVE RING** (PROVEN
+2026-07-27): for a module with a basis indexed by `Fin 2` over any commutative
+ring `R`, an alternating bilinear form `e` transforms under any endomorphism
+`f` by the determinant, `e (f x) (f y) = det f * e x y`.
 
-THIS IS A GENERALISATION OF SOMETHING ALREADY PROVEN, AND THAT IS THE WHOLE
-TASK. `WeilPairing.det_frobeniusTorsionEnd` (`EllipticCurve/WeilPairing.lean`,
-PROVEN, axiom-clean) is EXACTLY this statement for `N` a PRIME `p ≠ q`. Its
-proof is: the Weil pairing `e` on `Wbar[p]` is alternating and nondegenerate,
-Frobenius scales it by `q` (`exists_weilPairing_frobenius`), and on a rank-two
-module an endomorphism scaling a nonzero alternating form by `c` has
-determinant `c` (`det_eq_of_conj`).
+This is `WeilPairing.pairing_map_eq_det_smul` (`EllipticCurve/WeilPairing.lean`,
+PROVEN) with its `[Field F]` + `Module.rank F V = 2` hypotheses replaced by
+`[CommRing R]` + a given `Fin 2` basis. Nothing in that proof used division:
+it passes to matrices in the basis and expands `Matrix.det_fin_two`. The only
+step that genuinely needed a field was manufacturing the basis out of the rank
+hypothesis, and here the basis is supplied by the caller
+(`nonempty_basis_nTorsion` above, whenever `N` is coprime to `q`).
 
-WHAT IS MISSING is only the Weil pairing at COMPOSITE level: that whole
-development (`weilValueProp`, `IsWeilValue`, `dlog`, `exists_weilPairing_frobenius`)
-carries `[Fact p.Prime]`, because it builds the pairing out of `μ_p ⊆ 𝔽̄_qˣ`
-and a discrete logarithm to `ZMod p`, and `ZMod N` is not a field for composite
-`N`. The rank-two input the last step needs is available here in general:
-`nonempty_basis_nTorsion` above gives a `Fin 2` basis whenever `N` is coprime
-to `q`, so `det_eq_of_conj`'s `Module.rank = 2` hypothesis has a coprime-`N`
-replacement already.
+This is what makes the Weil-pairing determinant argument available at
+COMPOSITE level `N`, where `ZMod N` is not a field. -/
+lemma pairing_map_eq_det_smul_of_basis_fin_two {R M : Type*} [CommRing R]
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M)
+    (e : M →ₗ[R] M →ₗ[R] R) (halt : ∀ v, e v v = 0)
+    (f : M →ₗ[R] M) (x y : M) :
+    e (f x) (f y) = LinearMap.det f * e x y := by
+  classical
+  haveI : Module.Finite R M := Module.Finite.of_basis b
+  haveI : Module.Free R M := Module.Free.of_basis b
+  -- skew-symmetry from the alternating property
+  have hskew : ∀ v w : M, e w v = -e v w := by
+    intro v w
+    have h := halt (v + w)
+    simp only [map_add, LinearMap.add_apply, halt v, halt w, zero_add,
+      add_zero] at h
+    linear_combination h
+  -- the matrix of `f` in the basis `b`
+  have hfb : ∀ j, f (b j) =
+      LinearMap.toMatrix b b f 0 j • b 0 + LinearMap.toMatrix b b f 1 j • b 1 := by
+    intro j
+    have hsum := b.sum_repr (f (b j))
+    rw [Fin.sum_univ_two] at hsum
+    rw [← hsum]
+    congr 1 <;> rw [LinearMap.toMatrix_apply]
+  have hdet : LinearMap.det f =
+      LinearMap.toMatrix b b f 0 0 * LinearMap.toMatrix b b f 1 1 -
+      LinearMap.toMatrix b b f 0 1 * LinearMap.toMatrix b b f 1 0 := by
+    rw [← LinearMap.det_toMatrix b f, Matrix.det_fin_two]
+  -- both sides are bilinear; compare on basis pairs
+  suffices hb : ∀ i j, e (f (b i)) (f (b j)) = LinearMap.det f * e (b i) (b j) by
+    have hBB : e.compl₁₂ f f = LinearMap.det f • e := by
+      refine b.ext fun i => b.ext fun j => ?_
+      simpa [LinearMap.compl₁₂_apply, LinearMap.smul_apply] using hb i j
+    have happ := congrArg (fun B : M →ₗ[R] M →ₗ[R] R => B x y) hBB
+    simpa [LinearMap.compl₁₂_apply, LinearMap.smul_apply] using happ
+  intro i j
+  fin_cases i <;> fin_cases j <;>
+    · simp only [Fin.mk_zero, Fin.mk_one, hfb, hdet, map_add, map_smul,
+        LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul, halt,
+        hskew (b 0) (b 1)]
+      ring
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Rank-two determinant from a UNIMODULAR alternating form** (PROVEN
+2026-07-27): over a commutative ring, on a module with a `Fin 2` basis, an
+endomorphism scaling an alternating form by `c` has determinant `c` — provided
+the form takes at least one value that is a UNIT.
+
+`WeilPairing.det_eq_of_conj` is this over a field, where `e x y ≠ 0` suffices
+because a nonzero element of a field is cancellable. **Over `ZMod N` with `N`
+composite, `e x y ≠ 0` is NOT enough** — `2 ∈ ZMod 4` is a nonzero
+non-cancellable value, and `det f * 2 = c * 2` does not pin `det f`. That is
+exactly why the composite-level input leaf below has to assert SURJECTIVITY of
+the Weil pairing onto `μ_N` (equivalently: some value is a primitive `N`-th
+root of unity) rather than merely its nondegeneracy. -/
+lemma det_eq_of_conj_of_basis_fin_two {R M : Type*} [CommRing R]
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M)
+    (e : M →ₗ[R] M →ₗ[R] R) (halt : ∀ v, e v v = 0)
+    (hnd : ∃ x y, IsUnit (e x y))
+    {f : M →ₗ[R] M} {c : R} (hc : ∀ x y, e (f x) (f y) = c * e x y) :
+    LinearMap.det f = c := by
+  obtain ⟨x, y, hxy⟩ := hnd
+  have h1 := pairing_map_eq_det_smul_of_basis_fin_two b e halt f x y
+  exact hxy.mul_right_cancel (h1.symm.trans (hc x y))
+
+/-- **The `μ_N`-valued Weil pairing over `𝔽_q` at COMPOSITE level** (sorry
+leaf, opened 2026-07-27 by decomposing `det_frobeniusTorsionEnd_of_coprime`
+below): on the `N`-torsion of an elliptic curve over `𝔽_q`, `N` coprime to
+`q`, there is a multiplicatively bilinear alternating pairing valued in the
+`N`-th roots of unity of `𝔽̄_q`, SURJECTIVE onto `μ_N`, and natural for the
+`q`-power Frobenius: `e(Fx, Fy) = F(e(x, y))`.
+
+This is Silverman *AEC* III.8.1 (existence, bilinearity, alternation,
+surjectivity III.8.1(d)) together with the Galois-equivariance III.8.1(e)
+specialised to Frobenius — stated at level `N` rather than at a prime `p`.
+
+WHAT IS AND IS NOT NEW HERE. `WeilPairing.exists_weilPairing_mu`
+(`EllipticCurve/WeilPairing.lean`) is the VERBATIM prime-level analogue and is
+PROVEN there by the divisor-theoretic construction (the coordinate ring is a
+Dedekind domain; `Point.toClass` embeds the points in its class group; for an
+`N`-torsion point the `N`-th power of the point ideal is principal with a
+Miller generator `f_P`; the pairing is the evaluation ratio
+`e(P,Q) = f_P(D_Q)/f_Q(D_P)`, well-defined and bilinear by Weil reciprocity).
+**That construction never uses primality of the level** — `N·(P) − N·(O)` is
+principal for any `P ∈ E[N]` — so the intended route is to re-run it with `p`
+replaced by `N` under `Nat.Coprime N q`, not to invent anything new. Primality
+enters the prime-level file only downstream of the construction, in the
+`ZMod p`-linear-algebra layer, and THAT layer is what has already been
+generalised here: see `pairing_map_eq_det_smul_of_basis_fin_two`,
+`det_eq_of_conj_of_basis_fin_two` and `nonempty_basis_nTorsion` above, and
+`exists_weilPairing_frobenius_of_coprime` immediately below, which are all
+PROVEN at composite level.
+
+WHY SURJECTIVITY AND NOT NONDEGENERACY. The prime-level statement asserts
+`∀ x ≠ 0, ∃ y, e x y ≠ 1`, which over a field is enough to cancel. Over
+`ZMod N` it is not (see `det_eq_of_conj_of_basis_fin_two`), so the clause here
+is `∃ x y, IsPrimitiveRoot (e x y) N`, i.e. the pairing hits a generator of
+`μ_N`. That is the standard surjectivity statement and it is what the
+determinant argument consumes. The `∀ x ≠ 0` nondegeneracy clause is also true
+at level `N` and can be added if a later consumer needs it; it is omitted here
+because nothing consumes it.
 
 WHY IT CANNOT BE REDUCED TO THE PRIME CASE BY CRT: the prime case covers
-`N = p`, not `N = p^k`, and every composite `N` divisible by a square needs the
-prime-power level. So this is genuinely "redo the Weil pairing at level `N`",
-not "assemble the prime cases".
+`N = p`, not `N = p^k`, and every `N` divisible by a square needs the
+prime-power level. So this is genuinely "redo the level-`N` pairing", not
+"assemble the prime cases".
+
+NOT VACUOUS, and here is the junk-witness test it survives: a constant
+`e ≡ 1` satisfies bilinearity, alternation, `e^N = 1` and Frobenius naturality
+but has no primitive value once `N > 1`; and an alternating form on a rank-two
+module is determined up to a scalar, so the surjectivity clause forces `e` to
+be the Weil pairing up to a unit. The Frobenius clause then carries the
+arithmetic — it is what yields `det F = q`.
 
 THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a `μ_N`-valued pairing on
 `nTorsion N` anywhere in `Fermat/`, `.lake/packages/mathlib/` or `~/cs/FLT/`
 without a primality hypothesis. THE AXIS SEARCHED was the primality binders of
-this project's own Weil-pairing development. -/
+this project's own Weil-pairing development (grepped 2026-07-27). -/
+theorem exists_weilPairing_mu_of_coprime (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    ∃ e : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion N) →
+        ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N) →
+        (AlgebraicClosure (ZMod q))ˣ,
+      (∀ x y z, e (x + y) z = e x z * e y z) ∧
+      (∀ x y z, e x (y + z) = e x y * e x z) ∧
+      (∀ x, e x x = 1) ∧
+      (∀ x y, (e x y) ^ N = 1) ∧
+      (∃ x y, IsPrimitiveRoot (e x y) N) ∧
+      (∀ x y, e (WeilPairing.frobeniusTorsionEnd q Wbar N x)
+          (WeilPairing.frobeniusTorsionEnd q Wbar N y) =
+        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) :=
+  sorry
+
+/-- **The `ZMod N`-valued Frobenius-twisted Weil pairing at composite level**
+(PROVEN 2026-07-27 over `exists_weilPairing_mu_of_coprime` above, by discrete
+logarithm): on the `N`-torsion of an elliptic curve over `𝔽_q` with `N`
+coprime to `q` there is an alternating `ZMod N`-bilinear pairing taking a UNIT
+value which the `q`-power Frobenius scales by `q`.
+
+This is the exact composite-level analogue of
+`WeilPairing.exists_weilPairing_frobenius`, and — unlike the `μ_N`-valued leaf
+above — its derivation is entirely level-generic, which is why it is proven
+here rather than left open. The discrete logarithm is taken base the primitive
+value `ζ := e(x₀, y₀)` supplied by the surjectivity clause, so no separate
+root-of-unity existence argument is needed: `IsPrimitiveRoot.zpowers_eq`
+identifies `μ_N` with `zpowers ζ`, and `IsPrimitiveRoot.zmodEquivZPowers`
+identifies that with `ZMod N` additively. The reference pair then logs to `1`,
+which is where the unit value comes from — this is precisely the step that
+fails if one only assumes nondegeneracy. -/
+theorem exists_weilPairing_frobenius_of_coprime (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    ∃ e : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion N) →ₗ[ZMod N]
+        (((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N) →ₗ[ZMod N] ZMod N),
+      (∀ v, e v v = 0) ∧ (∃ x y, IsUnit (e x y)) ∧
+      ∀ x y, e (WeilPairing.frobeniusTorsionEnd q Wbar N x)
+          (WeilPairing.frobeniusTorsionEnd q Wbar N y) = (q : ZMod N) * e x y := by
+  classical
+  obtain ⟨e₀, hbl, hbr, halt, hord, ⟨x₀, y₀, hprim⟩, hfrob⟩ :=
+    exists_weilPairing_mu_of_coprime q Wbar N hNq
+  have hN0 : N ≠ 0 := by
+    rintro rfl
+    exact (Fact.out : q.Prime).ne_one (Nat.coprime_zero_left q |>.mp hNq)
+  haveI : NeZero N := ⟨hN0⟩
+  -- the discrete logarithm base the primitive value produced by surjectivity
+  set ζu : (AlgebraicClosure (ZMod q))ˣ := e₀ x₀ y₀
+  have hmem : ∀ x y, e₀ x y ∈ Subgroup.zpowers ζu := by
+    intro x y
+    rw [hprim.zpowers_eq]
+    exact (mem_rootsOfUnity N _).mpr (hord x y)
+  set dlog : ∀ (_ _ : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion N)), ZMod N :=
+    fun x y => hprim.zmodEquivZPowers.symm
+      (Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu))
+    with hdlogdef
+  -- the reference pair logs to `1`, which is the unit value
+  have hdunit : IsUnit (dlog x₀ y₀) := by
+    have hval1 : ((Additive.toMul
+        (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod N)))) :
+        Subgroup.zpowers ζu).1 = ζu := by
+      rw [hprim.zmodEquivZPowers_apply_coe_nat 1]
+      exact pow_one ζu
+    have helt : (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu) =
+        Additive.toMul (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod N))) :=
+      Subtype.ext hval1.symm
+    have h2 : dlog x₀ y₀ = ((1 : ℕ) : ZMod N) := by
+      show hprim.zmodEquivZPowers.symm
+        (Additive.ofMul (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu)) = _
+      rw [helt]
+      exact hprim.zmodEquivZPowers.symm_apply_apply _
+    rw [h2, Nat.cast_one]
+    exact isUnit_one
+  -- transfer of the pairing laws through the logarithm
+  have hdadd_l : ∀ x y z, dlog (x + y) z = dlog x z + dlog y z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ (x + y) z, hmem (x + y) z⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x z, hmem x z⟩ : Subgroup.zpowers ζu) * ⟨e₀ y z, hmem y z⟩ :=
+      Subtype.ext (hbl x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdadd_r : ∀ x y z, dlog x (y + z) = dlog x y + dlog x z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x (y + z), hmem x (y + z)⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) * ⟨e₀ x z, hmem x z⟩ :=
+      Subtype.ext (hbr x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdalt : ∀ x, dlog x x = 0 := by
+    intro x
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x x, hmem x x⟩ : Subgroup.zpowers ζu) = 1 :=
+      Subtype.ext (halt x)
+    rw [hsub]
+    rw [show Additive.ofMul (1 : Subgroup.zpowers ζu) = 0 from rfl, map_zero]
+  have hdfrob : ∀ x y, dlog (WeilPairing.frobeniusTorsionEnd q Wbar N x)
+      (WeilPairing.frobeniusTorsionEnd q Wbar N y) = (q : ZMod N) * dlog x y := by
+    intro x y
+    simp only [hdlogdef]
+    have hval : e₀ (WeilPairing.frobeniusTorsionEnd q Wbar N x)
+        (WeilPairing.frobeniusTorsionEnd q Wbar N y) = (e₀ x y) ^ q := by
+      rw [hfrob]
+      refine Units.ext ?_
+      show WeilPairing.frobAlgHom q
+          ((e₀ x y : (AlgebraicClosure (ZMod q))ˣ) : (AlgebraicClosure (ZMod q))) =
+        (((e₀ x y) ^ q : (AlgebraicClosure (ZMod q))ˣ) : (AlgebraicClosure (ZMod q)))
+      rw [Units.val_pow_eq_pow_val]
+      rfl
+    have hsub : (⟨e₀ (WeilPairing.frobeniusTorsionEnd q Wbar N x)
+        (WeilPairing.frobeniusTorsionEnd q Wbar N y), hmem _ _⟩ :
+        Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) ^ q :=
+      Subtype.ext (by
+        show e₀ (WeilPairing.frobeniusTorsionEnd q Wbar N x)
+          (WeilPairing.frobeniusTorsionEnd q Wbar N y) =
+          ((⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) ^ q :
+            Subgroup.zpowers ζu).1
+        rw [hval]
+        rfl)
+    refine Eq.trans (congrArg (fun g : Subgroup.zpowers ζu =>
+      hprim.zmodEquivZPowers.symm (Additive.ofMul g)) hsub) ?_
+    show hprim.zmodEquivZPowers.symm
+      (Additive.ofMul ((⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) ^ q)) = _
+    rw [ofMul_pow, map_nsmul, nsmul_eq_mul]
+  -- zero laws, then the two linear-map packagings
+  have hdzero_r : ∀ x, dlog x 0 = 0 := by
+    intro x
+    have h2 := hdadd_r x 0 0
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  have hdzero_l : ∀ y, dlog 0 y = 0 := by
+    intro y
+    have h2 := hdadd_l 0 0 y
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  have heinner : ∀ x : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion N),
+      ∃ f : (((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion N) →ₗ[ZMod N] ZMod N),
+      ∀ y, f y = dlog x y := by
+    intro x
+    refine ⟨AddMonoidHom.toZModLinearMap N
+      ⟨⟨dlog x, hdzero_r x⟩, hdadd_r x⟩, fun y => rfl⟩
+  choose einner heinnerval using heinner
+  have houter : ∃ e : ((Wbar.map (algebraMap (ZMod q)
+      (AlgebraicClosure (ZMod q)))).nTorsion N) →ₗ[ZMod N]
+      (((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion N) →ₗ[ZMod N] ZMod N),
+      ∀ x y, e x y = dlog x y := by
+    refine ⟨AddMonoidHom.toZModLinearMap N
+      ⟨⟨einner, ?_⟩, ?_⟩, fun x y => heinnerval x y⟩
+    · refine LinearMap.ext fun y => ?_
+      rw [heinnerval]
+      exact hdzero_l y
+    · intro x₁ x₂
+      refine LinearMap.ext fun y => ?_
+      rw [LinearMap.add_apply, heinnerval, heinnerval, heinnerval]
+      exact hdadd_l x₁ x₂ y
+  obtain ⟨e, he⟩ := houter
+  refine ⟨e, fun v => (he v v).trans (hdalt v), ⟨x₀, y₀, ?_⟩, ?_⟩
+  · rw [he]
+    exact hdunit
+  · intro x y
+    rw [he, he]
+    exact hdfrob x y
+
+/-- **The Frobenius determinant on the `N`-torsion for `N` coprime to `q`**
+(PROVEN 2026-07-27 over `exists_weilPairing_mu_of_coprime` above; itself
+opened the same day by decomposing `trace_frobeniusTorsionEnd_eq_natCard`
+below): `det F = q` on `Wbar[N]`.
+
+This is `WeilPairing.det_frobeniusTorsionEnd` (`EllipticCurve/WeilPairing.lean`)
+generalised from a PRIME level `p ≠ q` to any level coprime to `q`, and the
+proof is the same three-line assembly: `nonempty_basis_nTorsion` supplies the
+`Fin 2` basis, `exists_weilPairing_frobenius_of_coprime` supplies an
+alternating `ZMod N`-valued form with a UNIT value that Frobenius scales by
+`q`, and `det_eq_of_conj_of_basis_fin_two` reads off the determinant.
+
+WHAT REMAINS OPEN is only the arithmetic input, isolated as the single leaf
+`exists_weilPairing_mu_of_coprime` above: the `μ_N`-valued Weil pairing at
+composite level. Everything between that leaf and this statement — the
+rank-two linear algebra over a commutative ring, the discrete logarithm, and
+the freeness of `Wbar[N]` — is now proven at composite level. -/
 theorem det_frobeniusTorsionEnd_of_coprime (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
     (hNq : Nat.Coprime N q) :
-    LinearMap.det (WeilPairing.frobeniusTorsionEnd q Wbar N) = (q : ZMod N) :=
-  sorry
+    LinearMap.det (WeilPairing.frobeniusTorsionEnd q Wbar N) = (q : ZMod N) := by
+  obtain ⟨b⟩ := nonempty_basis_nTorsion q Wbar N hNq
+  obtain ⟨e, halt, hnd, hconj⟩ :=
+    exists_weilPairing_frobenius_of_coprime q Wbar N hNq
+  exact det_eq_of_conj_of_basis_fin_two b e halt hnd hconj
 
 /-- **The Lefschetz congruence: `#Wbar(𝔽_q) ≡ det(1 − F)` on `Wbar[N]`**
 (sorry leaf, opened 2026-07-27 by decomposing
@@ -4992,7 +5287,10 @@ independent and neither carries any of this leaf's linear algebra:
 
 * `det_frobeniusTorsionEnd_of_coprime` — the Weil-pairing half, `det F = q`.
   A direct generalisation of the PROVEN prime-level
-  `WeilPairing.det_frobeniusTorsionEnd`.
+  `WeilPairing.det_frobeniusTorsionEnd`, and now itself PROVEN
+  (2026-07-27) over the single arithmetic leaf
+  `exists_weilPairing_mu_of_coprime` (the `μ_N`-valued Weil pairing at
+  composite level); all the linear algebra between the two is proven.
 * `natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` — the Lefschetz
   half, `#Wbar(𝔽_q) ≡ det(1 − F)`. Mentions no trace.
 
