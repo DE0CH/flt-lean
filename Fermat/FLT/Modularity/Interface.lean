@@ -53192,9 +53192,197 @@ theorem isPeuRamifiee_iff_dvd_log_valuation
 end PeuRamifiee
 
 include hpodd in
+/-- **The ABELIAN half of Serre's local criterion: if local inertia acts
+through a COMMUTATIVE image then the radical descends, and
+`pⁿ ∣ v_p(q)`** (sorried leaf, opened 2026-07-27 by the fifteenth owner
+of `pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`
+below, as the ABELIAN branch of the INERTIA-COMMUTATIVITY CUT of that
+leaf; the whole mathematical argument is written out in that
+declaration's docstring under **ABELIAN-DESCENT LEMMA**, so what remains
+here is the Lean transport and nothing else).
+
+Note what this leaf does NOT assume: there is **no flatness hypothesis
+and no `hkill`**. The conclusion is forced by commutativity of the
+inertia image alone. That is exactly why this branch is strictly smaller
+than the leaf it was cut out of — it is a statement about a Galois
+representation and a Kummer radical, with no group scheme in it.
+
+THE ARGUMENT, IN THE NOTATION OF THIS STATEMENT. Let `L` be the field
+cut out by the local representation — the fixed field of
+`ker (σ₀.toLocal 𝔭ᵥ)` inside `(ℚᵖᵥ)ᵃˡᵍ` — and `Δ := Gal(L/ℚᵖᵥ)`, so
+that `Δ` is the image of `σ₀.toLocal 𝔭ᵥ`. Then:
+
+* `r ∈ L`, by `hfix` and Galois descent: every element of
+  `ker (σ₀.toLocal 𝔭ᵥ) = Gal((ℚᵖᵥ)ᵃˡᵍ / L)` fixes `r`;
+* the inertia subgroup of `Δ` is the image of `localInertiaGroup 𝔭ᵥ`
+  (a surjection of Galois groups carries inertia onto inertia), so the
+  fixed field `E := L ^ (image of localInertiaGroup 𝔭ᵥ)` is the MAXIMAL
+  UNRAMIFIED subextension of `L/ℚᵖᵥ`, and `L/E` is Galois with group
+  that image;
+* `habel` says that group is COMMUTATIVE, i.e. `L/E` is ABELIAN;
+* `μ_p ⊄ E`, because `E` is unramified over `ℚᵖᵥ` while `ℚᵖᵥ(μ_p)/ℚᵖᵥ`
+  is totally ramified of degree `p − 1 ≥ 2`. **This is the only place
+  `hpodd` is used, and it is not decoration**: at `p = 2` one has
+  `μ_2 = {±1} ⊆ ℚ_2`, abelian descent has no lever, and the statement
+  fails;
+* the ABELIAN-DESCENT LEMMA then produces `y ∈ Eˣ` with
+  `q = y ^ (p ^ n)`;
+* `E/ℚᵖᵥ` is unramified, so its valuation restricts to `v_p` with
+  `e = 1`, whence `v_p(q) = p ^ n · v_E(y) ∈ p ^ n ℤ`, which is the
+  conclusion.
+
+WHAT THE CUT COSTS ELSEWHERE: nothing. It is internal to the proof of
+the leaf below, which keeps its statement verbatim, so no consumer moves
+and no other owner's assembly is touched.
+
+WHY THIS BRANCH IS WORTH SEPARATING. Its docstring's thirteenth owner
+introduced ABELIAN-DESCENT as a COUNTEREXAMPLE-KILLER — the tool that
+disposed of the entire Lubin–Tate family in one line. It is stronger
+than that: as a CUT it closes, on paper, every `σ₀` whose local inertia
+image is commutative, which is the whole abelian world including all of
+`(ℚᵖᵥ)^{ab}` over an unramified base. The residual leaf below is
+therefore the genuinely nonabelian case, which is where every audit in
+that docstring says the content lives.
+
+THE MACHINERY FOR THE TRANSPORT IS ALREADY IN THIS FILE'S IMPORT CONE —
+do not rebuild it (checked 2026-07-27, at
+`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
+which this file `public import`s). All of the following are PROVEN
+there:
+
+* `restrictNormalHom_inertia_surjective` and
+  `exists_mem_localInertiaGroup_restrictNormalHom_eq` — inertia
+  surjects onto inertia along a restriction of Galois groups, at finite
+  level and then at the level of `localInertiaGroup v` itself by a
+  compactness gluing. This is precisely the second bullet above, which
+  is the one step the cut's soundness rests on.
+* `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` —
+  `e(M/Kᵥ) = 1` for any finite `M` inside
+  `IntermediateField.fixedField (localInertiaGroup v)`. This is the
+  last bullet: it is exactly "`E` is unramified, so `v_E` restricts to
+  `v_p` with `e = 1`".
+* `map_mem_inertiaSubgroup_of_mem_localInertiaGroup`,
+  `autCongr_mem_inertia`, `card_inertia_intermediate`,
+  `ramificationIdx_eq_one_of_inertia_le_fixingSubgroup` — the
+  surrounding inertia/fixed-field API.
+
+What is NOT in the cone, and is the genuinely new Lean content of this
+leaf, is the ABELIAN-DESCENT LEMMA itself as a statement about fields:
+`E` a field with `μ_p ⊄ E`, `L/E` abelian Galois, `q ∈ Eˣ` with a
+`pⁿ`-th root in `L`, conclude `q ∈ (Eˣ)^{pⁿ}`. That is self-contained,
+elementary and independent of everything else here, so it is the piece
+to write first and the natural place to cut this leaf again if it needs
+cutting.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: exhibit a field `E` with
+`μ_p ⊄ E`, a finite abelian extension `L/E`, and `q ∈ Eˣ` having a
+`pⁿ`-th root in `L` but with `q ∉ (Eˣ)^{pⁿ}`; equivalently, find the
+error in the five-line cocycle computation recorded below. -/
+theorem pow_dvd_log_valuation_of_forall_commute_localInertia
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W]
+    (σ₀ : GaloisRep ℚ A W) {n : ℕ}
+    (q : (ℚᵖᵥ)ˣ) (r : AlgebraicClosure ℚᵖᵥ)
+    (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+      σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r)
+    (habel : ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)) :
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
+  sorry
+
+include hpodd in
+/-- **The NONABELIAN half of Serre's local criterion: the residual
+Raynaud/fppf case** (sorried leaf, opened 2026-07-27 as the other branch
+of the INERTIA-COMMUTATIVITY CUT; this is where all the remaining
+content of
+`pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`
+now lives, and it is the leaf a next owner should be dispatched at).
+
+Same statement as the leaf below, with the extra hypothesis `hnab` that
+the image of `localInertiaGroup 𝔭ᵥ` under `σ₀.toLocal 𝔭ᵥ` is NOT
+commutative. Everything the abelian world could contribute has been
+peeled off into
+`pow_dvd_log_valuation_of_forall_commute_localInertia` above, which is
+paper-complete; in particular the whole Lubin–Tate family, and every
+`σ₀` with `ℚᵖᵥ(σ₀) ⊆ E^{ab}` for `E/ℚᵖᵥ` unramified, is already gone by
+the time this leaf is reached. The docstring of the leaf below records
+that this is exactly the shape every audit there points at: **the
+genuinely nonabelian CONNECTED case, and nothing else**.
+
+WHERE THE PROOF MUST COME FROM, AND THE TWO STEPS IT REDUCES TO. The
+route is the STRUCTURE axis — the connected–étale dévissage of the
+finite flat `G` supplied by `hflat` — composed with the elementary
+Hopf-order computation recorded in the leaf below under WHERE FLATNESS
+ACTUALLY BREAKS. That computation shows the naive order in the Kummer
+algebra `B = ∏_i ℚ_p[X]/(X^{p ^ n} − q ^ i)` is a Hopf order **iff**
+`v_p(q) = 0`, at every `n` and with no `s`-dependence, and it isolates
+the residual input as exactly two named steps:
+
+1. **the idempotents `e_i` lie in every Hopf order in `B`** —
+   equivalently, the étale quotient `ℤ/p ^ n` has only its constant
+   model over `ℤ_p`, which is Raynaud's uniqueness at `e = 1 < p − 1`;
+2. **a `μ_{p ^ n}`-torsor over `ℤ_p` with generic fibre `X^{p ^ n} = c`
+   forces `p ^ n ∣ v_p(c)`** — the fppf computation
+   `H¹(ℤ_p, μ_{p ^ n}) = ℤ_pˣ/(ℤ_pˣ)^{p ^ n}`, of which the naive-order
+   display is precisely the split case.
+
+WHY THOSE TWO ARE NOT YET SEPARATE DECLARATIONS, AND WHAT IT WOULD TAKE
+(fifteenth owner, 2026-07-27 — recorded so the next owner does not
+re-derive it). Both are statable in the
+`HopfAlgebra.IsShortExact` / `CartierDual` vocabulary of
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/ShortExact.lean`, which is
+present and sorry-free at the points that matter and whose import into
+this file adds 7 modules (2 project) and creates no cycle. What is
+missing is not vocabulary but a CONSUMER: neither step can be stated as
+a declaration of this development until the Kummer algebra `B` — a Hopf
+algebra over `ℚᵖᵥ` whose comultiplication is `X ↦ X ⊗ X` off the
+wrap-around and `X ↦ (X ⊗ X)/q` on it — is CONSTRUCTED, and until the
+MODULE form of the hypothesis is available; otherwise the two steps are
+free-floating, which this development forbids. The module/subfield gap
+is the real obstruction and it is documented in full in the leaf below
+under THE RECOMMENDED STRENGTHENING IS NOT FREE AT THE CONSUMER: no
+declaration in this tree produces a `Γ ℚᵖᵥ`-equivariant injection
+`E_q[p ^ n] ↪ (σ₀.toLocal 𝔭ᵥ).Space`, and manufacturing one is a
+seven-declaration surgery across six other owners' proven assemblies.
+
+So the honest ordering for a next owner is: (i) construct `B` and the
+notion of a Hopf order in it; (ii) state steps 1 and 2 against it and
+prove the elementary freeness computation, which closes the MODULE form;
+(iii) only then attack the subfield/module bridge, which is the part
+that no owner has a proof of and which — as the leaf below says in its
+own words — makes the present statement STRICTLY STRONGER THAN THE
+LITERATURE IT CITES.
+
+THE CHECK THAT WOULD REFUTE THIS BLOCK: find a declaration in this tree
+that already produces the equivariant injection named above, or exhibit
+a Hopf order in `B` for some `q` with `v_p(q) ≠ 0`. Either one changes
+the ordering. -/
+theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_not_forall_commute_localInertia
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W]
+    (σ₀ : GaloisRep ℚ A W) {n : ℕ} (hkill : ((p ^ n : ℕ) : A) = 0)
+    (hflat : σ₀.HasFlatProlongationAt 𝔭ᵥ)
+    (q : (ℚᵖᵥ)ˣ) (r : AlgebraicClosure ℚᵖᵥ)
+    (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+      σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r)
+    (hnab : ¬ ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)) :
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
+  sorry
+
+include hpodd in
 /-- **Serre's local criterion in VALUATION form: a `pⁿ`-th radical cut
 out by a finite flat `pⁿ`-torsion group scheme over `ℤ_p` has
-`pⁿ ∣ v_p(q)`** (sorry leaf — the LOCAL half of the 2026-07-26 KUMMER CUT
+`pⁿ ∣ v_p(q)`** (**now a THEOREM over the two branches of the
+2026-07-27 INERTIA-COMMUTATIVITY CUT stated immediately above** —
+`pow_dvd_log_valuation_of_forall_commute_localInertia` and
+`pow_dvd_log_valuation_of_hasFlatProlongationAt_of_not_forall_commute_localInertia`;
+it was a bare sorry leaf until then. It is the LOCAL half of the
+2026-07-26 KUMMER CUT
 of `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`,
 restated in this divisibility form by its second owner the same day;
 Serre, *Sur les représentations modulaires de degré 2 de `Gal(ℚ̄/ℚ)`*,
@@ -53812,7 +54000,52 @@ and both steps are statable in the `HopfAlgebra.IsShortExact` /
 
 THE CHECK THAT WOULD REFUTE THIS BLOCK: exhibit a Hopf order in `B` for
 some `q` with `v_p(q) ≠ 0`; equivalently, find the error in the one-line
-freeness argument, which is the whole of it. -/
+freeness argument, which is the whole of it.
+
+**THE INERTIA-COMMUTATIVITY CUT (fifteenth owner, 2026-07-27) — this
+declaration is no longer a leaf.** The CUT-AXIS VERDICT above searched
+three axes (arithmetic, level, ramification) and recommended a fourth
+(structure). There is a FIFTH, and it was sitting inside this docstring
+already: the thirteenth owner's ABELIAN-DESCENT LEMMA, introduced there
+purely as a counterexample-killer for the Lubin–Tate family. Used as a
+CUT rather than as a filter it splits this leaf cleanly in two, on
+
+    `∀ σ τ ∈ localInertiaGroup 𝔭ᵥ,
+       Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)`
+
+i.e. on whether the image of local inertia is commutative — equivalently
+(the image of inertia is the Galois group of the field cut out over its
+maximal unramified subfield) on whether `ℚᵖᵥ(σ₀)` is ABELIAN over its
+maximal unramified subextension. The assembly is `by_cases`, so it costs
+one line and no mathematics.
+
+* **Abelian branch**: `pow_dvd_log_valuation_of_forall_commute_localInertia`.
+  PAPER-COMPLETE — the proof is the ABELIAN-DESCENT LEMMA above applied
+  to `L/E` with `E` the maximal unramified subextension, and it needs
+  NEITHER `hflat` NOR `hkill`, both of which are dropped from that
+  branch's statement. Only the Lean transport (fixed fields, inertia
+  images, `e = 1` for unramified `E`) remains.
+* **Nonabelian branch**:
+  `pow_dvd_log_valuation_of_hasFlatProlongationAt_of_not_forall_commute_localInertia`.
+  Carries the whole residual, and is exactly the shape every audit above
+  converges on: COROLLARY 2 of the abelian-descent block says what
+  survives is "the genuinely nonabelian CONNECTED case, and nothing
+  else", and this is now that case as a named declaration rather than as
+  a sentence.
+
+Why this is a real cut and not bookkeeping: the abelian branch is
+strictly weaker in hypotheses (no group scheme at all) and strictly
+easier (a five-line cocycle argument, already written out), while the
+nonabelian branch is strictly narrower in scope. Neither the consumer
+below nor any other owner's assembly moves — this declaration's
+statement is byte-identical to what it was.
+
+THE CHECK THAT WOULD REFUTE THIS BLOCK: show that the image of
+`localInertiaGroup 𝔭ᵥ` being commutative does NOT make `ℚᵖᵥ(σ₀)`
+abelian over its maximal unramified subextension — i.e. that the
+inertia subgroup of `Gal(ℚᵖᵥ(σ₀)/ℚᵖᵥ)` is not the image of
+`localInertiaGroup 𝔭ᵥ`. That is the one step the cut's soundness rests
+on. -/
 theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
@@ -53823,8 +54056,13 @@ theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
     (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
     (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
       σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r) :
-    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
-  sorry
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) := by
+  by_cases habel : ∀ σ ∈ localInertiaGroup 𝔭ᵥ, ∀ τ ∈ localInertiaGroup 𝔭ᵥ,
+      Commute (σ₀.toLocal 𝔭ᵥ σ) (σ₀.toLocal 𝔭ᵥ τ)
+  · exact pow_dvd_log_valuation_of_forall_commute_localInertia
+      hpodd σ₀ q r hr hfix habel
+  · exact pow_dvd_log_valuation_of_hasFlatProlongationAt_of_not_forall_commute_localInertia
+      hpodd σ₀ hkill hflat q r hr hfix habel
 
 include hpodd in
 /-- **Serre's local criterion: the points of a finite flat group scheme
