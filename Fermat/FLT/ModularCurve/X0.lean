@@ -731,6 +731,19 @@ isomorphism, which is all that faithfulness of the level statements
 requires, and stating the geometric bijection would additionally require
 a theory of isomorphisms of `Γ₀(N)`-data that nothing here consumes.
 
+**That last clause is stale as of 2026-07-27, and the omission is now a
+deliberate economy rather than a necessity.**  Isomorphism of `Γ₀(N)`-data IS
+expressible — it is `IsBaseChangeOf (𝟙 _)`, see the last paragraph of that
+structure's docstring — and both halves of the geometric bijection are now
+stated and consumed over `ℚ̄`, as
+`IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (surjectivity, PROVEN)
+and `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (injectivity,
+PROVEN from a presentation-level leaf).  They are kept OUT of this structure
+because they are theorems about a presentation and not clauses of a universal
+property: adding them as fields would oblige every producer of an
+`IsCoarseModuliY0` to prove them, and `exists_coarseModuliY0_zero` — the
+empty scheme at the degenerate level — is a producer that should not have to.
+
 Over `S = Spec ℚ` the unique such `Y` is the modular curve `Y_0(N)`. -/
 structure IsCoarseModuliY0 (N : ℕ) {Y S : Scheme.{u}} (str : Y ⟶ S) where
   /-- the classifying map of the moduli problem -/
@@ -1006,23 +1019,34 @@ exactly the right shape: `AbelianSchemeStruct.baseChange`
 a pullback — and is sorry-free.  `AbelianSchemeStruct.ofMorphisms`
 (`Modularity/AbelianScheme.lean`) is a second producer.
 
-**What that opens, and what it does not.**  It supplies the
-ABELIAN-SCHEME half of base change only.  A `Gamma0Datum` also carries a
-`CyclicSubgroupOfOrder`, so turning base change of `Γ₀(N)`-data into a
-*construction* still needs (a) the level structure transported to the
-pullback — `C ×_T T'` with its closed immersion, finiteness, flatness and
-geometric fibres — and (b) an `IsBaseChangeOf` witness assembled from the
-two halves.  Neither exists today; the check that would refute THAT is
-`grep -rn "CyclicSubgroupOfOrder" Fermat/`, which currently finds the
-structure only in this file and in `MazurTorsion.lean`, with no transport
-lemma anywhere.  Note also that this file imports
-`Modularity.AbelianScheme` but NOT `Modularity.AbelianSchemeIsogeny`, so
-the descent route additionally costs that import.
+**What that opened, and the rest is now CLOSED too** (corrected 2026-07-27 —
+the paragraph that stood here is superseded, and the correction is recorded
+rather than deleted because the claim it made propagated).  It read:
 
-So the fppf-descent route is no longer blocked by a missing producer; it
-is blocked by the level-structure half alone.  The cut taken here needs
-no base change to be constructed, only to be *exhibited by the leaf*,
-which is why it goes through either way. -/
+> It supplies the ABELIAN-SCHEME half of base change only.  A `Gamma0Datum`
+> also carries a `CyclicSubgroupOfOrder`, so turning base change of
+> `Γ₀(N)`-data into a *construction* still needs (a) the level structure
+> transported to the pullback … and (b) an `IsBaseChangeOf` witness assembled
+> from the two halves.  Neither exists today … Note also that this file
+> imports `Modularity.AbelianScheme` but NOT
+> `Modularity.AbelianSchemeIsogeny`, so the descent route additionally costs
+> that import.
+
+Every clause of that is now false.  (a) is `Gamma0BaseChange.cycBC`, (b) is
+`Gamma0BaseChange.isBaseChangeBC`, the two are packaged as
+`exists_gamma0Datum_baseChange` (PROVEN), and this file DOES import
+`Modularity.AbelianSchemeIsogeny` — the import was paid when that proof
+landed.  **The refuting command is `grep -n "exists_gamma0Datum_baseChange"
+Fermat/FLT/ModularCurve/X0.lean`**, which finds the theorem and a dozen
+consumers.
+
+So **base change of `Γ₀(N)`-data IS a construction today**, and the
+fppf-descent route is no longer blocked by either half.  The cut taken here
+needs base change only to be *exhibited by the leaf* rather than constructed,
+which is why it went through even before that; it is recorded now because two
+separate docstrings elsewhere in this file cite this paragraph as evidence
+that the construction is missing, and a reader arriving through one of them
+would be misled. -/
 
 /-- **Morphisms to `Spec ℚ` are unique when they exist.**
 
@@ -1056,8 +1080,12 @@ The three non-trivial fields, and what supplies each:
   so after a finite étale surjective — hence flat, surjective and
   quasi-compact — base change `p : T' ⟶ T` the datum acquires one and is
   classified by a map `m : T' ⟶ M`.  Note that `d'` is *supplied* by the
-  field rather than constructed: this development states base change and
-  never builds it.
+  field rather than constructed — which is a convenience of the interface
+  and no longer a necessity: base change of `Γ₀(N)`-data IS a construction
+  in this file since 2026-07-27 (`exists_gamma0Datum_baseChange`, and the
+  `Gamma0BaseChange` namespace it is assembled from).  An earlier version of
+  this bullet said "this development states base change and never builds
+  it"; that is stale.
 * `quotient` — the categorical quotient property of `classify dM`, in the
   form that is actually available from GIT: a morphism out of `M` that
   cannot distinguish two rigidifications of the same datum is invariant
@@ -8532,16 +8560,22 @@ ingredients its own docstring listed:
   `A → ℚ̄` because `A` is integral over `B`; the lift is a `ℚ̄`-point `m` of the
   rigidified moduli scheme, and the base change of the universal family `dM`
   along `m` is the datum wanted.  Only two general facts are used, and both
-  were already here: `exists_gamma0Datum_baseChange` (PROVEN — note the
-  docstring of `Gamma0Atlas` above still says base change "does not exist
-  today"; that is stale) and `classify_dM`, which is what makes `classify dM`
+  were already here: `exists_gamma0Datum_baseChange` (PROVEN — the docstring
+  of `Gamma0Atlas` above used to say base change "does not exist today"; that
+  was stale and has been corrected in place, 2026-07-27) and `classify_dM`,
+  which is what makes `classify dM`
   the quotient map `Spec A ⟶ Spec B` and hence lets `m` be pushed to the given
   point.  Transport from the GIT presentation to an ARBITRARY coarse moduli
   space is pure initiality, exactly as in `IsCoarseModuliY0.exists_inverse`
   (which cannot be cited here — it is declared six thousand lines below — so
   the two-line argument is repeated inline).
-* *the twisting/Kummer computation* — this is `exists_gamma0Datum_specQ_of_ratPoint`,
-  the one genuinely arithmetic leaf of the bridge.
+* *the twisting/Kummer computation* — this was
+  `exists_gamma0Datum_specQ_of_ratPoint`, which is now PROVEN; the arithmetic
+  leaf of the bridge is `exists_stableCyclic_of_gamma0Datum_algClos`, and the
+  INJECTIVITY half of the geometric bijection, which used to ride inside it as
+  the hypothesis `hd`, is now the separate leaf
+  `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`.  See the
+  subsection "The injectivity split, taken 2026-07-27" below.
 
 What is left over is the translation back from a `Γ₀(N)`-datum over `ℚ` to a
 Weierstrass curve, `false_of_gamma0Datum_specQ`: the exact converse of
@@ -8614,9 +8648,13 @@ and the datum is the base change of the universal family along the lift,
 structure-morphism bookkeeping, as it does throughout this file.
 
 Note what is NOT needed: no properness, no finiteness of `G` beyond what
-`Algebra.IsInvariant` already carries, and no injectivity of `classify`.  The
-descent leaf below is where injectivity would enter, and it enters there in
-the packaged form of the hypothesis `hd` rather than as a separate statement. -/
+`Algebra.IsInvariant` already carries, and no injectivity of `classify`.
+Injectivity is a SEPARATE statement (updated 2026-07-27): it used to enter the
+descent leaf below in the packaged form of the hypothesis `hd`, and is now
+split off as this lemma's mirror image,
+`Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq`, together with
+its own initiality transport.  That split is what consumes `P.finite_G`, which
+this lemma does not. -/
 theorem Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint {N : ℕ}
     (P : Gamma0GITPresentation N) (x : RelPoint P.str (specAlgClos ℚ)) :
     ∃ d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))),
@@ -8716,18 +8754,144 @@ theorem y0HasNoRationalPoint_zero : Y0HasNoRationalPoint 0 := by
   have hne : Nonempty ↥SpecQ := inferInstanceAs (Nonempty (PrimeSpectrum ℚ))
   exact (‹IsEmpty ↥SpecQ›).elim hne.some
 
-/-- **A `ℚ̄`-datum whose class is a RATIONAL point of the coarse space descends
-to `ℚ`, after a twist** (sorry leaf, opened 2026-07-27) — the twisting/Kummer
-computation of the section above, and the one genuinely arithmetic ingredient
-of the descent bridge.
+/-! #### The injectivity split, taken 2026-07-27
 
-`hd` says that the class of `d` in the coarse space is the base change to `ℚ̄`
-of the rational point `y`.  That is precisely "the field of moduli of `d` is
-`ℚ`": the class of `σ^*d` is `σ^*(classify d) = σ^*(y|_ℚ̄) = y|_ℚ̄`, because a
-`ℚ`-rational point is Galois-invariant by construction, so `classify` cannot
-separate `σ^*d` from `d`.  Injectivity of `classify` on geometric points — the
-other half of the omitted clause — then makes `σ^*d ≅ d` for every `σ`, and
-that is the input to the twisting argument.
+`exists_gamma0Datum_specQ_of_ratPoint` used to carry the injectivity half of
+the geometric bijection *inside* itself: its hypothesis `hd` was phrased through
+`classify` rather than as `σ^*d ≅ d`, because — as its docstring recorded — the
+Galois-twisted datum had to be PRODUCED before it could be compared, and no
+producer existed.  `exists_gamma0Datum_baseChange` is now proven, so `σ^*d` is
+available as `exists_gamma0Datum_baseChange (specGal σ) d`, and the split the
+old docstring prescribed has been taken.
+
+The three declarations below are the result, and they mirror the surjectivity
+trio above one for one:
+
+* `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` — injectivity
+  over a *presentation*.  A leaf, exactly as its surjectivity partner was.
+* `IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` — the same
+  statement over an arbitrary coarse space, PROVEN by initiality alone, in the
+  same `v ≫ u = 𝟙` style as
+  `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint` (with the composite
+  taken in the other order, `u ≫ v = 𝟙`, since here it is `u` that must be
+  cancelled).
+* `exists_stableCyclic_of_gamma0Datum_algClos` — the twisting/Kummer descent,
+  now the ONLY arithmetic left under this node, and stated so that its
+  conclusion is verbatim the hypothesis list of the already-proven
+  `nonempty_gamma0Datum_of_stable`.  That is the second half of the split:
+  the leaf no longer has to BUILD a `Γ₀(N)`-datum over `ℚ`, only to produce a
+  Weierstrass curve over `ℚ` with a Galois-stable cyclic subgroup — which is
+  the language a twist is written in. -/
+
+/-- **`classify` is INJECTIVE on `ℚ̄`-points, over the GIT presentation**
+(sorry leaf, opened 2026-07-27): two `Γ₀(N)`-data over `ℚ̄` with the same class
+in the coarse space are isomorphic, an isomorphism of data being
+`IsBaseChangeOf (𝟙 _)` (see the last paragraph of `IsBaseChangeOf`'s
+docstring).
+
+This is the half of the geometric bijection that `IsCoarseModuliY0`
+deliberately omits which the surjectivity lemma
+`Gamma0GITPresentation.exists_gamma0Datum_of_algClosPoint` above does not
+cover, and it is stated over a PRESENTATION for exactly the reason recorded
+there: initiality determines `(Y, classify)` up to unique isomorphism and says
+nothing about which points of `Y` there are or which of them are separated,
+whereas a presentation says which points there are.
+`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` below transports it
+off the presentation, and that transport is PROVEN — so a presentation has to
+be entered exactly once.
+
+#### The route
+
+`classify_dM` identifies `(P.classify P.strM P.dM).1` with the quotient map
+`Spec A ⟶ Spec B`, `B = A^G`.  Two `ℚ̄`-points of `Spec A` with the same image
+in `Spec A^G` lie in a single `G`-orbit — the geometric-quotient half of the
+GIT quotient by a FINITE group, and the one place in this subsection where
+`P.finite_G` is consumed (the surjectivity partner uses only
+`Algebra.IsInvariant.isIntegral`).  The deck group changes the auxiliary
+`[Γ(n)]`-rigidification and not the underlying `Γ₀(N)`-datum, so points of one
+orbit carry isomorphic data: `exists_gamma0Datum_baseChange` realises the data
+at the two points as base changes of `P.dM` along the two lifts, and the
+comparison across the deck transformation is the `IsBaseChangeOf (𝟙 _)` asked
+for.
+
+`P.classify_natural` is what turns "same point of `Spec A`" into "isomorphic
+data", and `subsingleton_hom_specQ` disposes of the structure-morphism
+bookkeeping, as everywhere else in this file.
+
+**The check that would refute this**: exhibit `P` and two `ℚ̄`-data with equal
+class and no isomorphism.  Since a `ℚ̄`-point of `Spec A^G` determines the
+`G`-orbit and hence the datum up to the deck action, that is exactly a failure
+of the finite-group quotient to be a geometric quotient on `ℚ̄`-points — which
+does not happen for `Spec A^G` with `G` finite acting on a ring.
+
+`N = 0` needs no hypothesis: `isEmpty_of_gamma0Datum_zero` makes
+`Gamma0Datum 0 (Spec ℚ̄)` uninhabited, so the statement is vacuous there. -/
+theorem Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq {N : ℕ}
+    (P : Gamma0GITPresentation N)
+    (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (h : P.classify (specAlgClos ℚ) d₁ = P.classify (specAlgClos ℚ) d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
+  sorry
+
+/-- **`classify` is INJECTIVE on `ℚ̄`-points, over ANY coarse moduli space**
+(PROVEN 2026-07-27) — the previous leaf transported off the presentation by
+initiality alone, the exact mirror of
+`IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`.
+
+Initiality supplies `u : Y_P ⟶ Y` and `v : Y ⟶ Y_P` over `Spec ℚ` compatible
+with both classifying maps.  Surjectivity needed `v ≫ u = 𝟙 Y` (push a point of
+`Y` to `Y_P`, lift it, push it back); injectivity needs the OTHER composite,
+`u ≫ v = 𝟙 Y_P`, because what has to be cancelled here is `u` — the two classes
+agree in `Y`, and `hucl` writes each of them as the `Y_P`-class followed by `u`.
+Both identities come from the same `∃!` clause, applied on the relevant side.
+
+`hN : 0 < N` is consumed only by `exists_gamma0GITPresentation`, exactly as in
+the surjectivity transport; the degenerate level is `y0HasNoRationalPoint_zero`.
+-/
+theorem IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq {N : ℕ} (hN : 0 < N)
+    {Y : Scheme.{0}} {str : Y ⟶ SpecQ} (hY : IsCoarseModuliY0 N str)
+    (d₁ d₂ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (h : hY.classify (specAlgClos ℚ) d₁ = hY.classify (specAlgClos ℚ) d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) := by
+  obtain ⟨P⟩ := exists_gamma0GITPresentation N hN
+  let h₁ := P.toGamma0Atlas.toIsCoarseModuliY0
+  obtain ⟨u, ⟨hu, hucl⟩, -⟩ := h₁.universal str hY.classify hY.classify_natural
+  obtain ⟨v, ⟨hv, hvcl⟩, -⟩ := hY.universal P.toGamma0Atlas.str h₁.classify h₁.classify_natural
+  obtain ⟨w, -, hwuniq⟩ :=
+    h₁.universal P.toGamma0Atlas.str h₁.classify h₁.classify_natural
+  have huv : u ≫ v = 𝟙 _ := by
+    refine (hwuniq (u ≫ v) ⟨?_, ?_⟩).trans (hwuniq (𝟙 _) ⟨Category.id_comp _, ?_⟩).symm
+    · rw [Category.assoc, hv, hu]
+    · intro T g dd
+      conv_lhs => rw [hvcl g dd, hucl g dd]
+      exact Category.assoc _ _ _
+    · intro T g dd
+      exact (Category.comp_id _).symm
+  refine P.nonempty_isBaseChangeOf_of_classify_eq d₁ d₂ (Subtype.ext ?_)
+  show (h₁.classify (specAlgClos ℚ) d₁).1 = (h₁.classify (specAlgClos ℚ) d₂).1
+  have h1 : (h₁.classify (specAlgClos ℚ) d₁).1 ≫ u
+      = (h₁.classify (specAlgClos ℚ) d₂).1 ≫ u := by
+    rw [← hucl, ← hucl]; exact congrArg Subtype.val h
+  calc (h₁.classify (specAlgClos ℚ) d₁).1
+      = ((h₁.classify (specAlgClos ℚ) d₁).1 ≫ u) ≫ v := by
+        rw [Category.assoc, huv, Category.comp_id]
+    _ = ((h₁.classify (specAlgClos ℚ) d₂).1 ≫ u) ≫ v := by rw [h1]
+    _ = (h₁.classify (specAlgClos ℚ) d₂).1 := by
+        rw [Category.assoc, huv, Category.comp_id]
+
+/-- **A `ℚ̄`-datum whose Galois conjugates are all isomorphic to it comes from a
+Weierstrass curve over `ℚ` carrying a Galois-stable cyclic subgroup of order
+`N`** (sorry leaf, opened 2026-07-27) — the twisting/Kummer computation, and
+after the injectivity split above the ONE genuinely arithmetic ingredient of
+the descent bridge.
+
+`hinv` is "the field of moduli of `d` is `ℚ`", stated in the only comparison of
+data this development has.  It is NOT vacuous: `exists_gamma0Datum_baseChange`
+guarantees that a `dσ` with `IsBaseChangeOf (specGal σ) dσ d` exists for every
+`σ`, so quantifying over all such `dσ` really does constrain `d`, and the
+`∀ dσ` form is what makes the hypothesis cheap to supply — any producer will
+do.  It is satisfied by every datum that is itself a base change of one over
+`ℚ`, which is what makes the leaf non-trivial in the other direction too.
 
 #### The argument, and it is the one written out in the section docstring above
 
@@ -8740,8 +8904,8 @@ defined over `ℚ` and carries a `G_ℚ`-stable subgroup.
 
 **NO CASE SPLIT ON `j`, and do not reintroduce one.**  The `j ∈ {0, 1728}`
 caveat is a caveat about the strictly stronger statement that the PAIR
-`(E, C)` descend; only `Nonempty (Gamma0Datum N SpecQ)` is asked for here, so a
-twist is allowed and the obstruction vanishes.  Neither
+`(E, C)` descend; only a curve over `ℚ` with a stable subgroup is asked for
+here, so a twist is allowed and the obstruction vanishes.  Neither
 `isolatedJInvariants` nor any `p`-hypothesis belongs in this leaf; the former
 is load-bearing for the two arithmetic level leaves, not for this one.
 
@@ -8749,22 +8913,99 @@ is load-bearing for the two arithmetic level leaves, not for this one.
 `ℚˣ/(ℚˣ)^{n/2}` outside the image of `ℚˣ/(ℚˣ)ⁿ` — impossible, both maps being
 induced by the identity on representatives.
 
-WHAT A PROVER OWES.  The injectivity half of the geometric bijection is
-*inside* this leaf: `hd` is stated in terms of `classify` rather than in terms
-of an isomorphism `σ^*d ≅ d`, because `IsBaseChangeOf` along `specGal σ` is the
-only comparison of data this development has and the Galois-twisted datum
-would have to be produced before it could be compared.  A successor who wants
-to split that off should state it as
-`classify _ d₁ = classify _ d₂ → Nonempty (IsBaseChangeOf (𝟙 _) d₁ d₂)` and
-obtain `σ^*d` from `exists_gamma0Datum_baseChange (specGal σ) d`, both of which
-are now available. -/
+#### Why the conclusion is ELEMENTARY and not a `Gamma0Datum N SpecQ`
+
+Because the scheme-theoretic half of that conversion is already PROVEN:
+`nonempty_gamma0Datum_of_stable` takes exactly this conclusion — `E`, a point
+`g` of order `N` over `ℚ̄`, and Galois-stability of `AddSubgroup.zmultiples g` —
+and builds the datum over `Spec ℚ`, through
+`exists_ellipticScheme_of_weierstrass` and
+`exists_cyclicSubgroupOfOrder_of_galoisStable`.  Asking this leaf for a datum
+would make it re-do that work, and — worse — would state it in a language in
+which a *twist* cannot be written.  Twists live on Weierstrass equations.
+
+WHAT IS MISSING FOR IT, surveyed 2026-07-27 and worth recording because two
+of the three obvious places do NOT have it:
+
+* **Twist theory is absent from mathlib, from `~/cs/FLT`, and from this
+  project.**  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean`
+  covers only `j ∉ {0, 1728}` (its `u⁴ = u⁶ = 1` argument), and
+  `.../GaloisDescent.lean` is a STUB — header, imports, `variable` block and a
+  module docstring announcing "Galois descent for Weierstrass curve data",
+  with zero declarations.  Do not read a grep hit on that filename as
+  evidence.
+* At `j ∈ {0, 1728}` the two genuinely missing pieces are `Aut(E⁄ℚ̄) ≅ μ₄`,
+  `μ₆` (a direct extension of `Aut.lean`) and the twist attached to a cocycle.
+* **Conjugating a curve given only over `ℚ̄` is not expressible with mathlib's
+  point API** — `WeierstrassCurve.Affine.Point.map` needs a common base
+  algebra.  That is why every statement in this bridge is phrased in the
+  `ℚ`-model language rather than through an intermediate `Ē/ℚ̄`; a prover who
+  finds itself wanting to write `σ(E)` for `E/ℚ̄` has hit that wall, not a gap
+  in its own understanding.
+
+`hN : N ≠ 0` is load-bearing: at `N = 0` a generator of order `0` is of
+infinite order, and the conclusion would assert a `ℚ̄`-point of infinite order
+generating a Galois-stable subgroup, which is not what the hypotheses give.
+The `N = 0` branch of the consumer is discharged instead by
+`isEmpty_of_gamma0Datum_zero`, `Spec ℚ̄` being nonempty. -/
+theorem exists_stableCyclic_of_gamma0Datum_algClos {N : ℕ} (hN : N ≠ 0)
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
+    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
+      addOrderOf g = N ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g :=
+  sorry
+
+/-- **A `ℚ̄`-datum whose class is a RATIONAL point of the coarse space descends
+to `ℚ`, after a twist** (PROVEN 2026-07-27 by the injectivity split recorded in
+the subsection above; formerly the single sorry leaf that carried both halves).
+
+`hd` says that the class of `d` in the coarse space is the base change to `ℚ̄`
+of the rational point `y`.  That is precisely "the field of moduli of `d` is
+`ℚ`", and the proof turns it into that statement in three lines: for `σ ∈ G_ℚ`
+and any `dσ` which is a base change of `d` along `specGal σ`,
+`classify_natural` gives `classify dσ = RelPoint.pre (specGal σ) (classify d)`,
+and `specGal_comp_base` says a point of the shape `specAlgClos ℚ ≫ y.1` is
+fixed by that precomposition — a `ℚ`-rational point is Galois-invariant by
+construction, so `classify` cannot separate `σ^*d` from `d`.
+`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` then upgrades the
+equality of classes to an isomorphism `σ^*d ≅ d`, which is the input
+`exists_stableCyclic_of_gamma0Datum_algClos` wants, and
+`nonempty_gamma0Datum_of_stable` converts its elementary output back into a
+datum over `Spec ℚ`.
+
+The degenerate level is handled here rather than pushed onto the leaves: at
+`N = 0` the hypothesis `d` is itself contradictory, `isEmpty_of_gamma0Datum_zero`
+emptying `Spec ℚ̄`, which is nonempty. -/
 theorem exists_gamma0Datum_specQ_of_ratPoint {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
     (hY : IsCoarseModuliY0 N str) (y : RelPoint str (𝟙 SpecQ))
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
     (hd : hY.classify (specAlgClos ℚ) d
       = RelPoint.pre (specAlgClos ℚ) (Category.comp_id _) y) :
-    Nonempty (Gamma0Datum N SpecQ) :=
-  sorry
+    Nonempty (Gamma0Datum N SpecQ) := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · haveI : IsEmpty ↥(Spec (CommRingCat.of (AlgebraicClosure ℚ))) :=
+      isEmpty_of_gamma0Datum_zero d
+    have hne : Nonempty ↥(Spec (CommRingCat.of (AlgebraicClosure ℚ))) :=
+      inferInstanceAs (Nonempty (PrimeSpectrum (AlgebraicClosure ℚ)))
+    exact (‹IsEmpty ↥(Spec (CommRingCat.of (AlgebraicClosure ℚ)))›).elim hne.some
+  · have hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (dσ : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+        IsBaseChangeOf (specGal σ) dσ d →
+          Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d) := by
+      intro σ dσ hbc
+      refine hY.nonempty_isBaseChangeOf_of_classify_eq (Nat.pos_of_ne_zero hN) dσ d ?_
+      rw [hY.classify_natural (specGal σ) (specGal_comp_specAlgClos σ) hbc, hd]
+      exact Subtype.ext (specGal_comp_base y.1 σ)
+    obtain ⟨E, hE, g, hg, hstable⟩ := exists_stableCyclic_of_gamma0Datum_algClos hN d hinv
+    haveI := hE
+    exact nonempty_gamma0Datum_of_stable E hN g hg hstable
 
 /-- **A `Γ₀(N)`-datum over `ℚ` produces an elliptic curve over `ℚ` with a
 Galois-stable cyclic subgroup of order `N`** (sorry leaf, opened 2026-07-27),
@@ -8874,13 +9115,22 @@ computation above.  The first was correctly diagnosed as reachable from
 `Gamma0Atlas` / `Gamma0GITPresentation` and unreachable from initiality, and
 its SURJECTIVITY half — the half this node consumes — is now PROVEN, as
 `IsCoarseModuliY0.exists_gamma0Datum_of_algClosPoint`.  Its injectivity half
-survives inside `exists_gamma0Datum_specQ_of_ratPoint`, packaged as the
-hypothesis `hd`; see that leaf's docstring for how to split it off.
+used to survive inside `exists_gamma0Datum_specQ_of_ratPoint`, packaged as the
+hypothesis `hd`; **it has been split off** (2026-07-27), exactly as that
+leaf's docstring prescribed, into
+`Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` plus a PROVEN
+initiality transport.
 
-So exactly two leaves remain under this node, and they share no subject
-matter: `exists_gamma0Datum_specQ_of_ratPoint` (the twisting/Kummer descent,
-arithmetic) and `false_of_gamma0Datum_specQ` (the Weierstrass dictionary, the
-converse of `nonempty_gamma0Datum_of_stable`, no modular curve in it).
+So THREE leaves remain under this node, and no two of them share subject
+matter (updated 2026-07-27; `exists_gamma0Datum_specQ_of_ratPoint` itself is
+now proven and is no longer one of them):
+
+* `Gamma0GITPresentation.nonempty_isBaseChangeOf_of_classify_eq` — injectivity
+  of `classify` on `ℚ̄`-points over a presentation; GIT, no arithmetic;
+* `exists_stableCyclic_of_gamma0Datum_algClos` — the twisting/Kummer descent,
+  arithmetic, and the only place a twist appears;
+* `false_of_gamma0Datum_specQ` — the Weierstrass dictionary, the converse of
+  `nonempty_gamma0Datum_of_stable`, no modular curve in it.
 
 Cusps are not an obstacle and need no hypothesis: `Y_0(N)` is the coarse space
 of the moduli problem `[Γ₀(N)]`, whose objects are genuine elliptic schemes, so
