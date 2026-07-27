@@ -156,10 +156,18 @@ Every replacement is an EQUIVALENCE, so no statement was weakened at any step:
   Chabauty runs close the leaves modulo a descent step that is not on record.
 * `<level>.descent_system_no_solution` → `<level>.descent_system_no_solution_pos`
   and `..._neg` (BOTH levels, 2026-07-27) by `rcases` on the sign disjunct.
-  The two branches carry DIFFERENT theories and are independently
-  dispatchable: at level `18` the `+` branch is rank `1` and needs `p`-adic
-  elliptic Chabauty while the `−` branch is rank `0` and needs none; at level
-  `13` both live on one rank-`1` curve and need a Chabauty run each.
+  The two branches are independently dispatchable, but **the claim that made
+  earlier in this list — that at level `18` the `+` branch is rank `1` while
+  the `−` branch is rank `0` and needs no Chabauty — is REFUTED**; see the
+  ROUTE AUDIT CORRECTION on `X18.descent_system_no_solution_neg` (2026-07-27).
+  The elliptic curve attached to a solution is the twist by `±b`, selected by
+  the square class of `b` and not by the sign `δ`, so BOTH branches meet BOTH
+  the rank-`1` curve `E` (at `b ∈ 2ℚ*²` resp. `ℚ*²`) and the rank-`0` curve
+  `E_d` (at `b ∈ ℚ*²` resp. `2ℚ*²`), and both meet uncomputed twists at every
+  other `b`.  The `σ`-substitution `(a, b, u, v) ↦ (b, b − a, u, −v)` carries
+  either branch's system to the other's, so they cannot differ in difficulty.
+  The level-`13` claim on the same line has NOT been re-audited and is subject
+  to the same twist correction.
 
 What each step removed is a layer of Lean-specific interface: first the
 obligation to exhibit a *structure*, then the obligation to reason about a
@@ -1055,17 +1063,106 @@ MINUS a square in `ℤ[√−2]`:
 
     C̃(a, b) + 2√−2·B̃(a, b) = −(v − u√−2)².
 
-**This is the CHEAP branch of the pair, and that is the reason for the split.**
-Its curve is the twist `E_d : w² = −g(−x)`, for which Magma returns
-`rank E_d(K) = 0` and torsion `ℤ/3`, `Norm(𝔣) = 324`.  Rank `0` means NO
-Chabauty is needed: `E_d(K)` is finite, the three points have affine
-`x`-coordinate `−1` twice (i.e. `x = 1` after `x ↦ −x`) and `x = ∞` once, all
-degenerate and all excluded here by `0 < a < b`.  So what this branch needs is
-strictly less than its sibling — a rank-`0` statement over a quadratic field
-plus the finiteness of `E_d(K)` — and no `p`-adic analysis at all.  **A worker
-dispatched here should not be dispatched at elliptic Chabauty.**
+**ROUTE AUDIT CORRECTION (2026-07-27): the "cheap rank-`0` branch" reading of
+this leaf is WRONG, and this branch is NOT cheaper than its sibling.**  The
+previous text here said that this branch's curve "is the twist
+`E_d : w² = −g(−x)`", that `rank E_d(K) = 0` therefore closes it, and that "a
+worker dispatched here should not be dispatched at elliptic Chabauty".  All
+three are false, and the correction is a consequence of the GAP that the same
+docstring already recorded — the two were simply never reconciled.  Each claim
+below carries the check that refutes it.
 
-Subject to the same GAP recorded on `descent_system_no_solution` below. -/
+*The curve attached to a solution is selected by `b`, not by the sign `δ`.*
+Homogenisation gives `g(a/b) = F(a, b)/b³` with `F = C̃ + 2√−2·B̃` (a `ring`
+identity, PARI-checked 2026-07-27), so on this branch
+
+    g(a/b) = −(v − u√−2)²/b³ = (−b)·((v − u√−2)/b²)²,
+
+i.e. a solution is a `K`-point of the twist of `E : w² = g(x)` by `−b`, with
+`x = a/b ∈ ℚ`; on the sibling branch the twist is by `+b`.  Now
+`K*² ∩ ℚ* = ℚ*² ⊔ (−2)·ℚ*²` (`−2 = (√−2)²` is a square in `K`, `2` is not —
+Magma-checked), so the twist by `−b` is `E_d` exactly when `b ∈ ℚ*²` and is `E`
+exactly when `b ∈ 2·ℚ*²`.  The two curves are therefore distributed by the
+SQUARE CLASS OF `b`, and each branch meets both of them:
+
+| square class of `b` | `δ = −1` (this leaf) | `δ = +1` (sibling) |
+|---|---|---|
+| `b = c²` | `E_d`, rank `0` | `E`, rank `1` |
+| `b = 2c²` | `E`, rank `1` | `E_d`, rank `0` |
+| any other | twist by `−b` — NOT COMPUTED | twist by `+b` — NOT COMPUTED |
+
+**So this branch needs the rank-`1` curve and its Chabauty run as well**, and
+already at `b = 2`: the only pair in range there is `(a, b) = (1, 2)`, and
+excluding it is exactly the assertion `1/2 ∉ {∞, 0}` from `E`'s Chabauty
+output.  `E_d` says nothing whatever about it.
+
+The concrete refutation of the branch-to-curve identification is a solution of
+THIS system that is not on `E_d`: `(a, b, u, v) = (0, −1, 0, 1)`, since
+`C̃(0, −1) = −1 = 2·0² − 1²`, `B̃(0, −1) = 0 = 0·1`, `Int.gcd 0 (−1) = 1` and
+`IsCoprime 0 1`.  Its `x = a/b = 0`, and `−g(0) = −1` is NOT a square in `K`,
+so this `δ = −1` solution is not a point of `E_d` at all — it is a point of
+`E`, where `g(0) = 1`.  (It is excluded from the leaf by `0 < a < b`, and by
+nothing else.)
+
+*The `E_d` numbers are right; what is wrong is their scope.*  Magma re-confirms
+`E_d(K) = ℤ/3 = {O, (−1, ±1)}` with `Norm(𝔣) = 324`, and `E` with trivial
+torsion and `Norm(𝔣) = 1296`.  `E_d`'s affine points have `x = −1`, i.e.
+`x = 1` in the original coordinate, i.e. `a = b`.  Every recorded value checks
+out — they just settle the sub-case `b ∈ ℚ*²` rather than the leaf.
+
+*The covering collection does NOT repair this, and the check the GAP note asks
+for has now been run.*  `TwoCoverDescent` on the genus-`2` curve returns a
+**fake** `2`-Selmer set with exactly ONE element, the trivial class.  "Fake"
+means the descent lands in `L*/L*²ℚ*` — modulo `ℚ*` — and the `ℚ*` that is
+divided out is precisely the `b` above, so the computation gives NO bound on
+`b` modulo squares, which is the thing the route needs.  That is not an
+accident of the algorithm: `F` is a cubic form, so `(a, b) ↦ (λa, λb)` scales
+it by `λ³ ≡ λ (mod squares)`, and the square class of `F(a, b)` is well defined
+only modulo `ℚ*` to begin with.  Consistently, the `(u, v)` descent itself
+already IS the covering-collection computation in the homogeneous
+parametrisation — `C_odd` and `C_isCoprime` force `F(a, b) = ±(square)`
+exactly, so that collection is `{±1}` and is a theorem here, not a gap.  The
+real obstruction is that `F(a, b) = δ·(square)` in coprime INTEGERS `(a, b)` is
+not the `K`-point set of any single elliptic curve.
+
+**THE LEAF IS TRUE, and this is now an unconditional check rather than a
+search.**  Magma on `y² = x⁶ − 4x⁵ + 10x⁴ − 10x³ + 5x² − 2x + 1` over `ℚ`
+returns `TorsionSubgroup(J) = ℤ/21` and `RankBound(J) = 0`, and — the rank
+being `0` — `Chabauty0(J)` returns the FULL set of rational points,
+
+    {(1 : ±1 : 0), (0 : ±1 : 1), (1 : ±1 : 1)},
+
+the six cusps and nothing else.  At rank `0` `Chabauty0` is a decision
+procedure, not a point search.  Through `abd_eq_zero_of_sq_eq` that is exactly
+`ab(a − b) = 0`, so both sign branches are true.  **The refuting check on this
+paragraph**: re-run `RankBound` and `Chabauty0`; a positive rank, or a seventh
+point, overturns it.
+
+**The two branches are exchanged by `σ`, so they cannot differ in difficulty.**
+`(a, b, u, v) ↦ (b, b − a, u, −v)` carries a solution of THIS system to a
+solution of the sibling's, by the two identities `C̃(b, b−a) = −C̃(a, b)` and
+`B̃(b, b−a) = −B̃(a, b)` recorded below (both `ring`, both PARI-checked).  It
+sends the sector `0 < a < b` to `0 < b' < a'`, so it is not a Lean-level
+reduction of either leaf to the other; but it does show that the split is a
+`3 + 3` split of the six sectors cut by `ab(a − b) = 0`, not a split into two
+different theories.  Any claim that one of these two branches is cheap and the
+other expensive is suspect on its face.
+
+**WHAT THIS LEAF ACTUALLY NEEDS.**  Either
+
+1. elliptic curves over the quadratic field `K` with Mordell–Weil, plus
+   Bruin-style elliptic Chabauty, plus a treatment of the whole `b`-twist
+   family that the covering collection does not supply; or
+2. the route this file already half-owns: `Pic⁰` of the genus-`2` curve,
+   `rank J(ℚ) = 0`, and injectivity of reduction at `5` — which is what the
+   `Chabauty0` run above is, and for which `card_X18_F5 = 6`,
+   `sevenPts_injective` and `redPt_injective` are already PROVEN here.
+
+Route 2 is the one with an established proof.  Neither is small, and **neither
+is "no `p`-adic analysis at all"**.
+
+Subject to the GAP recorded on `descent_system_no_solution` below, as corrected
+here. -/
 theorem descent_system_no_solution_neg (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (ha : 0 < a) (hb : a < b) (huv : IsCoprime u v)
     (hB : a * b * (a - b) = u * v)
