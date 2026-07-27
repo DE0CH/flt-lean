@@ -399,6 +399,21 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
 -- this development is phrased against — lives here.
 public import Fermat.FLT.EllipticCurve.Torsion
+-- `WeierstrassCurve.IsIsogeny`, the GEOMETRIC hypothesis (rational map,
+-- surjective, finite kernel) that separates a genuine endomorphism of
+-- `E_ℚ̄` from an arbitrary endomorphism of the abstract group `E(ℚ̄)`.  It
+-- is needed by exactly one block, the complex-multiplication cut of
+-- `not_stable_of_mem_isolatedCMJInvariants`, and it is needed there
+-- ESSENTIALLY: `E(ℚ̄)` is divisible, so the abstract group admits a
+-- solution of `X² − X + (p+1)/4 = 0` (a companion matrix on `(ℚ/ℤ)²` and
+-- on the ℚ-vector-space part) for EVERY curve, CM or not, and the cut
+-- would be false without the geometry.  See the FAITHFULNESS note on
+-- `exists_cmEndomorphism_of_mem_isolatedCMJInvariants`.  Adding this
+-- import grows this module's project cone by exactly two modules
+-- (`EllipticCurve.Isogeny` and `EllipticCurve.Velu`), and
+-- `FreyCurve/MazurTorsion.lean` — one of this module's two consumers —
+-- already imported both.
+public import Fermat.FLT.EllipticCurve.Isogeny
 -- `Gamma0GL`, giving `S₂(Γ₀(N)) = CuspForm (Gamma0GL N) 2`, and the bundled
 -- Hecke operator `heckeOp N ℓ`, for the Eichler–Shimura point count
 -- `#X₀(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ)` at `card_relPoint_x0_finiteField`.  These
@@ -9688,46 +9703,234 @@ changes are recorded in its own docstring; read that first if you are
 here to prove something.
 -/
 
-/-- **The CM half of the second-isogeny theorem** (sorry node, introduced
-2026-07-27): for the five entries of `isolatedJInvariants p` that are
-singular moduli, `E` has no rational `q`-isogeny for any prime
-`q ≠ p` in `mazurIsogenyPrimes`.
+/-- **The two vacuous rows of the CM half are `p = 17` and `p = 37`**
+(PROVEN 2026-07-27): if `p` is an isolated Mazur prime and some rational
+`j` lies in `isolatedJInvariants p ∩ isolatedCMJInvariants`, then `p` is
+one of the five class-number-one primes `11, 19, 43, 67, 163`.
 
-TRUE, and this is the half with a UNIFORM argument, which is the whole
-reason it is separated from its non-CM sibling.  `E` has complex
-multiplication by the maximal order of `K = ℚ(√−p)`, one of the five
-class-number-one imaginary quadratic fields occurring in Mazur's table
-(`p = 11, 19, 43, 67, 163`; the `p = 17` and `p = 37` rows contribute
-nothing here, and `isolatedJInvariants p ∩ isolatedCMJInvariants = ∅` for
-those two).  The mod-`q` image of `Γ_ℚ` then lies in the normalizer of
-the Cartan subgroup attached to `K`, and a `Γ_ℚ`-stable line in `E[q]`
-forces the image into a Borel; the intersection of a Borel with the
-normalizer of a Cartan is small enough to force `q` to ramify in `K`,
-i.e. `q = p`, contradicting `hpq`.
+This is the arithmetic that makes the CM half **five** cases rather than
+seven, and it is pure `Finset` computation — no elliptic curve appears.
+The `p = 17` row is `{−882216989/131072, −297756989/2}` and the `p = 37`
+row is `{−9317, −162677523113838677}`; neither meets
+`isolatedCMJInvariants`, which consists of the five singular moduli
+`−32768, −884736, −884736000, −147197952000, −262537412640768000`.  (The
+`17`-row entries are not even integral, and no singular modulus of an
+imaginary quadratic order is a non-integer rational, since it is an
+algebraic integer; the `37` row is integral but simply is not on the
+list.)
 
-Note the argument never looks at *which* of the five values `E.j` is —
-only at the discriminant it names — and it is uniform in `q`, so `hqm` is
-NOT needed for this half.  It is carried anyway so that the two halves
-have the same hypothesis shape and the assembly is a plain case split;
-prefixing it with `_` records that the proof may ignore it.
+**The `j` is universally quantified on purpose.**  Stating it for an
+arbitrary `j` rather than for `E.j` keeps the statement free of the
+elliptic-curve API and makes it a decidable fact about the two tables.
 
-**Twist-invariance is not an extra hypothesis and must not be added as
-one.**  `E` is pinned only up to quadratic twist by `hj` (the statement
-constrains `E.j`, not `E`), and that is correct: for `j ∉ {0, 1728}` the
-`q`-torsion of a quadratic twist is the `q`-torsion of `E` tensored with
-a quadratic character, so `Γ_ℚ`-stable lines correspond bijectively.
-Every entry of `isolatedJInvariants` is strictly negative — verified in
-PARI/GP, see `isolatedJInvariants` — so `j ∉ {0, 1728}` throughout.
+**NON-VACUITY of the certificate.**  The proof is `fin_cases` on `hp`
+followed by `decide` on the five surviving rows and a `norm_num`
+refutation on the two empty ones; the `decide` branch cannot silently
+cover the `17`/`37` cases, because there its goal `17 ∈ {11, 19, 43, 67,
+163}` is FALSE.  Checked by breaking it on purpose: replacing the
+conclusion's target set by `{11, 19, 43, 67}` makes the declaration fail,
+so all five memberships and both refutations are load-bearing. -/
+theorem mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants {p : ℕ}
+    (hp : p ∈ isolatedIsogenyPrimes) {j : ℚ}
+    (hj : j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants) :
+    p ∈ ({11, 19, 43, 67, 163} : Finset ℕ) := by
+  rw [Finset.mem_inter] at hj
+  obtain ⟨h1, h2⟩ := hj
+  fin_cases hp <;>
+    first
+      | decide
+      | (exfalso
+         norm_num [isolatedJInvariants, isolatedCMJInvariants] at h1 h2
+         rcases h1 with rfl | rfl <;> norm_num at h2)
 
-IRREDUCIBLE at this pin: needs the CM theory of the mod-`ℓ` image
-(Deuring; Serre, *Propriétés galoisiennes*, 1972, §4), of which neither
-the Cartan-normalizer classification nor `E[ℓ]` as a Galois module in the
-required form exists in `Mathlib`, in `~/cs/FLT`, or in this project. -/
-theorem not_stable_of_mem_isolatedCMJInvariants {p q : ℕ}
-    (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime)
-    (_hqm : q ∈ mazurIsogenyPrimes) (_hpq : p ≠ q)
+/-- **DEURING: a curve over `ℚ` whose `j`-invariant is one of the five
+singular moduli of Mazur's table has complex multiplication by the
+maximal order of `ℚ(√−p)`** (sorry leaf, cut 2026-07-27 out of
+`not_stable_of_mem_isolatedCMJInvariants`; the RECOGNITION half).
+
+The endomorphism produced is `φ = (1 + √−p)/2`, presented by its minimal
+polynomial `φ² − φ + (p+1)/4 = 0` — of discriminant `1 − (p+1) = −p` — so
+that `ℤ[φ]` is the order of discriminant `−p`, which for `p ≡ 3 mod 4`
+prime is the MAXIMAL order of `K = ℚ(√−p)`.  `(p + 1) / 4` is NATURAL
+division and is exact at all five values: `11, 19, 43, 67, 163 ↦ 3, 5,
+11, 17, 41` (all five are `≡ 3 mod 4`; in fact all five are `≡ 3 mod 8`,
+which the sibling leaf uses).
+
+TRUE: Deuring's theorem, in the form "the roots of the Hilbert class
+polynomial `H_D` are exactly the `j`-invariants of the elliptic curves
+with CM by the order of discriminant `D`" (Silverman *ATAEC* II.4.3 and
+II.6.1; Cox, *Primes of the form x² + ny²*, §11).  At these five
+discriminants `h(−p) = 1` (PARI/GP `qfbclassno`, re-verified 2026-07-27
+by this leaf's author), so `H_{−p}` is LINEAR and its unique root is the
+tabulated integer — re-obtained independently as
+`round(real(ellj((1 + √−d)/2)))`, an exact match at all five.  Hence
+`E.j = j(O_{−p})` really does force `E_ℚ̄ ≅ ℂ/O_{−p}` and hands over the
+endomorphism.
+
+**WHY `IsIsogeny` IS ESSENTIAL AND MUST NOT BE WEAKENED TO A BARE
+`AddMonoidHom`.**  This is the one place the geometry is load-bearing, and
+dropping it makes the CONSUMER `not_stable_of_cmEndomorphism` outright
+FALSE, not merely unprovable.  `E(ℚ̄)` is a divisible group, abstractly
+`(ℚ/ℤ)² ⊕ V` with `V` a `ℚ`-vector space, and `X² − X + (p+1)/4` has a
+root in `M₂(Ẑ)` (its companion matrix) and in `M₂(ℚ)`; so EVERY elliptic
+curve over `ℚ`, CM or not, carries an abstract group endomorphism
+satisfying `hφsq`.  Taking any `E/ℚ` with a rational `2`-isogeny then
+refutes the abstract form of the sibling.  This is exactly the Faltings
+gap recorded in the ROUTE AUDIT of
+`WeierstrassCurve.not_cyclicIsogeny_fortyNine` in
+`FreyCurve/MazurTorsion.lean`, seen from the producing side; `IsIsogeny`
+carries `isRationalMap`, `surjective` and `finite_ker` as fields, which is
+precisely what an abstract endomorphism cannot supply.
+
+Note `φ ≠ 0` is a consequence, not a hypothesis: `hφsq` at `φ = 0` reads
+`((p+1)/4) • P = 0` for all `P`, false on a `ℚ̄`-point of infinite order.
+Likewise `φ ∉ ℤ` is automatic — `[n]` would give `n² − n + (p+1)/4 = 0`
+over `ℤ`, impossible since the discriminant `−p` is negative — so neither
+is carried, and a consumer that wants them derives them.
+
+**Twist-invariance.**  `hj` pins `E` only up to quadratic twist, and that
+is correct here: CM is a `ℚ̄`-property, `E` and its twists become
+isomorphic over `ℚ̄`, and `φ` is asked for only on `(E⁄ℚ̄).Point`.  Nothing
+in the conclusion asks `φ` to be defined over `ℚ` — it is not: the
+endomorphisms of a CM curve are defined exactly over `K` (*ATAEC* II.2.2),
+which is the fact the sibling leaf turns into a contradiction.
+
+WHAT PROVING IT NEEDS, and none of the three is in the mathlib pin, in
+`~/cs/FLT`, or in this project (re-checked 2026-07-27 by grepping
+`Cartan`, `ComplexMultiplication`, `HasCM`, `singularModulus`,
+`HilbertClassPolynomial` over all three trees):
+
+1. the analytic (or Deuring) uniformisation identifying elliptic curves
+   over `ℚ̄` with lattices up to homothety, enough to read `End` off the
+   lattice;
+2. the class polynomial `H_D` and its degree `h(D)`, enough to know that
+   `h(−p) = 1` makes the tabulated integer the unique CM `j`-invariant of
+   that discriminant;
+3. the passage from a lattice endomorphism to a `WeierstrassCurve`
+   endomorphism satisfying `IsIsogeny` — i.e. that multiplication by `φ`
+   on `ℂ/Λ` is algebraic, given by rational functions in `(x, y)`.
+
+Item 3 is the only one that touches this file's vocabulary; items 1 and 2
+are a genuine theory build.  **A cheaper route that avoids all three, for
+a successor:** state and use the `p`-isogeny directly.  Mazur's table
+entry at level `p` already asserts that the curve HAS a rational
+`p`-isogeny, and `ψ = 2φ − 1` with `ψ² = [−p]` is that isogeny; if the
+`p`-isogeny can be produced from `mem_isolatedJInvariants_of_stable`'s
+input rather than from the `j`-value, `φ = (1 + ψ)/2` follows by division
+by `2` inside `End`, and Deuring is not needed.  That route was NOT taken
+here because the hypothesis of this cluster is `E.j ∈ …`, with the
+`p`-isogeny already discarded by the time the CM half is reached; a
+successor who re-cuts the parent
+`not_stable_of_mem_isolatedJInvariants` so that the `p`-isogeny survives
+into the CM half would replace this leaf by a much smaller one.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` with
+`E.j` one of the five tabulated singular moduli and `End(E_ℚ̄) = ℤ`. -/
+theorem exists_cmEndomorphism_of_mem_isolatedCMJInvariants {p : ℕ}
+    (_hp : p ∈ ({11, 19, 43, 67, 163} : Finset ℕ))
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (_hj : E.j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants)
+    (_hj : E.j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants) :
+    ∃ φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point,
+      WeierstrassCurve.IsIsogeny φ ∧
+        ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+          φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P :=
+  sorry
+
+/-- **SERRE: a curve over `ℚ` with CM by the maximal order of `ℚ(√−p)`
+has no `Γ_ℚ`-stable subgroup of prime order `q ≠ p`** (sorry leaf, cut
+2026-07-27 out of `not_stable_of_mem_isolatedCMJInvariants`; the
+GALOIS-IMAGE half, and the one that is UNIFORM IN `q`).
+
+This is where the whole reason for splitting Mazur's table on CM lives:
+the statement quantifies over ALL primes `q ≠ p` with no membership
+hypothesis, no `j`-value ever appears, and the proof is one argument
+rather than a table of computations.  Contrast the non-CM sibling
+`not_stable_of_mem_isolatedNonCMJInvariants`, which needs
+`q ∈ mazurIsogenyPrimes` precisely because it is `66` separate checks.
+
+**THE ARGUMENT** (Serre, *Propriétés galoisiennes des points d'ordre fini
+des courbes elliptiques*, Invent. Math. **15** (1972), §4.5; Silverman
+*ATAEC* II.2 and II.6).
+
+1. `hφsq` makes `ℤ[φ]` the order of discriminant `1 − (p+1) = −p`, the
+   MAXIMAL order `O_K` of `K = ℚ(√−p)` (`p ≡ 3 mod 4` prime), so `E_ℚ̄`
+   has CM by `O_K` and `End(E_ℚ̄) ⊗ ℚ = K`.  Since `E` is defined over `ℚ`
+   and `j(E) ∈ ℚ`, the class polynomial `H_{−p}` has a rational root, so
+   `h(−p) = 1` — which is how the five discriminants of Mazur's table are
+   exactly the five with `h = 1` in the isolated range.
+2. `End(E_ℚ̄)` is defined over `K` and not over `ℚ` (*ATAEC* II.2.2), so
+   `Γ_ℚ` acts on `End(E_ℚ̄)` through `Gal(K/ℚ)`, and `Γ_K` is the
+   stabiliser.  Hence the image of `ρ̄_q : Γ_ℚ → Aut(E[q])` lies in the
+   NORMALIZER of the Cartan subgroup `C = (O_K/qO_K)ˣ`, with `Γ_K`
+   landing in `C` itself and complex conjugation in the nontrivial coset.
+3. `hg` and `hstable` give a `Γ_ℚ`-stable line `L = ⟨g⟩ ⊆ E[q]`, i.e. the
+   image lies in a Borel.  Split on `q` in `K`:
+   * `q` INERT: `C ≅ 𝔽_{q²}ˣ` acts on `E[q] ≅ 𝔽_{q²}` by multiplication,
+     and an element of `𝔽_{q²}ˣ ∖ 𝔽_qˣ` has no eigenvector, so `C` fixes
+     no line.  The image of `Γ_K` is not contained in `𝔽_qˣ` (CM theory:
+     it has index dividing `#O_Kˣ · h(−p) = 2`), so no stable line.
+   * `q` SPLIT: `C ≅ 𝔽_qˣ × 𝔽_qˣ` fixes exactly the two eigenlines, and
+     the nontrivial coset of the normalizer SWAPS them; complex
+     conjugation lies there, so no `Γ_ℚ`-stable line.
+   * `q` RAMIFIED: `q ∣ disc K = −p`, so `q = p` — excluded by `hpq`.
+4. So the stable line forces `q = p`, contradiction.
+
+**WHY THE FIVE-ELEMENT HYPOTHESIS ON `p` IS LOAD-BEARING AND MUST NOT BE
+RELAXED TO `p ≡ 3 mod 4` PRIME.**  At `p = 7` the statement is FALSE.
+`−7 ≡ 1 mod 8`, so `2` SPLITS in `ℚ(√−7)`, and the CM curve `49a1`
+(`j = −3375`) is `2`-isogenous to `49a2` (`j = 16581375`, discriminant
+`−28`); that `2`-isogeny is rational, so it gives a `Γ_ℚ`-stable subgroup
+of order `q = 2 ≠ 7`.  What rules this out at the five tabulated primes is
+`p ≡ 3 mod 8`: `11, 19, 43, 67, 163` are all `≡ 3 mod 8` (PARI/GP,
+2026-07-27, together with `kronecker(−p, 2) = −1` at all five), so `2` is
+INERT in every one of the five fields and case `q = 2` falls under the
+inert branch.  A successor may honestly widen `hp` to "`p` prime,
+`p ≡ 3 mod 8`, `h(−p) = 1`"; widening it to `p ≡ 3 mod 4` is a
+FALSIFICATION.
+
+**Independent numerical corroboration, and it is a check of exactly this
+statement.**  `ellisomat(ellinit(ellfromj(j)))` in PARI/GP 2.17.4 returns
+isogeny class size `2` with degree multiset `{1, p}` for each of the five
+singular moduli (`p = 11, 19, 43, 67` re-run 2026-07-27 by this leaf's
+author; `p = 163` overflows the default `parisize` and is recorded at
+`not_stable_of_mem_isolatedNonCMJInvariants`, which ran all eleven rows).
+A rational cyclic `q`-isogeny is an edge of degree `q` in that graph, so
+"no `q ≠ p`" is what the computation says.  PARI is an untrusted searcher:
+this is FAITHFULNESS evidence, not a proof.
+
+WHAT PROVING IT NEEDS, none of it present in the mathlib pin, in
+`~/cs/FLT`, or in this project (re-checked 2026-07-27 over all three; the
+same four absences are recorded at
+`WeierstrassCurve.MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic` and
+`…not_sq_eq_negFortyNine_of_stable` in `FreyCurve/MazurTorsion.lean`,
+whose CM content is the SAME theory at `p`-power level — **a successor
+should prove this leaf and those two together, not separately**):
+
+1. the Galois action on `End(E_ℚ̄)` by `σ ↦ σ ∘ φ ∘ σ⁻¹`, and that it is
+   by ring automorphisms;
+2. `End_ℚ(E) = ℤ` for `E/ℚ`, equivalently that the CM field is the exact
+   field of definition of the endomorphisms (*ATAEC* II.2.2);
+3. `E[q]` as a free rank-`1` `O_K/qO_K`-module, giving the Cartan
+   subgroup and its normalizer, with the inert/split/ramified trichotomy;
+4. the CM-theoretic lower bound on the image of `Γ_K` in `C` (index
+   dividing `#O_Kˣ · h`), which is what stops the image being scalar —
+   without it the split branch admits a fixed line and the argument
+   fails.
+
+Item 4 is the one an audit is most likely to skip; it is genuinely
+needed, and it is the only place `h(−p) = 1` is consumed.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ`, an
+isogeny `φ` of `E_ℚ̄` with `φ² − φ + (p+1)/4 = 0` for one of the five `p`,
+and a `Γ_ℚ`-stable point of prime order `q ≠ p` — equivalently, a rational
+`q`-isogeny on a curve with CM by `O_{−p}`. -/
+theorem not_stable_of_cmEndomorphism {p q : ℕ}
+    (_hp : p ∈ ({11, 19, 43, 67, 163} : Finset ℕ)) (_hq : q.Prime) (_hpq : p ≠ q)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hφ : WeierstrassCurve.IsIsogeny φ)
+    (_hφsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P)
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
     (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
@@ -9735,6 +9938,81 @@ theorem not_stable_of_mem_isolatedCMJInvariants {p q : ℕ}
         AddSubgroup.zmultiples g) :
     False :=
   sorry
+
+/-- **The CM half of the second-isogeny theorem** (PROVEN 2026-07-27 by
+decomposition; introduced as a single sorry leaf earlier the same day):
+for the five entries of `isolatedJInvariants p` that are singular moduli,
+`E` has no rational `q`-isogeny for any prime `q ≠ p` in
+`mazurIsogenyPrimes`.
+
+The proof is three steps and no mathematics of its own:
+
+1. `mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants` (PROVEN) turns
+   `hp` into `p ∈ {11, 19, 43, 67, 163}`, discharging the two VACUOUS rows
+   `p = 17` and `p = 37` outright — their intersection with
+   `isolatedCMJInvariants` is empty, so `hj` is already a contradiction
+   there.  This is the "`5` real cases `+ 2` vacuous" split, and the two
+   vacuous ones are now closed rather than carried.
+2. `exists_cmEndomorphism_of_mem_isolatedCMJInvariants` (LEAF, Deuring)
+   produces the CM endomorphism `φ = (1 + √−p)/2` of `E_ℚ̄`, presented by
+   `φ² − φ + (p+1)/4 = 0` and carrying `WeierstrassCurve.IsIsogeny`.
+3. `not_stable_of_cmEndomorphism` (LEAF, Serre §4.5) contradicts it with
+   the stable line, uniformly in `q`.
+
+**WHY THIS IS THE CUT.**  The two halves are the two halves of the
+sentence "the mod-`q` image of a CM curve lies in the normalizer of a
+Cartan": step 2 is *recognising* the CM (analytic uniformisation, class
+polynomial, `h(−p) = 1`) and step 3 is *using* it (Galois action on
+`End`, the Cartan trichotomy).  They share no machinery, and step 3 is
+the same theory as the two open `p`-power-level CM leaves in
+`FreyCurve/MazurTorsion.lean`
+(`MazurLevelFortyNine.trace_eq_zero_of_stable_cyclic`,
+`…not_sq_eq_negFortyNine_of_stable`) — so a single owner can close three
+leaves at once, which was not visible while this node was atomic.
+
+**`hqm` REMAINS UNUSED, and that is a fact about the CM half rather than
+an artefact.**  The argument never looks at *which* of the five values
+`E.j` is — only at the discriminant it names — and it is uniform in `q`.
+It is carried so that the two halves have the same hypothesis shape and
+the assembly in `not_stable_of_mem_isolatedJInvariants` is a plain case
+split; `_hqm` records mechanically that nothing consumes it.  The
+underscore is now the ONLY one left: `hp`, `hq`, `hpq`, `hj`, `hg` and
+`hstable` are all consumed.
+
+**Twist-invariance is not an extra hypothesis and must not be added as
+one.**  `E` is pinned only up to quadratic twist by `hj` (the statement
+constrains `E.j`, not `E`), and that is correct: for `j ∉ {0, 1728}` the
+`q`-torsion of a quadratic twist is the `q`-torsion of `E` tensored with
+a quadratic character, so `Γ_ℚ`-stable lines correspond bijectively.
+Every entry of `isolatedJInvariants` is strictly negative — verified in
+PARI/GP, see `isolatedJInvariants` — so `j ∉ {0, 1728}` throughout.  Both
+leaves below inherit this and neither adds a twist hypothesis.
+
+**The IRREDUCIBILITY verdict this replaces was scoped to the wrong axis.**
+It read "IRREDUCIBLE at this pin: needs the CM theory of the mod-`ℓ`
+image (Deuring; Serre 1972 §4), of which neither the Cartan-normalizer
+classification nor `E[ℓ]` as a Galois module in the required form exists
+in `Mathlib`, in `~/cs/FLT`, or in this project."  Every clause of that is
+still TRUE — and it searched over *proofs of the whole node* while
+holding the node fixed.  The missing theory is missing in TWO pieces that
+no proof needs simultaneously, and the seven rows of the table are not
+all live.  Both observations are cuts, and neither makes the mathematics
+easier: the two leaves below ask for exactly the theory the verdict
+named. -/
+theorem not_stable_of_mem_isolatedCMJInvariants {p q : ℕ}
+    (hp : p ∈ isolatedIsogenyPrimes) (hq : q.Prime)
+    (_hqm : q ∈ mazurIsogenyPrimes) (hpq : p ≠ q)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (hj : E.j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    False := by
+  have hp5 := mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants hp hj
+  obtain ⟨φ, hφ, hφsq⟩ := exists_cmEndomorphism_of_mem_isolatedCMJInvariants hp5 E hj
+  exact not_stable_of_cmEndomorphism hp5 hq hpq E φ hφ hφsq g hg hstable
 
 /-- **The non-CM half of the second-isogeny theorem** (sorry node,
 introduced 2026-07-27): for the six entries of `isolatedJInvariants p`
