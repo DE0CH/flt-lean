@@ -15445,7 +15445,48 @@ cost only because such a theorem would there be a NEW leaf.
 other declarations' docstrings): the sibling's former "only the numbers change",
 now corrected in place; and `classPoly500_of_stable_cyclic_subgroup_order_125`'s
 "Same verdict at level `169`, genus `8`, for the same reason", which is false as
-of today. -/
+of today.
+
+**AUDIT RE-RUN 2026-07-27, second pass** (by the owner of the two CM leaves
+further down, who was dispatched at this node with them). Four checks, run
+rather than assumed, recorded so a successor need not repeat them:
+
+1. *The `kenkuLevels` value quoted three paragraphs above is STALE.* It now
+   reads `[20, 24, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75]`
+   (`X0.lean:13067`) — `35` and `39` have been added since that paragraph was
+   written. The CONCLUSION is untouched, `125` is still not a member, but do not
+   copy the eleven-element list forward.
+
+2. *The "no uniform route reaches `125`" verdict now rests on a FULL
+   enumeration, not a sample.* Every proven `Y0HasNoRationalPoint` in `X0.lean`
+   was listed: `y0HasNoRationalPoint_zero`, the `isogenyClassPrimeSqLevels`,
+   `isogenyPrimeSqLevels`, `witnessSemiprimeLevels`, `chabautySemiprimeLevels`
+   and `smallSemiprimeLevels` families, the `kenkuLevels` thirteen,
+   `y0HasNoRationalPoint_x0TwentySix`, `y0HasNoRationalPoint_oneSixtyNine`, and
+   the primes outside `mazurIsogenyPrimes`. None covers `125`, and no proper
+   divisor of `125` other than `1` is covered either, so
+   `y0HasNoRationalPoint_of_dvd` still has nothing to consume. The literal
+   string `125` does not occur anywhere in `X0.lean` outside bibliography lines.
+
+3. *An axis nobody has searched*, named so the verdict's width is honest: no
+   audit of this node has tried the ISOGENY-CHARACTER direction — the `5`-adic
+   character `λ : G_ℚ → (ℤ/125)ˣ` cut out by the stable subgroup, and the
+   Momose/Mazur style constraints on its powers, which is how
+   `not_isogenyCharacter_of_prime_ge_twentyThree` disposes of large primes. It
+   is recorded here as UNTRIED, not as unavailable: at `p = 5` the character
+   argument is weak (`5` is small, and `5`- and `25`-isogenies genuinely exist
+   over `ℚ`), so it may well fail, but the failure has not been demonstrated and
+   claiming irreducibility without it overstates what has been searched.
+
+4. *The two CM leaves this node feeds are CLOSED.*
+   `classPoly500_of_end_closure_eq_top` and `classPoly676_of_end_closure_eq_top`
+   are PROVEN as of today over the single uniform leaf
+   `classNumberOne_of_end_closure_eq_top` (`h(D) = 1` in the reduced-form
+   encoding). Two consequences for whoever plans here: this declaration is now
+   the ONLY open leaf in the level-`125` cluster; and the level-`125` and
+   level-`169` clusters no longer share any open node, so the old "build the CM
+   theory once for both" argument no longer touches this leaf at all — it needs
+   modular-curve geometry, and nothing it needs is shared with the CM leaf. -/
 theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -16690,8 +16731,104 @@ theorem WeierstrassCurve.End.closure_singleton_eq_top_of_sq_eq_neg {F : Type*} [
     rw [huv, hu1, hv1]
     exact (MazurCMOrder.intCast_mul_intBasis ω m u₁ v₁).symm
 
-/-- **LEAF — the main theorem of complex multiplication at discriminant `−500`**
-(introduced 2026-07-27 by the cut of `classPoly500_of_endSq_neg125`).
+/-- **LEAF — an elliptic curve over `ℚ` with complex multiplication has CLASS
+NUMBER ONE**, written in the reduced-binary-quadratic-form encoding (introduced
+2026-07-27; it REPLACES the two level-specific Hilbert-class-polynomial leaves
+`classPoly500_of_end_closure_eq_top` and `classPoly676_of_end_closure_eq_top`,
+both of which are now PROVEN from it, so the frontier loses one node).
+
+`hsq` and `htop` together say `End(E_ℚ̄) = ℤ[ψ] ≅ ℤ[X]/(X² + n)`: `ψ ∉ ℤ`
+because `ψ² = [−n]` with `n > 0`, so `1, ψ` is a `ℤ`-basis and `End(E_ℚ̄)` is
+the order of DISCRIMINANT `−4n` in the imaginary quadratic field `ℚ(√−n)`.
+Since `E` is defined over `ℚ` we have `j(E) ∈ ℚ`, and the first main theorem of
+complex multiplication (Silverman *ATAEC* II.4.3 and II.6.1; Cox, *Primes of
+the Form x² + ny²*, §11) says `K(j(E))` is the ring class field of that order,
+with `[ℚ(j(E)) : ℚ] = h(−4n)`. Hence `h(−4n) = 1`.
+
+**THE CONCLUSION IS `h(−4n) = 1`, WITH NO CLASS-NUMBER FUNCTION.** Gauss's
+reduction theory puts the `h(D)` classes of primitive positive-definite binary
+quadratic forms of discriminant `D < 0` in bijection with the REDUCED ones,
+`0 < a` and `−a < b ≤ a ≤ c`; among those, the principal form `(1, 0, n)` is
+the unique one with `a = 1`. So "every reduced primitive form of discriminant
+`−4n` has `a = 1`" IS `h(−4n) = 1`, and it costs no new vocabulary: `hdisc` is
+`b² − 4ac = −4n`, `hprim` is `gcd(a, b, c) = 1`, and `hpos`/`hlb`/`hub`/`hac`
+are reducedness. Reducedness is stated WITHOUT Gauss's tie-breaking clause
+("`b ≥ 0` when `a = c`"), which only widens the hypothesis — `(a, b, a)` is
+properly equivalent to `(a, −b, a)`, so the statement remains true, and is if
+anything marginally stronger than the classical one.
+
+`0 < n` is deliberately NOT a hypothesis: `hpos`, `hub` and `hac` give
+`b² − 4ac ≤ a² − 4a² = −3a² < 0`, so `hdisc` forces `n > 0` by itself.
+
+**NOT VACUOUS — this is the main gain of the cut.** The two leaves it replaces
+had jointly unsatisfiable hypotheses (no elliptic curve over `ℚ` has a rational
+cyclic `125`- or `169`-isogeny), so neither could ever be tested against an
+instance. This one has honest instances: `n = 1` with `E : y² = x³ + x` and
+`ψ = i` gives `End(E_ℚ̄) = ℤ[i]`, discriminant `−4`, and indeed `h(−4) = 1`; so
+do `n = 2, 3, 4, 7`, of discriminants `−8, −12, −16, −28`, all of class number
+one. It FAILS at `n = 5`, where `h(−20) = 2` is witnessed by the reduced
+primitive form `(2, 2, 3)` — which is precisely why no elliptic curve over `ℚ`
+has geometric endomorphism ring `ℤ[√−5]` — and it is that same failure, at
+`n = 125` and `n = 169`, that the two consumers below use.
+
+**WHY THIS REPLACED THE TWO CLASS-POLYNOMIAL LEAVES.** Their shared dependency
+list had four items: (1) complex multiplication over `ℚ̄`, or lattices in `ℂ`
+and the analytic `j`; (2) proper ideals of a non-maximal order and their class
+group; (3) the first main theorem; and (4) integrality of `j` together with the
+identification of `∏ (X − j(𝔞))` with an explicit degree-`10` (resp.
+degree-`6`) integer literal. Item (4) was the ONLY level-specific part, and the
+only one requiring the Hilbert class polynomial to exist as a definition.
+Concluding `h(D) = 1` instead deletes item (4) outright and merges the two
+leaves into this one: what remains is (1)–(3), uniform in `n`, and shared with
+`not_isogenyCharacter_of_prime_ge_twentyThree`.
+
+**The two consumers' witnesses**, checked by hand and against PARI/GP
+(`qfbclassno(-500) = 10`, `qfbclassno(-676) = 6`):
+
+* `n = 125`, `D = −500`: the form `(2, 2, 63)` — `2² − 4·2·63 = −500`,
+  `gcd(2, 2, 63) = 1`, `−2 < 2 ≤ 2 ≤ 63` — whose `a = 2 ≠ 1`;
+* `n = 169`, `D = −676`: the form `(2, 2, 85)` — `2² − 4·2·85 = −676`,
+  `gcd(2, 2, 85) = 1`, `−2 < 2 ≤ 2 ≤ 85` — whose `a = 2 ≠ 1`.
+
+**THE `exfalso` ROUTE IT LICENSES IS NOT CIRCULAR.** The retired docstrings of
+both consumers warned that an `exfalso` there would be circular, because the
+only contradiction then available ran through their own siblings
+`classPoly500_no_rat_root` / `classPoly676_no_rat_root`, which cannot refute
+those hypotheses without the CM step. That warning was about THAT
+contradiction. This leaf is independent of both siblings — it IS the CM step,
+with a weaker conclusion — so the `exfalso` is legitimate. And both siblings
+remain load-bearing: they are still consumed by
+`not_cyclicIsogeny_oneHundredTwentyFive` and
+`not_cyclicIsogeny_oneHundredSixtyNine` through
+`classPoly500_of_stable_cyclic_subgroup_order_125` and
+`classPoly676_of_stable_cyclic_subgroup_order_169`, so nothing becomes
+free-floating.
+
+**STILL IRREDUCIBLE at this mathlib pin.** Re-checked 2026-07-27: neither
+mathlib, nor `~/cs/FLT`, nor this project has complex multiplication, ring
+class fields, the class group of a non-maximal order, or lattices in `ℂ`. What
+the cut buys is that the missing theory is now needed ONCE, uniformly in `n`,
+with no Hilbert class polynomial and no CAS-produced literal anywhere on the
+critical path. Refuting check for the "uniform" claim: if a successor finds
+that `[ℚ(j) : ℚ] = h(D)` is easier to obtain at `D = −500` than in general,
+this merge was the wrong move and the two literals should come back. -/
+theorem WeierstrassCurve.classNumberOne_of_end_closure_eq_top
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (n : ℤ)
+    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+    (hsq : ψ * ψ = ((-n : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine))
+    (htop : Subring.closure
+      ({ψ} : Set (WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) = ⊤)
+    (a b c : ℤ) (hdisc : b ^ 2 - 4 * a * c = -(4 * n))
+    (hprim : Int.gcd a (Int.gcd b c) = 1)
+    (hpos : 0 < a) (hlb : -a < b) (hub : b ≤ a) (hac : a ≤ c) :
+    a = 1 :=
+  sorry
+
+/-- **The main theorem of complex multiplication at discriminant `−500`**
+(introduced 2026-07-27 by the cut of `classPoly500_of_endSq_neg125`; PROVEN
+2026-07-27, from `False`, over the uniform leaf
+`classNumberOne_of_end_closure_eq_top` — it is no longer a leaf).
 
 `htop` says `End(E_ℚ̄) = ℤ[ψ]`; with `ψ² = [−125]` that identifies the
 endomorphism ring as `ℤ[√−125]`, the order of conductor `5` in `ℚ(√−5)`, whose
@@ -16714,28 +16851,41 @@ it fails `htop`. `htop` is what the hypothesis `hnd` of the consumer buys, via
 **VACUITY, inherited from the consumer.** The hypotheses are jointly
 unsatisfiable — `j(E) ∈ ℚ` cannot be a root of the irreducible degree-`10`
 `H_{−500}`, which is what `MazurLevel125.classPoly500_no_rat_root` PROVES — so
-this leaf cannot be discharged by exhibiting a witness. But that
-unsatisfiability is knowable only THROUGH this leaf: the sibling alone does not
-contradict the hypotheses without the complex-multiplication step, so an
-`exfalso` route here would be circular.
+this statement cannot be discharged by exhibiting a witness, and its proof is
+necessarily from `False`.
+
+**PROVEN 2026-07-27, AND THE OLD CIRCULARITY WARNING IS RETIRED.** The retired
+wording read: "that unsatisfiability is knowable only THROUGH this leaf: the
+sibling alone does not contradict the hypotheses without the
+complex-multiplication step, so an `exfalso` route here would be circular."
+That is correct about the contradiction it had in mind — the one running
+through `classPoly500_no_rat_root` — and it silently assumed that was the only
+one. It is not. `classNumberOne_of_end_closure_eq_top` just above IS the
+complex-multiplication step, stated with a weaker conclusion (`h(−4n) = 1`
+rather than a root of `H_{−4n}`), and it refutes `hsq ∧ htop` at `n = 125`
+directly, via the reduced primitive form `(2, 2, 63)` of discriminant `−500`
+whose leading coefficient is `2 ≠ 1`. Nothing in that route mentions the
+sibling, so it is not circular; and the sibling stays load-bearing, still
+consumed by `not_cyclicIsogeny_oneHundredTwentyFive` through
+`classPoly500_of_stable_cyclic_subgroup_order_125`.
 
 **The literal is the same one as in the consumer and the sibling**, which is
 what makes the three compose; it is PARI/GP `polclass(-500)`, cross-checked
 against Magma's `HilbertClassPolynomial(-500)` coefficient by coefficient, along
-with `h(−500) = 10` and `h(−20) = 2`. Do not re-derive it.
+with `h(−500) = 10` and `h(−20) = 2`. Do not re-derive it. **Re-verified a third
+time on 2026-07-27** against `polclass(-500)`: all eleven coefficients agree
+sign for sign with the literal below, and `qfbclassno(-500) = 10`,
+`qfbclassno(-20) = 2`.
 
-**IRREDUCIBLE at this mathlib pin.** Neither mathlib, nor `~/cs/FLT`, nor this
-project has the Hilbert class polynomial, the class group of an order, complex
-multiplication, or the analytic uniformisation. What a successor needs, in
-dependency order: (1) lattices in `ℂ` and the analytic `j`, or the algebraic
-theory of CM over `ℚ̄`; (2) proper ideals of a non-maximal order and their class
-group; (3) the first main theorem — `j(a)` generates the ring class field, and
-`Gal` permutes the `h(D)` values simply transitively; (4) integrality of `j` and
-the identification of `∏ (X − j(a))` with the literal at `D = −500`. Step (4) is
-the only level-specific part; (1)–(3) are shared with the `−676` sibling
-`classPoly676_of_end_closure_eq_top` and with
-`not_isogenyCharacter_of_prime_ge_twentyThree`, which is the argument for
-building them once. -/
+**What was IRREDUCIBLE here has moved, not vanished.** The four-item dependency
+list this docstring used to carry — (1) lattices in `ℂ` and the analytic `j`, or
+the algebraic theory of CM over `ℚ̄`; (2) proper ideals of a non-maximal order
+and their class group; (3) the first main theorem; (4) integrality of `j` and
+the identification of `∏ (X − j(a))` with the literal at `D = −500` — now lives
+on `classNumberOne_of_end_closure_eq_top`, MINUS item (4), which the weaker
+conclusion deletes. Item (4) was the only level-specific one, which is why the
+`−676` sibling `classPoly676_of_end_closure_eq_top` closed by the same two
+lines. -/
 theorem WeierstrassCurve.classPoly500_of_end_closure_eq_top
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
@@ -16753,8 +16903,14 @@ theorem WeierstrassCurve.classPoly500_of_end_closure_eq_top
       - 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 * E.j ^ 2
       + 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * E.j
       - 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000
-      = 0 :=
-  sorry
+      = 0 := by
+  -- `hsq` and `htop` make `End(E_ℚ̄)` the order of discriminant `−4·125 = −500`,
+  -- so complex multiplication forces `h(−500) = 1`; but the reduced primitive
+  -- form `(2, 2, 63)` of discriminant `−500` has leading coefficient `2`.
+  exfalso
+  have h := E.classNumberOne_of_end_closure_eq_top 125 ψ (by rw [hsq]; norm_num) htop
+    2 2 63 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  norm_num at h
 
 /-- **The complex-multiplication half at level `125`** (LEAF, restated
 2026-07-26 over `not_exists_five_mul_of_ker_order_125`; DECOMPOSED and no longer
@@ -22789,8 +22945,10 @@ theorem WeierstrassCurve.not_exists_thirteen_mul_of_ker_order_169
   rintro ⟨φ, hφ⟩
   exact h ⟨φ, by rw [hφ, ← hcast]⟩
 
-/-- **LEAF — the main theorem of complex multiplication at discriminant `−676`**
-(introduced 2026-07-27 by the cut of `classPoly676_of_endSq_neg169`; the exact
+/-- **The main theorem of complex multiplication at discriminant `−676`**
+(introduced 2026-07-27 by the cut of `classPoly676_of_endSq_neg169`; PROVEN the
+same day, from `False`, over the uniform leaf
+`classNumberOne_of_end_closure_eq_top` — it is no longer a leaf. The exact
 mirror of `classPoly500_of_end_closure_eq_top`, whose docstring carries the full
 discussion).
 
@@ -22810,15 +22968,29 @@ fails `htop`; `htop` is what the consumer's `hnd` buys, via
 
 **VACUITY, inherited from the consumer**, exactly as at `−500`: the hypotheses
 are jointly unsatisfiable because `j(E) ∈ ℚ` and `H_{−676}` is irreducible of
-degree `6` (`MazurLevel169.classPoly676_no_rat_root`, PROVEN) — but that is
-knowable only THROUGH this leaf, so an `exfalso` route here is circular.
+degree `6` (`MazurLevel169.classPoly676_no_rat_root`, PROVEN), so the proof is
+necessarily from `False`.
 
-**IRREDUCIBLE at this mathlib pin**, and blocked on exactly the same missing
-theory as the `−500` sibling; see that docstring for the dependency-ordered
-list. Only the final identification of `∏ (X − j(a))` with the literal is
-level-specific. The literal is PARI/GP `polclass(-676)`, cross-checked against
-Magma's `HilbertClassPolynomial(-676)` coefficient by coefficient, with
-`h(−676) = 6` and `h(−4) = 1`. Do not re-derive it. -/
+**PROVEN 2026-07-27; the old circularity warning is RETIRED, exactly as at
+`−500`.** The retired wording read "but that is knowable only THROUGH this
+leaf, so an `exfalso` route here is circular". It was right about the
+contradiction it had in mind (the one through
+`MazurLevel169.classPoly676_no_rat_root`) and wrong to assume it was the only
+one: `classNumberOne_of_end_closure_eq_top` is the complex-multiplication step
+with the weaker conclusion `h(−4n) = 1`, and at `n = 169` the reduced primitive
+form `(2, 2, 85)` of discriminant `−676` has leading coefficient `2 ≠ 1`, which
+refutes `hsq ∧ htop` without mentioning the sibling. The sibling remains
+load-bearing through `classPoly676_of_stable_cyclic_subgroup_order_169`.
+
+**The missing theory has MOVED to `classNumberOne_of_end_closure_eq_top`**, in
+the `−500` sibling's neighbourhood, minus the one level-specific item — the
+identification of `∏ (X − j(a))` with a degree-`6` literal — which the weaker
+conclusion deletes. That deletion is why one uniform leaf now serves both
+levels. The literal below is still PARI/GP `polclass(-676)`, cross-checked
+against Magma's `HilbertClassPolynomial(-676)` coefficient by coefficient, with
+`h(−676) = 6` and `h(−4) = 1`; **re-verified a third time on 2026-07-27**, all
+seven coefficients sign for sign, with `qfbclassno(-676) = 6` and
+`qfbclassno(-4) = 1`. Do not re-derive it. -/
 theorem WeierstrassCurve.classPoly676_of_end_closure_eq_top
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
@@ -22831,8 +23003,14 @@ theorem WeierstrassCurve.classPoly676_of_end_closure_eq_top
       + 1250093798808181921331239024003439064057314451090248756625408 * E.j ^ 3
       - 25139996004850385022058823419251332525548857652725838427880085782528 * E.j ^ 2
       + 183121307244468811013362819441915945367491906284343782971561865394520064 * E.j
-      - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 :=
-  sorry
+      - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 := by
+  -- `hsq` and `htop` make `End(E_ℚ̄)` the order of discriminant `−4·169 = −676`,
+  -- so complex multiplication forces `h(−676) = 1`; but the reduced primitive
+  -- form `(2, 2, 85)` of discriminant `−676` has leading coefficient `2`.
+  exfalso
+  have h := E.classNumberOne_of_end_closure_eq_top 169 ψ (by rw [hsq]; norm_num) htop
+    2 2 85 (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  norm_num at h
 
 /-- **The complex-multiplication half at level `169`** (LEAF, restated
 2026-07-26 over `not_exists_thirteen_mul_of_ker_order_169`).
