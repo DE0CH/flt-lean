@@ -5282,8 +5282,180 @@ end X0Nine
 
 namespace MazurLevel9
 
+/-- **The `X_0(9)` `j`-map at the FRICKE image, pulled back to the Kubert
+line** (PROVEN 2026-07-27 — the exact Fricke counterpart of `j9_of_tateParam`
+above, and the whole algebraic content of `jQuotient_of_tateParam` below).
+
+If `J` is the `j`-invariant of the Vélu quotient of the Kubert curve
+`tateCurve d` by `⟨(0,0)⟩` — written denominator-free as `J · Δ' = c₄'³` with
+
+  `c₄' = (d³ + 3d² − 6d + 1)·(d⁹ + 225d⁸ − 855d⁷ + 1866d⁶ − 2844d⁵`
+  `        + 3123d⁴ − 2265d³ + 981d² − 234d + 1)`,
+  `Δ'  = d(d − 1)(d² − d + 1)³(d³ − 6d² + 3d + 1)⁹`
+
+— and `t` is the Hauptmodul value `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)`
+(written denominator-free as `t · (d³ − 6d² + 3d + 1) = 27d(d − 1)`), then
+`J = j₉(27/t)` in the denominator-free form
+`J · t(t² + 9t + 27) = (t + 3)³(t³ + 9t² + 27t + 3)³`.
+
+**WHY THE TWO STATEMENTS ARE MIRROR IMAGES, which is also the sanity check
+that `Δ'` is right.**  `tateCurve_Δ` gives
+`Δ = d⁹(d − 1)⁹(d² − d + 1)³(d³ − 6d² + 3d + 1)`, with exponents `(9, 9, 3, 1)`
+on the four cusp orbits; `Δ'` carries `(1, 1, 3, 9)`.  The Fricke involution
+`w₉` exchanges the width-`9` cusp orbit `d ∈ {0, 1, ∞}` with the width-`1`
+orbit `d³ − 6d² + 3d + 1 = 0` and fixes the two conjugate cusps
+`d² − d + 1 = 0`, so the exponents must swap exactly as they do.
+
+The proof is `j9_of_tateParam`'s, with `t⁹` replaced by `t`: after clearing
+`q = d³ − 6d² + 3d + 1` to the twelfth power both sides become `729 c₄'³`,
+via `t·q = 27d(d−1)`, `(t² + 9t + 27)q² = 27(d² − d + 1)³` (the SAME
+identity as there), `(t + 3)q = 3(d³ + 3d² − 6d + 1)` and
+`(t³ + 9t² + 27t + 3)q³ = 3(d⁹ + 225d⁸ − ⋯ + 1)` — the last two being
+precisely the two factors of `c₄'`, which is why no elimination is needed.
+
+Stated over an arbitrary field because the consumer applies it over `ℚ̄`,
+where the Kubert parameter lives; the conclusion descends to `ℚ` because `t`
+does. -/
+lemma j9_fricke_of_tateParam {K : Type*} [Field K] (d J t : K)
+    (hq : d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0)
+    (hj : J * (d * (d - 1) * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9)
+        = ((d ^ 3 + 3 * d ^ 2 - 6 * d + 1)
+            * (d ^ 9 + 225 * d ^ 8 - 855 * d ^ 7 + 1866 * d ^ 6 - 2844 * d ^ 5
+               + 3123 * d ^ 4 - 2265 * d ^ 3 + 981 * d ^ 2 - 234 * d + 1)) ^ 3)
+    (ht : t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) = 27 * d * (d - 1)) :
+    J * (t * (t ^ 2 + 9 * t + 27))
+      = (t + 3) ^ 3 * (t ^ 3 + 9 * t ^ 2 + 27 * t + 3) ^ 3 := by
+  refine mul_right_cancel₀ (pow_ne_zero 12 hq) ?_
+  have hB : (t ^ 2 + 9 * t + 27) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 2
+      = 27 * (d ^ 2 - d + 1) ^ 3 := by
+    linear_combination (t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) + 27 * d * (d - 1)
+      + 9 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) * ht
+  have hC : (t + 3) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+      = 3 * (d ^ 3 + 3 * d ^ 2 - 6 * d + 1) := by
+    linear_combination ht
+  have hD : (t ^ 3 + 9 * t ^ 2 + 27 * t + 3) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 3
+      = 3 * (d ^ 9 + 225 * d ^ 8 - 855 * d ^ 7 + 1866 * d ^ 6 - 2844 * d ^ 5
+          + 3123 * d ^ 4 - 2265 * d ^ 3 + 981 * d ^ 2 - 234 * d + 1) := by
+    linear_combination ((t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) ^ 2
+      + t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) * (27 * d * (d - 1)) + (27 * d * (d - 1)) ^ 2
+      + 9 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+        * (t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) + 27 * d * (d - 1))
+      + 27 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 2) * ht
+  have hLid : J * (t * (t ^ 2 + 9 * t + 27)) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 12
+      = J * (t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1))
+          * ((t ^ 2 + 9 * t + 27) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 2)
+          * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9 := by ring
+  have hRid : (t + 3) ^ 3 * (t ^ 3 + 9 * t ^ 2 + 27 * t + 3) ^ 3
+        * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 12
+      = ((t + 3) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) ^ 3
+          * ((t ^ 3 + 9 * t ^ 2 + 27 * t + 3)
+              * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 3) ^ 3 := by ring
+  rw [hLid, hRid, ht, hB, hC, hD]
+  linear_combination (729 : K) * hj
+
+/-- **The `j`-invariant of the quotient, denominator-free on the Kubert line**
+(SORRY LEAF, cut 2026-07-27 out of `jQuotient_of_tateParam` below, which is
+now PROVEN over it together with `exists_tateParam`, `isTateParam_unique`,
+`tateCurve_Δ` and `j9_fricke_of_tateParam`, all four already PROVEN): with
+`(E, h, d)` as in `jQuotient_of_tateParam` and `E''` any curve receiving a
+`Gal`-equivariant homomorphism from `E(ℚ̄)` with kernel exactly `⟨h⟩`,
+
+  `j(E'') · d(d − 1)(d² − d + 1)³q⁹ = ((d³ + 3d² − 6d + 1)·P₉(d))³`,
+  `q = d³ − 6d² + 3d + 1`,
+
+where `P₉(d) = d⁹ + 225d⁸ − 855d⁷ + 1866d⁶ − 2844d⁵ + 3123d⁴ − 2265d³
++ 981d² − 234d + 1`.  Equivalently: `j(E'')` is the `j`-invariant of the
+Vélu quotient `(tateCurve d)/⟨(0,0)⟩`, written `c₄'³ = j · Δ'`.
+
+**THIS LEAF NOW CARRIES *ONLY* THE GEOMETRY.**  Every step from here to the
+`X_0(9)` relation is discharged: `j9_fricke_of_tateParam` just above converts
+this identity into `j(E'') · s(s² + 9s + 27) = (s + 3)³(s³ + 9s² + 27s + 3)³`
+by pure field algebra.  So a successor has exactly two things to do, and the
+first is finite computation.
+
+**STEP 1 — THE VÉLU COMPUTATION, ALREADY DONE NUMERICALLY (PARI/GP as an
+untrusted searcher; every formula below re-verified as a polynomial identity
+over `ℚ(d)`, and to be re-certified in Lean by `ring`).**  On `tateCurve d`,
+with `c = d²(d − 1)`, `b = c(d² − d + 1)` and `r = d² − d + 1`, the kernel
+`⟨(0,0)⟩` has order `9` generically (`9P = 0`, `5P = −4P` were both checked
+symbolically over `ℚ(d)`) with the four `±`-pairs
+
+  `P = (0, 0)`,  `2P = (b, bc)`,  `3P = (c, b − c)`,  `4P = (r(r−1), r²(c − r + 1))`.
+
+`veluTTerm`/`veluWTerm` are `±`-invariant, so Vélu's half-sums over the nine
+kernel points are the plain sums over `k = 1, 2, 3, 4`, giving
+
+  `t = d(d − 1)·(d⁹ − 8d⁷ + 25d⁶ − 47d⁵ + 61d⁴ − 53d³ + 28d² − 9d + 1)`,
+  `w = d²(d − 1)²·(2d¹² − 6d¹¹ + 10d¹⁰ − 19d⁹ + 56d⁸ − 141d⁷ + 241d⁶`
+  `      − 285d⁵ + 245d⁴ − 153d³ + 66d² − 17d + 2)`,
+
+and then `veluModel` at `(t, w)` has exactly the `c₄'`, `Δ'` above — a `ring`
+check once the four point-coordinates are established, which is the same
+shape of work as the PROVEN order-`3` precedent
+`exists_tateInvariants_of_stableThreeSubgroup` (whose `hSum` step evaluates
+`veluT`/`veluW` on the explicit kernel `{0, P, −P}`).  The `(9,9,3,1) ↦
+(1,1,3,9)` exponent swap in `Δ'` is the independent check that this is the
+Fricke dual and not some other quotient.
+
+**STEP 2 — THE OBSTRUCTION, WHICH IS REAL AND IS NOT MINE TO PATCH.**  `π` is
+hypothesised only as an abstract `Gal`-equivariant `AddMonoidHom` with kernel
+`⟨h⟩`, not as a morphism of curves.  Such a `π` is automatically surjective on
+torsion (its image is divisible of corank `2` in `E''_tors ≅ (ℚ/ℤ)²`, hence
+everything), so it induces `E''_tors ≅ E_tors/⟨h⟩ ≅ (E/⟨h⟩)_tors` as
+`Gal`-modules and therefore `T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for EVERY `ℓ`.  By
+Faltings that forces `E'' ≅ E/⟨h⟩` over `ℚ` — an isomorphism, not merely an
+isogeny, because `Hom(E'', E/⟨h⟩) ⊗ ℤ_ℓ` containing a `T_ℓ`-isomorphism makes
+the minimal isogeny degree prime to every `ℓ`.  So the statement is TRUE, and
+its hypotheses are strictly weaker than anything provable at this pin.
+
+**THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION** (per doctrine, stated so the
+next agent need not redo the survey): exhibit a route from `hπker` + `hπgal`
+alone to `j(E'') = j((tateCurve d)/⟨(0,0)⟩)` that does not pass through an
+isomorphism of `T_ℓ` for all `ℓ`.  Concretely, it is refuted the moment
+`π` is strengthened to a Vélu quotient — then `E''` IS `E.veluModel t w` and
+Step 1 closes the leaf outright.  **That repair is in flight elsewhere**
+(the same strengthening was authorised on `exists_x0Three_chainParameters`,
+whose `φ`, `ψ` feed this `π` through `X0Nine.ker_comp_eq`), so a successor
+should re-read the hypotheses BEFORE attempting Faltings: every call site
+already supplies a Vélu quotient, and the abstractness here is a design
+artefact, not a mathematical weakening anybody wanted.
+
+**NUMERICAL ANCHOR** (PARI/GP, untrusted searcher; `d = 2` gives the class
+`27a`): `tateCurve 2` has `j = −1167051/512`, `(0,0)` of order `9`, Hauptmodul
+`s = R(2) = −6`, and the Vélu quotient by `⟨(0,0)⟩` has `j = −132651/2`.  Both
+`j(E)·s⁹(s²+9s+27) = (s+9)³(s³+243s²+2187s+6561)³` and the conclusion here
+hold exactly.  The diamond orbit `d ∈ {2, 1/2, −1}` all return `s = −6`, as
+`exists_rat_hauptmodul_of_stable` requires. -/
+theorem veluQuotient_jRelation_of_tateParam
+    (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (hord : addOrderOf h = 9)
+    (hhstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (π : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hπgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        π (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (π Pt))
+    (hπker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      π Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (d : AlgebraicClosure ℚ) (hd : IsTateParam E h d) :
+    algebraMap ℚ (AlgebraicClosure ℚ) E''.j
+        * (d * (d - 1) * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9)
+      = ((d ^ 3 + 3 * d ^ 2 - 6 * d + 1)
+          * (d ^ 9 + 225 * d ^ 8 - 855 * d ^ 7 + 1866 * d ^ 6 - 2844 * d ^ 5
+             + 3123 * d ^ 4 - 2265 * d ^ 3 + 981 * d ^ 2 - 234 * d + 1)) ^ 3 :=
+  sorry
+
 /-- **The Fricke involution computes the `j`-invariant of the quotient**
-(SORRY LEAF, cut 2026-07-26 out of
+(PROVEN 2026-07-27 over the single new leaf
+`veluQuotient_jRelation_of_tateParam` just above, which isolates the geometry;
+all the `X_0(9)` algebra is now discharged by `j9_fricke_of_tateParam`.  Cut
+2026-07-26 out of
 `exists_x0Nine_frickePair_of_cyclicNineChain`, which is now PROVEN over it
 together with `exists_tateParam`, `exists_rat_hauptmodul_of_stable` and
 `j9_of_tateParam`, all three already PROVEN): let `E/ℚ` carry a geometric
@@ -5327,41 +5499,46 @@ three-curve hypothesis package of the consumer collapses to "a stable cyclic
 `9`-subgroup and a quotient by it".  That is a real simplification: nothing
 of level `3` is left in the level-`9` frontier.
 
-**WHAT A SUCCESSOR HAS TO DO — a computation, not a theory.**  Over `ℚ̄`,
-`E ≅ tateCurve d` with `h ↦ (0,0)` (that is exactly what `IsTateParam`
-carries — a VARIABLE CHANGE, not merely an abstract group isomorphism).  So
-the content is the single explicit statement
+**HOW IT WAS CLOSED (2026-07-27), and what is left.**  All the `X_0(9)`
+algebra is gone: over `ℚ̄`, `E ≅ tateCurve d` with `h ↦ (0,0)` (that is what
+`IsTateParam` carries — a VARIABLE CHANGE, not an abstract group
+isomorphism), and the content is the single explicit statement
 
-    `j((tateCurve d)/⟨(0,0)⟩) = j₉(q/(d² − d))`,   `q = d³ − 6d² + 3d + 1`,
+    `j((tateCurve d)/⟨(0,0)⟩) = j₉(q/(d² − d))`,   `q = d³ − 6d² + 3d + 1`
 
 (note `27/R(d) = q/(d(d−1))`, so the Fricke image of the Hauptmodul is that
-rational function of `d`).  `Fermat/FLT/EllipticCurve/Velu.lean` supplies the
-quotient: `exists_velu_quotient_isogeny_model` produces, for a `Gal`-stable
-odd-order subgroup, RATIONAL Vélu coefficients `t, w` with
-`algebraMap ℚ ℚ̄ t = veluT …` and the quotient curve `E.veluModel t w`.  The
-four pairs `±(0,0), ±2(0,0), ±3(0,0), ±4(0,0)` have explicit coordinates in
-`d`, so `veluT` and `veluW` are explicit rational functions of `d`, and the
-target identity is then a `ring`/`linear_combination` check of the same shape
-as `j9_of_tateParam` — which is the proven precedent for exactly this kind of
-degree-`90`-looking identity collapsing once the factorisations are supplied.
-Find the formulae with PARI/GP as an untrusted searcher, as `j9_of_tateParam`
-and `tateCurve_c₄` were found, and let `ring` certify them.
+rational function of `d`).  That is now the SOLE hypothesis: it is the new
+leaf `veluQuotient_jRelation_of_tateParam` above, stated denominator-free as
+`j(E'')·Δ' = c₄'³`, and `j9_fricke_of_tateParam` — the exact Fricke mirror of
+`j9_of_tateParam`, PROVEN — turns it into the conclusion here by pure field
+algebra.  The remaining three steps of this proof are bookkeeping:
+`exists_tateParam` + `isTateParam_unique` transport the nondegeneracy `Δ ≠ 0`
+onto the GIVEN `d`, `tateCurve_Δ` extracts `q ≠ 0`, and injectivity of
+`ℚ → ℚ̄` descends the identity.
+
+The Vélu coefficients and the resulting `c₄'`, `Δ'` have been computed
+explicitly and checked as polynomial identities over `ℚ(d)`; they are
+recorded in `veluQuotient_jRelation_of_tateParam`'s docstring, together with
+the `(9,9,3,1) ↦ (1,1,3,9)` cusp-exponent swap that identifies the quotient
+as the Fricke dual.
 
 **THE ONE PLACE WHERE THIS IS STILL MORE THAN A COMPUTATION, and it is a
-statement-level issue a reviewer should weigh.**  `π` is hypothesised only as
-an abstract `Gal`-equivariant `AddMonoidHom` with kernel `⟨h⟩`, not as a
-morphism of curves.  Such a `π` restricts to an isomorphism of torsion
-`Gal`-modules `E(ℚ̄)_tors/⟨h⟩ ≅ E''(ℚ̄)_tors` (the image is divisible, hence a
-direct summand, hence everything), so `T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for every `ℓ` —
-which does force `j(E'') = j(E/⟨h⟩)`, but through Faltings' isogeny theorem,
-not through anything available here.  The statement is therefore TRUE and its
-hypotheses are, strictly, weaker than any proof in this development can use.
-The honest repair, if a successor hits that wall, is to strengthen `π` to a
-Vélu quotient — which is what every call site actually supplies, since the
-consumer's chain is built by `exists_x0Three_param_of_stableThreeSubgroup`
-— rather than to import Faltings.  This affects `exists_x0Three_chainParameters`'s
-whole design, not just this leaf, so it is reported rather than silently
-patched.
+statement-level issue a reviewer should weigh** — it has moved WHOLESALE into
+the new leaf, and is restated there with the check that would refute it.  `π`
+is hypothesised only as an abstract `Gal`-equivariant `AddMonoidHom` with
+kernel `⟨h⟩`, not as a morphism of curves.  Such a `π` restricts to an
+isomorphism of torsion `Gal`-modules `E(ℚ̄)_tors/⟨h⟩ ≅ E''(ℚ̄)_tors` (the image
+is divisible, hence a direct summand, hence everything), so
+`T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for every `ℓ` — which does force
+`j(E'') = j(E/⟨h⟩)`, but through Faltings' isogeny theorem, not through
+anything available here.  The statement is therefore TRUE and its hypotheses
+are, strictly, weaker than any proof in this development can use.  The honest
+repair is to strengthen `π` to a Vélu quotient — which is what every call
+site actually supplies, since the consumer's chain is built by
+`exists_x0Three_param_of_stableThreeSubgroup` — rather than to import
+Faltings.  This affects `exists_x0Three_chainParameters`'s whole design, not
+just this leaf, so it is reported rather than silently patched; the same
+strengthening was authorised there independently on 2026-07-27.
 
 **NUMERICAL ANCHOR** (class `27a`, PARI/GP `ellisomat`, untrusted searcher):
 `E = 27a1`, `j = −12288000`, `s = −3`.  Then `(s+3)³ = 0` and
@@ -5390,8 +5567,22 @@ theorem jQuotient_of_tateParam
     (s : ℚ) (hs : algebraMap ℚ (AlgebraicClosure ℚ) s * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
       = 27 * d * (d - 1)) :
     E''.j * (s * (s ^ 2 + 9 * s + 27))
-      = (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 :=
-  sorry
+      = (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 := by
+  -- `d` is THE Kubert parameter of `(E, h)` (`isTateParam_unique`), so the
+  -- nondegeneracy `Δ ≠ 0` supplied by `exists_tateParam` is available at it.
+  obtain ⟨d₀, hd₀, hΔ, -⟩ := exists_tateParam E h hord
+  rw [isTateParam_unique hd₀ hd] at hΔ
+  have hq : d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0 := by
+    intro hzero
+    exact hΔ (by rw [tateCurve_Δ, hzero]; ring)
+  -- the geometry, over `ℚ̄`: `j(E'')` is the `j`-invariant of the Vélu quotient
+  -- of the Kubert curve, denominator-free.
+  have key := j9_fricke_of_tateParam d (algebraMap ℚ (AlgebraicClosure ℚ) E''.j)
+    (algebraMap ℚ (AlgebraicClosure ℚ) s) hq
+    (veluQuotient_jRelation_of_tateParam E E'' h hord hhstable π hπgal hπker d hd) hs
+  -- and it descends to `ℚ`, because `s` and `j(E'')` are rational.
+  refine (algebraMap ℚ (AlgebraicClosure ℚ)).injective ?_
+  simpa only [map_mul, map_pow, map_add, map_ofNat] using key
 
 end MazurLevel9
 
