@@ -2360,14 +2360,19 @@ THE VOCABULARY NOW EXISTS — verified 2026-07-27, and it IS on `main`
 `PolarizationStruct`, `PolarizationStruct.pairing` and its six lemmas
 (`pairing_add_left`, `pairing_add_right`, `pairing_self` — alternating,
 `pairing_gal`, `pairing_act`, `galSMul_hom`) live in
-`Modularity/AbelianScheme.lean`. Two gaps remain between that layer and
-this leaf, both checkable by reading the structure: nothing asserts a
-`DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`, and
-`PolarizationStruct` does not assert that its induced pairing is
-nondegenerate (only `DualStruct.weil_nondegenerate` is an axiom, and
-that is the canonical `A × A^∨` pairing, not the polarized one). Those
-two gaps are precisely the second bullet above, and they are now the
-content of `even_dim_torsion_of_isMaximal` rather than of this leaf.
+`Modularity/AbelianScheme.lean`. Of the two gaps this paragraph used to
+record between that layer and this leaf, ONE IS NOW CLOSED:
+`PolarizationStruct` DOES assert that its induced pairing is
+nondegenerate, by the axiom `PolarizationStruct.weil_hom_nondegenerate`,
+with `pairing_nondegenerate` and `exists_pairing_ne_one` as its usable
+forms. (It was added 2026-07-27 because without it the whole structure
+was satisfied by the CONSTANT ZERO MAP and so carried no content at all
+over `DualStruct`; the standing refutation test is the proven
+`PolarizationStruct.torsion_eq_zero_of_hom_eq_zero`.) The gap that
+REMAINS is EXISTENCE: nothing asserts that a
+`DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`. That
+remaining gap is the second bullet above, and it is now the content of
+`even_dim_torsion_of_isMaximal` rather than of this leaf.
 
 RESOLUTION (2026-07-27) — THE CUT, AND WHAT SURVIVED OF THE AUDIT.
 The audit's VERDICT survives verbatim: no collection of integer counts
@@ -6292,6 +6297,12 @@ re-run each REFUTING CHECK rather than trust this list:
    without which they do not assemble into `∧²_O T_I A ≅ O(1)`.
    REFUTING CHECK for what remains: find a field or lemma relating
    `weil x (I ^ (k+1)) (q ^ (k+1))` to `weil x (I ^ k) (q ^ k)`.
+   STATUS 2026-07-27: still absent, and the check has been run. The
+   missing axiom is now WRITTEN OUT — as a proposal, not as code — in
+   the section docstring of `Modularity/AbelianScheme.lean`. It belongs
+   on `DualStruct`, so adding it is a `DualStruct` restructuring and was
+   deliberately out of scope for the `PolarizationStruct` repair that
+   closed gap 3.
 2. NO EXISTENCE IS ASSERTED. Both structures are bundled DATA, by
    deliberate design ("the dual is a BUNDLED DATUM, not a construction"
    — representing `Pic⁰` is Grothendieck representability). This leaf's
@@ -6322,8 +6333,25 @@ re-run each REFUTING CHECK rather than trust this list:
    and is NOT this leaf's to make.
    REFUTING CHECK: exhibit a field of `PolarizationStruct` that the
    constant zero map fails to satisfy.
+   **GAP CLOSED 2026-07-27 — AND THIS ITEM'S OWN REFUTING CHECK IS THE
+   ANSWER.** The diagnosis above was exactly right, and the repair was
+   made where it says it belongs. `PolarizationStruct` now carries the
+   field `weil_hom_nondegenerate`: nondegeneracy of `weil (·) (hom ·)`
+   on `A[I]` itself — the perfection the classical argument appeals to
+   — with `pairing_nondegenerate` and `exists_pairing_ne_one` as its
+   usable forms. That is the field the constant zero map fails to
+   satisfy, and the refutation is a THEOREM rather than prose:
+   `PolarizationStruct.torsion_eq_zero_of_hom_eq_zero` proves that a
+   `hom ≡ 0` polarization forces every `I`-torsion point of every
+   geometric fibre to vanish, so the zero map survives only over data
+   with no torsion at all. The five-field satisfiability argument above
+   was itself re-verified mechanically against an arbitrary
+   `DualStruct` before the repair. Only gaps 1 and 2 remain.
+   The isogeny/finite-kernel alternative this item also floats was NOT
+   taken: surjectivity of `A[I] → A^∨[I]` needs `#A[I] = #A^∨[I]`,
+   which nothing in this development audits.
 
-The same three gaps block the sibling `card_torsion_of_isMaximal`,
+The same remaining gaps block the sibling `card_torsion_of_isMaximal`,
 where gap 1 does NOT bite (that leaf is level one), and where the layer
 plus two further geometric inputs does give a genuine route — see the
 PARITY section of its docstring.
