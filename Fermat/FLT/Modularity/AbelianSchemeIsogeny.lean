@@ -760,8 +760,54 @@ it goes stale; all re-run against the pin on 2026-07-27):
   `Module.free_of_maximalIdeal_rTensor_injective`
   (`LocalRing/Module.lean:248`) is the local criterion itself in the
   finitely-*presented* case: `𝔪 ⊗ M → M` injective plus `FinitePresentation`
-  gives `Free`.  The gap is precisely that a stalk is essentially, not
-  actually, of finite presentation.
+  gives `Free`.
+
+**ROUTE AUDIT, 2026-07-27 — a CORRECTION to the sentence that used to end
+that bullet.**  It read: "The gap is precisely that a stalk is essentially,
+not actually, of finite presentation."  That is **wrong**, and it is wrong in
+the direction that sends a prover at a non-existent one-line weakening, so it
+is corrected rather than merely qualified.  The check that refutes it is to
+read the mathlib statement:
+
+    theorem free_of_maximalIdeal_rTensor_injective [Module.FinitePresentation R M]
+        (H : Function.Injective ((𝔪).subtype.rTensor M)) : Module.Free R M
+
+Its hypothesis is `Module.FinitePresentation R M` — finite presentation of a
+**module**.  What this leaf has is `EssFinitePresentation` of a ring
+**homomorphism** `B →+* A`.  Those are not comparable notions and neither
+implies the other: a stalk `A` of a smooth morphism of positive relative
+dimension is essentially of finite presentation over `B` as an algebra while
+being nowhere near finitely generated as a `B`-module.  So the step from
+*finitely* to *essentially* finitely presented is **not** the missing step,
+and "weaken `FinitePresentation` to `EssFinitePresentation` in
+`free_of_maximalIdeal_rTensor_injective`" is not a task that can be
+dispatched — it does not typecheck as a task.
+
+**A second hazard on the same route, flagged rather than asserted.**  Before
+cutting this leaf along a local criterion at all, check the criterion's
+hypotheses in the NON-Noetherian setting: the classical statement (Matsumura
+*Commutative Ring Theory* Thm 22.3; Bourbaki) requires the module to be
+*ideally separated*, which Noetherianness supplies for free and which this
+leaf's setting — `S` an arbitrary scheme, so `R` an arbitrary local ring —
+does not.  A sub-leaf of the shape "`𝔫 ⊗_B A → A` injective ⟹ `A` flat over
+`B`", stated with no separatedness hypothesis, is exactly the sort of leaf
+that can be FALSE, and a false sub-leaf is worse than the open node it
+replaces.  Verify against the source before writing one.  That this is a
+real distinction and not pedantry is visible in the Stacks project itself:
+05UV is stated separately from the Noetherian 00MP precisely because the
+Noetherian engine does not reach it.
+
+**AXIS SEARCHED** (so the next reader knows what this audit did NOT look
+at): routes that cut this leaf along ring-theoretic machinery — Tor, the
+local criterion of flatness, and Noetherian approximation/spreading out.
+All three are absent from the pin, by the greps above and below, re-run
+2026-07-27.  Not searched: whether the CONSUMER can be re-cut so that this
+ring-level statement is never needed — e.g. whether the abelian-scheme
+application always supplies a Noetherian base, in which case the far cheaper
+Noetherian form 00MP would suffice and this leaf could be replaced by a
+weaker one.  That is a question about `flat_of_flat_fiberMap`'s call sites,
+not about commutative algebra, and it is the first thing to check before
+anyone commits to building Tor.
 * **Spreading out / absolute Noetherian approximation is ABSENT.**
   `grep -rni "noetherian approximation" Mathlib/` returns nothing.
   `AffineTransitionLimit.lean` descends *morphisms* along cofiltered limits
@@ -787,9 +833,89 @@ theorem flat_of_flat_of_flat_quotientMap {R B A : Type u}
     v.Flat :=
   sorry
 
+/-- **A finitely presented ring map followed by a localization is essentially
+of finite presentation.**  This is `EssFinitePresentation` read off its own
+definition, with the one piece of friction the definition creates handled
+once and for all: the definition demands
+`@IsLocalization T _ M S _ v.toAlgebra`, i.e. the localization statement for
+the algebra structure *built from* `v`, whereas at a use site the ambient
+`Algebra T S` instance is the one in scope.  The two are equal by
+`Algebra.algebra_ext` (their `algebraMap`s are literally the same function),
+and every construction of an `EssFinitePresentation` below goes through this
+lemma rather than repeating that transport. -/
+theorem essFinitePresentation_of_isLocalization {R T S : Type u} [CommRing R] [CommRing T]
+    [CommRing S] [Algebra T S] (M : Submonoid T) [IsLocalization M S]
+    {g : R →+* T} (hg : g.FinitePresentation) :
+    EssFinitePresentation ((algebraMap T S).comp g) := by
+  refine ⟨T, ‹_›, g, algebraMap T S, M, hg, rfl, ?_⟩
+  have h : (algebraMap T S).toAlgebra = ‹Algebra T S› :=
+    Algebra.algebra_ext _ _ (fun _ => rfl)
+  rw [h]
+  infer_instance
+
+/-- **The localization of a finitely presented map is essentially of finite
+presentation.**  This is the `EssFinitePresentation` analogue of mathlib's
+`RingHom.HoldsForLocalization.isLocalizationMap`, and the proof is that
+proof's factorization specialized to a finitely presented `f`:
+`IsLocalization.map S' f` factors as the `M`-localized map
+`R' → (M.map f)⁻¹S`, which is finitely presented by
+`RingHom.finitePresentation_localizationPreserves`, followed by the further
+localization `(M.map f)⁻¹S → S'`.
+
+Stating it directly, rather than deriving it from the generic
+`isLocalizationMap`, is what lets the whole stalk leaf avoid
+`StableUnderComposition` for `EssFinitePresentation` — which is the only one
+of the four meta-properties with real content, since a finitely presented
+algebra over a localization descends to a finitely presented algebra only
+after clearing denominators in the *relations*. -/
+theorem essFinitePresentation_isLocalizationMap
+    {R S : Type u} [CommRing R] [CommRing S]
+    {M : Submonoid R} {T : Submonoid S}
+    {R' : Type u} [CommRing R'] [Algebra R R'] [IsLocalization M R']
+    (S' : Type u) [CommRing S'] [Algebra S S'] [IsLocalization T S']
+    {f : R →+* S} (hy : M ≤ Submonoid.comap f T) (hf : f.FinitePresentation) :
+    EssFinitePresentation (IsLocalization.map (S := R') S' f hy) := by
+  have hle : Submonoid.map f M ≤ T := by simpa [Submonoid.map_le_iff_le_comap]
+  letI : Algebra (Localization (M.map f)) S' :=
+    IsLocalization.localizationAlgebraOfSubmonoidLe _ _ (M.map f) T hle
+  have : IsScalarTower S (Localization (Submonoid.map f M)) S' :=
+    IsLocalization.localization_isScalarTower_of_submonoid_le _ _ _ _ _
+  have : IsLocalization (T.map (algebraMap S (Localization (M.map f)))) S' :=
+    IsLocalization.isLocalization_of_submonoid_le _ _ (M.map f) T hle
+  have heq : IsLocalization.map (S := R') S' f hy =
+      (algebraMap (Localization (M.map f)) S').comp
+        (IsLocalization.map (M := M) (T := M.map f) (S := R') (Localization (M.map f)) f
+          (M.le_comap_map)) := by
+    apply IsLocalization.ringHom_ext M
+    ext
+    simp [← IsScalarTower.algebraMap_apply]
+  rw [heq]
+  exact essFinitePresentation_of_isLocalization
+    (T.map (algebraMap S (Localization (M.map f))))
+    (RingHom.finitePresentation_localizationPreserves f M R' _ hf)
+
+/-- **`EssFinitePresentation` respects isomorphisms.**  Post-composition
+transports the witnessing localization along the equivalence
+(`IsLocalization.isLocalization_of_algEquiv`); pre-composition is absorbed
+into the finitely presented half, using
+`RingHom.finitePresentation_respectsIso`. -/
+theorem essFinitePresentation_respectsIso :
+    RingHom.RespectsIso @EssFinitePresentation := by
+  constructor
+  · rintro R S T' _ _ _ f e ⟨T₀, _, g, v, M, hg, hv, hloc⟩
+    refine ⟨T₀, ‹_›, g, e.toRingHom.comp v, M, hg, by rw [RingHom.comp_assoc, hv], ?_⟩
+    letI : Algebra T₀ S := v.toAlgebra
+    letI : Algebra T₀ T' := (e.toRingHom.comp v).toAlgebra
+    exact IsLocalization.isLocalization_of_algEquiv (S := S) M
+      (AlgEquiv.ofRingEquiv (f := e) (fun _ => rfl))
+  · rintro R S T' _ _ _ f e ⟨T₀, _, g, v, M, hg, hv, hloc⟩
+    exact ⟨T₀, ‹_›, g.comp e.toRingHom, v, M,
+      RingHom.finitePresentation_respectsIso.2 g e hg,
+      by rw [← RingHom.comp_assoc, hv], hloc⟩
+
 /-- **The stalk of a morphism locally of finite presentation is essentially
-of finite presentation** (sorry leaf — general scheme theory, no abelian
-varieties).
+of finite presentation** (PROVEN 2026-07-27 — general scheme theory, no
+abelian varieties).
 
 This is the exact analogue of mathlib's
 `AlgebraicGeometry.LocallyOfFiniteType.stalkMap`
@@ -807,23 +933,70 @@ presentation is stable under base change) and `S_𝔮` is a localization of it,
 so the composite is a localization of a finitely presented `R_𝔭`-algebra —
 which is `EssFinitePresentation` by definition.
 
-**The likely shape of a proof**, mirroring the finite-type one verbatim:
-`HasRingHomProperty.stalkMap_of_respectsIso` applied to
-`EssFinitePresentation`, which needs the four closure properties mathlib
-already has for `RingHom.EssFiniteType` — `respectsIso`,
-`stableUnderComposition`, `isStableUnderBaseChange` (hence
-`localizationPreserves`) and `holdsForLocalization` — proved for
-`EssFinitePresentation` instead.  Those four are the natural further cut if
-this leaf wants splitting; `stableUnderComposition` is the only one with any
-content. -/
+**HOW IT IS PROVEN, and the ONE STALE CLAIM this replaces.**  The route is
+`HasRingHomProperty.stalkMap_of_respectsIso`, exactly as for the finite-type
+one.  The previous version of this docstring predicted that this would need
+**four** closure properties for `EssFinitePresentation` (`respectsIso`,
+`stableUnderComposition`, `isStableUnderBaseChange`/`localizationPreserves`,
+`holdsForLocalization`), and called `stableUnderComposition` "the only one
+with any content".  That was right about the content and wrong about the
+requirement: `stalkMap_of_respectsIso` asks only for
+
+* `RespectsIso` of the *target* property — `essFinitePresentation_respectsIso`
+  above, which needs no composition lemma at all; and
+* the localized-map statement **for a finitely presented `f` only** —
+  `essFinitePresentation_isLocalizationMap` above.
+
+`stableUnderComposition` for `EssFinitePresentation` is therefore **not
+needed here and is not proven**.  That matters, because it is the one with
+the real mathematics in it: a finitely presented algebra over a localization
+`M⁻¹T` descends to a finitely presented `T`-algebra only after clearing
+denominators in the *relations*, and unlike the finite-type case the
+subalgebra idiom is unavailable (see `EssFinitePresentation`'s own
+docstring).  Anyone who later wants `EssFinitePresentation` as a genuine
+meta-property should expect that lemma to be the whole cost. -/
 theorem essFinitePresentation_stalkMap {X Y : Scheme.{u}} (φ : X ⟶ Y)
     [LocallyOfFinitePresentation φ] (x : X) :
     EssFinitePresentation (φ.stalkMap x).hom :=
-  sorry
+  HasRingHomProperty.stalkMap_of_respectsIso essFinitePresentation_respectsIso
+    (fun _ hf _ _ ↦ essFinitePresentation_isLocalizationMap _ _ hf) ‹_› x
 
-/-- **The stalk of the fibre is the base change of the stalk**, in the
-flatness form the fibre criterion consumes (sorry leaf — general scheme
-theory, no abelian varieties).
+/-- **The stalk of the fibre is the quotient of the stalk, compatibly with
+`u`** (sorry leaf — general scheme theory, no abelian varieties: this is the
+whole mathematical content of
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver` below, which is PROVEN over
+it with no residue).
+
+Two canonical identifications
+`𝒪_{Y,y} ⧸ 𝔪_s 𝒪_{Y,y} ≅ 𝒪_{Y_s, y_s}` and
+`𝒪_{X_s, x_s} ≅ 𝒪_{X,x} ⧸ 𝔪_s 𝒪_{X,x}`, and the square saying they carry the
+stalk map of `fiberMapOver u rfl s` to `Ideal.quotientMap`.
+
+**Why the two equivalences point in OPPOSITE directions.**  A `RingEquiv` in
+either direction is the same data, and these two are chosen so that the
+square composes with no `.symm` anywhere: the conclusion is literally
+`quotientMap = eX ∘ stalkMap ∘ eY`.  That is not cosmetic — the `.symm` form
+of the same statement cost a full verify cycle in coercion bookkeeping
+(`RingEquiv.toRingHom` vs the `RingEquiv` coercion do not simp into each
+other inside `RingHom.comp`), and this form makes the consumer a two-line
+application of `RingHom.Flat.comp` and `RingHom.Flat.of_bijective`.
+
+**Why the point of `q.fiber s` is written
+`fiberMapOver u rfl s ((u ≫ q).asFiber x)` and not `q.asFiber (u x)`.**
+Those two points ARE equal — both lie over `u x` and `q.fiberι` is injective
+(`Scheme.Hom.fiberHomeo`) — but proving it is a separate obligation, and
+`stalkMap` forces the former.  Writing the former keeps this leaf free of
+that obligation; a prover who wants the latter should prove the point
+equality first and transport.  The statement is faithful either way: the
+point named does lie over `u x`, since
+`fiberι ≫ fiberMapOver = u ≫ fiberι`.
+
+**A SIMPLIFICATION the old note missed.**  The old text justified "the
+further localization is trivial" by `Scheme.Hom.fiberι` being injective on
+points.  That is true but is not the reason, and the real reason is much
+cheaper: `𝔪_s·𝒪_{X,x} ⊆ 𝔪_x` because `p.stalkMap x` is a LOCAL homomorphism,
+so `𝒪_{X,x} ⧸ 𝔪_s 𝒪_{X,x}` is already a local ring and localizing it at its
+own maximal ideal does nothing.  No point-set input is needed.
 
 Concretely: `𝒪_{X_s, x_s} = 𝒪_{X,x} ⧸ 𝔪_s 𝒪_{X,x}` and
 `𝒪_{Y_s, y_s} = 𝒪_{Y,y} ⧸ 𝔪_s 𝒪_{Y,y}`, compatibly with `u`, so flatness of
@@ -860,6 +1033,50 @@ equation, while the conclusion depends on `g` through the ideal `𝔪_s·𝒪_{Y
 invariant under, and could have been FALSE.  It is therefore stated in the
 substituted form `p = u ≫ q`, with the map fixed to `q.stalkMap (u x)`; the
 consumer reaches it by `subst h`, which costs nothing. -/
+theorem exists_ringEquiv_stalkMap_fiberMapOver
+    {X Y S : Scheme.{u}} {q : Y ⟶ S} (u : X ⟶ Y) (x : X) :
+    ∃ (eY : (Y.presheaf.stalk (u x) ⧸
+              (IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))).map
+                (q.stalkMap (u x)).hom) ≃+*
+            ((q.fiber ((u ≫ q) x)).presheaf.stalk
+              (fiberMapOver u rfl ((u ≫ q) x) ((u ≫ q).asFiber x))))
+      (eX : (((u ≫ q).fiber ((u ≫ q) x)).presheaf.stalk ((u ≫ q).asFiber x)) ≃+*
+            (X.presheaf.stalk x ⧸
+              (IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))).map
+                ((u.stalkMap x).hom.comp (q.stalkMap (u x)).hom))),
+      Ideal.quotientMap
+          ((IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))).map
+            ((u.stalkMap x).hom.comp (q.stalkMap (u x)).hom))
+          (u.stalkMap x).hom
+          (map_le_comap_map_comp (q.stalkMap (u x)).hom (u.stalkMap x).hom
+            (IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))))
+        = eX.toRingHom.comp
+            (((fiberMapOver u rfl ((u ≫ q) x)).stalkMap ((u ≫ q).asFiber x)).hom.comp
+              eY.toRingHom) :=
+  sorry
+
+/-- **The stalk of the fibre is the base change of the stalk**, in the
+flatness form the fibre criterion consumes (PROVEN 2026-07-27 over
+`exists_ringEquiv_stalkMap_fiberMapOver` above, with NO residue — the whole
+of what remains open is that one statement).
+
+The statement is phrased as this flatness rather than as the isomorphism, so
+that it plugs straight into hypothesis (5) of
+`flat_of_flat_of_flat_quotientMap`; the isomorphism itself is the leaf above.
+
+**What this cut buys.**  All the commutative-algebra bookkeeping —
+`Ideal.quotientMap`, the ideal inclusion `map_le_comap_map_comp`, and the
+transport of `RingHom.Flat` across the two identifications — is discharged
+here by `RingHom.Flat.comp` and `RingHom.Flat.of_bijective`, so what remains
+open is a statement of pure scheme theory that mentions flatness nowhere.
+It is also strictly more reusable than the flatness form: any property of
+ring maps that respects isomorphisms transports across the same square.
+
+**FAITHFULNESS — the intermediate map is PINNED, deliberately**, exactly as
+recorded on the leaf above: `p` is substituted as `u ≫ q` and the map
+`𝒪_{S,s} ⟶ 𝒪_{Y,y}` is fixed to `q.stalkMap (u x)` rather than quantified
+over, because `u.stalkMap x` need not be injective and the conclusion
+depends on that map through the ideal `𝔪_s·𝒪_{Y,y}`. -/
 theorem flat_quotientMap_of_flat_stalkMap_fiberMapOver
     {X Y S : Scheme.{u}} {q : Y ⟶ S} (u : X ⟶ Y) (x : X)
     (hfib : ((fiberMapOver u rfl ((u ≫ q) x)).stalkMap ((u ≫ q).asFiber x)).hom.Flat) :
@@ -868,8 +1085,12 @@ theorem flat_quotientMap_of_flat_stalkMap_fiberMapOver
           ((u.stalkMap x).hom.comp (q.stalkMap (u x)).hom))
         (u.stalkMap x).hom
         (map_le_comap_map_comp (q.stalkMap (u x)).hom (u.stalkMap x).hom
-          (IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))))).Flat :=
-  sorry
+          (IsLocalRing.maximalIdeal (S.presheaf.stalk ((u ≫ q) x))))).Flat := by
+  obtain ⟨eY, eX, heq⟩ := exists_ringEquiv_stalkMap_fiberMapOver (q := q) u x
+  rw [heq]
+  exact RingHom.Flat.comp
+    (RingHom.Flat.comp (RingHom.Flat.of_bijective eY.bijective) hfib)
+    (RingHom.Flat.of_bijective eX.bijective)
 
 /-- **The fibrewise criterion of flatness, AT A POINT** (PROVEN 2026-07-27
 over the three leaves above —
@@ -940,11 +1161,28 @@ treating a missing *definition* as a missing *theory*:
 The old note's positive content survives and has been moved to the leaf it
 actually describes: the Tor / local-criterion / spreading-out survey is on
 `flat_of_flat_of_flat_quotientMap`, and the stalk-of-pullback survey is on
-`flat_quotientMap_of_flat_stalkMap_fiberMapOver`.  One correction to it
-that a prover should know: mathlib's `Module.free_of_maximalIdeal_rTensor_injective`
-IS the local criterion of flatness in the finitely-presented case, so the
-gap is narrower than "no local criterion exists" suggested — it is exactly
-the step from *finitely* to *essentially* finitely presented.
+`flat_quotientMap_of_flat_stalkMap_fiberMapOver`.
+
+**STATUS of the three leaves, 2026-07-27.**  Two of the three are now closed:
+
+* `essFinitePresentation_stalkMap` — **PROVEN**, and its docstring records
+  that `stableUnderComposition` for `EssFinitePresentation` turned out not to
+  be needed at all.
+* `flat_quotientMap_of_flat_stalkMap_fiberMapOver` — **PROVEN** over the
+  single new leaf `exists_ringEquiv_stalkMap_fiberMapOver`, which carries all
+  of its content and none of its flatness bookkeeping.
+* `flat_of_flat_of_flat_quotientMap` — still open, and still where all the
+  depth is.
+
+An earlier version of this paragraph carried a "correction" claiming that
+mathlib's `Module.free_of_maximalIdeal_rTensor_injective` narrows the gap to
+"exactly the step from *finitely* to *essentially* finitely presented".
+**That claim is false and has been retracted**; the refutation, which is a
+one-line read of the mathlib statement (its hypothesis is finite presentation
+of a MODULE, whereas this leaf has essential finite presentation of a ring
+HOMOMORPHISM — incomparable notions), is written out in full on
+`flat_of_flat_of_flat_quotientMap` itself, together with the axis that audit
+searched and the one it did not.
 
 **Route note that remains true and load-bearing**: `S` is an ARBITRARY
 scheme, so the Noetherian engine 00MP does not reach this statement.  05UV
