@@ -413,9 +413,9 @@ open statements at level `11` are now:
 * `exists_halving_witness` — the `2`-descent over `ℤ[s]` (PID + units + the
   local conditions killing the nontrivial classes);
 * `height_drop_or_small` — the resultant/archimedean bound: either the height
-  drops or `|p| + e² ≤ 398`. Its docstring carries every constant, both integral
+  drops or `|p| + e² ≤ 512`. Its docstring carries every constant, both integral
   Bezout identities, and the coprimality bookkeeping, all verified externally;
-* `smallPoints` — the resulting finite check on `|p| ≤ 398`, `1 ≤ e ≤ 19`.
+* `smallPoints` — the resulting finite check on `|p| ≤ 512`, `1 ≤ e ≤ 22`.
 
 The last two are the two genuinely different inputs — an inequality about two
 explicit binary quartics, and a bounded search — and are attackable
@@ -587,15 +587,22 @@ to `A = p·k`, whence `gcd(A, B) = gcd(p·k, e²·k) = k·gcd(p, e²) = k`, i.e.
 
 Combining: `H ≥ H'⁴/(4g) ≥ H'⁴/495616`. If the height does NOT drop then
 `|p'| + E ≥ |p| + e²`, so `2H' ≥ H` and `H ≥ (H/2)⁴/495616 = H⁴/7929856`,
-giving `H³ ≤ 7929856 = 2¹⁶·11²`, `H ≤ 199`, and `|p| + e² ≤ 2H ≤ 398`. That is
-the bound stated. (The `2¹⁶·11²` is the resultant
-`Res(X⁴−128X+256, X³−4X²+16)`; it reappears here as `16·4·11·11264`, which is
-why the earlier version of this docstring already quoted `H ≤ 199`.)
+giving `H³ ≤ 7929856 = 2¹⁶·11²`, `H ≤ 199`, and `|p| + e² ≤ 2H ≤ 398`. (The
+`2¹⁶·11²` is the resultant `Res(X⁴−128X+256, X³−4X²+16)`; it reappears here as
+`16·4·11·11264`, which is why the earlier version of this docstring already
+quoted `H ≤ 199`.)
 
-**The `398` has enormous slack, deliberately, and it is stated at the value the
-CRUDEST correct route reaches** — so no cleverness is required. Two sharpenings
-exist if a smaller box is wanted in `smallPoints`, and they are worth quoting
-because they are the whole distance between `398` and the truth:
+**The stated bound is `512`, not `398`, ON PURPOSE.** The archimedean step is
+tight — equality holds at `(X, Y) = (4, 1)`, where `F = 0` and `4YG = 64` — so
+`max(|A|, B) ≥ H'⁴/4` cannot be replaced by the more convenient
+`|A| + B ≥ H'⁴/4` without paying a factor of `2` at the `max ≥ sum/2` step; that
+shortcut is perfectly correct and lands at `H ≤ 251`, `|p| + e² ≤ 502`. Stating
+`512` means BOTH routes close this leaf and nobody is forced to keep the `max`.
+The cost is only that `smallPoints` searches `e ≤ 22` instead of `e ≤ 19`.
+
+**Beyond that the slack is enormous, and deliberate.** Two sharpenings exist if
+a smaller box is wanted in `smallPoints`, and they are worth quoting because
+they are the whole distance between `512` and the truth:
 
 * A per-prime reading of the same two Bezout identities gives `g ∣ 2¹⁰·11 =
   11264` (for a prime power `qʲ ∥ g`: `hcop'` puts `q` outside `p'` or outside
@@ -619,14 +626,14 @@ theorem height_drop_or_small {p e p' e' n' : ℤ} (he : 0 < e) (hcop : IsCoprime
     (hn' : n' ^ 2 = p' ^ 3 - 4 * p' ^ 2 * e' ^ 2 + 16 * e' ^ 6)
     (hrel : e ^ 2 * (p' ^ 4 - 128 * p' * e' ^ 6 + 256 * e' ^ 8) = 4 * p * e' ^ 2 * n' ^ 2) :
     p'.natAbs + (e' ^ 2).natAbs < p.natAbs + (e ^ 2).natAbs ∨
-      p.natAbs + (e ^ 2).natAbs ≤ 398 := sorry
+      p.natAbs + (e ^ 2).natAbs ≤ 512 := sorry
 
 /-- **THE FINITE BASE CASE at level `11`** (sorry leaf, 2026-07-27): the only
 SMALL coprime integral points of `W² = U³ − 4U² + 16` are the two real ones.
 
-This is `integral_leaf` restricted to `|p| + e² ≤ 398`, and unlike that
-statement it is a FINITE check: `|p| ≤ 398` and `e² ≤ 398`, so `1 ≤ e ≤ 19`,
-about `10⁴` coprime pairs, each decided by whether `p³ − 4p²e² + 16e⁶` is a
+This is `integral_leaf` restricted to `|p| + e² ≤ 512`, and unlike that
+statement it is a FINITE check: `|p| ≤ 512` and `e² ≤ 512`, so `1 ≤ e ≤ 22`,
+about `1.5·10⁴` coprime pairs, each decided by whether `p³ − 4p²e² + 16e⁶` is a
 perfect square. On that box `|p³ − 4p²e² + 16e⁶| < 1.3·10⁸`, and the value is
 negative — hence instantly not a square — over most of it.
 
@@ -644,14 +651,14 @@ and kernel-reducing `Nat.sqrt` is hopeless (it is well-founded recursion, so
   closed by `omega`/`norm_num` plus "no square strictly between consecutive
   squares". Mechanical, but ~10⁴ witnesses; generate the file.
 
-Either way, consider sharpening first: the bound `398` in
-`height_drop_or_small` is stated at the value its CRUDEST route reaches, and
-that docstring records two cheap sharpenings bringing it to `178` (`e ≤ 13`,
-~3400 pairs) and then to `70` (`e ≤ 8`, ~800 pairs). Lowering it there lowers
-it here in step, and the true bound is `1`. -/
+Either way, consider sharpening first: the bound `512` in
+`height_drop_or_small` is stated above even the crudest route's `502`, and that
+docstring records sharpenings bringing it to `398` (`e ≤ 19`), `178` (`e ≤ 13`,
+~3400 pairs) and then `70` (`e ≤ 8`, ~800 pairs). Lowering it there lowers it
+here in step, and the true bound is `1`. -/
 theorem smallPoints {p e n : ℤ} (he : 0 < e) (hcop : IsCoprime p e)
     (h : n ^ 2 = p ^ 3 - 4 * p ^ 2 * e ^ 2 + 16 * e ^ 6)
-    (hsmall : p.natAbs + (e ^ 2).natAbs ≤ 398) :
+    (hsmall : p.natAbs + (e ^ 2).natAbs ≤ 512) :
     (p = 0 ∧ e = 1) ∨ (p = 4 ∧ e = 1) := sorry
 
 /-- **THE HEIGHT STEP at level `11`** (PROVEN 2026-07-27 over
@@ -833,7 +840,7 @@ and `c`. So the three open statements are `exists_halving_witness` (the
 `2`-descent over `ℤ[s]`: PID, units, and the local conditions),
 `height_drop_or_small` (the resultant/archimedean height bound, where the
 finite-generation content actually lives) and `smallPoints` (the finite base
-case it leaves behind, `|p| ≤ 398` and `1 ≤ e ≤ 19`). See the section docstring
+case it leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22`). See the section docstring
 for the computed evidence behind that split, including why the earlier routing
 note — which called the cubic field's class group the obstruction — was wrong.
 
@@ -929,7 +936,7 @@ infinite descent (`MazurLevel11.integral_leaf_aux`) over
 `MazurLevel11.exists_halving_witness` and `MazurLevel11.halving_descends`; and
 `halving_descends` is now PROVEN in turn, over
 `MazurLevel11.height_drop_or_small` (the resultant/archimedean height bound)
-and `MazurLevel11.smallPoints` (the finite base case `|p| ≤ 398`, `e ≤ 19`).
+and `MazurLevel11.smallPoints` (the finite base case `|p| ≤ 512`, `e ≤ 22`).
 So level `11` stands on exactly three open statements. See the
 `MazurLevel11` section docstring.
 
