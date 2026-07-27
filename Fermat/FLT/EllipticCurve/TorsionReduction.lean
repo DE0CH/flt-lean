@@ -50,14 +50,14 @@ because *any* elliptic curve over `𝔽₅` has fewer than `37` points.
 
 ## The two bricks
 
-`exists_injective_torsion_toReduction` (good reduction) and
 `exists_reduction_dvd_addOrderOf_of_jIntegral` (potentially good reduction) are
 the module's two bricks. Both are Silverman *AEC* VII; see their docstrings for
 the precise citation, the proof route, and an AUDIT of what this tree already
-has towards them.
+has towards them. **Both are now PROVEN**, each over its own smaller leaves;
+what follows is the state of those leaves.
 
-**Brick 1 is PROVEN (2026-07-26)**, over two smaller leaves it was decomposed
-into on the same day, and the reduction bookkeeping underneath it is proven
+**Brick 1, `exists_injective_torsion_toReduction`, is PROVEN (2026-07-26)** over
+two smaller leaves, and the reduction bookkeeping underneath it is proven
 outright:
 
 * `RatAdic.valuationSubring` / `RatAdic.res` / `isReductionAlong_ratAdic` /
@@ -73,7 +73,30 @@ outright:
   missing mathematics: the formal group of a Weierstrass curve and its
   torsion-freeness exist in neither this tree nor mathlib.
 
-Do not start the two open ones expecting a short composition.
+**Brick 2, `exists_reduction_dvd_addOrderOf_of_jIntegral`, is PROVEN
+(2026-07-26)** over the single reduction leaf
+`exists_goodReductionHom_of_jIntegral` — "there is a group homomorphism
+`E(ℚ) → W(𝔽_ℓ)` onto an elliptic curve over `𝔽_ℓ` that does not kill
+prime-to-`ℓ` torsion". Everything downstream of that (Lagrange, and the passage
+from a point of order `p` to `p ∣ #W(𝔽_ℓ)`) is elementary and is proven.
+
+That leaf was in turn DECOMPOSED on 2026-07-27 and is now PROVEN, over
+
+* `exists_tameGoodModel_of_jIntegral` — the arithmetic: `E` acquires good
+  reduction over an extension in which `ℓ` is TOTALLY RAMIFIED. OPEN.
+* `redHom_eq_zero_of_nsmul_eq_zero` — Lutz–Nagell: the kernel of reduction
+  contains no point killed by an integer prime to `ℓ`. OPEN, and it SUBSUMES
+  `redHom_ne_zero_of_prime_order_ne` above; see its docstring.
+
+The key structural discovery, made while cutting it, is worth repeating here:
+**brick 1's `RatAdic` bookkeeping generalises verbatim from `ℚ` to any number
+field**, because `IsDedekindDomain.HeightOneSpectrum.valuationSubringAtPrime`
+is stated for an arbitrary Dedekind domain. That is what makes the
+potentially-good case reachable without `ℚ_ℓ`, formal groups, or Tate's
+algorithm: one may work over the number field `ℚ(ℓ^{1/e})`, in which `ℓ` is
+TOTALLY RAMIFIED, so the residue field is still `𝔽_ℓ`.
+
+Do not start the open ones expecting a short composition.
 
 ## What is PROVEN here
 
@@ -94,6 +117,10 @@ injection into a contradiction:
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.SetTheory.Cardinal.NatCard
 public import Mathlib.Data.ZMod.Basic
+-- `Field (ZMod ℓ)` from `[Fact ℓ.Prime]`, which is what puts the `AddCommGroup`
+-- structure on `W.toAffine.Point` for `W` over `ZMod ℓ`: mathlib's group law on
+-- `Affine.Point` is stated for a field. `Data.ZMod.Basic` alone does not supply it.
+public import Mathlib.Algebra.Field.ZMod
 public import Mathlib.RingTheory.DedekindDomain.AdicValuation
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 
@@ -479,8 +506,341 @@ theorem exists_injective_torsion_toReduction
     rw [map_sub, hPQ, sub_self]
   exact sub_eq_zero.mp ((redHom_eq_zero_iff_of_isOfFinAddOrder hℓ2 W hΔ htor).mp hzero)
 
+/-! ### The potentially-good case: a good model over a totally ramified extension
+
+The three declarations below are the 2026-07-27 decomposition of
+`exists_goodReductionHom_of_jIntegral`. The cut separates the two difficulties
+that leaf mixed, and which have nothing to do with each other:
+
+* **the arithmetic** — produce a field `L ⊇ ℚ` in which `ℓ` is TOTALLY RAMIFIED,
+  and a variable change over `L` carrying `E` to a model with good reduction
+  there. This is Silverman *AEC* VII.5.5 (potentially good reduction from
+  `v_ℓ(j) ≥ 0`) plus the tame totally-ramified model, and is `TameGoodModel` /
+  `exists_tameGoodModel_of_jIntegral`.
+* **the reduction theory** — on such a model, the kernel of reduction contains no
+  point killed by an integer prime to `ℓ`. This is Lutz–Nagell, and is
+  `redHom_eq_zero_of_nsmul_eq_zero`.
+
+**THE STRUCTURAL DISCOVERY THAT MAKES THIS CUT WORTH MAKING** (2026-07-27, and it
+refutes the "GAP A is a few hundred lines of bookkeeping" note that the
+pre-decomposition docstring below carried). `RatAdic` above builds the `ℓ`-adic
+valuation subring of `ℚ` and its residue map to `𝔽_ℓ` in about seventy lines,
+because `IsDedekindDomain.HeightOneSpectrum.valuationSubringAtPrime` packages the
+localization of a Dedekind domain at a height-one prime as a `ValuationSubring`
+of the fraction field. **That declaration is stated for an ARBITRARY Dedekind
+domain**, so the same seventy lines run verbatim over `𝓞_L` for a number field
+`L` and a prime `𝔭 ∣ ℓ`. The residue field is `𝓞_L/𝔭`, which is `𝔽_ℓ` exactly
+when `𝔭` has residue degree `1` — i.e. exactly when `ℓ` is totally ramified.
+
+The consequence is that **`ℚ_ℓ` is not needed anywhere in this cut, and neither
+are formal groups or Tate's algorithm**. One may take `L = ℚ(ℓ^{1/12})`, a fixed
+degree-`12` number field independent of `E`: `X¹² − ℓ` is Eisenstein at `ℓ`, so
+`ℓ` is totally ramified in `L` and the residue field at the prime above it is
+`𝔽_ℓ`. Since the ramification index needed is `e = 12 / gcd(v_ℓ(Δ_min), 12)`,
+which always DIVIDES `12`, this single `L` works for every `E` at once — and
+`ℓ ≥ 5` is what makes `gcd(e, ℓ) = 1`, i.e. the ramification tame.
+
+The scaling arithmetic is elementary and is worth recording so the owner of
+`exists_tameGoodModel_of_jIntegral` need not rediscover it. Over a field of
+characteristic `≠ 2, 3` put `E` in the form `y² = x³ + Ax + B`, so that
+`Δ = −16(4A³ + 27B²)` and `j = 1728 · 4A³/(4A³ + 27B²)`. Write `a = v(A)`,
+`b = v(B)`, `d = v(4A³ + 27B²)`. The variable change `(x, y) ↦ (u²x, u³y)` sends
+`(A, B) ↦ (u⁴A, u⁶B)` and scales `4A³ + 27B²` by `u¹²`, so a good model needs
+`t = v(u)` with
+
+    4t + a ≥ 0,    6t + b ≥ 0,    12t + d = 0,
+
+i.e. `t = −d/12`, which is achievable in `L` precisely because `12t ∈ ℤ` and `ℓ`
+is totally ramified of degree `12`. The first condition is `3a ≥ d`, which **is
+exactly the hypothesis `v_ℓ(j) ≥ 0`**; and the second, `2b ≥ d`, is then
+automatic: `d ≥ min(3a, 2b)` always, so if `3a < 2b` then `d = 3a ≤ 2b`; if
+`3a > 2b` then `d = 2b`; and if `3a = 2b` then `d ≤ 3a = 2b` by `3a ≥ d`. So
+`v_ℓ(j) ≥ 0` is not merely sufficient for the construction — it is precisely the
+one inequality that is not automatic. -/
+
+/-- **A good model of `E` over an extension in which `ℓ` is totally ramified**,
+bundled with everything `PointReduction.lean`'s `redHom` needs.
+
+The fields say: `L` is a field extension of `ℚ`; `A ⊆ L` is a valuation subring
+whose residue map `res` lands in `𝔽_ℓ` and is LOCAL (so the residue field is
+`𝔽_ℓ` itself, which is where "totally ramified" is encoded — an unramified or
+mixed extension would give a residue field strictly larger than `𝔽_ℓ` and no
+`res` into `ZMod ℓ` at all); `V` is `E` transported to `L` by a variable change
+`C`; `red` is its coefficientwise reduction, which is nonsingular; and `emb`
+injects the rational points of `E` into `V(L)`.
+
+**WHY `V_eq` IS PRESENT, AND WHY THE STRUCTURE WOULD BE UNFAITHFUL WITHOUT IT.**
+Without pinning `V` to a variable change of `E⁄L`, the structure could be
+satisfied by an UNRELATED curve `V` with good reduction at `ℓ` together with an
+abstract injective homomorphism of abelian groups `E(ℚ) →+ V(L)` — such a
+homomorphism can exist for purely group-theoretic reasons (both groups are
+finitely generated of the same shape) while carrying none of the reduction
+theory this leaf is supposed to supply. `V_eq` forces `V` to be `L`-isomorphic
+to `E`, so "V has good reduction at `A`" really does say that `E` has
+POTENTIALLY good reduction at `ℓ`, which is the content.
+
+`emb` is left as an abstract injective homomorphism rather than pinned to
+`Affine.Point.baseChange` composed with a variable-change isomorphism, because
+**mathlib has no map on points induced by a `VariableChange`** (verified
+2026-07-27 by grepping `AlgebraicGeometry/EllipticCurve/Affine/` for
+`VariableChange`: `Affine/Basic.lean` uses it only in
+`equation_iff_variableChange` / `nonsingular_iff_variableChange`, and
+`Affine/Point.lean` does not mention it at all). Constructing that map — the
+explicit substitution `(x, y) ↦ (u²x + r, u³y + u²sx + t)` and its inverse,
+shown to be additive — is an elementary but real obligation, and it is part of
+what the owner of `exists_tameGoodModel_of_jIntegral` must build. Writing it as
+a general `VariableChange`-induced `≃+` on `Affine.Point` and contributing it
+upstream would be the better shape.
+
+THE CHECK THAT WOULD REFUTE THE ABOVE: `grep -rn 'VariableChange'
+Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` returning a point-level
+map, or an `Affine.Point` congruence along `C • W = W'`. -/
+structure TameGoodModel (E : WeierstrassCurve ℚ) (ℓ : ℕ) [Fact ℓ.Prime] where
+  /-- The extension of `ℚ` over which `E` acquires good reduction. -/
+  L : Type
+  [instField : Field L]
+  [instDec : DecidableEq L]
+  [instAlgebra : Algebra ℚ L]
+  /-- The valuation subring of `L` above `ℓ`. -/
+  A : ValuationSubring L
+  /-- Its residue map. Landing in `ZMod ℓ` rather than an extension of it is
+  where TOTAL RAMIFICATION is encoded. -/
+  res : A →+* ZMod ℓ
+  [instLocal : IsLocalHom res]
+  /-- The variable change over `L` producing the good model. -/
+  C : VariableChange L
+  /-- The good model itself. -/
+  V : WeierstrassCurve L
+  /-- `V` is genuinely a model of `E` over `L`, not an unrelated curve. -/
+  V_eq : V = C • (E.baseChange L)
+  /-- The reduction of `V` modulo the maximal ideal of `A`. -/
+  red : WeierstrassCurve (ZMod ℓ)
+  /-- The reduction datum, in the form `redHom` consumes. -/
+  isReduction : IsReductionAlong A res V red
+  /-- Good reduction: the reduced curve is nonsingular. -/
+  red_Δ_ne_zero : red.Δ ≠ 0
+  /-- The rational points of `E` sit inside `V(L)`. -/
+  emb : (E⁄ℚ).Point →+ V.toAffine.Point
+  /-- and they do so injectively. -/
+  emb_injective : Function.Injective emb
+
+attribute [instance] TameGoodModel.instField TameGoodModel.instDec
+  TameGoodModel.instAlgebra TameGoodModel.instLocal
+
+/-- **Potentially good reduction, as the existence of a tame good model** (sorry
+leaf, opened 2026-07-27 by decomposing `exists_goodReductionHom_of_jIntegral`).
+
+THIS IS THE ARITHMETIC HALF, and it is where Silverman *AEC* VII.5.5 lives. See
+the section note above for the explicit construction: take `L = ℚ(ℓ^{1/12})`,
+`A` the valuation subring of `𝓞_L` at the unique prime above `ℓ` (obtained from
+`IsDedekindDomain.HeightOneSpectrum.valuationSubringAtPrime`, exactly as
+`RatAdic` does over `ℚ`), and the variable change `u` with `v(u) = −d/12` in the
+short Weierstrass form. The hypothesis `¬ ℓ ∣ E.j.den` is used exactly once, to
+give `3a ≥ d`, which is the one inequality that is not automatic.
+
+`hℓ5` is load-bearing twice: it makes the ramification TAME (`gcd(12, ℓ) = 1`),
+and it puts `E` in short Weierstrass form (`char ≠ 2, 3`).
+
+WHAT MUST BE BUILT, none of which exists in this tree or in mathlib (checked
+2026-07-27):
+
+1. The number field `ℚ(ℓ^{1/12})` with `ℓ` totally ramified — Eisenstein
+   irreducibility is `Polynomial.IsEisensteinAt.irreducible` in mathlib, and
+   "Eisenstein implies totally ramified" is the part to look for.
+2. Residue degree `1` at that prime, i.e. `𝓞_L/𝔭 ≃+* ZMod ℓ`, which is what
+   makes `res` land in `ZMod ℓ`.
+3. The `VariableChange`-induced map on `Affine.Point` (see `TameGoodModel`'s
+   docstring), needed for `emb`.
+4. The valuation bookkeeping of the scaling argument.
+
+THE CHECK THAT WOULD REFUTE THIS ROUTE: a mathlib declaration giving a totally
+ramified extension of prescribed degree over a number field with an explicit
+residue-field identification, or a point-level `VariableChange` map. Either
+would shorten the list above.
+
+NOT VACUOUS. `TameGoodModel` is a structure with an `emb_injective` field, so it
+cannot be discharged by a zero homomorphism; and `V_eq` forbids substituting an
+unrelated curve. See `TameGoodModel`'s docstring for why that field is there. -/
+theorem exists_tameGoodModel_of_jIntegral
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {ℓ : ℕ} [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ E.j.den)) :
+    Nonempty (TameGoodModel E ℓ) :=
+  sorry
+
+/-- **The kernel of reduction contains no point killed by an integer prime to
+`ℓ`** (sorry leaf, opened 2026-07-27 by decomposing
+`exists_goodReductionHom_of_jIntegral`). Lutz–Nagell, in the generality of an
+arbitrary valuation subring with residue field `𝔽_ℓ`.
+
+**THIS SUBSUMES `redHom_ne_zero_of_prime_order_ne` ABOVE, AND THE TWO SHOULD BE
+UNIFIED.** That leaf is this statement specialised to `L = ℚ`,
+`A = RatAdic.valuationSubring ℓ`, `V = W⁄ℚ` for an integral `W`, and `n = q` a
+prime `≠ ℓ`; the general-order case follows from the prime case by the same
+`minFac` argument `redHom_eq_zero_iff_of_isOfFinAddOrder` already uses. They were
+opened independently — the `RatAdic` one on 2026-07-26 while decomposing brick 1,
+this one on 2026-07-27 while decomposing brick 2 — and whoever proves either
+should prove THIS one and derive the other, since the argument does not use
+anything special about `ℚ`. Flagged rather than merged here because
+`redHom_ne_zero_of_prime_order_ne` has a separate live owner and this file's
+rule is not to edit another owner's declaration.
+
+WHY THE GENERAL FORM IS NO HARDER. The classical proof is Cassels' division
+polynomial argument, and every ingredient it needs is already present at this
+generality:
+
+* `ΨSqₙ` has coefficients in `A`, because `IsReductionAlong` says exactly that
+  `V`'s coefficients lie in `A`;
+* its leading coefficient is `n²`, which is a UNIT of `A` precisely when
+  `res n ≠ 0`, i.e. when `¬ ℓ ∣ n` — this is the only place the hypothesis `hn`
+  is used, and it is why the `ℓ`-primary case is genuinely excluded rather than
+  merely inconvenient;
+* `ValuationSubring.mem_of_root_of_inv_leadingCoeff_mem`
+  (`GoodReduction.lean:62`) then puts the abscissa of `P` in `A`, and it is
+  stated for an ARBITRARY valuation subring already;
+* `IsReductionAlong.redFun_eq_zero_iff` (`PointReduction.lean:712`) says the
+  kernel of reduction is exactly the non-integral locus, so an integral abscissa
+  forces `P = 0`.
+
+Note `hΔ` is needed only so that `redHom` exists at all; the integrality
+argument does not use it. Note also that `¬ ℓ ∣ n` already forces `n ≠ 0`.
+
+`GoodReduction.lean`'s `torsion_abscissa_mem` is the same theorem but stated
+over a SEPARABLE CLOSURE with a compatibility hypothesis relating `𝒪` back to a
+DVR `R`, and under `[E.HasGoodReduction R]`. Deriving this statement from it
+therefore costs the descent along `L → Lˢᵉᵖ` and an instance of
+`HasGoodReduction`; proving it directly from the four ingredients above may well
+be shorter, and is the recommended route.
+
+THE CHECK THAT WOULD REFUTE THE "no harder" CLAIM: if
+`mem_of_root_of_inv_leadingCoeff_mem` or the division-polynomial API turns out
+to need a DISCRETE or COMPLETE valuation, the general form is not available and
+the leaf must be restated for a DVR. Read those signatures before starting. -/
+theorem redHom_eq_zero_of_nsmul_eq_zero {ℓ : ℕ} [Fact ℓ.Prime] {L : Type*} [Field L]
+    [DecidableEq L] {A : ValuationSubring L} {ρ : A →+* ZMod ℓ} [IsLocalHom ρ]
+    {V : WeierstrassCurve L} {Wred : WeierstrassCurve (ZMod ℓ)}
+    (hred : IsReductionAlong A ρ V Wred) (hΔ : Wred.Δ ≠ 0)
+    {P : V.toAffine.Point} {n : ℕ} (hn : ¬ (ℓ ∣ n)) (hP : n • P = 0)
+    (hker : hred.redHom hΔ P = 0) :
+    P = 0 :=
+  sorry
+
+/-- **Potentially good reduction at a tame prime, packaged as a reduction
+homomorphism injective on prime-to-`ℓ` torsion** (PROVEN 2026-07-27 over
+`exists_tameGoodModel_of_jIntegral` and `redHom_eq_zero_of_nsmul_eq_zero`;
+opened 2026-07-26
+as the cut of `exists_reduction_dvd_addOrderOf_of_jIntegral`): if `ℓ ≥ 5` and
+`j(E)` is `ℓ`-integral, then there is an elliptic curve `W` over `𝔽_ℓ` and a
+group homomorphism `f : E(ℚ) → W(𝔽_ℓ)` such that a point killed by an integer
+prime to `ℓ` and lying in `ker f` is already `0`.
+
+THIS IS THE WHOLE REDUCTION-THEORETIC CONTENT of
+`exists_reduction_dvd_addOrderOf_of_jIntegral`; that theorem is now PROVEN over
+this leaf by Lagrange, and it is the only consumer. The cut was chosen here
+because everything downstream of "the reduction map exists and does not kill
+prime-to-`ℓ` torsion" is elementary group theory, while everything upstream is
+Silverman *AEC* VII and is a theory this repository does not have.
+
+WHY THE KERNEL CONDITION IS PHRASED WITH AN ARBITRARY `n` rather than as
+`Function.Injective f`. Injectivity on the nose is FALSE: `E(ℚ)` may have
+positive rank, and the kernel of reduction is an infinite pro-`ℓ` group, so `f`
+kills plenty. Injectivity holds exactly on the prime-to-`ℓ` torsion, and
+`∀ P n, ¬ ℓ ∣ n → n • P = 0 → f P = 0 → P = 0` is that statement written
+without having to name a torsion subgroup. Note `¬ ℓ ∣ n` already forces
+`n ≠ 0`, since `ℓ ∣ 0`, so no separate nondegeneracy hypothesis is needed.
+The `ℓ`-primary torsion really is NOT covered, and must not be: at a prime of
+good ordinary reduction the `ℓ`-torsion of the kernel is where the formal group
+lives.
+
+CLASSICAL STATEMENT AND ROUTE. Silverman *AEC* VII.5.5 plus VII.3.1, in four
+steps, of which the first three are the missing theory:
+
+1. `¬ ℓ ∣ E.j.den` says `v_ℓ(j) ≥ 0`, so `E/ℚ_ℓ` has POTENTIALLY GOOD REDUCTION
+   (*AEC* VII.5.5). This is an iff, and only this direction is needed.
+2. Because `ℓ ≥ 5` the ramification is TAME, and good reduction is attained over
+   a TOTALLY RAMIFIED extension `L/ℚ_ℓ` of degree `e = 12 / gcd(v_ℓ(Δ_min), 12)`,
+   so `e ∈ {1, 2, 3, 4, 6, 12}` and `gcd(e, ℓ) = 1`. Concretely, choosing
+   `u ∈ L` with `v_L(u) = v_ℓ(Δ_min) · e / 12` — an integer by the choice of
+   `e` — the variable change `(x, y) ↦ (u²x, u³y)` scales `Δ` by `u^{-12}` and
+   lands `v_L(Δ') = 0`.
+   TOTALLY RAMIFIED IS THE LOAD-BEARING WORD: it makes the residue field of `L`
+   equal to `𝔽_ℓ` rather than an extension of it, which is what keeps the
+   resulting point count inside the `(#𝔽_ℓ)² + 1` bound the consumers use. An
+   unramified or mixed extension would make this leaf true but useless.
+3. Reduction `W(L) → W(𝔽_ℓ)` on the good model is a group homomorphism whose
+   kernel is `E₁(L)`, the group of points of the formal group `Ê(𝔪_L)`, hence a
+   PRO-`ℓ` group (*AEC* VII.3.1 with VII.2.2): an element killed by an integer
+   prime to `ℓ` is therefore `0`. Composing with `E(ℚ) ⊆ E(ℚ_ℓ) ⊆ E(L) ≅ W(L)`
+   gives `f`.
+4. `W.IsElliptic` is exactly `v_L(Δ') = 0` read in the residue field.
+
+WHAT THIS TREE HAS, AND THE THREE GAPS. Identical audit to
+`exists_injective_torsion_toReduction` above, and the two leaves should be
+attacked together by whoever builds the theory — they are the same machinery in
+the good and the potentially-good case, and neither is a short composition:
+
+* `Fermat/FLT/KnownIn1980s/EllipticCurves/PointReduction.lean` (sorry-free) has
+  the reduction homomorphism on points, `redHom`, for a `ValuationSubring` and a
+  local ring hom to a field, plus `redFun_eq_zero_iff` identifying the kernel by
+  non-integrality of the abscissa. That is step 3's SHAPE but not its content.
+* `Fermat/FLT/KnownIn1980s/EllipticCurves/GoodReduction.lean` (sorry-free) has
+  Lutz–Nagell integrality, `torsion_abscissa_mem` and `torsion_ordinate_mem` —
+  but under `[NeZero (n : ResidueField R)]`, i.e. only for prime-to-`ℓ` torsion.
+  THAT IS EXACTLY THE RANGE THIS LEAF ASKS FOR, which is why this leaf is the
+  more reachable of the two: unlike its sibling it does NOT need the
+  formal-group `e < ℓ − 1` argument, only the pro-`ℓ` statement restricted to
+  the prime-to-`ℓ` part, which is formal.
+* GAP A — **RETIRED 2026-07-27, and the "few hundred lines" estimate was wrong.**
+  It read: "nothing builds the `ℓ`-adic valuation subring of `ℚ`, or of a totally
+  ramified `L/ℚ_ℓ`, in the form `redHom` wants". `RatAdic` above now does exactly
+  that over `ℚ`, in about seventy lines, via
+  `IsDedekindDomain.HeightOneSpectrum.valuationSubringAtPrime`; and because that
+  mathlib declaration is stated for an arbitrary Dedekind domain, the same
+  seventy lines run over `𝓞_L`. See the section note above
+  `TameGoodModel`. What survives of GAP A is only the residue-degree-`1`
+  identification `𝓞_L/𝔭 ≃+* 𝔽_ℓ`, and it is now part of
+  `exists_tameGoodModel_of_jIntegral`.
+* GAP B (real) and GAP C (real): step 1, the criterion
+  `v(j) ≥ 0 ⟹ potentially good reduction`, and step 2, the tame
+  totally-ramified model, are in neither this tree nor mathlib. **Both are now
+  exactly `exists_tameGoodModel_of_jIntegral`**, and the section note above
+  gives the explicit elementary construction that discharges them together —
+  notably, without `ℚ_ℓ`, minimal models, or `v(Δ_min)`: the short Weierstrass
+  form and the single inequality `3v(A) ≥ v(4A³ + 27B²)` suffice.
+
+Step 3 is `redHom_eq_zero_of_nsmul_eq_zero`, and note it does NOT need the
+formal group: in the prime-to-`ℓ` range Cassels' division-polynomial argument
+gives it, which is why this leaf is the more reachable of the two bricks.
+
+NOT VACUOUS. The hypotheses are satisfiable — `ℓ = 5`, `E = 14a4`, whose `j` is
+an integer — and there the conclusion is a genuine assertion, since `14a4(ℚ)`
+has a point of order `7`. Nor is the conclusion satisfiable by junk: the zero
+homomorphism does not work, because it would force every prime-to-`ℓ` torsion
+point of `E(ℚ)` to vanish.
+
+DECOMPOSED AND PROVEN 2026-07-27. The proof below is the whole of what this leaf
+contributed beyond its two parts: take the good model, reduce along it, and
+transport the kernel condition back through the injection. -/
+theorem exists_goodReductionHom_of_jIntegral
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {ℓ : ℕ} [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ E.j.den)) :
+    ∃ (W : WeierstrassCurve (ZMod ℓ)) (f : (E⁄ℚ).Point →+ W.toAffine.Point),
+      W.IsElliptic ∧
+        ∀ (P : (E⁄ℚ).Point) (n : ℕ), ¬ (ℓ ∣ n) → n • P = 0 → f P = 0 → P = 0 := by
+  obtain ⟨M⟩ := E.exists_tameGoodModel_of_jIntegral hℓ5 hj
+  refine ⟨M.red, (M.isReduction.redHom M.red_Δ_ne_zero).comp M.emb, ?_, ?_⟩
+  · -- Over a field `IsElliptic` is just `Δ ≠ 0`.
+    exact ⟨isUnit_iff_ne_zero.mpr M.red_Δ_ne_zero⟩
+  · intro P n hn hnP hker
+    -- `emb` is additive, so `P` being killed by `n` is inherited by its image.
+    have hnι : n • M.emb P = 0 := by rw [← map_nsmul, hnP, map_zero]
+    -- The image lies in the kernel of reduction, so it vanishes.
+    have himg : M.emb P = 0 :=
+      redHom_eq_zero_of_nsmul_eq_zero M.isReduction M.red_Δ_ne_zero hn hnι hker
+    exact M.emb_injective (by rw [himg, map_zero])
+
 /-- **A rational point of prime order `p` survives reduction at any prime `ℓ ≥ 5`
-of potentially good reduction** (sorry leaf, opened 2026-07-26): if `j(E)` is
+of potentially good reduction** (PROVEN 2026-07-26 over the leaf
+`exists_goodReductionHom_of_jIntegral` above): if `j(E)` is
 `ℓ`-integral and `E/ℚ` carries a rational point of exact order `p ≠ ℓ`, then some
 elliptic curve over `𝔽_ℓ` has `p` dividing its number of points.
 
@@ -513,12 +873,37 @@ NOT VACUOUS. The conclusion is a genuine assertion about `𝔽_ℓ`-curves; it i
 the consumers that combine it with `#W(𝔽_ℓ) ≤ (#𝔽_ℓ)² + 1` to reach a
 contradiction. In particular the hypotheses are jointly satisfiable for small
 `p` — e.g. `p = 7`, `ℓ = 5`, `E = 14a4` — where the conclusion is true and
-non-trivial. -/
+non-trivial.
+
+DECOMPOSED 2026-07-26, and this declaration is now PROVEN. All of the
+reduction-theoretic content was factored out into the single leaf
+`exists_goodReductionHom_of_jIntegral` below; what remains here — the passage
+from "a homomorphism injective on prime-to-`ℓ` torsion" to the divisibility
+`p ∣ #W(𝔽_ℓ)` — is Lagrange plus `addOrderOf_map_dvd`, and is proven. See that
+leaf's docstring for the route and the audit. -/
 theorem exists_reduction_dvd_addOrderOf_of_jIntegral
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {ℓ p : ℕ} [Fact ℓ.Prime]
     (hℓ5 : 5 ≤ ℓ) (hp : p.Prime) (hpℓ : p ≠ ℓ) (hj : ¬ (ℓ ∣ E.j.den))
     (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = p) :
-    ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧ p ∣ Nat.card W.toAffine.Point :=
-  sorry
+    ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧ p ∣ Nat.card W.toAffine.Point := by
+  obtain ⟨W, f, hW, hker⟩ := E.exists_goodReductionHom_of_jIntegral hℓ5 hj
+  refine ⟨W, hW, ?_⟩
+  -- `ℓ ∤ p`: two distinct primes.
+  have hℓp : ¬ (ℓ ∣ p) := fun h => hpℓ ((Nat.prime_dvd_prime_iff_eq Fact.out hp).mp h).symm
+  -- `Q` is killed by `p`, which is prime to `ℓ`, so `Q` is not in the kernel of `f`.
+  have hpQ : p • Q = 0 := hQ ▸ addOrderOf_nsmul_eq_zero Q
+  have hfQ0 : f Q ≠ 0 := by
+    intro h
+    have hQ0 : Q = 0 := hker Q p hℓp hpQ h
+    rw [hQ0, addOrderOf_zero] at hQ
+    exact hp.one_lt.ne hQ
+  -- Its image therefore has order exactly `p`.
+  have hdvd : addOrderOf (f Q) ∣ p := hQ ▸ addOrderOf_map_dvd f Q
+  have hfQ : addOrderOf (f Q) = p := by
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hp _ hdvd) with h1 | hpp
+    · exact absurd (AddMonoid.addOrderOf_eq_one_iff.mp h1) hfQ0
+    · exact hpp
+  -- Lagrange in the finite group `W(𝔽_ℓ)`.
+  exact hfQ ▸ addOrderOf_dvd_natCard (f Q)
 
 end WeierstrassCurve
