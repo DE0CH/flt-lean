@@ -21640,7 +21640,33 @@ PERFORMANCE NOTE (measured): `ΨSq 7`'s evaluation is stated in the shape the
 rewrites literally produce, and converted to the shape the consumer wants by the
 THREE-ATOM identity `hkey`.  Doing that conversion with `ring` on the expanded
 polynomial instead makes it expand a degree-`24` polynomial in three variables
-and costs more than ten minutes. -/
+and costs more than ten minutes.
+
+**THE ABSCISSA IDENTIFICATION (strengthening added 2026-07-27; the last five
+conjuncts).**  The algebraic conjuncts `hx2`/`hx3`/`hpsi` do NOT determine
+`x₁, x₂, x₃`: `ψ₇` has `24` roots, three for each of the up to eight order-`7`
+subgroups, and a curve carrying two independent `7`-isogenies has two DIFFERENT
+rational triples satisfying every one of them.  So a consumer that wants Vélu's
+sums over `⟨P⟩` — i.e. `WeierstrassCurve.exists_x0Seven_veluShortQuotient` — cannot
+recover *which* subgroup's abscissae it is holding, and no amount of work
+downstream can repair that: the missing conjunct is unprovable in a context where
+the triple is unpinned.
+
+The proof, on the other hand, knows the answer outright — it builds
+`x₁ = x(P)`, `x₂ = x(2P)`, `x₃ = x(3P)` from actual points — so the fix belongs
+here.  The conclusion therefore also records
+
+* the distinctness `x₃ ≠ x₁`, `x₃ ≠ x₂` (with `x₂ ≠ x₁` already present, this
+  makes `{x₁, x₂, x₃}` a `3`-element set);
+* the three pinnings `veluPointX P = x₁`, `veluPointX (2 • P) = x₂`,
+  `veluPointX (3 • P) = x₃`;
+* and that EVERY nonzero element of `⟨P⟩` has one of them as its abscissa, which
+  is the `±`-folding `x(iP) = x((7 − i)P)` collapsing `i ∈ {4, 5, 6}` onto
+  `{3, 2, 1}` (`hmemT` below, the same computation `hTstab` already performs with
+  a Galois element in front).
+
+Together these say exactly `(⟨P⟩ ∖ {0}).image veluPointX = {x₁, x₂, x₃}`, stated
+without needing a `DecidableEq` instance in the signature. -/
 theorem MazurLevelSeven.exists_kernelCoords_of_isShortNF (E₀ : WeierstrassCurve ℚ)
     [E₀.IsElliptic] [E₀.IsShortNF]
     (P : (E₀⁄(AlgebraicClosure ℚ)).Point) (hPord : addOrderOf P = 7)
@@ -21667,7 +21693,13 @@ theorem MazurLevelSeven.exists_kernelCoords_of_isShortNF (E₀ : WeierstrassCurv
             - 4 * a * b * x₁ - a ^ 3 - 8 * b ^ 2)) ^ 3 = 0 ∧
       algebraMap ℚ (AlgebraicClosure ℚ) s₁ = x₁ + x₂ + x₃ ∧
       algebraMap ℚ (AlgebraicClosure ℚ) s₂ = x₁ * x₂ + x₁ * x₃ + x₂ * x₃ ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ := by
+      algebraMap ℚ (AlgebraicClosure ℚ) s₃ = x₁ * x₂ * x₃ ∧
+      x₃ ≠ x₁ ∧ x₃ ≠ x₂ ∧
+      veluPointX P = x₁ ∧
+      veluPointX ((2 : ℤ) • P) = x₂ ∧
+      veluPointX ((3 : ℤ) • P) = x₃ ∧
+      ∀ R ∈ AddSubgroup.zmultiples P, R ≠ 0 →
+        veluPointX R = x₁ ∨ veluPointX R = x₂ ∨ veluPointX R = x₃ := by
   classical
   set K := AlgebraicClosure ℚ with hKdef
   haveI hEK : ((E₀⁄K) : WeierstrassCurve K).IsElliptic :=
@@ -21975,7 +22007,37 @@ theorem MazurLevelSeven.exists_kernelCoords_of_isShortNF (E₀ : WeierstrassCurv
   obtain ⟨s₁, hs₁⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ + x₂ + x₃) hfix1
   obtain ⟨s₂, hs₂⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ + x₁ * x₃ + x₂ * x₃) hfix2
   obtain ⟨s₃, hs₃⟩ := MazurLevel9.exists_rat_of_galois_fixed (x₁ * x₂ * x₃) hfix3
-  exact ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h12.symm, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩
+  -- ### the abscissa identification: `{x₁, x₂, x₃}` IS the abscissa set of `⟨P⟩ ∖ {0}`
+  -- (the `±`-folding `x(iP) = x((7−i)P)` collapses `i ∈ {4,5,6}` onto `{3,2,1}`)
+  have hmemT : ∀ i : ℤ, ¬((7 : ℤ) ∣ i) →
+      veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₁ ∨
+      veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₂ ∨
+      veluPointX (i • (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point)) = x₃ := by
+    intro i hi
+    rw [hred i]
+    have h7 : i % 7 = 1 ∨ i % 7 = 2 ∨ i % 7 = 3 ∨ i % 7 = 4 ∨ i % 7 = 5 ∨ i % 7 = 6 := by
+      have h1 : (0 : ℤ) ≤ i % 7 := Int.emod_nonneg i (by norm_num)
+      have h2 : i % 7 < 7 := Int.emod_lt_of_pos i (by norm_num)
+      have h3 : i % 7 ≠ 0 := fun h => hi (Int.dvd_of_emod_eq_zero h)
+      omega
+    rcases h7 with h | h | h | h | h | h
+    · rw [h, hxv1]; exact Or.inl rfl
+    · rw [h, hxv2]; exact Or.inr (Or.inl rfl)
+    · rw [h, hxv3]; exact Or.inr (Or.inr rfl)
+    · rw [h, show ((4 : ℤ)) = 7 - 3 by norm_num, hnegmul, velu_pointX_neg, hxv3]
+      exact Or.inr (Or.inr rfl)
+    · rw [h, show ((5 : ℤ)) = 7 - 2 by norm_num, hnegmul, velu_pointX_neg, hxv2]
+      exact Or.inr (Or.inl rfl)
+    · rw [h, show ((6 : ℤ)) = 7 - 1 by norm_num, hnegmul, velu_pointX_neg, hxv1]
+      exact Or.inl rfl
+  have hzm : ∀ R ∈ AddSubgroup.zmultiples
+        (Affine.Point.some x₁ y₁ hns : (E₀⁄K).Point), R ≠ 0 →
+      veluPointX R = x₁ ∨ veluPointX R = x₂ ∨ veluPointX R = x₃ := by
+    rintro R hR hR0
+    obtain ⟨i, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hR
+    exact hmemT i (fun hd => hR0 (hz i hd))
+  exact ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h12.symm, hdup, htri, hpsi7, hs₁, hs₂, hs₃,
+    h13.symm, h23.symm, rfl, hxv2, hxv3, hzm⟩
 
 /-- **Coordinates of the kernel of a stable order-`7` subgroup** (PROVEN
 2026-07-27 over `MazurLevelSeven.exists_kernelCoords_of_isShortNF`; cut
@@ -22092,7 +22154,7 @@ theorem WeierstrassCurve.exists_x0Seven_kernelCoords (E : WeierstrassCurve ℚ)
     have hR : ee (k • P) = k • g := by rw [map_zsmul, hPee]
     rw [hL, hR]
     exact hk.symm
-  obtain ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃⟩ :=
+  obtain ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃, -, -, -, -, -, -⟩ :=
     MazurLevelSeven.exists_kernelCoords_of_isShortNF (C • E) P hPord hstab
   have hΔ : (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2 : ℚ) ≠ 0 := by
     intro h0
@@ -22457,6 +22519,85 @@ lemma MazurLevelSeven.veluW_eq_sum_image {S : Finset W.Point} (hS : IsPointSubgr
 
 end VeluHalfSums
 
+/-! #### Vélu's data under a change of variables (obligation 2, PROVEN 2026-07-27)
+
+Vélu's `t` has weight `4` and `w` weight `6`, but `w` is NOT simply `u⁻⁶`-homogeneous: the
+`x`-translation `x ↦ u²x + r` feeds the `t`-sum into the `w`-sum.  The exact statement is
+
+  `C • (W.veluModel t w) = (C • W).veluModel (u⁻⁴ t) (u⁻⁶ (w − r t))`,
+
+where the `−r t` is precisely the `12r` in mathlib's `(C • W).b₂ = u⁻²(b₂ + 12r)`; check the
+`a₆`-slot of `variableChange` against `veluModel`'s `a₆ − b₂t − 7w` and it falls out.
+
+At the level of POINTS the change of variables is `x ↦ u²x + r`
+(`Affine.Point.equivVariableChange_some`), and the two Vélu term polynomials are homogeneous
+for it:
+
+  `N(u²x + r) = u⁴ N'(x)`,  `D(u²x + r) = u⁶ D'(x)`
+
+with `N(X) = 6X² + b₂X + b₄` and `D(X) = 4X³ + b₂X² + 2b₄X + b₆`, primes denoting `C • W`.
+Both are `linear_combination`s of mathlib's `variableChange_b₂/b₄/b₆`.  Summing the second
+plus `x·` the first over the three abscissae is what turns `u⁻⁶(w − rt)` into the short-model
+`w' = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`. -/
+
+section VeluVariableChange
+
+/-- **Vélu's model under a change of variables** (the curve-level half of obligation 2). -/
+lemma MazurLevelSeven.variableChange_veluModel {k : Type*} [Field k] (W : WeierstrassCurve k)
+    (C : VariableChange k) (t w : k) :
+    C • (W.veluModel t w)
+      = (C • W).veluModel (((C.u⁻¹ : kˣ) : k) ^ 4 * t)
+          (((C.u⁻¹ : kˣ) : k) ^ 6 * (w - C.r * t)) := by
+  ext
+  · simp only [WeierstrassCurve.veluModel, WeierstrassCurve.variableChange_a₁]
+  · simp only [WeierstrassCurve.veluModel, WeierstrassCurve.variableChange_a₂]
+  · simp only [WeierstrassCurve.veluModel, WeierstrassCurve.variableChange_a₃]
+  · simp only [WeierstrassCurve.veluModel, WeierstrassCurve.variableChange_a₄]; ring
+  · simp only [WeierstrassCurve.veluModel, WeierstrassCurve.variableChange_a₆,
+      WeierstrassCurve.variableChange_b₂]
+    ring
+
+/-- **The abscissa under the base-changed change of variables** (the point-level half of
+obligation 2): `x(C·Q) = u²x(Q) + r` away from the point at infinity, where the junk value
+`veluPointX 0 = 0` would break the affine formula. -/
+lemma MazurLevelSeven.veluPointX_equivVariableChangeBaseChange {k : Type*} [Field k]
+    (W : WeierstrassCurve k) (C : VariableChange k) (Ω : Type*) [Field Ω] [Algebra k Ω]
+    [DecidableEq Ω] [W.IsElliptic] {Q : ((C • W)⁄Ω).toAffine.Point} (hQ : Q ≠ 0) :
+    veluPointX (Affine.Point.equivVariableChangeBaseChange W C Ω Q)
+      = algebraMap k Ω (C.u : k) ^ 2 * veluPointX Q + algebraMap k Ω C.r := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y h =>
+      simp only [Affine.Point.equivVariableChangeBaseChange, AddEquiv.trans_apply]
+      rw [Affine.Point.equivOfEq_some, Affine.Point.equivVariableChange_some]
+      simp [VariableChange.baseChange]
+
+/-- **Vélu's `t`-term is weight-`4` homogeneous** for `x ↦ u²x + r`. -/
+lemma MazurLevelSeven.veluNTerm_variableChange {k : Type*} [Field k] (W : WeierstrassCurve k)
+    (C : VariableChange k) (x : k) :
+    6 * ((C.u : k) ^ 2 * x + C.r) ^ 2 + W.b₂ * ((C.u : k) ^ 2 * x + C.r) + W.b₄
+      = (C.u : k) ^ 4 * (6 * x ^ 2 + (C • W).b₂ * x + (C • W).b₄) := by
+  have hu : (C.u : k) ≠ 0 := C.u.ne_zero
+  simp only [WeierstrassCurve.variableChange_b₂, WeierstrassCurve.variableChange_b₄,
+    Units.val_inv_eq_inv_val]
+  field_simp
+  ring
+
+/-- **Vélu's `u`-term is weight-`6` homogeneous** for `x ↦ u²x + r`; this is the
+`2`-division polynomial `4x³ + b₂x² + 2b₄x + b₆`. -/
+lemma MazurLevelSeven.veluDTerm_variableChange {k : Type*} [Field k] (W : WeierstrassCurve k)
+    (C : VariableChange k) (x : k) :
+    4 * ((C.u : k) ^ 2 * x + C.r) ^ 3 + W.b₂ * ((C.u : k) ^ 2 * x + C.r) ^ 2
+        + 2 * W.b₄ * ((C.u : k) ^ 2 * x + C.r) + W.b₆
+      = (C.u : k) ^ 6 * (4 * x ^ 3 + (C • W).b₂ * x ^ 2 + 2 * (C • W).b₄ * x + (C • W).b₆) := by
+  have hu : (C.u : k) ≠ 0 := C.u.ne_zero
+  simp only [WeierstrassCurve.variableChange_b₂, WeierstrassCurve.variableChange_b₄,
+    WeierstrassCurve.variableChange_b₆, Units.val_inv_eq_inv_val]
+  field_simp
+  ring
+
+end VeluVariableChange
+
 /-- **The third `X_0(7)` kernel relation `E3`** (PROVEN 2026-07-27; it existed NOWHERE in this
 tree before, and its absence was recorded as obligation 3 of
 `exists_x0Seven_veluFrickeData`).  In the notation of `MazurLevelSeven.kernelRelations`,
@@ -22709,57 +22850,57 @@ theorem MazurLevelSeven.veluFricke_of_relations (jE jQ A B s₁ s₂ s₃ A' B' 
     linear_combination G2
 
 /-- **The short-model kernel and quotient data of a stable order-`7` subgroup**
-(SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluFrickeData` just below, which is now
+(PROVEN 2026-07-27; cut 2026-07-27 out of `exists_x0Seven_veluFrickeData` just below, which is
 PROVEN over it together with `MazurLevelSeven.kernelInvariants_of_relations` and
 `MazurLevelSeven.veluFricke_of_relations`).
 
-**THIS IS THE WHOLE REMAINING GEOMETRY OF THE `X_0(7)` VÉLU NODE, AND NOTHING ELSE.**  Six of
-the eight conjuncts are already discharged elsewhere and are here only so that a single
-existential carries them all to the consumer:
+**THIS WAS THE WHOLE REMAINING GEOMETRY OF THE `X_0(7)` VÉLU NODE, AND IT IS NOW CLOSED.**
+Six of the eight conjuncts come from elsewhere and are here only so that a single existential
+carries them all to the consumer:
 
-* `4A³ + 27B² ≠ 0`, `E.j·(4A³ + 27B²) = 6912A³`, and the coordinates producing `s₁, s₂, s₃`
-  come from the PROVEN `WeierstrassCurve.exists_x0Seven_kernelCoords`;
-* `s₁ ≠ 0` from the PROVEN `MazurLevelSeven.sOne_ne_zero`;
-* `E1`, `E2` from the PROVEN `MazurLevelSeven.kernelRelations`;
-* `E3` from `MazurLevelSeven.kernelRelationThree`, PROVEN just above.
+* `4A³ + 27B² ≠ 0`, `E.j·(4A³ + 27B²) = 6912A³` and the coordinates producing `s₁, s₂, s₃`
+  from `MazurLevelSeven.exists_kernelCoords_of_isShortNF` on the short model `C • E`
+  (`A = (C • E).a₄`, `B = (C • E).a₆`, transported by `WeierstrassCurve.variableChange_j`);
+* `s₁ ≠ 0` from `MazurLevelSeven.sOne_ne_zero`;
+* `E1`, `E2` from `MazurLevelSeven.kernelRelations`;
+* `E3` from `MazurLevelSeven.kernelRelationThree`.
 
-**WHAT IS ACTUALLY MISSING is obligation 2 of `exists_x0Seven_veluFrickeData`, plus the
-abscissa identification that obligation 2 silently presupposed.**  The proof below performs
-the reduction that obligation 1 makes available — `MazurLevelSeven.veluT_eq_sum_image` and
-`veluW_eq_sum_image`, PROVEN just above, rewrite `t` and `w` from HALF-sums over the whole
-kernel into ordinary sums over the three distinct abscissae of `⟨P⟩` — and what remains is:
+**WHAT THIS LEAF ITSELF PROVES** is the last two conjuncts — obligation 2 of
+`exists_x0Seven_veluFrickeData` — and, upstream of them, the ABSCISSA IDENTIFICATION that
+obligation 2 silently presupposed.
 
-1. *The abscissa identification.*  `MazurLevelSeven.exists_kernelCoords_of_isShortNF` returns
-   `x₁, x₂, x₃` pinned only by the algebraic relations `hx2`, `hx3`, `hpsi` (a root of `ψ₇`
-   and its duplication/triplication images).  It does **not** state that `x₁, x₂, x₃` are the
-   abscissae of the points of `⟨P⟩`, i.e. that
-   `(hCfin.toFinset.erase 0).image veluPointX = {x₁, x₂, x₃}`.  Without that conjunct the
-   Vélu sums cannot be connected to `s₁, s₂, s₃` at all — `ψ₇` has `24` roots, three for each
-   of the up to eight order-`7` subgroups, and a curve with two independent `7`-isogenies has
-   two DIFFERENT rational triples `(s₁, s₂, s₃)`.  **So the honest repair is to strengthen
-   `exists_kernelCoords_of_isShortNF` with that conjunct**, which its proof already knows (it
-   builds `x₁ = x(P)`, `x₂ = x(2P)`, `x₃ = x(3P)` from actual points); nothing here can
-   recover it after the fact.  Do NOT attempt to close this leaf by sorrying an intermediate
-   `have` in a context where the abscissae are not pinned — such a `have` is unprovable, not
-   merely unproven.
-2. *Transport along the variable change* (obligation 2 proper).  `exists_kernelCoords_of_isShortNF`
-   works on a short model `C • E` while `veluT`/`veluW` are sums over the kernel of `E`
-   itself.  Two ingredients, both absent from the tree and both pure `VariableChange`
-   algebra:
-   * *curve level*: `C • (W.veluModel t w) = (C • W).veluModel (u⁻⁴ t) (u⁻⁶ (w − r t))` for
-     `C = ⟨u, r, s, τ⟩` — check it field by field against mathlib's `variableChange`, using
-     `(C • W).b₂ = u⁻²(b₂ + 12r)`; the `−rt` in the `w`-slot is exactly the `12r` there.
-     Then `WeierstrassCurve.variableChange_j` transports the `j`-conjunct for free.
-   * *point level*: `veluPointX (Affine.Point.equivVariableChange W C P) = u²·veluPointX P + r`
-     (immediate from `Affine.Point.equivVariableChange_some`), whence the abscissa sets
-     correspond and, term by term,
-     `6(u²a' + r)² + b₂(u²a' + r) + b₄ = u⁴(6a'² + b₂'a' + b₄')` — a `ring` identity once the
-     `b`-transformation lemmas are unfolded.  This is what turns `u⁻⁴t` into the short-model
-     `t' = 6(s₁² − 2s₂) + 6A`, and `u⁻⁶(w − rt)` into `w' = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`.
+1. *The abscissa identification.*  The algebraic conjuncts `hx2`/`hx3`/`hpsi` returned by
+   `exists_kernelCoords_of_isShortNF` do NOT determine `x₁, x₂, x₃`: `ψ₇` has `24` roots,
+   three per order-`7` subgroup, and a curve with two independent `7`-isogenies has two
+   DIFFERENT rational triples satisfying all of them.  So the connection between the Vélu
+   sums and `s₁, s₂, s₃` is not recoverable after the fact, and the repair had to be made
+   where the information exists: `exists_kernelCoords_of_isShortNF` was STRENGTHENED
+   (2026-07-27) to state `x₁ = x(P)`, `x₂ = x(2P)`, `x₃ = x(3P)`, their distinctness, and
+   that every nonzero element of `⟨P⟩` has one of the three as its abscissa.  `himg` below
+   is exactly `(⟨P⟩ ∖ {0}).image veluPointX = {u²x₁ + r, u²x₂ + r, u²x₃ + r}`, assembled
+   from that plus the point-level transport.
 
-With those, `A' = A − 5t' = −29A − 30s₁² + 60s₂` and `B' = B − 7w' =
-−83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`, which is exactly the last conjunct; the
-nondegeneracy `4A'³ + 27B'² ≠ 0` is `hE'` transported the same way. -/
+2. *Transport along the variable change.*  `exists_kernelCoords_of_isShortNF` works on the
+   short model `C • E` while `veluT`/`veluW` are sums over the kernel of `E` itself.  Both
+   halves are in the `VeluVariableChange` section above:
+   * *curve level*: `MazurLevelSeven.variableChange_veluModel`,
+     `C • (W.veluModel t w) = (C • W).veluModel (u⁻⁴t) (u⁻⁶(w − rt))` — the `−rt` is exactly
+     the `12r` in mathlib's `(C • W).b₂ = u⁻²(b₂ + 12r)`.  `variableChange_j` then transports
+     the `j`-conjunct for free, and `Δ_of_isShortNF` transports the nondegeneracy;
+   * *point level*: `MazurLevelSeven.veluPointX_equivVariableChangeBaseChange`,
+     `x(C·Q) = u²x(Q) + r`, with the two homogeneity identities
+     `MazurLevelSeven.veluNTerm_variableChange` (weight `4`) and `veluDTerm_variableChange`
+     (weight `6`).
+
+   With those, `u⁻⁴t = t' = 6(s₁² − 2s₂) + 6A` and
+   `u⁻⁶(w − rt) = w' = 10(s₁³ − 3s₁s₂ + 3s₃) + 6As₁ + 12B`, whence
+   `A' = A − 5t' = −29A − 30s₁² + 60s₂` and
+   `B' = B − 7w' = −83B − 70s₁³ + 210s₁s₂ − 210s₃ − 42As₁`, which are the last two conjuncts.
+
+**A TRAP WORTH RECORDING.**  `WeierstrassCurve.j` takes an `IsElliptic` INSTANCE argument, so
+`rw [hmodel]` inside a `.j` fails with "motive is not type correct".  The proof therefore
+never rewrites the curve under `j`: it works with `C • (E.veluModel t w)` throughout and uses
+`hmodel` only on `a₄`, `a₆` and on the `IsShortNF` instance, where there is no dependency. -/
 theorem WeierstrassCurve.exists_x0Seven_veluShortQuotient
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
@@ -22810,7 +22951,294 @@ theorem WeierstrassCurve.exists_x0Seven_veluShortQuotient
   -- Obligation 1: the half-sums become ordinary sums over the three distinct abscissae.
   rw [MazurLevelSeven.veluT_eq_sum_image hS hodd] at ht
   rw [MazurLevelSeven.veluW_eq_sum_image hS hodd] at hw
-  sorry
+  -- ### the short model and the transported generator
+  obtain ⟨C, hC⟩ := E.exists_variableChange_isShortNF
+  haveI hCi : (C • E).IsShortNF := hC
+  set ee := Affine.Point.equivVariableChangeBaseChange E C (AlgebraicClosure ℚ) with heedef
+  have hee := Affine.Point.equivVariableChangeBaseChange_galois E C (AlgebraicClosure ℚ)
+  obtain ⟨P', hP'ee⟩ : ∃ Q : ((C • E)⁄(AlgebraicClosure ℚ)).Point, ee Q = P :=
+    ⟨ee.symm P, ee.apply_symm_apply P⟩
+  have hP'ord : addOrderOf P' = 7 := by
+    have h := ee.addOrderOf_eq P'
+    rw [hP'ee, hP] at h
+    exact h.symm
+  have hstab : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ n : ℤ, ∃ k : ℤ,
+      Affine.Point.map σ.toAlgHom (n • P') = k • P' := by
+    intro σ n
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ (n • P) (AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩))
+    refine ⟨k, ee.injective ?_⟩
+    have hL : ee (Affine.Point.map σ.toAlgHom (n • P'))
+        = Affine.Point.map σ.toAlgHom (n • P) := by
+      rw [hee σ (n • P'), map_zsmul, hP'ee]
+    have hR : ee (k • P') = k • P := by rw [map_zsmul, hP'ee]
+    rw [hL, hR]
+    exact hk.symm
+  obtain ⟨s₁, s₂, s₃, x₁, x₂, x₃, he0, h21, hdup, htri, hpsi7, hs₁, hs₂, hs₃,
+      h31, h32, hv1, hv2, hv3, hzm⟩ :=
+    MazurLevelSeven.exists_kernelCoords_of_isShortNF (C • E) P' hP'ord hstab
+  -- ### the short-model invariants and the three kernel relations
+  have hΔ : (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2 : ℚ) ≠ 0 := by
+    intro h0
+    have hΔ0 : (C • E).Δ = 0 := by
+      rw [WeierstrassCurve.Δ_of_isShortNF, h0, mul_zero]
+    exact not_isUnit_zero (hΔ0 ▸ (C • E).isUnit_Δ)
+  have hjeq : E.j * (4 * (C • E).a₄ ^ 3 + 27 * (C • E).a₆ ^ 2) = 6912 * (C • E).a₄ ^ 3 := by
+    rw [← WeierstrassCurve.variableChange_j (W := E) (C := C), WeierstrassCurve.j_of_isShortNF,
+      div_mul_cancel₀ _ hΔ]
+  obtain ⟨hE1, hE2⟩ :=
+    MazurLevelSeven.kernelRelations (algebraMap ℚ (AlgebraicClosure ℚ))
+      (C • E).a₄ (C • E).a₆ s₁ s₂ _ _ x₁ x₂ x₃ rfl rfl he0 h21 hdup htri hpsi7 hs₁ hs₂
+  have hs1ne : s₁ ≠ 0 :=
+    MazurLevelSeven.sOne_ne_zero (algebraMap ℚ (AlgebraicClosure ℚ))
+      (C • E).a₄ (C • E).a₆ s₁ s₂ s₃ _ _ x₁ x₂ x₃ rfl rfl he0 h21 hdup hE1 hs₁ hs₂ hs₃
+  have hE3 :=
+    MazurLevelSeven.kernelRelationThree (algebraMap ℚ (AlgebraicClosure ℚ))
+      (C • E).a₄ (C • E).a₆ s₁ s₂ s₃ _ _ x₁ x₂ x₃ rfl rfl he0 h21 hdup htri hpsi7 hs₁ hs₂ hs₃
+  -- ### the abscissa image of the kernel of `E`
+  have hune : algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ≠ 0 := fun h =>
+    (Units.ne_zero C.u)
+      ((algebraMap ℚ (AlgebraicClosure ℚ)).injective (by rw [h, map_zero]))
+  have hnzP : ∀ n : ℤ, ¬((7 : ℤ) ∣ n) → n • P ≠ 0 := by
+    intro n hn h0
+    have hd := addOrderOf_dvd_iff_zsmul_eq_zero.mpr h0
+    rw [hP] at hd
+    exact hn (by exact_mod_cast hd)
+  have hmemFin : ∀ n : ℤ, ¬((7 : ℤ) ∣ n) → n • P ∈ hCfin.toFinset.erase 0 := by
+    intro n hn
+    refine Finset.mem_erase.mpr ⟨hnzP n hn, ?_⟩
+    rw [Set.Finite.mem_toFinset]
+    exact AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩
+  have key : ∀ n : ℤ, ¬((7 : ℤ) ∣ n) →
+      veluPointX (n • P)
+        = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * veluPointX (n • P')
+          + algebraMap ℚ (AlgebraicClosure ℚ) C.r := by
+    intro n hn
+    have h1 : ee (n • P') = n • P := by rw [map_zsmul, hP'ee]
+    have h2 : (n • P' : ((C • E)⁄(AlgebraicClosure ℚ)).Point) ≠ 0 := by
+      intro h0
+      exact hnzP n hn (by rw [← h1, h0, map_zero])
+    rw [← h1, heedef, MazurLevelSeven.veluPointX_equivVariableChangeBaseChange E C (AlgebraicClosure ℚ) h2]
+  have e1 : algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₁
+      + algebraMap ℚ (AlgebraicClosure ℚ) C.r = veluPointX ((1 : ℤ) • P) := by
+    rw [key 1 (by decide), one_zsmul, hv1]
+  have e2 : algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₂
+      + algebraMap ℚ (AlgebraicClosure ℚ) C.r = veluPointX ((2 : ℤ) • P) := by
+    rw [key 2 (by decide), hv2]
+  have e3 : algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₃
+      + algebraMap ℚ (AlgebraicClosure ℚ) C.r = veluPointX ((3 : ℤ) • P) := by
+    rw [key 3 (by decide), hv3]
+  have hinj : ∀ z z' : AlgebraicClosure ℚ,
+      algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * z
+          + algebraMap ℚ (AlgebraicClosure ℚ) C.r
+        = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * z'
+          + algebraMap ℚ (AlgebraicClosure ℚ) C.r → z = z' := by
+    intro z z' h
+    have h2 : algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * (z - z') = 0 := by
+      linear_combination h
+    rcases mul_eq_zero.mp h2 with h3 | h3
+    · exact absurd (pow_eq_zero_iff two_ne_zero |>.mp h3) hune
+    · exact sub_eq_zero.mp h3
+  have himg : (hCfin.toFinset.erase 0).image veluPointX
+      = ({algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₁
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r,
+          algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₂
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r,
+          algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₃
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r} : Finset (AlgebraicClosure ℚ)) := by
+    refine Finset.Subset.antisymm ?_ ?_
+    · intro α hα
+      obtain ⟨R, hR, rfl⟩ := Finset.mem_image.mp hα
+      have hR0 : R ≠ 0 := Finset.ne_of_mem_erase hR
+      have hRmem : R ∈ AddSubgroup.zmultiples P := by
+        have h := Finset.mem_of_mem_erase hR
+        rwa [Set.Finite.mem_toFinset] at h
+      obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp hRmem
+      have hn7 : ¬((7 : ℤ) ∣ n) := by
+        intro hd
+        refine hR0 ?_
+        rw [← hn]
+        exact addOrderOf_dvd_iff_zsmul_eq_zero.mp (by rw [hP]; exact_mod_cast hd)
+      subst hn
+      have h1 : ee (n • P') = n • P := by rw [map_zsmul, hP'ee]
+      have h2 : (n • P' : ((C • E)⁄(AlgebraicClosure ℚ)).Point) ≠ 0 := by
+        intro h0
+        exact hnzP n hn7 (by rw [← h1, h0, map_zero])
+      have hmem := hzm (n • P') (AddSubgroup.mem_zmultiples_iff.mpr ⟨n, rfl⟩) h2
+      rw [key n hn7]
+      simp only [Finset.mem_insert, Finset.mem_singleton]
+      rcases hmem with h | h | h
+      · exact Or.inl (by rw [h])
+      · exact Or.inr (Or.inl (by rw [h]))
+      · exact Or.inr (Or.inr (by rw [h]))
+    · intro α hα
+      simp only [Finset.mem_insert, Finset.mem_singleton] at hα
+      rcases hα with rfl | rfl | rfl
+      · exact Finset.mem_image.mpr ⟨(1 : ℤ) • P, hmemFin 1 (by decide), e1.symm⟩
+      · exact Finset.mem_image.mpr ⟨(2 : ℤ) • P, hmemFin 2 (by decide), e2.symm⟩
+      · exact Finset.mem_image.mpr ⟨(3 : ℤ) • P, hmemFin 3 (by decide), e3.symm⟩
+  -- ### the two Vélu half-sums on the short model
+  have hnm1 : (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₁
+        + algebraMap ℚ (AlgebraicClosure ℚ) C.r)
+      ∉ ({algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₂
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r,
+          algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₃
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r} : Finset (AlgebraicClosure ℚ)) := by
+    simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+    exact ⟨fun h => (Ne.symm h21) (hinj _ _ h), fun h => (Ne.symm h31) (hinj _ _ h)⟩
+  have hnm2 : (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₂
+        + algebraMap ℚ (AlgebraicClosure ℚ) C.r)
+      ∉ ({algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x₃
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r} : Finset (AlgebraicClosure ℚ)) := by
+    simp only [Finset.mem_singleton]
+    exact fun h => (Ne.symm h32) (hinj _ _ h)
+  have hCu : ((C.baseChange (AlgebraicClosure ℚ)).u : AlgebraicClosure ℚ)
+      = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) := by
+    simp [VariableChange.baseChange]
+  have hCr : (C.baseChange (AlgebraicClosure ℚ)).r
+      = algebraMap ℚ (AlgebraicClosure ℚ) C.r := by
+    simp [VariableChange.baseChange]
+  have hCB : (C.baseChange (AlgebraicClosure ℚ)) • (E⁄(AlgebraicClosure ℚ))
+      = ((C • E)⁄(AlgebraicClosure ℚ)) :=
+    WeierstrassCurve.map_variableChange (C := C) (W := E)
+      (φ := algebraMap ℚ (AlgebraicClosure ℚ))
+  have hb2K : ((C.baseChange (AlgebraicClosure ℚ)) • (E⁄(AlgebraicClosure ℚ))).b₂ = 0 := by
+    rw [hCB]
+    simp only [WeierstrassCurve.baseChange]
+    rw [WeierstrassCurve.map_b₂, WeierstrassCurve.b₂_of_isShortNF, map_zero]
+  have hb4K : ((C.baseChange (AlgebraicClosure ℚ)) • (E⁄(AlgebraicClosure ℚ))).b₄
+      = 2 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₄ := by
+    rw [hCB]
+    simp only [WeierstrassCurve.baseChange]
+    rw [WeierstrassCurve.map_b₄, WeierstrassCurve.b₄_of_isShortNF, map_mul, map_ofNat]
+  have hb6K : ((C.baseChange (AlgebraicClosure ℚ)) • (E⁄(AlgebraicClosure ℚ))).b₆
+      = 4 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₆ := by
+    rw [hCB]
+    simp only [WeierstrassCurve.baseChange]
+    rw [WeierstrassCurve.map_b₆, WeierstrassCurve.b₆_of_isShortNF, map_mul, map_ofNat]
+  have hN : ∀ x : AlgebraicClosure ℚ,
+      6 * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+            + algebraMap ℚ (AlgebraicClosure ℚ) C.r) ^ 2
+          + (E⁄(AlgebraicClosure ℚ)).b₂
+            * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r)
+          + (E⁄(AlgebraicClosure ℚ)).b₄
+        = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 4
+            * (6 * x ^ 2 + 2 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₄) := by
+    intro x
+    have h := MazurLevelSeven.veluNTerm_variableChange (E⁄(AlgebraicClosure ℚ))
+      (C.baseChange (AlgebraicClosure ℚ)) x
+    rw [hCu, hCr, hb2K, hb4K] at h
+    rw [h]; ring
+  have hDN : ∀ x : AlgebraicClosure ℚ,
+      (4 * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r) ^ 3
+            + (E⁄(AlgebraicClosure ℚ)).b₂
+              * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+                + algebraMap ℚ (AlgebraicClosure ℚ) C.r) ^ 2
+            + 2 * (E⁄(AlgebraicClosure ℚ)).b₄
+              * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+                + algebraMap ℚ (AlgebraicClosure ℚ) C.r)
+            + (E⁄(AlgebraicClosure ℚ)).b₆)
+          + (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+              + algebraMap ℚ (AlgebraicClosure ℚ) C.r)
+            * (6 * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+                  + algebraMap ℚ (AlgebraicClosure ℚ) C.r) ^ 2
+                + (E⁄(AlgebraicClosure ℚ)).b₂
+                  * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 2 * x
+                    + algebraMap ℚ (AlgebraicClosure ℚ) C.r)
+                + (E⁄(AlgebraicClosure ℚ)).b₄)
+        = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 6
+              * (10 * x ^ 3 + 6 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₄ * x
+                + 4 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₆)
+            + algebraMap ℚ (AlgebraicClosure ℚ) C.r
+              * (algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 4
+                * (6 * x ^ 2 + 2 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₄)) := by
+    intro x
+    have hd := MazurLevelSeven.veluDTerm_variableChange (E⁄(AlgebraicClosure ℚ))
+      (C.baseChange (AlgebraicClosure ℚ)) x
+    have hn := MazurLevelSeven.veluNTerm_variableChange (E⁄(AlgebraicClosure ℚ))
+      (C.baseChange (AlgebraicClosure ℚ)) x
+    rw [hCu, hCr, hb2K, hb4K, hb6K] at hd
+    rw [hCu, hCr, hb2K, hb4K] at hn
+    rw [hd, hn]; ring
+  have htX : algebraMap ℚ (AlgebraicClosure ℚ) t
+      = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 4
+        * (6 * (x₁ ^ 2 + x₂ ^ 2 + x₃ ^ 2)
+            + 6 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₄) := by
+    rw [ht, himg, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton,
+      hN x₁, hN x₂, hN x₃]
+    ring
+  have hwX : algebraMap ℚ (AlgebraicClosure ℚ) w
+      = algebraMap ℚ (AlgebraicClosure ℚ) (C.u : ℚ) ^ 6
+          * (10 * (x₁ ^ 3 + x₂ ^ 3 + x₃ ^ 3)
+              + 6 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₄ * (x₁ + x₂ + x₃)
+              + 12 * algebraMap ℚ (AlgebraicClosure ℚ) (C • E).a₆)
+        + algebraMap ℚ (AlgebraicClosure ℚ) C.r * algebraMap ℚ (AlgebraicClosure ℚ) t := by
+    rw [hw, himg, Finset.sum_insert hnm1, Finset.sum_insert hnm2, Finset.sum_singleton,
+      hDN x₁, hDN x₂, hDN x₃, htX]
+    ring
+  -- ### the two Vélu coefficients on the short model, over `ℚ`
+  have htt : t = (C.u : ℚ) ^ 4 * (6 * (s₁ ^ 2 - 2 * s₂) + 6 * (C • E).a₄) := by
+    apply (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+    rw [htX, hs₁, hs₂]
+    ring
+  have hww : w - C.r * t
+      = (C.u : ℚ) ^ 6 * (10 * (s₁ ^ 3 - 3 * s₁ * s₂ + 3 * s₃) + 6 * (C • E).a₄ * s₁
+          + 12 * (C • E).a₆) := by
+    apply (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+    simp only [map_add, map_sub, map_mul, map_pow, map_ofNat]
+    rw [hwX, hs₁, hs₂, hs₃]
+    ring
+  -- ### the Vélu quotient of the short model
+  haveI hEll : (E.veluModel t w).IsElliptic := hE'
+  have huinvℚ : ((C.u⁻¹ : ℚˣ) : ℚ) * ((C.u : ℚˣ) : ℚ) = 1 := by
+    rw [← Units.val_mul]; simp
+  have hu4 : ((C.u⁻¹ : ℚˣ) : ℚ) ^ 4 * ((C.u : ℚˣ) : ℚ) ^ 4 = 1 := by
+    rw [← mul_pow, huinvℚ, one_pow]
+  have hu6 : ((C.u⁻¹ : ℚˣ) : ℚ) ^ 6 * ((C.u : ℚˣ) : ℚ) ^ 6 = 1 := by
+    rw [← mul_pow, huinvℚ, one_pow]
+  have ht4 : ((C.u⁻¹ : ℚˣ) : ℚ) ^ 4 * t = 6 * (s₁ ^ 2 - 2 * s₂) + 6 * (C • E).a₄ := by
+    rw [htt, ← mul_assoc, hu4, one_mul]
+  have hw6 : ((C.u⁻¹ : ℚˣ) : ℚ) ^ 6 * (w - C.r * t)
+      = 10 * (s₁ ^ 3 - 3 * s₁ * s₂ + 3 * s₃) + 6 * (C • E).a₄ * s₁ + 12 * (C • E).a₆ := by
+    rw [hww, ← mul_assoc, hu6, one_mul]
+  have hmodel : C • (E.veluModel t w)
+      = (C • E).veluModel (6 * (s₁ ^ 2 - 2 * s₂) + 6 * (C • E).a₄)
+          (10 * (s₁ ^ 3 - 3 * s₁ * s₂ + 3 * s₃) + 6 * (C • E).a₄ * s₁ + 12 * (C • E).a₆) := by
+    rw [MazurLevelSeven.variableChange_veluModel, ht4, hw6]
+  haveI hshortV : (C • (E.veluModel t w)).IsShortNF := by
+    rw [hmodel]
+    exact ⟨WeierstrassCurve.a₁_of_isShortNF (C • E), WeierstrassCurve.a₂_of_isShortNF (C • E),
+      WeierstrassCurve.a₃_of_isShortNF (C • E)⟩
+  have hA'eq : (C • (E.veluModel t w)).a₄ = -29 * (C • E).a₄ - 30 * s₁ ^ 2 + 60 * s₂ := by
+    rw [hmodel]
+    simp only [WeierstrassCurve.veluModel]
+    ring
+  have hB'eq : (C • (E.veluModel t w)).a₆ = -83 * (C • E).a₆ - 70 * s₁ ^ 3 + 210 * s₁ * s₂
+      - 210 * s₃ - 42 * (C • E).a₄ * s₁ := by
+    rw [hmodel]
+    simp only [WeierstrassCurve.veluModel, WeierstrassCurve.b₂_of_isShortNF]
+    ring
+  have hΔV : (4 * (C • (E.veluModel t w)).a₄ ^ 3
+      + 27 * (C • (E.veluModel t w)).a₆ ^ 2 : ℚ) ≠ 0 := by
+    intro h0
+    have hz0 : (C • (E.veluModel t w)).Δ = 0 := by
+      rw [WeierstrassCurve.Δ_of_isShortNF, h0, mul_zero]
+    exact not_isUnit_zero (hz0 ▸ (C • (E.veluModel t w)).isUnit_Δ)
+  have hΔQ : (4 * (-29 * (C • E).a₄ - 30 * s₁ ^ 2 + 60 * s₂) ^ 3
+      + 27 * (-83 * (C • E).a₆ - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃
+        - 42 * (C • E).a₄ * s₁) ^ 2 : ℚ) ≠ 0 := by
+    rw [← hA'eq, ← hB'eq]; exact hΔV
+  have hjQ : (E.veluModel t w).j * (4 * (-29 * (C • E).a₄ - 30 * s₁ ^ 2 + 60 * s₂) ^ 3
+        + 27 * (-83 * (C • E).a₆ - 70 * s₁ ^ 3 + 210 * s₁ * s₂ - 210 * s₃
+          - 42 * (C • E).a₄ * s₁) ^ 2)
+      = 6912 * (-29 * (C • E).a₄ - 30 * s₁ ^ 2 + 60 * s₂) ^ 3 := by
+    rw [← hA'eq, ← hB'eq,
+      ← WeierstrassCurve.variableChange_j (W := E.veluModel t w) (C := C),
+      WeierstrassCurve.j_of_isShortNF, div_mul_cancel₀ _ hΔV]
+  exact ⟨(C • E).a₄, (C • E).a₆, s₁, s₂, s₃, hΔ, hjeq, hs1ne, hE1, hE2, hE3, hΔQ, hjQ⟩
 
 /-- **The `X_0(7)` kernel data of a Vélu quotient, in Fricke-relation form**
 (SORRY LEAF, cut 2026-07-27 out of `exists_x0Seven_veluParam` below, which is now
@@ -22894,8 +23322,9 @@ It also said `E3` should be proven "alongside `E1`, `E2` in
 already consume, for no gain — the elimination is the same computation either
 way, and a sibling costs the integrator nothing.
 
-**STATUS 2026-07-27: THIS NODE IS NOW PROVEN, AND TWO OF THE THREE OBLIGATIONS ARE
-CLOSED.**  Do not re-dispatch a prover here; the open work has moved one level down.
+**STATUS 2026-07-27: THIS NODE IS NOW PROVEN, AND ALL THREE OBLIGATIONS ARE CLOSED.**
+Do not re-dispatch a prover here, nor at `exists_x0Seven_veluShortQuotient` below — that
+leaf is proven too, and the whole `X_0(7)` Vélu subtree is closed.
 
 * *Obligation 1 (`±`-pairing) is PROVEN*, and for an ARBITRARY Weierstrass model rather
   than only a short one: `MazurLevelSeven.veluT_eq_sum_image` and
@@ -22911,11 +23340,16 @@ CLOSED.**  Do not re-dispatch a prover here; the open work has moved one level d
   carries all three conjuncts).  The weight-`4` Fricke relation really is the one-term
   `3A'F + 49s₁²G = (−12789A − 13083s₁² + 26460s₂)·E1`; the weight-`6` one consumes all of
   `E1`, `E2`, `E3`.
-* *Obligation 2 (transport along the variable change) is the one thing left*, and it has
-  been isolated in the single new leaf `WeierstrassCurve.exists_x0Seven_veluShortQuotient`
-  below-this-docstring's-consumer — see ITS docstring, which also records a gap obligation 2
-  presupposed: `exists_kernelCoords_of_isShortNF` never states that its `x₁, x₂, x₃` ARE the
-  abscissae of `⟨P⟩`, and it must be strengthened to say so. -/
+* *Obligation 2 (transport along the variable change) is PROVEN* (2026-07-27) inside
+  `WeierstrassCurve.exists_x0Seven_veluShortQuotient` above, over the four new
+  `MazurLevelSeven` lemmas of the `VeluVariableChange` section
+  (`variableChange_veluModel`, `veluPointX_equivVariableChangeBaseChange`,
+  `veluNTerm_variableChange`, `veluDTerm_variableChange`).
+* *The gap obligation 2 presupposed is closed at the source.*
+  `exists_kernelCoords_of_isShortNF` used to pin `x₁, x₂, x₃` only by the algebraic relations,
+  which `ψ₇`'s `24` roots leave ambiguous between the up to eight order-`7` subgroups; it was
+  STRENGTHENED to state outright that they are `x(P)`, `x(2P)`, `x(3P)`, that they are
+  distinct, and that every nonzero element of `⟨P⟩` has one of them as its abscissa. -/
 theorem WeierstrassCurve.exists_x0Seven_veluFrickeData
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 7)
