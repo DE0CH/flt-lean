@@ -4023,30 +4023,76 @@ theorem nsmul_twistQ_eq_zero [NeZero n] (L : FullLevelStructure n d)
   rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
 
 /-- **The twisted pair is again a fibrewise basis of the `n`-torsion**
-(sorry leaf, opened 2026-07-27) — the `geom_basis` field of the matrix
-twist, and the only part of the twist that is not bookkeeping.
+(PROVEN 2026-07-27) — the `geom_basis` field of the matrix twist, and the
+only part of the twist that is not bookkeeping.
 
-## What the prover of this node owes
+## FALSITY AUDIT: this is FALSE without `hP`/`hQ`, which is why they are here
 
-Work at ONE geometric point `t : Spec K ⟶ T` and write `M` for
-`RelPoint d.f t` with `d.ab.addCommGroup t`, `P₀ := pre t _ L.P`,
-`Q₀ := pre t _ L.Q`.  `L.geom_basis` at `x = 0` says the map
-`φ : Fin n × Fin n → M`, `(a, b) ↦ a • P₀ + b • Q₀`, is INJECTIVE (both
-`(0, 0)` and any other representation of `0` satisfy the `∃!`), and the
-two directions of the `↔` then say that its image is exactly the
-`n`-torsion `M[n]`.  In particular `P₀ = φ (1, 0)` and `Q₀ = φ (0, 1)` are
-`n`-torsion, so `M[n]` is a `ZMod n`-module (`AddCommGroup.zmodModule`)
-and `φ` is a `ZMod n`-linear isomorphism `(ZMod n)² ≃ M[n]`.
+This leaf was opened with only `hn` and `L`, on the strength of
+`FullLevelStructure`'s docstring claim that "`n • P = 0` and `n • Q = 0`
+are consequences, not fields".  **That claim is false.**  The
+UNDER-SPECIFICATION AUDIT on `RigidifiedModuli` had already refuted it
+over the base, with a nilpotent thickening, and left standing the weaker
+claim that it is "true only at geometric points".  That weaker claim is
+false too: `geom_basis` does not force `n • P₀ = 0` even at a single
+geometric point, i.e. not even as a statement about one abelian group.
+For `n = 6` take
 
-The twisted pair is `φ` composed with the `ZMod n`-linear automorphism of
-`(ZMod n)²` given by `σ`, which is bijective because `σ` is a UNIT of
-`Matrix (Fin 2) (Fin 2) (ZMod n)`.  So the twisted `φ_σ` is again a
-bijection `(ZMod n)² ≃ M[n]`, which is the `∃!` in both directions.
+> `M = ℤ/20`, `P₀ = Q₀ = 1`.
 
-The only friction is that the statement is phrased with `Fin n`
-representatives and `ℕ`-scalar multiplication, so each step needs
-`nsmul_eq_nsmul_of_mod` (above) to move between `ZMod n`-coefficients and
-their `ZMod.val` lifts.
+Then `{x | 6 • x = 0} = {0, 10}`; the sums `a + b` with `a, b < 6` run
+over `0, …, 10` without wrapping, and `a + b = s` has exactly ONE
+solution precisely for `s = 0` and `s = 10`.  So `geom_basis` holds
+verbatim — while `6 • P₀ = 6 ≠ 0`.  Twisting by
+`σ = !![1, 1; 0, 1] ∈ GL₂(ℤ/6)` gives `P₀' = 2`, `Q₀' = 1`, and now
+`10 = 2·3 + 4 = 2·4 + 2 = 2·5 + 0` has THREE representations although
+`6 • 10 = 0`: the twisted pair is *not* a fibrewise basis.  The same
+happens at every `n ≡ 2 mod 4`, with `M = ℤ/(4n-4)`, `P₀ = Q₀ = 1`; a
+machine search over cyclic `M` found these and no others for
+`3 ≤ n ≤ 12`.
+
+What excludes the countermodel for an honest elliptic scheme is
+`E(K)[n] ≅ (ℤ/n)²` at an algebraically closed `K` — a structure theorem
+for the torsion of an abelian scheme that this project does not have, and
+that `AbelianSchemeStruct` (proper, smooth, geometrically connected, group
+law by points) does not encode.  So the hypotheses are the honest route,
+and they cost nothing downstream: they are literally
+`RigidifiedModuli.lvlM_nsmul` / `RigidifiedModuliScheme.lvlM_nsmul`, and
+`exists_deckAction_of_torsion` — the only consumer of `twist` — already
+carries them.
+
+*The check that would refute this audit*: exhibit a `FullLevelStructure`
+whose `geom_basis` holds and whose sections are not `n`-torsion at some
+geometric point, for which the twist by some `σ ∈ GL₂(ℤ/n)` is still a
+fibrewise basis — or, in the other direction, derive `n • P₀ = 0` from
+`geom_basis` alone.  The `ℤ/20` model above refutes the second.
+
+## The proof
+
+Work at ONE geometric point `t : Spec K ⟶ T`, write `M` for
+`RelPoint d.f t` and `P₀ := pre t _ L.P`, `Q₀ := pre t _ L.Q`.  Since
+`RelPoint.pre` is additive and unital (`AbelianSchemeStruct.pre_nsmul`,
+`pre_zero`), `hP` and `hQ` give `n • P₀ = 0` and `n • Q₀ = 0` — the step
+the countermodel above shows cannot be recovered from `geom_basis`.
+
+`RelPoint.pre_comb` then puts the twisted sections in the original basis,
+and `RelPoint.comb_comb` — the one place the `n`-torsion is consumed —
+turns a `ZMod n`-combination of the twisted pair into the combination by
+the matrix product.  So for `u, v : ZMod n`
+
+  `u • P₀' + v • Q₀' = (u σ₀₀ + v σ₁₀) • P₀ + (u σ₀₁ + v σ₁₁) • Q₀`,
+
+which is `(u, v) ↦ (u, v) ᵥ* σ` on coefficients.  That map is a
+bijection of `(ZMod n)²` because `σ` is a UNIT of
+`Matrix (Fin 2) (Fin 2) (ZMod n)` (`Matrix.vecMul_vecMul` plus
+`mul_inv_cancel`), and `Fin n ≃ ZMod n` transports it to a bijection `Φ`
+of `Fin n × Fin n` with
+`(Φ ab).1 = (ab.1 σ₀₀ + ab.2 σ₁₀).val`.  The two `∃!`s are then the same
+statement reindexed along `Φ`, which is `Equiv.existsUnique_congr_right`.
+
+The `Fin n` ↔ `ZMod n` friction is exactly `ZMod.val_cast_of_lt` and
+`ZMod.natCast_rightInverse`; `nsmul_eq_nsmul_of_mod` is used only inside
+`RelPoint.comb_comb`.
 
 **`L.nsmul_P` and `L.nsmul_Q` are available to the prover of this node**
 (2026-07-27): `L.P` and `L.Q` are `n`-torsion *over the base*, not merely
@@ -4059,22 +4105,109 @@ rather than re-derived at each geometric point from `geom_basis`.
 `hn` is load-bearing exactly as on `FullLevelStructure`: at `n = 0` the
 `∃!` is unsatisfiable (`Fin 0` is empty) while `0 • x = 0` always, so the
 statement is FALSE, and at `n = 1, 2` it is true but `Matrix.one_apply_ne`
-arguments in the callers want `1 < n` anyway.
+arguments in the callers want `1 < n` anyway.  Here it is used only
+through `NeZero n`.
 
 Nothing here mentions `Γ₀(N)`, moduli, or the deck group; it is a
 statement about one abelian scheme and one matrix. -/
 theorem geomBasis_twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
     (σ : GL (Fin 2) (ZMod n)) :
     ∀ (K : Type u) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T),
       letI := d.ab.addCommGroup t
       ∀ x : RelPoint d.f t, n • x = 0 ↔
         ∃! ab : Fin n × Fin n,
           x = (ab.1 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistP σ L)
-              + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistQ σ L) :=
-  sorry
+              + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistQ σ L) := by
+  intro K _ _ t
+  letI := d.ab.addCommGroup (𝟙 T)
+  letI := d.ab.addCommGroup t
+  haveI : NeZero n := ⟨by omega⟩
+  set P₀ : RelPoint d.f t := RelPoint.pre t (Category.comp_id t) L.P
+  set Q₀ : RelPoint d.f t := RelPoint.pre t (Category.comp_id t) L.Q
+  -- the two sections stay `n`-torsion at the geometric point
+  have hnP : n • P₀ = 0 := by
+    have h1 : RelPoint.pre t (Category.comp_id t) (n • L.P) = n • P₀ :=
+      d.ab.pre_nsmul t (Category.comp_id t) n L.P
+    rw [hP] at h1
+    rw [← h1]
+    exact d.ab.pre_zero t (Category.comp_id t)
+  have hnQ : n • Q₀ = 0 := by
+    have h1 : RelPoint.pre t (Category.comp_id t) (n • L.Q) = n • Q₀ :=
+      d.ab.pre_nsmul t (Category.comp_id t) n L.Q
+    rw [hQ] at h1
+    rw [← h1]
+    exact d.ab.pre_zero t (Category.comp_id t)
+  -- the twisted sections, read in the original basis
+  have hPt : RelPoint.pre t (Category.comp_id t) (twistP σ L)
+      = RelPoint.comb d.ab (σ.val 0 0) (σ.val 0 1) P₀ Q₀ :=
+    RelPoint.pre_comb d.ab t (Category.comp_id t) (σ.val 0 0) (σ.val 0 1) L.P L.Q
+  have hQt : RelPoint.pre t (Category.comp_id t) (twistQ σ L)
+      = RelPoint.comb d.ab (σ.val 1 0) (σ.val 1 1) P₀ Q₀ :=
+    RelPoint.pre_comb d.ab t (Category.comp_id t) (σ.val 1 0) (σ.val 1 1) L.P L.Q
+  -- a `ZMod n`-combination of the twisted pair is the matrix-product combination
+  have key : ∀ u v : ZMod n,
+      u.val • RelPoint.pre t (Category.comp_id t) (twistP σ L)
+        + v.val • RelPoint.pre t (Category.comp_id t) (twistQ σ L)
+      = (u * σ.val 0 0 + v * σ.val 1 0).val • P₀
+        + (u * σ.val 0 1 + v * σ.val 1 1).val • Q₀ := by
+    intro u v
+    rw [hPt, hQt]
+    exact RelPoint.comb_comb d.ab hnP hnQ u v (σ.val 0 0) (σ.val 0 1) (σ.val 1 0) (σ.val 1 1)
+  -- `σ` acts bijectively on the coefficient pairs
+  let e : Fin n ≃ ZMod n :=
+    { toFun := fun a => ((a : ℕ) : ZMod n)
+      invFun := fun z => ⟨z.val, ZMod.val_lt z⟩
+      left_inv := fun a => Fin.ext (ZMod.val_cast_of_lt a.isLt)
+      right_inv := fun z => ZMod.natCast_rightInverse z }
+  let f2 : Fin n × Fin n ≃ (Fin 2 → ZMod n) :=
+    (e.prodCongr e).trans (finTwoArrowEquiv (ZMod n)).symm
+  let vm : (Fin 2 → ZMod n) ≃ (Fin 2 → ZMod n) :=
+    { toFun := fun w => Matrix.vecMul w σ.val
+      invFun := fun w => Matrix.vecMul w σ⁻¹.val
+      left_inv := fun w => by
+        show Matrix.vecMul (Matrix.vecMul w σ.val) σ⁻¹.val = w
+        rw [Matrix.vecMul_vecMul, ← Units.val_mul, mul_inv_cancel, Units.val_one,
+          Matrix.vecMul_one]
+      right_inv := fun w => by
+        show Matrix.vecMul (Matrix.vecMul w σ⁻¹.val) σ.val = w
+        rw [Matrix.vecMul_vecMul, ← Units.val_mul, inv_mul_cancel, Units.val_one,
+          Matrix.vecMul_one] }
+  let Φ : Fin n × Fin n ≃ Fin n × Fin n := f2.trans (vm.trans f2.symm)
+  have hΦ1 : ∀ ab : Fin n × Fin n, ((Φ ab).1 : ℕ)
+      = (((ab.1 : ℕ) : ZMod n) * σ.val 0 0 + ((ab.2 : ℕ) : ZMod n) * σ.val 1 0).val := by
+    intro ab
+    simp [Φ, f2, vm, e, Matrix.vecMul, Fin.sum_univ_two, dotProduct]
+  have hΦ2 : ∀ ab : Fin n × Fin n, ((Φ ab).2 : ℕ)
+      = (((ab.1 : ℕ) : ZMod n) * σ.val 0 1 + ((ab.2 : ℕ) : ZMod n) * σ.val 1 1).val := by
+    intro ab
+    simp [Φ, f2, vm, e, Matrix.vecMul, Fin.sum_univ_two, dotProduct]
+  have key' : ∀ ab : Fin n × Fin n,
+      ((Φ ab).1 : ℕ) • P₀ + ((Φ ab).2 : ℕ) • Q₀
+        = (ab.1 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistP σ L)
+          + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistQ σ L) := by
+    intro ab
+    have h := key ((ab.1 : ℕ) : ZMod n) ((ab.2 : ℕ) : ZMod n)
+    rw [ZMod.val_cast_of_lt ab.1.isLt, ZMod.val_cast_of_lt ab.2.isLt] at h
+    rw [hΦ1, hΦ2, ← h]
+  intro x
+  rw [L.geom_basis K t x]
+  calc (∃! cd : Fin n × Fin n, x = (cd.1 : ℕ) • P₀ + (cd.2 : ℕ) • Q₀)
+      ↔ (∃! ab : Fin n × Fin n, x = ((Φ ab).1 : ℕ) • P₀ + ((Φ ab).2 : ℕ) • Q₀) :=
+        (Equiv.existsUnique_congr_right (q := fun cd : Fin n × Fin n =>
+          x = (cd.1 : ℕ) • P₀ + (cd.2 : ℕ) • Q₀) Φ).symm
+    _ ↔ (∃! ab : Fin n × Fin n, x = (ab.1 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistP σ L)
+          + (ab.2 : ℕ) • RelPoint.pre t (Category.comp_id t) (twistQ σ L)) := by
+        simp only [key']
 
-/-- **The `GL₂(ℤ/n)`-twist of a full level structure.** -/
+/-- **The `GL₂(ℤ/n)`-twist of a full level structure.**
+
+The `n`-torsion hypotheses are not decoration: see the FALSITY AUDIT on
+`geomBasis_twist`, which is where they are consumed. -/
 noncomputable def twist (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
     (σ : GL (Fin 2) (ZMod n)) : FullLevelStructure n d where
   P := twistP σ L
   Q := twistQ σ L
@@ -4092,7 +4225,9 @@ theorem ext' {L₁ L₂ : FullLevelStructure n d} (hP : L₁.P = L₂.P) (hQ : L
     L₁ = L₂ := by
   cases L₁; cases L₂; subst hP; subst hQ; rfl
 
-theorem twist_one (hn : 3 ≤ n) (L : FullLevelStructure n d) : twist hn L 1 = L :=
+theorem twist_one (hn : 3 ≤ n) (L : FullLevelStructure n d)
+    (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
+    (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0) : twist hn L hP hQ 1 = L :=
   ext' (twistP_one (by omega) L) (twistQ_one (by omega) L)
 
 /-- **The twist is an action** — and this is FALSE without the `n`-torsion
@@ -4102,8 +4237,10 @@ explicit arguments so that the dependence is visible at every use site. -/
 theorem twist_mul (hn : 3 ≤ n) (L : FullLevelStructure n d)
     (hP : letI := d.ab.addCommGroup (𝟙 T); n • L.P = 0)
     (hQ : letI := d.ab.addCommGroup (𝟙 T); n • L.Q = 0)
-    (σ τ : GL (Fin 2) (ZMod n)) :
-    twist hn (twist hn L τ) σ = twist hn L (σ * τ) := by
+    (σ τ : GL (Fin 2) (ZMod n))
+    (hP' : letI := d.ab.addCommGroup (𝟙 T); n • (twist hn L hP hQ τ).P = 0)
+    (hQ' : letI := d.ab.addCommGroup (𝟙 T); n • (twist hn L hP hQ τ).Q = 0) :
+    twist hn (twist hn L hP hQ τ) hP' hQ' σ = twist hn L hP hQ (σ * τ) := by
   haveI : NeZero n := ⟨by omega⟩
   refine ext' ?_ ?_
   · show RelPoint.comb d.ab (σ.val 0 0) (σ.val 0 1)
@@ -4174,9 +4311,9 @@ theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedM
   have huniv : ∀ σ : gamma0DeckGroup n,
       ∃! m : Spec (CommRingCat.of R.A) ⟶ Spec (CommRingCat.of R.A),
         ∃ bc : IsBaseChangeOf m R.dM R.dM,
-          (FullLevelStructure.twist hn R.lvlM σ).P.1 ≫ bc.map = m ≫ R.lvlM.P.1 ∧
-          (FullLevelStructure.twist hn R.lvlM σ).Q.1 ≫ bc.map = m ≫ R.lvlM.Q.1 :=
-    fun σ => R.universal R.strM R.dM (FullLevelStructure.twist hn R.lvlM σ)
+          (FullLevelStructure.twist hn R.lvlM hP hQ σ).P.1 ≫ bc.map = m ≫ R.lvlM.P.1 ∧
+          (FullLevelStructure.twist hn R.lvlM hP hQ σ).Q.1 ≫ bc.map = m ≫ R.lvlM.Q.1 :=
+    fun σ => R.universal R.strM R.dM (FullLevelStructure.twist hn R.lvlM hP hQ σ)
   choose mm hmm hmmu using huniv
   choose bcm e1 e2 using hmm
   -- `σ ↦ mm σ` is an antihomomorphism into the automorphisms of `Spec A`
@@ -4186,41 +4323,45 @@ theorem exists_deckAction_of_torsion (N n : ℕ) (hn : 3 ≤ n) (R : RigidifiedM
         simp [IsBaseChangeOf.refl]
   have hmul : ∀ σ τ : gamma0DeckGroup n, mm (σ * τ) = mm τ ≫ mm σ := by
     intro σ τ
-    have hTP : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).P)
+    have hTP : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ τ).P)
         = RelPoint.pre (mm τ) (by simp) R.lvlM.P := Subtype.ext (e1 τ)
-    have hTQ : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM τ).Q)
+    have hTQ : (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ τ).Q)
         = RelPoint.pre (mm τ) (by simp) R.lvlM.Q := Subtype.ext (e2 τ)
-    have hstepP : (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map
-        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).P.1 := by
+    have hstepP : (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).P.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM hP hQ σ).P.1 := by
       refine congrArg Subtype.val (?_ :
-        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).P)
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).P)
           = RelPoint.pre (mm τ) (by simp)
-              ((FullLevelStructure.twist hn R.lvlM σ).P))
-      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ]
+              ((FullLevelStructure.twist hn R.lvlM hP hQ σ).P))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ
+        (FullLevelStructure.nsmul_twistP_eq_zero R.lvlM hP hQ τ)
+        (FullLevelStructure.nsmul_twistQ_eq_zero R.lvlM hP hQ τ)]
       show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1)
-          (FullLevelStructure.twist hn R.lvlM τ).P
-          (FullLevelStructure.twist hn R.lvlM τ).Q)
+          (FullLevelStructure.twist hn R.lvlM hP hQ τ).P
+          (FullLevelStructure.twist hn R.lvlM hP hQ τ).Q)
         = RelPoint.pre (mm τ) (by simp)
             (RelPoint.comb R.dM.ab (σ.val 0 0) (σ.val 0 1) R.lvlM.P R.lvlM.Q)
       rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
-    have hstepQ : (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map
-        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM σ).Q.1 := by
+    have hstepQ : (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).Q.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn R.lvlM hP hQ σ).Q.1 := by
       refine congrArg Subtype.val (?_ :
-        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM (σ * τ)).Q)
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).Q)
           = RelPoint.pre (mm τ) (by simp)
-              ((FullLevelStructure.twist hn R.lvlM σ).Q))
-      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ]
+              ((FullLevelStructure.twist hn R.lvlM hP hQ σ).Q))
+      rw [← FullLevelStructure.twist_mul hn R.lvlM hP hQ σ τ
+        (FullLevelStructure.nsmul_twistP_eq_zero R.lvlM hP hQ τ)
+        (FullLevelStructure.nsmul_twistQ_eq_zero R.lvlM hP hQ τ)]
       show (bcm τ).toRelPoint (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1)
-          (FullLevelStructure.twist hn R.lvlM τ).P
-          (FullLevelStructure.twist hn R.lvlM τ).Q)
+          (FullLevelStructure.twist hn R.lvlM hP hQ τ).P
+          (FullLevelStructure.twist hn R.lvlM hP hQ τ).Q)
         = RelPoint.pre (mm τ) (by simp)
             (RelPoint.comb R.dM.ab (σ.val 1 0) (σ.val 1 1) R.lvlM.P R.lvlM.Q)
       rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
     refine (hmmu (σ * τ) (mm τ ≫ mm σ) ⟨(bcm τ).comp (bcm σ), ?_, ?_⟩).symm
-    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).P.1 ≫ (bcm τ).map ≫ (bcm σ).map
+    · show (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).P.1 ≫ (bcm τ).map ≫ (bcm σ).map
           = (mm τ ≫ mm σ) ≫ R.lvlM.P.1
       rw [← Category.assoc, hstepP, Category.assoc, e1 σ, Category.assoc]
-    · show (FullLevelStructure.twist hn R.lvlM (σ * τ)).Q.1 ≫ (bcm τ).map ≫ (bcm σ).map
+    · show (FullLevelStructure.twist hn R.lvlM hP hQ (σ * τ)).Q.1 ≫ (bcm τ).map ≫ (bcm σ).map
           = (mm τ ≫ mm σ) ≫ R.lvlM.Q.1
       rw [← Category.assoc, hstepQ, Category.assoc, e2 σ, Category.assoc]
   -- transport to ring homomorphisms through full faithfulness of `Spec` on affines
@@ -4295,8 +4436,9 @@ acts on a full level structure by `(P, Q) ↦ (aP + bQ, cP + dQ)`
 preserved exactly because the matrix is invertible mod `n` — the twisted
 pair is again a basis of the `n`-torsion at every geometric point, with the
 unique coordinate pair of a point transformed by `σ⁻¹`.  That last step is
-the one remaining sub-leaf of the construction,
-`FullLevelStructure.geomBasis_twist`.  `R.universal` then classifies the
+`FullLevelStructure.geomBasis_twist`, PROVEN 2026-07-27 — but only from the
+`n`-torsion of `P` and `Q` OVER THE BASE, which `twist` therefore takes as
+arguments; see its FALSITY AUDIT.  `R.universal` then classifies the
 twist by a UNIQUE endomorphism of `Spec (CommRingCat.of R.A)`, which is an
 automorphism because `σ⁻¹` supplies the inverse (uniqueness in
 `R.universal` makes `σ ↦ mσ` a monoid antihomomorphism into endomorphisms,
