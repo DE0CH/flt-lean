@@ -7467,11 +7467,397 @@ lemma exists_hilbertGLTwoLift_of_surjective {A : Type*} [CommRing A] [IsLocalRin
     exact hU.ne_zero
   exact ⟨(Matrix.isUnit_iff_isUnit_det W₀).mpr hdet |>.unit, by simpa using hmap⟩
 
+/-- **Raynaud closure for flat prolongations over a VARIABLE number field,
+in plain SUBOBJECT form** (PROVEN 2026-07-26; the sub-object sibling of
+`hasFlatProlongationAt_of_pi_surjection_of_numberField` above, and the
+`K`-variable form of `Deformation.lean`'s PROVEN
+`hasFlatProlongationAt_of_injection`): if the local space of `ρ₂` at a
+place `w` of `K` is the geometric-point group of a finite flat group scheme
+over `𝒪_w`, then so is every `Γ K_w`-equivariant additive SUBGROUP of it.
+
+Mathematically this is closure of the essential image of the generic-fibre
+functor (finite flat group schemes over the DVR `𝒪_w`) ⟶ (finite
+`Γ K_w`-modules) under `Γ`-stable subgroups, by SCHEMATIC CLOSURE: the
+closure of a closed subgroup scheme of the generic fibre inside the finite
+flat model is again finite flat over the DVR. The EXISTENCE direction needs
+no `e < ℓ − 1` bound; Raynaud's bound enters only for UNIQUENESS of the
+prolongation, which is not asserted.
+
+**HOW IT WAS CLOSED, AND WHY IT WAS OPEN FOR A DAY.** Word for word the
+situation of the surjection sibling above, whose docstring carries the full
+analysis. The fix prescribed there — hoist
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`'s
+`variable (v : HeightOneSpectrum (𝓞 ℚ))` to a general number field — HAS
+LANDED, and that file is now sorry-free at a variable `K`. So this is the
+same three-line assembly as its sibling, over the same three PROVEN
+ingredients: `hasFlatProlongationAt_iff_isFlatPointsGroupAt` to pass to the
+representation-free carrier, `IsFlatPointsGroupAt.of_injective` for the
+schematic closure of a `Γ K_w`-stable subgroup, and the `iff` again to come
+back. Note it does NOT route through `Deformation.lean`'s `ℚ`-level
+`hasFlatProlongationAt_of_prod_injection` corollary (which takes the same
+object twice and kills the second coordinate, `x ↦ (j x, 0)`); that module
+is DOWNSTREAM and unusable from here, and the direct subobject closure is
+shorter anyway.
+
+This leaf survived the hoist that was supposed to close it purely for a
+bookkeeping reason worth recording: the hoist task was pointed at
+`hasFlatProlongationAt_of_prod_injection_over_numberField`, **a name that
+exists nowhere in this file**, so its sibling closed and this one did not.
+A task aimed at a name that does not exist fails silently — it looks like a
+completed task, not a missed one.
+
+The import cost is nil: `FlatPointsGroup.lean` is already imported by this
+module for the surjection sibling, and its Gelfand-duality closure was
+audited there (38 `Fermat`-side modules, nothing from `HardlyRamified/`,
+`Family.lean`, `Lift.lean`, `Deformation.lean` or `Modularity/*`), so the
+circularity guard is intact.
+
+No finiteness hypothesis on `M₁` is needed: it is forced, `M₁` injecting
+into the finite `M₂`.
+
+FAITHFULNESS: the hypotheses are exactly those of the `ℚ`-level theorem
+with `ℚ` replaced by `K`, and the conclusion asks only for EXISTENCE of a
+prolongation produced by a closure construction inside a model that already
+exists — not for a descent of existence from `𝒪^nr`, so the `𝒪ᵥ`
+discriminating rule does not bite.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974), §2–3; Tate, *Finite flat group schemes*, in
+Cornell–Silverman–Stevens, §4. -/
+theorem hasFlatProlongationAt_of_injection_of_numberField
+    {K : Type u} [Field K] [NumberField K] (w : HeightOneSpectrum (𝓞 K))
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep K A₁ M₁} {ρ₂ : GaloisRep K A₂ M₂}
+    (h : ρ₂.HasFlatProlongationAt w)
+    (j : (ρ₁.toLocal w).Space →+ (ρ₂.toLocal w).Space)
+    (hinj : Function.Injective j)
+    (hequiv : ∀ (g : Γ (w.adicCompletion K))
+        (x : (ρ₁.toLocal w).Space), j (g • x) = g • j x) :
+    ρ₁.HasFlatProlongationAt w := by
+  -- pass to the representation-free point-group carrier
+  have h₂ : Modularity.IsFlatPointsGroupAt w (ρ₂.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mp h
+  -- subobjects: schematic closure over the DVR along the equivariant injection
+  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mpr
+    (h₂.of_injective j hinj hequiv)
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Flatness at a place pulls back along a conjugation identity, over a
+VARIABLE number field** (PROVEN 2026-07-26; the `K`-variable form of
+`Deformation.lean`'s `isFlatAt_of_conj_eq`, whose proof this is verbatim):
+if `ρ.conj e = τ` and `τ` is flat at `w`, then so is `ρ`.
+
+This is the direction opposite to the flatness clause of
+`isHilbertHardlyRamified_conj` above, and is what a *descent* hypothesis of
+the shape `(ρ' ⊗ R)ᵉ = ρ` gives: the base-changed inverse framing
+`(R ⧸ I) ⊗ e⁻¹` is an equivariant additive isomorphism of the two local
+spaces, so `HasFlatProlongationAt.of_equiv` transports the Hopf-algebra
+witness at every open ideal `I`. -/
+theorem isFlatAt_of_conj_eq_of_numberField {K : Type u} [Field K]
+    [NumberField K] (w : HeightOneSpectrum (𝓞 K))
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type*} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {ρ : GaloisRep K R M} {τ : GaloisRep K R N} (e : M ≃ₗ[R] N)
+    (he : ρ.conj e = τ) (h : τ.IsFlatAt w) : ρ.IsFlatAt w := by
+  constructor
+  intro I hI
+  refine (h.cond I hI).of_equiv _
+    (LinearEquiv.baseChange R (R ⧸ I) N M e.symm).toAddEquiv ?_
+  intro g x
+  show (LinearEquiv.baseChange R (R ⧸ I) N M e.symm)
+      (((τ.baseChange (R ⧸ I)).toLocal w g) x) =
+    ((ρ.baseChange (R ⧸ I)).toLocal w g)
+      ((LinearEquiv.baseChange R (R ⧸ I) N M e.symm) x)
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c m =>
+    simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+      LinearEquiv.baseChange_tmul]
+    congr 1
+    conv_lhs => rw [← he]
+    rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+      LinearEquiv.symm_apply_apply]
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Flatness at a place descends from a complete local ring to a subring
+carrying the subspace topology, over a VARIABLE number field** (PROVEN
+2026-07-26 over the two Raynaud closure leaves
+`hasFlatProlongationAt_of_injection_of_numberField` and
+`hasFlatProlongationAt_of_pi_surjection_of_numberField`; the `K`-variable
+form of `Deformation.lean`'s `isFlatAt_of_subring_baseChange`, whose proof
+this is verbatim): if `C` is a subring of an `𝔪`-adic local ring `A` and
+the base change `τ ⊗ A` of a framed representation over `C` is flat at `w`,
+then `τ` itself is flat at `w`.
+
+NOTHING about `C` is used except that its topology is the subspace topology
+(which is how `Subring` carries a topology) and that `A` is `𝔪`-adic. In
+particular the Carayol arithmetic of the sibling leaf
+`exists_isLocalRing_hilbertTraceSubring` is NOT consumed: flatness never
+asks for the `𝔪'`-adic filtration of `C`, only for cofinality of *some*
+family of open ideals, and the contracted ideals `𝔪ⁿ ∩ C` are cofinal in
+the open ideals of `C` by the definition of the subspace topology alone.
+
+ROUTE, in three steps, given an open ideal `I` of `C`.
+
+1. *Cofinality.* `I` is a neighbourhood of `0` for the subspace topology,
+   so `I ⊇ t ∩ C` for a neighbourhood `t` of `0` in `A`, and `isAdic_iff`
+   gives `n` with `𝔪ⁿ ⊆ t`. Put `J := 𝔪ⁿ` and `J' := J ∩ C ≤ I`.
+2. *Subobject.* `C ⧸ J' → A ⧸ J` is INJECTIVE — that is exactly
+   `J' = J ∩ C` — and `N` is free, hence flat, over `C`, so
+   `(C ⧸ J') ⊗_C N → (A ⧸ J) ⊗_C N` is injective. Composing with the
+   inverse of `TensorProduct.AlgebraTensorModule.cancelBaseChange`, this
+   is a `Γ K_w`-equivariant injection into a space with a finite flat
+   prolongation, and the sub-object closure prolongs it.
+3. *Quotient.* `J' ≤ I`, so `τ ⊗ C/I` is an equivariant QUOTIENT of
+   `τ ⊗ C/J'`; the surjection closure at `n = 1` finishes.
+
+Both closure steps are genuinely needed and neither subsumes the other:
+`J'` is in general strictly smaller than `I`, so the subobject step alone
+lands at the wrong level, and `C ⧸ I` need not embed in any `A ⧸ J`. -/
+theorem isFlatAt_of_subring_baseChange_of_numberField {K : Type u} [Field K]
+    [NumberField K] (w : HeightOneSpectrum (𝓞 K))
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} [IsLocalRing C] [ContinuousSMul C A]
+    {N : Type*} [AddCommGroup N] [Module C N] [Module.Finite C N]
+    [Module.Free C N]
+    {τ : GaloisRep K C N}
+    (hflat : (τ.baseChange A).IsFlatAt w) :
+    τ.IsFlatAt w := by
+  classical
+  constructor
+  intro I hI
+  -- STEP 1: an `𝔪`-adic open ideal of `A` contracting into `I`
+  obtain ⟨n, hn⟩ : ∃ n : ℕ,
+      Ideal.comap (algebraMap C A) ((IsLocalRing.maximalIdeal A) ^ n) ≤ I := by
+    have hs : (I : Set C) ∈ nhds (0 : C) := hI.mem_nhds I.zero_mem
+    rw [nhds_induced, Filter.mem_comap] at hs
+    obtain ⟨t, ht, hts⟩ := hs
+    obtain ⟨m, hm⟩ := (isAdic_iff.mp hadic).2 t (by simpa using ht)
+    exact ⟨m, fun z hz => hts (hm hz)⟩
+  set J : Ideal A := (IsLocalRing.maximalIdeal A) ^ n
+  have hJopen : IsOpen (J : Set A) := (isAdic_iff.mp hadic).1 n
+  set J' : Ideal C := Ideal.comap (algebraMap C A) J
+  -- STEP 2: the `Γ`-stable subobject `C ⧸ J' ↪ A ⧸ J`
+  let cmap : (C ⧸ J') →ₗ[C] (A ⧸ J) :=
+    Submodule.liftQ J' (Algebra.linearMap C (A ⧸ J)) (by
+      intro r hr
+      show algebraMap C (A ⧸ J) r = 0
+      rw [IsScalarTower.algebraMap_apply C A (A ⧸ J)]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr hr)
+  have hcmap : ∀ r : C, cmap (Ideal.Quotient.mk J' r) = algebraMap C (A ⧸ J) r :=
+    fun _ => rfl
+  have hcmapinj : Function.Injective cmap := by
+    refine (injective_iff_map_eq_zero cmap).mpr ?_
+    intro x hx
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    rw [hcmap r, IsScalarTower.algebraMap_apply C A (A ⧸ J),
+      Ideal.Quotient.algebraMap_eq, Ideal.Quotient.eq_zero_iff_mem] at hx
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hx
+  let ι : ((C ⧸ J') ⊗[C] N) →ₗ[C] ((A ⧸ J) ⊗[C] N) := LinearMap.rTensor N cmap
+  let can := TensorProduct.AlgebraTensorModule.cancelBaseChange C A (A ⧸ J) (A ⧸ J) N
+  let jmap : ((τ.baseChange (C ⧸ J')).toLocal w).Space →+
+      (((τ.baseChange A).baseChange (A ⧸ J)).toLocal w).Space :=
+    (can.symm.toAddEquiv.toAddMonoidHom).comp (ι.toAddMonoidHom)
+  have hsmall : (τ.baseChange (C ⧸ J')).HasFlatProlongationAt w := by
+    refine hasFlatProlongationAt_of_injection_of_numberField w
+      (hflat.cond J hJopen) jmap ?_ ?_
+    · exact can.symm.injective.comp
+        (Module.Flat.rTensor_preserves_injective_linearMap cmap hcmapinj)
+    · intro g x
+      show can.symm (ι (((τ.baseChange (C ⧸ J')).toLocal w) g x))
+        = (((τ.baseChange A).baseChange (A ⧸ J)).toLocal w) g (can.symm (ι x))
+      induction x using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => simp only [map_add, ha, hb]
+      | tmul c m => rfl
+  -- STEP 3: the equivariant quotient `C ⧸ J' ↠ C ⧸ I`
+  let qmap : (C ⧸ J') →ₗ[C] (C ⧸ I) :=
+    Submodule.liftQ J' (Submodule.mkQ (I : Submodule C C))
+      (by rw [Submodule.ker_mkQ]; exact hn)
+  have hqsurj : Function.Surjective qmap := by
+    intro z
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective z
+    exact ⟨Ideal.Quotient.mk J' r, rfl⟩
+  have hqkey : ∀ (g : Γ (w.adicCompletion K))
+      (y : ((τ.baseChange (C ⧸ J')).toLocal w).Space),
+      LinearMap.rTensor N qmap (((τ.baseChange (C ⧸ J')).toLocal w) g y)
+        = ((τ.baseChange (C ⧸ I)).toLocal w) g (LinearMap.rTensor N qmap y) := by
+    intro g y
+    induction y using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m => rfl
+  let pmap : (Fin 1 → ((τ.baseChange (C ⧸ J')).toLocal w).Space) →+
+      ((τ.baseChange (C ⧸ I)).toLocal w).Space :=
+    { toFun := fun x => LinearMap.rTensor N qmap (x 0)
+      map_zero' := by simp
+      map_add' := fun x y => by simp }
+  refine hasFlatProlongationAt_of_pi_surjection_of_numberField w 1 hsmall
+    pmap ?_ ?_
+  · intro z
+    obtain ⟨y, hy⟩ := LinearMap.rTensor_surjective N hqsurj z
+    exact ⟨fun _ => y, hy⟩
+  · intro g x
+    exact hqkey g (x 0)
+
+/-- **A FINITE DISCRETE LOCAL RING IS `𝔪`-ADIC** (PROVEN 2026-07-27; the
+local copy of `Deformation.lean`'s `isAdic_maximalIdeal_of_finite`, which
+lives DOWNSTREAM of this module and so cannot be imported back — the name
+carries the `_hilbert` suffix used throughout this file for exactly that
+situation, since `Deformation.lean` `public import`s this module and a
+silently colliding duplicate has broken it once already).
+
+This is the hypothesis `isFlatAt_of_subring_baseChange_of_numberField` asks
+for, supplied here for the finite test objects of the `F`-level deformation
+problem. A finite ring is Artinian, so its Jacobson radical is nilpotent
+(`IsArtinianRing.isNilpotent_jacobson_bot`), and in a local ring that radical
+is `𝔪` (`IsLocalRing.jacobson_eq_maximalIdeal`). Hence `𝔪ⁿ = ⊥` for some `n`,
+which makes the `𝔪`-adic filtration cofinal in the (discrete) neighbourhood
+filter of `0`; openness of every `𝔪ⁿ` is free in the discrete topology. -/
+lemma isAdic_maximalIdeal_of_finite_hilbert {A : Type*} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A] [Finite A]
+    [DiscreteTopology A] :
+    IsAdic (IsLocalRing.maximalIdeal A) := by
+  haveI : IsArtinianRing A := inferInstance
+  rw [isAdic_iff]
+  refine ⟨fun n => isOpen_discrete _, ?_⟩
+  intro s hs
+  obtain ⟨n, hn⟩ : ∃ n, (IsLocalRing.maximalIdeal A) ^ n = ⊥ := by
+    have h : IsNilpotent (Ideal.jacobson (⊥ : Ideal A)) :=
+      IsArtinianRing.isNilpotent_jacobson_bot
+    rw [IsLocalRing.jacobson_eq_maximalIdeal (⊥ : Ideal A) bot_ne_top] at h
+    obtain ⟨m, hm⟩ := h
+    exact ⟨m, by simpa using hm⟩
+  refine ⟨n, ?_⟩
+  rw [hn]
+  intro x hx
+  have hx0 : x = 0 := by simpa using hx
+  rw [hx0]
+  exact mem_of_mem_nhds hs
+
+/-- **THE TAME-AT-`2` CLAUSE OF THE SUBRING DESCENT** (LEAF — cut out
+2026-07-27 from `isHilbertHardlyRamified_of_subring_entries` below, which is
+otherwise now PROVEN over it. This is the ONLY genuinely open content of that
+theorem: its determinant, unramifiedness and flatness clauses are all
+discharged there.)
+
+Setting: `A` a finite discrete local `ℤ_ℓ`-algebra in which `2` is a unit,
+`C ⊆ A` a local subring, `ρC` a framed `F`-level representation whose matrix
+entries are exactly those of the hardly ramified `ρA` (`hent`), and `w` a
+place of `F` over `2`. Wanted: the `Γ F_w`-stable rank-one QUOTIENT of `ρC`
+at `w`, with a square-trivial unramified character.
+
+**OBSTRUCTION AUDIT: THE `ℚ`-LEVEL ARITHMETIC INPUT DOES NOT TRANSPORT, AND
+THE OBSTRUCTION IS INTRINSIC** (2026-07-27; this is the same obstruction
+recorded, independently, in the FALSITY AUDIT on
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` below, and the two
+should be read together. Two independent records of one obstruction is a
+strong signal: treat any route that ignores it as wrong until it has refuted
+the witness below.)
+
+At the `ℚ` level (`Deformation.lean`'s PROVEN
+`isHardlyRamified_of_subring_entries`) the stable line is produced from a
+SIMPLE residual root of the eigen-quadratic: Cayley–Hamilton makes each row
+of `ρ(g₀) − χ_ℓ(g₀)δ(g₀)·I` a left eigenvector for `δ(g₀)`, and that matrix
+has trace `δ(g₀)(1 − χ_ℓ(g₀))`, so one of its rows is unimodular over the
+local ring `C` exactly when `1 − χ_ℓ(g₀)` is a UNIT. Over `ℚ_2` such a `g₀`
+always exists (`exists_cyclotomicCharacter_padicTwo_sub_one_isUnit`;
+concretely Frobenius, where `χ_ℓ = 2` and `1 − 2 = −1`).
+
+**No other choice of `g₀` can help, and this is worth stating because it is
+what makes the obstruction intrinsic rather than an artefact of the route.**
+For ANY `g₀ ∈ Γ F_w` the two eigencharacters of `ρ(g₀)` are `δ` on the line
+and `ψ = χ_ℓ/δ` on the quotient, and `δ² = 1`, so their difference is
+`ψ(g₀) − δ(g₀) = (χ_ℓ(g₀) − δ(g₀)²)/δ(g₀) = (χ_ℓ(g₀) − 1)/δ(g₀)`. The
+separation of the residual eigenvalues is therefore `χ_ℓ − 1` up to a unit,
+for every element of the group — substituting `δ(g₀) = −1` for `δ(g₀) = 1`
+changes nothing.
+
+Over a place `w ∣ 2` of a general totally real `F` that quantity need NOT be
+a unit: `χ_ℓ mod 𝔪` is trivial on `Γ F_w` exactly when `μ_ℓ ⊆ F_w`, and
+`ℚ_2(μ_ℓ)` is the unramified extension of `ℚ_2` of degree `ord_ℓ(2)`, which
+is finite. The witness is explicit: `ℓ = 7`, `F = ℚ(ζ₇)⁺` (totally real,
+`ℓ ≥ 5`), where `2` is inert with residue degree `3` and the unique `w ∣ 2`
+has `F_w = ℚ_2(μ_7)`, so `χ_7(Γ F_w) ⊆ 1 + 7ℤ_7` and NO `g₀` separates the
+two residual eigenvalues. Nothing in the hypotheses excludes such an `F`, and
+nothing downstream does either: the consumer chain carries only `Odd ℓ` and,
+further down, `5 ≤ ℓ`.
+
+WHAT WOULD REFUTE THIS LEAF, stated so the next owner can aim at it. Over
+that `(F, ℓ, w)` the LATTICE obstruction is realisable in the FINITE setting
+this leaf lives in — the sibling audit's `ℤ_7[[Z]] ↪ ℤ_7[[Y]]`, `Z ↦ 7Y`
+witness truncates: with `A = (ℤ/49)[Y]/(Y²)` (finite, local, discrete,
+`2 ∈ Aˣ`), `C = ℤ/49 + (7Y)·(ℤ/7) ⊆ A` and `M_c = [[1, (1−c)Y], [0, c]]` for
+`c ∈ χ_7(Γ F_w) ⊆ 1 + 7ℤ_7`, the entries lie in `C`, the row `(1, Y)` is a
+unimodular `δ = 1` eigenrow over `A`, and a direct computation shows every
+`δ = 1` eigenrow over `C` lies in `𝔪_C·C²` while the only other eigenrow has
+character `χ_7`, barred by `δ² = 1`. **The one thing still missing for a
+refutation is GLOBAL**: a genuinely `F`-level hardly ramified `ρA` over `A`
+restricting to that shape at `w` (it must also be flat at the places over
+`7`). Producing it — or proving no such `ρA` exists — is the check that
+decides this leaf.
+
+WHY THE RETRACTION ROUTE IS UNAVAILABLE, and why residual fullness is not a
+substitute. The sibling leaf
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` is true because it
+carries a ring RETRACTION `f : 𝒟.R ↠ R'` of the inclusion, which kills the
+counterexample outright and makes the tame descent three formal steps with no
+arithmetic at `w` at all. No retraction `A ↠ C` is available here, and none
+exists in general: for the `A`, `C` above, `φ(Y) ∈ C` with `φ(Y)² = 0` forces
+`φ(Y) ∈ 7A`, whence `7(φ(Y) − Y) = −7Y ≠ 0`.
+
+CONSUMER CHECK (run 2026-07-27, and it closes the remaining hope that the
+call site might supply more than the statement does). The sole consumer is
+`hilbertFrameLevels_repClause_ker` below, which instantiates `C := f.range`
+for `f : hilbertFrameRing ℓ F k →+* A` — i.e. `C` is exactly the subring
+generated by `ℤ_ℓ`, the matrix entries and the Teichmüller lifts of the
+residue field, which IS the shape of the counterexample `C` above. It
+supplies residual fullness (`πA` restricted to `C` is onto `k`) but no
+retraction, and residual fullness is NOT enough: the `C` above already has
+it. So a proof needs either a new hypothesis with real content or a genuinely
+different argument, and saying which is worth more than another proof
+attempt.
+
+References: Carayol, *Formes modulaires et représentations galoisiennes*,
+Théorème 1; Mazur, *Deforming Galois representations*, §1.8; de Smit–Lenstra,
+in Cornell–Silverman–Stevens, Prop. 2.3. -/
+theorem isHilbertTameAtTwo_of_subring_entries
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
+    (h2 : IsUnit (2 : A))
+    (C : Subring A) [IsLocalRing C] [Algebra ℤ_[ℓ] C]
+    {ρC : FramedGaloisRep F C (Fin 2)} {ρA : FramedGaloisRep F A (Fin 2)}
+    (hent : ∀ (g : Γ F) (i j : Fin 2),
+      ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
+        LinearMap.toMatrix' (ρA g) i j)
+    (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA)
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal) :
+    ∃ (p : (Fin 2 → C) →ₗ[C] C) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) C C),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → C,
+        p (ρC.toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
+  sorry
+
+open scoped TensorProduct in
 /-- **`IsHilbertHardlyRamified` DESCENDS TO A SUBRING CARRYING THE MATRIX
-ENTRIES** (LEAF — stated 2026-07-27; item 4 of the `CUT AUDIT` decomposition
-recorded on `hilbertFrameLevels_classification` below, written now because
-`hilbertFrameLevels_repClause_ker` is now PROVEN over it and it is therefore
-no longer free-floating. The `F`-level twin of `Deformation.lean`'s PROVEN
+ENTRIES** (PROVEN 2026-07-27 over the single leaf
+`isHilbertTameAtTwo_of_subring_entries` above; item 4 of the `CUT AUDIT`
+decomposition recorded on `hilbertFrameLevels_classification` below. The
+`F`-level twin of `Deformation.lean`'s PROVEN
 `isHardlyRamified_of_subring_entries`.)
 
 Setting: `A` a finite discrete local `ℤ_ℓ`-algebra in which `2` is a unit,
@@ -7479,11 +7865,13 @@ Setting: `A` a finite discrete local `ℤ_ℓ`-algebra in which `2` is a unit,
 matrix entries are exactly those of the hardly ramified `ρA` (hypothesis
 `hent`). Then `ρC` is itself `F`-level hardly ramified.
 
-**CLAUSE-BY-CLAUSE STATUS — three of the four clauses are already available
-here and only the tame one is genuinely open.** This is recorded so that the
-next owner does not re-survey it; each item names the check that settles it.
+**CLAUSE-BY-CLAUSE STATUS — three of the four clauses are PROVEN here and
+only the tame one is genuinely open**, which is now a fact about the file and
+not a forecast: the tame clause is the named leaf
+`isHilbertTameAtTwo_of_subring_entries` immediately above, and this theorem's
+proof discharges the other three outright.
 
-* *Determinant.* Formal. `LinearMap.det` commutes with `Matrix.map` along
+* *Determinant.* PROVEN. `LinearMap.det` commutes with `Matrix.map` along
   `C.subtype` (`RingHom.map_det`), the `ℤ_ℓ`-structures agree because
   `hilbertRingHom_padicInt_ext_finite` makes a ring map `ℤ_ℓ →+* A` into a
   FINITE ring unique, and `C ↪ A` is injective. The `ℚ`-level proof of this
@@ -7491,27 +7879,35 @@ next owner does not re-survey it; each item names the check that settles it.
   of `IsHilbertHardlyRamified` differing from the `ℚ` one only by composing
   the cyclotomic character with `Field.absoluteGaloisGroup.map`, which is a
   fixed element of `Γ ℚ` per `g` and plays no part.
-* *Unramifiedness away from `2ℓ`.* Formal, and the inertia quantifier is
+* *Unramifiedness away from `2ℓ`.* PROVEN, and the inertia quantifier is
   never widened: `ρA.toLocal w σ = 1` for `σ ∈ localInertiaGroup w` forces
   `ρC.toLocal w σ = 1` entrywise through the injection. The one shape
   difference from `ℚ` is that the places are `w : HeightOneSpectrum (𝓞 F)`
   rather than rational primes, so the clause is read off directly instead of
   through `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`.
-* *Flatness at the places over `ℓ`.* ALREADY PROVEN IN THIS FILE, and blocked
-  here only by DECLARATION ORDER: it is
+* *Flatness at the places over `ℓ`.* PROVEN, and the earlier note that it was
+  "blocked only by DECLARATION ORDER" was exactly right: it is
   `isFlatAt_of_conj_eq_of_numberField` composed with
   `isFlatAt_of_subring_baseChange_of_numberField`, applied to the base-change
   identity `(ρC ⊗ A)ᵉ = ρA` for `e = TensorProduct.piScalarRight C A A (Fin 2)`
   — exactly as at the `ℚ` level — plus a port of `Deformation.lean`'s
   `isAdic_maximalIdeal_of_finite` (twelve lines: a finite ring is Artinian,
-  so `𝔪ⁿ = ⊥`). Both flat lemmas live ~4200 lines BELOW this point
-  (`isFlatAt_of_subring_baseChange_of_numberField`, in the trace-subring
-  development), so closing this half is a pure HOIST of that block above
-  `section HilbertFrameRing`, not new mathematics. Check that refutes the
-  claim it is only an ordering problem: grep the moved block for any name
-  declared between here and its current home.
+  so `𝔪ⁿ = ⊥`), which is `isAdic_maximalIdeal_of_finite_hilbert` above. The
+  two flat lemmas used to live ~4200 lines BELOW this point, in the
+  trace-subring development; on 2026-07-27 the contiguous block
+  `hasFlatProlongationAt_of_injection_of_numberField`,
+  `isFlatAt_of_conj_eq_of_numberField`,
+  `isFlatAt_of_subring_baseChange_of_numberField` was HOISTED verbatim to
+  just above this docstring. The hoist was a pure move — it needed no new
+  imports and no new declarations, its only in-file dependency
+  (`hasFlatProlongationAt_of_pi_surjection_of_numberField`) was already
+  further up, and it changed nothing at the block's former use site further
+  down. Do not re-copy those three lemmas; use them from here.
 * *Tameness at the places over `2`.* THE ONLY GENUINELY OPEN CONTENT, and it
-  is NOT a transcription — see the next section.
+  is NOT a transcription. It is now the named leaf
+  `isHilbertTameAtTwo_of_subring_entries` above, which carries the full
+  obstruction audit; the summary below is kept because the two records were
+  written independently and agree.
 
 **OBSTRUCTION AUDIT FOR THE TAME CLAUSE: THE `ℚ`-LEVEL ARITHMETIC INPUT DOES
 NOT TRANSPORT** (2026-07-27; this is the same obstruction already recorded,
@@ -7591,8 +7987,92 @@ theorem isHilbertHardlyRamified_of_subring_entries
       ((LinearMap.toMatrix' (ρC g) i j : C) : A) =
         LinearMap.toMatrix' (ρA g) i j)
     (hHRA : IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA) :
-    IsHilbertHardlyRamified ℓ F (rank_finTwoPi C) ρC :=
-  sorry
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi C) ρC := by
+  classical
+  haveI : Finite C := Subtype.finite
+  haveI : ContinuousSMul C A := ⟨continuous_of_discreteTopology⟩
+  have hinjC : Function.Injective (fun c : C => (c : A)) := Subtype.val_injective
+  -- the `ℤ_ℓ`-structures agree, both being ring maps into the finite ring `A`
+  have halgC : ∀ r : ℤ_[ℓ], ((algebraMap ℤ_[ℓ] C r : C) : A) = algebraMap ℤ_[ℓ] A r := by
+    intro r
+    have h := hilbertRingHom_padicInt_ext_finite (ℓ := ℓ)
+      ((C.subtype : C →+* A).comp (algebraMap ℤ_[ℓ] C)) (algebraMap ℤ_[ℓ] A)
+    exact RingHom.congr_fun h r
+  -- an element killed by `ρA` is killed by `ρC`
+  have hone : ∀ g : Γ F, ρA g = 1 → ρC g = 1 := by
+    intro g hg
+    have hm : ∀ i j : Fin 2, LinearMap.toMatrix' (ρC g) i j =
+        LinearMap.toMatrix' (1 : Module.End C (Fin 2 → C)) i j := by
+      intro i j
+      refine hinjC ?_
+      simp only
+      rw [hent g i j, hg]
+      rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply]
+      simp only [Module.End.one_apply]
+      by_cases hij : i = j <;> simp [hij]
+    exact LinearMap.toMatrix'.injective (Matrix.ext hm)
+  -- the determinant clause
+  have hdetC : ∀ g : Γ F, ρC.det g = algebraMap ℤ_[ℓ] C
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+    intro g
+    refine hinjC ?_
+    simp only
+    have hd1 : ((LinearMap.det (ρC g) : C) : A) = LinearMap.det (ρA g) := by
+      rw [← LinearMap.det_toMatrix' (ρC g), ← LinearMap.det_toMatrix' (ρA g)]
+      have hmap : (LinearMap.toMatrix' (ρC g)).map (fun c : C => (c : A)) =
+          LinearMap.toMatrix' (ρA g) := by
+        ext i j
+        exact hent g i j
+      rw [← hmap]
+      exact (RingHom.map_det (C.subtype : C →+* A) (LinearMap.toMatrix' (ρC g))).symm
+    show ((ρC.det g : C) : A) = _
+    rw [GaloisRep.det_apply, hd1, halgC, ← GaloisRep.det_apply]
+    exact hHRA.det g
+  -- the base change identity `(ρC ⊗ A)ᵉ = ρA`
+  set e := TensorProduct.piScalarRight C A A (Fin 2) with he_def
+  have hframe : ∀ (w : Fin 2 → C),
+      e ((1 : A) ⊗ₜ[C] w) = fun j => ((w j : C) : A) := by
+    intro w
+    funext j
+    rw [he_def, TensorProduct.piScalarRight_apply,
+      TensorProduct.piScalarRightHom_tmul]
+    simp only [Algebra.smul_def, mul_one]
+    rfl
+  have hbc : (ρC.baseChange A).conj e = ρA := by
+    refine GaloisRep.ext fun g => ?_
+    refine LinearMap.toMatrix'.injective (Matrix.ext fun i j => ?_)
+    rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply]
+    have hsingle : (Pi.single j (1 : A) : Fin 2 → A) =
+        e ((1 : A) ⊗ₜ[C] (Pi.single j (1 : C) : Fin 2 → C)) := by
+      rw [hframe]
+      funext m
+      by_cases hm : m = j <;> simp [hm]
+    have hL : ((ρC.baseChange A).conj e) g (Pi.single j (1 : A)) i =
+        ((ρC g (Pi.single j (1 : C)) i : C) : A) := by
+      conv_lhs => rw [hsingle]
+      rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+        LinearEquiv.symm_apply_apply, GaloisRep.baseChange_tmul, hframe]
+    have hR := hent g i j
+    rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply] at hR
+    rw [hL, hR]
+  refine ⟨hdetC, ?_, ?_, ?_⟩
+  · -- unramifiedness away from the places over `2ℓ`
+    intro w hw2 hwl
+    have hun := hHRA.isUnramified w hw2 hwl
+    refine ⟨fun σ hσ => ?_⟩
+    have h1 : ρA.toLocal w σ = 1 := hun.localInertiaGroup_le hσ
+    show ρC.toLocal w σ = 1
+    rw [GaloisRep.toLocal_apply] at h1 ⊢
+    exact hone _ h1
+  · -- flatness at the places over `ℓ`
+    intro w hw
+    exact isFlatAt_of_subring_baseChange_of_numberField w
+      isAdic_maximalIdeal_of_finite_hilbert
+      (isFlatAt_of_conj_eq_of_numberField w e hbc (hHRA.isFlat w hw))
+  · -- tameness at the places over `2` — the single open leaf
+    intro w hw
+    exact isHilbertTameAtTwo_of_subring_entries ℓ F h2 C hent hHRA w hw
 
 /-- **TRANSPORT OF A FRAMED `F`-LEVEL HARDLY RAMIFIED REPRESENTATION ALONG A
 CONTINUOUS RING MAP INTO A FINITE LOCAL RING** (PROVEN 2026-07-27; the
@@ -13434,250 +13914,6 @@ lemma one_tmul_injective_hilbert {A : Type*} [CommRing A] {B : Type*}
   have h3 := congrFun h2 i
   simp only [Algebra.smul_def, mul_one] at h3
   exact hinj h3
-
-/-- **Raynaud closure for flat prolongations over a VARIABLE number field,
-in plain SUBOBJECT form** (PROVEN 2026-07-26; the sub-object sibling of
-`hasFlatProlongationAt_of_pi_surjection_of_numberField` above, and the
-`K`-variable form of `Deformation.lean`'s PROVEN
-`hasFlatProlongationAt_of_injection`): if the local space of `ρ₂` at a
-place `w` of `K` is the geometric-point group of a finite flat group scheme
-over `𝒪_w`, then so is every `Γ K_w`-equivariant additive SUBGROUP of it.
-
-Mathematically this is closure of the essential image of the generic-fibre
-functor (finite flat group schemes over the DVR `𝒪_w`) ⟶ (finite
-`Γ K_w`-modules) under `Γ`-stable subgroups, by SCHEMATIC CLOSURE: the
-closure of a closed subgroup scheme of the generic fibre inside the finite
-flat model is again finite flat over the DVR. The EXISTENCE direction needs
-no `e < ℓ − 1` bound; Raynaud's bound enters only for UNIQUENESS of the
-prolongation, which is not asserted.
-
-**HOW IT WAS CLOSED, AND WHY IT WAS OPEN FOR A DAY.** Word for word the
-situation of the surjection sibling above, whose docstring carries the full
-analysis. The fix prescribed there — hoist
-`Deformations/RepresentationTheory/FlatPointsGroup.lean`'s
-`variable (v : HeightOneSpectrum (𝓞 ℚ))` to a general number field — HAS
-LANDED, and that file is now sorry-free at a variable `K`. So this is the
-same three-line assembly as its sibling, over the same three PROVEN
-ingredients: `hasFlatProlongationAt_iff_isFlatPointsGroupAt` to pass to the
-representation-free carrier, `IsFlatPointsGroupAt.of_injective` for the
-schematic closure of a `Γ K_w`-stable subgroup, and the `iff` again to come
-back. Note it does NOT route through `Deformation.lean`'s `ℚ`-level
-`hasFlatProlongationAt_of_prod_injection` corollary (which takes the same
-object twice and kills the second coordinate, `x ↦ (j x, 0)`); that module
-is DOWNSTREAM and unusable from here, and the direct subobject closure is
-shorter anyway.
-
-This leaf survived the hoist that was supposed to close it purely for a
-bookkeeping reason worth recording: the hoist task was pointed at
-`hasFlatProlongationAt_of_prod_injection_over_numberField`, **a name that
-exists nowhere in this file**, so its sibling closed and this one did not.
-A task aimed at a name that does not exist fails silently — it looks like a
-completed task, not a missed one.
-
-The import cost is nil: `FlatPointsGroup.lean` is already imported by this
-module for the surjection sibling, and its Gelfand-duality closure was
-audited there (38 `Fermat`-side modules, nothing from `HardlyRamified/`,
-`Family.lean`, `Lift.lean`, `Deformation.lean` or `Modularity/*`), so the
-circularity guard is intact.
-
-No finiteness hypothesis on `M₁` is needed: it is forced, `M₁` injecting
-into the finite `M₂`.
-
-FAITHFULNESS: the hypotheses are exactly those of the `ℚ`-level theorem
-with `ℚ` replaced by `K`, and the conclusion asks only for EXISTENCE of a
-prolongation produced by a closure construction inside a model that already
-exists — not for a descent of existence from `𝒪^nr`, so the `𝒪ᵥ`
-discriminating rule does not bite.
-
-References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
-(1974), §2–3; Tate, *Finite flat group schemes*, in
-Cornell–Silverman–Stevens, §4. -/
-theorem hasFlatProlongationAt_of_injection_of_numberField
-    {K : Type u} [Field K] [NumberField K] (w : HeightOneSpectrum (𝓞 K))
-    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
-    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
-    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
-    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
-    {ρ₁ : GaloisRep K A₁ M₁} {ρ₂ : GaloisRep K A₂ M₂}
-    (h : ρ₂.HasFlatProlongationAt w)
-    (j : (ρ₁.toLocal w).Space →+ (ρ₂.toLocal w).Space)
-    (hinj : Function.Injective j)
-    (hequiv : ∀ (g : Γ (w.adicCompletion K))
-        (x : (ρ₁.toLocal w).Space), j (g • x) = g • j x) :
-    ρ₁.HasFlatProlongationAt w := by
-  -- pass to the representation-free point-group carrier
-  have h₂ : Modularity.IsFlatPointsGroupAt w (ρ₂.toLocal w).Space :=
-    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mp h
-  -- subobjects: schematic closure over the DVR along the equivariant injection
-  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mpr
-    (h₂.of_injective j hinj hequiv)
-
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **Flatness at a place pulls back along a conjugation identity, over a
-VARIABLE number field** (PROVEN 2026-07-26; the `K`-variable form of
-`Deformation.lean`'s `isFlatAt_of_conj_eq`, whose proof this is verbatim):
-if `ρ.conj e = τ` and `τ` is flat at `w`, then so is `ρ`.
-
-This is the direction opposite to the flatness clause of
-`isHilbertHardlyRamified_conj` above, and is what a *descent* hypothesis of
-the shape `(ρ' ⊗ R)ᵉ = ρ` gives: the base-changed inverse framing
-`(R ⧸ I) ⊗ e⁻¹` is an equivariant additive isomorphism of the two local
-spaces, so `HasFlatProlongationAt.of_equiv` transports the Hopf-algebra
-witness at every open ideal `I`. -/
-theorem isFlatAt_of_conj_eq_of_numberField {K : Type u} [Field K]
-    [NumberField K] (w : HeightOneSpectrum (𝓞 K))
-    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
-    [IsLocalRing R]
-    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
-    [Module.Free R M]
-    {N : Type*} [AddCommGroup N] [Module R N] [Module.Finite R N]
-    [Module.Free R N]
-    {ρ : GaloisRep K R M} {τ : GaloisRep K R N} (e : M ≃ₗ[R] N)
-    (he : ρ.conj e = τ) (h : τ.IsFlatAt w) : ρ.IsFlatAt w := by
-  constructor
-  intro I hI
-  refine (h.cond I hI).of_equiv _
-    (LinearEquiv.baseChange R (R ⧸ I) N M e.symm).toAddEquiv ?_
-  intro g x
-  show (LinearEquiv.baseChange R (R ⧸ I) N M e.symm)
-      (((τ.baseChange (R ⧸ I)).toLocal w g) x) =
-    ((ρ.baseChange (R ⧸ I)).toLocal w g)
-      ((LinearEquiv.baseChange R (R ⧸ I) N M e.symm) x)
-  induction x using TensorProduct.induction_on with
-  | zero => simp
-  | add a b ha hb => simp only [map_add, ha, hb]
-  | tmul c m =>
-    simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
-      LinearEquiv.baseChange_tmul]
-    congr 1
-    conv_lhs => rw [← he]
-    rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
-      LinearEquiv.symm_apply_apply]
-
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **Flatness at a place descends from a complete local ring to a subring
-carrying the subspace topology, over a VARIABLE number field** (PROVEN
-2026-07-26 over the two Raynaud closure leaves
-`hasFlatProlongationAt_of_injection_of_numberField` and
-`hasFlatProlongationAt_of_pi_surjection_of_numberField`; the `K`-variable
-form of `Deformation.lean`'s `isFlatAt_of_subring_baseChange`, whose proof
-this is verbatim): if `C` is a subring of an `𝔪`-adic local ring `A` and
-the base change `τ ⊗ A` of a framed representation over `C` is flat at `w`,
-then `τ` itself is flat at `w`.
-
-NOTHING about `C` is used except that its topology is the subspace topology
-(which is how `Subring` carries a topology) and that `A` is `𝔪`-adic. In
-particular the Carayol arithmetic of the sibling leaf
-`exists_isLocalRing_hilbertTraceSubring` is NOT consumed: flatness never
-asks for the `𝔪'`-adic filtration of `C`, only for cofinality of *some*
-family of open ideals, and the contracted ideals `𝔪ⁿ ∩ C` are cofinal in
-the open ideals of `C` by the definition of the subspace topology alone.
-
-ROUTE, in three steps, given an open ideal `I` of `C`.
-
-1. *Cofinality.* `I` is a neighbourhood of `0` for the subspace topology,
-   so `I ⊇ t ∩ C` for a neighbourhood `t` of `0` in `A`, and `isAdic_iff`
-   gives `n` with `𝔪ⁿ ⊆ t`. Put `J := 𝔪ⁿ` and `J' := J ∩ C ≤ I`.
-2. *Subobject.* `C ⧸ J' → A ⧸ J` is INJECTIVE — that is exactly
-   `J' = J ∩ C` — and `N` is free, hence flat, over `C`, so
-   `(C ⧸ J') ⊗_C N → (A ⧸ J) ⊗_C N` is injective. Composing with the
-   inverse of `TensorProduct.AlgebraTensorModule.cancelBaseChange`, this
-   is a `Γ K_w`-equivariant injection into a space with a finite flat
-   prolongation, and the sub-object closure prolongs it.
-3. *Quotient.* `J' ≤ I`, so `τ ⊗ C/I` is an equivariant QUOTIENT of
-   `τ ⊗ C/J'`; the surjection closure at `n = 1` finishes.
-
-Both closure steps are genuinely needed and neither subsumes the other:
-`J'` is in general strictly smaller than `I`, so the subobject step alone
-lands at the wrong level, and `C ⧸ I` need not embed in any `A ⧸ J`. -/
-theorem isFlatAt_of_subring_baseChange_of_numberField {K : Type u} [Field K]
-    [NumberField K] (w : HeightOneSpectrum (𝓞 K))
-    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    [IsLocalRing A] (hadic : IsAdic (IsLocalRing.maximalIdeal A))
-    {C : Subring A} [IsLocalRing C] [ContinuousSMul C A]
-    {N : Type*} [AddCommGroup N] [Module C N] [Module.Finite C N]
-    [Module.Free C N]
-    {τ : GaloisRep K C N}
-    (hflat : (τ.baseChange A).IsFlatAt w) :
-    τ.IsFlatAt w := by
-  classical
-  constructor
-  intro I hI
-  -- STEP 1: an `𝔪`-adic open ideal of `A` contracting into `I`
-  obtain ⟨n, hn⟩ : ∃ n : ℕ,
-      Ideal.comap (algebraMap C A) ((IsLocalRing.maximalIdeal A) ^ n) ≤ I := by
-    have hs : (I : Set C) ∈ nhds (0 : C) := hI.mem_nhds I.zero_mem
-    rw [nhds_induced, Filter.mem_comap] at hs
-    obtain ⟨t, ht, hts⟩ := hs
-    obtain ⟨m, hm⟩ := (isAdic_iff.mp hadic).2 t (by simpa using ht)
-    exact ⟨m, fun z hz => hts (hm hz)⟩
-  set J : Ideal A := (IsLocalRing.maximalIdeal A) ^ n
-  have hJopen : IsOpen (J : Set A) := (isAdic_iff.mp hadic).1 n
-  set J' : Ideal C := Ideal.comap (algebraMap C A) J
-  -- STEP 2: the `Γ`-stable subobject `C ⧸ J' ↪ A ⧸ J`
-  let cmap : (C ⧸ J') →ₗ[C] (A ⧸ J) :=
-    Submodule.liftQ J' (Algebra.linearMap C (A ⧸ J)) (by
-      intro r hr
-      show algebraMap C (A ⧸ J) r = 0
-      rw [IsScalarTower.algebraMap_apply C A (A ⧸ J)]
-      exact Ideal.Quotient.eq_zero_iff_mem.mpr hr)
-  have hcmap : ∀ r : C, cmap (Ideal.Quotient.mk J' r) = algebraMap C (A ⧸ J) r :=
-    fun _ => rfl
-  have hcmapinj : Function.Injective cmap := by
-    refine (injective_iff_map_eq_zero cmap).mpr ?_
-    intro x hx
-    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
-    rw [hcmap r, IsScalarTower.algebraMap_apply C A (A ⧸ J),
-      Ideal.Quotient.algebraMap_eq, Ideal.Quotient.eq_zero_iff_mem] at hx
-    exact Ideal.Quotient.eq_zero_iff_mem.mpr hx
-  let ι : ((C ⧸ J') ⊗[C] N) →ₗ[C] ((A ⧸ J) ⊗[C] N) := LinearMap.rTensor N cmap
-  let can := TensorProduct.AlgebraTensorModule.cancelBaseChange C A (A ⧸ J) (A ⧸ J) N
-  let jmap : ((τ.baseChange (C ⧸ J')).toLocal w).Space →+
-      (((τ.baseChange A).baseChange (A ⧸ J)).toLocal w).Space :=
-    (can.symm.toAddEquiv.toAddMonoidHom).comp (ι.toAddMonoidHom)
-  have hsmall : (τ.baseChange (C ⧸ J')).HasFlatProlongationAt w := by
-    refine hasFlatProlongationAt_of_injection_of_numberField w
-      (hflat.cond J hJopen) jmap ?_ ?_
-    · exact can.symm.injective.comp
-        (Module.Flat.rTensor_preserves_injective_linearMap cmap hcmapinj)
-    · intro g x
-      show can.symm (ι (((τ.baseChange (C ⧸ J')).toLocal w) g x))
-        = (((τ.baseChange A).baseChange (A ⧸ J)).toLocal w) g (can.symm (ι x))
-      induction x using TensorProduct.induction_on with
-      | zero => simp
-      | add a b ha hb => simp only [map_add, ha, hb]
-      | tmul c m => rfl
-  -- STEP 3: the equivariant quotient `C ⧸ J' ↠ C ⧸ I`
-  let qmap : (C ⧸ J') →ₗ[C] (C ⧸ I) :=
-    Submodule.liftQ J' (Submodule.mkQ (I : Submodule C C))
-      (by rw [Submodule.ker_mkQ]; exact hn)
-  have hqsurj : Function.Surjective qmap := by
-    intro z
-    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective z
-    exact ⟨Ideal.Quotient.mk J' r, rfl⟩
-  have hqkey : ∀ (g : Γ (w.adicCompletion K))
-      (y : ((τ.baseChange (C ⧸ J')).toLocal w).Space),
-      LinearMap.rTensor N qmap (((τ.baseChange (C ⧸ J')).toLocal w) g y)
-        = ((τ.baseChange (C ⧸ I)).toLocal w) g (LinearMap.rTensor N qmap y) := by
-    intro g y
-    induction y using TensorProduct.induction_on with
-    | zero => simp
-    | add a b ha hb => simp only [map_add, ha, hb]
-    | tmul c m => rfl
-  let pmap : (Fin 1 → ((τ.baseChange (C ⧸ J')).toLocal w).Space) →+
-      ((τ.baseChange (C ⧸ I)).toLocal w).Space :=
-    { toFun := fun x => LinearMap.rTensor N qmap (x 0)
-      map_zero' := by simp
-      map_add' := fun x y => by simp }
-  refine hasFlatProlongationAt_of_pi_surjection_of_numberField w 1 hsmall
-    pmap ?_ ?_
-  · intro z
-    obtain ⟨y, hy⟩ := LinearMap.rTensor_surjective N hqsurj z
-    exact ⟨fun _ => y, hy⟩
-  · intro g x
-    exact hqkey g (x 0)
 
 /-! #### The two formal descent steps live UPSTREAM now
 
