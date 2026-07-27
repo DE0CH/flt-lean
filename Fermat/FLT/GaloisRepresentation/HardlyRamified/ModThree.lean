@@ -39038,6 +39038,268 @@ theorem exists_artinAuxiliaryField_ray_class
     intro σ hσH hσFix
     exact (hAker σ).mp (hii σ hσH ((hBker σ).mpr hσFix))
 
+/-- **A homomorphism out of the free abelian group `Multiplicative (ι →₀ ℤ)` may
+be prescribed arbitrarily on the basis** (PROVEN 2026-07-27), by
+`Finsupp.liftAddHom` over `zmultiplesHom` transported across
+`Additive`/`Multiplicative`. This is the construction of the divisor-group Artin
+map `φ` of (A3b-1): a divisor group is free abelian on the height-one primes, so
+prescribing `φ (single v 1) = χ (globalFrob v)` determines `φ` and hence its
+kernel, which is what lets the package pin `φ` by clauses instead of naming the
+extension `M/F`. -/
+theorem exists_monoidHom_ofAdd_single_ray_class {ι : Type*} {G : Type*} [CommGroup G]
+    (u : ι → G) :
+    ∃ φ : Multiplicative (ι →₀ ℤ) →* G,
+      ∀ i : ι, φ (Multiplicative.ofAdd (Finsupp.single i (1 : ℤ))) = u i := by
+  classical
+  set Φ : (ι →₀ ℤ) →+ Additive G :=
+    Finsupp.liftAddHom (fun i => zmultiplesHom (Additive G) (Additive.ofMul (u i))) with hΦ
+  refine ⟨{ toFun := fun x => Additive.toMul (Φ (Multiplicative.toAdd x))
+            map_one' := by simp
+            map_mul' := fun x y => by simp [map_add] }, ?_⟩
+  intro i
+  show Additive.toMul (Φ (Finsupp.single i (1 : ℤ))) = u i
+  rw [hΦ, Finsupp.liftAddHom_apply_single]
+  simp
+
+/-- **The divisor map of a Dedekind domain, pinned by ideal divisibility alone**
+(PROVEN 2026-07-27). The exponent at `v` is the `Associates`-count of `v` in the
+factorisation of `(δ)`, finitely supported by `Associates.finite_factors`, and the
+pinning clause `v ^ n ∣ (δ) ↔ n ≤ (d δ) v` is `Associates.prime_pow_dvd_iff_le`.
+Note the statement uses **no factorisation API at all** — only divisibility of
+ideals — which is exactly the design decision recorded on (A3b-1). -/
+theorem exists_divisorMap_heightOneSpectrum_ray_class (R : Type*) [CommRing R]
+    [IsDedekindDomain R] :
+    ∃ d : R → Multiplicative (IsDedekindDomain.HeightOneSpectrum R →₀ ℤ),
+      ∀ δ : R, δ ≠ 0 → ∀ (v : IsDedekindDomain.HeightOneSpectrum R) (n : ℕ),
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v) := by
+  classical
+  have hspan : ∀ δ : R, δ ≠ 0 → (Ideal.span {δ} : Ideal R) ≠ 0 := by
+    intro δ hδ h
+    exact hδ (Ideal.span_singleton_eq_bot.mp h)
+  have key : ∀ (δ : R) (_ : δ ≠ 0),
+      ∀ᶠ v : IsDedekindDomain.HeightOneSpectrum R in Filter.cofinite,
+        ((Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {δ})).factors : ℤ) = 0 :=
+    fun δ hδ => Associates.finite_factors (hspan δ hδ)
+  refine ⟨fun δ => Multiplicative.ofAdd (if hδ : δ = 0 then 0 else
+      ⟨(key δ hδ).toFinset,
+        fun v => ((Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {δ})).factors : ℤ),
+        fun v => (key δ hδ).mem_toFinset⟩), ?_⟩
+  intro δ hδ v n
+  show v.asIdeal ^ n ∣ Ideal.span {δ} ↔
+    (n : ℤ) ≤ (if hδ' : δ = 0 then (0 : IsDedekindDomain.HeightOneSpectrum R →₀ ℤ) else
+      ⟨(key δ hδ').toFinset,
+        fun v => ((Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {δ})).factors : ℤ),
+        fun v => (key δ hδ').mem_toFinset⟩) v
+  rw [dif_neg hδ]
+  show v.asIdeal ^ n ∣ Ideal.span {δ} ↔
+    (n : ℤ) ≤ ((Associates.mk v.asIdeal).count (Associates.mk (Ideal.span {δ})).factors : ℤ)
+  rw [Nat.cast_le, ← Associates.prime_pow_dvd_iff_le
+      (Associates.mk_ne_zero.mpr (hspan δ hδ)) v.associates_irreducible,
+    ← Associates.mk_pow, Associates.mk_le_mk_iff_dvd]
+
+/-- **The subgroup of divisors supported away from a set of primes** (PROVEN
+2026-07-27). This is `I_F(mm)` of (A3b), realised inside the full divisor group
+as the divisors whose exponent vanishes at every `v ∣ mm`. Built as an
+`AddSubgroup` of the `Finsupp` and transported by `AddSubgroup.toSubgroup`, so
+membership is definitionally the clause the cluster's statements are written
+with. -/
+theorem exists_supportSubgroup_ray_class {ι : Type*} (s : ι → Prop) :
+    ∃ Im : Subgroup (Multiplicative (ι →₀ ℤ)),
+      ∀ x, x ∈ Im ↔ ∀ i : ι, s i → Multiplicative.toAdd x i = 0 := by
+  refine ⟨AddSubgroup.toSubgroup
+    { carrier := {f : ι →₀ ℤ | ∀ i : ι, s i → f i = 0}
+      zero_mem' := fun i _ => rfl
+      add_mem' := fun hx hy i hi => by simp [hx i hi, hy i hi]
+      neg_mem' := fun hx i hi => by simp [hx i hi] }, fun x => Iff.rfl⟩
+
+/-- **A relative index is nonzero as soon as the map's range lands in a finite
+subgroup** (PROVEN 2026-07-27).
+
+This is what discharges the clause `hidx₁ : A.relIndex Im ≠ 0` of (A3b-1), and it
+is worth recording that **Chebotarev is NOT needed for it**. The package's
+docstring attributed `hidx₁` to surjectivity of the Artin map; surjectivity is
+what computes the index to be exactly `#G`, but the clause as stated asks only
+that the index be FINITE. Finiteness follows from `hord` alone: every basis value
+`χ (globalFrob v)` is an `ℓ^k`-th root of unity, so the whole range of `φ` lies in
+`rootsOfUnity (ℓ ^ k) (Dickson.K 3)`, which is finite because a field has at most
+`n` `n`-th roots of unity. `Subgroup.index_ker` then identifies the relative index
+with the cardinality of a subset of that finite group.
+
+Refutable in one step if wrong: exhibit `φ` with `φ.range ≤ T`, `T` finite, and
+`(φ.ker ⊓ Im).relIndex Im = 0`. -/
+theorem relIndex_ker_ne_zero_of_range_le_ray_class {G H : Type*} [Group G] [Group H]
+    (φ : G →* H) (T : Subgroup H) [Finite T] (hle : φ.range ≤ T) (Im : Subgroup G) :
+    (φ.ker ⊓ Im).relIndex Im ≠ 0 := by
+  classical
+  rw [Subgroup.relIndex, Subgroup.inf_subgroupOf_right, ← Subgroup.relIndex]
+  have hker : φ.ker.subgroupOf Im = (φ.comp Im.subtype).ker := by
+    ext x; simp [Subgroup.mem_subgroupOf, MonoidHom.mem_ker]
+  rw [Subgroup.relIndex, hker, Subgroup.index_ker]
+  have hsub : ((φ.comp Im.subtype).range : Set H) ⊆ (T : Set H) := by
+    rintro _ ⟨x, rfl⟩
+    exact hle ⟨Im.subtype x, rfl⟩
+  have : Finite (φ.comp Im.subtype).range :=
+    (Set.Finite.subset (Set.toFinite (T : Set H)) hsub).to_subtype
+  exact Nat.card_ne_zero.mpr ⟨inferInstance, this⟩
+
+set_option maxHeartbeats 1000000 in
+/-- **FINITENESS OF RAMIFICATION: a nonzero modulus divisible by every prime at
+which `χ` is ramified** (sorry node, created 2026-07-27 as sub-leaf (A3b-1-a) of
+`exists_artinDivisorPackage_ray_class` below, which is now PROVEN as glue over
+this leaf, (A3b-1-b) `artinDivisorMap_apply_span_ray_class` and (A3b-1-c)
+`artinDivisorNormIndex_le_ray_class`).
+
+**Content.** `ker χ` contains the open subgroup `V`, hence is open, hence cuts out
+a FINITE extension `M/F`; a finite extension of number fields is ramified at only
+finitely many primes; take `mm` to be their product, which is nonzero because each
+factor is. Everything about the divisor-group construction that is genuinely
+arithmetic-and-global sits here.
+
+**FAITHFULNESS: TRUE and NOT vacuous.** `mm ≠ ⊥` is what carries the content: if
+infinitely many `w` were ramified no nonzero `mm` could be divisible by them all,
+so the leaf is exactly the assertion that ramification is finite. Note it is NOT
+satisfiable by `mm = ⊤` in general — `⊤` is divisible by no height-one prime — so
+a witness must genuinely enumerate the ramified set. The degenerate case `χ`
+trivial (no ramified `w`) is honestly admitted by `mm = ⊤`, and that is correct
+rather than a hole: there is then nothing to be divisible by.
+
+**Check that would refute it**: a `χ` satisfying `hmul`/`hVopen`/`hVker` with
+infinitely many `w` carrying a conjugate of an inertia element outside `ker χ`. -/
+theorem exists_ramifiedModulus_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) :
+    ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+          χ (a * Field.absoluteGaloisGroup.map
+            (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
+            ≠ 1) → w.asIdeal ∣ mm :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **THE DIVISOR-GROUP ARTIN MAP COMPUTES THE IDEAL ARTIN SYMBOL**
+(sorry node, created 2026-07-27 as sub-leaf (A3b-1-b) of
+`exists_artinDivisorPackage_ray_class` below).
+
+This is Childress's ingredient 1., i.e. the clause `hφd` of (A3b-1), isolated
+from the construction. Both sides are pinned: `φ` by its values on the basis
+(`hφv`) and `d` by ideal divisibility (`hd`), so nothing here is a matter of
+choice.
+
+**Route.** Factor `(δ) = ∏ᶠ v, v ^ (v-adic valuation of δ)` — this is
+`Ideal.finprod_heightOneSpectrum_factorization`, IN THE PIN, and `hd` identifies
+that exponent with `Multiplicative.toAdd (d δ) v`. Then push `c` through the
+finite product with `hcmul` (all factors nonzero) and evaluate each `c (v.asIdeal)`
+with `hcfrob`; on the other side push `φ` through the same product using that
+`d δ` is the sum of its `Finsupp.single`s and `hφv`. Both sides become
+`∏ᶠ v, χ (globalFrob v) ^ (v-adic valuation of δ)`.
+
+**FAITHFULNESS: TRUE as stated, and `hord` is LOAD-BEARING** (audited 2026-07-27,
+and the leaf would be FALSE without it). `hcmul` alone does not force `c ⊤ = 1`:
+it gives `c ⊤ = c ⊤ * c ⊤`, so `c ⊤ ∈ {0, 1}`. If `c ⊤ = 0` then `c J = 0` for
+every nonzero `J`, while `φ (d δ) = φ 1 = 1` for `δ` a unit — a counterexample.
+What excludes `c ⊤ = 0` is `hord`: `c (v.asIdeal) = χ (globalFrob v)` is a root of
+unity by `hord`, hence nonzero. So the `ℓ`-block is not decoration here.
+
+**Check that would refute it**: any `c` with `hcmul`, `hcfrob` and `c ⊤ ≠ 1`. -/
+theorem artinDivisorMap_apply_span_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+        = χ (globalFrob v))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) :
+    ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}) :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **THE GLOBAL CYCLIC NORM INDEX INEQUALITY** (sorry node, created 2026-07-27 as
+sub-leaf (A3b-1-c) of `exists_artinDivisorPackage_ray_class` below).
+
+Childress ch. 4: for `M/F` cyclic, `[I_F(mm) : P⁺_{F,mm} · N_{M/F} I_M(mm)] ≥ #G`,
+which in the relative-index language of this cluster is
+`A.relIndex Im ≤ (P ⊔ N).relIndex Im`. Only this half of the Norm Index Equality
+is needed; the other half follows from the crux (A3b-2) by counting. NOT in tree,
+and it is the deepest of the three pieces of the package.
+
+**Why the clause lives here rather than being derived from admissibility.** `mm`
+carries only `mm ≠ ⊥` and divisibility by the ramified primes, deliberately: this
+file's `IsAdmissibleModulusRayClass` is the CONCLUSION of the whole (A3) cluster,
+so requiring it would make the package as strong as its own consumer. What
+excludes a too-coarse `mm` is precisely this inequality — with `F = ℚ`,
+`M = ℚ(i)`, `mm = (2)` one has `P⁺ = I_ℚ((2))`, so the clause reads `2 ≤ 1` and
+fails, while the true conductor `(4)` gives `2 ≤ 2`.
+
+**FAITHFULNESS: TRUE as stated.** The objects are pinned by `hd`, `hA`, `hφv`,
+`hφd`, `hIm`, `hP`, `hN` to be the textbook ones (see the package docstring). Not
+vacuous: the `ℚ(i)`, `mm = (2)` computation above is an instance of the remaining
+hypotheses in which the conclusion is FALSE, so no witness can discharge it by
+shape alone.
+
+**Check that would refute it**: hypotheses as stated together with an explicit
+`mm`, `φ`, `d`, `Im`, `P`, `N` for which `(P ⊔ N).relIndex Im < A.relIndex Im`. -/
+theorem artinDivisorNormIndex_le_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (hmmram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+        χ (a * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
+          ≠ 1) → w.asIdeal ∣ mm)
+    (φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ)
+    (d : NumberField.RingOfIntegers F → Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ))
+    (Im A P N : Subgroup (Multiplicative
+      (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)))
+    (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
+        (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v))
+    (hA : A = φ.ker ⊓ Im)
+    (hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+        = χ (globalFrob v))
+    (hφd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}))
+    (hIm : ∀ x, x ∈ Im ↔ ∀ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), v.asIdeal ∣ mm → Multiplicative.toAdd x v = 0)
+    (hP : P = Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+      (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+      δ - 1 ∈ mm ∧ y = d δ})
+    (hN : N = Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
+      y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))}) :
+    A.relIndex Im ≤ (P ⊔ N).relIndex Im :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **THE DIVISOR-GROUP ARTIN PACKAGE: the four subgroups, the divisor map,
 and the counting** (sorry node, created 2026-07-26 as sub-leaf (A3b-1) of
@@ -39119,21 +39381,54 @@ mentioning the ray on the `c` side — no circularity.
   Norm Index Equality**, Childress ch. 4. Only the `≥ #G` half is needed;
   the other half is automatic from the crux. NOT in tree.
 
-**A LATER OWNER SHOULD SPLIT THIS FURTHER.** Now that the objects are
-pinned by clauses rather than existentially chosen, the four bullets
-above are independently statable, and the natural next cut is
-"construction + `hφd`" against "the two index facts". That cut was not
-made here only because it doubles the amount of boilerplate in one pass;
-it is no longer blocked by a design decision.
+**DECOMPOSED AND PROVEN 2026-07-27.** The split the paragraph above asked
+for has been made, and it went further than "construction against the two
+index facts" because one of the two index facts turned out not to be an
+arithmetic input at all. The construction is now PROVEN here as glue over
+three new leaves and four new PROVEN utilities:
 
-**FAITHFULNESS (audited 2026-07-26): TRUE as stated.** True with `mm` the
-finite part of the conductor of `M/F` (finite abelian because `hVopen`,
-`hVker` make `ker χ` open and the values of `χ` commute), `φ` the
-divisor-group Artin map, `A = ker φ`, `P` the narrow ray, `N` the norm
-subgroup; the four bullets above are then the standard statements. Not
-vacuous: `hidx₂` is false for a modulus that is too coarse (the `ℚ(i)`,
-`mm = (2)` computation above), `hφd` is false for a `φ` unrelated to `c`,
-and `hd` pins `d` to be the true divisor map. -/
+* `exists_monoidHom_ofAdd_single_ray_class` (PROVEN) builds `φ` — the
+  divisor group is free abelian, so prescribing `φ` on the basis is
+  `Finsupp.liftAddHom` over `zmultiplesHom`. It is built valued in
+  `rootsOfUnity (ℓ ^ k) (Dickson.K 3)` and then composed with the
+  inclusion, which is what makes the range visibly finite;
+* `exists_divisorMap_heightOneSpectrum_ray_class` (PROVEN) builds `d`,
+  with the pinning clause `v ^ n ∣ (δ) ↔ n ≤ (d δ) v` discharged by
+  `Associates.prime_pow_dvd_iff_le` — no factorisation API, exactly as the
+  design decision above requires;
+* `exists_supportSubgroup_ray_class` (PROVEN) builds `Im`;
+* `relIndex_ker_ne_zero_of_range_le_ray_class` (PROVEN) discharges
+  `hidx₁`. **This corrects the attribution in the bullet list above:
+  `hidx₁` is NOT Chebotarev.** Surjectivity of the Artin map is what makes
+  the index equal `#G`, but the clause as written asks only that it be
+  FINITE, and that follows from `hord` alone — the image of `φ` consists
+  of `ℓ^k`-th roots of unity, and a field has at most `n` of them. The
+  Chebotarev input is therefore not needed anywhere in this package;
+* `exists_ramifiedModulus_ray_class` (A3b-1-a, sorry) — finiteness of
+  ramification, the only genuinely global input to `mm`;
+* `artinDivisorMap_apply_span_ray_class` (A3b-1-b, sorry) — `hφd`;
+* `artinDivisorNormIndex_le_ray_class` (A3b-1-c, sorry) — `hidx₂`, the
+  Global Cyclic Norm Index Inequality of Childress ch. 4, which is the
+  deep remaining content.
+
+**REPAIR 2026-07-27: `A` is now `φ.ker ⊓ Im`, not `φ.ker`.** The Artin
+kernel of Childress 5.2.2 is the kernel of the Artin map restricted to
+`I_F(mm)`. With the unrestricted `φ.ker`, the crux (A3b-2)
+`artinDivisorKernel_le_sup_ray_class` below was FALSE — see the FALSITY
+AUDIT in its docstring for the explicit counterexample. This package leaf
+itself was satisfiable either way (it could always answer `mm = ⊤`), so
+the defect was invisible here and only bit the consumer; the repair is
+made on both sides so that the pair is sound. `A.relIndex Im` is
+unaffected by the change (`Subgroup.inf_subgroupOf_right`).
+
+**FAITHFULNESS (re-audited 2026-07-27): TRUE as stated.** True with `mm`
+the finite part of the conductor of `M/F` (finite abelian because
+`hVopen`, `hVker` make `ker χ` open and the values of `χ` commute), `φ`
+the divisor-group Artin map, `A = ker φ ⊓ I_F(mm)`, `P` the narrow ray,
+`N` the norm subgroup; the four bullets above are then the standard
+statements. Not vacuous: `hidx₂` is false for a modulus that is too coarse
+(the `ℚ(i)`, `mm = (2)` computation above), `hφd` is false for a `φ`
+unrelated to `c`, and `hd` pins `d` to be the true divisor map. -/
 theorem exists_artinDivisorPackage_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -39162,7 +39457,7 @@ theorem exists_artinDivisorPackage_ray_class
         (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
           ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
             (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v)) ∧
-        A = φ.ker ∧
+        A = φ.ker ⊓ Im ∧
         (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
           ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
             = χ (globalFrob v)) ∧
@@ -39176,8 +39471,64 @@ theorem exists_artinDivisorPackage_ray_class
         N = Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
           y = Multiplicative.ofAdd (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))} ∧
-        A.relIndex Im ≠ 0 ∧ A.relIndex Im ≤ (P ⊔ N).relIndex Im :=
-  sorry
+        A.relIndex Im ≠ 0 ∧ A.relIndex Im ≤ (P ⊔ N).relIndex Im := by
+  classical
+  have hℓk : ℓ ^ k ≠ 0 := pow_ne_zero k hℓ.ne_zero
+  haveI : NeZero (ℓ ^ k) := ⟨hℓk⟩
+  -- (A3b-1-a): finiteness of ramification supplies the modulus.
+  obtain ⟨mm, hmm, hmmram⟩ := exists_ramifiedModulus_ray_class F χ hmul V hVopen hVker
+  -- `hord` makes every value of `χ` a root of unity, hence a unit.
+  have hu : ∀ a : Γ F, IsUnit (χ a) := fun a => IsUnit.of_pow_eq_one (hord a) hℓk
+  have hmem : ∀ a : Γ F, (hu a).unit ∈ rootsOfUnity (ℓ ^ k) (Dickson.K 3) := by
+    intro a
+    rw [mem_rootsOfUnity', IsUnit.unit_spec]
+    exact hord a
+  -- The divisor-group Artin map, prescribed on the basis and valued in `μ_{ℓ^k}`.
+  obtain ⟨φ₀, hφ₀⟩ := exists_monoidHom_ofAdd_single_ray_class
+    (fun v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) =>
+      (⟨(hu (globalFrob v)).unit, hmem (globalFrob v)⟩ :
+        rootsOfUnity (ℓ ^ k) (Dickson.K 3)))
+  set φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ :=
+    (rootsOfUnity (ℓ ^ k) (Dickson.K 3)).subtype.comp φ₀ with hφdef
+  obtain ⟨d, hd⟩ :=
+    exists_divisorMap_heightOneSpectrum_ray_class (NumberField.RingOfIntegers F)
+  obtain ⟨Im, hIm⟩ := exists_supportSubgroup_ray_class
+    (fun v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) =>
+      v.asIdeal ∣ mm)
+  have hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
+        = χ (globalFrob v) := by
+    intro v
+    rw [hφdef]
+    change (((φ₀ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) :
+      (Dickson.K 3)ˣ) : Dickson.K 3) = χ (globalFrob v)
+    rw [hφ₀ v]
+    exact (hu (globalFrob v)).unit_spec
+  -- (A3b-1-b): the divisor-group Artin map computes the ideal Artin symbol.
+  have hφd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      ((φ (d δ) : Dickson.K 3)) = c (Ideal.span {δ}) :=
+    artinDivisorMap_apply_span_ray_class F χ ℓ hℓ k hord c hcmul hcfrob φ d hφv hd
+  -- `hidx₁` needs only FINITENESS of the image, which `hord` already gives.
+  have hrange : φ.range ≤ rootsOfUnity (ℓ ^ k) (Dickson.K 3) := by
+    rintro _ ⟨x, rfl⟩
+    exact (φ₀ x).2
+  have hidx₁ : (φ.ker ⊓ Im).relIndex Im ≠ 0 :=
+    relIndex_ker_ne_zero_of_range_le_ray_class φ (rootsOfUnity (ℓ ^ k) (Dickson.K 3))
+      hrange Im
+  -- (A3b-1-c): the Global Cyclic Norm Index Inequality.
+  have hidx₂ : (φ.ker ⊓ Im).relIndex Im ≤
+      ((Subgroup.closure {y | ∃ δ : NumberField.RingOfIntegers F, δ ≠ 0 ∧
+          (∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F δ)) ∧
+          δ - 1 ∈ mm ∧ y = d δ}) ⊔
+        (Subgroup.closure {y | ∃ v : IsDedekindDomain.HeightOneSpectrum
+          (NumberField.RingOfIntegers F), ¬ (v.asIdeal ∣ mm) ∧
+          y = Multiplicative.ofAdd
+            (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))})).relIndex Im :=
+    artinDivisorNormIndex_le_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul
+      hcfrob mm hmm hmmram φ d Im (φ.ker ⊓ Im) _ _ hd rfl hφv hφd hIm rfl rfl
+  exact ⟨mm, hmm, hmmram, φ, d, Im, φ.ker ⊓ Im, _, _, hd, rfl, hφv, hφd, hIm, rfl, rfl,
+    hidx₁, hidx₂⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **CHILDRESS PROPOSITION 5.2.2 — the crux: the Artin kernel is
@@ -39219,7 +39570,43 @@ without `hidx₂` a too-coarse `mm` would be admitted. Carrying them as
 hypotheses therefore costs nothing and removes a whole class of ways this
 leaf could have been stated FALSE.
 
-**FAITHFULNESS (audited 2026-07-26): TRUE as stated.** True by the
+**FALSITY AUDIT (2026-07-27): THE LEAF WAS FALSE AS STATED, WITH
+`hA : A = φ.ker`, AND IS REPAIRED HERE TO `hA : A = φ.ker ⊓ Im`.**
+
+The Artin kernel of Childress 5.2.2 is the kernel of the Artin map
+**restricted to `I_F(mm)`**, i.e. `ker φ ⊓ Im`; the previous transcription
+took the kernel in the FULL divisor group, and the containment then fails
+for a completely elementary reason.
+
+*Why.* The consumer `exists_artinIdealGroup_relIndex_ray_class` below
+PROVES `P ⊔ N ≤ Im` from these very hypotheses (`hPIm`, `hNIm`): every
+generator of `P` comes from a `δ ≡ 1 (mod mm)`, which is a unit at each
+`v ∣ mm`, and every generator of `N` is supported at a single `v ∤ mm`.
+But `ker φ` is NOT contained in `Im`: for any `v₀ ∣ mm` the divisor
+`single v₀ (orderOf (χ (globalFrob v₀)))` lies in `ker φ` by `hφv`, while
+its exponent at `v₀` is `orderOf (χ (globalFrob v₀)) ≥ 1` — nonzero,
+because `hord` makes `χ (globalFrob v₀)` a root of unity and roots of
+unity have finite positive order. So it is outside `Im ⊇ P ⊔ N`.
+
+*Explicit counterexample to the old statement.* `F = ℚ`, `χ ≡ 1`, `c ≡ 1`,
+`V = ⊤`, `ℓ = 2`, `k = 0`, `mm = (5)`, `φ` the trivial homomorphism, `d`
+the divisor map, `Im` as pinned. Every hypothesis holds: `hunr` and
+`hmmram` are vacuous because `χ` is trivial; `hartin` holds with `m = 1`
+and `H = ⊤`; `hcycl` is the file's own
+`artinSymbol_span_eq_one_of_cyclotomic_ray_class`; `A = ker φ = ⊤` gives
+`hidx₁` as `1 ≠ 0`, and `N = Im` (its generators `single v 1`, `v ∤ (5)`,
+generate `Im`) gives `hidx₂` as `1 ≤ 1`. The conclusion `⊤ ≤ P ⊔ N` is
+false because `P ⊔ N ≤ Im` and `single (5) 1 ∉ Im`.
+
+*Blast radius of the repair.* `A.relIndex Im` is UNCHANGED, since
+`(φ.ker ⊓ Im).subgroupOf Im = φ.ker.subgroupOf Im`
+(`Subgroup.inf_subgroupOf_right`), so `hidx₁`/`hidx₂` mean exactly what
+they meant before. The package (A3b-1) now produces `A = φ.ker ⊓ Im`, and
+the consumer needed two one-line adjustments (`N ≤ A` now also uses
+`N ≤ Im`, and membership in `A` is destructed with `Subgroup.mem_inf`).
+Nothing else in the cluster mentions `hA`.
+
+**FAITHFULNESS (re-audited 2026-07-27): TRUE as repaired.** True by the
 argument above, with the pinning clauses forcing `A`, `P`, `N`, `Im`, `d`
 to be the textbook objects (see the package docstring for why each clause
 pins what it claims to pin). Non-vacuous: the conclusion `A ≤ P ⊔ N` is
@@ -39227,7 +39614,10 @@ what the counting in the consumer converts into `P ≤ A`, i.e. into
 reciprocity itself, and it is false for a `P`/`N` pair built over a
 modulus not divisible by the ramified primes (then `A` is not even
 well-defined as an Artin kernel). `hunr` is load-bearing: without it `χ`
-need not cut out an extension unramified outside `mm`. -/
+need not cut out an extension unramified outside `mm`.
+
+**Check that would refute the repaired form**: hypotheses as stated
+together with an `x ∈ ker φ ⊓ Im` exhibited outside `P ⊔ N`. -/
 theorem artinDivisorKernel_le_sup_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -39285,7 +39675,7 @@ theorem artinDivisorKernel_le_sup_ray_class
     (hd : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
       ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F), ∀ n : ℕ,
         (v.asIdeal ^ n ∣ Ideal.span {δ} ↔ (n : ℤ) ≤ Multiplicative.toAdd (d δ) v))
-    (hA : A = φ.ker)
+    (hA : A = φ.ker ⊓ Im)
     (hφv : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       ((φ (Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)))) : Dickson.K 3)
         = χ (globalFrob v))
@@ -39504,8 +39894,10 @@ theorem exists_artinIdealGroup_relIndex_ray_class
     simp [hwv]
   -- `N ≤ A`: the Consistency Property, here immediate from the exponent being the
   -- order of `χ (globalFrob v)`.
-  have hNA : N ≤ A := by
-    rw [hN, hA, Subgroup.closure_le]
+  -- (adjusted 2026-07-27 for the repaired `hA : A = φ.ker ⊓ Im`; see the FALSITY
+  -- AUDIT on `artinDivisorKernel_le_sup_ray_class`.)
+  have hNker : N ≤ φ.ker := by
+    rw [hN, Subgroup.closure_le]
     rintro y ⟨v, _hv, rfl⟩
     rw [SetLike.mem_coe, MonoidHom.mem_ker]
     have hsingle : (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ)) =
@@ -39521,15 +39913,17 @@ theorem exists_artinIdealGroup_relIndex_ray_class
     ext
     push_cast
     rw [hφv v, zpow_natCast, pow_orderOf_eq_one]
+  have hNA : N ≤ A := by rw [hA]; exact le_inf hNker hNIm
   refine ⟨mm, hmm, Im, A, P, N, d, hcrux, sup_le hPIm hNIm, hNA, hidx₁, hidx₂, ?_⟩
   intro δ hδ0 hδpos hδmem
   refine ⟨?_, ?_⟩
   · rw [hP]
     exact Subgroup.subset_closure ⟨δ, hδ0, hδpos, hδmem, rfl⟩
   · intro hmem
-    rw [hA, MonoidHom.mem_ker] at hmem
+    rw [hA] at hmem
+    have hker : φ (d δ) = 1 := MonoidHom.mem_ker.mp (Subgroup.mem_inf.mp hmem).1
     have h := hφd δ hδ0
-    rw [hmem] at h
+    rw [hker] at h
     simpa using h.symm
 
 set_option maxHeartbeats 1000000 in
