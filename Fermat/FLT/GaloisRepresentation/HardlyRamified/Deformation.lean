@@ -323,6 +323,14 @@ Khare–Wintenberger pillar α
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- `exists_conj_baseChange_of_matrix` and
+-- `exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem`, hoisted out of THIS
+-- file and out of `HilbertModularity.lean` on 2026-07-26 (each carried its own
+-- copy, and neither can import the other's: this file `public import`s that
+-- one). Imported DIRECTLY rather than relied on through the re-export below,
+-- because a private import in an intermediate module makes such names
+-- unavailable even in proof bodies.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.FramedDescent
 -- The Hilbert-modular (`R_F = T_F`) development over a totally real field,
 -- which discharges the potential-modularity node of pillar α. It is KW-free
 -- and imports only `Defs.lean` and mathlib, so this import does not touch
@@ -9103,98 +9111,43 @@ theorem finite_quotient_of_maximalIdeal_pow_le {R : Type*} [CommRing R]
     (Ideal.Quotient.factor_surjective hnle)
 
 open scoped Matrix in
-open scoped TensorProduct in
-/-- **The matrix form of a framed conjugation** (PROVEN 2026-07-25 — the
-linear-algebra dictionary of the pro-finite limit
-`isWeaklyUniversalOnIdentifiedFrames_of_finite`): a conjugating matrix
-`E ∈ GL₂(B)` intertwining the `ψ`-image of a standard-framed
-representation `ρ` over `R` with a standard-framed representation `σ`
-over `B` produces the linear equivalence
-`e : B ⊗_R R² ≃ₗ[B] B²` with `(ρ ⊗ B)ᵉ = σ` that the deformation
-vocabulary asks for.
+/-! #### `exists_conj_baseChange_of_matrix` — HOISTED, see `FramedDescent.lean`
 
-This is what lets the pro-finite limit be taken over PAIRS living in a
-type INDEPENDENT of the ring map: the conjugation datum of
-`IsWeaklyUniversalOnIdentifiedFrames` is a `≃ₗ` whose very type depends
-on the algebra structure induced by `ψ`, so a tower of such data is a
-tower over dependent types and does not form an inverse system of sets;
-its matrix avatar `(ψ, E) : (R →+* B) × Matrix (Fin 2) (Fin 2) B` does.
-(The naive transfer of `Modularity/Patching.lean`'s
-`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests` fails exactly
-here: that proof carries only the TRACE-level clause through the limit,
-so its inverse system is one of ring maps alone.)
+**The matrix form of a framed conjugation** (PROVEN 2026-07-25; MOVED
+2026-07-26 to `HardlyRamified/FramedDescent.lean` and generalised there from
+`ℚ` to a variable base number field): a conjugating matrix `E ∈ GL₂(B)`
+intertwining the `ψ`-image of a standard-framed representation `ρ` over `R`
+with a standard-framed representation `σ` over `B` produces the linear
+equivalence `e : B ⊗_R R² ≃ₗ[B] B²` with `(ρ ⊗ B)ᵉ = σ` that the deformation
+vocabulary asks for. The name is unchanged and the `ℚ`-level call sites below
+are unchanged: `F := ℚ` is inferred from `ρ`.
 
-Proof: `e` is the canonical `B ⊗_R R² ≅ B²` (`TensorProduct.piScalarRight`)
-followed by the automorphism of `B²` given by `E`
-(`Matrix.toLinearEquiv'`, `E` being invertible since its determinant is
-a unit). On a simple tensor `b ⊗ w` the base-changed representation acts
-as `b ⊗ ρ(g)w`, whose image is `b • (E *ᵥ ψ∘(ρ(g)w))`; entrywise
+WHY IT MOVED. `HilbertModularity.lean` needed the same statement over a
+variable `F` and could not import it, this file `public import`ing that one, so
+it carried a verbatim `F`-variable copy. Nothing in the statement or the proof
+mentions the base field beyond carrying it as a parameter, so both copies were
+replaced by one lemma upstream of both files.
+
+WHAT IT IS FOR, since two docstrings below say "above". This is what lets the
+pro-finite limit of `isWeaklyUniversalOnIdentifiedFrames_of_finite` be taken
+over PAIRS living in a type INDEPENDENT of the ring map: the conjugation datum
+of `IsWeaklyUniversalOnIdentifiedFrames` is a `≃ₗ` whose very type depends on
+the algebra structure induced by `ψ`, so a tower of such data is a tower over
+dependent types and does not form an inverse system of sets; its matrix avatar
+`(ψ, E) : (R →+* B) × Matrix (Fin 2) (Fin 2) B` does. (The naive transfer of
+`Modularity/Patching.lean`'s
+`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests` fails exactly here:
+that proof carries only the TRACE-level clause through the limit, so its
+inverse system is one of ring maps alone.)
+
+Proof, for reference: `e` is the canonical `B ⊗_R R² ≅ B²`
+(`TensorProduct.piScalarRight`) followed by the automorphism of `B²` given by
+`E` (`Matrix.toLinearEquiv'`, `E` being invertible since its determinant is a
+unit). On a simple tensor `b ⊗ w` the base-changed representation acts as
+`b ⊗ ρ(g)w`, whose image is `b • (E *ᵥ ψ∘(ρ(g)w))`; entrywise
 `ψ∘(ρ(g)w) = (ψ(ρ(g)) *ᵥ ψ∘w)` because `ψ` is a ring homomorphism
 (`RingHom.map_mulVec`), so the two sides of the required identity are
 `b • ((E * ψ(ρ(g))) *ᵥ ψ∘w)` and `b • ((σ(g) * E) *ᵥ ψ∘w)`. -/
-theorem exists_conj_baseChange_of_matrix
-    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
-    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    (ψ : R →+* B) (hψ : Continuous ψ)
-    (ρ : FramedGaloisRep ℚ R (Fin 2)) (σ : FramedGaloisRep ℚ B (Fin 2))
-    (E : Matrix (Fin 2) (Fin 2) B) (hE : IsUnit E.det)
-    (hconj : ∀ g : Field.absoluteGaloisGroup ℚ,
-      E * (LinearMap.toMatrix' (ρ g)).map ⇑ψ =
-        (LinearMap.toMatrix' (σ g)) * E) :
-    letI : Algebra R B := ψ.toAlgebra
-    letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
-      (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
-    ∃ e : (B ⊗[R] (Fin 2 → R)) ≃ₗ[B] (Fin 2 → B),
-      (ρ.baseChange B).conj e = σ := by
-  letI : Algebra R B := ψ.toAlgebra
-  letI : ContinuousSMul R B := continuousSMul_of_algebraMap R B
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
-  haveI : Invertible E := Matrix.invertibleOfIsUnitDet E hE
-  set e : (B ⊗[R] (Fin 2 → R)) ≃ₗ[B] (Fin 2 → B) :=
-    (TensorProduct.piScalarRight R B B (Fin 2)).trans
-      (Matrix.toLinearEquiv' E inferInstance) with he
-  -- the scalar action of `R` on `B` is `ψ`
-  have hsmul : ∀ (r : R) (b : B), r • b = ψ r * b := fun r b => by
-    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra]
-  -- `e` on a simple tensor is `E` applied to the `ψ`-image, scaled by `b`
-  have hetmul : ∀ (b : B) (w : Fin 2 → R),
-      e (b ⊗ₜ[R] w) = b • (E *ᵥ (fun j => ψ (w j))) := by
-    intro b w
-    rw [he]
-    show E *ᵥ (TensorProduct.piScalarRight R B B (Fin 2) (b ⊗ₜ[R] w)) = _
-    rw [TensorProduct.piScalarRight_apply,
-      TensorProduct.piScalarRightHom_tmul]
-    rw [show (fun j => w j • b) = b • (fun j => ψ (w j)) from by
-      funext j
-      rw [hsmul]
-      show ψ (w j) * b = b * ψ (w j)
-      rw [mul_comm]]
-    exact Matrix.mulVec_smul E b _
-  refine ⟨e, GaloisRep.ext fun g => ?_⟩
-  rw [GaloisRep.conj_apply]
-  refine LinearMap.ext fun v => ?_
-  rw [LinearEquiv.conj_apply_apply]
-  -- the identity on simple tensors, extended by linearity
-  have key : ∀ x : B ⊗[R] (Fin 2 → R),
-      e ((ρ.baseChange B) g x) = σ g (e x) := by
-    intro x
-    induction x using TensorProduct.induction_on with
-    | zero => simp
-    | add a b ha hb => simp only [map_add, ha, hb]
-    | tmul b w =>
-      rw [GaloisRep.baseChange_tmul, hetmul, hetmul]
-      have hmap : (fun j => ψ ((ρ g w) j)) =
-          (LinearMap.toMatrix' (ρ g)).map ⇑ψ *ᵥ (fun j => ψ (w j)) := by
-        funext i
-        rw [show (ρ g w) = LinearMap.toMatrix' (ρ g) *ᵥ w from
-          (LinearMap.toMatrix'_mulVec (ρ g) w).symm]
-        exact RingHom.map_mulVec ψ (LinearMap.toMatrix' (ρ g)) w i
-      rw [hmap, Matrix.mulVec_mulVec]
-      rw [show σ g (b • (E *ᵥ (fun j => ψ (w j)))) =
-          b • (LinearMap.toMatrix' (σ g) *ᵥ (E *ᵥ (fun j => ψ (w j)))) from by
-        rw [map_smul, ← LinearMap.toMatrix'_mulVec (σ g)]]
-      rw [Matrix.mulVec_mulVec, hconj g]
-  rw [key (e.symm v), LinearEquiv.apply_symm_apply]
 
 open CategoryTheory in
 /-- **Kőnig's lemma plus adic assembly, for PAIRS** (PROVEN 2026-07-25 —
@@ -10939,91 +10892,37 @@ lemma one_tmul_injective {A : Type*} [CommRing A] {B : Type*} [CommRing B]
   simp only [Algebra.smul_def, mul_one] at h3
   exact hinj h3
 
-/-- **A matrix-valued representation with entries in a subring descends
-to that subring** (PROVEN 2026-07-26 — the representation-theoretic
-plumbing of Carayol's Théorème 1, isolated so that the arithmetic leaves
-below can be stated purely in terms of MATRICES): a family of matrices
-`F : Γ ℚ → M₂(B)` that is unital, multiplicative, continuous entrywise,
-and whose entries all lie in a subring `C ⊆ B`, is the entrywise image of
-a genuine `FramedGaloisRep ℚ C (Fin 2)`.
+/-! #### `exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem` — HOISTED
 
-This is what turns the MATRIX form of Carayol's theorem into the `∃ ρ'`
-form the deformation vocabulary asks for; together with the PROVEN
-`exists_conj_baseChange_of_matrix` it discharges the whole non-arithmetic
-burden of `exists_framedGaloisRep_baseChange_traceSubring` below.
+**A matrix-valued representation with entries in a subring descends to that
+subring** (PROVEN 2026-07-26; MOVED the same day to
+`HardlyRamified/FramedDescent.lean` and generalised there from `ℚ` to a
+variable base number field, for the same reason as its sibling above — this
+file and `HilbertModularity.lean` each carried a copy and cannot import each
+other's). The name is unchanged and the call site below is unchanged.
 
-Proof. The entrywise corestriction `G g := ⟨F g i j, _⟩` is a monoid
-homomorphism into `M₂(C)` because `Matrix.map` along the injective
-inclusion `C.subtype` reflects both the unit and the product. Continuity
-is the only delicate point, because `GaloisRep` demands continuity INTO
-`Module.End C (C²)` for the MODULE topology, and the module topology is
-the FINEST topology making the module topological — so maps into it are
-not continuous for free. It is obtained by factoring through matrices:
+A family of matrices `Φ : Γ F → M₂(B)` that is unital, multiplicative,
+continuous entrywise, and whose entries all lie in a subring `C ⊆ B`, is the
+entrywise image of a genuine `FramedGaloisRep F C (Fin 2)`. This is what turns
+the MATRIX form of Carayol's theorem into the `∃ ρ'` form the deformation
+vocabulary asks for; together with `exists_conj_baseChange_of_matrix` it
+discharges the whole non-arithmetic burden of
+`exists_framedGaloisRep_baseChange_traceSubring` below.
+
+Proof, for reference. The entrywise corestriction `G g := ⟨Φ g i j, _⟩` is a
+monoid homomorphism into `M₂(C)` because `Matrix.map` along the injective
+inclusion `C.subtype` reflects both the unit and the product. Continuity is
+the only delicate point, because `GaloisRep` demands continuity INTO
+`Module.End C (C²)` for the MODULE topology, and the module topology is the
+FINEST topology making the module topological — so maps into it are not
+continuous for free. It is obtained by factoring through matrices:
 `Module.End C (C²)` carries the module topology by construction, so the
-`C`-linear `Matrix.toLin'` out of `M₂(C)` — which carries the module
-topology, being a finite product of copies of `C`
-(`IsModuleTopology.instPi`, matched to `Matrix` by `inferInstanceAs`,
-the two topologies being the same `Pi.topologicalSpace` by definition) —
-is automatically continuous (`IsModuleTopology.continuous_of_linearMap`);
-and `g ↦ G g` is continuous entrywise into the subspace topology of `C`
-by `continuous_induced_rng`. -/
-theorem exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem
-    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    (C : Subring B)
-    (F : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) B)
-    (hcont : ∀ i j, Continuous fun g => F g i j)
-    (hone : F 1 = 1)
-    (hmul : ∀ g h, F (g * h) = F g * F h)
-    (hmem : ∀ g i j, F g i j ∈ C) :
-    ∃ τ : FramedGaloisRep ℚ C (Fin 2),
-      ∀ g, (LinearMap.toMatrix' (τ g)).map C.subtype = F g := by
-  classical
-  letI := moduleTopology C (Module.End C (Fin 2 → C))
-  haveI hMT : IsModuleTopology C (Module.End C (Fin 2 → C)) := ⟨rfl⟩
-  haveI : ContinuousAdd (Module.End C (Fin 2 → C)) :=
-    IsModuleTopology.toContinuousAdd C (Module.End C (Fin 2 → C))
-  haveI : IsModuleTopology C (Matrix (Fin 2) (Fin 2) C) :=
-    inferInstanceAs (IsModuleTopology C (Fin 2 → Fin 2 → C))
-  -- entrywise corestriction of `F` to `C`
-  set G : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) C :=
-    fun g => Matrix.of fun i j => (⟨F g i j, hmem g i j⟩ : C)
-  have hGmap : ∀ g, (G g).map C.subtype = F g := by
-    intro g; ext i j; rfl
-  -- `Matrix.map` along the injective inclusion is injective
-  have hinj : Function.Injective
-      (fun M : Matrix (Fin 2) (Fin 2) C => M.map C.subtype) := by
-    intro M N hMN
-    ext i j
-    exact congrFun (congrFun hMN i) j
-  have hGone : G 1 = 1 := by
-    refine hinj ?_
-    show (G 1).map C.subtype = (1 : Matrix (Fin 2) (Fin 2) C).map C.subtype
-    rw [hGmap, hone, Matrix.map_one C.subtype (map_zero _) (map_one _)]
-  have hGmul : ∀ g h, G (g * h) = G g * G h := by
-    intro g h
-    refine hinj ?_
-    show (G (g * h)).map C.subtype = ((G g) * (G h)).map C.subtype
-    rw [hGmap, hmul, Matrix.map_mul, hGmap, hGmap]
-  have hGcont : Continuous G := by
-    refine continuous_matrix fun i j => ?_
-    exact continuous_induced_rng.mpr (hcont i j)
-  have htolin : Continuous
-      (Matrix.toLin' (R := C) (m := Fin 2) (n := Fin 2)) :=
-    IsModuleTopology.continuous_of_linearMap
-      (Matrix.toLin' (R := C) (m := Fin 2) (n := Fin 2)).toLinearMap
-  refine ⟨⟨⟨⟨fun g => Matrix.toLin' (G g), ?_⟩, ?_⟩, ?_⟩, ?_⟩
-  · show Matrix.toLin' (G 1) = 1
-    rw [hGone, Matrix.toLin'_one]
-    rfl
-  · intro g h
-    show Matrix.toLin' (G (g * h)) = Matrix.toLin' (G g) * Matrix.toLin' (G h)
-    rw [hGmul, Matrix.toLin'_mul]
-    rfl
-  · exact htolin.comp hGcont
-  · intro g
-    show (LinearMap.toMatrix' (Matrix.toLin' (G g))).map C.subtype = F g
-    rw [LinearMap.toMatrix'_toLin']
-    exact hGmap g
+`C`-linear `Matrix.toLin'` out of `M₂(C)` — which carries the module topology,
+being a finite product of copies of `C` (`IsModuleTopology.instPi`, matched to
+`Matrix` by `inferInstanceAs`, the two topologies being the same
+`Pi.topologicalSpace` by definition) — is automatically continuous
+(`IsModuleTopology.continuous_of_linearMap`); and `g ↦ G g` is continuous
+entrywise into the subspace topology of `C` by `continuous_induced_rng`. -/
 
 open scoped Matrix in
 /-- **Trace duality: coordinates against a basis with invertible trace
