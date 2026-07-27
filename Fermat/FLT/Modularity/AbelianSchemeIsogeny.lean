@@ -920,11 +920,17 @@ theorem finite_preimage_comp {X Y Z : Scheme.{u}} (g : X ⟶ Y) (h : Y ⟶ Z)
 
 /-! ### `[n]` is UNRAMIFIED when `n` is prime to the characteristic
 
-The four declarations below carry the whole of
-`finite_preimage_mulByNat_of_field_prime_to_char` except one leaf.  Three
-of them are general scheme theory with no abelian-variety content at all;
-the fourth (`eq_zero_of_nsmul_eq_zero_of_squareZero`) is the single
-genuinely missing input, the Lie algebra of a smooth group scheme. -/
+The declarations below carry the whole of
+`finite_preimage_mulByNat_of_field_prime_to_char` except one leaf.  All
+but one of them are general scheme theory or bookkeeping with no
+abelian-variety content at all; the exception,
+`nonempty_module_infKernel_of_squareZero`, is the single genuinely
+missing input — the Lie algebra of a smooth group scheme, in the form
+"the infinitesimal kernel is a `K`-vector space".
+
+Note `eq_zero_of_nsmul_eq_zero_of_squareZero`, which was the leaf when
+this section was written on 2026-07-27, is now PROVEN over it: the split
+moved the arithmetic into a proof and left the geometry as the leaf. -/
 
 namespace AbelianSchemeStruct
 
@@ -963,6 +969,45 @@ theorem pre_sub (ab : AbelianSchemeStruct f) {T' T : Scheme.{u}} (h : T' ⟶ T)
   simp only [sub_eq_add_neg]
   rw [← hneg]
   exact ab.pre_add h hg x (-y)
+
+/-- **Precomposition of relative points, packaged as a GROUP HOMOMORPHISM**
+(PROVEN 2026-07-27).
+
+`RelPoint.pre h hg` is additive and unital by the two naturality axioms
+`pre_add` and `pre_zero`, so it is an `AddMonoidHom` for the group
+structures `ab.addCommGroup` on source and target.  Nothing new is proven
+here; the point is to have a bundled map whose KERNEL is an
+`AddSubgroup`, which is what `infKernel` below needs.
+
+Used only through `infKernel`. -/
+def preAddHom (ab : AbelianSchemeStruct f) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g') :
+    letI := ab.addCommGroup g
+    letI := ab.addCommGroup g'
+    RelPoint f g →+ RelPoint f g' :=
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  { toFun := RelPoint.pre h hg
+    map_zero' := ab.pre_zero h hg
+    map_add' := ab.pre_add h hg }
+
+/-- **THE INFINITESIMAL KERNEL** — `ker (A(T) ⟶ A(T'))` for a change of
+test object `h : T' ⟶ T`, as an additive subgroup of `RelPoint f g`.
+
+For `h` a square-zero thickening `Spec R₀ ⟶ Spec R` this is the group
+whose classical description is the *Lie algebra of `A` tensored with the
+ideal* — see `nonempty_module_infKernel_of_squareZero` below, which is
+the one place its structure beyond "subgroup" is asserted.
+
+Membership is definitionally `RelPoint.pre h hg x = 0`, so
+`AddMonoidHom.mem_ker` is not needed to enter or leave it. -/
+def infKernel (ab : AbelianSchemeStruct f) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g') :
+    letI := ab.addCommGroup g
+    AddSubgroup (RelPoint f g) :=
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  (ab.preAddHom h hg).ker
 
 end AbelianSchemeStruct
 
@@ -1019,15 +1064,26 @@ theorem locallyQuasiFinite_of_formallyUnramified {X Y : Scheme.{u}} (u : X ⟶ Y
     ((HasRingHomProperty.iff_appLE (P := @LocallyOfFiniteType) (f := u)).mp ‹_› U V e)
 
 /-- **THE LIE ALGEBRA OF A SMOOTH GROUP SCHEME** (sorry leaf, created
-2026-07-27 — the ONE remaining input of
-`finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing in
-that half of the old cube leaf that mathlib does not already have).
+2026-07-27 as `eq_zero_of_nsmul_eq_zero_of_squareZero` and RESTATED
+2026-07-27 in its present module-theoretic form — the ONE remaining input
+of `finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing
+in that half of the old cube leaf that mathlib does not already have).
 
-*The infinitesimal kernel of an abelian scheme is torsion free at every `n`
-invertible in the base field.*  Concretely: `Spec R₀ ⟶ Spec R` is a
-square-zero thickening (`φ` surjective, `ker φ ^ 2 = ⊥`), `d` is an
-`R`-point of `A` over the base point `q`, `d` restricts to the identity
-element on `Spec R₀`, and `n · d = 0`.  Then `d = 0`.
+*The infinitesimal kernel of an abelian scheme is a `K`-VECTOR SPACE.*
+Concretely: `Spec R₀ ⟶ Spec R` is a square-zero thickening (`φ`
+surjective, `ker φ ^ 2 = ⊥`), and `ab.infKernel (Spec.map φ) rfl` is the
+subgroup of `R`-points of `A` over `q` that restrict to the identity
+element on `Spec R₀`.  The claim is that this abelian group carries a
+`K`-module structure — necessarily compatible with its own addition,
+since `Module K ↥(…)` is stated over the subgroup's own `AddCommGroup`.
+
+**WHY THIS IS THE RIGHT RESIDUE.**  The arithmetic that used to sit on
+top of this — "`n • d = 0` and `(n : K) ≠ 0` force `d = 0`" — is now
+PROVEN in `eq_zero_of_nsmul_eq_zero_of_squareZero` below, in six lines:
+a `K`-module has no `n`-torsion for `(n : K) ≠ 0` because `(n : K)⁻¹`
+exists, and `Nat.cast_smul_eq_nsmul` identifies the group's `ℕ`-action
+with the module's.  So none of the difficulty was ever arithmetic, and
+what remains here is exactly the geometric input and nothing else.
 
 **WHY IT IS TRUE, and why it needs no line bundles.**  Write `I = ker φ`, so
 `I ^ 2 = 0` and `I` is a module over `R₀ = R ⧸ I`.  For any `S`-group scheme
@@ -1060,13 +1116,69 @@ re-run 2026-07-27 on this worktree's `.lake/packages/mathlib`).
   ring level (`KaehlerDifferential`) and as a sheaf, so what is missing is
   the group-scheme half, not differentials.
 
+**THE TWO-STEP ROUTE A SUCCESSOR SHOULD COST OUT FIRST**, since neither
+step exists at this pin and the second is the expensive one.  Write
+`P = R ×_{R₀} R`.  For `c : R₀` with any lift `c̃ : R`, the map
+
+    α_c : P ⟶ R,   (a, b) ↦ a + c̃ · (b - a)
+
+is a RING HOMOMORPHISM — the only thing to check is multiplicativity, and
+it reduces to `(b - a)(b' - a') = 0`, which holds because both factors lie
+in `I` and `I ^ 2 = 0`; independence of the lift `c̃` is the same
+computation.  Note `α_0 = pr₁` and `α_1 = pr₂`.  Scaling is then
+`c • d := Spec.map (α_c) ≫ w`, where `w : Spec P ⟶ A` is the point
+patched together from the compatible pair `(0, d)`.  So the missing input
+is **Milnor patching for schemes**: that `Spec (R ×_{R₀} R)` is the
+pushout of `Spec R ← Spec R₀ → Spec R`, equivalently that
+`A(R ×_{R₀} R) ≅ A(R) ×_{A(R₀)} A(R)`.
+
+That is genuinely absent: `grep -rlin "ferrand\|milnor" Mathlib/` is EMPTY
+and `grep -rln "pushout" Mathlib/AlgebraicGeometry/` returns only files
+about *pullbacks* (re-run 2026-07-27).  A hit on either means this route
+has become cheap.  Be warned that the module AXIOMS are not free once
+patching exists — additivity in `c` and `(c c') • d = c • (c' • d)` each
+need a further patching diagram and the group law — so "prove Milnor
+patching" is a necessary but not sufficient plan.
+
 **A GENERALISATION THAT IS ALSO TRUE**, recorded so a prover is not misled
-into thinking the field is essential: the same statement holds over an
-arbitrary base with `n` invertible in `Γ(T, 𝒪_T)`, and does not need
-`ab.smooth` either (the displayed isomorphism is valid for every group
-scheme).  It is stated over a field here because that is the shape the
-consumer needs, and a prover may freely prove the stronger form and
-specialise. -/
+into thinking the field is essential: the kernel is a module over `R₀`
+itself (restrict along `K ⟶ R₀` to recover the statement below), over an
+arbitrary base, and without `ab.smooth` — the displayed isomorphism is
+valid for every group scheme.  It is stated over a field here because
+that is exactly what the consumer needs and it is the weakest form that
+suffices; a prover may freely prove the stronger form and specialise. -/
+theorem nonempty_module_infKernel_of_squareZero {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
+    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
+    (hker : RingHom.ker φ.hom ^ 2 = ⊥)
+    {q : Spec R ⟶ Spec K} :
+    letI := ab.addCommGroup q
+    Nonempty (Module K (ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q))) :=
+  sorry
+
+/-- **THE INFINITESIMAL KERNEL IS TORSION FREE AT `n` PRIME TO THE
+CHARACTERISTIC** (PROVEN 2026-07-27 over the single leaf
+`nonempty_module_infKernel_of_squareZero` above; this used to BE the leaf).
+
+`Spec R₀ ⟶ Spec R` is a square-zero thickening, `d` is an `R`-point of `A`
+over the base point `q` restricting to the identity element on `Spec R₀`,
+and `n · d = 0` with `(n : K) ≠ 0`.  Then `d = 0`.  This is exactly the
+classical `d[n] = n · id` statement, and it is why the
+prime-to-characteristic half of `finite_preimage_mulByNat_of_field` is
+cheap while the characteristic half needs the theorem of the cube: at
+`n = p = ringChar K` the scalar `(n : K)` is zero and the argument below
+says nothing.
+
+**The proof is pure module theory, and that is the point of the split.**
+`d` lies in `ab.infKernel (Spec.map φ) rfl` by `hres` — definitionally, so
+no `AddMonoidHom.mem_ker` step is needed.  On that subgroup the leaf
+supplies a `K`-module structure whose addition IS the group's, so
+`Nat.cast_smul_eq_nsmul` turns `hnd` into `(n : K) • ⟨d, _⟩ = 0`, and
+multiplying by `(n : K)⁻¹` — available because `K` is a field and
+`hn : (n : K) ≠ 0` — gives `⟨d, _⟩ = 0`.  `Subtype.val` then returns the
+statement about `d`.
+
+No geometry is used HERE; all of it is inside the leaf. -/
 theorem eq_zero_of_nsmul_eq_zero_of_squareZero {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
     {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : (n : K) ≠ 0)
     {R R₀ : CommRingCat.{u}} (φ : R ⟶ R₀) (hφ : Function.Surjective φ)
@@ -1075,12 +1187,31 @@ theorem eq_zero_of_nsmul_eq_zero_of_squareZero {X : Scheme.{u}} (K : CommRingCat
     (hres : letI := ab.addCommGroup (Spec.map φ ≫ q)
       RelPoint.pre (Spec.map φ) rfl d = 0)
     (hnd : letI := ab.addCommGroup q; n • d = 0) :
-    letI := ab.addCommGroup q; d = 0 :=
-  sorry
+    letI := ab.addCommGroup q; d = 0 := by
+  letI := ab.addCommGroup q
+  letI := ab.addCommGroup (Spec.map φ ≫ q)
+  obtain ⟨inst⟩ := nonempty_module_infKernel_of_squareZero K ab φ hφ hker (q := q)
+  letI := inst
+  have hd : d ∈ ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q) := hres
+  have hx : (n : K) • (⟨d, hd⟩ :
+      ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q)) = 0 := by
+    rw [Nat.cast_smul_eq_nsmul]
+    exact Subtype.ext hnd
+  have hz : (⟨d, hd⟩ :
+      ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q)) = 0 :=
+    calc (⟨d, hd⟩ : ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q))
+        = ((n : K)⁻¹ * (n : K)) • (⟨d, hd⟩ :
+            ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q)) := by
+          rw [inv_mul_cancel₀ hn, one_smul]
+      _ = (n : K)⁻¹ • ((n : K) • (⟨d, hd⟩ :
+            ab.infKernel (Spec.map φ) (rfl : Spec.map φ ≫ q = Spec.map φ ≫ q))) := mul_smul _ _ _
+      _ = 0 := by rw [hx, smul_zero]
+  exact congrArg Subtype.val hz
 
 /-- **`[n]` is FORMALLY UNRAMIFIED when `n` is prime to the characteristic**
-(PROVEN 2026-07-27 over the single leaf
-`eq_zero_of_nsmul_eq_zero_of_squareZero` above).
+(PROVEN 2026-07-27 over `eq_zero_of_nsmul_eq_zero_of_squareZero` above,
+which is itself now proven over the single leaf
+`nonempty_module_infKernel_of_squareZero`).
 
 This is the functor-of-points argument in full, and it uses no geometry
 beyond the group structure.  Mathlib's `FormallyUnramified.of_hom_ext`
@@ -1127,7 +1258,7 @@ theorem formallyUnramified_mulByNat {X : Scheme.{u}} (K : CommRingCat.{u}) [Fiel
 
 /-- **`[n]` has finite fibres when `n` is invertible in the base field**
 (PROVEN 2026-07-27 over the single leaf
-`eq_zero_of_nsmul_eq_zero_of_squareZero`; this used to be a sorry leaf).
+`nonempty_module_infKernel_of_squareZero`; this used to be a sorry leaf).
 
 One half of the old `finite_preimage_mulByNat_of_field`, split out
 2026-07-27.  Since `K` is a field, `(n : K) ≠ 0` says exactly that `n` is
@@ -1165,7 +1296,7 @@ is now the single leaf.**  Neither was ever the cube.
 
 1. The `Γ(T, 𝒪_T)`-module structure on the kernel above, i.e. the Lie algebra
    / tangent space of a smooth group scheme.  **Still missing, and it is now
-   the leaf `eq_zero_of_nsmul_eq_zero_of_squareZero` above**, where the
+   the leaf `nonempty_module_infKernel_of_squareZero` above**, where the
    argument, the references and the refuting greps are recorded.  Mathlib
    still has NO scheme tangent space: `grep -rni "tangentSpace\|DualNumber"
    Mathlib/AlgebraicGeometry/` returns NOTHING (re-run 2026-07-27).
@@ -1258,7 +1389,7 @@ theorem finite_preimage_mulByNat_of_field_char {X : Scheme.{u}}
 
 **Status update 2026-07-27, later the same day.**  Of those two,
 `finite_preimage_mulByNat_of_field_prime_to_char` is now itself PROVEN, over
-the single new leaf `eq_zero_of_nsmul_eq_zero_of_squareZero` (the Lie algebra
+the single new leaf `nonempty_module_infKernel_of_squareZero` (the Lie algebra
 of a smooth group scheme).  So the two open leaves under this declaration are
 now that one and `finite_preimage_mulByNat_of_field_char`, and only the
 SECOND of them needs the theorem of the cube.
@@ -1298,7 +1429,7 @@ verdict.**  This is no longer a leaf.  It is proven by strong induction on
 `n` over the two declarations above, which are genuinely different
 mathematical problems and want different provers (and the first of them has
 since been PROVEN, over the Lie-algebra leaf
-`eq_zero_of_nsmul_eq_zero_of_squareZero`).  Writing `p = ringChar K`, the
+`nonempty_module_infKernel_of_squareZero`).  Writing `p = ringChar K`, the
 step is:
 
 * `(n : K) ≠ 0` — pass to `finite_preimage_mulByNat_of_field_prime_to_char`;
