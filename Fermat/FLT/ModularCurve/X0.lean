@@ -3011,45 +3011,6 @@ def IsBaseChangeOf.refl {N : ℕ} {T : Scheme.{u}} (d : Gamma0Datum N T) :
     exact RelPoint.liesIn_congr _ (by
       simp only [RelPoint.along_val, Category.comp_id])
 
-/-- **Base changes compose** (PROVEN 2026-07-27): if `d''` is a base change
-of `d'` along `k` and `d'` is a base change of `d` along `h`, then `d''` is
-a base change of `d` along `k ≫ h`.
-
-Cartesianness is pullback pasting (`IsPullback.paste_vert`); the three
-remaining fields are the corresponding chains, moved across the
-associativity of the base points by `RelPoint.transport`. -/
-def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}} {k : T'' ⟶ T'} {h : T' ⟶ T}
-    {d'' : Gamma0Datum N T''} {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
-    (bk : IsBaseChangeOf k d'' d') (bh : IsBaseChangeOf h d' d) :
-    IsBaseChangeOf (k ≫ h) d'' d where
-  map := bk.map ≫ bh.map
-  isPullback := bk.isPullback.paste_vert bh.isPullback
-  map_zero := by
-    intro T₀ g
-    have hz1 := congrArg Subtype.val (bk.map_zero g)
-    have hz2 := congrArg Subtype.val (bh.map_zero (g ≫ k))
-    have hz3 := congrArg Subtype.val
-      (RelPoint.transport_zero d.ab (Category.assoc g k h))
-    refine Subtype.ext ?_
-    simp only [RelPoint.along_val, RelPoint.transport_val] at hz1 hz2 hz3 ⊢
-    rw [← Category.assoc, hz1, hz2, hz3]
-  map_add := by
-    intro T₀ g x y
-    have hassoc : (g ≫ k) ≫ h = g ≫ (k ≫ h) := Category.assoc g k h
-    have hal : ∀ z : RelPoint d''.f g,
-        RelPoint.along (bk.map ≫ bh.map) (bk.isPullback.paste_vert bh.isPullback).w z
-          = RelPoint.transport hassoc
-              (RelPoint.along bh.map bh.isPullback.w
-                (RelPoint.along bk.map bk.isPullback.w z)) :=
-      fun z => Subtype.ext (by
-        simp only [RelPoint.along_val, RelPoint.transport_val, Category.assoc])
-    rw [hal, hal, hal, bk.map_add, bh.map_add, RelPoint.transport_add]
-  liesIn_iff := by
-    intro T₀ g x
-    rw [bk.liesIn_iff, bh.liesIn_iff]
-    exact RelPoint.liesIn_congr _ (by
-      simp only [RelPoint.along_val, Category.assoc])
-
 /-! #### The deck group, the invariant quotient, and the two leaves the
 assembly rests on
 
@@ -10882,71 +10843,6 @@ noncomputable def IsBaseChangeOf.id {N : ℕ} {T : Scheme.{u}} (d : Gamma0Datum 
       rw [Category.comp_id] at hy
       exact ⟨y, hy⟩
 
-/-- **Addition of relative points depends only on the underlying
-morphisms** (PROVEN).
-
-`RelPoint f g₁` and `RelPoint f g₂` are different types for propositionally
-equal `g₁, g₂`, but they are subtypes of the SAME type of morphisms.  This
-lemma is what lets the associativity and unit rewrites below be carried out
-on underlying morphisms instead of by transport. -/
-theorem AbelianSchemeStruct.add_val_congr {A S : Scheme.{u}} {f : A ⟶ S}
-    (ab : AbelianSchemeStruct f) {T : Scheme.{u}} {g₁ g₂ : T ⟶ S} (hg : g₁ = g₂)
-    (x₁ y₁ : RelPoint f g₁) (x₂ y₂ : RelPoint f g₂)
-    (hx : x₁.1 = x₂.1) (hy : y₁.1 = y₂.1) :
-    (ab.add x₁ y₁).1 = (ab.add x₂ y₂).1 := by
-  subst hg
-  rw [Subtype.ext hx (p := fun z => z ≫ f = g₁), Subtype.ext hy (p := fun z => z ≫ f = g₁)]
-
-/-- **`LiesIn` depends only on the underlying morphism** (PROVEN) — it is
-`∃ y, y ≫ ι = x.1`, so the base point never enters. -/
-theorem RelPoint.liesIn_congr {E T C : Scheme.{u}} {f : E ⟶ T} (ι : C ⟶ E) {T' : Scheme.{u}}
-    {g₁ g₂ : T' ⟶ T} {x₁ : RelPoint f g₁} {x₂ : RelPoint f g₂} (hx : x₁.1 = x₂.1) :
-    RelPoint.LiesIn ι x₁ ↔ RelPoint.LiesIn ι x₂ := by
-  unfold RelPoint.LiesIn
-  rw [hx]
-
-/-- **Base changes compose** (PROVEN) — pullback pasting on the square,
-and the three functor-of-points axioms transported along
-`Category.assoc`.
-
-This is what makes a datum restricted twice — first to an open of `T`,
-then to an affine open of that — a base change of the original along the
-composite, which is the step the descent argument uses at every overlap. -/
-noncomputable def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}} {k : T'' ⟶ T'} {h : T' ⟶ T}
-    {d'' : Gamma0Datum N T''} {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
-    (hk : IsBaseChangeOf k d'' d') (hh : IsBaseChangeOf h d' d) :
-    IsBaseChangeOf (k ≫ h) d'' d where
-  map := hk.map ≫ hh.map
-  isPullback := hk.isPullback.paste_vert hh.isPullback
-  map_zero g := by
-    refine Subtype.ext ?_
-    have h1 : (d''.ab.zero g).1 ≫ hk.map = (d'.ab.zero (g ≫ k)).1 :=
-      congrArg Subtype.val (hk.map_zero g)
-    have h2 : (d'.ab.zero (g ≫ k)).1 ≫ hh.map = (d.ab.zero ((g ≫ k) ≫ h)).1 :=
-      congrArg Subtype.val (hh.map_zero (g ≫ k))
-    show (d''.ab.zero g).1 ≫ hk.map ≫ hh.map = (d.ab.zero (g ≫ k ≫ h)).1
-    rw [← Category.assoc, h1, h2, Category.assoc]
-  map_add x y := by
-    refine Subtype.ext ?_
-    have h1 : (d''.ab.add x y).1 ≫ hk.map
-        = (d'.ab.add (RelPoint.along hk.map hk.isPullback.w x)
-            (RelPoint.along hk.map hk.isPullback.w y)).1 :=
-      congrArg Subtype.val (hk.map_add x y)
-    have h2 : (d'.ab.add (RelPoint.along hk.map hk.isPullback.w x)
-            (RelPoint.along hk.map hk.isPullback.w y)).1 ≫ hh.map
-        = (d.ab.add (RelPoint.along hh.map hh.isPullback.w
-              (RelPoint.along hk.map hk.isPullback.w x))
-            (RelPoint.along hh.map hh.isPullback.w
-              (RelPoint.along hk.map hk.isPullback.w y))).1 :=
-      congrArg Subtype.val (hh.map_add _ _)
-    show (d''.ab.add x y).1 ≫ hk.map ≫ hh.map = _
-    rw [← Category.assoc, h1, h2]
-    exact d.ab.add_val_congr (Category.assoc _ k h) _ _ _ _
-      (Category.assoc _ _ _) (Category.assoc _ _ _)
-  liesIn_iff x :=
-    (hk.liesIn_iff x).trans
-      ((hh.liesIn_iff _).trans (RelPoint.liesIn_congr _ (Category.assoc _ _ _)))
-
 /-- The morphism induced by cancelling a base change: `e.E ⟶ d'.E`, from
 the universal property of `d'.E` as a fibre product. -/
 noncomputable def IsBaseChangeOf.cancelMap {N : ℕ} {T'' T' T : Scheme.{u}}
@@ -11340,11 +11236,17 @@ theorem jLineCoord_injective {R : Type} [CommRing R]
   have := congrArg (fun f => CommRingCat.Hom.hom f a) hcomp
   simpa [jLineStr, Polynomial.C_eq_algebraMap] using this
 
-/-! **`IsBaseChangeOf.comp` lives EARLIER IN THIS FILE.**  A second, byte-inequivalent
-but statement-identical copy of it was written in this block on another branch of the same
-batch and deleted at integration (2026-07-27); the surviving definition is the one in the
-`Gamma0Datum` transport section above, and it has the same signature, so every use below is
-unaffected. -/
+/-! **`IsBaseChangeOf.comp`, `RelPoint.liesIn_congr` and
+`AbelianSchemeStruct.add_val_congr` all live EARLIER IN THIS FILE.**
+
+Three branches of the 2026-07-27 batch each wrote their own copy of this small
+base-change calculus, in three different regions of `X0.lean`, so the merges
+were textually clean and the file then declared `Fermat.IsBaseChangeOf.comp`
+three times over.  All the copies have the same signatures, so the surviving
+ones — the `namespace IsBaseChangeOf` block and the `AbelianSchemeStruct`
+block near the top of the file — serve every use below unchanged; the
+duplicates were deleted at integration.  If you are about to add a
+base-change-calculus lemma, look there first. -/
 
 /-- **`x` is THE `j`-value of the datum `d` over the affine base
 `Spec R`.**
