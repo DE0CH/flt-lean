@@ -18432,6 +18432,155 @@ the ROUTE AUDIT on the consumer applies verbatim — `absurd hirr
 (not_isIrreducible_of_isHardlyRamified_of_five_le …)` is CIRCULAR here,
 since the headline consumes this leaf through the chain recorded there.
 
+FOURTH-OWNER AUDIT (2026-07-27).  Four findings.  Three of them close off
+routes a reader of the docstring above would try FIRST, and the fourth is
+the most promising unexplored one.  Each is stated with the check that
+would refute it.
+
+(1) CITATION-SCOPE DEFECT — THE CITED THEOREM'S INPUT IS NOT AMONG THE
+HYPOTHESES.  Arthur–Clozel Ch. 3 Thm 4.2(d) takes as input a CUSPIDAL
+automorphic `Π` over `L` that is `Gal(L/M)`-invariant, and returns the
+descended `π` over `M`.  This leaf's binders contain no such object.
+What they contain about `L` is `hPL` alone, and `hPL` is bare
+`E`-RATIONALITY of Frobenius characteristic polynomials: it says they
+agree with SOME function `PL : places of L → Polynomial E`, and `PL` is
+otherwise unconstrained.  The only automorphic datum in scope anywhere is
+`Wit.modularF`, and that is over `F`, not over `L`.
+
+The defect is one level up, in the datum the induction propagates.  Read
+`HeckeSystemDescendsTo` (defined above in this module): it is literally
+`∃ S P, ∀ w ∉ S, (charFrob w).map ιO = (P w).map ψℓ`.  The BASE case
+(`C = ⊥`, so `L = F`) is fine — there `hPL` IS `Wit.modularF`, the
+`L`-side object really is the Hilbert newform, and AC applies.  EVERY
+LATER STEP IS NOT: its `hPL` is the previous step's conclusion, a bare
+polynomial system, and Thm 4.2(d) has nothing to act on.  So route (i)
+above cannot be carried out here BY ANYONE, however much automorphic
+theory is added to the pin — not for want of a theorem but for want of a
+hypothesis.  The leaf itself remains TRUE (route (ii), collapse, is
+untouched); this is a cut defect, not a falsity.
+
+REPAIR (cut-level, NOT this owner's to make): strengthen
+`HeckeSystemDescendsTo Wit C` to carry an automorphic eigensystem over
+`F^C` — the analogue over `F^C` of `Wit.heckeF`, a cuspidal Hilbert
+newform datum over the (totally real, since `F^C ⊆ F`) field `F^C` whose
+Hecke polynomials are the charpolys — instead of an arbitrary
+`Polynomial E`-valued function.  The prime step then RECEIVES the `Π`
+Thm 4.2(d) requires and RETURNS the `π` the next step needs, and the
+citation becomes supported at every stage rather than only the first.
+That edit moves `HeckeSystemDescendsTo`, its `C = ⊥` base case,
+`heckeSystemDescendsTo_of_prime_cyclic_step` and the final consumer, so
+it needs a named owner.
+
+CHECK THAT REFUTES (1): exhibit, among the binders of this theorem, an
+object asserting automorphy of the `L`-eigensystem — or a hypothesis that
+`C` is solvable, which would let AC descend `Wit.modularF` from `F` to
+`L` first and supply `Π`.  There is neither.
+
+(2) THE `ζ` IS FORMALLY VACUOUS: this leaf and the UNTWISTED statement
+are EQUIVALENT, not merely "interderivable away from `ℓ`".  Forward: take
+`ζ w = 1`, as the HONEST ACCOUNTING above records.  Backward: the PROVEN
+body of the consumer `exists_heckeTrace_of_prime_cyclic_step_of_inert`
+immediately below derives `ζ w ∈ Set.range ψℓ` from
+`ζ w ^ 2 · ψℓ (δ w) = ιO(coeff 0) = Nw`, for BOTH parities of `p`, using
+no hypothesis this leaf does not already carry.  Consequence: the
+`η`-torsor the cut was made to expose is NOT visible in the statement,
+and nobody should read the `ζ` as recording residual automorphic
+ambiguity.  The cut's gain is presentational — the statement can be
+checked line by line against Ch. 3 Thm 4.2(d) — not logical.
+
+CHECK THAT REFUTES (2): find an instantiation where
+`charFrob_baseChange_coeff_zero_eq_absNorm` fails, so `ιO(coeff 0) = Nw`
+fails and `ζ w ^ 2` is not forced into `ψℓ(E)`.  Its only hypothesis
+beyond `hρ` is that `w` avoids `ℓ`, and `S` is existentially quantified
+here exactly as in the consumer (which discharges it with
+`exists_finset_forall_natCast_notMem_asIdeal`), so there is none.
+
+(3) `Wit.modularF` IS UNUSABLE AT EXACTLY THE PLACES THIS LEAF IS ABOUT.
+Worth recording because it is the first shortcut anyone will try.  The
+proven sibling `charFrob_baseChange_eq_of_absNorm_eq` equates charpolys
+across DIFFERENT number fields whenever the absolute norms agree.  So a
+single `u ∉ Wit.badF` with `Nu = Nw` would give
+`charFrob_M w = charFrob_F u`, and `Wit.modularF` would close the leaf at
+`w` for free with `ζ w = 1`.  It never happens.  Let `q` be the rational
+prime under `w`, unramified in `F`, and `σ` a Frobenius at a place of `F`
+over `q`.  Places of `F` over `q` have norm `q ^ (orderOf σ)`, and the
+place of `F^D` (resp. `F^C`) in the double coset of `g` has residue
+degree `min {n > 0 | g σ^n g⁻¹ ∈ D}` (resp. with `C`).  Put
+`τ = g σ g⁻¹` and let `e = min {n | τ^n ∈ D}` be `w`'s residue degree.  A
+matching place of `F` forces `orderOf σ = e`, hence `τ^e = 1 ∈ C`, hence
+`min {n | τ^n ∈ C} ≤ e`; and `hCD : C ≤ D` forces
+`min {n | τ^n ∈ C} ≥ min {n | τ^n ∈ D} = e`.  So they are equal, and the
+place `v` of `L = F^C` in the same double coset has `Nv = q^e = Nw` —
+which `hinert` forbids.  Hence outside the finite set of places under
+`SL` (and the ramified ones), `hinert` PRECLUDES any matching place of
+`F`: the automorphic datum we do have is blind to precisely these `w`.
+
+CHECK THAT REFUTES (3): produce `τ ∈ Gal(F/ℚ)` with
+`min {n | τ^n ∈ C} < min {n | τ^n ∈ D}`.  Impossible under `hCD`; the
+argument is exactly as strong as that hypothesis and no stronger.
+
+(4) THE UNCONDITIONAL GALOIS-DESCENT ROUTE, AND THE EXACT POINT WHERE IT
+STOPS.  There is a route needing NO automorphic input, and it deserves
+recording because it almost works — a future owner should not rediscover
+it and then rediscover its obstruction.
+
+Let `K ⊆ ℚ̄_ℓ` be a subfield containing the traces of `ρ|_{G_L}` on the
+WHOLE group, and suppose `ρ|_{G_L}` is absolutely irreducible.  The
+`K`-span `R` of `ρ(G_L)` in `M₂(ℚ̄_ℓ)` is then a `K`-form of `M₂`:
+spanning by Burnside, and `dim_K R = 4` because the trace form is
+`K`-valued on `ρ(G_L) · ρ(G_L) ⊆ ρ(G_L)` and nondegenerate.  A lift `g`
+of a generator of `Gal(L/M)` normalizes `G_L`, so `x ↦ ρ(g) x ρ(g)⁻¹` is
+a `K`-algebra automorphism of `R`; by Skolem–Noether it is inner, say by
+`u ∈ R^×`, so `ρ(g) = λ · u` with `λ ∈ ℚ̄_ℓ^×` and `tr ρ(g) ∈ λ · K`.
+Two constraints pin `λ` modulo `K^×`: `ρ(g)^p = ρ(g^p)` with `g^p ∈ G_L`
+gives `λ^p ∈ K^×` (the scalar lies in `R`, whose centre is `K`), and
+`det ρ(g) = Nrd(u) · λ^2` with `det ρ` cyclotomic, hence in `ℚ ⊆ K`,
+gives `λ^2 ∈ K^×`.  For `p` ODD, `gcd(2, p) = 1`, so `λ ∈ K^×` and
+`tr ρ(G_M) ⊆ K`.  This is the SAME phenomenon as the consumer's
+`ζ`-killing proof, and it says what the `η`-torsor really is: the class
+of `λ` in `ℚ̄_ℓ^× / K^×`, killed by `λ^2, λ^p ∈ K^×`.  At `p = 2` the two
+constraints coincide and a genuine class of order `2` survives, so the
+route is odd-`p`-only.
+
+WHY IT DOES NOT CLOSE THE LEAF, precisely.  (a) It needs traces on ALL of
+`G_L`, while `hPL` supplies them only at Frobenii; upgrading by
+Chebotarev needs `{x | tr ρ(x) ∈ K}` CLOSED, and `K = ψℓ(E)` is not
+closed in `ℚ̄_ℓ` — `E` is a number field (`Wit.numberFieldE`) and already
+`ψℓ(ℚ) ∩ ℤ_ℓ = ℤ_(ℓ)` is dense in `ℤ_ℓ`.  What IS closed is the
+completion `E_λ = ψℓ(E) · ℚ_ℓ`, a finite extension of `ℚ_ℓ`, and the
+whole argument runs verbatim with `K = E_λ`.  So the route does prove,
+unconditionally and with no automorphic input,
+
+  `p` odd  ⟹  `ιO ((charFrob_M w).coeff 1) ∈ E_λ`,
+
+and the ENTIRE residual content of this leaf is the gap between `E_λ` and
+the number field `ψℓ(E)` — classically supplied by the algebraicity of
+Hecke eigenvalues, and supplied by nothing here.  (b) It also needs
+`ρ|_{G_L}` absolutely irreducible, which is NOT a hypothesis either:
+`hirr` is irreducibility of `ρbar` over `ℚ`, and irreducibility can be
+lost on restriction to a solvable extension.
+
+CHECK THAT REFUTES (4): exhibit a proof that
+`{x ∈ G_L | tr ρ(x) ∈ Set.range ψℓ}` is closed; or an a-priori bound
+(degree over `ψℓ(E)` together with an archimedean/Weil bound on the
+eigenvalues) pinning an element of `E_λ` that is algebraic of degree `≤ p`
+over `ψℓ(E)` into `ψℓ(E)`.  The second is NOT hopeless and is the most
+promising unexplored route here: at an inert `w` the unique place `W` of
+`L` above it has `NW = Nw ^ p`, so `hPL` at `W` makes
+`ιO ((charFrob_M w).coeff 1)` a root of the degree-`p` Dickson equation
+`D_p(X, Nw) = ψℓ(c)`, hence algebraic of degree `≤ p` over `ψℓ(E)`.
+Building that hypothesis needs the inert place and the `p`-th-power
+Frobenius comparison; the proven helpers
+`exists_conj_map_adicArithFrob_base` and `charFrob_eq_of_conj_of_inertia`
+above are the right tools (`X_L` and `X_M ^ p` induce the same power map
+on the residue field, hence differ by inertia), together with mathlib's
+`Ideal.absNorm_eq_pow_inertiaDeg'_of_liesOver` and `Ideal.inertiaDeg_tower`
+for `NW = Nw ^ p`.  Note this cut is NOT the one the INFORMATION AUDIT
+above rejected: that objection ("needs `μ_p ⊆ Set.range ψℓ`") is about
+deducing the conclusion FROM "some root of `D_p(X, Nw) − c` is
+`E`-rational", whereas here the Dickson relation is an ADDED hypothesis
+on a leaf that keeps the full arithmetic context.
+
 PLACEMENT: this leaf lives in this module rather than a new one because
 it quantifies over `PotentialModularityWitness`, `IsHardlyRamified` and
 `GaloisRep.charFrob`, all declared above; a separate module would have
