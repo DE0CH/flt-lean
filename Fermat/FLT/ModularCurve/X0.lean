@@ -519,9 +519,18 @@ public import Mathlib.Algebra.Category.CommAlgCat.Basic
 -- `Fermat.DescentHeight` and `Fermat.fg_of_descentHeight`: Silverman's descent
 -- theorem (AEC VIII.3.1), PROVEN there for an arbitrary `AddCommGroup`.  It is
 -- the whole proof of `fg_relPoint_of_abelianScheme` — Mordell–Weil — from its
--- two leaves `exists_descentHeight_of_abelianScheme` (heights) and
--- `finite_quotient_nsmul_of_abelianScheme` (weak Mordell–Weil).
+-- two leaves `exists_integralCoordinates_of_abelianScheme` (heights) and
+-- `finite_quotient_psmul_of_abelianScheme` (weak Mordell–Weil).  Also
+-- `Fermat.WeilHeight` / `WeilHeight.toDescentHeight` and
+-- `Fermat.finite_quotient_nsmul_of_prime`, the two reductions that shrank those
+-- leaves to what they are now.
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
+-- `Fermat.intHeight` and Northcott's theorem for it, `Fermat.IntegralCoordinates`
+-- and `IntegralCoordinates.toDescentHeight`: the naive height on `ℤ^d` and the
+-- finiteness half of the theory of heights over `ℚ`, PROVEN there.  It reduces
+-- `exists_descentHeight_of_abelianScheme` to the purely geometric leaf
+-- `exists_integralCoordinates_of_abelianScheme` below.
+public import Fermat.FLT.Mathlib.NumberTheory.IntegralHeight
 -- The relative Picard functor: `IsRelPicZeroOf`, `RelPicEquiv`, `modTensor`,
 -- `sectionIdeal`.  This is the infrastructure the IRREDUCIBILITY audit of
 -- `exists_jacobianOf_x0` named as missing — line bundles on `X ×_S T` modulo
@@ -17031,80 +17040,188 @@ theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
   exact ⟨J, jstr, ab,
     isJacobianOf_of_isRelPicZeroOf h.isProper h.smooth h.connected P⟩
 
-/-- **A height function with the Northcott property exists on `A(ℚ)`,
-for every abelian scheme `A` over `ℚ`** (sorry node) — the GEOMETRIC
-half of Mordell–Weil, and the only half that needs a theory of heights.
+/-- **An integral coordinate system exists on `A(ℚ)`, for every abelian
+scheme `A` over `ℚ`** (sorry node) — ALL that is left of the theory of
+heights after `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`, and
+purely geometric: no finiteness statement survives in it.
 
 TRUE and classical (Silverman, *AEC* VIII.5–VIII.6 for the elliptic
 case; Hindry–Silverman, *Diophantine Geometry* Part B, for abelian
 varieties in general).  `ab.proper` and `ab.smooth` make `A` an abelian
-variety over `ℚ`, so it is projective and carries a symmetric ample line
-bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀`.  Let
-`height` be the associated Weil height `h_L`.  The three fields of
-`DescentHeight` are then three standard theorems about `h_L`:
+variety over `ℚ`, so it is projective and carries a **symmetric** ample
+line bundle `L` — take any ample `L₀` and set `L = L₀ ⊗ [−1]^* L₀` —
+which after replacing `L` by a power is very ample.  Let
+`φ_L : A ↪ ℙ^N_ℚ` be the resulting closed immersion.  A point of
+`ℙ^N(ℚ)` has a primitive integral representative `(x_0 : … : x_N)`,
+unique up to sign, and the sign is pinned by asking that the first
+nonzero coordinate be positive; sending `P ∈ A(ℚ)` to that vector is the
+required `coords : A(ℚ) → ℤ^{N+1}`.
 
-* `translate` is the **quasi-parallelogram law**
-  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)`, which gives
-  `h_L(P + Q) ≤ 2 h_L(P) + C(Q)` because `h_L` is bounded below for `L`
-  ample;
-* `double` is **quadraticity**, `h_L(m • P) = m² h_L(P) + O(1)` for
-  symmetric `L`, of which only the `≥` direction is used;
-* `northcott` is **Northcott's theorem**: a projective variety over a
-  number field has only finitely many rational points of bounded height.
+The two fields are then two standard theorems:
 
-`m` may be taken to be any integer `≥ 2`, and the descent theorem uses
-whichever one this leaf supplies — which is why the sibling leaf
-`finite_quotient_nsmul_of_abelianScheme` is stated for every `n ≥ 2`
-rather than for one fixed `n`.
+* `injective` is injectivity of `φ_L` on `ℚ`-points, which holds because
+  a closed immersion is a monomorphism;
+* `quasiParallelogram` is the **theorem of the cube**, in the form
+  `h_L(P + Q) + h_L(P − Q) = 2 h_L(P) + 2 h_L(Q) + O(1)` for symmetric
+  `L`.  It transfers from the projective height `log max_i |x_i|` to
+  `intHeight`, which is `log (1 + ∑_i |x_i|)`, because
+  `max_i |x_i| ≤ 1 + ∑_i |x_i| ≤ (N + 2) · max_i |x_i|` for a primitive
+  vector — the two differ by at most `log (N + 2)`, and the statement is
+  only asked to hold up to a constant.
 
-**FAITHFULNESS AUDIT.**  *Not vacuous in general.*  `DescentHeight`
-cannot be met by a junk height when `A(ℚ)` is infinite: `northcott`
-alone forces every level set to be finite, so a constant or bounded
-`height` is immediately excluded.  It *is* cheap exactly when `A(ℚ)` is
-finite — `height = 0`, `m = 2` works — and that is correct rather than a
-defect, since a finite group is finitely generated and the conclusion of
-the consumer holds for that reason.  So the leaf carries content exactly
-where the theorem it feeds needs content.
+**What this leaf NO LONGER carries, and this is the point of the cut.**
+Northcott's theorem has been *proven* rather than assumed: over `ℚ` and
+in primitive integral coordinates it is the statement that an integer
+box is finite, and that is `Fermat.instNorthcottIntHeight`.  So the
+finiteness input to Mordell–Weil's geometric half is gone from the
+frontier; what remains is exactly the projective embedding and the
+theorem of the cube.
 
-*The conclusion is `Nonempty`, not a chosen height*, because nothing
-downstream depends on WHICH height is used; only its existence is
-consumed.  A prover may pick any `m ≥ 2`.
+**FAITHFULNESS AUDIT.**  *Not vacuous.*  An arbitrary injection
+`A(ℚ) ↪ ℤ^d` would satisfy `injective` and give a Northcott height, but
+`quasiParallelogram` forces that height to be a quadratic form up to
+`O(1)`, which pins the growth rate of the coordinates along every cyclic
+subgroup: for `A(ℚ) ≅ ℤ` a linear parametrisation fails outright, since
+`log|n+m| + log|n−m| − 2 log|n| − 2 log|m|` is unbounded.  It *is* cheap
+exactly when `A(ℚ)` is finite — any injection into `ℤ^1` works, with a
+constant absorbing the finitely many defects — and that is correct
+rather than a defect, since a finite group is finitely generated and the
+conclusion of the consumer holds for that reason.
 
-**MISSING MACHINERY**, and it is the honest cost of this leaf: Weil
-heights on projective space, functoriality of heights along morphisms,
-the theory of the canonical (Néron–Tate) height, and Northcott's
-theorem.  None of these exists in `Mathlib`, in `~/cs/FLT`, or in this
-project — the check that refutes this is
-`grep -rn "Northcott\|WeilHeight\|NeronTate" Fermat/
-.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`, whose only hit is
-`Mathlib/Order/Northcott.lean`, the *class* `Northcott` (a function all
-of whose level sets are finite) with no instance for any height.  That
-class is precisely the `northcott` field below, so the statement of this
-leaf is pin-available even though its proof is not. -/
+*The conclusion is `Nonempty`, not a chosen coordinate system*, because
+nothing downstream depends on WHICH one is used.
+
+**`ℚ`-SPECIFIC BY DESIGN.**  Primitive integral coordinates exist
+because `ℤ` is a PID with unit group `{±1}`; over a general number field
+the normalisation involves the class group and the unit group, and the
+elementary Northcott argument proven upstream would not apply.
+Mordell–Weil is only ever needed over `ℚ` in this development.
+
+**MISSING MACHINERY**, and it is the honest remaining cost: projectivity
+of an abelian variety, symmetric very ample line bundles, and the
+theorem of the cube.  None of these exists in `Mathlib`, in `~/cs/FLT`,
+or in this project — the check that would refute this is
+`grep -rn "TheoremOfTheCube\|VeryAmple\|NeronTate" Fermat/
+.lake/packages/mathlib/Mathlib/ ~/cs/FLT/`. -/
+theorem exists_integralCoordinates_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Nonempty (IntegralCoordinates (RelPoint jstr (𝟙 SpecQ))) :=
+  sorry
+
+/-- **A height function with the Northcott property exists on `A(ℚ)`,
+for every abelian scheme `A` over `ℚ`** (PROVEN, 2026-07-27, over the
+leaf above) — the GEOMETRIC half of Mordell–Weil.
+
+**SPLIT, 2026-07-27.  The IRREDUCIBILITY note this docstring used to
+carry — "Weil heights, functoriality, the Néron–Tate height and
+Northcott's theorem are all missing from the pin" — was correct about
+the pin and wrong about the CUT: it searched only the "is the theory
+available?" axis, and never asked which part of it is a *finiteness*
+statement about `ℚ` and which part is *geometry*.**
+
+* The finiteness part is Northcott's theorem, and over `ℚ` in primitive
+  integral coordinates it is elementary — an integer box is finite.  It
+  is now PROVEN, as `Fermat.instNorthcottIntHeight` in
+  `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean`.
+* The bookkeeping part is the passage from a symmetric two-sided
+  parallelogram bound to the asymmetric three-field `DescentHeight`
+  (a translation bound with a `Q`-dependent constant, a one-sided
+  quadraticity bound, and a choice of `m`).  That is pure real
+  arithmetic once one knows a Northcott height is bounded below, and it
+  is now PROVEN, as `Fermat.WeilHeight.toDescentHeight` and
+  `Fermat.exists_lowerBound_of_northcott`.
+* The geometry — a symmetric very ample line bundle and the theorem of
+  the cube — is what is left, and it is the single leaf above.
+
+`m` is taken to be `2` by `WeilHeight.toDescentHeight`; the descent
+theorem uses whichever `m` this node supplies, which is why the sibling
+leaf `finite_quotient_nsmul_of_abelianScheme` is deliberately stated for
+every `n ≥ 2` rather than for one fixed `n`.  Do not narrow it: that
+choice is what keeps this node free to change its `m`. -/
 theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) :
     letI := ab.addCommGroup (𝟙 SpecQ)
-    Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) :=
-  sorry
+    Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  obtain ⟨ic⟩ := exists_integralCoordinates_of_abelianScheme ab
+  exact ⟨ic.toDescentHeight⟩
 
-/-- **Weak Mordell–Weil: `A(ℚ) / n A(ℚ)` is finite, for every abelian
-scheme `A` over `ℚ` and every `n ≥ 2`** (sorry node) — the ARITHMETIC
-half of Mordell–Weil.
+/-- **Weak Mordell–Weil at a PRIME: `A(ℚ) / p A(ℚ)` is finite, for every
+abelian scheme `A` over `ℚ` and every prime `p`** (sorry node) — the
+ARITHMETIC half of Mordell–Weil, and the whole of what is left of it.
 
 TRUE and classical (Silverman, *AEC* Theorem VIII.1.1 for elliptic
 curves; the abelian-variety case is the same argument).  Adjoin the
-`n`-torsion to get `L = ℚ(A[n])`, a finite extension; the Kummer
-sequence `0 → A[n] → A →[n] A → 0` embeds `A(ℚ)/nA(ℚ)` into
-`H¹(Gal(ℚ̄/ℚ), A[n])`, and the image consists of classes unramified
-outside the finite set `S` of places dividing `n` and the places of bad
+`p`-torsion to get `L = ℚ(A[p])`, a finite extension; the Kummer
+sequence `0 → A[p] → A →[p] A → 0` embeds `A(ℚ)/pA(ℚ)` into
+`H¹(Gal(ℚ̄/ℚ), A[p])`, and the image consists of classes unramified
+outside the finite set `S` of places dividing `p` and the places of bad
 reduction.  Finiteness of `H¹_S` is then finiteness of the class group
 of `L` together with Dirichlet's unit theorem (finite generation of the
-`S`-units), via the `n`-Selmer group of `L`.
+`S`-units), via the `p`-Selmer group of `L`.
 
-The subgroup `n A(ℚ)` is written as the range of the
-multiplication-by-`n` endomorphism `nsmulAddMonoidHom n`, which is the
+The subgroup `p A(ℚ)` is written as the range of the
+multiplication-by-`p` endomorphism `nsmulAddMonoidHom p`, which is the
 form `Fermat.exists_finset_nsmul_repr` — the coset-representative step
 inside the descent theorem — consumes.
+
+**FAITHFULNESS AUDIT.**  `hp` is load-bearing, and not only because `p`
+must be nonzero: at `p = 0` the range is the trivial subgroup, the
+quotient is `A(ℚ)` itself, and the statement is FALSE for every abelian
+scheme with infinitely many rational points (an elliptic curve of
+positive rank, for instance); at `p = 1` the quotient is trivial and the
+statement is vacuously true.  Primality is what makes the leaf carry its
+intended content rather than either of those degenerate readings, and it
+is exactly what the reduction
+`Fermat.finite_quotient_nsmul_of_prime` asks for.
+
+*Not vacuous.*  This is the whole arithmetic content of Mordell–Weil:
+`A(ℚ)` finitely generated implies this, and it is strictly weaker only
+because it says nothing about the rank.  There is no junk witness — the
+statement is about a specific quotient of a specific group.
+
+**MISSING MACHINERY:** Galois cohomology of the Kummer sequence for an
+abelian scheme, the `p`-Selmer group, and the two finiteness theorems of
+algebraic number theory (class group, unit group) applied to
+`ℚ(A[p])`.  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
+counterexample: despite its name it is an explicit `2`-descent for the
+two named curves `11a3` and `14a4`, with no general theory.
+
+**WHY THE PRIME CASE SUFFICES, and why it is the right leaf.**  `A / nA`
+is finite as soon as `A / pA` is finite for every prime `p`:
+`A / (m k) A` is an extension of `A / mA` by a quotient of `A / kA`
+(Noether's third isomorphism theorem plus the surjection
+`A / kA ↠ mA / mkA`), so an induction on the prime factorisation does
+the rest.  That reduction is pure group theory and is PROVEN, as
+`Fermat.finite_quotient_nsmul_mul` and
+`Fermat.finite_quotient_nsmul_of_prime` in
+`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
+
+The gain is not bookkeeping.  At a PRIME the arithmetic input is a
+different and much better-behaved object: `A[p]` is an `𝔽_p`-vector
+space, so `H¹(G_ℚ, A[p])` and the `p`-Selmer group are `𝔽_p`-vector
+spaces, and their finiteness is a statement about dimensions rather than
+about a general finite abelian group.  Every classical treatment of weak
+Mordell–Weil that is written uniformly in `n` specialises to a prime at
+the first opportunity. -/
+theorem finite_quotient_psmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
+    letI := ab.addCommGroup (𝟙 SpecQ)
+    Finite (RelPoint jstr (𝟙 SpecQ) ⧸
+      (nsmulAddMonoidHom p : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) :=
+  sorry
+
+/-- **Weak Mordell–Weil: `A(ℚ) / n A(ℚ)` is finite, for every abelian
+scheme `A` over `ℚ` and every `n ≥ 2`** (PROVEN, 2026-07-27, from the
+prime case above) — the ARITHMETIC half of Mordell–Weil.
+
+The statement is kept at "every `n ≥ 2`" rather than narrowed to `n = 2`
+on purpose: the descent theorem consumes whichever `m` the sibling leaf
+`exists_descentHeight_of_abelianScheme` supplies, and that node is free
+to change its `m` (it currently supplies `2`, through
+`Fermat.WeilHeight.toDescentHeight`).  Narrowing here would couple the
+two leaves.
 
 **FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the range of
 `nsmulAddMonoidHom 0` is the trivial subgroup, the quotient is `A(ℚ)`
@@ -17113,25 +17230,18 @@ infinitely many rational points (an elliptic curve of positive rank, for
 instance).  At `n = 1` the quotient is trivial and the statement is
 vacuously true, so `2 ≤ n` — rather than `0 < n` — is the honest
 hypothesis, and it is exactly what `DescentHeight.two_le` supplies at
-the one call site.
-
-*Not vacuous.*  This is the whole arithmetic content of Mordell–Weil:
-`A(ℚ)` finitely generated implies this, and it is strictly weaker only
-because it says nothing about the rank.  There is no junk witness — the
-statement is about a specific quotient of a specific group.
-
-**MISSING MACHINERY:** Galois cohomology of the Kummer sequence for an
-abelian scheme, the `n`-Selmer group, and the two finiteness theorems of
-algebraic number theory (class group, unit group) applied to
-`ℚ(A[n])`.  `Fermat/FLT/EllipticCurve/MordellWeil.lean` is NOT a
-counterexample: despite its name it is an explicit `2`-descent for the
-two named curves `11a3` and `14a4`, with no general theory. -/
+the one call site.  The proof below uses `hn` only through `n ≠ 0`,
+which is all the reduction needs; the stronger hypothesis is retained
+because it is what the call site has and because `n = 1` would otherwise
+invite a reader to think the leaf says something at `n = 1`. -/
 theorem finite_quotient_nsmul_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : 2 ≤ n) :
     letI := ab.addCommGroup (𝟙 SpecQ)
     Finite (RelPoint jstr (𝟙 SpecQ) ⧸
-      (nsmulAddMonoidHom n : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) :=
-  sorry
+      (nsmulAddMonoidHom n : RelPoint jstr (𝟙 SpecQ) →+ RelPoint jstr (𝟙 SpecQ)).range) := by
+  letI := ab.addCommGroup (𝟙 SpecQ)
+  exact finite_quotient_nsmul_of_prime
+    (fun p hp => finite_quotient_psmul_of_abelianScheme ab p hp) n (by omega)
 
 /-- **Mordell–Weil: `A(ℚ)` is finitely generated, for EVERY abelian
 scheme `A` over `ℚ`** (PROVEN, from the two leaves above plus the
@@ -17162,10 +17272,28 @@ lemma is pure group theory: it holds for an arbitrary `AddCommGroup`
 carrying a height function, and it is now PROVEN, in
 `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`
 (`Fermat.fg_of_descentHeight`, Silverman *AEC* Theorem VIII.3.1).  So
-this node is now a two-line assembly over the two leaves above —
+this node is now a two-line assembly over the two nodes above —
 `exists_descentHeight_of_abelianScheme` and
 `finite_quotient_nsmul_of_abelianScheme` — and neither of them is the
 descent argument.
+
+**SECOND SPLIT, same day, and it cut both of those in turn.**  Each is
+now itself PROVEN, over one strictly smaller leaf:
+
+* `exists_descentHeight_of_abelianScheme` over
+  `exists_integralCoordinates_of_abelianScheme`, having shed Northcott's
+  theorem (proven over `ℚ` in primitive integral coordinates, where it
+  is the finiteness of an integer box) and the passage from the
+  parallelogram law to the three fields of `DescentHeight` (proven as
+  real arithmetic);
+* `finite_quotient_nsmul_of_abelianScheme` over
+  `finite_quotient_psmul_of_abelianScheme`, having shed the reduction
+  from a general `n` to its prime factors (proven as group theory).
+
+So the two OPEN leaves under Mordell–Weil are now the prime case of weak
+Mordell–Weil and the existence of a projective embedding whose height
+obeys the theorem of the cube.  Everything else between here and them is
+compiler-checked.
 
 The retired verdict, kept because its *check* is still the right one:
 "neither heights on abelian varieties, nor the weak Mordell–Weil
@@ -18344,6 +18472,10 @@ row and is now PROVEN too, in
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
+| `finite_quotient_psmul_of_abelianScheme` | weak Mordell–Weil at a prime | no |
+| `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
+| `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
 | `exists_affineLine_of_not_injective_aj` | Riemann–Roch | no |
 | `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
