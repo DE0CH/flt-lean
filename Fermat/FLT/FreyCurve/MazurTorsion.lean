@@ -2070,16 +2070,17 @@ group, which restricts to the `N`-torsion and is `ZMod N`-linear there. The
 construction mirrors `WeilPairing.frobeniusTorsionEnd` line for line, with
 `Point.equivVariableChange` in place of `Point.map (frobAlgHom q)`.
 
-CORRECTION OF RECORD FOR `EllipticCurve/TorsionReduction.lean`'s OWNER: that
-file's `TameGoodModel` docstring states, as of 2026-07-27, that "mathlib has no
-map on points induced by a `VariableChange`", and lists constructing one as an
-obligation of `exists_tameGoodModel_of_jIntegral`. That is true of mathlib and
-**stale for this tree**: `WeierstrassCurve.Affine.Point.equivVariableChange`,
-together with `equivVariableChangeBaseChange` and
-`equivVariableChangeBaseChange_galois`, is already in the project shim
-`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` and is
-what this definition is built on. Reported, not repaired, here — it is another
-owner's region. -/
+THE POINT-LEVEL API THIS RESTS ON, AND WHERE THE SAME LESSON WAS LEARNED
+TWICE. `WeierstrassCurve.Affine.Point.equivVariableChange`, together with
+`equivVariableChangeBaseChange` and `equivVariableChangeBaseChange_galois`,
+lives in the project shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`. It is
+absent from mathlib, which is exactly why the shim exists — and
+`EllipticCurve/TorsionReduction.lean` independently recorded, then RETIRED
+("it was never missing"), an audit item claiming this map had to be built,
+after an earlier grep had covered only mathlib's copy. Both files now depend
+on it. The reusable moral is the standing one: grep `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/`, not mathlib alone. -/
 noncomputable def WeierstrassCurve.autTorsionEnd {F : Type*} [Field F]
     [DecidableEq F] (W : WeierstrassCurve F) [W.IsElliptic]
     (C : WeierstrassCurve.VariableChange F)
