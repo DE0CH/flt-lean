@@ -3769,8 +3769,17 @@ Added 2026-07-27, executing the TRACE route recorded in the docstring of
 `isIntegral_heckeEndo` below. The three declarations here are the
 GENERAL half of that route — no modular forms occur in any of them —
 and they reduce the leaf to exactly two inputs, one analytic
-(Eichler–Selberg, `exists_trace_heckeSubring_int`) and one
-number-theoretic (`exists_int_of_monic_of_forall_sum_roots_pow_int`).
+(Eichler–Selberg) and one number-theoretic
+(`exists_int_of_monic_of_forall_sum_roots_pow_int`).
+
+UPDATED 2026-07-27, later the same day: the analytic input
+`exists_trace_heckeSubring_int` is now itself PROVEN, over the single
+leaf `isIntegral_trace_heckeOpN` — `Tr(T_m)` is an ALGEBRAIC INTEGER.
+Its rationality half is discharged from Shimura's rationality theorem
+(`exists_trace_heckeSubring_rat`), and the Hecke multiplication rule,
+which that citation used to carry as an inseparable second half, is no
+longer needed anywhere: `heckeSubring_le_span_heckeOpN` above already
+puts `𝕋` in the `ℤ`-span of the `T_m`.
 
 The linear algebra in between is PROVEN here: over `ℂ` the power traces
 of an endomorphism are the power sums of the roots of its
@@ -3951,47 +3960,307 @@ theorem exists_int_charpoly_of_forall_trace_pow_int {V : Type*} [AddCommGroup V]
   exists_int_of_monic_of_forall_sum_roots_pow_int (LinearMap.charpoly_monic T)
     fun k hk => by rw [← trace_pow_eq_sum_roots_pow T k]; exact h k hk
 
-/-- **EICHLER–SELBERG: THE TRACE IS INTEGRAL ON `𝕋`** (sorry leaf, cut
-2026-07-27 out of `isIntegral_heckeEndo` below): every element of the
-Hecke algebra has rational-integer trace on `S₂(Γ₀(N))`.
+/-- **EICHLER–SELBERG RESIDUE — `Tr(T_m)` IS AN ALGEBRAIC INTEGER**
+(sorry leaf, cut 2026-07-27 out of `exists_trace_heckeSubring_int`
+below, which WAS the whole Eichler–Selberg citation and is now PROVEN
+over this leaf alone). This is the entire remaining analytic input of
+the trace route.
 
-This is the single ANALYTIC input of the trace route, and it is stated
-for the whole subring rather than for the powers `T_q^k` on purpose:
-`𝕋` is a subring, so `pow_mem` supplies the powers, and the statement
-is then the natural one — the trace map `𝕋 → ℂ` lands in `ℤ`.
+**TWO CLAIMS OF THE OLD CITATION ARE NOW STALE AND ARE CORRECTED HERE.**
 
-WHY THIS IS THE RIGHT UNIT. Classically the content is two facts that
-this file cannot presently separate, because the `T_n` at composite `n`
-are never DEFINED here (only their existence inside `𝕋` is produced, by
-`exists_mem_heckeSubring_qCoeff` above):
+*Stale claim 1: "the Hecke MULTIPLICATION RULE cannot be separated from
+the trace formula, because the `T_n` at composite `n` are never defined
+in this file".* Both halves of that are now false. `heckeOpN` above
+NAMES `T_m` (it is `exists_mem_heckeSubring_qCoeff` made definite by the
+uniqueness `heckeOpN_unique`), and `heckeSubring_le_span_heckeOpN` above
+PROVES `𝕋 ≤ ℤ-span {T_m}` — through the multiplier subring, so that the
+general rule `T_m T_n = Σ_{d ∣ (m,n), (d,N)=1} d · T_{mn/d²}` is never
+needed, only the one-prime recursion `heckeEndo_mul_heckeOpN`. Trace is
+`ℤ`-linear, so integrality on the spanning set `{T_m}` spreads to all of
+`𝕋` by `isIntegral_trace_heckeSubring` below. **The multiplication rule
+is therefore no longer an input to anything in this cluster.**
 
-* the **Eichler–Selberg trace formula**, `Tr(T_n) ∈ ℤ` for each `n` —
-  a finite, elementary but lengthy computation. Reference: Zagier's
-  appendix to Lang, *Introduction to Modular Forms* (Springer GMW 222),
-  which derives the formula for `Γ₀(N)` at weight `k ≥ 2` from the
-  Petersson kernel and the class numbers of imaginary quadratic orders.
-  It is ABSENT from the pin (`grep -rn Eichler .lake/packages/mathlib`
-  is empty) and from `~/cs/FLT`, whose Hecke material is quaternionic;
-* the **Hecke multiplication rule**
-  `T_m T_n = Σ_{d ∣ (m,n), (d,N) = 1} d · T_{mn/d²}`, which puts every
-  monomial in the `T_q` — hence every element of `Subring.closure {T_q}`
-  — in the `ℤ`-SPAN of the `T_n`.
+*Stale claim 2: "the content is `Tr(T_n) ∈ ℤ`".* The RATIONALITY half of
+that is not analytic and is now PROVEN, as
+`exists_trace_heckeSubring_rat` below, over Shimura's rationality
+theorem `rationalCuspForms_span_eq_top` above: `𝕋` preserves the
+`ℚ`-structure, a `ℚ`-basis of the Sturm-truncated `ℚ`-form is a
+`ℂ`-basis of `S₂(Γ₀(N))`, and the matrix of any `T ∈ 𝕋` in that basis
+has rational entries. So what a successor must supply is ONLY that the
+trace is an ALGEBRAIC INTEGER — `ℤ` is integrally closed in `ℚ`, and
+that step is discharged in `exists_trace_heckeSubring_int` below.
 
-A successor that first DEFINES `T_n` for composite `n` may prefer to
-split this leaf along that line; until then the pair is one statement.
+**THE ROUTE.** The Eichler–Selberg trace formula, `Γ₀(N)` at weight
+`k = 2`: Zagier's appendix to Lang, *Introduction to Modular Forms*
+(Springer GMW 222), which derives it from the Petersson kernel and the
+class numbers of imaginary quadratic orders; Diamond–Shurman gives the
+weight-`k` statement. It is ABSENT from the pin
+(`grep -rn Eichler .lake/packages/mathlib` is empty) and from
+`~/cs/FLT`, whose Hecke material is quaternionic. Note the formula's
+own terms are NOT individually integral — the Hurwitz class numbers
+carry denominators `2` and `3` — so a successor deriving integrality
+from the formula must do so from the sum, not termwise. A theory build
+is expected here.
+
+**THE LATTICE ROUTE IS STILL CIRCULAR, and this was re-checked rather
+than inherited.** `T_m` preserves `integralCuspForms N`, which is
+finitely generated (`integralCuspForms_fg` above) and Hecke stable
+(`heckeEndo_mem_integralCuspForms` above), so the determinant trick
+gives a monic `ℤ`-relation — but only on that lattice's `ℂ`-SPAN.
+Upgrading the span to `⊤` is `integralCuspForms_span_eq_top`, and the
+chain `exists_heckeSubring_zForm` → `integralCuspForms_span_eq_top` →
+`exists_heckeStable_lattice` → `heckeSubring_moduleFinite` runs THROUGH
+this cluster (it is recorded twice below, at
+`heckeSubring_moduleFinite_int` and at `exists_heckeSubring_zForm`). So
+the route is circular, not merely out of order. Do not rediscover it.
+
+WHY THIS IS WEAKER THAN WHAT IT REPLACES, and why that is the point:
+`IsIntegral ℤ` drops all rationality content, which is exactly the half
+that turned out to be free. Anything proving `Tr(T_m) ∈ ℤ` proves this,
+so nothing is lost by the weakening.
 
 NO SEMISIMPLICITY IS USED OR NEEDED, which is the entire reason this
 route is available here and dead for the sibling `heckeSubring_zRank_le`
 — see `isIntegral_heckeEndo` below.
 
-SOUNDNESS: `0 < N` is inherited from the consumer. At `N = 0` every
-`heckeEndo 0 q` is the junk value `0`, so `𝕋` is the prime subring and
-the trace of `n · 1` is `n · dim S₂`, again an integer; the hypothesis
-is a convenience, not a necessity. -/
+SOUNDNESS: `0 < N` is inherited from the consumer and is NOT needed
+mathematically — at `N = 0` every `heckeOpN 0 m` is the junk value `0`,
+whose trace is `0`. It is kept for uniformity with the siblings. -/
+theorem isIntegral_trace_heckeOpN {N : ℕ} (hN : 0 < N) (m : ℕ) :
+    IsIntegral ℤ (LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) (heckeOpN N m)) :=
+  sorry
+
+/-- **ALGEBRAIC INTEGRALITY OF THE TRACE SPREADS FROM `T_m` TO ALL OF
+`𝕋`** (PROVEN, 2026-07-27): `𝕋 ≤ ℤ-span {T_m}`
+(`heckeSubring_le_span_heckeOpN` above), the trace is `ℤ`-linear, and
+the algebraic integers form a subring. No arithmetic input, and — the
+point of the block — NO Hecke multiplication rule. -/
+theorem isIntegral_trace_heckeSubring {N : ℕ} (hN : 0 < N)
+    {T : Module.End ℂ (CuspForm (Gamma0GL N) 2)} (hT : T ∈ heckeSubring N) :
+    IsIntegral ℤ (LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) T) := by
+  have key : ∀ x ∈ Submodule.span ℤ (Set.range (heckeOpN N)),
+      IsIntegral ℤ (LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) x) := by
+    intro x hx
+    induction hx using Submodule.span_induction with
+    | mem y hy => obtain ⟨m, rfl⟩ := hy; exact isIntegral_trace_heckeOpN hN m
+    | zero => rw [map_zero]; exact isIntegral_zero
+    | add a b _ _ ha hb => rw [map_add]; exact ha.add hb
+    | smul c a _ ha => rw [map_zsmul]; exact ha.zsmul c
+  exact key T (heckeSubring_le_span_heckeOpN hN hT)
+
+/-- **SHIMURA RATIONALITY: THE TRACE ON `𝕋` IS RATIONAL** (PROVEN,
+2026-07-27, over the single citation `rationalCuspForms_span_eq_top`
+above — Shimura's rationality theorem, itself already proven here). This
+is the half of the old Eichler–Selberg citation that turned out to carry
+no analytic content at all.
+
+THE DERIVATION, with every step but the citation discharged here.
+
+1. `𝕋` preserves the `ℚ`-structure `rationalCuspForms N`: the
+   endomorphisms that do form a subring, and the generators `T_q` do by
+   `heckeEndo_mem_rationalCuspForms` above. The same set is stable under
+   multiplication by RATIONAL scalars, by `ℂ`-linearity of `qCoeffL`.
+2. The Sturm truncation `Ψ = (a₀, …, a_{B−1}) : S₂(Γ₀(N)) → ℂ^B` is
+   INJECTIVE (`exists_cuspForm_sturm_bound` above — this is the same
+   finiteness that gives `cuspForm_finiteDimensional`), and it carries
+   rational forms into `ℚ^B`. Its image of the rational forms is
+   therefore a `ℚ`-SUBSPACE `V_ℚ ⊆ ℚ^B`, finite-dimensional because
+   `ℚ^B` is. **The finiteness of `B` is what makes the whole argument
+   work**: it is what allows the base-change step below, which is false
+   for families indexed by all of `ℕ`.
+3. A `ℚ`-basis of `V_ℚ` lifts (elementwise, by definition of `V_ℚ`) to
+   a family `g` of RATIONAL cusp forms. `Ψ ∘ g` is the base change to
+   `ℂ` of a `ℚ`-linearly independent family of vectors in `ℚ^B`, hence
+   `ℂ`-linearly independent (`linearIndependent_algebraMap_comp_iff`,
+   which needs the index set `Fin B` to be FINITE); `Ψ` is injective, so
+   `g` is `ℂ`-linearly independent. And every rational form is a
+   `ℚ`-combination of `g` — read off in `V_ℚ` and transported back
+   through the injectivity of `Ψ` — so `g` `ℂ`-spans `S₂(Γ₀(N))` by the
+   citation. Hence `g` is a `ℂ`-BASIS whose coordinate functionals are
+   `ℚ`-VALUED on rational forms.
+4. `T (g i)` is rational by (1), so the matrix of `T` in that basis has
+   rational entries and its trace `Σ_i (repr (T (g i)) i)` is rational.
+
+WHY THE BASIS HAS TO BE BUILT THIS WAY. Drawing a `ℂ`-basis directly
+out of `rationalCuspForms` (which is what `heckeSubring_zRank_le` below
+does, and all it needs) is NOT enough here: it makes the basis vectors
+rational but says nothing about the COORDINATES of a rational form in
+it, and it is the coordinates that the trace is a sum of. Going through
+the `ℚ`-form of the truncation is what makes the coordinates rational,
+and that is why the Sturm bound appears in a statement about traces.
+
+SOUNDNESS: `0 < N` is used, through `exists_cuspForm_sturm_bound` and
+`rationalCuspForms_span_eq_top`. -/
+theorem exists_trace_heckeSubring_rat {N : ℕ} (hN : 0 < N)
+    {T : Module.End ℂ (CuspForm (Gamma0GL N) 2)} (hT : T ∈ heckeSubring N) :
+    ∃ r : ℚ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) T = (r : ℂ) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  -- (1) `𝕋` preserves the rational structure
+  have hstab : ∀ U ∈ heckeSubring N, ∀ f ∈ rationalCuspForms N,
+      U f ∈ rationalCuspForms N := by
+    have hle : heckeSubring N ≤
+        ({ carrier := {U | ∀ f ∈ rationalCuspForms N, U f ∈ rationalCuspForms N}
+           mul_mem' := fun {_ _} hu hv f hf => hu _ (hv f hf)
+           one_mem' := fun _ hf => hf
+           add_mem' := fun {_ _} hu hv f hf =>
+             (rationalCuspForms N).add_mem (hu f hf) (hv f hf)
+           zero_mem' := fun _ _ => (rationalCuspForms N).zero_mem
+           neg_mem' := fun {_} hu f hf => (rationalCuspForms N).neg_mem (hu f hf) } :
+          Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2))) := by
+      refine Subring.closure_le.mpr ?_
+      rintro U ⟨q, hq, rfl⟩ f hf
+      exact heckeEndo_mem_rationalCuspForms hN hq hf
+    exact fun U hU => hle hU
+  have hQsmul : ∀ (c : ℚ) (g : CuspForm (Gamma0GL N) 2), g ∈ rationalCuspForms N →
+      ((c : ℂ) • g) ∈ rationalCuspForms N := by
+    intro c g hg m
+    obtain ⟨r, hr⟩ := hg m
+    refine ⟨c * r, ?_⟩
+    rw [← qCoeffL_apply, map_smul, qCoeffL_apply, hr, smul_eq_mul]
+    push_cast
+    ring
+  -- (2) the Sturm truncation and the `ℚ`-form of its image
+  obtain ⟨Bd, hBd⟩ := exists_cuspForm_sturm_bound N hN
+  set Ψ : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] (Fin Bd → ℂ) :=
+    LinearMap.pi (fun i : Fin Bd => qCoeffL N (i : ℕ)) with hΨdef
+  have hΨapp : ∀ (f : CuspForm (Gamma0GL N) 2) (i : Fin Bd), Ψ f i = qCoeff N f (i : ℕ) :=
+    fun f i => rfl
+  have hΨinj : Function.Injective Ψ := by
+    rw [injective_iff_map_eq_zero]
+    intro f hf
+    refine hBd f fun m hm => ?_
+    have := congrFun hf ⟨m, hm⟩
+    rwa [hΨapp] at this
+  let Vq : Submodule ℚ (Fin Bd → ℚ) :=
+    { carrier := {v | ∃ g ∈ rationalCuspForms N, ∀ i : Fin Bd, ((v i : ℚ) : ℂ) = Ψ g i}
+      add_mem' := by
+        rintro v w ⟨g, hg, hgv⟩ ⟨g', hg', hgw⟩
+        refine ⟨g + g', (rationalCuspForms N).add_mem hg hg', fun i => ?_⟩
+        have hvw : ((v + w) i : ℚ) = v i + w i := rfl
+        rw [hvw]
+        push_cast
+        rw [hgv i, hgw i, map_add]
+        rfl
+      zero_mem' := by
+        refine ⟨0, (rationalCuspForms N).zero_mem, fun i => ?_⟩
+        simp
+      smul_mem' := by
+        rintro c v ⟨g, hg, hgv⟩
+        refine ⟨(c : ℂ) • g, hQsmul c g hg, fun i => ?_⟩
+        have hcv : ((c • v) i : ℚ) = c * v i := rfl
+        rw [hcv]
+        push_cast
+        rw [hgv i, map_smul]
+        rfl }
+  set d := Module.finrank ℚ ↥Vq with hddef
+  let bq : Module.Basis (Fin d) ℚ ↥Vq := Module.finBasis ℚ ↥Vq
+  have hlift : ∀ i : Fin d, ∃ gg : CuspForm (Gamma0GL N) 2, gg ∈ rationalCuspForms N ∧
+      ∀ j : Fin Bd, (((bq i : Fin Bd → ℚ) j : ℚ) : ℂ) = Ψ gg j := fun i => (bq i).2
+  choose g hgmem hgspec using hlift
+  -- (3) `g` is a `ℂ`-basis with `ℚ`-valued coordinates on rational forms
+  have hbqli : LinearIndependent ℚ (fun i : Fin d => ((bq i : Fin Bd → ℚ))) :=
+    bq.linearIndependent.map' (Submodule.subtype Vq) (Submodule.ker_subtype Vq)
+  have hgli : LinearIndependent ℂ g := by
+    refine LinearIndependent.of_comp Ψ ?_
+    have hcomp : (Ψ ∘ g) =
+        fun i : Fin d => algebraMap ℚ ℂ ∘ (fun j : Fin Bd => (bq i : Fin Bd → ℚ) j) := by
+      funext i j
+      simp only [Function.comp_apply]
+      rw [← hgspec i j]
+      simp
+    rw [hcomp]
+    exact linearIndependent_algebraMap_comp_iff.mpr hbqli
+  have hrepr : ∀ h ∈ rationalCuspForms N, ∃ c : Fin d → ℚ,
+      h = ∑ i, ((c i : ℂ)) • g i := by
+    intro h hh
+    have hw : ∀ j : Fin Bd, ∃ r : ℚ, Ψ h j = (r : ℂ) := by
+      intro j
+      obtain ⟨r, hr⟩ := hh (j : ℕ)
+      exact ⟨r, by rw [hΨapp]; exact hr⟩
+    choose w hwspec using hw
+    have hwmem : w ∈ Vq := ⟨h, hh, fun j => (hwspec j).symm⟩
+    set c : Fin d → ℚ := fun i => bq.repr ⟨w, hwmem⟩ i with hcdef
+    refine ⟨c, ?_⟩
+    have hsum : (⟨w, hwmem⟩ : ↥Vq) = ∑ i, c i • bq i := (bq.sum_repr _).symm
+    have h2 : (w : Fin Bd → ℚ) = ∑ i, c i • ((bq i : Fin Bd → ℚ)) := by
+      have h3 := congrArg (fun z : ↥Vq => (z : Fin Bd → ℚ)) hsum
+      simp only [Submodule.coe_sum, Submodule.coe_smul] at h3
+      exact h3
+    apply hΨinj
+    funext j
+    have h1 : w j = ∑ i, c i * ((bq i : Fin Bd → ℚ) j) := by
+      have h4 := congrFun h2 j
+      simpa only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul] using h4
+    rw [map_sum]
+    simp only [map_smul, Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    rw [hwspec j, h1]
+    push_cast
+    exact Finset.sum_congr rfl fun i _ => by rw [hgspec i j]
+  have hspan : ⊤ ≤ Submodule.span ℂ (Set.range g) := by
+    have h1 : Submodule.span ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) ≤
+        Submodule.span ℂ (Set.range g) := by
+      refine Submodule.span_le.mpr fun h hh => ?_
+      obtain ⟨c, hc⟩ := hrepr h hh
+      rw [hc]
+      exact Submodule.sum_mem _ fun i _ =>
+        Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+    rw [rationalCuspForms_span_eq_top hN] at h1
+    exact h1
+  let e : Module.Basis (Fin d) ℂ (CuspForm (Gamma0GL N) 2) := Module.Basis.mk hgli hspan
+  have he : ∀ i, e i = g i := fun i => Module.Basis.mk_apply _ _ i
+  -- (4) the matrix of `T` in that basis is rational, hence so is its trace
+  have hrat : ∀ i : Fin d, ∃ r : ℚ, e.repr (T (e i)) i = (r : ℂ) := by
+    intro i
+    have hmem : T (e i) ∈ rationalCuspForms N := by
+      rw [he i]; exact hstab T hT (g i) (hgmem i)
+    obtain ⟨c, hc⟩ := hrepr _ hmem
+    refine ⟨c i, ?_⟩
+    have hc' : T (e i) = ∑ k, ((c k : ℂ)) • e k := by
+      rw [hc]; exact Finset.sum_congr rfl fun k _ => by rw [he k]
+    rw [hc', e.repr_sum_self]
+  choose ρ hρ using hrat
+  refine ⟨∑ i, ρ i, ?_⟩
+  rw [LinearMap.trace_eq_matrix_trace ℂ e T, Matrix.trace]
+  simp only [Matrix.diag_apply, LinearMap.toMatrix_apply]
+  push_cast
+  exact Finset.sum_congr rfl fun i _ => hρ i
+
+/-- **EICHLER–SELBERG: THE TRACE IS INTEGRAL ON `𝕋`** (PROVEN,
+2026-07-27; formerly THE Eichler–Selberg sorry leaf, cut the same day
+out of `isIntegral_heckeEndo` below): every element of the Hecke algebra
+has rational-integer trace on `S₂(Γ₀(N))`.
+
+It is stated for the whole subring rather than for the powers `T_q^k` on
+purpose: `𝕋` is a subring, so `pow_mem` supplies the powers, and the
+statement is then the natural one — the trace map `𝕋 → ℂ` lands in `ℤ`.
+
+THE ASSEMBLY, all three inputs above:
+`exists_trace_heckeSubring_rat` (the trace is RATIONAL — Shimura, no
+analysis), `isIntegral_trace_heckeSubring` (the trace is an ALGEBRAIC
+INTEGER — the `ℤ`-span of the `T_m` over the single remaining leaf
+`isIntegral_trace_heckeOpN`), and `IsIntegrallyClosed ℤ` inside `ℚ`,
+which is what turns the pair into membership of `ℤ`.
+
+WHAT REMAINS OPEN BENEATH THIS NODE is exactly one leaf,
+`isIntegral_trace_heckeOpN` above; read its docstring before recutting,
+since it corrects two claims this node used to carry (the Hecke
+multiplication rule is no longer needed, and the rationality half is no
+longer a citation). -/
 theorem exists_trace_heckeSubring_int {N : ℕ} (hN : 0 < N)
     {T : Module.End ℂ (CuspForm (Gamma0GL N) 2)} (hT : T ∈ heckeSubring N) :
-    ∃ z : ℤ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) T = (z : ℂ) :=
-  sorry
+    ∃ z : ℤ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) T = (z : ℂ) := by
+  obtain ⟨r, hr⟩ := exists_trace_heckeSubring_rat hN hT
+  have hint := isIntegral_trace_heckeSubring hN hT
+  rw [hr] at hint
+  have hmap : ((r : ℂ)) = algebraMap ℚ ℂ r := by simp
+  rw [hmap] at hint
+  have hq : IsIntegral ℤ r :=
+    IsIntegral.tower_bot (A := ℚ) (B := ℂ) (algebraMap ℚ ℂ).injective hint
+  obtain ⟨z, hz⟩ := IsIntegrallyClosed.isIntegral_iff.mp hq
+  refine ⟨z, ?_⟩
+  rw [hr, ← hz]
+  simp
 
 /-- **LEAF 1b OF THE DISCRETENESS CUT — INTEGRALITY: every `T_q`
 satisfies a monic `ℤ`-polynomial** (DECOMPOSED 2026-07-27; formerly a
@@ -4033,7 +4302,12 @@ above** (2026-07-27):
 
 * `exists_trace_heckeSubring_int` — Eichler–Selberg, the one analytic
   input, stated for all of `𝕋` so that `pow_mem` supplies the powers
-  (SORRY);
+  (**PROVEN** later on 2026-07-27, over the single leaf
+  `isIntegral_trace_heckeOpN`: `Tr(T_m)` is an ALGEBRAIC INTEGER. Its
+  rationality half came free from Shimura, and the Hecke multiplication
+  rule quoted in the bullet above is NOT needed —
+  `heckeSubring_le_span_heckeOpN` already puts `𝕋` in the `ℤ`-span of
+  the `T_m`, so that bullet's second clause is stale);
 * `trace_pow_eq_sum_roots_pow` — `Tr(Tᵏ) = Σ_i λᵢᵏ` over `ℂ` (PROVEN
   here; mathlib has only the case `k = 1` and no triangularization to
   iterate it with);
