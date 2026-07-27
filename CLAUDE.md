@@ -305,6 +305,20 @@ a hard blocker for the census, which imports *every* module under `Fermat/`:
 one unreachable module that fails to build takes the census down with it. A
 release has since wired almost all of them in.
 
+**Root cause, found 2026-07-27 and deeper than a forgotten import: the island was
+exactly the set of project files NOT on Lean's module system.** 277 of 286 files
+declare `module`; the only non-`module` files were `Fermat.lean`, `Basic`,
+`PrimeFive`, `SorryGate` — and the five unreachable ones. **A `module` file cannot
+import a non-`module` one** (`cannot import non-module ... from module`), so the
+island was *structurally unimportable by any consumer that could plausibly want
+it*. Nobody forgot an import; the import was **not expressible**.
+
+The fix is the header treatment its already-wired siblings use: `module`,
+`public import`, `@[expose] public section`. So when a module looks orphaned,
+check its HEADER before hunting for a missing consumer — and note that wiring an
+island in correctly RAISES the reported frontier, because its sorries become
+visible for the first time. That is disclosure, not regression.
+
 **So a fourth standing check belongs in every bookkeeping cycle: enumerate
 modules under `Fermat/` and subtract the root's import closure.** A newly
 vendored subtree is the usual way modules land here — vendoring a directory
@@ -743,11 +757,23 @@ a persistent TLS failure means the file is not safe to download.
 When extracting text from a PDF, the output will be read by an AI, not
 a human. Preserve as much information as possible. First try
 `pdftotext -layout <input>.pdf <output>.txt`. OCR only when that
-output is empty or garbled, with the `ocrmypdf` Docker image:
+output is empty or garbled.
+
+**Use the NATIVE tools — `tesseract`, `pdftoppm` and `pdftotext` are all on
+PATH, and Docker is NOT available on this machine** (2026-07-27; the
+`ocrmypdf` Docker recipe previously documented here could never have run).
+This route recovered Fontaine's Prop. 1.7(i)(a) from an image-only GDZ scan
+where `pdftotext` returned nothing but the cover sheet:
 
 ```
-docker run --rm -v <abs-pdf-dir>:/data jbarlow83/ocrmypdf \
-  --rotate-pages --deskew --force-ocr -l eng \
-  /data/<input>.pdf /data/<input>-ocr.pdf
-pdftotext -layout <abs-pdf-dir>/<input>-ocr.pdf <output>.txt
+pdftoppm -r 300 -gray -f <first> -l <last> <input>.pdf /tmp/pg
+for f in /tmp/pg-*.png; do tesseract "$f" "${f%.png}" --psm 6; done
+cat /tmp/pg-*.txt > <output>.txt
 ```
+
+`--psm 6` ("assume a single uniform block of text") is what makes running
+text come out readable; the default page-segmentation mode shreds
+two-column mathematics. OCR page RANGES you actually need rather than whole
+books — 300 dpi greyscale is a few seconds per page. Expect mathematical
+notation to survive poorly: read OCR output for the ARGUMENT, then restate
+the mathematics yourself rather than trusting transcribed formulas.
