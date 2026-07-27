@@ -83,7 +83,19 @@ from a point of order `p` to `p ∣ #W(𝔽_ℓ)`) is elementary and is proven.
 That leaf was in turn DECOMPOSED on 2026-07-27 and is now PROVEN, over
 
 * `exists_tameGoodModel_of_jIntegral` — the arithmetic: `E` acquires good
-  reduction over an extension in which `ℓ` is TOTALLY RAMIFIED. OPEN.
+  reduction over an extension in which `ℓ` is TOTALLY RAMIFIED. **DECOMPOSED AND
+  PROVEN 2026-07-27**, over the `TameBase` interface, which separates the
+  number theory from the curve theory. What remains open under it is:
+  * `nonempty_tameBase` — the field `ℚ(ℓ^{1/12})` with `ℓ` totally ramified and
+    residue field `𝔽_ℓ`. Independent of `E` and of `Δ`: ONE field serves every
+    curve and every `ℓ`. OPEN, and the only genuinely missing theory left in the
+    potentially-good chain.
+  * `padicValRat_Δ_le_of_jIntegral` — `v_ℓ(j) ≥ 0 ⟹ 3v(A) ≥ v(Δ)` and
+    `2v(B) ≥ v(Δ)`, a statement about three rational numbers. OPEN, elementary.
+  The scaling itself (`exists_tameGoodModel_of_isShortNF`) is PROVEN, and so is
+  the reduction to short Weierstrass form. One of the four obligations the
+  pre-decomposition docstring listed — a `VariableChange`-induced map on
+  `Affine.Point` — turned out to exist already in `Fermat/FLT/Mathlib/`.
 * `redHom_eq_zero_of_nsmul_eq_zero` — Lutz–Nagell: the kernel of reduction
   contains no point killed by an integer prime to `ℓ`. **PROVEN 2026-07-27**,
   directly from Cassels' division-polynomial argument at the stated generality
@@ -139,6 +151,13 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
 public import Fermat.FLT.EllipticCurve.TorsionCard
 public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+-- And these three are what the decomposition of `exists_tameGoodModel_of_jIntegral`
+-- consumes: the short-Weierstrass normal form, `padicValRat`, and — the one that
+-- retires a whole obligation the pre-decomposition docstring recorded as missing —
+-- this project's own shim `Affine.Point.equivVariableChange`.
+public import Mathlib.AlgebraicGeometry.EllipticCurve.NormalForms
+public import Mathlib.NumberTheory.Padics.PadicVal.Basic
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 
 @[expose] public section
 
@@ -596,21 +615,34 @@ to `E`, so "V has good reduction at `A`" really does say that `E` has
 POTENTIALLY good reduction at `ℓ`, which is the content.
 
 `emb` is left as an abstract injective homomorphism rather than pinned to
-`Affine.Point.baseChange` composed with a variable-change isomorphism, because
-**mathlib has no map on points induced by a `VariableChange`** (verified
-2026-07-27 by grepping `AlgebraicGeometry/EllipticCurve/Affine/` for
-`VariableChange`: `Affine/Basic.lean` uses it only in
-`equation_iff_variableChange` / `nonsingular_iff_variableChange`, and
-`Affine/Point.lean` does not mention it at all). Constructing that map — the
-explicit substitution `(x, y) ↦ (u²x + r, u³y + u²sx + t)` and its inverse,
-shown to be additive — is an elementary but real obligation, and it is part of
-what the owner of `exists_tameGoodModel_of_jIntegral` must build. Writing it as
-a general `VariableChange`-induced `≃+` on `Affine.Point` and contributing it
-upstream would be the better shape.
+`Affine.Point.baseChange` composed with a variable-change isomorphism. The
+original reason given was that **mathlib has no map on points induced by a
+`VariableChange`**, and that constructing one was "part of what the owner of
+`exists_tameGoodModel_of_jIntegral` must build".
 
-THE CHECK THAT WOULD REFUTE THE ABOVE: `grep -rn 'VariableChange'
-Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` returning a point-level
-map, or an `Affine.Point` congruence along `C • W = W'`. -/
+**THAT IS CORRECT ABOUT MATHLIB AND WRONG ABOUT THIS PROJECT, AND THE CHECK IT
+ITSELF PRESCRIBED IS WHAT FOUND THE ERROR** (2026-07-27, by that owner). The
+recorded refutation check was to grep `Affine/Point.lean` for a point-level
+`VariableChange` map — but only mathlib's copy was grepped. This repository
+carries its own shim tree, and
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` already
+supplies exactly the missing map, in the better shape the note asked for:
+
+* `Affine.Point.mapVariableChange : (C • W).Point →+ W.Point`,
+* `Affine.Point.equivVariableChange : (C • W).Point ≃+ W.Point`, whose inverse
+  is given explicitly by `C⁻¹` rather than extracted from bijectivity, so the
+  whole thing is computable given `DecidableEq F`,
+* `Affine.Point.equivOfEq`, transport along an equality of curves.
+
+So that obligation is RETIRED — nothing had to be built — and `emb` below is
+constructed from it composed with mathlib's `Affine.Point.map`. The general
+lesson is the one this development keeps relearning: grep `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT` before recording anything as absent,
+because material lands in `Fermat/FLT/Mathlib/` precisely when mathlib lacks it.
+
+The field is nevertheless kept ABSTRACT rather than pinned to that composite,
+because `emb_injective` is all any consumer uses and pinning it would force
+every producer through one particular factorisation. -/
 structure TameGoodModel (E : WeierstrassCurve ℚ) (ℓ : ℕ) [Fact ℓ.Prime] where
   /-- The extension of `ℚ` over which `E` acquires good reduction. -/
   L : Type
@@ -643,8 +675,272 @@ structure TameGoodModel (E : WeierstrassCurve ℚ) (ℓ : ℕ) [Fact ℓ.Prime] 
 attribute [instance] TameGoodModel.instField TameGoodModel.instDec
   TameGoodModel.instAlgebra TameGoodModel.instLocal
 
-/-- **Potentially good reduction, as the existence of a tame good model** (sorry
-leaf, opened 2026-07-27 by decomposing `exists_goodReductionHom_of_jIntegral`).
+/-- **A tamely totally ramified base for `ℓ`** (interface opened 2026-07-27 while
+decomposing `exists_tameGoodModel_of_jIntegral`): a field `L ⊇ ℚ` carrying a
+valuation with ramification index `12` over the `ℓ`-adic one and residue field
+exactly `𝔽_ℓ`. Concretely `L = ℚ(ℓ^{1/12})` and `π = ℓ^{1/12}`, but nothing below
+uses that — this structure is the entire interface between the NUMBER THEORY and
+the CURVE THEORY, and it is what makes the two halves separately ownable.
+
+WHY THIS IS THE RIGHT CUT. `TameGoodModel` mixes two difficulties that share no
+technique: constructing a totally ramified extension with a prescribed residue
+field, and scaling a Weierstrass equation until its discriminant is a unit. The
+first is Dedekind-domain arithmetic, the second is `VariableChange` bookkeeping.
+`TameBase` is exactly the data the second needs from the first.
+
+`mem_iff` IS THE LOAD-BEARING FIELD, and it is stated for a general exponent `m`
+because that is what the scaling uses: the scaled coefficients are `π^{-4d}·A`
+and `π^{-6d}·B` for `d = v_ℓ(Δ)`, so integrality is decided by comparing `m`
+against `12·v_ℓ(q)`. At `m = 0` it degenerates to "the `ℓ`-integral rationals are
+exactly `A ∩ ℚ`"; at `q = 1` to "`π` has valuation `1/12` of `ℓ`".
+
+NOT VACUOUS, and `mem_iff` is what prevents it: `q = 1/ℓ, m = 0` gives
+`0 ≤ -12`, false, so `A ≠ L`; `q = 1, m = -1` gives `0 ≤ -1`, false, so `π` is a
+genuine non-unit; and `π_pow` then forces the ramification index to be `12`
+rather than merely divisible by it. A `TameBase` therefore cannot be produced by
+any degenerate choice of `A`. -/
+structure TameBase (ℓ : ℕ) [Fact ℓ.Prime] where
+  /-- The extension of `ℚ`, morally `ℚ(ℓ^{1/12})`. -/
+  L : Type
+  [instField : Field L]
+  [instDec : DecidableEq L]
+  [instAlgebra : Algebra ℚ L]
+  /-- The valuation subring above `ℓ`. -/
+  A : ValuationSubring L
+  /-- Its residue map. Landing in `ZMod ℓ` is where residue degree `1` is encoded. -/
+  res : A →+* ZMod ℓ
+  [instLocal : IsLocalHom res]
+  /-- The uniformizer, morally `ℓ^{1/12}`. -/
+  π : L
+  /-- and it is nonzero, so its integer powers make sense. -/
+  π_ne_zero : π ≠ 0
+  /-- **Total ramification of index `12`**, in the only form the scaling needs. -/
+  π_pow : π ^ (12 : ℕ) = algebraMap ℚ L (ℓ : ℚ)
+  /-- **The integrality criterion**: `v(π^m · q) = m + 12 · v_ℓ(q)`, written as a
+  membership so that no `ValueGroup` arithmetic is needed downstream. -/
+  mem_iff : ∀ (m : ℤ) {q : ℚ}, q ≠ 0 →
+    (π ^ m * algebraMap ℚ L q ∈ A ↔ 0 ≤ m + 12 * padicValRat ℓ q)
+
+attribute [instance] TameBase.instField TameBase.instDec TameBase.instAlgebra
+  TameBase.instLocal
+
+/-- **`ℚ(ℓ^{1/12})` exists, with `ℓ` totally ramified and residue field `𝔽_ℓ`**
+(sorry leaf, opened 2026-07-27 by decomposing
+`exists_tameGoodModel_of_jIntegral`). This is the NUMBER-THEORETIC half, and it
+is the only place in the potentially-good chain where Dedekind-domain arithmetic
+is needed.
+
+INDEPENDENT OF THE CURVE AND OF `E`, and that is the point: `X¹² − ℓ` is
+Eisenstein at `ℓ`, so `ℓ` is totally ramified in `L = ℚ[X]/(X¹² − ℓ)` and the
+residue field at the prime above it is `𝔽_ℓ`. Since the ramification index the
+scaling needs is `e = 12 / gcd(v_ℓ(Δ), 12)`, which always DIVIDES `12`, this
+single field works for every `E` and every `ℓ` at once — which is why the leaf
+quantifies over `ℓ` alone.
+
+WHAT MUST BE BUILT (checked 2026-07-27 against mathlib and `~/cs/FLT`):
+
+1. Irreducibility of `X¹² − ℓ` over `ℚ`. Mathlib HAS this:
+   `Polynomial.IsEisensteinAt.irreducible`.
+2. `ℓ` totally ramified in `L`, i.e. `e = 12` and `f = 1` at the unique prime
+   `𝔭 ∣ ℓ`. Mathlib does NOT have "Eisenstein implies totally ramified" — only
+   three files mention `IsEisensteinAt` at all, and none is about ramification.
+   This is the substantial item.
+3. `𝓞_L/𝔭 ≃+* ZMod ℓ`, which is what lets `res` land in `ZMod ℓ`.
+4. `mem_iff`, i.e. that the normalized valuation of `π` is `1/12` that of `ℓ`.
+
+The subring itself is FREE, and this is the discovery that made the whole
+potentially-good route cheap:
+`IsDedekindDomain.HeightOneSpectrum.valuationSubringAtPrime` is stated for an
+ARBITRARY Dedekind domain, so the seventy lines of `RatAdic` above run verbatim
+over `𝓞_L`. Neither `ℚ_ℓ` nor completion nor Tate's algorithm appears anywhere.
+
+THE CHECK THAT WOULD REFUTE THIS ROUTE: a mathlib declaration producing a totally
+ramified extension of prescribed degree over a number field together with an
+explicit residue-field identification — grep
+`Mathlib/NumberTheory/RamificationInertia/` and
+`Mathlib/RingTheory/Polynomial/Eisenstein/` for one. Either would collapse items
+2 and 3. A cheaper *alternative* worth trying first: build the DVR
+`ℤ_(ℓ)[X]/(X¹² − ℓ)` directly and take `L` to be its fraction field, which avoids
+`𝓞_L` and global class-field bookkeeping entirely — an Eisenstein extension of a
+DVR is monogenic, so that quotient IS the integral closure. -/
+theorem nonempty_tameBase (ℓ : ℕ) [Fact ℓ.Prime] : Nonempty (TameBase ℓ) :=
+  sorry
+
+/-- **`v_ℓ(j) ≥ 0` bounds the coefficient valuations against the discriminant's**
+(sorry leaf, opened 2026-07-27 by decomposing
+`exists_tameGoodModel_of_jIntegral`). This is the whole arithmetic content of the
+hypothesis `¬ ℓ ∣ E.j.den`, isolated from every curve-theoretic concern: it is a
+statement about three rational numbers.
+
+In the short form `y² = x³ + A x + B` write `a = v_ℓ(A)`, `b = v_ℓ(B)`,
+`d = v_ℓ(Δ)`, where `Δ = −16(4A³ + 27B²)` and `v_ℓ(−16) = v_ℓ(4) = v_ℓ(27) = 0`
+because `ℓ ≥ 5`. The two conclusions are `3a ≥ d` and `2b ≥ d`, and they are the
+exact conditions under which the variable change `u = π^d` lands the scaled
+model in `A` — see `exists_tameGoodModel_of_isShortNF`.
+
+**THE FIRST IS THE HYPOTHESIS AND THE SECOND IS FREE.** `j = 1728·4A³/(4A³+27B²)`,
+so `v_ℓ(j) ≥ 0` says precisely `3a ≥ d`. Given that, `2b ≥ d` follows by
+ultrametricity alone: `d ≥ min(3a, 2b)` always, with EQUALITY when the two
+differ. If `3a < 2b` then `d = 3a < 2b`; if `3a > 2b` then `d = 2b`; and if
+`3a = 2b` then `d ≥ 3a` combines with `d ≤ 3a` to give `d = 2b`. So the leaf has
+one hypothesis doing all the work, which is why it is stated as a conjunction
+rather than split in two.
+
+WHY BOTH HALVES CARRY A NONVANISHING SIDE CONDITION, and it is NOT defensive
+bookkeeping: `padicValRat ℓ 0 = 0` by convention, so at `A = 0` the unguarded
+claim `d ≤ 3·v_ℓ(A)` reads `d ≤ 0` and is FALSE — `y² = x³ + ℓ` has `A = 0`,
+`d = 2`, and is perfectly good potentially. The honest reading is `a = ∞` there,
+and the consumer discharges that case separately because the scaled coefficient
+is literally `0`, which is in `A` for free. The same applies at `B = 0`.
+
+THE CHECK THAT WOULD REFUTE THE "second is free" CLAIM: exhibit rationals with
+`3a ≥ d` and `2b < d`. By the trichotomy above that needs `d > min(3a,2b) = 2b`
+with the minimum attained uniquely, contradicting ultrametric equality — so any
+such witness would instead be a bug in `padicValRat`'s treatment of the
+characteristic-`0` cancellations, which `hℓ5` is there to exclude. -/
+theorem padicValRat_Δ_le_of_jIntegral (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {ℓ : ℕ} [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ W.j.den)) :
+    (W.a₄ ≠ 0 → padicValRat ℓ W.Δ ≤ 3 * padicValRat ℓ W.a₄) ∧
+      (W.a₆ ≠ 0 → padicValRat ℓ W.Δ ≤ 2 * padicValRat ℓ W.a₆) :=
+  sorry
+
+/-- **The tame good model, for a curve already in short Weierstrass form**
+(PROVEN 2026-07-27 over `nonempty_tameBase` and `padicValRat_Δ_le_of_jIntegral`).
+
+This is the curve-theoretic half of `exists_tameGoodModel_of_jIntegral`, and the
+whole of it: given the base and the two valuation inequalities, the model is the
+single variable change `u = π^d` with `d = v_ℓ(Δ)`, `r = s = t = 0`.
+
+The arithmetic, recorded because it is the reason `12` appears everywhere.
+Normalize `v` on `L` so that `v(π) = 1`, hence `v(q) = 12·v_ℓ(q)` for rational
+`q`. The change `(x, y) ↦ (u²x, u³y)` sends `(A, B, Δ) ↦ (u⁻⁴A, u⁻⁶B, u⁻¹²Δ)`,
+so with `v(u) = d`:
+
+    v(V.a₄) = −4d + 12a ≥ 0  ⟺  3a ≥ d      (the `j`-integrality hypothesis)
+    v(V.a₆) = −6d + 12b ≥ 0  ⟺  2b ≥ d      (automatic, see the leaf above)
+    v(V.Δ)  = −12d + 12d = 0                (always, by the CHOICE of `d`)
+
+The third line is why `d` is defined as `v_ℓ(Δ)` and not as anything subtler:
+`12 ∣ 12d` needs no divisibility hypothesis, which is exactly the step that
+would have required `v_ℓ(Δ_min)` and a minimal model over `ℚ_ℓ` had the base had
+ramification index less than `12`. `v(V.Δ) = 0` on the nose gives BOTH `V.Δ ∈ A`
+and `(V.Δ)⁻¹ ∈ A`, i.e. `V.Δ` is a unit of `A`, and hence its residue — which is
+`red.Δ` — is a unit of `𝔽_ℓ` and in particular nonzero. That is `red_Δ_ne_zero`,
+and note it comes out of the valuation bookkeeping rather than needing a separate
+nondegeneracy argument.
+
+`emb` is `Affine.Point.map` into `L` followed by
+`Affine.Point.equivVariableChange`'s inverse; both are injective, and both were
+already available (see `TameGoodModel`'s docstring on the retired obligation). -/
+theorem exists_tameGoodModel_of_isShortNF (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {ℓ : ℕ} [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ W.j.den)) :
+    Nonempty (TameGoodModel W ℓ) := by
+  classical
+  obtain ⟨M⟩ := nonempty_tameBase ℓ
+  obtain ⟨h4, h6⟩ := padicValRat_Δ_le_of_jIntegral W hℓ5 hj
+  have hΔ0 : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+  set d : ℤ := padicValRat ℓ W.Δ with hd
+  have hπd : (M.π ^ d) ≠ 0 := zpow_ne_zero _ M.π_ne_zero
+  set u : (M.L)ˣ := Units.mk0 (M.π ^ d) hπd with hu
+  set C : VariableChange M.L := ⟨u, 0, 0, 0⟩ with hC
+  set V : WeierstrassCurve M.L := C • (W.baseChange M.L) with hV
+  -- ### the coefficients of the scaled model
+  have hui : ∀ k : ℕ, ((u⁻¹ : (M.L)ˣ) : M.L) ^ k = M.π ^ (-(k : ℤ) * d) := by
+    intro k
+    rw [hu]
+    simp only [Units.val_inv_eq_inv_val, Units.val_mk0]
+    rw [← zpow_natCast (M.π ^ d)⁻¹ k, ← zpow_neg, ← zpow_mul]
+    ring_nf
+  have hVa₁ : V.a₁ = 0 := by
+    rw [hV, variableChange_a₁, hC]
+    simp [baseChange]
+  have hVa₂ : V.a₂ = 0 := by
+    rw [hV, variableChange_a₂, hC]
+    simp [baseChange]
+  have hVa₃ : V.a₃ = 0 := by
+    rw [hV, variableChange_a₃, hC]
+    simp [baseChange]
+  have hVa₄ : V.a₄ = M.π ^ (-4 * d) * algebraMap ℚ M.L W.a₄ := by
+    rw [hV, variableChange_a₄, hC]
+    simp only [baseChange, map_a₁, map_a₂, map_a₃, map_a₄, W.a₁_of_isShortNF,
+      W.a₂_of_isShortNF, W.a₃_of_isShortNF, map_zero]
+    rw [hui 4]
+    push_cast
+    ring
+  have hVa₆ : V.a₆ = M.π ^ (-6 * d) * algebraMap ℚ M.L W.a₆ := by
+    rw [hV, variableChange_a₆, hC]
+    simp only [baseChange, map_a₁, map_a₂, map_a₃, map_a₄, map_a₆, W.a₁_of_isShortNF,
+      W.a₂_of_isShortNF, W.a₃_of_isShortNF, map_zero]
+    rw [hui 6]
+    push_cast
+    ring
+  have hVΔ : V.Δ = M.π ^ (-12 * d) * algebraMap ℚ M.L W.Δ := by
+    rw [hV, variableChange_Δ, hC]
+    simp only [baseChange, map_Δ]
+    rw [hui 12]
+    push_cast
+    ring
+  -- ### integrality of the scaled coefficients
+  have hzero : (0 : M.L) ∈ M.A := zero_mem _
+  have ha₁ : V.a₁ ∈ M.A := by rw [hVa₁]; exact hzero
+  have ha₂ : V.a₂ ∈ M.A := by rw [hVa₂]; exact hzero
+  have ha₃ : V.a₃ ∈ M.A := by rw [hVa₃]; exact hzero
+  have ha₄ : V.a₄ ∈ M.A := by
+    rcases eq_or_ne W.a₄ 0 with h0 | h0
+    · rw [hVa₄, h0, map_zero, mul_zero]; exact hzero
+    · rw [hVa₄, M.mem_iff _ h0]; have := h4 h0; omega
+  have ha₆ : V.a₆ ∈ M.A := by
+    rcases eq_or_ne W.a₆ 0 with h0 | h0
+    · rw [hVa₆, h0, map_zero, mul_zero]; exact hzero
+    · rw [hVa₆, M.mem_iff _ h0]; have := h6 h0; omega
+  have haΔ : V.Δ ∈ M.A := by rw [hVΔ, M.mem_iff _ hΔ0]; omega
+  have haΔinv : (V.Δ)⁻¹ ∈ M.A := by
+    have hrw : (V.Δ)⁻¹ = M.π ^ (12 * d) * algebraMap ℚ M.L (W.Δ)⁻¹ := by
+      rw [hVΔ, mul_inv, ← zpow_neg, map_inv₀]; ring_nf
+    rw [hrw, M.mem_iff _ (inv_ne_zero hΔ0), padicValRat.inv]
+    omega
+  -- ### the integral model over `A` and its reduction
+  set ι : M.A →+* M.L := SubringClass.subtype M.A with hι
+  set VA : WeierstrassCurve M.A :=
+    ⟨⟨V.a₁, ha₁⟩, ⟨V.a₂, ha₂⟩, ⟨V.a₃, ha₃⟩, ⟨V.a₄, ha₄⟩, ⟨V.a₆, ha₆⟩⟩ with hVA
+  have hVAmap : VA.map ι = V := rfl
+  have hVAΔ : (VA.Δ : M.L) = V.Δ := by rw [← hVAmap, map_Δ]; rfl
+  have hVΔne : V.Δ ≠ 0 := by
+    rw [hVΔ]
+    refine mul_ne_zero (zpow_ne_zero _ M.π_ne_zero) ?_
+    simp only [ne_eq, map_eq_zero]
+    exact hΔ0
+  have hVAΔunit : IsUnit VA.Δ := by
+    refine isUnit_iff_exists_inv.mpr ⟨⟨(V.Δ)⁻¹, haΔinv⟩, Subtype.ext ?_⟩
+    show (VA.Δ : M.L) * (V.Δ)⁻¹ = 1
+    rw [hVAΔ]
+    exact mul_inv_cancel₀ hVΔne
+  haveI : (W.baseChange M.L).IsElliptic :=
+    inferInstanceAs (W.map (algebraMap ℚ M.L)).IsElliptic
+  refine ⟨{
+    L := M.L
+    A := M.A
+    res := M.res
+    C := C
+    V := V
+    V_eq := hV
+    red := VA.map M.res
+    isReduction :=
+      { a₁_mem := ha₁, a₂_mem := ha₂, a₃_mem := ha₃, a₄_mem := ha₄, a₆_mem := ha₆
+        a₁_eq := rfl, a₂_eq := rfl, a₃_eq := rfl, a₄_eq := rfl, a₆_eq := rfl }
+    red_Δ_ne_zero := by
+      rw [map_Δ]
+      exact (hVAΔunit.map M.res).ne_zero
+    emb := (Affine.Point.equivVariableChange (W.baseChange M.L) C).symm.toAddMonoidHom.comp
+      (Affine.Point.map (W' := W) (Algebra.ofId ℚ M.L))
+    emb_injective := fun P Q h =>
+      Affine.Point.map_injective (Algebra.ofId ℚ M.L)
+        ((Affine.Point.equivVariableChange (W.baseChange M.L) C).symm.injective h) }⟩
+
+/-- **Potentially good reduction, as the existence of a tame good model**
+(opened 2026-07-27 by decomposing `exists_goodReductionHom_of_jIntegral`;
+**DECOMPOSED AND PROVEN 2026-07-27** over `exists_tameGoodModel_of_isShortNF`,
+hence over `nonempty_tameBase` and `padicValRat_Δ_le_of_jIntegral`).
 
 THIS IS THE ARITHMETIC HALF, and it is where Silverman *AEC* VII.5.5 lives. See
 the section note above for the explicit construction: take `L = ℚ(ℓ^{1/12})`,
@@ -657,22 +953,37 @@ give `3a ≥ d`, which is the one inequality that is not automatic.
 `hℓ5` is load-bearing twice: it makes the ramification TAME (`gcd(12, ℓ) = 1`),
 and it puts `E` in short Weierstrass form (`char ≠ 2, 3`).
 
-WHAT MUST BE BUILT, none of which exists in this tree or in mathlib (checked
-2026-07-27):
+**WHERE THE FOUR-ITEM "WHAT MUST BE BUILT" LIST STANDS NOW.** The
+pre-decomposition version of this docstring listed four items, "none of which
+exists in this tree or in mathlib". Two are done, one was never missing, and
+only one is genuinely open:
 
-1. The number field `ℚ(ℓ^{1/12})` with `ℓ` totally ramified — Eisenstein
-   irreducibility is `Polynomial.IsEisensteinAt.irreducible` in mathlib, and
-   "Eisenstein implies totally ramified" is the part to look for.
-2. Residue degree `1` at that prime, i.e. `𝓞_L/𝔭 ≃+* ZMod ℓ`, which is what
-   makes `res` land in `ZMod ℓ`.
-3. The `VariableChange`-induced map on `Affine.Point` (see `TameGoodModel`'s
-   docstring), needed for `emb`.
-4. The valuation bookkeeping of the scaling argument.
+1. *(Open — now `nonempty_tameBase`.)* The number field `ℚ(ℓ^{1/12})` with `ℓ`
+   totally ramified. Still absent; see that leaf for the reduced list, and for a
+   cheaper alternative route through the DVR `ℤ_(ℓ)[X]/(X¹² − ℓ)`.
+2. *(Open — also `nonempty_tameBase`.)* Residue degree `1`, `𝓞_L/𝔭 ≃+* ZMod ℓ`.
+   Folded into the same leaf because it is the same construction.
+3. *(RETIRED — IT WAS NEVER MISSING.)* "The `VariableChange`-induced map on
+   `Affine.Point`, needed for `emb`." True of mathlib, FALSE of this project:
+   `Affine.Point.equivVariableChange` is in
+   `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`, in
+   exactly the general `≃+` shape the note asked someone to write. The audit's
+   own refutation check found this — it just had to be run against `Fermat/` and
+   not only against `.lake/packages/mathlib`. See `TameGoodModel`'s docstring.
+4. *(DONE — `exists_tameGoodModel_of_isShortNF`.)* The valuation bookkeeping of
+   the scaling argument, together with the reduction to short Weierstrass form.
 
-THE CHECK THAT WOULD REFUTE THIS ROUTE: a mathlib declaration giving a totally
-ramified extension of prescribed degree over a number field with an explicit
-residue-field identification, or a point-level `VariableChange` map. Either
-would shorten the list above.
+So the residue of this leaf is ONE construction, `nonempty_tameBase`, which is
+independent of `E` and of every curve-theoretic concern, plus the elementary
+`padicValRat` inequality `padicValRat_Δ_le_of_jIntegral`.
+
+THE PROOF BELOW is only the reduction to short form: `E.toShortNF` puts `E` in
+the form `y² = x³ + Ax + B` (mathlib's `toShortNF_spec`; `Invertible 2` and
+`Invertible 3` hold over `ℚ`, which is the second job of `hℓ5` in the informal
+account and is free here since the base is `ℚ`), `variableChange_j` carries the
+hypothesis `¬ ℓ ∣ j.den` across, and the resulting `TameGoodModel` is transported
+back by composing the two variable changes (`mul_smul` and `map_variableChange`)
+and pre-composing `emb` with `Affine.Point.equivVariableChange`.
 
 NOT VACUOUS. `TameGoodModel` is a structure with an `emb_injective` field, so it
 cannot be discharged by a zero homomorphism; and `V_eq` forbids substituting an
@@ -680,8 +991,28 @@ unrelated curve. See `TameGoodModel`'s docstring for why that field is there. -/
 theorem exists_tameGoodModel_of_jIntegral
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {ℓ : ℕ} [Fact ℓ.Prime]
     (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ E.j.den)) :
-    Nonempty (TameGoodModel E ℓ) :=
-  sorry
+    Nonempty (TameGoodModel E ℓ) := by
+  classical
+  haveI : Invertible (2 : ℚ) := invertibleOfNonzero (by norm_num)
+  haveI : Invertible (3 : ℚ) := invertibleOfNonzero (by norm_num)
+  have hj' : ¬ (ℓ ∣ (E.toShortNF • E).j.den) := by rwa [variableChange_j]
+  obtain ⟨N⟩ := exists_tameGoodModel_of_isShortNF (E.toShortNF • E) hℓ5 hj'
+  refine ⟨{
+    L := N.L
+    A := N.A
+    res := N.res
+    C := N.C * (E.toShortNF.map (algebraMap ℚ N.L))
+    V := N.V
+    V_eq := by
+      have hmv : (E.toShortNF.map (algebraMap ℚ N.L)) • (E.baseChange N.L)
+          = (E.toShortNF • E).baseChange N.L := map_variableChange _ _ _
+      rw [N.V_eq, mul_smul, hmv]
+    red := N.red
+    isReduction := N.isReduction
+    red_Δ_ne_zero := N.red_Δ_ne_zero
+    emb := N.emb.comp (Affine.Point.equivVariableChange E E.toShortNF).symm.toAddMonoidHom
+    emb_injective := fun P Q h =>
+      (Affine.Point.equivVariableChange E E.toShortNF).symm.injective (N.emb_injective h) }⟩
 
 /-- **The kernel of reduction contains no point killed by an integer prime to
 `ℓ`** (opened 2026-07-27 by decomposing `exists_goodReductionHom_of_jIntegral`;
