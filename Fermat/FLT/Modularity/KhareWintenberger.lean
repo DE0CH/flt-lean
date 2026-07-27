@@ -387,6 +387,22 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
 -- `Deformation.lean` already `public import`s `HilbertModularity`, so the
 -- module was in this file's import closure before this line was written.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity
+-- the Raynaud closure cut on the representation-free point-group carrier
+-- (`IsFlatPointsGroupAt`, `GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`,
+-- `IsFlatPointsGroupAt.of_surjective`), over which
+-- `hasFlatProlongationAt_of_surjective` below is PROVEN (2026-07-27).  MOVED to
+-- this home 2026-07-26 out of `Modularity/Interface.lean` precisely so that
+-- modules at or below this one could consume it; the HOME AUDIT in that
+-- theorem's docstring is updated accordingly.  This adds NO module to any cone:
+-- `HilbertModularity.lean`, already `public import`ed on the line above,
+-- imports `FlatPointsGroup.lean`, so the module was in this file's import
+-- closure before this line was written.  It reaches this file only through a
+-- BARE import there, however, which is not re-exported — hence the explicit
+-- line.  The circularity guard of pillar β is respected: the cone of
+-- `FlatPointsGroup.lean` is `FlatProlongation.lean` +
+-- `KnownIn1980s/EllipticCurves/Flat.lean`, disjoint from `Family.lean`,
+-- `Lift.lean` and `Modularity/*`.
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 -- the `charFrob` transport API (`GaloisRep.charFrob_map_algEquiv`,
 -- `GaloisRep.exists_finset_isUnramifiedAt_map`), which discharges the base
 -- of the solvable-descent chain (`heckeSystemDescendsTo_bot`)
@@ -16068,8 +16084,22 @@ stated for the GLOBAL action, as in
 `GaloisRep.HasFlatProlongationAt.of_addEquiv`; it implies the local one
 because `toLocal` is precomposition with `G_ℚᵥ → G_ℚ`.
 
-Intended proof (dual to a subobject closure, and easier — SUB-algebras
-of the witness where a subobject closure would quotient it):
+Proof (2026-07-27): pass to the representation-free point-group carrier
+by the exact repackaging
+`GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`, apply
+`IsFlatPointsGroupAt.of_surjective`
+(`Deformations/RepresentationTheory/FlatPointsGroup.lean`, sorry-free),
+and repackage back. The GLOBAL equivariance hypothesis `he` supplies the
+LOCAL one the carrier asks for through the exposed `rfl`-lemma
+`GaloisRep.toLocal_apply` (`g • x` on `(ρ.toLocal v).Space` is
+`ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ Kᵥ) g) x`); it must be
+routed through that lemma rather than by `exact he _ x`, because the
+unexposed `IsAlgClosed.lift` inside `Field.absoluteGaloisGroup.map`
+blocks the direct defeq check.
+
+The mathematics is the carrier lemma's, and is (dual to a subobject
+closure, and easier — SUB-algebras of the witness where a subobject
+closure would quotient it):
 * (α) *finiteness*: the source point group is finite (the generic fibre
   `Q := Kᵥ ⊗[𝒪ᵥ] G` of the witness is finite étale over `Kᵥ`), hence so
   is the target through the surjection `e`.
