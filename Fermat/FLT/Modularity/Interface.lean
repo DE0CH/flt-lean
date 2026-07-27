@@ -2589,11 +2589,201 @@ theorem cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring {N : ℕ} (hN : 0 < N
   obtain ⟨T, hT, hTe⟩ := exists_mem_heckeSubring_qCoeff hN m
   rw [hTe f, hf T hT, qCoeff_zero_cuspForm]
 
-/-- **`𝕋` IS A `ℤ`-FORM: `rank_ℤ 𝕋 = dim_ℂ S₂(Γ₀(N))`** (sorry node —
-the EICHLER–SHIMURA citation, isolated 2026-07-26 as the single
-arithmetic input of `integralCuspForms_span_eq_top` under route B):
-there are `D = dim_ℂ S₂(Γ₀(N))` Hecke operators, themselves in `𝕋`,
-which generate `𝕋` as a `ℤ`-module.
+/-- **A module over a characteristic-zero division ring is additively
+torsion free** (PROVEN, 2026-07-27). Stated over an abstract base per
+this development's standing rule that helpers be generic; it is used
+only at `K = ℂ`, `M = End_ℂ(S₂(Γ₀(N)))`, to feed the structure theory of
+finitely generated modules over the PID `ℤ` in
+`exists_spanning_of_finite_of_not_linearIndependent` below.
+
+Mathlib has no instance covering this: `IsAddTorsionFree.of_module_rat`
+wants a `Module ℚ` structure and
+`IsAddTorsionFree.of_isCancelMulZero_charZero` wants no zero divisors,
+which `End_ℂ(V)` has in abundance. -/
+theorem isAddTorsionFree_of_charZero_module {K M : Type*} [DivisionRing K] [CharZero K]
+    [AddCommGroup M] [Module K M] : IsAddTorsionFree M := by
+  refine ⟨fun n hn x y hxy => ?_⟩
+  have hn' : (n : K) ≠ 0 := Nat.cast_ne_zero.mpr hn
+  have h : (n : K) • x = (n : K) • y := by
+    rw [Nat.cast_smul_eq_nsmul, Nat.cast_smul_eq_nsmul]
+    exact hxy
+  calc x = (n : K)⁻¹ • ((n : K) • x) := (inv_smul_smul₀ hn' x).symm
+    _ = (n : K)⁻¹ • ((n : K) • y) := by rw [h]
+    _ = y := inv_smul_smul₀ hn' y
+
+/-- **The `ℤ`-form packaging step** (PROVEN, 2026-07-27): a subring `T`
+of an additively torsion-free ring, FINITE as a `ℤ`-module and admitting
+no `ℤ`-linearly independent family of `D + 1` elements, is `ℤ`-spanned
+by `D` of its own elements.
+
+Pure structure theory over the PID `ℤ`, carrying no arithmetic: `T` is
+finitely generated and torsion free, hence FREE of some rank `r`
+(`Module.free_of_finite_type_torsion_free'`); a `ℤ`-basis is
+`ℤ`-independent, so the hypothesis forces `r ≤ D`; padding the basis
+with zeros gives the `D` elements, and `Basis.sum_repr` writes every
+member of `T` as a `ℤ`-combination of them.
+
+Stated abstractly, like `span_preimage_int_eq_top` above, so that the
+cusp-form API never enters the unification problem. It is what makes the
+two leaves below a genuine DECOMPOSITION of `exists_heckeSubring_zForm`
+rather than a restatement of it: everything except the two hypotheses is
+discharged here. -/
+theorem exists_spanning_of_finite_of_not_linearIndependent
+    {R : Type*} [Ring R] [IsAddTorsionFree R] (T : Subring R) [Module.Finite ℤ T]
+    {D : ℕ}
+    (hrank : ∀ t : Fin (D + 1) → R, (∀ i, t i ∈ T) → ¬ LinearIndependent ℤ t) :
+    ∃ t : Fin D → R, (∀ i, t i ∈ T) ∧ ∀ S ∈ T, S ∈ Submodule.span ℤ (Set.range t) := by
+  classical
+  haveI : Module.IsTorsionFree ℤ T :=
+    Function.Injective.moduleIsTorsionFree (R := ℤ) (M := T) (N := R)
+      Subtype.val Subtype.val_injective (fun _ _ => rfl)
+  haveI : Module.Free ℤ T := Module.free_of_finite_type_torsion_free'
+  set r := Module.finrank ℤ T with hrdef
+  let b : Module.Basis (Fin r) ℤ T := Module.finBasis ℤ T
+  let ι : T →ₗ[ℤ] R := (T.subtype : T →+* R).toAddMonoidHom.toIntLinearMap
+  have hιapp : ∀ x : T, ι x = (x : R) := fun _ => rfl
+  have hιinj : Function.Injective ι := Subtype.val_injective
+  have hrD : r ≤ D := by
+    by_contra hlt
+    have hle : D + 1 ≤ r := by omega
+    have hbi : LinearIndependent ℤ (fun i : Fin (D + 1) => b (Fin.castLE hle i)) :=
+      b.linearIndependent.comp _ (Fin.castLE_injective hle)
+    have hind : LinearIndependent ℤ (fun i : Fin (D + 1) => ((b (Fin.castLE hle i) : T) : R)) :=
+      hbi.map' ι (LinearMap.ker_eq_bot.mpr hιinj)
+    exact hrank _ (fun i => (b (Fin.castLE hle i)).2) hind
+  refine ⟨fun i => if h : (i : ℕ) < r then ((b ⟨i, h⟩ : T) : R) else 0, ?_, ?_⟩
+  · intro i
+    dsimp only
+    split_ifs with h
+    · exact (b ⟨i, h⟩).2
+    · exact T.zero_mem
+  · suffices h : ∀ x : T, (x : R) ∈
+        Submodule.span ℤ (Set.range fun i : Fin D =>
+          if h : (i : ℕ) < r then ((b ⟨i, h⟩ : T) : R) else 0) from
+      fun S hS => h ⟨S, hS⟩
+    intro x
+    have hx : ι x = ∑ j : Fin r, (b.repr x j) • ι (b j) := by
+      conv_lhs => rw [← b.sum_repr x]
+      rw [map_sum]
+      exact Finset.sum_congr rfl fun j _ => map_zsmul ι _ _
+    rw [← hιapp x, hx]
+    refine Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (Submodule.subset_span ?_)
+    refine ⟨Fin.castLE hrD j, ?_⟩
+    have hj : ((Fin.castLE hrD j : Fin D) : ℕ) < r := by simp
+    have hidx : (⟨((Fin.castLE hrD j : Fin D) : ℕ), hj⟩ : Fin r) = j := by simp
+    dsimp only
+    rw [dif_pos hj, hιapp, hidx]
+
+/-- **LEAF 1 OF 2 FOR THE `ℤ`-FORM — DISCRETENESS: `𝕋` is a finitely
+generated `ℤ`-module** (sorry leaf, cut 2026-07-27).
+
+This is the half of Eichler–Shimura that says `𝕋` is a LATTICE at all:
+classically `𝕋` acts faithfully on `H₁(X₀(N), ℤ)`, which is free of
+rank `2D` over `ℤ`, so `𝕋 ↪ End_ℤ(H₁) ≅ M_{2D}(ℤ)` is finite over `ℤ`
+(Diamond–Shurman §8.5; Mazur, *Eisenstein ideal*, ch. II §§6–9; Ribet,
+*Invent. Math.* 100 (1990), §2).
+
+STRICTLY WEAKER THAN THE NODE, with the counterexample already on
+record: DEAD END 6 of `integralCuspForms_span_eq_top` below exhibits
+`D = 1`, `𝕋 = ℤ[√2] ⊆ ℂ = End_ℂ(S₂)`, which is finite over `ℤ` and
+faithful and yet fails `exists_heckeSubring_zForm` (`rank_ℤ 𝕋 = 2 > 1 = D`).
+So this leaf CANNOT be the whole of the node — it must be paired with
+`heckeSubring_zRank_le` below, and that pairing is exactly what dead
+end 6 says a recut must cite.
+
+ORTHOGONAL TO LEAF 2, which is why the cut is a decomposition and not a
+restatement: neither leaf implies the other. `ℤ[√2]` (finite, rank
+`2 > D = 1`) refutes leaf 1 ⟹ leaf 2; `ℤ[1/2] ⊆ ℂ` (rank `1 = D`, so
+leaf 2 holds, but not finitely generated) refutes leaf 2 ⟹ leaf 1.
+
+**BEWARE — `heckeSubring_moduleFinite` FAR BELOW IS THIS SAME STATEMENT,
+AND MAY NOT BE USED HERE.** That declaration is currently proven the
+long way round, THROUGH this node:
+`exists_heckeSubring_zForm` → `integralCuspForms_span_eq_top` →
+`exists_heckeStable_lattice` → `heckeSubring_moduleFinite`. Citing it
+here would close the cluster into a circle. Lean's declaration order
+already makes that a hard error rather than a silent cycle, since this
+leaf sits above all four. The redundancy is a SIGNAL, not a defect: it
+records that the fleet is presently obtaining a strictly weaker fact by
+the most expensive available route. Whoever proves this leaf should
+replace `heckeSubring_moduleFinite`'s body with it plus the `N = 0`
+case, which that proof already discharges separately.
+
+SOUNDNESS: `0 < N` is inherited from the node and is not needed
+mathematically — at `N = 0` every `heckeEndo 0 q` is the junk value `0`,
+so `𝕋` is the prime subring and finiteness is immediate, exactly as
+`heckeSubring_moduleFinite` discharges it below. -/
+theorem heckeSubring_moduleFinite_int {N : ℕ} (hN : 0 < N) :
+    Module.Finite ℤ (heckeSubring N) :=
+  sorry
+
+/-- **LEAF 2 OF 2 FOR THE `ℤ`-FORM — RANK: `rank_ℤ 𝕋 ≤ dim_ℂ S₂(Γ₀(N))`**
+(sorry leaf, cut 2026-07-27), stated as the absence of a `ℤ`-linearly
+independent family of `D + 1` Hecke operators.
+
+This is the half that says the lattice `𝕋` has the RIGHT SIZE — i.e.
+that `𝕋 ⊗_ℤ ℂ → End_ℂ(S₂)` is injective, so that `𝕋` is a `ℤ`-FORM of
+its own `ℂ`-span rather than a lattice of too large a rank collapsing
+inside it. Classically it is the other half of Eichler–Shimura:
+`H₁(X₀(N), ℤ) ⊗ ℝ ≅ S₂ ⊕ S̄₂` as `𝕋`-modules pins `rank_ℤ 𝕋 = D`.
+
+WHY THE INDEPENDENCE SPELLING, and not `Module.finrank ℤ 𝕋 ≤ D`.
+`Module.finrank` is `0` for a module of infinite rank, so the `finrank`
+spelling would be VACUOUSLY true for any non-finitely-generated `𝕋` and
+would silently carry no content unless read together with leaf 1. The
+independence spelling is non-vacuous standing alone, which is what a
+leaf must be.
+
+THE REVERSE INEQUALITY IS FREE and is deliberately not asked for: with
+`cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring` above, the pairing
+`(T, f) ↦ a₁(T f)` embeds `S₂` into `Hom_ℂ(𝕋_ℂ, ℂ)`, so `dim_ℂ 𝕋_ℂ ≥ D`
+already. Only `≤` carries arithmetic, and only `≤` is what the node
+consumes.
+
+NON-VACUOUS at every level, including the degenerate ones: at genus-zero
+`N` (`D = 0`) `End_ℂ(S₂) = 0` is a subsingleton, and a one-element
+family in a subsingleton module is `ℤ`-dependent, so the statement holds
+with content rather than by an empty quantifier.
+
+SOUNDNESS: `0 < N` is inherited from the node. At `N = 0`, `𝕋` is the
+prime subring `ℤ·1`, of rank `≤ 1`, so the statement is true there too
+whenever `D ≥ 1`. -/
+theorem heckeSubring_zRank_le {N : ℕ} (hN : 0 < N)
+    (T : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2) + 1) →
+        Module.End ℂ (CuspForm (Gamma0GL N) 2))
+    (hT : ∀ i, T i ∈ heckeSubring N) :
+    ¬ LinearIndependent ℤ T :=
+  sorry
+
+/-- **`𝕋` IS A `ℤ`-FORM: `rank_ℤ 𝕋 = dim_ℂ S₂(Γ₀(N))`** (PROVEN
+2026-07-27 by DECOMPOSITION into the two strictly weaker leaves
+`heckeSubring_moduleFinite_int` (discreteness) and
+`heckeSubring_zRank_le` (rank); formerly itself THE Eichler–Shimura
+citation, isolated 2026-07-26 as the single arithmetic input of
+`integralCuspForms_span_eq_top` under route B): there are
+`D = dim_ℂ S₂(Γ₀(N))` Hecke operators, themselves in `𝕋`, which
+generate `𝕋` as a `ℤ`-module.
+
+THE CUT, AND WHY IT IS A DECOMPOSITION RATHER THAN A RESTATEMENT.
+DEAD END 8 below records that every faithful reformulation TRIED
+collapsed to an equivalence with this node. This one does not, because
+it is a conjunction of two independent statements, each strictly weaker,
+each with an explicit counterexample to the implication it does not
+support:
+
+* leaf 1, `Module.Finite ℤ 𝕋`, fails to imply the node — `ℤ[√2]` at
+  `D = 1`, which is dead end 6's own counterexample;
+* leaf 2, `rank_ℤ 𝕋 ≤ D`, fails to imply leaf 1 — `ℤ[1/2] ⊆ ℂ` at
+  `D = 1` has rank `1` and is not finitely generated.
+
+Everything else in the node — the passage from "finite of rank `≤ D`"
+to "`D` explicit `ℤ`-spanning operators lying in `𝕋`" — is the PID
+structure theory discharged above in
+`exists_spanning_of_finite_of_not_linearIndependent`: finite plus
+torsion free gives free of rank `r`, a basis is independent so `r ≤ D`,
+and padding with zeros supplies the family. That step is arithmetic-free
+and is now proven, so the whole arithmetic residue of this node is the
+two leaves.
 
 WHY THIS IS THE RIGHT CITATION, and not a weakening. The node below
 records as its DEAD END 6 that `Module.Finite ℤ 𝕋` alone does NOT imply
@@ -2606,12 +2796,20 @@ and the `√2` counterexample is exactly a violation of it (`rank_ℤ 𝕋 = 2`
 against `D = 1`), so this node is NOT vacuous and NOT the trap.
 
 NON-VACUITY, mechanically. The spanning clause with `D` operators is the
-whole content: `𝕋` is already known finite over `ℤ`
-(`heckeSubring_moduleFinite`, far below), so the statement is equivalent
-to `rank_ℤ 𝕋 ≤ D`; the reverse inequality is free from
-`cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring` above. A junk
+whole content: GIVEN finiteness over `ℤ` (leaf 1) the statement is
+equivalent to `rank_ℤ 𝕋 ≤ D` (leaf 2); the reverse inequality is free
+from `cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring` above. A junk
 witness would have to make a rank-`> D` lattice fit inside a `ℤ`-span of
 `D` elements, which is impossible.
+
+A CORRECTION to the earlier version of this paragraph, which read
+"`𝕋` is already known finite over `ℤ` (`heckeSubring_moduleFinite`, far
+below)". That is TRUE but unusable HERE: `heckeSubring_moduleFinite` is
+proven from `exists_heckeStable_lattice`, which is proven from
+`integralCuspForms_span_eq_top`, which is proven from THIS node. Reading
+it as an available input is the trap this cluster is built to prevent,
+and it is why finiteness had to be re-cut as leaf 1 above rather than
+imported from below.
 
 MEMBERSHIP CLAUSE. `∀ i, T i ∈ heckeSubring N` is not consumed by the
 derivation below — the spanning clause alone suffices — but it is kept
@@ -2643,8 +2841,12 @@ theorem exists_heckeSubring_zForm {N : ℕ} (hN : 0 < N) :
     ∃ T : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) →
         Module.End ℂ (CuspForm (Gamma0GL N) 2),
       (∀ i, T i ∈ heckeSubring N) ∧
-      ∀ S ∈ heckeSubring N, S ∈ Submodule.span ℤ (Set.range T) :=
-  sorry
+      ∀ S ∈ heckeSubring N, S ∈ Submodule.span ℤ (Set.range T) := by
+  haveI : IsAddTorsionFree (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+    isAddTorsionFree_of_charZero_module (K := ℂ)
+  haveI := heckeSubring_moduleFinite_int hN
+  exact exists_spanning_of_finite_of_not_linearIndependent (heckeSubring N)
+    (fun t ht => heckeSubring_zRank_le hN t ht)
 
 /-- **The `q`-expansion principle over `ℤ`** (PROVEN 2026-07-26 via
 ROUTE B, over the single Eichler–Shimura citation
@@ -2670,8 +2872,12 @@ there:
 * the FILE-ORDER OBSTACLE has been removed by relocating the
   `heckeEndo`/`heckeSubring` block above this node, as that section
   predicted would be mechanical;
-* what remains is the `ℤ`-FORM citation `exists_heckeSubring_zForm`,
-  which is precisely what DEAD END 6 below says a recut must cite.
+* what remains is the `ℤ`-FORM statement `exists_heckeSubring_zForm`,
+  which is precisely what DEAD END 6 below says a recut must cite. It
+  is no longer a citation: since 2026-07-27 it is PROVEN by
+  decomposition into `heckeSubring_moduleFinite_int` (discreteness) and
+  `heckeSubring_zRank_le` (rank), which are the two open leaves this
+  node now rests on.
 
 Concretely: the `ℤ`-form gives `D = dim_ℂ S₂` operators `ℤ`-spanning
 `𝕋`; `Φ f = (a₁(T i f))_i : S₂ → ℂ^D` is injective by
