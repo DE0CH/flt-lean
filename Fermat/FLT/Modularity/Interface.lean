@@ -155,6 +155,15 @@ public import Mathlib.MeasureTheory.Integral.Bochner.Set
 public import Mathlib.MeasureTheory.Integral.Bochner.ContinuousLinearMap
 public import Mathlib.MeasureTheory.Measure.OpenPos
 public import Mathlib.Data.Matrix.Mul
+-- Added 2026-07-27 for the trace route to `isIntegral_heckeEndo`; these are
+-- `public` because `LinearMap.trace`, `LinearMap.charpoly` and
+-- `Module.End.maxGenEigenspace` occur in SIGNATURE position there, where a
+-- merely transitive (non-`public`) import is not re-exported.
+public import Mathlib.LinearAlgebra.Charpoly.Basic
+public import Mathlib.LinearAlgebra.Trace
+public import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
+public import Mathlib.LinearAlgebra.Eigenspace.Zero
+public import Mathlib.Algebra.DirectSum.LinearMap
 import Mathlib.NumberTheory.ModularForms.LevelOne.DimensionFormula
 import Mathlib.Topology.Algebra.IntermediateField
 import Mathlib.Data.Matrix.Basic
@@ -2899,9 +2908,240 @@ theorem exists_heckeSubring_algebraGenerators {N : ℕ} (hN : 0 < N) :
       Subring.closure {T | ∃ q : ℕ, q.Prime ∧ q ≤ k ∧ T = heckeEndo N q} :=
   sorry
 
+/-! #### The trace route to integrality
+
+Added 2026-07-27, executing the TRACE route recorded in the docstring of
+`isIntegral_heckeEndo` below. The three declarations here are the
+GENERAL half of that route — no modular forms occur in any of them —
+and they reduce the leaf to exactly two inputs, one analytic
+(Eichler–Selberg, `exists_trace_heckeSubring_int`) and one
+number-theoretic (`exists_int_of_monic_of_forall_sum_roots_pow_int`).
+
+The linear algebra in between is PROVEN here: over `ℂ` the power traces
+of an endomorphism are the power sums of the roots of its
+characteristic polynomial (`trace_pow_eq_sum_roots_pow`), and Cayley–
+Hamilton turns an integral characteristic polynomial into integrality
+(inside `isIntegral_heckeEndo`'s proof). -/
+
+/-- **TRACE OF A POWER OF `SCALAR + NILPOTENT`** (PROVEN, 2026-07-27):
+if `S − μ` is nilpotent on a finite free `ℂ`-module `W`, then
+`Tr(Sᵏ) = μᵏ · dim W`.
+
+Induction on `k` over mathlib's
+`LinearMap.trace_comp_eq_mul_of_commute_of_isNilpotent`, which is
+exactly the step `Tr(Sⁿ ∘ S) = μ · Tr(Sⁿ)`. This is the
+single-generalized-eigenspace computation behind
+`trace_pow_eq_sum_roots_pow` below. -/
+theorem trace_pow_of_isNilpotent_sub_algebraMap {W : Type*} [AddCommGroup W] [Module ℂ W]
+    [Module.Finite ℂ W] [Module.Free ℂ W] (S : Module.End ℂ W) (μ : ℂ)
+    (hnil : IsNilpotent (S - algebraMap ℂ (Module.End ℂ W) μ)) (k : ℕ) :
+    LinearMap.trace ℂ W (S ^ k) = μ ^ k * (Module.finrank ℂ W : ℂ) := by
+  induction k with
+  | zero => simp [LinearMap.trace_one]
+  | succ n ih =>
+    have hpow : S ^ (n + 1) = (S ^ n) ∘ₗ S := by
+      rw [pow_succ]; rfl
+    rw [hpow, LinearMap.trace_comp_eq_mul_of_commute_of_isNilpotent μ
+      ((Commute.refl S).pow_left n) hnil, ih]
+    ring
+
+/-- **POWER TRACES ARE POWER SUMS OF THE EIGENVALUES** (PROVEN,
+2026-07-27): for an endomorphism `T` of a finite-dimensional `ℂ`-vector
+space and any `k`, `Tr(Tᵏ) = Σ_i λᵢᵏ`, the sum over the roots of the
+characteristic polynomial WITH MULTIPLICITY.
+
+Absent from the pin: mathlib has this only at `k = 1`
+(`LinearMap.trace_eq_sum_roots_charpoly_of_splits`), and has no
+triangularization theorem to iterate it with. The proof here does not
+need one. `ℂ` is algebraically closed, so the maximal generalized
+eigenspaces of `T` decompose `V` internally
+(`Module.End.iSup_maxGenEigenspace_eq_top` plus
+`Module.End.independent_maxGenEigenspace`); `Tᵏ` preserves each of them;
+on the `μ`-block `T − μ` is nilpotent
+(`Module.End.isNilpotent_restrict_maxGenEigenspace_sub_algebraMap`), so
+`trace_pow_of_isNilpotent_sub_algebraMap` gives block trace
+`μᵏ · dim`; and `dim` of that block IS the root multiplicity of `μ`
+(`LinearMap.finrank_maxGenEigenspace_eq`). Summing the blocks against
+`Finset.sum_multiset_map_count` gives the multiset sum.
+
+Note the two index sets — the eigenvalues with nonzero block and the
+roots of the characteristic polynomial — are reconciled without an
+`iff`: both summands vanish off their own set BY THE SAME identity
+`dim (maxGenEigenspace μ) = rootMultiplicity μ`, so a pair of
+`Finset.sum_subset` steps through the union suffices. -/
+theorem trace_pow_eq_sum_roots_pow {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [FiniteDimensional ℂ V] (T : Module.End ℂ V) (k : ℕ) :
+    LinearMap.trace ℂ V (T ^ k) = ((LinearMap.charpoly T).roots.map (· ^ k)).sum := by
+  classical
+  have hcomm : ∀ μ : ℂ, Set.MapsTo (T ^ k)
+      ((T.maxGenEigenspace μ : Submodule ℂ V) : Set V) (T.maxGenEigenspace μ) :=
+    fun μ => T.mapsTo_maxGenEigenspace_of_comm ((Commute.refl T).pow_right k) μ
+  have hone : ∀ μ : ℂ, Set.MapsTo T
+      ((T.maxGenEigenspace μ : Submodule ℂ V) : Set V) (T.maxGenEigenspace μ) :=
+    fun μ => T.mapsTo_maxGenEigenspace_of_comm (Commute.refl T) μ
+  have hsup : ⨆ μ : ℂ, T.maxGenEigenspace μ = ⊤ := Module.End.iSup_maxGenEigenspace_eq_top T
+  have hds := DirectSum.isInternal_submodule_of_iSupIndep_of_iSup_eq_top
+    T.independent_maxGenEigenspace hsup
+  have hfin : {μ : ℂ | T.maxGenEigenspace μ ≠ ⊥}.Finite :=
+    WellFoundedGT.finite_ne_bot_of_iSupIndep T.independent_maxGenEigenspace
+  rw [LinearMap.trace_eq_sum_trace_restrict' hds hfin hcomm]
+  have key : ∀ μ : ℂ, LinearMap.trace ℂ _ ((T ^ k).restrict (hcomm μ))
+      = μ ^ k * ((LinearMap.charpoly T).rootMultiplicity μ : ℂ) := by
+    intro μ
+    have hres : (T ^ k).restrict (hcomm μ) = (T.restrict (hone μ)) ^ k :=
+      (Module.End.pow_restrict k (hone μ)).symm
+    have hnil0 := T.isNilpotent_restrict_maxGenEigenspace_sub_algebraMap μ
+    have heq : (T - algebraMap ℂ (Module.End ℂ V) μ).restrict
+        (T.mapsTo_maxGenEigenspace_of_comm (Algebra.mul_sub_algebraMap_commutes T μ) μ)
+        = T.restrict (hone μ) - algebraMap ℂ (Module.End ℂ _) μ := by
+      ext x
+      simp [LinearMap.restrict_apply]
+    rw [hres, trace_pow_of_isNilpotent_sub_algebraMap _ μ (by rw [← heq]; exact hnil0) k,
+      _root_.LinearMap.finrank_maxGenEigenspace_eq]
+  have hchar0 : LinearMap.charpoly T ≠ 0 := (LinearMap.charpoly_monic T).ne_zero
+  have hg0 : ∀ μ ∈ hfin.toFinset ∪ (LinearMap.charpoly T).roots.toFinset,
+      μ ∉ hfin.toFinset → μ ^ k * ((LinearMap.charpoly T).rootMultiplicity μ : ℂ) = 0 := by
+    intro μ _ hμ
+    have hbot : T.maxGenEigenspace μ = ⊥ := by simpa using hμ
+    have hr : (LinearMap.charpoly T).rootMultiplicity μ = 0 := by
+      rw [← _root_.LinearMap.finrank_maxGenEigenspace_eq, hbot, _root_.finrank_bot]
+    simp [hr]
+  have hg0' : ∀ μ ∈ hfin.toFinset ∪ (LinearMap.charpoly T).roots.toFinset,
+      μ ∉ (LinearMap.charpoly T).roots.toFinset →
+      μ ^ k * ((LinearMap.charpoly T).rootMultiplicity μ : ℂ) = 0 := by
+    intro μ _ hμ
+    have hnr : ¬ (LinearMap.charpoly T).IsRoot μ := by
+      intro hroot
+      exact hμ (Multiset.mem_toFinset.mpr ((Polynomial.mem_roots hchar0).mpr hroot))
+    simp [Polynomial.rootMultiplicity_eq_zero hnr]
+  calc ∑ μ ∈ hfin.toFinset, LinearMap.trace ℂ _ ((T ^ k).restrict (hcomm μ))
+      = ∑ μ ∈ hfin.toFinset, μ ^ k * ((LinearMap.charpoly T).rootMultiplicity μ : ℂ) :=
+        Finset.sum_congr rfl fun μ _ => key μ
+    _ = ∑ μ ∈ hfin.toFinset ∪ (LinearMap.charpoly T).roots.toFinset,
+          μ ^ k * ((LinearMap.charpoly T).rootMultiplicity μ : ℂ) :=
+        Finset.sum_subset Finset.subset_union_left hg0
+    _ = ∑ μ ∈ (LinearMap.charpoly T).roots.toFinset,
+          μ ^ k * ((LinearMap.charpoly T).rootMultiplicity μ : ℂ) :=
+        (Finset.sum_subset Finset.subset_union_right hg0').symm
+    _ = ((LinearMap.charpoly T).roots.map (· ^ k)).sum := by
+        rw [Finset.sum_multiset_map_count]
+        refine Finset.sum_congr rfl fun μ _ => ?_
+        rw [Polynomial.count_roots, nsmul_eq_mul]
+        ring
+
+/-- **ALGEBRAIC NUMBERS WITH INTEGRAL POWER SUMS ARE ALGEBRAIC INTEGERS**
+(sorry leaf, cut 2026-07-27 out of `isIntegral_heckeEndo` below): a
+monic `p ∈ ℂ[X]` all of whose root power sums `Σ_i λᵢᵏ`, `k ≥ 1`, are
+rational integers is the image of a monic `p₀ ∈ ℤ[X]`.
+
+This is the whole ARITHMETIC content of the trace route and it contains
+no modular forms; it is a self-contained mathlib-shaped statement.
+
+**THE ROUTE IS ELEMENTARY — no `p`-adic analysis is needed.** The
+docstring this leaf was cut from recorded the classical `p`-adic
+argument (the generating function `Σ_{k ≥ 1} p_k tᵏ = Σ_i λᵢt/(1 − λᵢt)`
+has `ℤ_p`-integral coefficients, hence converges on the open unit disc,
+hence has no pole there, hence `|λᵢ|_p ≤ 1` for every `p`). That is
+correct but would require `ℂ_p`, which the pin does not have. The same
+conclusion follows from **FATOU'S LEMMA** (1906, and it is a Gauss's-
+lemma-level content argument over `ℤ[t]`): a power series with INTEGER
+coefficients which is a rational function `A/B` with `A, B ∈ ℚ[t]`,
+`B(0) = 1`, already has `A, B ∈ ℤ[t]`. Applied here:
+
+* Newton's identities in characteristic `0` (mathlib:
+  `MvPolynomial.psum_eq_mul_esymm_sub_sum`) turn `p_k ∈ ℤ` into
+  `p ∈ ℚ[X]`, since each `e_k` is a `ℚ`-polynomial in `p_1, …, p_k`.
+* Write `p*(t) = t^deg p · p(1/t) = Π_i (1 − λᵢ t) ∈ ℚ[t]`, `p*(0) = 1`.
+  Then `Σ_{k ≥ 1} p_k tᵏ = −t (p*)'/p*`, an identity of formal power
+  series over `ℚ` (mathlib: `PowerSeries`, `Polynomial.derivative`).
+* Its lowest-terms denominator is the RADICAL `Π_{distinct λ} (1 − λt)`:
+  in characteristic `0` the partial-fraction residue at `1/λ` is
+  `m_λ · λ ≠ 0`, so no pole cancels. Fatou therefore puts that radical
+  in `ℤ[t]`, i.e. every `λᵢ` is an algebraic integer.
+* Each coefficient of `p` is then both an algebraic integer and rational
+  (previous bullet), hence in `ℤ` (`IsIntegrallyClosed ℤ`).
+
+FAITHFULNESS. TRUE as stated, including the degenerate cases: `p = 1`
+has empty root multiset, all power sums `0`, and `p₀ = 1` witnesses it.
+Monicity is REQUIRED — `2X − 2` has root multiset `{1}` and every power
+sum `1`, and is not the image of a monic integer polynomial. Over `ℂ`
+the root multiset automatically has cardinality `deg p`, so no
+splitting hypothesis is needed.
+
+WHAT IT IS NOT. It is not a statement about semisimplicity and does not
+need one: the power traces of `T` and of its semisimple part agree, so
+the nilpotent part is invisible to the hypothesis AND harmless to the
+conclusion (`p` is the full characteristic polynomial either way). This
+is precisely why the trace route survives here while it is dead for the
+sibling `heckeSubring_zRank_le` — see `isIntegral_heckeEndo` below. -/
+theorem exists_int_of_monic_of_forall_sum_roots_pow_int {p : Polynomial ℂ} (hp : p.Monic)
+    (h : ∀ k : ℕ, 0 < k → ∃ z : ℤ, (p.roots.map (· ^ k)).sum = (z : ℂ)) :
+    ∃ p₀ : Polynomial ℤ, p₀.Monic ∧ p₀.map (algebraMap ℤ ℂ) = p :=
+  sorry
+
+/-- **INTEGRAL POWER TRACES ⟹ INTEGRAL CHARACTERISTIC POLYNOMIAL**
+(PROVEN, 2026-07-27, from `trace_pow_eq_sum_roots_pow` and
+`exists_int_of_monic_of_forall_sum_roots_pow_int` above): an
+endomorphism of a finite-dimensional `ℂ`-vector space all of whose
+power traces `Tr(Tᵏ)`, `k ≥ 1`, are rational integers has
+characteristic polynomial defined over `ℤ`.
+
+The two cited facts are exactly the linear-algebra half and the
+arithmetic half; this declaration is the seam and carries nothing
+else. -/
+theorem exists_int_charpoly_of_forall_trace_pow_int {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [FiniteDimensional ℂ V] (T : Module.End ℂ V)
+    (h : ∀ k : ℕ, 0 < k → ∃ z : ℤ, LinearMap.trace ℂ V (T ^ k) = (z : ℂ)) :
+    ∃ p₀ : Polynomial ℤ, p₀.Monic ∧ p₀.map (algebraMap ℤ ℂ) = LinearMap.charpoly T :=
+  exists_int_of_monic_of_forall_sum_roots_pow_int (LinearMap.charpoly_monic T)
+    fun k hk => by rw [← trace_pow_eq_sum_roots_pow T k]; exact h k hk
+
+/-- **EICHLER–SELBERG: THE TRACE IS INTEGRAL ON `𝕋`** (sorry leaf, cut
+2026-07-27 out of `isIntegral_heckeEndo` below): every element of the
+Hecke algebra has rational-integer trace on `S₂(Γ₀(N))`.
+
+This is the single ANALYTIC input of the trace route, and it is stated
+for the whole subring rather than for the powers `T_q^k` on purpose:
+`𝕋` is a subring, so `pow_mem` supplies the powers, and the statement
+is then the natural one — the trace map `𝕋 → ℂ` lands in `ℤ`.
+
+WHY THIS IS THE RIGHT UNIT. Classically the content is two facts that
+this file cannot presently separate, because the `T_n` at composite `n`
+are never DEFINED here (only their existence inside `𝕋` is produced, by
+`exists_mem_heckeSubring_qCoeff` above):
+
+* the **Eichler–Selberg trace formula**, `Tr(T_n) ∈ ℤ` for each `n` —
+  a finite, elementary but lengthy computation. Reference: Zagier's
+  appendix to Lang, *Introduction to Modular Forms* (Springer GMW 222),
+  which derives the formula for `Γ₀(N)` at weight `k ≥ 2` from the
+  Petersson kernel and the class numbers of imaginary quadratic orders.
+  It is ABSENT from the pin (`grep -rn Eichler .lake/packages/mathlib`
+  is empty) and from `~/cs/FLT`, whose Hecke material is quaternionic;
+* the **Hecke multiplication rule**
+  `T_m T_n = Σ_{d ∣ (m,n), (d,N) = 1} d · T_{mn/d²}`, which puts every
+  monomial in the `T_q` — hence every element of `Subring.closure {T_q}`
+  — in the `ℤ`-SPAN of the `T_n`.
+
+A successor that first DEFINES `T_n` for composite `n` may prefer to
+split this leaf along that line; until then the pair is one statement.
+
+NO SEMISIMPLICITY IS USED OR NEEDED, which is the entire reason this
+route is available here and dead for the sibling `heckeSubring_zRank_le`
+— see `isIntegral_heckeEndo` below.
+
+SOUNDNESS: `0 < N` is inherited from the consumer. At `N = 0` every
+`heckeEndo 0 q` is the junk value `0`, so `𝕋` is the prime subring and
+the trace of `n · 1` is `n · dim S₂`, again an integer; the hypothesis
+is a convenience, not a necessity. -/
+theorem exists_trace_heckeSubring_int {N : ℕ} (hN : 0 < N)
+    {T : Module.End ℂ (CuspForm (Gamma0GL N) 2)} (hT : T ∈ heckeSubring N) :
+    ∃ z : ℤ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) T = (z : ℂ) :=
+  sorry
+
 /-- **LEAF 1b OF THE DISCRETENESS CUT — INTEGRALITY: every `T_q`
-satisfies a monic `ℤ`-polynomial** (sorry leaf, cut 2026-07-27), the
-operator form of "Hecke eigenvalues are algebraic integers".
+satisfies a monic `ℤ`-polynomial** (DECOMPOSED 2026-07-27; formerly a
+sorry leaf, cut the same day), the operator form of "Hecke eigenvalues
+are algebraic integers".
 
 STRICTLY WEAKER THAN THE CONSUMER, with the counterexample already on
 record in the audit of `heckeSubring_moduleFinite` far below:
@@ -2911,24 +3151,50 @@ finite `ℤ`-module. So integrality alone carries no discreteness; it is
 the partner of `exists_heckeSubring_algebraGenerators` above.
 
 **TWO INDEPENDENT ROUTES, and the second is the whole reason this half
-was worth separating off.**
+was worth separating off. THE SECOND IS THE ONE EXECUTED BELOW.**
 
 * *The lattice route.* `T_q` preserves a full-rank `ℤ`-lattice, so it
   satisfies that lattice's characteristic polynomial. This is the
   integral-model input again — the same deep input as everything else in
-  this cluster — so it buys nothing new.
+  this cluster — so it buys nothing new. Concretely it is unavailable
+  HERE, not merely expensive: the lattice would be
+  `integralCuspForms N` (finitely generated by `integralCuspForms_fg`
+  above and `T_q`-stable by `heckeEndo_mem_integralCuspForms` above, both
+  PROVEN), and the determinant trick would give a monic `ℤ`-relation
+  holding on its `ℂ`-SPAN only. Upgrading that span to `⊤` is
+  `integralCuspForms_span_eq_top`, which is DECLARED BELOW and is proven
+  THROUGH this very cluster — so the route is circular, not just
+  out of order.
 * *The TRACE route, which needs NO integral model and NO semisimplicity.*
   Eichler–Selberg gives `Tr(T_n) ∈ ℤ` for every `n`; the Hecke
   multiplication rule `T_m T_n = Σ_{d ∣ (m,n), (d,N)=1} d · T_{mn/d²}`
   puts every power `T_q^k` in the `ℤ`-SPAN of the `T_n`, so all power
   sums `Tr(T_q^k)`, `k ≥ 1`, are rational integers; and a matrix over a
   field of characteristic `0` all of whose power traces are rational
-  integers has characteristic polynomial in `ℤ[X]`. (`p`-adically:
-  `Σ_{k ≥ 1} Tr(T_q^k) t^k = Σ_i λ_i t/(1 − λ_i t)` is a rational
-  function with `ℤ_p`-integral coefficients, so it converges on the open
-  unit disc and can have no pole there, so no eigenvalue satisfies
-  `|λ|_p > 1`; being also a root of a monic `ℚ`-polynomial, each `λ_i`
-  is an algebraic integer.)
+  integers has characteristic polynomial in `ℤ[X]`.
+
+**THE TRACE ROUTE IS NOW WRITTEN, and its three pieces sit immediately
+above** (2026-07-27):
+
+* `exists_trace_heckeSubring_int` — Eichler–Selberg, the one analytic
+  input, stated for all of `𝕋` so that `pow_mem` supplies the powers
+  (SORRY);
+* `trace_pow_eq_sum_roots_pow` — `Tr(Tᵏ) = Σ_i λᵢᵏ` over `ℂ` (PROVEN
+  here; mathlib has only the case `k = 1` and no triangularization to
+  iterate it with);
+* `exists_int_of_monic_of_forall_sum_roots_pow_int` — integral power
+  sums force integral roots (SORRY), the arithmetic residue.
+
+A CORRECTION TO THE ROUTE AS FIRST RECORDED. This docstring used to
+justify the last step `p`-adically: the generating function
+`Σ_{k ≥ 1} Tr(T_q^k) tᵏ = Σ_i λᵢt/(1 − λᵢt)` has `ℤ_p`-integral
+coefficients, hence converges on the open unit disc, hence has no pole
+there, hence `|λᵢ|_p ≤ 1` for all `p`. That is correct mathematics but
+it would require `ℂ_p`, which the pin does not have. **FATOU'S LEMMA
+(1906) gives the same conclusion by a Gauss's-lemma content argument
+over `ℤ[t]`, with no analysis at all** — see the leaf's own docstring
+for the four-step version. Anyone attacking that leaf should start
+there and not with `p`-adic convergence.
 
 THE ASYMMETRY WITH THE SIBLING, which is the finding this cut is built
 on. Eichler–Selberg is recorded as a DEAD axis (axis 2) in the audit of
@@ -2948,12 +3214,43 @@ Eichler–Selberg is absent from the pin — `grep -rn 'Eichler'
 this is still a theory to build; but it is an elementary and finite
 analytic computation, not a moduli-theoretic one.
 
+TWO CONSTRAINTS THAT ARE UNAVAILABLE *IN PLACE* AT THIS LEAF — not
+merely unproven, and worth recording because both look like natural
+tools until one checks where they live.
+
+* `rank_ℚ 𝕋 < ∞` is NOT available here: it IS the sibling
+  `heckeSubring_zRank_le`, declared BELOW. So trace-form and
+  dual-lattice arguments cannot be used at this leaf at all — they
+  cannot even be stated.
+* Semisimplicity of `𝕋 ⊗ ℚ` is OPEN in general — for `Γ₀(N)` it is the
+  semisimplicity of `U_q` on the `q`-old part (Coleman–Edixhoven,
+  *Math. Ann.* **310** (1998), 119–127). Nothing below leans on it, and
+  any note pairing integrality with semisimplicity is stale.
+
 SOUNDNESS: `0 < N` is inherited from the consumer and is not needed
 mathematically — at `N = 0` the operator is the junk value `0`, which is
-integral. -/
+integral.
+
+THE ASSEMBLY, now that the route is written: `heckeEndo N q ^ k` lies in
+`𝕋` (`pow_mem` on `heckeEndo_mem_heckeSubring`), so its trace is a
+rational integer by `exists_trace_heckeSubring_int`; that makes the
+characteristic polynomial integral by
+`exists_int_charpoly_of_forall_trace_pow_int`; and Cayley–Hamilton
+(`LinearMap.aeval_self_charpoly`) evaluates it to `0`, which is
+`IsIntegral ℤ` by definition once `Polynomial.aeval_map_algebraMap`
+transports the evaluation from `ℂ[X]` back to `ℤ[X]`. Finite
+dimensionality comes from `cuspForm_finiteDimensional` above, i.e. from
+the Sturm bound — no modular-curve geometry. -/
 theorem isIntegral_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime) :
-    IsIntegral ℤ (heckeEndo N q) :=
-  sorry
+    IsIntegral ℤ (heckeEndo N q) := by
+  haveI := cuspForm_finiteDimensional N hN
+  obtain ⟨p, hpm, hpe⟩ := exists_int_charpoly_of_forall_trace_pow_int (heckeEndo N q)
+    fun k _ => exists_trace_heckeSubring_int hN
+      (pow_mem (heckeEndo_mem_heckeSubring N hq) k)
+  refine ⟨p, hpm, ?_⟩
+  have hCH := LinearMap.aeval_self_charpoly (heckeEndo N q)
+  rw [← hpe, Polynomial.aeval_map_algebraMap] at hCH
+  exact hCH
 
 open scoped IsMulCommutative in
 /-- **LEAF 1 OF 2 FOR THE `ℤ`-FORM — DISCRETENESS: `𝕋` is a finitely
