@@ -315,6 +315,11 @@ public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
 public import Mathlib.AlgebraicGeometry.Limits
 -- `ZMod ℓ` is the base ring of the reduction `X_0(N)_{𝔽_ℓ}`; see `SpecF`.
 public import Mathlib.Data.ZMod.Basic
+-- `padicValRat`: the `q`-adic valuation of the `j`-invariant, in which the
+-- `v_q(j) < 0 ⟹ cuspidal reduction` dictionary is stated.  Same spelling as
+-- `FreyCurve/MazurTorsion.lean`'s `potentiallyGoodReduction_of_isogenyCharacter`,
+-- which is the consumer that dictionary exists for.
+public import Mathlib.NumberTheory.Padics.PadicVal.Basic
 -- `Scheme.Hom.image` / `imageι` / `toImage`: the scheme-theoretic image of a
 -- morphism, which is how the descent leaf's closed subscheme `C` is built.
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
@@ -2511,6 +2516,256 @@ structure IsX0Compactification (N : ℕ) {X Y S : Scheme.{0}} (strX : X ⟶ S)
   connected : GeometricallyConnected strX
   /-- the complement of `Y` in `X` — the cusp locus — is finite -/
   finite_compl : (Set.range j.base)ᶜ.Finite
+
+/-! ### The `j`-map, and the `v_q(j) < 0 ⟹ cuspidal reduction` dictionary
+
+The layer this subsection adds is the one Mazur's Cor. 4.4 opens with:
+*"potentially multiplicative reduction at `q` means `v_q(j(x)) < 0`, so
+`x` reduces mod `q` to a cusp"*.  Before 2026-07-27 there was no `j`-map
+on `X_0(N)` anywhere in this development — `grep jInvariant`/`jMap` over
+the tree returned only `WeierstrassCurve`-side hits — and `redX` was
+constrained by nothing but `red_aj`, so the sentence could not even be
+stated, let alone proved.  Both halves are supplied here.
+
+**Why the `j`-map is a map of POINTS and not a morphism of schemes.**
+`IsX0ReductionAt` already presents reduction as a bare function
+`RelPoint strX (𝟙 SpecQ) → RelPoint strX' (𝟙 (SpecF ℓ))` rather than as a
+morphism, because the integral model that would induce it does not exist
+at this pin.  The `j`-map is presented the same way and for the same
+reason; carrying it as `Y ⟶ 𝔸¹_ℚ` would additionally require the
+identification `Γ(Spec ℚ, 𝒪) ≅ ℚ` at every use site and would pin
+nothing extra, since every statement below evaluates it at a rational
+point.
+
+**What pins `jm`, and why the pinning is an EXISTENCE statement.**  The
+tempting field is the equation `jm (hc.classify d) = E.j` for every
+datum `d` whose elliptic scheme is a model of the Weierstrass curve `E`.
+It is *not* used, and deliberately: the only "is a model of" relation
+available here is the one `exists_ellipticScheme_of_weierstrass`
+produces — a Galois-equivariant `≃+` of geometric-fibre point groups —
+and that relation is NOT known to determine `E` up to isomorphism, hence
+not known to determine `E.j`.  Were two curves with different
+`j`-invariants to share a datum, that field would make `IsJMapOn`
+UNSATISFIABLE and `exists_jMap` FALSE, silently.  `classify_jm` is
+therefore stated existentially (*some* datum is classified by a point
+carrying `E.j`), which is what the consumer needs, is true of the genuine
+`j`-map, and cannot be contradictory whatever that relation turns out to
+pin.
+
+**`hN : N ≠ 0` on `exists_jMap` is load-bearing** — the same propagation
+recorded in the FALSITY AUDIT of
+`exists_cyclicSubgroupOfOrder_of_galoisStable` and in
+`nonempty_gamma0Datum_of_stable`.  At `N = 0` the hypotheses of
+`classify_jm` are met by a rational point of infinite order on a
+positive-rank curve, while its conclusion demands a
+`Gamma0Datum 0 SpecQ`, which `isEmpty_of_gamma0Datum_zero` forbids over
+the nonempty base `Spec ℚ`.  So `IsJMapOn 0 hc` is *unsatisfiable*, and
+`exists_jMap` without `hN` would be false. -/
+
+/-- **A rational point of the compactification is a cusp when it does not
+come from the open part**, on a general base.
+
+The exact analogue of `IsCompactificationY0.IsCusp`, which is hardwired
+to `Spec ℚ`; this one is needed over `Spec 𝔽_q`, where the conclusion of
+the dictionary below lives.  Phrased through `sectionAlong` rather than
+through a bare factorisation of `x.1`, because that is the form
+`IsX0Compactification`'s consumers already use. -/
+def IsX0Compactification.IsCusp {N : ℕ} {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S}
+    {jY : Y ⟶ X} (h : IsX0Compactification N strX strY jY) (x : RelPoint strX (𝟙 S)) : Prop :=
+  ¬ ∃ y : RelPoint strY (𝟙 S), sectionAlong jY h.comm y = x
+
+/-- **The `j`-map on the rational points of `Y_0(N)`.**
+
+`Y_0(N)` is an affine curve and `j` is a regular function on it — the
+composite of the degeneracy map to level `1` (which this module already
+builds, `Gamma0Datum.ofDvd` + `IsBaseChangeOf.ofDvd` + the universal
+property of `hc`) with the coordinate identifying `Y_0(1)` with the
+`j`-line `𝔸¹`.  Only its values at rational points are ever used, so only
+those are carried.
+
+See the subsection docstring for why `classify_jm` is an existence
+statement rather than the equation `jm (hc.classify d) = E.j`, and for
+why `IsJMapOn 0 hc` is unsatisfiable. -/
+structure IsJMapOn (N : ℕ) {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 N strY) where
+  /-- the `j`-invariant of a rational moduli point -/
+  jm : RelPoint strY (𝟙 SpecQ) → ℚ
+  /-- every Weierstrass curve over `ℚ` carrying a Galois-stable cyclic
+  subgroup of order `N` is classified by a rational point of `Y_0(N)` at
+  which `jm` takes the value `E.j`.  The hypotheses are verbatim those of
+  `nonempty_gamma0Datum_of_stable`, which is what supplies the datum. -/
+  classify_jm : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic]
+      (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = N →
+      (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) →
+      ∃ d : Gamma0Datum N SpecQ, jm (hc.classify (𝟙 SpecQ) d) = E.j
+
+/-- **Good reduction at `q` of the pair `(X_0(N), j)`, on rational
+points.**
+
+This is the constraint on `redX` that the dictionary needs, and that
+`IsX0ReductionAt` deliberately does not carry: that structure's only
+axioms are additivity, injectivity of `redJ` and `red_aj`, so `redX`
+there is pinned *only* through the Abel–Jacobi square and a dictionary
+about `j` could not be proved against it.  Rather than add a field to
+`IsX0ReductionAt` — which is concurrently owned — the constraint is
+packaged separately; the two structures share no field and can be
+carried side by side.
+
+The single axiom `red_jm` is the point-level reading of "the `j`-map
+extends to a morphism of smooth models over `ℤ_(q)`", which is
+Deligne–Rapoport for `q ∤ N`: if a rational point reduces INTO the open
+part `Y'` of the special fibre — i.e. its reduction is not a cusp — then
+its `j`-invariant is `q`-integral, and its reduction is the `j`-invariant
+of the reduced point.
+
+**Both conjuncts earn their place.**  The dictionary below uses only the
+first, `q`-integrality; the second pins `jm'` as the genuine `j`-map of
+the special fibre rather than an arbitrary function, and is stated as
+`jm' y' * den = num` in `ZMod q` rather than with an inverse precisely so
+that it needs no side condition — `q`-integrality, the first conjunct,
+already makes `den` invertible mod `q`. -/
+structure IsX0JReductionAt (N q : ℕ)
+    {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    (hX : IsCompactificationY0 strY strX)
+    (hX' : IsX0Compactification N strX' strY' jY')
+    (hj : IsJMapOn N hc) where
+  /-- reduction of rational points of `X_0(N)` at `q` -/
+  redX : RelPoint strX (𝟙 SpecQ) → RelPoint strX' (𝟙 (SpecF q))
+  /-- the `j`-map on the rational points of the special fibre -/
+  jm' : RelPoint strY' (𝟙 (SpecF q)) → ZMod q
+  /-- the `j`-map extends over `ℤ_(q)` and commutes with reduction: a
+  rational point whose reduction lies in the open part has `q`-integral
+  `j`-invariant, reducing to the `j`-invariant of the reduced point -/
+  red_jm : ∀ (y : RelPoint strY (𝟙 SpecQ)) (y' : RelPoint strY' (𝟙 (SpecF q))),
+      redX (sectionAlong hX.j hX.over y) = sectionAlong jY' hX'.comm y' →
+      0 ≤ padicValRat q (hj.jm y) ∧
+        jm' y' * ((hj.jm y).den : ZMod q) = ((hj.jm y).num : ZMod q)
+
+/-- **THE DICTIONARY** (PROVEN): a rational point of `Y_0(N)` whose
+`j`-invariant has a pole at `q` reduces mod `q` into the CUSPIDAL locus.
+
+This is the first sentence of Mazur's Cor. 4.4 argument, and the step
+that `WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter` in
+`FreyCurve/MazurTorsion.lean` is blocked on.
+
+The proof is the contrapositive of `red_jm` and nothing else: if the
+reduction were *not* a cusp it would be `sectionAlong` of a rational
+point `y'` of the special fibre's open part, and `red_jm` would then make
+`j(y)` `q`-integral, contradicting `v_q(j(y)) < 0`.
+
+Note the conclusion is about `redX (sectionAlong … y)` — the reduction of
+a point of the OPEN part pushed into the compactification.  That is the
+right hypothesis shape for Mazur: the point he starts from is
+non-cuspidal by construction (it is the pair `(E, C)`), and the whole
+force of the argument is that it nevertheless reduces to a cusp. -/
+theorem isCusp_redX_of_padicValRat_neg {N q : ℕ}
+    {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc} (hjr : IsX0JReductionAt N q hX hX' hj)
+    (y : RelPoint strY (𝟙 SpecQ)) (hv : padicValRat q (hj.jm y) < 0) :
+    hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.over y)) := by
+  rintro ⟨y', hy'⟩
+  exact absurd (hjr.red_jm y y' hy'.symm).1 (not_le.mpr hv)
+
+/-- **The dictionary in the shape Mazur's Cor. 4.4 consumes it** (PROVEN):
+an elliptic curve over `ℚ` with a Galois-stable cyclic subgroup of order
+`N` and `v_q(j(E)) < 0` gives a rational point of `Y_0(N)` with that
+`j`-invariant whose image in `X_0(N)` reduces mod `q` to a cusp.
+
+This is the composite of `IsJMapOn.classify_jm` — which turns the
+elliptic-curve hypotheses into a rational moduli point carrying `E.j` —
+with `isCusp_redX_of_padicValRat_neg`.  The hypotheses on `E` and `g` are
+verbatim those of `WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter`'s
+own inputs, so this is the use site that layer will call.
+
+What remains between this and Cor. 4.4 is exactly Mazur's two missing
+objects, and neither is in this module: the Eisenstein quotient `J_e(N)`
+of rank `0`, and the formal-immersion criterion at `∞` in characteristic
+`q ≠ 2`.  This statement is what they are applied TO. -/
+theorem exists_cuspidalReduction_of_padicValRat_neg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N q : ℕ}
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g)
+    {Y X Y' X' : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc} (hjr : IsX0JReductionAt N q hX hX' hj)
+    (hv : padicValRat q E.j < 0) :
+    ∃ y : RelPoint strY (𝟙 SpecQ), hj.jm y = E.j ∧
+      hX'.IsCusp (hjr.redX (sectionAlong hX.j hX.over y)) := by
+  obtain ⟨d, hd⟩ := hj.classify_jm E g hg hstable
+  exact ⟨hc.classify (𝟙 SpecQ) d, hd,
+    isCusp_redX_of_padicValRat_neg hjr _ (by rw [hd]; exact hv)⟩
+
+/-- **Existence of the `j`-map on `Y_0(N)`** (sorry node).
+
+TRUE and classical.  Two halves, both already visible in this module:
+
+* the degeneracy map `Y_0(N) ⟶ Y_0(1)` exists — `Gamma0Datum.ofDvd`,
+  `IsBaseChangeOf.ofDvd` and `liesIn_ofDvd_iff` are PROVEN here, and
+  `d ↦ classify₁ (d.ofDvd hN (one_dvd N))` is a natural transformation
+  out of the `Γ₀(N)`-problem, so `hc.universal` yields the morphism (this
+  is exactly the argument `y0HasNoRationalPoint_of_dvd` already runs);
+* `Y_0(1)` is the `j`-line: the coarse space of the level-`1` problem is
+  `𝔸¹_ℚ` with coordinate the `j`-invariant (Deligne–Rapoport VI, or
+  Silverman *AEC* III.1 over `ℚ̄` plus descent).  This half is what
+  `classify_jm` records, and it is the genuinely missing input — the
+  `j`-invariant of an elliptic SCHEME does not exist at this pin, only
+  `WeierstrassCurve.j` of a Weierstrass equation does.
+
+`hN : N ≠ 0` is REQUIRED, not decoration: see the subsection docstring —
+`IsJMapOn 0 hc` is unsatisfiable, so this statement is FALSE without it.
+
+IRREDUCIBLE at this pin, and for the same reason as
+`exists_coarseModuliY0`: it needs the level-`1` coarse space identified
+with `𝔸¹` compatibly with `WeierstrassCurve.j`, which is a statement
+about a moduli space that does not exist here. -/
+theorem exists_jMap (N : ℕ) (_hN : N ≠ 0) {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 N strY) : Nonempty (IsJMapOn N hc) :=
+  sorry
+
+/-- **Existence of the good reduction of `(X_0(N), j)` at a prime
+`q ∤ N`** (sorry node).
+
+TRUE — Deligne–Rapoport: for `q ∤ N` the modular curve `X_0(N)` has a
+smooth proper model over `ℤ_(q)` whose special fibre is `X_0(N)_{𝔽_q}`,
+the cusps form a relative divisor, and the `j`-map extends to a morphism
+of models.  Reduction of rational points is the valuative criterion
+applied to that proper model: a `ℚ`-point extends uniquely to a
+`ℤ_(q)`-point, which is then evaluated on the closed fibre.  `red_jm` is
+the extension of `j` read on points.
+
+Note what is NOT assumed: `q` is not required to be odd.  Mazur needs
+`q ≠ 2` for the FORMAL IMMERSION, which is a different statement and is
+not part of this module; the model and the `j`-map extension are fine at
+`q = 2` as long as `q ∤ N`, and keeping the hypothesis out is the
+direction that leaves the leaf weakest.
+
+IRREDUCIBLE at this pin, and strictly harder than
+`exists_x0Compactification`: on top of the compactification over `ℚ` it
+needs the integral model, which is the same missing object that makes
+`exists_x0Sieve` atomic. -/
+theorem exists_x0JReductionAt (N q : ℕ) (_hN : N ≠ 0) (_hq : q.Prime) (_hqN : ¬ q ∣ N)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {hc : IsCoarseModuliY0 N strY} (hX : IsCompactificationY0 strY strX)
+    (hj : IsJMapOn N hc) :
+    ∃ (Y' X' : Scheme.{0}) (strY' : Y' ⟶ SpecF q) (strX' : X' ⟶ SpecF q) (jY' : Y' ⟶ X')
+      (hX' : IsX0Compactification N strX' strY' jY'),
+      Nonempty (IsX0JReductionAt N q hX hX' hj) :=
+  sorry
 
 /-- **`ab` is the Jacobian of the curve `strX`, based at `o`.**
 
