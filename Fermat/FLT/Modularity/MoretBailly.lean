@@ -19640,6 +19640,55 @@ theorem exists_rat_strongApprox_pi (S : Finset ℕ) (hS : ∀ p ∈ S, p.Prime)
   choose a ha1 ha2 ha3 using h
   exact ⟨a, ha1, fun p hp i => ha2 i p hp, fun ℓ h1 h2 h3 i => ha3 i ℓ h1 h2 h3⟩
 
+/-- **Complete splitting at the archimedean place IS total reality** (PROVEN): a number
+field with exactly `[F : ℚ]` embeddings into `ℝ` is totally real.
+
+This is the archimedean half of the `v ∈ Σ = {∞} ∪ S` splitting dictionary that
+`exists_skolemBallDatum_of_projectiveCompactification` below hands to its consumer. It is
+stated in the SAME counting form as `IsTotallySplitAt` — `Nat.card (F →+* K_v) =
+finrank ℚ F` — so that the leaf's local conditions can be uniform in `v`, which is how
+Moret–Bailly states them (§3.2.4: `D` is `L_v`-split for every `v ∈ Σ`, with `L_∞ = ℝ` and
+`L_p = ℚ_p` here). Before this lemma existed, the archimedean conjunct of the leaf was
+`NumberField.IsTotallyReal κ(x)` — a statement about INFINITE PLACES, which is not what
+§3's geometry produces; the geometry produces `deg` distinct real points of the divisor,
+i.e. the counting equation. Converting one to the other was a step of pure number theory
+trapped inside a geometric leaf, and it is hoisted out here.
+
+PROOF. Post-composition with `ℝ ↪ ℂ` injects `F →+* ℝ` into `F →+* ℂ`, and the latter has
+exactly `finrank ℚ F` elements (`NumberField.Embeddings.card`, `ℂ` being algebraically
+closed and of characteristic zero). An injection between finite types of equal cardinality
+is a bijection (`Fintype.bijective_iff_injective_and_card`), so EVERY complex embedding of
+`F` factors through `ℝ`, hence is fixed by complex conjugation, hence every infinite place
+of `F` is real.
+
+The converse direction is `NumberField.IsTotallyReal.finrank` together with
+`InfinitePlace.card_real_embeddings`, and is not needed here. -/
+theorem isTotallyReal_of_natCard_ringHom_real
+    (F : Type*) [Field F] [NumberField F]
+    (hcard : Nat.card (F →+* ℝ) = Module.finrank ℚ F) :
+    NumberField.IsTotallyReal F := by
+  have hinj : Function.Injective (fun ψ : F →+* ℝ => (Complex.ofRealHom).comp ψ) := by
+    intro ψ₁ ψ₂ h
+    ext x
+    have := RingHom.congr_fun h x
+    simpa [Complex.ofReal_inj] using this
+  have hcardC : Fintype.card (F →+* ℂ) = Module.finrank ℚ F :=
+    NumberField.Embeddings.card F ℂ
+  have hcardR : Fintype.card (F →+* ℝ) = Module.finrank ℚ F := by
+    rwa [← Nat.card_eq_fintype_card]
+  have hbij : Function.Bijective (fun ψ : F →+* ℝ => (Complex.ofRealHom).comp ψ) :=
+    (Fintype.bijective_iff_injective_and_card _).mpr ⟨hinj, by rw [hcardR, hcardC]⟩
+  have hreal : ∀ φ : F →+* ℂ, NumberField.ComplexEmbedding.IsReal φ := by
+    intro φ
+    obtain ⟨ψ, hψ⟩ := hbij.2 φ
+    rw [NumberField.ComplexEmbedding.isReal_iff]
+    ext x
+    have hx : φ x = ((ψ x : ℝ) : ℂ) := by rw [← hψ]; rfl
+    simp [NumberField.ComplexEmbedding.conjugate_coe_eq, hx]
+  refine ⟨fun v => ?_⟩
+  rw [← NumberField.InfinitePlace.mk_embedding v, NumberField.InfinitePlace.isReal_mk_iff]
+  exact hreal _
+
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.9 as a LOCAL-CONDITIONS DATUM** (SORRY — the whole
 Picard-theoretic argument; the ONE residual leaf of
@@ -19761,6 +19810,31 @@ The `~/cs/FLT` hits on the bare word "Jacobian" are false positives — `Matrix`
 Jacobians in `ModuleTopology.lean`, `Determinant.lean` and `HaarChar/RealComplex.lean`,
 with no curve or Picard content.
 
+**SURVEY RE-RUN AND CORRECTED AT `90ef8957` (2026-07-27, release 4).** All five greps above
+were re-executed and every one still returns nothing but this docstring's own copy of the
+grep — so the five absence claims stand, and this paragraph is their datestamp. Two
+corrections and one extension, because the survey as written says less than it should:
+
+* **CORRECTION — the divisor layer is NOT empty.** Mathlib has
+  `AlgebraicGeometry.ord : X.functionField → X → ℤ`, the order of vanishing at a point of
+  coheight `1` (`Mathlib/AlgebraicGeometry/OrderOfVanishing.lean`, 135 lines: `ordHom`,
+  `ord`, `ord_mul`, `ord_add`, `ord_of_isUnit`, `le_ord_iff`), and
+  `AlgebraicGeometry.AlgebraicCycle X R := X →₀ R` with functorial pushforward
+  (`AlgebraicCycle/Basic.lean`, 79 lines). So **divisors on `X̄` and the order of vanishing
+  of a rational function are expressible at this pin**, which the survey above does not
+  say and which matters because it is where any §3.5/§3.6 development starts.
+* **What those two files still do NOT give**, and this is the honest boundary: no principal
+  divisor `div f` as a cycle, no `deg` of a cycle, no `deg (div f) = 0` on a proper curve,
+  no linear equivalence, no `𝒪(D)`, no `L(D)`. The theory is two bricks, not a foundation.
+* **EXTENSION — measured absences the survey never mentions**, each by
+  `grep -rl "<name>" --include=*.lean Mathlib/AlgebraicGeometry/ Mathlib/Geometry/`
+  returning EMPTY at this pin: `CartierDivisor`, `WeilDivisor`, `InvertibleSheaf`,
+  `LineBundle`, `IsAmple`, `IsVeryAmple`, `SerreDuality`, `HilbertScheme`, `Grassmannian`,
+  and `genus`. There is no coherent-sheaf cohomology in `AlgebraicGeometry/` at all (the
+  sole `Cohomology` hit is `Sites/ElladicCohomology.lean`). **So §3.6's Riemann–Roch is not
+  merely unproven — the sheaves it is about cannot be written**, and that, not the Picard
+  scheme, is the largest single missing chapter.
+
 **THE ONE PIECE THAT IS BUILDABLE TODAY — NOW BUILT (2026-07-27).** §3.8's engine is
 strong approximation, and it is the only input of §3 that needs NEITHER a Picard scheme
 NOR a symmetric power: specialised to `K = ℚ`, `Σ = {∞} ∪ S` and `R = ℤ[1/N]`, it is the
@@ -19824,7 +19898,67 @@ So what the cut BUYS is not a reduction in logical strength. It is:
 
 A prover who closes this leaf by proving the consumer directly has done nothing wrong and
 nothing extra; a prover following Moret–Bailly will find `d`, `t`, `w`, `ε` waiting for
-exactly the objects §3.6 produces. -/
+exactly the objects §3.6 produces.
+
+**THE LOCAL CONDITIONS ARE NOW UNIFORM OVER `Σ = {∞} ∪ S` (2026-07-27).** The conclusion's
+archimedean conjunct used to be `NumberField.IsTotallyReal κ(x)` — a statement about
+INFINITE PLACES. That is not what §3 produces: §3.2.4 says `D` is `L_v`-split, i.e. the
+fibre algebra of the point entier acquires `deg` distinct `K_v`-points, which at `v = ∞` is
+the counting equation `Nat.card (κ(x) →+* ℝ) = [κ(x) : ℚ]` and at `v = p` is exactly
+`IsTotallySplitAt κ(x) p` as already defined. Both conjuncts are now written in that one
+form, so the leaf asks for "`κ(x)` is totally split at every `v ∈ Σ`" and nothing else, and
+the number-theoretic step that converts the archimedean count into total reality is hoisted
+out into the PROVEN `isTotallyReal_of_natCard_ringHom_real` above, which the consumer
+applies. This is a change of SHAPE, not of strength — the two forms are equivalent — and it
+is worth exactly what it says: one step of pure number theory that was trapped inside a
+geometric leaf now lives in the root cone, and a prover of §3 no longer has to know what an
+infinite place is.
+
+**AXIS-SCOPED OBSTRUCTION RECORD (2026-07-27, at `90ef8957`).** A further cut was searched
+for along five axes; here is what each returned, so that the next reader can attack an axis
+rather than repeat the search. This is deliberately NOT an unscoped "irreducible" verdict.
+
+* *Which conclusion clause to drop* — **structurally closed, not merely unsearched.** The
+  leaf is an existential and its consumer applies `exists_rat_strongApprox_pi` to discharge
+  the ball hypotheses, so ANY witnesses `(q, d, t, w, ε)` reduce the leaf to proving the
+  consumer's conclusion for one particular `a`. Dropping a clause therefore cannot reduce
+  strength; this is the same collapse the audit above records at `d = 0`.
+* *Which hypothesis to weaken (equivalently: which to STRENGTHEN and prove separately)* —
+  **the one axis that could buy something without collapsing, and it is blocked at `∞`.**
+  §3.3(ii) at `L_v = K_v` needs `d` DISTINCT points of `C(K_v)`, whereas `hreal`/`hSpt`
+  supply exactly one each; strengthening them to "infinitely many" and proving the
+  strengthening would be a genuine cut. The `p`-adic half looks attackable —
+  `Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete`
+  (`Mathlib/RingTheory/Smooth/AdicCompletion.lean`) plus
+  `IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]` is Hensel in the form needed. The
+  ARCHIMEDEAN half is not: "a smooth curve over `ℝ` with a real point has infinitely many"
+  is Zariski-density of the real points at a smooth real point, and its proof needs a
+  bridge from `AlgebraicGeometry.Smooth` to the real implicit function theorem. No such
+  bridge exists at this pin —
+  `grep -rn "Smooth" --include=*.lean Mathlib/Geometry/Manifold/ | grep -i "AlgebraicGeometry\|Scheme"`
+  is empty, and there is no comparison functor from schemes to real manifolds anywhere in
+  `Mathlib/`. Taking the cut would therefore replace one honest leaf by one honest leaf
+  plus a second missing chapter disguised as a small lemma. **If someone builds that
+  bridge, this is the cut to take.**
+* *The shape in which the citation delivers its result* — **open, and TAKEN today**: it is
+  the uniform-`Σ` restatement described in the previous paragraph. It bought a proven
+  number-theoretic lemma in the root cone; it bought nothing geometric.
+* *The base* — nothing to move. `K = ℚ` is forced by the sole consumer, and MB's §3 is
+  already cheaper at a field base than over a general `B` (his 3.4 needs only Murre's
+  representability of the GENERIC fibre).
+* *Which object carries the hypothesis* — moving the local conditions from `C` to `X̄`
+  (they are transported by `hjcomm` either way) changes no machinery requirement, and the
+  conclusion must stay on `C` because that is what the consumer needs and what MB
+  delivers (`Y ⊆ X`, not `⊆ X̄`).
+
+**WHAT WOULD ACTUALLY UNBLOCK THIS LEAF, in dependency order, with the largest item first.**
+The survey above names five absent chapters; the measurement added to it today reorders
+them. §3.6 is the deepest: it is Riemann–Roch plus `R¹`-vanishing for a sheaf on `X̄`, and
+at this pin there is no invertible sheaf, no ampleness and no coherent cohomology at all, so
+its STATEMENT cannot be written, let alone proved. §3.2's `X̄^(d)` and §3.4's `PG_d(X̄,Z)`
+come next and are each a development in their own right. Only §3.5 and §3.7–3.9 are
+"ordinary" work once those exist. The one brick that IS present and that any of this would
+build on is `AlgebraicGeometry.ord`, recorded in the survey correction above. -/
 theorem exists_skolemBallDatum_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -19847,8 +19981,9 @@ theorem exists_skolemBallDatum_of_projectiveCompactification
         (∀ i, |(a i : ℝ) - t i| < (ε : ℝ)) →
         (∀ p ∈ S, ∀ i, padicNorm p (a i - w p i) < ε) →
         (∀ ℓ : ℕ, ℓ.Prime → ℓ ∉ S → ℓ ≠ q → ∀ i, padicNorm ℓ (a i) ≤ 1) →
-        ∃ (x : ↥C) (_ : NumberField ↥(C.residueField x))
-          (_ : NumberField.IsTotallyReal ↥(C.residueField x)),
+        ∃ (x : ↥C) (_ : NumberField ↥(C.residueField x)),
+          Nat.card (↥(C.residueField x) →+* ℝ)
+              = Module.finrank ℚ ↥(C.residueField x) ∧
           ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt ↥(C.residueField x) p :=
   sorry
 
@@ -19874,7 +20009,13 @@ split at every `p ∈ S`.
 The cut-strength audit — this decomposition is logically equivalent to its leaf, and what
 it buys is placement of the strong-approximation engine in the root cone rather than a
 reduction of the mathematical burden — is recorded in full on the leaf's own docstring,
-where a dispatcher will see it. -/
+where a dispatcher will see it.
+
+Since 2026-07-27 this assembly has a second PROVEN input besides strong approximation:
+`isTotallyReal_of_natCard_ringHom_real`. The leaf now states BOTH of its local conditions
+in the uniform counting form `Nat.card (κ(x) →+* K_v) = [κ(x) : ℚ]` for `v ∈ Σ = {∞} ∪ S`,
+which is the shape §3.2.4 actually delivers, and this assembly converts the archimedean one
+into `NumberField.IsTotallyReal` here rather than leaving it to the geometry. -/
 theorem exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -19898,7 +20039,9 @@ theorem exists_residueField_isTotallyReal_isTotallySplitAt_of_projectiveCompacti
     exists_skolemBallDatum_of_projectiveCompactification fC fX j hjimm hjcomm hXsmooth
       hXproper hXgi hZ hdim hXdim hreal S hSprime hSpt
   obtain ⟨a, ha1, ha2, ha3⟩ := exists_rat_strongApprox_pi S hSprime q hq hqS d t w hε
-  exact hkey a ha1 ha2 ha3
+  obtain ⟨x, hnf, hRe, hsplit⟩ := hkey a ha1 ha2 ha3
+  haveI := hnf
+  exact ⟨x, hnf, isTotallyReal_of_natCard_ringHom_real _ hRe, hsplit⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
