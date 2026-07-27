@@ -2662,7 +2662,8 @@
   "name": "IsRationalMap.add_of_x_ne",
   "module": "Fermat.FLT.EllipticCurve.Isogeny",
   "text": "`WeierstrassCurve.IsRationalMap.add_of_x_ne` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/Isogeny.lean:1566): **LEAF.** The chord branch, **with its one degenerate case already excluded**: the sum of two rational maps whose `x`-coordinate functions `A\u2081 / B\u2081` and `A\u2082 / B\u2082` are genuinely different, expressed as `A\u2082 B\u2081 - A\u2081 B\u2082 \u2260 0`. The certificates are taken apart into their five polynomials rather than passed as `IsRationalMap`, because `hG` has to talk about `A\u2081, B\u2081, A\u2082, B\u2082` \u2014 the whole point of this cut is that a witness has been FIXED and the degenerate one ruled out. `IsRationalMap.add_of_ne` below reassembles it and discharges `hG`, so this leaf is a statement about a chosen witness only, never about the map. **The \u2026",
-  "fullname": "WeierstrassCurve.IsRationalMap.add_of_x_ne"
+  "fullname": "WeierstrassCurve.IsRationalMap.add_of_x_ne",
+  "wip": true
  },
  {
   "name": "Isogeny.isRationalMap_dualHom",
@@ -2675,43 +2676,37 @@
   "name": "End.dualEnd_add",
   "module": "Fermat.FLT.EllipticCurve.IsogenyTrace",
   "text": "`WeierstrassCurve.End.dualEnd_add` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/IsogenyTrace.lean:377): **LEAF \u2014 the parallelogram law, and the only thing this cluster still needs.** `\u03c8 \u21a6 \u03c8\u0302` is additive: Silverman *AEC* III.6.2(b). This is the residue of the old `End.exists_dual` after the two things it bundled were separated. Rationality of the dual is *not* here \u2014 it is `Isogeny.isRationalMap_dualHom`, a leaf of `Isogeny.lean` with its own owner, and it is consumed above through `Isogeny.dual`. What is left is exactly additivity. **What is missing at this pin, precisely.** Additivity of `\u03c6 \u21a6 \u03c6\u0302` is equivalent to the parallelogram law for the degree, `deg (\u03c6 + \u03c8) + deg (\u03c6 \u2212 \u03c8) = 2 deg \u03c6 + 2 deg \u03c8`, i.e. to `deg` \u2026",
-  "fullname": "WeierstrassCurve.End.dualEnd_add",
-  "wip": true
+  "fullname": "WeierstrassCurve.End.dualEnd_add"
  },
  {
   "name": "MazurLevel11.exists_halving_witness",
   "module": "Fermat.FLT.EllipticCurve.MordellWeil",
   "text": "`WeierstrassCurve.MazurLevel11.exists_halving_witness` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/MordellWeil.lean:435): **THE `2`-DESCENT LEAF at level `11`** (sorry leaf, 2026-07-27): every coprime integral point of `W\u00b2 = U\u00b3 \u2212 4U\u00b2 + 16` lies in the TRIVIAL square class of the `2`-division field, written out in coordinates. MEANING. With `s\u00b3 = 2s\u00b2 \u2212 2` the cubic factors as `U\u00b3 \u2212 4U\u00b2 + 16 = (U \u2212 2s)(U\u00b2 + (2s \u2212 4)U + 4s\u00b2 \u2212 8s)` over `K = \u211a(s)`, and a coprime integral point has `N(p \u2212 2s\u00b7e\u00b2) = n\u00b2`. This statement says `p \u2212 2s\u00b7e\u00b2 = (a + bs + cs\u00b2)\u00b2` in `\ud835\udcde_K = \u2124[s]`: the three components of that equation, after reducing with `s\u00b3 = 2s\u00b2 \u2212 2` and `s\u2074 = 4s\u00b2 \u2212 2s \u2212 4`, are exactly the three conclusions below (constant, `s`, and `s\u00b2` \u2026",
-  "fullname": "WeierstrassCurve.MazurLevel11.exists_halving_witness",
-  "wip": true
+  "fullname": "WeierstrassCurve.MazurLevel11.exists_halving_witness"
  },
  {
   "name": "MazurLevel11.halving_descends",
   "module": "Fermat.FLT.EllipticCurve.MordellWeil",
   "text": "`WeierstrassCurve.MazurLevel11.halving_descends` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/MordellWeil.lean:473): **THE HEIGHT LEAF at level `11`** (sorry leaf, 2026-07-27): the halving supplied by `exists_halving_witness` strictly decreases the height, except at the two points that are actually there. The hypotheses are the halving in its eliminated form: `m` and `c` satisfy the `2`-covering `2c\u00b7e\u00b2 = m\u00b3 \u2212 2c\u00b7m\u00b2 + 2c\u00b3` and the `x`-relation `4c\u00b2\u00b7p = m\u2074 + 16c\u2074 \u2212 16m\u00b7c\u00b3` (both PROVEN from the witness in `integral_leaf_aux`), and `(p', e', n')` is the coprime integral model of the halved point `U' = 2m/c`, pinned by the cross-multiplied `2m\u00b7e'\u00b2 = p'\u00b7c`. **THIS IS THE FINITE-GENERATION CONTENT OF LEVEL `11`**, and it is the only \u2026",
-  "fullname": "WeierstrassCurve.MazurLevel11.halving_descends",
-  "wip": true
+  "fullname": "WeierstrassCurve.MazurLevel11.halving_descends"
  },
  {
   "name": "nonempty_tameBase",
   "module": "Fermat.FLT.EllipticCurve.TorsionReduction",
   "text": "`WeierstrassCurve.nonempty_tameBase` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/TorsionReduction.lean:634): **`\u211a(\u2113^{1/12})` exists, with `\u2113` totally ramified and residue field `\ud835\udd3d_\u2113`** (sorry leaf, opened 2026-07-27 by decomposing `exists_tameGoodModel_of_jIntegral`). This is the NUMBER-THEORETIC half, and it is the only place in the potentially-good chain where Dedekind-domain arithmetic is needed. INDEPENDENT OF THE CURVE AND OF `E`, and that is the point: `X\u00b9\u00b2 \u2212 \u2113` is Eisenstein at `\u2113`, so `\u2113` is totally ramified in `L = \u211a[X]/(X\u00b9\u00b2 \u2212 \u2113)` and the residue field at the prime above it is `\ud835\udd3d_\u2113`. Since the ramification index the scaling needs is `e = 12 / gcd(v_\u2113(\u0394), 12)`, which always DIVIDES `12`, this single field works \u2026",
-  "fullname": "WeierstrassCurve.nonempty_tameBase",
-  "wip": true
+  "fullname": "WeierstrassCurve.nonempty_tameBase"
  },
  {
   "name": "padicValRat_\u0394_le_of_jIntegral",
   "module": "Fermat.FLT.EllipticCurve.TorsionReduction",
   "text": "`WeierstrassCurve.padicValRat_\u0394_le_of_jIntegral` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/TorsionReduction.lean:669): **`v_\u2113(j) \u2265 0` bounds the coefficient valuations against the discriminant's** (sorry leaf, opened 2026-07-27 by decomposing `exists_tameGoodModel_of_jIntegral`). This is the whole arithmetic content of the hypothesis `\u00ac \u2113 \u2223 E.j.den`, isolated from every curve-theoretic concern: it is a statement about three rational numbers. In the short form `y\u00b2 = x\u00b3 + A x + B` write `a = v_\u2113(A)`, `b = v_\u2113(B)`, `d = v_\u2113(\u0394)`, where `\u0394 = \u221216(4A\u00b3 + 27B\u00b2)` and `v_\u2113(\u221216) = v_\u2113(4) = v_\u2113(27) = 0` because `\u2113 \u2265 5`. The two conclusions are `3a \u2265 d` and `2b \u2265 d`, and they are the exact conditions under which the variable change `u = \u03c0^d` \u2026",
-  "fullname": "WeierstrassCurve.padicValRat_\u0394_le_of_jIntegral",
-  "wip": true
+  "fullname": "WeierstrassCurve.padicValRat_\u0394_le_of_jIntegral"
  },
  {
   "name": "velu_norm_line_eq_poly",
   "module": "Fermat.FLT.EllipticCurve.Velu",
   "text": "`WeierstrassCurve.velu_norm_line_eq_poly` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/Velu.lean:4838): **`POLY`: THE ONE REMAINING LEAF OF THE ODD-ORDER V\u00c9LU DEVELOPMENT** (cut 2026-07-27 out of `HNORM`, which it replaces). The norm along `S` of ANY line function on `W` lies in the coordinate ring of the quotient curve: there are polynomials `a`, `b` with `\u220f_{Q\u2208S} (y(P+Q) \u2212 \u2113\u00b7(x(P+Q) \u2212 x\u2080) \u2212 y\u2080) = a(X P) + b(X P)\u00b7Y P` for every `P \u2209 S`. This is the invariant-function theorem for `F(W)` over `F(W)^S`, in the weakest form that the development actually needs. `N` is `S`-invariant by construction and regular off `S`, hence descends to a regular function on the affine curve `V \u2216 {O}`, whose ring of regular functions \u2026",
-  "fullname": "WeierstrassCurve.velu_norm_line_eq_poly",
-  "wip": true
+  "fullname": "WeierstrassCurve.velu_norm_line_eq_poly"
  },
  {
   "name": "velu_curve_\u0394_ne_zero",
@@ -2723,8 +2718,7 @@
   "name": "velu_map_add_of_subgroup",
   "module": "Fermat.FLT.EllipticCurve.Velu",
   "text": "`WeierstrassCurve.velu_map_add_of_subgroup` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/Velu.lean:7517): **LEAF: the V\u00e9lu map is additive, at EVERY kernel order.** The parity-free form of `velu_map_add`. The reduction above it is formal and parity-free once its inputs are \u2014 `veluMapAll_neg`, additivity up to sign, and the kernel cases \u2014 so the real content is the parity-free forms of `velu_coord_ne_neg` (which routes through `velu_xNum_sub_eq_prod`, hence through `veluH_factor`) and of the `addX` identity still open at `velu_map_add_of_notMem`. Whoever closes this should expect to close that odd-order leaf on the way, and should coordinate with its owner.",
-  "fullname": "WeierstrassCurve.velu_map_add_of_subgroup",
-  "wip": true
+  "fullname": "WeierstrassCurve.velu_map_add_of_subgroup"
  },
  {
   "name": "WeilPairing.rootMultiplicity_derivative_\u03a6_eq_two_of_two_eq_zero",
@@ -2742,8 +2736,7 @@
   "name": "exists_noCuspidalReduction_of_isogenyPrime",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`exists_noCuspidalReduction_of_isogenyPrime` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:993): **The Eisenstein half of Mazur's Cor. 4.4** (sorry node, new 2026-07-27): for `N` prime `> 19` and `q` a prime other than `2` and `N`, there is a reduction datum for `(X_0(N), j)` at `q` under which **no** rational point of `Y_0(N)` reduces to a cusp. This is the whole of what `potentiallyGoodReduction_of_isogenyCharacter` still needs. Everything else in Mazur's Cor. 4.4 is now released: the moduli point (`nonempty_gamma0Datum_of_stable`), the compactification (`exists_compactificationY0`), and \u2014 since `318d8382` \u2014 the dictionary `v_q(j) < 0 \u27f9 cuspidal reduction` (`exists_cuspidalReduction_of_padicValRat_neg`). \u2026",
-  "fullname": "exists_noCuspidalReduction_of_isogenyPrime",
-  "wip": true
+  "fullname": "exists_noCuspidalReduction_of_isogenyPrime"
  },
  {
   "name": "exists_isogenyLocalRamificationDataAt",
@@ -2773,8 +2766,7 @@
   "name": "exists_frobenius_reduction_model_of_potentiallyGoodReduction",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`WeierstrassCurve.exists_frobenius_reduction_model_of_potentiallyGoodReduction` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:2151): **Serre\u2013Tate at a prime of potentially good reduction: the Frobenius acts as the `q`-power Frobenius of an elliptic curve over `\ud835\udd3d_q`** (sorry leaf, opened 2026-07-27 by decomposing `exists_integerFrobeniusTrace_of_potentiallyGoodReduction` below, which is now PROVEN over this leaf and `hasseWeil_trace_frobeniusTorsionEnd`). This is the exact analogue of `WeilPairing.exists_frobenius_reduction_model` (PROVEN, axiom-clean) with the two quantifiers traded. That theorem covers EVERY prime outside an *unnamed* finite set `S`, which is useless at a NAMED prime `q`; this one covers every prime `q \u2209 {2, N}` at which `E` \u2026",
-  "fullname": "WeierstrassCurve.exists_frobenius_reduction_model_of_potentiallyGoodReduction",
-  "wip": true
+  "fullname": "WeierstrassCurve.exists_frobenius_reduction_model_of_potentiallyGoodReduction"
  },
  {
   "name": "hasseWeil_trace_frobeniusTorsionEnd",
@@ -2805,8 +2797,7 @@
   "name": "MazurLevel16.exists_halvingParams_of_twoTorsionChain",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurLevel16.exists_halvingParams_of_twoTorsionChain` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:8840): **Step 3 of the `X_0(16)` route: the two halving conditions** (SORRY LEAF, cut 2026-07-27 out of `exists_chainModel_of_ratTwoTorsion`). This is the whole Galois content of steps 2\u20133, and it is where `X_0(4)` and `X_0(8)` are used. On `twoTorsionModel a b` carrying a Galois-stable cyclic `16`-subgroup `\u27e8h\u2080\u27e9` whose `2`-torsion point is the origin, there are rationals `\u03b2` (the `x`-coordinate of the `4`-torsion point `4 \u2022 h\u2080`) and `\u03bc` with `b = \u03b2\u00b2` and `\u03bc\u00b2 = \u03b2(a + 2\u03b2)`. **WHERE EACH COMES FROM.** `exists_isogenyCharacter` (PROVEN far above) gives `\u03c3(h\u2080) = \u03bb(\u03c3) \u2022 h\u2080` with `\u03bb(\u03c3) \u2208 (\u2124/16)\u02e3`, hence `\u03bb(\u03c3)` odd. * `\u03b2 \u2208 \u2026",
-  "fullname": "MazurLevel16.exists_halvingParams_of_twoTorsionChain",
-  "wip": true
+  "fullname": "MazurLevel16.exists_halvingParams_of_twoTorsionChain"
  },
  {
   "name": "MazurLevel16.exists_chainModel_chain_of_halvingParams",
@@ -2818,29 +2809,25 @@
   "name": "MazurLevel16.exists_isogenyChain_of_chainModel",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurLevel16.exists_isogenyChain_of_chainModel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:9121): **Pushing the `16`-chain through the first `2`-isogeny** (SORRY LEAF, cut 2026-07-27 out of `exists_sq_of_chainModel_stable` below): the transport half of step 4, which is plumbing rather than mathematics. On the nondegenerate `X_0(8)` normal form `chainModel \u03b3 \u03b4` (nondegenerate meaning `\u03b4 \u2260 0`, `\u03b3 \u2260 0` and `\u03b3\u00b2 \u2260 4\u03b4\u00b2` \u2014 exactly the non-vanishing of `\u0394 = 16\u03b4\u2078\u03b3\u00b2(\u03b3 \u2212 2\u03b4)(\u03b3 + 2\u03b4)`), a Galois-stable cyclic `16`-subgroup `\u27e8h\u27e9` whose `X_0(4)`-part is the one displayed by the coordinates pushes forward along `\u03c6 : E \u2192 E/\u27e8(0,0)\u27e9`, followed by the translation `x \u21a6 x + \u03b3\u00b2`, to a Galois-stable cyclic `8`-subgroup `\u27e8k\u27e9` of \u2026",
-  "fullname": "MazurLevel16.exists_isogenyChain_of_chainModel",
-  "wip": true
+  "fullname": "MazurLevel16.exists_isogenyChain_of_chainModel"
  },
  {
   "name": "MazurLevel16.exists_halvingParams_of_order_eight_chain",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurLevel16.exists_halvingParams_of_order_eight_chain` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:9180): **The halving conditions at level `8`** (SORRY LEAF, cut 2026-07-27 out of `exists_sq_of_chainModel_stable` below). This is `exists_halvingParams_of_twoTorsionChain` above **one level down**: the same model `twoTorsionModel A B`, the same hypotheses with `16, 8` replaced by `8, 4`, and the same conclusion. On a Galois-stable cyclic `8`-subgroup `\u27e8k\u27e9` whose `2`-torsion point `4 \u2022 k` is the origin there are rationals `\u03b2` (the `x`-coordinate of the `4`-torsion point `2 \u2022 k`) and `\u03bc` with `B = \u03b2\u00b2` and `\u03bc\u00b2 = \u03b2(A + 2\u03b2)`. **WHERE EACH COMES FROM** (identical to the level-`16` argument; see that leaf's docstring and the \u2026",
-  "fullname": "MazurLevel16.exists_halvingParams_of_order_eight_chain",
-  "wip": true
+  "fullname": "MazurLevel16.exists_halvingParams_of_order_eight_chain"
  },
  {
   "name": "MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:9845): **`rank J_0(32)(\u211a) = 0` and `genus X_0(32) \u2265 1`** (sorry node, introduced 2026-07-27). The exact level-`32` analogue of `X0.lean`'s `hasRankZeroJacobian_of_kenkuLevel`, which cannot be reused verbatim because `kenkuLevels` is by construction the list of NON-prime-power levels of Kenku's determination and `32 = 2\u2075` is not among them. Nothing else about the statement differs. **TRUE**, and at this level it is the softest of all the Kenku-style instances rather than the hardest, because `J_0(32) = X_0(32) = 32a1` itself \u2014 the level has genus `1`, so the curve IS its own Jacobian: * `Finite (RelPoint jstr (\ud835\udfd9 \u2026",
-  "fullname": "MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo",
-  "wip": true
+  "fullname": "MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo"
  },
  {
   "name": "MazurLevel32.exists_x0ThirtyTwo_mod_three",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurLevel32.exists_x0ThirtyTwo_mod_three` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:9876): **`X_0(32)` reduces well at `3`, and `#X_0(32)(\ud835\udd3d_3) = 4`** (sorry node, introduced 2026-07-27). The exact level-`32` analogue of `X0.lean`'s `exists_x0Compactification_mod_prime`, which cannot be reused verbatim because `x0WitnessTable` lists only the seven Kenku levels that close on a single prime; `(32, 3, 4)` would be its eighth row. Nothing else about the statement differs. **TRUE.** `3 \u2224 32`, so `X_0(32)` has good reduction at `3` and the special fibre is the coarse space of the same `\u0393\u2080(32)`-problem over `\ud835\udd3d_3`; being proper over a finite field it has finitely many rational points; and Eichler\u2013Shimura \u2026",
-  "fullname": "MazurLevel32.exists_x0ThirtyTwo_mod_three",
-  "wip": true
+  "fullname": "MazurLevel32.exists_x0ThirtyTwo_mod_three"
  },
  {
   "name": "exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125",
@@ -2852,8 +2839,7 @@
   "name": "classPoly500_of_endSq_neg125",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`WeierstrassCurve.classPoly500_of_endSq_neg125` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:11454): **The complex-multiplication half at level `125`** (LEAF, restated 2026-07-26 over `not_exists_five_mul_of_ker_order_125`). An endomorphism `\u03c8` of `E` with `\u03c8\u00b2 = [-125]` forces `End(E) \u2260 \u2124`, so `E` has complex multiplication by an order `O` in `K = \u211a(\u221a-5)`, and `O \u2287 \u2124[\u03c8] = \u2124[\u221a-125]`, the order of conductor `5` and discriminant `-500`. **WHY `hnd` AND NOT CYCLICITY DIRECTLY.** The only other candidate for `O` is the maximal order `\u2124[\u221a-5]` (orders containing `\u2124[5\u221a-5]` have conductor dividing `5`), and its elements of square `-125` are exactly `\u00b15\u221a-5`. Those are `[5]` composed with `\u00b1\u221a-5`, which lies in `End` \u2026",
-  "fullname": "WeierstrassCurve.classPoly500_of_endSq_neg125",
-  "wip": true
+  "fullname": "WeierstrassCurve.classPoly500_of_endSq_neg125"
  },
  {
   "name": "exists_x0Seven_veluParam",
@@ -2873,22 +2859,19 @@
   "name": "classPoly676_of_endSq_neg169",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`WeierstrassCurve.classPoly676_of_endSq_neg169` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:15049): **The complex-multiplication half at level `169`** (LEAF, restated 2026-07-26 over `not_exists_thirteen_mul_of_ker_order_169`). An endomorphism `\u03c8` of `E` with `\u03c8\u00b2 = [-169]` forces `End(E) \u2260 \u2124`, so `E` has complex multiplication by an order `O` in `K = \u211a(\u221a-13)`, and `O \u2287 \u2124[\u03c8] = \u2124[\u221a-169]`, the order of conductor `13` and discriminant `-676`. **WHY `hnd` AND NOT CYCLICITY DIRECTLY.** The only other candidate for `O` is the maximal order `\u2124[\u221a-13]` (orders containing `\u2124[13\u221a-13]` have conductor dividing `13`), and its elements of square `-169` are exactly `\u00b113\u221a-13`. Those are `[13]` composed with `\u00b1\u221a-13`, which lies \u2026",
-  "fullname": "WeierstrassCurve.classPoly676_of_endSq_neg169",
-  "wip": true
+  "fullname": "WeierstrassCurve.classPoly676_of_endSq_neg169"
  },
  {
   "name": "MazurIsogenyPrimeJ.hasRankZeroJacobian_of_genusOnePrime",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurIsogenyPrimeJ.hasRankZeroJacobian_of_genusOnePrime` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:15535): **`rank J_0(p)(\u211a) = 0` and `genus X_0(p) \u2265 1` at `p \u2208 {11, 17, 19}`** (sorry leaf, introduced 2026-07-27; the BOUNDING half of the genus-one decomposition, together with `exists_x0GenusOne_mod_prime`). The exact analogue of `Fermat.hasRankZeroJacobian_of_kenkuLevel`, which is restricted to `Fermat.kenkuLevels` and so does not reach the prime levels. A successor may well prefer to merge the two by widening that leaf's level hypothesis; it is stated separately here only because modifying another owner's declaration is not this task's to make. TRUE, and STRICTLY EASIER than its Kenku analogue, which is worth saying \u2026",
-  "fullname": "MazurIsogenyPrimeJ.hasRankZeroJacobian_of_genusOnePrime",
-  "wip": true
+  "fullname": "MazurIsogenyPrimeJ.hasRankZeroJacobian_of_genusOnePrime"
  },
  {
   "name": "MazurIsogenyPrimeJ.exists_x0GenusOne_mod_prime",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurIsogenyPrimeJ.exists_x0GenusOne_mod_prime` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:15560): **The reduction `X_0(p)_{\ud835\udd3d_\u2113}` and its point count, at the three genus-one witness primes** (sorry leaf, introduced 2026-07-27). The exact analogue of `Fermat.exists_x0Compactification_mod_prime` against the new table `x0GenusOneTable`, and TRUE for the same reason: for `\u2113 \u2224 p` the modular curve has good reduction at `\u2113`, its special fibre is the coarse space of the same `\u0393\u2080(p)`-problem over `\ud835\udd3d_\u2113`, and being proper over a finite field it has finitely many rational points. The three counts are `#E(\ud835\udd3d_\u2113) = \u2113 + 1 \u2212 a_\u2113` for `E = 11a1, 17a1, 19a1` (PARI/GP, 2026-07-27; see the subsection note, including why `p = 19` \u2026",
-  "fullname": "MazurIsogenyPrimeJ.exists_x0GenusOne_mod_prime",
-  "wip": true
+  "fullname": "MazurIsogenyPrimeJ.exists_x0GenusOne_mod_prime"
  },
  {
   "name": "MazurIsogenyPrimeJ.exists_x0GenusOnePoints",
@@ -2901,15 +2884,13 @@
   "name": "MazurIsogenyPrimeJ.exists_jMap_thirtySeven",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurIsogenyPrimeJ.exists_jMap_thirtySeven` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:15711): **The `j`-values of `Y_0(37)(\u211a)`** (sorry leaf, introduced 2026-07-27 as the modular-curve form of `jInvariant_mem_of_isogenyPrime_thirtySeven`). TRUE: `X_0(37)` has genus `2` and exactly two non-cuspidal rational points, of `j`-invariants `\u22127\u00b711\u00b3` and `\u22127\u00b7137\u00b3\u00b72083\u00b3` (Mazur\u2013Swinnerton-Dyer, Mazur\u2013V\u00e9lu). **Why this level is NOT decomposed along the rank-`0` axis, and the check that refutes the objection.** `rank J_0(37)(\u211a) = 1` (`J_0(37) ~ 37a \u00d7 37b` of ranks `1` and `0`), so `Fermat.card_le_of_rankZeroJacobian` is not merely unavailable here \u2014 its hypothesis `Fermat.HasRankZeroJacobian` is FALSE at this level, \u2026",
-  "fullname": "MazurIsogenyPrimeJ.exists_jMap_thirtySeven",
-  "wip": true
+  "fullname": "MazurIsogenyPrimeJ.exists_jMap_thirtySeven"
  },
  {
   "name": "MazurIsogenyPrimeJ.exists_jMap_classNumberOne",
   "module": "Fermat.FLT.FreyCurve.MazurTorsion",
   "text": "`MazurIsogenyPrimeJ.exists_jMap_classNumberOne` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:15747): **The `j`-values of `Y_0(p)(\u211a)` at `p \u2208 {43, 67, 163}`** (sorry leaf, introduced 2026-07-27 as the modular-curve form of `jInvariant_mem_of_isogenyPrime_classNumberOne`). TRUE: `X_0(p)` has genus `3, 5, 13` and exactly one non-cuspidal rational point, the CM point of the class-number-one discriminant `\u2212p`. **Why this cluster is NOT decomposed along the rank-`0` axis.** `rank J_0(p)(\u211a) = 1, 2, 6` respectively, so as at `37` the hypothesis of `Fermat.card_le_of_rankZeroJacobian` is FALSE, not merely unavailable. Since `1 < 3`, `2 < 5` and `6 < 13`, Chabauty\u2013Coleman applies to the curve itself; that plus Mazur's \u2026",
-  "fullname": "MazurIsogenyPrimeJ.exists_jMap_classNumberOne",
-  "wip": true
+  "fullname": "MazurIsogenyPrimeJ.exists_jMap_classNumberOne"
  },
  {
   "name": "MazurLevel21.quartic_one",
@@ -2939,8 +2920,7 @@
   "name": "exists_obstructionHom_relationSpace_sha2",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation",
   "text": "`GaloisRepresentation.exists_obstructionHom_relationSpace_sha2` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/Deformation.lean:17182): **B\u00f6ckle's obstruction homomorphism, with its lifting criterion** (sorry node, cut out of `exists_injective_dual_relationSpace_to_sha2` below on 2026-07-27, which is now PROVEN over it together with `ker_le_of_exists_section_of_ker_le_sq_sup` above; it carries items (4)+(5) of the machinery audit on `rank_relationSpace_le_of_minimal_mvPowerSeries_presentation` below): for a minimal, `\u2124_\u2113`-compatible presentation `\u03c6 : \u039b[[x\u2081,\u2026,x_g]] \u21a0 D.R` of the weakly universal, trace-generated hardly ramified deformation ring, there is a `k`-LINEAR map `ob : (ker \u03c6/\ud835\udd2a_S\u00b7ker \u03c6)^\u2228 \u2192 \u0428\u00b2_S(ad\u2070)` whose vanishing at `\u03c8` is witnessed \u2026",
-  "fullname": "GaloisRepresentation.exists_obstructionHom_relationSpace_sha2",
-  "wip": true
+  "fullname": "GaloisRepresentation.exists_obstructionHom_relationSpace_sha2"
  },
  {
   "name": "rank_sha2_le_rank_sha1_twist",
@@ -2960,7 +2940,8 @@
   "name": "IsHardlyRamified.exists_unramified_grouplike_family_generating_corner",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Family",
   "text": "`GaloisRepresentation.IsHardlyRamified.exists_unramified_grouplike_family_generating_corner` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/Family.lean:3737): **Half (\u03b2) of the \u03bc-type node, SHARPENED to an `\u211a\u1d56\u1d65\u1d58\u207f\u02b3`-rationality statement: the connected corner is DIAGONALIZABLE over the strict henselisation** (SORRY NODE \u2014 the genuine Raynaud/Oort\u2013Tate citation of this cut. RESTATED 2026-07-26 (third pass, this owner) from \"every corner group-like is unramified\" to \"SOME generating family of corner group-likes is unramified\", i.e. from the CHARACTER-GROUP conclusion to the MULTIPLICATIVE-TYPE hypothesis that Raynaud's classification actually delivers. The two are equivalent, and the equivalence is the point: the direction that was requirement (R4) \u2014 *multiplicative type \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_unramified_grouplike_family_generating_corner"
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_unramified_grouplike_family_generating_corner",
+  "wip": true
  },
  {
   "name": "differentIdeal_exponent_le_wild_of_residueDegreeGtOne",
@@ -2999,25 +2980,16 @@
   "fullname": "GaloisRepresentation.exists_hilbertFixing_rootsOfUnity_discrim_isSquare"
  },
  {
-  "name": "exists_patchedModule_of_hilbertPatchingSystem",
-  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity",
-  "text": "`GaloisRepresentation.exists_patchedModule_of_hilbertPatchingSystem` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean:17059): **The patching limit is taken here** (LEAF \u2014 new 2026-07-26; RESTATED AND REOPENED 2026-07-27 against the repaired two-ring interface; pure commutative algebra, no base field anywhere in the statement). From a Taylor\u2013Wiles tower over `F`, extract the limit object `M_\u221e`. This is the pigeonhole / inverse-limit half of Taylor\u2013Wiles patching: the conclusion is `Modularity.PatchedModule`, whose `Minf` is finite over the PRESENTATION ring `S = \ud835\udcaa\u27e6x\u2081, \u2026, x_q\u27e7` and carries an `M_\u221e`-regular sequence of length `q + 1` in `\ud835\udd2a_S`. # WHY THE PREVIOUS PROOF WAS DELETED (2026-07-27) This declaration was PROVEN on 2026-07-26 by \u2026",
-  "fullname": "GaloisRepresentation.exists_patchedModule_of_hilbertPatchingSystem",
-  "wip": true
- },
- {
   "name": "exists_hilbertPatchingSystem",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity",
   "text": "`GaloisRepresentation.exists_hilbertPatchingSystem` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean:17227): **The Taylor\u2013Wiles tower over `F` exists** (LEAF \u2014 new 2026-07-26; this is the whole `F`-specific arithmetic of the patching argument, and the ONLY place where `htr` and `hgal` are consumed). Out of the `F`-level deformation and Hecke data, and the Taylor\u2013Wiles prime supply `hTW`, build the level-wise tower: * **Auxiliary deformation rings over `F`.** For each `d`, the deformation problem of `\u03c1bar|_{G_F}` with the level raised at `Q_d` \u2014 `IsHilbertHardlyRamified` away from `Q_d`, and the split-torus local condition at each `w \u2208 Q_d` supplied by the distinct-eigenvalue clause of `IsHilbertTaylorWilesPrimeSet`. \u2026",
-  "fullname": "GaloisRepresentation.exists_hilbertPatchingSystem",
-  "wip": true
+  "fullname": "GaloisRepresentation.exists_hilbertPatchingSystem"
  },
  {
   "name": "IsHardlyRamified.existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "text": "`GaloisRepresentation.IsHardlyRamified.existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean:8682): **Fontaine's LIFTING ESTIMATE at `3`** (sorry node, created 2026-07-26 \u2014 leaf (ii-a\u2032-3-a), and the ONLY place in the whole development where the exponent `1/(p\u22121)` of Fontaine's bound enters): let `A` be a finite flat `\ud835\udcaa\u2083\u1d65 \u2245 \u2124\u2083`-algebra with `\u03a9[A\u2044\ud835\udcaa\u2083\u1d65]` killed by `3`, and let `E/\u211a\u2083\u1d65` be a FINITE extension whose ring of integers has `v_E(3) = e` (that is what `he` says, since `\ud835\udcaa_E` is a DVR). If the truncation level `k` satisfies `3e < 2k` \u2014 i.e. `k/e > 3/2 = e_K(n + 1/(p\u22121))` at `K = \u211a\u2083`, `e_K = 1`, `n = 1`, `p = 3` \u2014 then every `\ud835\udcaa\u2083\u1d65`-algebra map `A \u2192 \ud835\udcaa_E/\ud835\udd2a_E^k` LIFTS to an `\ud835\udcaa\u2083\u1d65`-algebra map `A \u2192 \ud835\udcaa_E`. This is \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow",
-  "wip": true
+  "fullname": "GaloisRepresentation.IsHardlyRamified.existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow"
  },
  {
   "name": "IsHardlyRamified.finrank_dvd_of_isSplittingField_X_pow_sub_C",
@@ -3029,15 +3001,13 @@
   "name": "IsHardlyRamified.exists_sub_mem_forall_not_mem_of_algHom_quotient",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "text": "`GaloisRepresentation.IsHardlyRamified.exists_sub_mem_forall_not_mem_of_algHom_quotient` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean:11128): **THE ARITHMETIC HALF OF FONTAINE'S PROP. 1.5 (i): A LIFT OF `\u03b7(\u03b8)` IS CLOSER TO `\u03b8` THAN THE CONJUGATES OF `\u03b8` ARE TO EACH OTHER** (sorry node, created 2026-07-27 \u2014 leaf (Y-2-a), the residue left after `mem_adjoin_of_sub_mem_of_forall_not_mem` above absorbs the Krasner half). Everything analytic in the tame case of Fontaine's Prop. 1.5 (i) is concentrated here, and nothing else remains: the consumer below is pure glue. WHAT MUST BE PRODUCED. A finite Galois `M/\u211a\u2083\u1d65` containing (a copy of) both `F` and `E`, a monogenic generator `\u03b8 \u2208 \ud835\udcaa_M` of `F` and a lift `\u03b2 \u2208 \ud835\udcaa_M` of `\u03b7(\u03b8)` that actually lies in `E`, together \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_sub_mem_forall_not_mem_of_algHom_quotient",
-  "wip": true
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_sub_mem_forall_not_mem_of_algHom_quotient"
  },
  {
   "name": "IsHardlyRamified.exists_isEmpty_algHom_of_ne_one_of_mem_inertia",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "text": "`GaloisRepresentation.IsHardlyRamified.exists_isEmpty_algHom_of_ne_one_of_mem_inertia` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean:11389): **FONTAINE'S PROP. 1.5 (ii) IN `\u03c6`-FREE INTEGER FORM: a NONTRIVIAL element of a deep ramification group MANUFACTURES A COUNTEREXAMPLE to `(P_m)`** (sorry node, created 2026-07-26 \u2014 leaf (Y-3), the genuine citation of the Yoshida cut; Fontaine, *Il n'y a pas de vari\u00e9t\u00e9 ab\u00e9lienne sur \u2124*, Invent. Math. 81 (1985), Prop. 1.5 (ii), = Yoshida, arXiv:0905.1171, Prop. 3.2 (ii)). STATEMENT IN CLASSICAL LANGUAGE. Write `G_i = inertia(\ud835\udd2a_L^(i+1))`, `g\u2080 = #G_0 = e_{L/\u211a\u2083\u1d65}` and `S = \u03a3_{i=1}^{j+1} #G_i`, so that `\u03c6_{L/\u211a\u2083\u1d65}(j+1) = S/g\u2080` and a `\u03c4 \u2260 1` lying in `G_{j+1}` has Fontaine upper ramification index `u^{(F)}_{L/\u211a\u2083\u1d65}(\u03c4) = \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_isEmpty_algHom_of_ne_one_of_mem_inertia",
-  "wip": true
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_isEmpty_algHom_of_ne_one_of_mem_inertia"
  },
  {
   "name": "IsHardlyRamified.exists_generators_projective_cotangent_of_hopf_package",
@@ -3062,27 +3032,27 @@
   "name": "IsHardlyRamified.artinDivisorNormIndex_le_ray_class",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "text": "`GaloisRepresentation.IsHardlyRamified.artinDivisorNormIndex_le_ray_class` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean:42181): **THE GLOBAL CYCLIC NORM INDEX INEQUALITY** (sorry node, created 2026-07-27 as sub-leaf (A3b-1-c) of `exists_artinDivisorPackage_ray_class` below). Childress ch. 4: for `M/F` cyclic, `[I_F(mm) : P\u207a_{F,mm} \u00b7 N_{M/F} I_M(mm)] \u2265 #G`, which in the relative-index language of this cluster is `A.relIndex Im \u2264 (P \u2294 N).relIndex Im`. Only this half of the Norm Index Equality is needed; the other half follows from the crux (A3b-2) by counting. NOT in tree, and it is the deepest of the three pieces of the package. **Why the clause lives here rather than being derived from admissibility.** `mm` carries only `mm \u2260 \u22a5` and \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.artinDivisorNormIndex_le_ray_class"
+  "fullname": "GaloisRepresentation.IsHardlyRamified.artinDivisorNormIndex_le_ray_class",
+  "wip": true
  },
  {
   "name": "IsHardlyRamified.artinDivisorKernel_le_sup_ray_class",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "text": "`GaloisRepresentation.IsHardlyRamified.artinDivisorKernel_le_sup_ray_class` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean:42571): **CHILDRESS PROPOSITION 5.2.2 \u2014 the crux: the Artin kernel is contained in the narrow ray times the norms** (sorry node, created 2026-07-26 as sub-leaf (A3b-2) of `exists_artinIdealGroup_relIndex_ray_class` below, which is now PROVEN as glue over this leaf and the package (A3b-1) `exists_artinDivisorPackage_ray_class` just above). **This is the ONLY consumer of `hartin` and `hcycl` in the whole (A3) cluster.** Everything else \u2014 the construction of the divisor-group objects, Chebotarev, and the Global Cyclic Norm Index Equality \u2014 is in the package leaf above. That is the seam: Childress ch. 5 \u00a72 Prop 5.2.2 here, \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.artinDivisorKernel_le_sup_ray_class",
-  "wip": true
+  "fullname": "GaloisRepresentation.IsHardlyRamified.artinDivisorKernel_le_sup_ray_class"
  },
  {
   "name": "IsHardlyRamified.exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "text": "`GaloisRepresentation.IsHardlyRamified.exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean:44466): **Artin's DESCENT with RAMIFICATION ALLOWED** (sorry node, created 2026-07-27 as the SINGLE sub-leaf of `exists_isAdmissibleModulus_primePow_ray_class` just below, which is PROVEN over it): this is `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` above WITH THE HYPOTHESIS `hunr` DELETED, and nothing else changed. **WHY THIS LEAF EXISTS AND WHY IT SHOULD BE SHORT-LIVED \u2014 read before dispatching a prover at it.** `hunr` is *redundant* everywhere it occurs in the Artin chain above, and the correct fleet-level repair is to DELETE the `hunr` binder from the four statements that carry it \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class"
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class",
+  "wip": true
  },
  {
   "name": "IsHardlyRamified.exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree",
   "text": "`GaloisRepresentation.IsHardlyRamified.exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/ModThree.lean:44897): **SOME admissible modulus AVOIDS a given unramified prime, for `\u03c7` of PRIME-POWER ORDER `\u2113^k` with `\u2113 \u2260 3`** (sorry node, created 2026-07-27 as the single sub-leaf of `exists_isAdmissibleModulus_not_dvd_of_unramified_ray_class` just below, which is now PROVEN as the prime-power reduction over this leaf). **THIS IS THE LEAF BELOW WITH `hord` ADDED, AND THAT IS THE ENTIRE POINT OF THE CUT.** Nothing else changes: same `F`, `\u03c7`, `hmul`, `V`, `hVopen`, `hVker`, `c`, `hcmul`, `hcfrob`, `w`, `hw`, `mm`, `hmm`, same conclusion. What is gained is `\u2113`, `h\u2113`, `h\u21133`, `k` and `hord : \u2200 a, \u03c7 a ^ (\u2113 ^ k) = 1`. **Why that is \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class",
-  "wip": true
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class"
  },
  {
   "name": "IsHardlyRamified.exists_localInertia_no_fixed_connected_vector_of_hopf_package",
@@ -3094,8 +3064,7 @@
   "name": "IsHardlyRamified.connected_locus_displacement_surjective_of_hopf_package",
   "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
   "text": "`GaloisRepresentation.IsHardlyRamified.connected_locus_displacement_surjective_of_hopf_package` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/Threeadic.lean:2867): **The inertia displacement is SURJECTIVE on the connected locus** (SORRY LEAF, cut 2026-07-27 out of `connected_locus_cyclic_of_hopf_package` just below, which is now PROVEN over it together with the pure local algebra `le_span_singleton_sup_smul_pow_of_displacement_surjective` above). This is the ENTIRE finite-flat content of the cyclicity node. With `\u03c3 \u2208 I\u2083` such that `\u03c9 \u03c3 \u2260 1`, `g\u2080` its image in `\u0393 \u211a` and `d := \u03c1 g\u2080 \u2212 1`, the assertion is that `d` maps the connected locus `M\u2070 \u2286 M := (R \u29f8 \ud835\udd2a\u207f\u207a\u00b2) \u2297[R] V` ONTO itself: every connected `z` is `d y` for some connected `y`, modulo `\ud835\udd2a\u207f\u207a\u00b2V`. ROUTE (Raynaud). At `e = 1 \u2026",
-  "fullname": "GaloisRepresentation.IsHardlyRamified.connected_locus_displacement_surjective_of_hopf_package",
-  "wip": true
+  "fullname": "GaloisRepresentation.IsHardlyRamified.connected_locus_displacement_surjective_of_hopf_package"
  },
  {
   "name": "nonempty_projGroupLaw",
@@ -3125,42 +3094,38 @@
   "name": "exists_projGeomFibreAddEquiv",
   "module": "Fermat.FLT.ModularCurve.EllipticScheme",
   "text": "`Fermat.exists_projGeomFibreAddEquiv` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/EllipticScheme.lean:269): **The geometric fibre of the projective Weierstrass model IS `E(\u211a\u0304)`, equivariantly** (sorry node \u2014 item 8). This is the conjunct that pins the scheme as *this* curve rather than some elliptic curve: without it the node would be satisfiable by any elliptic curve over `\u211a` whatsoever, and the bridge in `X0.lean` would then manufacture a `\u0393\u2080(N)`-datum out of the wrong curve. Two halves, and only the first is missing. The FIELD-level half is already at this pin: `WeierstrassCurve.Projective.toAffineAddEquiv` gives `W.Point \u2243+ W.toAffine.Point` over a field. What has to be supplied is the identification of `Spec \u2026",
-  "fullname": "Fermat.exists_projGeomFibreAddEquiv"
+  "fullname": "Fermat.exists_projGeomFibreAddEquiv",
+  "wip": true
  },
  {
   "name": "X18.sq_ne_of_zero_lt_lt",
   "module": "Fermat.FLT.ModularCurve.HyperellipticJacobian",
   "text": "`Fermat.Hyperelliptic.X18.sq_ne_of_zero_lt_lt` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/HyperellipticJacobian.lean:786): **THE LEAF, \u03c3-NORMALISED: no coprime `0 < a < b` makes `C\u0303\u00b2 + 8B\u0303\u00b2` a square.** `abd_eq_zero_of_sq_eq` below is PROVEN from this, and the two are EQUIVALENT. **HONEST ACCOUNTING: this is a NORMALISATION, not a reduction in difficulty.** It is equivalent for a reason that costs nothing. The order-`3` automorphism `\u03c3(x) = 1/(1 \u2212 x)` acts on homogeneous coordinates by `M : (a, b) \u21a6 (b, b \u2212 a)`, and both semi-invariants change sign under it: C\u0303(b, b \u2212 a) = \u2212C\u0303(a, b), B\u0303(b, b \u2212 a) = \u2212B\u0303(a, b) C\u0303(\u2212a, \u2212b) = \u2212C\u0303(a, b), B\u0303(\u2212a, \u2212b) = \u2212B\u0303(a, b) (four `ring` identities, all four used in the proof of `abd_eq_zero_of_sq_eq`). \u2026",
-  "fullname": "Fermat.Hyperelliptic.X18.sq_ne_of_zero_lt_lt",
-  "wip": true
+  "fullname": "Fermat.Hyperelliptic.X18.sq_ne_of_zero_lt_lt"
  },
  {
   "name": "X13.abd_eq_zero_of_sq_eq",
   "module": "Fermat.FLT.ModularCurve.HyperellipticJacobian",
   "text": "`Fermat.Hyperelliptic.X13.abd_eq_zero_of_sq_eq` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/HyperellipticJacobian.lean:1413): **THE LEAF, in integral homogeneous form: a coprime integral point of `X_1(13)` is degenerate.** `t\u00b2 = C\u0303(a, b)\u00b2 + 4\u00b7B\u0303(a, b)\u00b2` with `gcd(a, b) = 1` forces `ab(a + b) = 0`, i.e. `x = a/b \u2208 {0, \u22121, \u221e}`. Its consumer `affine_rational_points` is PROVEN over it and discharges the whole `\u211a`-to-`\u2124` passage (through the generic bridge `holds_num_den_of_sq_eq_sext`), so what remains is a statement about INTEGERS only: no rationals, no denominators, no `redPt`, no `Classical.choose`, no weighted-projective coordinates. **HONEST ACCOUNTING.** This is *equivalent* to `affine_rational_points`, not weaker; it is the same \u2026",
-  "fullname": "Fermat.Hyperelliptic.X13.abd_eq_zero_of_sq_eq",
-  "wip": true
+  "fullname": "Fermat.Hyperelliptic.X13.abd_eq_zero_of_sq_eq"
  },
  {
   "name": "specInvariants_universal",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.specInvariants_universal` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:1183): **GIT: `Spec` of a ring of invariants is a categorical quotient in the category of ALL schemes** (sorry node \u2014 entirely mathlib-facing; the AFFINE case is already PROVEN below, so what is open is the reduction of an arbitrary target to affine ones). Let a finite group `G` act on a commutative ring `A` by ring automorphisms and let `B` be its invariant ring: `Algebra.IsInvariant B A G` says every `G`-fixed element of `A` comes from `B`, and `SMulCommClass G B A` says conversely that everything from `B` is `G`-fixed (mathlib's own `smul_algebraMap`, since `\u03c3 \u2022 (b \u2022 1) = b \u2022 (\u03c3 \u2022 1) = b \u2022 1`). Then every \u2026",
-  "fullname": "Fermat.specInvariants_universal",
-  "wip": true
+  "fullname": "Fermat.specInvariants_universal"
  },
  {
   "name": "exists_gamma0GITPresentation",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.exists_gamma0GITPresentation` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:1371): **Existence of the Katz\u2013Mazur GIT presentation for `N \u2265 1`** (sorry node \u2014 the CITATION, now carrying only the MODULAR-CURVE half of what Katz\u2013Mazur construct). This is the citation formerly attached to `exists_coarseModuliY0_of_pos`, twice reduced: * the **initiality** clause of `IsCoarseModuliY0` was never covered by it and is now PROVEN, in `Gamma0Atlas.toIsCoarseModuliY0` (2026-07-27); * the **categorical quotient** \u2014 item 3 of the itemisation below, the one item that names no modular curve \u2014 is now the separate, entirely mathlib-facing leaf `specInvariants_universal` (2026-07-27). The full citation, the \u2026",
-  "fullname": "Fermat.exists_gamma0GITPresentation",
-  "wip": true
+  "fullname": "Fermat.exists_gamma0GITPresentation"
  },
  {
   "name": "exists_addHom_factor_geomSq",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.exists_addHom_factor_geomSq` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:2873): **The group law carries the square of the geometric-point family into the span** (sorry leaf (iii-b), split out 2026-07-27 \u2014 this is the half of leaf (iii) that carries the arithmetic). `\u03a3 \u00d7_\u211a \u03a3 = \u2210_{j,k} Spec (\u211a\u0304 \u2297_\u211a \u211a\u0304)`, and the composite into `A` is `ab.add` of the two points `p j`, `p k` pulled back along the two *different* projections. Every point of `Spec (\u211a\u0304 \u2297_\u211a \u211a\u0304)` has residue field `\u211a\u0304` (the ring is integral over each factor and `\u211a\u0304` is algebraically closed), and the corresponding `\u211a\u0304`-point of `A` is `p j + \u03c3 (p k)` for the `\u03c3 \u2208 \u0393_\u211a` that the point encodes. **This is exactly, and only, where \u2026",
-  "fullname": "Fermat.exists_addHom_factor_geomSq",
-  "wip": true
+  "fullname": "Fermat.exists_addHom_factor_geomSq"
  },
  {
   "name": "exists_specGal_factor_span",
@@ -3184,8 +3149,7 @@
   "name": "cuspidal_x0_prime",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.cuspidal_x0_prime` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:4436): **Mazur 1978, Theorem 1** (sorry node): for every prime `p \u2209 mazurIsogenyPrimes`, every rational point of `X_0(p)` is a cusp. TRUE \u2014 Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978), Theorem 1: `X_0(p)(\u211a)` consists of the two cusps `0` and `\u221e` for every prime `p \u2209 {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`. **This is the statement in the shape Mazur proves it**, which is the point of routing `y0HasNoRationalPoint_prime` through it. The argument is: the Eisenstein quotient `J\u0303` of `J_0(p)` has Mordell\u2013Weil rank `0` (Mazur, *Modular curves and the Eisenstein ideal*, Publ. Math. IH\u00c9S 47 \u2026",
-  "fullname": "Fermat.cuspidal_x0_prime",
-  "wip": true
+  "fullname": "Fermat.cuspidal_x0_prime"
  },
  {
   "name": "y0HasNoRationalPoint_of_isogenyPrimeSqLevel",
@@ -3209,8 +3173,7 @@
   "name": "exists_x0Compactification",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.exists_x0Compactification` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:5496): **Existence of the compactified coarse moduli space `X_0(N)` over `\u211a`** (sorry node). TRUE and classical: `Y_0(N)` is a smooth affine curve over `\u211a` and every smooth curve over a field has a unique smooth projective compactification; for `Y_0(N)` it is the modular curve `X_0(N)` of Deligne\u2013Rapoport, obtained directly as the coarse space of the moduli problem of GENERALISED elliptic curves with `\u0393\u2080(N)`-structure, the added points being the cusps. This leaf SUBSUMES `exists_coarseModuliY0` \u2014 its `coarse` field is exactly that statement \u2014 so a successor closing that node has closed half of this one; what remains is \u2026",
-  "fullname": "Fermat.exists_x0Compactification",
-  "wip": true
+  "fullname": "Fermat.exists_x0Compactification"
  },
  {
   "name": "nonempty_cuspIndexing",
@@ -3222,15 +3185,13 @@
   "name": "hasRankZeroJacobian_of_kenkuLevel",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.hasRankZeroJacobian_of_kenkuLevel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:5635): **`rank J_0(N)(\u211a) = 0` and `genus X_0(N) \u2265 1` at the eleven Kenku levels** (sorry node). TRUE, by the reconnaissance recorded below: decomposing the cuspidal subspace `S_2(\u0393_0(N))` into newform factors and evaluating `L(A, 1)` on each, EVERY factor at EVERY one of the eleven levels has `L(A, 1) \u2260 0`; so `J_0(N)` has analytic rank `0`, hence Mordell\u2013Weil rank `0` by Kolyvagin\u2013Logachev, hence finite `J_0(N)(\u211a)`. Positivity of the genus is classical and holds at all eleven \u2014 the genus values, in the order of `kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`. IRREDUCIBLE at this pin, and the deepest of the six \u2026",
-  "fullname": "Fermat.hasRankZeroJacobian_of_kenkuLevel",
-  "wip": true
+  "fullname": "Fermat.hasRankZeroJacobian_of_kenkuLevel"
  },
  {
   "name": "exists_x0Compactification_mod_prime",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.exists_x0Compactification_mod_prime` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:5652): **The reduction `X_0(N)_{\ud835\udd3d_\u2113}` and its Eichler\u2013Shimura point count, at the seven witness primes** (sorry node). TRUE: for `\u2113 \u2224 N` the modular curve has good reduction at `\u2113` and its special fibre is the coarse space of the same `\u0393\u2080(N)`-problem over `\ud835\udd3d_\u2113`; being proper over a finite field it has finitely many rational points; and Eichler\u2013Shimura evaluates the count as `\u2113 + 1 \u2212 Tr(T_\u2113 \u2223 S_2(\u0393_0(N)))`. The seven rows of `x0WitnessTable` are that formula computed with Magma. IRREDUCIBLE at this pin: neither the integral model of `X_0(N)`, nor its reduction, nor the Hecke operators exist here.",
-  "fullname": "Fermat.exists_x0Compactification_mod_prime",
-  "wip": true
+  "fullname": "Fermat.exists_x0Compactification_mod_prime"
  },
  {
   "name": "card_le_of_rankZeroJacobian",
@@ -3242,29 +3203,25 @@
   "name": "neronKernel_torsionFree_primeToResidue",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.neronKernel_torsionFree_primeToResidue` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6236): **The kernel of reduction contains no point of PRIME order `q \u2260 \u2113`** (sorry node \u2014 the \u00c9TALE RIGIDITY fact). TRUE, and note what is NOT among its hypotheses: **`\u2113 \u2260 2` is absent, and that is the point of separating this case out.** This half of the torsion-freeness statement holds at every residue characteristic, including `\u2113 = 2`; the `e < \u2113 \u2212 1` condition belongs exclusively to the `q = \u2113` case in `neronKernel_torsionFree_residue`. The argument is not formal groups at all. Since `q \u2260 \u2113` and `hbase` makes `R` local with residue field `\ud835\udd3d_\u2113`, `q` is a UNIT in `R`, so `\ud835\udca5[q] \u27f6 Spec R` is finite \u00e9tale \u2026",
-  "fullname": "Fermat.neronKernel_torsionFree_primeToResidue",
-  "wip": true
+  "fullname": "Fermat.neronKernel_torsionFree_primeToResidue"
  },
  {
   "name": "neronKernel_torsionFree_residue",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.neronKernel_torsionFree_residue` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6279): **The kernel of reduction contains no point of order `\u2113`, for `\u2113` odd** (sorry node \u2014 the FORMAL-GROUP fact). TRUE, and classical. The kernel of `\ud835\udca5(\u2124_(\u2113)) \u2192 \ud835\udca5(\ud835\udd3d_\u2113)` embeds in the kernel over the completion `\u2124_\u2113`, which is the group of points of the formal group of `\ud835\udca5` on the maximal ideal; and a formal group over an `\u2113`-adic ring of absolute ramification index `e` is torsion-free when `e < \u2113 \u2212 1`. Here `e = 1` by `hbase`, so the condition is exactly `\u2113 > 2`. **This is where \u2014 and ONLY where \u2014 `h\u21132` is load-bearing.** `h\u21132` is exactly the `e < \u2113 \u2212 1` condition and cannot be dropped: at `\u2113 = 2`, `e = 1 = \u2113 \u2212 1`, \u2026",
-  "fullname": "Fermat.neronKernel_torsionFree_residue",
-  "wip": true
+  "fullname": "Fermat.neronKernel_torsionFree_residue"
  },
  {
   "name": "exists_x0CurveModel_of_base",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.exists_x0CurveModel_of_base` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6508): **The integral CURVE model of `X_0(N)` over `\u2124_(\u2113)` exists, at every `\u2113 \u2224 N`** (sorry node \u2014 Deligne\u2013Rapoport / Igusa). TRUE: `X_0(N)` has a smooth proper model over `\u2124[1/N]`, hence over `\u2124_(\u2113)` for `\u2113 \u2224 N`, and the fibre identifications are the definition of a model. `properX` is the valuative criterion of properness for it. Note there is NO sharpness claim and no hypothesis `\u2113 \u2260 2`: this leaf is universal in `\u2113 \u2224 N` and says only that the model exists. IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from mathlib entirely \u2026",
-  "fullname": "Fermat.exists_x0CurveModel_of_base",
-  "wip": true
+  "fullname": "Fermat.exists_x0CurveModel_of_base"
  },
  {
   "name": "exists_x0JacobianModel_of_curveModel",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.exists_x0JacobianModel_of_curveModel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6538): **The relative JACOBIAN of a given integral curve model exists** (sorry node \u2014 Grothendieck's relative Picard scheme). TRUE: for a smooth proper curve with a section over a base, `Pic\u2070` is representable by an abelian scheme, its formation commutes with base change, and Abel\u2013Jacobi is defined over the base. An abelian scheme with the right generic fibre IS the N\u00e9ron model, which is `neronJ`. Note what this leaf does NOT need: it is stated for an arbitrary `IsX0CurveModel`, so it knows nothing about modular curves. It is a statement about smooth proper curves in general, and proving it that way is the intended \u2026",
-  "fullname": "Fermat.exists_x0JacobianModel_of_curveModel",
-  "wip": true
+  "fullname": "Fermat.exists_x0JacobianModel_of_curveModel"
  },
  {
   "name": "exists_sharpSievePrime",
@@ -3276,14 +3233,14 @@
   "name": "exists_x0JNeronDatum",
   "module": "Fermat.FLT.ModularCurve.X0",
   "text": "`Fermat.exists_x0JNeronDatum` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7583): **Existence of the N\u00e9ron-pinned `j`-reduction datum at a prime `q \u2224 N`** (sorry node). TRUE \u2014 Deligne\u2013Rapoport: for `q \u2224 N` the modular curve `X_0(N)` has a smooth proper model over `\u2124_(q)` whose special fibre is `X_0(N)_{\ud835\udd3d_q}`, the cusps form a relative divisor, and the `j`-map extends to a morphism of models. Reduction of rational points is the valuative criterion applied to that proper model; `jmZ` is the extension of `j`, read on points and valued in `\u2124_(q)` itself. Note what is NOT assumed: `q` is not required to be odd. Mazur needs `q \u2260 2` for the FORMAL IMMERSION, which is a different statement and is not \u2026",
-  "fullname": "Fermat.exists_x0JNeronDatum",
-  "wip": true
+  "fullname": "Fermat.exists_x0JNeronDatum"
  },
  {
   "name": "flat_of_flat_of_flat_quotientMap",
   "module": "Fermat.FLT.Modularity.AbelianSchemeIsogeny",
   "text": "`Fermat.flat_of_flat_of_flat_quotientMap` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:757): **CRIT\u00c8RE DE PLATITUDE PAR FIBRES, ring level** (sorry leaf \u2014 PURE COMMUTATIVE ALGEBRA, no schemes, no group schemes: **Stacks 05UV** = Algebra Lemma 10.128.9, the non-Noetherian local-ring form; Noetherian case Stacks 00MP; Matsumura *Commutative Ring Theory* \u00a723 and EGA IV 11.3.10 for the classical account). *Let `R \u2192 B \u2192 A` be local homomorphisms of local rings, with `R \u2192 A` essentially of finite presentation and `R \u2192 B` essentially of finite type. If `A` is flat over `R` and `A/\ud835\udd2a_R A` is flat over `B/\ud835\udd2a_R B`, then `A` is flat over `B`.* **FAITHFULNESS \u2014 this is 05UV instantiated at `M = S' = A`, with the \u2026",
-  "fullname": "Fermat.flat_of_flat_of_flat_quotientMap"
+  "fullname": "Fermat.flat_of_flat_of_flat_quotientMap",
+  "wip": true
  },
  {
   "name": "essFinitePresentation_stalkMap",
@@ -3314,7 +3271,8 @@
   "name": "ringKrullDim_stalk_eq_of_isFinite_endo",
   "module": "Fermat.FLT.Modularity.AbelianSchemeIsogeny",
   "text": "`Fermat.ringKrullDim_stalk_eq_of_isFinite_endo` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:1090): **A FINITE ENDOMORPHISM PRESERVES THE DIMENSION OF EVERY LOCAL RING** (sorry leaf \u2014 general scheme theory over a field, NO abelian varieties, no group law, no `[n]`. This is the deepest of the three geometric leaves and the one that genuinely needs a dimension theory of schemes.) For `X` smooth, proper and geometrically connected over a field and `u` a FINITE endomorphism of `X`, `dim \ud835\udcaa_{X,x} = dim \ud835\udcaa_{X,u x}` for every `x`. **ROUTE, in the order the hypotheses are used.** 1. *`X` is irreducible.* `Smooth g` over a field makes every stalk regular local, hence a domain, so `X` is locally irreducible; \u2026",
-  "fullname": "Fermat.ringKrullDim_stalk_eq_of_isFinite_endo"
+  "fullname": "Fermat.ringKrullDim_stalk_eq_of_isFinite_endo",
+  "wip": true
  },
  {
   "name": "flat_of_isRegularLocalRing_of_ringKrullDim_eq",
@@ -3338,36 +3296,31 @@
   "name": "heckeSubring_moduleFinite_int",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.heckeSubring_moduleFinite_int` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:2740): **LEAF 1 OF 2 FOR THE `\u2124`-FORM \u2014 DISCRETENESS: `\ud835\udd4b` is a finitely generated `\u2124`-module** (sorry leaf, cut 2026-07-27). This is the half of Eichler\u2013Shimura that says `\ud835\udd4b` is a LATTICE at all: classically `\ud835\udd4b` acts faithfully on `H\u2081(X\u2080(N), \u2124)`, which is free of rank `2D` over `\u2124`, so `\ud835\udd4b \u21aa End_\u2124(H\u2081) \u2245 M_{2D}(\u2124)` is finite over `\u2124` (Diamond\u2013Shurman \u00a78.5; Mazur, *Eisenstein ideal*, ch. II \u00a7\u00a76\u20139; Ribet, *Invent. Math.* 100 (1990), \u00a72). STRICTLY WEAKER THAN THE NODE, with the counterexample already on record: DEAD END 6 of `integralCuspForms_span_eq_top` below exhibits `D = 1`, `\ud835\udd4b = \u2124[\u221a2] \u2286 \u2102 = End_\u2102(S\u2082)`, which is finite \u2026",
-  "fullname": "GaloisRepresentation.Modularity.heckeSubring_moduleFinite_int",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.heckeSubring_moduleFinite_int"
  },
  {
   "name": "heckeSubring_zRank_le",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.heckeSubring_zRank_le` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:2775): **LEAF 2 OF 2 FOR THE `\u2124`-FORM \u2014 RANK: `rank_\u2124 \ud835\udd4b \u2264 dim_\u2102 S\u2082(\u0393\u2080(N))`** (sorry leaf, cut 2026-07-27), stated as the absence of a `\u2124`-linearly independent family of `D + 1` Hecke operators. This is the half that says the lattice `\ud835\udd4b` has the RIGHT SIZE \u2014 i.e. that `\ud835\udd4b \u2297_\u2124 \u2102 \u2192 End_\u2102(S\u2082)` is injective, so that `\ud835\udd4b` is a `\u2124`-FORM of its own `\u2102`-span rather than a lattice of too large a rank collapsing inside it. Classically it is the other half of Eichler\u2013Shimura: `H\u2081(X\u2080(N), \u2124) \u2297 \u211d \u2245 S\u2082 \u2295 S\u0304\u2082` as `\ud835\udd4b`-modules pins `rank_\u2124 \ud835\udd4b = D`. WHY THE INDEPENDENCE SPELLING, and not `Module.finrank \u2124 \ud835\udd4b \u2264 D`. `Module.finrank` is `0` for \u2026",
-  "fullname": "GaloisRepresentation.Modularity.heckeSubring_zRank_le",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.heckeSubring_zRank_le"
  },
  {
   "name": "span_jacobiSum_le_decompCarryPow_of_two_le",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.span_jacobiSum_le_decompCarryPow_of_two_le` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:23271): **STICKELBERGER PROPER \u2014 THE JACOBI-SUM CARRY FORMULA AT CARRY COUNT `\u2265 2`** (SORRY LEAF, cut 2026-07-27 out of `span_jacobiSum_le_decompCarryPow` below, which is now PROVEN over this leaf and `jacobiSum_mem_of_mem_decompCarry` above). This is the residue of the deep node after the elementary route has been driven to its limit. The hypothesis `2 \u2264 #{carries}` is not a convenience: the elementary argument gives EXACTLY `v_q(J) \u2265 1`, so carry counts `0` and `1` are now closed and everything at `2` and above is open. **WHY THE ELEMENTARY ROUTE STOPS AT `1`, and the check that refutes this claim.** Reducing mod `q` \u2026",
-  "fullname": "GaloisRepresentation.Modularity.span_jacobiSum_le_decompCarryPow_of_two_le",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.span_jacobiSum_le_decompCarryPow_of_two_le"
  },
  {
   "name": "exists_frobeniusIdeal_cyclotomic",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.exists_frobeniusIdeal_cyclotomic` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:25682): **The Frobenius-to-ideal dictionary for `\u211a(\u03bc_p)`, with its cyclotomic equivariance** (E3c support leaf (ii-a-1-i-A); SORRY NODE, cut 2026-07-27 out of `exists_artinMap_classGroup_frobeniusIdeal` below): for `\u03c7` the mod-`p` cyclotomic character `\u03c9` of `\u0393\u211a` and any model `CF` of `\u211a(\u03bc_p)`, there are an embedding `\u03b9 : CF \u2192\u2090[\u211a] \u211a\u0304` and a family `frobIdeal g v` of nonzero ideals of `\ud835\udcde CF` such that * (A) whenever the conjugate `g \u00b7 Frob_v \u00b7 g\u207b\u00b9` lies in `ker \u03c7`, it IS the arithmetic Frobenius at `frobIdeal g v`, checked at every finite normal level: for every finite normal `M/\u211a` inside `\u211a\u0304` and every `\u03b9`-compatible \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_frobeniusIdeal_cyclotomic",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_frobeniusIdeal_cyclotomic"
  },
  {
   "name": "exists_artinMap_classGroup_of_frobeniusIdeal",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.exists_artinMap_classGroup_of_frobeniusIdeal` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:25781): **The Hilbert class field of `\u211a(\u03bc_p)` EXISTS: the Artin map, over a given Frobenius-to-ideal dictionary** (E3c support leaf (ii-a-1-i-B); SORRY NODE, cut 2026-07-27 out of `exists_artinMap_classGroup_frobeniusIdeal` below): given `\u03b9` and `frobIdeal` as produced by `exists_frobeniusIdeal_cyclotomic` above \u2014 i.e. given that `g \u00b7 Frob_v \u00b7 g\u207b\u00b9` is the arithmetic Frobenius at `frobIdeal g v` at every finite normal level \u2014 there is a map `art : \u0393\u211a \u2192 Cl(\ud835\udcde CF)` that is a homomorphism on `ker \u03c7`, SURJECTIVE onto the class group, trivial on an open normal subgroup of `\u0393\u211a`, sends each Frobenius conjugate to the class of \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_artinMap_classGroup_of_frobeniusIdeal",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_artinMap_classGroup_of_frobeniusIdeal"
  },
  {
   "name": "peterssonIntegrableOn_slash",
@@ -3385,15 +3338,13 @@
   "name": "mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:31323): **MIYAKE THEOREM 4.6.4: A FORM SUPPORTED ON THE MULTIPLES OF `p` DESCENDS TO LEVEL `M/p`** (sorry leaf \u2014 cut 2026-07-27 out of `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` below; Miyake, *Modular Forms*, Theorem 4.6.4, at `l = p` prime, weight `2`, trivial character): if every `q`-expansion coefficient of `f \u2208 S\u2082(\u0393\u2080(M))` at an index NOT divisible by the prime `p \u2223 M` vanishes, then `f = V_p g` for some `g \u2208 S\u2082(\u0393\u2080(M/p))`. This is the single-prime case of the Main Lemma and the engine of the general case: it is the ONLY place where the descent from level `M` to level `M/p` actually happens. PROOF \u2026",
-  "fullname": "GaloisRepresentation.Modularity.mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.mem_range_degeneracyOp_of_qCoeff_eq_zero_of_not_dvd"
  },
  {
   "name": "exists_sub_degeneracyOp_qCoeff_coprime_eq_zero",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.exists_sub_degeneracyOp_qCoeff_coprime_eq_zero` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:31378): **MIYAKE'S PEELING STEP: ONE PRIME COMES OFF THE MAIN LEMMA'S MODULUS** (sorry leaf \u2014 cut 2026-07-27 out of `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` below; Miyake, *Modular Forms*, the induction step in the proof of Theorem 4.6.8, pp. 160\u2013162): let `p \u2223 M` be prime and let `L > 1` be prime to `p`. If every `q`-expansion coefficient of `f \u2208 S\u2082(\u0393\u2080(M))` at an index `n` with `p \u2224 n` and `(n, L) = 1` vanishes \u2014 i.e. `f` satisfies the Main Lemma hypothesis for the modulus `pL` \u2014 then a single `V_p`-component can be REMOVED so that the remainder satisfies the Main Lemma hypothesis for the smaller \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_sub_degeneracyOp_qCoeff_coprime_eq_zero",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_sub_degeneracyOp_qCoeff_coprime_eq_zero"
  },
  {
   "name": "norm_qCoeff_le_two_mul_sqrt_of_not_dvd",
@@ -3429,15 +3380,13 @@
   "name": "exists_frobeniusForm_modularTateFrame",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.exists_frobeniusForm_modularTateFrame` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:38145): **The rational Hecke algebra is a FROBENIUS algebra** (sorry leaf, the TWELFTH decomposition, 2026-07-27): `\ud835\udd4b_\u211a \u2297 \u211a\u0304_p` carries a `\u211a\u0304_p`-linear functional `\u03b8` whose trace form `(a, b) \u21a6 \u03b8(ab)` is nondegenerate. THIS IS THE WHOLE OF THE PAIRING SIDE OF `ModularTateGaloisData`, AND IT CONTAINS NO GALOIS THEORY AND NO MODULAR CURVE. The four fields `pair`, `pair_self`, `pair_nondeg`, `pair_hecke` of that structure are, by `frameSymplectic` and its lemmas in `Modularity/HeckeFrame.lean`, exactly equivalent to this one functional \u2014 see the section note there for the converse direction (an alternating `A`-self-adjoint \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_frobeniusForm_modularTateFrame",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_frobeniusForm_modularTateFrame"
  },
  {
   "name": "exists_galoisRep_modularTateSpace",
   "module": "Fermat.FLT.Modularity.Interface",
   "text": "`GaloisRepresentation.Modularity.exists_galoisRep_modularTateSpace` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:38204): **The Galois residue of the geometric leaf** (sorry leaf, the TWELFTH decomposition, 2026-07-27): given the pairing, the Galois action on the concrete Tate space with the Eichler\u2013Shimura congruence and the Frobenius multiplier. This is what is left of `ModularTateGaloisData` once the pairing side is removed, and it is EXACTLY items **4** and **6** of that structure's missing-theory list \u2014 Hecke correspondences with `\u211a`-models (Diamond\u2013Shurman \u00a77.9, \u00a78.5) and the Eichler\u2013Shimura congruence (Igusa; D\u2013S Theorems 8.6.1 and 8.7.2) \u2014 together with the fact that the Weil pairing multiplier at `Frob_q` is `q`. Item 7 \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_galoisRep_modularTateSpace",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_galoisRep_modularTateSpace"
  },
  {
   "name": "hasConductorExponentAt_factorization_of_isWeightTwoNewform",
@@ -3468,8 +3417,7 @@
   "name": "formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:2591): **THE GENERIC FIBRE IS SMOOTH** (sorry node, 2026-07-27; the ONLY remaining leaf under `exists_genericSmoothFibre_of_smooth_of_charZero`, and the only place where `CharZero` is used). If `B` is smooth over a characteristic-zero field `k` and finite type over a `k`-subalgebra `R` which is a domain, then every prime `q` of `B` lying over `\u22a5 \u2264 R` is a smooth point of `B` over `R`. THE PROOF, and why it is exactly one classical theorem. Put `K := Frac R`. Since `q` lies over `\u22a5`, every nonzero element of `R` maps outside `q`, so `B_q` is a `K`-algebra, and it is essentially of finite type over `K` because `B` is of \u2026",
-  "fullname": "GaloisRepresentation.Modularity.formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.formallySmooth_localizationAtPrime_of_comap_eq_bot_of_charZero"
  },
  {
   "name": "exists_bertiniConnectedLocus_algebra",
@@ -3487,64 +3435,49 @@
   "name": "exists_stepanovAuxiliary",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.exists_stepanovAuxiliary` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:7293): **ITEM 2: STEPANOV'S AUXILIARY CONSTRUCTION** (SORRY LEAF, cut 2026-07-27). This is the genuinely hard step of the route and the place the `\u221aq` comes from. Every conjunct below is a numbered result of Schmidt, *Equations over Finite Fields*, Chapter III, for the SECOND of his two algebraic functions (`k = 2`, `\u03b5\u2082 = d \u2212 1`); nothing here is invented. With `\ud835\udd04 = {x : \u0394(x) \u2260 0}` the set where the discriminant of `f(x, Y)` is nonzero, `\ud835\udd10\u2081(x)` the set of roots of `f(x, Y)` lying in `\ud835\udd3d_p` and `\ud835\udd10\u2082(x)` those that do not: * `p \u2264 A.card + d * (d - 1)` is Schmidt (4.5), `q \u2212 d(d\u22121) \u2264 |\ud835\udd04|`, itself from the discriminant \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_stepanovAuxiliary",
-  "wip": true
- },
- {
-  "name": "exists_bound_forall_zmodSolvable_of_planeCurveNonempty",
-  "module": "Fermat.FLT.Modularity.KhareWintenberger",
-  "text": "`GaloisRepresentation.Modularity.exists_bound_forall_zmodSolvable_of_planeCurveNonempty` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:7422): **ITEMS 4 AND 5: BERTINI OVER FINITE FIELDS, AND THE LANG\u2013WEIL INDUCTION** (SORRY LEAF, cut 2026-07-27). Everything that remains between the plane-curve case and this file's Lang\u2013Weil leaf. The plane-curve nonemptiness of item 3 is taken as a HYPOTHESIS rather than applied inside, so that this leaf is exactly \"the reduction\", provable by someone who takes the curve case as given. The consumer below discharges the hypothesis with `exists_zero_of_absolutelyIrreducible_plane`. WHAT IS LEFT, in Schmidt's numbering (same book, later chapters): * Chapter V \u2014 Theorem 4B/4C and Theorem 5A: from plane curves to an \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_bound_forall_zmodSolvable_of_planeCurveNonempty",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_stepanovAuxiliary"
  },
  {
   "name": "exists_properCompactification_affineSpace",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.exists_properCompactification_affineSpace` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:9668): **LEAF A1 \u2014 projective `n`-space over `\u211a` exists** (SORRY LEAF, and after the decomposition below it is the ONLY residual content of LEAF A). Precisely: affine `n`-space over `\u211a`, in its bare affine form `Spec \u211a[x\u2081, \u2026, x\u2099]`, is an OPEN subscheme of a PROPER `\u211a`-scheme, compatibly with the two structure morphisms to `Spec \u211a`. WHAT THIS COSTS AT THIS PIN, checked rather than guessed (2026-07-27): * `Proj` exists (`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/`), and `instance [Algebra.FiniteType (\ud835\udc9c 0) A] : IsProper (Proj.toSpecZero \ud835\udc9c)` gives properness for free, so `P := Proj \u211a[x\u2080, \u2026, x\u2099]` with the total-degree \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_properCompactification_affineSpace",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_properCompactification_affineSpace"
  },
  {
   "name": "isFinite_fromNormalization_of_smooth_affine",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.isFinite_fromNormalization_of_smooth_affine` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:9852): **LEAF B \u2014 finiteness of the normalization (E. Noether)** (SORRY LEAF). `g.fromNormalization` is ALREADY integral, unconditionally, by mathlib's `instance : IsIntegralHom f.fromNormalization`. Since `IsFinite = IsIntegralHom \u2293 LocallyOfFiniteType` (`IsFinite.iff_isIntegralHom_and_locallyOfFiniteType`), the entire content of this leaf is that the integral closure of `\u0393(P, U)` in `\u0393(C, g\u207b\u00b9 U)` is a FINITELY GENERATED algebra \u2014 i.e. E. Noether's finiteness theorem for the integral closure of a finite-type algebra over a field, equivalently that finite-type `\u211a`-algebras are Nagata. CUT-OBSTRUCTION AUDIT, 2026-07-27 \u2026",
-  "fullname": "GaloisRepresentation.Modularity.isFinite_fromNormalization_of_smooth_affine",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.isFinite_fromNormalization_of_smooth_affine"
  },
  {
   "name": "smooth_of_isRegularLocalRing_stalk_of_perfectField",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.smooth_of_isRegularLocalRing_stalk_of_perfectField` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10024): **LEAF C2 \u2014 REGULAR \u27f9 SMOOTH OVER A PERFECT FIELD** (SORRY LEAF, and this is THE genuinely missing theory in the whole smooth-proper-model cluster). This is the EXACT CONVERSE of `isRegularLocalRing_stalk_of_smooth_over_field` (PROVEN above in this file): that node says a scheme smooth over a field has regular local rings; this one says that over a PERFECT field the implication reverses. Stacks 00TT (`X` locally of finite type over a field `k` is smooth iff it is geometrically regular) together with Stacks 056S (over a perfect `k`, a locally Noetherian `k`-scheme is geometrically regular iff it is regular). \u2026",
-  "fullname": "GaloisRepresentation.Modularity.smooth_of_isRegularLocalRing_stalk_of_perfectField",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.smooth_of_isRegularLocalRing_stalk_of_perfectField"
  },
  {
   "name": "isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10069): **LEAF C1a \u2014 THE STALKS OF THE NORMALIZED MODEL ARE INTEGRALLY CLOSED** (SORRY LEAF; Stacks 035Q). This is the NORMALITY half of \"the model is regular\". The mathematics is the one-paragraph argument the parent docstring already records, and it is worth writing out because it shows the leaf is about the RELATIVE normalization and not about curves at all: Locally `X\u0304 = g.normalization` has sections `A' = ` the integral closure of `A = \u0393(P, U)` inside `B = \u0393(C, g\u207b\u00b9 U)`. `C` is smooth over `\u211a`, so `B` is a regular \u2014 hence normal \u2014 domain (`isRegularLocalRing_stalk_of_smooth_over_field` above, plus \u2026",
-  "fullname": "GaloisRepresentation.Modularity.isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.isIntegrallyClosed_stalk_normalizationModel_of_smooth_affine_curve"
  },
  {
   "name": "topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10116): **LEAF C1b \u2014 THE NORMALIZED MODEL HAS DIMENSION `\u2264 1`** (SORRY LEAF). The DIMENSION half of \"the model is regular\", stated at the SPACE \u2014 the stalk form it needs is supplied by the PROVEN `krullDimLE_stalk_of_topologicalKrullDim_le` above. `g.toNormalization : C \u27f6 X\u0304` is an OPEN IMMERSION by Zariski's Main Theorem and is DOMINANT (`instance : IsDominant f.toNormalization`), so `C` is a dense open subscheme of `X\u0304`; `X\u0304` is integral, hence irreducible, so `X\u0304` and `C` have the same generic point and the same function field, and `hdim` bounds the dimension of `C`. Since `X\u0304` is of finite type over a field, its \u2026",
-  "fullname": "GaloisRepresentation.Modularity.topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.topologicalKrullDim_normalizationModel_le_one_of_smooth_affine_curve"
  },
  {
   "name": "exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10663): **Every point of an irreducible finite-type `\u211a`-scheme is dominated in coheight by a point of any nonempty open** (SORRY LEAF \u2014 this is the whole commutative-algebra content of the dense-open dimension transfer, and the ONLY thing in that transfer that is missing from the pin). Equivalently, via `ringKrullDim_stalk_eq_coheight`: for every `x \u2208 X\u0304` there is a `y` in the open subscheme `C` with `dim \ud835\udcaa_{X\u0304,x} \u2264 dim \ud835\udcaa_{X\u0304,y}`. THE PROOF, and exactly where the pin runs out: 1. Coheight is LOCAL: choose an affine open `U = Spec A` containing `x`; then `coheight_{X\u0304} x = coheight_U x = height \ud835\udd2d\u2093` \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_coheight_le_of_isOpenImmersion_of_locallyOfFiniteType"
  },
  {
   "name": "exists_totallySplitPoint_of_projectiveCompactification",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.exists_totallySplitPoint_of_projectiveCompactification` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10836): **Moret\u2013Bailly \u00a73.2\u20133.10: the arithmetic core, on the compactification** (SORRY \u2014 the whole Picard-theoretic argument). Given the \u00a73.1 datum \u2014 `C` a dense affine open in a smooth proper geometrically irreducible curve `X\u0304/\u211a` with nonempty complement `Z` \u2014 and the local solvability of the Skolem datum (`hreal`, `hSpt`), Moret\u2013Bailly produces a *point entier*: an irreducible closed `Y \u2286 C`, finite over the base, whose generic fibre `Spec F` is `L_v`-split and inside `\u03a9_v` at every `v \u2208 \u03a3 = {\u221e} \u222a S`. Reading off the conclusion (his Remarque 1.5): `F` is a number field, `F \u2297_\u211a \u211d \u2245 \u211d^[F:\u211a]` (total reality) and `F \u2297_\u211a \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_totallySplitPoint_of_projectiveCompactification",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_totallySplitPoint_of_projectiveCompactification"
  },
  {
   "name": "exists_anticyclotomicZModChar_of_quadraticChar",
@@ -3556,22 +3489,19 @@
   "name": "exists_splitHilbertBlumenthalModuli",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.exists_splitHilbertBlumenthalModuli` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:15242): **LEAF A \u2014 Rapoport's split moduli space** (sorry node, cut 2026-07-27): for a totally real `D` and two maximal ideals `\u03bb \u220b \u2113`, `\ud835\udd2d \u220b p` of `\ud835\udcaa_D` with `p \u2260 \u2113` and prescribed residue fields, the split Hilbert\u2013Blumenthal moduli problem of level `\u03bb\ud835\udd2d` is represented by a smooth, separated, finite-type, quasi-compact, geometrically irreducible `\u211a`-variety carrying the universal family. Classically this is section 1 of Rapoport's *Compactifications de l'espace de modules de Hilbert\u2013Blumenthal* (with Deligne\u2013Pappas for the general `\ud835\udcaa_D`): smoothness and geometric connectedness come from the analytic uniformization of \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_splitHilbertBlumenthalModuli",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_splitHilbertBlumenthalModuli"
  },
  {
   "name": "exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:15290): **LEAF B \u2014 Taylor's descent along the cocycle** (sorry node, cut 2026-07-27): GIVEN the split moduli space of leaf A, the twist of it by `R = \u03c1bar \u2295 \u03c1barp` satisfies the seam and is fine at the archimedean place. This is Taylor, *On the meromorphic continuation of degree two `L`-functions*, \u00a74 pp. 759\u2013762: `\u0393` acts faithfully on the split space, `H\u00b9(G_\u211a, \u0393)` classifies the twists, Lemma 4.4 describes the `F`-points of `X_{R,\u03c8}` \u2014 which is exactly `IsTwistedHilbertBlumenthalModuli` \u2014 and Lemma 4.5 produces the real point by transporting the CM point of `X_Dih` along the isomorphism of the two twists over `\u211d`, \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_twistedHilbertBlumenthalModuliTwist_of_datum_of_split"
  },
  {
   "name": "exists_realAbelianSchemeWithTensorLevelStructure",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.exists_realAbelianSchemeWithTensorLevelStructure` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:16699): **THE GEOMETRIC LEAF of the archimedean node, in TENSOR form** (sorry leaf, cut 2026-07-27 out of `exists_realAbelianSchemeWithDivisibleLevelStructure`): one real abelian scheme with real multiplication by `\ud835\udcaa_D`, carrying ONE level structure over the divisible `\ud835\udcaa_D`-module `(\ud835\udcaa_D \u2297_\u2124 \u211a/\u2124)\u00b2`. WHY THE TENSOR AND NOT `D / \ud835\udcaa_D`. The two modules are isomorphic (`divisibleTensorEquiv`, PROVEN above), so this is a restatement and not a weakening \u2014 the consumer `exists_realAbelianSchemeWithDivisibleLevelStructure` is proved from it in five lines by transport. What the restatement buys is that the module is now written in \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_realAbelianSchemeWithTensorLevelStructure",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_realAbelianSchemeWithTensorLevelStructure"
  },
  {
   "name": "exists_heckeTraceAlgebra_of_congruentSeed",
@@ -3583,8 +3513,7 @@
   "name": "carayol_threeadic_realization_of_heckePackage",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.carayol_threeadic_realization_of_heckePackage` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:22681): **The Hilbert-modular `3`-adic realization, geometric core** (sorry node \u2014 Carayol 1986, Th\u00e9or\u00e8me (A)/(B) / Taylor 1989; THE citation leaf of the `3`-adic realization node, in its narrowest form to date): a Hilbert-modular Hecke eigensystem `(E, heckeF)` over the totally real field `F` \u2014 witnessed as modular by the `\u2113`-adic matching clause `hmod` for the lift `\u03c1` \u2014 has a `3`-adic Galois realization: a representation `\u03c4F` of `G_F` on a rank-`2` lattice over a local DOMAIN `B` module-finite over `\u2124_3` (classically the integers of the completion `E_\u03bb`, `\u03bb | 3`), matching the Hecke polynomials through a place `\u03c8\u2083` \u2026",
-  "fullname": "GaloisRepresentation.Modularity.carayol_threeadic_realization_of_heckePackage",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.carayol_threeadic_realization_of_heckePackage"
  },
  {
   "name": "weilBound_of_charFrob_baseChange",
@@ -3614,8 +3543,7 @@
   "name": "blggt_threeadicBrauerSum_of_witness",
   "module": "Fermat.FLT.Modularity.KhareWintenberger",
   "text": "`GaloisRepresentation.Modularity.blggt_threeadicBrauerSum_of_witness` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:28856): **Brauer descent, `3`-adic side \u2014 the geometric core of the Brauer sum** (sorry node \u2014 BLGGT \u00a75.3; THE single citation sub-leaf of the `3`-adic realization): given the descended rational Hecke system `(S\u2080, Pv)` produced on the `\u2113`-adic side (`exists_heckeField_system_of_witness`), the SAME system is realized `3`-adically \u2014 there are a finite exceptional set `S\u2081`, a coefficient ring `A` which is a local DOMAIN module-finite over `\u2124_3` (classically the integers `O_{E_\u03bb}` of the completion of the Hecke field at a place `\u03bb | 3`), a representation `\u03c4` of `G_\u211a` on `Fin 2 \u2192 A`, and a comparison embedding `\u03b9A : A \u2192 \u2026",
-  "fullname": "GaloisRepresentation.Modularity.blggt_threeadicBrauerSum_of_witness",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.blggt_threeadicBrauerSum_of_witness"
  },
  {
   "name": "hasFlatProlongationAt_of_surjective",
@@ -3628,43 +3556,37 @@
   "name": "exists_taylorWilesBottomLevel",
   "module": "Fermat.FLT.Modularity.Patching",
   "text": "`GaloisRepresentation.Modularity.exists_taylorWilesBottomLevel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Patching.lean:4656): **The bottom Taylor\u2013Wiles level** (patching leaf 2a-i-\u03b1, sorry node \u2014 the MODULARITY-SUBTREE PLUG POINT): under the full hypothesis set of pillar 3b-iii, the level-independent invariants of the Taylor\u2013Wiles tower exist together with the bottom (`Q = \u2205`) level datum. What is asserted: a Taylor\u2013Wiles number `q`, a freeness rank `d`, and a NONTRIVIAL bottom Hecke module `M\u2080` carrying an action of the abstract Hecke ring `T` of the pillar, such that the level-`0` raw datum exists over them. Classically `M\u2080 = H\u00b9(X\u2080(N), \u2124_p)_\ud835\udd2a` is the `\ud835\udd2a`-localized cohomology of the modular curve at the level of the residual \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_taylorWilesBottomLevel",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_taylorWilesBottomLevel"
  },
  {
   "name": "exists_taylorWilesLevelRaw",
   "module": "Fermat.FLT.Modularity.Patching",
   "text": "`GaloisRepresentation.Modularity.exists_taylorWilesLevelRaw` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Patching.lean:4859): **The auxiliary Taylor\u2013Wiles levels** (patching leaf 2a-i-\u03b2, sorry node \u2014 ingredients 1\u20134 of the patching construction): given the level-independent invariants `(q, d, M\u2080)` of the bottom level, the raw level datum exists at EVERY level `n`. This is where the four Galois/Hecke ingredients of the tower live, each at the auxiliary level `Q_n` \u2014 ring and module together, since the auxiliary Hecke module is a module over the auxiliary deformation ring and neither is characterized without the other: 1. **Dual-Selmer refinement of the prime supply** (Wiles, Ann. of Math. 141 (1995), ch. 3; DDT \u00a74, Thm. 2.49): refine \u2026",
-  "fullname": "GaloisRepresentation.Modularity.exists_taylorWilesLevelRaw",
-  "wip": true
+  "fullname": "GaloisRepresentation.Modularity.exists_taylorWilesLevelRaw"
  },
  {
   "name": "card_torsion_span_natCast",
   "module": "Fermat.FLT.Modularity.TateModule",
   "text": "`Fermat.card_torsion_span_natCast` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:2085): **`#A[N] = N^(2g)`: the degree of `[N]`, in characteristic zero** (sorry leaf \u2014 ABELIAN VARIETIES; Mumford *Abelian Varieties* \u00a76 (theorem of the cube) and \u00a718, Milne *Abelian Varieties* I.7). `A_x` is an abelian variety of dimension `g = [D : \u211a]` over an algebraically closed field of characteristic zero \u2014 that is `hdim` together with the properness, smoothness and connectedness carried by `ab` \u2014 and `[N]` is an isogeny of degree `N^(2g)`, \u00e9tale in characteristic zero, so its kernel has exactly `N^(2g)` geometric points. WHAT ALREADY EXISTS, and what is genuinely missing. `Modularity/AbelianSchemeIsogeny.lean` \u2026",
-  "fullname": "Fermat.card_torsion_span_natCast",
-  "wip": true
+  "fullname": "Fermat.card_torsion_span_natCast"
  },
  {
   "name": "even_dim_torsion_of_isMaximal",
   "module": "Fermat.FLT.Modularity.TateModule",
   "text": "`Fermat.even_dim_torsion_of_isMaximal` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:2163): **The residual rank is EVEN at every maximal `J`** (sorry leaf \u2014 POLARIZATION; Mumford *Abelian Varieties* \u00a716, \u00a720, \u00a723). This is the input that defeats the counterexample of the audit below: `M\u2081` there has `r_{J\u2081} = 1`, so parity alone excludes it, and parity is drawn from the polarization rather than from `H\u2081(A, \u211a)`. THE ARGUMENT. An `\ud835\udcaa_D`-linear polarization `\u03bb : A \u27f6 A^\u2228` induces, via the canonical Weil pairing on `A \u00d7 A^\u2228`, an `\ud835\udcaa_D`-bilinear ALTERNATING pairing on the `J`-torsion \u2014 that is exactly `PolarizationStruct.pairing` together with `pairing_add_left`, `pairing_add_right`, `pairing_self` and \u2026",
-  "fullname": "Fermat.even_dim_torsion_of_isMaximal",
-  "wip": true
+  "fullname": "Fermat.even_dim_torsion_of_isMaximal"
  },
  {
   "name": "card_torsion_ne_one_of_isMaximal",
   "module": "Fermat.FLT.Modularity.TateModule",
   "text": "`Fermat.card_torsion_ne_one_of_isMaximal` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:2192): **`A[J] \u2260 0` at every maximal `J`** (sorry leaf \u2014 Mumford *Abelian Varieties* \u00a719, `End(A) \u21aa End(T_p A)`). Equivalently: `\ud835\udcaa_D \u2297 \u2124_p` acts FAITHFULLY on `T_p A`, so no factor of `\ud835\udcaa_D \u2297 \u2124_p = \u220f_{J \u2223 p} \ud835\udcaa_J` annihilates it. THIS IS NOT THE FAITHFULNESS THE AUDIT BELOW DISMISSES. That audit's counterexample `M\u2081` is faithful as an `\ud835\udcaa_D`-MODULE, and so is the parity-even variant with `(r_{J\u2081}, r_{J\u2082}) = (0, 4)`; module-faithfulness constrains only the SUM `\u03a3_J r_J e_J f_J`. What is needed, and what this leaf states, is nonvanishing at each SINGLE `J`. Together with `even_dim_torsion_of_isMaximal` it gives `r_J \u2265 2` \u2026",
-  "fullname": "Fermat.card_torsion_ne_one_of_isMaximal",
-  "wip": true
+  "fullname": "Fermat.card_torsion_ne_one_of_isMaximal"
  },
  {
   "name": "det_globalFrob_eq_cyclotomicCharacter_of_tateFrame",
   "module": "Fermat.FLT.Modularity.TateModule",
   "text": "`Fermat.det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:5964): **The determinant of a Tate frame at the global Frobenius elements** (SORRY NODE, cut 2026-07-27 out of `det_eq_cyclotomicCharacter_of_tateFrame` along the CHEBOTAREV axis \u2014 THE geometric input of the determinant clause; Silverman *AEC* III.8 for the elliptic case, Mumford *Abelian Varieties* \u00a716/\u00a720 for the polarized case in general, Taylor 2002 \u00a72 and Carayol for the Hilbert\u2013Blumenthal normalization used here). For a Tate frame `\u03c6`/`\u03c4` as in `exists_tateFrame_of_adicCoefficientRing`, there is a FINITE set of finite places of `F` outside which `det (\u03c4 (Frob_v)) = \u03c7_cyc(Frob_v)`. The general identity at every `\u03c3 \u2026",
-  "fullname": "Fermat.det_globalFrob_eq_cyclotomicCharacter_of_tateFrame",
-  "wip": true
+  "fullname": "Fermat.det_globalFrob_eq_cyclotomicCharacter_of_tateFrame"
  },
  {
   "name": "exists_algebraicClosureEmbedding_of_tateFrame_mult",
@@ -3677,5 +3599,543 @@
   "module": "Fermat.FLT.Modularity.TateModule",
   "text": "`Fermat.exists_intWeilPolynomial_of_mult` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:6807): **The Frobenius characteristic polynomials of the `\ud835\udcaa_D`-Tate modules are `X\u00b2 - a_w X + b_w` with `a_w, b_w \u2208 \ud835\udcaa_D` independent of `I`** (sorry leaf \u2014 the arithmetic half of `exists_weilFrobeniusSystem_of_mult`, and the deepest statement in the chain: Weil's Riemann hypothesis for abelian varieties over finite fields together with Faltings' theorem that the system is independent of the residue characteristic; Faltings, *Endlichkeitss\u00e4tze f\u00fcr abelsche Variet\u00e4ten \u00fcber Zahlk\u00f6rpern*, Invent. Math. 73 (1983); Taylor 2002 \u00a71\u20132 and Shimura for the Hilbert\u2013Blumenthal normalization). For an abelian scheme with real \u2026",
   "fullname": "Fermat.exists_intWeilPolynomial_of_mult"
+ },
+ {
+  "name": "LevelStruct.isFiniteRelIndex_\u0394",
+  "module": "Fermat.FLT.AutomorphicForm.QuaternionAlgebra.Basic",
+  "text": "`TotallyDefiniteQuaternionAlgebra.WeightTwoAutomorphicForm.LevelStruct.isFiniteRelIndex_\u0394` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, `Fermat/FLT/AutomorphicForm/QuaternionAlgebra/Basic.lean:532`): for a totally definite quaternion algebra `D/F` and a level structure `\u2112`, the subgroup `\ud835\udcd5\u02e3` has finite relative index in `\u2112.\u0394 D g`. AXIOM-POLICY LEAF: in the reference FLT project this instance is discharged by the tactic `knownin1980s` = `axiom knownin1980s {P : Prop} : P`, a proof of an ARBITRARY proposition and hence inconsistency-grade. This project admits only `propext`, `Classical.choice` and `Quot.sound`, so `FLT.Assumptions.KnownIn1980s` is deliberately NOT vendored and its single use in the vendored closure becomes this ordinary sorried leaf with its statement written out in full. It is the ONLY unproven statement in the entire 20,688-line, 109-module vendored closure.",
+  "fullname": "TotallyDefiniteQuaternionAlgebra.WeightTwoAutomorphicForm.LevelStruct.isFiniteRelIndex_\u0394",
+  "wip": true
+ },
+ {
+  "name": "End.degree_add_add_degree_sub",
+  "module": "Fermat.FLT.EllipticCurve.IsogenyTrace",
+  "text": "`WeierstrassCurve.End.degree_add_add_degree_sub` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/IsogenyTrace.lean:468): **LEAF \u2014 the parallelogram law for the degree.** Silverman *AEC* III.6.3: the degree is a quadratic form on `End W`. deg (\u03c6 + \u03c8) + deg (\u03c6 \u2212 \u03c8) = 2 deg \u03c6 + 2 deg \u03c8. Stated in `\u2115` because `Isogeny.degree` is `Nat.card (ker \u00b7)`; every term is a cardinality, and the assembly below casts to `\u2124` once. This is one of the two leaves the additivity of the dual splits into \u2014 see the CUT note above for why it is not sufficient by itself, and for the route through `\u03c1_N : End W \u2192 M\u2082(ZMod N)` where it becomes the `2 \u00d7 2` determinant identity `det (A+B) + det (A\u2212B) = 2 det A + 2 det B`. **Sanity check of the statement**, from \u2026",
+  "fullname": "WeierstrassCurve.End.degree_add_add_degree_sub"
+ },
+ {
+  "name": "End.self_add_dualEnd",
+  "module": "Fermat.FLT.EllipticCurve.IsogenyTrace",
+  "text": "`WeierstrassCurve.End.self_add_dualEnd` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/IsogenyTrace.lean:500): **LEAF \u2014 the trace formula.** Silverman *AEC* III.6.2: `\u03c8 + \u03c8\u0302` is an integer, and that integer is `deg (\u03c8 + 1) \u2212 deg \u03c8 \u2212 1`: \u03c8 + \u03c8\u0302 = [deg (\u03c8 + 1) \u2212 deg \u03c8 \u2212 1]. Equivalently \u2014 multiply on the right by `\u03c8` and use `End.dualEnd_comp` \u2014 every endomorphism satisfies the monic quadratic `\u03c8\u00b2 \u2212 [t] \u03c8 + [deg \u03c8] = 0` over `\u2124`. This is the content `End.exists_charPoly` below currently obtains *from* additivity; the cut turns it into an input, which is what makes the split honest rather than a renaming (see the CUT note above). **The formula is stated with an explicit trace rather than existentially** on purpose: `\u2203 t, \u03c8 \u2026",
+  "fullname": "WeierstrassCurve.End.self_add_dualEnd"
+ },
+ {
+  "name": "MazurLevel11.smallPoints",
+  "module": "Fermat.FLT.EllipticCurve.MordellWeil",
+  "text": "`WeierstrassCurve.MazurLevel11.smallPoints` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/MordellWeil.lean:892): **THE FINITE BASE CASE at level `11`** (sorry leaf, 2026-07-27): the only SMALL coprime integral points of `W\u00b2 = U\u00b3 \u2212 4U\u00b2 + 16` are the two real ones. This is `integral_leaf` restricted to `|p| + e\u00b2 \u2264 512`, and unlike that statement it is a FINITE check: `|p| \u2264 512` and `e\u00b2 \u2264 512`, so `1 \u2264 e \u2264 22`, about `1.5\u00b710\u2074` coprime pairs, each decided by whether `p\u00b3 \u2212 4p\u00b2e\u00b2 + 16e\u2076` is a perfect square. On that box `|p\u00b3 \u2212 4p\u00b2e\u00b2 + 16e\u2076| < 1.3\u00b710\u2078`, and the value is negative \u2014 hence instantly not a square \u2014 over most of it. HOW TO PROVE IT, and what NOT to try. `native_decide` is banned (undue axiom) and kernel-reducing \u2026",
+  "fullname": "WeierstrassCurve.MazurLevel11.smallPoints"
+ },
+ {
+  "name": "TameBaseAux.exists_tameResidueHom",
+  "module": "Fermat.FLT.EllipticCurve.TorsionReduction",
+  "text": "`WeierstrassCurve.TameBaseAux.exists_tameResidueHom` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/TorsionReduction.lean:927): **The residue field of `A` is `\ud835\udd3d_\u2113`, i.e. the residue degree is `1`** (sorry leaf, opened 2026-07-27 while proving `nonempty_tameBase`). EVERY OTHER FIELD OF `TameBase` IS PROVEN ABOVE; this is the entire residue. Note the `IsLocalHom` half is FREE and is included only to keep the leaf self-contained: `ZMod \u2113` is generated by `1` as a ring, so EVERY ring hom `A \u2192+* ZMod \u2113` is surjective, hence has maximal kernel, hence \u2014 `A` being local \u2014 kernel exactly `m_A`. WHY IT CANNOT BE AVOIDED. Chevalley (`tameSubring_dominates`) produces SOME valuation subring over `\u2124_(\u2113)`, and domination only gives an INJECTION `\ud835\udd3d_\u2113 \u21aa \u2026",
+  "fullname": "WeierstrassCurve.TameBaseAux.exists_tameResidueHom"
+ },
+ {
+  "name": "velu_coord_ne_neg_of_subgroup",
+  "module": "Fermat.FLT.EllipticCurve.Velu",
+  "text": "`WeierstrassCurve.velu_coord_ne_neg_of_subgroup` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/Velu.lean:8362): **LEAF: injectivity of the V\u00e9lu coordinates modulo the kernel, at EVERY kernel order.** The parity-free form of `velu_coord_ne_neg`. Its odd-order proof is short and goes entirely through `velu_xNum_sub_eq_prod`: `X(\u2212Q) = X(P)` makes `x(\u2212Q)` a root of the fibre polynomial of `P`, hence `\u2212Q \u2208 P + S`, hence `P + Q \u2208 S`. So this leaf is exactly item 1 of the route map above and nothing else \u2014 once the fibre polynomial factors for an arbitrary kernel, this mirrors verbatim.",
+  "fullname": "WeierstrassCurve.velu_coord_ne_neg_of_subgroup"
+ },
+ {
+  "name": "velu_coordX_add_eq_addX_of_subgroup",
+  "module": "Fermat.FLT.EllipticCurve.Velu",
+  "text": "`WeierstrassCurve.velu_coordX_add_eq_addX_of_subgroup` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/EllipticCurve/Velu.lean:8394): **LEAF: the `addX` identity at EVERY kernel order.** The parity-free form of `velu_coordX_add_eq_addX`, and the real content of arbitrary-order V\u00e9lu additivity. The odd-order proof runs the identity over `AlgebraicClosure F` and descends; the descent half (`velu_bc_coordX`, `velu_bc_coordY`, `velu_baseChange_isPointSubgroup`) is already parity-free, so what must be mirrored is the algebraically-closed core: `velu_hnorm` and `velu_addX_eq_of_norm_line`. See items 1\u20134 of the route map above \u2014 in particular item 4, the STAR sign, which is the one place a naive mirror of an existing statement would be FALSE rather \u2026",
+  "fullname": "WeierstrassCurve.velu_coordX_add_eq_addX_of_subgroup"
+ },
+ {
+  "name": "X0GenusOne.hasRankZeroJacobian",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "text": "`X0GenusOne.hasRankZeroJacobian` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:10111): **`rank J_0(N)(\u211a) = 0` and `genus X_0(N) \u2265 1` at the four genus-one levels** (sorry leaf, introduced 2026-07-27; consolidates the former `MazurLevel32.hasRankZeroJacobian_x0ThirtyTwo` and `MazurIsogenyPrimeJ.hasRankZeroJacobian_of_genusOnePrime`, which are now proven from it). The exact analogue of `Fermat.hasRankZeroJacobian_of_kenkuLevel`, which is restricted to `Fermat.kenkuLevels` and so reaches none of these four. TRUE, and STRICTLY EASIER than that analogue \u2014 which its own docstring calls \"the deepest of the six leaves\" \u2014 because here `X_0(N)` is itself an elliptic curve, so: * `J_0(N) = X_0(N)` (the \u2026",
+  "fullname": "X0GenusOne.hasRankZeroJacobian",
+  "wip": true
+ },
+ {
+  "name": "X0GenusOne.exists_mod_prime",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "text": "`X0GenusOne.exists_mod_prime` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:10139): **The reduction `X_0(N)_{\ud835\udd3d_\u2113}` and its point count, at the four genus-one witness primes** (sorry leaf, introduced 2026-07-27; consolidates the former `MazurLevel32.exists_x0ThirtyTwo_mod_three` and `MazurIsogenyPrimeJ.exists_x0GenusOne_mod_prime`, which are now proven from it). The exact analogue of `Fermat.exists_x0Compactification_mod_prime` against `countTable`, and TRUE for the same reason: for `\u2113 \u2224 N` the modular curve has good reduction at `\u2113`, its special fibre is the coarse space of the same `\u0393\u2080(N)`-problem over `\ud835\udd3d_\u2113`, and being proper over a finite field it has finitely many rational points. \u2026",
+  "fullname": "X0GenusOne.exists_mod_prime"
+ },
+ {
+  "name": "End.exists_intBasis",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "text": "`WeierstrassCurve.End.exists_intBasis` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:12093): **LEAF \u2014 `End(E)` is a free `\u2124`-module of rank `2` as soon as it is bigger than `\u2124`** (introduced 2026-07-27 by the cut of the two class-polynomial nodes). If some `\u03c8\u2080 \u2208 End W` is not an integer, then there are `\u03c9 \u2208 End W` and `a, b \u2208 \u2124` with `\u03c9\u00b2 = a\u03c9 \u2212 b` such that `1, \u03c9` is a `\u2124`-BASIS of `End W`: every `\u03c7` is `u + v\u03c9`, and `u + v\u03c9 = 0` forces `u = v = 0`. This is the structure theorem for endomorphism rings in characteristic `0`, Silverman *AEC* III.9.4 together with Deuring: over an algebraically closed field of characteristic `0`, `End(E)` is either `\u2124` or an ORDER in an imaginary quadratic field, and every \u2026",
+  "fullname": "WeierstrassCurve.End.exists_intBasis"
+ },
+ {
+  "name": "classPoly500_of_end_closure_eq_top",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "text": "`WeierstrassCurve.classPoly500_of_end_closure_eq_top` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:12249): **LEAF \u2014 the main theorem of complex multiplication at discriminant `\u2212500`** (introduced 2026-07-27 by the cut of `classPoly500_of_endSq_neg125`). `htop` says `End(E_\u211a\u0304) = \u2124[\u03c8]`; with `\u03c8\u00b2 = [\u2212125]` that identifies the endomorphism ring as `\u2124[\u221a\u2212125]`, the order of conductor `5` in `\u211a(\u221a\u22125)`, whose discriminant is `\u22124 \u00b7 125 = \u2212500`. The conclusion is that `j(E)` is a root of the Hilbert class polynomial `H_{\u2212500}`. This is the main theorem of complex multiplication (Silverman *ATAEC* II.6.1, Cox *Primes of the Form x\u00b2 + ny\u00b2* \u00a711): for an order `O` of discriminant `D` in an imaginary quadratic field, the \u2026",
+  "fullname": "WeierstrassCurve.classPoly500_of_end_closure_eq_top"
+ },
+ {
+  "name": "classPoly676_of_end_closure_eq_top",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "text": "`WeierstrassCurve.classPoly676_of_end_closure_eq_top` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:15917): **LEAF \u2014 the main theorem of complex multiplication at discriminant `\u2212676`** (introduced 2026-07-27 by the cut of `classPoly676_of_endSq_neg169`; the exact mirror of `classPoly500_of_end_closure_eq_top`, whose docstring carries the full discussion). `htop` says `End(E_\u211a\u0304) = \u2124[\u03c8]`; with `\u03c8\u00b2 = [\u2212169]` that identifies the endomorphism ring as `\u2124[\u221a\u2212169] = \u2124[13i]`, the order of conductor `13` in `\u211a(i)`, whose discriminant is `\u22124 \u00b7 169 = \u2212676`. The conclusion is that `j(E)` is a root of the Hilbert class polynomial `H_{\u2212676}`, the degree-`6` literal below. **`htop` IS LOAD-BEARING: the statement is FALSE with `hsq` \u2026",
+  "fullname": "WeierstrassCurve.classPoly676_of_end_closure_eq_top"
+ },
+ {
+  "name": "MazurX1Plane.exists_isX1TwentyFiveDatum",
+  "module": "Fermat.FLT.FreyCurve.MazurTorsion",
+  "text": "`MazurX1Plane.exists_isX1TwentyFiveDatum` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/FreyCurve/MazurTorsion.lean:28522): **Mazur 1977, Thm 8 for `X_1(25)`, as the counting datum above** (sorry node \u2014 NEW 2026-07-27, the modular half of the level-`25` leaf). Everything mathematical in `WeierstrassCurve.x1TwentyFive_plane_ne_zero` is here; what remains there is `11 > 10`. See `IsX1TwentyFiveDatum` for the four inputs, the pinning audit, and the reconciliation note against `Fermat/FLT/ModularCurve/X0.lean`. MISSING MACHINERY, in dependency order \u2014 the pin has NONE of it, and this is the honest reason the node is open rather than hard: 1. the modular curve `X_1(N)` as a coarse moduli space over `\u2124[1/N]`, with its cusps (`X0.lean` \u2026",
+  "fullname": "MazurX1Plane.exists_isX1TwentyFiveDatum"
+ },
+ {
+  "name": "exists_obstructionCocycle_relationSpace_sha2",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation",
+  "text": "`GaloisRepresentation.exists_obstructionCocycle_relationSpace_sha2` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/Deformation.lean:17165): **B\u00f6ckle's obstruction COCYCLE, with its lifting criterion** (sorry node, cut out of `exists_obstructionHom_relationSpace_sha2` below on 2026-07-27, which is now PROVEN over it; this is the same statement one level lower, at the level of explicit 2-cocycles rather than of cohomology classes): for a minimal, `\u2124_\u2113`-compatible presentation `\u03c6 : \u039b[[x\u2081,\u2026,x_g]] \u21a0 D.R` of the weakly universal, trace-generated hardly ramified deformation ring, there is a `k`-LINEAR map `oc : (ker \u03c6/\ud835\udd2a_S\u00b7ker \u03c6)^\u2228 \u2192 Z\u00b2(\u0393_\u211a, ad\u2070 \u03c1bar)` into the CONTINUOUS 2-COCYCLES of `ad\u2070`, such that (a) the class of `oc \u03c8` lies in `\u0428\u00b2_S(ad\u2070)` for every \u2026",
+  "fullname": "GaloisRepresentation.exists_obstructionCocycle_relationSpace_sha2",
+  "wip": true
+ },
+ {
+  "name": "trace_quotient_pow_eq_of_mem_cofactor",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.HermiteMinkowski",
+  "text": "`GaloisRepresentation.trace_quotient_pow_eq_of_mem_cofactor` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/HermiteMinkowski.lean:1508): **CUT 1 of the trace witness: base change to `\u2124/q^k`, then CRT** (SORRY LEAF, cut 2026-07-27 out of `exists_intTrace_not_mem_span_of_ramificationIdx` below, which is PROVEN over this together with `exists_mem_cofactor_trace_quotient_ne_zero`). For `x` in the cofactor `J` of `Q^{e\u00b7k}` in `q^k\u00b7\ud835\udcde_K`, the rational integer `Tr_{K/\u211a}(x)`, reduced modulo `q^k`, is computed by the trace of the image of `x` in the SINGLE finite ring `\ud835\udcde_K/Q^{e\u00b7k}` over `\u2124/q^k`. **This leaf carries no arithmetic \u2014 it is trace bookkeeping.** The three steps, and the mathlib input for each: 1. *Base change of the trace along `\u2124 \u21a0 \u2124/q^k`.* \u2026",
+  "fullname": "GaloisRepresentation.trace_quotient_pow_eq_of_mem_cofactor",
+  "wip": true
+ },
+ {
+  "name": "exists_mem_cofactor_trace_quotient_ne_zero",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.HermiteMinkowski",
+  "text": "`GaloisRepresentation.exists_mem_cofactor_trace_quotient_ne_zero` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/HermiteMinkowski.lean:1636): **CUT 2 of the trace witness: the trace form of the finite local ring `\ud835\udcde_K/Q^{e\u00b7k}` over `\u2124/q^k` is not identically zero, witnessed inside the cofactor `J`** (SORRY LEAF, cut 2026-07-27 out of `exists_intTrace_not_mem_span_of_ramificationIdx` below). **This is the whole mathematical content of Serre's wild different bound.** Everything else in the chain is bookkeeping. ## THE STATEMENT IS EXACTLY \"TRACE NONZERO\", AND THAT IS WHY `k` IS `v_q(e)+1` The consumer needs `v_q(Tr x) \u2264 v_q(e)`. With `k = v_q(e) + 1` that is literally `q^k \u2224 Tr x`, i.e. `Tr x \u2260 0` in `\u2124/q^k`. So no \"exactly `v_q(e)`\" claim is needed \u2026",
+  "fullname": "GaloisRepresentation.exists_mem_cofactor_trace_quotient_ne_zero",
+  "wip": true
+ },
+ {
+  "name": "exists_hilbertTaylorWilesLevels",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity",
+  "text": "`GaloisRepresentation.exists_hilbertTaylorWilesLevels` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean:16907): **The Taylor\u2013Wiles levels over `F` exist** (LEAF \u2014 new 2026-07-26 as `exists_hilbertPatchingSystem`; RESTATED 2026-07-27 to produce the HOISTED `\u211a`-level interface instead of an `F`-level copy of it, and CUT the same day so that it is asked only for the RAW level data). This is the whole `F`-specific arithmetic of the patching argument, and the ONLY place where `htr` and `hgal` are consumed. Out of the `F`-level deformation and Hecke data, and the Taylor\u2013Wiles prime supply `hTW`, produce the shared data `q`, `d`, `coeff`, `M\u2080` and, at every depth `n`, a `Modularity.TaylorWilesLevelRaw`. Assembling those into a \u2026",
+  "fullname": "GaloisRepresentation.exists_hilbertTaylorWilesLevels"
+ },
+ {
+  "name": "IsHardlyRamified.connected_vector_threePow_torsion_of_hopf_package",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "text": "`GaloisRepresentation.IsHardlyRamified.connected_vector_threePow_torsion_of_hopf_package` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/Threeadic.lean:2263): **The connected part is `3`-PRIMARY** (SORRY LEAF, cut 2026-07-27 out of `exists_localInertia_no_fixed_connected_vector_of_hopf_package` below, which is PROVEN over it together with the tameness leaf `exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package` just after it). Content: every CONNECTED vector \u2014 every `z` whose point takes the value `1` at the connected counit idempotent `e\u2080` \u2014 is killed by SOME power of `3`. Nothing about inertia, nothing about ramification: this is the ORDER statement alone, and it is the half of the parent leaf that the Raynaud classification does NOT supply. WHY \u2026",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.connected_vector_threePow_torsion_of_hopf_package"
+ },
+ {
+  "name": "IsHardlyRamified.exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package",
+  "module": "Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic",
+  "text": "`GaloisRepresentation.IsHardlyRamified.exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/GaloisRepresentation/HardlyRamified/Threeadic.lean:2375): **Raynaud TAMENESS at `e = 1 < p \u2212 1`: local inertia acts on the connected `3`-torsion through a CYCLIC quotient** (SORRY LEAF, cut 2026-07-27 out of `exists_localInertia_no_fixed_connected_vector_of_hopf_package` below, which is PROVEN over it together with the order leaf `connected_vector_threePow_torsion_of_hopf_package` just above). Content: there is ONE `\u03c3 \u2208 localInertiaGroup \ud835\udd2d\u2083` whose fixed locus on the connected `3`-torsion is contained in the fixed locus of EVERY `\u03c4 \u2208 localInertiaGroup \ud835\udd2d\u2083` \u2014 i.e. the image of `\u03c3` GENERATES the image of local inertia in the automorphism group of the connected socle. THIS \u2026",
+  "fullname": "GaloisRepresentation.IsHardlyRamified.exists_localInertia_generates_on_connected_threeTorsion_of_hopf_package"
+ },
+ {
+  "name": "AlgebraicGeometry.exists_isOpenImmersion_isProper",
+  "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification",
+  "text": "`AlgebraicGeometry.exists_isOpenImmersion_isProper` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean:239): **Nagata's compactification theorem, for a quasi-compact separated finite-type scheme over a field** (sorry leaf). TRUE and classical: Nagata (1962), *Imbedding of an abstract variety in a complete variety*; see also Conrad's *Deligne's notes on Nagata compactifications* and Stacks project tag `0F41`. Any separated finite-type morphism to a quasi-compact quasi-separated base factors as an open immersion followed by a proper morphism. Note what is NOT claimed: `P` is **not** asserted normal, smooth, or even reduced. That is the whole point of routing through the normalization afterwards \u2014 Nagata's `P` is an \u2026",
+  "fullname": "AlgebraicGeometry.exists_isOpenImmersion_isProper"
+ },
+ {
+  "name": "AlgebraicGeometry.locallyOfFiniteType_fromNormalization",
+  "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification",
+  "text": "`AlgebraicGeometry.locallyOfFiniteType_fromNormalization` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean:268): **The normalization of a scheme of finite type over a field is of finite type over it** (sorry leaf \u2014 the Nagata/Japanese input, and all that is left of the old `isFinite_fromNormalization`). TRUE and classical: a domain of finite type over a field is a Nagata (universally Japanese) ring, so its integral closure in a finite extension of its fraction field is a finite module, in particular a finite-type algebra. Stacks tag `032E` (Nagata \u27f8 finite type over a field) and `03GH` (finiteness of the relative normalization over a Nagata base). **Why the leaf is stated as `LocallyOfFiniteType` rather than `IsFinite`** \u2026",
+  "fullname": "AlgebraicGeometry.locallyOfFiniteType_fromNormalization"
+ },
+ {
+  "name": "AlgebraicGeometry.smoothOfRelativeDimension_one_fromNormalization",
+  "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification",
+  "text": "`AlgebraicGeometry.smoothOfRelativeDimension_one_fromNormalization` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean:328): **The normalization of a curve over a perfect field is a smooth curve** (sorry leaf). TRUE and classical, in three steps: the relative normalization `X` of `P` in the integral scheme `Y` is normal and integral, and has the same function field as `Y`, hence the same dimension `1`; a noetherian normal local domain of dimension one is a discrete valuation ring, so `X` is regular (Serre's criterion in dimension one, or just `IsIntegrallyClosed` + noetherian + dimension one \u27f9 `IsDedekindDomain`); and over a **perfect** field regular is equivalent to smooth (Stacks `056S`), the relative dimension being `1` because `X` \u2026",
+  "fullname": "AlgebraicGeometry.smoothOfRelativeDimension_one_fromNormalization"
+ },
+ {
+  "name": "AlgebraicGeometry.topologicalKrullDim_normalization_le_one",
+  "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification",
+  "text": "`AlgebraicGeometry.topologicalKrullDim_normalization_le_one` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean:356): **The normalized proper model of a smooth curve is one-dimensional** (sorry leaf \u2014 the dimension-theoretic input, and all that is left of the old `finite_compl_range_toNormalization`). TRUE: `i.normalization` contains the smooth curve `Y` as a dense open (Zariski's Main Theorem), and is finite over the finite-type `K`-scheme `P`, so it is itself of finite type over `K` and has the same function field as `Y`; a variety of finite type over a field has topological dimension equal to the transcendence degree of its function field, which is `1` because `Y \u27f6 Spec K` is smooth of relative dimension `1`. Stacks tags \u2026",
+  "fullname": "AlgebraicGeometry.topologicalKrullDim_normalization_le_one"
+ },
+ {
+  "name": "AlgebraicGeometry.denseRange_of_isPullback",
+  "module": "Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification",
+  "text": "`AlgebraicGeometry.denseRange_of_isPullback` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean:470): **A dominant morphism stays dominant after base change to a field-valued point** (sorry leaf \u2014 the flat-base-change input, and all that is left of the old `geometricallyConnected_of_isSmoothCompactification`). TRUE: `y : Spec L \u27f6 S` with `L` a field is flat, hence so is every base change of it, and density is preserved by flat base change (Stacks tag `0CC1`; equivalently, the schematic image commutes with flat base change, Stacks `081I`). Concretely `V \u27f6 X'` is flat, `W` is the preimage of `Y'` in `V`, and a flat morphism is generalizing, so a point of `V` whose image lies in the closure of `Y'` has a \u2026",
+  "fullname": "AlgebraicGeometry.denseRange_of_isPullback"
+ },
+ {
+  "name": "exists_projAdd",
+  "module": "Fermat.FLT.ModularCurve.EllipticScheme",
+  "text": "`Fermat.exists_projAdd` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/EllipticScheme.lean:263): **The chord\u2013tangent addition on the projective Weierstrass model** (sorry node \u2014 what is left of items 5+6 once the inversion `i`, the unit section `e` and the three structure-morphism compatibilities have been discharged; see `nonempty_projGroupLaw` for the assembly). TRUE and classical. The addition FORMULAS are already at this pin over an arbitrary `[CommRing R]` \u2014 `WeierstrassCurve.Projective.addXYZ`/`addX`/`addY`/`addZ` in `EllipticCurve/Projective/Formula.lean` \u2014 so nothing has to be invented; what is missing is the *gluing*. The formulas degenerate on the locus where the naive chart fails, so `m` is \u2026",
+  "fullname": "Fermat.exists_projAdd"
+ },
+ {
+  "name": "locally_isStandardSmooth_awayCoord",
+  "module": "Fermat.FLT.ModularCurve.EllipticScheme",
+  "text": "`Fermat.locally_isStandardSmooth_awayCoord` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/EllipticScheme.lean:554): **THE RESIDUAL LEAF OF ITEM 7a** \u2014 the degree-zero part of the localisation of the homogeneous coordinate ring at a coordinate is locally standard smooth of relative dimension `1` over `\u211a`. Everything else in `smoothOfRelativeDimension_projToSpec` is now proven: the reduction to the three coordinate charts, the identification of each chart composite with a `Spec.map` (`away\u03b9_projToSpec_eq_specMap`), the passage to the ring-hom property (`smoothOfRelativeDimension_specMap_of_locally`), and the Jacobian criterion itself (`jacobianSpan_eq_top`, supplied here as `hjac` and therefore genuinely consumed). ## What is \u2026",
+  "fullname": "Fermat.locally_isStandardSmooth_awayCoord"
+ },
+ {
+  "name": "X18.descent_system_no_solution",
+  "module": "Fermat.FLT.ModularCurve.HyperellipticJacobian",
+  "text": "`Fermat.Hyperelliptic.X18.descent_system_no_solution` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/HyperellipticJacobian.lean:1059): **THE LEAF, AFTER THE `\u221a\u22122` DESCENT** (opened 2026-07-27, replacing the `t`-form directly above, which is PROVEN over it by `descent_sq_add_eight_sq`). For coprime `0 < a < b` there are no coprime `u, v` with ab(a \u2212 b) = uv and C\u0303(a, b) = \u00b1(v\u00b2 \u2212 2u\u00b2). **HONEST ACCOUNTING: this is EQUIVALENT to the `t`-form, not weaker.** Given such `u, v` the identity `(v\u00b2 + 2u\u00b2)\u00b2 = (v\u00b2 \u2212 2u\u00b2)\u00b2 + 8(uv)\u00b2` (`ring`) returns a `t`. The leaf count at this level is unchanged at one and **no Diophantine content was disposed of**; what changed is that the two facts the descent needs \u2014 `C\u0303` odd and `gcd(C\u0303, B\u0303) = 1` \u2014 are now THEOREMS \u2026",
+  "fullname": "Fermat.Hyperelliptic.X18.descent_system_no_solution"
+ },
+ {
+  "name": "exists_fullLevelStructure_cover",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_fullLevelStructure_cover` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:1537): **Every `\u0393\u2080(N)`-datum over a `\u211a`-scheme acquires a full level-`n` structure after a faithfully flat quasi-compact base change** (sorry node) \u2014 item 2 of the itemisation on `exists_gamma0GITPresentation` below, the level-`n` torsor, now a leaf of its own. ## What is cited Katz\u2013Mazur (8.1.1) rigidify by `[\u0393(n)]`-structures for `n \u2265 3` invertible on the base; over a `\u211a`-scheme every `n` is invertible. The content is that `E[n] \u27f6 T` is finite \u00e9tale of rank `n\u00b2` (Katz\u2013Mazur 2.3.1; Silverman *AEC* III.6.4 for the fibres, plus flatness of the multiplication-by-`n` kernel), so the sheaf `Isom_T((\u2124/n)\u00b2_T, E[n])` is \u2026",
+  "fullname": "Fermat.exists_fullLevelStructure_cover"
+ },
+ {
+  "name": "exists_gamma0GITPresentation_of_cover",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_gamma0GITPresentation_of_cover` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:1578): **Representability of the rigidified moduli problem** (sorry node) \u2014 item 1 of the itemisation on `exists_gamma0GITPresentation` below, with item 2 discharged by the hypothesis `hcov`. Given that every `\u0393\u2080(N)`-datum over a `\u211a`-scheme acquires a full level-`n` structure fppf-locally \u2014 which is exactly `exists_fullLevelStructure_cover` \u2014 the rigidified moduli scheme `\ud835\udd10([\u0393\u2080(N)], [\u0393(n)])` exists as an AFFINE `\u211a`-scheme `Spec A` with the finite deck group `G = GL\u2082(\u2124/n)` acting, carrying a universal family `dM`, and the classifying map of `dM` is the quotient map onto `Spec A^G`. ## What the prover of this node owes, \u2026",
+  "fullname": "Fermat.exists_gamma0GITPresentation_of_cover"
+ },
+ {
+  "name": "exists_geomPts_ker_eq_bot_sigmaSq",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_geomPts_ker_eq_bot_sigmaSq` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:3182): **The square of the tautological `\u211a\u0304`-point cover is schematically dominated by its `\u211a\u0304`-points** (sorry leaf (iii-b-1), split out 2026-07-27). `\u03a3 = \u2210_J Spec \u211a\u0304`, so `\u03a3 \u00d7_\u211a \u03a3 = \u2210_{j,k} Spec (\u211a\u0304 \u2297_\u211a \u211a\u0304)`. What is asked is a family of `\u211a\u0304`-points of that square whose descent `\u2210_I Spec \u211a\u0304 \u27f6 \u03a3 \u00d7_\u211a \u03a3` has trivial kernel ideal sheaf \u2014 i.e. a schematically dominant cover of the square by copies of `Spec \u211a\u0304`. **NOTHING ARITHMETIC IS IN THIS LEAF**: no group law, no `y`, no `N`, no Galois stability, not even an ambient scheme `A`. It is a statement about `(\u2210_J Spec \u211a\u0304) \u00d7_{Spec \u211a} (\u2210_J Spec \u211a\u0304)` alone, and it is the ONLY \u2026",
+  "fullname": "Fermat.exists_geomPts_ker_eq_bot_sigmaSq"
+ },
+ {
+  "name": "CyclicSubgroupOfOrder.flat_torsion\u03b9",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.CyclicSubgroupOfOrder.flat_torsion\u03b9` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:4727): **`C[n]` is flat over the base** (sorry leaf). **FALSITY AUDIT (2026-07-27, with an explicit counterexample). THIS STATEMENT IS FALSE AS STATED. Do not dispatch a prover at it; it needs a CUT-LEVEL repair, described at the end.** The counterexample lives in characteristic `p`, where `geom_cyclic` \u2014 a condition on the SET of geometric points \u2014 does not pin the RANK of `C`, so `C` may carry an arbitrary infinitesimal part invisible to it. > Let `k = \ud835\udd3d\u0304_p` (`p \u2265 5`), `R = k[[t]]`, `T = Spec R`. > * `E\u2081 / R` = a constant ORDINARY elliptic curve, and `P \u2208 E\u2081[p](k)` a > point of order `p`; so `(\u2124/p)_T \u2286 E\u2081` is a \u2026",
+  "fullname": "Fermat.CyclicSubgroupOfOrder.flat_torsion\u03b9"
+ },
+ {
+  "name": "exists_isCoarseModuliY0_isSmoothCurve",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_isCoarseModuliY0_isSmoothCurve` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:5310): **SOME coarse moduli space of the `\u0393\u2080(N)`-problem is a geometrically connected smooth curve over `\u211a`, for `N \u2265 1`** (sorry leaf \u2014 the MODULAR half of the compactification, and the ONLY modular input to `X_0(N)`'s existence). TRUE and classical: for `N \u2265 1` the coarse moduli space of the `\u0393\u2080(N)`-problem over `\u211a` is a smooth affine geometrically connected curve. Smoothness is normality of the coarse space of a smooth Deligne\u2013Mumford stack of dimension one together with \"normal curve = smooth curve\" (Deligne\u2013Rapoport III.1; Katz\u2013Mazur 8.2, and 8.2.1 for the `\u2124[1/N]`-smoothness that specialises to this); geometric \u2026",
+  "fullname": "Fermat.exists_isCoarseModuliY0_isSmoothCurve"
+ },
+ {
+  "name": "y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:5658): **Kenku's prime-square determination at the seven levels with a finite isogeny classification** (sorry node, introduced 2026-07-27): `Y_0(N)(\u211a) = \u2205` for `N = p\u00b2`, `p \u2208 {11, 17, 19, 37, 43, 67, 163}`. TRUE: none of `121, 289, 361, 1369, 1849, 4489, 26569` lies in the Mazur\u2013Kenku list `1, \u2026, 19, 21, 25, 27, 37, 43, 67, 163` of levels with a non-cuspidal rational point \u2014 every one of them exceeds `163`. See `isogenyClassPrimeSqLevels` for the route: the two-independent-lines reduction, and the finiteness of `Y_0(p)(\u211a)` that makes it terminate. The seven fall into two sub-families, and a successor may split this \u2026",
+  "fullname": "Fermat.y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel"
+ },
+ {
+  "name": "y0HasNoRationalPoint_oneSixtyNine",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.y0HasNoRationalPoint_oneSixtyNine` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:5717): **Kenku's determination at level `169`** (sorry node, introduced 2026-07-27): `Y_0(169)(\u211a) = \u2205`. TRUE: `169 > 163`, so it is outside the Mazur\u2013Kenku list. **Why this is a node of its own**, and not a member of `isogenyClassPrimeSqLevels`: `genus X_0(13) = 0`. Every other prime `p` with `p\u00b2 \u2208 isogenyPrimeSqLevels` has `genus X_0(p) \u2265 1`, hence `Y_0(p)(\u211a)` finite, hence a finite list of `p`-isogeny classes to check; at `p = 13` the curve `X_0(13)` is `\u2119\u00b9_\u211a`, `Y_0(13)(\u211a)` is infinite, and that route does not exist even in principle. `169` must be settled on `X_0(169)`, of genus `8`. This is Kenku, *The modular \u2026",
+  "fullname": "Fermat.y0HasNoRationalPoint_oneSixtyNine"
+ },
+ {
+  "name": "y0HasNoRationalPoint_of_isolatedSemiprime",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.y0HasNoRationalPoint_of_isolatedSemiprime` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6172): **The `56` levels with an isolated prime** (sorry node, introduced 2026-07-27): for `p \u2208 isolatedIsogenyPrimes` and any prime `q \u2260 p`, `Y_0(pq)(\u211a) = \u2205`. TRUE, and it needs NO geometry of `X_0(pq)` \u2014 which is why it is one statement rather than `56`. **The argument.** A rational point of `X_0(pq)` pushes forward along the degree-`\u03c8(q)` map `X_0(pq) \u2192 X_0(p)`, `(E, C_{pq}) \u21a6 (E, C_p)`, which sends non-cuspidal points to non-cuspidal points. For `p \u2208 isolatedIsogenyPrimes` Mazur's Theorem 1 tabulates `X_0(p)(\u211a)` completely, and the non-cuspidal points are these `j`-invariants: | `p` | non-cuspidal `j` | CM | \u2026",
+  "fullname": "Fermat.y0HasNoRationalPoint_of_isolatedSemiprime"
+ },
+ {
+  "name": "y0HasNoRationalPoint_x0TwentySix",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.y0HasNoRationalPoint_x0TwentySix` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6205): **`Y_0(26)(\u211a) = \u2205`** (sorry node, introduced 2026-07-27). TRUE: `26` is not in the Mazur\u2013Kenku list. `X_0(26)` has genus `2`, four rational cusps, and `rank J_0(26)(\u211a) = 0` \u2014 indeed `J_0(26) ~ 26a \u00d7 26b` with both factors elliptic of rank `0`. **Why this is its own leaf and not folded in with `35, 39`.** The rank is `0`, so `card_le_of_rankZeroJacobian` applies \u2014 and it is NEVER SHARP. Over the odd primes `3 \u2264 \u2113 < 60` with `\u2113 \u2224 26` the Eichler\u2013Shimura counts `#X_0(26)(\ud835\udd3d_\u2113) = \u2113 + 1 \u2212 Tr(T_\u2113 \u2223 S_2(\u0393_0(26)))` are \u2113 = 3 5 7 11 17 19 23 29 31 37 41 43 47 53 59 # = 6 10 8 8 24 12 28 22 32 42 42 50 32 42 76 with \u2026",
+  "fullname": "Fermat.y0HasNoRationalPoint_x0TwentySix"
+ },
+ {
+  "name": "y0HasNoRationalPoint_of_chabautySemiprimeLevel",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.y0HasNoRationalPoint_of_chabautySemiprimeLevel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6244): **`Y_0(65)(\u211a) = Y_0(91)(\u211a) = \u2205`** (sorry node, introduced 2026-07-27) \u2014 the two genuinely hard levels of the `61`. TRUE: neither `65` nor `91` is in the Mazur\u2013Kenku list. This is Kenku, *The modular curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math. Proc. Cambridge Philos. Soc. **87** (1980) 15\u201320 \u2014 and the fact that Kenku treated exactly these two together is the historical confirmation of the arithmetic reason they are grouped here. **Why no counting argument can work, however sharp it looks.** | `N` | genus | `rank J_0(N)` | rational cusps | `\u2113` | `#X_0(N)(\ud835\udd3d_\u2113)` | \u2026",
+  "fullname": "Fermat.y0HasNoRationalPoint_of_chabautySemiprimeLevel"
+ },
+ {
+  "name": "exists_jSection",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_jSection` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6953): **Existence of the `j`-invariant of an elliptic scheme** (sorry node). TRUE and classical \u2014 this is `Y_0(1) \u2245 \ud835\udd38\u00b9_j`, Deligne\u2013Rapoport VI, or Silverman *AEC* III.1 plus descent. WHAT IT NEEDS. A Weierstrass presentation of an elliptic scheme `f : E \u27f6 T` Zariski-locally on `T`, so that `c\u2084\u00b3/\u0394` glues to a global function; equivalently, the line bundle `\u03c9 = f_* \u03a9\u00b9_{E/T}` and the classical formulas for `c\u2084, c\u2086, \u0394` as sections of its powers. None of that exists at this pin: `AbelianSchemeStruct` is a functor-of-points presentation with no coordinates anywhere, and mathlib's `WeierstrassCurve.j` is defined only for a \u2026",
+  "fullname": "Fermat.exists_jSection"
+ },
+ {
+  "name": "exists_weierstrassModel_gamma0Datum",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_weierstrassModel_gamma0Datum` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:6979): **Existence of a `\u0393\u2080(N)`-datum over `\u211a` with a prescribed Weierstrass model** (sorry node). TRUE: take the projective Weierstrass curve of `E`, whose complement of the point at infinity is `Spec \u211a[E]` by construction, with the subgroup scheme generated by `g` \u2014 which descends to `\u211a` precisely because `hstable` says the Galois action preserves `\u27e8g\u27e9`. This is the SAME missing construction as `exists_ellipticScheme_of_weierstrass`, not a new one: both need the projective Weierstrass scheme, i.e. that theorem's ITEM 1, the grading on a graded quotient ring needed to form `Proj`, recorded there as in flight and \u2026",
+  "fullname": "Fermat.exists_weierstrassModel_gamma0Datum"
+ },
+ {
+  "name": "nonempty_cuspIndexing_of_ne_zero",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.nonempty_cuspIndexing_of_ne_zero` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7360): **`X_0(N)` has a `\u211a`-rational cusp above every divisor `d \u2223 N` with `\u03c6(gcd(d, N/d)) = 1`, and these are pairwise distinct** (sorry node). TRUE and classical (Ogg; Deligne\u2013Rapoport VI.6, or Diamond\u2013Im \u00a79.3): the cusps of `X_0(N)` over `\u211a\u0304` are `\u0393_0(N)\\\u2119\u00b9(\u211a)`, the cusp `a/d` with `gcd(a, d) = 1` and `d \u2223 N` depends only on `d` and on `a mod gcd(d, N/d)`, and `\u03c3_t \u2208 Gal(\u211a(\u03b6_n)/\u211a)` sends the class of `a` to the class of `t\u207b\u00b9 a`. When `\u03c6(gcd(d, N/d)) = 1` that action is trivial, so the cusp is `\u211a`-rational; and cusps above distinct `d` are distinct because `d` is a `\u0393_0(N)`-invariant of the cusp. WHAT REMAINS, \u2026",
+  "fullname": "Fermat.nonempty_cuspIndexing_of_ne_zero"
+ },
+ {
+  "name": "exists_jacobianOf_x0",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_jacobianOf_x0` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7546): **The Jacobian of `X_0(N)` exists** (sorry node). TRUE and classical: `X` is a smooth proper geometrically connected curve over `\u211a` with a rational point `o`, so its Albanese \u2014 equivalently `Pic\u2070` \u2014 is an abelian variety over `\u211a` and the Abel\u2013Jacobi map based at `o` is initial among maps to abelian varieties killing `o`. That is exactly `IsJacobianOf`. `h` is load-bearing: without properness and smoothness there is no abelian Albanese, and without geometric connectedness `Pic\u2070` is not connected. IRREDUCIBLE at this pin: neither `Pic\u2070` of a relative curve, nor the Albanese, nor Riemann\u2013Roch exists in `Mathlib`.",
+  "fullname": "Fermat.exists_jacobianOf_x0"
+ },
+ {
+  "name": "finite_jacobian_of_kenkuLevel",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.finite_jacobian_of_kenkuLevel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7582): **`rank J_0(N)(\u211a) = 0` at the thirteen Kenku levels** (sorry node) \u2014 the DEEP half of `hasRankZeroJacobian_of_kenkuLevel`. TRUE, by the reconnaissance recorded below: decomposing the cuspidal subspace `S_2(\u0393_0(N))` into newform factors and evaluating `L(A, 1)` on each, EVERY factor at EVERY one of the thirteen levels has `L(A, 1) \u2260 0`; so `J_0(N)` has analytic rank `0`, hence Mordell\u2013Weil rank `0` by Kolyvagin\u2013Logachev, hence `J_0(N)(\u211a)` is finite. **Two of the thirteen, `35` and `39`, were added on 2026-07-27** and their reconnaissance is NOT in the `#### Reconnaissance` block below, which predates them; it is \u2026",
+  "fullname": "Fermat.finite_jacobian_of_kenkuLevel"
+ },
+ {
+  "name": "injective_aj_of_one_le_x0Genus",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.injective_aj_of_one_le_x0Genus` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7612): **Positive genus makes Abel\u2013Jacobi injective on rational points** (sorry node) \u2014 the bridge from the arithmetic `x0Genus` to the geometry. TRUE and classical, and it is the ONLY thing standing between `one_le_x0Genus_of_kenkuLevel` (proven above, by computation) and the `Injective` conjunct of `HasRankZeroJacobian`. Two steps, deliberately bundled here because neither can be stated separately at this pin: * `x0Genus N` is the genus of `X` \u2014 the classical formula (Diamond\u2013Shurman, Theorem 3.1.1). This cannot be stated as an equation because there is no genus of a scheme in `Mathlib`; it is therefore absorbed into \u2026",
+  "fullname": "Fermat.injective_aj_of_one_le_x0Genus"
+ },
+ {
+  "name": "exists_x0Compactification_finiteField",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_x0Compactification_finiteField` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7689): **`X_0(N)` exists over `\ud835\udd3d_\u2113` for `\u2113 \u2224 N`** (sorry node \u2014 the good-reduction half of the point count). TRUE and classical. `IsX0Compactification` was written with a GENERAL base for exactly this purpose (see its docstring), and the statement here is `exists_x0Compactification` with `Spec \u211a` replaced by `Spec \ud835\udd3d_\u2113`: the `\u0393\u2080(N)`-problem over `\ud835\udd3d_\u2113` has a coarse space, and a smooth affine curve over a field has a unique smooth projective compactification. For `\u2113 \u2224 N` the Deligne\u2013Rapoport / Igusa smooth model over `\u2124[1/N]` exhibits it as the special fibre, which is why `h\u2113N` is a hypothesis; but the statement itself is \u2026",
+  "fullname": "Fermat.exists_x0Compactification_finiteField"
+ },
+ {
+  "name": "finite_relPoint_of_x0Compactification_finiteField",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.finite_relPoint_of_x0Compactification_finiteField` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7713): **A curve proper over a finite field has finitely many rational points** (sorry node \u2014 the finiteness half of the point count). TRUE, and it is the one piece of this leaf that is not about modular curves at all: `strX` is proper, hence of finite type, over `Spec \ud835\udd3d_\u2113`; a finite-type scheme over a FINITE ring has finitely many sections, because a section is determined by the images of finitely many generators in a finite ring. The only property of `IsX0Compactification` consumed is `isProper`. `h\u2113` is `\u2113 \u2260 0` rather than `\u2113.Prime` deliberately \u2014 that is the honest minimal hypothesis, since all that is used is that \u2026",
+  "fullname": "Fermat.finite_relPoint_of_x0Compactification_finiteField"
+ },
+ {
+  "name": "card_relPoint_x0_finiteField",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.card_relPoint_x0_finiteField` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:7752): **Eichler\u2013Shimura: the special fibre has exactly `m` rational points, at the seven witness rows** (sorry node \u2014 the arithmetic half of the point count). TRUE. `#X_0(N)(\ud835\udd3d_\u2113) = \u2113 + 1 \u2212 Tr(T_\u2113 \u2223 S_2(\u0393_0(N)))`, and the seven `m` of `x0WitnessTable` are that formula evaluated. **Recomputed independently with Magma on 2026-07-27** (`CuspForms(Gamma0(N), 2)`, `Trace(HeckeOperator(S, \u2113))`), reproducing the banked table exactly: | `N` | `\u2113` | genus | `Tr T_\u2113` | `\u2113 + 1 \u2212 Tr T_\u2113` | |-----|-----|-------|----------|-------------------| | 20 | 3 | 1 | `\u22122` | 6 | | 24 | 5 | 1 | `\u22122` | 8 | | 28 | 5 | 2 | `0` | 6 | | 30 | 17 | 3 \u2026",
+  "fullname": "Fermat.card_relPoint_x0_finiteField"
+ },
+ {
+  "name": "eq_zero_of_squareZero_of_isUnit_nsmul",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.eq_zero_of_squareZero_of_isUnit_nsmul` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:8402): **The kernel of `A(R) \u27f6 A(R/I)` along a SQUARE-ZERO extension has no `q`-torsion when `q` is a unit of `R`** (sorry node \u2014 and, after the reduction below, the ONLY thing left in the whole `q \u2260 \u2113` half of `neronKernel_torsionFree`). TRUE, and it is the standard first statement of deformation theory. For a SMOOTH `f : A \u27f6 S` (here `ab.smooth`) and a square-zero extension `R \u21a0 R/I`, the kernel of `A(R) \u27f6 A(R/I)` is canonically Hom_{R/I}(e^* \u03a9_{A/S} \u2297 R/I, I) \u2245 Lie(A/S) \u2297 I, the lifts of a fixed `(R/I)`-point forming a TORSOR under it. The point that matters is not the precise identification but its consequence: the \u2026",
+  "fullname": "Fermat.eq_zero_of_squareZero_of_isUnit_nsmul"
+ },
+ {
+  "name": "exists_x0CompactificationModel",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_x0CompactificationModel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:9171): **The smooth proper integral model of `X_0(N)` over `\u2124_(\u2113)` exists, with its generic fibre identified with the given `X/\u211a`** (sorry node \u2014 Deligne\u2013Rapoport / Igusa). This is `exists_x0CurveModel_of_base` with everything FORMAL removed. What is left is the one citation: `X_0(N)` has a smooth proper model over `\u2124[1/N]`, hence over `\u2124_(\u2113)` for `\u2113 \u2224 N`, and its generic fibre is the `X_0(N)` we started with \u2014 the second half being the uniqueness of the coarse moduli space and of the smooth compactification of a curve over `\u211a`, both of which are determined up to unique isomorphism by `IsCoarseModuliY0`'s initiality \u2026",
+  "fullname": "Fermat.exists_x0CompactificationModel"
+ },
+ {
+  "name": "exists_relativeJacobian",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_relativeJacobian` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:9259): **The relative Jacobian of a smooth proper curve with a section exists** (sorry node \u2014 Grothendieck's relative Picard scheme). TRUE: for `f : C \u27f6 S` smooth and proper with geometrically connected fibres of dimension `1` and a section `o`, the relative Picard functor `Pic\u2070_{C/S}` is representable by an abelian scheme over `S`, and Abel\u2013Jacobi `x \u21a6 [x] \u2212 [o]` is the universal map to an abelian scheme \u2014 which is exactly `IsJacobianOf`. (FGA, expos\u00e9 232; BLR *N\u00e9ron Models* ch. 8\u20139; the section is what makes `Pic` representable rather than only its fppf sheafification.) Note the base is ARBITRARY: this is the \u2026",
+  "fullname": "Fermat.exists_relativeJacobian"
+ },
+ {
+  "name": "isSmoothProperCurve_of_fibreIdent",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.isSmoothProperCurve_of_fibreIdent` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:9287): **A fibre of a smooth proper curve is a smooth proper curve** (sorry node). TRUE, and it is pure base change: `IsFibreIdent s f f'` says by Yoneda in `Over S'` that `f'` is isomorphic to `f \u00d7_S S'`, and `IsProper`, `SmoothOfRelativeDimension 1` and `GeometricallyConnected` are each stable under base change and invariant under isomorphism over the base. It is needed because the special fibre `X'` of a curve model is constrained by NOTHING but its functor of points \u2014 `IsX0CurveModel` carries `spX`/`spX_nat` and no geometric field about `strX'` \u2014 so `exists_relativeJacobian` cannot be applied to it until its \u2026",
+  "fullname": "Fermat.isSmoothProperCurve_of_fibreIdent",
+  "wip": true
+ },
+ {
+  "name": "exists_jacobianFibreIdent",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_jacobianFibreIdent` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:9316): **Formation of the Jacobian commutes with base change** (sorry node). TRUE: if `jac` presents `J/S` as the Jacobian of `C/S` and `jac'` presents `J'/S'` as the Jacobian of the fibre `C'/S'`, based at the point `o'` lying over `o`, then `J'` is the fibre of `J` \u2014 and the identification is additive and intertwines the two Abel\u2013Jacobi maps. This is \"cohomology and base change\" for `Pic\u2070` (BLR ch. 8.1, 9.4). **`_ho` is load-bearing, not decoration.** The Jacobian is only defined up to translation once the base point moves: if `o'` were not the fibre of `o`, `jac'` would differ from the base change of `jac` by \u2026",
+  "fullname": "Fermat.exists_jacobianFibreIdent"
+ },
+ {
+  "name": "finite_specialFibre_of_x0NeronDatum",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.finite_specialFibre_of_x0NeronDatum` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:9642): **The special fibre of a N\u00e9ron-pinned datum has finitely many rational points** (sorry node \u2014 geometry, UNIVERSAL in `\u2113`). TRUE, and it carries no sharpness claim whatever, which is why it is separated out: `d.spX` identifies `X_0(N)(\ud835\udd3d_\u2113)` with the `\ud835\udd3d_\u2113`-points of the integral model `xstr`, and `d.model.isProper` makes that model proper over `Spec \u2124_(\u2113)`; so the special fibre is a proper scheme over the finite field `\ud835\udd3d_\u2113` and has finitely many rational points. `\u2113 \u2260 0` is not a hypothesis because `d.base` already forces `\u2113` prime \u2014 see `IsReductionBase`, whose docstring derives primality from the two conditions. \u2026",
+  "fullname": "Fermat.finite_specialFibre_of_x0NeronDatum"
+ },
+ {
+  "name": "aj_injective_of_x0NeronDatum",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.aj_injective_of_x0NeronDatum` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:9675): **Abel\u2013Jacobi is injective on the special fibre** (sorry node \u2014 geometry, UNIVERSAL in `\u2113`). TRUE: `x \u21a6 [x] \u2212 [o']` is injective on the points of a curve exactly when the genus is positive, since `[x] \u2212 [y] = 0` with `x \u2260 y` gives a degree-`1` map to `\u2119\u00b9`. `d.model` pins the curve as `X_0(N)`, and `hlevel` supplies positivity of the genus \u2014 the genus values at the eleven Kenku levels, in the order of `kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`, and the four sieve levels have genus `3, 4, 5, 5` (Magma, 2026-07-27). Positivity is preserved by good reduction, so it holds on the special fibre. This is the \u2026",
+  "fullname": "Fermat.aj_injective_of_x0NeronDatum"
+ },
+ {
+  "name": "exists_sharpSievePrime_classCount",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_sharpSievePrime_classCount` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:9734): **At some good odd prime the reduced rational Jacobian meets the Abel\u2013Jacobi image in at most `numRationalCusps N` classes** (sorry node \u2014 the arithmetic residue of the sieve). This is `exists_sharpSievePrime` with the two pieces of geometry above removed, and it is the statement Magma actually computes: a count of the intersection of two subsets of the FINITE abelian group `J_0(N)(\ud835\udd3d_\u2113)` \u2014 the subgroup `Set.range d.redJ \u2245 J_0(N)(\u211a)` and the set of Abel\u2013Jacobi classes `Set.range (jac'.aj)` of the `\u2113 + 1 \u2212 Tr T_\u2113` points of `X_0(N)(\ud835\udd3d_\u2113)`. The second conjunct, `numRationalCusps N \u2264 #X_0(N)(\ud835\udd3d_\u2113)`, is what lets the \u2026",
+  "fullname": "Fermat.exists_sharpSievePrime_classCount"
+ },
+ {
+  "name": "isX0Compactification_data_of_compactificationY0",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.isX0Compactification_data_of_compactificationY0` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:10702): **The three facts about `X_0(N)/\u211a` that `IsCompactificationY0` does not carry** (sorry node). TRUE for `N \u2260 0`. `hc` pins `Y` up to isomorphism as the coarse moduli space of the `\u0393\u2080(N)`-problem over `\u211a`, which is a geometrically connected smooth affine curve; `hX` presents `X` as a smooth proper scheme containing it as a DENSE open (`isDominant`). Hence `X` is a smooth proper geometrically connected curve \u2014 relative dimension `1` and geometric connectedness transfer along a dominant open immersion from `Y` \u2014 and its cusp locus, the complement of a dense open in an irreducible curve, is finite. `_hN` is \u2026",
+  "fullname": "Fermat.isX0Compactification_data_of_compactificationY0"
+ },
+ {
+  "name": "exists_x0JOpenModel_of_curveModel",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_x0JOpenModel_of_curveModel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:10884): **The open-part fibres and the integral `j` exist over a given curve model** (sorry node \u2014 base change of the open immersion, and Igusa). TRUE for `q \u2224 N`. Two independent statements, deliberately kept in one leaf because both are read off the SAME model and neither is usable without the other: * the special fibre `\ud835\udcb4 \u00d7_{\u2124_(q)} \ud835\udd3d_q` of the open part exists and its complement in `\ud835\udcb3 \u00d7_{\u2124_(q)} \ud835\udd3d_q` is the special fibre of the cusp locus, which is what `hX'` and `spX_j` record; the generic side is the same statement over `\u211a`. This is formal \u2014 base change of an open immersion is an open immersion, and the fibre \u2026",
+  "fullname": "Fermat.exists_x0JOpenModel_of_curveModel"
+ },
+ {
+  "name": "exists_isX0Compactification_specialFibre",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.exists_isX0Compactification_specialFibre` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:11030): **The special fibre of the smooth model over `\u2124_(\u2113)` is `X_0(N)` over `\ud835\udd3d_\u2113`** (sorry node \u2014 good reduction, on the curve side). TRUE, and it is the defining property of good reduction: for `\u2113 \u2224 N` the Deligne\u2013Rapoport/Igusa model `\ud835\udcb3` over `\u2124_(\u2113)` has `\ud835\udcb3 \u00d7_{\u2124_(\u2113)} \ud835\udd3d_\u2113` the coarse space of the same `\u0393\u2080(N)`-moduli problem over `\ud835\udd3d_\u2113`, and it is smooth, proper and geometrically connected there because those properties are fibrewise for a smooth proper model. So the datum's special fibre `X'` carries an `IsX0Compactification N` over `\ud835\udd3d_\u2113`, its open part being the special fibre of the model's own open part. **The \u2026",
+  "fullname": "Fermat.exists_isX0Compactification_specialFibre"
+ },
+ {
+  "name": "nonempty_relPointEquiv_of_isX0Compactification",
+  "module": "Fermat.FLT.ModularCurve.X0",
+  "text": "`Fermat.nonempty_relPointEquiv_of_isX0Compactification` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/ModularCurve/X0.lean:11089): **`X_0(N)` over `\ud835\udd3d_\u2113` is unique up to isomorphism, hence its rational points up to bijection** (sorry node). TRUE, and classical, in two steps \u2014 and both steps are already *stated* in this file, which is why this is a small leaf rather than a theory: * `IsCoarseModuliY0` is an INITIALITY property, so it determines `(Y, classify)` up to unique isomorphism over the base. Its own docstring says exactly this, and `Y0HasNoRationalPoint` is quantified over all coarse moduli spaces for precisely this reason. So `Y\u2081 \u2245 Y\u2082` over `\ud835\udd3d_\u2113`. * Over a FIELD, a smooth curve has a unique smooth proper compactification: two smooth \u2026",
+  "fullname": "Fermat.nonempty_relPointEquiv_of_isX0Compactification"
+ },
+ {
+  "name": "exists_isWeaklyRegular_span_eq_maximalIdeal",
+  "module": "Fermat.FLT.Modularity.AbelianSchemeIsogeny",
+  "text": "`Fermat.exists_isWeaklyRegular_span_eq_maximalIdeal` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:1990): **A REGULAR LOCAL RING HAS A REGULAR SYSTEM OF PARAMETERS, AND IT IS A REGULAR SEQUENCE** (sorry leaf \u2014 pure commutative algebra; would be at home in `Mathlib/RingTheory/RegularLocalRing/`). `\ud835\udd2a_R` is generated by `dim R` elements *by the definition of `IsRegularLocalRing`* (`spanFinrank_maximalIdeal`); the CONTENT of this leaf is that some such generating list is a weakly regular sequence. **THIS IS BLOCKED BY DECLARATION ORDER, NOT BY MATHEMATICS \u2014 DO NOT PROVE IT FROM SCRATCH.** The induction is on `n = (\ud835\udd2a_R).spanFinrank`: * `n = 0`: `\ud835\udd2a_R = \u22a5`, so `R` is a field and `rs = []` works (`IsWeaklyRegular R []` is \u2026",
+  "fullname": "Fermat.exists_isWeaklyRegular_span_eq_maximalIdeal"
+ },
+ {
+  "name": "isWeaklyRegular_map_of_ringKrullDim_eq",
+  "module": "Fermat.FLT.Modularity.AbelianSchemeIsogeny",
+  "text": "`Fermat.isWeaklyRegular_map_of_ringKrullDim_eq` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:2030): **A SYSTEM OF PARAMETERS OF A REGULAR LOCAL RING IS A REGULAR SEQUENCE** (sorry leaf \u2014 pure commutative algebra; this is \"regular local \u27f9 Cohen\u2013Macaulay\" in the only form the assembly needs, and it is the one genuinely missing piece of commutative algebra under this node). The hypotheses say exactly that `rs.map \u03c6` is a system of parameters of `T`: `hspan` makes `Ideal.span (rs.map \u03c6) = Ideal.map \u03c6 \ud835\udd2a_R`, `hfib` says that ideal is `\ud835\udd2a_T`-primary (dimension `0` quotient), and `hlen` with `hdim` says the list has exactly `dim T` entries. `T` regular \u27f9 `T` Cohen\u2013Macaulay \u27f9 every system of parameters is a regular \u2026",
+  "fullname": "Fermat.isWeaklyRegular_map_of_ringKrullDim_eq"
+ },
+ {
+  "name": "flat_of_isWeaklyRegular_span_eq_maximalIdeal",
+  "module": "Fermat.FLT.Modularity.AbelianSchemeIsogeny",
+  "text": "`Fermat.flat_of_isWeaklyRegular_span_eq_maximalIdeal` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:2075): **THE LOCAL CRITERION OF FLATNESS** (sorry leaf \u2014 pure commutative algebra; Matsumura *Commutative Ring Theory* 22.3, Stacks 00MK. Absent from mathlib, from `~/cs/FLT` and from this project). If `\ud835\udd2a_R` is generated by an `R`-regular sequence `rs` \u2014 equivalently, `R` is regular local with regular system of parameters `rs` \u2014 and the image of `rs` is `T`-regular, then `T` is flat over `R`. **FAITHFULNESS \u2014 the separatedness hypothesis is present, disguised as `[IsNoetherianRing T] [IsLocalRing T] [IsLocalHom \u03c6]`, and it is LOAD-BEARING.** The classical criterion needs `T` to be `\ud835\udd2a_R`-adically *ideally separated*; \u2026",
+  "fullname": "Fermat.flat_of_isWeaklyRegular_span_eq_maximalIdeal"
+ },
+ {
+  "name": "nonempty_module_infKernel_of_squareZero",
+  "module": "Fermat.FLT.Modularity.AbelianSchemeIsogeny",
+  "text": "`Fermat.nonempty_module_infKernel_of_squareZero` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:2841): **THE LIE ALGEBRA OF A SMOOTH GROUP SCHEME** (sorry leaf, created 2026-07-27 as `eq_zero_of_nsmul_eq_zero_of_squareZero` and RESTATED 2026-07-27 in its present module-theoretic form \u2014 the ONE remaining input of `finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing in that half of the old cube leaf that mathlib does not already have). **FALSITY AUDIT (2026-07-27): THIS LEAF IS FALSE AS STATED, AND SO IS ITS CONSUMER `eq_zero_of_nsmul_eq_zero_of_squareZero`. DO NOT ATTEMPT A PROOF BEFORE THE STATEMENT IS REPAIRED.** The defect is an INSTANCE DIAMOND in the binder `(K : CommRingCat.{u}) [Field K]`, \u2026",
+  "fullname": "Fermat.nonempty_module_infKernel_of_squareZero",
+  "wip": true
+ },
+ {
+  "name": "isQuasiAffine_ker_mulByNat_of_field_char",
+  "module": "Fermat.FLT.Modularity.AbelianSchemeIsogeny",
+  "text": "`Fermat.isQuasiAffine_ker_mulByNat_of_field_char` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean:3547): **`ker[p]` is a QUASI-AFFINE SCHEME in characteristic `p`** (sorry leaf \u2014 the theorem of the cube; cut 2026-07-27 out of `isAffine_ker_mulByNat_of_field_char`, which is now PROVEN over it through the bridge `isAffine_of_isQuasiAffine_of_universallyClosed` immediately above). **HONESTY FIRST: this is a CHANGE OF SHAPE, NOT a reduction of content.** For a scheme proper over a field, *quasi-affine*, *affine* and *finite* are all equivalent, and both equivalences are now PROVEN here \u2014 so a prover at this leaf owes neither more nor less than a prover owed at `finite_preimage_mulByNat_of_field_char` two cuts ago. \u2026",
+  "fullname": "Fermat.isQuasiAffine_ker_mulByNat_of_field_char",
+  "wip": true
+ },
+ {
+  "name": "rationalCuspForms_span_eq_top",
+  "module": "Fermat.FLT.Modularity.Interface",
+  "text": "`GaloisRepresentation.Modularity.rationalCuspForms_span_eq_top` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:2913): **SHIMURA'S RATIONALITY THEOREM: the cusp forms with RATIONAL `q`-expansion `\u2102`-span `S\u2082(\u0393\u2080(N))`** (sorry leaf, opened 2026-07-27 as the single arithmetic residue of `heckeSubring_zRank_le` below). Shimura, *Introduction to the Arithmetic Theory of Automorphic Functions*, Theorem 3.52; equivalently Diamond\u2013Shurman \u00a76.5, where this `\u211a`-structure is what defines the `Aut(\u2102)`-action `f \u21a6 f^\u03c3`. The classical proof is the `q`-expansion principle on the **`\u211a`-model** of `X\u2080(N)`: weight-2 cusp forms are global differentials, `X\u2080(N)` and its cusp `\u221e` are defined over `\u211a`, the uniformizer `q` is `\u211a`-rational, and flat \u2026",
+  "fullname": "GaloisRepresentation.Modularity.rationalCuspForms_span_eq_top"
+ },
+ {
+  "name": "exists_gaussSumPow_of_jacobiSum",
+  "module": "Fermat.FLT.Modularity.Interface",
+  "text": "`GaloisRepresentation.Modularity.exists_gaussSumPow_of_jacobiSum` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:23764): **STICKELBERGER FOR GAUSS SUMS, PACKAGED INSIDE `\ud835\udcde CF`** (SORRY LEAF, cut 2026-07-27 out of `span_jacobiSum_le_decompCarryPow_of_two_le` below, which is now PROVEN over it \u2014 with `htwo` unused, see below). `G a` is `g(\u03c7\u1d43)^p`, the `p`-th power of the Gauss sum of `\u03c7\u1d43` against a primitive additive character of `F = \ud835\udcde CF \u29f8 q`. The Gauss sum itself lives in the compositum `L = CF(\u03b6_\u2113)`, `\u2113` the rational prime under `q`; its `p`-th power is `Gal(L/CF)`-invariant, because `\u03c3_t(g(\u03c7\u1d43)) = \u03c7\u1d43(t)\u207b\u00b9\u00b7g(\u03c7\u1d43)` and `\u03c7` is `p`-torsion \u2014 **so `G a` is an element of `\ud835\udcde CF` and the compositum never appears in this statement.** That \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_gaussSumPow_of_jacobiSum"
+ },
+ {
+  "name": "exists_smul_traceOp_qCoeff_coprime_eq_zero",
+  "module": "Fermat.FLT.Modularity.Interface",
+  "text": "`GaloisRepresentation.Modularity.exists_smul_traceOp_qCoeff_coprime_eq_zero` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:32931): **MIYAKE'S PEELING STEP: ONE PRIME COMES OFF THE MAIN LEMMA'S MODULUS** (sorry leaf \u2014 cut 2026-07-27 out of `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` below; Miyake, *Modular Forms*, the induction step in the proof of Theorem 4.6.8, pp. 160\u2013162): let `p \u2223 M` be prime and let `L > 1` be prime to `p`. If every `q`-expansion coefficient of `f \u2208 S\u2082(\u0393\u2080(M))` at an index `n` with `p \u2224 n` and `(n, L) = 1` vanishes \u2014 i.e. `f` satisfies the Main Lemma hypothesis for the modulus `pL` \u2014 then a single `V_p`-component can be REMOVED so that the remainder satisfies the Main Lemma hypothesis for the smaller \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_smul_traceOp_qCoeff_coprime_eq_zero"
+ },
+ {
+  "name": "exists_const_norm_qCoeff_prime_pow_le",
+  "module": "Fermat.FLT.Modularity.Interface",
+  "text": "`GaloisRepresentation.Modularity.exists_const_norm_qCoeff_prime_pow_le` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:37126): **The crude Weil bound along the powers of a good prime** (sorry node, THIRTEENTH decomposition 2026-07-27 \u2014 the geometric residue of `norm_qCoeff_le_two_mul_sqrt_of_not_dvd` below, which is now PROVEN over it): at `q \u2224 M` the coefficients `a_{q^r}` of a weight-two newform grow no faster than `q^{r/2}`, up to an arbitrary constant and a linear factor. WHAT THIS BUYS, AND WHY THE CUT IS NOT CIRCULAR. The consumer is the SHARP inequality `|a_q| \u2264 2\u221aq`, which is this statement at `r = 1` with the extremal constant. This leaf is a GROWTH RATE, and it is strictly weaker at every single `r` \u2014 at `r = 1` it asserts \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_const_norm_qCoeff_prime_pow_le"
+ },
+ {
+  "name": "heckeOp_atkinLehnerOp_eigen_of_newform",
+  "module": "Fermat.FLT.Modularity.Interface",
+  "text": "`GaloisRepresentation.Modularity.heckeOp_atkinLehnerOp_eigen_of_newform` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:38103): **THE SPECTRAL HALF of Atkin\u2013Lehner at `q \u2016 M`** (sorry node, THIRTEENTH decomposition 2026-07-27): the Atkin\u2013Lehner transform of a weight-two newform is again a joint eigenvector of the complex Hecke operators, for `g`'s OWN eigensystem `{a_r(g)}` \u2014 at EVERY prime `r`, the bad ones included. Classical content, in two disjoint pieces, and this is the cut a successor should make: * `r \u2260 q`: `W_q` COMMUTES with `T_r` (Atkin\u2013Lehner 1970 Lemma 17: `W_Q` commutes with `T_p` and with `U_p` for every `p \u2224 Q`). This is a pure double-coset computation with no newform input, best stated as the operator identity `heckeOp M \u2026",
+  "fullname": "GaloisRepresentation.Modularity.heckeOp_atkinLehnerOp_eigen_of_newform"
+ },
+ {
+  "name": "qCoeff_one_atkinLehnerOp_of_newform",
+  "module": "Fermat.FLT.Modularity.Interface",
+  "text": "`GaloisRepresentation.Modularity.qCoeff_one_atkinLehnerOp_of_newform` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Interface.lean:38131): **THE EIGENVALUE HALF of Atkin\u2013Lehner at `q \u2016 M`** (sorry node, THIRTEENTH decomposition 2026-07-27): the FIRST Fourier coefficient of the Atkin\u2013Lehner transform of a normalized weight-two newform is `\u2212a_q`. This is Atkin\u2013Lehner 1970 Theorem 3 (Diamond\u2013Shurman \u00a75.8) with the weight-two exponent `q^{k/2\u22121} = 1` already taken: `a\u2081(g \u2223[2] W_q) = \u2212a_q(g)`. Equivalently, since `U_q g = a_q(g)\u00b7g` (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`, PROVEN), it is the operator identity `U_q = \u2212W_q` on the `q`-new part, read in the first coefficient. Note the two leaves are INDEPENDENT: this one is an unconditional \u2026",
+  "fullname": "GaloisRepresentation.Modularity.qCoeff_one_atkinLehnerOp_of_newform"
+ },
+ {
+  "name": "exists_inverted_irreducibleSpace_integralSystemModel",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.exists_inverted_irreducibleSpace_integralSystemModel` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:6389): **EGA IV 9.7.7 OVER `Spec \u2124`, IN THE SHAPE THE ARGUMENT ACTUALLY PRODUCES** (SORRY LEAF, cut 2026-07-27 out of `exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre` immediately below, which is PROVEN over it). This carries the WHOLE mathematical content of that leaf \u2014 the layer below removes packaging only \u2014 and a prover here needs NOTHING from this file except `integralSystemIdeal` and `IntegralSystemModel`, so it is dispatchable to a commutative algebraist in isolation, exactly like its Lang\u2013Weil sibling `exists_bound_forall_zmodSolvable_of_irreducibleFibre`. TWO SHAPE CHANGES relative to \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_inverted_irreducibleSpace_integralSystemModel"
+ },
+ {
+  "name": "exists_stepanovNormalisation",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.exists_stepanovNormalisation` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:6766): **ITEM 2a: SCHMIDT'S NORMALISATION** (SORRY LEAF, cut 2026-07-27), his Chapter III \u00a71 \"Reduction\", (4.1)\u2013(4.2). An absolutely irreducible plane curve may be moved by a SHEAR `h(X,Y) = c\u207b\u00b9 \u00b7 g(X + cY, Y)` into the normal form `F = Y^d + g\u2081(X)Y^{d\u22121} + \u22ef + g_d(X)` with `deg g_i \u2264 i`, which is the shape every later step assumes. The curve is presented as an element of `\ud835\udd3d_p[X][Y]`, i.e. `Polynomial (Polynomial (ZMod p))`, since every downstream step works with `F(x, Y) = F.map (Polynomial.evalRingHom x)` \u2014 a univariate polynomial in `Y` \u2014 and the `MvPolynomial (Fin 2)` packaging only gets in the way. WHY THE SHEAR \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_stepanovNormalisation"
+ },
+ {
+  "name": "exists_stepanovDiscriminant",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.exists_stepanovDiscriminant` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:6808): **ITEM 2b: THE DISCRIMINANT BOUND** (SORRY LEAF, cut 2026-07-27), Schmidt III (4.1) and (4.3). `\u0394(X)`, the discriminant of the normalised `F` as a polynomial in `Y`, is a NONZERO polynomial of degree at most `d(d\u22121)`, and off its zero set the fibre `F(x, Y)` has full degree `d` and `d` distinct roots. WHY `deg \u0394 \u2264 d(d\u22121)`. The discriminant of `a\u2080Y\u1d48 + \u22ef + a_d` is a polynomial of degree `2d \u2212 2` in the `a\u1d62` in which every monomial `a\u2081^{i\u2081} \u22ef a_d^{i_d}` satisfies `i\u2081 + 2i\u2082 + \u22ef + d i_d = d(d\u22121)` \u2014 Schmidt (4.1), from Lemma 5A of his Chapter I. Substituting `a\u1d62 = g\u1d62(X)` with `deg g\u1d62 \u2264 i` (hypothesis `hcoeff`) gives \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_stepanovDiscriminant"
+ },
+ {
+  "name": "exists_stepanovNormPolynomial",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.exists_stepanovNormPolynomial` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:6862): **ITEM 2c: THE AUXILIARY FUNCTION AND ITS NORM** (SORRY LEAF, cut 2026-07-27) \u2014 Schmidt III Lemma 4A together with Lemma 5A, for the SECOND of his two algebraic functions (`\u03bb = 2`, `\u03b5\u2082 = d \u2212 1`). **This is the genuinely hard step of the whole route and the place the `\u221aq` comes from.** Let `\u03b7` satisfy `F(X, \u03b7) = 0`, so `\ud835\udd3d_p(X, \u03b7)/\ud835\udd3d_p(X)` has degree `d`. * **Lemma 4A** produces `a(X, Y)` with `a(X, \u03b7) \u2260 0`, with `deg a \u2264 (\u03b5\u2082/d)\u00b7pM + p(d \u2212 3/2)`, and \u2014 writing `D_\u03bd` for the `\u03bd`-th hyperderivative, i.e. `Polynomial.hasseDeriv \u03bd` \u2014 with `a^{(\u03bd)}(x, y) = 0` for all `x \u2208 \ud835\udd04`, `y \u2208 \ud835\udd10\u2082(x)` and `0 \u2264 \u03bd < M`. Its proof is a \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_stepanovNormPolynomial"
+ },
+ {
+  "name": "exists_bound_forall_hypersurfaceCount_of_planeCurveCount",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.exists_bound_forall_hypersurfaceCount_of_planeCurveCount` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:7183): **ITEM 4: BERTINI OVER FINITE FIELDS** (SORRY LEAF, cut 2026-07-27) \u2014 Schmidt Chapter V, Theorems 4B/4C and 5A: from PLANE curves to an absolutely irreducible HYPERSURFACE in `N` variables. Given the plane-curve count, an absolutely irreducible `h \u2208 \ud835\udd3d_p[X\u2081,\u2026,X_N]` of total degree `d` has at least `c\u207b\u00b9 p^{N\u22121}` points over `\ud835\udd3d_p`, for all `p` past a bound depending only on `N` and `d`. THE ARGUMENT is the averaging displayed in the subsection header, run with the plane count `N(M) \u2265 q/2` rather than with `N(M) \u2265 1`: it then yields `N \u2265 (1 \u2212 \u03c8/q)\u00b7q^{N\u22121}/2`, so `c = 4` works once `q > 2\u03c8`. The constant is left \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_bound_forall_hypersurfaceCount_of_planeCurveCount"
+ },
+ {
+  "name": "exists_bound_forall_zmodSolvable_of_hypersurfaceCount",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.exists_bound_forall_zmodSolvable_of_hypersurfaceCount` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:7230): **ITEM 5: THE LANG\u2013WEIL INDUCTION ON DIMENSION** (SORRY LEAF, cut 2026-07-27) \u2014 Schmidt Chapter VI \u00a77, Theorem 7A via Lemmas 7B and 7C: from hypersurfaces to a general variety, which is where the SYSTEM `f : Fin m \u2192 \u2026` (as opposed to a single equation) is handled. The hypersurface COUNT of item 4 is taken as a HYPOTHESIS rather than applied inside, so that this leaf is exactly \"the reduction\", provable by someone who takes the hypersurface case as given. The consumer below discharges it with `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`. WHAT IS LEFT: the passage from `Ideal.IsPrime` of the radical \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_bound_forall_zmodSolvable_of_hypersurfaceCount"
+ },
+ {
+  "name": "isReduced_of_smooth_over_rat",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.isReduced_of_smooth_over_rat` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10031): **LEAF B-i \u2014 a scheme smooth over a field is reduced** (SORRY LEAF, new 2026-07-27). Mathematically this is \"smooth over a field \u27f9 regular \u27f9 reduced\", and it is the ONE place where the standard chain is unavailable at this pin: mathlib has **no regularity theory for schemes at all**. **CHECK THAT WOULD REFUTE THIS:** `grep -rln 'IsRegularLocalRing\\|IsRegular' .lake/packages/mathlib/Mathlib/AlgebraicGeometry/` returns only `EffectiveEpi.lean` and `Sites/Fpqc.lean`, neither of which is about regularity of schemes; and `grep -rn 'IsReduced' Mathlib/RingTheory/Smooth/` is empty, so the ring-level shortcut \u2026",
+  "fullname": "GaloisRepresentation.Modularity.isReduced_of_smooth_over_rat",
+  "wip": true
+ },
+ {
+  "name": "module_finite_integralClosure_of_finiteType",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.module_finite_integralClosure_of_finiteType` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10085): **LEAF B-ii \u2014 E. Noether's finiteness theorem for the integral closure** (SORRY LEAF, new 2026-07-27). This is the mathematical content of LEAF B, reduced to pure commutative algebra with every scheme gone. `A` is a finite-type algebra over a field `k` of characteristic `0`, `B` is a REDUCED finite-type `A`-algebra. Then the integral closure of `A` in `B` is a finite `A`-module. Equivalently (Stacks 0335, specialised): a finite-type algebra over a field is NAGATA. **CORRECTION TO THE 2026-07-27 CUT-OBSTRUCTION AUDIT BELOW.** That audit records that `IsIntegralClosure.finite` \"does not apply\", and it is right \u2026",
+  "fullname": "GaloisRepresentation.Modularity.module_finite_integralClosure_of_finiteType",
+  "wip": true
+ },
+ {
+  "name": "module_finite_integralClosure_sections_of_isReduced",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.module_finite_integralClosure_sections_of_isReduced` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:10127): **LEAF B-iii \u2014 globalising Noether's theorem over one affine open of the target** (SORRY LEAF, new 2026-07-27). This supplies the hypothesis of `isFinite_fromNormalization_of_forall_affineOpens` above from LEAF B-ii, and it is the ONE step that is neither pure algebra nor pure formalism. **Why it is not immediate.** `g \u207b\u00b9\u1d41 U` is an open subscheme of the affine `C`, and it is NOT affine in general, so `\u0393(C, g \u207b\u00b9\u1d41 U)` need not be a finite-type `\u0393(P, U)`-algebra and LEAF B-ii cannot be applied to it directly. (This is the same phenomenon as Nagata's examples of a quasi-compact open in a Noetherian affine with \u2026",
+  "fullname": "GaloisRepresentation.Modularity.module_finite_integralClosure_sections_of_isReduced",
+  "wip": true
+ },
+ {
+  "name": "exists_evenDegree_totallyReal_of_sup_eq_top",
+  "module": "Fermat.FLT.Modularity.KhareWintenberger",
+  "text": "`GaloisRepresentation.Modularity.exists_evenDegree_totallyReal_of_sup_eq_top` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/KhareWintenberger.lean:12313): **Even-degree enlargement of a totally real Galois field, preserving disjointness** (sorry leaf, 2026-07-27 \u2014 elementary algebraic number theory; Neukirch I \u00a7\u00a72, 8 and the standard disjointness criterion via ramification). Given `F` totally real and Galois over `\u211a`, and an OPEN subgroup `N \u2264 \u0393 \u211a` with `N \u2294 (\u0393 F \u2192 \u0393 \u211a).range = \u22a4`, there is a totally real Galois `F' \u2287 F` with the same disjointness property and with `[F' : \u211a]` EVEN. WHY THIS NODE EXISTS. The vendored quaternionic automorphic-forms development works with a quaternion algebra over `F` that is split at every FINITE place (this is exactly the content \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_evenDegree_totallyReal_of_sup_eq_top",
+  "wip": true
+ },
+ {
+  "name": "taylorWilesLevelIdeal_le_maximalIdeal_pow",
+  "module": "Fermat.FLT.Modularity.Patching",
+  "text": "`GaloisRepresentation.Modularity.taylorWilesLevelIdeal_le_maximalIdeal_pow` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Patching.lean:3916): **The level ideals shrink** (sorry node, LEAF A1 of the 2026-07-27 decomposition of `exists_taylorWilesLevelRaw`): `\ud835\udd1f_n \u2286 \ud835\udd2a_\u039b^n` whenever every exponent satisfies `e_i \u2265 n`, i.e. `TaylorWilesLevelRaw.bIdeal_le` for the explicit level ideal. This is the convergence input of the whole patching argument \u2014 it is what makes the pigeonhole of `TaylorWilesSystem.exists_patchedModule` nontrivial \u2014 and it is pure commutative algebra over `\u039b = \u2124_p[[S_1,\u2026,S_q]]`, with no Galois or Hecke content whatsoever. INTENDED PROOF (sketched here because it is short and the leaf is meant to be closed in isolation). Write `a = S_i \u2208 \u2026",
+  "fullname": "GaloisRepresentation.Modularity.taylorWilesLevelIdeal_le_maximalIdeal_pow"
+ },
+ {
+  "name": "exists_taylorWilesBottomPresentation",
+  "module": "Fermat.FLT.Modularity.Patching",
+  "text": "`GaloisRepresentation.Modularity.exists_taylorWilesBottomPresentation` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Patching.lean:3979): **The Taylor\u2013Wiles presentation of the universal deformation ring** (sorry node, LEAF B1 of the 2026-07-27 decomposition of `exists_taylorWilesBottomLevel`): the RING half of the bottom level \u2014 the coefficient ring `\ud835\udcaa` and the `q`-generator power-series presentation of `Runiv` over it, in a universe-`0` model. Three things are asserted, and they are exactly the three the bottom level's ring side consumes: 1. **The coefficient ring `\ud835\udcaa`** exists as a `TaylorWilesCoefficients`. Classically `\ud835\udcaa = WittVector p k`; this is the obligation the REPAIR block of `exists_taylorWilesBottomLevel` records as genuinely owed \u2014 \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_taylorWilesBottomPresentation"
+ },
+ {
+  "name": "exists_taylorWilesBottomHeckeModule",
+  "module": "Fermat.FLT.Modularity.Patching",
+  "text": "`GaloisRepresentation.Modularity.exists_taylorWilesBottomHeckeModule` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Patching.lean:4065): **The bottom Hecke module** (sorry node, LEAF B2 of the 2026-07-27 decomposition of `exists_taylorWilesBottomLevel`): the MODULE half of the bottom level \u2014 the modularity-subtree plug point. Classically `M\u2080 = H\u00b9(X\u2080(N), \u2124_p)_\ud835\udd2a`, the `\ud835\udd2a`-localized cohomology of the modular curve at the level of the residual representation: a nontrivial `T`-module, free of rank `d` over `\u2124_p`, on which the diamond coordinate ring `\u039b = \u2124_p[[S_1,\u2026,S_q]]` acts through its augmentation `\u039b \u21a0 \u039b/\ud835\udd2b \u2245 \u2124_p \u2192 T` (that is the content of `aug_smul`, and it is what makes `bIdeal := \ud835\udd2b` the correct bottom level ideal). The freeness is recorded in \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_taylorWilesBottomHeckeModule",
+  "wip": true
+ },
+ {
+  "name": "exists_taylorWilesAuxLevelData",
+  "module": "Fermat.FLT.Modularity.Patching",
+  "text": "`GaloisRepresentation.Modularity.exists_taylorWilesAuxLevelData` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/Patching.lean:4155): **The auxiliary Taylor\u2013Wiles level at a GIVEN prime set** (sorry node, LEAF A2 of the 2026-07-27 decomposition of `exists_taylorWilesLevelRaw`): the arithmetic core of the Taylor\u2013Wiles construction \u2014 ingredients 2, 3 and 4, at a prime set `Q` that the assembly has already chosen from `hTWq`. What has been stripped off relative to the parent leaf, and where it went: * the CHOICE of the level-`n` prime set `Q` with `#Q = q` \u2014 now made in the assembly by `hTWq q n`, so it arrives here as the hypotheses `hQcard` and `hQ`; * the SHAPE of the level ideal \u2014 instead of an arbitrary `bIdeal : Ideal \u039b`, this leaf produces \u2026",
+  "fullname": "GaloisRepresentation.Modularity.exists_taylorWilesAuxLevelData",
+  "wip": true
+ },
+ {
+  "name": "exists_padicAlgebra_ringHom_of_frameComparison",
+  "module": "Fermat.FLT.Modularity.TateModule",
+  "text": "`Fermat.exists_padicAlgebra_ringHom_of_frameComparison` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:6789): **Transport of the coefficient-ring structure along a frame comparison** (sorry leaf). Let `O\u2081` be a `\u2124_q`-algebra, finite and free over `\u2124_q`, carrying `j\u2081 : \ud835\udcaa_D \u2192+* O\u2081` which is `\u03c0`-adically dense (`hdense`) and detects the `I`-adic filtration (`hker`) \u2014 i.e. `O\u2081` is the `I`-adic completion `\ud835\udcaa_{D,I}`, pinned exactly as in `exists_adicCoefficientRing`. Let `O` be any commutative ring with `j : \ud835\udcaa_D \u2192+* O`, and suppose the two squares are related by an ADDITIVE BIJECTION `g` intertwining the two `\ud835\udcaa_D`-actions. Then `O` is itself a finite free `\u2124_q`-algebra of the same rank as `O\u2081`, and `O\u2081` sits inside it over \u2026",
+  "fullname": "Fermat.exists_padicAlgebra_ringHom_of_frameComparison",
+  "wip": true
+ },
+ {
+  "name": "surjective_of_finrank_eq_of_isIntegrallyClosed",
+  "module": "Fermat.FLT.Modularity.TateModule",
+  "text": "`Fermat.surjective_of_finrank_eq_of_isIntegrallyClosed` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:6839): **An injection of `\u2124_q`-algebras of equal rank out of an integrally closed domain is surjective** (sorry leaf \u2014 pure commutative algebra; Serre, *Local Fields* I, or Neukirch I.2 for the integral-closure step). THE ARGUMENT. Write `n` for the common rank and `K` for the fraction field of `O\u2081`. Since `O\u2081` is a domain finite over `\u2124_q`, the localization `O\u2081 \u2297_{\u2124_q} \u211a_q` is a field, hence equal to `K`, of `\u211a_q`-dimension `n`. Now `\u03c1` is an injection of finite free `\u2124_q`-modules of equal rank `n`, so `\u03c1 \u2297 \u211a_q : K \u2192 O \u2297_{\u2124_q} \u211a_q` is an injection of `\u211a_q`-spaces of equal dimension, hence an ISOMORPHISM. `O` is \u2026",
+  "fullname": "Fermat.surjective_of_finrank_eq_of_isIntegrallyClosed",
+  "wip": true
+ },
+ {
+  "name": "exists_weilCoeffs_of_tateFrame_mult",
+  "module": "Fermat.FLT.Modularity.TateModule",
+  "text": "`Fermat.exists_weilCoeffs_of_tateFrame_mult` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:7252): **RATIONALITY: the Frobenius characteristic polynomial of ONE frame has its coefficients in `j(\ud835\udcaa_D)`** (sorry leaf \u2014 Weil's Riemann hypothesis for abelian varieties over finite fields, in the Hilbert\u2013Blumenthal normalization of Shimura / Taylor 2002 \u00a71). Fix a frame `(O, \u03c4, \u03c6, j)` of `TatePt m x I \u03c0` which remembers the real multiplication. Then for all but finitely many places `w` of `F`, \u03c4.charFrob w = X\u00b2 - C (j (a w)) \u00b7 X + C (j (b w)) for some `a, b : w \u21a6 \ud835\udcaa_D`. This is the target statement with `a`, `b` and `bad` moved INSIDE the frame quantifiers, so it carries no independence-of-`I` content whatever; that \u2026",
+  "fullname": "Fermat.exists_weilCoeffs_of_tateFrame_mult"
+ },
+ {
+  "name": "exists_finset_weilCoeffs_eq_of_mult",
+  "module": "Fermat.FLT.Modularity.TateModule",
+  "text": "`Fermat.exists_finset_weilCoeffs_eq_of_mult` (open leaf; added to the tree 2026-07-27 by the bookkeeping sweep, Fermat/FLT/Modularity/TateModule.lean:7317): **INDEPENDENCE: two frames give the SAME `\ud835\udcaa_D`-coefficients at all but finitely many places** (sorry leaf \u2014 this is the whole compatible-system content of `exists_intWeilPolynomial_of_mult`, and the only place in the chain where two residue characteristics are compared). If `(a, b)` are the Weil coefficients of some frame and `(a', b')` those of some other frame \u2014 the two frames unrelated, at possibly DIFFERENT rational primes `q`, `q'` and different maximal ideals `I`, `I'` \u2014 then `a w = a' w` and `b w = b' w` for all but finitely many `w`. Why this is the right way to say it, and why it is not the target \u2026",
+  "fullname": "Fermat.exists_finset_weilCoeffs_eq_of_mult"
  }
 ]
