@@ -229,6 +229,67 @@ noncomputable def ProjGroupLaw.toAbelianSchemeStruct {E : WeierstrassCurve ℚ}
     (SmoothOfRelativeDimension.smooth 1 (projToSpec E))
     (geometricallyConnected_projToSpec E)
 
+/-! ### Compatibility of the morphism-level law with the `RelPoint` presentation
+
+**This is the reusable payoff of stating the group law as morphisms.**
+Every existing consumer in `X0.lean` and the moduli argument downstream is
+written against `RelPoint`, not against `m`, `e`, `i`; so a producer that
+hands over a `ProjGroupLaw` needs to know what the resulting `+`, `0` and
+`-` on `RelPoint (projToSpec E) g` actually *are*.
+
+All four lemmas below are definitional — `ofMorphisms` sets its `add`,
+`zero` and `neg` fields to `addOfMor`, `zeroOfMor` and `negOfMor`, whose
+values are `relPair x y ≫ m`, `g ≫ e` and `x.1 ≫ i` — but they are worth
+stating, because after `toAbelianSchemeStruct` the underlying morphisms are
+buried three definitions deep and no consumer should have to unfold
+`ofMorphisms` by hand to reach them.  With these in place a `T`-point
+computation on the projective model is a computation with `gl.m`, `gl.e`
+and `gl.i` in the category of schemes, which is the only form in which the
+chord–tangent formulas can be applied. -/
+
+variable {E : WeierstrassCurve ℚ} [E.IsElliptic] (gl : ProjGroupLaw E)
+  {T : Scheme.{0}} {g : T ⟶ Spec (CommRingCat.of ℚ)}
+
+/-- **Addition of relative points on the projective model is `gl.m` applied
+to the paired point** (PROVEN, definitional). -/
+@[simp] theorem ProjGroupLaw.toAbelianSchemeStruct_add_val
+    (x y : RelPoint (projToSpec E) g) :
+    (gl.toAbelianSchemeStruct.add x y).1 =
+      AbelianSchemeStruct.relPair x y ≫ gl.m := rfl
+
+/-- **The zero relative point on the projective model is the base point
+composed with the unit section `gl.e`** (PROVEN, definitional). -/
+@[simp] theorem ProjGroupLaw.toAbelianSchemeStruct_zero_val :
+    (gl.toAbelianSchemeStruct.zero g).1 = g ≫ gl.e := rfl
+
+/-- **Negation of relative points on the projective model is postcomposition
+with `gl.i`** (PROVEN, definitional). -/
+@[simp] theorem ProjGroupLaw.toAbelianSchemeStruct_neg_val
+    (x : RelPoint (projToSpec E) g) :
+    (gl.toAbelianSchemeStruct.neg x).1 = x.1 ≫ gl.i := rfl
+
+/-- **The `AddCommGroup` structure on relative points, computed from the
+morphisms** (PROVEN, definitional).
+
+This is the form a consumer actually meets: `X0.lean` and the moduli
+argument use the `+` coming from
+`AbelianSchemeStruct.addCommGroup`, not the bare `add` field. -/
+theorem ProjGroupLaw.addCommGroup_add_val (x y : RelPoint (projToSpec E) g) :
+    letI := gl.toAbelianSchemeStruct.addCommGroup g
+    (x + y).1 = AbelianSchemeStruct.relPair x y ≫ gl.m := rfl
+
+/-- **The zero of the `AddCommGroup` on relative points is the unit
+section** (PROVEN, definitional). -/
+theorem ProjGroupLaw.addCommGroup_zero_val :
+    letI := gl.toAbelianSchemeStruct.addCommGroup g
+    (0 : RelPoint (projToSpec E) g).1 = g ≫ gl.e := rfl
+
+/-- **Negation in the `AddCommGroup` on relative points is postcomposition
+with `gl.i`** (PROVEN, definitional). -/
+theorem ProjGroupLaw.addCommGroup_neg_val (x : RelPoint (projToSpec E) g) :
+    letI := gl.toAbelianSchemeStruct.addCommGroup g
+    (-x).1 = x.1 ≫ gl.i := rfl
+
 end EllipticScheme
 
 /-- **The geometric fibre of the projective Weierstrass model IS `E(ℚ̄)`,
