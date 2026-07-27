@@ -23502,6 +23502,271 @@ theorem trace_eq_zero_of_stable_cyclic (E : WeierstrassCurve ℚ) [E.IsElliptic]
     t = 0 :=
   sorry
 
+/-! #### The three inputs to `not_sq_eq_negFortyNine_of_stable` (cut 2026-07-27)
+
+The leaf below is now PROVEN over exactly two named sub-leaves (plus the PROVEN
+transport lemma `isIsogeny_galConj`), and the cut is
+worth recording because it makes the old MISSING MACHINERY list of that leaf
+sharper in one place and RETRACTS it in another.
+
+* **Item 3 of that list is already in the tree and needs nothing built.** The
+  Weil-pairing determinant `det ρ̄_ℓ = χ̄_ℓ` is
+  `WeilPairing.det_galoisRep_eq_cyclotomic`, PROVEN 2026-07-17 from the
+  Frobenius-determinant node and Chebotarev. Combined with
+  `WeilPairing.cyclotomicCharacterModL_eq_toZMod` it gives the determinant of the
+  mod-`7` representation as `GaloisRepresentation.cyclotomicCharacterModL 7`
+  outright. The assembly below uses it directly, in the adapted basis `(v, u)`,
+  through `LinearMap.det_toMatrix` and `Matrix.det_fin_two`.
+* **Item 4 — "`End(E_ℚ̄)` is defined exactly over the CM field" — is the only
+  genuinely missing mathematics**, and it is isolated here as
+  `exists_sqrtNegOne_galSign`. The transport lemma it consumes,
+  `isIsogeny_galConj` (item 1 of the same list — that Galois ACTS on
+  `End(E_ℚ̄)`), is PROVEN below.
+* **The concluding "`ℚ(√−7) ≠ ℚ(i)`" step is isolated as
+  `exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three`** — a statement about
+  `ℚ(ζ₂₈)/ℚ` alone, with no elliptic curve in it.
+
+**The simplification the cut buys.** The docstring's argument derives `χ₇³ = ε`
+for EVERY `σ` and then contradicts it. The assembly below never needs the cube:
+it evaluates at the SINGLE `σ₀` produced by
+`exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three`, where the sign is `+1`, so
+`Ψ` commutes with `σ₀`. Then the two relations are
+`α = d` (from commutation, `Ψ v = c·u` with `c ≠ 0`) and `d·α = χ₇(σ₀) = 3`
+(from the determinant), whence `α² = 3` in `𝔽₇` — and `3` is not a square mod `7`,
+which `decide` settles. -/
+
+/-- `3` is not a square in `ZMod 7`; the arithmetic core of
+`not_sq_eq_negFortyNine_of_stable`. -/
+theorem not_sq_eq_three_zmod_seven : ∀ x : ZMod 7, x * x ≠ 3 := by decide
+
+/-- **A Galois conjugate of an isogeny is an isogeny** (cut 2026-07-27, PROVEN the
+same day).
+
+For `σ ∈ Gal(ℚ̄/ℚ)` and an isogeny `φ` of `E_ℚ̄`, the conjugate
+`σ ∘ φ ∘ σ⁻¹` is again an isogeny. This is item 1 of the MISSING MACHINERY note
+of `trace_eq_zero_of_stable_cyclic`, and it is the transport half of it — the
+statement that the Galois group ACTS on `End(E_ℚ̄)`, with no claim yet about what
+that action is.
+
+**THE ARGUMENT.** All three fields of `IsIsogeny` transport:
+
+* `isRationalMap`: if `x(φ P)·B(x P) = A(x P)` and
+  `y(φ P)·E(x P) = C(x P)·y P + D(x P)` with `A, …, E ∈ ℚ̄[X]`, then the same
+  identities hold for the conjugate with the `σ`-conjugated polynomials
+  `A^σ = A.map σ`, …, because `veluPointX (Point.map σ P) = σ (veluPointX P)` and
+  `veluPointY (Point.map σ P) = σ (veluPointY P)` — both PROVEN in
+  `Fermat/FLT/EllipticCurve/Velu.lean` (`veluPointX_map`, `veluPointY_map`, near
+  line 6229) — and `σ` is a ring homomorphism, so it commutes with `eval`.
+  `B.map σ ≠ 0` and `E.map σ ≠ 0` because `σ` is injective.
+* `surjective` and `finite_ker`: `Point.map σ` is a bijection with inverse
+  `Point.map σ⁻¹` (`Velu.lean` line 6221), so surjectivity is transported by
+  composition and the kernel of the conjugate is the `Point.map σ`-image of
+  `ker φ`, hence finite.
+
+All three geometric inputs were already in the tree:
+`WeierstrassCurve.velu_pointX_map`, `velu_pointY_map` and
+`velu_point_map_symm_map` in `Fermat/FLT/EllipticCurve/Velu.lean`, together with
+`Polynomial.eval₂_at_apply` for `(p.map σ).eval (σ x) = σ (p.eval x)`. So item 1
+of the MISSING MACHINERY note of `trace_eq_zero_of_stable_cyclic` — "the Galois
+action on `End(E_ℚ̄)`" — is CLOSED on its transport half; only the
+identification of that action (`exists_sqrtNegOne_galSign` below) remains. -/
+theorem isIsogeny_galConj (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hφ : WeierstrassCurve.IsIsogeny φ) :
+    WeierstrassCurve.IsIsogeny
+      ((Affine.Point.map (W' := E) σ.toAlgHom).comp
+        (φ.comp (Affine.Point.map (W' := E) σ.symm.toAlgHom))) := by
+  obtain ⟨A, B, C, D, G, hB, hG, hcert⟩ := hφ.isRationalMap
+  set f : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ := σ.toAlgHom.toRingHom with hf_def
+  have hfinj : Function.Injective f := σ.injective
+  have hev : ∀ (p : Polynomial (AlgebraicClosure ℚ)) (x : AlgebraicClosure ℚ),
+      (p.map f).eval (σ x) = σ (p.eval x) := by
+    intro p x
+    have hsx : σ x = f x := rfl
+    rw [hsx, Polynomial.eval_map, Polynomial.eval₂_at_apply]
+    rfl
+  have hinv : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E) σ.toAlgHom
+        (Affine.Point.map (W' := E) σ.symm.toAlgHom P) = P := by
+    intro P
+    exact WeierstrassCurve.velu_point_map_symm_map E σ.symm P
+  have hφne_of : ((Affine.Point.map (W' := E) σ.toAlgHom).comp
+      (φ.comp (Affine.Point.map (W' := E) σ.symm.toAlgHom))) ≠ 0 → φ ≠ 0 := by
+    intro hne hc
+    refine hne (AddMonoidHom.ext fun P => ?_)
+    show Affine.Point.map (W' := E) σ.toAlgHom
+      (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P)) = 0
+    rw [hc]
+    simp
+  refine { isRationalMap := ?_, surjective := ?_, finite_ker := ?_ }
+  · refine ⟨A.map f, B.map f, C.map f, D.map f, G.map f,
+      (Polynomial.map_ne_zero_iff hfinj).mpr hB,
+      (Polynomial.map_ne_zero_iff hfinj).mpr hG, ?_⟩
+    intro P hP
+    have hφQ : φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P) ≠ 0 := by
+      intro hcc
+      refine hP ?_
+      show Affine.Point.map (W' := E) σ.toAlgHom
+        (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P)) = 0
+      rw [hcc, map_zero]
+    obtain ⟨hx, hy⟩ := hcert _ hφQ
+    have hxP : veluPointX P
+        = σ (veluPointX (Affine.Point.map (W' := E) σ.symm.toAlgHom P)) := by
+      conv_lhs => rw [← hinv P]
+      exact WeierstrassCurve.velu_pointX_map E σ
+        (Affine.Point.map (W' := E) σ.symm.toAlgHom P)
+    have hyP : veluPointY P
+        = σ (veluPointY (Affine.Point.map (W' := E) σ.symm.toAlgHom P)) := by
+      conv_lhs => rw [← hinv P]
+      exact WeierstrassCurve.velu_pointY_map E σ
+        (Affine.Point.map (W' := E) σ.symm.toAlgHom P)
+    have hxim : veluPointX (Affine.Point.map (W' := E) σ.toAlgHom
+        (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P)))
+        = σ (veluPointX (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P))) :=
+      WeierstrassCurve.velu_pointX_map E σ _
+    have hyim : veluPointY (Affine.Point.map (W' := E) σ.toAlgHom
+        (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P)))
+        = σ (veluPointY (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P))) :=
+      WeierstrassCurve.velu_pointY_map E σ _
+    constructor
+    · show veluPointX (Affine.Point.map (W' := E) σ.toAlgHom
+          (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P)))
+            * (B.map f).eval (veluPointX P)
+          = (A.map f).eval (veluPointX P)
+      rw [hxim, hxP, hev, hev, ← map_mul, hx]
+    · show veluPointY (Affine.Point.map (W' := E) σ.toAlgHom
+          (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P)))
+            * (G.map f).eval (veluPointX P)
+          = (C.map f).eval (veluPointX P) * veluPointY P + (D.map f).eval (veluPointX P)
+      rw [hyim, hxP, hyP, hev, hev, hev, ← map_mul, ← map_mul, ← map_add, hy]
+  · intro hne R
+    obtain ⟨Q, hQ⟩ := hφ.surjective (hφne_of hne)
+      (Affine.Point.map (W' := E) σ.symm.toAlgHom R)
+    refine ⟨Affine.Point.map (W' := E) σ.toAlgHom Q, ?_⟩
+    show Affine.Point.map (W' := E) σ.toAlgHom
+      (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom
+        (Affine.Point.map (W' := E) σ.toAlgHom Q))) = R
+    have hcancel : Affine.Point.map (W' := E) σ.symm.toAlgHom
+        (Affine.Point.map (W' := E) σ.toAlgHom Q) = Q :=
+      WeierstrassCurve.velu_point_map_symm_map E σ Q
+    rw [hcancel, hQ, hinv]
+  · intro hne
+    have hsub : ((AddMonoidHom.ker ((Affine.Point.map (W' := E) σ.toAlgHom).comp
+        (φ.comp (Affine.Point.map (W' := E) σ.symm.toAlgHom)))) :
+          Set (E⁄(AlgebraicClosure ℚ)).Point)
+        ⊆ (fun P => Affine.Point.map (W' := E) σ.toAlgHom P)
+            '' ((AddMonoidHom.ker φ : AddSubgroup (E⁄(AlgebraicClosure ℚ)).Point) :
+              Set (E⁄(AlgebraicClosure ℚ)).Point) := by
+      intro P hP
+      refine ⟨Affine.Point.map (W' := E) σ.symm.toAlgHom P, ?_, hinv P⟩
+      have hPz : Affine.Point.map (W' := E) σ.toAlgHom
+          (φ (Affine.Point.map (W' := E) σ.symm.toAlgHom P)) = 0 := hP
+      refine AddMonoidHom.mem_ker.mpr ?_
+      refine Affine.Point.map_injective (W' := E) σ.toAlgHom ?_
+      rw [hPz, map_zero]
+    exact Set.Finite.subset (((hφ.finite_ker (hφne_of hne))).image _) hsub
+
+/-- **LEAF (cut 2026-07-27): the endomorphisms of a curve with `Ψ² = [−49]` are
+defined exactly over `ℚ(i)`.**
+
+This is item 4 of the MISSING MACHINERY note of `not_sq_eq_negFortyNine_of_stable`
+— *ATAEC* II.2.2, the statement that for a curve with complex multiplication the
+CM field is the field of definition of the endomorphisms — stated in exactly the
+form the level-`49` argument consumes, and it is the ONE genuinely missing piece
+of mathematics in that argument.
+
+**THE ARGUMENT.** The action of `End(E_ℚ̄)` on the invariant differential
+`ω = dx/(2y + a₁x + a₃)` is a ring homomorphism `λ : End(E_ℚ̄) → ℚ̄`
+(`φ*ω = λ(φ)·ω`), it is INJECTIVE in characteristic zero (an isogeny acting as
+`0` on the cotangent space is constant), it restricts to the identity on `ℤ`, and
+it is Galois-equivariant: `λ(σ ∘ φ ∘ σ⁻¹) = σ(λ φ)`, because the defining
+rational functions of the conjugate are the `σ`-conjugates of `φ`'s. Then:
+
+* `λ(Ψ)² = λ(Ψ²) = λ([−49]) = −49`, so `μ := λ(Ψ)` is a square root of `−49` and
+  `i₀ := μ/7` is a square root of `−1`;
+* for `σ ∈ Gal(ℚ̄/ℚ)`, `λ(Ψ^σ) = σ(μ)`, and `σ(μ)² = −49` forces `σ(μ) = ±μ`,
+  i.e. `σ(i₀) = ±i₀`;
+* injectivity of `λ` upgrades that to `Ψ^σ = Ψ` when `σ i₀ = i₀`, and
+  `Ψ^σ = −Ψ` otherwise.
+
+`hnotint` (`Ψ ∉ ℤ`, PROVEN as `not_intMul_of_cyclic_ker`) is what makes `μ ∉ ℚ`,
+so the sign character is the QUADRATIC character of `ℚ(i)` rather than trivial;
+`hconj` is discharged by `isIsogeny_galConj` above and is what makes `Ψ^σ` an
+element of `End(E_ℚ̄)` at all.
+
+**WHAT IS MISSING, PRECISELY**: the differential character `λ`. Neither the
+mathlib pin nor `~/cs/FLT` has the invariant differential of a Weierstrass curve
+as a functional on isogenies; this project has the universal invariant derivation
+`Fermat/FLT/EllipticCurve/InvariantDerivation.lean` (`Dham`, `DK`, `DK_tautX`,
+`DK_tautY`), which is the natural place to build it. Note the leaf does NOT need
+`End = ℤ` for non-CM curves and does NOT need the classification of CM orders;
+`WeierstrassCurve.End.exists_charPoly` (PROVEN) already covers what the trace
+argument needs.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ`, an isogeny
+`Ψ` of `E_ℚ̄` with `Ψ² = [−49]` and `Ψ ∉ ℤ`, and a `σ ∈ Gal(ℚ̄/ℚ)` with
+`Ψ^σ ∉ {Ψ, −Ψ}` — or one with `Ψ^σ = −Ψ` while `σ` fixes every square root of
+`−1`. -/
+theorem exists_sqrtNegOne_galSign (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (hconj : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      WeierstrassCurve.IsIsogeny
+        ((Affine.Point.map (W' := E)
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom).comp
+          (Ψ.comp (Affine.Point.map (W' := E)
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).symm.toAlgHom))))
+    (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt)
+    (hsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = 0) :
+    ∃ i₀ : AlgebraicClosure ℚ, i₀ ^ 2 = -1 ∧
+      ∀ (σ : Field.absoluteGaloisGroup ℚ) (P : (E⁄(AlgebraicClosure ℚ)).Point),
+        Affine.Point.map (W' := E)
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ P)
+          = (if (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) i₀ = i₀
+              then (1 : ℤ) else (-1 : ℤ)) •
+              Ψ (Affine.Point.map (W' := E)
+                (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) :=
+  sorry
+
+/-- **LEAF (cut 2026-07-27): `ℚ(i)` and `ℚ(√−7)` are different quadratic fields,
+in cyclotomic-character form.**
+
+There is a `σ ∈ Gal(ℚ̄/ℚ)` fixing a chosen square root `i₀` of `−1` whose mod-`7`
+cyclotomic character is `3` — a NON-square mod `7`, hence a `σ` fixing `ℚ(i)` and
+moving the quadratic subfield `ℚ(√−7)` of `ℚ(ζ₇)`. This is the only input to
+`not_sq_eq_negFortyNine_of_stable` that mentions no elliptic curve.
+
+**THE ARGUMENT.** Let `ω ∈ ℚ̄` be a primitive `28`-th root of unity, so
+`ζ₇ := ω⁴` is a primitive `7`-th root and `ω⁷` is a square root of `−1`, and
+`i₀ = ±ω⁷` (the two square roots of `−1` differ by sign, and the conclusion is
+insensitive to which). `ℚ(ζ₂₈)/ℚ` is Galois of degree `φ(28) = 24` with
+`Gal ≅ (ℤ/28)ˣ` (`IsCyclotomicExtension.Rat.autEquivPow`, the irreducibility of
+`Φ₂₈` over `ℚ`), and `17 ∈ (ℤ/28)ˣ`. The automorphism `ω ↦ ω¹⁷` therefore exists,
+and extends to `ℚ̄` because `ℚ̄/ℚ(ζ₂₈)` is an algebraic extension into an
+algebraically closed field (`AlgEquiv.restrictNormalHom_surjective`). It fixes
+`i₀`, since `17 ≡ 1 (mod 4)` gives `(ω⁷)¹⁷ = ω^119 = ω⁷`; and its mod-`7`
+cyclotomic character is `17 mod 7 = 3`, since `(ω⁴)¹⁷ = ω^68 = ω^12 = (ω⁴)³`.
+
+**WHAT IS MISSING, PRECISELY**: the surjectivity of the mod-`N` cyclotomic
+character of `Gal(ℚ̄/ℚ)`. `GaloisRepresentation.cyclotomicCharacterModL` is
+defined in `Fermat/FLT/GaloisRepresentation/Chebotarev.lean` and its continuity is
+proven there, but nothing in the tree records that it is ONTO — nor the joint
+surjectivity onto `(ℤ/4)ˣ × (ℤ/7)ˣ` that this leaf really uses. Both follow from
+mathlib's `IsCyclotomicExtension.Rat.autEquivPow` plus the standard restriction
+argument; neither is stated here yet.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a proof that every `σ` fixing `i₀` has
+`χ₇(σ)` a square mod `7` — i.e. that `ℚ(√−7) ⊆ ℚ(i)`, which is false because the
+two fields have discriminants `−7` and `−4`. -/
+theorem exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three [Fact (Nat.Prime 7)]
+    (i₀ : AlgebraicClosure ℚ) (hi₀ : i₀ ^ 2 = -1) :
+    ∃ σ : Field.absoluteGaloisGroup ℚ,
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) i₀ = i₀ ∧
+      ((GaloisRepresentation.cyclotomicCharacterModL 7 σ : (ZMod 7)ˣ) : ZMod 7) = 3 :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **LEAF (cut 2026-07-27): no curve over `ℚ` carries a `Gal`-stable cyclic
 `49`-endomorphism with `Ψ² = [−49]`.**
 
@@ -23542,7 +23807,14 @@ endomorphism `Ψ` of `E_ℚ̄` satisfying `Ψ² = [−49]` whose kernel is cycli
 of discriminant `−196` and a rational `7`-isogeny; `−196` is not among the
 thirteen rational CM discriminants, which is a second, independent reason the leaf
 is true (and a heavier one, since it needs the class-number-one classification —
-the Galois argument above deliberately avoids it). -/
+the Galois argument above deliberately avoids it).
+
+**PROVEN 2026-07-27** over the three leaves `isIsogeny_galConj`,
+`exists_sqrtNegOne_galSign` and
+`exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three` above, together with the
+already-PROVEN Weil-pairing determinant `WeilPairing.det_galoisRep_eq_cyclotomic`
+(which retracts item 3 of the MISSING MACHINERY list). See the section note
+before those three for the shape of the assembly. -/
 theorem not_sq_eq_negFortyNine_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
     (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
@@ -23556,8 +23828,268 @@ theorem not_sq_eq_negFortyNine_of_stable (E : WeierstrassCurve ℚ) [E.IsEllipti
       Ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
     (hnotint : ∀ n : ℤ, ∃ Pt : (E⁄(AlgebraicClosure ℚ)).Point, Ψ Pt ≠ n • Pt)
     (hsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ (Ψ P) + (49 : ℕ) • P = 0) :
-    False :=
-  sorry
+    False := by
+  classical
+  haveI hp7 : Fact (Nat.Prime 7) := ⟨by norm_num⟩
+  have hpos : (0 : ℕ) < 7 := by norm_num
+  have hoddseven : Odd 7 := ⟨3, by norm_num⟩
+  -- the sign character and the σ that fixes `i₀` but moves the seventh roots of unity
+  obtain ⟨i₀, hi₀sq, hsign⟩ :=
+    exists_sqrtNegOne_galSign E Ψ hΨiso
+      (fun σ => isIsogeny_galConj E (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) Ψ hΨiso)
+      hnotint hsq
+  obtain ⟨σ₀, hσ₀i, hσ₀χ⟩ := exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three i₀ hi₀sq
+  -- `Ψ` commutes with `σ₀`
+  have hcomm : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+          (σ₀ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ P)
+        = Ψ (Affine.Point.map (W' := E)
+            (σ₀ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) := by
+    intro P
+    rw [hsign σ₀ P, if_pos hσ₀i, one_zsmul]
+  -- ### the order of `h`
+  have hord : addOrderOf h = 49 := by
+    have hd : addOrderOf h ∣ 7 ^ 2 := by
+      have := addOrderOf_dvd_of_nsmul_eq_zero h49
+      simpa using this
+    obtain ⟨k, hk, hkk⟩ := (Nat.dvd_prime_pow (p := 7) (by norm_num)).mp hd
+    interval_cases k
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · exact absurd (addOrderOf_dvd_iff_nsmul_eq_zero.mp (by rw [hkk]; norm_num)) h7
+    · simpa using hkk
+  -- ### the seven-torsion generator of the stable line
+  set u : (E⁄(AlgebraicClosure ℚ)).Point := (7 : ℕ) • h with hu_def
+  have hu7 : (7 : ℕ) • u = 0 := by
+    rw [hu_def, smul_smul]
+    exact_mod_cast h49
+  have hune : u ≠ 0 := h7
+  have humem : u ∈ AddSubgroup.zmultiples h :=
+    AddSubgroup.nsmul_mem _ (AddSubgroup.mem_zmultiples h) 7
+  have hΨu : Ψ u = 0 := (hker u).mpr humem
+  -- `⟨h⟩ ∩ E[7] = ⟨u⟩`
+  have hcap : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      P ∈ AddSubgroup.zmultiples h → (7 : ℕ) • P = 0 → P ∈ AddSubgroup.zmultiples u := by
+    intro P hP h7P
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hP
+    have h0 : ((7 * k : ℤ)) • h = 0 := by
+      rw [mul_zsmul, hk]
+      rw [show ((7 : ℤ) • P) = (7 : ℕ) • P from (Nat.cast_smul_eq_nsmul ℤ 7 P)]
+      exact h7P
+    have hdvd : ((addOrderOf h : ℤ)) ∣ 7 * k := addOrderOf_dvd_iff_zsmul_eq_zero.mpr h0
+    rw [hord] at hdvd
+    have h7k : (7 : ℤ) ∣ k := by
+      have : (7 : ℤ) * 7 ∣ 7 * k := by simpa using hdvd
+      exact (mul_dvd_mul_iff_left (by norm_num : (7 : ℤ) ≠ 0)).mp this
+    obtain ⟨m, hm⟩ := h7k
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨m, ?_⟩
+    have hus : (m : ℤ) • u = (7 * m) • h := by
+      rw [hu_def, ← Nat.cast_smul_eq_nsmul ℤ 7 h, smul_smul, mul_comm]
+      norm_num
+    rw [hus, ← hm, hk]
+  -- `Ψ` maps the seven-torsion into `⟨u⟩`
+  have hΨseven : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, (7 : ℕ) • P = 0 →
+      Ψ P ∈ AddSubgroup.zmultiples u := by
+    intro P hP
+    refine hcap _ ((hker _).mp ?_) ?_
+    · have h49P : (49 : ℕ) • P = 0 := by
+        rw [show (49 : ℕ) = 7 * 7 from rfl, ← smul_smul, hP]
+        simp
+      have := hsq P
+      rw [h49P, add_zero] at this
+      exact this
+    · rw [← map_nsmul, hP]
+      simp
+  -- ### the seven-torsion as a two-dimensional `ZMod 7`-space
+  have hcard : Nat.card ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) = 7 ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) 7 (by norm_num)
+  haveI hfin : Finite ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) :=
+    Nat.finite_of_card_ne_zero (by rw [hcard]; norm_num)
+  haveI : Fintype ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) := Fintype.ofFinite _
+  haveI : Module.Finite (ZMod 7) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) :=
+    Module.Finite.of_finite
+  have hfr : Module.finrank (ZMod 7)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) = 2 := by
+    have hh := Module.card_eq_pow_finrank (K := ZMod 7)
+      (V := ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7))
+    rw [ZMod.card] at hh
+    have h2 : (7 : ℕ) ^ 2 = 7 ^ Module.finrank (ZMod 7)
+        ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) := by
+      rw [← hcard, Nat.card_eq_fintype_card]
+      exact hh
+    exact (Nat.pow_right_injective (by norm_num) h2.symm)
+  haveI : FiniteDimensional (ZMod 7)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) := inferInstance
+  -- the point `u` as an element of the seven-torsion
+  have hu7z : ((7 : ℕ) : ℤ) • u = 0 := by
+    rw [Nat.cast_smul_eq_nsmul ℤ 7 u]; exact hu7
+  set U : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7 :=
+    ⟨u, (Submodule.mem_torsionBy_iff _ _).mpr hu7z⟩ with hU_def
+  have hUne : U ≠ 0 := by
+    intro hc
+    exact hune (congrArg Subtype.val hc)
+  -- a vector outside the stable line
+  have hspan_ne : (Submodule.span (ZMod 7) {U}) ≠ ⊤ := by
+    intro hcc
+    have h1 : Module.finrank (ZMod 7)
+        ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) ≤ 1 := by
+      have hs1 := finrank_span_singleton (K := ZMod 7) hUne
+      have h2 : Module.finrank (ZMod 7) (Submodule.span (ZMod 7) {U}) =
+          Module.finrank (ZMod 7) ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) := by
+        rw [hcc]; exact finrank_top _ _
+      omega
+    omega
+  obtain ⟨V, hV⟩ : ∃ V : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7,
+      V ∉ Submodule.span (ZMod 7) {U} := by
+    by_contra hcc
+    exact hspan_ne (eq_top_iff.mpr fun x _ => not_not.mp fun hx => hcc ⟨x, hx⟩)
+  -- `(V, U)` is a basis
+  have hli : LinearIndependent (ZMod 7) ![V, U] := by
+    rw [linearIndependent_fin2]
+    refine ⟨by simpa using hUne, ?_⟩
+    intro aa hcc
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at hcc
+    exact hV (Submodule.mem_span_singleton.mpr ⟨aa, hcc⟩)
+  set b : Module.Basis (Fin 2) (ZMod 7)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) :=
+    basisOfLinearIndependentOfCardEqFinrank hli (by simp [hfr]) with hb_def
+  have hb0 : b 0 = V := by
+    rw [hb_def, coe_basisOfLinearIndependentOfCardEqFinrank]; rfl
+  have hb1 : b 1 = U := by
+    rw [hb_def, coe_basisOfLinearIndependentOfCardEqFinrank]; rfl
+  -- ### the Galois matrix of `σ₀`
+  set F : Module.End (ZMod 7)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7) :=
+    (E.galoisRep 7 hpos σ₀ : Module.End (ZMod 7) _) with hF_def
+  -- the seven-torsion point `v` outside the stable line, as a point
+  obtain ⟨v, hv⟩ : ∃ v : (E⁄(AlgebraicClosure ℚ)).Point, V.val = v := ⟨V.val, rfl⟩
+  have hUval : U.val = u := rfl
+  -- ### the Galois action on the seven-torsion is `Affine.Point.map`
+  have hρcoe : ∀ P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7,
+      (F P).val
+        = Affine.Point.map (W' := E)
+            (σ₀ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P.val := by
+    intro P
+    rfl
+  -- coercion of a `ZMod 7`-scalar multiple
+  have hzcoe : ∀ (n : ℤ) (P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7),
+      (((n : ZMod 7)) • P).val = n • P.val := by
+    intro n P
+    rw [Int.cast_smul_eq_zsmul]
+    simp
+  -- ### the order of `u`
+  have hordu : addOrderOf u = 7 := by
+    have hd : addOrderOf u ∣ 7 := addOrderOf_dvd_of_nsmul_eq_zero hu7
+    rcases (Nat.Prime.eq_one_or_self_of_dvd (by norm_num) _ hd) with h1 | h1
+    · exact absurd (AddMonoid.addOrderOf_eq_one_iff.mp h1) hune
+    · exact h1
+  have h7u : ((7 : ℤ)) • u = 0 := by
+    have hh : (((7 : ℕ) : ℤ)) • u = 0 := by
+      rw [Nat.cast_smul_eq_nsmul ℤ 7 u]; exact hu7
+    simpa using hh
+  -- ### the character on the stable line
+  obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+    (hcap _ (hstable σ₀ u humem) (by rw [← map_nsmul, hu7]; simp))
+  have hzcoe' : ∀ (t : ZMod 7) (P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7),
+      (t • P).val = ((t.val : ℤ)) • P.val := by
+    intro t P
+    have ht : t = (((t.val : ℤ)) : ZMod 7) := by push_cast; simp
+    conv_lhs => rw [ht]
+    rw [hzcoe]
+  have hUact : F U = ((k : ZMod 7)) • U := by
+    refine Subtype.ext ?_
+    rw [hρcoe U, hzcoe k U, hUval, ← hk]
+    rfl
+  -- ### the second basis vector under `σ₀`
+  obtain ⟨d, a, hVact⟩ : ∃ d a : ZMod 7, F V = d • V + a • U := by
+    refine ⟨b.repr (F V) 0, b.repr (F V) 1, ?_⟩
+    have hs := b.sum_repr (F V)
+    rw [Fin.sum_univ_two, hb0, hb1] at hs
+    exact hs.symm
+  -- ### the determinant identity
+  have hdetmat : (LinearMap.toMatrix b b F).det = d * ((k : ZMod 7)) := by
+    rw [Matrix.det_fin_two]
+    have e00 : LinearMap.toMatrix b b F 0 0 = d := by
+      rw [LinearMap.toMatrix_apply, hb0, hVact, ← hb0, ← hb1]; simp
+    have e10 : LinearMap.toMatrix b b F 1 0 = a := by
+      rw [LinearMap.toMatrix_apply, hb0, hVact, ← hb0, ← hb1]; simp
+    have e01 : LinearMap.toMatrix b b F 0 1 = 0 := by
+      rw [LinearMap.toMatrix_apply, hb1, hUact, ← hb1]; simp
+    have e11 : LinearMap.toMatrix b b F 1 1 = (k : ZMod 7) := by
+      rw [LinearMap.toMatrix_apply, hb1, hUact, ← hb1]; simp
+    rw [e00, e01, e10, e11]
+    ring
+  have hdet3 : d * ((k : ZMod 7)) = 3 := by
+    have h1 := WeilPairing.det_galoisRep_eq_cyclotomic E 7 hpos hoddseven σ₀
+    have h2 : (LinearMap.toMatrix b b F).det = LinearMap.det F :=
+      LinearMap.det_toMatrix b F
+    rw [hdetmat] at h2
+    have h3 := h2.trans h1
+    have hbridge := WeilPairing.cyclotomicCharacterModL_eq_toZMod 7 σ₀
+    rw [← hσ₀χ, hbridge]
+    exact h3
+  -- ### `Ψ` on the second basis vector
+  have hV7 : (7 : ℕ) • v = 0 := by
+    have hh := (Submodule.mem_torsionBy_iff _ _).mp V.2
+    rw [hv] at hh
+    rw [← Nat.cast_smul_eq_nsmul ℤ 7 v]
+    exact hh
+  obtain ⟨c, hc⟩ := AddSubgroup.mem_zmultiples_iff.mp (hΨseven _ hV7)
+  have hcne : (c : ZMod 7) ≠ 0 := by
+    intro hc0
+    have h7c : (7 : ℤ) ∣ c := by
+      have hh := (ZMod.intCast_zmod_eq_zero_iff_dvd c 7).mp hc0
+      exact_mod_cast hh
+    obtain ⟨m, hm⟩ := h7c
+    have hΨV : Ψ v = 0 := by
+      rw [← hc, hm]
+      refine addOrderOf_dvd_iff_zsmul_eq_zero.mp ?_
+      rw [hordu]
+      exact ⟨m, by push_cast; ring⟩
+    have hmem := hcap _ ((hker _).mp hΨV) hV7
+    obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp hmem
+    refine hV (Submodule.mem_span_singleton.mpr ⟨(n : ZMod 7), ?_⟩)
+    refine Subtype.ext ?_
+    rw [hzcoe n U, hUval]
+    exact hn.trans hv.symm
+  -- ### the commutation relation
+  have hdv : d = ((d.val : ℤ) : ZMod 7) := by push_cast; simp
+  have hav : a = ((a.val : ℤ) : ZMod 7) := by push_cast; simp
+  have hrel : (c : ZMod 7) * ((k : ZMod 7)) = d * (c : ZMod 7) := by
+    have hcomV := hcomm v
+    have hlhs : Affine.Point.map (W' := E)
+        (σ₀ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ v)
+        = (c * k) • u := by
+      rw [← hc, map_zsmul, ← hk, smul_smul]
+    have hmapV : Affine.Point.map (W' := E)
+        (σ₀ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom v
+        = ((d.val : ℤ) • v) + ((a.val : ℤ) • u) := by
+      rw [← hv, ← hρcoe V, hVact]
+      have hsum : ((d • V + a • U : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion 7)).val
+          = (d • V).val + (a • U).val := rfl
+      rw [hsum, hzcoe' d V, hzcoe' a U, hUval, hv]
+      rfl
+    have hz0 : ((a.val : ℤ)) • (0 : (E⁄(AlgebraicClosure ℚ)).Point) = 0 :=
+      addOrderOf_dvd_iff_zsmul_eq_zero.mp (by simp)
+    rw [hlhs, hmapV, map_add, map_zsmul, map_zsmul, hΨu, hz0, add_zero, ← hc,
+      smul_smul] at hcomV
+    have hzero : ((c * k) - ((d.val : ℤ) * c)) • u = 0 := by
+      rw [sub_zsmul, hcomV]
+      exact add_neg_cancel _
+    have hdvd : ((addOrderOf u : ℤ)) ∣ ((c * k) - ((d.val : ℤ) * c)) :=
+      addOrderOf_dvd_iff_zsmul_eq_zero.mpr hzero
+    rw [hordu] at hdvd
+    have hz := (ZMod.intCast_zmod_eq_zero_iff_dvd ((c * k) - ((d.val : ℤ) * c)) 7).mpr
+      (by exact_mod_cast hdvd)
+    rw [Int.cast_sub, Int.cast_mul, Int.cast_mul, Int.cast_natCast,
+      show ((d.val : ℕ) : ZMod 7) = d from by simp] at hz
+    linear_combination hz
+  have hkd : ((k : ZMod 7)) = d := by
+    have h1 : (c : ZMod 7) * ((k : ZMod 7)) = (c : ZMod 7) * d := by
+      rw [hrel]; ring
+    exact mul_left_cancel₀ hcne h1
+  rw [hkd] at hdet3
+  exact not_sq_eq_three_zmod_seven d hdet3
+
 
 end MazurLevelFortyNine
 
