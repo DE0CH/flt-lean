@@ -8936,64 +8936,92 @@ noncomputable def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}} {k : T''
     (hk.liesIn_iff x).trans
       ((hh.liesIn_iff _).trans (RelPoint.liesIn_congr _ (Category.assoc _ _ _)))
 
-/-- **Two base changes of one datum along one morphism differ by an
-`IsBaseChangeOf 𝟙`** (PROVEN).
+/-- The morphism induced by cancelling a base change: `e.E ⟶ d'.E`, from
+the universal property of `d'.E` as a fibre product. -/
+noncomputable def IsBaseChangeOf.cancelMap {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    e.E ⟶ d'.E :=
+  hb₂.isPullback.lift (e.f ≫ h₁) hb.map (by rw [Category.assoc]; exact hb.isPullback.w)
 
-This is the step the previous docstring of
-`exists_jTransformation_of_affine` recorded as missing: "two base changes
-along the same morphism differ by an `IsBaseChangeOf 𝟙`, which is
-`IsBaseChangeOf.isPullback` plus `IsPullback.isoIsPullback` — available at
-this pin, but the transport of `map_zero`, `map_add` and `liesIn_iff`
-across that isomorphism has to be written".  It is written here.
+@[reassoc] theorem IsBaseChangeOf.cancelMap_fst {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    hb.cancelMap hb₂ ≫ d'.f = e.f ≫ h₁ :=
+  hb₂.isPullback.lift_fst _ _ _
 
-The isomorphism is `IsPullback.isoIsPullback` for two pullback squares over
-the same cospan; the three axioms transport because `IsPullback.hom_ext`
-lets a morphism into `d₂.E` be checked against `d₂.f` and `h₂.map`
-separately, and `isoIsPullback_hom_fst` / `isoIsPullback_hom_snd` say
-exactly what those two composites are. -/
-noncomputable def IsBaseChangeOf.uniq {N : ℕ} {T' T : Scheme.{u}} {h : T' ⟶ T}
-    {d₁ d₂ : Gamma0Datum N T'} {d : Gamma0Datum N T}
-    (h₁ : IsBaseChangeOf h d₁ d) (h₂ : IsBaseChangeOf h d₂ d) :
-    IsBaseChangeOf (𝟙 T') d₁ d₂ where
-  map := (h₁.isPullback.isoIsPullback T' d.E h₂.isPullback).hom
+@[reassoc] theorem IsBaseChangeOf.cancelMap_snd {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    hb.cancelMap hb₂ ≫ hb₂.map = hb.map :=
+  hb₂.isPullback.lift_snd _ _ _
+
+/-- **Base changes CANCEL** (PROVEN) — the exact converse of
+`IsBaseChangeOf.comp`.
+
+Both `e` and `d'` are pullbacks of `d`, so `e.E` maps to `d'.E` by the
+universal property, and the resulting square is cartesian by the converse
+of pullback pasting (`IsPullback.of_bot`, used the same way as in
+`Gamma0BaseChange.isPullback_iota` earlier in this file).  The three
+functor-of-points axioms transport because `IsPullback.hom_ext` lets a
+morphism into `d'.E` be checked against `d'.f` and `hb₂.map` separately,
+and `cancelMap_fst` / `cancelMap_snd` say what those two composites are.
+
+**Two nodes consume this, in two different specialisations.**  In the
+form stated it is `exists_isBaseChangeOf_cancel` below, which
+`exists_jValueOnAffine_of_localModels` needs.  At `h₁ = 𝟙` it says that two
+base changes of one datum along the SAME morphism differ by an
+`IsBaseChangeOf 𝟙`, which is verbatim the step the docstring of
+`exists_jTransformation_of_affine` recorded as missing ("the transport of
+`map_zero`, `map_add` and `liesIn_iff` across that isomorphism has to be
+written"); that specialisation is `jt_eq_of_isBaseChangeOf` below. -/
+noncomputable def IsBaseChangeOf.cancel {N : ℕ} {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
+    {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
+    IsBaseChangeOf h₁ e d' where
+  map := hb.cancelMap hb₂
   isPullback := by
-    refine IsPullback.of_vert_isIso ⟨?_⟩
-    rw [Category.comp_id, IsPullback.isoIsPullback_hom_fst]
+    refine IsPullback.of_bot ?_ (hb.cancelMap_fst hb₂).symm hb₂.isPullback
+    rw [hb.cancelMap_snd hb₂]
+    exact hb.isPullback
   map_zero g := by
-    refine Subtype.ext (h₂.isPullback.hom_ext ?_ ?_)
+    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
     · simp only [RelPoint.along]
-      rw [Category.assoc, IsPullback.isoIsPullback_hom_fst, (d₁.ab.zero g).2,
-        (d₂.ab.zero (g ≫ 𝟙 T')).2, Category.comp_id]
-    · have e1 : (d₁.ab.zero g).1 ≫ h₁.map = (d.ab.zero (g ≫ h)).1 :=
-        congrArg Subtype.val (h₁.map_zero g)
-      have e2 : (d₂.ab.zero (g ≫ 𝟙 T')).1 ≫ h₂.map = (d.ab.zero ((g ≫ 𝟙 T') ≫ h)).1 :=
-        congrArg Subtype.val (h₂.map_zero (g ≫ 𝟙 T'))
+      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.zero g).2,
+        (d'.ab.zero (g ≫ h₁)).2]
+    · have e1 : (e.ab.zero g).1 ≫ hb.map = (d.ab.zero (g ≫ h₁ ≫ h₂)).1 :=
+        congrArg Subtype.val (hb.map_zero g)
+      have e2 : (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 :=
+        congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
       simp only [RelPoint.along]
-      rw [Category.assoc, IsPullback.isoIsPullback_hom_snd, e1, e2, Category.comp_id]
+      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2, Category.assoc]
   map_add := fun {_} {g} x y => by
-    refine Subtype.ext (h₂.isPullback.hom_ext ?_ ?_)
+    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
     · simp only [RelPoint.along]
-      rw [Category.assoc, IsPullback.isoIsPullback_hom_fst, (d₁.ab.add x y).2,
-        (d₂.ab.add _ _).2, Category.comp_id]
-    · have e1 : (d₁.ab.add x y).1 ≫ h₁.map
-          = (d.ab.add (RelPoint.along h₁.map h₁.isPullback.w x)
-              (RelPoint.along h₁.map h₁.isPullback.w y)).1 :=
-        congrArg Subtype.val (h₁.map_add x y)
-      have e2 : ∀ a b : RelPoint d₂.f (g ≫ 𝟙 T'), (d₂.ab.add a b).1 ≫ h₂.map
-          = (d.ab.add (RelPoint.along h₂.map h₂.isPullback.w a)
-              (RelPoint.along h₂.map h₂.isPullback.w b)).1 :=
-        fun a b => congrArg Subtype.val (h₂.map_add a b)
+      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.add x y).2,
+        (d'.ab.add _ _).2]
+    · have e1 : (e.ab.add x y).1 ≫ hb.map
+          = (d.ab.add (RelPoint.along hb.map hb.isPullback.w x)
+              (RelPoint.along hb.map hb.isPullback.w y)).1 :=
+        congrArg Subtype.val (hb.map_add x y)
+      have e2 : ∀ a b : RelPoint d'.f (g ≫ h₁), (d'.ab.add a b).1 ≫ hb₂.map
+          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w a)
+              (RelPoint.along hb₂.map hb₂.isPullback.w b)).1 :=
+        fun a b => congrArg Subtype.val (hb₂.map_add a b)
       simp only [RelPoint.along]
-      rw [Category.assoc, IsPullback.isoIsPullback_hom_snd, e1, e2]
-      refine d.ab.add_val_congr (by rw [Category.comp_id]) _ _ _ _ ?_ ?_ <;>
+      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2]
+      refine d.ab.add_val_congr (Category.assoc g h₁ h₂) _ _ _ _ ?_ ?_ <;>
         · simp only [RelPoint.along]
-          rw [Category.assoc, IsPullback.isoIsPullback_hom_snd]
+          rw [Category.assoc, hb.cancelMap_snd hb₂]
   liesIn_iff x := by
-    refine (h₁.liesIn_iff x).trans
-      (Iff.trans (RelPoint.liesIn_congr d.cyc.ι ?_) (h₂.liesIn_iff _).symm)
-    show x.1 ≫ h₁.map
-      = (x.1 ≫ (h₁.isPullback.isoIsPullback T' d.E h₂.isPullback).hom) ≫ h₂.map
-    rw [Category.assoc, IsPullback.isoIsPullback_hom_snd]
+    refine (hb.liesIn_iff x).trans
+      (Iff.trans (RelPoint.liesIn_congr d.cyc.ι ?_) (hb₂.liesIn_iff _).symm)
+    show x.1 ≫ hb.map = (x.1 ≫ hb.cancelMap hb₂) ≫ hb₂.map
+    rw [Category.assoc, hb.cancelMap_snd hb₂]
 
 /-- **A relative point of the `j`-line that is LOCALLY GIVEN by an affine
 `j`-theory**: on every affine base mapping to `T`, it restricts to the
@@ -9029,7 +9057,8 @@ theorem isLocallyJ_unique (ja : IsJSectionOnAffine)
     ((h₁ R k (k ≫ g) rfl d' hd').trans (h₂ R k (k ≫ g) rfl d' hd').symm)
 
 /-- **The affine `j`-invariant does not depend on WHICH base change is
-used** (PROVEN, from `IsBaseChangeOf.uniq` and `ja.jt_natural` at `𝟙`).
+used** (PROVEN, from `IsBaseChangeOf.cancel` at `h₁ = 𝟙` and
+`ja.jt_natural` at `𝟙`).
 
 `hbc` only asserts that *some* restriction exists, so every use of it makes
 an arbitrary choice; this lemma is what makes those choices harmless, and
@@ -9040,7 +9069,9 @@ theorem jt_eq_of_isBaseChangeOf (ja : IsJSectionOnAffine) (R : Type) [CommRing R
     {d₁ d₂ : Gamma0Datum 1 (Spec (CommRingCat.of R))} {d : Gamma0Datum 1 T}
     (h₁ : IsBaseChangeOf k d₁ d) (h₂ : IsBaseChangeOf k d₂ d) :
     ja.jt g' d₁ = ja.jt g' d₂ := by
-  rw [ja.jt_natural (𝟙 (Spec (CommRingCat.of R))) (Category.id_comp g') (h₁.uniq h₂)]
+  have h₁' : IsBaseChangeOf (𝟙 (Spec (CommRingCat.of R)) ≫ k) d₁ d := by
+    rw [Category.id_comp]; exact h₁
+  rw [ja.jt_natural (𝟙 (Spec (CommRingCat.of R))) (Category.id_comp g') (h₁'.cancel h₂)]
   exact Subtype.ext (Category.id_comp _)
 
 /-- **THE ZARISKI GLUING** (sorry node — all that is left of
@@ -9118,7 +9149,8 @@ note read: *"the 'two base changes along the same morphism differ by an
 `IsPullback.isoIsPullback` — available at this pin, but the transport of
 `map_zero`, `map_add` and `liesIn_iff` across that isomorphism has to be
 written; and the sheaf gluing itself."*  The first half is written, as
-`IsBaseChangeOf.uniq`, and the second half is the single residual leaf
+`IsBaseChangeOf.cancel` (at `h₁ = 𝟙`), and the second half is the single
+residual leaf
 `exists_isLocallyJ`.
 
 **How the assembly avoids a second gluing argument**, which is the point
@@ -9297,68 +9329,14 @@ theorem jLineCoord_injective {R : Type} [CommRing R]
   have := congrArg (fun f => CommRingCat.Hom.hom f a) hcomp
   simpa [jLineStr, Polynomial.C_eq_algebraMap] using this
 
-/-- **Base changes compose** (PROVEN).
-
-If `d''` is a base change of `d'` along `h₁` and `d'` is a base change of
-`d` along `h₂`, then `d''` is a base change of `d` along `h₁ ≫ h₂`.  The
-cartesian square is `IsPullback.paste_vert`; the three remaining axioms
-are the corresponding axioms of the two halves, chased through
-`RelPoint.along` and reassociated.
-
-Consumed by `exists_jSectionOnAffine` below to prove `jt_natural`: the
-pinning `IsJValueOnAffine` quantifies over base changes, so transporting
-it along one more base change is exactly this composition. -/
-noncomputable def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}}
-    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {d'' : Gamma0Datum N T''} {d' : Gamma0Datum N T'}
-    {d : Gamma0Datum N T} (hb₁ : IsBaseChangeOf h₁ d'' d') (hb₂ : IsBaseChangeOf h₂ d' d) :
-    IsBaseChangeOf (h₁ ≫ h₂) d'' d where
-  map := hb₁.map ≫ hb₂.map
-  isPullback := hb₁.isPullback.paste_vert hb₂.isPullback
-  map_zero := by
-    intro U g
-    have e₁ := congrArg Subtype.val (hb₁.map_zero g)
-    have e₂ := congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
-    refine Subtype.ext ?_
-    show (d''.ab.zero g).1 ≫ hb₁.map ≫ hb₂.map = _
-    rw [← Category.assoc]
-    show ((d''.ab.zero g).1 ≫ hb₁.map) ≫ hb₂.map = _
-    rw [show (d''.ab.zero g).1 ≫ hb₁.map = (d'.ab.zero (g ≫ h₁)).1 from e₁]
-    rw [show (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 from e₂,
-      Category.assoc]
-  map_add := by
-    intro U g x y
-    have key : ∀ {b₁ b₂ : U ⟶ T}, b₁ = b₂ → ∀ (p q : RelPoint d.f b₁)
-        (p' q' : RelPoint d.f b₂), p.1 = p'.1 → q.1 = q'.1 →
-        (d.ab.add p q).1 = (d.ab.add p' q').1 := by
-      rintro b₁ b₂ rfl p q p' q' hp hq
-      rw [Subtype.ext hp, Subtype.ext hq]
-    have e₁ := congrArg Subtype.val (hb₁.map_add x y)
-    have e₂ := congrArg Subtype.val
-      (hb₂.map_add (RelPoint.along hb₁.map hb₁.isPullback.w x)
-        (RelPoint.along hb₁.map hb₁.isPullback.w y))
-    refine Subtype.ext ?_
-    show (d''.ab.add x y).1 ≫ hb₁.map ≫ hb₂.map = _
-    rw [← Category.assoc]
-    show ((d''.ab.add x y).1 ≫ hb₁.map) ≫ hb₂.map = _
-    rw [show (d''.ab.add x y).1 ≫ hb₁.map
-        = (d'.ab.add (RelPoint.along hb₁.map hb₁.isPullback.w x)
-            (RelPoint.along hb₁.map hb₁.isPullback.w y)).1 from e₁]
-    rw [show (d'.ab.add (RelPoint.along hb₁.map hb₁.isPullback.w x)
-            (RelPoint.along hb₁.map hb₁.isPullback.w y)).1 ≫ hb₂.map
-          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w
-                (RelPoint.along hb₁.map hb₁.isPullback.w x))
-              (RelPoint.along hb₂.map hb₂.isPullback.w
-                (RelPoint.along hb₁.map hb₁.isPullback.w y))).1 from e₂]
-    exact key (Category.assoc g h₁ h₂) _ _ _ _ (by simp [RelPoint.along]) (by
-      simp [RelPoint.along])
-  liesIn_iff := by
-    intro U g x
-    rw [hb₁.liesIn_iff x, hb₂.liesIn_iff]
-    constructor
-    · rintro ⟨z, hz⟩
-      exact ⟨z, by simpa [RelPoint.along, ← Category.assoc] using hz⟩
-    · rintro ⟨z, hz⟩
-      exact ⟨z, by simpa [RelPoint.along, ← Category.assoc] using hz⟩
+/- `IsBaseChangeOf.comp` used to be stated HERE a second time.  It is now a
+DUPLICATE: the same declaration, in the same namespace, is PROVEN earlier in
+this file (in the base-change-calculus subsection that precedes
+`exists_jTransformation_of_affine`), where `IsBaseChangeOf.id`,
+`IsBaseChangeOf.cancel` and the two `RelPoint` congruence lemmas live too.  The
+two copies were written independently on two branches and were a hard
+"already declared" error rather than merely redundant; deleted at integration
+2026-07-27, keeping the earlier one because both consumers sit below it. -/
 
 /-- **`x` is THE `j`-value of the datum `d` over the affine base
 `Spec R`.**
@@ -9508,41 +9486,30 @@ theorem isWeierstrassModel_map_of_isBaseChangeOf {R S : Type} [CommRing R] [Comm
     IsWeierstrassModel d'.ab (W.map φ) :=
   sorry
 
-/-- **Base changes cancel** (sorry leaf) — the exact converse of
-`IsBaseChangeOf.comp`, which is proven above.
+/-- **Base changes cancel** (PROVEN 2026-07-27; formerly a sorry leaf) —
+the exact converse of `IsBaseChangeOf.comp`.
 
-TRUE.  `e` and `d'` are both pullbacks of `d`, so the cartesian square
-for `h₁` is `IsPullback.of_right` applied to the pasting; the induced
-`e.E ⟶ d'.E` exists by the universal property of `d'.E`.  For the three
-remaining axioms, note that `RelPoint.along hb₂.map` is INJECTIVE — that
-is what cartesianness buys, and it is already available in this project
-as `RelPoint.baseChangeDown` / `RelPoint.baseChangeUp`
-(`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`), consumed the same
-way by `exists_gamma0Datum_baseChange`.  Each axiom then follows by
-composing with `hb₂`'s corresponding axiom and cancelling.
+The witness is `IsBaseChangeOf.cancel`, built in the base-change-calculus
+subsection above.  The route taken there is slightly different from the
+one this docstring originally predicted, and the difference is worth
+recording: it does NOT go through `RelPoint.baseChangeDown` /
+`baseChangeUp`.  Cancellation of `hb₂.map` is `IsPullback.hom_ext`
+directly — a morphism into `d'.E` is determined by its composites with
+`d'.f` and `hb₂.map` — which is the same fact in the form the axioms
+actually need, and avoids transporting anything through the
+`Gamma0BaseChange` pullback model.  The cartesian square is
+`IsPullback.of_bot` (the converse of `paste_vert`), as predicted.
 
-**THIS LEAF IS SHARED, AND PROVING IT UNBLOCKS TWO NODES.**  Taking
-`h₁ = 𝟙` it says that two base changes of one datum along the SAME
-morphism are related by an `IsBaseChangeOf 𝟙` — which is verbatim the
-step recorded as missing in the docstring of
-`exists_jTransformation_of_affine` above ("two base changes along the
-same morphism differ by an `IsBaseChangeOf 𝟙`, which is
-`IsBaseChangeOf.isPullback` plus `IsPullback.isoIsPullback` — available
-at this pin, but the transport of `map_zero`, `map_add` and `liesIn_iff`
-across that isomorphism has to be written").  It is stated in the
-cancellation form rather than the `𝟙` form because that is the form
-`exists_jValueOnAffine_of_localModels` consumes, and the `𝟙` form is the
-special case.
-
-NOT VACUOUS: the hypotheses are two genuine cartesian squares and the
-conclusion is a third, with three axioms to transport; it is not
-satisfiable by shape alone. -/
+**IT UNBLOCKED TWO NODES, as advertised.**  At `h₁ = 𝟙` it is the step
+the docstring of `exists_jTransformation_of_affine` recorded as missing,
+consumed there through `jt_eq_of_isBaseChangeOf`; in the form stated here
+it is what `exists_jValueOnAffine_of_localModels` consumes. -/
 theorem exists_isBaseChangeOf_cancel {N : ℕ} {T'' T' T : Scheme.{u}}
     {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma0Datum N T''}
     {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
     (hb : IsBaseChangeOf (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOf h₂ d' d) :
     Nonempty (IsBaseChangeOf h₁ e d') :=
-  sorry
+  ⟨hb.cancel hb₂⟩
 
 /-- **The local `j`-values glue to a unique `j`-value over the affine
 base** (sorry leaf, step (iii) of the cut of `exists_jSectionOnAffine`).
