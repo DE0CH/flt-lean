@@ -535,10 +535,42 @@ So the leaf is now cut in two along exactly that seam:
   (EGA IV 11.3.10, *critère de platitude par fibres*; Stacks 039E).
   Pure scheme theory: no group scheme, no abelian variety, no `[n]`.
 * `flat_fiberMap_mulByNat` — `[p]` is flat **on every fibre**, for `p`
-  prime.  This is the abelian-variety content, now stated over a field.
+  prime.  This was the abelian-variety half; it is **PROVEN since
+  2026-07-27** and is no longer a leaf.
 
 `flat_mulByNat` itself is PROVEN over the two, together with
 `mulByNat_mul` (which does the reduction from general `n` to primes).
+
+**The second cut, 2026-07-27 — and where the declarations now live.**
+`flat_fiberMap_mulByNat` was closed by carrying the split one step
+further, along the seam between the group law and the commutative
+algebra.  Over a fibre the base is `Spec κ(s)`, and
+`AbelianSchemeStruct.baseChange` — which already existed — makes the
+fibre a genuine abelian VARIETY, with `baseChange_mulByNat` identifying
+`fiberMapOver [p]` as its own `[p]`.  That reduces the fibre statement to
+`flat_mulByNat_of_field`, which in turn splits with NO residue into:
+
+* `finite_preimage_mulByNat_of_field` — the theorem of the cube, and now
+  the ONLY leaf in this chain carrying abelian-variety content.  It
+  already existed, as the input the torsion CARDINALITY arguments need;
+  it is untouched.
+* `flat_of_finite_fibres_endo` — **miracle flatness** (Matsumura
+  *Commutative Ring Theory* Thm 23.1) in endomorphism form: a proper
+  endomorphism with finite fibres of a smooth proper geometrically
+  connected scheme over a field is flat.  Pure commutative algebra: no
+  group scheme, no abelian variety, no `[n]`.  Declared just below, next
+  to `flat_of_flat_fiberMap`, because the two are siblings — both are
+  general theorems that would be at home in mathlib.
+
+So the abelian-variety input of the whole divisibility chain is now
+concentrated in ONE leaf, where it previously appeared twice.
+
+Declaration ORDER changed to make this possible: `flat_fiberMap_mulByNat`
+and `flat_mulByNat` now sit BELOW `finite_preimage_mulByNat`, since they
+consume the cube leaf.  They moved down rather than the leaf moving up,
+deliberately — that leaf had a live owner, and relocating a declaration
+out from under the agent proving it is how merge conflicts get
+manufactured here.
 -/
 
 /-- **The morphism induced on scheme-theoretic fibres** over a point `s`
@@ -555,6 +587,116 @@ noncomputable def fiberMapOver {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     u (𝟙 _) (𝟙 _)
     (by rw [Category.comp_id]; exact h.symm)
     (by rw [Category.comp_id, Category.id_comp])
+
+/-- **MIRACLE FLATNESS, endomorphism form** (sorry leaf — PURE COMMUTATIVE
+ALGEBRA / general scheme theory, NO abelian varieties, no group law, no
+`[n]`: Matsumura *Commutative Ring Theory* Theorem 23.1, the theorem
+usually called *miracle flatness*; also in the Stacks Project under that
+name, and in EGA IV §6.  Tag numbers deliberately not quoted — they were
+not checked against the Stacks Project, and a wrong tag is worse than
+none.)
+
+*A proper endomorphism with finite fibres of a smooth proper
+geometrically connected scheme over a field is FLAT.*
+
+**Why this shape** (2026-07-27).  It is exactly the residue of
+`flat_fiberMap_mulByNat` after the abelian-variety input has been isolated
+into `finite_preimage_mulByNat_of_field` below.  Everything specific to
+abelian varieties — the group law, the theorem of the cube, the degree
+`n^{2g}` — is consumed by that leaf; what is left is a statement about an
+arbitrary endomorphism of an arbitrary smooth proper connected variety,
+which is where the classical "miracle flatness" theorem lives.  Whoever
+proves this proves a general theorem, and it has no group scheme in it at
+all — the same division of labour as `flat_of_flat_fiberMap` below.
+
+**The classical proof, in the order the hypotheses are used.**
+
+1. *`u` is FINITE.*  `IsProper u` supplies `LocallyOfFiniteType u`, and
+   `hu` supplies finite fibres, so
+   `LocallyQuasiFinite.of_finite_preimage_singleton` gives
+   `LocallyQuasiFinite u`, and then Zariski's main theorem in mathlib's
+   form, `IsFinite.of_isProper_of_locallyQuasiFinite`, gives `IsFinite u`.
+   Both lemmas EXIST at this pin — `Morphisms/QuasiFinite.lean:296` and
+   `ZariskisMainTheorem.lean:371`, located by name 2026-07-27 — but
+   neither module is imported here, so a prover closing this leaf should
+   add `Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite` and
+   `Mathlib.AlgebraicGeometry.ZariskisMainTheorem` to the header.  That
+   missing import is exactly why the hypothesis is phrased as `IsProper`
+   plus finite fibres rather than as `[IsFinite u]`: in this form the
+   statement needs no import this module does not already have, and the
+   caller can discharge it from material that is free here.
+2. *`X` is REGULAR and IRREDUCIBLE.*  `Smooth g` over a field gives
+   geometric regularity, hence regularity, hence normality, hence local
+   irreducibility; `GeometricallyConnected g` gives connectedness; and a
+   connected, locally noetherian, locally irreducible scheme is
+   irreducible.  Only ORDINARY connectedness is used, so a prover may
+   weaken that hypothesis freely — `GeometricallyConnected` is merely what
+   the caller has in hand (`AbelianSchemeStruct.connected`).
+3. *`u` is SURJECTIVE.*  `IsProper g` makes `X` quasi-compact and of
+   finite type over the field, hence finite-dimensional.  A finite
+   morphism preserves dimension, so `u '' X` is a closed irreducible
+   subset of `X` of the full dimension `dim X`, and in an irreducible
+   finite-dimensional scheme of finite type over a field the only such
+   subset is `X` itself.
+4. *Miracle flatness, pointwise.*  Fix `x` and put `y = u x`.  Then
+   `𝒪_{X,y} → 𝒪_{X,x}` is a local homomorphism of REGULAR local rings,
+   module-finite because `u` is finite, whose fibre ring
+   `𝒪_{X,x} / m_y 𝒪_{X,x}` is a localisation of a finite `κ(y)`-algebra
+   and so has dimension `0`.  Since `u` is finite,
+   `dim closure {x} = dim closure {u x}`, and on a finite-dimensional
+   irreducible scheme of finite type over a field
+   `dim 𝒪_{X,x} = dim X - dim closure {x}`; hence
+   `dim 𝒪_{X,x} = dim 𝒪_{X,y} + dim (𝒪_{X,x} / m_y 𝒪_{X,x})`.  A regular
+   local ring is Cohen–Macaulay, so Matsumura 23.1 applies and `𝒪_{X,x}`
+   is flat over `𝒪_{X,y}`.  Conclude with
+   `AlgebraicGeometry.Flat.iff_flat_stalkMap`
+   (`Morphisms/Flat.lean:102`, located by name 2026-07-27).
+
+**BOTH GLOBAL HYPOTHESES ARE LOAD-BEARING — an explicit counterexample.**
+Drop connectedness and the statement is FALSE.  Take `X = 𝔸¹_K ⊔ Spec K`
+and let `u` be the identity on `𝔸¹` and send the isolated point to the
+origin of `𝔸¹`.  Every fibre is finite, yet on stalks `u` is
+`𝒪_{𝔸¹,0} → K`, the quotient by the maximal ideal, which is not flat.
+(This `X` is smooth over `K` but neither connected nor proper, so it is
+excluded twice over — which is the point: neither hypothesis is
+decorative.)
+
+**WHAT IS PRESENT AND WHAT IS MISSING at this pin (checked 2026-07-27, not
+inherited).**
+
+* PRESENT: `ringKrullDim` (`RingTheory/KrullDimension/Basic.lean`),
+  `Module.supportDim`, `topologicalKrullDim`, `Ideal.height`,
+  `IsRegularLocalRing` (`RingTheory/RegularLocalRing/Defs.lean`), the
+  regular-sequence theory in `RingTheory/Regular/RegularSequence.lean`,
+  and the dimension-drop lemmas Stacks 00KW / 0B52 in
+  `RingTheory/KrullDimension/Regular.lean` — which are the induction step
+  of miracle flatness.  At scheme level, `Flat.iff_flat_stalkMap`,
+  `Scheme.Hom.fiber`, and Zariski's main theorem.
+* MISSING: **Cohen–Macaulay and depth**.  `grep -rl CohenMacaulay Mathlib/`
+  returns nothing, and `RingTheory/Regular/Depth.lean` is 10 lines with
+  ZERO declarations (both re-run 2026-07-27).  Also missing: the local
+  criterion of flatness (the `Tor₁` statement), generic flatness, and
+  openness of the flat locus —
+  `grep -rln "genericFlat\|flatLocus" Mathlib/RingTheory/` is empty.
+  `~/cs/FLT` has none of it either.
+
+**To refute this survey**, re-run those three greps; a hit on any of them
+means this note has gone stale and the leaf may be far cheaper than it
+looks.  Note that a prover does NOT need the whole of CM theory: only
+"regular local ⟹ Cohen–Macaulay" plus Matsumura 23.1 in the special case
+where BOTH rings are regular, which is the classical dimension count and
+does not need depth in its full generality.
+
+**Two routes considered and REJECTED for this leaf**, recorded so they are
+not re-attempted: the *theorem of the cube* route needs ample line
+bundles, absent as above; the *homogeneity/translation* route needs
+openness of the flat locus AND generic flatness, both absent, and its
+translation layer would have been free-floating since nothing could
+consume it. -/
+theorem flat_of_finite_fibres_endo {X : Scheme.{u}} {K : CommRingCat.{u}} [Field K]
+    (g : X ⟶ Spec K) [Smooth g] [IsProper g] [GeometricallyConnected g]
+    (u : X ⟶ X) [IsProper u] (hu : ∀ a : X, (⇑u ⁻¹' {a}).Finite) : Flat u :=
+  sorry
 
 /-- **The fibrewise criterion of flatness** (sorry leaf — general scheme
 theory, NO abelian varieties: EGA IV 11.3.10, *critère de platitude par
@@ -617,125 +759,16 @@ theorem flat_of_flat_fiberMap {X Y S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     (H : ∀ s : S, Flat (fiberMapOver u h s)) : Flat u :=
   sorry
 
-/-- **`[p]` is FLAT ON EVERY FIBRE, for `p` prime** (sorry leaf — abelian
-varieties; Mumford *Abelian Varieties* §6 (Application 2 of the theorem
-of the cube) and §18, Milne *Abelian Varieties* I.7, Silverman *AEC*
-III.6).
-
-This is the abelian-variety half of the old `flat_mulByNat`, and the
-point of the cut is that it is now a statement **over a field**: the
-fibre `f.fiber s` is an abelian variety over the residue field `κ(s)`,
-and `fiberMapOver (ab.mulByNat p) _ s` is `[p]` on it.
-
-**The argument, which now actually applies.**  `f.fiber s` is smooth
-over `κ(s)` (smoothness is stable under base change), hence REGULAR —
-this is the step that is simply false for `A` itself over a general base
-`S`, and it is why the fibrewise criterion had to be split off.  Fix a
-symmetric ample line bundle `L` on the fibre; the theorem of the cube
-gives `[p]^* L ≅ L^{p²}`, again ample for `p ≠ 0`, so `[p]` has finite
-fibres, and being also proper it is finite.  A finite morphism between
-regular schemes of the same dimension is flat ("miracle flatness",
-Matsumura *Commutative Ring Theory* Theorem 23.1).
-
-**`p.Prime` is a convenience, not a restriction.**  The consumer
-`flat_mulByNat` derives the statement for every `n ≠ 0` from this one by
-multiplicativity (`mulByNat_mul`) and stability of `Flat` under
-composition, so a prover only has to handle primes.  Nothing is lost:
-a prover holding the cube gets every `n` at once and may ignore `hp`.
-The reason to keep the hypothesis is that over a fibre of
-characteristic `ℓ` the two cases `p ≠ ℓ` (where `[p]` is étale) and
-`p = ℓ` (where it is not) are genuinely different arguments, and this is
-the form in which that split can be made.
-
-**MISSING MACHINERY at this pin, restricted to what this leaf needs**
-(surveyed 2026-07-26; the general-purpose half of the survey is in
-`flat_of_flat_fiberMap` above).  Mathlib has group schemes as `GrpObj`
-objects of `Over (Spec K)`
-(`Mathlib/AlgebraicGeometry/Group/{Abelian,Smooth}.lean`), but **no**
-`AbelianVariety`, no isogeny theory, no `[n]`, no theorem of the cube,
-no degree, and no ample line bundles (the only `Ample` in mathlib is
-`Analysis/Convex/AmpleSet.lean`, which is about convexity).  Supplying
-an isogeny package is what this leaf asks for.
-
-**A note for whoever takes it.**  The fibre carries an abelian-variety
-structure, but this module does not hand you one: `AbelianSchemeStruct`
-is not currently known to base-change.  Constructing
-`AbelianSchemeStruct (f.fiberOverSpecResidueField s)` from `ab` is
-therefore the natural first step, and it is pure Yoneda — a relative
-point of the fibre over `T ⟶ Spec κ(s)` is, by the universal property of
-the pullback, a relative point of `f` over the composite `T ⟶ S`. -/
-theorem flat_fiberMap_mulByNat (ab : AbelianSchemeStruct f) (p : ℕ) (hp : p.Prime)
-    (s : S) : Flat (fiberMapOver (ab.mulByNat p) (ab.mulByNat_comp p) s) :=
-  sorry
-
-/-- **Multiplication by a nonzero `n` on an abelian scheme is FLAT**
-(sorry leaf — abelian varieties; Mumford *Abelian Varieties* §6
-(Application 2 of the theorem of the cube) and §18, Milne *Abelian
-Varieties* I.7, Silverman *AEC* III.6).
-
-**PROVEN 2026-07-26**, over the two leaves above plus `mulByNat_mul`.
-It used to be the sorry itself; the abelian-variety content is now in
-`flat_fiberMap_mulByNat` and the scheme theory in
-`flat_of_flat_fiberMap`.
-
-Together with `isProper_mulByNat` and `locallyOfFinitePresentation_mulByNat`
-(both free) this says `[n]` is **finite locally free**, of degree `n^{2g}`
-on each fibre of `f` — the classical statement that `[n]` is an isogeny.
-Only the flatness was ever asked for here, because properness and finite
-presentation are already available without any abelian-variety input.
-
-**The proof, in three moves.**
-
-1. *Reduce to primes.*  `[1] = 𝟙` (`mulByNat_one`) is flat, and
-   `[p·m] = [m] ≫ [p]` (`mulByNat_mul`), so a strong induction on `n`
-   using `Nat.exists_prime_and_dvd` and the fact that `Flat` is stable
-   under composition reduces everything to `n` prime.  `hn : n ≠ 0` is
-   what makes the induction start: it rules out the one value of `n`
-   with no prime factorization to descend along.
-2. *Descend to the fibres.*  `f` is smooth, hence flat and locally of
-   finite presentation, and `[p]` is locally of finite presentation for
-   free (`locallyOfFinitePresentation_mulByNat`).  So
-   `flat_of_flat_fiberMap` applies to `[p]` as a morphism over `S`.
-3. *The fibre statement* is `flat_fiberMap_mulByNat`.
-
-**`hn` is LOAD-BEARING** — it is a genuine hypothesis, not bookkeeping.
-`mulByNat 0 = f ≫ zeroSection` factors through the base, so for relative
-dimension `g ≥ 1` it is not flat: its fibre over a point of the zero
-section is a whole fibre of `f`, of dimension `g`, while its fibre over
-any other point is empty, and flatness would force those to have the
-same dimension.
-
-**Relation to the sibling leaf.**  `Modularity/TateModule.lean` carries
-`locallyQuasiFinite_mulByNat`, which asks for the QUASI-FINITENESS of the
-same morphism and is the same theorem-of-the-cube input; over it that file
-derives `IsFinite (mulByNat n)` by Zariski's main theorem.  The two are
-deliberately *not* merged: quasi-finiteness is what the torsion
-CARDINALITY arguments need, flatness is what DIVISIBILITY needs, and a
-prover who has the cube gets both at once.  Neither consumes the other. -/
-theorem flat_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
-    Flat (ab.mulByNat n) := by
-  haveI := ab.smooth
-  haveI : LocallyOfFinitePresentation f := inferInstance
-  haveI : Flat f := inferInstance
-  induction n using Nat.strong_induction_on with
-  | _ n ih =>
-    rcases eq_or_ne n 1 with rfl | hn1
-    · rw [ab.mulByNat_one]; infer_instance
-    · obtain ⟨p, hp, hpd⟩ := Nat.exists_prime_and_dvd hn1
-      obtain ⟨m, rfl⟩ := hpd
-      have hm0 : m ≠ 0 := by rintro rfl; simp at hn
-      have hmlt : m < p * m := by
-        have h1 : 1 * m < p * m :=
-          (Nat.mul_lt_mul_right (Nat.pos_of_ne_zero hm0)).mpr hp.one_lt
-        simpa using h1
-      haveI := ih m hmlt hm0
-      haveI : LocallyOfFinitePresentation (ab.mulByNat p) :=
-        ab.locallyOfFinitePresentation_mulByNat p
-      haveI : Flat (ab.mulByNat p) :=
-        flat_of_flat_fiberMap (ab.mulByNat p) (ab.mulByNat_comp p)
-          (flat_fiberMap_mulByNat ab p hp)
-      rw [ab.mulByNat_mul]
-      infer_instance
+/-! **`flat_fiberMap_mulByNat` and `flat_mulByNat` used to stand here.**
+They moved DOWN, below `finite_preimage_mulByNat` (2026-07-27), because
+`flat_fiberMap_mulByNat` is now PROVEN over the theorem-of-the-cube leaf
+`finite_preimage_mulByNat_of_field`, which is declared below this point.
+Moving the two consumers down was preferred to hoisting that leaf up: the
+leaf had a live owner at the time, and relocating a declaration out from
+under the agent proving it is how this fleet manufactures merge
+conflicts.  Nothing else changed, and `flat_mulByNat` is byte-identical
+to its previous form.
+-/
 
 /-- **The fibres of `[n]` on an abelian VARIETY are FINITE** (sorry leaf —
 abelian varieties; same references as `flat_mulByNat`).
@@ -845,6 +878,189 @@ theorem finite_preimage_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n 
   have e1 : f.fiberι (f a) ((ab.baseChange (S.fromSpecResidueField (f a))).mulByNat n x₀)
       = ab.mulByNat n (f.fiberι (f a) x₀) := hcomm x₀
   rw [e1, hx₀, hx, Scheme.Hom.fiberι_asFiber]
+
+/-- **`[n]` is FLAT on an abelian scheme OVER A FIELD** (PROVEN
+2026-07-27 over two leaves, with no residue).
+
+This is the whole of the abelian-variety flatness statement, in the only
+setting where the classical proof applies: the base is `Spec K` for a
+field `K`, so `ab.smooth` really does make `X` regular — which is exactly
+what fails over the arbitrary base `S` of `f`.
+
+**The proof.**  `ab.proper`, `ab.smooth` and `ab.connected` are precisely
+the three hypotheses that `flat_of_finite_fibres_endo` asks of the
+structure morphism `fK`.  Properness of `[n]` itself is FREE
+(`isProper_mulByNat`, via `IsProper.of_comp` applied to `[n] ≫ fK = fK`),
+and finiteness of the fibres of `[n]` is exactly
+`finite_preimage_mulByNat_of_field`.  So the two leaves meet with nothing
+left over, and `hn` is passed straight through to the cube leaf — this
+assembly introduces no hypothesis of its own and no mathematics of its
+own.
+
+**Where the content went.**  All abelian-variety input is in
+`finite_preimage_mulByNat_of_field` (the theorem of the cube); all
+commutative algebra is in `flat_of_finite_fibres_endo` (miracle
+flatness).  Since 2026-07-27 the cube leaf is therefore the ONLY leaf in
+the divisibility chain carrying abelian-variety content — it used to be
+needed twice over, once here and once for the torsion cardinality
+arguments.
+
+`hn : n ≠ 0` is load-bearing downstream rather than here; see the
+discussion in `flat_mulByNat` below. -/
+theorem flat_mulByNat_of_field {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
+    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : n ≠ 0) :
+    Flat (ab.mulByNat n) :=
+  haveI := ab.smooth
+  haveI := ab.proper
+  haveI := ab.connected
+  haveI := ab.isProper_mulByNat n
+  flat_of_finite_fibres_endo fK (ab.mulByNat n)
+    (finite_preimage_mulByNat_of_field K ab n hn)
+
+/-- **`[p]` is FLAT ON EVERY FIBRE, for `p` prime** (PROVEN 2026-07-27;
+abelian varieties — Mumford *Abelian Varieties* §6 (Application 2 of the
+theorem of the cube) and §18, Milne *Abelian Varieties* I.7, Silverman
+*AEC* III.6).
+
+This is the abelian-variety half of the old `flat_mulByNat`, and the
+point of the cut is that it is a statement **over a field**: the fibre
+`f.fiber s` is an abelian variety over the residue field `κ(s)`, and
+`fiberMapOver (ab.mulByNat p) _ s` is `[p]` on it.
+
+**THE OLD DOCSTRING'S CLOSING NOTE WAS STALE, AND IT WAS THE WHOLE
+OBSTACLE** (corrected 2026-07-27).  It read: "the fibre carries an
+abelian-variety structure, but this module does not hand you one:
+`AbelianSchemeStruct` is not currently known to base-change", and it
+named constructing that structure as the natural first step.
+**`AbelianSchemeStruct.baseChange` has existed in this very module since
+2026-07-26**, together with `AbelianSchemeStruct.baseChange_mulByNat`,
+which says precisely that `[n]` commutes with the projection; the sibling
+`finite_preimage_mulByNat` was already proven by exactly that route.
+Refute the note in one grep:
+`grep -n "def baseChange" Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`.
+
+**The proof, in one move.**  `Scheme.Hom.fiber f s` is by definition
+`pullback f (S.fromSpecResidueField s)`, so
+`ab.baseChange (S.fromSpecResidueField s)` is an `AbelianSchemeStruct` on
+`pullback.snd f (S.fromSpecResidueField s)` — an abelian scheme over
+`Spec κ(s)`, i.e. an abelian VARIETY.  Its multiplication morphism IS the
+fibre map:
+
+  `fiberMapOver [p] _ s = (ab.baseChange (S.fromSpecResidueField s)).mulByNat p`,
+
+which `pullback.hom_ext` reduces to two identities: `baseChange_mulByNat`
+after composing with `pullback.fst`, and `mulByNat_comp` for the
+base-changed structure after composing with `pullback.snd` (`fiberMapOver`
+carries the identity in that slot).  Then `flat_mulByNat_of_field`
+applies with `K := S.residueField s`, and `hp.pos.ne'` supplies its
+`n ≠ 0`.
+
+**`p.Prime` is unused by this proof, and that is deliberate.**  Only
+`p ≠ 0` is needed, since `flat_mulByNat_of_field` holds for every nonzero
+`n`.  The hypothesis is kept because the statement is consumed by
+`flat_mulByNat`'s reduction to primes, and because — as the old note
+observed — a prover attacking the cube directly may want to split on
+whether `p` equals the residue characteristic, the case `p ≠ ℓ` being
+where `[p]` is étale.  It is a genuine hypothesis of the STATEMENT that
+this particular proof happens not to need, not a hidden weakening. -/
+theorem flat_fiberMap_mulByNat (ab : AbelianSchemeStruct f) (p : ℕ) (hp : p.Prime)
+    (s : S) : Flat (fiberMapOver (ab.mulByNat p) (ab.mulByNat_comp p) s) := by
+  have hkey : fiberMapOver (ab.mulByNat p) (ab.mulByNat_comp p) s
+      = show (f.fiber s : Scheme.{u}) ⟶ f.fiber s from
+          (ab.baseChange (S.fromSpecResidueField s)).mulByNat p := by
+    refine Limits.pullback.hom_ext ?_ ?_
+    · calc fiberMapOver (ab.mulByNat p) (ab.mulByNat_comp p) s
+              ≫ Limits.pullback.fst f (S.fromSpecResidueField s)
+          = Limits.pullback.fst f (S.fromSpecResidueField s) ≫ ab.mulByNat p :=
+            Limits.pullback.lift_fst _ _ _
+        _ = (ab.baseChange (S.fromSpecResidueField s)).mulByNat p
+              ≫ Limits.pullback.fst f (S.fromSpecResidueField s) :=
+            (ab.baseChange_mulByNat (S.fromSpecResidueField s) p).symm
+    · calc fiberMapOver (ab.mulByNat p) (ab.mulByNat_comp p) s
+              ≫ Limits.pullback.snd f (S.fromSpecResidueField s)
+          = Limits.pullback.snd f (S.fromSpecResidueField s) ≫ 𝟙 _ :=
+            Limits.pullback.lift_snd _ _ _
+        _ = Limits.pullback.snd f (S.fromSpecResidueField s) := Category.comp_id _
+        _ = (ab.baseChange (S.fromSpecResidueField s)).mulByNat p
+              ≫ Limits.pullback.snd f (S.fromSpecResidueField s) :=
+            ((ab.baseChange (S.fromSpecResidueField s)).mulByNat_comp p).symm
+  rw [hkey]
+  exact flat_mulByNat_of_field (S.residueField s) (ab.baseChange _) p hp.pos.ne'
+
+/-- **Multiplication by a nonzero `n` on an abelian scheme is FLAT**
+(abelian varieties; Mumford *Abelian Varieties* §6 (Application 2 of the
+theorem of the cube) and §18, Milne *Abelian Varieties* I.7, Silverman
+*AEC* III.6).
+
+**PROVEN 2026-07-26**, over the two leaves above plus `mulByNat_mul`.
+It used to be the sorry itself; the abelian-variety content is now in
+`flat_fiberMap_mulByNat` and the scheme theory in
+`flat_of_flat_fiberMap`.  (Statement and proof unchanged since;
+the declaration merely MOVED here on 2026-07-27, below
+`finite_preimage_mulByNat_of_field`, so that `flat_fiberMap_mulByNat`
+could be proven over it.)
+
+Together with `isProper_mulByNat` and `locallyOfFinitePresentation_mulByNat`
+(both free) this says `[n]` is **finite locally free**, of degree `n^{2g}`
+on each fibre of `f` — the classical statement that `[n]` is an isogeny.
+Only the flatness was ever asked for here, because properness and finite
+presentation are already available without any abelian-variety input.
+
+**The proof, in three moves.**
+
+1. *Reduce to primes.*  `[1] = 𝟙` (`mulByNat_one`) is flat, and
+   `[p·m] = [m] ≫ [p]` (`mulByNat_mul`), so a strong induction on `n`
+   using `Nat.exists_prime_and_dvd` and the fact that `Flat` is stable
+   under composition reduces everything to `n` prime.  `hn : n ≠ 0` is
+   what makes the induction start: it rules out the one value of `n`
+   with no prime factorization to descend along.
+2. *Descend to the fibres.*  `f` is smooth, hence flat and locally of
+   finite presentation, and `[p]` is locally of finite presentation for
+   free (`locallyOfFinitePresentation_mulByNat`).  So
+   `flat_of_flat_fiberMap` applies to `[p]` as a morphism over `S`.
+3. *The fibre statement* is `flat_fiberMap_mulByNat`.
+
+**`hn` is LOAD-BEARING** — it is a genuine hypothesis, not bookkeeping.
+`mulByNat 0 = f ≫ zeroSection` factors through the base, so for relative
+dimension `g ≥ 1` it is not flat: its fibre over a point of the zero
+section is a whole fibre of `f`, of dimension `g`, while its fibre over
+any other point is empty, and flatness would force those to have the
+same dimension.
+
+**Relation to the sibling leaf.**  `Modularity/TateModule.lean` carries
+`locallyQuasiFinite_mulByNat`, which asks for the QUASI-FINITENESS of the
+same morphism and is the same theorem-of-the-cube input; over it that file
+derives `IsFinite (mulByNat n)` by Zariski's main theorem.  The two are
+deliberately *not* merged: quasi-finiteness is what the torsion
+CARDINALITY arguments need, flatness is what DIVISIBILITY needs, and a
+prover who has the cube gets both at once.  Neither consumes the other.
+(Since 2026-07-27 they share their one leaf,
+`finite_preimage_mulByNat_of_field`, so "a prover who has the cube gets
+both at once" is now literally true of this file.) -/
+theorem flat_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
+    Flat (ab.mulByNat n) := by
+  haveI := ab.smooth
+  haveI : LocallyOfFinitePresentation f := inferInstance
+  haveI : Flat f := inferInstance
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    rcases eq_or_ne n 1 with rfl | hn1
+    · rw [ab.mulByNat_one]; infer_instance
+    · obtain ⟨p, hp, hpd⟩ := Nat.exists_prime_and_dvd hn1
+      obtain ⟨m, rfl⟩ := hpd
+      have hm0 : m ≠ 0 := by rintro rfl; simp at hn
+      have hmlt : m < p * m := by
+        have h1 : 1 * m < p * m :=
+          (Nat.mul_lt_mul_right (Nat.pos_of_ne_zero hm0)).mpr hp.one_lt
+        simpa using h1
+      haveI := ih m hmlt hm0
+      haveI : LocallyOfFinitePresentation (ab.mulByNat p) :=
+        ab.locallyOfFinitePresentation_mulByNat p
+      haveI : Flat (ab.mulByNat p) :=
+        flat_of_flat_fiberMap (ab.mulByNat p) (ab.mulByNat_comp p)
+          (flat_fiberMap_mulByNat ab p hp)
+      rw [ab.mulByNat_mul]
+      infer_instance
 
 /-- **`[n]` is flat and locally of finite presentation** (PROVEN
 2026-07-26 over `flat_mulByNat`; the finite presentation is free).
