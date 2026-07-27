@@ -363,7 +363,7 @@ open in them has been split along the theories it needed:
 
 | open leaf | theory | base |
 |---|---|---|
-| `exists_gamma1GITPresentation` | Katz-Mazur (8.1.1)/(8.1.3): the rigidified moduli scheme and its deck group | any `K`, `char K ∤ N` |
+| `exists_gamma1Rigidification` | Katz-Mazur (8.1.1): the rigidified moduli scheme, its deck group and its level torsor | any `K`, `char K ∤ N` |
 | `isDomain_of_gamma1GITPresentation` | irreducibility of `Y_1(N)` (Katz-Mazur 8.1.1's integrality half) | any `K`, `char K ∤ N` |
 | `smoothOfRelativeDimension_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2 | any `K`, `char K ∤ N` |
 | `geometricallyConnected_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]` | any `K`, `char K ∤ N` |
@@ -416,7 +416,10 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `Gamma0Atlas.toIsCoarseModuliY0` (PROVEN) | `Gamma1Atlas.toIsCoarseModuliY1` (PROVEN) |
 | `Gamma0GITPresentation` | `Gamma1GITPresentation` |
 | `Gamma0GITPresentation.toGamma0Atlas` (PROVEN) | `Gamma1GITPresentation.toGamma1Atlas` (PROVEN) |
-| `exists_gamma0GITPresentation` (leaf) | `exists_gamma1GITPresentation` (leaf) |
+| `exists_gamma0GITPresentation` (PROVEN) | `exists_gamma1GITPresentation` (PROVEN) |
+| `exists_rigidifiedModuli` + `exists_deckAction` (leaves) | `exists_gamma1Rigidification` (leaf) |
+| `exists_descendClassify` (PROVEN) | `exists_descendClassifyGamma1` (PROVEN) |
+| `exists_gamma0Datum_baseChange` (PROVEN) | `exists_gamma1Datum_baseChange` (PROVEN) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
 | `isDomain_of_gamma0Atlas` (leaf) | `isDomain_of_gamma1GITPresentation` (leaf) |
 | `smoothOfRelativeDimension_of_gamma0Atlas` (leaf) | `smoothOfRelativeDimension_of_gamma1GITPresentation` (leaf) |
@@ -463,7 +466,7 @@ scheme is disconnected and `A` is not a domain.  What survives base
 change is `IsDomain B` for the INVARIANTS, since `G = GL₂(ℤ/n)` permutes
 those components transitively — and that is the fold that would close
 `isDomain_of_gamma1GITPresentation`.  It is deliberately not folded in here, for
-the reason `X0.lean` gives: a prover sent at `exists_gamma1GITPresentation`
+the reason `X0.lean` gives: a prover sent at `exists_gamma1Rigidification`
 should have to build the construction and nothing else. -/
 
 /-- **A Katz–Mazur atlas for the `Γ₁(N)`-problem over a base scheme `S`.**
@@ -703,9 +706,589 @@ noncomputable def Gamma1GITPresentation.toGamma1Atlas {N : ℕ} {S : Scheme.{0}}
       · rintro ψ' ⟨-, h⟩
         exact huniq ψ' h }
 
-/-- **The Katz–Mazur GIT presentation of `Y_1(N)` over a field in which
-`N` is invertible exists** (sorry leaf — Katz–Mazur (8.1.1) + (8.1.3),
-and the ONLY modular EXISTENCE input below `X_1(N)` over either base).
+/-! #### Base change of a `Γ₁(N)`-datum, as a construction
+
+**Added 2026-07-27**, cutting `exists_gamma1GITPresentation` along the
+same axis `X0.lean` cuts `exists_gamma0GITPresentation`: the `Γ₁`-moduli
+problem is a FUNCTOR, every datum pulls back along every `h : T' ⟶ T`,
+and that is what the fpqc descent of the classifying map below runs on.
+
+This is the `Γ₁` transcription of `Gamma0BaseChange`, and it is strictly
+SHORTER, because the level structure is a SECTION rather than a subgroup
+scheme: transporting it is one `pullback.lift`, where `Gamma0BaseChange`
+has to build `C ×_T T'`, recover the closed immersion by pullback
+pasting, and prove `liesIn_iota_iff` in both directions.  What survives
+verbatim is `AbelianSchemeStruct.baseChange` and its bijection
+`RelPoint.baseChangeDown` / `RelPoint.baseChangeUp`, and the one step
+with content — `geom_order` — transports for the same reason
+`geom_cyclic` does: `downHom` is an INJECTIVE additive map, so
+`addOrderOf_injective` carries the order across. -/
+
+namespace Gamma1BaseChange
+
+open CategoryTheory.Limits
+
+variable {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ T) (d : Gamma1Datum N T)
+
+/-- the projection of the base-changed total space to `E` -/
+noncomputable abbrev qq : pullback d.f h ⟶ d.E := pullback.fst d.f h
+
+/-- the structure morphism of the base-changed total space -/
+noncomputable abbrev fb : pullback d.f h ⟶ T' := pullback.snd d.f h
+
+/-- **The base-changed section**, `h ≫ sec` paired with the identity.
+This is the whole of the `Γ₁` level-structure base change, and it is the
+place where this development is shorter than the `Γ₀` one. -/
+noncomputable def secBC : T' ⟶ pullback d.f h :=
+  pullback.lift (h ≫ d.pt.sec) (𝟙 T') (by
+    rw [Category.assoc, d.pt.sec_comp, Category.comp_id, Category.id_comp])
+
+lemma secBC_fst : secBC h d ≫ qq h d = h ≫ d.pt.sec := pullback.lift_fst _ _ _
+
+lemma secBC_snd : secBC h d ≫ fb h d = 𝟙 T' := pullback.lift_snd _ _ _
+
+/-- **`baseChangeDown` as an additive map on relative points.**  This is
+what carries `addOrderOf` between the two sides in `geom_order`; it is
+injective by `RelPoint.baseChangeDown_injective`. -/
+noncomputable def downHom {U : Scheme.{u}} (g : U ⟶ T') :
+    letI := (d.ab.baseChange h).addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ h)
+    RelPoint (fb h d) g →+ RelPoint d.f (g ≫ h) :=
+  letI := (d.ab.baseChange h).addCommGroup g
+  letI := d.ab.addCommGroup (g ≫ h)
+  { toFun := RelPoint.baseChangeDown h
+    map_zero' := by
+      show RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g) = d.ab.zero (g ≫ h)
+      rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+    map_add' := by
+      intro x y
+      show RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y)
+          = d.ab.add (RelPoint.baseChangeDown h x) (RelPoint.baseChangeDown h y)
+      rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp] }
+
+lemma downHom_apply {U : Scheme.{u}} (g : U ⟶ T') (x : RelPoint (fb h d) g) :
+    downHom h d g x = RelPoint.baseChangeDown h x := rfl
+
+/-- **The base-changed point of exact order `N`.**  The order is read at
+`t ≫ h` and transported back by the injective additive `downHom`. -/
+noncomputable def ptBC : PointOfExactOrder (d.ab.baseChange h) N where
+  sec := secBC h d
+  sec_comp := secBC_snd h d
+  geom_order := by
+    intro K _ _ t
+    letI := (d.ab.baseChange h).addCommGroup t
+    letI := d.ab.addCommGroup (t ≫ h)
+    have hinj : Function.Injective (downHom h d t) :=
+      RelPoint.baseChangeDown_injective h
+    have hmap : downHom h d t (RelPoint.ofSection (secBC h d) (secBC_snd h d) t)
+        = RelPoint.ofSection d.pt.sec d.pt.sec_comp (t ≫ h) := by
+      refine Subtype.ext ?_
+      show (t ≫ secBC h d) ≫ pullback.fst d.f h = (t ≫ h) ≫ d.pt.sec
+      rw [Category.assoc, secBC_fst, ← Category.assoc]
+    rw [← addOrderOf_injective (downHom h d t) hinj, hmap]
+    exact d.pt.geom_order K (t ≫ h)
+
+/-- **The base-changed `Γ₁(N)`-datum.** -/
+noncomputable def datumBC : Gamma1Datum N T' where
+  E := pullback d.f h
+  f := fb h d
+  ab := d.ab.baseChange h
+  relativeDimensionOne :=
+    haveI := smoothOfRelativeDimension_isStableUnderBaseChange (n := 1)
+    MorphismProperty.of_isPullback (P := @SmoothOfRelativeDimension 1)
+      (IsPullback.of_hasPullback d.f h) d.relativeDimensionOne
+  pt := ptBC h d
+
+/-- **And it IS a base change**, with the cartesian square the defining
+one; `map_sec` is `secBC_fst` and needs no argument at all, which is the
+`Γ₁` analogue of `Gamma0BaseChange.isBaseChangeBC`'s `liesIn_iff`. -/
+noncomputable def isBaseChangeBC : IsBaseChangeOfGamma1 h (datumBC h d) d where
+  map := qq h d
+  isPullback := (IsPullback.of_hasPullback d.f h).flip
+  map_zero := by
+    intro U g
+    show RelPoint.baseChangeDown h ((d.ab.baseChange h).zero g) = d.ab.zero (g ≫ h)
+    rw [AbelianSchemeStruct.baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+  map_add := by
+    intro U g x y
+    show RelPoint.baseChangeDown h ((d.ab.baseChange h).add x y)
+        = d.ab.add (RelPoint.baseChangeDown h x) (RelPoint.baseChangeDown h y)
+    rw [AbelianSchemeStruct.baseChange_add, RelPoint.baseChangeDown_baseChangeUp]
+  map_sec := secBC_fst h d
+
+end Gamma1BaseChange
+
+/-- **Base change of a `Γ₁(N)`-datum, as a CONSTRUCTION** (PROVEN
+2026-07-27) — the `Γ₁` analogue of `exists_gamma0Datum_baseChange`.
+
+Given any `h : T' ⟶ T` and any datum over `T`, there is a datum over `T'`
+which is a base change of it.  Nothing here mentions a level `n`, a base
+field, or any moduli scheme: it is the statement that the
+`Γ₁(N)`-moduli problem is a FUNCTOR, and `exists_descendClassifyGamma1`
+below consumes it purely to produce the data living over the fibre
+products of the rigidifying cover.
+
+Stated at universe `u` rather than at `0` because nothing in it is
+specific to the modular-curve layer. -/
+theorem exists_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{u}} (h : T' ⟶ T)
+    (d : Gamma1Datum N T) :
+    ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 h d' d) :=
+  ⟨Gamma1BaseChange.datumBC h d, ⟨Gamma1BaseChange.isBaseChangeBC h d⟩⟩
+
+namespace IsBaseChangeOfGamma1
+
+variable {N : ℕ}
+
+/-- **A datum is a base change of itself along the identity** (PROVEN).
+
+Consumed by `nonempty_gamma1GITPresentation_of_rigidification` to compute
+the classifying map of the universal family: the trivial cover `𝟙` of
+`Spec A`, rigidified by `𝟙`, is what forces `classify strM dM = π`. -/
+def refl {T : Scheme.{u}} (d : Gamma1Datum N T) : IsBaseChangeOfGamma1 (𝟙 T) d d where
+  map := 𝟙 d.E
+  isPullback := IsPullback.of_id_snd
+  map_zero := by
+    intro T'' g
+    have h0 : d.ab.zero (g ≫ 𝟙 T)
+        = RelPoint.transport (Category.comp_id g).symm (d.ab.zero g) :=
+      (RelPoint.transport_zero d.ab _).symm
+    refine Subtype.ext ?_
+    rw [h0]
+    simp only [RelPoint.along_val, RelPoint.transport_val, Category.comp_id]
+  map_add := by
+    intro T'' g x y
+    have hal : ∀ z : RelPoint d.f g,
+        RelPoint.along (𝟙 d.E) (IsPullback.of_id_snd (f := d.f)).w z
+          = RelPoint.transport (Category.comp_id g).symm z :=
+      fun z => Subtype.ext (by
+        simp only [RelPoint.along_val, RelPoint.transport_val, Category.comp_id])
+    rw [hal, hal, hal, RelPoint.transport_add]
+  map_sec := by rw [Category.comp_id, Category.id_comp]
+
+/-- **Base changes compose** (PROVEN): `d₁` a base change of `d₂` along
+`a` and `d₂` one of `d₃` along `b` make `d₁` one of `d₃` along `a ≫ b`.
+The cartesian square is `IsPullback.paste_vert`; the base-point
+associativity is absorbed by `AbelianSchemeStruct.zero_val_congr` /
+`add_val_congr`, and `map_sec` is three rewrites. -/
+noncomputable def comp {T₁ T₂ T₃ : Scheme.{u}} {a : T₁ ⟶ T₂} {b : T₂ ⟶ T₃}
+    {d₁ : Gamma1Datum N T₁} {d₂ : Gamma1Datum N T₂} {d₃ : Gamma1Datum N T₃}
+    (bc₁ : IsBaseChangeOfGamma1 a d₁ d₂) (bc₂ : IsBaseChangeOfGamma1 b d₂ d₃) :
+    IsBaseChangeOfGamma1 (a ≫ b) d₁ d₃ where
+  map := bc₁.map ≫ bc₂.map
+  isPullback := bc₁.isPullback.paste_vert bc₂.isPullback
+  map_zero := by
+    intro U g
+    refine Subtype.ext ?_
+    have h₁ : (d₁.ab.zero g).1 ≫ bc₁.map = (d₂.ab.zero (g ≫ a)).1 :=
+      congrArg Subtype.val (bc₁.map_zero g)
+    have h₂ : (d₂.ab.zero (g ≫ a)).1 ≫ bc₂.map = (d₃.ab.zero ((g ≫ a) ≫ b)).1 :=
+      congrArg Subtype.val (bc₂.map_zero (g ≫ a))
+    show (d₁.ab.zero g).1 ≫ bc₁.map ≫ bc₂.map = (d₃.ab.zero (g ≫ a ≫ b)).1
+    rw [← Category.assoc, h₁, h₂]
+    exact AbelianSchemeStruct.zero_val_congr d₃.ab (Category.assoc g a b)
+  map_add := by
+    intro U g x y
+    refine Subtype.ext ?_
+    have h₁ : (d₁.ab.add x y).1 ≫ bc₁.map
+        = (d₂.ab.add (RelPoint.along bc₁.map bc₁.isPullback.w x)
+            (RelPoint.along bc₁.map bc₁.isPullback.w y)).1 :=
+      congrArg Subtype.val (bc₁.map_add x y)
+    have h₂ : ∀ z w : RelPoint d₂.f (g ≫ a), (d₂.ab.add z w).1 ≫ bc₂.map
+        = (d₃.ab.add (RelPoint.along bc₂.map bc₂.isPullback.w z)
+            (RelPoint.along bc₂.map bc₂.isPullback.w w)).1 :=
+      fun z w => congrArg Subtype.val (bc₂.map_add z w)
+    show (d₁.ab.add x y).1 ≫ bc₁.map ≫ bc₂.map
+        = (d₃.ab.add (RelPoint.along (bc₁.map ≫ bc₂.map) (bc₁.isPullback.paste_vert
+              bc₂.isPullback).w x)
+            (RelPoint.along (bc₁.map ≫ bc₂.map) (bc₁.isPullback.paste_vert
+              bc₂.isPullback).w y)).1
+    rw [← Category.assoc, h₁, h₂]
+    exact AbelianSchemeStruct.add_val_congr d₃.ab (Category.assoc g a b) _ _ _ _
+      (Category.assoc _ _ _) (Category.assoc _ _ _)
+  map_sec := by
+    show d₁.pt.sec ≫ bc₁.map ≫ bc₂.map = (a ≫ b) ≫ d₃.pt.sec
+    rw [← Category.assoc, bc₁.map_sec, Category.assoc, bc₂.map_sec, ← Category.assoc]
+
+/-- The morphism induced by cancelling a base change: `e.E ⟶ d'.E`, from
+the universal property of `d'.E` as a fibre product. -/
+noncomputable def cancelMap {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
+    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
+    e.E ⟶ d'.E :=
+  hb₂.isPullback.lift (e.f ≫ h₁) hb.map (by rw [Category.assoc]; exact hb.isPullback.w)
+
+@[reassoc] theorem cancelMap_fst {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
+    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
+    hb.cancelMap hb₂ ≫ d'.f = e.f ≫ h₁ :=
+  hb₂.isPullback.lift_fst _ _ _
+
+@[reassoc] theorem cancelMap_snd {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
+    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
+    hb.cancelMap hb₂ ≫ hb₂.map = hb.map :=
+  hb₂.isPullback.lift_snd _ _ _
+
+/-- **Base changes CANCEL** (PROVEN) — the exact converse of
+`IsBaseChangeOfGamma1.comp`, and the `Γ₁` analogue of
+`IsBaseChangeOf.cancel`.
+
+Both `e` and `d'` are pullbacks of `d`, so `e.E` maps to `d'.E` by the
+universal property and the resulting square is cartesian by the converse
+of pullback pasting (`IsPullback.of_bot`).  The remaining fields
+transport because `IsPullback.hom_ext` lets a morphism into `d'.E` be
+checked against `d'.f` and `hb₂.map` separately, and `cancelMap_fst` /
+`cancelMap_snd` say what those two composites are.
+
+Consumed by `exists_descendClassifyGamma1` at `h₁ := g₂`, `h₂ := p`, to
+recognise that a base change of the rigidified cover along `g₁` is *also*
+one along any `g₂` with `g₁ ≫ p = g₂ ≫ p`. -/
+noncomputable def cancel {T'' T' T : Scheme.{u}}
+    {h₁ : T'' ⟶ T'} {h₂ : T' ⟶ T} {e : Gamma1Datum N T''}
+    {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+    (hb : IsBaseChangeOfGamma1 (h₁ ≫ h₂) e d) (hb₂ : IsBaseChangeOfGamma1 h₂ d' d) :
+    IsBaseChangeOfGamma1 h₁ e d' where
+  map := hb.cancelMap hb₂
+  isPullback := by
+    refine IsPullback.of_bot ?_ (hb.cancelMap_fst hb₂).symm hb₂.isPullback
+    rw [hb.cancelMap_snd hb₂]
+    exact hb.isPullback
+  map_zero g := by
+    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
+    · simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.zero g).2,
+        (d'.ab.zero (g ≫ h₁)).2]
+    · have e1 : (e.ab.zero g).1 ≫ hb.map = (d.ab.zero (g ≫ h₁ ≫ h₂)).1 :=
+        congrArg Subtype.val (hb.map_zero g)
+      have e2 : (d'.ab.zero (g ≫ h₁)).1 ≫ hb₂.map = (d.ab.zero ((g ≫ h₁) ≫ h₂)).1 :=
+        congrArg Subtype.val (hb₂.map_zero (g ≫ h₁))
+      simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2, Category.assoc]
+  map_add := fun {_} {g} x y => by
+    refine Subtype.ext (hb₂.isPullback.hom_ext ?_ ?_)
+    · simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, (e.ab.add x y).2,
+        (d'.ab.add _ _).2]
+    · have e1 : (e.ab.add x y).1 ≫ hb.map
+          = (d.ab.add (RelPoint.along hb.map hb.isPullback.w x)
+              (RelPoint.along hb.map hb.isPullback.w y)).1 :=
+        congrArg Subtype.val (hb.map_add x y)
+      have e2 : ∀ a b : RelPoint d'.f (g ≫ h₁), (d'.ab.add a b).1 ≫ hb₂.map
+          = (d.ab.add (RelPoint.along hb₂.map hb₂.isPullback.w a)
+              (RelPoint.along hb₂.map hb₂.isPullback.w b)).1 :=
+        fun a b => congrArg Subtype.val (hb₂.map_add a b)
+      simp only [RelPoint.along]
+      rw [Category.assoc, hb.cancelMap_snd hb₂, e1, e2]
+      refine d.ab.add_val_congr (Category.assoc g h₁ h₂) _ _ _ _ ?_ ?_ <;>
+        · simp only [RelPoint.along]
+          rw [Category.assoc, hb.cancelMap_snd hb₂]
+  map_sec := by
+    refine hb₂.isPullback.hom_ext ?_ ?_
+    · rw [Category.assoc, hb.cancelMap_fst hb₂, ← Category.assoc, e.pt.sec_comp,
+        Category.id_comp, Category.assoc, d'.pt.sec_comp, Category.comp_id]
+    · rw [Category.assoc, hb.cancelMap_snd hb₂, hb.map_sec, Category.assoc,
+        Category.assoc, hb₂.map_sec]
+
+end IsBaseChangeOfGamma1
+
+/-! #### The rigidified moduli scheme, and the two halves of (8.1.1)/(8.1.3)
+
+**The cut of `exists_gamma1GITPresentation`, 2026-07-27.**  What was one
+sorry leaf is now ONE leaf plus proven glue, along the same line
+Katz–Mazur themselves draw and the same line `X0.lean` draws between
+`exists_rigidifiedModuli` and `exists_gamma0GITPresentation_of_rigidified`:
+
+| what | where | status |
+|---|---|---|
+| the rigidified moduli scheme, its deck group, its cover and its torsor property | `Gamma1Rigidification` / `exists_gamma1Rigidification` | **LEAF** (8.1.1) |
+| the invariants `B = A^G`, the structure morphism of the coarse space, and the DESCENT of the classifying map | `exists_descendClassifyGamma1` / `nonempty_gamma1GITPresentation_of_rigidification` | **PROVEN** (8.1.3) |
+
+**`coequalises` is REQUIRED and its absence makes the descent half FALSE
+— here is the counterexample that found it.**  The tempting
+`Gamma1Rigidification` is `Gamma1GITPresentation` minus the `classify`
+block, i.e. `cover` + `strM_invariant` + `dM_equivariant`.  That is not
+enough.  Take `A = A₀ × A₀` with `G` acting diagonally on a genuine
+rigidified `A₀`, `dM` the disjoint union of two copies of the universal
+family, and `strM` the same on both factors.  Then `cover` holds (map
+into the first copy), `strM_invariant` and `dM_equivariant` hold, and
+`B = A^G = B₀ × B₀`.  But the two inclusions `ι₁, ι₂ : Spec A₀ ⟶ Spec A`
+pull `dM` back to ISOMORPHIC data, so naturality of any `classify` at
+`h = 𝟙` forces `ι₁ ≫ π = ι₂ ≫ π`, which is false because the two land in
+different factors of `Spec (B₀ × B₀)`.  So `classify` with
+`classify_dM` cannot exist over that rigidification, and a descent leaf
+stated without `coequalises` would be FALSE, not merely hard.
+
+`coequalises` is exactly what excludes it, it is exactly clause (b) of
+`X0.lean`'s `exists_deckAction`, and it is TRUE of the Katz–Mazur
+construction: two level-`n` structures on one curve differ by a
+*locally constant* `GL₂(ℤ/n)`-valued comparison, which equalises the two
+composites with `π` piecewise and hence globally.  The section comment
+above `Gamma0Atlas` in `X0.lean` records the same fact as the reason the
+descent route needs "a strictly stronger field — the torsor property";
+that field is this one.
+
+Note `dM_equivariant` is NOT derivable from `coequalises` and vice versa:
+the first says `σ^*dM ≅ dM`, the second is the converse direction, and
+`Gamma1GITPresentation.toGamma1Atlas` consumes only the first while
+`exists_descendClassifyGamma1` consumes only the second. -/
+
+/-- **The Katz–Mazur rigidified moduli scheme for `[Γ₁(N)]`, over an
+arbitrary base scheme `S`** — the output of (8.1.1), with the descended
+classifying map of (8.1.3) deliberately NOT included.
+
+This is `Gamma1GITPresentation` with `B`, `str`, `classify`,
+`classify_natural` and `classify_dM` removed and `coequalises` added; the
+removed fields are all PROVEN from these ones in
+`nonempty_gamma1GITPresentation_of_rigidification` below, and the added
+one is what makes that proof possible at all (see the section comment for
+the counterexample).
+
+The `Γ₀` analogue is `RigidifiedModuli` together with the two clauses of
+`exists_deckAction`, which `X0.lean` keeps separate because its `A` comes
+from a fine moduli scheme via a chosen affine presentation.  Here the
+whole package is one structure, since nothing in this file needs the
+fine moduli property on its own. -/
+structure Gamma1Rigidification (N : ℕ) (S : Scheme.{0}) where
+  /-- the coordinate ring of the rigidified moduli scheme `𝔐([Γ₁(N)], [Γ(n)])` -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the deck group `GL₂(ℤ/n)` of the rigidification -/
+  G : Type
+  [group_G : Group G]
+  [finite_G : Finite G]
+  [action_GA : MulSemiringAction G A]
+  /-- the structure morphism of the rigidified moduli scheme -/
+  strM : Spec (CommRingCat.of A) ⟶ S
+  /-- the universal family it carries -/
+  dM : Gamma1Datum N (Spec (CommRingCat.of A))
+  /-- **rigidification**: every datum over an `S`-scheme is, after a
+  faithfully flat quasi-compact base change **of `S`-schemes**, a base
+  change of `dM`.  Verbatim `Gamma1GITPresentation.cover`. -/
+  cover : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T')
+      (m : T' ⟶ Spec (CommRingCat.of A)),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      p ≫ g = m ≫ strM ∧
+      Nonempty (IsBaseChangeOfGamma1 p d' d) ∧ Nonempty (IsBaseChangeOfGamma1 m d' dM)
+  /-- **the deck group acts over the base** -/
+  strM_invariant : ∀ σ : G,
+    Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ)) ≫ strM = strM
+  /-- **`G`-equivariance of the universal family**: `σ^*dM ≅ dM` -/
+  dM_equivariant : ∀ σ : G, ∃ d₁ : Gamma1Datum N (Spec (CommRingCat.of A)),
+    Nonempty (IsBaseChangeOfGamma1 (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
+    Nonempty (IsBaseChangeOfGamma1
+      (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+  /-- **the torsor property**: the quotient map coequalises ANY two
+  rigidifications of one datum, not merely `𝟙` and `Spec σ` for a global
+  `σ : G`.  Without this field the descent below is FALSE — see the
+  section comment. -/
+  coequalises : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of A))
+    (d₁ : Gamma1Datum N Z), IsBaseChangeOfGamma1 a d₁ dM →
+    IsBaseChangeOfGamma1 b d₁ dM →
+    a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A
+
+/-- **fpqc descent of the classifying map, over an ARBITRARY base**
+(PROVEN 2026-07-27) — Katz–Mazur (8.1.3), and the half of
+`exists_gamma1GITPresentation` that mentions no level structure, no deck
+group construction and no modular curve.
+
+The `Γ₁` analogue of `X0.lean`'s `exists_descendClassify`, stated over an
+abstract finite group acting on an abstract commutative ring with the
+rigidified cover and the coequalising property as hypotheses.
+
+**The one place it is not a transcription: the base.**  `X0.lean`'s
+version takes `_g : T ⟶ SpecQ` and never uses it, because
+`Subsingleton (T ⟶ Spec ℚ)` makes `c ≫ str = g` automatic.  Over a
+general `S` that clause is real content and is now part of the
+conclusion, proved from the `p ≫ g = m ≫ strM` clause of `cover` — which
+`Gamma0GITPresentation.cover` does not even carry — together with
+`hstr` and cancellation of the fpqc epimorphism.
+
+## How it is proven
+
+`hcov` produces a flat surjective quasi-compact `p : T' ⟶ T`, a datum
+`d'` on `T'` which is a base change of `d`, and a rigidification
+`m₀ : T' ⟶ Spec A` of `d'`.
+
+* **The descent datum, and it costs no fibre product.**  mathlib's
+  `EffectiveEpiStruct` is stated against *every* pair `g₁, g₂ : Z ⟶ T'`
+  with `g₁ ≫ p = g₂ ≫ p`, so the kernel pair is never named.  Base-change
+  `d'` along `g₁` (`exists_gamma1Datum_baseChange`) to get `d₁` over `Z`;
+  composing with `bp` makes `d₁` a base change of `d` along
+  `g₁ ≫ p = g₂ ≫ p`, and `IsBaseChangeOfGamma1.cancel` turns that into
+  `IsBaseChangeOfGamma1 g₂ d₁ d'`.  So `g₁ ≫ m₀` and `g₂ ≫ m₀` are two
+  rigidifications of ONE datum, which is the shape `hcoeq` wants.
+* **The descent.**  `AlgebraicGeometry.fpqcTopology` is `Subcanonical`,
+  so a flat surjective quasi-compact `p` is an `EffectiveEpi`, and
+  `EffectiveEpi.desc` factors the equalised morphism through `p`.
+* **Independence of the cover** is the `∀ Z k dZ m` clause: pull the
+  cover back to `Z ×_T T'`, whose first projection is a base change of
+  `p` hence again an epimorphism, and compare there.
+
+## Faithfulness
+
+`hcoeq` is a hypothesis, so a degenerate `G`-action does not make this
+leaf false — it makes `hcoeq` unsatisfiable and the statement vacuously
+true at that action.  The counterexample in the section comment above is
+precisely a rigidification at which `hcoeq` fails and no `c` exists. -/
+theorem exists_descendClassifyGamma1 (N : ℕ) (G : Type) [Group G] [Finite G]
+    {A : Type} [CommRing A] [MulSemiringAction G A] {S : Scheme.{0}}
+    (strM : Spec (CommRingCat.of A) ⟶ S)
+    (str : Spec (CommRingCat.of ↥(FixedPoints.subring A G)) ⟶ S)
+    (hstr : specInvariantsQuotient G A ≫ str = strM)
+    (dM : Gamma1Datum N (Spec (CommRingCat.of A)))
+    (hcov : ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma1Datum N T),
+      ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T')
+        (m : T' ⟶ Spec (CommRingCat.of A)),
+        AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+        p ≫ g = m ≫ strM ∧
+        Nonempty (IsBaseChangeOfGamma1 p d' d) ∧ Nonempty (IsBaseChangeOfGamma1 m d' dM))
+    (hcoeq : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of A))
+      (d₁ : Gamma1Datum N Z), IsBaseChangeOfGamma1 a d₁ dM →
+      IsBaseChangeOfGamma1 b d₁ dM →
+      a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A)
+    (T : Scheme.{0}) (g : T ⟶ S) (d : Gamma1Datum N T) :
+    ∃ c : T ⟶ Spec (CommRingCat.of ↥(FixedPoints.subring A G)),
+      c ≫ str = g ∧
+      ∀ (Z : Scheme.{0}) (k : Z ⟶ T) (dZ : Gamma1Datum N Z),
+        IsBaseChangeOfGamma1 k dZ d →
+        ∀ m : Z ⟶ Spec (CommRingCat.of A), IsBaseChangeOfGamma1 m dZ dM →
+          k ≫ c = m ≫ specInvariantsQuotient G A := by
+  classical
+  -- the rigidifying cover of `d`, and the rigidification `m₀` it carries
+  obtain ⟨T', p, d', m₀, hf, hs, hq, hst, ⟨bp⟩, ⟨bm⟩⟩ := hcov g d
+  haveI := hf; haveI := hs; haveI := hq
+  -- `m₀ ≫ π` coequalises every pair that `p` coequalises
+  have key : ∀ {Z : Scheme.{0}} (g₁ g₂ : Z ⟶ T'), g₁ ≫ p = g₂ ≫ p →
+      g₁ ≫ (m₀ ≫ specInvariantsQuotient G A)
+        = g₂ ≫ (m₀ ≫ specInvariantsQuotient G A) := by
+    intro Z g₁ g₂ he
+    obtain ⟨d₁, ⟨b₁⟩⟩ := exists_gamma1Datum_baseChange g₁ d'
+    have hb : IsBaseChangeOfGamma1 (g₂ ≫ p) d₁ d := by rw [← he]; exact b₁.comp bp
+    rw [← Category.assoc, ← Category.assoc]
+    exact hcoeq (g₁ ≫ m₀) (g₂ ≫ m₀) d₁ (b₁.comp bm) ((hb.cancel bp).comp bm)
+  refine ⟨EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key, ?_, ?_⟩
+  · -- the descended map is a morphism over `S`: check it after the epimorphism `p`
+    refine (cancel_epi p).mp ?_
+    rw [← Category.assoc, EffectiveEpi.fac, Category.assoc, hstr, hst]
+  · -- independence of the cover: compare on `Z ×_T T'`
+    intro Z k dZ bk m bmZ
+    have hcond : Limits.pullback.fst k p ≫ k = Limits.pullback.snd k p ≫ p :=
+      Limits.pullback.condition
+    obtain ⟨dW, ⟨bq⟩⟩ := exists_gamma1Datum_baseChange (Limits.pullback.fst k p) dZ
+    have hb : IsBaseChangeOfGamma1 (Limits.pullback.snd k p ≫ p) dW d := by
+      rw [← hcond]; exact bq.comp bk
+    have h1 : (Limits.pullback.fst k p ≫ m) ≫ specInvariantsQuotient G A
+        = (Limits.pullback.snd k p ≫ m₀) ≫ specInvariantsQuotient G A :=
+      hcoeq _ _ dW (bq.comp bmZ) ((hb.cancel bp).comp bm)
+    refine (cancel_epi (Limits.pullback.fst k p)).mp ?_
+    calc Limits.pullback.fst k p
+          ≫ k ≫ EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key
+        = (Limits.pullback.snd k p ≫ p)
+            ≫ EffectiveEpi.desc p (m₀ ≫ specInvariantsQuotient G A) key := by
+          rw [← Category.assoc, hcond]
+      _ = Limits.pullback.snd k p ≫ (m₀ ≫ specInvariantsQuotient G A) := by
+          rw [Category.assoc, EffectiveEpi.fac]
+      _ = Limits.pullback.fst k p ≫ m ≫ specInvariantsQuotient G A := by
+          rw [← Category.assoc, ← Category.assoc]; exact h1.symm
+
+/-- **A rigidification IS a GIT presentation** (PROVEN 2026-07-27) — the
+formalisation half of `exists_gamma1GITPresentation`, with the
+Katz–Mazur citation discharged by `R`.
+
+## What was owed, and where each piece is discharged
+
+* **`B` and `Algebra.IsInvariant`**: `B` is `FixedPoints.subring R.A R.G`
+  and `algebra_BA` is `RingHom.toAlgebra` of the subring inclusion, so
+  `algebraMap B A` is definitionally that inclusion — which is what makes
+  `classify_dM` an equation about `specInvariantsQuotient`.
+  `Algebra.IsInvariant`, `SMulCommClass` and `injective_algebraMap` are
+  one-liners from that choice.
+* **`str`, the structure morphism of the coarse space**: this is where
+  the `Γ₁` development departs from the `Γ₀` one.  `X0.lean` builds it by
+  hand from `Spec.preimage R.strM` and `RingHom.codRestrict`, using
+  `subsingleton_hom_specQ` to see that the resulting `ℚ →+* A` is
+  `G`-fixed.  Over a general base there is no such ring map to restrict,
+  so `str` comes instead from the EXISTENCE half of
+  `specInvariants_universal` applied to `R.strM` and `R.strM_invariant`,
+  and `hstr` is its factorisation clause.
+* **`classify`, `classify_natural`, `classify_dM`**: the descent,
+  `exists_descendClassifyGamma1` above.  Naturality is the
+  characterisation compared after a rigidifying cover and the cover
+  cancelled; `classify_dM` is the characterisation read at the trivial
+  cover `𝟙` of `Spec A` rigidified by `𝟙`, which is what
+  `IsBaseChangeOfGamma1.refl` exists for.
+* **`cover`, `strM_invariant`, `dM_equivariant`**: verbatim from `R`.
+
+Does NOT owe: any Katz–Mazur citation.  Representability, the deck group,
+the torsor and the cover are all `R`. -/
+theorem nonempty_gamma1GITPresentation_of_rigidification {N : ℕ} {S : Scheme.{0}}
+    (R : Gamma1Rigidification N S) : Nonempty (Gamma1GITPresentation N S) := by
+  classical
+  letI := R.commRing_A
+  letI := R.group_G
+  letI := R.finite_G
+  letI := R.action_GA
+  -- the ring of invariants, as a subring of `A`
+  letI : Algebra ↥(FixedPoints.subring R.A R.G) R.A :=
+    RingHom.toAlgebra (Subring.subtype _)
+  haveI : Algebra.IsInvariant ↥(FixedPoints.subring R.A R.G) R.A R.G :=
+    ⟨fun x hx => ⟨⟨x, hx⟩, rfl⟩⟩
+  haveI : SMulCommClass R.G ↥(FixedPoints.subring R.A R.G) R.A :=
+    ⟨fun σ b a => by
+      show σ • ((b : R.A) * a) = (b : R.A) * (σ • a)
+      rw [smul_mul', b.2 σ]⟩
+  have hinj : Function.Injective (algebraMap ↥(FixedPoints.subring R.A R.G) R.A) :=
+    Subtype.val_injective
+  -- the structure morphism of the coarse space, from the GIT quotient property
+  obtain ⟨str, hstr, -⟩ := specInvariants_universal R.G hinj R.strM R.strM_invariant
+  have hstr' : specInvariantsQuotient R.G R.A ≫ str = R.strM := hstr
+  -- the descended classifying map, together with its characterisation
+  choose c hc1 hc2 using fun (T : Scheme.{0}) (g : T ⟶ S) (d : Gamma1Datum N T) =>
+    exists_descendClassifyGamma1 N R.G R.strM str hstr' R.dM
+      (fun {_T} g₀ d₀ => R.cover g₀ d₀)
+      (fun {_Z} a b d₁ h₁ h₂ => R.coequalises a b d₁ h₁ h₂) T g d
+  refine ⟨{ A := R.A
+            B := ↥(FixedPoints.subring R.A R.G)
+            G := R.G
+            action_GA := R.action_GA
+            injective_algebraMap := hinj
+            str := str
+            strM := R.strM
+            classify := fun {T} g d => ⟨c T g d, hc1 T g d⟩
+            classify_natural := ?_
+            dM := R.dM
+            classify_dM := ?_
+            cover := fun {_T} g d => R.cover g d
+            strM_invariant := R.strM_invariant
+            dM_equivariant := R.dM_equivariant }⟩
+  · -- naturality: both sides agree after the rigidifying cover of `d'`, and
+    -- that cover is an epimorphism.
+    intro T' T h g g' hg d' d bch
+    refine Subtype.ext ?_
+    show c T' g' d' = h ≫ c T g d
+    obtain ⟨Z, p, dZ, m, hf, hs, hq, -, ⟨bp⟩, ⟨bm⟩⟩ := R.cover g' d'
+    haveI := hf; haveI := hs; haveI := hq
+    have h1 := hc2 T' g' d' Z p dZ bp m bm
+    have h2 := hc2 T g d Z (p ≫ h) dZ (bp.comp bch) m bm
+    refine (cancel_epi p).mp ?_
+    rw [h1, ← Category.assoc, h2]
+  · -- the classifying map of the universal family is the quotient map: read
+    -- the characterisation at the trivial cover of `Spec A`, rigidified by `𝟙`.
+    show c _ R.strM R.dM = Spec.map (CommRingCat.ofHom
+      (algebraMap ↥(FixedPoints.subring R.A R.G) R.A))
+    have h1 := hc2 _ R.strM R.dM _ (𝟙 _) R.dM (IsBaseChangeOfGamma1.refl R.dM) (𝟙 _)
+      (IsBaseChangeOfGamma1.refl R.dM)
+    rw [Category.id_comp, Category.id_comp] at h1
+    exact h1
+
+/-- **The Katz–Mazur rigidified moduli scheme of `[Γ₁(N)]` over a field in
+which `N` is invertible exists** (sorry leaf — Katz–Mazur (8.1.1), and
+after the cut of 2026-07-27 the ONLY modular EXISTENCE input below
+`X_1(N)` over either base).
 
 TRUE and classical, and this is the construction itself rather than any
 of its properties.  For `N ≥ 4` the moduli problem `[Γ₁(N)]` is rigid
@@ -714,25 +1297,58 @@ nontrivial automorphism), so over a base where `N` is invertible it is
 representable; adjoining a full level-`n` structure for some auxiliary
 `n ≥ 3` prime to `N · char K` makes `[Γ₁(N)], [Γ(n)]` representable by an
 AFFINE scheme `Spec A` (8.1.1), with `G = GL₂(ℤ/n)` acting through the
-level-`n` structure, and the coarse space of `[Γ₁(N)]` is `Spec (A^G)`.
-`classify_natural` is (8.1.3)'s independence of the auxiliary level `n`.
+level-`n` structure.
 
-**What a prover has to build, and what it does NOT have to build.**  The
-four properties of the resulting curve — affine, integral, smooth,
-geometrically connected — are NOT part of this leaf: `isAffine` is a
-consequence of the presentation being `Spec` of a ring, and the other
-three are the three per-presentation leaves below.  So this leaf is the
-representability statement and the torsor that rigidifies it, and
-nothing else.
+**What a prover has to build, and what it does NOT have to build.**
+
+Does NOT have to build: the invariants `B = A^G`, the structure morphism
+of the coarse space, or the classifying map and its two properties.  All
+of those are PROVEN, in `exists_descendClassifyGamma1` and
+`nonempty_gamma1GITPresentation_of_rigidification` immediately above —
+which is the whole point of the cut.  Nor the four properties of the
+resulting curve: `isAffine` is a consequence of the coarse space being
+`Spec` of a ring, and the other three are the three per-presentation
+leaves below.
+
+Has to build: `A`, `G`, `strM`, `dM`, and the four Props.  Three of those
+Props are Katz–Mazur's construction read off directly; the fourth,
+`coequalises`, is the `GL₂(ℤ/n)`-torsor property of the level-`n`
+rigidification, and the section comment above records why it cannot be
+dropped.
+
+**The natural next cut, if this is still too large**, is the one
+`X0.lean` takes: interpose a FINE moduli scheme for `[Γ₁(N)], [Γ(n)]`
+(`RigidifiedModuli`'s analogue), split off the level-`n` torsor as a
+`cover`-shaped hypothesis (`exists_fullLevelStructure_cover`'s analogue),
+and derive the deck action and `coequalises` from the torsor
+(`exists_deckAction`'s analogue).  That needs a `Γ₁` analogue of
+`FullLevelStructure`, which is currently stated only for a
+`Gamma0Datum` — generalising it from `d : Gamma0Datum N T` to a bare
+`AbelianSchemeStruct` would make it serve both problems, since it never
+looks at the level structure of `d`.
 
 `_hchar` is what makes `[Γ₁(N)]` representable at all: at
 `char K = p ∣ N` a point of exact order `N` acquires an infinitesimal
 part, `Spec A` is not smooth, and the whole tower fails.  `_hN` is
 rigidity. -/
-theorem exists_gamma1GITPresentation (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
+theorem exists_gamma1Rigidification (N : ℕ) (_hN : 4 ≤ N) (K : Type) [Field K]
     (_hchar : ¬ ringChar K ∣ N) :
-    Nonempty (Gamma1GITPresentation N (Spec (CommRingCat.of K))) :=
+    Nonempty (Gamma1Rigidification N (Spec (CommRingCat.of K))) :=
   sorry
+
+/-- **The Katz–Mazur GIT presentation of `Y_1(N)` over a field in which
+`N` is invertible exists** (PROVEN 2026-07-27 from the two halves it was
+split into — Katz–Mazur (8.1.1) is `exists_gamma1Rigidification`, and
+(8.1.3) is `exists_descendClassifyGamma1` plus
+`nonempty_gamma1GITPresentation_of_rigidification`, both proven).
+
+The citation this declaration used to carry now lives on
+`exists_gamma1Rigidification`, which is what it reduced to. -/
+theorem exists_gamma1GITPresentation (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K]
+    (hchar : ¬ ringChar K ∣ N) :
+    Nonempty (Gamma1GITPresentation N (Spec (CommRingCat.of K))) :=
+  (exists_gamma1Rigidification N hN K hchar).elim fun R =>
+    nonempty_gamma1GITPresentation_of_rigidification R
 
 /-! #### The geometry, stated for the PRESENTATION rather than per-atlas
 
@@ -957,7 +1573,8 @@ Nagata/normalization half is
 and, as of 2026-07-27, the GIT axis: the `Γ₁` analogue of
 `exists_gamma0AffineModel` is now built above, the previous "NOT
 searched" note is DISCHARGED, and what remains open below this node is
-the four leaves `exists_gamma1GITPresentation`,
+the four leaves `exists_gamma1Rigidification` (which
+`exists_gamma1GITPresentation` was cut down to on the same day),
 `isDomain_of_gamma1GITPresentation`,
 `smoothOfRelativeDimension_of_gamma1GITPresentation` and
 `geometricallyConnected_of_gamma1GITPresentation` — a representability
