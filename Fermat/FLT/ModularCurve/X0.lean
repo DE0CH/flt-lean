@@ -8756,7 +8756,20 @@ the constant section `0`, which is natural.  It is the agreement on
 affines that gives the leaf content, and it gives it FULLY: every scheme
 has an affine open cover, so naturality plus agreement on affines
 determines `jt` on all of `T`.  So the leaf is neither vacuous nor
-under-determined. -/
+under-determined.
+
+**Update 2026-07-27: the descent leaf is now PROVEN, and the three-leaf
+cut is a four-leaf one with three of the four discharged.**
+`exists_jTransformation_of_affine` is assembled over a single residual
+leaf, `exists_isLocallyJ`, which is the Zariski gluing and nothing else.
+Everything else it used to contain is proven in the subsection below: an
+`IsBaseChangeOf` calculus (`IsBaseChangeOf.id`, `.comp`, `.uniq` — the
+last of which was the step the leaf's own docstring named as missing),
+well-definedness of the affine `j`-invariant against the choice of
+restriction (`jt_eq_of_isBaseChangeOf`), and the observation that both
+naturality over an arbitrary base and agreement on affines follow from
+UNIQUENESS of a locally-given section rather than from a second gluing
+argument. -/
 
 /-- **The `j`-invariant of an elliptic scheme over an AFFINE base.**
 
@@ -8812,8 +8825,277 @@ had FIRED, and the two copies were in the same namespace, so keeping both
 was a hard "already declared" error rather than merely redundant.  Deleted at
 integration 2026-07-27; use the general version above. -/
 
+/-! #### The base-change calculus, and the cut of the descent leaf
+
+`IsBaseChangeOf` is *stated* in this file and, until 2026-07-27, had no
+calculus at all: no identity, no composition, and no comparison of two
+base changes along the same morphism.  The descent argument needs all
+three, and the previous docstring of `exists_jTransformation_of_affine`
+named the third of them as its missing step.  All three are PROVEN below,
+so what is left of that leaf is the Zariski gluing and nothing else. -/
+
+/-- **Morphisms out of a scheme are determined on affines** (PROVEN).
+
+`Scheme.Cover.hom_ext` at the canonical affine open cover, whose
+components are literally `Spec` of a `CommRingCat`; taking the carrier
+type puts them in the `Spec (CommRingCat.of R)` form that
+`IsJSectionOnAffine` quantifies over (`CommRingCat.of ↥S` and `S` are
+definitionally equal by structure eta). -/
+theorem hom_ext_of_affine {T Y : Scheme.{0}} (a b : T ⟶ Y)
+    (h : ∀ (R : Type) [CommRing R] (k : Spec (CommRingCat.of R) ⟶ T), k ≫ a = k ≫ b) :
+    a = b :=
+  T.affineCover.hom_ext _ _ fun i => h ↥(T.affineOpenCover.X i) (T.affineOpenCover.f i)
+
+/-- **A datum is a base change of itself along the identity** (PROVEN). -/
+noncomputable def IsBaseChangeOf.id {N : ℕ} {T : Scheme.{u}} (d : Gamma0Datum N T) :
+    IsBaseChangeOf (𝟙 T) d d where
+  map := 𝟙 d.E
+  isPullback := by
+    refine IsPullback.of_vert_isIso ⟨?_⟩
+    rw [Category.comp_id, Category.id_comp]
+  map_zero g := by
+    refine Subtype.ext ?_
+    show (d.ab.zero g).1 ≫ 𝟙 d.E = (d.ab.zero (g ≫ 𝟙 T)).1
+    rw [Category.comp_id, Category.comp_id]
+  map_add x y := by
+    refine Subtype.ext ?_
+    show (d.ab.add x y).1 ≫ 𝟙 d.E = (d.ab.add _ _).1
+    rw [Category.comp_id]
+    congr 1
+  liesIn_iff x := by
+    constructor
+    · rintro ⟨y, hy⟩
+      exact ⟨y, show y ≫ d.cyc.ι = x.1 ≫ 𝟙 d.E by rw [Category.comp_id]; exact hy⟩
+    · rintro ⟨y, hy⟩
+      replace hy : y ≫ d.cyc.ι = x.1 ≫ 𝟙 d.E := hy
+      rw [Category.comp_id] at hy
+      exact ⟨y, hy⟩
+
+/-- **Addition of relative points depends only on the underlying
+morphisms** (PROVEN).
+
+`RelPoint f g₁` and `RelPoint f g₂` are different types for propositionally
+equal `g₁, g₂`, but they are subtypes of the SAME type of morphisms.  This
+lemma is what lets the associativity and unit rewrites below be carried out
+on underlying morphisms instead of by transport. -/
+theorem AbelianSchemeStruct.add_val_congr {A S : Scheme.{u}} {f : A ⟶ S}
+    (ab : AbelianSchemeStruct f) {T : Scheme.{u}} {g₁ g₂ : T ⟶ S} (hg : g₁ = g₂)
+    (x₁ y₁ : RelPoint f g₁) (x₂ y₂ : RelPoint f g₂)
+    (hx : x₁.1 = x₂.1) (hy : y₁.1 = y₂.1) :
+    (ab.add x₁ y₁).1 = (ab.add x₂ y₂).1 := by
+  subst hg
+  rw [Subtype.ext hx (p := fun z => z ≫ f = g₁), Subtype.ext hy (p := fun z => z ≫ f = g₁)]
+
+/-- **`LiesIn` depends only on the underlying morphism** (PROVEN) — it is
+`∃ y, y ≫ ι = x.1`, so the base point never enters. -/
+theorem RelPoint.liesIn_congr {E T C : Scheme.{u}} {f : E ⟶ T} (ι : C ⟶ E) {T' : Scheme.{u}}
+    {g₁ g₂ : T' ⟶ T} {x₁ : RelPoint f g₁} {x₂ : RelPoint f g₂} (hx : x₁.1 = x₂.1) :
+    RelPoint.LiesIn ι x₁ ↔ RelPoint.LiesIn ι x₂ := by
+  unfold RelPoint.LiesIn
+  rw [hx]
+
+/-- **Base changes compose** (PROVEN) — pullback pasting on the square,
+and the three functor-of-points axioms transported along
+`Category.assoc`.
+
+This is what makes a datum restricted twice — first to an open of `T`,
+then to an affine open of that — a base change of the original along the
+composite, which is the step the descent argument uses at every overlap. -/
+noncomputable def IsBaseChangeOf.comp {N : ℕ} {T'' T' T : Scheme.{u}} {k : T'' ⟶ T'} {h : T' ⟶ T}
+    {d'' : Gamma0Datum N T''} {d' : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (hk : IsBaseChangeOf k d'' d') (hh : IsBaseChangeOf h d' d) :
+    IsBaseChangeOf (k ≫ h) d'' d where
+  map := hk.map ≫ hh.map
+  isPullback := hk.isPullback.paste_vert hh.isPullback
+  map_zero g := by
+    refine Subtype.ext ?_
+    have h1 : (d''.ab.zero g).1 ≫ hk.map = (d'.ab.zero (g ≫ k)).1 :=
+      congrArg Subtype.val (hk.map_zero g)
+    have h2 : (d'.ab.zero (g ≫ k)).1 ≫ hh.map = (d.ab.zero ((g ≫ k) ≫ h)).1 :=
+      congrArg Subtype.val (hh.map_zero (g ≫ k))
+    show (d''.ab.zero g).1 ≫ hk.map ≫ hh.map = (d.ab.zero (g ≫ k ≫ h)).1
+    rw [← Category.assoc, h1, h2, Category.assoc]
+  map_add x y := by
+    refine Subtype.ext ?_
+    have h1 : (d''.ab.add x y).1 ≫ hk.map
+        = (d'.ab.add (RelPoint.along hk.map hk.isPullback.w x)
+            (RelPoint.along hk.map hk.isPullback.w y)).1 :=
+      congrArg Subtype.val (hk.map_add x y)
+    have h2 : (d'.ab.add (RelPoint.along hk.map hk.isPullback.w x)
+            (RelPoint.along hk.map hk.isPullback.w y)).1 ≫ hh.map
+        = (d.ab.add (RelPoint.along hh.map hh.isPullback.w
+              (RelPoint.along hk.map hk.isPullback.w x))
+            (RelPoint.along hh.map hh.isPullback.w
+              (RelPoint.along hk.map hk.isPullback.w y))).1 :=
+      congrArg Subtype.val (hh.map_add _ _)
+    show (d''.ab.add x y).1 ≫ hk.map ≫ hh.map = _
+    rw [← Category.assoc, h1, h2]
+    exact d.ab.add_val_congr (Category.assoc _ k h) _ _ _ _
+      (Category.assoc _ _ _) (Category.assoc _ _ _)
+  liesIn_iff x :=
+    (hk.liesIn_iff x).trans
+      ((hh.liesIn_iff _).trans (RelPoint.liesIn_congr _ (Category.assoc _ _ _)))
+
+/-- **Two base changes of one datum along one morphism differ by an
+`IsBaseChangeOf 𝟙`** (PROVEN).
+
+This is the step the previous docstring of
+`exists_jTransformation_of_affine` recorded as missing: "two base changes
+along the same morphism differ by an `IsBaseChangeOf 𝟙`, which is
+`IsBaseChangeOf.isPullback` plus `IsPullback.isoIsPullback` — available at
+this pin, but the transport of `map_zero`, `map_add` and `liesIn_iff`
+across that isomorphism has to be written".  It is written here.
+
+The isomorphism is `IsPullback.isoIsPullback` for two pullback squares over
+the same cospan; the three axioms transport because `IsPullback.hom_ext`
+lets a morphism into `d₂.E` be checked against `d₂.f` and `h₂.map`
+separately, and `isoIsPullback_hom_fst` / `isoIsPullback_hom_snd` say
+exactly what those two composites are. -/
+noncomputable def IsBaseChangeOf.uniq {N : ℕ} {T' T : Scheme.{u}} {h : T' ⟶ T}
+    {d₁ d₂ : Gamma0Datum N T'} {d : Gamma0Datum N T}
+    (h₁ : IsBaseChangeOf h d₁ d) (h₂ : IsBaseChangeOf h d₂ d) :
+    IsBaseChangeOf (𝟙 T') d₁ d₂ where
+  map := (h₁.isPullback.isoIsPullback T' d.E h₂.isPullback).hom
+  isPullback := by
+    refine IsPullback.of_vert_isIso ⟨?_⟩
+    rw [Category.comp_id, IsPullback.isoIsPullback_hom_fst]
+  map_zero g := by
+    refine Subtype.ext (h₂.isPullback.hom_ext ?_ ?_)
+    · simp only [RelPoint.along]
+      rw [Category.assoc, IsPullback.isoIsPullback_hom_fst, (d₁.ab.zero g).2,
+        (d₂.ab.zero (g ≫ 𝟙 T')).2, Category.comp_id]
+    · have e1 : (d₁.ab.zero g).1 ≫ h₁.map = (d.ab.zero (g ≫ h)).1 :=
+        congrArg Subtype.val (h₁.map_zero g)
+      have e2 : (d₂.ab.zero (g ≫ 𝟙 T')).1 ≫ h₂.map = (d.ab.zero ((g ≫ 𝟙 T') ≫ h)).1 :=
+        congrArg Subtype.val (h₂.map_zero (g ≫ 𝟙 T'))
+      simp only [RelPoint.along]
+      rw [Category.assoc, IsPullback.isoIsPullback_hom_snd, e1, e2, Category.comp_id]
+  map_add := fun {_} {g} x y => by
+    refine Subtype.ext (h₂.isPullback.hom_ext ?_ ?_)
+    · simp only [RelPoint.along]
+      rw [Category.assoc, IsPullback.isoIsPullback_hom_fst, (d₁.ab.add x y).2,
+        (d₂.ab.add _ _).2, Category.comp_id]
+    · have e1 : (d₁.ab.add x y).1 ≫ h₁.map
+          = (d.ab.add (RelPoint.along h₁.map h₁.isPullback.w x)
+              (RelPoint.along h₁.map h₁.isPullback.w y)).1 :=
+        congrArg Subtype.val (h₁.map_add x y)
+      have e2 : ∀ a b : RelPoint d₂.f (g ≫ 𝟙 T'), (d₂.ab.add a b).1 ≫ h₂.map
+          = (d.ab.add (RelPoint.along h₂.map h₂.isPullback.w a)
+              (RelPoint.along h₂.map h₂.isPullback.w b)).1 :=
+        fun a b => congrArg Subtype.val (h₂.map_add a b)
+      simp only [RelPoint.along]
+      rw [Category.assoc, IsPullback.isoIsPullback_hom_snd, e1, e2]
+      refine d.ab.add_val_congr (by rw [Category.comp_id]) _ _ _ _ ?_ ?_ <;>
+        · simp only [RelPoint.along]
+          rw [Category.assoc, IsPullback.isoIsPullback_hom_snd]
+  liesIn_iff x := by
+    refine (h₁.liesIn_iff x).trans
+      (Iff.trans (RelPoint.liesIn_congr d.cyc.ι ?_) (h₂.liesIn_iff _).symm)
+    show x.1 ≫ h₁.map
+      = (x.1 ≫ (h₁.isPullback.isoIsPullback T' d.E h₂.isPullback).hom) ≫ h₂.map
+    rw [Category.assoc, IsPullback.isoIsPullback_hom_snd]
+
+/-- **A relative point of the `j`-line that is LOCALLY GIVEN by an affine
+`j`-theory**: on every affine base mapping to `T`, it restricts to the
+affine theory's value on any restriction of the datum.
+
+This is the predicate the descent cut is made along.  It is the *right*
+notion for two reasons.  First, it determines its subject: a morphism out
+of `T` is determined on an affine cover, so at most one `u` can satisfy it
+(`isLocallyJ_unique` below).  Second, it is inherited by base change along
+an ARBITRARY morphism of schemes, because `IsBaseChangeOf.comp` turns a
+restriction-of-a-restriction into a restriction — which is precisely why
+naturality of the extension falls out of uniqueness rather than having to
+be proved by a second gluing argument. -/
+def IsLocallyJ (ja : IsJSectionOnAffine) {T : Scheme.{0}} {g : T ⟶ SpecQ}
+    (d : Gamma0Datum 1 T) (u : RelPoint jLineStr g) : Prop :=
+  ∀ (R : Type) [CommRing R] (k : Spec (CommRingCat.of R) ⟶ T)
+    (g' : Spec (CommRingCat.of R) ⟶ SpecQ) (hg : k ≫ g = g')
+    (d' : Gamma0Datum 1 (Spec (CommRingCat.of R))),
+    IsBaseChangeOf k d' d → RelPoint.pre k hg u = ja.jt g' d'
+
+/-- **A locally-given point is unique** (PROVEN) — `hom_ext_of_affine`
+plus `hbc` to supply, at each affine of the cover, a datum both sides can
+be evaluated against. -/
+theorem isLocallyJ_unique (ja : IsJSectionOnAffine)
+    (hbc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) (d : Gamma0Datum 1 T),
+      ∃ d' : Gamma0Datum 1 T', Nonempty (IsBaseChangeOf h d' d))
+    {T : Scheme.{0}} {g : T ⟶ SpecQ} {d : Gamma0Datum 1 T}
+    {u₁ u₂ : RelPoint jLineStr g} (h₁ : IsLocallyJ ja d u₁) (h₂ : IsLocallyJ ja d u₂) :
+    u₁ = u₂ := by
+  refine Subtype.ext (hom_ext_of_affine u₁.1 u₂.1 fun R _ k => ?_)
+  obtain ⟨d', ⟨hd'⟩⟩ := hbc k d
+  exact congrArg Subtype.val
+    ((h₁ R k (k ≫ g) rfl d' hd').trans (h₂ R k (k ≫ g) rfl d' hd').symm)
+
+/-- **The affine `j`-invariant does not depend on WHICH base change is
+used** (PROVEN, from `IsBaseChangeOf.uniq` and `ja.jt_natural` at `𝟙`).
+
+`hbc` only asserts that *some* restriction exists, so every use of it makes
+an arbitrary choice; this lemma is what makes those choices harmless, and
+it is the well-definedness the gluing needs on overlaps. -/
+theorem jt_eq_of_isBaseChangeOf (ja : IsJSectionOnAffine) (R : Type) [CommRing R]
+    {T : Scheme.{0}} {k : Spec (CommRingCat.of R) ⟶ T}
+    {g' : Spec (CommRingCat.of R) ⟶ SpecQ}
+    {d₁ d₂ : Gamma0Datum 1 (Spec (CommRingCat.of R))} {d : Gamma0Datum 1 T}
+    (h₁ : IsBaseChangeOf k d₁ d) (h₂ : IsBaseChangeOf k d₂ d) :
+    ja.jt g' d₁ = ja.jt g' d₂ := by
+  rw [ja.jt_natural (𝟙 (Spec (CommRingCat.of R))) (Category.id_comp g') (h₁.uniq h₂)]
+  exact Subtype.ext (Category.id_comp _)
+
+/-- **THE ZARISKI GLUING** (sorry node — all that is left of
+`exists_jTransformation_of_affine`).
+
+TRUE, and it is descent and nothing else: no elliptic curve, no
+`Γ₀(N)`-structure beyond the ability to restrict one, and — since
+2026-07-27 — no `IsBaseChangeOf` bookkeeping either, all of which is
+discharged above.
+
+THE ARGUMENT.  Take the affine cover `𝒰 := T.affineOpenCover`.  For each
+`i`, `hbc (𝒰.f i) d` gives `dᵢ` on `Spec (𝒰.X i)`, and
+`ja.jt (𝒰.f i ≫ g) dᵢ` is a morphism `uᵢ : Spec (𝒰.X i) ⟶ 𝔸¹_ℚ`.  These
+are compatible: on the overlap `V := Spec (𝒰.X i) ×_T Spec (𝒰.X j)` —
+which is NOT affine, so `ja` does not apply to it directly — compatibility
+is checked by `hom_ext_of_affine` on `V`, i.e. against every affine
+`m : Spec A ⟶ V`.  There `m ≫ p₁` and `m ≫ p₂` are morphisms of AFFINE
+schemes, so `ja.jt_natural` applies to each, and what remains is that the
+two restrictions of `d` to `Spec A` — one through `i`, one through `j`,
+along the SAME composite by `pullback.condition` — have the same
+`ja.jt`.  That is exactly `hwd`.  Then
+`Scheme.Cover.glueMorphisms` produces `u`, and `Scheme.Cover.ι_glueMorphisms`
+gives its restrictions.
+
+Finally `IsLocallyJ ja d u`: for an affine `k : Spec R ⟶ T` and any `d'`
+over it, apply `hom_ext_of_affine` to `Spec R` again and use the pullback
+cover of `Spec R` by the `𝒰.f i`, refined to affines.
+
+WHAT IS STILL MISSING, precisely: only the two `hom_ext_of_affine`
+bookkeeping arguments above and the two `glueMorphisms` calls.  The
+mathlib API is `Scheme.Cover.glueMorphisms`, `Scheme.Cover.ι_glueMorphisms`
+and `Scheme.Cover.hom_ext` (`Mathlib/AlgebraicGeometry/Gluing.lean`),
+together with `Scheme.affineOpenCover` and `Scheme.Cover.pullbackCover`.
+
+WHY `hwd` IS A HYPOTHESIS RATHER THAN A CALL: it is PROVEN, as
+`jt_eq_of_isBaseChangeOf`, and threaded in exactly as `hbc` is, so that the
+two obligations stay visibly separate and this leaf's own content is the
+gluing alone.
+
+NOT VACUOUS: `IsLocallyJ` pins `u` completely (`isLocallyJ_unique`), so a
+witness carries the whole affine theory. -/
+theorem exists_isLocallyJ (ja : IsJSectionOnAffine)
+    (hbc : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) (d : Gamma0Datum 1 T),
+      ∃ d' : Gamma0Datum 1 T', Nonempty (IsBaseChangeOf h d' d))
+    (hwd : ∀ (R : Type) [CommRing R] {T₀ : Scheme.{0}}
+      {k : Spec (CommRingCat.of R) ⟶ T₀} {g₀ : Spec (CommRingCat.of R) ⟶ SpecQ}
+      {d₁ d₂ : Gamma0Datum 1 (Spec (CommRingCat.of R))} {d₀ : Gamma0Datum 1 T₀},
+      IsBaseChangeOf k d₁ d₀ → IsBaseChangeOf k d₂ d₀ → ja.jt g₀ d₁ = ja.jt g₀ d₂)
+    {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum 1 T) :
+    ∃ u : RelPoint jLineStr g, IsLocallyJ ja d u :=
+  sorry
+
 /-- **Zariski descent for the `j`-invariant: an affine `j`-theory extends
-to all bases** (sorry node).
+to all bases** (PROVEN 2026-07-27 over `exists_isLocallyJ`; formerly a
+sorry node).
 
 TRUE, and it is descent and nothing else — no elliptic curve enters the
 argument, which is the point of cutting here.
@@ -8830,13 +9112,31 @@ universal property — so `ja.jt_natural` (twice, plus once at `𝟙`) makes
 the naturality of `d ↦ u` for arbitrary morphisms of schemes and its
 agreement with `ja.jt` when `T` is already affine.
 
-WHAT IS MISSING, precisely: the "two base changes along the same morphism
-differ by an `IsBaseChangeOf 𝟙`" step, which is `IsBaseChangeOf.isPullback`
-plus `IsPullback.isoIsPullback` — available at this pin, but the transport
-of `map_zero`, `map_add` and `liesIn_iff` across that isomorphism has to be
-written; and the sheaf gluing itself, for which
-`AlgebraicGeometry.Scheme.OpenCover` and the fact that morphisms glue are
-the relevant mathlib API.
+**WHAT WAS MISSING IS NOW SUPPLIED, and this node is PROVEN.**  The old
+note read: *"the 'two base changes along the same morphism differ by an
+`IsBaseChangeOf 𝟙`' step, which is `IsBaseChangeOf.isPullback` plus
+`IsPullback.isoIsPullback` — available at this pin, but the transport of
+`map_zero`, `map_add` and `liesIn_iff` across that isomorphism has to be
+written; and the sheaf gluing itself."*  The first half is written, as
+`IsBaseChangeOf.uniq`, and the second half is the single residual leaf
+`exists_isLocallyJ`.
+
+**How the assembly avoids a second gluing argument**, which is the point
+of the `IsLocallyJ` cut and worth reading.  Both remaining obligations —
+naturality for an ARBITRARY morphism of schemes, and agreement with `ja`
+on affine bases — are discharged by UNIQUENESS rather than by
+construction:
+
+* naturality: `RelPoint.pre h hg (u T g d)` is itself locally given for
+  `(g', d')`, because restricting it to an affine `k : Spec R ⟶ T'` is
+  restricting `u T g d` along `k ≫ h`, and `IsBaseChangeOf.comp` makes the
+  corresponding datum a base change of `d` along that composite.  So
+  `isLocallyJ_unique` identifies it with `u T' g' d'`;
+* agreement: instantiate local-givenness at `k = 𝟙` with
+  `IsBaseChangeOf.id`.
+
+Neither step re-enters the sheaf argument, which is why the residual leaf
+is the gluing ALONE.
 
 WHY `hbc` IS A HYPOTHESIS RATHER THAN A CALL.  So that the base-change
 leaf is visibly consumed at the assembly site below, and so that this leaf
@@ -8851,8 +9151,22 @@ theorem exists_jTransformation_of_affine (ja : IsJSectionOnAffine)
       ∃ d' : Gamma0Datum 1 T', Nonempty (IsBaseChangeOf h d' d)) :
     ∃ jtr : IsJTransformation, ∀ {R : Type} [CommRing R]
       (g : Spec (CommRingCat.of R) ⟶ SpecQ) (d : Gamma0Datum 1 (Spec (CommRingCat.of R))),
-      jtr.jt g d = ja.jt g d :=
-  sorry
+      jtr.jt g d = ja.jt g d := by
+  choose u hu using fun (T : Scheme.{0}) (g : T ⟶ SpecQ) (d : Gamma0Datum 1 T) =>
+    exists_isLocallyJ ja hbc (fun R _ => jt_eq_of_isBaseChangeOf ja R) g d
+  refine ⟨{ jt := fun {T} g d => u T g d, jt_natural := ?_ }, ?_⟩
+  · intro T' T h g g' hg d' d hbcd
+    refine isLocallyJ_unique ja hbc (hu T' g' d') ?_
+    intro R _ k gk hgk d'' hd''
+    have hpre : RelPoint.pre k hgk (RelPoint.pre h hg (u T g d))
+        = RelPoint.pre (k ≫ h) (by rw [Category.assoc, hg, hgk]) (u T g d) :=
+      Subtype.ext (Category.assoc _ _ _).symm
+    rw [hpre]
+    exact hu T g d R (k ≫ h) gk _ d'' (hd''.comp hbcd)
+  · intro R _ g d
+    rw [← hu (Spec (CommRingCat.of R)) g d R (𝟙 _) g (Category.id_comp g) d
+      (IsBaseChangeOf.id d)]
+    exact (Subtype.ext (Category.id_comp _)).symm
 
 /-- **Existence of the `j`-invariant of an elliptic scheme over an affine
 base** (sorry node).
