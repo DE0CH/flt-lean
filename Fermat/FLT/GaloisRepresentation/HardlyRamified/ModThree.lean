@@ -43351,7 +43351,25 @@ the divisor-group Artin map, `A = ker φ ⊓ I_F(mm)`, `P` the narrow ray,
 `N` the norm subgroup; the four bullets above are then the standard
 statements. Not vacuous: `hidx₂` is false for a modulus that is too coarse
 (the `ℚ(i)`, `mm = (2)` computation above), `hφd` is false for a `φ`
-unrelated to `c`, and `hd` pins `d` to be the true divisor map. -/
+unrelated to `c`, and `hd` pins `d` to be the true divisor map.
+
+**SUPPORT CLAUSE ADDED 2026-07-27 (third conjunct):**
+`∀ w, w.asIdeal ∣ mm → IsRamifiedCharRayClass F χ w`. The `mm` built here
+is the ramified RADICAL, and `exists_radical_isRamifiedChar_ray_class`
+characterises it by an IFF; this node used to export only the `mpr`
+direction (`hmmram`, ramified ⟹ divides) and threw the `mp` direction
+away. Exporting it is two lines and no new mathematics, and it is
+Childress 5.2.1(ii)'s "the ideal `m` can be chosen so that it is
+divisible only by the ramified primes". It is threaded from here through
+`exists_artinIdealGroup_relIndex_ray_class`,
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` and
+`exists_conductor_artinSymbol_span_eq_one_ray_class`, and the matching
+clause on the sorried
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
+is what closes
+`exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class`.
+Note `hmmram` and the new clause are NOT redundant of each other: under
+`hunr` the former is vacuous while the latter forces `mm = ⊤`. -/
 theorem exists_artinDivisorPackage_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -43371,6 +43389,8 @@ theorem exists_artinDivisorPackage_ray_class
           χ (a * Field.absoluteGaloisGroup.map
             (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
             ≠ 1) → w.asIdeal ∣ mm) ∧
+      (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w.asIdeal ∣ mm → IsRamifiedCharRayClass F χ w) ∧
       ∃ φ : Multiplicative (IsDedekindDomain.HeightOneSpectrum
           (NumberField.RingOfIntegers F) →₀ ℤ) →* (Dickson.K 3)ˣ,
       ∃ d : NumberField.RingOfIntegers F → Multiplicative
@@ -43408,6 +43428,13 @@ theorem exists_artinDivisorPackage_ray_class
           (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
           ≠ 1) → w.asIdeal ∣ mm :=
     fun w hw => (hmmiff w).mpr hw
+  -- The SAME iff in the other direction: `mm` is the ramified RADICAL, so its
+  -- prime divisors are exactly the ramified places.  This is Childress
+  -- 5.2.1(ii)'s "divisible only by the ramified primes", and it is free here.
+  have hmmsupp : ∀ w : IsDedekindDomain.HeightOneSpectrum
+      (NumberField.RingOfIntegers F),
+      w.asIdeal ∣ mm → IsRamifiedCharRayClass F χ w :=
+    fun w hw => (hmmiff w).mp hw
   -- `hord` makes every value of `χ` a root of unity, hence a unit.
   have hu : ∀ a : Γ F, IsUnit (χ a) := fun a => IsUnit.of_pow_eq_one (hord a) hℓk
   have hmem : ∀ a : Γ F, (hu a).unit ∈ rootsOfUnity (ℓ ^ k) (Dickson.K 3) := by
@@ -43458,8 +43485,8 @@ theorem exists_artinDivisorPackage_ray_class
             (Finsupp.single v (orderOf (χ (globalFrob v)) : ℤ))})).relIndex Im :=
     artinDivisorNormIndex_le_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul
       hcfrob mm hmm hmmram φ d Im (φ.ker ⊓ Im) _ _ hd rfl hφv hφd hIm rfl rfl
-  exact ⟨mm, hmm, hmmram, φ, d, Im, φ.ker ⊓ Im, _, _, hd, rfl, hφv, hφd, hIm, rfl, rfl,
-    hidx₁, hidx₂⟩
+  exact ⟨mm, hmm, hmmram, hmmsupp, φ, d, Im, φ.ker ⊓ Im, _, _, hd, rfl, hφv, hφd, hIm,
+    rfl, rfl, hidx₁, hidx₂⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **CHILDRESS PROPOSITION 5.2.2 — the crux: the Artin kernel is
@@ -43771,6 +43798,8 @@ theorem exists_artinIdealGroup_relIndex_ray_class
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
         c' (Ideal.span {δ}) = 1) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
       ∃ Im A P N : Subgroup (Multiplicative
         (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)),
       ∃ d : NumberField.RingOfIntegers F → Multiplicative
@@ -43784,7 +43813,8 @@ theorem exists_artinIdealGroup_relIndex_ray_class
             d δ ∈ P ∧ (d δ ∈ A → c (Ideal.span {δ}) = 1) := by
   classical
   -- (A3b-1): the package pins `φ`, `d`, `Im`, `A`, `P`, `N` and supplies the counting.
-  obtain ⟨mm, hmm, hmmram, φ, d, Im, A, P, N, hd, hA, hφv, hφd, hIm, hP, hN, hidx₁, hidx₂⟩ :=
+  obtain ⟨mm, hmm, hmmram, hmmsupp, φ, d, Im, A, P, N, hd, hA, hφv, hφd, hIm, hP, hN,
+      hidx₁, hidx₂⟩ :=
     exists_artinDivisorPackage_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul hcfrob
   -- (A3b-2): Childress Prop 5.2.2, the only consumer of `hartin` and `hcycl`.
   have hcrux : A ≤ P ⊔ N :=
@@ -43845,7 +43875,7 @@ theorem exists_artinIdealGroup_relIndex_ray_class
     push_cast
     rw [hφv v, zpow_natCast, pow_orderOf_eq_one]
   have hNA : N ≤ A := by rw [hA]; exact le_inf hNker hNIm
-  refine ⟨mm, hmm, Im, A, P, N, d, hcrux, sup_le hPIm hNIm, hNA, hidx₁, hidx₂, ?_⟩
+  refine ⟨mm, hmm, hmmsupp, Im, A, P, N, d, hcrux, sup_le hPIm hNIm, hNA, hidx₁, hidx₂, ?_⟩
   intro δ hδ0 hδpos hδmem
   refine ⟨?_, ?_⟩
   · rw [hP]
@@ -44019,6 +44049,8 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
         c' (Ideal.span {δ}) = 1) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
       ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
@@ -44033,12 +44065,12 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
   -- cyclotomic base case `hcycl` at `E`, NOT at `F`) together with the
   -- Global Cyclic Norm Index Equality (`A.relIndex Im ≤ (P ⊔ N).relIndex Im`)
   -- and the surjectivity of the Artin map (`A.relIndex Im ≠ 0`, Chebotarev).
-  obtain ⟨mm, hmm, Im, A, P, N, d, hAPN, hPNIm, _hNA, hAidx, hidx, hd⟩ :=
+  obtain ⟨mm, hmm, hmmsupp, Im, A, P, N, d, hAPN, hPNIm, _hNA, hAidx, hidx, hd⟩ :=
     exists_artinIdealGroup_relIndex_ray_class F χ hmul V hVopen hVker hunr ℓ hℓ hℓ3 k
       hord c hcmul hcfrob
       (fun p S => exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S)
       hcycl
-  refine ⟨mm, hmm, ?_⟩
+  refine ⟨mm, hmm, hmmsupp, ?_⟩
   intro δ hδ0 hδpos hδcong
   -- pure counting: `ker A ⊆ P⁺·N ⊆ I_F(mm)` with `[I_F(mm) : ker A]` finite and
   -- at most `[I_F(mm) : P⁺·N]` forces `P⁺·N = ker A`
@@ -44200,6 +44232,8 @@ theorem exists_conductor_artinSymbol_span_eq_one_ray_class
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       c v.asIdeal = χ (globalFrob v)) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
       ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
@@ -45608,31 +45642,52 @@ the Artin symbol of `χ` rather than an arbitrary function on ideals;
 `hℓ3` is load-bearing because the cyclotomic base case fails at the
 residue characteristic; and `mm = ⊥` is excluded by the conclusion.
 
-**REQUEST FROM A DOWNSTREAM LEAF — PLEASE CARRY THE SUPPORT CLAUSE
-(recorded 2026-07-27 by the owner of
+**SUPPORT CLAUSE ADDED 2026-07-27 — the conclusion now also asserts that
+every prime divisor of `mm` is RAMIFIED for `χ`**, i.e.
+
+    ∀ v, v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v.
+
+*Why it belongs here rather than in a separate leaf.* This is the second
+half of Childress's own Theorem 5.2.1(ii) — *"the ideal `m` of `𝓞 F` can
+be chosen so that it is **divisible only by the ramified primes** and
+satisfies `P⁺_{F,m} ⊆ ker A`"*. The unramified-carrying sibling
+`exists_conductor_artinSymbol_span_eq_one_ray_class` silently DROPS it;
+this leaf, whose whole point is that ramification is allowed, is exactly
+where support control is meaningful and where the classical statement
+supplies it.
+
+*Where the clause comes from along the intended route.* The modulus
+produced by the descent is the one manufactured in the ALREADY-PROVEN
+`exists_artinDivisorPackage_ray_class`, whose very first step is
+`exists_radical_isRamifiedChar_ray_class` — the ramified RADICAL, whose
+characterisation is an IFF (`hmmiff`). The package currently exports only
+the `mpr` direction (as `hmmram`, ramified ⟹ divides); the `mp`
+direction is exactly this clause and is available for free at that point.
+So a prover of this leaf who mirrors the proof of
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` gets
+the clause by threading `hmmiff.mp` out through
+`exists_artinDivisorPackage_ray_class` and
+`exists_artinIdealGroup_relIndex_ray_class` — a conclusion-clause
+addition to two proven declarations, no new mathematics. **The clause
+therefore adds no unproven obligation beyond what the leaf already
+carried.**
+
+*What it buys.* It converts
 `exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class`
-below).** When this node is proven, please also conclude
+below from an open leaf (previously believed to need local norm
+surjectivity) into a two-line corollary: an admissible modulus supported
+on ramified primes automatically avoids every unramified `w`. That leaf
+is now PROVEN, and the "local class field theory is missing" note on it
+has been corrected accordingly.
 
-    ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-      v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v
-
-i.e. that the modulus produced is supported on the RAMIFIED primes. This
-is not an extra mathematical obligation: the PROVEN `hunr`-carrying
-analogue `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`
-above already gets that clause for free, because its modulus is threaded
-down through `exists_artinIdealGroup_relIndex_ray_class` and
-`exists_artinDivisorPackage_ray_class` to
-`exists_radical_isRamifiedChar_ray_class`, whose characterisation is an
-**iff** (`v.asIdeal ∣ rr ↔ IsRamifiedCharRayClass F χ v`) of which only
-the `←` direction is currently exported. Whatever route proves THIS node
-will be producing its modulus the same way.
-
-Why it matters: that one clause closes
-`exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class`
-below as pure ideal arithmetic. Without it that leaf is a SECOND,
-independent class-field-theory obligation — its ROUTE AUDIT records that
-all three of its natural reformulations collapse back onto itself, so it
-has no attack of its own. With it, the two collapse into one. -/
+*Faithfulness of the strengthening.* TRUE for the same classical reason:
+the finite part of the conductor `𝔣(M/F)` is divisible exactly by the
+primes ramified in `M/F`, and `v` is ramified in `M = (AlgebraicClosure
+F)^{ker χ}` precisely when inertia at `v` is not killed by `χ`, which is
+`IsRamifiedCharRayClass F χ v`. Note the clause does NOT make the leaf
+vacuous or unprovable in the degenerate direction either: when `χ` is
+unramified everywhere it forces `mm = ⊤`, which is the correct assertion
+that `M` lies in the narrow Hilbert class field. -/
 theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -45661,6 +45716,8 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_clas
         δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
         c' (Ideal.span {δ}) = 1) :
     ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v) ∧
       ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
@@ -45668,8 +45725,10 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_clas
   classical
   -- (A3b-1) The divisor package. It is `hunr`-FREE, and among its outputs is
   -- `hmmram` — `χ` is unramified outside `mm` — which is the hypothesis that
-  -- replaces `hunr` in the ramified case.
-  obtain ⟨mm, hmm, hmmram, φ, d, Im, A, P, N, hd, hA, hφv, hφd, hIm, hP, hN,
+  -- replaces `hunr` in the ramified case.  `hmmsupp` is the converse SUPPORT
+  -- clause (every prime dividing `mm` is ramified), added to the package on
+  -- 2026-07-27; it is threaded straight out into this leaf's conclusion.
+  obtain ⟨mm, hmm, hmmram, hmmsupp, φ, d, Im, A, P, N, hd, hA, hφv, hφd, hIm, hP, hN,
       hidx₁, hidx₂⟩ :=
     exists_artinDivisorPackage_ray_class F χ hmul V hVopen hVker ℓ hℓ hℓ3 k hord c
       hcmul hcfrob
@@ -45717,7 +45776,7 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_clas
   -- `[Im : P ⊔ N]` forces `P ⊔ N = A`, in particular `P ≤ A`.
   have hPNA : P ⊔ N ≤ A :=
     le_of_le_of_relIndex_le_ray_class A (P ⊔ N) Im hcrux (sup_le hPIm hNIm) hidx₁ hidx₂
-  refine ⟨mm, hmm, ?_⟩
+  refine ⟨mm, hmm, hmmsupp, ?_⟩
   intro δ hδ0 hδpos hδcong
   have hdP : d δ ∈ P := by
     rw [hP]
@@ -45807,7 +45866,16 @@ audit is a dated claim: `grep -n 'hunr' ModThree.lean` and confirm which
 occurrences are inside PROOF bodies as opposed to statements. Do this
 over the WHOLE file, not just the Artin cluster — restricting the grep
 to the cluster is precisely the error that produced the refuted "one
-call site" claim. -/
+call site" claim.
+
+**SUPPORT CLAUSE ADDED 2026-07-27.** The conclusion now also carries
+`∀ v, v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v`, threaded verbatim
+out of the sub-leaf above (see the SUPPORT CLAUSE section of its
+docstring for the mathematics and for why it costs the sub-leaf nothing).
+This node remains pure glue. The clause is what closes
+`exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class`
+below; the two call sites in `exists_isAdmissibleModulus_ray_class` just
+below simply discard it. -/
 theorem exists_isAdmissibleModulus_primePow_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -45821,13 +45889,15 @@ theorem exists_isAdmissibleModulus_primePow_ray_class
       c v.asIdeal = χ (globalFrob v))
     (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1) :
-    ∃ mm : Ideal (NumberField.RingOfIntegers F), IsAdmissibleModulusRayClass F c mm := by
+    ∃ mm : Ideal (NumberField.RingOfIntegers F), IsAdmissibleModulusRayClass F c mm ∧
+      ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v := by
   -- Artin's descent, ramification allowed, over the cyclotomic base case at
   -- EVERY number field `E` — not merely at `F`, because the descent runs over
   -- the auxiliary field supplied by Artin's Lemma.  This is the exact assembly
   -- of `exists_conductor_artinSymbol_span_eq_one_ray_class` above with the
   -- redundant `hunr` argument omitted; see the sub-leaf's docstring.
-  obtain ⟨mm, hmm, hkill⟩ :=
+  obtain ⟨mm, hmm, hsupp, hkill⟩ :=
     exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class F χ hmul
       V hVopen hVker ℓ hℓ hℓ3 k hord c hcmul hcfrob
       (fun E _ _ χ' hmul' m hm hcyc c' hcmul' hcfrob' δ hδ0 hδpos hδcong =>
@@ -45835,8 +45905,9 @@ theorem exists_isAdmissibleModulus_primePow_ray_class
           (fun v hv ζ hζ =>
             globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
           c' hcmul' hcfrob' δ hδ0 hδpos hδcong)
-  -- `IsAdmissibleModulusRayClass` is exactly the pair produced above.
-  exact ⟨mm, hmm, hkill⟩
+  -- `IsAdmissibleModulusRayClass` is exactly the pair produced above, and the
+  -- support clause is carried through unchanged.
+  exact ⟨mm, ⟨hmm, hkill⟩, hsupp⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **SOME modulus is admissible for the Artin symbol `c`**
@@ -45952,14 +46023,19 @@ theorem exists_isAdmissibleModulus_ray_class
       intro χ' hmul' hVker' h3 hord' c' hcmul' hcfrob'
       rcases Nat.eq_zero_or_pos k with rfl | hk
       · -- `p ^ 0 = 1`: `χ'` is trivial. Use `ℓ = 2`, which is legitimate even
-        -- when `p = 3`, since `2 ^ 0 = 1 = p ^ 0`.
-        exact exists_isAdmissibleModulus_primePow_ray_class F χ' hmul' V hVopen hVker'
-          c' hcmul' hcfrob' 2 Nat.prime_two (by norm_num) 0 (by simpa using hord')
+        -- when `p = 3`, since `2 ^ 0 = 1 = p ^ 0`.  The support clause of that
+        -- node is not needed here and is discarded.
+        obtain ⟨mm, hmm, -⟩ :=
+          exists_isAdmissibleModulus_primePow_ray_class F χ' hmul' V hVopen hVker'
+            c' hcmul' hcfrob' 2 Nat.prime_two (by norm_num) 0 (by simpa using hord')
+        exact ⟨mm, hmm⟩
       · have hp3 : p ≠ 3 := by
           rintro rfl
           exact h3 (dvd_pow_self 3 hk.ne')
-        exact exists_isAdmissibleModulus_primePow_ray_class F χ' hmul' V hVopen hVker'
-          c' hcmul' hcfrob' p hp hp3 k hord'
+        obtain ⟨mm, hmm, -⟩ :=
+          exists_isAdmissibleModulus_primePow_ray_class F χ' hmul' V hVopen hVker'
+            c' hcmul' hcfrob' p hp hp3 k hord'
+        exact ⟨mm, hmm⟩
   | coprime a b ha hb hab iha ihb =>
       intro χ' hmul' hVker' h3 hord' c' hcmul' hcfrob'
       obtain ⟨e, f, s, hbe, haf, hef⟩ := exists_coprimeExponents_ray_class a b ha hb hab
@@ -46053,10 +46129,33 @@ theorem isAdmissibleModulus_pow_ray_class
 
 set_option maxHeartbeats 1000000 in
 /-- **SOME admissible modulus AVOIDS a given unramified prime, for `χ` of
-PRIME-POWER ORDER `ℓ^k` with `ℓ ≠ 3`** (sorry node, created 2026-07-27 as
-the single sub-leaf of
+PRIME-POWER ORDER `ℓ^k` with `ℓ ≠ 3`** (**PROVEN 2026-07-27**, see the
+CLOSED section at the end; created the same day as the single sub-leaf of
 `exists_isAdmissibleModulus_not_dvd_of_unramified_ray_class` just below,
-which is now PROVEN as the prime-power reduction over this leaf).
+which is PROVEN as the prime-power reduction over this leaf).
+
+**CLOSED 2026-07-27 BY THE SUPPORT CLAUSE, NOT BY LOCAL CLASS FIELD
+THEORY.** `exists_isAdmissibleModulus_primePow_ray_class` above now
+returns a modulus together with
+`∀ v, v.asIdeal ∣ mm → IsRamifiedCharRayClass F χ v` — the second half of
+Childress 5.2.1(ii), "the ideal `m` can be chosen so that it is divisible
+only by the ramified primes" — threaded out of the sorried Artin-descent
+leaf `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ramified_ray_class`
+above. Given that, this leaf is two lines: the modulus it returns is
+supported on ramified primes and `hw` says `w` is not one of them.
+
+**Be precise about what that means: content was RELOCATED, not created.**
+The obligation now sits inside the (still sorried) Artin-descent leaf,
+where it is part of the classical statement being proven anyway and
+therefore costs that leaf nothing extra — see the SUPPORT CLAUSE section
+of its docstring, which records that the clause is literally
+`exists_radical_isRamifiedChar_ray_class`'s iff read in the `mp`
+direction, already available inside the proven
+`exists_artinDivisorPackage_ray_class`. The route audit below (axis (b),
+"the support of the modulus tracked through the descent") is the one that
+landed; axis (a) was not needed. The input modulus `mm` is no longer
+used, and is underscored to `_mm`/`_hmm` so that the emptiness is
+mechanically visible rather than merely asserted.
 
 **THIS IS THE LEAF BELOW WITH `hord` ADDED, AND THAT IS THE ENTIRE POINT
 OF THE CUT.** Nothing else changes: same `F`, `χ`, `hmul`, `V`, `hVopen`,
@@ -46078,9 +46177,13 @@ it as stated. This is the same gap, and the same repair, that
 leaf; see the note at that declaration ("This is the input the whole Artin
 apparatus of this file already assumes and nobody had supplied").
 
-**THE MATHEMATICAL CONTENT IS UNCHANGED AND IS STILL LOCAL NORM
-SURJECTIVITY** — the reduction below is group-theoretic bookkeeping, not
-class field theory, and it moves none of the arithmetic. In the classical
+**THE MATHEMATICAL CONTENT — superseded 2026-07-27, kept because it
+records what the leaf MEANS.** What follows was written when this leaf
+was open and identified its content as local norm surjectivity. That is
+still what the statement expresses classically; it is not how the leaf
+closed. See the CLOSED section at the top: the same fact is delivered by
+the support clause of the Artin descent, which is where the conductor's
+prime support is determined in the first place. In the classical
 language this still says `ord_w 𝔣(M/F) = 0` at an unramified `w`, where
 `M/F` is the finite abelian extension cut out by `ker χ`: the global norm
 group of unit ideles factors place by place, and at an UNRAMIFIED finite
@@ -46111,8 +46214,13 @@ is a multiple of the conductor — concretely `F = ℚ`, `M = ℚ(i)`,
 admissible, and none avoids `2`, because `3 ≡ 1 (mod 2)` is totally
 positive with `Frob_3` nontrivial in `Gal(ℚ(i)/ℚ)`. Note this witness has
 `χ` of order `2`, so it refutes the PRIME-POWER statement and not merely
-the general one. `hmm` is load-bearing: without an admissible modulus to
-start from the conclusion would assert reciprocity itself. `hℓ3` is
+the general one. `hmm` was recorded as load-bearing — "without an
+admissible modulus to start from, the conclusion would assert reciprocity
+itself" — and that reading is now OBSOLETE rather than wrong: the proof
+does assert reciprocity itself, by calling
+`exists_isAdmissibleModulus_primePow_ray_class` directly, which is legal
+because that node sits ABOVE this one and takes no input modulus. The
+binder is kept (so no consumer signature moves) and underscored. `hℓ3` is
 load-bearing for the intended route, because the cyclotomic base case of
 Artin's descent fails at the residue characteristic. The conclusion is not
 satisfiable by `nn = ⊤`: `⊤` is admissible only when `c` kills EVERY
@@ -46124,7 +46232,8 @@ proof that every admissible modulus is divisible by `w`. That is exactly a
 failure of `ord_w 𝔣 = 0`, i.e. a counterexample to unramified local norm
 surjectivity.
 
-**THE AXIS SEARCHED, so the next owner need not redo it (2026-07-27).**
+**THE AXIS SEARCHED (2026-07-27) — kept as the record of how the leaf was
+closed, since axis (b) at the end of it is exactly what landed.**
 The IDEAL-ARITHMETIC axis is exhausted: every proven declaration below
 line 43854 was inventoried, and none relates unramifiedness at a place to
 admissibility, to `c (w.asIdeal)`, or to `χ (globalFrob w)`. The two
@@ -46207,7 +46316,10 @@ corollary of (b), not attacked directly.
 **Mathlib survey (re-run 2026-07-27, unchanged): nothing to build on.**
 `grep` over `.lake/packages/mathlib`, `Fermat/` and `~/cs/FLT` finds no
 ray class group, no Artin map, no local or global norm group and no
-conductor. Local class field theory is absent from the pin. -/
+conductor. Local class field theory is absent from the pin. **That is
+still true and is no longer this leaf's problem** — the missing class
+field theory now sits entirely in the Artin-descent leaf above, which is
+where it belonged. -/
 theorem exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -46223,11 +46335,19 @@ theorem exists_isAdmissibleModulus_primePow_not_dvd_of_unramified_ray_class
     (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
     (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
     (hw : ¬ IsRamifiedCharRayClass F χ w)
-    (mm : Ideal (NumberField.RingOfIntegers F))
-    (hmm : IsAdmissibleModulusRayClass F c mm) :
+    (_mm : Ideal (NumberField.RingOfIntegers F))
+    (_hmm : IsAdmissibleModulusRayClass F c _mm) :
     ∃ nn : Ideal (NumberField.RingOfIntegers F),
-      IsAdmissibleModulusRayClass F c nn ∧ ¬ w.asIdeal ∣ nn :=
-  sorry
+      IsAdmissibleModulusRayClass F c nn ∧ ¬ w.asIdeal ∣ nn := by
+  -- Reciprocity at prime-power order now produces a modulus SUPPORTED ON THE
+  -- RAMIFIED PRIMES (the support clause of
+  -- `exists_isAdmissibleModulus_primePow_ray_class` above, which comes from
+  -- Childress 5.2.1(ii)'s "divisible only by the ramified primes").
+  obtain ⟨nn, hnn, hsupp⟩ :=
+    exists_isAdmissibleModulus_primePow_ray_class F χ hmul V hVopen hVker c hcmul hcfrob
+      ℓ hℓ hℓ3 k hord
+  -- `w` is unramified for `χ`, so it cannot be one of those primes.
+  exact ⟨nn, hnn, fun hdvd => hw (hsupp w hdvd)⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **SOME admissible modulus AVOIDS a given unramified prime**
@@ -47581,7 +47701,7 @@ theorem artinSymbol_span_eq_one_of_pos_primePow_ray_class
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ)) :
     c (Ideal.span {γ}) = 1 := by
   -- (A) reciprocity for SOME nonzero modulus `mm`
-  obtain ⟨mm, hmm, hray⟩ :=
+  obtain ⟨mm, hmm, -, hray⟩ :=
     exists_conductor_artinSymbol_span_eq_one_ray_class F χ hmul V hVopen hVker hunr
       ℓ hℓ hℓ3 k hord c hcmul hcfrob
   -- (B) the conductor of an everywhere-finite-unramified character is `(1)`,
