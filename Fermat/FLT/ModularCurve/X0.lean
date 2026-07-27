@@ -15559,12 +15559,15 @@ deliberate — `IsLFunctionOf a L` depends only on `a`, so the two leaves
 below share their subject and the assembly is a rewrite; and it keeps
 `cuspPeriod` free of the dependent `⟨y * I, _⟩ : ℍ` coercion.
 
-**The identification is MACHINE-CHECKED at this pin** (2026-07-27).  It
-is recorded here rather than as a declaration for one reason only: it has
-no consumer until `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` below is
-proven, and a proven-but-unconsumed declaration is free-floating.
-**Whoever proves that leaf should paste this back in**, at which point it
-acquires its consumer:
+**The identification is MACHINE-CHECKED at this pin** (2026-07-27), and
+since the same day it is also CONSUMED: the proof of
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod` below contains the same
+identification in the rescaled form `f(iy/√N) = ∑ₙ aₙ e^{-2πny/√N}` (its
+`hpt`, over `hasSum_axisRestrict`), and that is a proof term rather than
+a comment.  The unrescaled version is kept here because it is the one
+that reads as "the integrand is `f(iy)`", which is what the name
+`cuspPeriod` claims; it is a comment rather than a declaration only
+because it has no consumer of its own and would be free-floating:
 
 ```
 example (N : ℕ) (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ)
@@ -15595,9 +15598,9 @@ noncomputable def cuspPeriod (a : ℕ → ℂ) : ℂ :=
     ∑' n : ℕ, a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (y : ℂ)))
 
 /-- **Hecke's Mellin transform at `s = 1`: `L(f, 1) = 2π ∫₀^∞ f(iy) dy`**
-(sorry node) — LEVEL-FREE, and it is the whole of the *analysis* in
+(PROVEN 2026-07-27) — LEVEL-FREE, and it is the whole of the *analysis* in
 `lFunction_apply_one_ne_zero_of_kenkuLevel` below.  `kenkuLevels` does
-not appear; `N` enters only through the type of `f`.
+not appear; `N` enters only through the type of `f` and through `hN`.
 
 TRUE, and classical.  Write `Λ(s) = ∫₀^∞ f(iy) y^{s-1} dy`.
 
@@ -15615,11 +15618,24 @@ TRUE, and classical.  Write `Λ(s) = ∫₀^∞ f(iy) y^{s-1} dy`.
   theorem they agree everywhere, in particular at `s = 1`, where
   `Γ(1) = 1`.  Hence `L 1 = 2π Λ(1) = 2π · cuspPeriod a`.
 
-**This leaf does NOT need the Fricke involution, and it does NOT need
-the continuation to be constructed** — `hL` hands it over.  So it is
-genuinely independent of its sibling
-`exists_isLFunctionOf_of_isWeightTwoEigenform`, which *builds* a
-continuation; the two share a theory but neither consumes the other.
+**The old "this leaf does NOT need the Fricke involution" note is
+WITHDRAWN (2026-07-27), and the correction is the whole reason the leaf
+closed.**  It reasoned that `hL` hands over the continuation, so the leaf
+is independent of its sibling `exists_isLFunctionOf_of_isWeightTwoEigenform`.
+The first half is right and the conclusion does not follow: `hL` gives an
+entire `L`, but it says NOTHING about the integral `∫₀^∞ f(iy) dy`, and
+what has to be shown is that *that integral* is the value of the
+continuation at `s = 1`.  Only the completed transform `Λ` links them,
+and `Λ` is entire only through the Fricke involution.  So the leaf
+consumes `cuspFEPair`, hence `exists_frickeInvolution`, after all; the
+second bullet above (decay at the cusp `0`) is the same fact in the form
+one would prove it *without* mathlib's `IsStrongFEPair`, and is not what
+the proof does.
+
+The recorded independence held only in the direction it was checked:
+neither declaration consumes the other's STATEMENT, and this one still
+does not use `hL.entire`'s construction.  They do share the four modular
+leaves in `ModularCurve/WeightTwoEigenform.lean`.
 
 `hf` is load-bearing in only one direction: `f` must be a genuine cusp
 form with `a` as its `q`-expansion (that is what pins the integrand and
@@ -15648,22 +15664,169 @@ the content and not a reformulation that has lost it.  PARI/GP is an
 untrusted searcher; this establishes that the statement is not false, and
 is not a proof.
 
-**What is missing at this pin, and the check that would refute it.**
-mathlib has `Mathlib/Analysis/MellinTransform.lean`, `Complex.Gamma`, and
-`AnalyticOnNhd.eqOn_of_preconnected_of_eventuallyEq` (the identity
-theorem — already used, machine-checked, on `IsLFunctionOf`).  What is
-absent is the exponential decay of a weight-two cusp form along the
-imaginary axis *near `0`* extracted from `zero_at_cusps'`, and the
-termwise-integration step.  Refute with
-`grep -rn "mellin\|IsZeroAt\|zero_at_cusps" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/`.  The *axis not searched*: defining
-`L(f, 1)` as the period outright, which would delete this leaf and change
-`IsLFunctionOf`; that is a cut-level repair and is not mine to make. -/
-theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod (N : ℕ)
+**The old "what is missing at this pin" note is RETIRED (2026-07-27), and
+it was wrong on both counts.**  It said that the decay of `f(iy)` near
+`y = 0` and the termwise-integration step were absent.  The
+termwise integration is mathlib's `hasSum_mellin` and was already
+packaged here as `mellin_axisRestrict`; and the decay near `0` is never
+needed *as decay* — it is subsumed by
+`IsStrongFEPair.differentiable_Λ`, which turns the Fricke functional
+equation directly into entirety of the completed transform.  Both had
+landed in `ModularCurve/WeightTwoEigenform.lean` before this leaf was
+attempted; the note was written against the state of the tree one release
+earlier.  What this proof adds on top of that file is only the
+*evaluation* at `s = 1` and the change of variables `y ↦ y/√N`.
+
+### How it is proven, and what it consumes
+
+Write `c = 2π/√N` and `Λ = (cuspFEPair N hN f).Λ`, mathlib's completed
+transform of `axisRestrict N f : y ↦ f(iy/√N)`.
+
+1. `Λ` is ENTIRE (`isStrongFEPair_cuspFEPair` and
+   `IsStrongFEPair.differentiable_Λ`); this is where the Fricke
+   involution is consumed, through `cuspFEPair`.
+2. `Λ s = Γ(s) c^{-s} · LSeries a s` on `Re s > 2` (`mellin_axisRestrict`,
+   i.e. `hasSum_mellin`); so `s ↦ c^s Λ(s) / Γ(s)` is entire — `1/Γ` is
+   entire, so no pole of `Γ` has to be dodged — and agrees with `L` on
+   `Re s > 2`.
+3. By the identity theorem on `ℂ` (both functions are entire and agree on
+   the nonempty open half plane) they agree at `s = 1`, where
+   `Γ(1) = 1`: `L 1 = c · Λ 1`.
+4. `Λ 1 = mellin (axisRestrict N f) 1 = ∫₀^∞ f(iy/√N) dy` — the Mellin
+   weight `y^{s-1}` is `1` at `s = 1` — and `y ↦ y/√N` scales the
+   integral by `√N` (`integral_comp_mul_left_Ioi`).  So
+   `Λ 1 = √N · cuspPeriod a` and `L 1 = (2π/√N)·√N·cuspPeriod a`.
+
+Step 4 is also where the identification of the integrand is *consumed*
+rather than merely asserted: `hasSum_axisRestrict` gives
+`f(iy/√N) = ∑ₙ aₙ e^{-2πny/√N}`, which is exactly `cuspPeriod`'s
+integrand evaluated at `y/√N`.  So the machine-check recorded on
+`cuspPeriod` above is now part of a proof term.
+
+The eigenform conditions `hecke` and `atkin` are still not used; `hf`
+enters only through `qExpansion`, `qExpansionSummable` (via
+`hasSum_axisRestrict`) and `isBigO_atTop_coeff` (via
+`mellin_axisRestrict`).  They are not `omit`ted only because the whole
+`hf` is passed on to those two lemmas.
+
+### SCOPE AUDIT (2026-07-27): `hN : N ≠ 0` was ADDED to the statement
+
+This hypothesis was not on the leaf as dispatched.  It is added, and the
+sole consumer `lFunction_apply_one_ne_zero_of_kenkuLevel` below supplies
+it in three lines from `N ∈ kenkuLevels`, exactly as
+`isTorsion_jacobian_of_kenkuLevel` already does for the sibling
+`exists_isLFunctionOf_of_isWeightTwoEigenform`.  So nothing downstream
+loses anything.  Be clear about what is and is not claimed:
+
+* **It is NOT claimed that the statement is false at `N = 0`.**  No
+  counterexample was found, and one instance was checked positively: for
+  a non-principal Dirichlet character `χ`, `f(τ) = ∑ₙ χ(n) qⁿ` is a
+  genuine element of `CuspForm (Gamma0GL 0) 2` (the only cusp of
+  `Γ₀(0) = ⟨-I, T⟩` is `∞`), `a = χ` is completely multiplicative so
+  `atkin` holds and `hecke` is vacuous, `L(·, χ)` is entire, and both
+  sides come out equal to `L(1, χ)`.  So `N = 0` is neither vacuous nor
+  refuted.
+* **What IS claimed is that the ROUTE above is unavailable at `N = 0`.**
+  Every step goes through `cuspFEPair N hN f`, which does not exist at
+  `N = 0`: `axisPoint` divides by `√N`, and behind it the Fricke
+  involution `W_N = ![![0,-1],![N,0]]` is singular.  That is not an
+  artefact of the packaging — `Γ₀(0)` has infinite index in `SL(2, ℤ)`,
+  `0` is not one of its cusps, and `f(iy)` genuinely need NOT decay as
+  `y → 0` there: for `f = q/(1-q)`, i.e. `aₙ = 1`, the integrand is
+  `1/(e^{2πy}-1) ~ 1/(2πy)` and `cuspPeriod a` is the junk value of a
+  divergent integral.  (That witness admits no entire `L`, since
+  `LSeries a = ζ` has a pole at `1`, so it does not refute anything — it
+  shows only that any `N = 0` proof must route through `hL`, i.e. must be
+  an inverse-Mellin/Tauberian argument rather than this one.)
+
+If a later reader wants the `N`-free statement back, the missing piece is
+exactly "an entire `L` forces `∫₀^∞ G` to converge to the continued
+value" at level `0`; that is a different theorem, and pinning it to a
+named leaf is a cut-level decision, not this one's. -/
+theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod (N : ℕ) (hN : N ≠ 0)
     (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a)
     (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
-    L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a :=
-  sorry
+    L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a := by
+  have hsq : (0 : ℝ) < Real.sqrt N :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hcpos : (0 : ℝ) < 2 * Real.pi / Real.sqrt N := by positivity
+  have hcC : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ≠ 0 :=
+    Complex.ofReal_ne_zero.mpr hcpos.ne'
+  have hstrong : IsStrongFEPair (cuspFEPair N hN f) := isStrongFEPair_cuspFEPair N hN f
+  -- `s ↦ c^s Λ(s) / Γ(s)` is entire: `Λ` is entire and `1/Γ` is entire.
+  have hFentire : AnalyticOnNhd ℂ
+      (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s * (cuspFEPair N hN f).Λ s *
+        (Complex.Gamma s)⁻¹) Set.univ := by
+    rw [Complex.analyticOnNhd_univ_iff_differentiable]
+    exact ((differentiable_id.const_cpow (Or.inl hcC)).mul
+      hstrong.differentiable_Λ).mul Complex.differentiable_one_div_Gamma
+  -- and it is the Dirichlet series on `Re s > 2`
+  have hFeq : ∀ s : ℂ, 2 < s.re →
+      ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s * (cuspFEPair N hN f).Λ s *
+        (Complex.Gamma s)⁻¹ = LSeries a s := by
+    intro s hs
+    have hΛ : (cuspFEPair N hN f).Λ s =
+        Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s := by
+      rw [congr_fun hstrong.Λ_eq s]
+      exact mellin_axisRestrict hN hf hs
+    have hΓ : Complex.Gamma s ≠ 0 := Complex.Gamma_ne_zero_of_re_pos (by linarith)
+    have hcancel : ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) = 1 := by
+      rw [← Complex.cpow_add _ _ hcC, add_neg_cancel, Complex.cpow_zero]
+    rw [hΛ, show ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (Complex.Gamma s * ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s) * LSeries a s) *
+        (Complex.Gamma s)⁻¹
+      = (((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+          ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ (-s)) *
+        (Complex.Gamma s * (Complex.Gamma s)⁻¹) * LSeries a s from by ring,
+      hcancel, mul_inv_cancel₀ hΓ, one_mul, one_mul]
+  -- identity theorem: two entire functions agreeing on `Re s > 2` agree at `s = 1`
+  have hL1 : L 1 = ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) * (cuspFEPair N hN f).Λ 1 := by
+    have hopen : IsOpen {z : ℂ | 2 < z.re} := isOpen_lt continuous_const Complex.continuous_re
+    have hmem : (3 : ℂ) ∈ {z : ℂ | 2 < z.re} := by norm_num
+    have key : Set.EqOn L (fun s : ℂ => ((2 * Real.pi / Real.sqrt N : ℝ) : ℂ) ^ s *
+        (cuspFEPair N hN f).Λ s * (Complex.Gamma s)⁻¹) Set.univ := by
+      refine hL.entire.eqOn_of_preconnected_of_eventuallyEq hFentire isPreconnected_univ
+        (Set.mem_univ (3 : ℂ)) ?_
+      filter_upwards [hopen.mem_nhds hmem] with z hz
+      rw [hL.eq_lseries z hz, hFeq z hz]
+    have := key (Set.mem_univ (1 : ℂ))
+    simpa [Complex.cpow_one, Complex.Gamma_one] using this
+  -- the completed transform at `s = 1` is `√N` times the period
+  have hΛ1 : (cuspFEPair N hN f).Λ 1 = ((Real.sqrt N : ℝ) : ℂ) * cuspPeriod a := by
+    have hmel : (cuspFEPair N hN f).Λ 1 = ∫ y in Set.Ioi (0 : ℝ), axisRestrict N f y := by
+      rw [congr_fun hstrong.Λ_eq 1]
+      simp only [mellin, sub_self, Complex.cpow_zero, one_smul]
+      rfl
+    have hpt : ∀ y ∈ Set.Ioi (0 : ℝ), axisRestrict N f y =
+        (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) := by
+      intro y hy
+      have hy' : (0 : ℝ) < y := hy
+      have h := (hasSum_axisRestrict hN hf hy').tsum_eq
+      rw [← h]
+      refine tsum_congr fun n => ?_
+      congr 1
+      rw [Complex.ofReal_exp]
+      congr 1
+      push_cast
+      ring
+    have hint : (∫ y in Set.Ioi (0 : ℝ), axisRestrict N f y)
+        = ∫ y in Set.Ioi (0 : ℝ), (fun u : ℝ => ∑' n : ℕ,
+            a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ))))
+          ((Real.sqrt N)⁻¹ * y) :=
+      MeasureTheory.setIntegral_congr_fun measurableSet_Ioi hpt
+    rw [hmel, hint,
+      MeasureTheory.integral_comp_mul_left_Ioi (fun u : ℝ => ∑' n : ℕ,
+        a (n + 1) * Complex.exp (-(2 * (Real.pi : ℂ) * (n + 1) * (u : ℂ)))) 0
+        (inv_pos.mpr hsq)]
+    rw [cuspPeriod]
+    rw [mul_zero, inv_inv, Complex.real_smul]
+  rw [hL1, hΛ1]
+  have hsqC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hsq.ne'
+  push_cast
+  field_simp
 
 /-- **The period of a weight-two eigenform is nonzero at the thirteen
 Kenku levels** (sorry node) — the ARITHMETIC half of
@@ -15814,7 +15977,13 @@ continuation. -/
 theorem lFunction_apply_one_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a)
     (L : ℂ → ℂ) (hL : IsLFunctionOf a L) : L 1 ≠ 0 := by
-  rw [lFunction_apply_one_eq_two_pi_mul_cuspPeriod N f a hf L hL]
+  -- `N ≠ 0` is a hypothesis of Hecke's Mellin transform (the Fricke rescaling
+  -- by `√N`); all thirteen Kenku levels are positive.  See the SCOPE AUDIT on
+  -- `lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.
+  have hN0 : N ≠ 0 := by
+    simp only [kenkuLevels, List.mem_cons, List.not_mem_nil, or_false] at hN
+    omega
+  rw [lFunction_apply_one_eq_two_pi_mul_cuspPeriod N hN0 f a hf L hL]
   exact mul_ne_zero
     (mul_ne_zero (by norm_num) (Complex.ofReal_ne_zero.mpr Real.pi_ne_zero))
     (cuspPeriod_ne_zero_of_kenkuLevel N hN f a hf)
@@ -16687,8 +16856,17 @@ leaf each; the seam is "`X` contains a dense open copy of `𝔸¹_ℚ`", which
 is how rationality of a curve is expressible at a pin that has affine but
 not projective space.
 
+**Seventh round (2026-07-27).**  `lFunction_apply_one_eq_two_pi_mul_cuspPeriod`
+— the analytic half of the fifth round's cut — is now PROVEN, over
+`ModularCurve/WeightTwoEigenform.lean`'s `cuspFEPair` and
+`mellin_axisRestrict`; it needed no new leaf, only the evaluation of the
+completed transform at `s = 1` and the change of variables `y ↦ y/√N`.  It
+acquired the hypothesis `N ≠ 0` in the process — see the SCOPE AUDIT on it.
+So of the two successors of `lFunction_apply_one_ne_zero_of_kenkuLevel` only
+the arithmetic one, `cuspPeriod_ne_zero_of_kenkuLevel`, is still open.
+
 The open leaves under this node, and the single theory each one needs, are the
-TEN below.  **This table was REGENERATED at integration (2026-07-27) from a
+NINE below.  **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — two branches
 edited it in the same release.  `lFunction_apply_one_ne_zero_of_kenkuLevel` was
 decomposed along the period and is now PROVEN (its two successors are rows five
@@ -16705,15 +16883,14 @@ row and is now PROVEN too, in
 | `isJacobianOf_of_isRelPicZeroOf` | autoduality / biduality | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
-| `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
 | `exists_affineLine_of_not_injective_aj` | Riemann–Roch | no |
 | `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
 | `hasNonconstantAbelianMap_of_one_le_x0Genus` | genus formula | **yes** |
 
-Only two of the ten mention `N` or `kenkuLevels` at all, and each of
-the other eight is a named classical theorem stated for an arbitrary
+Only two of the nine mention `N` or `kenkuLevels` at all, and each of
+the other seven is a named classical theorem stated for an arbitrary
 object — which is what makes them dispatchable independently, and
 reusable by the rest of the modular-curve subtree. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
