@@ -39528,8 +39528,469 @@ theorem atkinLehnerOp_atkinLehnerOp {M Q : ℕ} (hM : 0 < M) (hQ : Q ∣ M)
     (atkinLehnerOp_mul_self hM hQ hcop)
   simpa using h
 
+/-! #### The `ℙ¹(𝔽_r)` bookkeeping behind `T_r W_q = W_q T_r`
+
+Everything from here to `heckeTransform_slash_atkinLehnerRep` exists to make
+Atkin–Lehner 1970 Lemma 17 (`r ≠ q` half) a finite reindexing.  The `r`
+coset representatives `!![1, j; 0, r]` of `T_r`, together with the extra
+`!![r, 0; 0, 1]` present exactly when `r ∤ M`, are indexed by
+`Option (ZMod r) = ℙ¹(𝔽_r)` — `heckeIndexMat` / `heckeIndexRep` — and the
+sum `heckeTransform M r` is rewritten as a sum over the finset
+`heckeIndexSet M r` (`heckeTransform_eq_sum_heckeIndexSet`).
+
+Conjugation `β ↦ A β A⁻¹` by an Atkin–Lehner matrix acts on those indices
+as the Möbius action of `Ā⁻¹`, spelled out as `atkinLehnerConjIndex`: the
+row `(1, j)` (resp. `(0, 1)`) times `adj Ā` is `(u, v)`, and the new index
+is `v/u`, or `∞` when `u = 0`.  Injectivity
+(`atkinLehnerConjIndex_injective`) is the single determinant identity
+`u_x v_y − v_x u_y = (y − x)·det Ā`, and `det Ā = q̄ ≠ 0` is exactly where
+`r ≠ q` enters.  When `r ∣ M` the matrix `Ā` is upper triangular, so `∞`
+is fixed and the finite points are permuted among themselves
+(`atkinLehnerConjIndex_none`, `atkinLehnerConjIndex_some_ne_none`) — which
+is why the `U_r` case needs no extra representative.
+
+The integral half is `exists_gamma0_atkinLehner_conj`: for each index `x`
+there is `γ ∈ Γ₀(M)` with `A · α_x = γ · α_{π x} · A`.  It is pure `Dvd`
+bookkeeping — the same as `exists_gamma0_of_smul_atkinLehner` above, with
+no Bézout anywhere: `C := A α_x adj A` has `det C = q²r`, `q ∣ C₀₀, C₀₁,
+C₁₁` and `q·M ∣ C₁₀`, so `C = q·β` with `det β = r` and `M ∣ β₁₀`; and
+`β = γ · α_{π x}` because `π x` was chosen to make the two divisions by
+`r` integral. -/
+
+/-- The integral degree-`r` coset representative indexed by a point of `ℙ¹(𝔽_r)`:
+`some j ↦ !![1, j; 0, r]` and `none ↦ !![r, 0; 0, 1]`. -/
+def heckeIndexMat (r : ℕ) : Option (ZMod r) → Matrix (Fin 2) (Fin 2) ℤ
+  | some j => !![1, (j.val : ℤ); 0, (r : ℤ)]
+  | none => !![(r : ℤ), 0; 0, 1]
+
+theorem heckeIndexMat_det (r : ℕ) (x : Option (ZMod r)) :
+    (heckeIndexMat r x).det = (r : ℤ) := by
+  cases x <;> simp [heckeIndexMat, Matrix.det_fin_two_of]
+
+/-- The `GL₂(ℝ)` incarnation of `heckeIndexMat`. -/
+noncomputable def heckeIndexRep (r : ℕ) : Option (ZMod r) → GL (Fin 2) ℝ
+  | some j => heckeRep r j.val
+  | none => heckeRepInf r
+
+theorem heckeIndexRep_coe {r : ℕ} (hr0 : (r : ℝ) ≠ 0) (x : Option (ZMod r)) :
+    ((heckeIndexRep r x : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ)
+      = (heckeIndexMat r x).map (Int.cast : ℤ → ℝ) := by
+  cases x with
+  | none =>
+    show ((heckeRepInf r : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ) = _
+    rw [heckeRepInf_coe hr0]
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [heckeIndexMat]
+  | some j =>
+    show ((heckeRep r j.val : GL (Fin 2) ℝ) : Matrix (Fin 2) (Fin 2) ℝ) = _
+    rw [heckeRep_coe hr0]
+    ext i k
+    fin_cases i <;> fin_cases k <;> simp [heckeIndexMat]
+
+/-- The index set of the weight-two Hecke slash-sum at level `M` and prime `r`. -/
+def heckeIndexSet (M r : ℕ) [NeZero r] : Finset (Option (ZMod r)) :=
+  if r ∣ M then Finset.univ.image some else Finset.univ
+
+theorem zmodVal_image_univ_eq_range (r : ℕ) [NeZero r] :
+    (Finset.univ : Finset (ZMod r)).image ZMod.val = Finset.range r := by
+  ext n
+  simp only [Finset.mem_image, Finset.mem_univ, true_and, Finset.mem_range]
+  constructor
+  · rintro ⟨j, rfl⟩
+    exact ZMod.val_lt j
+  · intro h
+    exact ⟨(n : ZMod r), ZMod.val_natCast_of_lt h⟩
+
+theorem finset_sum_slash {ι : Type*} (s : Finset ι) (F : ι → (UpperHalfPlane → ℂ))
+    (γ : GL (Fin 2) ℝ) :
+    (∑ i ∈ s, F i) ∣[(2 : ℤ)] γ = ∑ i ∈ s, (F i) ∣[(2 : ℤ)] γ := by
+  classical
+  induction s using Finset.induction with
+  | empty => simp
+  | insert a s ha ih =>
+    rw [Finset.sum_insert ha, SlashAction.add_slash, ih, Finset.sum_insert ha]
+
+theorem heckeTransform_eq_sum_heckeIndexSet (M r : ℕ) [NeZero r] (g : UpperHalfPlane → ℂ) :
+    heckeTransform M r g = ∑ x ∈ heckeIndexSet M r, g ∣[(2 : ℤ)] heckeIndexRep r x := by
+  classical
+  have hre : ∑ j ∈ Finset.range r, g ∣[(2 : ℤ)] heckeRep r j
+      = ∑ j : ZMod r, g ∣[(2 : ℤ)] heckeIndexRep r (some j) := by
+    rw [← zmodVal_image_univ_eq_range r,
+      Finset.sum_image (fun x _ y _ h => ZMod.val_injective r h)]
+    rfl
+  unfold heckeTransform heckeIndexSet
+  split_ifs with h
+  · rw [Finset.sum_image (fun x _ y _ h => Option.some_injective _ h), add_zero, hre]
+  · rw [Fintype.sum_option, hre]
+    show _ = g ∣[(2 : ℤ)] heckeRepInf r + _
+    rw [add_comm]
+
+/-! ### The permutation of `ℙ¹(𝔽_r)` induced by conjugation -/
+
+/-- First coordinate of `(row x) · adj Ā` over `𝔽_r`. -/
+def atkinLehnerConjU (r : ℕ) (A : Matrix (Fin 2) (Fin 2) ℤ) : Option (ZMod r) → ZMod r
+  | some j => ((A 1 1 : ℤ) : ZMod r) - j * ((A 1 0 : ℤ) : ZMod r)
+  | none => -((A 1 0 : ℤ) : ZMod r)
+
+/-- Second coordinate of `(row x) · adj Ā` over `𝔽_r`. -/
+def atkinLehnerConjV (r : ℕ) (A : Matrix (Fin 2) (Fin 2) ℤ) : Option (ZMod r) → ZMod r
+  | some j => j * ((A 0 0 : ℤ) : ZMod r) - ((A 0 1 : ℤ) : ZMod r)
+  | none => ((A 0 0 : ℤ) : ZMod r)
+
+/-- The Möbius action of `Ā⁻¹` on `ℙ¹(𝔽_r)`. -/
+noncomputable def atkinLehnerConjIndex (r : ℕ) (A : Matrix (Fin 2) (Fin 2) ℤ)
+    (x : Option (ZMod r)) : Option (ZMod r) :=
+  if atkinLehnerConjU r A x = 0 then none
+  else some (atkinLehnerConjV r A x * (atkinLehnerConjU r A x)⁻¹)
+
+theorem atkinLehner_det_cast {M q r : ℕ} {A : Matrix (Fin 2) (Fin 2) ℤ}
+    (hA : IsAtkinLehnerMatrix M q A) :
+    ((A 0 0 : ℤ) : ZMod r) * ((A 1 1 : ℤ) : ZMod r)
+      - ((A 0 1 : ℤ) : ZMod r) * ((A 1 0 : ℤ) : ZMod r) = ((q : ℕ) : ZMod r) := by
+  have h : A 0 0 * A 1 1 - A 0 1 * A 1 0 = (q : ℤ) := by
+    rw [← Matrix.det_fin_two A]; exact hA.det_eq
+  have h2 := congrArg (fun z : ℤ => (z : ZMod r)) h
+  push_cast at h2
+  exact h2
+
+theorem atkinLehnerConjIndex_injective {M q r : ℕ} (hq : q.Prime) (hr : r.Prime) (hrq : r ≠ q)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A) :
+    Function.Injective (atkinLehnerConjIndex r A) := by
+  haveI : Fact r.Prime := ⟨hr⟩
+  have hq0 : ((q : ℕ) : ZMod r) ≠ 0 := by
+    rw [Ne, ZMod.natCast_eq_zero_iff]
+    intro h
+    exact hrq ((Nat.prime_dvd_prime_iff_eq hr hq).mp h)
+  have hdet := atkinLehner_det_cast (r := r) hA
+  intro x y hxy
+  have key : atkinLehnerConjU r A x * atkinLehnerConjV r A y
+      - atkinLehnerConjV r A x * atkinLehnerConjU r A y = 0 := by
+    unfold atkinLehnerConjIndex at hxy
+    by_cases h1 : atkinLehnerConjU r A x = 0
+    · by_cases h2 : atkinLehnerConjU r A y = 0
+      · rw [h1, h2]; ring
+      · rw [if_pos h1, if_neg h2] at hxy; exact absurd hxy (by simp)
+    · by_cases h2 : atkinLehnerConjU r A y = 0
+      · rw [if_neg h1, if_pos h2] at hxy; exact absurd hxy (by simp)
+      · rw [if_neg h1, if_neg h2] at hxy
+        have h3 := Option.some.inj hxy
+        rw [← div_eq_mul_inv, ← div_eq_mul_inv, div_eq_div_iff h1 h2] at h3
+        linear_combination -h3
+  cases x with
+  | none =>
+    cases y with
+    | none => rfl
+    | some jy =>
+      exact absurd (by
+        simp only [atkinLehnerConjU, atkinLehnerConjV] at key
+        linear_combination -key - hdet : ((q : ℕ) : ZMod r) = 0) hq0
+  | some jx =>
+    cases y with
+    | none =>
+      exact absurd (by
+        simp only [atkinLehnerConjU, atkinLehnerConjV] at key
+        linear_combination key - hdet : ((q : ℕ) : ZMod r) = 0) hq0
+    | some jy =>
+      simp only [atkinLehnerConjU, atkinLehnerConjV] at key
+      have : (jy - jx) * ((q : ℕ) : ZMod r) = 0 := by linear_combination key - (jy - jx) * hdet
+      rcases mul_eq_zero.mp this with h | h
+      · rw [sub_eq_zero] at h; rw [h]
+      · exact absurd h hq0
+
+theorem atkinLehnerConjU_none_eq_zero {M q r : ℕ} (hrM : r ∣ M)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A) :
+    atkinLehnerConjU r A none = 0 := by
+  have hc : ((A 1 0 : ℤ) : ZMod r) = 0 := by
+    rw [ZMod.intCast_zmod_eq_zero_iff_dvd]
+    exact (Int.natCast_dvd_natCast.mpr hrM).trans hA.dvd_one_zero
+  simp [atkinLehnerConjU, hc]
+
+theorem atkinLehnerConjIndex_none {M q r : ℕ} (hrM : r ∣ M)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A) :
+    atkinLehnerConjIndex r A none = none := by
+  rw [atkinLehnerConjIndex, if_pos (atkinLehnerConjU_none_eq_zero hrM hA)]
+
+theorem atkinLehnerConjIndex_some_ne_none {M q r : ℕ} (hq : q.Prime) (hr : r.Prime) (hrq : r ≠ q)
+    (hrM : r ∣ M) {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A)
+    (j : ZMod r) : atkinLehnerConjIndex r A (some j) ≠ none := by
+  haveI : Fact r.Prime := ⟨hr⟩
+  have hq0 : ((q : ℕ) : ZMod r) ≠ 0 := by
+    rw [Ne, ZMod.natCast_eq_zero_iff]
+    intro h
+    exact hrq ((Nat.prime_dvd_prime_iff_eq hr hq).mp h)
+  have hc : ((A 1 0 : ℤ) : ZMod r) = 0 := by
+    rw [ZMod.intCast_zmod_eq_zero_iff_dvd]
+    exact (Int.natCast_dvd_natCast.mpr hrM).trans hA.dvd_one_zero
+  have hdet := atkinLehner_det_cast (r := r) hA
+  rw [hc] at hdet
+  have hu : atkinLehnerConjU r A (some j) ≠ 0 := by
+    simp only [atkinLehnerConjU, hc, mul_zero, sub_zero]
+    intro h
+    apply hq0
+    rw [← hdet, h]
+    ring
+  rw [atkinLehnerConjIndex, if_neg hu]
+  simp
+
+/-! ### The integral factorization -/
+
+theorem exists_intMatrix_of_smul_dvd_det {M : ℕ} {Q D : ℤ} (hQ0 : Q ≠ 0)
+    {C : Matrix (Fin 2) (Fin 2) ℤ} (hdet : C.det = Q ^ 2 * D)
+    (h00 : Q ∣ C 0 0) (h01 : Q ∣ C 0 1) (h10 : (Q * (M : ℤ)) ∣ C 1 0) (h11 : Q ∣ C 1 1) :
+    ∃ B : Matrix (Fin 2) (Fin 2) ℤ, C = Q • B ∧ B.det = D ∧ (M : ℤ) ∣ B 1 0 := by
+  obtain ⟨a, ha⟩ := h00
+  obtain ⟨b, hb⟩ := h01
+  obtain ⟨c, hc⟩ := h10
+  obtain ⟨d, hd⟩ := h11
+  refine ⟨!![a, b; (M : ℤ) * c, d], ?_, ?_, ?_⟩
+  · ext i j
+    fin_cases i <;> fin_cases j <;> simp [ha, hb, hd, hc, mul_assoc]
+  · have h1 : (Q • (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ)).det
+        = Q ^ 2 * (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ).det := by
+      rw [Matrix.det_smul]; norm_num
+    have hCD : C = Q • (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ) := by
+      ext i j
+      fin_cases i <;> fin_cases j <;> simp [ha, hb, hd, hc, mul_assoc]
+    have hkey : Q ^ 2 * (!![a, b; (M : ℤ) * c, d] : Matrix (Fin 2) (Fin 2) ℤ).det
+        = Q ^ 2 * D := by rw [← h1, ← hCD, hdet]
+    exact mul_left_cancel₀ (pow_ne_zero _ hQ0) hkey
+  · exact ⟨c, by simp⟩
+
+theorem exists_gamma0_factor_finite {M r : ℕ} (hr0 : (r : ℤ) ≠ 0) (k : ZMod r)
+    {B : Matrix (Fin 2) (Fin 2) ℤ} (hdetB : B.det = (r : ℤ)) (hB10 : (M : ℤ) ∣ B 1 0)
+    (h1 : (r : ℤ) ∣ B 0 1 - (k.val : ℤ) * B 0 0)
+    (h2 : (r : ℤ) ∣ B 1 1 - (k.val : ℤ) * B 1 0) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      B = (γ : Matrix (Fin 2) (Fin 2) ℤ) * heckeIndexMat r (some k) := by
+  obtain ⟨s, hs⟩ := h1
+  obtain ⟨t, ht⟩ := h2
+  have hprod : (!![B 0 0, s; B 1 0, t] : Matrix (Fin 2) (Fin 2) ℤ)
+      * heckeIndexMat r (some k) = B := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two]
+    · linear_combination -hs
+    · linear_combination -ht
+  have hdetg : (!![B 0 0, s; B 1 0, t] : Matrix (Fin 2) (Fin 2) ℤ).det = 1 := by
+    have hh : (!![B 0 0, s; B 1 0, t] : Matrix (Fin 2) (Fin 2) ℤ).det * (r : ℤ) = 1 * (r : ℤ) := by
+      rw [one_mul]
+      conv_rhs => rw [← hdetB, ← hprod]
+      rw [Matrix.det_mul, heckeIndexMat_det]
+    exact mul_right_cancel₀ hr0 hh
+  refine ⟨⟨_, hdetg⟩, ?_, hprod.symm⟩
+  rw [Gamma0_mem_iff_intDvd]
+  simpa using hB10
+
+theorem exists_gamma0_factor_inf {M r : ℕ} (hr : r.Prime) (hrM : ¬ (r ∣ M))
+    {B : Matrix (Fin 2) (Fin 2) ℤ} (hdetB : B.det = (r : ℤ)) (hB10 : (M : ℤ) ∣ B 1 0)
+    (h1 : (r : ℤ) ∣ B 0 0) (h2 : (r : ℤ) ∣ B 1 0) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      B = (γ : Matrix (Fin 2) (Fin 2) ℤ) * heckeIndexMat r none := by
+  have hr0 : (r : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hr.ne_zero
+  obtain ⟨s, hs⟩ := h1
+  obtain ⟨t, ht⟩ := h2
+  have hprod : (!![s, B 0 1; t, B 1 1] : Matrix (Fin 2) (Fin 2) ℤ)
+      * heckeIndexMat r none = B := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two]
+    · linear_combination -hs
+    · linear_combination -ht
+  have hdetg : (!![s, B 0 1; t, B 1 1] : Matrix (Fin 2) (Fin 2) ℤ).det = 1 := by
+    have hh : (!![s, B 0 1; t, B 1 1] : Matrix (Fin 2) (Fin 2) ℤ).det * (r : ℤ) = 1 * (r : ℤ) := by
+      rw [one_mul]
+      conv_rhs => rw [← hdetB, ← hprod]
+      rw [Matrix.det_mul, heckeIndexMat_det]
+    exact mul_right_cancel₀ hr0 hh
+  refine ⟨⟨_, hdetg⟩, ?_, hprod.symm⟩
+  rw [Gamma0_mem_iff_intDvd]
+  have hcop : IsCoprime ((M : ℕ) : ℤ) ((r : ℕ) : ℤ) := by
+    rw [Nat.isCoprime_iff_coprime]
+    exact ((Nat.Prime.coprime_iff_not_dvd hr).mpr hrM).symm
+  have hMt : (M : ℤ) ∣ (r : ℤ) * t := by rw [← ht]; exact hB10
+  simpa using hcop.dvd_of_dvd_mul_left hMt
+
+/-! ### The conjugation identity -/
+
+theorem exists_gamma0_atkinLehner_conj_core {M q r : ℕ} (hq : q.Prime) (hr : r.Prime) (hrq : r ≠ q)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A)
+    {α : Matrix (Fin 2) (Fin 2) ℤ} (hαdet : α.det = (r : ℤ))
+    {p0 p1 uZ vZ w00 w01 w10 w11 : ℤ}
+    (hC00 : (A * α * Matrix.adjugate A) 0 0 = p0 * uZ + (r : ℤ) * w00)
+    (hC01 : (A * α * Matrix.adjugate A) 0 1 = p0 * vZ + (r : ℤ) * w01)
+    (hC10 : (A * α * Matrix.adjugate A) 1 0 = p1 * uZ + (r : ℤ) * w10)
+    (hC11 : (A * α * Matrix.adjugate A) 1 1 = p1 * vZ + (r : ℤ) * w11)
+    (hd00 : (q : ℤ) ∣ (A * α * Matrix.adjugate A) 0 0)
+    (hd01 : (q : ℤ) ∣ (A * α * Matrix.adjugate A) 0 1)
+    (hd10 : ((q : ℤ) * (M : ℤ)) ∣ (A * α * Matrix.adjugate A) 1 0)
+    (hd11 : (q : ℤ) ∣ (A * α * Matrix.adjugate A) 1 1)
+    (k : Option (ZMod r))
+    (hk : k = if ((uZ : ZMod r)) = 0 then none
+              else some ((vZ : ZMod r) * ((uZ : ZMod r))⁻¹))
+    (hgood : k = none → ¬ (r ∣ M)) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      A * α = (γ : Matrix (Fin 2) (Fin 2) ℤ) * (heckeIndexMat r k * A) := by
+  haveI : Fact r.Prime := ⟨hr⟩
+  haveI : NeZero r := ⟨hr.pos.ne'⟩
+  have hq0 : (q : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hq.ne_zero
+  have hr0 : (r : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hr.ne_zero
+  have hrp : Prime (r : ℤ) := Nat.prime_iff_prime_int.mp hr
+  have hrq' : ¬ ((r : ℤ) ∣ (q : ℤ)) := by
+    rw [Int.natCast_dvd_natCast]
+    intro h
+    exact hrq ((Nat.prime_dvd_prime_iff_eq hr hq).mp h)
+  have hcancel : ∀ z : ℤ, (r : ℤ) ∣ (q : ℤ) * z → (r : ℤ) ∣ z := by
+    intro z hz
+    rcases hrp.dvd_mul.mp hz with h | h
+    · exact absurd h hrq'
+    · exact h
+  have hdetC : (A * α * Matrix.adjugate A).det = (q : ℤ) ^ 2 * (r : ℤ) := by
+    rw [Matrix.det_mul, Matrix.det_mul, hA.det_eq, hαdet, det_adjugate_of_det_eq hA.det_eq]
+    ring
+  obtain ⟨B, hBsmul, hBdet, hB10⟩ :=
+    exists_intMatrix_of_smul_dvd_det (M := M) hq0 hdetC hd00 hd01 hd10 hd11
+  have hBe : ∀ i j, (A * α * Matrix.adjugate A) i j = (q : ℤ) * B i j := by
+    intro i j; rw [hBsmul]; simp
+  have hB00e : (q : ℤ) * B 0 0 = p0 * uZ + (r : ℤ) * w00 := (hBe 0 0).symm.trans hC00
+  have hB01e : (q : ℤ) * B 0 1 = p0 * vZ + (r : ℤ) * w01 := (hBe 0 1).symm.trans hC01
+  have hB10e : (q : ℤ) * B 1 0 = p1 * uZ + (r : ℤ) * w10 := (hBe 1 0).symm.trans hC10
+  have hB11e : (q : ℤ) * B 1 1 = p1 * vZ + (r : ℤ) * w11 := (hBe 1 1).symm.trans hC11
+  have hBA : B * A = A * α := by
+    have h1 : ((q : ℤ) • B) * A = A * α * (Matrix.adjugate A * A) := by
+      rw [← hBsmul, Matrix.mul_assoc]
+    rw [Matrix.adjugate_mul, hA.det_eq] at h1
+    rw [Matrix.smul_mul, Matrix.mul_smul, Matrix.mul_one] at h1
+    exact smul_right_injective _ hq0 h1
+  by_cases hu : ((uZ : ZMod r)) = 0
+  · rw [if_pos hu] at hk
+    subst hk
+    have hru : (r : ℤ) ∣ uZ := by rwa [ZMod.intCast_zmod_eq_zero_iff_dvd] at hu
+    have h1 : (r : ℤ) ∣ B 0 0 := by
+      refine hcancel _ ?_
+      rw [hB00e]
+      exact dvd_add (hru.mul_left p0) (dvd_mul_right _ _)
+    have h2 : (r : ℤ) ∣ B 1 0 := by
+      refine hcancel _ ?_
+      rw [hB10e]
+      exact dvd_add (hru.mul_left p1) (dvd_mul_right _ _)
+    obtain ⟨γ, hγ, hBγ⟩ := exists_gamma0_factor_inf hr (hgood rfl) hBdet hB10 h1 h2
+    exact ⟨γ, hγ, by rw [← hBA, hBγ, Matrix.mul_assoc]⟩
+  · rw [if_neg hu] at hk
+    set kk : ZMod r := (vZ : ZMod r) * ((uZ : ZMod r))⁻¹ with hkk
+    have hK : (r : ℤ) ∣ vZ - (kk.val : ℤ) * uZ := by
+      rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      push_cast
+      rw [ZMod.natCast_val, ZMod.cast_id, hkk, mul_assoc, inv_mul_cancel₀ hu, mul_one, sub_self]
+    have hd1 : (r : ℤ) ∣ B 0 1 - (kk.val : ℤ) * B 0 0 := by
+      refine hcancel _ ?_
+      have hexp : (q : ℤ) * (B 0 1 - (kk.val : ℤ) * B 0 0)
+          = p0 * (vZ - (kk.val : ℤ) * uZ) + (r : ℤ) * (w01 - (kk.val : ℤ) * w00) := by
+        linear_combination hB01e - (kk.val : ℤ) * hB00e
+      rw [hexp]
+      exact dvd_add (hK.mul_left p0) (dvd_mul_right _ _)
+    have hd2 : (r : ℤ) ∣ B 1 1 - (kk.val : ℤ) * B 1 0 := by
+      refine hcancel _ ?_
+      have hexp : (q : ℤ) * (B 1 1 - (kk.val : ℤ) * B 1 0)
+          = p1 * (vZ - (kk.val : ℤ) * uZ) + (r : ℤ) * (w11 - (kk.val : ℤ) * w10) := by
+        linear_combination hB11e - (kk.val : ℤ) * hB10e
+      rw [hexp]
+      exact dvd_add (hK.mul_left p1) (dvd_mul_right _ _)
+    obtain ⟨γ, hγ, hBγ⟩ := exists_gamma0_factor_finite hr0 kk hBdet hB10 hd1 hd2
+    exact ⟨γ, hγ, by rw [← hBA, hBγ, hk, Matrix.mul_assoc]⟩
+
+theorem exists_gamma0_atkinLehner_conj {M q r : ℕ} (hq : q.Prime) (hqM : q ∣ M)
+    (hr : r.Prime) (hrq : r ≠ q)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A)
+    (x : Option (ZMod r))
+    (hgood : atkinLehnerConjIndex r A x = none → ¬ (r ∣ M)) :
+    ∃ γ : SL(2, ℤ), γ ∈ CongruenceSubgroup.Gamma0 M ∧
+      A * heckeIndexMat r x
+        = (γ : Matrix (Fin 2) (Fin 2) ℤ)
+            * (heckeIndexMat r (atkinLehnerConjIndex r A x) * A) := by
+  haveI : NeZero r := ⟨hr.pos.ne'⟩
+  have hqMz : (q : ℤ) ∣ (M : ℤ) := Int.natCast_dvd_natCast.mpr hqM
+  have hqa := hA.dvd_zero_zero
+  have hMc := hA.dvd_one_zero
+  have hqd := hA.dvd_one_one
+  have hqc : (q : ℤ) ∣ A 1 0 := hqMz.trans hMc
+  cases x with
+  | some j =>
+    have e00 : (A * heckeIndexMat r (some j) * Matrix.adjugate A) 0 0
+        = A 0 0 * (A 1 1 - (j.val : ℤ) * A 1 0) + (r : ℤ) * (-(A 0 1 * A 1 0)) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    have e01 : (A * heckeIndexMat r (some j) * Matrix.adjugate A) 0 1
+        = A 0 0 * ((j.val : ℤ) * A 0 0 - A 0 1) + (r : ℤ) * (A 0 0 * A 0 1) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    have e10 : (A * heckeIndexMat r (some j) * Matrix.adjugate A) 1 0
+        = A 1 0 * (A 1 1 - (j.val : ℤ) * A 1 0) + (r : ℤ) * (-(A 1 1 * A 1 0)) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    have e11 : (A * heckeIndexMat r (some j) * Matrix.adjugate A) 1 1
+        = A 1 0 * ((j.val : ℤ) * A 0 0 - A 0 1) + (r : ℤ) * (A 0 0 * A 1 1) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    refine exists_gamma0_atkinLehner_conj_core hq hr hrq hA (heckeIndexMat_det r (some j))
+      e00 e01 e10 e11 ?_ ?_ ?_ ?_ _ ?_ hgood
+    · rw [e00]
+      exact dvd_add (hqa.mul_right _) ((dvd_neg.mpr (hqc.mul_left _)).mul_left _)
+    · rw [e01]
+      exact dvd_add (hqa.mul_right _) ((hqa.mul_right _).mul_left _)
+    · rw [e10]
+      obtain ⟨m, hm⟩ := hMc
+      obtain ⟨dd, hdd⟩ := hqd
+      obtain ⟨mm, hmm⟩ := hqMz
+      refine ⟨m * dd - (j.val : ℤ) * mm * m ^ 2 - (r : ℤ) * dd * m, ?_⟩
+      rw [hm, hdd, hmm]
+      ring
+    · rw [e11]
+      exact dvd_add (hqc.mul_right _) ((hqa.mul_right _).mul_left _)
+    · have hcu : (((A 1 1 - (j.val : ℤ) * A 1 0 : ℤ)) : ZMod r) = atkinLehnerConjU r A (some j) := by
+        simp [atkinLehnerConjU, ZMod.natCast_val, ZMod.cast_id]
+      have hcv : ((((j.val : ℤ) * A 0 0 - A 0 1 : ℤ)) : ZMod r) = atkinLehnerConjV r A (some j) := by
+        simp [atkinLehnerConjV, ZMod.natCast_val, ZMod.cast_id]
+      rw [hcu, hcv, atkinLehnerConjIndex]
+  | none =>
+    have e00 : (A * heckeIndexMat r none * Matrix.adjugate A) 0 0
+        = A 0 1 * (-(A 1 0)) + (r : ℤ) * (A 0 0 * A 1 1) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    have e01 : (A * heckeIndexMat r none * Matrix.adjugate A) 0 1
+        = A 0 1 * (A 0 0) + (r : ℤ) * (-(A 0 0 * A 0 1)) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    have e10 : (A * heckeIndexMat r none * Matrix.adjugate A) 1 0
+        = A 1 1 * (-(A 1 0)) + (r : ℤ) * (A 1 1 * A 1 0) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    have e11 : (A * heckeIndexMat r none * Matrix.adjugate A) 1 1
+        = A 1 1 * (A 0 0) + (r : ℤ) * (-(A 0 1 * A 1 0)) := by
+      simp [heckeIndexMat, Matrix.mul_apply, Fin.sum_univ_two, Matrix.adjugate_fin_two]
+      ring
+    refine exists_gamma0_atkinLehner_conj_core hq hr hrq hA (heckeIndexMat_det r none)
+      e00 e01 e10 e11 ?_ ?_ ?_ ?_ _ ?_ hgood
+    · rw [e00]
+      exact dvd_add ((dvd_neg.mpr hqc).mul_left _) ((hqa.mul_right _).mul_left _)
+    · rw [e01]
+      exact dvd_add (hqa.mul_left _) ((dvd_neg.mpr (hqa.mul_right _)).mul_left _)
+    · rw [e10]
+      obtain ⟨m, hm⟩ := hMc
+      obtain ⟨dd, hdd⟩ := hqd
+      refine ⟨-(dd * m) + (r : ℤ) * dd * m, ?_⟩
+      rw [hm, hdd]
+      ring
+    · rw [e11]
+      exact dvd_add (hqa.mul_left _) ((dvd_neg.mpr (hqc.mul_left _)).mul_left _)
+    · have hcu : (((-(A 1 0) : ℤ)) : ZMod r) = atkinLehnerConjU r A none := by
+        simp [atkinLehnerConjU]
+      have hcv : (((A 0 0 : ℤ)) : ZMod r) = atkinLehnerConjV r A none := by
+        simp [atkinLehnerConjV]
+      rw [hcu, hcv, atkinLehnerConjIndex]
+
 /-- **`W_q` COMMUTES WITH `T_r` AT EVERY PRIME `r ≠ q`, at the level of
-FUNCTIONS on `ℍ`** (sorry leaf, FOURTEENTH decomposition 2026-07-27) —
+FUNCTIONS on `ℍ`** (PROVEN 2026-07-27; it was the sorry leaf of the
+FOURTEENTH decomposition 2026-07-27) —
 Atkin–Lehner 1970, Lemma 17 (`W_Q` commutes with `T_p` and with `U_p`
 for every `p ∤ Q`).  This is the `r ≠ q` half of the spectral node
 below, stripped of every newform hypothesis: a pure identity between
@@ -39588,13 +40049,70 @@ for which conjugation by an Atkin–Lehner matrix fails to permute the
 `Γ₀(M)`-cosets inside `Δ₀(M,r)`.  At `r = q` the statement is FALSE in
 general — `U_q` and `W_q` do not commute, which is precisely why
 Atkin–Lehner restrict Lemma 17 to `p ∤ Q` and why the `r = q` half is a
-separate leaf below rather than an instance of this one. -/
+separate leaf below rather than an instance of this one.
+
+HOW IT IS PROVEN (2026-07-27), for the record.  Exactly the route above,
+mechanised by the `ℙ¹(𝔽_r)` toolkit immediately preceding this
+declaration.  Both sides become sums over the finset `heckeIndexSet M r`
+(`heckeTransform_eq_sum_heckeIndexSet`, plus `finset_sum_slash` to push the
+outer slash inside the sum on the right), and `Finset.sum_bijective` closes
+the goal from two inputs: `atkinLehnerConjIndex` is bijective and preserves
+the index set, and for every index `x` the matrix identity
+`A · α_x = γ · α_{π x} · A` of `exists_gamma0_atkinLehner_conj` transports
+to `GL₂(ℝ)` and kills `γ` through
+`SlashInvariantFormClass.slash_action_eq`.  Nothing here uses newness,
+holomorphy or any coefficient — it is an identity of finite slash-sums for
+every level-`M` weight-two cusp form, as advertised.  Axiom audit:
+`propext, Classical.choice, Quot.sound`. -/
 theorem heckeTransform_slash_atkinLehnerRep {M q : ℕ} (hq : q.Prime) (hqM : q ∣ M)
     {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A)
     {r : ℕ} (hr : r.Prime) (hrq : r ≠ q) (f : CuspForm (Gamma0GL M) 2) :
     heckeTransform M r (⇑f ∣[(2 : ℤ)] atkinLehnerRep A)
-      = (heckeTransform M r ⇑f) ∣[(2 : ℤ)] atkinLehnerRep A :=
-  sorry
+      = (heckeTransform M r ⇑f) ∣[(2 : ℤ)] atkinLehnerRep A := by
+  haveI : Fact r.Prime := ⟨hr⟩
+  haveI : NeZero r := ⟨hr.pos.ne'⟩
+  have hq0R : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hr0R : (r : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hr.ne_zero
+  have hAne : ((A.map (Int.cast : ℤ → ℝ)).det) ≠ 0 := det_map_cast_ne_zero_isAL hq0R hA
+  have hbij : Function.Bijective (atkinLehnerConjIndex r A) :=
+    Finite.injective_iff_bijective.mp (atkinLehnerConjIndex_injective hq hr hrq hA)
+  have hmem : ∀ x : Option (ZMod r), x ∈ heckeIndexSet M r ↔
+      atkinLehnerConjIndex r A x ∈ heckeIndexSet M r := by
+    intro x
+    unfold heckeIndexSet
+    split_ifs with h
+    · simp only [Finset.mem_image, Finset.mem_univ, true_and]
+      constructor
+      · rintro ⟨j, rfl⟩
+        rcases Option.ne_none_iff_exists.mp
+          (atkinLehnerConjIndex_some_ne_none hq hr hrq h hA j) with ⟨k, hk⟩
+        exact ⟨k, hk⟩
+      · rintro ⟨k, hk⟩
+        cases x with
+        | none => rw [atkinLehnerConjIndex_none h hA] at hk; exact absurd hk (by simp)
+        | some j => exact ⟨j, rfl⟩
+    · simp
+  rw [heckeTransform_eq_sum_heckeIndexSet, heckeTransform_eq_sum_heckeIndexSet, finset_sum_slash]
+  refine Finset.sum_bijective (atkinLehnerConjIndex r A) hbij hmem ?_
+  intro x hx
+  have hgood : atkinLehnerConjIndex r A x = none → ¬ (r ∣ M) := by
+    intro hnone hrM
+    unfold heckeIndexSet at hx
+    rw [if_pos hrM] at hx
+    simp only [Finset.mem_image, Finset.mem_univ, true_and] at hx
+    obtain ⟨j, rfl⟩ := hx
+    exact atkinLehnerConjIndex_some_ne_none hq hr hrq hrM hA j hnone
+  obtain ⟨γ, hγ, hmat⟩ := exists_gamma0_atkinLehner_conj hq hqM hr hrq hA x hgood
+  have hGL : atkinLehnerRep A * heckeIndexRep r x
+      = mapGL ℝ γ * (heckeIndexRep r (atkinLehnerConjIndex r A x) * atkinLehnerRep A) := by
+    apply Units.ext
+    rw [Units.val_mul, Units.val_mul, Units.val_mul,
+      atkinLehnerRep_coe hAne, heckeIndexRep_coe hr0R, heckeIndexRep_coe hr0R,
+      mapGL_coe_matrix_int, ← intMatrix_map_cast_mul, ← intMatrix_map_cast_mul,
+      ← intMatrix_map_cast_mul, hmat]
+  rw [← SlashAction.slash_mul, hGL, SlashAction.slash_mul,
+    SlashInvariantFormClass.slash_action_eq f (mapGL ℝ γ) (mem_Gamma0GL_iff.mpr ⟨γ, hγ, rfl⟩),
+    SlashAction.slash_mul]
 
 /-- **`T_r` and `W_q` commute as ENDOMORPHISMS of `S₂(Γ₀(M))` for
 `r ≠ q`** (PROVEN over `heckeTransform_slash_atkinLehnerRep`).  Pure
