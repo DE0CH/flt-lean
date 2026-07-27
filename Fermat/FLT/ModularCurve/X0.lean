@@ -9567,8 +9567,10 @@ they sit immediately before their consumer
 same block, by a mechanically pure move, and both are now PROVEN over the
 shared criterion `y0HasNoRationalPoint_of_cardLeCusps`.  The open content
 of `26, 65, 91` is now the two point-count leaves `card_le_x0TwentySix`
-and `card_le_of_chabautySemiprimeLevel`, which live down there beside the
-compactification machinery they are stated over.  So what stays HERE is
+and — since 2026-07-27, when `card_le_of_chabautySemiprimeLevel` was
+itself decomposed — `injective_redX_of_chabautyColemanPrime`, which live
+down there beside the compactification machinery they are stated over.
+So what stays HERE is
 the partition itself: the three `List ℕ` definitions,
 `y0HasNoRationalPoint_of_isolatedSemiprime` (the `56`-level descent —
 PROVEN, over `mem_isolatedJInvariants_of_stable` and
@@ -13663,10 +13665,37 @@ levels have `numRationalCusps N = 4` — all four divisors `1, p, q, pq`
 of a squarefree semiprime satisfy `gcd(d, N/d) = 1` — so both rows are
 sharp, which is what
 `y0HasNoRationalPoint_of_witnessSemiprimeLevel` consumes.  Note `3 ∤ 35`
-and `5 ∤ 39`, as `card_le_of_rankZeroJacobian` requires. -/
+and `5 ∤ 39`, as `card_le_of_rankZeroJacobian` requires.
+
+**The rows `(65, 3, 4)` and `(91, 5, 4)` were added 2026-07-27** by the
+owner of `card_le_of_chabautySemiprimeLevel`, and they are the ONLY rows
+of this table whose level does not lie in `kenkuLevels`.  That is not an
+oversight: at `65` and `91` the Jacobian has positive rank, so
+`y0HasNoRationalPoint_of_witnessPrime` — which demands
+`N ∈ kenkuLevels` as well as a table row — cannot consume them, and
+nothing in this file lets a rank-`0` argument reach those levels.  What
+the two rows supply is the COUNT alone, which is a statement about the
+special fibre and is indifferent to the rank; the injectivity half is
+supplied there by `injective_redX_of_chabautyColemanPrime` instead.
+
+Both were computed with PARI/GP 2.17.4 on 2026-07-27 from
+`mfheckemat` on `S_2(Γ_0(N))`, as a POSITIVE CONTROL against the two
+rows above: the same script reproduces `Tr(T_3 ∣ S_2(Γ_0(35))) = 0` and
+`Tr(T_5 ∣ S_2(Γ_0(39))) = 2` exactly.  It gives
+`Tr(T_3 ∣ S_2(Γ_0(65))) = 0`, so `#X_0(65)(𝔽_3) = 3 + 1 − 0 = 4`; and
+`Tr(T_5 ∣ S_2(Γ_0(91))) = 2`, so `#X_0(91)(𝔽_5) = 5 + 1 − 2 = 4`.  Both
+levels are squarefree semiprimes, hence have `numRationalCusps N = 4`,
+so both rows are sharp.  `3 ∤ 65` and `5 ∤ 91`.
+
+**Note what adding a row does to `traceHeckeOp_of_x0WitnessTable`**: that
+leaf is quantified over the rows, so it now carries two more instances of
+the Eichler–Shimura trace evaluation.  Both are true (the computation
+above), and sharing them with the existing leaf is deliberate — the
+alternative was a second, duplicate Eichler–Shimura leaf for the Chabauty
+levels. -/
 def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
   [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (35, 3, 4), (36, 5, 6), (39, 5, 4),
-    (42, 11, 8), (50, 3, 4)]
+    (42, 11, 8), (50, 3, 4), (65, 3, 4), (91, 5, 4)]
 
 /-- **`Y_0(N)` exists over an ARBITRARY field `K` with `char K ∤ N`, and
 is a geometrically connected smooth curve there** (sorry leaf — the
@@ -15972,7 +16001,7 @@ theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     injective_aj_of_one_le_x0Genus N (one_le_x0Genus_of_kenkuLevel N hN) h jac⟩
 
 /-- **Every row of `x0WitnessTable` has `0 < N`, `ℓ` prime and `ℓ ∤ N`**
-(PROVEN, by `decide` over the seven rows).
+(PROVEN, by `decide` over the eleven rows).
 
 The side conditions that `exists_x0Compactification_mod_prime` needs in
 order to hand its three leaves a good prime.  Note `ℓ ≠ 2` is NOT among
@@ -25544,19 +25573,235 @@ See `y0HasNoRationalPoint_x0TwentySix` for the purity record of the move,
 and for the general lesson that a clean scratch module says nothing about
 declaration order.
 
-**`hN` is why this is ONE leaf and not two.**  `chabautySemiprimeLevels`
-is `[65, 91]`, so a prover discharges it with `fin_cases hN` and two
-independent Chabauty–Coleman computations; there is no shared argument
-between the levels beyond the method itself.  A successor that wants them
-owned separately should split this into `card_le_x0SixtyFive` and
-`card_le_x0NinetyOne` and re-derive this by `fin_cases` — the assembly
-below is unaffected either way. -/
+**`hN` is why the residue was ONE leaf and not two.**
+`chabautySemiprimeLevels` is `[65, 91]`, so a prover discharges it with
+`fin_cases` and two independent Chabauty–Coleman computations; there is
+no shared argument between the levels beyond the method itself.  That
+split is now available one level down, at
+`injective_redX_of_chabautyColemanPrime`, whose hypothesis is a row of
+`chabautyColemanPrimes` — a successor that wants the two levels owned
+separately splits THAT by `fin_cases` and leaves everything here
+untouched.
+
+## WHAT WAS TAKEN 2026-07-27, AND WHAT IS LEFT
+
+The **counting** axis, which the audit above did not search.  The bound
+`#X_0(N)(ℚ) ≤ 4` factors into two statements of completely different
+character, and only one of them is Chabauty–Coleman:
+
+* `#X_0(N)(𝔽_ℓ) = 4` at `(N, ℓ) = (65, 3)` and `(91, 5)` — Eichler–Shimura,
+  a statement about the SPECIAL FIBRE, which knows nothing about the rank.
+  This is now two rows of `x0WitnessTable`, and it costs no new leaf: it is
+  absorbed by the already-open `traceHeckeOp_of_x0WitnessTable`.
+* reduction mod `ℓ` is INJECTIVE on `X_0(N)(ℚ)` — this is the
+  Chabauty–Coleman half, and it is the whole of what remains.  It is
+  `injective_redX_of_chabautyColemanPrime` below.
+
+The verdict above stands where it was aimed: no route to the injectivity
+half exists at this pin.  What was wrong was the *scope* — it read as a
+verdict on the whole bound, and half of the bound was an Eichler–Shimura
+count already available here. -/
+def chabautyColemanPrimes : List (ℕ × ℕ) := [(65, 3), (91, 5)]
+
+/-- **Every row of `chabautyColemanPrimes` is a good odd prime for its
+level** (PROVEN, by `decide` over the two rows).
+
+The side conditions `exists_x0NeronDatum` needs: `ℓ ≠ 2` for the formal
+group, `ℓ ∤ N` for good reduction, and `N ≠ 0` so the cusp count is
+positive. -/
+theorem chabautyColemanPrimes_spec {N ℓ : ℕ} (h : (N, ℓ) ∈ chabautyColemanPrimes) :
+    N ≠ 0 ∧ ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N := by
+  fin_cases h <;> exact ⟨by decide, by decide, by decide, by decide⟩
+
+/-- **Each Chabauty prime is a SHARP witness prime for its level**
+(PROVEN, by `decide`): `#X_0(65)(𝔽_3) = #X_0(91)(𝔽_5) = 4 =
+numRationalCusps 65 = numRationalCusps 91`.
+
+This is the half of the bound that is NOT Chabauty–Coleman.  See
+`x0WitnessTable` for the PARI/GP computation of the two rows and for the
+positive control that validates it against the rows already there. -/
+theorem mem_x0WitnessTable_of_chabautyColemanPrime {N ℓ : ℕ}
+    (h : (N, ℓ) ∈ chabautyColemanPrimes) :
+    (N, ℓ, numRationalCusps N) ∈ x0WitnessTable := by
+  fin_cases h <;> decide
+
+/-- **Every Chabauty level has a Chabauty prime** (PROVEN, by
+`fin_cases`). -/
+theorem exists_chabautyColemanPrime {N : ℕ} (hN : N ∈ chabautySemiprimeLevels) :
+    ∃ ℓ, (N, ℓ) ∈ chabautyColemanPrimes := by
+  fin_cases hN
+  · exact ⟨3, by decide⟩
+  · exact ⟨5, by decide⟩
+
+section ChabautyColeman
+
+variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+
+/-- **Chabauty–Coleman at `65` and `91`: reduction is injective on
+`X_0(N)(ℚ)`** (sorry LEAF, introduced 2026-07-27 — and this is where ALL
+of the `65, 91` mathematics now lives).
+
+Reduction modulo `3` (resp. `5`) is injective on the rational points of
+`X_0(65)` (resp. `X_0(91)`).  `d.redX` is the Néron-pinned reduction of
+`IsX0NeronDatum` — extend the rational point to the integral model by the
+valuative criterion, then restrict to the special fibre — so this is the
+GENUINE reduction map and not an arbitrary injection posited into
+existence.  The datum is quantified universally for exactly the reason
+`exists_sharpSievePrime` is: `IsX0NeronDatum` pins the base as `ℤ_(ℓ)`,
+the model as the smooth model of `X_0(N)` over it, and both fibres as
+equivalences of FUNCTORS of points, so `redX` is determined by `N` and
+`ℓ` up to isomorphism and a junk datum cannot falsify the statement.
+
+TRUE.  Kenku (*The modular curves `X_0(65)` and `X_0(91)` and rational
+isogeny*, Math. Proc. Cambridge Philos. Soc. **87** (1980) 15–20) gives
+`X_0(N)(ℚ) =` the four rational cusps at both levels, and the cusps are
+disjoint sections of the smooth model over `ℤ[1/N]`, hence stay distinct
+in the special fibre.  That argument is not available as a PROOF here —
+it presupposes the determination this leaf is an ingredient of — and it
+is recorded only as a consistency check.
+
+## THE ROUTE: CHABAUTY–COLEMAN, IN ITS RESIDUE-DISC FORM
+
+`rank J_0(N)(ℚ) < genus X_0(N)` at both levels — `1 < 5` and `2 < 7` —
+so the `ℚ_ℓ`-closure of `J_0(N)(ℚ)` inside `J_0(N)(ℚ_ℓ)` has dimension at
+most `r`, and the space of regular differentials annihilating it
+(`H^0(X, Ω¹)`-elements killing the Coleman integral on `J(ℚ)`) has
+dimension at least `g − r ≥ 1`.  For such an `ω` and a good odd `ℓ`, the
+Coleman integral `x ↦ ∫_{Q}^{x} ω` is a `ℓ`-adically analytic function on
+the residue disc of `Q` vanishing at every rational point of that disc,
+and Coleman's local bound says the disc contains at most `n_Q + 1`
+rational points whenever `n_Q = ord_{Q}(\bar ω) < ℓ − 2`.  So it suffices
+to exhibit, at each of the four `𝔽_ℓ`-points, an annihilating `ω` whose
+reduction does not vanish there: then `n_Q = 0`, every disc holds at most
+one rational point, and reduction is injective.  `n_Q = 0 < ℓ − 2` holds
+already at `ℓ = 3`, which is why the small prime is usable.
+
+## THE GLOBAL CHABAUTY BOUNDS ARE ALL USELESS HERE — DO NOT REACH FOR THEM
+
+This is the trap that costs a cycle, and it is why the leaf is stated as
+injectivity rather than as a numerical bound.  Both standard uniform
+bounds fail at both levels, for arithmetic reasons that no choice of
+prime repairs.  Point counts recomputed with PARI/GP 2.17.4 on
+2026-07-27 (`mfheckemat` on `S_2(Γ_0(N))`, Eichler–Shimura), over every
+good odd `ℓ < 60`:
+
+| `N` | `g` | `r` | `#X_0(N)(𝔽_ℓ)` for `ℓ = 3, 5, 7, 11, 17, 19, 23, …` |
+|-----|-----|-----|------------------------------------------------------|
+| `65` | `5` | `1` | `4, —, 4, 12, 20, 24, 24, 40, 20, 48, 60, 32, 36, 64, 48` |
+| `91` | `7` | `2` | `8, 4, —, 16, 16, 32, 14, 14, 36, 44, 40, 46, 40, 70, 44` |
+
+* **Coleman's bound** `#X(ℚ) ≤ #X(𝔽_ℓ) + 2g − 2` needs `ℓ > 2g`, i.e.
+  `ℓ ≥ 11` at `65` and `ℓ ≥ 17` at `91`.  The best it can give is
+  `12 + 8 = 20` and `16 + 12 = 28`.  Both are hopeless against `4`.
+* **Stoll's refinement** `#X(ℚ) ≤ #X(𝔽_ℓ) + 2r` needs `ℓ > 2r + 2`, i.e.
+  `ℓ ≥ 5` at `65` and `ℓ ≥ 7` at `91`.  At `65` it applies at `ℓ = 7`,
+  where `#X_0(65)(𝔽_7) = 4`, and gives `4 + 2 = 6 > 4`.  At `91` the
+  ONLY sharp prime below `60` is `ℓ = 5`, and `5 ≤ 2r + 2 = 6`, so
+  Stoll's hypothesis fails at the only prime that could help.
+
+So neither uniform bound reaches `4` at either level, at any prime.  The
+per-disc argument with `n_Q = 0` is not a sharpening of them — it is the
+only form of the method that works here, and it is what the conclusion
+above is stated as.
+
+## WHAT PROVING IT NEEDS, AND WHAT EXISTS
+
+Nothing of the following exists at this pin, in mathlib, in `~/cs/FLT`,
+or in this project.  The refuting commands, run 2026-07-27 and quoted so
+that the next reader re-runs them rather than trusting this paragraph —
+`grep -rlni coleman .lake/packages/mathlib/Mathlib/` and the same over
+`~/cs/FLT/FLT/` both return NOTHING, and over `Fermat/` they return only
+prose (four Coleman–Edixhoven citations in `Modularity/Interface.lean`,
+and `FreyCurve/MazurTorsion.lean`'s own survey, which independently
+records "`Coleman`: `0` files"):
+
+* the `ℓ`-adic points `X(ℚ_ℓ)` and their reduction to residue discs, with
+  a local coordinate on each disc;
+* regular differentials `H^0(X, Ω¹_{X/ℚ})` on the curve, and their
+  reduction to `H^0(X_{𝔽_ℓ}, Ω¹)`;
+* the Coleman integral, i.e. the primitive of a differential on a disc,
+  and its additivity over `J`;
+* the Mordell–Weil rank of `J_0(N)(ℚ)` as a number — this file has
+  `HasRankZeroJacobian` and `HasRankZeroAbelianImage`, both of which are
+  the `r = 0` case and are FALSE here, and no notion of rank at all.
+
+The last item is worth stating separately because it is the reason no
+interface work rescues the existing criteria: `card_le_of_rankZeroJacobian`
+and `card_le_of_sieve` consume `HasRankZeroJacobian`, and `J_0(65)`
+contains the rank-`1` curve `65a` while `J_0(91)` has a rank-`1` factor
+twice over.  Positive rank is not a weakness of the packaging, it is the
+hypothesis failing.
+
+**The checks that would refute this leaf**: a rational point of `X_0(65)`
+or `X_0(91)` that is not a cusp (contradicting Kenku); or two distinct
+rational points with the same reduction, which for the four cusps would
+mean two of them collide in the special fibre at a prime of good
+reduction; or a PARI/GP `mfheckemat` run contradicting a column of the
+table above.
+
+**Splitting into two owners** is a `fin_cases h` away and needs nothing
+from the assembly: the two levels share only the method. -/
+theorem injective_redX_of_chabautyColemanPrime (h : (N, ℓ) ∈ chabautyColemanPrimes)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
+    Function.Injective d.redX :=
+  sorry
+
+end ChabautyColeman
+
+/-- **`#X_0(65)(ℚ) ≤ 4` and `#X_0(91)(ℚ) ≤ 4`** (PROVEN 2026-07-27 over
+`injective_redX_of_chabautyColemanPrime`).
+
+The assembly is the same two-line count that `card_le_of_rankZeroJacobian`
+and `card_le_of_sieve` run, with the injectivity input coming from
+Chabauty–Coleman instead of from a rank-`0` Jacobian: pick the Chabauty
+prime `ℓ` for the level, take a rational cusp as base point, build the
+Jacobian and the Néron-pinned datum at `ℓ`, identify the special fibre as
+`X_0(N)_{𝔽_ℓ}`, and push `t` forward along the injective `d.redX` into a
+set of size `#X_0(N)(𝔽_ℓ) = numRationalCusps N`.
+
+Everything here is bookkeeping.  The two pieces of arithmetic are
+`injective_redX_of_chabautyColemanPrime` (the Chabauty–Coleman half,
+still open) and the two rows `(65, 3, 4)`, `(91, 5, 4)` of
+`x0WitnessTable` (the Eichler–Shimura half, carried by
+`traceHeckeOp_of_x0WitnessTable`).  See the former's docstring for the
+route, the positive-rank trap, and the reason no uniform Chabauty bound
+reaches `4` at either level. -/
 theorem card_le_of_chabautySemiprimeLevel {N : ℕ}
     (hN : N ∈ chabautySemiprimeLevels) {X Y : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jm)
-    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N :=
-  sorry
+    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N := by
+  classical
+  obtain ⟨ℓ, hpair⟩ := exists_chabautyColemanPrime hN
+  obtain ⟨hN0, hℓ, hℓ2, hℓN⟩ := chabautyColemanPrimes_spec hpair
+  have htable := mem_x0WitnessTable_of_chabautyColemanPrime hpair
+  obtain ⟨s, hs, -⟩ := exists_rationalCusps N hX
+  obtain ⟨o, -⟩ : s.Nonempty :=
+    Finset.card_pos.mp (by rw [hs]; exact numRationalCusps_pos hN0)
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ := exists_jacobianOf_x0 N hX o
+  obtain ⟨R, toF, X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr,
+    jZ, jstrZ, abZ, oZ, jacZ, ⟨d⟩⟩ := exists_x0NeronDatum N ℓ hℓ hℓ2 hℓN hX jac
+  obtain ⟨Y'', strY'', j'', ⟨hX''⟩⟩ :=
+    exists_isX0Compactification_specialFibre (jac := jac) hℓ hℓN d
+  have hinj := injective_redX_of_chabautyColemanPrime hpair d
+  haveI : Finite (RelPoint strX' (𝟙 (SpecF ℓ))) :=
+    finite_relPoint_of_x0Compactification_finiteField N ℓ hℓ.ne_zero hX''
+  haveI : Fintype (RelPoint strX' (𝟙 (SpecF ℓ))) := Fintype.ofFinite _
+  calc t.card = (t.image d.redX).card := (Finset.card_image_of_injective t hinj).symm
+    _ ≤ Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) := by
+        rw [Nat.card_eq_fintype_card, ← Finset.card_univ]
+        exact Finset.card_le_univ _
+    _ = numRationalCusps N := card_relPoint_x0_finiteField N ℓ _ htable hX''
 
 /-- **`Y_0(65)(ℚ) = Y_0(91)(ℚ) = ∅`** (PROVEN 2026-07-27 over
 `card_le_of_chabautySemiprimeLevel`; introduced as a sorry node the same
@@ -25566,12 +25811,15 @@ TRUE: neither `65` nor `91` is in the Mazur–Kenku list.  This is Kenku,
 *The modular curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math.
 Proc. Cambridge Philos. Soc. **87** (1980) 15–20.
 
-The whole content is the leaf immediately above, whose docstring carries
-the point-count table, the positive-rank trap that makes `65, 91` look
-like `35, 39` when they are not, and the irreducibility audit with the
-axis it was searched on.  This declaration is the three-line assembly:
-`0 < N` by `fin_cases` over `chabautySemiprimeLevels`, then the shared
-cusp-count criterion. -/
+This declaration is the three-line assembly: `0 < N` by `fin_cases` over
+`chabautySemiprimeLevels`, then the shared cusp-count criterion.  Since
+2026-07-27 the layer below it is an assembly too — the whole open content
+of both levels is `injective_redX_of_chabautyColemanPrime`, whose
+docstring carries the point-count table over every good odd `ℓ < 60`, the
+positive-rank trap that makes `65, 91` look like `35, 39` when they are
+not, the residue-disc form of Chabauty–Coleman that is the only form of
+the method reaching `4` here, and the irreducibility audit with the axis
+it was searched on. -/
 theorem y0HasNoRationalPoint_of_chabautySemiprimeLevel (N : ℕ)
     (hN : N ∈ chabautySemiprimeLevels) : Y0HasNoRationalPoint N := by
   have hpos : 0 < N := by fin_cases hN <;> norm_num
@@ -25681,7 +25929,10 @@ is exactly that criterion, and `35, 39` — two of the five residual levels
 statements are now PROVEN, and what remains of the `61` has moved down
 one layer, onto point counts for `X_0(N)` and the isolated-prime descent:
 `card_le_x0TwentySix` (`26`, needs the multi-prime sieve),
-`card_le_of_chabautySemiprimeLevel` (`65, 91`, needs Chabauty–Coleman),
+`injective_redX_of_chabautyColemanPrime` (`65, 91`, needs
+Chabauty–Coleman — `card_le_of_chabautySemiprimeLevel` was itself
+decomposed on 2026-07-27 and is now PROVEN, its Eichler–Shimura half
+absorbed into `x0WitnessTable`),
 and — for the `56` isolated-prime levels, whose descent
 `y0HasNoRationalPoint_of_isolatedSemiprime` is itself PROVEN —
 `mem_isolatedJInvariants_of_stable` and
