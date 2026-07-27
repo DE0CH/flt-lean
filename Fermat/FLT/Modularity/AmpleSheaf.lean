@@ -40,7 +40,7 @@ list of NAMED LEAVES with honest statements, instead of a wall.
 ## What is proven here and what is left open
 
 **Update 2026-07-27 (second pass).  All six of the original sheaf-theoretic
-leaves are now PROVEN**, on top of five smaller named ones.  The route that
+leaves are now PROVEN**, on top of four smaller named ones.  The route that
 closed them is worth recording, because it refutes a second recorded verdict:
 
 > `modTensor` is deliberately object-only … the ASSOCIATOR is the genuinely
@@ -73,16 +73,19 @@ PROVEN (free from the pin): `modPullbackCompIso`, `modPullbackCongrIso`,
 PROVEN here, in the tensor/ampleness API: `modTensorMapIso`,
 `modTensorUnitLeftIso`, `modTensorUnitRightIso`, `modTensorPowMapIso`,
 `modTensorPowUnitIso`, `modPullbackUnitIso`, `trivializedSection_of_iso`,
-`nonvanishingAt_of_iso`, `nonvanishingLocus_of_iso`, and — derived from the
-five leaves below — all six original statements
+`nonvanishingAt_of_iso`, `nonvanishingLocus_of_iso`, `unitEndoApply_eq`,
+`trivializedSection_restrictUnitIso`, `trivializedSection_trans`,
+`nonvanishingLocus_modUnit` (the transition-function computation, which was the
+only remaining obligation of `isQuasiAffine_of_isAmpleSheaf_modUnit`), and —
+derived from the four leaves below — all six original statements
 (`isAmpleSheaf_of_iso`, `isAmpleSheaf_modTensorPow`, `isAmpleSheaf_modPullback`,
 `isQuasiAffine_of_isAmpleSheaf_modUnit`, `nonempty_modPullback_modTensorPow`,
 `nonempty_modPullback_modUnit`).
 
-OPEN — five leaves, each strictly smaller than what it replaced:
+OPEN — four leaves, each strictly smaller than what it replaced:
 
 * `nonempty_modTensor_assoc` — SHEAFIFICATION IS MONOIDAL, in the one instance
-  needed.  The deepest of the five; everything about tensor *powers*
+  needed.  The deepest of the four; everything about tensor *powers*
   (`nonempty_modTensorPow_add`, `nonempty_modTensorPow_mul`) is derived from it
   here, so it is the only associativity obligation left anywhere.
 * `nonempty_modPullback_modTensor` — monoidality of `f^*` on objects.  With
@@ -90,11 +93,6 @@ OPEN — five leaves, each strictly smaller than what it replaced:
   `nonempty_modPullback_modTensorPow` needs.
 * `exists_tensorPowSection` — the `k`-th tensor power `s^{⊗k}` of a global
   section, with the same non-vanishing locus.
-* `nonvanishingLocus_modUnit` — the transition-function computation:
-  `Z_r = Z.basicOpen r` for the structure sheaf.  This is the "well-definedness
-  of the non-vanishing locus" obligation named in the original docstring of
-  `isQuasiAffine_of_isAmpleSheaf_modUnit`, and it is now that leaf's ONLY
-  remaining obligation — the unitor half is discharged.
 * `nonvanishingLocus_modPullback_of_isAmpleSheaf` — EGA II 5.1.12's geometric
   step.  **Read its FAITHFULNESS note**: the hypothesis-free version of this
   lemma is FALSE, with an explicit counterexample.
@@ -430,25 +428,94 @@ theorem exists_tensorPowSection {Z : Scheme.{u}} (A : Z.Modules) (s : Γ(A, ⊤)
     ∃ t : Γ(modTensorPow A k, ⊤),
       nonvanishingLocus (modTensorPow A k) t = (V : Set Z) := sorry
 
+/-! ### The non-vanishing locus of a section of the structure sheaf
+
+The "well-definedness of `nonvanishingLocus`" obligation recorded against
+`isQuasiAffine_of_isAmpleSheaf_modUnit`.  It is a transition-function
+computation, and it needs *less* than the docstring predicted: only that an
+endomorphism of `𝒪_U` as an `𝒪_U`-module is multiplication by `β(1)` —
+INVERTIBILITY of that factor is never used, because `basicOpen (a * c) ≤
+basicOpen a` already suffices in the direction where it is needed.
+
+Note `Γ(modUnit W, ⊤)` and `Γ(W, ⊤)` are DEFEQ at this pin; `unitOne` and
+`unitEndoApply` exist only to give the elaborator a place to see that, since
+type-class search for `1` and `*` does not unfold `modUnit` on its own. -/
+
+/-- `1 : Γ(W, ⊤)`, read as a section of the unit module. -/
+def unitOne (W : Scheme.{u}) : Γ(modUnit W, ⊤) := (1 : Γ(W, ⊤))
+
+/-- An endomorphism of `𝒪_W` (as a module over itself), applied to a global
+section, with both sides typed in `Γ(W, ⊤)`. -/
+noncomputable def unitEndoApply {W : Scheme.{u}} (β : modUnit W ≅ modUnit W) (a : Γ(W, ⊤)) :
+    Γ(W, ⊤) := β.hom.val.app (op ⊤) a
+
+/-- **An endomorphism of the structure sheaf is multiplication by `β(1)`** —
+`𝒪_W`-linearity applied to `a = a • 1`. -/
+lemma unitEndoApply_eq {W : Scheme.{u}} (β : modUnit W ≅ modUnit W) (a : Γ(W, ⊤)) :
+    unitEndoApply β a = a * unitEndoApply β 1 := by
+  have h2 : unitEndoApply β (a * 1) = a * unitEndoApply β 1 :=
+    (β.hom.val.app (op ⊤)).hom.map_smul a (unitOne W)
+  simpa using h2
+
+/-- The CANONICAL trivialization of `𝒪_Z` over `U` computes the ordinary
+restriction map `Γ(Z, ⊤) ⟶ Γ(U, ⊤)`.  Uses `Scheme.Opens.ι_appIso`, which says
+the comparison isomorphism of an open immersion of the form `U.ι` is
+`Iso.refl`. -/
+lemma trivializedSection_restrictUnitIso {Z : Scheme.{u}} (U : Z.Opens) (r : Γ(Z, ⊤)) :
+    trivializedSection (Scheme.Modules.restrictUnitIso U.ι) r = U.ι.appTop r := by
+  unfold trivializedSection
+  rw [Scheme.Opens.ι_appTop]
+  simp [Scheme.Modules.restrictUnitIso, Scheme.Opens.ι_appIso]
+  rfl
+
+/-- Post-composing a trivialization with an endomorphism of `𝒪_U` post-composes
+the trivialized section. -/
+lemma trivializedSection_trans {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
+    (α : A.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (β : modUnit (U : Scheme.{u}) ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
+    trivializedSection (α ≪≫ β) s = unitEndoApply β (trivializedSection α s) := rfl
+
 /-- **The non-vanishing locus of a section of the structure sheaf is its basic
-open** (sorry leaf) — the transition-function computation.
+open** (PROVEN 2026-07-27).
 
-This is the "well-definedness of `nonvanishingLocus`" obligation named in the
-original docstring of `isQuasiAffine_of_isAmpleSheaf_modUnit`, and it is now
-that theorem's ONLY remaining input: the UNITOR half is discharged by
-`modTensorPowUnitIso`.
+`⊇` take `U = ⊤` and the canonical trivialization.  `⊆` any trivialization `φ`
+factors as `restrictUnitIso ≪≫ β` with `β` an endomorphism of `𝒪_U`, so
+`trivializedSection φ r = (r|_U) * β(1)` and
+`basicOpen ((r|_U) * β(1)) ≤ basicOpen (r|_U) = U.ι ⁻¹ᵁ Z.basicOpen r`.
 
-PROOF SKETCH: `⊇` take `U = ⊤` and `φ = Scheme.Modules.restrictUnitIso (⊤ :
-Z.Opens).ι`.  `⊆` an arbitrary `φ : (modUnit Z).restrict U.ι ≅ modUnit U` is an
-automorphism of the structure sheaf as a module over itself, hence is
-multiplication by the unit `u = φ.hom.app ⊤ 1` (from `x = x • 1` and
-`PresheafOfModules.unitHomEquiv`); `u` is invertible because `φ.inv` inverts it,
-and `basicOpen (u * r) = basicOpen r` for a unit `u`.
-
-Note `Γ(modUnit Z, ⊤)` and `Γ(Z, ⊤)` are DEFEQ at this pin, which is why no
-coercion appears in the statement. -/
+This was the ONLY remaining input of `isQuasiAffine_of_isAmpleSheaf_modUnit`,
+which is therefore now sorry-free. -/
 theorem nonvanishingLocus_modUnit (Z : Scheme.{u}) (r : Γ(Z, ⊤)) :
-    nonvanishingLocus (modUnit Z) r = (Z.basicOpen r : Set Z) := sorry
+    nonvanishingLocus (modUnit Z) r = (Z.basicOpen r : Set Z) := by
+  have key : ∀ (U : Z.Opens) (φ : (modUnit Z).restrict U.ι ≅ modUnit (U : Scheme.{u})),
+      (U : Scheme.{u}).basicOpen (trivializedSection φ r)
+        ≤ (U : Scheme.{u}).basicOpen (U.ι.appTop r) := by
+    intro U φ
+    obtain ⟨β, hφ⟩ : ∃ β : modUnit (U : Scheme.{u}) ≅ modUnit (U : Scheme.{u}),
+        φ = Scheme.Modules.restrictUnitIso U.ι ≪≫ β :=
+      ⟨(Scheme.Modules.restrictUnitIso U.ι).symm ≪≫ φ,
+        Eq.symm (Iso.self_symm_id_assoc _ _)⟩
+    have e1 : trivializedSection φ r = (U.ι.appTop r) * unitEndoApply β 1 := by
+      rw [hφ]
+      exact (trivializedSection_trans _ _ _).trans
+        ((congrArg (unitEndoApply β) (trivializedSection_restrictUnitIso U r)).trans
+          (unitEndoApply_eq β _))
+    rw [e1, Scheme.basicOpen_mul]
+    exact inf_le_left
+  ext z
+  constructor
+  · rintro ⟨U, hz, φ, hmem⟩
+    have h1 := key U φ hmem
+    have h2 : (⟨z, hz⟩ : (U : Scheme.{u})) ∈ U.ι ⁻¹ᵁ Z.basicOpen r :=
+      (Scheme.preimage_basicOpen_top U.ι r).symm ▸ h1
+    exact h2
+  · intro hzr
+    refine ⟨⊤, trivial, Scheme.Modules.restrictUnitIso (⊤ : Z.Opens).ι, ?_⟩
+    have h3 : (⟨z, trivial⟩ : ((⊤ : Z.Opens) : Scheme.{u}))
+        ∈ (⊤ : Z.Opens).ι ⁻¹ᵁ Z.basicOpen r := hzr
+    have h4 := (Scheme.preimage_basicOpen_top (⊤ : Z.Opens).ι r) ▸ h3
+    exact (congrArg ((⊤ : Z.Opens) : Scheme.{u}).basicOpen
+      (trivializedSection_restrictUnitIso (⊤ : Z.Opens) r)).ge h4
 
 /-- **The geometric step of EGA II 5.1.12** (sorry leaf): for a closed immersion
 `f`, the non-vanishing locus of a pulled-back section is the preimage of the
