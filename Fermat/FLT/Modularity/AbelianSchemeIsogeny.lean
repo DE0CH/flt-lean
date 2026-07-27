@@ -780,19 +780,22 @@ On 2026-07-27 that leaf was CUT along the source's own seam into
   before touching the approximation leaf;
 * `essFinitePresentation_of_essFiniteType_of_flat_quotientMap` — the
   **finite-generation of `J`**, 05UV's other conclusion.  **PROVEN
-  2026-07-27** by writing out 05UV's own presentation step; its whole
-  remaining content is the new leaf `fg_ker_of_flat_quotientMap` ("`J` is
-  finitely generated"), and the presentation bookkeeping around it —
-  `exists_essFinitePresentation_surjective_of_essFiniteType` and
+  2026-07-27** by writing out 05UV's own presentation step; the presentation
+  bookkeeping — `exists_essFinitePresentation_surjective_of_essFiniteType` and
   `essFinitePresentation_comp_of_fg_ker` — is proven, needing nothing that
-  was missing from the pin;
+  was missing from the pin, and so, later the same day, is
+  `fg_ker_of_flat_quotientMap` ("`J` is finitely generated") itself;
 * `flat_of_flat_of_flat_quotientMap` — now **PROVEN**, a two-line assembly of
   those two, exactly as 05UV's proof ends.
 
-So the two OPEN leaves of this block are now
-`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` (00R7) and
-`fg_ker_of_flat_quotientMap` (finite generation of `J`), and the survey below
-applies to both.
+So the ONE open node of this block is now
+`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` (00R7), i.e. its two
+leaves `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian`
+(approximation) and `flat_of_rTensor_injective_of_flat_quotientMap` (the
+Noetherian local criterion), and the survey below applies to them.  **The
+finite-generation half is closed**: it needed neither Noetherian approximation
+nor `Tor` — see the section note "05UV's FINITE-GENERATION ARGUMENT" below,
+which records the specific claim of the survey below that is false for it.
 
 Everything below is the route audit that produced that cut, retained verbatim
 because each of its claims is paired with the grep that refutes it if it goes
@@ -1429,12 +1432,12 @@ Consequently the leaf that used to stand here is now a THREE-LINE ASSEMBLY,
 and all of its remaining mathematical content sits in the single new leaf
 `fg_ker_of_flat_quotientMap`.
 
-**046Y is still not stated, for the unchanged reason**: its only consumer
-would be inside `fg_ker_of_flat_quotientMap`'s proof, which is still open, so
-stating it now would be free-floating.  But the obstruction the old note
-named — "with the presentation bookkeeping unwritten" — is gone: 046Y may be
-stated the moment someone decomposes `fg_ker_of_flat_quotientMap`, and it can
-then be stated against a presentation that already exists and is proven.
+**046Y IS NOW STATED AND PROVEN** (2026-07-27; this paragraph replaces "046Y is
+still not stated, for the unchanged reason: its only consumer would be inside
+`fg_ker_of_flat_quotientMap`'s proof, which is still open").  That consumer got
+written, so 046Y stopped being free-floating; it is
+`eq_of_fg_of_flat_quotient_of_le_sup`, in the section immediately below, and it
+costs no Noetherian approximation — see that section's note for why.
 -/
 
 /-- **Every essentially-of-finite-type LOCAL homomorphism is a surjection out
@@ -1595,8 +1598,464 @@ theorem essFinitePresentation_comp_of_fg_ker {R P B : Type u}
     · rw [Ideal.mk_ker, ← hJmap]
       exact le_of_eq rfl
 
+/-! ### 05UV's FINITE-GENERATION ARGUMENT — and a CORRECTION to what 046Y costs
+
+**SECTION NOTE for the six declarations that follow** (2026-07-27).  The note
+above this one said "046Y is still not stated, for the unchanged reason: its
+only consumer would be inside `fg_ker_of_flat_quotientMap`'s proof, which is
+still open".  That consumer is now written, so 046Y is stated — and the
+surprise is that **in the shape 05UV consumes it, 046Y needs NO Noetherian
+approximation at all.**
+
+The route audit above records `046Y (10.128.4) = the same approximation +
+10.99.1`, and concludes that 046Y "shares the engine's missing machinery".
+That is true of 046Y in FULL generality and **false of the instance 05UV
+uses**, because 05UV never has to *prove* that `B/J'` is flat over `R` —
+**00R7 hands it that**, since flatness of the base is 00R7's other conclusion.
+Once `R`-flatness is an INPUT rather than an output, the entire content of 046Y
+at this instance is
+
+    Tor₁^R(P/J, R/𝔪) = 0     +     Nakayama,
+
+and the Tor half is the **equational criterion of flatness**, which IS in the
+pin (`Module.Flat.isTrivialRelation_of_sum_smul_eq_zero`,
+`Mathlib/RingTheory/Flat/EquationalCriterion.lean`).  So the survey's "Tor for
+modules is ABSENT" item does not obstruct this half either — exactly as it did
+not obstruct `rTensor_map_subtype_injective_of_flat` above.
+
+**The refuting check**, if this note goes stale: read the hypotheses of
+`inf_map_le_mul_of_flat_quotient` below and ask whether any of them has to be
+*proven* rather than *supplied* inside `fg_ker_of_flat_quotientMap`.  If one
+does, approximation is back.
+
+The one thing that had to be recovered is 00R7's SECOND conclusion, which the
+statement of `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above
+deliberately discards ("only `M` flat over `S` is kept, because only that is
+consumed") — it is consumed now.  It is recovered rather than re-sorried,
+because a flat local homomorphism of local rings is FAITHFULLY flat and
+flatness descends along a faithfully flat tower.
+
+The six declarations, in dependency order:
+
+* `isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation` — the
+  fibre `P/𝔪P` of an essentially-of-finite-presentation local map is
+  NOETHERIAN.  This is what lets 05UV choose its `f₁,…,f_k`;
+* `flat_of_faithfullyFlat_tower` — flatness DESCENDS along a faithfully flat
+  tower.  General commutative algebra, absent from the pin
+  (`grep -rn "FaithfullyFlat" .lake/packages/mathlib/Mathlib/RingTheory/` finds
+  transitivity and base-change descent, not tower descent);
+* `flat_base_of_flat_of_flat_quotientMap_of_essFinitePresentation` — **00R7's
+  SECOND conclusion**;
+* `inf_map_le_mul_of_flat_quotient` — the Tor-vanishing statement, in ideal
+  form;
+* `eq_of_fg_of_flat_quotient_of_le_sup` — **046Y**, in the shape 05UV consumes
+  it;
+* `eq_of_fg_le_ker_of_le_sup` — 05UV's comparison step: 00R7 and 046Y applied
+  to `R → P/J'' → A`.
+
+All six are PROVEN, and the first, second, fourth and fifth are AXIOM-CLEAN
+(`#print axioms` returns `[propext, Classical.choice, Quot.sound]`); the third
+and sixth carry `sorryAx` only through the 00R7 leaf they consume.
+-/
+
+/-- **THE FIBRE OF AN ESSENTIALLY-OF-FINITE-PRESENTATION LOCAL MAP IS
+NOETHERIAN** (PROVEN 2026-07-27).  If `R → P` is essentially of finite
+presentation and `R` is local with maximal ideal `𝔪`, then `P/𝔪P` is a
+Noetherian ring.
+
+This is the step of 05UV's proof that reads "*we can find `f₁,…,f_k ∈ J` such
+that the images `f̄ᵢ ∈ B/𝔪B` generate the image `J̄` of `J` in the **Noetherian
+ring** `B/𝔪B`*".  The source gets Noetherianness from the explicit shape
+`B = R[x₁,…,xₙ]_𝔮`; here `P` is only abstractly essentially of finite
+presentation, so it is proved from the definition.
+
+**The proof.**  Unfold `EssFinitePresentation gP` as `P = M⁻¹T` with `R → T`
+finitely presented.  Then `T/𝔪T` is a finite-type algebra over the residue
+FIELD `R/𝔪` — hence Noetherian by `Algebra.FiniteType.isNoetherianRing` — and
+`P/𝔪P` is a localization of it at the image of `M`, which is
+`IsLocalization.of_surjective` applied to the square `T → P`, `T/𝔪T → P/𝔪P`.
+`IsLocalization.isNoetherianRing` finishes.  Only finite TYPE of `R → T` is
+used, so this holds verbatim for `Algebra.EssFiniteType`; it is stated for
+`EssFinitePresentation` because that is what the consumer has. -/
+theorem isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation
+    {R P : Type u} [CommRing R] [CommRing P] [IsLocalRing R]
+    {gP : R →+* P} (hfpP : EssFinitePresentation gP) :
+    IsNoetherianRing (P ⧸ (IsLocalRing.maximalIdeal R).map gP) := by
+  classical
+  obtain ⟨T, _, gT, vT, M, hgT, hvT, hloc⟩ := hfpP
+  letI : Algebra T P := vT.toAlgebra
+  haveI : IsLocalization M P := hloc
+  letI : Algebra R T := gT.toAlgebra
+  have hIK : ((IsLocalRing.maximalIdeal R).map gT).map vT
+      = (IsLocalRing.maximalIdeal R).map gP := by
+    rw [Ideal.map_map, hvT]
+  haveI : (IsLocalRing.maximalIdeal R).IsMaximal := IsLocalRing.maximalIdeal.isMaximal R
+  haveI : IsNoetherianRing (R ⧸ IsLocalRing.maximalIdeal R) :=
+    inferInstanceAs (IsNoetherianRing (IsLocalRing.ResidueField R))
+  have hle₁ : IsLocalRing.maximalIdeal R
+      ≤ ((IsLocalRing.maximalIdeal R).map gT).comap gT := Ideal.le_comap_map
+  letI : Algebra (R ⧸ IsLocalRing.maximalIdeal R) (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map gT) gT hle₁).toAlgebra
+  haveI : IsScalarTower R (R ⧸ IsLocalRing.maximalIdeal R)
+      (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  haveI : Algebra.FiniteType R T := RingHom.FiniteType.of_finitePresentation hgT
+  haveI : Algebra.FiniteType R (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    Algebra.FiniteType.of_surjective
+      (Ideal.Quotient.mkₐ R ((IsLocalRing.maximalIdeal R).map gT))
+      Ideal.Quotient.mk_surjective
+  haveI : Algebra.FiniteType (R ⧸ IsLocalRing.maximalIdeal R)
+      (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    Algebra.FiniteType.of_restrictScalars_finiteType R _ _
+  haveI : IsNoetherianRing (T ⧸ (IsLocalRing.maximalIdeal R).map gT) :=
+    Algebra.FiniteType.isNoetherianRing (R ⧸ IsLocalRing.maximalIdeal R) _
+  have hle₂ : (IsLocalRing.maximalIdeal R).map gT
+      ≤ ((IsLocalRing.maximalIdeal R).map gP).comap vT := by
+    rw [← hIK]; exact Ideal.le_comap_map
+  letI : Algebra (T ⧸ (IsLocalRing.maximalIdeal R).map gT)
+      (P ⧸ (IsLocalRing.maximalIdeal R).map gP) :=
+    (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map gP) vT hle₂).toAlgebra
+  haveI : IsLocalization (M.map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gT)))
+      (P ⧸ (IsLocalRing.maximalIdeal R).map gP) := by
+    refine IsLocalization.of_surjective M P
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gT)) Ideal.Quotient.mk_surjective
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP)) Ideal.Quotient.mk_surjective
+      ?_ ?_
+    · exact RingHom.ext fun _ => rfl
+    · rw [Ideal.mk_ker, Ideal.mk_ker]
+      exact le_of_eq hIK.symm
+  exact IsLocalization.isNoetherianRing
+    (M.map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gT))) _ inferInstance
+
+open scoped TensorProduct in
+/-- **FLATNESS DESCENDS ALONG A FAITHFULLY FLAT TOWER** (PROVEN 2026-07-27).
+For a tower `R → C → A` with `A` FAITHFULLY flat over `C` and flat over `R`,
+the intermediate `C` is flat over `R`.
+
+Absent from the pin: `Mathlib/RingTheory/Flat/FaithfullyFlat/` has transitivity
+(`Module.FaithfullyFlat.trans`) and base-change descent
+(`Module.Flat.of_flat_tensorProduct`), and neither is this.
+
+**The proof** is the one-line classical argument, mechanised: for an ideal `I`
+of `R`, `A ⊗_C (C ⊗_R I) ≅ A ⊗_R I` naturally
+(`TensorProduct.AlgebraTensorModule.cancelBaseChange`), so `A ⊗_C (−)` carries
+`C ⊗_R I → C ⊗_R R` to `A ⊗_R I → A ⊗_R R`, which is injective because `A` is
+`R`-flat; and a faithfully flat `A` REFLECTS injectivity
+(`Module.FaithfullyFlat.lTensor_injective_iff_injective`).  The ideal criterion
+`Module.Flat.iff_lTensor_injective'` then gives `Module.Flat R C`. -/
+theorem flat_of_faithfullyFlat_tower {R C A : Type u} [CommRing R] [CommRing C] [CommRing A]
+    [Algebra R C] [Algebra C A] [Algebra R A] [IsScalarTower R C A]
+    [Module.FaithfullyFlat C A] [Module.Flat R A] : Module.Flat R C := by
+  rw [Module.Flat.iff_lTensor_injective']
+  intro I
+  set F : C ⊗[R] ↥I →ₗ[C] C ⊗[R] R :=
+    TensorProduct.AlgebraTensorModule.map (LinearMap.id : C →ₗ[C] C) I.subtype with hF
+  have hFfun : ⇑F = ⇑(LinearMap.lTensor C I.subtype) := rfl
+  rw [← hFfun, ← Module.FaithfullyFlat.lTensor_injective_iff_injective (R := C) (M := A) F]
+  set cbcI := TensorProduct.AlgebraTensorModule.cancelBaseChange R C A A ↥I with hcbcI
+  set cbcR := TensorProduct.AlgebraTensorModule.cancelBaseChange R C A A R with hcbcR
+  have hnat : ∀ z, cbcR (LinearMap.lTensor A F z)
+      = LinearMap.lTensor A I.subtype (cbcI z) := by
+    intro z
+    induction z with
+    | zero => simp
+    | tmul a y =>
+        induction y with
+        | zero => simp
+        | tmul c i => simp [hF, hcbcI, hcbcR]
+        | add y₁ y₂ h₁ h₂ =>
+            simp only [LinearMap.lTensor_tmul] at h₁ h₂
+            simp only [TensorProduct.tmul_add, map_add, LinearMap.lTensor_tmul, h₁, h₂]
+    | add z₁ z₂ h₁ h₂ => simp [h₁, h₂]
+  have hcomp : Function.Injective (fun z => cbcR (LinearMap.lTensor A F z)) := by
+    simp only [hnat]
+    exact fun x y h => cbcI.injective
+      ((Module.Flat.iff_lTensor_injective'.mp inferInstance I) h)
+  exact fun x y h => hcomp (by simp only [h])
+
+/-- **00R7's SECOND CONCLUSION: `R → B` is FLAT** (PROVEN 2026-07-27).
+
+`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above states 00R7
+with only the conclusion "`M` is flat over `S`", because at the time that was
+all any consumer used.  05UV's finite-generation argument uses the OTHER half —
+"*Hence we conclude that `B/J'` is flat over `R` for any choice `J'`*" — so it
+is recovered here.
+
+**It is a corollary, not a new leaf.**  00R7 gives `A` flat over `B`; `B → A` is
+a local homomorphism of local rings, so `A` is FAITHFULLY flat over `B`
+(`Module.FaithfullyFlat.of_flat_of_isLocalHom`); and `A` is flat over `R` by
+hypothesis.  `flat_of_faithfullyFlat_tower` then descends flatness to `B`.
+
+So this consumes exactly the same leaf as 00R7 does and adds no open
+mathematics of its own. -/
+theorem flat_base_of_flat_of_flat_quotientMap_of_essFinitePresentation
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g)
+    (hflat : (v.comp g).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp g)) v
+        (map_le_comap_map_comp g v (IsLocalRing.maximalIdeal R))).Flat) :
+    g.Flat := by
+  have hvflat : v.Flat :=
+    flat_of_flat_of_flat_quotientMap_of_essFinitePresentation hfpA hfpB hflat hfib
+  algebraize [g, v, v.comp g]
+  haveI : IsLocalHom (algebraMap B A) := ‹IsLocalHom v›
+  haveI : Module.FaithfullyFlat B A := Module.FaithfullyFlat.of_flat_of_isLocalHom
+  exact flat_of_faithfullyFlat_tower (R := R) (C := B) (A := A)
+
+/-- **`Tor₁^R(P/J, R/I) = 0`, WRITTEN WITHOUT `Tor`** (PROVEN 2026-07-27).
+
+*Let `R → P` be a ring map and `J ⊆ P` an ideal with `P/J` FLAT over `R`.  Then
+for every ideal `I ⊆ R`,*  `J ∩ I·P ⊆ I·J`.
+
+That containment (the reverse is trivial) is precisely the vanishing of
+`Tor₁^R(P/J, R/I)`, read off the exact sequence `0 → J → P → P/J → 0`, and it is
+the only place flatness enters 046Y at the instance 05UV uses.
+
+**This closes another "Tor is absent" item without Tor.**  The proof is the
+**equational criterion of flatness**, which the pin does have
+(`Module.Flat.isTrivialRelation_of_sum_smul_eq_zero`): write `m ∈ J ∩ I·P` as
+`m = Σᵢ aᵢ • cᵢ` with `aᵢ ∈ I`; its image in `P/J` vanishes, so the criterion
+produces `y_j ∈ P/J` and `b_{ij} ∈ R` with `c̄ᵢ = Σⱼ b_{ij} yⱼ` and
+`Σᵢ aᵢ b_{ij} = 0`.  Lifting `yⱼ` to `P` makes `dᵢ := cᵢ − Σⱼ b_{ij} yⱼ'` lie in
+`J`, and `m = Σᵢ aᵢ • dᵢ` because the correction term is `Σⱼ (Σᵢ aᵢ b_{ij}) yⱼ' = 0`.
+Each `aᵢ • dᵢ = gP(aᵢ)·dᵢ` lies in `(I·P)·J`.
+
+No local, Noetherian or finiteness hypothesis is used, and none is available —
+this is the general statement. -/
+theorem inf_map_le_mul_of_flat_quotient {R P : Type u} [CommRing R] [CommRing P]
+    {gP : R →+* P} {J : Ideal P} {I : Ideal R}
+    (hflat : ((Ideal.Quotient.mk J).comp gP).Flat) :
+    J ⊓ I.map gP ≤ (I.map gP) * J := by
+  classical
+  letI : Algebra R P := gP.toAlgebra
+  letI : Algebra R (P ⧸ J) := ((Ideal.Quotient.mk J).comp gP).toAlgebra
+  haveI : Module.Flat R (P ⧸ J) := hflat
+  have hsmul : ∀ (a : R) (p : P),
+      (Ideal.Quotient.mk J) (a • p) = a • (Ideal.Quotient.mk J) p := by
+    intro a p
+    simp only [Algebra.smul_def]
+    rfl
+  rintro m ⟨hmJ, hmI⟩
+  obtain ⟨n, c, gg, hsum⟩ := Submodule.mem_span_set'.mp hmI
+  choose a ha hgg using fun i : Fin n => (gg i).2
+  have hac : ∀ i, a i • c i = c i • ((gg i : P)) := by
+    intro i
+    rw [Algebra.smul_def, smul_eq_mul, ← hgg i]
+    show gP (a i) * c i = c i * gP (a i)
+    ring
+  have hsum' : ∑ i, a i • c i = m := by
+    rw [← hsum]; exact Finset.sum_congr rfl fun i _ => hac i
+  have hrel : ∑ i, a i • (Ideal.Quotient.mk J (c i)) = 0 := by
+    calc ∑ i, a i • (Ideal.Quotient.mk J (c i))
+        = Ideal.Quotient.mk J (∑ i, a i • c i) := by
+          rw [map_sum]; exact (Finset.sum_congr rfl fun i _ => hsmul _ _).symm
+      _ = Ideal.Quotient.mk J m := by rw [hsum']
+      _ = 0 := Ideal.Quotient.eq_zero_iff_mem.mpr hmJ
+  obtain ⟨k, b, y, hy, hb⟩ := Module.Flat.isTrivialRelation_of_sum_smul_eq_zero hrel
+  choose y' hy' using fun j : Fin k => Ideal.Quotient.mk_surjective (y j)
+  have hdJ : ∀ i, c i - ∑ j, b i j • y' j ∈ J := by
+    intro i
+    have hyi : Ideal.Quotient.mk J (c i) = ∑ j, b i j • y j := hy i
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_sum, hyi, sub_eq_zero]
+    exact Finset.sum_congr rfl fun j _ => by rw [hsmul, hy' j]
+  have hm : m = ∑ i, a i • (c i - ∑ j, b i j • y' j) := by
+    have hexp : ∀ i : Fin n, a i • (c i - ∑ j, b i j • y' j)
+        = a i • c i - ∑ j, (a i * b i j) • y' j := by
+      intro i
+      rw [smul_sub, Finset.smul_sum]
+      congr 1
+      exact Finset.sum_congr rfl fun j _ => smul_smul _ _ _
+    rw [Finset.sum_congr rfl fun i _ => hexp i, Finset.sum_sub_distrib, hsum',
+      Finset.sum_comm]
+    have hzero : ∀ j : Fin k, ∑ i, (a i * b i j) • y' j = 0 := by
+      intro j
+      rw [← Finset.sum_smul, hb j, zero_smul]
+    rw [Finset.sum_congr rfl fun j _ => hzero j]
+    simp
+  rw [hm]
+  exact Ideal.sum_mem _ fun i _ => by
+    rw [Algebra.smul_def]
+    exact Ideal.mul_mem_mul (Ideal.mem_map_of_mem _ (ha i)) (hdJ i)
+
+/-- **046Y = Stacks 10.128.4, in the shape 05UV consumes it** (PROVEN
+2026-07-27 — see the section note above for why this instance costs no
+Noetherian approximation).
+
+*Let `R → P` be a LOCAL homomorphism of local rings and `J' ⊆ J''` ideals of `P`
+with `J''` finitely generated.  If `P/J''` is flat over `R` and
+`J'' ⊆ J' + 𝔪_R·P`, then `J' = J''`.*
+
+05UV writes this as "*`B/J' → B/J''` is a surjective map between flat
+`R`-algebras which are essentially of finite presentation which is an
+isomorphism modulo `𝔪`.  Hence Lemma 10.128.4 implies that `B/J' = B/J''`*".
+The essential-finite-presentation hypothesis is not needed for THIS direction —
+finite generation of `J''` is what Nakayama consumes — so it is omitted;
+omitting a hypothesis cannot make a true statement false.
+
+**THE PROOF.**  `J'' ⊆ J' + 𝔪·P` and `J' ⊆ J''` put `J'' − J' ⊆ J'' ∩ 𝔪·P`, so
+`inf_map_le_mul_of_flat_quotient` gives `J'' ⊆ J' + (𝔪·P)·J''`; since `R → P` is
+local, `𝔪·P ⊆ 𝔪_P`, and Nakayama in the form
+`Submodule.le_of_le_smul_of_le_jacobson_bot` (Stacks 00DV (4)) concludes
+`J'' ⊆ J'`. -/
+theorem eq_of_fg_of_flat_quotient_of_le_sup {R P : Type u} [CommRing R] [CommRing P]
+    [IsLocalRing R] [IsLocalRing P] {gP : R →+* P} [IsLocalHom gP]
+    {J' J'' : Ideal P} (hle : J' ≤ J'') (hfg : J''.FG)
+    (hflat : ((Ideal.Quotient.mk J'').comp gP).Flat)
+    (hmod : J'' ≤ J' ⊔ (IsLocalRing.maximalIdeal R).map gP) :
+    J' = J'' := by
+  refine le_antisymm hle ?_
+  refine Submodule.le_of_le_smul_of_le_jacobson_bot (I := IsLocalRing.maximalIdeal P)
+    hfg (IsLocalRing.maximalIdeal_le_jacobson ⊥) ?_
+  have h1 : J'' ≤ J' ⊔ ((IsLocalRing.maximalIdeal R).map gP) * J'' := by
+    intro x hx
+    obtain ⟨y, hy, z, hz, rfl⟩ := Submodule.mem_sup.mp (hmod hx)
+    have hzJ : z ∈ J'' := by
+      have hsub := Ideal.sub_mem J'' hx (hle hy)
+      simpa using hsub
+    exact Submodule.mem_sup.mpr ⟨y, hy, z, inf_map_le_mul_of_flat_quotient hflat ⟨hzJ, hz⟩, rfl⟩
+  refine h1.trans (sup_le_sup_left ?_ _)
+  rw [Ideal.smul_eq_mul]
+  exact Ideal.mul_mono (IsLocalRing.map_maximalIdeal_le gP) le_rfl
+
+/-- **05UV's COMPARISON STEP: any two finitely generated `J' ⊆ J'' ⊆ ker w`
+with the same image modulo `𝔪` are EQUAL** (PROVEN 2026-07-27).
+
+This is steps 2–3 of 05UV's finite-generation argument: 00R7 applied to
+`R → P/J'' → A` makes `P/J''` flat over `R`, and 046Y then forces `J' = J''`.
+
+**The bookkeeping, which is the whole proof.**  `J'' ⊆ ker w ⊆ 𝔪_P`, so `P/J''`
+is local; `essFinitePresentation_comp_of_fg_ker` makes `R → P/J''` essentially
+of finite presentation because `J''` is finitely generated (this is the second
+of the two uses that lemma was written for); and the fibre hypothesis transports
+because the natural map
+
+    (P/J'') / 𝔪·(P/J'')  ⟶  B / 𝔪·B
+
+is BIJECTIVE — surjective since `w` is, and injective because
+`w⁻¹(𝔪·B) = 𝔪·P + ker w = 𝔪·P + J''` by `Ideal.comap_map_of_surjective`
+together with `hkerle`.  A bijective ring map is flat, so the transported
+fibre map is flat by `RingHom.Flat.comp`.
+
+**FAITHFULNESS.**  `hkerle` (`ker w ⊆ J'' + 𝔪·P`) is load-bearing and is exactly
+05UV's condition that `J'` induce an isomorphism `(B/J')⊗R/𝔪 ≅ B/𝔪B`; without
+it the two fibres differ and the transport is false. -/
+theorem eq_of_fg_le_ker_of_le_sup {R P B A : Type u}
+    [CommRing R] [CommRing P] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing P] [IsLocalRing B] [IsLocalRing A]
+    {gP : R →+* P} {w : P →+* B} {v : B →+* A}
+    [IsLocalHom gP] [IsLocalHom w] [IsLocalHom v]
+    (hfpP : EssFinitePresentation gP)
+    (hw : Function.Surjective w)
+    (hfp : EssFinitePresentation (v.comp (w.comp gP)))
+    (hflat : (v.comp (w.comp gP)).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
+        (map_le_comap_map_comp (w.comp gP) v (IsLocalRing.maximalIdeal R))).Flat)
+    {J' J'' : Ideal P} (hle : J' ≤ J'') (hJ''le : J'' ≤ RingHom.ker w) (hfg : J''.FG)
+    (hkerle : RingHom.ker w ≤ J'' ⊔ (IsLocalRing.maximalIdeal R).map gP)
+    (hmod : J'' ≤ J' ⊔ (IsLocalRing.maximalIdeal R).map gP) :
+    J' = J'' := by
+  classical
+  have hkerP : RingHom.ker w ≤ IsLocalRing.maximalIdeal P := by
+    refine IsLocalRing.le_maximalIdeal ?_
+    rw [Ideal.ne_top_iff_one]
+    intro h
+    rw [RingHom.mem_ker, map_one] at h
+    exact one_ne_zero h
+  have hJ''P : J'' ≤ IsLocalRing.maximalIdeal P := hJ''le.trans hkerP
+  have hJ''top : J'' ≠ ⊤ := fun h =>
+    (IsLocalRing.maximalIdeal.isMaximal P).ne_top (top_le_iff.mp (h ▸ hJ''P))
+  haveI : Nontrivial (P ⧸ J'') := Ideal.Quotient.nontrivial_iff.mpr hJ''top
+  haveI hlmk : IsLocalHom (Ideal.Quotient.mk J'') :=
+    IsLocalHom.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : IsLocalRing (P ⧸ J'') :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk J'') Ideal.Quotient.mk_surjective
+  haveI : IsLocalHom ((Ideal.Quotient.mk J'').comp gP) := RingHom.isLocalHom_comp _ _
+  have hw₂ker : ∀ a ∈ J'', w a = 0 := fun a ha => hJ''le ha
+  have hw₂surj : Function.Surjective (Ideal.Quotient.lift J'' w hw₂ker) := by
+    intro b
+    obtain ⟨p, rfl⟩ := hw b
+    exact ⟨Ideal.Quotient.mk J'' p, rfl⟩
+  haveI : IsLocalHom (Ideal.Quotient.lift J'' w hw₂ker) :=
+    IsLocalHom.of_surjective _ hw₂surj
+  haveI : IsLocalHom (v.comp (Ideal.Quotient.lift J'' w hw₂ker)) := RingHom.isLocalHom_comp _ _
+  -- the comparison map between the two fibres, and its bijectivity
+  have hle_e : (IsLocalRing.maximalIdeal R).map ((Ideal.Quotient.mk J'').comp gP)
+      ≤ ((IsLocalRing.maximalIdeal R).map (w.comp gP)).comap
+        (Ideal.Quotient.lift J'' w hw₂ker) :=
+    map_le_comap_map_comp ((Ideal.Quotient.mk J'').comp gP)
+      (Ideal.Quotient.lift J'' w hw₂ker) (IsLocalRing.maximalIdeal R)
+  have hebij : Function.Bijective
+      (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (w.comp gP))
+        (Ideal.Quotient.lift J'' w hw₂ker) hle_e) := by
+    constructor
+    · rw [injective_iff_map_eq_zero]
+      intro x hx
+      obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective x
+      obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective c
+      have hx' : w p ∈ (IsLocalRing.maximalIdeal R).map (w.comp gP) := by
+        rw [show Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (w.comp gP))
+              (Ideal.Quotient.lift J'' w hw₂ker) hle_e
+              (Ideal.Quotient.mk _ (Ideal.Quotient.mk J'' p))
+            = Ideal.Quotient.mk _ (w p) from rfl,
+          Ideal.Quotient.eq_zero_iff_mem] at hx
+        exact hx
+      have h1 : (IsLocalRing.maximalIdeal R).map (w.comp gP)
+          = ((IsLocalRing.maximalIdeal R).map gP).map w := (Ideal.map_map gP w).symm
+      have h2 : p ∈ ((IsLocalRing.maximalIdeal R).map gP) ⊔ RingHom.ker w := by
+        have hcm := Ideal.comap_map_of_surjective w hw ((IsLocalRing.maximalIdeal R).map gP)
+        rw [← RingHom.ker_eq_comap_bot] at hcm
+        rw [← hcm]
+        rw [h1] at hx'
+        exact hx'
+      have h3 : p ∈ J'' ⊔ (IsLocalRing.maximalIdeal R).map gP :=
+        sup_le (le_sup_right) hkerle h2
+      rw [Ideal.Quotient.eq_zero_iff_mem, ← Ideal.map_map]
+      obtain ⟨y, hy, z, hz, rfl⟩ := Submodule.mem_sup.mp h3
+      have hyz : (Ideal.Quotient.mk J'') (y + z) = (Ideal.Quotient.mk J'') z := by
+        rw [map_add, Ideal.Quotient.eq_zero_iff_mem.mpr hy, zero_add]
+      rw [hyz]
+      exact Ideal.mem_map_of_mem _ hz
+    · intro y
+      obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+      obtain ⟨p, rfl⟩ := hw b
+      exact ⟨Ideal.Quotient.mk _ (Ideal.Quotient.mk J'' p), rfl⟩
+  have hEq : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
+        (map_le_comap_map_comp (w.comp gP) v (IsLocalRing.maximalIdeal R))).comp
+      (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (w.comp gP))
+        (Ideal.Quotient.lift J'' w hw₂ker) hle_e)
+      = Ideal.quotientMap
+          ((IsLocalRing.maximalIdeal R).map
+            ((v.comp (Ideal.Quotient.lift J'' w hw₂ker)).comp
+              ((Ideal.Quotient.mk J'').comp gP)))
+          (v.comp (Ideal.Quotient.lift J'' w hw₂ker))
+          (map_le_comap_map_comp ((Ideal.Quotient.mk J'').comp gP)
+            (v.comp (Ideal.Quotient.lift J'' w hw₂ker)) (IsLocalRing.maximalIdeal R)) := by
+    apply Ideal.Quotient.ringHom_ext
+    refine RingHom.ext fun c => ?_
+    obtain ⟨p, rfl⟩ := Ideal.Quotient.mk_surjective c
+    rfl
+  have hfib₂ : (Ideal.quotientMap
+          ((IsLocalRing.maximalIdeal R).map
+            ((v.comp (Ideal.Quotient.lift J'' w hw₂ker)).comp
+              ((Ideal.Quotient.mk J'').comp gP)))
+          (v.comp (Ideal.Quotient.lift J'' w hw₂ker))
+          (map_le_comap_map_comp ((Ideal.Quotient.mk J'').comp gP)
+            (v.comp (Ideal.Quotient.lift J'' w hw₂ker))
+            (IsLocalRing.maximalIdeal R))).Flat :=
+    hEq ▸ RingHom.Flat.comp (RingHom.Flat.of_bijective hebij) hfib
+  have hfpB₂ : EssFinitePresentation ((Ideal.Quotient.mk J'').comp gP) :=
+    essFinitePresentation_comp_of_fg_ker hfpP Ideal.Quotient.mk_surjective
+      (by rw [Ideal.mk_ker]; exact hfg)
+  have hflat₂ : ((Ideal.Quotient.mk J'').comp gP).Flat :=
+    flat_base_of_flat_of_flat_quotientMap_of_essFinitePresentation
+      (v := v.comp (Ideal.Quotient.lift J'' w hw₂ker)) hfp hfpB₂ hflat hfib₂
+  exact eq_of_fg_of_flat_quotient_of_le_sup hle hfg hflat₂ hmod
+
 /-- **THE WHOLE REMAINING CONTENT OF 05UV's FIRST CONCLUSION: the ideal `J` is
-FINITELY GENERATED** (SORRY LEAF, cut 2026-07-27 out of
+FINITELY GENERATED** (PROVEN 2026-07-27; cut 2026-07-27 out of
 `essFinitePresentation_of_essFiniteType_of_flat_quotientMap` once the
 presentation bookkeeping above was proven).
 
@@ -1612,30 +2071,37 @@ above supply `P` (from `R → B` essentially of finite type) and convert this
 conclusion back into `EssFinitePresentation`, so the leaf below is now pure
 assembly and **nothing else in 05UV's first conclusion is open**.
 
-**THE PROOF, from the Stacks argument.**
+**THE PROOF, from the Stacks argument, now written out.**
 
-1. Choose `f₁,…,f_k ∈ J` whose images generate `J̄ ⊂ P/𝔪P`.
-2. For each finitely generated `J' ⊆ J` with
-   `(P/J') ⊗_R R/𝔪 ≅ (P/J) ⊗_R R/𝔪`, apply **00R7** — i.e.
-   `flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` above — to
-   `R → P/J' → A`, which yields `P/J'` flat over `R`.  Its hypotheses are
-   available: `P/J'` is essentially of finite presentation by
-   `essFinitePresentation_comp_of_fg_ker` above (this is why that lemma is
-   needed twice over), the fibre hypothesis is `hfib` transported along
-   `(P/J')/𝔪 ≅ B/𝔪B`, and `hfp`/`hflat` are unchanged.
-3. For two such ideals `J'`, `J''`, the surjection `P/J' → P/J''` is a map of
-   `R`-flat, essentially-of-finite-presentation algebras that is an
-   isomorphism modulo `𝔪`.  **046Y** (10.128.4) then forces `J' = J''`.
-4. Hence `J` equals the finitely generated `J'` generated by the `fᵢ`.
+1. Choose `f₁,…,f_k ∈ J` whose images generate `J̄ ⊂ P/𝔪P`.  This is possible
+   because `P/𝔪P` is NOETHERIAN
+   (`isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation`), and
+   it is the only place the essential finite presentation of `R → P` is used
+   outside 00R7.  Let `J₀ = (f₁,…,f_k)`, so `J₀ ⊆ J` and `J₀ + 𝔪P = J + 𝔪P`.
+2. For each finitely generated `J'' ⊆ J` with `J'' + 𝔪P = J + 𝔪P`, apply
+   **00R7** to `R → P/J'' → A`; `P/J''` is then flat over `R`.
+3. **046Y** forces `J₀ = J''`.  Steps 2 and 3 are the single lemma
+   `eq_of_fg_le_ker_of_le_sup` above.
+4. Take `J'' = J₀ + (x)` for `x ∈ J`: it satisfies 2's hypotheses, so `x ∈ J₀`.
+   Hence `J = J₀`, which is finitely generated.
 
-**046Y is the one genuinely new tool this leaf needs**, and it should be
-stated in the same cut as any decomposition of this leaf: *`R → S` local with
-`S` essentially of finite presentation over `R`, `u : M → N` a map of
-`S`-modules with `M`, `N` finitely presented over `S`, `N` flat over `R`, and
-`ū : M/𝔪M → N/𝔪N` injective; then `u` is injective and `N/u(M)` is flat over
-`R`.*  Its own proof is approximation (10.127.13 / 10.128.3) plus the
-Noetherian 10.99.1, so it shares the engine's missing machinery — see the
-section note above for the survey of what is and is not in the pin.
+**A CORRECTION about what 046Y costs.**  The previous version of this docstring
+said: "*046Y is the one genuinely new tool this leaf needs … its own proof is
+approximation (10.127.13 / 10.128.3) plus the Noetherian 10.99.1, so it shares
+the engine's missing machinery.*"  That is right about 046Y in full generality
+and **wrong about the instance 05UV uses**, and the difference is the whole
+reason this leaf closed: 05UV never has to PROVE that `P/J''` is flat over `R`,
+because **00R7 hands it that** as its second conclusion.  With `R`-flatness an
+input, 046Y at this instance is `Tor₁^R(P/J'', R/𝔪) = 0` plus Nakayama, and the
+Tor half is the equational criterion of flatness, which is in the pin.  See the
+section note "05UV's FINITE-GENERATION ARGUMENT" above, and
+`inf_map_le_mul_of_flat_quotient` / `eq_of_fg_of_flat_quotient_of_le_sup` for
+the two halves.
+
+**So the only leaf under this declaration is 00R7**, i.e.
+`flat_of_flat_of_flat_quotientMap_of_essFinitePresentation` and the two open
+leaves beneath it (the approximation half and the Noetherian local criterion).
+Nothing in the finite-generation argument is open.
 
 **FAITHFULNESS.**  Every hypothesis here is one of 05UV's, transported along
 the presentation rather than weakened: `hfpP` is "`B'` is essentially of
@@ -1649,14 +2115,79 @@ theorem fg_ker_of_flat_quotientMap {R P B A : Type u}
     [IsLocalRing R] [IsLocalRing P] [IsLocalRing B] [IsLocalRing A]
     {gP : R →+* P} {w : P →+* B} {v : B →+* A}
     [IsLocalHom gP] [IsLocalHom w] [IsLocalHom v]
-    (_hfpP : EssFinitePresentation gP)
-    (_hw : Function.Surjective w)
-    (_hfp : EssFinitePresentation (v.comp (w.comp gP)))
-    (_hflat : (v.comp (w.comp gP)).Flat)
-    (_hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
+    (hfpP : EssFinitePresentation gP)
+    (hw : Function.Surjective w)
+    (hfp : EssFinitePresentation (v.comp (w.comp gP)))
+    (hflat : (v.comp (w.comp gP)).Flat)
+    (hfib : (Ideal.quotientMap ((IsLocalRing.maximalIdeal R).map (v.comp (w.comp gP))) v
         (map_le_comap_map_comp (w.comp gP) v (IsLocalRing.maximalIdeal R))).Flat) :
-    (RingHom.ker w).FG :=
-  sorry
+    (RingHom.ker w).FG := by
+  classical
+  haveI := isNoetherianRing_quotient_maximalIdeal_map_of_essFinitePresentation hfpP
+  -- Step 1: the image of `J` in the NOETHERIAN fibre `P/𝔪P` is finitely generated,
+  -- and its generators lift to elements of `J`.
+  obtain ⟨t, ht⟩ := Ideal.fg_of_isNoetherianRing
+    ((RingHom.ker w).map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP)))
+  have hlift : ∀ y ∈ t, ∃ x, x ∈ RingHom.ker w ∧
+      Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP) x = y := by
+    intro y hy
+    exact (Ideal.mem_map_iff_of_surjective _ Ideal.Quotient.mk_surjective).mp
+      (ht ▸ Ideal.subset_span hy)
+  choose f hfJ hfmk using hlift
+  refine ⟨t.attach.image (fun y => f y.1 y.2), ?_⟩
+  set J₀ : Ideal P := Ideal.span ↑(t.attach.image (fun y => f y.1 y.2)) with hJ₀
+  have hJ₀le : J₀ ≤ RingHom.ker w := by
+    rw [hJ₀, Ideal.span_le]
+    rintro x hx
+    simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_attach] at hx
+    obtain ⟨y, -, rfl⟩ := hx
+    exact hfJ y.1 y.2
+  have hJ₀map : J₀.map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP))
+      = (RingHom.ker w).map (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP)) := by
+    rw [hJ₀, Ideal.map_span, ← ht]
+    congr 1
+    ext y
+    simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, Finset.mem_attach,
+      Set.image_image, true_and, Subtype.exists]
+    constructor
+    · rintro ⟨z, hz, rfl⟩
+      rw [hfmk z hz]
+      exact hz
+    · intro hy
+      exact ⟨y, hy, hfmk y hy⟩
+  -- Step 1': hence `J₀` and `J` have the same image modulo `𝔪P`.
+  have hsup : RingHom.ker w ⊔ (IsLocalRing.maximalIdeal R).map gP
+      = J₀ ⊔ (IsLocalRing.maximalIdeal R).map gP := by
+    have h1 := Ideal.comap_map_of_surjective
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP))
+      Ideal.Quotient.mk_surjective (RingHom.ker w)
+    have h2 := Ideal.comap_map_of_surjective
+      (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal R).map gP))
+      Ideal.Quotient.mk_surjective J₀
+    rw [← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at h1 h2
+    rw [← h1, ← h2, hJ₀map]
+  -- Steps 2–4: the comparison step at `J₀ ⊆ J₀ + (x)` puts every `x ∈ J` into `J₀`.
+  have hkey : RingHom.ker w ≤ J₀ := by
+    intro x hx
+    have hx' : x ∈ J₀ ⊔ (IsLocalRing.maximalIdeal R).map gP := by
+      rw [← hsup]; exact Ideal.mem_sup_left hx
+    have hfg₀ : J₀.FG := ⟨_, rfl⟩
+    have h := eq_of_fg_le_ker_of_le_sup (J' := J₀) (J'' := J₀ ⊔ Ideal.span {x})
+      hfpP hw hfp hflat hfib
+      le_sup_left
+      (sup_le hJ₀le (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hx)))
+      (Submodule.FG.sup hfg₀ ⟨{x}, by simp⟩)
+      (by
+        calc RingHom.ker w ≤ RingHom.ker w ⊔ (IsLocalRing.maximalIdeal R).map gP := le_sup_left
+          _ = J₀ ⊔ (IsLocalRing.maximalIdeal R).map gP := hsup
+          _ ≤ (J₀ ⊔ Ideal.span {x}) ⊔ (IsLocalRing.maximalIdeal R).map gP :=
+              sup_le_sup_right le_sup_left _)
+      (sup_le le_sup_left (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hx')))
+    have hmem : x ∈ J₀ ⊔ Ideal.span {x} :=
+      Ideal.mem_sup_right (Ideal.subset_span rfl)
+    rw [← h] at hmem
+    exact hmem
+  exact le_antisymm hJ₀le hkey
 
 /-- **THE FINITE-GENERATION HALF: 05UV's OTHER conclusion** (PROVEN
 2026-07-27 from the presentation lemmas above and the single leaf
