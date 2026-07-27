@@ -1844,10 +1844,13 @@ which this file now `public import`s (see the import block) and which
 `KhareWintenberger.lean` imports in turn.  Nothing was restated or reproved:
 the declarations moved byte-identically, in the same namespace, and all nine
 are sorry-free.  So there is NO open mathematics under this leaf anywhere in
-the tree, and the `public import` above is deliberate and load-bearing for the
-repair below even though nothing in THIS file consumes it yet.
+the tree, and the `public import` above is what this proof consumes.
 
-**FALSITY AUDIT (2026-07-27).**  The hypothesis `[Field K]` does not say what
+**FALSITY AUDIT (2026-07-27) — the defect this signature USED TO HAVE, kept
+because the same trap is one keystroke away in any file that handles a
+`CommRingCat` and a field together.**  The statement used to bind
+`{K : CommRingCat.{u}} [Field K]` with `(g : X ⟶ Spec K)`.  That hypothesis
+does not say what
 it looks like it says.  `K : CommRingCat` is a BUNDLED object, carrying its own
 ring structure `K.str`; `Spec K` is built from `K.str`.  But `[Field K]`
 elaborates to `Field ↥K` — a class on the CARRIER TYPE — and its `CommRing`
@@ -2031,6 +2034,17 @@ theorem ringKrullDim_quotient_map_maximalIdeal_stalkMap {X Y : Scheme.{u}}
 (sorry leaf — general scheme theory over a field, NO abelian varieties, no
 group law, no `[n]`.  This is the deepest of the three geometric leaves and
 the one that genuinely needs a dimension theory of schemes.)
+
+**SIGNATURE REPAIRED 2026-07-27 — this leaf was FALSE AS STATED until then.**
+It used to bind `{K : CommRingCat.{u}} [Field K]` with `(g : X ⟶ Spec K)`,
+which constrains the ring structure `Spec K` is built from **not at all**; the
+`ZMod 4` counterexample in the FALSITY AUDIT of
+`isRegularLocalRing_stalk_of_smooth` above refutes it verbatim, since with
+`X = Spec K` and `u = 𝟙` step 1 of the route below already fails (the stalk
+`ZMod 4` is not a domain, so `X` is not irreducible).  The statement now binds
+`{K : Type u} [Field K]` with `Spec (CommRingCat.of K)`, so `g` really is a
+morphism to the spectrum of a FIELD and the route below is sound.  Everything
+that follows describes the repaired statement.
 
 For `X` smooth, proper and geometrically connected over a field and `u` a
 FINITE endomorphism of `X`, `dim 𝒪_{X,x} = dim 𝒪_{X,u x}` for every `x`.
