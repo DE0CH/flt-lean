@@ -10541,8 +10541,323 @@ theorem isRationalMap_variableChangeEquiv {F : Type*} [Field F] [DecidableEq F]
         Polynomial.eval_one, mul_one]
       try ring
 
+/-- **The three distinct `2`-torsion abscissae of a short-normal-form elliptic
+curve over an algebraically closed field of characteristic zero** (PROVEN
+2026-07-27).
+
+`Y² = X³ + a₄X + a₆` is nonsingular exactly when the cubic `p = X³ + a₄X + a₆`
+has no repeated root, and over an algebraically closed field a squarefree cubic
+therefore has three DISTINCT roots — the `x`-coordinates of the three nonzero
+`2`-torsion points.
+
+The separability certificate is the explicit Bézout identity
+
+  `(−18a₄X + 27a₆)·p + (6a₄X² − 9a₆X + 4a₄²)·p′ = 4a₄³ + 27a₆²`,
+
+verified by `ring`, divided through by `4a₄³ + 27a₆² = −Δ/16 ≠ 0`. No
+discriminant theory and no `Squarefree`/`Separable` bridge lemma is needed: the
+identity IS the coprimality witness, and `Polynomial.nodup_roots` then turns
+`Separable` into `roots.Nodup`, while `IsAlgClosed.splits` gives
+`roots.card = natDegree = 3`. -/
+theorem exists_three_distinct_roots_of_isShortNF {F : Type*} [Field F]
+    [IsAlgClosed F] [CharZero F] (V : WeierstrassCurve F) [V.IsElliptic] [V.IsShortNF] :
+    ∃ e₁ e₂ e₃ : F, e₁ ≠ e₂ ∧ e₁ ≠ e₃ ∧ e₂ ≠ e₃ ∧
+      e₁ ^ 3 + V.a₄ * e₁ + V.a₆ = 0 ∧ e₂ ^ 3 + V.a₄ * e₂ + V.a₆ = 0 ∧
+      e₃ ^ 3 + V.a₄ * e₃ + V.a₆ = 0 := by
+  classical
+  have hdisc : 4 * V.a₄ ^ 3 + 27 * V.a₆ ^ 2 ≠ 0 := by
+    intro h
+    have hΔ : V.Δ ≠ 0 := V.isUnit_Δ.ne_zero
+    exact hΔ (by rw [WeierstrassCurve.Δ_of_isShortNF, h, mul_zero])
+  set p : Polynomial F :=
+    Polynomial.X ^ 3 + Polynomial.C V.a₄ * Polynomial.X + Polynomial.C V.a₆ with hp
+  have hdeg : p.natDegree = 3 := by rw [hp]; compute_degree!
+  have hder : p.derivative = Polynomial.C 3 * Polynomial.X ^ 2 + Polynomial.C V.a₄ := by
+    rw [hp]
+    simp only [Polynomial.derivative_add, Polynomial.derivative_X_pow,
+      Polynomial.derivative_C_mul, Polynomial.derivative_X, Polynomial.derivative_C,
+      mul_one, add_zero, Nat.cast_ofNat]
+  have hbez : ((-18 : Polynomial F) * Polynomial.C V.a₄ * Polynomial.X
+        + 27 * Polynomial.C V.a₆) * p
+      + (6 * Polynomial.C V.a₄ * Polynomial.X ^ 2 - 9 * Polynomial.C V.a₆ * Polynomial.X
+        + 4 * Polynomial.C V.a₄ ^ 2) * p.derivative
+      = Polynomial.C (4 * V.a₄ ^ 3 + 27 * V.a₆ ^ 2) := by
+    rw [hp, hder]
+    simp only [map_add, map_mul, map_pow, map_ofNat]
+    ring
+  have hsep : p.Separable := by
+    refine ⟨Polynomial.C (4 * V.a₄ ^ 3 + 27 * V.a₆ ^ 2)⁻¹ *
+        ((-18 : Polynomial F) * Polynomial.C V.a₄ * Polynomial.X + 27 * Polynomial.C V.a₆),
+      Polynomial.C (4 * V.a₄ ^ 3 + 27 * V.a₆ ^ 2)⁻¹ *
+        (6 * Polynomial.C V.a₄ * Polynomial.X ^ 2 - 9 * Polynomial.C V.a₆ * Polynomial.X
+          + 4 * Polynomial.C V.a₄ ^ 2), ?_⟩
+    have h1 : (Polynomial.C (4 * V.a₄ ^ 3 + 27 * V.a₆ ^ 2)⁻¹ : Polynomial F) *
+        Polynomial.C (4 * V.a₄ ^ 3 + 27 * V.a₆ ^ 2) = 1 := by
+      rw [← Polynomial.C_mul, inv_mul_cancel₀ hdisc, Polynomial.C_1]
+    calc _ = Polynomial.C (4 * V.a₄ ^ 3 + 27 * V.a₆ ^ 2)⁻¹ *
+        (((-18 : Polynomial F) * Polynomial.C V.a₄ * Polynomial.X
+            + 27 * Polynomial.C V.a₆) * p
+          + (6 * Polynomial.C V.a₄ * Polynomial.X ^ 2 - 9 * Polynomial.C V.a₆ * Polynomial.X
+            + 4 * Polynomial.C V.a₄ ^ 2) * p.derivative) := by ring
+      _ = 1 := by rw [hbez]; exact h1
+  have hcard : p.roots.card = 3 := by
+    rw [← hdeg]
+    exact ((IsAlgClosed.splits p).natDegree_eq_card_roots).symm
+  have hnodup : p.roots.Nodup := Polynomial.nodup_roots hsep
+  have hfin : p.roots.toFinset.card = 3 := by
+    rw [Multiset.toFinset_card_of_nodup hnodup, hcard]
+  obtain ⟨e₁, e₂, e₃, h12, h13, h23, hset⟩ := Finset.card_eq_three.mp hfin
+  have hmem : ∀ e ∈ p.roots.toFinset, e ^ 3 + V.a₄ * e + V.a₆ = 0 := by
+    intro e he
+    have : p.IsRoot e := Polynomial.isRoot_of_mem_roots (Multiset.mem_toFinset.mp he)
+    simpa [hp, Polynomial.IsRoot] using this
+  refine ⟨e₁, e₂, e₃, h12, h13, h23, hmem _ ?_, hmem _ ?_, hmem _ ?_⟩ <;>
+    rw [hset] <;> simp
+
+/-- **THE ONE REMAINING LEAF of the uniqueness-of-the-quotient cluster: the
+`x`-map of a BIJECTIVE rational map between short normal forms is
+AFFINE-LINEAR** (SORRY LEAF, cut 2026-07-27 out of
+`j_eq_of_bijective_isRationalMap_isShortNF`, which is PROVEN over it).
+
+Everything else in the chain
+`jRelation_veluCurve_of_isogeny_ker_eq` → `j_eq_of_bijective_isRationalMap`
+→ `j_eq_of_bijective_isRationalMap_isShortNF` → THIS is proven; this is the whole
+geometric content that is left.
+
+**WHY THE OBVIOUS ARGUMENT DOES NOT WORK — a refutation, not a difficulty.**
+The route recorded on `jRelation_veluCurve_of_isogeny_ker_eq` said: "`θ` is
+injective on points, so its `x`-map `A/B` is injective on `x`-coordinates, hence a
+Möbius function; `θ(0) = 0` sends the point at infinity to itself, so `B` is
+constant". The last step is FALSE as an inference from the `IsRationalMap`
+certificate, and here is the counterexample that kills it.
+
+`IsRationalMap` asserts `x(θ P) · B(x P) = A(x P)` — a CLEARED-DENOMINATOR
+identity, so it says NOTHING at a common zero of `A` and `B`. Over any field take
+the honest bijection `X : F → F`, `X(t) = t⁻¹` for `t ≠ 0` and `X(0) = 0`,
+together with `A = 𝑋`, `B = 𝑋²`: then `X(t)·t² = t = A(t)` for `t ≠ 0`, and at
+`t = 0` both sides are `0`, so the certificate holds EVERYWHERE and `X` is
+bijective — yet the reduced pair `(A₀, B₀) = (1, 𝑋)` has a pole. So injectivity of
+the `x`-map plus the `x`-certificate genuinely do not force `B` (or its reduced
+form) to be pole-free. The certificate is blind exactly where it would have to
+speak.
+
+**NOR DOES THE `y`-CERTIFICATE CLOSE IT, and this is worth recording because it is
+the natural second attempt.** Substituting both certificates into the two
+Weierstrass equations and clearing denominators gives the polynomial identity
+
+  `C² · (X³ + a₄X + a₆) · B³ = E² · (A³ + a₄′AB² + a₆′B³)`
+
+(valid after cancelling `gcd(A,B)³` and `gcd(C,E)²`). That identity is satisfied by
+the coordinate functions of a TRANSLATION by a `2`-torsion point composed with an
+isomorphism — a map whose `x`-part has a genuine pole at that point's abscissa,
+and which is bijective on the affine points off it. So the identity alone cannot
+exclude a pole either. What excludes it is that `θ` is a group HOMOMORPHISM and a
+translation is not: two morphisms of curves agreeing off a finite set are equal,
+and `τ_T(Q₁ + Q₂) = Q₁ + Q₂ + T` while `τ_T(Q₁) + τ_T(Q₂) = Q₁ + Q₂ + 2T`, so
+additivity forces `T = 0`.
+
+**AXIS SEARCHED**: certificates and degree bookkeeping on the `x`-line, plus the
+Weierstrass identity above. NOT searched, and this is where the proof should go:
+an argument that USES ADDITIVITY of `θ` at the bad locus, e.g. comparing
+`x(θ(Q₁ + Q₂))` with the group-law expression in `x(θQ₁), x(θQ₂)` at three points
+chosen off the finite bad set. `α ≠ 0` is free once the map is affine-linear,
+since a constant `x`-map contradicts injectivity on an infinite point group.
+
+**THE CHECK THAT WOULD REFUTE THIS OBSTRUCTION**: exhibit anywhere under `Fermat/`
+or in the pin a statement taking a bijective (equivalently trivial-kernel)
+`IsRationalMap`/`IsIsogeny` to an `∃ C : VariableChange F`, or a
+`degree_eq_one_iff` companion for `WeierstrassCurve.Isogeny.degree`. As of
+2026-07-27 `grep -rn 'exists_variableChange' Fermat/` returns only the other
+direction (`exists_variableChange_of_j_eq`, `..._isShortNF`, `..._tateCurve`,
+`..._lang`). If one turns up, this leaf is a corollary. -/
+theorem exists_affine_xMap_of_bijective_isRationalMap_isShortNF
+    {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] (V₁ V₂ : Affine F) [V₁.IsElliptic] [V₂.IsElliptic]
+    [V₁.IsShortNF] [V₂.IsShortNF]
+    {θ : V₁.Point →+ V₂.Point} (hθ : WeierstrassCurve.IsRationalMap θ)
+    (hbij : Function.Bijective θ) :
+    ∃ α β : F, α ≠ 0 ∧ ∀ Q : V₁.Point, Q ≠ 0 →
+      veluPointX (θ Q) = α * veluPointX Q + β :=
+  sorry
+
+/-- **A bijective rational map between SHORT NORMAL FORMS preserves `j`** (PROVEN
+2026-07-27 over `exists_affine_xMap_of_bijective_isRationalMap_isShortNF`).
+
+Given that the `x`-map is `x ↦ αx + β`, the rest is `2`-torsion bookkeeping and is
+completely elementary:
+
+* a nonzero point of `Y² = X³ + a₄X + a₆` is `2`-torsion iff its ordinate is `0`
+  (in short normal form `negY x y = −y`, and `char F ≠ 2`);
+* `θ` is a group isomorphism, so it carries `2`-torsion to `2`-torsion; hence for
+  each of the three distinct roots `e` of `X³ + a₄X + a₆`
+  (`exists_three_distinct_roots_of_isShortNF`), `αe + β` is a root of
+  `X³ + a₄′X + a₆′`;
+* subtracting `α³·(e³ + a₄e + a₆) = 0` turns that into
+  `3α²β·e² + (3αβ² + a₄′α − α³a₄)·e + (β³ + a₄′β + a₆′ − α³a₆) = 0`
+  at three distinct points, so all three coefficients vanish (two Vandermonde
+  subtractions), giving `β = 0`, `a₄′ = α²a₄`, `a₆′ = α³a₆`;
+* `j = 6912a₄³/(4a₄³ + 27a₆²)` is then invariant because numerator and
+  denominator both scale by `α⁶`.
+
+Note this is exactly the assertion that `θ` is induced by the admissible change of
+variables `(x, y) ↦ (α x, α^{3/2} y)`, without having to construct that change of
+variables — which would need a square root of `α` and buys nothing, since `j` is
+all the consumer wants. -/
+theorem j_eq_of_bijective_isRationalMap_isShortNF {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] (V₁ V₂ : Affine F) [V₁.IsElliptic] [V₂.IsElliptic]
+    [V₁.IsShortNF] [V₂.IsShortNF]
+    {θ : V₁.Point →+ V₂.Point} (hθ : WeierstrassCurve.IsRationalMap θ)
+    (hbij : Function.Bijective θ) : V₁.j = V₂.j := by
+  obtain ⟨α, β, hα, hxmap⟩ :=
+    exists_affine_xMap_of_bijective_isRationalMap_isShortNF V₁ V₂ hθ hbij
+  -- the `2`-torsion of `V₁` maps into the `2`-torsion of `V₂`
+  have key : ∀ e : F, e ^ 3 + V₁.a₄ * e + V₁.a₆ = 0 →
+      (α * e + β) ^ 3 + V₂.a₄ * (α * e + β) + V₂.a₆ = 0 := by
+    intro e he
+    have hns : V₁.Nonsingular e 0 := by
+      refine V₁.toAffine.equation_iff_nonsingular.mp ?_
+      rw [WeierstrassCurve.Affine.equation_iff]
+      simp only [WeierstrassCurve.a₁_of_isShortNF, WeierstrassCurve.a₂_of_isShortNF,
+        WeierstrassCurve.a₃_of_isShortNF]
+      linear_combination -he
+    set Q : V₁.Point := Affine.Point.some e 0 hns with hQdef
+    have hQ0 : Q ≠ 0 := Affine.Point.some_ne_zero _
+    have hQ2 : -Q = Q := by
+      rw [hQdef, Affine.Point.neg_some]
+      congr 1
+      simp only [WeierstrassCurve.Affine.negY, WeierstrassCurve.a₁_of_isShortNF,
+        WeierstrassCurve.a₃_of_isShortNF]
+      ring
+    have hθQ0 : θ Q ≠ 0 := fun h => hQ0 (hbij.1 (by rw [h, map_zero]))
+    have h2 : -(θ Q) = θ Q := by rw [← map_neg, hQ2]
+    have hx : veluPointX (θ Q) = α * e + β := by
+      rw [hxmap Q hQ0, hQdef]; simp [veluPointX_some]
+    rcases hQθ : θ Q with _ | ⟨x', y', hns'⟩
+    · exact absurd hQθ hθQ0
+    · rw [hQθ] at h2 hx
+      rw [Affine.Point.neg_some] at h2
+      have hy : y' = 0 := by
+        have hinj := (Affine.Point.some.injEq _ _ _ _ _ _).mp h2
+        have hneg : WeierstrassCurve.Affine.negY V₂ x' y' = y' := hinj.2
+        simp only [WeierstrassCurve.Affine.negY, WeierstrassCurve.a₁_of_isShortNF,
+          WeierstrassCurve.a₃_of_isShortNF] at hneg
+        have h2y : (2 : F) * y' = 0 := by linear_combination -hneg
+        exact (mul_eq_zero.mp h2y).resolve_left two_ne_zero
+      have heq : V₂.Equation x' y' := V₂.toAffine.equation_iff_nonsingular.mpr hns'
+      rw [WeierstrassCurve.Affine.equation_iff] at heq
+      simp only [WeierstrassCurve.a₁_of_isShortNF, WeierstrassCurve.a₂_of_isShortNF,
+        WeierstrassCurve.a₃_of_isShortNF, hy] at heq
+      simp only [veluPointX_some] at hx
+      rw [← hx]
+      linear_combination -heq
+  obtain ⟨e₁, e₂, e₃, h12, h13, h23, q1, q2, q3⟩ :=
+    exists_three_distinct_roots_of_isShortNF V₁
+  have k1 := key e₁ q1
+  have k2 := key e₂ q2
+  have k3 := key e₃ q3
+  -- the quadratic `c₂ X² + c₁ X + c₀` vanishes at three distinct points
+  set c₂ : F := 3 * α ^ 2 * β with hc₂
+  set c₁ : F := 3 * α * β ^ 2 + V₂.a₄ * α - α ^ 3 * V₁.a₄ with hc₁
+  set c₀ : F := β ^ 3 + V₂.a₄ * β + V₂.a₆ - α ^ 3 * V₁.a₆ with hc₀
+  have hq1 : c₂ * e₁ ^ 2 + c₁ * e₁ + c₀ = 0 := by
+    rw [hc₂, hc₁, hc₀]; linear_combination k1 - α ^ 3 * q1
+  have hq2 : c₂ * e₂ ^ 2 + c₁ * e₂ + c₀ = 0 := by
+    rw [hc₂, hc₁, hc₀]; linear_combination k2 - α ^ 3 * q2
+  have hq3 : c₂ * e₃ ^ 2 + c₁ * e₃ + c₀ = 0 := by
+    rw [hc₂, hc₁, hc₀]; linear_combination k3 - α ^ 3 * q3
+  have hd12 : c₂ * (e₁ + e₂) + c₁ = 0 := by
+    have h : (e₁ - e₂) * (c₂ * (e₁ + e₂) + c₁) = 0 := by linear_combination hq1 - hq2
+    rcases mul_eq_zero.mp h with h' | h'
+    · exact absurd (sub_eq_zero.mp h') h12
+    · exact h'
+  have hd13 : c₂ * (e₁ + e₃) + c₁ = 0 := by
+    have h : (e₁ - e₃) * (c₂ * (e₁ + e₃) + c₁) = 0 := by linear_combination hq1 - hq3
+    rcases mul_eq_zero.mp h with h' | h'
+    · exact absurd (sub_eq_zero.mp h') h13
+    · exact h'
+  have hc₂0 : c₂ = 0 := by
+    have h : (e₂ - e₃) * c₂ = 0 := by linear_combination hd12 - hd13
+    rcases mul_eq_zero.mp h with h' | h'
+    · exact absurd (sub_eq_zero.mp h') h23
+    · exact h'
+  have hc₁0 : c₁ = 0 := by linear_combination hd12 - (e₁ + e₂) * hc₂0
+  have hc₀0 : c₀ = 0 := by linear_combination hq1 - e₁ ^ 2 * hc₂0 - e₁ * hc₁0
+  -- read off the change of variables
+  have hβ : β = 0 := by
+    rw [hc₂] at hc₂0
+    have h3 : (3 : F) * α ^ 2 ≠ 0 := mul_ne_zero three_ne_zero (pow_ne_zero 2 hα)
+    have h : (3 * α ^ 2) * β = 0 := by linear_combination hc₂0
+    exact (mul_eq_zero.mp h).resolve_left h3
+  have ha₄ : V₂.a₄ = α ^ 2 * V₁.a₄ := by
+    have hc := hc₁0
+    rw [hc₁, hβ] at hc
+    have h : α * (V₂.a₄ - α ^ 2 * V₁.a₄) = 0 := by linear_combination hc
+    rcases mul_eq_zero.mp h with h' | h'
+    · exact absurd h' hα
+    · linear_combination h'
+  have ha₆ : V₂.a₆ = α ^ 3 * V₁.a₆ := by
+    have hc := hc₀0
+    rw [hc₀, hβ] at hc
+    linear_combination hc
+  have hdisc : 4 * V₁.a₄ ^ 3 + 27 * V₁.a₆ ^ 2 ≠ 0 := by
+    intro h
+    exact V₁.isUnit_Δ.ne_zero (by rw [WeierstrassCurve.Δ_of_isShortNF, h, mul_zero])
+  rw [WeierstrassCurve.j_of_isShortNF, WeierstrassCurve.j_of_isShortNF, ha₄, ha₆]
+  have hα6 : α ^ 6 ≠ 0 := pow_ne_zero 6 hα
+  rw [div_eq_div_iff hdisc (by
+    intro h
+    apply hdisc
+    have hz : α ^ 6 * (4 * V₁.a₄ ^ 3 + 27 * V₁.a₆ ^ 2) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp hz with h' | h'
+    · exact absurd h' hα6
+    · exact h')]
+  ring
+
+/-- **A bijective rational map of elliptic curves preserves `j`** (PROVEN
+2026-07-27 over `j_eq_of_bijective_isRationalMap_isShortNF`).
+
+The reduction to short normal form, which is legitimate because `char F = 0` makes
+`2` and `3` invertible: put both curves in the form `Y² = X³ + a₄X + a₆` with
+`exists_variableChange_isShortNF`, transport `θ` across the two variable changes
+using `isRationalMap_variableChangeEquiv` (PROVEN just above) and the PROVEN
+`IsRationalMap.comp`, and pull the conclusion back with mathlib's
+`variableChange_j`. Both transports are `AddEquiv`s, so bijectivity survives.
+
+The inverse transport is obtained as the variable change by `C⁻¹`, using
+`inv_smul_smul` to identify `C⁻¹ • (C • V)` with `V`; no separate "inverse of a
+rational map is rational" lemma is needed. -/
+theorem j_eq_of_bijective_isRationalMap {F : Type*} [Field F] [DecidableEq F]
+    [IsAlgClosed F] [CharZero F] (V₁ V₂ : Affine F) [V₁.IsElliptic] [V₂.IsElliptic]
+    {θ : V₁.Point →+ V₂.Point} (hθ : WeierstrassCurve.IsRationalMap θ)
+    (hbij : Function.Bijective θ) : V₁.j = V₂.j := by
+  haveI : Invertible (2 : F) := invertibleOfNonzero (two_ne_zero)
+  haveI : Invertible (3 : F) := invertibleOfNonzero (three_ne_zero)
+  obtain ⟨C₁, hC₁⟩ := V₁.exists_variableChange_isShortNF
+  obtain ⟨C₂, hC₂⟩ := V₂.exists_variableChange_isShortNF
+  haveI := hC₁
+  haveI := hC₂
+  -- the two transport isomorphisms, both rational
+  have hg₁ := isRationalMap_variableChangeEquiv V₁ (C₁ • V₁) C₁ rfl
+  have he₂ := isRationalMap_variableChangeEquiv (C₂ • V₂) V₂ C₂⁻¹
+    (inv_smul_smul C₂ V₂).symm
+  set g₁ := (((Affine.Point.equivOfEq (rfl : (C₁ • V₁) = C₁ • V₁)).trans
+    (Affine.Point.equivVariableChange V₁ C₁)) : (C₁ • V₁).Point ≃+ V₁.Point)
+  set e₂ := (((Affine.Point.equivOfEq ((inv_smul_smul C₂ V₂).symm)).trans
+    (Affine.Point.equivVariableChange (C₂ • V₂) C₂⁻¹)) :
+      V₂.Point ≃+ (C₂ • V₂).Point)
+  have hθ' : WeierstrassCurve.IsRationalMap
+      ((e₂.toAddMonoidHom).comp (θ.comp g₁.toAddMonoidHom)) :=
+    (hg₁.comp hθ).comp he₂
+  have hbij' : Function.Bijective ((e₂.toAddMonoidHom).comp (θ.comp g₁.toAddMonoidHom)) :=
+    e₂.bijective.comp (hbij.comp g₁.bijective)
+  have hkey := j_eq_of_bijective_isRationalMap_isShortNF (C₁ • V₁) (C₂ • V₂) hθ' hbij'
+  rw [WeierstrassCurve.variableChange_j, WeierstrassCurve.variableChange_j] at hkey
+  exact hkey
+
 /-- **UNIQUENESS OF THE QUOTIENT: an isogeny is determined, up to the
-`j`-invariant of its target, by its KERNEL** (SORRY LEAF, cut 2026-07-27 out of
+`j`-invariant of its target, by its KERNEL** (PROVEN 2026-07-27 over the single
+leaf `exists_affine_xMap_of_bijective_isRationalMap_isShortNF`; cut 2026-07-27
+out of
 `MazurLevel9.jQuotient_eq_veluCurve_of_tateParam`, which is PROVEN over it).
 
 Over an algebraically closed field of characteristic zero, if `φ : W → W'` is an
@@ -10562,38 +10877,49 @@ no pin in this development.  Carrying an `IsIsogeny` certificate instead (which
 `isIsogeny_of_veluQuotient` above supplies for free at the point of construction)
 replaces that unattackable obligation by THIS statement, which is elementary.
 
-**THE ROUTE, in three steps, all of them inside this tree's existing machinery
-except the last.**
+**THE ROUTE, and it is now CARRIED OUT here (2026-07-27) except for one leaf.**
 
-1. *Factorisation.*  Vélu's own map `ν : W → W.veluCurve S` is an isogeny with
-   kernel exactly `S` (`isRationalMap_veluMap` + `IsRationalMap.isIsogeny`, both
-   PROVEN in `Fermat/FLT/EllipticCurve/Isogeny.lean`).  `φ` is surjective
-   (`IsIsogeny.surjective`, `F` algebraically closed) and `ker φ = ker ν`, so
-   there is a unique group homomorphism `θ : W' → W.veluCurve S` with `θ ∘ φ = ν`,
-   and `θ` is BIJECTIVE.
-2. *Rationality of `θ`.*  This is `IsRationalMap.descend` (PROVEN, and its
-   `[CharZero F]` hypothesis is load-bearing — the statement is FALSE in
-   characteristic `2`, where Frobenius is a bijective rational map that is not an
-   isomorphism; see `Isogeny.NotIsRationalMapDualHom`).
-3. *THE ONE MISSING STEP, and it is what this leaf really is:* **a bijective
-   rational map of Weierstrass curves preserves the `j`-invariant.**  Concretely:
-   `θ` is injective on points, so its `x`-map `A/B` is injective on
-   `x`-coordinates, hence a Möbius function; `θ(0) = 0` sends the point at infinity
-   to itself, so `B` is constant and `x ↦ ax + b`; substituting into the two
-   Weierstrass equations (after `exists_variableChange_isShortNF` puts both in the
-   form `y² = x³ + Ax + B`, legitimate over `F` algebraically closed of
-   characteristic `0`) forces `b = 0`, `A' = a²A`, `B' = a³B`, and then
-   `j = 1728·4A³/(4A³ + 27B²)` is invariant by `ring`.  In other words: `θ` is an
-   admissible change of variables, the converse of the PROVEN
-   `isRationalMap_variableChangeEquiv` just above.
+1. *Factorisation.* — PROVEN below.  Vélu's own map `ν : W → W.veluCurve S`,
+   bundled with the PROVEN `velu_map_add`, is an isogeny with kernel exactly `S`
+   (`isRationalMap_veluMap`, `isIsogeny_of_veluMap`, `veluMap_eq_zero_iff`).  `φ`
+   is surjective (`IsIsogeny.surjective`, `F` algebraically closed; `φ ≠ 0` because
+   `W.Point` is infinite while `S` is a `Finset`), and `ker φ = ker ν = S`, so
+   choosing a set-theoretic section of `φ` and pushing it through `ν` produces a
+   group homomorphism `θ : W' → W.veluCurve S` with `θ ∘ φ = ν`, and `θ` is
+   BIJECTIVE.
+2. *Rationality of `θ`.* — PROVEN below, as `IsRationalMap.descend` applied to
+   `π := φ`, `ψ := ν`, `χ := θ` (its `[CharZero F]` hypothesis is load-bearing —
+   the statement is FALSE in characteristic `2`, where Frobenius is a bijective
+   rational map that is not an isomorphism; see
+   `Isogeny.NotIsRationalMapDualHom`).
+3. *A bijective rational map preserves `j`.* — this is
+   `j_eq_of_bijective_isRationalMap` just above, PROVEN in turn over
+   `j_eq_of_bijective_isRationalMap_isShortNF` (short-normal-form reduction plus
+   `2`-torsion bookkeeping, both proven) and finally over the single remaining
+   leaf `exists_affine_xMap_of_bijective_isRationalMap_isShortNF`: *the `x`-map of
+   a bijective rational map between short normal forms is affine-linear.*
 
-**THE CHECK THAT WOULD REFUTE THE OBSTRUCTION** (per doctrine): exhibit, anywhere
-under `Fermat/` or in the pin, a theorem taking a bijective (equivalently,
+**CORRECTION, 2026-07-27 — the version of step 3 previously recorded here was
+WRONG, and its error is worth keeping.**  It read: "`θ` is injective on points, so
+its `x`-map `A/B` is injective on `x`-coordinates, hence a Möbius function;
+`θ(0) = 0` sends the point at infinity to itself, so `B` is constant".  The final
+inference does not follow from the `IsRationalMap` certificate, which is a
+CLEARED-DENOMINATOR identity `x(θP)·B(x P) = A(x P)` and therefore says nothing at
+a common zero of `A` and `B`.  An explicit counterexample to the inference (not to
+this theorem) is recorded in the docstring of
+`exists_affine_xMap_of_bijective_isRationalMap_isShortNF`, together with a second
+one showing that the Weierstrass identity obtained from the `y`-certificate does
+not close the gap either — it is satisfied by a translation by a `2`-torsion
+point.  What is really needed is an argument USING ADDITIVITY of `θ` at the bad
+locus.  Everything downstream of that one step is now proven.
+
+**THE CHECK THAT WOULD REFUTE THE REMAINING OBSTRUCTION** (per doctrine): exhibit,
+anywhere under `Fermat/` or in the pin, a theorem taking a bijective (equivalently,
 trivial-kernel) `IsRationalMap` / `IsIsogeny` to an `∃ C : VariableChange F` or
 directly to equality of `j`.  `grep -rn 'exists_variableChange' Fermat/` returns
 only the OTHER direction (`exists_variableChange_of_j_eq`, `..._isShortNF`,
 `..._tateCurve`, `..._lang`), and `Isogeny.degree` has no `degree_eq_one_iff`
-companion.  If one turns up, this leaf is a corollary and should be closed at once.
+companion.  If one turns up, the remaining leaf is a corollary.
 
 **AXIS SEARCHED**: mathlib at this pin, `~/cs/FLT`, and this project, for
 degree-one/isomorphism statements about isogenies.  NOT searched: a route through
@@ -10613,8 +10939,71 @@ theorem jRelation_veluCurve_of_isogeny_ker_eq {F : Type*} [Field F] [DecidableEq
     (S : Finset W.Point) (hS : IsPointSubgroup S) (hodd : Odd S.card)
     (φ : W.Point →+ W'.Point) (hφiso : WeierstrassCurve.IsIsogeny φ)
     (hker : ∀ P : W.Point, φ P = 0 ↔ P ∈ S) :
-    W'.j * (W.veluCurve S).Δ = (W.veluCurve S).c₄ ^ 3 :=
-  sorry
+    W'.j * (W.veluCurve S).Δ = (W.veluCurve S).c₄ ^ 3 := by
+  classical
+  haveI hVell : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+  -- Vélu's own quotient map, bundled as a homomorphism
+  obtain ⟨ν, hνapp⟩ : ∃ ν : W.Point →+ (W.veluCurve S).Point,
+      ∀ P, ν P = W.veluMap S hS hodd P :=
+    ⟨AddMonoidHom.mk' (W.veluMap S hS hodd) (velu_map_add W S hS hodd), fun _ => rfl⟩
+  have hνker : ∀ P : W.Point, ν P = 0 ↔ P ∈ S := by
+    intro P; rw [hνapp]; exact veluMap_eq_zero_iff W S hS hodd P
+  have hνrat : WeierstrassCurve.IsRationalMap ν := isRationalMap_veluMap hS hodd hνapp
+  have hνiso : WeierstrassCurve.IsIsogeny ν := isIsogeny_of_veluMap hS hodd hνapp
+  -- the point group is infinite, so a finite kernel cannot be everything
+  haveI hinf : Infinite W.Point := by
+    refine Infinite.of_injective
+      (fun t : F => (exists_point_veluPointX_eq (W := W) t).choose) ?_
+    intro s t hst
+    have hs := (exists_point_veluPointX_eq (W := W) s).choose_spec.2
+    have ht := (exists_point_veluPointX_eq (W := W) t).choose_spec.2
+    rw [← hs, ← ht]
+    exact congrArg veluPointX hst
+  have hSne : ¬ (∀ P : W.Point, P ∈ S) := by
+    intro hall
+    haveI : Finite W.Point := by
+      have hsub : (Set.univ : Set W.Point) ⊆ (S : Set W.Point) := fun P _ => hall P
+      exact Set.finite_univ_iff.mp (S.finite_toSet.subset hsub)
+    exact not_finite W.Point
+  have hφ0 : φ ≠ 0 := fun h0 => hSne (fun P => (hker P).mp (by simp [h0]))
+  have hν0 : ν ≠ 0 := fun h0 => hSne (fun P => (hνker P).mp (by simp [h0]))
+  have hφsurj : Function.Surjective φ := hφiso.surjective hφ0
+  have hνsurj : Function.Surjective ν := hνiso.surjective hν0
+  have hkerEq : ∀ P : W.Point, φ P = 0 ↔ ν P = 0 := fun P => (hker P).trans (hνker P).symm
+  have hφsurj' : Function.Surjective φ := hφsurj
+  choose sec hsec using hφsurj'
+  -- the induced map on the quotient, well defined because `ker φ = ker ν`
+  obtain ⟨θ, hθapp⟩ : ∃ θ : W'.Point →+ (W.veluCurve S).Point, ∀ Q, θ Q = ν (sec Q) := by
+    refine ⟨AddMonoidHom.mk' (fun Q => ν (sec Q)) ?_, fun _ => rfl⟩
+    intro Q₁ Q₂
+    have h0 : φ (sec (Q₁ + Q₂) - (sec Q₁ + sec Q₂)) = 0 := by
+      simp [map_sub, map_add, hsec]
+    have h1 := (hkerEq _).mp h0
+    rw [map_sub, map_add, sub_eq_zero] at h1
+    exact h1
+  have hfac : ∀ P : W.Point, θ (φ P) = ν P := by
+    intro P
+    rw [hθapp]
+    have h0 : φ (sec (φ P) - P) = 0 := by simp [map_sub, hsec]
+    have h1 := (hkerEq _).mp h0
+    rw [map_sub, sub_eq_zero] at h1
+    exact h1
+  have hθrat : WeierstrassCurve.IsRationalMap θ :=
+    IsRationalMap.descend hφiso.isRationalMap (fun Q => ⟨sec Q, hsec Q⟩) hνrat hfac
+  have hθsurj : Function.Surjective θ := by
+    intro R
+    obtain ⟨P, rfl⟩ := hνsurj R
+    exact ⟨φ P, hfac P⟩
+  have hθinj : Function.Injective θ := by
+    rw [injective_iff_map_eq_zero]
+    intro Q hQ
+    obtain ⟨P, rfl⟩ := hφsurj Q
+    rw [hfac P] at hQ
+    exact (hker P).mpr ((hνker P).mp hQ)
+  have hj : W'.j = (W.veluCurve S).j :=
+    j_eq_of_bijective_isRationalMap W' (W.veluCurve S) hθrat ⟨hθinj, hθsurj⟩
+  rw [hj]
+  exact MazurLevel9.cFour_cube_eq _
 
 /-- **`X_0(3)`: the hauptmodul parameter of a rational `3`-isogeny, in
 MODEL-NAMING form** (PROVEN 2026-07-27 over
