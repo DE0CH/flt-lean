@@ -28686,10 +28686,153 @@ theorem exists_frobeniusIdeal_cyclotomic
             ((g⁻¹ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp ι))
     rw [cycGalRingOfIntegersEquiv_coe, ← hcm, Ideal.map_comap_of_surjective _ hsurj]
 
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **Two `ℚ`-isomorphic local fields have `Γℚ`-CONJUGATE images in
+`Γℚ`** (PROVEN 2026-07-27; the field-theoretic core of
+`exists_padicAbsoluteGaloisGroup_conj_eq_map_adicCompletion` below).
+
+If `M` is any characteristic-zero field carrying a ring isomorphism
+`E : M ≃+* ℚ_[q]`, then for every `n : Γ M` and every ring map
+`A : ℚ →+* M` there are `h : Γ ℚ_[q]` and `τ : Γℚ` with
+`map A n = τ · map (algebraMap ℚ ℚ_[q]) h · τ⁻¹`.
+
+**EQUALITY IS FALSE — the conjugator is load-bearing.** `A` is
+irrelevant to the statement (`Subsingleton (ℚ →+* M)`), but
+`Field.absoluteGaloisGroup.map` is built on an ARBITRARILY CHOSEN
+embedding of algebraic closures, and `E` need not be compatible with
+those two choices. What survives is that the two `ℚ`-embeddings
+`ι ∘ ι₂` and `ι₁` of `ℚᵃˡᵍ` into `Mᵃˡᵍ` differ by a single element of
+`Γℚ`, which is exactly `τ`.
+
+Proof (the same shape as `exists_padicGalois_map_eq_conj_globalFrob` in
+`Chebotarev.lean`, of which this is the general form): `E` induces
+`ι := AlgebraicClosure.map E.symm`, bijective because `ι ∘ (map E)` is
+an algebraic endomorphism of an algebraic closure over its base
+(`Algebra.IsAlgebraic.algHom_bijective`); conjugation by `ι` carries `n`
+to `h := ι⁻¹ ∘ n ∘ ι ∈ Γ ℚ_[q]`; the conjugator is
+`τ := Normal.algHomEquivAut (ι ∘ ι₂)`; and the transport square
+`ι ∘ h = n ∘ ι` gives the identity pointwise through the injective `ι₁`
+(`Field.absoluteGaloisGroup.lift_map`, twice). -/
+theorem exists_conj_map_of_ratRingEquiv {M : Type*} [Field M] [CharZero M]
+    (q : ℕ) [Fact q.Prime]
+    (A : ℚ →+* M) (E : M ≃+* ℚ_[q]) (n : Field.absoluteGaloisGroup M) :
+    ∃ (h : Field.absoluteGaloisGroup ℚ_[q]) (τ : Field.absoluteGaloisGroup ℚ),
+      Field.absoluteGaloisGroup.map A n =
+        τ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) h * τ⁻¹ := by
+  classical
+  set ι := AlgebraicClosure.map (E.symm : ℚ_[q] →+* M) with hι
+  have hιsurj : Function.Surjective ι := by
+    set j := AlgebraicClosure.map (E : M →+* ℚ_[q]) with hj
+    set jc : AlgebraicClosure M →ₐ[M] AlgebraicClosure M :=
+      { toRingHom := ι.comp j
+        commutes' := fun x => by
+          show ι (j (algebraMap _ _ x)) = algebraMap _ _ x
+          rw [hj, AlgebraicClosure.map_algebraMap, hι,
+            AlgebraicClosure.map_algebraMap]
+          congr 1
+          exact E.symm_apply_apply x }
+    have hbij := Algebra.IsAlgebraic.algHom_bijective jc
+    intro y
+    obtain ⟨x, hx⟩ := hbij.2 y
+    exact ⟨j x, hx⟩
+  set ιe := RingEquiv.ofBijective ι ⟨ι.injective, hιsurj⟩
+  have hιe_apply : ∀ y, ιe y = ι y := fun _ => rfl
+  set ι₁ := AlgebraicClosure.map A with hι₁
+  set ι₂ := AlgebraicClosure.map (algebraMap ℚ ℚ_[q]) with hι₂
+  letI : Algebra (AlgebraicClosure ℚ) (AlgebraicClosure M) := ι₁.toAlgebra
+  haveI : IsScalarTower ℚ (AlgebraicClosure ℚ) (AlgebraicClosure M) :=
+    IsScalarTower.of_algebraMap_eq' (R := ℚ) (S := AlgebraicClosure ℚ)
+      (A := AlgebraicClosure M) (Subsingleton.elim _ _)
+  set ff : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure M :=
+    (ι.comp ι₂).toRatAlgHom with hff
+  set c : Field.absoluteGaloisGroup ℚ := (Normal.algHomEquivAut (F := ℚ)
+    (K₁ := AlgebraicClosure M) (E := AlgebraicClosure ℚ)) ff with hc
+  have hfc : ∀ x : AlgebraicClosure ℚ, ff x = ι₁ (c x) := by
+    intro x
+    have hsym : ff = (Normal.algHomEquivAut (F := ℚ)
+        (K₁ := AlgebraicClosure M) (E := AlgebraicClosure ℚ)).symm c := by
+      rw [hc, Equiv.symm_apply_apply]
+    rw [hsym, Normal.algHomEquivAut_symm_apply]
+    rfl
+  set g₀ := (ιe.trans n.toRingEquiv).trans ιe.symm with hg₀
+  have hg₀_apply : ∀ y, g₀ y = ιe.symm (n (ιe y)) := fun _ => rfl
+  set h : Field.absoluteGaloisGroup ℚ_[q] :=
+    AlgEquiv.ofRingEquiv (f := g₀) (fun x => by
+      rw [hg₀_apply]
+      have hx : ιe ((algebraMap ℚ_[q] (AlgebraicClosure ℚ_[q])) x) =
+          algebraMap M (AlgebraicClosure M) (E.symm x) := by
+        rw [hιe_apply, hι, AlgebraicClosure.map_algebraMap]
+        rfl
+      rw [hx, n.commutes (E.symm x), RingEquiv.symm_apply_eq, hx]) with hh
+  have hh_apply : ∀ y, h y = ιe.symm (n (ιe y)) := fun _ => rfl
+  have hsquare : ∀ y, ι (h y) = n (ι y) := by
+    intro y
+    rw [hh_apply, ← hιe_apply, RingEquiv.apply_symm_apply, hιe_apply]
+  refine ⟨h, c, ?_⟩
+  apply AlgEquiv.ext
+  intro x
+  apply ι₁.injective
+  have hL := Field.absoluteGaloisGroup.lift_map A n x
+  have hR := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[q]) h (c⁻¹ x)
+  rw [show ι₁ ((Field.absoluteGaloisGroup.map A n) x) = n (ι₁ x) from hL]
+  show n (ι₁ x) =
+    ι₁ (c ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) h) (c⁻¹ x)))
+  rw [← hfc]
+  rw [show ff ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) h) (c⁻¹ x)) =
+    ι (ι₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) h) (c⁻¹ x)))
+    from rfl]
+  rw [show ι₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) h) (c⁻¹ x)) =
+    h (ι₂ (c⁻¹ x)) from hR]
+  rw [hsquare]
+  rw [show ι (ι₂ (c⁻¹ x)) = ff (c⁻¹ x) from rfl]
+  rw [hfc]
+  rw [show (c : Field.absoluteGaloisGroup ℚ)
+    ((c⁻¹ : Field.absoluteGaloisGroup ℚ) x) = x from by
+    rw [← AlgEquiv.mul_apply, mul_inv_cancel, AlgEquiv.one_apply]]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
+/-- **The `v_q`-adic completion of `ℚ` IS `ℚ_[q]`** (PROVEN 2026-07-27):
+mathlib's `Rat.HeightOneSpectrum.adicCompletion.padicEquiv` normalized
+through the `Padic`-instance cast along `natGenerator_toHeightOneSpectrum`
+(which identifies the generator of `v_q` with `q`). Stated as a
+`Nonempty` of a bare `RingEquiv` so that no `Algebra ℚ`-instance choice
+leaks into the statement — the `ℚ`-algebra diamond on `adicCompletion ℚ v`
+is real (see the INSTANCE NOTE on `exists_padicGalois_map_eq_conj_globalFrob`
+in `Chebotarev.lean`) and any `ℚ`-algebra structure at all is fine here,
+`ℚ →+* X` being a subsingleton. -/
+theorem nonempty_ringEquiv_adicCompletion_padic (q : ℕ) [Fact q.Prime]
+    (hq : q.Prime) :
+    Nonempty ((IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat) ≃+* ℚ_[q]) := by
+  classical
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat with hv
+  haveI hfp : Fact ((Rat.HeightOneSpectrum.primesEquiv v) : ℕ).Prime :=
+    ⟨(Rat.HeightOneSpectrum.primesEquiv v).2⟩
+  have hprime : ((Rat.HeightOneSpectrum.primesEquiv v) : ℕ) = q := by
+    show Rat.HeightOneSpectrum.natGenerator _ = q
+    exact GaloisRepresentation.natGenerator_toHeightOneSpectrum hq
+  have hcast : ∀ (a b : ℕ) (ha : Fact a.Prime) (hb : Fact b.Prime),
+      a = b → ((@Padic a ha) ≃+* (@Padic b hb)) := by
+    intro a b ha hb hab
+    subst hab
+    have hinst : ha = hb := Subsingleton.elim _ _
+    subst hinst
+    exact RingEquiv.refl _
+  letI : Algebra ℚ (HeightOneSpectrum.adicCompletion ℚ v) :=
+    IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion _ _ _
+  exact ⟨((Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+    v).toAlgEquiv.toRingEquiv).trans (hcast _ q hfp inferInstance hprime)⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 /-- **The two spellings of "the local field at `q`" cut out CONJUGATE
 subgroups of `Γℚ`** (E3c support leaf, cut 2026-07-27 out of
-`exists_unramifiedAbelianSubgroup_relIndex_classGroup` below; SORRY
-LEAF): the image in `Γℚ` of the absolute Galois group of
+`exists_unramifiedAbelianSubgroup_relIndex_classGroup` below; PROVEN
+2026-07-27 over `nonempty_ringEquiv_adicCompletion_padic` and
+`exists_conj_map_of_ratRingEquiv` above): the image in `Γℚ` of the
+absolute Galois group of
 `HeightOneSpectrum.adicCompletion ℚ v_q` is a `Γℚ`-CONJUGATE of the
 image of the absolute Galois group of `ℚ_[q]`.
 
@@ -28722,11 +28865,14 @@ the nose.
 `n : Γ (adicCompletion ℚ v_q)` whose image in `Γℚ` lies in no
 `Γℚ`-conjugate of the image of `Γ ℚ_[q]`. Impossible: the image of `n`
 lies in the decomposition group of the place induced by the chosen
-embedding, and all places above `q` are `Γℚ`-conjugate. The axis
-searched here was the two `Field.absoluteGaloisGroup.map` images only;
-a prover may instead build the ring isomorphism
-`ℚ_[q] ≃+* adicCompletion ℚ v_q` over `ℚ` and transport, which is
-probably the cheaper route. -/
+embedding, and all places above `q` are `Γℚ`-conjugate.
+
+**The route taken** is the one the cut anticipated as cheaper: build the
+ring isomorphism `adicCompletion ℚ v_q ≃+* ℚ_[q]`
+(`nonempty_ringEquiv_adicCompletion_padic`) and transport
+(`exists_conj_map_of_ratRingEquiv`). Neither step ever produces an
+equality of the two images, which is why the conjugator survives to the
+statement. -/
 theorem exists_padicAbsoluteGaloisGroup_conj_eq_map_adicCompletion
     (q : ℕ) [Fact q.Prime] (hq : q.Prime)
     (n : Field.absoluteGaloisGroup
@@ -28736,8 +28882,9 @@ theorem exists_padicAbsoluteGaloisGroup_conj_eq_map_adicCompletion
       Field.absoluteGaloisGroup.map (algebraMap ℚ
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
           hq.toHeightOneSpectrumRingOfIntegersRat)) n =
-      τ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g * τ⁻¹ :=
-  sorry
+      τ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g * τ⁻¹ := by
+  obtain ⟨E⟩ := nonempty_ringEquiv_adicCompletion_padic q hq
+  exact exists_conj_map_of_ratRingEquiv q _ E n
 
 /-- **Every `Γℚ`-conjugate of a local inertia element is a local-split
 generator** (E3c support, 2026-07-27; PROVEN over
@@ -28781,67 +28928,6 @@ theorem mem_localSplitGenerators_of_mem_localInertiaGroup
       exact Or.inr (Or.inl ⟨g, σ * τ, by rw [hg, mul_inv_rev]; group⟩)
     · exact Or.inl ⟨ℓ, hℓ, h2, hq, n, hn, σ, rfl⟩
 
-/-- **The maximal everywhere-unramified abelian extension of `ℚ(μ_p)`
-is FINITE** (E3c support leaf, cut 2026-07-27 out of
-`exists_unramifiedAbelianSubgroup_relIndex_classGroup` below; SORRY
-LEAF — one half of unramified class field theory).
-
-Write `K = ℚ(μ_p)`, so that `ker χ = Γ_K` by `hχcyc`. The subgroup
-named in the statement is `D`, the CLOSED subgroup of `Γ_K` generated
-by
-
-* every `Γℚ`-conjugate of a local inertia element that happens to lie
-  in `Γ_K` — i.e. the inertia subgroup of `Γ_K` at every finite place
-  of `K` — together with
-* every commutator of `Γ_K`,
-
-pushed forward along `Γ_K ↪ Γℚ`. By Galois theory `Γ_K/D` is
-`Gal(H/K)` for `H` the maximal abelian extension of `K` unramified at
-every finite place, so this leaf says exactly that `H/K` is FINITE.
-
-**How a prover may avoid re-doing the deep work.** Openness follows
-from finiteness of the index by an ordinary compactness argument: `D`
-is closed by construction (`Subgroup.topologicalClosure`), `Γℚ` is
-profinite, and `Subgroup.isOpen_of_isClosed_of_finiteIndex`
-(`Mathlib/Topology/Algebra/Group/ClosedSubgroup.lean`) turns a closed
-subgroup of finite index in a compact group into an open one. So this
-leaf is a corollary of
-`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` below
-(whose right-hand side is a nonzero natural number, the class number)
-together with openness of `ker χ` — for which
-`GaloisRepresentation.continuous_cyclotomicCharacterModL`
-(`Chebotarev.lean`) is the existing input, `χ` being the mod-`p`
-cyclotomic character by `hχcyc`. It is kept as a SEPARATE leaf because
-that reduction still needs the `cyclotomicCharacter`-to-
-`cyclotomicCharacterModL` bridge and the closed-image bookkeeping,
-neither of which belongs inside the index computation.
-
-**The check that would refute it**: produce an infinite tower of
-distinct everywhere-unramified abelian extensions of `ℚ(μ_p)`. That
-contradicts finiteness of the class group (Neukirch VI (6.9)). -/
-theorem isOpen_localInertiaCommutatorSubgroup
-    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
-    (χ : Field.absoluteGaloisGroup ℚ →* kk')
-    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
-      algebraMap ℤ_[p] kk'
-        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) :
-    IsOpen ((Subgroup.map (MonoidHom.ker χ).subtype
-      ((Subgroup.closure
-        ({x : MonoidHom.ker χ | ∃ (ℓ : ℕ) (hℓ : ℓ.Prime)
-            (n : Field.absoluteGaloisGroup
-              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hℓ.toHeightOneSpectrumRingOfIntegersRat))
-            (σ : Field.absoluteGaloisGroup ℚ),
-          n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat ∧
-          (x : Field.absoluteGaloisGroup ℚ) =
-            σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
-              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-                hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
-         {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
-            a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure)) :
-        Set (Field.absoluteGaloisGroup ℚ)) :=
-  sorry
-
 /-- **UNRAMIFIED CLASS FIELD THEORY, THE EXISTENCE HALF: the degree of
 the maximal everywhere-unramified abelian extension of `ℚ(μ_p)` is the
 CLASS NUMBER** (E3c support leaf, cut 2026-07-27 out of
@@ -28849,7 +28935,7 @@ CLASS NUMBER** (E3c support leaf, cut 2026-07-27 out of
 LEAF, and the deep node of that cut).
 
 With `D` the closed subgroup described on
-`isOpen_localInertiaCommutatorSubgroup` above and `K = ℚ(μ_p)`, this
+`isOpen_localInertiaCommutatorSubgroup` below and `K = ℚ(μ_p)`, this
 says `[Γ_K : D] = h_K`, i.e. that `Gal(H/K)` and `Cl(𝓞 K)` have the
 same cardinality for `H` the Hilbert class field. It is the deep half
 of Neukirch VI (6.9) — the two inequalities `[H : K] ≤ h_K` and
@@ -28900,6 +28986,176 @@ theorem relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup
             a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure)).relIndex
       (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF)) :=
   sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The maximal everywhere-unramified abelian extension of `ℚ(μ_p)`
+is FINITE** (E3c support leaf, cut 2026-07-27 out of
+`exists_unramifiedAbelianSubgroup_relIndex_classGroup` below; PROVEN
+2026-07-27 **over the index leaf
+`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` directly
+above**, which is still open — this declaration was MOVED below that
+one for exactly that reason, since it now consumes it).
+
+Write `K = ℚ(μ_p)`, so that `ker χ = Γ_K` by `hχcyc`. The subgroup
+named in the statement is `D`, the CLOSED subgroup of `Γ_K` generated
+by
+
+* every `Γℚ`-conjugate of a local inertia element that happens to lie
+  in `Γ_K` — i.e. the inertia subgroup of `Γ_K` at every finite place
+  of `K` — together with
+* every commutator of `Γ_K`,
+
+pushed forward along `Γ_K ↪ Γℚ`. By Galois theory `Γ_K/D` is
+`Gal(H/K)` for `H` the maximal abelian extension of `K` unramified at
+every finite place, so this leaf says exactly that `H/K` is FINITE.
+
+**The proof, in four steps.**
+
+1. `ker χ` is OPEN: it contains the fixing subgroup of the finite
+   extension `ℚ(μ_p)/ℚ`, which is open in the Krull topology
+   (`IntermediateField.fixingSubgroup_isOpen`), and `χ` kills that
+   subgroup by `algebraMap_cyclotomicCharacter_eq_one_of_fixes_rootsOfUnity`
+   — which IS the `cyclotomicCharacter`-to-level-one bridge the cut
+   asked for, already proven above, so no passage through
+   `cyclotomicCharacterModL` is needed.
+2. `D` has FINITE INDEX in `ker χ`: the index leaf directly above
+   computes it as `Nat.card (ClassGroup (𝓞 CF))`, a nonzero natural
+   number because the class group of a number field is finite and
+   nonempty. The model `CF` is produced here rather than taken as a
+   parameter, as `ℚ(ζ_p) ⊆ ℚ̄` — an `IntermediateField ℚ (AlgebraicClosure ℚ)`
+   rather than `CyclotomicField p ℚ`, because at the concrete base `ℚ`
+   instance search finds `DivisionRing.toRatAlgebra` for
+   `Algebra ℚ (CyclotomicField p ℚ)` and the `IsCyclotomicExtension`
+   instance then fails to synthesize (this development's recurring
+   `ℚ`-algebra diamond; see the same note in `ModularCurve/X0.lean`).
+3. `D` is CLOSED by construction (`Subgroup.topologicalClosure`), so a
+   closed subgroup of finite index is open
+   (`Subgroup.isOpen_of_isClosed_of_finiteIndex`; no compactness of
+   `Γℚ` is needed — the complement is a finite union of closed cosets).
+4. `ker χ` being open, the inclusion `ker χ ↪ Γℚ` is an open map
+   (`IsOpen.isOpenMap_subtype_val`), which pushes `D` forward to an
+   open subset of `Γℚ`.
+
+**The check that would refute it**: produce an infinite tower of
+distinct everywhere-unramified abelian extensions of `ℚ(μ_p)`. That
+contradicts finiteness of the class group (Neukirch VI (6.9)). -/
+theorem isOpen_localInertiaCommutatorSubgroup
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)) :
+    IsOpen ((Subgroup.map (MonoidHom.ker χ).subtype
+      ((Subgroup.closure
+        ({x : MonoidHom.ker χ | ∃ (ℓ : ℕ) (hℓ : ℓ.Prime)
+            (n : Field.absoluteGaloisGroup
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hℓ.toHeightOneSpectrumRingOfIntegersRat))
+            (σ : Field.absoluteGaloisGroup ℚ),
+          n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat ∧
+          (x : Field.absoluteGaloisGroup ℚ) =
+            σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
+         {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
+            a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure)) :
+        Set (Field.absoluteGaloisGroup ℚ)) := by
+  classical
+  set D : Subgroup (MonoidHom.ker χ) :=
+    (Subgroup.closure
+      ({x : MonoidHom.ker χ | ∃ (ℓ : ℕ) (hℓ : ℓ.Prime)
+          (n : Field.absoluteGaloisGroup
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat))
+          (σ : Field.absoluteGaloisGroup ℚ),
+        n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat ∧
+        (x : Field.absoluteGaloisGroup ℚ) =
+          σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹} ∪
+       {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
+          a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure with hD
+  -- (1) `ker χ` is open: it contains the fixing subgroup of `ℚ(μ_p)`
+  have hχker : IsOpen ((MonoidHom.ker χ : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := by
+    haveI : NeZero p := ⟨hp.out.ne_zero⟩
+    haveI : Finite ((rootsOfUnity p (AlgebraicClosure ℚ) :
+        Set (AlgebraicClosure ℚ)ˣ)) :=
+      inferInstanceAs (Finite (rootsOfUnity p (AlgebraicClosure ℚ)))
+    have hSfin : (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+        (rootsOfUnity p (AlgebraicClosure ℚ) :
+          Set (AlgebraicClosure ℚ)ˣ)).Finite :=
+      Set.Finite.image _ (Set.toFinite _)
+    haveI := hSfin.to_subtype
+    haveI halg : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+      AlgebraicClosure.isAlgebraic ℚ
+    haveI : FiniteDimensional ℚ (IntermediateField.adjoin ℚ
+        (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+          (rootsOfUnity p (AlgebraicClosure ℚ) :
+            Set (AlgebraicClosure ℚ)ˣ))) :=
+      IntermediateField.finiteDimensional_adjoin fun x _ =>
+        (Algebra.IsAlgebraic.isAlgebraic (R := ℚ) x).isIntegral
+    refine Subgroup.isOpen_mono (H₁ := (IntermediateField.adjoin ℚ
+      (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+        (rootsOfUnity p (AlgebraicClosure ℚ) :
+          Set (AlgebraicClosure ℚ)ˣ))).fixingSubgroup) ?_
+      ((IntermediateField.adjoin ℚ _).fixingSubgroup_isOpen)
+    intro τ hτmem
+    refine MonoidHom.mem_ker.mpr ((hχcyc τ).trans ?_)
+    refine algebraMap_cyclotomicCharacter_eq_one_of_fixes_rootsOfUnity
+      (fun t ht => ?_)
+    have htne : t ≠ 0 := by
+      intro h
+      rw [h, zero_pow hp.out.ne_zero] at ht
+      exact zero_ne_one ht
+    have hmemS : t ∈ (((↑) : (AlgebraicClosure ℚ)ˣ → AlgebraicClosure ℚ) ''
+        (rootsOfUnity p (AlgebraicClosure ℚ) :
+          Set (AlgebraicClosure ℚ)ˣ)) :=
+      ⟨Units.mk0 t htne, (mem_rootsOfUnity' p _).mpr (by simpa using ht), rfl⟩
+    exact ((IntermediateField.mem_fixingSubgroup_iff _ _).mp hτmem) t
+      (IntermediateField.subset_adjoin ℚ _ hmemS)
+  -- (2) `D` has finite index in `ker χ`, by the class-number computation
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) p
+  haveI halg2 : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+    AlgebraicClosure.isAlgebraic ℚ
+  set CF : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    IntermediateField.adjoin ℚ ({ζ} : Set (AlgebraicClosure ℚ)) with hCF
+  haveI hcycCF : IsCyclotomicExtension {p} ℚ CF :=
+    hζ.intermediateField_adjoin_isCyclotomicExtension (K := ℚ)
+  haveI hFDCF : FiniteDimensional ℚ CF :=
+    IntermediateField.adjoin.finiteDimensional
+      (Algebra.IsAlgebraic.isAlgebraic (R := ℚ) ζ).isIntegral
+  haveI hNFCF : NumberField CF := ⟨⟩
+  have hrel := relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup
+    χ hχcyc CF
+  have hcard : Nat.card (ClassGroup (𝓞 CF)) ≠ 0 :=
+    Nat.card_ne_zero.mpr ⟨⟨1⟩, inferInstance⟩
+  have hsub : (Subgroup.map (MonoidHom.ker χ).subtype D).subgroupOf
+      (MonoidHom.ker χ) = D :=
+    Subgroup.comap_map_eq_self_of_injective
+      (Subgroup.subtype_injective (MonoidHom.ker χ)) D
+  haveI : D.FiniteIndex := by
+    refine ⟨?_⟩
+    rw [← hsub]
+    exact fun hh => hcard (by rw [← hrel]; exact hh)
+  -- (3) `D` is closed, hence open in `ker χ`
+  have hDclosed : IsClosed ((D : Subgroup (MonoidHom.ker χ)) :
+      Set (MonoidHom.ker χ)) := by
+    rw [hD]
+    exact Subgroup.isClosed_topologicalClosure _
+  have hDopen : IsOpen ((D : Subgroup (MonoidHom.ker χ)) :
+      Set (MonoidHom.ker χ)) :=
+    Subgroup.isOpen_of_isClosed_of_finiteIndex _ hDclosed
+  -- (4) push forward along the open inclusion `ker χ ↪ Γℚ`
+  have hcoe : ((Subgroup.map (MonoidHom.ker χ).subtype D :
+      Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) =
+      (Subtype.val) '' ((D : Subgroup (MonoidHom.ker χ)) :
+        Set (MonoidHom.ker χ)) := by
+    rw [Subgroup.coe_map]
+    rfl
+  rw [hcoe]
+  exact hχker.isOpenMap_subtype_val _ hDopen
 
 /-- **THE EXISTENCE HALF: an everywhere-unramified abelian extension of
 `ℚ(μ_p)` of degree EXACTLY the class number** (E3c support leaf
