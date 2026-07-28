@@ -9065,7 +9065,463 @@ theorem isAuxProLimitClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
   sorry
 
 set_option linter.checkUnivs false in
-/-- **The RAISED-LEVEL Schlessinger machine** (sorry node, LEAF A2′-2d of the
+/-- **`charFrob` commutes with `pushforwardFrame`** (PROVEN 2026-07-28): the
+characteristic polynomial of Frobenius of a framed representation pushed
+forward along a continuous ring homomorphism is the image of the original one
+under that homomorphism.
+
+`pushforwardFrame` is base change along `ψ.toAlgebra` followed by the standard
+identification `A ⊗_B (Fin 2 → B) ≅ (Fin 2 → A)`, so this is
+`charFrob_conj` (conjugation does not move `charFrob`) followed by
+`charFrob_baseChange` (base change maps the coefficients along `algebraMap`,
+which for `ψ.toAlgebra` IS `ψ`).  The `ℚ`-side twin of the Hilbert file's
+`charpoly_framePushforward`, in the linear-coefficient shape this file's
+residual-compatibility clauses use. -/
+lemma charFrob_pushforwardFrame.{u} {B : Type u} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
+    (hψ : Continuous ψ) (ρ : GaloisRep ℚ B (Fin 2 → B))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    (pushforwardFrame ψ hψ ρ).charFrob v = (ρ.charFrob v).map ψ := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  show ((ρ.baseChange A).conj
+    (TensorProduct.piScalarRight B A A (Fin 2))).charFrob v = _
+  rw [charFrob_conj, charFrob_baseChange, RingHom.algebraMap_toAlgebra]
+
+set_option linter.checkUnivs false in
+/-- **Weak universality of a raw package on FINITE RAISED-LEVEL frames**
+(new 2026-07-28, with the machine cut below): the `ℚ`-side twin of
+`IsHilbertAuxWeaklyUniversalOnFiniteFrames`, on the raw data
+`(R, ρuniv, πuniv, Suniv)` rather than on a bundled datum.
+
+Every FINITE DISCRETE raised-level framed test object `(A, ρA, πA, SA)` — the
+objects of Schlessinger's category, on which the deformation functor is defined
+pointwise — is classified by a continuous `ℤ_p`-algebra map `ψ : R →+* A`
+compatible with the reductions, along which the linear `charFrob` coefficients
+of `ρuniv` become those of `ρA`.
+
+**Why the trace clause carries `Suniv` and `SA` rather than holding at every
+prime.**  The whole `ℚ`-side chain of this file carries residual data only up
+to a FINITE exceptional set — that is `AuxDeformationDatum.charFrob_compat`'s
+shape, and the reason for it is recorded on `AuxDeformationDatum` itself.  What
+matters for the limit passage below is that the exceptional set of the
+classifying map be **uniform in the test object's level**: it is bounded by
+`Suniv ∪ SA`, where `Suniv` is fixed with the package and `SA` is the test
+object's own set.  A per-level exceptional set would be useless — the inverse
+limit runs over infinitely many levels and no finite set could absorb their
+union.  (The two conditions are written as two arrows rather than as a union
+because `Finset` union needs `DecidableEq` on the height-one spectrum, which is
+not an instance here.)
+
+The Hilbert twin asks the stronger `((ρA g).charpoly).map πA = (ρbar g).charpoly`
+at every `g`; that shape is not available on this side, for the reason recorded
+in `AuxDeformationDatum`'s docstring. -/
+def IsAuxWeaklyUniversalOnFrames.{a, vK, vW} {p : ℕ} (hpodd : Odd p)
+    [Fact p.Prime] (Q : Finset ℕ)
+    {k : Type vK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type vW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (ρbar : GaloisRep ℚ k W)
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R]
+    (ρuniv : GaloisRep ℚ R (Fin 2 → R)) (πuniv : R →+* k)
+    (Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) :
+    Prop :=
+  ∀ (A : Type a) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[p] A] [Finite A] [DiscreteTopology A]
+    (ρA : GaloisRep ℚ A (Fin 2 → A)),
+    IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun A) ρA →
+    ∀ (πA : A →+* k), Function.Surjective πA →
+    ∀ (SA : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+    (∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ SA →
+      πA ((ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) →
+    ∃ ψ : R →+* A, Continuous ψ ∧
+      ψ.comp (algebraMap ℤ_[p] R) = algebraMap ℤ_[p] A ∧
+      πA.comp ψ = πuniv ∧
+      ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ SA →
+        ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρA.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1
+
+set_option linter.checkUnivs false in
+open scoped TensorProduct in
+/-- **Pro-representability of the RAISED-LEVEL problem over `ℚ`** (sorry node,
+LEAF A2′-2d′ — new 2026-07-28, and the ONE leaf left by the cut of the
+raised-level Schlessinger machine below; the `ℚ`-side twin of
+`exists_universalFrame_profinite_hilbertAux_of_clauses`).
+
+Everything Schlessinger's machine constructs for the raised-level problem: the
+Mazur-category coefficient ring `R` (complete Noetherian local topological
+`ℤ_p`-algebra with the maximal-adic topology), the universal framed
+representation `ρuniv`, the surjective reduction `πuniv` whose linear `charFrob`
+coefficients are those of `ρbar` away from a finite set `Suniv`, the fact that
+`ρuniv` satisfies the raised-level condition at every open quotient level, and
+weak universality on finite discrete raised-level frames.
+
+**WHY THE MAZUR RING CLAUSES ARE HERE AND NOT OUTSIDE, unlike the Hilbert
+twin.**  On the Hilbert side the construction leaf delivers a merely PROFINITE
+ring and the assembly upgrades it with Mazur's `Φ_ℓ` criterion,
+`ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`.
+That criterion binds the residual field and the coefficient ring in the SAME
+universe (`{k : Type u} … {R : Type u}`), and this statement — like every other
+`ℚ`-side declaration in this file — keeps them independent (`k : Type uK`,
+`R : Type uR`), which is what its consumers need.  So the criterion cannot be
+applied at the assembly here, and the three ring clauses are asked of the
+construction directly.  Nothing mathematical changes: the criterion is spent
+inside the construction rather than after it, on exactly the point-finiteness
+that `hfin` supplies.
+
+**WHY EACH HYPOTHESIS.**  `hirr` and `hW` are Schlessinger's H4 through Schur
+(an odd irreducible two-dimensional representation over a finite field of odd
+characteristic is absolutely irreducible, so `End_{k[Γ]}(ρbar) = k`); `hglue`
+is H1/H2; `hfin` is H3, and also the point-finiteness that makes `R`
+Noetherian; `hfunc` is the two coefficient operations the inductive
+construction performs.  `𝒟₀` is Schlessinger's "`F(k)` is a point": it pins
+`Module.rank k W = 2` and exhibits the residual object the machine deforms, and
+**without it the statement is FALSE**, the raised-level category being empty —
+the same faithfulness repair recorded on
+`exists_isWeaklyUniversal_auxDeformationDatum` below.
+
+**WHAT THIS LEAF MAY NOT DO** (inherited from the machine below, and the reason
+that ban is repeated here): the base-level `ℚ` chain of this file bottoms out in
+`exists_framedStrictlyUniversal_hardlyRamified_finiteTests`, which is discharged
+by `exfalso` from the odd-prime dichotomy against an irreducible hardly ramified
+`ρbar`.  That route is BANNED: this statement deliberately does not carry
+`IsHardlyRamified hpodd hW ρbar`, and deriving it from `𝒟₀` by reduction descent
+is banned by the circularity guard.  A proof ending in `exfalso` must be
+rejected.
+
+The recommended discharge is the one the Hilbert twin also records: make the
+base-level chain (`exists_universalFrame_profinite_of_deformationCondition` and
+the level-ideal system beneath it, in
+`HardlyRamified/Deformation.lean`) PREDICATE-GENERIC in the local condition and
+instantiate it twice, rather than transcribing it.  That refactor edits proven
+declarations belonging to other owners, which is why it was not attempted at
+this cut.
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above.
+
+References: Schlessinger, *Functors of Artin rings*, Thm. 2.11; Mazur,
+*Deforming Galois representations*, §1.2; de Smit–Lenstra, Prop. 2.3; Wiles,
+Ann. of Math. 141 (1995), ch. 3 for the local condition at `Q`. -/
+theorem exists_universalFrame_auxDeformation_of_clauses.{uK, uW, uR}
+    {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (Q : Finset ℕ)
+    (𝒟₀ : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar)
+    (hfunc : IsAuxFunctorialityClause.{uR} hpodd Q)
+    (hglue : IsAuxFibreProductClause.{uR, uK, uW} hpodd Q ρbar)
+    (hfin : IsAuxFiniteFramesClause.{uR} hpodd Q) :
+    ∃ (R : Type uR) (_ : CommRing R) (_ : TopologicalSpace R)
+      (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[p] R)
+      (_ : IsNoetherianRing R) (_ : IsAdic (IsLocalRing.maximalIdeal R))
+      (_ : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+      (ρuniv : GaloisRep ℚ R (Fin 2 → R))
+      (πuniv : R →+* k) (_ : Function.Surjective πuniv)
+      (Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))),
+      (∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
+        πuniv ((ρuniv.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) ∧
+      (∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+        (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+        IsRaisedLevelHardlyRamified hpodd Q hdimI (ρuniv.baseChange (R ⧸ I))) ∧
+      IsAuxWeaklyUniversalOnFrames.{uR, uK, uW} hpodd Q ρbar ρuniv πuniv
+        Suniv :=
+  sorry
+
+set_option linter.checkUnivs false in
+/-- **From the finite discrete levels to the whole RAISED-LEVEL category**
+(PROVEN 2026-07-28 — the `ℚ`-side twin of
+`HilbertAuxDeformationDatum.isWeaklyUniversal_of_finiteFrames`, and its proof
+transcribed with the charpoly clause replaced by the linear `charFrob`
+coefficients away from a finite exceptional set).
+
+A raised-level datum that classifies every FINITE DISCRETE raised-level frame
+classifies every object of the raised-level category.  Run over the maximal-adic
+tower `𝔪^n` of the test datum `𝒟'` — which is complete and separated by
+`𝒟'.isAdicComplete`, and whose levels `𝒟'.R ⧸ 𝔪^n` are FINITE (the residue field
+is `k`, finite, and `𝒟'.R` is Noetherian) and DISCRETE (the tower ideals are
+open, by `𝒟'.isAdic`), i.e. exactly the test objects of
+`IsAuxWeaklyUniversalOnFrames`.
+
+`hfunc` is the ONLY clause consumed, and it is consumed once, to know that the
+finite levels of an ARBITRARY raised-level datum satisfy the raised-level
+condition: its quotient conjunct base-changes `𝒟'.ρ` to `𝒟'.R ⧸ 𝔪^n`, and its
+conjugation conjunct moves the result along
+`TensorProduct.piScalarRight` onto the standard frame, which together are
+exactly `pushforwardFrame`.  Everything else is commutative algebra: the level
+sets `X n` of classifying maps are NONEMPTY by the finite-frames hypothesis,
+FINITE because a map compatible with the residue maps kills `𝔪_{𝒟.R}^n` and so
+factors through the finite ring `𝒟.R ⧸ 𝔪^n`, and STABLE under the transition
+maps, so `exists_ringHom_of_forall_quotientPow_mem` assembles them; the three
+clauses of the conclusion then pass to the limit by separatedness.
+
+The exceptional set delivered is `𝒟.S ∪ 𝒟'.S`, UNIFORM in the level — which is
+why `IsAuxWeaklyUniversalOnFrames` bounds its trace clause by `Suniv ∪ SA`
+rather than leaving the set to be chosen per test object.  See that definition's
+docstring. -/
+theorem AuxDeformationDatum.isWeaklyUniversal_of_frames.{a, vK, vW}
+    {p : ℕ} {hpodd : Odd p} [Fact p.Prime] {Q : Finset ℕ}
+    {k : Type vK} [Field k] [Finite k] [Algebra ℤ_[p] k]
+    [TopologicalSpace k] [DiscreteTopology k] [IsTopologicalRing k]
+    {W : Type vW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    (hfunc : IsAuxFunctorialityClause.{a} hpodd Q)
+    (𝒟 : AuxDeformationDatum.{a, vK, vW} hpodd Q ρbar)
+    (h𝒟 : IsAuxWeaklyUniversalOnFrames.{a, vK, vW} hpodd Q ρbar 𝒟.ρ 𝒟.π 𝒟.S) :
+    𝒟.IsWeaklyUniversal := by
+  classical
+  intro 𝒟'
+  set J : Ideal 𝒟'.R := IsLocalRing.maximalIdeal 𝒟'.R with hJ
+  haveI : IsAdicComplete J 𝒟'.R := 𝒟'.isAdicComplete
+  have hkerπ : RingHom.ker 𝒟'.π = J :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective 𝒟'.π 𝒟'.π_surjective)
+  have hkerD : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective 𝒟.π 𝒟.π_surjective)
+  have hJne : J ≠ ⊤ := (IsLocalRing.maximalIdeal.isMaximal 𝒟'.R).ne_top
+  have hJpowne : ∀ n : ℕ, n ≠ 0 → J ^ n ≠ ⊤ := by
+    intro n hn htop
+    exact hJne (top_le_iff.mp (htop ▸ Ideal.pow_le_self hn))
+  have hπpow : ∀ (n : ℕ), n ≠ 0 → ∀ a ∈ J ^ n, 𝒟'.π a = 0 := by
+    intro n hn a ha
+    have hmem : a ∈ RingHom.ker 𝒟'.π := by
+      rw [hkerπ]
+      exact Ideal.pow_le_self hn ha
+    exact hmem
+  have hfinlev : ∀ n : ℕ, Finite (𝒟'.R ⧸ J ^ n) := fun n =>
+    finite_quotient_of_pow_maximalIdeal_le 𝒟'.π 𝒟'.π_surjective ⟨n, le_rfl⟩
+  have hJopen : ∀ n : ℕ, IsOpen ((J ^ n : Ideal 𝒟'.R) : Set 𝒟'.R) := fun n =>
+    (isAdic_iff.mp 𝒟'.isAdic).1 n
+  have hmkcont : ∀ n : ℕ, Continuous (Ideal.Quotient.mk (J ^ n)) := fun n =>
+    (QuotientRing.isOpenQuotientMap_mk (J ^ n)).continuous
+  have hdisc : ∀ n : ℕ, DiscreteTopology (𝒟'.R ⧸ J ^ n) := by
+    intro n
+    rw [discreteTopology_iff_isOpen_singleton_zero]
+    have himg : (Ideal.Quotient.mk (J ^ n)) ''
+        ((J ^ n : Ideal 𝒟'.R) : Set 𝒟'.R) = {0} := by
+      ext x
+      constructor
+      · rintro ⟨y, hy, rfl⟩
+        exact Ideal.Quotient.eq_zero_iff_mem.mpr hy
+      · rintro rfl
+        exact ⟨0, (J ^ n).zero_mem, map_zero _⟩
+    rw [← himg]
+    exact (QuotientRing.isOpenQuotientMap_mk (J ^ n)).isOpenMap _ (hJopen n)
+  have hsep : ∀ x : 𝒟'.R, (∀ n : ℕ, x ∈ J ^ n) → x = 0 := by
+    intro x hx
+    refine IsHausdorff.haus (I := J) (M := 𝒟'.R) inferInstance x fun n => ?_
+    rw [SModEq.sub_mem, sub_zero]
+    have hsm : (J ^ n : Ideal 𝒟'.R) ≤ (J ^ n) • (⊤ : Submodule 𝒟'.R 𝒟'.R) := by
+      intro r hr
+      have hmem : r • (1 : 𝒟'.R) ∈ (J ^ n) • (⊤ : Submodule 𝒟'.R 𝒟'.R) :=
+        Submodule.smul_mem_smul hr Submodule.mem_top
+      simpa using hmem
+    exact hsm (hx n)
+  have heq : ∀ a b : 𝒟'.R,
+      (∀ n : ℕ, Ideal.Quotient.mk (J ^ n) a = Ideal.Quotient.mk (J ^ n) b) →
+      a = b := by
+    intro a b hab
+    have h0 : a - b = 0 := hsep _ fun n => Ideal.Quotient.eq.mp (hab n)
+    exact sub_eq_zero.mp h0
+  have hfinhom : ∀ (n : ℕ) (hn : n ≠ 0),
+      {ψ : 𝒟.R →+* 𝒟'.R ⧸ J ^ n |
+        (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)).comp ψ = 𝒟.π}.Finite := by
+    intro n hn
+    set Jq : Ideal (𝒟'.R ⧸ J ^ n) := J.map (Ideal.Quotient.mk (J ^ n)) with hJq
+    have hkerlift : ∀ y : 𝒟'.R ⧸ J ^ n,
+        (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)) y = 0 → y ∈ Jq := by
+      intro y hy
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+      rw [Ideal.Quotient.lift_mk] at hy
+      exact Ideal.mem_map_of_mem _ (by rw [← hkerπ]; exact hy)
+    have hJqpow : Jq ^ n = ⊥ := by
+      rw [hJq, ← Ideal.map_pow, Ideal.map_quotient_self]
+    have hkill : ∀ ψ : 𝒟.R →+* 𝒟'.R ⧸ J ^ n,
+        (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)).comp ψ = 𝒟.π →
+        ∀ x ∈ (IsLocalRing.maximalIdeal 𝒟.R) ^ n, ψ x = 0 := by
+      intro ψ hψ x hx
+      have hmR : IsLocalRing.maximalIdeal 𝒟.R ≤ Ideal.comap ψ Jq := by
+        intro y hy
+        refine hkerlift _ ?_
+        rw [← RingHom.comp_apply, hψ]
+        rw [← hkerD] at hy
+        exact hy
+      have hpow : ∀ j : ℕ,
+          (IsLocalRing.maximalIdeal 𝒟.R) ^ j ≤ Ideal.comap ψ (Jq ^ j) := by
+        intro j
+        induction j with
+        | zero => simp
+        | succ j ih =>
+          rw [pow_succ, pow_succ]
+          refine le_trans (Ideal.mul_mono ih hmR) ?_
+          rw [Ideal.mul_le]
+          intro r hr s hs
+          have hr' : ψ r ∈ Jq ^ j := hr
+          have hs' : ψ s ∈ Jq := hs
+          show ψ (r * s) ∈ Jq ^ j * Jq
+          rw [map_mul]
+          exact Ideal.mul_mem_mul hr' hs'
+      have hmem : ψ x ∈ Jq ^ n := hpow n hx
+      rw [hJqpow] at hmem
+      exact hmem
+    haveI : Finite (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) :=
+      finite_quotient_of_pow_maximalIdeal_le 𝒟.π 𝒟.π_surjective ⟨n, le_rfl⟩
+    haveI := hfinlev n
+    haveI : Finite ((𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) →+*
+        𝒟'.R ⧸ J ^ n) :=
+      Finite.of_injective
+        (fun g : (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) →+* 𝒟'.R ⧸ J ^ n =>
+          (g : (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) → 𝒟'.R ⧸ J ^ n))
+        DFunLike.coe_injective
+    refine Set.Finite.subset (Set.finite_range
+      (fun g : (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) →+* 𝒟'.R ⧸ J ^ n =>
+        g.comp (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal 𝒟.R) ^ n)))) ?_
+    intro ψ hψ
+    exact ⟨Ideal.Quotient.lift _ ψ (hkill ψ hψ), RingHom.ext fun _ => rfl⟩
+  set X : ∀ n : ℕ, Set (𝒟.R →+* 𝒟'.R ⧸ J ^ n) := fun n =>
+    {ψ | (ψ.comp (algebraMap ℤ_[p] 𝒟.R) =
+            (Ideal.Quotient.mk (J ^ n)).comp (algebraMap ℤ_[p] 𝒟'.R)) ∧
+         (∀ hn : n ≠ 0,
+            (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)).comp ψ = 𝒟.π) ∧
+         (∀ (q : ℕ) (hq : q.Prime),
+            hq.toHeightOneSpectrumRingOfIntegersRat ∉ 𝒟.S →
+            hq.toHeightOneSpectrumRingOfIntegersRat ∉ 𝒟'.S →
+            ψ ((𝒟.ρ.charFrob
+                hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+              Ideal.Quotient.mk (J ^ n) ((𝒟'.ρ.charFrob
+                hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1))}
+    with hX
+  have hfacmk : ∀ (m n : ℕ) (hmn : n ≤ m) (a : 𝒟'.R),
+      Ideal.Quotient.factorPow J hmn (Ideal.Quotient.mk (J ^ m) a) =
+        Ideal.Quotient.mk (J ^ n) a := fun _ _ _ a =>
+    Ideal.Quotient.factor_mk _ a
+  have hliftfac : ∀ (m n : ℕ) (hmn : n ≤ m) (hn : n ≠ 0) (hm : m ≠ 0)
+      (y : 𝒟'.R ⧸ J ^ m),
+      (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn))
+          (Ideal.Quotient.factorPow J hmn y) =
+        (Ideal.Quotient.lift (J ^ m) 𝒟'.π (hπpow m hm)) y := by
+    intro m n hmn _ _ y
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [hfacmk m n hmn a, Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk]
+  have hXstab : ∀ (m n : ℕ) (hmn : n ≤ m) (P : 𝒟.R →+* 𝒟'.R ⧸ J ^ m),
+      P ∈ X m → (Ideal.Quotient.factorPow J hmn).comp P ∈ X n := by
+    intro m n hmn P hP
+    simp only [hX, Set.mem_setOf_eq] at hP ⊢
+    obtain ⟨h1, h2, h3⟩ := hP
+    refine ⟨?_, ?_, ?_⟩
+    · refine RingHom.ext fun x => ?_
+      have h1x := RingHom.congr_fun h1 x
+      simp only [RingHom.comp_apply] at h1x ⊢
+      rw [h1x, hfacmk m n hmn]
+    · intro hn
+      have hm : m ≠ 0 := by omega
+      refine RingHom.ext fun r => ?_
+      have h2x := RingHom.congr_fun (h2 hm) r
+      simp only [RingHom.comp_apply] at h2x ⊢
+      rw [hliftfac m n hmn hn hm, h2x]
+    · intro q hq hqS hqS'
+      simp only [RingHom.comp_apply]
+      rw [h3 q hq hqS hqS', hfacmk m n hmn]
+  have hXne_pos : ∀ n : ℕ, n ≠ 0 → (X n).Nonempty := by
+    intro n hn
+    haveI : Nontrivial (𝒟'.R ⧸ J ^ n) := by
+      rw [← not_subsingleton_iff_nontrivial, Ideal.Quotient.subsingleton_iff]
+      exact hJpowne n hn
+    haveI : IsLocalRing (𝒟'.R ⧸ J ^ n) :=
+      IsLocalRing.of_surjective' (Ideal.Quotient.mk (J ^ n))
+        Ideal.Quotient.mk_surjective
+    haveI := hfinlev n
+    haveI := hdisc n
+    have halgQ : (Ideal.Quotient.mk (J ^ n)).comp (algebraMap ℤ_[p] 𝒟'.R) =
+        algebraMap ℤ_[p] (𝒟'.R ⧸ J ^ n) := rfl
+    have hrk : Module.rank (𝒟'.R ⧸ J ^ n)
+        ((𝒟'.R ⧸ J ^ n) ⊗[𝒟'.R] (Fin 2 → 𝒟'.R)) = 2 := by
+      rw [Module.rank_baseChange, 𝒟'.rank_eq]
+      simp
+    have hHRn : IsRaisedLevelHardlyRamified hpodd Q
+        (rank_finTwoFun (𝒟'.R ⧸ J ^ n))
+        (pushforwardFrame (Ideal.Quotient.mk (J ^ n)) (hmkcont n) 𝒟'.ρ) :=
+      hfunc.2 (rank_finTwoFun (𝒟'.R ⧸ J ^ n))
+        (hfunc.1 (J ^ n) hrk 𝒟'.isRaisedLevelHardlyRamified)
+        (TensorProduct.piScalarRight 𝒟'.R (𝒟'.R ⧸ J ^ n) (𝒟'.R ⧸ J ^ n) (Fin 2))
+    have hπQsurj :
+        Function.Surjective (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)) := by
+      intro y
+      obtain ⟨x, hx⟩ := 𝒟'.π_surjective y
+      exact ⟨Ideal.Quotient.mk (J ^ n) x, hx⟩
+    have hpfcf : ∀ (q : ℕ) (hq : q.Prime),
+        ((pushforwardFrame (Ideal.Quotient.mk (J ^ n)) (hmkcont n)
+            𝒟'.ρ).charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+          Ideal.Quotient.mk (J ^ n) ((𝒟'.ρ.charFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) := by
+      intro q hq
+      rw [charFrob_pushforwardFrame, Polynomial.coeff_map]
+    have hresQ : ∀ (q : ℕ) (hq : q.Prime),
+        hq.toHeightOneSpectrumRingOfIntegersRat ∉ 𝒟'.S →
+        (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn))
+            (((pushforwardFrame (Ideal.Quotient.mk (J ^ n)) (hmkcont n)
+              𝒟'.ρ).charFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
+          (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+      intro q hq hqS
+      rw [hpfcf q hq]
+      exact 𝒟'.charFrob_compat q hq hqS
+    obtain ⟨ψ, _hcont, halg, hπ, htr⟩ :=
+      h𝒟 (𝒟'.R ⧸ J ^ n) _ hHRn _ hπQsurj 𝒟'.S hresQ
+    refine ⟨ψ, ?_, ?_, ?_⟩
+    · rw [halg, ← halgQ]
+    · exact fun _ => hπ
+    · intro q hq hqS hqS'
+      rw [htr q hq hqS hqS', hpfcf q hq]
+  have hXne : ∀ n : ℕ, (X n).Nonempty := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · obtain ⟨P, hP⟩ := hXne_pos 1 one_ne_zero
+      exact ⟨_, hXstab 1 0 (Nat.zero_le 1) P hP⟩
+    · exact hXne_pos n hn
+  have hXfin : ∀ n : ℕ, (X n).Finite := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · haveI : Subsingleton (𝒟'.R ⧸ J ^ 0) := by
+        rw [Ideal.Quotient.subsingleton_iff, pow_zero, Ideal.one_eq_top]
+      exact Set.Subsingleton.finite fun x _ y _ =>
+        RingHom.ext fun _ => Subsingleton.elim _ _
+    · exact (hfinhom n hn).subset fun ψ hψ => hψ.2.1 hn
+  obtain ⟨f, hf⟩ :=
+    exists_ringHom_of_forall_quotientPow_mem J X hXfin hXne hXstab
+  simp only [hX, Set.mem_setOf_eq] at hf
+  refine ⟨f, ?_, ?_, ⟨𝒟.S ∪ 𝒟'.S, ?_⟩⟩
+  · refine RingHom.ext fun x => ?_
+    refine heq _ _ fun n => ?_
+    have hn := RingHom.congr_fun (hf n).1 x
+    simpa using hn
+  · refine RingHom.ext fun r => ?_
+    have h1 := RingHom.congr_fun ((hf 1).2.1 one_ne_zero) r
+    simpa using h1
+  · intro q hq hqS
+    rw [Finset.mem_union, not_or] at hqS
+    refine heq _ _ fun n => ?_
+    have hn := (hf n).2.2 q hq hqS.1 hqS.2
+    simpa using hn
+
+set_option linter.checkUnivs false in
+/-- **The RAISED-LEVEL Schlessinger machine** (ASSEMBLY — cut 2026-07-28 over
+the construction leaf and the limit passage above; was LEAF A2′-2d of the
 2026-07-28 clause cut): the arithmetic-free half of
 `exists_isWeaklyUniversal_auxDeformationDatum` below.
 
@@ -9078,34 +9534,67 @@ upgrade `exists_weaklyUniversalOnIdentified_framed_of_finite_tangent` and the
 limit passage `exists_weaklyUniversalOnIdentified_hardlyRamifiedDeformation` —
 consumes `IsHardlyRamified` ONLY through the operations packaged as the clauses
 above: pushforward along a quotient, conjugation, gluing along a fibre product,
-finiteness at each Artinian level, and detection on the finite levels.  So the
-intended discharge is that chain with `IsRaisedLevelHardlyRamified hpodd Q` in
-place of `IsHardlyRamified hpodd`, plus the extra bookkeeping that the raised
-gluing and pro-limit clauses also demand the residual pinning
-`(π, S, charFrob_compat)`, which every object of the category carries by
-definition.
+finiteness at each Artinian level, and detection on the finite levels.
 
-**The right way to discharge it is probably to make the base-level chain
-PREDICATE-GENERIC and instantiate it twice**, rather than to transcribe ~1300
-lines a second time.  That refactor was not attempted at the cut because it
-edits proven declarations belonging to other owners; a successor holding the
-whole chain should consider it before transcribing.  The Hilbert twin
-`exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses` records the
-same recommendation, and a single predicate-generic machine serving both sides
-is the outcome worth aiming at.
+**THE CUT TAKEN 2026-07-28 (flt-lean-151).**  This is now the ASSEMBLY over the
+same CONSTRUCTION / LIMIT-PASSAGE split the Hilbert twin
+`exists_isWeaklyUniversal_hilbertAuxDeformationDatum_of_clauses` uses, and it is
+that assembly step for step:
 
-**WHAT THIS LEAF MAY NOT DO.**  The base-level `ℚ` chain bottoms out in
+* `IsAuxWeaklyUniversalOnFrames` — the raw-package predicate "classifies every
+  finite discrete raised-level frame", the `ℚ` twin of
+  `IsHilbertAuxWeaklyUniversalOnFiniteFrames`;
+* `exists_universalFrame_auxDeformation_of_clauses` (the ONE remaining LEAF) —
+  Schlessinger's inductive small-extension argument over H1–H4 and the passage
+  to the inverse limit, delivering the Mazur-category coefficient ring;
+* `AuxDeformationDatum.isWeaklyUniversal_of_frames` (PROVEN) — the limit passage
+  from the finite discrete levels to the whole category, which consumes `hfunc`
+  and nothing else about the local condition;
+* `hlim` in between, to upgrade the open-quotient levels of `ρuniv` to the
+  raised-level condition over `R` itself.
+
+**The one place this does NOT mirror the Hilbert twin, and why.**  There the
+construction leaf delivers a merely PROFINITE ring and the assembly upgrades it
+with Mazur's `Φ_ℓ` criterion,
+`ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`.
+That criterion binds the residual field and the coefficient ring in the SAME
+universe, and this statement keeps `k : Type uK` and the datum's carrier
+`Type uR` independent — so the criterion cannot be applied here and the three
+Mazur ring clauses are asked of the construction leaf directly.  The refuting
+check for that claim, so the next reader need not redo it: the criterion's
+signature reads `{k : Type u_1} … {R : Type u_1}`.
+
+**The right way to discharge the remaining leaf is still to make the base-level
+chain PREDICATE-GENERIC and instantiate it twice**, rather than to transcribe
+~1300 lines a second time.  That refactor was not attempted here because it
+edits proven declarations belonging to other owners
+(`HardlyRamified/Deformation.lean`'s level-ideal system in particular); a
+successor holding the whole chain should consider it before transcribing.  The
+Hilbert twin records the same recommendation, and a single predicate-generic
+machine serving both sides is the outcome worth aiming at.
+
+**WHAT THE REMAINING LEAF MAY NOT DO.**  The base-level `ℚ` chain bottoms out in
 `exists_framedStrictlyUniversal_hardlyRamified_finiteTests`, which is
 discharged by `exfalso` from the odd-prime dichotomy
 (`IsHardlyRamified.mod_three_reducible` at `p = 3`,
 `not_isIrreducible_of_isHardlyRamified_of_five_le` at `p ≥ 5`) against an
-irreducible hardly ramified `ρbar`.  That route is BANNED here: this statement
+irreducible hardly ramified `ρbar`.  That route is BANNED: this statement
 deliberately does not carry `IsHardlyRamified hpodd hW ρbar`, and deriving it
-from `𝒟₀` by reduction descent is banned by the circularity guard.  A proof of
-this leaf ending in `exfalso` must be rejected.  So the transcription must
-follow the chain ABOVE that bottom leaf — the part that is genuine Schlessinger
-machinery — and take the finite-level representability from `hglue`, `hfin` and
-`hfunc` instead.
+from `𝒟₀` by reduction descent is banned by the circularity guard.  A proof
+ending in `exfalso` must be rejected.  So the transcription must follow the
+chain ABOVE that bottom leaf — the part that is genuine Schlessinger machinery —
+and take the finite-level representability from `hglue`, `hfin` and `hfunc`
+instead.  The ban is restated on
+`exists_universalFrame_auxDeformation_of_clauses`, which is where it now bites.
+
+WHERE EACH HYPOTHESIS IS SPENT.  `hW`, `hirr`, `𝒟₀`, `hglue` and `hfin` go into
+the construction leaf.  `hfunc` is used TWICE — once inside the construction and
+once here, passed on to the limit passage, which needs it to know that the finite
+levels of an ARBITRARY raised-level datum satisfy the raised-level condition.
+`hlim` is used only here, on the open quotients of `R`.  The residual pinning the
+raised gluing and pro-limit clauses demand is supplied for free: `Suniv` and its
+compatibility clause are the constructed package's own, and `𝒟'.S` /
+`𝒟'.charFrob_compat` are carried by every object of the category.
 
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above. -/
 theorem exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
@@ -9123,8 +9612,30 @@ theorem exists_isWeaklyUniversal_auxDeformationDatum_of_clauses.{uK, uW, uR}
     (hfin : IsAuxFiniteFramesClause.{uR} hpodd Q)
     (hlim : IsAuxProLimitClause.{uR, uK, uW} hpodd Q ρbar) :
     ∃ 𝒟 : AuxDeformationDatum.{uR, uK, uW} hpodd Q ρbar,
-      𝒟.IsWeaklyUniversal :=
-  sorry
+      𝒟.IsWeaklyUniversal := by
+  classical
+  obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv, πuniv,
+      hπsurj, Suniv, hres, hquotI, huniv⟩ :=
+    exists_universalFrame_auxDeformation_of_clauses.{uK, uW, uR} hpodd hW hirr Q
+      𝒟₀ hfunc hglue hfin
+  -- **The raised-level condition for `ρuniv` itself**, from its open-quotient
+  -- levels: that is exactly what the pro-limit clause is for, and the residual
+  -- pinning it demands is the constructed package's own `(πuniv, Suniv, hres)`.
+  have hHR : IsRaisedLevelHardlyRamified hpodd Q (rank_finTwoFun R) ρuniv := by
+    refine hlim hadic hcomplete πuniv Suniv hres ?_
+    intro I hI _ hdimI
+    exact hquotI I hI hdimI
+  refine ⟨{ R := R
+            isAdic := hadic
+            isAdicComplete := hcomplete
+            ρ := ρuniv
+            rank_eq := rank_finTwoFun R
+            isRaisedLevelHardlyRamified := hHR
+            π := πuniv
+            π_surjective := hπsurj
+            S := Suniv
+            charFrob_compat := hres }, ?_⟩
+  exact AuxDeformationDatum.isWeaklyUniversal_of_frames hfunc _ huniv
 
 set_option linter.checkUnivs false in
 /-- **The raised-level deformation problem is weakly representable** (ASSEMBLY
@@ -9146,8 +9657,19 @@ and the clauses above, mirroring the Hilbert twin
 `isAuxFunctorialityClause` is PROVEN — over the two new raised-level transfers
 `isRaisedLevelHardlyRamified_baseChange_quotient` and
 `isRaisedLevelHardlyRamified_conj`, themselves over the new
-`isSplitTorusAt_baseChange`, all three PROVEN.  Three clause leaves and the
-machine leaf remain.  `n` and `hQ` are consumed by the gluing and pro-limit
+`isSplitTorusAt_baseChange`, all three PROVEN.
+
+**STATUS 2026-07-28 (flt-lean-151): the machine is no longer a leaf.**
+`exists_isWeaklyUniversal_auxDeformationDatum_of_clauses` is now an ASSEMBLY over
+the PROVEN limit passage `AuxDeformationDatum.isWeaklyUniversal_of_frames` and
+the single new construction leaf
+`exists_universalFrame_auxDeformation_of_clauses`, mirroring the Hilbert twin's
+own construction/limit split.  So what is open below this node is the three
+clause leaves `isAuxFibreProductClause`, `isAuxFiniteFramesClause`,
+`isAuxProLimitClause`, plus that one construction leaf — four leaves, none of
+which is the whole machine.
+
+`n` and `hQ` are consumed by the gluing and pro-limit
 clauses, which is exactly where residual distinctness at `q ∈ Q` is needed —
 see the section preamble for the `k[u,v]/(u,v)²` counterexample that forces the
 residual pinning on both of them, and for why the `ℚ`-side pinning is
