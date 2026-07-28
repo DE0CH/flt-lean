@@ -466,6 +466,17 @@ public import Mathlib.RingTheory.Ideal.Quotient.Operations
 -- vocabulary is written here rather than reused. `LinearAlgebra.Trace` is
 -- `ad⁰` itself, the trace-zero endomorphisms of `V`.
 public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functoriality
+-- The INHOMOGENEOUS description of `H¹` (added 2026-07-28 by flt-lean-58, with
+-- the correction recorded on `finite_hilbertH1TwistUnramified` below): mathlib's
+-- `ContCohomology/LowDegree.lean` stops at `H⁰`, so a class could not be
+-- evaluated at a group element in this module at all. The two vendored files
+-- `.../ContCohomology/Basic.lean` (`cocycleClass`, `cocycleClass_eq_zero_iff`)
+-- and `.../ContCohomology/LowDegreeOne.lean` (`eval₁`, the crossed-homomorphism
+-- identity `eval₁_mul`, `eval₁_conj`, `eval₁_mem_range_sub_conj`,
+-- `exists_cocycleClass_eq`) supply it, are BOTH sorry-free, and import nothing
+-- but mathlib — hence are upstream of this module and carry no cycle risk.
+-- They are what the four `H¹` leaves below are written against.
+public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.LowDegreeOne
 public import Mathlib.LinearAlgebra.Trace
 public import Mathlib.Algebra.Module.ULift
 -- proof-only: `ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient`, which
@@ -19292,8 +19303,368 @@ theorem IsHilbertTaylorWilesPrimeSet.exists_card_eq
         IsHilbertTaylorWilesPrimeSet.exists_insert ℓ hℓ5 F hirrF 𝒟₀ n hQ''
       exact ⟨Q', by rw [hcard', hcard''], hQ'⟩
 
+/-! #### The subgroup-restriction apparatus of `finite_hilbertH1TwistUnramified`
+
+Added 2026-07-28 (flt-lean-58) by the DECOMPOSITION of
+`finite_hilbertH1TwistUnramified` below, which until then was a bare `sorry`.
+
+The cut is the `F`-level transcription of the one `Modularity/Patching.lean`
+made the same day for `finite_h1TwistUnramified` — that file being DOWNSTREAM of
+this one, nothing here may cite it, so the four declarations below are honest
+twins rather than re-exports. The shape is: cover the unramified-outside-`S`
+part of `H¹` by the kernels of restriction to the FINITELY many small open
+normal subgroups that Hermite–Minkowski permits, and observe that each such
+kernel is finite-dimensional by inflation–restriction.
+
+**ONE DELIBERATE DEVIATION FROM THE `ℚ`-LEVEL CUT, and it is forced.**
+`finite_hilbertH1TwistUnramified` carries NO `[Finite k]` (see its own
+docstring), so `ad⁰ρbar(1)` is a finite-DIMENSIONAL but possibly INFINITE
+module. Every step of the `ℚ`-level assembly that counted elements therefore
+has to count dimensions instead:
+
+* `finite_ker_resSubgroupTwist1` concludes `Finite ↥(ker …)`; its twin
+  `finiteDimensional_ker_hilbertResSubgroupTwist1` below concludes
+  `Module.Finite k ↥(ker …)`, which is what is actually true here — with `k`
+  infinite the kernel is `H¹(Γ F ⧸ N, M^N)`, a subquotient of the `k`-space of
+  functions `Γ F ⧸ N → M`, of `k`-dimension at most `[Γ F : N] · dim_k M` but of
+  infinite cardinality;
+* the `ℚ`-level assembly finishes with "a finite union of finite sets is
+  finite". A finite union of finite-dimensional SUBSPACES is not a subspace, so
+  the assembly below takes the `⨆` instead: the unramified part is contained in
+  the (finite) supremum of those kernels, `Submodule.fg_iSup` makes the
+  supremum finite-dimensional, and `Submodule.finiteDimensional_of_le` descends
+  it. This is strictly cleaner and needs nothing about `#k`.
+-/
+
+/-- The inclusion `N ↪ Γ F` of a subgroup, as a continuous group homomorphism —
+the restriction datum of `hilbertResSubgroupTwist1` below. The `F`-level twin of
+`Modularity/Patching.lean`'s `subgroupToGlobalHom`, written here because that
+module is downstream. -/
+noncomputable def hilbertSubgroupToGlobalHom (F : Type u) [Field F] [NumberField F]
+    (N : Subgroup (Γ F)) : ↥N →ₜ* Γ F :=
+  ⟨N.subtype, continuous_subtype_val⟩
+
+/-- `ad⁰ρbar(1)` restricted to a subgroup `N ≤ Γ F` — the analogue of
+`hilbertAdZeroTwistInertia` / `hilbertAdZeroTwistDecomp` along
+`hilbertSubgroupToGlobalHom N`. -/
+noncomputable def hilbertAdZeroTwistSubgroup
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (N : Subgroup (Γ F)) :
+    TopRep.{max u v} k ↥N :=
+  TopRep.res (hilbertSubgroupToGlobalHom F N).toMonoidHom
+    (hilbertAdZeroTwist F ρbar)
+
+/-- The restriction `H¹(F, ad⁰ρbar(1)) → H¹(N, ad⁰ρbar(1))` along the inclusion
+of a subgroup `N ≤ Γ F`. Its KERNEL is the inflation image from `Γ F ⧸ N`
+whenever `N` is closed normal, which is why it is finite-dimensional for open
+`N` of finite index (`finiteDimensional_ker_hilbertResSubgroupTwist1` below). -/
+noncomputable def hilbertResSubgroupTwist1
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (N : Subgroup (Γ F)) :
+    continuousCohomology 1 (hilbertAdZeroTwist F ρbar) ⟶
+      continuousCohomology 1 (hilbertAdZeroTwistSubgroup F ρbar N) :=
+  ContinuousCohomology.map (hilbertSubgroupToGlobalHom F N)
+    (CategoryTheory.CategoryStruct.id (hilbertAdZeroTwistSubgroup F ρbar N)) 1
+
+/-- **Open normal subgroups of `Γ F` of bounded index, unramified outside a
+finite set `S` of places of `F`** (ADDED 2026-07-28): the subgroups `N` that are
+normal, open, of index at most `n`, and into which the inertia at every place
+`w ∉ S` maps.
+
+Under the infinite Galois correspondence these are exactly the finite Galois
+extensions `K/F` inside `Fᵃˡᵍ` of degree at most `n` unramified outside `S`; the
+set is FINITE, which is `finite_hilbertInertiaOutsideSubgroups` below.
+
+Written with this module's own `hilbertInertiaToGlobalHom` rather than with
+`HermiteMinkowski.lean`'s `InertiaTrivialAt`, which is hard-wired to `Γ ℚ` and
+to a RATIONAL prime and so cannot even be stated here. -/
+def hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
+    (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) : Set (Subgroup (Γ F)) :=
+  {N | N.Normal ∧ IsOpen (N : Set (Γ F)) ∧ N.FiniteIndex ∧ N.index ≤ n ∧
+    ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      ∀ σ : ↥(localInertiaGroup w), hilbertInertiaToGlobalHom F w σ ∈ N}
+
+/-- **Hermite–Minkowski over `F`** (SORRY LEAF, cut out 2026-07-28 as the first
+of the four inputs of `finite_hilbertH1TwistUnramified` below):
+`hilbertInertiaOutsideSubgroups F S n` is finite.
+
+This is `HermiteMinkowski.lean`'s `finite_setOf_subgroup_inertiaAt_le` with the
+base field `ℚ` replaced by an arbitrary number field `F` and the hard-wired
+rational prime set `{2, p}` replaced by an arbitrary finite set `S` of PLACES of
+`F`. It is the ONE genuinely new piece of arithmetic in this decomposition, and
+the reason it cannot simply be transcribed is recorded next.
+
+# ROUTE, AND WHAT IS NEW RELATIVE TO THE `ℚ`-LEVEL PROOF
+
+The SUBGROUP half transcribes verbatim, with `AlgebraicClosure ℚ` replaced by
+`AlgebraicClosure F` throughout: such an `N` is closed (`IsOpen ⟹ IsClosed` for
+a subgroup of a profinite group), hence the fixing subgroup of its fixed field
+`K = Fᵃˡᵍ^N` (`InfiniteGalois.fixingSubgroup_fixedField`), which is
+finite-dimensional over `F` (`InfiniteGalois.isOpen_iff_finite`), Galois
+(`InfiniteGalois.normal_iff_isGalois`) and of degree
+`[K : F] = #(Γ F ⧸ N) = N.index ≤ n`. So the set injects along `fixingSubgroup`
+into the set of finite Galois `K/F` of degree `≤ n` unramified outside `S`.
+
+The FIELD half is where the work is. `NumberField.finite_of_discr_bdd` applies
+to `AlgebraicClosure F` exactly as it does to `AlgebraicClosure ℚ` (it wants a
+characteristic-zero algebraically closed field, which `Fᵃˡᵍ` is), and it bounds
+the number of subfields by their ABSOLUTE discriminant. What is needed is
+therefore a bound on `|d_K|` from the relative data, i.e. the conductor–
+discriminant tower formula
+
+    d_K = N_{F/ℚ}(𝔡_{K/F}) · d_F ^ [K : F] ,
+
+together with: `[K : ℚ] = [K : F] · [F : ℚ] ≤ n · [F : ℚ]`, so the exponent of a
+rational prime `q` in `|d_K|` is bounded by
+`exists_discr_factorization_le_of_finrank_le q (n * [F : ℚ])` — already stated
+in `HermiteMinkowski.lean` for an arbitrary prime `q` — and the SUPPORT of `d_K`
+is contained in the finite set of rational primes lying under `S` together with
+the primes dividing `d_F`, because at any other `q` every place `w ∣ q` of `F`
+is outside `S`, so `K/F` is unramified at `w` (that is `hinert`, through the
+converse of `MinkowskiUnramified.lean`'s `isUnramifiedAt_of_inertia_le_fixingSubgroup`)
+and `F/ℚ` is unramified at `q`.
+
+**So this leaf costs exactly two dictionary lemmas**: the tower formula for
+discriminants in the shape "support and exponents of `d_K` are controlled by
+`𝔡_{K/F}` and `d_F`", and the same unramified⟹inertia-trivial converse that the
+`ℚ`-level `exists_finset_isUnramifiedAt_of_notMem` costs. Neither is in the pin
+(`grep -rn "discr.*tower\|discr_mul\|finrank.*discr" .lake/packages/mathlib`
+finds nothing of this shape) nor in `~/cs/FLT`.
+
+**A CHEAPER SUFFICIENT ROUTE, recorded because it may be the right one.** The
+consumer below never needs `S` to be arbitrary — it needs it to contain the
+places over `2` and `ℓ` and the ramification of `ρbar|_{G_F}`. Nothing is lost by
+proving the statement for `N` of index `≤ n` in the ABSOLUTE Galois group by
+pulling back to `Γ ℚ`: the fixed field of `N` is a number field of degree
+`≤ n · [F : ℚ]` over `ℚ`, and the finiteness of `{K ⊆ ℚᵃˡᵍ : [K : ℚ] ≤ m}`
+unramified outside a finite RATIONAL set is `finite_inertiaOutsideSubgroups`'s
+argument. That route replaces the tower formula by a base-change of the
+inertia condition, which may well be cheaper.
+
+Both-ways audit: a plain classical finiteness statement, no
+representation-theoretic hypothesis, hence not vacuous and not dischargeable by
+refuting any package — `⊤` is a member for every `S` and every `n ≥ 1`, so the
+set is nonempty and the content is genuinely an upper bound. -/
+theorem finite_hilbertInertiaOutsideSubgroups (F : Type u) [Field F] [NumberField F]
+    (S : Finset (HeightOneSpectrum (𝓞 F))) (n : ℕ) :
+    (hilbertInertiaOutsideSubgroups F S n).Finite := sorry
+
+/-- **A continuous representation of `Γ F` over a discrete coefficient field is
+unramified outside finitely many places** (SORRY LEAF, cut out 2026-07-28 as the
+second of the four inputs of `finite_hilbertH1TwistUnramified` below; the
+`F`-level twin of `Modularity/Patching.lean`'s
+`exists_finset_isUnramifiedAt_of_notMem`).
+
+This is the classical "a number field is ramified at only finitely many primes",
+transported through the kernel of `ρbar`. Route: `k` is discrete and `V` is a
+finite free `k`-module, so `Module.End k V` carries the discrete topology and
+continuity of `ρbar` makes `ker ρbar` an OPEN normal subgroup of `Γ ℚ`; its
+fixed field `L` is a finite Galois number field
+(`InfiniteGalois.isOpen_iff_finite`, `InfiniteGalois.normal_iff_isGalois`), and
+`ρbar.map (algebraMap ℚ F)` is unramified at every place `w` of `F` that is
+unramified in `L·F/F` — of which there are all but finitely many, since `L·F/F`
+is a finite extension. Take `S` to be that finite set.
+
+**`[Finite k]` IS ABSENT HERE TOO**, and the route above is why it costs
+nothing: what makes `ker ρbar` open is DISCRETENESS of `Module.End k V`, not
+finiteness. The `ℚ`-level twin carries `[Finite k]` only because its ambient
+section does.
+
+**What is genuinely missing and is this leaf's content**: the last step is the
+CONVERSE of `MinkowskiUnramified.lean`'s PROVEN
+`isUnramifiedAt_of_inertia_le_fixingSubgroup` (which runs inertia-trivial ⟹
+unramified). `grep -rn "isUnramifiedAt_of_inertia_le_fixingSubgroup" Fermat/`
+finds only that direction. That converse — "`w` unramified in the finite Galois
+`L/F` ⟹ the image of `I_w` fixes `L` pointwise" — is the one new dictionary
+lemma, and it is SHARED with `finite_hilbertInertiaOutsideSubgroups` above, so
+the two leaves are natural companions and are best given to ONE owner.
+
+Both-ways audit: no hypothesis on `ρbar` beyond its type, hence non-vacuous and
+not dischargeable by refuting the hardly ramified package. Stated for the FULL
+place set rather than for a bound so that the consumer may enlarge `S` freely
+(it adds the places over `2` and over `ℓ`). -/
+theorem exists_finset_isUnramifiedAt_hilbert_of_notMem
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
+    ∃ S : Finset (HeightOneSpectrum (𝓞 F)), ∀ w : HeightOneSpectrum (𝓞 F),
+      w ∉ S → (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := sorry
+
+/-- **An unramified-outside-`hilbertHardlyRamifiedPlaces` class dies on a small
+open subgroup** (SORRY LEAF, cut out 2026-07-28 as the third of the four inputs
+of `finite_hilbertH1TwistUnramified` below — this is the cocycle bookkeeping,
+and the only one of the four that touches the cochain model; the `F`-level twin
+of `Modularity/Patching.lean`'s
+`exists_mem_inertiaOutsideSubgroups_resSubgroup_eq_zero`).
+
+Given a finite set `S` of places of `F` containing the hardly ramified places
+and every place at which `ρbar|_{G_F}` ramifies, there is a bound `n` such that
+EVERY class `c` unramified outside `hilbertHardlyRamifiedPlaces ℓ F` restricts
+to zero on SOME `N ∈ hilbertInertiaOutsideSubgroups F S n`.
+
+# ROUTE (`finite_setOf_galoisRep_isUnramifiedAt`'s argument, run on cocycles
+instead of on representations)
+
+Write `M = ad⁰ρbar(1)`, a discrete `Γ F`-module on which `Γ F` acts through a
+finite quotient, and let `z` be a continuous `1`-cocycle representing `c`.
+
+* `N₁ := ker(Γ F → Aut_k M)` is open normal of index at most `#Aut_k M`; the
+  index is finite because the action is continuous and `M` is discrete with `Γ F`
+  compact, so the image is a FINITE subgroup of `Aut_k M` — note this needs no
+  `[Finite k]`, only that `M` is discrete.
+* `N := {g ∈ N₁ | z g = 0}` is again OPEN (preimage of `{0}` under a continuous
+  map into a discrete space) and NORMAL in `Γ F` — not merely in `N₁`: for
+  `g ∈ Γ F` and `x ∈ N₁` one computes `z (g x g⁻¹) = g · z x`, using
+  `z (g⁻¹) = −g⁻¹ · z g` and that `x` acts trivially on `M`. Its index is at
+  most `#(Γ F / N₁) · #(image of z)`, both finite by compactness and
+  discreteness, which is the `n` to take.
+* `N ∈ hilbertInertiaOutsideSubgroups F S n`: for `w ∉ S` the module `M` is
+  unramified at `w` (`hSunr`; the twist is by `det ρbar|_{G_F}`, which is
+  unramified wherever `ρbar|_{G_F}` is, so no separate cyclotomic bookkeeping is
+  needed — this is a genuine simplification over the `ℚ`-level twin, and it is
+  the payoff of deviation (1) of the section note, which spells the twist as
+  `det ρbar` rather than cyclotomically), so `I_w ⊆ N₁`; and `c` unramified at
+  `w` means `z|_{I_w}` is a coboundary `σ ↦ σ·m − m` on `I_w`, which VANISHES
+  because `I_w` acts trivially. Hence `I_w ⊆ N`.
+* `res^{Γ F}_N c = 0` because `z` restricts to the zero cocycle on `N`.
+
+# WHAT IT COSTS — **AND A STALE-CLAIM CORRECTION, 2026-07-28 (flt-lean-58)**
+
+The bullets above need the degree-`1` INHOMOGENEOUS cochain dictionary, without
+which the phrase "`z g = 0`" cannot even be written: mathlib's
+`ContCohomology/LowDegree.lean` stops at `H⁰`, and `continuousCohomology` is
+computed from the HOMOGENEOUS complex
+`(homogeneousCochains X).X 1 = (C(G, C(G, M)))^G`.
+
+**The `ℚ`-level twin's docstring in `Modularity/Patching.lean` records that
+dictionary as absent from our pin and from `~/cs/FLT`. THAT IS NOW FALSE**, and
+was already false when this leaf was cut: `d29c9035` added
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/LowDegreeOne.lean`,
+which is SORRY-FREE and supplies exactly the half such arguments use —
+
+* `ContinuousCohomology.eval₁ X f g = f 1 g` with `continuous_eval₁`;
+* `cocycle_apply` (`f h l = eval₁ f l - eval₁ f h`) and the
+  crossed-homomorphism identity `eval₁_mul`, plus `eval₁_one`, `eval₁_inv`,
+  `eval₁_conj`;
+* `eval₁_mem_range_sub_conj` — conjugation-stability of the surviving locus,
+  which is the Chebotarev-facing statement;
+* `cocycles₁` (the kernel model) and `exists_cocycleClass_eq`: every class is
+  the class of a cocycle;
+
+on top of `.../ContCohomology/Basic.lean`'s `cocycleClass` (a `k`-LINEAR map)
+and `cocycleClass_eq_zero_iff`. It imports nothing but mathlib, so it is
+upstream of this module and of `Patching.lean` alike, and **this file now
+`public import`s it** (see the header note). A prover of this leaf therefore
+starts with the dictionary in hand.
+
+What is genuinely still absent is the OTHER half — the inverse
+`z ↦ ((x, y) ↦ x · z (x⁻¹ y))` exhibiting `eval₁` as an isomorphism, and the
+compatibility of `ContinuousCohomology.map` with it. The four bullets above need
+neither: they construct `N` from a cocycle and conclude vanishing of a
+restriction, both of which are `eval₁`-directed. **Check this before building
+anything** — the same shared cost is recorded, in its now-stale form, on
+`finiteDimensional_ker_hilbertResSubgroupTwist1` below and on the two `ℚ`-level
+leaves in `Patching.lean`.
+
+Both-ways audit: `hSram` and `hSunr` are both load-bearing — without `hSram` the
+hypothesis `c ∈ hilbertH1TwistUnramified` says nothing at the places of `S`
+where `c` may ramify wildly, and without `hSunr` the inertia at `w ∉ S` need not
+act trivially on `M` and the third bullet fails. Not vacuous:
+`hilbertH1TwistUnramified` contains `0`, and the hypotheses on `S` are
+satisfiable (`exists_finset_isUnramifiedAt_hilbert_of_notMem` above supplies
+one, enlarged by the two `finite_setOf_natCast_mem_asIdeal` sets). No hypothesis
+on `ρbar` beyond its type, so no circular discharge is available. -/
+theorem exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (S : Finset (HeightOneSpectrum (𝓞 F)))
+    (hSram : hilbertHardlyRamifiedPlaces ℓ F ⊆ (S : Set (HeightOneSpectrum (𝓞 F))))
+    (hSunr : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w) :
+    ∃ n : ℕ, ∀ c ∈ hilbertH1TwistUnramified ℓ F ρbar,
+      ∃ N ∈ hilbertInertiaOutsideSubgroups F S n,
+        c ∈ LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap :=
+  sorry
+
+/-- **Inflation–restriction: the kernel of restriction to an open normal
+subgroup is FINITE-DIMENSIONAL over `k`** (SORRY LEAF, cut out 2026-07-28 as the
+fourth of the four inputs of `finite_hilbertH1TwistUnramified` below).
+
+For `N ≤ Γ F` open, normal and of finite index, the kernel of
+`res : H¹(Γ F, ad⁰ρbar(1)) → H¹(N, ad⁰ρbar(1))` is a finite-dimensional
+`k`-vector space.
+
+**THE CONCLUSION IS `Module.Finite k`, NOT `Finite`, AND THAT IS THE POINT.**
+The `ℚ`-level twin `finite_ker_resSubgroupTwist1` concludes finiteness of the
+underlying SET, which it may because it carries `[Finite k]`. This module's
+leaves do not (see `finite_hilbertH1TwistUnramified`'s own docstring), and with
+`k` infinite the set-level statement is FALSE as soon as the kernel is nonzero —
+a nonzero `k`-subspace of an infinite `k`-space is infinite. Do not "align" this
+statement with its `ℚ`-level twin by strengthening `Finite` back in; the
+consumer needs only the `k`-dimension, and the assembly below is written so that
+`k`-dimension is all it uses.
+
+# ROUTE
+
+The inflation–restriction sequence in degree `1`,
+`0 → H¹(Γ F ⧸ N, M^N) → H¹(Γ F, M) → H¹(N, M)`, identifies the kernel with
+`H¹(Γ F ⧸ N, M^N)`; `Γ F ⧸ N` is a FINITE discrete group (`N` open of finite
+index) and `M^N ⊆ M` is a `k`-subspace of the finite-dimensional `M`, so that
+`H¹` is a subquotient of the `k`-space of functions `Γ F ⧸ N → M^N`, of
+dimension at most `N.index * dim_k M = 3 * N.index * finrank k V`.
+
+Only the INJECTIVITY half of inflation–restriction is needed, and it can be had
+directly rather than through the exact sequence: a class in the kernel is
+represented by a cocycle vanishing on `N` after adjusting by a coboundary, and
+such a cocycle is constant on the left cosets `gN` (`z (g x) = z g + g · z x =
+z g`), so the map "kernel → functions `Γ F ⧸ N → M`" is a well-defined injective
+`k`-LINEAR map modulo the coboundaries `B¹ ≅ M / M^{Γ F}`, itself
+finite-dimensional.
+
+**THE DICTIONARY THIS NEEDS IS PRESENT — see the correction on
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` above.**
+`ContCohomology/LowDegreeOne.lean` (sorry-free, now `public import`ed by this
+module) gives `eval₁`, `cocycles₁`, `exists_cocycleClass_eq` and
+`cocycle_apply`; `ContCohomology/Basic.lean` gives the `k`-linear
+`cocycleClass` and `cocycleClass_eq_zero_iff`. Concretely the proof is: the
+kernel is the IMAGE under the `k`-linear `cocycleClass X 1` of the subspace
+`Z := {z ∈ cocycles₁ | eval₁ z vanishes on N}` (surjectivity onto the kernel is
+`exists_cocycleClass_eq` followed by `cocycleClass_eq_zero_iff` applied to the
+restricted class, which adjusts the representative by a coboundary), and `Z`
+injects `k`-linearly into `Γ F ⧸ N → M` by `eval₁_mul` because `eval₁ z` is then
+constant on left cosets of `N`. A `k`-linear image of a finite-dimensional space
+is finite-dimensional. So this leaf and
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` share the same
+apparatus and are best given to ONE owner.
+
+Both-ways audit: `hnorm`, `hopen` and `hFI` are all load-bearing. Dropping
+`hopen` makes the statement FALSE as a matter of continuous cohomology (a
+non-closed `N` of finite index has no inflation–restriction sequence), and
+dropping `hFI` makes `Γ F ⧸ N` infinite and the kernel infinite-dimensional —
+this is exactly the `dim_k H¹(Γ F, ad⁰(1)) = ℵ₀` computation recorded on
+`Sha1Twist` in `HardlyRamified/Deformation.lean`, at `N = 1`. -/
+theorem finiteDimensional_ker_hilbertResSubgroupTwist1
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (N : Subgroup (Γ F)) (hnorm : N.Normal)
+    (hopen : IsOpen (N : Set (Γ F))) (hFI : N.FiniteIndex) :
+    Module.Finite k
+      ↥(LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N).hom.toLinearMap) :=
+  sorry
+
 /-- **Finiteness of the unramified-outside-`hilbertHardlyRamifiedPlaces` part of
-`H¹(F, ad⁰ρbar(1))`** (SORRY LEAF, cut out 2026-07-28 as the first of the two
+`H¹(F, ad⁰ρbar(1))`** (cut out 2026-07-28 as the first of the two
 inputs of DDT Thm. 2.49 over `F`; see `exists_hilbertTaylorWilesPrimeSet_core`
 below, and `Modularity/Patching.lean`'s `finite_h1TwistUnramified` for the
 `ℚ`-level twin — which this file may NOT reuse, `Patching.lean` being
@@ -19329,6 +19700,23 @@ finiteness of the underlying set:
   FINITE elementary abelian `p`-group by Hermite–Minkowski, so the `Hom` group
   is a finite direct sum of copies of `M` and `dim_k ≤ 3 · rank`.
 
+**PROVEN 2026-07-28 (flt-lean-58) over the four named leaves immediately above**
+— `finite_hilbertInertiaOutsideSubgroups`,
+`exists_finset_isUnramifiedAt_hilbert_of_notMem`,
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` and
+`finiteDimensional_ker_hilbertResSubgroupTwist1`. This declaration carries no
+direct `sorry` of its own; see the section note above them for the cut and for
+the one deviation `[Finite k]`'s absence forces (dimensions, not cardinalities,
+so the cover is taken as a `⨆` of subspaces rather than as a union of sets).
+
+# THE ASSEMBLY, IN ONE LINE
+
+`hilbertH1TwistUnramified` is contained in the supremum, over the FINITELY many
+`N` in `hilbertInertiaOutsideSubgroups F S n`, of the kernels of restriction to
+`N`; each such kernel is finite-dimensional; a finite supremum of
+finite-dimensional subspaces is finite-dimensional; and a subspace of a
+finite-dimensional space is finite-dimensional.
+
 **WHAT THIS TREE ALREADY HAS, AND WHAT IT DOES NOT.**
 `HardlyRamified/HermiteMinkowski.lean` is in this module's import cone and its
 DISCRIMINANT machinery is already stated over an arbitrary number field —
@@ -19356,11 +19744,518 @@ theorem finite_hilbertH1TwistUnramified (ℓ : ℕ) [Fact ℓ.Prime]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
-    Module.Finite k ↥(hilbertH1TwistUnramified ℓ F ρbar) := sorry
+    Module.Finite k ↥(hilbertH1TwistUnramified ℓ F ρbar) := by
+  classical
+  have hℓne : ((ℓ : ℕ) : 𝓞 F) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out : ℓ.Prime).ne_zero
+  have h2ne : ((2 : ℕ) : 𝓞 F) ≠ 0 := Nat.cast_ne_zero.mpr (by norm_num)
+  obtain ⟨S₀, hS₀⟩ := exists_finset_isUnramifiedAt_hilbert_of_notMem F ρbar
+  set S : Finset (HeightOneSpectrum (𝓞 F)) :=
+    S₀ ∪ (finite_setOf_natCast_mem_asIdeal F _ hℓne).toFinset ∪
+      (finite_setOf_natCast_mem_asIdeal F _ h2ne).toFinset with hSdef
+  have hSram : hilbertHardlyRamifiedPlaces ℓ F ⊆
+      (S : Set (HeightOneSpectrum (𝓞 F))) := by
+    intro w hw
+    have hw' : ((ℓ : ℕ) : 𝓞 F) ∈ w.asIdeal ∨ ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal := hw
+    rw [Finset.mem_coe, hSdef]
+    rcases hw' with h | h
+    · exact Finset.mem_union_left _
+        (Finset.mem_union_right _ ((Set.Finite.mem_toFinset _).mpr h))
+    · exact Finset.mem_union_right _ ((Set.Finite.mem_toFinset _).mpr h)
+  have hSunr : ∀ w : HeightOneSpectrum (𝓞 F), w ∉ S →
+      (ρbar.map (algebraMap ℚ F)).IsUnramifiedAt w := by
+    intro w hw
+    refine hS₀ w fun hmem => hw ?_
+    rw [hSdef]
+    exact Finset.mem_union_left _ (Finset.mem_union_left _ hmem)
+  obtain ⟨n, hcov⟩ := exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero
+    ℓ F ρbar S hSram hSunr
+  haveI hfinN : Finite ↥(hilbertInertiaOutsideSubgroups F S n) :=
+    (finite_hilbertInertiaOutsideSubgroups F S n).to_subtype
+  -- the FINITE supremum of the kernels of restriction to the permitted subgroups
+  have hWfg : (⨆ N : ↥(hilbertInertiaOutsideSubgroups F S n),
+      LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N.1).hom.toLinearMap).FG := by
+    refine Submodule.fg_iSup _ fun N => ?_
+    exact Module.Finite.iff_fg.mp (finiteDimensional_ker_hilbertResSubgroupTwist1
+      F ρbar N.1 N.2.1 N.2.2.1 N.2.2.2.1)
+  haveI : FiniteDimensional k
+      ↥(⨆ N : ↥(hilbertInertiaOutsideSubgroups F S n),
+        LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N.1).hom.toLinearMap) :=
+    Module.Finite.iff_fg.mpr hWfg
+  have hle : hilbertH1TwistUnramified ℓ F ρbar ≤
+      ⨆ N : ↥(hilbertInertiaOutsideSubgroups F S n),
+        LinearMap.ker (hilbertResSubgroupTwist1 F ρbar N.1).hom.toLinearMap := by
+    intro c hc
+    obtain ⟨N, hN, hres⟩ := hcov c hc
+    exact Submodule.mem_iSup_of_mem ⟨N, hN⟩ hres
+  exact Submodule.finiteDimensional_of_le hle
+
+/-! ### The Taylor–Wiles locus of `F`, and the Chebotarev extraction factored out
+
+Added 2026-07-28 (flt-lean-58) as the decomposition of
+`exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero` (DDT Lemma 2.48) below; the
+`F`-level transcription of the cut `Modularity/Patching.lean` made the same day
+for `exists_taylorWilesPrime_locResDecomp_ne_zero` (that file being DOWNSTREAM,
+nothing here cites it).
+
+`exists_hilbertTaylorWilesPrime` above proves its existence statement by putting
+the two LOCAL Taylor–Wiles conditions into one open set and hitting it with
+Chebotarev density over `F`. The strengthened statement needs a THIRD,
+cohomological condition, and the argument is the same one: that condition cuts
+out an open, conjugation-stable locus too, and Chebotarev produces a Frobenius in
+the intersection.
+
+So the two halves are separated: the conditions on the Galois element are
+packaged as the `Set` `hilbertTaylorWilesLocus`, whose three relevant properties
+(open, conjugation-stable, nonempty) are PROVEN below, and the extraction of a
+place from an open conjugation-stable locus is the proof of
+`exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero` itself, also proven. What
+remains open is TWO leaves — the global and local halves of DDT 2.48 — and
+nothing else.
+
+Nothing here changes `exists_hilbertTaylorWilesPrime` above; it keeps its own
+inline copies of the openness arguments so the two declarations stay
+independently owned.
+
+**THE COHOMOLOGICAL CONDITION IS EXPRESSIBLE HERE ONLY BECAUSE OF
+`ContCohomology/LowDegreeOne.lean`** — see the correction recorded on
+`exists_mem_hilbertInertiaOutsideSubgroups_resSubgroup_eq_zero` above. Our pin
+computes `continuousCohomology` from HOMOGENEOUS cochains and offers no way to
+evaluate a class at a group element, so "`c(σ) ∉ (σ − 1)·M`" could not be written
+in this module at all before that file was imported. -/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Fixing the `ℓⁿ`-th roots of unity is an open condition on `Γ F`** (PROVEN
+2026-07-28): the set of `x : Γ F` whose image in `Γ ℚ` acts trivially on every
+`ℓⁿ`-th root of unity is open, being the preimage of the fixing subgroup of the
+FINITE extension `ℚ(μ_{ℓⁿ})/ℚ`.
+
+This is the second of the two open loci of `exists_hilbertTaylorWilesPrime`'s
+proof, restated as a standalone lemma so that `isOpen_hilbertTaylorWilesLocus`
+below can use it. Deviation (2) of that proof's docstring applies verbatim: `Γ F`
+acts on `Fᵃˡᵍ` while the roots of unity live in `ℚᵃˡᵍ`, so the condition is
+stated on the image under `Field.absoluteGaloisGroup.map (algebraMap ℚ F)`.
+
+The `set_option` is not decoration: without it the
+`IntermediateField.adjoin ℚ {ζ | ζ ^ ℓ ^ n = 1}` elaborates against
+`DivisionRing.toRatAlgebra` rather than `AlgebraicClosure.instAlgebra ℚ`, and the
+two are not defeq at `instances` transparency. -/
+lemma isOpen_setOf_hilbertFixes_rootsOfUnity (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] (n : ℕ) :
+    IsOpen {x : Γ F | ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F) x) ζ = ζ} := by
+  classical
+  have hSfin : {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}.Finite := by
+    refine Set.Finite.subset
+      (Polynomial.nthRoots (ℓ ^ n) (1 : ℚ ᵃˡᵍ)).toFinset.finite_toSet fun ζ hζ => ?_
+    rw [Finset.mem_coe, Multiset.mem_toFinset,
+      Polynomial.mem_nthRoots (pow_pos (Fact.out : ℓ.Prime).pos n)]
+    exact hζ
+  haveI := hSfin.to_subtype
+  haveI : FiniteDimensional ℚ
+      (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}) := by
+    refine IntermediateField.finiteDimensional_adjoin fun x hx =>
+      ⟨Polynomial.X ^ ℓ ^ n - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C (R := ℚ) (1 : ℚ)
+        (n := ℓ ^ n) (pow_ne_zero _ (Fact.out : ℓ.Prime).pos.ne')
+      simpa [Polynomial.C_1] using this
+    · have hx' : x ^ ℓ ^ n = 1 := hx
+      simp [Polynomial.eval₂_sub, hx']
+  have hQopen : IsOpen {x : Γ ℚ | ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 → x ζ = ζ} := by
+    have hopen := IntermediateField.fixingSubgroup_isOpen
+      (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1})
+    -- the coercion `Subgroup Gal(ℚᵃˡᵍ/ℚ) → Set (Γ ℚ)` is NOT available, so both
+    -- sides are written as honest `Set (Γ ℚ)` set-builders (see the note in
+    -- `exists_hilbertTaylorWilesPrime`'s proof above)
+    have hmem : IsOpen {x : Γ ℚ |
+        x ∈ (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}).fixingSubgroup} :=
+      hopen
+    have hEq : {x : Γ ℚ |
+        x ∈ (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}).fixingSubgroup} =
+        {x : Γ ℚ | ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 → x ζ = ζ} := by
+      ext x
+      simp only [Set.mem_setOf_eq]
+      constructor
+      · intro hx ζ hζ
+        exact (IntermediateField.mem_fixingSubgroup_iff _ _).mp hx ζ
+          (IntermediateField.subset_adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1} hζ)
+      · intro hx
+        have hle : IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1} ≤
+            IntermediateField.fixedField (Subgroup.zpowers x) := by
+          rw [IntermediateField.adjoin_le_iff]
+          intro ζ hζ
+          refine SetLike.mem_coe.mpr ((IntermediateField.mem_fixedField_iff _ _).mpr ?_)
+          intro f hf
+          have hst : Subgroup.zpowers x ≤ MulAction.stabilizer (Γ ℚ) ζ :=
+            Subgroup.zpowers_le.mpr (MulAction.mem_stabilizer_iff.mpr (hx ζ hζ))
+          exact hst hf
+        refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun a ha => ?_
+        exact (IntermediateField.mem_fixedField_iff _ _).mp (hle ha) x
+          (Subgroup.mem_zpowers x)
+    rw [← hEq]
+    exact hmem
+  exact hQopen.preimage
+    (ContinuousMonoidHom.continuous_toFun
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F)))
+
+/-- **The Taylor–Wiles locus of `F` at level `n`** (ADDED 2026-07-28): the set of
+`x : Γ F` satisfying the two LOCAL Taylor–Wiles conditions — acting trivially on
+the `ℓⁿ`-th roots of unity, and having residual characteristic polynomial split
+with two DISTINCT roots in `k`.
+
+This is precisely the set that `exists_hilbertTaylorWilesPrime` above intersects
+with the dense union of Frobenius conjugacy classes, written down as a `Set` so
+that the cohomological condition of DDT 2.48 can be intersected with it. Its
+three relevant properties are proven immediately below:
+`isOpen_hilbertTaylorWilesLocus`, `hilbertTaylorWilesLocus_conj` (conjugation
+stability, which is what lets a Frobenius CONJUGATE in the locus be traded for
+the Frobenius itself) and the nonemptiness supplied by
+`exists_hilbertFixing_rootsOfUnity_charpoly_split`.
+
+A place `w ∤ 2ℓ` whose `globalFrob` lies here is a Taylor–Wiles place of level
+`n`: the roots-of-unity clause forces `N w ≡ 1 mod ℓⁿ` through
+`adicArithFrob_rootsOfUnity_pow_residueCard`, and the charpoly clause IS the
+split condition through `GaloisRep.charFrob_eq_charpoly_globalFrob`. Both
+derivations are carried out in
+`exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero`'s proof below. -/
+def hilbertTaylorWilesLocus (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ) : Set (Γ F) :=
+  {x | (∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F) x) ζ = ζ) ∧
+    ∃ α β : k, α ≠ β ∧
+      ((ρbar.map (algebraMap ℚ F)) x).charpoly =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)}
+
+/-- **The Taylor–Wiles locus is OPEN** (PROVEN 2026-07-28).
+
+The roots-of-unity clause is `isOpen_setOf_hilbertFixes_rootsOfUnity` above. The
+charpoly clause is a UNION over the split polynomials of the loci
+`{x | charpoly x = P}`, each open by
+`isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum` — which is where the datum
+`𝒟₀` is spent, exactly as in deviation (1) of `exists_hilbertTaylorWilesPrime`'s
+docstring: with no `[Finite k]`/`[DiscreteTopology k]` available, openness cannot
+come from discreteness of the endomorphism module and must come from the datum.
+
+Writing it as a union rather than as a finite union over pairs `(α, β)` is what
+makes it work for INFINITE `k`, which this module must allow. -/
+lemma isOpen_hilbertTaylorWilesLocus (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
+    IsOpen (hilbertTaylorWilesLocus ℓ F ρbar n) := by
+  have hsplit : hilbertTaylorWilesLocus ℓ F ρbar n =
+      {x : Γ F | ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) x) ζ = ζ} ∩
+      {x : Γ F | ∃ α β : k, α ≠ β ∧
+        ((ρbar.map (algebraMap ℚ F)) x).charpoly =
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)} := rfl
+  rw [hsplit]
+  refine IsOpen.inter (isOpen_setOf_hilbertFixes_rootsOfUnity ℓ F n) ?_
+  refine isOpen_iff_forall_mem_open.mpr fun x hx => ?_
+  obtain ⟨α, β, hαβ, hpoly⟩ := hx
+  exact ⟨{y : Γ F | ((ρbar.map (algebraMap ℚ F)) y).charpoly =
+      (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)},
+    fun y hy => ⟨α, β, hαβ, hy⟩,
+    isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum 𝒟₀ _, hpoly⟩
+
+/-- **The Taylor–Wiles locus is stable under conjugation** (PROVEN 2026-07-28).
+
+Both clauses are conjugation-invariant, and for the same reasons as in
+`exists_hilbertTaylorWilesPrime`'s proof: the characteristic polynomial is a
+conjugation invariant, and the `ℓⁿ`-th roots of unity form a Galois-STABLE set,
+so fixing them pointwise is preserved (`φ (g x g⁻¹) ζ = φ g (φ x (φ g⁻¹ ζ))` and
+`φ g⁻¹ ζ` is again an `ℓⁿ`-th root of unity). -/
+lemma hilbertTaylorWilesLocus_conj (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) (n : ℕ)
+    (g : Γ F) {x : Γ F} (hx : x ∈ hilbertTaylorWilesLocus ℓ F ρbar n) :
+    g * x * g⁻¹ ∈ hilbertTaylorWilesLocus ℓ F ρbar n := by
+  obtain ⟨hfix, α, β, hαβ, hpoly⟩ := hx
+  refine ⟨?_, α, β, hαβ, ?_⟩
+  · intro ζ hζ
+    have hζ' : ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).symm ζ) ^ ℓ ^ n = 1 := by
+      rw [← map_pow, hζ, map_one]
+    have h1 := hfix _ hζ'
+    have h2 : (Field.absoluteGaloisGroup.map (algebraMap ℚ F) (g * x * g⁻¹)) ζ =
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g)
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) x)
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).symm ζ)) := by
+      rw [map_mul, map_mul, map_inv, AlgEquiv.mul_apply, AlgEquiv.mul_apply,
+        AlgEquiv.aut_inv]
+    rw [h2, h1]
+    exact AlgEquiv.apply_symm_apply _ _
+  · have hgu : ((ρbar.map (algebraMap ℚ F)) g).comp
+        ((ρbar.map (algebraMap ℚ F)) g⁻¹) = LinearMap.id := by
+      have h1 : (ρbar.map (algebraMap ℚ F)) g * (ρbar.map (algebraMap ℚ F)) g⁻¹ = 1 := by
+        rw [← map_mul, mul_inv_cancel, map_one]
+      exact h1
+    have hgu' : ((ρbar.map (algebraMap ℚ F)) g⁻¹).comp
+        ((ρbar.map (algebraMap ℚ F)) g) = LinearMap.id := by
+      have h1 : (ρbar.map (algebraMap ℚ F)) g⁻¹ * (ρbar.map (algebraMap ℚ F)) g = 1 := by
+        rw [← map_mul, inv_mul_cancel, map_one]
+      exact h1
+    have heq : (ρbar.map (algebraMap ℚ F)) (g * x * g⁻¹) =
+        (LinearEquiv.ofLinear ((ρbar.map (algebraMap ℚ F)) g)
+          ((ρbar.map (algebraMap ℚ F)) g⁻¹) hgu hgu').conj
+          ((ρbar.map (algebraMap ℚ F)) x) := by
+      ext y
+      simp [map_mul, LinearEquiv.conj_apply, Module.End.mul_apply]
+    rw [heq, LinearEquiv.charpoly_conj]
+    exact hpoly
+
+/-- **The surviving locus of a continuous `1`-cocycle over `F`** (ADDED
+2026-07-28): the set of `x : Γ F` at which the cocycle `z` is NOT a local
+coboundary, i.e. `z x ∉ (ρ x − 1) · ad⁰ρbar(1)`.
+
+This is the classical `V` of DDT Lemma 2.48, written down; writing it down at
+all is what `ContCohomology/LowDegreeOne.lean` supplies (see the section note
+above). Three facts make it the right object:
+
+* it depends only on the COHOMOLOGY CLASS of `z`, since changing `z` by a
+  coboundary moves `z x` inside `(ρ x − 1) · M`;
+* it is CONJUGATION-STABLE (`hilbertSurvivingLocus_conj` below, proven from the
+  crossed-homomorphism identity), which is what makes it usable with Chebotarev
+  density — only Frobenius CONJUGACY CLASSES are available there;
+* at a place `w` where the class is unramified, `Frob_w ∈ hilbertSurvivingLocus`
+  is exactly the statement that the class survives the local restriction at `w`,
+  because the unramified local `H¹` is `M / (Frob_w − 1) M` under evaluation at
+  `Frob_w`. That last one is the content of
+  `notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus` below. -/
+def hilbertSurvivingLocus
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar)) :
+    Set (Γ F) :=
+  {x | ContinuousCohomology.eval₁ (hilbertAdZeroTwist F ρbar) z.1 x ∉
+    Set.range fun m : ↥(hilbertAdZeroTwist F ρbar) =>
+      (hilbertAdZeroTwist F ρbar).ρ x m - m}
+
+/-- **The surviving locus is stable under conjugation** (PROVEN 2026-07-28):
+immediate from `ContinuousCohomology.cocycles₁_eval₁_mem_range_sub_conj`, which
+is in turn the crossed-homomorphism identity together with the fact that `ρ g`
+carries `(ρ x − 1) · M` bijectively onto `(ρ (g x g⁻¹) − 1) · M`. -/
+lemma hilbertSurvivingLocus_conj
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    (g x : Γ F) (hx : x ∈ hilbertSurvivingLocus F ρbar z) :
+    g * x * g⁻¹ ∈ hilbertSurvivingLocus F ρbar z :=
+  fun hmem => hx (ContinuousCohomology.cocycles₁_eval₁_mem_range_sub_conj z g x hmem)
+
+/-- **The GLOBAL half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
+2026-07-28): for a cocycle `z` representing a nonzero class `c` unramified
+outside `hilbertHardlyRamifiedPlaces ℓ F`, the surviving locus of `z` is OPEN and
+MEETS the Taylor–Wiles locus of `F` at level `n`. (The representative itself is
+supplied by `ContinuousCohomology.exists_cocycleClass_eq`, in the consumer.)
+
+This is the deep half — the "nonemptiness step" of DDT §2 — and it is where
+absolute irreducibility of `ρbar|_{G_F}` is used classically.
+
+# ROUTE
+
+Let `M = ad⁰ρbar(1)` and `L = F(M, μ_{ℓⁿ})`, a finite Galois extension of `F`.
+
+*Openness.* `z` is continuous (`ContinuousCohomology.continuous_eval₁`) and `M`
+is discrete (`k` discrete, `V` finite free), and `x ↦ ρ x` is continuous into the
+discrete `End_k M` because `ρbar` is. So `x ↦ (z x, ρ x)` is continuous into a
+discrete space and the surviving locus is the preimage of a subset of it.
+Concretely the locus is a union of cosets of the open normal subgroup `Γ_{L_z}`,
+where `L_z/L` is the extension cut out by `z|_{Γ L}`.
+
+*Nonemptiness.* `Γ L` acts trivially on `M`, so `z|_{Γ L}` is a HOMOMORPHISM
+`Γ L → M`, and `Γ L` is normal, so `hilbertTaylorWilesLocus` contains the whole
+coset `σ · Γ L` of any `σ` in it — and
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` above supplies one.
+Restriction `H¹(Γ F, M) → Hom(Γ L, M)` is injective on classes unramified outside
+`hilbertHardlyRamifiedPlaces ℓ F` because `H¹(Gal(L/F), M) = 0` — this is the step
+needing absolute irreducibility of `ρbar|_{G_{F(ζ_ℓ)}}`, which at `ℓ ≥ 5` follows
+from `hirrF` — so `z|_{Γ L} ≠ 0`. Now `ρ σ` has two DISTINCT eigenvalues, so
+`(ρ σ − 1) · M` is a PROPER subspace of `M`; if `z σ ∈ (ρ σ − 1) · M`, pick
+`τ ∈ Γ L` with `z τ` outside it and use `z (σ τ) = z σ + ρ σ (z τ)`
+(`ContinuousCohomology.cocycles₁_eval₁_mul`) to move out. Either `σ` or `σ τ`
+then lies in the intersection.
+
+**THE DATUM `𝒟₀` IS LOAD-BEARING AND MAY NOT BE DROPPED.** It is what supplies
+the Galois element of the nonemptiness half, through
+`exists_hilbertFixing_rootsOfUnity_charpoly_split`; and deviation (1) of
+`exists_hilbertTaylorWilesPrime`'s docstring records why no `k`-side hypothesis
+can replace it in this module.
+
+Both-ways audit: at the intended instantiation this is the cited Taylor–Wiles
+separation step. It is not vacuous — `hc0` is satisfiable as soon as
+`hilbertH1TwistUnramified ≠ ⊥`, and when that submodule IS `⊥` the leaf is
+vacuously true, which is harmless because `exists_hilbertTaylorWilesPrimeSet_core`
+then never calls it.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`; in particular a proof ending in `exfalso`
+on `hirrF` through `not_isIrreducible_of_isHardlyRamified_of_five_le` is
+FORBIDDEN, that dichotomy being proven over pillar α, which is proven over this
+cluster. -/
+theorem isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
+    IsOpen (hilbertSurvivingLocus F ρbar z) ∧
+      (hilbertSurvivingLocus F ρbar z ∩
+        hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty := sorry
+
+/-- **The LOCAL half of DDT Lemma 2.48 over `F`** (SORRY LEAF, cut out
+2026-07-28): at a place `w ∤ 2ℓ` where the class `c` is unramified, membership of
+`Frob_w` in the surviving locus of a cocycle representative implies that `c` does
+not die under the FULL local restriction at `w`.
+
+# ROUTE
+
+`hcunr` says `c` dies under restriction to the inertia group at every place off
+`hilbertHardlyRamifiedPlaces ℓ F`, and `w` is such a place (that is exactly what
+`hwℓ` and `hw2` say, unfolding the definition of `hilbertHardlyRamifiedPlaces` —
+note this is CHEAPER than its `ℚ`-level twin, which has to route the same step
+through the injectivity of `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`).
+
+So the restriction of `c` to the decomposition group `G_w` is INFLATED from the
+procyclic quotient `G_w / I_w`, topologically generated by `Frob_w`. For a
+procyclic group `⟨F⟩^` acting on a discrete module `M`, evaluation at `F` is an
+isomorphism `H¹(⟨F⟩^, M) ≅ M / (ρ F − 1) M`: a cocycle is determined by its value
+at `F` by the crossed-homomorphism identity
+(`ContinuousCohomology.cocycles₁_eval₁_mul`), and it is a coboundary exactly when
+that value lies in `(ρ F − 1) M`. Hence
+
+    loc_w c = 0  ↔  z (Frob_w) ∈ (ρ Frob_w − 1) · M  ↔  Frob_w ∉ survivingLocus,
+
+and `hmem` is the right-hand negation.
+
+The `↔` in the last display is stronger than needed: only the direction
+"`Frob_w ∈ survivingLocus ⟹ loc_w c ≠ 0`" is asserted here, and it needs only the
+EASY half — that a class dying locally has a representative whose value at
+`Frob_w` is a `(ρ Frob_w − 1)`-boundary, obtained by inflating a coboundary
+witness back along `G_w ↠ ⟨Frob_w⟩^`.
+`ContinuousCohomology.cocycleClass_eq_zero_iff` in the vendored
+`ContCohomology/Basic.lean` is the handle that turns the vanishing of a class into
+the cocycle being a coboundary.
+
+No local Tate duality is needed, in keeping with the deviation note on
+`IsHilbertTaylorWilesPrimeSet`.
+
+Both-ways audit and CIRCULARITY GUARD: as for the global half above. -/
+theorem notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V)
+    (z : ContinuousCohomology.cocycles₁ (hilbertAdZeroTwist F ρbar))
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hzc : ContinuousCohomology.cocycleClass (hilbertAdZeroTwist F ρbar) 1 z = c)
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar)
+    (w : HeightOneSpectrum (𝓞 F))
+    (hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal) (hw2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal)
+    (hmem : globalFrob w ∈ hilbertSurvivingLocus F ρbar z) :
+    c ∉ LinearMap.ker
+      (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := sorry
+
+/-- **The separating locus of a nonzero dual-Selmer class over `F` — the
+arithmetic core of DDT Lemma 2.48** (cut out 2026-07-28 by the decomposition of
+`exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero` below, and **PROVEN the
+same day** over the two halves
+`isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus` (global) and
+`notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus` (local), with
+the conjugation stability supplied by `hilbertSurvivingLocus_conj`).
+
+Packaging the conclusion as an abstract open conjugation-stable `V` — rather than
+as the concrete `hilbertSurvivingLocus` — is what keeps the Chebotarev extraction
+below independent of the cochain model: the consumer never mentions `cocycles₁`.
+
+Both-ways audit and CIRCULARITY GUARD: inherited from the two halves. -/
+theorem exists_hilbertSeparatingOpen_locResDecomp
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ)
+    {c : continuousCohomology 1 (hilbertAdZeroTwist F ρbar)}
+    (hcunr : c ∈ hilbertH1TwistUnramified ℓ F ρbar) (hc0 : c ≠ 0) :
+    ∃ W : Set (Γ F),
+      IsOpen W ∧
+      (∀ g x : Γ F, x ∈ W → g * x * g⁻¹ ∈ W) ∧
+      (W ∩ hilbertTaylorWilesLocus ℓ F ρbar n).Nonempty ∧
+      ∀ w : HeightOneSpectrum (𝓞 F), ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal →
+        ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal → globalFrob w ∈ W →
+        c ∉ LinearMap.ker
+          (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := by
+  obtain ⟨z, hzc⟩ :=
+    ContinuousCohomology.exists_cocycleClass_eq (X := hilbertAdZeroTwist F ρbar) 1 c
+  obtain ⟨hzopen, hzmeet⟩ :=
+    isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus ℓ hℓ5 F hirrF 𝒟₀
+      n z hzc hcunr hc0
+  exact ⟨hilbertSurvivingLocus F ρbar z, hzopen,
+    fun g x hx => hilbertSurvivingLocus_conj F ρbar z g x hx, hzmeet,
+    fun w hwℓ hw2 hmem =>
+      notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus ℓ F ρbar z
+        hzc hcunr w hwℓ hw2 hmem⟩
 
 /-- **Chebotarev separation of a single dual-Selmer class by a Taylor–Wiles place
-of `F` — DDT Lemma 2.48** (SORRY LEAF, cut out 2026-07-28 as the second of the
-two inputs of DDT Thm. 2.49 over `F`): given a NONZERO class
+of `F` — DDT Lemma 2.48** (cut out 2026-07-28 as the second of the
+two inputs of DDT Thm. 2.49 over `F`; **PROVEN the same day (flt-lean-58)** over
+the single leaf `exists_hilbertSeparatingOpen_locResDecomp` immediately above,
+itself over the two halves
+`isOpen_hilbertSurvivingLocus_and_meets_hilbertTaylorWilesLocus` and
+`notMem_ker_hilbertLocResDecompTwist1_of_mem_hilbertSurvivingLocus` — this
+declaration carries no direct `sorry` of its own).
+
+# WHAT IS PROVEN HERE, AND WHAT MOVED TO THE LEAVES
+
+The proof below is the CHEBOTAREV EXTRACTION and nothing else, in the shape
+`exists_hilbertTaylorWilesPrime` above already uses:
+
+* the leaf supplies an open, conjugation-stable `W` meeting
+  `hilbertTaylorWilesLocus ℓ F ρbar n`, at whose Frobenii `c` survives;
+* `isOpen_hilbertTaylorWilesLocus` makes `W ∩ hilbertTaylorWilesLocus` open and
+  the leaf makes it nonempty, so `dense_conjClasses_globalFrob` over `F` — applied
+  away from the two finite fibres over `2` and over `ℓ` — puts a Frobenius
+  CONJUGATE `g · Frob_w · g⁻¹` inside it;
+* conjugating back by `g⁻¹` (both `W` and the locus are conjugation-stable, the
+  latter by `hilbertTaylorWilesLocus_conj`) puts `Frob_w` itself inside it, which
+  is what makes this proof shorter than `exists_hilbertTaylorWilesPrime`'s, where
+  the two conditions had to be transported one at a time;
+* membership in the locus then reads off as the two arithmetic conditions exactly
+  as there: `adicArithFrob_rootsOfUnity_pow_residueCard` plus `hζ.pow_inj` turn
+  "fixes `μ_{ℓⁿ}`" into `N w ≡ 1 mod ℓⁿ`, and
+  `GaloisRep.charFrob_eq_charpoly_globalFrob` turns the charpoly clause into the
+  `charFrob` one.
+
+The excluded places are those over `2` and over `ℓ`: the latter because the
+Frobenius must be unramified for the roots-of-unity read-off, the former because
+the leaf's local computation needs `w ∉ hilbertHardlyRamifiedPlaces ℓ F`, i.e.
+needs `c` to be unramified at `w`. Excluding them costs nothing — two finite
+fibres out of a dense family.
+
+The original statement of the leaf is below unchanged; what follows is its
+original route note, which is now the route note of the two open halves.
+
+Given a NONZERO class
 `c ∈ H¹(F, ad⁰ρbar(1))` unramified outside `hilbertHardlyRamifiedPlaces ℓ F` and
 a level `n`, there is a Taylor–Wiles place `w` of `F` at that level — `w ∤ 2ℓ`,
 `N w ≡ 1 mod ℓ ^ n`, `ρbar|_{G_F}(Frob_w)` split with two distinct eigenvalues in
@@ -19433,7 +20328,69 @@ theorem exists_hilbertTaylorWilesPrime_locResDecomp_ne_zero
         (ρbar.map (algebraMap ℚ F)).charFrob w =
           (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)) ∧
       c ∉ LinearMap.ker
-        (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := sorry
+        (hilbertLocResDecompTwist1 F ρbar w).hom.toLinearMap := by
+  classical
+  -- the separating locus, and the Taylor–Wiles locus it meets
+  obtain ⟨W, hWopen, hWconj, ⟨σ, hσW, hσT⟩, hWsep⟩ :=
+    exists_hilbertSeparatingOpen_locResDecomp ℓ hℓ5 F hirrF 𝒟₀ n hcunr hc0
+  have hUopen : IsOpen (W ∩ hilbertTaylorWilesLocus ℓ F ρbar n) :=
+    hWopen.inter (isOpen_hilbertTaylorWilesLocus ℓ F 𝒟₀ n)
+  -- Chebotarev density over `F`, away from the places over `2` and over `ℓ`
+  have hℓne : ((ℓ : ℕ) : 𝓞 F) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out : ℓ.Prime).ne_zero
+  have h2ne : ((2 : ℕ) : 𝓞 F) ≠ 0 := Nat.cast_ne_zero.mpr (by norm_num)
+  set T : Finset (HeightOneSpectrum (𝓞 F)) :=
+    (finite_setOf_natCast_mem_asIdeal F _ hℓne).toFinset ∪
+      (finite_setOf_natCast_mem_asIdeal F _ h2ne).toFinset with hT
+  obtain ⟨x, hxU, hxfrob⟩ :=
+    (dense_conjClasses_globalFrob (K := F) T).inter_open_nonempty _ hUopen ⟨σ, hσW, hσT⟩
+  obtain ⟨w, hwT, g, rfl⟩ := hxfrob
+  have hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hmem => hwT (by
+    simp only [hT, Finset.mem_union, Set.Finite.mem_toFinset]
+    exact Or.inl hmem)
+  have hw2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hmem => hwT (by
+    simp only [hT, Finset.mem_union, Set.Finite.mem_toFinset]
+    exact Or.inr hmem)
+  obtain ⟨hxW, hxT⟩ := hxU
+  -- conjugating back by `g⁻¹` moves the CONJUGATE that density supplies to
+  -- `Frob_w` itself, in BOTH loci at once — which is what makes this proof
+  -- shorter than `exists_hilbertTaylorWilesPrime`'s, where the two conditions
+  -- had to be transported one at a time
+  have hconjinv : g⁻¹ * (g * globalFrob w * g⁻¹) * g⁻¹⁻¹ = globalFrob w := by group
+  have hFW : globalFrob w ∈ W := by
+    have h := hWconj g⁻¹ _ hxW
+    rwa [hconjinv] at h
+  have hFT : globalFrob w ∈ hilbertTaylorWilesLocus ℓ F ρbar n := by
+    have h := hilbertTaylorWilesLocus_conj ℓ F ρbar n g⁻¹ hxT
+    rwa [hconjinv] at h
+  obtain ⟨hfrobfix, α, β, hαβ, hpoly⟩ := hFT
+  -- `N w ≡ 1 mod ℓⁿ`, by the action of `Frob_w` on `μ_{ℓⁿ}`
+  have hnorm : Ideal.absNorm w.asIdeal = Nat.card (𝓞 F ⧸ w.asIdeal) := by
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  have hmod : Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n] := by
+    rcases Nat.eq_zero_or_pos n with hn | hn
+    · subst hn
+      rw [pow_zero]
+      exact Nat.modEq_one
+    · haveI : NeZero (ℓ ^ n) := ⟨pow_ne_zero n (Fact.out : ℓ.Prime).ne_zero⟩
+      obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (ℚ ᵃˡᵍ) (ℓ ^ n)
+      have hact := adicArithFrob_rootsOfUnity_pow_residueCard (ℓ := ℓ) F w hwℓ n
+        (hζ.toRootsOfUnity) (by exact (hζ.toRootsOfUnity).2)
+      have hfix := hfrobfix ζ hζ.pow_eq_one
+      have h1lt : 1 < ℓ ^ n := Nat.one_lt_pow hn.ne' (Fact.out : ℓ.Prime).one_lt
+      rw [hζ.val_toRootsOfUnity_coe] at hact
+      have hz : ζ ^ ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n))).val = ζ ^ 1 := by
+        rw [pow_one, ← hact]
+        exact hfix
+      have hval : ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n))).val = 1 :=
+        hζ.pow_inj (ZMod.val_lt _) h1lt hz
+      rw [← hnorm]
+      show Ideal.absNorm w.asIdeal % ℓ ^ n = 1 % ℓ ^ n
+      rw [Nat.mod_eq_of_lt h1lt, ← ZMod.val_natCast]
+      exact hval
+  refine ⟨w, hwℓ, hw2, hmod, ⟨α, β, hαβ, ?_⟩, hWsep w hwℓ hw2 hFW⟩
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+  exact hpoly
 
 /-- **The dual-Selmer-killing core over `F` — DDT Thm. 2.49** (PROVEN 2026-07-28
 over the two leaves above, replacing the internal sorried `have hcore` of
