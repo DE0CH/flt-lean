@@ -30,13 +30,39 @@ What is here, and all of it is PROVEN:
   equivalent to the principal form `⟨1, 1, m⟩` — i.e. the discriminant
   `1 − 4m` has ONE class.
 
-The one thing that is NOT here is the deep input, and it is isolated as the
-single leaf `neg_163_le_of_classNumberOne`; see its docstring.
+On top of that, `neg_163_le_of_classNumberOne` is now PROVEN by a decomposition
+along the Heegner–Stark route (Heegner 1952, Stark 1967; presented as in Cox,
+*Primes of the form x²+ny²*, §12, and Booher, *Modular curves and the class
+number one problem*, §6). The elementary half is proved here:
+
+* `not_dvd_sq_sub_of_classNumberOne` — **the elementary obstruction**: one class
+  forces `d` to be a non-square mod `4a` for every `a` with `2 ≤ a` and `4a < |d|`
+  (this is Booher's Proposition 2, i.e. "no small split primes", in the form that
+  needs no Legendre symbol);
+* `prime_of_classNumberOne` — **the reduction to prime discriminants**:
+  `d = −4`, `d = −8`, or `−d` is a prime `≡ 3 mod 4` (the elementary half of
+  Gauss's genus theory, run with explicit forms);
+* `mod_eight_eq_three_of_classNumberOne` — `p ≡ 3 mod 8` once `p > 8`;
+* `heegnerRelation_solutions` — the six solutions of Heegner's coefficient
+  relation `2(b²−4a) = (2b−a²)²`, over the Diophantine leaf below.
+
+`lt_exp_pi_sqrt`, the numeric bound `exp(π√p) > 640320³ + 745` for `p ≥ 164`, is
+also proved here. TWO leaves remain, and they are stated so that each can be
+worked on alone:
+
+* `exists_heegnerRelation_of_classNumberOne` — the DEEP one (complex
+  multiplication, Weber's functions, the `q`-expansion of `j`);
+* `eq_of_two_mul_mul_cube_add_one_eq_sq` — `2x(x³+1) = y²`, elementary and
+  self-contained.
 -/
 module
 
 public import Mathlib.Tactic
 public import Mathlib.Data.Nat.Prime.Basic
+public import Mathlib.Analysis.Real.Sqrt
+public import Mathlib.Analysis.Real.Pi.Bounds
+public import Mathlib.Analysis.Complex.ExponentialBounds
+public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 
 @[expose] public section
 
@@ -308,8 +334,358 @@ theorem equivalent_of_primeGenerating {m : ℕ} (hm : 2 ≤ m)
     · simp only [act, eval, principal]; rw [hga, h1]; ring
     · simp only [act, eval, principal]; rw [hga, h1, hcm]; ring
 
-/-- **THE CLASS NUMBER ONE THEOREM — Heegner (1952), Stark (1967), Baker (1966).
-DEEP LEAF, and the only sorry in this file.**
+/-! ### The elementary obstruction: represented values -/
+
+/-- The action is precomposition with the matrix: `(f ∘ M)(x, y) = f(px + qy, rx + sy)`. -/
+lemma eval_act (f : BinaryQuadraticForm) (p q r s x y : ℤ) :
+    (f.act p q r s).eval x y = f.eval (p * x + q * y) (r * x + s * y) := by
+  simp only [act, eval]; ring
+
+/-- The set of represented values is an invariant of proper equivalence. -/
+lemma Equivalent.represents {f g : BinaryQuadraticForm} (h : f.Equivalent g) {n : ℤ}
+    (hn : ∃ x y : ℤ, g.eval x y = n) : ∃ x y : ℤ, f.eval x y = n := by
+  obtain ⟨p, q, r, s, _, rfl⟩ := h
+  obtain ⟨x, y, hxy⟩ := hn
+  exact ⟨p * x + q * y, r * x + s * y, by rw [← eval_act]; exact hxy⟩
+
+/-- Completing the square: `4 a f(x,y) = (2 a x + b y)² − d y²`. -/
+lemma four_mul_a_mul_eval (f : BinaryQuadraticForm) (x y : ℤ) :
+    4 * f.a * f.eval x y = (2 * f.a * x + f.b * y) ^ 2 - f.discr * y ^ 2 := by
+  simp only [eval, discr]; ring
+
+/-- A form whose leading coefficient satisfies `2 ≤ a` and `4a < |d|` does not represent `1`.
+
+By `four_mul_a_mul_eval`, `f(x,y) = 1` gives `4a = (2ax + by)² + |d| y²`. If `y ≠ 0` the right
+side is at least `|d| > 4a`; and if `y = 0` it says `4a = 4a²x²`, i.e. `a·x² = 1`, so `a ∣ 1`. -/
+lemma not_represents_one {f : BinaryQuadraticForm} (ha : 2 ≤ f.a)
+    (hd : 4 * f.a < -f.discr) : ¬ ∃ x y : ℤ, f.eval x y = 1 := by
+  rintro ⟨x, y, hxy⟩
+  have key := four_mul_a_mul_eval f x y
+  rw [hxy, mul_one] at key
+  rcases eq_or_ne y 0 with rfl | hy
+  · have key0 : 4 * f.a = (2 * f.a * x) ^ 2 := by linarith [key]
+    have h1 : 4 * f.a * (f.a * x ^ 2) = 4 * f.a * 1 := by linear_combination -key0
+    have h2 : f.a * x ^ 2 = 1 :=
+      mul_left_cancel₀ (show (4 : ℤ) * f.a ≠ 0 by intro h; omega) h1
+    have h3 : f.a ∣ 1 := ⟨x ^ 2, h2.symm⟩
+    have := Int.le_of_dvd one_pos h3
+    omega
+  · have hy2 : 1 ≤ y ^ 2 := (one_le_sq_iff_one_le_abs _).mpr (Int.one_le_abs hy)
+    have hdpos : (0 : ℤ) < -f.discr := by linarith
+    have hbig : -f.discr ≤ -f.discr * y ^ 2 := le_mul_of_one_le_right hdpos.le hy2
+    nlinarith [sq_nonneg (2 * f.a * x + f.b * y)]
+
+/-- Every admissible discriminant carries a form with leading coefficient `1` — namely
+`⟨1, 0, −d/4⟩` or `⟨1, 1, (1−d)/4⟩` — which therefore represents `1`. -/
+lemma exists_a_eq_one (d : ℤ) (hd4 : d % 4 = 0 ∨ d % 4 = 1) :
+    ∃ f : BinaryQuadraticForm, f.a = 1 ∧ f.discr = d := by
+  rcases hd4 with h | h
+  · obtain ⟨e, rfl⟩ : ∃ e, d = 4 * e := ⟨d / 4, by omega⟩
+    exact ⟨⟨1, 0, -e⟩, rfl, by simp only [discr]; ring⟩
+  · obtain ⟨e, rfl⟩ : ∃ e, d = 1 + 4 * e := ⟨d / 4, by omega⟩
+    exact ⟨⟨1, 1, -e⟩, rfl, by simp only [discr]; ring⟩
+
+/-- **THE ELEMENTARY OBSTRUCTION TO CLASS NUMBER ONE.** If `d < 0` has exactly one class of
+positive definite forms, then for every `a ≥ 2` with `4a < |d|` the discriminant `d` is
+**not a square modulo `4a`**.
+
+From `b² ≡ d (mod 4a)` one builds `f = ⟨a, b, (b²−d)/(4a)⟩`, positive definite of discriminant
+`d`, which by `not_represents_one` does not represent `1`; but `exists_a_eq_one` supplies a form
+of the same discriminant that does, and represented values are an equivalence invariant.
+
+This is exactly Booher's Proposition 2 (*Modular curves and the class number one problem*):
+for `p ≡ 3 mod 4` prime, `h(−p) = 1` iff every prime `ℓ < √(p/4)`… — stated here without
+Legendre symbols, so it needs no quadratic reciprocity and no number field. -/
+theorem not_dvd_sq_sub_of_classNumberOne {d : ℤ} (hd : d < 0) (hd4 : d % 4 = 0 ∨ d % 4 = 1)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = d → g.discr = d → f.Equivalent g)
+    {a : ℤ} (ha : 2 ≤ a) (hlt : 4 * a < -d) (b : ℤ) (hdvd : 4 * a ∣ b ^ 2 - d) : False := by
+  obtain ⟨c, hc⟩ := hdvd
+  have hdisc : (⟨a, b, c⟩ : BinaryQuadraticForm).discr = d := by simp only [discr]; linarith
+  have hpd : (⟨a, b, c⟩ : BinaryQuadraticForm).IsPosDef :=
+    ⟨show (0 : ℤ) < a by omega, by rw [hdisc]; exact hd⟩
+  obtain ⟨g, hga, hgd⟩ := exists_a_eq_one d hd4
+  have hgpd : g.IsPosDef := ⟨by rw [hga]; norm_num, by rw [hgd]; exact hd⟩
+  have hequiv := hcl ⟨a, b, c⟩ g hpd hgpd hdisc hgd
+  refine not_represents_one (f := ⟨a, b, c⟩) (show (2 : ℤ) ≤ a from ha)
+    (by rw [hdisc]; exact hlt) ?_
+  exact hequiv.represents ⟨1, 0, by simp [eval, hga]⟩
+
+/-- A composite number factors as `u * v` with `2 ≤ u ≤ v`. -/
+lemma exists_ordered_factorization {N : ℕ} (h2 : 2 ≤ N) (hp : ¬ N.Prime) :
+    ∃ u v : ℕ, 2 ≤ u ∧ u ≤ v ∧ N = u * v := by
+  obtain ⟨m, ⟨j, rfl⟩, hm2, hmn⟩ := Nat.exists_dvd_of_not_prime2 h2 hp
+  have hj2 : 2 ≤ j := by
+    rcases Nat.lt_or_ge j 2 with h | h
+    · interval_cases j <;> omega
+    · exact h
+  rcases le_total m j with hle | hle
+  · exact ⟨m, j, hm2, hle, rfl⟩
+  · exact ⟨j, m, hj2, hle, Nat.mul_comm m j⟩
+
+/-- **THE ELEMENTARY REDUCTION OF CLASS NUMBER ONE TO PRIME DISCRIMINANTS.**
+
+If `d < 0` has one class of positive definite integral binary quadratic forms — primitive
+and imprimitive alike — then `d = −4`, `d = −8`, or `−d` is a prime congruent to `3` mod `4`.
+
+This is the elementary half of Gauss's genus theory, run with explicit inequivalent forms
+rather than genus characters (which would need Dirichlet's theorem for the surjectivity of the
+genus map). Each case exhibits a form of discriminant `d` whose leading coefficient `a`
+satisfies `2 ≤ a` and `4a < |d|`, hence which does not represent `1`:
+
+* `d = −4n` with `n = u·v`, `2 ≤ u ≤ v` — the form `⟨u, 0, v⟩`;
+* `d = −4p` with `p` an odd prime — the form `⟨2, 2, (p+1)/2⟩`;
+* `d = −N` with `N ≡ 3 mod 4` and `N = u·v`, `3 ≤ u ≤ v` — the form `⟨u, u, (u+v)/4⟩`
+  (note `4 ∣ u+v`, because `u·v ≡ 3 mod 4` with `u, v` odd forces `u ≢ v mod 4`; and `v ≥ 5`,
+  because `u = v = 3` would give `N = 9 ≡ 1 mod 4`).
+
+Quantifying over ALL forms rather than only primitive ones is what makes the second bullet
+work and what removes the four non-fundamental class-number-one discriminants
+`−12, −16, −27, −28`; see the note on `neg_163_le_of_classNumberOne`. -/
+theorem prime_of_classNumberOne {d : ℤ} (hd : d < 0) (hd4 : d % 4 = 0 ∨ d % 4 = 1)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = d → g.discr = d → f.Equivalent g) :
+    d = -4 ∨ d = -8 ∨ ∃ p : ℕ, p.Prime ∧ p % 4 = 3 ∧ d = -(p : ℤ) := by
+  have key : ∀ a : ℤ, 2 ≤ a → 4 * a < -d → ∀ b : ℤ, 4 * a ∣ b ^ 2 - d → False :=
+    fun _ => not_dvd_sq_sub_of_classNumberOne hd hd4 hcl
+  obtain ⟨N, rfl⟩ : ∃ N : ℕ, d = -(N : ℤ) := ⟨(-d).toNat, by omega⟩
+  rcases hd4 with h4 | h4
+  · -- `d ≡ 0 (mod 4)`: write `N = 4 n`.
+    obtain ⟨n, rfl⟩ : ∃ n : ℕ, N = 4 * n := ⟨N / 4, by omega⟩
+    by_cases hn2 : n ≤ 2
+    · have hn0 : 0 < n := by omega
+      interval_cases n
+      · exact Or.inl (by norm_num)
+      · exact Or.inr (Or.inl (by norm_num))
+    · exfalso
+      by_cases hp : n.Prime
+      · -- `n` an odd prime: use `⟨2, 2, (n+1)/2⟩`.
+        have hodd : n % 2 = 1 := by
+          rcases hp.eq_two_or_odd with h | h
+          · omega
+          · exact h
+        obtain ⟨k, rfl⟩ : ∃ k : ℕ, n = 2 * k + 1 := ⟨n / 2, by omega⟩
+        exact key 2 (by norm_num) (by push_cast; omega) 2
+          ⟨(k : ℤ) + 1, by push_cast; ring⟩
+      · -- `n` composite: use `⟨u, 0, v⟩`.
+        obtain ⟨u, v, hu2, huv, rfl⟩ := exists_ordered_factorization (by omega) hp
+        have hu2' : (2 : ℤ) ≤ (u : ℤ) := by exact_mod_cast hu2
+        have hv2' : (2 : ℤ) ≤ (v : ℤ) := by exact_mod_cast le_trans hu2 huv
+        exact key (u : ℤ) hu2' (by push_cast; nlinarith) 0
+          ⟨(v : ℤ), by push_cast; ring⟩
+  · -- `d ≡ 1 (mod 4)`, i.e. `N ≡ 3 (mod 4)`.
+    have hN4 : N % 4 = 3 := by omega
+    by_cases hp : N.Prime
+    · exact Or.inr (Or.inr ⟨N, hp, hN4, rfl⟩)
+    · exfalso
+      obtain ⟨u, v, hu2, huv, hNuv⟩ := exists_ordered_factorization (by omega) hp
+      have hu_odd : u % 2 = 1 := by
+        have hnd : ¬ ((2 : ℕ) ∣ u) := by
+          intro h
+          have h2N : (2 : ℕ) ∣ N := by rw [hNuv]; exact h.mul_right v
+          omega
+        omega
+      have hv_odd : v % 2 = 1 := by
+        have hnd : ¬ ((2 : ℕ) ∣ v) := by
+          intro h
+          have h2N : (2 : ℕ) ∣ N := by rw [hNuv]; exact h.mul_left u
+          omega
+        omega
+      obtain ⟨s, rfl⟩ : ∃ s : ℕ, u = 2 * s + 1 := ⟨u / 2, by omega⟩
+      obtain ⟨t, rfl⟩ : ∃ t : ℕ, v = 2 * t + 1 := ⟨v / 2, by omega⟩
+      obtain ⟨P, hP⟩ : ∃ P : ℕ, s * t = P := ⟨s * t, rfl⟩
+      have hexp : N = 4 * P + 2 * s + 2 * t + 1 := by rw [hNuv, ← hP]; ring
+      -- `s + t` is odd, hence `4 ∣ u + v`; and `s < t`, hence `v ≥ 5`.
+      obtain ⟨w, hw⟩ : ∃ w : ℕ, 2 * s + 1 + (2 * t + 1) = 4 * w :=
+        ⟨(2 * s + 2 * t + 2) / 4, by omega⟩
+      have ht2 : 2 ≤ t := by omega
+      have hNZ : (N : ℤ) = ((2 * s + 1 : ℕ) : ℤ) * ((2 * t + 1 : ℕ) : ℤ) := by exact_mod_cast hNuv
+      have hwZ : ((2 * s + 1 : ℕ) : ℤ) + ((2 * t + 1 : ℕ) : ℤ) = 4 * (w : ℤ) := by
+        exact_mod_cast hw
+      have ht2' : (5 : ℤ) ≤ ((2 * t + 1 : ℕ) : ℤ) := by push_cast; omega
+      have hs0' : (3 : ℤ) ≤ ((2 * s + 1 : ℕ) : ℤ) := by push_cast; omega
+      refine key ((2 * s + 1 : ℕ) : ℤ) (by push_cast; omega) ?_
+        ((2 * s + 1 : ℕ) : ℤ) ⟨(w : ℤ), ?_⟩
+      · rw [hNZ]; nlinarith
+      · rw [hNZ]; linear_combination ((2 * s + 1 : ℕ) : ℤ) * hwZ
+
+/-! ### Heegner's route -/
+
+/-- **`p ≡ 3 (mod 8)`.** If `−p` has one class and `p > 8` then `p ≡ 3 mod 8`.
+
+For `p ≡ 7 mod 8` one has `8 ∣ 1 + p`, i.e. `1² ≡ −p (mod 8)`, so `⟨2, 1, (p+1)/8⟩` is a
+positive definite form of discriminant `−p` that does not represent `1`. (Classically this is
+the statement that `2` splits in `ℚ(√−p)` exactly when `p ≡ 7 mod 8`; Heegner and Cox instead
+deduce `p = 7` from `h(−4p) = h(−p) = 1` and the even-discriminant list, which needs the class
+number formula for non-maximal orders. The form-theoretic route above needs neither.) -/
+theorem mod_eight_eq_three_of_classNumberOne {p : ℕ} (hp4 : p % 4 = 3) (h8 : 8 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    p % 8 = 3 := by
+  rcases (by omega : p % 8 = 3 ∨ p % 8 = 7) with h | h
+  · exact h
+  · exfalso
+    obtain ⟨q, hq⟩ : ∃ q : ℕ, p + 1 = 8 * q := ⟨(p + 1) / 8, by omega⟩
+    have hqZ : (p : ℤ) + 1 = 8 * (q : ℤ) := by exact_mod_cast hq
+    exact not_dvd_sq_sub_of_classNumberOne (d := -(p : ℤ)) (by omega) (by omega) hcl
+      (a := 2) (by norm_num) (by omega) 1 ⟨(q : ℤ), by linear_combination hqZ⟩
+
+/-- **DIOPHANTINE LEAF.** The only integer solutions of `2x(x³ + 1) = y²` are
+`(0, 0)`, `(−1, 0)`, `(1, ±2)` and `(2, ±6)`.
+
+This is Booher's Proposition 39 / Cox, *Primes of the form x²+ny²*, end of §12. It is
+elementary and self-contained: **nothing else in this file is needed to attack it.**
+
+PROOF PLAN (Booher, Prop. 39 and Lemma 40). Handle `x = 0, −1` directly. Otherwise `x` and
+`x³+1` are coprime, so `±(x³+1)` is a square or twice a square, i.e.
+`x³ + 1 = ε z²` or `x³ + 1 = 2ε z²` with `ε = ±1`. In the case `x³ + 1 = 2z²`, substituting back
+gives `4xz² = y²`, so `x` is itself a square, `x = w²`. This leaves four subsidiary equations:
+
+1. `x³ + 1 = z²` — solutions `(−1, 0)`, `(0, ±1)`, `(2, ±3)`. Euler's descent: there are no
+   positive integers `b ≠ c` with `3 ∤ c` and `bc(c² − 3bc + 3b²)` a perfect square; apply it
+   to `x = a/b`, `c = a + b`, noting `b(a³+b³) = bc(c² − 3bc + 3b²)`. This is the hard one.
+2. `x³ + 1 = −z²` — only `(−1, 0)`; factor `x³ = −(z² + 1)` over `ℤ[i]`.
+3. `w⁶ + 1 = 2z²` — only `w² = 1`, `z = ±1`; factor over `ℤ[ω]`.
+4. `x³ + 1 = −2z²` — only `(−1, 0)`; factor over `ℤ[√−2]`.
+
+All three quadratic rings have class number one, which is what makes the factorisations work.
+(These are Mordell equations; `y² = x³ + 1` is the elliptic curve `27a3`, rank `0`, and a CAS
+finds its integral points in under a second — useful as a check, never as the proof.) -/
+theorem eq_of_two_mul_mul_cube_add_one_eq_sq {x y : ℤ} (h : 2 * x * (x ^ 3 + 1) = y ^ 2) :
+    (x = 0 ∧ y = 0) ∨ (x = -1 ∧ y = 0) ∨ (x = 1 ∧ y = 2) ∨ (x = 1 ∧ y = -2) ∨
+      (x = 2 ∧ y = 6) ∨ (x = 2 ∧ y = -6) :=
+  sorry
+
+/-- **Heegner's coefficient relation has exactly six solutions.**
+
+`2(b² − 4a) = (2b − a²)²` holds for `(a, b)` exactly in
+`{(0,0), (2,4), (−2,8), (−2,0), (−4,28), (−4,4)}`.
+
+PROVEN here over `eq_of_two_mul_mul_cube_add_one_eq_sq`. The relation forces `a` even (the
+right side is even, so `2b − a²` is, so `a²` is) and then `b` even; writing `a = −2x` and
+`b = 2m`, the relation becomes exactly `2x(x³ + 1) = (m − 2x²)²`, so the six solutions
+`(x, y) = (0,0), (−1,0), (1,±2), (2,±6)` transport to the six pairs above via `a = −2x`,
+`b = 4x² + 2y`. -/
+theorem heegnerRelation_solutions {a b : ℤ} (h : 2 * (b ^ 2 - 4 * a) = (2 * b - a ^ 2) ^ 2) :
+    (a = 0 ∧ b = 0) ∨ (a = 2 ∧ b = 4) ∨ (a = -2 ∧ b = 8) ∨ (a = -2 ∧ b = 0) ∨
+      (a = -4 ∧ b = 28) ∨ (a = -4 ∧ b = 4) := by
+  have heven : Even ((2 * b - a ^ 2) ^ 2) := ⟨b ^ 2 - 4 * a, by linarith⟩
+  have hu : Even (2 * b - a ^ 2) := (Int.even_pow' (by norm_num)).mp heven
+  have ha2 : Even (a ^ 2) := by obtain ⟨k, hk⟩ := hu; exact ⟨b - k, by linarith⟩
+  obtain ⟨k, hk⟩ := (Int.even_pow' (by norm_num)).mp ha2
+  obtain ⟨x, rfl⟩ : ∃ x : ℤ, a = -2 * x := ⟨-k, by omega⟩
+  have hb2 : Even (b ^ 2) := by
+    refine ⟨(b - 2 * x ^ 2) ^ 2 - 4 * x, ?_⟩
+    refine mul_left_cancel₀ (show (2 : ℤ) ≠ 0 by norm_num) ?_
+    linear_combination h
+  obtain ⟨m, rfl⟩ : ∃ m : ℤ, b = 2 * m := by
+    obtain ⟨n, hn⟩ := (Int.even_pow' (by norm_num)).mp hb2
+    exact ⟨n, by omega⟩
+  have hy : 2 * x * (x ^ 3 + 1) = (m - 2 * x ^ 2) ^ 2 :=
+    mul_left_cancel₀ (show (8 : ℤ) ≠ 0 by norm_num) (by linear_combination h)
+  rcases eq_of_two_mul_mul_cube_add_one_eq_sq hy with
+    ⟨hx, hm⟩ | ⟨hx, hm⟩ | ⟨hx, hm⟩ | ⟨hx, hm⟩ | ⟨hx, hm⟩ | ⟨hx, hm⟩ <;>
+      subst hx <;> norm_num at hm ⊢ <;> omega
+
+/-- **The numeric bound.** `exp(π √p) > 262537412640768745` for `p ≥ 164`.
+
+Nothing arithmetic is involved: `262537412640768745 = 640320³ + 745`, and
+`(log 262537412640768745 / π)² = 163.000000000…`, so the statement is SHARP at `p = 163` — the
+celebrated Ramanujan near-integer `exp(π√163) = 262537412640768743.99999999999925…` — and has
+a comfortable margin at `p = 164`, where `exp(π√164) ≈ 2.9685·10¹⁷`.
+
+Proved from `√p > 12.8` and `π > 3.141592`, giving `π√p > 40.2123`, then splitting
+`exp(π√p) = exp 40 · exp(π√p − 40)` with `exp 1 > 2.718` for the first factor and
+`1 + t ≤ exp t` for the second: `2.718⁴⁰ · 1.2123 > 2.8417·10¹⁷`. -/
+theorem lt_exp_pi_sqrt {p : ℕ} (hp : 164 ≤ p) :
+    (262537412640768745 : ℝ) < Real.exp (Real.pi * Real.sqrt p) := by
+  have h164 : (164 : ℝ) ≤ (p : ℝ) := by exact_mod_cast hp
+  have hs : (12.8 : ℝ) < Real.sqrt p := (Real.lt_sqrt (by norm_num)).mpr (by nlinarith)
+  have hpi : (3.141592 : ℝ) < Real.pi := Real.pi_gt_d6
+  have hprod : (40.2123 : ℝ) < Real.pi * Real.sqrt p := by
+    nlinarith [Real.pi_pos, Real.sqrt_nonneg (p : ℝ)]
+  have he : (2.718 : ℝ) < Real.exp 1 := by linarith [Real.exp_one_gt_d9]
+  have hL : (2.718 : ℝ) ^ 40 < Real.exp 40 := by
+    have h40 : Real.exp 40 = Real.exp 1 ^ 40 := by
+      rw [← Real.exp_nat_mul]; norm_num
+    rw [h40]; gcongr
+  have ht : (1.2123 : ℝ) ≤ Real.exp (Real.pi * Real.sqrt p - 40) :=
+    le_trans (by linarith) (Real.add_one_le_exp _)
+  have hsplit : Real.exp 40 * Real.exp (Real.pi * Real.sqrt p - 40)
+      = Real.exp (Real.pi * Real.sqrt p) := by
+    rw [← Real.exp_add]; ring_nf
+  calc (262537412640768745 : ℝ) < (2.718 : ℝ) ^ 40 * 1.2123 := by norm_num
+    _ ≤ Real.exp 40 * Real.exp (Real.pi * Real.sqrt p - 40) :=
+        mul_le_mul hL.le ht (by norm_num) (Real.exp_pos _).le
+    _ = Real.exp (Real.pi * Real.sqrt p) := hsplit
+
+/-- **THE DEEP LEAF: HEEGNER'S COMPLEX-MULTIPLICATION INPUT.**
+Heegner (1952), Stark (1967); the presentation is Cox, *Primes of the form x²+ny²*, §12, as
+worked out in Booher, *Modular curves and the class number one problem*, §6.
+
+If `p ≡ 3 (mod 8)` is a prime `> 3` and the discriminant `−p` has one class, then there are
+integers `a, b` satisfying Heegner's coefficient relation `2(b² − 4a) = (2b − a²)²`, such that
+the associated integer
+
+  `γ = −(b² − 4a)² − 8(2b − a²)`
+
+satisfies `exp(π √p) ≤ |γ|³ + 745`.
+
+WHAT `γ` IS, AND WHERE EACH PIECE COMES FROM. Put `τ₀ = (3 + √−p)/2`, and let
+`f₂(τ) = √2 · η(2τ)/η(τ)` be Weber's function and `γ₂ = j^{1/3}` the real cube root of the
+modular `j`-invariant. Then:
+
+* `h(−p) = 1` makes `K(j(τ₀))` the Hilbert class field of `K = ℚ(√−p)`, so `j(τ₀) ∈ ℤ`; since
+  `p ≢ 0 mod 3`, also `γ₂(τ₀) ∈ ℤ`. **This is the main theorem of complex multiplication.**
+* Weber's identity `γ₂ = (f₂²⁴ + 16)/f₂⁸` (an identity of modular functions, provable from the
+  `η`-product) shows `α⁴ = −f₂(τ₀)⁸` is a root of `x³ − γ₂ x − 16`, where
+  `α = ζ₈⁻¹ f₂(τ₀)²`.
+* `α` generates the same cubic field, so it has a monic cubic minimal polynomial
+  `x³ + ax² + bx + c` over `ℤ`. Squaring twice ("separate even and odd degree terms, square")
+  turns that into a cubic for `α⁴`; matching it against `x³ − γ₂x − 16` gives `c = ±2` and the
+  system `2(b² − 4a) = (2b − a²)²`, `γ₂ = −(b² − 4a)² − 8(2b − a²)`. **This is the relation
+  above** — and it is the step Weber missed, which is why the problem waited sixty years.
+* Finally `j(τ₀) = q⁻¹ + 744 + 196884q + …` with `q = −exp(−π√p)` real, so
+  `exp(π√p) = |j(τ₀)| + 744 − 196884·exp(−π√p) − … ≤ |γ₂|³ + 745`. **This is the analytic
+  half**, and it is what converts the finite list of `γ₂` values into a bound on `p` without
+  needing "`j` determines the field".
+
+FAITHFULNESS, machine-checked. The hypotheses are satisfiable exactly for
+`p ∈ {11, 19, 43, 67, 163}`, with `γ = −32, −96, −960, −5280, −640320` respectively (`p = 3`
+is excluded by `3 < p`, and would give `γ = 0`). The final inequality was verified at all six
+values in `PARI/GP`, minimum slack `1.0000`:
+
+| `p`   | `|γ|³ + 745`         | `exp(π√p)`               |
+|-------|----------------------|--------------------------|
+| `3`   | `745`                | `230.7646`               |
+| `11`  | `33513`              | `33506.1431`             |
+| `19`  | `885481`             | `885479.7777`            |
+| `43`  | `884736745`          | `884736743.9998`         |
+| `67`  | `147197952745`       | `147197952743.999999`    |
+| `163` | `262537412640768745` | `262537412640768744.000` |
+
+The constant `745` is essentially forced: `744` would leave slack `0.0000` at `p = 163`.
+
+WHAT IT WOULD TAKE. The `j`-function is not in mathlib at this pin, but its ingredients are:
+`Mathlib.NumberTheory.ModularForms.DedekindEta` (`η`),
+`Mathlib.NumberTheory.ModularForms.LevelOne.GradedRing` (`E₄`, `E₆`, `Δ`, and
+`Δ = (E₄³ − E₆²)/1728`), and `Mathlib.NumberTheory.ModularForms.QExpansion`. So `j = E₄³/Δ`
+and `f₂ = √2 · η(2τ)/η(τ)` are both *definable* today, and the `q`-expansion bullet is
+within reach of the existing `qExpansion` API. What is genuinely absent everywhere — mathlib,
+`~/cs/FLT`, and this project — is the main theorem of complex multiplication and the ring
+class field theory behind the first bullet; that is the real cost of this leaf, and it is where
+a further decomposition should cut. The remaining bullets are ordinary (if lengthy) modular
+function identities. -/
+theorem exists_heegnerRelation_of_classNumberOne {p : ℕ} (hp : p.Prime) (hp8 : p % 8 = 3)
+    (h3 : 3 < p)
+    (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
+      f.discr = -(p : ℤ) → g.discr = -(p : ℤ) → f.Equivalent g) :
+    ∃ a b : ℤ, 2 * (b ^ 2 - 4 * a) = (2 * b - a ^ 2) ^ 2 ∧
+      Real.exp (Real.pi * Real.sqrt p) ≤
+        ((|(b ^ 2 - 4 * a) ^ 2 + 8 * (2 * b - a ^ 2)| ^ 3 + 745 : ℤ) : ℝ) :=
+  sorry
+
+/-- **THE CLASS NUMBER ONE THEOREM — Heegner (1952), Stark (1967), Baker (1966).**
 
 If the discriminant `d < 0` has exactly ONE class of positive definite integral
 binary quadratic forms (i.e. any two such forms of discriminant `d` are properly
@@ -335,46 +711,65 @@ Both hypotheses are load-bearing. Without `d < 0` there are no positive
 definite forms at all and the hypothesis is vacuous; likewise without
 `d ≡ 0, 1 (mod 4)`, since `b² − 4ac ≡ 0, 1 (mod 4)` always.
 
-WHY THIS IS OPEN, and what it would take. The hypothesis says the class number
-of the order of discriminant `d` is one. Every known proof is deep:
+PROVEN here, along the Heegner–Stark route, over three leaves:
 
-* **Heegner–Stark.** Complex multiplication: `h(d) = 1` forces `j(τ)` to be a
-  rational integer for `τ` the associated CM point, and the Weber functions
-  then produce a Diophantine equation with no large solutions. Needs the
-  `j`-function, its `q`-expansion with integral coefficients, the modular
-  equation, and the main theorem of complex multiplication. None of this
-  exists in mathlib at this pin, in `~/cs/FLT`, or in this project.
-* **Baker.** An effective lower bound for linear forms in logarithms of
-  algebraic numbers, applied through the Gelfond–Linnik reduction. Needs
-  transcendence machinery (auxiliary functions, Siegel's lemma, extrapolation)
-  and a theory of heights. Also absent from all three trees.
-* **Goldfeld–Gross–Zagier.** Strictly harder: it needs `L`-functions of
-  elliptic curves and Heegner points.
+1. `prime_of_classNumberOne` — ELEMENTARY, proven above: `d = −4`, `d = −8`, or
+   `−d` is a prime `p ≡ 3 mod 4`. Then `mod_eight_eq_three_of_classNumberOne`
+   pins `p ≡ 3 mod 8` once `p > 8`. Together these are the elementary half of
+   genus theory plus the `2`-adic condition, and they cost no CM theory at all.
+2. `exists_heegnerRelation_of_classNumberOne` — the DEEP leaf: complex
+   multiplication, Weber's functions and the `q`-expansion of `j` produce
+   integers `a, b` with `2(b² − 4a) = (2b − a²)²` and
+   `exp(π√p) ≤ |γ|³ + 745`, `γ = −(b² − 4a)² − 8(2b − a²)`.
+3. `heegnerRelation_solutions` — proven over the DIOPHANTINE leaf
+   `eq_of_two_mul_mul_cube_add_one_eq_sq` (`2x(x³+1) = y²`): the relation has
+   exactly six solutions, so `|γ| ≤ 640320` and `|γ|³ + 745 ≤ 640320³ + 745`.
+4. `lt_exp_pi_sqrt` — PROVEN: `exp(π√p) > 640320³ + 745` for `p ≥ 164`.
 
-The ANALYTIC route is a dead end for a DIFFERENT reason and it is worth
-recording so nobody re-costs it: Dirichlet's class number formula gives
-`L(1, χ_d) = π h / √|d|`, and `h ≥ 1` already yields `L(1, χ_d) ≥ π/√|d|`;
-`h = 1` is exactly the EQUALITY case, i.e. precisely the Siegel-zero scenario.
-An elementary or soft-analytic argument cannot beat the trivial bound, and
-Siegel's improvement is ineffective by construction.
+The two routes NOT taken, recorded so nobody re-costs them:
 
-REFUTATION CHECKS for the three "absent" claims above, all returning zero hits
-against this pin:
-`grep -rn "Heegner\|Rabinowitsch\|BinaryQuadratic" .lake/packages/mathlib/Mathlib/`,
-the same over `~/cs/FLT/FLT`, and
-`grep -rn "linear form.*logarithm\|Baker" .lake/packages/mathlib/Mathlib/NumberTheory/`. -/
+* **Baker.** An effective lower bound for linear forms in logarithms plus the
+  Gelfond–Linnik reduction. The reduction is itself research-level and cannot
+  be cut into checkable statements, which is why this route was rejected;
+  the transcendence machinery (auxiliary functions, Siegel's lemma,
+  extrapolation, heights) is absent from mathlib, `~/cs/FLT` and this project.
+* **Goldfeld–Gross–Zagier.** Strictly harder: `L`-functions of elliptic curves
+  and Heegner points.
+
+The SOFT-ANALYTIC route is a dead end for a DIFFERENT reason: Dirichlet's class
+number formula gives `L(1, χ_d) = π h / √|d|`, and `h ≥ 1` already yields
+`L(1, χ_d) ≥ π/√|d|`; `h = 1` is exactly the EQUALITY case, i.e. precisely the
+Siegel-zero scenario. An elementary or soft-analytic argument cannot beat the
+trivial bound, and Siegel's improvement is ineffective by construction. -/
 theorem neg_163_le_of_classNumberOne {d : ℤ} (hd : d < 0) (hd4 : d % 4 = 0 ∨ d % 4 = 1)
     (hcl : ∀ f g : BinaryQuadraticForm, f.IsPosDef → g.IsPosDef →
       f.discr = d → g.discr = d → f.Equivalent g) :
-    -163 ≤ d :=
-  sorry
+    -163 ≤ d := by
+  rcases prime_of_classNumberOne hd hd4 hcl with rfl | rfl | ⟨p, hp, hp4, rfl⟩
+  · norm_num
+  · norm_num
+  · by_contra hcon
+    have hple : 164 ≤ p := by
+      have : (163 : ℤ) < (p : ℤ) := by omega
+      exact_mod_cast this
+    have hp8 : p % 8 = 3 := mod_eight_eq_three_of_classNumberOne hp4 (by omega) hcl
+    obtain ⟨a, b, hrel, hbnd⟩ :=
+      exists_heegnerRelation_of_classNumberOne hp hp8 (by omega) hcl
+    have hint : |(b ^ 2 - 4 * a) ^ 2 + 8 * (2 * b - a ^ 2)| ^ 3 + 745
+        ≤ (262537412640768745 : ℤ) := by
+      rcases heegnerRelation_solutions hrel with
+        ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> norm_num
+    have hcast : ((|(b ^ 2 - 4 * a) ^ 2 + 8 * (2 * b - a ^ 2)| ^ 3 + 745 : ℤ) : ℝ)
+        ≤ (262537412640768745 : ℝ) := by exact_mod_cast hint
+    linarith [lt_exp_pi_sqrt hple]
 
 /-- **Rabinowitsch's theorem.** If `x² + x + m` is prime for every `x` with
 `x + 1 < m`, then `m ≤ 41`.
 
-PROVEN here over the single deep leaf `neg_163_le_of_classNumberOne`. The
-elementary content — that the hypothesis forces the discriminant `1 − 4m` to
-have one class — is `equivalent_of_primeGenerating`, which rests on Gauss
+PROVEN here over `neg_163_le_of_classNumberOne`, which is itself proven over the
+Heegner leaves. The elementary content — that the hypothesis forces the
+discriminant `1 − 4m` to have one class — is
+`equivalent_of_primeGenerating`, which rests on Gauss
 reduction (`exists_reduced_equivalent`) and the reduced-form computation
 (`a_eq_one_of_primeGenerating`). The bound is SHARP: the hypothesis holds
 exactly for `m ∈ {2, 3, 5, 11, 17, 41}`. -/
