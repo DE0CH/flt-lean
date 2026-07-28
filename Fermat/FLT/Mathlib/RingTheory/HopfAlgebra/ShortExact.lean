@@ -99,23 +99,23 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * `HopfAlgebra.IsShortExact.augmentationIdeal_sq_eq` — idempotence of the augmentation ideal is
   extension-closed. **PROVEN**.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN**, unconditionally.
-* `Bialgebra.augmentationIdeal_sq_eq_of_formallyUnramified` and
-  `HopfAlgebra.formallyUnramified_of_augmentationIdeal_sq_eq` — a group scheme is unramified iff
-  its augmentation ideal is idempotent. **PROVEN**, over an arbitrary base.
-* `HopfAlgebra.IsShortExact.augmentationIdeal_sq_eq` — idempotence of the augmentation ideal is
-  extension-closed. **PROVEN**.
 * `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. **PROVEN** as an
-  assembly of the four statements below, two of which are open.
+  assembly of the four statements below, exactly one of which is open.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
-* `Module.Flat.quotient_range_of_rTensor_injective` — a flat module modulo a *pure* submodule is
-  flat. OPEN, and the only commutative-algebra input this file assumes; stated at the root
-  namespace because it belongs in mathlib, which has neither it nor a `Tor` long exact sequence
-  nor a `pure` API at this pin.
+* `AlgHom.flat_quotient_range_of_faithfullyFlat` — the cokernel of a faithfully flat algebra map
+  is a flat `R`-module. **PROVEN** (2026-07-28) by the diagram chase in the `FaithfullyFlatSplit`
+  section. This is the general-module-theory content that this file used to assume as a sorried
+  root-namespace leaf `Module.Flat.quotient_range_of_rTensor_injective` ("a flat module modulo a
+  pure submodule is flat"). **That leaf no longer exists**: it was introduced on one branch while
+  a second branch proved the same conclusion outright, and the merge kept the proven route. Do not
+  re-create it — nothing in this file needs it, and a general restatement with no consumer would
+  be free-floating.
 * `HopfAlgebra.IsShortExact.rTensor_injective` — `i` is a **pure** map of `R`-modules.
   **PROVEN** (2026-07-28) from the `faithfullyFlat` field alone.
-* `HopfAlgebra.IsShortExact.flat_quotient` — `A / i(A'')` is `R`-flat. **PROVEN** (2026-07-28)
-  from the two above. Re-audited the same day: it is **not** gated on Takeuchi's theorem, contrary
-  to what this file recorded — see its docstring.
+  Note there is no longer a separate `HopfAlgebra.IsShortExact.flat_quotient` wrapper either: the
+  branch that introduced it also introduced the leaf, and both went when the merge kept the proven
+  route. `AlgHom.flat_quotient_range_of_faithfullyFlat` applied to `i.toAlgHom` is that statement.
+  It is **not** gated on Takeuchi's theorem, contrary to what this file used to record.
 * `HopfAlgebra.IsShortExact.exists_linearRetraction` — `i(A'')` is an `R`-module direct summand
   of `A`. **PROVEN** (2026-07-27) from faithful flatness alone, via purity of a faithfully flat
   algebra map; the fppf-descent route the docstring used to record is not needed. See the
@@ -123,22 +123,26 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * `HopfAlgebra.IsShortExact.surjective_cartierDual_map` — **PROVEN** from the retraction.
 * `HopfAlgebra.IsShortExact.le_ker_cartierDual` — the easy half of the dual kernel condition.
   **PROVEN**, from `apply_comp` alone.
-* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. OPEN. (Its "gated on fppf
-  descent" note is **withdrawn**: the sibling field carrying the identical note turned out to
-  need no descent at all. See its docstring for the recommended cut.)
-* `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — OPEN; the deepest field, classically
-  `Ext¹(G'', 𝔾ₘ) = 0`. Reduces to `Module.Free (CartierDual R A') (CartierDual R A)` by an
-  instance already in the pin.
+* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. **PROVEN** from the single cut
+  `exists_basis_cartierDual`. (Its "gated on fppf descent" note is **withdrawn**: the sibling
+  field carrying the identical note turned out to need no descent at all.)
+* `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — the deepest field, classically
+  `Ext¹(G'', 𝔾ₘ) = 0`. **PROVEN** from the same cut, via
+  `Module.Free (CartierDual R A') (CartierDual R A)` and an instance already in the pin.
+* `HopfAlgebra.IsShortExact.exists_basis_cartierDual` — the dual normal basis, `D(A)` free of
+  rank `rk_R A''` over `D(A')`. **OPEN — the only open statement in this file.**
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN** (2026-07-27),
   with no non-Hopf leaf left under it.
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
   by multiplicative type is of multiplicative type. **PROVEN** from the two above.
 
-This file assumes **no** non-Hopf leaf. Two branches closed
-`IsShortExact.flat_quotient` concurrently and by different routes: one over a new sorried general
-statement `Module.Flat.quotient_range_of_rTensor_injective`, the other — kept here — over the
-PROVEN `AlgHom.flat_quotient_range_of_faithfullyFlat` in the `FaithfullyFlatSplit` section below,
-which needs no leaf at all. It used to carry a different sorried shim
+This file assumes **no** non-Hopf leaf. Two branches closed flatness of `A ⧸ i(A'')` concurrently
+and by different routes: one over a new sorried general statement
+`Module.Flat.quotient_range_of_rTensor_injective` wrapped as `IsShortExact.flat_quotient`, the
+other — kept here — over the PROVEN `AlgHom.flat_quotient_range_of_faithfullyFlat` in the
+`FaithfullyFlatSplit` section below, which needs no leaf at all. The merge kept the second, so
+**neither the leaf nor the `flat_quotient` wrapper exists any more**; a task prompt naming either
+of them by line number is describing the losing branch. It used to carry a different sorried shim
 `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` (flat + unramified +
 finitely presented is étale, Stacks 00UU); that statement **is in the pin**, as
 `Algebra.Etale.of_formallyUnramified_of_flat` in `Mathlib/RingTheory/Smooth/Fiber.lean`, so the
@@ -692,10 +696,15 @@ is two mathlib lemmas:
   A ⊗_{A''} (A'' ⊗[R] N) ≃ₗ A ⊗[R] N`, under which `1 ⊗ₜ (a'' ⊗ₜ n) ↦ i a'' ⊗ₜ n`, i.e. the unit
   becomes `LinearMap.rTensor N i`.
 
-This is the Hopf-side content of `IsShortExact.flat_quotient`. It is retained as a named lemma
-because purity of `i` is worth having on its own, but the file's own route to `flat_quotient` no
-longer goes through it: `AlgHom.flat_quotient_range_of_faithfullyFlat` in the
-`FaithfullyFlatSplit` section proves the same conclusion outright. -/
+This is the Hopf-side statement of purity, i.e. the Hopf specialisation of
+`AlgHom.rTensor_injective_of_faithfullyFlat`. **It currently has no consumer.** It was written to
+feed a route to flatness of `A ⧸ i(A'')` that went through a sorried general lemma
+(`Module.Flat.quotient_range_of_rTensor_injective`); a concurrent branch proved the same conclusion
+outright as `AlgHom.flat_quotient_range_of_faithfullyFlat` in the `FaithfullyFlatSplit` section
+above, the merge kept that route, and both the leaf and the `IsShortExact.flat_quotient` wrapper
+that consumed this lemma went with it. So this is free-floating and is a candidate for the next
+free-floating sweep; it is left in place only because deleting a merger-retained declaration is a
+sweep decision, not a prover's. -/
 theorem IsShortExact.rTensor_injective (h : IsShortExact i π)
     (N : Type*) [AddCommGroup N] [Module R N] :
     Function.Injective
@@ -739,8 +748,8 @@ variable {i : A'' →ₐc[R] A} {π : A →ₐc[R] A'}
 
 /-! #### The four inputs
 
-`IsShortExact.cartierDual` is assembled below out of four statements, of which two are proven
-here. The split is by *where the mathematics is*:
+`IsShortExact.cartierDual` is assembled below out of the statements tabulated here, all but one of
+which are proven. The split is by *where the mathematics is*:
 
 | statement | status | content |
 | --------- | ------ | ------- |
@@ -751,17 +760,20 @@ here. The split is by *where the mathematics is*:
 | `ker_cartierDual_le` | **PROVEN** from the cut | the hard half: a character trivial on `Spec A'` descends |
 | `faithfullyFlat_cartierDual` | **PROVEN** from the cut | `(Spec A)^D → (Spec A')^D` is faithfully flat |
 
-So exactly **two** statements are open in this file, they are independent of each other, and
-**neither is Hopf-theoretic on the `A`-side**:
+So exactly **one** statement is open in this file:
 
-* `Module.Flat.quotient_range_of_rTensor_injective` — general module theory, stated at the root
-  namespace because it belongs in mathlib. It is what the surjectivity field really rests on.
 * `exists_basis_cartierDual` — the linear dual of the normal basis, feeding the other two fields.
+
+The surjectivity field rests on general module theory rather than on anything Hopf-theoretic, but
+that input is **no longer a leaf**: it is `AlgHom.flat_quotient_range_of_faithfullyFlat`, PROVEN in
+the `FaithfullyFlatSplit` section above. An earlier version of this note listed a second open
+statement, a root-namespace `Module.Flat.quotient_range_of_rTensor_injective`; that declaration was
+removed when the two concurrent branches were merged and the proven route was kept.
 
 An earlier note claiming that all three fields were gated on *one* missing theorem — Takeuchi's
 bijectivity of the Galois map `β : A ⊗_{A''} A → A ⊗[R] A'` — was wrong twice over. The two
 `cartierDual` fields do share a gate, and it is the *dual* normal basis rather than `β`; and
-`flat_quotient` neither participates in that gate nor needs `β` at all, because the
+flatness of `A ⧸ i(A'')` neither participates in that gate nor needs `β` at all, because the
 `faithfullyFlat` field already makes `i` pure.
 
 -/
@@ -867,9 +879,9 @@ the one given by `CartierDual.map π`.
 
 OPEN, and this is now the **only** open statement of the duality half of this file: both
 `IsShortExact.ker_cartierDual_le` and `IsShortExact.faithfullyFlat_cartierDual` are proven from it
-below, and `IsShortExact.cartierDual` is assembled from those. (`IsShortExact.flat_quotient`,
-sitting under the surjectivity field, is the other open leaf of the file and is independent of
-this one.)
+below, and `IsShortExact.cartierDual` is assembled from those. (It is now the only open statement
+of the *whole* file: the surjectivity field's former leaf on flatness of `A ⧸ i(A'')` is PROVEN, as
+`AlgHom.flat_quotient_range_of_faithfullyFlat`.)
 
 ## Why this is the right cut
 
@@ -1156,11 +1168,11 @@ algebra, so that `A ≅ A'' ⊗[R] A'` as an `A''`-comodule, and the linear dual
 decomposition supplies all three conditions at once.
 
 PROVEN as an assembly of the statements above; as of 2026-07-28 the remaining mathematics is in
-exactly two of them. The kernel condition is fully proven (`le_ker_cartierDual` and
+exactly one of them. The kernel condition is fully proven (`le_ker_cartierDual` and
 `ker_cartierDual_le`) and so is the faithful-flatness field, both from the single cut
 `IsShortExact.exists_basis_cartierDual`; the surjectivity field is reduced to a pure module
 statement about `A` (`IsShortExact.exists_linearRetraction`) with no Hopf structure left in it,
-resting on `IsShortExact.flat_quotient`. -/
+and that is PROVEN outright from `AlgHom.exists_linearRetraction_of_faithfullyFlat`. -/
 theorem IsShortExact.cartierDual (h : IsShortExact i π) :
     IsShortExact (CartierDual.map π) (CartierDual.map i) :=
   ⟨h.faithfullyFlat_cartierDual, h.surjective_cartierDual_map,
