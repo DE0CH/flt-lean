@@ -3689,7 +3689,9 @@ single place:
 * `exists_totallyNegative_sub_one_mem_span_eq_asIdeal` (STEP 1a-i′-c-1,
   EXISTENCE — Dirichlet/Chebotarev for a ray class, and it carries NO parity
   hypothesis at all): some totally negative `b ≡ 1 (mod 2ⁿ)` generates a PRIME
-  ideal;
+  ideal. **PROVEN 2026-07-28**, over
+  `exists_prime_generator_sub_mem_of_sup_eq_top` (also proven), over the single
+  remaining leaf `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top`;
 * `exists_sq_eq_neg_one_adicCompletion_of_span_eq_of_even_nrRealPlaces`
   (STEP 1a-i′-c-2, RECIPROCITY — Hilbert's product formula, and **the only
   place in the whole ABHN chain where `Even (nrRealPlaces F)` is spent**): for
@@ -3727,12 +3729,256 @@ prose). Given `b` and `w` from -c-1 at exponent `N := max n 3`:
   height-one prime of a Dedekind domain is MAXIMAL, so `w = w'`. This is the
   clause the primality of `(b)` was chosen to collapse. -/
 
+/-! #### STEP 1a-i′-c-1, RECUT (2026-07-28) — the existence leaf split into
+CLASS FIELD THEORY and GENERATOR EXTRACTION
+
+`exists_totallyNegative_sub_one_mem_span_eq_asIdeal` below is now a PROVEN
+assembly over two further declarations, of which only the FIRST carries
+mathematics:
+
+* `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` (STEP
+  1a-i′-c-1-α, the CLASS FIELD THEORY — Dirichlet/Chebotarev for a narrow ray
+  class, stated with integral ideals only and with NO ray class group in the
+  statement): the narrow ray class of `(a)` modulo `𝔣 · ∏_{v real} v` contains
+  a PRIME, exhibited in the integral form `𝔭 · (β) = (a·α)` with `α, β`
+  totally positive and `≡ 1 (mod 𝔣)`;
+* `exists_prime_generator_sub_mem_of_sup_eq_top` (STEP 1a-i′-c-1-β, PROVEN):
+  from that ideal identity, `c := aα/β` is an ALGEBRAIC INTEGER generating
+  `𝔭`, congruent to `a` modulo `𝔣`, and with the same sign as `a` at every
+  real place.
+
+WHY THE SPLIT IS ALONG THIS LINE, and why it is not a relocation. The
+predecessor's leaf fused two things a successor must do separately: (i) the
+analytic/abelian input — SOME prime lies in a prescribed narrow ray class —
+and (ii) the passage from that ideal-theoretic fact to a GENERATOR with a
+prescribed congruence and a prescribed sign pattern. Step (ii) looks like
+bookkeeping and is not: it is where `β ≡ 1 (mod 𝔣)` gets inverted modulo `𝔣`,
+where the cancellativity of the ideal monoid of a Dedekind domain is spent to
+see that `𝔭` is principal at all, and where total positivity of `α/β` is
+converted into the sign statement. All of it is now PROVEN code, so the
+remaining leaf is exactly the class field theory and nothing else.
+
+The `-α` leaf deliberately does **not** mention ray class groups, ray class
+fields or the Artin map — the pin has none of these (`RayClass`, `rayClass`
+have zero hits in all of `Mathlib`, re-verified 2026-07-28) and building them
+is not a prerequisite for STATING what is needed. It is written in the same
+hypothesis-carrying style as `exists_artinDivisorNormIndex_le_ray_class` in
+`HardlyRamified/ModThree.lean`: every object it needs is an ideal or an
+element of `𝒪_F`, and the ray class structure lives only in the shape of the
+conclusion. A successor is free to prove it through the ray class field and
+Chebotarev (`GaloisRepresentation/Chebotarev.lean`, already `public import`ed
+at line 443 of this file, carries `infinite_setOf_isArithFrobAt`,
+`exists_frobenius_conj_mem_coset` and `dense_conjClasses_globalFrob`) or
+through Hecke `L`-functions, without first committing the tree to a
+definition of `Cl_𝔪(F)`.
+
+WHY THE SEED IS `1 - 2ⁿ⁺¹` AND NOT `1 - 2ⁿ`. The assembly instantiates the
+`-β` leaf at `a := 1 - 2^(n+1)`, a RATIONAL integer, and this is the one place
+where a small change matters: `1 - 2ⁿ` degenerates to `0` at `n = 0`, and a
+zero seed has no sign at all, so the sign-matching clause of `-β` becomes
+unsatisfiable and the whole chain would be FALSE at `n = 0`. Taking the
+exponent `n + 1` makes the seed `≤ -1` for every `n : ℕ` uniformly while
+keeping `a ≡ 1 (mod 2ⁿ)`, which is why `-β` carries the hypothesis `a ≠ 0`
+explicitly rather than leaving it implicit. -/
+
+/-- **STEP 1a-i′-c-1-α — CLASS FIELD THEORY: A NARROW RAY CLASS CONTAINS A
+PRIME** (sorry leaf, CUT 2026-07-28 out of
+`exists_totallyNegative_sub_one_mem_span_eq_asIdeal`).
+
+This is Dirichlet's theorem on primes in an arithmetic progression for a
+number field, in its narrow (totally positive) ray-class form, and **it
+carries no parity hypothesis** — it is true for every number field, every
+modulus and every seed.
+
+STATEMENT, unpacked. Given a nonzero ideal `𝔣` and a nonzero `a ∈ 𝒪_F` whose
+ideal is coprime to `𝔣`, there are a height-one prime `w`, and `α, β ∈ 𝒪_F`
+both totally positive and both `≡ 1 (mod 𝔣)`, with
+
+    w.asIdeal * (β) = (a * α)      as ideals of `𝒪_F`.
+
+Read multiplicatively, this says `w ~ (a)` in `I_𝔪 / P_𝔪` with
+`𝔪 = 𝔣 · ∏_{v real} v`: the ratio `w · (a)⁻¹` equals `(α/β)` with `α/β ≻ 0`
+and `α/β ≡ 1 (mod 𝔣)`, i.e. it lies in `P_𝔪`. Writing the ray-class relation
+as an identity between INTEGRAL ideals is what lets the statement avoid
+fractional ideals, ray class groups and the Artin map entirely.
+
+ROUTE. Put `𝔪 := 𝔣 · ∏_{v real} v`. The ideal `(a)` is coprime to `𝔪`, so it
+represents a class `τ ∈ Cl_𝔪(F)`. By Dirichlet/Chebotarev for ray classes
+(equivalently: Chebotarev applied to the ray class field `H_𝔪`, whose Galois
+group the Artin map identifies with `Cl_𝔪(F)`) the class `τ` contains
+infinitely many prime ideals; take one, `𝔭`. Then `𝔭 · (a)⁻¹ ∈ P_𝔪`, i.e.
+`𝔭 · (a)⁻¹ = (γ)` with `γ ∈ F^*`, `γ ≻ 0`, `γ ≡ 1 (mod^× 𝔣)`. Clearing
+denominators writes `γ = α/β` with `α, β ∈ 𝒪_F` totally positive and
+`≡ 1 (mod 𝔣)`, which is the conclusion with `w := 𝔭`.
+
+MISSING MACHINERY, checked 2026-07-28 rather than inherited. `RayClass`,
+`rayClass`, `HilbertSymbol` and `hilbertSymbol` have ZERO hits in the whole
+mathlib pin, so the ray class group, the ray class field and the Artin map
+for one all have to be built. What EXISTS and is usable is the Chebotarev
+material in this module's own import cone
+(`GaloisRepresentation/Chebotarev.lean`, `public import`ed at line 443:
+`infinite_setOf_isArithFrobAt`, `exists_frobenius_conj_mem_coset`,
+`dense_conjClasses_globalFrob`), so only the ABELIAN side is missing. This
+tree also carries ray-class-flavoured material that does NOT found this leaf:
+`HardlyRamified/ModThree.lean`'s `charKernelRayClass`, `muFixerRayClass`,
+`IsRamifiedCharRayClass` (Galois-side subgroups, PROVEN) and
+`exists_artinDivisorNormIndex_le_ray_class` (sorried, but the model for the
+hypothesis-carrying style used here); `Modularity/Interface.lean`'s
+`exists_artinMap_classGroup` and friends (sorried, and excluded here by this
+block's circularity guard).
+
+FAITHFULNESS. Every hypothesis is load-bearing.
+
+* `h𝔣 : 𝔣 ≠ ⊥`. At `𝔣 = ⊥` the congruences `α - 1 ∈ ⊥`, `β - 1 ∈ ⊥` force
+  `α = β = 1`, so the conclusion reads `w.asIdeal * ⊤ = (a)`, i.e. `(a)` is
+  prime — false for `a = 1`, or for any `a` that is a unit or a nontrivial
+  product.
+* `ha0 : a ≠ 0`. At `a = 0` the identity reads `w.asIdeal * (β) = ⊥`, forcing
+  `β = 0` (as `w.asIdeal ≠ ⊥`) against `β ≠ 0`. So the conclusion is
+  UNSATISFIABLE at `a = 0` and the leaf would be false without this
+  hypothesis.
+* `β ≠ 0` in the conclusion. Without it the totally-positive clause is vacuous
+  over a totally imaginary `F`, `β = 0` becomes admissible, and the identity
+  collapses to `⊥ = (a·α)` — a junk witness that would make the leaf useless
+  to its consumer, which divides by `β`.
+* `hcop`. Coprimality is what makes `(a)` represent a class of `Cl_𝔪(F)` at
+  all; it is the hypothesis of the classical theorem.
+
+NOT VACUOUS, checked at `F = ℚ`, `𝔣 = (4)`, `a = -7`: take `α = β = 1` and
+`w = (7)`, giving `(7) · (1) = (-7)`. Not a relocation of its consumer either:
+the consumer needs a GENERATOR with a prescribed congruence and sign, and
+producing one from this identity is the separate proven step below. -/
+theorem exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top
+    (F : Type u) [Field F] [NumberField F]
+    (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
+    (a : NumberField.RingOfIntegers F) (ha0 : a ≠ 0)
+    (hcop : Ideal.span {a} ⊔ 𝔣 = ⊤) :
+    ∃ (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (α β : NumberField.RingOfIntegers F),
+      β ≠ 0 ∧ α - 1 ∈ 𝔣 ∧ β - 1 ∈ 𝔣 ∧
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        0 < NumberField.InfinitePlace.embedding_of_isReal hv
+              (algebraMap (NumberField.RingOfIntegers F) F α)) ∧
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        0 < NumberField.InfinitePlace.embedding_of_isReal hv
+              (algebraMap (NumberField.RingOfIntegers F) F β)) ∧
+      w.asIdeal * Ideal.span {β} = Ideal.span {a * α} :=
+  sorry
+
+/-- **STEP 1a-i′-c-1-β — GENERATOR EXTRACTION: A NARROW RAY CLASS CONTAINING A
+PRIME CONTAINS A PRIME *GENERATOR* WITH THE PRESCRIBED CONGRUENCE AND SIGNS**
+(PROVEN 2026-07-28 over `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top`).
+
+Given the ideal identity `w.asIdeal · (β) = (a·α)` of the `-α` leaf, the
+element `c := aα/β` is an algebraic integer, it GENERATES the prime `w`, it is
+`≡ a (mod 𝔣)`, and it has the same sign as `a` at every real place.
+
+THE THREE STEPS, and none of them is bookkeeping:
+
+1. *`c` exists and generates `w`.* `w.asIdeal · (β) = (a·α) ⊆ (β)` gives
+   `β ∣ a·α`, so `c := aα/β ∈ 𝒪_F`. Then `(β)·(c) = (a·α) = w.asIdeal·(β)`,
+   and the ideal monoid of a Dedekind domain is CANCELLATIVE at nonzero
+   ideals, so `(c) = w.asIdeal`. This is the step that needs `β ≠ 0`.
+2. *The congruence.* `β·(c − a) = a·(α − β) ∈ 𝔣` because `α − β =
+   (α−1) − (β−1) ∈ 𝔣`; and `β ≡ 1 (mod 𝔣)` lets `β` be cancelled without any
+   invertibility API, via `c − a = β(c−a) − (β−1)(c−a)`.
+3. *The signs.* At a real place `σ`, `σ(a)σ(α) = σ(β)σ(c)`, hence
+   `σ(β)·(σ(c)σ(a)) = σ(a)²σ(α) > 0`; with `σ(β) > 0` this gives
+   `σ(c)σ(a) > 0`. Positivity of `σ(a)²` needs `σ(a) ≠ 0`, which is where
+   `ha0` is spent — `σ` is injective, being a ring hom out of a field
+   precomposed with `𝒪_F ↪ F`.
+
+WHY THE SIGN CLAUSE IS A PRODUCT AND NOT A SEPARATE CASE SPLIT. The consumer
+knows the sign of its seed `a` and wants the same sign for `c`; stating
+`0 < σ(c)·σ(a)` says exactly "same sign, both nonzero" in one clause that is
+symmetric in the two elements and needs no `Decidable` case analysis. The
+consumer recovers `σ(c) < 0` from `σ(a) < 0` by one `nlinarith`. -/
+theorem exists_prime_generator_sub_mem_of_sup_eq_top
+    (F : Type u) [Field F] [NumberField F]
+    (𝔣 : Ideal (NumberField.RingOfIntegers F)) (h𝔣 : 𝔣 ≠ ⊥)
+    (a : NumberField.RingOfIntegers F) (ha0 : a ≠ 0)
+    (hcop : Ideal.span {a} ⊔ 𝔣 = ⊤) :
+    ∃ (c : NumberField.RingOfIntegers F)
+      (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      Ideal.span {c} = w.asIdeal ∧
+      c - a ∈ 𝔣 ∧
+      (∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+        0 < NumberField.InfinitePlace.embedding_of_isReal hv
+              (algebraMap (NumberField.RingOfIntegers F) F c) *
+            NumberField.InfinitePlace.embedding_of_isReal hv
+              (algebraMap (NumberField.RingOfIntegers F) F a)) := by
+  classical
+  obtain ⟨w, α, β, hβ0, hα1, hβ1, hαpos, hβpos, heq⟩ :=
+    exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top F 𝔣 h𝔣 a ha0 hcop
+  -- `β ∣ a * α`, because `w.asIdeal * (β) = (a * α)` sits inside `(β)`.
+  have hdvd : β ∣ a * α := by
+    rw [← Ideal.span_singleton_le_span_singleton, ← heq]
+    exact Ideal.mul_le_left
+  obtain ⟨c, hc⟩ := hdvd
+  have hβspan : Ideal.span {β} ≠ 0 := by
+    simp [hβ0]
+  refine ⟨c, w, ?_, ?_, ?_⟩
+  · -- `(c) = w`: cancel the nonzero ideal `(β)`.
+    have h1 : Ideal.span {β} * Ideal.span {c} = Ideal.span {β} * w.asIdeal := by
+      rw [Ideal.span_singleton_mul_span_singleton, ← hc, ← heq, mul_comm]
+    exact mul_left_cancel₀ hβspan h1
+  · -- `c ≡ a (mod 𝔣)`, using that `β ≡ 1 (mod 𝔣)` may be cancelled mod `𝔣`.
+    have hαβ : α - β ∈ 𝔣 := by
+      have hrw : α - β = (α - 1) - (β - 1) := by ring
+      rw [hrw]; exact Ideal.sub_mem _ hα1 hβ1
+    have key : β * (c - a) ∈ 𝔣 := by
+      have hrw : β * (c - a) = a * (α - β) := by linear_combination -hc
+      rw [hrw]
+      exact Ideal.mul_mem_left _ _ hαβ
+    have hrw : c - a = β * (c - a) - (β - 1) * (c - a) := by ring
+    rw [hrw]
+    exact Ideal.sub_mem _ key (Ideal.mul_mem_right _ _ hβ1)
+  · -- the signs of `c` and `a` agree, because `c / a = α / β` is totally positive.
+    intro v hv
+    set σ : NumberField.RingOfIntegers F →+* ℝ :=
+      (NumberField.InfinitePlace.embedding_of_isReal hv).comp
+        (algebraMap (NumberField.RingOfIntegers F) F) with hσ
+    have hσa : σ a ≠ 0 := by
+      rw [hσ]
+      simp only [RingHom.coe_comp, Function.comp_apply, ne_eq,
+        map_eq_zero_iff _ (NumberField.InfinitePlace.embedding_of_isReal hv).injective,
+        map_eq_zero_iff _ (FaithfulSMul.algebraMap_injective
+          (NumberField.RingOfIntegers F) F)]
+      exact ha0
+    have hsq : 0 < σ a ^ 2 := by
+      rcases lt_trichotomy (σ a) 0 with h | h | h
+      · nlinarith
+      · exact absurd h hσa
+      · nlinarith
+    have hα' : 0 < σ α := hαpos v hv
+    have hβ' : 0 < σ β := hβpos v hv
+    have hmul : σ a * σ α = σ β * σ c := by
+      have := congrArg σ hc
+      simpa using this
+    have hprod : σ β * (σ c * σ a) = σ a ^ 2 * σ α := by
+      linear_combination (-σ a) * hmul
+    have hpos : 0 < σ β * (σ c * σ a) := by rw [hprod]; exact mul_pos hsq hα'
+    show 0 < σ c * σ a
+    by_contra hcon
+    rw [not_lt] at hcon
+    nlinarith [mul_nonneg hβ'.le (neg_nonneg.mpr hcon)]
+
 /-- **STEP 1a-i′-c-1 — EXISTENCE: SOME TOTALLY NEGATIVE `b ≡ 1 (mod 2ⁿ)`
-GENERATES A PRIME IDEAL** (sorry leaf; CUT 2026-07-28 out of
-`exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces`).
+GENERATES A PRIME IDEAL** (PROVEN 2026-07-28 as an assembly over
+`exists_prime_generator_sub_mem_of_sup_eq_top` (STEP 1a-i′-c-1-β, itself PROVEN
+over the class field theory leaf `-α`); originally CUT 2026-07-28 out of
+`exists_totallyNegative_sub_one_mem_of_even_nrRealPlaces` as a sorry leaf).
 
 This is Dirichlet's theorem on primes in a ray class, and **it carries no
 parity hypothesis** — it is true for every number field and every `n`.
+
+RECUT 2026-07-28: the whole of this statement now follows from the general
+`-β` leaf, instantiated at the seed `a := 1 - 2^(n+1)`. See the section
+comment above `exists_heightOneSpectrum_mul_span_eq_span_of_sup_eq_top` for
+why the seed exponent is `n + 1` (the obvious `1 - 2ⁿ` is `0` at `n = 0`,
+which has no sign, and the chain would be false there). Everything below is
+retained as the record of the mathematics; the only part still OPEN is the
+class field theory, now isolated in the `-α` leaf.
 
 ROUTE. Put `𝔣 := (2ⁿ)` and `𝔪 := 𝔣 · ∏_{v real} v`, and let
 `T := {𝔞 : 𝔞 = (c) for some c ≺ 0 with c ≡ 1 mod 𝔣}`.
@@ -3796,7 +4042,53 @@ theorem exists_totallyNegative_sub_one_mem_span_eq_asIdeal
           (algebraMap (NumberField.RingOfIntegers F) F b) < 0) ∧
       b - 1 ∈ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} ∧
       Ideal.span {b} = w.asIdeal := by
-  sorry
+  classical
+  -- The seed is the RATIONAL integer `1 - 2 ^ (n + 1)`: negative under every real
+  -- embedding because it is a negative rational integer, and `≡ 1 (mod 2ⁿ)`.
+  -- The exponent is `n + 1` and not `n` so that the seed is nonzero at `n = 0`.
+  have hm2 : (1 : ℤ) < 2 ^ (n + 1) := one_lt_pow₀ (by norm_num) (by omega)
+  set m : ℤ := 1 - 2 ^ (n + 1) with hm
+  have hmneg : m < 0 := by rw [hm]; linarith
+  set a : NumberField.RingOfIntegers F := (m : NumberField.RingOfIntegers F) with ha
+  have h2ne : (2 : NumberField.RingOfIntegers F) ^ n ≠ 0 := pow_ne_zero _ two_ne_zero
+  have h𝔣 : Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} ≠ ⊥ := by
+    simp [h2ne]
+  have ha1 : a - 1 ∈ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} := by
+    rw [Ideal.mem_span_singleton]
+    have hrw : a - 1 = -((2 : NumberField.RingOfIntegers F) ^ n * 2) := by
+      rw [ha, hm]; push_cast; ring
+    rw [hrw]
+    exact (dvd_mul_right _ _).neg_right
+  have ha0 : a ≠ 0 := by
+    rw [ha]
+    exact_mod_cast hmneg.ne
+  have hcop : Ideal.span {a} ⊔ Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n} = ⊤ := by
+    rw [Ideal.eq_top_iff_one]
+    have h1 : (1 : NumberField.RingOfIntegers F) = a - (a - 1) := by ring
+    rw [h1]
+    exact Ideal.sub_mem _
+      (Ideal.mem_sup_left (Ideal.mem_span_singleton_self a))
+      (Ideal.mem_sup_right ha1)
+  have haneg : ∀ (v : NumberField.InfinitePlace F) (hv : v.IsReal),
+      NumberField.InfinitePlace.embedding_of_isReal hv
+        (algebraMap (NumberField.RingOfIntegers F) F a) < 0 := by
+    intro v hv
+    have hmap : NumberField.InfinitePlace.embedding_of_isReal hv
+        (algebraMap (NumberField.RingOfIntegers F) F a) = (m : ℝ) := by
+      rw [ha, map_intCast, map_intCast]
+    rw [hmap]
+    exact_mod_cast hmneg
+  obtain ⟨c, w, hcw, hca, hsign⟩ :=
+    exists_prime_generator_sub_mem_of_sup_eq_top F
+      (Ideal.span {(2 : NumberField.RingOfIntegers F) ^ n}) h𝔣 a ha0 hcop
+  refine ⟨c, w, ?_, ?_, hcw⟩
+  · intro v hv
+    have h1 := hsign v hv
+    have h2 := haneg v hv
+    nlinarith
+  · have h1 : c - 1 = (c - a) + (a - 1) := by ring
+    rw [h1]
+    exact Ideal.add_mem _ hca ha1
 
 /-- **STEP 1a-i′-c-2 — RECIPROCITY: A PRIME GENERATED BY A TOTALLY NEGATIVE
 `b ≡ 1 (mod 2ⁿ)`, `n ≥ 3`, SPLITS IN `F(i)` WHEN `F` HAS EVENLY MANY REAL
