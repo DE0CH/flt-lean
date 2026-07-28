@@ -4426,12 +4426,16 @@ PROVEN from three declarations stated below it, only ONE of which is open:
 * `FullLevelStructure.twist_baseChange` — the matrix twist commutes with
   base change, because `twist` is built from `RelPoint.comb` and
   `IsBaseChangeOf.toRelPoint` is additive (`toRelPoint_comb`).  PROVEN.
-* `exists_openCover_twist_of_fullLevelStructure` — **the ONE open leaf**:
-  two full level structures on ONE datum over a `ℚ`-scheme differ
-  Zariski-locally by a CONSTANT matrix.  This is the whole geometric
-  content, and it is now stated with no reference to `RigidifiedModuli`,
-  to the deck group's action, or to the invariant quotient — it is a
-  statement about one abelian scheme and two bases of its `n`-torsion.
+* `exists_openCover_twist_of_fullLevelStructure` — two full level
+  structures on ONE datum over a `ℚ`-scheme differ Zariski-locally by a
+  CONSTANT matrix.  This is the whole geometric content, and it is stated
+  with no reference to `RigidifiedModuli`, to the deck group's action, or
+  to the invariant quotient — it is a statement about one abelian scheme
+  and two bases of its `n`-torsion.  **PROVEN 2026-07-28**; the one open
+  leaf under it is now `isOpenImmersion_equalizer_of_nsmul_eq_zero` (the
+  equalizer of two `n`-torsion sections over a `ℚ`-scheme is open), and
+  the `(ℤ/n)²_Z`-versus-`E[n]` infrastructure that used to be owed here
+  is NOT needed — see the section comment before that leaf.
 
 **Why the leaf is safe** (this is the objection the section comment above
 raises, and it is answered).  It quantifies over `RigidifiedModuli N n`,
@@ -4675,8 +4679,423 @@ theorem twist_baseChange {N n : ℕ} (hn : 3 ≤ n) {T' T : Scheme.{u}} {p : T' 
 
 end FullLevelStructure
 
+/-! #### The Zariski-local comparison of two full level structures
+
+`exists_openCover_twist_of_fullLevelStructure` below is **PROVEN
+(2026-07-28)** from the declarations in this block together with the
+pure-algebra leaf `isUnit_of_geomBasis_comb`.  Exactly ONE geometric
+statement is left open, `isOpenImmersion_equalizer_of_nsmul_eq_zero`, and
+the cut is worth describing because it **retires most of the
+infrastructure list that this node used to carry**.
+
+The route recorded until today went through an isomorphism
+`(ℤ/n)²_Z ≅ d.E[n]` of finite étale group schemes, and therefore owed:
+`E[n]` as an object, its finiteness over `Z`, its flatness, the
+fibrewise-isomorphism criterion, AND the constant group scheme `(ℤ/n)²_Z`
+with its sections computed.
+
+**None of that is needed.**  Replace "transport `L₂` through an
+isomorphism and observe that a section of a constant scheme is locally
+constant" by
+
+> for each of the `n⁴` candidate matrices `M`, the locus in `Z` where
+> `L₂ = twist L₁ M` is OPEN, and those loci COVER `Z`.
+
+The covering half is `L₁.geom_basis` read at one geometric point above
+each point of `Z` — a FIELD of `FullLevelStructure`, so it is free.  The
+open half is the equalizer of two `n`-torsion sections, which is the one
+leaf.  No surjectivity, no flatness, no finiteness, no constant group
+scheme, no `Isom`-sheaf, and no comparison torsor.
+
+*The check that would refute this paragraph*: the proof of
+`exists_openCover_comb_of_fullLevelStructure` below, which cites exactly
+`isOpenImmersion_equalizer_of_nsmul_eq_zero`, `FullLevelStructure.geom_basis`
+and `RelPoint.pre_comb`, and nothing else geometric. -/
+
+/-- **A `ZMod n`-combination of two `n`-torsion relative points is again
+`n`-torsion** (PROVEN) — the same computation as
+`FullLevelStructure.nsmul_twistP_eq_zero`, stated for a bare `comb` so
+that it applies to the `n⁴` candidate matrices below rather than only to
+the two rows of a `GL₂`. -/
+theorem nsmul_comb_eq_zero {n : ℕ} {E S : Scheme.{u}} {f : E ⟶ S}
+    (ab : AbelianSchemeStruct f) {U : Scheme.{u}} {g : U ⟶ S} (a b : ZMod n)
+    {P Q : RelPoint f g}
+    (hP : letI := ab.addCommGroup g; n • P = 0)
+    (hQ : letI := ab.addCommGroup g; n • Q = 0) :
+    letI := ab.addCommGroup g
+    n • RelPoint.comb ab a b P Q = 0 := by
+  letI := ab.addCommGroup g
+  show n • (a.val • P + b.val • Q) = 0
+  rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+
+/-- **The fibre product of two SECTIONS is their equalizer** (PROVEN): its
+two projections to the base agree.
+
+`x` and `y` are relative points over `𝟙 Z`, i.e. sections of `f`, so
+composing the cartesian square with `f` collapses both legs to the
+projections themselves.  This is what makes `pullback x.1 y.1` the
+*equalizer* of `x` and `y` rather than merely a fibre product, and it is
+used twice below: to read the defining square as an equation of
+morphisms, and to know that a point of `Z` at which `x` and `y` agree
+lifts. -/
+theorem pullback_snd_eq_fst_relPoint {E Z : Scheme.{u}} {f : E ⟶ Z}
+    (x y : RelPoint f (𝟙 Z)) :
+    Limits.pullback.snd x.1 y.1 = Limits.pullback.fst x.1 y.1 := by
+  have h1 : Limits.pullback.fst x.1 y.1 ≫ x.1 ≫ f
+      = Limits.pullback.snd x.1 y.1 ≫ y.1 ≫ f := by
+    rw [← Category.assoc, ← Category.assoc, Limits.pullback.condition]
+  rw [x.2, y.2, Category.comp_id, Category.comp_id] at h1
+  exact h1.symm
+
+/-- **Two sections agree after restriction to their equalizer** (PROVEN). -/
+theorem pullback_fst_comp_relPoint {E Z : Scheme.{u}} {f : E ⟶ Z}
+    (x y : RelPoint f (𝟙 Z)) :
+    Limits.pullback.fst x.1 y.1 ≫ x.1 = Limits.pullback.fst x.1 y.1 ≫ y.1 := by
+  conv_rhs => rw [← pullback_snd_eq_fst_relPoint x y]
+  exact Limits.pullback.condition
+
+/-- **Anything factoring through the equalizer equalises** (PROVEN) — the
+form in which the previous lemma is consumed, since the two pieces of the
+comparison locus factor through the two equalizers by different
+projections. -/
+theorem comp_eq_of_factors_equalizer {W E Z : Scheme.{u}} {f : E ⟶ Z}
+    (x y : RelPoint f (𝟙 Z)) {w : W ⟶ Z} (k : W ⟶ Limits.pullback x.1 y.1)
+    (hk : k ≫ Limits.pullback.fst x.1 y.1 = w) : w ≫ x.1 = w ≫ y.1 := by
+  rw [← hk, Category.assoc, Category.assoc, pullback_fst_comp_relPoint]
+
+/-- **THE ONE OPEN LEAF under `exists_openCover_twist_of_fullLevelStructure`**
+(opened 2026-07-28): *the equalizer of two `n`-torsion sections of an
+elliptic scheme over a `ℚ`-scheme is OPEN in the base.*
+
+## What the prover of this node owes
+
+`Limits.pullback x.1 y.1` is the locus in `Z` where the two sections
+agree (`pullback_snd_eq_fst_relPoint` above is what makes that reading
+correct), and `pullback.fst` is its inclusion.  That inclusion is a
+CLOSED immersion for free — it is a base change of the section `y`, which
+is a section of the separated morphism `f`.  What is asserted here is
+that it is also OPEN.
+
+The route, and it is short:
+
+1.  `E[n] := pullback (ab.mulByNat n) ab.zeroSection`, exactly the
+    construction `CyclicSubgroupOfOrder.torsionScheme` already carries in
+    this file with `c.ι` replaced by `𝟙 d.E`.  `ab.mulByNat`,
+    `ab.zeroSection`, `ab.nsmul_val` and `ab.zero_val` are all PROVEN in
+    `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`; `liesIn_torsionι_iff`
+    is the model for the functor-of-points step.
+2.  `hx` and `hy` say exactly that `x` and `y` factor through `E[n]` —
+    that is the content of `liesIn_torsionι_iff`, read with `ι = 𝟙`.
+3.  `E[n] ⟶ Z` is **unramified**: this is the ONLY genuinely new
+    mathematics, and it is where `g : Z ⟶ SpecQ` is consumed.  `n` is
+    invertible on a `ℚ`-scheme, so `[n]` is étale and its kernel is étale
+    over the base (Katz–Mazur 2.3.1).  `E[n] ⟶ Z` is separated and
+    locally of finite type for free (`E[n] ⟶ E` is a closed immersion,
+    `f` is proper).
+4.  The equalizer of two sections of a formally unramified, locally of
+    finite type, separated morphism is open, because it is a base change
+    of the DIAGONAL and the diagonal of such a morphism is an open
+    immersion (`FormallyUnramified.isOpenImmersion_diagonal`).  **That
+    argument is already carried out in this file**, at
+    `section_eq_of_formallyUnramified` in the `NeronEtaleRigidity`
+    section, which additionally assumes the base preconnected in order to
+    conclude global equality; here the base is not connected and the
+    clopen locus is kept as a piece of a cover instead.
+5.  `E[n] ⟶ E` is a closed immersion, hence a monomorphism, so
+    `pullback x.1 y.1` is also the pullback of the two factorisations
+    through `E[n]` — a mono can be cancelled from a cospan without
+    changing the limit.
+
+## What it does NOT owe
+
+**Nothing about `(ℤ/n)²_Z`, and nothing about FINITENESS or FLATNESS of
+`E[n]`.**  The previous cut of this node needed the comparison torsor to
+be trivialised by an isomorphism with a constant group scheme; the
+equalizer formulation needs only unramifiedness.  See the section comment
+above.
+
+## Faithfulness
+
+`g` is **load-bearing for TRUTH**.  Over a base of residue characteristic
+`p ∣ n` the kernel `E[n]` is not étale, its zero section is not open, and
+two `n`-torsion sections can agree on a closed non-open locus; the
+statement is then FALSE.
+
+`hn` is load-bearing at `n = 0`, where the hypotheses `0 • x = 0` and
+`0 • y = 0` are vacuous, `x` and `y` are arbitrary sections, and the
+equalizer of two sections of an elliptic surface over `𝔸¹` is a point —
+closed and not open.  Only `n ≠ 0` is used; `3 ≤ n` is inherited from the
+parent.
+
+`hdim` is NOT needed for truth — the `n`-torsion of an abelian scheme of
+any relative dimension is étale where `n` is invertible — and is kept
+only because every caller has it and a prover may want it. -/
+theorem isOpenImmersion_equalizer_of_nsmul_eq_zero (n : ℕ) (hn : 3 ≤ n)
+    {Z E : Scheme.{0}} (g : Z ⟶ SpecQ) {f : E ⟶ Z} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (x y : RelPoint f (𝟙 Z))
+    (hx : letI := ab.addCommGroup (𝟙 Z); n • x = 0)
+    (hy : letI := ab.addCommGroup (𝟙 Z); n • y = 0) :
+    IsOpenImmersion (Limits.pullback.fst x.1 y.1) :=
+  sorry
+
+/-- **The comparison matrix of two fibrewise bases is INVERTIBLE**
+(PROVEN 2026-07-28) — the pure-algebra half of
+`exists_openCover_twist_of_fullLevelStructure`, and the only place
+`L₂.geom_basis` is used.
+
+## The statement
+
+`P, Q` and `P', Q'` are two pairs with unique `Fin n × Fin n`-coordinates
+on the `n`-torsion of one abelian group — i.e. two bases of `(ℤ/n)²` — and
+`M` expresses the second in terms of the first.  Then `M` is a unit of
+`Matrix (Fin 2) (Fin 2) (ZMod n)`, which is what turns a bare matrix into
+an element of `gamma0DeckGroup n`.
+
+## The proof
+
+`φ w := w₀ • P + w₁ • Q` is INJECTIVE on `(ZMod n)²` (uniqueness half of
+`hb`, transported along `Fin n ≃ ZMod n` by `ZMod.val_lt` /
+`ZMod.natCast_rightInverse`), `ψ w := w₀ • P' + w₁ • Q'` is SURJECTIVE
+onto the `n`-torsion (existence half of `hb'`), and `ψ = φ ∘ (· ᵥ* M)` —
+the last identity is `nsmul_eq_nsmul_of_mod` against `hP`/`hQ`, i.e. the
+same `ZMod.val`-is-not-multiplicative correction that
+`RelPoint.comb_comb` carries, which is exactly why the `n`-torsion
+hypotheses are here.
+
+Surjectivity of `ψ` plus injectivity of `φ` gives a preimage of each
+standard basis vector under `· ᵥ* M`, i.e. a matrix `N` with `N * M = 1`;
+`mul_eq_one_comm` over the commutative ring `ZMod n` upgrades that to a
+two-sided inverse.  Note that only ONE direction of each hypothesis is
+used, which is why no bijectivity-of-a-linear-map API is needed.
+
+## Faithfulness
+
+`hn` is used only through `NeZero n`.  `hP`/`hQ` are load-bearing: without
+them `ψ = φ ∘ (· ᵥ* M)` fails, since `(a * b).val ≠ a.val * b.val` in
+general. -/
+theorem isUnit_of_geomBasis_comb {G : Type*} [AddCommGroup G] {n : ℕ} (hn : 3 ≤ n)
+    {P Q P' Q' : G} (hP : n • P = 0) (hQ : n • Q = 0)
+    (hb : ∀ x : G, n • x = 0 ↔ ∃! c : Fin n × Fin n,
+      x = (c.1 : ℕ) • P + (c.2 : ℕ) • Q)
+    (hb' : ∀ x : G, n • x = 0 ↔ ∃! c : Fin n × Fin n,
+      x = (c.1 : ℕ) • P' + (c.2 : ℕ) • Q')
+    (M : Matrix (Fin 2) (Fin 2) (ZMod n))
+    (hP' : P' = (M 0 0).val • P + (M 0 1).val • Q)
+    (hQ' : Q' = (M 1 0).val • P + (M 1 1).val • Q) :
+    IsUnit M := by
+  haveI : NeZero n := ⟨by omega⟩
+  have hvalinj : ∀ a b : ZMod n, a.val = b.val → a = b := by
+    intro a b h
+    rw [← ZMod.natCast_rightInverse a, ← ZMod.natCast_rightInverse b, h]
+  set φ : (Fin 2 → ZMod n) → G := fun w => (w 0).val • P + (w 1).val • Q with hφ
+  have hφtor : ∀ w, n • φ w = 0 := by
+    intro w
+    show n • ((w 0).val • P + (w 1).val • Q) = 0
+    rw [smul_add, smul_comm n, smul_comm n, hP, hQ, smul_zero, smul_zero, add_zero]
+  have hφinj : Function.Injective φ := by
+    intro w w' h
+    obtain ⟨c, -, huniq⟩ := (hb (φ w)).mp (hφtor w)
+    have h1 : ((⟨(w 0).val, ZMod.val_lt _⟩, ⟨(w 1).val, ZMod.val_lt _⟩) :
+        Fin n × Fin n) = c := huniq _ rfl
+    have h2 : ((⟨(w' 0).val, ZMod.val_lt _⟩, ⟨(w' 1).val, ZMod.val_lt _⟩) :
+        Fin n × Fin n) = c := huniq _ h
+    have h3 := h1.trans h2.symm
+    have e0 : (w 0).val = (w' 0).val := congrArg (fun p => (p.1 : ℕ)) h3
+    have e1 : (w 1).val = (w' 1).val := congrArg (fun p => (p.2 : ℕ)) h3
+    funext i
+    fin_cases i
+    · exact hvalinj _ _ e0
+    · exact hvalinj _ _ e1
+  have hψ : ∀ w : Fin 2 → ZMod n,
+      (w 0).val • P' + (w 1).val • Q' = φ (Matrix.vecMul w M) := by
+    intro w
+    have e0 : ((Matrix.vecMul w M) 0).val • P
+        = ((w 0).val * (M 0 0).val + (w 1).val * (M 1 0).val) • P := by
+      refine nsmul_eq_nsmul_of_mod hP (mod_eq_of_zmod_eq ?_)
+      push_cast [ZMod.natCast_val, ZMod.cast_id]
+      simp [Matrix.vecMul, dotProduct, Fin.sum_univ_two]
+    have e1 : ((Matrix.vecMul w M) 1).val • Q
+        = ((w 0).val * (M 0 1).val + (w 1).val * (M 1 1).val) • Q := by
+      refine nsmul_eq_nsmul_of_mod hQ (mod_eq_of_zmod_eq ?_)
+      push_cast [ZMod.natCast_val, ZMod.cast_id]
+      simp [Matrix.vecMul, dotProduct, Fin.sum_univ_two]
+    show (w 0).val • P' + (w 1).val • Q'
+      = ((Matrix.vecMul w M) 0).val • P + ((Matrix.vecMul w M) 1).val • Q
+    rw [e0, e1, hP', hQ', add_nsmul, add_nsmul, mul_nsmul', mul_nsmul', mul_nsmul',
+      mul_nsmul', smul_add, smul_add]
+    abel
+  have hsurj : ∀ i : Fin 2, ∃ w : Fin 2 → ZMod n,
+      Matrix.vecMul w M = (1 : Matrix (Fin 2) (Fin 2) (ZMod n)) i := by
+    intro i
+    obtain ⟨c, hc, -⟩ := (hb' (φ ((1 : Matrix (Fin 2) (Fin 2) (ZMod n)) i))).mp
+      (hφtor _)
+    refine ⟨![((c.1 : ℕ) : ZMod n), ((c.2 : ℕ) : ZMod n)], hφinj ?_⟩
+    rw [← hψ]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+    rw [ZMod.val_cast_of_lt c.1.isLt, ZMod.val_cast_of_lt c.2.isLt]
+    exact hc.symm
+  choose w hw using hsurj
+  set NN : Matrix (Fin 2) (Fin 2) (ZMod n) := Matrix.of fun i j => w i j with hNN
+  have hNM : NN * M = 1 := by
+    ext i j
+    have h := congrFun (hw i) j
+    simpa [Matrix.mul_apply, Matrix.vecMul, dotProduct, hNN] using h
+  exact ⟨⟨M, NN, mul_eq_one_comm.mp hNM, hNM⟩, rfl⟩
+
+/-- **The Zariski piece on which the comparison matrix is the constant
+`M`**: the intersection of the two equalizers, `{L₂.P = M₀ · L₁}` and
+`{L₂.Q = M₁ · L₁}`, formed as a fibre product over `Z`. -/
+noncomputable def combPiece {N n : ℕ} {Z : Scheme.{0}} {d : Gamma0Datum N Z}
+    (L₁ L₂ : FullLevelStructure n d) (M : Matrix (Fin 2) (Fin 2) (ZMod n)) : Scheme.{0} :=
+  Limits.pullback
+    (Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+    (Limits.pullback.fst L₂.Q.1 (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1)
+
+/-- The inclusion of the piece into `Z`. -/
+noncomputable def combPieceι {N n : ℕ} {Z : Scheme.{0}} {d : Gamma0Datum N Z}
+    (L₁ L₂ : FullLevelStructure n d) (M : Matrix (Fin 2) (Fin 2) (ZMod n)) :
+    combPiece L₁ L₂ M ⟶ Z :=
+  Limits.pullback.fst
+      (Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+      (Limits.pullback.fst L₂.Q.1 (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1) ≫
+    Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1
+
+/-- On the piece, `L₂.P` IS the first row of `M` applied to `L₁` (PROVEN):
+the piece factors through the first equalizer by `pullback.fst`. -/
+theorem combPieceι_comp_P {N n : ℕ} {Z : Scheme.{0}} {d : Gamma0Datum N Z}
+    (L₁ L₂ : FullLevelStructure n d) (M : Matrix (Fin 2) (Fin 2) (ZMod n)) :
+    combPieceι L₁ L₂ M ≫ L₂.P.1
+      = combPieceι L₁ L₂ M ≫ (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1 :=
+  comp_eq_of_factors_equalizer _ _
+    (Limits.pullback.fst
+      (Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+      (Limits.pullback.fst L₂.Q.1 (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1)) rfl
+
+/-- On the piece, `L₂.Q` IS the second row of `M` applied to `L₁` (PROVEN):
+the piece factors through the second equalizer by `pullback.snd`, which is
+`Limits.pullback.condition`. -/
+theorem combPieceι_comp_Q {N n : ℕ} {Z : Scheme.{0}} {d : Gamma0Datum N Z}
+    (L₁ L₂ : FullLevelStructure n d) (M : Matrix (Fin 2) (Fin 2) (ZMod n)) :
+    combPieceι L₁ L₂ M ≫ L₂.Q.1
+      = combPieceι L₁ L₂ M ≫ (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1 :=
+  comp_eq_of_factors_equalizer _ _
+    (Limits.pullback.snd
+      (Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+      (Limits.pullback.fst L₂.Q.1 (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1))
+    Limits.pullback.condition.symm
+
+/-- **The piece is an OPEN subscheme of `Z`** (PROVEN from the leaf): each
+of the two equalizers is open by
+`isOpenImmersion_equalizer_of_nsmul_eq_zero`, open immersions are stable
+under base change, and they compose. -/
+theorem isOpenImmersion_combPieceι {N n : ℕ} (hn : 3 ≤ n) {Z : Scheme.{0}} (g : Z ⟶ SpecQ)
+    {d : Gamma0Datum N Z} (L₁ L₂ : FullLevelStructure n d)
+    (M : Matrix (Fin 2) (Fin 2) (ZMod n)) : IsOpenImmersion (combPieceι L₁ L₂ M) := by
+  haveI := isOpenImmersion_equalizer_of_nsmul_eq_zero n hn g d.ab d.relativeDimensionOne
+    L₂.P (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q) L₂.nsmul_P
+    (nsmul_comb_eq_zero d.ab _ _ L₁.nsmul_P L₁.nsmul_Q)
+  haveI := isOpenImmersion_equalizer_of_nsmul_eq_zero n hn g d.ab d.relativeDimensionOne
+    L₂.Q (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q) L₂.nsmul_Q
+    (nsmul_comb_eq_zero d.ab _ _ L₁.nsmul_P L₁.nsmul_Q)
+  show IsOpenImmersion (Limits.pullback.fst _ _ ≫
+    Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1)
+  infer_instance
+
+/-- **Two full level structures on one datum over a `ℚ`-scheme differ
+Zariski-locally by a constant MATRIX** (PROVEN 2026-07-28) — the
+parent statement with `GL₂(ℤ/n)` weakened to `M₂(ℤ/n)`, which is
+precisely the part that does not need `L₂.geom_basis`.
+
+The cover is indexed by the `n⁴` matrices themselves, with the piece for
+`M` the locus `combPiece L₁ L₂ M` where both rows of the comparison hold.
+Each piece is open (`isOpenImmersion_combPieceι`, over the one leaf), and
+they COVER: at a point `z` of `Z`, take the geometric point
+`Spec (κ(z)^alg) ⟶ Z`, read `L₂.P` and `L₂.Q` in the basis `L₁` there
+(`L₁.geom_basis`, a field of `FullLevelStructure`), and the resulting
+`Fin n`-coordinates assemble into a matrix whose piece contains `z` —
+the lift being `pullback.lift` applied twice, once for each equalizer.
+
+Note where invertibility is NOT available: a piece may be EMPTY, and on
+an empty piece the matrix is unconstrained.  That is why the `GL₂` form
+of the statement is proven separately, by discharging the empty pieces
+through initiality rather than by strengthening this one. -/
+theorem exists_openCover_comb_of_fullLevelStructure (N n : ℕ) (hn : 3 ≤ n)
+    {Z : Scheme.{0}} (g : Z ⟶ SpecQ) (d : Gamma0Datum N Z)
+    (L₁ L₂ : FullLevelStructure n d) :
+    ∃ 𝒰 : Scheme.OpenCover.{0} Z, ∀ i : 𝒰.I₀,
+      ∃ M : Matrix (Fin 2) (Fin 2) (ZMod n),
+        𝒰.f i ≫ L₂.P.1 = 𝒰.f i ≫ (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1 ∧
+        𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1 := by
+  classical
+  refine ⟨Scheme.Cover.mkOfCovers (Matrix (Fin 2) (Fin 2) (ZMod n))
+    (fun M => combPiece L₁ L₂ M) (fun M => combPieceι L₁ L₂ M) ?_
+    (fun M => isOpenImmersion_combPieceι hn g L₁ L₂ M),
+    fun i => ⟨i, combPieceι_comp_P L₁ L₂ i, combPieceι_comp_Q L₁ L₂ i⟩⟩
+  intro z
+  letI := d.ab.addCommGroup (𝟙 Z)
+  let Kz := AlgebraicClosure (Z.residueField z)
+  let t : Spec (CommRingCat.of Kz) ⟶ Z :=
+    Spec.map (CommRingCat.ofHom (algebraMap (Z.residueField z) Kz)) ≫
+      Z.fromSpecResidueField z
+  letI := d.ab.addCommGroup t
+  have htP : n • RelPoint.pre t (Category.comp_id t) L₂.P = 0 :=
+    RelPoint.nsmul_pre_eq_zero d.ab t (Category.comp_id t) L₂.nsmul_P
+  have htQ : n • RelPoint.pre t (Category.comp_id t) L₂.Q = 0 :=
+    RelPoint.nsmul_pre_eq_zero d.ab t (Category.comp_id t) L₂.nsmul_Q
+  obtain ⟨a, ha, -⟩ := (L₁.geom_basis Kz t _).mp htP
+  obtain ⟨b, hb, -⟩ := (L₁.geom_basis Kz t _).mp htQ
+  refine ⟨![![((a.1 : ℕ) : ZMod n), ((a.2 : ℕ) : ZMod n)],
+      ![((b.1 : ℕ) : ZMod n), ((b.2 : ℕ) : ZMod n)]], ?_⟩
+  set M : Matrix (Fin 2) (Fin 2) (ZMod n) :=
+    ![![((a.1 : ℕ) : ZMod n), ((a.2 : ℕ) : ZMod n)],
+      ![((b.1 : ℕ) : ZMod n), ((b.2 : ℕ) : ZMod n)]] with hM
+  have hM00 : (M 0 0).val = (a.1 : ℕ) := ZMod.val_cast_of_lt a.1.isLt
+  have hM01 : (M 0 1).val = (a.2 : ℕ) := ZMod.val_cast_of_lt a.2.isLt
+  have hM10 : (M 1 0).val = (b.1 : ℕ) := ZMod.val_cast_of_lt b.1.isLt
+  have hM11 : (M 1 1).val = (b.2 : ℕ) := ZMod.val_cast_of_lt b.2.isLt
+  have keyP : t ≫ L₂.P.1 = t ≫ (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1 := by
+    refine congrArg Subtype.val (?_ : RelPoint.pre t (Category.comp_id t) L₂.P
+      = RelPoint.pre t (Category.comp_id t) (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q))
+    rw [RelPoint.pre_comb d.ab t (Category.comp_id t) (M 0 0) (M 0 1) L₁.P L₁.Q]
+    show _ = (M 0 0).val • _ + (M 0 1).val • _
+    rw [hM00, hM01]
+    exact ha
+  have keyQ : t ≫ L₂.Q.1 = t ≫ (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1 := by
+    refine congrArg Subtype.val (?_ : RelPoint.pre t (Category.comp_id t) L₂.Q
+      = RelPoint.pre t (Category.comp_id t) (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q))
+    rw [RelPoint.pre_comb d.ab t (Category.comp_id t) (M 1 0) (M 1 1) L₁.P L₁.Q]
+    show _ = (M 1 0).val • _ + (M 1 1).val • _
+    rw [hM10, hM11]
+    exact hb
+  have hup : Limits.pullback.lift t t keyP ≫
+      Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1 = t :=
+    Limits.pullback.lift_fst _ _ _
+  have huq : Limits.pullback.lift t t keyQ ≫
+      Limits.pullback.fst L₂.Q.1 (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1 = t :=
+    Limits.pullback.lift_fst _ _ _
+  have hcond : Limits.pullback.lift t t keyP ≫
+      Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1
+      = Limits.pullback.lift t t keyQ ≫
+        Limits.pullback.fst L₂.Q.1 (RelPoint.comb d.ab (M 1 0) (M 1 1) L₁.P L₁.Q).1 := by
+    rw [hup, huq]
+  have hucomp : Limits.pullback.lift (Limits.pullback.lift t t keyP)
+      (Limits.pullback.lift t t keyQ) hcond ≫ combPieceι L₁ L₂ M = t := by
+    show Limits.pullback.lift (Limits.pullback.lift t t keyP)
+        (Limits.pullback.lift t t keyQ) hcond ≫ Limits.pullback.fst _ _ ≫
+      Limits.pullback.fst L₂.P.1 (RelPoint.comb d.ab (M 0 0) (M 0 1) L₁.P L₁.Q).1 = t
+    rw [← Category.assoc, Limits.pullback.lift_fst, hup]
+  refine ⟨Limits.pullback.lift (Limits.pullback.lift t t keyP)
+    (Limits.pullback.lift t t keyQ) hcond (IsLocalRing.closedPoint Kz), ?_⟩
+  have h2 : (Limits.pullback.lift (Limits.pullback.lift t t keyP)
+        (Limits.pullback.lift t t keyQ) hcond ≫ combPieceι L₁ L₂ M)
+        (IsLocalRing.closedPoint Kz)
+      = t (IsLocalRing.closedPoint Kz) := by rw [hucomp]
+  simp only [Scheme.Hom.comp_base, TopCat.coe_comp, Function.comp_apply] at h2
+  exact h2.trans (Scheme.fromSpecResidueField_apply z _)
+
 /-- **Two full level structures on ONE datum over a `ℚ`-scheme differ
-ZARISKI-locally by a CONSTANT matrix** (opened 2026-07-28) — the whole
+ZARISKI-locally by a CONSTANT matrix** (opened 2026-07-28, **PROVEN
+2026-07-28**) — the whole
 geometric content of `exists_openCover_deckTranslation`, and after that
 cut the only step of the coequalising clause that is still open.
 
@@ -4690,86 +5109,49 @@ a statement about a single abelian scheme and two bases of its
 (`exists_fullLevelStructure_baseChange`, `twist_baseChange`, uniqueness
 in `R.universal`) has been discharged before reaching it.
 
-## THE ROUTE, and why the locality is ZARISKI and not merely fppf
+## THE PROOF (2026-07-28), and what it does NOT need
 
-The trap paragraph on `exists_deckAction` records that **a search for a
-single global `σ` cannot succeed**.  What makes the LOCAL statement
-Zariski rather than étale is that `L₁` **trivialises the comparison
-torsor**, so the comparison becomes a section of a CONSTANT group scheme.
+The route this docstring used to record — trivialise the comparison
+torsor by `L₁`, get an isomorphism `(ℤ/n)²_Z ≅ d.E[n]` of finite étale
+group schemes, transport `L₂` through it and observe that a section of a
+CONSTANT scheme is locally constant — is **abandoned**, together with the
+whole infrastructure list it carried (`E[n]` finite, `E[n]` flat, the
+fibrewise-isomorphism criterion, and `(ℤ/n)²_Z` with its sections
+computed).  None of that is needed.  What replaces it:
 
-1.  `n` is invertible on a `ℚ`-scheme, so `d.E[n]` is finite étale over
-    `Z`.  `L₁.nsmul_P` / `nsmul_Q` make `(a, b) ↦ a·L₁.P + b·L₁.Q` a
-    homomorphism of group schemes `(ℤ/n)²_Z ⟶ d.E[n]` — this is the step
-    that needs the torsion OVER THE BASE, not merely at geometric points,
-    and it is exactly why those are fields of `FullLevelStructure`.
-2.  `L₁.geom_basis` says that homomorphism is bijective on geometric
-    fibres, and a fibrewise isomorphism of finite étale group schemes is
-    an isomorphism.  **This is the step the project does not yet have**:
-    it needs the `n`-torsion subgroup scheme of a `Gamma0Datum` AS AN
-    OBJECT, and `Gamma0Datum` carries only a functor-of-points
-    `AbelianSchemeStruct`.  See the note below.
-3.  Transport `L₂.P`, `L₂.Q` through that isomorphism: they become two
-    sections of the CONSTANT group scheme `(ℤ/n)²_Z`.  A section of a
-    constant scheme is a locally constant function, and `L₂.geom_basis`
-    makes the resulting matrix invertible at every point, so it is a
-    locally constant function `Z → GL₂(ℤ/n)` — i.e. a finite CLOPEN
-    decomposition of `Z`, with `σ` the value on the piece.
-4.  On a piece, `L₂ = twist hn L₁ σ` by construction, which is the
-    displayed pair of equations (stated on the underlying morphisms, so
-    that no base-point transport appears).
+1.  For each of the `n⁴` matrices `M ∈ M₂(ℤ/n)`, the locus in `Z` where
+    BOTH `L₂.P = M₀ · L₁` and `L₂.Q = M₁ · L₁` hold is
+    `combPiece L₁ L₂ M`, the fibre product over `Z` of two equalizers.
+2.  Each such locus is OPEN.  That is the single leaf
+    `isOpenImmersion_equalizer_of_nsmul_eq_zero`, and it is where
+    `g : Z ⟶ SpecQ` is consumed: it says the equalizer of two
+    `n`-torsion sections of an elliptic scheme over a `ℚ`-scheme is open,
+    which follows from `E[n] ⟶ Z` being UNRAMIFIED and nothing else.
+3.  They COVER `Z`: at a point `z`, read `L₂.P` and `L₂.Q` in the basis
+    `L₁` at the geometric point `Spec (κ(z)^alg) ⟶ Z`.  This is
+    `L₁.geom_basis`, a FIELD of `FullLevelStructure`, so it is free.  The
+    resulting `Fin n`-coordinates are the entries of the matrix whose
+    piece contains `z`.  Steps 1–3 are
+    `exists_openCover_comb_of_fullLevelStructure`, PROVEN.
+4.  On a NONEMPTY piece the matrix is INVERTIBLE, by `L₂.geom_basis` at a
+    geometric point of the piece: two bases of `(ℤ/n)²` differ by a unit.
+    That is `isUnit_of_geomBasis_comb`, pure algebra, PROVEN.
+5.  On an EMPTY piece the matrix need not be invertible and there is
+    nothing to prove: an empty scheme is initial, so any two morphisms
+    out of it agree and `σ = 1` serves.  This is the one place where the
+    `M₂(ℤ/n)` form of step 3 and the `GL₂(ℤ/n)` form of the conclusion
+    genuinely differ.
 
-*The check that would refute step 3*: exhibit a `ℚ`-scheme `Z`, a datum
-with two full level structures, and a point at which the comparison
-matrix is not locally constant.  It cannot be done once step 2 is
-available, because `Hom_Z(Z, S_Z)` is locally constant functions for any
-finite `S`.
+*The check that would refute this account*: the proof below cites exactly
+`exists_openCover_comb_of_fullLevelStructure`, `isUnit_of_geomBasis_comb`,
+`isInitialOfIsEmpty` and `RelPoint.pre_comb`.
 
-## THE MISSING INFRASTRUCTURE, precisely — and it is SMALLER than it was
-
-`(ℤ/n)²_Z ≅ d.E[n]` **as finite étale group schemes**.  Three of the four
-pieces this used to need are now IN THIS TREE, and the note is corrected
-here rather than left to mislead the next owner:
-
-* **The torsion scheme as an OBJECT is a solved pattern.**
-  `CyclicSubgroupOfOrder.torsionScheme` below is
-  `Limits.pullback (c.ι ≫ ab.mulByNat n) ab.zeroSection`, with
-  `isClosedImmersion_torsionι`, `isFinite_torsionι` and — the whole
-  functor-of-points content — `liesIn_torsionι_iff`, all PROVEN.  `E[n]`
-  is the SAME construction with `c.ι` replaced by `𝟙 d.E`, and
-  `AbelianSchemeStruct.isClosedImmersion_zeroSection` (PROVEN) is what
-  makes the projection a closed immersion in either case.
-* **Étaleness is available**, and with no characteristic hypothesis:
-  `AlgebraicGeometry.etale_of_isReduced_pullback`
-  (`Fermat/FLT/Mathlib/AlgebraicGeometry/EtaleOfGeometricFibres.lean`) —
-  finite, flat, locally of finite presentation, reduced geometric fibres
-  ⟹ étale — together with
-  `isReduced_pullback_of_finrank_le_card_geometricPoints` and
-  `locallyOfFinitePresentation_of_finrank_const` named in its docstring.
-  This is where `g : Z ⟶ SpecQ` is consumed: it is what makes the fibres
-  reduced.
-* **The `n`-torsion over the base** — needed to make
-  `(a, b) ↦ a·L₁.P + b·L₁.Q` a homomorphism of group schemes rather than
-  a map of point sets — is `L₁.nsmul_P` / `nsmul_Q`, fields of
-  `FullLevelStructure`.
-
-What is genuinely still owed is therefore only: **finiteness and flatness
-of `d.E[n] ⟶ Z`** (`C[n]` inherits finiteness from `C` being finite over
-the base; `d.E ⟶ Z` is proper, not finite, so this needs a real argument
-— `n` invertible plus relative dimension one), and **the constant group
-scheme `(ℤ/n)²_Z` with its sections computed**, i.e. `Hom_Z(Z, S_Z)` =
-locally constant functions for finite `S`, which is what turns the
-comparison into the CLOPEN decomposition.
-
-*The check that would refute this paragraph*:
-`grep -n 'torsionScheme\|isClosedImmersion_zeroSection' ` in this file
-and `grep -rn 'etale_of_isReduced_pullback' Fermat/`.
-
-`exists_isomTorsor_of_geomPoint` far above owes the same torsion scheme,
-plus the `Isom`-sheaf and its representability, which this leaf does NOT
-need — `L₁` trivialises the torsor, so what is left here is only local
-constancy of sections of a constant scheme.  Its own "what this project
-does not have" paragraph predates the material listed above and should be
-re-read against it before anyone acts on it.
+*Stale notes this correction touches, reported not edited*: the
+"What this project does not have" paragraph of
+`exists_isomTorsor_of_geomPoint` (far above) predates
+`EtaleOfGeometricFibres.lean` and the `torsionScheme` block, and is
+independently stale; that leaf still owes the `Isom`-sheaf, which is not
+needed here.
 
 ## Faithfulness
 
@@ -4777,7 +5159,8 @@ re-read against it before anyone acts on it.
 characteristic `p ∣ n` the kernel `E[n]` is not étale, the comparison is
 not locally constant, and the statement is FALSE.  `hn` is load-bearing
 at `n = 0` exactly as on `FullLevelStructure` (there `Fin 0` is empty
-while `0 • x = 0` always), and is used here only through `twist`.
+while `0 • x = 0` always), and is used here through `twist` and through
+the leaf.
 
 Nothing here is vacuous: `𝒰` is an open COVER, so its pieces are jointly
 surjective and the equations really do determine `L₂` from `L₁` and the
@@ -4790,7 +5173,52 @@ theorem exists_openCover_twist_of_fullLevelStructure (N n : ℕ) (hn : 3 ≤ n)
     ∃ 𝒰 : Scheme.OpenCover.{0} Z, ∀ i : 𝒰.I₀, ∃ σ : gamma0DeckGroup n,
       𝒰.f i ≫ L₂.P.1 = 𝒰.f i ≫ (FullLevelStructure.twist hn L₁ σ).P.1 ∧
       𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (FullLevelStructure.twist hn L₁ σ).Q.1 := by
-  sorry
+  obtain ⟨𝒰, h𝒰⟩ := exists_openCover_comb_of_fullLevelStructure N n hn g d L₁ L₂
+  refine ⟨𝒰, fun i => ?_⟩
+  obtain ⟨M, hMP, hMQ⟩ := h𝒰 i
+  rcases isEmpty_or_nonempty ↥(𝒰.X i) with hemp | hne
+  · haveI := hemp
+    exact ⟨1, (isInitialOfIsEmpty (X := 𝒰.X i)).hom_ext _ _,
+      (isInitialOfIsEmpty (X := 𝒰.X i)).hom_ext _ _⟩
+  · obtain ⟨pt⟩ := hne
+    let Kw := AlgebraicClosure ((𝒰.X i).residueField pt)
+    let t : Spec (CommRingCat.of Kw) ⟶ Z :=
+      (Spec.map (CommRingCat.ofHom (algebraMap ((𝒰.X i).residueField pt) Kw)) ≫
+        (𝒰.X i).fromSpecResidueField pt) ≫ 𝒰.f i
+    letI := d.ab.addCommGroup t
+    have hfac : ∀ {x y : RelPoint d.f (𝟙 Z)}, 𝒰.f i ≫ x.1 = 𝒰.f i ≫ y.1 →
+        RelPoint.pre t (Category.comp_id t) x = RelPoint.pre t (Category.comp_id t) y := by
+      intro x y h
+      refine Subtype.ext ?_
+      show t ≫ x.1 = t ≫ y.1
+      show ((Spec.map (CommRingCat.ofHom (algebraMap ((𝒰.X i).residueField pt) Kw)) ≫
+        (𝒰.X i).fromSpecResidueField pt) ≫ 𝒰.f i) ≫ x.1 = _
+      rw [Category.assoc, h, ← Category.assoc]
+    have hP' : RelPoint.pre t (Category.comp_id t) L₂.P
+        = (M 0 0).val • RelPoint.pre t (Category.comp_id t) L₁.P
+          + (M 0 1).val • RelPoint.pre t (Category.comp_id t) L₁.Q := by
+      rw [hfac hMP, RelPoint.pre_comb d.ab t (Category.comp_id t) (M 0 0) (M 0 1) L₁.P L₁.Q]
+      rfl
+    have hQ' : RelPoint.pre t (Category.comp_id t) L₂.Q
+        = (M 1 0).val • RelPoint.pre t (Category.comp_id t) L₁.P
+          + (M 1 1).val • RelPoint.pre t (Category.comp_id t) L₁.Q := by
+      rw [hfac hMQ, RelPoint.pre_comb d.ab t (Category.comp_id t) (M 1 0) (M 1 1) L₁.P L₁.Q]
+      rfl
+    have hM : IsUnit M :=
+      isUnit_of_geomBasis_comb hn
+        (RelPoint.nsmul_pre_eq_zero d.ab t (Category.comp_id t) L₁.nsmul_P)
+        (RelPoint.nsmul_pre_eq_zero d.ab t (Category.comp_id t) L₁.nsmul_Q)
+        (L₁.geom_basis Kw t) (L₂.geom_basis Kw t) M hP' hQ'
+    have hval : (hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) = M := hM.unit_spec
+    refine ⟨hM.unit, ?_, ?_⟩
+    · show 𝒰.f i ≫ L₂.P.1 = 𝒰.f i ≫ (RelPoint.comb d.ab
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 0 0)
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 0 1) L₁.P L₁.Q).1
+      rw [hval]; exact hMP
+    · show 𝒰.f i ≫ L₂.Q.1 = 𝒰.f i ≫ (RelPoint.comb d.ab
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 1 0)
+        ((hM.unit : Matrix (Fin 2) (Fin 2) (ZMod n)) 1 1) L₁.P L₁.Q).1
+      rw [hval]; exact hMQ
 
 /-- **Two rigidifications of one datum differ ZARISKI-locally by a single
 deck transformation** (opened 2026-07-27, **PROVEN 2026-07-28**) — the
