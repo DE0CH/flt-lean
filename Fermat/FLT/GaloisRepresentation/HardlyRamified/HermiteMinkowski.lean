@@ -78,8 +78,29 @@ public import Mathlib.LinearAlgebra.Trace
 public import Mathlib.RingTheory.LocalRing.Module
 -- `Module.Projective.of_split`, for those two summands.
 public import Mathlib.Algebra.Module.Projective
--- `Algebra.trace_eq_of_algEquiv`, `Algebra.trace_apply`, `Algebra.trace_prod_apply`.
+-- `Algebra.trace_eq_of_algEquiv`, `Algebra.trace_apply`, `Algebra.trace_prod_apply`,
+-- `Algebra.trace_surjective`.
 public import Mathlib.RingTheory.Trace.Basic
+-- The five inputs to the finite-local-ring core of the trace witness
+-- (`exists_subalgebra_free_finrank_eq_residualTrace_surjective` below).  All PUBLIC:
+-- the names are used in proof bodies, and a private import would make them unavailable
+-- there when the privacy sits in an intermediate module.
+-- `HenselianRing`, `IsAdicComplete.henselianRing` — the Newton iteration that lifts a
+-- residue-field generator through the nilpotent maximal ideal.
+public import Mathlib.RingTheory.Henselian
+-- `Field.exists_primitive_element`, `IntermediateField.adjoin.finrank`,
+-- `IntermediateField.finrank_top'`,
+-- `IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic`.
+public import Mathlib.FieldTheory.PrimitiveElement
+-- `PerfectField.ofFinite` and the `Algebra.IsSeparable` instance over a perfect base:
+-- this is what makes the residue extension of finite fields separable.
+public import Mathlib.FieldTheory.Perfect
+-- `Polynomial.lifts_and_degree_eq_and_monic`, `Polynomial.lifts_iff_coeff_lifts` —
+-- the monic lift of the minimal polynomial along `Z ↠ κ_Z`.
+public import Mathlib.Algebra.Polynomial.Lifts
+-- `PowerBasis.mem_span_pow'`, the division-by-a-monic membership criterion behind
+-- `adjoin_singleton_le_span_pow`.
+public import Mathlib.RingTheory.PowerBasis
 
 /-!
 # Hermite–Minkowski finiteness for hardly ramified representations
@@ -1978,9 +1999,313 @@ theorem maximalIdeal_int_quotient_pow_eq_span (q : ℕ) (hq : q.Prime) (k : ℕ)
   simp only [SetLike.mem_coe, Ideal.mem_span_singleton]
   exact dvd_pow_self _ hk
 
+section FiniteLocalRingCore
+
+open _root_.IsLocalRing _root_.Polynomial
+
+/-- `|Fin n → R| = |R| ^ n`. -/
+theorem natCard_fun_fin (R : Type*) [Finite R] (n : ℕ) :
+    Nat.card (Fin n → R) = Nat.card R ^ n := by
+  simp [Nat.card_pi]
+
+/-- `Nat.card` form of `Module.card_eq_pow_finrank`. -/
+theorem natCard_eq_pow_finrank (K V : Type*) [Field K] [AddCommGroup V] [Module K V] [Finite K]
+    [Finite V] : Nat.card V = Nat.card K ^ Module.finrank K V := by
+  haveI := Fintype.ofFinite K
+  haveI := Fintype.ofFinite V
+  simpa [Nat.card_eq_fintype_card] using Module.card_eq_pow_finrank (K := K) (V := V)
+
+/-- A module spanned by `n` elements over a finite ring has at most `|R| ^ n` elements. -/
+theorem card_le_pow_of_span_eq_top {R M : Type*} [CommRing R] [AddCommGroup M] [Module R M]
+    [Finite R] {n : ℕ} (g : Fin n → M) (hspan : Submodule.span R (Set.range g) = ⊤) :
+    Nat.card M ≤ Nat.card R ^ n := by
+  classical
+  have hsurj : Function.Surjective (fun c : Fin n → R => ∑ i, c i • g i) := by
+    intro y
+    have hy : y ∈ Submodule.span R (Set.range g) := by rw [hspan]; trivial
+    exact (Submodule.mem_span_range_iff_exists_fun R).mp hy
+  simpa [natCard_fun_fin] using Nat.card_le_card_of_surjective _ hsurj
+
+/-- **Equality of cardinalities upgrades a spanning family of `n` elements to a basis.**
+The surjection `R ^ n ↠ M` it gives is a bijection between finite sets of equal size, hence
+an isomorphism.  This is what converts the counting argument below into freeness. -/
+theorem free_finrank_of_span_of_card_eq {R M : Type*} [CommRing R] [Nontrivial R]
+    [AddCommGroup M] [Module R M] [Finite R] {n : ℕ} (g : Fin n → M)
+    (hspan : Submodule.span R (Set.range g) = ⊤) (hcard : Nat.card M = Nat.card R ^ n) :
+    Module.Free R M ∧ Module.Finite R M ∧ Module.finrank R M = n := by
+  classical
+  have hsurj : Function.Surjective (Fintype.linearCombination R g) := by
+    intro y
+    have hy : y ∈ Submodule.span R (Set.range g) := by rw [hspan]; trivial
+    obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun R).mp hy
+    exact ⟨c, by simpa [Fintype.linearCombination_apply] using hc⟩
+  have hbij : Function.Bijective (Fintype.linearCombination R g) :=
+    (Nat.bijective_iff_surjective_and_card _).mpr ⟨hsurj, by rw [natCard_fun_fin, hcard]⟩
+  let e : (Fin n → R) ≃ₗ[R] M := LinearEquiv.ofBijective _ hbij
+  exact ⟨Module.Free.of_equiv e, Module.Finite.equiv e,
+    by rw [← e.finrank_eq, Module.finrank_fin_fun]⟩
+
+/-- **Minimal generators over a finite local ring** (Nakayama).  A finite module `M` over a
+finite local ring `R` is spanned by `n` elements, where `|M ⧸ 𝔪 M| = |κ| ^ n`; i.e. `n` is the
+`κ`-dimension of `M ⧸ 𝔪 M`.  Uses mathlib's `IsLocalRing.map_mkQ_eq_top`. -/
+theorem exists_span_eq_top_card_quot_eq_pow (R M : Type*) [CommRing R] [IsLocalRing R] [Finite R]
+    [AddCommGroup M] [Module R M] [Finite M] :
+    ∃ (n : ℕ) (g : Fin n → M), Submodule.span R (Set.range g) = ⊤ ∧
+      Nat.card (M ⧸ (maximalIdeal R • ⊤ : Submodule R M)) = Nat.card (ResidueField R) ^ n := by
+  classical
+  letI : Module (ResidueField R) (M ⧸ (maximalIdeal R • ⊤ : Submodule R M)) :=
+    inferInstanceAs (Module (R ⧸ maximalIdeal R) (M ⧸ maximalIdeal R • (⊤ : Submodule R M)))
+  letI : IsScalarTower R (ResidueField R) (M ⧸ (maximalIdeal R • ⊤ : Submodule R M)) :=
+    inferInstanceAs (IsScalarTower R (R ⧸ maximalIdeal R) (M ⧸ maximalIdeal R • (⊤ : Submodule R M)))
+  haveI : Finite (ResidueField R) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : Finite (M ⧸ (maximalIdeal R • ⊤ : Submodule R M)) :=
+    Finite.of_surjective _ (Submodule.Quotient.mk_surjective (maximalIdeal R • ⊤))
+  set V := M ⧸ (maximalIdeal R • ⊤ : Submodule R M) with hV
+  set n := Module.finrank (ResidueField R) V with hn
+  let b := Module.finBasis (ResidueField R) V
+  let g : Fin n → M := fun i => Function.surjInv
+    (Submodule.Quotient.mk_surjective (maximalIdeal R • ⊤ : Submodule R M)) (b i)
+  have hgb : ∀ i, (Submodule.mkQ (maximalIdeal R • ⊤ : Submodule R M)) (g i) = b i := fun i =>
+    Function.surjInv_eq _ _
+  refine ⟨n, g, ?_, ?_⟩
+  · rw [← IsLocalRing.map_mkQ_eq_top]
+    rw [Submodule.map_span, ← Set.range_comp]
+    have hcomp : ((Submodule.mkQ (maximalIdeal R • ⊤ : Submodule R M)) ∘ g) = ⇑b := by
+      funext i; exact hgb i
+    rw [hcomp, ← Submodule.restrictScalars_span R (ResidueField R) Ideal.Quotient.mk_surjective,
+      b.span_eq]
+    exact Submodule.restrictScalars_top R (ResidueField R) V
+  · exact natCard_eq_pow_finrank (ResidueField R) V
+
+/-- **A ring is adically complete for a nilpotent ideal.**  `I ^ N = 0` makes the `I`-adic
+filtration eventually `⊥`, so `IsHausdorff` and `IsPrecomplete` are immediate.  Composed with
+`IsAdicComplete.henselianRing` this is what makes a finite local ring Henselian without any
+completeness hypothesis. -/
+theorem isAdicComplete_of_isNilpotent {R : Type*} [CommRing R] {I : Ideal R}
+    (hI : IsNilpotent I) : IsAdicComplete I R := by
+  obtain ⟨N, hN⟩ := hI
+  have hbot : ∀ m : ℕ, N ≤ m → (I ^ m • (⊤ : Submodule R R)) = ⊥ := by
+    intro m hm
+    have h1 : I ^ m ≤ I ^ N := Ideal.pow_le_pow_right hm
+    rw [hN, Ideal.zero_eq_bot] at h1
+    rw [le_bot_iff.mp h1, Submodule.bot_smul]
+  haveI hh : IsHausdorff I R := by
+    constructor
+    intro x hx
+    have h1 := hx N
+    rw [hbot N le_rfl] at h1
+    simpa using SModEq.sub_mem.mp h1
+  haveI hp : IsPrecomplete I R := by
+    constructor
+    intro g hg
+    refine ⟨g N, fun n => ?_⟩
+    rcases le_or_gt n N with hn | hn
+    · exact hg hn
+    · have h1 := hg hn.le
+      rw [hbot N le_rfl] at h1
+      have h2 : g N = g n := by simpa [sub_eq_zero] using SModEq.sub_mem.mp h1
+      rw [h2]
+  exact ⟨⟩
+
+variable {Z S : Type*} [CommRing Z] [CommRing S] [Algebra Z S]
+
+/-- In a subalgebra of a **finite** ring, being a unit is detected in the ambient ring: if
+`x ∈ A` is a unit of `S` then multiplication by `x` is injective on the finite set `A`, hence
+surjective, so `x` already has an inverse inside `A`. -/
+theorem isUnit_subalgebra_iff [Finite S] (A : Subalgebra Z S) (x : A) :
+    IsUnit x ↔ IsUnit (x : S) := by
+  constructor
+  · exact fun hx => hx.map (A.val : A →+* S)
+  · intro hx
+    haveI : Finite A := Subtype.finite
+    have hinj : Function.Injective (fun y : A => x * y) := by
+      intro y z hyz
+      have h1 : (x : S) * (y : S) = (x : S) * (z : S) := by
+        exact_mod_cast congrArg (fun w : A => (w : S)) hyz
+      exact Subtype.ext (hx.mul_right_injective h1)
+    obtain ⟨y, hy⟩ := (Finite.injective_iff_surjective.mp hinj) 1
+    exact ⟨⟨x, y, hy, by rw [mul_comm]; exact hy⟩, rfl⟩
+
+/-- **A subalgebra of a finite local ring is local**, with maximal ideal the contraction of
+`𝔪_S` (see `isUnit_subalgebra_iff`).  No nilpotence is needed. -/
+theorem isLocalRing_subalgebra [IsLocalRing S] [Finite S] (A : Subalgebra Z S) :
+    IsLocalRing A := by
+  haveI : Nontrivial A := inferInstance
+  refine IsLocalRing.of_nonunits_add ?_
+  intro a b ha hb
+  rw [mem_nonunits_iff, isUnit_subalgebra_iff] at ha hb ⊢
+  have ha' : (a : S) ∈ maximalIdeal S := (mem_maximalIdeal _).mpr ha
+  have hb' : (b : S) ∈ maximalIdeal S := (mem_maximalIdeal _).mpr hb
+  have : ((a + b : A) : S) ∈ maximalIdeal S := by
+    push_cast
+    exact Ideal.add_mem _ ha' hb'
+  exact (mem_maximalIdeal _).mp this
+
+/-- If `ω` is a root of a monic polynomial of degree `d`, then `R[ω]` is spanned as an
+`R`-module by `1, ω, …, ω ^ (d - 1)` (divide by the monic polynomial). -/
+theorem adjoin_singleton_le_span_pow {R M : Type*} [CommRing R] [CommRing M] [Algebra R M]
+    [Nontrivial R] {ω : M} {h : R[X]} (hm : h.Monic) (hroot : aeval ω h = 0) :
+    Subalgebra.toSubmodule (Algebra.adjoin R {ω})
+      ≤ Submodule.span R (Set.range fun i : Fin h.natDegree => ω ^ (i : ℕ)) := by
+  rintro y hy
+  rw [Subalgebra.mem_toSubmodule, Algebra.adjoin_singleton_eq_range_aeval] at hy
+  obtain ⟨p, rfl⟩ := hy
+  refine PowerBasis.mem_span_pow'.mpr ⟨p %ₘ h, ?_, ?_⟩
+  · exact (degree_modByMonic_lt _ hm).trans_le degree_le_natDegree
+  · conv_lhs => rw [← modByMonic_add_div p h]
+    simp [hroot]
+
+/-- **The Henselian lift of a residue-field generator** (PROVEN 2026-07-28).
+
+`κ_S / κ_Z` is an extension of finite fields, hence separable, so it has a primitive element
+`ω̄` whose minimal polynomial `μ` has degree `f = [κ_S : κ_Z]` and is separable.  Lift `μ` to a
+monic `h ∈ Z[X]` of the same degree (`Polynomial.lifts_and_degree_eq_and_monic` along the
+surjection `Z ↠ κ_Z`) and lift `ω̄` to any `ω₀ ∈ S`.  Then `h(ω₀) ∈ 𝔪_S` and `h'(ω₀)` is a unit,
+and `S` is Henselian at `𝔪_S` because `𝔪_S` is nilpotent
+(`isAdicComplete_of_isNilpotent` + `IsAdicComplete.henselianRing`), so Newton iteration produces
+`ω ∈ S` with `h(ω) = 0` and `ω ≡ ω₀`.
+
+The subalgebra is `A = Z[ω]`, spanned over `Z` by `1, ω, …, ω ^ (f - 1)`
+(`adjoin_singleton_le_span_pow`), and `A ↠ κ_S` because the image is a subring containing the
+image of `κ_Z` and `ω̄`, which generate `κ_S`. -/
+theorem exists_subalgebra_span_pow_residue_surjective
+    (Z S : Type*) [CommRing Z] [CommRing S] [Algebra Z S]
+    [IsLocalRing Z] [IsLocalRing S] [Finite Z] [Finite S]
+    [IsLocalHom (algebraMap Z S)]
+    (hnil : IsNilpotent (maximalIdeal S)) :
+    ∃ (A : Subalgebra Z S)
+      (g : Fin (Module.finrank (ResidueField Z) (ResidueField S)) → A),
+      Submodule.span Z (Set.range g) = ⊤ ∧
+      ∀ x : ResidueField S, ∃ a : A, residue S (a : S) = x := by
+  classical
+  haveI : Finite (ResidueField Z) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : Finite (ResidueField S) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : FiniteDimensional (ResidueField Z) (ResidueField S) := Module.Finite.of_finite
+  haveI : PerfectField (ResidueField Z) := PerfectField.ofFinite
+  haveI : Algebra.IsSeparable (ResidueField Z) (ResidueField S) := inferInstance
+  obtain ⟨wbar, hwbar⟩ := Field.exists_primitive_element (ResidueField Z) (ResidueField S)
+  have hint : IsIntegral (ResidueField Z) wbar := Algebra.IsIntegral.isIntegral wbar
+  set μ := minpoly (ResidueField Z) wbar with hμdef
+  have hμmonic : μ.Monic := minpoly.monic hint
+  have hμdeg : μ.natDegree = Module.finrank (ResidueField Z) (ResidueField S) := by
+    rw [← IntermediateField.adjoin.finrank hint, hwbar]
+    exact IntermediateField.finrank_top'
+  have hμsep : μ.Separable := Algebra.IsSeparable.isSeparable _ wbar
+  have hμaeval : aeval wbar μ = 0 := minpoly.aeval _ _
+  obtain ⟨hp, hpmap, hpdeg, hpmonic⟩ := Polynomial.lifts_and_degree_eq_and_monic
+    (f := residue Z) (p := μ)
+    ((Polynomial.lifts_iff_coeff_lifts μ).mpr fun n => residue_surjective (μ.coeff n)) hμmonic
+  have hpnat : hp.natDegree = Module.finrank (ResidueField Z) (ResidueField S) := by
+    rw [natDegree_eq_of_degree_eq hpdeg, hμdeg]
+  obtain ⟨w₀, hw₀⟩ := residue_surjective (R := S) wbar
+  haveI : IsAdicComplete (maximalIdeal S) S := isAdicComplete_of_isNilpotent hnil
+  haveI : HenselianRing S (maximalIdeal S) := IsAdicComplete.henselianRing S _
+  set H := hp.map (algebraMap Z S) with hHdef
+  have hHmonic : H.Monic := hpmonic.map _
+  have hcomp : ((residue S).comp (algebraMap Z S))
+      = (algebraMap (ResidueField Z) (ResidueField S)).comp (residue Z) := by
+    ext z; rfl
+  have key : ∀ q : Z[X], residue S ((q.map (algebraMap Z S)).eval w₀)
+      = aeval wbar (q.map (residue Z)) := by
+    intro q
+    rw [← Polynomial.eval₂_at_apply (residue S) w₀, ← Polynomial.eval_map, Polynomial.map_map,
+      hcomp, hw₀, Polynomial.aeval_def, ← Polynomial.eval_map, Polynomial.map_map]
+  have hHeval : H.eval w₀ ∈ maximalIdeal S := by
+    have h1 : residue S (H.eval w₀) = 0 := by
+      rw [hHdef, key hp, hpmap]; exact hμaeval
+    exact (Ideal.Quotient.eq_zero_iff_mem).mp h1
+  have hHderiv : IsUnit (Ideal.Quotient.mk (maximalIdeal S) ((derivative H).eval w₀)) := by
+    have h1 : residue S ((derivative H).eval w₀) = aeval wbar (derivative μ) := by
+      rw [hHdef, Polynomial.derivative_map, key (derivative hp), ← Polynomial.derivative_map, hpmap]
+    show IsUnit (residue S ((derivative H).eval w₀))
+    rw [h1]
+    exact (hμsep.aeval_derivative_ne_zero hμaeval).isUnit
+  obtain ⟨w, hwroot, hwmem⟩ := HenselianRing.is_henselian H hHmonic w₀ hHeval hHderiv
+  have hresw : residue S w = wbar := by
+    have h1 : residue S (w - w₀) = 0 := (Ideal.Quotient.eq_zero_iff_mem).mpr hwmem
+    rw [map_sub, sub_eq_zero] at h1
+    rw [h1, hw₀]
+  have hroot : aeval w hp = 0 := by
+    rw [Polynomial.aeval_def, ← Polynomial.eval_map, ← hHdef]
+    exact hwroot
+  set A : Subalgebra Z S := Algebra.adjoin Z {w} with hAdef
+  have hwA : w ∈ A := Algebra.self_mem_adjoin_singleton Z w
+  refine ⟨A, fun i => ⟨w ^ (i : ℕ), A.pow_mem hwA _⟩, ?_, ?_⟩
+  · rw [eq_top_iff]
+    rintro ⟨y, hy⟩ -
+    have hspanS : y ∈ Submodule.span Z
+        (Set.range fun i : Fin (Module.finrank (ResidueField Z) (ResidueField S)) =>
+          w ^ (i : ℕ)) := by
+      have h1 := adjoin_singleton_le_span_pow hpmonic hroot hy
+      rwa [hpnat] at h1
+    obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun Z).mp hspanS
+    refine (Submodule.mem_span_range_iff_exists_fun Z).mpr ⟨c, ?_⟩
+    apply Subtype.ext
+    push_cast
+    exact hc
+  · intro x
+    have hxadj : x ∈ Algebra.adjoin (ResidueField Z) ({wbar} : Set (ResidueField S)) := by
+      rw [← IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hint.isAlgebraic, hwbar]
+      trivial
+    induction hxadj using Algebra.adjoin_induction with
+    | mem y hy =>
+        rw [Set.mem_singleton_iff] at hy
+        subst hy
+        exact ⟨⟨w, hwA⟩, hresw⟩
+    | algebraMap c =>
+        obtain ⟨z, rfl⟩ := residue_surjective (R := Z) c
+        exact ⟨algebraMap Z A z, rfl⟩
+    | add p q hp hq ihp ihq =>
+        obtain ⟨a, ha⟩ := ihp
+        obtain ⟨b, hb⟩ := ihq
+        exact ⟨a + b, by push_cast; rw [map_add, ha, hb]⟩
+    | mul p q hp hq ihp ihq =>
+        obtain ⟨a, ha⟩ := ihp
+        obtain ⟨b, hb⟩ := ihq
+        exact ⟨a * b, by push_cast; rw [map_mul, ha, hb]⟩
+
+/-- A bigger submodule (possibly over a *different* ring — only the carriers are compared)
+has a smaller quotient. -/
+theorem card_quot_le_card_quot {R R' M : Type*} [Ring R] [Ring R'] [AddCommGroup M]
+    [Module R M] [Module R' M] [Finite M] (N : Submodule R M) (N' : Submodule R' M)
+    (h : ∀ x, x ∈ N → x ∈ N') : Nat.card (M ⧸ N') ≤ Nat.card (M ⧸ N) := by
+  classical
+  haveI : Finite (M ⧸ N) := Finite.of_surjective _ (Submodule.Quotient.mk_surjective N)
+  have hsurj : Function.Surjective
+      (fun q : M ⧸ N => (Submodule.Quotient.mk (Quotient.out q) : M ⧸ N')) := by
+    intro y
+    obtain ⟨m, rfl⟩ := Submodule.Quotient.mk_surjective N' y
+    refine ⟨Submodule.Quotient.mk m, ?_⟩
+    refine (Submodule.Quotient.eq N').mpr (h _ ?_)
+    exact (Submodule.Quotient.eq N).mp (Quotient.out_eq _)
+  exact Nat.card_le_card_of_surjective _ hsurj
+
+/-- **Residual trace surjectivity for finite rings.**  If `p` and `pA` are maximal then
+`A ⧸ pA` is a finite extension of the finite — hence perfect — field `Z ⧸ p`, so it is
+separable and mathlib's `Algebra.trace_surjective` applies.
+
+Stated separately from the consumer below because the `Field` instances on the two quotients
+have to be introduced *before* the statement's `Algebra` instance is fixed; introducing them
+inside a proof whose goal already mentions an abbreviated ideal makes instance search fail. -/
+theorem trace_surjective_of_map_isMaximal {Z A : Type*} [CommRing Z] [CommRing A] [Algebra Z A]
+    [Finite Z] [Finite A] (p : Ideal Z) [hp : p.IsMaximal]
+    (hmax : (Ideal.map (algebraMap Z A) p).IsMaximal) :
+    Function.Surjective (Algebra.trace (Z ⧸ p) (A ⧸ Ideal.map (algebraMap Z A) p)) := by
+  haveI := hmax
+  letI : Field (Z ⧸ p) := Ideal.Quotient.field p
+  letI : Field (A ⧸ Ideal.map (algebraMap Z A) p) := Ideal.Quotient.field _
+  haveI : Finite (Z ⧸ p) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : Finite (A ⧸ Ideal.map (algebraMap Z A) p) :=
+    Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : PerfectField (Z ⧸ p) := PerfectField.ofFinite
+  exact Algebra.trace_surjective _ _
+
+end FiniteLocalRingCore
+
+open _root_.IsLocalRing in
 /-- **CUT 2a-i of the trace witness: THE FINITE-LOCAL-RING CORE — an
 unramified subalgebra of a finite local algebra over a finite local ring**
-(SORRY LEAF, cut 2026-07-27 out of
+(PROVEN 2026-07-28; cut 2026-07-27 out of
 `exists_unramifiedSubalgebra_finrank_eq_isUnit_trace` below, which is PROVEN
 over it).
 
@@ -2002,52 +2327,63 @@ local-ring lemmas above.
 * `hcard2` — `|S| = |κ_S|^{e·k}`.
 * `hcard3` — `|Z| = |κ_Z|^k`.
 
-## THE CONSTRUCTION
+## THE CONSTRUCTION AS ACTUALLY CARRIED OUT
 
 Write `f = [κ_S : κ_Z]`, so `|κ_S| = |κ_Z|^f` and `|Z| = |κ_Z|^k`.
 
-1. *An unramified subring.*  Let `h ∈ Z[X]` be monic of degree `f` reducing to
-   the minimal polynomial of a generator `ω̄` of `κ_S` over `κ_Z`.  `h mod 𝔪`
-   is separable, so `h'(ω₀)` is a unit in `S` for any lift `ω₀`; `𝔪_S` is
-   NILPOTENT, hence `S` is `𝔪_S`-adically complete (`I^N = ⊥` makes
-   `IsHausdorff` and `IsPrecomplete` immediate — this is a ten-line `haveI`,
-   NOT a new global instance), hence `HenselianRing S 𝔪_S` by mathlib's
-   `IsAdicComplete.henselianRing`, and Newton iteration produces `ω ∈ S` with
-   `h(ω) = 0`, `ω ≡ ω₀`.  Take `A = Algebra.adjoin Z {ω}` — a `Subalgebra`,
-   which is what makes `Algebra ↥A S` and `IsScalarTower Z ↥A S` automatic and
-   is why the statement is phrased with `Subalgebra` rather than an abstract
-   intermediate ring.
-   (`Algebra.FormallySmooth.lift`, which takes `IsNilpotent I` directly, is the
-   alternative route and needs no `IsAdicComplete` at all.)
-2. *`A` is free of rank `f` over `Z`.*  By construction from the monic `h`.
-   For injectivity: if `∑ c_j ω^j = 0` with `μ = min_j v(c_j) < k`, then
-   `∑ (c_j/q^μ) ω^j` reduces to a nonzero element of `κ_S` by `κ_Z`-independence
-   of `1, …, ω̄^{f−1}`, hence is a unit of `S`, forcing `q^μ = 0` in `S`.
-3. *`S` is free of rank `e` over `A`, BY COUNTING.*  `A` is local with
-   `𝔪_A = 𝔪_Z A` and `A/𝔪_A ≅ κ_S` (a surjection of `κ_Z`-spaces of equal
-   dimension `f`), so `S/𝔪_A S = S/𝔪_Z S` has `κ_S`-dimension `e` by `hcard1`.
-   Nakayama (`IsLocalRing.quotient_span_eq_top_iff_span_eq_top`) lifts a
-   `κ_S`-basis to a spanning family of `e` elements, giving `A^e ↠ S`; and
-   `|A^e| = (|Z|^f)^e = |κ_Z|^{kfe} = |κ_S|^{ek} = |S|` by `hcard2`/`hcard3`,
-   so the surjection is bijective and `S ≅ A^e`.  **This is what replaces local
-   monogenicity `𝓞_L = W[π]`** — freeness is all the classical argument ever
-   used, and freeness is free.
-4. *Residual trace surjectivity.*  `A/𝔪_Z A ≅ κ_S` and `Z/𝔪_Z = κ_Z` are
-   finite fields, so `κ_S/κ_Z` is separable (`PerfectField.ofFinite`) and
-   `Algebra.trace_surjective` (`Mathlib/RingTheory/Trace/Basic.lean:521`)
+1. *An unramified subring.*  `exists_subalgebra_span_pow_residue_surjective`
+   above: `h ∈ Z[X]` monic of degree `f` reducing to the minimal polynomial of
+   a primitive element `ω̄` of `κ_S / κ_Z`, Henselian lift `ω` of `ω̄`
+   (`𝔪_S` NILPOTENT ⟹ `IsAdicComplete` ⟹ `HenselianRing`), and
+   `A = Algebra.adjoin Z {ω}` — a `Subalgebra`, which is what makes
+   `Algebra ↥A S` and `IsScalarTower Z ↥A S` automatic and is why the statement
+   is phrased with `Subalgebra` rather than an abstract intermediate ring.
+   That leaf delivers exactly two things: a `Z`-spanning family of `f` elements
+   of `A`, and surjectivity of `A → κ_S`.
+2. *Both freeness statements come out of ONE counting collapse.*  This replaces
+   the valuation argument for injectivity of `Z[X]/(h) → S` that an earlier
+   version of this plan called for; that argument is not available here, since
+   `Z` is an arbitrary finite local ring and `𝔪_Z` need not be principal.
+   Instead:
+   * `A` is local (`isLocalRing_subalgebra`; only finiteness is needed, no
+     nilpotence) with `𝔪_A` the contraction of `𝔪_S`, and `|κ_A| = |κ_S|`;
+   * `|A| ≤ |Z|^f` from the `f` spanning elements;
+   * Nakayama (`exists_span_eq_top_card_quot_eq_pow`) makes `S` spanned by `n`
+     elements over `A` with `|κ_S|^n = |S/𝔪_A S| ≤ |S/𝔪_Z S| = |κ_S|^e`, so
+     `n ≤ e` and `|S| ≤ |A|^n ≤ |A|^e`;
+   * hence `|κ_Z|^{kfe} = |S| ≤ |A|^n ≤ |A|^e ≤ (|Z|^f)^e = |κ_Z|^{kfe}`, and
+     every inequality in that chain is an equality.  So `|A| = |Z|^f`,
+     `|S| = |A|^e` and `n = e`, and `free_finrank_of_span_of_card_eq` turns each
+     of the two spanning families into a basis.  **This is what replaces local
+     monogenicity `𝓞_L = W[π]`** — freeness is all the classical argument ever
+     used, and freeness is free.
+3. *`𝔪_Z A = 𝔪_A` is an OUTPUT, not an input.*  `A ⧸ 𝔪_Z A` is spanned over
+   `κ_Z` by the images of the same `f` elements, so it has at most `|κ_Z|^f`
+   elements; it also surjects onto `A ⧸ 𝔪_A = κ_S`, which has exactly that many.
+   Equality forces `𝔪_Z A = 𝔪_A`, hence `𝔪_Z A` maximal.
+4. *Residual trace surjectivity.*  `A/𝔪_Z A` and `Z/𝔪_Z` are then finite fields,
+   the former perfect-base-separable over the latter, so
+   `trace_surjective_of_map_isMaximal` (mathlib's `Algebra.trace_surjective`)
    applies.
 
 FAITHFULNESS: not vacuous — `finrank ↥A S = e` and the residual surjectivity
-are genuine assertions about a genuinely constructed `A`, `he0`/`hk0` are
-load-bearing (at `e = 0` or `k = 0` the hypotheses force `S` trivial), and the
-cardinality hypotheses are exactly what a proof of freeness by counting
-consumes. -/
+are genuine assertions about a genuinely constructed `A`, `he0` is load-bearing
+(it is what makes `x ↦ x^e` injective in the collapse of step 2), and the
+cardinality hypotheses are exactly what the proof of freeness by counting
+consumes.
+
+REDUNDANCY NOTE (2026-07-28, correcting the previous line of this paragraph):
+`hk0` is **not** used.  It is not needed, because `k = 0` already contradicts
+`hcard3` — it would give `|Z| = 1`, and `Z` is local hence nontrivial.  The
+hypothesis is kept so that the consumer
+`exists_unramifiedSubalgebra_finrank_eq_isUnit_trace` below need not change; it
+is underscore-prefixed so the redundancy is mechanically visible. -/
 theorem exists_subalgebra_free_finrank_eq_residualTrace_surjective
     (Z S : Type*) [CommRing Z] [CommRing S] [Algebra Z S]
     [IsLocalRing Z] [IsLocalRing S] [Finite Z] [Finite S]
     [IsLocalHom (algebraMap Z S)]
     (hnil : IsNilpotent (IsLocalRing.maximalIdeal S))
-    (e k : ℕ) (he0 : e ≠ 0) (hk0 : k ≠ 0)
+    (e k : ℕ) (he0 : e ≠ 0) (_hk0 : k ≠ 0)
     (hcard1 : Nat.card (S ⧸ Ideal.map (algebraMap Z S) (IsLocalRing.maximalIdeal Z))
       = Nat.card (IsLocalRing.ResidueField S) ^ e)
     (hcard2 : Nat.card S = Nat.card (IsLocalRing.ResidueField S) ^ (e * k))
@@ -2057,7 +2393,137 @@ theorem exists_subalgebra_free_finrank_eq_residualTrace_surjective
       Module.Free A S ∧ Module.Finite A S ∧
       Module.finrank A S = e ∧
       Function.Surjective (Algebra.trace (Z ⧸ IsLocalRing.maximalIdeal Z)
-        (A ⧸ Ideal.map (algebraMap Z A) (IsLocalRing.maximalIdeal Z))) := sorry
+        (A ⧸ Ideal.map (algebraMap Z A) (IsLocalRing.maximalIdeal Z))) := by
+  classical
+  haveI : Finite (ResidueField Z) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : Finite (ResidueField S) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : FiniteDimensional (ResidueField Z) (ResidueField S) := Module.Finite.of_finite
+  set f := Module.finrank (ResidueField Z) (ResidueField S) with hfdef
+  have hkS : Nat.card (ResidueField S) = Nat.card (ResidueField Z) ^ f :=
+    natCard_eq_pow_finrank _ _
+  obtain ⟨A, g, hspanA, hsurjA⟩ := exists_subalgebra_span_pow_residue_surjective Z S hnil
+  haveI : Finite A := Subtype.finite
+  haveI hAloc : IsLocalRing A := isLocalRing_subalgebra A
+  have hmA : ∀ x : A, x ∈ maximalIdeal A ↔ (x : S) ∈ maximalIdeal S := by
+    intro x
+    rw [mem_maximalIdeal, mem_nonunits_iff, isUnit_subalgebra_iff, ← mem_nonunits_iff,
+      ← mem_maximalIdeal]
+  -- `A ↠ κ_S` has kernel `𝔪_A`, so `|κ_A| = |κ_S|`
+  set φ : A →+* ResidueField S := (residue S).comp (A.val : A →+* S) with hφdef
+  have hφsurj : Function.Surjective φ := fun x => hsurjA x
+  have hzero : ∀ y : S, residue S y = 0 ↔ y ∈ maximalIdeal S :=
+    fun y => Ideal.Quotient.eq_zero_iff_mem
+  have hker : RingHom.ker φ = maximalIdeal A := by
+    ext x
+    rw [RingHom.mem_ker, hφdef]
+    simp only [RingHom.coe_comp, Function.comp_apply]
+    rw [hzero]
+    exact (hmA x).symm
+  have hresA : Nat.card (ResidueField A) = Nat.card (ResidueField S) :=
+    Nat.card_congr (((Ideal.quotEquivOfEq hker.symm).trans
+      (RingHom.quotientKerEquivOfSurjective hφsurj)).toEquiv)
+  -- minimal generators of `S` over `A`
+  obtain ⟨n, gg, hspanS, hcardV⟩ := exists_span_eq_top_card_quot_eq_pow A S
+  have hcoe : ∀ z : Z, ((algebraMap Z A z : A) : S) = algebraMap Z S z := fun z => rfl
+  have hsub : ∀ x : S, x ∈ Ideal.map (algebraMap Z S) (maximalIdeal Z) →
+      x ∈ (maximalIdeal A • ⊤ : Submodule A S) := by
+    intro x hx
+    have hx' : x ∈ (maximalIdeal Z • (⊤ : Submodule Z S)) := by
+      rw [Ideal.smul_top_eq_map]; exact hx
+    refine Submodule.smul_induction_on hx' ?_ ?_
+    · intro z hz s _
+      have hz' : (algebraMap Z A z) ∈ maximalIdeal A := by
+        rw [hmA, hcoe]
+        refine (mem_maximalIdeal _).mpr fun hu => ?_
+        exact (mem_maximalIdeal z).mp hz (isUnit_of_map_unit (algebraMap Z S) z hu)
+      rw [← IsScalarTower.algebraMap_smul (↥A) z s]
+      exact Submodule.smul_mem_smul hz' Submodule.mem_top
+    · intro a b ha hb; exact Submodule.add_mem _ ha hb
+  have hquotle : Nat.card (S ⧸ (maximalIdeal A • ⊤ : Submodule A S))
+      ≤ Nat.card (S ⧸ Ideal.map (algebraMap Z S) (maximalIdeal Z)) :=
+    card_quot_le_card_quot _ _ hsub
+  have hcs2 : 2 ≤ Nat.card (ResidueField S) := by
+    have := Finite.one_lt_card (α := ResidueField S)
+    omega
+  have hne : n ≤ e := by
+    have h1 : Nat.card (ResidueField S) ^ n ≤ Nat.card (ResidueField S) ^ e := by
+      rw [← hcard1, ← hresA, ← hcardV]; exact hquotle
+    exact (Nat.pow_le_pow_iff_right hcs2).mp h1
+  -- the two upper bounds
+  have hAle : Nat.card A ≤ Nat.card Z ^ f := card_le_pow_of_span_eq_top g hspanA
+  have hSle : Nat.card S ≤ Nat.card A ^ n := card_le_pow_of_span_eq_top gg hspanS
+  haveI : Nontrivial A := inferInstance
+  have hcA2 : 2 ≤ Nat.card A := by have := Finite.one_lt_card (α := A); omega
+  have hSval : Nat.card S = (Nat.card Z ^ f) ^ e := by
+    rw [hcard2, hkS, hcard3, ← pow_mul, ← pow_mul, ← pow_mul]
+    congr 1
+    ring
+  -- the counting chain collapses
+  have hchain : Nat.card S ≤ Nat.card A ^ e := hSle.trans (Nat.pow_le_pow_right (by omega) hne)
+  have hchain2 : Nat.card A ^ e ≤ Nat.card S := by
+    rw [hSval]; exact Nat.pow_le_pow_left hAle e
+  have hAe : Nat.card A ^ e = Nat.card S := le_antisymm hchain2 hchain
+  have hcA : Nat.card A = Nat.card Z ^ f := by
+    refine Nat.pow_left_injective he0 ?_
+    show Nat.card A ^ e = (Nat.card Z ^ f) ^ e
+    rw [hAe, hSval]
+  have hSA : Nat.card S = Nat.card A ^ n := le_antisymm hSle (by
+    rw [← hAe]; exact Nat.pow_le_pow_right (by omega) hne)
+  have hnE : n = e := Nat.pow_right_injective hcA2 (by
+    show Nat.card A ^ n = Nat.card A ^ e
+    rw [← hSA, hAe])
+  subst hnE
+  obtain ⟨hfreeZ, hfinZ, -⟩ := free_finrank_of_span_of_card_eq g hspanA hcA
+  obtain ⟨hfreeA, hfinA, hrank⟩ := free_finrank_of_span_of_card_eq gg hspanS hSA
+  refine ⟨A, hfreeZ, hfinZ, hfreeA, hfinA, hrank, ?_⟩
+  -- the residual trace: first `𝔪_Z A = 𝔪_A`
+  set I : Ideal A := Ideal.map (algebraMap Z A) (maximalIdeal Z) with hIdef
+  have hIle : I ≤ maximalIdeal A := by
+    rw [hIdef, Ideal.map_le_iff_le_comap]
+    intro z hz
+    rw [Ideal.mem_comap, hmA, hcoe]
+    refine (mem_maximalIdeal _).mpr fun hu => ?_
+    exact (mem_maximalIdeal z).mp hz (isUnit_of_map_unit (algebraMap Z S) z hu)
+  haveI : Finite (A ⧸ I) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  haveI : Finite (Z ⧸ maximalIdeal Z) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  have hspanQ : Submodule.span (Z ⧸ maximalIdeal Z)
+      (Set.range fun i => (Ideal.Quotient.mk I (g i) : A ⧸ I)) = ⊤ := by
+    rw [eq_top_iff]
+    rintro y -
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+    have ha : a ∈ Submodule.span Z (Set.range g) := by rw [hspanA]; trivial
+    obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun Z).mp ha
+    refine (Submodule.mem_span_range_iff_exists_fun (Z ⧸ maximalIdeal Z)).mpr
+      ⟨fun i => Ideal.Quotient.mk (maximalIdeal Z) (c i), ?_⟩
+    rw [← hc, map_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+    rfl
+  have hQle : Nat.card (A ⧸ I) ≤ Nat.card (Z ⧸ maximalIdeal Z) ^ f :=
+    card_le_pow_of_span_eq_top _ hspanQ
+  have hQge : Nat.card (A ⧸ maximalIdeal A) ≤ Nat.card (A ⧸ I) :=
+    card_quot_le_card_quot I (maximalIdeal A) fun x hx => hIle hx
+  have hQeq : Nat.card (A ⧸ I) = Nat.card (A ⧸ maximalIdeal A) := by
+    refine le_antisymm ?_ hQge
+    calc Nat.card (A ⧸ I) ≤ Nat.card (Z ⧸ maximalIdeal Z) ^ f := hQle
+      _ = Nat.card (ResidueField S) := hkS.symm
+      _ = Nat.card (A ⧸ maximalIdeal A) := hresA.symm
+  have hIeq : I = maximalIdeal A := by
+    refine le_antisymm hIle fun x hx => ?_
+    have hfsurj : Function.Surjective (Ideal.Quotient.factor hIle) := by
+      intro y
+      obtain ⟨a, ha⟩ := Ideal.Quotient.mk_surjective y
+      exact ⟨Ideal.Quotient.mk I a, by rw [← ha]; rfl⟩
+    have hbij := (Nat.bijective_iff_surjective_and_card _).mpr ⟨hfsurj, hQeq⟩
+    have h0 : Ideal.Quotient.factor hIle (Ideal.Quotient.mk I x) =
+        Ideal.Quotient.factor hIle (0 : A ⧸ I) := by
+      rw [map_zero]
+      exact (Ideal.Quotient.eq_zero_iff_mem).mpr hx
+    exact (Ideal.Quotient.eq_zero_iff_mem).mp (hbij.1 h0)
+  haveI : (maximalIdeal Z).IsMaximal := maximalIdeal.isMaximal Z
+  have hImax : (Ideal.map (algebraMap Z ↥A) (maximalIdeal Z)).IsMaximal := by
+    rw [← hIdef, hIeq]; exact maximalIdeal.isMaximal A
+  exact trace_surjective_of_map_isMaximal (maximalIdeal Z) hImax
 
 attribute [local instance] Ideal.Quotient.field in
 /-- **CUT 2a of the trace witness: the unramified subalgebra
