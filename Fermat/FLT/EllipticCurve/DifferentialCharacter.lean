@@ -99,6 +99,9 @@ functoriality), *ATAEC* II.2.
 module
 
 public import Fermat.FLT.EllipticCurve.Isogeny
+-- `PsiSumCompanion.wronskian` (`Φₙ′ΨSqₙ − ΦₙΨSqₙ′ = n·preΨ₂ₙ`, sorry-free, any
+-- commutative ring) is the `x`-side of `isDiffChar_two` at `n = 2`.
+public import Fermat.FLT.EllipticCurve.WronskianInduction
 
 @[expose] public section
 
@@ -1026,6 +1029,127 @@ hypotheses, matching `IsRationalMap.add_of_ne` hypothesis for hypothesis. That
 match is evidence the cut is the right one rather than a convenient one: the same
 four exclusions are what make the chord formula applicable at all. -/
 
+omit [DecidableEq F] in
+/-- **The ring identity behind the `y`-side of `isDiffChar_two`**, isolated from the
+curve exactly as `addY_two_core` is: `ψ₂³ · ψ₂([2]P) = preΨ₄(x)`.
+
+`L` is the tangent slope, constrained only by `hLd : L·ψ₂ = 3x² + 2a₂x + a₄ − a₁y`;
+the left-hand factor after `ψ₂³` is `2·addY + a₁·addX + a₃` written out through
+`negY`/`negAddY`/`addX`, and the right-hand side is mathlib's `preΨ₄` with the
+`b`-invariants expanded.
+
+Three steps. `hAX` is the `x`-coordinate of the duplication cleared by `ψ₂²` (the
+same identity `addY_two_core` opens with, and with the same cofactors); `hQ` is
+`ψ₂² = 4x³ + b₂x² + 2b₄x + b₆`, which is `4 ×` the curve equation; and the final
+`linear_combination` is the derivation
+
+  `ψ₂³·ψ₂([2]P) = −(𝔸 − x·ψ₂²)·(2ν₀ + a₁(a₁x + a₃)) − ψ₂⁴`,
+
+where `𝔸 = addX·ψ₂²` and `ν₀ = 3x² + 2a₂x + a₄`. The `y` disappears because
+`2ν + a₁ψ₂ = 2ν₀ + a₁(a₁x + a₃)` identically, with `ν = ν₀ − a₁y`.
+
+**Note the classical normalisation this settles**, which `isDiffChar_two`'s
+docstring flagged as unchecked: `2y(2P) + a₁x(2P) + a₃ = ψ₄/ψ₂⁴ = preΨ₄/ψ₂³`, so
+mathlib's `preΨ₄` — not `ψ₄` — is the polynomial that pairs with `ΨSq₂² = ψ₂⁴`. -/
+theorem preΨ₄_two_core (a₁ a₂ a₃ a₄ a₆ x y L : F)
+    (hEq : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hLd : L * (2 * y + a₁ * x + a₃) = 3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) :
+    (2 * y + a₁ * x + a₃) ^ 3
+        * (2 * (-(L * ((L ^ 2 + a₁ * L - a₂ - x - x) - x) + y)
+              - a₁ * (L ^ 2 + a₁ * L - a₂ - x - x) - a₃)
+            + a₁ * (L ^ 2 + a₁ * L - a₂ - x - x) + a₃)
+      = 2 * x ^ 6 + (a₁ ^ 2 + 4 * a₂) * x ^ 5 + 5 * (2 * a₄ + a₁ * a₃) * x ^ 4
+          + 10 * (a₃ ^ 2 + 4 * a₆) * x ^ 3
+          + 10 * (a₁ ^ 2 * a₆ + 4 * a₂ * a₆ - a₁ * a₃ * a₄ + a₂ * a₃ ^ 2 - a₄ ^ 2) * x ^ 2
+          + ((a₁ ^ 2 + 4 * a₂)
+                * (a₁ ^ 2 * a₆ + 4 * a₂ * a₆ - a₁ * a₃ * a₄ + a₂ * a₃ ^ 2 - a₄ ^ 2)
+              - (2 * a₄ + a₁ * a₃) * (a₃ ^ 2 + 4 * a₆)) * x
+          + ((2 * a₄ + a₁ * a₃)
+                * (a₁ ^ 2 * a₆ + 4 * a₂ * a₆ - a₁ * a₃ * a₄ + a₂ * a₃ ^ 2 - a₄ ^ 2)
+              - (a₃ ^ 2 + 4 * a₆) ^ 2) := by
+  have hAX : (L ^ 2 + a₁ * L - a₂ - x - x) * (2 * y + a₁ * x + a₃) ^ 2
+      = (3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2
+        + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄)
+        - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+        - (a₂ + 2 * x) * (2 * y + a₁ * x + a₃) ^ 2 := by
+    linear_combination (L * (2 * y + a₁ * x + a₃) + (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)
+      + a₁ * (2 * y + a₁ * x + a₃)) * hLd + (-a₁ ^ 2) * hEq
+  have hQ : (2 * y + a₁ * x + a₃) ^ 2
+      = 4 * x ^ 3 + (a₁ ^ 2 + 4 * a₂) * x ^ 2 + 2 * (2 * a₄ + a₁ * a₃) * x
+        + (a₃ ^ 2 + 4 * a₆) := by
+    linear_combination 4 * hEq
+  set S : F := (2 * y + a₁ * x + a₃) ^ 2 with hS
+  set Q : F := 4 * x ^ 3 + (a₁ ^ 2 + 4 * a₂) * x ^ 2 + 2 * (2 * a₄ + a₁ * a₃) * x
+      + (a₃ ^ 2 + 4 * a₆) with hQd
+  set 𝔸 : F := (3 * x ^ 2 + 2 * a₂ * x + a₄) ^ 2
+      + a₁ * (a₁ * x + a₃) * (3 * x ^ 2 + 2 * a₂ * x + a₄)
+      - a₁ ^ 2 * (x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆) - (a₂ + 2 * x) * S with h𝔸
+  set M : F := 2 * (3 * x ^ 2 + 2 * a₂ * x + a₄) + a₁ * (a₁ * x + a₃) with hM
+  linear_combination (-2 * (L * (2 * y + a₁ * x + a₃)) - a₁ * (2 * y + a₁ * x + a₃)) * hAX
+    + (-2 * (𝔸 - x * S)) * hLd
+    + ((a₂ + 3 * x) * M - (S + Q)) * hQ
+
+omit [DecidableEq F] in
+/-- `Ψ₂Sq` evaluates to `ψ₂(P)²` at every nonzero point — the `veluPoint` spelling of
+`TorsionCard.eval_Ψ₂Sq_eq_sq`. -/
+theorem eval_Ψ₂Sq_veluPointX [W.IsElliptic] {P : W.Point} (hP : P ≠ 0) :
+    W.Ψ₂Sq.eval (veluPointX P)
+      = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2 := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h =>
+    haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+    have hq := TorsionCard.eval_Ψ₂Sq_eq_sq W h.1
+    simp only [veluPointX_some, veluPointY_some]
+    rw [show (2 * y + W.a₁ * x + W.a₃) = (2 * y + (W.a₁ * x + W.a₃)) from by ring]
+    exact hq
+
+/-- **`preΨ₄(x P) = ψ₂(P)³ · ψ₂([2]P)`**, the `y`-side of `isDiffChar_two`.
+
+This is the classical `2y(nP) + a₁x(nP) + a₃ = ψ₂ₙ/ψₙ⁴` at `n = 2`, in mathlib's
+`preΨ` normalisation (`ψ₄ = preΨ₄·ψ₂`, so `ψ₄/ψ₂⁴ = preΨ₄/ψ₂³`). The hypothesis
+`(2 : ℕ) • P ≠ 0` is what makes the duplication formula available; where it fails
+both sides are unconstrained and the certificate is vacuous, which is exactly the
+finite set `isDiffCharCert_of_cofinite` absorbs.
+
+Proof: the duplication point is `Affine.Point.add_self_of_Y_ne`, so its coordinates
+are `addX`/`addY` at the tangent slope, and the identity is `preΨ₄_two_core`. Holds
+in EVERY characteristic, including `2`. -/
+theorem eval_preΨ₄_two [W.IsElliptic] (P : W.Point) (hP : (2 : ℕ) • P ≠ 0) :
+    W.preΨ₄.eval (veluPointX P)
+      = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 3
+        * (2 * veluPointY ((2 : ℕ) • P) + W.a₁ * veluPointX ((2 : ℕ) • P) + W.a₃) := by
+  cases P with
+  | zero => exact absurd (smul_zero 2) hP
+  | some x y h =>
+    have hEq : y ^ 2 + W.a₁ * x * y + W.a₃ * y
+        = x ^ 3 + W.a₂ * x ^ 2 + W.a₄ * x + W.a₆ := (Affine.equation_iff ..).1 h.1
+    by_cases hy2 : y = -y - W.a₁ * x - W.a₃
+    · refine absurd ?_ hP
+      rw [two_nsmul]
+      exact Affine.Point.add_self_of_Y_eq (by simpa [Affine.negY] using hy2)
+    have hd : (2 * y + W.a₁ * x + W.a₃) ≠ 0 := fun hc => hy2 (by linear_combination hc)
+    have hy2' : y ≠ W.negY x y := by simpa [Affine.negY] using hy2
+    have hLd : W.slope x x y y * (2 * y + W.a₁ * x + W.a₃)
+        = 3 * x ^ 2 + 2 * W.a₂ * x + W.a₄ - W.a₁ * y := by
+      rw [Affine.slope_of_Y_ne' hy2,
+        show y - (-y - W.a₁ * x - W.a₃) = 2 * y + W.a₁ * x + W.a₃ from by ring]
+      exact div_mul_cancel₀ _ hd
+    have hX : veluPointX ((2 : ℕ) • (Affine.Point.some x y h : W.Point))
+        = W.addX x x (W.slope x x y y) := by
+      rw [two_nsmul, Affine.Point.add_self_of_Y_ne hy2', veluPointX_some]
+    have hY : veluPointY ((2 : ℕ) • (Affine.Point.some x y h : W.Point))
+        = W.addY x x y (W.slope x x y y) := by
+      rw [two_nsmul, Affine.Point.add_self_of_Y_ne hy2', veluPointY_some]
+    rw [hX, hY]
+    simp only [veluPointX_some, veluPointY_some, Affine.addY, Affine.negAddY, Affine.addX,
+      Affine.negY, WeierstrassCurve.preΨ₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆, WeierstrassCurve.b₈, Polynomial.eval_add,
+      Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C,
+      Polynomial.eval_X, Polynomial.eval_ofNat]
+    linear_combination
+      (-1 : F) * preΨ₄_two_core W.a₁ W.a₂ W.a₃ W.a₄ W.a₆ x y (W.slope x x y y) hEq hLd
+
 /-- **LEAF: `[2]*ω = 2ω`**, the irreducible core of additivity.
 
 `IsDiffChar (mulByHom W 2) 2` — multiplication by `2` on a single curve acts on the
@@ -1041,10 +1165,72 @@ unnecessary and a silent weakening of every consumer.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a Weierstrass curve over an
 algebraically closed field on which the duplication map pulls `ω` back to `k·ω`
-for some `k ≠ 2`. -/
+for some `k ≠ 2`.
+
+**PROVEN 2026-07-28**, exactly along the route the section docstring maps out, and
+with the normalisation it flagged as unchecked now SETTLED (see `preΨ₄_two_core`):
+the classical `ψ₂ₙ/ψₙ⁴` is `preΨ₄/ψ₂³` in mathlib's spelling, not `ψ₄/ψ₂⁴`.
+
+The witnesses are `(Φ 2, ΨSq 2)` for `x` (`veluPointX_nsmul`) and
+`exists_y_witness_two` for `y`. Off the finite `2`-torsion the reduced certificate
+is, after cancelling `E`,
+
+  `2·ΨSq₂(t)²·ψ₂([2]R) = (Φ₂′ΨSq₂ − Φ₂ΨSq₂′)(t)·ψ₂(R)`,
+
+whose right-hand side is `2·preΨ₄(t)·ψ₂(R)` by `PsiSumCompanion.wronskian` at
+`n = 2` and whose left-hand side is `2·ψ₂(R)⁴·ψ₂([2]R)` by
+`eval_Ψ₂Sq_veluPointX`; `eval_preΨ₄_two` matches them. Note `ψ₂(R) ≠ 0` is never
+needed — nothing is divided out — so characteristic `2` is not a special case.
+
+The guard clause `[2] = 0 → (2 : F) = 0` is discharged by refuting the hypothesis:
+if `[2] = 0` then every point is `2`-torsion, `finite_nsmulKer` makes `W.Point`
+finite, and `exists_point_veluPointX_eq` then makes `F` finite, contradicting
+`Infinite F` for an algebraically closed field. -/
 theorem isDiffChar_two [IsAlgClosed F] [W.IsElliptic] :
-    IsDiffChar (mulByHom W 2) (2 : F) :=
-  sorry
+    IsDiffChar (mulByHom W 2) (2 : F) := by
+  classical
+  obtain ⟨Cw, Dw, Ew, hEw, hyw⟩ := exists_y_witness_two (W := W)
+  have hB : W.ΨSq ((2 : ℕ) : ℤ) ≠ 0 := ΨSq_ne_zero' W (by norm_num)
+  refine ⟨fun hc => ?_, W.Φ ((2 : ℕ) : ℤ), W.ΨSq ((2 : ℕ) : ℤ), Cw, Dw, Ew, hB, hEw,
+    fun P hP => ⟨veluPointX_nsmul (by norm_num) P hP, hyw P hP⟩, fun P _ => ?_⟩
+  · exfalso
+    have hall : (Set.univ : Set W.Point).Finite := by
+      refine Set.Finite.subset (finite_nsmulKer (W := W) (n := 2) (by norm_num)) ?_
+      intro Q _
+      show (2 : ℕ) • Q = 0
+      simpa using DFunLike.congr_fun hc Q
+    have himg : (Set.univ : Set F).Finite := by
+      refine Set.Finite.subset (hall.image veluPointX) ?_
+      intro t _
+      obtain ⟨Q, -, hQx⟩ := exists_point_veluPointX_eq (W := W) t
+      exact ⟨Q, Set.mem_univ _, hQx⟩
+    exact Set.infinite_univ himg
+  · refine isDiffCharCert_of_cofinite
+      (S := veluPointX '' {R : W.Point | (2 : ℕ) • R = 0})
+      ((finite_nsmulKer (W := W) (n := 2) (by norm_num)).image _) (fun R hR0 hRS => ?_) P
+    have h2R : mulByHom W 2 R ≠ 0 := fun hc => hRS ⟨R, hc, rfl⟩
+    set t := veluPointX R with htdef
+    have hx : veluPointX (mulByHom W 2 R) * (W.ΨSq ((2 : ℕ) : ℤ)).eval t
+        = (W.Φ ((2 : ℕ) : ℤ)).eval t := veluPointX_nsmul (by norm_num) R h2R
+    have hy := hyw R h2R
+    refine isDiffCharCert_of_reduced (φ := mulByHom W 2) hx hy ?_
+    have hwr := congrArg (Polynomial.eval t) (PsiSumCompanion.wronskian W (n := 2) (by norm_num))
+    simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_natCast] at hwr
+    rw [show (2 * ((2 : ℕ) : ℤ)) = (4 : ℤ) from by norm_num, WeierstrassCurve.preΨ_four] at hwr
+    have hΨ : (W.ΨSq ((2 : ℕ) : ℤ)).eval t
+        = (2 * veluPointY R + W.a₁ * t + W.a₃) ^ 2 := by
+      rw [show ((2 : ℕ) : ℤ) = (2 : ℤ) from by norm_num, WeierstrassCurve.ΨSq_two]
+      exact eval_Ψ₂Sq_veluPointX hR0
+    have hpre : W.preΨ₄.eval t
+        = (2 * veluPointY R + W.a₁ * t + W.a₃) ^ 3
+          * (2 * veluPointY (mulByHom W 2 R) + W.a₁ * veluPointX (mulByHom W 2 R) + W.a₃) :=
+      eval_preΨ₄_two R h2R
+    linear_combination
+      (2 * Ew.eval t
+          * (2 * veluPointY (mulByHom W 2 R) + W.a₁ * veluPointX (mulByHom W 2 R) + W.a₃)
+          * ((W.ΨSq ((2 : ℕ) : ℤ)).eval t + (2 * veluPointY R + W.a₁ * t + W.a₃) ^ 2)) * hΨ
+        + (-(Ew.eval t * (2 * veluPointY R + W.a₁ * t + W.a₃))) * hwr
+        + (-(2 * Ew.eval t * (2 * veluPointY R + W.a₁ * t + W.a₃))) * hpre
 
 /-- **LEAF: additivity, the CHORD branch.**
 
