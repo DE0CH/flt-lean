@@ -3340,8 +3340,177 @@ theorem isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape
     AddMonoid.IsTorsion (RelPoint jstr (𝟙 SpecQ)) :=
   sorry
 
-/-- **`L(f, 1) ≠ 0` for every weight-two eigenform on `Γ_1(25)`** (sorry
-node) — the ONLY genuinely level-specific input left under
+/-- **Hecke's Mellin transform at `s = 1` on `Γ₁(N)`:
+`L(f, 1) = 2π ∫₀^∞ f(iy) dy`** (sorry leaf, NEW 2026-07-28) — the `Γ₁`
+transposition of `X0.lean`'s **PROVEN**
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.  LEVEL-FREE and
+NEBENTYPUS-FREE: it is the whole of the *analysis* under
+`lFunction_apply_one_ne_zero_x1TwentyFive` below, and `25` does not
+appear in it.
+
+TRUE, and it is the SAME classical theorem as the `Γ₀` one rather than an
+analogue of it.  Writing `Λ(s) = ∫₀^∞ f(iy/√N) y^{s-1} dy`:
+
+* for `Re s > 2`, termwise integration of the `q`-expansion gives
+  `Λ(s) = Γ(s) (2π/√N)^{-s} L(s)` (mathlib's `hasSum_mellin`);
+* `Λ` is entire because `f` decays exponentially at BOTH ends of the
+  imaginary axis — at `y → ∞` from the `q`-expansion, at `y → 0` from
+  the Fricke functional equation, `f` being cuspidal at every cusp;
+* so `s ↦ (2π/√N)^s Λ(s) / Γ(s)` and `L` are entire and agree on
+  `Re s > 2`, hence everywhere by the identity theorem, and at `s = 1`
+  (`Γ(1) = 1`) this reads `L 1 = (2π/√N)·Λ(1) = 2π · cuspPeriod a`,
+  since `Λ(1) = ∫₀^∞ f(iy/√N) dy = √N · cuspPeriod a` by the change of
+  variables `y ↦ y/√N`.
+
+### WHY THIS IS A LEAF AND NOT AN APPLICATION OF THE `Γ₀` THEOREM
+
+`X0.lean`'s theorem is proven, and **its proof uses nothing about
+`Γ₀(N)` beyond the TYPE of `f`.**  All of it — `axisPoint`,
+`axisRestrict`, `cuspFEPair`, `hasSum_axisRestrict`,
+`mellin_axisRestrict`, `isStrongFEPair_cuspFEPair` and the identity-
+theorem assembly itself — is written against `CuspForm (Gamma0GL N) 2`
+purely because that is the type it was first needed at.  So the two
+statements cannot be shared TODAY (a `Γ₁(N)` cusp form is not a `Γ₀(N)`
+cusp form unless `χ = 1`), and they will be ONE statement the moment the
+machinery upstream is group-generic.
+
+**The route, and it is a small mechanical diff, not a theory.**  In
+`ModularCurve/WeightTwoEigenform.lean`, replace `Gamma0GL N` by a
+variable `G : Subgroup (GL (Fin 2) ℝ)` in `axisRestrict`, `cuspFEPair`,
+and the four analytic leaves.  Three of the four never mention `Γ₀` in
+their *content* at all —
+
+* `isBigO_atTop_axisRestrict` (a cusp form decays faster than every power
+  at `i∞`),
+* `locallyIntegrableOn_axisRestrict` (continuity through the `ℍ`
+  coercion),
+* `isBigO_atTop_coeff` (`|aₙ| = O(n)`, the Petersson bound),
+
+— and transpose verbatim.  The one that does is `exists_frickeInvolution`,
+whose statement is "`W_N` normalises the group, so `f ∣[2] W_N` is again
+a cusp form on it".
+
+**And `Γ₁(N)` IS normalised by `W_N`.**  This is the one fact the
+transposition needs that the `Γ₀` docstring does not record, so it is
+written out here.  With `W_N = ![![0, -1], ![N, 0]]`, so that
+`W_N⁻¹ = (1/N)·![![0, 1], ![-N, 0]]`, a direct multiplication gives, for
+`γ = ![![a, b], ![c, d]]`,
+
+> `W_N γ W_N⁻¹ = ![![d, -c/N], ![-N b, a]]`.
+
+Read off the three `Γ₁(N)` conditions on the right-hand side: its
+`(0,0)` entry is `d ≡ 1`, its `(1,1)` entry is `a ≡ 1`, its `(1,0)`
+entry is `-Nb ≡ 0`, and its `(0,1)` entry `-c/N` is an INTEGER exactly
+because `N ∣ c`.  Its determinant is `ad - bc = 1`.  So
+`W_N Γ₁(N) W_N⁻¹ = Γ₁(N)`, and the Fricke involution preserves
+`S₂(Γ₁(N))` — which is the familiar `W_N : S₂(N, χ) → S₂(N, χ̄)`, the
+nebentypus conjugation being invisible at the level of `Γ₁(N)`.  (That
+conjugation is also why the FE-pair partner `g` must be allowed to be a
+*different* form, which `exists_frickeInvolution` already permits: it
+existentially quantifies `g` and never claims `g = ±f`.)
+
+**FAITHFULNESS.**  `hN : N ≠ 0` is load-bearing for exactly the reason
+recorded in the `FALSITY AUDIT` on the `Γ₀` statement, and the
+counterexample transports verbatim: `Γ₁(0) = ⟨T⟩`, so
+`CuspForm (Gamma1GL 0) 2` is just "holomorphic, `1`-periodic, `→ 0` at
+`i∞`"; `hecke` is vacuous at `N = 0` (every prime divides `0`) and
+`atkin` then says only that `a` is completely multiplicative; so
+`a n = 1` for `n ≥ 1` with `f (τ) = q/(1 − q)` satisfies every field, and
+`LSeries a = riemannZeta` has a POLE at `s = 1`, so no entire `L` agrees
+with it on `Re s > 2`.
+
+`χ` is inert here — the analysis never looks at the nebentypus, and a
+prover may `omit` it.  It is carried only so that the hypothesis is
+literally the one `lFunction_apply_one_ne_zero_x1TwentyFive` holds.  For
+the same reason the eigenform fields `hecke`/`atkin` are not used either;
+what IS used is `qExpansion`, `qExpansionSummable` and `zero`. -/
+theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1 (N : ℕ) (hN : N ≠ 0)
+    (χ : DirichletCharacter ℂ N) (f : CuspForm (Gamma1GL N) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL N) N χ f a)
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
+    L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a :=
+  sorry
+
+/-- **The period `∫₀^∞ f(iy) dy` of a weight-two eigenform of
+`S₂(Γ_1(25))` is nonzero** (sorry leaf, NEW 2026-07-28) — the ARITHMETIC
+half of `lFunction_apply_one_ne_zero_x1TwentyFive` below, and the ONLY
+declaration in this cluster that mentions the level `25`.
+
+After the cut it contains no `L`-function, no scheme, no Jacobian and no
+abelian variety: it is a statement about a convergent integral of a
+`q`-expansion.  It is the exact `Γ₁(25)` counterpart of `X0.lean`'s
+`cuspPeriod_ne_zero_of_kenkuLevel`, and it shares its subject `a` with
+it, `cuspPeriod` being defined on the coefficient sequence alone.
+
+TRUE: the twelve values are tabulated on
+`lFunction_apply_one_ne_zero_x1TwentyFive` below, all nonzero, the
+smallest `|L(f, 1)| = 0.4212…`; by
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` above a nonzero
+`L`-value is a nonzero period and conversely, so the table is a
+reconnaissance for this statement just as much as for that one.
+
+*Re-run a THIRD time on 2026-07-28* (PARI/GP 2.17.4, `znstar(25,1)`,
+`mfinit([25,2,[G,[k]]],1)` for `k = 0..19`, `mfeigenbasis`, `mffields` to
+split single-embedding spaces from multi-, `lfun(lfunmf(·), 1)` at every
+embedding).  Every digit of the recorded table reproduced: eight nonzero
+characters at `k = 2, 4, 6, 8, 12, 14, 16, 18`, `newdim = cuspdim` in all
+eight, `Σ newdim = 12`, `12` embeddings, `0` vanishing,
+`min |L(f, 1)| = 0.421217773477606542527525787430`.  PARI/GP is an
+untrusted searcher: this establishes that the statement is not false, and
+is not a proof.
+
+### WHAT A PROVER MUST BUILD, and one gate that is ABSENT here
+
+`X0.lean`'s sibling records that the first thing its prover must write is
+the reduction to newforms, because `IsWeightTwoEigenform` admits the
+`p`-stabilizations of forms of every level `M ∣ N` alongside the newforms
+themselves.  **At `N = 25` that step is free**, and this is the one
+respect in which this leaf is genuinely cheaper than the `Γ₀` one: the
+divisors of `25` are `1`, `5`, `25`, and `X_1(1)` and `X_1(5)` both have
+genus `0`, so `S₂(Γ_1(1)) = S₂(Γ_1(5)) = 0` and there are no oldforms and
+no stabilizations to strip.  That is visible in the reconnaissance as
+`newdim = cuspdim` in every one of the eight nonzero characters.
+
+Two consequences.  First, every `a` admitted by `hf` is the expansion of
+a NEWFORM, hence a `W_25`-eigenform up to the nebentypus conjugation
+`χ ↦ χ̄`; so the Fricke cut that `X0.lean` records as unavailable *before*
+the reduction to newforms is available here immediately.  Second, that
+cut is what makes the numerics finite: splitting `Λ(1)` at `y = 1` and
+applying the functional equation turns the period into
+
+> `2π · cuspPeriod a = (2π/5)·(∑_{n≥1} (aₙ/n) e^{-2πn/5}
+>   + ε ∑_{n≥1} (ā ₙ/n) e^{-2πn/5})`,
+
+with `e^{-2π/5} = 0.2846…`, so the tail after `n` terms is
+`O(0.285ⁿ)` and separating `0.42` from `0` needs on the order of twenty
+coefficients — which is what "the precision demanded is modest" means.
+
+**The gate that remains, and it is the real one.**  The statement
+quantifies over EVERY `(χ, f, a)` satisfying `hf`, so a proof must first
+know that `hf` pins `a` to one of the twelve tabulated sequences.  That
+needs an explicit certified basis of `S₂(Γ_1(25))` — dimension formulas
+per nebentypus, the eigenbasis, and proven `q`-expansion coefficients —
+and none of that exists at this pin: `grep -rn "newform\|Newform\|
+oldform\|degeneracy\|eigenbasis" Fermat/ .lake/packages/mathlib/
+~/cs/FLT/` is the check that would refute it, and it returned nothing on
+2026-07-28.  This is the same missing theory that `X0.lean` names as "the
+axis not searched" on its own period leaf, and closing it closes both.
+
+**The axis searched, so the next reader need not redo it.**  A cut on the
+character `χ` (eight cases) is mechanically available and is *not* a
+decomposition: it moves no theory and multiplies the frontier by eight.
+A cut that isolates the Fricke sign `ε` is a real decomposition but is
+worth nothing on its own, because the sum above still needs the certified
+`aₙ`; it becomes worth writing at the moment the basis does. -/
+theorem cuspPeriod_ne_zero_x1TwentyFive (χ : DirichletCharacter ℂ 25)
+    (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
+    (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a) :
+    cuspPeriod a ≠ 0 :=
+  sorry
+
+/-- **`L(f, 1) ≠ 0` for every weight-two eigenform on `Γ_1(25)`** (PROVEN
+2026-07-28 from the two leaves above) — the ONLY genuinely
+level-specific input left under
 `hasRankZeroJacobian_x1TwentyFive`, and the `Γ₁(25)` counterpart of
 `X0.lean`'s `lFunction_apply_one_ne_zero_of_kenkuLevel`.
 
@@ -3447,24 +3616,45 @@ statement is true — and the eigenform conditions are what make `a`
 multiplicative, hence what make `L(a, s)` an Euler product rather than an
 arbitrary Dirichlet series.
 
-WHAT A PROVER MUST BUILD.  This is the numerical half and it is
-genuinely computational: one needs the `L`-value as a period integral
-(`L(f, 1) = 2π ∫₀^∞ f(iy) dy` once
-`exists_isLFunctionOf_of_isWeightTwoEigenformOn` is available through the
-Mellin transform), then a modular-symbol or explicit-period computation
-of the twelve values above to enough precision to separate them from
-zero — the smallest being `0.42`, the precision demanded is modest.  The
-`Γ₀` sibling `lFunction_apply_one_ne_zero_of_kenkuLevel` needs exactly
-the same machinery at thirteen levels, so a successor building it should
-expect to close both; that is the last remaining sharing between the two
-layers, and unlike the two leaves above it is NOT captured by a common
-statement, because the two computations are over different spaces of
-forms. -/
+**DECOMPOSED 2026-07-28, ALONG THE PERIOD — this node is no longer a
+leaf.**  It used to carry two unrelated theories at once, and the seam
+between them is Hecke's Mellin transform at `s = 1`.  Above the seam is
+the ANALYSIS, `L 1 = 2π · cuspPeriod a`
+(`lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1`, LEVEL-FREE);
+below it is the ARITHMETIC, `cuspPeriod a ≠ 0`
+(`cuspPeriod_ne_zero_x1TwentyFive`, the only place `25` survives).  The
+assembly is a rewrite plus "a product of nonzero complex numbers is
+nonzero", `2π ≠ 0`.
+
+**This is exactly the cut `X0.lean` already made** at
+`lFunction_apply_one_ne_zero_of_kenkuLevel`, with `cuspPeriod` — which is
+defined on the coefficient sequence `a` alone, and is therefore already
+shared between the two layers — as the common seam.  The old note here
+saying the two layers' computations are "NOT captured by a common
+statement" was right about the arithmetic half and **wrong about the
+analytic half**: `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` is
+proven, level-free, and uses nothing about `Γ₀(N)` beyond the type of
+`f`, so the two analytic halves become ONE declaration as soon as
+`ModularCurve/WeightTwoEigenform.lean` is made group-generic.  The route
+for that — including the matrix computation showing `W_N` normalises
+`Γ₁(N)` — is written out on
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1` above.
+
+What remains genuinely level-`25` is therefore only
+`cuspPeriod_ne_zero_x1TwentyFive`: a modular-symbol or explicit-period
+computation of the twelve values above to enough precision to separate
+them from zero — the smallest being `0.42`, so the precision demanded is
+modest.  Unlike its `Γ₀` sibling it needs no reduction to newforms, the
+space at level `25` being entirely new; see that leaf for what the
+computation still costs. -/
 theorem lFunction_apply_one_ne_zero_x1TwentyFive (χ : DirichletCharacter ℂ 25)
     (f : CuspForm (Gamma1GL 25) 2) (a : ℕ → ℂ)
     (hf : IsWeightTwoEigenformOn (Gamma1GL 25) 25 χ f a)
-    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) : L 1 ≠ 0 :=
-  sorry
+    (L : ℂ → ℂ) (hL : IsLFunctionOf a L) : L 1 ≠ 0 := by
+  rw [lFunction_apply_one_eq_two_pi_mul_cuspPeriod_gamma1 25 (by norm_num) χ f a hf L hL]
+  exact mul_ne_zero
+    (mul_ne_zero (by norm_num) (Complex.ofReal_ne_zero.mpr Real.pi_ne_zero))
+    (cuspPeriod_ne_zero_x1TwentyFive χ f a hf)
 
 end KolyvaginLogachev
 
