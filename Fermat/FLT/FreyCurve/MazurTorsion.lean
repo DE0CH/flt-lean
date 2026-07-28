@@ -3712,11 +3712,342 @@ theorem exists_atkinLehnerModelAut_of_jNeronDatum (N q : ℕ)
   exact exists_isCusp_ne_neronSpAut_of_atkinLehnerPin d hN.one_lt hq hqN al w hw wY hwY hjw hw2
     hpin
 
+/-! #### THE FOURTH CUT (2026-07-28): the special-fibre cusps are the
+REDUCTIONS of the generic ones
+
+`exists_cuspResidueIndexing_specialFibre` was opened as a second, free-standing
+Deligne–Rapoport citation over `𝔽_q`, twinning `X0.lean`'s
+`exists_cuspResidueIndexing` over `ℚ`.  That is one DR statement too many.
+Everything DR proves about the cuspidal locus it proves ONCE, over `ℤ[1/N]`;
+the two fibres are then related by the model, not by two independent
+citations.  This subsection carries that out, and the leaf below is proven
+from
+
+* the `ℚ`-side indexing `exists_cuspResidueIndexing` — already open in
+  `X0.lean`, and NOT duplicated here;
+* `isCusp_redX_of_isCusp_of_jNeronDatum` — a THEOREM over the datum, hoisted
+  to just below (it used to sit some 350 lines further down; only its position
+  changed, not a character of its statement, docstring or proof);
+* two new leaves, `redX_base_ne_of_isCusp` and
+  `card_compl_range_le_card_divisors_specialFibre`, which between them are the
+  ONLY genuinely special-fibre input: that the cuspidal subscheme of the model
+  is finite étale over `ℤ_(q)`, read once as SEPARATION of sections and once as
+  constancy of the COUNT.
+
+The cut is the exact `≤`/`≥` split `X0.lean` already takes on the `ℚ` side
+between `exists_cuspAboveDivisor` and `card_compl_range_le_card_divisors`, with
+the construction half replaced by REDUCTION — which is what makes it cheaper
+here than there: no cusp has to be constructed over `𝔽_q`, only carried down.
+
+**AND IT CORRECTS A FALSE CLAIM IN THE LEAF'S OWN DOCSTRING.**  That docstring
+said `N.Prime` "enters only at the call site".  True of the DEGREE clause, and
+FALSE of the BIJECTION: over `𝔽_q` the closed points above a divisor `d` number
+`φ(gcd(d, N/d)) / ord_{gcd(d, N/d)}(q)`, which exceeds `1` as soon as `q` fails
+to be a primitive root mod the gcd.  Take `N = 16`, `q = 5`.  The divisors are
+`1, 2, 4, 8, 16` with gcds `1, 2, 4, 2, 1`, so `X_0(16)` has
+`1 + 1 + 2 + 1 + 1 = 6` geometric cusps; since `5 ≡ 1 (mod 4)` we have
+`ζ_4 ∈ 𝔽_5`, so the two cusps above `d = 4` are individually `𝔽_5`-rational and
+stay two closed points.  That is `6` cusps against `σ₀(16) = 5` divisors, and NO
+bijection `N.divisors ≃ X' ∖ Y'` exists.  (Over `ℚ` those two are ONE closed
+point, with residue field `ℚ(ζ_4)`, which is why the `ℚ`-side leaf needs no
+squarefreeness.)  So the leaf is true as stated only because `N.Prime` is a
+hypothesis; `_hN` is renamed `hN` below and is now genuinely consumed, and the
+load-bearing form of it — `∀ d ∣ N, gcd(d, N/d) = 1`, i.e. `N` squarefree — is
+what the counting leaf carries. -/
+
+/-- **The reduction of a rational cusp is a cusp** (PROVEN 2026-07-27).
+
+**MOVED, 2026-07-28** — this declaration used to sit below
+`card_cusps_specialFibre_of_jNeronDatum`.  It is now consumed by
+`exists_cuspResidueIndexing_specialFibre`, which is above that, so Lean's
+declaration order forced the hoist.  Nothing else changed: same statement, same
+proof, same docstring.
+
+Over an arbitrary `IsX0JReductionAt` this is FALSE — the junk `redX` of
+that structure's FORMAL-CONTENT AUDIT may send a cusp anywhere.  Over
+`IsX0JNeronDatum` it is a theorem, and the proof is exactly the
+contrapositive of `exists_relSectionAlong_of_special`:
+
+suppose `redX c` is NOT a cusp, i.e. `redX c = sectionAlong jY' _ y'` for
+some `𝔽_q`-point `y'` of the open part.  Pushing that through `spX` and
+`spX_j` says the integral section `intX c` of the proper model meets the
+open part `𝒴` in the SPECIAL fibre.  The base `Spec ℤ_(q)` is local and
+`𝒴 ⊆ 𝒳` is open, so `exists_relSectionAlong_of_special` factors the whole
+section through `𝒴`.  Reading that on the GENERIC fibre through `genY`
+and `genX_j`, and using that `genX` is an equivalence, gives a rational
+point `y` of `Y_0(N)` with `sectionAlong hX.j hX.over y = c` — i.e. `c`
+comes from `Y_0(N)(ℚ)`, contradicting `hX.IsCusp c`.
+
+Note which fields do the work: `properX` (through `intX`/`pre_intX`),
+`spX_j`, `genX_j`, `genX`/`genY` and `base`.  Nothing is assumed about
+`redX`; it is the DEFINED one throughout.  This is the same shape as
+`IsX0JNeronDatum.red_jm`, and it is the second consumer of
+`exists_relSectionAlong_of_special`.
+
+**NOT the converse.**  `hX'.IsCusp (redX x) → hX.IsCusp x` is FALSE even
+for the genuine reduction — `exists_cuspidalReduction_of_padicValRat_neg`
+produces a non-cusp with cuspidal reduction, and that is the whole point
+of Mazur's Cor. 4.4.  See the CORRECTION note in `IsX0JReductionAt`'s
+docstring in `X0.lean`. -/
+theorem isCusp_redX_of_isCusp_of_jNeronDatum {N q : ℕ}
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    (c : RelPoint strX (𝟙 SpecQ)) (hcusp : hX.IsCusp c) :
+    hX'.IsCusp (d.redX c) := by
+  haveI := d.model.isOpen
+  rintro ⟨y', hy'⟩
+  -- the integral section of `c` meets the open part `𝒴` in the special fibre
+  have hA : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX c)
+      = relSectionAlong jZ d.model.comm
+        (d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y') := by
+    have hcong := congrArg
+      (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)) hy'.symm
+    rwa [d.redX_def, Equiv.apply_symm_apply,
+      sectionAlong_eq_relSectionAlong jY' hX'.comm y', d.spX_j] at hcong
+  -- so the WHOLE section lies in `𝒴`: the base is local and `𝒴` is open
+  obtain ⟨yZ, hyZ⟩ := exists_relSectionAlong_of_special d.base d.model _ _ hA
+  -- read it on the generic fibre: `c` comes from a rational point of `Y_0(N)`
+  refine hcusp ⟨((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+      (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)).1, ?_⟩
+  have hkey : sectionAlong hX.j hX.«over»
+      ((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
+        (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)) = c := by
+    apply (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
+    rw [sectionAlong_eq_relSectionAlong hX.j hX.«over», d.genX_j,
+      Equiv.apply_symm_apply, ← pre_relSectionAlong, hyZ, d.pre_intX]
+  exact congrArg Subtype.val hkey
+
+/-- **A point whose residue field is the base field carries a rational
+point of `X` supported there** (PROVEN 2026-07-28; axiom-audited
+`[propext, Classical.choice, Quot.sound]`).
+
+The base-field converse of `finrank_residueField_eq_one_of_relPoint` below, and
+the base-field analogue of `exists_specSection_of_finrank_eq_one` in `X0.lean`
+— stated as a `RelPoint` rather than as a bare section of `Spec`, because that
+is what `IsCompactificationY0.IsCusp` and `IsX0JNeronDatum.redX` consume.
+
+`exists_algHom_of_finrank_eq_one` collapses `κ(p)` to `k`; the resulting
+`Spec k ⟶ Spec κ(p) ⟶ X` lies over the base because `residueBaseAlgebra` is
+DEFINED through `Spec.preimage`, so `fromSpecResidueField p ≫ strX` is
+`Spec.map (algebraMap k κ(p))` on the nose (`Spec.map_preimage`) and the
+composite is `Spec.map` of `algebraMap` followed by a retraction, i.e. of
+`𝟙`.  The second conjunct is `Scheme.range_fromSpecResidueField`: the image of
+`Spec κ(p) ⟶ X` is the single point `p`, so every point of `Spec k` lands on
+`p`.
+
+Nothing modular enters; this is the same "the scheme structure costs nothing
+once the points are given" observation that the `residueBaseAlgebra` subsection
+records, run backwards. -/
+theorem exists_relPoint_of_residueDegreeOne {k : Type} [Field k] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of k)) (p : X)
+    (hp : letI := residueBaseAlgebra strX p; Module.finrank k (X.residueField p) = 1) :
+    ∃ x : RelPoint strX (𝟙 (Spec (CommRingCat.of k))),
+      ∀ P : (Spec (CommRingCat.of k) : Scheme.{0}), x.1.base P = p := by
+  letI := residueBaseAlgebra strX p
+  obtain ⟨f⟩ := exists_algHom_of_finrank_eq_one hp
+  have hcomm : (Spec.map (CommRingCat.ofHom f.toRingHom) ≫ X.fromSpecResidueField p) ≫ strX
+      = 𝟙 (Spec (CommRingCat.of k)) := by
+    have hpre : X.fromSpecResidueField p ≫ strX
+        = Spec.map (Spec.preimage (X.fromSpecResidueField p ≫ strX)) :=
+      (Spec.map_preimage _).symm
+    rw [Category.assoc, hpre, ← Spec.map_comp]
+    have hid : Spec.preimage (X.fromSpecResidueField p ≫ strX) ≫
+        CommRingCat.ofHom f.toRingHom = 𝟙 (CommRingCat.of k) := by
+      ext r
+      exact f.commutes r
+    exact (congrArg (fun g => Spec.map g) hid).trans (Spec.map_id _)
+  refine ⟨⟨_, hcomm⟩, fun P => ?_⟩
+  have hr : ((Spec.map (CommRingCat.ofHom f.toRingHom) ≫ X.fromSpecResidueField p).base P)
+      ∈ Set.range (X.fromSpecResidueField p).base := ⟨_, rfl⟩
+  rw [Scheme.range_fromSpecResidueField] at hr
+  exact hr
+
+/-- **The point supporting a `k`-rational point of `X` has residue field `k`**
+(PROVEN 2026-07-28; axiom-audited `[propext, Classical.choice, Quot.sound]`).
+
+`algHom_of_relPoint_factor` turns the section into a `k`-ALGEBRA retraction
+`κ(p) →ₐ[k] k`, and `finrank_eq_one_of_algHom_to_base` turns a retraction into
+degree one.  So `degree_one` of `IsX0RationalCuspLocus` is FREE at any point
+that carries a rational point — which is what makes the reduction route below
+cost nothing in residue-field information: the `ℚ`-side leaf pins the residue
+fields upstairs, and downstairs rationality alone pins them.
+
+Stated with the supporting point `p` and `hp : ∀ P, x.1.base P = p` rather than
+at `x.1.base (closedPoint k)`, so that a caller who obtained `p` from
+`exists_relPoint_of_residueDegreeOne` or from `mem_compl_range_of_isCusp` can
+use it without first proving the two descriptions agree; `Spec` of a field is a
+one-point space, so `hp` is `Subsingleton.elim`. -/
+theorem finrank_residueField_eq_one_of_relPoint {k : Type} [Field k] {X : Scheme.{0}}
+    (strX : X ⟶ Spec (CommRingCat.of k))
+    (x : RelPoint strX (𝟙 (Spec (CommRingCat.of k))))
+    (p : X) (hp : ∀ P : (Spec (CommRingCat.of k) : Scheme.{0}), x.1.base P = p) :
+    letI := residueBaseAlgebra strX p
+    Module.finrank k (X.residueField p) = 1 := by
+  have hcl : x.1.base (IsLocalRing.closedPoint k) = p := hp _
+  subst hcl
+  letI := residueBaseAlgebra strX (x.1.base (IsLocalRing.closedPoint k))
+  obtain ⟨f, -⟩ := algHom_of_relPoint_factor strX x _ _
+    (Scheme.descResidueField_stalkClosedPointTo_fromSpecResidueField k X x.1)
+  exact finrank_eq_one_of_algHom_to_base f
+
+/-- **DISTINCT rational cusps of `X_0(N)` have DISTINCT reductions mod `q`**
+(sorry leaf, new 2026-07-28) — the first of the two special-fibre inputs of the
+fourth cut, and the SEPARATION half of "the cuspidal subscheme of the smooth
+model is finite étale over `ℤ_(q)`".
+
+**WHAT IS ASKED.**  Nothing about which points the cusps are, and nothing about
+residue fields: only that the map `redX` does not FUSE two cusps.  Note the
+conclusion is about the underlying POINTS of `X'`, not about `RelPoint`
+equality — that is the form the indexing below consumes, and it is the stronger
+of the two (equal points would force equal `RelPoint`s here, both reductions
+having residue field `𝔽_q`).
+
+**WHY IT IS TRUE, AND WHY IT IS NOT FORMAL.**  Two distinct rational cusps give
+two distinct sections of the proper model (`properX` and `genX` are
+injections), and their reductions are two sections of the CUSPIDAL subscheme
+`𝒞 ⊆ 𝒳` in the special fibre.  Deligne–Rapoport build `𝒞` as a FINITE ÉTALE
+`ℤ[1/N]`-scheme; a section of a separated étale morphism is an isomorphism onto
+an open-and-closed subscheme, and over the spectrum of a LOCAL ring two such
+images sharing their closed point coincide (an open set containing the closed
+point is everything), so the two sections would be equal.  The étaleness of
+`𝒞/ℤ[1/N]` is the classical input; without it a proper smooth model can
+perfectly well fuse two sections in the special fibre — `P¹_{ℤ_(q)}` fuses `0`
+and `q`, which is why no general "sections of a smooth proper model stay
+distinct" lemma exists to be cited.
+
+**WHERE THE HYPOTHESES ENTER.**  `_hqN : ¬ q ∣ N` is good reduction: at `q ∣ N`
+the cuspidal subscheme is not étale at `q` and cusps genuinely DO collide, so
+the statement is false there.  `d` is the guard that the assertion is about the
+special fibre of the good model — `redX` cannot even be written without it, and
+over an arbitrary `IsX0JReductionAt` (whose `redX` is a posited function) the
+statement is false against the constant junk map.  `_hx₁`/`_hx₂` restrict to
+CUSPS and are load-bearing: for arbitrary rational points the statement is
+FALSE, since two distinct rational points of `X_0(N)` may perfectly well be
+congruent mod `q` — that is exactly what makes the Mazur formal-immersion
+argument nontrivial.
+
+**LEVEL-GENERIC.**  No `N.Prime` and no squarefreeness: étaleness of the
+cuspidal subscheme away from `N` holds at every level.  The arithmetic of the
+cusp count is the sibling leaf's business, not this one's.
+
+**NON-VACUITY.**  `N = 37`, `q = 3`: the cusps `0` and `∞` are distinct rational
+cusps and reduce to two distinct `𝔽_3`-points, so the conclusion is a genuine
+disequality rather than a statement about an empty index.
+
+**REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), IV.3 and VI.6 for the
+smooth model over `ℤ[1/N]` and the finite étale cuspidal subscheme;
+Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, 13.11. -/
+theorem redX_base_ne_of_isCusp (N q : ℕ) (_hqN : ¬ q ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    (x₁ x₂ : RelPoint strX (𝟙 SpecQ)) (_hx₁ : hX.IsCusp x₁) (_hx₂ : hX.IsCusp x₂)
+    (_hne : x₁ ≠ x₂) (P : (SpecF q : Scheme.{0})) :
+    (d.redX x₁).1.base P ≠ (d.redX x₂).1.base P :=
+  sorry
+
+/-- **The special fibre has at most `σ₀(N)` cusps, when every `gcd(d, N/d)` is
+`1`** (sorry leaf, new 2026-07-28) — the second special-fibre input of the
+fourth cut, and the base-field twin of `card_compl_range_le_card_divisors` in
+`X0.lean`.  The opposite inequality is NOT a leaf: it comes free from the
+injectivity that `redX_base_ne_of_isCusp` supplies, and the two together force
+the bijection, exactly as on the `ℚ` side.
+
+**`_hsq` IS LOAD-BEARING FOR TRUTH, NOT A CONVENIENCE.**  Over `𝔽_q` the number
+of CLOSED points above a divisor `d` is `φ(gcd(d, N/d)) / ord_{gcd(d, N/d)}(q)`
+— the `φ(gcd)` geometric cusps above `d` are permuted by Frobenius through
+`ζ ↦ ζ^q`, so they fall into orbits of size `ord_{gcd}(q)`, which is `φ(gcd)`
+only when `q` is a primitive root mod the gcd.  **Counterexample without
+`_hsq`:** `N = 16`, `q = 5`.  The divisors `1, 2, 4, 8, 16` have gcds
+`1, 2, 4, 2, 1`, so there are `1 + 1 + 2 + 1 + 1 = 6` geometric cusps; and
+`5 ≡ 1 (mod 4)` puts `ζ_4` in `𝔽_5`, so the two cusps above `d = 4` are each
+`𝔽_5`-rational and remain two closed points.  That gives `6 > 5 = σ₀(16)` and
+refutes the conclusion.  Over `ℚ` the same two are ONE closed point with residue
+field `ℚ(ζ_4)`, which is why the `ℚ`-side twin needs no such hypothesis — this
+is the precise sense in which the two bounds are NOT the same statement.
+
+Under `_hsq` every gcd is `1`, every divisor carries exactly one geometric cusp,
+that cusp is rational over every base, and the count is `σ₀(N)` over `𝔽_q` as
+over `ℚ`.  `_hsq` holds at prime level by
+`gcd_div_eq_one_of_prime_of_mem_divisors` and more generally exactly when `N` is
+squarefree; it is stated in the pointwise form rather than as `Squarefree N` so
+that the call site can discharge it with the lemma it already has.
+
+**WHERE THE OTHER HYPOTHESES ENTER.**  `_hN : N ≠ 0` for the same reason as on
+the `ℚ` side: at `N = 0` the conclusion says the cusp locus is EMPTY, which is
+substantive and is not derivable from `IsX0Compactification 0`.  `_hqN` is good
+reduction, without which the cuspidal fibre degenerates and points can appear or
+collide.  `_d` records that `hX'` is the special fibre of the good model at
+`q ∤ N`, keeping every leaf of this cut indexed by the same datum; it is
+underscored because a prover need not use it, not because it is decorative.
+
+**WHAT IS NOT ASKED.**  No point of `X'` has to be constructed and no residue
+field computed — those come from the `ℚ` side by reduction.  What is needed is
+only the cusp COUNT of `Γ₀(N)` (Diamond–Shurman §3.8,
+`ε_∞(Γ₀(N)) = ∑_{d ∣ N} φ(gcd(d, N/d))`, in
+`sources/diamondshurman2005mf.txt` around line 5630) together with the fact that
+the cuspidal fibre at `q ∤ N` has the same number of points as the generic one,
+i.e. finite étaleness of the cuspidal subscheme again.
+
+**NON-VACUITY.**  `N = 37`, `q = 3`: `X_0(37)` has two cusps and `σ₀(37) = 2`,
+so the bound is attained and is not the trivial `≤ ∞`.
+
+**REFERENCES.**  Deligne–Rapoport (Antwerp II, 1973), V.5 and VI.6; Ogg,
+*Rational points on certain elliptic modular curves* (1973). -/
+theorem card_compl_range_le_card_divisors_specialFibre (N q : ℕ) (_hN : N ≠ 0)
+    (_hsq : ∀ dd : N.divisors, Nat.gcd dd.1 (N / dd.1) = 1) (_hqN : ¬ q ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    Nat.card ((Set.range jY'.base)ᶜ : Set X') ≤ N.divisors.card :=
+  sorry
+
 /-- **The cusps of `X_0(N)` mod `q` are indexed by the divisors of `N`,
-the cusp above `d` having residue field `𝔽_q(ζ_{gcd(d, N/d)})** (sorry
-node, new 2026-07-28) — the sole remaining Deligne–Rapoport input of the
-special-fibre cusp route, and the base-field twin of
-`exists_cuspResidueIndexing` in `X0.lean`.
+the cusp above `d` having residue field `𝔽_q(ζ_{gcd(d, N/d)})** (PROVEN
+2026-07-28 over `exists_cuspResidueIndexing`, `redX_base_ne_of_isCusp`
+and `card_compl_range_le_card_divisors_specialFibre`; opened as a sorry
+node earlier the same day) — no longer a free-standing Deligne–Rapoport
+citation over `𝔽_q`, but the REDUCTION of the `ℚ`-side twin
+`exists_cuspResidueIndexing` in `X0.lean`.  See the subsection docstring
+above `isCusp_redX_of_isCusp_of_jNeronDatum` for the cut, and for the
+composite-level counterexample that makes `N.Prime` load-bearing here.
+
+**HOW IT IS PROVEN.**  `isX0Compactification_data_of_compactificationY0`
+turns `hX` and `hc` into the `ℚ`-side `IsX0Compactification`, whose cusps
+`exists_cuspResidueIndexing` indexes by `N.divisors` with residue field
+`ℚ(ζ_{gcd(d, N/d)})`.  At prime level every gcd is `1`
+(`gcd_div_eq_one_of_prime_of_mem_divisors`), so `residueQDegree_eq_totient`
+makes every such cusp `ℚ`-RATIONAL and `exists_relPoint_of_residueDegreeOne`
+produces an actual rational point of `X` supported at it.
+`isCusp_redX_of_isCusp_of_jNeronDatum` carries that point down to a cusp
+of `X'`, `mem_compl_range_of_isCusp` puts its supporting point in
+`X' ∖ Y'`, and `finrank_residueField_eq_one_of_relPoint` makes the residue
+field there `𝔽_q` for FREE — the degree clause costs no classical input at
+all on this route.  Injectivity of the resulting map `N.divisors → X' ∖ Y'`
+is `redX_base_ne_of_isCusp`; surjectivity is
+`Function.Injective.bijective_of_nat_card_le` against
+`card_compl_range_le_card_divisors_specialFibre`.  Those two leaves are the
+only classical input, and they are one fact read twice: the cuspidal
+subscheme of the model is finite étale over `ℤ_(q)`.
 
 **WHAT THE STATEMENT SAYS.**  `X' ∖ Y'` — a finite set of closed points
 of the curve `X'`, by `IsX0Compactification.finite_compl` — is in
@@ -3732,12 +4063,25 @@ FOR ALL `d`.**  Over `ℚ` the cusp above `d` has residue degree
 `φ(gcd(d, N/d))`; over `𝔽_q` it has degree `ord_{gcd(d, N/d)}(q)`, a
 DIFFERENT number (see `IsX0RationalCuspLocus`'s docstring).  The two
 agree only where the gcd is `1`, and there both are `1`, since
-`k(ζ_1) = k` over every base.  So the clause below is the part of DR's
-description that is base-INDEPENDENT, and it is true at composite level
-as well — the leaf is not silently specialised to `N.Prime`.  `N.Prime`
-enters only at the call site, through
-`gcd_div_eq_one_of_prime_of_mem_divisors`, which is exactly where the
-parent docstring says it belongs.
+`k(ζ_1) = k` over every base.  So the DEGREE clause is the part of DR's
+description that is base-INDEPENDENT, and it is true at composite level as
+well.
+
+**CORRECTED 2026-07-28: THAT IS TRUE OF THE DEGREE CLAUSE AND FALSE OF THE
+BIJECTION.**  The previous version of this paragraph went on to say that
+`N.Prime` "enters only at the call site, through
+`gcd_div_eq_one_of_prime_of_mem_divisors`", i.e. that `_hN` was decorative
+here.  It is not: over `𝔽_q` the number of CLOSED points above `d` is
+`φ(gcd(d, N/d)) / ord_{gcd(d, N/d)}(q)`, so at `N = 16`, `q = 5` the
+divisors `1, 2, 4, 8, 16` carry `1 + 1 + 2 + 1 + 1 = 6` cusps (`ζ_4 ∈ 𝔽_5`
+splits the two above `d = 4` into two rational points) against
+`σ₀(16) = 5`, and no bijection `N.divisors ≃ X' ∖ Y'` exists.  Over `ℚ`
+those two are one closed point with residue field `ℚ(ζ_4)`, which is why
+the `ℚ`-side twin needs no such hypothesis.  So the hypothesis is renamed
+`hN` and is genuinely consumed below; its load-bearing form — `N`
+squarefree, in the pointwise shape `∀ d ∣ N, gcd(d, N/d) = 1` — is carried
+by `card_compl_range_le_card_divisors_specialFibre`, which is where a
+composite-level generalisation must go.
 
 **WHY NO `ratPoint` CLAUSE.**  The `ℚ`-side leaf carries one, because
 `nonempty_cuspLocus_of_residueIndexing` takes it as a hypothesis.  Here it
@@ -3771,7 +4115,7 @@ smooth model of `X_0(N)` over `ℤ[1/N]` and its fibres; Ogg, *Rational
 points on certain elliptic modular curves* (1973) for the cusp count at
 prime level. -/
 theorem exists_cuspResidueIndexing_specialFibre (N q : ℕ)
-    (_hN : N.Prime) [_hq : Fact q.Prime] (_hqN : q ≠ N)
+    (hN : N.Prime) [hq : Fact q.Prime] (hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -3780,12 +4124,57 @@ theorem exists_cuspResidueIndexing_specialFibre (N q : ℕ)
     {hX' : IsX0Compactification N strX' strY' jY'}
     {hj : IsJMapOn N hc}
     {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (_d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
     ∃ e : N.divisors ≃ ((Set.range jY'.base)ᶜ : Set X'),
       ∀ dd : N.divisors, Nat.gcd dd.1 (N / dd.1) = 1 →
         letI := residueBaseAlgebra strX' (e dd).1
-        Module.finrank (ZMod q) (X'.residueField (e dd).1) = 1 :=
-  sorry
+        Module.finrank (ZMod q) (X'.residueField (e dd).1) = 1 := by
+  classical
+  haveI : Finite ((Set.range jY'.base)ᶜ : Set X') := hX'.finite_compl.to_subtype
+  have hqN' : ¬ q ∣ N := by
+    intro hdvd
+    rcases hN.eq_one_or_self_of_dvd q hdvd with h1 | h2
+    · exact hq.out.one_lt.ne' h1
+    · exact hqN h2
+  -- the `ℚ`-side compactification structure, and its divisor-indexed cusps
+  have hdata := isX0Compactification_data_of_compactificationY0 N hN.ne_zero hc hX
+  obtain ⟨e0, hcyc⟩ :=
+    exists_cuspResidueIndexing N hN.ne_zero (hX.toX0Compactification hc hdata)
+  -- at PRIME level every `ℚ`-cusp is rational: `gcd(d, N/d) = 1`, so `φ = 1`
+  have hdeg0 : ∀ dd : N.divisors,
+      letI := residueBaseAlgebra strX (e0 dd).1
+      Module.finrank ℚ (X.residueField (e0 dd).1) = 1 := by
+    intro dd
+    have hg := gcd_div_eq_one_of_prime_of_mem_divisors hN dd
+    have h1 := residueQDegree_eq_totient (X := X) (strX := strX)
+      (by rw [hg]; exact one_ne_zero) (hcyc dd)
+    rw [hg, Nat.totient_one] at h1
+    exact h1
+  choose xq hxq using fun dd => exists_relPoint_of_residueDegreeOne strX (e0 dd).1 (hdeg0 dd)
+  have hcuspq : ∀ dd : N.divisors, hX.IsCusp (xq dd) := by
+    rintro dd ⟨y, hy⟩
+    refine (e0 dd).2 ⟨y.base (IsLocalRing.closedPoint ℚ), ?_⟩
+    have hb := congrArg (fun (f : SpecQ ⟶ X) => f.base (IsLocalRing.closedPoint ℚ)) hy
+    simpa [hxq dd] using hb
+  -- reduce each rational cusp to the special fibre; it is a cusp there
+  set c : N.divisors → ((Set.range jY'.base)ᶜ : Set X') := fun dd =>
+    ⟨(d.redX (xq dd)).1.base (IsLocalRing.closedPoint (ZMod q)),
+      mem_compl_range_of_isCusp hX' _
+        (isCusp_redX_of_isCusp_of_jNeronDatum d _ (hcuspq dd)) _⟩ with hcdef
+  have hinj : Function.Injective c := by
+    intro dd dd' hcc
+    by_contra hne
+    refine redX_base_ne_of_isCusp N q hqN' d (xq dd) (xq dd') (hcuspq dd) (hcuspq dd')
+      (fun heq => hne ?_) (IsLocalRing.closedPoint (ZMod q)) (congrArg Subtype.val hcc)
+    refine e0.injective (Subtype.ext ?_)
+    rw [← hxq dd (IsLocalRing.closedPoint ℚ), ← hxq dd' (IsLocalRing.closedPoint ℚ), heq]
+  have hcard : Nat.card ((Set.range jY'.base)ᶜ : Set X') ≤ Nat.card N.divisors := by
+    rw [Nat.card_eq_finsetCard]
+    exact card_compl_range_le_card_divisors_specialFibre N q hN.ne_zero
+      (gcd_div_eq_one_of_prime_of_mem_divisors hN) hqN' d
+  refine ⟨Equiv.ofBijective c (hinj.bijective_of_nat_card_le hcard), fun dd _ => ?_⟩
+  exact finrank_residueField_eq_one_of_relPoint strX' (d.redX (xq dd)) _
+    (fun P => congrArg _ (Subsingleton.elim P _))
 
 /-- **The cuspidal subscheme of the special fibre is two `𝔽_q`-rational
 points** (PROVEN 2026-07-28 over `exists_cuspResidueIndexing_specialFibre`;
@@ -4087,69 +4476,6 @@ theorem card_cusps_specialFibre_of_jNeronDatum (N q : ℕ)
   haveI : Fact q.Prime := ⟨hq⟩
   obtain ⟨C⟩ := nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum N q hN hqN d
   exact C.card_isCusp_eq_two hN
-
-/-- **The reduction of a rational cusp is a cusp** (PROVEN 2026-07-27).
-
-Over an arbitrary `IsX0JReductionAt` this is FALSE — the junk `redX` of
-that structure's FORMAL-CONTENT AUDIT may send a cusp anywhere.  Over
-`IsX0JNeronDatum` it is a theorem, and the proof is exactly the
-contrapositive of `exists_relSectionAlong_of_special`:
-
-suppose `redX c` is NOT a cusp, i.e. `redX c = sectionAlong jY' _ y'` for
-some `𝔽_q`-point `y'` of the open part.  Pushing that through `spX` and
-`spX_j` says the integral section `intX c` of the proper model meets the
-open part `𝒴` in the SPECIAL fibre.  The base `Spec ℤ_(q)` is local and
-`𝒴 ⊆ 𝒳` is open, so `exists_relSectionAlong_of_special` factors the whole
-section through `𝒴`.  Reading that on the GENERIC fibre through `genY`
-and `genX_j`, and using that `genX` is an equivalence, gives a rational
-point `y` of `Y_0(N)` with `sectionAlong hX.j hX.over y = c` — i.e. `c`
-comes from `Y_0(N)(ℚ)`, contradicting `hX.IsCusp c`.
-
-Note which fields do the work: `properX` (through `intX`/`pre_intX`),
-`spX_j`, `genX_j`, `genX`/`genY` and `base`.  Nothing is assumed about
-`redX`; it is the DEFINED one throughout.  This is the same shape as
-`IsX0JNeronDatum.red_jm`, and it is the second consumer of
-`exists_relSectionAlong_of_special`.
-
-**NOT the converse.**  `hX'.IsCusp (redX x) → hX.IsCusp x` is FALSE even
-for the genuine reduction — `exists_cuspidalReduction_of_padicValRat_neg`
-produces a non-cusp with cuspidal reduction, and that is the whole point
-of Mazur's Cor. 4.4.  See the CORRECTION note in `IsX0JReductionAt`'s
-docstring in `X0.lean`. -/
-theorem isCusp_redX_of_isCusp_of_jNeronDatum {N q : ℕ}
-    {R : Subring ℚ} {toF : R →+* ZMod q}
-    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
-    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
-    {hc : IsCoarseModuliY0 N strY}
-    {hX : IsCompactificationY0 strY strX}
-    {hX' : IsX0Compactification N strX' strY' jY'}
-    {hj : IsJMapOn N hc}
-    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
-    (c : RelPoint strX (𝟙 SpecQ)) (hcusp : hX.IsCusp c) :
-    hX'.IsCusp (d.redX c) := by
-  haveI := d.model.isOpen
-  rintro ⟨y', hy'⟩
-  -- the integral section of `c` meets the open part `𝒴` in the special fibre
-  have hA : RelPoint.pre (SpecLoc.special toF) (Category.comp_id _) (d.intX c)
-      = relSectionAlong jZ d.model.comm
-        (d.spY (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _) y') := by
-    have hcong := congrArg
-      (d.spX (𝟙 (SpecF q)) (SpecLoc.special toF) (Category.id_comp _)) hy'.symm
-    rwa [d.redX_def, Equiv.apply_symm_apply,
-      sectionAlong_eq_relSectionAlong jY' hX'.comm y', d.spX_j] at hcong
-  -- so the WHOLE section lies in `𝒴`: the base is local and `𝒴` is open
-  obtain ⟨yZ, hyZ⟩ := exists_relSectionAlong_of_special d.base d.model _ _ hA
-  -- read it on the generic fibre: `c` comes from a rational point of `Y_0(N)`
-  refine hcusp ⟨((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
-      (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)).1, ?_⟩
-  have hkey : sectionAlong hX.j hX.over
-      ((d.genY (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).symm
-        (RelPoint.pre (SpecLoc.generic R) (Category.comp_id _) yZ)) = c := by
-    apply (d.genX (𝟙 SpecQ) (SpecLoc.generic R) (Category.id_comp _)).injective
-    rw [sectionAlong_eq_relSectionAlong hX.j hX.over, d.genX_j,
-      Equiv.apply_symm_apply, ← pre_relSectionAlong, hyZ, d.pre_intX]
-  exact congrArg Subtype.val hkey
 
 /-- **The Atkin–Lehner involution and the two-cusp dichotomy at prime
 level** (PROVEN 2026-07-27 over the three declarations immediately above;
