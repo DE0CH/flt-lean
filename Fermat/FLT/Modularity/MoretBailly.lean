@@ -18017,7 +18017,126 @@ theorem exists_bound_not_isPrime_radical_of_eq_top {n m : ℕ}
   intro hpr
   exact hpr.ne_top hrad.symm
 
-/-- **LEAF (A): THE DEGENERATE HALF OF EGA IV 9.7.7 OVER `Spec ℤ`** (SORRY LEAF,
+/-! #### Spreading out a WITNESS rather than a CONDITION (2026-07-28)
+
+The block below replaces the constructibility route that leaf (A) was originally
+cut against. See the CORRECTION section of that leaf's docstring for why the
+route recorded there was a non sequitur; these are the five pieces the
+replacement proof consumes, four of them PROVEN here and one left as the single
+named sub-leaf `exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure`. -/
+
+/-- **A polynomial whose coefficients lie in a subring is the image of one over
+that subring** (PROVEN). Assemble it monomial by monomial over the support; the
+coefficients off the support are `0`, which lies in every subring, so only the
+support has to be constrained. -/
+theorem exists_map_subringSubtype_eq_of_coeff_mem {σ : Type*} {R : Type*} [CommRing R]
+    (A : Subring R) (a : MvPolynomial σ R)
+    (h : ∀ m ∈ a.support, MvPolynomial.coeff m a ∈ A) :
+    ∃ a' : MvPolynomial σ A, MvPolynomial.map A.subtype a' = a := by
+  classical
+  refine ⟨∑ m ∈ a.support.attach, MvPolynomial.monomial m.1 ⟨MvPolynomial.coeff m.1 a, h m.1 m.2⟩,
+    ?_⟩
+  rw [map_sum]
+  simp only [MvPolynomial.map_monomial, Subring.coe_subtype]
+  rw [Finset.sum_attach a.support fun m => MvPolynomial.monomial m (MvPolynomial.coeff m a)]
+  exact (MvPolynomial.as_sum a).symm
+
+/-- **Evaluation commutes with a ring homomorphism applied to the coefficients**
+(PROVEN, by induction on the polynomial). -/
+theorem ringHom_eval_eq_eval_map_ringHom {σ A L : Type*} [CommRing A] [CommRing L]
+    (φ : A →+* L) (x : σ → A) (q : MvPolynomial σ A) :
+    φ (MvPolynomial.eval x q) = MvPolynomial.eval (fun j => φ (x j)) (MvPolynomial.map φ q) :=
+  MvPolynomial.induction_on
+    (motive := fun q => φ (MvPolynomial.eval x q)
+      = MvPolynomial.eval (fun j => φ (x j)) (MvPolynomial.map φ q))
+    q (fun r => by simp) (fun p q hp hq => by simp [hp, hq]) (fun p j hp => by simp [hp])
+
+/-- **The subring-inclusion instance of `ringHom_eval_eq_eval_map_ringHom`**
+(PROVEN). -/
+theorem coe_eval_eq_eval_map_subringSubtype {σ R : Type*} [CommRing R] (A : Subring R)
+    (x : σ → A) (q : MvPolynomial σ A) :
+    ((MvPolynomial.eval x q : A) : R)
+      = MvPolynomial.eval (fun j => ((x j : A) : R)) (MvPolynomial.map A.subtype q) := by
+  simpa using ringHom_eval_eq_eval_map_ringHom A.subtype x q
+
+/-- **Over the ring itself, `aeval` is `eval`** (PROVEN). The Nullstellensatz API
+in the pin is phrased with `aeval` and everything below is phrased with `eval`;
+this is the bridge, and it is used in both directions. -/
+theorem aeval_eq_eval_of_self {σ R : Type*} [CommRing R] (x : σ → R) (q : MvPolynomial σ R) :
+    MvPolynomial.aeval x q = MvPolynomial.eval x q := by
+  rw [MvPolynomial.aeval_def, MvPolynomial.eval₂_eq_eval_map,
+    show (algebraMap R R) = RingHom.id R from rfl, MvPolynomial.map_id]
+
+/-- **Reducing an integral polynomial into `A` and then pushing it along
+`φ : A →+* L` is reducing it into `L`** (PROVEN): there is only one ring
+homomorphism `ℤ →+* L`. -/
+theorem map_map_intCastRingHom {σ : Type*} {A L : Type*} [CommRing A] [CommRing L]
+    (φ : A →+* L) (g : MvPolynomial σ ℤ) :
+    MvPolynomial.map φ (MvPolynomial.map (Int.castRingHom A) g)
+      = MvPolynomial.map (Int.castRingHom L) g := by
+  rw [MvPolynomial.map_map]
+  exact congrArg (fun ψ => MvPolynomial.map ψ g) (Subsingleton.elim _ _)
+
+/-- **SUB-LEAF: A FINITELY GENERATED SUBRING OF `ℚ̄` SPREADS OUT** (SORRY LEAF,
+cut 2026-07-28 out of `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`,
+and the ONLY thing that leaf still needs).
+
+WHAT IT SAYS. For a finite set `S` of algebraic numbers there is a single
+positive integer `N` — a common denominator — such that for every prime `p ∤ N`
+the subring `ℤ[S] ⊆ ℚ̄` admits a ring homomorphism to `𝔽̄_p`. Equivalently: an
+arithmetic scheme `Spec ℤ[S]` that is nonempty over `ℚ` has an `𝔽̄_p`-point for
+all but finitely many `p`.
+
+NOTHING ELSE IS ASSUMED, and in particular no `Nontrivial` hypothesis is needed:
+`ℤ[S]` is a subring of a field of characteristic zero, so it is automatically a
+nonzero domain, which is exactly why the conclusion can be unconditional.
+
+THE INTENDED PROOF, which uses only pieces PRESENT in the pin (each checked
+2026-07-28 by grep over `.lake/packages/mathlib`):
+
+1. Every `s ∈ S` is algebraic over `ℚ` (`AlgebraicClosure` is algebraic over its
+   base), so after clearing denominators it is a root of a nonzero `q_s ∈ ℤ[X]`.
+   Put `N := ∏_{s ∈ S} |lc q_s|`, which is positive because each `q_s ≠ 0`.
+2. Over `R := ℤ[1/N] ⊆ ℚ̄` each `s` is INTEGRAL: `lc q_s` divides `N` and is
+   therefore a unit in `R`, so `C (lc q_s)⁻¹ * q_s` is monic over `R` (the
+   leading coefficient of a product is the product of leading coefficients here,
+   because `R` is a domain). Hence `B := R[S]` is integral over `R`
+   (`Algebra.IsIntegral.adjoin`,
+   `Mathlib/RingTheory/IntegralClosure/IsIntegralClosure/Basic.lean:141`).
+3. For `p ∤ N` the element `p` is not a unit in `R = ℤ[1/N]` — otherwise
+   `p ∣ N^d` for some `d`, hence `p ∣ N` — so `p` lies in some maximal ideal
+   `M₀ ◁ R`, and `R ⧸ M₀ ≅ 𝔽_p`: writing `x N + y p = 1` (possible since
+   `gcd (p, N) = 1`) shows `N` is invertible modulo `M₀` with inverse the image
+   of the INTEGER `x`, so the generator `1/N` of `R` is already in the image of
+   `ℤ`.
+4. Lying over (`Ideal.exists_ideal_over_maximal_of_isIntegral`,
+   `Mathlib/RingTheory/Ideal/GoingUp.lean:344`; the kernel hypothesis is
+   vacuous because `R ↪ B ⊆ ℚ̄`) gives a maximal `M ◁ B` with `M ∩ R = M₀`.
+   Then `B ⧸ M` is a field, integral over `R ⧸ M₀ = 𝔽_p`, hence algebraic over
+   `𝔽_p`, so `IsAlgClosed.lift` embeds it into `𝔽̄_p`.
+5. Compose `ℤ[S] ↪ B ↠ B ⧸ M ↪ 𝔽̄_p`.
+
+THE CHECK THAT WOULD REFUTE THIS CUT: look for a hypothesis of the consumer
+inside this statement. There is none — `S` is an arbitrary finite set of
+algebraic numbers and no polynomial system, ideal or prime appears — so this is
+a self-contained commutative-algebra statement, and no defect in the consumer
+can make it false.
+
+FAITHFULNESS. Not vacuous: at `S = ∅` it asserts the (true, and nontrivial in
+the sense of being the base case) existence of `ℤ →+* 𝔽̄_p`; at
+`S = {1/N}` the bound `N` is genuinely needed, since `ℤ[1/N]` admits NO
+homomorphism to `𝔽̄_p` when `p ∣ N`. So the `p ∤ N` guard cannot be dropped, and
+the statement is not an artefact of the packaging. -/
+theorem exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure
+    (S : Finset (AlgebraicClosure ℚ)) :
+    ∃ N : ℕ, 0 < N ∧ ∀ (p : ℕ) [Fact p.Prime], ¬ (p ∣ N) →
+      Nonempty (Subring.closure (S : Set (AlgebraicClosure ℚ)) →+*
+        AlgebraicClosure (ZMod p)) :=
+  sorry
+
+/-- **LEAF (A): THE DEGENERATE HALF OF EGA IV 9.7.7 OVER `Spec ℤ`**
+(**PROVEN 2026-07-28** over the single sub-leaf
+`exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure` immediately above;
 cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
 
 WHAT IT SAYS. If the geometric generic fibre of an integral system is NONEMPTY
@@ -18049,20 +18168,48 @@ non-primality that needs no constructibility at all, and it is discharged by
 `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`. So `hne` costs the leaf
 nothing and removes a case that is already done.
 
-WHY THE OBVIOUS CERTIFICATE ROUTE DOES NOT WORK HERE, recorded so the next owner
-does not spend a cycle on it. The technique that proves
+CORRECTION 2026-07-28 — CONSTRUCTIBILITY IS **NOT** NEEDED, AND THE ARGUMENT THAT
+SAID IT WAS IS A NON SEQUITUR. An earlier version of this docstring recorded, as
+a warning to the next owner, that the certificate technique behind
 `exists_bound_not_dvd_map_algClosureZMod` and
-`exists_inverted_irreducible_map_algClosureZMod` above — rewrite the condition as
-SOLVABILITY of a system of integral equations, then spread out non-solvability —
-does not apply. Non-primality of the radical is
-`∃ a b, a * b ∈ I.radical ∧ a ∉ I.radical ∧ b ∉ I.radical`, and membership in the
-RADICAL carries an unbounded exponent `k` with `a ^ k ∈ I`; there is no degree
-bound on `k`, so the condition is not cut out by a fixed finite system. That is
-exactly the "unbounded degrees" objection recorded against route 2 of the parent
-chain above, and it is why the ordinary constructibility machinery (generic
-flatness / Chevalley via `PrimeSpectrum.isConstructible_comap_image`,
-`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`, PRESENT in the pin) is
-genuinely needed here rather than avoidable.
+`exists_inverted_irreducible_map_algClosureZMod` "does not apply", because
+membership in the RADICAL carries an unbounded exponent `k` with `a ^ k ∈ I`, so
+non-primality is not cut out by a fixed finite system; and it concluded that the
+Chevalley/constructibility machinery
+(`PrimeSpectrum.isConstructible_comap_image`) is "genuinely needed here rather
+than avoidable".
+
+The premise is TRUE and the conclusion does NOT follow. Those two lemmas spread
+out a NEGATIVE — "no solution over `ℚ̄`" to "no solution over `𝔽̄_p`" — and that
+direction really does need the condition to be cut out uniformly, which is why
+they need certificates. **This leaf spreads out a POSITIVE**, and a positive
+needs no uniformity at all: one fixes ONE witness over `ℚ̄` and pushes it into
+`𝔽̄_p`. The exponent `k` is then a constant of the witness, not an unbounded
+quantifier, and the whole objection evaporates. Nothing about EGA IV 9.7.7 is
+used; the leaf is not, in the end, a constructibility statement.
+
+THE PROOF BELOW, in one paragraph. `hne` and the Nullstellensatz make
+`I.radical ≠ ⊤`, so `hQ` supplies `a, b` over `ℚ̄` with `a * b ∈ I.radical`,
+`a ∉ I.radical`, `b ∉ I.radical`. Unwinding gives FIVE pieces of finite data:
+an exponent `k` and cofactors `c` with `(a * b) ^ k = ∑ᵢ cᵢ · fᵢ`, and — by
+`vanishingIdeal_zeroLocus_eq_radical` — points `P, Q ∈ V(I)` with `a(P) ≠ 0` and
+`b(Q) ≠ 0`. Adjoin to `ℤ` the finitely many algebraic numbers occurring in that
+data (the coefficients of `a`, `b`, `c`, the coordinates of `P` and `Q`, and the
+two INVERSES `a(P)⁻¹`, `b(Q)⁻¹`) and call the result `A ⊆ ℚ̄`; everything above
+then lives over `A`, the two inverses being what turns "nonzero" into "unit", so
+that non-vanishing is preserved by ANY ring homomorphism out of `A`. The
+sub-leaf supplies `N > 0` and, for every `p ∤ N`, a homomorphism
+`φ : A →+* 𝔽̄_p`. Applying `φ` transports all five pieces verbatim: `φ(P)` and
+`φ(Q)` lie on the mod-`p` model, `(φa · φb) ^ k` is still in the ideal, and
+`φa(φP) ≠ 0 ≠ φb(φQ)` because units go to units. Since `radical ≤ vanishing
+ideal of the zero locus`, neither `φa` nor `φb` is in the radical while their
+product is — so the radical is not prime, for every `p > N`.
+
+WHAT THIS BUYS BEYOND THIS LEAF. The sub-leaf is the missing CONVERSE of
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` far above (that one spreads
+out unsolvability; this one spreads out solvability), and it is stated with no
+reference to any polynomial system, so it is reusable anywhere in this chain
+where a `ℚ̄`-witness has to survive reduction.
 
 FAITHFULNESS. Not vacuous: `hne` makes the geometric generic fibre nonempty and
 `hQ` makes it reducible, and both are satisfiable (take `f = (x * y)` in two
@@ -18078,8 +18225,213 @@ theorem exists_bound_not_isPrime_radical_integralSystemIdeal_zmod {n m : ℕ}
     (hne : integralSystemIdeal f (AlgebraicClosure ℚ) ≠ ⊤)
     (hQ : ¬ (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
     ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
-      ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime :=
-  sorry
+      ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime := by
+  classical
+  set K := AlgebraicClosure ℚ
+  set I : Ideal (MvPolynomial (Fin n) K) := integralSystemIdeal f K with hIdef
+  have hradne : I.radical ≠ ⊤ := fun h => hne (Ideal.radical_eq_top.mp h)
+  obtain ⟨a, b, hab, ha, hb⟩ :
+      ∃ a b : MvPolynomial (Fin n) K, a * b ∈ I.radical ∧ a ∉ I.radical ∧ b ∉ I.radical := by
+    by_contra hcon
+    push Not at hcon
+    refine hQ ⟨hradne, ?_⟩
+    intro x y hxy
+    by_cases hx : x ∈ I.radical
+    · exact Or.inl hx
+    · exact Or.inr (hcon x y hxy hx)
+  obtain ⟨kk, hk⟩ : ∃ kk, (a * b) ^ kk ∈ I := hab
+  rw [hIdef, integralSystemIdeal] at hk
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun _).mp hk
+  have hnull : MvPolynomial.vanishingIdeal K (MvPolynomial.zeroLocus K I) = I.radical :=
+    MvPolynomial.vanishingIdeal_zeroLocus_eq_radical I
+  have hPex : ∃ P ∈ MvPolynomial.zeroLocus K I, MvPolynomial.aeval P a ≠ 0 := by
+    by_contra hcon
+    push Not at hcon
+    exact ha (hnull ▸ (MvPolynomial.mem_vanishingIdeal_iff.mpr hcon))
+  have hQex : ∃ Q ∈ MvPolynomial.zeroLocus K I, MvPolynomial.aeval Q b ≠ 0 := by
+    by_contra hcon
+    push Not at hcon
+    exact hb (hnull ▸ (MvPolynomial.mem_vanishingIdeal_iff.mpr hcon))
+  obtain ⟨P, hP, haP⟩ := hPex
+  obtain ⟨Q, hQpt, hbQ⟩ := hQex
+  -- the finite set of algebraic numbers that has to survive reduction
+  set T : Finset K :=
+    ((((a.support.image fun mm => MvPolynomial.coeff mm a) ∪
+        (b.support.image fun mm => MvPolynomial.coeff mm b)) ∪
+      (Finset.univ.biUnion fun i : Fin m =>
+        (c i).support.image fun mm => MvPolynomial.coeff mm (c i))) ∪
+      ((Finset.univ.image P) ∪ (Finset.univ.image Q))) ∪
+      {(MvPolynomial.aeval P a)⁻¹, (MvPolynomial.aeval Q b)⁻¹} with hT
+  set A : Subring K := Subring.closure (T : Set K)
+  have hacoef : ∀ mm ∈ a.support, MvPolynomial.coeff mm a ∈ A := by
+    intro mm hmm
+    refine Subring.subset_closure (Finset.mem_coe.mpr ?_)
+    rw [hT]
+    simp only [Finset.mem_union]
+    exact Or.inl (Or.inl (Or.inl (Or.inl (Finset.mem_image.mpr ⟨mm, hmm, rfl⟩))))
+  have hbcoef : ∀ mm ∈ b.support, MvPolynomial.coeff mm b ∈ A := by
+    intro mm hmm
+    refine Subring.subset_closure (Finset.mem_coe.mpr ?_)
+    rw [hT]
+    simp only [Finset.mem_union]
+    exact Or.inl (Or.inl (Or.inl (Or.inr (Finset.mem_image.mpr ⟨mm, hmm, rfl⟩))))
+  have hccoef : ∀ i : Fin m, ∀ mm ∈ (c i).support, MvPolynomial.coeff mm (c i) ∈ A := by
+    intro i mm hmm
+    refine Subring.subset_closure (Finset.mem_coe.mpr ?_)
+    rw [hT]
+    simp only [Finset.mem_union]
+    exact Or.inl (Or.inl (Or.inr
+      (Finset.mem_biUnion.mpr ⟨i, Finset.mem_univ i, Finset.mem_image.mpr ⟨mm, hmm, rfl⟩⟩)))
+  have hPmem : ∀ j, P j ∈ A := by
+    intro j
+    refine Subring.subset_closure (Finset.mem_coe.mpr ?_)
+    rw [hT]
+    simp only [Finset.mem_union]
+    exact Or.inl (Or.inr (Or.inl (Finset.mem_image.mpr ⟨j, Finset.mem_univ j, rfl⟩)))
+  have hQmem : ∀ j, Q j ∈ A := by
+    intro j
+    refine Subring.subset_closure (Finset.mem_coe.mpr ?_)
+    rw [hT]
+    simp only [Finset.mem_union]
+    exact Or.inl (Or.inr (Or.inr (Finset.mem_image.mpr ⟨j, Finset.mem_univ j, rfl⟩)))
+  have huP : (MvPolynomial.aeval P a)⁻¹ ∈ A := by
+    refine Subring.subset_closure (Finset.mem_coe.mpr ?_)
+    rw [hT]
+    exact Finset.mem_union_right _ (Finset.mem_insert_self _ _)
+  have huQ : (MvPolynomial.aeval Q b)⁻¹ ∈ A := by
+    refine Subring.subset_closure (Finset.mem_coe.mpr ?_)
+    rw [hT]
+    exact Finset.mem_union_right _ (Finset.mem_insert_of_mem (Finset.mem_singleton_self _))
+  -- lift everything into `A`
+  obtain ⟨a', ha'⟩ := exists_map_subringSubtype_eq_of_coeff_mem A a hacoef
+  obtain ⟨b', hb'⟩ := exists_map_subringSubtype_eq_of_coeff_mem A b hbcoef
+  choose c' hc' using fun i => exists_map_subringSubtype_eq_of_coeff_mem A (c i) (hccoef i)
+  set P' : Fin n → A := fun j => ⟨P j, hPmem j⟩
+  set Q' : Fin n → A := fun j => ⟨Q j, hQmem j⟩
+  have hP'coe : ∀ j, ((P' j : A) : K) = P j := fun j => rfl
+  have hQ'coe : ∀ j, ((Q' j : A) : K) = Q j := fun j => rfl
+  -- the two evaluation values are UNITS in `A`; this is what makes non-vanishing
+  -- survive an arbitrary ring homomorphism out of `A`
+  have hαval : ((MvPolynomial.eval P' a' : A) : K) = MvPolynomial.aeval P a := by
+    rw [coe_eval_eq_eval_map_subringSubtype A P' a']
+    simp only [hP'coe, ha']
+    exact (aeval_eq_eval_of_self P a).symm
+  have hβval : ((MvPolynomial.eval Q' b' : A) : K) = MvPolynomial.aeval Q b := by
+    rw [coe_eval_eq_eval_map_subringSubtype A Q' b']
+    simp only [hQ'coe, hb']
+    exact (aeval_eq_eval_of_self Q b).symm
+  have hαunit : (MvPolynomial.eval P' a' : A) * ⟨_, huP⟩ = 1 := by
+    apply Subtype.val_injective
+    rw [Subring.coe_mul, hαval, Subring.coe_one]
+    exact mul_inv_cancel₀ haP
+  have hβunit : (MvPolynomial.eval Q' b' : A) * ⟨_, huQ⟩ = 1 := by
+    apply Subtype.val_injective
+    rw [Subring.coe_mul, hβval, Subring.coe_one]
+    exact mul_inv_cancel₀ hbQ
+  -- the certificate identity, over `A`
+  set g' : Fin m → MvPolynomial (Fin n) A :=
+    fun i => MvPolynomial.map (Int.castRingHom A) (f i) with hg'
+  have hg'map : ∀ i, MvPolynomial.map A.subtype (g' i)
+      = MvPolynomial.map (Int.castRingHom K) (f i) := by
+    intro i
+    rw [hg']
+    exact map_map_intCastRingHom A.subtype (f i)
+  have hcA : (a' * b') ^ kk = ∑ i, c' i * g' i := by
+    apply MvPolynomial.map_injective A.subtype Subtype.val_injective
+    rw [map_pow, map_mul, ha', hb', map_sum]
+    simp only [map_mul, hc', hg'map]
+    rw [← hc]
+    exact Finset.sum_congr rfl fun i _ => (smul_eq_mul _ _).symm
+  -- the two points lie on the model, over `A`
+  have hPzero : ∀ i, MvPolynomial.eval P' (g' i) = 0 := by
+    intro i
+    apply Subtype.val_injective
+    rw [coe_eval_eq_eval_map_subringSubtype A P' (g' i)]
+    simp only [hP'coe, hg'map, Subring.coe_zero]
+    have h := hP (MvPolynomial.map (Int.castRingHom K) (f i))
+      (Ideal.subset_span ⟨i, rfl⟩)
+    rw [aeval_eq_eval_of_self] at h
+    exact h
+  have hQzero : ∀ i, MvPolynomial.eval Q' (g' i) = 0 := by
+    intro i
+    apply Subtype.val_injective
+    rw [coe_eval_eq_eval_map_subringSubtype A Q' (g' i)]
+    simp only [hQ'coe, hg'map, Subring.coe_zero]
+    have h := hQpt (MvPolynomial.map (Int.castRingHom K) (f i))
+      (Ideal.subset_span ⟨i, rfl⟩)
+    rw [aeval_eq_eval_of_self] at h
+    exact h
+  -- spread out: this is the ONLY step that is not already proven above
+  obtain ⟨N, hNpos, hN⟩ := exists_pos_forall_prime_not_dvd_nonempty_ringHom_closure T
+  refine ⟨N, ?_⟩
+  intro p _ hpN
+  obtain ⟨φ⟩ := hN p (fun hdvd => absurd (Nat.le_of_dvd hNpos hdvd) (not_le.mpr hpN))
+  intro hprime
+  set L := AlgebraicClosure (ZMod p)
+  set ap : MvPolynomial (Fin n) L := MvPolynomial.map φ a' with hap
+  set bp : MvPolynomial (Fin n) L := MvPolynomial.map φ b' with hbp
+  set Pp : Fin n → L := fun j => φ (P' j) with hPp
+  set Qp : Fin n → L := fun j => φ (Q' j) with hQp
+  set J : Ideal (MvPolynomial (Fin n) L) := integralSystemIdeal f L with hJ
+  -- the product lies in the radical mod `p`
+  have hmem : (ap * bp) ^ kk ∈ J := by
+    rw [hJ, integralSystemIdeal]
+    refine (Submodule.mem_span_range_iff_exists_fun _).mpr
+      ⟨fun i => MvPolynomial.map φ (c' i), ?_⟩
+    have hpush := congrArg (MvPolynomial.map φ) hcA
+    simp only [map_pow, map_mul, map_sum] at hpush
+    rw [hap, hbp]
+    rw [show (∑ i, MvPolynomial.map φ (c' i) •
+        MvPolynomial.map (Int.castRingHom L) (f i))
+        = ∑ i, MvPolynomial.map φ (c' i) * MvPolynomial.map φ (g' i) from
+      Finset.sum_congr rfl fun i _ => by
+        rw [smul_eq_mul, hg', map_map_intCastRingHom φ (f i)]]
+    exact hpush.symm
+  have hradmem : ap * bp ∈ J.radical := ⟨kk, hmem⟩
+  -- the two points lie on the mod-`p` model
+  have hPpzero : Pp ∈ MvPolynomial.zeroLocus L J := by
+    rw [hJ, integralSystemIdeal, MvPolynomial.zeroLocus_span]
+    rintro q ⟨i, rfl⟩
+    have h := congrArg φ (hPzero i)
+    rw [ringHom_eval_eq_eval_map_ringHom φ P' (g' i), map_zero] at h
+    rw [hg', map_map_intCastRingHom φ (f i)] at h
+    rw [aeval_eq_eval_of_self]
+    exact h
+  have hQpzero : Qp ∈ MvPolynomial.zeroLocus L J := by
+    rw [hJ, integralSystemIdeal, MvPolynomial.zeroLocus_span]
+    rintro q ⟨i, rfl⟩
+    have h := congrArg φ (hQzero i)
+    rw [ringHom_eval_eq_eval_map_ringHom φ Q' (g' i), map_zero] at h
+    rw [hg', map_map_intCastRingHom φ (f i)] at h
+    rw [aeval_eq_eval_of_self]
+    exact h
+  -- non-vanishing survives, because units go to units
+  have hapP : MvPolynomial.eval Pp ap ≠ 0 := by
+    have h1 := congrArg φ hαunit
+    rw [map_mul, map_one] at h1
+    rw [hap, hPp, ← ringHom_eval_eq_eval_map_ringHom φ P' a']
+    intro h0
+    rw [h0, zero_mul] at h1
+    exact zero_ne_one h1
+  have hbqQ : MvPolynomial.eval Qp bp ≠ 0 := by
+    have h1 := congrArg φ hβunit
+    rw [map_mul, map_one] at h1
+    rw [hbp, hQp, ← ringHom_eval_eq_eval_map_ringHom φ Q' b']
+    intro h0
+    rw [h0, zero_mul] at h1
+    exact zero_ne_one h1
+  -- conclude: a product in the radical whose factors are not
+  have hnotin : ∀ (r : MvPolynomial (Fin n) L) (y : Fin n → L),
+      y ∈ MvPolynomial.zeroLocus L J → MvPolynomial.eval y r ≠ 0 → r ∉ J.radical := by
+    intro r y hy hry hr
+    refine hry ?_
+    have h1 := MvPolynomial.radical_le_vanishingIdeal_zeroLocus (K := L) J hr
+    have h2 := MvPolynomial.mem_vanishingIdeal_iff.mp h1 y hy
+    rw [aeval_eq_eval_of_self] at h2
+    exact h2
+  rcases hprime.mem_or_mem hradmem with h | h
+  · exact hnotin ap Pp hPpzero hapP h
+  · exact hnotin bp Qp hQpzero hbqQ h
 
 /-- **LEAF (B): SCHMIDT'S THEOREM 4D OVER `ℚ`, DESCENDED TO `ℤ`** (SORRY LEAF,
 cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
