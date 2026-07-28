@@ -67,12 +67,18 @@ is a LOCALIZATION functor (`ModuleCat/Sheaf/Localization.lean`), so
 structure to `Z.Modules` as soon as the inverted class `modLocW Z` is
 compatible with `⊗`.  That compatibility is `MorphismProperty.IsMonoidal`, its
 right-whiskering half follows from its left-whiskering half by the braiding,
-and what is left is ONE leaf:
+and what was left was ONE leaf, `modLocW_whiskerLeft` — TENSORING PRESERVES
+LOCAL ISOMORPHISMS.
 
-* `modLocW_whiskerLeft` — TENSORING PRESERVES LOCAL ISOMORPHISMS.  Read its
-  docstring: it carries the entire content of "sheafification is monoidal", and
-  names the two routes (internal hom, as in `Sites/Monoidal.lean`; or free
-  presentations, as in `ModuleCat/Presheaf/Generator.lean`).
+**Update 2026-07-28 (fourth pass).  `modLocW_whiskerLeft` is now PROVEN**, so
+`MorphismProperty.IsMonoidal (modLocW Z)` and with it the whole localized
+monoidal structure are unconditional.  The proof is elementary and lives in
+`Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/MonoidalW.lean`, stated
+for an arbitrary site: neither of the two theories the old docstring named as
+prerequisites (`MonoidalClosed (PresheafOfModules R)`; a monoidal stalk functor)
+is needed.  What is needed is the EQUATIONAL CRITERION FOR VANISHING without
+mathlib's "the `mᵢ` generate `M`" hypothesis, which that file supplies as
+`Fermat.SheafificationMonoidal.exists_relations`.
 
 Similarly, `nonempty_modPullback_modUnit` turned out to be **free from the
 pin**, contradicting the recorded note that finality of `Opens.map f` "is not
@@ -128,15 +134,14 @@ a prover should do:
   hypotheses are kept (they cost the consumer nothing and removing them would
   churn the call site) but the unused ones are underscore-prefixed.
 
-OPEN — five leaves.  Two are the original ones:
+OPEN.  `modLocW_whiskerLeft` — SHEAFIFICATION IS MONOIDAL — used to head this
+list; it is PROVEN as of 2026-07-28, and with it every associativity statement
+in the module (`nonempty_modTensor_assoc`, `nonempty_modTensorPow_add`,
+`nonempty_modTensorPow_mul`, `isAmpleSheaf_modTensorPow`).  What remains is
+listed below, with the entries that have since been PROVEN kept in place for
+the notes they carry — read the `PROVEN` marks, not a count.  One is an
+original leaf:
 
-* `modLocW_whiskerLeft` — SHEAFIFICATION IS MONOIDAL, in the one instance
-  needed, and now stated at the level where the mathematics actually lives
-  (local isomorphisms are stable under `X ⊗ -`).  The deepest of the four;
-  everything about tensor *powers* (`nonempty_modTensorPow_add`,
-  `nonempty_modTensorPow_mul`) is derived from it here through
-  `nonempty_modTensor_assoc`, so it is the only associativity obligation left
-  anywhere.
 * `nonempty_modPullback_modTensor` — monoidality of `f^*` on objects.  With
   `modPullbackUnitIso` proven, this is all that
   `nonempty_modPullback_modTensorPow` needs, and — through
@@ -172,6 +177,7 @@ definition.
 module
 
 public import Fermat.FLT.ModularCurve.RelativePicard
+public import Fermat.FLT.Mathlib.Algebra.Category.ModuleCat.Presheaf.MonoidalW
 public import Mathlib.CategoryTheory.Localization.Monoidal.Basic
 public import Mathlib.AlgebraicGeometry.QuasiAffine
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
@@ -479,10 +485,10 @@ noncomputable instance presheafOfModulesSymmetric (Z : Scheme.{u}) :
   inferInstanceAs (SymmetricCategory
     (PresheafOfModules.{u} (Z.presheaf ⋙ forget₂ CommRingCat RingCat)))
 
-/-- **TENSORING PRESERVES LOCAL ISOMORPHISMS** (sorry leaf).  This is the entire
-mathematical content of "sheafification is monoidal" for `𝒪_Z`-modules: with it,
-`MorphismProperty.IsMonoidal (modLocW Z)` holds, and every associativity and
-unit statement about `modTensor` follows formally.
+/-- **TENSORING PRESERVES LOCAL ISOMORPHISMS** — PROVEN (2026-07-28).  This is
+the entire mathematical content of "sheafification is monoidal" for
+`𝒪_Z`-modules: with it, `MorphismProperty.IsMonoidal (modLocW Z)` holds, and
+every associativity and unit statement about `modTensor` follows formally.
 
 Concretely: if `g` becomes an isomorphism after sheafification, so does
 `X ◁ g : X ⊗ Y₁ ⟶ X ⊗ Y₂`.  Unfolded through
@@ -490,61 +496,58 @@ Concretely: if `g` becomes an isomorphism after sheafification, so does
 `GrothendieckTopology.WEqualsLocallyBijective`, it says that `X ⊗ -` preserves
 LOCAL BIJECTIVITY of maps of abelian presheaves.
 
-TRUE, and standard (Stacks 01LA; Mac Lane VII).  Note it is NOT a formal
-consequence of right exactness alone: local surjectivity of `X ◁ g` is the easy
-half (a section of `X ⊗ Y₂` is a finite sum of tensors, each of whose right
-factors lifts locally, and finitely many covering sieves may be intersected),
-while local INJECTIVITY has to rule out a `Tor`-type contribution.
+TRUE, and standard (Stacks 01LA; Mac Lane VII).  It is NOT a formal consequence
+of right exactness alone: local surjectivity of `X ◁ g` is the easy half (a
+section of `X ⊗ Y₂` is a finite sum of tensors, each of whose right factors
+lifts locally, and finitely many covering sieves may be intersected), while
+local INJECTIVITY has to rule out a `Tor`-type contribution.
 
-TWO ROUTES, neither yet tried here.
+The proof lives in
+`Fermat/FLT/Mathlib/Algebra/Category/ModuleCat/Presheaf/MonoidalW.lean`
+(`Fermat.SheafificationMonoidal.W_whiskerLeft`), stated for an ARBITRARY site
+and an arbitrary presheaf of commutative rings, so nothing here is special to
+`Z.Opens`.
 
-1. *Internal hom.*  This is exactly how mathlib proves the analogous
-   `CategoryTheory.GrothendieckTopology.W.whiskerLeft` for `Sheaf J A` with `A`
-   monoidal closed (`Mathlib/CategoryTheory/Sites/Monoidal.lean`): `modLocW` is
-   `ObjectProperty.isLocal` of "is a sheaf", so membership means
-   `Hom(X ⊗ Y₂, H) → Hom(X ⊗ Y₁, H)` is bijective for every sheaf `H`; currying
-   turns that into `Hom(Y₂, ihom X H) → Hom(Y₁, ihom X H)`, which is `hg`
-   applied to the sheaf `ihom X H`.  What is missing at this pin is the internal
-   hom of PRESHEAVES OF MODULES (mathlib has `MonoidalClosed` for `ModuleCat`
-   and for functor categories, but not for `PresheafOfModules`), together with
-   the analogue of `Presheaf.isSheaf_functorEnrichedHom`.
+ROUTE ACTUALLY TAKEN, and a correction to the three routes this docstring used
+to record as the only candidates.  Routes 1 and 3 were both real but both cost
+a missing theory:
 
-2. *Free presentations.*  `Mathlib/Algebra/Category/ModuleCat/Presheaf/`
-   `Generator.lean` presents every `X` as a cokernel
-   `X.freeYonedaCoproduct ⟶ X` of a map between coproducts of
-   `(free R).obj (yoneda.obj U)` (`isColimitFreeYonedaCoproductsCokernelCofork`;
-   available here because `Z.Opens` is a `SmallCategory`).  Both
-   `MonoidalCategory.tensorRight Y` (instance in
-   `ModuleCat/Presheaf/Monoidal.lean`) and sheafification preserve colimits, so
-   it suffices to know the statement for `X` FREE — where `X ⊗ Y` is a direct
-   sum of copies of `Y` indexed by `F U`, and local bijectivity is
-   componentwise.  The residue of this route is therefore
-   `modLocW ((PresheafOfModules.free _).obj F ◁ g)` for `F : Cᵒᵖ ⥤ Type u`,
-   plus the cokernel comparison.
+* the *internal hom* route (mathlib's own proof of
+  `CategoryTheory.GrothendieckTopology.W.whiskerLeft` in
+  `Mathlib/CategoryTheory/Sites/Monoidal.lean`) needs `MonoidalClosed
+  (PresheafOfModules R)`, which is still absent from this pin — re-checked
+  2026-07-28 by `grep -rn MonoidalClosed
+  Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/`, which is EMPTY;
+* the *stalk* route (`Mathlib/CategoryTheory/Sites/Point/IsMonoidalW.lean`
+  plus `Mathlib/Topology/Sheaves/Points.lean`) needs a MONOIDAL stalk functor
+  for presheaves of modules, i.e.
+  `colim_{U ∋ z} (X(U) ⊗_{𝒪(U)} Y(U)) ≅ X_z ⊗_{𝒪_{Z,z}} Y_z` — a filtered
+  colimit of tensor products over a filtered system of base rings, which the pin
+  does not have either.
 
-3. *Stalks* — and this is probably the right one HERE, because the site is the
-   site of OPENS of a topological space, which is special.  `Mathlib/Topology/
-   Sheaves/Points.lean` proves `GrothendieckTopology.HasEnoughPoints
-   (Opens.grothendieckTopology X)`: the points of the space form a conservative
-   family of points of the site.  `Mathlib/CategoryTheory/Sites/Point/`
-   `IsMonoidalW.lean` then derives `(J.W).IsMonoidal` from exactly that, by
-   checking `IsIso` STALKWISE and using `Functor.Monoidal.map_tensor` — see
-   `ObjectProperty.IsConservativeFamilyOfPoints.isMonoidal_W`.  That instance is
-   *not* directly usable here, because it is about the tensor product of
-   `Cᵒᵖ ⥤ AddCommGrpCat` (over `ℤ`) and not the `𝒪_Z`-linear one; but the
-   argument transports verbatim once one has a MONOIDAL stalk functor
-   `PresheafOfModules Z.ringCatSheaf.obj ⥤ ModuleCat 𝒪_{Z,z}`, i.e. the single
-   fact that
+Neither is needed.  The statement is ELEMENTARY, and the one non-formal input is
+the EQUATIONAL CRITERION FOR VANISHING (Stacks 00HK; Altman–Kleiman Lemma 8.16):
+if `∑ᵢ xᵢ ⊗ g(yᵢ) = 0` in `X(U) ⊗_{𝒪(U)} Y₂(U)`, the vanishing is witnessed by a
+finite system of relations `g(qₛ) = ∑ⱼ aₛⱼ wⱼ`, `∑ₛ aₛⱼ pₛ = 0`.  Cover `U` so
+that every `wⱼ` lifts to some `vⱼ` (local surjectivity of `g`), refine so that
+`qₛ − ∑ⱼ aₛⱼ vⱼ` dies (local injectivity of `g`), and on that cover
+`∑ₛ pₛ ⊗ qₛ = ∑ⱼ (∑ₛ aₛⱼ pₛ) ⊗ vⱼ = 0`.
 
-       colim_{U ∋ z} (X(U) ⊗_{𝒪(U)} Y(U))  ≅  X_z ⊗_{𝒪_{Z,z}} Y_z,
-
-   a filtered colimit of tensor products over a filtered system of base rings.
-   With that, `modLocW Z (X ◁ g)` is stalkwise `𝟙 ⊗ g_z`, and `g_z` is an
-   isomorphism because `g ∈ modLocW Z`.  This is the smallest genuinely new
-   input of the three routes. -/
+Mathlib's `TensorProduct.vanishesTrivially_of_sum_tmul_eq_zero` states the
+criterion only when the `xᵢ` GENERATE the module, which is exactly what is
+unavailable here (and the hypothesis is not removable: `2 ⊗ 1 = 0` in
+`ℤ ⊗ ℤ/2` while `2 ⊗ 1 ≠ 0` in `2ℤ ⊗ ℤ/2`).  `SheafificationMonoidal
+.exists_relations` is the general form, obtained by the same argument over a
+free presentation indexed by `Fin k ⊕ M` — the `⊕` is what keeps the original
+family from being identified when two `xᵢ` coincide. -/
 theorem modLocW_whiskerLeft {Z : Scheme.{u}} (X : PresheafOfModules.{u} Z.ringCatSheaf.obj)
     {Y₁ Y₂ : PresheafOfModules.{u} Z.ringCatSheaf.obj} {g : Y₁ ⟶ Y₂}
-    (hg : modLocW Z g) : modLocW Z (X ◁ g) := sorry
+    (hg : modLocW Z g) : modLocW Z (X ◁ g) := by
+  have key : modLocW Z = _ :=
+    (PresheafOfModules.inverseImage_W_toPresheaf_eq_inverseImage_isomorphisms
+      (𝟙 Z.ringCatSheaf.obj)).symm
+  rw [key] at hg ⊢
+  exact SheafificationMonoidal.W_whiskerLeft (R := Z.presheaf) X hg
 
 /-- The right-hand whiskering, from the left-hand one by the braiding. -/
 theorem modLocW_whiskerRight {Z : Scheme.{u}}
@@ -602,7 +605,9 @@ noncomputable def modTensorLocIso {Z : Scheme.{u}} (L M : Z.Modules) :
 
 /-! ### The two CATEGORICAL leaves
 
-Each is strictly smaller than one of the six statements it replaced, and each
+The first of the two (the ASSOCIATOR) is PROVEN; only
+`nonempty_modPullback_modTensor` remains.  Each is strictly smaller than one of
+the six statements it replaced, and each
 names in its docstring what it needs.  Between them they are the residue of the
 ampleness theory that `Mathlib/AlgebraicGeometry/` does not have
 (`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY at this pin — re-run it
@@ -620,15 +625,15 @@ rerouting `modRestrictLEIso` through `Scheme.Modules.restrictFunctorCongr`.) -/
 The route recorded in the previous version of this docstring — pair
 `Mathlib/CategoryTheory/Localization/Monoidal/Basic.lean` with
 `Mathlib/Algebra/Category/ModuleCat/Sheaf/Localization.lean` — is the one that
-works; see the section above.  The whole associativity question is now carried
-by the single leaf `modLocW_whiskerLeft` ("tensoring preserves local
-isomorphisms"), from which the localized monoidal structure, and with it this
+works; see the section above.  The whole associativity question reduces to
+`modLocW_whiskerLeft` ("tensoring preserves local isomorphisms") — itself PROVEN
+since 2026-07-28 — from which the localized monoidal structure, and with it this
 associator, both unitors and the braiding, are formal.
 
 Everything else about tensor powers in this file (`nonempty_modTensorPow_add`,
 `nonempty_modTensorPow_mul`, and hence `isAmpleSheaf_modTensorPow`) is DERIVED
-from this statement, so `modLocW_whiskerLeft` is the single associativity
-obligation of the module. -/
+from this statement, so the module now carries NO open associativity
+obligation. -/
 theorem nonempty_modTensor_assoc {Z : Scheme.{u}} (L M N : Z.Modules) :
     Nonempty (modTensor (modTensor L M) N ≅ modTensor L (modTensor M N)) := by
   have e : toModLM (modTensor (modTensor L M) N) ≅ toModLM (modTensor L (modTensor M N)) :=
