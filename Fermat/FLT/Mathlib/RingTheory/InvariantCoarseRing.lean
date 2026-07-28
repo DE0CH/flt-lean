@@ -40,12 +40,15 @@ Regularity is then free: mathlib has `[IsDedekindDomain R] : IsRegularRing R`.
 ## Geometric integrality
 
 The second half of the consumer's needs is that `B ⊗[ℚ] K` is a domain for every
-field extension `K/ℚ`.  Two pieces live here:
+field extension `K/ℚ`.  The pieces live here:
 
 * `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — the field-theoretic
   statement that a field extension `L/k` in characteristic zero with `k`
   algebraically closed in `L` is a *regular* extension, i.e. `L ⊗[k] K` is a
-  domain for every `K/k`.  This is the one LEAF of this module.
+  domain for every `K/k`.  PROVEN for `K/k` **algebraic**, and reduced in
+  general to the finitely generated subextensions of `K`; the one LEAF of this
+  module is the transcendental case for a finitely generated `k(S)`
+  (`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
 * `isDomain_tensorProduct_of_injective` — the transfer from the fraction field
   down to the ring, which is just flatness of a field over a field (PROVEN).
 
@@ -58,7 +61,21 @@ field extension `K/ℚ`.  Two pieces live here:
 * `Algebra.IsInvariant.isDedekindDomain_of_isInvariant` — assembly (PROVEN)
 * `Algebra.IsInvariant.isRegularRing_of_isInvariant` — the packaged conclusion
   the modular-curve consumer asks for (PROVEN)
-* `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — regular extensions (LEAF)
+* `algebraicClosure_fractionRing_eq_bot` — `k` is algebraically closed in
+  `Frac B` as soon as it is algebraically closed in the normal domain `B` (PROVEN)
+* `minpoly_map_eq_of_algebraicClosure_eq_bot` — minimal polynomials over `k`
+  stay irreducible over `L` (PROVEN); the heart of the regularity argument
+* `linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot`,
+  `linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot` — linear
+  disjointness of an algebraic intermediate field from `L` (PROVEN)
+* `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` — the
+  algebraic half of regularity (PROVEN)
+* `isDomain_tensorProduct_of_forall_adjoin_finset` — reduction to finitely
+  generated subextensions of `K` (PROVEN)
+* `isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`
+  — the transcendental half, for a finitely generated subextension (LEAF)
+* `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — regular extensions
+  (PROVEN over the transcendental leaf)
 * `isDomain_tensorProduct_of_injective` — descent to a subring (PROVEN)
 -/
 module
@@ -76,6 +93,12 @@ public import Mathlib.RingTheory.Algebraic.Integral
 public import Mathlib.FieldTheory.AlgebraicClosure
 public import Mathlib.RingTheory.TensorProduct.Basic
 public import Mathlib.RingTheory.Flat.Basic
+public import Mathlib.RingTheory.Polynomial.IsIntegral
+public import Mathlib.FieldTheory.LinearDisjoint
+public import Mathlib.FieldTheory.PrimitiveElement
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+public import Mathlib.FieldTheory.Perfect
+public import Mathlib.RingTheory.TensorProduct.Nontrivial
 
 @[expose] public section
 
@@ -265,58 +288,359 @@ end Algebra.IsInvariant
 
 /-! ### Regular field extensions and geometric integrality -/
 
-/-- **The fraction field of a normal domain in which the base field is
-algebraically closed is a regular extension** (sorry leaf).
+/-- **`k` is algebraically closed in `Frac B` as soon as it is algebraically
+closed in the normal domain `B`** (PROVEN).
 
-`k` being algebraically closed *in `B`* is the same as `k` being algebraically
-closed *in `Frac B`* when `B` is integrally closed — an element of `Frac B`
-algebraic over the field `k` is integral over `k`, hence over `B`, hence lies in
-`B` — and a field extension `L/k` with `k` algebraically closed in `L` is
-**regular** in characteristic zero, i.e. `L ⊗[k] K` is a domain for every field
-extension `K/k`.  Bourbaki *Algebra* V §17, EGA IV 4.6.1, Stacks 04KM.
-
-Together with `isDomain_tensorProduct_of_injective` below this is exactly
-"geometrically integral", which is what an affine geometric-connectedness
-criterion needs.
-
-**What blocks it in the pin, checked 2026-07-27.**  Mathlib has the linear
-disjointness theory (`Mathlib/FieldTheory/LinearDisjoint.lean`, in particular
-`IntermediateField.LinearDisjoint.isDomain`,
-`IntermediateField.LinearDisjoint.isDomain'` and
-`Algebra.TensorProduct.isField_of_isAlgebraic`) but **no notion of a regular or
-primary field extension** and no statement of this criterion; `algebraicClosure`
-(`Mathlib/FieldTheory/AlgebraicClosure.lean`) is developed only as an
-intermediate field, with nothing relating it to base change.  *The checks that
-would refute this*:
-`grep -rn "IsPrimaryExtension\|IsRegularExtension" .lake/packages/mathlib/Mathlib/`
-returning anything, or a lemma whose conclusion is `IsDomain (L ⊗[k] K)` and
-whose hypothesis mentions `algebraicClosure`.
-
-**The classical proof, for whoever closes it.**  Reduce to `K/k` algebraic:
-choose a transcendence basis `(tᵢ)` of `K/k`; then `L ⊗[k] k(t) = L(t)` is a
-domain (a localization of a polynomial ring over the domain `L`), `k(t)` is
-algebraically closed in `L(t)` because `k` is in `L`, and `K/k(t)` is algebraic.
-For `K/k` algebraic, `k` is perfect, so it is enough to treat `K/k` finite
-Galois, where `L ⊗[k] K` is a *field* exactly because `L ∩ K = k` inside a
-common overfield — and that last step is precisely what mathlib's
-`IntermediateField.LinearDisjoint` API provides.
+An element of `Frac B` algebraic over the field `k` is integral over `k`, hence
+integral over `B`; as `B` is integrally closed in its fraction field it comes
+from an element of `B`, which is then algebraic over `k` and so lies in the
+image of `k` by hypothesis.
 
 The `k`-algebra structure on `FractionRing B` is the one mathlib already
 supplies for a localization, and it is compatible with `Algebra k B` by the
-ambient `IsScalarTower k B (FractionRing B)` instance, so it is not a choice.
+ambient `IsScalarTower k B (FractionRing B)` instance, so it is not a choice. -/
+theorem algebraicClosure_fractionRing_eq_bot
+    (k B : Type*) [Field k] [CommRing B] [IsDomain B] [Algebra k B] [IsIntegrallyClosed B]
+    (h : ∀ x : B, IsAlgebraic k x → x ∈ (⊥ : Subalgebra k B)) :
+    algebraicClosure k (FractionRing B) = ⊥ := by
+  refine le_antisymm (fun x hx => ?_) bot_le
+  rw [mem_algebraicClosure_iff'] at hx
+  have hxB : IsIntegral B x := hx.tower_top
+  obtain ⟨y, rfl⟩ := IsIntegrallyClosed.isIntegral_iff.mp hxB
+  have hy : IsAlgebraic k y :=
+    ((isIntegral_algebraMap_iff
+      (IsFractionRing.injective B (FractionRing B))).mp hx).isAlgebraic
+  obtain ⟨c, hc⟩ := Algebra.mem_bot.mp (h y hy)
+  rw [IntermediateField.mem_bot]
+  exact ⟨c, by rw [IsScalarTower.algebraMap_apply k B (FractionRing B), hc]⟩
 
-**Faithfulness note.**  `CharZero k` is load-bearing.  In characteristic `p` the
-statement is FALSE without a separability hypothesis: for `k = 𝔽_p(u)`,
-`B = L = k(u^{1/p})`, `K = L`, the base field `k` *is* algebraically closed in
-nothing bigger inside `L` in the separable sense, yet `L ⊗[k] L` contains the
-nonzero nilpotent `u^{1/p} ⊗ 1 - 1 ⊗ u^{1/p}` and is not a domain. -/
+/-- **Minimal polynomials over `k` stay irreducible over `L` when `k` is
+algebraically closed in `L`** (PROVEN).
+
+This is the heart of the regularity argument.  Let `M/L/k` be a tower of fields
+and `x : M` integral over `k`.  Then `minpoly L x` divides `(minpoly k x).map`,
+so by Stacks 00H6 (`Polynomial.isIntegral_coeff_of_dvd`) every coefficient of
+`minpoly L x` is integral over `k` — and it lies in `L`, hence in
+`algebraicClosure k L = ⊥`, i.e. in `k`.  So `minpoly L x` descends to a monic
+`q : k[X]` killing `x`, whence `minpoly k x ∣ q`; and `q ∣ minpoly k x` because
+their images under the injective map `k[X] → L[X]` divide one another.  Both are
+monic, so they agree.
+
+Concretely: `[L(x) : L] = [k(x) : k]`, which is exactly the linear
+disjointness of `k(x)` and `L` over `k`. -/
+theorem minpoly_map_eq_of_algebraicClosure_eq_bot
+    {k L M : Type*} [Field k] [Field L] [Field M] [Algebra k L] [Algebra k M] [Algebra L M]
+    [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥) {x : M} (hx : IsIntegral k x) :
+    minpoly L x = (minpoly k x).map (algebraMap k L) := by
+  have hxL : IsIntegral L x := hx.tower_top
+  have hdvd : minpoly L x ∣ (minpoly k x).map (algebraMap k L) :=
+    minpoly.dvd_map_of_isScalarTower k L x
+  have hcoe : ∀ i, (minpoly L x).coeff i ∈ Set.range (algebraMap k L) := by
+    intro i
+    have hint : IsIntegral k ((minpoly L x).coeff i) :=
+      Polynomial.isIntegral_coeff_of_dvd (minpoly k x) (minpoly L x)
+        (minpoly.monic hx) (minpoly.monic hxL) hdvd i
+    have hmem : (minpoly L x).coeff i ∈ algebraicClosure k L := mem_algebraicClosure_iff'.mpr hint
+    rw [hbot, IntermediateField.mem_bot] at hmem
+    exact hmem
+  obtain ⟨q, hq1, -, hq3⟩ := Polynomial.lifts_and_natDegree_eq_and_monic
+    ((Polynomial.lifts_iff_coeff_lifts (f := algebraMap k L) (minpoly L x)).mpr hcoe)
+    (minpoly.monic hxL)
+  have haeval : (Polynomial.aeval x) q = 0 := by
+    have h0 := minpoly.aeval L x
+    rw [← hq1, Polynomial.aeval_map_algebraMap] at h0
+    exact h0
+  have hdvd2 : minpoly k x ∣ q := minpoly.dvd k x haeval
+  have hdvd3 : q ∣ minpoly k x := by
+    rw [← Polynomial.map_dvd_map' (algebraMap k L), hq1]
+    exact hdvd
+  have heq : q = minpoly k x :=
+    Polynomial.eq_of_monic_of_associated hq3 (minpoly.monic hx)
+      (associated_of_dvd_dvd hdvd3 hdvd2)
+  rw [← hq1, heq]
+
+/-- **A finite-dimensional intermediate field is linearly disjoint from `L`**
+(PROVEN).
+
+In characteristic zero `k` is perfect, so `A/k` has a primitive element `α`, and
+`A` has the `k`-basis `1, α, …, α^{d-1}` with `d = deg (minpoly k α)`.  By
+`minpoly_map_eq_of_algebraicClosure_eq_bot` the minimal polynomial of `α` over
+`L` still has degree `d`, so those powers stay `L`-linearly independent inside
+`M`; that is `IntermediateField.LinearDisjoint.of_basis_left`. -/
+theorem linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot
+    {k L M : Type*} [Field k] [CharZero k] [Field L] [Field M] [Algebra k L] [Algebra k M]
+    [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
+    (A : IntermediateField k M) [FiniteDimensional k A] : A.LinearDisjoint L := by
+  let pb : PowerBasis k A := Field.powerBasisOfFiniteOfSeparable k A
+  set β : M := (pb.gen : M) with hβ
+  have hint : IsIntegral k β := (Algebra.IsIntegral.isIntegral (R := k) pb.gen).map A.val
+  have hmp : minpoly k β = minpoly k pb.gen := minpoly.algHom_eq A.val A.val.injective pb.gen
+  have hdeg : (minpoly L β).natDegree = pb.dim := by
+    rw [minpoly_map_eq_of_algebraicClosure_eq_bot hbot hint, Polynomial.natDegree_map, hmp,
+      pb.natDegree_minpoly]
+  have hLI : LinearIndependent L (fun i : Fin pb.dim => β ^ (i : ℕ)) :=
+    (linearIndependent_pow (K := L) β).comp (finCongr hdeg.symm) (finCongr hdeg.symm).injective
+  refine IntermediateField.LinearDisjoint.of_basis_left pb.basis ?_
+  have hval : ⇑A.val ∘ pb.basis = fun i : Fin pb.dim => β ^ (i : ℕ) := by
+    funext i
+    show ((pb.basis i : A) : M) = β ^ (i : ℕ)
+    rw [pb.coe_basis, hβ]
+    push_cast
+    ring
+  rw [hval]
+  exact hLI
+
+/-- **An algebraic intermediate field is linearly disjoint from `L`** (PROVEN).
+
+Linear independence is a statement about finite subfamilies, and every finite
+subfamily of a `k`-basis of `A` lies in the finite-dimensional intermediate
+field it generates; apply
+`linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot` there.  This is
+the colimit step of the classical argument, done at the level of linear
+independence rather than of tensor products, which avoids having to build the
+directed colimit of the `L ⊗[k] A₀`. -/
+theorem linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot
+    {k L M : Type*} [Field k] [CharZero k] [Field L] [Field M] [Algebra k L] [Algebra k M]
+    [Algebra L M] [IsScalarTower k L M] (hbot : algebraicClosure k L = ⊥)
+    (A : IntermediateField k M) [Algebra.IsAlgebraic k A] : A.LinearDisjoint L := by
+  classical
+  let a := Module.Free.chooseBasis k A
+  refine IntermediateField.LinearDisjoint.of_basis_left a ?_
+  rw [linearIndependent_iff']
+  intro s g hsum i hi
+  set T : Set M := (fun j => ((a j : A) : M)) '' (s : Set _) with hT
+  haveI : Finite T := (s.finite_toSet.image _)
+  have hTint : ∀ x ∈ T, IsIntegral k x := by
+    rintro _ ⟨j, -, rfl⟩
+    exact (Algebra.IsIntegral.isIntegral (R := k) (a j)).map A.val
+  set A₀ : IntermediateField k M := IntermediateField.adjoin k T with hA₀
+  haveI : FiniteDimensional k A₀ := IntermediateField.finiteDimensional_adjoin hTint
+  have hld0 : A₀.LinearDisjoint L :=
+    linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot hbot A₀
+  have hmem : ∀ j ∈ s, ((a j : A) : M) ∈ A₀ := fun j hj =>
+    IntermediateField.subset_adjoin k T ⟨j, hj, rfl⟩
+  let b : {j // j ∈ s} → A₀ := fun j => ⟨((a j.1 : A) : M), hmem j.1 j.2⟩
+  have hbM : LinearIndependent k (fun j : {j // j ∈ s} => ((a j.1 : A) : M)) := by
+    have h1 : LinearIndependent k (fun j : {j // j ∈ s} => a j.1) :=
+      a.linearIndependent.comp _ Subtype.val_injective
+    exact h1.map' A.val.toLinearMap (LinearMap.ker_eq_bot.mpr A.val.injective)
+  have hb : LinearIndependent k b := LinearIndependent.of_comp A₀.val.toLinearMap hbM
+  have hbL' : LinearIndependent L (fun j : {j // j ∈ s} => ((a j.1 : A) : M)) :=
+    hld0.linearIndependent_left hb
+  have hsum' : ∑ j : {j // j ∈ s}, g j.1 • ((a j.1 : A) : M) = 0 := by
+    rw [Finset.sum_coe_sort s (fun j => g j • ((a j : A) : M))]
+    exact hsum
+  exact Fintype.linearIndependent_iff.mp hbL' (fun j => g j.1) hsum' ⟨i, hi⟩
+
+/-- **The algebraic half of regularity** (PROVEN).
+
+If `k` is algebraically closed in `L` (characteristic zero) and `K/k` is
+algebraic, then `L ⊗[k] K` is a domain.  Embed `K` into an algebraic closure `M`
+of `L` (possible because `K/k` is algebraic), apply
+`linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot` to the image, and
+conclude with `IntermediateField.LinearDisjoint.isDomain'`. -/
+theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
+    (k L : Type*) [Field k] [CharZero k] [Field L] [Algebra k L]
+    (hbot : algebraicClosure k L = ⊥)
+    (K : Type*) [Field K] [Algebra k K] [Algebra.IsAlgebraic k K] :
+    IsDomain (L ⊗[k] K) := by
+  set M := AlgebraicClosure L with hM
+  let fa : K →ₐ[k] M := IsAlgClosed.lift
+  haveI : Algebra.IsAlgebraic k fa.fieldRange := (AlgEquiv.ofInjectiveField fa).isAlgebraic
+  have hld : (fa.fieldRange).LinearDisjoint L :=
+    linearDisjoint_of_isAlgebraic_of_algebraicClosure_eq_bot hbot _
+  have hld2 : (fa.fieldRange).LinearDisjoint ((IsScalarTower.toAlgHom k L M).fieldRange) := by
+    rw [IntermediateField.linearDisjoint_iff', AlgHom.fieldRange_toSubalgebra]
+    rw [IntermediateField.linearDisjoint_iff] at hld
+    exact hld
+  haveI : IsDomain (K ⊗[k] L) := IntermediateField.LinearDisjoint.isDomain' hld2
+  exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
+
+set_option maxSynthPendingDepth 2 in
+/-- **Being a domain after `⊗[k] K` is detected on the finitely generated
+subextensions of `K`** (PROVEN).
+
+`L ⊗[k] K` is the directed union of the `L ⊗[k] k(S)` over finite `S ⊆ K`: every
+element of a tensor product is a finite sum of pure tensors, so it comes from
+one of them, and each transition map is injective because `L` is flat over the
+field `k`.  So a product of two nonzero elements can be tested inside a single
+`L ⊗[k] k(S)`.
+
+This runs the colimit step at the level of *elements* rather than by building a
+directed colimit of algebras, which is why it needs no colimit API at all.
+
+`maxSynthPendingDepth` has to be raised by one: deciding
+`NoZeroDivisors (L ⊗[k] ↥(adjoin k S))` from the supplied `IsDomain` requires
+Lean to discharge the pending `Semiring (L ⊗[k] ↥(adjoin k S))` obligation
+through the tensor-product-of-intermediate-field tower, which is one layer
+deeper than the default budget.  This is an elaborator budget, not a resource
+bump masking a failure: the proof term is unchanged. -/
+theorem isDomain_tensorProduct_of_forall_adjoin_finset
+    (k L : Type*) [Field k] [Field L] [Algebra k L]
+    (K : Type*) [Field K] [Algebra k K]
+    (H : ∀ S : Finset K, IsDomain (L ⊗[k] (IntermediateField.adjoin k (S : Set K)))) :
+    IsDomain (L ⊗[k] K) := by
+  classical
+  haveI : Nontrivial (L ⊗[k] K) :=
+    Algebra.TensorProduct.nontrivial_of_algebraMap_injective_of_isDomain k L K
+      (algebraMap k L).injective (algebraMap k K).injective
+  set ψ : ∀ S : Finset K, L ⊗[k] (IntermediateField.adjoin k (S : Set K)) →ₐ[k] L ⊗[k] K :=
+    fun S => Algebra.TensorProduct.map (AlgHom.id k L)
+      (IntermediateField.adjoin k (S : Set K)).val with hψ
+  have hψinj : ∀ S : Finset K, Function.Injective (ψ S) := by
+    intro S
+    have hcoe : ∀ z, ψ S z =
+        LinearMap.lTensor L (IntermediateField.adjoin k (S : Set K)).val.toLinearMap z := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | tmul a b => simp [hψ]
+      | add u v hu hv => simp [map_add, hu, hv]
+    have hlt : Function.Injective
+        (LinearMap.lTensor L (IntermediateField.adjoin k (S : Set K)).val.toLinearMap) :=
+      Module.Flat.lTensor_preserves_injective_linearMap _
+        (IntermediateField.adjoin k (S : Set K)).val.injective
+    intro u v huv
+    exact hlt (by rw [← hcoe, ← hcoe, huv])
+  have hmono : ∀ (S T : Finset K), S ⊆ T → Set.range (ψ S) ⊆ Set.range (ψ T) := by
+    intro S T h
+    have hle : IntermediateField.adjoin k (S : Set K) ≤ IntermediateField.adjoin k (T : Set K) :=
+      IntermediateField.adjoin.mono k _ _ (by exact_mod_cast h)
+    have key : ∀ z, ψ T (Algebra.TensorProduct.map (AlgHom.id k L)
+        (IntermediateField.inclusion hle) z) = ψ S z := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | tmul a b => simp [hψ]
+      | add u v hu hv => simp [map_add, hu, hv]
+    rintro _ ⟨z, rfl⟩
+    exact ⟨_, key z⟩
+  have hmem : ∀ x : L ⊗[k] K, ∃ S : Finset K, x ∈ Set.range (ψ S) := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => exact ⟨∅, 0, map_zero _⟩
+    | tmul a b =>
+        refine ⟨{b}, a ⊗ₜ ⟨b, IntermediateField.subset_adjoin k _ (by simp)⟩, ?_⟩
+        simp [hψ]
+    | add u v hu hv =>
+        obtain ⟨S₁, hS₁⟩ := hu
+        obtain ⟨S₂, hS₂⟩ := hv
+        obtain ⟨a, ha⟩ := hmono S₁ (S₁ ∪ S₂) Finset.subset_union_left hS₁
+        obtain ⟨b, hb⟩ := hmono S₂ (S₁ ∪ S₂) Finset.subset_union_right hS₂
+        exact ⟨S₁ ∪ S₂, a + b, by rw [map_add, ha, hb]⟩
+  have main : ∀ a b : L ⊗[k] K, a * b = 0 → a = 0 ∨ b = 0 := by
+    intro a b hab
+    obtain ⟨S₁, hS₁⟩ := hmem a
+    obtain ⟨S₂, hS₂⟩ := hmem b
+    obtain ⟨x, hx⟩ := hmono S₁ (S₁ ∪ S₂) Finset.subset_union_left hS₁
+    obtain ⟨y, hy⟩ := hmono S₂ (S₁ ∪ S₂) Finset.subset_union_right hS₂
+    have hzero : ψ (S₁ ∪ S₂) (x * y) = 0 := by rw [map_mul, hx, hy, hab]
+    have h0 : x * y = 0 := hψinj _ (by rw [hzero, map_zero])
+    haveI := H (S₁ ∪ S₂)
+    rcases mul_eq_zero.mp h0 with h | h
+    · exact Or.inl (by rw [← hx, h, map_zero])
+    · exact Or.inr (by rw [← hy, h, map_zero])
+  haveI : NoZeroDivisors (L ⊗[k] K) := ⟨fun {a b} h => main a b h⟩
+  exact {}
+
+/-- **The transcendental half of regularity, for a finitely generated
+subextension** (sorry leaf).
+
+`k` is algebraically closed in `L`, the characteristic is zero, `S` is a finite
+subset of a field extension `K/k`, and the subfield `k(S)` it generates is *not*
+algebraic over `k`.  The conclusion `IsDomain (L ⊗[k] k(S))` is true for every
+`S`; this leaf isolates exactly what
+`isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` (the
+algebraic case, PROVEN) and `isDomain_tensorProduct_of_forall_adjoin_finset`
+(the reduction to finitely generated subextensions, PROVEN) do not already
+cover, so that the hypotheses record what is left rather than duplicating a
+proven statement.
+
+**The classical argument, for whoever closes it** (Bourbaki *Algebra* V §17,
+EGA IV 4.6.1, Stacks 04KM).  Write `F := k(S)`.  In characteristic zero `F/k` is
+separably generated: there is a *finite* transcendence basis `T ⊆ S` with `F/k(T)`
+finite separable.  Then
+
+* `L ⊗[k] k(T)` is a domain — it is the localization of the polynomial ring
+  `L[T]` at the nonzero elements of `k[T]`, hence a subring of the rational
+  function field `L(T)`;
+* `k(T)` is algebraically closed in `Frac (L ⊗[k] k(T)) = L(T)`, because `k` is
+  algebraically closed in `L`.  **This is the one step that genuinely needs new
+  mathematics**: it is the statement that regularity is stable under purely
+  transcendental base change;
+* `L ⊗[k] F ≅ (L ⊗[k] k(T)) ⊗[k(T)] F` embeds into `L(T) ⊗[k(T)] F` by flatness
+  of the field extension `F/k(T)`, and the latter is a domain by
+  `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` applied to
+  the pair `(k(T), L(T))` and the algebraic extension `F/k(T)`.
+
+So the mathematical residue is the middle bullet plus the tensor-associativity
+plumbing; the algebraic case above is already available as the last step, and
+the finiteness of `T` here means no colimit is needed inside this leaf either.
+
+*The check that would refute the claim that this is all that is missing*: find a
+statement in the pin whose conclusion is `algebraicClosure (RatFunc k) _ = ⊥`,
+or an `IsDomain` result for `L ⊗[k] RatFunc k`.  Neither existed at
+`2ead1a48`.
+
+**Faithfulness note.**  `CharZero k` is load-bearing throughout this section.
+In characteristic `p` the statement is FALSE with only "algebraically closed in":
+for `k = 𝔽_p(u,v)` and `L` the function field of `y^p = u x^p + v`, the field `k`
+*is* algebraically closed in `L`, yet `L ⊗[k] k^{1/p}` has a nonzero nilpotent
+(the curve becomes `w^p = v` after adjoining `u^{1/p}`), so `L/k` is not
+separable and `L ⊗[k] K` is not a domain for `K = k^{1/p}`.  Characteristic zero
+is used here through `PerfectField k`, which is what supplies the primitive
+element in
+`linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot`. -/
+theorem isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
+    (k L : Type*) [Field k] [CharZero k] [Field L] [Algebra k L]
+    (hbot : algebraicClosure k L = ⊥)
+    (K : Type*) [Field K] [Algebra k K] (S : Finset K)
+    (hna : ¬ Algebra.IsAlgebraic k (IntermediateField.adjoin k (S : Set K))) :
+    IsDomain (L ⊗[k] (IntermediateField.adjoin k (S : Set K))) :=
+  sorry
+
+/-- **A field extension in which the base field is algebraically closed is
+regular** (PROVEN over
+`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
+
+`L ⊗[k] K` is a domain for every field extension `K/k`, when `k` has
+characteristic zero and is algebraically closed in `L`.  Reduce to the finitely
+generated subextensions `k(S)` of `K`, then split each of those into the
+algebraic case (PROVEN) and the transcendental case (the leaf). -/
+theorem isDomain_tensorProduct_of_algebraicClosure_eq_bot
+    (k L : Type*) [Field k] [CharZero k] [Field L] [Algebra k L]
+    (hbot : algebraicClosure k L = ⊥)
+    (K : Type*) [Field K] [Algebra k K] :
+    IsDomain (L ⊗[k] K) := by
+  classical
+  refine isDomain_tensorProduct_of_forall_adjoin_finset k L K (fun S => ?_)
+  by_cases halg : Algebra.IsAlgebraic k (IntermediateField.adjoin k (S : Set K))
+  · haveI := halg
+    exact isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot k L hbot _
+  · exact isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
+      k L hbot K S halg
+
+/-- **The fraction field of a normal domain in which the base field is
+algebraically closed is a regular extension** (PROVEN over
+`isDomain_tensorProduct_of_algebraicClosure_eq_bot`).
+
+`k` being algebraically closed *in `B`* is the same as `k` being algebraically
+closed *in `Frac B`* when `B` is integrally closed
+(`algebraicClosure_fractionRing_eq_bot`), and a field extension `L/k` with `k`
+algebraically closed in `L` is **regular** in characteristic zero, i.e.
+`L ⊗[k] K` is a domain for every field extension `K/k`.
+
+Together with `isDomain_tensorProduct_of_injective` below this is exactly
+"geometrically integral", which is what an affine geometric-connectedness
+criterion needs. -/
 theorem isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot
     (k B : Type*) [Field k] [CharZero k] [CommRing B] [IsDomain B] [Algebra k B]
     [IsIntegrallyClosed B]
     (h : ∀ x : B, IsAlgebraic k x → x ∈ (⊥ : Subalgebra k B))
     (K : Type*) [Field K] [Algebra k K] :
     IsDomain (FractionRing B ⊗[k] K) :=
-  sorry
+  isDomain_tensorProduct_of_algebraicClosure_eq_bot k (FractionRing B)
+    (algebraicClosure_fractionRing_eq_bot k B h) K
 
 /-- **Geometric integrality descends from the fraction field to the ring**
 (PROVEN).
