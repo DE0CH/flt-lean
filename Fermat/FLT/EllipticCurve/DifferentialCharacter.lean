@@ -60,12 +60,20 @@ uniqueness needs no `φ ≠ 0` hypothesis.
 
 ## The leaves
 
-`isDiffChar_id`, `isDiffChar_zero`, `isDiffChar_neg_id`, `isDiffChar_neg` and
-`isDiffChar_mulByHom` are PROVEN. The genuinely geometric facts are open, each
-stated in full:
+`isDiffChar_id`, `isDiffChar_zero`, `isDiffChar_neg_id`, `isDiffChar_neg`,
+`isDiffChar_mulByHom`, `psi_ne_zero_of_two_nsmul_ne_zero`, `exists_isDiffChar`
+and `isDiffChar_unique` are PROVEN (the last two on 2026-07-28).
 
-* `exists_isDiffChar` — every rational map acts on `ω` by some scalar;
-* `isDiffChar_unique` — that scalar is unique;
+`isDiffChar_unique` needs no geometry at all — the two witness tuples define the
+same rational function `A/B`, and its derivative is what the certificate
+measures. `exists_isDiffChar` is an assembly over ONE geometric leaf,
+`exists_diffCharScalar` (translation-invariance of `ω`, in the form "the pullback
+ratio is constant"); the `y`-witnesses, the zero map, and the crossing of the
+finite kernel by Zariski density are all discharged there.
+
+Still open, each stated in full:
+
+* `exists_diffCharScalar` — the pullback ratio `φ*ω'/ω` is CONSTANT;
 * `isDiffChar_add` — `λ` is additive;
 * `isDiffChar_comp` — `λ` is multiplicative on composites;
 * `eq_of_isDiffChar` — `λ` is injective (characteristic zero);
@@ -155,6 +163,24 @@ theorem exists_point_ne_zero [IsAlgClosed F] [W.IsElliptic] :
   obtain ⟨P, hP, -⟩ := exists_point_veluPointX_eq (W := W) 0
   exact ⟨P, hP⟩
 
+/-- **`ω` has no zero at a non-`2`-torsion point**: `2y + a₁x + a₃ = 0` at a
+nonzero `P` says exactly that `−P` has the same two coordinates as `P`, i.e. that
+`P` is its own negative. Contrapositive form, which is how both
+`exists_isDiffChar` and `isDiffChar_unique` use it: away from the (finite)
+`2`-torsion the denominator of `ω` is invertible. -/
+theorem psi_ne_zero_of_two_nsmul_ne_zero {P : W.Point} (h2 : (2 : ℕ) • P ≠ 0) :
+    2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 := by
+  intro hc
+  have hP : P ≠ 0 := fun hz => h2 (by rw [hz, smul_zero])
+  refine h2 ?_
+  have hneg : -P = P := by
+    refine eq_of_veluPoint_eq (neg_ne_zero.2 hP) hP (velu_pointX_neg _) ?_
+    rw [velu_pointY_neg _ hP]
+    linear_combination -hc
+  calc (2 : ℕ) • P = P + P := two_nsmul _
+    _ = P + -P := by rw [hneg]
+    _ = 0 := add_neg_cancel _
+
 /-- `λ(1) = 1`, with the witnesses `A = X`, `B = 1`, `C = 1`, `D = 0`, `E = 1`:
 the certificate reads `2y + a₁x + a₃ = 2y + a₁x + a₃`. -/
 theorem isDiffChar_id [IsAlgClosed F] [W.IsElliptic] :
@@ -199,61 +225,296 @@ Hamiltonian derivation `PsiSumCompanion.DK` of
 `ψ₂ · d/dx` on the function field of the UNIVERSAL curve and carries no
 statement about isogenies. -/
 
-/-- **LEAF: every rational map acts on the invariant differential by some
-scalar.**
+/-- **LEAF: the pullback ratio `φ*ω'/ω` is a CONSTANT.**
 
-`φ*ω'` is an invariant (translation-invariant) differential on `W`, and the space
-of invariant differentials is one-dimensional, spanned by `ω`; so `φ*ω' = c·ω`
-for a unique `c`. Equivalently, in the coordinates: the rational function
-`f'·(2y + a₁x + a₃)/(2g + a₁'f + a₃')` on `W` is regular and invariant under
-translation by every point, hence constant.
+This is the ONE geometric input of `exists_isDiffChar`, isolated from all of its
+bookkeeping: the `φ = 0` branch, the restoration of the `y`-witnesses `Cx, D, E`
+that the identity below has cancelled, and the extension of the certificate from
+the good locus across the (finite) kernel by Zariski density are all PROVEN there
+from this statement.
 
-**THE ARGUMENT** in the form the certificate wants. Take any witness tuple
-`A, …, E` for `IsRationalMap φ`; for `φ = 0` take `A = 0, B = 1, C = D = 0,
-E = 1` and `c = 0`, which is the certificate `0 = 0`. For `φ ≠ 0`, differentiate
-the two certificate identities of `IsRationalMap` along the Hamiltonian
-derivation `D = ψ₂ · d/dx` of `InvariantDerivation.lean`: `D` kills the curve
-polynomial, so it acts on the coordinate ring of `W`, and `Dx = ψ₂`,
-`Dy = (3x² + 2a₂x + a₄ − a₁y)`. Applying `D` to `x∘φ = A/B` and using the chain
-rule gives `D(x∘φ) = f'(x)·ψ₂(x,y)`, while `x∘φ` is the `x`-coordinate of a point
-of `W'` so `D(x∘φ) = c·ψ₂(φP)` for the scalar `c` defined by
-`c = D(x∘φ)/ψ₂(φP)`. That this last quotient is a CONSTANT — not merely a
-rational function — is the one-dimensionality of the space of invariant
-differentials, and is what makes the statement a leaf rather than a computation.
+**What it says.** At a point `P` off the kernel the two rational-map certificates
+`x(φP)·B = A` and `y(φP)·E = Cx·y + D` collapse `IsDiffCharCert` to
+
+  `c · B(x)² · (2y(φP) + a₁'x(φP) + a₃')  =  (A'B − AB')(x) · (2y + a₁x + a₃)`,
+
+i.e. `c = u'(x)·ψ(P)/ψ'(φP)` with `u = A/B = x∘φ`, which is exactly
+`φ*ω' = c·ω` for `ω = dx/(2y + a₁x + a₃)`. The content is that this quotient does
+not depend on `P`. Note the `y`-witnesses have dropped out entirely: the scalar is
+a function of the `x`-map alone. No `φ ≠ 0` hypothesis is needed — for `φ = 0` the
+conclusion is vacuous.
+
+**THE ARGUMENT.** `ω` is translation-invariant (*AEC* III.5.1: `div ω = 0`, so
+`τ_Q^*ω/ω` is a function with neither zeros nor poles, hence a constant, and
+`Q ↦ that constant` is a morphism from a complete connected curve to `𝔾_m`, hence
+constant `= 1`). Because `φ` is a HOMOMORPHISM, `φ ∘ τ_Q = τ_{φQ} ∘ φ`, so
+`φ*ω'` is translation-invariant as well, and therefore so is `h := φ*ω'/ω`. The
+step from there is free and needs no completeness: a translation-invariant
+FUNCTION is constant, since `h(P₁) = h(P₁ + (P₂ − P₁)) = h(P₂)`. So the whole
+burden is the invariance of `ω` and `ω'`, not the constancy of `h`.
+
+**A REDUCTION WORTH KNOWING: `y` can be eliminated.** Squaring and using
+`(2y + a₁x + a₃)² = 4x³ + b₂x² + 2b₄x + b₆` on each curve turns the statement into
+a purely ONE-VARIABLE polynomial identity in `F[X]`,
+
+  `(A'B − AB')² · (4X³ + b₂X² + 2b₄X + b₆)
+     = C (c²) · B · (4A³ + b₂'A²B + 2b₄'AB² + b₆'B³)`,
+
+which pins `c` up to sign. The `[n]` case of exactly this identity is already in
+the tree: it is the Wronskian `Φₙ′·ΨSqₙ − Φₙ·ΨSqₙ′ = n·preΨ₂ₙ` behind
+`separable_preΨ'`, proven through the Hamiltonian derivation
+`PsiSumCompanion.DK` of `InvariantDerivation.lean` (`D = ψ₂·d/dx`, which kills the
+curve polynomial and so acts on the coordinate ring). That derivation is the
+natural route to the general case.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a rational map of Weierstrass curves
-over a field, in any characteristic, whose pullback of `ω'` is not a constant
-multiple of `ω`. (In characteristic `p` the constant may be `0` — the Frobenius
-— which is why only `eq_of_isDiffChar` below carries `CharZero`.) -/
-theorem exists_isDiffChar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
-    {φ : W.Point →+ W'.Point} (hφ : IsRationalMap φ) :
-    ∃ c : F, IsDiffChar φ c :=
+over an algebraically closed field, with witnesses `A, …, E`, and two points off
+its kernel at which the displayed quotient takes different values. -/
+theorem exists_diffCharScalar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {A B Cx D E : F[X]} (hB : B ≠ 0) (hE : E ≠ 0)
+    (hrat : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    ∃ c : F, ∀ P : W.Point, P ≠ 0 → φ P ≠ 0 →
+      c * B.eval (veluPointX P) ^ 2
+          * (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃)
+        = ((derivative A).eval (veluPointX P) * B.eval (veluPointX P)
+            - A.eval (veluPointX P) * (derivative B).eval (veluPointX P))
+          * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) :=
   sorry
 
-/-- **LEAF: the scalar is unique.**
+/-- **PROVEN** (2026-07-28): every rational map acts on the invariant differential
+by some scalar.
+
+`φ*ω'` is an invariant (translation-invariant) differential on `W`, and the space
+of invariant differentials is one-dimensional, spanned by `ω`; so `φ*ω' = c·ω`.
+That one-dimensionality is `exists_diffCharScalar` above and is the ONLY thing
+this proof takes on trust. Everything else is discharged here:
+
+* **`φ = 0`** is `isDiffChar_zero`; the guard clause `φ = 0 → c = 0` is then
+  vacuous for `φ ≠ 0`.
+* **Restoring the `y`-witnesses.** `exists_diffCharScalar` returns the collapsed
+  identity, with `Cx, D, E` cancelled. Multiplying it by `E(x)` and feeding back
+  the two rational-map certificates recovers `IsDiffCharCert` verbatim at every
+  `P ∉ ker φ` — with no side condition on `E(x)`, because the certificates hold
+  wherever `φ P ≠ 0`.
+* **Crossing the kernel.** `IsDiffCharCert` is required at EVERY affine `P`,
+  including the finitely many with `φ P = 0`, where nothing can be rewritten. But
+  the certificate is affine-linear in `y`: its difference is `y·p(x) + q(x)` for
+  two explicit polynomials `p, q` built from `A, B, Cx, D, E` and `c`. At an `x`
+  outside the (finite) image of `ker φ ∪ W[2]`, BOTH points `P` and `−P` over it
+  are good, and subtracting their two instances leaves
+  `(2y + a₁x + a₃)·p(x) = 0` with the first factor nonzero
+  (`psi_ne_zero_of_two_nsmul_ne_zero`); so `p` and then `q` have cofinitely many
+  roots, hence vanish identically, hence the certificate holds everywhere.
+
+**THE CHECK THAT WOULD REFUTE THE REMAINING LEAF**: a rational map of Weierstrass
+curves over a field, in any characteristic, whose pullback of `ω'` is not a
+constant multiple of `ω`. (In characteristic `p` the constant may be `0` — the
+Frobenius — which is why only `eq_of_isDiffChar` below carries `CharZero`.) -/
+theorem exists_isDiffChar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hφ : IsRationalMap φ) :
+    ∃ c : F, IsDiffChar φ c := by
+  classical
+  by_cases hφ0 : φ = 0
+  · subst hφ0
+    exact ⟨0, isDiffChar_zero⟩
+  obtain ⟨A, B, Cx, D, E, hB, hE, hrat⟩ := id hφ
+  obtain ⟨c, hc⟩ := exists_diffCharScalar hB hE hrat
+  -- The certificate off the kernel, with the `y`-witnesses restored.
+  have hcertGood : ∀ P : W.Point, P ≠ 0 → φ P ≠ 0 →
+      IsDiffCharCert W W' A B Cx D E c P := by
+    intro P hP0 hφP
+    have hcol := hc P hP0 hφP
+    have hr := hrat P hφP
+    unfold IsDiffCharCert
+    linear_combination E.eval (veluPointX P) * hcol
+      - (2 * c * B.eval (veluPointX P) ^ 2) * hr.2
+      - (c * B.eval (veluPointX P) * W'.a₁ * E.eval (veluPointX P)) * hr.1
+  -- The certificate is affine-linear in `y`, with polynomial coefficients `p, q`.
+  obtain ⟨p, q, hΔ⟩ : ∃ p q : F[X], ∀ P : W.Point,
+      IsDiffCharCert W W' A B Cx D E c P ↔
+        veluPointY P * p.eval (veluPointX P) + q.eval (veluPointX P) = 0 := by
+    refine ⟨C (2 * c) * B ^ 2 * Cx
+        - C (2 : F) * (derivative A * B - A * derivative B) * E,
+      C c * B * (C (2 : F) * B * D + C W'.a₁ * A * E + C W'.a₃ * B * E)
+        - (derivative A * B - A * derivative B) * E * (C W.a₁ * X + C W.a₃),
+      fun P => ?_⟩
+    unfold IsDiffCharCert
+    simp only [eval_sub, eval_add, eval_mul, eval_pow, eval_C, eval_X]
+    constructor
+    · intro hh; linear_combination hh
+    · intro hh; linear_combination hh
+  -- Both coefficients vanish at every `x` off a finite set, hence identically.
+  have hker : (AddMonoidHom.ker φ : Set W.Point).Finite := hφ.finite_ker hφ0
+  have htor : {P : W.Point | (2 : ℕ) • P = 0}.Finite := finite_nsmulKer (by norm_num)
+  have hTfin : (veluPointX '' ((AddMonoidHom.ker φ : Set W.Point)
+      ∪ {P : W.Point | (2 : ℕ) • P = 0})).Finite := (hker.union htor).image _
+  have hpq : ∀ t : F, t ∉ veluPointX '' ((AddMonoidHom.ker φ : Set W.Point)
+      ∪ {P : W.Point | (2 : ℕ) • P = 0}) → p.eval t = 0 ∧ q.eval t = 0 := by
+    intro t ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hcc =>
+      ht ⟨P, Or.inl (by simpa [AddMonoidHom.mem_ker] using hcc), hPx⟩
+    have hP2 : (2 : ℕ) • P ≠ 0 := fun hcc => ht ⟨P, Or.inr hcc, hPx⟩
+    have hψ : 2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 :=
+      psi_ne_zero_of_two_nsmul_ne_zero hP2
+    have hnP0 : -P ≠ 0 := neg_ne_zero.2 hP0
+    have hφnP : φ (-P) ≠ 0 := by rw [map_neg]; exact neg_ne_zero.2 hφP
+    have e1 := (hΔ P).mp (hcertGood P hP0 hφP)
+    have e2 := (hΔ (-P)).mp (hcertGood (-P) hnP0 hφnP)
+    rw [velu_pointX_neg, velu_pointY_neg P hP0] at e2
+    rw [hPx] at e1 e2 hψ
+    have hp0 : p.eval t = 0 := by
+      have hsub : (2 * veluPointY P + W.a₁ * t + W.a₃) * p.eval t = 0 := by
+        linear_combination e1 - e2
+      rcases mul_eq_zero.mp hsub with hh | hh
+      · exact absurd hh hψ
+      · exact hh
+    exact ⟨hp0, by linear_combination e1 - veluPointY P * hp0⟩
+  have hp0 : p = 0 := Polynomial.eq_zero_of_infinite_isRoot _
+    (Set.Infinite.mono (fun t ht => (hpq t ht).1) hTfin.infinite_compl)
+  have hq0 : q = 0 := Polynomial.eq_zero_of_infinite_isRoot _
+    (Set.Infinite.mono (fun t ht => (hpq t ht).2) hTfin.infinite_compl)
+  exact ⟨c, fun hz => absurd hz hφ0, A, B, Cx, D, E, hB, hE, hrat, fun P _ =>
+    (hΔ P).mpr (by rw [hp0, hq0]; simp)⟩
+
+/-- **PROVEN** (2026-07-28): the scalar is unique.
 
 If `φ*ω' = c·ω = c'·ω` then `(c − c')·ω = 0`, and `ω ≠ 0`.
 
-**THE ARGUMENT.** For `φ = 0` both scalars are `0` by the guard clause of
-`IsDiffChar`. For `φ ≠ 0`, subtract the two certificates: with witnesses
-`A₁, …, E₁` and `A₂, …, E₂`, the two rational functions `A₁/B₁` and `A₂/B₂`
-agree at every `P` with `φ P ≠ 0` — a cofinite set, since `ker φ` is finite —
-hence are equal, and likewise `(C₁y + D₁)/E₁ = (C₂y + D₂)/E₂`. So both
-certificates are the same identity of functions on `W` up to nonzero factors, and
-`(c − c')·B·(2B(Cy + D) + a₁'AE + a₃'BE) = 0` at every affine point. The second
-factor is `B²·E·ψ₂(φP)` divided by nothing, i.e. it is a nonzero element of the
-coordinate ring: `C ≠ 0` (else `y ∘ φ` would be a function of `x` alone, forcing
-`φ(P) = φ(−P)` and hence `φ ∘ [2] = 0`, so `φ = 0` by
-`eq_zero_of_finite_range`), and `{1, y}` is a free basis of the coordinate ring
-over `F[x]`. A nonzero element of the coordinate ring vanishes at only finitely
-many points, while `W.Point` is infinite, so `c = c'`.
+**THE PROOF**, which needs *nothing* from the geometry — no invariant-differential
+theory, only the two certificates and the finiteness facts of `Isogeny.lean`.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: a nonzero rational map with two
-witness tuples giving different scalars. -/
+For `φ = 0` both scalars are `0` by the guard clause of `IsDiffChar`; this is the
+one place that clause is load-bearing, and without it the statement is FALSE (see
+the module docstring). For `φ ≠ 0`:
+
+1. **The `x`-witnesses agree as rational functions.** `x(φP)·B₁ = A₁` and
+   `x(φP)·B₂ = A₂` give `A₁B₂ = A₂B₁` at every `x` off the (finite) image of
+   `ker φ`, hence — the base field being infinite — as POLYNOMIALS.
+2. **Hence so do their derivatives.** Differentiating `A₁B₂ = A₂B₁` and taking a
+   two-term `linear_combination` yields
+   `(A₁′B₁ − A₁B₁′)·B₂² = (A₂′B₂ − A₂B₂′)·B₁²`, the cleared-denominator form of
+   `(A₁/B₁)′ = (A₂/B₂)′`.
+3. **The `y`-witnesses are irrelevant.** Feeding both rational-map certificates
+   into `IsDiffCharCert` turns it into `c·B²·E·ψ'(φP) = (A′B − AB′)·E·ψ(P)`, and
+   `E(x) ≠ 0` cancels: `Cx, D, E` disappear from the identity entirely.
+4. **One good point finishes it.** Cross-multiplying the two collapsed identities
+   with step 2 gives `(c − c')·B₁²B₂²·ψ'(φP) = 0`. Choose `P` with `B₁, B₂, E₁, E₂`
+   nonvanishing at `x P` and `2•(φ P) ≠ 0` — possible because
+   `ker(φ ∘ [2])` is finite (`[2]` is surjective, so `φ ∘ [2] ≠ 0`) and each
+   polynomial has finitely many roots — and `ψ'(φP) ≠ 0` by
+   `psi_ne_zero_of_two_nsmul_ne_zero`.
+
+**THE CHECK THAT WOULD REFUTE THIS**: a nonzero rational map with two witness
+tuples giving different scalars. -/
 theorem isDiffChar_unique [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     {φ : W.Point →+ W'.Point} {c c' : F}
-    (h : IsDiffChar φ c) (h' : IsDiffChar φ c') : c = c' :=
-  sorry
+    (h : IsDiffChar φ c) (h' : IsDiffChar φ c') : c = c' := by
+  classical
+  by_cases hφ0 : φ = 0
+  · rw [h.1 hφ0, h'.1 hφ0]
+  obtain ⟨-, A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hrat₁, hcert₁⟩ := h
+  obtain ⟨-, A₂, B₂, C₂, D₂, E₂, hB₂, hE₂, hrat₂, hcert₂⟩ := h'
+  have hrm : IsRationalMap φ := ⟨A₁, B₁, C₁, D₁, E₁, hB₁, hE₁, hrat₁⟩
+  -- **Step 1.** `A₁/B₁` and `A₂/B₂` are the same rational function.
+  have hXker : (veluPointX '' (AddMonoidHom.ker φ : Set W.Point)).Finite :=
+    (hrm.finite_ker hφ0).image _
+  have hsub : (veluPointX '' (AddMonoidHom.ker φ : Set W.Point))ᶜ
+      ⊆ {t : F | IsRoot (A₁ * B₂ - A₂ * B₁) t} := by
+    intro t ht
+    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+    have hφP : φ P ≠ 0 := fun hc =>
+      ht ⟨P, by simpa [AddMonoidHom.mem_ker] using hc, hPx⟩
+    have h1 := (hrat₁ P hφP).1
+    have h2 := (hrat₂ P hφP).1
+    rw [hPx] at h1 h2
+    show (A₁ * B₂ - A₂ * B₁).eval t = 0
+    simp only [eval_sub, eval_mul]
+    linear_combination B₁.eval t * h2 - B₂.eval t * h1
+  have hkey : A₁ * B₂ = A₂ * B₁ := by
+    have := Polynomial.eq_zero_of_infinite_isRoot (A₁ * B₂ - A₂ * B₁)
+      (Set.Infinite.mono hsub hXker.infinite_compl)
+    linear_combination this
+  -- **Step 2.** So do their derivatives, in cleared-denominator form.
+  have hpolyD : (derivative A₁ * B₁ - A₁ * derivative B₁) * B₂ ^ 2
+      = (derivative A₂ * B₂ - A₂ * derivative B₂) * B₁ ^ 2 := by
+    have hd := congrArg derivative hkey
+    simp only [derivative_mul] at hd
+    linear_combination (B₁ * B₂) * hd
+      - (derivative B₁ * B₂ + B₁ * derivative B₂) * hkey
+  -- **Step 3.** A point where nothing degenerates.
+  have hrm2 : IsRationalMap (φ.comp (mulByHom W 2)) :=
+    IsRationalMap.comp (isRationalMap_mulByHom_two (W := W)) hrm
+  have hne2 : φ.comp (mulByHom W 2) ≠ 0 := by
+    intro hcc
+    refine hφ0 (AddMonoidHom.ext fun Q => ?_)
+    obtain ⟨P, hP⟩ := nsmul_surjective (W := W) (n := 2) two_ne_zero Q
+    have hz := DFunLike.congr_fun hcc P
+    simp only [AddMonoidHom.comp_apply, mulByHom_apply, AddMonoidHom.zero_apply] at hz
+    have hP' : (2 : ℕ) • P = Q := hP
+    rw [← hP']
+    simpa using hz
+  have hker2 : (AddMonoidHom.ker (φ.comp (mulByHom W 2)) : Set W.Point).Finite :=
+    hrm2.finite_ker hne2
+  have hfin : (veluPointX '' (AddMonoidHom.ker (φ.comp (mulByHom W 2)) : Set W.Point)
+      ∪ ({t : F | IsRoot B₁ t} ∪ {t : F | IsRoot B₂ t}
+        ∪ ({t : F | IsRoot E₁ t} ∪ {t : F | IsRoot E₂ t}))).Finite :=
+    (hker2.image _).union
+      (((Polynomial.finite_setOf_isRoot hB₁).union
+          (Polynomial.finite_setOf_isRoot hB₂)).union
+        ((Polynomial.finite_setOf_isRoot hE₁).union
+          (Polynomial.finite_setOf_isRoot hE₂)))
+  obtain ⟨t, ht⟩ := hfin.infinite_compl.nonempty
+  simp only [Set.mem_compl_iff, Set.mem_union, Set.mem_setOf_eq, IsRoot.def,
+    not_or] at ht
+  obtain ⟨htk, ⟨htB₁, htB₂⟩, htE₁, htE₂⟩ := ht
+  obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
+  have hmemk : ∀ (_ : φ (2 • P) = 0), False := fun hc =>
+    htk ⟨P, by simpa [AddMonoidHom.mem_ker] using hc, hPx⟩
+  have hφP : φ P ≠ 0 := fun hc => hmemk (by rw [map_nsmul, hc, smul_zero])
+  have hP2 : (2 : ℕ) • φ P ≠ 0 := fun hc => hmemk (by rw [map_nsmul]; exact hc)
+  have hpsi' : 2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃ ≠ 0 :=
+    psi_ne_zero_of_two_nsmul_ne_zero hP2
+  -- **Step 4.** Both certificates collapse to `c·B²·ψ'(φP) = (A′B − AB′)·ψ(P)`.
+  have hcollapse : ∀ (A B Cw Dw Ew : F[X]) (d : F),
+      (∀ Q : W.Point, φ Q ≠ 0 →
+        veluPointX (φ Q) * B.eval (veluPointX Q) = A.eval (veluPointX Q) ∧
+        veluPointY (φ Q) * Ew.eval (veluPointX Q)
+          = Cw.eval (veluPointX Q) * veluPointY Q + Dw.eval (veluPointX Q)) →
+      (∀ Q : W.Point, Q ≠ 0 → IsDiffCharCert W W' A B Cw Dw Ew d Q) →
+      Ew.eval t ≠ 0 →
+      d * B.eval t ^ 2
+          * (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃)
+        = ((derivative A).eval t * B.eval t - A.eval t * (derivative B).eval t)
+            * (2 * veluPointY P + W.a₁ * t + W.a₃) := by
+    intro A B Cw Dw Ew d hrat hcert hEt
+    have hc1 := hcert P hP0
+    have hr1 := hrat P hφP
+    unfold IsDiffCharCert at hc1
+    rw [hPx] at hc1 hr1
+    refine mul_right_cancel₀ hEt ?_
+    linear_combination hc1 + (2 * d * B.eval t ^ 2) * hr1.2
+      + (d * B.eval t * W'.a₁ * Ew.eval t) * hr1.1
+  have hd₁ := hcollapse A₁ B₁ C₁ D₁ E₁ c hrat₁ hcert₁ htE₁
+  have hd₂ := hcollapse A₂ B₂ C₂ D₂ E₂ c' hrat₂ hcert₂ htE₂
+  -- **Step 5.** Cross-multiply and cancel.
+  have hpolyD' : ((derivative A₁).eval t * B₁.eval t - A₁.eval t * (derivative B₁).eval t)
+        * B₂.eval t ^ 2
+      = ((derivative A₂).eval t * B₂.eval t - A₂.eval t * (derivative B₂).eval t)
+        * B₁.eval t ^ 2 := by
+    have hev := congrArg (Polynomial.eval t) hpolyD
+    simpa only [eval_mul, eval_sub, eval_pow] using hev
+  have hfinal : (c - c') * (B₁.eval t ^ 2 * B₂.eval t ^ 2
+      * (2 * veluPointY (φ P) + W'.a₁ * veluPointX (φ P) + W'.a₃)) = 0 := by
+    linear_combination B₂.eval t ^ 2 * hd₁ - B₁.eval t ^ 2 * hd₂
+      + (2 * veluPointY P + W.a₁ * t + W.a₃) * hpolyD'
+  rcases mul_eq_zero.mp hfinal with hcc | hcc
+  · exact sub_eq_zero.mp hcc
+  · exact absurd hcc (mul_ne_zero
+      (mul_ne_zero (pow_ne_zero 2 htB₁) (pow_ne_zero 2 htB₂)) hpsi')
 
 /-- **LEAF: `λ` is additive.**
 
