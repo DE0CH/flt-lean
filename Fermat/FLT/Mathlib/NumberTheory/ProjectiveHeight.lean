@@ -59,6 +59,17 @@ the docstrings there — the point is that after that reduction the leaf in
 `Fermat/FLT/ModularCurve/X0.lean` contains no height, no `ℝ` and no `O(1)`
 at all, only algebraic geometry.
 
+`CubeModel A` and `CubeModel.nonempty_cubeEmbedding` go one level further
+still.  `CubeEmbedding` asks for a *Nullstellensatz certificate*
+(`cert`, `cert_eval`), which is commutative algebra rather than geometry;
+`CubeModel` asks instead for the equations of the Segre image and for the
+forms of the cube to have no common zero on it over an algebraic closure —
+which is exactly "`(P, Q) ↦ (P + Q, P − Q)` is a morphism" — and
+`exists_homogeneousCertificate` manufactures the certificate from that.
+After this, the leaf in `X0.lean` owes exactly three classical theorems:
+projectivity of an abelian variety, a symmetric very ample line bundle,
+and the theorem of the cube.
+
 The proof is the classical one.  Cover the bounded-height set by the `n`
 subsets on which the `j`-th coordinate is nonzero.  On the `j`-th of
 them, send `P` to the tuple of ratios `(xᵢ / x_j)ᵢ`.  Each ratio has
@@ -85,6 +96,13 @@ public import Mathlib.NumberTheory.Height.Northcott
 -- `CubeEmbedding.parallelogram`.
 public import Mathlib.NumberTheory.Height.MvPolynomial
 public import Mathlib.Order.Northcott
+-- `MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`: Hilbert's Nullstellensatz for
+-- an ideal over a base field `k` with zero locus taken in an algebraically closed
+-- extension `K`, returning the radical OVER `k`.  That the radical comes back over
+-- the small field is what makes `exists_homogeneousCertificate` rational for free.
+public import Mathlib.RingTheory.Nullstellensatz
+public import Mathlib.RingTheory.MvPolynomial.Homogeneous
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 
 @[expose] public section
 
@@ -378,5 +396,287 @@ def toProjectiveHeightSource : ProjectiveHeightSource A where
   parallelogram := ce.parallelogram
 
 end CubeEmbedding
+
+/-!
+### Shedding the Nullstellensatz certificate
+
+`CubeEmbedding` still asks its producer for `cert` / `cert_homogeneous` /
+`cert_eval`, and those are **not geometry either**: they are an *effective
+homogeneous Nullstellensatz certificate*, a fact of commutative algebra
+about the forms `cube` once one knows they have no common zero on the
+Segre image.  `CubeModel` below asks for the geometric statement instead
+— the forms of the ideal of the image, and non-vanishing on that image
+over an algebraic closure — and `CubeModel.nonempty_cubeEmbedding`
+manufactures the certificate.  It is PROVEN, over `Mathlib`'s
+`MvPolynomial.vanishingIdeal_zeroLocus_eq_radical`.
+-/
+
+/-- **Taking a homogeneous component past multiplication by a homogeneous
+factor** (PROVEN).  If `q` is homogeneous of degree `d` then the degree-`n`
+part of `p * q` is `(degree-(n − d) part of p) * q`, and is zero when
+`n < d`.
+
+`Mathlib` has `MvPolynomial.homogeneousComponent` and
+`MvPolynomial.homogeneousComponent_C_mul` but not this; it is what lets an
+arbitrary ideal-membership certificate be replaced by a *homogeneous* one,
+which is what `Height.logHeight_eval_ge'` requires. -/
+theorem homogeneousComponent_mul_right_of_isHomogeneous {σ R : Type*} [CommRing R]
+    {q : MvPolynomial σ R} {d : ℕ} (hq : q.IsHomogeneous d) (p : MvPolynomial σ R) (n : ℕ) :
+    MvPolynomial.homogeneousComponent n (p * q)
+      = (if d ≤ n then MvPolynomial.homogeneousComponent (n - d) p else 0) * q := by
+  classical
+  induction p using MvPolynomial.induction_on' with
+  | monomial e r =>
+      have hm : (MvPolynomial.monomial e r : MvPolynomial σ R).IsHomogeneous e.degree :=
+        MvPolynomial.isHomogeneous_monomial _ rfl
+      rw [MvPolynomial.homogeneousComponent_of_mem (hm.mul hq),
+        MvPolynomial.homogeneousComponent_of_mem hm]
+      by_cases hdn : d ≤ n
+      · simp only [hdn, if_true]
+        by_cases he : n - d = e.degree
+        · have : n = e.degree + d := by omega
+          simp [this]
+        · have : n ≠ e.degree + d := by omega
+          simp [he, this]
+      · have : n ≠ e.degree + d := by omega
+        simp [hdn, this]
+  | add p₁ p₂ h₁ h₂ =>
+      rw [add_mul, map_add, h₁, h₂, map_add]
+      split <;> ring
+
+/-- **THE EFFECTIVE HOMOGENEOUS NULLSTELLENSATZ OVER `ℚ`** (PROVEN) — if a
+finite family `f` of forms of a common degree `N` has no common zero on the
+projective set cut out by a finite family `g` of forms, *over an algebraic
+closure*, then some fixed power of every variable is a **homogeneous**
+combination of the `f` modulo the `g`, with `ℚ`-rational coefficients.
+
+This is the whole of `CubeEmbedding.cert`, and it is pure commutative
+algebra: no group, no height, no `ℝ`.
+
+**The `ℚ`-rationality is free**, which is the one point worth flagging.
+`Mathlib`'s `MvPolynomial.vanishingIdeal_zeroLocus_eq_radical` is already
+stated for an ideal over a base field `k` with its zero locus taken in an
+algebraically closed extension `K`, and returns the radical **over `k`**.
+So the descent from `ℚ̄` to `ℚ` that this statement appears to need is
+performed inside that lemma, and no faithful-flatness argument is required
+here.
+
+**Homogeneity is the other half**, and is
+`homogeneousComponent_mul_right_of_isHomogeneous` above: an arbitrary
+certificate `X k ^ n = ∑ aᵢ fᵢ + ∑ b_j g_j` becomes a homogeneous one by
+taking degree-`n` components of both sides, because each `fᵢ` and each
+`g_j` is homogeneous.
+
+The conclusion is stated with the `g`-part already discharged — it is an
+identity at every `ℚ`-point where the `g` vanish, not a polynomial
+identity — because that is the form `CubeEmbedding.cert_eval` wants. -/
+theorem exists_homogeneousCertificate {σ ι κ : Type*} [Fintype σ] [DecidableEq σ]
+    [Fintype ι] [Fintype κ] {N : ℕ}
+    (f : ι → MvPolynomial σ ℚ) (hf : ∀ i, (f i).IsHomogeneous N)
+    (dg : κ → ℕ) (g : κ → MvPolynomial σ ℚ) (hg : ∀ j, (g j).IsHomogeneous (dg j))
+    (hnv : ∀ z : σ → AlgebraicClosure ℚ, z ≠ 0 →
+        (∀ j, MvPolynomial.aeval z (g j) = 0) → ∃ i, MvPolynomial.aeval z (f i) ≠ 0) :
+    ∃ (m : ℕ) (c : σ → ι → MvPolynomial σ ℚ),
+      (∀ k i, (c k i).IsHomogeneous m) ∧
+      ∀ z : σ → ℚ, (∀ j, MvPolynomial.eval z (g j) = 0) → ∀ k : σ,
+        ∑ i, MvPolynomial.eval z (c k i) * MvPolynomial.eval z (f i) = z k ^ (m + N) := by
+  classical
+  set K := AlgebraicClosure ℚ with hK
+  set F : ι ⊕ κ → MvPolynomial σ ℚ := Sum.elim f g with hF
+  set I : Ideal (MvPolynomial σ ℚ) := Ideal.span (Set.range F) with hI
+  have hmemI : ∀ t, F t ∈ I := fun t => Ideal.subset_span ⟨t, rfl⟩
+  -- 1.  The zero locus of `I` over `K` is contained in `{0}`.
+  have hzl : MvPolynomial.zeroLocus K I ⊆ {(0 : σ → K)} := by
+    intro z hz
+    by_contra hne
+    obtain ⟨i, hi⟩ := hnv z (by simpa using hne) fun j => hz _ (hmemI (Sum.inr j))
+    exact hi (hz _ (hmemI (Sum.inl i)))
+  -- 2.  Hence every variable lies in the radical of `I`, ALREADY OVER `ℚ`.
+  have hrad : ∀ k : σ, (MvPolynomial.X k : MvPolynomial σ ℚ) ∈ I.radical := by
+    intro k
+    rw [← MvPolynomial.vanishingIdeal_zeroLocus_eq_radical (K := K)]
+    intro z hz
+    have hz0 : z = 0 := hzl hz
+    subst hz0
+    simp
+  choose nk hnk using fun k => (Ideal.mem_radical_iff).mp (hrad k)
+  -- 3.  A uniform exponent, chosen `≥ N` so that the certificate degree is `n − N`.
+  set n : ℕ := (Finset.univ.sup nk) + N with hn
+  have hNn : N ≤ n := Nat.le_add_left _ _
+  have hpow : ∀ k : σ, (MvPolynomial.X k : MvPolynomial σ ℚ) ^ n ∈ I := by
+    intro k
+    have hle : nk k ≤ n := le_trans (Finset.le_sup (Finset.mem_univ k)) (Nat.le_add_right _ _)
+    have hsplit : (MvPolynomial.X k : MvPolynomial σ ℚ) ^ n
+        = MvPolynomial.X k ^ nk k * MvPolynomial.X k ^ (n - nk k) := by
+      rw [← pow_add]; congr 1; omega
+    rw [hsplit]
+    exact Ideal.mul_mem_right _ _ (hnk k)
+  -- 4.  Write each `X k ^ n` as an explicit finite combination.
+  have hcomb : ∀ k : σ, ∃ a : ι ⊕ κ → MvPolynomial σ ℚ,
+      ∑ t, a t * F t = (MvPolynomial.X k : MvPolynomial σ ℚ) ^ n := by
+    intro k
+    obtain ⟨a, ha⟩ := (Submodule.mem_span_range_iff_exists_fun (MvPolynomial σ ℚ)).mp (hpow k)
+    exact ⟨a, by simpa [smul_eq_mul] using ha⟩
+  choose a ha using hcomb
+  -- 5.  Take homogeneous components of degree `n`; the `f`-coefficients become
+  --     homogeneous of degree `n − N` and the `g`-part stays a multiple of `g`.
+  have key : ∀ k : σ, (MvPolynomial.X k : MvPolynomial σ ℚ) ^ n
+      = (∑ i, MvPolynomial.homogeneousComponent (n - N) (a k (Sum.inl i)) * f i)
+        + ∑ j, (if dg j ≤ n then MvPolynomial.homogeneousComponent (n - dg j)
+            (a k (Sum.inr j)) else 0) * g j := by
+    intro k
+    calc (MvPolynomial.X k : MvPolynomial σ ℚ) ^ n
+        = MvPolynomial.homogeneousComponent n ((MvPolynomial.X k : MvPolynomial σ ℚ) ^ n) :=
+          (MvPolynomial.homogeneousComponent_eq_self
+            (MvPolynomial.isHomogeneous_X_pow k n)).symm
+      _ = MvPolynomial.homogeneousComponent n (∑ t, a k t * F t) := by rw [ha k]
+      _ = ∑ t, MvPolynomial.homogeneousComponent n (a k t * F t) := by rw [map_sum]
+      _ = (∑ i, MvPolynomial.homogeneousComponent n (a k (Sum.inl i) * f i))
+            + ∑ j, MvPolynomial.homogeneousComponent n (a k (Sum.inr j) * g j) := by
+          rw [Fintype.sum_sum_type]; rfl
+      _ = _ := by
+          congr 1
+          · refine Finset.sum_congr rfl fun i _ => ?_
+            rw [homogeneousComponent_mul_right_of_isHomogeneous (hf i), if_pos hNn]
+          · refine Finset.sum_congr rfl fun j _ => ?_
+            rw [homogeneousComponent_mul_right_of_isHomogeneous (hg j)]
+  refine ⟨n - N, fun k i => MvPolynomial.homogeneousComponent (n - N) (a k (Sum.inl i)), ?_, ?_⟩
+  · intro k i; exact MvPolynomial.homogeneousComponent_isHomogeneous _ _
+  · intro z hz k
+    have h := congrArg (MvPolynomial.eval z) (key k)
+    simp only [map_pow, MvPolynomial.eval_X, map_add, map_sum, map_mul] at h
+    have hzero : ∀ j ∈ (Finset.univ : Finset κ),
+        MvPolynomial.eval z (if dg j ≤ n then MvPolynomial.homogeneousComponent (n - dg j)
+            (a k (Sum.inr j)) else 0) * MvPolynomial.eval z (g j) = 0 := by
+      intro j _; rw [hz j, mul_zero]
+    rw [Finset.sum_congr rfl hzero, Finset.sum_const_zero, add_zero] at h
+    rw [Nat.sub_add_cancel hNn]
+    exact h.symm
+
+/-- **A projective embedding of `A` over `ℚ` by a symmetric bundle, with the
+theorem of the cube — and NOTHING ELSE.**
+
+This is `CubeEmbedding` with the Nullstellensatz certificate replaced by the
+geometry it encodes.  `CubeEmbedding.cert` / `cert_eval` are an *effective*
+certificate: polynomials witnessing that the forms `cube` have no common zero
+on the Segre image.  A producer coming from algebraic geometry does not have
+those polynomials in hand — what it has is
+
+* `rel`, homogeneous forms cutting out the Segre image of `A × A` in
+  `ℙ^{dim²−1}` (the abelian variety `A × A` is projective, so its image under
+  the Segre embedding is closed, and its homogeneous ideal is finitely
+  generated by Hilbert's basis theorem);
+* `cube_nonvanishing`, the statement that `(P, Q) ↦ (P + Q, P − Q)` is a
+  *morphism defined everywhere* — i.e. the forms `cube` do not all vanish at
+  any point of the affine cone over that image other than the origin.  This is
+  asked over an ALGEBRAIC CLOSURE, which is where the geometry lives and where
+  the Nullstellensatz applies; `ℚ`-points alone would not suffice.
+
+`CubeModel.nonempty_cubeEmbedding` below turns that into a `CubeEmbedding`,
+using `exists_homogeneousCertificate` above.  So a producer of a `CubeModel`
+owes **only** the three classical theorems: projectivity of an abelian
+variety, a symmetric very ample line bundle, and the theorem of the cube.
+
+**FAITHFULNESS AUDIT.**
+
+*Not weaker than what it produces* — `nonempty_cubeEmbedding` is proven, so a
+`CubeModel` yields a genuine `CubeEmbedding` and hence, through
+`CubeEmbedding.toProjectiveHeightSource`, a `ProjectiveHeightSource`.
+
+*Not stronger than the geometry supplies.*  Every field is something a
+symmetric very ample `L` on an abelian variety over `ℚ` gives: `coords` from
+the closed immersion `φ_L`, `injective_of_smul` because a closed immersion is
+a monomorphism, `cube` / `cube_eval` from the theorem of the cube
+`σ*L ⊗ δ*L ≅ p₁*L² ⊗ p₂*L²` (bidegree `(2,2)` in `(x, y)` is degree `2` in the
+Segre variables), `rel` from projectivity of `A × A`, and `cube_nonvanishing`
+because `(P, Q) ↦ (P + Q, P − Q)` is a morphism on all of `A × A`.
+
+*Symmetry of `L` is NOT a field here*, and that is deliberate: symmetry is
+used to *prove* `cube_eval` — for non-symmetric `L` the cube gives
+`σ*L ⊗ δ*L ≅ p₁*(L ⊗ [−1]*L) ⊗ p₂*(L ⊗ [−1]*L)` instead — and adding it as a
+field would record a hypothesis that no consumer reads.
+
+*It is cheap exactly when `A(ℚ)` is finite* — `dim = 1`, `coords ≡ ![1]`,
+`cube = z`, `relDim = 0`, and `cube_nonvanishing` holds because
+`z ≠ 0` forces `z (0,0) ≠ 0`.  That is correct rather than a defect: a finite
+group is finitely generated, so the consumer's conclusion holds anyway.
+
+**A WARNING ABOUT CUTTING THIS FURTHER, and the axis that was searched.**  The
+obvious next cut is to split the embedding (`dim`, `coords`,
+`coords_ne_zero`, `injective_of_smul`, `rel`) from the cube (`cube`,
+`cube_eval`, `cube_nonvanishing`), leaving a leaf "any symmetric projective
+embedding of `A(ℚ)` satisfies the theorem of the cube".  **That leaf is
+FALSE**, and the counterexample is cheap: take an elliptic curve over `ℚ` with
+`E(ℚ) ≅ ℤ` (say `y² + y = x³ − x`), `dim = 3`, `coords n = (1, n³, n⁶)` — this
+is injective up to scaling, nonzero, and `[−1]` is induced by the linear map
+`diag(1, −1, 1)` — and its height is `6 log|n| + O(1)`, for which
+`h(2n) + h(0) − 4h(n) = 6 log 2n − 24 log n` is unbounded.  Nothing about the
+*abstract group* `A(ℚ)` plus an injection into `ℙⁿ(ℚ)` constrains the height,
+so any faithful further cut must carry the link between `coords` and the
+scheme — i.e. must be made at the level of the invertible sheaf and its
+global sections, not in coordinates.  The axis searched here is
+COORDINATE-LEVEL cuts; the sheaf-level axis is untried and is named in the
+producer's docstring. -/
+structure CubeModel (A : Type*) [AddCommGroup A] where
+  /-- the number of homogeneous coordinates -/
+  dim : ℕ
+  /-- homogeneous coordinates of a point -/
+  coords : A → (Fin dim → ℚ)
+  /-- a homogeneous coordinate vector is nonzero -/
+  coords_ne_zero : ∀ P : A, coords P ≠ 0
+  /-- the induced map to `ℙ^{dim-1}(ℚ)` is injective -/
+  injective_of_smul : ∀ P Q : A, ∀ c : ℚ, c ≠ 0 → coords P = c • coords Q → P = Q
+  /-- the forms of the **theorem of the cube**: bidegree `(2,2)` in `(x, y)`,
+  hence degree `2` in the Segre variables `z (i,j) = xᵢ · y_j` -/
+  cube : Fin dim × Fin dim → MvPolynomial (Fin dim × Fin dim) ℚ
+  /-- `cube` is homogeneous of degree `2` in the Segre variables -/
+  cube_homogeneous : ∀ k, (cube k).IsHomogeneous 2
+  /-- **the theorem of the cube**: evaluated at the Segre point of `(P, Q)`, the
+  forms `cube` compute the Segre product of the coordinates of `P + Q` and
+  `P − Q`, up to one common nonzero scalar -/
+  cube_eval : ∀ P Q : A, ∃ c : ℚ, c ≠ 0 ∧ ∀ k : Fin dim × Fin dim,
+    MvPolynomial.eval (fun m : Fin dim × Fin dim => coords P m.1 * coords Q m.2) (cube k)
+      = c * (coords (P + Q) k.1 * coords (P - Q) k.2)
+  /-- the number of generators of the homogeneous ideal of the Segre image -/
+  relDim : ℕ
+  /-- their degrees -/
+  relDeg : Fin relDim → ℕ
+  /-- homogeneous generators of the ideal of the Segre image of `A × A` -/
+  rel : Fin relDim → MvPolynomial (Fin dim × Fin dim) ℚ
+  /-- the generators are homogeneous -/
+  rel_homogeneous : ∀ i, (rel i).IsHomogeneous (relDeg i)
+  /-- the generators vanish on the image -/
+  rel_eval : ∀ P Q : A, ∀ i,
+    MvPolynomial.eval (fun m : Fin dim × Fin dim => coords P m.1 * coords Q m.2) (rel i) = 0
+  /-- **`(P, Q) ↦ (P + Q, P − Q)` is a morphism defined everywhere**: over an
+  algebraic closure, the forms `cube` have no common zero on the affine cone
+  over the Segre image apart from the origin -/
+  cube_nonvanishing : ∀ z : Fin dim × Fin dim → AlgebraicClosure ℚ, z ≠ 0 →
+    (∀ i, MvPolynomial.aeval z (rel i) = 0) → ∃ k, MvPolynomial.aeval z (cube k) ≠ 0
+
+/-- **A cube model is a cube embedding** (PROVEN) — the Nullstellensatz
+certificate `cert` / `cert_homogeneous` / `cert_eval` is manufactured from the
+geometric non-vanishing by `exists_homogeneousCertificate`.
+
+This is the step that removes commutative algebra from the geometry leaf:
+after it, the only thing a producer owes is projectivity of an abelian
+variety, a symmetric very ample line bundle, and the theorem of the cube. -/
+theorem CubeModel.nonempty_cubeEmbedding (cm : CubeModel A) : Nonempty (CubeEmbedding A) := by
+  obtain ⟨m, c, hc, hcert⟩ :=
+    exists_homogeneousCertificate (N := 2) cm.cube cm.cube_homogeneous cm.relDeg cm.rel
+      cm.rel_homogeneous cm.cube_nonvanishing
+  exact ⟨{ dim := cm.dim
+           coords := cm.coords
+           coords_ne_zero := cm.coords_ne_zero
+           injective_of_smul := cm.injective_of_smul
+           certDeg := m
+           cube := cm.cube
+           cube_homogeneous := cm.cube_homogeneous
+           cert := fun b => c b.1 b.2
+           cert_homogeneous := fun b => hc b.1 b.2
+           cube_eval := cm.cube_eval
+           cert_eval := fun P Q k =>
+             hcert (fun w : Fin cm.dim × Fin cm.dim => cm.coords P w.1 * cm.coords Q w.2)
+               (cm.rel_eval P Q) k }⟩
 
 end Fermat
