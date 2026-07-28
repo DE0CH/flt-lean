@@ -2478,6 +2478,20 @@ principal-ideal input separates them by itself: `J^h` is a power of the
 SINGLE prime `J`, so the count at it sees `r_J` and nothing else.  That
 is exactly the counterexample's blind spot, closed.
 
+**`hprin` IS ASKED ONLY AT GENERATORS OF POWERS OF `J`** (weakened
+2026-07-28, and this is what makes the theorem usable over a FINITE
+base).  The proof consumes it exactly once, at the generator `a` of
+`J ^ h` produced from the class group in step 2 — so demanding the count
+at every nonzero principal ideal was strictly more than the argument
+needs, and over a finite field it is more than is TRUE: at `a = p =
+char k` and a supersingular fibre `#A[(p)] = p^r` with `r ≤ g`, against
+`#(𝒪_D/(p))² = p^(2g)`.  See `card_torsion_span_singleton_of_field`,
+whose `hchar` hypothesis is exactly that obstruction, and
+`card_torsion_of_isMaximal_finiteBase`, which discharges the weakened
+form because `N(J ^ n)` is a power of `N(J)` and hence prime to `char k`
+whenever `J` is.  Characteristic-zero consumers are unaffected: they hold
+the stronger statement and pass `fun _ a ha _ => …`.
+
 STEP 1 REPEATS `exists_mem_torsion_act_uniformizer_eq` at the abstract
 level, deliberately.  That theorem is the same four-step argument
 (`π ∣ N(π) ∈ ℤ`; divisibility by `N`; split off the prime-to-`J` part of
@@ -2491,11 +2505,11 @@ theorem card_tors_eq_sq_of_principal
     {D : Type*} [Field D] [NumberField D]
     {P : Type*} [AddCommGroup P] [Module (𝓞 D) P]
     (hdiv : ∀ N : ℕ, N ≠ 0 → ∀ y : P, ∃ w : P, N • w = y)
-    (hprin : ∀ a : 𝓞 D, a ≠ 0 →
+    (J : Ideal (𝓞 D)) (hJ : J.IsMaximal) (hJ0 : J ≠ ⊥)
+    (hprin : ∀ (n : ℕ) (a : 𝓞 D), a ≠ 0 → Ideal.span {a} = J ^ n →
       Nat.card (Submodule.torsionBySet (𝓞 D) P
           ((Ideal.span {a} : Ideal (𝓞 D)) : Set (𝓞 D)))
-        = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2)
-    (J : Ideal (𝓞 D)) (hJ : J.IsMaximal) (hJ0 : J ≠ ⊥) :
+        = Nat.card (𝓞 D ⧸ (Ideal.span {a} : Ideal (𝓞 D))) ^ 2) :
     Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
       = Nat.card (𝓞 D ⧸ J) ^ 2 := by
   classical
@@ -2594,7 +2608,7 @@ theorem card_tors_eq_sq_of_principal
   -- ### 4. the count at `J ^ h`, read off the principal-ideal input
   have hcardh : Nat.card (Submodule.torsionBySet (𝓞 D) P
       ((J ^ h : Ideal (𝓞 D)) : Set (𝓞 D))) = Nat.card (𝓞 D ⧸ J) ^ (2 * h) := by
-    have h1 := hprin a ha0
+    have h1 := hprin h a ha0 ha'.symm
     rw [← ha'] at h1
     rw [h1, card_quotient_pow, ← pow_mul, Nat.mul_comm]
   -- ### 5. the residual rank, and the same count from the tower
@@ -3630,8 +3644,8 @@ theorem card_torsion_isMaximal_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Fie
       ∀ y : RelPoint fK (𝟙 (Spec (CommRingCat.of K))), ∃ w, N • w = y := fun N hN y =>
     abK.exists_nsmul_of_exists_comp N y (exists_comp_mulByNat_eq abK N hN y.1)
   exact LevelFrame.card_tors_eq_sq_of_principal
-    (D := D) (P := RelPoint fK (𝟙 (Spec (CommRingCat.of K)))) hdiv
-    (fun a ha => card_torsion_span_singleton_of_isAlgClosed m hdim a ha) J hJ hJ0
+    (D := D) (P := RelPoint fK (𝟙 (Spec (CommRingCat.of K)))) hdiv J hJ hJ0
+    (fun _ a ha _ => card_torsion_span_singleton_of_isAlgClosed m hdim a ha)
 
 end FibreReduction
 
@@ -14453,18 +14467,38 @@ theorem card_torsion_of_isMaximal_finiteBase
   letI : Module (NumberField.RingOfIntegers D)
       (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
     m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  haveI := hfin
+  haveI : Fact q.Prime := ⟨hq⟩
   haveI : I.IsMaximal := hI
-  exact LevelFrame.card_tors_eq_sq
-    (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) I hI q hq hqI
-    (fun J hJ π hπ hπ2 j y hy =>
-      exists_mem_torsion_act_uniformizer_eq m' (𝟙 (Spec (CommRingCat.of k)))
-        J hJ π hπ hπ2 j y hy)
-    (card_torsion_span_natCast_finiteBase hfin N hN ab' m' hdim' q hq.ne_zero
-      ((Nat.Prime.coprime_iff_not_dvd hq).mpr hqN))
-    (fun J hJ hqJ =>
-      even_dim_torsion_of_isMaximal_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ)
-    (fun J hJ hqJ =>
-      card_torsion_ne_one_of_isMaximal_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ)
+  have hqne : (q : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hI0 : I ≠ ⊥ := fun h => hqne (by rw [h] at hqI; exact Ideal.mem_bot.mp hqI)
+  -- ### the residue field at `I` has `q`-POWER order, so every power of `I` has
+  -- absolute norm prime to `char k` — which is what `hchar` below needs
+  haveI : Finite (𝓞 D ⧸ I) := Ideal.finiteQuotientOfFreeOfNeBot I hI0
+  letI : Field (𝓞 D ⧸ I) := Ideal.Quotient.field I
+  have hqchar : ((q : ℕ) : 𝓞 D ⧸ I) = 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk I) q]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hqI
+  haveI : CharP (𝓞 D ⧸ I) q := (CharP.charP_iff_prime_eq_zero hq).mpr hqchar
+  obtain ⟨c, hcard⟩ : ∃ c : ℕ, Nat.card (𝓞 D ⧸ I) = q ^ c := by
+    haveI := Fintype.ofFinite (𝓞 D ⧸ I)
+    obtain ⟨n, -, hn⟩ := FiniteField.card (𝓞 D ⧸ I) q
+    exact ⟨(n : ℕ), by rw [Nat.card_eq_fintype_card, hn]⟩
+  have hnormI : Ideal.absNorm I = q ^ c := by
+    have h : Nat.card (𝓞 D ⧸ I) = Ideal.absNorm I := by
+      simp [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    rw [← h, hcard]
+  -- ### the class-group assembly, over divisibility and the principal-ideal count
+  refine LevelFrame.card_tors_eq_sq_of_principal
+    (P := GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (fun M hM y => exists_nsmul_eq_geomFibrePt ab' _ M hM y) I hI hI0 ?_
+  intro n a ha hspan
+  refine card_torsion_span_singleton_of_field m' hdim' a ha ?_
+  have hnorm : Ideal.absNorm (Ideal.span {a} : Ideal (𝓞 D)) = q ^ (c * n) := by
+    rw [hspan, map_pow, hnormI, ← pow_mul]
+  rw [hnorm]
+  exact natCast_ne_zero_of_coprime_natCard
+    (by rw [hN]; exact Nat.Coprime.pow_left _ ((Nat.Prime.coprime_iff_not_dvd hq).mpr hqN))
 
 open _root_.NumberField in
 /-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME WITH REAL
