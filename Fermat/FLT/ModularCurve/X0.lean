@@ -37057,8 +37057,265 @@ theorem exists_iso_of_isX0Compactification {N : ℕ} {X Y X₀ Y₀ : Scheme.{0}
 
 /-! ### The integral model, and its generic fibre -/
 
+/-! #### The integral coarse space, cut at the Katz–Mazur ATLAS (2026-07-28)
+
+`exists_isCoarseModuliY0_loc` and `exists_unique_genericFibre_universal` were
+two independent citations.  They are now THEOREMS over the two leaves of this
+subsection, and the cut is the one the FIELD case of this file already takes.
+
+**A STALE AUDIT, CORRECTED.**  The docstring of `exists_isCoarseModuliY0_loc`
+named "`Gamma0Atlas` / `Gamma0GITPresentation` / `exists_coarseModuliY0_of_pos`,
+whose base was deliberately left general" as the foothold to extend from
+`Spec ℚ` to `Spec ℤ_(ℓ)`.  **That claim is false.**  All three are hard-wired
+to `SpecQ`: `Gamma0GITPresentation.str` and `.strM` land in `SpecQ`, and its
+`classify`, `classify_natural` and `cover` quantify over `ℚ`-schemes; likewise
+`Gamma0Atlas`.  The genuinely base-general object is `Gamma0AtlasOver N S`
+(added 2026-07-27, far below in this file), whose
+`Gamma0AtlasOver.toIsCoarseModuliY0` is PROVEN at an ARBITRARY base.  A prover
+following the old note would have gone to `Gamma0GITPresentation` and missed
+the machinery that already exists.  *The check that refutes the old claim*:
+`Gamma0GITPresentation`'s field list contains `SpecQ` five times.
+
+So the two residues are:
+
+* `nonempty_gamma0AtlasOver_specLoc` — Katz–Mazur (8.1.1) over the RING
+  `ℤ_(ℓ)`, the exact analogue of `exists_gamma0AtlasOver_isAffine_zmod` (the
+  same construction over `𝔽_p`).  It is strictly stronger than
+  `exists_isCoarseModuliY0_loc`, which is what that leaf's own docstring
+  predicted a prover would have to supply anyway.
+* `bcQuotient_specLocGeneric` — Katz–Mazur (8.1.6)(2) at the FLAT base change
+  `ℤ_(ℓ) → ℚ`, the exact analogue of `bcQuotient_of_field`.  Seven of the eight
+  atlas fields base-change formally (`Gamma0AtlasOver.baseChange`, PROVEN); the
+  categorical quotient is the one that does not.
+
+**Why the second cut is a reduction and not a repackaging.**
+`exists_unique_genericFibre_universal` asks for initiality of `𝒴 ×_{ℤ_(ℓ)} ℚ`
+over `ℚ` given only an ABSTRACT `IsCoarseModuliY0` over `ℤ_(ℓ)`.  Its own
+docstring records — correctly — that this does not follow from the integral
+initiality, because a cocone defined only on `ℚ`-schemes cannot be extended to
+`ℤ_(ℓ)`-schemes.  What that docstring did not say is the consequence: the leaf
+was **unattackable in isolation**, since any proof must first produce the
+Katz–Mazur construction and identify the given coarse space with it.  That is
+now explicit and shared — the construction is
+`nonempty_gamma0AtlasOver_specLoc`, the identification is
+`exists_iso_classify_of_isCoarseModuliY0`, and the residue is exactly the
+flat-base-change clause.
+
+**Which side of (8.1.6) this lands on.**  The section comment above
+`Gamma0AtlasOver` records that for `ℤ[1/N] → 𝔽_p` *none* of (8.1.6)'s four
+conditions applies — which is why the characteristic-`p` model has to be built
+directly, and why Remark (8.1.7)'s counterexamples bite there.  Here the base
+change is `ℤ_(ℓ) → ℚ`.  Every subring of `ℚ` contains `ℤ`, so `ℚ` is its
+fraction field, hence a localization, hence FLAT — condition (2) applies on the
+nose, and (8.1.7) does not reach it.  So `bcQuotient_specLocGeneric` is a leaf
+that Katz–Mazur's own criterion certifies, rather than one that needs a new
+argument.
+
+**The degenerate level `N = 0` is PROVEN outright on both consumers**, so
+neither new leaf carries it — and the two generalisations that make that
+possible are recorded here rather than left inline, because both are the
+identical observation that a `Γ₀(0)`-datum forces its base to be initial and
+that argument never looks at the base scheme. -/
+
+/-- **Two coarse moduli spaces of the `Γ₀(N)`-problem over one base are
+isomorphic COMPATIBLY WITH THE CLASSIFYING MAPS** (PROVEN, from initiality
+alone — no geometry, no restriction on the base).
+
+This is `exists_iso_of_isCoarseModuliY0` above with the intertwining
+`(h₀.classify g d).1 = (h.classify g d).1 ≫ e.hom` RETAINED instead of
+discarded; the proof is that one verbatim, keeping the second component of the
+`∃!` it already produced.
+
+**Discarding it is not a harmless simplification, and this file has paid for
+that once already.**  `exists_iso_of_isX0Compactification`'s docstring records
+the same repair on the compactification side: dropping the compatibility
+between `E` and `e` there let the generic open part drift away from the model
+and made `exists_genericOpenIso_of_curveModel` FALSE as stated, refutable by
+postcomposing with a `ℚ`-automorphism.  The bare `exists_iso_of_isCoarseModuliY0`
+has exactly the same exposure — an isomorphism over the base which is not known
+to respect `classify` says nothing about moduli — and it is unusable for the
+generic-fibre transport below for precisely that reason.  It is left in place
+because it has its own consumers; new consumers should prefer this one. -/
+theorem exists_iso_classify_of_isCoarseModuliY0 {N : ℕ} {Y Y₀ S : Scheme.{0}}
+    {strY : Y ⟶ S} {strY₀ : Y₀ ⟶ S}
+    (h : IsCoarseModuliY0 N strY) (h₀ : IsCoarseModuliY0 N strY₀) :
+    ∃ e : Y ≅ Y₀, e.hom ≫ strY₀ = strY ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S) (d : Gamma0Datum N T),
+        (h₀.classify g d).1 = (h.classify g d).1 ≫ e.hom := by
+  obtain ⟨u, ⟨hu₁, hu₂⟩, -⟩ := h.universal strY₀ h₀.classify h₀.classify_natural
+  obtain ⟨v, ⟨hv₁, hv₂⟩, -⟩ := h₀.universal strY h.classify h.classify_natural
+  obtain ⟨w, -, hwY⟩ := h.universal strY h.classify h.classify_natural
+  obtain ⟨w₀, -, hwY₀⟩ := h₀.universal strY₀ h₀.classify h₀.classify_natural
+  have huv : u ≫ v = 𝟙 Y := by
+    rw [hwY (u ≫ v) ⟨by rw [Category.assoc, hv₁, hu₁],
+        fun g d => (hv₂ g d).trans (by rw [hu₂ g d, Category.assoc])⟩,
+      hwY (𝟙 Y) ⟨Category.id_comp _, fun g d => (Category.comp_id _).symm⟩]
+  have hvu : v ≫ u = 𝟙 Y₀ := by
+    rw [hwY₀ (v ≫ u) ⟨by rw [Category.assoc, hu₁, hv₁],
+        fun g d => (hu₂ g d).trans (by rw [hv₂ g d, Category.assoc])⟩,
+      hwY₀ (𝟙 Y₀) ⟨Category.id_comp _, fun g d => (Category.comp_id _).symm⟩]
+  exact ⟨⟨u, v, huv, hvu⟩, hu₁, hu₂⟩
+
+/-- **The degenerate level `N = 0` has a coarse space over ANY base**
+(PROVEN) — `exists_coarseModuliY0_zero` with `SpecQ` replaced by an arbitrary
+`S`.
+
+VACUITY AUDIT, inherited verbatim from that theorem and not weakened by the
+generalisation: by `isEmpty_of_gamma0Datum_zero` the `Γ₀(0)`-problem has no
+object over a nonempty base, so `∅ ⟶ S` is a coarse moduli space for the
+cheapest possible reason — every base carrying a datum is INITIAL, so all three
+clauses are equalities of morphisms out of an initial object.  This carries no
+arithmetic whatsoever.
+
+The generalisation is free because the proof uses the base ONLY as a fixed
+object; `emptyIsInitial.to S` is the only place it appears. -/
+theorem exists_coarseModuliY0_zero_base (S : Scheme.{0}) :
+    ∃ (Y : Scheme.{0}) (str : Y ⟶ S), Nonempty (IsCoarseModuliY0 0 str) := by
+  classical
+  refine ⟨(∅ : Scheme.{0}), emptyIsInitial.to S, ⟨?_⟩⟩
+  have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+    intro T d
+    have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    exact isInitialOfIsEmpty
+  exact
+    { classify := fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩
+      classify_natural := fun {_T' _T} _h {_g _g'} _hg {d'} {_d} _hbc =>
+        Subtype.ext ((hinit d').hom_ext _ _)
+      universal := fun {Y'} _str' _c _hc =>
+        ⟨emptyIsInitial.to Y',
+          ⟨emptyIsInitial.hom_ext _ _, fun {_T} _g d => (hinit d).hom_ext _ _⟩,
+          fun _u _hu => emptyIsInitial.hom_ext _ _⟩ }
+
+/-- **At `N = 0` every coarse space over ANY base is EMPTY** (PROVEN) —
+`isEmpty_of_isCoarseModuliY0_zero` with `SpecQ` replaced by an arbitrary `S`,
+and free for the same reason: the base appears only as `emptyIsInitial.to S`.
+
+This is what discharges the degenerate half of
+`exists_unique_genericFibre_universal`: at `N = 0` the integral `𝒴` is empty,
+hence so is `𝒴 ×_{ℤ_(ℓ)} ℚ`, hence it is initial and the `∃!` holds for trivial
+reasons.  Contrast `exists_isX0Compactification_of_isCoarseModuliY0_loc`, where
+`N = 0` is genuinely FALSE and `_hX` is load-bearing. -/
+theorem isEmpty_of_isCoarseModuliY0_zero_base {Y S : Scheme.{0}} {strY : Y ⟶ S}
+    (hc : IsCoarseModuliY0 0 strY) : IsEmpty Y := by
+  classical
+  have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+    intro T d
+    have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    exact isInitialOfIsEmpty
+  obtain ⟨u, -, -⟩ :=
+    hc.universal (Y' := (∅ : Scheme.{0})) (emptyIsInitial.to S)
+      (fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩)
+      (by intro _ _ _ _ _ _ d' _ _; exact Subtype.ext ((hinit d').hom_ext _ _))
+  exact Function.isEmpty u.base
+
+/-- **The Katz–Mazur atlas exists over `ℤ_(ℓ)`** (sorry leaf — (8.1.1) over the
+RING `ℤ_(ℓ)`; Katz–Mazur ch. 8, Deligne–Rapoport for the integral models).
+
+This is the base-`ℤ_(ℓ)` form of `exists_gamma0Atlas`, and the exact analogue
+over a discrete valuation ring of what `exists_gamma0AtlasOver_isAffine_zmod`
+is over `𝔽_p`.  It asks for the CONSTRUCTION — the rigidified moduli scheme,
+its universal family, the fppf cover and the categorical-quotient property —
+and for nothing geometric: no smoothness, no compactification, no cusps.
+
+**Why the atlas and not the bare coarse space.**  `Gamma0AtlasOver` was
+introduced (2026-07-27) precisely so that existence leaves may ask for the
+Katz–Mazur construction rather than for the universal property, because
+`Gamma0AtlasOver.toIsCoarseModuliY0` derives the latter from the former at an
+ARBITRARY base.  Two consumers need it here, not one:
+`exists_isCoarseModuliY0_loc` needs the coarse space, and
+`exists_unique_genericFibre_universal` needs the presentation, since initiality
+of a generic FIBRE cannot be extracted from integral initiality (see that
+leaf).  Asking for the coarse space alone would leave the second consumer with
+no route at all.
+
+**Why the base is an ARBITRARY `Subring ℚ` and carries no `ℓ`.**  Both
+consumers instantiate it only at `R = ℤ_(ℓ)`, but
+`exists_unique_genericFibre_universal` does not have `ℓ` in scope — its
+signature mentions only `R` — so a leaf carrying `IsReductionBase` could not be
+applied there without changing that statement and every consumer of
+`exists_genericFibreOpen_of_x0IntegralModel` downstream.  Stating it for an
+arbitrary subring costs a proof obligation and no faithfulness, because
+(8.1.1) is itself stated over an ARBITRARY ring.
+
+**What the extra generality actually costs, precisely: the `n ≥ 3` patching.**
+(8.1.1) constructs `M(𝒫)` locally on the base — "to define `M(𝒫)` as an
+`R`-scheme it suffices to do so locally on `R`, so we may assume some integer
+`n ≥ 3` is invertible in `R`".  Over `ℤ_(ℓ)` that proviso is free: the ring is
+LOCAL with residue characteristic `ℓ`, so every integer prime to `ℓ` is a unit
+and one takes `n = 3` for `ℓ ≠ 3`, `n = 4` for `ℓ = 3`; a single global `𝔐` and
+a single global `cover` exist, exactly as in the field case.  Over a general
+`R ⊆ ℚ` — `R = ℤ` is the extreme case, where NO `n ≥ 3` is invertible — the two
+basic opens `D(2)` and `D(3)` still COVER `Spec R`, since a prime ideal
+containing both `2` and `3` would contain `1`; `n = 4` is invertible on the
+first and `n = 3` on the second.  So the construction is the two-chart one, and
+a single global presentation is available by taking `𝔐 = 𝔐₄ ⊔ 𝔐₃`: `cover`
+composes the fppf cover `T[1/2] ⊔ T[1/3] ⟶ T` (flat, surjective by the same
+disjointness, and affine hence quasi-compact) with the rigidification of each
+piece, and `quotient` glues the two local factorisations over the corresponding
+cover of `Spec R`.  That is the whole of the extra work, and it is bookkeeping
+around the same theorem rather than a second citation.
+
+`_hℓN`-style hypotheses are absent for the same reason they are absent from
+`exists_gamma0Atlas`: `ℓ ∤ N` is what makes the problem ÉTALE, hence the model
+SMOOTH, and no clause of `Gamma0AtlasOver` asks for smoothness.  The coarse
+space exists over any base by 6.6.1.
+
+IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD REFUTE
+THAT: a survey on 2026-07-27 found `ModularCurve` absent from mathlib entirely
+(zero hits), and no `DeligneRapoport` or integral model of a modular curve in
+mathlib, `~/cs/FLT` or this project.  Producing the `Γ₀(N)`-atlas over `ℤ[1/N]`
+— or directly over `ℤ_(ℓ)` — refutes it.  Note the axis: what is missing is the
+construction over a base of mixed characteristic; the `ℚ` construction
+(`exists_gamma0GITPresentation`) and the `𝔽_p` one
+(`exists_gamma0AtlasOver_isAffine_zmod`) are separate leaves with separate
+obstructions, and neither implies this one — base change out of `SpecLoc R`
+goes the wrong way, and base change INTO it from `ℤ[1/N]` is exactly the
+(8.1.6)-conditioned step this file keeps isolating. -/
+theorem nonempty_gamma0AtlasOver_specLoc (N : ℕ) (R : Subring ℚ) (_hN : 0 < N) :
+    Nonempty (Gamma0AtlasOver N (SpecLoc R)) :=
+  sorry
+
+/-- **The categorical quotient descends along the FLAT base change
+`ℤ_(ℓ) → ℚ`** (sorry leaf — Katz–Mazur (8.1.6)(2)).
+
+Word for word `bcQuotient_of_field` with the field extension replaced by the
+inclusion of a subring of `ℚ` into `ℚ`, and TRUE for the same reason: `ℚ` is
+the fraction field of every subring of `ℚ` (each contains `ℤ`), hence a
+localization of it, hence FLAT — so (8.1.6)(2) applies and the canonical map
+`M([Γ₀(N)] ⊗ ℚ) → M([Γ₀(N)]) ⊗ ℚ` is an isomorphism.  Concretely, `Y ×_R ℚ` is
+again the categorical quotient of `𝔐 ×_R ℚ` by the deck group, because the
+invariants of `A ⊗_R ℚ` are `A^G ⊗_R ℚ` when `ℚ` is flat over `R`.
+
+**Everything else about this base change is already PROVEN**:
+`Gamma0AtlasOver.baseChange` builds seven of the eight atlas fields formally at
+an arbitrary base morphism, out of `exists_gamma0Datum_baseChange` and
+`IsBaseChangeOf.cancel`.  So a prover here owes exactly one thing: that a
+morphism out of `𝔐_ℚ` over `Spec ℚ` which does not separate two rigidifications
+of one datum lying over one base point factors uniquely, over `Spec ℚ`, through
+`Y_ℚ`.  `Gamma0AtlasOver.BcQuotient` unfolds to that statement and to nothing
+else.
+
+**Do NOT weaken this to an arbitrary base morphism out of `SpecLoc R`.**  At a
+non-flat base change it is FALSE: Remark (8.1.7) gives explicit counterexamples
+at `p = 2` and `p = 3`, and the SPECIAL fibre `SpecLoc.special toF` is exactly
+such a base change — which is why this file builds the characteristic-`p` model
+directly (`nonempty_gamma0CurveAtlasOver_zmod`) instead of reducing it at the
+closed point.  The generic side is the licensed one; the special side is not.
+
+AXIS SEARCHED: the base ring, and the flatness criterion of (8.1.6).  NOT
+SEARCHED: whether fpqc descent along `Spec ℚ ⟶ Spec ℤ_(ℓ)` turns this into a
+theorem about the integral quotient.  It does not obviously, because that map
+is not surjective — `Spec ℚ` misses the closed point — so it is not an fpqc
+COVER, and the route `exists_descendClassify` takes over `ℚ` does not
+transpose.  Recording that here because it is the first thing a successor will
+try. -/
+theorem bcQuotient_specLocGeneric {N : ℕ} {R : Subring ℚ}
+    (A : Gamma0AtlasOver N (SpecLoc R)) : A.BcQuotient (SpecLoc.generic R) :=
+  sorry
+
 /-- **`Y_0(N)` exists over `ℤ_(ℓ)`: the `Γ₀(N)`-problem has a coarse
-moduli space over the local base** (sorry leaf — the MODULI half of the
+moduli space over the local base** (PROVEN 2026-07-28 over
+`nonempty_gamma0AtlasOver_specLoc`; formerly a sorry leaf — the MODULI half of the
 integral model; Katz–Mazur ch. 8).
 
 This is the base-`ℤ_(ℓ)` form of `exists_coarseModuliY0`, and the exact
@@ -37071,30 +37328,40 @@ it has a coarse space over `ℤ[1/N]`; `ℤ_(ℓ)` is a `ℤ[1/N]`-algebra once
 `ℓ ∤ N`, and the coarse space base changes to it.
 
 **No `N ≠ 0` hypothesis, and that is not an oversight.**  At `N = 0` the
-statement is TRUE with `YZ = ∅`: `exists_coarseModuliY0_zero` proves
-exactly that over `Spec ℚ`, from `isEmpty_of_gamma0Datum_zero` (every
-`Γ₀(0)`-datum is supported on the empty scheme) together with the
-initiality of `∅`, and neither step sees the base.  The degenerate level
-is ruled out only in the COMPANION leaf below, where it genuinely
-matters.
+statement is TRUE with `YZ = ∅`, and that half is now PROVEN outright by
+`exists_coarseModuliY0_zero_base` — `exists_coarseModuliY0_zero`'s argument at
+an arbitrary base, from `isEmpty_of_gamma0Datum_zero` (every `Γ₀(0)`-datum is
+supported on the empty scheme) together with the initiality of `∅`, neither
+step seeing the base.  The degenerate level is ruled out only in the COMPANION
+leaf below, where it genuinely matters.
 
-IRREDUCIBLE at this pin ALONG THE MODULI AXIS, and the CHECK THAT WOULD
-REFUTE THAT: a survey on 2026-07-27 found `ModularCurve` absent from
-mathlib entirely (zero hits), and no `DeligneRapoport` or integral model
-of a modular curve in mathlib, `~/cs/FLT` or this project.  Producing the
-`Γ₀(N)`-coarse space over `ℤ[1/N]` refutes the claim.  The nearest usable
-foothold in this file is `Gamma0Atlas` / `Gamma0GITPresentation` /
-`exists_coarseModuliY0_of_pos`, whose base was deliberately left general
-— extending that GIT construction from `Spec ℚ` to `Spec ℤ_(ℓ)` is the
-concrete attack, and it is the same attack that
-`exists_isCoarseModuliY0_isSmoothCurve_field`'s docstring names ("build
-that integral model once and obtain every base by pullback, which is how
-Katz–Mazur state it").  A prover of THIS leaf should expect to subsume
-that one as well. -/
+**THE CUT (2026-07-28), and the STALE AUDIT it corrects.**  The paragraph that
+used to stand here read: "The nearest usable foothold in this file is
+`Gamma0Atlas` / `Gamma0GITPresentation` / `exists_coarseModuliY0_of_pos`, whose
+base was deliberately left general — extending that GIT construction from
+`Spec ℚ` to `Spec ℤ_(ℓ)` is the concrete attack."  **The parenthetical is
+false**: `Gamma0GITPresentation` and `Gamma0Atlas` are hard-wired to `SpecQ`
+(five occurrences in the former's field list), so there is no general base to
+instantiate.  What IS base-general is `Gamma0AtlasOver N S`, added 2026-07-27,
+whose `toIsCoarseModuliY0` is PROVEN at an arbitrary base.  The attack the old
+note described is therefore right in spirit and points at the wrong object; see
+the subsection comment above for the correction and for the check that refutes
+the old claim.
+
+Accordingly this is no longer a citation.  It is a THEOREM over
+`nonempty_gamma0AtlasOver_specLoc` — the Katz–Mazur atlas over `ℤ_(ℓ)` — which
+is where the old audit's "IRREDUCIBLE at this pin ALONG THE MODULI AXIS"
+verdict and its refuting check now live, and which is also what
+`exists_unique_genericFibre_universal` consumes.  The old docstring predicted
+exactly this: "A prover of THIS leaf should expect to subsume that one as
+well."  It does. -/
 theorem exists_isCoarseModuliY0_loc (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
     (R : Subring ℚ) (_toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R _toF) :
-    ∃ (YZ : Scheme.{0}) (ystr : YZ ⟶ SpecLoc R), Nonempty (IsCoarseModuliY0 N ystr) :=
-  sorry
+    ∃ (YZ : Scheme.{0}) (ystr : YZ ⟶ SpecLoc R), Nonempty (IsCoarseModuliY0 N ystr) := by
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · subst hN; exact exists_coarseModuliY0_zero_base (SpecLoc R)
+  · obtain ⟨A⟩ := nonempty_gamma0AtlasOver_specLoc N R hN
+    exact ⟨A.Y, A.str, ⟨A.toIsCoarseModuliY0⟩⟩
 
 /-- **The integral `Y_0(N)` has a smooth proper compactification over
 `ℤ_(ℓ)`** (sorry leaf — the COMPACTIFICATION half of the integral model;
@@ -37314,9 +37581,10 @@ theorem genericFibreClassify_natural {N : ℕ} {R : Subring ℚ} {XZ YZ : Scheme
     (show h ≫ (g ≫ SpecLoc.generic R) = g' ≫ SpecLoc.generic R by
       rw [← Category.assoc, hg]) hbc
 
+open CategoryTheory.Limits in
 /-- **INITIALITY of the generic fibre of `Y_0(N)`'s integral model**
-(sorry leaf — formation of the coarse moduli space commutes with the flat
-base change `ℤ_(ℓ) → ℚ`).
+(PROVEN 2026-07-28 over `nonempty_gamma0AtlasOver_specLoc` and
+`bcQuotient_specLocGeneric`; formerly a sorry leaf).
 
 This is the entire residue of `exists_genericFibreOpen_of_x0IntegralModel`:
 `classify`, `classify_natural`, the open immersion and the cusp-locus
@@ -37338,16 +37606,46 @@ the CLOSED point has no `ℚ`-structure, so `c` assigns it nothing.  The
 integral initiality is therefore strictly weaker input than the
 conclusion.
 
+**THE CONSEQUENCE OF THAT PARAGRAPH, WHICH IT DID NOT DRAW, AND WHICH IS WHY
+THIS IS NOW A THEOREM (2026-07-28).**  If the integral initiality is strictly
+weaker than the conclusion, then this statement was **unattackable in
+isolation**: `hmodel` was the ONLY hypothesis with content, so any proof must
+first produce the Katz–Mazur CONSTRUCTION over `SpecLoc R` from thin air and
+then identify the given coarse space with it.  Nobody dispatched here could
+have closed it without also closing `exists_isCoarseModuliY0_loc`'s successor.
+That is now explicit, and shared rather than duplicated:
+
+1. `nonempty_gamma0AtlasOver_specLoc` supplies `A : Gamma0AtlasOver N (SpecLoc R)`
+   — the same leaf `exists_isCoarseModuliY0_loc` consumes;
+2. `exists_iso_classify_of_isCoarseModuliY0` identifies `A.Y` with `YZ` over the
+   base **compatibly with `classify`**, which the bare
+   `exists_iso_of_isCoarseModuliY0` does not give and which is exactly what the
+   transport needs;
+3. `Gamma0AtlasOver.baseChange` base-changes the atlas to `Spec ℚ`, formally in
+   seven of its eight fields, its `Y` being literally `𝒴 ×_{ℤ_(ℓ)} ℚ` and its
+   `classify` being literally `genericFibreClassify` (both are
+   `RelPoint.baseChangeUp` of the integral classifying point — the proof
+   observes this rather than proving it);
+4. the eighth field, the categorical quotient, is `bcQuotient_specLocGeneric`,
+   i.e. Katz–Mazur (8.1.6)(2) at a base change that IS flat, so the leaf lands
+   on the licensed side of Remark (8.1.7) rather than the counterexample side.
+
+The comparison `F`/`G` between `𝒴_A ×_R ℚ` and `𝒴 ×_R ℚ` is then mutually
+inverse by the pullback's own universal property, and the `∃!` transports along
+it in both directions.  See the subsection comment above for the stale audit
+this cut also corrected.
+
 **FAITHFULNESS at `N = 0`, since no `hN` hypothesis is carried.**  The
 statement is still TRUE there, and vacuously so in a checkable way: at
 `N = 0`, `hmodel.coarse` forces `YZ` to be empty — that is
-`isEmpty_of_isCoarseModuliY0_zero`, whose proof (through
-`isEmpty_of_gamma0Datum_zero` and the initiality of `∅`) never sees the
-base and so applies over `SpecLoc R` — hence `𝒴 ×_{ℤ_(ℓ)} ℚ` is empty,
-hence initial, and the `∃!` holds for trivial reasons.  A prover may
-therefore split on `N = 0` and dispatch that half by
-`isInitialOfIsEmpty`.  Contrast the compactification leaf above, where
-`N = 0` is genuinely FALSE and the hypothesis `_hX` is load-bearing. -/
+`isEmpty_of_isCoarseModuliY0_zero_base`, the arbitrary-base form of
+`isEmpty_of_isCoarseModuliY0_zero` (its proof, through
+`isEmpty_of_gamma0Datum_zero` and the initiality of `∅`, never sees the
+base) — hence `𝒴 ×_{ℤ_(ℓ)} ℚ` is empty, hence initial, and the `∃!` holds for
+trivial reasons.  That is exactly how the `N = 0` branch below is discharged,
+which is also why the atlas leaf may carry `0 < N`: the degenerate level never
+reaches it.  Contrast the compactification leaf above, where `N = 0` is
+genuinely FALSE and the hypothesis `_hX` is load-bearing. -/
 theorem exists_unique_genericFibre_universal {N : ℕ} {R : Subring ℚ}
     {XZ YZ : Scheme.{0}} {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
     (hmodel : IsX0Compactification N xstr ystr jZ)
@@ -37359,8 +37657,159 @@ theorem exists_unique_genericFibre_universal {N : ℕ} {R : Subring ℚ}
     ∃! u : Limits.pullback ystr (SpecLoc.generic R) ⟶ Y',
       u ≫ str' = Limits.pullback.snd ystr (SpecLoc.generic R) ∧
         ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
-          (c g d).1 = (genericFibreClassify hmodel g d).1 ≫ u :=
-  sorry
+          (c g d).1 = (genericFibreClassify hmodel g d).1 ≫ u := by
+  classical
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · subst hN
+    have hYZ : IsEmpty YZ := isEmpty_of_isCoarseModuliY0_zero_base hmodel.coarse
+    haveI := hYZ
+    haveI := Function.isEmpty (β := YZ)
+      ⇑(Limits.pullback.fst ystr (SpecLoc.generic R)).base
+    have hinit : Limits.IsInitial (Limits.pullback ystr (SpecLoc.generic R)) :=
+      isInitialOfIsEmpty
+    refine ⟨hinit.to Y', ⟨hinit.hom_ext _ _, ?_⟩, fun u _ => hinit.hom_ext _ _⟩
+    intro T g d
+    haveI : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    exact (isInitialOfIsEmpty : Limits.IsInitial T).hom_ext _ _
+  · obtain ⟨A⟩ := nonempty_gamma0AtlasOver_specLoc N R hN
+    obtain ⟨e, he, hecl⟩ :=
+      exists_iso_classify_of_isCoarseModuliY0 A.toIsCoarseModuliY0 hmodel.coarse
+    have hinv : e.inv ≫ A.str = ystr := by
+      rw [← he, ← Category.assoc, e.inv_hom_id, Category.id_comp]
+    obtain ⟨F, hFfst, hFsnd⟩ : ∃ F : Limits.pullback A.str (SpecLoc.generic R) ⟶
+        pullback ystr (SpecLoc.generic R),
+        F ≫ pullback.fst ystr (SpecLoc.generic R)
+            = pullback.fst A.str (SpecLoc.generic R) ≫ e.hom ∧
+          F ≫ pullback.snd ystr (SpecLoc.generic R) = pullback.snd A.str (SpecLoc.generic R) :=
+      ⟨pullback.lift (pullback.fst A.str (SpecLoc.generic R) ≫ e.hom)
+          (pullback.snd A.str (SpecLoc.generic R))
+          (by rw [Category.assoc, he]; exact pullback.condition),
+        pullback.lift_fst _ _ _, pullback.lift_snd _ _ _⟩
+    obtain ⟨G, hGfst, hGsnd⟩ : ∃ G : pullback ystr (SpecLoc.generic R) ⟶
+        Limits.pullback A.str (SpecLoc.generic R),
+        G ≫ pullback.fst A.str (SpecLoc.generic R)
+            = pullback.fst ystr (SpecLoc.generic R) ≫ e.inv ∧
+          G ≫ pullback.snd A.str (SpecLoc.generic R) = pullback.snd ystr (SpecLoc.generic R) :=
+      ⟨pullback.lift (pullback.fst ystr (SpecLoc.generic R) ≫ e.inv)
+          (pullback.snd ystr (SpecLoc.generic R))
+          (by rw [Category.assoc, hinv]; exact pullback.condition),
+        pullback.lift_fst _ _ _, pullback.lift_snd _ _ _⟩
+    have hFG : F ≫ G = 𝟙 (Limits.pullback A.str (SpecLoc.generic R)) := by
+      refine pullback.hom_ext ?_ ?_
+      · calc (F ≫ G) ≫ pullback.fst A.str (SpecLoc.generic R)
+            = F ≫ (G ≫ pullback.fst A.str (SpecLoc.generic R)) := Category.assoc _ _ _
+          _ = F ≫ (pullback.fst ystr (SpecLoc.generic R) ≫ e.inv) := by rw [hGfst]
+          _ = (F ≫ pullback.fst ystr (SpecLoc.generic R)) ≫ e.inv :=
+              (Category.assoc _ _ _).symm
+          _ = (pullback.fst A.str (SpecLoc.generic R) ≫ e.hom) ≫ e.inv := by
+              rw [hFfst]
+          _ = pullback.fst A.str (SpecLoc.generic R) ≫ (e.hom ≫ e.inv) := Category.assoc _ _ _
+          _ = pullback.fst A.str (SpecLoc.generic R) ≫ 𝟙 A.Y := by rw [e.hom_inv_id]
+          _ = pullback.fst A.str (SpecLoc.generic R) := Category.comp_id _
+          _ = 𝟙 (Limits.pullback A.str (SpecLoc.generic R))
+                ≫ pullback.fst A.str (SpecLoc.generic R) := (Category.id_comp _).symm
+      · calc (F ≫ G) ≫ pullback.snd A.str (SpecLoc.generic R)
+            = F ≫ (G ≫ pullback.snd A.str (SpecLoc.generic R)) := Category.assoc _ _ _
+          _ = F ≫ pullback.snd ystr (SpecLoc.generic R) := by rw [hGsnd]
+          _ = pullback.snd A.str (SpecLoc.generic R) := hFsnd
+          _ = 𝟙 (Limits.pullback A.str (SpecLoc.generic R))
+                ≫ pullback.snd A.str (SpecLoc.generic R) := (Category.id_comp _).symm
+    have hGF : G ≫ F = 𝟙 (Limits.pullback ystr (SpecLoc.generic R)) := by
+      refine pullback.hom_ext ?_ ?_
+      · calc (G ≫ F) ≫ pullback.fst ystr (SpecLoc.generic R)
+            = G ≫ (F ≫ pullback.fst ystr (SpecLoc.generic R)) := Category.assoc _ _ _
+          _ = G ≫ (pullback.fst A.str (SpecLoc.generic R) ≫ e.hom) := by rw [hFfst]
+          _ = (G ≫ pullback.fst A.str (SpecLoc.generic R)) ≫ e.hom :=
+              (Category.assoc _ _ _).symm
+          _ = (pullback.fst ystr (SpecLoc.generic R) ≫ e.inv) ≫ e.hom := by
+              rw [hGfst]
+          _ = pullback.fst ystr (SpecLoc.generic R) ≫ (e.inv ≫ e.hom) := Category.assoc _ _ _
+          _ = pullback.fst ystr (SpecLoc.generic R) ≫ 𝟙 YZ := by rw [e.inv_hom_id]
+          _ = pullback.fst ystr (SpecLoc.generic R) := Category.comp_id _
+          _ = 𝟙 (Limits.pullback ystr (SpecLoc.generic R))
+                ≫ pullback.fst ystr (SpecLoc.generic R) := (Category.id_comp _).symm
+      · calc (G ≫ F) ≫ pullback.snd ystr (SpecLoc.generic R)
+            = G ≫ (F ≫ pullback.snd ystr (SpecLoc.generic R)) := Category.assoc _ _ _
+          _ = G ≫ pullback.snd A.str (SpecLoc.generic R) := by rw [hFsnd]
+          _ = pullback.snd ystr (SpecLoc.generic R) := hGsnd
+          _ = 𝟙 (Limits.pullback ystr (SpecLoc.generic R))
+                ≫ pullback.snd ystr (SpecLoc.generic R) := (Category.id_comp _).symm
+    -- the two classifying maps of the generic fibre correspond under `F`/`G`
+    have keyG : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+        (genericFibreClassify hmodel g d).1 ≫ G
+          = (A.bcClassify (SpecLoc.generic R) g d).1 := by
+      intro T g d
+      refine pullback.hom_ext ?_ ?_
+      · rw [Category.assoc, hGfst, ← Category.assoc]
+        show ((RelPoint.baseChangeUp (SpecLoc.generic R)
+            (hmodel.coarse.classify (g ≫ SpecLoc.generic R) d)).1
+              ≫ pullback.fst ystr (SpecLoc.generic R)) ≫ e.inv = _
+        rw [RelPoint.baseChangeUp_val, pullback.lift_fst,
+          hecl (g ≫ SpecLoc.generic R) d, Category.assoc, e.hom_inv_id, Category.comp_id]
+        exact (pullback.lift_fst _ _ _).symm
+      · rw [Category.assoc, hGsnd]
+        show (RelPoint.baseChangeUp (SpecLoc.generic R)
+            (hmodel.coarse.classify (g ≫ SpecLoc.generic R) d)).1
+              ≫ pullback.snd ystr (SpecLoc.generic R) = _
+        rw [RelPoint.baseChangeUp_val, pullback.lift_snd]
+        exact (pullback.lift_snd _ _ _).symm
+    have keyF : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+        (A.bcClassify (SpecLoc.generic R) g d).1 ≫ F
+          = (genericFibreClassify hmodel g d).1 := by
+      intro T g d
+      calc (A.bcClassify (SpecLoc.generic R) g d).1 ≫ F
+          = ((genericFibreClassify hmodel g d).1 ≫ G) ≫ F :=
+            (congrArg (fun t => t ≫ F) (keyG g d)).symm
+        _ = (genericFibreClassify hmodel g d).1 ≫ (G ≫ F) := Category.assoc _ _ _
+        _ = (genericFibreClassify hmodel g d).1 ≫ 𝟙 (pullback ystr (SpecLoc.generic R)) :=
+            congrArg (fun t => (genericFibreClassify hmodel g d).1 ≫ t) hGF
+        _ = (genericFibreClassify hmodel g d).1 := Category.comp_id _
+    -- initiality of the base-changed atlas
+    obtain ⟨u₀, ⟨hu₀s, hu₀c⟩, hu₀u⟩ :=
+      (A.baseChange (SpecLoc.generic R) (bcQuotient_specLocGeneric A)).toIsCoarseModuliY0.universal
+        str' c _hc
+    have hstr : (A.baseChange (SpecLoc.generic R) (bcQuotient_specLocGeneric A)).str
+        = Limits.pullback.snd A.str (SpecLoc.generic R) := rfl
+    have hcls : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (d : Gamma0Datum N T),
+        ((A.baseChange (SpecLoc.generic R)
+            (bcQuotient_specLocGeneric A)).toIsCoarseModuliY0.classify g d).1
+          = (A.bcClassify (SpecLoc.generic R) g d).1 := fun _ _ => rfl
+    rw [hstr] at hu₀s
+    refine ⟨G ≫ u₀, ⟨?_, ?_⟩, ?_⟩
+    · calc (G ≫ u₀) ≫ str' = G ≫ (u₀ ≫ str') := Category.assoc _ _ _
+        _ = G ≫ Limits.pullback.snd A.str (SpecLoc.generic R) :=
+            congrArg (fun t => G ≫ t) hu₀s
+        _ = pullback.snd ystr (SpecLoc.generic R) := hGsnd
+    · intro T g d
+      calc (c g d).1
+          = ((A.baseChange (SpecLoc.generic R)
+              (bcQuotient_specLocGeneric A)).toIsCoarseModuliY0.classify g d).1 ≫ u₀ :=
+            hu₀c g d
+        _ = (A.bcClassify (SpecLoc.generic R) g d).1 ≫ u₀ :=
+            congrArg (fun t => t ≫ u₀) (hcls g d)
+        _ = ((genericFibreClassify hmodel g d).1 ≫ G) ≫ u₀ :=
+            (congrArg (fun t => t ≫ u₀) (keyG g d)).symm
+        _ = (genericFibreClassify hmodel g d).1 ≫ (G ≫ u₀) := Category.assoc _ _ _
+    · rintro u₁ ⟨hu₁s, hu₁c⟩
+      have h₁ : F ≫ u₁ = u₀ := by
+        refine hu₀u _ ⟨?_, ?_⟩
+        · rw [hstr]
+          calc (F ≫ u₁) ≫ str' = F ≫ (u₁ ≫ str') := Category.assoc _ _ _
+            _ = F ≫ pullback.snd ystr (SpecLoc.generic R) :=
+                congrArg (fun t => F ≫ t) hu₁s
+            _ = Limits.pullback.snd A.str (SpecLoc.generic R) := hFsnd
+        · intro T g d
+          calc (c g d).1 = (genericFibreClassify hmodel g d).1 ≫ u₁ := hu₁c g d
+            _ = ((A.bcClassify (SpecLoc.generic R) g d).1 ≫ F) ≫ u₁ :=
+                (congrArg (fun t => t ≫ u₁) (keyF g d)).symm
+            _ = (A.bcClassify (SpecLoc.generic R) g d).1 ≫ (F ≫ u₁) := Category.assoc _ _ _
+            _ = ((A.baseChange (SpecLoc.generic R)
+                  (bcQuotient_specLocGeneric A)).toIsCoarseModuliY0.classify g d).1
+                  ≫ (F ≫ u₁) := (congrArg (fun t => t ≫ (F ≫ u₁)) (hcls g d)).symm
+      calc u₁ = 𝟙 (pullback ystr (SpecLoc.generic R)) ≫ u₁ := (Category.id_comp _).symm
+        _ = (G ≫ F) ≫ u₁ := (congrArg (fun t => t ≫ u₁) hGF).symm
+        _ = G ≫ (F ≫ u₁) := Category.assoc _ _ _
+        _ = G ≫ u₀ := congrArg (fun t => G ≫ t) h₁
 
 /-- **The generic fibre of an integral model carries the cuspidal open**
 (PROVEN 2026-07-27 over the initiality leaf above; formerly a sorry leaf
