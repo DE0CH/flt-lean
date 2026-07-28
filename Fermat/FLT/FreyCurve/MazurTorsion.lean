@@ -3445,9 +3445,10 @@ elliptiques* (Antwerp II, 1973), IV–VI; Atkin–Lehner, *Hecke operators on
 `Γ₀(m)`*, Math. Ann. 185 (1970), §2. -/
 theorem exists_extend_atkinLehnerModel_of_jNeronDatum (_hq : q.Prime) (_hqN : q ≠ N)
     (al : AtkinLehnerMorphism N) (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr)
-    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (gQ : T ⟶ SpecQ)
+        (dd : Gamma0Datum N T),
       RelPoint.post wY hwY (d.model.coarse.classify g dd)
-        = d.model.coarse.classify g (al.dual dd)) :
+        = d.model.coarse.classify g (al.dual gQ dd)) :
     ∃ w : XZ ⟶ XZ, w ≫ xstr = xstr ∧ wY ≫ jZ = jZ ≫ w :=
   sorry
 
@@ -3539,9 +3540,10 @@ theorem exists_isCusp_ne_neronSpAut_of_atkinLehnerPin (_hN : 1 < N) (_hq : q.Pri
     (_hqN : q ≠ N) (al : AtkinLehnerMorphism N)
     (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr)
     (_hcomm : wY ≫ jZ = jZ ≫ w) (_hinv : w ≫ w = 𝟙 XZ)
-    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (gQ : T ⟶ SpecQ)
+        (dd : Gamma0Datum N T),
       RelPoint.post wY hwY (d.model.coarse.classify g dd)
-        = d.model.coarse.classify g (al.dual dd)) :
+        = d.model.coarse.classify g (al.dual gQ dd)) :
     ∃ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' ∧ neronSpAut d w hw x' ≠ x' :=
   sorry
 
@@ -3671,6 +3673,39 @@ and `∞`, which are distinct because the cuspidal subscheme is étale at
 **REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ₀(m)`*, Math. Ann.
 185 (1970), §2.  Deligne–Rapoport, *Les schémas de modules de courbes
 elliptiques* (Antwerp II, 1973), for the model over `ℤ[1/N]` and the
+
+**RE-OPENED AS A SORRY LEAF AT THE RELEASE-17 MERGE (2026-07-29), because its
+proof consumed the Atkin–Lehner moduli action over a base where that action DOES
+NOT EXIST.  Do not re-close it by threading an extra argument; the cut has to
+change.**
+
+`flt-lean-218` REFUTED `exists_isNIsogenyPair` over a base of residue
+characteristic `p ∣ N` (witness: `K = 𝔽̄_p`, `N = p`, `E/K` ordinary,
+`C = (E[p])_red`), which made `AtkinLehnerMorphism` an EMPTY TYPE and
+`nonempty_atkinLehnerMorphism` FALSE for every `N ≥ 2`.  The repair restates both
+over ℚ-schemes, so `AtkinLehnerMorphism.dual` now reads
+`∀ {T}, (T ⟶ SpecQ) → Gamma0Datum N T → Gamma0Datum N T`.
+
+The proof that stood here built `wY` by applying `d.model.coarse.universal` to the
+natural transformation `fun g dd => classify g (al.dual dd)` with
+`g : T ⟶ SpecLoc R`, i.e. it invoked the moduli action over `ℤ_(q)`-SCHEMES.
+There is no `SpecLoc R ⟶ SpecQ` — `ℚ → ℤ_(q)` runs the wrong way — so no
+`T ⟶ SpecQ` is available at that call, and threading one through is not a
+mechanical fix: the coarse-moduli universal property quantifies over
+`T ⟶ SpecLoc R` alone, and the two hypotheses this theorem feeds
+(`exists_extend_atkinLehnerModel_of_jNeronDatum` and
+`exists_isCusp_ne_neronSpAut_of_atkinLehnerPin`, whose `_hpin` binders were
+adjusted here to carry a `gQ : T ⟶ SpecQ`) can only be satisfied on the GENERIC
+fibre.
+
+**That is the mathematics, not an accident of the formalisation.**  `w_N` on the
+integral model is not obtained by applying the moduli involution over `ℤ_(q)`; it
+is obtained by constructing it on the ℚ-fibre and EXTENDING it across the special
+fibre — which is exactly what `exists_extend_atkinLehnerModel_of_jNeronDatum`
+below is for.  So the repair is to run the `universal` step over the generic
+fibre and extend, rather than to descend the action.  That is a cut-level
+decision across this section's interface and is deliberately not made at merge
+time.  **NEEDS AN OWNER.**
 extension of `w_N` to it. -/
 theorem exists_atkinLehnerModelAut_of_jNeronDatum (N q : ℕ)
     (hN : N.Prime) (hq : q.Prime) (hqN : q ≠ N)
@@ -3686,43 +3721,9 @@ theorem exists_atkinLehnerModelAut_of_jNeronDatum (N q : ℕ)
     ∃ (w : XZ ⟶ XZ) (wY : YZ ⟶ YZ) (hw : w ≫ xstr = xstr) (hwY : wY ≫ ystr = ystr),
       wY ≫ jZ = jZ ≫ w ∧ w ≫ w = 𝟙 XZ ∧
       ∃ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' ∧ neronSpAut d w hw x' ≠ x' := by
-  obtain ⟨al⟩ := nonempty_atkinLehnerMorphism N
-  -- (2) the moduli action descends to a unique endomorphism of the INTEGRAL open part
-  obtain ⟨wY, ⟨hwY, hwYfac⟩, -⟩ :=
-    d.model.coarse.universal ystr (fun {_} g dd => d.model.coarse.classify g (al.dual dd))
-      (by
-        intro T' T h g g' hg d' dd hbc
-        exact d.model.coarse.classify_natural h hg (al.dual_baseChange h hbc))
-  -- the factorisation, in the `RelPoint.post` form the two leaves below consume
-  have hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
-      RelPoint.post wY hwY (d.model.coarse.classify g dd)
-        = d.model.coarse.classify g (al.dual dd) :=
-    fun g dd => Subtype.ext (hwYfac g dd).symm
-  -- `(E/C)/(E[N]/C) ≅ E`, read on moduli points
-  have hdd : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
-      d.model.coarse.classify g (al.dual (al.dual dd)) = d.model.coarse.classify g dd := by
-    intro T g dd
-    rw [d.model.coarse.classify_natural (𝟙 T) (Category.id_comp g) (al.dual_dual dd)]
-    exact Subtype.ext (Category.id_comp _)
-  -- so `wY ≫ wY` and `𝟙 YZ` factor the SAME natural transformation, hence agree
-  have hwY2 : wY ≫ wY = 𝟙 YZ := by
-    refine (d.model.coarse.universal ystr (fun {_} g dd => d.model.coarse.classify g dd)
-      (by
-        intro T' T h g g' hg d' dd hbc
-        exact d.model.coarse.classify_natural h hg hbc)).unique
-      (y₁ := wY ≫ wY) (y₂ := 𝟙 YZ) ⟨by rw [Category.assoc, hwY, hwY], fun {_} g dd => ?_⟩
-      ⟨Category.id_comp ystr, fun {_} g dd => (Category.comp_id _).symm⟩
-    rw [← Category.assoc, ← hwYfac, ← hwYfac, hdd]
-  -- (3) extend across the cusps, and promote involutivity along the dense open
-  obtain ⟨w, hw, hjw⟩ := exists_extend_atkinLehnerModel_of_jNeronDatum d hq hqN al wY hwY hpin
-  have hw2 : w ≫ w = 𝟙 XZ := by
-    refine eq_of_comp_open_x0JNeronModel d.model ?_
-    rw [← Category.assoc, ← hjw, Category.assoc, ← hjw, ← Category.assoc, hwY2,
-      Category.id_comp, Category.comp_id]
-  -- (4) the moved cusp
-  refine ⟨w, wY, hw, hwY, hjw, hw2, ?_⟩
-  exact exists_isCusp_ne_neronSpAut_of_atkinLehnerPin d hN.one_lt hq hqN al w hw wY hwY hjw hw2
-    hpin
+  -- RE-OPENED AT THE RELEASE-17 MERGE (2026-07-29).  See the docstring note below.
+  sorry
+
 
 /-! #### THE FOURTH CUT (2026-07-28): the special-fibre cusps are the
 REDUCTIONS of the generic ones
