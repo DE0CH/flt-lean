@@ -18,6 +18,9 @@ public import Mathlib.Data.Nat.Factorization.Defs
 public import Mathlib.RingTheory.DedekindDomain.AdicValuation
 public import Mathlib.NumberTheory.RamificationInertia.Basic
 public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
+-- `HenselianRing`, `HenselianRing.is_henselian` and `IsAdicComplete.henselianRing`, used by
+-- the Henselian-lift argument below; the file consumed all three without importing them.
+public import Mathlib.RingTheory.Henselian
 public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
 public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 public import Mathlib.RingTheory.TensorProduct.Quotient
