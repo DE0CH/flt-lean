@@ -68258,13 +68258,13 @@ CUT).
 THE INTEGRALITY CUT (2026-07-28 — what this node now IS). The node is
 PROVEN, as a two-step assembly:
 
-1. `exists_toricKummerClassTower_of_weightTwoEigenform_pNew` (sorry
-   leaf, just above): the same statement with clause 3 asking only that
-   `σ` fix `rt n` UP TO AN INTEGER POWER OF `q`, i.e. fix its class in
-   `Ωˣ ⧸ q ^ ℤ`. That is the shape Tate's uniformisation
-   `Ωˣ ⧸ q ^ ℤ ≅ E_q(Ω)` actually delivers, and it is literally the
-   conclusion of the PROVEN
-   `exists_zpow_of_pow_eq_of_tateTorsion_fixed` above.
+1. `exists_toricKummerClassTower_of_weightTwoEigenform_pNew` (just
+   above — itself PROVEN since the 2026-07-28 RIGID-UNIFORMISATION CUT,
+   over the geometric leaf
+   `exists_toricTatePointTower_of_weightTwoEigenform_pNew`): the same
+   statement with clause 3 asking only that `σ` fix `rt n` UP TO AN
+   INTEGER POWER OF `q`, i.e. fix its class in `Ωˣ ⧸ q ^ ℤ`. That is the
+   shape Tate's uniformisation `Ωˣ ⧸ q ^ ℤ ≅ E_q(Ω)` actually delivers.
 2. `tateTower_fixed_of_kummerClass_fixed` (PROVEN, just above): the
    residual `q ^ ℤ` ambiguity is killed by the tower's own coherence
    together with `v(q) < 1`, by an induction on `n` whose base case is
@@ -68276,8 +68276,12 @@ step that was previously credited to the Néron model — "integrality of
 the monodromy" — is, for THIS clause, pure valuation theory, and is now
 a theorem of this repository. WHAT IT DOES NOT BUY: the modular-curve
 geometry itself (Deligne–Rapoport models of `X₀(Mp)`, the toric
-reduction of the `p`-new part of `J₀(Mp)`) is untouched, and remains the
-whole content of the leaf above.
+reduction of the `p`-new part of `J₀(Mp)`, and the identification of
+`ρ|_{G_p}` with the Tate module of that toric object) is untouched. Since
+the 2026-07-28 RIGID-UNIFORMISATION CUT it no longer lives in the node
+immediately above — that one is proven — but two steps up, in
+`exists_toricTatePointTower_of_weightTwoEigenform_pNew`, which is where
+the refuting grep and the axes searched are kept.
 
 FAITHFULNESS. The statement below is character-for-character the one
 that stood here before the cut; only its proof changed. -/
