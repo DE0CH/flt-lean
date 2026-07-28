@@ -4170,7 +4170,14 @@ separately from its single consumer `heckeSubring_moduleFinite_int`
 below because that consumer must first move the question INSIDE the
 Hecke algebra: `𝕋` is commutative (`heckeSubring_mul_comm`) but the
 ambient `End_ℂ(S₂(Γ₀(N)))` is not, and the integral-closure API is
-commutative-only. -/
+commutative-only.
+
+**CONSUMERLESS AS OF 2026-07-28**: that consumer was rewired onto the
+LATTICE route (`exists_smul_mem_integralCuspForms`), which uses no
+integrality, so this general lemma now has no code-position use. It is
+kept because it is a clean, statement-level-correct piece of general
+algebra and is the natural tool for any future "finitely many integral
+generators" argument. -/
 theorem moduleFinite_int_of_isIntegral_of_closure_eq_top {A : Type*} [CommRing A]
     {s : Set A} (hfin : s.Finite) (hint : ∀ x ∈ s, IsIntegral ℤ x)
     (htop : Subring.closure s = ⊤) : Module.Finite ℤ A := by
@@ -4611,6 +4618,15 @@ redundant: three sorries retired by one. Rewiring
 `heckeSubring_moduleFinite_int` to consume this leaf directly is a RECUT
 and belongs to the owner of that cut, not here.
 
+**UPDATE 2026-07-28 — THE RECUT IS DONE.**
+`heckeSubring_moduleFinite_int` below now consumes THIS leaf directly
+(through `rationalCuspForms_span_eq_top` and the lattice embedding
+`𝕋 ↪ End_ℤ(S₂(Γ₀(N); ℤ))`) and no longer cites `isIntegral_heckeEndo`
+at all. So this leaf is now the SINGLE open input of that node, and the
+whole trace cluster named above is consumerless — see THE REWIRE in
+`heckeSubring_moduleFinite_int`'s docstring for the exact list. Nothing
+was deleted, precisely because this leaf is still open.
+
 NON-VACUOUS: at genus-zero levels `S₂(Γ₀(N)) = 0` and the statement is
 trivially true, but at e.g. `N = 11` the rational forms are nonzero and
 the uniform denominator is real content — it is what the consumer
@@ -4737,6 +4753,15 @@ belongs to whoever owns that cut; nothing is changed here. It also
 retrospectively vindicates that cut's own claim that "the deep input of
 the pair sits" in leaf 1a: it sits there in full.
 
+**UPDATE 2026-07-28 — THAT RECUT IS DONE, AND IT ALSO ORPHANED THIS
+LEAF.** `heckeSubring_moduleFinite_int` below is now proven directly
+from `exists_smul_mem_integralCuspForms` by the lattice embedding, so it
+no longer goes through `exists_heckeSubring_algebraGenerators` and
+therefore no longer through this theorem. This declaration and
+`heckeOpN_mem_closure` above now have NO code-position consumer. They
+are deliberately NOT deleted while bounded denominators is still open —
+see THE REWIRE in `heckeSubring_moduleFinite_int`'s docstring.
+
 ASSEMBLY (2026-07-27). Three steps, none of them arithmetic:
 `rationalCuspForms_span_eq_top` plus the citation give
 `span_ℂ S₂(Γ₀(N); ℤ) = ⊤` (clear one denominator per rational form and
@@ -4793,6 +4818,15 @@ citation `exists_heckeOpN_sturm_span` above — STURM'S BOUND OVER `ℤ`;
 formerly a sorry leaf, cut the same day out of
 `heckeSubring_moduleFinite_int` below along the ALGEBRAIC-STRUCTURE
 axis; see that leaf's second audit for why the axis is new).
+
+**CONSUMERLESS AS OF 2026-07-28.** `heckeSubring_moduleFinite_int` was
+rewired that day onto the LATTICE route — `exists_smul_mem_integralCuspForms`
+(BOUNDED DENOMINATORS) plus `rationalCuspForms_span_eq_top`, giving
+`𝕋 ↪ End_ℤ(S₂(Γ₀(N); ℤ))` with no algebra-generation and no integrality
+input — so this declaration, `exists_heckeOpN_sturm_span` above and
+`heckeOpN_mem_closure` above no longer have any code-position use.
+Nothing is deleted while bounded denominators is open; see THE REWIRE in
+`heckeSubring_moduleFinite_int`'s docstring.
 
 THE DERIVATION, with every step but the citation discharged in the
 `T_m` block above and NO arithmetic input of its own:
@@ -5452,6 +5486,39 @@ repeated inline in the proof below rather than factored into a shared
 lemma, deliberately: factoring them would edit a declaration this leaf
 does not own.
 
+**MERGE NOTE 2026-07-28 — THIS LEAF IS NOW CONSUMERLESS, AND THAT IS A
+SEPARATE FACT FROM ITS BEING PROVEN** (reconciling `flt-lean-162`, which
+recut `heckeSubring_moduleFinite_int`, with `flt-lean-163`, which wrote
+the proof below; both landed the same day and neither knew of the other).
+`heckeSubring_moduleFinite_int` below no longer cites
+`isIntegral_heckeEndo`: it is proven directly from
+`exists_smul_mem_integralCuspForms` by the same lattice embedding. So
+nothing in the tree has a code-position use of `isIntegral_trace_heckeOpN`
+outside the trace cluster, and that cluster's own root
+`isIntegral_heckeEndo` is consumerless too.
+
+**READ THE CONSEQUENCE CAREFULLY, because the two changes interact and
+neither author could see it.** `flt-lean-162` kept this route deliberately
+as the FALLBACK for the case where `exists_smul_mem_integralCuspForms`
+(bounded denominators) turns out to be unreachable. The proof below is
+written OVER bounded denominators, so it does NOT preserve that
+independence: after it, the fallback property is carried only by the
+Eichler–Selberg route recorded in `isIntegral_heckeEndo`'s docstring and
+in this file's history (the superseded docstring of this leaf, at the
+commit that proved it, has the full citation — Zagier's appendix to Lang,
+*Introduction to Modular Forms*, GMW 222; Diamond–Shurman for general
+weight; absent from the pin and from `~/cs/FLT`; and the warning that the
+formula's terms are NOT individually integral, the Hurwitz class numbers
+carrying denominators `2` and `3`, so integrality must be taken from the
+sum and not termwise). If bounded denominators is ever refuted, REVERT
+this proof rather than re-deriving it — the statement is unchanged, so
+the revert is exact.
+
+WHY THIS IS WEAKER THAN WHAT IT REPLACES, and why that is the point:
+`IsIntegral ℤ` drops all rationality content, which is exactly the half
+that turned out to be free. Anything proving `Tr(T_m) ∈ ℤ` proves this,
+so nothing is lost by the weakening.
+
 THE ROUTE, in three steps, none of them analytic:
 
 1. `span_ℂ (integralCuspForms N) = ⊤`, as just described;
@@ -5489,11 +5556,6 @@ everything in this cluster, and it cites nothing below itself; the other
 four inputs — `rationalCuspForms_span_eq_top`, `integralCuspForms_fg`,
 `heckeEndo_mem_integralCuspForms`, `heckeOpN_mem` — are all PROVEN above
 with no reference below.
-
-WHAT IS STILL WEAKER THAN WHAT IT REPLACES, and why that remains the
-point: `IsIntegral ℤ` drops all rationality content, which is the half
-that turned out to be free (`exists_trace_heckeSubring_rat` below,
-Shimura). Anything proving `Tr(T_m) ∈ ℤ` proves this.
 
 SOUNDNESS: `0 < N` is now genuinely USED — through
 `rationalCuspForms_span_eq_top`, `integralCuspForms_fg`,
@@ -5775,6 +5837,28 @@ satisfies a monic `ℤ`-polynomial** (DECOMPOSED 2026-07-27; formerly a
 sorry leaf, cut the same day), the operator form of "Hecke eigenvalues
 are algebraic integers".
 
+**CONSUMERLESS AS OF 2026-07-28 — READ THIS BEFORE WORKING BENEATH IT.**
+The consumer this leaf was cut for, `heckeSubring_moduleFinite_int`
+below, was REWIRED that day to consume `exists_smul_mem_integralCuspForms`
+(BOUNDED DENOMINATORS) directly, by the lattice embedding
+`𝕋 ↪ End_ℤ(S₂(Γ₀(N); ℤ))`, which needs no integrality at all. This
+declaration therefore has NO code-position use anywhere in the tree, and
+neither does anything under it — `exists_trace_heckeSubring_int`,
+`isIntegral_trace_heckeSubring`, `exists_trace_heckeSubring_rat`,
+`isIntegral_trace_heckeOpN` (still a sorry),
+`exists_int_charpoly_of_forall_trace_pow_int`,
+`trace_pow_eq_sum_roots_pow`,
+`exists_int_of_monic_of_forall_sum_roots_pow_int`.
+
+It is deliberately NOT deleted: bounded denominators is itself still a
+sorry, so this route is the live FALLBACK, and
+`exists_trace_heckeSubring_rat` is reusable independently of it. **Do
+not dispatch a prover at `isIntegral_trace_heckeOpN` on the strength of
+this node alone** without first checking whether the recut has made it
+dead weight — and check that against the compiler, not against this
+paragraph. Everything below is the route as it stood before the rewire
+and is left standing unchanged.
+
 STRICTLY WEAKER THAN THE CONSUMER, with the counterexample already on
 record in the audit of `heckeSubring_moduleFinite` far below:
 `ℤ + ℚ·x ⊆ ℚ[x]/(x²)` is a subring EVERY element of which is integral
@@ -5901,10 +5985,9 @@ theorem isIntegral_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime) :
   rw [← hpe, Polynomial.aeval_map_algebraMap] at hCH
   exact hCH
 
-open scoped IsMulCommutative in
 /-- **LEAF 1 OF 2 FOR THE `ℤ`-FORM — DISCRETENESS: `𝕋` is a finitely
-generated `ℤ`-module** (DECOMPOSED 2026-07-27; formerly a sorry leaf,
-cut the same day).
+generated `ℤ`-module** (DECOMPOSED 2026-07-27; REWIRED 2026-07-28 —
+see THE REWIRE below; formerly a sorry leaf, cut 2026-07-27).
 
 This is the half of Eichler–Shimura that says `𝕋` is a LATTICE at all:
 classically `𝕋` acts faithfully on `H₁(X₀(N), ℤ)`, which is free of
@@ -6038,56 +6121,174 @@ left-nondegeneracy (`heckeSubring_eq_zero_of_forall_qCoeff_one`);
 upgrading that to `ℚ`-independence ⟹ `ℂ`-independence is exactly the
 sibling's content, and is the coupling this cluster deliberately avoids.
 
-ASSEMBLY (2026-07-27). `𝕋` is commutative
-(`heckeSubring_mul_comm`, via `Subring.isMulCommutative_closure` on the
-defining generator set), so the whole question moves inside the type
-`↥𝕋`, where the commutative integral-closure API applies; the ambient
-`End_ℂ(S₂)` is NOT commutative, which is the only reason the transfer is
-written out. The finite generating set `s` of leaf 1a is pulled back to
-`s' ⊆ ↥𝕋` (finite, since `Subtype.val` is injective), its elements are
-integral by leaf 1b transported along the injective `ℤ`-algebra map
-`Subring.subtype` (`isIntegral_algHom_iff`), and `Subring.closure s' = ⊤`
-because `Subring.closure s` is contained in the image of
-`Subring.closure s'`. -/
+**THE REWIRE (2026-07-28) — THIS LEAF NOW CONSUMES BOUNDED DENOMINATORS
+DIRECTLY, AND `isIntegral_heckeEndo` IS NO LONGER CITED HERE.**
+
+The ALGEBRAIC-STRUCTURE assembly recorded above (finite algebra
+generation `exists_heckeSubring_algebraGenerators` + integrality of the
+generators `isIntegral_heckeEndo`) is CORRECT and is left standing as
+the record of how the cut was found; it is simply no longer the route
+taken. What replaced it is the LATTICE route, which the axis-shaped
+audits above had ruled out only because the full-rank input was
+unavailable in place — and `exists_smul_mem_integralCuspForms` above
+(BOUNDED DENOMINATORS, cut 2026-07-27) supplies exactly it:
+
+* `rationalCuspForms_span_eq_top` above puts the RATIONAL forms' span at
+  `⊤`, and bounded denominators moves each rational form into
+  `S₂(Γ₀(N); ℤ)` after clearing ONE denominator, which divides straight
+  back out over `ℂ`. So `span_ℂ (integralCuspForms N) = ⊤`.
+* Hence `𝕋 ↪ End_ℤ(S₂(Γ₀(N); ℤ))` is INJECTIVE — an operator killing the
+  lattice kills its `ℂ`-span, hence is `0` — and `End_ℤ` of a finitely
+  generated `ℤ`-module is `ℤ`-noetherian
+  (`integralCuspForms_fg` above, `ℤ` noetherian).
+
+That is `Module.Finite ℤ 𝕋` with **NO INTEGRALITY INPUT WHATSOEVER**.
+The two bullets that the earlier "WHAT DOES NOT HELP" paragraph rules
+out are untouched by this: `rationalCuspForms_span_eq_top` ALONE still
+does not suffice (its `ℤ[1/2]` counterexample stands), and
+`integralCuspForms_fg` ALONE still does not suffice (its kernel is the
+annihilator of the lattice's `ℂ`-span). It is precisely their
+CONJUNCTION-through-bounded-denominators that closes the gap, and that
+conjunction did not exist when those paragraphs were written. Note also
+that the circularity warning above is respected exactly:
+`integralCuspForms_span_eq_top` FAR BELOW is NOT cited here — the span
+is re-derived from the RATIONAL structure, which sits above this line.
+
+**WHAT THIS RETIRES — REPORTED, DELIBERATELY NOT DELETED.** After this
+rewire the following have NO consumer anywhere in the tree, i.e. their
+only code-position use was the assembly that this docstring replaced:
+
+* `isIntegral_heckeEndo` above, hence `exists_trace_heckeSubring_int`,
+  `isIntegral_trace_heckeSubring`, `exists_trace_heckeSubring_rat`,
+  `isIntegral_trace_heckeOpN` (**a sorry leaf**),
+  `exists_int_charpoly_of_forall_trace_pow_int`,
+  `trace_pow_eq_sum_roots_pow`,
+  `exists_int_of_monic_of_forall_sum_roots_pow_int` — the whole
+  Eichler–Selberg/trace cluster;
+* `exists_heckeSubring_algebraGenerators` above, hence
+  `exists_heckeOpN_sturm_span` and `heckeOpN_mem_closure`;
+* `moduleFinite_int_of_isIntegral_of_closure_eq_top` above.
+
+**They are NOT deleted, and deleting them now would be wrong**, because
+`exists_smul_mem_integralCuspForms` is ITSELF STILL A SORRY: until it is
+proven, the trace route remains the live fallback for this leaf, and
+`exists_trace_heckeSubring_rat` (Shimura rationality of traces) is
+reusable independently of whether this consumer survives. Retirement is
+a deliberate later step, to be taken only once bounded denominators
+lands — and to be decided against the COMPILER (the
+`declaration uses 'sorry'` set plus a free-floating census), never
+against this paragraph.
+
+**NET EFFECT ON THE FRONTIER.** Before: this leaf was transitively
+sorried through TWO independent leaves — `exists_smul_mem_integralCuspForms`
+(via `exists_heckeSubring_algebraGenerators`) and
+`isIntegral_trace_heckeOpN` (via `isIntegral_heckeEndo`). After: through
+ONE, `exists_smul_mem_integralCuspForms`. No sorry was opened or closed;
+the cone got strictly smaller.
+
+ASSEMBLY (2026-07-28), four steps, and it is the same formal argument
+that `heckeSubring_moduleFinite` far below runs on the lattice supplied
+by `exists_heckeStable_lattice` — reproduced here rather than cited,
+because that chain runs THROUGH this node (see the BEWARE above).
+(0) `span_ℂ (integralCuspForms N) = ⊤` from
+`rationalCuspForms_span_eq_top` and `exists_smul_mem_integralCuspForms`;
+(i) `{T | ∀ f ∈ L, T f ∈ L}` is a SUBRING containing every `T_q`
+(`heckeEndo_mem_integralCuspForms`), so it contains all of
+`𝕋 = Subring.closure {T_q}` — stability at the generators upgrades to
+stability under the whole algebra with no computation; (ii) restriction
+to a finite generating set `s` of `L` (`integralCuspForms_fg`) is a
+`ℤ`-linear `ρ : 𝕋 →ₗ[ℤ] (s → L)`; (iii) `ρ` is injective, since a `T`
+killing `s` kills `span_ℤ s = L` by `Submodule.span_induction`, hence
+kills `span_ℂ L = ⊤`; (iv) `L` is finitely generated over the noetherian
+`ℤ`, so `s → L` is noetherian, so — by (iii) — is `𝕋`. Note where the
+two properties of `L` enter: finite generation in (iv), full `ℂ`-span in
+(iii), and NOWHERE else. -/
 theorem heckeSubring_moduleFinite_int {N : ℕ} (hN : 0 < N) :
     Module.Finite ℤ (heckeSubring N) := by
   classical
-  obtain ⟨k, hk⟩ := exists_heckeSubring_algebraGenerators hN
-  set s : Set (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
-    {T | ∃ q : ℕ, q.Prime ∧ q ≤ k ∧ T = heckeEndo N q}
-  have hsub : s ⊆ (heckeSubring N : Set (Module.End ℂ (CuspForm (Gamma0GL N) 2))) := by
-    rintro T ⟨q, hq, -, rfl⟩
-    exact heckeEndo_mem_heckeSubring N hq
-  have hsfin : s.Finite := by
-    have himg : s ⊆ (fun q : ℕ => heckeEndo N q) '' (Set.Iic k) := by
-      rintro T ⟨q, -, hqk, rfl⟩
-      exact ⟨q, hqk, rfl⟩
-    exact Set.Finite.subset ((Set.finite_Iic k).image _) himg
-  -- `𝕋` is commutative, so the commutative integral-closure API applies inside it.
-  haveI : IsMulCommutative ↥(heckeSubring N) :=
-    Subring.isMulCommutative_closure
-      (s := {T | ∃ q : ℕ, q.Prime ∧ T = heckeEndo N q})
-      (fun x hx y hy => heckeSubring_mul_comm hN (Subring.subset_closure hx)
-        (Subring.subset_closure hy))
-  set s' : Set ↥(heckeSubring N) :=
-    (fun y : ↥(heckeSubring N) => (y : Module.End ℂ (CuspForm (Gamma0GL N) 2))) ⁻¹' s
-  have hs'fin : s'.Finite := Set.Finite.preimage (Subtype.val_injective.injOn) hsfin
-  have hint : ∀ x ∈ s', IsIntegral ℤ x := by
-    rintro x ⟨q, hq, -, hqx⟩
-    have h1 : IsIntegral ℤ ((Subring.subtype (heckeSubring N)).toIntAlgHom x) := by
-      simpa [hqx] using isIntegral_heckeEndo hN hq
-    exact (isIntegral_algHom_iff _ Subtype.coe_injective).mp h1
-  have htop : Subring.closure s' = ⊤ := by
-    rw [eq_top_iff]
-    rintro x -
-    have hx : (x : Module.End ℂ (CuspForm (Gamma0GL N) 2)) ∈ Subring.closure s := hk x.2
-    have hle : Subring.closure s ≤ (Subring.closure s').map (Subring.subtype _) := by
-      refine Subring.closure_le.mpr ?_
-      rintro y hy
-      exact ⟨⟨y, hsub hy⟩, Subring.subset_closure hy, rfl⟩
-    obtain ⟨y, hy, hyx⟩ := hle hx
-    exact (Subtype.ext hyx : y = x) ▸ hy
-  exact moduleFinite_int_of_isIntegral_of_closure_eq_top hs'fin hint htop
+  -- (0) BOUNDED DENOMINATORS: the integral lattice has FULL `ℂ`-span.
+  have hLspan :
+      Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ := by
+    refine top_le_iff.mp ?_
+    rw [← rationalCuspForms_span_eq_top hN]
+    refine Submodule.span_le.mpr fun f hf => ?_
+    obtain ⟨d, hd, hdf⟩ := exists_smul_mem_integralCuspForms hN hf
+    have hdc : ((d : ℂ)) ≠ 0 := by exact_mod_cast hd.ne'
+    have hfe : f = ((d : ℂ))⁻¹ • (((d : ℤ) • f : CuspForm (Gamma0GL N) 2)) := by
+      rw [← Int.cast_smul_eq_zsmul ℂ (d : ℤ) f, smul_smul]
+      push_cast
+      rw [inv_mul_cancel₀ hdc, one_smul]
+    rw [hfe]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span hdf)
+  obtain ⟨s, hs⟩ := integralCuspForms_fg hN
+  -- (i) the endomorphisms preserving the lattice form a SUBRING, so all of `𝕋` does
+  let S : Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+    { carrier := {T | ∀ f ∈ integralCuspForms N, T f ∈ integralCuspForms N}
+      mul_mem' := fun {_ _} ha hb f hf => ha _ (hb f hf)
+      one_mem' := fun _ hf => hf
+      add_mem' := fun {_ _} ha hb f hf => (integralCuspForms N).add_mem (ha f hf) (hb f hf)
+      zero_mem' := fun _ _ => (integralCuspForms N).zero_mem
+      neg_mem' := fun {_} ha f hf => (integralCuspForms N).neg_mem (ha f hf) }
+  have hSub : heckeSubring N ≤ S := by
+    refine Subring.closure_le.mpr ?_
+    rintro T ⟨q, hq, rfl⟩
+    exact fun f hf => heckeEndo_mem_integralCuspForms hN hq hf
+  have hmem : ∀ (T : heckeSubring N) (f : CuspForm (Gamma0GL N) 2),
+      f ∈ integralCuspForms N →
+      (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) f ∈ integralCuspForms N :=
+    fun T f hf => hSub T.2 f hf
+  have hsL : ∀ x ∈ s, x ∈ integralCuspForms N := by
+    intro x hx
+    rw [← hs]
+    exact Submodule.subset_span hx
+  -- (ii) restriction to a finite generating set of the lattice
+  let ρ : heckeSubring N →ₗ[ℤ] ({x // x ∈ s} → integralCuspForms N) :=
+    { toFun := fun T x =>
+        ⟨(T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) (x : CuspForm (Gamma0GL N) 2),
+          hmem T _ (hsL x x.2)⟩
+      map_add' := by
+        intro T U
+        funext x
+        apply Subtype.ext
+        simp
+      map_smul' := by
+        intro c T
+        funext x
+        apply Subtype.ext
+        simp }
+  -- (iii) it is INJECTIVE, because the lattice `ℂ`-spans `S₂(Γ₀(N))`
+  have hinj : Function.Injective ρ := by
+    refine (injective_iff_map_eq_zero ρ).mpr ?_
+    intro T hT
+    have h0 : ∀ x ∈ s, (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) x = 0 := by
+      intro x hx
+      have h := congrFun hT ⟨x, hx⟩
+      exact congrArg Subtype.val h
+    have hL0 : ∀ f ∈ integralCuspForms N,
+        (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) f = 0 := by
+      intro f hf
+      rw [← hs] at hf
+      refine Submodule.span_induction ?_ ?_ ?_ ?_ hf
+      · intro y hy
+        exact h0 y hy
+      · exact map_zero _
+      · intro y z _ _ hy hz
+        rw [map_add, hy, hz, add_zero]
+      · intro n y _ hy
+        rw [map_zsmul, hy, smul_zero]
+    have hker : (⊤ : Submodule ℂ (CuspForm (Gamma0GL N) 2))
+        ≤ LinearMap.ker (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) := by
+      rw [← hLspan]
+      exact Submodule.span_le.mpr fun f hf => hL0 f hf
+    have hT0 : (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) = 0 := by
+      rw [← LinearMap.ker_eq_top]
+      exact top_le_iff.mp hker
+    exact Subtype.ext hT0
+  -- (iv) `ℤ` is noetherian, so a submodule of a finite product of copies of the lattice
+  haveI : IsNoetherian ℤ (integralCuspForms N) :=
+    isNoetherian_of_fg_of_noetherian _ ⟨s, hs⟩
+  haveI := isNoetherian_of_injective ρ hinj
+  infer_instance
 
 /-- **LEAF 2 OF 2 FOR THE `ℤ`-FORM — RANK: `rank_ℤ 𝕋 ≤ dim_ℂ S₂(Γ₀(N))`**
 (sorry leaf, cut 2026-07-27), stated as the absence of a `ℤ`-linearly
