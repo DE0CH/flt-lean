@@ -1642,8 +1642,25 @@ sum of copies of `Tor₁^B(B ⧸ I, A) = 0`, and the next map in the long exact
 sequence is `K ⊗_{B⧸I} A⧸IA → F ⊗_{B⧸I} A⧸IA`, injective because `A ⧸ IA` is
 `B ⧸ I`-flat.
 
-**THE PIN HAS NO `Tor` LONG EXACT SEQUENCE** — this is the same obstruction that
-`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` records for
+**PROVEN 2026-07-28 — AND WITHOUT ANY `Tor`.  The verdict below is HISTORY; read it only
+for the dead ends it rules out.**  The proof is three lines here plus the general induction
+`Module.Flat.NilpotentLocalCriterion.rTensor_subtype_injective_of_pow_smul_top_le` in
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, whose module docstring is now the
+place to read the argument.  Two things about it matter for this file:
+
+* the induction carries **no nilpotence hypothesis** — `J ^ n • ⊤ ≤ K` is a hypothesis, not
+  a consequence of `J` being nilpotent — which is exactly why the same lemma serves both
+  this leaf and `Module.Flat.of_flat_quotient_of_pow_eq_bot`;
+* it is stated for a **flat** ambient module, not merely a free one, and that is what makes
+  its induction close (the step needs STEP 1 applied to a submodule of `↥L →₀ A`).
+
+Here `F := B`, `K := I ^ n`, and `(I ^ n) • (⊤ : Submodule B B) ≤ I ^ n` is immediate; the
+`lTensor`/`rTensor` mismatch is `LinearMap.lTensor_inj_iff_rTensor_inj`.
+
+--- HISTORICAL, and it was WRONG about what was needed ---
+
+**THE PIN HAS NO `Tor` LONG EXACT SEQUENCE** — this was the same obstruction that
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` recorded for
 `Module.Flat.of_flat_quotient_of_pow_eq_bot`, re-checked 2026-07-28:
 `CategoryTheory/Monoidal/Tor.lean` defines `Tor` and proves only that higher
 `Tor` of a projective vanishes, and `CategoryTheory/Abelian/LeftDerived.lean`
@@ -1674,15 +1691,38 @@ to be built from nothing" is NOT.  The GENERAL machinery is present at this pin:
 So the honest statement of the obstruction is "`Tor₁` for modules is not
 ASSEMBLED here", not "the homological algebra is missing".  That is a much
 smaller job than the earlier note implies, and it is the first thing a
-successor should price. -/
+successor should price.
+
+**FINAL CORRECTION (2026-07-28), and it is the one worth remembering.**  Both of the above
+verdicts — "build `Tor₁` and its six-term sequence" and "use `ShortComplex.ShortExact.δ`
+with the group-homology file as a template" — are *routes that would have worked* and were
+both **more expensive than necessary**.  Neither was taken.  The long exact sequence is
+used in Stacks 00MK only to (a) split off a free summand and (b) devissage along a finite
+filtration; both uses are replaceable by a chase that needs nothing but **right-exactness
+of `- ⊗ B`**, once the statement is re-phrased as "`↥K ⊗ B → F ⊗ B` is injective for
+`K ≤ F` flat with `J ^ n • ⊤ ≤ K`" rather than as "`Tor₁(N, A) = 0` for `N` killed by
+`J ^ n`".  The lesson generalises: **an audit naming the missing machinery has usually
+fixed the STATEMENT SHAPE that makes that machinery necessary** — before building the
+machinery, try to restate the goal so it is not. -/
 theorem lTensor_pow_subtype_injective {B A : Type u}
     [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
     (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
     (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
     (_hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ).Flat)
     (n : ℕ) :
-    Function.Injective (LinearMap.lTensor A (I ^ n).subtype) :=
-  sorry
+    Function.Injective (LinearMap.lTensor A (I ^ n).subtype) := by
+  -- `_hquot` in `Module.Flat` form.
+  have hflat : Module.Flat (B ⧸ I) (A ⧸ Ideal.map (algebraMap B A) I) := by
+    rw [← RingHom.flat_algebraMap_iff]
+    have heq : algebraMap (B ⧸ I) (A ⧸ Ideal.map (algebraMap B A) I)
+        = Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ :=
+      Ideal.Quotient.ringHom_ext (RingHom.ext fun _ => rfl)
+    rw [heq]
+    exact _hquot
+  rw [LinearMap.lTensor_inj_iff_rTensor_inj]
+  refine _root_.Module.Flat.NilpotentLocalCriterion.rTensor_subtype_injective_of_pow_smul_top_le
+    _htor hflat n (F := B) (K := I ^ n) ?_
+  exact Submodule.smul_le.mpr fun r hr x _ => Ideal.mul_mem_right x _ hr
 
 /-- **`A ⧸ IⁿA` IS FLAT OVER `B ⧸ Iⁿ` FOR EVERY `n`** (SORRY LEAF, cut 2026-07-28
 out of `lTensor_subtype_injective_of_pow_le` below; Stacks **00MK** / Matsumura
