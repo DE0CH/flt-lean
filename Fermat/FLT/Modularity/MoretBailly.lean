@@ -27273,6 +27273,46 @@ def IsSplitLevelStructure
     (∀ y, y ∈ (m.torsion x I).1 ↔ ∃ w, e w = y) ∧
     (∀ v w : Fin 2 → kI, pol.pairing x I n hn (e v) (e w) = Λ F v w)
 
+open CategoryTheory in
+/-- **A standard (pairing-normalized) level module at `n`**: a rank-two
+`GaloisRep` over `kI` together with an alternating, nondegenerate,
+`Γ`-equivariant form into `μ_n`, uniformly in the base field.
+
+This is Taylor's `W_{b₀,0}` with its standard pairing. Every clause is
+forced by a `Fermat.PolarizationStruct` axiom — see the MODULE/GEOMETRY cut
+docstring below — and the last one is the cyclotomic-determinant condition
+in the only shape this vocabulary can express it: `Λ` cannot be pinned to a
+VALUE (`DualStruct.weil` is `μ_n(F̄)`-valued, so fixing `⟨e₀, e₁⟩ = ζ` is not
+a `ℚ`-rational condition), but its EQUIVARIANCE under `galRoot` can be, and
+that is exactly what cuts the split space down to one geometric component.
+
+`Λ` is indexed by the base field because its target is; the index ranges
+over `ℚ`-algebra fields because in characteristic `n` the target is
+trivial and nondegeneracy would be FALSE rather than merely vacuous.
+
+RELOCATED 2026-07-28, from the MODULE/GEOMETRY cut subsection below to
+here, ahead of `HasSplitHilbertBlumenthalModuli`. Lean's declaration order
+is the whole reason: that definition now EXPORTS this predicate (see its
+docstring, "WHAT `hsplit` HANDS ITS CONSUMER"), and could not while this
+one was declared after it. Nothing about the statement changed. -/
+def IsStandardLevelModule
+    (n : ℕ) {kI : Type u} [Field kI] [TopologicalSpace kI]
+    (ρ : GaloisRep ℚ kI (Fin 2 → kI))
+    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
+      rootsOfUnity n (AlgebraicClosure F)) : Prop :=
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
+      Λ F (u + v) w = Λ F u w * Λ F v w) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
+      Λ F u (v + w) = Λ F u v * Λ F u w) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI), Λ F v v = 1) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI),
+      v ≠ 0 → ∃ w, Λ F v w ≠ 1) ∧
+  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
+      (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → kI),
+      Λ F (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
+          (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w)
+        = Fermat.galRoot σ (Λ F v w))
+
 open CategoryTheory AlgebraicGeometry in
 /-- **The split Hilbert–Blumenthal moduli space of level `λ𝔭` exists**:
 Rapoport's `X₀`, packaged as the hypothesis of Taylor's descent.
@@ -27293,9 +27333,44 @@ The existential carries, besides the space and its universal family:
   structures at `λ` and at `𝔭` comes from an `F`-point of `X₀`, compatibly
   on geometric points. See the section docstring for exactly what is not
   claimed;
-* **nondegeneracy of `Λ`, `Λp`**. Without it `Λ ≡ 1` satisfies everything
-  else and the normalization is empty — the same role
-  `DualStruct.weil_nondegenerate` plays one level down.
+* **`IsStandardLevelModule ℓ ρ₀ Λ` and `IsStandardLevelModule p ρ₀p Λp`**
+  (STRENGTHENED 2026-07-28 — see "WHAT `hsplit` HANDS ITS CONSUMER" below;
+  this used to be only the NONDEGENERACY clause of each). Nondegeneracy
+  alone already rules out the empty normalization `Λ ≡ 1`, the same role
+  `DualStruct.weil_nondegenerate` plays one level down; the other four
+  clauses are bimultiplicativity, the alternating law, and — the one that
+  matters to the descent — `galRoot`-equivariance, i.e. `det ρ₀ = χ̄_ℓ`.
+
+WHAT `hsplit` HANDS ITS CONSUMER, and why it now hands over more
+(2026-07-28). The two final conjuncts used to be the nondegeneracy clause
+of `IsStandardLevelModule` and nothing else, so a consumer holding
+`hsplit` could destructure out `ρ₀`, `ρ₀p`, `Λ`, `Λp` and learn that the
+forms are nonempty — but NOT that they are `galRoot`-equivariant, hence
+NOT that `det ρ₀ = χ̄_ℓ` and `det ρ₀p = χ̄_p`.
+
+That gap is load-bearing for `exists_twistedHilbertBlumenthalDescent_of_split`.
+Its `Γ`-ACTION AUDIT states the twisting datum as the 1-cocycle
+`σ ↦ ρbar(σ) ρ₀(σ)⁻¹` for the `ρ₀`-conjugation action on `X₀ ⊗ ℚ̄`, and
+observes that the cocycle lands in the pairing-preserving subgroup exactly
+when `det ρbar = det ρ₀`. The `ρbar` half of that equation is supplied
+(`IsHardlyRamified.det`, and `hstdp` at `𝔭`); the `ρ₀` half was **not
+derivable from `hsplit`**, so the very identity the audit calls the
+condition for the construction to make sense could not even be STATED by a
+consumer of `hsplit`. That is what this strengthening fixes, and it is the
+prerequisite for cutting the descent leaf along ARITHMETIC versus GEOMETRY
+the way leaf A was cut along MODULE versus GEOMETRY.
+
+THE STRENGTHENING IS FREE ON THE PRODUCING SIDE, which is why it is the
+right repair rather than a new hypothesis somewhere. The only producer,
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule`, obtains
+`hstd' : IsStandardLevelModule ℓ ρ₀ Λ` from its own hypothesis and was
+projecting out `hstd'.2.2.2.1` and discarding the rest; it now passes
+`hstd'` whole. Nothing else changed, and
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` — the open
+geometric leaf underneath — is untouched: it never asserted the `Λ`
+clauses, which is exactly the point of the MODULE/GEOMETRY cut. This is
+the shape CLAUDE.md records as usual for such repairs: the missing
+hypothesis was already in the caller's hand and was being thrown away.
 
 `GeometricallyIrreducible fX₀` is asserted, and it is faithful precisely
 BECAUSE the level structures are `Λ`-normalized: the un-normalized split
@@ -27412,10 +27487,7 @@ def HasSplitHilbertBlumenthalModuli
           (∀ (a : NumberField.RingOfIntegers D) y, φ (mB.act a y) = m₀.act a (φ y)) ∧
           (∀ (σ : Field.absoluteGaloisGroup F) y,
             φ (abB.galSMul (𝟙 (Spec (CommRingCat.of F))) σ y) = ab₀.galSMul x σ (φ y))) ∧
-    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → k),
-      v ≠ 0 → ∃ w, Λ F v w ≠ 1) ∧
-    (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kp),
-      v ≠ 0 → ∃ w, Λp F v w ≠ 1)
+    IsStandardLevelModule ℓ ρ₀ Λ ∧ IsStandardLevelModule p ρ₀p Λp
 
 /-! ##### The MODULE/GEOMETRY cut of leaf A (2026-07-27)
 
@@ -27427,7 +27499,9 @@ A's existential precisely because it could not be constructed at the time;
 that made the leaf STATEABLE, and it left a prover facing both halves at
 once. This cut separates them.
 
-`IsStandardLevelModule` below is exactly the constraint the geometry
+`IsStandardLevelModule` (declared just above `HasSplitHilbertBlumenthalModuli`,
+where Lean's declaration order forces it now that `HasSplitHilbertBlumenthalModuli`
+exports it; it used to sit here) is exactly the constraint the geometry
 imposes on the pair `(ρ₀, Λ)`, read off the axioms of
 `Fermat.PolarizationStruct.pairing` rather than guessed:
 
@@ -27468,40 +27542,6 @@ BOOKKEEPING NOTE: this raises the direct-sorry count of the section by one
 is a self-contained, finite-field representation-theory node that needs no
 algebraic geometry and can be owned separately, and A2 is Rapoport's
 construction with the normalization handed to it. -/
-
-open CategoryTheory in
-/-- **A standard (pairing-normalized) level module at `n`**: a rank-two
-`GaloisRep` over `kI` together with an alternating, nondegenerate,
-`Γ`-equivariant form into `μ_n`, uniformly in the base field.
-
-This is Taylor's `W_{b₀,0}` with its standard pairing. Every clause is
-forced by a `Fermat.PolarizationStruct` axiom — see the section docstring
-— and the last one is the cyclotomic-determinant condition in the only
-shape this vocabulary can express it: `Λ` cannot be pinned to a VALUE
-(`DualStruct.weil` is `μ_n(F̄)`-valued, so fixing `⟨e₀, e₁⟩ = ζ` is not a
-`ℚ`-rational condition), but its EQUIVARIANCE under `galRoot` can be, and
-that is exactly what cuts the split space down to one geometric component.
-
-`Λ` is indexed by the base field because its target is; the index ranges
-over `ℚ`-algebra fields because in characteristic `n` the target is
-trivial and nondegeneracy would be FALSE rather than merely vacuous. -/
-def IsStandardLevelModule
-    (n : ℕ) {kI : Type u} [Field kI] [TopologicalSpace kI]
-    (ρ : GaloisRep ℚ kI (Fin 2 → kI))
-    (Λ : ∀ (F : Type u) [Field F] [Algebra ℚ F], (Fin 2 → kI) → (Fin 2 → kI) →
-      rootsOfUnity n (AlgebraicClosure F)) : Prop :=
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
-      Λ F (u + v) w = Λ F u w * Λ F v w) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (u v w : Fin 2 → kI),
-      Λ F u (v + w) = Λ F u v * Λ F u w) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI), Λ F v v = 1) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F) (v : Fin 2 → kI),
-      v ≠ 0 → ∃ w, Λ F v w ≠ 1) ∧
-  (∀ (F : Type u) (_ : Field F) (_ : Algebra ℚ F)
-      (σ : Field.absoluteGaloisGroup F) (v w : Fin 2 → kI),
-      Λ F (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) v)
-          (ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) w)
-        = Fermat.galRoot σ (Λ F v w))
 
 /-! ##### The standard level module, constructed (2026-07-27)
 
@@ -28594,7 +28634,7 @@ theorem exists_splitHilbertBlumenthalModuli_of_standardLevelModule
     AlgebraicGeometry.SmoothOfRelativeDimension.smooth (n := Module.finrank ℚ D) (f := fX₀)
   exact ⟨X₀, fX₀, A₀, fA₀, ab₀, m₀, d₀, pol₀, ρ₀, ρ₀p, Λ, Λp, hsm, hsep, hlft, hqc,
     geometricallyIrreducible_of_smooth_of_geometricallyConnected fX₀ hsm hconn,
-    hdimA, huniv, hfine, hstd'.2.2.2.1, hstdp'.2.2.2.1⟩
+    hdimA, huniv, hfine, hstd', hstdp'⟩
 
 open CategoryTheory in
 /-- **LEAF A — Rapoport's split moduli space** (PROVEN 2026-07-27 as an
