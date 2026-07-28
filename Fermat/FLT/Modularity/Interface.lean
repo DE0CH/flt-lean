@@ -61299,10 +61299,14 @@ WHAT MOVED WHERE.
   unipotent inertia action is tame at `q ≠ p`. No Weil–Deligne parameter is
   needed anywhere, and the trivial-nebentypus input appears exactly once, as
   the determinant leaf.
-* `Sw_q ≥ dim V − dim V^{P_q}` (`wildCodim_le_swanExponentAux`) is what turns
-  a conductor exponent of `2` into TAMENESS rather than merely into
+* `0 < Sw_q` at a wildly ramified place
+  (`one_le_swanExponentAux_of_not_isTamelyRamifiedAt`) is what turns a
+  conductor exponent of `2` into TAMENESS rather than merely into
   `swanExponent = 0`. It needs a ramification filtration to exist, which is
-  the fourth leaf.
+  the fourth leaf. (Until 2026-07-28 this bullet named the stronger
+  `Sw_q ≥ dim V − dim V^{P_q}`, `wildCodim_le_swanExponentAux`. That bound
+  is FALSE — breaks in the Swan normalisation need not be `≥ 1` — and it has
+  been withdrawn; see the withdrawal note beside the leaf.)
 
 THE FOUR LEAVES, and why each is smaller than what it replaces:
 
@@ -61449,85 +61453,77 @@ theorem isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_det_eq_one
   rw [toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero hpn hsq hσ]
   rfl
 
-/-- **THE SWAN CONDUCTOR DOMINATES THE WILD CODIMENSION**,
-`Sw_v(V) ≥ dim V − dim V^{P_v}` (PROVEN 2026-07-28, fifteenth owner,
-given a ramification filtration).
+/-! ### WITHDRAWN 2026-07-28: `wildCodim_le_swanExponentAux` was FALSE
 
-This is "check 3" of the NON-VACUITY note on `GaloisRep.IsSwanExponentAt`
-in `ArtinConductor.lean`, promoted from a scratch verification to a
-consumed lemma. The proof is one line of the specification: at `u = 1`
-the normalisation axiom `RamificationFiltration.gp_eq_wild` gives
-`G¹ = P_v`, so the counting clause reads
+Until 2026-07-28 this file carried
 
-  `wildCodim = #{k < wildCodim : 1 ≤ μ k}`,
+  `theorem wildCodim_le_swanExponentAux … : τ.wildCodim v ≤ τ.swanExponentAux v`
 
-and a filtered subset of `range d` with `d` elements IS `range d`, so
-every break satisfies `μ k ≥ 1`. Summing, `Sw = ∑ μ k ≥ d`.
+proved in a dozen lines from `RamificationFiltration.gp_eq_wild` at `u = 1`:
+that axiom made `G¹ = P_v`, the counting clause of
+`GaloisRep.IsSwanExponentAt` then read
+`wildCodim = #{k < wildCodim : 1 ≤ μ k}`, so every break was `≥ 1` and the
+break sum dominated `wildCodim`.
 
-It is the ONLY route from "the wild inertia acts nontrivially" to
-"the Swan exponent is nonzero", which is what turns a conductor exponent
-of `2` into TAMENESS rather than merely into `swanExponent = 0`. -/
-theorem wildCodim_le_swanExponentAux
-    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
-    (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
-    (F : RamificationFiltration v) (hfin : τ.HasFiniteWildMonodromyAt v) :
-    τ.wildCodim v ≤ τ.swanExponentAux v := by
-  classical
-  obtain ⟨-, hF⟩ := τ.isSwanExponentAt_swanExponentAux v hfin
-  obtain ⟨μ, hcount, hsum⟩ := hF F
-  have h1 := hcount 1 (by norm_num)
-  rw [F.gp_eq_wild 1 (by norm_num) le_rfl] at h1
-  have hcard : ((Finset.range (τ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k)
-      = Finset.range (τ.wildCodim v) := by
-    refine Finset.eq_of_subset_of_card_le (Finset.filter_subset _ _) ?_
-    rw [Finset.card_range, ← h1]
-    exact le_rfl
-  have hall : ∀ k ∈ Finset.range (τ.wildCodim v), (1 : ℚ) ≤ μ k := by
-    intro k hk
-    have hmem : k ∈ (Finset.range (τ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k := by
-      rw [hcard]; exact hk
-    exact (Finset.mem_filter.mp hmem).2
-  have hge : ((τ.wildCodim v : ℕ) : ℚ) ≤ ∑ k ∈ Finset.range (τ.wildCodim v), μ k := by
-    calc ((τ.wildCodim v : ℕ) : ℚ)
-        = ∑ _k ∈ Finset.range (τ.wildCodim v), (1 : ℚ) := by simp
-      _ ≤ ∑ k ∈ Finset.range (τ.wildCodim v), μ k := Finset.sum_le_sum hall
-  rw [← hsum] at hge
-  exact_mod_cast hge
+**THE AXIOM WAS FALSE AND SO IS THE THEOREM.** `gp_eq_wild` confused the two
+ramification numberings — it is the LOWER filtration that is constant on
+`(0, 1]`; in the UPPER numbering the first break is `i₁/(G₀ : G₁)`, which is
+`< 1` whenever the first lower break `i₁` is smaller than the tame degree.
+See the SECOND FALSITY AUDIT on `RamificationFiltration` in
+`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean` for the
+machine-checked counterexample; the same one refutes this theorem directly.
 
-/-- **A WILDLY RAMIFIED PLACE HAS A POSITIVE SWAN CONDUCTOR** (PROVEN
-2026-07-28, fifteenth owner, given a ramification filtration).
+COUNTEREXAMPLE. `v = (3)`, `Kᵥ = ℚ₃`, and `L/ℚ₃` the `S₃`-closure of the
+totally ramified non-Galois cubic `ℚ₃[x]/(x³ + 12x + 3)` (PARI: `e = 6`,
+`f = 1`, `v₃(disc) = 7`, `|G₀| = 6`, `|G₁| = 3`, `G₂ = 1`). Its
+`2`-dimensional irreducible `ρ₂` has `V^{I_v} = V^{P_v} = 0`, so
+`wildCodim = 2`, while conductor–discriminant gives `a(ρ₂) = 3` and hence
+`Sw(ρ₂) = 3 − 2 + 0 = 1`. Both breaks are `1/2`. The theorem asserts `2 ≤ 1`.
 
-If `P_v` does NOT act trivially then `V^{P_v}` is a proper submodule of
-the `2`-dimensional `V`, so `wildCodim ≥ 1`, and
-`wildCodim_le_swanExponentAux` transports that to `swanExponentAux ≥ 1`.
+Breaks in the Swan normalisation are positive RATIONALS with denominator
+bounded by `dim V`. The bound `≥ 1` is Hasse–Arf for a CHARACTER and does not
+survive induction to higher dimension. Do not reintroduce this theorem, and do
+not reintroduce any `Sw ≥ wildCodim` variant: only `0 < Sw` survives at a
+wildly ramified place, and that is the leaf below. -/
 
-This is the converse direction of the `if` built into
-`GaloisRep.swanExponent`: without it, `swanExponent = 0` would carry NO
-information at a place that might be wild, since the `else` branch could
-also be `0`. -/
+/-- **A WILDLY RAMIFIED PLACE HAS A POSITIVE SWAN CONDUCTOR** (SORRY LEAF
+as of 2026-07-28; it was PROVEN earlier the same day over
+`wildCodim_le_swanExponentAux`, and REOPENED when that theorem was
+refuted — see the withdrawal note immediately above).
+
+THE STATEMENT IS STILL TRUE, and only its cheap route died.
+`swanExponentAux` is the break sum `∑_{k < wildCodim} μ k`; at a
+non-tamely-ramified place `wildCodim ≥ 1`, the breaks are positive, and
+the sum is a NATURAL NUMBER by the sum clause of
+`GaloisRep.IsSwanExponentAt` — which is where Hasse–Arf integrality
+lives. A positive rational that is a natural number is `≥ 1`. What was
+lost is only the false intermediate bound `μ k ≥ 1`.
+
+THE ROUTE TO REPROVE IT, given the repaired axioms. It suffices to find
+ONE `u > 0` with `V^{G^u} ≠ V`: the counting clause at that `u` then
+produces a break `μ k ≥ u > 0`, the counting clause at large `u` makes
+the remaining breaks nonnegative, and the sum is a positive natural
+number.
+
+Such a `u` comes from `RamificationFiltration.gp_herbrand`. Pick a level
+`D` whose `lvl` acts trivially on `V` — this is exactly what `hfin`,
+i.e. `GaloisRep.HasFiniteWildMonodromyAt`, supplies, and it is why that
+hypothesis is here. Then `G^{φ_D(1)} ⊔ D.lvl = D.gp 1 ⊇ P_v`, so if
+`G^{φ_D(1)}` acted trivially then all of `D.gp 1`, hence `P_v`, would act
+trivially — that is tameness, against `hnt`. So `u := φ_D(1) > 0` works.
+
+THE ONE INPUT THAT ROUTE STILL NEEDS, and the reason this is a leaf here
+rather than a repair in place: `wildInertiaGroup v ≤ D.gp 1`, i.e. that
+the first lower ramification group of a finite level contains the wild
+inertia. That is a fact about `LowerRamificationData.mem_gp` and belongs
+beside it in `ArtinConductor.lean`. -/
 theorem one_le_swanExponentAux_of_not_isTamelyRamifiedAt
     {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
-    (F : RamificationFiltration v) (hfin : τ.HasFiniteWildMonodromyAt v)
-    (hnt : ¬ τ.IsTamelyRamifiedAt v) :
-    1 ≤ τ.swanExponentAux v := by
-  refine le_trans ?_ (wildCodim_le_swanExponentAux τ F hfin)
-  have hne : τ.fixedSubmodule v (wildInertiaGroup v) ≠ ⊤ := by
-    intro h
-    refine hnt fun σ hσ x => ?_
-    have hx : x ∈ τ.fixedSubmodule v (wildInertiaGroup v) := by
-      rw [h]; exact Submodule.mem_top
-    exact hx σ hσ
-  have hV : Module.finrank (AlgebraicClosure ℚ_[p])
-      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
-  have hlt : Module.finrank (AlgebraicClosure ℚ_[p])
-      (τ.fixedSubmodule v (wildInertiaGroup v))
-      < Module.finrank (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]) :=
-    Submodule.finrank_lt hne
-  rw [hV] at hlt
-  have hgoal : 1 ≤ 2 - Module.finrank (AlgebraicClosure ℚ_[p])
-      (τ.fixedSubmodule v (wildInertiaGroup v)) := by omega
-  simpa [GaloisRep.wildCodim, hV] using hgoal
+    (_F : RamificationFiltration v) (_hfin : τ.HasFiniteWildMonodromyAt v)
+    (_hnt : ¬ τ.IsTamelyRamifiedAt v) :
+    1 ≤ τ.swanExponentAux v :=
+  sorry
 
 /-- **THE WILD INERTIA AT `q ≠ p` HAS FINITE IMAGE** (SORRY LEAF, cut at
 the release-13 integration): the `p`-adic representation `τ` kills an open
@@ -61599,17 +61595,26 @@ lower numbering and Herbrand's `ψ`, IV §3 / VI §2 for the upper
 numbering; Neukirch, *Algebraic Number Theory* II.10).
 
 `RamificationFiltration v` (`ArtinConductor.lean`) is the family
-`G^u ≤ Γ Kᵥ` with five axioms: decreasing, `G⁰ = I_v`, `G^u = P_v` on
-`(0, 1]`, left continuity, and separatedness `⋂_{u>0} G^u = 1`. This leaf
-says the type is INHABITED.
+`G^u ≤ Γ Kᵥ` with six axioms: decreasing, `G⁰ = I_v`, `G^u ≤ P_v` for
+`u > 0`, left continuity, separatedness `⋂_{u>0} G^u = 1`, and Herbrand
+compatibility with every finite level. This leaf says the type is
+INHABITED.
+
+**UPDATED 2026-07-28.** The third axiom used to read `G^u = P_v` on
+`(0, 1]`, and in that form THIS LEAF WAS FALSE — the type was empty. See
+the SECOND FALSITY AUDIT on `RamificationFiltration`. The axiom has been
+weakened to the true `G^u ≤ P_v`, and the paragraphs below have been
+corrected where they justified the retired form.
 
 WHY IT IS TRUE. The lower-numbering filtration `G_i` of each finite
 Galois subextension is defined by `i_{L/K}(σ) = v_L(σπ_L − π_L)`;
 Herbrand's function `ψ_{L/K}` renumbers it so that the result is
 compatible with quotients, and the upper numbering therefore passes to
 the inverse limit and defines `G^u` on the absolute Galois group. The
-five axioms are then the standard facts: `G^0 = G_0 = I_v` because
-`ψ(0) = 0`; `G^u = G_1 = P_v` for `0 < u ≤ 1` because `ψ(u) = u` there;
+axioms are then the standard facts: `G^0 = G_0 = I_v` because
+`ψ(0) = 0`; `G^u ≤ G_1 = P_v` for `u > 0` because `ψ(u) > 0` there
+(the EQUALITY that stood here was false — `ψ(u) = u` holds on `[−1, 0]`,
+not on `[0, 1]`, so the first upper break `i₁/(G₀ : G₁)` can be `< 1`);
 left continuity is the standard convention `G^u = ⋂_{w<u} G^w`; and
 separatedness is that every element of the inertia has finite image in
 some finite level, where the filtration reaches `1`. For `u < 0` any
@@ -61635,10 +61640,15 @@ free follow-up for whoever next edits that file.
 
 THE CHECK THAT WOULD REFUTE IT: exhibit an axiom of
 `RamificationFiltration` that the genuine upper-numbering filtration of
-`Γ Kᵥ` fails. The candidate is separatedness, and it holds because the
-absolute Galois group of a local field is the inverse limit of finite
-Galois groups in each of which the ramification filtration terminates at
-`1`. AXIS SEARCHED: the five axioms individually. NOT SEARCHED: whether
+`Γ Kᵥ` fails. **THAT CHECK WAS RUN ON 2026-07-28 AND IT FOUND ONE.** The
+candidate named here was separatedness, which does hold — the absolute
+Galois group of a local field is the inverse limit of finite Galois
+groups in each of which the ramification filtration terminates at `1`.
+The axiom that failed was the NORMALISATION `G^u = P_v` on `(0, 1]`,
+which is a lower-numbering fact misapplied to the upper numbering; the
+machine-checked witness is an `S₃`-extension of `ℚ₃` with `G¹ = 1`. It
+has been weakened to `G^u ≤ P_v`, and with that weakening this leaf is
+true again. AXIS SEARCHED: the axioms individually. NOT SEARCHED: whether
 the axioms are strong enough to make the filtration UNIQUE — they are
 not known to be, which is deliberate and is why
 `GaloisRep.exists_isSwanExponentAt` is a separate leaf. -/
@@ -62020,9 +62030,12 @@ of Carayol's identity at the boundary, `a_q(τ) ≤ 2`. Given that:
 * so `a_q = 2 + swanExponent ≤ 2` forces `swanExponent = 0`;
 * and `swanExponent = 0` implies TAMENESS, because at a non-tame place
   `swanExponent` takes its `else` branch `swanExponentAux`, which is
-  `≥ wildCodim ≥ 1` (`one_le_swanExponentAux_of_not_isTamelyRamifiedAt`,
-  over `wildCodim_le_swanExponentAux` and hence over the existence of a
-  ramification filtration).
+  `≥ 1` (`one_le_swanExponentAux_of_not_isTamelyRamifiedAt`, over the
+  existence of a ramification filtration). That step was PROVEN over
+  `wildCodim_le_swanExponentAux` until 2026-07-28 and is a leaf again
+  since that theorem was refuted — the bound `Sw ≥ wildCodim` is false.
+  The `1 ≤ Sw` form used here is still true; see the leaf's docstring
+  for the replacement route.
 
 The third bullet is the step that the `if`-branch packaging of
 `GaloisRep.swanExponent` makes necessary and that nothing in the tree
