@@ -7789,9 +7789,53 @@ That cut names `WeierstrassCurve.PotentiallyGoodModel`, which is declared
 ~1100 lines BELOW this point, and the branch made it TYPE by hoisting the whole
 `PotentiallyGoodModel` cluster out into a new module.
 
-The release-12 integration rejected the hoist — two other branches had
-meanwhile GROWN the moved region (`TranslationDatum`, `PreTranslationDatum`,
-the whole `exists_potentiallyGoodModel_of_*` family) and MOVED part of it
+> for `σ ∈ I_q`, `σ²⁴` acts trivially on the `N`-torsion of `E`,
+
+which mentions neither `lam`, nor `hlam`, nor `hg`, nor `hN19`, nor even
+`N.Prime` beyond `q ≠ N`.  That sentence is
+`WeierstrassCurve.map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg`
+below, and `B₀¹` is derived from it in a dozen lines by the standard
+`(lam σ).val • g = g ⟹ lam σ = 1` argument that
+`isogenyCharacter_pow_twelve_eq_of_localInertia` already runs further
+down this file.
+
+WHY THE CHARACTER IS WORTH STRIPPING OFF.  The statement above is a fact
+about the mod-`N` Galois REPRESENTATION, not about a character of it, so
+it is the same input that `B₀²` needs (`B₀²` reads off the exponent of
+`Φ^{ab}`, `B₀¹` the exponent of `Φ`, and both are facts about the image
+of `I_q` in `Aut(E[N])`).  Cutting here therefore does not duplicate
+work between the two halves of the `B₀` cut; it factors it.
+
+THE GALOIS-MODULE STATEMENT IS THEN SPLIT ON THE RESIDUE
+CHARACTERISTIC, because that is where the AVAILABLE machinery splits:
+
+* `WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral`
+  turns this leaf's own hypothesis `0 ≤ v_q(j)` into a good model over a
+  number field with residue degree one at `q`.  The residual leaf
+  `map_pow_twentyFour_eq_self_of_potentiallyGoodModel` is then pure
+  Néron–Ogg–Shafarevich plus the classification of the semistability
+  defect, with the reduction theory handed over as data.
+* **NO SPLIT ON `q = 2` IS NEEDED ANY MORE** (2026-07-28).  An earlier
+  version of this paragraph said the producer is "not stated at `q = 2`"
+  and prescribed a separate `2`-adic leaf on that ground.  That is no
+  longer true: `exists_potentiallyGoodModel_of_jIntegral` is now uniform
+  in `q`, its `hq2 : q ≠ 2` hypothesis having been removed when
+  `exists_potentiallyGoodModel_of_jIntegral_two` was opened.  The `2`-adic
+  arithmetic did not disappear — it is `nonempty_fullTranslationDatum_two`
+  — but it is now BEHIND the producer, so this cut sees one case, not two.
+
+THE HOIST THAT THIS CUT NEEDS, AND WHICH HAS NOT BEEN DONE.
+`PotentiallyGoodModel` and its producers sit ~1100 lines BELOW this point
+IN THIS FILE, so Lean's lack of forward references puts them out of reach
+here, and the three-leaf split described above therefore does NOT exist in
+the tree: `B₀¹` below is still the single leaf it always was.
+
+The branch that wrote this paragraph moved the cluster VERBATIM into a new
+`Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean` (the Minkowski precedent).
+That could not be applied at the release-12 integration: two other branches
+had meanwhile GROWN the moved region (`TranslationDatum`,
+`PreTranslationDatum` and the whole `exists_potentiallyGoodModel_of_*`
+family, none of which is in the hoisted file) and MOVED part of it
 elsewhere (`flt-lean-381` took `WeierstrassCurve.TameBaseAux` into
 `EllipticCurve/TorsionReduction.lean`), so the extraction lost twenty
 declarations and duplicated seven — and then, at build 4, reverted the cut with
@@ -10167,24 +10211,311 @@ theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_three
           = (E.toShortNF • E).baseChange N.K := map_variableChange _ _ _
       rw [N.V_eq, mul_smul, hmv] }⟩
 
+/-! ### The wild case `q = 2`: the FULL variable change is not optional
+
+`TranslationDatum` above fixes `s = t = 0`, and its docstring proves that this loses
+nothing **at `q = 3`** — the completing-the-square change `(1, 0, -a₁/2, -a₃/2)` is
+integral there because `2` is a unit of the residue characteristic `3`. At `q = 2` that
+step is exactly what fails, and the failure is not technical: **`TranslationDatum W 2` is
+EMPTY for every `W`.**
+
+For a Weierstrass equation with `a₁ = a₃ = 0` one has `b₂ = 4a₂`, `b₄ = 2a₄`, `b₆ = 4a₆`,
+`b₈ = 4a₂a₆ − a₄²`, hence
+
+    Δ = −b₂²b₈ − 8b₄³ − 27b₆² + 9b₂b₄b₆
+      = −64a₂³a₆ + 16a₂²a₄² − 64a₄³ − 432a₆² + 288a₂a₄a₆,
+
+every coefficient of which is divisible by `16`. So `16 ∣ Δ` whenever the `aᵢ` are
+integral, and `Δ` is never a unit at a place above `2`. (Conceptually: in residue
+characteristic `2` the equation `y² = cubic` is inseparable in `y`, so its reduction is
+singular at the point where the cubic's derivative vanishes.) A good model at `2`
+therefore has `a₁ ≠ 0` or `a₃ ≠ 0`, i.e. **both `s` and `t` are genuinely needed**, and
+the datum below carries all four components of the variable change.
+
+Everything else is unchanged, and in particular
+`exists_potentiallyGoodModel_of_fullTranslationDatum` below is uniform in `q` — nothing
+in it mentions `2`. -/
+
+/-- **The obligation the wild case `q = 2` owes, with every trace of reduction theory
+removed** (interface opened 2026-07-28 while extending
+`exists_potentiallyGoodModel_of_jIntegral` to `q = 2`). A `FullTranslationDatum W q` is: a
+number field `L`, a DVR valuation subring `A ⊆ L` with residue field `ZMod q`, and **four
+field elements** `u ∈ Lˣ`, `r, s, t ∈ L` such that the curve `y² = x³ + a₄x + a₆` becomes
+integral with invertible discriminant after the variable change `(u, r, s, t)`. Nothing
+else: no `IsMinimal`, no `HasGoodReduction`, no `IsIntegral`, no residue-field
+bookkeeping. Those all live in
+`exists_potentiallyGoodModel_of_fullTranslationDatum` below, which is PROVEN and is
+uniform in `q`.
+
+The five membership conditions are literally the transformed coefficients of a curve in
+short normal form (`a₁ = a₂ = a₃ = 0`), read off mathlib's `variableChange_aᵢ`:
+
+    a₁' = u⁻¹·(2s),                     a₂' = u⁻²·(3r − s²),
+    a₃' = u⁻³·(2t),                     a₄' = u⁻⁴·(a₄ + 3r² − 2st),
+    a₆' = u⁻⁶·(a₆ + r·a₄ + r³ − t²),
+
+and `hΔ` is `(Δ')⁻¹ ∈ A` for `Δ' = u⁻¹²·Δ`.
+
+**RELATION TO `TranslationDatum`.** Setting `s = t = 0` recovers it exactly, so this
+structure is weaker as a hypothesis and stronger as a conclusion — a `TranslationDatum`
+yields a `FullTranslationDatum` for the same `W` and `q`. The converse fails at `q = 2`
+by the computation in the section header above, and holds at every odd `q` by the
+completing-the-square argument in `TranslationDatum`'s docstring. Nothing here is
+specific to `2`.
+
+**NOT VACUOUS, and it is exactly as non-vacuous as `PotentiallyGoodModel`.** One
+direction is the theorem below. For the converse, a `PotentiallyGoodModel` of a `W` in
+short normal form comes with an integral `V = C • W_L` with unit `Δ`, and reading off the
+four components of that `C` gives back the five memberships verbatim — there is no
+normalisation step to lose, precisely because `s` and `t` are no longer being forced to
+`0`. So `Nonempty (W.FullTranslationDatum q)` and `Nonempty (W.PotentiallyGoodModel q)`
+are EQUIVALENT for `W` in short normal form: the structure is a faithful repackaging. -/
+structure WeierstrassCurve.FullTranslationDatum (W : WeierstrassCurve ℚ)
+    (q : ℕ) [Fact q.Prime] where
+  /-- The number field over which `W` acquires good reduction. -/
+  L : Type
+  [instField : Field L]
+  [instDec : DecidableEq L]
+  [instAlgebra : Algebra ℚ L]
+  [instFin : FiniteDimensional ℚ L]
+  /-- The local ring at the chosen prime of `L` above `q`. -/
+  A : ValuationSubring L
+  [instDVR : IsDiscreteValuationRing A]
+  /-- **Residue degree one**, exactly as in `PotentiallyGoodModel`. -/
+  resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q
+  /-- The scaling. `hΔ` forces `v(u) = v(Δ)/12`. -/
+  u : Lˣ
+  /-- The translation `x ↦ x + r`. -/
+  r : L
+  /-- The shear `y ↦ y + sx`. It is what `TranslationDatum` sets to `0` and what a good
+  model at `2` cannot do without: in residue characteristic `2` a curve with `a₁ = 0` has
+  `Δ ≡ a₃⁴`, so a nonsingular reduction needs `a₁' ≠ 0` or `a₃' ≠ 0`. -/
+  s : L
+  /-- The translation `y ↦ y + t`. -/
+  t : L
+  /-- `a₁'` is integral. -/
+  ha₁ : ((u⁻¹ : Lˣ) : L) * (2 * s) ∈ A
+  /-- `a₂'` is integral. -/
+  ha₂ : ((u⁻¹ : Lˣ) : L) ^ 2 * (3 * r - s ^ 2) ∈ A
+  /-- `a₃'` is integral. -/
+  ha₃ : ((u⁻¹ : Lˣ) : L) ^ 3 * (2 * t) ∈ A
+  /-- `a₄'` is integral. -/
+  ha₄ : ((u⁻¹ : Lˣ) : L) ^ 4 *
+    (algebraMap ℚ L W.a₄ + 3 * r ^ 2 - 2 * s * t) ∈ A
+  /-- `a₆'` is integral. -/
+  ha₆ : ((u⁻¹ : Lˣ) : L) ^ 6 *
+    (algebraMap ℚ L W.a₆ + r * algebraMap ℚ L W.a₄ + r ^ 3 - t ^ 2) ∈ A
+  /-- `Δ'` is a unit. -/
+  hΔ : ((u : L)) ^ 12 * (algebraMap ℚ L W.Δ)⁻¹ ∈ A
+
+attribute [instance] WeierstrassCurve.FullTranslationDatum.instField
+  WeierstrassCurve.FullTranslationDatum.instDec
+  WeierstrassCurve.FullTranslationDatum.instAlgebra
+  WeierstrassCurve.FullTranslationDatum.instFin
+  WeierstrassCurve.FullTranslationDatum.instDVR
+
+/-- **A full translation datum produces the good model** (PROVEN 2026-07-28). This is the
+`q`-uniform half of the wild case at `2`, and it is pure bookkeeping over
+`exists_potentiallyGoodModel_of_integral`: the variable change is `(u, r, s, t)`, the
+`a₁`, `a₂`, `a₃` obligations are the structure's own fields once `IsShortNF` has killed
+`W`'s `a₁, a₂, a₃`, and so are the other three.
+
+Nothing here is specific to `q = 2`; the statement is uniform in `q`, and it subsumes
+`exists_potentiallyGoodModel_of_translationDatum` (take `s = t = 0`). What is specific to
+`q = 2` is that the datum is HARD TO BUILD — see `nonempty_fullTranslationDatum_two`. -/
+theorem WeierstrassCurve.exists_potentiallyGoodModel_of_fullTranslationDatum
+    {q : ℕ} [Fact q.Prime] (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    (D : W.FullTranslationDatum q) : Nonempty (W.PotentiallyGoodModel q) := by
+  classical
+  set C : VariableChange D.L := ⟨D.u, D.r, D.s, D.t⟩ with hC
+  have hb₁ : (W.baseChange D.L).a₁ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₂ : (W.baseChange D.L).a₂ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₃ : (W.baseChange D.L).a₃ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₄ : (W.baseChange D.L).a₄ = algebraMap ℚ D.L W.a₄ := rfl
+  have hb₆ : (W.baseChange D.L).a₆ = algebraMap ℚ D.L W.a₆ := rfl
+  have hbΔ : (W.baseChange D.L).Δ = algebraMap ℚ D.L W.Δ := by
+    simp [WeierstrassCurve.baseChange, map_Δ]
+  refine WeierstrassCurve.exists_potentiallyGoodModel_of_integral W D.L D.A D.resEquiv C
+    ?_ ?_ ?_ ?_ ?_ ?_
+  · rw [variableChange_a₁, hC, hb₁]
+    simpa using D.ha₁
+  · rw [variableChange_a₂, hC, hb₁, hb₂]
+    simpa using D.ha₂
+  · rw [variableChange_a₃, hC, hb₁, hb₃]
+    simpa using D.ha₃
+  · rw [variableChange_a₄, hC, hb₁, hb₂, hb₃, hb₄]
+    simpa using D.ha₄
+  · rw [variableChange_a₆, hC, hb₁, hb₂, hb₃, hb₄, hb₆]
+    simpa using D.ha₆
+  · rw [variableChange_Δ, hC, hbΔ]
+    simpa [mul_comm] using D.hΔ
+
+/-- **THE ARITHMETIC OF THE WILD CASE `q = 2`** (sorry leaf, opened 2026-07-28 while
+extending `exists_potentiallyGoodModel_of_jIntegral` to `q = 2`). What is owed is a base
+`L` with a residue-degree-`1` DVR at `2`, plus **four elements** `u, r, s, t` of `L`
+making the five transformed coefficients integral and `Δ'` a unit. Write `A = W.a₄`,
+`B = W.a₆`, `d = v₂(Δ)`; `hΔ` pins `v(u) = d/12`.
+
+**WHY THIS CASE EXISTS AT ALL.** The producer was stated with `hq2 : q ≠ 2` from the day
+it was written, on the grounds that its tame Kummer base `ℚ_q(π^{1/e})` "does not reach
+the wild prime `2`". That is a statement about the ROUTE, not about the theorem: the
+conclusion is true at `2` for the same reason as everywhere else (Silverman *AEC* VII.5.5
+plus the removal of the unramified layer), and the `q ≠ 2` hypothesis was propagating
+into consumers as a real restriction — notably it is what forced
+`map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg` to be split into a `q ≠ 2` half and
+a separate `q = 2` leaf. With this leaf in place the producer is uniform in `q` and that
+split is unnecessary.
+
+**THE TAME BASE IS TOO SMALL AT `2`, AND HERE THE OBSTRUCTION IS EXACT.** If `E/ℚ₂`
+acquires good reduction over a finite `L/ℚ₂` then `I_L ⊆ N := ker(I → Aut T_ℓE)`
+(Néron–Ogg–Shafarevich), so with `Φ := I/N` the semistability defect,
+
+    |Φ| = [I : N]  divides  [I : I_L] = e(L/ℚ₂).
+
+At `p = 2` Kraus's classification gives `e ∈ {1, 2, 3, 4, 6, 8, 24}`, and `ℚ₂(2^{1/12})`
+has `e = 12`. So **every curve with `e ∈ {8, 24}` is out of reach of the tame base**,
+since neither `8` nor `24` divides `12`. Concrete witness, found with PARI and stated
+here as reconnaissance rather than as a Lean fact: `E : y² = x³ − 2x` has `j = 1728` with
+`v₂(j) = 6 ≥ 0`, and `elllocalred(E, 2)` returns Kodaira type `III` with conductor
+exponent `8` — the maximum possible at `2` — i.e. wild part `δ = 6`, which is Kraus's
+`e = 24` case. So, exactly as at `q = 3`, **do not attempt this leaf over
+`TameBaseAux`**; the base has to be built out of the curve.
+
+Two further curves worth knowing, both with `v₂(j) ≥ 0` and `j ∉ {0, 1728}`, so that the
+difficulty is not confined to the CM values: `y² = x³ + x + 1` has `j = 6912/31`,
+`v₂(j) = 8`, Kodaira `II`, conductor exponent `4` at `2` (wild, `δ = 2`); and
+`y² = x³ − x + 1` has `j = −6912/23`, `v₂(j) = 8`, Kodaira `IV`, conductor exponent `2`
+(tame).
+
+**WHAT IS FORCED, AND IT IS THE ORDINARY/SUPERSINGULAR DICHOTOMY.** Since `hΔ` makes `Δ'`
+a unit, the reduction is nonsingular; in residue characteristic `2` a Weierstrass
+equation has
+
+    Δ ≡ a₁⁶a₆ + a₁⁵a₃a₄ + a₁⁴a₂a₃² + a₁⁴a₄² + a₁³a₃³ + a₃⁴   (mod 2),
+
+which for `a₁ = 0` is `a₃⁴`. So `v(a₁') = 0` or `v(a₃') = 0`, i.e.
+
+    v(s) = v(u) − v(2)      (ordinary reduction)   or
+    v(t) = 3v(u) − v(2)     (supersingular reduction).
+
+Neither `s` nor `t` is free, and a prover should expect to split on this dichotomy rather
+than to find a single uniform formula. Note `v(2) = e(L/ℚ₂) > 0` here, which is exactly
+why the `ha₁`/`ha₃` conditions are satisfiable at all.
+
+**A REDUCTION THAT IS AVAILABLE AND COSTS NOTHING** (the same one recorded on
+`nonempty_preTranslationDatum_three`, and it applies verbatim here). The statement is
+invariant under rational scaling: for `c ∈ ℚˣ` let `W_c` be the short curve with
+`a₄ ↦ c⁴a₄`, `a₆ ↦ c⁶a₆` (so `Δ ↦ c¹²Δ`, `j` unchanged); given a `FullTranslationDatum`
+for `W_c` with data `(u', r', s', t')`, the tuple `(u'/c, r'/c², s'/c, t'/c³)` is one for
+`W`, since each of the six conditions is homogeneous of the matching weight. Taking
+`c = a₄.den · a₆.den` reduces to `a₄, a₆ ∈ ℤ`, where Newton-polygon arguments are
+available.
+
+**THE ONE REMAINING GAP IS THE SAME AS AT `q = 3`: residue degree `1`.** Producing SOME
+finite `L/ℚ₂` with good reduction is Silverman *AEC* VII.5.5; producing one with residue
+degree `1` is the removal of the unramified layer, and the argument is group-theoretic:
+`G/N` is an extension of `Ẑ` by the finite `Φ`, the closure of a Frobenius lift is a
+procyclic group surjecting onto `Ẑ` with finite kernel — hence `≅ Ẑ`, since a proper
+procyclic quotient of `Ẑ` cannot surject onto `Ẑ` — so it is a complement, its preimage
+`H` has `H ∩ I = N` and index `e`, and the fixed field of `H` is TOTALLY RAMIFIED of
+degree `e` with good reduction. Formalising that needs local Galois theory this project
+does not have.
+
+**THE DECOMPOSITION THAT WOULD PAY FOR ITSELF, and it is uniform in `q`.** Split
+`PotentiallyGoodModel` into (i) the same structure WITHOUT `resEquiv`, asking only that
+the residue field have characteristic `q`, and (ii) the passage from (i) to residue
+degree `1`. Then (i) is Silverman VII.5.5 + a Krasner descent and (ii) is the paragraph
+above, both uniform in `q` — and `q = 2`, `q = 3` and `5 ≤ q` all become corollaries of
+one pair of leaves instead of three separate per-prime arguments. That cut is NOT made
+here only because `exists_potentiallyGoodModel_of_jIntegral_three` has a live owner and
+restructuring it under them would cost a merge conflict for no mathematical gain.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v₂(j(E))` acquiring
+good reduction over NO finite extension of `ℚ₂` of residue degree `1`. Silverman *AEC*
+VII.5.5 gives good reduction over some finite `L/ℚ₂`, and the group-theoretic argument
+just quoted removes the unramified layer, so such a witness would have to break that
+step. References for the wild arithmetic at `2`: Serre, *Propriétés galoisiennes des
+points d'ordre fini des courbes elliptiques*, Invent. Math. 15 (1972), §5.6; Kraus, *Sur
+le défaut de semi-stabilité des courbes elliptiques à réduction additive*, Manuscripta
+Math. 69 (1990). -/
+theorem WeierstrassCurve.nonempty_fullTranslationDatum_two
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hq2 : q = 2) (hj : 0 ≤ padicValRat q W.j) :
+    Nonempty (W.FullTranslationDatum q) :=
+  sorry
+
+/-- **The WILD half of the arithmetic leaf at the wild prime: `q = 2`** (PROVEN
+2026-07-28 modulo `nonempty_fullTranslationDatum_two`, which carries all the remaining
+arithmetic). The proof is only the reduction to short normal form, exactly as in the
+`q = 3` and `5 ≤ q` halves: `E.toShortNF` puts `E` in short form (`Invertible 2` and
+`Invertible 3` are free over `ℚ`, the residue characteristic being irrelevant to what
+happens over `ℚ` itself), `variableChange_j` carries `j`-integrality across, and the two
+variable changes compose by `mul_smul` and `map_variableChange`.
+
+**WHAT IS ALREADY BUILT AND MUST NOT BE REBUILT**, all of it uniform in `q`:
+`exists_potentiallyGoodModel_of_integral` turns *(number field, DVR, residue equivalence,
+variable change, five integrality memberships, invertible `Δ`)* into the
+`PotentiallyGoodModel` datum; `hasGoodReduction_of_isUnit_Δ` and
+`isMinimal_of_valuation_Δ_eq_one` discharge mathlib's `IsMinimal`/`HasGoodReduction`
+bookkeeping; `residueFieldEquivZModOfLocalHom` upgrades any local hom onto `ZMod q` to
+the required `resEquiv`; and `TranslationAux.algebraMap_mem_of_not_dvd_den` is the bridge
+from `0 ≤ padicValRat q x` to membership of `A`. A prover here owes exactly ONE thing,
+and it is stated as its own leaf above. -/
+theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_two
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {q : ℕ} [Fact q.Prime] (hq2 : q = 2)
+    (hj : 0 ≤ padicValRat q E.j) : Nonempty (E.PotentiallyGoodModel q) := by
+  classical
+  haveI : Invertible (2 : ℚ) := invertibleOfNonzero (by norm_num)
+  haveI : Invertible (3 : ℚ) := invertibleOfNonzero (by norm_num)
+  have hj' : 0 ≤ padicValRat q (E.toShortNF • E).j := by rwa [variableChange_j]
+  obtain ⟨D⟩ := WeierstrassCurve.nonempty_fullTranslationDatum_two
+    (E.toShortNF • E) hq2 hj'
+  obtain ⟨N⟩ := WeierstrassCurve.exists_potentiallyGoodModel_of_fullTranslationDatum
+    (E.toShortNF • E) D
+  exact ⟨{
+    K := N.K
+    R := N.R
+    resEquiv := N.resEquiv
+    V := N.V
+    C := N.C * (E.toShortNF.map (algebraMap ℚ N.K))
+    V_eq := by
+      have hmv : (E.toShortNF.map (algebraMap ℚ N.K)) • (E.baseChange N.K)
+          = (E.toShortNF • E).baseChange N.K := map_variableChange _ _ _
+      rw [N.V_eq, mul_smul, hmv] }⟩
+
 /-- **The ARITHMETIC half: integral `j`-invariant produces a good model over a
 number field with residue degree one at `q`** (opened 2026-07-27 by
 decomposing `exists_frobeniusAut_of_potentiallyGoodReduction` below;
-**DECOMPOSED 2026-07-27** into its tame and wild halves, of which
-`exists_potentiallyGoodModel_of_jIntegral_five_le` is PROVEN and
+**DECOMPOSED 2026-07-27** into its tame and wild halves; **EXTENDED TO `q = 2`
+on 2026-07-28**, so the statement is now uniform in `q` and carries no
+`hq2 : q ≠ 2`). Of the three halves,
+`exists_potentiallyGoodModel_of_jIntegral_five_le` is PROVEN,
 `exists_potentiallyGoodModel_of_jIntegral_three` is PROVEN modulo the single
-remaining leaf `nonempty_translationDatum_three`). No
+remaining leaf `nonempty_translationDatum_three`, and
+`exists_potentiallyGoodModel_of_jIntegral_two` is PROVEN modulo
+`nonempty_fullTranslationDatum_two`. No
 Galois theory appears here; the whole content is reduction theory of Weierstrass
 equations.
 
-THE PROOF BELOW is only the case split: a prime `q ≠ 2` is either `3` or `≥ 5`
-(`4` is not prime), and the two halves are separately owned. `5 ≤ q` is PROVEN
+THE PROOF BELOW is only the case split: a prime is `2`, or `3`, or `≥ 5`
+(`4` is not prime), and the three halves are separately owned. `5 ≤ q` is PROVEN
 over `EllipticCurve/TorsionReduction.lean`'s base `ℚ(q^{1/12})`, upgraded to a
-DVR here; `q = 3` is wildly ramified and is where all the remaining difficulty
-sits — read that leaf's docstring, which records three independent reasons the
-tame route does not extend and lists the machinery already built for it.
+DVR here; `q = 3` and `q = 2` are wildly ramified and are where all the
+remaining difficulty sits — read those leaves' docstrings, which record why the
+tame route does not extend and list the machinery already built for them.
 
-THE INFORMAL PROOF, kept for the wild half. Locally, `0 ≤ v_q(j(E))` is
+**WHY `hq2 : q ≠ 2` IS GONE, and what it was doing.** It was never a
+mathematical restriction — it recorded that the TAME route reaches only odd
+primes. Consumers were inheriting it and paying for it: it is why
+`map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg` had to be cut into a
+`q ≠ 2` half and a separate `q = 2` leaf. Removing it here removes the reason
+for that split. It does NOT remove `hq2` from
+`exists_frobeniusAut_of_potentiallyGoodReduction`, whose GALOIS half
+(`exists_frobeniusAut_of_potentiallyGoodModel`) has its own, independent, use
+of `q ≠ 2` — that one is about the separability of the `2`-division polynomial
+mod `q` and lives on `PotentiallyGoodModel.exists_isTorsionReduction`.
+
+THE INFORMAL PROOF, kept for the wild halves. Locally, `0 ≤ v_q(j(E))` is
 equivalent to potential good reduction (Silverman *AEC* VII.5.5), so `E/ℚ_q`
 acquires good reduction over some finite `L/ℚ_q`. Three further steps produce
 the datum:
@@ -10226,13 +10557,14 @@ unramified extension of `ℚ_q` but over no totally ramified one — which the
 unit-discriminant argument of step 1 rules out for `q` odd. -/
 theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {q : ℕ} [Fact q.Prime] (hq : q.Prime)
-    (hq2 : q ≠ 2) (hj : 0 ≤ padicValRat q E.j) :
+    (hj : 0 ≤ padicValRat q E.j) :
     Nonempty (E.PotentiallyGoodModel q) := by
-  have h2 := hq.two_le
-  rcases eq_or_lt_of_le (show 3 ≤ q by omega) with h | h
-  · exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_three E h.symm hj
-  · have hq4 : q ≠ 4 := by rintro rfl; exact absurd hq (by decide)
-    exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_five_le E (by omega) hj
+  rcases eq_or_lt_of_le hq.two_le with h | h
+  · exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_two E h.symm hj
+  · rcases eq_or_lt_of_le (show 3 ≤ q by omega) with h3 | h3
+    · exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_three E h3.symm hj
+    · have hq4 : q ≠ 4 := by rintro rfl; exact absurd hq (by decide)
+      exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_five_le E (by omega) hj
 
 /-- **The reduction of the good model, transported to `𝔽_q`** (PROVEN
 2026-07-27): the reduction of `D.V` over the residue field of `D.R`, carried to
@@ -11961,7 +12293,7 @@ theorem WeierstrassCurve.exists_frobeniusAut_of_potentiallyGoodReduction
           hq.toHeightOneSpectrumRingOfIntegersRat) x) =
         WeierstrassCurve.autTorsionEnd _ C hC N
           (WeilPairing.frobeniusTorsionEnd q Wbar₀ N (ψ₀ x)) :=
-  (E.exists_potentiallyGoodModel_of_jIntegral hq hq2 hj).elim
+  (E.exists_potentiallyGoodModel_of_jIntegral hq hj).elim
     (E.exists_frobeniusAut_of_potentiallyGoodModel hN hq hq2 hqN)
 
 open Polynomial in
