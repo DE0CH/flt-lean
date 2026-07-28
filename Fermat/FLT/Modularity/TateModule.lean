@@ -247,6 +247,16 @@ public import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 public import Mathlib.LinearAlgebra.BilinearForm.Properties
 public import Mathlib.FieldTheory.Finiteness
 public import Mathlib.NumberTheory.NumberField.Ideal.Basic
+-- the four below serve `exists_isAlt_nondegenerate_of_adjointPairing`: the trace
+-- form of `κ / 𝔽_q` and its nondegeneracy (`traceForm_nondegenerate`, which needs
+-- `PerfectField (ZMod q)` from `Mathlib.FieldTheory.Perfect`), the `ZMod q`-algebra
+-- structure of a ring of characteristic `q`, `AddMonoidHom.toZModLinearMap`, and
+-- `zmodAddCyclicAddEquiv` for the cyclic target group
+public import Mathlib.RingTheory.Trace.Basic
+public import Mathlib.FieldTheory.Perfect
+public import Mathlib.Algebra.Algebra.ZMod
+public import Mathlib.Algebra.Module.ZMod
+public import Mathlib.GroupTheory.SpecificGroups.Cyclic
 
 @[expose] public section
 
@@ -14216,11 +14226,288 @@ theorem card_torsion_span_natCast_finiteBase
     exact hnorm
   rw [hq, ← pow_mul, Nat.mul_comm]
 
+/-- **A MULTIPLICATIVE PAIRING THAT IS ALTERNATING, ADJOINT AND
+NONDEGENERATE UPGRADES TO AN ALTERNATING NONDEGENERATE `κ`-BILINEAR
+FORM** (**PROVEN 2026-07-28** — SCHEME-FREE LINEAR ALGEBRA over a finite
+field; Mumford *Abelian Varieties* §20, Milne *Abelian Varieties* §I.13,
+where this is the passage from the `μ_q`-valued Weil pairing to the
+`𝒪_D/J`-valued one).
+
+This is the algebraic half of `even_dim_torsion_of_isMaximal_finiteBase`
+below and it mentions no scheme, no abelian variety and no number field:
+it is a statement about a finite `κ`-vector space `V` carrying a pairing
+into a cyclic group `μ` of exponent dividing `q = char κ`.  It is
+deliberately stated in the MULTIPLICATIVE vocabulary of
+`DualStruct.weil`, so that the consumer below has nothing to translate.
+
+THE ARGUMENT, in four steps — this is the proof written below, with the
+step numbers of the docstring matching the `### n` comments of the body.
+
+1. *Skew.*  Expanding `e (y + z) (y + z) = 1` with `hself`, `hel` and
+   `her` gives `e z y = (e y z)⁻¹`.
+
+2. *Alternation along scalars*: `e (a • y) y = 1` for EVERY `a : κ`, not
+   only `a = 1`.  This is what `hself` alone does not give and what the
+   whole construction needs.  From `hact` and step 1,
+   `e (a • y) y = e y (a • y) = (e (a • y) y)⁻¹`, so `e (a • y) y` is
+   `2`-torsion; and `e (a² • y) y = e (a • y) (a • y) = 1` by `hself` at
+   `a • y`, so it is also killed by every square.  For `q` odd the first
+   fact suffices (`2`-torsion in a group of exponent `q`); for `q = 2`
+   the second does, because the Frobenius `a ↦ a²` is SURJECTIVE on a
+   finite field of characteristic `2`.  Both cases are needed — neither
+   argument covers the other.
+
+3. *The `κ`-valued form.*  `μ` is cyclic of exponent dividing the prime
+   `q`, hence trivial or of order exactly `q`; in the trivial case `hnd`
+   forces `V = 0` and `B := 0` works.  Otherwise fix an isomorphism
+   `Additive μ ≃+ ZMod q` and let `b : V → V → ZMod q` be the transported
+   pairing.  For fixed `y, z` the map `a ↦ b (a • y) z` is
+   `ZMod q`-linear in `a` (additivity is `add_smul` plus `hel`;
+   `ZMod q`-homogeneity is automatic for an additive map between
+   `ZMod q`-modules), i.e. an element of the `𝔽_q`-dual of `κ`.  The
+   trace form of the finite — hence SEPARABLE — extension `κ / 𝔽_q` is
+   nondegenerate, so there is a unique `B y z : κ` with
+   `Tr (a * B y z) = b (a • y) z` for all `a`.
+
+4. *The three properties of `B`.*  `κ`-bilinearity is `hact` plus
+   associativity of multiplication inside the trace, read through the
+   uniqueness in step 3; alternation is step 2; and nondegeneracy is
+   `hnd`, read at `a = 1`.
+
+**WHY THE TARGET MUST BE CYCLIC OF EXPONENT `q` AND NOT MERELY
+`q`-TORSION.**  Step 4's nondegeneracy needs the transported `b` to
+detect every nonzero value of `e`.  If `μ` were a `q`-torsion group of
+`𝔽_q`-dimension `≥ 2`, no single functional `μ → 𝔽_q` would do that, and
+the construction would produce a form with a nonzero radical.  In the
+application `μ = μ_q(k̄)` with `q ≠ char k`, which is cyclic — that is
+`rootsOfUnity.isCyclic`, and it is the reason the prime-to-`p`
+hypothesis is genuinely used on the way to the pairing even though it is
+not load-bearing for the parity CONCLUSION.
+
+**NON-VACUITY.**  `hnd` is the content: without it `e ≡ 1` satisfies
+every other hypothesis over every `V`, and the conclusion would then be
+false for `V` of odd positive dimension. -/
+theorem exists_isAlt_nondegenerate_of_adjointPairing
+    {κ : Type*} [Field κ] [Finite κ] {q : ℕ} (hq : q.Prime) (hqκ : (q : κ) = 0)
+    {V : Type*} [AddCommGroup V] [Module κ V] [Finite V]
+    {μ : Type*} [CommGroup μ] [IsCyclic μ] (hμq : ∀ z : μ, z ^ q = 1)
+    (e : V → V → μ)
+    (hel : ∀ y y' z, e (y + y') z = e y z * e y' z)
+    (her : ∀ y z z', e y (z + z') = e y z * e y z')
+    (hself : ∀ y, e y y = 1)
+    (hact : ∀ (a : κ) (y z : V), e (a • y) z = e y (a • z))
+    (hnd : ∀ y : V, (∀ z, e y z = 1) → y = 0) :
+    ∃ B : LinearMap.BilinForm κ V, B.IsAlt ∧ B.Nondegenerate := by
+  classical
+  haveI : Fact q.Prime := ⟨hq⟩
+  haveI hchar : CharP κ q := (CharP.charP_iff_prime_eq_zero hq).mpr hqκ
+  -- ### 0. a cyclic group of exponent dividing the prime `q` embeds into `ZMod q`
+  have hZ : ∃ ψ : Additive μ →+ ZMod q, Function.Injective ψ := by
+    obtain ⟨g, hg⟩ := (isCyclic_iff_exists_zpowers_eq_top (α := μ)).mp inferInstance
+    have hcard : Nat.card μ = orderOf g := (orderOf_eq_card_of_zpowers_eq_top hg).symm
+    have hdvd : orderOf g ∣ q := orderOf_dvd_of_pow_eq_one (hμq g)
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hq _ hdvd) with h1 | hqq
+    · refine ⟨0, ?_⟩
+      have hg1 : g = 1 := orderOf_eq_one_iff.mp h1
+      have hsub : Subsingleton μ := by
+        refine ⟨fun x y => ?_⟩
+        have hx : x ∈ Subgroup.zpowers g := by rw [hg]; exact Subgroup.mem_top x
+        have hy : y ∈ Subgroup.zpowers g := by rw [hg]; exact Subgroup.mem_top y
+        rw [hg1, Subgroup.zpowers_one_eq_bot, Subgroup.mem_bot] at hx hy
+        rw [hx, hy]
+      exact fun x y _ => Subsingleton.elim x y
+    · haveI : IsAddCyclic (Additive μ) := isAddCyclic_additive_iff.2 inferInstance
+      have hcq : Nat.card (Additive μ) = q := hcard.trans hqq
+      have E : ZMod (Nat.card (Additive μ)) ≃+ Additive μ := zmodAddCyclicAddEquiv inferInstance
+      rw [hcq] at E
+      exact ⟨E.symm.toAddMonoidHom, E.symm.injective⟩
+  obtain ⟨ψ, hψ⟩ := hZ
+  -- ### 1. the pairing, read additively in `ZMod q`
+  set b : V → V → ZMod q := fun y z => ψ (Additive.ofMul (e y z)) with hbdef
+  have hbl : ∀ y y' z, b (y + y') z = b y z + b y' z := by
+    intro y y' z; simp only [hbdef, hel, ofMul_mul, map_add]
+  have hbr : ∀ y z z', b y (z + z') = b y z + b y z' := by
+    intro y z z'; simp only [hbdef, her, ofMul_mul, map_add]
+  have hbself : ∀ y, b y y = 0 := by
+    intro y; simp only [hbdef, hself, ofMul_one, map_zero]
+  have hbact : ∀ (a : κ) (y z : V), b (a • y) z = b y (a • z) := by
+    intro a y z; simp only [hbdef, hact]
+  have hbnd : ∀ y : V, (∀ z, b y z = 0) → y = 0 := by
+    intro y hy
+    refine hnd y fun z => ?_
+    have h : Additive.ofMul (e y z) = 0 := hψ (by rw [map_zero]; exact hy z)
+    simpa using h
+  have hbskew : ∀ y z : V, b z y = - b y z := by
+    intro y z
+    have h := hbself (y + z)
+    rw [hbl, hbr, hbr, hbself, hbself, zero_add, add_zero] at h
+    linear_combination h
+  -- ### 2. ALTERNATION ALONG SCALARS: `b (a • y) y = 0` for every `a : κ`
+  have hsq : ∀ (a : κ) (y : V), b ((a * a) • y) y = 0 := by
+    intro a y
+    rw [mul_smul, hbact, hbself]
+  have hdouble : ∀ (a : κ) (y : V), b (a • y) y + b (a • y) y = 0 := by
+    intro a y
+    have h1 : b (a • y) y = b y (a • y) := hbact a y y
+    have h2 : b y (a • y) = - b (a • y) y := hbskew (a • y) y
+    linear_combination h1 + h2
+  have halt2 : ∀ (a : κ) (y : V), b (a • y) y = 0 := by
+    intro a y
+    by_cases h2 : q = 2
+    · -- characteristic two: `c ↦ c * c` is injective, hence surjective on a FINITE field
+      have hchar2 : (2 : κ) = 0 := by
+        have h := hqκ
+        rw [h2] at h
+        exact_mod_cast h
+      have hinj : Function.Injective (fun c : κ => c * c) := by
+        intro x y hxy
+        simp only at hxy
+        have hz : (x - y) * (x - y) = 0 := by
+          linear_combination hxy + (y * (y - x)) * hchar2
+        exact sub_eq_zero.mp (mul_self_eq_zero.mp hz)
+      obtain ⟨c, hc⟩ := Finite.injective_iff_surjective.mp hinj a
+      simp only at hc
+      rw [← hc]
+      exact hsq c y
+    · -- odd characteristic: `2` is invertible in the field `ZMod q`
+      have h2ne : (2 : ZMod q) ≠ 0 := by
+        intro hz
+        have h : ((2 : ℕ) : ZMod q) = 0 := by exact_mod_cast hz
+        exact h2 ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp
+          ((CharP.cast_eq_zero_iff (ZMod q) q 2).mp h))
+      have hprod : (2 : ZMod q) * b (a • y) y = 0 := by
+        linear_combination hdouble a y
+      exact (mul_eq_zero.mp hprod).resolve_left h2ne
+  -- ### 3. the trace form of the finite — hence SEPARABLE — extension `κ / 𝔽_q`
+  letI : Algebra (ZMod q) κ := ZMod.algebra κ q
+  haveI : FiniteDimensional (ZMod q) κ := Module.Finite.of_finite
+  have htnd : (Algebra.traceForm (ZMod q) κ).Nondegenerate := traceForm_nondegenerate (ZMod q) κ
+  set T := (Algebra.traceForm (ZMod q) κ).toDual htnd with hTdef
+  have hT : ∀ (c a : κ), T c a = Algebra.trace (ZMod q) κ (c * a) := by
+    intro c a
+    rw [hTdef, LinearMap.BilinForm.toDual_def, Algebra.traceForm_apply]
+  set φ : V → V → Module.Dual (ZMod q) κ := fun y z =>
+    (AddMonoidHom.mk' (fun a : κ => b (a • y) z)
+      (fun a a' => by rw [add_smul, hbl])).toZModLinearMap q with hφdef
+  have hφ : ∀ (y z : V) (a : κ), φ y z a = b (a • y) z := fun _ _ _ => rfl
+  set Bf : V → V → κ := fun y z => T.symm (φ y z) with hBfdef
+  have hB : ∀ (y z : V) (a : κ), Algebra.trace (ZMod q) κ (Bf y z * a) = b (a • y) z := by
+    intro y z a
+    rw [← hT, hBfdef]
+    simp only [LinearEquiv.apply_symm_apply]
+    exact hφ y z a
+  have hBinj : ∀ (c c' : κ), (∀ a, Algebra.trace (ZMod q) κ (c * a)
+      = Algebra.trace (ZMod q) κ (c' * a)) → c = c' := by
+    intro c c' h
+    have hTe : T c = T c' := by ext a; rw [hT, hT]; exact h a
+    exact T.injective hTe
+  -- ### 4. the four bilinearity clauses, alternation and nondegeneracy
+  have hBl : ∀ y y' z, Bf (y + y') z = Bf y z + Bf y' z := by
+    intro y y' z
+    refine hBinj _ _ fun a => ?_
+    rw [hB, add_mul, map_add, hB, hB, smul_add, hbl]
+  have hBsl : ∀ (c : κ) (y z : V), Bf (c • y) z = c * Bf y z := by
+    intro c y z
+    refine hBinj _ _ fun a => ?_
+    rw [hB, show c * Bf y z * a = Bf y z * (a * c) by ring, hB, smul_smul]
+  have hBr : ∀ y z z', Bf y (z + z') = Bf y z + Bf y z' := by
+    intro y z z'
+    refine hBinj _ _ fun a => ?_
+    rw [hB, add_mul, map_add, hB, hB, hbr]
+  have hBsr : ∀ (c : κ) (y z : V), Bf y (c • z) = c * Bf y z := by
+    intro c y z
+    refine hBinj _ _ fun a => ?_
+    rw [hB, show c * Bf y z * a = Bf y z * (a * c) by ring, hB, ← hbact, smul_smul, mul_comm c a]
+  refine ⟨LinearMap.mk₂ κ Bf hBl (fun c y z => hBsl c y z) hBr (fun c y z => hBsr c y z), ?_, ?_⟩
+  · intro y
+    show Bf y y = 0
+    refine hBinj _ _ fun a => ?_
+    rw [hB, zero_mul, map_zero, halt2 a y]
+  · have hBskew : ∀ y z, Bf z y = - Bf y z := by
+      intro y z
+      refine hBinj _ _ fun a => ?_
+      rw [hB, neg_mul, map_neg, hB, hbskew, hbact]
+    have hzero : ∀ y z, Bf y z = 0 → b y z = 0 := by
+      intro y z h
+      have h1 := hB y z 1
+      rw [h, zero_mul, map_zero, one_smul] at h1
+      exact h1.symm
+    refine ⟨fun y hy => hbnd y fun z => hzero y z (hy z), fun z hz => hbnd z fun y => ?_⟩
+    refine hzero z y ?_
+    rw [hBskew, show Bf y z = 0 from hz y, neg_zero]
+
+open _root_.NumberField in
+/-- **AN `𝒪_D`-LINEAR POLARIZATION EXISTS OVER A FINITE BASE, AND ITS
+INDUCED PAIRING IS NONDEGENERATE AT `J`** (sorry leaf — the GEOMETRIC
+half of `even_dim_torsion_of_isMaximal_finiteBase` below; Mumford
+*Abelian Varieties* §13, §16, §23, Milne *Abelian Varieties* §I.10–13).
+
+This is the gap that the characteristic-zero sibling
+`even_dim_torsion_of_isMaximal` dodged through `exists_bettiFrame`, and
+it is the one named in that leaf's own docstring: nothing in
+`Modularity/AbelianScheme.lean` asserts that a `DualStruct` or a
+`PolarizationStruct` EXISTS for a given `ab`/`m`.  Everything the
+`PolarizationStruct` namespace proves — `pairing_add_left`,
+`pairing_add_right`, `pairing_self`, `pairing_act`,
+`pairing_nondegenerate` — is a consequence of the axioms, so this
+existence statement is the whole geometric content of the parity leaf.
+
+THE CLASSICAL FACTS BEHIND IT.  An abelian variety over any field
+carries a dual `A^∨ = Pic⁰(A)` with its canonical Weil pairing
+`A[I] × A^∨[I] ⟶ μ_n` (that is `DualStruct`), and it admits a
+polarization `λ : A ⟶ A^∨` — over a finite field one may take the one
+attached to an ample line bundle.  `DualStruct.weil_act`, the
+`R`-adjointness, is the statement that the Rosati involution is the
+identity on `𝒪_D`; for `D` TOTALLY REAL this is automatic, since the
+Rosati involution is positive and a totally real field admits no
+nontrivial positive involution.  That is where
+`NumberField.IsTotallyReal D` is used, and it is why the induced pairing
+is `𝒪_D`-bilinear rather than merely `ℤ`-bilinear.
+
+`J ∈ 𝒩` is nondegeneracy of the INDUCED pairing at level `J`, i.e.
+`ker λ ∩ A'[J] = 0`, i.e. `deg λ` prime to `J`.  The `𝒩`-guard on
+`PolarizationStruct` exists precisely so that this may be demanded at
+the levels one cares about without forcing a PRINCIPAL polarization,
+which a Hilbert–Blumenthal abelian variety need not admit; see that
+structure's docstring.  A producer may enlarge `deg λ` away from `J`
+freely, so a single level is never an obstruction.
+
+**THE PRIME-TO-`p` HYPOTHESIS `hqN` IS LOAD-BEARING HERE**, and this is
+where it is spent: at a maximal ideal over `p = char k` the polarized
+pairing on the — possibly trivial — `p`-torsion carries no nondegeneracy
+whatsoever.  The parity CONCLUSION of the consumer is probably true at
+`p` as well (`r = 0` is even); it is this intermediate statement that
+fails there.
+
+NOTE ON THE SIBLING SUBTREE.  `det_frobLevelMatrix_eq_natCast_finiteBase`
+wants Galois EQUIVARIANCE (`PolarizationStruct.pairing_gal`) from the
+same polarization, where this leaf wants alternation and nondegeneracy.
+They are expected to share exactly this existence statement and nothing
+else: whoever proves this leaf should state it once and let both
+consumers cite it. -/
+theorem exists_polarizationStruct_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (hdim' : SmoothOfRelativeDimension (Module.finrank ℚ D) f')
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal)
+    (hqJ : (q : NumberField.RingOfIntegers D) ∈ J) :
+    ∃ (d : DualStruct ab' m') (𝒩 : Set (Ideal (NumberField.RingOfIntegers D)))
+      (𝔞 : Ideal (NumberField.RingOfIntegers D)) (𝔞pos : Set (NumberField.RingOfIntegers D))
+      (_ : PolarizationStruct d 𝒩 𝔞 𝔞pos), J ∈ 𝒩 :=
+  sorry
+
 open _root_.NumberField in
 /-- **THE RESIDUAL RANK IS EVEN AT EVERY MAXIMAL IDEAL OF RESIDUE
-CHARACTERISTIC PRIME TO `#k`** (sorry leaf — the Weil pairing attached to
-an `𝒪_D`-linear polarization; Mumford *Abelian Varieties* §16, §20, §23,
-Milne *Abelian Varieties* §I.13).
+CHARACTERISTIC PRIME TO `#k`** (**PROVEN 2026-07-28** over the SINGLE new
+leaf `exists_polarizationStruct_finiteBase` — the geometric half; its
+algebraic half `exists_isAlt_nondegenerate_of_adjointPairing` is proven
+above; the Weil pairing attached to an `𝒪_D`-linear polarization;
+Mumford *Abelian Varieties* §16, §20, §23, Milne *Abelian Varieties*
+§I.13).
 
 `#A'[J] = #(𝒪_D/J)^(2r)` for some `r`.  This is the finite-base
 counterpart of `even_dim_torsion_of_isMaximal`, and — unlike that one —
@@ -14236,30 +14523,99 @@ vector space over the residue field `𝒪_D/J` and has even dimension; the
 mathlib gap that closes that last step is already filled here by
 `even_finrank_of_isAlt_nondegenerate` and
 `exists_card_eq_pow_two_mul_of_isAlt_nondegenerate` above, which
-`LevelFrame.card_tors_eq_sq` also consumes.  What is missing is the
-EXISTENCE of an `𝒪_D`-linear polarization — the same gap the
-characteristic-zero sibling records, where it was dodged via
-`exists_bettiFrame`.
+`LevelFrame.card_tors_eq_sq` also consumes.
+
+**WHAT THE PROOF BELOW DOES, AND WHERE THE TWO RESIDUES SIT.**  The body
+is now written in full and consumes exactly three inputs, of which only
+ONE — the geometric one — is open:
+
+* `card_torsion_span_natCast_finiteBase` (the sibling leaf, separate
+  owner) — used ONLY to know that `A'[J]` is FINITE, through
+  `A'[J] ⊆ A'[q𝒪_D]` and `#A'[q𝒪_D] = q^(2g) ≠ 0`.  Nothing about the
+  VALUE of that count is used here, so this leaf does not inherit its
+  content;
+* `exists_polarizationStruct_finiteBase` — the geometric residue: that
+  an `𝒪_D`-linear polarization exists at all, nondegenerate at `J`.
+  This is the same gap the characteristic-zero sibling records, where it
+  was dodged via `exists_bettiFrame`;
+* `exists_isAlt_nondegenerate_of_adjointPairing` — PROVEN above: turning
+  the MULTIPLICATIVE `μ_q`-valued pairing supplied by
+  `PolarizationStruct.pairing` into an ADDITIVE `𝒪_D/J`-bilinear form.
+  That step is not bookkeeping: `pairing_act` gives ADJOINTNESS
+  (`⟨a·y, z⟩ = ⟨y, a·z⟩`), not `𝒪_D/J`-homogeneity, and the target
+  `μ_q` is not an `𝒪_D/J`-module at all, so the residue field has to be
+  brought in through the trace form of `κ / 𝔽_q`.
+
+The glue between them is the module theory: `A'[J]` is `torsionBySet` for
+`Mult.module`, hence a module over `𝒪_D/J` by mathlib's
+`Submodule.instModuleQuotient…`, and `𝒪_D/J` is a finite field because
+`J` is maximal and nonzero.
+
+**IS THIS LEAF STILL NEEDED?  CHECKED 2026-07-28, AND THE ANSWER IS YES
+AS THE TREE IS WIRED — but only by one hypothesis of one assembly.**
+`card_torsion_span_singleton_of_field` above now gives the count at a
+principal ideal over an ARBITRARY field base, which raises the obvious
+question of whether `LevelFrame.card_tors_eq_sq_of_principal` reaches
+`card_torsion_of_isMaximal_finiteBase` on its own, making parity and
+nonvanishing both unnecessary.  It does NOT, as those two are stated:
+that assembly's `hprin` demands the count at EVERY nonzero principal
+ideal, and over a finite field that is **FALSE** — take `a = p = char k`
+and a supersingular fibre, where `#A'[(p)] = p^r` with `r ≤ g` while
+`#(𝒪_D/(p))² = p^(2g)`.  That is the same counterexample
+`card_torsion_span_singleton_of_field`'s own docstring gives for dropping
+its `hchar`, and it is why that hypothesis is there.
+
+THE REPAIR, IF SOMEONE WANTS IT, AND THE CHECK THAT WOULD REFUTE THIS
+NOTE.  `card_tors_eq_sq_of_principal` uses `hprin` **exactly once**, at
+the generator `a` of `J ^ h` produced from the class group inside its own
+proof (`have h1 := hprin a ha0`, in the step commented "the count at
+`J ^ h`").  So weakening `hprin` to
+
+    ∀ (n : ℕ) (a : 𝒪_D), a ≠ 0 → Ideal.span {a} = J ^ n → …
+
+costs its characteristic-zero consumer
+`card_torsion_isMaximal_of_isAlgClosed` nothing (it holds the stronger
+form) and lets the finite-base consumer discharge it: `N(J ^ n)` is a
+power of `N(J)`, hence prime to `char k` whenever `J` is, which is
+`natCast_ne_zero_of_coprime_natCard` composed with
+`Ideal.absNorm_pow`.  Grep for `hprin` in this file to check the "exactly
+once" claim; it takes a second.
+
+If that repair lands, THIS LEAF AND ITS GEOMETRIC RESIDUE
+`exists_polarizationStruct_finiteBase` BECOME FREE-FLOATING and should be
+DELETED, together with `card_torsion_ne_one_of_isMaximal_finiteBase` and
+`card_torsion_span_natCast_finiteBase` — and, unless
+`det_frobLevelMatrix_eq_natCast_finiteBase` is first rewired to cite it,
+the polarization existence statement disappears with them.  That is a
+cut-level decision across four owners' declarations, not one this leaf's
+owner should take unilaterally.
 
 **THE PAIRING IS ONLY AVAILABLE PRIME TO `p`**, which is why `hq`/`hqN`
 are carried: over a finite field the Weil pairing on `A'[J]` is
 nondegenerate exactly when `J` has residue characteristic different from
 `char k` (at `p` the pairing on the — possibly trivial — `p`-torsion
-carries no such information).
+carries no such information).  Both hypotheses are spent inside
+`exists_polarizationStruct_finiteBase`; `hqN` is additionally spent, here
+in the glue, on the cyclicity of `μ_q(k̄)` — see the corresponding
+paragraph of `exists_isAlt_nondegenerate_of_adjointPairing`.
 
 `hdim'` is carried for uniformity with the sibling leaf
 `card_torsion_ne_one_of_isMaximal_finiteBase`, where relative dimension
 `0` is an outright counterexample; here it is not needed for TRUTH (`r =
-0` satisfies the conclusion for the trivial fibre) but a prover will
-want it, since the honest route runs through the polarization of a fibre
-of positive dimension.
+0` satisfies the conclusion for the trivial fibre) but the route below
+does use it, since it passes through
+`card_torsion_span_natCast_finiteBase` and through the polarization of a
+fibre of positive dimension.
 
 NOTE ON THE SIBLING SUBTREE.  This leaf and
 `det_frobLevelMatrix_eq_natCast_finiteBase` both want a Weil pairing over
 a finite field, but they want different facts about it — ALTERNATION and
 NONDEGENERACY here, Galois EQUIVARIANCE (the cyclotomic character) there
 — and neither statement mentions the other.  They are expected to share
-infrastructure, not proofs. -/
+infrastructure, not proofs, and the shared infrastructure is now NAMED:
+`exists_polarizationStruct_finiteBase` above is what both should cite.
+The equivariance consumer needs `PolarizationStruct.pairing_gal`, which
+is already proven from the same axioms. -/
 theorem even_dim_torsion_of_isMaximal_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -14271,8 +14627,96 @@ theorem even_dim_torsion_of_isMaximal_finiteBase
     (J : Ideal (NumberField.RingOfIntegers D)) (hJ : J.IsMaximal)
     (hqJ : (q : NumberField.RingOfIntegers D) ∈ J) :
     ∃ r, Nat.card (m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).1
-      = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ (2 * r) :=
-  sorry
+      = Nat.card (NumberField.RingOfIntegers D ⧸ J) ^ (2 * r) := by
+  classical
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  letI : Module (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+    m'.module (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+  haveI : J.IsMaximal := hJ
+  -- ### 1. the residue field `𝒪_D/J` is a FINITE FIELD
+  have hqne : (q : NumberField.RingOfIntegers D) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hJ0 : J ≠ ⊥ := fun h => hqne (by rw [h] at hqJ; exact Ideal.mem_bot.mp hqJ)
+  haveI : Finite (NumberField.RingOfIntegers D ⧸ J) :=
+    Ideal.finiteQuotientOfFreeOfNeBot J hJ0
+  letI : Field (NumberField.RingOfIntegers D ⧸ J) := Ideal.Quotient.field J
+  -- ### 2. `A'[J]` is FINITE, through `A'[J] ⊆ A'[q𝒪_D]`
+  have hcop : Nat.Coprime q N := (Nat.Prime.coprime_iff_not_dvd hq).mpr hqN
+  have hcardq : Nat.card (Submodule.torsionBySet (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+      ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
+        Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)))
+      = q ^ (2 * Module.finrank ℚ D) :=
+    card_torsion_span_natCast_finiteBase hfin N hN ab' m' hdim' q hq.ne_zero hcop
+  haveI hfinq : Finite (Submodule.torsionBySet (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+      ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
+        Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D))) := by
+    refine (Nat.card_ne_zero.mp ?_).2
+    rw [hcardq]
+    exact pow_ne_zero _ hq.ne_zero
+  have hle : (Submodule.torsionBySet (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+      ((J : Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)))
+      ≤ Submodule.torsionBySet (NumberField.RingOfIntegers D)
+        (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
+          Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)) :=
+    LevelFrame.tors_mono (Ideal.span_le.2 (by simpa using hqJ))
+  haveI hfinJ : Finite (Submodule.torsionBySet (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+      ((J : Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D))) :=
+    Finite.of_injective (fun x => (⟨(x : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))), hle x.2⟩ :
+        Submodule.torsionBySet (NumberField.RingOfIntegers D)
+          (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+          ((Ideal.span {(q : NumberField.RingOfIntegers D)} :
+            Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D))))
+      (by intro x y hxy; simp only [Subtype.mk.injEq] at hxy; exact Subtype.ext hxy)
+  -- ### 3. the polarization, and the `μ_q`-valued pairing it induces on `A'[J]`
+  obtain ⟨d, 𝒩, 𝔞, 𝔞pos, pol, hJ𝒩⟩ :=
+    exists_polarizationStruct_finiteBase hfin N hN ab' m' hdim' q hq hqN J hJ hqJ
+  set V := Submodule.torsionBySet (NumberField.RingOfIntegers D)
+      (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+      ((J : Ideal (NumberField.RingOfIntegers D)) : Set (NumberField.RingOfIntegers D)) with hVdef
+  set e : V → V → rootsOfUnity q (AlgebraicClosure k) :=
+    fun y z => pol.pairing (𝟙 (Spec (CommRingCat.of k))) J q hqJ (y : _) (z : _) with hedef
+  have hmem : ∀ y : V, (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+      ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) J).1 := fun y => y.2
+  have hel : ∀ y y' z : V, e (y + y') z = e y z * e y' z := fun y y' z =>
+    pol.pairing_add_left _ _ _ _ _ _ _ (hmem y) (hmem y') (hmem z)
+  have her : ∀ y z z' : V, e y (z + z') = e y z * e y z' := fun y z z' =>
+    pol.pairing_add_right _ _ _ _ _ _ _ (hmem y) (hmem z) (hmem z')
+  have hself : ∀ y : V, e y y = 1 := fun y => pol.pairing_self _ _ _ _ _ (hmem y)
+  have hact : ∀ (a : NumberField.RingOfIntegers D ⧸ J) (y z : V), e (a • y) z = e y (a • z) := by
+    intro a y z
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective a
+    have h1 : ((Ideal.Quotient.mk J b • y : V) :
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        = m'.act b (y : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      congrArg Subtype.val (Submodule.torsionBySet.mk_smul _ b y)
+    have h2 : ((Ideal.Quotient.mk J b • z : V) :
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+        = m'.act b (z : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      congrArg Subtype.val (Submodule.torsionBySet.mk_smul _ b z)
+    simp only [hedef, h1, h2]
+    exact pol.pairing_act _ _ _ _ b _ _ (hmem y) (hmem z)
+  have hnd : ∀ y : V, (∀ z, e y z = 1) → y = 0 := by
+    intro y hy
+    exact Subtype.ext (pol.pairing_nondegenerate _ _ _ _ hJ𝒩 _ (hmem y) fun z hz => hy ⟨z, hz⟩)
+  -- ### 4. the residue field has characteristic `q`, and `μ_q(k̄)` is cyclic of exponent `q`
+  have hqκ : ((q : ℕ) : NumberField.RingOfIntegers D ⧸ J) = 0 := by
+    rw [← map_natCast (Ideal.Quotient.mk J) q]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr hqJ
+  have hμq : ∀ z : rootsOfUnity q (AlgebraicClosure k), z ^ q = 1 := fun z =>
+    Subtype.ext (by simpa using (mem_rootsOfUnity q (z : (AlgebraicClosure k)ˣ)).mp z.2)
+  -- ### 5. the symplectic form, and the parity it forces
+  obtain ⟨B, halt, hBnd⟩ :=
+    exists_isAlt_nondegenerate_of_adjointPairing
+      (κ := NumberField.RingOfIntegers D ⧸ J) hq hqκ hμq e hel her hself hact hnd
+  obtain ⟨r, hr⟩ := exists_card_eq_pow_two_mul_of_isAlt_nondegenerate B halt hBnd
+  exact ⟨r, hr⟩
 
 open _root_.NumberField in
 /-- **THE RESIDUAL TORSION IS NONTRIVIAL AT EVERY MAXIMAL IDEAL OF
