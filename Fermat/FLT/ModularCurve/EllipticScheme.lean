@@ -1001,9 +1001,188 @@ theorem toHom_eq_of_addXYZ_not_span {K : CommRingCat.{0}} (hK : _root_.IsField �
   have hd : smul u c = d := ProjCoords.ext (by rw [smul_coord]; exact hu)
   rw [← toHom_smul u c, hd]
 
+/-- **A morphism `X ⟶ Proj 𝒜` built from global sections determines every RATIO of two
+homogeneous elements of the same degree, wherever the denominator is invertible**
+(**PROVEN 2026-07-28** — the entire scheme-theoretic content of
+`ProjCoords.exists_units_smul_of_toHom_eq`).
+
+Stated for an arbitrary graded ring because nothing in it is special to the Weierstrass
+ring, exactly as for `fromOfGlobalSections_eq_of_gradedSmul` above; the Weierstrass
+instantiation takes `s`, `t` to be two of the three coordinates `X̄`, `Ȳ`, `Z̄`, all of
+degree `1`.
+
+## Why it is TRUE (this is the proof that is written below)
+
+`hu : IsUnit (f t)` makes the single chart `D₊(t)` cover all of `X`:
+`Proj.fromOfGlobalSections_preimage_basicOpen` gives
+`F ⁻¹ᵁ D₊(t) = X.basicOpen (f t) = ⊤` for `F` the morphism built from `f`, and applying
+the same lemma to `g` together with `heq` gives `G ⁻¹ᵁ D₊(t) = X.basicOpen (g t) = ⊤`
+as well — so the SAME chart covers `X` for both, which is the only place `hu` is used
+and the reason no cover argument is needed.
+
+Over that chart the morphism IS a ring map out of `Away 𝒜 t`, and the ratio `s/t` is
+one of its elements (degree `0`, since `deg s = deg t = n`).  Concretely, writing
+`V := Proj.basicOpen 𝒜 t` and
+
+    γ H h := X.topIso.inv ≫ (X.isoOfEq h).inv ≫ (H ∣_ V)    for `h : H ⁻¹ᵁ V = ⊤`,
+
+one has `γ H h ≫ V.ι = H` (`Scheme.isoOfEq_inv_ι`, `Scheme.toIso_inv_ι`,
+`morphismRestrict_ι`), and `γ` depends on `H` alone, so `heq` gives `γ F _ = γ G _`
+— the usual `rintro H H' hH hH' rfl; rfl` dodge handles the proof arguments, which is
+what makes the dependent typing harmless.  Composing with
+`(Proj.basicOpenIsoSpec 𝒜 t ht hn).hom` turns each side into a morphism
+`X ⟶ Spec (Away 𝒜 t)`, and `Scheme.Hom.appTop` turns THAT into a ring map
+`ν : Away 𝒜 t →+* Γ(X, ⊤)` with `ν = ν'` for the two sides.
+
+The value of `ν` is then read off from the definition of
+`Proj.toBasicOpenOfGlobalSections` (via `Proj.fromOfGlobalSections_morphismRestrict`):
+it factors as `Away 𝒜 t → Localization.Away (f t) → Γ(X, ⊤)`, where the first map is
+`IsLocalization.map _ f _` composed with `HomogeneousLocalization.algebraMap`, sending
+`s/t` to `f s / f t`; and the second is the appTop of a morphism which,
+after `basicOpenIsoSpecAway_hom_SpecMap` and `morphismRestrict_ι`, composes with
+`Spec.map (algebraMap Γ(X, ⊤) _)` to give `X.toSpecΓ` — i.e. it is a RETRACTION of
+`algebraMap`, so it sends `a / (f t)^k` to the unique `w` with `w * (f t)^k = a`.
+
+Hence `ν (s/t) * f t = f s` and `ν (s/t) * g t = g s` from the two sides, and
+`g s * f t = ν(s/t) * g t * f t = f s * g t`.  Nothing beyond this is needed: the
+conclusion is deliberately stated as a cross-multiplication rather than as a division,
+so that no inverse has to be named and `IsUnit (g t)` never has to be produced.
+
+*Why the hypothesis `hu` cannot be dropped*: without it `D₊(t)` pulls back to a proper
+open of `X`, the identity holds only there, and over a general (non-reduced, or merely
+non-integral) `X` a section vanishing on an open need not vanish.  The consumer supplies
+`hu` from `span_coord` over a field.
+
+*Not in the pin* (checked 2026-07-28): `ProjectiveSpectrum/Basic.lean` has
+`_preimage_basicOpen`, `_morphismRestrict`, `_resLE` and `_toSpecZero` for
+`fromOfGlobalSections`, and no statement at all computing its chart ring map.  The
+refuting check for that claim is a grep for `fromOfGlobalSections` in
+`Mathlib/AlgebraicGeometry/`.
+
+*Shared with a sibling*: `ProjCoords.exists_of_specField` (surjectivity) needs the same
+chart ring map, in the opposite direction — it must BUILD coordinates out of
+`Away 𝒜 r →+* K`.  Its owner should reuse `hret`/`hsplit`/`hE` below verbatim: the
+retraction identity `θ ≫ Spec.map (algebraMap Γ(X,⊤) _) = X.toSpecΓ` and the splitting
+`γ ≫ (basicOpenIsoSpec).hom = θ ≫ Spec.map φ` are exactly the two facts that turn a
+morphism into (and, read backwards, out of) the ring map `Away 𝒜 t →+* Γ(X, ⊤)`. -/
+theorem mul_eq_mul_of_fromOfGlobalSections_eq {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {Y : Scheme.{0}}
+    (f g : A →+* Γ(Y, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (heq : Proj.fromOfGlobalSections 𝒜 f hf = Proj.fromOfGlobalSections 𝒜 g hg)
+    {n : ℕ} (hn : 0 < n) {s t : A} (hs : s ∈ 𝒜 n) (ht : t ∈ 𝒜 n) (hu : IsUnit (f t)) :
+    g s * f t = f s * g t := by
+  classical
+  -- the ratio `s / t`, an element of the chart ring `(A_t)₀`
+  set elt : HomogeneousLocalization.Away 𝒜 t :=
+    HomogeneousLocalization.mk ⟨n, ⟨s, hs⟩, ⟨t, ht⟩, Submonoid.mem_powers t⟩ with helt
+  have hopen : Y.basicOpen (f t) = Y.basicOpen (g t) := by
+    rw [← Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 f hf hn ht,
+      ← Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 g hg hn ht, heq]
+  have htopf : Y.basicOpen (f t) = ⊤ := Y.basicOpen_of_isUnit hu
+  have htopg : Y.basicOpen (g t) = ⊤ := hopen ▸ htopf
+  have hFV : Proj.fromOfGlobalSections 𝒜 f hf ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤ := by
+    rw [Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 f hf hn ht, htopf]
+  have hGV : Proj.fromOfGlobalSections 𝒜 g hg ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤ := by
+    rw [Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 g hg hn ht, htopg]
+  -- the chart morphism, as a function of the morphism into `Proj` alone
+  set γ : (H : Y ⟶ Proj 𝒜) → (H ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤) →
+      (Y ⟶ (Proj.basicOpen 𝒜 t).toScheme) :=
+    fun H h => Y.topIso.inv ≫ (Y.isoOfEq h).inv ≫ (H ∣_ Proj.basicOpen 𝒜 t) with hγdef
+  have hγeq : γ _ hFV = γ _ hGV := by
+    clear hγdef
+    revert hFV hGV
+    rw [heq]
+    intro hFV hGV
+    rfl
+  -- the value of the chart ring map at `s / t`
+  have main : ∀ (f' : A →+* Γ(Y, ⊤))
+      (hf' : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f' = ⊤)
+      (h' : Proj.fromOfGlobalSections 𝒜 f' hf' ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤),
+      (γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+          ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt)
+            * f' t = f' s := by
+    intro f' hf' h'
+    have hpre : Proj.fromOfGlobalSections 𝒜 f' hf' ⁻¹ᵁ Proj.basicOpen 𝒜 t = Y.basicOpen (f' t) :=
+      Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 f' hf' hn ht
+    have hle : Submonoid.powers t ≤ Submonoid.comap f' (Submonoid.powers (f' t)) := by
+      rw [← Submonoid.map_le_iff_le_comap, Submonoid.map_powers]
+    set θ : Y ⟶ Spec (CommRingCat.of (Localization.Away (f' t))) :=
+      Y.topIso.inv ≫ (Y.isoOfEq h').inv ≫ (Y.isoOfEq hpre).hom ≫
+        (Y.isoOfEq (Y.toSpecΓ_preimage_basicOpen (f' t))).inv ≫
+        (Y.toSpecΓ ∣_ PrimeSpectrum.basicOpen (f' t)) ≫
+        (basicOpenIsoSpecAway (f' t)).hom with hθdef
+    -- `θ` is a retraction of the localisation map
+    have hret : θ ≫ Spec.map (CommRingCat.ofHom
+        (algebraMap Γ(Y, ⊤) (Localization.Away (f' t)))) = Y.toSpecΓ := by
+      simp only [hθdef, Category.assoc, basicOpenIsoSpecAway_hom_SpecMap, morphismRestrict_ι,
+        Scheme.isoOfEq_inv_ι_assoc, Scheme.isoOfEq_hom_ι_assoc, Scheme.toIso_inv_ι_assoc]
+    -- the chart map splits through `θ`
+    have hsplit : γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom =
+        θ ≫ Spec.map (CommRingCat.ofHom
+          ((IsLocalization.map (Localization.Away (f' t)) f' hle).comp
+            (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t)))) := by
+      simp only [hγdef, hθdef]
+      rw [Proj.fromOfGlobalSections_morphismRestrict 𝒜 f' hf' hn ht]
+      simp only [Proj.toBasicOpenOfGlobalSections, Category.assoc, Iso.inv_hom_id,
+        Category.comp_id]
+    -- the two ring-level consequences
+    have hE : (Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv ≫
+        (γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop =
+        CommRingCat.ofHom ((IsLocalization.map (Localization.Away (f' t)) f' hle).comp
+            (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))) ≫
+          ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv ≫ θ.appTop) := by
+      rw [hsplit, Scheme.Hom.comp_appTop, ← Category.assoc, ← Scheme.ΓSpecIso_inv_naturality,
+        Category.assoc]
+    have hRid : CommRingCat.ofHom (algebraMap Γ(Y, ⊤) (Localization.Away (f' t))) ≫
+        ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv ≫ θ.appTop) =
+        𝟙 Γ(Y, ⊤) := by
+      rw [← Category.assoc, Scheme.ΓSpecIso_inv_naturality, Category.assoc,
+        ← Scheme.Hom.comp_appTop, hret, Scheme.toSpecΓ_appTop]
+      exact Iso.inv_hom_id _
+    have hev : ∀ a : Γ(Y, ⊤),
+        θ.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom
+          (algebraMap Γ(Y, ⊤) (Localization.Away (f' t)) a)) = a := by
+      intro a
+      exact congrArg (fun (ψ : Γ(Y, ⊤) ⟶ Γ(Y, ⊤)) => ψ.hom a) hRid
+    have hphi : ((IsLocalization.map (Localization.Away (f' t)) f' hle).comp
+          (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))) elt =
+        IsLocalization.mk' (Localization.Away (f' t)) (f' s)
+          (⟨f' t, hle (Submonoid.mem_powers t)⟩ : Submonoid.powers (f' t)) := by
+      simp only [RingHom.comp_apply, helt, HomogeneousLocalization.algebraMap_apply,
+        HomogeneousLocalization.val_mk, Localization.mk_eq_mk', IsLocalization.map_mk']
+    have hgoal : (γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+        ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt) =
+        θ.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom
+          (IsLocalization.mk' (Localization.Away (f' t)) (f' s)
+            (⟨f' t, hle (Submonoid.mem_powers t)⟩ : Submonoid.powers (f' t)))) :=
+      (congrArg (fun (ψ : CommRingCat.of (HomogeneousLocalization.Away 𝒜 t) ⟶ Γ(Y, ⊤)) =>
+        ψ.hom elt) hE).trans
+        (congrArg (fun z => θ.appTop.hom
+          ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom z)) hphi)
+    rw [hgoal]
+    have hspec := IsLocalization.mk'_spec (Localization.Away (f' t)) (f' s)
+      (⟨f' t, hle (Submonoid.mem_powers t)⟩ : Submonoid.powers (f' t))
+    have h1 := congrArg (fun z => θ.appTop.hom
+      ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom z)) hspec
+    simp only [map_mul, hev] at h1
+    simpa using h1
+  have h1 := main f hf hFV
+  have h2 := main g hg hGV
+  rw [hγeq] at h1
+  calc g s * f t = (γ _ hGV ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+        ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt)
+          * g t * f t := by rw [h2]
+    _ = (γ _ hGV ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+        ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt)
+          * f t * g t := by ring
+    _ = f s * g t := by rw [h1]
+
 /-- **The exact CONVERSE of `ProjCoords.toHom_smul`: over a field, two coordinate data
-inducing the same morphism differ by a unit** (sorry node, introduced 2026-07-27 as the
-one missing ingredient of the `Spec K`-point dictionary).
+inducing the same morphism differ by a unit** (**PROVEN 2026-07-28**, over the
+general-graded-ring lemma `ProjCoords.mul_eq_mul_of_fromOfGlobalSections_eq` immediately
+above, which is itself proven — so this whole subtree is now closed).
 
 `toHom_smul` says rescaling does not change the morphism; this says nothing else does.
 Together they make `c ↦ c.toHom` induce a BIJECTION from coordinate data modulo rescaling
@@ -1036,11 +1215,80 @@ global unit suffices.
 
 The binder is `(hK : IsField ↥K')` rather than `[Field K']` for the reason given in the
 FALSITY AUDIT on `exists_of_specField`: `[Field K']` would elaborate to a SECOND ring
-structure on the carrier, unrelated to `K'.str`, and the statement would be false. -/
-theorem exists_units_smul_of_toHom_eq {K' : CommRingCat.{0}} (_hK : _root_.IsField ↥K')
-    (c d : ProjCoords E (Spec K')) (_h : c.toHom = d.toHom) :
-    ∃ u : (Γ(Spec K', ⊤))ˣ, smul u c = d :=
-  sorry
+structure on the carrier, unrelated to `K'.str`, and the statement would be false.
+
+## The cut (2026-07-28)
+
+Everything below the line "`a` determines every RATIO" is scheme theory over an
+ARBITRARY graded ring and has nothing to do with Weierstrass curves; it is
+`ProjCoords.mul_eq_mul_of_fromOfGlobalSections_eq` immediately above.  What is left
+here — choosing the index `r`, showing `d.coord r` is a unit too, and assembling the
+unit — is field arithmetic.
+
+One point worth keeping: the ratio lemma is invoked with `s := X̄ᵢ` and `t := X̄_r` for
+EVERY `i`, including `i = r`, and `IsUnit (d.coord r)` is then derived ARITHMETICALLY
+(if `d.coord r = 0` the ratio identity forces every `d.coord i = 0`, contradicting
+`span_coord`).  That is why the general lemma needs a unit hypothesis only on `f`, and
+why no scheme-theoretic transfer of invertibility is required anywhere. -/
+theorem exists_units_smul_of_toHom_eq {K' : CommRingCat.{0}} (hK : _root_.IsField ↥K')
+    (c d : ProjCoords E (Spec K')) (h : c.toHom = d.toHom) :
+    ∃ u : (Γ(Spec K', ⊤))ˣ, smul u c = d := by
+  have hR : _root_.IsField Γ(Spec K', ⊤) :=
+    (Scheme.ΓSpecIso K').commRingCatIsoToRingEquiv.toMulEquiv.isField hK
+  haveI : Nontrivial Γ(Spec K', ⊤) := ⟨hR.exists_pair_ne⟩
+  -- the three coordinates, as degree-one elements of the homogeneous coordinate ring
+  have hXmem : ∀ i : Fin 3,
+      (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.X i)) ∈
+        projGrading E 1 := fun _ =>
+    HomogeneousIdeal.mk_mem_quotientGrading
+      ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X _ _))
+  have hval : ∀ (e : ProjCoords E (Spec K')) (i : Fin 3),
+      e.ringHom (Ideal.Quotient.mk _ (MvPolynomial.X i)) = e.coord i := by
+    intro e i; simp
+  -- a coordinate datum over a field has a nonzero coordinate
+  have hne : ∀ e : ProjCoords E (Spec K'), ∃ i : Fin 3, e.coord i ≠ 0 := by
+    intro e
+    by_contra hcon
+    push_neg at hcon
+    have hle : Ideal.span (Set.range e.coord) ≤ ⊥ := by
+      rw [Ideal.span_le]
+      rintro _ ⟨i, rfl⟩
+      simp [hcon i]
+    exact one_ne_zero (Ideal.mem_bot.mp (hle (by rw [e.span_coord]; trivial)))
+  obtain ⟨r, hr⟩ := hne c
+  obtain ⟨cinv, hcinv⟩ := hR.mul_inv_cancel hr
+  -- the ratio identity, from the scheme-theoretic leaf above
+  have hratio : ∀ i : Fin 3, d.coord i * c.coord r = c.coord i * d.coord r := by
+    intro i
+    have hur : IsUnit (c.ringHom (Ideal.Quotient.mk _ (MvPolynomial.X r))) := by
+      rw [hval c r]; exact isUnit_iff_exists_inv.mpr ⟨cinv, hcinv⟩
+    have key := mul_eq_mul_of_fromOfGlobalSections_eq (projGrading E) c.ringHom d.ringHom
+      c.map_irrelevant_eq_top d.map_irrelevant_eq_top h one_pos (hXmem i) (hXmem r) hur
+    rwa [hval c i, hval c r, hval d i, hval d r] at key
+  -- hence the SAME index works for `d`
+  have hdr : d.coord r ≠ 0 := by
+    intro h0
+    obtain ⟨j, hj⟩ := hne d
+    refine hj ?_
+    have h1 := hratio j
+    rw [h0, mul_zero] at h1
+    calc d.coord j = d.coord j * (c.coord r * cinv) := by rw [hcinv, mul_one]
+      _ = d.coord j * c.coord r * cinv := by ring
+      _ = 0 := by rw [h1, zero_mul]
+  obtain ⟨dinv, hdinv⟩ := hR.mul_inv_cancel hdr
+  refine ⟨⟨d.coord r * cinv, c.coord r * dinv, ?_, ?_⟩, ?_⟩
+  · calc d.coord r * cinv * (c.coord r * dinv)
+        = c.coord r * cinv * (d.coord r * dinv) := by ring
+      _ = 1 := by rw [hcinv, hdinv, mul_one]
+  · calc c.coord r * dinv * (d.coord r * cinv)
+        = c.coord r * cinv * (d.coord r * dinv) := by ring
+      _ = 1 := by rw [hcinv, hdinv, mul_one]
+  · refine ProjCoords.ext (funext fun i => ?_)
+    simp only [smul_coord, Pi.smul_apply, smul_eq_mul, Units.val_mk]
+    calc d.coord r * cinv * c.coord i = c.coord i * d.coord r * cinv := by ring
+      _ = d.coord i * c.coord r * cinv := by rw [hratio i]
+      _ = d.coord i * (c.coord r * cinv) := by ring
+      _ = d.coord i := by rw [hcinv, mul_one]
 
 end ProjCoords
 
