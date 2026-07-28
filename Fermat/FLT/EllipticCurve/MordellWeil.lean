@@ -165,6 +165,11 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
 public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.RingTheory.UniqueFactorizationDomain.Multiplicity
+public import Mathlib.NumberTheory.NumberField.ClassNumber
+public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+public import Mathlib.RingTheory.Polynomial.Eisenstein.IsIntegral
+public import Mathlib.RingTheory.Localization.NormTrace
+public import Mathlib.NumberTheory.NumberField.Units.DirichletTheorem
 
 @[expose] public section
 
@@ -413,15 +418,14 @@ i.e. `p/e² = F(p', e'²)/(4e'²·G(p', e'²))` for the binary forms
 
 **UPDATED 2026-07-27**: `exists_halving_witness` is PROVEN too, and so, later the
 same day, is `descent_unit_square` — the purely ideal-theoretic half of the
-`2`-descent over `ℤ[s]`. Of its four ingredients (`𝓞_K = ℤ[s]`, `h(K) = 1`, units
-mod squares, valuation bookkeeping) the **valuation bookkeeping is now PROVEN**,
-over a genuine `CommRing` model of `ℤ[s]` built in the `ℤ[s] AS A RING` section
-below, and level `11` stands on exactly TWO open statements, both facts about the
-cubic field `K = ℚ(s)`: `Cubic.ZS.isPrincipalIdealRing_zs` and
-`Cubic.ZS.unit_sq_class`. The norm pruning and the local condition that the
-sentence above expected are PROVEN, and the local condition turned out to be
-**parity mod `4`**, needing no `11`-adic input at all. See the `ℤ[s] IN
-COORDINATES` section below.
+`2`-descent over `ℤ[s]`. **All four of its ingredients are now PROVEN**: the
+valuation bookkeeping over a genuine `CommRing` model of `ℤ[s]` built in the
+`ℤ[s] AS A RING` section below, and, later the same day, the two number-theoretic
+facts about the cubic field `K = ℚ(s)` — `Cubic.ZS.isPrincipalIdealRing_zs`
+(`𝓞_K = ℤ[s]` together with `h(K) = 1`) and `Cubic.ZS.unit_sq_class` (the units
+modulo squares). The norm pruning and the local condition that the sentence above
+expected are PROVEN, and the local condition turned out to be **parity mod `4`**,
+needing no `11`-adic input at all. See the `ℤ[s] IN COORDINATES` section below.
 
 `height_drop_or_small` is PROVEN, over three proven ingredients: the
 coprimality bookkeeping (`reduced_fraction`), the resultant divisibility
@@ -666,43 +670,36 @@ beyond the ring itself:
    (`exists_associated_pow_of_mul_eq_pow'`); and finally split the exponents
    `a = 2⌊a/2⌋ + a%2`, `b = 2⌊b/2⌋ + b%2`.
 
-## THE TWO REMAINING LEAVES, AND THE ROUTE FOR EACH
+## BOTH NUMBER-THEORY STATEMENTS ARE NOW PROVEN (2026-07-27)
 
 Both are statements about the cubic field `K = ℚ(s)`, `s³ = 2s² − 2`, whose data
-was re-derived in PARI/GP (untrusted searcher; every number below is checkable):
-`poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1`; `h(K) = 1`;
-signature `(r₁, r₂) = (1, 1)`; unit rank `1`, torsion `{±1}`, fundamental unit
-`ε = −s² + s + 1` with `N(ε) = −1`.
+was re-derived in PARI/GP (untrusted searcher; every number below is now also
+verified in Lean): `poldisc(X³ − 2X² + 2) = −44 = disc(K)`, so `[𝓞_K : ℤ[s]] = 1`;
+`h(K) = 1`; signature `(r₁, r₂) = (1, 1)`; unit rank `1`, torsion `{±1}`,
+fundamental unit `ε = −s² + s + 1` with `N(ε) = −1`.
 
-*Leaf 1, `isPrincipalIdealRing_zs`.* The intended route is mathlib's
-`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`
-(`Mathlib/NumberTheory/NumberField/ClassNumber.lean`), whose hypothesis at
-`finrank = 3`, `nrComplexPlaces = 1` reads
-`|discr K| < (2·(π/4)·(3³/3!))² = (2.25π)² ≈ 49.96`, and `44 < 49.96` with room
-to spare (`pi_gt_three` suffices: `44 < 45.5625`), exactly as in
-`Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean`, the worked precedent.
-What has to be supplied first is the identification `𝓞_K ≃+* ℤ[s]`, i.e. that
-the power basis `1, s, s²` is an integral basis.
+`K` is realised in the `RingOfIntegers` section below as the **fraction field of
+`ℤ[s]` itself** rather than as `ℚ[X]/(X³ − 2X² + 2)`, which makes `ℤ[s] ⊆ K` free
+by construction; `Basis.localizationLocalization` then turns the ℤ-basis `1, s, s²`
+into a ℚ-basis and `Algebra.discr_localizationLocalization` transports the
+discriminant, computed inside `ℤ[s]` from `Tr(a + bs + cs²) = 3a + 2b + 4c`.
 
-**CORRECTION to the previous docstring, and it matters for whoever takes this
-leaf**: the polynomial discriminant `−44 = −2²·11` is NOT squarefree, so "the
-discriminants agree, hence index `1`" is the CONCLUSION, not a cheap input — the
-index could a priori be `2`, and ruling that out is a real argument at `2`. The
-defining polynomial IS Eisenstein at `2` (`−2, 0, 2` all even, `2` not divisible
-by `4`), which gives both irreducibility and `2`-maximality; so an Eisenstein
-argument IS needed, contrary to the earlier note.
+Two corrections to the earlier route notes, both load-bearing, are recorded in
+full at the two sections below and summarised here:
 
-*Leaf 2, `unit_sq_class`.* Needs `𝓞_K = ℤ[s]` as well, then Dirichlet:
-`r₁ + r₂ − 1 = 1`, so `𝓞_K^× ≅ {±1} × ℤ`, hence `𝓞_K^× / (𝓞_K^×)²` has order `4`
-with representatives `{±1, ±ε₀}` for any fundamental `ε₀`. **`ε` need not be
-proven fundamental**: `N(ε) = −1` and `ε = ±ε₀^k` force `k` odd, so `ε ≡ ε₀`
-modulo squares whatever `ε₀` is. Torsion is `{±1}` because `K` has a real
-embedding. Mathlib carries the pieces (`NumberField.Units.rank`, Dirichlet) but
-not the signature computation for this polynomial (one real root: the cubic is
-increasing off `[0, 4/3]` and its two critical values `2` and `2 − 32/27` have
-the same sign, so exactly one real root, near `−0.8393`).
+* **`isPrincipalIdealRing_zs`.** `−44 = −2²·11` is NOT squarefree, so "the
+  discriminants agree, hence index `1`" is a CONCLUSION, not an input.  The
+  polynomial IS Eisenstein at `2`, which kills the `2`-part; the prime `11` is
+  killed separately, by the trace form plus `N(4 + 3s + s²) = 242 = 2·11²`.
+  Minkowski then needs only `2·nrComplexPlaces ≤ finrank = 3` — the exact
+  signature is not required for this half.
+* **`unit_sq_class`.** "`N(ε) = −1` forces the exponent odd" is **invalid**: if
+  the fundamental unit had norm `+1` the equation would constrain only the sign.
+  What actually rules out `ε = −(square)` is a quadratic-residue obstruction at
+  the degree-one prime above `13` (`s ↦ 7`), where `ε ↦ 11` and neither `11` nor
+  `−11 = 2` is a square mod `13`.
 
-Neither leaf needs Galois cohomology, a Selmer group, a connecting map, or
+Neither leaf needed Galois cohomology, a Selmer group, a connecting map, or
 `E(ℚ) ≅ ℤ/5`. -/
 
 namespace Cubic
@@ -962,45 +959,690 @@ theorem irreducible_gEl : Irreducible gEl :=
 /-- `uD` is a unit (PROVEN): `N(uD) = 1`. -/
 theorem isUnit_uD : IsUnit uD := isUnit_of_norm_isUnit (by decide)
 
-/-- **LEAF 1 (sorry leaf, 2026-07-27): `ℤ[s]` is a principal ideal ring**, i.e.
-`h(K) = 1` together with `𝓞_K = ℤ[s]`.
+section RingOfIntegers
 
-Route, with the mathlib lemma named: identify `ℤ[s]` with `𝓞_K` for
-`K = ℚ[X]/(X³ − 2X² + 2)` (the power basis `1, s, s²` is an integral basis —
-index `1`, which needs the Eisenstein-at-`2` argument, see the section
-docstring), then apply
-`NumberField.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt`: at
-`finrank = 3`, `nrComplexPlaces = 1` its hypothesis is
-`|discr K| < (2·(π/4)·(3³/3!))² = (2.25π)² ≈ 49.96`, and `|discr K| = 44`.
-`Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean` is the worked precedent
-for discharging exactly this inequality.
+open scoped NumberField
+open _root_.Module
+
+/-! ### `ℤ[s] = 𝓞_K` for `K = ℚ(s)`, and `h(K) = 1` (PROVEN 2026-07-27)
+
+Everything from here to `isPrincipalIdealRing_zs` is the proof that `ℤ[s]` is the
+full ring of integers of `K = ℚ(s)` and that its class number is `1`.  The route
+is the one the old leaf docstring predicted, carried out:
+
+* `K` is built as the fraction field of `ℤ[s]` itself, so `ℤ[s] ⊆ K` is free and
+  `1, s, s²` is visibly a `ℤ`-basis; `Basis.localizationLocalization` turns it
+  into a `ℚ`-basis of `K` and `Algebra.discr_localizationLocalization` transports
+  the discriminant, which is computed **inside `ℤ[s]`** from the trace form
+  `Tr(a + bs + cs²) = 3a + 2b + 4c`: `det ![![3,2,4],![2,4,2],![4,2,0]] = −44`.
+* `Algebra.discr_mul_isIntegral_mem_adjoin` gives `−44 · z ∈ ℤ[s]` for every
+  algebraic integer `z`, and since `X³ − 2X² + 2` **is Eisenstein at `2`**,
+  `mem_adjoin_of_smul_prime_pow_smul_of_minpoly_isEisensteinAt` strips the `2²`,
+  leaving `11 · z ∈ ℤ[s]`.
+* The prime `11` is killed by hand, and this is the one step the old docstring did
+  not spell out.  `11 ∣ Tr(x·s^j)` for `j = 0, 1, 2` (because `Tr(z·s^j) ∈ ℤ`)
+  cuts `𝓞_K/ℤ[s]` down to the single `𝔽₁₁`-line spanned by
+  `x₀/11 = (4 + 3s + s²)/11`; the group `𝓞_K/ℤ[s]` is `11`-torsion, so if it is
+  nonzero it *contains* `x₀/11`.  But `N(x₀) = 242 = 2·11²`, so
+  `N(x₀/11) = 242/1331 ∉ ℤ` — contradiction.  Hence `𝓞_K = ℤ[s]`, `disc K = −44`,
+  and `2·nrComplexPlaces ≤ finrank = 3` makes Minkowski's bound
+  `(2·(π/4)^r₂·(27/6))² ≥ (2.25π)² > 44` (only `pi_gt_three` is needed).
+
+The correction recorded in the section docstring above is the load-bearing point:
+`−44 = −2²·11` is **not** squarefree, so "the discriminants agree" is a
+conclusion, not an input, and the Eisenstein argument at `2` is genuinely needed. -/
+
+
+/-! ## Coordinate scaffolding -/
+
+@[simp] theorem zsmul_a (m : ℤ) (x : ZS) : (m • x).a = m * x.a := by
+  rw [zsmul_eq_mul]; simp
+@[simp] theorem zsmul_b (m : ℤ) (x : ZS) : (m • x).b = m * x.b := by
+  rw [zsmul_eq_mul]; simp
+@[simp] theorem zsmul_c (m : ℤ) (x : ZS) : (m • x).c = m * x.c := by
+  rw [zsmul_eq_mul]; simp
+
+theorem sEl_pow_two : sEl ^ 2 = ⟨0, 0, 1⟩ := by decide
+theorem sEl_pow_three : sEl ^ 3 = ⟨-2, 0, 2⟩ := by decide
+theorem sEl_pow_four : sEl ^ 4 = ⟨-4, -2, 4⟩ := by decide
+
+instance : CharZero ZS := ⟨fun m n h => by
+  have := congrArg ZS.a h
+  simpa using this⟩
+
+/-- The `ℤ`-linear coordinate isomorphism `ℤ[s] ≃ ℤ³`. -/
+def coordEquiv : ZS ≃ₗ[ℤ] (Fin 3 → ℤ) where
+  toFun x := ![x.a, x.b, x.c]
+  invFun v := ⟨v 0, v 1, v 2⟩
+  map_add' x y := by ext i; fin_cases i <;> simp
+  map_smul' m x := by ext i; fin_cases i <;> simp
+  left_inv x := by cases x; rfl
+  right_inv v := by ext i; fin_cases i <;> simp
+
+/-- The `ℤ`-basis `1, s, s²` of `ℤ[s]`. -/
+noncomputable def basisZS : Basis (Fin 3) ℤ ZS := Basis.ofEquivFun coordEquiv
+
+@[simp] theorem basisZS_repr (x : ZS) (i : Fin 3) :
+    basisZS.repr x i = ![x.a, x.b, x.c] i :=
+  Basis.ofEquivFun_repr_apply coordEquiv x i
+
+theorem basisZS_apply (i : Fin 3) : basisZS i = sEl ^ (i : ℕ) := by
+  refine (Basis.apply_eq_iff (b := basisZS)).mpr ?_
+  ext j
+  fin_cases i <;> fin_cases j <;>
+    simp <;> decide
+
+theorem basisZS_zero : basisZS 0 = ⟨1, 0, 0⟩ := by rw [basisZS_apply]; decide
+theorem basisZS_one : basisZS 1 = ⟨0, 1, 0⟩ := by rw [basisZS_apply]; decide
+theorem basisZS_two : basisZS 2 = ⟨0, 0, 1⟩ := by rw [basisZS_apply]; decide
+
+/-! ## The trace and discriminant of `ℤ[s]` over `ℤ` -/
+
+instance : Module.Finite ℤ ZS := Module.Finite.of_basis basisZS
+instance : Module.Free ℤ ZS := Module.Free.of_basis basisZS
+
+theorem trace_eq (x : ZS) : Algebra.trace ℤ ZS x = 3 * x.a + 2 * x.b + 4 * x.c := by
+  classical
+  rw [Algebra.trace_eq_matrix_trace basisZS]
+  simp only [Matrix.trace, Matrix.diag_apply, Fin.sum_univ_three,
+    Algebra.leftMulMatrix_eq_repr_mul, basisZS_repr, basisZS_zero, basisZS_one, basisZS_two,
+    Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons, mul_a, mul_b, mul_c]
+  ring
+
+theorem discr_basisZS : Algebra.discr ℤ basisZS = -44 := by
+  classical
+  rw [Algebra.discr_def, Matrix.det_fin_three]
+  simp only [Algebra.traceMatrix_apply, Algebra.traceForm_apply, trace_eq,
+    basisZS_zero, basisZS_one, basisZS_two, mul_a, mul_b, mul_c]
+  norm_num
+
+/-! ## The cubic field `K = ℚ(s)` -/
+
+/-- The cubic field `K = ℚ(s)`, realised as the fraction field of `ℤ[s]`.
+
+This is a `def`, not an `abbrev`, on purpose: `FractionRing` carries both an
+`OreLocalization`-flavoured `CommRing`/`Algebra ℤ` structure and the one coming
+from its `Field` instance, and although the two are definitionally equal they are
+never syntactically equal, so mathlib's `𝓞 K` API (stated through `Field.toCommRing`
+and `Ring.toIntAlgebra`) does not match a goal elaborated through the
+`OreLocalization` path.  Sealing the definition means the instances below are the
+only ones instance search can see. -/
+def KK : Type := FractionRing ZS
+
+noncomputable instance instFieldKK : Field KK := inferInstanceAs (Field (FractionRing ZS))
+noncomputable instance instAlgZSKK : Algebra ZS KK := inferInstanceAs (Algebra ZS (FractionRing ZS))
+instance instIFRKK : IsFractionRing ZS KK := inferInstanceAs (IsFractionRing ZS (FractionRing ZS))
+
+instance instSTZSKK : IsScalarTower ℤ ZS KK :=
+  IsScalarTower.of_algebraMap_eq fun n => by simp [eq_intCast]
+
+instance instCZKK : CharZero KK :=
+  charZero_of_injective_algebraMap (IsFractionRing.injective ZS KK)
+
+theorem algebraMap_ne_zero {x : ZS} (hx : x ≠ 0) : algebraMap ZS KK x ≠ 0 :=
+  fun h => hx (IsFractionRing.injective ZS KK (by rw [map_zero]; exact h))
+
+instance isLocalization_KK :
+    IsLocalization (Algebra.algebraMapSubmonoid ZS (nonZeroDivisors ℤ)) KK := by
+  rw [isLocalization_iff]
+  refine ⟨?_, ?_, ?_⟩
+  · rintro ⟨y, m, hm, rfl⟩
+    have hm0 : m ≠ 0 := nonZeroDivisors.coe_ne_zero ⟨m, hm⟩
+    refine isUnit_iff_ne_zero.mpr (algebraMap_ne_zero fun h => hm0 ?_)
+    have h2 := congrArg ZS.a h
+    simpa [eq_intCast] using h2
+  · intro z
+    obtain ⟨⟨x, s, hs⟩, hxs⟩ := IsLocalization.surj (nonZeroDivisors ZS) z
+    have hs0 : s ≠ 0 := nonZeroDivisors.coe_ne_zero ⟨s, hs⟩
+    have hN : N s ≠ 0 := fun h => hs0 (norm_eq_zero h)
+    refine ⟨⟨x * adj s, ⟨algebraMap ℤ ZS (N s), ⟨N s, ?_, rfl⟩⟩⟩, ?_⟩
+    · simpa using hN
+    · have hms : (algebraMap ℤ ZS (N s)) = s * adj s := (mul_adj s).symm
+      simp only [hms, map_mul, ← mul_assoc]
+      rw [hxs]
+  · intro x y h
+    exact ⟨1, by rw [IsFractionRing.injective ZS KK h]⟩
+
+instance instSTQ : @IsScalarTower ℤ ℚ KK Algebra.toSMul Algebra.toSMul Algebra.toSMul :=
+  IsScalarTower.of_algebraMap_eq fun n => by
+    simp [eq_intCast, map_intCast]
+
+/-- The `ℚ`-basis `1, s, s²` of `K`. -/
+noncomputable def basisKK : Basis (Fin 3) ℚ KK :=
+  basisZS.localizationLocalization ℚ (nonZeroDivisors ℤ) KK
+
+theorem discr_basisKK : Algebra.discr ℚ basisKK = -44 := by
+  rw [basisKK, Algebra.discr_localizationLocalization ℤ (nonZeroDivisors ℤ) KK basisZS,
+    discr_basisZS]
+  norm_num
+
+/-- The generator `s ∈ K`. -/
+noncomputable def thetaK : KK := algebraMap ZS KK sEl
+
+theorem basisKK_apply (i : Fin 3) : basisKK i = thetaK ^ (i : ℕ) := by
+  rw [basisKK, Basis.localizationLocalization_apply, basisZS_apply, thetaK, map_pow]
+
+/-- The power basis `1, s, s²` of `K` over `ℚ`. -/
+noncomputable def pbKK : PowerBasis ℚ KK where
+  gen := thetaK
+  dim := 3
+  basis := basisKK
+  basis_eq_pow := basisKK_apply
+
+instance : FiniteDimensional ℚ KK := Module.Finite.of_basis basisKK
+
+instance : NumberField KK where
+  to_charZero := inferInstance
+  to_finiteDimensional := inferInstance
+
+theorem finrank_KK : Module.finrank ℚ KK = 3 := by
+  rw [Module.finrank_eq_card_basis basisKK]; simp
+
+/-! ## The minimal polynomial `X³ − 2X² + 2`, Eisenstein at `2` -/
+
+/-- `X³ − 2X² + 2 ∈ ℤ[X]`. -/
+noncomputable def minPolyZ : Polynomial ℤ :=
+  Polynomial.X ^ 3 - Polynomial.C 2 * Polynomial.X ^ 2 + Polynomial.C 2
+
+theorem minPolyZ_monic : minPolyZ.Monic := by
+  unfold minPolyZ; monicity!
+
+theorem minPolyZ_natDegree : minPolyZ.natDegree = 3 := by
+  unfold minPolyZ; compute_degree!
+
+@[simp] theorem minPolyZ_coeff_zero : minPolyZ.coeff 0 = 2 := by simp [minPolyZ]
+@[simp] theorem minPolyZ_coeff_one : minPolyZ.coeff 1 = 0 := by simp [minPolyZ]
+@[simp] theorem minPolyZ_coeff_two : minPolyZ.coeff 2 = -2 := by simp [minPolyZ]
+
+theorem minPolyZ_eisenstein :
+    minPolyZ.IsEisensteinAt (Submodule.span ℤ {(2 : ℤ)}) where
+  leading := by
+    rw [minPolyZ_monic.leadingCoeff, ← Ideal.span, Ideal.mem_span_singleton]
+    decide
+  mem := by
+    intro n hn
+    rw [minPolyZ_natDegree] at hn
+    rw [← Ideal.span, Ideal.mem_span_singleton]
+    interval_cases n <;> simp
+  notMem := by
+    rw [minPolyZ_coeff_zero, ← Ideal.span, Ideal.span_singleton_pow,
+      Ideal.mem_span_singleton]
+    decide
+
+theorem sEl_relation : sEl ^ 3 - 2 * sEl ^ 2 + 2 = 0 := by decide
+
+theorem aeval_thetaK : Polynomial.aeval thetaK minPolyZ = 0 := by
+  have h : (Polynomial.aeval sEl) minPolyZ = 0 := by
+    simp only [minPolyZ, map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C]
+    simpa using sEl_relation
+  have hth : thetaK = algebraMap ZS KK sEl := rfl
+  rw [hth, Polynomial.aeval_algebraMap_apply, h, map_zero]
+
+theorem isIntegral_thetaK : IsIntegral ℤ thetaK := ⟨minPolyZ, minPolyZ_monic, by
+  simpa [Polynomial.aeval_def] using aeval_thetaK⟩
+
+theorem minPolyZ_irreducible : Irreducible minPolyZ :=
+  minPolyZ_eisenstein.irreducible
+    (Ideal.span_singleton_prime (by decide) |>.mpr Int.prime_two)
+    minPolyZ_monic.isPrimitive (by rw [minPolyZ_natDegree]; decide)
+
+theorem minpoly_rat_thetaK : minpoly ℚ thetaK = minPolyZ.map (algebraMap ℤ ℚ) := by
+  refine (minpoly.eq_of_irreducible_of_monic ?_ ?_ (minPolyZ_monic.map _)).symm
+  · exact (Polynomial.IsPrimitive.Int.irreducible_iff_irreducible_map_cast
+      minPolyZ_monic.isPrimitive).mp minPolyZ_irreducible
+  · rw [Polynomial.aeval_map_algebraMap]
+    exact aeval_thetaK
+
+theorem minpoly_int_thetaK : minpoly ℤ thetaK = minPolyZ := by
+  have h := minpoly.isIntegrallyClosed_eq_field_fractions' (K := ℚ) (S := KK)
+    isIntegral_thetaK
+  rw [minpoly_rat_thetaK] at h
+  exact (Polynomial.map_injective (algebraMap ℤ ℚ) (algebraMap ℤ ℚ).injective_int h.symm)
+
+theorem minpoly_eisenstein :
+    (minpoly ℤ thetaK).IsEisensteinAt (Submodule.span ℤ {(2 : ℤ)}) := by
+  rw [minpoly_int_thetaK]; exact minPolyZ_eisenstein
+
+/-! ## `ℤ[s]` as a subring of `K` -/
+
+instance : Algebra.IsIntegral ℤ ZS := Algebra.IsIntegral.of_finite ℤ ZS
+
+theorem isIntegral_algebraMap_ZS (u : ZS) : IsIntegral ℤ (algebraMap ZS KK u) :=
+  (Algebra.IsIntegral.isIntegral (R := ℤ) u).map (IsScalarTower.toAlgHom ℤ ZS KK)
+
+theorem eq_intCast_add (x : ZS) :
+    x = (x.a : ZS) + (x.b : ZS) * sEl + (x.c : ZS) * sEl ^ 2 := by
+  rw [sEl_pow_two]; ext <;> simp [sEl]
+
+theorem algebraMap_eq (x : ZS) :
+    algebraMap ZS KK x = (x.a : KK) + (x.b : KK) * thetaK + (x.c : KK) * thetaK ^ 2 := by
+  conv_lhs => rw [eq_intCast_add x]
+  simp only [map_add, map_mul, map_pow, map_intCast, thetaK]
+
+theorem mem_adjoin_thetaK_iff {z : KK} :
+    z ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) ↔ ∃ y : ZS, algebraMap ZS KK y = z := by
+  constructor
+  · intro hz
+    have hle : Algebra.adjoin ℤ ({thetaK} : Set KK) ≤
+        (IsScalarTower.toAlgHom ℤ ZS KK).range := by
+      refine Algebra.adjoin_le ?_
+      rintro _ rfl
+      exact ⟨sEl, rfl⟩
+    exact hle hz
+  · rintro ⟨y, rfl⟩
+    have hθ : thetaK ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) :=
+      Algebra.subset_adjoin rfl
+    rw [algebraMap_eq]
+    exact Subalgebra.add_mem _
+      (Subalgebra.add_mem _ (Subalgebra.intCast_mem _ _)
+        (Subalgebra.mul_mem _ (Subalgebra.intCast_mem _ _) hθ))
+      (Subalgebra.mul_mem _ (Subalgebra.intCast_mem _ _) (Subalgebra.pow_mem _ hθ _))
+
+/-! ## The discriminant multiplier and the Eisenstein descent at `2` -/
+
+set_option backward.isDefEq.respectTransparency false in
+theorem mul44_mem {z : KK} (hz : IsIntegral ℤ z) :
+    (-44 : KK) * z ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) := by
+  have H := Algebra.discr_mul_isIntegral_mem_adjoin (R := ℤ) ℚ
+    (B := pbKK) isIntegral_thetaK hz
+  rw [Algebra.smul_def, show Algebra.discr ℚ pbKK.basis = -44 from discr_basisKK,
+    show pbKK.gen = thetaK from rfl,
+    show (algebraMap ℚ KK) (-44 : ℚ) = (-44 : KK) by simp] at H
+  exact H
+
+theorem isIntegral_intCast (m : ℤ) : IsIntegral ℤ ((m : ℤ) : KK) := by
+  rw [show ((m : ℤ) : KK) = algebraMap ℤ KK m by simp]
+  exact isIntegral_algebraMap
+
+set_option backward.isDefEq.respectTransparency false in
+theorem mul11_mem {z : KK} (hz : IsIntegral ℤ z) :
+    (11 : KK) * z ∈ Algebra.adjoin ℤ ({thetaK} : Set KK) := by
+  have h11 : IsIntegral ℤ ((-11 : KK) * z) := by
+    have h1 : (-11 : KK) = ((-11 : ℤ) : KK) := by push_cast; ring
+    rw [h1]
+    exact (isIntegral_intCast (-11)).mul hz
+  have hm : (-11 : KK) * z ∈ Algebra.adjoin ℤ ({pbKK.gen} : Set KK) := by
+    refine mem_adjoin_of_smul_prime_pow_smul_of_minpoly_isEisensteinAt
+      (B := pbKK) (n := 2) (p := (2 : ℤ)) Int.prime_two isIntegral_thetaK h11 ?_
+      minpoly_eisenstein
+    rw [Algebra.smul_def, show pbKK.gen = thetaK from rfl,
+      show (algebraMap ℤ KK ((2 : ℤ) ^ 2)) * ((-11 : KK) * z) = (-44 : KK) * z by
+        simp only [map_pow, map_ofNat]; ring]
+    exact mul44_mem hz
+  rw [show pbKK.gen = thetaK from rfl] at hm
+  have hneg := Subalgebra.neg_mem _ hm
+  rw [show -((-11 : KK) * z) = (11 : KK) * z by ring] at hneg
+  exact hneg
+
+/-! ## Trace and norm through the localization -/
+
+theorem trace_algebraMap (w : ZS) :
+    Algebra.trace ℚ KK (algebraMap ZS KK w) = ((Algebra.trace ℤ ZS w : ℤ) : ℚ) := by
+  rw [Algebra.trace_localization ℤ (nonZeroDivisors ℤ)]; simp
+
+theorem norm_algebraMap_ZS (w : ZS) :
+    Algebra.norm ℚ (algebraMap ZS KK w) = ((Algebra.norm ℤ w : ℤ) : ℚ) := by
+  rw [Algebra.norm_localization ℤ (nonZeroDivisors ℤ)]; simp
+
+theorem norm_eq (x : ZS) : Algebra.norm ℤ x = N x := by
+  classical
+  rw [Algebra.norm_eq_matrix_det basisZS, Matrix.det_fin_three]
+  simp only [Algebra.leftMulMatrix_eq_repr_mul, basisZS_repr, basisZS_zero, basisZS_one,
+    basisZS_two, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.head_cons,
+    Matrix.cons_val_two, Matrix.tail_cons, mul_a, mul_b, mul_c, N]
+  ring
+
+theorem eleven_dvd_trace {z : KK} (hz : IsIntegral ℤ z) {x : ZS}
+    (hx : algebraMap ZS KK x = (11 : KK) * z) (u : ZS) :
+    (11 : ℤ) ∣ Algebra.trace ℤ ZS (x * u) := by
+  have hint : IsIntegral ℤ (z * algebraMap ZS KK u) := hz.mul (isIntegral_algebraMap_ZS u)
+  obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp (Algebra.isIntegral_trace
+    (R := ℤ) (L := ℚ) (F := KK) hint)
+  refine ⟨m, ?_⟩
+  have key : ((Algebra.trace ℤ ZS (x * u) : ℤ) : ℚ) = 11 * ((m : ℤ) : ℚ) := by
+    rw [← trace_algebraMap, map_mul, hx, mul_assoc,
+      show ((11 : KK) * (z * algebraMap ZS KK u))
+          = ((11 : ℚ) • (z * algebraMap ZS KK u)) by rw [Algebra.smul_def]; norm_num,
+      map_smul, ← hm]
+    simp
+  exact_mod_cast key
+
+/-! ## Killing the prime `11`: `𝓞_K = ℤ[s]` -/
+
+/-- `x₀ = 4 + 3s + s²`, of norm `242 = 2·11²`. -/
+def x0El : ZS := ⟨4, 3, 1⟩
+
+theorem N_x0El : N x0El = 242 := by decide
+
+theorem exists_mem_ZS {z : KK} (hz : IsIntegral ℤ z) : ∃ y : ZS, algebraMap ZS KK y = z := by
+  obtain ⟨x, hx⟩ := mem_adjoin_thetaK_iff.mp (mul11_mem hz)
+  have h1 : (11 : ℤ) ∣ 3 * x.a + 2 * x.b + 4 * x.c := by
+    have h := eleven_dvd_trace hz hx 1
+    rwa [mul_one, trace_eq] at h
+  have h3 : (11 : ℤ) ∣ 4 * x.a + 2 * x.b := by
+    have h := eleven_dvd_trace hz hx ⟨0, 0, 1⟩
+    rw [trace_eq] at h
+    obtain ⟨k, hk⟩ := h
+    simp only [mul_a, mul_b, mul_c] at hk
+    exact ⟨k, by linarith⟩
+  obtain ⟨p, hp⟩ : (11 : ℤ) ∣ x.a - 4 * x.c := by omega
+  obtain ⟨q, hq⟩ : (11 : ℤ) ∣ x.b - 3 * x.c := by omega
+  by_cases hc : (11 : ℤ) ∣ x.c
+  · obtain ⟨r, hr⟩ := hc
+    refine ⟨⟨4 * r + p, 3 * r + q, r⟩, ?_⟩
+    have hxeq : x = ((11 : ℤ) : ZS) * (⟨4 * r + p, 3 * r + q, r⟩ : ZS) := by
+      ext <;>
+        simp only [mul_a, mul_b, mul_c, intCast_a, intCast_b, intCast_c] <;>
+        ring_nf <;> omega
+    have h11 : (11 : KK) * algebraMap ZS KK (⟨4 * r + p, 3 * r + q, r⟩ : ZS) = 11 * z := by
+      rw [← hx, hxeq, map_mul, map_intCast]
+      norm_num
+    exact mul_left_cancel₀ (by norm_num : (11 : KK) ≠ 0) h11
+  · exfalso
+    obtain ⟨t, k, ht⟩ : ∃ t k : ℤ, x.c * t = 1 + 11 * k := by
+      have hgcd : Int.gcd 11 x.c = 1 := by
+        have hg11 : Int.gcd 11 x.c ∣ 11 := Nat.gcd_dvd_left _ _
+        rcases (by decide : Nat.Prime 11).eq_one_or_self_of_dvd _ hg11 with h | h
+        · exact h
+        · exact absurd (by
+            have hd := Int.gcd_dvd_right (a := (11 : ℤ)) (b := x.c)
+            rw [h] at hd; exact_mod_cast hd) hc
+      obtain ⟨u, v, huv⟩ := Int.isCoprime_iff_gcd_eq_one.mpr hgcd
+      exact ⟨v, -u, by linarith⟩
+    have hxd : x = (x.c : ZS) * x0El + ((11 : ℤ) : ZS) * (⟨p, q, 0⟩ : ZS) := by
+      ext <;>
+        simp only [x0El, mul_a, mul_b, mul_c, add_a, add_b, add_c,
+          intCast_a, intCast_b, intCast_c] <;>
+        ring_nf <;> omega
+    have hw : (11 : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))
+        = (x.c : KK) * algebraMap ZS KK x0El := by
+      have hxx := hx
+      rw [hxd, map_add, map_mul, map_mul, map_intCast, map_intCast] at hxx
+      push_cast at hxx ⊢
+      linear_combination -hxx
+    have hvint : IsIntegral ℤ ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))
+        - (k : KK) * algebraMap ZS KK x0El) :=
+      ((isIntegral_intCast t).mul (hz.sub (isIntegral_algebraMap_ZS _))).sub
+        ((isIntegral_intCast k).mul (isIntegral_algebraMap_ZS _))
+    have hv : (11 : KK) * ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))
+        - (k : KK) * algebraMap ZS KK x0El) = algebraMap ZS KK x0El := by
+      have hct : (x.c : KK) * (t : KK) = 1 + 11 * (k : KK) := by
+        have : ((x.c * t : ℤ) : KK) = ((1 + 11 * k : ℤ) : KK) := by rw [ht]
+        push_cast at this
+        linear_combination this
+      have h2 : (11 : KK) * ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS)))
+          = ((x.c : KK) * (t : KK)) * algebraMap ZS KK x0El := by
+        rw [show (11 : KK) * ((t : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS)))
+            = (t : KK) * ((11 : KK) * (z - algebraMap ZS KK (⟨p, q, 0⟩ : ZS))) by ring, hw]
+        ring
+      rw [hct] at h2
+      linear_combination h2
+    obtain ⟨n, hn⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+      (Algebra.isIntegral_norm (K := ℚ) hvint)
+    have hnorm := congrArg (Algebra.norm ℚ) hv
+    rw [map_mul, norm_algebraMap_ZS, norm_eq, N_x0El,
+      show (11 : KK) = algebraMap ℚ KK 11 by simp, Algebra.norm_algebraMap,
+      finrank_KK, ← hn] at hnorm
+    rw [eq_intCast] at hnorm
+    have hcast : ((1331 * n : ℤ) : ℚ) = ((242 : ℤ) : ℚ) := by
+      push_cast; linear_combination hnorm
+    have h1331 : (1331 : ℤ) * n = 242 := by exact_mod_cast hcast
+    omega
+
+/-! ## `ℤ[s] = 𝓞_K`, the discriminant of `K`, and Minkowski -/
+
+instance isIntegralClosure_ZS : IsIntegralClosure ZS ℤ KK where
+  algebraMap_injective := IsFractionRing.injective ZS KK
+  isIntegral_iff := fun {_} =>
+    ⟨fun h => exists_mem_ZS h, fun ⟨y, hy⟩ => hy ▸ isIntegral_algebraMap_ZS y⟩
+
+/-- **`𝓞_K = ℤ[s]`**. -/
+noncomputable def ringOfIntegersEquivZS : ZS ≃ₐ[ℤ] 𝓞 KK :=
+  IsIntegralClosure.equiv ℤ ZS KK (𝓞 KK)
+
+theorem discr_KK : NumberField.discr KK = -44 := by
+  have hb : (⇑(basisZS.map ringOfIntegersEquivZS.toLinearEquiv))
+      = ⇑ringOfIntegersEquivZS ∘ ⇑basisZS := by
+    funext i; simp
+  rw [← NumberField.discr_eq_discr KK (basisZS.map ringOfIntegersEquivZS.toLinearEquiv), hb,
+    ← Algebra.discr_eq_discr_of_algEquiv basisZS ringOfIntegersEquivZS, discr_basisZS]
+
+theorem nrComplexPlaces_le : NumberField.InfinitePlace.nrComplexPlaces KK ≤ 1 := by
+  have h := NumberField.InfinitePlace.card_add_two_mul_card_eq_rank KK
+  rw [finrank_KK] at h
+  omega
+
+theorem isPrincipalIdealRing_OKK : IsPrincipalIdealRing (𝓞 KK) := by
+  apply _root_.RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt
+  rw [discr_KK, finrank_KK]
+  rcases Nat.le_one_iff_eq_zero_or_eq_one.mp nrComplexPlaces_le with h | h <;> rw [h]
+  · norm_num [Nat.factorial]
+  · norm_num [Nat.factorial]
+    nlinarith [Real.pi_gt_three]
+
+theorem isPrincipalIdealRing_of_ringEquiv {A B : Type*} [CommRing A] [CommRing B]
+    (e : A ≃+* B) [IsPrincipalIdealRing B] : IsPrincipalIdealRing A := by
+  refine ⟨fun I => ?_⟩
+  obtain ⟨b, hb⟩ := (IsPrincipalIdealRing.principal (I.map (e : A →+* B))).principal
+  refine ⟨e.symm b, ?_⟩
+  have h1 : (I.map (e : A →+* B)).map (e.symm : B →+* A) = I := by
+    rw [Ideal.map_map]
+    convert Ideal.map_id I
+    ext x; simp
+  rw [← h1, hb, Ideal.map_span]
+  simp
+
+end RingOfIntegers
+
+/-- **`ℤ[s]` is a principal ideal ring** (PROVEN 2026-07-27), i.e. `𝓞_K = ℤ[s]`
+together with `h(K) = 1`.  See the section above for the proof; it goes through
+`RingOfIntegers.isPrincipalIdealRing_of_abs_discr_lt` with `|disc K| = 44` against
+the Minkowski bound `(2·(π/4)^{r₂}·(3³/3!))² ≥ (2.25π)² ≈ 49.96`.
 
 Consumed below only through `WfDvdMonoid`, `UniqueFactorizationMonoid` and
-Bézout, so any route to a PID discharges it — including a Euclidean structure:
-`ℤ[s]` is norm-Euclidean, discriminant `−44` being on the classical list of
-norm-Euclidean complex cubic fields. -/
-theorem isPrincipalIdealRing_zs : IsPrincipalIdealRing ZS := sorry
+Bézout. -/
+theorem isPrincipalIdealRing_zs : IsPrincipalIdealRing ZS :=
+  haveI := isPrincipalIdealRing_OKK
+  isPrincipalIdealRing_of_ringEquiv ringOfIntegersEquivZS.toRingEquiv
 
 instance : IsPrincipalIdealRing ZS := isPrincipalIdealRing_zs
 
-/-- **LEAF 2 (sorry leaf, 2026-07-27): the units of `ℤ[s]` modulo squares are
-`{±1, ±ε}`**, `ε = −s² + s + 1`.
+section UnitGroup
 
-Route: `𝓞_K = ℤ[s]` again, then Dirichlet's unit theorem. `K` has signature
-`(r₁, r₂) = (1, 1)` — the cubic `X³ − 2X² + 2` has exactly one real root, since
-it is increasing off `[0, 4/3]` and its two critical values `2` and `2 − 32/27`
-have the same sign — so the unit rank is `r₁ + r₂ − 1 = 1`, and the torsion is
-`{±1}` because a real embedding exists. Hence `𝓞_K^× ≅ {±1} × ℤ` and
-`𝓞_K^×/(𝓞_K^×)²` has exactly the four classes `{±1, ±ε₀}` for any fundamental
-unit `ε₀`.
+open scoped NumberField
+open _root_.Module
 
-**`ε` need NOT be proven fundamental**, which is the expensive half of the
-classical computation and is avoided here: `N(ε) = −1`, and `ε = ±ε₀^k` gives
-`(±1)·N(ε₀)^k = −1`, forcing `k` odd, so `ε ≡ ε₀` modulo squares whichever `ε₀`
-Dirichlet hands back. (PARI/GP confirms `ε` is in fact fundamental, but that is
-not needed here.) -/
+/-! ### The units of `ℤ[s]` modulo squares (PROVEN 2026-07-27)
+
+The signature of `K` is `(r₁, r₂) = (1, 1)`, but it is obtained here from
+`NumberField.sign_discr` — `sign (disc K) = (−1)^{r₂}` with `disc K = −44 < 0`
+forces `r₂` odd, and `r₁ + 2r₂ = 3` forces `r₂ ≤ 1` — rather than from counting
+the real roots of `X³ − 2X² + 2` analytically, which is what the previous
+docstring proposed.  Hence `rank 𝓞_K^× = 1`, and torsion is `{±1}` by
+`NumberField.Units.torsion_eq_one_or_neg_one_of_odd_finrank` (`finrank = 3` is
+odd), so every unit is `±E^n` for a fundamental `E`.
+
+**CORRECTION to the previous docstring, and it is load-bearing.**  The old text
+argued: "`N(ε) = −1`, and `ε = ±ε₀^k` gives `(±1)·N(ε₀)^k = −1`, forcing `k` odd,
+so `ε ≡ ε₀` modulo squares".  **That inference is invalid.**  If `N(ε₀) = +1`
+then `N(ε₀)^k = 1` for every `k`, the equation reads `(±1) = −1`, and it
+constrains the SIGN only — `k` is left completely free.  Concretely `ε = −ε₀²`
+satisfies `N(ε) = −1` with `k` even, and in that case `{±1, ±ε}` would meet only
+two of the four classes of `𝓞_K^×/(𝓞_K^×)²` and the statement would be FALSE.
+
+What actually rules that out is a **quadratic-residue obstruction**, and it is
+needed for the `−` case only:
+
+* `ε = w²` is impossible by the norm: `N(ε) = −1` while `N(w²) = N(w)² ≥ 0`.
+* `ε = −w²` is **not** excluded by the norm (`N(−w²) = −N(w)² = −1` when
+  `N(w) = ±1`), nor by the real embedding (`ε ≈ −0.5437 < 0`, consistent).  It is
+  excluded by reducing at the degree-one prime above `13` with `s ↦ 7`
+  (`7³ − 2·7² + 2 = 247 = 13·19`): there `ε ↦ 1 + 7 − 10 = −2 = 11`, and neither
+  `11` nor `−11 = 2` is a square mod `13` (`13 ≡ 5 mod 8`).  `phi13` below is
+  that reduction, and its multiplicativity is the integer identity
+  `LHS − RHS = −13·(3bb' + 4bc' + 4cb' + 6cc')`.
+
+So `ε` is not `±` a square, its exponent against any fundamental unit is odd, and
+`{±1, ±ε}` is exactly a set of representatives. -/
+
+/-! ## The signature of `K` and the unit rank -/
+
+theorem nrComplexPlaces_KK : NumberField.InfinitePlace.nrComplexPlaces KK = 1 := by
+  have hsign := NumberField.sign_discr (K := KK)
+  rw [discr_KK] at hsign
+  rcases Nat.le_one_iff_eq_zero_or_eq_one.mp nrComplexPlaces_le with h | h
+  · rw [h] at hsign; exact absurd hsign (by decide)
+  · exact h
+
+theorem nrRealPlaces_KK : NumberField.InfinitePlace.nrRealPlaces KK = 1 := by
+  have h := NumberField.InfinitePlace.card_add_two_mul_card_eq_rank KK
+  rw [finrank_KK, nrComplexPlaces_KK] at h
+  omega
+
+theorem rank_KK : NumberField.Units.rank KK = 1 := by
+  rw [NumberField.Units.rank, NumberField.InfinitePlace.card_eq_nrRealPlaces_add_nrComplexPlaces,
+    nrRealPlaces_KK, nrComplexPlaces_KK]
+
+/-! ## Transporting Dirichlet's unit theorem to `ℤ[s]` -/
+
+noncomputable def unitsEquivZS : (ZS)ˣ ≃* (𝓞 KK)ˣ :=
+  Units.mapEquiv ringOfIntegersEquivZS.toRingEquiv.toMulEquiv
+
+theorem unitsEquivZS_neg (X : (ZS)ˣ) : unitsEquivZS (-X) = -unitsEquivZS X := by
+  ext
+  simp [unitsEquivZS]
+
+/-- **Dirichlet for `ℤ[s]`**: `ℤ[s]ˣ = {±1} × ⟨E⟩` for a fundamental unit `E`. -/
+theorem exists_fundamental_unit :
+    ∃ E : (ZS)ˣ, ∀ U : (ZS)ˣ, ∃ (σ : (ZS)ˣ) (n : ℤ), (σ = 1 ∨ σ = -1) ∧ U = σ * E ^ n := by
+  have hsub : Subsingleton (Fin (NumberField.Units.rank KK)) :=
+    Fin.subsingleton_iff_le_one.mpr (le_of_eq rank_KK)
+  have hidx : (0 : ℕ) < NumberField.Units.rank KK := by rw [rank_KK]; norm_num
+  refine ⟨unitsEquivZS.symm (NumberField.Units.fundSystem KK ⟨0, hidx⟩), fun U => ?_⟩
+  obtain ⟨⟨ζ, e⟩, hV, -⟩ := NumberField.Units.exist_unique_eq_mul_prod KK (unitsEquivZS U)
+  have hprod : (∏ i, (NumberField.Units.fundSystem KK i) ^ (e i))
+      = (NumberField.Units.fundSystem KK ⟨0, hidx⟩) ^ (e ⟨0, hidx⟩) :=
+    Finset.prod_eq_single_of_mem _ (Finset.mem_univ _)
+      fun b _ hb => absurd (Subsingleton.elim b ⟨0, hidx⟩) hb
+  rw [hprod] at hV
+  refine ⟨unitsEquivZS.symm (ζ : (𝓞 KK)ˣ), e ⟨0, hidx⟩, ?_, ?_⟩
+  · rcases NumberField.Units.torsion_eq_one_or_neg_one_of_odd_finrank (K := KK)
+      (by rw [finrank_KK]; decide) ζ with hz | hz
+    · left; rw [hz, map_one]
+    · right
+      apply unitsEquivZS.injective
+      rw [MulEquiv.apply_symm_apply, hz, show (-1 : (ZS)ˣ) = -(1 : (ZS)ˣ) from rfl,
+        unitsEquivZS_neg, map_one]
+  · apply unitsEquivZS.injective
+    rw [map_mul, map_zpow, MulEquiv.apply_symm_apply, MulEquiv.apply_symm_apply, hV]
+
+/-! ## `ε` is not `±` a square: reduction mod the prime `s ↦ 7` of `𝔽₁₃` -/
+
+/-- The ring reduction `ℤ[s] → 𝔽₁₃`, `s ↦ 7` (`7³ − 2·7² + 2 = 247 = 13·19`). -/
+def phi13 (x : ZS) : ZMod 13 := (x.a : ZMod 13) + 7 * (x.b : ZMod 13) + 10 * (x.c : ZMod 13)
+
+theorem phi13_mul (x y : ZS) : phi13 (x * y) = phi13 x * phi13 y := by
+  have h : ((x * y).a + 7 * (x * y).b + 10 * (x * y).c : ℤ)
+      = (x.a + 7 * x.b + 10 * x.c) * (y.a + 7 * y.b + 10 * y.c)
+        - 13 * (3 * x.b * y.b + 4 * x.b * y.c + 4 * x.c * y.b + 6 * x.c * y.c) := by
+    simp only [mul_a, mul_b, mul_c]; ring
+  have hc := congrArg (fun z : ℤ => (z : ZMod 13)) h
+  push_cast at hc
+  rw [show (13 : ZMod 13) = 0 from by decide, zero_mul, sub_zero] at hc
+  simp only [phi13]
+  linear_combination hc
+
+theorem phi13_neg (x : ZS) : phi13 (-x) = -phi13 x := by
+  simp only [phi13, neg_a, neg_b, neg_c, Int.cast_neg]; ring
+
+theorem phi13_epsEl : phi13 epsEl = 11 := by decide
+
+theorem sq_ne_eleven : ∀ y : ZMod 13, (11 : ZMod 13) ≠ y ^ 2 ∧ (11 : ZMod 13) ≠ -y ^ 2 := by
+  decide
+
+/-- **`ε` is neither a square nor minus a square in `ℤ[s]`.**  The `+` case is
+already excluded by the norm (`N(ε) = −1` while `N(w²) = N(w)² ≥ 0`); the `−` case
+is NOT, and needs this reduction: `ε ↦ 11` in `𝔽₁₃`, and neither `11` nor `−11 = 2`
+is a square mod `13`. -/
+theorem epsEl_ne_sq (w : ZS) : epsEl ≠ w ^ 2 ∧ epsEl ≠ -(w ^ 2) := by
+  constructor
+  · intro h
+    have hp := congrArg phi13 h
+    rw [phi13_epsEl, pow_two, phi13_mul] at hp
+    exact (sq_ne_eleven (phi13 w)).1 (by rw [hp]; ring)
+  · intro h
+    have hp := congrArg phi13 h
+    rw [phi13_epsEl, phi13_neg, pow_two, phi13_mul] at hp
+    exact (sq_ne_eleven (phi13 w)).2 (by rw [hp]; ring)
+
+theorem isUnit_epsEl : IsUnit epsEl := isUnit_of_norm_isUnit (by decide)
+
+theorem zpow_two_mul (F : (ZS)ˣ) (k : ℤ) : F ^ (2 * k) = (F ^ k) ^ 2 := by
+  rw [← zpow_natCast (F ^ k) 2, ← zpow_mul]
+  congr 1
+  push_cast
+  ring
+
+/-! ## The four classes -/
+
+end UnitGroup
+
+/-- **The units of `ℤ[s]` modulo squares are `{±1, ±ε}`** (PROVEN 2026-07-27),
+`ε = −s² + s + 1`.  See the section above; note in particular the correction
+recorded there: `N(ε) = −1` does **not** by itself force the exponent to be odd,
+and the `−` case genuinely needs the mod-`13` quadratic-residue obstruction. -/
 theorem unit_sq_class {u : ZS} (hu : IsUnit u) :
-    ∃ v w : ZS, (v = 1 ∨ v = -1 ∨ v = epsEl ∨ v = -epsEl) ∧ u = v * w ^ 2 := sorry
+    ∃ v w : ZS, (v = 1 ∨ v = -1 ∨ v = epsEl ∨ v = -epsEl) ∧ u = v * w ^ 2 := by
+  obtain ⟨E, hE⟩ := exists_fundamental_unit
+  obtain ⟨U, rfl⟩ := hu
+  obtain ⟨P, hP⟩ := isUnit_epsEl
+  obtain ⟨σ₀, j, hσ₀, hj⟩ := hE P
+  -- `j` is odd: otherwise `ε = ±(square)`.
+  have hjodd : ¬ (2 ∣ j) := by
+    rintro ⟨t, rfl⟩
+    rw [zpow_two_mul] at hj
+    rcases hσ₀ with rfl | rfl
+    · exact (epsEl_ne_sq ((E ^ t : (ZS)ˣ) : ZS)).1 (by
+        rw [← hP, hj, one_mul]; push_cast; ring_nf)
+    · exact (epsEl_ne_sq ((E ^ t : (ZS)ˣ) : ZS)).2 (by
+        rw [← hP, hj]; push_cast; ring_nf)
+  obtain ⟨σ, n, hσ, hU⟩ := hE U
+  rcases Int.even_or_odd n with ⟨m, hm⟩ | ⟨m, hm⟩
+  · -- `n` even
+    refine ⟨(σ : ZS), ((E ^ m : (ZS)ˣ) : ZS), ?_, ?_⟩
+    · rcases hσ with rfl | rfl
+      · exact Or.inl rfl
+      · exact Or.inr (Or.inl rfl)
+    · have : U = σ * (E ^ m) ^ 2 := by
+        rw [hU, hm, show (m + m : ℤ) = 2 * m by ring, ← zpow_natCast (E ^ m) 2, ← zpow_mul]
+        ring_nf
+      rw [this]; push_cast; ring
+  · -- `n` odd; use `j` odd to replace `E` by `ε`
+    obtain ⟨t, ht⟩ : ∃ t : ℤ, j = 2 * t + 1 := by
+      rcases Int.even_or_odd j with ⟨r, hr⟩ | ⟨r, hr⟩
+      · exact absurd ⟨r, by omega⟩ hjodd
+      · exact ⟨r, hr⟩
+    have hσ₀sq : σ₀ * σ₀ = 1 := by rcases hσ₀ with rfl | rfl <;> simp
+    have hcalc : (σ * σ₀) * (σ₀ * E ^ j) * (E ^ (m - t)) ^ 2 = σ * E ^ n := by
+      have h1 : (σ * σ₀) * (σ₀ * E ^ j) = σ * E ^ j := by
+        rw [mul_assoc, ← mul_assoc σ₀ σ₀, hσ₀sq, one_mul]
+      rw [h1, mul_assoc, ← zpow_natCast (E ^ (m - t)) 2, ← zpow_mul, ← zpow_add, ht, hm]
+      congr 1
+      push_cast
+      ring_nf
+    refine ⟨((σ * σ₀ : (ZS)ˣ) : ZS) * epsEl, ((E ^ (m - t) : (ZS)ˣ) : ZS), ?_, ?_⟩
+    · rcases hσ with rfl | rfl <;> rcases hσ₀ with rfl | rfl
+      · exact Or.inr (Or.inr (Or.inl (by norm_num)))
+      · exact Or.inr (Or.inr (Or.inr (by norm_num)))
+      · exact Or.inr (Or.inr (Or.inr (by norm_num)))
+      · exact Or.inr (Or.inr (Or.inl (by norm_num)))
+    · have hUU : U = (σ * σ₀) * P * (E ^ (m - t)) ^ 2 := by
+        rw [hj, hcalc, hU]
+      rw [hUU, ← hP]
+      push_cast
+      ring_nf
 
 /-- **THE VALUATION BOOKKEEPING** (PROVEN 2026-07-27 over the two leaves above):
 `β = p − 2s·e²` is a unit from `{±1, ±ε}` times `s^r g^t` (`r, t ∈ {0, 1}`) times
@@ -2178,11 +2820,12 @@ the finite-generation content lives — is PROVEN too, over `reduced_fraction`,
 `forms_common_dvd` and `forms_archimedean`. And `smallPoints` — the finite base
 case the height bound leaves behind, `|p| ≤ 512` and `1 ≤ e ≤ 22` — is PROVEN
 as of 2026-07-27 by a bitmask quadratic-residue sieve. And `exists_halving_witness`
-was decomposed later the same day, then `descent_unit_square` after it, so exactly
-TWO open statements remain, both facts about the cubic field `K = ℚ(s)`:
-`Cubic.ZS.isPrincipalIdealRing_zs` (`𝓞_K = ℤ[s]` with `h(K) = 1`) and
-`Cubic.ZS.unit_sq_class` (units mod squares). The valuation bookkeeping that used
-to sit with them is PROVEN, as `Cubic.ZS.descent_zs`. See the
+was decomposed later the same day, then `descent_unit_square` after it, and the
+two number-theoretic statements it rested on — `Cubic.ZS.isPrincipalIdealRing_zs`
+(`𝓞_K = ℤ[s]` with `h(K) = 1`) and `Cubic.ZS.unit_sq_class` (units mod squares) —
+are **PROVEN as of 2026-07-27**, so nothing of the `2`-descent survives as a leaf.
+The valuation bookkeeping that used to sit with them is PROVEN too, as
+`Cubic.ZS.descent_zs`. See the
 section docstring for the computed evidence behind that split, including why the
 earlier routing note — which called the cubic field's class group the
 obstruction — was wrong, and why the ROUTE AUDIT that called for Galois
@@ -2287,10 +2930,10 @@ and BOTH of those are themselves PROVEN — `height_drop_or_small` over
 kernel. Finally `exists_halving_witness` itself was decomposed on 2026-07-27
 and is PROVEN, over `MazurLevel11.descent_square_class` (the norm pruning) and
 `MazurLevel11.epsilon_class_impossible` (the local condition, pure parity mod
-`4`). And `descent_unit_square` was decomposed the same day too, so level `11`
-stands on exactly TWO open statements, both facts about the cubic field `ℚ(s)`:
-`MazurLevel11.Cubic.ZS.isPrincipalIdealRing_zs` and
-`MazurLevel11.Cubic.ZS.unit_sq_class`. See the `MazurLevel11` section docstring.
+`4`). And `descent_unit_square` was decomposed the same day too, into the two
+facts about the cubic field `ℚ(s)` — `MazurLevel11.Cubic.ZS.isPrincipalIdealRing_zs`
+and `MazurLevel11.Cubic.ZS.unit_sq_class` — and **both are PROVEN** as of
+2026-07-27. See the `MazurLevel11` section docstring.
 
 Note the sentence above — "finite generation alone never yields rank `0`, so it
 was never the hard half" — is true but was read the wrong way round when

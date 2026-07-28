@@ -5,7 +5,19 @@ Authors: Deyao Chen
 -/
 module
 
-public import Fermat.FLT.FreyCurve.MazurTorsion
+-- **This module deliberately does NOT import `Fermat.FLT.FreyCurve.MazurTorsion`**
+-- (release 9).  It used to, and it used not one declaration from it: a
+-- comment-stripped scan of every identifier here against `MazurTorsion`'s 1168
+-- declaration names found ZERO uses.  The import cost 427 s of SERIAL build
+-- time, because this module is imported by `ModThree.lean`, which is on the
+-- critical path — release 7 removed the direct `ModThree → MazurTorsion` edge
+-- and the chain simply rerouted through here.  What the file actually needs
+-- from that cone is the absolute Galois group and the `𝒪`-inertia vocabulary,
+-- named explicitly below.  **Do not restore the `MazurTorsion` import**; add
+-- the specific module you need instead.
+public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
+public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+public import Mathlib.RingTheory.Adjoin.PowerBasis
 public import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
 public import Mathlib.NumberTheory.RamificationInertia.Galois
 public import Mathlib.NumberTheory.RamificationInertia.Basic
