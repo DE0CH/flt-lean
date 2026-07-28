@@ -36,11 +36,19 @@ the *affine chart* of a pointed curve exist — and it is the scheme-theoretic h
   singleton, `K` a field.  PROVEN.  (`Spec K` is a one-point space.)
 * `isClosed_singleton_of_section` — the two combined: the image of a section of a
   separated morphism from the spectrum of a field is a closed point.  PROVEN.
-* `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **the sorry leaf**, and it is
-  the whole content: ampleness / the Serre criterion.
+* `affineLineOver` — the structure morphism `𝔸¹_K ⟶ Spec K`, used only to say "over `K`".
+* `exists_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: RIEMANN–ROCH,
+  a nonconstant regular function on `X ∖ {z}`.
+* `isProper_of_locallyQuasiFinite_toAffineLine_compl_singleton` — **sorry leaf**: the
+  compactification step, that any such function's morphism to `𝔸¹_K` is proper.
+* `isAffineOpen_compl_singleton_of_isSmoothProperCurve` — **PROVEN 2026-07-28** over those
+  two, by Zariski's main theorem.  It does NOT go through ampleness; see the next section.
 * `exists_isOpenImmersion_range_eq_compl_of_section` — the packaged existential a consumer
   actually wants: a ring `R` and an open immersion `Spec R ⟶ X` onto the complement of the
-  image of a `K`-point.  PROVEN over the leaf.
+  image of a `K`-point.  PROVEN over the two leaves.
+* `exists_surjective_coordinateRingHom_of_generators` — two elements plus a Weierstrass
+  relation plus `Subring.closure … = ⊤` give a SURJECTION out of the coordinate ring.
+  PROVEN, no sorry.
 * `injective_of_surjective_coordinateRing` — a surjection from a Weierstrass coordinate
   ring onto a domain that is not a field is injective.  PROVEN, no sorry.  This is the
   algebraic half of "the affine chart IS a Weierstrass coordinate ring"; it means the
@@ -213,7 +221,8 @@ TRUE.  Write `U = X ∖ {z}` and let `f ∈ Γ(X, U)` be the function `g` classi
 intended proof is the valuative criterion, in two steps:
 
 1. **`g` does not extend across `z`.**  If it did, the extension `ĝ : X ⟶ 𝔸¹_K` would be a
-   `K`-morphism out of a proper `X`, hence proper (`IsProper.of_comp_of_isSeparated`
+   `K`-morphism out of a proper `X`, hence proper (`IsProper.of_comp`, which cancels
+   `IsProper` on the right
    against the separated `𝔸¹_K ⟶ Spec K`), and still quasi-finite, hence FINITE by
    `IsFinite.of_isProper_of_locallyQuasiFinite`.  A finite surjection onto `𝔸¹_K` from a
    universally closed `X` would make `𝔸¹_K ⟶ Spec K` universally closed, which it is not.
