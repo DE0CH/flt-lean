@@ -490,14 +490,36 @@ theorem eq_zero_of_isDiffChar_zero [IsAlgClosed F] [CharZero F] [W.IsElliptic]
 
 /-! ### The open geometry
 
-The three statements still sorried below are the remaining leaves of this cut. Each
-is a standard fact about the invariant differential (Silverman, *AEC* III.5); none of
-them is in the mathlib pin, in `~/cs/FLT`, or elsewhere in `Fermat/` — the pin has the
-invariant differential nowhere, and this project has only the universal
-Hamiltonian derivation `PsiSumCompanion.DK` of
-`Fermat/FLT/EllipticCurve/InvariantDerivation.lean`, which is the derivation
-`ψ₂ · d/dx` on the function field of the UNIVERSAL curve and carries no
-statement about isogenies.
+The statements still sorried below are the remaining leaves of this cut. Each is a
+standard fact about the invariant differential (Silverman, *AEC* III.5), and the pin
+does not have the invariant differential.
+
+**STALE ABSENCE CLAIM, CORRECTED 2026-07-28.** This paragraph used to end "none of
+them is in the mathlib pin, in `~/cs/FLT`, or elsewhere in `Fermat/` … this project
+has only the universal Hamiltonian derivation `PsiSumCompanion.DK` of
+`InvariantDerivation.lean` … and carries no statement about isogenies." The last
+clause is **FALSE**, and it is the load-bearing one.
+
+`Fermat/FLT/EllipticCurve/WronskianInduction.lean` — built on exactly that `DK`, and
+SORRY-FREE — proves `[n]*ω = n·ω` in precisely the Wronskian form this file's reduced
+certificate consumes:
+
+  `PsiSumCompanion.wronskian (W : WeierstrassCurve R) (hn : 1 ≤ n) :`
+  `  Φₙ′ · ΨSqₙ − Φₙ · ΨSqₙ′ = n · preΨ (2n)`
+
+over an ARBITRARY commutative ring `R`, for every `n ≥ 1`. Its file docstring says so
+outright: "the coordinates of `n • (tautX, tautY)` satisfy `DK xₙ = n ⬝ ψ₂(nP)` … i.e.
+`[n]*ω = n ⬝ ω` for the invariant differential." So the invariant-differential
+induction is not missing from this project — it is *done*, at the universal curve, and
+descended to every ring. It is reachable (`TorsionCharP.lean` and `TorsionCardSep.lean`
+`public import` it).
+
+The check that refutes the old claim in one command:
+`grep -rn "theorem wronskian" Fermat/FLT/EllipticCurve/WronskianInduction.lean`.
+
+What this changes concretely: `isDiffChar_two` below is a Wronskian identity between
+division polynomials and `PsiSumCompanion.wronskian` at `n = 2` supplies its
+`x`-side outright. See that leaf's docstring for what remains.
 
 **How to attack any of them** (2026-07-28, and this is what the block above exists
 for). Build witnesses, then verify the certificate through
@@ -963,18 +985,41 @@ itself (`φ ∘ [n]`) has a scalar known only through `isDiffChar_mulByHom`, whi
 proven BY additivity. `[2]` is the irreducible core of additivity, not an instance
 of it.
 
-**Why it should nevertheless be tractable.** The witnesses are already in the tree
-and are explicit: `veluPointX_nsmul` gives `x([n]P)·ΨSqₙ(x P) = Φₙ(x P)`, so for
-`n = 2` the `x`-witness pair is `(W.Φ 2, W.ΨSq 2)` from the division-polynomial
-development (`TorsionCard.lean`, `PhiPsiCoprime.lean`, `Degree.lean`). Through
-`isDiffCharCert_of_cofinite` + `isDiffCharCert_of_reduced` the leaf becomes the
-Wronskian identity
+**Why it should be tractable, and HALF OF IT IS ALREADY PROVEN.** The witnesses are
+in the tree and explicit: `veluPointX_nsmul` gives `x([n]P)·ΨSqₙ(x P) = Φₙ(x P)`, and
+the `y`-witness for `n = 2` is `exists_y_witness_two` (both in `Isogeny.lean`, both
+PROVEN). Through `isDiffCharCert_of_cofinite` + `isDiffCharCert_of_reduced` the leaf
+becomes the Wronskian identity
 
-  `2 · ΨSq₂² · ψ₂([2]P) = (Φ₂'·ΨSq₂ − Φ₂·ΨSq₂') · ψ₂(P)`
+  `2 · ΨSq₂² · ψ₂([2]P) = (Φ₂′·ΨSq₂ − Φ₂·ΨSq₂′) · ψ₂(P)`
 
-between division polynomials — algebra in one variable, not geometry. Note it is
-true in EVERY characteristic, including `2`, where both sides vanish because `[2]`
-is inseparable; so it must not acquire a `CharZero` hypothesis.
+between division polynomials — algebra in one variable, not geometry. And its
+right-hand side is ALREADY A THEOREM:
+
+  `PsiSumCompanion.wronskian` (`WronskianInduction.lean`, sorry-free, any
+  commutative ring, every `n ≥ 1`): `Φₙ′·ΨSqₙ − Φₙ·ΨSqₙ′ = n · preΨ (2n)`.
+
+At `n = 2` that reads `Φ₂′·ΨSq₂ − Φ₂·ΨSq₂′ = 2 · preΨ 4`, so the target collapses to
+the `y`-side statement
+
+  `ΨSq₂² · ψ₂([2]P) = preΨ 4 (x P) · ψ₂(P)`  (up to `preΨ`'s normalisation),
+
+i.e. the classical `2y(nP) + a₁x(nP) + a₃ = ψ₂ₙ/ψₙ⁴` at `n = 2`. **VERIFY THAT
+NORMALISATION BEFORE BUILDING ON IT** — mathlib's `preΨ` differs from the classical
+`ψ` by a `ψ₂` factor in the even case, which is exactly where an off-by-`ψ₂` error
+would hide, and this docstring has not checked it. The material to settle it is
+`addY_two_core` (`Isogeny.lean`), which gives `y([2]P)·ψ₂⁴` as an explicit `y`-affine
+expression, so the comparison is a `linear_combination` against the curve equation
+rather than a search.
+
+Note the whole statement is true in EVERY characteristic, including `2`, where both
+sides vanish because `[2]` is inseparable; so it must not acquire a `CharZero`
+hypothesis.
+
+**A tempting shortcut that is CIRCULAR**: `PsiSumCompanion.wronskian` holds for all
+`n`, so it looks as though `isDiffChar_mulByHom` could be proven directly from it and
+additivity read off afterwards. It cannot — `isDiffChar_mulByHom` is proven BY
+`isDiffChar_add`, whose doubling branch is this leaf. Use `wronskian` at `n = 2` only.
 
 **`isDiffChar_add_of_ne`, the CHORD branch**, carries the four degeneracies as
 hypotheses, matching `IsRationalMap.add_of_ne` hypothesis for hypothesis. That
