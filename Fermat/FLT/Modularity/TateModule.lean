@@ -14126,10 +14126,17 @@ remaining content splits into four disjoint theorems:
   `Nm_{D/ℚ}(N) = N^{[D:ℚ]} = N^g`).  It is the finite-base counterpart of
   `exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult`.
   **PROVEN 2026-07-28** over the single geometric leaf
-  `exists_levelWeilPairing_finiteBase` — the pairing itself, stated on the
-  torsion with NO frame, NO matrix and NO determinant, with the transport
-  along the frame (`bilin_alternating_apply_det_apply` plus the unit
-  supplied by perfectness) proven.  That is the same PAIRING axis along
+  `exists_levelWeilPairing_finiteBase` — the pairing itself, with the
+  transport along the frame (`bilin_alternating_apply_det_apply` plus the
+  unit supplied by perfectness) proven.  **CORRECTED the same day**: that
+  leaf was stated with the FRAME in its binders, which (see its CUT AUDIT)
+  makes it equivalent to this determinant statement rather than weaker
+  than it, since a frame lets `e := det ![c⁻¹ ·, c⁻¹ ·]` be written down
+  outright.  It is now itself PROVEN over
+  `exists_levelWeilPairing_of_nonzeroTorsion_finiteBase`, the same pairing
+  statement with NO frame, NO matrix and NO determinant in the binders —
+  the frame is consumed only to exhibit a nonzero torsion point.  That is
+  the same PAIRING axis along
   which the characteristic-zero half of this file was already cut, at
   `exists_tateWeilPairing_of_mult` against
   `det_eq_cyclotomicCharacter_of_tateWeilPairing`, and at a finite base
@@ -15020,28 +15027,159 @@ def IsLevelWeilPairing {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruc
   (∃ y ∈ (m.torsion x J).1, ∃ z ∈ (m.torsion x J).1, IsUnit (e y z))
 
 open _root_.NumberField in
+/-- **THE `𝒪_D`-WEIL PAIRING ON `A'[Iⁿ]` OVER A FINITE FIELD, STATED WITH
+NO FRAME IN THE BINDERS** (SORRY LEAF — Mumford *Abelian Varieties* §16
+and §20, Milne *Abelian Varieties* §I.13; the GEOMETRIC residue of
+`exists_levelWeilPairing_finiteBase`, which is PROVEN over it).
+
+For `k` finite with `N` elements and `I` a maximal ideal of `𝒪_D` of
+residue characteristic prime to `N`, the torsion `A'[Iⁿ]` carries an
+`𝒪_D/Iⁿ`-valued Weil pairing (`IsLevelWeilPairing`) whose Galois
+multiplier at the `N`-power Frobenius `σ` is `N`, as soon as that torsion
+is NONZERO.
+
+**WHY THIS LEAF EXISTS: A FRAME IN THE BINDERS MAKES THE STATEMENT
+EQUIVALENT TO ITS OWN CONSUMER** (cut audit, 2026-07-28).  Its parent
+`exists_levelWeilPairing_finiteBase` receives the level frame `c`/`hc`,
+and `IsLevelTateFrame` makes `c` a BIJECTION onto `A'[Iⁿ]` (clauses
+`hinj` and `hsurj`).  So with the frame in scope one may simply DEFINE
+
+  `e y z := Matrix.det ![c⁻¹ y, c⁻¹ z]`
+
+on the torsion and zero elsewhere: bi-additivity is the frame's `hadd`
+clause, `𝒪_D`-linearity is its `hsmul` clause, the form is alternating
+because `det` of a repeated row vanishes, and perfectness is
+`e (c ![1,0]) (c ![0,1]) = 1`.  Only the equivariance clause has any
+content left, and `bilin_alternating_apply_det_apply` — the very lemma
+the parent's consumer uses — turns it into `det Φ = N` for the matrix
+`Φ` of `σ` supplied by `exists_frobLevelMatrix_of_levelTateFrame`.  That
+is *exactly* `det_frobLevelMatrix_eq_natCast_finiteBase`.  Hence with the
+frame present the pairing statement and the determinant statement imply
+each other, and the cut between them buys nothing: a prover dispatched at
+the framed pairing is a prover dispatched at the determinant in disguise.
+
+This is the failure mode the characteristic-zero half of this file
+records at `exists_tateWeilSystem_of_mult` ("THIS LEAF DOES NOT RECEIVE
+THE FRAME … REFUTING CHECK for that claim: look for `φ` or `τ` in the
+binders below") and guards against by keeping the frame out.  The guard
+was not reproduced at the finite base; this declaration reinstates it,
+and its parent is now PROVEN over it.
+
+REFUTING CHECK for the claim that the guard is now in force: look for `c`
+or `IsLevelTateFrame` in the binders below.  There are none, so no `e`
+can be manufactured by transporting `stdAlternatingBilin` backwards along
+a frame, and the equivariance clause cannot be discharged by quoting a
+determinant identity that is not in scope.  What must be built is the
+pairing itself, out of the geometry of `f' : A' ⟶ Spec k`.
+
+**WHAT REPLACES THE FRAME, AND WHY IT IS THE WEAKEST THING THAT WORKS.**
+`hne` — some `Iⁿ`-torsion point is nonzero.  Something of this kind is
+unavoidable: `A' = Spec k` with its unique group structure satisfies
+every other hypothesis (it is proper, smooth and geometrically connected,
+and `𝒪_D` acts on it), its torsion is `{0}`, and then `e 0 0 = 0` is a
+unit only in the ZERO ring — so the perfectness clause is FALSE for it at
+every `n ≥ 1`.  `hne` excludes exactly that degenerate fibre and nothing
+else: it does NOT pin the rank, and in particular does not say `A'[Iⁿ]`
+is free of rank two, which is what would make the statement equivalent to
+the determinant again.
+
+That the rank need not be pinned is a genuine strengthening, not
+sloppiness.  If `A'` has dimension `r·[D:ℚ]` with `𝒪_D` acting, then
+`T_I A'` is free of rank `r` over the local ring `𝒪_{D,I}`, the `r` is
+EVEN (a polarization makes it a symplectic `𝒪_{D,I}`-module), and an
+alternating `𝒪_D`-bilinear form with a unit value exists there just as it
+does at `r = 2`; the Galois multiplier is the mod-`Iⁿ` cyclotomic
+character either way, which at the `N`-power Frobenius is the constant
+`N`.  So no rank hypothesis is needed and none is imposed.
+
+WHERE THE GEOMETRY IS.  Classically the pairing is
+`⋀²_{𝒪_D} A'[Iⁿ] ≅ μ_{Iⁿ} ⊗ 𝔡_D⁻¹𝔠`, obtained from an `𝒪_D`-linear
+polarization; the identification of the target with `𝒪_D/Iⁿ` is a choice
+of generator of `μ_{Iⁿ}(k̄)`, which exists because `q ≠ char k` makes
+`μ_{Iⁿ}(k̄)` free of rank one over `𝒪_D/Iⁿ`, and under it the Galois
+action `ζ ↦ ζ^N` becomes multiplication by `N`.  That last sentence is
+where `hσ` is consumed and it is why the multiplier is `N` and not an
+unknown character.  The route to build is the finite-base image of the
+one the characteristic-zero half uses — a `μ_{q^m}`-valued Weil system
+(`IsQAdicWeilSystem`) refined along the inverse different to an
+`𝒪_D/Iⁿ`-valued form (`IsTraceDualFunctional`, which is pure algebra and
+carries no base field, hence is REUSABLE here verbatim) — with the
+passage to the limit and the cyclotomic character both absent, because
+there is a single level and the character is the constant `N`.
+
+FAITHFULNESS.  `hσ` is load-bearing: for `σ = 1` the multiplier is `1`,
+and the statement with multiplier `N` is FALSE for `N ≠ 1` (the pairing
+really is `σ`-equivariant with multiplier `1` at `σ = 1`, and perfectness
+then forces `N = 1` in `𝒪_D/Iⁿ`).  `hqN` is load-bearing for a different
+reason: at the residue characteristic of `k` the group `μ_{qⁿ}(k̄)` is
+trivial, the target of the pairing collapses, and the perfectness clause
+is false.  `[NumberField.IsTotallyReal D]` is what makes the Rosati
+involution trivial on `𝒪_D`, i.e. what makes the polarized pairing
+`𝒪_D`-BILINEAR rather than hermitian; without it the multiplier of the
+consumer is a twist. -/
+theorem exists_levelWeilPairing_of_nonzeroTorsion_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ)
+    (hne : ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      y ≠ ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))) :
+    ∃ e : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        NumberField.RingOfIntegers D ⧸ I ^ n,
+      IsLevelWeilPairing m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) σ
+        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE `𝒪_D`-WEIL PAIRING ON THE PRIME-TO-`p` TORSION OVER A FINITE
-FIELD** (sorry leaf — Mumford *Abelian Varieties* §16 and §20, Milne
-*Abelian Varieties* §I.13; the GEOMETRIC residue of
-`det_frobLevelMatrix_eq_natCast_finiteBase`, which is PROVEN over it).
+FIELD** (**PROVEN 2026-07-28** over the frame-free geometric leaf
+`exists_levelWeilPairing_of_nonzeroTorsion_finiteBase`; Mumford *Abelian
+Varieties* §16 and §20, Milne *Abelian Varieties* §I.13; the GEOMETRIC
+residue of `det_frobLevelMatrix_eq_natCast_finiteBase`, which is PROVEN
+over it).
 
 For `k` finite with `N` elements, `I` a maximal ideal of `𝒪_D` of residue
 characteristic prime to `N`, and a level frame of `A'[Iⁿ]`, the torsion
 `A'[Iⁿ]` carries an `𝒪_D/Iⁿ`-valued Weil pairing (`IsLevelWeilPairing`)
 whose Galois multiplier at the `N`-power Frobenius `σ` is `N`.
 
-WHY THIS IS THE RIGHT RESIDUE, i.e. why the cut does not collapse.  The
+**CUT AUDIT (2026-07-28): AS STATED, WITH `c`/`hc` IN THE BINDERS, THIS
+STATEMENT IS EQUIVALENT TO ITS OWN CONSUMER** — it is NOT a residue of
+it.  An earlier version of this docstring claimed the opposite ("the
 consumer's statement is about a MATRIX `Φ` in a frame; this one mentions
-no frame coordinates, no matrix and no determinant.  It is the same
-axis along which the characteristic-zero half of this file was already
-cut — `exists_tateWeilPairing_of_mult` (the geometry, stated WITHOUT the
-frame) against `det_eq_cyclotomicCharacter_of_tateWeilPairing` (the
-transport along the frame, PROVEN) — reproduced at a finite base, where
-the cyclotomic character degenerates to the constant `N`.  Everything
-between the pairing and `det Φ = N` is linear algebra over `𝒪_D/Iⁿ` and
-is proven below.
+no frame coordinates, no matrix and no determinant"), and the second half
+of that sentence is true of the CONCLUSION and false of the BINDERS,
+which is what decides the question.  `IsLevelTateFrame` makes `c` a
+bijection onto `A'[Iⁿ]`, so `e y z := det ![c⁻¹ y, c⁻¹ z]` satisfies every
+clause but equivariance for free, and equivariance for that `e` is
+`det Φ = N` by `bilin_alternating_apply_det_apply` — i.e. exactly
+`det_frobLevelMatrix_eq_natCast_finiteBase`.  So this statement implies
+its consumer (proven below) and its consumer implies this statement, and
+a prover dispatched here is a prover dispatched at the determinant.
 
-WHERE THE GEOMETRY IS.  Classically the pairing is
+That is the failure mode the characteristic-zero half of this file guards
+against at `exists_tateWeilSystem_of_mult`, whose docstring says "THIS
+LEAF DOES NOT RECEIVE THE FRAME … REFUTING CHECK: look for `φ` or `τ` in
+the binders below".  The guard is now reinstated here: this statement is
+PROVEN over `exists_levelWeilPairing_of_nonzeroTorsion_finiteBase`, which
+is the same statement with `c`/`hc` deleted and replaced by the weakest
+nondegeneracy the perfectness clause needs — some `Iⁿ`-torsion point is
+nonzero.  The frame supplies that (`c ![1,0] ≠ c 0`, by `hinj`) whenever
+`𝒪_D/Iⁿ` is nontrivial, and when it is trivial the zero form discharges
+every clause including perfectness, because every element of the zero
+ring is a unit.  Those two
+observations are the whole proof below, and they are precisely the
+content this cut had: none.
+
+WHERE THE GEOMETRY IS (all of it now lives in the frame-free leaf).  Classically the pairing is
 `⋀²_{𝒪_D} A'[Iⁿ] ≅ μ_{Iⁿ} ⊗ 𝔡_D⁻¹𝔠`, obtained from an `𝒪_D`-linear
 polarization (`PolarizationStruct` in `Modularity/AbelianScheme.lean`
 axiomatises exactly this datum, but over a general base and with values
@@ -15059,10 +15197,13 @@ dividing a prime dividing `N - 1`… and more simply, the pairing really is
 `σ`-equivariant with multiplier `1` at `σ = 1`).  `hqN` is load-bearing
 for a different reason: at the residue characteristic of `k` the group
 `μ_{qⁿ}(k̄)` is trivial, the target of the pairing collapses, and the
-perfectness clause is false.  `c` and `hc` are carried because
-perfectness needs the torsion to be BIG — for a fibre admitting no
-rank-two frame at level `Iⁿ` there is nothing forcing a unit value — and
-they are exactly what the consumer has in hand. -/
+perfectness clause is false.  `c` and `hc` are carried because they are
+what the consumer has in hand, and because SOME nondegeneracy is needed —
+for a fibre with no nonzero `Iⁿ`-torsion (`A' = Spec k`) nothing forces a
+unit value.  But only the nonzero-torsion consequence of the frame is
+used below, and reading the frame as anything more is what produced the
+collapsed cut audited above: `hσ`, `hqN` and totally-real `D` remain
+load-bearing in the frame-free leaf, `c` and `hc` do not. -/
 theorem exists_levelWeilPairing_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -15082,8 +15223,34 @@ theorem exists_levelWeilPairing_finiteBase
         GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
         NumberField.RingOfIntegers D ⧸ I ^ n,
       IsLevelWeilPairing m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) σ
-        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e :=
-  sorry
+        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e := by
+  classical
+  obtain ⟨hmem, hadd, hinj, -, -⟩ := hc
+  by_cases hsub : Subsingleton (NumberField.RingOfIntegers D ⧸ I ^ n)
+  · -- TRIVIAL COEFFICIENT RING.  Every clause is an equation in a subsingleton,
+    -- and every element of the zero ring is a unit, so the zero form works.
+    refine ⟨fun _ _ => 0, fun _ _ _ _ _ _ => Subsingleton.elim _ _,
+      fun _ _ _ _ _ _ => Subsingleton.elim _ _, fun _ _ => Subsingleton.elim _ _,
+      fun _ _ _ _ _ => Subsingleton.elim _ _, fun _ _ _ _ => Subsingleton.elim _ _,
+      ⟨c 0, hmem 0, c 0, hmem 0, isUnit_of_subsingleton _⟩⟩
+  · -- NONTRIVIAL COEFFICIENT RING.  The frame is used for one thing only: it
+    -- produces a nonzero `Iⁿ`-torsion point, which is what the frame-free leaf
+    -- asks for in place of `c`/`hc`.
+    haveI hnt : Nontrivial (NumberField.RingOfIntegers D ⧸ I ^ n) :=
+      not_subsingleton_iff_nontrivial.mp hsub
+    letI : AddCommGroup (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))) :=
+      ab'.addCommGroup (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k)))
+    have hc0 : c 0 = ab'.zero (specAlgClos k ≫ 𝟙 (Spec (CommRingCat.of k))) := by
+      have h := hadd 0 0
+      rw [add_zero] at h
+      exact left_eq_add.mp h
+    refine exists_levelWeilPairing_of_nonzeroTorsion_finiteBase hfin N hN ab' m' σ hσ
+      q hq hqN I hI hqI n ⟨c ![1, 0], hmem _, fun hzero => ?_⟩
+    have hvec : (![1, 0] : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) = 0 :=
+      hinj (hzero.trans hc0.symm)
+    have h1 := congrFun hvec 0
+    simp only [Matrix.cons_val_zero, Pi.zero_apply] at h1
+    exact one_ne_zero h1
 
 open _root_.NumberField in
 /-- **THE DETERMINANT OF FROBENIUS AT A PRIME-TO-`p` LEVEL IS `N`**
