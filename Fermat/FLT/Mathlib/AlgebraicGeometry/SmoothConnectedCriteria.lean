@@ -122,11 +122,13 @@ Both hypotheses are load-bearing.  `EssFiniteType K A` cannot be dropped (formal
 smoothness of a general regular local `K`-algebra is false — a complete local ring
 such as `K⟦t⟧` is regular but not formally smooth over `K` for the discrete
 topology), and `PerfectField K` cannot be dropped (same counterexample as below). -/
-theorem FormallySmooth.of_isRegularLocalRing_of_perfectField
-    (K A : Type u) [Field K] [PerfectField K] [CommRing A] [Algebra K A]
-    [Algebra.EssFiniteType K A] [IsRegularLocalRing A] :
-    Algebra.FormallySmooth K A :=
-  sorry
+-- (`Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField` is declared in
+-- `Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean`, which this module `public
+-- import`s, and it is PROVEN there over the single leaf
+-- `Algebra.injective_lTensor_residueField_kerInclusion`.  Two branches wrote the same
+-- statement into two files, one importing the other -- the release-6 defect class -- so the
+-- SORRIED copy that stood here has been deleted.  The surviving form takes `K` and `R`
+-- IMPLICITLY; the docstring above is retained for its faithfulness note.)
 
 /-- **A regular ring of finite type over a perfect field is formally smooth over
 it** (PROVEN 2026-07-27 over `FormallySmooth.of_isRegularLocalRing_of_perfectField`).
@@ -148,7 +150,7 @@ theorem FormallySmooth.of_isRegularRing_of_perfectField
   haveI : Algebra.EssFiniteType B (Localization.AtPrime p.asIdeal) :=
     .of_isLocalization _ p.asIdeal.primeCompl
   haveI : Algebra.EssFiniteType K (Localization.AtPrime p.asIdeal) := .comp _ B _
-  exact FormallySmooth.of_isRegularLocalRing_of_perfectField K _
+  exact FormallySmooth.of_isRegularLocalRing_of_perfectField (K := K)
 
 open scoped IntermediateField.algebraAdjoinAdjoin in
 /-- **The rank of the module of Kähler differentials of a finitely generated field

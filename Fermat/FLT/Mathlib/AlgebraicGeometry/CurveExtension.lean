@@ -613,10 +613,12 @@ theorem ringKrullDim_stalk_le_of_smoothOfRelativeDimension {n : ℕ}
   exact ringKrullDim_localization_le_of_isStandardSmoothOfRelativeDimension (K := K) (n := n)
     (A := ↥Γ(X, V)) (hV.primeIdealOf ⟨x, hxV⟩).asIdeal ↥(X.presheaf.stalk x)
 
-/-- **A smooth curve over a field has discrete valuation rings as its local rings away from
-the generic point** (**PROVEN 2026-07-27** over the single dimension leaf
-`ringKrullDim_le_of_isStandardSmoothOfRelativeDimension`, which was itself closed
-**2026-07-28** — so nothing under this node is sorried any more).
+-- (`isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` is declared BELOW, with
+-- its own docstring, and is PROVEN there by the LOCAL STRUCTURE THEOREM rather than by
+-- dimension theory.  Two branches proved it concurrently by the two different routes; the
+-- Krull-dimension route's supporting lemmas survive above (they are proven and useful on
+-- their own), but the surviving proof of the theorem itself is the local-structure one.
+-- An unterminated copy of the dimension-route docstring stood here after the merge.)
 
 /-- **Principality of the maximal ideal transfers along a ring isomorphism of local rings.** -/
 lemma isPrincipal_maximalIdeal_of_ringEquiv {R S : Type*} [CommRing R] [CommRing S]
