@@ -45109,6 +45109,14 @@ theorem noFixedRationalPoint_atkinLehner_x0OneSixtyNine {X Y : Scheme.{0}}
 PROVEN over the single new leaf `exists_abelianImage_of_isAdditiveOn`
 together with the already-proven `isAdditiveOn_of_post_zero`.
 
+**Updated 2026-07-28**: `exists_abelianImage_of_isAdditiveOn` is itself no
+longer a leaf.  It is now a one-line corollary of
+`exists_surjectiveAbelianImage_of_isAdditiveOn` — the same theorem for a
+general `u : J ⟶ A`, relocated into this block from ~2500 lines below and
+merged with it — and that theorem is PROVEN over three level-generic
+leaves stated just below.  Nothing in this subsection's statements changed;
+see the merge note attached to those leaves.
+
 **The cut is "image", not "kernel", and that is the whole idea.**  The
 node's own docstring describes the Prym as `ker(1 + w_J)⁰`, the identity
 component of a kernel — which needs the kernel of an endomorphism of an
@@ -45180,17 +45188,358 @@ theorem IsAdditiveOn.postNeg {A B S : Scheme.{0}} {af : A ⟶ S} {bf : B ⟶ S}
     rw [← h (abA.neg x) x, abA.neg_add, h.postZero]
   exact add_eq_zero_iff_eq_neg.mp h2
 
-/-- **The image of a homomorphism of abelian varieties over `ℚ` is an
-abelian subvariety** (sorry leaf, 2026-07-27) — the single theory gate of
-`exists_prym_of_involution`, and the CHEAP replacement for Poincaré
-reducibility that the "image, not kernel" cut buys.
+/-! #### The image of a homomorphism of abelian varieties, stated ONCE
 
-TRUE, and classical: for a homomorphism `u : J ⟶ J` of abelian varieties
-over a field, `u(J)` is an abelian subvariety and `u` factors as a
-faithfully flat surjection onto it followed by a closed immersion
-(Mumford, *Abelian Varieties* §12, or Milne, *Abelian Varieties* I.8;
-this is strictly weaker than Poincaré reducibility §19, which in addition
-produces a complement).
+**MERGED 2026-07-28.**  Two near-duplicate leaves used to state this
+theorem — `exists_abelianImage_of_isAdditiveOn` here, cut for
+`exists_prym_of_involution` and stated only for an ENDOMORPHISM
+`u : J ⟶ J` with conclusion `Epi p`, and
+`exists_surjectiveAbelianImage_of_isAdditiveOn` ~2500 lines below, cut for
+`exists_albaneseQuotientAbelianImage_x0OneSixtyNine`, stated for a general
+`u : J ⟶ A` with conclusion `AlgebraicGeometry.Surjective π`.  `Epi` and
+`Surjective` are NOT interchangeable in `Scheme` — `Spec K ⟶ Spec R` is
+epi and not surjective — which is why they were written separately and
+why neither could be derived from the other as stated.
+
+They are now ONE theorem, `exists_surjectiveAbelianImage_of_isAdditiveOn`
+(relocated here from below, since the endomorphism version consumes it and
+Lean's declaration order forces the definition to come first), concluding
+`Surjective π ∧ Epi π ∧ Mono ι ∧ π ≫ ι = u`; the endomorphism version is a
+one-line corollary and ITS STATEMENT AND CALL SITE ARE UNCHANGED.  Both
+conclusions come from the same object because the corestriction onto the
+scheme-theoretic image is surjective (properness) and faithfully flat
+(homogeneity), and a flat surjection of schemes is an epimorphism
+(mathlib's `Flat.epi_of_flat_of_surjective`, Stacks 02VW).
+
+**What is PROVEN here and what is left.**  The construction is mathlib's
+scheme-theoretic image: `B := u.image`, `ι := u.imageι`,
+`π := u.toImage`, `bstr := u.imageι ≫ astr`.  With that choice
+
+* `π ≫ ι = u` is `Scheme.Hom.toImage_imageι`, free;
+* `Mono ι` is free — `u.imageι` is a closed immersion, hence a
+  preimmersion, hence a monomorphism;
+* `IsProper bstr` is free — a closed immersion is finite, hence proper,
+  and `astr` is proper;
+* `Surjective π` is PROVEN below inside the assembly: `u` is proper
+  (`u ≫ astr = jstr` is proper and `astr` is separated), hence so is `π`
+  (`π ≫ ι = u` and `ι` is separated), hence `π` has closed range; and `π`
+  is dominant because `u` is quasi-compact.  Closed plus dense is
+  everything;
+* `GeometricallyConnected bstr` is PROVEN, as
+  `geometricallyConnected_schemeTheoreticImage_of_surjective`;
+* the seven group axioms and the two naturality fields of
+  `AbelianSchemeStruct` are PROVEN from the three transport equations of
+  `exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn`, because
+  `Mono ι` makes `RelPoint.post ι` injective at every test object.
+
+Three leaves remain, one theory each and all LEVEL-GENERIC:
+`exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn` (the image is
+a subgroup scheme), `smooth_schemeTheoreticImage_of_isAdditiveOn`
+(Cartier), `flat_toImage_of_isAdditiveOn` (a surjective homomorphism of
+abelian varieties is flat). -/
+
+/-- **The scheme-theoretic image of a homomorphism of abelian varieties is
+a SUBGROUP SCHEME** (sorry leaf, 2026-07-28) — the group-theoretic half of
+`exists_surjectiveAbelianImage_of_isAdditiveOn`, and the only one of its
+three leaves that carries the word "group".
+
+TRUE, and classical: `B := u.image` is a closed subscheme of `A`, and it is
+stable under the group law of `A` precisely because `u` is a homomorphism
+(`hadd`).  Concretely, `B ×_ℚ B` is the scheme-theoretic image of
+`J ×_ℚ J` (the source is reduced and the base is a field, so image commutes
+with the product here), and the composite
+`J ×_ℚ J ⟶ J ⟶ A` obtained from `abJ.add` followed by `u` equals
+`B ×_ℚ B ⟶ A` obtained from `abA.add`; so the latter factors through the
+scheme-theoretic image `B`.  Same argument for the zero section and for
+inversion.  Mumford, *Abelian Varieties* §I.1;
+Bosch–Lütkebohmert–Raynaud, *Néron Models*, 7.3.
+
+**Why the conclusion is three OPERATIONS and three TRANSPORT EQUATIONS,
+and not an `AbelianSchemeStruct`.**  `ι := u.imageι` is a closed
+immersion, hence a monomorphism, so `RelPoint.post ι` is INJECTIVE at
+every test object.  Injectivity turns each of the seven group axioms and
+each of the two naturality fields into the corresponding axiom for `abA`,
+mechanically — that derivation is written out in
+`exists_surjectiveAbelianImage_of_isAdditiveOn` below and needs nothing
+from this leaf beyond the three equations.  So the leaf is stated with the
+minimum a prover has to build: the subset `image (RelPoint.post ι)` of
+`RelPoint astr g` is a SUBGROUP.
+
+**The check that refutes it**: a homomorphism of abelian varieties over
+`ℚ` whose scheme-theoretic image is not stable under the group law — i.e.
+a counterexample to the image of a homomorphism being a subgroup scheme.
+**The check that refutes any claim it is vacuous**: dropping `hadd` makes
+it FALSE, since the scheme-theoretic image of an arbitrary morphism of
+abelian varieties (a non-torsion translate of a subvariety, say) is not
+stable under addition. -/
+theorem exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (hadd : IsAdditiveOn abJ abA u hu) :
+    ∃ (add : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ),
+        RelPoint (u.imageι ≫ astr) g → RelPoint (u.imageι ≫ astr) g →
+          RelPoint (u.imageι ≫ astr) g)
+      (zero : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint (u.imageι ≫ astr) g)
+      (neg : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ),
+        RelPoint (u.imageι ≫ astr) g → RelPoint (u.imageι ≫ astr) g),
+      (∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x y : RelPoint (u.imageι ≫ astr) g),
+        RelPoint.post u.imageι rfl (add T g x y)
+          = abA.add (RelPoint.post u.imageι rfl x) (RelPoint.post u.imageι rfl y)) ∧
+      (∀ (T : Scheme.{0}) (g : T ⟶ SpecQ),
+        RelPoint.post u.imageι rfl (zero T g) = abA.zero g) ∧
+      (∀ (T : Scheme.{0}) (g : T ⟶ SpecQ) (x : RelPoint (u.imageι ≫ astr) g),
+        RelPoint.post u.imageι rfl (neg T g x)
+          = abA.neg (RelPoint.post u.imageι rfl x)) :=
+  sorry
+
+/-- **CARTIER: the scheme-theoretic image of a homomorphism of abelian
+varieties over `ℚ` is SMOOTH** (sorry leaf, 2026-07-28) — the
+characteristic-`0` half of `exists_surjectiveAbelianImage_of_isAdditiveOn`,
+and the only place where the base field being `ℚ` rather than an arbitrary
+field is used.
+
+TRUE: `B := u.image` is a group scheme of finite type over `ℚ` (finite
+type because it is a closed subscheme of `A`, group scheme by
+`exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn`), and every
+group scheme of finite type over a field of characteristic `0` is smooth —
+Cartier's theorem (Mumford, *Abelian Varieties* §II.11; Milne, *Algebraic
+Groups* 3.23; Stacks 047N for the reduced-implies-smooth half).  The
+cheaper route available here does not even need Cartier in full: `J` is
+smooth over `ℚ`, hence reduced, and the scheme-theoretic image of a
+reduced scheme is reduced, so `B` is a REDUCED group scheme of finite type
+over the perfect field `ℚ`, which is smooth.
+
+**Related material already in this project**: `Fermat/FLT/GroupScheme/
+Cartier.lean` proves `isReduced_of_charZero` for HOPF ALGEBRAS, i.e. for
+AFFINE group schemes in characteristic `0`.  `B` is proper, hence not
+affine, so that statement does not apply directly — but its
+`subsingleton_kaehlerDifferential` half is the local input a proof here
+would want, and the file is already in this module's import cone.
+
+**The check that refutes it**: a homomorphism of abelian varieties over
+`ℚ` whose scheme-theoretic image is non-smooth — impossible in
+characteristic `0`. -/
+theorem smooth_schemeTheoreticImage_of_isAdditiveOn {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (hadd : IsAdditiveOn abJ abA u hu) :
+    Smooth (u.imageι ≫ astr) :=
+  sorry
+
+/-- **A homomorphism of abelian varieties is FLAT onto its image** (sorry
+leaf, 2026-07-28) — the clause that turns `Surjective π` into `Epi π`, and
+the reason the two old leaves could be merged at all.
+
+TRUE, and classical: a surjective homomorphism of abelian varieties is
+faithfully flat.  Every fibre of `π : J ⟶ B` is a translate of
+`ker π` — the group acts transitively on itself — so all fibres have the
+same dimension, and a dominant morphism of smooth varieties with
+equidimensional fibres is flat ("miracle flatness", Matsumura 23.1;
+Mumford, *Abelian Varieties* §II.8; Bosch–Lütkebohmert–Raynaud 7.3/2).
+
+**What it buys.**  `Flat.epi_of_flat_of_surjective` (mathlib, Stacks
+02VW) turns `Flat π` plus `Surjective π` into `Epi π`, and `Surjective π`
+is proven in `exists_surjectiveAbelianImage_of_isAdditiveOn` below from
+properness alone.  This is the ONLY route to `Epi π` used here: a
+surjection of schemes need not be an epimorphism (`Spec k ⟶ Spec k[ε]` is
+surjective, and is not epi), so flatness is doing real work rather than
+packaging.
+
+**The check that refutes it**: a surjective homomorphism of abelian
+varieties over `ℚ` that is not flat — impossible by homogeneity. -/
+theorem flat_toImage_of_isAdditiveOn {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (hadd : IsAdditiveOn abJ abA u hu) :
+    Flat u.toImage :=
+  sorry
+
+/-- **The scheme-theoretic image of a geometrically connected scheme under
+a surjection is geometrically connected** (PROVEN 2026-07-28) — the
+`connected` field of the `AbelianSchemeStruct` built below, and the one
+geometric field of that structure that needs no new theory.
+
+The argument is base change: for a field `K` and `y : Spec K ⟶ Spec ℚ`,
+the fibre product `Z := B ×_ℚ Spec K` receives `W := J ×_ℚ Spec K`
+through the base change of `u.toImage`, that base change is surjective
+because `Surjective` is stable under base change, and `W` is connected
+because `J` is geometrically connected over `ℚ`.  A continuous surjection
+out of a connected space has connected target.
+
+The pullback pasting is what makes the middle step available: the square
+`(W ⟶ J, W ⟶ Z, u.toImage, Z ⟶ B)` is cartesian because pasting it under
+the defining square of `Z` gives the defining square of `W`. -/
+theorem geometricallyConnected_schemeTheoreticImage_of_surjective {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} (abJ : AbelianSchemeStruct jstr)
+    (u : J ⟶ A) {astr : A ⟶ SpecQ} (hu : u ≫ astr = jstr)
+    (hsurj : AlgebraicGeometry.Surjective u.toImage) :
+    GeometricallyConnected (u.imageι ≫ astr) := by
+  have hfac : u.toImage ≫ u.imageι ≫ astr = jstr := by
+    rw [← Category.assoc, u.toImage_imageι, hu]
+  refine ⟨?_⟩
+  intro K _ y Z fst snd hZ
+  -- `W := J ×_ℚ Spec K` is connected, `J` being geometrically connected over `ℚ`
+  have hW : IsPullback (Limits.pullback.fst jstr y) (Limits.pullback.snd jstr y) jstr y :=
+    IsPullback.of_hasPullback _ _
+  haveI : ConnectedSpace (Limits.pullback (C := Scheme.{0}) jstr y) :=
+    abJ.connected.geometrically_connectedSpace y _ _ hW
+  -- the base change of `u.toImage` along `fst`
+  set q : Limits.pullback (C := Scheme.{0}) jstr y ⟶ Z :=
+    hZ.lift (Limits.pullback.fst jstr y ≫ u.toImage) (Limits.pullback.snd jstr y)
+      (by rw [Category.assoc, hfac]; exact hW.w) with hq
+  have hsq : IsPullback (Limits.pullback.fst jstr y) q u.toImage fst := by
+    refine IsPullback.of_bot ?_ (hZ.lift_fst _ _ _).symm hZ
+    rw [hq, hZ.lift_snd, hfac]
+    exact hW
+  haveI : AlgebraicGeometry.Surjective q :=
+    MorphismProperty.of_isPullback (P := @AlgebraicGeometry.Surjective) hsq hsurj
+  exact q.surjective.connectedSpace q.continuous
+
+/-- **The IMAGE of a homomorphism of abelian varieties over `ℚ` is again
+an abelian variety, receiving the source SURJECTIVELY and EPIMORPHICALLY
+and sitting in the target by a MONOMORPHISM** (PROVEN 2026-07-28 over
+three level-generic leaves; RELOCATED here from ~2500 lines below on the
+same day, and MERGED there with the endomorphism-only
+`exists_abelianImage_of_isAdditiveOn`, which is now its corollary) —
+LEVEL-GENERIC: no modular curve, no Jacobian, no level, no `169`.
+
+TRUE, and classical.  `u : J ⟶ A` is a homomorphism of abelian varieties
+over a field of characteristic `0`.  Its scheme-theoretic image `B` is a
+closed subgroup scheme of `A`: `J` is proper, so the set-theoretic image
+is closed, and it is stable under the group law of `A` precisely because
+`u` is a homomorphism (`hadd`).  `B` is SMOOTH because the base field has
+characteristic `0` — Cartier's theorem — and its fibre is geometrically
+CONNECTED because `J`'s is and `π` is surjective.  Those are the three
+geometric fields of `AbelianSchemeStruct`, and the group law is the
+restriction of `abA`'s.  So `B` is again an abelian variety,
+`π : J ⟶ B` is the corestriction of `u` — surjective by construction —
+and `ι : B ⟶ A` is a closed immersion, hence a monomorphism, with
+`π ≫ ι = u`.  Mumford, *Abelian Varieties*, §I.1 (the image of a
+homomorphism is an abelian subvariety); Bosch–Lütkebohmert–Raynaud,
+*Néron Models*, 7.3.
+
+**Why `Surjective π` AND `Epi π`, both.**  They are not interchangeable
+in `Scheme`: a localisation `Spec K ⟶ Spec R` is epi and not surjective,
+and `Spec k ⟶ Spec k[ε]` is surjective and not epi.  Two consumers want
+different halves — `exists_prym_of_involution` cancels `π` on the right of
+an equation of MORPHISMS, which is `Epi`; the good-reduction argument of
+`exists_goodAbelianReduction_of_abelianQuotient` wants the map of
+topological spaces to hit every point, which is `Surjective`.  One object
+supplies both, and that is the whole reason this is one theorem rather
+than two: the corestriction onto the scheme-theoretic image is proper,
+hence surjective onto its (closed, dense) image, and faithfully flat,
+hence an epimorphism (Stacks 02VW).
+
+**Why `Mono ι` and not injectivity of `RelPoint.post ι hι` on
+`ℚ`-points.**  The two are NOT interchangeable, and the gap between them
+is exactly the trap the `x0OneSixtyNine` subsection records:
+point-injectivity on `ℚ`-points is strictly weaker than monomorphy, and a
+leaf pinned only by it is satisfied by `A = B × C` with `C(ℚ) = 0`.
+`Mono ι` is what a closed immersion actually gives, and it is what makes
+finiteness of `B`'s points follow from finiteness of `A`'s at EVERY test
+object rather than at one.  It is also what makes the group law
+transportable: `RelPoint.post ι` is injective, which is how the seven
+axioms below are discharged.
+
+**Not asked for, though the same construction supplies them**:
+`IsAdditiveOn abJ abB π hπ` and `IsAdditiveOn abB abA ι hι`.  No consumer
+needs them — `exists_goodAbelianReduction_of_abelianQuotient` recovers
+additivity of a surjection by rigidity — so they are left out rather than
+loaded onto a prover for nothing.  Add them here if a consumer ever wants
+them; the construction does not change.
+
+**The leaf is not junk-satisfiable.**  Its conclusion is a
+surjection–monomorphism factorisation of `u` through an abelian variety,
+which pins `B` as the image up to isomorphism.  Neither degenerate choice
+discharges it in general: `B := A, π := u, ι := 𝟙` needs `u` surjective and
+`B := J, π := 𝟙, ι := u` needs `u` mono, and a homomorphism of abelian
+varieties is neither in general.
+
+**The check that refutes it**: a homomorphism of abelian varieties over
+`ℚ` whose image is not an abelian subvariety — impossible in
+characteristic `0`, where Cartier makes every finite-type group scheme
+smooth. -/
+theorem exists_surjectiveAbelianImage_of_isAdditiveOn {J A : Scheme.{0}}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) (hadd : IsAdditiveOn abJ abA u hu) :
+    ∃ (B : Scheme.{0}) (bstr : B ⟶ SpecQ) (_abB : AbelianSchemeStruct bstr)
+      (π : J ⟶ B) (_hπ : π ≫ bstr = jstr) (ι : B ⟶ A) (_hι : ι ≫ astr = bstr),
+      AlgebraicGeometry.Surjective π ∧ Epi π ∧ Mono ι ∧ π ≫ ι = u := by
+  haveI := abJ.proper
+  haveI := abA.proper
+  -- `u` is proper: `u ≫ astr` is, and `astr` is separated
+  haveI hup : IsProper u := by
+    have hfg : IsProper (u ≫ astr) := by rw [hu]; exact abJ.proper
+    exact MorphismProperty.of_postcomp (W := @IsProper) (W' := @IsSeparated) u astr
+      inferInstance hfg
+  -- so is the corestriction onto the image, `u.imageι` being a closed immersion
+  haveI : IsProper u.toImage := by
+    have hfg : IsProper (u.toImage ≫ u.imageι) := by rw [u.toImage_imageι]; exact hup
+    exact MorphismProperty.of_postcomp (W := @IsProper) (W' := @IsSeparated) u.toImage u.imageι
+      inferInstance hfg
+  -- a proper dominant morphism is surjective: its range is closed and dense
+  haveI hsurj : AlgebraicGeometry.Surjective u.toImage := by
+    refine surjective_of_isDominant_of_isClosed_range _ ?_
+    rw [← Set.image_univ]
+    exact u.toImage.isClosedMap _ isClosed_univ
+  -- `u.imageι` is a monomorphism, so relative points of the image inject into those of `A`
+  have hinj : ∀ {T : Scheme.{0}} {g : T ⟶ SpecQ} (x y : RelPoint (u.imageι ≫ astr) g),
+      RelPoint.post u.imageι rfl x = RelPoint.post u.imageι rfl y → x = y := by
+    intro T g x y h
+    exact Subtype.ext ((cancel_mono u.imageι).mp (congrArg Subtype.val h))
+  obtain ⟨add, zero, neg, hpadd, hpzero, hpneg⟩ :=
+    exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn abJ abA u hu hadd
+  refine ⟨u.image, u.imageι ≫ astr, ?_, u.toImage, ?_, u.imageι, rfl, hsurj,
+    ?_, inferInstance, u.toImage_imageι⟩
+  · exact
+      { add := fun {T} {g} x y => add T g x y
+        zero := fun {T} g => zero T g
+        neg := fun {T} {g} x => neg T g x
+        add_assoc := by
+          intro T g x y z
+          refine hinj _ _ ?_
+          rw [hpadd, hpadd, hpadd, hpadd, abA.add_assoc]
+        add_comm := by
+          intro T g x y
+          refine hinj _ _ ?_
+          rw [hpadd, hpadd, abA.add_comm]
+        zero_add := by
+          intro T g x
+          refine hinj _ _ ?_
+          rw [hpadd, hpzero, abA.zero_add]
+        neg_add := by
+          intro T g x
+          refine hinj _ _ ?_
+          rw [hpadd, hpneg, hpzero, abA.neg_add]
+        pre_add := by
+          intro T' T h g g' hg x y
+          refine hinj _ _ ?_
+          rw [RelPoint.post_pre, hpadd, abA.pre_add, hpadd, RelPoint.post_pre,
+            RelPoint.post_pre]
+        pre_zero := by
+          intro T' T h g g' hg
+          refine hinj _ _ ?_
+          rw [RelPoint.post_pre, hpzero, hpzero, abA.pre_zero]
+        proper := inferInstance
+        smooth := smooth_schemeTheoreticImage_of_isAdditiveOn abJ abA u hu hadd
+        connected := geometricallyConnected_schemeTheoreticImage_of_surjective abJ u hu hsurj }
+  · rw [← Category.assoc, u.toImage_imageι, hu]
+  · haveI := flat_toImage_of_isAdditiveOn abJ abA u hu hadd
+    exact Flat.epi_of_flat_of_surjective _
+
+/-- **The image of a homomorphism of abelian varieties over `ℚ` is an
+abelian subvariety** (PROVEN 2026-07-28 as a corollary of
+`exists_surjectiveAbelianImage_of_isAdditiveOn`, above; a sorry leaf from
+2026-07-27) — the single theory gate of `exists_prym_of_involution`, and
+the CHEAP replacement for Poincaré reducibility that the "image, not
+kernel" cut buys.
+
+**This is the ENDOMORPHISM special case** of the theorem above, taking
+`A := J`, and it is kept as a named declaration only so that
+`exists_prym_of_involution`'s call site does not change.  The statement is
+byte-for-byte what it was when it was a leaf; the only edit is that `_hadd`
+became `hadd`, since the corollary now uses it.
 
 **Every clause is used, and here is where:**
 
@@ -45200,34 +45549,25 @@ produces a complement).
   specifically `ι₀ ≫ wJ = ι₀ ≫ negHom ab`, the anti-invariance of `A`,
   which must hold at every point of `A` and not merely on the image of
   `p`.  `p` is faithfully flat and quasi-compact, hence a (universal
-  effective) epimorphism of schemes (Stacks 023Q);
+  effective) epimorphism of schemes (Stacks 023Q/02VW);
 * `Mono ι₀` gives the `Mono ι` clause of the node, `ι` being `ι₀`
   composed with a translation and translations being automorphisms.
   `ι₀` is a closed immersion, and closed immersions are monomorphisms.
 
-`_hadd` is the hypothesis that makes the statement true rather than
+`hadd` is the hypothesis that makes the statement true rather than
 merely plausible: the image of an ARBITRARY morphism of abelian varieties
 is not a subvariety, and the factorisation through it is not a
 homomorphism.  It is supplied at the use site by
-`isAdditiveOn_of_post_zero`, so nothing is pushed onto the consumer.
-
-**What proving it needs**: the image of a morphism of schemes as a
-scheme-theoretic image, flatness of the corestriction, and that a
-subgroup scheme of an abelian variety which is reduced and connected is
-an abelian variety.  **The check that refutes the absence claim**:
-`grep -rn "abelianSubvariety\|scheme-theoretic image\|PoincareReducibility"
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
-
-**The check that refutes the STATEMENT**: a homomorphism of abelian
-varieties over `ℚ` whose image is not proper, or is not smooth, or is
-disconnected. -/
+`isAdditiveOn_of_post_zero`, so nothing is pushed onto the consumer. -/
 theorem exists_abelianImage_of_isAdditiveOn {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) {u : J ⟶ J} (hu : u ≫ jstr = jstr)
-    (_hadd : IsAdditiveOn ab ab u hu) :
+    (hadd : IsAdditiveOn ab ab u hu) :
     ∃ (A : Scheme.{0}) (astr : A ⟶ SpecQ) (_abA : AbelianSchemeStruct astr)
-      (p : J ⟶ A) (hp : p ≫ astr = jstr) (ι₀ : A ⟶ J) (_hι₀ : ι₀ ≫ jstr = astr),
-      p ≫ ι₀ = u ∧ Epi p ∧ Mono ι₀ :=
-  sorry
+      (p : J ⟶ A) (_hp : p ≫ astr = jstr) (ι₀ : A ⟶ J) (_hι₀ : ι₀ ≫ jstr = astr),
+      p ≫ ι₀ = u ∧ Epi p ∧ Mono ι₀ := by
+  obtain ⟨B, bstr, abB, π, hπ, ι, hι, -, hepi, hmono, hcomp⟩ :=
+    exists_surjectiveAbelianImage_of_isAdditiveOn ab ab u hu hadd
+  exact ⟨B, bstr, abB, π, hπ, ι, hι, hcomp, hepi, hmono⟩
 
 /-- **The Prym of an involution of a curve** (PROVEN 2026-07-27 over the
 single leaf `exists_abelianImage_of_isAdditiveOn`; introduced as a sorry
@@ -47730,17 +48070,24 @@ all — it is *defined* as `x ↦ π (aj x)`, and its naturality is
 | leaf | theory | level |
 |---|---|---|
 | `exists_albaneseQuotientAbelianImage_x0OneSixtyNine` | the `hA` repair: the translate of `c` killing the base point, factored through the Albanese | PROVEN 2026-07-28 |
-| `exists_surjectiveAbelianImage_of_isAdditiveOn` | the image of a homomorphism of abelian varieties is an abelian subvariety | generic |
+| `exists_surjectiveAbelianImage_of_isAdditiveOn` | the image of a homomorphism of abelian varieties is an abelian subvariety | generic (PROVEN 2026-07-28, relocated ~2500 lines up, over three leaves) |
 | `exists_goodAbelianReduction_of_abelianQuotient` | Néron–Ogg–Šafarevič | generic (PROVEN 2026-07-28 over `hasGoodAbelianModelAtBase_of_surjective`) |
 | `exists_abelianSpread_of_neronModel` | the Néron mapping property for a morphism out of a smooth model | generic |
 
-No leaf carries more than one theory, and ALL THREE that remain open are
-LEVEL-GENERIC: none of them mentions a modular curve or the level.  That
+No leaf carries more than one theory, and everything still open here is
+LEVEL-GENERIC: none of it mentions a modular curve or the level.  That
 is not an accident of packaging.  The repair leaf was written as the
 level-specific one and, once proved, turned out **not to use its `hX` at
 all** — the entire level-specific content of the repair sits inside `hA`,
 which `hasRankZeroAbelianImage_x0OneSixtyNine` supplies.  See the note on
-`hX` in its docstring. -/
+`hX` in its docstring.
+
+The three leaves that
+`exists_surjectiveAbelianImage_of_isAdditiveOn` was proven over —
+`exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn`,
+`smooth_schemeTheoreticImage_of_isAdditiveOn` and
+`flat_toImage_of_isAdditiveOn` — are stated in the
+`exists_prym_of_involution` block above and are level-generic too. -/
 
 /-- **`A/ℚ` has GOOD REDUCTION at `ℓ`, over the base `(R, toF)`**: it is
 the generic fibre of an abelian scheme over `ℤ_(ℓ)`, whose special fibre
@@ -47777,84 +48124,34 @@ def HasGoodAbelianReductionAtBase (ℓ : ℕ) (R : Subring ℚ) (toF : R →+* Z
       spA.toEquiv g g₀ h (ab'.add x y)
         = abZ.add (spA.toEquiv g g₀ h x) (spA.toEquiv g g₀ h y))
 
-/-- **The IMAGE of a homomorphism of abelian varieties over `ℚ` is again
-an abelian variety, receiving the source SURJECTIVELY and sitting in the
-target by a MONOMORPHISM** (sorry leaf, 2026-07-28) — LEVEL-GENERIC: no
-modular curve, no Jacobian, no level, no `169`.
+/-! #### `exists_surjectiveAbelianImage_of_isAdditiveOn` was RELOCATED and MERGED
 
-TRUE, and classical.  `u : J ⟶ A` is a homomorphism of abelian varieties
-over a field of characteristic `0`.  Its scheme-theoretic image `B` is a
-closed subgroup scheme of `A`: `J` is proper, so the set-theoretic image
-is closed, and it is stable under the group law of `A` precisely because
-`u` is a homomorphism (`hadd`).  `B` is SMOOTH because the base field has
-characteristic `0` — Cartier's theorem, that every group scheme of finite
-type over a field of characteristic `0` is smooth — and its fibre is
-geometrically CONNECTED because `J`'s is and `π` is surjective.  Those are
-the three geometric fields of `AbelianSchemeStruct`, and the group law is
-the restriction of `abA`'s.  So `B` is again an abelian variety,
-`π : J ⟶ B` is the corestriction of `u` — surjective by construction —
-and `ι : B ⟶ A` is a closed immersion, hence a monomorphism, with
-`π ≫ ι = u`.  Mumford, *Abelian Varieties*, §I.1 (the image of a
-homomorphism is an abelian subvariety); Bosch–Lütkebohmert–Raynaud,
-*Néron Models*, 7.3.
+**2026-07-28.**  The declaration that stood here — the image of a
+homomorphism of abelian varieties over `ℚ`, as a surjection followed by a
+monomorphism — now lives ~2500 lines ABOVE, in the
+`exists_prym_of_involution` block, where its own docstring is.  Two things
+happened to it at once, and neither is visible from this site:
 
-**Why `Mono ι` and not injectivity of `RelPoint.post ι hι` on
-`ℚ`-points.**  The two are NOT interchangeable, and the gap between them
-is exactly the trap the subsection heading above records: point-injectivity
-on `ℚ`-points is strictly weaker than monomorphy, and a leaf pinned only by
-it is satisfied by `A = B × C` with `C(ℚ) = 0`.  `Mono ι` is what a closed
-immersion actually gives, and it is what makes finiteness of `B`'s points
-follow from finiteness of `A`'s at EVERY test object rather than at one.
-It is used for nothing else here.
+* it was **MERGED** with `exists_abelianImage_of_isAdditiveOn`, the
+  endomorphism-only near-duplicate the old docstring here flagged.  The
+  merged statement concludes `Surjective π ∧ Epi π ∧ Mono ι ∧ π ≫ ι = u`
+  — so it gained an `Epi π` clause, which is what makes the endomorphism
+  version a one-line corollary; that corollary keeps its old name,
+  statement and call site;
+* it was **PROVEN**, over three level-generic leaves:
+  `exists_relPointGroup_schemeTheoreticImage_of_isAdditiveOn` (the
+  scheme-theoretic image is a subgroup scheme),
+  `smooth_schemeTheoreticImage_of_isAdditiveOn` (Cartier), and
+  `flat_toImage_of_isAdditiveOn` (a homomorphism of abelian varieties is
+  flat onto its image, which is where `Epi` comes from).  `Surjective π`,
+  `Mono ι`, `IsProper bstr`, `GeometricallyConnected bstr` and the nine
+  group/naturality fields of `AbelianSchemeStruct` are all proven outright.
 
-**Not asked for, though the same construction supplies them**:
-`IsAdditiveOn abJ abB π hπ` and `IsAdditiveOn abB abA ι hι`.  No consumer
-needs them — `exists_goodAbelianReduction_of_abelianQuotient` recovers
-additivity of a surjection by rigidity — so they are left out rather than
-loaded onto a prover for nothing.  Add them here if a consumer ever wants
-them; the construction does not change.
-
-**The leaf is not junk-satisfiable.**  Its conclusion is a
-surjection–monomorphism factorisation of `u` through an abelian variety,
-which pins `B` as the image up to isomorphism.  Neither degenerate choice
-discharges it in general: `B := A, π := u, ι := 𝟙` needs `u` surjective and
-`B := J, π := 𝟙, ι := u` needs `u` mono, and a homomorphism of abelian
-varieties is neither in general.
-
-**NEAR-DUPLICATE, DELIBERATELY NOT MERGED HERE — and worth merging by
-whoever proves either** (recorded 2026-07-28).
-`exists_abelianImage_of_isAdditiveOn`, above, is the SAME theorem cut for
-`exists_prym_of_involution`, and it is not usable here for two independent
-reasons, both in the statement rather than in the mathematics:
-
-* it is stated only for an ENDOMORPHISM `u : J ⟶ J` (source and target the
-  same abelian variety), while the Albanese factorisation produces
-  `u : J ⟶ A` with `A` the ambient variety of `hA`;
-* it concludes `Epi p`, and the consumer here needs
-  `AlgebraicGeometry.Surjective π`.  These are not interchangeable in
-  `Scheme`: a localisation `Spec K ⟶ Spec R` is epi and not surjective.
-
-One construction discharges both — the corestriction of `u` onto its
-scheme-theoretic image is faithfully flat and quasi-compact, hence both
-surjective and (Stacks 023Q) an epimorphism.  So the right end state is a
-single leaf, stated for `u : J ⟶ A`, concluding `Surjective π ∧ Epi π ∧
-Mono ι ∧ π ≫ ι = u`, with both consumers reading off what they need.  That
-merge was not done here because the endomorphism version has another owner
-and rewriting it would collide; it is a one-line change at the call site of
-either once the proof exists.
-
-**The check that refutes it**: a homomorphism of abelian varieties over
-`ℚ` whose image is not an abelian subvariety — impossible in
-characteristic `0`, where Cartier makes every finite-type group scheme
-smooth. -/
-theorem exists_surjectiveAbelianImage_of_isAdditiveOn {J A : Scheme.{0}}
-    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
-    (abJ : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
-    (u : J ⟶ A) (hu : u ≫ astr = jstr) (hadd : IsAdditiveOn abJ abA u hu) :
-    ∃ (B : Scheme.{0}) (bstr : B ⟶ SpecQ) (_abB : AbelianSchemeStruct bstr)
-      (π : J ⟶ B) (hπ : π ≫ bstr = jstr) (ι : B ⟶ A) (_hι : ι ≫ astr = bstr),
-      AlgebraicGeometry.Surjective π ∧ Mono ι ∧ π ≫ ι = u :=
-  sorry
+The RELOCATION is forced: Lean elaborates a file top to bottom, the
+endomorphism corollary is consumed by `exists_prym_of_involution` up
+there, and a corollary cannot precede the theorem it is a corollary of.
+Nothing about the consumer below changes except that its `obtain` now
+takes an extra `Epi π` component. -/
 
 /-- **The repair of `hA`: a rank-`0` abelian image of `X_0(169)` that is a
 QUOTIENT of the Jacobian** (PROVEN 2026-07-28 over
@@ -47980,7 +48277,7 @@ theorem exists_albaneseQuotientAbelianImage_x0OneSixtyNine {X Y J : Scheme.{0}}
     rw [← jac.aj_base]
     exact h0.symm
   -- the IMAGE of `u`: an abelian subvariety of `A` receiving `J` surjectively
-  obtain ⟨B, bstr, abB, π, hπ, ι, hι, hsurj, hmono, hcomp⟩ :=
+  obtain ⟨B, bstr, abB, π, hπ, ι, hι, hsurj, -, hmono, hcomp⟩ :=
     exists_surjectiveAbelianImage_of_isAdditiveOn abJ abA u hu1 hadd
   haveI := hmono
   haveI := hfin
