@@ -88,6 +88,30 @@ placed it in `FreyCurve/MazurTorsion.lean` as
 direction: `MazurTorsion.lean` `public import`s this module, so anything
 stated there is downstream of every consumer here.  It is stated here
 instead, as `exists_sq_frobeniusPointEnd`.
+
+FOURTH CUT, 2026-07-28: `exists_sq_frobeniusPointEnd` is PROVEN, over the
+TORSION-PRIMARY split.  What closed:
+
+* `exists_pos_nsmul_eq_zero` — `Wbar(𝔽̄_q)` is a TORSION group.  Proven from
+  scratch (finite-subfield closure of the coordinates, plus finiteness of the
+  points over a finite field); this development had not recorded it before, and
+  it is what makes any primary-by-primary argument possible.
+* the assembly itself — Bézout on `q^k · m`, additivity of `F`.
+
+What remains open in its place, and the two are genuinely different mathematics
+rather than two halves of one argument:
+
+* `exists_sq_frobeniusPointEnd_prime_to_char` — one integer `c` works on all
+  torsion of order prime to `q`.  Cayley–Hamilton on `Wbar[n] ≅ (ℤ/n)²` with
+  `det(F) = q`, PLUS the integrality of the trace, which is the archimedean
+  half and is where the difficulty of Hasse's bound actually sits.
+* `sq_frobeniusPointEnd_qPrimary` — the same `c` works on the `q`-power
+  torsion.  The ordinary/supersingular dichotomy; `F` acts on the ordinary
+  `q`-divisible group by the unit root.
+
+Both leaves want `F` bijective on `Wbar(𝔽̄_q)`, as does
+`natCard_ker_degreeFormEnd_of_dvd`; that is not yet a declaration here and is
+the obvious shared next brick.
 -/
 module
 
@@ -288,6 +312,181 @@ theorem ker_zsmul_one {M : Type*} [AddCommGroup M] (d : ℤ) :
   simp only [LinearMap.mem_ker, LinearMap.smul_apply, Module.End.one_apply,
     Submodule.mem_torsionBy_iff]
 
+/-! ### `Wbar(𝔽̄_q)` is a torsion group, and the two primary halves of `F² = c·F − q`
+
+The characteristic equation is an identity of `ℤ`-endomorphisms of
+`Wbar(𝔽̄_q)`, and that group is a TORSION group: every point has coordinates in
+a finite subfield of `𝔽̄_q`, hence lies in the (finite) group of points of the
+curve over that subfield.  So the identity may be checked one torsion-primary
+piece at a time — and the two pieces carry genuinely different mathematics:
+
+* away from `q`, `Wbar(𝔽̄_q)[n] ≅ (ℤ/n)²` and the identity is Cayley–Hamilton for
+  a `2 × 2` matrix whose determinant is `q` (the Weil pairing), together with the
+  INTEGRALITY of the resulting trace;
+* at `q`, `Wbar(𝔽̄_q)[q^∞]` is `ℚ_q/ℤ_q` (ordinary) or `0` (supersingular), and
+  the identity is the statement that `F` acts there by the *unit root* of the
+  same quadratic.
+
+`exists_pos_nsmul_eq_zero` below is the torsion statement, PROVEN; the two halves
+are the two leaves `exists_sq_frobeniusPointEnd_prime_to_char` and
+`sq_frobeniusPointEnd_qPrimary`; and `exists_sq_frobeniusPointEnd` is their
+assembly, PROVEN.
+-/
+
+/-- **`Wbar(𝔽̄_q)` is a torsion group** (PROVEN 2026-07-28): every point is
+killed by some positive integer.
+
+This is the fact that makes a torsion-primary proof of the characteristic
+equation possible at all, and it is the first place this development records it.
+The proof is the standard one: a point `(x, y)` has both coordinates algebraic
+over `𝔽_q`, so `L = 𝔽_q(x, y)` is a finite extension (`IntermediateField`'s
+`finiteDimensional_adjoin`, over `Algebra.IsIntegral`); the point is then the
+base change of an `L`-rational point (`Affine.baseChange_nonsingular` transports
+nonsingularity back down); `(Wbar⁄L).Point` is finite because `L` is; and
+`Affine.Point.baseChange` is an injective group homomorphism, so the order of the
+`L`-rational point kills the original point.
+
+NOT SPECIFIC TO ELLIPTIC CURVES: no `IsElliptic` hypothesis is needed, because
+finiteness of `(Wbar⁄L).Point` is read off the coordinates directly rather than
+from any group structure. -/
+theorem exists_pos_nsmul_eq_zero (q : ℕ) [Fact q.Prime] (Wbar : WeierstrassCurve (ZMod q))
+    (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point) :
+    ∃ n : ℕ, 0 < n ∧ (n : ℤ) • P = 0 := by
+  classical
+  cases P with
+  | zero => exact ⟨1, one_pos, by rw [Nat.cast_one, one_smul]; rfl⟩
+  | some x y h =>
+    set L := IntermediateField.adjoin (ZMod q) ({x, y} : Set (AlgebraicClosure (ZMod q)))
+      with hL
+    haveI : FiniteDimensional (ZMod q) L :=
+      IntermediateField.finiteDimensional_adjoin
+        (fun z _ => Algebra.IsIntegral.isIntegral z)
+    haveI : Finite L := Module.finite_of_finite (ZMod q)
+    have hx : x ∈ L := IntermediateField.subset_adjoin _ _ (by simp)
+    have hy : y ∈ L := IntermediateField.subset_adjoin _ _ (by simp)
+    have h' : (Wbar⁄L).Nonsingular (⟨x, hx⟩ : L) (⟨y, hy⟩ : L) :=
+      (WeierstrassCurve.Affine.baseChange_nonsingular (W := Wbar)
+        (f := Algebra.ofId L (AlgebraicClosure (ZMod q)))
+        (Algebra.ofId L (AlgebraicClosure (ZMod q))).injective
+        (⟨x, hx⟩ : L) (⟨y, hy⟩ : L)).mp h
+    set P' : (Wbar⁄L).Point := WeierstrassCurve.Affine.Point.some _ _ h' with hP'
+    haveI : Finite (Wbar⁄L).Point := by
+      have hinj : Function.Injective
+          (fun Q : (Wbar⁄L).Point =>
+            match Q with
+            | 0 => (none : Option (L × L))
+            | WeierstrassCurve.Affine.Point.some x y _ => some (x, y)) := by
+        rintro (_ | ⟨x₁, y₁, h₁⟩) (_ | ⟨x₂, y₂, h₂⟩) hh <;> simp_all
+      exact Finite.of_injective _ hinj
+    refine ⟨addOrderOf P', addOrderOf_pos_iff.mpr (isOfFinAddOrder_of_finite P'), ?_⟩
+    have hmap : WeierstrassCurve.Affine.Point.baseChange (W' := Wbar) L
+        (AlgebraicClosure (ZMod q)) P' = WeierstrassCurve.Affine.Point.some x y h := rfl
+    rw [← hmap, ← map_zsmul, natCast_zsmul, addOrderOf_nsmul_eq_zero, map_zero]
+
+/-- **The characteristic equation away from `q`** (sorry leaf, opened 2026-07-28;
+Silverman *AEC* V.2.3.1, prime-to-`q` half): there is ONE rational integer `c`
+with `F(F P) = c·F P − q·P` for every point `P` whose order is prime to `q`.
+
+WHAT IS IN THIS LEAF, and it is two things that classical treatments prove
+together but that are separately identifiable here.
+
+* *Cayley–Hamilton at level `n`.*  For `q ∤ n` the group `Wbar(𝔽̄_q)[n]` is free
+  of rank `2` over `ZMod n` — `TorsionCard.card_torsionBy` (PROVEN) already
+  counts it as `n²` — the Frobenius acts `ZMod n`-linearly on it, and
+  `det(F | Wbar[n]) = q`.  That determinant is PROVEN from the Weil pairing as
+  `WeilPairing.det_frobeniusTorsionEnd`, but **only for PRIME `n`**, over
+  `WeierstrassCurve.p_torsion_rank`, which is likewise stated for prime `n`.  So
+  a successor's first task is the prime-power/composite generalisation of those
+  two, after which `F² = t_n·F − q` holds on `Wbar[n]` with
+  `t_n = tr(F | Wbar[n]) ∈ ZMod n`.
+* *Integrality of the trace.*  The residues `t_n` are compatible (each is the
+  reduction of the next, because `Wbar[n] ⊆ Wbar[nm]` and `F` is injective), so
+  they assemble to an element of `Ẑ`; the content of this leaf is that that
+  element is a rational INTEGER.  That is the archimedean half, and it is where
+  the difficulty of Hasse's bound actually lives: an element of `Ẑ` is an integer
+  exactly when it is bounded, and no purely `ℓ`-adic argument supplies a bound.
+
+The classical supply of the bound is the DEGREE: `deg(1 − F) = #ker(1 − F)` is a
+cardinality, and `#ker(1 − F) = #Wbar(𝔽_q)` is PROVEN here as
+`natCard_ker_one_sub_frobeniusPointEnd`, so `c = q + 1 − #Wbar(𝔽_q)` is visibly
+an integer once one knows `det(1 − F | Wbar[n]) ≡ #Wbar(𝔽_q) (mod n)` — the
+LEFSCHETZ CONGRUENCE.  That congruence is exactly the shape
+`FreyCurve/MazurTorsion.lean`'s
+`natCard_affine_point_eq_det_one_sub_frobeniusTorsionEnd` states, and it is
+DOWNSTREAM of this module, so it cannot be cited here; a successor that proves
+the congruence should prove it HERE and let `MazurTorsion.lean` consume it.
+
+THE COEFFICIENT IS EXISTENTIAL ON PURPOSE, for the same reason as in
+`exists_sq_frobeniusPointEnd`: naming `c = frobeniusTrace` would fold the
+`(m, n) = (1, 1)` evaluation into this leaf, and that evaluation is already
+proven separately.
+
+NON-VACUITY.  `c = 0` is not a free choice — see the non-vacuity note on
+`exists_sq_frobeniusPointEnd` below, which applies verbatim, since that
+statement's `c` is produced by this one.  The hypothesis `q ∤ n` is
+LOAD-BEARING: at `n = q` the conclusion would be the `q`-primary half, which is
+a different theorem (`sq_frobeniusPointEnd_qPrimary`).
+
+THE CHECK THAT WOULD REFUTE the claim that the trace integrality is the hard
+half: an `ℓ`-adic-only proof that the compatible system `(t_n)` is bounded. -/
+theorem exists_sq_frobeniusPointEnd_prime_to_char (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
+    ∃ c : ℤ, ∀ n : ℕ, ¬ (q ∣ n) →
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+  sorry
+
+/-- **The characteristic equation on the `q`-primary torsion** (sorry leaf,
+opened 2026-07-28; Silverman *AEC* V.3.1, the ordinary/supersingular
+dichotomy): the SAME coefficient `c` that works away from `q` also works on the
+`q`-power torsion.
+
+WHY THIS IS A SEPARATE LEAF AND NOT AN ARTEFACT.  `Wbar(𝔽̄_q)[q^∞]` is invisible
+to the prime-to-`q` argument: it is `0` in the supersingular case, and
+`ℚ_q/ℤ_q` in the ordinary case, never `(ℚ_q/ℤ_q)²`, so no `2 × 2`
+Cayley–Hamilton is available there and the Weil pairing determinant
+(`WeilPairing.det_frobeniusTorsionEnd`) explicitly excludes `n = q`.  What has to
+be shown is that `F` acts on the ordinary `q`-divisible group by the UNIT ROOT
+of `X² − cX + q`, i.e. by the root that is a `q`-adic unit — the other root has
+valuation `1` and cannot act invertibly on `ℚ_q/ℤ_q`.
+
+`hc` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.  Dropping `hc` leaves `c`
+a free integer, and the conclusion at `k = 1` would then assert
+`F² = c·F − q` on `Wbar[q]` for EVERY `c`, which fails already for an ordinary
+curve (take `c` and `c + 1`, whose difference forces `F P = 0` for all
+`P ∈ Wbar[q]`, contradicting injectivity of `F`).  It is the prime-to-`q`
+identity that pins `c`, and this leaf is precisely the assertion that the SAME
+pinned `c` survives at `q`.
+
+WHAT A SUCCESSOR NEEDS.  Only the ordinary case is real work: in the
+supersingular case `Wbar(𝔽̄_q)[q^∞] = 0`, so the hypothesis
+`(q^k) • P = 0` forces `P = 0` for `k ≥ 1` and the conclusion is trivial.  The
+`k = 0` case is trivial for the same reason (`1 • P = 0` gives `P = 0`).  The
+route note of `natCard_ker_degreeFormEnd_of_dvd` below reduces its own
+`q`-primary case to the single count `#ker([c] − F) = q` for `q ∤ c`; that count
+and this leaf are the same piece of mathematics seen from two sides, so
+whichever is proven first should be stated so the other can consume it.  Both
+want `F` BIJECTIVE on `Wbar(𝔽̄_q)` (injective because `x ↦ x^q` is; surjective
+because `𝔽̄_q` is algebraically closed and perfect), which is not yet a
+declaration in this file.
+
+THE CHECK THAT WOULD REFUTE the claim that this case is not covered by the leaf
+above: a torsion point of `q`-power order that is also killed by an integer
+prime to `q`.  There is none other than `0`, which is exactly why the split is
+exhaustive and why this leaf is needed. -/
+theorem sq_frobeniusPointEnd_qPrimary (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] {c : ℤ}
+    (hc : ∀ n : ℕ, ¬ (q ∣ n) →
+      ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point, (n : ℤ) • P = 0 →
+        frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+          = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P)
+    (k : ℕ) (P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point)
+    (hP : ((q : ℤ) ^ k) • P = 0) :
+    frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+      = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P :=
+  sorry
+
 /-! ### The conjugate endomorphism
 
 `ψ = [m] − [n]∘F` has a CONJUGATE `ψ' = [m − n·c] + [n]∘F` inside the
@@ -300,8 +499,10 @@ applies with no rationality input, and it identifies `ker (ψ ∘ ψ')` with the
 -/
 
 /-- **The characteristic equation of the `q`-power Frobenius, on points**
-(sorry leaf, opened 2026-07-28; Silverman *AEC* V.2.3.1): there is an integer
-`c` with `F² = c·F − q` in `Module.End ℤ (Wbar(𝔽̄_q))`.
+(PROVEN 2026-07-28 over `exists_pos_nsmul_eq_zero`,
+`exists_sq_frobeniusPointEnd_prime_to_char` and `sq_frobeniusPointEnd_qPrimary`;
+Silverman *AEC* V.2.3.1): there is an integer `c` with `F² = c·F − q` in
+`Module.End ℤ (Wbar(𝔽̄_q))`.
 
 WHERE THIS LEAF HAD TO LIVE, and it is not where it was planned.  The cut of
 2026-07-27 recorded this step as belonging in `FreyCurve/MazurTorsion.lean`
@@ -323,24 +524,75 @@ WHY IT IS NOT VACUOUS.  `c = 0` is *not* a free choice: `F² = −q` would give
 `𝔽₅` has `#E(𝔽₅) = 8`).  Any `c` satisfying this leaf is forced to be
 `q + 1 − #Wbar(𝔽_q)`, by `natCard_ker_degreeFormEnd`'s own argument.
 
-ROUTE.  `Wbar(𝔽̄_q)` is a TORSION group — every point is defined over some
-finite subfield — so an identity in `End` may be checked on each `E[ℓ^k]`
-separately.  For `ℓ ≠ q` the module `E[ℓ^k]` is free of rank `2` over
-`ZMod (ℓ^k)` (`WeierstrassCurve.p_torsion_rank`, `Torsion.lean`, which needs
-only `(ℓ : 𝔽̄_q) ≠ 0` and *no* characteristic-zero hypothesis), and
-Cayley–Hamilton for a `2 × 2` matrix gives `F² = tr(F)·F − det(F)` there; the
-arithmetic input is `det(F | E[ℓ^k]) = q` and the compatibility of `tr` across
-`ℓ` and `k`.  THE CHECK THAT WOULD REFUTE the claim that this is the cheapest
-route: a proof of `F² − cF + q = 0` that does not pass through a torsion
-representation — the classical alternative is the dual isogeny, and the dual
-is machine-refuted in characteristic `p` in `Isogeny.lean`
-(`Isogeny.NotIsRationalMapDualHom`), so it is unavailable. -/
+ROUTE, AND IT IS THE ONE TAKEN (the cut of 2026-07-28).  `Wbar(𝔽̄_q)` is a
+TORSION group — every point is defined over some finite subfield — so an
+identity in `End` may be checked one torsion-primary piece at a time.  That is
+`exists_pos_nsmul_eq_zero`, now PROVEN, and it is what this declaration's proof
+runs on: writing the order of `P` as `q^k · m` with `q ∤ m` and using a Bézout
+relation splits `P = P₂ + P₁` with `m • P₂ = 0` and `q^k • P₁ = 0`, and the two
+summands are handled by the two leaves.  The identity is additive in `P`, so
+that is the whole assembly.
+
+The prime-to-`q` half is the `ℓ`-adic one: for `ℓ ≠ q` the module `E[ℓ^k]` is
+free of rank `2` over `ZMod (ℓ^k)` (`WeierstrassCurve.p_torsion_rank`,
+`Torsion.lean`, which needs only `(ℓ : 𝔽̄_q) ≠ 0` and *no* characteristic-zero
+hypothesis), and Cayley–Hamilton for a `2 × 2` matrix gives
+`F² = tr(F)·F − det(F)` there; the arithmetic input is `det(F | E[ℓ^k]) = q`
+(the Weil pairing) and the INTEGRALITY of `tr`.  The `q`-primary half is
+separate and is the ordinary/supersingular dichotomy.  See the two leaves for
+what each of them still owes.
+
+THE CHECK THAT WOULD REFUTE the claim that this is the cheapest route: a proof
+of `F² − cF + q = 0` that does not pass through a torsion representation — the
+classical alternative is the dual isogeny, and the dual is machine-refuted in
+characteristic `p` in `Isogeny.lean` (`Isogeny.NotIsRationalMapDualHom`), so it
+is unavailable. -/
 theorem exists_sq_frobeniusPointEnd (q : ℕ) [Fact q.Prime]
     (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] :
     ∃ c : ℤ, frobeniusPointEnd q Wbar * frobeniusPointEnd q Wbar
       = c • frobeniusPointEnd q Wbar
-        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) :=
-  sorry
+        - (q : ℤ) • (1 : Module.End ℤ ((Wbar⁄(AlgebraicClosure (ZMod q))).Point)) := by
+  obtain ⟨c, hc⟩ := exists_sq_frobeniusPointEnd_prime_to_char q Wbar
+  refine ⟨c, ?_⟩
+  have key : ∀ P : (Wbar⁄(AlgebraicClosure (ZMod q))).Point,
+      frobeniusPointEnd q Wbar (frobeniusPointEnd q Wbar P)
+        = c • frobeniusPointEnd q Wbar P - (q : ℤ) • P := by
+    intro P
+    obtain ⟨n, hnpos, hn⟩ := exists_pos_nsmul_eq_zero q Wbar P
+    obtain ⟨k, m, hmq, hnk⟩ :=
+      Nat.exists_eq_pow_mul_and_not_dvd hnpos.ne' q (Fact.out : q.Prime).ne_one
+    have hcop : Nat.Coprime (q ^ k) m :=
+      Nat.Coprime.pow_left k (((Fact.out : q.Prime).coprime_iff_not_dvd).mpr hmq)
+    obtain ⟨a, b, hab⟩ : IsCoprime ((q ^ k : ℕ) : ℤ) ((m : ℕ) : ℤ) :=
+      Nat.isCoprime_iff_coprime.mpr hcop
+    set P₁ : (Wbar⁄(AlgebraicClosure (ZMod q))).Point := (b * (m : ℤ)) • P with hP₁
+    set P₂ : (Wbar⁄(AlgebraicClosure (ZMod q))).Point := (a * ((q ^ k : ℕ) : ℤ)) • P with hP₂
+    have hnz : ((q ^ k : ℕ) : ℤ) * ((m : ℕ) : ℤ) = (n : ℤ) := by
+      rw [← Nat.cast_mul, ← hnk]
+    have h1 : ((q : ℤ) ^ k) • P₁ = 0 := by
+      rw [hP₁, smul_smul]
+      have hb : (q : ℤ) ^ k * (b * (m : ℤ)) = b * ((n : ℤ)) := by
+        rw [← hnz]; push_cast; ring
+      rw [hb, ← smul_smul, hn]
+      exact zsmul_zero _
+    have h2 : ((m : ℕ) : ℤ) • P₂ = 0 := by
+      rw [hP₂, smul_smul]
+      have ha : ((m : ℕ) : ℤ) * (a * ((q ^ k : ℕ) : ℤ)) = a * ((n : ℤ)) := by
+        rw [← hnz]; ring
+      rw [ha, ← smul_smul, hn]
+      exact zsmul_zero _
+    have hsplit : P = P₂ + P₁ := by
+      rw [hP₁, hP₂]
+      match_scalars
+      push_cast at hab ⊢
+      linarith
+    have e1 := hc m hmq P₂ h2
+    have e2 := sq_frobeniusPointEnd_qPrimary q Wbar hc k P₁ h1
+    rw [hsplit, map_add, map_add, e1, e2]
+    module
+  refine LinearMap.ext fun P => ?_
+  simpa only [Module.End.mul_apply, LinearMap.sub_apply, LinearMap.smul_apply,
+    Module.End.one_apply] using key P
 
 /-- **`ψ ∘ ψ' = [m² − c·m·n + n²q]`** (PROVEN over `exists_sq_frobeniusPointEnd`):
 the conjugate of `ψ = [m] − [n]∘F` is `ψ' = [m − n·c] + [n]∘F`, which is
