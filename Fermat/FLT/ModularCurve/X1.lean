@@ -3810,20 +3810,95 @@ sections).
 **WHY THIS IS THE WHOLE REMAINING CONTENT.**  `X0.lean` builds
 `exists_ellipticScheme_of_weierstrass`, which goes from a plane cubic to
 an abelian scheme; the direction needed here is the CONVERSE — a
-Weierstrass presentation of a given abelian scheme — and it exists
-nowhere in this tree, in mathlib, or in `~/cs/FLT`.  Classically it is
+Weierstrass presentation of a given abelian scheme.  Classically it is
 Riemann–Roch on the genus-one curve `E`: `ℒ(3·O)` is three-dimensional
 and a basis `1, x, y` embeds `E` as a plane cubic in Weierstrass form.
 The arithmetic that used to be bundled with it is now
 `natCard_weierstrassPoint_le` above and is PROVEN, so a successor here
 faces geometry only.
 
+### ROUTE AUDIT CORRECTION (2026-07-28) — "it exists nowhere in this tree" is FALSE
+
+The sentence removed above said the converse bridge "exists nowhere in
+this tree, in mathlib, or in `~/cs/FLT`".  Two of the three clauses are
+right; the first is not, and believing it costs a successor the design of
+a decomposition that has already been designed and reviewed.
+
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` carries
+**`exists_weierstrassModel_of_ellipticScheme`** — precisely this converse,
+an `AbelianSchemeStruct f` with `SmoothOfRelativeDimension 1 f` yielding
+`E : WeierstrassCurve _`, `E.IsElliptic`, and an open immersion of
+`Spec E.toAffine.CoordinateRing` onto the complement of the zero section
+— together with its assembly and its cut into **three named leaves**:
+`exists_affineComplement_zeroSection` (affineness),
+`exists_weierstrassRingEquiv_of_affineComplement` (the Riemann–Roch
+third) and `isElliptic_of_isOpenImmersion_coordinateRing` (the
+discriminant third).
+
+So the honest statement of the gap is a CONJUNCTION of two things, and
+neither is "design a decomposition":
+
+1. **The base is hard-wired to `ℚ`.**  Every one of those four signatures
+   reads `f : A ⟶ Spec (CommRingCat.of ℚ)` and `WeierstrassCurve ℚ`;
+   this leaf needs `SpecF ℓ` and `WeierstrassCurve (ZMod ℓ)`.  The work
+   is to base-generalize an EXISTING cut, reusing its assembly verbatim.
+   One `ℚ`-specific convenience does survive the move: the assembly gets
+   its structure-morphism conjunct free from `hom_ext_spec_rat` (any two
+   morphisms to `Spec ℚ` agree, because `ℤ → ℚ` is a ring epimorphism);
+   the same holds over `ZMod ℓ`, where `ℤ → ZMod ℓ` is surjective, so an
+   `𝔽_ℓ` analogue of that lemma is cheap and is the only piece of the
+   assembly that has to be re-proven rather than transported.
+2. **The Riemann–Roch content is still genuinely OPEN**, so the
+   docstring's *conclusion* stands even though its premise does not: all
+   three leaves above are `sorry` at the time of writing, i.e.
+   `exists_weierstrassModel_of_ellipticScheme` is PROVEN only in the
+   ASSEMBLY sense (no direct sorry, transitively sorried).  Nothing here
+   can be discharged by citing it, over `ℚ` or over `𝔽_ℓ`.
+
+**A STRUCTURAL BLOCKER a successor must budget for, verified by a
+two-way reproduction on 2026-07-28.**  None of those names is visible
+from this file: `X0.lean` reaches `EllipticScheme.lean` through a
+deliberately NON-`public` `import` (`X0.lean`'s import block; the
+intent is recorded on
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`, which
+notes that keeping `proj`/`projToSpec` out of its conjuncts is what
+"keeps `X0.lean`'s import non-public").  A scratch module importing only
+`Fermat.FLT.ModularCurve.X1` and mentioning
+`Fermat.exists_weierstrassModel_of_ellipticScheme` fails with
+`Unknown identifier`; adding
+`public import Fermat.FLT.ModularCurve.EllipticScheme` makes the same
+module compile clean, `EXIT=0`.  This is the private-import failure whose
+privacy sits in an INTERMEDIATE module, so it bites proof bodies and not
+merely signatures.  Closing this leaf therefore requires an import change
+here (or a hoist), which is a cone-growth decision, not a local one.
+
+The check that would refute this audit: `grep -n "sorry"` at the three
+`EllipticScheme.lean` leaves named above, and re-running the two-way
+scratch.  If those leaves have closed and been base-generalized, this
+leaf becomes an assembly.
+
 `W.IsElliptic` is asked for even though the count above does not use it,
 because it is TRUE of the genuine model and asking for less would let the
 leaf be discharged by a degenerate cubic that carries none of the
 geometry.  `[Fact ℓ.Prime]` rather than `ℓ.Prime` because the statement
 mentions `WeierstrassCurve (ZMod ℓ)`, whose `Field` instance — and hence
-the group law on `Point` — is only available under the `Fact`. -/
+the group law on `Point` — is only available under the `Fact`.
+
+**`_d`'s UNDERSCORE IS AN ARTIFACT OF THE SORRIED BODY, NOT A VACUITY
+MARKER — do not "simplify" the statement by dropping it** (guard added
+2026-07-28).  The fleet convention is that an underscore-prefixed
+hypothesis is one the PROOF does not use, so that emptiness is
+mechanically visible; here the underscore is only silencing the
+unused-variable linter while the body is `sorry`, and any real proof MUST
+consume `d`.  Without it the statement reads "for every `N` and every
+prime `ℓ` there is an elliptic curve over `𝔽_ℓ` with a point of exact
+order `N`", which is **FALSE**, and refuted by this module's own
+`natCard_weierstrassPoint_le`: at `(N, ℓ) = (25, 3)` any Weierstrass
+curve over `𝔽_3` has at most `2·3 + 1 = 7` points, so it has no point of
+order `25`.  That is the same inequality
+`isEmpty_gamma1Datum_finiteField` below turns into its conclusion — so a
+successor who dropped `_d` would be deriving `False` from the very bound
+the cluster exists to exploit. -/
 theorem exists_weierstrassPointOfOrder_of_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
     (_d : Gamma1Datum N (SpecF ℓ)) :
     ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧
