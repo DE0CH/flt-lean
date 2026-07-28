@@ -32884,6 +32884,74 @@ theorem zmod_eq_zero_of_forall_primePow_cast {nn : ℕ} (a : ZMod nn)
           (Int.natAbs_ne_zero.mpr hb)).mp hz
       · simp [Nat.factorization_eq_zero_of_not_prime _ hll]
 
+/-- **CHINESE REMAINDER FOR A CHARACTER OF `ker χ`: it is enough to kill every
+PRIME-POWER reduction** (PROVEN 2026-07-28; general topological group theory,
+no arithmetic).
+
+Let `N ≤ ker χ` (`hNker`) and `ψ : ker χ →* Multiplicative (ZMod nn)` a
+character with `N = ker ψ` (`hψN`, `hψker`). To place an `x ∈ ker χ` in `N` it
+is enough to place it in the kernel `N'` of every PRIME-POWER reduction `ψ'`
+of `ψ` — and the hypothesis `H` is handed both `N ≤ N'` and `N' ≤ ker χ`, so a
+consumer discharges the arithmetic hypotheses of its prime-power leaf at `N'`
+by monotonicity alone, and gets `N'` open from `Subgroup.isOpen_mono` on its
+own side.
+
+**This is hoisted OUT of `Interface.lean`'s arithmetic on purpose.** The
+identical argument written inline against `Field.absoluteGaloisGroup ℚ` died
+with `(deterministic) timeout at whnf` at 200000 heartbeats; over an abstract
+`G` it elaborates instantly. Quotient-group and structure-theorem work over
+`Γℚ` should always be moved to a `Type*` lemma like this one.
+
+**NO TOPOLOGY HERE, and that is deliberate.** An earlier version carried
+`[TopologicalSpace G] [IsTopologicalGroup G]` and `hNopen` so that it could
+hand `IsOpen N'` to `H`. Keeping the topology out costs the consumer one
+`Subgroup.isOpen_mono` and keeps this lemma's instance surface minimal.
+
+Nothing here needs `N` normal, and nothing here needs the quotient to be
+finite — see `zmod_eq_zero_of_forall_primePow_cast` above for why `nn = 0`
+costs nothing. -/
+theorem mem_of_forall_primePowChar_pullback_mem {G : Type*} [Group G]
+    {M : Type*} [Monoid M]
+    (χ : G →* M) (N : Subgroup G)
+    (hNker : ∀ y ∈ N, χ y = 1)
+    (nn : ℕ) (ψ : (MonoidHom.ker χ) →* Multiplicative (ZMod nn))
+    (hψN : ∀ y : (MonoidHom.ker χ), (y : G) ∈ N → ψ y = 1)
+    (hψker : ∀ y : (MonoidHom.ker χ), ψ y = 1 → (y : G) ∈ N)
+    (x : (MonoidHom.ker χ))
+    (H : ∀ (ll nk : ℕ), ll.Prime →
+        ∀ (N' : Subgroup G)
+          (ψ' : (MonoidHom.ker χ) →* Multiplicative (ZMod (ll ^ nk))),
+        N ≤ N' → (∀ y ∈ N', χ y = 1) →
+        (∀ y : (MonoidHom.ker χ), (y : G) ∈ N' → ψ' y = 1) →
+        (∀ y : (MonoidHom.ker χ), ψ' y = 1 → (y : G) ∈ N') →
+        (x : G) ∈ N') :
+    (x : G) ∈ N := by
+  classical
+  refine hψker x ?_
+  refine _root_.toAdd_eq_zero.mp ?_
+  refine zmod_eq_zero_of_forall_primePow_cast (Multiplicative.toAdd (ψ x)) ?_
+  intro ll nk hll hd
+  set cst : Multiplicative (ZMod nn) →* Multiplicative (ZMod (ll ^ nk)) :=
+    AddMonoidHom.toMultiplicative
+      (ZMod.castHom hd (ZMod (ll ^ nk))).toAddMonoidHom with hcst
+  set ψ' : (MonoidHom.ker χ) →* Multiplicative (ZMod (ll ^ nk)) :=
+    cst.comp ψ with hψ'
+  set N' : Subgroup G := Subgroup.map (MonoidHom.ker χ).subtype ψ'.ker with hN'
+  have hNle : N ≤ N' := by
+    intro g hg
+    have hgk : g ∈ MonoidHom.ker χ := MonoidHom.mem_ker.mpr (hNker g hg)
+    refine (mem_map_ker_char_iff ψ' (⟨g, hgk⟩ : MonoidHom.ker χ)).mpr ?_
+    rw [hψ', MonoidHom.comp_apply, hψN ⟨g, hgk⟩ hg, map_one]
+  have hN'ker : ∀ g ∈ N', χ g = 1 := by
+    rintro g ⟨z, -, rfl⟩
+    exact MonoidHom.mem_ker.mp z.2
+  have hres := H ll nk hll N' ψ' hNle hN'ker
+    (fun y hy => (mem_map_ker_char_iff ψ' y).mp hy)
+    (fun y hy => (mem_map_ker_char_iff ψ' y).mpr hy)
+  have hx1 := (mem_map_ker_char_iff ψ' x).mp hres
+  rw [hψ', MonoidHom.comp_apply] at hx1
+  simpa [hcst] using congrArg Multiplicative.toAdd hx1
+
 /-- **ARTIN RECIPROCITY, PRODUCT FORM, FOR A CYCLIC QUOTIENT OF PRIME-POWER
 ORDER** (E3c support leaf (ii-a-1-i-B-2-a-ii-α-1); SORRY LEAF, cut 2026-07-28
 out of `prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar` below
@@ -33104,7 +33172,9 @@ symbol `c` at ALL primes, not only degree-one ones; `hunr` from `hNinert`;
 `mm = ⊤`), none of which is an edit to `ModThree.lean`.
 
 **THE PRIME-POWER REFINEMENT IS DONE (2026-07-28), and this node is PROVEN
-by it.** The reduction is `zmod_eq_zero_of_forall_primePow_cast` above
+by it.** The reduction itself lives in the abstract-group lemma
+`mem_of_forall_primePowChar_pullback_mem` above, over
+`zmod_eq_zero_of_forall_primePow_cast`
 applied to `ψ x` for `x` the product taken in `ker χ`: for each prime `ll`
 and each `nk` with `ll ^ nk ∣ nn`, post-composing `ψ` with the reduction
 `ZMod nn →+* ZMod (ll ^ nk)` gives a prime-power character `ψ'` whose kernel
@@ -33124,6 +33194,29 @@ occur is that `N` is open in the compact `Γℚ`, so `ker χ / N` is finite —
 but the proof below never needs that, because every `ll ^ nk` divides `0`,
 so the prime-power leaf applies at every `2 ^ nk` and an integer divisible
 by arbitrarily large powers of `2` is `0`.
+
+**AN ELABORATION HAZARD WORTH THE PARAGRAPH, because it cost two full
+`Interface` builds (≈80 min each) and the symptom points at the wrong
+thing.** Two successive versions of this proof died with
+`(deterministic) timeout at whnf, maximum number of heartbeats (200000)`
+reported at the DECLARATION, which reads as "this file is too big" or "this
+proof is too clever" and is neither. Bisected in a 40-second scratch module
+that restates these two theorems over the same imports, the whole cost was
+in one subterm: writing
+
+    ⟨(L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod,
+      hmem⟩
+
+instead of `⟨_, hmem⟩`. Spelling the product out a second time re-elaborates
+the `List.map`/`List.prod` term at the subtype's expected type and then has
+to unify the result with `hmem`'s statement; that `whnf` does not finish in
+200000 heartbeats, and does not finish in 4 000 000 either (measured — so it
+is divergence, not a budget shortfall, and `set_option maxHeartbeats` would
+never have fixed it). With the underscore the same declaration elaborates in
+seconds. Hoisting the group theory to `mem_of_forall_primePowChar_pullback_mem`
+above is right for other reasons but did NOT fix this; the underscore did.
+General rule: inside this file, never write a large term twice — bind it once
+and let `_` recover it from the accompanying proof.
 
 **The check that would refute it**: exhibit `nn`, `ψ` and `L` with every
 `frobIdeal q.1 q.2` a degree-one prime, `∏ frobIdeal` principal, and the
@@ -33187,41 +33280,25 @@ theorem prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_cyclicChar
     intro z hz
     obtain ⟨q, hq, rfl⟩ := List.mem_map.mp hz
     exact MonoidHom.mem_ker.mpr (hL q hq)
-  set x : (MonoidHom.ker χ) :=
-    ⟨(L.map (fun q => q.1 * GaloisRepresentation.globalFrob q.2 * q.1⁻¹)).prod, hmem⟩
-  refine hψker x ?_
-  refine _root_.toAdd_eq_zero.mp ?_
-  refine zmod_eq_zero_of_forall_primePow_cast (Multiplicative.toAdd (ψ x)) ?_
-  intro ll nk hll hd
-  -- the prime-power character obtained by reducing `ψ` modulo `ll ^ nk`
-  set cst : Multiplicative (ZMod nn) →* Multiplicative (ZMod (ll ^ nk)) :=
-    AddMonoidHom.toMultiplicative (ZMod.castHom hd (ZMod (ll ^ nk))).toAddMonoidHom
-    with hcst
-  set ψ' : (MonoidHom.ker χ) →* Multiplicative (ZMod (ll ^ nk)) :=
-    cst.comp ψ with hψ'
-  -- its kernel, pushed forward to `Γℚ`; it contains `N`
-  set N' : Subgroup (Field.absoluteGaloisGroup ℚ) :=
-    Subgroup.map (MonoidHom.ker χ).subtype ψ'.ker with hN'
-  have hNle : N ≤ N' := by
-    intro g hg
-    have hgk : g ∈ MonoidHom.ker χ := MonoidHom.mem_ker.mpr (hNker g hg)
-    refine (mem_map_ker_char_iff ψ' (⟨g, hgk⟩ : MonoidHom.ker χ)).mpr ?_
-    rw [hψ', MonoidHom.comp_apply, hψN ⟨g, hgk⟩ hg, map_one]
-  have hN'ker : ∀ z ∈ N', χ z = 1 := by
-    rintro z ⟨w, -, rfl⟩
-    exact MonoidHom.mem_ker.mp w.2
-  have hres := prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar
+  -- the whole reduction is `mem_of_forall_primePowChar_pullback_mem` above,
+  -- deliberately hoisted to an abstract group: written inline here it died with
+  -- `(deterministic) timeout at whnf` at 200000 heartbeats.
+  -- **`⟨_, hmem⟩`, NEVER `⟨(L.map …).prod, hmem⟩`.** Spelling the product out a
+  -- second time inside the anonymous constructor is what made the earlier
+  -- version diverge: it re-elaborates the whole `List.map`/`List.prod` term at
+  -- the subtype's expected type and then has to unify it with `hmem`'s, and
+  -- that whnf does not terminate inside the 200000-heartbeat budget (it does
+  -- not terminate in 4 000 000 either — measured). With the underscore the
+  -- same declaration elaborates in seconds.
+  refine mem_of_forall_primePowChar_pullback_mem χ N hNker nn ψ hψN hψker
+    ⟨_, hmem⟩ ?_
+  intro ll nk hll N' ψ' hNle hN'ker hψ'N hψ'ker
+  exact prod_frobConj_mem_of_mk0_prod_frobIdeal_eq_one_of_primePowChar
     (p := p) χ hχcyc CF ι frobIdeal hfrob N'
     (Subgroup.isOpen_mono hNle hNopen) hN'ker
     (fun ℓ hℓ n σ hn hχn => hNle (hNinert ℓ hℓ n σ hn hχn))
     (fun a b ha hb => hNle (hNab a b ha hb))
-    ll hll nk ψ'
-    (fun y hy => (mem_map_ker_char_iff ψ' y).mp hy)
-    (fun y hy => (mem_map_ker_char_iff ψ' y).mpr hy)
-    L hL hprin
-  have hx1 := (mem_map_ker_char_iff ψ' x).mp hres
-  rw [hψ', MonoidHom.comp_apply] at hx1
-  simpa [hcst] using congrArg Multiplicative.toAdd hx1
+    ll hll nk ψ' hψ'N hψ'ker L hL hprin
 
 /-- **ARTIN RECIPROCITY, PRODUCT FORM: a product of degree-one Frobenius
 elements whose ideal product is PRINCIPAL lies in `N`** (E3c support leaf
