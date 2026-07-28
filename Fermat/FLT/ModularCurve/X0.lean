@@ -18617,8 +18617,230 @@ theorem exists_gamma0Datum_geomClassify {p : ℕ} (hp : p.Prime)
   rw [hvc (specAlgClos ℚ ≫ 𝟙 SpecQ) d, congrArg Subtype.val hd, Category.assoc, huv,
     Category.comp_id]
 
+/-! ### Weil descent for the PAIR, cut along the `j`-invariant
+
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli` below was a single
+sorry leaf from 2026-07-27; this subsection DECOMPOSES it (2026-07-28) into three
+named leaves, along the axis its own docstring names but had never used — the
+`j`-invariant — and proves the assembly.
+
+The three leaves are
+
+* `exists_weierstrassModel_gamma0Datum_algClos` — pure geometry, no arithmetic:
+  a `Γ₀(N)`-datum over `ℚ̄` has a Weierstrass model.  This is the base-field
+  generalisation of the `ℚ`-statement the file already has
+  (`exists_weierstrassCurve_of_abelianSchemeStruct`, PROVEN by citation to
+  `EllipticScheme.lean`), and it is what makes the `j`-invariant of a `ℚ̄`-datum
+  *available* at all;
+* `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` — **the only place `hmem` does
+  any work**, and the reason it is a hypothesis of this node: at `j ∈ {0, 1728}`
+  the curve has CM by `ℤ[i]` or `ℤ[ζ₃]`, and a `Γ₀(p)`-structure with field of
+  moduli `ℚ` on such a curve forces `p` to ramify in the CM field, i.e.
+  `p ∈ {2, 3} ⊆ mazurIsogenyPrimes`;
+* `exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic` — the Weil descent
+  itself, at `j ∉ {0, 1728}`, where `Aut(E, C) = Aut(E) = {±1}` and the descent
+  obstruction is empty.
+
+**Why this cut and not the twist axis.**  The verdict recorded on this node
+before the decomposition — "twist theory is absent from mathlib, from `~/cs/FLT`
+and from this project, so a prover should expect to build the twist first" — is
+CORRECT about twist theory and was the wrong axis, for the reason the standing
+doctrine gives: it names the axis it searched.  The pair-descent statement here
+needs NO twist at all.  A twist is what its weaker sibling
+`exists_stableCyclic_of_gamma0Datum_algClos` needs, precisely because that
+sibling is allowed to change the curve; this node must land on `d` itself, so a
+twist is not available to it and the obstruction has to be *absent* rather than
+*trivialised*.  It is absent exactly when `Aut(E, C) = {±1}`, i.e. off
+`j ∈ {0, 1728}` — and `hmem` is what puts us there.  So the `j`-split is not an
+economy here, it is the shape of the argument.
+
+**The sibling is already PROVEN, and this node's docstring claim to the contrary
+is now retired.**  Until 2026-07-28 the docstring below said that closing this
+leaf "closes both", `exists_stableCyclic_of_gamma0Datum_algClos` being derivable
+from it.  That was true when written; release 8 then proved the sibling outright
+over `exists_weierstrassQ_autStable_of_galoisInvariant` and
+`exists_stableCyclic_twist_of_autStable_of_j_special`, so there is no second leaf
+to close and the two attacks are now genuinely independent.  Do not re-derive the
+sibling from this node. -/
+
+/-- **A `Γ₀(N)`-datum over `ℚ̄` has a Weierstrass model** (sorry leaf, opened
+2026-07-28 as the geometric half of the `j`-cut of
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli`).
+
+TRUE, and it carries NO arithmetic: `d.ab` is an abelian scheme of relative
+dimension `1` over the field `ℚ̄` with a section, i.e. a genus-one curve with a
+rational point, so Riemann–Roch on `𝒪(3·O)` presents it as a Weierstrass curve
+and the complement of the zero section is the affine Weierstrass curve
+`Spec ℚ̄[W]`.  Smoothness makes `Δ` a unit, whence `W.IsElliptic`.
+
+**This is a BASE GENERALISATION, not a new theory, and that is the whole
+reason it is cut off here.**  The identical statement over `ℚ` is
+`exists_weierstrassCurve_of_abelianSchemeStruct` (PROVEN, by citation to
+`EllipticScheme.lean`'s `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`),
+and `exists_weierstrassModel_gamma0Datum` (PROVEN) produces the
+`IsWeierstrassModel` conjunct over `ℚ` in exactly this form.  Both are written
+against `Spec (CommRingCat.of ℚ)` only; nothing in either argument uses anything
+about `ℚ` beyond its being a field, so the honest route for a successor is to
+generalise the base of that development rather than to open a second copy of
+Riemann–Roch here.  The three Riemann–Roch leaves it rests on are
+`exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement` and
+`isElliptic_of_isOpenImmersion_coordinateRing`, all in `EllipticScheme.lean`.
+
+**The check that would refute "open"**: any statement of `IsWeierstrassModel`, or
+of `EllipticScheme.lean`'s reverse bridge, over a base other than
+`Spec (CommRingCat.of ℚ)`.  RUN 2026-07-28 — `IsWeierstrassModel` itself is
+stated over an arbitrary `[CommRing R]`, but every *producer* of it
+(`exists_weierstrassModel_gamma0Datum`, `exists_weierstrassModel_localization`,
+`exists_ellipticScheme_isWeierstrassModel_of_projModel`) is over `ℚ`, over `SpecQ`
+or is itself a leaf.  So the conjunct is expressible here and unproduced here.
+
+**NOT VACUOUS.**  `IsWeierstrassModel` demands an open immersion whose range is
+*exactly* the complement of the zero section, so it is not satisfiable by a junk
+`W`; and `weierstrassModel_j_unique` records that two models of one elliptic
+scheme have equal `j`, which is what makes the `j` this leaf exposes well
+defined and hence what makes the two leaves below faithful.
+
+`N` is unconstrained: at `N = 0` the hypothesis `d` is already contradictory
+(`isEmpty_of_gamma0Datum_zero` empties `Spec ℚ̄`, which is nonempty), so the
+statement is vacuously true there and no `hN` is carried. -/
+theorem exists_weierstrassModel_gamma0Datum_algClos {N : ℕ}
+    (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
+    ∃ (W : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : W.IsElliptic),
+      IsWeierstrassModel d.ab W :=
+  sorry
+
+/-- **A `Γ₀(p)`-datum over `ℚ̄` with field of moduli `ℚ` and `p ∉
+mazurIsogenyPrimes` has `j ∉ {0, 1728}`** (sorry leaf, opened 2026-07-28) —
+**THE ONE PLACE `hmem` DOES ANY WORK** in the whole descent bridge.
+
+TRUE, and it is classical CM theory, *not* Mazur's theorem.  In characteristic
+zero `j = 1728` forces `End(W⁄ℚ̄) = ℤ[i]` and `j = 0` forces `ℤ[ζ₃]`; write
+`K = ℚ(i)` resp. `ℚ(ζ₃)`, of class number one.  A cyclic subgroup `C ⊂ W(ℚ̄)` of
+PRIME order `p` on a curve with CM by `𝒪_K` is the `𝔭`-torsion for a prime `𝔭 ∣ p`
+of `𝒪_K` (the Galois module `W[p]` is free of rank one over `𝒪_K/p`, so its
+`𝒪_K`-stable lines are the `𝒪_K/𝔭`), and `hinv` — the field of moduli of the PAIR
+being `ℚ` — makes the class of `(W, C)` stable under `Gal(ℚ̄/ℚ)`.  Complex
+conjugation acts on `𝒪_K` nontrivially and carries `𝔭` to `𝔭̄`, so stability
+forces `𝔭 = 𝔭̄`, i.e. `p` RAMIFIES in `K`: `p ∣ disc K ∈ {-4, -3}`, so `p ∈ {2, 3}`.
+Both lie in `mazurIsogenyPrimes = {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`,
+contradicting `hmem`.
+
+**Why this is NOT circular against Mazur.**  Mazur's isogeny theorem is what
+`mazurIsogenyPrimes` is *named* for and is the conclusion the whole file is
+working towards; nothing here uses it.  The argument above is a statement about
+CM curves alone, decided by ramification in an imaginary quadratic field of class
+number one, and it is the classical reason the two special `j`-values are
+excluded from Weil descent for the pair.  A prover must not discharge this leaf
+by citing `cuspidal_x0_prime` or any form of Mazur.
+
+**The check that would refute this**: exhibit a prime `p ∉ mazurIsogenyPrimes`
+and a `Γ₀(p)`-structure with field of moduli `ℚ` on a curve of `j`-invariant `0`
+or `1728`.  Equivalently, exhibit a rational point of `Y_0(p)` with CM by an
+order of discriminant `-3` or `-4`.  There is none: the split primes give
+isogenies rational only over `K` (conjugation swaps `𝔭` and `𝔭̄`, e.g. at
+`p = 31 = 5² + 5 + 1` for `K = ℚ(ζ₃)`, which is exactly why `31` is absent from
+the list), and the inert primes give no `𝒪_K`-stable line at all.
+
+**`hp : p.Prime` is load-bearing** — at composite `N` the level structure need
+not be `𝔭`-torsion for a single prime and the ramification argument does not
+close.  `hinv` is load-bearing too: without it `C` is an arbitrary cyclic
+subgroup and every `p` split in `K` supplies one.
+
+**NOT VACUOUS**, and note *which* way: the hypotheses are satisfiable — the
+conclusion `j ∉ {0, 1728}` really does have to be proved, it is not a disguised
+`False`.  What is (inherited) vacuous is only the further composite with Mazur;
+see the VACUITY paragraph on the consumer below. -/
+theorem not_isSpecialJ_of_gamma0Datum_fieldOfModuli {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes)
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
+    (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (hW : IsWeierstrassModel d.ab W) :
+    W.j ≠ 0 ∧ W.j ≠ 1728 :=
+  sorry
+
+/-- **WEIL DESCENT FOR THE PAIR, at `j ∉ {0, 1728}`** (sorry leaf, opened
+2026-07-28): the arithmetic heart of
+`exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli`, with the two special
+`j`-values — and with them `hmem`, and with them the entire descent obstruction —
+removed.
+
+TRUE, and this is where the classical argument becomes *unobstructed*.  With
+`j(W) ∉ {0, 1728}` one has `Aut(W⁄ℚ̄) = {±1}`
+(`WeierstrassCurve.eq_one_or_eq_negVariableChange_of_smul_eq`, already in this
+tree), and `−1` preserves every subgroup, so `Aut(W, C) = Aut(W) = {±1}` as well
+and the quotient `Aut(W)/Aut(W, C)` — the group the descent obstruction lives in —
+is TRIVIAL.  The three steps are then:
+
+1. *`j` descends.*  `hinv` gives `σ^*d ≅ d` for every `σ`, hence `σ(j W) = j W`
+   for every `σ` by `weierstrassModel_j_unique` applied to `W` and `W^σ`, hence
+   `j W ∈ ℚ` (`ℚ̄^{Gal} = ℚ`).
+2. *The curve descends.*  Take `E : WeierstrassCurve ℚ` with `E.j = j W`
+   (`WeierstrassCurve.ofJ`, whose `j` is right off `0, 1728` — which is the second
+   place the hypothesis is used) and `WeierstrassCurve.exists_variableChange_of_j_eq`
+   over the separably closed `ℚ̄` to get `ψ : W ≅ E⁄ℚ̄`.
+3. *The level structure descends, with nothing left over.*  Transport `d.cyc`
+   through `ψ` to a cyclic subgroup `⟨g⟩ ⊆ (E⁄ℚ̄).Point` of order `p`.  `hinv`
+   makes it Galois-stable up to `Aut(E⁄ℚ̄) = {±1}`, and `±1` fixes `⟨g⟩`
+   pointwise-as-a-set, so it is Galois-stable ON THE NOSE.  Feed
+   `(E, g)` to `exists_weierstrassModel_gamma0Datum` (PROVEN) for
+   `d₀ : Gamma0Datum p SpecQ` with `IsWeierstrassModel d₀.ab E`, and the base
+   change of `d₀` to `ℚ̄` is a datum with the same Weierstrass model and the same
+   level structure as `d`, hence isomorphic to it; compose with
+   `isBaseChangeBC` through `IsBaseChangeOf.comp` for the conclusion.
+
+**NO TWIST IS NEEDED HERE, AND NONE IS AVAILABLE.**  This is the substantive
+difference from `exists_stableCyclic_of_gamma0Datum_algClos`, which may replace
+`E` by a twist because its conclusion has forgotten `d`.  The conclusion here
+pins `d` as the base change, so the curve is not ours to move — and at
+`j ∉ {0, 1728}` it does not need to be.  A prover who finds itself reaching for
+`.../GaloisDescent.lean` (still a stub) has taken the wrong branch: the twist is
+needed only at `j ∈ {0, 1728}`, and that case does not arise here — it is
+excluded upstream by `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` rather than
+handled.
+
+**MISSING MACHINERY, surveyed 2026-07-28.**  Step 1 needs
+`weierstrassModel_j_unique` (a LEAF in this file, step (ii) of the
+`exists_jSectionOnAffine` cut) and the conjugate model `W^σ`, which is
+`isWeierstrassModel_map_of_isBaseChangeOf` applied to `specGal σ`.  Step 2 is
+entirely in the pin.  Step 3 needs the transport of a cyclic subgroup along a
+`VariableChange` — `Affine.Point.mapVariableChange` and `autPoint` above, both
+present — plus the comparison "two `ℚ̄`-data with a common Weierstrass model and
+a common level structure are isomorphic", which is NOT present and is the one
+genuinely new statement a prover will have to write.  It is the `ℚ̄`-analogue of
+`IsCoarseModuliY0.nonempty_isBaseChangeOf_of_classify_eq` (PROVEN) with the
+coarse space replaced by the coordinate pinning, and it is a rigidity statement,
+not an arithmetic one.
+
+**The check that would refute this leaf**: a `Γ₀(p)`-datum over `ℚ̄` with
+`j ∉ {0, 1728}`, all of whose Galois conjugates are isomorphic to it, that is not
+the base change of any datum over `ℚ`.  There is none — that is Weil's descent
+criterion with a trivial obstruction group.
+
+**VACUITY, inherited and NOT introduced here.**  `Gamma0Datum p SpecQ` is empty
+for `p ∉ mazurIsogenyPrimes` by Mazur, so the composite with the consumer below
+is vacuously true.  This statement itself carries no `hmem` and is therefore
+NON-vacuous: it is the honest `j ∉ {0, 1728}` specialisation the consumer's
+docstring says "is where a proof should start".  A prover must not discharge it
+by an argument that assumes the conclusion of `cuspidal_x0_prime`. -/
+theorem exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic {p : ℕ} (hp : p.Prime)
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
+    (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (hW : IsWeierstrassModel d.ab W) (hj₀ : W.j ≠ 0) (hj₁ : W.j ≠ 1728) :
+    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) :=
+  sorry
+
 /-- **A `Γ₀(p)`-datum over `ℚ̄` whose field of moduli is `ℚ` IS the base
-change of a datum over `ℚ`** (sorry leaf, opened 2026-07-27): the whole
+change of a datum over `ℚ`** (PROVEN 2026-07-28 over the three leaves of the
+subsection above; a sorry leaf from 2026-07-27 until then): the whole
 arithmetic content of the descent below, with the coarse space removed.
 
 TRUE, and this is Weil descent for the pair `(E, C)`.  The hypothesis
@@ -18647,10 +18869,16 @@ so it needs the descended datum to classify to `y`, which by
 `classify_natural` is exactly the statement that `d` is its base change.
 Hence the `IsBaseChangeOf` conclusion here.
 
-So this leaf is strictly stronger than its sibling, and a prover closing it
-closes both (`exists_stableCyclic_of_gamma0Datum_algClos` follows by base
-change plus `exists_stableCyclic_of_gamma0Datum`).  **That is the
-recommended order of attack**: do not prove the two independently.
+So this leaf is strictly stronger than its sibling.  **The "closing it closes
+both" instruction that used to stand here is RETIRED (2026-07-28)**: it advised
+proving this node first and deriving
+`exists_stableCyclic_of_gamma0Datum_algClos` from it by base change plus
+`exists_stableCyclic_of_gamma0Datum`, which was correct when written and is now
+moot — release 8 proved the sibling outright, over
+`exists_weierstrassQ_autStable_of_galoisInvariant` and
+`exists_stableCyclic_twist_of_autStable_of_j_special`.  There is no second leaf
+to close here, and the two attacks are independent: the sibling's open leaves are
+about TWISTING, this one's are about the special `j`-values and about rigidity.
 
 ## WHERE `hmem` IS CONSUMED, AND WHY IT IS HERE AND NOT ON THE SIBLING
 
@@ -18666,15 +18894,24 @@ twist supplies whatever `Aut` is (see the "NO CASE SPLIT ON `j`" paragraph
 in its docstring; the two are consistent, and the difference is exactly the
 strength of the conclusion).
 
-## WHAT IS MISSING FOR IT
+## WHAT IS MISSING FOR IT — the twist verdict was the WRONG AXIS
 
-Verbatim what is recorded on `exists_stableCyclic_of_gamma0Datum_algClos`:
-twist theory is absent from mathlib, from `~/cs/FLT` and from this project
+The paragraph that stood here until 2026-07-28 read, verbatim from
+`exists_stableCyclic_of_gamma0Datum_algClos`: "twist theory is absent from
+mathlib, from `~/cs/FLT` and from this project
 (`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Aut.lean` covers only
-`j ∉ {0, 1728}`; `.../GaloisDescent.lean` is a STUB with zero
-declarations), and conjugating a curve given only over `ℚ̄` is not
-expressible with mathlib's point API.  A prover should expect to build the
-twist first.
+`j ∉ {0, 1728}`; `.../GaloisDescent.lean` is a STUB with zero declarations), and
+conjugating a curve given only over `ℚ̄` is not expressible with mathlib's point
+API.  A prover should expect to build the twist first."
+
+Every clause of that is still TRUE, and as a verdict about THIS node it was
+wrong — the same shape the doctrine records for the irreducibility verdict on
+the consumer below.  It was inherited from the sibling, and the sibling is the
+statement that *needs* a twist, precisely because it is allowed to change the
+curve.  This node must land on `d` itself, so a twist is not even available to
+it; what it needs is for the obstruction to be EMPTY, which happens exactly off
+`j ∈ {0, 1728}`.  That is the axis the subsection above cuts along, and on it
+three of the four ingredients are already present.
 
 **VACUITY, inherited.**  `Gamma0Datum p SpecQ` is empty for
 `p ∉ mazurIsogenyPrimes` — Mazur's theorem — so this leaf is vacuously
@@ -18683,15 +18920,21 @@ true; it must not be "proved" by an argument that assumes the conclusion of
 one with `p` prime, `p ≥ 5` and `j ≠ 0, 1728`, and unlike the `jm` leaf
 below that specialisation is genuinely TRUE — it is Weil descent — so it is
 where a proof should start. -/
-theorem exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli {p : ℕ} (_hp : p.Prime)
-    (_hmem : p ∉ mazurIsogenyPrimes)
+theorem exists_gamma0Datum_specQ_isBaseChangeOf_of_fieldOfModuli {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes)
     (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-    (_hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
       (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
       IsBaseChangeOf (specGal σ) dσ d →
         Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
-    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) :=
-  sorry
+    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) := by
+  -- the `j`-invariant of `d`, made available by a Weierstrass model over `ℚ̄`
+  obtain ⟨W, hWe, hW⟩ := exists_weierstrassModel_gamma0Datum_algClos d
+  haveI := hWe
+  -- `hmem` is consumed HERE and nowhere else: it excludes the two CM values
+  obtain ⟨hj₀, hj₁⟩ := not_isSpecialJ_of_gamma0Datum_fieldOfModuli hp hmem d hinv W hW
+  -- and off those two values the descent obstruction is empty
+  exact exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic hp d hinv W hW hj₀ hj₁
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` whose moduli point is defined over `ℚ`
 descends to `ℚ`** (PROVEN 2026-07-27 over
