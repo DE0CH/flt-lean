@@ -683,6 +683,17 @@ public import Mathlib.RingTheory.Polynomial.Basic
 -- Public because `MoretBaillySeed`, `PotentialModularityWitness` and
 -- `HilbertBlumenthalPoint` all appear in SIGNATURE position below.
 public import Fermat.FLT.Modularity.MoretBailly
+-- PUBLIC (2026-07-28), and load-bearing rather than stylistic: `Polynomial.dickson`
+-- appears in SIGNATURE position in `dickson_one_eval_add` and `map_dickson_eval`
+-- below (the two naturality lemmas of the Frobenius power-sum block). The module
+-- was ALREADY in this file's transitive closure, through the BARE
+-- `import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation` above, so
+-- this adds ZERO modules to any cone — but a bare import is not re-exported, so
+-- `dickson` resolved in proof bodies and failed with `unknown identifier` in the
+-- two statements until this line was added.
+-- POSITION: deliberately LAST. Import order reorders instance search in this file;
+-- keep new imports at the tail rather than interleaving them.
+public import Mathlib.RingTheory.Polynomial.Dickson
 
 @[expose] public section
 
@@ -9825,8 +9836,68 @@ theorem exists_charpoly_pow_eq_charFrob_of_prime {ℓ : ℕ}
           (ρ.map (algebraMap ℚ K)).charFrob w = (M ^ e).charpoly :=
   sorry
 
+/-! ### Dickson power sums: the four elementary lemmas behind
+`exists_complexEmbedding_frobRoots_of_charpoly_pow`
+
+The Dickson polynomial of the first kind `dickson 1 a n` is the universal
+power-sum polynomial of the recursion `p_{n+2} = X·p_{n+1} − a·p_n`,
+`p_0 = 2`, `p_1 = X`.  Three of the facts this block needs are ALREADY
+PROVEN one module upstream, in `HardlyRamified/Deformation.lean`, and are
+reused verbatim rather than restated:
+
+* `monic_natDegree_dickson_one` — `dickson 1 a n` is monic of degree `n`
+  for `n ≠ 0`;
+* `sq_eq_trace_smul_sub_det_smul` — Cayley–Hamilton in rank `2`;
+* `trace_pow_eq_eval_dickson` — `tr (Mⁿ) = (dickson 1 (det M) n)(tr M)`.
+
+What is genuinely new here is the pair of NATURALITY facts that carry the
+recursion across a ring homomorphism and across the parametrisation
+`α + β`, plus the two `Fin 2` charpoly coefficient readings.  -/
+
+/-- **The Dickson polynomial is the power-sum polynomial** (PROVEN
+2026-07-28, elementary): if `x·y = a` then `(dickson 1 a n)(x + y) = xⁿ + yⁿ`.
+
+This is the general-parameter form of mathlib's
+`Polynomial.dickson_one_one_eval_add_inv`, which is stated only at `a = 1`
+(i.e. `y = x⁻¹`).  The proof is the same two-step induction: substituting
+`a = x·y` turns the recursion step into the polynomial identity
+`(x+y)(x^{n+1}+y^{n+1}) − xy(xⁿ+yⁿ) = x^{n+2}+y^{n+2}`. -/
+theorem dickson_one_eval_add {R : Type*} [CommRing R] (a x y : R) (h : x * y = a) :
+    ∀ n : ℕ, (dickson 1 a n).eval (x + y) = x ^ n + y ^ n
+  | 0 => by simp only [dickson_zero, Nat.cast_one]; norm_num
+  | 1 => by simp
+  | n + 2 => by
+    simp only [dickson_add_two, eval_sub, eval_mul, eval_X, eval_C,
+      dickson_one_eval_add a x y h n, dickson_one_eval_add a x y h (n + 1)]
+    subst h
+    ring
+
+/-- **Ring homomorphisms commute with Dickson evaluation** (PROVEN
+2026-07-28, elementary): `h ((dickson 1 a n)(s)) = (dickson 1 (h a) n)(h s)`.
+
+This is what lets ONE trace recursion, computed over the coefficient ring
+`O`, be read simultaneously in `ℚ̄_ℓ`, in a number field inside it, and in
+`ℂ` — which is the whole mechanism of
+`exists_complexEmbedding_frobRoots_of_charpoly_pow`. -/
+theorem map_dickson_eval {R S : Type*} [CommRing R] [CommRing S]
+    (h : R →+* S) (a s : R) (n : ℕ) :
+    h ((dickson 1 a n).eval s) = (dickson 1 (h a) n).eval (h s) := by
+  rw [← map_dickson h n, eval_map, eval₂_at_apply]
+
+/-- **The linear coefficient of a `2 × 2` characteristic polynomial is minus
+the trace** (PROVEN 2026-07-28): immediate from `Matrix.charpoly_fin_two`. -/
+theorem charpoly_fin_two_coeff_one {R : Type*} [CommRing R] [Nontrivial R]
+    (A : Matrix (Fin 2) (Fin 2) R) : A.charpoly.coeff 1 = - A.trace := by
+  rw [Matrix.charpoly_fin_two]; simp
+
+/-- **The constant coefficient of a `2 × 2` characteristic polynomial is the
+determinant** (PROVEN 2026-07-28): immediate from `Matrix.charpoly_fin_two`. -/
+theorem charpoly_fin_two_coeff_zero {R : Type*} [CommRing R] [Nontrivial R]
+    (A : Matrix (Fin 2) (Fin 2) R) : A.charpoly.coeff 0 = A.det := by
+  rw [Matrix.charpoly_fin_two]; simp
+
 /-- **Two Frobenius traces over one rational prime are power sums of ONE
-pair of complex numbers** (SORRIED LEAF, cut 2026-07-28; PURE FIELD THEORY
+pair of complex numbers** (**PROVEN 2026-07-28**; PURE FIELD THEORY
 AND LINEAR ALGEBRA — no automorphic datum, no `ρ`).
 
 STATEMENT.  `M` is an endomorphism of a rank-`2` free module with
@@ -9868,11 +9939,42 @@ lemma cannot do and this leaf can.
 NOT VACUOUS.  `α` is pinned: `αβ = q` together with `α + β = Φ(ιO t)`
 determines the pair up to order, so the two power-sum clauses are genuine
 constraints — for arbitrary `u, v ∈ ℂ` there is in general no `α` with
-`α^g + (q/α)^g = u` and `α^f + (q/α)^f = v`. -/
+`α^g + (q/α)^g = u` and `α^f + (q/α)^f = v`.
+
+PROOF NOTE (2026-07-28), recording two deviations from the sketch above.
+
+(1) `T_n(X, q)` IS `Polynomial.dickson 1 q n`, mathlib's Dickson polynomial
+of the first kind, whose defining recursion is literally
+`p_{n+2} = X·p_{n+1} − C q·p_n`, `p_0 = 2`, `p_1 = X`.  Nothing had to be
+defined: `monic_natDegree_dickson_one`, `sq_eq_trace_smul_sub_det_smul` and
+`trace_pow_eq_eval_dickson` were already PROVEN in
+`HardlyRamified/Deformation.lean` (which this module imports) and are used
+verbatim.  Only the two naturality lemmas above are new.
+
+(2) `K` IS NOT THE COMPOSITUM AND IS NOT A NUMBER FIELD.  The sketch takes
+the compositum of `ψ₁(E₁)`, `ψ₂(E₂)` and `ℚ(ιO t)` and extends `φ ∘ ψ₁⁻¹`
+across the finite extension `K/ψ₁(E₁)`.  The proof instead takes the FULL
+relative algebraic closure `K = algebraicClosure E₁ ℚ̄_ℓ` — an intermediate
+field of infinite degree — and applies `IsAlgClosed.lift : K →ₐ[E₁] ℂ`,
+which needs only `Algebra.IsAlgebraic E₁ K` and `IsAlgClosed ℂ`.  That is
+strictly less work (no compositum, no finiteness, no primitive element) and
+it delivers the same three memberships: `ψ₂(E₂) ⊆ K` because a number field
+is algebraic over `ℚ`, hence over `E₁`; and `ιO t ∈ K` because
+`dickson 1 q g − C x` is monic of degree `g` over `E₁` and kills it.
+
+(3) `_hq` AND `_hιO` ARE NOT USED, and are underscore-prefixed so that the
+fact is mechanically visible rather than merely asserted.  The statement is
+deliberately left CARRYING them: `0 < q` is never needed — `q = 0` is fine,
+the pair being `{0, τ}` — and `Nontrivial O` follows from the mere
+EXISTENCE of `ιO` (`RingHom.domain_nontrivial`), so injectivity is not
+needed either.  Both are free at the single call site, so nothing is gained
+by dropping them and a narrower statement would only cost the consumer a
+rewrite.  Nothing else about the leaf is weakened by this: the theorem is
+simply true under strictly fewer hypotheses than were anticipated. -/
 theorem exists_complexEmbedding_frobRoots_of_charpoly_pow {ℓ : ℕ} [Fact ℓ.Prime]
     {O : Type u} [CommRing O]
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (M : Module.End O (Fin 2 → O)) (q : ℕ) (hq : 0 < q)
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_hιO : Function.Injective ιO)
+    (M : Module.End O (Fin 2 → O)) (q : ℕ) (_hq : 0 < q)
     (hdet : M.charpoly.coeff 0 = (q : O))
     {E₁ : Type u} [Field E₁] [NumberField E₁]
     (ψ₁ : E₁ →+* AlgebraicClosure ℚ_[ℓ])
@@ -9883,8 +9985,108 @@ theorem exists_complexEmbedding_frobRoots_of_charpoly_pow {ℓ : ℕ} [Fact ℓ.
     (hy : ψ₂ y = - ιO (((M ^ f).charpoly).coeff 1))
     (φ : E₁ →+* ℂ) :
     ∃ (φ' : E₂ →+* ℂ) (α β : ℂ),
-      α * β = (q : ℂ) ∧ α ^ g + β ^ g = φ x ∧ α ^ f + β ^ f = φ' y :=
-  sorry
+      α * β = (q : ℂ) ∧ α ^ g + β ^ g = φ x ∧ α ^ f + β ^ f = φ' y := by
+  classical
+  haveI : Nontrivial O := ιO.domain_nontrivial
+  -- STEP 1.  Read `M` in the standard basis; `Fin 2` charpoly coefficients are
+  -- `det` and `−tr`, so `hdet` says `det A = q`.
+  let b := Pi.basisFun O (Fin 2)
+  set A : Matrix (Fin 2) (Fin 2) O := LinearMap.toMatrix b b M with hAdef
+  have hpow : ∀ n : ℕ, LinearMap.toMatrix b b (M ^ n) = A ^ n := by
+    intro n
+    induction n with
+    | zero => simp [hAdef]
+    | succ n ih => rw [pow_succ, pow_succ, LinearMap.toMatrix_mul, ih, ← hAdef]
+  have hcp : ∀ n : ℕ, (M ^ n).charpoly = (A ^ n).charpoly := by
+    intro n; rw [← hpow n, LinearMap.charpoly_toMatrix]
+  have hdetA : A.det = (q : O) := by
+    rw [← charpoly_fin_two_coeff_zero, ← pow_one A, ← hcp 1, pow_one, hdet]
+  have hco : ∀ n : ℕ, ιO (Matrix.trace (A ^ n)) = - ιO (((M ^ n).charpoly).coeff 1) := by
+    intro n; rw [hcp n, charpoly_fin_two_coeff_one, map_neg, neg_neg]
+  -- STEP 2.  Cayley–Hamilton makes every `tr (Aⁿ)` a Dickson value at `t = tr A`,
+  -- and `ιO` carries that recursion into `ℚ̄_ℓ` unchanged.
+  set u : AlgebraicClosure ℚ_[ℓ] := ιO A.trace with hudef
+  have key : ∀ n : ℕ,
+      ιO (Matrix.trace (A ^ n)) = (dickson 1 ((q : AlgebraicClosure ℚ_[ℓ])) n).eval u := by
+    intro n
+    rw [trace_pow_eq_eval_dickson A n, map_dickson_eval ιO A.det A.trace n, hdetA, map_natCast]
+  have hxu : ψ₁ x = (dickson 1 ((q : AlgebraicClosure ℚ_[ℓ])) g).eval u := by
+    rw [hx, ← hco g, key g]
+  have hyu : ψ₂ y = (dickson 1 ((q : AlgebraicClosure ℚ_[ℓ])) f).eval u := by
+    rw [hy, ← hco f, key f]
+  -- STEP 3.  `K` is the relative algebraic closure of `E₁` inside `ℚ̄_ℓ` — a
+  -- concrete substitute for the compositum of `ψ₁(E₁)`, `ψ₂(E₂)` and `ℚ(t)`.
+  letI : Algebra E₁ (AlgebraicClosure ℚ_[ℓ]) := ψ₁.toAlgebra
+  letI : Algebra E₁ ℂ := φ.toAlgebra
+  have halg₁ : (algebraMap E₁ (AlgebraicClosure ℚ_[ℓ])) = ψ₁ := rfl
+  set K : IntermediateField E₁ (AlgebraicClosure ℚ_[ℓ]) :=
+    algebraicClosure E₁ (AlgebraicClosure ℚ_[ℓ]) with hKdef
+  -- `hg` enters HERE and only here: `dickson 1 q g − C x` is monic of degree
+  -- `g ≥ 1` over `E₁` and kills `u`, which is what makes `t` algebraic at all.
+  have hu : u ∈ K := by
+    rw [hKdef, mem_algebraicClosure_iff']
+    refine ⟨dickson 1 ((q : E₁)) g - C x, ?_, ?_⟩
+    · have hmg := monic_natDegree_dickson_one ((q : E₁)) g hg.ne'
+      refine hmg.1.sub_of_left ?_
+      refine lt_of_le_of_lt degree_C_le ?_
+      rw [degree_eq_natDegree hmg.1.ne_zero, hmg.2]
+      exact_mod_cast hg
+    · rw [eval₂_sub, eval₂_C, ← eval_map, map_dickson, map_natCast, ← hxu, halg₁, sub_self]
+  have hmem₂ : ∀ z : E₂, ψ₂ z ∈ K := by
+    intro z
+    rw [hKdef, mem_algebraicClosure_iff']
+    obtain ⟨p, hpm, hpz⟩ : IsIntegral ℚ z := Algebra.IsIntegral.isIntegral z
+    refine ⟨p.map (algebraMap ℚ E₁), hpm.map _, ?_⟩
+    rw [eval₂_map,
+      show (algebraMap E₁ (AlgebraicClosure ℚ_[ℓ])).comp (algebraMap ℚ E₁)
+          = ψ₂.comp (algebraMap ℚ E₂) from Subsingleton.elim _ _,
+      ← hom_eval₂, hpz, map_zero]
+  -- STEP 4.  Lift `φ` along `K/E₁` into the algebraically closed `ℂ`.
+  let Φ : K →ₐ[E₁] ℂ := IsAlgClosed.lift
+  let ψ₂' : E₂ →+* K :=
+    { toFun := fun z => ⟨ψ₂ z, hmem₂ z⟩
+      map_one' := by ext; simp
+      map_mul' := fun a c => by ext; simp
+      map_zero' := by ext; simp
+      map_add' := fun a c => by ext; simp }
+  set v : K := ⟨u, hu⟩ with hvdef
+  set τ : ℂ := Φ v with hτdef
+  have hKinj : Function.Injective (K.val) := (K.val : ↥K →+* AlgebraicClosure ℚ_[ℓ]).injective
+  have hval : ∀ n : ℕ, K.val ((dickson 1 ((q : K)) n).eval v)
+      = (dickson 1 ((q : AlgebraicClosure ℚ_[ℓ])) n).eval u := by
+    intro n
+    have := map_dickson_eval (K.val : ↥K →+* AlgebraicClosure ℚ_[ℓ]) ((q : K)) v n
+    simpa [hvdef] using this
+  have hΦ : ∀ n : ℕ, Φ ((dickson 1 ((q : K)) n).eval v) = (dickson 1 ((q : ℂ)) n).eval τ := by
+    intro n
+    have := map_dickson_eval (Φ : K →+* ℂ) ((q : K)) v n
+    simpa [hτdef] using this
+  -- STEP 5.  `α, β` are the two roots of `X² − τ·X + q` in `ℂ`.
+  obtain ⟨δ, hδ⟩ : ∃ δ : ℂ, δ ^ 2 = τ ^ 2 - 4 * (q : ℂ) :=
+    IsAlgClosed.exists_pow_nat_eq _ (n := 2) (by norm_num)
+  refine ⟨(Φ : K →+* ℂ).comp ψ₂', (τ + δ) / 2, (τ - δ) / 2, ?_, ?_, ?_⟩
+  · field_simp
+    linear_combination -hδ
+  · have hsum : (τ + δ) / 2 + (τ - δ) / 2 = τ := by ring
+    have hprod : (τ + δ) / 2 * ((τ - δ) / 2) = (q : ℂ) := by
+      field_simp; linear_combination -hδ
+    rw [← dickson_one_eval_add ((q : ℂ)) _ _ hprod g, hsum, ← hΦ g]
+    have hkey : (algebraMap E₁ K x) = (dickson 1 ((q : K)) g).eval v := by
+      refine hKinj ?_
+      rw [hval g, ← hxu]
+      rfl
+    rw [← hkey, Φ.commutes x]
+    rfl
+  · have hsum : (τ + δ) / 2 + (τ - δ) / 2 = τ := by ring
+    have hprod : (τ + δ) / 2 * ((τ - δ) / 2) = (q : ℂ) := by
+      field_simp; linear_combination -hδ
+    have hkey2 : ψ₂' y = (dickson 1 ((q : K)) f).eval v := by
+      refine hKinj ?_
+      rw [hval f, ← hyu]
+      rfl
+    rw [← dickson_one_eval_add ((q : ℂ)) _ _ hprod f, hsum, ← hΦ f]
+    simp only [RingHom.comp_apply, hkey2]
+    rfl
 
 /-- **Away from finitely many places, the residue characteristic of `w` is
 good for `F` as well** (SORRIED LEAF, cut 2026-07-28; ELEMENTARY ALGEBRAIC
