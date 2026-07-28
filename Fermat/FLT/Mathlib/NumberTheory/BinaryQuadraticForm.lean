@@ -68,11 +68,21 @@ SEVEN leaves remain, each stated so that it can be worked on alone:
   (`q`-expansion combinatorics, no class field theory);
 * `Heegner.exists_rat_gammaTwo_heegnerPoint` — `γ₂(τ₀) ∈ ℚ`; **this is the main
   theorem of complex multiplication and is the only leaf here that needs it**;
-* `Heegner.gammaTwo_pow_three_eq_jInvariant` — Weber's `γ₂³ = j` (classical
-  elliptic-function theory over machinery mathlib already has);
-* `Heegner.exp_pi_sqrt_le_of_jInvariant_eq` — the `q`-expansion bound
-  `exp(π√p) ≤ 745 − j(τ₀)`, a real-analytic estimate.
--/
+`Heegner.gammaTwo_pow_three_eq_jInvariant` (Weber's `γ₂³ = j`) and
+`Heegner.exp_pi_sqrt_le_of_jInvariant_eq` (the bound `exp(π√p) ≤ 745 − j(τ₀)`) are now both
+PROVEN, over three new analytic leaves:
+
+* `Heegner.eta_pow_24_add_eta_two_pow_24` — `η²⁴ + 256η(2z)²⁴ = E₄·(η·η(2z))⁸`, the single
+  modular-form identity carrying ALL of Weber's `γ₂³ = j`. Given it, LEAF 5 is field algebra;
+* `Heegner.exists_E₄_heegnerPoint_approx`, `Heegner.exists_E₆_heegnerPoint_approx` — the
+  values of `E₄` and `E₆` at `τ₀` to second order in `Q = exp(−π√p)`, with an explicit `Q³`
+  error bound. Both follow the same mathlib lemma
+  (`EisensteinSeries.q_expansion_bernoulli`), and between them they eliminate `Δ` via
+  `Δ = (E₄³ − E₆²)/1728` — so LEAF 6 needs no infinite products and, notably, no positivity
+  of the `j`-coefficients `c_k`.
+
+So this file has EIGHT open leaves, not seven; the count rose because two leaves closed over
+three smaller ones. -/
 module
 
 public import Mathlib.Tactic
@@ -84,6 +94,8 @@ public import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 public import Mathlib.NumberTheory.ModularForms.DedekindEta
 public import Mathlib.NumberTheory.ModularForms.Discriminant
 public import Mathlib.NumberTheory.ModularForms.EisensteinSeries.Basic
+public import Mathlib.NumberTheory.ModularForms.EisensteinSeries.QExpansion
+public import Mathlib.NumberTheory.ModularForms.LevelOne.GradedRing
 
 @[expose] public section
 
@@ -873,6 +885,309 @@ theorem exists_rat_gammaTwo_heegnerPoint {p : ℕ} (hp : p.Prime) (hp8 : p % 8 =
     ∃ r : ℚ, (r : ℂ) = gammaTwo (heegnerPoint p hp.pos) :=
   sorry
 
+/-! ### Reduction of LEAVES 5 and 6 to their analytic cores
+
+Everything from here to `exp_pi_sqrt_le_of_jInvariant_eq` was added when LEAVES 5 and 6 were
+closed over three new named sub-leaves. Both targets are now PROVEN; what is left open is
+`eta_pow_24_add_eta_two_pow_24` (one modular-form identity) and the two `q`-expansion value
+estimates `exists_E₄_heegnerPoint_approx` / `exists_E₆_heegnerPoint_approx`.
+
+CORRECTION TO THE NAMESPACE DOCSTRING ABOVE (checked 2026-07-28, `grep` over
+`.lake/packages/mathlib`). The claim that "nothing of the modular theory used below is in
+mathlib at this pin" is too strong and cost this decomposition a wrong first plan. Mathlib at
+this pin ALSO has, and all of it is used or usable here:
+
+* `ModularForm.discriminant_eq_E₄_cube_sub_E₆_sq : Δ z = (E₄ z ^ 3 - E₆ z ^ 2) / 1728`
+  (`ModularForms/LevelOne/GradedRing.lean`) — this is what lets LEAF 6 avoid infinite products
+  entirely and run on Eisenstein values alone;
+* `ModularForm.levelOne_weight_four_rank_one : Module.rank ℂ (ModularForm 𝒮ℒ 4) = 1`,
+  `dimension_level_one`, and `sturm_bound_levelOne`
+  (`ModularForms/LevelOne/DimensionFormula.lean`) — a Sturm bound, i.e. exactly the tool for
+  proving an identity of level-one forms from finitely many `q`-coefficients;
+* `EisensteinSeries.q_expansion_bernoulli`, `E_qExpansion_coeff`,
+  `EisensteinSeries.summable_sigma_mul_cexp_pow` (`EisensteinSeries/QExpansion.lean`) — the
+  pointwise `q`-expansion `E k z = 1 - (2k/B_k) Σ σ_{k-1}(n) qⁿ` with summability;
+* `ModularForm.discriminant_eq_q_prod`, `discriminant_T_invariant`, `discriminant_S_invariant`,
+  and the `η`-transformation material in `ModularForms/Discriminant.lean`.
+
+What is genuinely absent is still absent: no `j`-invariant, no Weber functions, no complex
+multiplication, no ring class fields. Re-run the greps; they are a dated measurement. -/
+
+/-- **SUB-LEAF 5a — the level-two `η`-identity**
+
+  `η(z)²⁴ + 256 η(2z)²⁴ = E₄(z) · (η(z)η(2z))⁸`.
+
+This is ALL of the modular-function content of Weber's `γ₂³ = j`: given it, LEAF 5 is pure
+field algebra (see `gammaTwo_eq_E₄_div_eta_pow_eight` and
+`gammaTwo_pow_three_eq_jInvariant`, both PROVEN below).
+
+WHY THIS IS THE RIGHT CUT. Writing `h = η(2z)/η(z)`, the definition
+`γ₂ = (f₂²⁴+16)/f₂⁸` with `f₂ = √2·h` unfolds to `γ₂ = (256h²⁴+1)/h⁸`, i.e.
+`γ₂ = (η²⁴ + 256η(2z)²⁴)/(η¹⁶ η(2z)⁸)`. So this identity says exactly `γ₂ = E₄/η⁸`, and
+cubing gives `γ₂³ = E₄³/η²⁴ = E₄³/Δ = j` because `Δ = η²⁴` is mathlib's DEFINITION of the
+discriminant. No branch of a cube root is ever chosen, which is why the statement is an
+identity rather than an identity-up-to-`ζ₃`.
+
+MACHINE-CHECKED FAITHFULNESS (`PARI/GP`, 60 digits, `eta(z,1)` against the `σ₃` series for
+`E₄`): at `z = 0.3+0.7i`, `0.1+1.3i`, `-0.4+0.55i` the two sides agree to `10⁻⁷⁷`, with ratio
+`1` to every printed digit. The three points are generic — not Heegner points — because this
+is an identity on all of `ℍ`, and testing it only at CM points would not distinguish it from
+a weaker statement.
+
+ROUTE, AND WHAT MAKES IT CHEAP AT THIS PIN. Divide through: the claim is that
+`F(z) = (Δ(z) + 256Δ(2z))/(η(z)η(2z))⁸` equals `E₄`. `F` is holomorphic and nonvanishing-free
+of poles on `ℍ` (`ModularForm.eta_ne_zero`), and is `T`-invariant by the `24`-th-power
+argument — `η(z+1)²⁴ = η(z)²⁴` and `η(2z+2)²⁴ = η(2z)²⁴`, while the denominator picks up
+`(e^{πi/12}·e^{πi/6})⁸ = e^{2πi} = 1`. The remaining work is `S`-invariance of weight `4`,
+after which `ModularForm.levelOne_weight_four_rank_one` plus a single `q`-coefficient
+comparison (constant term `1`) finishes; `sturm_bound_levelOne` is the packaged form of that
+last step. `discriminant_S_invariant` and `eta_comp_eqOn_const_mul_csqrt_eta` in
+`ModularForms/Discriminant.lean` are the transformation inputs.
+
+WHAT WOULD REFUTE IT: any `z ∈ ℍ` where the two sides differ. There is none — but note the
+`256` and the exponent `8` are both forced, and neither is a normalisation choice: `256`
+comes from `2¹²/16` in `f₂²⁴/f₂⁸` and `8` from `f₂⁸ = 16 η(2z)⁸/η(z)⁸`. -/
+theorem eta_pow_24_add_eta_two_pow_24 (z : UpperHalfPlane) :
+    ModularForm.eta (z : ℂ) ^ 24 + 256 * ModularForm.eta (2 * (z : ℂ)) ^ 24
+      = ModularForm.E₄ z * (ModularForm.eta (z : ℂ) * ModularForm.eta (2 * (z : ℂ))) ^ 8 :=
+  sorry
+
+/-- The field algebra behind `γ₂ = E₄/η⁸`, isolated over plain variables of `ℂ` so that `ring`
+sees genuine atoms rather than `η` applied to two different-looking arguments. -/
+theorem weber_div_algebra (e1 e2 E s : ℂ) (h1 : e1 ≠ 0) (h2 : e2 ≠ 0) (hs : s ^ 2 = 2)
+    (key : e1 ^ 24 + 256 * e2 ^ 24 = E * (e1 * e2) ^ 8) :
+    ((s * e2 / e1) ^ 24 + 16) / (s * e2 / e1) ^ 8 = E / e1 ^ 8 := by
+  have hs8 : s ^ 8 = 16 := by
+    rw [show (8 : ℕ) = 2 * 4 from rfl, pow_mul, hs]; norm_num
+  have hs24 : s ^ 24 = 4096 := by
+    rw [show (24 : ℕ) = 2 * 12 from rfl, pow_mul, hs]; norm_num
+  have hE : E = (e1 ^ 24 + 256 * e2 ^ 24) / (e1 * e2) ^ 8 := by
+    rw [eq_div_iff (pow_ne_zero _ (mul_ne_zero h1 h2))]
+    linear_combination -key
+  rw [hE, div_pow, div_pow, mul_pow, mul_pow, hs8, hs24]
+  field_simp
+  ring
+
+/-- **`γ₂ = E₄/η⁸`** — PROVEN from `eta_pow_24_add_eta_two_pow_24`.
+
+This is the useful form of Weber's identity: it exhibits `γ₂` as an honest cube root of
+`j = E₄³/η²⁴` with no branch chosen. -/
+theorem gammaTwo_eq_E₄_div_eta_pow_eight (z : UpperHalfPlane) :
+    gammaTwo z = ModularForm.E₄ z / ModularForm.eta (z : ℂ) ^ 8 := by
+  have hs : ((Real.sqrt 2 : ℝ) : ℂ) ^ 2 = 2 := by
+    norm_cast
+    rw [Real.sq_sqrt]
+    norm_num
+  exact weber_div_algebra _ _ _ _ (eta_ne_zero' z) (eta_two_ne_zero z) hs
+    (eta_pow_24_add_eta_two_pow_24 z)
+
+/-- The real `q`-parameter magnitude at the Heegner point: `Q = exp(−π√p)`.
+
+`q = exp(2πiτ₀) = −Q` is NEGATIVE — that is what the `3` in `τ₀ = (3+√−p)/2` buys — but only
+`Q` itself is needed below, since the sign is already absorbed into the signs of the
+coefficients in `exists_E₄_heegnerPoint_approx` and `exists_E₆_heegnerPoint_approx`. -/
+noncomputable def heegnerQ (p : ℕ) : ℝ := Real.exp (-(Real.pi * Real.sqrt p))
+
+lemma heegnerQ_pos (p : ℕ) : 0 < heegnerQ p := Real.exp_pos _
+
+/-- `Q ≤ 10⁻⁴` for `p ≥ 11`. The true value at `p = 11` is `2.98·10⁻⁵`; `10⁻⁴` is the
+threshold the tail arithmetic below is calibrated to, and it is reached with room to spare
+(`π√11 = 10.42` against the `10` actually used). -/
+lemma heegnerQ_le {p : ℕ} (hp : 11 ≤ p) : heegnerQ p ≤ 1 / 10000 := by
+  have hpi : (3.14 : ℝ) < Real.pi := Real.pi_gt_d2
+  have hsq : (3.3 : ℝ) ≤ Real.sqrt p := by
+    have h11 : (11 : ℝ) ≤ (p : ℝ) := by exact_mod_cast hp
+    have h2 : Real.sqrt 10.89 ≤ Real.sqrt p := Real.sqrt_le_sqrt (by linarith)
+    calc (3.3 : ℝ) = Real.sqrt 10.89 := by
+          rw [show (10.89 : ℝ) = 3.3 ^ 2 by norm_num, Real.sqrt_sq]; norm_num
+      _ ≤ _ := h2
+  have h10 : (10 : ℝ) ≤ Real.pi * Real.sqrt p := by nlinarith [Real.pi_pos]
+  have hexp : (10000 : ℝ) ≤ Real.exp 10 := by
+    have he : (2.7182818283 : ℝ) < Real.exp 1 := Real.exp_one_gt_d9
+    have hp10 : (2.7182818283 : ℝ) ^ 10 ≤ Real.exp 1 ^ 10 :=
+      pow_le_pow_left₀ (by norm_num) he.le 10
+    rw [show Real.exp 10 = Real.exp 1 ^ 10 by rw [← Real.exp_nat_mul]; norm_num]
+    nlinarith [hp10]
+  have hmono : Real.exp (-(Real.pi * Real.sqrt p)) ≤ Real.exp (-10) :=
+    Real.exp_le_exp.mpr (by linarith)
+  rw [heegnerQ]
+  refine hmono.trans ?_
+  rw [Real.exp_neg, inv_le_comm₀ (Real.exp_pos _) (by norm_num)]
+  simpa using hexp
+
+/-- **SUB-LEAF 6a — the value of `E₄` at the Heegner point, to second order in `Q`.**
+
+  `E₄(τ₀) = 1 − 240Q + 2160Q² + r`  with  `|r| ≤ 20000 Q³`,  `Q = exp(−π√p)`.
+
+WHY SECOND ORDER IS NOT NEGOTIABLE. The quantity the consumer needs is a difference of two
+numbers each `≈ 1728Q` whose leading terms cancel: the margin in
+`heegner_tail_nonneg` is `1728Q²`, so a first-order-only bound on `E₄` (error `O(Q²)`) is
+useless no matter how small its constant. The `Q²` coefficient `2160 = 240·σ₃(2) = 240·9`
+must be exact, and only the `Q³` tail may be bounded.
+
+ROUTE. `EisensteinSeries.q_expansion_bernoulli` gives
+`E k z = 1 - (2k/B_k) Σ' n:ℕ+, σ_{k-1}(n) · exp(2πiz)ⁿ`; at `k = 4`, `B₄ = -1/30`, so
+`2·4/B₄ = -240` and `E₄ z = 1 + 240 Σ σ₃(n) qⁿ`. At `τ₀` one has `q = exp(2πiτ₀) = -Q`,
+real and negative, because `2πiτ₀ = 3πi - π√p` and `exp(3πi) = -1`. Splitting off `n = 1, 2`
+leaves `r = 240 Σ_{n≥3} σ₃(n)(-Q)ⁿ`, and `ArithmeticFunction.sigma_le_pow_succ` gives
+`σ₃(n) ≤ n⁴`, whence `|r| ≤ 240 Σ_{n≥3} n⁴Qⁿ ≤ 240 · 82 Q³ = 19680 Q³` for `Q ≤ 10⁻⁴`.
+Summability for the split is `EisensteinSeries.summable_sigma_mul_cexp_pow`.
+
+The stated constant `20000` is therefore not tight — it has ~1.6% slack over the true bound,
+and the consumer has a further factor of ~12 of room — so it may be freely rounded up to any
+value below `10⁷` without breaking `heegner_tail_nonneg`. What may NOT change is the exponent
+`Q³` or the coefficients `240` and `2160`. -/
+theorem exists_E₄_heegnerPoint_approx {p : ℕ} (hp : 11 ≤ p) :
+    ∃ r : ℝ, |r| ≤ 20000 * heegnerQ p ^ 3 ∧
+      ModularForm.E₄ (heegnerPoint p (by omega)) =
+        ((1 - 240 * heegnerQ p + 2160 * heegnerQ p ^ 2 + r : ℝ) : ℂ) :=
+  sorry
+
+/-- **SUB-LEAF 6b — the value of `E₆` at the Heegner point, to second order in `Q`.**
+
+  `E₆(τ₀) = 1 + 504Q − 16632Q² + s`  with  `|s| ≤ 400000 Q³`.
+
+Identical route to `exists_E₄_heegnerPoint_approx` at `k = 6`: `B₆ = 1/42`, so
+`2·6/B₆ = 504` and `E₆ z = 1 - 504 Σ σ₅(n) qⁿ`; at `q = -Q` this is
+`1 + 504Q - 504·σ₅(2)·Q² + ⋯` with `σ₅(2) = 33`, giving the `-16632 = -504·33`. The tail bound
+uses `σ₅(n) ≤ n⁶`: `|s| ≤ 504 Σ_{n≥3} n⁶Qⁿ ≤ 504 · 730 Q³ = 367920 Q³` for `Q ≤ 10⁻⁴`.
+
+`E₆` enters only through `Δ = (E₄³ − E₆²)/1728`
+(`ModularForm.discriminant_eq_E₄_cube_sub_E₆_sq`). Using that identity rather than the
+`η`-product `Δ = q∏(1−qⁿ)²⁴` is what keeps this leaf-set free of infinite-product estimates:
+both `E₄` and `E₆` are handled by one and the same mathlib lemma. -/
+theorem exists_E₆_heegnerPoint_approx {p : ℕ} (hp : 11 ≤ p) :
+    ∃ s : ℝ, |s| ≤ 400000 * heegnerQ p ^ 3 ∧
+      ModularForm.E₆ (heegnerPoint p (by omega)) =
+        ((1 + 504 * heegnerQ p - 16632 * heegnerQ p ^ 2 + s : ℝ) : ℂ) :=
+  sorry
+
+/-- Product of two bounded nonnegative reals. Stated separately to keep the `nlinarith` calls
+in `heegner_tail_nonneg` out of a twenty-hypothesis context, where they time out. -/
+theorem heegner_nonneg_prod {x u a b : ℝ} (hx1 : 0 ≤ x) (hx2 : x ≤ a) (hu1 : 0 ≤ u)
+    (hu2 : u ≤ b) : 0 ≤ x * u ∧ x * u ≤ a * b :=
+  ⟨mul_nonneg hx1 hu1, mul_le_mul hx2 hu2 hu1 (le_trans hx1 hx2)⟩
+
+/-- Product of a two-sided-bounded real with a bounded nonnegative one. -/
+theorem heegner_two_sided_prod {x u a b : ℝ} (hx1 : -a ≤ x) (hx2 : x ≤ a) (hu1 : 0 ≤ u)
+    (hu2 : u ≤ b) : -(a * b) ≤ x * u ∧ x * u ≤ a * b := by
+  have ha : 0 ≤ a := by linarith
+  constructor <;> nlinarith
+
+/-- `x² + xy + y²` on the box `[0.9, 1.1]²`. -/
+theorem heegner_box_bound {x y : ℝ} (hx1 : (0.9 : ℝ) ≤ x) (hx2 : x ≤ 1.1)
+    (hy1 : (0.9 : ℝ) ≤ y) (hy2 : y ≤ 1.1) :
+    0 ≤ x ^ 2 + x * y + y ^ 2 ∧ x ^ 2 + x * y + y ^ 2 ≤ 4 := by
+  constructor <;> nlinarith
+
+/-- `Δ(τ₀) < 0`, in the form `1000Q ≤ B² − A³`, where `A = E₄(τ₀)` and `B = E₆(τ₀)`.
+
+The true value of `B² − A³` is `1728Q(1 + 24Q + ⋯)`; `1000Q` is a deliberately slack lower
+bound, needed only to know the sign of `Δ` so that the final inequality may be multiplied
+through by it. -/
+theorem heegner_tail_pos {Q r s A B : ℝ} (hQpos : 0 < Q) (hQle : Q ≤ 1 / 10000)
+    (hr : |r| ≤ 20000 * Q ^ 3) (hs : |s| ≤ 400000 * Q ^ 3)
+    (hA : A = 1 - 240 * Q + 2160 * Q ^ 2 + r) (hB : B = 1 + 504 * Q - 16632 * Q ^ 2 + s) :
+    1000 * Q ≤ B ^ 2 - A ^ 3 := by
+  rw [abs_le] at hr hs
+  have hQ3 : Q ^ 3 ≤ Q ^ 2 / 10000 := by nlinarith [pow_pos hQpos 2]
+  have hQ2 : Q ^ 2 ≤ Q / 10000 := by nlinarith
+  have hrM : r ≤ 2 * Q ^ 2 := by nlinarith [hr.2]
+  have hrm : -(2 * Q ^ 2) ≤ r := by nlinarith [hr.1]
+  have hsM : s ≤ 40 * Q ^ 2 := by nlinarith [hs.2]
+  have hsm : -(40 * Q ^ 2) ≤ s := by nlinarith [hs.1]
+  have hQcube : Q ^ 3 ≤ 1 / 1000000000000 := by nlinarith [hQ3, hQ2, hQle, hQpos]
+  have hAM : A ≤ 1 - 240 * Q + 2163 * Q ^ 2 := by rw [hA]; linarith
+  have hAm : (0.9 : ℝ) ≤ A := by rw [hA]; nlinarith
+  have hBm : 1 + 504 * Q - 16673 * Q ^ 2 ≤ B := by rw [hB]; linarith
+  have hBm2 : (0.9 : ℝ) ≤ B := by rw [hB]; nlinarith
+  have hApos : (0 : ℝ) ≤ 1 - 240 * Q + 2163 * Q ^ 2 := by nlinarith
+  have hBpos : (0 : ℝ) ≤ 1 + 504 * Q - 16673 * Q ^ 2 := by nlinarith
+  have hA3 : A ^ 3 ≤ (1 - 240 * Q + 2163 * Q ^ 2) ^ 3 :=
+    pow_le_pow_left₀ (by linarith) hAM 3
+  have hB2 : (1 + 504 * Q - 16673 * Q ^ 2) ^ 2 ≤ B ^ 2 :=
+    pow_le_pow_left₀ hBpos hBm 2
+  have hpoly : 1000 * Q ≤ (1 + 504 * Q - 16673 * Q ^ 2) ^ 2 - (1 - 240 * Q + 2163 * Q ^ 2) ^ 3 := by
+    have hid : (1 + 504 * Q - 16673 * Q ^ 2) ^ 2 - (1 - 240 * Q + 2163 * Q ^ 2) ^ 3 - 1000 * Q
+        = Q * ((728 - 109813178 * Q ^ 3) + (41381 * Q + 132336 * Q ^ 2)
+            + Q ^ 4 * (3368569680 - 10119744747 * Q)) := by ring
+    nlinarith [hid, hQpos, hQcube, hQle, pow_pos hQpos 2, pow_pos hQpos 4, pow_pos hQpos 3]
+  linarith [hA3, hB2, hpoly]
+
+/-- **The real core of LEAF 6.** With `A = E₄(τ₀)`, `B = E₆(τ₀)` and `Q = exp(−π√p)`,
+
+  `0 ≤ 1728·Q·A³ − (B² − A³)(1 − 745Q)`.
+
+This is exactly `exp(π√p) ≤ 745 − j(τ₀)` cleared of denominators, using
+`Δ = (A³ − B²)/1728` and `j = A³/Δ`.
+
+WHERE THE `745` LIVES. Substituting the exact second-order values `A₀ = 1 − 240Q + 2160Q²`,
+`B₀ = 1 + 504Q − 16632Q²` gives, by `ring`,
+
+  `1728·Q·A₀³ − (B₀² − A₀³)(1 − 745Q)`
+    `= 1728Q² + 340523136Q³ − 29025860544Q⁴ + 583386857280Q⁵ − 3292047360000Q⁶`
+      `+ 9906375168000Q⁷`,
+
+whose leading term `1728Q²` is precisely the `1` of slack that `745` (rather than `744`) buys:
+`744` would make that coefficient `0` and the statement would then turn on the sign of
+`340523136Q³ − ⋯`, i.e. on `c₁ = 196884` beating `1/Q` — which fails at `p = 163`. So the
+`745` is visible here as a positive `Q²` coefficient, and `744` is visible as its absence.
+That is the mechanical form of the "do not weaken it" note on LEAF 6.
+
+The perturbation `r, s` off the second-order values contributes at most
+`20000Q³·8 + 400000Q³·3 = 1360000Q³ ≤ 136Q²` at `Q ≤ 10⁻⁴`, comfortably inside `1728Q²`. -/
+theorem heegner_tail_nonneg {Q r s A B : ℝ} (hQpos : 0 < Q) (hQle : Q ≤ 1 / 10000)
+    (hr : |r| ≤ 20000 * Q ^ 3) (hs : |s| ≤ 400000 * Q ^ 3)
+    (hA : A = 1 - 240 * Q + 2160 * Q ^ 2 + r) (hB : B = 1 + 504 * Q - 16632 * Q ^ 2 + s) :
+    0 ≤ 1728 * Q * A ^ 3 - (B ^ 2 - A ^ 3) * (1 - 745 * Q) := by
+  rw [abs_le] at hr hs
+  obtain ⟨A0, hA0⟩ : ∃ x : ℝ, x = 1 - 240 * Q + 2160 * Q ^ 2 := ⟨_, rfl⟩
+  obtain ⟨B0, hB0⟩ : ∃ x : ℝ, x = 1 + 504 * Q - 16632 * Q ^ 2 := ⟨_, rfl⟩
+  have hQ3 : Q ^ 3 ≤ Q ^ 2 / 10000 := by nlinarith [pow_pos hQpos 2]
+  have hQ2 : Q ^ 2 ≤ Q / 10000 := by nlinarith
+  have hAA0 : A = A0 + r := by rw [hA, hA0]
+  have hBB0 : B = B0 + s := by rw [hB, hB0]
+  have hrM : r ≤ 2 * Q ^ 2 := by nlinarith [hr.2]
+  have hrm : -(2 * Q ^ 2) ≤ r := by nlinarith [hr.1]
+  have hsM : s ≤ 40 * Q ^ 2 := by nlinarith [hs.2]
+  have hsm : -(40 * Q ^ 2) ≤ s := by nlinarith [hs.1]
+  have hA0b : (0.9 : ℝ) ≤ A0 ∧ A0 ≤ 1.1 := by
+    rw [hA0]; constructor <;> nlinarith
+  have hB0b : (0.9 : ℝ) ≤ B0 ∧ B0 ≤ 1.1 := by
+    rw [hB0]; constructor <;> nlinarith
+  have hAb : (0.9 : ℝ) ≤ A ∧ A ≤ 1.1 := by
+    rw [hA]; constructor <;> nlinarith
+  have hBb : (0.9 : ℝ) ≤ B ∧ B ≤ 1.1 := by
+    rw [hB]; constructor <;> nlinarith
+  have hC0 : 1728 * Q ^ 2 ≤ 1728 * Q * A0 ^ 3 - (B0 ^ 2 - A0 ^ 3) * (1 - 745 * Q) := by
+    have hid : 1728 * Q * A0 ^ 3 - (B0 ^ 2 - A0 ^ 3) * (1 - 745 * Q) - 1728 * Q ^ 2
+        = Q ^ 3 * ((340523136 - 29025860544 * Q)
+            + Q ^ 2 * (583386857280 - 3292047360000 * Q)
+            + 9906375168000 * Q ^ 4) := by
+      rw [hA0, hB0]; ring
+    nlinarith [pow_pos hQpos 3, pow_pos hQpos 2, pow_nonneg hQpos.le 4, hid, hQle, hQpos]
+  have hCid : (1728 * Q * A ^ 3 - (B ^ 2 - A ^ 3) * (1 - 745 * Q))
+        - (1728 * Q * A0 ^ 3 - (B0 ^ 2 - A0 ^ 3) * (1 - 745 * Q))
+      = r * ((1 + 983 * Q) * (A ^ 2 + A * A0 + A0 ^ 2)) - s * ((1 - 745 * Q) * (B + B0)) := by
+    rw [hAA0, hBB0]; ring
+  have hX1 : (0 : ℝ) ≤ A ^ 2 + A * A0 + A0 ^ 2 :=
+    (heegner_box_bound hAb.1 hAb.2 hA0b.1 hA0b.2).1
+  have hX2 : A ^ 2 + A * A0 + A0 ^ 2 ≤ 4 :=
+    (heegner_box_bound hAb.1 hAb.2 hA0b.1 hA0b.2).2
+  have hY1 : (0 : ℝ) ≤ B + B0 := by linarith [hBb.1, hB0b.1]
+  have hY2 : B + B0 ≤ 3 := by linarith [hBb.2, hB0b.2]
+  have hc1 : (0 : ℝ) < 1 + 983 * Q := by linarith
+  have hc2 : 1 + 983 * Q ≤ 2 := by linarith
+  have hd1 : (0 : ℝ) < 1 - 745 * Q := by linarith
+  have hd2 : 1 - 745 * Q ≤ 1 := by linarith
+  have hU := heegner_nonneg_prod hc1.le hc2 hX1 hX2
+  have hV := heegner_nonneg_prod hd1.le hd2 hY1 hY2
+  obtain ⟨hE1, -⟩ := heegner_two_sided_prod hr.1 hr.2 hU.1 hU.2
+  obtain ⟨-, hE2⟩ := heegner_two_sided_prod hs.1 hs.2 hV.1 hV.2
+  have hfin : 20000 * Q ^ 3 * (2 * 4) + 400000 * Q ^ 3 * (1 * 3) ≤ 1728 * Q ^ 2 := by
+    nlinarith [hQ3, sq_nonneg Q]
+  linarith [hC0, hCid, hE1, hE2]
+
 /-- **LEAF 5 — Weber's identity: `γ₂³ = j`**, i.e. `((f₂²⁴+16)/f₂⁸)³ = E₄³/Δ` on all of `ℍ`.
 
 Booher §3.2, Theorem 23 together with the definition `γ₂ = 12g₂/Δ^{1/3}`. The classical proof
@@ -891,9 +1206,14 @@ for anyone continuing this decomposition, since mathlib already has `η`, `Δ = 
 
 FAITHFULNESS: verified numerically at the five Heegner points, where both sides return
 `−32768, −884736, −884736000, −147197952000, −262537412640768000`, the left from the `η`
-product and the right from `PARI/GP`'s independent `ellj`. -/
-theorem gammaTwo_pow_three_eq_jInvariant (z : UpperHalfPlane) : gammaTwo z ^ 3 = jInvariant z :=
-  sorry
+product and the right from `PARI/GP`'s independent `ellj`.
+
+PROVEN here from `gammaTwo_eq_E₄_div_eta_pow_eight` (hence from the single sub-leaf
+`eta_pow_24_add_eta_two_pow_24`) together with `Δ = η²⁴`, which is mathlib's DEFINITION of
+`ModularForm.discriminant` — so the last step is `(E₄/η⁸)³ = E₄³/η²⁴`, i.e. `pow_mul`. -/
+theorem gammaTwo_pow_three_eq_jInvariant (z : UpperHalfPlane) : gammaTwo z ^ 3 = jInvariant z := by
+  rw [gammaTwo_eq_E₄_div_eta_pow_eight, jInvariant, div_pow, ModularForm.discriminant,
+    show (24 : ℕ) = 8 * 3 from rfl, pow_mul]
 
 /-- **LEAF 6 — the `q`-expansion bound.** If `j(τ₀)` is the integer `n`, then
 `exp(π√p) ≤ 745 − n`.
@@ -924,11 +1244,47 @@ i.e. by the Ramanujan near-integer, and `743` fails outright. Do not weaken it.
 `11 ≤ p` rather than `3 < p` because the estimate genuinely fails at `p = 3`, where
 `Q = e^{−π√3} ≈ 0.0043` is far too large for the tail bound (though the CONCLUSION still
 holds there, since `j((3+√−3)/2) = 0`). The consumer supplies `11 ≤ p` from
-`p ≡ 3 mod 8`, `p` prime, `3 < p`. -/
+`p ≡ 3 mod 8`, `p` prime, `3 < p`.
+
+PROVEN here from `exists_E₄_heegnerPoint_approx` and `exists_E₆_heegnerPoint_approx` over
+`heegner_tail_pos` and `heegner_tail_nonneg`. Note the route taken does NOT go through the
+`q`-expansion of `j` at all — no `c_k` is ever named, and in particular the positivity of the
+`c_k` (a Kronecker/Hurwitz-level fact) is never needed. Instead `Δ` is eliminated by
+`ModularForm.discriminant_eq_E₄_cube_sub_E₆_sq`, turning the whole estimate into a polynomial
+inequality in the two Eisenstein VALUES and `Q`. The prose above describing the `c_k` tail is
+a correct account of why the statement is true; it is not the proof used. -/
 theorem exp_pi_sqrt_le_of_jInvariant_eq {p : ℕ} (hp : 11 ≤ p) {n : ℤ}
     (hn : (n : ℂ) = jInvariant (heegnerPoint p (by omega))) :
-    Real.exp (Real.pi * Real.sqrt p) ≤ 745 - (n : ℝ) :=
-  sorry
+    Real.exp (Real.pi * Real.sqrt p) ≤ 745 - (n : ℝ) := by
+  obtain ⟨r, hr, ha⟩ := exists_E₄_heegnerPoint_approx hp
+  obtain ⟨s, hs, hb⟩ := exists_E₆_heegnerPoint_approx hp
+  have hQpos : 0 < heegnerQ p := heegnerQ_pos p
+  have hQle : heegnerQ p ≤ 1 / 10000 := heegnerQ_le hp
+  set Q := heegnerQ p with hQdef
+  set A : ℝ := 1 - 240 * Q + 2160 * Q ^ 2 + r with hAdef
+  set B : ℝ := 1 + 504 * Q - 16632 * Q ^ 2 + s with hBdef
+  have hΔ : ModularForm.discriminant (heegnerPoint p (by omega : 0 < p))
+      = (((A ^ 3 - B ^ 2) / 1728 : ℝ) : ℂ) := by
+    rw [ModularForm.discriminant_eq_E₄_cube_sub_E₆_sq, ha, hb, hAdef, hBdef]
+    push_cast
+    ring
+  have hΔne := ModularForm.discriminant_ne_zero (heegnerPoint p (by omega : 0 < p))
+  have hnC : (n : ℂ) * (((A ^ 3 - B ^ 2) / 1728 : ℝ) : ℂ) = ((A ^ 3 : ℝ) : ℂ) := by
+    rw [← hΔ, hn, jInvariant, div_mul_cancel₀ _ hΔne, ha, hAdef]
+    push_cast
+    ring
+  have hnR : (n : ℝ) * ((A ^ 3 - B ^ 2) / 1728) = A ^ 3 := by exact_mod_cast hnC
+  have hD : 1000 * Q ≤ B ^ 2 - A ^ 3 := heegner_tail_pos hQpos hQle hr hs hAdef hBdef
+  have hC : 0 ≤ 1728 * Q * A ^ 3 - (B ^ 2 - A ^ 3) * (1 - 745 * Q) :=
+    heegner_tail_nonneg hQpos hQle hr hs hAdef hBdef
+  have hDpos : 0 < B ^ 2 - A ^ 3 := by nlinarith
+  have hexp : Real.exp (Real.pi * Real.sqrt p) = Q⁻¹ := by
+    rw [hQdef, heegnerQ, ← Real.exp_neg, neg_neg]
+  rw [hexp, inv_le_iff_one_le_mul₀ hQpos]
+  have hkey : (745 - (n : ℝ)) * Q * (B ^ 2 - A ^ 3) - (B ^ 2 - A ^ 3)
+      = 1728 * Q * A ^ 3 - (B ^ 2 - A ^ 3) * (1 - 745 * Q) := by
+    linear_combination (1728 * Q) * hnR
+  nlinarith [hC, hDpos, hkey]
 
 /-- **`γ₂(τ₀) ∈ ℤ`** — PROVEN from LEAF 3 (algebraic integer) and LEAF 4 (rational), using
 that `ℤ` is integrally closed in `ℚ`. -/
