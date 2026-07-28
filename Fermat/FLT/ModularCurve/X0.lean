@@ -421,6 +421,10 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.FinrankGeometricPoints
 -- turn `CyclicSubgroupOfOrder.eq_zero_of_liesIn_of_squareZero_of_finrank` into a corollary of the
 -- RANK, with no characteristic hypothesis of its own.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.EtaleOfGeometricFibres
+-- `CartierTheorem.isReduced_of_charZero`: Cartier's theorem for a finite
+-- commutative Hopf algebra over a field of characteristic zero, which is what
+-- `CyclicSubgroupOfOrder.isReduced_geomFibre_of_specQBase` below consumes.
+public import Fermat.FLT.GroupScheme.Cartier
 -- `AlgebraicGeometry.Etale`: the hypothesis carried by every declaration in the
 -- torsion-subscheme section below.  It is what repairs the FALSE leaf
 -- `flat_torsionι` (see the REPAIR RECORD there): `geom_cyclic` pins the
@@ -19340,7 +19344,7 @@ descent leaf below needs to identify the classifying point.  Note it says
 nothing about SPLITTING: an fpqc cover of `Spec ℚ̄` need not split, which is
 why `Gamma0Atlas.cover` does not rigidify over `ℚ̄` — cancelling an
 epimorphism and choosing a section are different things. -/
-theorem epi_specAlgClos (F : Type) [Field F] : Epi (specAlgClos F) := by
+instance epi_specAlgClos (F : Type) [Field F] : Epi (specAlgClos F) := by
   have hff : (CommRingCat.ofHom (algebraMap F (AlgebraicClosure F))).hom.FaithfullyFlat := by
     unfold RingHom.FaithfullyFlat
     infer_instance
@@ -24145,58 +24149,9 @@ theorem galSMul_ratToGeom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
   show specGal σ ≫ specAlgClos ℚ ≫ P.1 = specAlgClos ℚ ≫ P.1
   rw [← Category.assoc, specGal_comp_specAlgClos]
 
-/-- **The Galois action by one element, bundled as an additive
-homomorphism** — `pre_zero` and `pre_add` read at `Spec σ`. -/
-noncomputable def galSMulHom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-    (ab : AbelianSchemeStruct jstr) (σ : Field.absoluteGaloisGroup ℚ) :
-    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-    GeomFibrePt jstr (𝟙 SpecQ) →+ GeomFibrePt jstr (𝟙 SpecQ) :=
-  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-  { toFun := fun w => ab.galSMul (𝟙 SpecQ) σ w
-    map_zero' := ab.pre_zero (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ)
-    map_add' := fun a b => ab.pre_add (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ) a b }
+-- (`galSMulHom` is declared ABOVE, beside `galSMul_eq_galSMulHom` which consumes it; the same concurrent-relocation collision as the Jacobian block.)
 
-/-- **`Spec F̄ ⟶ Spec F` is an epimorphism of schemes, for every field
-`F`** (PROVEN, 2026-07-28) — the whole content of the injectivity half of
-Galois descent, and it needs no fpqc machinery.
-
-The cut-obstruction note this file used to carry pointed at
-`Sites/Fpqc.lean` and `Morphisms/Flat.lean`, i.e. at "a faithfully flat
-quasi-compact morphism is an epimorphism".  That theorem is *not* at this
-pin, and it is also not needed: for `Spec` of a FIELD both sides of the
-cancellation are classified by `Scheme.SpecToEquivOfField`, which says a
-morphism `Spec K ⟶ X` out of the spectrum of a field is exactly a point
-`x` of `X` together with a field embedding `κ(x) ⟶ K`.  Composing with
-`specAlgClos F` leaves the point alone and postcomposes the embedding
-with `F ⟶ F̄`, which is a monomorphism of rings because it is injective.
-So the cancellation is cancellation of a mono in `CommRingCat`, one
-level down.
-
-Registered as an `instance` so that `cancel_epi (specAlgClos F)` fires
-directly. -/
-instance epi_specAlgClos (F : Type u) [Field F] : Epi (specAlgClos F) := by
-  refine ⟨fun {X} a b hab => ?_⟩
-  set q : CommRingCat.of F ⟶ CommRingCat.of (AlgebraicClosure F) :=
-    CommRingCat.ofHom (algebraMap F (AlgebraicClosure F)) with hq
-  have hmono : Mono q :=
-    ConcreteCategory.mono_of_injective q (algebraMap F (AlgebraicClosure F)).injective
-  apply (Scheme.SpecToEquivOfField F X).injective
-  set A := Scheme.SpecToEquivOfField F X a with hA
-  set B := Scheme.SpecToEquivOfField F X b with hB
-  have ha : a = Spec.map A.2 ≫ X.fromSpecResidueField A.1 := by
-    rw [hA]; exact ((Scheme.SpecToEquivOfField F X).symm_apply_apply a).symm
-  have hb : b = Spec.map B.2 ≫ X.fromSpecResidueField B.1 := by
-    rw [hB]; exact ((Scheme.SpecToEquivOfField F X).symm_apply_apply b).symm
-  have key : (⟨A.1, A.2 ≫ q⟩ : Σ x, X.residueField x ⟶ .of (AlgebraicClosure F))
-      = ⟨B.1, B.2 ≫ q⟩ := by
-    apply (Scheme.SpecToEquivOfField (AlgebraicClosure F) X).symm.injective
-    show Spec.map (A.2 ≫ q) ≫ _ = Spec.map (B.2 ≫ q) ≫ _
-    rw [Spec.map_comp, Spec.map_comp, Category.assoc, Category.assoc, ← ha, ← hb]
-    exact hab
-  obtain ⟨e, he⟩ := Scheme.SpecToEquivOfField_eq_iff.mp key
-  refine Scheme.SpecToEquivOfField_eq_iff.mpr ⟨e, ?_⟩
-  rw [← cancel_mono q, Category.assoc]
-  exact he
+-- (`epi_specAlgClos` is declared far ABOVE and is what every consumer in this file sees.  A second branch re-proved it here at `Type u` and registered it as an instance; the upper copy has been made an instance instead.)
 
 /-- **Galois descent for the points of an ARBITRARY scheme: a
 `Γ_F`-invariant `F̄`-point of `X` comes from an `F`-point** (PROVEN,
@@ -26561,176 +26516,7 @@ def IsRelPicZeroOf.isAlbaneseOf {C J S : Scheme.{0}} {f : C ⟶ S}
     intro A astr ab' u v hu hv hadu hadv hagree
     exact P.eq_of_aj_eq hf ab' hu hv hadu hadv hagree
 
-/-- **`Pic⁰` is representable: the degree-zero relative Picard functor of
-a smooth proper geometrically connected curve over `ℚ` carrying a
-rational point is an abelian scheme** (PROVEN 2026-07-27 — it is the
-`S = SpecQ` instance of `Fermat.exists_relPicZero`, and nothing else).
 
-Grothendieck's representability theorem (FGA, exposé 232;
-Bosch–Lütkebohmert–Raynaud, *Néron Models* 8.2/1 and 9.4/4; Stacks 0D2C),
-specialised to a curve, where the degree-zero part is represented by an
-abelian scheme — the Jacobian.
-
-**THIS NODE IS NOW A ONE-LINE INSTANCE, AND THAT IS THE WHOLE POINT.**
-The sorried statement lives ONCE, over an arbitrary base and
-universe-polymorphically, in `ModularCurve/RelativePicard.lean` as
-`exists_relPicZero`.  It has to be there rather than here because its
-other consumer — `exists_albaneseOfCurve`, ~4700 lines below — needs
-`S = Spec ℤ_(ℓ)` and `S = Spec 𝔽_ℓ`, which this `SpecQ` statement cannot
-serve; and a declaration reachable from only one of two consumers forces
-two independently sorried copies of one classical theorem, which is the
-single most expensive object this development produces.  Anything that
-needs representability over `ℚ` should call THIS; anything that needs it
-over another base should call `exists_relPicZero` directly.
-
-The section `o` is load-bearing twice over, and travels with the general
-statement.  It is what makes the naive quotient `Pic(X_T)/Pic(T)` —
-`RelPicEquiv` — already the relative Picard functor, with no fppf
-sheafification anywhere (BLR 8.1/4), which is the only reason
-`IsRelPicZeroOf` is statable at a pin with no site theory; and it is what
-the Abel–Jacobi fields `aj`, `aj_spec`, `aj_base` are based at.
-
-The three geometric hypotheses are exactly what `IsX0Compactification`
-supplies, and each is load-bearing: without properness `Pic⁰` is not
-proper, without smoothness it is not smooth, and without geometric
-connectedness `f_*𝒪_X = 𝒪_S` fails universally, so the quotient
-presentation above is not the Picard functor at all.  The inventory of
-what the proof still needs is on `exists_relPicZero`, not duplicated
-here. -/
-theorem exists_relPicZeroOf {X : Scheme.{0}} {strX : X ⟶ SpecQ}
-    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
-    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 SpecQ)) :
-    ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr),
-      Nonempty (IsRelPicZeroOf strX ab o) :=
-  exists_relPicZero strX hproper hsmooth hconn o
-
-/-- **Autoduality: a representing object for `Pic⁰` is the Albanese**
-(**PROVEN 2026-07-27, by the relocation its own docstring prescribed**) —
-LEVEL-FREE and CURVE-GENERAL.
-
-TRUE, and this is the classical "autoduality of the Jacobian" step.
-Given `P : IsRelPicZeroOf strX ab o`, the fields `inj`, `sheaf_zero` and
-`sheaf_add` exhibit `J` as an abelian *subscheme* of `Pic_{X/ℚ}`, and
-`aj` puts the image of the Abel–Jacobi map inside it.  For a smooth
-proper geometrically connected curve that image generates `Pic⁰` as a
-group, so `J = Pic⁰`; the universal property then follows from
-autoduality and biduality, and uniqueness from rigidity plus generation.
-
-**IT HAD NO MATHEMATICAL CONTENT LEFT, AND NOW IT HAS NO `sorry` EITHER.**
-Every ingredient was already in this file, in a block declared BELOW this
-point, so the node was sorried purely by Lean's declaration order — the
-third category of open leaf: neither hard nor false, just misordered.
-The block was moved up (see the RELOCATED heading above), and the proof
-is the one line the old docstring already wrote out:
-
-    ⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩
-
-* `IsRelPicZeroOf.isAlbaneseOf` turns `P` into an `IsAlbaneseOf`, over an
-  ARBITRARY base, over the two named leaves
-  `IsRelPicZeroOf.exists_albaneseFactorisation` (autoduality and
-  biduality) and `IsRelPicZeroOf.eq_of_aj_eq` (generation, i.e.
-  `Sym^g C ↠ Pic⁰`);
-* `IsAlbaneseOf.isJacobianOf` turns that into an `IsJacobianOf`,
-  supplying the `∃!` over arbitrary `S`-morphisms out of
-  `isAdditiveOn_of_post_zero` (relative RIGIDITY, PROVEN).
-
-So the two genuinely open pieces of autoduality are those two named
-general-base leaves — `IsRelPicZeroOf.exists_albaneseFactorisation` and
-`IsRelPicZeroOf.eq_of_aj_eq`, both still above — and a prover dispatched
-HERE would have written a THIRD copy of a rigidity/generation argument
-that already exists twice.  **Nothing is transferred to a new leaf by
-this closure**: the transitive frontier under this node is unchanged, and
-only the misordering is gone.
-
-Stated with `Nonempty` because `IsJacobianOf` is DATA — it carries the
-Abel–Jacobi map as a field — so the bare structure is not a proposition
-and cannot be a `theorem`.  That is the same shape the conclusion of
-`exists_jacobianOf_x0` already has. -/
-theorem isJacobianOf_of_isRelPicZeroOf {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
-    (hconn : GeometricallyConnected strX) (P : IsRelPicZeroOf strX ab o) :
-    Nonempty (IsJacobianOf strX ab o) :=
-  ⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩
-
-/-- **The Jacobian of `X_0(N)` exists** (PROVEN 2026-07-27 over
-`exists_relPicZeroOf` and `isJacobianOf_of_isRelPicZeroOf`; formerly the
-sorry node this whole section was named after).
-
-TRUE and classical: `X` is a smooth proper geometrically connected curve
-over `ℚ` with a rational point `o`, so its Albanese — equivalently
-`Pic⁰` — is an abelian variety over `ℚ` and the Abel–Jacobi map based at
-`o` is initial among maps to abelian varieties killing `o`.  That is
-exactly `IsJacobianOf`.
-
-`h` is load-bearing: without properness and smoothness there is no
-abelian Albanese, and without geometric connectedness `Pic⁰` is not
-connected.  Only three of its fields are used, and they are passed to the
-two leaves individually, which is what keeps both of them level-free.
-
-**THE CUT (2026-07-27), and what it corrects.**  The audit reproduced
-below closed with "IRREDUCIBLE at this pin", having searched *cuts along
-the universal property* — and it named the way out itself: the honest cut
-is representability of `Pic⁰` plus autoduality, gated on writing a
-relative Picard functor.  That functor is now written
-(`ModularCurve/RelativePicard.lean`), so the verdict is retired: the axis
-the auditor did not search was not another universal property but the
-*infrastructure* axis, where a theory has only to be STATED for the cut
-to become available.  Both halves are now named leaves, and each is a
-single classical theorem about an arbitrary curve rather than a statement
-about `X_0(N)`.
-
-**FAITHFULNESS AUDIT (2026-07-27), two checks, both passed.**
-
-*Not vacuous.*  The obvious junk witness is the trivial abelian scheme
-`J = Spec ℚ`, `jstr = 𝟙`, for which `RelPoint jstr g` is a singleton.
-It does **not** discharge the leaf: `universal` would then force every
-natural pointed `c : X(−) ⟶ A(−)` to be constant, which fails for the
-genuine `X_0(N)` at every level of positive genus.  So the existential
-really does demand the Albanese, and cannot be met cheaply.
-
-*The `∃!` is not too strong.*  `u` is asked to be a bare morphism of
-`ℚ`-schemes, **not** a homomorphism, so uniqueness looks suspicious: for
-`g ≥ 2` the image of `X` in `J` is a curve inside a `g`-dimensional
-variety and is nowhere dense, and two morphisms agreeing on a nowhere
-dense subscheme are not usually equal.  Uniqueness nevertheless holds,
-by **rigidity**: any morphism `v : J ⟶ A` of abelian varieties over a
-field is a homomorphism followed by a translation.  If `u, u'` both
-satisfy the displayed condition then `v = u − u'` vanishes on `aj(X)`,
-so its homomorphism part is constant on `aj(X)`, hence kills the
-subgroup `aj(X)` generates — which is all of `J` — and the translation
-part is `0` as well.  So `v = 0`.  The statement is therefore correct as
-written, and a prover must not weaken `∃!` to `∃`.
-
-**The axis the old audit searched, kept because it is still correct and
-still saves a reader the work.**  *Cuts along the universal property*
-were tried and all fail:
-
-* "existence of `(J, aj)` natural and pointed" + "that `aj` is initial"
-  is **not** a cut — the first half is discharged by the trivial `J`
-  above, so all the content stays in the second half, which can no
-  longer be stated once the witness is chosen.
-* "`aj` generates `J`" + "a generating pointed `aj` is initial" is
-  UNSOUND: points of `J` are sums of differences of points of `X` only
-  fppf-locally, not on the nose as a functor, so the second half would
-  be a false leaf.  Note that `IsRelPicZeroOf` does NOT fall into this
-  trap: it does not say the classes generate, it says the classification
-  is an injective HOMOMORPHISM into `Pic`, which is a condition on `J`
-  rather than on the sheaf of groups generated by `aj(X)`.
-* the honest cut is *representability of `Pic⁰`* + *autoduality of the
-  Jacobian*, and stating it needs a relative Picard functor — line
-  bundles on `X ×_S T` modulo pullbacks from `T`.  That was the recorded
-  obstruction, and it has been removed: the functor is now
-  `ModularCurve/RelativePicard.lean`, and the two leaves above are the
-  two halves. -/
-theorem exists_jacobianOf_x0 (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j)
-    (o : RelPoint strX (𝟙 SpecQ)) :
-    ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr),
-      Nonempty (IsJacobianOf strX ab o) := by
-  obtain ⟨J, jstr, ab, ⟨P⟩⟩ := exists_relPicZeroOf h.isProper h.smooth h.connected o
-  exact ⟨J, jstr, ab,
-    isJacobianOf_of_isRelPicZeroOf h.isProper h.smooth h.connected P⟩
 
 /-! #### The Eichler–Shimura seam, resumed
 
@@ -26788,6 +26574,12 @@ theorem isTorsion_of_finite_jointKer {G : Type*} [AddCommGroup G] {ι : Type*} [
     rw [hmz]; rfl
   rw [← smul_smul]
   simpa using hcoe
+
+-- (`exists_relPicZeroOf`, `isJacobianOf_of_isRelPicZeroOf` and `exists_jacobianOf_x0` are
+-- declared far ABOVE, just before `galSMulHom`.  Two branches worked this block
+-- concurrently: one relocated the three of them upward, the other edited them in place,
+-- and git merged BOTH placements with no conflict.  Only the upper copy survives; it
+-- dominates every consumer.)
 
 /-! #### The moduli pin for the Hecke operators
 
