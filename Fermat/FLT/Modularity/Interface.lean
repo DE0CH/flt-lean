@@ -50841,8 +50841,303 @@ theorem heckeOp_atkinLehnerOp_eigen_of_newform {M : ℕ} (hM : 0 < M)
       heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hr,
       map_smul]
 
-/-- **THE ATKIN–LEHNER TRACE IDENTITY at `q ‖ M`** (sorry leaf,
-FIFTEENTH decomposition 2026-07-27): for EVERY `f ∈ S₂(Γ₀(M))`,
+/-- **THE `q + 1` COSETS OF `Γ₀(M)` IN `Γ₀(M/q)` AT `q ‖ M`, AS A SLASH-SUM**
+(PROVEN 2026-07-27): for every `f ∈ S₂(Γ₀(M))` and every Atkin–Lehner matrix
+`A` for `(M, q)`,
+
+    `Tr^M_{M/q} f  =  f  +  Σ_{j<q} f ∣[2] (A · !![1, j; 0, q])`
+
+as functions on `ℍ`.  This is the whole coset content of the Atkin–Lehner
+trace identity below, stripped of every operator wrapper: `degeneracyOp _ _ 1`
+is the identity on underlying functions (`coe_degeneracyOp_one`), `W_q` is the
+slash by `A` (`atkinLehnerOp_coe`), and `U_q` is the `q`-term slash-sum
+(`heckeOp_coe` with the `q ∣ M` branch of `heckeTransform`).
+
+HOW IT IS PROVEN, so a reader need not re-derive it.  Write `M = q·M₀` with
+`q ∤ M₀` and take the Bézout Atkin–Lehner matrix `A₀ = !![q, −v; M, q·u]`
+where `u·q + v·M₀ = 1` — legitimate because `atkinLehnerOp_coe` holds for
+EVERY Atkin–Lehner matrix, so the general `A` is reduced to `A₀` by applying
+it twice.  Then
+
+    `A₀ · !![1, j; 0, q] = q · B j`,   `B j = !![1, j − v; M₀, M₀·j + q·u]`,
+
+with `det (B j) = u·q + v·M₀ = 1`, so `B j ∈ SL(2, ℤ)` with lower-left `M₀`,
+hence `B j ∈ Γ₀(M₀) \ Γ₀(M)`; and the positive scalar `q` is invisible to the
+weight-two slash (`slash_two_of_coe_eq_smul_one`), so
+`f ∣[2] (A₀ · α_j) = f ∣[2] B j`.
+
+`1, B 0, …, B (q−1)` is then shown to be a COMPLETE, IRREDUNDANT set of coset
+representatives for `Γ₀(M) \ Γ₀(M₀)`, by an explicit bijection
+`Option (Fin q) ≃ Γ₀(M₀) ⧸ Γ₀(M)`:
+
+* `B j ∉ Γ₀(M)`, because `M = q·M₀` does not divide `M₀`;
+* `(B j)·(B k)⁻¹` has lower-left `M₀²·(k − j)`, and `M ∣ M₀²(k−j)` forces
+  `q ∣ k − j` (as `q ∤ M₀`), hence `j = k` for `j, k < q`;
+* SURJECTIVITY: for `δ = !![α, β; M₀·c', d] ∈ Γ₀(M₀)` the lower-left of
+  `B j · δ` is `M₀·(α + M₀·c'·j + q·u·c')`, so `δ` is equivalent to `B j`
+  exactly when `α + M₀·c'·j ≡ 0 (mod q)`.  At `q ∤ c'` that has the unique
+  solution `j ≡ −α·(M₀c')⁻¹` in `𝔽_q`; at `q ∣ c'` no `j` works and `δ` is
+  itself in `Γ₀(M)`, which is the `none` branch.  `det δ = 1` is exactly what
+  rules out the remaining case `q ∣ c'` and `q ∣ α`.
+
+So the index `[Γ₀(M/q) : Γ₀(M)] = q + 1` is not quoted from anywhere — it is
+produced by this bijection.  `hqM2` is load-bearing twice, once because
+`atkinLehnerOp M q` is junk without `Nat.Coprime q (M / q)` and once because
+the index is `q` rather than `q + 1` at `q² ∣ M`. -/
+theorem coe_traceOp_eq_self_add_sum_slash_atkinLehner {M q : ℕ} [NeZero M] [NeZero (M / q)]
+    (hM : 0 < M) (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M)
+    {A : Matrix (Fin 2) (Fin 2) ℤ} (hA : IsAtkinLehnerMatrix M q A)
+    (f : CuspForm (Gamma0GL M) 2) :
+    ⇑(traceOp M (M / q) f)
+      = ⇑f + ∑ j ∈ Finset.range q, ⇑f ∣[(2 : ℤ)] (atkinLehnerRep A * heckeRep q j) := by
+  classical
+  haveI : Fact (Nat.Prime q) := ⟨hq⟩
+  haveI : NeZero q := ⟨hq.ne_zero⟩
+  have hq0R : (q : ℝ) ≠ 0 := Nat.cast_ne_zero.mpr hq.ne_zero
+  have hq0Rpos : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq.pos
+  have hcop : Nat.Coprime q (M / q) := by
+    refine (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd => hqM2 ?_
+    obtain ⟨t, ht⟩ := hdvd
+    refine ⟨t, ?_⟩
+    have h := Nat.mul_div_cancel' hqM
+    rw [ht] at h
+    rw [← h]; ring
+  obtain ⟨M₀, hM₀⟩ : ∃ M₀ : ℕ, M / q = M₀ := ⟨M / q, rfl⟩
+  have hM0pos : 0 < M₀ := hM₀ ▸ Nat.div_pos (Nat.le_of_dvd hM hqM) hq.pos
+  have hcop₀ : Nat.Coprime q M₀ := hM₀ ▸ hcop
+  have hMZ : (M : ℤ) = (q : ℤ) * (M₀ : ℤ) := by
+    rw [← hM₀]; exact_mod_cast (Nat.mul_div_cancel' hqM).symm
+  have hMR : (M : ℝ) = (q : ℝ) * (M₀ : ℝ) := by
+    rw [← hM₀]; exact_mod_cast (Nat.mul_div_cancel' hqM).symm
+  have hM0ne : (M₀ : ℤ) ≠ 0 := by exact_mod_cast hM0pos.ne'
+  obtain ⟨u, v, huv⟩ : IsCoprime (q : ℤ) (M₀ : ℤ) := Nat.isCoprime_iff_coprime.mpr hcop₀
+  -- ### The chosen Atkin–Lehner matrix `A₀ = !![q, -v; M, q*u]`
+  have hA₀ : IsAtkinLehnerMatrix M q (!![(q : ℤ), -v; (M : ℤ), (q : ℤ) * u]) := by
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · rw [Matrix.det_fin_two_of, hMZ]
+      linear_combination (q : ℤ) * huv
+    · simp
+    · simp
+    · simp
+  -- ### The `q` lower coset matrices `B j = !![1, j - v; M/q, (M/q)*j + q*u]`
+  have hdetB : ∀ j : ℕ,
+      (!![(1 : ℤ), (j : ℤ) - v; (M₀ : ℤ),
+          (M₀ : ℤ) * (j : ℤ) + (q : ℤ) * u] : Matrix (Fin 2) (Fin 2) ℤ).det = 1 := by
+    intro j
+    rw [Matrix.det_fin_two_of]
+    linear_combination huv
+  obtain ⟨B, hB⟩ : ∃ B : ℕ → SL(2, ℤ), ∀ j : ℕ,
+      (B j : Matrix (Fin 2) (Fin 2) ℤ)
+        = !![(1 : ℤ), (j : ℤ) - v; (M₀ : ℤ),
+            (M₀ : ℤ) * (j : ℤ) + (q : ℤ) * u] :=
+    ⟨fun j => ⟨_, hdetB j⟩, fun _ => rfl⟩
+  have hB10 : ∀ j : ℕ, (B j : Matrix (Fin 2) (Fin 2) ℤ) 1 0 = (M₀ : ℤ) := by
+    intro j; rw [hB]; simp
+  have hB11 : ∀ j : ℕ, (B j : Matrix (Fin 2) (Fin 2) ℤ) 1 1
+      = (M₀ : ℤ) * (j : ℤ) + (q : ℤ) * u := by
+    intro j; rw [hB]; simp
+  have hB00 : ∀ j : ℕ, (B j : Matrix (Fin 2) (Fin 2) ℤ) 0 0 = 1 := by
+    intro j; rw [hB]; simp
+  have hB01 : ∀ j : ℕ, (B j : Matrix (Fin 2) (Fin 2) ℤ) 0 1 = (j : ℤ) - v := by
+    intro j; rw [hB]; simp
+  -- ### Membership criteria
+  have hmemM : ∀ δ : SL(2, ℤ),
+      mapGL ℝ δ ∈ Gamma0GL M ↔ (M : ℤ) ∣ (δ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 := by
+    intro δ
+    constructor
+    · intro h
+      obtain ⟨ε, hε, hεeq⟩ := mem_Gamma0GL_iff.mp h
+      have h10 := congrArg (fun g : GL (Fin 2) ℝ => (g : Matrix (Fin 2) (Fin 2) ℝ) 1 0) hεeq
+      simp only [mapGL_coe_matrix, Matrix.SpecialLinearGroup.map_apply_coe,
+        RingHom.mapMatrix_apply, Matrix.map_apply, algebraMap_int_eq, Int.coe_castRingHom] at h10
+      have hZ : (ε : Matrix (Fin 2) (Fin 2) ℤ) 1 0 = (δ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 := by
+        exact_mod_cast h10
+      rw [← hZ]
+      exact Gamma0_mem_iff_intDvd.mp hε
+    · intro h
+      exact mem_Gamma0GL_iff.mpr ⟨δ, Gamma0_mem_iff_intDvd.mpr h, rfl⟩
+  have hBmemGL : ∀ j : ℕ, mapGL ℝ (B j) ∈ Gamma0GL (M / q) := by
+    intro j
+    exact mem_Gamma0GL_iff.mpr
+      ⟨B j, Gamma0_mem_iff_intDvd.mpr (by rw [hM₀, hB10]), rfl⟩
+  -- ### The slash identity `f ∣ (A₀ · α_j) = f ∣ B j`
+  have hslashB : ∀ j : ℕ,
+      ⇑f ∣[(2 : ℤ)] (atkinLehnerRep (!![(q : ℤ), -v; (M : ℤ), (q : ℤ) * u]) * heckeRep q j)
+        = ⇑f ∣[(2 : ℤ)] mapGL ℝ (B j) := by
+    intro j
+    have hEq : atkinLehnerRep (!![(q : ℤ), -v; (M : ℤ), (q : ℤ) * u]) * heckeRep q j
+        = mapGL ℝ (B j) * (heckeRepInf q * heckeRep q 0) := by
+      refine Units.ext ?_
+      rw [Units.val_mul, Units.val_mul, heckeRepInf_mul_heckeRep_zero_coe hq0R,
+        atkinLehnerRep_coe (det_map_cast_ne_zero_isAL hq0R hA₀), heckeRep_coe hq0R]
+      ext i k
+      fin_cases i <;> fin_cases k <;>
+        simp [Matrix.mul_apply, Fin.sum_univ_two, Matrix.map_apply,
+          hB00, hB01, hB10, hB11, hMR] <;> ring
+    rw [hEq, SlashAction.slash_mul,
+      slash_two_of_coe_eq_smul_one _ hq0Rpos (heckeRepInf_mul_heckeRep_zero_coe hq0R)]
+  -- ### Reduce the goal to `A₀`
+  have hindep : ∀ j : ℕ, ⇑f ∣[(2 : ℤ)] (atkinLehnerRep A * heckeRep q j)
+      = ⇑f ∣[(2 : ℤ)] mapGL ℝ (B j) := by
+    intro j
+    rw [SlashAction.slash_mul, ← atkinLehnerOp_coe hM hqM hcop hA,
+      atkinLehnerOp_coe hM hqM hcop hA₀, ← SlashAction.slash_mul]
+    exact hslashB j
+  rw [Finset.sum_congr rfl fun j _ => hindep j]
+  -- ### The coset enumeration
+  haveI : Subgroup.IsFiniteRelIndex (Gamma0GL M) (Gamma0GL (M / q)) :=
+    isFiniteRelIndex_of_isArithmetic _ _
+  letI : Fintype (Gamma0GL (M / q) ⧸ (Gamma0GL M).subgroupOf (Gamma0GL (M / q))) :=
+    Fintype.ofFinite _
+  have hcls : ∀ x y : Gamma0GL (M / q),
+      (⟦x⟧ : Gamma0GL (M / q) ⧸ (Gamma0GL M).subgroupOf (Gamma0GL (M / q))) = ⟦y⟧ ↔
+        ((x : GL (Fin 2) ℝ))⁻¹ * (y : GL (Fin 2) ℝ) ∈ Gamma0GL M := by
+    intro x y
+    rw [Quotient.eq, QuotientGroup.leftRel_apply, Subgroup.mem_subgroupOf]
+    simp
+  obtain ⟨Φ, hΦnone, hΦsome⟩ :
+      ∃ Φ : Option (Fin q) → (Gamma0GL (M / q) ⧸ (Gamma0GL M).subgroupOf (Gamma0GL (M / q))),
+        Φ none = ⟦(1 : Gamma0GL (M / q))⟧ ∧
+        ∀ j : Fin q,
+          Φ (some j) = ⟦(⟨mapGL ℝ (B j.val), hBmemGL j.val⟩ : Gamma0GL (M / q))⁻¹⟧ :=
+    ⟨fun x => match x with
+      | none => ⟦(1 : Gamma0GL (M / q))⟧
+      | some j => ⟦(⟨mapGL ℝ (B j.val), hBmemGL j.val⟩ : Gamma0GL (M / q))⁻¹⟧,
+      rfl, fun _ => rfl⟩
+  -- the `B j` are never in `Γ₀(M)`
+  have hBnotM : ∀ j : ℕ, ¬ mapGL ℝ (B j) ∈ Gamma0GL M := by
+    intro j hmem
+    rw [hmemM, hB10, hMZ] at hmem
+    obtain ⟨t, ht⟩ := hmem
+    have h1 : (M₀ : ℤ) * 1 = (M₀ : ℤ) * ((q : ℤ) * t) := by
+      rw [mul_one]; linarith [ht]
+    have h2 : (1 : ℤ) = (q : ℤ) * t := mul_left_cancel₀ hM0ne h1
+    have h3 : (q : ℤ) ∣ 1 := ⟨t, h2⟩
+    have h4 := Int.le_of_dvd one_pos h3
+    have h5 : (2 : ℤ) ≤ (q : ℤ) := by exact_mod_cast hq.two_le
+    omega
+  have hΦinj : Function.Injective Φ := by
+    rintro (_ | j) (_ | k) hjk
+    · rfl
+    · exfalso
+      rw [hΦnone, hΦsome] at hjk
+      have h := (hcls _ _).mp hjk
+      simp only [OneMemClass.coe_one, inv_one, one_mul, InvMemClass.coe_inv] at h
+      exact hBnotM k.val (by simpa using inv_mem h)
+    · exfalso
+      rw [hΦnone, hΦsome] at hjk
+      have h := (hcls _ _).mp hjk.symm
+      simp only [OneMemClass.coe_one, inv_one, one_mul, InvMemClass.coe_inv] at h
+      exact hBnotM j.val (by simpa using inv_mem h)
+    · rw [hΦsome, hΦsome] at hjk
+      have h := (hcls _ _).mp hjk
+      simp only [InvMemClass.coe_inv, inv_inv] at h
+      have hprod : mapGL ℝ (B j.val * (B k.val)⁻¹) ∈ Gamma0GL M := by
+        rw [map_mul, map_inv]
+        exact h
+      rw [hmemM] at hprod
+      have hentry : ((B j.val * (B k.val)⁻¹ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ) 1 0
+          = (M₀ : ℤ) * ((M₀ : ℤ) * ((k.val : ℤ) - (j.val : ℤ))) := by
+        rw [Matrix.SpecialLinearGroup.coe_mul, Matrix.SpecialLinearGroup.coe_inv,
+          Matrix.adjugate_fin_two]
+        simp only [Matrix.mul_apply, Fin.sum_univ_two, Matrix.cons_val', Matrix.cons_val_zero,
+          Matrix.cons_val_one, Matrix.empty_val', Matrix.cons_val_fin_one,
+          Matrix.of_apply, hB00, hB01, hB10, hB11]
+        ring
+      rw [hentry, hMZ] at hprod
+      have hqdvd : (q : ℤ) ∣ (M₀ : ℤ) * ((k.val : ℤ) - (j.val : ℤ)) := by
+        obtain ⟨t, ht⟩ := hprod
+        refine ⟨t, mul_left_cancel₀ hM0ne ?_⟩
+        linarith [ht]
+      have hqM0 : ¬ (q : ℤ) ∣ (M₀ : ℤ) := by
+        rw [Int.natCast_dvd_natCast]
+        exact (Nat.Prime.coprime_iff_not_dvd hq).mp hcop₀
+      have hqint : Prime (q : ℤ) := Nat.prime_iff_prime_int.mp hq
+      have hkj : (q : ℤ) ∣ ((k.val : ℤ) - (j.val : ℤ)) :=
+        (hqint.dvd_mul.mp hqdvd).resolve_left hqM0
+      have hz : ((k.val : ℕ) : ZMod q) = ((j.val : ℕ) : ZMod q) := by
+        have h0 := (ZMod.intCast_zmod_eq_zero_iff_dvd ((k.val : ℤ) - (j.val : ℤ)) q).mpr hkj
+        push_cast at h0
+        exact sub_eq_zero.mp h0
+      have hval := congrArg ZMod.val hz
+      rw [ZMod.val_cast_of_lt k.isLt, ZMod.val_cast_of_lt j.isLt] at hval
+      exact congrArg some (Fin.ext hval.symm)
+  have hΦsurj : Function.Surjective Φ := by
+    intro c
+    induction c using Quotient.inductionOn with
+    | h x =>
+      obtain ⟨δ, hδ, hδeq⟩ := mem_Gamma0GL_iff.mp x.2
+      obtain ⟨c', hc'⟩ : (M₀ : ℤ) ∣ (δ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 :=
+        (by rw [← hM₀]; exact Gamma0_mem_iff_intDvd.mp hδ)
+      by_cases hqc : (q : ℤ) ∣ c'
+      · refine ⟨none, ?_⟩
+        rw [hΦnone]
+        refine (hcls _ _).mpr ?_
+        simp only [OneMemClass.coe_one, inv_one, one_mul]
+        rw [← hδeq, hmemM, hc', hMZ]
+        obtain ⟨t, ht⟩ := hqc
+        exact ⟨t, by rw [ht]; ring⟩
+      · have hM0unit : (M₀ : ZMod q) ≠ 0 := by
+          intro h0
+          have h1 : (((M₀ : ℤ)) : ZMod q) = 0 := by exact_mod_cast h0
+          rw [ZMod.intCast_zmod_eq_zero_iff_dvd] at h1
+          exact ((Nat.Prime.coprime_iff_not_dvd hq).mp hcop₀) (Int.natCast_dvd_natCast.mp h1)
+        have hc'unit : ((c' : ℤ) : ZMod q) ≠ 0 := by
+          intro h0
+          rw [ZMod.intCast_zmod_eq_zero_iff_dvd] at h0
+          exact hqc h0
+        have hne : (M₀ : ZMod q) * ((c' : ℤ) : ZMod q) ≠ 0 :=
+          mul_ne_zero hM0unit hc'unit
+        set t : ZMod q :=
+          -(((δ : Matrix (Fin 2) (Fin 2) ℤ) 0 0 : ℤ) : ZMod q) *
+            ((M₀ : ZMod q) * ((c' : ℤ) : ZMod q))⁻¹ with htdef
+        refine ⟨some ⟨t.val, ZMod.val_lt t⟩, ?_⟩
+        rw [hΦsome]
+        refine (hcls _ _).mpr ?_
+        simp only [InvMemClass.coe_inv, inv_inv]
+        rw [← hδeq, ← map_mul, hmemM]
+        have hentry : ((B t.val * δ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ) 1 0
+            = (M₀ : ℤ) *
+              ((δ : Matrix (Fin 2) (Fin 2) ℤ) 0 0
+                + ((M₀ : ℤ) * (t.val : ℤ) + (q : ℤ) * u) * c') := by
+          rw [Matrix.SpecialLinearGroup.coe_mul]
+          simp only [Matrix.mul_apply, Fin.sum_univ_two, hB10, hB11, hc']
+          ring
+        rw [hentry, hMZ]
+        have hkey : (q : ℤ) ∣ ((δ : Matrix (Fin 2) (Fin 2) ℤ) 0 0
+            + ((M₀ : ℤ) * (t.val : ℤ) + (q : ℤ) * u) * c') := by
+          rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+          push_cast
+          rw [ZMod.natCast_val, ZMod.cast_id, ZMod.natCast_self]
+          rw [htdef]
+          field_simp
+          ring
+        obtain ⟨s, hs⟩ := hkey
+        exact ⟨s, by rw [hs]; ring⟩
+  have hΦbij : Function.Bijective Φ := ⟨hΦinj, hΦsurj⟩
+  -- ### Unfold the trace as the sum over the quotient
+  have htrace : ⇑(traceOp M (M / q) f)
+      = ∑ c : Gamma0GL (M / q) ⧸ (Gamma0GL M).subgroupOf (Gamma0GL (M / q)),
+          SlashInvariantForm.quotientFunc f c := by
+    show ⇑(CuspForm.trace (Gamma0GL (M / q)) f) = _
+    rw [CuspForm.coe_trace]
+  rw [htrace, ← Fintype.sum_bijective Φ hΦbij
+      (fun x => SlashInvariantForm.quotientFunc f (Φ x))
+      (SlashInvariantForm.quotientFunc f) (fun _ => rfl),
+    Fintype.sum_option]
+  congr 1
+  · rw [hΦnone, SlashInvariantForm.quotientFunc_mk]
+    simp only [OneMemClass.coe_one, inv_one]
+    exact SlashInvariantFormClass.slash_action_eq f 1 (one_mem _)
+  · rw [← Fin.sum_univ_eq_sum_range (fun j => ⇑f ∣[(2 : ℤ)] mapGL ℝ (B j)) q]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    rw [hΦsome, SlashInvariantForm.quotientFunc_mk]
+    simp
+
+/-- **THE ATKIN–LEHNER TRACE IDENTITY at `q ‖ M`** (PROVEN 2026-07-27
+over the coset-enumeration lemma
+`coe_traceOp_eq_self_add_sum_slash_atkinLehner` immediately above; was the
+FIFTEENTH decomposition's sorry leaf): for EVERY `f ∈ S₂(Γ₀(M))`,
 
     `Tr^M_{M/q} f = f + U_q (W_q f)`,
 
@@ -50892,11 +51187,66 @@ theorem degeneracyOp_one_traceOp_eq_self_add_heckeOp_atkinLehnerOp {M q : ℕ}
     (hM : 0 < M) (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M)
     (f : CuspForm (Gamma0GL M) 2) :
     degeneracyOp (M / q) M 1 (traceOp M (M / q) f)
-      = f + heckeOp M q (atkinLehnerOp M q f) :=
+      = f + heckeOp M q (atkinLehnerOp M q f) := by
+  have hcop : Nat.Coprime q (M / q) := by
+    refine (Nat.Prime.coprime_iff_not_dvd hq).mpr fun hdvd => hqM2 ?_
+    obtain ⟨t, ht⟩ := hdvd
+    refine ⟨t, ?_⟩
+    have h := Nat.mul_div_cancel' hqM
+    rw [ht] at h
+    rw [← h]; ring
+  obtain ⟨A, hA⟩ := exists_isAtkinLehnerMatrix hqM hcop
+  refine DFunLike.coe_injective ?_
+  rw [coe_degeneracyOp_one (Nat.div_dvd_of_dvd hqM), CuspForm.coe_add,
+    heckeOp_coe hM hq, atkinLehnerOp_coe hM hqM hcop hA,
+    coe_traceOp_eq_self_add_sum_slash_atkinLehner hM hq hqM hqM2 hA f]
+  unfold heckeTransform
+  rw [if_pos hqM, add_zero]
+  congr 1
+  exact Finset.sum_congr rfl fun j _ => SlashAction.slash_mul (2 : ℤ) _ _ _
+
+/-- **THE TRACE COMMUTES WITH THE GOOD HECKE OPERATORS** (sorry leaf, cut
+2026-07-27 out of `traceOp_eq_zero_of_isWeightTwoNewform` below; Miyake,
+*Modular Forms*, Lemma 4.5.4, Diamond–Shurman §5.2): for `N ∣ M` and a prime
+`r ∤ M`,
+
+    `T_r ∘ Tr^M_N  =  Tr^M_N ∘ T_r`.
+
+`r ∤ M` is LOAD-BEARING, and it is the only hypothesis relating `r` to the
+levels.  At `r ∤ M` the operator is the honest `T_r` at BOTH levels — `N ∣ M`
+gives `r ∤ N`, so the extra representative `!![r, 0; 0, 1]` is present in
+`heckeTransform` at `M` and at `N` alike — and the degree-`r` double coset
+`Γ₀ · diag(1, r) · Γ₀` is then stable under the coset bookkeeping of the
+trace.  Drop it and one side is `U_r` while the other is `T_r`, and the two
+differ by `r·V_r`.
+
+WHAT A SUCCESSOR MUST DO.  Both sides are FINITE slash-sums, so this is a
+reindexing statement and carries NO analysis:
+`Tr^M_N F = Σ_{γ ∈ Γ₀(N) ⧸ Γ₀(M)} F ∣[2] γ⁻¹` (`CuspForm.coe_trace`, through
+`SlashInvariantForm.quotientFunc`) and `T_r G = Σ_{α ∈ R_r} G ∣[2] α`
+(`heckeOp_coe` and `heckeTransform`, with `heckeTransform_eq_sum_heckeIndexSet`
+already packaging `R_r` as a sum over `heckeIndexSet N r = ℙ¹(𝔽_r)`).  So both
+composites are double sums over pairs `(γ, α)`, and what is needed is a
+bijection of the index sets carrying `α·γ` to `γ'·α'`.  That is exactly the
+shape of `heckeTransform_slash_atkinLehnerRep` above, which performs the same
+reindexing for conjugation by an Atkin–Lehner matrix and is PROVEN;
+`heckeRep_conj_mem_iff` is the corresponding coset criterion, and
+`exists_gamma0_atkinLehner_conj` the corresponding integral bookkeeping.
+
+NOT VACUOUS, and not a restatement of the trace's linearity: at `N = M` both
+sides are `T_r f` (the trace is then multiplication by the index `1`), and all
+the content is at `N < M`, where the two Hecke operators act on DIFFERENT
+spaces and the identity is the assertion that the trace intertwines them. -/
+theorem heckeOp_traceOp_comm_of_not_dvd {M N : ℕ} [NeZero M] [NeZero N]
+    (hM : 0 < M) (hN : 0 < N) (hNM : N ∣ M) {r : ℕ} (hr : r.Prime) (hrM : ¬ r ∣ M)
+    (f : CuspForm (Gamma0GL M) 2) :
+    heckeOp N r (traceOp M N f) = traceOp M N (heckeOp M r f) :=
   sorry
 
-/-- **A NEWFORM HAS VANISHING TRACE TO EVERY LOWER LEVEL** (sorry leaf,
-FIFTEENTH decomposition 2026-07-27; Atkin–Lehner 1970, Diamond–Shurman
+/-- **A NEWFORM HAS VANISHING TRACE TO EVERY LOWER LEVEL** (PROVEN
+2026-07-27 over the single leaf `heckeOp_traceOp_comm_of_not_dvd`
+immediately above; was the FIFTEENTH decomposition's sorry leaf;
+Atkin–Lehner 1970, Diamond–Shurman
 §5.6–5.8): for a weight-two level-`M` newform `g` and a prime `q ∣ M`,
 `Tr^M_{M/q} g = 0`.
 
@@ -50905,38 +51255,55 @@ subspace", and it is the ONLY place the newform hypothesis enters the
 eigenvalue half of Atkin–Lehner below.  It says nothing about `W_q`, nothing
 about `a_q`, and nothing about eigenvalues at all.
 
-CLASSICAL PROOF, and exactly what of it the pin already has.  The trace
-`Tr^M_{M/q}` is the Petersson ADJOINT of the level-raising inclusion
-`degeneracyOp (M/q) M 1` (up to the covolume ratio):
-`⟨Tr^M_{M/q} g, h⟩_{M/q} = ⟨g, V₁ h⟩_M` for every `h ∈ S₂(Γ₀(M/q))`.  A
-newform of level exactly `M` is orthogonal to the whole old subspace, so the
-right side vanishes identically, and the Petersson product at level `M/q` is
-DEFINITE, hence `Tr^M_{M/q} g = 0`.  This development already has a Petersson
-product with the properties that argument needs —
-`exists_peterssonProduct_selfAdjoint_heckeOp` supplies additivity, scalar
-equivariance, symmetry, DEFINITENESS and `T_r`-self-adjointness at `r ∤ M` —
-so what a successor must add is exactly two things:
+PROOF (2026-07-27), and this CORRECTS the audit that stood here: the node is
+proven with NO PETERSSON THEORY AT ALL, over the single Hecke/trace
+commutation leaf above.
 
-* the ADJOINTNESS `⟨Tr F, h⟩ = ⟨F, V₁ h⟩`, an unfolding of the coset sum
-  against the invariant measure (the `Γ₀(M)`-fundamental domain machinery
-  used by `exists_peterssonDomain` is the same input), and
-* the ORTHOGONALITY of `g` to `range (degeneracyOp (M/q) M 1)`, which on the
-  minimal-level carrier is where `hg.eigensystem_minimal` has to be spent.
+The route recorded here previously was the classical analytic one — the trace
+is the Petersson adjoint of `degeneracyOp (M/q) M 1`, a newform is orthogonal
+to the whole old subspace, and the product at level `M/q` is DEFINITE.  That
+route is correct and it is NOT the cheapest one available in this tree, whose
+`eigensystem_minimal` machinery already carries everything needed:
 
-A ROUTE THAT DOES NOT WORK, recorded so it is not retried: one cannot get
-this from `eigensystem_minimal` by coefficients alone.  If `g = V₁ u` with
-`u ∈ S₂(Γ₀(M/q))` then `u` has `g`'s coefficients verbatim
-(`qCoeff_degeneracyOp_one`), but `u` is then NOT an inhabitant of
-`IsWeightTwoEigenform (M/q)`: at `q ∤ (M/q)` that carrier demands the GOOD
-recursion `a_{q²} = a_q² − q·a_1`, while `g` satisfies the BAD one
-`a_{q²} = a_q²`, and the two differ by `q ≠ 0`.  So no eigenform at the
-proper divisor level is produced and `eigensystem_minimal` is never reached.
-The analytic input is genuinely needed. -/
+* `u := Tr^M_{M/q} g` is a GOOD-PRIME EIGENVECTOR at level `M/q`: at `r ∤ M`
+  the trace commutes with `T_r` (`heckeOp_traceOp_comm_of_not_dvd`, the leaf
+  above) and `T_r g = a_r(g)·g`
+  (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`, PROVEN), so
+  `T_r u = a_r(g)·u` by linearity of the trace;
+* if `u ≠ 0` then `exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd`
+  (PROVEN) produces a NORMALIZED weight-two eigenform `g'` at some level
+  `M' ∣ M/q` with `a_r(g') = a_r(g)` for every prime `r ∤ M`;
+* `M' ≤ M/q < M`, so `M' ∣ M` and `M' ≠ M`, and `hg.eigensystem_minimal`
+  forbids exactly that.  Hence `u = 0`.
+
+THE OLD "ROUTE THAT DOES NOT WORK" NOTE IS NOT REFUTED — it is about a
+DIFFERENT route, and it remains true.  It observed that one cannot get this by
+ASSUMING `g = V₁ u` and reading coefficients: such a `u` would carry `g`'s
+coefficients verbatim (`qCoeff_degeneracyOp_one`) while satisfying the BAD
+recursion `a_{q²} = a_q²` where the level-`M/q` carrier demands the GOOD one
+`a_{q²} = a_q² − q·a_1`, so no eigenform at the proper divisor level is
+produced that way.  The route above never assumes `g` is old: it applies the
+descent to the TRACE, and its eigenform comes from the general spectral lemma
+rather than from transporting `g`'s own coefficients.  What is refuted is only
+the closing sentence, "the analytic input is genuinely needed". -/
 theorem traceOp_eq_zero_of_isWeightTwoNewform {M q : ℕ} [NeZero M] [NeZero (M / q)]
     (hM : 0 < M) (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     (hq : q.Prime) (hqM : q ∣ M) :
-    traceOp M (M / q) g = 0 :=
-  sorry
+    traceOp M (M / q) g = 0 := by
+  by_contra hne
+  have hNdvd : (M / q) ∣ M := Nat.div_dvd_of_dvd hqM
+  have hNpos : 0 < M / q := Nat.div_pos (Nat.le_of_dvd hM hqM) hq.pos
+  have hue : ∀ r : ℕ, r.Prime → ¬ r ∣ M →
+      heckeOp (M / q) r (traceOp M (M / q) g) = qCoeff M g r • traceOp M (M / q) g := by
+    intro r hr hrM
+    rw [heckeOp_traceOp_comm_of_not_dvd hM hNpos hNdvd hr hrM g,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hr,
+      map_smul]
+  obtain ⟨M', hM'dvd, g', hg', hcoeff⟩ :=
+    exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd hNpos hNdvd hne hue
+  have hM'lt : M' < M :=
+    lt_of_le_of_lt (Nat.le_of_dvd hNpos hM'dvd) (Nat.div_lt_self hM hq.one_lt)
+  exact hg.eigensystem_minimal M' (hM'dvd.trans hNdvd) (Nat.ne_of_lt hM'lt) g' hg' hcoeff
 
 /-- **`U_q W_q = −1` ON THE `q`-NEW PART at `q ‖ M`** (PROVEN 2026-07-27
 over the two trace leaves above; Atkin–Lehner 1970 Theorem 3 in operator
