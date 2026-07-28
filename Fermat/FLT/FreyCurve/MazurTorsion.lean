@@ -29089,9 +29089,9 @@ in `~/cs/FLT`, or elsewhere in `Fermat/` (re-checked 2026-07-27 by grepping for
 
 1. the Galois action on `End(E_ℚ̄)` — that `σ ∘ Ψ ∘ σ⁻¹` is again an isogeny (its
    defining rational functions are the `σ`-conjugates of `Ψ`'s), and that the
-   action is by ring automorphisms. **First half still OPEN, as
-   `isIsogeny_galoisConj`; second half CLOSED** (it is formal, once the first
-   half gives an element of the endomorphism ring — see `galoisConj_eq_or`);
+   action is by ring automorphisms. **Both halves now CLOSED**: the first is
+   `isIsogeny_galoisConj` (PROVEN 2026-07-28), the second is formal once the
+   first gives an element of the endomorphism ring — see `galoisConj_eq_or`;
 2. `End_ℚ(E) = ℤ` for `E/ℚ`, equivalently that a curve over `ℚ` has no
    `ℚ`-rational complex multiplication. **Still OPEN, as
    `exists_galoisConj_ne`.**
@@ -29104,11 +29104,12 @@ des points d'ordre fini*, Invent. Math. 15 (1972), §4.
 trace is nonzero.
 
 **CUT 2026-07-27 — this leaf is now PROVEN over two smaller ones**, see
-`galoisConj`, `isIsogeny_galoisConj` and `exists_galoisConj_ne` below. Only item
-1 of the MISSING MACHINERY list survives, and only its first half (that
-`σ ∘ Ψ ∘ σ⁻¹` is again an isogeny); "the action is by ring automorphisms" and
-the two-roots dichotomy are now proven from the endomorphism ring's
-commutativity. -/
+`galoisConj`, `isIsogeny_galoisConj` and `exists_galoisConj_ne` below. Item 1 of
+the MISSING MACHINERY list is now entirely closed: its first half (that
+`σ ∘ Ψ ∘ σ⁻¹` is again an isogeny) is `isIsogeny_galoisConj`, PROVEN 2026-07-28,
+and "the action is by ring automorphisms" and the two-roots dichotomy were
+already proven from the endomorphism ring's commutativity. Only item 2,
+`exists_galoisConj_ne`, remains open in this cluster. -/
 
 /-- A group element killed by `49` but not by `7` has order exactly `49`. -/
 theorem addOrderOf_eq_fortyNine {A : Type*} [AddGroup A] {h : A}
@@ -29127,8 +29128,8 @@ defined over `ℚ` (introduced 2026-07-27 by the cut of
 `trace_eq_zero_of_stable_cyclic`).
 
 This is a homomorphism of point groups for free, since `Affine.Point.map` is
-additive; what is NOT free — and is the surviving leaf `isIsogeny_galoisConj` —
-is that it is again an ISOGENY. -/
+additive; that it is again an ISOGENY is `isIsogeny_galoisConj` below (PROVEN
+2026-07-28). -/
 noncomputable def galoisConj (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
     (σ : Field.absoluteGaloisGroup ℚ) :
@@ -29152,7 +29153,8 @@ theorem galoisConj_apply (E : WeierstrassCurve ℚ) [E.IsElliptic]
           ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
             AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)) := rfl
 
-/-- **LEAF (cut 2026-07-27): the Galois conjugate of an isogeny is an isogeny.**
+/-- **The Galois conjugate of an isogeny is an isogeny** (cut 2026-07-27,
+**PROVEN 2026-07-28**).
 
 This is the FIRST HALF of item 1 of the MISSING MACHINERY list on
 `trace_eq_zero_of_stable_cyclic`, and after the cut it is all that survives of
@@ -29179,12 +29181,156 @@ endomorphism of the SAME point group rather than a map to a twist.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an isogeny of `E_ℚ̄` and a
 `σ ∈ Gal(ℚ̄/ℚ)` for which `σ ∘ Ψ ∘ σ⁻¹` fails to be given by rational functions,
-or fails to be surjective. -/
+or fails to be surjective.
+
+**PROOF (2026-07-28), following the paragraph above verbatim.** The transport of
+coordinates is `veluPointX (Point.map σ P) = σ (veluPointX P)` and its `y`-analogue,
+both by `cases P` (`Point.map` is `0 ↦ 0` and `some x y ↦ some (σ x) (σ y)`); the
+compatibility of `Polynomial.map` with evaluation is `Polynomial.eval_map_apply`,
+and `Polynomial.map_ne_zero_iff` keeps `B, E` nonzero. Surjectivity and the finite
+kernel use only that `Point.map σ` and `Point.map σ⁻¹` are mutually inverse, which
+is `Affine.Point.map_map` together with `Point.map 1 = id`; the kernel is exhibited
+as a subset of the IMAGE of `ker Ψ` under `Point.map σ`, so only `Set.Finite.image`
+is needed. No CM theory, no geometry, no Hasse bound. -/
 theorem isIsogeny_galoisConj (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
     (hΨiso : WeierstrassCurve.IsIsogeny Ψ) (σ : Field.absoluteGaloisGroup ℚ) :
-    WeierstrassCurve.IsIsogeny (galoisConj E Ψ σ) :=
-  sorry
+    WeierstrassCurve.IsIsogeny (galoisConj E Ψ σ) := by
+  classical
+  set rh : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ :=
+    ((σ : Field.absoluteGaloisGroup ℚ) :
+      AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.toRingHom with hrh
+  -- `Point.map` is coordinatewise, so it transports both coordinates by `σ`.
+  have hvX : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      veluPointX (Affine.Point.map (W' := E)
+          ((σ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+        = rh (veluPointX P) := by
+    intro P
+    cases P
+    · exact (map_zero rh).symm
+    · rfl
+  have hvY : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      veluPointY (Affine.Point.map (W' := E)
+          ((σ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
+        = rh (veluPointY P) := by
+    intro P
+    cases P
+    · exact (map_zero rh).symm
+    · rfl
+  -- The Galois action on points is a monoid action, and `σ⁻¹` undoes `σ`.
+  have hcomp : ∀ τ ρ : Field.absoluteGaloisGroup ℚ,
+      ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+          ((τ * ρ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P =
+        Affine.Point.map (W' := E)
+          ((τ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (Affine.Point.map (W' := E)
+            ((ρ : Field.absoluteGaloisGroup ℚ) :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) := by
+    intro τ ρ P
+    have hc : ((τ * ρ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom =
+        ((τ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.comp
+          ((ρ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom :=
+      AlgHom.ext fun x => rfl
+    rw [Affine.Point.map_map, hc]
+  have hmap1 : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+        ((1 : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P = P := by
+    intro P; cases P <;> rfl
+  have hinv : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+          ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (Affine.Point.map (W' := E)
+            ((σ : Field.absoluteGaloisGroup ℚ) :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) = P := by
+    intro P
+    rw [← hcomp σ⁻¹ σ P, inv_mul_cancel, hmap1]
+  have hinv' : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      Affine.Point.map (W' := E)
+          ((σ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+          (Affine.Point.map (W' := E)
+            ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) = P := by
+    intro P
+    rw [← hcomp σ σ⁻¹ P, mul_inv_cancel, hmap1]
+  -- `galoisConj` vanishes at `P` exactly when `Ψ` vanishes at `σ⁻¹ P`.
+  have hker : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      galoisConj E Ψ σ P = 0 ↔
+        Ψ (Affine.Point.map (W' := E)
+          ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+            AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) = 0 := by
+    intro P
+    rw [galoisConj_apply]
+    constructor
+    · intro h
+      have hcong := congrArg (Affine.Point.map (W' := E)
+        ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom) h
+      rwa [hinv, map_zero] at hcong
+    · intro h; rw [h, map_zero]
+  -- If the conjugate is nonzero then so is `Ψ`.
+  have hΨ0 : galoisConj E Ψ σ ≠ 0 → Ψ ≠ 0 := by
+    intro hne hc
+    exact hne (AddMonoidHom.ext fun P => by rw [galoisConj_apply, hc]; simp)
+  refine ⟨?_, ?_, ?_⟩
+  · -- rationality: conjugate the five polynomial witnesses by `σ`
+    obtain ⟨A, B, C, D, Ee, hB, hEe, hcert⟩ := hΨiso.isRationalMap
+    refine ⟨A.map rh, B.map rh, C.map rh, D.map rh, Ee.map rh,
+      (Polynomial.map_ne_zero_iff rh.injective).mpr hB,
+      (Polynomial.map_ne_zero_iff rh.injective).mpr hEe, ?_⟩
+    intro P hP
+    have hΨne : Ψ (Affine.Point.map (W' := E)
+        ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P) ≠ 0 :=
+      fun hc => hP ((hker P).mpr hc)
+    obtain ⟨hx, hy⟩ := hcert _ hΨne
+    have hxP : veluPointX P
+        = rh (veluPointX (Affine.Point.map (W' := E)
+            ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)) := by
+      conv_lhs => rw [← hinv' P]
+      rw [hvX]
+    have hyP : veluPointY P
+        = rh (veluPointY (Affine.Point.map (W' := E)
+            ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+              AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)) := by
+      conv_lhs => rw [← hinv' P]
+      rw [hvY]
+    refine ⟨?_, ?_⟩
+    · rw [galoisConj_apply, hvX, hxP, Polynomial.eval_map_apply, Polynomial.eval_map_apply,
+        ← map_mul, hx]
+    · rw [galoisConj_apply, hvY, hxP, hyP, Polynomial.eval_map_apply, Polynomial.eval_map_apply,
+        Polynomial.eval_map_apply, ← map_mul, ← map_mul, ← map_add, hy]
+  · -- surjectivity, transported along the bijection `Point.map σ`
+    intro hne R
+    obtain ⟨Q, hQ⟩ := hΨiso.surjective (hΨ0 hne)
+      (Affine.Point.map (W' := E)
+        ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom R)
+    refine ⟨Affine.Point.map (W' := E)
+      ((σ : Field.absoluteGaloisGroup ℚ) :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q, ?_⟩
+    rw [galoisConj_apply, hinv, hQ, hinv']
+  · -- finite kernel: it is the image of `ker Ψ` under `Point.map σ`
+    intro hne
+    refine Set.Finite.subset ((hΨiso.finite_ker (hΨ0 hne)).image
+      (Affine.Point.map (W' := E)
+        ((σ : Field.absoluteGaloisGroup ℚ) :
+          AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)) ?_
+    intro P hPmem
+    exact ⟨Affine.Point.map (W' := E)
+      ((σ⁻¹ : Field.absoluteGaloisGroup ℚ) :
+        AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P, (hker P).mp hPmem, hinv' P⟩
 
 /-- **Each `σ` sends `Ψ` to `Ψ` or to `[t] − Ψ`** (PROVEN 2026-07-27 over
 `isIsogeny_galoisConj` and `WeierstrassCurve.End.mul_comm_charZero`).
