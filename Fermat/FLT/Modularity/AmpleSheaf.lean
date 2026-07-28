@@ -150,7 +150,10 @@ Three are new, and each is strictly smaller than the leaf it came out of:
   bookkeeping.
 * `exists_trivialization_tensorPow` — `s^{⊗k}` read through the `k`-th power of
   a trivialization is the `k`-th power of the trivialized section.
-* `exists_trivialization_modPullback` — the same for `f^*`.
+* `exists_trivialization_modPullback` — the same for `f^*`.  **PROVEN 2026-07-28**
+  over a five-lemma calculus for the pullback of a global section through the
+  canonical comparison isomorphisms, and a `trivializationOfPullback` that is now
+  real code rather than an `∃`.  See `trivializedSection_trivializationOfPullback`.
 
 ## A note on the definition of ampleness
 
@@ -1166,24 +1169,251 @@ theorem exists_tensorPowSection {Z : Scheme.{u}} (A : Z.Modules) (s : Γ(A, ⊤)
       nonvanishingLocus (modTensorPow A k) t = (V : Set Z) :=
   ⟨tensorPowSection s k, by rw [nonvanishingLocus_tensorPowSection A s hk]; exact hloc⟩
 
+/-! ### The pullback of a global section, through the canonical isomorphisms
+
+(PROVEN 2026-07-28.)  Every isomorphism appearing in the trivialization calculus
+above is a component of one of the four canonical comparisons — restriction-as-
+pullback, pseudo-functoriality, functoriality, and `f^*𝒪 ≅ 𝒪` — and each of them
+turns out to be *characterised* by what it does to `modPullbackSection` through a
+single adjunction identity already in the pin.  That is the whole content of this
+section: five one-step lemmas, from which the section identity for the pullback of
+a trivialization follows by composition.
+
+The route the docstring below used to call "the compatibility of
+`modPullbackSection` with the adjunction unit" is exactly right, and it is CHEAPER
+than it looks, because none of the five needs the adjunction unwound by hand:
+
+* `modPullbackSection_map` is `NatTrans.naturality` of the unit;
+* `modPullbackSection_compIso` is `unit_conjugateEquiv` together with mathlib's
+  `Scheme.Modules.conjugateEquiv_pullbackComp_inv`;
+* `modPullbackSection_congrIso` is `subst` and `rfl`;
+* `modPullbackSection_unitIso` is
+  `SheafOfModules.pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit`,
+  whose right-hand side `unitToPushforwardObjUnit` is *by definition* the ring map
+  `f.app`, which is why the answer comes out as `f.appTop`;
+* `modPullbackSection_restrictPullbackIso` is
+  `Adjunction.unit_leftAdjointUniq_hom_app`.  Note this is the one place where
+  `restrictFunctorIsoPullback` being a `leftAdjointUniq` — recorded elsewhere in
+  this file as the REASON a section identity is not definitional — is what makes
+  the proof work rather than what obstructs it: `leftAdjointUniq` is *defined* by
+  its compatibility with the two units, and the restriction of a global section
+  IS the unit of `restrictAdjunction` at `⊤` (`restrictAdjunction_unit_app_app`).
+
+PERFORMANCE NOTE, and it is not incidental.  Composing the six-fold isomorphism
+and asking for the identity in one step is *not* feasible: both a single `rfl`
+against the fully nested composite and a `rw` chain ending on the last step
+exhaust 200000 heartbeats in `isDefEq`, because the trailing `rfl` attempt tries
+to unfold the adjunction.  What works is to peel the composite with
+`iso_trans_val_app` (a `rfl` lemma at ONE `≪≫` at a time), rewrite with
+FULLY-APPLIED instances of the five lemmas, and never let a `rw` end on a goal
+that is not already closed — hence the `simp only` and the final `exact`.  The
+same consideration is why `modPullbackSection_trivializationStep` is a separate
+declaration rather than three more entries in the rewrite list. -/
+
+/-- The restriction of a global section to `U`, as a global section of `A|_U`.
+
+This is the first half of `trivializedSection`, split off so that the composition
+lemmas below have something to rewrite against; `trivializedSection φ s` is
+`φ` applied to it (`trivializedSection_eq`, which is `rfl`). -/
+noncomputable def restrictedSection {Z : Scheme.{u}} (A : Z.Modules) (U : Z.Opens) (s : Γ(A, ⊤)) :
+    Γ(A.restrict U.ι, ⊤) :=
+  (Scheme.Modules.restrictAppIso U.ι A ⊤).inv (A.presheaf.map (homOfLE le_top).op s)
+
+/-- `trivializedSection` is a trivialization applied to `restrictedSection`. -/
+lemma trivializedSection_eq {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
+    (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
+    trivializedSection φ s = φ.hom.val.app (op ⊤) (restrictedSection A U s) := rfl
+
+/-- Peeling ONE `≪≫` off a composite, on global sections.  Definitional, and
+kept as a lemma precisely so that it can be applied one step at a time. -/
+lemma iso_trans_val_app {W : Scheme.{u}} {M N P : W.Modules} (α : M ≅ N) (β : N ≅ P)
+    (x : Γ(M, ⊤)) :
+    (α ≪≫ β).hom.val.app (op ⊤) x = β.hom.val.app (op ⊤) (α.hom.val.app (op ⊤) x) := rfl
+
+/-- The inverse of an isomorphism of modules cancels it on global sections. -/
+lemma modIso_inv_hom {W : Scheme.{u}} {M N : W.Modules} (α : M ≅ N) (x : Γ(M, ⊤)) :
+    α.inv.val.app (op ⊤) (α.hom.val.app (op ⊤) x) = x := by
+  have h : (α.hom ≫ α.inv).val.app (op ⊤) = (𝟙 M :).val.app (op ⊤) := by rw [α.hom_inv_id]
+  exact ConcreteCategory.congr_hom h x
+
+/-- **`f^*` of a morphism carries `f^*s` to `f^*` of the image** — naturality of
+the unit of the pullback/pushforward adjunction. -/
+lemma modPullbackSection_map {X Y : Scheme.{u}} (f : X ⟶ Y) {A B : Y.Modules} (α : A ⟶ B)
+    (s : Γ(A, ⊤)) :
+    ((Scheme.Modules.pullback f).map α).val.app (op ⊤) (modPullbackSection f A s)
+      = modPullbackSection f B (α.val.app (op ⊤) s) := by
+  have h := (Scheme.Modules.pullbackPushforwardAdjunction f).unit.naturality α
+  have h2 := congrArg (fun m => Scheme.Modules.Hom.app m ⊤) h
+  exact (ConcreteCategory.congr_hom h2 s).symm
+
+/-- The `modPullbackMapIso` form of `modPullbackSection_map`. -/
+lemma modPullbackSection_mapIso {X Y : Scheme.{u}} (f : X ⟶ Y) {A B : Y.Modules} (e : A ≅ B)
+    (s : Γ(A, ⊤)) :
+    (modPullbackMapIso f e).hom.val.app (op ⊤) (modPullbackSection f A s)
+      = modPullbackSection f B (e.hom.val.app (op ⊤) s) :=
+  modPullbackSection_map f e.hom s
+
+/-- **Pseudo-functoriality on sections**: `f^*(g^*s)` is `(f ≫ g)^*s` across
+`modPullbackCompIso`.  This is `unit_conjugateEquiv` applied to
+`(pullbackComp f g).inv`, whose conjugate mathlib computes to be
+`(pushforwardComp f g).hom`; the latter is the IDENTITY on sections
+(`pushforwardComp_hom_app_app`), which is what makes the identity come out. -/
+lemma modPullbackSection_compIso {X Y Z : Scheme.{u}} (f : X ⟶ Y) (g : Y ⟶ Z) (L : Z.Modules)
+    (s : Γ(L, ⊤)) :
+    (modPullbackCompIso f g L).hom.val.app (op ⊤)
+        (modPullbackSection f (modPullback g L) (modPullbackSection g L s))
+      = modPullbackSection (f ≫ g) L s := by
+  have h := unit_conjugateEquiv
+    ((Scheme.Modules.pullbackPushforwardAdjunction g).comp
+      (Scheme.Modules.pullbackPushforwardAdjunction f))
+    (Scheme.Modules.pullbackPushforwardAdjunction (f ≫ g))
+    (Scheme.Modules.pullbackComp f g).inv L
+  rw [Scheme.Modules.conjugateEquiv_pullbackComp_inv] at h
+  have h2 := congrArg (fun m => Scheme.Modules.Hom.app m ⊤) h
+  have h3 := ConcreteCategory.congr_hom h2 s
+  have h4 : (modPullbackCompIso f g L).hom.val.app (op ⊤)
+      ((modPullbackCompIso f g L).inv.val.app (op ⊤) (modPullbackSection (f ≫ g) L s))
+      = modPullbackSection (f ≫ g) L s := by
+    have h5 : ((modPullbackCompIso f g L).inv ≫ (modPullbackCompIso f g L).hom).val.app (op ⊤)
+        = (𝟙 (modPullback (f ≫ g) L) :).val.app (op ⊤) := by
+      rw [(modPullbackCompIso f g L).inv_hom_id]
+    exact ConcreteCategory.congr_hom h5 _
+  rw [← h4]
+  exact congrArg _ h3
+
+/-- The inverse form of `modPullbackSection_compIso`. -/
+lemma modPullbackSection_compIso_inv {X Y Z : Scheme.{u}} (f : X ⟶ Y) (g : Y ⟶ Z) (L : Z.Modules)
+    (s : Γ(L, ⊤)) :
+    (modPullbackCompIso f g L).inv.val.app (op ⊤) (modPullbackSection (f ≫ g) L s)
+      = modPullbackSection f (modPullback g L) (modPullbackSection g L s) := by
+  rw [← modPullbackSection_compIso f g L s]
+  exact modIso_inv_hom _ _
+
+/-- **Pullback along equal morphisms** leaves the pulled-back section alone. -/
+lemma modPullbackSection_congrIso {X Y : Scheme.{u}} {f g : X ⟶ Y} (h : f = g) (L : Y.Modules)
+    (s : Γ(L, ⊤)) :
+    (modPullbackCongrIso h L).hom.val.app (op ⊤) (modPullbackSection f L s)
+      = modPullbackSection g L s := by
+  subst h
+  rfl
+
+/-- **`f^*𝒪_Y ≅ 𝒪_X` computes `f^#` on sections**: the pullback of `r : Γ(𝒪_Y, ⊤)`,
+read through `modPullbackUnitIso`, is `f.appTop r`.
+
+This is the one step that produces the arithmetic — everything else in the chain
+is transport — and it is immediate from mathlib's
+`pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit`, because the
+adjoint of `pullbackObjUnitToUnit` is `unitToPushforwardObjUnit`, which is
+DEFINED as the ring map underlying `f`. -/
+lemma modPullbackSection_unitIso {X Y : Scheme.{u}} (f : X ⟶ Y) (r : Γ(modUnit Y, ⊤)) :
+    (modPullbackUnitIso f).hom.val.app (op ⊤) (modPullbackSection f (modUnit Y) r)
+      = f.appTop r := by
+  have h := SheafOfModules.pullbackPushforwardAdjunction_homEquiv_pullbackObjUnitToUnit
+    (Scheme.Hom.toRingCatSheafHom f)
+  have h2 := congrArg (fun m => Scheme.Modules.Hom.app m ⊤) h
+  exact ConcreteCategory.congr_hom h2 r
+
+/-- **Restriction read as a pullback sends the restricted section to the pulled-back
+section** — `Adjunction.unit_leftAdjointUniq_hom_app`, since restricting a global
+section IS the unit of `restrictAdjunction` at `⊤`. -/
+lemma modPullbackSection_restrictPullbackIso {X Y : Scheme.{u}} (f : X ⟶ Y) [IsOpenImmersion f]
+    (A : Y.Modules) (a : Γ(A, ⊤)) :
+    (modRestrictPullbackIso f A).hom.val.app (op ⊤)
+        ((Scheme.Modules.restrictAppIso f A ⊤).inv (A.presheaf.map (homOfLE le_top).op a))
+      = modPullbackSection f A a := by
+  have h := Adjunction.unit_leftAdjointUniq_hom_app (Scheme.Modules.restrictAdjunction f)
+    (Scheme.Modules.pullbackPushforwardAdjunction f) A
+  have h2 := congrArg (fun m => Scheme.Modules.Hom.app m ⊤) h
+  exact ConcreteCategory.congr_hom h2 a
+
+/-- `modPullbackSection_restrictPullbackIso` in `restrictedSection` form. -/
+lemma modPullbackSection_restrictedSection {Z : Scheme.{u}} (A : Z.Modules) (U : Z.Opens)
+    (a : Γ(A, ⊤)) :
+    (modRestrictPullbackIso U.ι A).hom.val.app (op ⊤) (restrictedSection A U a)
+      = modPullbackSection U.ι A a :=
+  modPullbackSection_restrictPullbackIso U.ι A a
+
+/-- The inverse form. -/
+lemma modPullbackSection_restrictedSection_inv {Z : Scheme.{u}} (A : Z.Modules) (U : Z.Opens)
+    (a : Γ(A, ⊤)) :
+    (modRestrictPullbackIso U.ι A).inv.val.app (op ⊤) (modPullbackSection U.ι A a)
+      = restrictedSection A U a := by
+  rw [← modPullbackSection_restrictedSection A U a]
+  exact modIso_inv_hom _ _
+
 /-! ### The geometric step of EGA II 5.1.12 -/
 
-/-- **The pullback of a trivialization trivializes the pullback, and the
-pulled-back section has the preimage basic open** (sorry leaf).
+/-- **The pullback of a trivialization**, as real code rather than an `∃`:
+`(f^*A)|_{f⁻¹U} ≅ 𝒪_{f⁻¹U}`.
 
-Bookkeeping, in the membership form its one consumer uses.  ROUTE: the
-trivialization is `f^*` applied to `φ` — `modPullbackMapIso`, composed with base
-change of restriction (`(f^*A)|_{f⁻¹U} ≅ (f∣_U)^*(A|_U)`, which is
-`modPullbackCompIso` twice over `morphismRestrict_ι`) and `modPullbackUnitIso`,
-all of which are PROVEN above.  The section identity is
-`trivializedSection ψ (f^*s) = (f ∣_ U).appTop (trivializedSection φ s)` — the
-compatibility of `modPullbackSection` with the adjunction unit — and the
-membership statement then follows from `Scheme.preimage_basicOpen_top (f ∣_ U)`
+Reading right to left, the chain is restriction-as-pullback, pseudo-functoriality
+down to `((f⁻¹U).ι ≫ f)^*A`, the base-change identity
+`(f⁻¹U).ι ≫ f = (f ∣_ U) ≫ U.ι` (`morphismRestrict_ι`), pseudo-functoriality back
+up to `(f ∣_ U)^*(A|_U)`, `f ∣_ U` applied to `φ`, and finally `f^*𝒪 ≅ 𝒪`.  Every
+component is PROVEN above, and `trivializedSection_trivializationOfPullback` says
+what it does to sections. -/
+noncomputable def trivializationOfPullback {X Y : Scheme.{u}} (f : X ⟶ Y) {A : Y.Modules}
+    {U : Y.Opens} (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    (modPullback f A).restrict (f ⁻¹ᵁ U).ι ≅ modUnit ((f ⁻¹ᵁ U : X.Opens) : Scheme.{u}) :=
+  modRestrictPullbackIso (f ⁻¹ᵁ U).ι (modPullback f A) ≪≫
+    modPullbackCompIso (f ⁻¹ᵁ U).ι f A ≪≫
+    modPullbackCongrIso (morphismRestrict_ι f U).symm A ≪≫
+    (modPullbackCompIso (f ∣_ U) U.ι A).symm ≪≫
+    modPullbackMapIso (f ∣_ U) ((modRestrictPullbackIso U.ι A).symm ≪≫ φ) ≪≫
+    modPullbackUnitIso (f ∣_ U)
+
+/-- The `f ∣_ U`-image of `φ`, read on sections.  Split out of
+`trivializedSection_trivializationOfPullback` for the performance reason recorded
+in the section docstring above: three more rewrites in that proof's `simp only`
+list push it over the heartbeat limit. -/
+lemma modPullbackSection_trivializationStep {X Y : Scheme.{u}} (f : X ⟶ Y) {A : Y.Modules}
+    {U : Y.Opens} (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
+    (modPullbackMapIso (f ∣_ U) ((modRestrictPullbackIso U.ι A).symm ≪≫ φ)).hom.val.app (op ⊤)
+        (modPullbackSection (f ∣_ U) (modPullback U.ι A) (modPullbackSection U.ι A s))
+      = modPullbackSection (f ∣_ U) (modUnit (U : Scheme.{u})) (trivializedSection φ s) := by
+  rw [modPullbackSection_mapIso (f ∣_ U) ((modRestrictPullbackIso U.ι A).symm ≪≫ φ)
+      (modPullbackSection U.ι A s),
+    iso_trans_val_app (modRestrictPullbackIso U.ι A).symm φ (modPullbackSection U.ι A s),
+    Iso.symm_hom, modPullbackSection_restrictedSection_inv A U s, ← trivializedSection_eq φ s]
+
+/-- **The section identity for `trivializationOfPullback`** (PROVEN 2026-07-28):
+`f^*s`, read through the pullback of `φ`, is `f^#` of `s` read through `φ`.
+
+This is the statement the docstring of `exists_trivialization_modPullback` named
+as the content of that leaf, and it is proven here by composing the five
+one-step lemmas of the previous section. -/
+theorem trivializedSection_trivializationOfPullback {X Y : Scheme.{u}} (f : X ⟶ Y) {A : Y.Modules}
+    {U : Y.Opens} (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
+    trivializedSection (trivializationOfPullback f φ) (modPullbackSection f A s)
+      = (f ∣_ U).appTop (trivializedSection φ s) := by
+  rw [trivializedSection_eq (trivializationOfPullback f φ) (modPullbackSection f A s)]
+  simp only [trivializationOfPullback, iso_trans_val_app, Iso.symm_hom,
+    modPullbackSection_restrictedSection (modPullback f A) (f ⁻¹ᵁ U)
+      (modPullbackSection f A s),
+    modPullbackSection_compIso (f ⁻¹ᵁ U).ι f A s,
+    modPullbackSection_congrIso (morphismRestrict_ι f U).symm A s,
+    modPullbackSection_compIso_inv (f ∣_ U) U.ι A s,
+    modPullbackSection_trivializationStep f φ s]
+  exact modPullbackSection_unitIso (f ∣_ U) (trivializedSection φ s)
+
+/-- **The pullback of a trivialization trivializes the pullback, and the
+pulled-back section has the preimage basic open** (PROVEN 2026-07-28).
+
+The witness is `trivializationOfPullback f φ`, built as real code above, and the
+section identity is `trivializedSection_trivializationOfPullback`; what is left
+here is the membership half, which is `Scheme.preimage_basicOpen_top (f ∣_ U)`
 together with `morphismRestrict_base_coe`.
+
+The ROUTE recorded here before it was proven was correct in every step, and its
+one warning is worth keeping: the compatibility of `modPullbackSection` with the
+adjunction unit is the whole content, and it is five separate adjunction facts
+(see the section `The pullback of a global section, through the canonical
+isomorphisms` above), not one.
 
 Note the statement is for an ARBITRARY morphism `f`.  That is not an oversight:
 basic opens pull back along any morphism of schemes, so the closed-immersion
-hypothesis of the consumer plays no role here. -/
+hypothesis of the consumer plays no role here — and indeed no hypothesis on `f`
+is used anywhere in the proof. -/
 theorem exists_trivialization_modPullback {X Y : Scheme.{u}} (f : X ⟶ Y) {A : Y.Modules}
     {U : Y.Opens} (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
     ∃ ψ : (modPullback f A).restrict (f ⁻¹ᵁ U).ι ≅ modUnit ((f ⁻¹ᵁ U : X.Opens) : Scheme.{u}),
@@ -1192,7 +1422,13 @@ theorem exists_trivialization_modPullback {X Y : Scheme.{u}} (f : X ⟶ Y) {A : 
             ((f ⁻¹ᵁ U : X.Opens) : Scheme.{u}).basicOpen
               (trivializedSection ψ (modPullbackSection f A s))) ↔
           ((⟨f.base x, hx⟩ : (U : Scheme.{u})) ∈
-            (U : Scheme.{u}).basicOpen (trivializedSection φ s)) := sorry
+            (U : Scheme.{u}).basicOpen (trivializedSection φ s)) := by
+  refine ⟨trivializationOfPullback f φ, fun x hx => ?_⟩
+  rw [trivializedSection_trivializationOfPullback, ← Scheme.preimage_basicOpen_top]
+  show (f ∣_ U).base ⟨x, hx⟩ ∈ (U : Scheme.{u}).basicOpen (trivializedSection φ s) ↔ _
+  rw [show (f ∣_ U).base ⟨x, hx⟩ = (⟨f.base x, hx⟩ : (U : Scheme.{u})) from
+    Subtype.ext (morphismRestrict_base_coe f U ⟨x, hx⟩)]
+  exact Iff.rfl
 
 /-- **The geometric step of EGA II 5.1.12** (PROVEN 2026-07-28): for a closed
 immersion `f`, the non-vanishing locus of a pulled-back section is the preimage
