@@ -46893,11 +46893,46 @@ theorem hasDoubleCoverOfAffineLine_of_ajPair_eq {X J : Scheme.{0}} {strX : X ⟶
     h₁₁ h₁₂ h₂₁ h₂₂
     (relPicEquiv_sectionIdeal_of_aj_add_eq hproper hcurve hconn jac x₁ x₂ y₁ y₂ heq)
 
-/-- **A CURVE WITH A DOUBLE COVER OF THE LINE HAS AT MOST `2·(#K + 1)`
-`K`-POINTS, for every finite field `K` over the base** (sorry leaf,
-2026-07-28) — the counting half of Ogg's argument, and it is LEVEL-FREE:
-it mentions neither `169`, nor `IsX0Compactification`, nor modular curves
-at all.
+/-- **THE `K`-POINTS THAT LIE IN `U` NUMBER AT MOST `2·#K`** (sorry leaf,
+2026-07-28) — the first half of
+`card_relPoint_le_of_hasDoubleCoverOfAffineLine`, and the half that needs
+**no `ℙ¹`**.  Like its consumer it is LEVEL-FREE: it mentions neither
+`169`, nor `IsX0Compactification`, nor modular curves at all.
+
+TRUE, and the argument is two steps with nothing missing behind either.
+`ι` is an open immersion, hence a MONOMORPHISM, so a point `x` that lies in
+`U` has a UNIQUE lift `u : Spec K ⟶ U` with `u ≫ ι = x`; sending `x` to
+`u ≫ φ` is therefore a well-defined map into `RelPoint (𝔸(Unit; S) ↘ S) k`,
+and it lands there because `_hcomm` gives
+`u ≫ φ ≫ (𝔸 ↘ S) = u ≫ ι ≫ strX = x ≫ strX = k`.  That target has exactly
+`#K` elements — the `K`-points of the affine line over a fixed `K`-point of
+the base are `Γ(Spec K) = K`.  And every fibre of the map has at most `2`
+elements: three points of one fibre give three lifts `u₁, u₂, u₃` with a
+common `uᵢ ≫ φ`, so `_hthree` makes two of them equal, hence two of the
+`xᵢ` equal (`ι` mono again).  A map to a set of size `#K` with fibres of
+size `≤ 2` has domain of size `≤ 2·#K`.
+
+**`_hthree` IS THE DEGREE BOUND AND THE LEAF IS FALSE WITHOUT IT.**  Drop
+it and `φ` may have any degree — every curve admits a finite map from a
+dense open to `𝔸¹` (any nonconstant rational function) — so the bound
+`2·#K` fails for every curve with more than `2·#K` points in `U`.  It is
+exactly the clause `HasDoubleCoverOfAffineLine` carries for this purpose.
+
+**`_hφ` (finiteness of `φ`) is NOT used by the argument above** and is
+carried only because the consumer has it and a successor proving this leaf
+may want it for the fibre-counting step in a different formulation; it is
+underscore-prefixed accordingly.  **`_hcomm` and `_hι` are both genuinely
+load-bearing** — the first to land in the right fibre, the second for
+uniqueness of the lift.
+
+**Note the hypotheses this leaf does NOT have**: `IsProper`,
+`SmoothOfRelativeDimension 1`, `GeometricallyConnected` and `IsDominant`
+are all absent, and that is the point of the cut — they are needed only for
+the complement, and they all sit on the sibling leaf below.
+
+The audit that follows is the audit of the WHOLE node
+`card_relPoint_le_of_hasDoubleCoverOfAffineLine`, retained here because it
+is what the two leaves were cut out of.
 
 TRUE and classical.  `HasDoubleCoverOfAffineLine strX` gives a dense open
 `ι : U ⟶ X` and a finite `φ : U ⟶ 𝔸¹_S` no fibre of which has three
@@ -46918,8 +46953,14 @@ closed in the preimage of `𝔸¹` under the extension, and it is open there
 too; the preimage is an open subscheme of the irreducible `X_K`, hence
 connected, so `U_K` IS the whole preimage of `𝔸¹` and `X_K ∖ U_K` is the
 fibre over `∞` — at most `d ≤ 2` points, already counted by the `+ 1`.
-So no separate bound on the complement is needed, and in particular the
-leaf must NOT be weakened to a statement about `#U(K)` alone.
+In particular the node must NOT be weakened to a statement about `#U(K)`
+alone.  **Corrected 2026-07-28**: an earlier version of this sentence read
+"so no separate bound on the complement is needed", which the cut below has
+made misleading — the complement bound is not free, it is precisely
+`card_relPoint_not_liesIn_le_of_finite_toAffineLine`, and it is where the
+whole `ℙ¹` requirement of this node now lives.  What is true, and was the
+point being made, is that the complement costs nothing *extra* in the final
+arithmetic: its `2` is the `2·1` of the `+ 1`.
 
 **Not vacuous**: `X = ℙ¹_K` satisfies the hypothesis with `d = 1` and has
 `#K + 1 ≤ 2(#K + 1)` points, and an elliptic curve satisfies it with
@@ -46941,13 +46982,98 @@ leaf is INDEPENDENT of the three Riemann–Roch leaves in this cluster, and
 a prover should not wait on them.  **The check that would refute this
 verdict**: a Riemann–Roch or `h⁰` statement being NEEDED here — it is
 not; what is needed is a projective line and the degree of a finite
-morphism. -/
-theorem card_relPoint_le_of_hasDoubleCoverOfAffineLine {X S : Scheme.{0}} {strX : X ⟶ S}
-    (_hproper : IsProper strX) (_hcurve : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (_hdc : HasDoubleCoverOfAffineLine strX)
+morphism.
+
+**DECOMPOSED 2026-07-28** over the two leaves immediately below, along the
+`U` / `X ∖ U` seam.  See the docstring of
+`card_relPoint_liesIn_le_of_finite_toAffineLine` for why that seam is the
+right one: it confines the `ℙ¹` requirement — the only genuinely missing
+theory here — to the COMPLEMENT half, while the `U` half needs nothing but
+the `K`-points of `𝔸¹` and the three-point clause. -/
+theorem card_relPoint_liesIn_le_of_finite_toAffineLine {X S U : Scheme.{0}} {strX : X ⟶ S}
+    (ι : U ⟶ X) (φ : U ⟶ 𝔸(Unit; S))
+    (_hι : IsOpenImmersion ι) (_hφ : IsFinite φ)
+    (_hcomm : φ ≫ (𝔸(Unit; S) ↘ S) = ι ≫ strX)
+    (_hthree : ∀ (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ 𝔸(Unit; S))
+      (u₁ u₂ u₃ : Spec (CommRingCat.of K) ⟶ U),
+      u₁ ≫ φ = k → u₂ ≫ φ = k → u₃ ≫ φ = k → u₁ = u₂ ∨ u₁ = u₃ ∨ u₂ = u₃)
     (K : Type) [Field K] [Finite K] (k : Spec (CommRingCat.of K) ⟶ S) :
-    Nat.card (RelPoint strX k) ≤ 2 * (Nat.card K + 1) :=
+    Nat.card {x : RelPoint strX k // RelPoint.LiesIn ι x} ≤ 2 * Nat.card K :=
   sorry
+
+/-- **THE COMPLEMENT OF `U` CONTRIBUTES AT MOST `2` `K`-POINTS** (sorry
+leaf, 2026-07-28) — the second half of
+`card_relPoint_le_of_hasDoubleCoverOfAffineLine`, and **the ONLY place in
+that node where `ℙ¹` is needed**.
+
+TRUE, and it is the paragraph the consumer's docstring calls "why the
+complement `X ∖ U` costs nothing", stated as its own obligation.  `φ` is
+finite hence proper, so `U` is closed in the preimage of `𝔸¹` under the
+unique extension `X_K ⟶ ℙ¹_K`
+(`exists_unique_extension_of_isSmoothProperCurve`, PROVEN in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` and already in
+this file's cone), and open there too; the preimage is an open subscheme
+of the irreducible `X_K`, hence connected, so `U_K` IS the whole preimage
+of `𝔸¹` and `X_K ∖ U_K` is the fibre over `∞` — at most `d ≤ 2` points.
+
+**All three curve hypotheses are load-bearing HERE and nowhere else in the
+node**: `_hproper` is what makes the extension to `ℙ¹` exist, `_hcurve` is
+what makes `X_K` a curve so a nonconstant map to `ℙ¹` is finite, and
+`_hconn` is what makes `U_K` the whole preimage of `𝔸¹` (on `ℙ¹ ⊔ ℙ¹` it
+is not).  That is why they are hypotheses of this leaf and NOT of its
+sibling.
+
+**`_hdom` is what forbids `U = ∅`**, which would make the complement all of
+`X_K` and the bound false for any curve with `≥ 3` points.
+
+**The check that would refute this verdict**: a `ℙ¹`-free proof of the
+complement bound — the affine phrasing is exactly where `ℙ¹` could have
+been avoided and, as far as this audit found, cannot be. -/
+theorem card_relPoint_not_liesIn_le_of_finite_toAffineLine {X S U : Scheme.{0}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hcurve : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX)
+    (ι : U ⟶ X) (φ : U ⟶ 𝔸(Unit; S))
+    (_hι : IsOpenImmersion ι) (_hdom : IsDominant ι) (_hφ : IsFinite φ)
+    (_hcomm : φ ≫ (𝔸(Unit; S) ↘ S) = ι ≫ strX)
+    (K : Type) [Field K] [Finite K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    Nat.card {x : RelPoint strX k // ¬ RelPoint.LiesIn ι x} ≤ 2 :=
+  sorry
+
+/-- **A CURVE WITH A DOUBLE COVER OF THE LINE HAS AT MOST `2·(#K + 1)`
+`K`-POINTS** (**PROVEN 2026-07-28** by decomposition over the two leaves
+immediately above; introduced as a sorry leaf earlier the same day).  See
+the long audit above `card_relPoint_liesIn_le_of_finite_toAffineLine` for
+the mathematics; this declaration is only the bookkeeping that adds the two
+halves.
+
+**THE ONE SUBTLETY IN THE ASSEMBLY, recorded because it is invisible in the
+statement.**  `Nat.card` of an INFINITE type is `0`, so the conclusion is
+automatic when `RelPoint strX k` is infinite, and the proof discharges that
+branch by `Nat.card_eq_zero_of_infinite` rather than by geometry.  The leaf
+is therefore not *vacuous* — over a finite field the point set of a proper
+curve really is finite, and the consumer
+(`not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`) supplies the count `38`
+which forces finiteness there — but a successor should know that no
+finiteness statement is being proven here, and must not cite this leaf for
+one. -/
+theorem card_relPoint_le_of_hasDoubleCoverOfAffineLine {X S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (hdc : HasDoubleCoverOfAffineLine strX)
+    (K : Type) [Field K] [Finite K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    Nat.card (RelPoint strX k) ≤ 2 * (Nat.card K + 1) := by
+  classical
+  obtain ⟨U, ι, φ, hι, hdom, hφ, hcomm, hthree⟩ := hdc
+  rcases finite_or_infinite (RelPoint strX k) with _ | _
+  · have hsplit : Nat.card (RelPoint strX k)
+        = Nat.card {x : RelPoint strX k // RelPoint.LiesIn ι x}
+          + Nat.card {x : RelPoint strX k // ¬ RelPoint.LiesIn ι x} := by
+      rw [← Nat.card_sum]
+      exact Nat.card_congr (Equiv.sumCompl _).symm
+    have hA := card_relPoint_liesIn_le_of_finite_toAffineLine ι φ hι hφ hcomm hthree K k
+    have hB := card_relPoint_not_liesIn_le_of_finite_toAffineLine hproper hcurve hconn
+      ι φ hι hdom hφ hcomm K k
+    omega
+  · simp [Nat.card_eq_zero_of_infinite]
 
 /-- **A DOUBLE COVER OF THE LINE SPECIALISES TO THE GOOD REDUCTION**
 (sorry leaf, 2026-07-28) — gonality does not RISE under specialisation at
@@ -47004,10 +47130,51 @@ theorem hasDoubleCoverOfAffineLine_specialFibre {N ℓ : ℕ} (_hN : 0 < N) (_h�
     HasDoubleCoverOfAffineLine strX' :=
   sorry
 
-/-- **`#X_0(169)(𝔽₉) = 38`** (sorry leaf, 2026-07-28) — Eichler–Shimura
-over the QUADRATIC extension of `𝔽₃`, and the only one of the three
-leaves that mentions the level.  The `𝔽_{ℓ²}` analogue of
-`card_relPoint_x0_finiteField`.
+/-- **EICHLER–SHIMURA, SECOND POWER SUM: `Σ αᵢ² = Tr(T_ℓ²) − 2ℓ·dim
+S₂(Γ₀(N))`** (sorry leaf, 2026-07-28) — the geometric half of
+`card_relPoint_x0OneSixtyNine_quadratic`, and it is **LEVEL-GENERIC**: `N`
+and `ℓ` are arbitrary with `ℓ ∤ N`, and nothing about `169` enters.
+
+TRUE, and it is the SAME Eichler–Shimura pairing that
+`isWeilEigenvalues_x0_eichlerShimura` (above in this file) states in its
+`(sum, product)` form, read off one degree higher.  The pairing gives the
+`2g` Frobenius eigenvalues as `αᵢ, βᵢ` with `αᵢ + βᵢ = aᵢ` and
+`αᵢ βᵢ = ℓ`, the `aᵢ` being the eigenvalues of `T_ℓ` on `S₂(Γ₀(N))`.  Then
+
+    Σ over all 2g eigenvalues of (·)²
+      = Σᵢ (αᵢ² + βᵢ²) = Σᵢ ((αᵢ + βᵢ)² − 2αᵢβᵢ) = Σᵢ (aᵢ² − 2ℓ)
+      = Tr(T_ℓ²) − 2ℓ·dim S₂(Γ₀(N)),
+
+using that the `n`-th power sum of the eigenvalue multiset of an
+endomorphism is `Tr` of its `n`-th power.
+
+**WHY THIS IS A SEPARATE LEAF AND NOT A COROLLARY of
+`isWeilEigenvalues_x0_eichlerShimura`.**  That leaf exposes exactly two
+scalars — `α.sum` and `∏ (1 − αᵢ)` — and the second power sum is recoverable
+from neither, nor from both together: `Σ αᵢ²` is not a function of `Σ αᵢ`
+and `∏ (1 − αᵢ)` once `g ≥ 2`.  Its docstring says as much, in the sentence
+recording that the weak `(sum, product)` form "is all that
+`IsX0EichlerShimura` needs" — this node needs more, so it asks for more.
+A successor proving the full congruence relation closes both at once, and
+that is the right target; see the `WHAT IS MISSING` item 3 on
+`isWeilEigenvalues_x0_eichlerShimura`, which is unchanged by this cut.
+
+**Not vacuous and not junk-dischargeable**: `α` is universally quantified
+and pinned by `_hα` (`IsWeilEigenvalues` constrains it by the point counts
+over EVERY finite extension — see the section docstring above), so this is
+an equation between two determined complex numbers.
+
+**`_hℓN` is load-bearing**: at `ℓ ∣ N` the curve has bad reduction, the
+`αᵢβᵢ = ℓ` half of the pairing fails (the Atkin–Lehner/Steinberg
+eigenvalues are `±1` and `±ℓ` rather than a conjugate pair of norm `ℓ`),
+and the stated identity is false.
+
+---
+
+**The audit below is the audit of the `#X_0(169)(𝔽₉) = 38` node**
+(`card_relPoint_x0OneSixtyNine_quadratic`), retained here because it is what
+these three leaves were cut out of, and because it carries the numerical
+work and the field correction that justify the whole approach.
 
 TRUE, and computed three ways below.  `dim S₂(Γ₀(169)) = 8`, so `X_0(169)`
 has `16` Frobenius eigenvalues at `3`, in pairs `(α_f, β_f)` with
@@ -47032,13 +47199,29 @@ points.  `4 ≤ 8`, so the `𝔽₃` count refutes NOTHING.
 
 Worse, and this is what makes the correction worth a paragraph: **NO
 prime field works, at any `ℓ`.**  PARI/GP over every prime `ℓ ∤ 169` below
-`300` finds `#X_0(169)(𝔽_ℓ) = ℓ + 1` in every case (`Tr T_ℓ = 0`
-throughout — the level-`169` newforms pair off under the quadratic twist
-by the character mod `13`), and `ℓ + 1 ≤ 2(ℓ + 1)` always; while for
-`ℓ ≥ 254` Weil alone forbids it, since `#X(𝔽_ℓ) ≤ ℓ + 1 + 2·8·√ℓ ≤
-2(ℓ + 1)` there.  So a successor must not "simplify" this leaf back down
-to `SpecF ℓ`-points: the resulting statement would be TRUE, USELESS and
-indistinguishable from this one at a glance.
+`300` finds `#X_0(169)(𝔽_ℓ) ≤ 2(ℓ + 1)` in every case, so no prime field
+refutes anything; while for `ℓ ≥ 254` Weil alone forbids it, since
+`#X(𝔽_ℓ) ≤ ℓ + 1 + 2·8·√ℓ ≤ 2(ℓ + 1)` there (the crossover is
+`16√ℓ ≤ ℓ + 1`, i.e. `ℓ ≥ 254`).  So a successor must not "simplify" this
+leaf back down to `SpecF ℓ`-points: the resulting statement would be TRUE,
+USELESS and indistinguishable from this one at a glance.
+
+**A FALSE PARENTHETICAL CORRECTED HERE, 2026-07-28.**  The sentence above
+used to read "finds `#X_0(169)(𝔽_ℓ) = ℓ + 1` in every case (`Tr T_ℓ = 0`
+throughout — the level-`169` newforms pair off under the quadratic twist by
+the character mod `13`)".  **That is false**, and the table below already
+contradicted it in its own `ℓ = 17` row: `#X_0(169)(𝔽₁₇) = 16 = 18 − 2`, so
+`Tr T_17 = 2 ≠ 0`.  An independent PARI/GP run
+(`mf = mfinit([169,2],1); trace(mfheckemat(mf,ℓ))`) finds **28 primes below
+`300` with `Tr T_ℓ ≠ 0`** — `17, 23, 29, 43, 53, 61, 79, 101, …` — with
+`max |Tr T_ℓ| = 60` at `ℓ = 173`.  The traces do vanish at the small primes
+`2, 3, 5, 7, 11, 19` that the table happens to list, which is presumably
+how the claim was formed.
+
+The CONCLUSION ("no prime field works") survives intact and was re-verified
+directly: over every prime `ℓ ∤ 169` below `300`, `ℓ + 1 − Tr T_ℓ ≤
+2(ℓ + 1)` holds, with zero exceptions.  Only the stated REASON was wrong,
+and the correct reason is the Weil bound rather than a vanishing trace.
 
 Over the quadratic extension the bound bites at exactly five primes:
 
@@ -47063,28 +47246,152 @@ cannot be discharged by choosing a convenient `K`.  The value `38` is
 nonzero and is not `#K + 1 = 10`, so it is not the cusp count nor any
 shape-of-the-object default.
 
-**WHAT PROVING IT NEEDS.**  Exactly `card_relPoint_x0_finiteField`'s
-inputs, at `𝔽_{ℓ²}` instead of `𝔽_ℓ`: the geometric half is the Lefschetz
-trace formula for `Frob²` — already the `card_curve` field of
-`IsX0EichlerShimura` in spirit, but that structure is stated for
+**WHAT PROVING IT NEEDS — AND ONE CLAIM HERE WAS STALE, CORRECTED
+2026-07-28.**  This paragraph used to read: "the geometric half is the
+Lefschetz trace formula for `Frob²` — already the `card_curve` field of
+`IsX0EichlerShimura` in spirit, but **that structure is stated for
 `RelPoint strX (𝟙 (SpecF ℓ))` only and must be widened to an arbitrary
-finite `k`, which is the honest first step; the arithmetic half is
-`Tr(T_3² ∣ S₂(Γ₀(169))) = 20`, one more row of the same computation
-`traceHeckeOp_of_x0WitnessTable` performs, in `T_ℓ²` rather than `T_ℓ`.
-Note `169` is NOT a row of `x0WitnessTable` and should not be added to
-it: that table is consumed with `ℓ + 1 − m` semantics that are wrong for
-a non-prime field.
+finite `k`, which is the honest first step**".
+
+**The widening was already done.**  `IsWeilEigenvalues` (above in this
+file) carries a `card_ext` field quantified over EVERY finite extension —
+`∀ n, 0 < n → ∀ (K : Type) [Field K] [Finite K] (φ : ZMod ℓ →+* K),
+Nat.card K = ℓ ^ n → #X(K) = ℓⁿ + 1 − Σ αᵢⁿ` — and
+`exists_isWeilEigenvalues` produces it from exactly the three curve
+conditions `IsX0Compactification` supplies.  So the "honest first step"
+cost nothing: it had been paid when the zeta-function cut was taken.  The
+old note would have sent a prover to widen a structure that did not need
+widening, which is why it is recorded rather than silently deleted.
+
+`169` is still NOT a row of `x0WitnessTable` and must not be added to it:
+that table is consumed with `ℓ + 1 − m` semantics that are wrong for a
+non-prime field.  The arithmetic is instead banked on the two dedicated
+leaves below.
 
 **The check that would refute this verdict**: a fourth independent
 computation of `Tr(T_3² ∣ S₂(Γ₀(169)))` disagreeing with `20`, or of
-`dim S₂(Γ₀(169))` disagreeing with `8`. -/
+`dim S₂(Γ₀(169))` disagreeing with `8`.  Both were run again on
+2026-07-28 with PARI/GP and both agree; `Tr(T_9) = −4` agrees with them
+through `T_3² = T_9 + 3·⟨3⟩` (`20 − 3·8 = −4`), which is a third check.
+
+**DECOMPOSED 2026-07-28** over the three leaves below. -/
+theorem sumSq_isWeilEigenvalues_x0 (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
+    {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
+    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α) :
+    (α.map (fun a => a ^ 2)).sum =
+      LinearMap.trace ℂ
+          (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+          (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ *
+            _root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+        - 2 * (ℓ : ℂ) *
+          (Module.finrank ℂ
+            (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) : ℂ) :=
+  sorry
+
+/-- **`dim_ℂ S₂(Γ₀(169)) = 8`** (sorry leaf, 2026-07-28) — equivalently
+`g(X_0(169)) = 8`, and one of the two arithmetic inputs of
+`card_relPoint_x0OneSixtyNine_quadratic`.
+
+TRUE, and checkable three ways.  `x0Genus 169` is `decide`-computable in
+this file and evaluates to `8`: `gammaZeroIndex 169 = 169·(1 + 1/13) =
+182`, `numEllipticTwo 169 = 2` and `numEllipticThree 169 = 2` (because
+`13 ≡ 1 mod 4` and `13 ≡ 1 mod 3`), `numCusps 169 = 1 + φ(13) + 1 = 14`,
+so `(12 + 182 − 3·2 − 4·2 − 6·14)/12 = 96/12 = 8`.  PARI/GP
+(`mfdim(mfinit([169,2],1))`) returns `8` independently, and the new
+subspace has the same dimension (`mfdim(mfinit([169,2],0)) = 8`), as it
+must since `dim S₂(Γ₀(13)) = dim S₂(Γ₀(1)) = 0` leaves no oldforms.
+
+**WHY THIS IS A SEPARATE LEAF FROM `x0Genus 169 = 8`.**  `x0Genus` is a
+closed-form arithmetic function and is already decidable; what is NOT
+available at this pin is the bridge `dim_ℂ S₂(Γ₀(N)) = x0Genus N` — the
+dimension formula for weight-`2` cusp forms.  Its genus-`1` instance is
+`finrank_cuspForm_eq_one_of_x0Genus_eq_one`
+(`FreyCurve/MazurTorsion.lean`, itself a sorry leaf), and this is the
+`N = 169` instance of the same missing bridge.  **A successor proving the
+general bridge closes both**, and stating it generally is the better
+target than either instance. -/
+theorem finrank_cuspForm_x0OneSixtyNine :
+    Module.finrank ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL 169) 2) = 8 :=
+  sorry
+
+/-- **`Tr(T_3² ∣ S₂(Γ₀(169))) = 20`** (sorry leaf, 2026-07-28) — the second
+arithmetic input of `card_relPoint_x0OneSixtyNine_quadratic`, and the only
+place where a number about the level `169` enters the gonality argument.
+
+TRUE, computed with PARI/GP on 2026-07-28
+(`mf = mfinit([169,2],1); t = mfheckemat(mf,3); trace(t*t)`) and
+cross-checked two ways: `Tr(T_3) = 0` and `Tr(T_9) = −4`, and the weight-`2`
+Hecke recursion `T_3² = T_9 + 3·⟨3⟩ = T_9 + 3` (trivial nebentypus,
+`3 ∤ 169`) gives `Tr(T_3²) = −4 + 3·8 = 20`.  The matrix identity
+`t*t == mfheckemat(mf,9) + 3·I` was verified directly and holds.
+
+**WHY `T_3²` AND NOT `T_9`.**  What the Lefschetz count over `𝔽₉` needs is
+the second POWER SUM of the Frobenius eigenvalues, and Eichler–Shimura
+turns that into `Σ_f (a_3(f)² − 2·3)`, i.e. into `Tr(T_3²)` and not into
+`Tr(T_9)`.  The two differ by exactly `3·dim = 24`, which is the whole
+content of the recursion; banking the wrong one would give
+`#X_0(169)(𝔽₉) = 10 − (−4 − 48) = 62` instead of `38`, and `62` also
+exceeds `20`, so the ERROR WOULD NOT HAVE BEEN CAUGHT by the consumer.
+That is why the cross-check above is recorded rather than assumed.
+
+**This is the same kind of statement as `exists_basis_charpoly_heckeOp`
+and should be proven the same way** — a `q`-expansion basis of
+`S₂(Γ₀(169))` and the matrix of `T_3` in it — but it is deliberately NOT
+routed through `x0HeckeCharpolyTable`: getting `Tr(M²)` from a banked
+characteristic polynomial needs Newton's identity in the form
+`p₂ = e₁² − 2e₂`, and `Mathlib` at this pin has
+`Matrix.trace_eq_sum_roots_charpoly` (first power sum only) with no
+counterpart for the second, so the charpoly route would cost a
+triangularisation argument for no gain here. -/
+theorem trace_heckeOpSq_x0OneSixtyNine :
+    LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL 169) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp 169 3 *
+          _root_.GaloisRepresentation.Modularity.heckeOp 169 3) = 20 :=
+  sorry
+
+/-- **`#X_0(169)(𝔽₉) = 38`** (**PROVEN 2026-07-28** by decomposition over
+`sumSq_isWeilEigenvalues_x0`, `trace_heckeOpSq_x0OneSixtyNine` and
+`finrank_cuspForm_x0OneSixtyNine`, on top of the already-present
+`exists_isWeilEigenvalues`; introduced as a sorry leaf earlier the same
+day).  The full numerical audit is on the docstring above.
+
+The assembly is: `exists_isWeilEigenvalues` supplies the Frobenius
+eigenvalue multiset `α` of `X_0(169)_{𝔽₃}` from the three curve conditions;
+`card_ext` at `n = 2` gives `#X(K) = 3² + 1 − Σ αᵢ²` for any `K` of
+cardinality `9`; and the second power sum is `20 − 2·3·8 = −28`, so the
+count is `10 + 28 = 38`.
+
+**THE `𝔽₃`-STRUCTURE ON `K` IS UNIQUE, and that is what lets an arbitrary
+`k` be fed to `card_ext`.**  `card_ext` is stated for the base point
+`Spec.map (CommRingCat.ofHom φ)` attached to a ring map `φ : ZMod 3 →+* K`,
+while this leaf quantifies over an ARBITRARY `k : Spec K ⟶ SpecF 3`.  The
+two agree because `Spec` is fully faithful (`Spec.map_preimage`), so
+`k = Spec.map (Spec.preimage k)` and `φ := (Spec.preimage k).hom` is the
+map to use — no characteristic computation and no choice of isomorphism
+`K ≅ 𝔽₉` is needed anywhere.  (Uniqueness of `φ` itself, `RingHom.ext_zmod`,
+is not even required for the proof; it is what makes the statement's
+quantification over `k` harmless.) -/
 theorem card_relPoint_x0OneSixtyNine_quadratic {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF 3}
     {strY' : Y' ⟶ SpecF 3} {jY' : Y' ⟶ X'}
-    (_hX' : IsX0Compactification 169 strX' strY' jY')
-    (K : Type) [Field K] [Finite K] (_hK : Nat.card K = 9)
+    (hX' : IsX0Compactification 169 strX' strY' jY')
+    (K : Type) [Field K] [Finite K] (hK : Nat.card K = 9)
     (k : Spec (CommRingCat.of K) ⟶ SpecF 3) :
-    Nat.card (RelPoint strX' k) = 38 :=
-  sorry
+    Nat.card (RelPoint strX' k) = 38 := by
+  obtain ⟨α, hα⟩ := exists_isWeilEigenvalues 3 Nat.prime_three strX'
+    hX'.isProper hX'.smooth hX'.connected
+  have hsq : (α.map (fun a => a ^ 2)).sum = -28 := by
+    rw [sumSq_isWeilEigenvalues_x0 169 3 (by norm_num) Nat.prime_three (by decide) hX' hα,
+      trace_heckeOpSq_x0OneSixtyNine, finrank_cuspForm_x0OneSixtyNine]
+    norm_num
+  have hk : Spec.map (CommRingCat.ofHom (Spec.preimage k).hom) = k := by
+    simp
+  have h := hα.card_ext 2 (by norm_num) K (Spec.preimage k).hom (by rw [hK]; norm_num)
+  rw [hk, hsq] at h
+  norm_num at h
+  exact_mod_cast h
 
 /-- **`X_0(169)` HAS GONALITY `≥ 3` — it is neither rational nor
 hyperelliptic** (PROVEN 2026-07-28 by decomposition, over the three
