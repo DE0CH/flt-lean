@@ -21198,8 +21198,9 @@ development's vocabulary: `A(ℚ) = RelPoint jstr (𝟙 SpecQ)`,
 `RelPoint.pre (specAlgClos ℚ) rfl`, and the Galois action is
 `ab.galSMul (𝟙 SpecQ)`.  `Fermat.finite_quotient_nsmul_of_kummerCochains`
 (`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) is the pure-algebra half;
-what is supplied here is its five hypotheses.  Three of them are PROVEN
-below or upstream, and the two that remain are the leaves. -/
+what is supplied here is its five hypotheses.  Four of them are PROVEN
+below or upstream, and the one that remains — finiteness of the set of
+Kummer cochains — is the leaf. -/
 
 -- (`epi_specAlgClos` — "`Spec F̄ ⟶ Spec F` is an epimorphism of schemes" — used to be
 -- restated HERE at `F = ℚ`.  Two branches proved it on 2026-07-27, one at a general
@@ -21260,9 +21261,96 @@ theorem galSMul_pre_specAlgClos {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
   show specGal σ ≫ specAlgClos ℚ ≫ P.1 = specAlgClos ℚ ≫ P.1
   rw [← Category.assoc, specGal_comp_specAlgClos]
 
+/-- **Galois descent of a point, over a VARIABLE perfect base field: a
+`Γ_F`-invariant `F̄`-point of ANY scheme comes from an `F`-point**
+(PROVEN 2026-07-28, no leaf).
+
+Stated for a bare `A : Scheme.{0}` with no structure morphism, no
+properness and no group law, because the argument uses none of them; the
+`ℚ`-level consumer below is the one-line specialisation.
+
+**THE PROOF, IN FOUR STEPS.**
+
+1. `Scheme.SpecToEquivOfField` (`Mathlib`) writes `p : Spec F̄ ⟶ A` as a
+   point `a : A` together with an embedding `φ : κ(a) ⟶ F̄`, via
+   `p = Spec.map φ ≫ A.fromSpecResidueField a`.
+2. `specGal σ ≫ p = p` becomes `φ ≫ σ = φ`: compose the factorisation with
+   `Spec.map σ`, cancel the MONO `A.fromSpecResidueField a` (it is a
+   preimmersion), and use full faithfulness of `Spec` (`Spec.map_inj`).
+   So every value of `φ` is `Γ_F`-fixed.
+3. `mem_range_algebraMap_of_galoisFixed` (above in this file) puts the
+   image of `φ` inside the range of `algebraMap F F̄`, which is a subring
+   on which `algebraMap` is a bijection onto its range (it is injective,
+   `F` being a field), so `φ` factors as `algebraMap F F̄ ∘ ψ` for a ring
+   map `ψ : κ(a) ⟶ F`.
+4. `Spec.map ψ ≫ A.fromSpecResidueField a` is the descended point, and
+   `specAlgClos F ≫ (-) = p` is step 1 read backwards.
+
+**`PerfectField F` is what cannot be dropped**, and it enters only
+through step 3: over `𝔽_p(t)` the extension `F̄/F` is not separable and
+the fixed field of `Aut(F̄/F)` is the perfect closure, strictly larger
+than `F`.
+
+**VARIABLE `F`, NOT the literal `ℚ`, and that is load-bearing rather than
+stylistic** — the same discipline `mem_range_algebraMap_of_galoisFixed`
+records above.  At the concrete base `ℚ` the two
+`Algebra ℚ (AlgebraicClosure ℚ)` instances (`DivisionRing.toRatAlgebra`
+and `AlgebraicClosure.instAlgebra`) form a DIAMOND, and
+`IsAlgClosure ℚ ℚ̄` — hence `Normal`, `Algebra.IsSeparable`, `IsGalois` —
+then fails to synthesise inside this file.  With `F` a variable there is
+one instance path and the proofs are short.
+
+**No separatedness is used, and the conclusion is correspondingly only
+EXISTENCE.**  Uniqueness of the descended section is what would need `A`
+separated over `F`; nothing downstream asks for it, so it is not claimed.
+
+**DUPLICATION TO RESOLVE AT INTEGRATION.**  `X1.lean` carries the
+byte-identical statement as `exists_specSection_of_specGal_invariant`,
+proven the same way over its own copy of the field-theoretic step
+(`mem_range_algebraMap_of_absoluteGaloisGroup_fixed`, which is
+`mem_range_algebraMap_of_galoisFixed` renamed).  That copy could not be
+cited here — `X1.lean` `public import`s `X0.lean`, so the dependency runs
+the wrong way — and the two were written independently on 2026-07-27 and
+2026-07-28.  The clean repair is to delete both `X1.lean` declarations
+and have `exists_section_of_galoisInvariant` cite this one; it is not
+done here only because `X1.lean` has a separate owner. -/
+theorem exists_specSection_of_specGal_fixed {F : Type} [Field F] [PerfectField F]
+    {A : Scheme.{0}} (p : Spec (CommRingCat.of (AlgebraicClosure F)) ⟶ A)
+    (hinv : ∀ σ : Field.absoluteGaloisGroup F, specGal σ ≫ p = p) :
+    ∃ s : Spec (CommRingCat.of F) ⟶ A, specAlgClos F ≫ s = p := by
+  set d := Scheme.SpecToEquivOfField (AlgebraicClosure F) A p
+  have hp : Spec.map d.2 ≫ A.fromSpecResidueField d.1 = p :=
+    (Scheme.SpecToEquivOfField (AlgebraicClosure F) A).symm_apply_apply p
+  have hfix : ∀ (σ : Field.absoluteGaloisGroup F) (t : A.residueField d.1),
+      (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (d.2.hom t) = d.2.hom t := by
+    intro σ t
+    have h1 : Spec.map (d.2 ≫ CommRingCat.ofHom
+        ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom))
+        ≫ A.fromSpecResidueField d.1 = Spec.map d.2 ≫ A.fromSpecResidueField d.1 := by
+      rw [Spec.map_comp, Category.assoc, hp, ← specGal, hinv σ]
+    have h3 := Spec.map_inj.mp ((cancel_mono (A.fromSpecResidueField d.1)).mp h1)
+    exact congrArg (fun (m : A.residueField d.1 ⟶ _) => m.hom t) h3
+  have hmem : ∀ t : A.residueField d.1,
+      d.2.hom t ∈ (algebraMap F (AlgebraicClosure F)).range := fun t =>
+    mem_range_algebraMap_of_galoisFixed _ (fun σ => hfix σ t)
+  set ι : F →+* AlgebraicClosure F := algebraMap F (AlgebraicClosure F)
+  have hιinj : Function.Injective ι := ι.injective
+  let eR : F ≃+* ι.range := RingEquiv.ofBijective ι.rangeRestrict
+    ⟨fun x y hxy => hιinj (congrArg Subtype.val hxy), ι.rangeRestrict_surjective⟩
+  let ψ : A.residueField d.1 →+* F :=
+    (eR.symm : ι.range →+* F).comp (d.2.hom.codRestrict ι.range hmem)
+  have hψ : ∀ t, ι (ψ t) = d.2.hom t := fun t =>
+    congrArg Subtype.val (eR.apply_symm_apply ⟨d.2.hom t, hmem t⟩)
+  refine ⟨Spec.map (CommRingCat.ofHom ψ) ≫ A.fromSpecResidueField d.1, ?_⟩
+  rw [specAlgClos, ← Category.assoc, ← Spec.map_comp]
+  refine Eq.trans ?_ hp
+  congr 2
+  exact CommRingCat.hom_ext (RingHom.ext hψ)
+
 /-- **Galois descent for points of `A`: a `Γ_ℚ`-invariant `ℚ̄`-point comes
-from a `ℚ`-point** (sorry leaf, introduced 2026-07-27) — the surjective
-half of `A(ℚ) = A(ℚ̄)^{Γ_ℚ}`.
+from a `ℚ`-point** (**PROVEN 2026-07-28**, sorry-free, over
+`exists_specSection_of_specGal_fixed` above; formerly a sorry leaf) — the
+surjective half of `A(ℚ) = A(ℚ̄)^{Γ_ℚ}`.
 
 TRUE, and it is the standard Galois descent for points of a scheme over a
 field: for *any* `ℚ`-scheme `J`, `J(ℚ̄)^{Γ_ℚ} = J(ℚ)`.  No properness, no
@@ -21292,17 +21380,28 @@ are swapped by `Γ_ℚ` and neither of which descends.  Quantifying `σ` over
 all of `Γ_ℚ` rather than over a subgroup is likewise essential: a point
 invariant only under `Gal(ℚ̄/L)` descends to `L`, not to `ℚ`.
 
-**MISSING MACHINERY:** the passage between a morphism into a scheme and
-the ring map on an affine open containing the image point
-(`Scheme.Hom.appLE` and `IsAffineOpen.fromSpec` bookkeeping), plus
-`(ℚ̄)^{Γ_ℚ} = ℚ`.  Both exist at this pin; nothing here is a theory
-build. -/
+**THE AFFINE-OPEN ROUTE WAS NOT NEEDED, and this corrects the plan the
+docstring used to record.**  It proposed passing between a morphism into
+a scheme and the ring map on an affine open containing the image point
+(`Scheme.Hom.appLE` and `IsAffineOpen.fromSpec` bookkeeping).  That is a
+correct but much heavier route: the RESIDUE FIELD of the image point is
+already the whole content, and `Mathlib`'s
+`Scheme.SpecToEquivOfField` hands the factorisation over directly, so no
+affine open and no `appLE` appears in the proof.  Only `(ℚ̄)^{Γ_ℚ} = ℚ`
+survives from that list, as `mem_range_algebraMap_of_galoisFixed`.
+
+`ab` is taken because the consumer has it and because `hy` is phrased
+with `ab.galSMul`; the proof uses none of its fields, which is why
+`exists_specSection_of_specGal_fixed` above is stated for a bare
+`Scheme`. -/
 theorem exists_relPoint_of_galSMul_fixed {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ))
     (hy : ∀ σ : Field.absoluteGaloisGroup ℚ, ab.galSMul (𝟙 SpecQ) σ y = y) :
     ∃ P : RelPoint jstr (𝟙 SpecQ),
-      RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl P = y :=
-  sorry
+      RelPoint.pre (f := jstr) (specAlgClos ℚ) (g := 𝟙 SpecQ) rfl P = y := by
+  obtain ⟨s, hs⟩ := exists_specSection_of_specGal_fixed (F := ℚ) y.1
+    (fun σ => congrArg Subtype.val (hy σ))
+  exact ⟨⟨s, (subsingleton_hom_specQ SpecQ).elim _ _⟩, Subtype.ext hs⟩
 
 /-- **Only finitely many `A[p]`-valued Kummer cochains occur** (sorry
 leaf, introduced 2026-07-27) — THE ARITHMETIC INPUT of weak
@@ -21397,9 +21496,10 @@ needed at all, and the third is now isolated in one named leaf:
 * **The `A(ℚ) ↪ A(ℚ̄)` half of Galois descent is free**, by faithful
   flatness (`epi_specAlgClos`).
 
-What is left is the two leaves above: Galois descent of an invariant
-`ℚ̄`-point (elementary, no new theory), and finiteness of the set of
-Kummer cochains (the arithmetic).
+What is left is ONE leaf above: finiteness of the set of Kummer cochains
+(the arithmetic).  The other, Galois descent of an invariant `ℚ̄`-point,
+was PROVEN on 2026-07-28 — it was indeed elementary and needed no new
+theory, exactly as this note predicted.
 
 TRUE and classical (Silverman, *AEC* Theorem VIII.1.1 for elliptic
 curves; the abelian-variety case is the same argument).  Adjoin the
@@ -21585,13 +21685,14 @@ four inputs: divisibility of `A(ℚ̄)` was already proven upstream in
 `A(ℚ) → A(ℚ̄)` is faithful flatness (`epi_specAlgClos`), and no Galois
 cohomology is needed at all.
 
-So the OPEN leaves under Mordell–Weil are now three: the existence of a
+So the OPEN leaves under Mordell–Weil are now two: the existence of a
 projective embedding whose height obeys the theorem of the cube
-(`exists_integralCoordinates_of_abelianScheme`), Galois descent for
-points (`exists_relPoint_of_galSMul_fixed`), and finiteness of the set of
-Kummer cochains (`finite_kummerCochains_of_abelianScheme`, which is where
-the class group and the unit theorem enter).  Everything else between
-here and them is compiler-checked.
+(`exists_integralCoordinates_of_abelianScheme`), and finiteness of the
+set of Kummer cochains (`finite_kummerCochains_of_abelianScheme`, which
+is where the class group and the unit theorem enter).  The third,
+Galois descent for points (`exists_relPoint_of_galSMul_fixed`), was
+PROVEN on 2026-07-28 over `exists_specSection_of_specGal_fixed`.
+Everything else between here and them is compiler-checked.
 
 The retired verdict, kept because its *check* is still the right one:
 "neither heights on abelian varieties, nor the weak Mordell–Weil
@@ -25082,7 +25183,6 @@ docstring).
 | `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
-| `exists_relPoint_of_galSMul_fixed` | Galois descent for points | no |
 | `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
 | `finite_kummerCochains_of_abelianScheme` | class group + units (weak Mordell–Weil) | no |
