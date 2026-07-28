@@ -46236,13 +46236,142 @@ theorem mul_eq_cyclotomicCharacter_of_frobValue
     trivial
   exact closure_minimal hsub hclosed hγ
 
+/-- **SERRE TYPE `A₀`, IN THE FORM SERRE'S PROOF PRODUCES IT: `δ₁` IS AN
+INTEGRAL POWER OF `χ_cyc` ON A FINITE-INDEX NORMAL SUBGROUP** (SORRY
+LEAF, FIFTEENTH decomposition 2026-07-28, cut out of
+`exists_pow_mul_pow_cyclotomicCharacter_eq` below, which is now PROVEN
+over it. **This is the whole of the missing mathematics** — everything
+else on this route, here and below, is glue.)
+
+`∃ a b, ∃ K ⊴ Γℚ of finite index, ∀ γ ∈ K, δ₁ γ · χ_cyc(γ)^b =
+χ_cyc(γ)^a` — i.e. `δ₁ = χ_cyc^{a−b}` **exactly**, on a subgroup of
+finite index. Same `zpow`-free packaging as the consumer (`n : ℤ` is
+the difference `a − b` of two naturals, so nothing has to divide, and
+the identity is between products so it never has to invert).
+
+**WHAT THIS CUT BOUGHT.** The consumer asked for an identity of `m`-th
+POWERS, valid on ALL of `Γℚ`; that is a *repackaging* of what Serre's
+argument delivers, not what it delivers. Serre's proof produces an open
+subgroup on which the character IS an integral power of `χ_cyc` — the
+finite-order twist `ε` is precisely the obstruction to that subgroup
+being everything. Converting one into the other is **Lagrange and
+nothing else**: `γ ^ [Γℚ : K] ∈ K` for `K` normal of finite index
+(`Subgroup.pow_index_mem`), and `δ₁`, `χ_cyc` send powers to powers, so
+`m := [Γℚ : K]` discharges the consumer. That glue is PROVEN below, so a
+prover attacking this leaf never has to name `ε`, extract its order, or
+touch the `m`-th-power bookkeeping.
+
+Note `0 < K.index` is exactly "K has finite index" (`Subgroup.index` is
+`0` for an infinite-index subgroup), and it is load-bearing: with index
+`0` the consumer's `0 < m` cannot be met. `K.Normal` is what makes
+Lagrange available; Serre's `K` is a kernel of a finite-order character,
+hence normal, so this costs the prover nothing.
+
+**THE STRUCTURAL TRAP, AND THE ROUTE CHOSEN THROUGH IT.** Serre's
+criterion wants the Frobenius values in a FIXED number field, and
+`δ₁(Frob_q)` a priori generates `E(√(a_q² − 4q))`, which VARIES with
+`q`. **This cut takes the DEGREE-BOUND route, not the fixed-field
+route**, and the bound is uniform and immediate from `hfrob`:
+`δ₁(Frob_q)` is a root of `X² − κ(a_q)X + q` whose coefficients lie in
+the FIXED number field `κ(heckeField M g)`, so
+
+    [ℚ(δ₁(Frob_q)) : ℚ] ≤ 2 · [heckeField M g : ℚ]   for every good `q`,
+
+with the right-hand side independent of `q`. Serre's type-`A₀` criterion
+consumes exactly such a uniform bound; it does not need the field
+itself to be fixed. (The symmetric alternative — carrying the pair
+`{δ₁, δ₂}` and never separating them — also works, and `hδ₂ne`,
+`hδ₂mul`, `hδ₂cont` are retained so that a prover may switch to it. Do
+NOT try to route *through* the trap by proving the values lie in a fixed
+field: that is true only a posteriori, as a consequence of this very
+leaf.)
+
+**THE REMAINING ROUTE, IN THREE NAMED PIECES.** None of them is written
+here, because assembling them needs infrastructure this pin does not
+have (see the note after each); a future decomposition of this leaf
+should build that infrastructure first, in this order:
+
+1. *`δ₁` is unramified outside a finite set of primes.* The complete
+   argument — no local class field theory, only that a character kills
+   commutators — is written out as steps 1–5 in the docstring of
+   `exists_frobValue_eq_rootOfUnity_mul_pow_single` below. **Needs**: a
+   global inertia subgroup `I_ℓ ≤ Γℚ` for each rational prime. The
+   project's `localInertiaGroup`
+   (`Fermat/FLT/Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`)
+   is a subgroup of the LOCAL group `Γ Kᵥ`, not of `Γℚ`, so the global
+   decomposition/inertia embedding is the missing piece.
+2. *Local algebraicity at `p`*: on an open subgroup of the inertia group
+   at `p`, `δ₁` agrees with `χ_cyc^n` for a single `n : ℤ`. This is the
+   genuine hard core, and it is where the degree bound above is spent.
+   **Needs**: Serre, *Abelian ℓ-adic Representations and Elliptic
+   Curves*, Ch. III §§1–3. Hodge–Tate theory — Ribet's route — is
+   deliberately NOT available on this pin, so the elementary type-`A₀`
+   argument is the one to follow.
+3. *Glue 1 + 2 into a global statement.* Over `ℚ` this is where the
+   arithmetic of the base is used: `Γℚ^ab ≅ Ẑˣ` (Kronecker–Weber, ABSENT
+   from mathlib at this pin — grepped 2026-07-28, no `KroneckerWeber`
+   anywhere in `Mathlib/`, `Fermat/` or `~/cs/FLT`), together with the
+   fact that `ℚ` has no unramified abelian extension (Minkowski). Both
+   are statements about `ℚ` alone and neither depends on `g`, `M` or
+   `κ`, so they are reusable and worth building as their own subtree.
+
+**The check that would refute the framing above**, rather than the
+conclusion: exhibit a continuous multiplicative nowhere-vanishing
+`δ : Γℚ → ℚ̄_pˣ` whose Frobenius values have uniformly bounded degree
+over `ℚ` and which is NOT `ε·χ_cyc^n` on any finite-index subgroup. By
+Serre no such `δ` exists; if one is found, this leaf is false and the
+consumer's cut, not its proof, is what needs repair. -/
+theorem exists_normal_finiteIndex_mul_pow_cyclotomicCharacter_eq {M : ℕ} (hM : 0 < M)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (δ₁ δ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδ₁cont : Continuous δ₁) (hδ₂cont : Continuous δ₂)
+    (hδ₁ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ ≠ 0)
+    (hδ₂ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₂ γ ≠ 0)
+    (hδ₁mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₁ (γ * γ') = δ₁ γ * δ₁ γ')
+    (hδ₂mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₂ (γ * γ') = δ₂ γ * δ₂ γ')
+    (hfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = κ (heckeCoeff M g q) ∧
+        δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p]))
+    (hcyc : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ * δ₂ γ =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p])) :
+    ∃ (a b : ℕ) (K : Subgroup (Field.absoluteGaloisGroup ℚ)),
+      K.Normal ∧ 0 < K.index ∧
+      ∀ γ ∈ K, δ₁ γ * (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+            ℤ_[p])) ^ b
+        = (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+            ℤ_[p])) ^ a :=
+  sorry
+
 /-- **SERRE TYPE `A₀`: `δ₁` IS A ROOT OF UNITY TIMES AN INTEGRAL POWER OF
-THE CYCLOTOMIC CHARACTER** (SORRY LEAF, FOURTEENTH decomposition
-2026-07-27, cut out of
-`exists_frobValue_eq_rootOfUnity_mul_pow_single` below, which is now
-PROVEN over this leaf and `mul_eq_cyclotomicCharacter_of_frobValue`
-above. **This is the whole of the missing mathematics** — everything
-else on this route is now glue.)
+THE CYCLOTOMIC CHARACTER** (**PROVEN** 2026-07-28 as glue over the
+FIFTEENTH decomposition,
+`exists_normal_finiteIndex_mul_pow_cyclotomicCharacter_eq` immediately
+above, which is now where the whole of the missing mathematics lives.
+Was the open leaf of the FOURTEENTH decomposition 2026-07-27, cut out of
+`exists_frobValue_eq_rootOfUnity_mul_pow_single` below, which is PROVEN
+over this statement and `mul_eq_cyclotomicCharacter_of_frobValue`
+above.)
+
+**WHAT IS DISCHARGED HERE** is exactly the repackaging: Lagrange
+(`Subgroup.pow_index_mem`) turns "`δ₁ = χ_cyc^{a−b}` on a finite-index
+normal `K`" into "the `[Γℚ : K]`-th powers agree on ALL of `Γℚ`", using
+only that `δ₁` and `χ_cyc` send powers to powers — which for `δ₁` needs
+`hδ₁ne` (to get `δ₁ 1 = 1`, cancelling in `δ₁ 1 = δ₁ 1 · δ₁ 1`) and
+`hδ₁mul`, and for `χ_cyc` is `map_pow` twice. Nothing else in the
+hypothesis list is used here; all of it is forwarded to the leaf above,
+which genuinely needs it (see its docstring for why `hfrob`, `g`, `hg`
+and `κ` are what make the Frobenius values algebraic of uniformly
+bounded degree).
 
 `∃ a b m, 0 < m ∧ ∀ γ, (δ₁ γ · χ_cyc(γ)^b)^m = (χ_cyc(γ)^a)^m` — i.e.
 `δ₁ = ε·χ_cyc^{a−b}` with `ε^m = 1`, Serre's classification of type
@@ -46251,42 +46380,32 @@ difference `a − b` of two naturals, so nothing has to divide) and as an
 identity of the `m`-th powers, so that `ε` need not be NAMED. `a`, `b`,
 `m` are chosen ONCE, before `γ` — that uniformity is the entire content.
 
-**WHAT THIS CUT BOUGHT, AND WHY THE STATEMENT IS ABOUT `χ_cyc` RATHER
-THAN ABOUT FROBENIUS VALUES.** The consumer's version quantified over
+**WHAT AN EARLIER CUT BOUGHT, AND WHY THE STATEMENT IS ABOUT `χ_cyc`
+RATHER THAN ABOUT FROBENIUS VALUES.** The consumer
+(`exists_frobValue_eq_rootOfUnity_mul_pow_single` below) quantified over
 primes and asked for the Frobenius values only. Two things moved out of
-it:
+it in the FOURTEENTH decomposition and are PROVEN:
 
 * the identity `δ₁·δ₂ = χ_cyc` on ALL of `Γℚ`, which is Chebotarev and
-  is PROVEN above — it is what lets `δ₂` be eliminated, so the
-  classification below is a statement about ONE character;
+  is `mul_eq_cyclotomicCharacter_of_frobValue` above — it is what lets
+  `δ₂` be eliminated, so this is a statement about ONE character;
 * the evaluation `χ_cyc(Frob_q) = q` at `q ≠ p`
   (`cyclotomicCharacter_globalFrob`) together with the root-of-unity
   extraction `ζ := δ₁(Frob_q)·q^b/q^a`, both discharged in the consumer.
 
-What remains is exactly Serre's theorem and nothing else. `hfrob` and
-`κ` are retained because the classification genuinely needs them: they
-are what makes the Frobenius values ALGEBRAIC (roots of
-`X² − κ(a_q)X + q` over the number field `heckeField M g`), and
-continuity alone does NOT suffice — `⟨χ_cyc⟩^s` for `s ∈ ℤ_p ∖ ℤ` is
-continuous, unramified outside `{p}`, and neither finite-order nor an
-integral power.
+`hfrob`, `g`, `hg` and `κ` are retained, and forwarded unchanged to the
+leaf above, because the classification genuinely needs them: they are
+what makes the Frobenius values ALGEBRAIC (roots of `X² − κ(a_q)X + q`
+over the number field `heckeField M g`), and continuity alone does NOT
+suffice — `⟨χ_cyc⟩^s` for `s ∈ ℤ_p ∖ ℤ` is continuous, unramified
+outside `{p}`, and neither finite-order nor an integral power.
 
 **REFERENCE**: Serre, *Abelian ℓ-adic Representations and Elliptic
 Curves*, Ch. III §§1–3 (type `A₀`); Hodge–Tate-ness, Ribet's own route,
-is deliberately NOT available on this pin. The consumer's docstring
-below carries the rest of the roadmap, including the complete argument
-(steps 1–5 there) that **every** continuous multiplicative
-`δ : Γℚ → ℚ̄_pˣ` is automatically unramified outside a finite set — so
-that hypothesis need not be added here, and adding it would be a
-strictly wider cut for nothing.
-
-**ONE STRUCTURAL WARNING FOR A PROVER.** Serre's criterion wants the
-Frobenius values in a FIXED number field, and `δ₁(Frob_q)` a priori
-generates `E(√(a_q² − 4q))`, which varies with `q`. That is only an
-apparent obstruction — a posteriori the conclusion puts every value in
-`ℚ(ζ_m)·q^{a−b}` — but a formalisation must route around it rather than
-through it, e.g. by working with the pair `{δ₁, δ₂}` symmetrically, or
-by bounding the degree rather than fixing the field. -/
+is deliberately NOT available on this pin. The STRUCTURAL WARNING about
+`δ₁(Frob_q)` generating a field that varies with `q`, and the
+degree-bound route chosen through it, now live on the leaf above, which
+is where they bind. -/
 theorem exists_pow_mul_pow_cyclotomicCharacter_eq {M : ℕ} (hM : 0 < M)
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
@@ -46314,8 +46433,44 @@ theorem exists_pow_mul_pow_cyclotomicCharacter_eq {M : ℕ} (hM : 0 < M)
             ℤ_[p])) ^ b) ^ m
         = ((algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
           ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
-            ℤ_[p])) ^ a) ^ m :=
-  sorry
+            ℤ_[p])) ^ a) ^ m := by
+  -- Serre type `A₀` in the form the proof produces it: an exact identity
+  -- `δ₁ = χ_cyc ^ (a − b)` on a normal subgroup `K` of finite index
+  obtain ⟨a, b, K, hKn, hKidx, hval⟩ :=
+    exists_normal_finiteIndex_mul_pow_cyclotomicCharacter_eq hM S g hg κ δ₁ δ₂
+      hδ₁cont hδ₂cont hδ₁ne hδ₂ne hδ₁mul hδ₂mul hfrob hcyc
+  haveI := hKn
+  refine ⟨a, b, K.index, hKidx, fun γ => ?_⟩
+  -- a nowhere-vanishing multiplicative function sends `1` to `1`, hence powers
+  -- to powers
+  have hδone : δ₁ 1 = 1 := by
+    have h := hδ₁mul 1 1
+    rw [mul_one] at h
+    exact (mul_right_cancel₀ (hδ₁ne 1) (by rw [one_mul, ← h])).symm
+  have hδpow : ∀ (x : Field.absoluteGaloisGroup ℚ) (n : ℕ), δ₁ (x ^ n) = δ₁ x ^ n := by
+    intro x n
+    induction n with
+    | zero => simpa using hδone
+    | succ k ih => rw [pow_succ, hδ₁mul, ih, pow_succ]
+  -- and so does the cyclotomic character, being a monoid homomorphism
+  have hχpow : ∀ (x : Field.absoluteGaloisGroup ℚ) (n : ℕ),
+      (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p (x ^ n).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]))
+      = (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p x.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p])) ^ n := by
+    intro x n
+    have hpow : ∀ k : ℕ, (x ^ k).toRingEquiv = x.toRingEquiv ^ k := by
+      intro k
+      induction k with
+      | zero => rfl
+      | succ j ih => rw [pow_succ, pow_succ, ← ih]; rfl
+    rw [hpow, map_pow, Units.val_pow_eq_pow_val, map_pow]
+  -- Lagrange: `γ ^ [Γℚ : K]` lands in `K`, where the exact identity holds
+  have h := hval _ (K.pow_index_mem γ)
+  rw [hδpow, hχpow] at h
+  rw [mul_pow, ← pow_mul, ← pow_mul, Nat.mul_comm b K.index, Nat.mul_comm a K.index,
+    pow_mul, pow_mul]
+  exact h
 
 /-- **Serre type A₀ for ONE Frobenius character** (**PROVEN** 2026-07-27
 as glue over the FOURTEENTH decomposition —
