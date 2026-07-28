@@ -36,6 +36,52 @@ the `q`-expansion of the slash-sum, the Sturm bound, the Hecke algebra,
 import`s this module.  Do not migrate more here without re-running the
 reference scan: the point of this module is to be SMALL and upstream of
 `X0.lean`, not to become a second modular-forms file.
+
+## THE SECOND `Gamma0GL` IS THE SAME TERM — do not bridge it, do not copy it
+
+(2026-07-28, measured and MACHINE-CHECKED; this note exists because the
+duplication has already been read as an incompatibility and cost work.)
+
+There is a second `Gamma0GL` in this tree,
+`Fermat.Gamma0GL` in `ModularCurve/WeightTwoEigenform.lean`, written as
+the mathlib coercion `((Gamma0 N : Subgroup SL(2, ℤ)) : Subgroup (GL (Fin 2) ℝ))`.
+That coercion instance is `Mathlib/NumberTheory/ModularForms/ArithmeticSubgroups.lean:83`,
+`coe := map (mapGL ℝ)` — i.e. **verbatim the body of the `Gamma0GL`
+below**.  Verified in a scratch importing both modules:
+
+* `Fermat.Gamma0GL N = GaloisRepresentation.Modularity.Gamma0GL N := rfl`;
+* a term of `CuspForm (Fermat.Gamma0GL N) 2` **is** a term of
+  `CuspForm (GaloisRepresentation.Modularity.Gamma0GL N) 2`, in both
+  directions, with no cast, no `show` and no bridge lemma;
+* `heckeOp N n` (defined here) applies **directly** to a
+  `CuspForm (Fermat.Gamma0GL N) 2`.
+
+So the "two rival `Gamma0GL`s" cost exactly nothing at the type level, and
+`X0.lean` needs no reconciliation in order to state the Eichler–Shimura
+point count over `heckeOp` — the note far down `X0.lean` that spells that
+leaf with an explicit `_root_.GaloisRepresentation.Modularity.Gamma0GL`
+could equally use its own bare `Gamma0GL`.
+
+**Do not unify the two definitions.** It would retype 289 declarations'
+worth of elaboration in the 60k-line `Interface.lean` for zero
+mathematical gain, and the compiler already identifies them.  The one
+real asymmetry, also checked: `Fermat.Gamma0GL` is an `abbrev`, so
+mathlib's generic `IsArithmetic` instance is reachable through it at a
+literal level with no `NeZero`, whereas the semireducible `def` here
+needs the `[NeZero N]` instance restated below.  Neither side synthesizes
+`IsArithmetic` at `N = 0`, so nothing is lost by the difference.
+
+## THE EIGENFORM CARRIER IS A REAL DUPLICATION.  It is NOT this file's.
+
+`Interface.lean` has `IsWeightTwoEigenform N f` (coefficients read off
+`qCoeff`) and `IsWeightTwoNewform M g`; `WeightTwoEigenform.lean` has
+`Fermat.IsWeightTwoEigenform N f a` (coefficients CARRIED, with a
+summability field), and `X1.lean` has `IsWeightTwoEigenformOn G N χ f a`
+which subsumes the latter.  Those are genuinely different predicates and
+bridging them is a theorem, not a `rfl`.  See the reconciliation plan
+recorded in `ModularCurve/WeightTwoEigenform.lean`'s module docstring —
+including the reference scan for the hoist of `qCoeff`/the carriers into
+THIS module, which is feasible but by itself buys nothing.
 -/
 module
 
