@@ -16487,8 +16487,299 @@ theorem totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero {K : Type*
   rw [hsingle]
   exact hlt
 
-/-- **BERTINI'S IRREDUCIBILITY THEOREM, THE IRREDUCIBILITY HALF ALONE (SORRY
-LEAF, cut 2026-07-27)** -- what is left of
+/-! ### The Bertini descent: one FAMILY of parallel planes, and its generic member
+
+The cut of `exists_irreducible_planeSection_leadingForm_ne_zero` (2026-07-28)
+follows Schmidt, *Equations over Finite Fields*, Chapter V, Lemma 4A, which does
+the whole descent in ONE step: fix the plane DIRECTION `(u₁, u₂)`, let the base
+point run over a linear family `∑ⱼ xⱼ · Φ j`, and specialise the parameters `x`
+away from a proper closed subset. Three declarations set that up.
+-/
+
+/-- The whole FAMILY of parallel plane sections of `h` in a fixed direction
+`(u₁, u₂)`, with the base point running along `∑ⱼ xⱼ · Φ j`, packaged as a
+SINGLE two-variable polynomial whose COEFFICIENTS are polynomials in the family
+parameters `x`.
+
+This is the object Schmidt's Lemma 4A specialises. Its generic member -- the
+image in `MvPolynomial (Fin 2) (Frac K[x])` -- is the section along the generic
+member of the family, and `map_eval_familyPlaneSection` below says that
+specialising `x` at a `K`-point recovers the honest plane section there. No
+condition is imposed on `Φ`: taking `m = N` and `Φ` the standard basis makes the
+family ALL translates, which is the most convenient case and is admissible
+because the leaf that produces `(Φ, u₁, u₂)` quantifies `m` and `Φ`
+existentially. -/
+noncomputable def familyPlaneSection {K : Type*} [CommRing K] {N m : ℕ}
+    (h : MvPolynomial (Fin N) K) (Φ : Fin m → (Fin N → K)) (u₁ u₂ : Fin N → K) :
+    MvPolynomial (Fin 2) (MvPolynomial (Fin m) K) :=
+  planeSection (MvPolynomial.map MvPolynomial.C h)
+    (fun i => ∑ j, MvPolynomial.C (Φ j i) * MvPolynomial.X j)
+    (fun i => MvPolynomial.C (u₁ i)) (fun i => MvPolynomial.C (u₂ i))
+
+/-- **PROVEN**: specialising the family parameters at a point `x` turns
+`familyPlaneSection h Φ u₁ u₂` into the honest plane section of `h` based at
+`∑ⱼ Φ j · xⱼ`. This is `planeSection_map` applied to the evaluation map
+`K[x] → K`, plus the fact that evaluation undoes the constant inclusion. -/
+theorem map_eval_familyPlaneSection {K : Type*} [CommRing K] {N m : ℕ}
+    (h : MvPolynomial (Fin N) K) (Φ : Fin m → (Fin N → K)) (u₁ u₂ : Fin N → K)
+    (x : Fin m → K) :
+    MvPolynomial.map (MvPolynomial.eval x) (familyPlaneSection h Φ u₁ u₂)
+      = planeSection h (fun i => ∑ j, Φ j i * x j) u₁ u₂ := by
+  rw [familyPlaneSection, planeSection_map]
+  have hh : MvPolynomial.map (MvPolynomial.eval x)
+      (MvPolynomial.map (MvPolynomial.C : K →+* MvPolynomial (Fin m) K) h) = h := by
+    rw [MvPolynomial.map_map]
+    have : (MvPolynomial.eval x).comp (MvPolynomial.C : K →+* MvPolynomial (Fin m) K)
+        = RingHom.id K := by
+      ext a
+      simp
+    rw [this, MvPolynomial.map_id]
+  have e1 : (fun i => MvPolynomial.eval x
+      (∑ j, MvPolynomial.C (Φ j i) * MvPolynomial.X j))
+      = fun i => ∑ j, Φ j i * x j := by
+    funext i
+    simp
+  have e2 : (fun i => MvPolynomial.eval x (MvPolynomial.C (u₁ i))) = u₁ := by
+    funext i; simp
+  have e3 : (fun i => MvPolynomial.eval x (MvPolynomial.C (u₂ i))) = u₂ := by
+    funext i; simp
+  rw [hh, e1, e2, e3]
+
+/-- The map from the family-parameter ring `K[x₀ … x_{m-1}]` into an ALGEBRAIC
+CLOSURE of its fraction field. Base-changing a family along this map is what
+"pass to the generic geometric fibre" means concretely, and irreducibility THERE
+is exactly ABSOLUTE irreducibility of the generic member -- the condition that
+`exists_irreducible_planeSection_leadingForm_ne_zero`'s FALSITY AUDIT shows is
+NOT implied by the degree condition `h_d(u₁) ≠ 0`. -/
+noncomputable def paramAlgClosureHom (K : Type*) [Field K] (m : ℕ) :
+    MvPolynomial (Fin m) K →+*
+      AlgebraicClosure (FractionRing (MvPolynomial (Fin m) K)) :=
+  (algebraMap (FractionRing (MvPolynomial (Fin m) K))
+      (AlgebraicClosure (FractionRing (MvPolynomial (Fin m) K)))).comp
+    (algebraMap (MvPolynomial (Fin m) K) (FractionRing (MvPolynomial (Fin m) K)))
+
+/-- **PROVEN**: `paramAlgClosureHom` is injective -- it is a fraction-field
+inclusion followed by a map of fields. Used to transport total degrees between
+the parameter ring and the generic geometric fibre. -/
+theorem paramAlgClosureHom_injective (K : Type*) [Field K] (m : ℕ) :
+    Function.Injective (paramAlgClosureHom K m) := by
+  rw [paramAlgClosureHom]
+  simp only [RingHom.coe_comp]
+  exact (RingHom.injective _).comp
+    (IsFractionRing.injective (MvPolynomial (Fin m) K)
+      (FractionRing (MvPolynomial (Fin m) K)))
+
+/-- **SCHMIDT'S THEOREM 3D: A PLANE DIRECTION IN GENERAL POSITION (SORRY LEAF,
+cut 2026-07-28)** -- the GEOMETRIC half of
+`exists_irreducible_planeSection_leadingForm_ne_zero`, and the only part of it
+that is about the hypersurface rather than about specialisation.
+
+WHAT IT SAYS. There is a plane direction `(u₁, u₂)` and a linear family of base
+points `∑ⱼ xⱼ · Φ j` such that (i) the degree normalisation `h_d(u₁) ≠ 0` holds,
+and (ii) the GENERIC member of the resulting family of parallel plane sections
+is ABSOLUTELY irreducible -- irreducible after base change to an algebraic
+closure of `K(x)`, which over that field is the same as geometric irreducibility.
+
+WHY THIS IS THE RIGHT SPLIT. The parent's FALSITY AUDIT shows that `h_d(u₁) ≠ 0`
+is NOT enough to make a direction good: for `h = X 1 ^ 2 - X 0` with
+`u₁ = Pi.single 1 1`, `u₂ = Pi.single 2 1` every section is `(C (v 1) + X 0)^2
+- C (v 0)`, reducible for every `v`. Read through this leaf, the counterexample
+says exactly that the GENERIC member `(x₁ + s)² - x₀` -- take `Φ` the standard
+basis -- factors over `K(x)‾` as `(s + x₁ - √x₀)(s + x₁ + √x₀)`. Clause (ii) is
+therefore the missing general-position hypothesis, and it is not derivable from
+clause (i). The good directions for that `h` are those containing the `X 0`
+direction: `u₁ = Pi.single 1 1`, `u₂ = Pi.single 0 1` gives the generic member
+`(x₁ + s)² - (x₀ + t)`, linear in `t` with unit leading coefficient, hence
+absolutely irreducible. So the leaf is TRUE there, and the counterexample is
+not a counterexample to it.
+
+FREEDOM DELIBERATELY LEFT TO THE PROVER. Both `m` and `Φ` are existentially
+quantified, and no independence condition is imposed on `(Φ, u₁, u₂)`.
+* Schmidt's own normalisation takes `m = n + 1` with `(Φ 0 … Φ n, u₁, u₂)` a
+  BASIS, so that the family is the set of ALL planes parallel to `span(u₁, u₂)`,
+  each occurring once.
+* Taking instead `m = n + 3` and `Φ` the standard basis -- the family of ALL
+  translates -- is also admissible, and is usually more convenient: it is the
+  base change of Schmidt's family along the field extension
+  `K(x₀ … xₙ) ⊆ K(x₀ … x_{n+2})` followed by a translation automorphism of the
+  `(s, t)`-plane, and absolute irreducibility is stable under both.
+Either way the conclusion asked for here is the weaker existential.
+
+THE ROUTE (Schmidt, Chapter V, Theorem 3D; Fried-Jarden, *Field Arithmetic*,
+around Proposition 10.4.2). Two steps, both genuinely missing from the pin:
+1. **Gauss for `MvPolynomial`.** With `R = K[x]` a UFD and `F = Frac R`, an
+   element of `R[s, t]` that is irreducible there and not in `R` stays
+   irreducible in `F[s, t]`: inverting `R \ {0}` in a UFD turns an irreducible
+   either into a unit (only for irreducibles OF `R`) or into an irreducible.
+   Mathlib has only the univariate
+   `Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map`.
+   Combined with invariance of irreducibility under an invertible linear change
+   of the `N` coordinates (the `N`-variable analogue of
+   `irreducible_planeSection_of_det_ne_zero`), this gives irreducibility over
+   `F` for EVERY basis `(Φ, u₁, u₂)`.
+2. **Geometric integrality for a GENERIC direction.** Upgrading step 1 from
+   irreducible over `F` to irreducible over `F‾` is where the direction must be
+   chosen, and where `K = K‾` is used: for a generic plane direction, `F` is
+   relatively algebraically closed in `Frac(F[s, t]/(g))`. This is the only
+   deep step, and the failure of the naive choice above is precisely a failure
+   of it (`√x₀` is algebraic over `K(x₀)` and lies in the residue field).
+Clause (i) is then free: if `h_d` vanished identically on `span(u₁, u₂)` the
+generic member would have degree `< d` in a way that is invisible here, so one
+re-chooses the basis of the plane by
+`irreducible_planeSection_of_det_ne_zero` -- see the "the normalisation costs
+nothing" paragraph in the parent's docstring.
+
+WHAT THIS LEAF DOES NOT NEED: no degree bound, no uniformity in the
+characteristic, and only ONE algebraically closed base field. All the
+`p`-uniformity of the surrounding cluster lives in
+`exists_absolutelyIrreducibleForms_two`, not here. -/
+theorem exists_directions_irreducible_familyPlaneSection {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
+    (hdeg : h.totalDegree = d) (hirr : Irreducible h) :
+    ∃ (m : ℕ) (Φ : Fin m → (Fin (n + 3) → K)) (u₁ u₂ : Fin (n + 3) → K),
+      MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (MvPolynomial.map (paramAlgClosureHom K m)
+        (familyPlaneSection h Φ u₁ u₂)) :=
+  sorry
+
+/-- **E. NOETHER'S IRREDUCIBILITY FORMS, ℤ-RATIONAL (SORRY LEAF, cut
+2026-07-28)** -- the classical statement, with ONE family of forms with INTEGER
+coefficients serving every algebraically closed field in every characteristic.
+
+WHAT IT SAYS. For each `d` there are finitely many polynomials `Fs i` in the
+COEFFICIENTS of a plane polynomial, with integer coefficients, such that over
+any algebraically closed field `E` and for any `g` of total degree `≤ d`,
+`g` is irreducible of total degree exactly `d` iff some `Fs i` is nonzero at the
+coefficient vector of `g`. Over an algebraically closed field irreducible means
+absolutely irreducible, so this is the usual "the non-absolutely-irreducible
+locus is Zariski closed, cut out by universal forms".
+
+⚠ **THIS LEAF SUBSUMES `exists_absolutelyIrreducibleForms_two`** (its sibling
+in the arithmetic half of the same cluster, owned separately as of 2026-07-28).
+That leaf asks for forms over `ZMod p` of total degree `≤ E` with `E`
+independent of `p`; take `Gs i := MvPolynomial.map (Int.castRingHom (ZMod p))
+(Fs i)` and `E := Finset.univ.sup fun i => (Fs i).totalDegree`. The degree bound
+is then uniform in `p` for free, because the forms themselves no longer depend
+on `p`, and
+`MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) (Gs i)
+= MvPolynomial.map (Int.castRingHom _) (Fs i)` because any two ring
+homomorphisms out of `ℤ` agree. The sibling's own docstring records the same
+implication from the other side ("If the ℤ-rational version is what falls out of
+the elimination argument, it implies this one immediately"). **A single proof of
+this statement therefore closes both leaves**; they are not independent work.
+
+THE PROOF is elimination theory, and the four-step cut is written out in full in
+`exists_absolutelyIrreducibleForms_two`'s docstring -- the algebraic
+characterisation of "not irreducible of degree `d`", the linear degree-drop
+piece, closedness of the image of `P(V_{d₁}) × P(V_{d₂}) → P(V_d)` (the only
+step needing real elimination theory), and union-to-product. Every step is
+already characteristic-free and defined over `ℤ`; performing it over `Spec ℤ`,
+where the projective-image argument is a proper morphism and so survives base
+change to any field, is what produces the ℤ-rational forms directly.
+
+THE `d = 0` CASE is discharged by the EMPTY family (`k = 0`): a constant is
+never `Irreducible` over a field, so the left side is always false. -/
+theorem exists_irreducibilityFormsInt_two (d : ℕ) :
+    ∃ (k : ℕ) (Fs : Fin k → MvPolynomial (Fin 2 →₀ ℕ) ℤ),
+      ∀ (E : Type*) [Field E] [IsAlgClosed E] (g : MvPolynomial (Fin 2) E),
+        g.totalDegree ≤ d →
+        ((g.totalDegree = d ∧ Irreducible g) ↔
+          ∃ i, MvPolynomial.eval (fun mm => MvPolynomial.coeff mm g)
+                (MvPolynomial.map (Int.castRingHom E) (Fs i)) ≠ 0) :=
+  sorry
+
+/-- **THE SPECIALISATION STEP OF BERTINI (PROVEN 2026-07-28 over
+`exists_irreducibilityFormsInt_two`)** -- if a family of plane polynomials over
+`K[x]` has ABSOLUTELY IRREDUCIBLE generic member, then all members outside the
+zero set of ONE nonzero polynomial `P` in the parameters are irreducible.
+
+This is step 3 of the route recorded in
+`exists_irreducible_planeSection_leadingForm_ne_zero`, and the proof is Schmidt's
+own: it derives the Bertini half FROM Noether's forms, exactly as his Lemma 4A
+derives it from his Theorem 2A. No new geometry is needed, and in particular no
+Chevalley constructibility and no scheme theory:
+
+* `P` is the product of two explicit polynomials in the parameters. The first,
+  `coeff mm G` for a top monomial `mm`, prevents the total degree from dropping
+  under specialisation -- without it the specialised member could be a polynomial
+  of smaller degree, which Noether's forms cannot see. The second is the pullback
+  `Fs i` evaluated at the coefficient polynomials of `G`; it is nonzero exactly
+  because the GENERIC member is absolutely irreducible.
+* Both applications of the forms use the SAME `i` and the same integer forms --
+  the first over `AlgebraicClosure (FractionRing K[x])`, the second over `K`
+  itself, which is where `[IsAlgClosed K]` is consumed. That the two agree is
+  `MvPolynomial.eval₂_comp_left` twice, plus `RingHom.ext_int`.
+
+The bad locus is thus explicitly a hypersurface, not merely a proper closed
+subset, which is what makes the final extraction of a good parameter value a
+one-line application of `MvPolynomial.funext` over the infinite field `K`. -/
+theorem exists_badLocusPoly_of_irreducible_map_paramAlgClosureHom {K : Type*} [Field K]
+    [IsAlgClosed K] {m : ℕ} (G : MvPolynomial (Fin 2) (MvPolynomial (Fin m) K))
+    (hG : Irreducible (MvPolynomial.map (paramAlgClosureHom K m) G)) :
+    ∃ P : MvPolynomial (Fin m) K, P ≠ 0 ∧
+      ∀ x : Fin m → K, MvPolynomial.eval x P ≠ 0 →
+        Irreducible (MvPolynomial.map (MvPolynomial.eval x) G) := by
+  classical
+  set φR := paramAlgClosureHom K m with hφR
+  have hinj : Function.Injective φR := paramAlgClosureHom_injective K m
+  have hG0 : G ≠ 0 := by
+    intro hc
+    rw [hc, map_zero] at hG
+    exact not_irreducible_zero hG
+  have hne : G.support.Nonempty :=
+    Finset.nonempty_iff_ne_empty.mpr fun hc => hG0 (MvPolynomial.support_eq_empty.mp hc)
+  obtain ⟨mm, hmm, hmmdeg⟩ :=
+    Finset.exists_mem_eq_sup G.support hne (fun s : Fin 2 →₀ ℕ => s.sum fun _ e => e)
+  set d' := G.totalDegree with hd'
+  have hmapdeg : (MvPolynomial.map φR G).totalDegree = d' :=
+    totalDegree_map_eq_of_injective G hinj
+  obtain ⟨k, Fs, hFs⟩ := exists_irreducibilityFormsInt_two d'
+  obtain ⟨i, hi⟩ :=
+    (hFs _ (MvPolynomial.map φR G) (le_of_eq hmapdeg)).mp ⟨hmapdeg, hG⟩
+  set Q : MvPolynomial (Fin m) K :=
+    MvPolynomial.eval₂ (Int.castRingHom (MvPolynomial (Fin m) K))
+      (fun mm => MvPolynomial.coeff mm G) (Fs i) with hQ
+  have hQmap : MvPolynomial.eval
+      (fun mm => MvPolynomial.coeff mm (MvPolynomial.map φR G))
+      (MvPolynomial.map (Int.castRingHom _) (Fs i)) = φR Q := by
+    rw [hQ, MvPolynomial.eval₂_comp_left φR
+      (Int.castRingHom (MvPolynomial (Fin m) K))
+      (fun mm => MvPolynomial.coeff mm G) (Fs i)]
+    rw [MvPolynomial.eval_map,
+      RingHom.ext_int (φR.comp (Int.castRingHom (MvPolynomial (Fin m) K)))
+        (Int.castRingHom _)]
+    simp only [MvPolynomial.coeff_map, Function.comp_def]
+  have hQ0 : Q ≠ 0 := by
+    intro hc
+    rw [hQmap, hc, map_zero] at hi
+    exact hi rfl
+  have hP0 : MvPolynomial.coeff mm G ≠ 0 := MvPolynomial.mem_support_iff.mp hmm
+  refine ⟨MvPolynomial.coeff mm G * Q, mul_ne_zero hP0 hQ0, ?_⟩
+  intro x hx
+  rw [map_mul, mul_ne_zero_iff] at hx
+  obtain ⟨hx1, hx2⟩ := hx
+  set gx := MvPolynomial.map (MvPolynomial.eval x) G with hgx
+  have hgxc : MvPolynomial.coeff mm gx = MvPolynomial.eval x (MvPolynomial.coeff mm G) := by
+    rw [hgx, MvPolynomial.coeff_map]
+  have hgxdegle : gx.totalDegree ≤ d' := totalDegree_map_le' _ G
+  have hgxdegge : d' ≤ gx.totalDegree := by
+    rw [hd', MvPolynomial.totalDegree, hmmdeg]
+    exact MvPolynomial.le_totalDegree
+      (MvPolynomial.mem_support_iff.mpr (by rw [hgxc]; exact hx1))
+  have hQspec : MvPolynomial.eval (fun mm => MvPolynomial.coeff mm gx)
+      (MvPolynomial.map (Int.castRingHom K) (Fs i)) = MvPolynomial.eval x Q := by
+    rw [hQ, MvPolynomial.eval₂_comp_left (MvPolynomial.eval x)
+        (Int.castRingHom (MvPolynomial (Fin m) K))
+        (fun mm => MvPolynomial.coeff mm G) (Fs i),
+      RingHom.ext_int ((MvPolynomial.eval x).comp
+        (Int.castRingHom (MvPolynomial (Fin m) K))) (Int.castRingHom K),
+      MvPolynomial.eval_map]
+    simp only [Function.comp_def, hgx, MvPolynomial.coeff_map]
+  exact ((hFs K gx hgxdegle).mpr ⟨i, by rw [hQspec]; exact hx2⟩).2
+
+/-- **BERTINI'S IRREDUCIBILITY THEOREM, THE IRREDUCIBILITY HALF ALONE (PROVEN
+2026-07-28 over two named sub-leaves; cut as a leaf 2026-07-27)** -- what is left
+of `exists_irreducible_planeSection_of_irreducible` once the degree bookkeeping is
 `exists_irreducible_planeSection_of_irreducible` once the degree bookkeeping is
 discharged above.
 
@@ -16589,14 +16880,42 @@ polynomial ring in the remaining variables (mathlib has the univariate
 notion of ABSOLUTE irreducibility for multivariate polynomials, and geometric
 integrality of a hypersurface over an algebraically closed field. The
 `AbsolutelyIrreducible` names in `~/cs/FLT` are about Galois REPRESENTATIONS and
-are a name collision, not a result. -/
+are a name collision, not a result.
+
+THE CUT ACTUALLY TAKEN (2026-07-28). Steps 1 and 2 above are packaged as ONE
+leaf, `exists_directions_irreducible_familyPlaneSection`, because they are
+inseparable: the direction has to be chosen for step 2 and step 1 holds for every
+basis, so splitting them would leave step 2 restating the whole leaf. Step 3 is
+NOT left open -- it is PROVEN, as
+`exists_badLocusPoly_of_irreducible_map_paramAlgClosureHom`, over the ℤ-rational
+Noether forms `exists_irreducibilityFormsInt_two`. That confirms the 2026-07-27
+REPORTED FINDING above from the implementation side: this half really does go
+through the sibling's technique, and the version of Noether's forms it needs
+(`exists_irreducibilityFormsInt_two`) SUBSUMES the sibling
+`exists_absolutelyIrreducibleForms_two` outright -- see the ⚠ paragraph there.
+The remaining assembly here is `MvPolynomial.funext` over the infinite field `K`
+turning "the bad locus is a hypersurface" into a good base point, plus
+`map_eval_familyPlaneSection` identifying the specialised family member with the
+honest plane section. -/
 theorem exists_irreducible_planeSection_leadingForm_ne_zero {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K) (hdeg : h.totalDegree = d)
     (hirr : Irreducible h) :
     ∃ v u₁ u₂ : Fin (n + 3) → K,
       MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
-      Irreducible (planeSection h v u₁ u₂) :=
-  sorry
+      Irreducible (planeSection h v u₁ u₂) := by
+  obtain ⟨m, Φ, u₁, u₂, hlead, hgen⟩ :=
+    exists_directions_irreducible_familyPlaneSection n d h hdeg hirr
+  obtain ⟨P, hP0, hP⟩ :=
+    exists_badLocusPoly_of_irreducible_map_paramAlgClosureHom
+      (familyPlaneSection h Φ u₁ u₂) hgen
+  have hx : ∃ x : Fin m → K, MvPolynomial.eval x P ≠ 0 := by
+    by_contra hc
+    rw [not_exists] at hc
+    exact hP0 (MvPolynomial.funext (fun x => by simpa using not_not.mp (hc x)))
+  obtain ⟨x, hxP⟩ := hx
+  refine ⟨fun i => ∑ j, Φ j i * x j, u₁, u₂, hlead, ?_⟩
+  have := hP x hxP
+  rwa [map_eval_familyPlaneSection] at this
 
 /-- **BERTINI'S IRREDUCIBILITY THEOREM FOR PLANE SECTIONS (PROVEN 2026-07-27 over
 one named sub-leaf)** -- the GEOMETRIC half of
@@ -16647,12 +16966,16 @@ The cut is therefore into PROVEN degree machinery and ONE sorry leaf:
 * `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero` (PROVEN) -- so
   once `h_d(u₁) ≠ 0` the section has total degree exactly `d`. THE DEGREE HALF OF
   THIS LEAF IS THEREFORE FULLY DISCHARGED.
-* `exists_irreducible_planeSection_leadingForm_ne_zero` (SORRY) -- the
-  irreducibility half: produce a plane, normalised so that `h_d(u₁) ≠ 0`, whose
-  section is irreducible. That leaf's docstring carries the remaining three steps
-  (Gauss, geometric integrality, specialisation), an audit of what is missing
-  from the pin, and a FALSITY AUDIT refuting the sharper "fix the plane
-  direction" variant that one would naturally try next.
+* `exists_irreducible_planeSection_leadingForm_ne_zero` (PROVEN 2026-07-28, was
+  a sorry leaf) -- the irreducibility half: produce a plane, normalised so that
+  `h_d(u₁) ≠ 0`, whose section is irreducible. That leaf's docstring carries the
+  three steps (Gauss, geometric integrality, specialisation), an audit of what is
+  missing from the pin, and a FALSITY AUDIT refuting the sharper "fix the plane
+  direction" variant that one would naturally try next. It is now proven over two
+  further leaves, `exists_directions_irreducible_familyPlaneSection` (Schmidt's
+  Theorem 3D: a plane direction in general position) and
+  `exists_irreducibilityFormsInt_two` (E. Noether's forms, ℤ-rational -- which
+  SUBSUMES the sibling `exists_absolutelyIrreducibleForms_two`).
 
 WHY `N ≥ 3` AND NOT GENERAL `N`. At `N ≤ 2` the statement is true but carries no
 Bertini content and is already discharged elsewhere: at `N = 2` the identity
@@ -17672,7 +17995,10 @@ Bertini leaf is now PROVEN over the single smaller leaf
 supplied by `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, so
 what is open on this side is irreducibility alone. The accompanying claim that the two halves
 "share no technique" is withdrawn: Schmidt derives the Bertini half from
-Noether's Theorem 2A. See that leaf's docstring.)
+Noether's Theorem 2A. See that leaf's docstring. UPDATE 2026-07-28: that leaf is
+now PROVEN too, over `exists_directions_irreducible_familyPlaneSection`
+(Schmidt's Theorem 3D) and `exists_irreducibilityFormsInt_two` (Noether's forms,
+ℤ-rational), the second of which subsumes `exists_absolutelyIrreducibleForms_two`.)
 
 INFRASTRUCTURE ALREADY IN PLACE, so that proofs of those two need not rebuild it:
 `planeSection_comp` (composition of parametrisations, stated for a general
@@ -17769,7 +18095,9 @@ whatever — see `exists_bertiniNoetherWitness_zero`,
   plane only. (Since 2026-07-27 this is itself PROVEN over the one smaller leaf
   `exists_irreducible_planeSection_leadingForm_ne_zero`, which asks for
   irreducibility alone; the degree half is closed. That leaf's docstring also
-  carries a FALSITY AUDIT of the sharper fixed-direction variant.)
+  carries a FALSITY AUDIT of the sharper fixed-direction variant. UPDATE
+  2026-07-28: it is PROVEN, over `exists_directions_irreducible_familyPlaneSection`
+  and `exists_irreducibilityFormsInt_two`.)
 * `exists_noetherBadLocusForms` — E. Noether's irreducibility forms, elimination
   theory, carrying the degree bound that is UNIFORM in `p`.
 
