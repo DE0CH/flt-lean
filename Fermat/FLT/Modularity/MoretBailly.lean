@@ -14587,10 +14587,338 @@ theorem exists_bertiniNoetherWitness_two (d : ℕ) :
     · rw [planeSection_map]
       exact irreducible_planeSection_of_det_ne_zero _ _ _ _ hdetK hirr
 
-/-! ### The genuine content: `N ≥ 3` -/
+/-! ### The genuine content: `N ≥ 3`
 
-/-- **BERTINI'S IRREDUCIBILITY THEOREM FOR PLANE SECTIONS (SORRY LEAF, cut
-2026-07-27)** -- the GEOMETRIC half of `exists_bertiniNoetherWitness_of_three_le`.
+#### Coefficient of `s^d` in a plane section, and general position
+
+The five lemmas below are PROVEN, and together they discharge the DEGREE half of
+`exists_irreducible_planeSection_of_irreducible`, leaving only irreducibility to
+the Bertini leaf. The mechanism: substituting `xᵢ ↦ vᵢ + u₁ᵢ·s + u₂ᵢ·t` turns each
+variable into an affine form, so a monomial `x^α` of total degree `|α|` can
+contribute to the pure monomial `s^d` only when `|α| ≥ d`, and when `|α| = d` its
+contribution is exactly `∏ᵢ u₁ᵢ^αᵢ` -- every factor must supply its `s`-term. So
+for `d = h.totalDegree` the coefficient of `s^d` in the section is
+`h_d(u₁)`, where `h_d` is the degree-`d` homogeneous component of `h`. Choosing
+the plane direction with `h_d(u₁) ≠ 0` therefore FORCES the section to have total
+degree exactly `d`, for EVERY base point `v`.
+-/
+
+/-- **PROVEN**: the coefficient of `s^(m+n)` in a product splits, provided the
+factors have total degree at most `m` and `n` respectively. In the antidiagonal
+sum defining `coeff (single 0 (m+n)) (p*q)` every exponent pair `(a, b)` is
+supported at `0` alone (the other coordinates of `a + b` vanish), so `a` and `b`
+are `single 0 (a 0)` and `single 0 (b 0)` with `a 0 + b 0 = m + n`; if
+`a 0 > m` the first coefficient vanishes by degree, and if `a 0 < m` then
+`b 0 > n` and the second does. -/
+theorem coeff_single_add_mul_of_totalDegree_le {K : Type*} [CommRing K]
+    (p q : MvPolynomial (Fin 2) K) (m n : ℕ)
+    (hp : p.totalDegree ≤ m) (hq : q.totalDegree ≤ n) :
+    (p * q).coeff (Finsupp.single 0 (m + n))
+      = p.coeff (Finsupp.single 0 m) * q.coeff (Finsupp.single 0 n) := by
+  classical
+  have hdeg : ∀ (k : ℕ), ∑ i ∈ (Finsupp.single (0 : Fin 2) k).support,
+      (Finsupp.single (0 : Fin 2) k) i = k := by
+    intro k
+    have := Finsupp.degree_single (0 : Fin 2) k
+    simpa [Finsupp.degree_apply] using this
+  rw [MvPolynomial.coeff_mul]
+  refine (Finset.sum_eq_single (Finsupp.single (0 : Fin 2) m, Finsupp.single (0 : Fin 2) n)
+    ?_ ?_).trans rfl
+  · rintro ⟨a, b⟩ hab hne
+    rw [Finset.mem_antidiagonal] at hab
+    have hzero : ∀ j : Fin 2, j ≠ 0 → a j = 0 ∧ b j = 0 := by
+      intro j hj
+      have := congrArg (fun m : Fin 2 →₀ ℕ => m j) hab
+      simp only [Finsupp.add_apply, Finsupp.single_apply] at this
+      rw [if_neg (fun hc => hj hc.symm)] at this
+      omega
+    have ha : a = Finsupp.single (0 : Fin 2) (a 0) := by
+      ext j
+      rcases eq_or_ne j 0 with rfl | hj
+      · simp
+      · rw [Finsupp.single_apply, if_neg (fun hc => hj hc.symm), (hzero j hj).1]
+    have hb : b = Finsupp.single (0 : Fin 2) (b 0) := by
+      ext j
+      rcases eq_or_ne j 0 with rfl | hj
+      · simp
+      · rw [Finsupp.single_apply, if_neg (fun hc => hj hc.symm), (hzero j hj).2]
+    have hsum : a 0 + b 0 = m + n := by
+      have := congrArg (fun m : Fin 2 →₀ ℕ => m 0) hab
+      simpa using this
+    have ham : a 0 ≠ m := by
+      intro hc
+      refine hne ?_
+      have h1 : a = Finsupp.single (0 : Fin 2) m := by rw [ha, hc]
+      have h2 : b = Finsupp.single (0 : Fin 2) n := by
+        have hbn : b 0 = n := by omega
+        rw [hb, hbn]
+      rw [h1, h2]
+    rcases lt_or_gt_of_ne ham with hlt | hgt
+    · have : q.coeff b = 0 := by
+        refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+        rw [hb, hdeg]
+        omega
+      rw [this, mul_zero]
+    · have : p.coeff a = 0 := by
+        refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+        rw [ha, hdeg]
+        omega
+      rw [this, zero_mul]
+  · intro hmem
+    exact absurd (Finset.mem_antidiagonal.mpr (by
+      ext j
+      rcases eq_or_ne j 0 with rfl | hj
+      · simp
+      · simp [Finsupp.single_apply])) hmem
+
+/-- **PROVEN**: the coefficient of `s^e` in the `e`-th power of a polynomial of
+total degree at most one is the `e`-th power of its `s`-coefficient. Induction on
+`e` over `coeff_single_add_mul_of_totalDegree_le`. -/
+theorem coeff_single_pow_of_totalDegree_le_one {K : Type*} [CommRing K]
+    (p : MvPolynomial (Fin 2) K) (hp : p.totalDegree ≤ 1) (e : ℕ) :
+    (p ^ e).coeff (Finsupp.single 0 e) = (p.coeff (Finsupp.single 0 1)) ^ e := by
+  induction e with
+  | zero => simp
+  | succ k ih =>
+      have h1 : (p ^ k).totalDegree ≤ k := by
+        refine le_trans (MvPolynomial.totalDegree_pow p k) ?_
+        calc k * p.totalDegree ≤ k * 1 := Nat.mul_le_mul_left k hp
+          _ = k := by ring
+      rw [pow_succ, coeff_single_add_mul_of_totalDegree_le _ _ k 1 h1 hp, ih, pow_succ]
+
+/-- **PROVEN**: the coefficient of `s^(∑ e)` in `∏ (f i)^(e i)`, for factors of
+total degree at most one, is `∏ (coeff of s in f i)^(e i)`. -/
+theorem coeff_single_finsetProd_of_totalDegree_le_one {K : Type*} [CommRing K] {ι : Type*}
+    (f : ι → MvPolynomial (Fin 2) K) (hf : ∀ i, (f i).totalDegree ≤ 1) (e : ι → ℕ)
+    (s : Finset ι) :
+    (∏ i ∈ s, (f i) ^ (e i)).coeff (Finsupp.single 0 (∑ i ∈ s, e i))
+      = ∏ i ∈ s, ((f i).coeff (Finsupp.single 0 1)) ^ (e i) := by
+  classical
+  induction s using Finset.induction_on with
+  | empty => simp
+  | insert a s ha ih =>
+      have hpow : ∀ i : ι, ((f i) ^ (e i)).totalDegree ≤ e i := by
+        intro i
+        refine le_trans (MvPolynomial.totalDegree_pow (f i) (e i)) ?_
+        calc e i * (f i).totalDegree ≤ e i * 1 := Nat.mul_le_mul_left _ (hf i)
+          _ = e i := by ring
+      have hprod : (∏ i ∈ s, (f i) ^ (e i)).totalDegree ≤ ∑ i ∈ s, e i :=
+        le_trans (MvPolynomial.totalDegree_finsetProd s _) (Finset.sum_le_sum fun i _ => hpow i)
+      rw [Finset.prod_insert ha, Finset.sum_insert ha, Finset.prod_insert ha,
+        coeff_single_add_mul_of_totalDegree_le _ _ _ _ (hpow a) hprod,
+        coeff_single_pow_of_totalDegree_le_one _ (hf a), ih]
+
+/-- **PROVEN**: THE LEADING-FORM IDENTITY. For `d` at least the total degree of
+`h`, the coefficient of the pure monomial `s^d` in `planeSection h v u₁ u₂` is
+`h_d(u₁)`, the degree-`d` homogeneous component of `h` evaluated at the first
+direction vector. Note it does not depend on `v` or on `u₂` at all: the base
+point and the second direction can only contribute factors of `s`-degree `0`.
+
+This is the exact sense in which "the top form of a section is the top form
+restricted to the plane", and it is what makes the degree of a section
+computable without any Bertini input. -/
+theorem coeff_single_planeSection_eq_eval_homogeneousComponent {K : Type*} [CommRing K]
+    {N d : ℕ} (h : MvPolynomial (Fin N) K) (hd : h.totalDegree ≤ d) (v u₁ u₂ : Fin N → K) :
+    (planeSection h v u₁ u₂).coeff (Finsupp.single 0 d)
+      = MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) := by
+  classical
+  set f : Fin N → MvPolynomial (Fin 2) K := fun i =>
+    MvPolynomial.C (v i) + MvPolynomial.C (u₁ i) * MvPolynomial.X 0
+      + MvPolynomial.C (u₂ i) * MvPolynomial.X 1 with hf
+  have hfdeg : ∀ i, (f i).totalDegree ≤ 1 := fun i => totalDegree_affineForm_le_one _ _ _
+  have hfcoeff : ∀ i, (f i).coeff (Finsupp.single 0 1) = u₁ i := by
+    intro i
+    have hne : (0 : Fin 2 →₀ ℕ) ≠ Finsupp.single (0 : Fin 2) 1 := by
+      intro hc
+      have h0 := congrArg (fun m : Fin 2 →₀ ℕ => m 0) hc
+      simp at h0
+    simp [hf, MvPolynomial.coeff_C, MvPolynomial.coeff_C_mul, MvPolynomial.coeff_X,
+      Finsupp.single_eq_single_iff, hne]
+  have hdegsingle : ∑ i ∈ (Finsupp.single (0 : Fin 2) d).support,
+      (Finsupp.single (0 : Fin 2) d) i = d := by
+    simpa [Finsupp.degree_apply] using Finsupp.degree_single (0 : Fin 2) d
+  have hps : planeSection h v u₁ u₂ = MvPolynomial.bind₁ f h := rfl
+  have hsplit : MvPolynomial.bind₁ f h
+      = ∑ α ∈ h.support, MvPolynomial.bind₁ f
+          (MvPolynomial.monomial α (MvPolynomial.coeff α h)) := by
+    rw [← map_sum, MvPolynomial.support_sum_monomial_coeff]
+  have hLHS : MvPolynomial.coeff (Finsupp.single 0 d) (planeSection h v u₁ u₂)
+      = ∑ α ∈ h.support, (if α.degree = d then
+          MvPolynomial.coeff α h * ∏ i ∈ α.support, (u₁ i) ^ (α i) else 0) := by
+    rw [hps, hsplit, MvPolynomial.coeff_sum]
+    refine Finset.sum_congr rfl (fun α hα => ?_)
+    rw [MvPolynomial.bind₁_monomial, MvPolynomial.coeff_C_mul]
+    have hαd : α.degree ≤ d := le_trans (MvPolynomial.le_totalDegree hα) hd
+    have hpow : ∀ i : Fin N, ((f i) ^ (α i)).totalDegree ≤ α i := by
+      intro i
+      refine le_trans (MvPolynomial.totalDegree_pow (f i) (α i)) ?_
+      calc α i * (f i).totalDegree ≤ α i * 1 := Nat.mul_le_mul_left _ (hfdeg i)
+        _ = α i := by ring
+    rcases eq_or_lt_of_le hαd with heq | hlt
+    · rw [if_pos heq]
+      congr 1
+      have hsum : (∑ i ∈ α.support, α i) = d := by
+        rw [← Finsupp.degree_apply]; exact heq
+      rw [← hsum, coeff_single_finsetProd_of_totalDegree_le_one f hfdeg (fun i => α i) α.support]
+      exact Finset.prod_congr rfl (fun i _ => by rw [hfcoeff])
+    · rw [if_neg (by omega)]
+      have hz : MvPolynomial.coeff (Finsupp.single 0 d) (∏ i ∈ α.support, (f i) ^ (α i)) = 0 := by
+        refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+        rw [hdegsingle]
+        have hb1 : (∏ i ∈ α.support, (f i) ^ (α i)).totalDegree ≤ ∑ i ∈ α.support, α i :=
+          le_trans (MvPolynomial.totalDegree_finsetProd _ _)
+            (Finset.sum_le_sum fun i _ => hpow i)
+        have hb2 : (∑ i ∈ α.support, α i) < d := by
+          rw [← Finsupp.degree_apply]; exact hlt
+        omega
+      rw [hz, mul_zero]
+  have hRHS : MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h)
+      = ∑ α ∈ h.support, (if α.degree = d then
+          MvPolynomial.coeff α h * ∏ i ∈ α.support, (u₁ i) ^ (α i) else 0) := by
+    rw [MvPolynomial.homogeneousComponent_apply, map_sum, Finset.sum_filter]
+    refine Finset.sum_congr rfl (fun α _ => ?_)
+    by_cases hc : α.degree = d
+    · rw [if_pos hc, if_pos hc]
+      simp [MvPolynomial.eval_monomial, Finsupp.prod]
+    · rw [if_neg hc, if_neg hc]
+  rw [hLHS, hRHS]
+
+/-- **PROVEN**: if the degree-`d` leading form of `h` does not vanish at `u₁`,
+then EVERY plane section in the direction `(u₁, u₂)` has total degree exactly
+`d` -- no genericity and no hypothesis on the base point `v`. The upper bound is
+`totalDegree_planeSection_le`; the lower bound is
+`coeff_single_planeSection_eq_eval_homogeneousComponent`, which exhibits `s^d` in
+the support. -/
+theorem totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero {K : Type*} [Field K]
+    {N d : ℕ} (h : MvPolynomial (Fin N) K) (hdeg : h.totalDegree = d) (v u₁ u₂ : Fin N → K)
+    (hlead : MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0) :
+    (planeSection h v u₁ u₂).totalDegree = d := by
+  refine le_antisymm (hdeg ▸ totalDegree_planeSection_le h v u₁ u₂) ?_
+  by_contra hcon
+  have hlt : (planeSection h v u₁ u₂).totalDegree < d := Nat.lt_of_not_le hcon
+  refine hlead ?_
+  rw [← coeff_single_planeSection_eq_eval_homogeneousComponent h (le_of_eq hdeg) v u₁ u₂]
+  refine MvPolynomial.coeff_eq_zero_of_totalDegree_lt ?_
+  have hsingle : ∑ i ∈ (Finsupp.single (0 : Fin 2) d).support,
+      (Finsupp.single (0 : Fin 2) d) i = d := by
+    simpa [Finsupp.degree_apply] using Finsupp.degree_single (0 : Fin 2) d
+  rw [hsingle]
+  exact hlt
+
+/-- **BERTINI'S IRREDUCIBILITY THEOREM, THE IRREDUCIBILITY HALF ALONE (SORRY
+LEAF, cut 2026-07-27)** -- what is left of
+`exists_irreducible_planeSection_of_irreducible` once the degree bookkeeping is
+discharged above.
+
+WHAT IT SAYS, AND WHAT IT DOES NOT. The conclusion produces a plane together
+with the normalisation `h_d(u₁) ≠ 0` and asks for IRREDUCIBILITY ONLY: the
+DEGREE claim of the parent then follows from
+`totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, which turns
+`h_d(u₁) ≠ 0` into `totalDegree = d` for free. So the whole degree half of
+Bertini is closed, and what is open is exactly irreducibility.
+
+The normalisation costs nothing. If a plane `W = span(u₁, u₂)` carries a section
+of total degree `d` at all, then the degree-`d` part of that section is the
+binary form `h_d(s·u₁ + t·u₂)`, which is therefore nonzero; `K` is infinite, so
+some `u ∈ W` has `h_d(u) ≠ 0`, and re-choosing the basis of `W` to start with
+`u` changes the section by an invertible affine substitution of `𝔸²`
+(`irreducible_planeSection_of_det_ne_zero`), preserving irreducibility.
+
+**FALSITY AUDIT (2026-07-27) -- THE OBVIOUS SHARPER CUT IS FALSE, DO NOT
+RETRY IT.** The natural-looking strengthening is to FIX the plane direction and
+quantify only the base point:
+
+    (u₁ u₂ given) (hindep : LinearIndependent K ![u₁, u₂])
+      (hlead : eval u₁ (homogeneousComponent d h) ≠ 0) :
+        ∃ v, Irreducible (planeSection h v u₁ u₂)
+
+That statement is FALSE, and the counterexample is small. Take `n = 0`,
+`K` algebraically closed, and
+
+    h = X 1 ^ 2 - X 0   ∈ MvPolynomial (Fin 3) K,   d = 2.
+
+`h` is irreducible (degree one in `X 0`, and primitive there);
+`homogeneousComponent 2 h = X 1 ^ 2`. Take `u₁ = Pi.single 1 1` and
+`u₂ = Pi.single 2 1`. Then `hindep` holds, and `hlead` holds because
+`eval u₁ (X 1 ^ 2) = 1`. But for EVERY base point `v`,
+
+    planeSection h v u₁ u₂ = (C (v 1) + X 0) ^ 2 - C (v 0),
+
+a polynomial in the single variable `X 0`, of degree `2`, over an algebraically
+closed field -- hence a product of two linear factors, hence never irreducible.
+
+The mistake the counterexample exposes is a real mathematical one, not a
+bookkeeping slip: the degree condition `h_d|_W ≠ 0` is NECESSARY for a good
+plane but is NOT the general-position condition Bertini needs. Schmidt's
+Theorem 3D (Chapter V §3) delivers a linear change of coordinates after which
+`h` has degree `d` in the last two variables **AND is absolutely irreducible
+over `K(x₁ … x_{n+1})`**, and the text there gives the companion example
+`X 1 ^ 2 - X 0 * X 2 ^ 2` precisely to show the second condition does not
+follow from the first. In the counterexample above the good planes are the ones
+containing the `X 0` direction (e.g. `u₁ = Pi.single 1 1`, `u₂ = Pi.single 0 1`
+gives the irreducible `(C (v 1) + X 0) ^ 2 - (C (v 0) + X 1)`), and no condition
+on `h_d` alone can select them.
+
+Consequence for anyone sharpening this leaf: the direction must stay inside the
+existential unless the hypothesis added is genuinely absolute irreducibility
+over the residual function field, which is the content of the leaf itself. A
+proven general-position lemma
+(`∃ u₁ u₂, LinearIndependent K ![u₁, u₂] ∧ eval u₁ (homogeneousComponent d h) ≠ 0`,
+elementary: `h_d ≠ 0`, `K` infinite, `dim ≥ 2`) was written for the false cut and
+then removed as free-floating; recover it from commit `859e326f` if the eventual
+proof wants it.
+
+THE ROUTE (Schmidt, *Equations over Finite Fields*, Chapter V, Theorem 3D and
+Lemma 4A; the same argument is Fried-Jarden, *Field Arithmetic*, around
+Proposition 10.4.2). Apply Theorem 3D to choose coordinates in which the plane
+direction is the last coordinate 2-plane and `h`, read in `K(x₁ … x_{n+1})[y, z]`,
+has degree exactly `d` and is absolutely irreducible. Three steps remain:
+
+1. **Gauss.** `h` irreducible in `K[x, y, z]` and primitive in `(y, z)` implies
+   `h` irreducible in `K(x)[y, z]`.
+2. **Geometric integrality.** `K` algebraically closed implies `K` is
+   algebraically closed inside `Frac(K[x, y, z]/(h))`, so `h` stays irreducible
+   over an algebraic closure of `K(x)` -- i.e. it is ABSOLUTELY irreducible
+   there. (This is where "over an algebraically closed field" is used, and it is
+   the step that fails over a general base.)
+3. **Specialisation.** The `x`-locus where the fibre `h(x, y, z)` fails to be
+   absolutely irreducible of degree `d` is a proper closed subset -- E. Noether's
+   forms, or equivalently Chevalley constructibility plus the fact that the
+   generic point avoids it -- and `K` is infinite, so it misses a `K`-point `t`.
+   Then `v := (t, 0, 0)` works.
+
+REPORTED FINDING (2026-07-27, from the agent that made this cut): the premise
+that this half and the arithmetic half `exists_noetherBadLocusForms` "share no
+technique" is NOT true of the standard proof -- Schmidt's Lemma 4A derives this
+statement FROM his Theorem 2A, which is exactly the sibling's content. The two
+statements are still genuinely different, and this one is genuinely weaker: it
+needs only that the bad locus be a PROPER CLOSED subset over ONE algebraically
+closed field, with NO degree bound and in particular no bound uniform in `p`,
+which is the entire difficulty of the sibling. So step 3 can be discharged by
+Chevalley constructibility alone, without Noether's forms. But an implementation
+that goes through Noether's forms is legitimate and would let the two leaves
+share step 3's machinery; a future dispatcher should treat the "no shared
+technique" note as a design preference, not a mathematical fact.
+
+WHAT IS MISSING FROM THE PIN (checked 2026-07-27 against `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`): a Gauss lemma for `MvPolynomial` over a
+polynomial ring in the remaining variables (mathlib has the univariate
+`Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map` only), any
+notion of ABSOLUTE irreducibility for multivariate polynomials, and geometric
+integrality of a hypersurface over an algebraically closed field. The
+`AbsolutelyIrreducible` names in `~/cs/FLT` are about Galois REPRESENTATIONS and
+are a name collision, not a result. -/
+theorem exists_irreducible_planeSection_leadingForm_ne_zero {K : Type*} [Field K]
+    [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K) (hdeg : h.totalDegree = d)
+    (hirr : Irreducible h) :
+    ∃ v u₁ u₂ : Fin (n + 3) → K,
+      MvPolynomial.eval u₁ (MvPolynomial.homogeneousComponent d h) ≠ 0 ∧
+      Irreducible (planeSection h v u₁ u₂) :=
+  sorry
+
+/-- **BERTINI'S IRREDUCIBILITY THEOREM FOR PLANE SECTIONS (PROVEN 2026-07-27 over
+one named sub-leaf)** -- the GEOMETRIC half of
+`exists_bertiniNoetherWitness_of_three_le`.
 
 Over an ALGEBRAICALLY CLOSED field, an irreducible hypersurface of total degree
 `d` in `N = n + 3 ≥ 3` variables admits at least ONE plane section that is again
@@ -14603,7 +14931,13 @@ independently of the characteristic -- is the separate arithmetic half,
 `exists_noetherBadLocusForms`. Splitting the two is what lets each be attacked
 with its own technique: this one is geometry over one algebraically closed
 field, that one is elimination theory with a `p`-uniform degree bound. Neither
-half alone gives the parent leaf, and neither needs the other's methods.
+half alone gives the parent leaf. (CORRECTION, 2026-07-27: the further claim that
+"neither needs the other's methods" is FALSE of the standard proof -- Schmidt
+derives this half FROM his Theorem 2A, i.e. from the sibling's content. What
+remains true, and is the point of the split, is that this half needs only a
+PROPER CLOSED bad locus over ONE algebraically closed field, with no degree bound
+and in particular none uniform in `p`. See
+`exists_irreducible_planeSection_leadingForm_ne_zero`.)
 
 WHY IT IS TRUE IN EVERY CHARACTERISTIC. This is the IRREDUCIBILITY Bertini
 (Schmidt, *Equations over Finite Fields*, Chapter V §1; Fried-Jarden, *Field
@@ -14611,19 +14945,32 @@ Arithmetic*, §10.4, around Proposition 10.4.2; Jouanolou, *Théorèmes de Berti
 et applications*). The classical characteristic-`p` failure of Bertini concerns
 SMOOTHNESS of the generic hyperplane section and is irrelevant here.
 
-THE ROUTE. Induct on `N`, cutting by one hyperplane at a time: `V(h) ⊆ 𝔸^N` is
-irreducible of dimension `N - 1 ≥ 2`, and Bertini says a general hyperplane
-section of an irreducible variety of dimension `≥ 2` is again irreducible, so
-after `N - 2` cuts one lands on an irreducible curve inside a plane, which is
-`V(planeSection h v u₁ u₂)` for the composed parametrisation. `planeSection_comp`
-is stated at a GENERAL `N` precisely so that this composition is available. What
-is missing is (a) the one-step hyperplane statement and (b) the bookkeeping that
-a composite of affine parametrisations `𝔸² → 𝔸^{N-1} → 𝔸^N` is again a plane
-parametrisation of `𝔸^N`. For (b) the natural infrastructure is a general
-`affineSection h v u` for `u : Fin M → Fin N → K` with a composition lemma
-generalising `planeSection_comp`; it is deliberately NOT built here, because an
-attack through the generic plane over `K(v, u₁, u₂)` -- the other standard route
--- would not use it, and unusable machinery is worse than none.
+THE ROUTE TAKEN (2026-07-27), AND WHY NOT THE INDUCTIVE ONE. The cut recorded in
+the previous version of this docstring -- induct on `N`, one hyperplane at a
+time, over a general `affineSection h v u` with a composition lemma generalising
+`planeSection_comp` -- was NOT taken, and the `affineSection` infrastructure was
+NOT built. The reason is that Schmidt's own proof (Chapter V, Lemma 4A) does the
+whole descent in ONE step: after a linear change of coordinates putting the plane
+direction into the last two coordinates, one specialises ALL `N - 2` remaining
+variables at once. So the induction, and with it the composition bookkeeping,
+buys nothing. Concretely the family used is the planes PARALLEL to one fixed
+direction, which is expressible directly as `planeSection h v u₁ u₂` with
+`(u₁, u₂)` fixed and `v` varying -- no new definition needed at all.
+
+The cut is therefore into PROVEN degree machinery and ONE sorry leaf:
+
+* `coeff_single_planeSection_eq_eval_homogeneousComponent` (PROVEN) -- the
+  leading-form identity: the coefficient of `s^d` in any section equals
+  `h_d(u₁)`, whatever the base point and the second direction.
+* `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero` (PROVEN) -- so
+  once `h_d(u₁) ≠ 0` the section has total degree exactly `d`. THE DEGREE HALF OF
+  THIS LEAF IS THEREFORE FULLY DISCHARGED.
+* `exists_irreducible_planeSection_leadingForm_ne_zero` (SORRY) -- the
+  irreducibility half: produce a plane, normalised so that `h_d(u₁) ≠ 0`, whose
+  section is irreducible. That leaf's docstring carries the remaining three steps
+  (Gauss, geometric integrality, specialisation), an audit of what is missing
+  from the pin, and a FALSITY AUDIT refuting the sharper "fix the plane
+  direction" variant that one would naturally try next.
 
 WHY `N ≥ 3` AND NOT GENERAL `N`. At `N ≤ 2` the statement is true but carries no
 Bertini content and is already discharged elsewhere: at `N = 2` the identity
@@ -14636,15 +14983,18 @@ the missing mathematics -- see `exists_bertiniNoetherWitness_zero` / `_one` /
 FAITHFULNESS NOTE. `d` is not assumed positive, and need not be: at `d = 0` the
 hypothesis `Irreducible h` is already false over a field (a constant is a unit or
 zero), so the statement is vacuous there rather than wrong. Likewise no
-independence condition is imposed on the produced `(u₁, u₂)`; it is forced,
-since a degenerate parametrisation makes the section a univariate polynomial in
-a linear form, which for `d ≥ 2` is reducible. -/
+independence condition is imposed on the produced `(u₁, u₂)`; it is forced, since
+a degenerate parametrisation makes the section a univariate polynomial in a
+linear form, which for `d ≥ 2` is reducible. -/
 theorem exists_irreducible_planeSection_of_irreducible {K : Type*} [Field K]
     [IsAlgClosed K] (n d : ℕ) (h : MvPolynomial (Fin (n + 3)) K)
     (hdeg : h.totalDegree = d) (hirr : Irreducible h) :
     ∃ v u₁ u₂ : Fin (n + 3) → K,
-      (planeSection h v u₁ u₂).totalDegree = d ∧ Irreducible (planeSection h v u₁ u₂) :=
-  sorry
+      (planeSection h v u₁ u₂).totalDegree = d ∧ Irreducible (planeSection h v u₁ u₂) := by
+  obtain ⟨v, u₁, u₂, hlead, hv⟩ :=
+    exists_irreducible_planeSection_leadingForm_ne_zero n d h hdeg hirr
+  exact ⟨v, u₁, u₂,
+    totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero h hdeg v u₁ u₂ hlead, hv⟩
 
 /-- **E. NOETHER'S IRREDUCIBILITY FORMS, PULLED BACK TO THE PLANE PARAMETERS
 (SORRY LEAF, cut 2026-07-27)** -- the ARITHMETIC half of
@@ -14773,7 +15123,13 @@ two sub-leaves.
 WHAT IS OPEN AFTER THIS CUT: exactly `exists_irreducible_planeSection_of_irreducible`
 (Bertini, geometry over one algebraically closed field) and
 `exists_noetherBadLocusForms` (Noether, elimination theory with a `p`-uniform
-degree bound). They share no technique, so they are independently dispatchable.
+degree bound). They are independently dispatchable. (UPDATED 2026-07-27: the
+Bertini leaf is now PROVEN over the single smaller leaf
+`exists_irreducible_planeSection_leadingForm_ne_zero`; the DEGREE claim is
+supplied by `totalDegree_planeSection_of_eval_homogeneousComponent_ne_zero`, so
+what is open on this side is irreducibility alone. The accompanying claim that the two halves
+"share no technique" is withdrawn: Schmidt derives the Bertini half from
+Noether's Theorem 2A. See that leaf's docstring.)
 
 INFRASTRUCTURE ALREADY IN PLACE, so that proofs of those two need not rebuild it:
 `planeSection_comp` (composition of parametrisations, stated for a general
@@ -14867,11 +15223,17 @@ whatever — see `exists_bertiniNoetherWitness_zero`,
 
 * `exists_irreducible_planeSection_of_irreducible` — Bertini's irreducibility
   theorem, pure geometry over ONE algebraically closed field, EXISTENCE of a good
-  plane only;
+  plane only. (Since 2026-07-27 this is itself PROVEN over the one smaller leaf
+  `exists_irreducible_planeSection_leadingForm_ne_zero`, which asks for
+  irreducibility alone; the degree half is closed. That leaf's docstring also
+  carries a FALSITY AUDIT of the sharper fixed-direction variant.)
 * `exists_noetherBadLocusForms` — E. Noether's irreducibility forms, elimination
   theory, carrying the degree bound that is UNIFORM in `p`.
 
-They share no technique and are independently dispatchable.
+They are independently dispatchable. (2026-07-27: the claim that they "share no
+technique" is withdrawn -- Schmidt's Lemma 4A derives the Bertini half from
+Noether's Theorem 2A. What is true is that the Bertini half needs no degree
+bound, uniform in `p` or otherwise.)
 
 WHAT IT SAYS. For each `(N, d)` there is a degree bound `D`, DEPENDING ONLY ON
 `N` AND `d` AND NOT ON `p`, such that for every absolutely irreducible `h` of
