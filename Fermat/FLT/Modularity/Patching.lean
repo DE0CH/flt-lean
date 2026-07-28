@@ -5090,11 +5090,16 @@ That module is reusable beyond this leaf: `Sha1Twist`'s docstring in
 With it, `survivingLocus` above is definable, its conjugation stability is
 PROVEN (`survivingLocus_conj`), and DDT 2.48 split into its two halves —
 the global nonemptiness step and the local computation at `q` — as the two
-named leaves above.  Of those, the LOCAL half
-(`notMem_ker_locResDecompTwist1_of_mem_survivingLocus`) is now PROVEN
-(2026-07-28), over three further `LowDegreeOne.lean` lemmas; what remains
-open is exactly the global half
-`isOpen_survivingLocus_and_meets_taylorWilesLocus`.
+named leaves above.  The LOCAL half
+(`notMem_ker_locResDecompTwist1_of_mem_survivingLocus`) was proven on
+2026-07-28, over three further `LowDegreeOne.lean` lemmas.
+
+The status of the GLOBAL half is deliberately NOT recorded here: it is
+carried by a different owner on a different branch, so any claim made in
+this file about whether it is still open would be a guess about merge order
+rather than a fact, and would be false the moment that branch lands.  Ask
+the compiler — `lake build` reports the direct-sorry set — not this
+docstring.
 
 Both-ways audit, inherited verbatim from
 `exists_taylorWilesPrime_locResDecomp_ne_zero`: at the intended
