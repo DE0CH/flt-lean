@@ -186,6 +186,11 @@ import Mathlib.Data.Nat.Factorization.Induction
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 import Mathlib.RingTheory.Algebraic.Integral
+-- Added 2026-07-28 for `isIntegral_trace_of_isIntegral` below: the roots of the
+-- characteristic polynomial are the eigenvalues
+-- (`Module.End.hasEigenvalue_iff_isRoot_charpoly`). Used only in PROOF position,
+-- so a plain (non-`public`) import suffices.
+import Mathlib.LinearAlgebra.Eigenspace.Charpoly
 import Mathlib.LinearAlgebra.LinearIndependent.BaseChange
 import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
@@ -4882,7 +4887,19 @@ The linear algebra in between is PROVEN here: over `ℂ` the power traces
 of an endomorphism are the power sums of the roots of its
 characteristic polynomial (`trace_pow_eq_sum_roots_pow`), and Cayley–
 Hamilton turns an integral characteristic polynomial into integrality
-(inside `isIntegral_heckeEndo`'s proof). -/
+(inside `isIntegral_heckeEndo`'s proof).
+
+**UPDATED 2026-07-28 — THIS WHOLE ROUTE IS NOW MATHEMATICALLY
+REDUNDANT.** `isIntegral_trace_heckeOpN` below is PROVEN from
+`exists_heckeOpN_sturm_span` above alone (Sturm's bound over `ℤ`, a leaf
+the rest of the cluster already required), by the reverse implication
+nobody had checked: `𝕋` finite over `ℤ` ⟹ every `T ∈ 𝕋` integral over
+`ℤ` ⟹ every trace an algebraic integer, the last step being
+`isIntegral_trace_of_isIntegral` below. The same two lines prove
+`isIntegral_heckeEndo` directly, so rewiring it would retire
+`exists_int_of_monic_of_forall_sum_roots_pow_int` as well — see
+`isIntegral_trace_heckeOpN`'s docstring for why that repair is NOT made
+from inside this section. -/
 
 /-- **TRACE OF A POWER OF `SCALAR + NILPOTENT`** (PROVEN, 2026-07-27):
 if `S − μ` is nilpotent on a finite free `ℂ`-module `W`, then
@@ -5326,13 +5343,83 @@ theorem exists_int_charpoly_of_forall_trace_pow_int {V : Type*} [AddCommGroup V]
   exists_int_of_monic_of_forall_sum_roots_pow_int (LinearMap.charpoly_monic T)
     fun k hk => by rw [← trace_pow_eq_sum_roots_pow T k]; exact h k hk
 
-/-- **EICHLER–SELBERG RESIDUE — `Tr(T_m)` IS AN ALGEBRAIC INTEGER**
-(sorry leaf, cut 2026-07-27 out of `exists_trace_heckeSubring_int`
-below, which WAS the whole Eichler–Selberg citation and is now PROVEN
-over this leaf alone). This is the entire remaining analytic input of
-the trace route.
+/-- **THE TRACE OF AN ENDOMORPHISM INTEGRAL OVER `ℤ` IS AN ALGEBRAIC
+INTEGER** (PROVEN, 2026-07-28): if `T ∈ End_ℂ(V)` is killed by a monic
+`p ∈ ℤ[X]`, then `Tr(T)` is integral over `ℤ`.
 
-**TWO CLAIMS OF THE OLD CITATION ARE NOW STALE AND ARE CORRECTED HERE.**
+Every eigenvalue of `T` is a root of `p`: the roots of the
+characteristic polynomial ARE the eigenvalues
+(`Module.End.hasEigenvalue_iff_isRoot_charpoly`), and evaluating `p` at
+an eigenvector (`Module.End.aeval_apply_of_hasEigenvector`) turns
+`p(T) = 0` into `p(μ) = 0`. And `Tr T` is the sum of the roots WITH
+MULTIPLICITY, which is `trace_pow_eq_sum_roots_pow` above at `k = 1`. A
+finite sum of algebraic integers is an algebraic integer.
+
+This is the OPPOSITE direction to `exists_int_charpoly_of_forall_trace_pow_int`
+above, and it is strictly cheaper: going from the operator to the trace
+needs neither Newton's identities nor Fatou's lemma, which is why it
+carries no arithmetic residue of its own. -/
+theorem isIntegral_trace_of_isIntegral {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [FiniteDimensional ℂ V] {T : Module.End ℂ V} (hT : IsIntegral ℤ T) :
+    IsIntegral ℤ (LinearMap.trace ℂ V T) := by
+  classical
+  obtain ⟨p, hpm, hp0⟩ := hT
+  have hroots : ∀ μ ∈ (LinearMap.charpoly T).roots, IsIntegral ℤ μ := by
+    intro μ hμ
+    have hchar0 : LinearMap.charpoly T ≠ 0 := (LinearMap.charpoly_monic T).ne_zero
+    have hisroot : (LinearMap.charpoly T).IsRoot μ := (Polynomial.mem_roots hchar0).mp hμ
+    have hev : T.HasEigenvalue μ :=
+      (Module.End.hasEigenvalue_iff_isRoot_charpoly T μ).mpr hisroot
+    obtain ⟨x, hx1, hx2⟩ := hev.exists_hasEigenvector
+    refine ⟨p, hpm, ?_⟩
+    have hq0 : (Polynomial.aeval T) (p.map (algebraMap ℤ ℂ)) = 0 := by
+      rw [Polynomial.aeval_map_algebraMap]
+      exact hp0
+    have hkey := Module.End.aeval_apply_of_hasEigenvector (p := p.map (algebraMap ℤ ℂ))
+      (⟨hx1, hx2⟩ : T.HasEigenvector μ x)
+    rw [hq0] at hkey
+    have hzero : (p.map (algebraMap ℤ ℂ)).eval μ = 0 := by
+      rcases smul_eq_zero.mp hkey.symm with h | h
+      · exact h
+      · exact absurd h hx2
+    rw [← Polynomial.eval_map]
+    exact hzero
+  have key : ∀ ms : Multiset ℂ, (∀ μ ∈ ms, IsIntegral ℤ μ) → IsIntegral ℤ ms.sum := by
+    intro ms
+    refine Multiset.induction_on ms (fun _ => by simpa using isIntegral_zero) ?_
+    intro a s ih h
+    rw [Multiset.sum_cons]
+    exact (h a (Multiset.mem_cons_self a s)).add
+      (ih fun x hx => h x (Multiset.mem_cons_of_mem hx))
+  have htr := trace_pow_eq_sum_roots_pow T 1
+  rw [pow_one] at htr
+  rw [htr]
+  refine key _ ?_
+  intro a ha
+  obtain ⟨μ, hμ, rfl⟩ := Multiset.mem_map.mp ha
+  simpa using hroots μ hμ
+
+/-- **`Tr(T_m)` IS AN ALGEBRAIC INTEGER** (PROVEN 2026-07-28 over the
+single citation `exists_heckeOpN_sturm_span` above — STURM'S BOUND OVER
+`ℤ` — which every consumer of this cluster ALREADY required; formerly a
+sorry leaf carrying the Eichler–Selberg trace formula, cut 2026-07-27
+out of `exists_trace_heckeSubring_int` below).
+
+**THE CORRECTION THIS NODE RECORDS: it was NOT "Eichler–Selberg and
+nothing else".** The statement is implied — with no arithmetic input of
+its own — by a leaf declared 345 lines ABOVE it, and closing it that way
+introduces no new dependency anywhere in the tree. What hid this is that
+`isIntegral_heckeEndo` below derives OPERATOR integrality FROM this
+node, which reads as though the trace were the primitive fact; the
+converse direction (module finiteness of `𝕋` ⟹ every `T ∈ 𝕋` integral ⟹
+every trace an algebraic integer) was never checked. The audit of
+`exists_heckeOpN_sturm_span` above examines only the direction that does
+NOT close this node — its DEAD END 4, "Eichler–Selberg gives integrality
+only … the trace of `T_n` says nothing about which `T_n` span" — which
+is true and is about the other arrow.
+
+**TWO CLAIMS OF THE OLD CITATION WERE ALREADY STALE AND ARE PRESERVED
+HERE BECAUSE THEY REMAIN CORRECT.**
 
 *Stale claim 1: "the Hecke MULTIPLICATION RULE cannot be separated from
 the trace formula, because the `T_n` at composite `n` are never defined
@@ -5356,17 +5443,65 @@ has rational entries. So what a successor must supply is ONLY that the
 trace is an ALGEBRAIC INTEGER — `ℤ` is integrally closed in `ℚ`, and
 that step is discharged in `exists_trace_heckeSubring_int` below.
 
-**THE ROUTE.** The Eichler–Selberg trace formula, `Γ₀(N)` at weight
-`k = 2`: Zagier's appendix to Lang, *Introduction to Modular Forms*
-(Springer GMW 222), which derives it from the Petersson kernel and the
-class numbers of imaginary quadratic orders; Diamond–Shurman gives the
-weight-`k` statement. It is ABSENT from the pin
+**THE DERIVATION, in three steps; no modular forms after step 1.**
+
+1. `exists_heckeOpN_sturm_span` above gives a `B` with every `T_m` in
+   the `ℤ`-span of the FINITE set `{T_j : j ≤ B}`, and
+   `heckeSubring_le_span_heckeOpN` above puts all of `𝕋` in the
+   `ℤ`-span of the `T_m`. So `𝕋` embeds `ℤ`-linearly in a NOETHERIAN
+   `ℤ`-module (`isNoetherian_span_of_finite`, `ℤ` being noetherian),
+   whence `Module.Finite ℤ 𝕋`.
+2. Every element of a module-finite `ℤ`-algebra is integral over `ℤ`
+   (`IsIntegral.of_finite`, which routes through `Algebra.lmul` and so
+   needs NO commutativity — `End_ℂ(S₂)` is not commutative), transported
+   back to `End_ℂ(S₂)` along the injective `Subring.subtype` by
+   `isIntegral_algHom_iff`. Hence `IsIntegral ℤ (T_m)`.
+3. `isIntegral_trace_of_isIntegral` immediately above.
+
+**NO NEW DEPENDENCY IS INTRODUCED ANYWHERE.**
+`exists_heckeOpN_sturm_span` is already required by
+`exists_heckeSubring_algebraGenerators` above →
+`heckeSubring_moduleFinite_int` → `exists_heckeSubring_zForm` →
+`integralCuspForms_span_eq_top` → `exists_heckeStable_lattice` →
+`heckeSubring_moduleFinite`, i.e. by the entire `q`-expansion cluster.
+So this closure strictly REMOVES a leaf and adds nothing to any cone.
+
+**NOT CIRCULAR.** `exists_heckeOpN_sturm_span` is a `sorry` leaf, hence
+has no dependencies at all, and it is declared ABOVE this node, so
+Lean's declaration order already excludes a cycle. Nothing here touches
+`integralCuspForms_span_eq_top`, `exists_heckeStable_lattice`,
+`heckeSubring_moduleFinite` or `exists_heckeSubring_zForm`, every one of
+which is proven THROUGH this cluster.
+
+**CONSEQUENCE, REPORTED AND DELIBERATELY NOT ACTED ON HERE.** Step 1 is
+verbatim the statement of `heckeSubring_moduleFinite_int` below and step
+2 is verbatim that of `isIntegral_heckeEndo` below, both obtained here
+from `exists_heckeOpN_sturm_span` alone — which is exactly the
+redundancy that leaf's own docstring predicts ("proving this leaf proves
+it"), now realised. So the whole TRACE ROUTE —
+`exists_int_of_monic_of_forall_sum_roots_pow_int` (a sorry leaf, OWNED
+ELSEWHERE), `exists_int_charpoly_of_forall_trace_pow_int`,
+`isIntegral_trace_heckeSubring`, `exists_trace_heckeSubring_rat`,
+`exists_trace_heckeSubring_int` and this node itself — is now
+mathematically redundant, and rewiring `isIntegral_heckeEndo` to step 2
+would retire a SECOND sorry leaf. That is not done here: it would make
+one owned open leaf and several proven declarations FREE-FLOATING, which
+is a cut-level repair for whoever owns them, not a change to make from
+inside this node. (`trace_pow_eq_sum_roots_pow` above stays consumed
+either way — step 3 uses it.)
+
+**THE OLD ROUTE, kept for whoever undoes the above.** The Eichler–Selberg
+trace formula, `Γ₀(N)` at weight `k = 2`: Zagier's appendix to Lang,
+*Introduction to Modular Forms* (Springer GMW 222), from the Petersson
+kernel and the class numbers of imaginary quadratic orders;
+Diamond–Shurman gives the weight-`k` statement. It is ABSENT from the pin
 (`grep -rn Eichler .lake/packages/mathlib` is empty) and from
-`~/cs/FLT`, whose Hecke material is quaternionic. Note the formula's
-own terms are NOT individually integral — the Hurwitz class numbers
-carry denominators `2` and `3` — so a successor deriving integrality
-from the formula must do so from the sum, not termwise. A theory build
-is expected here.
+`~/cs/FLT`, whose Hecke material is quaternionic; and its own terms are
+NOT individually integral — the Hurwitz class numbers carry denominators
+`2` and `3` — so anyone deriving integrality from the formula must do so
+from the sum, not termwise. It would close this node WITHOUT
+`exists_heckeOpN_sturm_span`, but not the rest of the cluster, which
+needs that leaf regardless.
 
 **THE LATTICE ROUTE IS STILL CIRCULAR, and this was re-checked rather
 than inherited.** `T_m` preserves `integralCuspForms N`, which is
@@ -5419,12 +5554,40 @@ NO SEMISIMPLICITY IS USED OR NEEDED, which is the entire reason this
 route is available here and dead for the sibling `heckeSubring_zRank_le`
 — see `isIntegral_heckeEndo` below.
 
-SOUNDNESS: `0 < N` is inherited from the consumer and is NOT needed
-mathematically — at `N = 0` every `heckeOpN 0 m` is the junk value `0`,
-whose trace is `0`. It is kept for uniformity with the siblings. -/
+SOUNDNESS: `0 < N` is now genuinely used, to reach
+`exists_heckeOpN_sturm_span`, `heckeSubring_le_span_heckeOpN` and
+`cuspForm_finiteDimensional`; mathematically it is still not needed,
+since at `N = 0` every `heckeOpN 0 m` is the junk value `0` whose trace
+is `0`. -/
 theorem isIntegral_trace_heckeOpN {N : ℕ} (hN : 0 < N) (m : ℕ) :
-    IsIntegral ℤ (LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) (heckeOpN N m)) :=
-  sorry
+    IsIntegral ℤ (LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) (heckeOpN N m)) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  obtain ⟨B, hB⟩ := exists_heckeOpN_sturm_span hN
+  have hAfin : (heckeOpN N '' Set.Iic B).Finite := (Set.finite_Iic B).image _
+  haveI : IsNoetherian ℤ ↥(Submodule.span ℤ (heckeOpN N '' Set.Iic B)) :=
+    isNoetherian_span_of_finite ℤ hAfin
+  have hmem : ∀ T ∈ heckeSubring N, T ∈ Submodule.span ℤ (heckeOpN N '' Set.Iic B) := by
+    intro T hT
+    refine Submodule.span_le.mpr ?_ (heckeSubring_le_span_heckeOpN hN hT)
+    rintro x ⟨k, rfl⟩
+    exact hB k
+  haveI : Module.Finite ℤ (heckeSubring N) := by
+    refine Module.Finite.of_injective
+      (({ toFun := fun x : ↥(heckeSubring N) =>
+            (⟨(x : Module.End ℂ (CuspForm (Gamma0GL N) 2)), hmem _ x.2⟩ :
+              ↥(Submodule.span ℤ (heckeOpN N '' Set.Iic B)))
+          map_add' := fun _ _ => rfl
+          map_smul' := fun _ _ => rfl } :
+        ↥(heckeSubring N) →ₗ[ℤ] ↥(Submodule.span ℤ (heckeOpN N '' Set.Iic B)))) ?_
+    intro x y hxy
+    have h := congrArg Subtype.val hxy
+    exact Subtype.ext h
+  have h1 : IsIntegral ℤ (⟨heckeOpN N m, heckeOpN_mem hN m⟩ : ↥(heckeSubring N)) :=
+    IsIntegral.of_finite ℤ _
+  have h2 := (isIntegral_algHom_iff
+    ((Subring.subtype (heckeSubring N)).toIntAlgHom) Subtype.coe_injective).mpr h1
+  exact isIntegral_trace_of_isIntegral (by simpa using h2)
 
 /-- **ALGEBRAIC INTEGRALITY OF THE TRACE SPREADS FROM `T_m` TO ALL OF
 `𝕋`** (PROVEN, 2026-07-27): `𝕋 ≤ ℤ-span {T_m}`
@@ -5634,15 +5797,17 @@ statement is then the natural one — the trace map `𝕋 → ℂ` lands in `ℤ
 THE ASSEMBLY, all three inputs above:
 `exists_trace_heckeSubring_rat` (the trace is RATIONAL — Shimura, no
 analysis), `isIntegral_trace_heckeSubring` (the trace is an ALGEBRAIC
-INTEGER — the `ℤ`-span of the `T_m` over the single remaining leaf
-`isIntegral_trace_heckeOpN`), and `IsIntegrallyClosed ℤ` inside `ℚ`,
-which is what turns the pair into membership of `ℤ`.
+INTEGER — the `ℤ`-span of the `T_m` over `isIntegral_trace_heckeOpN`),
+and `IsIntegrallyClosed ℤ` inside `ℚ`, which is what turns the pair into
+membership of `ℤ`.
 
-WHAT REMAINS OPEN BENEATH THIS NODE is exactly one leaf,
-`isIntegral_trace_heckeOpN` above; read its docstring before recutting,
-since it corrects two claims this node used to carry (the Hecke
-multiplication rule is no longer needed, and the rationality half is no
-longer a citation). -/
+**NOTHING IS OPEN BENEATH THIS NODE AS OF 2026-07-28.**
+`isIntegral_trace_heckeOpN` above is PROVEN, from
+`exists_heckeOpN_sturm_span` — a leaf this cluster already required
+through `exists_heckeSubring_algebraGenerators`. So this node's only
+remaining input is that one leaf, and this whole trace assembly is a
+redundant detour to it; read `isIntegral_trace_heckeOpN`'s docstring
+before recutting anything here. -/
 theorem exists_trace_heckeSubring_int {N : ℕ} (hN : 0 < N)
     {T : Module.End ℂ (CuspForm (Gamma0GL N) 2)} (hT : T ∈ heckeSubring N) :
     ∃ z : ℤ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) T = (z : ℂ) := by
@@ -5692,6 +5857,21 @@ was worth separating off. THE SECOND IS THE ONE EXECUTED BELOW.**
   sums `Tr(T_q^k)`, `k ≥ 1`, are rational integers; and a matrix over a
   field of characteristic `0` all of whose power traces are rational
   integers has characteristic polynomial in `ℤ[X]`.
+
+**BOTH BULLETS ARE NOW OVERTAKEN (2026-07-28), and this node is a
+one-liner away from being independent of both.** `𝕋` is a finitely
+generated `ℤ`-module directly from `exists_heckeOpN_sturm_span` above —
+that leaf plus `heckeSubring_le_span_heckeOpN` puts `𝕋` inside the
+`ℤ`-span of finitely many operators, and `ℤ` is noetherian — so
+`IsIntegral.of_finite` gives `IsIntegral ℤ (heckeEndo N q)` at once,
+with no lattice, no trace formula and no
+`exists_int_of_monic_of_forall_sum_roots_pow_int`. The derivation is
+written out inside `isIntegral_trace_heckeOpN` above, which was closed
+that way. Rewiring this node to it would retire
+`exists_int_of_monic_of_forall_sum_roots_pow_int` (a sorry leaf, owned
+elsewhere at the time of writing) and make the four trace declarations
+above free-floating, which is why it was left to this node's owner
+rather than done in passing.
 
 **THE TRACE ROUTE IS NOW WRITTEN, and its three pieces sit immediately
 above** (2026-07-27):
