@@ -24591,10 +24591,190 @@ theorem locallyOfFiniteType_ajHom {X J S : Scheme.{0}} {strX : X ⟶ S}
   haveI : LocallyOfFiniteType (jac.ajHom ≫ jstr) := by rw [h]; infer_instance
   exact locallyOfFiniteType_of_comp jac.ajHom jstr
 
+/-- **ABEL, VIA AUTODUALITY: `aj x = aj y` says exactly `𝒪(−x) ≅ 𝒪(−y)`
+in the relative Picard group** (sorry leaf, 2026-07-28) — the bridge from
+the ALBANESE presentation of `J` to the PICARD one, over an ARBITRARY
+base and an ARBITRARY test object, and the shared first half of both
+degree-`1` Riemann–Roch leaves below.
+
+TRUE, and it is classical autoduality of the Jacobian (Mumford, *Abelian
+Varieties* §§11–13; BLR *Néron Models* 8.4 and 9.4).  `IsJacobianOf` says
+only that `(J, aj)` is INITIAL among abelian schemes under `X`; nothing
+in that presentation mentions a line bundle, so no statement about
+divisors can even be *started* from it.  The Picard presentation is
+`IsRelPicZeroOf` (`ModularCurve/RelativePicard.lean`), and this leaf is
+the identification of the two.
+
+The argument, every ingredient of which is already in this file:
+
+1. `exists_relPicZero strX hproper hcurve hconn o` produces an abelian
+   scheme `J'` carrying `P : IsRelPicZeroOf strX ab' o`.
+2. `IsRelPicZeroOf.isAlbaneseOf` and `IsAlbaneseOf.isJacobianOf` make
+   `(J', P.aj)` a Jacobian too, so the `∃!` of `IsJacobianOf` supplies
+   mutually inverse `J ⟶ J'` and `J' ⟶ J` COMPATIBLE WITH `aj`; in
+   particular `jac.aj g x = jac.aj g y` iff `P.aj x = P.aj y`.
+3. `P.aj_spec` reads `𝒪(x − o) ⊗ 𝒪(−x) ≅ 𝒪(−o)` in `Pic(X_T)/Pic(T)`.
+   Applying it at `x` and at `y` and cancelling the common invertible
+   factor `sheaf (P.aj x) = sheaf (P.aj y)` leaves `𝒪(−x) ≅ 𝒪(−y)`,
+   which is the conclusion.
+
+**WHY THIS IS THE SEAM, and why the single leaf it replaces was
+unattackable.**  The Abel–Jacobi node carries two disjoint theories: *the
+Jacobian is `Pic⁰`* (autoduality) and *Riemann–Roch on a curve*
+(Hartshorne IV.1, Stichtenoth ch. 1).  A prover handed the old statement
+had to produce both before writing a line, because the hypotheses speak
+about an Albanese and the geometry speaks about divisors.  Cut here, the
+first theory is this leaf and the second is
+`eq_of_relPicEquiv_sectionIdeal` and
+`eq_of_relPicEquiv_sectionIdeal_of_sqZero` below, NEITHER of which
+mentions `J`, `AbelianSchemeStruct` or `IsJacobianOf`.  The same cut is
+taken again in degree `2` at `relPicEquiv_sectionIdeal_of_aj_add_eq`.
+
+**NO GENUS HYPOTHESIS APPEARS, AND NONE IS NEEDED.**  This direction is
+true on a curve of any genus: `𝒪(−x) ≅ 𝒪(−y)` is strictly *weaker* than
+`x = y`, and on `ℙ¹` it holds for every pair of points while `aj` is
+constant.  All of the positivity lives in the geometric halves, which is
+exactly where `hnr` is consumed.
+
+**WHAT THIS LEAF STILL NEEDS, surveyed 2026-07-28, and step 3 is the
+surprise.**  Steps 1 and 2 are pure plumbing over declarations that exist;
+step 3 is not, because **`modTensor` has no algebraic API anywhere in this
+development** — no associativity, no symmetry, no unit, and in particular
+no cancellation of an invertible factor — and `IsInvertibleSheaf` is
+stated as local triviality, so it does not hand you an inverse either.
+`grep -rn 'modTensor' Fermat/` on 2026-07-28 returns the definition in
+`RelativePicard.lean`, this file, `AbelianSchemeIsogeny.lean` and
+`MoretBailly.lean`, and **not one lemma**.  So the honest inventory is:
+(i) transport of `IsRelPicZeroOf` along an `aj`-compatible isomorphism of
+abelian schemes, and (ii) enough tensor algebra on `Scheme.Modules` to
+cancel `sheaf (P.aj x)` from both sides of `aj_spec`.  (ii) is shared
+with `relPicEquiv_sectionIdeal_of_aj_add_eq` below and with the `Pic`
+statements in `AbelianSchemeIsogeny.lean`, so it is worth building once
+rather than inside a proof.
+
+The three curve hypotheses are consumed only through `exists_relPicZero`,
+which requires all three.  **The check that would refute this note**: an
+`IsRelPicZeroOf` obtainable from `IsJacobianOf` without autoduality, or a
+route to the geometric leaves that does not pass through divisors, or a
+`modTensor` cancellation lemma appearing anywhere. -/
+theorem relPicEquiv_sectionIdeal_of_aj_eq {X J S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) {T : Scheme.{0}} {g : T ⟶ S}
+    {x y : RelPoint strX g} (h : jac.aj g x = jac.aj g y) :
+    RelPicEquiv strX g (sectionIdeal (relSection x)) (sectionIdeal (relSection y)) :=
+  sorry
+
+/-- **RIEMANN–ROCH IN DEGREE `1`, ON POINTS: two linearly equivalent
+`K`-points of a curve with no rational fibre are EQUAL** (sorry leaf,
+2026-07-28) — the geometric half of
+`universallyInjective_ajHom_of_hasNoFibreAffineLine`, with the Jacobian
+removed: neither `J`, nor `AbelianSchemeStruct`, nor `IsJacobianOf`
+occurs in the statement.
+
+TRUE and classical.  `k : Spec K ⟶ S` is a field-valued point of the
+base and `x, y : RelPoint strX k` are `K`-points of the fibre
+`X_K = X ×_S Spec K`, which is a smooth proper geometrically connected
+curve over `K` by base change of the three hypotheses.  `Pic (Spec K)` is
+trivial, so `RelPicEquiv` at `T = Spec K` is plain isomorphism of
+invertible sheaves, and `hlin` therefore says the degree-`0` divisor
+`x − y` on `X_K` is PRINCIPAL.  If `x ≠ y`, the rational function
+realising it has exactly one simple pole, hence is a degree-`1` morphism
+`X_K ⟶ ℙ¹_K` — an isomorphism — and deleting the pole exhibits
+`𝔸¹_K ⟶ X_K ⟶ X` over `k` as a morphism factoring through no `K`-point of
+`X`, contradicting `hnr`.  That is Abel's theorem plus Riemann–Roch in
+degree `1`, the same gap `exists_affineLine_of_not_injective_aj` records
+at `S = Spec ℚ`.
+
+**`hnr` IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**  On
+`X = ℙ¹_ℚ` any two distinct rational points are linearly equivalent, so
+every pair is a counterexample — which is exactly the `X_0(1)` case the
+consumers record.
+
+**`hproper` IS LOAD-BEARING, with a counterexample that SATISFIES `hnr`**
+(so it is not subsumed by the previous one): `X = 𝔾ₘ = 𝔸¹ ∖ {0}` over `ℚ`
+is smooth, geometrically connected and of relative dimension `1`, and
+every `K`-morphism `𝔸¹_K ⟶ 𝔾ₘ,K` is a unit of `K[t]`, i.e. a constant —
+so `hnr` HOLDS.  But `Pic 𝔾ₘ,K = 0`, so `𝒪(−x) ≅ 𝒪(−y)` for *every* pair
+of `K`-points, while `𝔾ₘ(K)` is infinite.
+
+`hcurve` and `hconn` are consumed by the classical argument, which is
+Riemann–Roch on the base-changed fibre and needs it to be a geometrically
+integral curve; their counterexamples for the parent node (`ℙ¹ × E`,
+`ℙ¹ ⊔ ℙ¹`) are recorded on `exists_affineLine_of_not_injective_aj`, and
+both of those also fail `hnr`.  **The check that would refute this note**:
+a counterexample with `hcurve` or `hconn` dropped and `hnr` retained. -/
+theorem eq_of_relPicEquiv_sectionIdeal {X S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (hnr : HasNoFibreAffineLine strX)
+    (K : Type) [Field K] {k : Spec (CommRingCat.of K) ⟶ S} {x y : RelPoint strX k}
+    (hlin : RelPicEquiv strX k (sectionIdeal (relSection x)) (sectionIdeal (relSection y))) :
+    x = y :=
+  sorry
+
+/-- **RIEMANN–ROCH IN DEGREE `1`, ON TANGENT VECTORS: two linearly
+equivalent points of a SQUARE-ZERO THICKENING that agree modulo the
+thickening are EQUAL** (sorry leaf, 2026-07-28) — the geometric half of
+`formallyUnramified_ajHom_of_hasNoFibreAffineLine`, again with the
+Jacobian removed.
+
+TRUE and classical: for a smooth proper geometrically connected curve of
+genus `≥ 1` with a section, `x ↦ [x] − [o]` is a CLOSED IMMERSION into
+the Jacobian, hence a monomorphism, hence injective on `Spec R₀`-points;
+`hmod` and `hsq` cut that down to the infinitesimal direction, which is
+the only one `eq_of_relPicEquiv_sectionIdeal` cannot see.
+
+**THIS IS THE `Spec K[ε]` DIRECTION THE SEAM'S DOCSTRING WARNS ABOUT,
+ISOLATED.**  `HasNoFibreAffineLine` is deliberately quantified over
+`Spec K` for a FIELD `K`, because over `Spec K[ε]` the analogous
+statement is FALSE in every genus (a `t`-dependent tangent vector gives a
+nonconstant `𝔸¹_T ⟶ X_T` on any curve).  That does not weaken
+`Mono ajHom`; it makes the infinitesimal part a SEPARATE obligation,
+which is this leaf.
+
+**THE CORRECT DIFFERENTIAL CRITERION, AND IT IS *NOT* `h⁰(2x) = 1`**
+(corrected 2026-07-28; the earlier version of the consumer's docstring
+quoted the criterion for the CANONICAL map instead, which would have sent
+a prover after non-hyperellipticity — a condition Abel–Jacobi does not
+need, and whose pursuit is a different theorem).  Fibrewise over a field,
+at a point `x`, the differential of `aj` is `T_x X ⟶ H¹(𝒪_{X_K}) = T_0 J`,
+DUAL to the evaluation map `H⁰(ω_{X_K}) ⟶ ω_x ⊗ κ(x)`.  So `aj` is
+unramified at `x` exactly when `x` is not a base point of the canonical
+system `|K_X|`.  Riemann–Roch gives `h⁰(K_X − x) = h⁰(K_X) − 1` whenever
+`h⁰(x) = 1`, i.e. whenever the genus is `≥ 1`; hence `|K_X|` is
+base-point-free on EVERY curve of genus `≥ 1` and `aj` is unramified
+everywhere on it.  Hyperellipticity is irrelevant here: at a Weierstrass
+point of a hyperelliptic curve `h⁰(2x) = 2`, and `aj` is still an
+immersion there — indeed in genus `1`, `aj` is an ISOMORPHISM while
+`h⁰(2x) = 2` at every point.  Only genus `0` fails, which is exactly what
+`hnr` excludes.
+
+`hnr` is load-bearing in the same way as for the sibling leaf and with
+the same counterexample: at `X_0(1) = ℙ¹` the Jacobian is trivial and
+`ajHom` is constant, hence ramified everywhere.  The three curve
+hypotheses enter exactly as they do there.
+
+Note the leaf is NOT implied by the sibling: over a non-reduced `R₀` an
+isomorphism of ideal sheaves is invisible to field-valued points, which
+is the whole reason the diagonal criterion splits `Mono` into two. -/
+theorem eq_of_relPicEquiv_sectionIdeal_of_sqZero {X S : Scheme.{0}} {strX : X ⟶ S}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (hnr : HasNoFibreAffineLine strX)
+    {R₀ R₁ : CommRingCat} (φ : R₀ ⟶ R₁) (hsurj : Function.Surjective φ)
+    (hsq : RingHom.ker φ.hom ^ 2 = ⊥)
+    {g : Spec R₀ ⟶ S} {x y : RelPoint strX g}
+    (hmod : Spec.map φ ≫ x.1 = Spec.map φ ≫ y.1)
+    (hlin : RelPicEquiv strX g (sectionIdeal (relSection x)) (sectionIdeal (relSection y))) :
+    x = y :=
+  sorry
+
 /-- **RIEMANN–ROCH, FIBREWISE OVER A FIELD: Abel–Jacobi is injective on
-`K`-points, for every field `K`** (sorry leaf, 2026-07-27) — the
-point-set half of `mono_ajHom_of_hasNoFibreAffineLine`, and the form the
-literature actually proves.
+`K`-points, for every field `K`** (PROVEN 2026-07-28 by decomposition
+over `relPicEquiv_sectionIdeal_of_aj_eq` and
+`eq_of_relPicEquiv_sectionIdeal`; introduced as a sorry leaf 2026-07-27)
+— the point-set half of `mono_ajHom_of_hasNoFibreAffineLine`, and the
+form the literature actually proves.
 
 TRUE and classical.  `UniversallyInjective f` is, by
 `tfae_universallyInjective` (Stacks 01S4), exactly
@@ -24624,17 +24804,43 @@ the infinitesimal direction — see the sibling leaf.
 
 All four hypotheses are load-bearing, with the counterexamples recorded on
 `exists_affineLine_of_not_injective_aj` (`ℙ¹ × E` for `hcurve`,
-`ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`) and `X_0(1) = ℙ¹` for `hnr`. -/
+`ℙ¹ ⊔ ℙ¹` for `hconn`, `𝔾ₘ` for `hproper`) and `X_0(1) = ℙ¹` for `hnr`.
+
+**THE PROOF (2026-07-28), and it consumes no geometry at all.**
+`tfae_universallyInjective` turns the goal into injectivity of
+`u ↦ u ≫ ajHom` on `K`-points, for every field `K`.  Two such points with
+the same image lie over the SAME `K`-point `k = u₁ ≫ strX` of the base,
+because `ajHom ≫ jstr = strX`; so they are two elements of
+`RelPoint strX k` with equal `aj`, and `aj_val` (Yoneda) is what converts
+the morphism equation into the `aj` equation.  From there the two named
+leaves do the work: `relPicEquiv_sectionIdeal_of_aj_eq` (AUTODUALITY —
+the Jacobian is `Pic⁰`, so equal `aj` means `𝒪(−u₁) ≅ 𝒪(−u₂)`) and
+`eq_of_relPicEquiv_sectionIdeal` (RIEMANN–ROCH — on a curve with no
+rational fibre, linearly equivalent points are equal).  Those are the two
+theories this node used to carry at once, and neither of them mentions
+the other's vocabulary. -/
 theorem universallyInjective_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
     (jac : IsJacobianOf strX ab o) (hnr : HasNoFibreAffineLine strX) :
-    UniversallyInjective jac.ajHom :=
-  sorry
+    UniversallyInjective jac.ajHom := by
+  refine ((tfae_universallyInjective jac.ajHom).out 1 0).mp ?_
+  intro K _ u₁ u₂ heq₀
+  have heq : u₁ ≫ jac.ajHom = u₂ ≫ jac.ajHom := heq₀
+  have hst : jac.ajHom ≫ jstr = strX := (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+  have h2 : u₂ ≫ strX = u₁ ≫ strX := by
+    rw [← hst, ← Category.assoc, ← Category.assoc, heq]
+  have hxy : jac.aj (u₁ ≫ strX) ⟨u₁, rfl⟩ = jac.aj (u₁ ≫ strX) ⟨u₂, h2⟩ :=
+    Subtype.ext (by rw [jac.aj_val, jac.aj_val]; exact heq)
+  exact congrArg Subtype.val
+    (eq_of_relPicEquiv_sectionIdeal hproper hcurve hconn hnr K
+      (relPicEquiv_sectionIdeal_of_aj_eq hproper hcurve hconn jac hxy))
 
-/-- **RIEMANN–ROCH, INFINITESIMALLY: Abel–Jacobi is UNRAMIFIED** (sorry
-leaf, 2026-07-27) — the other half of `mono_ajHom_of_hasNoFibreAffineLine`,
+/-- **RIEMANN–ROCH, INFINITESIMALLY: Abel–Jacobi is UNRAMIFIED** (PROVEN
+2026-07-28 by decomposition over `relPicEquiv_sectionIdeal_of_aj_eq` and
+`eq_of_relPicEquiv_sectionIdeal_of_sqZero`; introduced as a sorry leaf
+2026-07-27) — the other half of `mono_ajHom_of_hasNoFibreAffineLine`,
 and the half that no statement about points can carry.
 
 TRUE and classical: for a smooth proper geometrically connected curve of
@@ -24653,16 +24859,27 @@ keeps `HasNoFibreAffineLine` true.
 
 The mathematics, fibrewise over a field `K` at a `K`-point `x`: the
 differential of `aj` at `x` is the natural map
-`T_x X ⟶ H¹(𝒪_{X_K}) = T_0 J`, dual to `H⁰(Ω¹) ⟶ Ω¹_x`, which is
-injective exactly when `x` is not a base point of the canonical system —
-equivalently `h⁰(𝒪(2x)) = 1`, i.e. `x` is not a Weierstrass point of a
-`g¹₂`.  For genus `≥ 2` this needs the curve to be non-hyperelliptic ONLY
-for the canonical map, not for Abel–Jacobi: injectivity of
-`T_x X ⟶ H¹(𝒪)` holds for every `x` on every curve of genus `≥ 1`, since
-`h⁰(𝒪(x)) = 1` there and Riemann–Roch gives
-`h⁰(𝒪(2x)) − h⁰(𝒪(x)) ≤ 1` with equality iff `2x` moves.  So the input is
-again Riemann–Roch in low degree, over a field — the same theory the
-sibling leaf needs, which is why the two are worth closing together.
+`T_x X ⟶ H¹(𝒪_{X_K}) = T_0 J`, DUAL to the evaluation map
+`H⁰(ω_{X_K}) ⟶ ω_x ⊗ κ(x)`, which is injective exactly when `x` is not a
+base point of the canonical system `|K_X|`.  Riemann–Roch gives
+`h⁰(K_X − x) = h⁰(K_X) − 1` whenever `h⁰(x) = 1`, i.e. whenever the genus
+is `≥ 1`, so `|K_X|` is base-point-free on EVERY curve of genus `≥ 1` and
+`aj` is unramified everywhere on it.  So the input is again Riemann–Roch
+in low degree, over a field — the same theory the sibling leaf needs,
+which is why the two are worth closing together.
+
+**CORRECTION (2026-07-28): the criterion is NOT `h⁰(𝒪(2x)) = 1`.**  The
+previous version of this paragraph gave `h⁰(𝒪(2x)) = 1` — "`x` is not a
+Weierstrass point of a `g¹₂`" — as the condition.  That is the criterion
+for the CANONICAL MAP `φ_{|K_X|}` to be an immersion at `x`, not for
+Abel–Jacobi, and it is strictly stronger: at a Weierstrass point of a
+hyperelliptic curve `h⁰(𝒪(2x)) = 2` while `aj` is still an immersion
+there, and in genus `1` `aj` is an ISOMORPHISM while `h⁰(𝒪(2x)) = 2` at
+every point.  The two are related by Riemann–Roch —
+`h⁰(K_X − 2x) = h⁰(K_X) − 2 ⟺ h⁰(2x) = 1` — which is the *second-order*
+condition; unramifiedness is only the first-order one.  Left uncorrected,
+the note would have sent a prover after non-hyperellipticity, a different
+theorem that Abel–Jacobi does not need.
 
 Note the leaf is NOT implied by the sibling: universal injectivity is a
 statement about field-valued points and is blind to `K[ε]`.  Nor is it
@@ -24670,14 +24887,38 @@ stronger than the target: `Mono ajHom` gives it back, by
 `mono_iff_formallyUnramified_and_universallyInjective`.
 
 `hnr` is load-bearing: at `X_0(1) = ℙ¹` the Jacobian is trivial and
-`ajHom` is the constant map, which is ramified everywhere. -/
+`ajHom` is the constant map, which is ramified everywhere.
+
+**THE PROOF (2026-07-28).**  `FormallyUnramified.of_hom_ext` reduces the
+goal to: two `Spec R₀`-points of `X` that agree modulo a square-zero
+ideal and have the same image under `ajHom` are equal.  As in the sibling
+they lie over the same base point `g = g₁ ≫ strX` (from
+`ajHom ≫ jstr = strX`), so `aj_val` makes the hypothesis an equation
+between `aj`-values, and the two named leaves finish it:
+`relPicEquiv_sectionIdeal_of_aj_eq` — the SAME autoduality leaf the
+sibling uses, which is why it is stated over an arbitrary test object
+rather than over fields — and
+`eq_of_relPicEquiv_sectionIdeal_of_sqZero`, the infinitesimal
+Riemann–Roch statement.  Note that `of_hom_ext` quantifies over ALL
+square-zero surjections of rings, not only over `K[ε]`; reducing to the
+tangent-vector form would need `Ω` and Nakayama, and buys nothing, since
+the argument sketched above is uniform in `R₀`. -/
 theorem formallyUnramified_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ S}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
     (jac : IsJacobianOf strX ab o) (hnr : HasNoFibreAffineLine strX) :
-    FormallyUnramified jac.ajHom :=
-  sorry
+    FormallyUnramified jac.ajHom := by
+  refine FormallyUnramified.of_hom_ext _ ?_
+  intro R₀ R₁ φ hsurj hsq g₁ g₂ hmod heq
+  have hst : jac.ajHom ≫ jstr = strX := (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+  have h2 : g₂ ≫ strX = g₁ ≫ strX := by
+    rw [← hst, ← Category.assoc, ← Category.assoc, heq]
+  have hxy : jac.aj (g₁ ≫ strX) ⟨g₁, rfl⟩ = jac.aj (g₁ ≫ strX) ⟨g₂, h2⟩ :=
+    Subtype.ext (by rw [jac.aj_val, jac.aj_val]; exact heq)
+  exact congrArg Subtype.val
+    (eq_of_relPicEquiv_sectionIdeal_of_sqZero hproper hcurve hconn hnr φ hsurj hsq hmod
+      (relPicEquiv_sectionIdeal_of_aj_eq hproper hcurve hconn jac hxy))
 
 /-- **RIEMANN–ROCH, base-general and LEVEL-FREE: a curve with no rational
 fibre has a MONOMORPHIC Abel–Jacobi morphism** (PROVEN 2026-07-27 by
@@ -35949,9 +36190,132 @@ def HasDoubleCoverOfAffineLine {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
       (u₁ u₂ u₃ : Spec (CommRingCat.of K) ⟶ U),
       u₁ ≫ φ = k → u₂ ≫ φ = k → u₃ ≫ φ = k → u₁ = u₂ ∨ u₁ = u₃ ∨ u₂ = u₃
 
+/-- **ABEL IN DEGREE `2`, VIA AUTODUALITY: `aj x₁ + aj x₂ = aj y₁ + aj y₂`
+says exactly `𝒪(−x₁ − x₂) ≅ 𝒪(−y₁ − y₂)`** (sorry leaf, 2026-07-28) — the
+degree-`2` copy of `relPicEquiv_sectionIdeal_of_aj_eq`, and the first half
+of `hasDoubleCoverOfAffineLine_of_ajPair_eq`.
+
+TRUE, and it is the same classical autoduality: `IsJacobianOf` presents
+`J` by the ALBANESE property, which mentions no line bundle, while the
+`g¹₂` the consumer has to produce is a statement about DIVISORS.  The
+identification is `IsRelPicZeroOf` (`ModularCurve/RelativePicard.lean`),
+reached exactly as in degree `1` — `exists_relPicZero`, then
+`IsRelPicZeroOf.isAlbaneseOf` and `IsAlbaneseOf.isJacobianOf`, then the
+`∃!` of `IsJacobianOf` to transport the Picard data along the resulting
+`aj`-compatible isomorphism.  What is different from degree `1`, and the
+whole reason this is a SEPARATE leaf rather than a corollary, is that the
+group law is now used: `P.sheaf_add` turns the sum in `J` into a tensor
+product of classes, and `P.aj_spec` applied four times then cancels the
+two copies of `𝒪(−o)`.  Deriving this from the degree-`1` statement would
+need cancellation of an arbitrary invertible sheaf, i.e. inverses in the
+relative Picard group, which `RelPicEquiv` does not carry.
+
+**THE BASE POINT CANCELS, AND THAT IS THE CONTENT OF THE `2`.**
+`aj x = [x] − [o]`, so the hypothesis is
+`[x₁] + [x₂] − 2[o] = [y₁] + [y₂] − 2[o]`; both sides having degree `2`,
+the `[o]`s cancel and the conclusion is a statement about the two
+effective divisors alone.  That is why the conclusion mentions neither
+`o` nor `J`.
+
+**`x₁ = x₂` AND `y₁ = y₂` ARE ALLOWED**, and the statement is the right
+one for them: `modTensor (sectionIdeal (relSection x₁)) (sectionIdeal
+(relSection x₁))` is `𝒪(−2x₁)`, which is exactly the doubled effective
+divisor the consumer's docstring says must be permitted.  No disjointness
+hypothesis appears here — disjointness is what the GEOMETRIC half needs,
+to make the pencil base-point-free, and putting it here would have been
+decoration.
+
+The three curve hypotheses are consumed only through `exists_relPicZero`.
+**What it still needs** is the inventory recorded on
+`relPicEquiv_sectionIdeal_of_aj_eq` — transport of `IsRelPicZeroOf` along
+an `aj`-compatible isomorphism, plus tensor algebra on `Scheme.Modules`,
+of which this development currently has the DEFINITION `modTensor` and no
+lemma at all.  **The check that would refute this note**: a route from
+`IsJacobianOf` to a divisor statement that does not pass through a
+representing object for `Pic⁰`. -/
+theorem relPicEquiv_sectionIdeal_of_aj_add_eq {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (x₁ x₂ y₁ y₂ : RelPoint strX (𝟙 SpecQ))
+    (heq : ab.add (jac.aj (𝟙 SpecQ) x₁) (jac.aj (𝟙 SpecQ) x₂) =
+      ab.add (jac.aj (𝟙 SpecQ) y₁) (jac.aj (𝟙 SpecQ) y₂)) :
+    RelPicEquiv strX (𝟙 SpecQ)
+      (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂)))
+      (modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂))) :=
+  sorry
+
+/-- **THE `g¹₂`: two DISJOINT effective degree-`2` divisors with
+isomorphic sheaves make the curve hyperelliptic or rational** (sorry leaf,
+2026-07-28) — the geometric half of
+`hasDoubleCoverOfAffineLine_of_ajPair_eq`, with the Jacobian removed:
+neither `J`, nor `AbelianSchemeStruct`, nor `IsJacobianOf` occurs in the
+statement, and this is the ONLY remaining Riemann–Roch obligation of the
+degree-`2` node.
+
+TRUE and classical (Hartshorne IV.1 and IV.5; Stichtenoth ch. 1).
+`Pic (Spec ℚ)` is trivial, so `hlin` is a plain isomorphism
+`𝒪(x₁ + x₂) ≅ 𝒪(y₁ + y₂)` of invertible sheaves on the curve `X`, i.e.
+the two effective degree-`2` divisors `D = x₁ + x₂` and `E = y₁ + y₂` are
+LINEARLY EQUIVALENT.  The four inequalities make their supports disjoint,
+so `D ≠ E` and `h⁰(D) ≥ 2`; the pencil they span is BASE-POINT-FREE,
+because a base point would lie in `supp D ∩ supp E = ∅`.  A
+base-point-free `g¹₂` is a finite morphism `φ : X ⟶ ℙ¹_ℚ` of degree
+exactly `2` whose fibre over the point cut out by `E` is `{y₁, y₂}`;
+deleting that point gives the dense open `U = X ∖ {y₁, y₂}` and
+`φ|U : U ⟶ 𝔸¹_ℚ`, finite of degree `2`, so no fibre has three points over
+any field.  (If instead `h⁰(D) = 3` the curve is rational and the same
+conclusion holds with `d = 1`.)
+
+**DISJOINTNESS IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**  Take
+any curve of genus `≥ 1` and `x₁ = y₁ = p`, `x₂ = y₂ = q`: then
+`D = E` and `hlin` holds trivially, while the conclusion fails for every
+curve of gonality `≥ 3`.  More sharply, with only `x₁ ≠ y₁` allowed one
+recovers the degree-`1` statement `x₂ = y₂` plus `[x₁] = [y₁]`, whose
+content is `mono_ajHom_of_hasNoFibreAffineLine` and not this leaf.  That
+is exactly the collapse the consumer's docstring warns about.
+
+**`x₁ = x₂` AND `y₁ = y₂` ARE STILL ALLOWED**, and are the interesting
+case: a doubled point is an effective degree-`2` divisor and the argument
+is unchanged, only the disjointness of the two supports being used.
+
+**Not vacuous**: on any hyperelliptic curve two distinct fibres of the
+degree-`2` map, both split over `ℚ`, satisfy every hypothesis, and the
+conclusion is then exactly the map they came from.
+
+**WHAT THIS LEAF STILL NEEDS, and it is now the WHOLE list**: `h⁰` of an
+invertible sheaf on a curve, linear systems, and the dictionary between a
+base-point-free pencil and a morphism to `ℙ¹`.  None of the three exists
+in `Mathlib` at this pin, in `~/cs/FLT`, or in this development —
+rechecked 2026-07-28.  What mathlib *does* have, and where a prover
+should start, is `Mathlib/AlgebraicGeometry/AlgebraicCycle`,
+`.../OrderOfVanishing.lean` (`Scheme.ord`, order of vanishing at a
+codimension-`1` point), `.../FunctionField.lean` and
+`.../Birational/RationalMap.lean`; the missing piece between them and
+this leaf is the coherent cohomology that computes `h⁰`.  Note also
+`exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN and
+already in this file's cone), which supplies the "a morphism from a dense
+open of a smooth proper curve into a proper target extends" step for
+free.  **The check that would refute this verdict**: an `h⁰`, a genus, or
+a linear-system statement appearing in any of the three trees. -/
+theorem hasDoubleCoverOfAffineLine_of_relPicEquiv {X : Scheme.{0}} {strX : X ⟶ SpecQ}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX)
+    (x₁ x₂ y₁ y₂ : RelPoint strX (𝟙 SpecQ))
+    (h₁₁ : x₁ ≠ y₁) (h₁₂ : x₁ ≠ y₂) (h₂₁ : x₂ ≠ y₁) (h₂₂ : x₂ ≠ y₂)
+    (hlin : RelPicEquiv strX (𝟙 SpecQ)
+      (modTensor (sectionIdeal (relSection x₁)) (sectionIdeal (relSection x₂)))
+      (modTensor (sectionIdeal (relSection y₁)) (sectionIdeal (relSection y₂)))) :
+    HasDoubleCoverOfAffineLine strX :=
+  sorry
+
 /-- **RIEMANN–ROCH IN DEGREE `2`, LEVEL-FREE: two disjoint effective
 degree-`2` divisors in one class make the curve hyperelliptic or
-rational** (sorry leaf, 2026-07-27) — the geometric half of
+rational** (PROVEN 2026-07-28 by decomposition over
+`relPicEquiv_sectionIdeal_of_aj_add_eq` and
+`hasDoubleCoverOfAffineLine_of_relPicEquiv`; introduced as a sorry leaf
+2026-07-27) — the geometric half of
 `ajPair_ne_of_disjoint_x0OneSixtyNine`, and the exact degree-`2` analogue
 of `exists_affineLine_of_not_injective_aj`.  It mentions neither `169`
 nor `IsX0Compactification`.
@@ -35986,14 +36350,34 @@ curve, two distinct fibres of the degree-`2` map are disjoint, effective,
 of degree `2`, and linearly equivalent — and the conclusion is then
 exactly what this leaf produces.
 
-IRREDUCIBLE at this pin along the geometric axis: Riemann–Roch, linear
-systems and `h⁰` are absent from `Mathlib`, from `~/cs/FLT` and from this
-development.  What mathlib *does* have, and where a prover should start,
-is the same list `exists_affineLine_of_not_injective_aj` records —
-`Mathlib/AlgebraicGeometry/AlgebraicCycle`, `.../OrderOfVanishing.lean`,
-`.../FunctionField.lean`, `.../Birational/RationalMap.lean`.  **The check
-that would refute this verdict**: an `h⁰`, a genus, or a Riemann–Roch
-statement appearing in any of the three trees. -/
+**THE IRREDUCIBILITY VERDICT THIS DOCSTRING USED TO CARRY IS WITHDRAWN**
+(2026-07-28).  It read: *"IRREDUCIBLE at this pin along the geometric
+axis: Riemann–Roch, linear systems and `h⁰` are absent from `Mathlib`,
+from `~/cs/FLT` and from this development."*  The absence is still true,
+and the verdict was still wrong, for the reason the fleet doctrine names:
+**it searched only the GEOMETRIC axis.**  Along the AUTODUALITY axis the
+node splits at once, because the hypothesis and the conclusion do not
+speak the same language — `heq` is about an ALBANESE and the `g¹₂` is
+about DIVISORS — and the translation between them is a separate classical
+theorem that this file already has the vocabulary for
+(`IsRelPicZeroOf`, `RelPicEquiv`, `sectionIdeal`, all in
+`ModularCurve/RelativePicard.lean` and `public import`ed above).
+
+So the node is now
+
+* `relPicEquiv_sectionIdeal_of_aj_add_eq` — AUTODUALITY: the sum of
+  Abel–Jacobi classes is the tensor product of ideal sheaves, i.e.
+  `𝒪(−x₁ − x₂) ≅ 𝒪(−y₁ − y₂)`.  Mentions no `𝔸¹` and no linear system.
+* `hasDoubleCoverOfAffineLine_of_relPicEquiv` — the `g¹₂` proper:
+  linear equivalence of two DISJOINT effective degree-`2` divisors gives
+  a degree-`2` map to the line.  Mentions no Jacobian.
+
+and this declaration is their composition.  The `h⁰`/linear-systems gap is
+real but it now lives on ONE of the two leaves rather than on both, and
+the four disjointness hypotheses — which are what make the pencil
+base-point-free, and are therefore pure geometry — travel with that one.
+**The check that would refute the new cut**: either half turning out to
+need the other's vocabulary. -/
 theorem hasDoubleCoverOfAffineLine_of_ajPair_eq {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
@@ -36004,7 +36388,9 @@ theorem hasDoubleCoverOfAffineLine_of_ajPair_eq {X J : Scheme.{0}} {strX : X ⟶
     (heq : ab.add (jac.aj (𝟙 SpecQ) x₁) (jac.aj (𝟙 SpecQ) x₂) =
       ab.add (jac.aj (𝟙 SpecQ) y₁) (jac.aj (𝟙 SpecQ) y₂)) :
     HasDoubleCoverOfAffineLine strX :=
-  sorry
+  hasDoubleCoverOfAffineLine_of_relPicEquiv hproper hcurve hconn x₁ x₂ y₁ y₂
+    h₁₁ h₁₂ h₂₁ h₂₂
+    (relPicEquiv_sectionIdeal_of_aj_add_eq hproper hcurve hconn jac x₁ x₂ y₁ y₂ heq)
 
 /-- **`X_0(169)` HAS GONALITY `≥ 3` — it is neither rational nor
 hyperelliptic** (sorry leaf, 2026-07-27) — the arithmetic half of
