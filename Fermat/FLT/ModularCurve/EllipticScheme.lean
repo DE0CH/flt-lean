@@ -691,6 +691,251 @@ theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing 
 
 end GradedSmul
 
+section ProjFunctoriality
+
+/-! ### The two missing `Proj.fromOfGlobalSections` functorialities (**PROVEN**, 2026-07-28)
+
+`AlgebraicGeometry.Proj.fromOfGlobalSections` has NO functoriality lemma at this pin:
+`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean` carries exactly four lemmas about
+it — `_preimage_basicOpen`, `_morphismRestrict`, `_resLE`, `_toSpecZero` — and none of them
+relates it to a morphism of the SOURCE scheme or to `Proj.map`.  The two congruences
+
+| lemma | statement |
+| --- | --- |
+| `fromOfGlobalSections_comp` | `g ≫ fromOfGlobalSections 𝒜 f hf = fromOfGlobalSections 𝒜 (Γ(g) ∘ f) _` |
+| `fromOfGlobalSections_comp_map` | `fromOfGlobalSections ℬ f hf ≫ Proj.map φ hφ = fromOfGlobalSections 𝒜 (f ∘ φ) _` |
+
+are supplied here, both PROVEN, by the cover-wise argument of
+`fromOfGlobalSections_eq_of_gradedSmul` above — `Scheme.Cover.hom_ext` over
+`Proj.openCoverOfMapIrrelevantEqTop` plus `Scheme.Cover.ι_glueMorphisms`.
+
+*The one structural observation that makes both cheap.*  `Proj.toBasicOpenOfGlobalSections`
+is, by DEFINITION (`toBasicOpenOfGlobalSections_eq` below is `rfl`), the restriction of
+`X.toSpecΓ` to a basic open followed by `Spec` of one ring map
+
+    awayLoc 𝒜 f t : Away 𝒜 t →+* Γ(X, ⊤)_{f t},
+
+so each congruence splits into an identity between ring maps out of `Away 𝒜 t` — pure
+`HomogeneousLocalization` — and a piece of affine plumbing.  For `Proj.map` the plumbing is
+already in mathlib (`Proj.awayι_comp_map`) and only the ring identity
+(`awayLoc_comp_map`) is new; for a morphism of the source scheme the ring identity is
+functoriality of `IsLocalization.map` (`awayLoc_comp`) and the plumbing is
+`toSpecΓ_restrict_naturality`, which is the naturality square of `X ↦ Spec Γ(X, ⊤)`
+restricted to a basic open.
+
+These two discharge `specPointEquiv_comp_projInfty_eq_zero`, `specPointEquiv_comp_projNeg`
+and `specPointEquiv_symm_map_galois` below, through the `ProjCoords`-level corollaries
+`toHom_comap` and `toHom_negC`. -/
+
+theorem powers_le_comap {R S : Type*} [CommSemiring R] [CommSemiring S] (f : R →+* S) (t : R) :
+    Submonoid.powers t ≤ (Submonoid.powers (f t)).comap f := by
+  rw [← Submonoid.map_le_iff_le_comap, Submonoid.map_powers]
+
+/-- **The ring map underlying one chart of `Proj.fromOfGlobalSections`** — the degree-zero
+localisation `Away 𝒜 t` mapped into `Γ(X, ⊤)_{f t}`.  Everything about
+`Proj.toBasicOpenOfGlobalSections` that is not plain affine plumbing sits here. -/
+noncomputable def awayLoc {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (f : A →+* Γ(X, ⊤)) (t : A) :
+    HomogeneousLocalization.Away 𝒜 t →+* Localization.Away (f t) :=
+  (IsLocalization.map (M := .powers t) (T := .powers (f t)) (Localization.Away (f t)) f
+      (powers_le_comap f t)).comp
+    (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))
+
+/-- **`Proj.toBasicOpenOfGlobalSections` unfolded** (PROVEN — it is `rfl`): the restriction
+of `X.toSpecΓ` to `D(f t)`, followed by `Spec (awayLoc 𝒜 f t)`. -/
+theorem toBasicOpenOfGlobalSections_eq {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}} (f : A →+* Γ(X, ⊤))
+    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht =
+      ((X.isoOfEq (X.toSpecΓ_preimage_basicOpen (f t))).inv ≫
+        (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen (f t)) ≫
+          ((basicOpenIsoSpecAway (f t)).hom ≫
+            Spec.map (CommRingCat.ofHom (awayLoc 𝒜 f t)))) ≫
+        (Proj.basicOpenIsoSpec 𝒜 t ht hn).inv :=
+  rfl
+
+theorem basicOpen_ι_eq {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {n : ℕ} {t : A}
+    (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    (Proj.basicOpen 𝒜 t).ι =
+      (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom ≫ Proj.awayι 𝒜 t ht hn := by
+  rw [← Proj.basicOpenIsoSpec_inv_ι 𝒜 t ht hn, Iso.hom_inv_id_assoc]
+
+theorem coverf_eq {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}} (f : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤) {n : ℕ} {t : A}
+    (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).f ⟨n, t, hn, ht⟩ = (X.basicOpen (f t)).ι :=
+  rfl
+
+/-- **One chart of `Proj.fromOfGlobalSections`** (PROVEN) — `Scheme.Cover.ι_glueMorphisms`
+for the cover `Proj.openCoverOfMapIrrelevantEqTop`, stated so that it can be used as a
+plain `rw`. -/
+theorem ι_comp_fromOfGlobalSections {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}} (f : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤) {n : ℕ} {t : A}
+    (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    (X.basicOpen (f t)).ι ≫ Proj.fromOfGlobalSections 𝒜 f hf =
+      Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+  (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
+
+/-! #### Naturality in the source scheme -/
+
+theorem map_irrelevant_eq_top_comp_appTop {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X Y : Scheme.{0}} (g : Y ⟶ X)
+    (f : A →+* Γ(X, ⊤)) (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤) :
+    (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map (g.appTop.hom.comp f) = ⊤ := by
+  rw [← Ideal.map_map, hf, Ideal.map_top]
+
+/-- The localisation map along `Γ(g)`. -/
+noncomputable def locMap {X Y : Scheme.{0}} (g : Y ⟶ X) (r : Γ(X, ⊤)) :
+    Localization.Away r →+* Localization.Away (g.appTop r) :=
+  IsLocalization.map (M := .powers r) (T := .powers (g.appTop r)) _ g.appTop.hom
+    (powers_le_comap _ r)
+
+theorem awayLoc_comp {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X Y : Scheme.{0}} (g : Y ⟶ X)
+    (f : A →+* Γ(X, ⊤)) (t : A) :
+    awayLoc 𝒜 (g.appTop.hom.comp f) t = (locMap g (f t)).comp (awayLoc 𝒜 f t) := by
+  rw [awayLoc, awayLoc, locMap, ← RingHom.comp_assoc]
+  congr 1
+  exact (IsLocalization.map_comp_map (Q := Localization.Away (f t)) _ _).symm
+
+/-- **The affine plumbing behind naturality of `Proj.fromOfGlobalSections`** (PROVEN) — the
+naturality square of `X ↦ Spec Γ(X, ⊤)`, restricted to a basic open.  Both sides become
+`(g ⁻¹ᵁ X.basicOpen r).ι ≫ Y.toSpecΓ ≫ Spec.map Γ(g)` after composing with the open
+immersion `Spec (Γ(X,⊤)_r) ⟶ Spec Γ(X, ⊤)`. -/
+@[reassoc]
+theorem toSpecΓ_restrict_naturality {X Y : Scheme.{0}} (g : Y ⟶ X) (r : Γ(X, ⊤)) :
+    (g ∣_ X.basicOpen r) ≫ (X.isoOfEq (X.toSpecΓ_preimage_basicOpen r)).inv ≫
+        (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen r) ≫ (basicOpenIsoSpecAway r).hom =
+      (Y.isoOfEq (Scheme.preimage_basicOpen_top g r)).hom ≫
+        (Y.isoOfEq (Y.toSpecΓ_preimage_basicOpen (g.appTop r))).inv ≫
+          (Y.toSpecΓ ∣_ PrimeSpectrum.basicOpen (g.appTop r)) ≫
+            (basicOpenIsoSpecAway (g.appTop r)).hom ≫
+              Spec.map (CommRingCat.ofHom (locMap g r)) := by
+  rw [← cancel_mono (Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r))))]
+  simp only [Category.assoc]
+  rw [basicOpenIsoSpecAway_hom_SpecMap]
+  have hcomp : Spec.map (CommRingCat.ofHom (locMap g r)) ≫
+      Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r))) =
+      Spec.map (CommRingCat.ofHom (algebraMap Γ(Y, ⊤) (Localization.Away (g.appTop r)))) ≫
+        Spec.map g.appTop := by
+    rw [← Spec.map_comp, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
+    congr 1
+    rw [locMap, IsLocalization.map_comp]
+    rfl
+  rw [hcomp, ← Category.assoc ((basicOpenIsoSpecAway (g.appTop r)).hom),
+    basicOpenIsoSpecAway_hom_SpecMap]
+  simp only [Scheme.isoOfEq_inv, Category.assoc, morphismRestrict_ι, morphismRestrict_ι_assoc,
+    Scheme.homOfLE_ι, Scheme.homOfLE_ι_assoc, Scheme.isoOfEq_hom_ι, Scheme.isoOfEq_hom_ι_assoc]
+  rw [Scheme.toSpecΓ_naturality g]
+
+theorem toBasicOpenOfGlobalSections_comp {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X Y : Scheme.{0}} (g : Y ⟶ X)
+    (f : A →+* Γ(X, ⊤)) {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    (g ∣_ X.basicOpen (f t)) ≫ Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht =
+      (Y.isoOfEq (Scheme.preimage_basicOpen_top g (f t))).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 (g.appTop.hom.comp f) rfl hn ht := by
+  rw [toBasicOpenOfGlobalSections_eq, toBasicOpenOfGlobalSections_eq, awayLoc_comp,
+    CommRingCat.ofHom_comp, Spec.map_comp]
+  simp only [Category.assoc]
+  rw [toSpecΓ_restrict_naturality_assoc g (f t)]
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **NATURALITY of `Proj.fromOfGlobalSections` in the source scheme** (**PROVEN
+2026-07-28**) — the first of the two congruences mathlib does not have. -/
+theorem fromOfGlobalSections_comp {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X Y : Scheme.{0}} (g : Y ⟶ X)
+    (f : A →+* Γ(X, ⊤)) (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤) :
+    g ≫ Proj.fromOfGlobalSections 𝒜 f hf =
+      Proj.fromOfGlobalSections 𝒜 (g.appTop.hom.comp f)
+        (map_irrelevant_eq_top_comp_appTop 𝒜 g f hf) := by
+  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 (g.appTop.hom.comp f)
+    (map_irrelevant_eq_top_comp_appTop 𝒜 g f hf)).hom_ext _ _ fun i ↦ ?_
+  obtain ⟨n, t, hn, ht⟩ := i
+  rw [coverf_eq]
+  refine Eq.trans ?_ (ι_comp_fromOfGlobalSections 𝒜 (g.appTop.hom.comp f)
+    (map_irrelevant_eq_top_comp_appTop 𝒜 g f hf) hn ht).symm
+  rw [show ((Y.basicOpen ((g.appTop.hom.comp f) t)).ι) =
+      (Y.isoOfEq (Scheme.preimage_basicOpen_top g (f t))).inv ≫
+        (g ⁻¹ᵁ X.basicOpen (f t)).ι from (Scheme.isoOfEq_inv_ι _ _).symm]
+  rw [Category.assoc, ← Category.assoc ((g ⁻¹ᵁ X.basicOpen (f t)).ι) g,
+    ← morphismRestrict_ι g (X.basicOpen (f t)), Category.assoc,
+    ι_comp_fromOfGlobalSections 𝒜 f hf hn ht,
+    ← Category.assoc ((g ∣_ X.basicOpen (f t))),
+    toBasicOpenOfGlobalSections_comp 𝒜 g f hn ht]
+  · simp only [Category.assoc, Iso.inv_hom_id_assoc]
+  all_goals assumption
+
+/-! #### Compatibility with `Proj.map` -/
+
+theorem map_irrelevant_eq_top_comp_gradedHom {σ τ : Type} {A B : Type} [CommRing A]
+    [CommRing B] [SetLike σ A] [AddSubgroupClass σ A] [SetLike τ B] [AddSubgroupClass τ B]
+    (𝒜 : ℕ → σ) (ℬ : ℕ → τ) [GradedRing 𝒜] [GradedRing ℬ] (φ : 𝒜 →+*ᵍ ℬ)
+    (hφ : HomogeneousIdeal.irrelevant ℬ ≤ (HomogeneousIdeal.irrelevant 𝒜).map φ)
+    {X : Scheme.{0}} (f : B →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant ℬ).toIdeal.map f = ⊤) :
+    (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map (f.comp φ.toRingHom) = ⊤ := by
+  rw [← Ideal.map_map, ← top_le_iff, ← hf]
+  exact Ideal.map_mono fun z hz => hφ hz
+
+theorem val_away_map {σ τ : Type} {A B : Type} [CommRing A] [CommRing B] [SetLike σ A]
+    [AddSubgroupClass σ A] [SetLike τ B] [AddSubgroupClass τ B] (𝒜 : ℕ → σ) (ℬ : ℕ → τ)
+    [GradedRing 𝒜] [GradedRing ℬ] (φ : 𝒜 →+*ᵍ ℬ) (t : A)
+    (x : HomogeneousLocalization.Away 𝒜 t) :
+    (HomogeneousLocalization.Away.map φ t x).val =
+      IsLocalization.map (M := .powers t) (T := .powers (φ t)) (Localization.Away (φ t))
+        φ.toRingHom (powers_le_comap φ.toRingHom t) x.val := by
+  obtain ⟨c, rfl⟩ := HomogeneousLocalization.mk_surjective x
+  simp [HomogeneousLocalization.Away.map, HomogeneousLocalization.map_mk,
+    Localization.mk_eq_mk', IsLocalization.map_mk']
+
+theorem awayLoc_comp_map {σ τ : Type} {A B : Type} [CommRing A] [CommRing B] [SetLike σ A]
+    [AddSubgroupClass σ A] [SetLike τ B] [AddSubgroupClass τ B] (𝒜 : ℕ → σ) (ℬ : ℕ → τ)
+    [GradedRing 𝒜] [GradedRing ℬ] (φ : 𝒜 →+*ᵍ ℬ) {X : Scheme.{0}} (f : B →+* Γ(X, ⊤))
+    (t : A) :
+    awayLoc 𝒜 (f.comp φ.toRingHom) t =
+      (awayLoc ℬ f (φ t)).comp (HomogeneousLocalization.Away.map φ t) := by
+  ext x
+  simp only [awayLoc, RingHom.coe_comp, Function.comp_apply,
+    HomogeneousLocalization.algebraMap_apply, val_away_map, IsLocalization.map_map]
+  rfl
+
+set_option maxHeartbeats 1000000 in
+set_option backward.isDefEq.respectTransparency false in
+/-- **COMPATIBILITY of `Proj.fromOfGlobalSections` with `Proj.map`** (**PROVEN
+2026-07-28**) — the second of the two congruences mathlib does not have. -/
+theorem fromOfGlobalSections_comp_map {σ τ : Type} {A B : Type} [CommRing A] [CommRing B]
+    [SetLike σ A] [AddSubgroupClass σ A] [SetLike τ B] [AddSubgroupClass τ B]
+    (𝒜 : ℕ → σ) (ℬ : ℕ → τ) [GradedRing 𝒜] [GradedRing ℬ] (φ : 𝒜 →+*ᵍ ℬ)
+    (hφ : HomogeneousIdeal.irrelevant ℬ ≤ (HomogeneousIdeal.irrelevant 𝒜).map φ)
+    {X : Scheme.{0}} (f : B →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant ℬ).toIdeal.map f = ⊤) :
+    Proj.fromOfGlobalSections ℬ f hf ≫ Proj.map φ hφ =
+      Proj.fromOfGlobalSections 𝒜 (f.comp φ.toRingHom)
+        (map_irrelevant_eq_top_comp_gradedHom 𝒜 ℬ φ hφ f hf) := by
+  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 (f.comp φ.toRingHom)
+    (map_irrelevant_eq_top_comp_gradedHom 𝒜 ℬ φ hφ f hf)).hom_ext _ _ fun i ↦ ?_
+  obtain ⟨n, t, hn, ht⟩ := i
+  have hφt : (φ t) ∈ ℬ n := φ.map_mem ht
+  rw [coverf_eq, ι_comp_fromOfGlobalSections 𝒜 (f.comp φ.toRingHom)
+      (map_irrelevant_eq_top_comp_gradedHom 𝒜 ℬ φ hφ f hf) hn ht, ← Category.assoc,
+    show (X.basicOpen ((f.comp φ.toRingHom) t)).ι ≫ Proj.fromOfGlobalSections ℬ f hf =
+        Proj.toBasicOpenOfGlobalSections ℬ f rfl hn hφt ≫ (Proj.basicOpen ℬ (φ t)).ι from
+      ι_comp_fromOfGlobalSections ℬ f hf hn hφt,
+    Category.assoc, basicOpen_ι_eq ℬ hn hφt, Category.assoc, Proj.awayι_comp_map φ hφ hn t ht,
+    toBasicOpenOfGlobalSections_eq ℬ f hn hφt,
+    toBasicOpenOfGlobalSections_eq 𝒜 (f.comp φ.toRingHom) hn ht, basicOpen_ι_eq 𝒜 hn ht,
+    awayLoc_comp_map 𝒜 ℬ φ f t, CommRingCat.ofHom_comp, Spec.map_comp]
+  · simp only [Category.assoc, Iso.inv_hom_id_assoc]
+    rfl
+  all_goals assumption
+
+end ProjFunctoriality
+
 /-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
 `n`** (sorry node — the arithmetic half of `ProjCoords.toHom_smul`).
 
