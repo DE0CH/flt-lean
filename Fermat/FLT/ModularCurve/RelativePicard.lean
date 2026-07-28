@@ -117,15 +117,33 @@ and the tautological point.  That is exactly the check that the trivial
 witness failed for `exists_jacobianOf_x0` itself, transported to the new
 node.
 
-## What is PROVEN here, and the one leaf that is not (amended 2026-07-27)
+## What is PROVEN here, and the leaves that are not (amended 2026-07-28)
 
-Everything in the *infrastructure* part of this module is PROVEN.  Since
-2026-07-27 the module also carries ONE sorried leaf, `exists_relPicZero`
-— Grothendieck representability itself — and it is here rather than next
-to a consumer for a reason that is forced by Lean's declaration order:
-it has **two** consumers, in two different places in
+Everything in the *infrastructure* part of this module is PROVEN.
+`exists_relPicZero` — Grothendieck representability itself — is here
+rather than next to a consumer for a reason that is forced by Lean's
+declaration order: it has **two** consumers, in two different places in
 `ModularCurve/X0.lean`, and only a declaration upstream of both can serve
 them.  See its own docstring for the inventory.
+
+Amended 2026-07-28: `exists_relPicZero` is now PROVEN, as the two-line
+composition of the two classical theorems its own docstring had always
+been citing side by side, along the CONSTRUCTION axis its atomicity
+audit recorded as unsearched:
+
+* `exists_relPicFull` (sorry leaf) — BLR 8.2/1, existence of the full
+  relative Picard scheme, stated through the new `IsRelPicOf`;
+* `exists_relPicZero_of_isRelPicOf` (sorry leaf) — BLR 9.4/4, `Pic⁰` is
+  an abelian scheme once `Pic` exists.
+
+`IsRelPicOf` is `IsRelPicZeroOf` with the group law and the Abel–Jacobi
+fields dropped and a **surjectivity** field added; that field is what
+makes `Pic` rather than `Pic⁰` the intended witness, and it is exactly
+the field `exists_relPicZero`'s atomicity audit named as the missing
+discriminator.  `IsRelPicOf` is also the shape a future
+`DualStruct`-to-`Pic⁰` bridge wants (`AbelianScheme.lean` records that
+bridge as the concrete next step for polarizations), so it is worth
+having for more than this leaf.
 
 The autoduality half of the cut lives next to its consumer in
 `ModularCurve/X0.lean`, as the two general-base leaves
@@ -332,9 +350,133 @@ structure IsRelPicZeroOf {X J S : Scheme.{u}} (strX : X ⟶ S) {jstr : J ⟶ S}
   /-- the base point goes to the origin -/
   aj_base : aj o = ab.zero (𝟙 S)
 
+/-- **`pstr : P ⟶ S` represents the FULL relative Picard functor
+`Pic_{X/S}`** — every invertible sheaf on `X_T`, not just the
+degree-zero ones.
+
+This is `IsRelPicZeroOf` with two changes, and both are forced by what
+the FULL Picard scheme is:
+
+* a **`surj` field** is added — *every* invertible sheaf on `X_T` is
+  classified.  This is the field the atomicity audit below names as the
+  one thing that would distinguish `Pic` from `Pic⁰`, and it is why
+  `IsRelPicZeroOf` deliberately does not have it;
+* the group law (`sheaf_zero`, `sheaf_add`), the Abel–Jacobi fields
+  (`aj`, `aj_spec`, `aj_pre`, `aj_base`) and the `AbelianSchemeStruct`
+  are all **dropped**.  Dropping them costs nothing: `inj` and `surj`
+  together say that `sheaf` is a natural BIJECTION
+  `Hom_S(T, P) ≅ Pic(X_T)/Pic(T)`, so `P` is pinned by Yoneda and its
+  group law — the tensor product of invertible sheaves — is determined
+  rather than assumed.  `Pic` is not proper, so it could not carry an
+  `AbelianSchemeStruct` in any case.
+
+**Not vacuous, and no junk witness.**  `inj` alone is satisfied by every
+scheme whose functor of points is a singleton (send everything to `𝒪`);
+`surj` alone by `Pic` and by anything mapping onto it.  Together they
+force `P(T) ≅ Pic(X_T)/Pic(T)` naturally in `T`, which by Yoneda
+determines `P` up to unique isomorphism over `S`.  In particular the
+trivial witness `P = S`, `pstr = 𝟙 S` — the one that makes every field
+of `IsRelPicZeroOf` except `inj` free, because `RelPoint (𝟙 S) g` is a
+singleton — fails `surj` at any curve of positive genus, already at
+`T = X`, `g = strX`: `sheaf` then has a single value, while
+`Pic(X ×_S X)/Pic(X)` contains the class of `𝒪(Δ) ⊗ 𝒪(−o_X)` and the
+trivial class, which are distinct for `g ≥ 1`.  That is the same check
+the module docstring records for `IsRelPicZeroOf`, transported to the
+larger functor.
+
+`RelPicEquiv` is not proven symmetric or transitive in this module —
+that would need a unitor, an inverse and an associator for `modTensor`,
+none of which is built here — so the direction of each occurrence is
+part of the statement.  Both fields are written in the same direction as
+the corresponding field of `IsRelPicZeroOf` (`sheaf p` on the left), and
+classically the relation IS an equivalence, so nothing is lost.
+
+The base point `o` does not appear: the naive quotient
+`Pic(X_T)/Pic(T)` is stated directly, and it is only the *theorem* that
+this quotient is the relative Picard functor (BLR 8.1/4) which needs the
+section. -/
+structure IsRelPicOf {X P S : Scheme.{u}} (strX : X ⟶ S) (pstr : P ⟶ S) where
+  /-- the invertible sheaf on `X_T` classified by a `T`-point of `P` -/
+  sheaf : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint pstr g → (curveBaseChange strX g).Modules
+  /-- the classified sheaves are invertible -/
+  invertible : ∀ {T : Scheme.{u}} {g : T ⟶ S} (p : RelPoint pstr g), IsInvertibleSheaf (sheaf p)
+  /-- `P ↪ Pic_{X/S}` is a monomorphism of functors -/
+  inj : ∀ {T : Scheme.{u}} {g : T ⟶ S} (p q : RelPoint pstr g),
+    RelPicEquiv strX g (sheaf p) (sheaf q) → p = q
+  /-- `P ↠ Pic_{X/S}`: every invertible sheaf on `X_T` is classified -/
+  surj : ∀ {T : Scheme.{u}} {g : T ⟶ S} (L : (curveBaseChange strX g).Modules),
+    IsInvertibleSheaf L → ∃ p : RelPoint pstr g, RelPicEquiv strX g (sheaf p) L
+  /-- the classification is natural in the test object -/
+  sheaf_pre : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (p : RelPoint pstr g),
+    RelPicEquiv strX g' (sheaf (RelPoint.pre h hg p))
+      (modPullback (curveBaseChangeMap strX h hg) (sheaf p))
+
+/-- **EXISTENCE OF THE RELATIVE PICARD SCHEME** — FGA exposé 232,
+Bosch–Lütkebohmert–Raynaud, *Néron Models*, 8.2/1 (sorry node).
+
+For a smooth proper geometrically connected relative curve with a
+section, the naive quotient `T ↦ Pic(X_T)/Pic(T)` is representable by an
+`S`-scheme.  Two classical inputs, and both are genuinely used:
+
+* representability of `Pic_{X/S}` as an fppf sheaf, which for a
+  projective flat morphism with integral geometric fibres is FGA 232 /
+  BLR 8.2/1.  `strX` is proper and smooth of relative dimension 1, hence
+  Zariski-locally on `S` projective, and its geometric fibres are smooth
+  connected curves, hence integral;
+* BLR 8.1/4: because `strX` has the section `o` and satisfies
+  `f_*𝒪_X = 𝒪_S` universally (geometric connectedness), the fppf sheaf
+  is ALREADY the naive quotient, with no sheafification.  This is what
+  makes the conclusion statable with no site theory, and it is the only
+  place the section is used.
+
+This is the half of `exists_relPicZero` that constructs a scheme at all.
+The other half — cutting `Pic⁰` out of `Pic` and proving it proper and
+smooth — is `exists_relPicZero_of_isRelPicOf`. -/
+theorem exists_relPicFull {X S : Scheme.{u}} (strX : X ⟶ S)
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_o : RelPoint strX (𝟙 S)) :
+    ∃ (P : Scheme.{u}) (pstr : P ⟶ S), Nonempty (IsRelPicOf strX pstr) :=
+  sorry
+
+/-- **`Pic⁰` IS AN ABELIAN SCHEME, GIVEN `Pic`** —
+Bosch–Lütkebohmert–Raynaud, *Néron Models*, 9.4/4 (sorry node).
+
+Assuming the relative Picard scheme `P` of `strX` has been constructed
+(`IsRelPicOf`), cut out its identity component and show that it is an
+abelian scheme carrying the Abel–Jacobi map based at `o`.  Everything
+this leaf still owes is exactly BLR 9.4/4 and its inputs:
+
+* the connected-component-of-identity construction, which needs `P ⟶ S`
+  to be smooth and separated — itself a consequence of cohomology and
+  base change on the relative curve (`H²` vanishes, so `Pic` is smooth);
+* properness of `Pic⁰`, i.e. the valuative criterion for line bundles on
+  a relative curve;
+* the `𝒪(D)` dictionary for the section divisors `[x]` and `[o]`, which
+  is what produces the `aj`, `aj_spec`, `aj_pre`, `aj_base` fields.  Only
+  the section case of that dictionary is needed, and `sectionIdeal`
+  above already writes it.
+
+The hypothesis is deliberately as WEAK as it can be while still pinning
+`P`: no group law is assumed on `P`, because `inj` and `surj` make
+`Hom_S(-, P) ≅ Pic(X_{-})/Pic(-)` a natural bijection and the group law
+transports through it by Yoneda.  So this leaf is as strong as it can
+be, and `exists_relPicFull` correspondingly as weak as it can be; both
+are true. -/
+theorem exists_relPicZero_of_isRelPicOf {X P S : Scheme.{u}} {strX : X ⟶ S} {pstr : P ⟶ S}
+    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S))
+    (_hP : IsRelPicOf strX pstr) :
+    ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr),
+      Nonempty (IsRelPicZeroOf strX ab o) :=
+  sorry
+
 /-- **GROTHENDIECK REPRESENTABILITY: `Pic⁰_{X/S}` is an abelian scheme,
 for a smooth proper geometrically connected curve with a section, over an
-ARBITRARY base** (sorry node).
+ARBITRARY base** (PROVEN 2026-07-28 over `exists_relPicFull` and
+`exists_relPicZero_of_isRelPicOf`; formerly a sorry node, and everything
+below the decomposition heading is the audit that was written while it
+was one).
 
 TRUE and classical: FGA, exposé 232 (representability of `Pic_{X/S}` for
 a projective flat morphism with integral geometric fibres);
@@ -428,12 +570,48 @@ a field-partition of `IsRelPicZeroOf` for which NEITHER `Pic_{X/S}` nor
 `Spec ℚ` is a witness of the weaker half.  It was not searched along the
 axis of the CONSTRUCTION (Quot/Hilbert schemes, `Sym^d C ⟶ Pic^d`), which
 is where a genuine decomposition would come from once relative effective
-Cartier divisors exist. -/
+Cartier divisors exist.
+
+**THE CONSTRUCTION AXIS, SEARCHED 2026-07-28 — AND IT CUTS.**  The cut
+is not the `Sym^d` one anticipated above (that would still need relative
+effective Cartier divisors); it is the split the two citations in the
+first paragraph of this docstring were always naming as two different
+theorems:
+
+* `exists_relPicFull` — BLR **8.2/1**: `Pic_{X/S}` is representable, as
+  the naive quotient `T ↦ Pic(X_T)/Pic(T)`, i.e. `IsRelPicOf`;
+* `exists_relPicZero_of_isRelPicOf` — BLR **9.4/4**: given that, `Pic⁰`
+  is an abelian scheme with the Abel–Jacobi map.
+
+and this leaf is now their two-line composition.
+
+**Why the rejection recorded above does not apply, and in fact points
+here.**  The rejected cut was "a scheme carrying the classification data
+exists" + "*any such scheme* is proper and smooth", refuted by
+`Pic_{X/S}` itself as a witness of the first half that fails the second.
+This cut differs in both halves.  The first half is strengthened by
+exactly the field that rejection names as missing — `surj`, "every
+invertible sheaf on `X_T` is classified" — so `Pic_{X/S}` is not a junk
+witness of it but the INTENDED one, pinned up to unique isomorphism by
+Yoneda.  And the second half does not assert that `P` is proper: it
+produces a NEW scheme `J`, so the passage `Pic ↝ Pic⁰` and the proof
+that the result is proper and smooth are still stated together, which is
+what the rejection actually demanded.  The rejection was right; it was a
+verdict about field-partitions of `IsRelPicZeroOf`, and this is not one.
+
+**What would refute THIS cut**: a witness of `IsRelPicOf strX pstr` for
+some `P` that is not the relative Picard scheme (which would make
+`exists_relPicZero_of_isRelPicOf` false), or a proof that
+`Pic(X_T)/Pic(T)` is not already the relative Picard functor here (which
+would make `exists_relPicFull` false).  The second is BLR 8.1/4 and
+depends only on the section `o` and on `f_*𝒪_X = 𝒪_S` universally, both
+of which are hypotheses. -/
 theorem exists_relPicZero {X S : Scheme.{u}} (strX : X ⟶ S)
-    (_hproper : IsProper strX) (_hsmooth : SmoothOfRelativeDimension 1 strX)
-    (_hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S)) :
+    (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 S)) :
     ∃ (J : Scheme.{u}) (jstr : J ⟶ S) (ab : AbelianSchemeStruct jstr),
-      Nonempty (IsRelPicZeroOf strX ab o) :=
-  sorry
+      Nonempty (IsRelPicZeroOf strX ab o) := by
+  obtain ⟨_P, _pstr, ⟨hP⟩⟩ := exists_relPicFull strX hproper hsmooth hconn o
+  exact exists_relPicZero_of_isRelPicOf hproper hsmooth hconn o hP
 
 end Fermat

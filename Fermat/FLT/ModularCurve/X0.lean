@@ -24933,9 +24933,12 @@ specialised to a curve, where the degree-zero part is represented by an
 abelian scheme — the Jacobian.
 
 **THIS NODE IS NOW A ONE-LINE INSTANCE, AND THAT IS THE WHOLE POINT.**
-The sorried statement lives ONCE, over an arbitrary base and
+The general statement lives ONCE, over an arbitrary base and
 universe-polymorphically, in `ModularCurve/RelativePicard.lean` as
-`exists_relPicZero`.  It has to be there rather than here because its
+`exists_relPicZero` (itself PROVEN 2026-07-28 over the two sorried
+leaves `exists_relPicFull` and `exists_relPicZero_of_isRelPicOf` in that
+same module — so a dispatcher should aim at those two, not at this node
+and not at `exists_relPicZero`).  It has to be there rather than here because its
 other consumer — `exists_albaneseOfCurve`, ~4700 lines below — needs
 `S = Spec ℤ_(ℓ)` and `S = Spec 𝔽_ℓ`, which this `SpecQ` statement cannot
 serve; and a declaration reachable from only one of two consumers forces
@@ -28190,12 +28193,15 @@ been CLOSED**, in `ModularCurve/RelativePicard.lean`:
 
 So the cut that the old docstring called unavailable is now available,
 and it is the classical one: **representability of `Pic⁰`** plus
-**autoduality**.  Three leaves replace one, and each is a single named
+**autoduality**.  Four leaves replace one (three until 2026-07-28, when
+`exists_relPicZero` was itself proven over the two classical theorems it
+had always been citing side by side), and each is a single named
 classical theorem with its own literature:
 
 | leaf | theory | where |
 |---|---|---|
-| `exists_relPicZero` | FGA 232, BLR 8.2/1 + 9.4/4 | `RelativePicard.lean` |
+| `exists_relPicFull` | FGA 232, BLR 8.2/1 (`Pic` is representable) | `RelativePicard.lean` |
+| `exists_relPicZero_of_isRelPicOf` | BLR 9.4/4 (`Pic⁰ ⊆ Pic` is abelian) | `RelativePicard.lean` |
 | `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality + biduality | below |
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | below |
 
@@ -32150,7 +32156,8 @@ docstring).
 
 | leaf | theory | level-specific? |
 |---|---|---|
-| `exists_relPicZero` (in `RelativePicard.lean`) | representability of `Pic⁰` | no |
+| `exists_relPicFull` (in `RelativePicard.lean`) | representability of `Pic` | no |
+| `exists_relPicZero_of_isRelPicOf` (in `RelativePicard.lean`) | `Pic ↝ Pic⁰` | no |
 | `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_cubeModel_of_abelianScheme` | symmetric very ample bundle + theorem of the cube | no |
@@ -38545,7 +38552,9 @@ theorem exists_jacobianFibreIdent {S S' : Scheme.{0}} (s : S' ⟶ S)
 (PROVEN, over the three base-independent statements above — all three of
 which are now themselves PROVEN as of 2026-07-27, and so is
 `exists_albaneseOfCurve`, so that the open inputs reached from here are
-exactly `exists_relPicZero` (in `ModularCurve/RelativePicard.lean`),
+exactly `exists_relPicFull` and `exists_relPicZero_of_isRelPicOf` (both
+in `ModularCurve/RelativePicard.lean`, and both new on 2026-07-28, when
+`exists_relPicZero` was proven over them),
 `IsRelPicZeroOf.exists_albaneseFactorisation`,
 `IsRelPicZeroOf.eq_of_aj_eq` and `universal_jacobianBaseChangeAj`;
 `isAdditiveOn_of_post_zero` is PROVEN).
