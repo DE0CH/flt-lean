@@ -633,8 +633,8 @@ public import Mathlib.Algebra.Category.CommAlgCat.Basic
 -- the whole proof of `fg_relPoint_of_abelianScheme` — Mordell–Weil — from its
 -- two leaves `exists_cubeModel_of_abelianScheme` (heights) and
 -- `finite_quotient_psmul_of_abelianScheme` (weak Mordell–Weil).  It also
--- carries `Fermat.ParallelogramHeight`, the interface a theory of heights
--- actually produces, `ParallelogramHeight.toDescentHeight`, and
+-- carries `Fermat.WeilHeight`, the interface a theory of heights
+-- actually produces, `WeilHeight.toDescentHeight`, and
 -- `Fermat.finite_quotient_nsmul_of_prime`, the reduction that shrank the
 -- arithmetic leaf to its prime case.
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
@@ -25320,13 +25320,16 @@ either returns nothing.  Northcott is proven here anyway, in the
 is a convenience, not a necessity.  See the CORRECTION section of
 `Fermat/FLT/Mathlib/GroupTheory/Descent.lean`.
 
-* `Fermat.ParallelogramHeight.toDescentHeight`
+* `Fermat.WeilHeight.toDescentHeight`
   (`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) derives `translate`,
   `double` and `m = 2` from the single two-sided parallelogram estimate.
   It is pure group theory over `ℝ` — in particular the lower bound on
   the height that `translate` needs is *not* an extra hypothesis, since
-  `Northcott` already forces it (`ParallelogramHeight.exists_lowerBound`).
-* `Fermat.ProjectiveHeightSource.toParallelogramHeight`
+  `Northcott` already forces it (`exists_lowerBound_of_northcott`).
+  (Named `ParallelogramHeight.toDescentHeight` until 2026-07-28, when
+  `ParallelogramHeight` was retired as a field-for-field duplicate of
+  `WeilHeight`.)
+* `Fermat.ProjectiveHeightSource.toWeilHeight`
   (`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`) supplies
   `Northcott` for the naïve height of a projective embedding, from
   `Mathlib`'s Northcott property for `ℚ`.
@@ -25347,7 +25350,7 @@ theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Spe
     Nonempty (DescentHeight (RelPoint jstr (𝟙 SpecQ))) := by
   letI := ab.addCommGroup (𝟙 SpecQ)
   obtain ⟨ps⟩ := exists_projectiveHeightSource_of_abelianScheme ab
-  exact ⟨ps.toParallelogramHeight.toDescentHeight⟩
+  exact ⟨ps.toWeilHeight.toDescentHeight⟩
 
 /-! ### Residue of the 2026-07-27 Kummer-map cut
 
@@ -26036,8 +26039,12 @@ of `L` together with Dirichlet's unit theorem (finite generation of the
 
 The subgroup `p A(ℚ)` is written as the range of the
 multiplication-by-`p` endomorphism `nsmulAddMonoidHom p`, which is the
-form `Fermat.exists_finset_nsmul_repr` — the coset-representative step
-inside the descent theorem — consumes.
+form `Fermat.fg_of_descentHeight` consumes.  (It used to be phrased as
+"the form `Fermat.exists_finset_nsmul_repr` — the coset-representative
+step inside the descent theorem — consumes"; that helper was retired on
+2026-07-28 when the descent theorem was rewired onto mathlib's
+`AddCommGroup.fg_of_descent`, which does the coset bookkeeping itself
+from `(nsmulAddMonoidHom p).range.FiniteIndex`.)
 
 **FAITHFULNESS AUDIT.**  `hp` is load-bearing, and not only because `p`
 must be nonzero: at `p = 0` the range is the trivial subgroup, the
@@ -32071,10 +32078,10 @@ so it is a PROVEN assembly now too.
 **Eighth round (2026-07-27).**  `exists_descentHeight_of_abelianScheme` was
 carrying FOUR things and only one of them is geometry, so it is now a PROVEN
 assembly too.  The three that are not geometry are proven in the shim tree:
-`ParallelogramHeight.toDescentHeight`
+`WeilHeight.toDescentHeight`
 (`Fermat/FLT/Mathlib/GroupTheory/Descent.lean`) turns the single two-sided
 parallelogram estimate into the asymmetric `translate` / `double` / `m = 2`
-form descent consumes; `ProjectiveHeightSource.toParallelogramHeight`
+form descent consumes; `ProjectiveHeightSource.toWeilHeight`
 (`Fermat/FLT/Mathlib/NumberTheory/ProjectiveHeight.lean`) supplies Northcott
 for the naïve height of a projective embedding; and `CubeEmbedding.parallelogram`
 (same file) derives the approximate parallelogram law itself from the theorem
