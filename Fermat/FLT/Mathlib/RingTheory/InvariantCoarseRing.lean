@@ -45,9 +45,10 @@ field extension `K/ℚ`.  The pieces live here:
 * `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — the field-theoretic
   statement that a field extension `L/k` in characteristic zero with `k`
   algebraically closed in `L` is a *regular* extension, i.e. `L ⊗[k] K` is a
-  domain for every `K/k`.  PROVEN for `K/k` **algebraic**; the transcendental
-  case is the one LEAF of this module
-  (`isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
+  domain for every `K/k`.  PROVEN for `K/k` **algebraic**, and reduced in
+  general to the finitely generated subextensions of `K`; the one LEAF of this
+  module is the transcendental case for a finitely generated `k(S)`
+  (`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
 * `isDomain_tensorProduct_of_injective` — the transfer from the fraction field
   down to the ring, which is just flatness of a field over a field (PROVEN).
 
@@ -69,8 +70,10 @@ field extension `K/ℚ`.  The pieces live here:
   disjointness of an algebraic intermediate field from `L` (PROVEN)
 * `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` — the
   algebraic half of regularity (PROVEN)
-* `isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot` — the
-  transcendental half (LEAF)
+* `isDomain_tensorProduct_of_forall_adjoin_finset` — reduction to finitely
+  generated subextensions of `K` (PROVEN)
+* `isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`
+  — the transcendental half, for a finitely generated subextension (LEAF)
 * `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — regular extensions
   (PROVEN over the transcendental leaf)
 * `isDomain_tensorProduct_of_injective` — descent to a subring (PROVEN)
@@ -95,6 +98,7 @@ public import Mathlib.FieldTheory.LinearDisjoint
 public import Mathlib.FieldTheory.PrimitiveElement
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.FieldTheory.Perfect
+public import Mathlib.RingTheory.TensorProduct.Nontrivial
 
 @[expose] public section
 
@@ -452,33 +456,131 @@ theorem isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot
   haveI : IsDomain (K ⊗[k] L) := IntermediateField.LinearDisjoint.isDomain' hld2
   exact (Algebra.TensorProduct.comm k L K).toMulEquiv.isDomain
 
-/-- **The transcendental half of regularity** (sorry leaf).
+set_option maxSynthPendingDepth 2 in
+/-- **Being a domain after `⊗[k] K` is detected on the finitely generated
+subextensions of `K`** (PROVEN).
 
-`k` is algebraically closed in `L`, the characteristic is zero, and `K/k` is
-*not* algebraic.  The conclusion `IsDomain (L ⊗[k] K)` is true for every `K/k`;
-this leaf isolates the case that
-`isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` does not
-already cover, so that the hypothesis `hna` records exactly what is left rather
-than duplicating a proven statement.
+`L ⊗[k] K` is the directed union of the `L ⊗[k] k(S)` over finite `S ⊆ K`: every
+element of a tensor product is a finite sum of pure tensors, so it comes from
+one of them, and each transition map is injective because `L` is flat over the
+field `k`.  So a product of two nonzero elements can be tested inside a single
+`L ⊗[k] k(S)`.
+
+This runs the colimit step at the level of *elements* rather than by building a
+directed colimit of algebras, which is why it needs no colimit API at all.
+
+`maxSynthPendingDepth` has to be raised by one: deciding
+`NoZeroDivisors (L ⊗[k] ↥(adjoin k S))` from the supplied `IsDomain` requires
+Lean to discharge the pending `Semiring (L ⊗[k] ↥(adjoin k S))` obligation
+through the tensor-product-of-intermediate-field tower, which is one layer
+deeper than the default budget.  This is an elaborator budget, not a resource
+bump masking a failure: the proof term is unchanged. -/
+theorem isDomain_tensorProduct_of_forall_adjoin_finset
+    (k L : Type*) [Field k] [Field L] [Algebra k L]
+    (K : Type*) [Field K] [Algebra k K]
+    (H : ∀ S : Finset K, IsDomain (L ⊗[k] (IntermediateField.adjoin k (S : Set K)))) :
+    IsDomain (L ⊗[k] K) := by
+  classical
+  haveI : Nontrivial (L ⊗[k] K) :=
+    Algebra.TensorProduct.nontrivial_of_algebraMap_injective_of_isDomain k L K
+      (algebraMap k L).injective (algebraMap k K).injective
+  set ψ : ∀ S : Finset K, L ⊗[k] (IntermediateField.adjoin k (S : Set K)) →ₐ[k] L ⊗[k] K :=
+    fun S => Algebra.TensorProduct.map (AlgHom.id k L)
+      (IntermediateField.adjoin k (S : Set K)).val with hψ
+  have hψinj : ∀ S : Finset K, Function.Injective (ψ S) := by
+    intro S
+    have hcoe : ∀ z, ψ S z =
+        LinearMap.lTensor L (IntermediateField.adjoin k (S : Set K)).val.toLinearMap z := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | tmul a b => simp [hψ]
+      | add u v hu hv => simp [map_add, hu, hv]
+    have hlt : Function.Injective
+        (LinearMap.lTensor L (IntermediateField.adjoin k (S : Set K)).val.toLinearMap) :=
+      Module.Flat.lTensor_preserves_injective_linearMap _
+        (IntermediateField.adjoin k (S : Set K)).val.injective
+    intro u v huv
+    exact hlt (by rw [← hcoe, ← hcoe, huv])
+  have hmono : ∀ (S T : Finset K), S ⊆ T → Set.range (ψ S) ⊆ Set.range (ψ T) := by
+    intro S T h
+    have hle : IntermediateField.adjoin k (S : Set K) ≤ IntermediateField.adjoin k (T : Set K) :=
+      IntermediateField.adjoin.mono k _ _ (by exact_mod_cast h)
+    have key : ∀ z, ψ T (Algebra.TensorProduct.map (AlgHom.id k L)
+        (IntermediateField.inclusion hle) z) = ψ S z := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => simp
+      | tmul a b => simp [hψ]
+      | add u v hu hv => simp [map_add, hu, hv]
+    rintro _ ⟨z, rfl⟩
+    exact ⟨_, key z⟩
+  have hmem : ∀ x : L ⊗[k] K, ∃ S : Finset K, x ∈ Set.range (ψ S) := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => exact ⟨∅, 0, map_zero _⟩
+    | tmul a b =>
+        refine ⟨{b}, a ⊗ₜ ⟨b, IntermediateField.subset_adjoin k _ (by simp)⟩, ?_⟩
+        simp [hψ]
+    | add u v hu hv =>
+        obtain ⟨S₁, hS₁⟩ := hu
+        obtain ⟨S₂, hS₂⟩ := hv
+        obtain ⟨a, ha⟩ := hmono S₁ (S₁ ∪ S₂) Finset.subset_union_left hS₁
+        obtain ⟨b, hb⟩ := hmono S₂ (S₁ ∪ S₂) Finset.subset_union_right hS₂
+        exact ⟨S₁ ∪ S₂, a + b, by rw [map_add, ha, hb]⟩
+  have main : ∀ a b : L ⊗[k] K, a * b = 0 → a = 0 ∨ b = 0 := by
+    intro a b hab
+    obtain ⟨S₁, hS₁⟩ := hmem a
+    obtain ⟨S₂, hS₂⟩ := hmem b
+    obtain ⟨x, hx⟩ := hmono S₁ (S₁ ∪ S₂) Finset.subset_union_left hS₁
+    obtain ⟨y, hy⟩ := hmono S₂ (S₁ ∪ S₂) Finset.subset_union_right hS₂
+    have hzero : ψ (S₁ ∪ S₂) (x * y) = 0 := by rw [map_mul, hx, hy, hab]
+    have h0 : x * y = 0 := hψinj _ (by rw [hzero, map_zero])
+    haveI := H (S₁ ∪ S₂)
+    rcases mul_eq_zero.mp h0 with h | h
+    · exact Or.inl (by rw [← hx, h, map_zero])
+    · exact Or.inr (by rw [← hy, h, map_zero])
+  haveI : NoZeroDivisors (L ⊗[k] K) := ⟨fun {a b} h => main a b h⟩
+  exact {}
+
+/-- **The transcendental half of regularity, for a finitely generated
+subextension** (sorry leaf).
+
+`k` is algebraically closed in `L`, the characteristic is zero, `S` is a finite
+subset of a field extension `K/k`, and the subfield `k(S)` it generates is *not*
+algebraic over `k`.  The conclusion `IsDomain (L ⊗[k] k(S))` is true for every
+`S`; this leaf isolates exactly what
+`isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` (the
+algebraic case, PROVEN) and `isDomain_tensorProduct_of_forall_adjoin_finset`
+(the reduction to finitely generated subextensions, PROVEN) do not already
+cover, so that the hypotheses record what is left rather than duplicating a
+proven statement.
 
 **The classical argument, for whoever closes it** (Bourbaki *Algebra* V §17,
-EGA IV 4.6.1, Stacks 04KM).  Choose a transcendence basis `T` of `K/k` and put
-`F := k(T) ⊆ K`, so that `K/F` is algebraic.  Then
+EGA IV 4.6.1, Stacks 04KM).  Write `F := k(S)`.  In characteristic zero `F/k` is
+separably generated: there is a *finite* transcendence basis `T ⊆ S` with `F/k(T)`
+finite separable.  Then
 
-* `L ⊗[k] F` is a domain — it is the localization of the polynomial ring `L[T]`
-  at the nonzero elements of `k[T]`, hence a subring of the rational function
-  field `L(T)`;
-* `F` is algebraically closed in `Frac (L ⊗[k] F) = L(T)`, because `k` is
-  algebraically closed in `L` (this is the step that genuinely needs work: it is
-  the statement that regularity is stable under purely transcendental base
-  change);
-* `L ⊗[k] K ≅ (L ⊗[k] F) ⊗[F] K` embeds into `L(T) ⊗[F] K` by flatness of the
-  field extension `K/F` over `F`, and the latter is a domain by
+* `L ⊗[k] k(T)` is a domain — it is the localization of the polynomial ring
+  `L[T]` at the nonzero elements of `k[T]`, hence a subring of the rational
+  function field `L(T)`;
+* `k(T)` is algebraically closed in `Frac (L ⊗[k] k(T)) = L(T)`, because `k` is
+  algebraically closed in `L`.  **This is the one step that genuinely needs new
+  mathematics**: it is the statement that regularity is stable under purely
+  transcendental base change;
+* `L ⊗[k] F ≅ (L ⊗[k] k(T)) ⊗[k(T)] F` embeds into `L(T) ⊗[k(T)] F` by flatness
+  of the field extension `F/k(T)`, and the latter is a domain by
   `isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot` applied to
-  the pair `(F, L(T))` and the algebraic extension `K/F`.
+  the pair `(k(T), L(T))` and the algebraic extension `F/k(T)`.
 
 So the mathematical residue is the middle bullet plus the tensor-associativity
-plumbing; the algebraic case above is already available as the last step.
+plumbing; the algebraic case above is already available as the last step, and
+the finiteness of `T` here means no colimit is needed inside this leaf either.
+
+*The check that would refute the claim that this is all that is missing*: find a
+statement in the pin whose conclusion is `algebraicClosure (RatFunc k) _ = ⊥`,
+or an `IsDomain` result for `L ⊗[k] RatFunc k`.  Neither existed at
+`2ead1a48`.
 
 **Faithfulness note.**  `CharZero k` is load-bearing throughout this section.
 In characteristic `p` the statement is FALSE with only "algebraically closed in":
@@ -489,29 +591,34 @@ separable and `L ⊗[k] K` is not a domain for `K = k^{1/p}`.  Characteristic ze
 is used here through `PerfectField k`, which is what supplies the primitive
 element in
 `linearDisjoint_of_finiteDimensional_of_algebraicClosure_eq_bot`. -/
-theorem isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot
+theorem isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [CharZero k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
-    (K : Type*) [Field K] [Algebra k K] (hna : ¬ Algebra.IsAlgebraic k K) :
-    IsDomain (L ⊗[k] K) :=
+    (K : Type*) [Field K] [Algebra k K] (S : Finset K)
+    (hna : ¬ Algebra.IsAlgebraic k (IntermediateField.adjoin k (S : Set K))) :
+    IsDomain (L ⊗[k] (IntermediateField.adjoin k (S : Set K))) :=
   sorry
 
 /-- **A field extension in which the base field is algebraically closed is
 regular** (PROVEN over
-`isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
+`isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot`).
 
 `L ⊗[k] K` is a domain for every field extension `K/k`, when `k` has
-characteristic zero and is algebraically closed in `L`.  The two halves are the
-algebraic and transcendental cases above. -/
+characteristic zero and is algebraically closed in `L`.  Reduce to the finitely
+generated subextensions `k(S)` of `K`, then split each of those into the
+algebraic case (PROVEN) and the transcendental case (the leaf). -/
 theorem isDomain_tensorProduct_of_algebraicClosure_eq_bot
     (k L : Type*) [Field k] [CharZero k] [Field L] [Algebra k L]
     (hbot : algebraicClosure k L = ⊥)
     (K : Type*) [Field K] [Algebra k K] :
     IsDomain (L ⊗[k] K) := by
-  by_cases halg : Algebra.IsAlgebraic k K
+  classical
+  refine isDomain_tensorProduct_of_forall_adjoin_finset k L K (fun S => ?_)
+  by_cases halg : Algebra.IsAlgebraic k (IntermediateField.adjoin k (S : Set K))
   · haveI := halg
-    exact isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot k L hbot K
-  · exact isDomain_tensorProduct_of_not_isAlgebraic_of_algebraicClosure_eq_bot k L hbot K halg
+    exact isDomain_tensorProduct_of_isAlgebraic_of_algebraicClosure_eq_bot k L hbot _
+  · exact isDomain_tensorProduct_adjoin_finset_of_not_isAlgebraic_of_algebraicClosure_eq_bot
+      k L hbot K S halg
 
 /-- **The fraction field of a normal domain in which the base field is
 algebraically closed is a regular extension** (PROVEN over
