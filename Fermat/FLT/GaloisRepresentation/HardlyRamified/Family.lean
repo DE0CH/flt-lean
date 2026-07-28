@@ -52,11 +52,15 @@ public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 -- requirement `exists_unramified_grouplike_family_generating_corner` below
 -- consumes, and which `ShortExact.lean` states and assembles as
 -- `HopfAlgebra.isMultiplicativeType_of_isShortExact` over `IsMultiplicativeType`
--- ("the Cartier dual is étale"). The assembly is written and compiles; it rests
--- on two open leaves in that module, `HopfAlgebra.IsShortExact.cartierDual`
--- (exactness of duality) and `HopfAlgebra.etale_of_isShortExact` (an extension
--- of étale by étale is étale — the elementary half, whose henselian route this
--- file's survey below records). `CartierDualExamples` supplies the dictionary
+-- ("the Cartier dual is étale"). The assembly is written and compiles. CORRECTED
+-- 2026-07-27: this comment used to say it rests on "two open leaves in that
+-- module, `HopfAlgebra.IsShortExact.cartierDual` and
+-- `HopfAlgebra.etale_of_isShortExact`". BOTH ARE PROVEN (`ShortExact.lean:669`
+-- and `:916`); what is open there are the four leaves they consume
+-- (`IsShortExact.exists_linearRetraction`, `.ker_cartierDual_le`,
+-- `.faithfullyFlat_cartierDual`, and
+-- `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`),
+-- separately queued. `CartierDualExamples` supplies the dictionary
 -- between the two descriptions of the corner: `dualGroupAlgebraBialgEquiv`
 -- identifies `CartierDual R (MonoidAlgebra R G)` with `GroupFunctions R G`,
 -- which is exactly what turns the étaleness of `GroupFunctions` proved in this
@@ -4220,8 +4224,10 @@ leaf is (R1), the Raynaud dévissage.
      leaves "with their own owners", and both halves of that were wrong;
      see the corrected inventory in the docstring of
      `exists_unramified_grouplike_family_generating_corner` below for
-     what is actually open beneath them (four leaves in `ShortExact.lean`)
-     and for why ownership must never be asserted in prose here.
+     what is actually open beneath them (ONE leaf in `ShortExact.lean`
+     as of 2026-07-28) and for why ownership must never be asserted in
+     prose here.
+
      Consuming (R3) here is still blocked on `IsShortExact` being
      established for this cluster's dévissage, i.e. on (R1).
 (R4) *multiplicative type ⟹ unramified character group*: **PROVEN
@@ -4568,21 +4574,24 @@ that would unblock it. Nothing here changes the statement.
        `declaration uses 'sorry'` warning set, which is regenerable,
        whereas this paragraph is not.
 
-     * WHAT IS ACTUALLY OPEN — four leaves, all in `ShortExact.lean`,
-       all downstream of the two theorems above (so `cartierDual` is
-       PROVEN but transitively sorried, and may be USED freely as a
-       stated theorem by anything above it):
-       - `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
-         (`:238`) — flat + unramified + finitely presented ⇒ formally
-         étale; the only remaining gap under `etale_of_isShortExact`.
-       - `HopfAlgebra.IsShortExact.exists_linearRetraction` (`:564`) —
-         `i(A'')` is an `R`-module direct summand of `A`. Pure module
-         theory, no Hopf structure left in the statement.
-       - `HopfAlgebra.IsShortExact.ker_cartierDual_le` (`:628`) — the
-         hard half: a character trivial on `Spec A'` descends. Gated on
-         fppf descent / Takeuchi's Hopf-ideal correspondence.
-       - `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` (`:648`) —
-         the deepest field: `(Spec A)^D → (Spec A')^D` faithfully flat.
+     * WHAT IS ACTUALLY OPEN — **ONE leaf, and this list has now been
+       rewritten three times by three owners, each of whom found the
+       previous version stale.  Read the warning above and regenerate it
+       rather than trusting it.**  As of 2026-07-28 the only sorry
+       anywhere in `ShortExact.lean` is
+
+       - `HopfAlgebra.IsShortExact.exists_basis_cartierDual` — a basis
+         for the Cartier dual of the quotient.
+
+       The four leaves that BOTH of the previous versions of this bullet
+       named as open — `exists_linearRetraction`, `ker_cartierDual_le`,
+       `faithfullyFlat_cartierDual` and
+       `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation`
+       — are ALL PROVEN.  Two concurrent branches each corrected this
+       paragraph to that same four-leaf list, and both were already wrong
+       when they were written.  That is the third instance here of the
+       same failure, and it is why the sentence above says the authority
+       is the warning set and not this file.
 
        Two PIN findings that make the last two cheaper than the (C4)
        audit priced them (that audit grepped `fppf|CartierDual|
