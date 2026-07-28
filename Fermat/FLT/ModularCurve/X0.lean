@@ -28644,6 +28644,30 @@ theorem exists_projectiveHeightSource_of_abelianScheme {J : Scheme.{0}} {jstr : 
   obtain ⟨ce⟩ := exists_cubeEmbedding_of_abelianScheme ab
   exact ⟨ce.toProjectiveHeightSource⟩
 
+/-! ### Segre coordinates from a cube embedding — WITHDRAWN AT MERGE (2026-07-28)
+
+`flt-lean-199` proved `exists_segreCoordinates_of_abelianScheme` here, by bridging
+`CubeEmbedding → SegreCoordinates` (`exists_primitive_integral_rep`,
+`eval_smul_of_isHomogeneous`, `CubeEmbedding.toSegreCoordinates`), and relocated the
+two coordinate existentials to this point so that the proof could consume
+`exists_cubeEmbedding_of_abelianScheme` above.
+
+Concurrently `flt-lean-12` RETIRED the whole Segre/integral-height route as dead
+code, deleting `Fermat/FLT/Mathlib/NumberTheory/SegreHeight.lean` and
+`IntegralHeight.lean` — which is where `SegreCoordinates` and `IntegralCoordinates`
+are DECLARED — together with both existentials.  The two changes are incompatible,
+and 12's is the better outcome: it is `−2` on the frontier with no proof obligation
+discharged or created, and the geometry 199's bridge was serving is the same
+geometry `exists_cubeModel_of_abelianScheme` still asks for.  Taking 199's block
+would have left it referring to two types that no longer exist.
+
+So the block is withdrawn whole.  Recover it with
+`git show flt-lean-199:Fermat/FLT/ModularCurve/X0.lean` if the route is ever
+revived; 199's OTHER half — `finite_torsion_geomPt_of_abelianScheme`, PROVEN over
+the new leaf `finite_geomPt_over_point` — is untouched by the deletion and is kept
+below.
+-/
+
 /-- **A height function with the Northcott property exists on `A(ℚ)`,
 for every abelian scheme `A` over `ℚ`** (PROVEN, over the leaves above) —
 the `DescentHeight` package that Silverman's descent theorem consumes.
@@ -29034,77 +29058,117 @@ theorem exists_ratPoint_of_galoisInvariant {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
   rw [← Category.assoc, hP₀]
   exact y.2
 
-/-- **The `n`-torsion of `A(ℚ̄)` is finite, for every `n ≠ 0`** (sorry
-node).
+/-- **A point of a `ℚ`-scheme locally of finite type has only finitely many
+geometric points above it** (sorry leaf, cut 2026-07-28 by flt-lean-199 out of
+`finite_torsion_geomPt_of_abelianScheme` below).
+
+TRUE, and it is a statement about RESIDUE FIELDS with no geometry in it.  By
+`Scheme.SpecToEquivOfField` a morphism `Spec ℚ̄ ⟶ X` is the same thing as a point
+`x : X` together with a ring hom `κ(x) ⟶ ℚ̄`, so this says exactly that
+`Hom(κ(x), ℚ̄)` is finite.  It is, and the dichotomy is sharp:
+
+* `str` locally of finite type makes `κ(x)` a FINITELY GENERATED field extension
+  of `ℚ`;
+* `ℚ̄` is ALGEBRAIC over `ℚ`, so a field hom `κ(x) → ℚ̄` forces `κ(x)` algebraic —
+  if `κ(x)` had positive transcendence degree there would be NO hom at all, since
+  a transcendental generator would have to go to an algebraic element and the
+  minimal polynomial of that element would then lie in the kernel, contradicting
+  injectivity of a field hom;
+* a f.g. algebraic extension is FINITE, and then `#Hom(κ(x), ℚ̄) = [κ(x) : ℚ]`.
+
+So the set is either empty (non-closed `x`) or of size `[κ(x) : ℚ]` (closed `x`,
+where the Nullstellensatz makes `κ(x)` a number field).  Both cases are finite,
+which is all that is claimed.
+
+**`hft` IS LOAD-BEARING and the leaf is FALSE without it.**  Take
+`X = Spec ℚ(t)` over `ℚ`, which is not of finite type, and `x` its unique point:
+`κ(x) = ℚ(t)` — but as just argued that admits no hom to `ℚ̄` at all, so this
+particular `X` does not refute it.  A genuine refutation is
+`X = Spec (AlgebraicClosure ℚ)` over `ℚ`: `κ(x) = ℚ̄` and
+`Hom(ℚ̄, ℚ̄) = Gal(ℚ̄/ℚ)` is infinite.  So dropping `hft` makes the statement
+false, and it is not decoration.
+
+*Not vacuous*: the consumer applies it at the points of `[n]⁻¹(0)` on an abelian
+variety, which are closed points with `κ(x)` a number field, so the sets counted
+here are genuinely nonempty. -/
+theorem finite_geomPt_over_point {X : Scheme.{0}} (str : X ⟶ SpecQ)
+    (hft : LocallyOfFiniteType str) (x : X) :
+    {y : GeomFibrePt str (𝟙 SpecQ) |
+      y.1.base (IsLocalRing.closedPoint (AlgebraicClosure ℚ)) = x}.Finite :=
+  sorry
+
+/-- **The `n`-torsion of `A(ℚ̄)` is finite, for every `n ≠ 0`** (PROVEN
+2026-07-28 by flt-lean-199, over the single new leaf `finite_geomPt_over_point`
+above and the already-PROVEN `finite_preimage_mulByNat_of_field_prime_to_char`).
 
 TRUE and classical: for an abelian variety `A` of dimension `g` over an
-algebraically closed field of characteristic `0`,
-`A[n] ≅ (ℤ/n)^{2g}`, of order `n^{2g}`.  The proof is that `[n]` is a
-finite flat isogeny of degree `n^{2g}` — `[n]` is finite because `A` is
-proper and `[n]` is quasi-finite (its kernel is a closed subgroup scheme
-of dimension `0`, since multiplication by `n` is an isogeny), and flat
-because `A` is smooth and the fibres are finite of constant length.
+algebraically closed field of characteristic `0`, `A[n] ≅ (ℤ/n)^{2g}`, of order
+`n^{2g}`.
 
-**FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the set is all
-of `A(ℚ̄)`, which is infinite for every `A` of positive dimension, so the
-statement is FALSE there.  At `n = 1` it is the zero subgroup, true and
-uninteresting.  *Not vacuous*: this is the finiteness of the target of
-the Kummer cocycle, and it is the reason the coset space and the torsion
-group together make a FINITE type in the assembly.
+**THE OLD "MISSING MACHINERY" NOTE WAS STALE, AND IT NAMED THE WRONG THING.**  It
+read: "the degree of the multiplication-by-`n` isogeny of an abelian scheme.
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is in this file's cone and is
+where such a statement belongs".  Two corrections, both checked against the
+compiler rather than against prose:
 
-Stated for a general `n ≠ 0` rather than only at the prime `p` of the
-consumer because the classical proof is uniform in `n` and nothing is
-gained by narrowing.
+1. *The degree is not needed.*  Finiteness of a SET does not need the order of
+   the group scheme; it needs only that the fibres of `[n]` are finite.  Asking
+   for `n^{2g}` was asking for strictly more than the consumer uses.
+2. *The finiteness is already PROVEN*, in exactly the file the note pointed at.
+   `finite_preimage_mulByNat_of_field_prime_to_char` (`AbelianSchemeIsogeny.lean`)
+   says the fibres of `[n]` on an abelian scheme over a field `K` with
+   `(n : K) ≠ 0` are finite, and it has no `sorry`.  At `K = ℚ` and `n ≠ 0` that
+   applies verbatim — `(n : ℚ) ≠ 0` is `exact_mod_cast hn`.  The note's own
+   suggested check (`grep -rn "torsion"`) is what missed it: the theorem is about
+   *preimages of `mulByNat`* and the word "torsion" does not occur in it.  An
+   absence verdict is only as good as the names it searches.
 
-**THE OLD MISSING-MACHINERY NOTE OVER-STATED WHAT IS MISSING, IN TWO
-WAYS** (corrected 2026-07-28, by the sibling leaf's owner, after running
-the check it prescribed).  It read: "MISSING MACHINERY: the degree of the
-multiplication-by-`n` isogeny of an abelian scheme.
-`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is in this file's cone
-and is where such a statement belongs; the check that would refute this
-note is `grep -rn "torsion"` over that file and over
-`Fermat/FLT/Modularity/AbelianScheme.lean`, whose `Mult.torsion` supplies
-the Galois-stable torsion SET but no finiteness."
+**THE ROUTE, in three lines.**  `nsmul_val` turns `n • y = 0` into
+`y.1 ≫ [n] = 0`, so the image point `y.1.base pt` of a torsion geometric point
+lies in `[n]⁻¹({z₀})`, a FINITE subset of `J` by the theorem above.  The torsion
+set is therefore contained in a finite union, indexed by that set, of the fibres
+of `y ↦ y.1.base pt` — and each of those fibres is finite by
+`finite_geomPt_over_point`, which is the whole residue.  So what was billed as
+"the degree of an isogeny" is really the statement that a point has finitely
+many `ℚ̄`-points above it.
 
-First, the DEGREE is not needed.  Nothing here asks for `#A[n] = n^{2g}`,
-only that the set be FINITE, and finiteness does not go through a degree
-computation.  A prover sent after `n^{2g}` is sent after a much harder
-statement than this leaf needs.
+**FAITHFULNESS AUDIT.**  `hn` is load-bearing: at `n = 0` the set is all of
+`A(ℚ̄)`, which is infinite for every `A` of positive dimension, so the statement
+is FALSE there — and note this is exactly where the proof breaks too, since
+`(0 : ℚ) ≠ 0` fails.  At `n = 1` it is the zero subgroup, true and uninteresting.
+*Not vacuous*: this is the finiteness of the target of the Kummer cocycle, and it
+is the reason the coset space and the torsion group together make a FINITE type
+in the assembly.
 
-Second, the finiteness input is already PROVEN and directly applicable:
-`Fermat.finite_preimage_mulByNat_of_field_prime_to_char` in
-`AbelianSchemeIsogeny.lean` gives `(⇑(ab.mulByNat n) ⁻¹' {a}).Finite` for
-an abelian scheme over `Spec K`, `K` a field, whenever `(n : K) ≠ 0`.  It
-specialises to THIS base with no glue — `SpecQ` is `Spec (CommRingCat.of ℚ)`
-and `(n : ℚ) ≠ 0` is `exact_mod_cast hn` — compiler-checked 2026-07-28:
-
-    theorem scratch {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
-        (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0) (a : J) :
-        (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
-      finite_preimage_mulByNat_of_field_prime_to_char ℚ ab n
-        (by exact_mod_cast hn) a
-
-(the grep the retracted note prescribed returns only prose from that file
-because the lemma is not spelled "torsion" — which is exactly why a
-name-shaped refutation check is weaker than a statement-shaped one).
-
-**WHAT IS ACTUALLY LEFT** is a POINT-SET step, not isogeny theory: that
-`y ↦ (y.1 evaluated at the point of `Spec ℚᵃˡᵍ`)` is finite-to-one from
-the kernel into the finite set `[n]⁻¹{0}`.  A morphism `Spec ℚᵃˡᵍ ⟶ J` is
-a point `x` together with a `ℚ`-embedding `κ(x) ↪ ℚᵃˡᵍ`; such an embedding
-exists only when `κ(x)/ℚ` is algebraic, hence (as `J` is of finite type
-over `ℚ`, being proper) only at closed `x` with `κ(x)/ℚ` FINITE, and then
-there are at most `[κ(x) : ℚ]` of them.  So the fibres of that map are
-finite and its image lands in a finite set.  The missing API is the
-`Spec K`-points/residue-field-embedding dictionary, not the degree of
-`[n]`.  The check that would refute THIS note is to find a mathlib lemma
-computing `(Spec (CommRingCat.of K) ⟶ X)` as a sigma over points of `X` of
-`κ(x) →ₐ[R] K`. -/
+Stated for a general `n ≠ 0` rather than only at the prime `p` of the consumer
+because the proof is uniform in `n` and nothing is gained by narrowing. -/
 theorem finite_torsion_geomPt_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (n : ℕ) (hn : n ≠ 0) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
-    Finite {y : GeomFibrePt jstr (𝟙 SpecQ) // n • y = 0} :=
-  sorry
+    Finite {y : GeomFibrePt jstr (𝟙 SpecQ) // n • y = 0} := by
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  haveI : IsProper jstr := ab.proper
+  haveI hft : LocallyOfFiniteType jstr := inferInstance
+  set pt := IsLocalRing.closedPoint (AlgebraicClosure ℚ) with hptdef
+  set z₀ : J := (0 : GeomFibrePt jstr (𝟙 SpecQ)).1.base pt with hz0
+  have hfin : (⇑(ab.mulByNat n) ⁻¹' {z₀}).Finite :=
+    finite_preimage_mulByNat_of_field_prime_to_char ℚ ab n (by exact_mod_cast hn) z₀
+  have hmem : ∀ y : GeomFibrePt jstr (𝟙 SpecQ), n • y = 0 →
+      y.1.base pt ∈ (⇑(ab.mulByNat n) ⁻¹' {z₀}) := by
+    intro y hy
+    have h := ab.nsmul_val n y
+    rw [hy] at h
+    have h2 : z₀ = (ab.mulByNat n).base (y.1.base pt) := by
+      rw [hz0, h]
+      rfl
+    simpa [Set.mem_preimage] using h2.symm
+  have hsub : {y : GeomFibrePt jstr (𝟙 SpecQ) | n • y = 0} ⊆
+      ⋃ x ∈ (⇑(ab.mulByNat n) ⁻¹' {z₀}),
+        {y : GeomFibrePt jstr (𝟙 SpecQ) | y.1.base pt = x} := by
+    intro y hy
+    exact Set.mem_biUnion (hmem y hy) rfl
+  exact (Set.Finite.subset
+    (hfin.biUnion (fun x _ => finite_geomPt_over_point jstr hft x)) hsub).to_subtype
 
 /-- **The discriminant of a finite subextension of `ℚᵃˡᵍ / ℚ`**, as a plain
 integer: mathlib's `NumberField.discr`, read at the number-field instance
