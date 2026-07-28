@@ -18592,12 +18592,21 @@ end TransportAlongIso
 
 /-! #### `X_0(N)` IS its own Jacobian at genus `1`
 
-The two leaves below are what the group law on `X_0(N)` reduces to, split
-along the SAME seam as `Fermat.mono_ajHom_of_one_le_x0Genus`: one
-level-free statement about relative curves, and one bridge from the
-arithmetic function `x0Genus` to the geometry.  Neither of them mentions
-`Pic⁰`, and neither of them is Riemann–Roch in the form
-`mono_ajHom_of_hasNoFibreAffineLine` needs it. -/
+What the group law on `X_0(N)` reduces to is split below along the SAME
+seam as `Fermat.mono_ajHom_of_one_le_x0Genus`: one level-free statement
+about relative curves, and one bridge from the arithmetic function
+`x0Genus` to the geometry.  Neither of them mentions `Pic⁰`, and neither
+of them is Riemann–Roch in the form `mono_ajHom_of_hasNoFibreAffineLine`
+needs it.
+
+UPDATE 2026-07-28: the second of the two, the genus bridge
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one`, is now PROVEN by a
+further split along the MODULAR axis into
+`pos_of_isX0Compactification_of_nonempty`,
+`finrank_cuspForm_eq_one_of_x0Genus_eq_one` (the dimension formula
+`dim_ℂ S_2(Γ_0(N)) = genus X_0(N)`, mentioning no scheme) and
+`smoothOfRelativeDimension_finrank_cuspForm` (Eichler–Shimura,
+`dim J_0(N) = dim_ℂ S_2(Γ_0(N))`).  Still no genus of a scheme anywhere. -/
 
 /-- **A MONOMORPHISM BETWEEN TWO RELATIVE CURVES OVER THE SAME BASE IS AN
 ISOMORPHISM** (sorry leaf, 2026-07-27) — the level-free geometric half of
@@ -18657,9 +18666,162 @@ theorem isIso_of_mono_of_relCurve {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : 
     (u : X ⟶ J) (hu : u ≫ jstr = strX) (hmono : Mono u) : IsIso u :=
   sorry
 
-/-- **THE GENUS BRIDGE AT GENUS `1`: `dim J_0(N) = 1`** (sorry leaf,
-2026-07-27) — the arithmetic half of `isIso_ajHom_of_x0Genus_eq_one`, and
-the ONLY half that mentions `N`.  The exact analogue of
+/-- **`0 < N` for an `X_0(N)`-compactification over a NONEMPTY base**
+(sorry leaf, 2026-07-28) — the base-general form of
+`Fermat.pos_of_isX0Compactification`, and the bookkeeping half of
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one`.  It mentions neither
+`x0Genus`, nor a Jacobian, nor `ℚ`.
+
+**THIS IS NOT BOOKKEEPING, it repairs a real hole.**  `x0Genus 0 = 1` —
+checked by `decide`, and recorded on `Fermat.pos_of_isX0Compactification`
+— so the hypothesis `hg : x0Genus N = 1` of the node below does NOT by
+itself exclude `N = 0`, while `S_2(Γ_0(0)) = 0` (`Gamma0GL 0` is the
+group of real matrices with lower-left entry `0`, not a discrete
+subgroup).  Without this leaf the arithmetic half of that node would be
+FALSE at `N = 0`, not merely unproven.
+
+TRUE, and the argument is `Fermat.pos_of_isX0Compactification`'s verbatim
+with the base generalised.  `hmodel.connected` makes `strX` surjective
+(`GeometricallyConnected ⟹ Surjective`, an instance in `Mathlib`), so a
+nonempty base gives a nonempty `X`; `strX` is proper and smooth of
+relative dimension `1`, so `X` is infinite (a smooth curve over a field
+has infinitely many closed points), and `finite_compl` then makes `Y`
+nonempty.  A point of `Y` produces a `Gamma0Datum 0` through
+`hmodel.coarse`, i.e. an elliptic scheme with a `CyclicSubgroupOfOrder 0`
+subgroup scheme — and a group scheme cannot have order `0`, its
+geometric fibres containing the identity section.
+
+**`hS` IS LOAD-BEARING and the statement is FALSE without it**: over the
+EMPTY base `S = X = Y = ∅` every field of `IsX0Compactification 0` holds
+vacuously.  That is exactly why `Fermat.pos_of_isX0Compactification` is
+stated over `SpecQ` and this one carries a nonemptiness hypothesis
+instead.
+
+**THIS SUBSUMES `Fermat.pos_of_isX0Compactification`**, which is the
+`S = SpecQ` case (`SpecQ` is nonempty, being the spectrum of a nonzero
+ring); that leaf lives in `ModularCurve/X0.lean` and is left alone here
+rather than rewritten, but a prover who closes this one should close it
+there too, as a one-line corollary. -/
+theorem pos_of_isX0Compactification_of_nonempty {N : ℕ} {X Y S : Scheme.{0}}
+    {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY) (hS : Nonempty S) : 0 < N :=
+  sorry
+
+/-- **THE DIMENSION FORMULA AT GENUS `1`: `dim_ℂ S_2(Γ_0(N)) = 1`**
+(sorry leaf, 2026-07-28) — the ARITHMETIC half of
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one`, and it mentions no
+scheme whatsoever.  The exact analogue, one genus up, of
+`Fermat.exists_ne_zero_cuspForm_of_one_le_x0Genus`.
+
+TRUE and classical: `dim_ℂ S_2(Γ_0(N)) = genus X_0(N)` for `N ≥ 1`
+(Diamond–Shurman, Theorem 3.5.1; the isomorphism `S_2(Γ) ≅ H⁰(X_Γ, Ω¹)`
+sending `f` to `f(τ) dτ`), and `x0Genus N` is that genus by the formula
+its own docstring records (Diamond–Shurman, Theorem 3.1.1).
+
+**`hN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**
+`x0Genus 0 = 1` (by `decide`; see `pos_of_isX0Compactification_of_nonempty`
+above), while `Gamma0GL 0` is not a discrete subgroup and
+`S_2(Γ_0(0)) = 0`, so the conclusion would read `0 = 1`.  This is the
+same trap `Fermat.exists_ne_zero_cuspForm_of_one_le_x0Genus` records, and
+it is why that leaf carries `0 < N` too.
+
+**VERIFIED NUMERICALLY (PARI/GP, 2026-07-28)**: `mfdim([N,2],1)` over
+`1 ≤ N ≤ 60` reproduces the genus of `X_0(N)` at every level, and equals
+`1` at exactly `N = 11, 14, 15, 17, 19, 20, 21, 24, 27, 32, 36, 49` —
+which contains all four of `X0GenusOne.levels` and no level at which
+`x0Genus N ≠ 1`.  It also reproduces the eleven `x0Genus` values banked
+in `Fermat.one_le_x0Genus_of_kenkuLevel`.  (Untrusted searcher: the
+numbers are a sanity check on the STATEMENT, not a proof of it.)
+
+**WHY THIS IS A DIFFERENT ATTACK SURFACE FROM RIEMANN–ROCH**, which is
+the whole point of the cut, and it is the note
+`exists_ne_zero_cuspForm_of_one_le_x0Genus` already carries: the textbook
+proof of the dimension formula is Riemann–Roch on `X_0(N)`, but this
+statement is about a specific `N`, so at any single level it can be
+discharged by exhibiting a basis — at the four genus-`1` levels the
+single form is an eta quotient, `η(τ)²η(11τ)² ∈ S_2(Γ_0(11))`,
+`η(τ)η(2τ)η(17τ)η(34τ)`-type products at `17`, and
+`η(4τ)²η(8τ)² ∈ S_2(Γ_0(32))` — together with the Sturm bound
+(`Fermat.exists_cuspForm_sturm_bound`, and
+`GaloisRepresentation.Modularity.cuspForm_finiteDimensional`, both in
+`Modularity/Interface.lean`) to bound the dimension above.  That route
+needs no cohomology, no genus of a scheme and no Riemann–Roch.
+
+**Stated as an equality rather than as `≠ 0`** because the consumer needs
+the exact dimension: `1 ≤ dim` would only give `dim J_0(N) ≥ 1`, and the
+asymmetry `x0Genus_eq_one`'s docstring records — injectivity of
+Abel–Jacobi needs the bound, surjectivity needs the equality — is exactly
+the difference between this leaf and its `1 ≤` sibling in `X0.lean`. -/
+theorem finrank_cuspForm_eq_one_of_x0Genus_eq_one {N : ℕ} (hN : 0 < N)
+    (hg : x0Genus N = 1) :
+    Module.finrank ℂ
+      (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2) = 1 :=
+  sorry
+
+/-- **EICHLER–SHIMURA: `dim J_0(N) = dim_ℂ S_2(Γ_0(N))`** (sorry leaf,
+2026-07-28) — the GEOMETRIC half of
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one`, and the place the
+`Modularity` subtree is meant to be fed in.  It mentions neither
+`x0Genus` nor any genus of a scheme; `N` enters only through `hmodel` and
+through the level of the cusp-form space.
+
+TRUE and classical (Diamond–Shurman ch. 6, and §6.6 for the algebraic
+Jacobian; Shimura, *Introduction to the Arithmetic Theory of Automorphic
+Functions* ch. 7).  The Jacobian of a smooth proper geometrically
+connected curve is an abelian scheme whose relative dimension is the
+genus of the curve — `Lie(J) = H¹(X, 𝒪_X)` — and for `X = X_0(N)` that
+genus is `dim_ℂ S_2(Γ_0(N))` by `S_2(Γ) ≅ H⁰(X_Γ, Ω¹)` and Serre duality.
+Being an abelian scheme `jstr` is already smooth (`ab.smooth`), so the
+whole content of the conclusion is the DIMENSION.
+
+**THIS IS THE `dim J_0(N) = dim S_2(Γ_0(N))` STATEMENT, in the form the
+consumer needs it** — the axis the previous version of this node recorded
+as unsearched and preferred.  Nothing in it is specific to genus `1`: it
+is stated at every level, and it is the statement a `Modularity`-side
+prover should attack.
+
+**`hN` is not an extra strength**: at `N = 0` the hypotheses are
+contradictory over a nonempty base
+(`pos_of_isX0Compactification_of_nonempty`) and the conclusion is
+vacuous over an empty one, so the leaf would be true without it.  It is
+present so that a prover need not redo that case analysis, and because
+`dim_ℂ S_2(Γ_0(0)) = 0` makes the `N = 0` reading of the conclusion
+actively misleading.
+
+**`jac` IS LOAD-BEARING**: without it `jstr` is an arbitrary abelian
+scheme receiving nothing, and `J = S` (relative dimension `0`) satisfies
+every remaining hypothesis.  `hmodel` is load-bearing twice over — it
+supplies the curve conditions AND it is the only thing tying the level
+`N` to the geometry of `strX`.
+
+**NOT VACUOUS**: `SmoothOfRelativeDimension d jstr` is refutable — it
+fails for `J = Spec ℚ` over `Spec ℚ` at every `d ≠ 0` — so the conclusion
+really constrains the Jacobian.
+
+**WHAT THIS STILL NEEDS**, stated so it can be checked rather than
+believed: the comparison between the algebraic Jacobian pinned by
+`IsJacobianOf` and the analytic `H⁰(X, Ω¹)^∨/H_1(X, ℤ)`, or equivalently
+`Lie(J) ≅ H¹(X, 𝒪_X)` together with `S_2(Γ_0(N)) ≅ H⁰(X_0(N), Ω¹)`.
+`Fermat.IsX0EichlerShimura` (`ModularCurve/X0.lean`) is the neighbouring
+interface for the same circle of ideas — it reads Grothendieck–Lefschetz
+off in POINT COUNTS over `𝔽_ℓ` rather than in dimensions — and a prover
+should check whether that interface can be strengthened to carry this
+rather than opening a second cohomological seam. -/
+theorem smoothOfRelativeDimension_finrank_cuspForm {N : ℕ} (hN : 0 < N)
+    {X Y J S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX0Compactification N strX strY jY) {jstr : J ⟶ S}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
+    (jac : IsJacobianOf strX ab o) :
+    SmoothOfRelativeDimension
+      (Module.finrank ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)) jstr :=
+  sorry
+
+/-- **THE GENUS BRIDGE AT GENUS `1`: `dim J_0(N) = 1`** (PROVEN
+2026-07-28 by decomposition along the MODULAR axis, over the three leaves
+immediately above; formerly a sorry leaf audited as irreducible) — the
+arithmetic half of `isIso_ajHom_of_x0Genus_eq_one`, and the ONLY half
+that mentions `N`.  The exact analogue of
 `Fermat.hasNoFibreAffineLine_of_one_le_x0Genus`, one genus up.
 
 TRUE and classical: the Jacobian of a smooth proper geometrically
@@ -18686,31 +18848,60 @@ refutes that is `grep -rn "genus\|arithmeticGenus\|Riemann" Fermat/ |
 grep -v x0Genus`, whose only hits are prose), so a statement relating
 `x0Genus N` to the geometry must land in a predicate that DOES exist.
 `SmoothOfRelativeDimension 1` is mathlib's, and on an abelian scheme it
-says exactly "`J` is an elliptic curve over `S`".  **If the genus of a
-scheme is ever written, this leaf splits along the same seam as
-`hasNoFibreAffineLine_of_one_le_x0Genus`, into `genus (fibre of strX) =
-x0Genus N` and `dim Jac = genus`, and BOTH should be split at once.**
+says exactly "`J` is an elliptic curve over `S`".
 
 **NOT VACUOUS**: `SmoothOfRelativeDimension 1 jstr` is refutable — it
 fails for `J = Spec ℚ` over `Spec ℚ`, which is smooth of relative
 dimension `0` — so the conclusion really constrains the Jacobian, and this
 leaf really consumes `hg`.
 
-IRREDUCIBLE at this pin along the axis searched (the identification of
-`x0Genus N` with an invariant of the scheme `X`): that needs a genus,
-`h¹(𝒪_X)`, or Riemann–Roch, none of which exists in `Mathlib`, in
-`~/cs/FLT` or here.  **NOT searched, and the axis a successor should
-prefer: the MODULAR one** — `dim J_0(N) = dim S_2(Γ_0(N))` out of the
-`Modularity` subtree never mentions the genus of a scheme, and at these
-four levels `S_2(Γ_0(N))` is one-dimensional.  **The check that would
-refute this verdict**: a genus, an `h¹`, or a `dim S_2(Γ_0(N))` statement
-appearing in any of the three trees. -/
+**THE SPLIT (2026-07-28), and it took the axis this docstring's own
+irreducibility verdict named as unsearched.**  That verdict read: *"the
+identification of `x0Genus N` with an invariant of the scheme `X` needs a
+genus, `h¹(𝒪_X)`, or Riemann–Roch, none of which exists … NOT searched,
+and the axis a successor should prefer: the MODULAR one —
+`dim J_0(N) = dim S_2(Γ_0(N))`"*.  It is correct about the geometric
+axis and is now superseded, exactly as the same verdict on
+`Fermat.hasNonconstantAbelianMap_of_one_le_x0Genus` was superseded one
+genus down.  No genus of a scheme is defined, no `ℙ¹` is constructed and
+no Riemann–Roch is used; the chain is
+
+`x0Genus N = 1` ⟹ `dim_ℂ S_2(Γ_0(N)) = 1` ⟹ `dim J_0(N) = 1`.
+
+* `pos_of_isX0Compactification_of_nonempty` — `0 < N`.  NOT bookkeeping:
+  `x0Genus 0 = 1` by `decide`, so without it the arithmetic half is FALSE
+  at `N = 0`.  This is the base-general form of
+  `Fermat.pos_of_isX0Compactification`, which it subsumes.
+* `finrank_cuspForm_eq_one_of_x0Genus_eq_one` — the DIMENSION FORMULA
+  `dim_ℂ S_2(Γ_0(N)) = genus X_0(N)` at the value used
+  (Diamond–Shurman Thm 3.5.1).  It mentions no scheme at all, so it is
+  attackable from the modular-forms side alone, and at any single level
+  by exhibiting a basis.
+* `smoothOfRelativeDimension_finrank_cuspForm` — EICHLER–SHIMURA:
+  `dim J_0(N) = dim_ℂ S_2(Γ_0(N))`, at every level and over an arbitrary
+  base.  This is where the `Modularity` subtree feeds in.
+
+**Why the case split on `Nonempty S`, and why the emptiness case is not
+a fudge.**  Over an empty base every scheme in sight is empty and
+`SmoothOfRelativeDimension n` holds vacuously at every `n`, so the
+conclusion is true there for trivial reasons — but the ARITHMETIC leaf is
+not, since `IsX0Compactification 0` is satisfiable over `∅` while
+`dim S_2(Γ_0(0)) = 0`.  Putting the split here is what keeps
+`finrank_cuspForm_eq_one_of_x0Genus_eq_one` a true statement about
+`Gamma0GL N` alone; folding it into that leaf instead would have made it
+false.  This is the same empty-base hazard
+`Fermat.pos_of_isX0Compactification` records, met one level up. -/
 theorem smoothOfRelativeDimension_one_of_x0Genus_eq_one {N : ℕ} (hg : x0Genus N = 1)
     {X Y J S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX0Compactification N strX strY jY) {jstr : J ⟶ S}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 S)}
-    (jac : IsJacobianOf strX ab o) : SmoothOfRelativeDimension 1 jstr :=
-  sorry
+    (jac : IsJacobianOf strX ab o) : SmoothOfRelativeDimension 1 jstr := by
+  by_cases hS : Nonempty S
+  · have hN := pos_of_isX0Compactification_of_nonempty hmodel hS
+    have h := smoothOfRelativeDimension_finrank_cuspForm hN hmodel jac
+    rwa [finrank_cuspForm_eq_one_of_x0Genus_eq_one hN hg] at h
+  · rw [not_nonempty_iff] at hS
+    exact ⟨fun x => isEmptyElim (jstr.base x)⟩
 
 /-- **ABEL–JACOBI IS AN ISOMORPHISM AT GENUS `1`: `X_0(N) ≅ J_0(N)`**
 (PROVEN 2026-07-27 by decomposition, over an arbitrary base) — "the
