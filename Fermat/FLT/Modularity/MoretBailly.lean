@@ -9505,81 +9505,382 @@ theorem irreducible_of_irreducible_map_field {σ K L : Type*} [Field K] [Field L
   · exact Or.inl (hunit _ hu)
   · exact Or.inr (hunit _ hu)
 
-/-- **POONEN §3.2 STEPS (a)–(c) AT THE LEVEL OF FUNCTION FIELDS** (SORRY LEAF,
-cut 2026-07-28 out of
-`exists_birationalHypersurface_reduced_integralSystemModel_rat` immediately
-below, which is now PROVEN over this leaf together with the general
-commutative-algebra lemma
-`nonempty_ringEquiv_localizationAway_of_fractionRing_ringEquiv`).
+/-- **A RING EQUIVALENCE BETWEEN `ℚ`-ALGEBRAS IS AUTOMATICALLY `ℚ`-LINEAR**
+(PROVEN glue, 2026-07-28). A ring homomorphism out of `ℚ` is unique
+(`RingHom.ext_rat`, which needs only a `Semiring` target), so `ℚ`-linearity is
+never a hypothesis a caller has to supply. This is what lets
+`isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv` below take a
+bare `≃+*` between fraction fields and still base-change it along `ℚ → ℚ̄`,
+saving the caller an algebra-instance transport across `FractionRing`. -/
+def ratAlgEquivOfRingEquiv {A B : Type*} [CommRing A] [Algebra ℚ A] [CommRing B] [Algebra ℚ B]
+    (e : A ≃+* B) : A ≃ₐ[ℚ] B :=
+  { e with
+    commutes' := fun r =>
+      DFunLike.congr_fun
+        (RingHom.ext_rat (e.toRingHom.comp (algebraMap ℚ A)) (algebraMap ℚ B)) r }
 
-WHAT THE CUT REMOVED. The parent asks for a BIRATIONAL identification in the
-concrete form "isomorphic localisations at single elements". That form is not
-what Poonen's argument produces: the argument produces an isomorphism of
-FUNCTION FIELDS, and the passage from there to isomorphic localisations is a
-separate, entirely general fact about two finitely generated domains over a
-field (the sibling lemma below). Splitting them means neither half has to carry
-the other's bookkeeping: this leaf never mentions `Localization.Away`, and the
-sibling never mentions `MvPolynomial`, `ℚ̄` or irreducibility.
+open _root_.TensorProduct in
+/-- **GEOMETRIC INTEGRALITY OF THE REDUCED GENERIC FIBRE** — Poonen §3.2 step (b)
+(SORRY LEAF, cut 2026-07-28 out of
+`exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat` below, which
+is now PROVEN over this leaf and three siblings).
 
-WHAT REMAINS HERE. Exactly Poonen, *Rational Points on Varieties*, §3.2 steps
-(a)–(c):
+WHAT IT SAYS. `hQ` constrains only the TOPOLOGY of the `ℚ̄`-fibre: its spectrum is
+irreducible. This leaf is the algebraic consequence the Poonen argument actually
+consumes — that the reduced `ℚ`-fibre `S := (IntegralSystemModel f ℚ)_red` stays a
+DOMAIN after base change to `ℚ̄`, i.e. that `S` is GEOMETRICALLY integral over `ℚ`.
+In characteristic zero that is equivalent to `ℚ` being algebraically closed in
+`Frac S`, which is the form the primitive-element step needs.
 
-(a) `hQ` makes `S := (IntegralSystemModel f ℚ)_red` a domain (that half is
-    already PROVEN, as
-    `isPrime_radical_integralSystemIdeal_rat_of_algebraicClosure` immediately
-    above composed with `isPrime_nilradical_quotient_of_isPrime_radical`), and
-    geometrically integral over `ℚ`;
-(b) in characteristic zero geometric integrality of `S` is equivalent to `ℚ`
-    being algebraically closed in `Frac S`. Separability is automatic — this is
-    the only place char `0` is used;
-(c) Noether-normalise (`exists_integral_inj_algHom_of_fg` /
-    `exists_finite_inj_algHom_of_fg`,
-    `Mathlib/RingTheory/NoetherNormalization.lean`, `@[stacks 00OW]`, ROOT
-    namespace, PRESENT in the pin) to get a finite injection
-    `ℚ[t₁..t_d] ↪ S`, so `Frac S` is finite over `ℚ(t₁..t_d)` and, being
-    separable, has a primitive element: `Frac S ≅ ℚ(t)[y] ⧸ (h)`. Clear
-    denominators (`exists_integralMultiple`, PROVEN ~1600 lines above) and take
-    the primitive part to land `g` in `ℤ[t₁..t_d, y]`, i.e. `k = d + 1`;
-    `ℚ[t, y] ⧸ (g)` has the same fraction field as `ℚ(t)[y] ⧸ (h)` because
-    inverting the nonzero elements of `ℚ[t]` turns one into the other.
+TWO INDEPENDENT HALVES, and the first is the mathematical one.
 
-ABSOLUTE IRREDUCIBILITY of `g` is step (b) again: `Frac S ⊗_ℚ ℚ̄` is a FIELD, so
-`h` stays irreducible over `ℚ̄(t)`, and Gauss's lemma on the primitive `g` moves
-that back to `ℚ̄[t, y]`.
+(i) GEOMETRIC REDUCEDNESS. `S` is reduced by construction; over the PERFECT field
+`ℚ` a reduced algebra is geometrically reduced, i.e. `ℚ̄ ⊗ S` is reduced. mathlib
+carries the predicate (`Algebra.IsGeometricallyReduced`,
+`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`) together with
+`Algebra.isGeometricallyReduced_field_iff`, but **no** instance deriving it from
+`IsReduced` over a perfect field — that implication is the missing half, and
+`Mathlib/FieldTheory/SeparablyGenerated.lean` (where the char-`p` obstruction is
+developed, and which already contains
+`exists_isTranscendenceBasis_and_isSeparable_of_perfectField`) is the place to look
+for the pieces.
+
+(ii) BOOKKEEPING, all of it available. `Algebra.TensorProduct.tensorQuotientEquiv`
+(in the pin, already imported here) gives
+`ℚ̄ ⊗ (A ⧸ nil A) ≅ (ℚ̄ ⊗ A) ⧸ (nil A)ᵉ`, and this file's own PROVEN
+`integralSystemModelBaseChange` identifies `ℚ̄ ⊗ A` with
+`Ā := IntegralSystemModel f ℚ̄`. The extended ideal `(nil A)ᵉ` is contained in
+`nil Ā` always; (i) makes the quotient REDUCED, which forces the reverse
+inclusion, so the two ideals agree and `ℚ̄ ⊗ S ≅ Ā ⧸ nil Ā` — a DOMAIN, because
+`hQ` says `nil Ā` is prime (`isPrime_nilradical_quotient_of_isPrime_radical`,
+PROVEN above).
+
+FAITHFULNESS. Not vacuous, and strictly stronger than `IsDomain S`: `IsDomain`
+carries `Nontrivial`, so the zero ring does not discharge it, and being a domain
+after base change to `ℚ̄` is a genuine restriction. Take `f = (x² + 1)` in one
+variable: the `ℚ`-fibre is the FIELD `ℚ(i)`, a domain, while
+`ℚ̄ ⊗ ℚ(i) ≅ ℚ̄ × ℚ̄` is not — and correspondingly `hQ` fails, since `x² + 1`
+factors over `ℚ̄`. That is exactly why this leaf is the content of step (b) and not
+a restatement of `hQ`.
+
+CIRCULARITY GUARD: inherited from the consumer; pure commutative algebra, no
+Galois representation, no route through `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    IsDomain (AlgebraicClosure ℚ ⊗[ℚ]
+      (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ))) :=
+  sorry
+
+/-- **BIRATIONAL HYPERSURFACE NORMAL FORM FOR A FINITELY GENERATED DOMAIN OVER
+`ℚ`** — Poonen §3.2 step (c) (SORRY LEAF, cut 2026-07-28 out of
+`exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat` below).
+
+This is the mathematical core of the cut: every finitely generated domain over `ℚ`
+is birational to a HYPERSURFACE. Note there is NO geometric hypothesis — the
+statement is true for every finitely generated domain over `ℚ`; only the ABSOLUTE
+(i.e. `ℚ̄`-) irreducibility of `g` needs geometric integrality, and that is the
+separate, already PROVEN leaf
+`irreducible_map_algebraicClosure_of_isDomain_tensorProduct_span` below. Nothing
+about `IntegralSystemModel`, `ℤ`-coefficients or `ℚ̄` survives here; a commutative
+algebraist who has never opened this file can take it.
+
+ROUTE, with every ingredient checked to be in the pin.
+* `Frac S` is essentially of finite type over `ℚ` (`Algebra.EssFiniteType`).
+* `ℚ` is a `PerfectField` (`PerfectField.ofCharZero`), so
+  `exists_isTranscendenceBasis_and_isSeparable_of_perfectField`
+  (`Mathlib/FieldTheory/SeparablyGenerated.lean`, `@[stacks 030W]`) yields a FINITE
+  SEPARATING transcendence basis `s : Finset (Frac S)`: `Frac S` is separable
+  algebraic over `F := IntermediateField.adjoin ℚ s`. This is the only place
+  characteristic zero is used. (`exists_integral_inj_algHom_of_fg` — Noether
+  normalisation, `Mathlib/RingTheory/NoetherNormalization.lean`, `@[stacks 00OW]`,
+  ROOT namespace — is the alternative route to the same finiteness and is also
+  present.)
+* `Frac S` is finite over `F`, so `Field.exists_primitive_element` gives `θ` with
+  `F⟮θ⟯ = ⊤`, i.e. `Frac S ≅ F[y] ⧸ (h)` for `h = minpoly F θ`.
+* `F` is the fraction field of the UFD `MvPolynomial s ℚ`, so clearing denominators
+  and taking the primitive part gives `g₁ ∈ (MvPolynomial (Fin d) ℚ)[y]`
+  irreducible, by Gauss
+  (`Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map`).
+* `MvPolynomial.finSuccEquiv` identifies `(MvPolynomial (Fin d) ℚ)[y]` with
+  `MvPolynomial (Fin (d+1)) ℚ`, i.e. `k = d + 1`.
+* Finally `Frac (ℚ[t, y] ⧸ (g)) ≅ F[y] ⧸ (h)`: the right-hand side is already a
+  field and is the localisation of the left-hand ring at the nonzero elements of
+  `ℚ[t]`.
+
+FAITHFULNESS. Not vacuous, and the two conjuncts pull against each other: `g` must
+be irreducible AND cut out a ring with the same function field as `S`. `k = 0` is
+unavailable outright, since a field has no irreducible element; `S = ℚ` forces
+`k = 1` with `g` of degree one, and `S = ℚ[t]` forces `k = 2`. In general `k` is
+the transcendence degree of `Frac S` plus one, so no uniform junk answer exists.
+
+CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used. -/
+theorem exists_irreducible_hypersurface_fractionRing_ringEquiv_rat
+    (S : Type*) [CommRing S] [IsDomain S] [Algebra ℚ S] [Algebra.FiniteType ℚ S] :
+    ∃ (k : ℕ) (g : MvPolynomial (Fin k) ℚ), Irreducible g ∧
+      Nonempty (FractionRing S ≃+*
+        FractionRing (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g})) :=
+  sorry
+
+open _root_.TensorProduct in
+/-- **GEOMETRIC INTEGRALITY PASSES FROM A DOMAIN TO ITS FRACTION FIELD** (SORRY
+LEAF, cut 2026-07-28 out of
+`isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv` immediately
+below, which is PROVEN over it).
+
+WHY IT IS TRUE. `ℚ̄ ⊗ Frac A` is the LOCALISATION of `ℚ̄ ⊗ A` at the image of
+`A ∖ {0}`: `IsLocalization.tensor`
+(`Mathlib/RingTheory/Localization/BaseChange.lean`) states exactly this for
+`(ℚ̄ ⊗_ℚ A) ⊗_A Frac A`, and `Algebra.TensorProduct.cancelBaseChange` rewrites that
+as `ℚ̄ ⊗_ℚ Frac A`. The image of `A ∖ {0}` consists of non-zerodivisors of the
+domain `ℚ̄ ⊗ A` because `Algebra.TensorProduct.includeRight` is injective
+(`Algebra.TensorProduct.includeRight_injective`, used several times above), so
+`IsLocalization.isDomain_of_le_nonZeroDivisors` finishes.
+
+ONE PRACTICAL WARNING, verified 2026-07-28. The `Algebra A (ℚ̄ ⊗_ℚ A)` that
+`IsLocalization.tensor` needs is `Algebra.TensorProduct.rightAlgebra`, which mathlib
+declares as a LOCAL instance (to avoid diamonds) and which therefore has to be
+introduced explicitly — `letI`, or an `attribute [local instance]` scoped to a
+section. That is the whole reason this step is a leaf rather than three more lines
+in the proof below.
+
+WHY IT IS A SEPARATE LEAF. It is the ONLY non-formal step of the birational
+invariance lemma below: the other two steps — transporting along a ring
+equivalence of fraction fields, and descending from `Frac B` back to `B` by
+flatness of `ℚ̄` over `ℚ` — are PROVEN there.
+
+FAITHFULNESS. `IsDomain A` is what makes `FractionRing A` the function field rather
+than a total quotient ring, and cannot be dropped. Not vacuous: the conclusion
+carries `Nontrivial` and `NoZeroDivisors`, and the latter genuinely fails for
+`A = ℚ(i)` — whose hypothesis `IsDomain (ℚ̄ ⊗ ℚ(i))` also fails, since
+`ℚ̄ ⊗ ℚ(i) ≅ ℚ̄ × ℚ̄`. -/
+theorem isDomain_algebraicClosure_tensorProduct_fractionRing
+    {A : Type*} [CommRing A] [IsDomain A] [Algebra ℚ A]
+    (h : IsDomain (AlgebraicClosure ℚ ⊗[ℚ] A)) :
+    IsDomain (AlgebraicClosure ℚ ⊗[ℚ] FractionRing A) :=
+  sorry
+
+open _root_.TensorProduct in
+/-- **GEOMETRIC INTEGRALITY IS A BIRATIONAL INVARIANT** (**PROVEN 2026-07-28** over
+`isDomain_algebraicClosure_tensorProduct_fractionRing` immediately above).
+
+Two domains over `ℚ` with the same function field are geometrically integral
+together. The equivalence is only asked to be a RING equivalence: a ring
+homomorphism between `ℚ`-algebras is automatically `ℚ`-linear
+(`ratAlgEquivOfRingEquiv` above), so demanding `ℚ`-linearity would cost the caller
+an algebra-instance transport across `FractionRing` for nothing.
+
+WHAT THIS PROOF DISCHARGES, and it is exactly the formal half: the transport of
+`IsDomain (ℚ̄ ⊗ Frac A)` to `IsDomain (ℚ̄ ⊗ Frac B)` along `e`
+(`Algebra.TensorProduct.congr`), and the descent from `Frac B` back to `B`, which
+is flatness of `ℚ̄` over `ℚ` (`Module.Flat.lTensor_preserves_injective_linearMap`)
+applied to `IsFractionRing.injective`. Only the passage `A ↝ Frac A` is left open,
+one declaration up. -/
+theorem isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv
+    {A B : Type*} [CommRing A] [IsDomain A] [Algebra ℚ A]
+    [CommRing B] [IsDomain B] [Algebra ℚ B]
+    (e : FractionRing A ≃+* FractionRing B)
+    (h : IsDomain (AlgebraicClosure ℚ ⊗[ℚ] A)) :
+    IsDomain (AlgebraicClosure ℚ ⊗[ℚ] B) := by
+  have hB : IsDomain (AlgebraicClosure ℚ ⊗[ℚ] FractionRing B) :=
+    have := isDomain_algebraicClosure_tensorProduct_fractionRing h
+    MulEquiv.isDomain _
+      (Algebra.TensorProduct.congr (AlgEquiv.refl (R := ℚ) (A₁ := AlgebraicClosure ℚ))
+        (ratAlgEquivOfRingEquiv e)).symm.toRingEquiv.toMulEquiv
+  exact Function.Injective.isDomain
+    (Algebra.TensorProduct.map (AlgHom.id ℚ (AlgebraicClosure ℚ))
+      (IsScalarTower.toAlgHom ℚ B (FractionRing B)))
+    (Module.Flat.lTensor_preserves_injective_linearMap _
+      (IsFractionRing.injective B (FractionRing B)))
+
+open _root_.TensorProduct in
+/-- **ABSOLUTE IRREDUCIBILITY OF A HYPERSURFACE EQUATION FROM GEOMETRIC INTEGRALITY
+OF ITS COORDINATE RING** (**PROVEN 2026-07-28**).
+
+This is the second half of Poonen §3.2 step (b), in the only place it is actually
+needed: it converts "the hypersurface `ℚ[x₁..x_k] ⧸ (g)` stays a domain over `ℚ̄`"
+into "`g` is irreducible over `ℚ̄`", which is the conjunct the consumer below is
+required to produce.
+
+HOW. Base change commutes with both constructions:
+`ℚ̄ ⊗_ℚ (ℚ[x] ⧸ (g)) ≅ ℚ̄[x] ⧸ (gᵇ)` where `gᵇ = MvPolynomial.map (algebraMap ℚ ℚ̄) g`,
+via `Algebra.TensorProduct.tensorQuotientEquiv` composed with
+`MvPolynomial.algebraTensorAlgEquiv` (both in the pin, both already imported), the
+ideal comparison being one `Ideal.map_span`. So the hypothesis says
+`span {gᵇ}` is prime; `Ideal.span_singleton_prime` turns that into `Prime gᵇ`
+(`gᵇ ≠ 0` from `hg` and injectivity of `MvPolynomial.map` along a field extension),
+and `Prime.irreducible` finishes.
+
+FAITHFULNESS. `hg : g ≠ 0` cannot be dropped: for `g = 0` the ring is `ℚ̄[x]`, a
+domain, while `0` is not irreducible. The other degenerate case needs no
+hypothesis — a nonzero constant `g` makes the quotient the ZERO ring, which fails
+`IsDomain` on `Nontrivial`, so it is excluded by the hypothesis itself. -/
+theorem irreducible_map_algebraicClosure_of_isDomain_tensorProduct_span
+    {k : ℕ} {g : MvPolynomial (Fin k) ℚ} (hg : g ≠ 0)
+    (h : IsDomain (AlgebraicClosure ℚ ⊗[ℚ]
+      (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g}))) :
+    Irreducible (MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) g) := by
+  classical
+  have hne : MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) g ≠ 0 := fun h0 =>
+    hg (MvPolynomial.map_injective _ (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+      (by simpa using h0))
+  have hmapeq : Ideal.span {MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) g} =
+      Ideal.map
+        (MvPolynomial.algebraTensorAlgEquiv (σ := Fin k) ℚ (AlgebraicClosure ℚ)).toRingEquiv
+        ((Ideal.span {g}).map
+          (Algebra.TensorProduct.includeRight
+            (R := ℚ) (A := AlgebraicClosure ℚ) (B := MvPolynomial (Fin k) ℚ))) := by
+    rw [Ideal.map_span, Set.image_singleton, Ideal.map_span, Set.image_singleton]
+    congr 2
+    simp
+  have E := (Algebra.TensorProduct.tensorQuotientEquiv (R := ℚ) ℚ (MvPolynomial (Fin k) ℚ)
+      (AlgebraicClosure ℚ) (Ideal.span {g})).toRingEquiv.trans
+    (Ideal.quotientEquiv _ _
+      (MvPolynomial.algebraTensorAlgEquiv (σ := Fin k) ℚ (AlgebraicClosure ℚ)).toRingEquiv hmapeq)
+  haveI : IsDomain (MvPolynomial (Fin k) (AlgebraicClosure ℚ) ⧸
+      Ideal.span {MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) g}) :=
+    MulEquiv.isDomain _ E.symm.toMulEquiv
+  exact ((Ideal.span_singleton_prime hne).1
+    ((Ideal.Quotient.isDomain_iff_prime _).1 ‹_›)).irreducible
+
+open _root_.TensorProduct in
+/-- **POONEN §3.2 STEPS (a)–(c) AT THE LEVEL OF FUNCTION FIELDS** (**PROVEN
+2026-07-28** over the four declarations immediately above, into which its content
+was split; the statement is preserved VERBATIM from the cut of the same day, so
+`exists_birationalHypersurface_reduced_integralSystemModel_rat` below is
+untouched).
+
+WHAT THE ORIGINAL CUT REMOVED, and it is still true of the leaves above. The
+parent asks for a BIRATIONAL identification in the concrete form "isomorphic
+localisations at single elements". That form is not what Poonen's argument
+produces: the argument produces an isomorphism of FUNCTION FIELDS, and the passage
+from there to isomorphic localisations is a separate, entirely general fact about
+two finitely generated domains over a field
+(`nonempty_ringEquiv_localizationAway_of_fractionRing_ringEquiv`, the sibling
+below). So this statement never mentions `Localization.Away`, and that sibling
+never mentions `MvPolynomial`, `ℚ̄` or irreducibility.
+
+THE FOUR-WAY SPLIT, and what is left open. Poonen, *Rational Points on
+Varieties*, §3.2:
+
+(a) `hQ` makes `S := (IntegralSystemModel f ℚ)_red` a domain. **PROVEN** —
+    `isPrime_radical_integralSystemIdeal_rat_of_algebraicClosure` above composed
+    with `isPrime_nilradical_quotient_of_isPrime_radical`, and discharged in the
+    proof below together with the two `Algebra.FiniteType` instances.
+(b) geometric integrality: `ℚ̄ ⊗ S` is a domain. **OPEN**, as
+    `isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat`.
+    Transported from `S` to the hypersurface along the birational identification
+    by `isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv`
+    (**PROVEN**, over the one open sub-step
+    `isDomain_algebraicClosure_tensorProduct_fractionRing`), and turned into
+    `ℚ̄`-irreducibility of `g` by
+    `irreducible_map_algebraicClosure_of_isDomain_tensorProduct_span`
+    (**PROVEN**).
+(c) Noether-normalise, take a separating transcendence basis and a primitive
+    element, clear denominators: the birational hypersurface normal form.
+    **OPEN**, as `exists_irreducible_hypersurface_fractionRing_ringEquiv_rat`,
+    which is stated for an ARBITRARY finitely generated domain over `ℚ` — it
+    needs no geometric hypothesis at all.
+
+WHAT THE PROOF BELOW DISCHARGES ON ITS OWN, beyond assembling those: the descent
+of the coefficients from `ℚ` to `ℤ`. The leaves work with `g : MvPolynomial _ ℚ`,
+the consumer wants `g : MvPolynomial _ ℤ`; `exists_integralMultiple` (PROVEN
+~1800 lines above) supplies `g₀` over `ℤ` and `c ≠ 0` with
+`map (Int.castRingHom ℚ) g₀ = c • g`, and then `Ideal.span_singleton_mul_left_unit`
+makes the two ideals — hence the two quotient rings, hence the two fraction fields
+— literally equal, while `irreducible_isUnit_mul` moves `Irreducible` across the
+unit `C c` on the `ℚ̄` side.
 
 WHY `FractionRing` ON BOTH SIDES IS THE HONEST STATEMENT. `FractionRing R` is
-`Localization (nonZeroDivisors R)` and is defined for ANY commutative ring, so
-the statement needs no `IsDomain` instance to be written down; both rings are in
-fact domains, and the consumer below derives that (the right-hand one from
-`Irreducible` over `ℚ̄`, descended to `ℚ` by
-`irreducible_of_irreducible_map_field` above, then `Ideal.isPrime_span_singleton_of_prime`).
+`Localization (nonZeroDivisors R)` and is defined for ANY commutative ring, so the
+statement needs no `IsDomain` instance to be written down; both rings are in fact
+domains, and the proof below derives that (the right-hand one from `Irreducible`
+over `ℚ`, obtained from the `ℚ̄` statement by `irreducible_of_irreducible_map_field`
+above, then `Ideal.isPrime_span_singleton_of_prime`).
 
 FAITHFULNESS. Not vacuous: the two conjuncts pull against each other. A prover
 cannot take `g` absolutely irreducible but unrelated to `f` (the fraction fields
-would not match), and cannot take a `g` matching the fraction field but
-reducible over `ℚ̄` (that is exactly what geometric integrality forbids, and it
-is the whole content of step (b)). In particular the degenerate `k = 0` is
-unavailable whenever `S` has positive dimension, since `MvPolynomial (Fin 0) ℚ ⧸ (g)`
-has fraction field a finite extension of `ℚ`.
+would not match), and cannot take a `g` matching the fraction field but reducible
+over `ℚ̄` (that is exactly what geometric integrality forbids, and it is the whole
+content of step (b)). In particular the degenerate `k = 0` is unavailable, since
+`MvPolynomial (Fin 0) ℚ` is a field and has no irreducible element.
 
-ON `hsm`. Carried, and a prover who does not use it should underscore it: EGA IV
-9.7.7 does not need smoothness, and dropping it strengthens the leaf. It is
-offered because step (b) is cheaper under it — a smooth `ℚ`-algebra is reduced
-and geometrically reduced.
+ON `hsm`. **NOT USED, and underscored accordingly** — EGA IV 9.7.7 does not need
+smoothness, so the leaf is strictly stronger without it, and none of the four
+sub-leaves above carries it either. It was offered because step (b) is cheaper
+under it (a smooth `ℚ`-algebra is reduced and geometrically reduced); the split
+above makes step (b) a self-contained statement about a perfect base field
+instead, which is the more reusable form.
 
-CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no
-Galois representation, no route through `Family.lean`, `Lift.lean` or
+CIRCULARITY GUARD: inherited from the parent; pure commutative algebra, no Galois
+representation, no route through `Family.lean`, `Lift.lean` or
 `Modularity/Interface.lean`. -/
 theorem exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat
     {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
-    (hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
+    (_hsm : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
     (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
     ∃ (k : ℕ) (g : MvPolynomial (Fin k) ℤ),
       Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g) ∧
       Nonempty (FractionRing (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ)) ≃+*
         FractionRing (MvPolynomial (Fin k) ℚ ⧸
-          Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})) :=
-  sorry
+          Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})) := by
+  classical
+  -- STEP (a): the reduced `ℚ`-fibre is a finitely generated DOMAIN.
+  haveI hnp : (nilradical (IntegralSystemModel f ℚ)).IsPrime :=
+    isPrime_nilradical_quotient_of_isPrime_radical _
+      (isPrime_radical_integralSystemIdeal_rat_of_algebraicClosure f hQ)
+  haveI hdomS : IsDomain (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ)) :=
+    (Ideal.Quotient.isDomain_iff_prime _).2 hnp
+  haveI hftA : Algebra.FiniteType ℚ (IntegralSystemModel f ℚ) :=
+    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ ℚ (integralSystemIdeal f ℚ))
+      Ideal.Quotient.mk_surjective
+  haveI hftS : Algebra.FiniteType ℚ
+      (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ)) :=
+    Algebra.FiniteType.of_surjective
+      (Ideal.Quotient.mkₐ ℚ (nilradical (IntegralSystemModel f ℚ)))
+      Ideal.Quotient.mk_surjective
+  -- STEP (b), first half (SORRY LEAF): geometric integrality of that fibre.
+  have hbcS : IsDomain (AlgebraicClosure ℚ ⊗[ℚ]
+      (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ))) :=
+    isDomain_algebraicClosure_tensorProduct_reduced_integralSystemModel_rat f hQ
+  -- STEP (c) (SORRY LEAF): the birational hypersurface normal form over `ℚ`.
+  obtain ⟨k, g, hgirr, ⟨e⟩⟩ :=
+    exists_irreducible_hypersurface_fractionRing_ringEquiv_rat
+      (IntegralSystemModel f ℚ ⧸ nilradical (IntegralSystemModel f ℚ))
+  haveI hprG : (Ideal.span {g}).IsPrime :=
+    Ideal.isPrime_span_singleton_of_prime
+      (UniqueFactorizationMonoid.irreducible_iff_prime.mp hgirr)
+  haveI hdomG : IsDomain (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g}) :=
+    (Ideal.Quotient.isDomain_iff_prime _).2 hprG
+  -- STEP (b), second half (PROVEN above): geometric integrality is birational,
+  -- and on a hypersurface it IS absolute irreducibility.
+  have hbcG : IsDomain (AlgebraicClosure ℚ ⊗[ℚ]
+      (MvPolynomial (Fin k) ℚ ⧸ Ideal.span {g})) :=
+    isDomain_algebraicClosure_tensorProduct_of_fractionRing_ringEquiv e hbcS
+  have hgQbar : Irreducible (MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ)) g) :=
+    irreducible_map_algebraicClosure_of_isDomain_tensorProduct_span hgirr.ne_zero hbcG
+  -- Descend the coefficients of `g` from `ℚ` to `ℤ`; the ideal is unchanged,
+  -- because the two generators differ by the unit `C c`.
+  obtain ⟨g₀, c, hc0, hcg⟩ := exists_integralMultiple g
+  have hspan : Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g₀} =
+      Ideal.span ({g} : Set (MvPolynomial (Fin k) ℚ)) := by
+    rw [hcg, MvPolynomial.smul_eq_C_mul,
+      Ideal.span_singleton_mul_left_unit ((isUnit_iff_ne_zero.2 hc0).map MvPolynomial.C)]
+  refine ⟨k, g₀, ?_, ?_⟩
+  · have h1 : MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ =
+        MvPolynomial.map (algebraMap ℚ (AlgebraicClosure ℚ))
+          (MvPolynomial.map (Int.castRingHom ℚ) g₀) := by
+      rw [MvPolynomial.map_map, RingHom.ext_int
+        ((algebraMap ℚ (AlgebraicClosure ℚ)).comp (Int.castRingHom ℚ))
+        (Int.castRingHom (AlgebraicClosure ℚ))]
+    rw [h1, hcg, MvPolynomial.smul_eq_C_mul, _root_.map_mul, MvPolynomial.map_C,
+      irreducible_isUnit_mul
+        ((isUnit_iff_ne_zero.2 (by simpa using hc0)).map
+          (MvPolynomial.C (σ := Fin k) (R := AlgebraicClosure ℚ)))]
+    exact hgQbar
+  · rw [hspan]
+    exact ⟨e⟩
 
 /-! #### `A[1/a]` inside a fraction field
 
