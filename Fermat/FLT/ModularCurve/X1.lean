@@ -376,7 +376,7 @@ open in them has been split along the theories it needed:
 |---|---|---|
 | `exists_gamma1Rigidification` | Katz-Mazur (8.1.1): the rigidified moduli scheme, its deck group and its level torsor.  (`exists_gamma1GITPresentation` is PROVEN over it, 2026-07-27, together with `nonempty_gamma1GITPresentation_of_rigidification`; and so are `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`, over the three ring-level rows here.) | any `K`, `char K ∤ N` |
 | `geometricComponents_of_gamma1GITPresentation` | Katz-Mazur 8.1.1 + Deligne-Rapoport IV.5.5: `Spec A` nonempty, reduced, components permuted transitively by `G` | any `K`, `char K ∤ N` |
-| `locallyStandardSmooth_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2 | any `K`, `char K ∤ N` |
+| `smooth_coarseRing_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is a smooth `K`-algebra of Krull dimension one.  (`locallyStandardSmooth_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28, together with the release's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.) | any `K`, `char K ∤ N` |
 | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
 | `nonempty_relPoint_atlas_of_relPoint` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` / Lang, on the atlas map `M ⟶ Y` | `𝔽_ℓ` |
@@ -442,7 +442,7 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `exists_gamma0Datum_baseChange` (PROVEN) | `exists_gamma1Datum_baseChange` (PROVEN) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
 | `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (leaf); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
-| `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
+| `smoothOfRelativeDimension_of_gamma0GITPresentation` (PROVEN over `isRegularRing_coarseRing_of_gamma0GITPresentation`) | `smooth_coarseRing_of_gamma1GITPresentation` (leaf); `locallyStandardSmooth_of_` and `smoothOfRelativeDimension_of_gamma1GITPresentation` are both PROVEN over it.  The `Γ₀` row goes through the PERFECT-field bridge and this one cannot — see the leaf's docstring |
 | `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `connectedSpace_tensorProduct_of_gamma1GITPresentation` (leaf); `geometricallyConnected_of_gamma1GITPresentation` is PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
@@ -1417,7 +1417,7 @@ geometric statements is equivalent to a statement about the `K`-algebra
 | scheme statement (PROVEN) | the ring-level leaf it rests on | the bridge |
 |---|---|---|
 | `isDomain_of_gamma1GITPresentation` | `geometricComponents_of_gamma1GITPresentation` | `Scheme.ΓSpecIso` + `isDomain_of_minimalPrimes_transitive` |
-| `smoothOfRelativeDimension_of_gamma1GITPresentation` | `locallyStandardSmooth_of_gamma1GITPresentation` | `HasRingHomProperty.Spec_iff` |
+| `smoothOfRelativeDimension_of_gamma1GITPresentation` | `smooth_coarseRing_of_gamma1GITPresentation` (2026-07-28; `locallyStandardSmooth_of_gamma1GITPresentation` sits between them and is PROVEN) | `HasRingHomProperty.Spec_iff` + `smoothOfRelativeDimension_specMap_algebraMap_of_smooth` |
 | `geometricallyConnected_of_gamma1GITPresentation` | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | `geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms` + `pullbackSpecIso` |
 
 So a prover sent at any of the three open leaves below works in
@@ -1606,75 +1606,161 @@ theorem isDomain_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N) {K : Type} [F
   exact MulEquiv.isDomain P.B
     (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
 
-/-- **`B` is locally standard smooth of relative dimension `1` over `K`**
-(sorry leaf, cut 2026-07-27 out of
-`smoothOfRelativeDimension_of_gamma1GITPresentation`) — Deligne–Rapoport
-III.1, Katz–Mazur 8.2, in the ring-level form that the pin can actually
-express.
+/-- **The coarse ring `B = A^G` is a SMOOTH `K`-algebra of Krull dimension
+one** (sorry leaf, opened 2026-07-28 as the whole modular content of
+`locallyStandardSmooth_of_gamma1GITPresentation`, which is now a theorem
+over it) — Deligne–Rapoport III.1, Katz–Mazur 8.2.1.
+
+This is the `Γ₁` analogue of `X0.lean`'s
+`isRegularRing_coarseRing_of_gamma0GITPresentation`, with the ONE
+difference that the whole `Γ₁` layer turns on: that statement concludes
+`IsRegularRing B` and is consumed through a bridge carrying
+`[PerfectField K]`, and here `K` is arbitrary, so the conclusion has to
+be smoothness itself.
 
 TRUE and classical, and one of the two genuinely modular geometric
-inputs.  `[Γ₁(N)]` is a smooth Deligne–Mumford stack of relative
-dimension one over `ℤ[1/N]` (Katz–Mazur 8.2.1 proves that
+inputs of this file.  `[Γ₁(N)]` is a smooth Deligne–Mumford stack of
+relative dimension one over `ℤ[1/N]` (Katz–Mazur 8.2.1 proves that
 `ℤ[1/N]`-smoothness directly, and it specialises to every field in which
 `N` is invertible); for `N ≥ 4` it is moreover representable, so the
 coarse space is the fine one and smoothness is immediate from 8.2.1.
 At the level of the GIT presentation the same argument reads: `A` is a
 smooth `K`-algebra of relative dimension one, and for `N ≥ 4` the action
-of `G` on `Spec A` is free, so `Spec (A^G)` is smooth as well.
+of `G` on `Spec A` is free, so `Spec A → Spec B` is a finite étale
+`G`-torsor and `Spec (A^G)` is smooth as well.
 
-**Note the `N ≥ 4` hypothesis is doing real work here and is not merely
-inherited.**  At `N ≤ 3` the moduli problem is not rigid, the quotient
-acquires elliptic points, and the coarse space — while still a smooth
-curve over a field of characteristic `0` — is not the quotient of a
-free action, so this route to smoothness is unavailable.  Only `N = 25`
-is used.
+`Algebra.Smooth` unfolds to `FormallySmooth` plus `FinitePresentation`,
+so the finite-type half of the classical statement ("Noether's theorem on
+invariants") is inside it; over the Noetherian base `K` finite type and
+finite presentation coincide.
 
-## Why the leaf is stated here and not one step up
+## THE ROUTE FROM `A`, AND EXACTLY WHAT IS MISSING FOR IT
 
-This is the SECOND of the two routes that
-`smoothOfRelativeDimension_of_gamma0GITPresentation`'s docstring names,
-now taken: `HasRingHomProperty.Spec_iff` for the instance
-`HasRingHomProperty (@SmoothOfRelativeDimension n)
-(Locally (IsStandardSmoothOfRelativeDimension n))` turns the scheme
-statement into exactly this ring statement, and nothing about that step
-is modular.  So a prover here works purely in commutative algebra over
-`K`, with no schemes in sight.
+A prover who wants to push this one step further down, onto the
+rigidified ring `A` where Katz–Mazur actually applies, needs three
+things, of which two already exist:
 
-The FIRST route — "regular + finite type over a perfect field ⟹ smooth"
-— is still not PROVEN anywhere, but as of the same release it is at
-least STATED, as
-`AlgebraicGeometry.smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`
-(`SmoothConnectedCriteria.lean`, itself a sorry leaf).  The pin check
-behind it is unchanged and was re-run at this commit:
-`grep -rn "SmoothOfRelativeDimension" .lake/packages/mathlib/Mathlib/`
-returns one file, `AlgebraicGeometry/Morphisms/Smooth.lean`, with
-nothing dimension-theoretic in it, and `Mathlib/RingTheory/Smooth/`
-carries `smooth_iff_locally_isStandardSmooth` only WITHOUT the relative
-dimension.
+1. *`Algebra.FiniteType K B` from `Algebra.FiniteType K A`* — PROVEN, as
+   `Algebra.IsInvariant.finiteType_of_isInvariant`
+   (`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`).  It needs
+   only `Finite G` and `P.injective_algebraMap`, no domain hypothesis.
+2. *`ringKrullDim B = ringKrullDim A`* — the pieces are
+   `dimensionLEOne_of_isInvariant` and `ringKrullDim_eq_one_of_isInvariant`
+   in the same file, but **both carry `[IsDomain S]`, i.e. `IsDomain A`,
+   which is FALSE here** — see the docstring of
+   `geometricComponents_of_gamma1GITPresentation`: as soon as `ζ_n ∈ K`
+   the scheme `𝔐([Γ₁(N)], [Γ(n)])` has `φ(n)` components.  The domain
+   hypothesis is used in exactly one place, the appeal to
+   `Ideal.exists_ideal_over_prime_of_isIntegral_of_isDomain`, and
+   `Ideal.exists_ideal_over_prime_of_isIntegral`
+   (`Mathlib/RingTheory/Ideal/GoingUp.lean`) is the general going-up
+   statement that replaces it, its side condition `ker ⊆ p` being free
+   from `P.injective_algebraMap`.  *The check that would refute this*:
+   read the proof of `dimensionLEOne_of_isInvariant` and find a second
+   use of `IsDomain S`.
+3. *Descent of smoothness along the `G`-torsor `Spec A → Spec B`* — this
+   is the genuinely missing one.  It is Stacks `02VL` ("if `X → Y` is
+   surjective, flat and locally of finite presentation and `X → S` is
+   smooth, then `Y → S` is smooth"), and mathlib's descent at this pin
+   goes the other way: `Algebra.Smooth.of_smooth_tensorProduct_of_faithfullyFlat`
+   and `RingHom.Smooth.codescendsAlong_faithfullyFlat`
+   (`Mathlib/RingTheory/Etale/Descent.lean`) descend along a faithfully
+   flat extension of the BASE, not along a cover of the target.  *The
+   check that would refute this*: a lemma in
+   `Mathlib/RingTheory/Smooth/` or `Mathlib/AlgebraicGeometry/Morphisms/`
+   concluding `Smooth R B` from `Smooth R A` and flatness of `B → A`.
 
-**That route cannot close THIS leaf as stated, and the reason is worth
-recording** (2026-07-27): the regular-ring bridge carries
-`[PerfectField K]`, which is load-bearing there — over an imperfect
-field of characteristic `p` the curve `y^p = t·x^p + t` is regular and
-not smooth — while this leaf, and every statement above it up to
-`exists_isCoarseModuliY1_isSmoothCurve`, quantifies over an ARBITRARY
-`K` with `char K ∤ N`.  Adding `[PerfectField K]` here would be a
-restatement reaching several declarations with other owners.
+Until item 3 exists, cutting this leaf onto `A` would trade one modular
+leaf for one modular leaf plus a missing descent theorem, which is why it
+is stated about `B`.
 
-And it would be the wrong repair anyway: the statement IS true over an
-imperfect `K`, because `Y_1(N)` over `K` is the base change of `Y_1(N)`
-over the prime field and `SmoothOfRelativeDimension` is stable under
-base change (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`).  So the
-route that fits this leaf is Katz–Mazur 8.2.1 directly — `ℤ[1/N]`-smoothness
-of the moduli problem, then base change — not regularity plus
-perfectness.  The perfect-field bridge is the right tool for the `Γ₀`
-sibling (base `ℚ`) and for `CurveCompactification.lean`, not for here. -/
-theorem locallyStandardSmooth_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+## FAITHFULNESS
+
+`hchar` is load-bearing: at `char K ∣ N` the moduli problem is not smooth
+over `K` and `[Γ₁(N)]` degenerates.  `hN` is inherited rather than
+strictly needed for the CONCLUSION — a coarse space of a tame quotient is
+still a smooth curve — but it is what makes the free-action route above
+available, and it is required by every consumer, so it is kept.
+
+`ringKrullDim B = 1` needs `Spec B` NONEMPTY, which is the same input as
+`Nontrivial P.A` in `geometricComponents_of_gamma1GITPresentation`: at
+`N = 0`, or at `char K ∣ N`, `B` would be the zero ring and its Krull
+dimension `⊥ ≠ 1`.  So the two leaves of this block agree about when the
+moduli space exists, and neither is vacuous.
+
+**No `[PerfectField K]` appears, and adding it would be the WRONG repair**
+(recorded 2026-07-27, re-affirmed here).  The regular-ring bridge
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` carries
+that hypothesis and it is load-bearing THERE — see the quasi-elliptic
+counterexample `y² = x³ + t` over `𝔽₃(t)` in its docstring — but this
+statement is TRUE over an imperfect `K`, because `Y_1(N)` over `K` is a
+base change of `Y_1(N)` over the prime field and both `Algebra.Smooth`
+and `ringKrullDim` of a geometrically integral curve survive it.  The
+perfect-field bridge is the right tool for the `Γ₀` sibling (base `ℚ`)
+and for `CurveCompactification.lean`, not for here. -/
+theorem smooth_coarseRing_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
     letI := P.commRing_B; letI := P.algebraB;
-    RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1) (algebraMap K P.B) :=
+    Algebra.Smooth K P.B ∧ ringKrullDim P.B = (1 : ℕ) :=
   sorry
+
+/-- **`B` is locally standard smooth of relative dimension `1` over `K`**
+(**PROVEN 2026-07-28** over `smooth_coarseRing_of_gamma1GITPresentation`,
+`isDomain_invariants_of_gamma1GITPresentation` and the release's shared
+bridge `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`; opened
+as a sorry leaf 2026-07-27) — Deligne–Rapoport III.1, Katz–Mazur 8.2, in
+the ring-level form that the pin can actually express.
+
+## The route, and why it is NOT the regular-ring one
+
+`AlgebraicGeometry.smoothOfRelativeDimension_specMap_algebraMap_of_smooth`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/SmoothConnectedCriteria.lean`) is
+the release's shared statement "the relative dimension of a smooth
+affine variety is its Krull dimension", for a finite-type DOMAIN over an
+ARBITRARY field:
+
+    [Field K] [IsDomain B] [Algebra.Smooth K B] → ringKrullDim B = n →
+      SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B)))
+
+It carries **no `PerfectField` and no `IsRegularRing`** — those were both
+consumed one level up, into
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`, when
+that leaf was closed over Stacks `056S` on 2026-07-28.  That is exactly
+what makes it usable here where `K` is arbitrary, and it is the reason
+this declaration is a theorem rather than a leaf.
+
+`HasRingHomProperty.Spec_iff` for the instance
+`HasRingHomProperty (@SmoothOfRelativeDimension n)
+(Locally (IsStandardSmoothOfRelativeDimension n))` converts the scheme
+conclusion back into the ring statement asked for here; `IsDomain B`
+comes from `isDomain_invariants_of_gamma1GITPresentation`, so the only
+thing left to supply is `Algebra.Smooth K B` together with
+`ringKrullDim B = 1`, which is the single leaf immediately above.
+
+**The regular-ring bridge cannot be used here and must not be reached
+for** (2026-07-27, and it is worth keeping the record): it carries
+`[PerfectField K]`, load-bearing there, while this statement and
+everything above it up to `exists_isCoarseModuliY1_isSmoothCurve`
+quantifies over an ARBITRARY `K` with `char K ∤ N`.  Adding
+`[PerfectField K]` would be a restatement reaching several declarations
+with other owners, and it would be wrong anyway, since the statement IS
+true over an imperfect `K` — `Y_1(N)` over `K` is a base change from the
+prime field and `SmoothOfRelativeDimension` is stable under base change
+(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean`). -/
+theorem locallyStandardSmooth_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_B; letI := P.algebraB;
+    RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 1) (algebraMap K P.B) := by
+  letI := P.commRing_B
+  letI := P.algebraB
+  obtain ⟨hsm, hdim⟩ := smooth_coarseRing_of_gamma1GITPresentation hN hchar P
+  haveI := hsm
+  haveI : IsDomain P.B := isDomain_invariants_of_gamma1GITPresentation hN hchar P
+  have h := smoothOfRelativeDimension_specMap_algebraMap_of_smooth K P.B 1 hdim
+  rw [HasRingHomProperty.Spec_iff (P := @SmoothOfRelativeDimension 1)] at h
+  exact h
 
 /-- **The coarse space is smooth of relative dimension `1` over `K`**
 (PROVEN 2026-07-27 over `locallyStandardSmooth_of_gamma1GITPresentation`;
@@ -1895,7 +1981,9 @@ and, as of 2026-07-27, the GIT axis: the `Γ₁` analogue of
 searched" note is DISCHARGED, and what remains open below this node is
 the four leaves `exists_gamma1GITPresentation`,
 `geometricComponents_of_gamma1GITPresentation`,
-`locallyStandardSmooth_of_gamma1GITPresentation` and
+`smooth_coarseRing_of_gamma1GITPresentation` (2026-07-28: the ring-level
+statement that `locallyStandardSmooth_of_gamma1GITPresentation` now rests
+on) and
 `connectedSpace_tensorProduct_of_gamma1GITPresentation` — a
 representability statement plus three properties of one curve, in place
 of one statement asserting a curve with five properties exists.
