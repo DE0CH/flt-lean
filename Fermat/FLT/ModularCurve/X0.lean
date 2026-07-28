@@ -21033,7 +21033,12 @@ The three leaves are
   generalisation of the `ℚ`-statement the file already has
   (`exists_weierstrassCurve_of_abelianSchemeStruct`, PROVEN by citation to
   `EllipticScheme.lean`), and it is what makes the `j`-invariant of a `ℚ̄`-datum
-  *available* at all;
+  *available* at all.  **PROVEN 2026-07-28**, by doing exactly what its
+  docstring prescribed: generalising the base of `EllipticScheme.lean`'s
+  reverse bridge (`exists_weierstrassModel_of_ellipticScheme` and its three
+  Riemann–Roch leaves) from `ℚ` to an arbitrary field, rather than opening a
+  second copy of Riemann–Roch here.  So this bullet is now a PROVEN node and
+  only the two below are leaves;
 * `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` — **the only place `hmem` does
   any work**, and the reason it is a hypothesis of this node: at `j ∈ {0, 1728}`
   the curve has CM by `ℤ[i]` or `ℤ[ζ₃]`, and a `Γ₀(p)`-structure with field of
@@ -21076,41 +21081,69 @@ and the complement of the zero section is the affine Weierstrass curve
 `Spec ℚ̄[W]`.  Smoothness makes `Δ` a unit, whence `W.IsElliptic`.
 
 **This is a BASE GENERALISATION, not a new theory, and that is the whole
-reason it is cut off here.**  The identical statement over `ℚ` is
+reason it was cut off here.**  The identical statement over `ℚ` is
 `exists_weierstrassCurve_of_abelianSchemeStruct` (PROVEN, by citation to
 `EllipticScheme.lean`'s `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`),
 and `exists_weierstrassModel_gamma0Datum` (PROVEN) produces the
-`IsWeierstrassModel` conjunct over `ℚ` in exactly this form.  Both are written
+`IsWeierstrassModel` conjunct over `ℚ` in exactly this form.  Both were written
 against `Spec (CommRingCat.of ℚ)` only; nothing in either argument uses anything
-about `ℚ` beyond its being a field, so the honest route for a successor is to
+about `ℚ` beyond its being a field, so the honest route was to
 generalise the base of that development rather than to open a second copy of
-Riemann–Roch here.  The three Riemann–Roch leaves it rests on are
+Riemann–Roch here.  **That is what was done** (2026-07-28), and this node is
+now PROVEN by a two-line citation.
+
+**HOW IT WAS CLOSED, and where the mathematics still is.**  The base of
+`EllipticScheme.lean`'s reverse bridge — `exists_weierstrassModel_of_`
+`ellipticScheme` and its three Riemann–Roch leaves
 `exists_affineComplement_zeroSection`,
 `exists_weierstrassRingEquiv_of_affineComplement` and
-`isElliptic_of_isOpenImmersion_coordinateRing`, all in `EllipticScheme.lean`.
+`isElliptic_of_isOpenImmersion_coordinateRing` — was generalised from
+`Spec (CommRingCat.of ℚ)` to `Spec (CommRingCat.of K)` for an arbitrary
+`[Field K]`.  **This node therefore added NO new leaf and closed NO old
+one**: the three Riemann–Roch leaves are exactly as open as they were, now
+over a general base, and the `ℚ`-instantiation of every consumer is
+unchanged.  What the generalisation cost is one conjunct that used to be
+free: over `ℚ` the structure-morphism clause `ι ≫ f = Spec.map (algebraMap
+ℚ _)` is a *theorem* (`hom_ext_spec_rat`, because `ℚ` is initial in
+`CommRing`), and no other field is initial — so leaf 1 now produces its ring
+as a `K`-algebra with `ι` over `Spec K`, leaf 2 produces a `≃ₐ[K]` in place
+of a bare `≃+*`, and leaf 3 takes the compatibility as a hypothesis.  See
+that file's assembly docstring for the full account.
 
-**The check that would refute "open"**: any statement of `IsWeierstrassModel`, or
-of `EllipticScheme.lean`'s reverse bridge, over a base other than
-`Spec (CommRingCat.of ℚ)`.  RUN 2026-07-28 — `IsWeierstrassModel` itself is
+**The check that would refute "open"** (recorded when this was a leaf): any
+statement of `IsWeierstrassModel`, or of `EllipticScheme.lean`'s reverse
+bridge, over a base other than `Spec (CommRingCat.of ℚ)`.  RUN 2026-07-28 —
+`IsWeierstrassModel` itself is
 stated over an arbitrary `[CommRing R]`, but every *producer* of it
 (`exists_weierstrassModel_gamma0Datum`, `exists_weierstrassModel_localization`,
-`exists_ellipticScheme_isWeierstrassModel_of_projModel`) is over `ℚ`, over `SpecQ`
-or is itself a leaf.  So the conjunct is expressible here and unproduced here.
+`exists_ellipticScheme_isWeierstrassModel_of_projModel`) was over `ℚ`, over
+`SpecQ` or is itself a leaf.  So the conjunct was expressible here and
+unproduced here — and the repair was to make one of those producers
+base-generic, which is the check refuting itself.
 
 **NOT VACUOUS.**  `IsWeierstrassModel` demands an open immersion whose range is
 *exactly* the complement of the zero section, so it is not satisfiable by a junk
 `W`; and `weierstrassModel_j_unique` records that two models of one elliptic
-scheme have equal `j`, which is what makes the `j` this leaf exposes well
+scheme have equal `j`, which is what makes the `j` this node exposes well
 defined and hence what makes the two leaves below faithful.
 
 `N` is unconstrained: at `N = 0` the hypothesis `d` is already contradictory
 (`isEmpty_of_gamma0Datum_zero` empties `Spec ℚ̄`, which is nonempty), so the
-statement is vacuously true there and no `hN` is carried. -/
+statement is vacuously true there and no `hN` is carried — and the proof
+below does not need to case on it, since `exists_weierstrassModel_of_`
+`ellipticScheme` consumes only `d.ab` and `d.relativeDimensionOne`. -/
 theorem exists_weierstrassModel_gamma0Datum_algClos {N : ℕ}
     (d : Gamma0Datum N (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
     ∃ (W : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : W.IsElliptic),
-      IsWeierstrassModel d.ab W :=
-  sorry
+      IsWeierstrassModel d.ab W := by
+  -- `exists_weierstrassModel_of_ellipticScheme` returns `IsWeierstrassModel`
+  -- with `weierstrassAffine` and `weierstrassAffineStr` unfolded — those are
+  -- definitions, not structures, so `exact` closes the goal with no transport
+  -- lemma.  This is the same spelling `exists_weierstrassModel_gamma0Datum`
+  -- consumes over `ℚ`.
+  obtain ⟨W, hW, hmodel⟩ :=
+    exists_weierstrassModel_of_ellipticScheme d.ab d.relativeDimensionOne
+  exact ⟨W, hW, hmodel⟩
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` with field of moduli `ℚ` and `p ∉
 mazurIsogenyPrimes` has `j ∉ {0, 1728}`** (sorry leaf, opened 2026-07-28) —
