@@ -33,6 +33,11 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
 public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 public import Fermat.FLT.GaloisRepresentation.MinkowskiUnramified
 public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- The PROVEN topology-free evaluation of a multivariate power series at a tuple
+-- drawn from an ideal of an adically complete ring (`MvPowerSeries.adicEval`,
+-- `adicEvalOfMem`), plus `MvPowerSeries.pderiv`, consumed by the decomposition of
+-- `exists_fontaineCoordinates`.
+public import Fermat.FLT.Mathlib.RingTheory.MvPowerSeries.AdicEval
 public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 public import Fermat.FLT.EllipticCurve.TorsionReduction
 public import Fermat.FLT.EllipticCurve.KernelPolynomial
@@ -8573,10 +8578,433 @@ theorem factorₐ_pow_comp_factorₐ_pow {R : Type*} [CommRing R] {A : Type*}
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **FONTAINE'S PRESENTATION IN COORDINATES** (sorry node, created
-2026-07-27 as the SHARED core of the two halves of Fontaine's inductive
-step below; it is steps 1–4 of his argument, and step 5 — the linear
-algebra that both halves run — is now PROVEN, twice, from this statement).
+/-- **`𝔪_E`-ADIC COMPLETENESS OF THE LOCAL INTEGRAL CLOSURE** (PROVEN
+2026-07-27; the completeness input of `exists_algHom_of_forall_exists_algHom_quotient`
+below).  `𝒪_E` is `𝔪_E`-adically complete for every finite subextension
+`E/ℚ₃ᵥ` of `ℚ₃ᵥᵃˡᵍ`.
+
+RELOCATED 2026-07-28, unchanged, from below
+`exists_algHom_quotient_maximalIdeal_pow_succ` to above
+`exists_fontaineCoordinates`.  The decomposition of that leaf evaluates power
+series at tuples drawn from `𝔪_E` through `MvPowerSeries.adicEvalOfMem`, which
+carries `IsAdicComplete` as a typeclass argument *in the statements* of the new
+sub-leaves; Lean's declaration order therefore forces this theorem above them.
+
+WHY THIS IS NOT AN INSTANCE ALREADY, and what the proof has to do.  What
+mathlib and this development supply is completeness for the ideal coming
+from the BASE: `𝒪₃ᵥ` is `𝔪₃ᵥ`-adically complete (`ConnectedEtale`), and
+`IsPrecomplete.of_finite_module` propagates precompleteness to the finite
+`𝒪₃ᵥ`-module `𝒪_E`, which `IsPrecomplete.map_algebraMap_iff` re-reads as
+precompleteness for the EXTENDED ideal `K := 𝔪₃ᵥ·𝒪_E`.  That is not
+`𝔪_E`: in the ramified case `K = 𝔪_E^d` with `d = e(E/ℚ₃ᵥ) > 1`, so the
+two filtrations are merely COFINAL, not equal.  The bridge is the
+reindexing `k ↦ d·k`: a `𝔪_E`-Cauchy sequence `f` gives a `K`-Cauchy
+sequence `k ↦ f (d·k)` because `𝔪_E^(d·k) = K^k`, and the limit `L` it
+produces satisfies `f n ≡ L mod 𝔪_E^n` for every `n` because
+`n ≤ d·n` (this is where `0 < d` is consumed, and it is the ONLY place).
+That `K` is a power of `𝔪_E` at all is the discrete valuation ring
+structure of `𝒪_E`: `K ≠ ⊥` because `algebraMap 𝒪₃ᵥ 𝒪_E` is injective and
+`𝔪₃ᵥ ≠ ⊥`, and `d ≠ 0` because `K ≤ 𝔪_E ≠ ⊤` (the map is local, being
+integral and injective).  Hausdorffness is free — it is the mathlib
+instance for a Noetherian local ring. -/
+theorem isAdicComplete_maximalIdeal_integralClosure
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E] :
+    IsAdicComplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E) := by
+  classical
+  haveI hMF : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) :=
+    IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ E (IntegralClosure 𝒪₃ᵥ E)
+  haveI hprecJ : IsPrecomplete (IsLocalRing.maximalIdeal 𝒪₃ᵥ) (IntegralClosure 𝒪₃ᵥ E) :=
+    IsPrecomplete.of_finite_module _
+  haveI hprecK : IsPrecomplete
+      ((IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)))
+      (IntegralClosure 𝒪₃ᵥ E) := IsPrecomplete.map_algebraMap_iff.mpr hprecJ
+  -- membership in `I • ⊤` is membership in `I`
+  have hmem : ∀ (I : Ideal (IntegralClosure 𝒪₃ᵥ E)) (x : IntegralClosure 𝒪₃ᵥ E),
+      x ∈ (I • ⊤ : Submodule (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ E)) ↔ x ∈ I := by
+    intro I x
+    simp
+  -- the extended ideal is a power of the maximal ideal
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪₃ᵥ E)
+  have hmspan : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) = Ideal.span {ϖ} :=
+    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+  have hKle : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ≤
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro x hx
+    simp only [Ideal.mem_comap]
+    exact (IsLocalRing.mem_maximalIdeal _).mpr fun hu =>
+      (IsLocalRing.mem_maximalIdeal _).mp hx
+        (isUnit_of_map_unit (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) x hu)
+  have hKne : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ≠ ⊥ := by
+    obtain ⟨a, ha, ha0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot
+      (IsDiscreteValuationRing.not_a_field 𝒪₃ᵥ)
+    intro hbot
+    have hmap0 : algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) a = 0 := by
+      have := Ideal.mem_map_of_mem (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ha
+      rwa [hbot, Ideal.mem_bot] at this
+    exact ha0 (FaithfulSMul.algebraMap_injective 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)
+      (by rw [hmap0, map_zero]))
+  obtain ⟨d, hd⟩ := IsDiscreteValuationRing.ideal_eq_span_pow_irreducible hKne hϖ
+  have hKpow : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ d := by
+    rw [hd, hmspan, Ideal.span_singleton_pow]
+  have hd0 : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with rfl | hpos
+    · exfalso
+      rw [hKpow, pow_zero, Ideal.one_eq_top] at hKle
+      exact (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪₃ᵥ E)).ne_top
+        (top_le_iff.mp hKle)
+    · exact hpos
+  haveI hprec : IsPrecomplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E) := by
+    constructor
+    intro f hf
+    have hf' : ∀ {m n : ℕ}, m ≤ n →
+        f m - f n ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ m := by
+      intro m n hmn
+      exact (hmem _ _).mp (SModEq.sub_mem.mp (hf hmn))
+    have hg : ∀ {k l : ℕ}, k ≤ l → f (d * k) ≡ f (d * l)
+        [SMOD (((IsLocalRing.maximalIdeal 𝒪₃ᵥ).map
+          (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E))) ^ k •
+          (⊤ : Submodule (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ E)))] := by
+      intro k l hkl
+      refine SModEq.sub_mem.mpr ((hmem _ _).mpr ?_)
+      rw [hKpow, ← pow_mul]
+      exact hf' (Nat.mul_le_mul_left d hkl)
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec hprecK hg
+    refine ⟨L, fun n => ?_⟩
+    refine SModEq.sub_mem.mpr ((hmem _ _).mpr ?_)
+    have h1 : f n - f (d * n) ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n :=
+      hf' (Nat.le_mul_of_pos_left n hd0)
+    have h2 : f (d * n) - L ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n := by
+      have hmemK := (hmem _ _).mp (SModEq.sub_mem.mp (hL n))
+      rw [hKpow, ← pow_mul] at hmemK
+      exact Ideal.pow_le_pow_right (Nat.le_mul_of_pos_left n hd0) hmemK
+    have hsum := Ideal.add_mem _ h1 h2
+    simpa using hsum
+  exact ⟨⟩
+/-- **A FONTAINE PRESENTATION OF A FONTAINE ALGEBRA** (created 2026-07-28 as the
+carrier of the decomposition of `exists_fontaineCoordinates` below).
+
+`exists_fontaineCoordinates` asserts the existence of coordinates `x`, an
+equation function `F` and a normalised Jacobian `p` satisfying five clauses.
+Those five clauses are about ONE tuple of data, so they cannot be split into
+independent leaves without first naming the data — and naming it in the
+coordinate language is not enough, because clauses 1–3 and 5 do NOT pin `F` and
+`p` tightly enough to imply clause 4.  (Explicitly: if `η : 𝔪^h → 𝔪` is an
+arbitrary function then `F' := F·(1 + η)` satisfies clauses 1–3 verbatim, since
+`1 + η w` is a unit, while `F'(w + μ) − F'(w)` acquires the term
+`F w ·(η(w+μ) − η w)`, which is not controlled by anything.  So "given `F` with
+clauses 1–3, produce `p` with clauses 4–5" would be a FALSE leaf.)
+
+What does pin the data is Fontaine's presentation itself, and that is what this
+structure records: `h` coordinates `x₁,…,x_h` of the local factor `A ⧸ J` that
+the residue map `ū` picks out, a surjection `α : 𝒪₃ᵥ[[X₁,…,X_h]] ↠ A ⧸ J`
+sending `Xᵢ ↦ xᵢ` whose kernel is generated by `h` equations `P₁,…,P_h`, and the
+normalised Jacobian `Q` with `∂Pᵢ/∂X_j = 3·Q_ij`, invertible at the presentation
+point.  `F` and `p` are then not data at all: they are the substitutions
+`w ↦ (Pᵢ(w))ᵢ` and `w ↦ (Q_ij(w))_ij`, taken through
+`MvPowerSeries.adicEvalOfMem`, and each of the five clauses becomes a separate
+statement ABOUT a presentation.
+
+The fields are Fontaine's steps 1–3 (pp. 521–522), in order:
+* `map_eq_zero`, `residue_eq_zero` — step 1, the reduction to a LOCAL algebra:
+  `ū` factors through `A ⧸ J`, and the coordinates lie in its maximal ideal.
+* `surjective`, `map_X`, `ker_eq` — step 2, the presentation, with `h` equations
+  in `h` variables (this is where `IsFontaineAlgebra`'s complete-intersection
+  half is spent).
+* `pderiv_eq`, `isUnit_det` — step 3, the Jacobian is `3` times an invertible
+  matrix (this is where `hΩ` and `IsFontaineAlgebra`'s flatness half are spent).
+
+Step 4 — the Taylor expansion — is NOT a field: it is a theorem about a
+presentation, `taylor_of_isFontainePresentation` below, because it is the only
+part that needs the threshold `e < 2t` and the only part that needs any
+power-series analysis. -/
+structure IsFontainePresentation (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A]
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E]
+    (ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1))
+    (h : ℕ) (x : Fin h → A) (J : Ideal A)
+    (P : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ)
+    (Q : Fin h → Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ)
+    (α : MvPowerSeries (Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] A ⧸ J) : Prop where
+  /-- The residue map `ū` kills `J`, i.e. it factors through the local factor
+  `A ⧸ J` that the presentation describes. -/
+  map_eq_zero : ∀ a ∈ J, ū a = 0
+  /-- The power series ring surjects onto that local factor. -/
+  surjective : Function.Surjective α
+  /-- The variables go to the chosen coordinates. -/
+  map_X : ∀ i, α (MvPowerSeries.X i) = Ideal.Quotient.mk J (x i)
+  /-- `h` equations in `h` variables: the kernel is generated by the `Pᵢ`. -/
+  ker_eq : RingHom.ker α = Ideal.span (Set.range P)
+  /-- The coordinates lie in the maximal ideal of the local factor. -/
+  residue_eq_zero : ∀ i, ū (x i) = 0
+  /-- The Jacobian of the presentation is `3` times `Q`. -/
+  pderiv_eq : ∀ i j, MvPowerSeries.pderiv j (P i) = 3 * Q i j
+  /-- `Q` is invertible at the presentation point. -/
+  isUnit_det : IsUnit (Matrix.of fun i j => α (Q i j)).det
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S PRESENTATION EXISTS** (sorry leaf, created 2026-07-28 as the
+first of the six leaves of the decomposition of `exists_fontaineCoordinates`
+below; it is Fontaine's steps 1–3, pp. 521–522).
+
+Everything Fontaine's inductive step needs about the ALGEBRA `A` is spent here,
+and nowhere else: `hΩ` and both halves of `hfon` are consumed by this leaf, and
+by no other leaf of the decomposition.  See `IsFontainePresentation` above for
+what the three steps contribute field by field.
+
+WHAT REMAINS TO BE BUILT for this leaf, from the transcription in
+`exists_algHom_quotient_maximalIdeal_pow_succ` below:
+* step 1 — reduction to `A` LOCAL with residue field `𝔽₃`, and freeness of
+  `Ω[A⁄𝒪₃ᵥ]` over `A/3A` on the `dx_i`.  The idempotent cutting out `J` is the
+  one `ū` selects; `ConnectedEtale`'s counit-idempotent package is the nearest
+  existing machinery.
+* step 2 — the surjection `α` and, from the complete-intersection half of
+  `hfon`, `ker α = (P₁,…,P_h)` with `h` equations in `h` variables.  This is the
+  one genuinely missing piece of commutative algebra: the pin has no
+  "`h`-equations-in-`h`-variables presentation of a finite complete
+  intersection".
+* step 3 — `(∂P_i/∂X_j)(x) ∈ 3A` and invertibility of `(p_ij)`, which is where
+  `hΩ` and the flatness half of `hfon` are used.  In the formal statement the
+  first half is `pderiv_eq` and the second is `isUnit_det`. -/
+theorem exists_fontainePresentation
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
+    (hfon : IsFontaineAlgebra A)
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E]
+    (ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1)) :
+    ∃ (h : ℕ) (x : Fin h → A) (J : Ideal A)
+      (P : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ)
+      (Q : Fin h → Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ)
+      (α : MvPowerSeries (Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] A ⧸ J),
+      IsFontainePresentation A E ū h x J P Q α := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **CLAUSE 1, SEPARATION** (sorry leaf, created 2026-07-28): two
+`𝒪₃ᵥ`-algebra maps `A → 𝒪_E/𝔪^k` with the same residue map `ū` and the same
+values on the coordinates are EQUAL.
+
+Two moves, both of them consequences of `IsFontainePresentation` alone:
+* each `vᵢ` factors through `A ⧸ J`, because `1 − ε` (the idempotent cutting out
+  `J`) maps to an idempotent of the LOCAL ring `𝒪_E/𝔪^k` whose residue is `0` by
+  `map_eq_zero`, hence to `0`;
+* the induced maps on `A ⧸ J` agree, because `α` is surjective (`surjective`)
+  and they agree on the images of the variables (`map_X` plus the hypothesis
+  `hx`), which topologically generate.
+
+The residue-level normalisation `ū` is LOAD-BEARING here and must not be
+"simplified away": `A` is only semilocal, so without it the clause is FALSE —
+take `A = 𝒪₃ᵥ × 𝒪₃ᵥ`, `h = 0` and the two projections. -/
+theorem separation_of_isFontainePresentation
+    {A : Type} [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    {E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ} [FiniteDimensional ℚ₃ᵥ E]
+    {ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1)}
+    {h : ℕ} {x : Fin h → A} {J : Ideal A}
+    {P : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {Q : Fin h → Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {α : MvPowerSeries (Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] A ⧸ J}
+    (hpres : IsFontainePresentation A E ū h x J P Q α)
+    (k : ℕ) (hk : 1 ≤ k)
+    (v₁ v₂ : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k))
+    (hv₁ : (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+      (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v₁ = ū)
+    (hv₂ : (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+      (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v₂ = ū)
+    (hx : ∀ i, v₁ (x i) = v₂ (x i)) :
+    v₁ = v₂ := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **CLAUSE 2, SOLUTIONS ARE POINTS** (sorry leaf, created 2026-07-28): a tuple
+`w ∈ 𝔪^h` with `P(w) ≡ 0 mod 𝔪^k` comes from an `𝒪₃ᵥ`-algebra map
+`A → 𝒪_E/𝔪^k` over `ū` sending `xᵢ ↦ wᵢ`.
+
+This is the universal property of `𝒪₃ᵥ[[X]]/(P)` at a topologically nilpotent
+tuple, and with `MvPowerSeries.adicEvalOfMem` in hand it is short: substitution
+at `w` is an `𝒪₃ᵥ`-algebra map `𝒪₃ᵥ[[X]] → 𝒪_E`, its reduction mod `𝔪^k` kills
+every `Pᵢ` by hypothesis, hence kills `ker α = (P₁,…,P_h)` by `ker_eq`, hence
+factors through `A ⧸ J` by `surjective`; compose with `A ↠ A ⧸ J`. -/
+theorem exists_algHom_of_isFontainePresentation
+    {A : Type} [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    {E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ} [FiniteDimensional ℚ₃ᵥ E]
+    [IsAdicComplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E)]
+    {ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1)}
+    {h : ℕ} {x : Fin h → A} {J : Ideal A}
+    {P : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {Q : Fin h → Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {α : MvPowerSeries (Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] A ⧸ J}
+    (hpres : IsFontainePresentation A E ū h x J P Q α)
+    (k : ℕ) (hk : 1 ≤ k) (w : Fin h → IntegralClosure 𝒪₃ᵥ E)
+    (hw : ∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+    (hF : ∀ i, MvPowerSeries.adicEvalOfMem
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (P i) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) :
+    ∃ v : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k),
+      (∀ i, v (x i) = Ideal.Quotient.mk
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) (w i)) ∧
+      (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+        (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v = ū := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **CLAUSE 3, POINTS ARE SOLUTIONS** (sorry leaf, created 2026-07-28): the
+coordinates of a map over `ū` lie in `𝔪` and solve `P ≡ 0 mod 𝔪^k`.
+
+The converse of `exists_algHom_of_isFontainePresentation`, and the easier
+direction: `wᵢ ∈ 𝔪` because `residue_eq_zero` says `ū (xᵢ) = 0`, and
+`Pᵢ(w) ≡ 0` because substitution at `w` composed to `𝒪_E/𝔪^k` agrees with
+`v ∘ α` (both are `𝒪₃ᵥ`-algebra maps out of `𝒪₃ᵥ[[X]]` sending `Xᵢ` to the same
+element), while `α (Pᵢ) = 0` by `ker_eq`. -/
+theorem mem_of_algHom_of_isFontainePresentation
+    {A : Type} [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    {E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ} [FiniteDimensional ℚ₃ᵥ E]
+    [IsAdicComplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E)]
+    {ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1)}
+    {h : ℕ} {x : Fin h → A} {J : Ideal A}
+    {P : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {Q : Fin h → Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {α : MvPowerSeries (Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] A ⧸ J}
+    (hpres : IsFontainePresentation A E ū h x J P Q α)
+    (k : ℕ) (hk : 1 ≤ k)
+    (v : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k))
+    (w : Fin h → IntegralClosure 𝒪₃ᵥ E)
+    (hv : (Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+      (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) hk)).comp v = ū)
+    (hvw : ∀ i, v (x i) = Ideal.Quotient.mk
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) (w i)) :
+    (∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) ∧
+      (∀ i, MvPowerSeries.adicEvalOfMem
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (P i) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **CLAUSE 4, THE TAYLOR ESTIMATE** (sorry leaf, created 2026-07-28; Fontaine's
+step 4, pp. 521–522): for `w ∈ 𝔪^h` and a perturbation `μ ∈ (𝔪^t)^h`,
+`P(w + μ) ≡ P w + 3·Q(w) *ᵥ μ  (mod 𝔪^(n+1))`.
+
+This is the ONLY leaf of the decomposition that consumes the threshold
+`ht : e < 2t`, the ONLY one that needs any power-series analysis, and the ONLY
+one that needs `he`.  It needs NEITHER `hΩ` nor `IsFontaineAlgebra`: everything
+about the algebra has already been spent in `exists_fontainePresentation`.
+
+It packages BOTH of Fontaine's estimates: the quadratic-and-higher remainder
+lies in `𝔪^(n+1)` (his `R ∈ 3·I^[n+1]`), and the linear coefficient
+`(∂P_i/∂X_j)(w)` is `3·Q_ij(w)` up to `𝔪^n` (his `≡ 3·P_ij(u) mod 3I^[n]`,
+absorbed here because `𝔪^n · 𝔪^t ⊆ 𝔪^(n+1)`).
+
+ROUTE, and it needs NO divided powers — see the ROUTE CORRECTION in
+`exists_algHom_quotient_maximalIdeal_pow_succ`'s docstring below.  Write the
+expansion with Hasse derivatives, `P(w+μ) = Σ_r (∂^[r]P)(w)·μ^r`, an identity of
+formal power series requiring no division, and bound each `|r| ≥ 2` term against
+`3·𝔪^(t+1) = 𝔪^(e+t+1)` using only `r!·∂^[r]P = ∂^r P`.  If `v₃(r!) = 0` the
+coefficient is in `𝔪^e` and `μ^r ∈ 𝔪^(2t) ⊆ 𝔪^(t+1)`; if `v₃(r!) ≥ 1` then
+`3 ∣ r!` forces `|r| ≥ 3`, so `μ^r ∈ 𝔪^(3t) ⊆ 𝔪^(t+e+1)` by `ht`, and no
+information about the coefficient beyond integrality is used.  So the only
+arithmetic input replacing the divided-power estimate is `3 ∣ n! → 3 ≤ n`.
+
+MACHINERY: `MvPowerSeries.subst` for the substitution `X ↦ w + μ`, plus a
+Hasse-derivative API for `MvPowerSeries` (the pin has one only for univariate
+`Polynomial`, `Mathlib/Algebra/Polynomial/HasseDeriv.lean`).  The evaluation
+itself is `MvPowerSeries.adicEvalOfMem`, already built.  The integrality of the
+iterated derivatives — `(∂^r P_i)(w) ∈ 3𝒪_E` — comes from `pderiv_eq` plus the
+Leibniz rule: for `f·Pᵢ ∈ ker α`, `∂(f·Pᵢ)/∂X_j = (∂f/∂X_j)·Pᵢ + f·3·Q_ij`
+again lies in `3·𝒪₃ᵥ[[X]] + ker α`, so induction on `|r|` goes through. -/
+theorem taylor_of_isFontainePresentation
+    {A : Type} [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    {E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ} [FiniteDimensional ℚ₃ᵥ E]
+    [IsAdicComplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E)]
+    {ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1)}
+    {h : ℕ} {x : Fin h → A} {J : Ideal A}
+    {P : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {Q : Fin h → Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {α : MvPowerSeries (Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] A ⧸ J}
+    (hpres : IsFontainePresentation A E ū h x J P Q α)
+    (e t n : ℕ)
+    (he : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e)
+    (ht : e < 2 * t) (htn : t + e = n)
+    (w μ : Fin h → IntegralClosure 𝒪₃ᵥ E)
+    (hw : ∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+    (hμ : ∀ i, μ i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ t)
+    (i : Fin h) :
+    MvPowerSeries.adicEvalOfMem
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) (w + μ) (P i) -
+      MvPowerSeries.adicEvalOfMem
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (P i) -
+      3 * ((Matrix.of fun a b => MvPowerSeries.adicEvalOfMem
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (Q a b)).mulVec μ) i ∈
+    IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (n + 1) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **CLAUSE 5, INVERTIBILITY OF THE NORMALISED JACOBIAN** (sorry leaf, created
+2026-07-28): `Q(w)` is invertible over `𝒪_E` for every `w ∈ 𝔪^h`.
+
+Short, given the presentation: a matrix over the LOCAL ring `𝒪_E` is invertible
+iff its determinant is a unit iff its reduction mod `𝔪` is invertible; and
+`w ∈ 𝔪^h` forces `Q(w) ≡ Q(0) mod 𝔪`, whose image in the residue field is the
+image of `α (Q_ij)` under the residue map that `map_eq_zero`/`residue_eq_zero`
+identify with `ū`.  So the clause is `isUnit_det` transported along a ring
+homomorphism, which preserves units. -/
+theorem isUnit_det_of_isFontainePresentation
+    {A : Type} [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    {E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ} [FiniteDimensional ℚ₃ᵥ E]
+    [IsAdicComplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+      (IntegralClosure 𝒪₃ᵥ E)]
+    {ū : A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ 1)}
+    {h : ℕ} {x : Fin h → A} {J : Ideal A}
+    {P : Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {Q : Fin h → Fin h → MvPowerSeries (Fin h) 𝒪₃ᵥ}
+    {α : MvPowerSeries (Fin h) 𝒪₃ᵥ →ₐ[𝒪₃ᵥ] A ⧸ J}
+    (hpres : IsFontainePresentation A E ū h x J P Q α)
+    (w : Fin h → IntegralClosure 𝒪₃ᵥ E)
+    (hw : ∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) :
+    IsUnit (Matrix.of fun a b => MvPowerSeries.adicEvalOfMem
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (Q a b)).det := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S PRESENTATION IN COORDINATES** (PROVEN 2026-07-28 by
+decomposition; created 2026-07-27 as the SHARED core of the two halves of
+Fontaine's inductive step below; it is steps 1–4 of his argument, and step 5 —
+the linear algebra that both halves run — is PROVEN, twice, from this
+statement).
 
 READ `exists_algHom_quotient_maximalIdeal_pow_succ` below first: its
 docstring carries the FALSITY AUDIT that refuted the `∃!` this cut
@@ -8628,23 +9056,45 @@ two solutions and invert `p w` again — for the RIGIDITY half.  In
 particular the two halves genuinely share this one leaf, which is what the
 decomposition was for.
 
-WHAT REMAINS TO BE BUILT (unchanged from the transcription below, minus
-step 5):
-* step 1 — reduction to `A` LOCAL with residue field `𝔽₃`, and freeness of
-  `Ω[A⁄𝒪₃ᵥ]` over `A/3A` on the `dx_i`;
-* step 2 — the surjection `α : 𝒪₃ᵥ[[X₁,…,X_h]] ↠ A` and, from the
-  complete-intersection half of `hfon`, `ker α = (P₁,…,P_h)` with `h`
-  equations in `h` variables.  Clauses 1–3 are then the universal property
-  of `𝒪₃ᵥ[[X]]/(P)` evaluated at topologically nilpotent tuples, for which
-  `Mathlib/RingTheory/MvPowerSeries/{Substitution,Evaluation}.lean` is the
-  relevant API;
-* step 3 — `(∂P_i/∂X_j)(x) ∈ 3A` and invertibility of `(p_ij)`, which is
-  where `hΩ` and the flatness half of `hfon` are used;
-* step 4 — the Hasse-form Taylor expansion
-  `P(u + μ) = Σ_r (∂^[r]P)(u)·μ^r`, needing `MvPowerSeries.subst` plus a
-  Hasse-derivative API for `MvPowerSeries` (the pin has one only for
-  univariate `Polynomial`).  NOTE that no divided-power structure on `𝒪_E`
-  is required — see the ROUTE CORRECTION in the docstring below. -/
+DECOMPOSED 2026-07-28, and this leaf is now PROVEN.  Fontaine's steps 1–3
+are `exists_fontainePresentation` above, whose conclusion is the structure
+`IsFontainePresentation`; the five clauses are the five leaves
+`separation_of_isFontainePresentation`,
+`exists_algHom_of_isFontainePresentation`,
+`mem_of_algHom_of_isFontainePresentation`, `taylor_of_isFontainePresentation`
+and `isUnit_det_of_isFontainePresentation`, each stated ABOUT a presentation.
+`F` and `p` are no longer data: they are the substitutions `w ↦ (Pᵢ(w))ᵢ` and
+`w ↦ (Q_ij(w))_ij` taken through `MvPowerSeries.adicEvalOfMem`, and the proof
+below is nothing but that plumbing.
+
+WHY THE DATA HAD TO BE NAMED FIRST, i.e. why the obvious cut "produce `F` with
+clauses 1–3, then produce `p` with clauses 4–5" is NOT available: clauses 1–3
+and 5 do not pin `F` and `p` tightly enough to imply clause 4.  For any
+function `η : 𝔪^h → 𝔪`, `F' := F·(1 + η)` satisfies clauses 1–3 verbatim
+(`1 + η w` is a unit, so `F' w ∈ 𝔪^k ↔ F w ∈ 𝔪^k`), while
+`F'(w + μ) − F'(w)` picks up `F w ·(η(w+μ) − η w)`, which no clause controls
+and which need not lie in `𝔪^(n+1)`.  Clause 5 constrains `p` not at all —
+ANY matrix function with unit determinant satisfies it.  So the cut has to run
+through the presentation, which is what `IsFontainePresentation` is for.
+
+WHERE THE HYPOTHESES ARE SPENT after the decomposition, which is the useful
+part of the bookkeeping: `hΩ` and BOTH halves of `hfon` are consumed by
+`exists_fontainePresentation` and by nothing else; `he`, `ht` and `htn` are
+consumed by `taylor_of_isFontainePresentation` and by nothing else.  The
+remaining four clause leaves need only the presentation.
+
+MACHINERY BUILT FOR THIS (2026-07-28,
+`Fermat/FLT/Mathlib/RingTheory/MvPowerSeries/AdicEval.lean`, PROVEN):
+`MvPowerSeries.adicEval`, the substitution of a tuple from an ideal `I` of an
+`I`-adically complete ring into a multivariate power series, together with its
+total form `MvPowerSeries.adicEvalOfMem` and the estimate
+`MvPowerSeries.adicEval_mem_pow`; and `MvPowerSeries.pderiv`, the formal
+partial derivative, which the pin lacks.  The evaluation uses NO topology — it
+is `MvPowerSeries.truncTotalAlgHom` followed by `MvPolynomial.aeval`, assembled
+by `IsAdicComplete.liftAlgHom` — which is what makes it usable at
+`IntegralClosure 𝒪₃ᵥ E`, a ring this development knows to be adically complete
+(`isAdicComplete_maximalIdeal_integralClosure`, relocated above this leaf for
+exactly that reason) but carries no `UniformSpace` on. -/
 theorem exists_fontaineCoordinates
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -8694,7 +9144,20 @@ theorem exists_fontaineCoordinates
       (∀ w : Fin h → IntegralClosure 𝒪₃ᵥ E,
           (∀ i, w i ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) →
           IsUnit (p w).det) := by
-  sorry
+  classical
+  haveI := isAdicComplete_maximalIdeal_integralClosure E
+  obtain ⟨h, x, J, P, Q, α, hpres⟩ := exists_fontainePresentation A hΩ hfon E ū
+  refine ⟨h, x,
+    (fun w i => MvPowerSeries.adicEvalOfMem
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (P i)),
+    (fun w => Matrix.of fun a b => MvPowerSeries.adicEvalOfMem
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E)) w (Q a b)),
+    fun k hk v₁ v₂ hv₁ hv₂ hxeq =>
+      separation_of_isFontainePresentation hpres k hk v₁ v₂ hv₁ hv₂ hxeq,
+    fun k hk w hw hF => exists_algHom_of_isFontainePresentation hpres k hk w hw hF,
+    fun k hk v w hv hvw => mem_of_algHom_of_isFontainePresentation hpres k hk v w hv hvw,
+    fun w μ hw hμ i => taylor_of_isFontainePresentation hpres e t n he ht htn w μ hw hμ i,
+    fun w hw => isUnit_det_of_isFontainePresentation hpres w hw⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -8980,108 +9443,6 @@ theorem exists_algHom_quotient_maximalIdeal_pow_succ
     rw [hdiff]
     exact hμmem i
 
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **`𝔪_E`-ADIC COMPLETENESS OF THE LOCAL INTEGRAL CLOSURE** (PROVEN
-2026-07-27; the completeness input of `exists_algHom_of_forall_exists_algHom_quotient`
-below).  `𝒪_E` is `𝔪_E`-adically complete for every finite subextension
-`E/ℚ₃ᵥ` of `ℚ₃ᵥᵃˡᵍ`.
-
-WHY THIS IS NOT AN INSTANCE ALREADY, and what the proof has to do.  What
-mathlib and this development supply is completeness for the ideal coming
-from the BASE: `𝒪₃ᵥ` is `𝔪₃ᵥ`-adically complete (`ConnectedEtale`), and
-`IsPrecomplete.of_finite_module` propagates precompleteness to the finite
-`𝒪₃ᵥ`-module `𝒪_E`, which `IsPrecomplete.map_algebraMap_iff` re-reads as
-precompleteness for the EXTENDED ideal `K := 𝔪₃ᵥ·𝒪_E`.  That is not
-`𝔪_E`: in the ramified case `K = 𝔪_E^d` with `d = e(E/ℚ₃ᵥ) > 1`, so the
-two filtrations are merely COFINAL, not equal.  The bridge is the
-reindexing `k ↦ d·k`: a `𝔪_E`-Cauchy sequence `f` gives a `K`-Cauchy
-sequence `k ↦ f (d·k)` because `𝔪_E^(d·k) = K^k`, and the limit `L` it
-produces satisfies `f n ≡ L mod 𝔪_E^n` for every `n` because
-`n ≤ d·n` (this is where `0 < d` is consumed, and it is the ONLY place).
-That `K` is a power of `𝔪_E` at all is the discrete valuation ring
-structure of `𝒪_E`: `K ≠ ⊥` because `algebraMap 𝒪₃ᵥ 𝒪_E` is injective and
-`𝔪₃ᵥ ≠ ⊥`, and `d ≠ 0` because `K ≤ 𝔪_E ≠ ⊤` (the map is local, being
-integral and injective).  Hausdorffness is free — it is the mathlib
-instance for a Noetherian local ring. -/
-theorem isAdicComplete_maximalIdeal_integralClosure
-    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E] :
-    IsAdicComplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
-      (IntegralClosure 𝒪₃ᵥ E) := by
-  classical
-  haveI hMF : Module.Finite 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) :=
-    IsIntegralClosure.finite 𝒪₃ᵥ ℚ₃ᵥ E (IntegralClosure 𝒪₃ᵥ E)
-  haveI hprecJ : IsPrecomplete (IsLocalRing.maximalIdeal 𝒪₃ᵥ) (IntegralClosure 𝒪₃ᵥ E) :=
-    IsPrecomplete.of_finite_module _
-  haveI hprecK : IsPrecomplete
-      ((IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)))
-      (IntegralClosure 𝒪₃ᵥ E) := IsPrecomplete.map_algebraMap_iff.mpr hprecJ
-  -- membership in `I • ⊤` is membership in `I`
-  have hmem : ∀ (I : Ideal (IntegralClosure 𝒪₃ᵥ E)) (x : IntegralClosure 𝒪₃ᵥ E),
-      x ∈ (I • ⊤ : Submodule (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ E)) ↔ x ∈ I := by
-    intro I x
-    simp
-  -- the extended ideal is a power of the maximal ideal
-  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪₃ᵥ E)
-  have hmspan : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) = Ideal.span {ϖ} :=
-    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
-  have hKle : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ≤
-      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) := by
-    rw [Ideal.map_le_iff_le_comap]
-    intro x hx
-    simp only [Ideal.mem_comap]
-    exact (IsLocalRing.mem_maximalIdeal _).mpr fun hu =>
-      (IsLocalRing.mem_maximalIdeal _).mp hx
-        (isUnit_of_map_unit (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) x hu)
-  have hKne : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ≠ ⊥ := by
-    obtain ⟨a, ha, ha0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot
-      (IsDiscreteValuationRing.not_a_field 𝒪₃ᵥ)
-    intro hbot
-    have hmap0 : algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E) a = 0 := by
-      have := Ideal.mem_map_of_mem (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) ha
-      rwa [hbot, Ideal.mem_bot] at this
-    exact ha0 (FaithfulSMul.algebraMap_injective 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)
-      (by rw [hmap0, map_zero]))
-  obtain ⟨d, hd⟩ := IsDiscreteValuationRing.ideal_eq_span_pow_irreducible hKne hϖ
-  have hKpow : (IsLocalRing.maximalIdeal 𝒪₃ᵥ).map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E)) =
-      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ d := by
-    rw [hd, hmspan, Ideal.span_singleton_pow]
-  have hd0 : 0 < d := by
-    rcases Nat.eq_zero_or_pos d with rfl | hpos
-    · exfalso
-      rw [hKpow, pow_zero, Ideal.one_eq_top] at hKle
-      exact (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪₃ᵥ E)).ne_top
-        (top_le_iff.mp hKle)
-    · exact hpos
-  haveI hprec : IsPrecomplete (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
-      (IntegralClosure 𝒪₃ᵥ E) := by
-    constructor
-    intro f hf
-    have hf' : ∀ {m n : ℕ}, m ≤ n →
-        f m - f n ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ m := by
-      intro m n hmn
-      exact (hmem _ _).mp (SModEq.sub_mem.mp (hf hmn))
-    have hg : ∀ {k l : ℕ}, k ≤ l → f (d * k) ≡ f (d * l)
-        [SMOD (((IsLocalRing.maximalIdeal 𝒪₃ᵥ).map
-          (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ E))) ^ k •
-          (⊤ : Submodule (IntegralClosure 𝒪₃ᵥ E) (IntegralClosure 𝒪₃ᵥ E)))] := by
-      intro k l hkl
-      refine SModEq.sub_mem.mpr ((hmem _ _).mpr ?_)
-      rw [hKpow, ← pow_mul]
-      exact hf' (Nat.mul_le_mul_left d hkl)
-    obtain ⟨L, hL⟩ := IsPrecomplete.prec hprecK hg
-    refine ⟨L, fun n => ?_⟩
-    refine SModEq.sub_mem.mpr ((hmem _ _).mpr ?_)
-    have h1 : f n - f (d * n) ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n :=
-      hf' (Nat.le_mul_of_pos_left n hd0)
-    have h2 : f (d * n) - L ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ n := by
-      have hmemK := (hmem _ _).mp (SModEq.sub_mem.mp (hL n))
-      rw [hKpow, ← pow_mul] at hmemK
-      exact Ideal.pow_le_pow_right (Nat.le_mul_of_pos_left n hd0) hmemK
-    have hsum := Ideal.add_mem _ h1 h2
-    simpa using hsum
-  exact ⟨⟩
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
