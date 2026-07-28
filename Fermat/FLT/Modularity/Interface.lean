@@ -54963,98 +54963,6 @@ theorem sq_sub_one_eq_zero_of_fixed_of_det_eq_one
     abel
   rw [hexp, hCH']
 
-/-- **BOUNDED AND INFINITELY `p`-DIVISIBLE FORCES ZERO, AT AN ARBITRARY
-FINITE PLACE** (PROVEN 2026-07-28, fifteenth owner).
-
-This is the analytic step of the tameness argument, stated at an
-arbitrary `v` instead of at `v₂`. It is the exact generalisation of
-`eq_zero_of_forall_exists_nsmul_toLocal_two_sub_one` further down this
-file, whose proof it repeats verbatim with `v₂` replaced by `v`; that
-specialisation is left alone (it is a released, consumed declaration and
-re-deriving it from here would churn it for no mathematical gain), but a
-later owner should collapse the two.
-
-WHY IT IS TRUE. Fix a vector `u` and a coordinate `i` and let
-`ev f := f u i`. This is `AlgebraicClosure ℚ_[p]`-LINEAR out of
-`Module.End`, which carries the module topology, so
-`IsModuleTopology.continuous_of_linearMap` makes `g ↦ ev (τ_v g)`
-continuous; `Γ Kᵥ` is compact, so the image is compact hence
-NORM-bounded by some `C` (`AlgebraicClosure ℚ_[p]` is a normed field
-through `spectralNorm`, `PadicAlgCl.normedField`). The hypothesis then
-gives `‖ev x‖ = ‖p‖ᵏ · ‖ev (τ_v θₖ − 1)‖ ≤ (1/p)ᵏ · (C + ‖ev 1‖)` for
-every `k`, and `‖p‖ = 1/p < 1`, so `ev x = 0`. Ranging over `u` and `i`
-gives `x = 0`.
-
-The continuity of `τ` is genuinely load-bearing: abstractly there are
-nonzero homomorphisms from a pro-`q` group to `(ℚ̄_p, +)`, so the
-topology-free version of the consumer below is FALSE. -/
-theorem eq_zero_of_forall_exists_nsmul_toLocal_sub_one
-    {v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
-    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])}
-    {x : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])}
-    (hdiv : ∀ k : ℕ, ∃ θ, x = (p ^ k : ℕ) • (τ.toLocal v θ - 1)) :
-    x = 0 := by
-  letI : TopologicalSpace (Module.End (AlgebraicClosure ℚ_[p])
-      (Fin 2 → AlgebraicClosure ℚ_[p])) :=
-    moduleTopology (AlgebraicClosure ℚ_[p])
-      (Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
-  haveI : IsModuleTopology (AlgebraicClosure ℚ_[p])
-      (Module.End (AlgebraicClosure ℚ_[p])
-        (Fin 2 → AlgebraicClosure ℚ_[p])) := ⟨rfl⟩
-  haveI : IsGalois (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)
-      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) := ⟨⟩
-  haveI : CompactSpace (Field.absoluteGaloisGroup
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
-    inferInstanceAs (CompactSpace (AlgebraicClosure
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) ≃ₐ[_] _))
-  refine LinearMap.ext fun u => funext fun i => ?_
-  show x u i = 0
-  set ev : Module.End (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])
-      →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p] :=
-    { toFun := fun f => f u i
-      map_add' := fun _ _ => rfl
-      map_smul' := fun _ _ => rfl }
-  have hcont : Continuous fun g : Field.absoluteGaloisGroup
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) =>
-      ev (τ.toLocal v g) :=
-    (IsModuleTopology.continuous_of_linearMap ev).comp
-      (ContinuousMonoidHom.continuous_toFun (τ.toLocal v))
-  obtain ⟨C, hC⟩ := (isCompact_range hcont).isBounded.subset_closedBall
-    (0 : AlgebraicClosure ℚ_[p])
-  have hCg : ∀ g, ‖ev (τ.toLocal v g)‖ ≤ C := by
-    intro g
-    have hmem := hC (Set.mem_range_self g)
-    simpa [Metric.mem_closedBall, dist_zero_right] using hmem
-  have hnp : ‖((p : ℕ) : AlgebraicClosure ℚ_[p])‖ = 1 / (p : ℝ) := by
-    rw [← PadicAlgCl.valuation_coe, PadicAlgCl.valuation_p]
-    simp
-  have hple : (1 : ℝ) / (p : ℝ) < 1 := by
-    have h2 : (2 : ℝ) ≤ (p : ℝ) := by exact_mod_cast hp.out.two_le
-    rw [div_lt_one (by linarith)]
-    linarith
-  have hpnn : (0 : ℝ) ≤ 1 / (p : ℝ) := by positivity
-  have hbound : ∀ k : ℕ, ‖x u i‖ ≤ (1 / (p : ℝ)) ^ k * (C + ‖ev 1‖) := by
-    intro k
-    obtain ⟨θ, hθ⟩ := hdiv k
-    have hx : x u i = ((p : AlgebraicClosure ℚ_[p]) ^ k) *
-        ev (τ.toLocal v θ - 1) := by
-      have h1 : ev x = (p ^ k : ℕ) • ev (τ.toLocal v θ - 1) := by
-        rw [hθ]; exact map_nsmul ev _ _
-      rw [show x u i = ev x from rfl, h1, nsmul_eq_mul]
-      norm_cast
-    have hsub : ‖ev (τ.toLocal v θ - 1)‖ ≤ C + ‖ev 1‖ := by
-      rw [map_sub]
-      exact (norm_sub_le _ _).trans (add_le_add (hCg θ) le_rfl)
-    rw [hx, norm_mul, norm_pow, hnp]
-    exact mul_le_mul_of_nonneg_left hsub (by positivity)
-  have hlim : Filter.Tendsto (fun k : ℕ => (1 / (p : ℝ)) ^ k * (C + ‖ev 1‖))
-      Filter.atTop (nhds 0) := by
-    have h := tendsto_pow_atTop_nhds_zero_of_lt_one hpnn hple
-    simpa using h.mul_const (C + ‖ev 1‖)
-  have hle : ‖x u i‖ ≤ 0 :=
-    ge_of_tendsto hlim (Filter.Eventually.of_forall hbound)
-  simpa using norm_le_zero_iff.mp hle
-
 /-- **A `2`-DIMENSIONAL REPRESENTATION WITH UNRAMIFIED DETERMINANT AND A
 NONZERO INERTIA-FIXED VECTOR IS TAMELY RAMIFIED** (PROVEN 2026-07-28,
 fifteenth owner; Serre, *Corps Locaux* IV §2).
@@ -55063,38 +54971,29 @@ This is the whole `dim V^{I_q} ≥ 1` half of the deep-level derivation,
 and it is a statement of PURE LOCAL GALOIS THEORY: no newform, no level,
 no Hecke data, no Weil–Deligne parameter.
 
-THE ARGUMENT, in four steps, each of which is checked below.
+THE ARGUMENT IS TWO STEPS, and the second is already in this file.
 
 1. A nonzero `w₀ ∈ V^{I_q}` is fixed by every `σ ∈ I_q`, and
    `det (τσ) = 1` there, so `sq_sub_one_eq_zero_of_fixed_of_det_eq_one`
    gives `(τσ − 1)² = 0` for every `σ ∈ I_q`. **This is where the
    trivial nebentypus enters, and it is the only place.**
-2. In dimension `2` a nonzero square-zero endomorphism has `im = ker`,
-   a LINE; `w₀` lies in that kernel, so the line is `ℚ̄_p·w₀` and every
-   `N σ := τσ − 1` maps INTO the common fixed line. Hence
-   `N σ ∘ N θ = 0` and `σ ↦ N σ` is ADDITIVE on `I_q`.
-3. `P_q` is pro-`q`, so for `n` prime to `q` the `n`-th power map is
-   onto it (`exists_pow_eq_of_mem_wildInertiaGroup`); with `q ≠ p` this
-   applies to `n = pᵏ`, and additivity turns it into
-   `N σ ∈ pᵏ · N(P_q)` for every `k`.
-4. `N(P_q)` is BOUNDED, being a continuous image of the compact `Γ Kᵥ`;
-   bounded and infinitely `p`-divisible forces `N σ = 0`
-   (`eq_zero_of_forall_exists_nsmul_toLocal_sub_one`). So `P_q` acts
-   trivially.
+2. A square-zero-unipotent inertia action at a place whose residue
+   characteristic is prime to `p` is trivial on the WILD inertia:
+   `toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero` above
+   (the fourteenth owner's place-generic block — additivity of
+   `σ ↦ τσ − 1`, `pᵏ`-th roots inside `P_v` from
+   `exists_pow_eq_of_mem_wildInertiaGroup`, and boundedness of the
+   continuous image of the compact `Γ Kᵥ`).
 
-`hqp : q ≠ p` IS LOAD-BEARING and enters exactly once, at step 3, as the
-side condition `(p : 𝓞 ℚ) ∉ v_q`. At `q = p` the wild inertia is pro-`p`
-and the pro-`p`/pro-`p` clash disappears; the statement is then false in
-general.
+So the only NEW mathematics here is step 1: the derivation of
+square-zero unipotence from the DETERMINANT rather than from a
+Weil–Deligne monodromy operator. That is what merges the old `N ≠ 0` and
+`N = 0` cases of the deep-level docstring into one.
 
-RELATION TO `isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` further down
-this file: that declaration is the same argument at `v₂`, taking
-square-zero unipotence as a HYPOTHESIS and obtaining the common fixed
-vector from Kolchin (`BrauerNesbitt.exists_fixed_of_unipotent`). Here
-the fixed vector is given (it spans `V^{I_q}`) and the square-zero
-property is DERIVED from the determinant, so Kolchin is not needed. The
-two are independent specialisations of one classical lemma and a later
-owner may wish to unify them. -/
+`hqp : q ≠ p` IS LOAD-BEARING and enters exactly once, as the side
+condition `(p : 𝓞 ℚ) ∉ v_q` of step 2. At `q = p` the wild inertia is
+pro-`p`, the pro-`p`/pro-`p` clash disappears, and the statement is
+false in general. -/
 theorem isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_det_eq_one
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p])}
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
@@ -55104,104 +55003,19 @@ theorem isTamelyRamifiedAt_of_inertiaInvariants_ne_bot_of_det_eq_one
     τ.IsTamelyRamifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
   set v := hq.toHeightOneSpectrumRingOfIntegersRat with hv
   obtain ⟨w₀, hw₀mem, hw₀ne⟩ := (Submodule.ne_bot_iff _).mp hne
-  have hw₀fix : ∀ σ ∈ localInertiaGroup v, τ.toLocal v σ w₀ = w₀ := hw₀mem
-  have hloc : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0 := fun σ hσ =>
-    sq_sub_one_eq_zero_of_fixed_of_det_eq_one hw₀ne (hw₀fix σ hσ) (hdet σ hσ)
-  have hw₀ker : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) w₀ = 0 := by
-    intro σ hσ
-    simp only [LinearMap.sub_apply, Module.End.one_apply, hw₀fix σ hσ, sub_self]
-  have hspanle : ∀ σ ∈ localInertiaGroup v,
-      Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} ≤
-        LinearMap.ker (τ.toLocal v σ - 1) := by
-    intro σ hσ
-    rw [Submodule.span_le, Set.singleton_subset_iff]
-    exact hw₀ker σ hσ
-  have hrange : ∀ σ ∈ localInertiaGroup v,
-      LinearMap.range (τ.toLocal v σ - 1) ≤
-        Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} := by
-    intro σ hσ
-    have hmulzero : (τ.toLocal v σ - 1) * (τ.toLocal v σ - 1) = 0 := by
-      rw [← pow_two]; exact hloc σ hσ
-    have hle : LinearMap.range (τ.toLocal v σ - 1) ≤
-        LinearMap.ker (τ.toLocal v σ - 1) := by
-      rintro y ⟨x, rfl⟩
-      have hx : ((τ.toLocal v σ - 1) * (τ.toLocal v σ - 1)) x = 0 := by
-        rw [hmulzero]; rfl
-      simpa [Module.End.mul_apply] using hx
-    by_cases hzero : LinearMap.range (τ.toLocal v σ - 1) = ⊥
-    · rw [hzero]; exact bot_le
-    · have hrn := LinearMap.finrank_range_add_finrank_ker (τ.toLocal v σ - 1)
-      have hV : Module.finrank (AlgebraicClosure ℚ_[p])
-          (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
-      have h1 : 1 ≤ Module.finrank (AlgebraicClosure ℚ_[p])
-          (LinearMap.range (τ.toLocal v σ - 1)) :=
-        Submodule.one_le_finrank_iff.mpr hzero
-      have hspanrank : Module.finrank (AlgebraicClosure ℚ_[p])
-          (Submodule.span (AlgebraicClosure ℚ_[p]) {w₀}) = 1 :=
-        finrank_span_singleton hw₀ne
-      have hkerle : Module.finrank (AlgebraicClosure ℚ_[p])
-          (LinearMap.ker (τ.toLocal v σ - 1)) ≤ 1 := by
-        rw [hV] at hrn; omega
-      have heq : Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} =
-          LinearMap.ker (τ.toLocal v σ - 1) :=
-        Submodule.eq_of_le_of_finrank_le (hspanle σ hσ)
-          (by rw [hspanrank]; exact hkerle)
-      rw [heq]; exact hle
-  have hmulzero2 : ∀ σ ∈ localInertiaGroup v, ∀ θ ∈ localInertiaGroup v,
-      (τ.toLocal v σ - 1) * (τ.toLocal v θ - 1) = 0 := by
-    intro σ hσ θ hθ
-    refine LinearMap.ext fun x => ?_
-    have hx : (τ.toLocal v θ - 1) x ∈
-        Submodule.span (AlgebraicClosure ℚ_[p]) {w₀} := hrange θ hθ ⟨x, rfl⟩
-    have hy := hspanle σ hσ hx
-    rw [LinearMap.mem_ker] at hy
-    rw [Module.End.mul_apply, hy, LinearMap.zero_apply]
-  have hadd : ∀ σ ∈ localInertiaGroup v, ∀ θ ∈ localInertiaGroup v,
-      τ.toLocal v (σ * θ) - 1 = (τ.toLocal v σ - 1) + (τ.toLocal v θ - 1) := by
-    intro σ hσ θ hθ
-    have hm : τ.toLocal v (σ * θ) = τ.toLocal v σ * τ.toLocal v θ := map_mul _ _ _
-    have hz := hmulzero2 σ hσ θ hθ
-    have key : (τ.toLocal v σ - 1) * (τ.toLocal v θ - 1) =
-        τ.toLocal v σ * τ.toLocal v θ - τ.toLocal v σ - (τ.toLocal v θ - 1) := by
-      rw [sub_mul, one_mul, mul_sub, mul_one]
-    rw [key, sub_sub, sub_eq_zero] at hz
-    rw [hm, hz]
-    abel
-  have hpow : ∀ σ ∈ localInertiaGroup v, ∀ m : ℕ,
-      τ.toLocal v (σ ^ m) - 1 = (m : ℕ) • (τ.toLocal v σ - 1) := by
-    intro σ hσ m
-    induction m with
-    | zero => simp
-    | succ m ih =>
-      have hmem : σ ^ m ∈ localInertiaGroup v := pow_mem hσ m
-      rw [pow_succ, hadd _ hmem _ hσ, ih, succ_nsmul]
+  -- STEP 1: a fixed vector plus determinant `1` makes inertia SQUARE-ZERO
+  -- unipotent. This is the only place the trivial nebentypus is used.
+  have hsq : ∀ σ ∈ localInertiaGroup v, (τ.toLocal v σ - 1) ^ 2 = 0 := fun σ hσ =>
+    sq_sub_one_eq_zero_of_fixed_of_det_eq_one hw₀ne (hw₀mem σ hσ) (hdet σ hσ)
+  -- STEP 2: `p` is prime to the residue characteristic `q`, so the
+  -- place-generic block above kills the wild inertia.
   have hpn : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ∉ v.asIdeal := by
     rw [hv, Nat.Prime.mem_toHeightOneSpectrumRingOfIntegersRat_asIdeal, map_natCast]
     intro hdvd
     have hqp' : q ∣ p := by exact_mod_cast hdvd
     exact hqp ((Nat.prime_dvd_prime_iff_eq hq hp.out).mp hqp')
-  have hiter : ∀ (k : ℕ) (σ : Field.absoluteGaloisGroup
-      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
-      σ ∈ wildInertiaGroup v → ∃ θ ∈ wildInertiaGroup v, θ ^ p ^ k = σ := by
-    intro k
-    induction k with
-    | zero => intro σ hσ; exact ⟨σ, hσ, by simp⟩
-    | succ k ih =>
-      intro σ hσ
-      obtain ⟨θ, hθ, hθpow⟩ := ih σ hσ
-      obtain ⟨η, hη, hηp⟩ := exists_pow_eq_of_mem_wildInertiaGroup v hpn hθ
-      refine ⟨η, hη, ?_⟩
-      rw [pow_succ p k, pow_mul', hηp, hθpow]
   intro σ hσ x
-  have hzero : τ.toLocal v σ - 1 = 0 := by
-    refine eq_zero_of_forall_exists_nsmul_toLocal_sub_one (τ := τ) (v := v) ?_
-    intro k
-    obtain ⟨θ, hθ, hθpow⟩ := hiter k σ hσ
-    refine ⟨θ, ?_⟩
-    rw [← hθpow]
-    exact hpow θ (wildInertiaGroup_le_localInertiaGroup v hθ) (p ^ k)
-  have h1 : τ.toLocal v σ = 1 := by rwa [sub_eq_zero] at hzero
-  rw [h1]
+  rw [toLocal_eq_one_of_mem_wildInertiaGroup_of_inertia_sq_eq_zero hpn hsq hσ]
   rfl
 
 /-- **THE SWAN CONDUCTOR DOMINATES THE WILD CODIMENSION**,
