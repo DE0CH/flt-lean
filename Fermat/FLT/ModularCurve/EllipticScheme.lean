@@ -2088,12 +2088,18 @@ mathlib gap is ONE lemma with two faces — NATURALITY and RIGIDITY of
 `Proj.fromOfGlobalSections`".  Both are now written, and everything the gluing
 needs on top of them is PROVEN here:
 
-* *naturality* is cut the same way `ProjCoords.toHom_smul` was: the scheme-theoretic
-  half (`projFromOfGlobalSections_comp`) is proven from a single CHART-LEVEL leaf
-  `projToBasicOpenOfGlobalSections_comp`, which is the exact sibling of
-  `toBasicOpenOfGlobalSections_eq_of_gradedSmul` and lives in
-  `HomogeneousLocalization`, not in scheme theory;
-* *rigidity* is the single leaf `ProjCoords.exists_units_smul_of_toHom_eq`.
+* *naturality* is **fully PROVEN** (2026-07-28).  It was cut the same way
+  `ProjCoords.toHom_smul` was: the scheme-theoretic half
+  (`projFromOfGlobalSections_comp`) from a single CHART-LEVEL leaf
+  `projToBasicOpenOfGlobalSections_comp`, the exact sibling of
+  `toBasicOpenOfGlobalSections_eq_of_gradedSmul`, living in
+  `HomogeneousLocalization` rather than in scheme theory.  That chart leaf is
+  now closed from `ProjCoords.toBasicOpenOfGlobalSections_comp` in the
+  `ProjFunctoriality` section above — which proves the same identity in its
+  unrotated form out of `awayLoc_comp` (functoriality of `IsLocalization.map`)
+  and `toSpecΓ_restrict_naturality`.  So NOTHING in the naturality face is open;
+* *rigidity* is the single leaf `ProjCoords.exists_units_smul_of_toHom_eq`,
+  which remains open in its arbitrary-test-scheme form.
 
 Everything else in this section — the pullback `ProjCoords.comap` of coordinate
 data, its compatibility with both addition laws, the refinement of a cover by the
@@ -2162,9 +2168,30 @@ theorem projFromOfGlobalSections_congr {σ : Type*} {A : Type} [CommRing A]
     Proj.fromOfGlobalSections 𝒜 f hf = Proj.fromOfGlobalSections 𝒜 f' hf' := by
   subst h; rfl
 
-/-- **The chart-level half of NATURALITY** (sorry node — the exact sibling of
-`ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul`, and the only thing
-naturality of `Proj.fromOfGlobalSections` still needs).
+/-- **The chart-level half of NATURALITY** (**PROVEN 2026-07-28** — formerly a
+sorry node, the exact sibling of
+`ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul`, and the last thing
+naturality of `Proj.fromOfGlobalSections` still needed).
+
+*How it closed.*  The `ProjFunctoriality` section above supplies
+`ProjCoords.toBasicOpenOfGlobalSections_comp`, which states the same chart
+identity in the *unrotated* form
+
+    (g ∣_ X.basicOpen (f t)) ≫ toBasicOpenOfGlobalSections 𝒜 f rfl hn ht
+      = (Y.isoOfEq (Scheme.preimage_basicOpen_top g (f t))).hom ≫
+          toBasicOpenOfGlobalSections 𝒜 (Γ(g) ∘ f) rfl hn ht,
+
+proven there from `awayLoc_comp` (functoriality of `IsLocalization.map`) plus
+`toSpecΓ_restrict_naturality` (the naturality square of `X ↦ Spec Γ(X, ⊤)`
+restricted to a basic open).  This statement is that one composed with
+`(Proj.basicOpen 𝒜 t).ι` and moved across the `isoOfEq`: `hpre` is
+`(Scheme.preimage_basicOpen_top g (f t)).symm`, so `(Y.isoOfEq hpre).hom` and
+`(Y.isoOfEq (Scheme.preimage_basicOpen_top g (f t))).inv` are the same term
+(both are `Y.homOfLE` of a proof-irrelevant `≤`), and `Iso.inv_hom_id_assoc`
+cancels the pair.
+
+The mathematical content described below is therefore discharged, but it now
+lives in `awayLoc_comp` / `toSpecΓ_restrict_naturality` rather than here.
 
 `Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht`, composed with
 `Proj.basicOpenIsoSpec`, is `Spec` of the ring map
@@ -2198,8 +2225,12 @@ theorem projToBasicOpenOfGlobalSections_comp {σ : Type*} {A : Type} [CommRing A
     Proj.toBasicOpenOfGlobalSections 𝒜 ((Scheme.Hom.appTop g).hom.comp f) rfl hn ht ≫
         (Proj.basicOpen 𝒜 t).ι =
       (Y.isoOfEq hpre).hom ≫ (g ∣_ X.basicOpen (f t)) ≫
-        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
-  sorry
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+  rw [← Category.assoc (g ∣_ X.basicOpen (f t)),
+    ProjCoords.toBasicOpenOfGlobalSections_comp 𝒜 g f hn ht,
+    show (Y.isoOfEq hpre).hom =
+      (Y.isoOfEq (Scheme.preimage_basicOpen_top g (f t))).inv from rfl,
+    Category.assoc, Iso.inv_hom_id_assoc]
 
 /-- **NATURALITY of `Proj.fromOfGlobalSections`** (PROVEN from the chart leaf
 above) — the first of the two faces the gluing needs, and **absent from the
@@ -2760,11 +2791,12 @@ that plan predicted:
 5. `isProjMulOn_of_cover` descends the property to `𝟙`, which is the
    characterisation at an arbitrary test scheme.
 
-So the whole thing is now proved **modulo exactly two named leaves**, which are
-the two faces the previous plan identified:
-`projToBasicOpenOfGlobalSections_comp` (the chart half of NATURALITY) and
-`ProjCoords.exists_units_smul_of_toHom_eq` (RIGIDITY).  No polynomial algebra is
-left anywhere in this cluster. -/
+So the whole thing is now proved **modulo exactly ONE named leaf** (2026-07-28).
+Of the two faces the previous plan identified,
+`projToBasicOpenOfGlobalSections_comp` (the chart half of NATURALITY) is
+**PROVEN**, so only `ProjCoords.exists_units_smul_of_toHom_eq` (RIGIDITY, in its
+arbitrary-test-scheme form) remains.  No polynomial algebra is left anywhere in
+this cluster. -/
 theorem exists_projMulOfCoordsTwo_of_cover (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (hcover : ∃ (𝒰 : (Limits.pullback (projToSpec E) (projToSpec E)).OpenCover.{0})
       (c : ∀ i, ProjCoords E (𝒰.X i)) (d : ∀ i, ProjCoords E (𝒰.X i)),
