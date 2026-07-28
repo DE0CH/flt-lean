@@ -138,9 +138,11 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   `Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`;
   `ProjCoords.toHom_smul` is **PROVEN as a reduction** to
   `ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul` (the chart identity,
-  the only genuinely new MATHLIB work left) and
+  and now the ONLY genuinely new MATHLIB work left) and
   `ProjCoords.ringHom_smul_apply_of_mem_projGrading` (a `MvPolynomial`
-  computation), the gluing half having been discharged by
+  computation, **PROVEN 2026-07-28** over the new
+  `ProjCoords.eval2_smul_of_isHomogeneous`), the gluing half having been
+  discharged by
   `ProjCoords.openCover_eq_of_gradedSmul` and
   `ProjCoords.fromOfGlobalSections_eq_of_gradedSmul`;
   `ProjCoords.exists_of_specField` remains open, and so — since the 2026-07-27
@@ -968,8 +970,40 @@ theorem fromOfGlobalSections_comp_map {σ τ : Type} {A B : Type} [CommRing A] [
 
 end ProjFunctoriality
 
+/-- **Rescaling the variables of a HOMOGENEOUS polynomial scales its `eval₂` by
+`u ^ n`** (**PROVEN 2026-07-28**) — the monomial-by-monomial computation that is
+the whole arithmetic content of `ringHom_smul_apply_of_mem_projGrading` below.
+
+Not in the pin: mathlib's `Mathlib/RingTheory/MvPolynomial/Homogeneous.lean`
+carries `IsHomogeneous.eval₂` (the IMAGE of a homogeneous polynomial under a
+homogeneous substitution is homogeneous) but no scaling identity, and
+`WeightedHomogeneous.lean` has none either.  The closest existing use is
+`AbsoluteValue.eval_mvPolynomial_le` in `Mathlib/NumberTheory/Height/MvPolynomial.lean`,
+which runs this same `degree_eq_sum_deg_support` + `prod_pow_eq_pow_sum` pair as
+an INEQUALITY; the identity itself has to be written out.
+
+Proof: expand both sides with `MvPolynomial.eval₂_eq` as a sum over the support,
+and fix a monomial `d` in it.  Then `∏ i, (u * g i) ^ d i` splits as
+`(∏ i, u ^ d i) * (∏ i, g i ^ d i)` and the first factor is
+`u ^ (∑ i, d i) = u ^ n`, the exponent being `n` for EVERY `d` in the support
+precisely because `p` is homogeneous (`IsHomogeneous.degree_eq_sum_deg_support`).
+So the common factor `u ^ n` pulls out of the sum. -/
+theorem eval2_smul_of_isHomogeneous {R S : Type} [CommRing R] [CommRing S]
+    (f : R →+* S) (g : Fin 3 → S) (u : S) {p : MvPolynomial (Fin 3) R} {n : ℕ}
+    (hp : p.IsHomogeneous n) :
+    MvPolynomial.eval₂ f (u • g) p = u ^ n * MvPolynomial.eval₂ f g p := by
+  rw [MvPolynomial.eval₂_eq, MvPolynomial.eval₂_eq, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  have hdeg : n = ∑ i ∈ d.support, d i := hp.degree_eq_sum_deg_support hd
+  have hprod : ∏ i ∈ d.support, (u • g) i ^ d i
+      = u ^ n * ∏ i ∈ d.support, g i ^ d i := by
+    simp only [Pi.smul_apply, smul_eq_mul, mul_pow]
+    rw [Finset.prod_mul_distrib, Finset.prod_pow_eq_pow_sum, ← hdeg]
+  rw [hprod]
+  ring
+
 /-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
-`n`** (sorry node — the arithmetic half of `ProjCoords.toHom_smul`).
+`n`** (**PROVEN 2026-07-28** — the arithmetic half of `ProjCoords.toHom_smul`).
 
 `ProjCoords.ringHom` is `Ideal.Quotient.lift` of `MvPolynomial.eval₂Hom base coord`,
 so on the class of a polynomial `p` this says
@@ -977,26 +1011,37 @@ so on the class of a polynomial `p` this says
     eval₂ base (u • coord) p = u ^ n * eval₂ base coord p   for `p` homogeneous of degree `n`,
 
 which is a monomial-by-monomial computation: a monomial of total degree `n`
-picks up exactly `u ^ n`.  The one step that is not literally that computation
+picks up exactly `u ^ n`.  That half is `eval2_smul_of_isHomogeneous` above.
+The one step that is not literally that computation
 is passing from `a ∈ projGrading E n` — membership in the quotient grading — to
 a homogeneous representative of degree `n`, i.e. surjectivity of
 `HomogeneousIdeal.quotientGrading` onto its graded pieces; `Ideal.Quotient.mk`
 is surjective and the quotient grading is defined as the image, so this is
-`HomogeneousIdeal.mk_mem_quotientGrading` read backwards.
+`HomogeneousIdeal.mk_mem_quotientGrading` read backwards.  The docstring's plan
+was accurate: that step is `HomogeneousIdeal.mem_quotientGrading.mp`, whose
+`rfl` component lets the representative be substituted by `obtain … rfl`, after
+which `ringHom_mk` turns both sides into `eval₂`s — and `(smul u c).base` and
+`(smul u c).coord` are `c.base` and `(u : Γ(X, ⊤)) • c.coord` definitionally, so
+no rewriting is needed to line the two up.
 
 This is deliberately stated in the exact form
 `fromOfGlobalSections_eq_of_gradedSmul` consumes. -/
 theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X)
     (n : ℕ) (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
     (ha : a ∈ projGrading E n) :
-    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a :=
-  sorry
+    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a := by
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  rw [ringHom_mk, ringHom_mk]
+  exact eval2_smul_of_isHomogeneous c.base c.coord (u : Γ(X, ⊤))
+    ((MvPolynomial.mem_homogeneousSubmodule n p).mp hp)
 
 /-- **Rescaling the coordinates by a unit does not change the morphism**
 (**PROVEN 2026-07-27** from `fromOfGlobalSections_eq_of_gradedSmul` and
 `ringHom_smul_apply_of_mem_projGrading` — it is a REDUCTION, not a result: the
-two leaves above still carry the content, and this declaration has no `sorry`
-of its own).
+two declarations above carry the content, and this one has no `sorry` of its
+own.  **Of those two, `ringHom_smul_apply_of_mem_projGrading` is PROVEN as of
+2026-07-28**, so only `toBasicOpenOfGlobalSections_eq_of_gradedSmul`, the chart
+identity, is still a leaf here).
 
 The general statement is: for `u : Γ(X, ⊤)ˣ` and `f : A →+* Γ(X, ⊤)` with
 `A` graded, the rescaled map `f_u : a ↦ ∑ n, u ^ n * f aₙ` satisfies
