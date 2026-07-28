@@ -13333,10 +13333,17 @@ longer a leaf.  It split cleanly into `eq_of_dense_geomPt_comp_eq` and
 `dense_torsionGeomPt_finiteBase`, and the SECOND of those is the only one
 of the two that needs abelian-variety theory — the first needs nothing
 beyond "smooth over a field is reduced", which this tree already has in
-`Modularity/MoretBailly.lean` (`isReduced_of_smooth_field`,
-`isReduced_of_smooth_over_rat`), plus separatedness from `IsProper`.  So
-the frontier here is now three arithmetic leaves and two density ones,
-and the cheapest of the five is the scheme-theoretic half. -/
+`isReduced_of_smooth_over_field_stalkwise` above, plus separatedness from
+`IsProper`.  So the frontier here is now three arithmetic leaves and two
+density ones, and the cheapest of the five is the scheme-theoretic half.
+
+**UPDATED 2026-07-28, LATER**: that cheapest half, `eq_of_dense_geomPt_comp_eq`,
+is now **PROVEN** — mathlib's `ext_of_isDominant_of_isSeparated` already runs
+the separated/reduced equaliser argument, so all that had to be supplied was
+that `equalizer.ι u v` is DOMINANT, which is `hs` plus `equalizer.lift`.  It
+needed no new machinery at all, and in particular the "smooth over a field is
+reduced" input was already in this file.  `dense_torsionGeomPt_finiteBase` is
+the remaining half of the density pair. -/
 
 /-- **CAYLEY–HAMILTON IN DIMENSION TWO, COORDINATEWISE** (PROVEN).  For a
 `2 × 2` matrix `Φ` over any commutative ring, `Φ² + det Φ = tr Φ · Φ`,
@@ -14299,10 +14306,10 @@ theorem exists_frobLevelTrace_of_mult_finiteBase
     hdetunit.mul_right_eq_zero.mp (by rw [mul_comm]; exact hdetw)
   exact sub_eq_zero.mp hw
 
+open _root_.CategoryTheory.Limits in
 /-- **TWO MORPHISMS AGREEING AT A ZARISKI-DENSE SET OF GEOMETRIC POINTS
-ARE EQUAL** (sorry leaf — the SCHEME-THEORETIC half of the density
-argument; EGA IV 11.10.1, or Hartshorne II Ex. 4.2 for the reduced /
-separated equaliser criterion).
+ARE EQUAL** (**PROVEN 2026-07-28**; EGA IV 11.10.1, or Hartshorne II
+Ex. 4.2 for the reduced / separated equaliser criterion).
 
 Let `u v : A' ⟶ A'` be morphisms over the base and `s` a set of geometric
 points of the fibre whose images sweep out a dense subset of `|A'|`.  If
@@ -14316,15 +14323,41 @@ and `A'` is REDUCED — it is smooth over a field (`ab'.smooth`) — so a
 surjective closed immersion into it is an isomorphism.  Therefore
 `E = A'` and `u = v`.
 
+**THE PROOF, and how little of that had to be written here.**  Mathlib's
+`AlgebraicGeometry.ext_of_isDominant_of_isSeparated`
+(`Mathlib/AlgebraicGeometry/Morphisms/Separated.lean`) already packages the
+whole "reduced source, separated target, dominant probe" criterion: for
+`[IsReduced X]` and `f g : X ⟶ Y` agreeing over a separated `Y ⟶ Z`, any
+DOMINANT `ι : W ⟶ X` with `ι ≫ f = ι ≫ g` forces `f = g`.  It even runs the
+equaliser argument internally — the closed immersion `equalizer.ι` of
+`isClosedImmersion_equalizer_ι_left`, surjective because dominant with closed
+range, hence an isomorphism.  So the only thing this leaf has to supply is
+the probe, and the probe is `equalizer.ι u v` ITSELF:
+
+* every `y ∈ s` factors through the equaliser by `equalizer.lift y.1 (h y hy)`,
+  so `Set.range y.1.base ⊆ Set.range (equalizer.ι u v).base`;
+* the union of those ranges is dense by `hs`, so `Dense.mono` gives
+  `DenseRange (equalizer.ι u v)`, i.e. `IsDominant (equalizer.ι u v)`;
+* `equalizer.condition u v` is the required agreement, and `hu`/`hv` give
+  agreement over `f'`.
+
+This is the same shape as mathlib's own `ext_of_fromSpecResidueField_eq`,
+which does it for the residue-field points of a dense SET OF POINTS; that
+lemma is not directly usable here because our probes are `Spec k̄`-valued
+geometric points rather than the canonical `X.fromSpecResidueField x`, and a
+geometric point does not factor back through the residue field on the nose.
+
 WHAT IS ALREADY AVAILABLE, checked rather than assumed.  Reducedness of a
-smooth scheme over a field is developed IN THIS TREE:
-`isReduced_of_smooth_field` and `isReduced_of_smooth_over_rat` in
-`Modularity/MoretBailly.lean` (the latter stated over `ℚ` only because
-that is where it is used; its docstring records that nothing in it is
-special to `ℚ`), running through mathlib's
-`Algebra.FormallyUnramified.isReduced_of_field` and
-`IsReduced.of_openCover` — regularity theory, which mathlib lacks, is
-NOT needed.  Separatedness is carried by `IsProper` at this pin.
+smooth scheme over a field is `isReduced_of_smooth_over_field_stalkwise`
+EARLIER IN THIS FILE (the stalkwise route through
+`isRegularLocalRing_stalk_of_smooth`), so no import is added and no
+regularity theory has to be built.  Note the older pointer that used to
+stand here — to `isReduced_of_smooth_field` /
+`isReduced_of_smooth_over_rat` in `Modularity/MoretBailly.lean` — was
+usable only over `ℚ` as stated; the in-file stalkwise version is general in
+`k` and is what the proof uses.  Separatedness is carried by `IsProper`,
+which literally `extends IsSeparated f` at this pin, so `haveI := ab'.proper`
+is the entire separatedness step.
 
 Only two fields of `AbelianSchemeStruct` are used, `proper` and `smooth`;
 neither the group law nor the multiplication nor the base field enters,
@@ -14343,8 +14376,19 @@ theorem eq_of_dense_geomPt_comp_eq
     (s : Set (GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k)))))
     (hs : Dense {x : A' | ∃ y ∈ s, x ∈ Set.range y.1.base})
     (h : ∀ y ∈ s, y.1 ≫ u = y.1 ≫ v) :
-    u = v :=
-  sorry
+    u = v := by
+  haveI := ab'.smooth
+  haveI := ab'.proper
+  haveI : AlgebraicGeometry.IsReduced A' := isReduced_of_smooth_over_field_stalkwise f'
+  -- the equaliser of `u` and `v` is a dominant probe: every `y ∈ s` factors
+  -- through it, and those factorisations already sweep out a dense set
+  haveI : IsDominant (equalizer.ι u v) := by
+    refine ⟨Dense.mono ?_ hs⟩
+    rintro x ⟨y, hy, z, rfl⟩
+    exact ⟨(equalizer.lift y.1 (h y hy)).base z, by
+      rw [← Scheme.Hom.comp_apply, equalizer.lift_ι]⟩
+  exact ext_of_isDominant_of_isSeparated f' (by rw [hu, hv]) (equalizer.ι u v)
+    (equalizer.condition u v)
 
 open _root_.NumberField in
 /-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME OVER A FINITE FIELD
