@@ -2265,7 +2265,8 @@ rather than proving a third copy of it. The audit recorded by the previous
 owner said: `IsFlatPointsGroupAt.of_surjective` in `Modularity/Interface.lean`
 is, together with `IsFlatPointsGroupAt.pi`, exactly this statement and was
 already PROVEN there; and `hasFlatProlongationAt_of_surjective` in
-`Modularity/KhareWintenberger.lean` is a `sorry` in the `n = 1` special case.
+`Modularity/KhareWintenberger.lean` was at that time a `sorry` in the `n = 1`
+special case (**it is no longer** — see the update at the end of this audit).
 Both live ABOVE this module (`Interface` imports `KhareWintenberger`, which
 imports this file), so neither could be consumed here. So the mathematics was
 never open — only misplaced.
@@ -2292,9 +2293,29 @@ one). `Interface.lean` now keeps only the assembly
 `GaloisRep.hasFlatProlongationAt_of_pi_embedding`, whose consumers are there.
 Nothing was restated, weakened or re-proven; `Interface.lean`'s own consumers
 see the same declarations through the import. THE COPY COUNT IS THEREFORE
-DOWN, not up: `KhareWintenberger.lean`'s `hasFlatProlongationAt_of_surjective`
-is now redundant (it is this theorem at `n = 1`) and should be redirected here
-by its owner.
+DOWN, not up.
+
+UPDATE 2026-07-27 — THE LAST ITEM OF THIS AUDIT IS CLOSED, AND NOT IN THE WAY
+THE AUDIT PROPOSED. `KhareWintenberger.lean`'s `hasFlatProlongationAt_of_surjective`
+is **PROVEN**, and the earlier text here (which recommended redirecting it into
+this theorem at `n = 1`) is retired rather than merely dated: that redirection
+was EVALUATED AND REJECTED as the worse of the two routes. Both routes bottom
+out in the same brick — `IsFlatPointsGroupAt.of_surjective` in
+`FlatPointsGroup.lean` — so nothing is reproven either way, and the choice is
+purely about how much adapter code sits on top:
+
+* via this theorem at `n = 1`, the caller must supply a `Fin 1 → X ≃ X`
+  adaptation to meet the finite-power shape, AND convert its GLOBAL
+  equivariance hypothesis into the LOCAL one this statement quantifies over;
+* going straight to the shared carrier needs NEITHER — the target statement is
+  already at `n = 1` and already carrier-shaped, so it is
+  `hasFlatProlongationAt_iff_isFlatPointsGroupAt` on both sides of
+  `IsFlatPointsGroupAt.of_surjective`, with the global-to-local step a
+  three-line `intro`/`show`/`exact` on the definitional unfolding of `toLocal`.
+
+Five lines instead of a dozen, with the deep content in exactly one place
+either way. Do not re-litigate this: the redirection is not an outstanding
+task, it is a considered non-choice.
 
 References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
 (1974), §3; Tate–Oort, *A classification of group schemes of order p*, Ann.
@@ -2691,11 +2712,22 @@ below by the three-line assembly the audit predicted, with NO fourth
 copy of the content — the same shape as its sibling
 `hasFlatProlongationAt_of_pi_surjection` above.
 
-The one remaining item of that audit is still open and belongs to
-another owner: `Modularity/KhareWintenberger.lean`'s
+THE AUDIT IS NOW FULLY DISCHARGED (updated 2026-07-27). Its last item
+used to read: `Modularity/KhareWintenberger.lean`'s
 `hasFlatProlongationAt_of_surjective` is this file's
 `hasFlatProlongationAt_of_pi_surjection` at `n = 1` and should be
-redirected rather than reproven.
+redirected rather than reproven. That leaf is **PROVEN**, so the item is
+closed — but note it did NOT close by that redirection, which was
+evaluated and deliberately rejected. It closes over the SAME shared
+brick this theorem uses (`IsFlatPointsGroupAt.of_surjective` in
+`FlatPointsGroup.lean`), reached directly rather than through this
+module: going via `hasFlatProlongationAt_of_pi_surjection` would have
+cost a `Fin 1 → X ≃ X` adaptation to the finite-power shape AND a
+global-to-local equivariance conversion, where the direct route needs
+neither and runs to five lines. No copy of the mathematics was added on
+either route. See the fuller note on
+`hasFlatProlongationAt_of_pi_surjection` above; do not re-open this as a
+redirection task.
 
 References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF
 102 (1974), §3; Tate–Oort, *A classification of group schemes of order
