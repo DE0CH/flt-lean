@@ -183,6 +183,11 @@ import Mathlib.Data.ZMod.QuotientRing
 -- square" into "this integer is a square"; consumed by the `X_1(15)`
 -- descent reduction `MazurLevel15.rank_zero_x`.
 public import Mathlib.Data.Rat.Lemmas
+-- `DualNumber R = R[ε]`, `ε² = 0`, and its algebra maps: the base over
+-- which a TANGENT VECTOR to the special fibre is a relative point, used
+-- by `IsCuspFormalImmersionCert` to state Mazur's §II.4 formal immersion
+-- infinitesimally.
+public import Mathlib.Algebra.DualNumber
 -- The unramified quadratic twist to split multiplicative reduction and
 -- its Galois-equivariant point equivalence, consumed by the PROVEN
 -- local torsion quotient of the nonsplit multiplicative case
@@ -1787,10 +1792,337 @@ theorem exists_abelianGoodReductionModel (q : ℕ) (_hq : q.Prime)
     Nonempty (IsAbelianGoodReductionModel q R toF genX fQ hfQ) :=
   sorry
 
-/-- **Mazur's Eisenstein quotient, ENTIRELY OVER `ℚ`** (sorry node, new
-2026-07-27) — the modular half of
-`exists_eisensteinQuotientModel_of_jNeronDatum`, and the whole of the
-residual content of Mazur's IHÉS 47 in this development.
+/-! #### The cut of `exists_eisensteinQuotientOverQ_of_jNeronDatum`: the
+FORMAL-IMMERSION axis (2026-07-28)
+
+The subsection docstring above records **five** axes that were tried on
+this node and fail — peeling off `finiteA`, peeling off
+`formalImmersion`, the cusp, the Hecke action, and (for the node above)
+the field split.  A sixth axis is available and none of those audits
+searched it: **the formal immersion is a statement about the SPECIAL
+FIBRE'S TANGENT SPACE, and the passage from that infinitesimal statement
+to the statement about rational points is a separate classical
+principle.**
+
+Concretely the leaf below asks, at the end, for
+
+> `x` a rational point of `X_0(N)` with `redX x = redX ∞` and
+> `π(aj(x)) = π(aj(∞))` implies `x = ∞`,
+
+which is the CONCLUSION of Mazur's method, not its input.  Mazur's own
+input is §II.4: the map `X_0(N) → J_e` is a **formal immersion at
+`∞_{/𝔽_q}`**, i.e. `Cot(J_e) ⊗ 𝔽_q ↠ Cot(X_0(N), ∞) ⊗ 𝔽_q` — dually, the
+map on `𝔽_q`-tangent vectors at the reduced cusp is INJECTIVE.  That
+condition is `IsCuspFormalImmersionCert` below, and it is expressible
+here with nothing new beyond `Spec 𝔽_q[ε]`: a tangent vector to the
+special fibre `X'` at `redX ∞` is a relative point of `strX'` over
+`Spec 𝔽_q[ε] ⟶ Spec 𝔽_q` whose restriction along the augmentation is
+`redX ∞`, and `d.spX` together with the good-reduction model's `fmor`
+carries it into the integral model of the quotient.  (The dual-number
+presentation of a tangent space was compiler-verified for `Spec ℚ[ε]` at
+`122c02b0`; see the pin discussion on `isTorsion_factor_of_heckeIsotypic`
+in `X0.lean`, which is where the construction is recorded.)
+
+**WHY THIS CUT IS SAFE, and it is the first cut of this node that kills
+the inherited degenerate witness rather than passing it on.**  The
+subsection docstring above says of every earlier split that
+`A := Spec ℚ`, `u := ` the structure map "satisfies every field of the
+`ℚ`-side leaf … and collapses its formal immersion to Mazur's own
+conclusion".  That witness does **not** satisfy
+`IsCuspFormalImmersionCert`: with `A = Spec ℚ` the good-reduction model
+is `𝒜 = Spec ℤ_(q)`, so `RelPoint G.astrZ g` is a SINGLETON for every
+`g`, while the tangent space of the smooth curve `X'` at the `𝔽_q`-point
+`redX ∞` is a one-dimensional `𝔽_q`-vector space and therefore has
+`q ≥ 3` elements.  The certificate demands an injection of the second
+into the first and there is none.  So `exists_eisensteinQuotientCert_of_jNeronDatum`
+is strictly STRONGER than the leaf it replaces, which is the direction a
+decomposition is allowed to move in.
+
+**AND THE TWO HALVES HAVE DISJOINT LITERATURE**, which is the check every
+cut in this file has to pass:
+
+* `exists_eisensteinQuotientCert_of_jNeronDatum` is Mazur, IHÉS 47 (1977)
+  — §II for the Eisenstein ideal and the quotient, Thm 4 for rank `0`,
+  §II.4 for the `a₁ ≢ 0 (mod q)` computation that IS the certificate.  It
+  mentions no formal group and no completion.
+* `formalImmersion_of_cuspFormalImmersionCert` is the classical
+  formal-immersion principle: a morphism of `ℤ_(q)`-schemes that is a
+  formal immersion at a point of the special fibre is injective on the
+  residue disc of that point.  Its proof is Nakayama on completed local
+  rings plus the valuative criterion (BLR §2.2/§7.4; Silverman *AEC* IV
+  for the formal-group half; the packaging is Mazur's method as used by
+  Kamienny and by Edixhoven).  It mentions no modular curve and no
+  Eisenstein ideal, and it is reusable verbatim by `X1.lean`.
+
+Neither consumes the other, and the assembly below additionally proves
+something neither is asked for: **`Finite` from `IsTorsion`**.  Mazur's
+Thm 4 is a statement about the RANK, so the leaf is stated with
+`AddMonoid.IsTorsion`; Mordell–Weil (`fg_relPoint_of_abelianScheme`,
+PROVEN in `X0.lean`) plus `AddCommGroup.finite_of_fg_torsion` is what
+turns that into finiteness, exactly as `finite_jacobian_of_kenkuLevel`
+already does for `J_0(N)` itself.  That is a third body of literature
+kept out of Mazur's leaf at no cost.
+
+**WHAT THIS CUT DOES NOT DO.**  It does not separate Mazur's Thm 4 (rank
+`0`) from Mazur's §II.4 (the `a₁` computation): both stay inside
+`exists_eisensteinQuotientCert_of_jNeronDatum`.  That split remains
+BLOCKED, and the reason is now sharper than "we lack a Hecke action".
+Suppose one tried leaf `P`: *"there are `A`, `u` with `A(ℚ)` torsion"*,
+and leaf `Q`: *"any such `A`, `u` satisfies the certificate"*.  `Q` is
+**FALSE**.  Take `A = A_f` an optimal quotient attached to a newform `f`;
+`Cot(A_f)` sits inside `S₂(Γ₀(N), ℤ)` and the composite
+`Cot(A_f) → Cot(X_0(N), ∞) ≅ ℤ_(q)` is `ω ↦ a₁(ω)`, whose image is
+`e · ℤ_(q)` for the congruence/Manin-type constant `e` of the quotient.
+Whenever `q ∣ e` the cotangent map is zero mod `q`, the certificate fails,
+and yet `A_f(ℚ)` may perfectly well be torsion.  What Mazur proves — and
+what nothing weaker than "`A` IS the Eisenstein quotient" gives — is
+`q ∤ e` for `q > 2`.  Pinning "`A` is the Eisenstein quotient" needs a
+pinned `T`, i.e. exactly the input
+`IsHeckeIsotypicDecomposition`'s docstring names; **the refuting check for
+that axis is therefore unchanged by this cut, and the check that would
+refute THIS paragraph is: exhibit a statement of "`A` is cut out by the
+Eisenstein ideal" that does not quantify over an unpinned family of
+endomorphisms.** -/
+
+/-- `Spec 𝔽_q[ε]`, `ε² = 0` — the base over which a tangent vector to the
+special fibre is a relative point. -/
+noncomputable abbrev SpecFD (q : ℕ) : Scheme.{0} :=
+  Spec (CommRingCat.of (DualNumber (ZMod q)))
+
+/-- the structure morphism `Spec 𝔽_q[ε] ⟶ Spec 𝔽_q` -/
+noncomputable def specFDStr (q : ℕ) : SpecFD q ⟶ SpecF q :=
+  Spec.map (CommRingCat.ofHom (algebraMap (ZMod q) (DualNumber (ZMod q))))
+
+/-- the augmentation section `Spec 𝔽_q ⟶ Spec 𝔽_q[ε]`, `ε ↦ 0` -/
+noncomputable def specFDAug (q : ℕ) : SpecF q ⟶ SpecFD q :=
+  Spec.map (CommRingCat.ofHom
+    (TrivSqZeroExt.fstHom (ZMod q) (ZMod q) (ZMod q) :
+      DualNumber (ZMod q) →ₐ[ZMod q] ZMod q).toRingHom)
+
+/-- **the augmentation is a section of the structure morphism** (PROVEN) -/
+theorem specFDAug_comp (q : ℕ) : specFDAug q ≫ specFDStr q = 𝟙 (SpecF q) := by
+  rw [specFDAug, specFDStr, ← Spec.map_comp]
+  convert Spec.map_id (CommRingCat.of (ZMod q))
+  ext x
+  rfl
+
+/-- **`π ∘ aj_∞` is a morphism over `ℚ`** (PROVEN — associativity and the
+Yoneda equation for `aj`).
+
+Named because `IsCuspFormalImmersionCert` below has to mention the proof
+term itself: `IsAbelianGoodReductionModel` is indexed by it. -/
+theorem ajHom_comp_quotient_over {X J A : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ} {ab : AbelianSchemeStruct jstr}
+    {o : RelPoint strX (𝟙 SpecQ)} (jac : IsJacobianOf strX ab o)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) : (jac.ajHom ≫ u) ≫ astr = strX := by
+  rw [Category.assoc, hu]
+  exact (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+
+/-- **The formal-immersion certificate at the cusp, in characteristic
+`q`** (new 2026-07-28) — Mazur's §II.4 condition, stated as an
+infinitesimal statement about the SPECIAL fibre and nothing else.
+
+Read it as: *`X_0(N) → J_e` is a formal immersion at `∞_{/𝔽_q}`.*  A
+tangent vector to the special fibre `X'` at the reduced cusp is a
+relative point `v` of `strX'` over `specFDStr q : Spec 𝔽_q[ε] ⟶ Spec 𝔽_q`
+whose restriction along the augmentation is `d.redX cusp`; `d.spX`
+identifies it with a point of the integral curve model over
+`Spec 𝔽_q[ε] ⟶ Spec ℤ_(q)`, and `G.fmor` pushes that into the integral
+model of the quotient.  The certificate says this is INJECTIVE on the
+tangent space at the cusp.
+
+**WHY IT IS QUANTIFIED OVER `G` RATHER THAN CARRYING ONE.**  Keeping the
+leaf that produces the certificate stated entirely over `ℚ` is the whole
+point of the field split recorded above; a model as a field would undo
+it.  The quantification costs nothing, because a good-reduction model of
+an abelian variety is unique up to unique isomorphism (Néron mapping
+property), so the condition does not depend on which `G` is taken — and
+it is not vacuous, because `exists_abelianGoodReductionModel` asserts
+`Nonempty` of exactly this type.
+
+**WHY THE SPECIAL FIBRE AND NOT `Spec ℚ[ε]`.**  Over `ℚ` the condition is
+equivalent to `A ≠ 0` and carries none of the arithmetic: eigenforms are
+normalized, so `a₁ = 1` in characteristic `0` for free.  The whole
+content of Mazur's §II.4 is that `a₁` stays a unit MOD `q`, and that is
+visible only on the special fibre.  This is the same
+`𝒪ᵥ`-versus-`𝒪^nr` discipline the project doctrine records: a VALUE
+descends, an integral generation statement does not. -/
+def IsCuspFormalImmersionCert {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    (cusp : RelPoint strX (𝟙 SpecQ))
+    {J A : Scheme.{0}} {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} (jac : IsJacobianOf strX ab cusp)
+    (u : J ⟶ A) (hu : u ≫ astr = jstr) : Prop :=
+  ∀ G : IsAbelianGoodReductionModel q R toF d.genX (jac.ajHom ≫ u)
+      (ajHom_comp_quotient_over jac u hu),
+    ∀ v w : RelPoint strX' (specFDStr q),
+      RelPoint.pre (specFDAug q) (specFDAug_comp q) v = d.redX cusp →
+      RelPoint.pre (specFDAug q) (specFDAug_comp q) w = d.redX cusp →
+      RelPoint.post G.fmor G.fmor_over
+          (d.spX (specFDStr q) (specFDStr q ≫ SpecLoc.special toF) rfl v)
+        = RelPoint.post G.fmor G.fmor_over
+          (d.spX (specFDStr q) (specFDStr q ≫ SpecLoc.special toF) rfl w) →
+      v = w
+
+/-- **Mazur's Eisenstein quotient, ENTIRELY OVER `ℚ`, with the formal
+immersion in its INFINITESIMAL form** (sorry node, new 2026-07-28) — the
+whole of the residual content of Mazur's IHÉS 47 in this development.
+
+The difference from the node below, which it replaces as the carrier of
+Mazur's mathematics, is exactly two:
+
+* the finiteness of `J_e(N)(ℚ)` is asked for as `AddMonoid.IsTorsion`
+  rather than `Finite` — Mazur's Thm 4 is a rank statement, and
+  Mordell–Weil is a separate theorem, applied in the assembly below;
+* the formal immersion is asked for as `IsCuspFormalImmersionCert`, i.e.
+  injectivity on `𝔽_q`-tangent vectors at the reduced cusp (§II.4), rather
+  than as the conclusion of Mazur's method about rational points.
+
+**REFERENCES.**  Mazur, *Modular curves and the Eisenstein ideal*, IHÉS
+47 (1977): §II for the Eisenstein ideal `I = (T_ℓ − ℓ − 1 : ℓ ∤ N)` and
+the quotient `J_e = J_0(N)/I J_0(N)`; Thm 4 for `rank J_e(N)(ℚ) = 0`;
+§II.4 for the `a₁ ≢ 0 (mod q)` computation, which is the certificate.
+
+**WHERE THE HYPOTHESES ENTER.**  `19 < N` with `N` prime is what makes
+Mazur's Thm 4 give a NONTRIVIAL Eisenstein quotient; `q ≠ 2` is the
+certificate (in characteristic `2` the `a₁` argument fails); `q ≠ N` with
+both prime is `q ∤ N`, which is what makes `d.redX` the reduction at a
+prime of good reduction.  They are underscored only because a sorried
+body uses nothing.
+
+**NON-VACUITY.**  `N = 37`, `q = 3` satisfies every hypothesis, and
+`Y_0(37)(ℚ)` is nonempty (two rational `37`-isogeny `j`-invariants,
+`−9317` and `−162677523113838677`), so no proof can discharge this by
+contradicting its own hypotheses.
+
+**THE DEGENERATE WITNESS IS NOW EXCLUDED, not inherited.**  `A := Spec ℚ`
+with `u := ` the structure map satisfies additivity, surjectivity and
+torsion, and it satisfied the OLD leaf's formal immersion by collapsing it
+to Mazur's own conclusion.  It does **not** satisfy
+`IsCuspFormalImmersionCert`: the good-reduction model of `Spec ℚ` is
+`Spec ℤ_(q)`, whose relative points over any base form a singleton, while
+the tangent space of the smooth curve `X'` at the `𝔽_q`-rational point
+`d.redX cusp` has `q ≥ 3` elements.  See the subsection docstring above. -/
+theorem exists_eisensteinQuotientCert_of_jNeronDatum (N q : ℕ)
+    (_hN : N.Prime) (_hN19 : 19 < N) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
+    ∃ cusp : RelPoint strX (𝟙 SpecQ), hX.IsCusp cusp ∧
+      ∃ (J A : Scheme.{0}) (jstr : J ⟶ SpecQ) (astr : A ⟶ SpecQ)
+        (ab : AbelianSchemeStruct jstr) (abA : AbelianSchemeStruct astr)
+        (jac : IsJacobianOf strX ab cusp) (u : J ⟶ A) (hu : u ≫ astr = jstr),
+        IsAdditiveOn ab abA u hu ∧ AlgebraicGeometry.Surjective u ∧
+          (letI := abA.addCommGroup (𝟙 SpecQ); AddMonoid.IsTorsion (RelPoint astr (𝟙 SpecQ))) ∧
+          IsCuspFormalImmersionCert d cusp jac u hu :=
+  sorry
+
+/-- **A formal immersion at a point of the special fibre is injective on
+that point's residue disc** (sorry node, new 2026-07-28) — the classical
+half of `exists_eisensteinQuotientOverQ_of_jNeronDatum`, carrying no
+modular content whatever.
+
+TRUE, and it is the standard packaging of Mazur's method.  Let `x` be a
+rational point of `X_0(N)` with `d.redX x = d.redX cusp` and
+`π(aj(x)) = π(aj(cusp))` in `A(ℚ)`.
+
+* *Spread out.*  `d.properX` (the valuative criterion) makes `d.intX`
+  a bijection onto the integral points, so `x` and `cusp` become
+  `ℤ_(q)`-points `𝑥`, `𝑐` of the integral curve model with the same
+  reduction.
+* *The images agree integrally.*  `exists_abelianGoodReductionModel`,
+  applied over the integral Jacobian `𝒥_0(N)/ℤ_(q)` that
+  `exists_x0JacobianModel_of_curveModel` supplies from
+  `x0CurveModel_of_jNeronDatum d`, gives a model `G`; `G.genA_fmor`
+  identifies the generic-fibre reading of `fmor` with `π ∘ aj`, and
+  `bijective_pre_generic_of_isProper` makes the generic-fibre restriction
+  injective on `ℤ_(q)`-points.  So `fmor 𝑥 = fmor 𝑐` in `𝒜(ℤ_(q))`.
+* *Conclude infinitesimally.*  The certificate says the map on
+  `𝔽_q`-tangent vectors at `d.redX cusp` is injective, i.e. the cotangent
+  map `Cot(𝒜, 0) ⊗ 𝔽_q → Cot(𝒳, 𝑐̄) ⊗ 𝔽_q` is surjective; by Nakayama the
+  map of completed local rings `𝒪̂_{𝒜,0} → 𝒪̂_{𝒳,𝑐̄}` is surjective, so
+  `𝒳̂_{𝑐̄} → 𝒜̂_0` is a closed immersion and injective on `ℤ_(q)`-points of
+  the residue disc.  Hence `𝑥 = 𝑐`, hence `x = cusp`.
+
+**REFERENCES.**  Bosch–Lütkebohmert–Raynaud, *Néron Models*, §2.2 and
+§7.4; Silverman, *AEC* IV (formal groups and the kernel of reduction);
+Mazur IHÉS 47 §III.1 for the packaging, and Kamienny and Edixhoven for
+the form in which it is usually quoted.
+
+**WHERE THE HYPOTHESES ENTER.**  `hq` and `hqN` are what
+`exists_x0JacobianModel_of_curveModel` needs to produce the integral
+Jacobian at a prime of good reduction; `hadd` and `hsurj` are what
+`exists_abelianGoodReductionModel` needs to produce `G` at all — without
+`hsurj` no model need exist, and the statement would be false.  `q ≠ 2`
+is deliberately ABSENT: characteristic `2` is an obstruction to the
+certificate, not to this principle, and asking for it here would hide
+where the difficulty lives.  They are underscored only because a sorried
+body uses nothing.
+
+**NON-VACUITY, and this is the field that matters.**  The certificate is
+satisfiable — that is what
+`exists_eisensteinQuotientCert_of_jNeronDatum` asserts — so this is not
+discharged by an empty hypothesis.  Nor is it trivially true: drop
+`hcert` and the conclusion is FALSE, since `A := Spec ℚ` with `u := ` the
+structure map makes the second hypothesis vacuous and the conclusion
+would assert that `X_0(N)` has at most one rational point in each residue
+disc, which is Mazur's theorem itself. -/
+theorem formalImmersion_of_cuspFormalImmersionCert (N q : ℕ)
+    (_hq : q.Prime) (_hqN : q ≠ N)
+    {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+    (cusp : RelPoint strX (𝟙 SpecQ))
+    {J A : Scheme.{0}} {jstr : J ⟶ SpecQ} {astr : A ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {abA : AbelianSchemeStruct astr}
+    (jac : IsJacobianOf strX ab cusp) (u : J ⟶ A) (hu : u ≫ astr = jstr)
+    (_hadd : IsAdditiveOn ab abA u hu) (_hsurj : AlgebraicGeometry.Surjective u)
+    (_hcert : IsCuspFormalImmersionCert d cusp jac u hu) :
+    ∀ x : RelPoint strX (𝟙 SpecQ), d.redX x = d.redX cusp →
+      RelPoint.post u hu (jac.aj (𝟙 SpecQ) x)
+        = RelPoint.post u hu (jac.aj (𝟙 SpecQ) cusp) → x = cusp :=
+  sorry
+
+/-- **Mazur's Eisenstein quotient, ENTIRELY OVER `ℚ`** (was a bare
+`sorry` when opened 2026-07-27; **DECOMPOSED and the assembly PROVEN
+2026-07-28** over
+`exists_eisensteinQuotientCert_of_jNeronDatum`,
+`formalImmersion_of_cuspFormalImmersionCert` and Mordell–Weil) — the
+modular half of
+`exists_eisensteinQuotientModel_of_jNeronDatum`.
+
+**THE RESIDUAL CONTENT OF MAZUR'S IHÉS 47 HAS MOVED ONE LEVEL DOWN**, to
+`exists_eisensteinQuotientCert_of_jNeronDatum`; this node is now the
+assembly that reads Mazur's infinitesimal statement as a statement about
+rational points.  The three inputs are: Mazur (§II, Thm 4, §II.4) in that
+leaf; the classical formal-immersion principle in
+`formalImmersion_of_cuspFormalImmersionCert`; and Mordell–Weil
+(`fg_relPoint_of_abelianScheme`) with
+`AddCommGroup.finite_of_fg_torsion`, which is what turns Thm 4's RANK
+statement into the `Finite` this node's consumer asks for.  Read the
+subsection docstring above `SpecFD` for why that cut is safe, for the
+disjointness of the three literatures, and for why the Thm 4 / §II.4
+split remains blocked on a pinned Hecke action.
 
 Produces the cusp `∞`, the quotient `J_e(N)` as an abelian variety over
 `ℚ` receiving a surjective homomorphism `u : J_0(N) ↠ J_e(N)`, the
@@ -1829,14 +2161,18 @@ because a sorried body uses nothing.
 `−9317` and `−162677523113838677`), so no proof can discharge this by
 contradicting its own hypotheses.
 
-**THE DEGENERATE WITNESS IS INHERITED, NOT INTRODUCED.**  `A := Spec ℚ`,
-`u := ` the structure map, `fQ := ` the structure map satisfies
-additivity, surjectivity (a map onto a one-point scheme) and finiteness,
-and collapses the formal immersion to *"a rational point congruent to the
-cusp mod `q` IS the cusp"* — Mazur's own conclusion, and exactly as hard.
-See the subsection docstring above for why no field split removes it. -/
+**THE DEGENERATE WITNESS IS INHERITED, NOT INTRODUCED — AND IT IS NOW
+EXCLUDED ONE LEVEL DOWN.**  `A := Spec ℚ`, `u := ` the structure map,
+`fQ := ` the structure map satisfies additivity, surjectivity (a map onto
+a one-point scheme) and finiteness, and collapses the formal immersion to
+*"a rational point congruent to the cusp mod `q` IS the cusp"* — Mazur's
+own conclusion, and exactly as hard.  It still inhabits THIS statement,
+which is why the statement is unchanged; what changed is that
+`exists_eisensteinQuotientCert_of_jNeronDatum` refuses it, because the
+good-reduction model of `Spec ℚ` has singleton relative points while the
+tangent space of `X'` at `d.redX cusp` has `q ≥ 3` elements. -/
 theorem exists_eisensteinQuotientOverQ_of_jNeronDatum (N q : ℕ)
-    (_hN : N.Prime) (_hN19 : 19 < N) (_hq : q.Prime) (_hq2 : q ≠ 2) (_hqN : q ≠ N)
+    (hN : N.Prime) (hN19 : 19 < N) (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -1854,8 +2190,18 @@ theorem exists_eisensteinQuotientOverQ_of_jNeronDatum (N q : ℕ)
           Finite (RelPoint astr (𝟙 SpecQ)) ∧
           ∀ x : RelPoint strX (𝟙 SpecQ), d.redX x = d.redX cusp →
             RelPoint.post u hu (jac.aj (𝟙 SpecQ) x)
-              = RelPoint.post u hu (jac.aj (𝟙 SpecQ) cusp) → x = cusp :=
-  sorry
+              = RelPoint.post u hu (jac.aj (𝟙 SpecQ) cusp) → x = cusp := by
+  obtain ⟨cusp, hcusp, J, A, jstr, astr, ab, abA, jac, u, hu, hadd, hsurj, htors, hcert⟩ :=
+    exists_eisensteinQuotientCert_of_jNeronDatum N q hN hN19 hq hq2 hqN d
+  refine ⟨cusp, hcusp, J, A, jstr, astr, ab, abA, jac, u, hu, hadd, hsurj, ?_, ?_⟩
+  · -- Mordell–Weil turns Mazur's RANK statement into finiteness
+    letI := abA.addCommGroup (𝟙 SpecQ)
+    haveI := fg_relPoint_of_abelianScheme abA
+    exact AddCommGroup.finite_of_fg_torsion _ htors
+  · -- the formal-immersion principle turns the infinitesimal statement into
+    -- one about rational points
+    exact formalImmersion_of_cuspFormalImmersionCert N q hq hqN d cusp jac u hu
+      hadd hsurj hcert
 
 /-- **Existence of Mazur's Eisenstein quotient as an integral model at
 `q`** (was a bare `sorry` when opened 2026-07-27; **PROVEN the same day**
