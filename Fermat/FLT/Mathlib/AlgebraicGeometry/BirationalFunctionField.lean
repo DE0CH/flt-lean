@@ -95,6 +95,9 @@ public import Mathlib.AlgebraicGeometry.Birational.Composition
 public import Mathlib.AlgebraicGeometry.AffineSpace
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.FieldTheory.RatFunc.Luroth
+-- for `Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one`, the one input to
+-- the non-degeneracy half of Lüroth below.  Adds nothing to the only consumer's cone:
+-- `Fermat/FLT/ModularCurve/X0.lean` already imports both this file and `CurveExtension`.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 
 @[expose] public section

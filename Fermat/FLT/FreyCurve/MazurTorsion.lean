@@ -7789,9 +7789,53 @@ That cut names `WeierstrassCurve.PotentiallyGoodModel`, which is declared
 ~1100 lines BELOW this point, and the branch made it TYPE by hoisting the whole
 `PotentiallyGoodModel` cluster out into a new module.
 
-The release-12 integration rejected the hoist — two other branches had
-meanwhile GROWN the moved region (`TranslationDatum`, `PreTranslationDatum`,
-the whole `exists_potentiallyGoodModel_of_*` family) and MOVED part of it
+> for `σ ∈ I_q`, `σ²⁴` acts trivially on the `N`-torsion of `E`,
+
+which mentions neither `lam`, nor `hlam`, nor `hg`, nor `hN19`, nor even
+`N.Prime` beyond `q ≠ N`.  That sentence is
+`WeierstrassCurve.map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg`
+below, and `B₀¹` is derived from it in a dozen lines by the standard
+`(lam σ).val • g = g ⟹ lam σ = 1` argument that
+`isogenyCharacter_pow_twelve_eq_of_localInertia` already runs further
+down this file.
+
+WHY THE CHARACTER IS WORTH STRIPPING OFF.  The statement above is a fact
+about the mod-`N` Galois REPRESENTATION, not about a character of it, so
+it is the same input that `B₀²` needs (`B₀²` reads off the exponent of
+`Φ^{ab}`, `B₀¹` the exponent of `Φ`, and both are facts about the image
+of `I_q` in `Aut(E[N])`).  Cutting here therefore does not duplicate
+work between the two halves of the `B₀` cut; it factors it.
+
+THE GALOIS-MODULE STATEMENT IS THEN SPLIT ON THE RESIDUE
+CHARACTERISTIC, because that is where the AVAILABLE machinery splits:
+
+* `WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral`
+  turns this leaf's own hypothesis `0 ≤ v_q(j)` into a good model over a
+  number field with residue degree one at `q`.  The residual leaf
+  `map_pow_twentyFour_eq_self_of_potentiallyGoodModel` is then pure
+  Néron–Ogg–Shafarevich plus the classification of the semistability
+  defect, with the reduction theory handed over as data.
+* **NO SPLIT ON `q = 2` IS NEEDED ANY MORE** (2026-07-28).  An earlier
+  version of this paragraph said the producer is "not stated at `q = 2`"
+  and prescribed a separate `2`-adic leaf on that ground.  That is no
+  longer true: `exists_potentiallyGoodModel_of_jIntegral` is now uniform
+  in `q`, its `hq2 : q ≠ 2` hypothesis having been removed when
+  `exists_potentiallyGoodModel_of_jIntegral_two` was opened.  The `2`-adic
+  arithmetic did not disappear — it is `nonempty_fullTranslationDatum_two`
+  — but it is now BEHIND the producer, so this cut sees one case, not two.
+
+THE HOIST THAT THIS CUT NEEDS, AND WHICH HAS NOT BEEN DONE.
+`PotentiallyGoodModel` and its producers sit ~1100 lines BELOW this point
+IN THIS FILE, so Lean's lack of forward references puts them out of reach
+here, and the three-leaf split described above therefore does NOT exist in
+the tree: `B₀¹` below is still the single leaf it always was.
+
+The branch that wrote this paragraph moved the cluster VERBATIM into a new
+`Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean` (the Minkowski precedent).
+That could not be applied at the release-12 integration: two other branches
+had meanwhile GROWN the moved region (`TranslationDatum`,
+`PreTranslationDatum` and the whole `exists_potentiallyGoodModel_of_*`
+family, none of which is in the hoisted file) and MOVED part of it
 elsewhere (`flt-lean-381` took `WeierstrassCurve.TameBaseAux` into
 `EllipticCurve/TorsionReduction.lean`), so the extraction lost twenty
 declarations and duplicated seven — and then, at build 4, reverted the cut with
@@ -10167,24 +10211,311 @@ theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_three
           = (E.toShortNF • E).baseChange N.K := map_variableChange _ _ _
       rw [N.V_eq, mul_smul, hmv] }⟩
 
+/-! ### The wild case `q = 2`: the FULL variable change is not optional
+
+`TranslationDatum` above fixes `s = t = 0`, and its docstring proves that this loses
+nothing **at `q = 3`** — the completing-the-square change `(1, 0, -a₁/2, -a₃/2)` is
+integral there because `2` is a unit of the residue characteristic `3`. At `q = 2` that
+step is exactly what fails, and the failure is not technical: **`TranslationDatum W 2` is
+EMPTY for every `W`.**
+
+For a Weierstrass equation with `a₁ = a₃ = 0` one has `b₂ = 4a₂`, `b₄ = 2a₄`, `b₆ = 4a₆`,
+`b₈ = 4a₂a₆ − a₄²`, hence
+
+    Δ = −b₂²b₈ − 8b₄³ − 27b₆² + 9b₂b₄b₆
+      = −64a₂³a₆ + 16a₂²a₄² − 64a₄³ − 432a₆² + 288a₂a₄a₆,
+
+every coefficient of which is divisible by `16`. So `16 ∣ Δ` whenever the `aᵢ` are
+integral, and `Δ` is never a unit at a place above `2`. (Conceptually: in residue
+characteristic `2` the equation `y² = cubic` is inseparable in `y`, so its reduction is
+singular at the point where the cubic's derivative vanishes.) A good model at `2`
+therefore has `a₁ ≠ 0` or `a₃ ≠ 0`, i.e. **both `s` and `t` are genuinely needed**, and
+the datum below carries all four components of the variable change.
+
+Everything else is unchanged, and in particular
+`exists_potentiallyGoodModel_of_fullTranslationDatum` below is uniform in `q` — nothing
+in it mentions `2`. -/
+
+/-- **The obligation the wild case `q = 2` owes, with every trace of reduction theory
+removed** (interface opened 2026-07-28 while extending
+`exists_potentiallyGoodModel_of_jIntegral` to `q = 2`). A `FullTranslationDatum W q` is: a
+number field `L`, a DVR valuation subring `A ⊆ L` with residue field `ZMod q`, and **four
+field elements** `u ∈ Lˣ`, `r, s, t ∈ L` such that the curve `y² = x³ + a₄x + a₆` becomes
+integral with invertible discriminant after the variable change `(u, r, s, t)`. Nothing
+else: no `IsMinimal`, no `HasGoodReduction`, no `IsIntegral`, no residue-field
+bookkeeping. Those all live in
+`exists_potentiallyGoodModel_of_fullTranslationDatum` below, which is PROVEN and is
+uniform in `q`.
+
+The five membership conditions are literally the transformed coefficients of a curve in
+short normal form (`a₁ = a₂ = a₃ = 0`), read off mathlib's `variableChange_aᵢ`:
+
+    a₁' = u⁻¹·(2s),                     a₂' = u⁻²·(3r − s²),
+    a₃' = u⁻³·(2t),                     a₄' = u⁻⁴·(a₄ + 3r² − 2st),
+    a₆' = u⁻⁶·(a₆ + r·a₄ + r³ − t²),
+
+and `hΔ` is `(Δ')⁻¹ ∈ A` for `Δ' = u⁻¹²·Δ`.
+
+**RELATION TO `TranslationDatum`.** Setting `s = t = 0` recovers it exactly, so this
+structure is weaker as a hypothesis and stronger as a conclusion — a `TranslationDatum`
+yields a `FullTranslationDatum` for the same `W` and `q`. The converse fails at `q = 2`
+by the computation in the section header above, and holds at every odd `q` by the
+completing-the-square argument in `TranslationDatum`'s docstring. Nothing here is
+specific to `2`.
+
+**NOT VACUOUS, and it is exactly as non-vacuous as `PotentiallyGoodModel`.** One
+direction is the theorem below. For the converse, a `PotentiallyGoodModel` of a `W` in
+short normal form comes with an integral `V = C • W_L` with unit `Δ`, and reading off the
+four components of that `C` gives back the five memberships verbatim — there is no
+normalisation step to lose, precisely because `s` and `t` are no longer being forced to
+`0`. So `Nonempty (W.FullTranslationDatum q)` and `Nonempty (W.PotentiallyGoodModel q)`
+are EQUIVALENT for `W` in short normal form: the structure is a faithful repackaging. -/
+structure WeierstrassCurve.FullTranslationDatum (W : WeierstrassCurve ℚ)
+    (q : ℕ) [Fact q.Prime] where
+  /-- The number field over which `W` acquires good reduction. -/
+  L : Type
+  [instField : Field L]
+  [instDec : DecidableEq L]
+  [instAlgebra : Algebra ℚ L]
+  [instFin : FiniteDimensional ℚ L]
+  /-- The local ring at the chosen prime of `L` above `q`. -/
+  A : ValuationSubring L
+  [instDVR : IsDiscreteValuationRing A]
+  /-- **Residue degree one**, exactly as in `PotentiallyGoodModel`. -/
+  resEquiv : IsLocalRing.ResidueField A ≃+* ZMod q
+  /-- The scaling. `hΔ` forces `v(u) = v(Δ)/12`. -/
+  u : Lˣ
+  /-- The translation `x ↦ x + r`. -/
+  r : L
+  /-- The shear `y ↦ y + sx`. It is what `TranslationDatum` sets to `0` and what a good
+  model at `2` cannot do without: in residue characteristic `2` a curve with `a₁ = 0` has
+  `Δ ≡ a₃⁴`, so a nonsingular reduction needs `a₁' ≠ 0` or `a₃' ≠ 0`. -/
+  s : L
+  /-- The translation `y ↦ y + t`. -/
+  t : L
+  /-- `a₁'` is integral. -/
+  ha₁ : ((u⁻¹ : Lˣ) : L) * (2 * s) ∈ A
+  /-- `a₂'` is integral. -/
+  ha₂ : ((u⁻¹ : Lˣ) : L) ^ 2 * (3 * r - s ^ 2) ∈ A
+  /-- `a₃'` is integral. -/
+  ha₃ : ((u⁻¹ : Lˣ) : L) ^ 3 * (2 * t) ∈ A
+  /-- `a₄'` is integral. -/
+  ha₄ : ((u⁻¹ : Lˣ) : L) ^ 4 *
+    (algebraMap ℚ L W.a₄ + 3 * r ^ 2 - 2 * s * t) ∈ A
+  /-- `a₆'` is integral. -/
+  ha₆ : ((u⁻¹ : Lˣ) : L) ^ 6 *
+    (algebraMap ℚ L W.a₆ + r * algebraMap ℚ L W.a₄ + r ^ 3 - t ^ 2) ∈ A
+  /-- `Δ'` is a unit. -/
+  hΔ : ((u : L)) ^ 12 * (algebraMap ℚ L W.Δ)⁻¹ ∈ A
+
+attribute [instance] WeierstrassCurve.FullTranslationDatum.instField
+  WeierstrassCurve.FullTranslationDatum.instDec
+  WeierstrassCurve.FullTranslationDatum.instAlgebra
+  WeierstrassCurve.FullTranslationDatum.instFin
+  WeierstrassCurve.FullTranslationDatum.instDVR
+
+/-- **A full translation datum produces the good model** (PROVEN 2026-07-28). This is the
+`q`-uniform half of the wild case at `2`, and it is pure bookkeeping over
+`exists_potentiallyGoodModel_of_integral`: the variable change is `(u, r, s, t)`, the
+`a₁`, `a₂`, `a₃` obligations are the structure's own fields once `IsShortNF` has killed
+`W`'s `a₁, a₂, a₃`, and so are the other three.
+
+Nothing here is specific to `q = 2`; the statement is uniform in `q`, and it subsumes
+`exists_potentiallyGoodModel_of_translationDatum` (take `s = t = 0`). What is specific to
+`q = 2` is that the datum is HARD TO BUILD — see `nonempty_fullTranslationDatum_two`. -/
+theorem WeierstrassCurve.exists_potentiallyGoodModel_of_fullTranslationDatum
+    {q : ℕ} [Fact q.Prime] (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    (D : W.FullTranslationDatum q) : Nonempty (W.PotentiallyGoodModel q) := by
+  classical
+  set C : VariableChange D.L := ⟨D.u, D.r, D.s, D.t⟩ with hC
+  have hb₁ : (W.baseChange D.L).a₁ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₂ : (W.baseChange D.L).a₂ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₃ : (W.baseChange D.L).a₃ = 0 := by simp [WeierstrassCurve.baseChange]
+  have hb₄ : (W.baseChange D.L).a₄ = algebraMap ℚ D.L W.a₄ := rfl
+  have hb₆ : (W.baseChange D.L).a₆ = algebraMap ℚ D.L W.a₆ := rfl
+  have hbΔ : (W.baseChange D.L).Δ = algebraMap ℚ D.L W.Δ := by
+    simp [WeierstrassCurve.baseChange, map_Δ]
+  refine WeierstrassCurve.exists_potentiallyGoodModel_of_integral W D.L D.A D.resEquiv C
+    ?_ ?_ ?_ ?_ ?_ ?_
+  · rw [variableChange_a₁, hC, hb₁]
+    simpa using D.ha₁
+  · rw [variableChange_a₂, hC, hb₁, hb₂]
+    simpa using D.ha₂
+  · rw [variableChange_a₃, hC, hb₁, hb₃]
+    simpa using D.ha₃
+  · rw [variableChange_a₄, hC, hb₁, hb₂, hb₃, hb₄]
+    simpa using D.ha₄
+  · rw [variableChange_a₆, hC, hb₁, hb₂, hb₃, hb₄, hb₆]
+    simpa using D.ha₆
+  · rw [variableChange_Δ, hC, hbΔ]
+    simpa [mul_comm] using D.hΔ
+
+/-- **THE ARITHMETIC OF THE WILD CASE `q = 2`** (sorry leaf, opened 2026-07-28 while
+extending `exists_potentiallyGoodModel_of_jIntegral` to `q = 2`). What is owed is a base
+`L` with a residue-degree-`1` DVR at `2`, plus **four elements** `u, r, s, t` of `L`
+making the five transformed coefficients integral and `Δ'` a unit. Write `A = W.a₄`,
+`B = W.a₆`, `d = v₂(Δ)`; `hΔ` pins `v(u) = d/12`.
+
+**WHY THIS CASE EXISTS AT ALL.** The producer was stated with `hq2 : q ≠ 2` from the day
+it was written, on the grounds that its tame Kummer base `ℚ_q(π^{1/e})` "does not reach
+the wild prime `2`". That is a statement about the ROUTE, not about the theorem: the
+conclusion is true at `2` for the same reason as everywhere else (Silverman *AEC* VII.5.5
+plus the removal of the unramified layer), and the `q ≠ 2` hypothesis was propagating
+into consumers as a real restriction — notably it is what forced
+`map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg` to be split into a `q ≠ 2` half and
+a separate `q = 2` leaf. With this leaf in place the producer is uniform in `q` and that
+split is unnecessary.
+
+**THE TAME BASE IS TOO SMALL AT `2`, AND HERE THE OBSTRUCTION IS EXACT.** If `E/ℚ₂`
+acquires good reduction over a finite `L/ℚ₂` then `I_L ⊆ N := ker(I → Aut T_ℓE)`
+(Néron–Ogg–Shafarevich), so with `Φ := I/N` the semistability defect,
+
+    |Φ| = [I : N]  divides  [I : I_L] = e(L/ℚ₂).
+
+At `p = 2` Kraus's classification gives `e ∈ {1, 2, 3, 4, 6, 8, 24}`, and `ℚ₂(2^{1/12})`
+has `e = 12`. So **every curve with `e ∈ {8, 24}` is out of reach of the tame base**,
+since neither `8` nor `24` divides `12`. Concrete witness, found with PARI and stated
+here as reconnaissance rather than as a Lean fact: `E : y² = x³ − 2x` has `j = 1728` with
+`v₂(j) = 6 ≥ 0`, and `elllocalred(E, 2)` returns Kodaira type `III` with conductor
+exponent `8` — the maximum possible at `2` — i.e. wild part `δ = 6`, which is Kraus's
+`e = 24` case. So, exactly as at `q = 3`, **do not attempt this leaf over
+`TameBaseAux`**; the base has to be built out of the curve.
+
+Two further curves worth knowing, both with `v₂(j) ≥ 0` and `j ∉ {0, 1728}`, so that the
+difficulty is not confined to the CM values: `y² = x³ + x + 1` has `j = 6912/31`,
+`v₂(j) = 8`, Kodaira `II`, conductor exponent `4` at `2` (wild, `δ = 2`); and
+`y² = x³ − x + 1` has `j = −6912/23`, `v₂(j) = 8`, Kodaira `IV`, conductor exponent `2`
+(tame).
+
+**WHAT IS FORCED, AND IT IS THE ORDINARY/SUPERSINGULAR DICHOTOMY.** Since `hΔ` makes `Δ'`
+a unit, the reduction is nonsingular; in residue characteristic `2` a Weierstrass
+equation has
+
+    Δ ≡ a₁⁶a₆ + a₁⁵a₃a₄ + a₁⁴a₂a₃² + a₁⁴a₄² + a₁³a₃³ + a₃⁴   (mod 2),
+
+which for `a₁ = 0` is `a₃⁴`. So `v(a₁') = 0` or `v(a₃') = 0`, i.e.
+
+    v(s) = v(u) − v(2)      (ordinary reduction)   or
+    v(t) = 3v(u) − v(2)     (supersingular reduction).
+
+Neither `s` nor `t` is free, and a prover should expect to split on this dichotomy rather
+than to find a single uniform formula. Note `v(2) = e(L/ℚ₂) > 0` here, which is exactly
+why the `ha₁`/`ha₃` conditions are satisfiable at all.
+
+**A REDUCTION THAT IS AVAILABLE AND COSTS NOTHING** (the same one recorded on
+`nonempty_preTranslationDatum_three`, and it applies verbatim here). The statement is
+invariant under rational scaling: for `c ∈ ℚˣ` let `W_c` be the short curve with
+`a₄ ↦ c⁴a₄`, `a₆ ↦ c⁶a₆` (so `Δ ↦ c¹²Δ`, `j` unchanged); given a `FullTranslationDatum`
+for `W_c` with data `(u', r', s', t')`, the tuple `(u'/c, r'/c², s'/c, t'/c³)` is one for
+`W`, since each of the six conditions is homogeneous of the matching weight. Taking
+`c = a₄.den · a₆.den` reduces to `a₄, a₆ ∈ ℤ`, where Newton-polygon arguments are
+available.
+
+**THE ONE REMAINING GAP IS THE SAME AS AT `q = 3`: residue degree `1`.** Producing SOME
+finite `L/ℚ₂` with good reduction is Silverman *AEC* VII.5.5; producing one with residue
+degree `1` is the removal of the unramified layer, and the argument is group-theoretic:
+`G/N` is an extension of `Ẑ` by the finite `Φ`, the closure of a Frobenius lift is a
+procyclic group surjecting onto `Ẑ` with finite kernel — hence `≅ Ẑ`, since a proper
+procyclic quotient of `Ẑ` cannot surject onto `Ẑ` — so it is a complement, its preimage
+`H` has `H ∩ I = N` and index `e`, and the fixed field of `H` is TOTALLY RAMIFIED of
+degree `e` with good reduction. Formalising that needs local Galois theory this project
+does not have.
+
+**THE DECOMPOSITION THAT WOULD PAY FOR ITSELF, and it is uniform in `q`.** Split
+`PotentiallyGoodModel` into (i) the same structure WITHOUT `resEquiv`, asking only that
+the residue field have characteristic `q`, and (ii) the passage from (i) to residue
+degree `1`. Then (i) is Silverman VII.5.5 + a Krasner descent and (ii) is the paragraph
+above, both uniform in `q` — and `q = 2`, `q = 3` and `5 ≤ q` all become corollaries of
+one pair of leaves instead of three separate per-prime arguments. That cut is NOT made
+here only because `exists_potentiallyGoodModel_of_jIntegral_three` has a live owner and
+restructuring it under them would cost a merge conflict for no mathematical gain.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: exhibit `E/ℚ` with `0 ≤ v₂(j(E))` acquiring
+good reduction over NO finite extension of `ℚ₂` of residue degree `1`. Silverman *AEC*
+VII.5.5 gives good reduction over some finite `L/ℚ₂`, and the group-theoretic argument
+just quoted removes the unramified layer, so such a witness would have to break that
+step. References for the wild arithmetic at `2`: Serre, *Propriétés galoisiennes des
+points d'ordre fini des courbes elliptiques*, Invent. Math. 15 (1972), §5.6; Kraus, *Sur
+le défaut de semi-stabilité des courbes elliptiques à réduction additive*, Manuscripta
+Math. 69 (1990). -/
+theorem WeierstrassCurve.nonempty_fullTranslationDatum_two
+    (W : WeierstrassCurve ℚ) [W.IsElliptic] [W.IsShortNF]
+    {q : ℕ} [Fact q.Prime] (hq2 : q = 2) (hj : 0 ≤ padicValRat q W.j) :
+    Nonempty (W.FullTranslationDatum q) :=
+  sorry
+
+/-- **The WILD half of the arithmetic leaf at the wild prime: `q = 2`** (PROVEN
+2026-07-28 modulo `nonempty_fullTranslationDatum_two`, which carries all the remaining
+arithmetic). The proof is only the reduction to short normal form, exactly as in the
+`q = 3` and `5 ≤ q` halves: `E.toShortNF` puts `E` in short form (`Invertible 2` and
+`Invertible 3` are free over `ℚ`, the residue characteristic being irrelevant to what
+happens over `ℚ` itself), `variableChange_j` carries `j`-integrality across, and the two
+variable changes compose by `mul_smul` and `map_variableChange`.
+
+**WHAT IS ALREADY BUILT AND MUST NOT BE REBUILT**, all of it uniform in `q`:
+`exists_potentiallyGoodModel_of_integral` turns *(number field, DVR, residue equivalence,
+variable change, five integrality memberships, invertible `Δ`)* into the
+`PotentiallyGoodModel` datum; `hasGoodReduction_of_isUnit_Δ` and
+`isMinimal_of_valuation_Δ_eq_one` discharge mathlib's `IsMinimal`/`HasGoodReduction`
+bookkeeping; `residueFieldEquivZModOfLocalHom` upgrades any local hom onto `ZMod q` to
+the required `resEquiv`; and `TranslationAux.algebraMap_mem_of_not_dvd_den` is the bridge
+from `0 ≤ padicValRat q x` to membership of `A`. A prover here owes exactly ONE thing,
+and it is stated as its own leaf above. -/
+theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_two
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {q : ℕ} [Fact q.Prime] (hq2 : q = 2)
+    (hj : 0 ≤ padicValRat q E.j) : Nonempty (E.PotentiallyGoodModel q) := by
+  classical
+  haveI : Invertible (2 : ℚ) := invertibleOfNonzero (by norm_num)
+  haveI : Invertible (3 : ℚ) := invertibleOfNonzero (by norm_num)
+  have hj' : 0 ≤ padicValRat q (E.toShortNF • E).j := by rwa [variableChange_j]
+  obtain ⟨D⟩ := WeierstrassCurve.nonempty_fullTranslationDatum_two
+    (E.toShortNF • E) hq2 hj'
+  obtain ⟨N⟩ := WeierstrassCurve.exists_potentiallyGoodModel_of_fullTranslationDatum
+    (E.toShortNF • E) D
+  exact ⟨{
+    K := N.K
+    R := N.R
+    resEquiv := N.resEquiv
+    V := N.V
+    C := N.C * (E.toShortNF.map (algebraMap ℚ N.K))
+    V_eq := by
+      have hmv : (E.toShortNF.map (algebraMap ℚ N.K)) • (E.baseChange N.K)
+          = (E.toShortNF • E).baseChange N.K := map_variableChange _ _ _
+      rw [N.V_eq, mul_smul, hmv] }⟩
+
 /-- **The ARITHMETIC half: integral `j`-invariant produces a good model over a
 number field with residue degree one at `q`** (opened 2026-07-27 by
 decomposing `exists_frobeniusAut_of_potentiallyGoodReduction` below;
-**DECOMPOSED 2026-07-27** into its tame and wild halves, of which
-`exists_potentiallyGoodModel_of_jIntegral_five_le` is PROVEN and
+**DECOMPOSED 2026-07-27** into its tame and wild halves; **EXTENDED TO `q = 2`
+on 2026-07-28**, so the statement is now uniform in `q` and carries no
+`hq2 : q ≠ 2`). Of the three halves,
+`exists_potentiallyGoodModel_of_jIntegral_five_le` is PROVEN,
 `exists_potentiallyGoodModel_of_jIntegral_three` is PROVEN modulo the single
-remaining leaf `nonempty_translationDatum_three`). No
+remaining leaf `nonempty_translationDatum_three`, and
+`exists_potentiallyGoodModel_of_jIntegral_two` is PROVEN modulo
+`nonempty_fullTranslationDatum_two`. No
 Galois theory appears here; the whole content is reduction theory of Weierstrass
 equations.
 
-THE PROOF BELOW is only the case split: a prime `q ≠ 2` is either `3` or `≥ 5`
-(`4` is not prime), and the two halves are separately owned. `5 ≤ q` is PROVEN
+THE PROOF BELOW is only the case split: a prime is `2`, or `3`, or `≥ 5`
+(`4` is not prime), and the three halves are separately owned. `5 ≤ q` is PROVEN
 over `EllipticCurve/TorsionReduction.lean`'s base `ℚ(q^{1/12})`, upgraded to a
-DVR here; `q = 3` is wildly ramified and is where all the remaining difficulty
-sits — read that leaf's docstring, which records three independent reasons the
-tame route does not extend and lists the machinery already built for it.
+DVR here; `q = 3` and `q = 2` are wildly ramified and are where all the
+remaining difficulty sits — read those leaves' docstrings, which record why the
+tame route does not extend and list the machinery already built for them.
 
-THE INFORMAL PROOF, kept for the wild half. Locally, `0 ≤ v_q(j(E))` is
+**WHY `hq2 : q ≠ 2` IS GONE, and what it was doing.** It was never a
+mathematical restriction — it recorded that the TAME route reaches only odd
+primes. Consumers were inheriting it and paying for it: it is why
+`map_pow_twentyFour_eq_self_of_padicValRat_j_nonneg` had to be cut into a
+`q ≠ 2` half and a separate `q = 2` leaf. Removing it here removes the reason
+for that split. It does NOT remove `hq2` from
+`exists_frobeniusAut_of_potentiallyGoodReduction`, whose GALOIS half
+(`exists_frobeniusAut_of_potentiallyGoodModel`) has its own, independent, use
+of `q ≠ 2` — that one is about the separability of the `2`-division polynomial
+mod `q` and lives on `PotentiallyGoodModel.exists_isTorsionReduction`.
+
+THE INFORMAL PROOF, kept for the wild halves. Locally, `0 ≤ v_q(j(E))` is
 equivalent to potential good reduction (Silverman *AEC* VII.5.5), so `E/ℚ_q`
 acquires good reduction over some finite `L/ℚ_q`. Three further steps produce
 the datum:
@@ -10226,13 +10557,14 @@ unramified extension of `ℚ_q` but over no totally ramified one — which the
 unit-discriminant argument of step 1 rules out for `q` odd. -/
 theorem WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {q : ℕ} [Fact q.Prime] (hq : q.Prime)
-    (hq2 : q ≠ 2) (hj : 0 ≤ padicValRat q E.j) :
+    (hj : 0 ≤ padicValRat q E.j) :
     Nonempty (E.PotentiallyGoodModel q) := by
-  have h2 := hq.two_le
-  rcases eq_or_lt_of_le (show 3 ≤ q by omega) with h | h
-  · exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_three E h.symm hj
-  · have hq4 : q ≠ 4 := by rintro rfl; exact absurd hq (by decide)
-    exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_five_le E (by omega) hj
+  rcases eq_or_lt_of_le hq.two_le with h | h
+  · exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_two E h.symm hj
+  · rcases eq_or_lt_of_le (show 3 ≤ q by omega) with h3 | h3
+    · exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_three E h3.symm hj
+    · have hq4 : q ≠ 4 := by rintro rfl; exact absurd hq (by decide)
+      exact WeierstrassCurve.exists_potentiallyGoodModel_of_jIntegral_five_le E (by omega) hj
 
 /-- **The reduction of the good model, transported to `𝔽_q`** (PROVEN
 2026-07-27): the reduction of `D.V` over the residue field of `D.R`, carried to
@@ -11961,7 +12293,7 @@ theorem WeierstrassCurve.exists_frobeniusAut_of_potentiallyGoodReduction
           hq.toHeightOneSpectrumRingOfIntegersRat) x) =
         WeierstrassCurve.autTorsionEnd _ C hC N
           (WeilPairing.frobeniusTorsionEnd q Wbar₀ N (ψ₀ x)) :=
-  (E.exists_potentiallyGoodModel_of_jIntegral hq hq2 hj).elim
+  (E.exists_potentiallyGoodModel_of_jIntegral hq hj).elim
     (E.exists_frobeniusAut_of_potentiallyGoodModel hN hq hq2 hqN)
 
 open Polynomial in
@@ -32107,8 +32439,8 @@ without that conjunct every `c` would be a cotangent scalar for the zero map,
 not have `map_zero`. Mathematically it says `0*ω = 0`, which is correct and not
 a weakening.
 
-**WHAT IS OPEN, AND WHAT IS NOT.** Four leaves are cut here, in decreasing order
-of difficulty:
+**WHAT IS OPEN, AND WHAT IS NOT.** Four leaves were cut here, in decreasing
+order of difficulty; **item 3 is now PROVEN (2026-07-28)** and three remain:
 
 1. `exists_isCotangentScalar` — the genuinely geometric input: the holomorphic
    differentials of an elliptic curve form a ONE-dimensional space, so `φ*ω'` is
@@ -32116,13 +32448,25 @@ of difficulty:
    place in the section where geometry is used.
 2. `IsCotangentScalar.add` — additivity, *AEC* III.5.2; equivalently `c φ` is
    the linear coefficient of `φ` on the formal group, where additivity is
-   immediate from `F(z, w) = z + w + ⋯`.
+   immediate from `F(z, w) = z + w + ⋯`. **Still open**, and the chain-rule
+   machinery added for item 3 does NOT reach it — see the ROUTE NOTE on the
+   declaration itself for the axis that was searched and the shape of the
+   missing input.
 3. `IsCotangentScalar.comp` — multiplicativity, the chain rule for the
-   composite rational map. Elementary but a real polynomial computation:
-   `IsRationalMap.comp` already produces the composed witnesses.
-4. `isCotangentScalar_unique` — **PROVEN 2026-07-28**, and no longer open; it
-   was the cheapest of the four, and purely
-   elementary. Two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
+   composite rational map. **PROVEN 2026-07-28** over the new polynomial
+   identity `wrBracket_homogSubst` (the chain rule for `homogSubst`, stated and
+   proved just above the declaration) together with the composed witnesses of
+   `IsRationalMap.comp`. It did **not** need `isCotangentScalar_unique`, and it
+   does not need `IsIsogeny ψ`.
+4. `isCotangentScalar_unique` — **PROVEN 2026-07-28**, and not by the argument
+   below: `IsCotangentScalar` and `WeierstrassCurve.IsDiffChar` (of
+   `EllipticCurve/DifferentialCharacter.lean`, already `public import`ed here)
+   are THE SAME PREDICATE, and `isDiffChar_unique` is proven there — with no
+   `CharZero` hypothesis. See `isDiffChar_of_isCotangentScalar` below. The same
+   bridge collapses the other three leaves here onto `exists_isDiffChar`,
+   `isDiffChar_add` and `isDiffChar_comp` as soon as the converse direction of
+   the bridge is available; see the note there. The original sketch, for the
+   record: two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
    satisfy `A B₂ = A₂ B` as POLYNOMIALS (both compute `x ∘ φ`, and by
    `exists_nonsingular_of_x` every element of `F` is an `x`-coordinate while
    only the finitely many points of `ker φ` are excluded), whence
@@ -32226,152 +32570,89 @@ theorem exists_isCotangentScalar [IsAlgClosed F] [CharZero F]
     ∃ c : F, IsCotangentScalar φ c :=
   sorry
 
-/-- **PROVEN 2026-07-28: the cotangent scalar is unique.** The cheapest of the
-four leaves cut in this section and entirely elementary — see item 4 of the
-section docstring for the argument in outline. The proof below runs it in four
-steps.
+/-! #### The bridge to `IsDiffChar`
+
+`WeierstrassCurve.IsDiffChar` of `Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`
+(already `public import`ed by this file) is **the same predicate as
+`IsCotangentScalar`**, written with the target's `ψ₂(φP)` substituted out through
+the rational-map relations rather than left literal. Concretely the two
+differential clauses differ by exactly the factor `E(x)`, which is what
+`isDiffCharCert_reduced` / `isDiffCharCert_of_reduced` say; and they differ in
+quantifier range — `IsDiffChar` asks for the identity at every `P ≠ 0`,
+`IsCotangentScalar` only off `ker φ`.
+
+That second difference is bridged by `isDiffCharCert_of_cofinite`, which is the
+substantive content: `y` occurs linearly in the certificate, so an identity
+holding off a finite set of `x`-values holds everywhere.
+
+So `isCotangentScalar_unique` is NOT a separate piece of mathematics — it is
+`isDiffChar_unique` (PROVEN, and with **no** characteristic hypothesis) read
+through the bridge below. -/
+
+/-- **`IsCotangentScalar φ c → IsDiffChar φ c`.** Same witness tuple; the
+differential clause transfers by multiplying through by `E(x)`
+(`isDiffCharCert_of_reduced`) at the points off `ker φ`, and extends to the
+finitely many remaining points by `isDiffCharCert_of_cofinite`.
+
+`hφ` is used only for `finite_ker`, i.e. only to know that the excluded set is
+finite. At `φ = 0` the given witnesses carry no information (the rational-map
+clause is vacuous there), so that case goes through `isDiffChar_zero` and the
+`φ = 0 → c = 0` conjunct instead of through the witnesses. -/
+theorem isDiffChar_of_isCotangentScalar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {c : F} (hφ : IsIsogeny φ)
+    (h : IsCotangentScalar φ c) : IsDiffChar φ c := by
+  classical
+  by_cases hφ0 : φ = 0
+  · subst hφ0
+    rw [h.1 rfl]
+    exact isDiffChar_zero
+  obtain ⟨hz, A, B, C, D, G, hB, hG, hwit, hdiff⟩ := h
+  refine ⟨hz, A, B, C, D, G, hB, hG, hwit, ?_⟩
+  set S : Set F := veluPointX '' (AddMonoidHom.ker φ : Set W.Point) with hS
+  have hSfin : S.Finite := (hφ.finite_ker hφ0).image _
+  have hall : ∀ Q : W.Point, Q ≠ 0 → veluPointX Q ∉ S →
+      IsDiffCharCert W W' A B C D G c Q := by
+    intro Q hQ0 hQS
+    have hφQ : φ Q ≠ 0 := fun hcc => hQS ⟨Q, hcc, rfl⟩
+    obtain ⟨hx, hy⟩ := hwit Q hφQ
+    refine isDiffCharCert_of_reduced hx hy ?_
+    have hred := hdiff Q hQ0 hφQ
+    simp only [invariantDiffDenom, eval_sub, eval_mul] at hred
+    linear_combination (-(G.eval (veluPointX Q))) * hred
+  exact fun P _ => isDiffCharCert_of_cofinite hSfin hall P
+
+/-- **PROVEN 2026-07-28: the cotangent scalar is unique.**
+
+Closed by transport, not by redoing the argument: `isDiffChar_of_isCotangentScalar`
+followed by `isDiffChar_unique`. The proportionality-of-witness-systems argument
+that this leaf's original docstring sketched (retained below for the record) is
+the one carried out once, in `DifferentialCharacter.lean`, for `isDiffChar_unique`.
+
+Note `[CharZero F]` is **not needed** — `isDiffChar_unique` has no characteristic
+hypothesis. It is kept here only because the surrounding section and this leaf's
+consumers already carry it; a later consolidation should drop it.
+
+*Original argument.* Two witness systems for
+the same `φ` are proportional (`A B₂ = A₂ B` as polynomials, because every
+element of `F` is an `x`-coordinate by `exists_nonsingular_of_x` and only the
+finitely many points of `ker φ` are excluded), the expression
+`(A'B − AB')/B²` is invariant under that proportionality, and a point at which
+`B`, `B₂` and `2y(φP) + a₁x(φP) + a₃` are all nonzero exists because each
+vanishing locus is finite while `W.Point` is infinite (`infinite_point`).
 
 *Step 0 — the zero map.* `φ = 0` is settled by the first conjunct of
 `IsCotangentScalar` alone: `c = 0 = d`. This is exactly the conjunct the section
 docstring calls "not decoration"; without it the differential identity is vacuous
 at `φ = 0` and this theorem is FALSE.
 
-*Step 1 — one finite bad locus in the `x`-line serves everything.* For `φ ≠ 0`,
-`φ + φ ≠ 0` as well: `φ` is surjective (`IsIsogeny.surjective`, `F`
-algebraically closed), so `φ + φ = 0` would make EVERY point of `W'` 2-torsion,
-and `{Q | 2 • Q = 0}` is finite (`finite_nsmulKer`) while `W'.Point` is infinite
-(`infinite_point`). Hence `ker (φ + φ)` is finite (`IsIsogeny.add`, then
-`finite_ker`), and
-
-    Bad := {t | (B · B₂)(t) = 0} ∪ x(ker (φ + φ))
-
-is finite. Off `Bad` there is a nonzero `P` with `x P = t`
-(`exists_point_veluPointX_eq`) at which, at one stroke, `B(t) ≠ 0`, `B₂(t) ≠ 0`,
-`φ P ≠ 0`, and `2y(φP) + a₁x(φP) + a₃ ≠ 0` — the last because
-`2y + a₁x + a₃ = 0` says exactly `Q = -Q` (`Affine.Point.add_self_of_Y_eq`), so
-`P` would lie in `ker (φ + φ)`. Using the DOUBLED map is what collapses the two
-separate conditions "`P ∉ ker φ`" and "`φ P ∉ W'[2]`" into a single kernel.
-
-*Step 2 — the two witness systems are proportional.* `A B₂ = A₂ B` as
-POLYNOMIALS: at every `t ∉ Bad` the two `x`-certificates give
-`A(t) B₂(t) = x(φP) B(t) B₂(t) = A₂(t) B(t)`, and the complement of a finite set
-in `F` is infinite (`CharZero F`), so `Polynomial.eq_zero_of_infinite_isRoot`
-applies to `A B₂ - A₂ B`. This step is why the identity may NOT be checked
-pointwise: differentiation is not a pointwise operation.
-
-*Step 3 — `(A'B − AB')/B²` is invariant under that proportionality.*
-Differentiating `A B₂ = A₂ B` and combining gives, in `F[X]`,
-
-    (A'B − AB') · B₂² = (A₂'B₂ − A₂B₂') · B²
-
-(a `linear_combination` with coefficients `B·B₂` on the differentiated identity
-and `−(B'B₂ + BB₂')` on the undifferentiated one). Evaluating both differential
-identities at the good `P`, multiplying the first by `B₂(t)²` and the second by
-`B(t)²`, the left-hand sides agree by the display, so
-`c · K = d · K` with `K = B(t)² B₂(t)² · (2y(φP) + a₁x(φP) + a₃) ≠ 0`.
-
-**THE CHECK THAT WOULD REFUTE THIS STATEMENT**: an isogeny with two distinct
+**THE CHECK THAT WOULD REFUTE THIS**: an isogeny with two distinct
 cotangent scalars — which, by the above, would need two witness systems that
 are NOT proportional. -/
 theorem isCotangentScalar_unique [IsAlgClosed F] [CharZero F]
     [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} {c d : F} (hφ : IsIsogeny φ)
-    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar φ d) : c = d := by
-  classical
-  obtain ⟨hc0, A, B, _C, _D, _E, hB, _hE, hcert, hdiff⟩ := hc
-  obtain ⟨hd0, A₂, B₂, _C₂, _D₂, _E₂, hB₂, _hE₂, hcert₂, hdiff₂⟩ := hd
-  -- **Step 0**: the zero map, where the first conjunct is the whole content.
-  by_cases hzero : φ = 0
-  · rw [hc0 hzero, hd0 hzero]
-  -- **Step 1**: `φ + φ ≠ 0`, hence `ker (φ + φ)` is finite.
-  have hdbl : φ + φ ≠ 0 := by
-    intro hsum
-    haveI := infinite_point W'
-    have hsub : (Set.univ : Set W'.Point) ⊆ {Q : W'.Point | (2 : ℕ) • Q = 0} := by
-      intro Q _
-      obtain ⟨P, rfl⟩ := hφ.surjective hzero Q
-      have h2 : φ P + φ P = 0 := by
-        have h := congrArg (fun f : W.Point →+ W'.Point => f P) hsum
-        simpa using h
-      show (2 : ℕ) • φ P = 0
-      rw [two_nsmul]; exact h2
-    have hfin : (Set.univ : Set W'.Point).Finite :=
-      (finite_nsmulKer (W := W') two_ne_zero).subset hsub
-    haveI : Finite W'.Point := Set.finite_univ_iff.mp hfin
-    exact not_finite W'.Point
-  have hkerfin : (AddMonoidHom.ker (φ + φ) : Set W.Point).Finite :=
-    (hφ.add hφ).finite_ker hdbl
-  have hBadFin : ({t : F | (B * B₂).eval t = 0}
-      ∪ veluPointX '' (AddMonoidHom.ker (φ + φ) : Set W.Point)).Finite :=
-    (Polynomial.finite_setOf_isRoot (mul_ne_zero hB hB₂)).union (hkerfin.image _)
-  -- `2y + a₁x + a₃ = 0` is exactly `Q = -Q`, i.e. `Q` is 2-torsion.
-  have key : ∀ Q : W'.Point, Q ≠ 0 → invariantDiffDenom W' Q = 0 → Q + Q = 0 := by
-    intro Q hQ0 hQΩ
-    cases Q with
-    | zero => exact absurd rfl hQ0
-    | some x0 y0 hns =>
-      simp only [invariantDiffDenom, veluPointX_some, veluPointY_some] at hQΩ
-      refine Affine.Point.add_self_of_Y_eq ?_
-      show y0 = W'.negY x0 y0
-      simp only [Affine.negY]
-      linear_combination hQΩ
-  -- Off the bad locus every denominator of both systems is invertible, `P ∉ ker φ`,
-  -- and `φ P` is not 2-torsion.
-  have hgood : ∀ t : F, t ∈ ({t : F | (B * B₂).eval t = 0}
-      ∪ veluPointX '' (AddMonoidHom.ker (φ + φ) : Set W.Point))ᶜ →
-      ∃ P : W.Point, P ≠ 0 ∧ veluPointX P = t ∧ φ P ≠ 0 ∧
-        B.eval t ≠ 0 ∧ B₂.eval t ≠ 0 ∧ invariantDiffDenom W' (φ P) ≠ 0 := by
-    intro t ht
-    simp only [Set.mem_compl_iff, Set.mem_union, Set.mem_setOf_eq, not_or] at ht
-    obtain ⟨hroot, himg⟩ := ht
-    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
-    have hker : (φ + φ) P ≠ 0 := fun hmem =>
-      himg ⟨P, AddMonoidHom.mem_ker.2 hmem, hPx⟩
-    have hsum2 : φ P + φ P ≠ 0 := by
-      intro hcon; exact hker (by simpa using hcon)
-    have hφP : φ P ≠ 0 := fun hcon => hsum2 (by rw [hcon, add_zero])
-    rw [Polynomial.eval_mul] at hroot
-    have hBt : B.eval t ≠ 0 := fun h => hroot (by rw [h, zero_mul])
-    have hB₂t : B₂.eval t ≠ 0 := fun h => hroot (by rw [h, mul_zero])
-    refine ⟨P, hP0, hPx, hφP, hBt, hB₂t, ?_⟩
-    intro hΩ
-    exact hsum2 (key (φ P) hφP hΩ)
-  -- **Step 2**: the two witness systems are PROPORTIONAL, `A B₂ = A₂ B`.
-  have hpoly : A * B₂ = A₂ * B := by
-    have hz : A * B₂ - A₂ * B = 0 := by
-      refine Polynomial.eq_zero_of_infinite_isRoot _
-        (Set.Infinite.mono ?_ hBadFin.infinite_compl)
-      intro t ht
-      obtain ⟨P, -, hPx, hφP, -, -, -⟩ := hgood t ht
-      obtain ⟨hx, -⟩ := hcert P hφP
-      obtain ⟨hx₂, -⟩ := hcert₂ P hφP
-      rw [hPx] at hx hx₂
-      show (A * B₂ - A₂ * B).eval t = 0
-      simp only [Polynomial.eval_sub, Polynomial.eval_mul]
-      linear_combination (B.eval t) * hx₂ - (B₂.eval t) * hx
-    linear_combination hz
-  -- **Step 3**: `(A'B − AB')/B²` is invariant under that proportionality.
-  have hderiv : (derivative A * B - A * derivative B) * B₂ ^ 2
-      = (derivative A₂ * B₂ - A₂ * derivative B₂) * B ^ 2 := by
-    have hd' : derivative A * B₂ + A * derivative B₂
-        = derivative A₂ * B + A₂ * derivative B := by
-      have h := congrArg (fun p : F[X] => derivative p) hpoly
-      simpa only [Polynomial.derivative_mul] using h
-    linear_combination (B * B₂) * hd' - (derivative B * B₂ + B * derivative B₂) * hpoly
-  -- Evaluate both differential identities at one good point.
-  obtain ⟨t, ht⟩ := hBadFin.infinite_compl.nonempty
-  obtain ⟨P, hP0, hPx, hφP, hBt, hB₂t, hΩ⟩ := hgood t ht
-  have h1 := hdiff P hP0 hφP
-  have h2 := hdiff₂ P hP0 hφP
-  rw [hPx] at h1 h2
-  have hev : (derivative A * B - A * derivative B).eval t * (B₂.eval t) ^ 2
-      = (derivative A₂ * B₂ - A₂ * derivative B₂).eval t * (B.eval t) ^ 2 := by
-    have h := congrArg (fun p : F[X] => p.eval t) hderiv
-    simpa only [Polynomial.eval_mul, Polynomial.eval_pow] using h
-  have hK : (B.eval t) ^ 2 * (B₂.eval t) ^ 2 * invariantDiffDenom W' (φ P) ≠ 0 :=
-    mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hBt) (pow_ne_zero 2 hB₂t)) hΩ
-  refine mul_right_cancel₀ hK ?_
-  linear_combination (invariantDiffDenom W P) * hev - (B₂.eval t) ^ 2 * h1
-    + (B.eval t) ^ 2 * h2
+    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar φ d) : c = d :=
+  isDiffChar_unique (isDiffChar_of_isCotangentScalar hφ hc)
+    (isDiffChar_of_isCotangentScalar hφ hd)
 
 /-- The cotangent scalar exists and is unique — the packaging that makes
 `End.cotangent` a function. Proven over `exists_isCotangentScalar` and
@@ -32382,15 +32663,260 @@ theorem exists_unique_isCotangentScalar [IsAlgClosed F] [CharZero F]
   obtain ⟨c, hc⟩ := exists_isCotangentScalar hφ
   exact ⟨c, hc, fun d hd => isCotangentScalar_unique hφ hd hc⟩
 
-/-- **LEAF (cut 2026-07-28): MULTIPLICATIVITY — the chain rule.**
+/-! #### The chain rule for `homogSubst`, in polynomial form
+
+`IsCotangentScalar.comp` below needs exactly one new polynomial identity, and it
+is the algebraic shadow of the chain rule. Write
+
+    ⟨f, g⟩ := f' · g − f · g'
+
+for the (sign-flipped) Wronskian bracket, which is what the differential
+identity of `IsCotangentScalar` measures: with `x ∘ φ = A / B` the numerator of
+`d(A/B)` is `⟨A, B⟩ = A'B − AB'`.
+
+Substituting `A/B` into a second pair `(p, q)` — which is what
+`homogSubst A B n` does, up to the factor `B ^ n` that clears denominators —
+composes the two rational functions, and the identity below says the bracket
+transforms by the chain rule:
+
+    ⟨homogSubst A B n p, homogSubst A B n q⟩
+      = homogSubst A B (2n − 2) ⟨p, q⟩ · ⟨A, B⟩.
+
+The exponent `2n − 2` is forced: `⟨p, q⟩` has degree at most `2n − 2` because
+the `x ^ (2n−1)` coefficients of `p'q` and `pq'` are both `n · pₙ · qₙ` and
+cancel. (The consumer never needs that sharp bound — it applies the identity at
+`n + 1` rather than `n`, where the crude estimate `deg ⟨p, q⟩ ≤ 2n` suffices.)
+
+The proof is bilinear expansion: both sides are `F`-bilinear in `(p, q)`, so it
+is enough to check monomials `p = X ^ i`, `q = X ^ j`, where
+`homogSubst A B n (X ^ i) = A ^ i B ^ (n−i)` and both sides come out as
+`(i − j) · A ^ (i+j−1) · B ^ (2n−i−j−1) · ⟨A, B⟩`. Writing `j = i + t + 1` and
+`n = i + t + 1 + r` in the case `i < j` removes every truncated subtraction, and
+antisymmetry gives `i > j`. -/
+
+omit [DecidableEq F] in
+theorem homogSubst_zero (A B : F[X]) (m : ℕ) : homogSubst A B m 0 = 0 := by
+  simp [homogSubst]
+
+omit [DecidableEq F] in
+theorem homogSubst_add (A B : F[X]) (m : ℕ) (Q R : F[X]) :
+    homogSubst A B m (Q + R) = homogSubst A B m Q + homogSubst A B m R := by
+  unfold homogSubst
+  rw [← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun i _ => by
+    rw [Polynomial.coeff_add, map_add]; ring
+
+omit [DecidableEq F] in
+theorem homogSubst_neg (A B : F[X]) (m : ℕ) (Q : F[X]) :
+    homogSubst A B m (-Q) = -homogSubst A B m Q := by
+  unfold homogSubst
+  rw [← Finset.sum_neg_distrib]
+  exact Finset.sum_congr rfl fun i _ => by
+    rw [Polynomial.coeff_neg, map_neg]; ring
+
+omit [DecidableEq F] in
+theorem homogSubst_C_mul (A B : F[X]) (m : ℕ) (a : F) (Q : F[X]) :
+    homogSubst A B m (C a * Q) = C a * homogSubst A B m Q := by
+  unfold homogSubst
+  rw [Finset.mul_sum]
+  exact Finset.sum_congr rfl fun i _ => by
+    rw [Polynomial.coeff_C_mul, map_mul]; ring
+
+omit [DecidableEq F] in
+theorem homogSubst_finsetSum {ι : Type*} (A B : F[X]) (m : ℕ) (s : Finset ι) (f : ι → F[X]) :
+    homogSubst A B m (∑ x ∈ s, f x) = ∑ x ∈ s, homogSubst A B m (f x) := by
+  classical
+  induction s using Finset.induction with
+  | empty => simp [homogSubst_zero]
+  | insert a s ha ih =>
+      rw [Finset.sum_insert ha, homogSubst_add, ih, Finset.sum_insert ha]
+
+omit [DecidableEq F] in
+/-- `homogSubst` of a monomial: the only surviving term of the defining sum. -/
+theorem homogSubst_C_mul_X_pow (A B : F[X]) (a : F) {m r : ℕ} (hr : r ≤ m) :
+    homogSubst A B m (C a * X ^ r) = C a * A ^ r * B ^ (m - r) := by
+  unfold homogSubst
+  rw [Finset.sum_eq_single r]
+  · rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_pos rfl, mul_one]
+  · intro i _ hi
+    rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, if_neg hi, mul_zero, map_zero,
+      zero_mul, zero_mul]
+  · intro h
+    exact absurd (Finset.mem_range.2 (Nat.lt_succ_of_le hr)) h
+
+omit [DecidableEq F] in
+/-- A polynomial of degree at most `n` written as a sum of `n + 1` monomials. -/
+theorem eq_sum_range_C_mul_X_pow {p : F[X]} {n : ℕ} (hp : p.natDegree ≤ n) :
+    p = ∑ i ∈ Finset.range (n + 1), C (p.coeff i) * X ^ i := by
+  conv_lhs => rw [Polynomial.as_sum_range' p (n + 1) (Nat.lt_succ_of_le hp)]
+  exact Finset.sum_congr rfl fun i _ => (Polynomial.C_mul_X_pow_eq_monomial).symm
+
+omit [DecidableEq F] in
+/-- A common factor pulls out of the bracket as its square. -/
+theorem wrBracket_mul_left (h u v : F[X]) :
+    derivative (h * u) * (h * v) - h * u * derivative (h * v)
+      = h ^ 2 * (derivative u * v - u * derivative v) := by
+  simp only [Polynomial.derivative_mul]
+  ring
+
+omit [DecidableEq F] in
+/-- The bracket is `F`-bilinear. -/
+theorem wrBracket_C_mul (a b : F) (f g : F[X]) :
+    derivative (C a * f) * (C b * g) - C a * f * derivative (C b * g)
+      = C a * C b * (derivative f * g - f * derivative g) := by
+  simp only [Polynomial.derivative_C_mul]
+  ring
+
+omit [DecidableEq F] in
+theorem wrBracket_pow_succ (A B : F[X]) (t : ℕ) :
+    derivative (B ^ (t + 1)) * A ^ (t + 1) - B ^ (t + 1) * derivative (A ^ (t + 1))
+      = -(C ((t : F) + 1)) * A ^ t * B ^ t * (derivative A * B - A * derivative B) := by
+  simp only [Polynomial.derivative_pow_succ]
+  ring
+
+omit [DecidableEq F] in
+/-- The monomial case of the chain rule, in the subtraction-free parametrisation
+`j = i + t + 1`, `n = i + t + 1 + r`. -/
+theorem wrBracket_monomial (A B : F[X]) (i t r : ℕ) :
+    derivative (A ^ i * B ^ (t + 1 + r)) * (A ^ (i + t + 1) * B ^ r)
+        - A ^ i * B ^ (t + 1 + r) * derivative (A ^ (i + t + 1) * B ^ r)
+      = -(C ((t : F) + 1)) * A ^ (2 * i + t) * B ^ (2 * r + t)
+          * (derivative A * B - A * derivative B) := by
+  have e1 : A ^ i * B ^ (t + 1 + r) = A ^ i * B ^ r * B ^ (t + 1) := by ring
+  have e2 : A ^ (i + t + 1) * B ^ r = A ^ i * B ^ r * A ^ (t + 1) := by ring
+  rw [e1, e2, wrBracket_mul_left, wrBracket_pow_succ]
+  ring
+
+omit [DecidableEq F] in
+/-- `⟨X ^ i, X ^ j⟩ = (i − j) · X ^ (i+j−1)`, in the case `j = i + t + 1`. -/
+theorem wrBracket_X_pow (i t : ℕ) :
+    derivative (X ^ i : F[X]) * X ^ (i + t + 1) - X ^ i * derivative (X ^ (i + t + 1))
+      = C (-((t : F) + 1)) * X ^ (2 * i + t) := by
+  cases i with
+  | zero =>
+      simp only [pow_zero, Polynomial.derivative_one, zero_mul, one_mul,
+        zero_add, mul_zero, Polynomial.derivative_pow_succ, Polynomial.derivative_X,
+        mul_one, map_neg, map_add, map_natCast, map_one]
+      ring
+  | succ i' =>
+      rw [show i' + 1 + t + 1 = i' + 1 + t + 1 from rfl, Polynomial.derivative_pow_succ,
+        Polynomial.derivative_pow_succ, Polynomial.derivative_X, mul_one, mul_one]
+      simp only [map_add, map_natCast, map_one, map_neg]
+      push_cast
+      ring
+
+omit [DecidableEq F] in
+/-- Bilinear expansion of the bracket over a finite sum. -/
+theorem wrBracket_finsetSum {ι : Type*} (s : Finset ι) (f g : ι → F[X]) :
+    derivative (∑ i ∈ s, f i) * (∑ j ∈ s, g j)
+        - (∑ i ∈ s, f i) * derivative (∑ j ∈ s, g j)
+      = ∑ i ∈ s, ∑ j ∈ s, (derivative (f i) * g j - f i * derivative (g j)) := by
+  rw [Polynomial.derivative_sum, Polynomial.derivative_sum, Finset.sum_mul_sum,
+    Finset.sum_mul_sum, ← Finset.sum_sub_distrib]
+  exact Finset.sum_congr rfl fun i _ => by rw [← Finset.sum_sub_distrib]
+
+omit [DecidableEq F] in
+theorem wrBracket_pow_pair_of_lt {A B : F[X]} {n i j : ℕ} (hj : j ≤ n) (hlt : i < j) :
+    derivative (A ^ i * B ^ (n - i)) * (A ^ j * B ^ (n - j))
+        - A ^ i * B ^ (n - i) * derivative (A ^ j * B ^ (n - j))
+      = homogSubst A B (2 * n - 2)
+          (derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j))
+        * (derivative A * B - A * derivative B) := by
+  obtain ⟨t, rfl⟩ : ∃ t, j = i + t + 1 := ⟨j - i - 1, by omega⟩
+  obtain ⟨r, rfl⟩ : ∃ r, n = i + t + 1 + r := ⟨n - (i + t + 1), by omega⟩
+  rw [show i + t + 1 + r - i = t + 1 + r by omega,
+    show i + t + 1 + r - (i + t + 1) = r by omega, wrBracket_monomial, wrBracket_X_pow,
+    homogSubst_C_mul_X_pow A B _ (show 2 * i + t ≤ 2 * (i + t + 1 + r) - 2 by omega),
+    show 2 * (i + t + 1 + r) - 2 - (2 * i + t) = 2 * r + t by omega, map_neg]
+
+omit [DecidableEq F] in
+theorem wrBracket_pow_pair {A B : F[X]} {n i j : ℕ} (hi : i ≤ n) (hj : j ≤ n) :
+    derivative (A ^ i * B ^ (n - i)) * (A ^ j * B ^ (n - j))
+        - A ^ i * B ^ (n - i) * derivative (A ^ j * B ^ (n - j))
+      = homogSubst A B (2 * n - 2)
+          (derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j))
+        * (derivative A * B - A * derivative B) := by
+  rcases lt_trichotomy i j with hlt | heq | hgt
+  · exact wrBracket_pow_pair_of_lt hj hlt
+  · subst heq
+    rw [show derivative (X ^ i : F[X]) * X ^ i - X ^ i * derivative (X ^ i) = 0 by ring,
+      homogSubst_zero, zero_mul]
+    ring
+  · have h := wrBracket_pow_pair_of_lt (A := A) (B := B) hi hgt
+    rw [show derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j)
+        = -(derivative (X ^ j : F[X]) * X ^ i - X ^ j * derivative (X ^ i)) by ring,
+      homogSubst_neg]
+    linear_combination -h
+
+omit [DecidableEq F] in
+/-- **THE CHAIN RULE FOR `homogSubst`.** See the subsection docstring above. -/
+theorem wrBracket_homogSubst {A B p q : F[X]} {n : ℕ}
+    (hp : p.natDegree ≤ n) (hq : q.natDegree ≤ n) :
+    derivative (homogSubst A B n p) * homogSubst A B n q
+        - homogSubst A B n p * derivative (homogSubst A B n q)
+      = homogSubst A B (2 * n - 2) (derivative p * q - p * derivative q)
+          * (derivative A * B - A * derivative B) := by
+  have hf : ∀ Q : F[X], homogSubst A B n Q
+      = ∑ i ∈ Finset.range (n + 1), C (Q.coeff i) * (A ^ i * B ^ (n - i)) := by
+    intro Q
+    unfold homogSubst
+    exact Finset.sum_congr rfl fun i _ => by ring
+  rw [hf p, hf q, wrBracket_finsetSum]
+  have hRHS : derivative p * q - p * derivative q
+      = ∑ i ∈ Finset.range (n + 1), ∑ j ∈ Finset.range (n + 1),
+          C (p.coeff i) * C (q.coeff j)
+            * (derivative (X ^ i : F[X]) * X ^ j - X ^ i * derivative (X ^ j)) := by
+    conv_lhs => rw [eq_sum_range_C_mul_X_pow hp, eq_sum_range_C_mul_X_pow hq]
+    rw [wrBracket_finsetSum]
+    exact Finset.sum_congr rfl fun i _ => Finset.sum_congr rfl fun j _ =>
+      wrBracket_C_mul _ _ _ _
+  rw [hRHS, homogSubst_finsetSum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  rw [homogSubst_finsetSum, Finset.sum_mul]
+  refine Finset.sum_congr rfl fun j hj => ?_
+  have hi' : i ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+  have hj' : j ≤ n := Nat.lt_succ_iff.1 (Finset.mem_range.1 hj)
+  rw [wrBracket_C_mul, wrBracket_pow_pair hi' hj', ← Polynomial.C_mul, homogSubst_C_mul]
+  ring
+
+/-- **MULTIPLICATIVITY — the chain rule. PROVEN 2026-07-28.**
 `(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·c·ω`.
 
-Elementary but a genuine polynomial computation. `IsRationalMap.comp` already
-constructs the composed witnesses (by homogeneous substitution,
-`homogSubst`/`eval_homogSubst`), and what remains is the chain rule for
-`(A ∘ (A₂/B₂))' ` after clearing denominators, together with
-`isCotangentScalar_unique` to transfer the conclusion from those particular
-witnesses to the ones supplied by `hc` and `hd`.
+The witness system for `ψ ∘ φ` is the one `IsRationalMap.comp` builds — the
+homogeneous substitution `Ã = homogSubst A B (n+1) A'`,
+`B̃ = homogSubst A B (n+1) B'` of `φ`'s `x`-witness into `ψ`'s — and the
+differential identity for it is `wrBracket_homogSubst` above followed by the two
+hypotheses:
+
+    ⟨Ã, B̃⟩(t) · 𝔡_W(P)
+      = B(t)^(2n) · ⟨A', B'⟩(u) · ⟨A, B⟩(t) · 𝔡_W(P)          (chain rule)
+      = B(t)^(2n) · ⟨A', B'⟩(u) · c · B(t)² · 𝔡_{W'}(φP)      (`hc` at `P`)
+      = c · B(t)^(2n+2) · d · B'(u)² · 𝔡_{W''}(ψφP)           (`hd` at `φP`)
+      = (d·c) · B̃(t)² · 𝔡_{W''}(ψφP),
+
+with `t = x P`, `u = x (φ P)` and `𝔡 = invariantDiffDenom`. Note `hd` is applied
+at the point `φ P`, which is exactly why the second conjunct of
+`IsCotangentScalar` is quantified over all points rather than asserted at one.
+
+**Why the substitution degree is `n + 1` rather than `n = max (deg A') (deg B')`.**
+`wrBracket_homogSubst` at degree `m` produces `homogSubst A B (2m−2) ⟨A', B'⟩`,
+and evaluating that through `eval_homogSubst` needs `deg ⟨A', B'⟩ ≤ 2m − 2`. At
+`m = n` that is the *sharp* bound (the top coefficients of `A''B'` and `A'B''`
+cancel); at `m = n + 1` the crude `deg ⟨A', B'⟩ ≤ 2n` suffices, and one degree of
+padding costs nothing since `homogSubst` at a larger degree only multiplies by a
+power of `B`.
+
+**Where `φ ≠ 0` is used**: `B̃ ≠ 0` can fail only when `x ∘ φ` is the constant
+`A = C c₀ · B` (`exists_const_of_homogSubst_eq_zero`), and a rational map with
+constant `x`-witness is zero (`eq_zero_of_constX`). The `φ = 0` and `ψ = 0`
+branches are handled first, where the composite is `0` and `d · c = 0` by the
+`φ = 0 → c = 0` conjunct of the corresponding hypothesis.
+
+`_hψ` is unused: **`IsIsogeny ψ` is not needed for multiplicativity** — only
+`ψ`'s cotangent identity is, and `φ`'s surjectivity (from `hφ`) is what makes
+the `ψ ∘ φ = 0 → d·c = 0` conjunct vacuous. The binder is kept so that the
+statement matches the one the section docstring and `End.cotangentHom` were
+written against.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: a composite of isogenies whose
 cotangent scalar is not the product of the two scalars — e.g. computable
@@ -32399,10 +32925,95 @@ scalar `1`. -/
 theorem IsCotangentScalar.comp [IsAlgClosed F] [CharZero F]
     [W.IsElliptic] [W'.IsElliptic] [W''.IsElliptic]
     {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point} {c d : F}
-    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ)
+    (hφ : IsIsogeny φ) (_hψ : IsIsogeny ψ)
     (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar ψ d) :
-    IsCotangentScalar (ψ.comp φ) (d * c) :=
-  sorry
+    IsCotangentScalar (ψ.comp φ) (d * c) := by
+  by_cases hφ0 : φ = 0
+  · have hc0 : c = 0 := hc.1 hφ0
+    have hz : ψ.comp φ = 0 := by
+      ext P
+      show ψ (φ P) = 0
+      rw [hφ0]; simp
+    rw [hz, hc0, mul_zero]
+    exact isCotangentScalar_zero
+  by_cases hψ0 : ψ = 0
+  · have hd0 : d = 0 := hd.1 hψ0
+    have hz : ψ.comp φ = 0 := by
+      ext P
+      show ψ (φ P) = 0
+      rw [hψ0]; simp
+    rw [hz, hd0, zero_mul]
+    exact isCotangentScalar_zero
+  obtain ⟨-, A, B, Cx, D, E, hB, hE, hcert, hdiff⟩ := hc
+  obtain ⟨-, A', B', C', D', E', hB', hE', hcert', hdiff'⟩ := hd
+  obtain ⟨n, hA'n, hB'n⟩ : ∃ m, A'.natDegree ≤ m ∧ B'.natDegree ≤ m :=
+    ⟨max A'.natDegree B'.natDegree, le_max_left _ _, le_max_right _ _⟩
+  obtain ⟨d2, hC'n, hD'n, hE'n⟩ :
+      ∃ m, C'.natDegree ≤ m ∧ D'.natDegree ≤ m ∧ E'.natDegree ≤ m :=
+    ⟨max (max C'.natDegree D'.natDegree) E'.natDegree,
+      le_trans (le_max_left _ _) (le_max_left _ _),
+      le_trans (le_max_right _ _) (le_max_left _ _), le_max_right _ _⟩
+  have hA'le : A'.natDegree ≤ n + 1 := le_trans hA'n (Nat.le_succ _)
+  have hB'le : B'.natDegree ≤ n + 1 := le_trans hB'n (Nat.le_succ _)
+  have hnc : ¬ ∃ c₀ : F, A = Polynomial.C c₀ * B := by
+    rintro ⟨c₀, hc₀⟩
+    exact hφ0 (eq_zero_of_constX hB c₀ hc₀ fun P hP => (hcert P hP).1)
+  have hne : ∀ Q : F[X], Q ≠ 0 → ∀ m : ℕ, Q.natDegree ≤ m → homogSubst A B m Q ≠ 0 :=
+    fun Q hQ m hm hz => hnc (exists_const_of_homogSubst_eq_zero hB hQ hm hz)
+  refine ⟨?_, homogSubst A B (n + 1) A', homogSubst A B (n + 1) B',
+    homogSubst A B d2 C' * Cx,
+    homogSubst A B d2 C' * D + homogSubst A B d2 D' * E,
+    homogSubst A B d2 E' * E,
+    hne B' hB' (n + 1) hB'le,
+    mul_ne_zero (hne E' hE' d2 hE'n) hE, ?_, ?_⟩
+  · -- `ψ ∘ φ = 0` is impossible: `φ` is surjective and `ψ ≠ 0`.
+    intro hzero
+    refine absurd (AddMonoidHom.ext fun Q => ?_) hψ0
+    obtain ⟨P, rfl⟩ := hφ.surjective hφ0 Q
+    have h := congrArg (fun f : W.Point →+ W''.Point => f P) hzero
+    simpa using h
+  · -- The composed rational-map certificate, exactly as in `IsRationalMap.comp`.
+    intro P hP
+    have hφP : φ P ≠ 0 := fun hcz => hP (by show ψ (φ P) = 0; rw [hcz, map_zero])
+    obtain ⟨hx, hy⟩ := hcert P hφP
+    obtain ⟨hx', hy'⟩ := hcert' (φ P) hP
+    have hxA := eval_homogSubst (A := A) (B := B) (Q := A') (d := n + 1) hA'le hx
+    have hxB := eval_homogSubst (A := A) (B := B) (Q := B') (d := n + 1) hB'le hx
+    have hyC := eval_homogSubst (A := A) (B := B) (Q := C') (d := d2) hC'n hx
+    have hyD := eval_homogSubst (A := A) (B := B) (Q := D') (d := d2) hD'n hx
+    have hyE := eval_homogSubst (A := A) (B := B) (Q := E') (d := d2) hE'n hx
+    refine ⟨?_, ?_⟩
+    · rw [hxA, hxB]
+      linear_combination (B.eval (veluPointX P)) ^ (n + 1) * hx'
+    · simp only [Polynomial.eval_mul, Polynomial.eval_add, hyC, hyD, hyE]
+      linear_combination
+        ((B.eval (veluPointX P)) ^ d2 * E.eval (veluPointX P)) * hy'
+          + ((B.eval (veluPointX P)) ^ d2 * C'.eval (veluPointX (φ P))) * hy
+  · -- The differential identity: the chain rule, then `hc` at `P`, then `hd` at `φ P`.
+    intro P hP0 hP
+    have hφP : φ P ≠ 0 := fun hcz => hP (by show ψ (φ P) = 0; rw [hcz, map_zero])
+    obtain ⟨hx, -⟩ := hcert P hφP
+    have hdegW : (derivative A' * B' - A' * derivative B').natDegree ≤ 2 * n := by
+      have h1 : (derivative A' * B').natDegree ≤ 2 * n := by
+        refine le_trans Polynomial.natDegree_mul_le ?_
+        have := Polynomial.natDegree_derivative_le A'
+        omega
+      have h2 : (A' * derivative B').natDegree ≤ 2 * n := by
+        refine le_trans Polynomial.natDegree_mul_le ?_
+        have := Polynomial.natDegree_derivative_le B'
+        omega
+      have h3 := Polynomial.natDegree_sub_le (derivative A' * B') (A' * derivative B')
+      omega
+    rw [wrBracket_homogSubst hA'le hB'le, show 2 * (n + 1) - 2 = 2 * n by omega,
+      Polynomial.eval_mul, eval_homogSubst hdegW hx, eval_homogSubst hB'le hx]
+    have h1 := hdiff P hP0 hφP
+    have h2 := hdiff' (φ P) hφP hP
+    have hcomp : ((ψ.comp φ) : W.Point →+ W''.Point) P = ψ (φ P) := rfl
+    rw [hcomp]
+    linear_combination
+      ((B.eval (veluPointX P)) ^ (2 * n)
+        * (derivative A' * B' - A' * derivative B').eval (veluPointX (φ P))) * h1
+      + (c * (B.eval (veluPointX P)) ^ (2 * n + 2)) * h2
 
 /-- **LEAF (cut 2026-07-28): ADDITIVITY — `(φ + ψ)*ω' = φ*ω' + ψ*ω'`.**
 
@@ -32419,7 +33030,56 @@ an isogeny over a general field, so there would be nothing to state.
 `c (φ + ψ) ≠ c φ + c ψ`. Note the degenerate instance `ψ = -φ` is already
 consistent: `φ + ψ = 0` forces `c + d = 0`, and indeed `c (-φ) = -c φ` because
 `x(-Q) = x(Q)` leaves `A, B` unchanged while
-`2y(-Q) + a₁x(-Q) + a₃ = -(2y(Q) + a₁x(Q) + a₃)`. -/
+`2y(-Q) + a₁x(-Q) + a₃ = -(2y(Q) + a₁x(Q) + a₃)`.
+
+## ROUTE NOTE (2026-07-28, written while proving `IsCotangentScalar.comp`)
+
+**The chain-rule machinery does NOT reach additivity, and the axis searched was
+"consequences of multiplicativity plus the already-proven `End` layer".** Along
+that axis the leaf is irreducible, and the section note further down gives the
+refutation test that confirms it: the LIPSCHITZ QUATERNION ORDER `ℤ⟨i, j⟩`
+satisfies every property the proven layer supplies, so no argument from that
+layer alone can produce a ring map to a commutative field. A genuinely new
+differential input is required. What was *not* searched: routes through the
+formal group, and routes through the function field of `W`.
+
+**The concrete shape of the missing input, in this file's idiom.** Additivity is
+`σ*ω' = pr₁*ω' + pr₂*ω'` for the addition morphism `σ : W' × W' → W'`, and the
+one-variable shadow of that — which is what the pointwise predicate here wants —
+is a purely ALGEBRAIC identity about derivations, with no geometry in it:
+
+> Let `S` be a commutative `F`-algebra and `Dv : S → S` an `F`-derivation. Let
+> `(x₁, y₁), (x₂, y₂), (x₃, y₃) ∈ S × S` satisfy `W'`'s Weierstrass equation,
+> with `(x₃, y₃)` the chord-and-tangent sum of the first two (so `x₁ - x₂` is a
+> unit in the chord branch). Write `𝔡ᵢ = 2yᵢ + a₁xᵢ + a₃`. Then
+>
+>     Dv x₃ · 𝔡₁ · 𝔡₂ = Dv x₁ · 𝔡₃ · 𝔡₂ + Dv x₂ · 𝔡₃ · 𝔡₁.
+>
+> After clearing the chord denominator this is a polynomial identity in
+> `x₁, y₁, x₂, y₂, Dv x₁, Dv y₁, Dv x₂, Dv y₂` modulo the two Weierstrass
+> equations and their `Dv`-derivatives — i.e. exactly a `linear_combination`
+> obligation, not an appeal to the theory of differentials.
+
+Two things stand between that statement and this leaf, and both are real:
+
+1. **A derivation-carrying model.** The predicate here is POINTWISE (a family of
+   identities in `F`, with derivatives appearing only as
+   `Polynomial.derivative` of the witnesses), so there is no `Dv` to feed the
+   identity. One needs the identity transported to the witnesses, which means
+   working in `F(t)[y]/(Weierstrass)` — `EllipticCurve/InvariantDerivation.lean`
+   builds exactly such a derivation (`DK` on the universal function field
+   `Kuniv`) and is the natural starting point.
+2. **The witnesses of `φ + ψ`.** `IsRationalMap.add` is proven, but additivity
+   needs its witnesses to be the chord-formula combination of `φ`'s and `ψ`'s,
+   which its statement does not record. Either that construction is exposed, or
+   the transfer is made through `isCotangentScalar_unique` (any witness system
+   gives the same scalar), which is the cheaper of the two.
+
+**Reusable from `comp`**: `wrBracket_homogSubst` and the `homogSubst`
+linearity lemmas above it. They are about substitution into a rational map and
+so are the wrong tool for a SUM, but the bilinear-expansion technique
+(`wrBracket_finsetSum` plus a subtraction-free monomial parametrisation) is what
+made the chain rule cheap and would likely do the same for a sum. -/
 theorem IsCotangentScalar.add [IsAlgClosed F] [CharZero F]
     [W.IsElliptic] [W'.IsElliptic]
     {φ ψ : W.Point →+ W'.Point} {c d : F}

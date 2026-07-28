@@ -12,6 +12,7 @@ public import Mathlib.RingTheory.HopfAlgebra.Convolution
 public import Mathlib.RingTheory.Finiteness.ModuleFinitePresentation
 public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
 public import Mathlib.RingTheory.Flat.EquationalCriterion
+public import Mathlib.RingTheory.Spectrum.Prime.FreeLocus
 public import Mathlib.Algebra.Module.FinitePresentation
 public import Mathlib.LinearAlgebra.TensorProduct.Tower
 public import Mathlib.LinearAlgebra.TensorProduct.RightExactness
@@ -100,7 +101,11 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   extension-closed. **PROVEN**.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN**, unconditionally.
 * `HopfAlgebra.IsShortExact.cartierDual` — **Cartier duality is exact**. **PROVEN** as an
-  assembly of the four statements below, exactly one of which is open.
+  assembly of the statements below; as of 2026-07-28 the only one of them still open is the
+  *generation* half of the dual normal basis, `exists_spanning_cartierDual`. Its sibling, the
+  rank count, was closed the same day over two new leaves — one Hopf-theoretic
+  (`IsShortExact.nonempty_linearEquiv_baseChange`) and one not
+  (`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`).
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
 * `AlgHom.flat_quotient_range_of_faithfullyFlat` — the cokernel of a faithfully flat algebra map
   is a flat `R`-module. **PROVEN** (2026-07-28) by the diagram chase in the `FaithfullyFlatSplit`
@@ -123,14 +128,26 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * `HopfAlgebra.IsShortExact.surjective_cartierDual_map` — **PROVEN** from the retraction.
 * `HopfAlgebra.IsShortExact.le_ker_cartierDual` — the easy half of the dual kernel condition.
   **PROVEN**, from `apply_comp` alone.
-* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. **PROVEN** from the single cut
+* `HopfAlgebra.IsShortExact.ker_cartierDual_le` — the hard half. **PROVEN** (2026-07-28) from
   `exists_basis_cartierDual`. (Its "gated on fppf descent" note is **withdrawn**: the sibling
   field carrying the identical note turned out to need no descent at all.)
-* `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — the deepest field, classically
-  `Ext¹(G'', 𝔾ₘ) = 0`. **PROVEN** from the same cut, via
-  `Module.Free (CartierDual R A') (CartierDual R A)` and an instance already in the pin.
-* `HopfAlgebra.IsShortExact.exists_basis_cartierDual` — the dual normal basis, `D(A)` free of
-  rank `rk_R A''` over `D(A')`. **OPEN — the only open statement in this file.**
+* `HopfAlgebra.IsShortExact.faithfullyFlat_cartierDual` — classically `Ext¹(G'', 𝔾ₘ) = 0`.
+  **PROVEN** (2026-07-28) from `exists_basis_cartierDual` plus the pin's
+  `[Nontrivial M] [Module.Free R M] → Module.FaithfullyFlat R M`.
+* `HopfAlgebra.IsShortExact.exists_basis_cartierDual` — the dual normal basis. **PROVEN**
+  (2026-07-28) by Orzech's property from two strictly weaker statements,
+  `IsShortExact.exists_spanning_cartierDual` (generation by `rk_R A''` elements) and
+  `IsShortExact.nonempty_linearEquiv_cartierDual` (the rank count `rk_R A = rk_R A'' · rk_R A'`).
+  Of those, only the generation half is still open.
+* `HopfAlgebra.IsShortExact.nonempty_linearEquiv_cartierDual` and its unpackaged form
+  `HopfAlgebra.IsShortExact.finrank_eq_mul` — the rank count. **PROVEN** (2026-07-28) from the
+  two leaves below, which share nothing with each other.
+* `HopfAlgebra.IsShortExact.nonempty_linearEquiv_baseChange` — the torsor identity
+  `A ⊗_{A''} A ≅ A ⊗_R A'`. OPEN. Pure Hopf algebra; needs no flatness over `A''` and no descent.
+* `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — the degree of a tower. OPEN, and stated at
+  the root namespace because it mentions no Hopf algebra and belongs in mathlib, which has
+  `rankAtStalk` and `finrank_mul_finrank` but no multiplicativity of the degree along a
+  composite of finite *locally* free maps.
 * `HopfAlgebra.etale_of_isShortExact` — étale-by-étale is étale. **PROVEN** (2026-07-27),
   with no non-Hopf leaf left under it.
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
@@ -541,6 +558,82 @@ theorem AlgHom.exists_linearRetraction_of_faithfullyFlat (f : B →ₐ[R] A)
 
 end FaithfullyFlatSplit
 
+/-! ### The degree of a tower
+
+The one piece of pure commutative algebra that the rank count below needs, stated at the root
+namespace because it belongs in mathlib. -/
+
+/-- **The degree of a tower**: if `S` is a finite free `R`-algebra and `M` is a finite flat
+`S`-module whose rank is the constant `n` at every stalk of `S`, then `M` has `R`-rank
+`rk_R S · n`.
+
+OPEN. Cut on 2026-07-28 out of `HopfAlgebra.IsShortExact.nonempty_linearEquiv_cartierDual`,
+alongside `HopfAlgebra.IsShortExact.nonempty_linearEquiv_baseChange`; the two are independent —
+this one mentions no Hopf algebra at all.
+
+## Why it is not in the pin (checked, not assumed)
+
+This pin has `Module.rankAtStalk` with a rich API in
+`Mathlib/RingTheory/Spectrum/Prime/FreeLocus.lean`: base change (`rankAtStalk_baseChange`),
+tensor products (`rankAtStalk_tensorProduct`, `rankAtStalk_tensorProduct_of_isScalarTower`),
+constancy under specialisation, and `rankAtStalk_eq` computing it as the dimension of the fibre.
+`Mathlib/RingTheory/Flat/LocallyFree.lean` turns constant rank into Zariski-local freeness
+(`Module.Free.away_of_finite_of_flat_of_rankAtStalk_constant`), and this project already carries
+`Module.finitePresentation_of_rankAtStalk_const`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/FinitePresentationOfFinrank.lean`), whose hypothesis has
+exactly the shape used here.
+
+What is missing everywhere is **multiplicativity of the degree along a composite of finite
+locally free maps**. `Module.finrank_mul_finrank` is the tower formula for *free* modules, and
+freeness over `S` is precisely what fails here. On the scheme side
+`Mathlib/AlgebraicGeometry/Morphisms/FlatRank.lean` defines `Scheme.Hom.finrank` for finite flat
+morphisms and proves its pullback compatibility (`finrank_pullback_snd`, `finrank_of_isPullback`)
+but has **no composition lemma**. Checked by grep over `Mathlib/` for `rankAtStalk` together with
+`comp`/`tower`/`trans`/`finrank_mul`, and over `Fermat/` and `~/cs/FLT`.
+
+## The intended route
+
+Fix a prime `q` of `R` with residue field `κ`. Both sides are computed at `q`:
+`finrank R M = rankAtStalk M q = dim_κ (κ ⊗[R] M)` and likewise for `S`
+(`Module.rankAtStalk_eq_finrank_of_free`, `Module.rankAtStalk_eq`). Base change to `κ` turns the
+tower into `κ → B := κ ⊗[R] S → N := κ ⊗[R] M`, with `B` a finite-dimensional `κ`-algebra and `N`
+finite flat over `B` of constant rank `n` (`Module.rankAtStalk_baseChange`). So it is enough to
+prove the statement over a **field** base, where `B` is Artinian: `B` is a finite product of
+local rings, `N` is free of rank `n` over each factor (`Module.free_of_flat_of_isLocalRing`), and
+`dim_κ N = ∑ᵢ n · dim_κ Bᵢ = n · dim_κ B`.
+
+The one ingredient that last step still needs is the decomposition of a **non-reduced** Artinian
+ring into local factors: this pin has `IsArtinianRing.equivPi` only for *reduced* `B`
+(`Mathlib/RingTheory/Artinian/Module.lean`), so that is the concrete gap to fill or route around.
+A route that avoids it: filter `N` by powers of the nilradical of `B`; flatness gives
+`nilʲ N / nilʲ⁺¹ N ≅ (nilʲ/nilʲ⁺¹) ⊗_{B_red} (N ⊗_B B_red)`, and `N ⊗_B B_red` is free of rank
+`n` over the reduced Artinian `B_red ≅ ∏ κᵢ`, so each graded piece has `κ`-dimension
+`n · dim_κ (nilʲ/nilʲ⁺¹)` and the dimensions telescope.
+
+## FALSITY AUDIT
+
+`[Nontrivial R]` is **load-bearing and was added after the statement was refuted without it.**
+Over the zero ring `S` is zero too, so `PrimeSpectrum S` is EMPTY and `hn` holds vacuously for
+*every* `n`; meanwhile `rank_subsingleton` makes `finrank R M = finrank R S = 1`, so the
+conclusion reads `1 = n`. Witness: `R = S = M = 0`, `n = 5`, giving `1 = 5`. Freeness offers no
+protection — over the zero ring every module is free. The consumer discharges the subsingleton
+base separately, so the hypothesis costs it nothing.
+
+With `[Nontrivial R]` the remaining corner is harmless: if `S` is the zero ring then `M` is zero,
+`finrank R S = 0` and the conclusion reads `0 = 0 · n`.
+
+The constancy hypothesis `hn` is load-bearing too, and cannot be weakened to constancy on the
+image of `Spec R`. Refuting check: `R = κ` a field, `S = κ × κ`, `M = κ × 0` (a direct summand
+of `S`, hence flat). Then `rankAtStalk M` is `1` at one prime and `0` at the other,
+`finrank R M = 1` and `finrank R S = 2`, and no `n` satisfies `1 = 2 · n`. -/
+theorem Module.finrank_eq_finrank_mul_of_rankAtStalk_eq
+    {R : Type*} {S : Type*} {M : Type*} [CommRing R] [Nontrivial R] [CommRing S] [Algebra R S]
+    [Module.Finite R S] [Module.Free R S]
+    [AddCommGroup M] [Module R M] [Module S M] [IsScalarTower R S M]
+    [Module.Finite S M] [Module.Flat S M] [Module.Free R M] [Module.Finite R M]
+    {n : ℕ} (hn : ∀ p : PrimeSpectrum S, Module.rankAtStalk (R := S) M p = n) :
+    Module.finrank R M = Module.finrank R S * n := sorry
+
 namespace HopfAlgebra
 
 /-! ### Short exact sequences -/
@@ -756,13 +849,28 @@ which are proven. The split is by *where the mathematics is*:
 | `exists_linearRetraction` | **PROVEN** | `i(A'')` is an `R`-module direct summand of `A` |
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
-| `exists_basis_cartierDual` | **OPEN** | `D(A)` is `D(A')`-free of rank `rk_R A''` |
+| `exists_spanning_cartierDual` | **OPEN** | `D(A)` is *generated* over `D(A')` by `rk_R A''` elements |
+| `nonempty_linearEquiv_cartierDual` | **PROVEN** from the two below | the rank count `rk_R A = rk_R A'' · rk_R A'` |
+| `finrank_eq_mul` | **PROVEN** from the two below | that same rank count, before packaging |
+| `nonempty_linearEquiv_baseChange` | **OPEN** | the torsor identity `A ⊗_{A''} A ≅ A ⊗_R A'` |
+| `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` | **OPEN** | the degree of a tower (root namespace, no Hopf content) |
+| `exists_basis_cartierDual` | **PROVEN** from those two | `D(A)` is `D(A')`-free of rank `rk_R A''` |
 | `ker_cartierDual_le` | **PROVEN** from the cut | the hard half: a character trivial on `Spec A'` descends |
 | `faithfullyFlat_cartierDual` | **PROVEN** from the cut | `(Spec A)^D → (Spec A')^D` is faithfully flat |
 
-So exactly **one** statement is open in this file:
+So exactly **three** statements are open in this file, they are independent of each other, and
+only one of them is Hopf-theoretic: `exists_spanning_cartierDual` (generation, the surviving half
+of the linear dual of the normal basis), `IsShortExact.nonempty_linearEquiv_baseChange` (the
+torsor identity) and `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` (the degree of a tower,
+root namespace, no Hopf content).  The rank half of the normal basis,
+`nonempty_linearEquiv_cartierDual`, was PROVEN on 2026-07-28 over the last two of those.
 
-* `exists_basis_cartierDual` — the linear dual of the normal basis, feeding the other two fields.
+(An older version of this list also named `Module.Flat.quotient_range_of_rTensor_injective` as
+what the surjectivity field rests on. **That is stale**: no such declaration is in this file, or
+anywhere under `Fermat/` — it belonged to the losing branch of the two that closed
+`IsShortExact.flat_quotient` concurrently, and the route kept here goes through the PROVEN
+`AlgHom.flat_quotient_range_of_faithfullyFlat` instead. The same correction applies to the bullet
+in the module header, which is left alone only because that name has a separate owner.)
 
 The surjectivity field rests on general module theory rather than on anything Hopf-theoretic, but
 that input is **no longer a leaf**: it is `AlgHom.flat_quotient_range_of_faithfullyFlat`, PROVEN in
@@ -868,20 +976,312 @@ normal-basis decomposition rather than the decomposition itself:
 > `CartierDual R A` is a **free** `CartierDual R A'`-module on an index set of the same size as an
 > `R`-basis of `A''`.
 
-That is `IsShortExact.exists_basis_cartierDual` below, and it is the only thing left open in this
-half of the file. The two derivations are written out under it; neither needs any further
-Hopf-algebra input, and in particular neither needs fppf descent (see the gate audit on
-`ker_cartierDual_le`). -/
+That is `IsShortExact.exists_basis_cartierDual` below. The two derivations are written out under
+it; neither needs any further Hopf-algebra input, and in particular neither needs fppf descent
+(see the gate audit on `ker_cartierDual_le`).
+
+**Since 2026-07-28 the shared cut is itself PROVEN, from two strictly weaker statements**, so
+what is left open in this half of the file is those two rather than the freeness:
+
+* `IsShortExact.exists_spanning_cartierDual` — *generation*: some family of `rk_R A''` elements
+  spans `CartierDual R A` over `CartierDual R A'`;
+* `IsShortExact.nonempty_linearEquiv_cartierDual` — the *rank count*
+  `rk_R A = rk_R A'' · rk_R A'`, packaged as an `R`-linear equivalence so that it is also true
+  (vacuously) over the zero ring. **This one is PROVEN since 2026-07-28**, over two further
+  leaves — the torsor identity `IsShortExact.nonempty_linearEquiv_baseChange` and the tower
+  formula `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` — so the generation half above is
+  now the only thing this half of the file still owes.
+
+The step that makes this a genuine reduction rather than a restatement is **Orzech's property**,
+which every commutative ring has (`Mathlib/RingTheory/FiniteType.lean`): a surjective linear map
+onto a finitely generated module admitting an injection from its source is injective. So linear
+*independence* — the half of "basis" that is usually the expensive one, and the half that fails
+for a merely fppf-locally free module — is not something a prover has to supply here at all. -/
+
+/-- **The dual normal basis, generation half**: `CartierDual R A` is *generated* as a
+`CartierDual R A'`-module — the module structure being the one given by `CartierDual.map π` — by
+a family indexed by `Module.Free.ChooseBasisIndex R A''`, i.e. by `rk_R A''` elements.
+
+OPEN. This is one of the two statements into which `IsShortExact.exists_basis_cartierDual` was
+cut on 2026-07-28; the other is the rank count `IsShortExact.nonempty_linearEquiv_cartierDual`,
+and the freeness is assembled from the two by Orzech's property.
+
+**Linear independence is deliberately not part of this statement.** Every commutative ring has
+Orzech's property, so a surjection onto a finitely generated module that admits an injection from
+its source is automatically injective; given the rank count, generation therefore upgrades to a
+basis for free. This matters because independence is exactly the half that a *local* argument
+cannot give — see the faithfulness audit on `exists_basis_cartierDual`, where the fallback
+position is local freeness — whereas generation of a finitely generated module is a condition
+that fppf-local and Nakayama-style arguments can reach.
+
+## Where the mathematics is
+
+Tate's argument (*Finite flat group schemes*, in Cornell–Silverman–Stevens, §2) is to dualise an
+`R`-basis of `A''` through the normal-basis decomposition `A ≅ A'' ⊗[R] A'`; under it
+`CartierDual.map π` becomes `1 ⊗ (regular representation of D(A'))`, so the `rk_R A''`
+dual-basis vectors generate.
+
+**Half of that is already available in this file, and a prover should start from it.** The map
+`CartierDual.map i : CartierDual R A → CartierDual R A''` is surjective
+(`IsShortExact.surjective_cartierDual_map`, PROVEN, via the `R`-linear retraction
+`IsShortExact.exists_linearRetraction`), and `CartierDual R A''` is `R`-free on
+`Module.Free.ChooseBasisIndex R A''`. So an *explicit* candidate family is available with no new
+input: transport the dual basis of `Module.Free.chooseBasis R A''` along a section of
+`CartierDual.map i`. For that family, `Submodule.span R (Set.range c) + ker (CartierDual.map i)`
+is already all of `CartierDual R A`. What remains open is precisely
+
+> `ker (CartierDual.map i) ≤ Submodule.span (CartierDual R A') (Set.range c)`,
+
+and *that* is where the normal-basis input enters. (Do not try to close it with
+`IsShortExact.ker_cartierDual_le`: that lemma is proven *from* this one, through
+`exists_basis_cartierDual`, so the route is circular.)
+
+## FAITHFULNESS AUDIT
+
+This statement is implied by the cut it was extracted from — a basis is in particular a spanning
+family — so it cannot be stronger than `exists_basis_cartierDual`, whose own audit is below. It
+is strictly weaker: it says nothing about independence, and in particular it is satisfied by any
+family of `rk_R A''` generators, not only by a dual normal basis.
+
+It is not vacuous: over the zero ring it holds trivially, but over a field it is the assertion
+`dim D(A) = dim A'' · dim A'` together with a choice of generators realising it, which is false
+for any family of fewer than `rk_R A''` elements.
+
+**This leaf now carries the whole global-versus-local-freeness risk of the cut, alone.** If
+`exists_basis_cartierDual` is ever refuted — its audit explains that the only possible shape of a
+counterexample is a non-local base on which `D(A)` is fppf-locally but not globally free — then
+the sibling `nonempty_linearEquiv_cartierDual` still survives, because local freeness of rank
+`rk_R A''` already forces the rank count; so the false statement would have to be *this* one. A
+prover who comes to doubt the strong form should therefore attack the generation statement for a
+counterexample, and the documented fallback (weaken to local freeness of rank `rk_R A''` and
+localise the two consumers' derivations, weakening neither consumer) applies here unchanged. -/
+theorem IsShortExact.exists_spanning_cartierDual (h : IsShortExact i π) :
+    letI : Algebra (CartierDual R A') (CartierDual R A) :=
+      ((CartierDual.map π).toAlgHom.toRingHom :
+        CartierDual R A' →+* CartierDual R A).toAlgebra
+    ∃ c : Module.Free.ChooseBasisIndex R A'' → CartierDual R A,
+      Submodule.span (CartierDual R A') (Set.range c) = ⊤ := sorry
+
+/-! #### The rank count
+
+`IsShortExact.nonempty_linearEquiv_cartierDual` below is the *numerical* half of the dual normal
+basis, and it is proven here out of two statements that share nothing with each other: a torsor
+identity that is pure Hopf algebra, and the degree of a tower, which is pure commutative algebra
+and lives at the root namespace above. -/
+
+/-- **`Spec A` is a `Spec A'`-torsor over `Spec A''`**, in the only form the rank count needs:
+`A ⊗[A''] A` and `A ⊗[R] A'` are isomorphic as `A`-modules, where `A` is an `A''`-algebra
+through `i`.
+
+OPEN. Cut on 2026-07-28 out of `IsShortExact.nonempty_linearEquiv_cartierDual`, alongside
+`Module.finrank_eq_finrank_mul_of_rankAtStalk_eq`.
+
+Geometrically this is the standard trivialisation of a torsor by its own base change,
+`G ×_{G''} G ≅ G × G'` via `(x, y) ↦ (x, x⁻¹y)`, which lands in `G'` precisely because `G'` is
+the kernel of `G → G''`. On points it is formal; the content is that the ring-level `ker_eq`
+field captures "kernel" correctly.
+
+## The route: a finite computation, and it needs NO flatness over `A''`
+
+Only `ker_eq`, surjectivity of `π`, and `R`-flatness of `A` (which is free) are used. The
+`faithfullyFlat` field is **not** needed here — it is consumed one level up, in
+`IsShortExact.finrank_eq_mul`, where it makes `Spec A → Spec A''` surjective. Worth knowing
+before attacking this: it is not a descent statement, and no fppf machinery is involved.
+
+Let `Θ : A ⊗[R] A ≃ₗ[R] A ⊗[R] A`, `a ⊗ b ↦ ∑ a·b₍₁₎ ⊗ b₍₂₎`, the classical translation
+isomorphism, whose inverse is `a ⊗ b ↦ ∑ a·S(b₍₁₎) ⊗ b₍₂₎` (the composites collapse by
+coassociativity and the antipode axiom). Write
+
+* `K₁ := ker (A ⊗[R] A ↠ A ⊗[A''] A)`, spanned by `a·i(c) ⊗ b - a ⊗ i(c)·b` for `c : A''`;
+* `K₂ := ker (A ⊗[R] A ↠ A ⊗[R] A')`, which is `A ⊗[R] RingHom.ker π` because `A` is `R`-flat
+  and `π` is surjective; by `ker_eq` it is spanned by `a ⊗ i(c)·b` with `c` in the augmentation
+  ideal of `A''`.
+
+Then `Θ K₁ = K₂`, and the map induced on quotients is the required isomorphism.
+
+* `Θ K₁ ⊆ K₂`: apply `id ⊗ π` to `Θ(a·i(c) ⊗ b) - Θ(a ⊗ i(c)·b) =
+  ∑ a i(c) b₍₁₎ ⊗ b₍₂₎ - ∑ a i(c₍₁₎) b₍₁₎ ⊗ i(c₍₂₎) b₍₂₎` (using that `i` is a coalgebra map).
+  By `IsShortExact.apply_comp`, `π (i c₍₂₎) = ε(c₍₂₎) · 1`, so the second sum contracts along
+  the counit axiom to the first and the difference dies.
+* `K₂ ⊆ Θ K₁`: for `c` in the augmentation ideal,
+  `Θ⁻¹(a ⊗ i(c)·b) = ∑ a S(b₍₁₎) S(i c₍₁₎) ⊗ i(c₍₂₎) b₍₂₎`. Modulo `K₁` move `i(c₍₂₎)` across the
+  tensor and use that `i` commutes with the antipode:
+  `∑ S(i c₍₁₎) i(c₍₂₎) = i (∑ S(c₍₁₎) c₍₂₎) = ε(c) · 1 = 0`.
+
+## What has to be built (checked, not assumed)
+
+There is **no** Hopf–Galois map in this pin. `Mathlib/RingTheory/HopfAlgebra/` contains exactly
+`Basic`, `Convolution`, `GroupLike`, `MonoidAlgebra`, `Quotient`, `TensorProduct`, and a grep
+over `Mathlib/` for `hopf.?galois`/`galoisMap` returns nothing. So `Θ` must be built here from
+`Coalgebra.comul`, `HopfAlgebra.antipode` and the `Coalgebra.Repr` API
+(`sum_antipode_mul_eq_algebraMap_counit` and its siblings). The presentation of `A ⊗[A''] A` as
+`A ⊗[R] A` modulo `K₁` has to be written too; the file already carries the analogous
+right-exactness plumbing in `AlgHom.flat_quotient_range_of_faithfullyFlat`, which goes through
+`lTensor_exact`.
+
+## Faithfulness
+
+`Nonempty` rather than a named equivalence is deliberate and is **not** under-pinning. The sole
+consumer, `IsShortExact.finrank_eq_mul`, uses it only through `Module.rankAtStalk_eq_of_equiv`:
+it wants some `A`-linear isomorphism and nothing else. An adversary free to choose the
+equivalence proves the same rank count, so there is nothing an existential can hide.
+
+Refuting check showing `ker_eq` is load-bearing: drop it and take `A'' := R` with `i` the unit,
+`A' := R` with `π := ε_A`. The conclusion would read `A ⊗[R] A ≅ A`, forcing `rk A ^ 2 = rk A`,
+which fails for `A = R[ℤ/2]`. With `ker_eq` in force that configuration is excluded, because
+`ker ε_A` is the augmentation ideal of `A` while `Ideal.map i (augmentationIdeal R R)` is `0`. -/
+theorem IsShortExact.nonempty_linearEquiv_baseChange (h : IsShortExact i π) :
+    letI : Algebra A'' A := (i.toAlgHom.toRingHom : A'' →+* A).toAlgebra
+    Nonempty ((A ⊗[A''] A) ≃ₗ[A] (A ⊗[R] A')) := sorry
+
+/-- **Multiplicativity of the rank in a short exact sequence**: `rk_R A = rk_R A'' · rk_R A'`.
+
+**PROVEN** (2026-07-28) from `IsShortExact.nonempty_linearEquiv_baseChange` (the torsor identity)
+and `Module.finrank_eq_finrank_mul_of_rankAtStalk_eq` (the degree of a tower). It is the whole
+mathematical content of `IsShortExact.nonempty_linearEquiv_cartierDual`, which is this identity
+repackaged through `CartierDual.finrank_cartierDual`.
+
+The argument is the classical one for `|G| = |G''| · |G'|`, in three steps.
+
+1. `A` is a finite flat `A''`-module: flatness is the `faithfullyFlat` field, finiteness comes
+   from `Module.Finite R A` along the tower `R → A'' → A`.
+2. Its rank is the **constant** `rk_R A'` at every stalk of `A''`. Faithful flatness makes
+   `Spec A → Spec A''` surjective (`PrimeSpectrum.comap_surjective_of_faithfullyFlat`), so it is
+   enough to check this after base change along `A'' → A`; there
+   `A ⊗[A''] A ≅ A ⊗[R] A'` is `A`-free of rank `rk_R A'`.
+3. The tower formula turns a constant relative rank into the product.
+
+Note where the two hypotheses go: faithful flatness is used **only** in step 2, and only for
+surjectivity of the map on spectra; the torsor identity itself needs none of it.
+
+The subsingleton base is discharged first and separately: over the zero ring every `finrank` is
+`1` by `rank_subsingleton` and the identity reads `1 = 1 · 1`. Afterwards `Nontrivial A` — needed
+for the `StrongRankCondition A` that the base-change rank computation uses — follows from
+`Nontrivial R`, because the counit is a retraction of `R → A`. -/
+theorem IsShortExact.finrank_eq_mul (h : IsShortExact i π) :
+    Module.finrank R A = Module.finrank R A'' * Module.finrank R A' := by
+  classical
+  rcases subsingleton_or_nontrivial R with _ | _
+  · have e1 : Module.finrank R A = 1 := by simp [Module.finrank, rank_subsingleton]
+    have e2 : Module.finrank R A'' = 1 := by simp [Module.finrank, rank_subsingleton]
+    have e3 : Module.finrank R A' = 1 := by simp [Module.finrank, rank_subsingleton]
+    rw [e1, e2, e3, one_mul]
+  haveI : Nontrivial A := by
+    rcases subsingleton_or_nontrivial A with hs | hA
+    · exact absurd ((Bialgebra.counit_one (R := R) (A := A)).symm.trans
+        (by rw [Subsingleton.elim (1 : A) 0, map_zero])) one_ne_zero
+    · exact hA
+  letI : Algebra A'' A := (i.toAlgHom.toRingHom : A'' →+* A).toAlgebra
+  haveI : IsScalarTower R A'' A :=
+    IsScalarTower.of_algebraMap_eq fun r => (i.toAlgHom.commutes r).symm
+  haveI hff : Module.FaithfullyFlat A'' A := h.faithfullyFlat
+  haveI : Module.Finite A'' A := Module.Finite.of_restrictScalars_finite R A'' A
+  have hsurj : Function.Surjective (PrimeSpectrum.comap (algebraMap A'' A)) :=
+    PrimeSpectrum.comap_surjective_of_faithfullyFlat
+  have hn : ∀ p : PrimeSpectrum A'',
+      Module.rankAtStalk (R := A'') A p = Module.finrank R A' := by
+    intro p
+    obtain ⟨q, rfl⟩ := hsurj p
+    rw [← Module.rankAtStalk_baseChange (R := A'') (M := A) (S := A) q]
+    obtain ⟨e⟩ := h.nonempty_linearEquiv_baseChange
+    rw [Module.rankAtStalk_eq_of_equiv e, Module.rankAtStalk_eq_finrank_of_free]
+    exact Module.finrank_baseChange
+  exact Module.finrank_eq_finrank_mul_of_rankAtStalk_eq hn
+
+/-- **The dual normal basis, rank half**: `CartierDual R A` and `rk_R A''` copies of
+`CartierDual R A'` have the same `R`-rank.
+
+Since `rk_R (CartierDual R M) = rk_R M` for finite free `M` (`CartierDual.finrank_cartierDual`),
+this is exactly the **multiplicativity of ranks in a short exact sequence**,
+`rk_R A = rk_R A'' · rk_R A'` — geometrically, that `Spec A → Spec A''` is finite locally free of
+rank `rk_R A'`, its fibre over the identity section being `Spec A'`.
+
+**PROVEN** (2026-07-28) — it is `IsShortExact.finrank_eq_mul` above, repackaged. It was the
+second of the two statements into which `IsShortExact.exists_basis_cartierDual` was cut earlier
+the same day; see `IsShortExact.exists_spanning_cartierDual` for the first, which is still open.
+
+The repackaging is the whole of the proof and is worth reading only for its degenerate case.
+`CartierDual.finrank_cartierDual` turns both `Cartier` duals into their originals, so
+`rk_R (ChooseBasisIndex R A'' →₀ CartierDual R A') = rk_R A'' · rk_R A' = rk_R A =
+rk_R (CartierDual R A)`, and two finite free modules of equal rank are linearly equivalent
+through their chosen bases. Over a **subsingleton** base none of that is available —
+`finrank_cartierDual` is stated with `[Nontrivial R]`, and `Module.finrank_eq_card_chooseBasisIndex`
+needs `StrongRankCondition R` — but there both sides are subsingleton by `Module.subsingleton`
+and the zero map is an equivalence, which is exactly the corner the docstring below predicted.
+
+## Why it is phrased as a linear equivalence and not as an equality of `finrank`s
+
+Two reasons, and the second is a correctness matter rather than convenience.
+
+* It is what the assembly consumes: Orzech's property needs an injective `R`-linear map from the
+  source of the spanning map into `CartierDual R A`, and an equivalence supplies one directly.
+* **The obvious index-set formulation is FALSE over the zero ring.** One might state
+  `Nonempty (ChooseBasisIndex R A'' × ChooseBasisIndex R A' ≃ ChooseBasisIndex R A)`; but when
+  `R` is subsingleton every module is zero and *every* type indexes a basis of it, so
+  `Module.Free.ChooseBasisIndex` is an arbitrary choice and the three chosen types need not match
+  — `Empty` against `Unit` refutes it. The linear-equivalence form has no such corner: over the
+  zero ring both sides are subsingleton and the equivalence exists trivially.
+
+## FAITHFULNESS AUDIT
+
+Implied by the cut it was extracted from: a `Module.Basis (ChooseBasisIndex R A'')
+(CartierDual R A') (CartierDual R A)` gives `CartierDual R A ≃ₗ[CartierDual R A']
+(ChooseBasisIndex R A'' →₀ CartierDual R A')`, and restricting scalars to `R` along the tower
+`R → CartierDual R A' → CartierDual R A` gives exactly this equivalence. So it is not stronger
+than `exists_basis_cartierDual`. It is strictly weaker: it retains only the numerical shadow of
+that statement and none of its module structure over `CartierDual R A'`.
+
+Non-vacuity: over a field it says `dim A = dim A'' · dim A'`, which pins a genuine numerical
+invariant of the extension and fails for, e.g., a would-be "short exact sequence" whose middle
+term had the wrong dimension. -/
+theorem IsShortExact.nonempty_linearEquiv_cartierDual (h : IsShortExact i π) :
+    Nonempty ((Module.Free.ChooseBasisIndex R A'' →₀ CartierDual R A') ≃ₗ[R]
+      CartierDual R A) := by
+  classical
+  rcases subsingleton_or_nontrivial R with hR | hR
+  · have h1 : Subsingleton (Module.Free.ChooseBasisIndex R A'' →₀ CartierDual R A') :=
+      Module.subsingleton R _
+    have h2 : Subsingleton (CartierDual R A) := Module.subsingleton R _
+    exact ⟨{ toFun := 0, map_add' := by intros; simp, map_smul' := by intros; simp,
+             invFun := 0, left_inv := fun _ => Subsingleton.elim _ _,
+             right_inv := fun _ => Subsingleton.elim _ _ }⟩
+  · let ι := Module.Free.ChooseBasisIndex R A''
+    let D' := CartierDual R A'
+    let κ' := Module.Free.ChooseBasisIndex R D'
+    let κ := Module.Free.ChooseBasisIndex R (CartierDual R A)
+    let c' : Module.Basis κ' R D' := Module.Free.chooseBasis R D'
+    let c : Module.Basis κ R (CartierDual R A) := Module.Free.chooseBasis R (CartierDual R A)
+    have hcard : Fintype.card (ι × κ') = Fintype.card κ := by
+      rw [Fintype.card_prod, ← Module.finrank_eq_card_chooseBasisIndex R A'',
+        ← Module.finrank_eq_card_chooseBasisIndex R D',
+        ← Module.finrank_eq_card_chooseBasisIndex R (CartierDual R A),
+        CartierDual.finrank_cartierDual, CartierDual.finrank_cartierDual, h.finrank_eq_mul]
+    let e : ι × κ' ≃ κ := Fintype.equivOfCardEq hcard
+    let E1 : (ι →₀ D') ≃ₗ[R] (ι →₀ (κ' →₀ R)) := Finsupp.mapRange.linearEquiv c'.repr
+    let E2 : (ι →₀ (κ' →₀ R)) ≃ₗ[R] ((ι × κ') →₀ R) := (Finsupp.curryLinearEquiv R).symm
+    let E3 : ((ι × κ') →₀ R) ≃ₗ[R] (κ →₀ R) := Finsupp.domLCongr e
+    exact ⟨E1 ≪≫ₗ E2 ≪≫ₗ E3 ≪≫ₗ c.repr.symm⟩
 
 /-- **The dual normal basis.** `CartierDual R A` is a free `CartierDual R A'`-module on
 `Module.Free.ChooseBasisIndex R A''`, i.e. free of rank `rk_R A''`, where the module structure is
 the one given by `CartierDual.map π`.
 
-OPEN, and this is now the **only** open statement of the duality half of this file: both
-`IsShortExact.ker_cartierDual_le` and `IsShortExact.faithfullyFlat_cartierDual` are proven from it
-below, and `IsShortExact.cartierDual` is assembled from those. (It is now the only open statement
-of the *whole* file: the surjectivity field's former leaf on flatness of `A ⧸ i(A'')` is PROVEN, as
-`AlgHom.flat_quotient_range_of_faithfullyFlat`.)
+**PROVEN** (2026-07-28) from the two statements above, `IsShortExact.exists_spanning_cartierDual`
+(generation by `rk_R A''` elements) and `IsShortExact.nonempty_linearEquiv_cartierDual` (the rank
+count), by **Orzech's property**: `Finsupp.linearCombination` on the spanning family is a
+surjective `CartierDual R A'`-linear map onto `CartierDual R A`, which is a finitely generated
+`R`-module; the rank equivalence provides an injective `R`-linear map from its source; so
+`OrzechProperty.bijective_of_surjective_of_injective` makes it bijective, and a bijective map
+from `ι →₀ S` is a basis. Independence therefore costs nothing once generation and the rank count
+are in hand — which is the whole reason for the cut.
+
+Both `IsShortExact.ker_cartierDual_le` and `IsShortExact.faithfullyFlat_cartierDual` are proven
+from this statement below, and `IsShortExact.cartierDual` is assembled from those.
+(The surjectivity field's former leaf under `IsShortExact.flat_quotient` is no longer open, and
+the wrapper no longer exists: that route now goes through the PROVEN
+`AlgHom.flat_quotient_range_of_faithfullyFlat` above.  Of the two statements this one is proven
+from, `exists_spanning_cartierDual` is still open and `nonempty_linearEquiv_cartierDual` was
+PROVEN the same day over two smaller leaves; see the status table above for the current three.)
 
 ## Why this is the right cut
 
@@ -935,7 +1335,26 @@ theorem IsShortExact.exists_basis_cartierDual (h : IsShortExact i π) :
       ((CartierDual.map π).toAlgHom.toRingHom :
         CartierDual R A' →+* CartierDual R A).toAlgebra
     Nonempty (Module.Basis (Module.Free.ChooseBasisIndex R A'')
-      (CartierDual R A') (CartierDual R A)) := sorry
+      (CartierDual R A') (CartierDual R A)) := by
+  letI : Algebra (CartierDual R A') (CartierDual R A) :=
+    ((CartierDual.map π).toAlgHom.toRingHom :
+      CartierDual R A' →+* CartierDual R A).toAlgebra
+  haveI : IsScalarTower R (CartierDual R A') (CartierDual R A) :=
+    IsScalarTower.of_algebraMap_eq fun r => ((CartierDual.map π).toAlgHom.commutes r).symm
+  obtain ⟨c, hc⟩ := h.exists_spanning_cartierDual
+  obtain ⟨e⟩ := h.nonempty_linearEquiv_cartierDual
+  -- The spanning family gives a surjection from a free `CartierDual R A'`-module.
+  set F : (Module.Free.ChooseBasisIndex R A'' →₀ CartierDual R A') →ₗ[CartierDual R A']
+      CartierDual R A := Finsupp.linearCombination (CartierDual R A') c with hF
+  have hFsurj : Function.Surjective F := by
+    rw [← LinearMap.range_eq_top, hF, Finsupp.range_linearCombination]
+    exact hc
+  -- Orzech: a surjection onto a finitely generated module whose source injects into it is
+  -- injective. The injection is the rank equivalence, read `R`-linearly.
+  have hFinj : Function.Injective F :=
+    OrzechProperty.injective_of_surjective_of_injective (R := R) e.toLinearMap
+      (F.restrictScalars R) e.injective hFsurj
+  exact ⟨Module.Basis.ofRepr (LinearEquiv.ofBijective F ⟨hFinj, hFsurj⟩).symm⟩
 
 /-- **The hard half of the dual kernel condition**: a functional on `A` vanishing on the
 sub-bialgebra `i(A'')` lies in the ideal of `CartierDual R A` generated by

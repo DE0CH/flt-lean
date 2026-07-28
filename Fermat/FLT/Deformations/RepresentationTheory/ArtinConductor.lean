@@ -4376,9 +4376,8 @@ theorem fixedSubmodule_gp_phi_eq (ρ : GaloisRep K A M) (v : HeightOneSpectrum (
     ρ.fixedSubmodule v (F.gp (D.phi m))
       = ρ.fixedSubmodule v (D.gp m ⊓ wildInertiaGroup v) := by
   haveI := D.lvl_normal
-  have hle : F.gp (D.phi m) ≤ wildInertiaGroup v := by
-    have h := F.gp_le_gp 1 (D.phi m) hm
-    rwa [F.gp_eq_wild 1 one_pos le_rfl] at h
+  have hle : F.gp (D.phi m) ≤ wildInertiaGroup v :=
+    F.gp_le_wild (D.phi m) (lt_of_lt_of_le zero_lt_one hm)
   calc ρ.fixedSubmodule v (F.gp (D.phi m))
       = ρ.fixedSubmodule v (F.gp (D.phi m) ⊔ (D.lvl ⊓ wildInertiaGroup v)) :=
         (ρ.fixedSubmodule_sup_eq v _ _ hD).symm
@@ -4389,30 +4388,47 @@ theorem fixedSubmodule_gp_phi_eq (ρ : GaloisRep K A M) (v : HeightOneSpectrum (
 /-- **EVERY BREAK IS `≥ 1`** — the upper-numbering normalisation, read off
 the counting clause at `u = 1`.
 
-`RamificationFiltration.gp_eq_wild` gives `G^1 = P_v`, so the left side of
-the counting clause at `u = 1` is `ρ.wildCodim v` by definition, i.e. the
-filter is all of `Finset.range (ρ.wildCodim v)`. This is what makes the
-break sum at least `ρ.wildCodim v` (the classical bound
-`Sw_v(V) ≥ dim V − dim V^{P_v}`) and it is what lets the two steps below
-work on `[1, ∞)` rather than on `(0, ∞)`. -/
+**RE-OPENED AS A SORRY LEAF AT THE RELEASE-17 MERGE (2026-07-28), because
+its proof consumed a REFUTED axiom.  Do not re-close it by rewriting the
+tactic; the statement needs its author's judgment.**
+
+The proof that stood here opened with
+
+    have h1 := hμ 1 one_pos
+    rw [F.gp_eq_wild 1 one_pos le_rfl] at h1
+
+i.e. it read `G¹ = P_v` off the structure field `gp_eq_wild`.  That field
+no longer exists: `b4f9cb7d` retired it in favour of the weaker
+`gp_le_wild : ∀ u > 0, gp u ≤ wildInertiaGroup v`, because — see the SECOND
+FALSITY AUDIT above, around the `Γ¹ ⊊ P_v` paragraph — **`gp_eq_wild` is
+FALSE at `u = 1`** for the genuine upper-numbering filtration.  So this
+theorem was resting on a refuted equality, and the file did not compile at
+all until this leaf was opened (a live call to a field that had been
+deleted: the "errored declaration" category, invisible to every sorry scan).
+
+`gp_le_wild` does not substitute for it, and the direction is the wrong
+one.  From `G¹ ≤ P_v` one gets `M^{G¹} ⊇ M^{P_v}`, hence
+
+    finrank M − finrank M^{G¹}  ≤  ρ.wildCodim v
+
+whereas the argument below needs equality — it concludes that the filter at
+`u = 1` is ALL of `Finset.range (ρ.wildCodim v)`, which requires the count
+to reach `wildCodim`, not merely to be bounded by it.
+
+What a repair has to decide is which of these the consumers actually want:
+either an extra hypothesis pinning `F.gp 1 = wildInertiaGroup v` for the
+filtrations in play (true for the LOWER numbering, which is what the
+classical statement `Sw_v(V) ≥ dim V − dim V^{P_v}` is about), or a
+restatement of the conclusion that survives the inequality.  That is a
+cut-level decision across this file's `RamificationFiltration` interface and
+is deliberately not made here. -/
 theorem one_le_break (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
     (F : RamificationFiltration v) (μ : ℕ → ℚ)
     (hμ : ∀ u : ℚ, 0 < u →
       Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
         ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card)
-    {k : ℕ} (hk : k < ρ.wildCodim v) : 1 ≤ μ k := by
-  have h1 := hμ 1 one_pos
-  rw [F.gp_eq_wild 1 one_pos le_rfl] at h1
-  have hcard : ((Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k).card
-      = (Finset.range (ρ.wildCodim v)).card := by
-    rw [Finset.card_range, ← h1]
-    rfl
-  have hfe : ((Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k)
-      = Finset.range (ρ.wildCodim v) :=
-    Finset.eq_of_subset_of_card_le (Finset.filter_subset _ _) (le_of_eq hcard.symm)
-  have hmem : k ∈ (Finset.range (ρ.wildCodim v)).filter fun k => (1 : ℚ) ≤ μ k := by
-    rw [hfe]; exact Finset.mem_range.mpr hk
-  exact (Finset.mem_filter.mp hmem).2
+    {k : ℕ} (hk : k < ρ.wildCodim v) : 1 ≤ μ k :=
+  sorry
 
 /-- A finite multiset of rationals has a GAP above any point: some `ε > 0`
 separates `a` from every element of the multiset that exceeds it. This is

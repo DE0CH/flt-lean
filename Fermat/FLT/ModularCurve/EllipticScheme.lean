@@ -170,10 +170,12 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   second-law cut — do `exists_projMulOfCoordsTwo` (the gluing, now characterised
   by BOTH Bosma–Lenstra laws), while `projMulCoords_unit` and
   `projMulCoords_inv` (the two axioms) are **PROVEN as of 2026-07-27**, over the
-  two NEW leaves `ProjCoords.toHom_infty` and `ProjCoords.toHom_negC` — the two
-  missing `Proj.fromOfGlobalSections` congruences, naturality in the SCHEME
-  argument and compatibility with `Proj.map`.  `exists_projMulOfCoords` itself is
-  PROVEN from `exists_projMulOfCoordsTwo` plus those two axioms.
+  two `Proj.fromOfGlobalSections` congruences `ProjCoords.toHom_infty`
+  (naturality in the SCHEME argument) and `ProjCoords.toHom_negC` (compatibility
+  with `Proj.map`) — **both of which are now PROVEN**, `toHom_negC` on
+  2026-07-27 and `toHom_infty` on 2026-07-28, so neither is a leaf any more.
+  `exists_projMulOfCoords` itself is PROVEN from `exists_projMulOfCoordsTwo`
+  plus those two axioms.
   **`projMulCoords_inv` gained `[E.IsElliptic]` at the same time, and it is
   NECESSARY**: the `dblZ` / `add2Y` dichotomy it needs has elimination ideal
   exactly `⟨Δ²⟩`, so it is false-shaped for a singular Weierstrass equation —
@@ -231,10 +233,10 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   node and is listed here only so that this count matches the compiler's:
   `exists_affineComplement_zeroSection`,
   `exists_weierstrassRingEquiv_of_affineComplement`,
-  `not_smooth_specMap_coordinateRing_of_singular` (which on 2026-07-28
-  replaced `isElliptic_of_isOpenImmersion_coordinateRing`, now PROVEN: the
-  char-`0` rationality of the singular point split off as the PROVEN
-  `exists_singular_of_Δ_eq_zero`, leaving only the Jacobian criterion) and
+  (`not_smooth_specMap_coordinateRing_of_singular` was listed here until
+  2026-07-28, when it too was PROVEN — by a square-zero lifting obstruction over
+  `ℚ[t]/(t³)`, not by either route its docstring proposed; so the whole
+  `isElliptic_of_isOpenImmersion_coordinateRing` subtree is now closed) and
   `smoothOfRelativeDimension_one_of_affineChart` (that last one replaced
   `exists_isIso_of_affineChart` on 2026-07-27, in two steps: first a cut into
   two extension leaves, then release 6's `CurveExtension.lean`, which closed
@@ -670,81 +672,6 @@ theorem openCover_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike
   unfold Proj.openCoverOfMapIrrelevantEqTop
   congr 1
 
-/-- **The chart-level half of the congruence** (sorry node — this is where ALL
-the remaining content of `ProjCoords.toHom_smul` now sits, and it is the piece
-that lives in `HomogeneousLocalization` rather than in scheme theory).
-
-`Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht` is, after composing with
-`Proj.basicOpenIsoSpec`, the map determined by the ring homomorphism
-
-    Away 𝒜 t →+* Localization.Away (f t),   mk (a, t ^ k) ↦ f a / (f t) ^ k
-
-(`IsLocalization.map` composed with `algebraMap (Away 𝒜 t) (Localization.Away t)`
-in mathlib's definition).  For `g` the same formula reads, on `a ∈ 𝒜 (k * n)`,
-
-    g a / (g t) ^ k = u ^ (k * n) * f a / (u ^ n * f t) ^ k = f a / (f t) ^ k,
-
-so the two ring maps are literally equal once `Localization.Away (g t)` is
-identified with `Localization.Away (f t)` — which is legitimate because
-`g t = u ^ n * f t` and `u ^ n` is a unit, so the two `Submonoid.powers` invert
-the same elements.  **That is the whole mathematical content**: `Away` is the
-degree-`0` part and the rescaling is by `u` to the power of the degree, so it
-cancels between numerator and denominator.
-
-The `Scheme.isoOfEq` on the left is `basicOpen_eq_of_gradedSmul`: the two charts
-have equal — but not syntactically equal — domains.
-
-*What is NOT missing.*  The gluing is already done: `openCover_eq_of_gradedSmul`
-shows the two covers are equal, and `fromOfGlobalSections_eq_of_gradedSmul` below
-derives the full congruence from this leaf by `Scheme.Cover.hom_ext` plus
-`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory.  So an owner of
-this leaf never has to touch `glueMorphisms`. -/
-theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
-    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
-    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
-    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
-    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
-    Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι =
-      (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫
-        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
-  sorry
-
-/-- **The missing mathlib congruence for `Proj.fromOfGlobalSections`** (PROVEN
-from `openCover_eq_of_gradedSmul` and
-`toBasicOpenOfGlobalSections_eq_of_gradedSmul`).
-
-This is the statement `ProjCoords.toHom_smul` needs, and — modulo the one chart
-leaf above — it is done.  Note that no hypothesis says `g` is *built* from `f` by
-rescaling; only the degreewise identity `g a = u ^ n * f a` is used, which is
-exactly what `ProjCoords.smul` provides. -/
-theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
-    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
-    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
-    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
-    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
-    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
-    Proj.fromOfGlobalSections 𝒜 g hg = Proj.fromOfGlobalSections 𝒜 f hf := by
-  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).hom_ext _ _ fun i ↦ ?_
-  obtain ⟨n, t, hn, ht⟩ := i
-  have hopen : X.basicOpen (g t) = X.basicOpen (f t) :=
-    basicOpen_eq_of_gradedSmul 𝒜 u f g h ht
-  have hfeq : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ =
-      (X.isoOfEq hopen).hom ≫ (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).f ⟨n, t, hn, ht⟩ := by
-    simp [Proj.openCoverOfMapIrrelevantEqTop]
-  have hL : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
-        Proj.fromOfGlobalSections 𝒜 g hg =
-      Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
-    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
-  have hR : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
-        Proj.fromOfGlobalSections 𝒜 f hf =
-      (X.isoOfEq hopen).hom ≫
-        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
-    rw [hfeq]
-    exact (Category.assoc _ _ _).trans (congrArg ((X.isoOfEq hopen).hom ≫ ·)
-      ((Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩))
-  rw [hL, hR]
-  exact toBasicOpenOfGlobalSections_eq_of_gradedSmul 𝒜 u f g h hn ht
-
 end GradedSmul
 
 section ProjFunctoriality
@@ -992,8 +919,247 @@ theorem fromOfGlobalSections_comp_map {σ τ : Type} {A B : Type} [CommRing A] [
 
 end ProjFunctoriality
 
+section GradedSmulCharts
+
+/-! ### The chart-level unit-rescaling congruence (**PROVEN 2026-07-28**)
+
+`toBasicOpenOfGlobalSections_eq_of_gradedSmul` was the last open piece of
+`ProjCoords.toHom_smul`.  It is proven here rather than in `GradedSmul` above only because
+its proof runs through `toBasicOpenOfGlobalSections_eq` and `awayLoc` — the unfolding of a
+chart into "restrict `X.toSpecΓ` to a basic open, then `Spec` of one ring map" — which
+`ProjFunctoriality` immediately above supplies.  Both congruences of the `GradedSmul`
+cluster were therefore MOVED down here verbatim; nothing else moved, and
+`basicOpen_eq_of_gradedSmul` / `openCover_eq_of_gradedSmul` are still where they were.
+
+The proof splits exactly as the old docstring predicted, into a ring identity and affine
+plumbing:
+
+* `awayLoc_eq_comp_of_gradedSmul` — on the degree-`0` localisation the rescaling by
+  `u ^ deg` cancels between numerator and denominator, because a `HomogeneousLocalization`
+  numerator and denominator carry the SAME degree.  **This needs no relation between that
+  degree and `n`**: it is `h c.deg` applied to `c.num` and to `c.den`, never `h (k * n)`,
+  which is why none of the divisibility bookkeeping the old docstring's formula suggests
+  actually appears.
+* `toSpecΓ_restrict_unitMul` — the analogue for a unit rescaling of
+  `toSpecΓ_restrict_naturality`, proven the same way: cancel the mono
+  `Spec.map (algebraMap Γ(X, ⊤) Γ(X, ⊤)_r)` and rewrite with
+  `basicOpenIsoSpecAway_hom_SpecMap` on both sides.
+
+`Localization.Away (v * r)` and `Localization.Away r` are compared by `awayCompOfUnitMul`,
+which is `IsLocalization.lift` of `algebraMap`.  It depends on the unit `v` only through
+the *proof* that `r` becomes invertible, so it is insensitive to the mismatch between the
+rescaling exponent `n` (the degree of `t`) and the degree of an arbitrary element of
+`Away 𝒜 t` — that insensitivity is what makes the two halves compose. -/
+
+/-- **`r` is a unit in `Γ_s` when `s = v * r` with `v` a unit** (PROVEN) — the reason the
+two `Submonoid.powers` invert the same elements. -/
+theorem isUnit_algebraMap_of_unitMul {R : Type*} [CommRing R] (v : Rˣ) (r s : R)
+    (hs : s = (v : R) * r) :
+    IsUnit (algebraMap R (Localization.Away s) r) := by
+  have h : IsUnit (algebraMap R (Localization.Away s) s) :=
+    IsLocalization.Away.algebraMap_isUnit s
+  have hsplit : algebraMap R (Localization.Away s) s =
+      algebraMap R (Localization.Away s) (v : R) * algebraMap R (Localization.Away s) r := by
+    rw [← map_mul, ← hs]
+  rw [hsplit] at h
+  exact (IsUnit.mul_iff.mp h).2
+
+/-- **The canonical comparison `Γ_r →+* Γ_s` for `s = v * r`, `v` a unit** (PROVEN).  It
+does not mention `v` outside the unit proof, which is what lets it be used at a rescaling
+exponent unrelated to the degree being compared. -/
+noncomputable def awayCompOfUnitMul {R : Type*} [CommRing R] (v : Rˣ) (r s : R)
+    (hs : s = (v : R) * r) :
+    Localization.Away r →+* Localization.Away s :=
+  IsLocalization.lift (M := Submonoid.powers r) (S := Localization.Away r)
+    (g := algebraMap R (Localization.Away s))
+    (fun y => by
+      obtain ⟨k, hk⟩ := y.2
+      simp only [← hk, map_pow]
+      exact (isUnit_algebraMap_of_unitMul v r s hs).pow k)
+
+@[simp] theorem awayCompOfUnitMul_algebraMap {R : Type*} [CommRing R] (v : Rˣ) (r s : R)
+    (hs : s = (v : R) * r) (x : R) :
+    awayCompOfUnitMul v r s hs (algebraMap R (Localization.Away r) x) =
+      algebraMap R (Localization.Away s) x :=
+  IsLocalization.lift_eq _ _
+
+/-- **A unit rescaling does not move a basic open** (PROVEN) — the same fact as
+`basicOpen_eq_of_gradedSmul`, in the form the plumbing below needs. -/
+theorem basicOpen_eq_of_unitMul {X : Scheme.{0}} (v : (Γ(X, ⊤))ˣ) (r s : Γ(X, ⊤))
+    (hs : s = (v : Γ(X, ⊤)) * r) : X.basicOpen s = X.basicOpen r := by
+  rw [hs, Scheme.basicOpen_mul, Scheme.basicOpen_of_isUnit _ v.isUnit, top_inf_eq]
+
+/-- **The affine plumbing behind the unit-rescaling congruence** (PROVEN) — the chart map
+of `D(s)` followed by `Spec` of the comparison is the chart map of `D(r)`, along the
+identification `D(s) = D(r)`.  Companion of `toSpecΓ_restrict_naturality` above. -/
+@[reassoc]
+theorem toSpecΓ_restrict_unitMul {X : Scheme.{0}} (v : (Γ(X, ⊤))ˣ) (r s : Γ(X, ⊤))
+    (hs : s = (v : Γ(X, ⊤)) * r) :
+    (X.isoOfEq (X.toSpecΓ_preimage_basicOpen s)).inv ≫
+        (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen s) ≫ (basicOpenIsoSpecAway s).hom ≫
+          Spec.map (CommRingCat.ofHom (awayCompOfUnitMul v r s hs)) =
+      (X.isoOfEq (basicOpen_eq_of_unitMul v r s hs)).hom ≫
+        (X.isoOfEq (X.toSpecΓ_preimage_basicOpen r)).inv ≫
+          (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen r) ≫ (basicOpenIsoSpecAway r).hom := by
+  rw [← cancel_mono (Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r))))]
+  simp only [Category.assoc]
+  rw [basicOpenIsoSpecAway_hom_SpecMap]
+  have hcomp : Spec.map (CommRingCat.ofHom (awayCompOfUnitMul v r s hs)) ≫
+      Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r))) =
+      Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away s))) := by
+    rw [← Spec.map_comp, ← CommRingCat.ofHom_comp]
+    congr 1
+    ext x
+    exact awayCompOfUnitMul_algebraMap v r s hs x
+  rw [hcomp, basicOpenIsoSpecAway_hom_SpecMap]
+  simp only [Scheme.isoOfEq_inv, Scheme.isoOfEq_hom, morphismRestrict_ι,
+    Scheme.homOfLE_ι_assoc]
+
+/-- **The ring-level content of the chart congruence** (PROVEN) — the two chart ring maps
+out of `Away 𝒜 t` agree once `Γ_{g t}` is identified with `Γ_{f t}`.
+
+The only fact used about `f` and `g` is the degreewise identity `h`, applied at the degree
+`c.deg` carried by BOTH the numerator and the denominator of a homogeneous fraction; the
+two factors of `u ^ c.deg` then cancel. -/
+theorem awayLoc_eq_comp_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {t : A}
+    (hgt : g t = ((u ^ n : (Γ(X, ⊤))ˣ) : Γ(X, ⊤)) * f t) :
+    awayLoc 𝒜 g t =
+      (awayCompOfUnitMul (u ^ n) (f t) (g t) hgt).comp (awayLoc 𝒜 f t) := by
+  ext x
+  obtain ⟨c, rfl⟩ := HomogeneousLocalization.mk_surjective x
+  have hLg : awayLoc 𝒜 g t (HomogeneousLocalization.mk c) =
+      IsLocalization.mk' (Localization.Away (g t)) (g c.num)
+        (⟨g c.den, powers_le_comap g t c.den_mem⟩ : Submonoid.powers (g t)) := by
+    simp only [awayLoc, RingHom.coe_comp, Function.comp_apply,
+      HomogeneousLocalization.algebraMap_apply, HomogeneousLocalization.val_mk,
+      Localization.mk_eq_mk', IsLocalization.map_mk']
+  have hLf : awayLoc 𝒜 f t (HomogeneousLocalization.mk c) =
+      IsLocalization.mk' (Localization.Away (f t)) (f c.num)
+        (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t)) := by
+    simp only [awayLoc, RingHom.coe_comp, Function.comp_apply,
+      HomogeneousLocalization.algebraMap_apply, HomogeneousLocalization.val_mk,
+      Localization.mk_eq_mk', IsLocalization.map_mk']
+  rw [RingHom.coe_comp, Function.comp_apply, hLf, hLg]
+  refine (IsLocalization.eq_mk'_iff_mul_eq.mpr ?_).symm
+  have hspec := IsLocalization.mk'_spec (Localization.Away (f t)) (f c.num)
+    (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t))
+  have hmap := congrArg (awayCompOfUnitMul (u ^ n) (f t) (g t) hgt) hspec
+  rw [map_mul, awayCompOfUnitMul_algebraMap, awayCompOfUnitMul_algebraMap] at hmap
+  calc awayCompOfUnitMul (u ^ n) (f t) (g t) hgt
+        (IsLocalization.mk' (Localization.Away (f t)) (f c.num)
+          (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t))) *
+        algebraMap Γ(X, ⊤) (Localization.Away (g t)) (g c.den)
+      = (awayCompOfUnitMul (u ^ n) (f t) (g t) hgt
+          (IsLocalization.mk' (Localization.Away (f t)) (f c.num)
+            (⟨f c.den, powers_le_comap f t c.den_mem⟩ : Submonoid.powers (f t))) *
+          algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f c.den)) *
+          algebraMap Γ(X, ⊤) (Localization.Away (g t)) ((u : Γ(X, ⊤)) ^ c.deg) := by
+        rw [h c.deg c.den c.den.2, map_mul]; ring
+    _ = algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f c.num) *
+          algebraMap Γ(X, ⊤) (Localization.Away (g t)) ((u : Γ(X, ⊤)) ^ c.deg) := by
+        rw [hmap]
+    _ = algebraMap Γ(X, ⊤) (Localization.Away (g t)) (g c.num) := by
+        rw [h c.deg c.num c.num.2, map_mul]; ring
+
+/-- **The chart-level half of the congruence** (**PROVEN 2026-07-28** — this carried ALL
+the remaining content of `ProjCoords.toHom_smul`, and it is the piece that lives in
+`HomogeneousLocalization` rather than in scheme theory).
+
+`Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht` is, after composing with
+`Proj.basicOpenIsoSpec`, the map determined by the ring homomorphism
+
+    Away 𝒜 t →+* Localization.Away (f t),   mk (a, t ^ k) ↦ f a / (f t) ^ k
+
+(`IsLocalization.map` composed with `algebraMap (Away 𝒜 t) (Localization.Away t)`
+in mathlib's definition).  For `g` the same formula reads, on `a ∈ 𝒜 (k * n)`,
+
+    g a / (g t) ^ k = u ^ (k * n) * f a / (u ^ n * f t) ^ k = f a / (f t) ^ k,
+
+so the two ring maps are literally equal once `Localization.Away (g t)` is
+identified with `Localization.Away (f t)` — which is legitimate because
+`g t = u ^ n * f t` and `u ^ n` is a unit, so the two `Submonoid.powers` invert
+the same elements.  **That is the whole mathematical content**: `Away` is the
+degree-`0` part and the rescaling is by `u` to the power of the degree, so it
+cancels between numerator and denominator.
+
+The `Scheme.isoOfEq` on the left is `basicOpen_eq_of_gradedSmul`: the two charts
+have equal — but not syntactically equal — domains.
+
+*One correction to the sketch above, made when it was carried out.*  The `a ∈ 𝒜 (k * n)`
+framing is a red herring, and chasing it costs bookkeeping that the proof does not need.
+A `HomogeneousLocalization.NumDenSameDeg` carries ONE degree `c.deg` shared by numerator
+and denominator, and nothing forces `c.deg = k * n` (if it differs, the denominator lies
+in two graded pieces at once, hence is `0`, and both localisations are trivial).  The
+proof therefore applies the degreewise identity at `c.deg` to `c.num` and to `c.den`
+separately, and the two factors of `u ^ c.deg` cancel — see
+`awayLoc_eq_comp_of_gradedSmul`.
+
+*What was NOT missing.*  The gluing was already done: `openCover_eq_of_gradedSmul`
+shows the two covers are equal, and `fromOfGlobalSections_eq_of_gradedSmul` below
+derives the full congruence from this leaf by `Scheme.Cover.hom_ext` plus
+`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory.  So this proof never
+touches `glueMorphisms`. -/
+theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a)
+    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι =
+      (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+  have hgt : g t = ((u ^ n : (Γ(X, ⊤))ˣ) : Γ(X, ⊤)) * f t := by
+    rw [Units.val_pow_eq_pow_val]; exact h n t ht
+  rw [toBasicOpenOfGlobalSections_eq 𝒜 g hn ht, toBasicOpenOfGlobalSections_eq 𝒜 f hn ht,
+    awayLoc_eq_comp_of_gradedSmul 𝒜 u f g h hgt, CommRingCat.ofHom_comp, Spec.map_comp]
+  simp only [Category.assoc]
+  rw [toSpecΓ_restrict_unitMul_assoc (u ^ n) (f t) (g t) hgt]
+
+/-- **The missing mathlib congruence for `Proj.fromOfGlobalSections`** (PROVEN
+from `openCover_eq_of_gradedSmul` and
+`toBasicOpenOfGlobalSections_eq_of_gradedSmul`).
+
+This is the statement `ProjCoords.toHom_smul` needs, and — modulo the one chart
+leaf above — it is done.  Note that no hypothesis says `g` is *built* from `f` by
+rescaling; only the degreewise identity `g a = u ^ n * f a` is used, which is
+exactly what `ProjCoords.smul` provides. -/
+theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (h : ∀ (n : ℕ) (a : A), a ∈ 𝒜 n → g a = (u : Γ(X, ⊤)) ^ n * f a) :
+    Proj.fromOfGlobalSections 𝒜 g hg = Proj.fromOfGlobalSections 𝒜 f hf := by
+  refine (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).hom_ext _ _ fun i ↦ ?_
+  obtain ⟨n, t, hn, ht⟩ := i
+  have hopen : X.basicOpen (g t) = X.basicOpen (f t) :=
+    basicOpen_eq_of_gradedSmul 𝒜 u f g h ht
+  have hfeq : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ =
+      (X.isoOfEq hopen).hom ≫ (Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).f ⟨n, t, hn, ht⟩ := by
+    simp [Proj.openCoverOfMapIrrelevantEqTop]
+  have hL : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 g hg =
+      Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
+    (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩
+  have hR : (Proj.openCoverOfMapIrrelevantEqTop 𝒜 g hg).f ⟨n, t, hn, ht⟩ ≫
+        Proj.fromOfGlobalSections 𝒜 f hf =
+      (X.isoOfEq hopen).hom ≫
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+    rw [hfeq]
+    exact (Category.assoc _ _ _).trans (congrArg ((X.isoOfEq hopen).hom ≫ ·)
+      ((Proj.openCoverOfMapIrrelevantEqTop 𝒜 f hf).ι_glueMorphisms _ _ ⟨n, t, hn, ht⟩))
+  rw [hL, hR]
+  exact toBasicOpenOfGlobalSections_eq_of_gradedSmul 𝒜 u f g h hn ht
+
+end GradedSmulCharts
+
 /-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
-`n`** (**PROVEN 2026-07-28** — the arithmetic half of `ProjCoords.toHom_smul`).
+`n`** (**PROVEN 2026-07-28** — the arithmetic half of `ProjCoords.toHom_smul`; with the
+chart half `toBasicOpenOfGlobalSections_eq_of_gradedSmul` also proven, `toHom_smul` now
+carries no `sorry` in its cone from this file).
 
 `ProjCoords.ringHom` is `Ideal.Quotient.lift` of `MvPolynomial.eval₂Hom base coord`,
 so on the class of a polynomial `p` this says
@@ -1001,7 +1167,11 @@ so on the class of a polynomial `p` this says
     eval₂ base (u • coord) p = u ^ n * eval₂ base coord p   for `p` homogeneous of degree `n`,
 
 which is a monomial-by-monomial computation: a monomial of total degree `n`
-picks up exactly `u ^ n`.  The one step that is not literally that computation
+picks up exactly `u ^ n`.  (Not in the pin: mathlib's
+`RingTheory/MvPolynomial/Homogeneous.lean` has `IsHomogeneous.eval₂` — the image of
+a homogeneous polynomial under a homogeneous substitution is homogeneous — but no
+scaling identity, and `WeightedHomogeneous.lean` has none either.)
+The one step that is not literally that computation
 is passing from `a ∈ projGrading E n` — membership in the quotient grading — to
 a homogeneous representative of degree `n`, i.e. surjectivity of
 `HomogeneousIdeal.quotientGrading` onto its graded pieces; that is
@@ -1021,10 +1191,16 @@ support.
 
 There is deliberately NO new top-level helper: the monomial computation is
 inlined, because a name like `eval₂_smul_of_isHomogeneous` in this namespace is
-exactly the shape that collides with a downstream `public import`er.
+exactly the shape that collides with a downstream `public import`er.  (Two
+concurrent branches each factored one out, under names differing only in the
+subscript of the `2`; both were dropped at the 2026-07-28 merge in favour of this
+inlined form, which is what the file already carried.)
 
-This is deliberately stated in the exact form
-`fromOfGlobalSections_eq_of_gradedSmul` consumes. -/
+*The representative step is `HomogeneousIdeal.mem_quotientGrading`*, not
+`mk_mem_quotientGrading` read backwards: the former is already the `↔`, so the whole
+step is one `obtain`.  The rest is `ringHom_mk` (which is `rfl`) on both sides —
+`(smul u c).base` is `c.base` and `(smul u c).coord` is `u • c.coord`, both
+definitionally. -/
 theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X)
     (n : ℕ) (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
     (ha : a ∈ projGrading E n) :
@@ -1052,8 +1228,10 @@ theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoor
 /-- **Rescaling the coordinates by a unit does not change the morphism**
 (**PROVEN 2026-07-27** from `fromOfGlobalSections_eq_of_gradedSmul` and
 `ringHom_smul_apply_of_mem_projGrading` — it is a REDUCTION, not a result: the
-two leaves above still carry the content, and this declaration has no `sorry`
-of its own).
+two declarations above carry the content, and this one has no `sorry` of its
+own.  **Of those two, `ringHom_smul_apply_of_mem_projGrading` is PROVEN as of
+2026-07-28**, so only `toBasicOpenOfGlobalSections_eq_of_gradedSmul`, the chart
+identity, is still a leaf here).
 
 The general statement is: for `u : Γ(X, ⊤)ˣ` and `f : A →+* Γ(X, ⊤)` with
 `A` graded, the rescaled map `f_u : a ↦ ∑ n, u ^ n * f aₙ` satisfies
@@ -1232,67 +1410,6 @@ noncomputable def add2 (c d : ProjCoords E X)
 
 @[simp] theorem add2_coord (c d : ProjCoords E X) (h) :
     (c.add2 d h).coord = add2XYZ (E.map c.base) c.coord d.coord := rfl
-
-/-- **Every point of the projective model over a FIELD admits coordinates**
-(sorry node).
-
-TRUE and standard, and the restriction to `Spec K` is what makes it true:
-a morphism `T ⟶ Proj 𝒜` is a line bundle on `T` plus generating sections,
-and over `Spec K` every line bundle is trivial (`Pic (Spec K) = 0`, since
-`K` is local — indeed a field — so every finitely generated projective
-module of rank `1` is free).  Hence the tautological `𝒪(1)` pulls back to
-`𝒪_{Spec K}` and its three coordinate sections become elements of
-`Γ(Spec K, ⊤)`.
-
-*Concretely*, without any Picard-group machinery: `a : Spec K ⟶ Proj 𝒜`
-has image a single point, which lies in some basic open `D₊(r)` with `r`
-one of `X̄`, `Ȳ`, `Z̄` (the three generate the irrelevant ideal, so they
-cannot all vanish at it).  Factor `a` through
-`D₊(r) ≅ Spec (Away 𝒜 r)`, giving a ring map `Away 𝒜 r →+* K`, and take
-`coord i := (image of Xᵢ/r)` scaled by any lift; the coordinate `r/r = 1`
-is a unit, so `span_coord` holds.  Mathlib supplies the factorisation as
-`Proj.awayι` together with `Proj.opensRange_awayι` and
-`Proj.basicOpenIsoSpec`.
-
-*What it is used for*: it is the bridge from the residue-field ext lemma
-`ext_of_fromSpecResidueField_eq` to the polynomial identities.  Without it
-no `K`-point argument in this cluster can start.
-
-## FALSITY AUDIT (2026-07-27): the hypothesis is `IsField ↥K`, NOT `[Field K]`
-
-This leaf, `toHom_eq_of_addXYZ_not_span` and `projMulCoords_comm` were all
-stated with `(K : CommRingCat.{0}) [Field K]`, and that binder is **false-shaped**
-— not merely awkward.  `[Field K]` elaborates to `Field ↥K`, an arbitrary field
-structure ON THE CARRIER TYPE, and `Field` extends `CommRing`, so it supplies a
-SECOND ring structure unrelated to `K.str`.  Everything the statement is about —
-`Spec K`, `Γ(Spec K, ⊤)`, `ProjCoords E (Spec K)` — is built from `K.str`, so the
-hypothesis constrains nothing about the ring whose spectrum is being taken.
-
-This was verified, not guessed.  The transport
-
-    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField (Field.toIsField _)
-
-fails with *"synthesized type class instance is not definitionally equal"*,
-`Field.toSemifield.toDivisionSemiring.toSemiring` against
-`CommRing.toCommSemiring.toSemiring`, exactly because the two ring structures on
-`↥K` are different terms.  With `(hK : IsField ↥K)` the same line elaborates, and
-it also elaborates at the one instantiation site, `Scheme.residueField x`, where
-the `Field` instance genuinely IS `K.str` — so the repair costs the consumers a
-`Field.toIsField _` and nothing else.
-
-Under the old binder the statement is not just unprovable but FALSE.  Take
-`K := CommRingCat.of ℚ[X]` with a junk `Field ℚ[X]` transported along a bijection
-`ℚ[X] ≃ ℚ` (`Equiv.field`; both types are denumerable): every hypothesis holds,
-`Spec K = 𝔸¹_ℚ`, and `c := ![0,1,0]`, `d := ![x₀,y₀,t]` have
-`addXYZ c d = t • d` (`addXYZ_of_Z_eq_zero_left`), whose span is `(t) ≠ ⊤`, while
-`c.toHom ≠ d.toHom`.  The earlier note claiming the binder is false-shaped "only
-when a proof needs `AlgebraicClosure K` or `algebraMap K _`" is too narrow: it is
-false-shaped whenever the proof needs the field structure to BE `K.str`, which
-"a proper ideal of a field is zero" does. -/
-theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0})
-    (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
-    ∃ c : ProjCoords E (Spec K), c.toHom = a :=
-  sorry
 
 /-- **Over a FIELD the chord–tangent triple degenerates exactly on the
 diagonal** (PROVEN) — the ring-level content of
@@ -1474,25 +1591,32 @@ this cluster higher up in the file (the `Congruences` section), PROVING
 `toHom_negC` and `toHom_inftyC`, and the two versions merged side by side --
 leaving `negC`, `negC_coord` and `toHom_negC` declared TWICE.  The PROVEN copies
 are 250's; what survives here is only what 250 has no counterpart for: the
-general-`X` infinity datum `infty` and its still-sorried `toHom_infty`, which the
-`projMulCoords_unit` / `projMulCoords_inv` proofs below consume by name.
+general-`X` infinity datum `infty` and its `toHom_infty` (sorried when restored,
+PROVEN 2026-07-28), which the `projMulCoords_unit` / `projMulCoords_inv` proofs
+below consume by name.
 
-**`toHom_infty` is very likely now CLOSEABLE and was left open deliberately.**
-250's `toHom_inftyC` is the same statement at `X = Spec ℚ`, PROVEN, and
-`comap_toHom` transports a datum along any `g : X ⟶ Spec ℚ`; `infty E base` is
-`inftyC` comapped, since both are the triple `![0, 1, 0]`.  Closing it is an
-author's edit, not an integrator's, so the leaf is restored exactly as it stood.
+**`toHom_infty` is now PROVEN (2026-07-28), and it MOVED** — it is no longer in
+this section.  It sits immediately after `ProjCoords.comap_toHom`, in the
+`namespace ProjCoords` block that opens after `projFromOfGlobalSections_comp`;
+see its own docstring there for the proof.  The route this docstring predicted
+is the one that worked: 250's `toHom_inftyC` is the same statement at
+`X = Spec ℚ`, and `infty E base` is `inftyC` comapped along `s`, both being the
+triple `![0, 1, 0]`.
 
-What the leaf is: naturality of `Proj.fromOfGlobalSections` in its SCHEME
-argument, `g ≫ fromOfGlobalSections 𝒜 f hf = fromOfGlobalSections 𝒜 (Γ(g) ∘ f) _`.
-Re-checked 2026-07-27 against `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean`,
-which carries exactly four lemmas about it -- `_preimage_basicOpen`,
-`_morphismRestrict`, `_resLE`, `_toSpecZero` -- and no naturality in `X`.  The
-shortcut worth trying first: the infinity datum has `coord 1 = 1`, a UNIT, so
-`X.basicOpen (f Ȳ) = ⊤` and `fromOfGlobalSections_morphismRestrict` at `r = Ȳ`
-already exhibits BOTH sides as factoring through the single chart
-`Proj.awayι 𝒜 Ȳ`, an open immersion hence a monomorphism, reducing the statement
-to an equality of two ring maps out of `Away 𝒜 Ȳ` -- no gluing at all. -/
+**Two claims that stood here are CORRECTED.**  (1) "What the leaf is: naturality
+of `Proj.fromOfGlobalSections` in its SCHEME argument, ABSENT FROM THE PIN."
+Absent from mathlib, yes — the re-check of
+`Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean` finding only
+`_preimage_basicOpen`, `_morphismRestrict`, `_resLE`, `_toSpecZero` is accurate.
+But it is present HERE: `projFromOfGlobalSections_comp` is proven in this file,
+and `comap_toHom` is exactly its `ProjCoords`-level packaging.  So the leaf never
+needed new theory.  (2) The `awayι`-through-the-`Ȳ`-chart shortcut — factoring
+both sides through the single chart `Proj.awayι 𝒜 Ȳ` because `coord 1 = 1` is a
+unit — is sound but UNNECESSARY, and nobody should spend a cycle on it.
+
+What actually held the leaf open was **declaration ORDER**: it was stated ~800
+lines above `comap`, and `comap` cannot precede `projFromOfGlobalSections_comp`.
+Moving the declaration was the entire fix. -/
 
 /-- **The point at infinity `[0 : 1 : 0]` as a coordinate datum** (PROVEN).
 
@@ -1515,18 +1639,14 @@ noncomputable def infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ 
 
 @[simp] theorem negC_base (c : ProjCoords E X) : (negC c).base = c.base := rfl
 
-/-- **The infinity datum computes `projInfty`** (sorry node — naturality of
-`Proj.fromOfGlobalSections` in its SCHEME argument, absent from the pin; see the
-section docstring above, including the `awayι` shortcut that applies to this
-leaf and not to `toHom_negC`).
-
-The `s` is unconstrained because `hom_ext_spec_rat` makes `X ⟶ Spec ℚ` a
-subsingleton, so this really is the statement "`[0 : 1 : 0]` over `X` IS the
-base change of the unit section", with no choice involved. -/
-theorem toHom_infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤))
-    (s : X ⟶ Spec (CommRingCat.of ℚ)) :
-    (infty E base).toHom = s ≫ projInfty E :=
-  sorry
+/-! `toHom_infty` — "the infinity datum computes `projInfty`" — was PROVEN on
+2026-07-28 and **now lives further down the file**, immediately after
+`ProjCoords.comap_toHom` in the `namespace ProjCoords` block that opens after
+`projFromOfGlobalSections_comp`.  It had to move: its proof is
+`comap_toHom` applied to `inftyC`, and `comap` cannot be stated before
+`projFromOfGlobalSections_comp` exists.  Nothing between here and there
+consumes it — its only two consumers are the `specPointEquiv` clauses
+thousands of lines below. -/
 
 end ProjCoords
 
@@ -2214,8 +2334,9 @@ needs on top of them is PROVEN here:
   `ProjFunctoriality` section above — which proves the same identity in its
   unrotated form out of `awayLoc_comp` (functoriality of `IsLocalization.map`)
   and `toSpecΓ_restrict_naturality`.  So NOTHING in the naturality face is open;
-* *rigidity* is the single leaf `ProjCoords.exists_units_smul_of_toHom_eq`,
-  which remains open in its arbitrary-test-scheme form.
+* *rigidity* — `ProjCoords.exists_units_smul_of_toHom_eq` — is **PROVEN (2026-07-28)**,
+  over an ARBITRARY test scheme, in the `Rigidity` section below.  It was previously
+  recorded here as the last open leaf of this cut; it is not one any more.
 
 Everything else in this section — the pullback `ProjCoords.comap` of coordinate
 data, its compatibility with both addition laws, the refinement of a cover by the
@@ -2433,6 +2554,44 @@ theorem comap_toHom (c : ProjCoords E X) (g : Y ⟶ X) : (c.comap g).toHom = g �
       (hr ▸ (c.comap g).map_irrelevant_eq_top)).trans
     (projFromOfGlobalSections_comp (projGrading E) g c.ringHom c.map_irrelevant_eq_top _)
 
+/-- **The infinity datum computes `projInfty`** (**PROVEN 2026-07-28**).
+
+The `s` is unconstrained because `hom_ext_spec_rat` makes `X ⟶ Spec ℚ` a
+subsingleton, so this really is the statement "`[0 : 1 : 0]` over `X` IS the
+base change of the unit section", with no choice involved.
+
+*How it closed, and the correction it carries.*  This leaf was recorded — in the
+`### The unit section AS A COORDINATE DATUM` docstring above and in its own — as
+needing "naturality of `Proj.fromOfGlobalSections` in its SCHEME argument, absent
+from the pin", with an `awayι`-through-the-`Ȳ`-chart shortcut suggested as the
+route to try first.  **Neither was needed.**  The naturality in question is
+`projFromOfGlobalSections_comp`, which is PROVEN in this very file (immediately
+above this `namespace ProjCoords` block) and already packaged at the
+`ProjCoords` level as `comap_toHom` — so the missing-from-the-pin note was true
+of mathlib and irrelevant here.
+
+What actually blocked the leaf was **declaration ORDER**, not mathematics: the
+statement sat ~800 lines above `comap`, which cannot be written before
+`projFromOfGlobalSections_comp`.  Moving the declaration here is the whole fix.
+
+The proof is then three steps: `infty E base` IS `inftyC E (Spec ℚ) _` pulled
+back along `s` — both coordinate triples are `![0, 1, 0]`, and a ring map sends
+`0 ↦ 0`, `1 ↦ 1`, so the pullback triple is literally the same triple, while the
+two `base` fields agree by `Subsingleton` (`ProjCoords.ext` asks only for
+`coord`).  Then `comap_toHom` turns the morphism of the pullback into
+`s ≫ (inftyC …).toHom`, and 250's `toHom_inftyC` identifies that last morphism
+with `projInfty E`. -/
+theorem toHom_infty (E : WeierstrassCurve ℚ) {X : Scheme.{0}} (base : ℚ →+* Γ(X, ⊤))
+    (s : X ⟶ Spec (CommRingCat.of ℚ)) :
+    (infty E base).toHom = s ≫ projInfty E := by
+  have hcomap : (inftyC E (Spec (CommRingCat.of ℚ))
+      ((Scheme.ΓSpecIso (CommRingCat.of ℚ)).inv).hom).comap s = infty E base := by
+    refine ProjCoords.ext ?_
+    rw [comap_coord, infty_coord]
+    funext i
+    fin_cases i <;> simp [inftyC]
+  rw [← hcomap, comap_toHom, toHom_inftyC]
+
 /-- **The chord–tangent triple commutes with pullback** (PROVEN from
 `map_addXYZ`). -/
 theorem comap_addXYZ (c d : ProjCoords E X) (g : Y ⟶ X) :
@@ -2504,37 +2663,396 @@ theorem comap_add2 (c d : ProjCoords E X) (g : Y ⟶ X)
       (Scheme.Hom.appTop g).hom ∘ add2XYZ (E.map c.base) c.coord d.coord
     exact comap_add2XYZ c d g)
 
-/-- **RIGIDITY of `Proj.fromOfGlobalSections`** (sorry node — the SECOND of the
-two faces, and the converse of `ProjCoords.toHom_smul`).
+section Rigidity
 
-Two coordinate data defining the SAME morphism differ by a unit.  This is
-`Pic`-freeness of the pullback of `𝒪(1)`: `c` and `d` trivialise the same line
-bundle `a^*𝒪(1)` on `X`, and two trivialisations of a line bundle differ by a
-global unit.
+/-! ### RIGIDITY of `Proj.fromOfGlobalSections` (**PROVEN 2026-07-28**, over an ARBITRARY `X`)
 
-*Route, and it needs no new mathlib API beyond what naturality already gives.*
-Write `a := c.toHom = d.toHom`.  For each `i`,
-`Proj.fromOfGlobalSections_preimage_basicOpen` gives
-`a ⁻¹ᵁ D₊(X̄ᵢ) = X.basicOpen (c.coord i) = X.basicOpen (d.coord i)`, so the two
-data have the SAME three basic opens and those cover `X`
-(`exists_mem_basicOpen_of_span_eq_top` applied to `span_coord`).  On
-`Uᵢ := X.basicOpen (c.coord i)` both `c.coord i` and `d.coord i` are units
-(`isUnit_ι_appTop_basicOpen`), and comparing the two factorisations through
-`Proj.awayι` — i.e. the two ring maps `Away 𝒜 X̄ᵢ →+* Γ(Uᵢ, ⊤)` that
-`Proj.basicOpenIsoSpec` turns them into — gives
-`d.coord j / d.coord i = c.coord j / c.coord i` on `Uᵢ`.  Hence
-`uᵢ := (d.coord i) * (c.coord i)⁻¹ ∈ Γ(Uᵢ, ⊤)ˣ` satisfies `uᵢ • c = d` there, and
-on `Uᵢ ∩ Uⱼ` the two units agree (both equal `d.coord k / c.coord k` for any `k`
-with `c.coord k` invertible), so they glue to a global `u : Γ(X, ⊤)ˣ` by the
-sheaf condition.
+The second of the two faces, and the converse of `ProjCoords.toHom_smul`: two
+coordinate data defining the SAME morphism differ by a GLOBAL unit.
+
+**This holds over an arbitrary test scheme `X`; no field hypothesis is needed.**
+The "line bundle is only locally trivial" worry does not apply, because a
+`ProjCoords` datum is not a bare morphism — it is a morphism TOGETHER WITH a
+trivialisation of `a^*𝒪(1)` and the three sections in it.  Two such data with the
+same `a` therefore differ by an automorphism of the TRIVIAL bundle, and
+`Aut(𝒪_X) = Γ(X, 𝒪_X)ˣ` for every scheme.  Concretely this is what the four steps
+below establish, the last of them by a compiler-checked purely algebraic argument
+that produces the global unit outright.
+
+The decomposition, in dependency order:
+
+| step | statement | content |
+| --- | --- | --- |
+| 1 | `mul_eq_mul_of_fromOfGlobalSections_eq` | the chart ring map, for a general graded ring, **when the denominator is already a unit** |
+| 2 | `res_mul_coord_comm` | step 1 pulled back along `Uₖ.ι`, where `c.coord k` *becomes* a unit |
+| 3 | `mul_coord_comm` | step 2 glued over the cover, by separatedness of `𝒪_X` |
+| 4 | `exists_units_smul_of_mul_comm` | pure commutative algebra: cross-multiplication + unimodularity ⟹ a global unit |
+
+**The hinge is step 2, and it is what removes the field hypothesis.** Step 1 needs
+`IsUnit (f t)` — without it `D₊(t)` pulls back to a proper open and a section
+vanishing on an open need not vanish.  That hypothesis is *not* available globally.
+But it is available after restricting to `Uₖ := X.basicOpen (c.coord k)`, where
+`isUnit_ι_appTop_basicOpen` makes `c.coord k` a unit for free, and `ProjCoords.comap`
+transports the whole datum there at no cost (`comap_toHom` turns the hypothesis
+`c.toHom = d.toHom` into the corresponding hypothesis downstairs).  The `Uₖ` cover
+`X` by `span_coord`, so step 3 recovers the global identity.
+
+*History, and a trap worth recording.*  A dispatch record claimed this leaf was
+already proven on a merged branch.  That is true of a declaration of the SAME NAME
+but a DIFFERENT, WEAKER statement — `flt-lean-256` restated it over `Spec K'` for a
+field `K'`, precisely to get `IsUnit` for free, and that restatement was then lost
+in the merge resolution `89b742ca`.  A name matching is not a statement matching.
+The general-`X` form is the one the consumers need (`toHom_add_congr` and
+`isProjMulOn_of_cover` below are its only consumers, and both are applied at an
+arbitrary test scheme), and it is true; weakening it to fields would have stranded
+them.  Step 1 below is recovered verbatim from `7a471e47`, which is where the real
+work is; steps 2–4 are new and are what generalise it. -/
+
+/-- **A morphism `X ⟶ Proj 𝒜` built from global sections determines every RATIO of two
+homogeneous elements of the same degree, wherever the denominator is invertible**
+(**PROVEN**, general graded ring — recovered from `7a471e47`).
+
+`hu : IsUnit (f t)` makes the single chart `D₊(t)` cover all of `Z`:
+`Proj.fromOfGlobalSections_preimage_basicOpen` gives `F ⁻¹ᵁ D₊(t) = Z.basicOpen (f t) = ⊤`,
+and the same lemma with `heq` gives `G ⁻¹ᵁ D₊(t) = ⊤` as well — so the SAME chart covers
+`Z` for both, which is the only place `hu` is used and the reason no cover argument is
+needed HERE.  (The caller supplies `hu` by first restricting to a basic open; see
+`res_mul_coord_comm`.)
+
+Over that chart the morphism IS a ring map out of `Away 𝒜 t`, and the ratio `s / t` is
+one of its elements (degree `0`, since `deg s = deg t = n`).  Writing
+`V := Proj.basicOpen 𝒜 t` and `γ H h := Z.topIso.inv ≫ (Z.isoOfEq h).inv ≫ (H ∣_ V)` for
+`h : H ⁻¹ᵁ V = ⊤`, one has `γ H h ≫ V.ι = H`, and `γ` depends on `H` alone, so `heq`
+gives `γ F _ = γ G _` — the `revert … rw … intro … rfl` dodge handles the proof
+arguments, which is what makes the dependent typing harmless.  Composing with
+`(Proj.basicOpenIsoSpec 𝒜 t ht hn).hom` and applying `Scheme.Hom.appTop` turns each side
+into a ring map `Away 𝒜 t →+* Γ(Z, ⊤)`, equal for the two sides.
+
+Its value is read off from `Proj.fromOfGlobalSections_morphismRestrict`: it factors as
+`Away 𝒜 t → Localization.Away (f t) → Γ(Z, ⊤)`, the first map sending `s/t` to
+`f s / f t`, and the second being a RETRACTION of `algebraMap` (that is `hret` +
+`hRid`), so it sends `a / (f t)^k` to the unique `w` with `w * (f t)^k = a`.  Hence
+`ν (s/t) * f t = f s` and `ν (s/t) * g t = g s`, and cross-multiplying gives the
+conclusion.  The conclusion is deliberately a cross-multiplication rather than a
+division, so that no inverse has to be named and `IsUnit (g t)` never has to be
+produced.
+
+*Not in the pin* (re-checked 2026-07-28): `ProjectiveSpectrum/Basic.lean` has
+`_preimage_basicOpen`, `_morphismRestrict`, `_resLE` and `_toSpecZero` for
+`fromOfGlobalSections`, and no statement at all computing its chart ring map.  The
+refuting check is a grep for `fromOfGlobalSections` in `Mathlib/AlgebraicGeometry/`.
+
+*Shared with a sibling*: `ProjCoords.exists_of_specField` (surjectivity) needs the same
+chart ring map in the opposite direction — it must BUILD coordinates out of
+`Away 𝒜 r →+* K`.  Its owner should reuse `hret`/`hsplit`/`hE` below verbatim. -/
+theorem mul_eq_mul_of_fromOfGlobalSections_eq {σ : Type*} {A : Type} [CommRing A]
+    [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {Z : Scheme.{0}}
+    (f g : A →+* Γ(Z, ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    (hg : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map g = ⊤)
+    (heq : Proj.fromOfGlobalSections 𝒜 f hf = Proj.fromOfGlobalSections 𝒜 g hg)
+    {n : ℕ} (hn : 0 < n) {s t : A} (hs : s ∈ 𝒜 n) (ht : t ∈ 𝒜 n) (hu : IsUnit (f t)) :
+    g s * f t = f s * g t := by
+  classical
+  -- the ratio `s / t`, an element of the chart ring `(A_t)₀`
+  set elt : HomogeneousLocalization.Away 𝒜 t :=
+    HomogeneousLocalization.mk ⟨n, ⟨s, hs⟩, ⟨t, ht⟩, Submonoid.mem_powers t⟩ with helt
+  have hopen : Z.basicOpen (f t) = Z.basicOpen (g t) := by
+    rw [← Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 f hf hn ht,
+      ← Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 g hg hn ht, heq]
+  have htopf : Z.basicOpen (f t) = ⊤ := Z.basicOpen_of_isUnit hu
+  have htopg : Z.basicOpen (g t) = ⊤ := hopen ▸ htopf
+  have hFV : Proj.fromOfGlobalSections 𝒜 f hf ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤ := by
+    rw [Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 f hf hn ht, htopf]
+  have hGV : Proj.fromOfGlobalSections 𝒜 g hg ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤ := by
+    rw [Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 g hg hn ht, htopg]
+  -- the chart morphism, as a function of the morphism into `Proj` alone
+  set γ : (H : Z ⟶ Proj 𝒜) → (H ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤) →
+      (Z ⟶ (Proj.basicOpen 𝒜 t).toScheme) :=
+    fun H h => Z.topIso.inv ≫ (Z.isoOfEq h).inv ≫ (H ∣_ Proj.basicOpen 𝒜 t) with hγdef
+  have hγeq : γ _ hFV = γ _ hGV := by
+    clear hγdef
+    revert hFV hGV
+    rw [heq]
+    intro hFV hGV
+    rfl
+  -- the value of the chart ring map at `s / t`
+  have main : ∀ (f' : A →+* Γ(Z, ⊤))
+      (hf' : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f' = ⊤)
+      (h' : Proj.fromOfGlobalSections 𝒜 f' hf' ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤),
+      (γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+          ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt)
+            * f' t = f' s := by
+    intro f' hf' h'
+    have hpre : Proj.fromOfGlobalSections 𝒜 f' hf' ⁻¹ᵁ Proj.basicOpen 𝒜 t = Z.basicOpen (f' t) :=
+      Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 f' hf' hn ht
+    have hle : Submonoid.powers t ≤ Submonoid.comap f' (Submonoid.powers (f' t)) := by
+      rw [← Submonoid.map_le_iff_le_comap, Submonoid.map_powers]
+    set θ : Z ⟶ Spec (CommRingCat.of (Localization.Away (f' t))) :=
+      Z.topIso.inv ≫ (Z.isoOfEq h').inv ≫ (Z.isoOfEq hpre).hom ≫
+        (Z.isoOfEq (Z.toSpecΓ_preimage_basicOpen (f' t))).inv ≫
+        (Z.toSpecΓ ∣_ PrimeSpectrum.basicOpen (f' t)) ≫
+        (basicOpenIsoSpecAway (f' t)).hom with hθdef
+    -- `θ` is a retraction of the localisation map
+    have hret : θ ≫ Spec.map (CommRingCat.ofHom
+        (algebraMap Γ(Z, ⊤) (Localization.Away (f' t)))) = Z.toSpecΓ := by
+      simp only [hθdef, Category.assoc, basicOpenIsoSpecAway_hom_SpecMap, morphismRestrict_ι,
+        Scheme.isoOfEq_inv_ι_assoc, Scheme.isoOfEq_hom_ι_assoc, Scheme.toIso_inv_ι_assoc]
+    -- the chart map splits through `θ`
+    have hsplit : γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom =
+        θ ≫ Spec.map (CommRingCat.ofHom
+          ((IsLocalization.map (Localization.Away (f' t)) f' hle).comp
+            (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t)))) := by
+      simp only [hγdef, hθdef]
+      rw [Proj.fromOfGlobalSections_morphismRestrict 𝒜 f' hf' hn ht]
+      simp only [Proj.toBasicOpenOfGlobalSections, Category.assoc, Iso.inv_hom_id,
+        Category.comp_id]
+    -- the two ring-level consequences
+    have hE : (Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv ≫
+        (γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop =
+        CommRingCat.ofHom ((IsLocalization.map (Localization.Away (f' t)) f' hle).comp
+            (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))) ≫
+          ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv ≫ θ.appTop) := by
+      rw [hsplit, Scheme.Hom.comp_appTop, ← Category.assoc, ← Scheme.ΓSpecIso_inv_naturality,
+        Category.assoc]
+    have hRid : CommRingCat.ofHom (algebraMap Γ(Z, ⊤) (Localization.Away (f' t))) ≫
+        ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv ≫ θ.appTop) =
+        𝟙 Γ(Z, ⊤) := by
+      rw [← Category.assoc, Scheme.ΓSpecIso_inv_naturality, Category.assoc,
+        ← Scheme.Hom.comp_appTop, hret, Scheme.toSpecΓ_appTop]
+      exact Iso.inv_hom_id _
+    have hev : ∀ a : Γ(Z, ⊤),
+        θ.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom
+          (algebraMap Γ(Z, ⊤) (Localization.Away (f' t)) a)) = a := by
+      intro a
+      exact congrArg (fun (ψ : Γ(Z, ⊤) ⟶ Γ(Z, ⊤)) => ψ.hom a) hRid
+    have hphi : ((IsLocalization.map (Localization.Away (f' t)) f' hle).comp
+          (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))) elt =
+        IsLocalization.mk' (Localization.Away (f' t)) (f' s)
+          (⟨f' t, hle (Submonoid.mem_powers t)⟩ : Submonoid.powers (f' t)) := by
+      simp only [RingHom.comp_apply, helt, HomogeneousLocalization.algebraMap_apply,
+        HomogeneousLocalization.val_mk, Localization.mk_eq_mk', IsLocalization.map_mk']
+    have hgoal : (γ _ h' ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+        ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt) =
+        θ.appTop.hom ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom
+          (IsLocalization.mk' (Localization.Away (f' t)) (f' s)
+            (⟨f' t, hle (Submonoid.mem_powers t)⟩ : Submonoid.powers (f' t)))) :=
+      (congrArg (fun (ψ : CommRingCat.of (HomogeneousLocalization.Away 𝒜 t) ⟶ Γ(Z, ⊤)) =>
+        ψ.hom elt) hE).trans
+        (congrArg (fun z => θ.appTop.hom
+          ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom z)) hphi)
+    rw [hgoal]
+    have hspec := IsLocalization.mk'_spec (Localization.Away (f' t)) (f' s)
+      (⟨f' t, hle (Submonoid.mem_powers t)⟩ : Submonoid.powers (f' t))
+    have h1 := congrArg (fun z => θ.appTop.hom
+      ((Scheme.ΓSpecIso (CommRingCat.of (Localization.Away (f' t)))).inv.hom z)) hspec
+    simp only [map_mul, hev] at h1
+    simpa using h1
+  have h1 := main f hf hFV
+  have h2 := main g hg hGV
+  rw [hγeq] at h1
+  calc g s * f t = (γ _ hGV ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+        ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt)
+          * g t * f t := by rw [h2]
+    _ = (γ _ hGV ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom).appTop.hom
+        ((Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom elt)
+          * f t * g t := by ring
+    _ = f s * g t := by rw [h1]
+
+/-- **Separatedness of `𝒪_X` against a spanning family of global sections** (PROVEN) —
+two global sections agreeing on every `X.basicOpen (v i)` are equal, because those
+basic opens cover `X` (`exists_mem_basicOpen_of_span_eq_top`).  Stated for
+`Scheme.Hom.appTop (X.basicOpen _).ι` rather than for the raw presheaf restriction so
+that it composes directly with `ProjCoords.comap`, which is how the local identity
+below is produced. -/
+theorem eq_of_ι_appTop_basicOpen_eq {ι : Type*} (v : ι → Γ(X, ⊤))
+    (hv : Ideal.span (Set.range v) = ⊤) {s t : Γ(X, ⊤)}
+    (h : ∀ i, (Scheme.Hom.appTop (X.basicOpen (v i)).ι) s =
+      (Scheme.Hom.appTop (X.basicOpen (v i)).ι) t) : s = t := by
+  refine X.sheaf.eq_of_locally_eq' (fun i ↦ (X.basicOpen (v i)).ι ''ᵁ ⊤) ⊤
+    (fun i ↦ homOfLE le_top) ?_ s t ?_
+  · rintro x -
+    obtain ⟨i, hi⟩ := exists_mem_basicOpen_of_span_eq_top v hv x
+    refine TopologicalSpace.Opens.mem_iSup.mpr ⟨i, ?_⟩
+    rw [Scheme.Opens.ι_image_top]
+    exact hi
+  · intro i
+    exact h i
+
+/-- **The image of a variable is homogeneous of degree one** (PROVEN) —
+`HomogeneousIdeal.mk_mem_quotientGrading` read on `MvPolynomial.isHomogeneous_X`.  This
+is what lets the three coordinates be fed to lemmas stated for a homogeneous element of
+positive degree. -/
+theorem mk_X_mem_projGrading (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.X i)) ∈
+      projGrading E 1 :=
+  HomogeneousIdeal.mk_mem_quotientGrading
+    ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))
+
+/-- **The coordinate ring map sends the variables to the coordinates** (PROVEN). -/
+theorem ringHom_mk_X (c : ProjCoords E X) (i : Fin 3) :
+    c.ringHom (Ideal.Quotient.mk _ (MvPolynomial.X i)) = c.coord i := by
+  rw [ringHom_mk]; simp
+
+/-- **The two coordinate triples are PROPORTIONAL on each piece of the cover** (PROVEN)
+— and this is the step that removes the field hypothesis from
+`mul_eq_mul_of_fromOfGlobalSections_eq`.
+
+On `Uₖ := X.basicOpen (c.coord k)` the section `c.coord k` becomes a unit
+(`isUnit_ι_appTop_basicOpen`), which is exactly the hypothesis `hu` that lemma needs and
+that is unavailable globally.  `ProjCoords.comap` moves both data to `Uₖ` and
+the pullback of the hypothesis (`hstep`, `comap_toHom` re-derived through the PROVEN
+`fromOfGlobalSections_comp`) moves the hypothesis with them, so the lemma applies
+downstairs with `t := X̄ₖ` and `s := X̄ₘ`, giving
+`d.coord m * c.coord k = c.coord m * d.coord k` there for every `m`.  Taking `m := i` and
+`m := j` and cancelling the unit `c.coord k` yields the stated cross-multiplication for an
+arbitrary pair `i, j`. -/
+theorem res_mul_coord_comm (c d : ProjCoords E X) (h : c.toHom = d.toHom) (k i j : Fin 3) :
+    (Scheme.Hom.appTop (X.basicOpen (c.coord k)).ι) (d.coord j * c.coord i) =
+      (Scheme.Hom.appTop (X.basicOpen (c.coord k)).ι) (d.coord i * c.coord j) := by
+  set π : (X.basicOpen (c.coord k)).toScheme ⟶ X := (X.basicOpen (c.coord k)).ι with hπ
+  have hcomap : ∀ (e : ProjCoords E X) (m : Fin 3),
+      (e.comap π).ringHom (Ideal.Quotient.mk _ (MvPolynomial.X m)) =
+        (Scheme.Hom.appTop π) (e.coord m) := by
+    intro e m
+    rw [ringHom_mk_X]
+    rfl
+  -- `(e.comap π).toHom = π ≫ e.toHom`.  This is exactly `comap_toHom` above, but it is
+  -- re-derived here through `ProjFunctoriality.fromOfGlobalSections_comp` (PROVEN) rather
+  -- than through the older `projFromOfGlobalSections_comp`, whose chart half
+  -- `projToBasicOpenOfGlobalSections_comp` is still open.  The two are redundant
+  -- duplicates and the `ProjFunctoriality` one is strictly stronger; routing through it
+  -- keeps the whole rigidity cone free of TRANSITIVE sorries, which citing `comap_toHom`
+  -- would not.  Delete these six lines in favour of `rw [comap_toHom, comap_toHom, h]`
+  -- once that leaf lands.
+  have hstep : ∀ e : ProjCoords E X,
+      Proj.fromOfGlobalSections (projGrading E) (e.comap π).ringHom
+        (e.comap π).map_irrelevant_eq_top = π ≫ e.toHom := by
+    intro e
+    have hr : (e.comap π).ringHom = (Scheme.Hom.appTop π).hom.comp e.ringHom :=
+      comap_ringHom e π
+    refine (projFromOfGlobalSections_congr (projGrading E) hr
+      (e.comap π).map_irrelevant_eq_top (hr ▸ (e.comap π).map_irrelevant_eq_top)).trans ?_
+    exact (fromOfGlobalSections_comp (projGrading E) π e.ringHom e.map_irrelevant_eq_top).symm
+  have heq : Proj.fromOfGlobalSections (projGrading E) (c.comap π).ringHom
+        (c.comap π).map_irrelevant_eq_top =
+      Proj.fromOfGlobalSections (projGrading E) (d.comap π).ringHom
+        (d.comap π).map_irrelevant_eq_top := by
+    rw [hstep c, hstep d, h]
+  have hunit : IsUnit ((Scheme.Hom.appTop π) (c.coord k)) :=
+    isUnit_ι_appTop_basicOpen (c.coord k)
+  have hu : IsUnit ((c.comap π).ringHom (Ideal.Quotient.mk _ (MvPolynomial.X k))) := by
+    rw [hcomap]; exact hunit
+  have key : ∀ m : Fin 3, (Scheme.Hom.appTop π) (d.coord m) * (Scheme.Hom.appTop π) (c.coord k) =
+      (Scheme.Hom.appTop π) (c.coord m) * (Scheme.Hom.appTop π) (d.coord k) := by
+    intro m
+    have hmul := mul_eq_mul_of_fromOfGlobalSections_eq (projGrading E) (c.comap π).ringHom
+      (d.comap π).ringHom (c.comap π).map_irrelevant_eq_top (d.comap π).map_irrelevant_eq_top
+      heq Nat.one_pos (mk_X_mem_projGrading E m) (mk_X_mem_projGrading E k) hu
+    rwa [hcomap, hcomap, hcomap, hcomap] at hmul
+  refine hunit.mul_left_cancel ?_
+  simp only [map_mul]
+  calc (Scheme.Hom.appTop π) (c.coord k) *
+        ((Scheme.Hom.appTop π) (d.coord j) * (Scheme.Hom.appTop π) (c.coord i))
+      = ((Scheme.Hom.appTop π) (d.coord j) * (Scheme.Hom.appTop π) (c.coord k)) *
+          (Scheme.Hom.appTop π) (c.coord i) := by ring
+    _ = ((Scheme.Hom.appTop π) (c.coord j) * (Scheme.Hom.appTop π) (d.coord k)) *
+          (Scheme.Hom.appTop π) (c.coord i) := by rw [key j]
+    _ = ((Scheme.Hom.appTop π) (c.coord i) * (Scheme.Hom.appTop π) (d.coord k)) *
+          (Scheme.Hom.appTop π) (c.coord j) := by ring
+    _ = ((Scheme.Hom.appTop π) (d.coord i) * (Scheme.Hom.appTop π) (c.coord k)) *
+          (Scheme.Hom.appTop π) (c.coord j) := by rw [key i]
+    _ = (Scheme.Hom.appTop π) (c.coord k) *
+          ((Scheme.Hom.appTop π) (d.coord i) * (Scheme.Hom.appTop π) (c.coord j)) := by ring
+
+/-- **The two coordinate triples are PROPORTIONAL, globally** (PROVEN) — the local
+identity above glued over the cover `X.basicOpen (c.coord k)`, which covers `X` by
+`c.span_coord`. -/
+theorem mul_coord_comm (c d : ProjCoords E X) (h : c.toHom = d.toHom) (i j : Fin 3) :
+    d.coord j * c.coord i = d.coord i * c.coord j :=
+  eq_of_ι_appTop_basicOpen_eq c.coord c.span_coord fun k ↦ res_mul_coord_comm c d h k i j
+
+/-- **Cross-multiplication plus unimodularity produces a GLOBAL unit** (PROVEN) — pure
+commutative algebra over an arbitrary commutative ring, and the step that makes the
+rigidity statement true over an arbitrary scheme rather than only over a field.
+
+Writing `1 = ∑ aᵢ xᵢ` and `1 = ∑ bᵢ yᵢ`, put `u := ∑ aᵢ yᵢ` and `v := ∑ bᵢ xᵢ`.  The
+hypothesis turns `u * xⱼ` into `yⱼ * ∑ aᵢ xᵢ = yⱼ` and `v * yⱼ` into `xⱼ`; hence
+`(u * v - 1) * yⱼ = 0` for every `j`, and multiplying by `∑ bⱼ yⱼ = 1` gives `u * v = 1`.
+So `u` is a unit and `u • x = y` on the nose.
+
+*Why no local-to-global argument is needed here.*  This is where the "two
+trivialisations of a line bundle differ only locally" intuition is defeated: the
+unimodularity of BOTH triples is what pins the ratio to a single global unit, and it is
+an honest identity in the ring, not a gluing. -/
+theorem exists_units_smul_of_mul_comm {A : Type*} [CommRing A] {n : Type*} [Fintype n]
+    (x y : n → A) (hx : Ideal.span (Set.range x) = ⊤) (hy : Ideal.span (Set.range y) = ⊤)
+    (h : ∀ i j, y j * x i = y i * x j) : ∃ u : Aˣ, (u : A) • x = y := by
+  classical
+  obtain ⟨a, ha⟩ : ∃ a : n → A, ∑ i, a i * x i = 1 :=
+    Ideal.mem_span_range_iff_exists_fun.mp (by rw [hx]; trivial)
+  obtain ⟨b, hb⟩ : ∃ b : n → A, ∑ i, b i * y i = 1 :=
+    Ideal.mem_span_range_iff_exists_fun.mp (by rw [hy]; trivial)
+  set u : A := ∑ i, a i * y i with hu
+  set v : A := ∑ i, b i * x i with hv
+  have hux : ∀ j, u * x j = y j := by
+    intro j
+    rw [hu, Finset.sum_mul]
+    have hterm : ∀ i ∈ Finset.univ, a i * y i * x j = y j * (a i * x i) := by
+      intro i _
+      have hij := h i j
+      calc a i * y i * x j = a i * (y i * x j) := by ring
+        _ = a i * (y j * x i) := by rw [← hij]
+        _ = y j * (a i * x i) := by ring
+    rw [Finset.sum_congr rfl hterm, ← Finset.mul_sum, ha, mul_one]
+  have hvy : ∀ j, v * y j = x j := by
+    intro j
+    rw [hv, Finset.sum_mul]
+    have hterm : ∀ i ∈ Finset.univ, b i * x i * y j = x j * (b i * y i) := by
+      intro i _
+      have hji := h j i
+      calc b i * x i * y j = b i * (y j * x i) := by ring
+        _ = b i * (y i * x j) := by rw [hji]
+        _ = x j * (b i * y i) := by ring
+    rw [Finset.sum_congr rfl hterm, ← Finset.mul_sum, hb, mul_one]
+  have huv : u * v = 1 := by
+    have key : ∀ j, (u * v - 1) * y j = 0 := by
+      intro j
+      have hj : u * (v * y j) = y j := by rw [hvy j, hux j]
+      rw [sub_mul, one_mul, mul_assoc, hj, sub_self]
+    have hexp : (u * v - 1) = ∑ i, (u * v - 1) * (b i * y i) := by
+      rw [← Finset.mul_sum, hb, mul_one]
+    have hz : ∑ i, (u * v - 1) * (b i * y i) = 0 := by
+      refine Finset.sum_eq_zero fun i _ ↦ ?_
+      calc (u * v - 1) * (b i * y i) = b i * ((u * v - 1) * y i) := by ring
+        _ = 0 := by rw [key i, mul_zero]
+    rw [hz] at hexp
+    exact sub_eq_zero.mp hexp
+  refine ⟨⟨u, v, huv, by rw [mul_comm]; exact huv⟩, ?_⟩
+  funext j
+  exact hux j
+
+/-- **RIGIDITY of `Proj.fromOfGlobalSections`** (**PROVEN 2026-07-28**, over an
+ARBITRARY `X`) — the SECOND of the two faces, and the converse of
+`ProjCoords.toHom_smul`.
+
+Two coordinate data defining the SAME morphism differ by a global unit.  See the
+section header above for the four-step decomposition and for why no field hypothesis is
+needed; the assembly here is `mul_coord_comm` (the two triples cross-multiply) fed to
+`exists_units_smul_of_mul_comm` (cross-multiplication + unimodularity ⟹ a global unit).
 
 *Where it is used*: it is what makes the gluing's characterisation hold at an
 ARBITRARY test scheme rather than only on the pieces of the chosen cover — see
 `ProjCoords.toHom_add_congr` and `isProjMulOn_of_cover` below, which are its only
-consumers. -/
+consumers, and which is why the general form rather than a field-level one is what this
+declaration must provide. -/
 theorem exists_units_smul_of_toHom_eq (c d : ProjCoords E X) (h : c.toHom = d.toHom) :
-    ∃ u : (Γ(X, ⊤))ˣ, smul u c = d :=
-  sorry
+    ∃ u : (Γ(X, ⊤))ˣ, smul u c = d := by
+  obtain ⟨u, hu⟩ := exists_units_smul_of_mul_comm c.coord d.coord c.span_coord d.span_coord
+    fun i j ↦ mul_coord_comm c d h i j
+  exact ⟨u, ProjCoords.ext (by rw [smul_coord]; exact hu)⟩
+
+end Rigidity
 
 /-- **Rigidity, in coordinate form** (PROVEN from the leaf above). -/
 theorem coord_eq_smul_of_toHom_eq (c d : ProjCoords E X) (h : c.toHom = d.toHom) :
@@ -3276,6 +3794,113 @@ theorem exists_projCoordsOpenCover (E : WeierstrassCurve ℚ) [E.IsElliptic] :
       ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))
   exact ⟨projChartCover E hcoord, fun i => projChartCoords E i (hcoord i),
     fun i => projChartCoords_toHom E i (hcoord i)⟩
+
+namespace ProjCoords
+
+/-- **Every point of the projective model over a FIELD admits coordinates**
+(**PROVEN 2026-07-28**, from `exists_projCoords_of_range_le` and `exists_mem_projChart`).
+
+**Relocated 2026-07-28**: this used to sit ~1900 lines above, next to `ProjCoords.add2`.
+Its proof cites `exists_projCoords_of_range_le`, so Lean's declaration order forced it
+below that lemma; it is here, in its own `ProjCoords` block, rather than there.  Its first
+consumer (`exists_projMulOfCoords`) is further down still, so nothing else moved.
+
+TRUE and standard, and the restriction to `Spec K` is what makes it true:
+a morphism `T ⟶ Proj 𝒜` is a line bundle on `T` plus generating sections,
+and over `Spec K` every line bundle is trivial (`Pic (Spec K) = 0`, since
+`K` is local — indeed a field — so every finitely generated projective
+module of rank `1` is free).  Hence the tautological `𝒪(1)` pulls back to
+`𝒪_{Spec K}` and its three coordinate sections become elements of
+`Γ(Spec K, ⊤)`.
+
+*Concretely*, without any Picard-group machinery: `a : Spec K ⟶ Proj 𝒜`
+has image a single point, which lies in some basic open `D₊(r)` with `r`
+one of `X̄`, `Ȳ`, `Z̄` (the three generate the irrelevant ideal, so they
+cannot all vanish at it).  Factor `a` through
+`D₊(r) ≅ Spec (Away 𝒜 r)`, giving a ring map `Away 𝒜 r →+* K`, and take
+`coord i := (image of Xᵢ/r)` scaled by any lift; the coordinate `r/r = 1`
+is a unit, so `span_coord` holds.  Mathlib supplies the factorisation as
+`Proj.awayι` together with `Proj.opensRange_awayι` and
+`Proj.basicOpenIsoSpec`.
+
+*What it is used for*: it is the bridge from the residue-field ext lemma
+`ext_of_fromSpecResidueField_eq` to the polynomial identities.  Without it
+no `K`-point argument in this cluster can start.
+
+*How it actually closed* (2026-07-28).  The Picard-group framing above is
+correct but was never needed: the general chart lemma
+`fromOfGlobalSections_eq_toSpecΓ_comp_awayι` and its corollary
+`exists_projCoords_of_range_le` reduce this to "the image of `Spec K` lies in one
+standard chart", and `Spec K` has a single point, so `exists_mem_projChart` at
+that point supplies the chart.  Both halves of the "single general lemma" the old
+`exists_projCoordsOpenCover` docstring asked for are therefore now in the file.
+
+*And one instance-level correction worth recording.*  The note in
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` warns that `Subsingleton ↥(Spec K)`
+and `Unique ↥(Spec K)` FAIL to synthesise for a bundled `K : CommRingCat`.  That is
+true under the `[Field K]` binder — an unrelated field structure on the carrier —
+and it is **not** an obstruction here.  Under the `IsField ↥K` binder,
+`letI : Field ↥K := hK.toField` produces a `Field` built from `‹Ring ↥K›` itself
+(`IsField.toField` is `__ := (‹Ring R› :)`), so its `CommRing` path is
+definitionally `K.str` and `inferInstanceAs (Subsingleton (PrimeSpectrum ↥K))`
+closes `Subsingleton ↥(Spec K)` directly.  This is a further payoff of the
+2026-07-27 binder repair, beyond the one that audit records.
+
+## FALSITY AUDIT (2026-07-27): the hypothesis is `IsField ↥K`, NOT `[Field K]`
+
+This leaf, `toHom_eq_of_addXYZ_not_span` and `projMulCoords_comm` were all
+stated with `(K : CommRingCat.{0}) [Field K]`, and that binder is **false-shaped**
+— not merely awkward.  `[Field K]` elaborates to `Field ↥K`, an arbitrary field
+structure ON THE CARRIER TYPE, and `Field` extends `CommRing`, so it supplies a
+SECOND ring structure unrelated to `K.str`.  Everything the statement is about —
+`Spec K`, `Γ(Spec K, ⊤)`, `ProjCoords E (Spec K)` — is built from `K.str`, so the
+hypothesis constrains nothing about the ring whose spectrum is being taken.
+
+This was verified, not guessed.  The transport
+
+    (Scheme.ΓSpecIso K).commRingCatIsoToRingEquiv.toMulEquiv.isField (Field.toIsField _)
+
+fails with *"synthesized type class instance is not definitionally equal"*,
+`Field.toSemifield.toDivisionSemiring.toSemiring` against
+`CommRing.toCommSemiring.toSemiring`, exactly because the two ring structures on
+`↥K` are different terms.  With `(hK : IsField ↥K)` the same line elaborates, and
+it also elaborates at the one instantiation site, `Scheme.residueField x`, where
+the `Field` instance genuinely IS `K.str` — so the repair costs the consumers a
+`Field.toIsField _` and nothing else.
+
+Under the old binder the statement is not just unprovable but FALSE.  Take
+`K := CommRingCat.of ℚ[X]` with a junk `Field ℚ[X]` transported along a bijection
+`ℚ[X] ≃ ℚ` (`Equiv.field`; both types are denumerable): every hypothesis holds,
+`Spec K = 𝔸¹_ℚ`, and `c := ![0,1,0]`, `d := ![x₀,y₀,t]` have
+`addXYZ c d = t • d` (`addXYZ_of_Z_eq_zero_left`), whose span is `(t) ≠ ⊤`, while
+`c.toHom ≠ d.toHom`.  The earlier note claiming the binder is false-shaped "only
+when a proof needs `AlgebraicClosure K` or `algebraMap K _`" is too narrow: it is
+false-shaped whenever the proof needs the field structure to BE `K.str`, which
+"a proper ideal of a field is zero" does. -/
+theorem exists_of_specField (E : WeierstrassCurve ℚ) (K : CommRingCat.{0})
+    (hK : _root_.IsField ↥K) (a : Spec K ⟶ proj E) :
+    ∃ c : ProjCoords E (Spec K), c.toHom = a := by
+  have hcoord : ∀ i : Fin 3, projCoord E i ∈ projGrading E 1 := fun i =>
+    HomogeneousIdeal.mk_mem_quotientGrading
+      ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))
+  haveI : Subsingleton ↥(Spec K) := by
+    letI : Field ↥K := hK.toField
+    exact inferInstanceAs (Subsingleton (PrimeSpectrum ↥K))
+  haveI : Nonempty ↥(Spec K) := by
+    letI : Field ↥K := hK.toField
+    exact inferInstanceAs (Nonempty (PrimeSpectrum ↥K))
+  obtain ⟨x₀⟩ := ‹Nonempty ↥(Spec K)›
+  obtain ⟨i, hi⟩ := exists_mem_projChart E (a.base x₀)
+  refine exists_projCoords_of_range_le E a i (hcoord i) ?_
+  have hmem : a.base x₀ ∈
+      (Proj.awayι (projGrading E) (projCoord E i) (hcoord i) one_pos).opensRange := by
+    rw [Proj.opensRange_awayι]
+    exact hi
+  rintro _ ⟨x, rfl⟩
+  rw [Subsingleton.elim x x₀]
+  exact hmem
+
+end ProjCoords
 
 /-- **Coordinate data exist locally on `A ×_ℚ A`** (**PROVEN 2026-07-28** from
 `exists_projCoordsOpenCover` and `ProjCoords.comap_toHom` — it is a REDUCTION,
@@ -8954,8 +9579,9 @@ existential, which is exactly what a shared implementation has to be.  It is
 route recorded above names it only as a "refuting check"; without it stated as a
 lemma the `right_inv` field of the `Equiv` cannot be discharged, so the plan read
 as complete while the construction was impossible.  It is now
-`ProjCoords.exists_units_smul_of_toHom_eq`, and it is the ONE leaf of the
-dictionary itself.
+`ProjCoords.exists_units_smul_of_toHom_eq`, which was the ONE leaf of the
+dictionary itself and is **PROVEN as of 2026-07-28** (over an arbitrary test
+scheme — see the `Rigidity` section for the four-step decomposition).
 
 Both leaves are now consumers, and what is left of each is exactly its own extra
 content, cut into named leaves.  **Do not build a second dictionary.**
@@ -10159,8 +10785,8 @@ that chain exactly, so that no two leaves share a difficulty:
    2026-07-28**, cut in two: the rationality of the singular point is
    `exists_singular_of_Δ_eq_zero` (**PROVEN**, with an explicit witness
    in `c₄`, `c₆`, `b₂` — no `VariableChange` transport needed), and the
-   Jacobian criterion is `not_smooth_specMap_coordinateRing_of_singular`,
-   which is the only leaf of this item that remains.
+   Jacobian criterion is `not_smooth_specMap_coordinateRing_of_singular`
+   (**PROVEN 2026-07-28** as well, so this item has NO leaf left).
 
 **Two conjuncts of the goal never reach a leaf.**  The structure-morphism
 conjunct is free by `hom_ext_spec_rat` (any two morphisms to `Spec ℚ`
@@ -10539,11 +11165,163 @@ theorem exists_singular_of_Δ_eq_zero (E : WeierstrassCurve ℚ) (hΔ : E.Δ = 0
   · exact h hXpart
   · exact h hY
 
+section JacobianCriterion
+
+/-! ### Points of the affine coordinate ring, and the square-zero test ring `ℚ[t]/(t³)`
+
+Everything in this section exists to serve
+`not_smooth_specMap_coordinateRing_of_singular` immediately below it, and nothing
+else in the tree uses it.  Two ingredients:
+
+* the *functor of points* of `E.toAffine.CoordinateRing` — a `ℚ`-algebra map
+  `E.toAffine.CoordinateRing →ₐ[ℚ] C` is the same thing as a solution of the
+  Weierstrass equation in `C` (`OnAffineWeierstrass`).  Mathlib gives
+  `CoordinateRing = AdjoinRoot E.polynomial` and nothing else here, so both
+  directions are built by hand out of `AdjoinRoot.lift` / `AdjoinRoot.eval₂_root`;
+* the ring `ℚ[t]/(t³)` together with its square-zero ideal `(t²)`, which is the
+  square-zero extension against which formal smoothness is tested. -/
+
+variable {C : Type} [CommRing C] [Algebra ℚ C]
+
+/-- **The affine Weierstrass equation of `E`, read in an arbitrary `ℚ`-algebra `C`.**
+`OnAffineWeierstrass E X₀ Y₀` says that `(X₀, Y₀)` is a `C`-point of the affine
+chart; for `C = ℚ` it is `E.toAffine.Equation` (up to the arrangement of terms). -/
+def OnAffineWeierstrass (E : WeierstrassCurve ℚ) (X₀ Y₀ : C) : Prop :=
+  Y₀ ^ 2 + (algebraMap ℚ C E.toAffine.a₁ * X₀ + algebraMap ℚ C E.toAffine.a₃) * Y₀
+    - (X₀ ^ 3 + algebraMap ℚ C E.toAffine.a₂ * X₀ ^ 2 + algebraMap ℚ C E.toAffine.a₄ * X₀
+        + algebraMap ℚ C E.toAffine.a₆) = 0
+
+/-- `eval₂` of the Weierstrass polynomial through an arbitrary ring hom on the
+coefficient ring `ℚ[X]`.  (PROVEN, by unfolding `WeierstrassCurve.Affine.polynomial`.) -/
+lemma eval₂_affinePolynomial {D : Type*} [CommRing D] (E : WeierstrassCurve ℚ)
+    (i : Polynomial ℚ →+* D) (Y₀ : D) :
+    Polynomial.eval₂ i Y₀ E.toAffine.polynomial
+      = Y₀ ^ 2 + (i (Polynomial.C E.toAffine.a₁) * i Polynomial.X
+            + i (Polynomial.C E.toAffine.a₃)) * Y₀
+        - ((i Polynomial.X) ^ 3 + i (Polynomial.C E.toAffine.a₂) * (i Polynomial.X) ^ 2
+            + i (Polynomial.C E.toAffine.a₄) * (i Polynomial.X)
+            + i (Polynomial.C E.toAffine.a₆)) := by
+  rw [WeierstrassCurve.Affine.polynomial]
+  simp only [Polynomial.eval₂_add, Polynomial.eval₂_sub, Polynomial.eval₂_mul,
+    Polynomial.eval₂_pow, Polynomial.eval₂_C, Polynomial.eval₂_X, map_add, map_mul, map_pow]
+
+/-- `AdjoinRoot.of` on constants of `ℚ[X]` is the `ℚ`-algebra structure map of the
+coordinate ring (PROVEN, the scalar tower `ℚ → ℚ[X] → CoordinateRing`). -/
+lemma adjoinRootOf_C_eq_algebraMap (E : WeierstrassCurve ℚ) (a : ℚ) :
+    AdjoinRoot.of E.toAffine.polynomial (Polynomial.C a)
+      = algebraMap ℚ E.toAffine.CoordinateRing a := by
+  rw [IsScalarTower.algebraMap_apply ℚ (Polynomial ℚ) E.toAffine.CoordinateRing,
+    AdjoinRoot.algebraMap_eq]
+  simp
+
+/-- **The tautological point**: the two generators of the coordinate ring satisfy the
+Weierstrass equation there (PROVEN, `AdjoinRoot.eval₂_root`). -/
+lemma onAffineWeierstrass_gens (E : WeierstrassCurve ℚ) :
+    OnAffineWeierstrass E (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+      (AdjoinRoot.root E.toAffine.polynomial) := by
+  have h := AdjoinRoot.eval₂_root E.toAffine.polynomial
+  rw [eval₂_affinePolynomial] at h
+  simp only [adjoinRootOf_C_eq_algebraMap] at h
+  rw [OnAffineWeierstrass]
+  linear_combination h
+
+/-- **A `ℚ`-algebra map out of the coordinate ring is a point**: the images of the two
+generators satisfy the Weierstrass equation in the target (PROVEN). -/
+lemma onAffineWeierstrass_of_algHom (E : WeierstrassCurve ℚ)
+    (g : E.toAffine.CoordinateRing →ₐ[ℚ] C) :
+    OnAffineWeierstrass E (g (AdjoinRoot.of E.toAffine.polynomial Polynomial.X))
+      (g (AdjoinRoot.root E.toAffine.polynomial)) := by
+  have h := congrArg g (onAffineWeierstrass_gens E)
+  simp only [map_add, map_sub, map_mul, map_pow, map_zero, AlgHom.commutes] at h
+  rw [OnAffineWeierstrass]
+  linear_combination h
+
+/-- The proof obligation consumed by `AdjoinRoot.lift` in `coordinateRingEvalHom`,
+named so that the computation rules below can mention it (PROVEN). -/
+lemma eval₂_affinePolynomial_eq_zero (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
+    (h : OnAffineWeierstrass E X₀ Y₀) :
+    Polynomial.eval₂ (Polynomial.aeval X₀ : Polynomial ℚ →ₐ[ℚ] C).toRingHom Y₀
+      E.toAffine.polynomial = 0 := by
+  rw [eval₂_affinePolynomial]
+  rw [OnAffineWeierstrass] at h
+  simpa using h
+
+/-- **A point gives a `ℚ`-algebra map out of the coordinate ring** — the converse of
+`onAffineWeierstrass_of_algHom`, i.e. evaluation at `(X₀, Y₀)`. -/
+noncomputable def coordinateRingEvalHom (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
+    (h : OnAffineWeierstrass E X₀ Y₀) : E.toAffine.CoordinateRing →ₐ[ℚ] C :=
+  { AdjoinRoot.lift (Polynomial.aeval X₀ : Polynomial ℚ →ₐ[ℚ] C).toRingHom Y₀
+      (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h) with
+    commutes' := by
+      intro c
+      show AdjoinRoot.lift _ _ (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h)
+        (algebraMap ℚ E.toAffine.CoordinateRing c) = _
+      rw [IsScalarTower.algebraMap_apply ℚ (Polynomial ℚ) E.toAffine.CoordinateRing,
+        AdjoinRoot.algebraMap_eq, AdjoinRoot.lift_of]
+      simp }
+
+lemma coordinateRingEvalHom_of_X (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
+    (h : OnAffineWeierstrass E X₀ Y₀) :
+    coordinateRingEvalHom E X₀ Y₀ h (AdjoinRoot.of E.toAffine.polynomial Polynomial.X) = X₀ := by
+  show AdjoinRoot.lift _ _ (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h)
+    (AdjoinRoot.of E.toAffine.polynomial Polynomial.X) = _
+  rw [AdjoinRoot.lift_of]; simp
+
+lemma coordinateRingEvalHom_root (E : WeierstrassCurve ℚ) (X₀ Y₀ : C)
+    (h : OnAffineWeierstrass E X₀ Y₀) :
+    coordinateRingEvalHom E X₀ Y₀ h (AdjoinRoot.root E.toAffine.polynomial) = Y₀ := by
+  show AdjoinRoot.lift _ _ (eval₂_affinePolynomial_eq_zero E X₀ Y₀ h)
+    (AdjoinRoot.root E.toAffine.polynomial) = _
+  rw [AdjoinRoot.lift_root]
+
+/-- **`ℚ[t]/(t³)`**, the second-order thickening of a point of the line: the test object
+for the lifting criterion below. -/
+abbrev CubicTruncRing : Type := AdjoinRoot ((Polynomial.X : Polynomial ℚ) ^ 3)
+
+/-- The image of `t` in `ℚ[t]/(t³)`. -/
+noncomputable def cubicTruncT : CubicTruncRing := AdjoinRoot.root _
+
+lemma cubicTruncT_cube : cubicTruncT ^ 3 = 0 := by
+  rw [cubicTruncT, ← AdjoinRoot.mk_X, ← map_pow]
+  exact AdjoinRoot.mk_self
+
+/-- **`t² ≠ 0` in `ℚ[t]/(t³)`** — this is the whole obstruction, and it is where the
+Weierstrass equation's `Y²` coefficient `1` enters. -/
+lemma cubicTruncT_sq_ne_zero : cubicTruncT ^ 2 ≠ 0 := by
+  rw [cubicTruncT, ← AdjoinRoot.mk_X, ← map_pow, Ne, AdjoinRoot.mk_eq_zero]
+  intro hd
+  have hne : ((Polynomial.X : Polynomial ℚ) ^ 2) ≠ 0 := pow_ne_zero _ Polynomial.X_ne_zero
+  have hle := Polynomial.degree_le_of_dvd hd hne
+  rw [Polynomial.degree_X_pow, Polynomial.degree_X_pow] at hle
+  norm_num at hle
+
+/-- The square-zero ideal `(t²) ⊆ ℚ[t]/(t³)`. -/
+noncomputable def cubicTruncIdeal : Ideal CubicTruncRing := Ideal.span {cubicTruncT ^ 2}
+
+lemma cubicTruncIdeal_sq : cubicTruncIdeal ^ 2 = ⊥ := by
+  rw [cubicTruncIdeal, Ideal.span_singleton_pow]
+  have h : (cubicTruncT ^ 2) ^ 2 = cubicTruncT * cubicTruncT ^ 3 := by ring
+  rw [h, cubicTruncT_cube, mul_zero]
+  exact Ideal.span_singleton_eq_bot.mpr rfl
+
+lemma cubicTruncT_sq_mem : cubicTruncT ^ 2 ∈ cubicTruncIdeal := Ideal.subset_span rfl
+
+lemma mem_cubicTruncIdeal {a : CubicTruncRing} :
+    a ∈ cubicTruncIdeal ↔ ∃ c, c * cubicTruncT ^ 2 = a :=
+  Ideal.mem_span_singleton'
+
+lemma mk_algebraMap_cubicTrunc (a : ℚ) :
+    Ideal.Quotient.mk cubicTruncIdeal (algebraMap ℚ CubicTruncRing a)
+      = algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) a :=
+  (Ideal.Quotient.mkₐ ℚ cubicTruncIdeal).commutes a
+
+end JacobianCriterion
+
 /-- **A Weierstrass curve with a rational singular point has a NON-SMOOTH
-affine coordinate ring** (sorry leaf, introduced 2026-07-28 as the residue of
-leaf 3 of `exists_weierstrassModel_of_ellipticScheme`).  This is the JACOBIAN
-CRITERION and it carries all of what is left of that leaf; the arithmetic half
-is `exists_singular_of_Δ_eq_zero` above, which is PROVEN.
+affine coordinate ring** (**PROVEN 2026-07-28**; a sorry leaf, introduced the same
+day as the residue of leaf 3 of `exists_weierstrassModel_of_ellipticScheme`, until
+then).  This is the JACOBIAN CRITERION and it carried all of what was left of that
+leaf; the arithmetic half is `exists_singular_of_Δ_eq_zero` above, also PROVEN.
 
 TRUE.  `R := E.toAffine.CoordinateRing` is `AdjoinRoot E.toAffine.polynomial`,
 i.e. `ℚ[X, Y] ⧸ (F)` with `F = Y² + a₁XY + a₃Y − X³ − a₂X² − a₄X − a₆`.  A
@@ -10551,98 +11329,184 @@ rational point `(x, y)` with `F(x, y) = 0` and `F_X(x, y) = F_Y(x, y) = 0`
 gives a maximal ideal `𝔪 ⊂ R` with `R ⧸ 𝔪 ≅ ℚ` — the kernel of evaluation at
 `(x, y)` — at which the two partial derivatives vanish.
 
-**ROUTE AUDIT, 2026-07-28 — every ingredient below was checked to EXIST at our
-pin by name, and the route needs NO Krull dimension, NO relative dimension, NO
-residue-field base change and NO Nakayama package.**  Two longer routes were
-considered first and are recorded at the end so nobody re-derives them.
+**HOW IT WAS PROVEN: neither route (a) nor route (b) of the original docstring, but
+the DEFINITION of formal smoothness — a square-zero lifting obstruction.**  Both
+recorded routes were sound but expensive: (a) through
+`isRegularLocalRing_stalk_of_smooth_over_field` needs a Krull-dimension and an
+embedding-dimension computation for `R_𝔪`, and (b) through
+`Algebra.FormallySmooth.iff_split_injection` (which IS in the pin, at
+`Mathlib/RingTheory/Smooth/Basic.lean`, contrary to the "nothing going non-regular
+⟹ non-smooth" note below) needs the conormal module `I/I²` identified with `R`.
+Neither is needed.  The proof actually used is:
 
-Write `P := ℚ[X][Y] = Polynomial (Polynomial ℚ)`, `F := E.toAffine.polynomial`,
-`I := RingHom.ker (algebraMap P R) = (F)` (so `R = AdjoinRoot F` is `P ⧸ I` by
-definition), and `𝔫 ⊂ P` for the kernel of evaluation at `(x, y)`, so that
-`𝔫 ≠ ⊤`.  Write `c := Ideal.toCotangent I ⟨F, _⟩ ∈ I.Cotangent` for the class of
-`F` in `I/I²`.  Then:
+* `Smooth (Spec.map …) ↔ RingHom.Smooth (algebraMap ℚ R)` by
+  `HasRingHomProperty.Spec_iff`, then `RingHom.smooth_algebraMap`, giving
+  `Algebra.FormallySmooth ℚ R`;
+* the square-zero extension is `ℚ[t]/(t³) ↠ ℚ[t]/(t²)`, whose kernel `(t²)` squares
+  to zero because `t⁴ = t · t³ = 0` (`cubicTruncIdeal_sq`);
+* the `ℚ[t]/(t²)`-point to lift is `(x, y + t)`.  It IS a point, because
+  `F(x, y + t) = F(x, y) + t · F_Y(x, y) + t² = t²`, which is `0` modulo `(t²)`;
+* formal smoothness would give a lift `ψ : R →ₐ[ℚ] ℚ[t]/(t³)`.  Writing
+  `ψ(X) = x + u` and `ψ(Y) = y + t + w` with `u, w ∈ (t²)`, every product of two of
+  `u, w, t` beyond `t²` is a multiple of `t³ = 0`, so
+  `0 = F(ψ(X), ψ(Y)) = F(x, y) + (t + w)·F_Y(x, y) + u·F_X(x, y) + t² = t²`;
+* but `t² ≠ 0` in `ℚ[t]/(t³)` (`cubicTruncT_sq_ne_zero`).  Contradiction.
 
-1. `Algebra.FormallySmooth ℚ P` — `Algebra.FormallySmooth.polynomial` twice plus
-   `Algebra.FormallySmooth.comp`.
-2. `Smooth (Spec.map …) → Algebra.Smooth ℚ R → Algebra.FormallySmooth ℚ R` —
-   `AlgebraicGeometry.HasRingHomProperty.Spec_iff` against the instance
-   `HasRingHomProperty @Smooth RingHom.Smooth`.
-3. `Algebra.FormallySmooth.iff_split_injection` (`Mathlib/RingTheory/Smooth/Basic.lean`,
-   stacks `031I`) then gives an honest `l` with
-   `l ∘ₗ KaehlerDifferential.kerCotangentToTensor ℚ P R = LinearMap.id`, and
-   `KaehlerDifferential.kerCotangentToTensor_toCotangent` evaluates the composite
-   at `c`: `l (1 ⊗ₜ D F) = c`.
-4. **`F ∈ 𝔫 ^ 2`.**  This is precisely what the two hypotheses say, and for a
-   Weierstrass cubic it is an EXPLICIT identity rather than a Taylor-series
-   argument: with `u := X − x` and `v := Y − y`,
+**Where each hypothesis is used, mechanically.**  `F(x, y) = 0` is `heq`;
+`F_Y(x, y) = 2y + a₁x + a₃ = 0` is used TWICE (once to make `(x, y + t)` a point at
+all, once in the final identity); `F_X(x, y) = a₁y − (3x² + 2a₂x + a₄) = 0` is used
+once, against the correction `u`.  Both come from `hns` through
+`WeierstrassCurve.Affine.nonsingular_iff'`.
 
-       F = F(x, y) + u ⬝ W_X(x, y) + v ⬝ W_Y(x, y)
-             + (v ^ 2 + a₁ u v − 3 x u ^ 2 − a₂ u ^ 2 − u ^ 3),
+**The `Y²` coefficient is what makes the obstruction nonzero**, and it is why the
+tangent direction chosen is `(0, 1)` rather than an arbitrary one: the quadratic
+part of `F` at a singular point has `v²` coefficient `1` for EVERY Weierstrass
+equation, so `t²` — not `0` — is the obstruction, in every characteristic-zero case
+and with no case split on the type of singularity (node or cusp).
 
-   a `ring` identity, whose first three terms vanish by `_heq` and `_hns` and
-   whose bracket is visibly in `𝔫 ^ 2`.
-5. **`1 ⊗ₜ D F ∈ 𝔫 • (R ⊗[P] Ω[P⁄ℚ])`**, by Leibniz alone: `D` carries `𝔫 ^ 2`
-   into `𝔫 • Ω[P⁄ℚ]` because `D (g * h) = g • D h + h • D g`.  No basis of
-   `Ω[P⁄ℚ]` is needed — which is what makes `ℚ[X][Y]` as usable here as
-   `MvPolynomial (Fin 2) ℚ`.
-6. So `c ∈ 𝔫 • I.Cotangent` by 3 and 5.  Every element of `I.Cotangent` is
-   `r • c` (`I` is principal), so `c = n • c` for some `n ∈ 𝔫`, i.e.
-   `(1 − n) • c = 0`.
-7. **`Ann_P c = I`**, in one line and with no finiteness: `r * F ∈ I ^ 2 = (F ^ 2)`
-   means `r * F = s * F ^ 2`, and `P` is a domain with `F ≠ 0`, so `r = s * F ∈ I`.
-   Hence `1 − n ∈ I ⊆ 𝔫`, so `1 ∈ 𝔫`, contradicting `𝔫 ≠ ⊤`.
-
-The two longer routes, for the record — **neither is needed, and both were
-priced before step 7 was found**:
-
-*(a) through the regularity engine this tree already has.*  The stalk of
-`Spec R` at `𝔪` is `Localization.AtPrime R 𝔪`, and
-`GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
-(`Fermat/FLT/Modularity/RegularStalks.lean`, **sorry-free**, and already in this
-module's import cone) says every stalk of a scheme smooth over a field is a
-regular local ring.  What remains is that `R_𝔪` is NOT regular — Krull dimension
-`1` against embedding dimension `2` — and the dimension theory of a plane curve
-is not in the pin.
-
-*(b) through the rank of `Ω`.*  `IsStandardSmooth.free_kaehlerDifferential` and
-`IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
-(`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) do exist, but they
-want GLOBAL standard smoothness, whereas `Smooth` is only LOCALLY standard
-smooth; recovering a rank at `𝔪` needs the projectivity of `Ω` plus a base
-change to the residue field.  Step 6 above is that argument with the base change
-removed.
-
-**Both hypotheses are LOAD-BEARING**, and are underscore-prefixed only because
-the body is `sorry`.  Without `_hns` the statement is FALSE: an elliptic `E` has
-a smooth coordinate ring and plenty of rational points satisfying `_heq`.
-Without `_heq` the pair `(x, y)` need not be on the curve at all, and
-`¬ Nonsingular` is then vacuously true for every `(x, y)` off the curve (the
-first conjunct of `Nonsingular` is `Equation`), so again every elliptic `E`
-would refute it.
+**Both hypotheses are LOAD-BEARING.**  Without `hns` the statement is FALSE: an
+elliptic `E` has a smooth coordinate ring and plenty of rational points satisfying
+`heq`.  Without `heq` the pair `(x, y)` need not be on the curve at all, and
+`¬ Nonsingular` is then vacuously true for every `(x, y)` off the curve (the first
+conjunct of `Nonsingular` is `Equation`), so again every elliptic `E` would refute
+it.
 
 NOT VACUOUS: `exists_singular_of_Δ_eq_zero` inhabits the hypotheses for every
 `E` with `E.Δ = 0`, e.g. `E = ⟨0, 0, 0, 0, 0⟩` (the cuspidal `y² = x³`) at
 `(0, 0)`.
 
-WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: any statement in mathlib deducing
-`Ideal.span {jacobian entries} = ⊤` from `Algebra.Smooth`, for a hypersurface.
-Searched 2026-07-28 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`:
-the tree has the CONVERSE (`jacobianSpan_eq_top` above, and
-`RegularStalks.lean`'s Jacobian-criterion tower, both going smooth ⟹ regular),
-but nothing going non-regular ⟹ non-smooth for a named point.
-
-**THIS IS NOT A THEORY BUILD** — that is the point of the audit above, and it
-distinguishes this leaf sharply from its two siblings
-(`exists_affineComplement_zeroSection` needs ampleness of divisors and
-`exists_weierstrassRingEquiv_of_affineComplement` needs Riemann–Roch, neither of
-which exists anywhere).  Every lemma the seven steps cite is present at our pin;
-what is left is Lean plumbing over `Ideal.Cotangent`, `KaehlerDifferential` and
-`AdjoinRoot`, in one file, with no new mathematics.  A prover here should NOT
-start by reading Silverman. -/
+STALE CLAIM CORRECTED 2026-07-28: the original docstring's closing note said the
+tree has "nothing going non-regular ⟹ non-smooth for a named point".  That is
+right about a *named-point regularity* statement, but it was read as "no usable
+smoothness obstruction exists", which is wrong — `Algebra.FormallySmooth`'s own
+defining lifting property (`Algebra.FormallySmooth.comp_surjective`) is exactly such
+an obstruction and is what closed this leaf. -/
 theorem not_smooth_specMap_coordinateRing_of_singular (E : WeierstrassCurve ℚ) {x y : ℚ}
-    (_heq : E.toAffine.Equation x y) (_hns : ¬ E.toAffine.Nonsingular x y) :
-    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) :=
-  sorry
+    (heq : E.toAffine.Equation x y) (hns : ¬ E.toAffine.Nonsingular x y) :
+    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) := by
+  intro hsm
+  -- the two partial derivatives vanish at `(x, y)`
+  have hXp : E.toAffine.a₁ * y - (3 * x ^ 2 + 2 * E.toAffine.a₂ * x + E.toAffine.a₄) = 0 := by
+    by_contra hc
+    exact hns ((WeierstrassCurve.Affine.nonsingular_iff' (W := E.toAffine) x y).mpr
+      ⟨heq, Or.inl hc⟩)
+  have hYp : 2 * y + E.toAffine.a₁ * x + E.toAffine.a₃ = 0 := by
+    by_contra hc
+    exact hns ((WeierstrassCurve.Affine.nonsingular_iff' (W := E.toAffine) x y).mpr
+      ⟨heq, Or.inr hc⟩)
+  have heq' : y ^ 2 + E.toAffine.a₁ * x * y + E.toAffine.a₃ * y
+      - (x ^ 3 + E.toAffine.a₂ * x ^ 2 + E.toAffine.a₄ * x + E.toAffine.a₆) = 0 :=
+    (WeierstrassCurve.Affine.equation_iff' (W := E.toAffine) x y).mp heq
+  -- numeral-free restatements, so that `algebraMap` pushes through cleanly
+  have hYp' : y + y + E.toAffine.a₁ * x + E.toAffine.a₃ = 0 := by linear_combination hYp
+  have hXp' : E.toAffine.a₁ * y
+      - (x ^ 2 + x ^ 2 + x ^ 2 + (E.toAffine.a₂ * x + E.toAffine.a₂ * x) + E.toAffine.a₄) = 0 := by
+    linear_combination hXp
+  -- smoothness of the `Spec` map is formal smoothness of the coordinate ring
+  rw [HasRingHomProperty.Spec_iff (P := @Smooth), CommRingCat.hom_ofHom,
+    RingHom.smooth_algebraMap] at hsm
+  haveI : Algebra.FormallySmooth ℚ E.toAffine.CoordinateRing := hsm.formallySmooth
+  -- the first-order point `(x, y + t)` over `ℚ[t]/(t²)`
+  have hs2 : (Ideal.Quotient.mk cubicTruncIdeal cubicTruncT) ^ 2 = 0 := by
+    rw [← map_pow]
+    exact Ideal.Quotient.eq_zero_iff_mem.mpr cubicTruncT_sq_mem
+  have hpt : OnAffineWeierstrass E (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x)
+      (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
+        + Ideal.Quotient.mk cubicTruncIdeal cubicTruncT) := by
+    rw [OnAffineWeierstrass]
+    have h0 : (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y) ^ 2
+        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₁
+            * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x
+            * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
+        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₃
+            * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
+        - ((algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x) ^ 3
+            + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₂
+              * (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x) ^ 2
+            + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₄
+              * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x
+            + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₆) = 0 := by
+      simpa using congrArg (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal)) heq'
+    have h1 : algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
+        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) y
+        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₁
+          * algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) x
+        + algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal) E.toAffine.a₃ = 0 := by
+      simpa using congrArg (algebraMap ℚ (CubicTruncRing ⧸ cubicTruncIdeal)) hYp'
+    linear_combination h0 + (Ideal.Quotient.mk cubicTruncIdeal cubicTruncT) * h1 + hs2
+  -- formal smoothness lifts it to `ℚ[t]/(t³)`
+  obtain ⟨ψ, hψ⟩ := Algebra.FormallySmooth.comp_surjective ℚ E.toAffine.CoordinateRing
+    cubicTruncIdeal cubicTruncIdeal_sq (coordinateRingEvalHom E _ _ hpt)
+  have hrel := onAffineWeierstrass_of_algHom E ψ
+  rw [OnAffineWeierstrass] at hrel
+  -- the lift agrees with `(x, y + t)` modulo `(t²)`
+  have hmodX : Ideal.Quotient.mk cubicTruncIdeal
+        (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X))
+      = Ideal.Quotient.mk cubicTruncIdeal (algebraMap ℚ CubicTruncRing x) := by
+    have h := AlgHom.congr_fun hψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+    rw [coordinateRingEvalHom_of_X] at h
+    rw [mk_algebraMap_cubicTrunc]
+    simpa only [AlgHom.coe_comp, Function.comp_apply, Ideal.Quotient.mkₐ_eq_mk] using h
+  have hmodY : Ideal.Quotient.mk cubicTruncIdeal (ψ (AdjoinRoot.root E.toAffine.polynomial))
+      = Ideal.Quotient.mk cubicTruncIdeal (algebraMap ℚ CubicTruncRing y + cubicTruncT) := by
+    have h := AlgHom.congr_fun hψ (AdjoinRoot.root E.toAffine.polynomial)
+    rw [coordinateRingEvalHom_root] at h
+    rw [map_add, mk_algebraMap_cubicTrunc]
+    simpa only [AlgHom.coe_comp, Function.comp_apply, Ideal.Quotient.mkₐ_eq_mk] using h
+  obtain ⟨c, hc⟩ := mem_cubicTruncIdeal.mp (Ideal.Quotient.eq.mp hmodX)
+  obtain ⟨d, hd⟩ := mem_cubicTruncIdeal.mp (Ideal.Quotient.eq.mp hmodY)
+  -- every product of two corrections, and every correction times `t`, dies against `t³ = 0`
+  refine cubicTruncT_sq_ne_zero ?_
+  have hut : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+      - algebraMap ℚ CubicTruncRing x) * cubicTruncT = 0 := by
+    rw [← hc]; linear_combination c * cubicTruncT_cube
+  have huu : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+      - algebraMap ℚ CubicTruncRing x) * (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+      - algebraMap ℚ CubicTruncRing x) = 0 := by
+    rw [← hc]; linear_combination c ^ 2 * cubicTruncT * cubicTruncT_cube
+  have huw : (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+        - algebraMap ℚ CubicTruncRing x)
+      * (ψ (AdjoinRoot.root E.toAffine.polynomial)
+        - (algebraMap ℚ CubicTruncRing y + cubicTruncT)) = 0 := by
+    rw [← hc, ← hd]; linear_combination c * d * cubicTruncT * cubicTruncT_cube
+  have hww : (ψ (AdjoinRoot.root E.toAffine.polynomial)
+        - (algebraMap ℚ CubicTruncRing y + cubicTruncT))
+      * (ψ (AdjoinRoot.root E.toAffine.polynomial)
+        - (algebraMap ℚ CubicTruncRing y + cubicTruncT)) = 0 := by
+    rw [← hd]; linear_combination d ^ 2 * cubicTruncT * cubicTruncT_cube
+  have hwt : (ψ (AdjoinRoot.root E.toAffine.polynomial)
+      - (algebraMap ℚ CubicTruncRing y + cubicTruncT)) * cubicTruncT = 0 := by
+    rw [← hd]; linear_combination d * cubicTruncT_cube
+  have h0 : (algebraMap ℚ CubicTruncRing y) ^ 2
+      + algebraMap ℚ CubicTruncRing E.toAffine.a₁ * algebraMap ℚ CubicTruncRing x
+        * algebraMap ℚ CubicTruncRing y
+      + algebraMap ℚ CubicTruncRing E.toAffine.a₃ * algebraMap ℚ CubicTruncRing y
+      - ((algebraMap ℚ CubicTruncRing x) ^ 3
+          + algebraMap ℚ CubicTruncRing E.toAffine.a₂ * (algebraMap ℚ CubicTruncRing x) ^ 2
+          + algebraMap ℚ CubicTruncRing E.toAffine.a₄ * algebraMap ℚ CubicTruncRing x
+          + algebraMap ℚ CubicTruncRing E.toAffine.a₆) = 0 := by
+    simpa using congrArg (algebraMap ℚ CubicTruncRing) heq'
+  have h1 : algebraMap ℚ CubicTruncRing y + algebraMap ℚ CubicTruncRing y
+      + algebraMap ℚ CubicTruncRing E.toAffine.a₁ * algebraMap ℚ CubicTruncRing x
+      + algebraMap ℚ CubicTruncRing E.toAffine.a₃ = 0 := by
+    simpa using congrArg (algebraMap ℚ CubicTruncRing) hYp'
+  have h2 : algebraMap ℚ CubicTruncRing E.toAffine.a₁ * algebraMap ℚ CubicTruncRing y
+      - ((algebraMap ℚ CubicTruncRing x) ^ 2 + (algebraMap ℚ CubicTruncRing x) ^ 2
+          + (algebraMap ℚ CubicTruncRing x) ^ 2
+          + (algebraMap ℚ CubicTruncRing E.toAffine.a₂ * algebraMap ℚ CubicTruncRing x
+              + algebraMap ℚ CubicTruncRing E.toAffine.a₂ * algebraMap ℚ CubicTruncRing x)
+          + algebraMap ℚ CubicTruncRing E.toAffine.a₄) = 0 := by
+    simpa using congrArg (algebraMap ℚ CubicTruncRing) hXp'
+  linear_combination hrel - h0
+    - (ψ (AdjoinRoot.root E.toAffine.polynomial) - algebraMap ℚ CubicTruncRing y) * h1
+    - (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+        - algebraMap ℚ CubicTruncRing x) * h2
+    - hww - 2 * hwt - algebraMap ℚ CubicTruncRing E.toAffine.a₁ * hut
+    - algebraMap ℚ CubicTruncRing E.toAffine.a₁ * huw
+    + (3 * algebraMap ℚ CubicTruncRing x
+        + (ψ (AdjoinRoot.of E.toAffine.polynomial Polynomial.X)
+            - algebraMap ℚ CubicTruncRing x)
+        + algebraMap ℚ CubicTruncRing E.toAffine.a₂) * huu
 
 /-- **A Weierstrass curve whose affine chart is an open subscheme of a
 smooth relative curve is elliptic** (**PROVEN 2026-07-28** from the two
@@ -10680,11 +11544,12 @@ dimension one and the open immersion are the whole input.  Keeping `ab`
 out makes it attackable by someone who knows nothing about abelian
 schemes, which is the point of separating it from leaf 2.
 
-**`_hdim` and `_hopen` ARE LOAD-BEARING** and the leaf is FALSE without
-either; they are underscore-prefixed only because the body is `sorry`.
-Drop `_hopen` and `ι` may be a constant morphism into a smooth `A` from
+**`hdim` and `hopen` ARE LOAD-BEARING** and the statement is FALSE without
+either.  (They were written `_hdim`/`_hopen` while the body was `sorry`; the
+proof now uses both, so the underscores are gone.)
+Drop `hopen` and `ι` may be a constant morphism into a smooth `A` from
 the chart of a nodal cubic (`Δ = 0`), so the conclusion fails.  Drop
-`_hdim` and `f` need not be smooth at all, so nothing constrains `E`.
+`hdim` and `f` need not be smooth at all, so nothing constrains `E`.
 
 NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
 `E`, an `(A, f, ι)` satisfying every hypothesis.
@@ -10693,7 +11558,8 @@ NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
 immediately above it, along exactly the axis the paragraph above describes:
 `exists_singular_of_Δ_eq_zero` (**PROVEN**, the char-`0` rationality of the
 singular point) and `not_smooth_specMap_coordinateRing_of_singular` (the
-Jacobian criterion, the one thing left open here).  The scheme-theoretic
+Jacobian criterion, **also PROVEN, later the same day**, so this whole subtree
+is closed and nothing under it is a leaf any more).  The scheme-theoretic
 plumbing — that `ι ≫ f` is smooth and IS `Spec` of the structure map — costs
 two lines and carries no content. -/
 theorem isElliptic_of_isOpenImmersion_coordinateRing {A : Scheme.{0}}
