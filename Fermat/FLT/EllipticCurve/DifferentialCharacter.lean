@@ -734,26 +734,6 @@ theorem homogSubst_wronskian {A B Ap Bp : F[X]} {d : ℕ}
   have h2 := homogSubst_derivative_euler (A := A) (B := B) hBp
   linear_combination (homogSubst A B d Bp) * h1 - (homogSubst A B d Ap) * h2
 
-/-- **LEAF: `λ` is additive.**
-
-`(φ + ψ)*ω' = φ*ω' + ψ*ω'`, because pullback of differentials along the addition
-map `W × W → W` is additive on invariant differentials (Silverman *AEC* III.5.2:
-`ω` is invariant, so `μ*ω = pr₁*ω + pr₂*ω` on `W' × W'`, and composing with
-`(φ, ψ)` gives the claim).
-
-The sum of two rational maps is rational (`IsRationalMap.add`, PROVEN in
-`Isogeny.lean`), so the statement is not vacuous; note that `IsIsogeny.add` is
-FALSE (see the falsity audit there) — which is exactly why `IsDiffChar` is built
-over `IsRationalMap` rather than over `IsIsogeny`.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: two rational maps whose sum acts on
-`ω` by something other than the sum of their scalars. -/
-theorem isDiffChar_add [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
-    {φ ψ : W.Point →+ W'.Point} {c d : F}
-    (hφ : IsDiffChar φ c) (hψ : IsDiffChar ψ d) :
-    IsDiffChar (φ + ψ) (c + d) :=
-  sorry
-
 /-- **PROVEN 2026-07-28: `λ` is multiplicative on composites.**
 
 `(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·(φ*ω') = (d·c)·ω`. Conceptually formal from
@@ -938,6 +918,163 @@ theorem isDiffChar_comp [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
   simp only [AddMonoidHom.comp_apply]
   linear_combination (ε.eval t) * hT0
 
+/-! ### Consequences of the leaves, PROVEN -/
+
+/-- `λ(−φ) = −λ(φ)`, from `−φ = (−1) ∘ φ` and `isDiffChar_neg_id`. -/
+theorem isDiffChar_neg [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {c : F} (h : IsDiffChar φ c) :
+    IsDiffChar (-φ) (-c) := by
+  have hcomp : IsDiffChar ((-(AddMonoidHom.id W'.Point)).comp φ) ((-1) * c) :=
+    isDiffChar_comp h isDiffChar_neg_id
+  have hEq : (-(AddMonoidHom.id W'.Point)).comp φ = -φ := by
+    ext P; rfl
+  rw [hEq, neg_one_mul] at hcomp
+  exact hcomp
+
+/-! ### Additivity, and the TWO leaves it reduces to
+
+`isDiffChar_add` is now an ASSEMBLY over the same five-way split that
+`IsRationalMap.add` uses in `Isogeny.lean`, and for the same reason: the affine
+group law on `W'` has two formulas, selected by whether `x(φP) = x(ψP)`, and that
+condition holds *identically* exactly when `φ = ψ` or `φ = −ψ`.
+
+**THREE of the five branches are FREE**, and are discharged in `isDiffChar_add`
+below:
+
+* `φ = 0` and `ψ = 0` — the guard clause of `IsDiffChar` gives `c = 0` resp.
+  `d = 0`, and the sum is the other summand unchanged.
+* `φ + ψ = 0` — then `ψ = −φ`, so `isDiffChar_neg` and `isDiffChar_unique` force
+  `d = −c`, and the sum is `IsDiffChar 0 0`, which is `isDiffChar_zero`.
+
+What is left is exactly two statements, and they are INDEPENDENT — they can be
+owned separately.
+
+**`isDiffChar_two`, the DOUBLING branch, collapsed to ONE curve.** `φ + φ` is
+`φ ∘ [2]_W` — the doubling happens on the SOURCE curve — so `isDiffChar_comp`
+reduces that whole branch to `IsDiffChar (mulByHom W 2) 2`, a statement in which
+`φ`, `ψ`, `W'`, `c` and `d` have all disappeared. That is `[2]*ω = 2ω`.
+
+**It is NOT derivable from additivity elsewhere, and that is worth recording**,
+because it looks at first as though it should be. The polarisation
+`2φ = (φ + χ) + (φ − χ)` would reduce doubling to the chord branch, but it needs a
+`χ` whose scalar is already known and which is neither `0` nor `±φ`; on a bare pair
+of curves `(W, W')` no such `χ` is available, and every candidate built from `φ`
+itself (`φ ∘ [n]`) has a scalar known only through `isDiffChar_mulByHom`, which is
+proven BY additivity. `[2]` is the irreducible core of additivity, not an instance
+of it.
+
+**Why it should nevertheless be tractable.** The witnesses are already in the tree
+and are explicit: `veluPointX_nsmul` gives `x([n]P)·ΨSqₙ(x P) = Φₙ(x P)`, so for
+`n = 2` the `x`-witness pair is `(W.Φ 2, W.ΨSq 2)` from the division-polynomial
+development (`TorsionCard.lean`, `PhiPsiCoprime.lean`, `Degree.lean`). Through
+`isDiffCharCert_of_cofinite` + `isDiffCharCert_of_reduced` the leaf becomes the
+Wronskian identity
+
+  `2 · ΨSq₂² · ψ₂([2]P) = (Φ₂'·ΨSq₂ − Φ₂·ΨSq₂') · ψ₂(P)`
+
+between division polynomials — algebra in one variable, not geometry. Note it is
+true in EVERY characteristic, including `2`, where both sides vanish because `[2]`
+is inseparable; so it must not acquire a `CharZero` hypothesis.
+
+**`isDiffChar_add_of_ne`, the CHORD branch**, carries the four degeneracies as
+hypotheses, matching `IsRationalMap.add_of_ne` hypothesis for hypothesis. That
+match is evidence the cut is the right one rather than a convenient one: the same
+four exclusions are what make the chord formula applicable at all. -/
+
+/-- **LEAF: `[2]*ω = 2ω`**, the irreducible core of additivity.
+
+`IsDiffChar (mulByHom W 2) 2` — multiplication by `2` on a single curve acts on the
+invariant differential by the scalar `2`. See the section docstring above for why
+this cannot be obtained from additivity by polarisation, and for the concrete route:
+the `x`-witnesses are the division polynomials `(W.Φ 2, W.ΨSq 2)` supplied by
+`veluPointX_nsmul`, and the reduced certificate turns the leaf into a Wronskian
+identity between them.
+
+**NO `CharZero`.** In characteristic `2` the statement reads `λ([2]) = 0`, which is
+correct — `[2]` is inseparable there — so a `CharZero` hypothesis would be both
+unnecessary and a silent weakening of every consumer.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a Weierstrass curve over an
+algebraically closed field on which the duplication map pulls `ω` back to `k·ω`
+for some `k ≠ 2`. -/
+theorem isDiffChar_two [IsAlgClosed F] [W.IsElliptic] :
+    IsDiffChar (mulByHom W 2) (2 : F) :=
+  sorry
+
+/-- **LEAF: additivity, the CHORD branch.**
+
+`λ(φ + ψ) = λ(φ) + λ(ψ)` when the four degeneracies are excluded: `φ ≠ 0`,
+`ψ ≠ 0`, `φ + ψ ≠ 0` and `φ ≠ ψ`. These are exactly the hypotheses of
+`IsRationalMap.add_of_ne` in `Isogeny.lean`, which is what makes the chord formula
+`x₃ = m² + a₁m − a₂ − x₁ − x₂` applicable: `φ ≠ ψ` and `φ + ψ ≠ 0` together say
+that `x∘φ` and `x∘ψ` are DIFFERENT rational functions, so `A₂B₁ − A₁B₂ ≠ 0` and its
+vanishing locus is a finite set of `x`-values that
+`isDiffCharCert_of_cofinite` absorbs.
+
+**THE ARGUMENT.** Conceptually this is Silverman *AEC* III.5.2: `ω` is
+translation-invariant, so the addition map `μ : W' × W' → W'` satisfies
+`μ*ω = pr₁*ω + pr₂*ω`, and composing with `(φ, ψ)` gives the claim. In the
+coordinates the two halves of that invariance are the identities
+
+  `ψ₂(S)·∂x₃/∂x_S + ν(S)·∂x₃/∂y_S = ψ₂(S+T)`  and the same in `T`,
+
+where `ν(Q) = 3x_Q² + 2a₂x_Q + a₄ − a₁y_Q`, i.e. `D = ψ₂ ∂/∂x + ν ∂/∂y` is the
+invariant derivation of `InvariantDerivation.lean` and the identities say `D`
+differentiates the chord formula to `ψ₂` on each factor. Given them, the two
+reduced certificates supply `D(x∘φ) = c·ψ₂(φP)` and `D(x∘ψ) = d·ψ₂(ψP)`, and the
+chain rule through the chord formula gives `D(x∘(φ+ψ)) = (c+d)·ψ₂((φ+ψ)P)`, which
+is the reduced certificate for `c + d`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: two rational maps, neither zero, with
+`φ ≠ ψ` and `φ + ψ ≠ 0`, whose sum acts on `ω` by something other than the sum of
+their scalars. -/
+theorem isDiffChar_add_of_ne [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ ψ : W.Point →+ W'.Point} {c d : F}
+    (hφ : IsDiffChar φ c) (hψ : IsDiffChar ψ d)
+    (h0φ : φ ≠ 0) (h0ψ : ψ ≠ 0) (hsum : φ + ψ ≠ 0) (hdiff : φ ≠ ψ) :
+    IsDiffChar (φ + ψ) (c + d) :=
+  sorry
+
+/-- **PROVEN 2026-07-28 (assembly): `λ` is additive.**
+
+The five-way split of the section docstring above. Three branches are discharged
+here outright; the doubling branch is `isDiffChar_comp` applied to
+`isDiffChar_two`; the chord branch is `isDiffChar_add_of_ne`.
+
+The sum of two rational maps is rational (`IsRationalMap.add`, PROVEN in
+`Isogeny.lean`), so the statement is not vacuous; note that `IsIsogeny.add` is
+FALSE (see the falsity audit there) — which is exactly why `IsDiffChar` is built
+over `IsRationalMap` rather than over `IsIsogeny`. -/
+theorem isDiffChar_add [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ ψ : W.Point →+ W'.Point} {c d : F}
+    (hφ : IsDiffChar φ c) (hψ : IsDiffChar ψ d) :
+    IsDiffChar (φ + ψ) (c + d) := by
+  by_cases h0φ : φ = 0
+  · rw [h0φ, zero_add, hφ.1 h0φ, zero_add]
+    exact hψ
+  by_cases h0ψ : ψ = 0
+  · rw [h0ψ, add_zero, hψ.1 h0ψ, add_zero]
+    exact hφ
+  by_cases hsum : φ + ψ = 0
+  · have hψeq : ψ = -φ := eq_neg_of_add_eq_zero_left (by rw [add_comm]; exact hsum)
+    rw [hψeq] at hψ
+    have hd : d = -c := isDiffChar_unique hψ (isDiffChar_neg hφ)
+    have hcd : c + d = 0 := by rw [hd]; ring
+    rw [hsum, hcd]
+    exact isDiffChar_zero
+  by_cases hdiff : φ = ψ
+  · have hcd : c = d := by
+      rw [hdiff] at hφ
+      exact isDiffChar_unique hφ hψ
+    have hEq : φ + ψ = ψ.comp (mulByHom W 2) := by
+      ext P
+      rw [hdiff]
+      simp [two_nsmul]
+    have hval : c + d = d * 2 := by rw [hcd]; ring
+    rw [hEq, hval]
+    exact isDiffChar_comp isDiffChar_two hψ
+  exact isDiffChar_add_of_ne hφ hψ h0φ h0ψ hsum hdiff
+
 /-- **PROVEN 2026-07-28: `λ` is injective, in characteristic zero.**
 
 `(φ − ψ)*ω' = 0`, and a rational map killing the invariant differential is
@@ -960,28 +1097,9 @@ derivative without being constant. -/
 theorem eq_of_isDiffChar [IsAlgClosed F] [CharZero F] [W.IsElliptic]
     [W'.IsElliptic] {φ ψ : W.Point →+ W'.Point} {c : F}
     (hφ : IsDiffChar φ c) (hψ : IsDiffChar ψ c) : φ = ψ := by
-  have hnegψ : IsDiffChar (-ψ) (-c) := by
-    have hcomp : IsDiffChar ((-(AddMonoidHom.id W'.Point)).comp ψ) ((-1) * c) :=
-      isDiffChar_comp hψ isDiffChar_neg_id
-    have hEq : (-(AddMonoidHom.id W'.Point)).comp ψ = -ψ := by ext P; rfl
-    rw [hEq, neg_one_mul] at hcomp
-    exact hcomp
-  have hsum : IsDiffChar (φ + -ψ) (c + -c) := isDiffChar_add hφ hnegψ
+  have hsum : IsDiffChar (φ + -ψ) (c + -c) := isDiffChar_add hφ (isDiffChar_neg hψ)
   rw [add_neg_cancel, ← sub_eq_add_neg] at hsum
   exact sub_eq_zero.mp (eq_zero_of_isDiffChar_zero hsum)
-
-/-! ### Consequences of the leaves, PROVEN -/
-
-/-- `λ(−φ) = −λ(φ)`, from `−φ = (−1) ∘ φ` and `isDiffChar_neg_id`. -/
-theorem isDiffChar_neg [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
-    {φ : W.Point →+ W'.Point} {c : F} (h : IsDiffChar φ c) :
-    IsDiffChar (-φ) (-c) := by
-  have hcomp : IsDiffChar ((-(AddMonoidHom.id W'.Point)).comp φ) ((-1) * c) :=
-    isDiffChar_comp h isDiffChar_neg_id
-  have hEq : (-(AddMonoidHom.id W'.Point)).comp φ = -φ := by
-    ext P; rfl
-  rw [hEq, neg_one_mul] at hcomp
-  exact hcomp
 
 /-- `λ([n]) = n` for a natural number `n`, by induction from `λ(0) = 0`,
 `λ(1) = 1` and additivity. -/
