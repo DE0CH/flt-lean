@@ -9535,8 +9535,183 @@ theorem exists_fractionRing_ringEquiv_hypersurface_integralSystemModel_rat
           Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g})) :=
   sorry
 
+/-! #### `A[1/a]` inside a fraction field
+
+The four declarations here are the general commutative algebra behind
+`nonempty_ringEquiv_localizationAway_of_fractionRing_ringEquiv` below.  They
+realise `Localization.Away a` CONCRETELY, as a subring of the fraction field of
+the domain `A`, which is what makes the birational back-and-forth of that proof
+a computation with fractions rather than a diagram chase between abstract
+localisations: both `A[1/a] ⊆ Frac A` and `B[1/b] ⊆ Frac B` become subobjects of
+rings that a single `e : Frac A ≃+* Frac B` already relates. -/
+
+/-- `A[1/a]` realised as a SUBRING of the fraction field `K` of the domain `A`
+(PROVEN): the set of `x` for which some `a`-power multiple of `x` comes from `A`.
+
+Closure under the ring operations is the usual common-denominator computation;
+nothing here needs `a ≠ 0` (for `a = 0` the definition returns the image of `A`
+itself, which is harmless — every consumer below carries `a ≠ 0`). -/
+def fractionRingAwaySubring (A K : Type*) [CommRing A] [IsDomain A] [Field K] [Algebra A K]
+    [IsFractionRing A K] (a : A) : Subring K where
+  carrier := {x : K | ∃ (n : ℕ) (y : A), x * algebraMap A K a ^ n = algebraMap A K y}
+  zero_mem' := ⟨0, 0, by simp⟩
+  one_mem' := ⟨0, 1, by simp⟩
+  add_mem' := by
+    intro x₁ x₂ hx₁ hx₂
+    obtain ⟨n, y, hy⟩ := hx₁
+    obtain ⟨m, z, hz⟩ := hx₂
+    refine ⟨n + m, y * a ^ m + z * a ^ n, ?_⟩
+    rw [_root_.map_add, _root_.map_mul, _root_.map_mul, _root_.map_pow, _root_.map_pow, ← hy, ← hz]
+    ring
+  mul_mem' := by
+    intro x₁ x₂ hx₁ hx₂
+    obtain ⟨n, y, hy⟩ := hx₁
+    obtain ⟨m, z, hz⟩ := hx₂
+    refine ⟨n + m, y * z, ?_⟩
+    rw [_root_.map_mul, ← hy, ← hz]
+    ring
+  neg_mem' := by
+    intro x hx
+    obtain ⟨n, y, hy⟩ := hx
+    exact ⟨n, -y, by rw [_root_.map_neg, ← hy]; ring⟩
+
+/-- A nonzero element of a domain has nonzero image in its fraction field (PROVEN). -/
+theorem algebraMap_fractionRing_ne_zero {A K : Type*} [CommRing A] [Field K] [Algebra A K]
+    [IsFractionRing A K] {a : A} (ha : a ≠ 0) : algebraMap A K a ≠ 0 :=
+  fun h => ha (IsFractionRing.to_map_eq_zero_iff.mp h)
+
+/-- `A` itself sits inside `A[1/a]` (PROVEN). -/
+theorem algebraMap_mem_fractionRingAwaySubring {A K : Type*} [CommRing A] [IsDomain A] [Field K]
+    [Algebra A K] [IsFractionRing A K] (a y : A) :
+    algebraMap A K y ∈ fractionRingAwaySubring A K a :=
+  ⟨0, y, by simp⟩
+
+/-- `a` is inverted in `A[1/a]` (PROVEN). -/
+theorem inv_algebraMap_mem_fractionRingAwaySubring {A K : Type*} [CommRing A] [IsDomain A] [Field K]
+    [Algebra A K] [IsFractionRing A K] {a : A} (ha : a ≠ 0) :
+    (algebraMap A K a)⁻¹ ∈ fractionRingAwaySubring A K a :=
+  ⟨1, 1, by rw [pow_one, inv_mul_cancel₀ (algebraMap_fractionRing_ne_zero ha), _root_.map_one]⟩
+
+/-- Enlarging the inverted element enlarges the localisation (PROVEN).  This is
+what lets the back-and-forth below multiply denominators together and keep every
+earlier membership. -/
+theorem fractionRingAwaySubring_mono {A K : Type*} [CommRing A] [IsDomain A] [Field K]
+    [Algebra A K] [IsFractionRing A K] {a c : A} (h : a ∣ c) :
+    fractionRingAwaySubring A K a ≤ fractionRingAwaySubring A K c := by
+  rintro x ⟨n, y, hy⟩
+  obtain ⟨d, rfl⟩ := h
+  refine ⟨n, y * d ^ n, ?_⟩
+  simp only [_root_.map_mul, _root_.map_pow, ← hy]
+  ring
+
+/-- The corestriction of `algebraMap A K` to `A[1/a]` (PROVEN glue). -/
+def toFractionRingAwaySubring {A K : Type*} [CommRing A] [IsDomain A] [Field K] [Algebra A K]
+    [IsFractionRing A K] (a : A) : A →+* fractionRingAwaySubring A K a :=
+  (algebraMap A K).codRestrict (fractionRingAwaySubring A K a)
+    (fun x => algebraMap_mem_fractionRingAwaySubring a x)
+
+@[simp] theorem coe_toFractionRingAwaySubring {A K : Type*} [CommRing A] [IsDomain A] [Field K]
+    [Algebra A K] [IsFractionRing A K] (a x : A) :
+    ((toFractionRingAwaySubring (K := K) a x : fractionRingAwaySubring A K a) : K)
+      = algebraMap A K x := rfl
+
+/-- Powers of `a` become units in `A[1/a]` (PROVEN) — the hypothesis
+`IsLocalization.lift` needs. -/
+theorem isUnit_toFractionRingAwaySubring {A K : Type*} [CommRing A] [IsDomain A] [Field K]
+    [Algebra A K] [IsFractionRing A K] {a : A} (ha : a ≠ 0) (y : Submonoid.powers a) :
+    IsUnit (toFractionRingAwaySubring (K := K) a y) := by
+  obtain ⟨n, hn⟩ := y.2
+  have hn' : (y : A) = a ^ n := by simpa using hn.symm
+  have hne : algebraMap A K a ≠ 0 := algebraMap_fractionRing_ne_zero ha
+  have h1 : IsUnit (toFractionRingAwaySubring (K := K) a a) := by
+    rw [isUnit_iff_exists]
+    refine ⟨⟨(algebraMap A K a)⁻¹, inv_algebraMap_mem_fractionRingAwaySubring ha⟩, ?_, ?_⟩ <;>
+      · ext
+        simp [coe_toFractionRingAwaySubring, mul_inv_cancel₀ hne, inv_mul_cancel₀ hne]
+  rw [hn']
+  simpa [_root_.map_pow] using h1.pow n
+
+/-- `A[1/a]` inside `K` really IS the localisation of `A` away from `a` (PROVEN).
+
+Injectivity and surjectivity of `IsLocalization.lift` are read off from
+`IsLocalization.lift_injective_iff` / `IsLocalization.lift_surjective_iff`; the
+surjectivity criterion is literally the membership condition defining
+`fractionRingAwaySubring`, which is why the subring was defined that way. -/
+noncomputable def ringEquivFractionRingAwaySubring {A K : Type*} [CommRing A] [IsDomain A]
+    [Field K] [Algebra A K] [IsFractionRing A K] {a : A} (ha : a ≠ 0) :
+    Localization.Away a ≃+* fractionRingAwaySubring A K a := by
+  refine RingEquiv.ofBijective
+    (IsLocalization.lift (M := Submonoid.powers a) (S := Localization.Away a)
+      (g := toFractionRingAwaySubring (K := K) a) (isUnit_toFractionRingAwaySubring ha)) ⟨?_, ?_⟩
+  · rw [IsLocalization.lift_injective_iff]
+    intro x y
+    constructor
+    · intro h
+      have := IsLocalization.injective (M := Submonoid.powers a) (Localization.Away a)
+        (by rw [Submonoid.powers_le]; exact mem_nonZeroDivisors_of_ne_zero ha) h
+      rw [this]
+    · intro h
+      have : algebraMap A K x = algebraMap A K y := congrArg Subtype.val h
+      rw [IsFractionRing.injective A K this]
+  · rw [IsLocalization.lift_surjective_iff]
+    rintro ⟨v, n, y, hy⟩
+    refine ⟨⟨y, ⟨a ^ n, ⟨n, rfl⟩⟩⟩, ?_⟩
+    ext
+    push_cast
+    rw [coe_toFractionRingAwaySubring, _root_.map_pow]
+    exact hy
+
+/-- **A RING HOM OUT OF A FINITELY GENERATED `ℚ`-ALGEBRA INTO A FRACTION FIELD
+LANDS IN A SINGLE PRINCIPAL LOCALISATION** (PROVEN).
+
+This is where finite generation is spent, and it is the ONLY place: each of the
+finitely many algebra generators `β` of `B` has an image `φ β` with SOME
+denominator `d β ∈ A`, and the single element `a := ∏_β d β` inverts all of them
+at once.  The passage from the generators to all of `B` is
+`Algebra.adjoin_eq_ring_closure`: the preimage `φ⁻¹ (A[1/a])` is a subring of `B`
+containing the generators, and it contains the image of `ℚ` because a ring
+homomorphism out of `ℚ` is unique (`RingHom.ext_rat`), so `φ ∘ algebraMap ℚ B`
+and `algebraMap A K ∘ algebraMap ℚ A` agree.  That is also why no `ℚ`-linearity
+hypothesis on `φ` is needed. -/
+theorem exists_ne_zero_forall_mem_fractionRingAwaySubring {A K B : Type*} [CommRing A]
+    [IsDomain A] [Field K] [Algebra A K] [IsFractionRing A K] [Algebra ℚ A] [CommRing B]
+    [Algebra ℚ B] [Algebra.FiniteType ℚ B] (φ : B →+* K) :
+    ∃ a : A, a ≠ 0 ∧ ∀ y : B, φ y ∈ fractionRingAwaySubring A K a := by
+  classical
+  obtain ⟨s, hs⟩ := (Algebra.FiniteType.out : (⊤ : Subalgebra ℚ B).FG)
+  have H : ∀ β : B, ∃ p : A × A, p.2 ≠ 0 ∧ φ β * algebraMap A K p.2 = algebraMap A K p.1 := by
+    intro β
+    obtain ⟨x, y, hy, hxy⟩ := IsFractionRing.div_surjective (A := A) (K := K) (φ β)
+    have hy0 : y ≠ 0 := nonZeroDivisors.ne_zero hy
+    refine ⟨⟨x, y⟩, hy0, ?_⟩
+    rw [← hxy]
+    exact div_mul_cancel₀ _ (algebraMap_fractionRing_ne_zero hy0)
+  choose D hD0 hD using H
+  refine ⟨∏ β ∈ s, (D β).2, Finset.prod_ne_zero_iff.2 fun β _ => hD0 β, ?_⟩
+  intro y
+  have key : (⊤ : Subring B) ≤
+      Subring.comap φ (fractionRingAwaySubring A K (∏ β ∈ s, (D β).2)) := by
+    have h1 : Subring.closure (Set.range (algebraMap ℚ B) ∪ (s : Set B)) ≤
+        Subring.comap φ (fractionRingAwaySubring A K (∏ β ∈ s, (D β).2)) := by
+      rw [Subring.closure_le]
+      rintro x (⟨q, rfl⟩ | hx)
+      · have hcomp : φ.comp (algebraMap ℚ B) = (algebraMap A K).comp (algebraMap ℚ A) :=
+          RingHom.ext_rat _ _
+        have hq : φ (algebraMap ℚ B q) = algebraMap A K (algebraMap ℚ A q) :=
+          congrArg (fun f : ℚ →+* K => f q) hcomp
+        simp only [Subring.mem_comap, SetLike.mem_coe, hq]
+        exact algebraMap_mem_fractionRingAwaySubring _ _
+      · simp only [Subring.mem_comap, SetLike.mem_coe]
+        refine fractionRingAwaySubring_mono (Finset.dvd_prod_of_mem (fun β => (D β).2) hx) ?_
+        exact ⟨1, (D x).1, by rw [pow_one]; exact hD x⟩
+    have h2 : Subring.closure (Set.range (algebraMap ℚ B) ∪ (s : Set B)) = ⊤ := by
+      rw [← Algebra.adjoin_eq_ring_closure, hs]
+      rfl
+    rwa [h2] at h1
+  exact key (Subring.mem_top y)
+
 /-- **BIRATIONAL FINITELY GENERATED DOMAINS HAVE ISOMORPHIC LOCALISATIONS AT
-SINGLE ELEMENTS** (SORRY LEAF, cut 2026-07-28 out of
+SINGLE ELEMENTS** (**PROVEN 2026-07-28**; cut 2026-07-28 out of
 `exists_birationalHypersurface_reduced_integralSystemModel_rat` below).
 
 This is the general commutative algebra that the parent's conclusion is phrased
@@ -9572,14 +9747,137 @@ localisations NONZERO rings, so the conclusion is not dischargeable by the
 zero ring; and it is not derivable from `e` alone without finite generation, by
 the counterexample in the previous paragraph.
 
+HOW IT IS PROVED (2026-07-28), following exactly the sketch above.  Both
+localisations are realised as SUBRINGS of the two fraction fields by
+`fractionRingAwaySubring` / `ringEquivFractionRingAwaySubring`, so the whole
+argument takes place inside `Frac A` and `Frac B` and the final isomorphism is
+`e` restricted, transported by `RingEquiv.subringMap`.  Finite generation enters
+once on each side, through
+`exists_ne_zero_forall_mem_fractionRingAwaySubring`, giving `a₁` with
+`e⁻¹(B) ⊆ A[1/a₁]` and `b₁` with `e(A) ⊆ B[1/b₁]`.  Writing `e a₁ = ι y / ι b₁^M`
+and `e⁻¹ (b₁ y) = ι z / ι a₁^N` and setting `a := a₁ z`, `b := b₁ y`, the two
+inclusions `e (A[1/a]) ⊆ B[1/b]` and `e⁻¹ (B[1/b]) ⊆ A[1/a]` hold; the second
+gives the reverse inclusion of the first because `e` is bijective, so
+`(A[1/a]).map e = B[1/b]` on the nose and no separate "mutually inverse"
+verification is needed.  The one nontrivial closure fact is that `(e a)⁻¹` lies
+in `B[1/b]`: `b = b₁ y` inverts BOTH `b₁` and `y` (a product being a unit makes
+each factor one), hence inverts `e a₁`, and then `e z = ι b · (e a₁)^N` inverts
+`e z` too.
+
 CIRCULARITY GUARD: pure commutative algebra; nothing in this file is used. -/
 theorem nonempty_ringEquiv_localizationAway_of_fractionRing_ringEquiv
     {A B : Type*} [CommRing A] [IsDomain A] [Algebra ℚ A] [Algebra.FiniteType ℚ A]
     [CommRing B] [IsDomain B] [Algebra ℚ B] [Algebra.FiniteType ℚ B]
     (e : FractionRing A ≃+* FractionRing B) :
     ∃ (a : A) (b : B), a ≠ 0 ∧ b ≠ 0 ∧
-      Nonempty (Localization.Away a ≃+* Localization.Away b) :=
-  sorry
+      Nonempty (Localization.Away a ≃+* Localization.Away b) := by
+  classical
+  set ιA : A →+* FractionRing A := algebraMap A (FractionRing A) with hιA
+  set ιB : B →+* FractionRing B := algebraMap B (FractionRing B) with hιB
+  set φ : B →+* FractionRing A := e.symm.toRingHom.comp ιB with hφdef
+  set ψ : A →+* FractionRing B := e.toRingHom.comp ιA with hψdef
+  have hφapp : ∀ x : B, φ x = e.symm (ιB x) := fun _ => rfl
+  have hψapp : ∀ x : A, ψ x = e (ιA x) := fun _ => rfl
+  have hAne : ∀ {x : A}, x ≠ 0 → ιA x ≠ 0 := fun {_} hx => algebraMap_fractionRing_ne_zero hx
+  have hBne : ∀ {x : B}, x ≠ 0 → ιB x ≠ 0 := fun {_} hx => algebraMap_fractionRing_ne_zero hx
+  have hene : ∀ {x : FractionRing A}, x ≠ 0 → e x ≠ 0 :=
+    fun {_} hx h => hx (e.injective (h.trans (_root_.map_zero e).symm))
+  have hesne : ∀ {x : FractionRing B}, x ≠ 0 → e.symm x ≠ 0 :=
+    fun {_} hx h => hx (e.symm.injective (h.trans (_root_.map_zero e.symm).symm))
+  -- STEPS 1/2: finite generation puts each side inside a single principal localisation.
+  obtain ⟨a₁, ha₁, hφa₁⟩ :=
+    exists_ne_zero_forall_mem_fractionRingAwaySubring (A := A) (K := FractionRing A) φ
+  obtain ⟨b₁, hb₁, hψb₁⟩ :=
+    exists_ne_zero_forall_mem_fractionRingAwaySubring (A := B) (K := FractionRing B) ψ
+  -- STEP 3: clear the denominator of `e a₁`, producing `b := b₁ * y`.
+  have hψa₁ne : ψ a₁ ≠ 0 := by
+    rw [hψapp]; exact hene (hAne ha₁)
+  obtain ⟨M, y, hy⟩ := hψb₁ a₁
+  have hy0 : y ≠ 0 := by
+    intro h
+    rw [h, _root_.map_zero] at hy
+    exact (mul_ne_zero hψa₁ne (pow_ne_zero _ (algebraMap_fractionRing_ne_zero hb₁))) hy
+  -- STEP 4: clear the denominator of `e⁻¹ b`, producing `a := a₁ * z`.
+  have hb : b₁ * y ≠ 0 := mul_ne_zero hb₁ hy0
+  have hbB : ιB (b₁ * y) ≠ 0 := hBne hb
+  have hφbne : φ (b₁ * y) ≠ 0 := by
+    rw [hφapp]; exact hesne hbB
+  obtain ⟨N, z, hz⟩ := hφa₁ (b₁ * y)
+  have hz0 : z ≠ 0 := by
+    intro h
+    rw [h, _root_.map_zero] at hz
+    exact (mul_ne_zero hφbne (pow_ne_zero _ (algebraMap_fractionRing_ne_zero ha₁))) hz
+  have ha : a₁ * z ≠ 0 := mul_ne_zero ha₁ hz0
+  -- The inverses that `B[1/b]` and `A[1/a]` have to contain.
+  have hinvψa₁ : (ψ a₁)⁻¹ ∈ fractionRingAwaySubring B (FractionRing B) (b₁ * y) := by
+    have h1 : ψ a₁ * (ιB b₁ ^ M * (ιB y)⁻¹) = 1 := by
+      rw [← mul_assoc, hy, mul_inv_cancel₀ (algebraMap_fractionRing_ne_zero hy0)]
+    rw [inv_eq_of_mul_eq_one_right h1]
+    exact (fractionRingAwaySubring B (FractionRing B) (b₁ * y)).mul_mem
+      (Subring.pow_mem _ (algebraMap_mem_fractionRingAwaySubring _ _) M)
+      (fractionRingAwaySubring_mono (Dvd.intro_left b₁ rfl)
+        (inv_algebraMap_mem_fractionRingAwaySubring hy0))
+  have hψz : ψ z = ιB (b₁ * y) * ψ a₁ ^ N := by
+    have hzz := congrArg e hz
+    rw [_root_.map_mul, _root_.map_pow, ← hψapp, ← hψapp, hφapp,
+      RingEquiv.apply_symm_apply] at hzz
+    rw [← hzz]
+  have hψzne : ψ z ≠ 0 := by
+    rw [hψapp]; exact hene (hAne hz0)
+  have hinvψz : (ψ z)⁻¹ ∈ fractionRingAwaySubring B (FractionRing B) (b₁ * y) := by
+    have h1 : ψ z * ((ιB (b₁ * y))⁻¹ * ((ψ a₁)⁻¹) ^ N) = 1 := by
+      rw [hψz, inv_pow, mul_mul_mul_comm, mul_inv_cancel₀ hbB,
+        mul_inv_cancel₀ (pow_ne_zero _ hψa₁ne), one_mul]
+    rw [inv_eq_of_mul_eq_one_right h1]
+    exact (fractionRingAwaySubring B (FractionRing B) (b₁ * y)).mul_mem
+      (inv_algebraMap_mem_fractionRingAwaySubring hb) (Subring.pow_mem _ hinvψa₁ N)
+  have hinvψa : (ψ (a₁ * z))⁻¹ ∈ fractionRingAwaySubring B (FractionRing B) (b₁ * y) := by
+    rw [_root_.map_mul, mul_inv]
+    exact (fractionRingAwaySubring B (FractionRing B) (b₁ * y)).mul_mem hinvψa₁ hinvψz
+  have hinvφb : (φ (b₁ * y))⁻¹ ∈ fractionRingAwaySubring A (FractionRing A) (a₁ * z) := by
+    have h1 : φ (b₁ * y) * (ιA a₁ ^ N * (ιA z)⁻¹) = 1 := by
+      rw [← mul_assoc, hz, mul_inv_cancel₀ (algebraMap_fractionRing_ne_zero hz0)]
+    rw [inv_eq_of_mul_eq_one_right h1]
+    exact (fractionRingAwaySubring A (FractionRing A) (a₁ * z)).mul_mem
+      (Subring.pow_mem _ (algebraMap_mem_fractionRingAwaySubring _ _) N)
+      (fractionRingAwaySubring_mono (Dvd.intro_left a₁ rfl)
+        (inv_algebraMap_mem_fractionRingAwaySubring hz0))
+  have hψane : ψ (a₁ * z) ≠ 0 := by
+    rw [_root_.map_mul]; exact mul_ne_zero hψa₁ne hψzne
+  -- CLAIM I: `e` carries `A[1/a]` into `B[1/b]`.
+  have hI : ∀ x ∈ fractionRingAwaySubring A (FractionRing A) (a₁ * z),
+      e x ∈ fractionRingAwaySubring B (FractionRing B) (b₁ * y) := by
+    rintro x ⟨n, w, hw⟩
+    have h1 : e x * ψ (a₁ * z) ^ n = ψ w := by
+      have hww := congrArg e hw
+      rwa [_root_.map_mul, _root_.map_pow, ← hψapp, ← hψapp] at hww
+    have h2 : e x = ψ w * ((ψ (a₁ * z))⁻¹) ^ n := by
+      rw [← h1, inv_pow, mul_assoc, mul_inv_cancel₀ (pow_ne_zero _ hψane), mul_one]
+    rw [h2]
+    exact (fractionRingAwaySubring B (FractionRing B) (b₁ * y)).mul_mem
+      (fractionRingAwaySubring_mono (Dvd.intro y rfl) (hψb₁ w)) (Subring.pow_mem _ hinvψa n)
+  -- CLAIM II: `e⁻¹` carries `B[1/b]` into `A[1/a]`.
+  have hII : ∀ x ∈ fractionRingAwaySubring B (FractionRing B) (b₁ * y),
+      e.symm x ∈ fractionRingAwaySubring A (FractionRing A) (a₁ * z) := by
+    rintro x ⟨n, w, hw⟩
+    have h1 : e.symm x * φ (b₁ * y) ^ n = φ w := by
+      have hww := congrArg e.symm hw
+      rwa [_root_.map_mul, _root_.map_pow, ← hφapp, ← hφapp] at hww
+    have h2 : e.symm x = φ w * ((φ (b₁ * y))⁻¹) ^ n := by
+      rw [← h1, inv_pow, mul_assoc, mul_inv_cancel₀ (pow_ne_zero _ hφbne), mul_one]
+    rw [h2]
+    exact (fractionRingAwaySubring A (FractionRing A) (a₁ * z)).mul_mem
+      (fractionRingAwaySubring_mono (Dvd.intro z rfl) (hφa₁ w)) (Subring.pow_mem _ hinvφb n)
+  have hmap : Subring.map e.toRingHom (fractionRingAwaySubring A (FractionRing A) (a₁ * z))
+      = fractionRingAwaySubring B (FractionRing B) (b₁ * y) := by
+    refine le_antisymm ?_ ?_
+    · rintro _ ⟨x, hx, rfl⟩
+      exact hI x hx
+    · intro t ht
+      exact ⟨e.symm t, hII t ht, by simp⟩
+  exact ⟨a₁ * z, b₁ * y, ha, hb,
+    ⟨(ringEquivFractionRingAwaySubring ha).trans ((RingEquiv.subringMap e).trans
+      ((RingEquiv.subringCongr hmap).trans (ringEquivFractionRingAwaySubring hb).symm))⟩⟩
 
 /-- **POONEN §3.2 STEPS (a)–(c), OVER THE REDUCED GENERIC FIBRE** (**PROVEN
 2026-07-28** over the two leaves immediately above, into which its content was
@@ -9588,7 +9886,8 @@ split at the function-field/localisation boundary:
 Poonen geometry, stated about fraction fields alone, and
 `nonempty_ringEquiv_localizationAway_of_fractionRing_ringEquiv` is the general
 fact that birational finitely generated domains have isomorphic principal
-localisations.
+localisations (that half is itself **PROVEN 2026-07-28**, so only the Poonen
+geometry is still open below this node).
 
 WHAT THE PROOF BELOW DISCHARGES ON ITS OWN. Three things, all of them
 bookkeeping the two leaves should not have to carry: that the reduced `ℚ`-fibre
@@ -9652,7 +9951,7 @@ theorem exists_birationalHypersurface_reduced_integralSystemModel_rat
   haveI hdomB : IsDomain (MvPolynomial (Fin k) ℚ ⧸
       Ideal.span {MvPolynomial.map (Int.castRingHom ℚ) g}) :=
     (Ideal.Quotient.isDomain_iff_prime _).2 hpr
-  -- STEP 2 (SORRY LEAF, general): birational finitely generated domains have
+  -- STEP 2 (PROVEN 2026-07-28, general): birational finitely generated domains have
   -- isomorphic localisations at single elements.
   obtain ⟨s, b, hs, hb, hiso⟩ :=
     nonempty_ringEquiv_localizationAway_of_fractionRing_ringEquiv e
