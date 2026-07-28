@@ -34734,6 +34734,19 @@ is built functorially enough to satisfy `c (Ψ^σ) = σ (c Ψ)`.  Given that,
 `End.exists_charPoly`, hence a rational algebraic integer, hence `c Ψ = c [n]`
 for some `n ∈ ℤ`, hence `Ψ = [n]` by injectivity.  So the cotangent character is
 worth more than its own leaf.
+
+**STATUS UPDATE (2026-07-28).**  Both halves of that "provided" are now in the
+tree.  The character itself is `WeierstrassCurve.End.cotangentHom`
+(`section Cotangent`, far above), which already discharged
+`End.mul_comm_charZero` — so item 2's leaf is CLOSED and the note above is stale
+on that point.  The functoriality is `cotangent_galoisConjHom` below, stated in
+exactly the `c (Ψ^σ) = σ⁻¹ (c Ψ)` form and proven over the axiom-clean
+`isCotangentScalar_galoisConjHom`; the conjugation transports the five
+presenting polynomials coefficientwise, exactly as
+`isRationalMap_galoisConjHom` does, and needs no differentials.  What is left
+under this cluster is therefore: `exists_intMul_of_galoisInvariant` (the three
+lines described above, now unblocked) and the four `section Cotangent` leaves
+that `End.cotangent` rests on.
 -/
 
 /-- **Two roots of one monic quadratic in a commutative ring** (PROVEN
@@ -34950,6 +34963,173 @@ theorem isIsogeny_galoisConjHom (E : WeierstrassCurve ℚ)
         rw [galoisConjHom_apply, pointMap_pointMap_symm, hR, map_zero]
     rw [himg]
     exact Set.Finite.image _ (hΨ.finite_ker hΨ0)
+
+/-- **THE COTANGENT CHARACTER IS GALOIS-EQUIVARIANT** (**PROVEN 2026-07-28**,
+axiom-clean): `c (Ψ^σ) = σ⁻¹ (c Ψ)`, where `Ψ^σ = σ⁻¹ ∘ Ψ ∘ σ` is `galoisConjHom`.
+
+This is the last piece of the invariant-differential subtree that is specific to
+the base field `ℚ`, and it is what makes
+`exists_intMul_of_galoisInvariant` below a three-line corollary of
+`section Cotangent`: a `Γ_ℚ`-invariant `Ψ` has `galoisConjHom E σ Ψ = Ψ` for
+every `σ`, so `isCotangentScalar_unique` turns this statement into
+`σ⁻¹ (c Ψ) = c Ψ` for every `σ`, i.e. `c Ψ ∈ ℚ`.
+
+**ORIENTATION.** `galoisConjHom E σ Ψ = Point.map σ⁻¹ ∘ Ψ ∘ Point.map σ`, so the
+scalar that comes out is `σ⁻¹ (c Ψ)`, written `σ.symm c`.  As `σ` ranges over
+the whole group so does `σ⁻¹`, so a consumer quantifying over all of `Γ_ℚ` may
+use either form; the `σ.symm` shape is the one that matches the definition and
+therefore needs no `inv`-juggling.
+
+**THE PROOF, and why it is elementary.** Exactly the computation of
+`isRationalMap_galoisConjHom` above, carried one step further.
+`IsCotangentScalar` is a *pointwise* certificate — five presenting polynomials
+plus the cleared-denominator identity
+
+    (A'B − AB')(x P) · (2·y P + a₁·x P + a₃)
+      = c · B(x P)² · (2·y (Ψ P) + a₁·x (Ψ P) + a₃)
+
+— and a pointwise certificate transports along a field automorphism by
+conjugating the polynomials COEFFICIENTWISE.  Three facts do all the work:
+`Polynomial.derivative` commutes with `Polynomial.map` (`derivative_map`), so
+`A'B − AB'` conjugates as a unit; `Polynomial.eval_map_apply` moves `τ` across
+an evaluation; and `τ` fixes `a₁, a₃` because they come from `E` over `ℚ`
+(`AlgEquiv.commutes`) — **that is the only place "defined over `ℚ`" is
+consumed**, and it is exactly the classical statement that the invariant
+differential `ω = dx/(2y + a₁x + a₃)` of a curve over `ℚ` is `σ`-fixed.  No
+function field, no differentials.
+
+The `Ψ^σ = 0 → σ⁻¹ c = 0` conjunct is discharged from `hc`'s own such conjunct
+because `Point.map σ` is a bijection, so `Ψ^σ = 0 ↔ Ψ = 0`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an `E/ℚ`, an isogeny `Ψ` of `E_ℚ̄`
+with cotangent scalar `c`, and a `σ` for which `σ⁻¹ Ψ σ` has a cotangent scalar
+other than `σ⁻¹ c`. -/
+theorem isCotangentScalar_galoisConjHom (E : WeierstrassCurve ℚ)
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    {c : AlgebraicClosure ℚ}
+    (hc : WeierstrassCurve.IsCotangentScalar Ψ c) :
+    WeierstrassCurve.IsCotangentScalar (galoisConjHom E σ Ψ) (σ.symm c) := by
+  obtain ⟨hzero, A, B, C, D, G, hB, hG, hcert, hdiff⟩ := hc
+  set τ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ := σ.symm.toAlgHom.toRingHom with hτdef
+  have hτinj : Function.Injective τ := τ.injective
+  have hτσ : ∀ w : AlgebraicClosure ℚ, τ (σ w) = w := by intro w; simp [hτdef]
+  have hfix : ∀ x : ℚ, τ (algebraMap ℚ (AlgebraicClosure ℚ) x)
+      = algebraMap ℚ (AlgebraicClosure ℚ) x := fun x => σ.symm.commutes x
+  have ha1 : τ ((E⁄(AlgebraicClosure ℚ)).toAffine.a₁)
+      = (E⁄(AlgebraicClosure ℚ)).toAffine.a₁ := hfix E.a₁
+  have ha3 : τ ((E⁄(AlgebraicClosure ℚ)).toAffine.a₃)
+      = (E⁄(AlgebraicClosure ℚ)).toAffine.a₃ := hfix E.a₃
+  have hidd : ∀ R : (E⁄(AlgebraicClosure ℚ)).Point,
+      τ (WeierstrassCurve.invariantDiffDenom (E⁄(AlgebraicClosure ℚ)).toAffine R)
+        = WeierstrassCurve.invariantDiffDenom (E⁄(AlgebraicClosure ℚ)).toAffine
+            (Affine.Point.map (W' := E) σ.symm.toAlgHom R) := by
+    intro R
+    simp only [WeierstrassCurve.invariantDiffDenom, veluPointX_pointMap, veluPointY_pointMap,
+      map_add, map_mul, map_ofNat, ha1, ha3]
+    rfl
+  refine ⟨?_, A.map τ, B.map τ, C.map τ, D.map τ, G.map τ,
+    (Polynomial.map_ne_zero_iff hτinj).mpr hB,
+    (Polynomial.map_ne_zero_iff hτinj).mpr hG, ?_, ?_⟩
+  · -- `Ψ^σ = 0 → σ⁻¹ c = 0`, because `Point.map σ` is a bijection.
+    intro h
+    have hΨ0 : Ψ = 0 := by
+      refine AddMonoidHom.ext fun P => ?_
+      have h1 := congrArg (fun f : (E⁄(AlgebraicClosure ℚ)).Point →+
+          (E⁄(AlgebraicClosure ℚ)).Point =>
+        f (Affine.Point.map (W' := E) σ.symm.toAlgHom P)) h
+      simp only [galoisConjHom_apply, AddMonoidHom.zero_apply] at h1
+      rw [pointMap_pointMap_symm] at h1
+      have h2 := congrArg (Affine.Point.map (W' := E) σ.toAlgHom) h1
+      rw [pointMap_pointMap_symm, map_zero] at h2
+      simpa using h2
+    rw [hzero hΨ0, map_zero]
+  · -- The five presenting polynomials, conjugated coefficientwise by `σ⁻¹`.
+    intro P hP
+    have hΨP : Ψ (Affine.Point.map (W' := E) σ.toAlgHom P) ≠ 0 := by
+      intro hcc
+      exact hP (by rw [galoisConjHom_apply, hcc, map_zero])
+    obtain ⟨hx, hy⟩ := hcert _ hΨP
+    rw [veluPointX_pointMap] at hx hy
+    rw [veluPointY_pointMap] at hy
+    have hxτ := congrArg τ hx
+    have hyτ := congrArg τ hy
+    rw [map_mul] at hxτ
+    rw [map_mul, map_add, map_mul] at hyτ
+    rw [galoisConjHom_apply, veluPointX_pointMap, veluPointY_pointMap]
+    refine ⟨?_, ?_⟩
+    · rw [show (B.map τ).eval (veluPointX P)
+          = τ (B.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+        show (A.map τ).eval (veluPointX P)
+          = τ (A.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ]]
+      exact hxτ
+    · rw [show (G.map τ).eval (veluPointX P)
+          = τ (G.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+        show (C.map τ).eval (veluPointX P)
+          = τ (C.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+        show (D.map τ).eval (veluPointX P)
+          = τ (D.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+        ← hτσ (veluPointY P)]
+      exact hyτ
+  · -- The differential identity: apply `σ⁻¹` to it at the point `σ P`.
+    intro P hP0 hPne
+    have hQ0 : Affine.Point.map (W' := E) σ.toAlgHom P ≠ 0 := by
+      intro hcq
+      refine hP0 ?_
+      have h2 := congrArg (Affine.Point.map (W' := E) σ.symm.toAlgHom) hcq
+      rw [pointMap_symm_pointMap, map_zero] at h2
+      simpa using h2
+    have hΨQ : Ψ (Affine.Point.map (W' := E) σ.toAlgHom P) ≠ 0 := by
+      intro hcc
+      exact hPne (by rw [galoisConjHom_apply, hcc, map_zero])
+    have hkey := congrArg τ (hdiff _ hQ0 hΨQ)
+    rw [map_mul, map_mul, map_mul, map_pow] at hkey
+    rw [veluPointX_pointMap] at hkey
+    rw [hidd, hidd, pointMap_symm_pointMap] at hkey
+    rw [Polynomial.derivative_map, Polynomial.derivative_map, ← Polynomial.map_mul,
+      ← Polynomial.map_mul, ← Polynomial.map_sub,
+      show ((Polynomial.derivative A * B - A * Polynomial.derivative B).map τ).eval
+            (veluPointX P)
+        = τ ((Polynomial.derivative A * B - A * Polynomial.derivative B).eval
+            (σ (veluPointX P))) by
+          rw [← Polynomial.eval_map_apply, hτσ],
+      show (B.map τ).eval (veluPointX P)
+        = τ (B.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+      galoisConjHom_apply]
+    exact hkey
+
+/-- **`c (Ψ^σ) = σ⁻¹ (c Ψ)` for the character itself** (PROVEN 2026-07-28) — the
+reusable packaging of `isCotangentScalar_galoisConjHom` at the level of
+`WeierstrassCurve.End.cotangent`, which is the form a consumer wants.
+
+Transitively sorried only through `End.cotangent`, i.e. through the four still-open
+leaves of `section Cotangent` (`exists_isCotangentScalar`,
+`isCotangentScalar_unique`, `IsCotangentScalar.comp`, `IsCotangentScalar.add`).
+The equivariance itself, `isCotangentScalar_galoisConjHom`, is axiom-clean and
+adds no new geometric input.
+
+**HOW `exists_intMul_of_galoisInvariant` BELOW CONSUMES IT.** `Γ_ℚ`-invariance of
+`Ψ` says `galoisConjHom E σ Ψ = Ψ` for every `σ`, so this lemma reads
+`c Ψ = σ⁻¹ (c Ψ)` for every `σ`, i.e. `c Ψ` is `Γ_ℚ`-fixed, hence rational
+(`InfiniteGalois.mem_range_algebraMap_iff_fixed`; note `IsGalois ℚ ℚ̄` must be
+obtained over a VARIABLE base field and instantiated, since `Normal ℚ ℚ̄` does not
+synthesise under this import cone).  Then `MazurEndLattice.exists_charPolyRing`
+plus `End.cotangentHom` make `c Ψ` a rational root of a monic integral quadratic,
+hence an integer `n`, and `End.injective_ringHomToBase` — injectivity is free in
+characteristic zero — gives `Ψ = [n]`. -/
+theorem cotangent_galoisConjHom (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ) :
+    WeierstrassCurve.End.cotangent
+        (⟨galoisConjHom E σ Ψ, isIsogeny_galoisConjHom E σ Ψ hΨiso⟩ :
+          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+      = σ.symm (WeierstrassCurve.End.cotangent
+          (⟨Ψ, hΨiso⟩ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)) :=
+  (WeierstrassCurve.End.cotangent_eq
+    (isCotangentScalar_galoisConjHom E σ Ψ
+      (WeierstrassCurve.End.isCotangentScalar_cotangent
+        (⟨Ψ, hΨiso⟩ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)))).symm
 
 /-- **The per-`σ` dichotomy** (PROVEN 2026-07-28): for EVERY `σ ∈ Γ_ℚ`, either
 `Ψ` commutes with `σ` or `σ⁻¹ Ψ σ = [t] − Ψ`.
