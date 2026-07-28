@@ -380,7 +380,6 @@ open in them has been split along the theories it needed:
 | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Frac B / K` is a regular extension (`K` algebraically closed in `Frac B`, separably generated).  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28. | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
 | `nonempty_relPoint_atlas_of_relPoint` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` / Lang, on the atlas map `M ⟶ Y` | `𝔽_ℓ` |
-| `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
 | `exists_x1ReductionAt` | the integral model and its reduction map | `ℚ → 𝔽_ℓ` |
@@ -392,12 +391,13 @@ open in them has been split along the theories it needed:
 | `locallyIntegrableOn_axisRestrictOn` | continuity of `y ↦ f(iy/√N)` on `(0, ∞)` | `ℚ` |
 | `isBigO_atTop_coeffOn` | Hecke's bound `\|aₙ\| = O(n)` | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
-| `hasNonconstantAbelianMap_of_one_le_x1Genus` | a positive-genus curve admits a nonconstant map to an abelian variety | `ℚ` |
+| `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
 
 (Table regenerated at the release-10 integration, 2026-07-28, from the
 compiler's `declaration uses 'sorry'` set rather than from any branch's prose;
-it agrees row-for-row with a comment-stripped source scan.  Fourteen rows.)
-| `hasNonconstantAbelianMap_of_one_le_x1Genus` | genus formula | `ℚ` |
+it agrees row-for-row with a comment-stripped source scan.  Fourteen rows.
+The last row was replaced 2026-07-28 when the node above it closed; a stray
+duplicate of it, left by a merge, was removed at the same time.)
 
 **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — three
@@ -2717,7 +2717,11 @@ leaf in two:
   space in the abstract.
 * `nonempty_gamma1Datum_baseChange` — a `Γ₁(N)`-datum base-changes along an
   arbitrary morphism of schemes.  Formal, moduli-free, level-free, base-free;
-  no arithmetic and no finite fields.
+  no arithmetic and no finite fields.  **PROVEN 2026-07-28, by citing
+  `exists_gamma1Datum_baseChange`, which was already in this file**: the cut
+  named a sub-leaf that a concurrent branch had independently proven, so this
+  half of the atlas cut cost nothing.  See its docstring for the duplication
+  and for two corrections to the audit it was dispatched with.
 
 The assembly is then three citations, all PROVEN: `exists_gamma1AffineModel`
 produces an atlas over `𝔽_ℓ` (this is where `hℓ` and `hℓN` are consumed, as
@@ -2734,8 +2738,9 @@ list missed it is that every one of its four axes searched the same space
 CONSTRUCTION.  Recorded here because "an irreducibility verdict is only as
 wide as the axis the auditor searched". -/
 
-/-- **A `Γ₁(N)`-datum base-changes along an arbitrary morphism** (sorry leaf —
-formal, and the easy half of the atlas cut).
+/-- **A `Γ₁(N)`-datum base-changes along an arbitrary morphism** (**PROVEN
+2026-07-28** — and it was ALREADY PROVEN in this very file; see the DUPLICATE
+note below, which is the finding that matters here).
 
 TRUE for every `h : T' ⟶ T`, with no hypothesis at all.  Form the fibre
 product `E ×_T T'`; it is proper, smooth and has geometrically connected
@@ -2747,27 +2752,57 @@ exactly those, so the condition transports with no computation.
 
 **Nothing arithmetic is here.**  No level, no base field, no finiteness: this
 is the base-change bookkeeping that `IsBaseChangeOfGamma1` was written to
-state and that nothing in this file has yet had to construct.  It is worth
-having on its own — `IsBaseChangeOfGamma1` is currently only ever *consumed*,
-by `classify_natural` and by `Gamma1Atlas.cover`, and never *produced*, so
-this is the missing constructor of that relation.
+state.
 
-**Why it is not free at this pin.**  `AbelianSchemeStruct` has no base-change
-operation anywhere in this tree (a `grep` for `baseChange` over
-`Modularity/AbelianScheme.lean` is empty), so the transport of `zero`, `add`
-and the three geometric fields has to be written.  That is the whole content,
-and it is `Γ₀`-usable verbatim once written.
+## DUPLICATE: this leaf is a `Scheme.{0}` restatement of
+## `exists_gamma1Datum_baseChange`, ~1800 lines above it in this same file
+
+The two statements are the same statement, and the `u`-polymorphic one was
+PROVEN on 2026-07-27 over the `Gamma1BaseChange` namespace (`secBC`,
+`downHom`, `ptBC`, `datumBC`, `isBaseChangeBC`) — so this leaf is discharged
+by one citation and is *not* new mathematics.
+
+How the duplication arose is worth recording, because it is a pure
+release-integration artefact and nobody made a mistake: the atlas cut of
+`exists_gamma1Datum_of_relPoint` (branch `flt-lean-36`) named this sub-leaf on
+the same day that a different branch added `Gamma1BaseChange` and
+`exists_gamma1Datum_baseChange` for `exists_descendClassifyGamma1`.  Neither
+branch could see the other, both landed in the same release, and the frontier
+then carried a `sorry` for a theorem the file already contained.
+
+**Two corrections to the ROUTE AUDIT this leaf was dispatched with**, both of
+the "stale audit" shape the doctrine warns about:
+
+* it recorded, as "the one real obstruction", that `AbelianSchemeStruct` has
+  no base change anywhere in this tree, on the strength of a `grep` over
+  `Modularity/AbelianScheme.lean` alone.  `AbelianSchemeStruct.baseChange` —
+  with `RelPoint.baseChangeDown` / `baseChangeUp`, `baseChange_add`,
+  `baseChange_zero`, `baseChangeDown_injective`, `baseChangeDown_pre` — is in
+  `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean`, and reaches this file
+  publicly through `X0.lean`.  One file is not the tree.
+* it recorded that this statement would be "`Γ₀`-usable verbatim once
+  written".  Backwards: `X0.lean`'s `exists_gamma0Datum_baseChange` was proven
+  FIRST, over `Gamma0BaseChange`, and `Gamma1BaseChange` is its transcription.
+
+**Cleanup available, deliberately not taken here.**  This declaration can be
+deleted outright once its single consumer `exists_gamma1Datum_of_relPoint`
+below is repointed to `exists_gamma1Datum_baseChange h d` (note the argument
+ORDER differs: `(h) (d)` there, `(d) (h)` here).  That edit was not made
+because `exists_gamma1Datum_of_relPoint`'s docstring is shared with the
+concurrently-owned leaf `nonempty_relPoint_atlas_of_relPoint`, and a one-line
+alias costs less than a merge conflict in it.
 
 **Non-vacuity.**  The conclusion produces `d'` TOGETHER WITH the cartesian
 square `IsBaseChangeOfGamma1 h d' d`, so a junk datum over `T'` does not
 discharge it: `isPullback` pins `d'.E` as the fibre product and `map_sec`
-pins the level structure.  The consumer below uses only the datum, but the
-square is what makes the statement the right one and what a successor
-producing a naturality argument will need. -/
+pins the level structure.  Both are genuinely produced:
+`Gamma1BaseChange.isBaseChangeBC` supplies the square as
+`(IsPullback.of_hasPullback d.f h).flip` and `map_sec` as
+`Gamma1BaseChange.secBC_fst`. -/
 theorem nonempty_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{0}}
-    (_d : Gamma1Datum N T) (_h : T' ⟶ T) :
-    ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 _h d' _d) :=
-  sorry
+    (d : Gamma1Datum N T) (h : T' ⟶ T) :
+    ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 h d' d) :=
+  exists_gamma1Datum_baseChange h d
 
 /-- **The atlas map `M ⟶ Y` is surjective on `𝔽_ℓ`-points** (sorry leaf —
 this is where the whole fineness/Lang content of the `Γ₁` point count now
@@ -4333,23 +4368,38 @@ still evaluates, and it evaluates WRONG in a direction that matters:
 * `x1Genus 0 = x1Genus 1 = 1`, while `X_1(1) = ℙ¹` has genus `0` and a
   TRIVIAL Jacobian.
 
-That is why `hasNonconstantAbelianMap_of_one_le_x1Genus` below — and the
-`not_isIso_jacobian_of_one_le_x1Genus` proven over it — carries `5 ≤ N`:
+That is why `hasNoFibreAffineLine_of_one_le_x1Genus` below — and
+`hasNonconstantAbelianMap_of_one_le_x1Genus` and
+`not_isIso_jacobian_of_one_le_x1Genus` proven over it — carry `5 ≤ N`:
 without it the leaf would be FALSE at `N = 1`, since `1 ≤ x1Genus 1`
-holds while `X_1(1)` receives only constant maps to abelian varieties
-and `¬ IsIso jstr` fails.  Inside the range the
+holds while `X_1(1) = ℙ¹` contains `𝔸¹` in its one fibre, receives only
+constant maps to abelian varieties, and has `¬ IsIso jstr` fail.  (The
+`Γ₀` analogue of this note was NOT propagated to
+`hasNoFibreAffineLine_of_one_le_x0Genus`, which carries no `hN` and is
+exposed at `x0Genus 0 = 1`; the `Γ₁` chain is guarded throughout.)
+Inside the range the
 definition is faithful; `x1Genus N` for `5 ≤ N ≤ 30` reproduces the
 classical table `0,0,0,0,0,0,1,0,2,1,1,2,5,2,7,3,5,6,12,5,12,10,13,10,22,9`
 (PARI/GP), with the first positive value at `N = 11` and `x1Genus 25 = 12`.
+
+**THE `Γ₀` SIDE HAS THE SAME TRAP AND NOW CARRIES THE SAME NOTE**
+(2026-07-28).  `x0Genus 0 = 1` as well (`decide`), so `1 ≤ x0Genus N`
+and `x0Genus N = 1` are both satisfiable at `N = 0`; only `N = 1`
+differs, `x0Genus 1 = 0` there against `x1Genus 1 = 1` here.  This note
+was not propagated across for a long time and one `Γ₀` consumer was
+FALSE at `N = 0` because of it, so read `x0Genus`'s VALIDITY RANGE note
+in `ModularCurve/X0.lean` alongside this one — it records the full sweep
+of every `x0Genus`-in-hypothesis site and which plug each one uses.
 
 **What this is and is not.**  `x1Genus` is a purely arithmetic,
 computable function of `N`, evaluated by `decide` in
 `x1Genus_twentyFive`.  It is NOT defined as the genus of the scheme `X`:
 no genus of a scheme, and no Riemann–Roch, exists at this pin.  The
 bridge from this number to the geometry of `X` is
-`hasNonconstantAbelianMap_of_one_le_x1Genus`, and that is the sorry node
-— exactly the split `X0.lean` makes between `x0Genus` and
-`hasNonconstantAbelianMap_of_one_le_x0Genus`. -/
+`hasNoFibreAffineLine_of_one_le_x1Genus`, and that is the sorry node
+(`hasNonconstantAbelianMap_of_one_le_x1Genus` was that node until
+2026-07-28 and is now PROVEN over it) — exactly the split `X0.lean`
+makes between `x0Genus` and `hasNoFibreAffineLine_of_one_le_x0Genus`. -/
 def x1Genus (N : ℕ) : ℤ :=
   (12 + (gammaOneIndex N : ℤ) - 6 * numCuspsX1 N) / 12
 
@@ -5970,10 +6020,96 @@ theorem isTorsion_jacobian_x1TwentyFive {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ
         exists_isLFunctionOf_of_isWeightTwoEigenformOn .gamma1 25 (by norm_num) χ trivial f a hf
       ⟨L, hLf, lFunction_apply_one_ne_zero_x1TwentyFive χ f a hf L hLf⟩
 
+/-- **The genus formula, fibrewise, at `Γ₁`: `genus X_1(N) ≥ 1` puts no
+rational curve in any fibre of `X_1(N)`** (sorry leaf, 2026-07-28) — the
+`Γ₁` transposition of `X0.lean`'s `hasNoFibreAffineLine_of_one_le_x0Genus`,
+and after the cut below the ONLY place where the computed number
+`x1Genus N` meets the scheme `X`.
+
+`HasNoFibreAffineLine` itself is `X0.lean`'s, REUSED VERBATIM — it is
+level-free, and the whole point of the seam is that only this leaf, which
+mentions `N`, differs between the two layers.
+
+TRUE.  `hmodel` makes every fibre of `strX` a smooth proper
+geometrically connected curve which is the `X_1(N)` of its residue
+field, and `hg` together with `hN` says its genus is `≥ 1` (the classical
+formula, Diamond–Shurman Thm 3.1.1).  A nonconstant `K`-morphism
+`𝔸¹_K ⟶ X` over a `K`-point of `S` lands in one such fibre `X_K`; it
+extends to `ℙ¹_K ⟶ X_K` because `𝔸¹_K` is a dense open of the smooth
+proper curve `ℙ¹_K` and `X_K` is proper, and a nonconstant morphism of
+smooth proper curves is finite surjective, so Riemann–Hurwitz gives
+`genus X_K ≤ genus ℙ¹_K = 0` — contradicting `hg`.  Hence every such
+morphism is constant, which is `HasNoFibreAffineLine`.
+
+**THE EXTENSION STEP IS ALREADY PROVEN AND IN THIS FILE'S CONE** — do not
+rebuild it.  `exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, reaching here
+through `X0.lean`, proven outright from `Mathlib` by the valuative
+criterion) extends a morphism from a dense open of a smooth proper curve
+over a field into any PROPER target, which is exactly "`𝔸¹_K ⟶ X_K`
+extends to `ℙ¹_K ⟶ X_K`" once `ℙ¹_K` is written down.  What is still
+missing is therefore only `ℙ¹` itself and the genus, not the extension.
+
+**BOTH ARITHMETIC HYPOTHESES ARE LOAD-BEARING, AND `hN` IS WHAT THE `Γ₀`
+SIBLING LACKS.**  See the VALIDITY RANGE note on `x1Genus`: the classical
+formula is the genus of `X_1(N)` only for `N ≥ 5`, and outside that range
+it evaluates WRONG in the dangerous direction — `x1Genus 0 = x1Genus 1 = 1`
+while `X_1(1) = ℙ¹` has genus `0`.  So without `hN` this statement is
+FALSE at `N = 1`: `hg` is satisfied, yet `𝔸¹ ⊂ ℙ¹ = X_1(1)` is a
+nonconstant witness over every base.  `hg` is load-bearing for the same
+reason inside the range, `X_1(5)` (genus `0`, and `5 ≤ 5`) being the
+witness.  `hmodel` is load-bearing twice over — it supplies the curve
+conditions AND it is the only thing tying the arithmetic `x1Genus N` to
+the geometry of `strX`.  `N` enters only through those.
+
+**The degenerate-level exposure that `X0.lean` carries does NOT arise
+here.**  `hasNoFibreAffineLine_of_one_le_x0Genus` has no `hN`, and
+`x0Genus 0 = 1`, so its prover must confront `N = 0` separately.  This
+leaf inherits `hN : 5 ≤ N` from the node it was cut out of, so `N = 0`
+and `N = 1` are excluded by hypothesis and no `isEmpty_of_isCoarseModuliY1`
+argument is needed.
+
+**NOT VACUOUS, and this is worth checking because the conclusion is a
+negative statement.**  `HasNoFibreAffineLine` is refutable: it fails for
+`X = 𝔸¹_ℚ ⊂ ℙ¹_ℚ` over `Spec ℚ` — take `K = ℚ`, `k = 𝟙`, `u` the open
+immersion, which factors through no `ℚ`-point since its image is
+`1`-dimensional.  So the predicate really constrains the curve, and this
+leaf really consumes the genus.
+
+**The `Γ₀` leaf does NOT imply this one**, for the reason this whole
+module exists: the natural degree-`φ(N)/2` map `X_1(N) ↠ X_0(N)` would
+give it by composition from `1 ≤ x0Genus N`, but `x0Genus 25 = 0`.  The
+two fibrewise genus formulas are genuinely independent leaves at the level
+this development needs.
+
+IRREDUCIBLE at this pin along the axis searched — the identification of
+the arithmetic `x1Genus N` with an invariant of the scheme `X`, which
+needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
+degree-`μ₁(N)` map to the `j`-line, none of which exists in `Mathlib`, in
+`~/cs/FLT`, or here.  **The check that would refute this verdict**: a
+genus, an `h¹`, or a Riemann–Hurwitz statement appearing in any of the
+three trees — `grep -rn "arithmeticGenus\|Riemann.*Roch\|Riemann.*Hurwitz"
+Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
+
+**Do NOT decompose this along the MODULAR axis** (`dim S_2(Γ_1(N)) =
+x1Genus N` plus Eichler–Shimura).  That was tried on the `Γ₀` side and
+RETIRED: it is a second, parallel copy of the genus formula with a theory
+build attached, and the copy it duplicates is this leaf.  See the note on
+`hasNonconstantAbelianMap_of_one_le_x1Genus` below. -/
+theorem hasNoFibreAffineLine_of_one_le_x1Genus {N : ℕ} (hN : 5 ≤ N) (hg : 1 ≤ x1Genus N)
+    {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
+    (hmodel : IsX1Compactification N strX strY jY) :
+    HasNoFibreAffineLine strX :=
+  sorry
+
 /-- **The genus formula, in its geometric form: `genus X_1(N) ≥ 1` gives
-`X_1(N)` a nonconstant map to an abelian variety** (sorry node) — the
-arithmetic-to-geometry bridge, and the ONLY place where the computed
-number `x1Genus N` meets the scheme `X`.
+`X_1(N)` a nonconstant map to an abelian variety** (PROVEN 2026-07-28,
+over `hasNoFibreAffineLine_of_one_le_x1Genus` and three level-free
+theorems of `X0.lean`; formerly a bare sorry node audited as irreducible)
+— the arithmetic-to-geometry bridge.  It is NO LONGER "the only place
+where the computed number `x1Genus N` meets the scheme `X`": that role
+has passed to `hasNoFibreAffineLine_of_one_le_x1Genus` above, which is
+where the genus formula is now consumed exactly once.
 
 TRUE: `x1Genus N` is the genus of `X` by the classical formula for
 `N ≥ 5` (Diamond–Shurman, Theorem 3.1.1); a smooth proper geometrically
@@ -6022,37 +6158,83 @@ dropped.
 `jac`-carrying one and a successor should know what moved.**  The
 previous statement was `¬ IsIso jstr` given `jac : IsJacobianOf strX ab
 o`.  This one drops `jac`, `J`, `jstr` and `ab` entirely, and the two
-are equivalent GIVEN that a Jacobian exists — which is the sibling leaf
-`exists_jacobianOf_curve`, already open beside this one, so no new
-obligation is created.  The two directions are exactly those recorded in
+are equivalent GIVEN that a Jacobian exists — which is
+`exists_jacobianOf_curve`, PROVEN above, so no new obligation is
+created; the proof below now uses it in exactly that way, taking `A := J`
+and `c := jac.aj`.  The two directions are exactly those recorded in
 the `Γ₀` sibling's own strength audit; the forward one is the proof of
 `not_isIso_jacobian_of_one_le_x1Genus` immediately below.  Dropping
 `jac` is a deliberate improvement: the leaf is now a statement about the
 curve `X_1(N)` ALONE, so it can be discharged without first constructing
 `Pic⁰`.
 
-IRREDUCIBLE at this pin along the GEOMETRIC axis, which is the only one
-searched: identifying the arithmetic `x1Genus` with an invariant of `X`
-needs a genus of a scheme, `h¹(𝒪_X)`, or Riemann–Hurwitz for the
-degree-`μ₁(N)` map to the `j`-line, and none of the three exists in
-`Mathlib`, in `~/cs/FLT`, or here.  **NOT searched, and the axis a
-successor should prefer: the MODULAR one** — build a newform factor
-`A_f` of `J_1(25)` and the modular parametrisation `X_1(25) ↠ A_f` out
-of the `Modularity` subtree, which already carries weight-`2` newforms
-and their attached representations, and feed it here.  That route never
-mentions the genus of a scheme, and it is why this leaf is stated as
-"SOME abelian scheme" rather than "the Jacobian".  It is also the route
-that would close the `Γ₀` sibling, since the two differ only in the
-level structure.  **The check that would refute this verdict:** a genus,
-an `h¹`, or a modular parametrisation appearing in any of the three
-trees — `grep -rn "modularParametri\|Riemann.*Roch\|arithmeticGenus"
-Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`. -/
+**PROVEN 2026-07-28, AND NOT ALONG EITHER AXIS THIS DOCSTRING NAMED.**
+The old note recorded the GEOMETRIC axis as exhausted (no genus of a
+scheme, no `h¹`, no Riemann–Hurwitz at this pin) and recommended the
+MODULAR one — build a newform factor `A_f` of `J_1(25)` and the modular
+parametrisation `X_1(25) ↠ A_f` out of the `Modularity` subtree.  **That
+recommendation is withdrawn**, and it is withdrawn on evidence rather than
+taste: the `Γ₀` sibling's owner TOOK the modular axis, wrote the three
+leaves it calls for (`0 < N`, the dimension formula
+`dim S_2(Γ_0(N)) = genus`, and Eichler–Shimura), and then RETIRED all
+three — the decomposition is a **second, parallel copy of the genus
+formula** with a theory build attached to it.
+
+The axis that cuts is the one where the arithmetic-to-geometry step has
+already been paid, in its base-general FIBREWISE form.  `X0.lean`'s
+`HasNoFibreAffineLine` — "no fibre of the curve contains a rational
+curve" — is the genus formula stated fibrewise, and it is LEVEL-FREE, so
+the `Γ₁` layer needs only the one arithmetic leaf
+`hasNoFibreAffineLine_of_one_le_x1Genus` above and reuses everything
+else:
+
+* `exists_jacobianOf_curve` (PROVEN above, level-free and moduli-free)
+  supplies `(J, aj)`, so the witness abelian scheme is the Jacobian
+  itself and `c := jac.aj`; naturality is `aj_pre` and pointedness is
+  `aj_base`, both free.
+* `mono_ajHom_of_hasNoFibreAffineLine` (`X0.lean`, PROVEN, base-general)
+  applied to `hasNoFibreAffineLine_of_one_le_x1Genus`, plus
+  `IsJacobianOf.injective_aj_of_mono`, makes `aj g` INJECTIVE at every
+  test object.  Nonconstancy then needs only two DISTINCT relative
+  points.
+* `not_isIso_of_smoothOfRelativeDimension_one` (`X0.lean`, sorry leaf,
+  elementary and level-free) gives those two: the tautological point
+  `𝟙 X` and the constant point `strX ≫ o` are distinct unless `o`
+  inverts `strX`, i.e. unless the curve is a single `ℚ`-point.
+
+Only the FIRST of those three is new here, and it is a genuine leaf; the
+other two are `X0.lean`'s, consumed with no edit to that file.  The
+`Γ₁` cost of the genus formula is therefore ONE leaf, and it is the same
+theory the `Γ₀` layer already needs — not a duplicate of it, because
+`x0Genus 25 = 0` makes the two levels genuinely independent.
+
+**WHERE `hN` GOES.**  It is consumed by
+`hasNoFibreAffineLine_of_one_le_x1Genus`, which carries the falsity at
+`N = 1` for exactly the reason recorded above; nothing else in the proof
+looks at `N`.  This is a strict improvement on the `Γ₀` side, whose
+fibrewise leaf has no such guard and whose prover must confront
+`x0Genus 0 = 1` by hand. -/
 theorem hasNonconstantAbelianMap_of_one_le_x1Genus (N : ℕ) (hN : 5 ≤ N)
     (hg : 1 ≤ x1Genus N) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
     {jY : Y ⟶ X} (h : IsX1Compactification N strX strY jY)
     (o : RelPoint strX (𝟙 SpecQ)) :
-    HasNonconstantAbelianMap strX o :=
-  sorry
+    HasNonconstantAbelianMap strX o := by
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ :=
+    exists_jacobianOf_curve h.isProper h.smooth h.connected o
+  refine ⟨J, jstr, ab, fun T g => jac.aj g, ?_, jac.aj_base, ?_⟩
+  · intro T' T hT g g' hcomm x
+    exact jac.aj_pre hT hcomm x
+  · -- the tautological point and the constant point at `o` are distinct,
+    -- and `aj` is injective, so they have distinct images
+    have hne : (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX)
+        ≠ ⟨strX ≫ o.1, by rw [Category.assoc, o.2, Category.comp_id]⟩ := by
+      intro hEq
+      refine not_isIso_of_smoothOfRelativeDimension_one h.smooth h.connected ?_
+      exact ⟨o.1, congrArg Subtype.val hEq.symm, o.2⟩
+    exact ⟨X, strX, _, _, fun hc =>
+      hne (jac.injective_aj_of_mono
+        (mono_ajHom_of_hasNoFibreAffineLine h.isProper h.smooth h.connected jac
+          (hasNoFibreAffineLine_of_one_le_x1Genus hN hg h)) strX hc)⟩
 
 /-- **The genus formula in its geometric form: `genus X_1(N) ≥ 1` makes
 the Jacobian nontrivial** (PROVEN 2026-07-27, over
@@ -6147,7 +6329,8 @@ disappearing:
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics | **yes** | here |
 | `injective_aj_of_not_isIso_jacobian` | Riemann–Roch | no | `X0.lean`, REUSED |
-| `hasNonconstantAbelianMap_of_one_le_x1Genus` | genus formula | **yes** | here |
+| `hasNoFibreAffineLine_of_one_le_x1Genus` | genus formula, fibrewise | **yes** | here |
+| `not_isIso_of_smoothOfRelativeDimension_one` | rel. dimension of a standard smooth presentation | no | `X0.lean`, REUSED |
 
 **Only TWO of the open rows are level-specific**, and neither of them
 is Kolyvagin-Logachev.  The two `Γ₁`-half rows that used to be leaves are
@@ -6156,10 +6339,10 @@ leaves listed under it, each stated once for every `G` between `Γ₁(N)` and
 `Γ₀(N)` rather than separately for the two shapes, and the
 Eichler–Shimura row over `IsHeckeIsotypicDecompositionGamma1` and the two
 leaves under it, with `X0.lean`'s `isTorsion_of_finite_jointKer` reused as
-the third step.  Two of the rows are `X0.lean` theorems used
+the third step.  THREE of the rows are `X0.lean` theorems used
 verbatim with no edit to that file — the concrete cash value of the
 module docstring's claim that `HasRankZeroJacobian` is shared between the
-layers.  The Albanese row is a third such reuse, one level deeper and now
+layers.  The Albanese row is a fourth such reuse, one level deeper and now
 PROVEN: its proof is two more `X0.lean` theorems consumed verbatim.
 
 **REVISED 2026-07-27.**  This paragraph used to say that the Hecke and
@@ -6171,6 +6354,13 @@ here CONSUME them, so what is open in this file is the `Γ₁` half of each.
 See the Kolyvagin–Logachev subsection docstring for the reversal, and for
 why executing the recorded "disposal" would have re-opened two closed
 nodes.
+
+**AMENDED 2026-07-28.**  The genus row was
+`hasNonconstantAbelianMap_of_one_le_x1Genus` until that node was PROVEN;
+what is open there now is its fibrewise half
+`hasNoFibreAffineLine_of_one_le_x1Genus`, and the third `X0.lean` reuse —
+`not_isIso_of_smoothOfRelativeDimension_one` — arrived with the same
+proof.
 
 So the `Γ₀` and `Γ₁` layers between them have exactly **four** distinct
 open general theories (Albanese — split into representability and

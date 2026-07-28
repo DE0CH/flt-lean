@@ -204,7 +204,13 @@ public import Mathlib.Data.Rat.Lemmas
 -- its Galois-equivariant point equivalence, consumed by the PROVEN
 -- local torsion quotient of the nonsplit multiplicative case
 -- (`exists_localTorsionQuotient_of_nonsplit`).
-import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
+-- PUBLIC (promoted 2026-07-28): `quadraticTwist`, `Algebra.IsQuadraticExtension`
+-- and `quadraticCharacter` occur in SIGNATURE position in the two leaves of the
+-- `T₁` cut below
+-- (`hasSplitMultiplicativeReduction_or_exists_quadraticTwist_of_padicValRat_j_neg`
+-- and `exists_splitModel_quadraticCharacter_pointEquiv_of_padicValRat_j_neg`),
+-- where a bare `import` is not re-exported.
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
 -- Fermat's little theorem (`ZMod.pow_card_sub_one_eq_one`), the cyclic
 -- structure of a group of prime order (`isAddCyclic_of_prime_card`), and
 -- Lagrange for the quotient by the eigenline
@@ -4297,13 +4303,14 @@ following are all in scope HERE, with no new import needed:
   analogue of the `ℚ_[q]` transport used by `FreyConditions.lean`, i.e.
   exactly the `ℚ̄ → Ω` plumbing `T₂` needs.
 
-What is genuinely NOT in scope is
+What was genuinely NOT in scope is
 `WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction`:
-`QuadraticTwists.SplitMultiplicativeReduction` is imported by this file with a
-bare `import`, which is not re-exported, so `T₁` (not `T₂`) will need that
-line promoted to `public import`.  That is a header change to a 52k-line
-module, so budget a full rebuild of it and its eight `public import`
-consumers.
+`QuadraticTwists.SplitMultiplicativeReduction` was imported by this file with a
+bare `import`, which is not re-exported.  **PROMOTED to `public import`
+2026-07-28** (see the note on that import line), because `quadraticTwist` and
+`Algebra.IsQuadraticExtension` occur in SIGNATURE position in `T₁a`/`T₁b₁`/`T₁b₂`
+below.  That is a header change to a 52k-line module, so budget a full rebuild
+of it and its `public import` consumers.
 -/
 
 /-- **The two `ℚ`-algebra structures on `Ω = Kᵥᵃˡᵍ` agree** (PROVEN
@@ -4333,7 +4340,309 @@ theorem algebraRatAlgClosureAdic_eq_inst
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) => f r)
     (Subsingleton.elim _ _)
 
-/-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (sorry leaf;
+/-! ##### The two-way cut of `T₁` (CARRIED OUT 2026-07-28)
+
+`T₁` was one sorry carrying two things that live in different worlds:
+**Tate's criterion** — the reduction-type statement "`v(j) < 0` forces split
+multiplicative reduction after at most one quadratic twist", which is
+arithmetic geometry over the local field `Kᵥ` and knows nothing about `Ω` or
+about Galois actions — and the **twist transport**, which is the plumbing that
+turns that reduction-type conclusion into a `ψ`-twisted comparison of `Ω`-point
+groups.  They are `T₁a` and `T₁b₁`/`T₁b₂` below, and `T₁` itself is now PROVEN glue
+over them together with the sorry-free `TateSepClosure.lean`.
+
+**Why the cut is at THIS seam.**  Everything the `Ω`-level assembly needs from
+`v(j) < 0` is a curve over `Kᵥ` with SPLIT multiplicative reduction plus a way
+back to `E`; and everything Tate's criterion produces is exactly that.  The
+seam is therefore the reduction-type dichotomy, and it is stated in the shape
+`exists_quadraticTwist_hasSplitMultiplicativeReduction` already speaks
+(`(… ).minimal 𝒪[Kᵥ]` has split multiplicative reduction), so that the second
+disjunct of `T₁a` and the conclusion of that PROVEN theorem are literally the
+same proposition.
+
+**The disjunction is not cosmetic and must NOT be collapsed to its second
+disjunct.**  `exists_quadraticTwist_hasSplitMultiplicativeReduction`'s own
+docstring records the reason: if `E` ALREADY has split multiplicative
+reduction then *no* quadratic twist of it does — the unramified quadratic
+twist is nonsplit multiplicative and every ramified quadratic twist is
+additive.  So "some quadratic twist has split multiplicative reduction" is
+FALSE precisely in the case one is most tempted to think of as trivial, and
+the first disjunct is what covers it.
+
+**Where the remaining depth is.**  `T₁a` is Tate's criterion (Silverman
+*ATAEC* V.5.3, and *AEC* VII.5.5 for the `v(j) < 0` ⟺ potentially
+multiplicative half); it is the genuinely new mathematics of this cluster and
+is in neither mathlib nor `~/cs/FLT` nor this project.  `T₁b₁` and `T₁b₂` are
+transport, one per disjunct: no new mathematical content, but not one-liners
+either.  **`T₁b₁` (the untwisted disjunct) is PROVEN.**  `T₁b₂` remains open
+because the quadratic extension `L` produced by `T₁a` arrives as an abstract
+field with no embedding into `Ω`, and `quadraticTwistPointEquiv` needs one
+(`IsAlgClosed.lift`, exactly as `Semistable.lean` does it in
+`torsionFlatPackage_of_unramified_quadraticTwist`).
+
+**Note on why `T₁b₂` carries the quadratic character rather than `T₁a`.**
+`ψ` is `quadraticCharacter Kᵥ L Ω` in the twisted branch and `1` in the
+untwisted one; it is therefore a function of the CHOSEN embedding `L ↪ Ω`,
+which does not exist yet at `T₁a`'s level.  Pushing `ψ` down into `T₁a` would
+force that choice into the reduction-type statement, where it does not belong.
+-/
+
+open ValuativeRel IsDedekindDomain in
+/-- **`T₁a` — Tate's criterion, in reduction-type form** (sorry leaf;
+Silverman *ATAEC* V.5.3 and *AEC* VII.5.5; Tate's 1959 notes): at a prime `v`
+with `v(j) < 0` the base change of `E` to `Kᵥ = ℚ_vˆ` has SPLIT MULTIPLICATIVE
+reduction after AT MOST ONE quadratic twist — either its own minimal model
+already does, or the minimal model of its twist by some separable quadratic
+`L/Kᵥ` does.
+
+This is the whole of the new arithmetic geometry in the `T₁` cluster.  The
+classical statement is in two halves.  First (*AEC* VII.5.5): `v(j) < 0` if
+and only if `E` has POTENTIALLY multiplicative reduction, i.e. acquires
+multiplicative reduction over a finite extension.  Second (*ATAEC* V.5.3): in
+that case `E` is, over `Kᵥ`, the twist of a Tate curve `E_Q` by a UNIQUE
+character `Γ Kᵥ → {±1}`; a character of order dividing `2` is either trivial —
+first disjunct, `E` itself is already split multiplicative — or cuts out a
+quadratic extension `L/Kᵥ`, and then `E ⊗ L` is the twist, which is the second
+disjunct.  Separability of `L` is automatic in characteristic `0`.
+
+FAITHFULNESS NOTE, and the reason for the disjunction.  The second disjunct
+ALONE would be FALSE: `exists_quadraticTwist_hasSplitMultiplicativeReduction`
+records that when `E` already has split multiplicative reduction, no quadratic
+twist of it has — the unramified twist is nonsplit multiplicative, the
+ramified ones are additive.  So a prover must not "simplify" this statement by
+dropping the left disjunct.  Conversely the first disjunct alone is false at
+any `E` with additive potentially-multiplicative reduction (a ramified twist
+is then genuinely needed), which is exactly the case that makes `ψ` ramified
+downstream and is why `T₁`'s twist cannot be discarded.
+
+Proof (not formalised).  The available route: `hasGoodReduction_or_hasMultiplicativeReduction_or_hasAdditiveReduction`
+splits on the reduction type of the minimal model; `v(j) < 0` excludes good
+reduction (`j` is integral there) and, in the multiplicative case,
+`exists_quadraticTwist_hasSplitMultiplicativeReduction` finishes (split
+already, or twist by the unramified quadratic extension).  The additive case
+is the one needing *ATAEC* V.5.3 proper: build the Tate parameter `Q` with
+`j(Q) = j(E)` from `v(j) < 0` (the `q`-expansion of `j` is invertible on
+`v(q) > 0`, which is `TateCurve.lean`'s `exists_variableChange_tateCurve`
+input), compare `E` with `E_Q` over `Kᵥ` and read off the quadratic character
+from `c₄`/`c₆`. -/
+theorem WeierstrassCurve.hasSplitMultiplicativeReduction_or_exists_quadraticTwist_of_padicValRat_j_neg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime) (hj : padicValRat v E.j < 0) :
+    ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).minimal
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat] ∨
+    ∃ (L : Type) (_ : Field L)
+      (_ : Algebra (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) L)
+      (_ : Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) L)
+      (_ : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) L),
+      (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).minimal
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat] :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+/-- **`T₁b₁` — the twist transport, UNTWISTED branch** (PROVEN 2026-07-28):
+when `E⁄Kᵥ` already has split multiplicative reduction — the first disjunct of
+`T₁a` — the model `X` demanded by `T₁` is just its minimal model, the
+character `ψ` is trivial, and `φ` is the minimal-model change of variables.
+
+Proof.  `X := C • (E⁄Kᵥ)` with `C := ((E⁄Kᵥ).exists_isMinimal 𝒪[Kᵥ]).choose`,
+so `X` IS `(E⁄Kᵥ).minimal 𝒪[Kᵥ]` by definitional unfolding and `hsplit`
+transfers verbatim.  `φ` is
+`Affine.Point.equivVariableChangeBaseChange (E⁄Kᵥ) C Ω` followed by
+`Affine.Point.equivOfEq` for `(E⁄Kᵥ)⁄Ω = E⁄Ω`.  That last equality is where
+the two towers meet, and it holds for the reason that makes `ℚ` initial: after
+`WeierstrassCurve.map_map` the two sides are `E.map` of two ring
+homomorphisms `ℚ → Ω`, and `Subsingleton.elim` identifies them — the same
+argument as `algebraRatAlgClosureAdic_eq_inst` above, in its `map` guise.
+Equivariance is `equivVariableChangeBaseChange_galois` (a base-changed
+variable change is `Kᵥ`-rational, hence fixed by every `σ ∈ Γ Kᵥ`) together
+with a two-case `Point.map`/`equivOfEq` transport; the `restrictScalars ℚ` on
+the `E`-side map is invisible to it, both sides being the same function of `Ω`.
+
+Note the `HasSplitMultiplicativeReduction` hypothesis is stated on
+`(E⁄Kᵥ).minimal 𝒪[Kᵥ]` rather than on `E⁄Kᵥ` itself: mathlib's reduction-type
+classes all extend `IsMinimal`, so the predicate is only ever asserted of a
+minimal model. -/
+theorem WeierstrassCurve.exists_splitModel_quadraticCharacter_pointEquiv_of_hasSplitMultiplicativeReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime)
+    (hsplit :
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))).minimal
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat]) :
+    ∃ (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))
+      (_ : X.IsElliptic)
+      (_ : X.HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat])
+      (ψ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+      (φ : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point ≃+
+        ((E⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+      ∀ (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))
+        (P : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+        WeierstrassCurve.Affine.Point.map (W' := E)
+            ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (φ P) =
+          ((ψ σ : ℤ)) • φ (WeierstrassCurve.Affine.Point.map (W' := X)
+            ((σ : _ ≃ₐ[_] _).toAlgHom) P) := by
+  classical
+  set W : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) :=
+    E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) with hWdef
+  set C : WeierstrassCurve.VariableChange (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) :=
+    (W.exists_isMinimal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat]).choose with hCdef
+  haveI hWell : W.IsElliptic := by
+    rw [hWdef]; exact inferInstanceAs (E.map (algebraMap ℚ _)).IsElliptic
+  -- `W⁄Ω = E⁄Ω`: the two ring homomorphisms `ℚ → Ω` agree because `ℚ` is initial
+  have hbase : (W⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))) =
+      (E⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))) := by
+    show W.map (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) _) = E.map (algebraMap ℚ _)
+    rw [hWdef, WeierstrassCurve.map_map]
+    congr 1
+  refine ⟨C • W, inferInstanceAs ((C • W).IsElliptic), hsplit, 1,
+    (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange W C
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).trans
+      (WeierstrassCurve.Affine.Point.equivOfEq hbase), ?_⟩
+  -- transporting `Point.map` across the curve identification `W⁄Ω = E⁄Ω`
+  have key : ∀ R : (W⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).Point,
+      ∀ σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat),
+      WeierstrassCurve.Affine.Point.map (W' := E)
+          ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ)
+          (WeierstrassCurve.Affine.Point.equivOfEq hbase R) =
+        WeierstrassCurve.Affine.Point.equivOfEq hbase
+          (WeierstrassCurve.Affine.Point.map (W' := W) ((σ : _ ≃ₐ[_] _).toAlgHom) R) := by
+    intro R σ
+    cases R with
+    | zero =>
+      simp only [← WeierstrassCurve.Affine.Point.zero_def, map_zero]
+    | some x y hns =>
+      rw [WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.equivOfEq_some]
+      rfl
+  intro σ P
+  have hg := WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange_galois W C
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) (σ : _ ≃ₐ[_] _) P
+  show WeierstrassCurve.Affine.Point.map (W' := E)
+      ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ)
+      (WeierstrassCurve.Affine.Point.equivOfEq hbase
+        (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange W C _ P)) =
+    ((1 : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ) σ : ℤ) •
+      WeierstrassCurve.Affine.Point.equivOfEq hbase
+        (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange W C _
+          (WeierstrassCurve.Affine.Point.map (W' := C • W) ((σ : _ ≃ₐ[_] _).toAlgHom) P))
+  rw [key, hg, MonoidHom.one_apply, Units.val_one, one_zsmul]
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+/-- **`T₁b₂` — the twist transport, TWISTED branch** (sorry leaf; pure
+plumbing over `quadraticTwistPointEquiv_galois`): the second disjunct of
+`T₁a`, where the quadratic extension `L/Kᵥ` is genuinely needed.
+
+This is where `T₁`'s twist is manufactured, and it is the only place in the
+whole cluster where an EMBEDDING of `L` into `Ω` has to be chosen — which is
+exactly why it could not be pushed into `T₁a`, whose statement is about
+reduction types over `Kᵥ` alone.
+
+Proof (not formalised).  Fix `ι : L →ₐ[Kᵥ] Ω` by `IsAlgClosed.lift` and
+install `Algebra L Ω` / `IsScalarTower Kᵥ L Ω` along it — verbatim the step
+`Semistable.lean` performs in
+`torsionFlatPackage_of_unramified_quadraticTwist`.  Take
+`X := ((E⁄Kᵥ).quadraticTwist L).minimal 𝒪[Kᵥ] = C • ((E⁄Kᵥ).quadraticTwist L)`,
+`ψ := quadraticCharacter Kᵥ L Ω` (which already has type `(Ω ≃ₐ[Kᵥ] Ω) →* ℤˣ`,
+i.e. `Γ Kᵥ →* ℤˣ`, since `Field.absoluteGaloisGroup` is reducible), and for `φ`
+the composite
+
+    X(Ω) ≃ ((E⁄Kᵥ).quadraticTwist L)(Ω) ≃ (E⁄Kᵥ)(Ω) = E(Ω)
+
+of `equivVariableChangeBaseChange`, `quadraticTwistPointEquiv Kᵥ L Ω`, and the
+`equivOfEq` for `(E⁄Kᵥ)⁄Ω = E⁄Ω`.  The twisted equivariance is
+`quadraticTwistPointEquiv_galois`, whose conclusion is *verbatim* the one here
+with `ψ σ = quadraticCharacter Kᵥ L Ω σ`; the outer two factors contribute
+nothing, by `equivVariableChangeBaseChange_galois` and by the `key` transport
+already carried out in `T₁b₁` above — **both of those are PROVEN there and
+should be copied rather than redone.**
+
+Note the conclusion is quantified over ALL of `Γ Kᵥ`, not over inertia: that
+is the whole point of carrying `ψ`, and it is what makes `T₂` true in its
+stated (non-inertial) generality.  A RAMIFIED `ψ` occurs exactly here, in the
+additive potentially-multiplicative case — an unramified `ψ` would be
+invisible to inertia and the twist could then be dropped, which is precisely
+the collapse `T₂`'s faithfulness note forbids. -/
+theorem WeierstrassCurve.exists_splitModel_quadraticCharacter_pointEquiv_of_quadraticTwist
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime)
+    (htwist :
+      ∃ (L : Type) (_ : Field L)
+        (_ : Algebra (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat) L)
+        (_ : Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat) L)
+        (_ : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat) L),
+        (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).minimal
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat]) :
+    ∃ (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))
+      (_ : X.IsElliptic)
+      (_ : X.HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat])
+      (ψ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+      (φ : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point ≃+
+        ((E⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+      ∀ (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))
+        (P : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+        WeierstrassCurve.Affine.Point.map (W' := E)
+            ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (φ P) =
+          ((ψ σ : ℤ)) • φ (WeierstrassCurve.Affine.Point.map (W' := X)
+            ((σ : _ ≃ₐ[_] _).toAlgHom) P) :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+/-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (DECOMPOSED and
+PROVEN 2026-07-28 from `T₁a` and `T₁b₁`/`T₁b₂` above;
 Silverman *ATAEC* V.3.1, V.5.3; Serre, Invent. Math. 15 (1972), §5.4): at a
 prime `v` of POTENTIALLY MULTIPLICATIVE reduction, i.e. `v(j) < 0`, the curve
 `E` over the algebraic closure `Ω` of `Kᵥ = ℚ_v` is uniformised by `Ωˣ/Qᶻ` for
@@ -4355,11 +4664,24 @@ the displayed equivariance.  Over INERTIA the twist is invisible when it is
 unramified, but it need not be, and it is certainly not invisible over `Γ Kᵥ`
 — so it is carried, not discarded.
 
-Proof (not formalised).  See the section note above for the route: the whole
-assembly already exists at `ℚ_[2]` in `FreyConditions.lean`, and
-`TateSepClosure.lean` is sorry-free.  What is genuinely new here is Tate's
-criterion in the form "`v(j) < 0` implies some quadratic twist has split
-multiplicative reduction". -/
+Proof, now formalised, and it is three lines over the cut above plus the
+sorry-free `TateSepClosure.lean`.  `T₁a` gives the reduction-type dichotomy
+and `T₁b₁`/`T₁b₂` turn it into a split-multiplicative model `X/Kᵥ` together with the
+quadratic character `ψ` and the twisted comparison `φ : X(Ω) ≃+ E(Ω)`.  Tate's
+uniformisation `exists_tateEquivSepClosure` then applies to `X` — it needs
+exactly `X.IsElliptic` and `X.HasSplitMultiplicativeReduction 𝒪[Kᵥ]`, minimality
+being implied by the latter (`HasSplitMultiplicativeReduction` extends
+`HasMultiplicativeReduction` extends `IsMinimal`) and explicitly `omit`ted
+there — giving an UNtwisted `e₀ : Ωˣ/Qᶻ ≃+ X(Ω)` with
+`Q := X.qUnitSepClosure Ω`.  Set `e := e₀.trans φ`; the two `Q`-conjuncts are
+the PROVEN `qUnitSepClosure_zpow_injective` (the Tate parameter has valuation
+`< 1` in `Kᵥ`, so `a ↦ Q^a` is injective) and `map_qUnitSepClosure_eq` (`Q` is
+the image of an element of `Kᵥ`, so every `σ ∈ Γ Kᵥ` fixes it), and the third
+is `hφ` followed by `he₀`.
+
+Note that `Q` is produced for the TWISTED curve `X`, not for `E` — which is
+harmless because `T₁` asserts only its existence, and is in fact forced: `E`
+itself need have no Tate parameter over `Kᵥ` at all. -/
 theorem WeierstrassCurve.exists_tateParametrisation_of_padicValRat_j_neg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     {v : ℕ} (hv : v.Prime) (hj : padicValRat v E.j < 0) :
@@ -4382,8 +4704,27 @@ theorem WeierstrassCurve.exists_tateParametrisation_of_padicValRat_j_neg
         WeierstrassCurve.Affine.Point.map (W' := E)
             ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (e (Additive.ofMul ↑u)) =
           ((ψ σ : ℤ)) • e (Additive.ofMul
-            ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) :=
-  sorry
+            ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) := by
+  obtain ⟨X, hXell, hXsplit, ψ, φ, hφ⟩ :=
+    (E.hasSplitMultiplicativeReduction_or_exists_quadraticTwist_of_padicValRat_j_neg
+        hv hj).elim
+      (fun h => E.exists_splitModel_quadraticCharacter_pointEquiv_of_hasSplitMultiplicativeReduction
+        hv h)
+      (fun h => E.exists_splitModel_quadraticCharacter_pointEquiv_of_quadraticTwist hv h)
+  haveI : X.IsElliptic := hXell
+  haveI : X.HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat] := hXsplit
+  obtain ⟨e₀, he₀⟩ := WeierstrassCurve.exists_tateEquivSepClosure
+    (k := HeightOneSpectrum.adicCompletion ℚ hv.toHeightOneSpectrumRingOfIntegersRat)
+    (E := X)
+    (Ω := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))
+  refine ⟨X.qUnitSepClosure _, ψ, e₀.trans φ,
+    X.qUnitSepClosure_zpow_injective _,
+    fun σ => X.map_qUnitSepClosure_eq _ (σ : _ ≃ₐ[_] _), fun σ u => ?_⟩
+  simp only [AddEquiv.trans_apply]
+  rw [hφ σ (e₀ (Additive.ofMul ↑u)), he₀ (σ : _ ≃ₐ[_] _) u]
 
 /-- **The `μ_N`-vs-étale dichotomy inside a Tate quotient** (PROVEN
 2026-07-28; pure group theory, the arithmetic-free core of `T₂` below).
@@ -7746,6 +8087,202 @@ noncomputable def GaloisRepresentation.globalValuationSubring
     (AlgebraicClosure.map (algebraMap ℚ
       (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
 
+/-! ### Transport along the fixed embedding `ℚ̄ ↪ ℚ̄_q`
+
+`globalValuationSubring v` is BY DEFINITION the comap of `localValuationSubring v`
+along `AlgebraicClosure.map (algebraMap ℚ ℚ_v)`, and `Field.absoluteGaloisGroup.map`
+transports `Γ ℚ_v → Γ ℚ` along the SAME embedding (`Field.absoluteGaloisGroup.lift_map`).
+The five declarations below are that observation made usable: the image of `Γ ℚ_v`
+lands in the decomposition group of `𝒪`, the image of `localInertiaGroup v` lands in
+its inertia subgroup, and residues of `𝒪` are read off residues of `𝒪_loc`.
+
+These were listed as "THE FIRST STEP A PROVER SHOULD TAKE" on
+`exists_frobeniusLift` below; they are proven here once so that leaf never has to
+mention `𝒪_loc` twice. The friction the note warned about is real and is why the
+memberships below are supplied as explicit `⟨_, _⟩` ascriptions rather than by
+`rw [MulAction.mem_stabilizer_iff]`: `Field.absoluteGaloisGroup ℚ` and
+`AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ` are reducibly but not syntactically
+equal, so `rw` fails on the membership with an instance mismatch while `show` and
+`exact` go through. -/
+
+/-- **Membership in `𝒪` is membership of the image in `𝒪_loc`** (PROVEN
+2026-07-28) — definitional, since `globalValuationSubring` is a `comap`. -/
+theorem GaloisRepresentation.mem_globalValuationSubring_iff
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (x : AlgebraicClosure ℚ) :
+    x ∈ GaloisRepresentation.globalValuationSubring v ↔
+      AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) x
+        ∈ localValuationSubring v :=
+  Iff.rfl
+
+/-- **The structural ring map `𝒪 →+* 𝒪_loc`** (PROVEN 2026-07-28): the fixed
+embedding `ℚ̄ ↪ ℚ̄_q` restricts to the two valuation subrings, because the source
+one is the comap of the target one. -/
+noncomputable def GaloisRepresentation.globalValuationSubringToLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    GaloisRepresentation.globalValuationSubring v →+* localValuationSubring v where
+  toFun a := ⟨AlgebraicClosure.map (algebraMap ℚ
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) a, a.2⟩
+  map_one' := Subtype.ext (map_one _)
+  map_mul' _ _ := Subtype.ext (map_mul _ _ _)
+  map_zero' := Subtype.ext (map_zero _)
+  map_add' _ _ := Subtype.ext (map_add _ _ _)
+
+@[simp]
+theorem GaloisRepresentation.globalValuationSubringToLocal_coe
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (a : GaloisRepresentation.globalValuationSubring v) :
+    ((GaloisRepresentation.globalValuationSubringToLocal v a : localValuationSubring v) :
+        AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      = AlgebraicClosure.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) a :=
+  rfl
+
+/-- **The maximal ideal of `𝒪` is the contraction of the maximal ideal of `𝒪_loc`**
+(PROVEN 2026-07-28). For a valuation subring, non-invertibility of `x` is
+`x = 0 ∨ x⁻¹ ∉ A` (`ValuationSubring.mem_nonunits_iff_or`), and both disjuncts are
+preserved and reflected by an injective field embedding. -/
+theorem GaloisRepresentation.mem_maximalIdeal_globalValuationSubring_iff
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (a : GaloisRepresentation.globalValuationSubring v) :
+    a ∈ IsLocalRing.maximalIdeal (GaloisRepresentation.globalValuationSubring v) ↔
+      GaloisRepresentation.globalValuationSubringToLocal v a
+        ∈ IsLocalRing.maximalIdeal (localValuationSubring v) := by
+  rw [ValuationSubring.valuation_lt_one_iff, ← ValuationSubring.mem_nonunits_iff,
+    ValuationSubring.mem_nonunits_iff_or, ValuationSubring.valuation_lt_one_iff,
+    ← ValuationSubring.mem_nonunits_iff, ValuationSubring.mem_nonunits_iff_or,
+    GaloisRepresentation.globalValuationSubringToLocal_coe]
+  constructor
+  · rintro (h | h)
+    · exact Or.inl (by rw [h, map_zero])
+    · exact Or.inr (by rwa [← map_inv₀])
+  · rintro (h | h)
+    · exact Or.inl ((AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))).injective
+          (by rw [h, map_zero]))
+    · exact Or.inr (by rwa [← map_inv₀] at h)
+
+instance GaloisRepresentation.isLocalHom_globalValuationSubringToLocal
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :
+    IsLocalHom (GaloisRepresentation.globalValuationSubringToLocal v) := by
+  constructor
+  intro a hu
+  by_contra hnu
+  exact ((IsLocalRing.mem_maximalIdeal _).mp
+    ((GaloisRepresentation.mem_maximalIdeal_globalValuationSubring_iff v a).mp
+      ((IsLocalRing.mem_maximalIdeal a).mpr hnu))) hu
+
+/-- **Residues in `κ(𝒪)` are detected in `κ(𝒪_loc)`** (PROVEN 2026-07-28): the
+induced map on residue fields is injective, because the maximal ideal of `𝒪` is the
+contraction of that of `𝒪_loc`. -/
+theorem GaloisRepresentation.residue_globalValuationSubring_eq_iff
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (a b : GaloisRepresentation.globalValuationSubring v) :
+    IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) a
+        = IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) b ↔
+      IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v a)
+        = IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v b) := by
+  have key1 : IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) a
+        = IsLocalRing.residue (GaloisRepresentation.globalValuationSubring v) b
+      ↔ a - b ∈ IsLocalRing.maximalIdeal
+        (GaloisRepresentation.globalValuationSubring v) := Ideal.Quotient.eq
+  have key2 : IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v a)
+        = IsLocalRing.residue (localValuationSubring v)
+          (GaloisRepresentation.globalValuationSubringToLocal v b)
+      ↔ GaloisRepresentation.globalValuationSubringToLocal v a
+          - GaloisRepresentation.globalValuationSubringToLocal v b
+        ∈ IsLocalRing.maximalIdeal (localValuationSubring v) := Ideal.Quotient.eq
+  rw [key1, key2, ← map_sub]
+  exact GaloisRepresentation.mem_maximalIdeal_globalValuationSubring_iff v _
+
+open scoped Pointwise in
+/-- **The image of `Γ ℚ_q` lies in the decomposition group of `𝒪`** (PROVEN
+2026-07-28): `mem_decompositionSubgroup_localValuationSubring` says `Γ ℚ_q`
+stabilises `𝒪_loc`, and `Field.absoluteGaloisGroup.lift_map` says the transported
+automorphism is the same automorphism read through the embedding, so it stabilises
+the comap. -/
+theorem GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ι : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :
+    Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι ∈
+      (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ := by
+  have key : ∀ (κ : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+      (x : AlgebraicClosure ℚ), x ∈ GaloisRepresentation.globalValuationSubring v →
+      Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) κ x
+        ∈ GaloisRepresentation.globalValuationSubring v := by
+    intro κ x hx
+    have hstab : κ • localValuationSubring v = localValuationSubring v :=
+      mem_decompositionSubgroup_localValuationSubring v κ
+    rw [GaloisRepresentation.mem_globalValuationSubring_iff,
+      Field.absoluteGaloisGroup.lift_map, ← hstab]
+    exact ⟨_, hx, rfl⟩
+  show (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι) •
+    GaloisRepresentation.globalValuationSubring v
+      = GaloisRepresentation.globalValuationSubring v
+  apply le_antisymm
+  · rintro y ⟨x, hx, rfl⟩
+    exact key ι x hx
+  · intro x hx
+    refine ⟨_, key ι⁻¹ x hx, ?_⟩
+    show (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι)
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) ι⁻¹) x) = x
+    rw [← AlgEquiv.mul_apply, ← map_mul, mul_inv_cancel, map_one, AlgEquiv.one_apply]
+
+/-- **The transported action on `𝒪` is the local action read through the
+embedding** (PROVEN 2026-07-28) — `Field.absoluteGaloisGroup.lift_map` again,
+packaged for the two decomposition-group actions. -/
+theorem GaloisRepresentation.globalValuationSubringToLocal_smul
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ι : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+    (a : GaloisRepresentation.globalValuationSubring v) :
+    GaloisRepresentation.globalValuationSubringToLocal v
+        ((⟨_, GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring v ι⟩ :
+          (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ) • a)
+      = (⟨ι, mem_decompositionSubgroup_localValuationSubring v ι⟩ :
+          (localValuationSubring v).decompositionSubgroup
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) •
+        GaloisRepresentation.globalValuationSubringToLocal v a :=
+  Subtype.ext (Field.absoluteGaloisGroup.lift_map _ _ _)
+
+/-- **The image of `localInertiaGroup q` lies in the inertia subgroup of `𝒪`**
+(PROVEN 2026-07-28): the two residue fields are compared by
+`residue_globalValuationSubring_eq_iff`, and the local statement is the
+already-proven `mem_inertiaSubgroup_localValuationSubring`. -/
+theorem GaloisRepresentation.map_mem_inertiaSubgroup_globalValuationSubring
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (ι : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+    (hι : ι ∈ localInertiaGroup v) :
+    (⟨_, GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring v ι⟩ :
+      (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ) ∈
+      (GaloisRepresentation.globalValuationSubring v).inertiaSubgroup ℚ := by
+  have hker := mem_inertiaSubgroup_localValuationSubring v ι hι
+  rw [ValuationSubring.inertiaSubgroup, MonoidHom.mem_ker] at hker ⊢
+  apply RingEquiv.ext
+  intro z
+  obtain ⟨a, rfl⟩ :=
+    IsLocalRing.residue_surjective (R := GaloisRepresentation.globalValuationSubring v) z
+  show IsLocalRing.residue _ ((⟨_,
+    GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring v ι⟩ :
+      (GaloisRepresentation.globalValuationSubring v).decompositionSubgroup ℚ) • a)
+    = IsLocalRing.residue _ a
+  rw [GaloisRepresentation.residue_globalValuationSubring_eq_iff,
+    GaloisRepresentation.globalValuationSubringToLocal_smul]
+  exact DFunLike.congr_fun hker
+    (IsLocalRing.residue _ (GaloisRepresentation.globalValuationSubringToLocal v a))
+
 /-- **A local frame for a potentially-good model: an embedding of `K` into `ℚ̄`
 placing the prime of `R` at the pinned valuation subring, with an identification
 of its residue field with `𝔽̄_q`** (interface, opened 2026-07-27 while cutting
@@ -7809,9 +8346,84 @@ structure WeierstrassCurve.PotentiallyGoodModel.LocalFrame
         = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
             (D.resEquiv (IsLocalRing.residue D.R r))
 
-/-- **Every potentially-good model admits a local frame** (sorry leaf, opened
-2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel` below into
-three).
+/-- **The placement of `K` inside `ℚ̄` that puts the prime of `R` at the pinned
+subring** (sorry leaf, opened 2026-07-28 by cutting `nonempty_localFrame` below
+into its VALUATION-THEORETIC and its RESIDUE-FIELD halves).
+
+This is item 1 of `nonempty_localFrame`'s docstring and it is pure valuation
+theory: `R` is a discrete valuation ring with fraction field `K` whose residue
+field has characteristic `q` (`D.resEquiv`), so `R ∩ ℚ = ℤ_(q)`. Choose ANY
+`ℚ`-embedding `emb₀ : K ↪ ℚ̄` (`K/ℚ` is finite and `ℚ̄` is algebraically closed);
+extend the valuation of `R` along `emb₀` to a valuation subring `𝒪'` of `ℚ̄`
+(Chevalley), so that `emb₀⁻¹ 𝒪' = R`. Both `𝒪'` and
+`globalValuationSubring q` lie over `ℤ_(q)`, and `Γ ℚ` acts TRANSITIVELY on the
+valuation subrings of `ℚ̄` above a fixed prime of `ℚ`; pick `γ` carrying `𝒪'` to
+`globalValuationSubring q` and set `emb := γ ∘ emb₀`. Then
+`emb⁻¹ (globalValuationSubring q) = emb₀⁻¹ 𝒪' = R`.
+
+NO ELLIPTIC CURVE APPEARS: `D` is used only through `D.K`, `D.R` and
+`D.resEquiv`, and `E` only as an index.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF is the one recorded on
+`nonempty_localFrame`: a prime of `K` above `q` outside the single `Γ ℚ`-orbit.
+Equivalently, a failure of Chevalley extension or of conjugacy of the extensions
+of `v_q` to `ℚ̄`. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_emb_comap_eq
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) :
+    ∃ emb : D.K →+* AlgebraicClosure ℚ,
+      (∀ x : ℚ, emb (algebraMap ℚ D.K x) = algebraMap ℚ (AlgebraicClosure ℚ) x) ∧
+      ((GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).comap emb).toSubring
+        = (algebraMap D.R D.K).range :=
+  sorry
+
+/-- **The residue field of the pinned subring is an algebraic closure of `𝔽_q`,
+compatibly with `D.resEquiv`** (sorry leaf, opened 2026-07-28 by cutting
+`nonempty_localFrame` below into its VALUATION-THEORETIC and its RESIDUE-FIELD
+halves).
+
+This is item 2 of `nonempty_localFrame`'s docstring. `ℚ̄` is algebraically
+closed, so the residue field `κ(𝒪)` of any valuation subring of it is
+algebraically closed; `ℚ̄/ℚ` is algebraic, so `κ(𝒪)` is algebraic over the
+residue field of `𝒪 ∩ ℚ = ℤ_(q)`, i.e. over `𝔽_q`. Hence `κ(𝒪)` IS an algebraic
+closure of `𝔽_q` and `resIso` exists by uniqueness of algebraic closures.
+
+WHY `hcomap` IS THE ONLY HYPOTHESIS NEEDED FOR THE COMPATIBILITY, and why the
+compatibility is not an extra constraint on the choice of `resIso`: `hcomap`
+makes `r ↦ ⟨emb (algebraMap D.R D.K r), _⟩` a ring map `D.R → 𝒪` (this is
+`WeierstrassCurve.RtoO`'s construction verbatim) which is LOCAL
+(`WeierstrassCurve.isLocalHom_RtoO`), hence induces a ring map
+`κ(D.R) → κ(𝒪)`. Both sides of the required identity are therefore ring
+homomorphisms out of `κ(D.R) ≃+* ZMod q` — and **any two ring homomorphisms out
+of `ZMod q` agree** (`RingHom.ext_zmod`). So the compatibility holds for EVERY
+`resIso`; it is recorded in the conclusion only because `LocalFrame` bundles it.
+
+NO ELLIPTIC CURVE APPEARS here either.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a valuation subring of an algebraically
+closed field whose residue field is not algebraically closed, or a `D` whose
+`D.R` has residue characteristic different from `q` — the latter is excluded by
+`D.resEquiv`, which lands in `ZMod q`. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_resIso
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) (emb : D.K →+* AlgebraicClosure ℚ)
+    (hcomap : ((GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).comap emb).toSubring
+      = (algebraMap D.R D.K).range) :
+    ∃ resIso : IsLocalRing.ResidueField (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat) ≃+* AlgebraicClosure (ZMod q),
+      ∀ (r : D.R) (h : emb (algebraMap D.R D.K r) ∈
+        GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat),
+        resIso (IsLocalRing.residue _ ⟨emb (algebraMap D.R D.K r), h⟩)
+          = algebraMap (ZMod q) (AlgebraicClosure (ZMod q))
+              (D.resEquiv (IsLocalRing.residue D.R r)) :=
+  sorry
+
+/-- **Every potentially-good model admits a local frame** (PROVEN 2026-07-28 by
+assembly; opened 2026-07-27 by cutting
+`exists_reductionFrame_of_potentiallyGoodModel` below into three).
 
 Pure algebraic number theory; no elliptic curve appears, and `E` enters only as
 an index. What has to be proven:
@@ -7828,15 +8440,71 @@ an index. What has to be proven:
 
 THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` whose `R` is
 induced by no embedding `K ↪ ℚ̄` — which would need a prime of `K` above `q`
-outside the single `Γ ℚ`-orbit, i.e. a failure of going-up plus conjugacy. -/
+outside the single `Γ ℚ`-orbit, i.e. a failure of going-up plus conjugacy.
+
+CUT 2026-07-28. The two numbered items above share no technique — the first is
+conjugacy of extensions of a valuation, the second is uniqueness of algebraic
+closures — so they are now the two separately-ownable leaves
+`exists_emb_comap_eq` and `exists_resIso` below, and this declaration is their
+assembly. Nothing else is left here: `LocalFrame` has exactly four fields and
+the two leaves supply two each. -/
 theorem WeierstrassCurve.PotentiallyGoodModel.nonempty_localFrame
     {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
-    (D : E.PotentiallyGoodModel q) : Nonempty (D.LocalFrame hq) :=
+    (D : E.PotentiallyGoodModel q) : Nonempty (D.LocalFrame hq) := by
+  obtain ⟨emb, hcomm, hcomap⟩ := D.exists_emb_comap_eq hq
+  obtain ⟨resIso, hres⟩ := D.exists_resIso hq emb hcomap
+  exact ⟨⟨emb, hcomm, hcomap, resIso, hres⟩⟩
+
+/-- **RESIDUE DEGREE ONE, AND NOTHING ELSE: an inertia element `ι` at `q` with
+`ι⁻¹ · Frob_q` fixing `emb K` pointwise** (sorry leaf, opened 2026-07-28 by
+cutting `exists_frobeniusLift` below).
+
+THIS IS THE WHOLE ARITHMETIC CONTENT OF `exists_frobeniusLift`, and it is the
+ONLY place in that cut where `D.resEquiv` is consumed. Everything else in
+`exists_frobeniusLift` is transport along the fixed embedding `ℚ̄ ↪ ℚ̄_q`
+(`map_mem_decompositionSubgroup_globalValuationSubring`,
+`map_mem_inertiaSubgroup_globalValuationSubring`) or the defining property of
+`Field.AbsoluteGaloisGroup.adicArithFrob`, and all of that is proven above.
+
+WHY IT IS TRUE. Write `K_𝔮 ⊆ ℚ̄_q` for the closure of the image of `Fr.emb`
+under the fixed embedding — this is the completion of `K` at the prime that
+`Fr.comap_eq` identifies with the prime of `D.R`. `D.resEquiv` says the residue
+field of `D.R` is the PRIME field `𝔽_q`, so `K_𝔮/ℚ_q` has residue degree one and
+`Gal(ℚ̄_q/K_𝔮) ↠ Gal(𝔽̄_q/𝔽_q)`. Pick `g ∈ Gal(ℚ̄_q/K_𝔮)` inducing `x ↦ x^q` on
+residues and set `ι := Frob_q · g⁻¹`; then `ι` induces the identity on residues,
+hence lies in `localInertiaGroup q`, and `ι⁻¹ · Frob_q = g` fixes the image of
+`Fr.emb` pointwise by construction. Transport to `Γ ℚ` is
+`Field.absoluteGaloisGroup.lift_map` plus injectivity of `ℚ̄ ↪ ℚ̄_q`: a
+transported automorphism fixes `Fr.emb x` exactly when the original fixes its
+image.
+
+Equivalently and more structurally: `I · Gal(ℚ̄_q/K_𝔮) = Γ ℚ_q`, because
+`Γ ℚ_q / I ≅ Gal(𝔽̄_q/𝔽_q)` and the image of `Gal(ℚ̄_q/K_𝔮)` there is the whole
+group precisely when the residue degree is `1`. `Frob_q ∈ I · Gal(ℚ̄_q/K_𝔮)` is
+the statement above.
+
+NOTHING ABOUT ELLIPTIC CURVES APPEARS: `D` enters through `D.K` and
+`D.resEquiv`, and `Fr` through `Fr.emb` and `Fr.comap_eq`.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` and frame at
+which the image of `Gal(ℚ̄_q/K_𝔮)` in `Gal(𝔽̄_q/𝔽_q)` is PROPER — i.e. residue
+degree `> 1`, which is exactly what `D.resEquiv` excludes by landing in `ZMod q`
+rather than in a proper extension of it. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.exists_inertia_frobLift_fixes_emb
+    {E : WeierstrassCurve ℚ} {q : ℕ} [Fact q.Prime] (hq : q.Prime)
+    (D : E.PotentiallyGoodModel q) (Fr : D.LocalFrame hq) :
+    ∃ ι ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ x : D.K, ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+          GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) (Fr.emb x) = Fr.emb x :=
   sorry
 
 /-- **Residue degree one produces a Frobenius lift inside the decomposition
-group of `K`** (sorry leaf, opened 2026-07-27 by cutting
-`exists_reductionFrame_of_potentiallyGoodModel` below into three).
+group of `K`** (PROVEN 2026-07-28 over `exists_inertia_frobLift_fixes_emb`;
+opened 2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel`
+below into three).
 
 WHAT IT SAYS, writing `𝒪 := globalValuationSubring q` and `t` for the image of
 `ι` in `Γ ℚ`: there is an inertia element `ι` of `Γ ℚ_q` such that
@@ -7858,19 +8526,25 @@ the identity survives transport into `Γ ℚ`.
 NOTHING ABOUT ELLIPTIC CURVES APPEARS: `D` enters only through `D.K` and
 `D.resEquiv`, and `Fr` only through `Fr.emb`.
 
-THE FIRST STEP A PROVER SHOULD TAKE is the transport of the two subgroups along
-`Field.absoluteGaloisGroup.map`: the image of `Γ ℚ_q` lands in
-`𝒪.decompositionSubgroup ℚ`, which follows from
-`mem_decompositionSubgroup_localValuationSubring` and
-`Field.absoluteGaloisGroup.lift_map` because `𝒪` is a comap; and the image of
-`localInertiaGroup q` lands in `𝒪.inertiaSubgroup ℚ` by the same route through
-`mem_inertiaSubgroup_localValuationSubring`, plus the fact that the maximal
-ideal of a comap valuation subring is the comap of the maximal ideal. Both were
-attempted while this leaf was opened and both are routine; the only friction is
-that `Γ ℚ` and `AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ` are reducibly but
-not syntactically equal, so `rw [MulAction.mem_stabilizer_iff]` fails on the
-membership with an instance-mismatch error and the ascription has to be written
-out by hand.
+THE TRANSPORT OF THE TWO SUBGROUPS along `Field.absoluteGaloisGroup.map` — which
+the 2026-07-27 version of this docstring named as "the first step a prover should
+take" — IS NOW DONE, above: `map_mem_decompositionSubgroup_globalValuationSubring`
+and `map_mem_inertiaSubgroup_globalValuationSubring`, with the maximal ideal of a
+comap valuation subring handled by
+`mem_maximalIdeal_globalValuationSubring_iff`. The friction that note warned
+about is real — `Γ ℚ` and `AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ` are
+reducibly but not syntactically equal, so `rw [MulAction.mem_stabilizer_iff]`
+fails with an instance mismatch — and it is dealt with there by `show` plus
+explicit `⟨_, _⟩` ascriptions.
+
+WHAT REMAINS, and it is the whole of `exists_inertia_frobLift_fixes_emb` above:
+the existence of `ι`. Conclusion (ii) is then AUTOMATIC and costs no arithmetic
+— `ι` acts trivially on residues because it is in inertia, and `Frob_q` acts as
+`x ↦ x^q` by `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` together
+with `natCard_residue_quotient_toHeightOneSpectrum` (which is what pins the
+exponent of `IsArithFrobAt` to `q`), so `ι⁻¹ · Frob_q` acts as `x ↦ x^q`
+whatever `ι` is. That is why the cut below puts ALL of the residue-degree-one
+content in the existence statement and none of it here.
 
 THE CHECK THAT WOULD REFUTE THIS LEAF: a `PotentiallyGoodModel` at which every
 `ι ∈ localInertiaGroup q` leaves `t⁻¹ Frob_q` moving `K` — which needs the
@@ -7908,14 +8582,419 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_frobeniusLift
           hq.toHeightOneSpectrumRingOfIntegersRat,
         (⟨_, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
             hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
-          IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :=
+          IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) := by
+  obtain ⟨ι, hι, hfix⟩ := D.exists_inertia_frobLift_fixes_emb hq Fr
+  have hdecT := GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat ι
+  have hdecFrob := GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat
+    (Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+  -- `globalFrob` is the transported local Frobenius; the ring map `ℚ →+* ℚ_q` inside it need
+  -- not be SYNTACTICALLY the one this file writes, but ring maps out of `ℚ` are unique.
+  have hglob : GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+      = Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    have hf : ∀ f₁ f₂ : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat,
+        Field.absoluteGaloisGroup.map f₁ (Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          = Field.absoluteGaloisGroup.map f₂ (Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) := by
+      intro f₁ f₂
+      rw [Subsingleton.elim f₁ f₂]
+    exact hf _ _
+  have hdecS : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+      GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat ∈
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ := by
+    rw [hglob]
+    exact mul_mem (inv_mem hdecT) hdecFrob
+  refine ⟨ι, hι, hdecT, hdecS,
+    GaloisRepresentation.map_mem_inertiaSubgroup_globalValuationSubring _ ι hι, hfix, ?_⟩
+  intro z
+  -- Rewrite the ambient decomposition-group element as a single transported one.
+  have heq : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
+        GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+      = Field.absoluteGaloisGroup.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        (ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) := by
+    rw [hglob, map_mul, map_inv]
+  have hsub : (⟨_, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+      = ⟨_, GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat
+          (ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)⟩ := Subtype.ext heq
+  rw [hsub, show (IsLocalRing.residue _ z) ^ q
+      = IsLocalRing.residue (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat) (z ^ q) from (map_pow _ _ _).symm]
+  show IsLocalRing.residue _ ((⟨_,
+      GaloisRepresentation.map_mem_decompositionSubgroup_globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat
+        (ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat)⟩ :
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) • z)
+    = IsLocalRing.residue _ (z ^ q)
+  rw [GaloisRepresentation.residue_globalValuationSubring_eq_iff,
+    GaloisRepresentation.globalValuationSubringToLocal_smul, map_pow]
+  -- Split the local element into its inertia part and its Frobenius part.
+  set y := GaloisRepresentation.globalValuationSubringToLocal
+    hq.toHeightOneSpectrumRingOfIntegersRat z
+  have hsplit : (⟨ι⁻¹ * Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat,
+      mem_decompositionSubgroup_localValuationSubring _ _⟩ :
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+      = (⟨ι⁻¹, mem_decompositionSubgroup_localValuationSubring _ _⟩ : _) *
+        ⟨Field.AbsoluteGaloisGroup.adicArithFrob hq.toHeightOneSpectrumRingOfIntegersRat,
+          mem_decompositionSubgroup_localValuationSubring _ _⟩ := Subtype.ext rfl
+  rw [hsplit, mul_smul]
+  -- Inertia acts trivially on the residue field.
+  have hker := mem_inertiaSubgroup_localValuationSubring
+    hq.toHeightOneSpectrumRingOfIntegersRat ι⁻¹ (inv_mem hι)
+  rw [ValuationSubring.inertiaSubgroup, MonoidHom.mem_ker] at hker
+  have hinv : ∀ w : localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat,
+      IsLocalRing.residue _ ((⟨ι⁻¹, mem_decompositionSubgroup_localValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat ι⁻¹⟩ :
+        (localValuationSubring hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) • w)
+      = IsLocalRing.residue _ w :=
+    fun w => DFunLike.congr_fun hker (IsLocalRing.residue _ w)
+  rw [hinv]
+  -- and the arithmetic Frobenius raises residues to the `q`-th power.
+  have hyq := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob
+    (v := hq.toHeightOneSpectrumRingOfIntegersRat)
+    ⟨(y : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+      hq.toHeightOneSpectrumRingOfIntegersRat)), y.2⟩
+  rw [GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hq] at hyq
+  exact Ideal.Quotient.eq.mpr hyq
+
+/-- **The good model of `D`, placed inside `ℚ̄` by the frame** (PROVEN 2026-07-28,
+opened while cutting `exists_torsionFrame` below along the COORDINATEWISE
+characterisation of the reduction map — the split that leaf's own atomicity audit
+names as the recommended one).
+
+`D.V_eq` says `V = C • E_K`; pushing that equation along the frame's embedding
+`Fr.emb : K ↪ ℚ̄` and using `emb_comm` to collapse `ℚ → K → ℚ̄` into `ℚ → ℚ̄`
+gives the same sentence over `ℚ̄`. Nothing here is about reduction: this is the
+"transport `E`-points to `V`-points along `D.C`" step that the audit records as
+the one prerequisite of the coordinatewise formulation. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.model_eq
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime] {hq : q.Prime}
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq) :
+    D.V.map Fr.emb
+      = (D.C.map Fr.emb) • (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) := by
+  have hcomp : Fr.emb.comp (algebraMap ℚ D.K) = algebraMap ℚ (AlgebraicClosure ℚ) :=
+    RingHom.ext Fr.emb_comm
+  rw [D.V_eq, ← WeierstrassCurve.map_variableChange]
+  congr 1
+  show (E.map (algebraMap ℚ D.K)).map Fr.emb = _
+  rw [WeierstrassCurve.map_map, hcomp]
+
+/-- **The frame's identification of the `ℚ̄`-points of `E` with those of the good
+model** (PROVEN 2026-07-28): the point-level transport along `D.C`, carried to
+`ℚ̄` through `Fr.emb`.
+
+This is `Affine.Point.equivVariableChange` (project shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`) read
+backwards through `model_eq`. It is what lets the reduction map be pinned by
+COORDINATES: a torsion point of `E` over `ℚ̄` has no integrality of its own, but
+its image on the GOOD model `V` does, because `V` is a minimal integral model
+over the DVR `D.R`. -/
+noncomputable def WeierstrassCurve.PotentiallyGoodModel.LocalFrame.modelEquiv
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ} [Fact q.Prime] {hq : q.Prime}
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq) :
+    (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine.Point ≃+
+      (D.V.map Fr.emb).toAffine.Point :=
+  (WeierstrassCurve.Affine.Point.equivVariableChange
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) (D.C.map Fr.emb)).symm.trans
+    (WeierstrassCurve.Affine.Point.equivOfEq Fr.model_eq.symm)
+
+/-- **The COORDINATEWISE pinning of the reduction map on `N`-torsion**
+(definition, opened 2026-07-28 while cutting `exists_torsionFrame` below into
+three).
+
+`Fr.IsTorsionReduction ψ₀` says: for every `N`-torsion point `P` of `E` over
+`ℚ̄`, if the corresponding point of the GOOD model `V` (via `modelEquiv`) is
+affine with coordinates `X, Y`, then `X` and `Y` lie in the pinned valuation
+subring `𝒪 = globalValuationSubring q`, and `ψ₀ P` is the point of
+`Ẽ = D.redCurve` over `𝔽̄_q` whose coordinates are the residues of `X` and `Y`
+carried along `Fr.resIso`.
+
+WHY THIS PREDICATE IS WHAT MAKES THE CUT OF `exists_torsionFrame` SAFE. That
+leaf's ATOMICITY AUDIT (reproduced there in full, and still standing) shows every
+cut handing `ψ₀` over as FREE data is FALSE: two solutions of the Frobenius
+intertwining differ by an element of the centraliser of `F`, which at
+`q ≡ 1 mod N` is all of `GL₂(ZMod N)` and moves the image of `Aut(Ẽ)`. The
+audit's own stated refutation is "a formulation whose hypotheses pin `ψ₀` up to
+the image of `Aut(Ẽ)` — for instance a statement of the reduction map by its
+coordinatewise definition". This IS that formulation, and it is in fact stronger
+than the audit anticipated: the coordinates are pinned outright, not merely up to
+`Aut(Ẽ)`, because the transport `E → V` is along the GIVEN variable change `D.C`
+and the residue identification is the GIVEN `Fr.resIso`. So a witness `ψ₀` is
+unique, and the two conclusions of the atom cannot come apart.
+
+The integrality of `X` and `Y` is part of the CONCLUSION rather than a
+hypothesis, deliberately: it is proven once, inside `exists_isTorsionReduction`,
+out of `torsion_abscissa_mem` and `torsion_ordinate_mem`, and both consumers then
+receive it instead of each re-deriving it.
+
+NOT VACUOUS: `ψ₀` is a linear EQUIVALENCE and the pinning determines it at every
+point, so a witness has to BE the genuine reduction map — in particular its
+existence forces reduction to be injective on `E[N]`, which is where the
+arithmetic sits. -/
+def WeierstrassCurve.PotentiallyGoodModel.LocalFrame.IsTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} {q : ℕ} [Fact q.Prime]
+    {hq : q.Prime} {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N)) :
+    Prop :=
+  ∀ (P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N)
+    (X Y : AlgebraicClosure ℚ) (hns : (D.V.map Fr.emb).toAffine.Nonsingular X Y),
+    (Fr.modelEquiv P.val = WeierstrassCurve.Affine.Point.some X Y hns) →
+    ∃ (hX : X ∈ GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hY : Y ∈ GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (hns' : (D.redCurve.map
+            (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).toAffine.Nonsingular
+          (Fr.resIso (IsLocalRing.residue _ ⟨X, hX⟩))
+          (Fr.resIso (IsLocalRing.residue _ ⟨Y, hY⟩))),
+      (ψ₀ P).val = WeierstrassCurve.Affine.Point.some _ _ hns'
+
+/-- **THE REDUCTION MAP ON `N`-TORSION EXISTS, AND IS PINNED COORDINATEWISE**
+(sorry leaf, opened 2026-07-28 by cutting `exists_torsionFrame` below into three
+along the coordinatewise characterisation of `ψ₀`).
+
+WHAT IT SAYS: there is a `ZMod N`-linear EQUIVALENCE
+`ψ₀ : E[N](ℚ̄) ≃ Ẽ[N](𝔽̄_q)`, `Ẽ := D.redCurve`, which is the honest reduction
+map — for every `N`-torsion point of `E` over `ℚ̄` the coordinates of the
+corresponding point of the good model `V` lie in `𝒪`, and `ψ₀` sends it to the
+point with the residue coordinates.
+
+NO GALOIS THEORY APPEARS. Neither `σ` nor `τ` occurs; this leaf is
+Néron–Ogg–Šafarevič's integrality and injectivity plus a counting surjectivity,
+and nothing else. That separation is the point of the cut: the two equivariances
+of the atom are proven ABOUT this map by the two leaves below, which receive it
+WITH its coordinatewise pinning and therefore cannot be satisfied by a conjugated
+junk witness.
+
+WHAT HAS TO BE PROVEN, in order:
+
+1. *Integrality.* `torsion_abscissa_mem` and `torsion_ordinate_mem`
+   (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free)
+   applied with `R := D.R`, `k := D.K`, `E := D.V`,
+   `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra`,
+   `𝒪 := globalValuationSubring q`, and `h𝒪` supplied VERBATIM by
+   `Fr.comap_eq` — the frame field was written to match that hypothesis
+   syntactically. `ℚ̄` is a separable closure of `D.K` because the
+   characteristic is zero, `ℚ̄` is algebraically closed, and `ℚ̄/D.K` is
+   algebraic (`D.K/ℚ` is finite).
+2. *Well-definedness.* The residue point is nonsingular on the reduction, which
+   is `Ẽ` transported along `Fr.resIso`; `Fr.resIso_comm` is exactly the
+   compatibility that makes the reduction of `V` over `κ(𝒪)` equal to
+   `Ẽ ⊗ 𝔽̄_q`.
+3. *Additivity*, from the group-law formulae over `𝒪` (the slope of two distinct
+   torsion points is integral because their abscissae have distinct residues,
+   which is step 4).
+4. *Injectivity*: `torsion_abscissa_residue_ne` and
+   `torsion_ordinate_eq_of_residue_eq`, both PROVEN.
+5. *Surjectivity by counting*: `E[N](ℚ̄)` and `Ẽ[N](𝔽̄_q)` both have `N²`
+   elements (`q ≠ N`, and the reduction is elliptic — the instance
+   `instIsEllipticRedCurve` above), so an injective additive map between them is
+   bijective.
+
+The assembly pattern to copy is the PROVEN
+`WeilPairing.exists_frobenius_reduction_model`, a ~2800-line monolith that does
+exactly this at the good primes of a global integral model over `ℚ` — including
+the construction of `redFun`, its additivity, its injectivity on torsion and its
+surjectivity by counting. The only differences here are that the base is `K`
+rather than `ℚ`, and that the model arrives as `D.V` rather than being
+constructed.
+
+**THE `N = 2` OBLIGATION IS LIVE, AND IT LIVES HERE.** `q ≠ 2` and `q ≠ N` do
+NOT exclude `N = 2`, and the tree's Néron–Ogg–Šafarevič criterion
+`torsion_unramified_of_good_reduction` requires `Odd n`; the oddness is used only
+inside `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq`,
+through the coprimality of `Ψ₂²` with `preΨ'ₙ`. The statement here is TRUE at
+`N = 2` — good reduction gives an unramified action on `E[ℓ]` for every `ℓ ≠ q`,
+and `q ≠ 2` keeps `2` invertible in the residue field — so this is a
+proving-effort obligation, not a faithfulness defect. A prover must either supply
+the `n = 2` case of those two lemmas in
+`KnownIn1980s/EllipticCurves/GoodReduction.lean` (the `2`-torsion abscissae are
+the roots of the `2`-division polynomial, separable mod `q` exactly because
+`q ≠ 2` and the reduction is elliptic), or restate this leaf with `Odd N` and
+push the restriction up the chain. NOT NARROWED AT THE CUT: the ultimate consumer
+`hasseWeil_trace_frobeniusTorsionEnd_of_jIntegral` carries `23 ≤ N`, so no
+downstream use actually reaches `N = 2`, but every statement between here and
+there is quantified over all primes `N` and narrowing them is another owner's
+edit.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: an `N`-torsion point of `E` over `ℚ̄`
+whose image on `D.V` has a coordinate outside `𝒪`, or two distinct `N`-torsion
+points with the same residue coordinates. The first contradicts
+`torsion_abscissa_mem` at the minimal integral model `D.V`; the second
+contradicts `torsion_abscissa_residue_ne`, whose hypotheses (`N` prime, `N`
+invertible in the residue field, good reduction) are all in hand. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_isTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq) :
+    ∃ ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N),
+      Fr.IsTorsionReduction ψ₀ :=
+  sorry
+
+/-- **A FROBENIUS LIFT ACTS THROUGH THE REDUCTION MAP AS THE `q`-POWER FROBENIUS**
+(sorry leaf, opened 2026-07-28 by cutting `exists_torsionFrame` below into three;
+this is the SMALL half of that cut).
+
+WHAT IT SAYS: if `ψ₀` is THE reduction map in the coordinatewise sense above, and
+`σ` fixes `emb K` pointwise, lies in the decomposition group of `𝒪` and induces
+`x ↦ x^q` on `κ(𝒪)`, then `ψ₀ ∘ ρ(σ) = F ∘ ψ₀`.
+
+WHY IT IS TRUE, AND WHY IT IS SMALL. Everything is a computation on coordinates
+once the pinning `hψ₀` is available:
+
+* `σ` fixes `emb K` pointwise, hence fixes the four coefficients of
+  `D.C.map Fr.emb`, hence COMMUTES with `modelEquiv`. This is the same
+  computation as `Affine.Point.equivVariableChangeBaseChange_galois` in the
+  project shim, which cannot be cited verbatim only because `σ` is a
+  `ℚ`-automorphism rather than a `K`-algebra map — but `hσK` says exactly that it
+  becomes one, so `Fr.emb.toAlgebra` turns `σ` into a `D.K`-algebra map and the
+  shim lemma applies;
+* so if the model point of `P` is `(X, Y)`, that of `ρ(σ) P` is `(σX, σY)`;
+* `IsLocalRing.ResidueField.residue_smul` turns `residue 𝒪 (σ • z)` into
+  `⟨σ, hdecS⟩ • residue 𝒪 z`, and `hσres` turns that into `(residue 𝒪 z) ^ q`;
+* `Fr.resIso` is a ring equivalence, so it carries `q`-th powers to `q`-th
+  powers;
+* `WeilPairing.frobeniusTorsionEnd` is by definition the restriction of
+  `Affine.Point.map (WeilPairing.frobAlgHom q)`, and `frobAlgHom q` is
+  `x ↦ x ^ q`.
+
+NO ARITHMETIC IS CONSUMED HERE beyond what `hψ₀` already carries, and that is
+what makes the leaf faithful: a cut handing `ψ₀` over constrained ONLY by
+`ψ₀ ρ(σ) ψ₀⁻¹ = F` would be false — see the atomicity audit below.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: a torsion point whose model coordinates
+are integral but whose `σ`-image has a non-integral coordinate. Impossible: `σ`
+lies in the decomposition group of `𝒪`, so it preserves `𝒪` setwise. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.frobenius_of_isTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hqN : q ≠ N)
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N))
+    (hψ₀ : Fr.IsTorsionReduction ψ₀)
+    (σ : Field.absoluteGaloisGroup ℚ)
+    (hdecS : σ ∈ (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+    (hσK : ∀ x : D.K, σ (Fr.emb x) = Fr.emb x)
+    (hσres : ∀ z : GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat,
+      (⟨σ, hdecS⟩ : (GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) •
+        IsLocalRing.residue _ z = (IsLocalRing.residue _ z) ^ q) :
+    ∀ x, ψ₀ (E.galoisRep N hN.pos σ x) =
+      WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x) :=
+  sorry
+
+/-- **INERTIA ACTS THROUGH THE REDUCTION MAP AS AN AUTOMORPHISM OF THE REDUCED
+CURVE — SERRE–TATE** (sorry leaf, opened 2026-07-28 by cutting
+`exists_torsionFrame` below into three; this is where the remaining mathematics
+of that leaf sits).
+
+WHAT IT SAYS: if `ψ₀` is THE reduction map in the coordinatewise sense above and
+`τ` lies in the inertia subgroup at `𝒪`, then `ψ₀ ρ(τ) ψ₀⁻¹` is
+`autTorsionEnd` of an automorphism `C` of `Ẽ` over `𝔽̄_q`, presented as the
+variable change it is.
+
+WHY `τ` IS DIFFERENT FROM `σ`, and it is the whole difficulty: `τ` need NOT fix
+`K`. Inertia over `ℚ` moves `K` whenever `K/ℚ` is ramified at `q` — and it must,
+since `E` has potentially good but in general NOT good reduction, so `ρ` is
+genuinely ramified at `q`. Hence `τ` does not commute with `modelEquiv`, and the
+FAILURE to commute is precisely the automorphism.
+
+THE ELEMENTARY ROUTE, avoiding Néron models, and the shape to try first: `τ`
+carries the variable change `D.C.map Fr.emb` to its `τ`-conjugate, and
+`Dτ := (Cᵗᵃᵘ) · C⁻¹` is a variable change between two integral models of the same
+curve, both with unit discriminant, hence has unit entries in `𝒪`, hence reduces
+to a variable change over `κ(𝒪)` — and that reduction is the `C` of the
+conclusion. `τ` fixes `κ(𝒪)` pointwise (`hτin`), which is what makes both models
+reduce to the SAME `Ẽ`.
+
+AVAILABLE AND NOT TO BE REBUILT: `Affine.Point.equivVariableChange`,
+`equivVariableChangeBaseChange` and `equivVariableChangeBaseChange_galois`, in
+the project shim
+`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean`; and
+`WeierstrassCurve.autTorsionEnd` above, which is already built on them.
+Serre–Tate itself is ABSENT from all three trees (`Fermat/`,
+`.lake/packages/mathlib/`, `~/cs/FLT/`, grepped 2026-07-27), which is why the
+elementary route is the recommended one.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: an inertia element at `𝒪` whose action on
+`E[N](ℚ̄)`, transported by `ψ₀`, is induced by no variable change of `Ẽ` over
+`𝔽̄_q`. By the route above that would need `Dτ` to have a non-unit entry, i.e.
+one of the two models to be non-minimal, which `D.V_good` excludes.
+
+THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END for this statement; the reason is
+structural rather than technical and is recorded in full on
+`exists_torsionFrame` below. -/
+theorem WeierstrassCurve.PotentiallyGoodModel.LocalFrame.exists_aut_of_isTorsionReduction
+    {E : WeierstrassCurve ℚ} [E.IsElliptic] {N : ℕ} (hN : N.Prime)
+    {q : ℕ} [Fact q.Prime] {hq : q.Prime} (hq2 : q ≠ 2) (hqN : q ≠ N)
+    {D : E.PotentiallyGoodModel q} (Fr : D.LocalFrame hq)
+    (ψ₀ : ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) ≃ₗ[ZMod N]
+      ((D.redCurve.map (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).nTorsion N))
+    (hψ₀ : Fr.IsTorsionReduction ψ₀)
+    (τ : Field.absoluteGaloisGroup ℚ)
+    (hdecT : τ ∈ (GaloisRepresentation.globalValuationSubring
+      hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ)
+    (hτin : (⟨τ, hdecT⟩ : (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).decompositionSubgroup ℚ) ∈
+      (GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat).inertiaSubgroup ℚ) :
+    ∃ (C : WeierstrassCurve.VariableChange (AlgebraicClosure (ZMod q)))
+      (hC : C • ((D.redCurve.map
+              (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q))))
+          = (D.redCurve.map
+              (algebraMap (ZMod q) (AlgebraicClosure (ZMod q)))).map
+            (algebraMap (AlgebraicClosure (ZMod q)) (AlgebraicClosure (ZMod q)))),
+      ∀ x, ψ₀ (E.galoisRep N hN.pos τ x) =
+        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x) :=
   sorry
 
 /-- **THE ATOM: the reduction map on `N`-torsion, and its two equivariances**
-(sorry leaf, opened 2026-07-27 by cutting
-`exists_reductionFrame_of_potentiallyGoodModel` below into three; this is the
-piece that survives the cut, and the audits that used to sit on the parent live
-here now because they describe THIS statement's content).
+(opened 2026-07-27 by cutting `exists_reductionFrame_of_potentiallyGoodModel`
+below into three; **PROVEN 2026-07-28** over the three leaves immediately above,
+by the COORDINATEWISE cut that this docstring's own atomicity audit named as the
+recommended one).
+
+THE PROOF HERE is three lines and no mathematics: `exists_isTorsionReduction`
+produces `ψ₀` together with its coordinatewise pinning
+`Fr.IsTorsionReduction ψ₀`, and the two equivariances are then
+`frobenius_of_isTorsionReduction` and `exists_aut_of_isTorsionReduction` applied
+to THAT `ψ₀`. Nothing receives `ψ₀` as free data — it is produced once and both
+leaves are handed it with its pinning — which is exactly what the audit below
+demands. **A prover should read those three docstrings, not this one**: the
+`N = 2` obligation and the Néron–Ogg–Šafarevič machinery survey now live on
+`exists_isTorsionReduction`, and the Serre–Tate route on
+`exists_aut_of_isTorsionReduction`. What remains here is the audit itself and
+the Chebotarev dead-end note, both of which are about the CUT rather than about
+any one leaf.
 
 WHAT IT SAYS. Given the placement `Fr` of `K` inside `ℚ̄`, a Frobenius lift `σ`
 — in the decomposition group of the pinned subring `𝒪`, fixing `emb K`
@@ -7972,12 +9051,29 @@ becomes two independently true statements. Note that the frame makes such a
 formulation WRITABLE for the first time: with `Fr.emb`, `Fr.comap_eq` and
 `Fr.resIso` in hand one can say "`ψ₀` sends a torsion point whose coordinates
 lie in `𝒪` to the point with the residue coordinates", and that IS a pinning up
-to `Aut(Ẽ)`. Splitting this leaf along that line is the recommended next step if
-it proves too large; it was not done at the cut because writing the
-coordinatewise characterisation first requires transporting `E`-points to
-`V`-points along `D.C`.
+to `Aut(Ẽ)`. Splitting this leaf along that line was the recommended next step;
+it was not done at the 2026-07-27 cut because writing the coordinatewise
+characterisation first requires transporting `E`-points to `V`-points along
+`D.C`.
 
-**THE `N = 2` OBLIGATION IS LIVE AND MUST NOT BE LEFT SILENT.** `q ≠ 2` and
+**THAT SPLIT WAS CARRIED OUT ON 2026-07-28 AND IS WHAT PROVES THIS LEAF.** The
+transport is `LocalFrame.modelEquiv` (PROVEN, over `LocalFrame.model_eq`), the
+characterisation is `LocalFrame.IsTorsionReduction`, and the three leaves are
+`exists_isTorsionReduction`, `frobenius_of_isTorsionReduction` and
+`exists_aut_of_isTorsionReduction` above. The split passes the audit for the
+reason the audit itself predicted, and in fact more strongly than it predicted:
+`IsTorsionReduction` pins `ψ₀` OUTRIGHT rather than up to `Aut(Ẽ)`, because the
+transport is along the GIVEN `D.C` and the residue identification is the GIVEN
+`Fr.resIso`. So the two consumers receive one and the same, uniquely determined,
+`ψ₀`, and none of the three counterexamples above can be instantiated: `Wbar₀` is
+`D.redCurve`, `ψ₀` is pinned pointwise, and `σ` is still constrained
+valuation-theoretically rather than by any representation-level identity.
+
+**THE `N = 2` OBLIGATION IS LIVE. It now lives on `exists_isTorsionReduction`
+above**, which is the only one of the three leaves that consumes oddness (through
+`torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq`); the full
+statement of the obligation is reproduced there. It is kept below as well, since
+it is a fact about THIS statement's quantification: `q ≠ 2` and
 `q ≠ N` do NOT exclude `N = 2`, and the tree's Néron–Ogg–Shafarevich criterion
 `torsion_unramified_of_good_reduction` requires `Odd n`; the oddness is used
 only inside `torsion_abscissa_residue_ne` and
@@ -7996,41 +9092,22 @@ between here and there is quantified over all primes `N` and narrowing them is
 another owner's edit.
 
 MACHINERY, GREPPED 2026-07-27 OVER ALL THREE TREES (`Fermat/`,
-`.lake/packages/mathlib/`, `~/cs/FLT/`).
+`.lake/packages/mathlib/`, `~/cs/FLT/`) — **the survey has been REDISTRIBUTED to
+the leaves that consume it, and the copies there are the live ones**:
 
-* **Néron–Ogg–Shafarevich is PARTLY PRESENT and must not be rebuilt.**
-  `WeierstrassCurve.torsion_unramified_of_good_reduction`
-  (`KnownIn1980s/EllipticCurves/GoodReduction.lean`, PROVEN, sorry-free) is
-  precisely "good reduction over a DVR `R` ⟹ inertia at a valuation subring
-  above `R` acts trivially on the `n`-torsion", for odd `n` invertible in the
-  residue field — stated over a GENERAL `R`, `k`, `ksep` and `𝒪`, with the
-  hypothesis `h𝒪` that `Fr.comap_eq` is written to match verbatim. Its
-  companions `torsion_abscissa_mem`, `torsion_ordinate_mem`,
-  `torsion_abscissa_residue_ne` and `torsion_ordinate_eq_of_residue_eq` are the
-  reduction-injectivity half, and `WeierstrassCurve.RtoO` /
-  `isLocalHom_RtoO` are the `R → 𝒪` plumbing built from the same `h𝒪`. Take
-  `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra`; it is a separable
-  closure of `D.K` because the characteristic is zero. The assembly pattern to
-  copy is the PROVEN `WeilPairing.exists_frobenius_reduction_model`, a ~2800-line
-  monolith that does exactly this work at the good primes of a global integral
-  model over `ℚ` — including the construction of `redFun`, its additivity, its
-  injectivity on torsion and its surjectivity by counting. The only new
-  ingredients here are that the base is `K` rather than `ℚ` and that the
-  Frobenius lift arrives as a hypothesis rather than from unramifiedness.
-* **Serre–Tate is ABSENT from all three trees.** What is available and should be
-  used rather than rebuilt is the point-level transport of a `VariableChange` —
-  `Affine.Point.equivVariableChange` and its Galois-equivariant base-changed
-  form `equivVariableChangeBaseChange_galois`, in the project shim
-  `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/Affine/Point.lean` — and
-  the definition `WeierstrassCurve.autTorsionEnd` above, which is already built
-  on it. THE ELEMENTARY ROUTE, avoiding Néron models, and the shape to try
-  first: `τ` carries the variable change `D.C` to `D.C^τ`, and
-  `D_τ := D.C^τ (D.C)⁻¹` is a variable change between two integral models of the
-  same curve with unit discriminant, hence has unit entries in `𝒪`, hence
-  reduces to a variable change over `κ(𝒪)`, which is the automorphism `C`. Note
-  `τ` need NOT fix `K` — inertia over `ℚ` moves `K` when `K/ℚ` is ramified at
-  `q` — but it fixes `κ(𝒪)` pointwise (`hτin`), which is what makes both models
-  reduce to the same `Ẽ`.
+* the **Néron–Ogg–Šafarevič** half (`torsion_unramified_of_good_reduction` and
+  its companions `torsion_abscissa_mem`, `torsion_ordinate_mem`,
+  `torsion_abscissa_residue_ne`, `torsion_ordinate_eq_of_residue_eq`, plus the
+  `R → 𝒪` plumbing `WeierstrassCurve.RtoO` / `isLocalHom_RtoO`, all PROVEN and
+  sorry-free, taking `ksep := AlgebraicClosure ℚ` through `Fr.emb.toAlgebra` and
+  `h𝒪 := Fr.comap_eq` verbatim, with
+  `WeilPairing.exists_frobenius_reduction_model` as the assembly pattern to
+  copy) is on `exists_isTorsionReduction` above;
+* the **Serre–Tate** half (Serre–Tate itself ABSENT from all three trees; the
+  elementary `Dτ := Cᵗᵃᵘ · C⁻¹` route; the shim
+  `Affine.Point.equivVariableChange` / `equivVariableChangeBaseChange_galois`
+  and `WeierstrassCurve.autTorsionEnd`) is on
+  `exists_aut_of_isTorsionReduction` above.
 
 THE GLOBAL/CHEBOTAREV AXIS IS A DEAD END HERE, and the reason is structural
 rather than technical — recorded so that nobody spends a cycle re-searching it
@@ -8082,8 +9159,12 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_torsionFrame
       (∀ x, ψ₀ (E.galoisRep N hN.pos σ x) =
         WeilPairing.frobeniusTorsionEnd q D.redCurve N (ψ₀ x)) ∧
       (∀ x, ψ₀ (E.galoisRep N hN.pos τ x) =
-        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) :=
-  sorry
+        WeierstrassCurve.autTorsionEnd _ C hC N (ψ₀ x)) := by
+  obtain ⟨ψ₀, hψ₀⟩ := Fr.exists_isTorsionReduction hN hq2 hqN
+  obtain ⟨C, hC, haut⟩ :=
+    Fr.exists_aut_of_isTorsionReduction hN hq2 hqN ψ₀ hψ₀ τ hdecT hτin
+  exact ⟨ψ₀, C, hC,
+    Fr.frobenius_of_isTorsionReduction hN hqN ψ₀ hψ₀ σ hdecS hσK hσres, haut⟩
 
 /-- **The reduction frame at `q`: Néron–Ogg–Shafarevich and Serre–Tate,
 packaged against the PINNED reduction curve** (PROVEN 2026-07-27 over the three
@@ -16647,9 +17728,10 @@ into the two leaves consumed below:
   `X0GenusOne.nonempty_relPoint_equiv_modelPoint` (all that survives of
   `card_relPoint_finiteField`) together with the four successors of
   `X0GenusOne.isTorsion_jacobian` — `exists_abelianSchemeStruct_of_x0Genus_eq_one`,
-  `exists_x0Model`, `finite_curve11a1`, `finite_curve17a1`,
+  `exists_x0Model`, `finite_curve17a1`,
   `finite_curve19a1` (2026-07-27, fourth correction; none is vacuous or
-  refutable).  `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
+  refutable — and `finite_curve11a1`, which that correction also named, is
+  PROVEN as of 2026-07-28 along the `5`-isogeny onto `11a3`).  `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
   `finite_relPoint_x0`, which this paragraph named at earlier corrections,
   are all now PROVEN — the last of them along the MODEL/ARITHMETIC seam,
   see the subsection note above `X0GenusOne.curve11a1`.
@@ -20547,9 +21629,11 @@ is the shape `Fermat/FLT/EllipticCurve/MordellWeil.lean` has already
 closed twice (`11a3`, `14a4`).
 
 **So the open leaves of this section are `exists_x0Model`,
-`finite_curve11a1`, `finite_curve17a1`, `finite_curve19a1`,
+`finite_curve17a1`, `finite_curve19a1`,
 `exists_abelianSchemeStruct_of_x0Genus_eq_one` and
-`nonempty_relPoint_equiv_modelPoint`.**  (`finite_jacobian` still consumes
+`nonempty_relPoint_equiv_modelPoint`.**  (`finite_curve11a1` was on that
+list until 2026-07-28; it is now PROVEN, along the `5`-isogeny onto
+`11a3` — see its docstring.)  (`finite_jacobian` still consumes
 the shared Mordell–Weil obligation `Fermat.fg_relPoint_of_abelianScheme`
 in `X0.lean`, but `isTorsion_jacobian` no longer needs it — see the
 bookkeeping note on `finite_jacobian`.)
@@ -20913,6 +21997,31 @@ x0Genus N` and `dim Jac = genus`, and BOTH should be split at once.**
 fails for `J = Spec ℚ` over `Spec ℚ`, which is smooth of relative
 dimension `0` — so the conclusion really constrains the Jacobian, and this
 leaf really consumes `hg`.
+
+**`N = 0` LEAKS THROUGH `hg`, AND THIS LEAF IS STILL SOUND — but NOT by
+the argument above** (sweep of 2026-07-28; see the VALIDITY RANGE note on
+`Fermat.x0Genus`).  `Fermat.x0Genus 0 = 1` by `decide`, so `hg` is
+SATISFIED at `N = 0`.  The "load-bearing in both directions" paragraph
+above ranges over `x0Genus N = 0` and `x0Genus N ≥ 2` and never mentions
+this, and the sentence "`hmodel` makes every fibre of `strX` the
+`X_0(N)` of its residue field" is FALSE there.  Being base-general, this
+statement cannot invoke `Fermat.pos_of_isX0Compactification`, which is
+`SpecQ`-only on purpose (it is false over an empty base).
+
+It survives by the same degeneracy that closes its analogue
+`Fermat.hasNoFibreAffineLine_of_one_le_x0Genus`, whose docstring records
+the two compiler-verified steps: `IsCoarseModuliY0 0` forces `Y = ∅`
+over any base, so `hmodel.finite_compl` makes the whole SPACE of `X`
+finite.  A nonempty finite `X` then contradicts `hmodel.smooth` plus
+`hmodel.isProper` over a nonempty base (the fibre would be a nonempty
+smooth proper curve over a field, hence infinite); and an empty `X`
+forces `S = ∅` through `o : RelPoint strX (𝟙 S)`, whence `J = ∅` too and
+the conclusion is `hmodel.smooth` transported along `X ≅ J ≅ ∅`.
+
+**Do NOT repair this by adding `0 < N`** — the statement is true as
+stated and the hypothesis would have to propagate through
+`isIso_ajHom_of_x0Genus_eq_one`, which is base-general as well.  Only the
+recorded ARGUMENT needed the extra branch.
 
 IRREDUCIBLE at this pin along the axis searched (the identification of
 `x0Genus N` with an invariant of the scheme `X`): that needs a genus,
@@ -21322,33 +22431,206 @@ theorem exists_x0Model (N : ℕ) (_hN : N ∈ levels)
     ∃ f : RelPoint strX (𝟙 SpecQ) → (x0Model N).toAffine.Point, Function.Injective f :=
   sorry
 
-/-- **`11a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
-level-`11` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
-`0` for `y² + y = x³ − x² − 10x − 20` with every trace of the modular
-interpretation removed.
+/-- **`11a1(ℚ)` is finite** (PROVEN 2026-07-28, by transporting
+`WeierstrassCurve.curve11a3_rational_points` along the `5`-isogeny
+`11a1 → 11a3`) — the level-`11` row of the arithmetic half of
+`finite_relPoint_x0`, i.e. rank `0` for `y² + y = x³ − x² − 10x − 20`
+with every trace of the modular interpretation removed.
 
 TRUE, and `#11a1(ℚ) = 5`: the affine points are `(5, 5)`, `(5, −6)`,
 `(16, 60)`, `(16, −61)` (PARI/GP `ellratpoints`, and `ellrank` returns
 the interval `[0, 0]`, so the rank is proven rather than bounded).  The
-group is cyclic of order `5`.
+group is cyclic of order `5`.  Only FINITENESS is claimed here; the
+proof below does not enumerate the five points.
 
-**This is the shape this development already closes.**
-`WeierstrassCurve.curve11a3_finite` in
-`Fermat/FLT/EllipticCurve/MordellWeil.lean` is the identical statement
-for `X_1(11) = 11a3`, proven from the unconditional enumeration
-`curve11a3_rational_points`, which is itself an explicit descent in the
-cubic ring `ZS = ℤ[s]` together with the height argument
-`MazurLevel11.height_drop_or_small`.  A successor should follow that file
-rather than looking for a general Mordell–Weil theorem, which exists
-nowhere in this tree, in `Mathlib`, or in `~/cs/FLT`.
+**CORRECTION to the note this docstring used to carry.**  The old text
+said "`11a3` does NOT discharge this … transporting finiteness along the
+isogeny needs the isogeny itself as a map of `Affine.Point` groups, which
+does not exist here."  The second half is false, and it is the reason the
+leaf looked as expensive as `curve11a3_rational_points` itself.  **No
+group structure is needed**: finiteness only needs a map with finite
+fibres, and the `x`-coordinate half of an odd-degree isogeny is already
+one, as a rational function of `x` alone.  So the whole `MazurLevel11`
+descent apparatus (the cubic ring `ZS = ℤ[s]`, the height bound
+`MazurLevel11.height_drop_or_small`, the `smallPoints` sieve) is
+consumed once, at level `11` of `X_1`, and is NOT rebuilt here.
 
-**`11a3` does NOT discharge this.**  `11a1` and `11a3` are `5`-isogenous
-but distinct curves; transporting finiteness along the isogeny needs the
-isogeny itself as a map of `Affine.Point` groups, which does not exist
-here.  Refuting check: `grep -n 'curve11a1' Fermat/` finds this
-declaration and nothing else. -/
-theorem finite_curve11a1 : Finite curve11a1.toAffine.Point :=
-  sorry
+THE ISOGENY, and it is the one PARI/GP calls
+`ellisogeny(E, x^2 + x − 29/5)`.  `11a1` admits two rational
+`5`-isogenies; the `5`-division polynomial factors as
+`5·(x − 5)(x − 16)(x² + x − 29/5)(x⁴ + 15x³ + 120x² + 200x + 155)·`
+`(x⁴ + x³ + 11x² + 41x + 101)`, so the two kernels are `(x − 5)(x − 16)`
+— the rational `5`-torsion, whose quotient is `11a2` and therefore
+useless here — and `x² + x − 29/5`, whose quotient IS `11a3` up to the
+variable change `(u, r, s, t) = (5, −8, 0, 62)`.  Composing gives, with
+
+    H = 5x² + 5x − 29
+    A = x⁵ + 10x⁴ + 45x³ − 400x² − 845x − 775
+    B = (y − 62)x⁶ + (3y − 186)x⁵ + (−54y + 873)x⁴ + (613y + 2419)x³
+          + (1752y − 4344)x² + (8585y − 2015)x + (6451y + 15420)
+
+the map `(x, y) ↦ (A/H², B/H³)` from `11a1` to `11a3 : Y² + Y = X³ − X²`.
+The single polynomial identity behind it, verified by `ring` through
+`linear_combination` below, is
+
+    B² + B·H³ − A³ + A²·H² = (x⁶ + 3x⁵ − 54x⁴ + 613x³ + 1752x² + 8585x
+                              + 6451)² · (y² + y − x³ + x² + 10x + 20),
+
+i.e. it holds modulo the `11a1` equation.  Sanity checks: `A(5) = 0` and
+`B(5, 5) = 0`, so `(5, 5) ↦ (0, 0)`; and `A(16) = 11⁶ = H(16)²`, so
+`(16, 60) ↦` a point with `X = 1`.  Both are affine points of `11a3`, as
+`curve11a3_rational_points` requires.
+
+THE ARGUMENT.  `curve11a3_rational_points` pins `X ∈ {0, 1}` for every
+affine rational point of `11a3`, so every affine rational `x` of `11a1`
+satisfies `H(x) = 0` or `A(x) = 0` or `A(x) = H(x)²` — that is, it is a
+root of the fixed degree-`12` polynomial `H·A·(A − H²)`, which is nonzero
+(its constant term is `(−29)(−775)(−1616) = −36319600`).  Finitely many
+`x`, at most two `y` over each (the affine equation is quadratic in `y`),
+hence a finite affine locus; `Affine.nonsingularPointEquiv` then adds the
+point at infinity, exactly as in `WeierstrassCurve.curve11a3_finite` and
+in `finite_curve32a1` below.
+
+Note the fibre bound is never needed quantitatively: the two quartic
+factors `x⁴ + 15x³ + 120x² + 200x + 155` (dividing `A`) and
+`x⁴ + x³ + 11x² + 41x + 101` (dividing `A − H²`) are the `x`-coordinates
+of the irrational `5`-torsion and have no rational roots, but proving
+that would only sharpen the count from "finite" to "five", which the
+statement does not ask for.  Likewise `H` has no rational root
+(`(10x + 5)² = 605 = 5·11²` would make `√5` rational), and the proof
+below simply keeps `H = 0` as one more factor rather than excluding it. -/
+theorem finite_curve11a1 : Finite curve11a1.toAffine.Point := by
+  classical
+  -- Every affine rational point has `x` a root of the fixed degree-`12` polynomial
+  -- `H · A · (A − H²)`, because its image under the `5`-isogeny onto `11a3` has
+  -- `X`-coordinate `A/H² ∈ {0, 1}`.
+  have hxroot : ∀ x y : ℚ, curve11a1.toAffine.Nonsingular x y →
+      (5 * x ^ 2 + 5 * x - 29) *
+        ((x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+            - (5 * x ^ 2 + 5 * x - 29) ^ 2)) = 0 := by
+    intro x y hxy
+    have he : y ^ 2 + y = x ^ 3 - x ^ 2 - 10 * x - 20 := by
+      have h := hxy.left
+      rw [WeierstrassCurve.Affine.equation_iff] at h
+      simp only [curve11a1, WeierstrassCurve.toAffine] at h
+      linear_combination h
+    by_cases hH : (5 * x ^ 2 + 5 * x - 29 : ℚ) = 0
+    · rw [hH]; ring
+    · -- `B² + B·H³ = A³ − A²·H²` modulo the curve equation: this IS the isogeny.
+      have key : ((y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420)) ^ 2 +
+          ((y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420)) * (5 * x ^ 2 + 5 * x - 29) ^ 3 =
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) ^ 3 -
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) ^ 2 *
+            (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+        linear_combination (x ^ 6 + 3 * x ^ 5 - 54 * x ^ 4 + 613 * x ^ 3 + 1752 * x ^ 2 +
+          8585 * x + 6451) ^ 2 * he
+      obtain ⟨X, hX⟩ : ∃ X : ℚ, X * (5 * x ^ 2 + 5 * x - 29) ^ 2 =
+          x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 :=
+        ⟨(x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) /
+          (5 * x ^ 2 + 5 * x - 29) ^ 2, div_mul_cancel₀ _ (pow_ne_zero _ hH)⟩
+      obtain ⟨Y, hY⟩ : ∃ Y : ℚ, Y * (5 * x ^ 2 + 5 * x - 29) ^ 3 =
+          (y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420) :=
+        ⟨((y - 62) * x ^ 6 + (3 * y - 186) * x ^ 5 + (-54 * y + 873) * x ^ 4 +
+            (613 * y + 2419) * x ^ 3 + (1752 * y - 4344) * x ^ 2 + (8585 * y - 2015) * x +
+            (6451 * y + 15420)) / (5 * x ^ 2 + 5 * x - 29) ^ 3,
+          div_mul_cancel₀ _ (pow_ne_zero _ hH)⟩
+      have key' : (Y * (5 * x ^ 2 + 5 * x - 29) ^ 3) ^ 2 +
+          (Y * (5 * x ^ 2 + 5 * x - 29) ^ 3) * (5 * x ^ 2 + 5 * x - 29) ^ 3 =
+          (X * (5 * x ^ 2 + 5 * x - 29) ^ 2) ^ 3 -
+          (X * (5 * x ^ 2 + 5 * x - 29) ^ 2) ^ 2 * (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+        rw [hX, hY]; exact key
+      have hXY : Y ^ 2 + Y = X ^ 3 - X ^ 2 := by
+        refine mul_left_cancel₀ (pow_ne_zero 6 hH) ?_
+        linear_combination key'
+      have heq : WeierstrassCurve.curve11a3.toAffine.Equation X Y := by
+        rw [WeierstrassCurve.Affine.equation_iff]
+        simp only [WeierstrassCurve.curve11a3, WeierstrassCurve.toAffine]
+        linear_combination hXY
+      have hns : WeierstrassCurve.curve11a3.toAffine.Nonsingular X Y :=
+        _root_.WeierstrassCurve.Affine.equation_iff_nonsingular.mp heq
+      rcases WeierstrassCurve.curve11a3_rational_points X Y hns with h | h | h | h <;>
+        simp only [Prod.mk.injEq] at h
+      · have hA0 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) = 0 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+            - (5 * x ^ 2 + 5 * x - 29) ^ 2)) * hA0
+      · have hA0 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) = 0 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+            - (5 * x ^ 2 + 5 * x - 29) ^ 2)) * hA0
+      · have hA1 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) =
+            (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775)) * hA1
+      · have hA1 : (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775 : ℚ) =
+            (5 * x ^ 2 + 5 * x - 29) ^ 2 := by
+          rw [← hX, h.1]; ring
+        linear_combination ((5 * x ^ 2 + 5 * x - 29) *
+          (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775)) * hA1
+  -- `H · A · (A − H²)` is a nonzero polynomial: its value at `0` is `-36319600`.
+  have hPne : ((5 * Polynomial.X ^ 2 + 5 * Polynomial.X - 29) *
+      ((Polynomial.X ^ 5 + 10 * Polynomial.X ^ 4 + 45 * Polynomial.X ^ 3
+          - 400 * Polynomial.X ^ 2 - 845 * Polynomial.X - 775) *
+        (Polynomial.X ^ 5 + 10 * Polynomial.X ^ 4 + 45 * Polynomial.X ^ 3
+          - 400 * Polynomial.X ^ 2 - 845 * Polynomial.X - 775
+          - (5 * Polynomial.X ^ 2 + 5 * Polynomial.X - 29) ^ 2)) : Polynomial ℚ) ≠ 0 := by
+    intro hzero
+    have h0 := congrArg (Polynomial.eval (0 : ℚ)) hzero
+    simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_sub,
+      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_ofNat, Polynomial.eval_zero] at h0
+    norm_num at h0
+  have hxfin : {x : ℚ | (5 * x ^ 2 + 5 * x - 29) *
+      ((x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) *
+        (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+          - (5 * x ^ 2 + 5 * x - 29) ^ 2)) = 0}.Finite := by
+    refine (Polynomial.finite_setOf_isRoot hPne).subset ?_
+    intro x hx
+    simp only [Set.mem_setOf_eq] at hx
+    simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_mul, Polynomial.eval_add,
+      Polynomial.eval_sub, Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_ofNat]
+    linear_combination hx
+  -- Over each `x`, the affine equation is a monic quadratic in `y`, so at most two points.
+  have hyfin : ∀ c : ℚ, {y : ℚ | y ^ 2 + y - c = 0}.Finite := by
+    intro c
+    have hq : (Polynomial.X ^ 2 + Polynomial.X - Polynomial.C c : Polynomial ℚ) ≠ 0 := by
+      intro hzero
+      have h2 := congrArg (fun p : Polynomial ℚ => p.coeff 2) hzero
+      simp [Polynomial.coeff_X] at h2
+    refine (Polynomial.finite_setOf_isRoot hq).subset ?_
+    intro y hy
+    simp only [Set.mem_setOf_eq] at hy
+    simp only [Set.mem_setOf_eq, Polynomial.IsRoot.def, Polynomial.eval_sub, Polynomial.eval_add,
+      Polynomial.eval_pow, Polynomial.eval_X, Polynomial.eval_C]
+    linear_combination hy
+  have hsub : {xy : ℚ × ℚ | curve11a1.toAffine.Nonsingular xy.1 xy.2} ⊆
+      ⋃ x ∈ {x : ℚ | (5 * x ^ 2 + 5 * x - 29) *
+          ((x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775) *
+            (x ^ 5 + 10 * x ^ 4 + 45 * x ^ 3 - 400 * x ^ 2 - 845 * x - 775
+              - (5 * x ^ 2 + 5 * x - 29) ^ 2)) = 0},
+        ({x} : Set ℚ) ×ˢ {y : ℚ | y ^ 2 + y - (x ^ 3 - x ^ 2 - 10 * x - 20) = 0} := by
+    rintro ⟨x, y⟩ hxy
+    refine Set.mem_biUnion (hxroot x y hxy) ⟨rfl, ?_⟩
+    have h := hxy.left
+    rw [WeierstrassCurve.Affine.equation_iff] at h
+    simp only [curve11a1, WeierstrassCurve.toAffine] at h
+    simp only [Set.mem_setOf_eq]
+    linear_combination h
+  have hfin : {xy : ℚ × ℚ | curve11a1.toAffine.Nonsingular xy.1 xy.2}.Finite :=
+    Set.Finite.subset (hxfin.biUnion fun x _ => (Set.finite_singleton x).prod (hyfin _)) hsub
+  haveI : Finite {xy : ℚ × ℚ // curve11a1.toAffine.Nonsingular xy.fst xy.snd} := hfin.to_subtype
+  haveI : Finite (WithZero {xy : ℚ × ℚ // curve11a1.toAffine.Nonsingular xy.fst xy.snd}) :=
+    inferInstanceAs (Finite (Option _))
+  exact Finite.of_equiv _ curve11a1.toAffine.nonsingularPointEquiv.symm
 
 /-- **`17a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
 level-`17` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
@@ -21498,15 +22780,21 @@ refuting check:
   `hasRankZeroJacobian_x0ThirtyTwo`.
 * *the isogeny axis* — `11a1` is `5`-isogenous to `11a3 = X_1(11)`, whose
   rational points ARE determined in this tree
-  (`WeierstrassCurve.curve11a3_points`), and torsion transports along an
-  isogeny (`φ̂ ∘ φ = [deg φ]`, so a torsion source forces a torsion
-  target).  Still blocked, but the obstruction has MOVED and shrunk: it
-  used to be the missing `Scheme` ↔ `WeierstrassCurve` bridge, and after
-  this cut both curves are `WeierstrassCurve ℚ`s, so what is missing is
-  only the `5`-isogeny `11a3 → 11a1` as a map of `Affine.Point` groups.
-  Refuting check for its absence: `grep -n 'curve11a1'
-  Fermat/FLT/EllipticCurve/` returns nothing.  A successor at
-  `finite_curve11a1` should weigh that against a direct descent.
+  (`WeierstrassCurve.curve11a3_rational_points`).  **NOT blocked, and this
+  axis CLOSED `finite_curve11a1` on 2026-07-28**; the note that used to
+  stand here — "what is missing is only the `5`-isogeny as a map of
+  `Affine.Point` groups" — was wrong, and expensively so.  Finiteness needs
+  no group structure at all, only a map with finite fibres, and the
+  `x`-coordinate half of an odd-degree isogeny is one already, as a
+  rational function of `x` alone: `x ↦ A(x)/H(x)²` with
+  `H = 5x² + 5x − 29` the kernel polynomial of the SECOND rational
+  `5`-isogeny out of `11a1` (the first, with kernel `(x − 5)(x − 16)`, is
+  the useless one — its quotient is `11a2`, whose points are unknown
+  here).  See `finite_curve11a1` for the identity and the constants.
+  **`finite_curve17a1` and `finite_curve19a1` do NOT inherit this**: their
+  curves have no rational isogeny onto a curve whose points this tree
+  knows, so the direct-descent template of `MordellWeil.lean` is still the
+  route there.
 * *the descent axis* — Selmer groups of an abelian scheme over `ℚ`, hence
   Galois cohomology with local conditions.  `grep -rn "Selmer" Fermat/`
   returns only Galois-representation modules and `MordellWeil.lean`'s
