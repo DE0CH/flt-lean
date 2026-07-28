@@ -230,6 +230,13 @@ public import Mathlib.Algebra.MvPolynomial.Equiv
 -- reached transitively through `Modularity/MoretBailly.lean`, which imports it
 -- only privately.
 public import Mathlib.Algebra.Polynomial.HasseDeriv
+-- PUBLIC (2026-07-28, NINETEENTH decomposition of
+-- `exists_stepanovAuxiliaryPair`): `Polynomial.resultant` occurs in SIGNATURE
+-- position in `stepanov_resultant_inflate_right` below, and in the proof body of
+-- `exists_stepanovGoodLocusField`.  `Modularity/MoretBailly.lean` reaches this
+-- module only PRIVATELY, so it must be imported here rather than relied on
+-- transitively.
+public import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.AlgebraicIndependent.Transcendental
 import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
 import Mathlib.FieldTheory.IsAlgClosed.Basic
@@ -47221,21 +47228,23 @@ theorem one_le_totalDegree_of_irreducible_map
 /-! ### Stepanov's auxiliary pair, NINETEENTH decomposition (2026-07-28)
 
 `exists_stepanovAuxiliaryPair` below is now **PROVEN** over four sub-leaves, cut
-along Schmidt III itself and stated over an ARBITRARY finite field `K`. They are
-the field-general counterparts of the `ZMod p` chain that
-`Fermat/FLT/Modularity/MoretBailly.lean` already carries PROVEN:
+along Schmidt III itself and stated over an ARBITRARY finite field `K` — of which
+**one is itself PROVEN here**, so THREE are open. They are the field-general
+counterparts of the `ZMod p` chain that `Fermat/FLT/Modularity/MoretBailly.lean`
+already carries PROVEN:
 
-| this file (arbitrary `𝔽_q`)                   | `MoretBailly.lean` (`𝔽_p`)          | Schmidt III |
-|-----------------------------------------------|--------------------------------------|-------------|
-| `exists_stepanovNormalisationField`            | `exists_stepanovNormalisation`       | §1, (4.1)–(4.2) |
-| `exists_stepanovGoodLocusField`                | `exists_stepanovDiscriminant` + (4.5)| (4.1), (4.3), (4.5) |
-| `exists_stepanovNormPolynomialRationalField`   | — (`λ = 1` is new)                   | Lemmas 4A + 5A, `λ = 1` |
-| `exists_stepanovNormPolynomialIrrationalField` | `exists_stepanovNormPolynomial`      | Lemmas 4A + 5A, `λ = 2` |
+| this file (arbitrary `𝔽_q`)                   | status | `MoretBailly.lean` (`𝔽_p`)          | Schmidt III |
+|-----------------------------------------------|--------|--------------------------------------|-------------|
+| `exists_stepanovNormalisationField`            | SORRY  | `exists_stepanovNormalisation`       | §1, (4.1)–(4.2) |
+| `exists_stepanovGoodLocusField`                | PROVEN | `exists_stepanovDiscriminant` + (4.5)| (4.1), (4.3), (4.5) |
+| `exists_stepanovNormPolynomialRationalField`   | SORRY  | — (`λ = 1` is new)                   | Lemmas 4A + 5A, `λ = 1` |
+| `exists_stepanovNormPolynomialIrrationalField` | SORRY  | `exists_stepanovNormPolynomial`      | Lemmas 4A + 5A, `λ = 2` |
 
 **The two gaps recorded on the parent are now localised.** The prime-power gap
-(§§7–9) lives ENTIRELY in the last two leaves — the first two are proven in the
-prime case by arguments that are already char-free apart from one step each,
-identified in their docstrings. The missing `λ = 1` auxiliary function is a
+(§§7–9) lives in the normalisation and the two `NormPolynomial` leaves; the good
+locus, which looked char-sensitive because its prime-field proof pins
+`(∂F/∂Y).natDegree = d − 1`, turned out not to be — see
+`stepanov_resultant_inflate_right`. The missing `λ = 1` auxiliary function is a
 single named leaf, `exists_stepanovNormPolynomialRationalField`, which is
 Schmidt's EASIER case (his Case 1: `x, y ∈ 𝔽_q`, so no norm-form manipulation).
 
@@ -47361,8 +47370,29 @@ theorem exists_stepanovNormalisationField {K : Type*} [Field K] [Finite K]
             + (Nat.card K - S.card) * G.totalDegree) :=
   sorry
 
+/-- **INFLATING THE SYLVESTER SIZE OF A MONIC RESULTANT IS FREE** (PROVEN).
+
+`Polynomial.resultant f g m n` is the determinant of an `(m+n)`-square Sylvester
+matrix, so `n` is a FORMAL degree for `g` and may exceed `g.natDegree`. Mathlib's
+`Polynomial.resultant_add_right_deg` says the excess costs a factor
+`f.coeff m ^ k`; when `f.coeff m = 1` — the case at hand, `f` monic of degree `m`
+— it costs nothing.
+
+**This is what replaces `(∂F/∂Y).natDegree = d − 1` in char `p`.** The prime-field
+proof of `exists_stepanovDiscriminant` (`Modularity/MoretBailly.lean`) fixes the
+Sylvester size at `d − 1` and justifies it with
+`stepanov_natDegree_derivative_of_monic`, which needs `(d : K) ≠ 0`. Over
+`𝔽_{p^f}` with `p ∣ d` the derivative's degree genuinely drops — for `F = Y^p + X`
+it drops to `⊥` — and the fix is not to track the actual degree but to observe
+that the size `d − 1` computes the SAME resultant anyway. -/
+theorem stepanov_resultant_inflate_right {R : Type*} [CommRing R]
+    (f g : Polynomial R) (m n : ℕ) (hfm : f.coeff m = 1) (hgn : g.natDegree ≤ n) :
+    f.resultant g m n = f.resultant g m g.natDegree := by
+  obtain ⟨k, hk⟩ : ∃ k, n = g.natDegree + k := ⟨n - g.natDegree, by omega⟩
+  rw [hk, Polynomial.resultant_add_right_deg _ _ _ _ _ (le_refl _), hfm, one_pow, one_mul]
+
 /-- **SCHMIDT III (4.1), (4.3), (4.5): THE GOOD LOCUS `𝔄`, OVER AN ARBITRARY
-FINITE FIELD** (sorry leaf, NINETEENTH decomposition 2026-07-28).
+FINITE FIELD** (PROVEN 2026-07-28, NINETEENTH decomposition).
 
 The set `𝔄` of `x ∈ K` over which the fibre `F(x, Y)` has `d` DISTINCT roots
 misses at most `d(d−1)` points of `K`.
@@ -47386,17 +47416,20 @@ Sylvester size `n` — and `A := {x | Δ(x) ≠ 0}`. Then
   so `F(x, Y)` is coprime to its derivative, i.e. separable, and it is monic of
   degree `d` because `F` is.
 
-THE ONE PLACE THE PRIME FIELD IS USED, and the whole content of this leaf.
+THE ONE PLACE THE PRIME FIELD WAS USED, and how it was removed.
 `MoretBailly.lean`'s `exists_stepanovDiscriminant` is this statement over
-`ZMod p` and is PROVEN, but its proof twice invokes
-`stepanov_natDegree_derivative_of_monic` to conclude
-`(∂F/∂Y).natDegree = d − 1`, which needs `(d : K) ≠ 0` — TRUE over `𝔽_p` because
-`d < p`, FALSE over `𝔽_{p^f}` whenever `p ∣ d`. So the Sylvester size `n = d − 1`
-is an OVER-estimate in general and the resultant has to be taken with the actual
-`(∂F/∂Y).natDegree`, the mismatch being absorbed by
-`Polynomial.resultant_add_right_deg` (which applies because `F.coeff d = 1`) —
-the same device `exists_stepanovNormPolynomial` already uses for `c`. Nothing
-else in the prime-field proof is char-sensitive.
+`ZMod p`, and its proof twice invokes `stepanov_natDegree_derivative_of_monic` to
+conclude `(∂F/∂Y).natDegree = d − 1`, which needs `(d : K) ≠ 0` — TRUE over `𝔽_p`
+because `d < p`, FALSE over `𝔽_{p^f}` whenever `p ∣ d` (for `F = Y^p + X` the
+derivative is `0`). The repair is NOT to track the actual degree but to notice
+that `d − 1` is a legitimate FORMAL Sylvester size and computes the same
+resultant, because `F` is monic: that is `stepanov_resultant_inflate_right` above,
+applied once over the function field `K̄(X)` and once in each fibre. With it, the
+prime-field proof goes through verbatim over an arbitrary finite field, and the
+degree bound `stepanov_natDegree_resultant_le` was already char-free.
+
+So this leaf is PROVEN and the prime-power gap is now carried entirely by
+`exists_stepanovNormalisationField` and the two `NormPolynomial` leaves.
 
 Note there is NO cardinality hypothesis: the argument is uniform in `q`, and
 imposing `250 d⁵ < q` here would only make the leaf harder to reuse.
@@ -47415,8 +47448,108 @@ theorem exists_stepanovGoodLocusField {K : Type*} [Field K] [Finite K]
     ∃ A : Finset K,
       Nat.card K ≤ A.card + d * (d - 1) ∧
       (∀ x ∈ A, (F.map (Polynomial.evalRingHom x)).Separable ∧
-        (F.map (Polynomial.evalRingHom x)).natDegree = d) :=
-  sorry
+        (F.map (Polynomial.evalRingHom x)).natDegree = d) := by
+  classical
+  letI : Fintype K := Fintype.ofFinite K
+  -- Schmidt (4.2): the weighted degree bounds on the coefficients of `F` and `∂F/∂Y`.
+  have hcoeffF : ∀ i, F.coeff i = 0 ∨ (F.coeff i).natDegree + i ≤ d := by
+    intro i
+    by_cases hi : i ≤ d
+    · exact Or.inr (by have := hcoeff i; omega)
+    · exact Or.inl (Polynomial.coeff_eq_zero_of_natDegree_lt (by omega))
+  have hcoeffF' : ∀ i, (Polynomial.derivative F).coeff i = 0 ∨
+      ((Polynomial.derivative F).coeff i).natDegree + i ≤ d - 1 := by
+    intro i
+    rw [Polynomial.coeff_derivative]
+    by_cases hi : i + 1 ≤ d
+    · refine Or.inr ?_
+      have h1 : (F.coeff (i + 1) * ((i : Polynomial K) + 1)).natDegree
+          ≤ (F.coeff (i + 1)).natDegree + ((i : Polynomial K) + 1).natDegree :=
+        Polynomial.natDegree_mul_le
+      have h2 : ((i : Polynomial K) + 1).natDegree = 0 := by
+        rw [show ((i : Polynomial K) + 1) = ((i + 1 : ℕ) : Polynomial K) by push_cast; ring]
+        exact Polynomial.natDegree_natCast _
+      have h3 := hcoeff (i + 1)
+      omega
+    · refine Or.inl ?_
+      rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega), zero_mul]
+  set Δ : Polynomial K := F.resultant (Polynomial.derivative F) d (d - 1) with hΔdef
+  -- Schmidt (4.3): `deg Δ ≤ d(d−1)`, by the weighted determinant bound.  Char-free.
+  have hΔdeg : Δ.natDegree ≤ d * (d - 1) :=
+    stepanov_natDegree_resultant_le F (Polynomial.derivative F) d (d - 1) hcoeffF hcoeffF'
+  refine ⟨Finset.univ.filter (fun x : K => Δ.eval x ≠ 0), ?_, ?_⟩
+  · -- Schmidt (4.5): `q − d(d−1) ≤ |𝔄|`.  Needs `Δ ≠ 0`.
+    have hΔ0 : Δ ≠ 0 := by
+      set A := AlgebraicClosure K with hA
+      set φ : Polynomial K →+* Polynomial A :=
+        Polynomial.mapRingHom (algebraMap K A) with hφ
+      have hφinj : Function.Injective φ :=
+        Polynomial.map_injective _ (algebraMap K A).injective
+      set L := FractionRing (Polynomial A)
+      set ι : Polynomial A →+* L := algebraMap (Polynomial A) L with hι
+      have hιinj : Function.Injective ι := IsFractionRing.injective _ _
+      set ψ : Polynomial K →+* L := ι.comp φ with hψ
+      have hψinj : Function.Injective ψ := hιinj.comp hφinj
+      -- Gauss: the monic `F̄` stays irreducible over the fraction field `K̄(X)`.
+      have hmonbar : (F.map φ).Monic := hmon.map φ
+      have hirrL : Irreducible ((F.map φ).map ι) :=
+        (Polynomial.Monic.irreducible_iff_irreducible_map_fraction_map hmonbar).mp hirrF
+      have hmapmap : (F.map φ).map ι = F.map ψ := by rw [Polynomial.map_map]
+      rw [hmapmap] at hirrL
+      have hmonL : (F.map ψ).Monic := hmon.map ψ
+      have hderivL : Polynomial.derivative (F.map ψ) ≠ 0 := by
+        rw [Polynomial.derivative_map]
+        exact (Polynomial.map_ne_zero_iff hψinj).mpr hsep
+      have hsepL : (F.map ψ).Separable :=
+        (Polynomial.separable_iff_derivative_ne_zero hirrL).mpr hderivL
+      have hdeg1 : (F.map ψ).natDegree = d := by rw [hmon.natDegree_map ψ, hdegY]
+      have hcoeffd : (F.map ψ).coeff d = 1 := by
+        rw [← hdeg1]; exact hmonL.coeff_natDegree
+      have hdle : (Polynomial.derivative (F.map ψ)).natDegree ≤ d - 1 := by
+        have := Polynomial.natDegree_derivative_le (F.map ψ)
+        omega
+      have hunit0 : IsUnit ((F.map ψ).resultant (Polynomial.derivative (F.map ψ))) :=
+        (Polynomial.isUnit_resultant_iff_isCoprime hmonL).mpr hsepL
+      have h2 := stepanov_resultant_inflate_right (F.map ψ)
+        (Polynomial.derivative (F.map ψ)) d (d - 1) hcoeffd hdle
+      have hunit : IsUnit ((F.map ψ).resultant (Polynomial.derivative (F.map ψ)) d (d - 1)) := by
+        rw [h2, ← hdeg1]
+        exact hunit0
+      have hval : (F.map ψ).resultant (Polynomial.derivative (F.map ψ)) d (d - 1)
+          = ψ (F.resultant (Polynomial.derivative F) d (d - 1)) := by
+        rw [← Polynomial.resultant_map_map, Polynomial.derivative_map]
+      rw [hval] at hunit
+      intro hcon
+      rw [hΔdef] at hcon
+      rw [hcon, map_zero] at hunit
+      exact not_isUnit_zero hunit
+    have hcard := stepanov_card_nonvanishing_ge Δ hΔ0
+    have hnc : Nat.card K = Fintype.card K := Nat.card_eq_fintype_card
+    omega
+  · -- Off the zero set of `Δ` the fibre is separable of full degree `d`.
+    intro x hx
+    have hx' : Δ.eval x ≠ 0 := (Finset.mem_filter.mp hx).2
+    set ev : Polynomial K →+* K := Polynomial.evalRingHom x with hev
+    have hmonx : (F.map ev).Monic := hmon.map ev
+    have hdeg1 : (F.map ev).natDegree = d := by rw [hmon.natDegree_map ev, hdegY]
+    have hcoeffd : (F.map ev).coeff d = 1 := by
+      rw [← hdeg1]; exact hmonx.coeff_natDegree
+    have hdle : (Polynomial.derivative (F.map ev)).natDegree ≤ d - 1 := by
+      have := Polynomial.natDegree_derivative_le (F.map ev)
+      omega
+    refine ⟨?_, hdeg1⟩
+    have hval : (F.map ev).resultant (Polynomial.derivative (F.map ev)) d (d - 1)
+        = ev (F.resultant (Polynomial.derivative F) d (d - 1)) := by
+      rw [← Polynomial.resultant_map_map, Polynomial.derivative_map]
+    have hne : (F.map ev).resultant (Polynomial.derivative (F.map ev)) d (d - 1) ≠ 0 := by
+      rw [hval]; exact hx'
+    have h2 := stepanov_resultant_inflate_right (F.map ev)
+      (Polynomial.derivative (F.map ev)) d (d - 1) hcoeffd hdle
+    rw [h2] at hne
+    have hu : IsUnit ((F.map ev).resultant (Polynomial.derivative (F.map ev))) := by
+      rw [hdeg1]
+      exact isUnit_iff_ne_zero.mpr hne
+    exact (Polynomial.isUnit_resultant_iff_isCoprime hmonx).mp hu
 
 /-- **SCHMIDT III LEMMAS 4A + 5A AT `λ = 1`, OVER AN ARBITRARY FINITE FIELD**
 (sorry leaf, NINETEENTH decomposition 2026-07-28). **Schmidt's EASIER case, and
@@ -47614,9 +47747,10 @@ than open on this one, and the confinement is the point:
    `exists_stepanovAuxiliary`) is all PROVEN and all over a PRIME field. The
    char-`p` obstructions are now localised one per leaf and named in each
    docstring: the inseparability reduction in `exists_stepanovNormalisationField`
-   (`X + Y^p` is a genuine counterexample to the prime-field shortcut), the
-   degree of `∂F/∂Y` in `exists_stepanovGoodLocusField`, and the `X^{qj} Y^{qk}`
-   ansatz in the two `NormPolynomial` leaves. NOTE that the CONSUMING step is
+   (`X + Y^p` is a genuine counterexample to the prime-field shortcut) and the
+   `X^{qj} Y^{qk}` ansatz in the two `NormPolynomial` leaves. The third —
+   the degree of `∂F/∂Y` in `exists_stepanovGoodLocusField` — turned out to be no
+   obstruction at all and that leaf is PROVEN. NOTE that the CONSUMING step is
    already field-general: `sum_le_natDegree_of_hasseDeriv_vanishing` is stated for
    an arbitrary field `K` and is Hasse-derivative based, so nothing downstream of
    this leaf has to be redone for `q = p^f`.
