@@ -148,17 +148,30 @@ original leaf:
   `nonempty_restrict_modTensor`, which is derived from it in three lines — it is
   also the only input the whole trivialization calculus has left.
 
-Three are new, and each is strictly smaller than the leaf it came out of:
+The rest came out of the trivialization calculus, each strictly smaller than the
+leaf it came out of:
 
 * `exists_trivialization_of_modTensorPow` — **the mathematical one**: Stacks
-  01CV, the semigroup bridge.  It is the only one of the five that is not
+  01CV, the semigroup bridge.  It is the only entry in this list that is not
   bookkeeping.
 * `exists_trivialization_tensorPow` — `s^{⊗k}` read through the `k`-th power of
-  a trivialization is the `k`-th power of the trivialized section.
+  a trivialization is the `k`-th power of the trivialized section.  **PROVEN
+  2026-07-28**, by induction, over ONE new leaf `exists_trivialization_modTensor`
+  ("a trivialization of a tensor product multiplies sections").  That cut is a
+  CORRECTION: the route recorded here relied on reading `trivializedSection`
+  through the anonymous iso supplied by `nonempty_restrict_modTensor`, which pins
+  nothing — see that leaf's docstring for the unit-scaling counterexample.
+* `exists_trivialization_modTensor` — the new leaf just described.
 * `exists_trivialization_modPullback` — the same for `f^*`.  **PROVEN 2026-07-28**
   over a five-lemma calculus for the pullback of a global section through the
   canonical comparison isomorphisms, and a `trivializationOfPullback` that is now
   real code rather than an `∃`.  See `trivializedSection_trivializationOfPullback`.
+* `trivializedSection_trivializationOfLE` — **PROVEN 2026-07-28.**  It was never
+  mathematics; it was blocked by `modRestrictLEIso` being routed through
+  `modPullback`.  Rerouting that through mathlib's `restrictFunctorCongr` +
+  `restrictFunctorComp` (both `app`s are `rfl`) closed it.  Two owners found
+  exactly this reroute independently and wrote the SAME definition; the proof
+  kept here is the one that was already on `main`.
 
 ## A note on the definition of ampleness
 
@@ -690,7 +703,22 @@ names the check that would refute it).
   (`PresheafOfModules.Monoidal.tensorObj` sends `X` to `M₁.obj X ⊗ M₂.obj X`);
   the only real step left is that sheafification commutes with restriction to an
   open subsite.  It is NOT stated as a separate leaf here only because it is a
-  three-line corollary of this one, and a redundant leaf is worse than a hint. -/
+  three-line corollary of this one, and a redundant leaf is worse than a hint.
+
+PIN CHECK 2026-07-28.  The second bullet's load-bearing claim was re-run and
+STANDS: `Mathlib/Algebra/Category/ModuleCat/Presheaf/PushforwardZeroMonoidal.lean`
+is present at this pin.
+
+One addition to the last bullet, and it raises that bullet's priority.  The OPEN
+IMMERSION case is not merely "a smaller first target" — it is what
+`nonempty_restrict_modTensor`, the whole trivialization calculus, and the new
+leaf `exists_trivialization_modTensor` all wait on.  And that last leaf needs
+strictly more than this one gives: it needs the comparison to be **canonical**,
+with a known effect on `tensorSection`, not merely to EXIST.  A `Nonempty`
+comparison can be post-composed with multiplication by any unit of `Γ(U, ⊤)`,
+which is invisible to every clause stated here.  So a prover closing this leaf
+should consider delivering a NAMED isomorphism rather than a `Nonempty` — the
+`Nonempty` packaging is precisely what forced that leaf to be cut. -/
 theorem nonempty_modPullback_modTensor {X Y : Scheme.{u}} (f : X ⟶ Y) (L M : Y.Modules) :
     Nonempty (modPullback f (modTensor L M) ≅
       modTensor (modPullback f L) (modPullback f M)) := sorry
@@ -1044,7 +1072,29 @@ produces `IsInvertibleSheaf` beside it — so the ALTERNATIVE repair (thread
 `AbelianSchemeIsogeny.lean`, where it is currently bound to `-`) is available and
 costs nothing mathematically.  It is not taken here because the statement as
 given is TRUE, and weakening a true statement to dodge a proof is exactly what
-the faithfulness rule forbids. -/
+the faithfulness rule forbids.
+
+PIN CHECK 2026-07-28 — one claim re-run and CONFIRMED, one API added that was
+not recorded here.
+
+* The stalk half of the argument above really is blocked, and the module
+  docstring's note about `NonvanishingAt` is the same gap:
+  `grep -rln stalk Mathlib/Algebra/Category/ModuleCat/{Presheaf,Sheaf}/` is
+  **EMPTY** at this pin.  (`Scheme.Modules.restrictStalkNatIso` does exist, but
+  it is a stalk of the underlying `Ab`-presheaf and carries no `Module`
+  structure, so it cannot express "`A_y` is invertible over `𝒪_y`".)
+* NOT recorded here before, and it is the vocabulary this leaf should be phrased
+  against: `Mathlib/Algebra/Category/ModuleCat/Sheaf/LocallyFree.lean` EXISTS at
+  this pin, supplying `SheafOfModules.IsLocallyFree`,
+  `SheafOfModules.LocalGeneratorsData.IsLocallyFreeData` and
+  `GeneratingSections`, on top of `Sheaf/Generators.lean` and
+  `Sheaf/Quasicoherent.lean`.  That is DEFINITIONS, not this theorem —
+  "invertible implies locally free of rank one" is not in the pin, and a grep
+  for it returns nothing — but the finite-generation half of the argument above
+  ("`A` is generated by `s_1, …, s_m` there") is literally a
+  `LocalGeneratorsData`, and `free.generatingSections` already gives the rank-one
+  model.  So the missing input is the STALK-MODULE structure, not the
+  local-freeness vocabulary. -/
 theorem exists_trivialization_of_modTensorPow {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
     {k : ℕ} (hk : 0 < k) (ψ : (modTensorPow A k).restrict U.ι ≅ modUnit (U : Scheme.{u}))
     {z : Z} (hz : z ∈ U) :
@@ -1105,21 +1155,76 @@ noncomputable def tensorPowSection {Z : Scheme.{u}} {A : Z.Modules} (s : Γ(A, �
   | 0 => unitOne Z
   | (k + 1) => tensorSection s (tensorPowSection s k)
 
-/-- **`s^{⊗k}` read through the `k`-th power of a trivialization is the `k`-th
-power of the trivialized section** (sorry leaf).
+/-- **A TRIVIALIZATION OF A TENSOR PRODUCT MULTIPLIES SECTIONS** (sorry leaf, cut
+2026-07-28 out of `exists_trivialization_tensorPow`).
 
-This is the computational half of `nonvanishingLocus_tensorPowSection`; it is
-bookkeeping, not mathematics.  ROUTE: induct on `k`, building `ψ` out of
-`nonempty_restrict_modTensor` and `modTensorUnitLeftIso` exactly as
-`isInvertibleSheaf_modTensor` does, and check the section identity against
-`tensorSection`'s definition — the presheaf tensor is objectwise, so the
-identity to verify is that the trivialization of a tensor sends `a ⊗ₜ b` to
-`a * b`, which is the definition of the left unitor composed with
-`modTensorMapIso`. -/
+Given trivializations of `L` and `M` over one open `U`, there is a trivialization
+of `L ⊗ M` over `U` that carries `a ⊗ b` to the PRODUCT of the two trivialized
+sections.
+
+**WHY THIS LEAF EXISTS — the ROUTE recorded on `exists_trivialization_tensorPow`
+could not work as written, and this is a correction, not a restatement.**  That
+route said: "induct on `k`, building `ψ` out of `nonempty_restrict_modTensor` and
+`modTensorUnitLeftIso` exactly as `isInvertibleSheaf_modTensor` does, and check
+the section identity against `tensorSection`'s definition".  The induction is
+fine and is now discharged below.  The "check the section identity" step is not:
+**`nonempty_restrict_modTensor` delivers `Nonempty`, i.e. an ARBITRARY
+isomorphism**, and `trivializedSection` through an arbitrary isomorphism is not
+computable by any amount of unfolding.  Concretely, post-composing that anonymous
+iso with multiplication by any unit `c : Γ(U, ⊤)ˣ` satisfies every clause
+`nonempty_restrict_modTensor` states while multiplying the trivialized section by
+`c` — so the identity `a ⊗ₜ b ↦ a * b` is simply not pinned by the stated inputs.
+The missing ingredient is a comparison isomorphism with a KNOWN effect on
+sections, which is what this leaf asks for.
+
+**Not vacuous, and not under-pinned.**  The `∀ a b` clause pins `θ` on every pure
+tensor of global sections, which is exactly what the consumer consumes; a `θ`
+differing by a unit fails it.  It is also satisfiable: the presheaf tensor is
+OBJECTWISE (`PresheafOfModules.Monoidal.tensorObj` sends `X` to
+`M₁.obj X ⊗ M₂.obj X`), and the left unitor sends `r ⊗ₜ m` to `r • m`, so the
+canonical comparison composed with `modTensorMapIso φ χ ≪≫ modTensorUnitLeftIso`
+has precisely this effect.
+
+ROUTE: the honest form is to strengthen `nonempty_restrict_modTensor` from
+`Nonempty` to a NAMED comparison isomorphism `(L ⊗ M)|_f ≅ L|_f ⊗ M|_f` carrying
+`(a ⊗ b)|_f` to `a|_f ⊗ b|_f`, which in turn wants a canonical
+`nonempty_modPullback_modTensor` rather than an anonymous one.  Restriction along
+an open immersion is a `SheafOfModules.pushforward` along `opensFunctor`, hence
+objectwise on presheaves where `⊗` is also objectwise, so at presheaf level the
+comparison is the IDENTITY and the whole content is that sheafification commutes
+with restriction to an open subsite. -/
+theorem exists_trivialization_modTensor {Z : Scheme.{u}} {L M : Z.Modules} {U : Z.Opens}
+    (φ : L.restrict U.ι ≅ modUnit (U : Scheme.{u}))
+    (χ : M.restrict U.ι ≅ modUnit (U : Scheme.{u})) :
+    ∃ θ : (modTensor L M).restrict U.ι ≅ modUnit (U : Scheme.{u}),
+      ∀ (a : Γ(L, ⊤)) (b : Γ(M, ⊤)),
+        trivializedSection θ (tensorSection a b)
+          = trivializedSection φ a * trivializedSection χ b := sorry
+
+/-- **`s^{⊗k}` read through the `k`-th power of a trivialization is the `k`-th
+power of the trivialized section** (PROVEN 2026-07-28 over
+`exists_trivialization_modTensor`).
+
+Induction on `k`, right-nested exactly as `modTensorPow` and `tensorPowSection`
+are.  The base case is the canonical trivialization of `𝒪_Z` over `U`, whose
+trivialized section is `U.ι.appTop 1 = 1` because `appTop` is a ring map; the
+step is one application of `exists_trivialization_modTensor` and `pow_succ'`.
+
+The bookkeeping half of the old ROUTE is therefore discharged; the half that did
+not survive contact is recorded on `exists_trivialization_modTensor` above. -/
 theorem exists_trivialization_tensorPow {Z : Scheme.{u}} {A : Z.Modules} {U : Z.Opens}
     (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) (k : ℕ) :
     ∃ ψ : (modTensorPow A k).restrict U.ι ≅ modUnit (U : Scheme.{u}),
-      trivializedSection ψ (tensorPowSection s k) = trivializedSection φ s ^ k := sorry
+      trivializedSection ψ (tensorPowSection s k) = trivializedSection φ s ^ k := by
+  induction k with
+  | zero =>
+    refine ⟨Scheme.Modules.restrictUnitIso U.ι, ?_⟩
+    rw [pow_zero]
+    exact (trivializedSection_restrictUnitIso U (1 : Γ(Z, ⊤))).trans (map_one _)
+  | succ k ih =>
+    obtain ⟨ψ, hψ⟩ := ih
+    obtain ⟨θ, hθ⟩ := exists_trivialization_modTensor φ ψ
+    exact ⟨θ, (hθ s (tensorPowSection s k)).trans (by rw [hψ, pow_succ'])⟩
 
 /-- **Tensor powers of a section do not change the non-vanishing locus** (PROVEN
 2026-07-28).
