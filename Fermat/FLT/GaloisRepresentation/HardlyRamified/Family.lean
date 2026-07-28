@@ -3476,7 +3476,21 @@ self-contained representation-theoretic leaf that this tree has the machinery to
 Refuting check on THIS cut, and it is cheap: exhibit a proof of
 `isMultiplicativeType_corner_of_hopf_package` that uses `hchar` or `fG` for something other
 than producing an inertia-stable flag — i.e. a use of the coefficient ring `R` that survives
-into the group-scheme argument. -/
+into the group-scheme argument.
+
+**UPDATE 2026-07-28 (later the same day): BOTH halves have since been cut again**, so
+neither of the two names above is a leaf any more. The four open statements under this
+section are now
+
+* `exists_levelOneFlag_space_of_charpoly` — the arithmetic, with `G` and `fG` removed
+  entirely: an inertia-stable `𝔽_p`-flag on the `Γ ℚᵖᵥ`-module
+  `((ρ.baseChange (R ⧸ I)).toLocal p).Space`. Its transport back to the points of `G` is
+  `exists_levelOneFlag_of_bijective_equivariant`, PROVEN.
+* `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` — Raynaud, with
+  connectedness in the intrinsic form (`hconn`) that route (a) of the dévissage needs. The
+  bridge `hprim₀ → hconn` is `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one`, PROVEN.
+* `exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType` and the `(D2)`
+  transport below, unchanged by this pass. -/
 
 set_option synthInstance.maxHeartbeats 1000000 in
 variable (p) in
@@ -3524,13 +3538,99 @@ def HasInertiaLevelOneFlag (G : Type) [CommRing G]
     (∀ i < n, ∃ x ∈ M (i + 1), p • x ∈ M i ∧
       M (i + 1) = M i ⊔ AddSubmonoid.closure {x})
 
-set_option synthInstance.maxHeartbeats 1000000 in
-/-- **THE ARITHMETIC HALF OF `(R1)`: the hardly-ramified Hopf package has level one**
-(SORRY LEAF — no group-scheme theory, no Raynaud, and NO `hpodd`).
+/-- **Transport of a level-one flag along a bijective equivariant additive map** (PROVEN
+2026-07-28; pure lattice theory of `AddSubmonoid`s, no arithmetic and no Hopf algebras).
 
-This is the whole contribution of `hchar`, `fG`/`hfG`, `hmul₁`/`hmul₂`, `hZinj`/`hRinj` and
-the open ideal `I` to the Raynaud citation. After it, the coefficient ring `R`, the
-representation `ρ` and the characters `χ₁`, `χ₂` never appear again.
+`HasInertiaLevelOneFlag p G` is a condition on the geometric points of `G` *as a
+`Γ ℚᵖᵥ`-module and nothing else*, so it transports verbatim along any bijective
+`Γ`-equivariant additive map. This lemma is what lets the arithmetic half of `(R1)` be
+stated on the representation space — where it belongs — rather than on the points of a
+Hopf order.
+
+The flag is pulled back by `AddSubmonoid.comap f`, which is a lattice isomorphism because
+`f` is bijective:
+
+* `comap f ⊥ = ⊥` needs injectivity, `comap f ⊤ = ⊤` is free, monotonicity is functorial;
+* stability under `σ` is `f (σ • x) = σ • f x`, i.e. `map_smul`;
+* the one-step-generation clause is `AddSubmonoid.map_sup_comap_of_surjective` (which turns
+  `comap` of a `⊔` into a `⊔` of `comap`s, given surjectivity) together with
+  `AddMonoidHom.map_mclosure` and `AddSubmonoid.comap_map_eq_of_injective` (which identify
+  `comap f (closure {f y})` with `closure {y}`).
+
+Stated over bare `AddMonoid`s — NOT `AddCommMonoid` — deliberately: the point "group" of a
+Hopf order reaches this file only through the project's `Monoid` instance on the bare hom
+type (the `Group`/`CommGroup` structure lives on the `WithConv` synonym), so an
+`AddCommMonoid` hypothesis would not be discharged at the call site. Nothing in the proof
+needs commutativity, since the `⊔` clause is handled through the Galois connection rather
+than through `AddSubmonoid.mem_sup`.
+
+`S` is a bare predicate rather than a `Set`/`Subgroup` so that the call site's
+`∀ σ ∈ localInertiaGroup …` binder unifies with it by pattern unification. -/
+theorem exists_levelOneFlag_of_bijective_equivariant
+    {Grp : Type*} [Monoid Grp] {M₀ N₀ : Type*} [AddMonoid M₀] [AddMonoid N₀]
+    [DistribMulAction Grp M₀] [DistribMulAction Grp N₀]
+    (f : M₀ →+[Grp] N₀) (hf : Function.Bijective f)
+    (S : Grp → Prop) (q : ℕ) (n : ℕ) (Q : ℕ → AddSubmonoid N₀)
+    (h0 : Q 0 = ⊥) (hn : Q n = ⊤) (hmono : ∀ i, Q i ≤ Q (i + 1))
+    (hstab : ∀ i, ∀ σ, S σ → ∀ x ∈ Q i, σ • x ∈ Q i)
+    (hstep : ∀ i < n, ∃ x ∈ Q (i + 1), q • x ∈ Q i ∧
+      Q (i + 1) = Q i ⊔ AddSubmonoid.closure {x}) :
+    ∃ (m : ℕ) (P : ℕ → AddSubmonoid M₀), P 0 = ⊥ ∧ P m = ⊤ ∧ (∀ i, P i ≤ P (i + 1)) ∧
+      (∀ i, ∀ σ, S σ → ∀ x ∈ P i, σ • x ∈ P i) ∧
+      (∀ i < m, ∃ x ∈ P (i + 1), q • x ∈ P i ∧
+        P (i + 1) = P i ⊔ AddSubmonoid.closure {x}) := by
+  classical
+  refine ⟨n, fun i => (Q i).comap f, ?_, ?_, ?_, ?_, ?_⟩
+  · show (Q 0).comap f = ⊥
+    rw [h0]
+    ext x
+    simp only [AddSubmonoid.mem_comap, AddSubmonoid.mem_bot]
+    exact ⟨fun hx => hf.1 (by simpa using hx), fun hx => by simp [hx]⟩
+  · show (Q n).comap f = ⊤
+    rw [hn]; ext x; simp
+  · intro i x hx
+    exact hmono i hx
+  · intro i σ hσ x hx
+    simp only [AddSubmonoid.mem_comap] at hx ⊢
+    rw [map_smul f σ x]
+    exact hstab i σ hσ _ hx
+  · intro i hi
+    obtain ⟨x, hxmem, hxq, hxsup⟩ := hstep i hi
+    obtain ⟨y, rfl⟩ := hf.2 x
+    refine ⟨y, hxmem, ?_, ?_⟩
+    · simp only [AddSubmonoid.mem_comap, map_nsmul]
+      exact hxq
+    · show (Q (i + 1)).comap f = (Q i).comap f ⊔ AddSubmonoid.closure {y}
+      have hmapclos : (AddSubmonoid.closure ({y} : Set M₀)).map f =
+          AddSubmonoid.closure ({f y} : Set N₀) := by
+        rw [AddMonoidHom.map_mclosure]; simp
+      have hclos : (AddSubmonoid.closure ({f y} : Set N₀)).comap f =
+          AddSubmonoid.closure ({y} : Set M₀) := by
+        rw [← hmapclos, AddSubmonoid.comap_map_eq_of_injective hf.1]
+      have key := congrArg (AddSubmonoid.comap f)
+        (AddSubmonoid.map_sup_comap_of_surjective hf.2 (Q i)
+          (AddSubmonoid.closure ({f y} : Set N₀)))
+      rw [AddSubmonoid.comap_map_eq_of_injective hf.1] at key
+      rw [hxsup, ← key, hclos]
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`, WITH THE GROUP SCHEME REMOVED: the residual
+representation admits an inertia-stable `𝔽_p`-flag** (SORRY LEAF, cut out of
+`hasInertiaLevelOneFlag_of_hopf_package` on 2026-07-28).
+
+`G`, `fG`/`hfG`, the flatness/finiteness of the Hopf order and the étaleness of its generic
+fibre have all DISAPPEARED: this is a statement about the `Γ ℚᵖᵥ`-module
+`((ρ.baseChange (R ⧸ I)).toLocal p).Space = (R ⧸ I) ⊗[R] V` and nothing else.
+`exists_levelOneFlag_of_bijective_equivariant` above carries it back to the points of `G`.
+
+WHY DROPPING `G` IS SAFE, i.e. why this is not a weakening into falsity. Every step of the
+argument recorded below spends only `hchar`, `hmul₁`/`hmul₂`, `hRinj`/`hZinj` and the
+openness of `I`; `fG` was used for exactly one thing, namely to *identify* the geometric
+points with this module, and the identification is a bijection, so the two statements are
+equivalent whenever a `G` exists. Nothing in the four steps is an argument about flat
+prolongations, and no step consults the special fibre of `G`. (Refuting check on this
+paragraph: a proof of the old leaf that inspects `G` — its rank, its idempotents, its
+special fibre — for something other than transporting the flag.)
 
 THE ARGUMENT, in four steps; each is ordinary representation theory over a finite field.
 
@@ -3552,27 +3652,84 @@ THE ARGUMENT, in four steps; each is ordinary representation theory over a finit
    trivial. So `χ̄ᵢ|_{I_p}` is `𝔽_p^×`-valued. **This step is exactly item (iv) of the
    audit history below, and it is why the conclusion is coefficient-free: no matter how
    large the residue field of `R`, only level one occurs.**
-4. *From `𝔽_p`-valued characters to the flag.* `fG`/`hfG` identify the geometric points
-   with `(R ⧸ I) ⊗ V` as `Γ ℚᵖᵥ`-modules. Filtering `R ⧸ I` by the powers of its maximal
-   ideal reduces to the residual `V̄`; by steps 2–3 the `𝔽̄_p`-constituents of `V̄|_{I_p}`
-   are `𝔽_p`-rational characters, so `V̄|_{I_p}` is triangularizable already over the
-   residue field `k`, and each `k`-line — on which inertia acts by a scalar IN `𝔽_p` — is
-   an `𝔽_p`-vector space every subspace of which is inertia-stable. Refining the `k`-flag
-   to an `𝔽_p`-flag gives the chain of `AddSubmonoid`s with cyclic order-`p` quotients.
+4. *From `𝔽_p`-valued characters to the flag.* Filtering `R ⧸ I` by the powers of its
+   maximal ideal (`hI` makes `R ⧸ I` a FINITE local artinian ring, so the filtration
+   terminates) reduces to the residual `V̄`; by steps 2–3 the `𝔽̄_p`-constituents of
+   `V̄|_{I_p}` are `𝔽_p`-rational characters, so `V̄|_{I_p}` is triangularizable already
+   over the residue field `k`, and each `k`-line — on which inertia acts by a scalar IN
+   `𝔽_p` — is an `𝔽_p`-vector space every subspace of which is inertia-stable. Refining the
+   `k`-flag to an `𝔽_p`-flag gives the chain of `AddSubmonoid`s with cyclic order-`p`
+   quotients.
+
+WHERE EACH HYPOTHESIS GOES, so a prover can tell a load-bearing one from decoration:
+`hchar` is step 2 and is the only source of the two characters; `hmul₁`/`hmul₂` are what
+make `χ̄ᵢ` a CHARACTER, without which step 3's `χ̄(τ)^p = χ̄(τ^p)` is not even a statement;
+`hRinj` is what makes `hchar` a statement about `ρ` rather than about a degenerate image;
+`hZinj` is step 1's integrality; `hI` is step 4's finiteness. `hpodd` is NOT here — it is
+spent entirely in `isMultiplicativeType_corner_of_inertiaLevelOneFlag`.
 
 NON-VACUITY. On the witness of item (C2) below — `R = ℤ_[p]`, `I = (p)`,
-`ρ = χ_cyc ⊕ 1`, `G = 𝒪(μ_p × ℤ/p)` — the point group is `𝔽_p(1) ⊕ 𝔽_p`, and the chain
-`⊥ ≤ 𝔽_p(1) ≤ ⊤` is inertia-stable with both quotients cyclic of order `p`. The condition
-FAILS, as it must, for the supersingular witness of item (iii): there the point group is a
-simple `𝔽_p[I_p]`-module of dimension `2` (tame inertia acts through the level-`2`
-fundamental characters), so no chain with cyclic order-`p` quotients is inertia-stable.
-That contrast is the evidence that this leaf carries the content it is supposed to carry:
-it is exactly what separates the two cases the citation must distinguish.
+`ρ = χ_cyc ⊕ 1` — the module is `𝔽_p(1) ⊕ 𝔽_p`, and the chain `⊥ ≤ 𝔽_p(1) ≤ ⊤` is
+inertia-stable with both quotients cyclic of order `p`. The conclusion FAILS, as it must,
+for the supersingular witness of item (iii): there the module is a simple `𝔽_p[I_p]`-module
+of dimension `2` (tame inertia acts through the level-`2` fundamental characters), so no
+chain with cyclic order-`p` quotients is inertia-stable. That contrast is the evidence that
+this leaf carries the content it is supposed to carry: it is exactly what separates the two
+cases the citation must distinguish. Note the supersingular witness also satisfies every
+HYPOTHESIS except `hchar` — which is precisely the hypothesis it must fail, since its
+residual representation is irreducible over `𝔽̄_p` and so has no such charpoly
+factorisation.
 
-FAITHFULNESS. The conclusion is an INERTIA-only condition on a filtration of the geometric
-points; it asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so it is blind
-to unramified twists (an unramified twist changes the `D_p`-action and not the `I_p`-action
-at all). It sits on the safe side of the rule that killed `exists_muType_closure`. -/
+DEGENERATE CASES (checked, both true rather than vacuous). At `I = ⊤` the module is `0`,
+and `n = 0` with `M 0 = ⊥ = ⊤` discharges the conclusion. At `V = 0` the same. Neither is
+excluded by a hypothesis, so a proof must handle them; neither is a counterexample.
+
+FAITHFULNESS. The conclusion is an INERTIA-only condition on a filtration of the module; it
+asks for no coordinate, no normal form and no `ℚᵖᵥ`-rationality, so it is blind to
+unramified twists (an unramified twist changes the `D_p`-action and not the `I_p`-action at
+all). It sits on the safe side of the rule that killed `exists_muType_closure`. -/
+theorem exists_levelOneFlag_space_of_charpoly
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R)) :
+    ∃ (n : ℕ) (M : ℕ → AddSubmonoid (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space)),
+      M 0 = ⊥ ∧ M n = ⊤ ∧
+      (∀ i, M i ≤ M (i + 1)) ∧
+      (∀ i, ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ x ∈ M i, σ • x ∈ M i) ∧
+      (∀ i < n, ∃ x ∈ M (i + 1), p • x ∈ M i ∧
+        M (i + 1) = M i ⊔ AddSubmonoid.closure {x}) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **THE ARITHMETIC HALF OF `(R1)`: the hardly-ramified Hopf package has level one**.
+
+**STATUS 2026-07-28 — NO LONGER A SORRY LEAF. It is a two-line ASSEMBLY** over
+
+* `exists_levelOneFlag_space_of_charpoly` — the arithmetic, stated on the
+  `Γ ℚᵖᵥ`-module `((ρ.baseChange (R ⧸ I)).toLocal p).Space` with no group scheme in sight;
+* `exists_levelOneFlag_of_bijective_equivariant` — PROVEN transport of a level-one flag
+  along the bijective equivariant `fG`.
+
+That cut is possible because `HasInertiaLevelOneFlag p G` is by construction a condition on
+the geometric points *as a `Γ ℚᵖᵥ`-module only*: it mentions no ring structure on the
+points, no comultiplication, no coordinate. So the whole Hopf-order half of the old
+hypothesis list (`G`, its flatness, finiteness and étale generic fibre) was there to name
+the module and for nothing else, and `hfG` is what makes naming it removable. This is the
+same disclaimer the surrounding cuts carry: it makes no progress on the arithmetic, it
+localises it.
+
+Refuting check on THIS cut, and it is cheap: exhibit a proof of the conclusion that
+inspects `G` — its rank, its idempotents, its special fibre — for anything other than
+transporting the flag. -/
 theorem hasInertiaLevelOneFlag_of_hopf_package
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -3591,15 +3748,98 @@ theorem hasInertiaLevelOneFlag_of_hopf_package
       (((ρ.baseChange (R ⧸ I)).toLocal
         hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
     (hfG : Function.Bijective fG) :
-    HasInertiaLevelOneFlag p G :=
-  sorry
+    HasInertiaLevelOneFlag p G := by
+  obtain ⟨n, Q, h0, hn, hmono, hstab, hstep⟩ :=
+    exists_levelOneFlag_space_of_charpoly hZinj hRinj χ₁ χ₂ hmul₁ hmul₂ hchar I hI
+  exact exists_levelOneFlag_of_bijective_equivariant fG hfG
+    (fun σ => σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+    p n Q h0 hn hmono hstab hstep
+
+/-- **`hprim₀` IS connectedness of the corner Hopf algebra** (PROVEN 2026-07-28; pure
+commutative algebra, no Hopf structure used — only `[CommRing A]`).
+
+If `e₀` is idempotent and every idempotent of `A` either kills or fixes it (`hprim₀`, i.e.
+`e₀` is a MINIMAL idempotent), then the corner `A ⧸ (1 - e₀)` has NO nontrivial
+idempotents.
+
+This is the bridge the docstring of `isMultiplicativeType_corner_of_inertiaLevelOneFlag`
+names under "what a further cut would need": route (a) — a single dévissage step assembled
+by strong induction on `Module.finrank 𝒪ᵖᵥ` — requires connectedness stated INTRINSICALLY on
+the abstract Hopf algebra, "which is what `hprim₀` gives for the corner". This lemma is
+that sentence, proven, so route (a) no longer has to re-derive it.
+
+PROOF. `x ∈ (1 - e₀)` iff `e₀ * x = 0` (take `c = x` in `∃ c, c * (1 - e₀) = x` for one
+direction; expand `e₀ * (c * (1 - e₀)) = c * (e₀ - e₀ * e₀)` for the other). So an
+idempotent `mk a` of the quotient gives `e₀ * (a * a - a) = 0`, whence `e₀ * a` is an
+idempotent OF `A`: `(e₀ a)(e₀ a) = e₀² (a a) = e₀ (a a) = e₀ a`. It also absorbs `e₀` on the
+right, `(e₀ a) e₀ = e₀² a = e₀ a`, so `hprim₀` applied to it reads `e₀ * a = 0` or
+`e₀ * a = e₀` — which are exactly `mk a = 0` and `mk a = 1`.
+
+The converse holds too (an idempotent `x` of `A` maps to an idempotent of the corner, and
+`mk x = 0`/`mk x = 1` unwind to `x * e₀ = 0`/`x * e₀ = e₀`), so nothing is lost: `hprim₀`
+and corner-connectedness are EQUIVALENT, and the leaf below is not weakened by taking the
+intrinsic form. -/
+theorem isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one
+    {A : Type*} [CommRing A] {e₀ : A} (he₀ : IsIdempotentElem e₀)
+    (hprim₀ : ∀ x : A, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (z : A ⧸ HopfAlgebra.cornerIdeal e₀) (hz : IsIdempotentElem z) : z = 0 ∨ z = 1 := by
+  classical
+  have hmem : ∀ x : A, e₀ * x = 0 →
+      (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) x : A ⧸ HopfAlgebra.cornerIdeal e₀) = 0 := by
+    intro x hx
+    rw [Ideal.Quotient.eq_zero_iff_mem, HopfAlgebra.mem_cornerIdeal_iff]
+    refine ⟨x, ?_⟩
+    rw [mul_sub, mul_one, mul_comm x e₀, hx, sub_zero]
+  have hmem' : ∀ x : A,
+      (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) x : A ⧸ HopfAlgebra.cornerIdeal e₀) = 0 →
+      e₀ * x = 0 := by
+    intro x hx
+    rw [Ideal.Quotient.eq_zero_iff_mem, HopfAlgebra.mem_cornerIdeal_iff] at hx
+    obtain ⟨c, rfl⟩ := hx
+    have h : e₀ * (c * (1 - e₀)) = c * (e₀ - e₀ * e₀) := by ring
+    rw [h, he₀, sub_self, mul_zero]
+  obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective z
+  have ha : e₀ * (a * a - a) = 0 := by
+    refine hmem' _ ?_
+    rw [map_sub, map_mul]
+    rw [show (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) a) *
+      (Ideal.Quotient.mk (HopfAlgebra.cornerIdeal e₀) a) = _ from hz, sub_self]
+  have hx : IsIdempotentElem (e₀ * a) := by
+    show (e₀ * a) * (e₀ * a) = e₀ * a
+    have h1 : (e₀ * a) * (e₀ * a) = (e₀ * e₀) * (a * a) := by ring
+    have h2 : e₀ * (a * a) = e₀ * a := by
+      have h3 : e₀ * (a * a) - e₀ * a = e₀ * (a * a - a) := by ring
+      rw [← sub_eq_zero, h3, ha]
+    rw [h1, he₀, h2]
+  have hfix : (e₀ * a) * e₀ = e₀ * a := by
+    have h1 : (e₀ * a) * e₀ = (e₀ * e₀) * a := by ring
+    rw [h1, he₀]
+  rcases hprim₀ (e₀ * a) hx with h | h
+  · left
+    exact hmem a (by rw [← hfix, h])
+  · right
+    have h5 : e₀ * (a - 1) = 0 := by
+      have h6 : e₀ * (a - 1) = (e₀ * a) * e₀ - e₀ := by rw [hfix]; ring
+      rw [h6, h, sub_self]
+    have h7 := hmem _ h5
+    rw [map_sub, map_one, sub_eq_zero] at h7
+    exact h7
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
-/-- **THE CITATION ITSELF, COEFFICIENT-FREE: a connected finite flat Hopf order over `𝒪ᵖᵥ`
-of LEVEL ONE is of multiplicative type** (SORRY LEAF — this is Raynaud, and after this cut
-it is the only statement in the cluster that is not either commutative algebra or
-representation theory).
+/-- **THE CITATION ITSELF, COEFFICIENT-FREE AND WITH CONNECTEDNESS INTRINSIC: a connected
+finite flat Hopf order over `𝒪ᵖᵥ` of LEVEL ONE is of multiplicative type** (SORRY LEAF —
+this is Raynaud, and after this cut it is the only statement in the cluster that is not
+either commutative algebra or representation theory).
+
+**CHANGE 2026-07-28**: the `e₀`-specific minimality hypothesis `hprim₀` has been replaced by
+the INTRINSIC `hconn`, "the corner Hopf algebra has no nontrivial idempotents". The two are
+EQUIVALENT (`isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` above proves the
+direction this file needs, and its docstring records the converse), so this is not a
+weakening; what it buys is the first of the two restatements that route (a) below requires,
+namely connectedness in a form an abstract sub-quotient `A''` can inherit. The second —
+`hflag` restated on the corner rather than on `G` — is NOT done here and is the one
+remaining obstruction to route (a); see the closing paragraph.
 
 Reference: Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF **102** (1974),
 §1.4, Prop. 3.3.2, Th. 3.3.3 and Cor. 3.4.4, with Oort–Tate 1970 at order `p`; Tate's
@@ -3616,7 +3856,7 @@ WHAT IS LEFT, and it is the whole of `(R1)`:
    Hopf algebras.
 2. *The order-`p` dichotomy `(R2)`, in its GROUP-SCHEME form.* Each graded piece is
    classified by `X^p = δ X` with `0 ≤ v(δ) ≤ e = 1`, hence is étale (`v(δ) = 0`) or of
-   `μ`-type (`v(δ) = 1`); connectedness (`hprim₀`) excludes étale. The POINT-LEVEL form of
+   `μ`-type (`v(δ) = 1`); connectedness (`hconn`) excludes étale. The POINT-LEVEL form of
    this is already formalized and sorry-free in
    `Fermat/FLT/GroupScheme/ConnectedEtale.lean`
    (`OortTate.inertia_character_trivial_or_cyclotomic`,
@@ -3645,7 +3885,7 @@ explicit counterexample:
   fundamental characters, so it is not of multiplicative type — indeed the Weil pairing
   makes `E[p]` self-dual, so its Cartier dual carries the same ramified action and is not
   étale. This is item (iii) of the audit history below, unchanged.
-* WITHOUT connectedness (`hε₀`, `hprim₀`) the statement is FALSE. The constant group scheme
+* WITHOUT connectedness (`hε₀`, `hconn`) the statement is FALSE. The constant group scheme
   `ℤ/p` over `ℤ_p` has trivial inertia action on its points, so it satisfies `hflag`
   trivially; its Cartier dual is `μ_p`, which is NOT étale over `ℤ_p`. Connectedness is
   what forbids the `v(δ) = 0` branch of the order-`p` dichotomy. (Note this hypothesis is
@@ -3670,11 +3910,61 @@ tree has no idiom for. The two shapes that avoid it are (a) a single dévissage 
 "either `𝒪(G°)` has rank `1`, or there are `A''`, `A'` with `IsShortExact i π`, `A'` of
 `μ`-type and `rank A'' < rank A`" — assembled by strong induction on
 `Module.finrank 𝒪ᵖᵥ`, which needs the hypotheses of this statement restated INTRINSICALLY
-on an abstract `A` so that `A''` inherits them (`hflag` already is intrinsic; connectedness
-would have to become "`A` has no nontrivial idempotents", which is what `hprim₀` gives for
-the corner); or (b) an inductive predicate `IsIteratedMultiplicativeExtension`. Route (a)
-is the smaller of the two and is the recommended one. Refuting check on this paragraph: a
-route to multiplicative type of `G°` that never produces a composition series. -/
+on an abstract `A` so that `A''` inherits them; or (b) an inductive predicate
+`IsIteratedMultiplicativeExtension`. Route (a) is the smaller of the two and is the
+recommended one. Refuting check on this paragraph: a route to multiplicative type of `G°`
+that never produces a composition series.
+
+**STATE OF ROUTE (a), UPDATED 2026-07-28.** The paragraph above used to say "`hflag`
+already is intrinsic; connectedness would have to become '`A` has no nontrivial
+idempotents'". Half of that was correct and half was backwards, and both halves have now
+moved:
+
+* CONNECTEDNESS IS DONE. It is `hconn` on this statement, proven equivalent to `hprim₀` by
+  `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` above. An abstract `A''` inherits
+  it (a quotient/sub of a ring with no nontrivial idempotents that is again a corner of it
+  has none either — which is the shape the dévissage produces).
+* `hflag` IS **NOT** ALREADY INTRINSIC HERE, and that is now the single remaining
+  obstruction to route (a). It is `HasInertiaLevelOneFlag p G` — a condition on the points
+  of the AMBIENT `G`, not of the corner. What route (a) needs is
+  `HasInertiaLevelOneFlag p (G ⧸ HopfAlgebra.cornerIdeal e₀)`, and the bridge is TRUE but
+  unwritten: `cornerIdeal e₀` is a Hopf ideal, so precomposition with the quotient map
+  `G → G ⧸ (1 - e₀)` is an INJECTIVE convolution-monoid map on `ℚᵖᵥᵃˡᵍ`-points (it is a
+  coalgebra map, so it distributes over the convolution) commuting with the `Γ ℚᵖᵥ`-action;
+  intersecting the ambient flag with the image gives an inertia-stable chain whose
+  successive quotients embed in cyclic groups of order dividing `p`, hence are themselves
+  cyclic of order dividing `p` (take the generator `x = 0` at a step where the intersection
+  does not grow — the clause permits it, since `closure {0} = ⊥`). The missing formal piece
+  is the "precomposition with a surjective bialgebra map is a monoid hom on points" lemma;
+  `AlgHom.comp_convMul_distrib` in `FlatProlongation.lean` is the POST-composition analogue
+  and is the model to copy. Whoever writes it should state it as its own named leaf. -/
+theorem isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (hflag : HasInertiaLevelOneFlag p G)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    [(HopfAlgebra.cornerIdeal e₀).IsHopfIdeal 𝒪ᵖᵥ]
+    [Coalgebra.IsCocomm 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
+    (hconn : ∀ z : G ⧸ HopfAlgebra.cornerIdeal e₀, IsIdempotentElem z → z = 0 ∨ z = 1) :
+    HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+include hpodd in
+/-- **`(R1)`'s group-scheme half, as the consumer states it** — same signature as before,
+now a ONE-LINE ASSEMBLY (2026-07-28) over
+
+* `isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one` — PROVEN: `hprim₀` says exactly
+  that the corner Hopf algebra has no nontrivial idempotents;
+* `isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag` — the Raynaud citation,
+  with connectedness in the intrinsic form route (a) needs.
+
+The signature is unchanged so that `isMultiplicativeType_corner_of_hopf_package`, which
+passes its arguments positionally, is untouched. -/
 theorem isMultiplicativeType_corner_of_inertiaLevelOneFlag
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
@@ -3688,7 +3978,8 @@ theorem isMultiplicativeType_corner_of_inertiaLevelOneFlag
     [Module.Finite 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)]
     [Module.Free 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀)] :
     HopfAlgebra.IsMultiplicativeType 𝒪ᵖᵥ (G ⧸ HopfAlgebra.cornerIdeal e₀) :=
-  sorry
+  isMultiplicativeType_corner_of_connected_of_inertiaLevelOneFlag hpodd G hflag e₀ he₀ hε₀
+    (isIdempotentElem_quotient_cornerIdeal_eq_zero_or_one he₀ hprim₀)
 
 set_option synthInstance.maxHeartbeats 1000000 in
 include hpodd in
