@@ -601,6 +601,14 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.InvariantQuotient
 -- `isDomain_tensorCoarseRing_of_gamma0GITPresentation` theorems over a single
 -- modular input about the RIGIDIFIED ring `A`.
 public import Fermat.FLT.Mathlib.RingTheory.InvariantCoarseRing
+-- `Fermat.FormalGroupChart` and its `ℓ`-shift theorem
+-- `FormalGroupChart.not_layer_mulByL`, proved mathlib-facing and
+-- modular-curve-free in
+-- `Fermat/FLT/Mathlib/RingTheory/FormalGroupFiltration.lean`.  It carries the
+-- valuation comparison `v([ℓ] x) = min (1 + k, ℓ * k)` of Silverman *AEC*
+-- IV.4.4/IV.6.1 — the `ℓ ≠ 2` half of `neronKernel_torsionFree` — over a
+-- single geometric obligation, `exists_formalGroupChart`.
+public import Fermat.FLT.Mathlib.RingTheory.FormalGroupFiltration
 -- `AddCommGroup.finite_of_fg_torsion`, which turns Mordell–Weil (finite
 -- generation) plus rank `0` (torsion) into finiteness of `J_0(N)(ℚ)`; it is the
 -- whole proof of `finite_jacobian_of_kenkuLevel` from its two leaves.
@@ -35534,7 +35542,14 @@ remain, and they are of three DIFFERENT kinds:
   `eq_zero_of_inKerRed_pow`, still open.
 * **(c)** the `ℓ`-SHIFT, `x ∈ K_k \ K_(k+1) → ℓ • x ∉ K_(k+2)`.  THIS is
   where `e < ℓ − 1` enters and where the formal group law is
-  irreplaceable; `not_inKerRed_nsmul_of_not_inKerRed`, still open.
+  irreplaceable; `not_inKerRed_nsmul_of_not_inKerRed`, **PROVEN** here
+  (2026-07-28) over the mathlib-facing `Fermat.FormalGroupChart` of
+  `Fermat/FLT/Mathlib/RingTheory/FormalGroupFiltration.lean`, whose
+  `ℓ`-shift theorem `FormalGroupChart.not_layer_mulByL` carries the
+  valuation comparison `v([ℓ] x) = min (1 + k, ℓ * k)` and consumes
+  `hℓ2` as the single inequality `ℓ * k ≥ k + 2`.  What is left of (c) is
+  the purely geometric `exists_formalGroupChart`: that the tower admits
+  formal-group coordinates at all.
 
 The assembly `neronKernel_torsionFree_residue` is then a two-line
 minimal-counterexample argument over (a), (b) and (c), and is proven.
@@ -35872,12 +35887,86 @@ theorem eq_zero_of_inKerRed_pow {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMo
     x = abZ.zero (𝟙 (SpecLoc R)) :=
   sorry
 
+/-- **OBLIGATION (c), GEOMETRIC HALF: the `𝔪`-adic tower on `𝒥(R)` admits
+FORMAL-GROUP COORDINATES** (sorry node).
+
+This is the single geometric obligation left by the `ℓ`-shift, and it is
+where the formal group of `𝒥` along its zero section enters.  Everything
+downstream of it — the valuation comparison, the place where `hℓ2` is
+consumed, and the cancellation — is proven, in
+`Fermat/FLT/Mathlib/RingTheory/FormalGroupFiltration.lean`.
+
+WHAT IS ASKED.  A `Fermat.FormalGroupChart ℓ ↥R _ layer (abZ.nsmulPoint ℓ)`
+for `layer k = abZ.InKerRed (𝔪 ^ k)` is: a number `d` of coordinate
+functions `coord : 𝒥(R) → Fin d → R` such that
+
+* `x ∈ K_k ↔ ∀ i, ℓ ^ k ∣ coord x i` (`mem_layer_iff`), and
+* `coord (ℓ • x) = ℓ · lin x + frob x` (`coord_mulByL`) for functions
+  `lin`, `frob` satisfying `lin` preserves the exact level
+  (`lin_notLayer`) and `ℓ ^ (ℓ * k) ∣ frob x` on `K_k` (`frob_layer`).
+
+TRUE, and this is exactly Silverman *AEC* IV.4.4 read on points.  On
+`K_1` the group law of `𝒥` is given by a `d`-dimensional formal group law
+`F` over `R` (`d = dim 𝒥`), obtained by completing `𝒥` along the zero
+section; `hbase` makes `R` a discrete valuation ring with `ℓ` itself a
+uniformizer (absolute ramification index `e = 1`, via
+`ker_eq_span_natCast`), so the `𝔪`-adic layers are exactly divisibility
+of the coordinates by `ℓ ^ k`, which is `mem_layer_iff`.  For
+`coord_mulByL`: modulo `𝔪` the differential of `[ℓ]` is multiplication by
+`ℓ = 0`, so `[ℓ]` kills the cotangent space of the special fibre and
+factors through the relative Frobenius, giving `[ℓ](T) ≡ h(T ^ ℓ)` mod
+`ℓ`; subtracting and dividing by the non-zero-divisor `ℓ` produces `f`
+with `[ℓ](T) = ℓ f(T) + h(T ^ ℓ)`.  Comparing linear terms, `f(T) = T +
+(deg ≥ 2)`, which is `lin_notLayer`; and every monomial of `h(T ^ ℓ)` is
+divisible by some `T_i ^ ℓ`, which is `frob_layer`.
+
+Outside `K_1` the coordinates are unconstrained — any junk value with a
+unit coordinate satisfies `mem_layer_iff` there, since `K_k ⊆ K_1` for
+`k ≥ 1` — so the obligation really is only about the formal group.
+
+**It is NOT vacuous**: a chart cannot exist if `K_1` has `ℓ`-torsion.
+For `x ∈ K_1 \ K_2` with `ℓ • x = 0` one gets `coord 0 = 0` (zero lies in
+every layer and `⋂ (ℓ ^ k) = 0` in `R`, by `eq_zero_of_mem_pow_ker`),
+hence `ℓ · lin x i = − frob x i` is divisible by `ℓ ^ ℓ`, hence
+`ℓ ^ 2 ∣ lin x i` for every `i` once `ℓ ≥ 3`, contradicting
+`lin_notLayer` at `k = 1`.  So this leaf carries the whole content of the
+`q = ℓ` half; it has not been relocated into something weaker.
+
+MISSING MACHINERY, and the CHECK THAT WOULD REFUTE THIS VERDICT:
+`Mathlib/RingTheory/FormalGroup/Basic.lean` is still the only file in that
+directory and still stops at `AddCommMonoid` on `Point` — no `Neg`, no
+`AddGroup`, no formal inverse series, and the points-in-a-complete-local-
+ring construction still a `TODO` in its own docstring (re-verified
+2026-07-28).  It is also one-dimensional, whereas `𝒥` is a Jacobian.  So
+what is absent everywhere (mathlib, `~/cs/FLT`, this project) is the
+formal completion of a smooth commutative group scheme along its zero
+section; producing it, or a `d`-dimensional formal group law with a
+substitution calculus, refutes the claim.
+
+AXES ALREADY SEARCHED AND CLOSED, so that a successor does not repeat
+them: the ÉTALE-rigidity route (`section_eq_of_formallyUnramified`) fails
+because `ℓ` is not a unit on `ℤ_(ℓ)`, so `[ℓ]` is ramified in residue
+characteristic `ℓ` and the equalizer is closed but not open; and the
+square-zero deformation cluster (`exists_smul_kerPre_of_squareZero` and
+the `sqz*` lemmas) applies to each STEP of this tower — `R ⧸ 𝔪 ^ (k+1) ↠
+R ⧸ 𝔪 ^ k` is square-zero — but the module structure it produces factors
+through `R ⧸ 𝔪 ^ k` and is NOT visibly killed by `ℓ` once `k ≥ 2`.  The
+identification with `Hom(ω, 𝔪 ^ k ⧸ 𝔪 ^ (k+1))` that would supply it is
+part of the same formal-group construction asked for here. -/
+theorem exists_formalGroupChart {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
+    (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime)
+    {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ) :
+    Nonempty (FormalGroupChart ℓ ↥R (RelPoint jstrZ (𝟙 (SpecLoc R)))
+      (fun k x => abZ.InKerRed (RingHom.ker toF ^ k) x) (abZ.nsmulPoint ℓ)) :=
+  sorry
+
 /-- **OBLIGATION (c): THE `ℓ`-SHIFT — multiplication by `ℓ` moves a point
-of the tower up by EXACTLY one step** (sorry node).
+of the tower up by EXACTLY one step** (PROVEN, over
+`exists_formalGroupChart`).
 
 **This is the whole mathematical content of the `q = ℓ` half, and the
 only place where `e < ℓ − 1` — i.e. `hℓ2` — and the formal group law are
-irreplaceable.**  Everything else in this block is proven.
+irreplaceable.**
 
 TRUE, and classical.  On the formal group of `𝒥` along the zero section
 over the complete local ring `R^`, a point of `K_(k+1) \ K_(k+2)` has
@@ -35896,35 +35985,29 @@ have equal valuation and may cancel — the standard witness is `𝔾ₘ` over
 `ℤ_p[ζ_p]`, where `ζ_p − 1` lies in the maximal ideal and is a
 `p`-torsion point of the formal group killed by reduction.
 
-IRREDUCIBLE at this pin ALONG THE FORMAL-GROUP AXIS, and the CHECK THAT
-WOULD REFUTE THAT: `Mathlib/RingTheory/FormalGroup/Basic.lean` was the
-only file in that directory as of 2026-07-27, and it stops at
-`AddCommMonoid` on `Point` — no `Neg`, no `AddGroup`, no formal inverse
-series — with the points-in-a-complete-local-ring construction still a
-`TODO` in its own docstring.  Absent everywhere (mathlib, `~/cs/FLT`,
-this project) are (i) the formal group OF an abelian scheme along its
-zero section, and (ii) the torsion-freeness theorem for `e < p − 1`.
-Producing either as a declaration refutes the claim.
-
-AXES ALREADY SEARCHED AND CLOSED, so that a successor does not repeat
-them: the ÉTALE-rigidity route (`section_eq_of_formallyUnramified`) fails
-because `ℓ` is not a unit on `ℤ_(ℓ)`, so `[ℓ]` is ramified in residue
-characteristic `ℓ` and the equalizer is closed but not open; and the
-square-zero deformation cluster (`exists_smul_kerPre_of_squareZero` and
-the `sqz*` lemmas) applies to each STEP of this tower — `R ⧸ 𝔪 ^ (k+1) ↠
-R ⧸ 𝔪 ^ k` is square-zero — but the module structure it produces factors
-through `R ⧸ 𝔪 ^ k` and is NOT visibly killed by `ℓ` once `k ≥ 2`, which
-is precisely the statement below.  The identification with
-`Hom(ω, 𝔪 ^ k ⧸ 𝔪 ^ (k+1))` that would supply it IS the missing
-formal-group theorem. -/
+**THE CUT** (2026-07-28).  That paragraph is now a theorem rather than a
+docstring.  `Fermat.FormalGroupChart.not_layer_mulByL`, in
+`Fermat/FLT/Mathlib/RingTheory/FormalGroupFiltration.lean`, proves the
+comparison from the three formal-group facts stated as
+`FormalGroupChart`, and the only inequality it uses is
+`ℓ * k ≥ k + 2` — which needs precisely `3 ≤ ℓ` (from `hℓ` and `hℓ2`) and
+`1 ≤ k`, here `k + 1 ≥ 1`.  Cancelling `ℓ` needs `ℓ ≠ 0` in `R` and
+`IsDomain ↥R`, both immediate for a subring of `ℚ`.  So this node now
+consumes `hℓ2` in a mechanically visible way, and the residual geometric
+input is the single leaf `exists_formalGroupChart` above. -/
 theorem not_inKerRed_nsmul_of_not_inKerRed {ℓ : ℕ} {R : Subring ℚ} (toF : R →+* ZMod ℓ)
-    (_hbase : IsReductionBase ℓ R toF) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2)
+    (hbase : IsReductionBase ℓ R toF) (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
     {JZ : Scheme.{0}} {jstrZ : JZ ⟶ SpecLoc R} (abZ : AbelianSchemeStruct jstrZ)
     (x : RelPoint jstrZ (𝟙 (SpecLoc R))) (k : ℕ)
-    (_hk : abZ.InKerRed (RingHom.ker toF ^ (k + 1)) x)
-    (_hk' : ¬ abZ.InKerRed (RingHom.ker toF ^ (k + 2)) x) :
-    ¬ abZ.InKerRed (RingHom.ker toF ^ (k + 3)) (abZ.nsmulPoint ℓ x) :=
-  sorry
+    (hk : abZ.InKerRed (RingHom.ker toF ^ (k + 1)) x)
+    (hk' : ¬ abZ.InKerRed (RingHom.ker toF ^ (k + 2)) x) :
+    ¬ abZ.InKerRed (RingHom.ker toF ^ (k + 3)) (abZ.nsmulPoint ℓ x) := by
+  obtain ⟨C⟩ := exists_formalGroupChart toF hbase hℓ abZ
+  have hℓ0 : (ℓ : ↥R) ≠ 0 := Nat.cast_ne_zero.mpr hℓ.ne_zero
+  have hℓ3 : 3 ≤ ℓ := by
+    have := hℓ.two_le
+    omega
+  exact C.not_layer_mulByL hℓ0 hℓ3 (Nat.le_add_left 1 k) hk hk'
 
 end NeronAdicTower
 
@@ -36045,8 +36128,30 @@ discharged:
   theorem, because `ker toF = (ℓ)` is principal
   (`ker_eq_span_natCast`) — and its scheme-theoretic half
   `eq_zero_of_inKerRed_pow`, still open;
-* (c) `not_inKerRed_nsmul_of_not_inKerRed`, still open, and now carrying
-  the formal-group content ALONE.
+* (c) `not_inKerRed_nsmul_of_not_inKerRed` — **PROVEN** (2026-07-28,
+  fifth owner) over the mathlib-facing `Fermat.FormalGroupChart` of
+  `Fermat/FLT/Mathlib/RingTheory/FormalGroupFiltration.lean`, leaving the
+  single geometric leaf `exists_formalGroupChart`.
+
+**HOW (c) WAS CUT, and what the audits above got right and wrong.**  The
+audits are correct that the formal group of `𝒥` along its zero section
+exists nowhere at this pin, and `exists_formalGroupChart` is exactly that
+gap, still open.  What they overstated is that the whole of (c) is
+therefore blocked: the shift argument consumes only THREE consequences of
+the formal group law — `[ℓ](T) = ℓ f(T) + h(T ^ ℓ)`, that `f` preserves
+the exact level, and that `h(T ^ ℓ)` has valuation `≥ ℓ k` — and those can
+be STATED without constructing anything.  Stated, the valuation
+comparison `v([ℓ] x) = min (1 + k, ℓ * k)` is finite arithmetic, and it
+is now proven, with `hℓ2` entering as the single inequality
+`ℓ * k ≥ k + 2` (false at `ℓ = 2, k = 1`, which is exactly the `𝔾ₘ` over
+`ℤ_p[ζ_p]` witness).  This is the general lesson recorded in the agent
+doctrine: "leaf A needs theory T, and T does not exist" does not imply
+that the DECOMPOSITION of A needs T proven.
+
+The interface is not vacuous — see the non-vacuity argument in the
+docstring of `exists_formalGroupChart`, which shows a chart cannot exist
+if `K_1` has `ℓ`-torsion, so the residual leaf still carries the whole
+content of this half.
 
 The assembly below is the minimal-counterexample argument: if `x ≠ 0`
 then by (b) some stage of the tower misses it; take the LEAST such stage,
@@ -36113,9 +36218,11 @@ and share no argument:
   **PROVEN** (2026-07-27) over the `𝔪`-adic tower cut of
   `NeronAdicTower`, whose residual leaves are
   `eq_zero_of_inKerRed_pow` (a section out of a LOCAL base is determined
-  by the tower — scheme theory, no formal groups) and
-  `not_inKerRed_nsmul_of_not_inKerRed` (the `ℓ`-shift — the formal group
-  law, and the sole consumer of `hℓ2`).
+  by the tower — scheme theory, no formal groups) and, since 2026-07-28,
+  `exists_formalGroupChart` (the formal completion of `𝒥` along its zero
+  section, as coordinates on the tower).  The `ℓ`-shift itself,
+  `not_inKerRed_nsmul_of_not_inKerRed`, is now PROVEN over the latter, and
+  `hℓ2` is consumed there.
 
 The previous audit here recorded the node as irreducible, but it ranged
 only over the formal-group axis; along that axis it was right.  The
