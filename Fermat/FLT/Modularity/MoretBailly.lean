@@ -37811,44 +37811,190 @@ theorem realConj_mul_eq_one_of_pow_eq_one
       rw [← hpowdown, hxx]; rfl
     nlinarith [sq_nonneg x.down]
 
+/-- **AN ALTERNATING FORM ON A FREE RANK-TWO MODULE IS THE COORDINATE
+DETERMINANT SCALED BY ITS BASIS VALUE** (PROVEN 2026-07-28), over an arbitrary
+commutative ring: for a basis `b : Fin 2 → M`,
+
+`e x y = (b.repr x 0 · b.repr y 1 − b.repr x 1 · b.repr y 0) · e (b 0) (b 1)`.
+
+Companion to `coordDet_map_eq_det_mul` above: that lemma says the coordinate
+determinant form transforms by `LinearMap.det`, this one says every alternating
+form IS that form up to the scalar `e (b 0) (b 1)`.  Together they give
+`det_eq_of_alternating_scaling_fin_two` below, which is the composite-level
+replacement for `WeilPairing.det_eq_of_conj` — that lemma needs a FIELD and
+`Module.rank = 2`, and `ZMod n` is not a field unless `n` is prime.
+
+Nothing here divides, so no field is needed. -/
+lemma alternating_eq_coordDet_mul_fin_two {R : Type*} [CommRing R] {M : Type*}
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M)
+    (e : M →ₗ[R] M →ₗ[R] R) (halt : ∀ v, e v v = 0) (x y : M) :
+    e x y = (b.repr x 0 * b.repr y 1 - b.repr x 1 * b.repr y 0) * e (b 0) (b 1) := by
+  classical
+  have hskew : ∀ v w : M, e w v = -e v w := by
+    intro v w
+    have h := halt (v + w)
+    simp only [map_add, LinearMap.add_apply, halt v, halt w, zero_add, add_zero] at h
+    linear_combination h
+  have hx : x = (b.repr x 0) • b 0 + (b.repr x 1) • b 1 := by
+    have h := b.sum_repr x
+    rw [Fin.sum_univ_two] at h
+    exact h.symm
+  have hy : y = (b.repr y 0) • b 0 + (b.repr y 1) • b 1 := by
+    have h := b.sum_repr y
+    rw [Fin.sum_univ_two] at h
+    exact h.symm
+  obtain ⟨x0, x1, rfl⟩ : ∃ a c : R, x = a • b 0 + c • b 1 := ⟨_, _, hx⟩
+  obtain ⟨y0, y1, rfl⟩ : ∃ a c : R, y = a • b 0 + c • b 1 := ⟨_, _, hy⟩
+  simp only [map_add, map_smul, LinearMap.add_apply, LinearMap.smul_apply, smul_eq_mul,
+    Finsupp.coe_add, Finsupp.coe_smul, Pi.add_apply, Pi.smul_apply,
+    Module.Basis.repr_self_apply, halt, hskew (b 0) (b 1)]
+  norm_num
+  ring
+
+/-- **RANK TWO: AN ENDOMORPHISM SCALING A UNIT-VALUED ALTERNATING FORM BY `c` HAS
+DETERMINANT `c`** (PROVEN 2026-07-28), over an arbitrary commutative ring.
+
+Nondegeneracy is asked for in the only form that survives over a ring that is not
+a field: SOME value of the form is a UNIT.  Over a field "nonzero" and "a unit"
+agree, which is why `WeilPairing.det_eq_of_conj` can ask for the weaker-looking
+`∃ x y, e x y ≠ 0`; over `ZMod n` with `n` composite the two differ, and the
+weaker one is NOT enough — a form with all values in a proper ideal is scaled by
+many `c`.  For the level-`n` Weil pairing the unit clause is exactly "`e(P, Q)`
+is a PRIMITIVE `n`-th root of unity on a basis `P, Q`". -/
+lemma det_eq_of_alternating_scaling_fin_two {R : Type*} [CommRing R] {M : Type*}
+    [AddCommGroup M] [Module R M] (b : Module.Basis (Fin 2) R M)
+    (e : M →ₗ[R] M →ₗ[R] R) (halt : ∀ v, e v v = 0) (hu : ∃ x y, IsUnit (e x y))
+    (f : M →ₗ[R] M) (c : R) (hf : ∀ x y, e (f x) (f y) = c * e x y) :
+    LinearMap.det f = c := by
+  classical
+  have hD0 : b.repr (b 0) 0 = 1 := by simp
+  have hD1 : b.repr (b 0) 1 = 0 := by simp
+  have hD2 : b.repr (b 1) 0 = 0 := by simp
+  have hD3 : b.repr (b 1) 1 = 1 := by simp
+  have hunit : IsUnit (e (b 0) (b 1)) := by
+    obtain ⟨x, y, hxy⟩ := hu
+    rw [alternating_eq_coordDet_mul_fin_two b e halt x y] at hxy
+    exact isUnit_of_mul_isUnit_right hxy
+  have h1 : e (f (b 0)) (f (b 1)) = LinearMap.det f * e (b 0) (b 1) := by
+    rw [alternating_eq_coordDet_mul_fin_two b e halt (f (b 0)) (f (b 1)),
+      coordDet_map_eq_det_mul b f (b 0) (b 1), hD0, hD1, hD2, hD3]
+    ring
+  have h2 : e (f (b 0)) (f (b 1)) = c * e (b 0) (b 1) := hf _ _
+  have h3 : e (b 0) (b 1) * LinearMap.det f = e (b 0) (b 1) * c := by
+    rw [mul_comm _ (LinearMap.det f), mul_comm _ c, ← h1, ← h2]
+  exact hunit.mul_left_cancel h3
+
+/-- **THE `μ_n`-VALUED WEIL PAIRING OVER THE ALGEBRAIC CLOSURE OF A
+CHARACTERISTIC-ZERO FIELD** (sorry leaf, cut 2026-07-28 out of
+`det_nTorsion_eq_neg_one_of_conj_inv` below).  This is the ONE genuinely missing
+piece of mathematics in the whole archimedean cluster; everything between it and
+`exists_weilPairing_real` is now proven.
+
+WHAT IT SAYS.  On `E[n]` over `F̄` (`F` of characteristic zero, `n ≥ 1`) there is
+a multiplicatively bilinear, alternating pairing valued in `F̄ˣ`, killed by `n`,
+taking a PRIMITIVE `n`-th root of unity as a value, and natural for the FULL
+absolute Galois group: `e(τx, τy) = τ(e(x, y))` for every `τ`.
+
+This is Silverman *AEC* III.8.1(a)–(e) verbatim, with the base field of
+`WeilPairing.exists_weilPairing_mu` (namely `𝔽_q`, `p` prime) replaced by an
+arbitrary characteristic-zero `F` and an arbitrary level `n`.  The construction
+is identical — the coordinate ring of `E ⊗ F̄` is Dedekind, `E[n]` sits in its
+class group through `Point.toClass`, the `n`-th power of a point ideal is
+principal with a Miller generator `f_P`, and `e(P, Q) = f_P(D_Q)/f_Q(D_P)` is
+well defined by Weil reciprocity — and it never uses finiteness of the base or
+the existence of a Frobenius.  What it DOES use is `(n : F̄) ≠ 0`, which
+`CharZero` supplies for every `n ≥ 1`; this is the exact analogue of `p ≠ q`
+there.
+
+WHY THE VALUE CLAUSE IS `IsPrimitiveRoot` AND NOT `∃ y, e x y ≠ 1`.  Over `ZMod n`
+with `n` composite, "nondegenerate" in the weak sense does not pin the scalar by
+which an endomorphism scales the form, and the consumer's determinant identity
+fails.  `IsPrimitiveRoot (e x y) n` is what makes the discrete logarithm of the
+reference pair a UNIT, which is the hypothesis of
+`det_eq_of_alternating_scaling_fin_two` above.  Exactly the same clause is
+carried by the finite-field composite-level sibling
+`MazurTorsion.exists_weilPairing_mu_of_coprime`, for exactly this reason.
+
+NOT VACUOUS, and the junk-witness test it survives: `e ≡ 1` satisfies
+bilinearity, alternation, `eⁿ = 1` and Galois naturality, but has no primitive
+value once `n > 1`; and an alternating form on a rank-two module is determined up
+to a scalar, so the primitive-value clause forces `e` to be the Weil pairing up
+to a unit.  The Galois clause then carries the arithmetic — it is what yields
+`det τ = χ_n(τ)`.
+
+THE CHECK THAT WOULD REFUTE THE "missing" CLAIM: a `μ_n`-valued pairing on
+`nTorsion n` over a base that is not a finite field, anywhere in `Fermat/`,
+`.lake/packages/mathlib/` or `~/cs/FLT/`.  THE AXIS SEARCHED (2026-07-28): every
+`exists_weilPairing*` in this project (`WeilPairing.lean` — `𝔽_q`, prime level;
+`MazurTorsion.lean` — `𝔽_q`, composite level, itself still a leaf;
+`WeilPairing.exists_weilPairing` / `det_galoisRep_eq_cyclotomic` — `ℚ`, but
+routed through reduction mod `q`, Frobenius and Chebotarev, which is what makes
+them unusable over a base with no residue field), plus `grep` for
+`weilPairing`/`WeilPairing` in mathlib (NO hits — mathlib has no Weil pairing at
+all) and in `~/cs/FLT` (`FLT/KnownIn1980s/EllipticCurves/WeilPairing.lean`, whose
+`WeierstrassCurve.weilPairing` is a bare `sorry` with no API).
+
+`hn : 1 ≤ n` is load-bearing: at `n = 0` the `0`-torsion is all of `E(F̄)`, which
+is not free of rank two, and no primitive `0`-th root of unity exists. -/
+theorem exists_weilPairing_mu_charZero {F : Type u} [Field F] [CharZero F]
+    (E : WeierstrassCurve F) [E.IsElliptic] (n : ℕ) (hn : 1 ≤ n) :
+    letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+    ∃ e : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →
+          ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →
+          (AlgebraicClosure F)ˣ,
+      (∀ x y z, e (x + y) z = e x z * e y z) ∧
+      (∀ x y z, e x (y + z) = e x y * e x z) ∧
+      (∀ x, e x x = 1) ∧
+      (∀ x y, (e x y) ^ n = 1) ∧
+      (∃ x y, IsPrimitiveRoot (e x y) n) ∧
+      (∀ (τ : Field.absoluteGaloisGroup F) x y,
+        e (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+              (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ) x)
+          (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+              (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ) y)
+          = Units.map
+              (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom
+              (e x y)) :=
+  sorry
+
 /-- **THE WEIL PAIRING, IN THE ONE FORM THIS NODE NEEDS: `det(τ | E[n]) = −1`
-WHENEVER `τ` INVERTS `μ_n`** (sorry leaf, cut 2026-07-28 out of
-`exists_weilPairing_real`).  Nothing archimedean survives the cut: the statement
-is over an ARBITRARY field `F` of characteristic zero, and the only trace of the
-real place is the hypothesis `hinv`, which
+WHENEVER `τ` INVERTS `μ_n`** (**PROVEN 2026-07-28** over the single leaf
+`exists_weilPairing_mu_charZero` above; formerly a bare `sorry`, cut the same day
+out of `exists_weilPairing_real`).  Nothing archimedean survives the cut: the
+statement is over an ARBITRARY field `F` of characteristic zero, and the only
+trace of the real place is the hypothesis `hinv`, which
 `realConj_mul_eq_one_of_pow_eq_one` above DISCHARGES over `ULift ℝ`.
 
 This is `det(τ | E[n]) = χ_n(τ)` (Silverman *AEC* III.8.1(e) plus
 III.8.1(a)–(d)) specialized to `χ_n(τ) = −1`, and it is the ONLY genuinely
 missing mathematics in the whole archimedean cluster.
 
-INTENDED PROOF, and the exact shape of the gap.  The tree already has the two
-halves of the argument, but for a base that is too small:
+THE PROOF, which is now real code (2026-07-28 — this is the "NATURAL FURTHER
+CUT" the previous version of this docstring described and declined).  The
+declining reason was that "the log half is not free and would add a second open
+leaf without removing any mathematics"; the first half is true and the second is
+NOT — the log half is entirely level-generic and base-generic, so proving it
+removes it from the frontier permanently and leaves the arithmetic input alone.
+The steps:
 
-* `WeilPairing.exists_weilPairing_mu` builds the `μ_p`-valued pairing over
-  `𝔽_q` from divisor classes (Silverman III.8, the Miller-function route);
-* `WeilPairing.exists_weilPairing` / `WeilPairing.det_galoisRep_eq_cyclotomic`
-  assemble `det ρ = χ` over `ℚ`, but route the arithmetic through REDUCTION MOD
-  `q` AND FROBENIUS (`det_frobeniusTorsionEnd`, `det_galoisRep_globalFrob`,
-  Chebotarev density), which is unavailable over `ℝ` — there is no residue
-  field to reduce to.
+* `WeierstrassCurve.n_torsion_dimension` at the separably closed `F̄` gives
+  `E[n] ≃+ (ZMod n)²` (this is where `(n : F̄) ≠ 0`, i.e. `CharZero` and
+  `1 ≤ n`, is consumed); `ZMod.map_smul` upgrades it to a `ZMod n`-linear
+  equivalence and `Module.Basis.finTwoProd` transports the standard basis back;
+* `exists_weilPairing_mu_charZero` supplies the `μ_n`-valued pairing `e₀`;
+* the DISCRETE LOGARITHM base the primitive value `ζ := e₀(x₀, y₀)` — via
+  `IsPrimitiveRoot.zpowers_eq` (which identifies `μ_n` with `zpowers ζ`) and
+  `IsPrimitiveRoot.zmodEquivZPowers` (which identifies that with `ZMod n`
+  additively) — turns `e₀` into a `ZMod n`-bilinear alternating form `e`.  The
+  reference pair logs to `1`, so `e` takes a UNIT value; this is precisely the
+  step that fails if the leaf only asserted nondegeneracy;
+* `hinv` applied to the value of `e₀` (legal because `e₀ x y` is killed by `n`)
+  turns the Galois clause `e₀(τx, τy) = τ(e₀(x, y))` into
+  `e₀(τx, τy) = e₀(x, y)⁻¹`, hence `e(τx, τy) = −e(x, y)`;
+* `det_eq_of_alternating_scaling_fin_two` above reads off `det = −1`.
 
-So what has to be written is the divisor-theoretic pairing DIRECTLY over the
-separably closed field `AlgebraicClosure F` — the same construction as
-`exists_weilPairing_mu` with `AlgebraicClosure (ZMod q)` replaced by
-`AlgebraicClosure F` — together with its equivariance
-`e(τx, τy) = τ(e(x, y))` for an arbitrary `τ ∈ Gal`.  Given that pairing, this
-leaf follows in a few lines: `hinv` says `τ` acts on `μ_n` by inversion, so
-`e(τx, τy) = e(x, y)⁻¹`, and transporting the multiplicative pairing to the
-additive `ZMod n`-valued one along a generator of `μ_n` turns that into
-`det τ = −1` via `coordDet_map_eq_det_mul` above.
-
-A NATURAL FURTHER CUT, if a successor wants to shrink this leaf rather than
-close it: state the `μ_n`-valued pairing over a separably closed field as its
-own leaf, and PROVE this one from it plus the cyclicity of `μ_n` (which needs
-`IsPrimitiveRoot` and a discrete logarithm `μ_n ≃+ ZMod n`).  That was not done
-here because the log half is not free and would have added a second open leaf
-without removing any mathematics.
+The only place the argument could have needed `ℝ` or an archimedean input is the
+inversion of `μ_n`, and that is the hypothesis rather than a step.
 
 FAITHFULNESS.  `hn : 1 ≤ n` is load-bearing: for `n = 0` the `0`-torsion is all
 of `E(F̄)`, which is not free of rank two, and `LinearMap.det` would fall back on
@@ -37869,8 +38015,126 @@ theorem det_nTorsion_eq_neg_one_of_conj_inv {F : Type u} [Field F] [CharZero F]
             (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ))
           : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
             ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n))
-      = -1 :=
-  sorry
+      = -1 := by
+  letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+  haveI : NeZero n := ⟨by omega⟩
+  haveI hcharK : CharZero (AlgebraicClosure F) :=
+    charZero_of_injective_algebraMap (algebraMap F (AlgebraicClosure F)).injective
+  have hn0 : ((n : ℕ) : AlgebraicClosure F) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  -- the rank-two basis of the `n`-torsion at the separably closed `F̄`
+  obtain ⟨φ⟩ := WeierstrassCurve.n_torsion_dimension
+    (E.map (algebraMap F (AlgebraicClosure F))) hn0
+  let ψ : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) ≃ₗ[ZMod n]
+      (ZMod n × ZMod n) := { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
+  let b : Module.Basis (Fin 2) (ZMod n)
+      ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) :=
+    (Module.Basis.finTwoProd (ZMod n)).map ψ.symm
+  set S : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
+      ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) :=
+    AddMonoidHom.toZModLinearMap n
+      (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+        (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ)) with hSdef
+  -- the `μ_n`-valued pairing
+  obtain ⟨e₀, hbl, hbr, halt, hord, ⟨x₀, y₀, hprim⟩, hgal⟩ :=
+    exists_weilPairing_mu_charZero E n hn
+  -- the discrete logarithm base the primitive value supplied by the leaf
+  set ζu : (AlgebraicClosure F)ˣ := e₀ x₀ y₀ with hζudef
+  have hmem : ∀ x y, e₀ x y ∈ Subgroup.zpowers ζu := by
+    intro x y
+    rw [hprim.zpowers_eq]
+    exact (mem_rootsOfUnity n _).mpr (hord x y)
+  set dlog : ∀ (_ _ : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n)), ZMod n :=
+    fun x y => hprim.zmodEquivZPowers.symm
+      (Additive.ofMul (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu)) with hdlogdef
+  -- the reference pair logs to `1`, which is where the unit value comes from
+  have hdunit : IsUnit (dlog x₀ y₀) := by
+    have hval1 : ((Additive.toMul
+        (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod n)))) : Subgroup.zpowers ζu).1 = ζu := by
+      rw [hprim.zmodEquivZPowers_apply_coe_nat 1]
+      exact pow_one ζu
+    have helt : (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu) =
+        Additive.toMul (hprim.zmodEquivZPowers (((1 : ℕ) : ZMod n))) :=
+      Subtype.ext hval1.symm
+    have h2 : dlog x₀ y₀ = ((1 : ℕ) : ZMod n) := by
+      show hprim.zmodEquivZPowers.symm
+        (Additive.ofMul (⟨e₀ x₀ y₀, hmem x₀ y₀⟩ : Subgroup.zpowers ζu)) = _
+      rw [helt]
+      exact hprim.zmodEquivZPowers.symm_apply_apply _
+    rw [h2, Nat.cast_one]
+    exact isUnit_one
+  -- transfer of the pairing laws through the logarithm
+  have hdadd_l : ∀ x y z, dlog (x + y) z = dlog x z + dlog y z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ (x + y) z, hmem (x + y) z⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x z, hmem x z⟩ : Subgroup.zpowers ζu) * ⟨e₀ y z, hmem y z⟩ :=
+      Subtype.ext (hbl x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdadd_r : ∀ x y z, dlog x (y + z) = dlog x y + dlog x z := by
+    intro x y z
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x (y + z), hmem x (y + z)⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu) * ⟨e₀ x z, hmem x z⟩ :=
+      Subtype.ext (hbr x y z)
+    rw [hsub, ofMul_mul, map_add]
+  have hdalt : ∀ x, dlog x x = 0 := by
+    intro x
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ x x, hmem x x⟩ : Subgroup.zpowers ζu) = 1 := Subtype.ext (halt x)
+    rw [hsub]
+    rw [show Additive.ofMul (1 : Subgroup.zpowers ζu) = 0 from rfl, map_zero]
+  -- `hinv` turns the Galois clause into inversion, hence negation after the log
+  have hinvval : ∀ x y, e₀ (S x) (S y) = (e₀ x y)⁻¹ := by
+    intro x y
+    have hg := hgal τ x y
+    have hpow : ((e₀ x y : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) ^ n = 1 := by
+      rw [← Units.val_pow_eq_pow_val, hord x y, Units.val_one]
+    have hmul := hinv ((e₀ x y : (AlgebraicClosure F)ˣ) : AlgebraicClosure F) hpow
+    have hu1 : Units.map
+        (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom
+        (e₀ x y) * (e₀ x y) = 1 := Units.ext hmul
+    exact hg.trans (eq_inv_of_mul_eq_one_left hu1)
+  have hdgal : ∀ x y, dlog (S x) (S y) = -dlog x y := by
+    intro x y
+    simp only [hdlogdef]
+    have hsub : (⟨e₀ (S x) (S y), hmem _ _⟩ : Subgroup.zpowers ζu) =
+        (⟨e₀ x y, hmem x y⟩ : Subgroup.zpowers ζu)⁻¹ :=
+      Subtype.ext (hinvval x y)
+    rw [hsub, ofMul_inv, map_neg]
+  -- package the logarithm as a `ZMod n`-bilinear form
+  have hdzero_r : ∀ x, dlog x 0 = 0 := by
+    intro x
+    have h2 := hdadd_r x 0 0
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  have hdzero_l : ∀ y, dlog 0 y = 0 := by
+    intro y
+    have h2 := hdadd_l 0 0 y
+    rw [add_zero] at h2
+    exact add_left_cancel (h2.symm.trans (add_zero _).symm)
+  have heinner : ∀ x : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n),
+      ∃ f : (((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n] ZMod n),
+      ∀ y, f y = dlog x y := by
+    intro x
+    exact ⟨AddMonoidHom.toZModLinearMap n ⟨⟨dlog x, hdzero_r x⟩, hdadd_r x⟩, fun y => rfl⟩
+  choose einner heinnerval using heinner
+  have houter : ∃ e : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
+      (((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n] ZMod n),
+      ∀ x y, e x y = dlog x y := by
+    refine ⟨AddMonoidHom.toZModLinearMap n ⟨⟨einner, ?_⟩, ?_⟩, fun x y => heinnerval x y⟩
+    · refine LinearMap.ext fun y => ?_
+      rw [heinnerval]
+      exact hdzero_l y
+    · intro x₁ x₂
+      refine LinearMap.ext fun y => ?_
+      rw [LinearMap.add_apply, heinnerval, heinnerval, heinnerval]
+      exact hdadd_l x₁ x₂ y
+  obtain ⟨e, he⟩ := houter
+  refine det_eq_of_alternating_scaling_fin_two b e (fun v => (he v v).trans (hdalt v))
+    ⟨x₀, y₀, by rw [he]; exact hdunit⟩ S (-1) ?_
+  intro x y
+  rw [he, he, hdgal x y]
+  ring
 
 /-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (sorry
 leaf, cut 2026-07-27 out of `exists_realWeierstrassCurveWithConjTorsion`).  This
@@ -37903,10 +38167,26 @@ CUT 2026-07-27: the leaf is discharged from the single sub-leaf
 ONLY form the node consumes — plus a real assembly.  See that leaf's docstring
 for why the pairing form was chosen over the determinant form.
 
-STATUS 2026-07-28: `exists_weilPairing_real` is itself now PROVEN, over the
-single sub-leaf `det_nTorsion_eq_neg_one_of_conj_inv` above.  The archimedean
-half is closed (`realConj_mul_eq_one_of_pow_eq_one`); what is left is purely
-algebraic and holds over any characteristic-zero field.
+STATUS 2026-07-28 (updated later the same day): `exists_weilPairing_real` is
+PROVEN over `det_nTorsion_eq_neg_one_of_conj_inv`, and THAT is now PROVEN too,
+over the single leaf `exists_weilPairing_mu_charZero`.  So the whole chain from
+this node down is real code except for one statement: the `μ_n`-valued Weil
+pairing over `F̄` for `F` of characteristic zero.  The archimedean half is closed
+(`realConj_mul_eq_one_of_pow_eq_one`), the discrete-logarithm and rank-two
+linear-algebra halves are closed
+(`alternating_eq_coordDet_mul_fin_two`, `det_eq_of_alternating_scaling_fin_two`,
+`coordDet_map_eq_det_mul`), and what remains is base-generic and level-generic
+arithmetic.
+
+CORRECTION to the "MISSING MACHINERY" paragraph above, which said the needed
+pairing is "the pairing itself over `ULift ℝ`": `ULift ℝ` is not the right
+generality and stating it there would have produced a leaf nobody else can
+reuse.  The leaf as cut is over an ARBITRARY characteristic-zero field, which is
+the same construction and is shared with any future consumer.  The paragraph's
+other suggestion — "a direct argument on `E[n]` may be shorter than a full
+pairing" — was searched and rejected: `det(τ | E[n]) = χ_n(τ)` has no known proof
+that avoids a pairing, and the `E(F̄)`-level shortcut is refuted two paragraphs
+below by divisibility.
 
 **WHY THE PAIRING MUST LIVE ON THE `n`-TORSION AND NOT ON `E(ℝ̄)`.**  A tempting
 simplification is to state a biadditive `e : E(ℝ̄) × E(ℝ̄) → ZMod n` and require
