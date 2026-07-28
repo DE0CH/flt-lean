@@ -16681,8 +16681,202 @@ theorem not_twoStableLines_of_cmEndomorphism {p : ℕ}
     False :=
   sorry
 
-/-- **The non-CM rows carry no second `p`-isogeny either** (sorry leaf, new
-2026-07-28; the EXPLICIT-COMPUTATION half at `q = p`).
+/-- **Two independent stable lines multiply into a rational factor of `Ψ_p`
+of degree `p − 1`** (sorry leaf, cut 2026-07-28 out of
+`not_twoStableLines_of_mem_isolatedNonCMJInvariants`; the UNIFORM half, and
+the only one that is about elliptic curves rather than about `ℚ[X]`).
+
+This is the CONVERSE of `WeierstrassCurve.exists_point_of_isKernelPolynomial`
+(`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`, PROVEN), taken twice and
+multiplied.  It is uniform in `p`: no `j`-invariant, no table, no arithmetic,
+and it is the piece the route note of
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge` already identifies
+as "ONE uniform piece of work, not `18`".
+
+**THE ARGUMENT.**  Write `L_i = ⟨g_i⟩` and
+`f_i := ∏_{α ∈ x(L_i ∖ 0)} (X − α)`, a priori in `ℚ̄[X]`.
+
+1. `x` is exactly `2`-to-`1` on `L_i ∖ 0` (`x(P) = x(Q)` iff `Q = ±P`, and
+   `P ≠ −P` because `p` is odd), so `f_i` is monic, squarefree, of degree
+   `(p − 1)/2`.
+2. `L_i` is `Γ_ℚ`-stable, so `Γ_ℚ` permutes `x(L_i ∖ 0)` and the coefficients
+   of `f_i` are `Γ_ℚ`-invariant, i.e. `f_i ∈ ℚ[X]`.  This is the descent step;
+   `InfiniteGalois.mem_range_algebraMap_iff_fixed` is the tool, and
+   `MazurGenusZero.mem_range_of_fixed` in this file is the `(p − 1)/2 = 1`
+   case of exactly it, stated over a variable base field so as to dodge the
+   `Algebra ℚ ℚ̄` diamond.
+3. `L₁ ≠ L₂` are distinct subgroups of prime order, so `L₁ ∩ L₂ = 0`, so `f₁`
+   and `f₂` have no common root: `x(P) = x(Q)` with `P ∈ L₁ ∖ 0`, `Q ∈ L₂ ∖ 0`
+   forces `Q = ±P ∈ L₁ ∩ L₂ = 0`.  Hence `f₁` and `f₂` are coprime.
+4. `preΨ' p = Ψ_p` is separable of degree `(p² − 1)/2` with root set exactly
+   `x(E[p] ∖ 0)` (char `0`, `E` nonsingular), so each `f_i ∣ Ψ_p`, and by
+   coprimality `f₁ f₂ ∣ Ψ_p`.
+
+`f := f₁ f₂` is then monic of degree `p − 1`.
+
+**WHY THE PRODUCT RATHER THAN THE PAIR.**  The consumer
+`not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants` is a statement about
+FACTOR DEGREES of `Ψ_p`, and step 3 is what licenses multiplying the two
+kernel polynomials before it is applied.  Exposing `f₁`, `f₂` and
+`IsCoprime f₁ f₂` separately would push that step across the cut for no gain:
+the arithmetic half would then have to redo it at each of the six rows, and
+the mod-`ℓ` certificates tabulated there refute a degree-`(p − 1)` factor
+outright, which is the stronger and simpler statement.
+
+**NOT VACUOUS, and `hne` is the whole content.**  With `L₁ = L₂` the honest
+conclusion is a factor of degree `(p − 1)/2`, which every one of the six
+tabulated curves really has —
+`MazurIsogenyPrimeJ.exists_kernelPolynomial_of_genusOneJTable` in
+`FreyCurve/MazurTorsion.lean` exhibits five such kernel polynomials
+explicitly, three of them at these very `j`-values — and the consumer would
+then be FALSE.  Nothing here is special to Mazur's table: the statement is
+about an arbitrary elliptic curve over `ℚ`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ` with two
+distinct `Γ_ℚ`-stable lines of order an odd prime `p` whose `p`-division
+polynomial has no rational factor of degree `p − 1`. -/
+theorem exists_monic_dvd_preΨ_of_twoStableLines {p : ℕ}
+    (_hp : p.Prime) (_hodd : Odd p)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
+    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₁)
+    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₂) :
+    ∃ f : Polynomial ℚ, f.Monic ∧ f.natDegree = p - 1 ∧ f ∣ E.preΨ' p :=
+  sorry
+
+/-- **The `p`-division polynomial of each of the six non-CM rows has no
+rational factor of degree `p − 1`** (sorry leaf, cut 2026-07-28 out of
+`not_twoStableLines_of_mem_isolatedNonCMJInvariants`; the ARITHMETIC half,
+and where all six explicit checks now live).
+
+Nothing Galois-theoretic is left here: the subgroups, their order and their
+stability are all discharged by `exists_monic_dvd_preΨ_of_twoStableLines`
+above.  What remains is a statement in `ℚ[X]` about six explicit curves.
+
+**WHY `p ∈ {11, 17, 37}` RATHER THAN `isolatedIsogenyPrimes`.**  The four
+levels `19, 43, 67, 163` are entirely CM
+(`isolatedJInvariants p ⊆ isolatedCMJInvariants`), so `hjn` is already a
+contradiction there; the consumer discharges those four branches itself and
+this leaf never sees them.  `hj` and `hjn` together pin `E.j` to exactly the
+six values
+
+    p = 11 : j = −121, −24729001
+    p = 17 : j = −882216989/131072, −297756989/2
+    p = 37 : j = −9317, −162677523113838677
+
+so `fin_cases hp` followed by `norm_num [isolatedJInvariants,
+isolatedCMJInvariants] at hj hjn` is the first step of any attack, exactly as
+in `not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge`.
+
+**TWIST-INVARIANCE is not an extra hypothesis and must not be added as one.**
+`hj` pins `E` only up to `ℚ`-isomorphism, i.e. up to a variable change
+`x ↦ u²x + r`; that is a `ℚ`-linear substitution composed with a scaling, so
+it maps `Ψ_p` to a scalar multiple of a substituted copy and leaves the
+MULTISET OF DEGREES of the rational irreducible factors unchanged.  Every
+entry of `isolatedJInvariants` is strictly negative, hence `∉ {0, 1728}`, so
+`Aut_ℚ̄(E) = {±1}` and the twists are the only freedom.  A proof may therefore
+normalise to the minimal model of each row.
+
+## MACHINE-CHECKED CERTIFICATES FOR ALL SIX ROWS (PARI/GP 2.15.4, 2026-07-28)
+
+The certificate is a **mod-`ℓ` factorisation-degree** obstruction, and it is
+the exact analogue at `q = p` of the mod-`ℓ` rational-root certificates that
+close the genus-zero rows in `MazurGenusZeroCertificates`.  For `ℓ` of good
+reduction with `ℓ ∤ p` and `Ψ_p mod ℓ` SQUAREFREE, Gauss's lemma makes the
+reduction of any monic rational factor of `Ψ_p` a factor of `Ψ_p mod ℓ` of
+the same degree; so if no sub-multiset of the degrees of the irreducible
+factors of `Ψ_p mod ℓ` sums to `p − 1`, there is no rational factor of degree
+`p − 1` at all.
+
+| `p` | `j₀` | minimal model `[a₁,a₂,a₃,a₄,a₆]` | `ℓ` | degrees of `Ψ_p mod ℓ` |
+|-----|------|----------------------------------|-----|------------------------|
+| 11 | `−121` | `[1,1,0,−2,−7]` | 23 | `1⁵, 11⁵` |
+| 11 | `−24729001` | `[1,1,1,−30,−76]` | 23 | `1⁵, 11⁵` |
+| 17 | `−882216989/131072` | `[1,1,0,−660,−7600]` | 67 | `2⁴, 34⁴` |
+| 17 | `−297756989/2` | `[1,0,1,−3041,64278]` | 67 | `2⁴, 34⁴` |
+| 37 | `−9317` | `[1,1,1,−8,6]` | 397 | `6³, 222³` |
+| 37 | `−162677523113838677` | `[1,1,1,−208083,−36621194]` | 397 | `6³, 222³` |
+
+Every factor has multiplicity `1` (verified), so the squarefreeness side
+condition holds.  The subset-sum check is immediate and needs no search: in
+each row the SMALL factors total exactly `(p − 1)/2 = 5, 8, 18`, which is
+less than `p − 1`, and every LARGE factor already exceeds `p − 1`
+(`11 > 10`, `34 > 16`, `222 > 36`).  So `p − 1` is unreachable — and note
+this simultaneously shows `Ψ_p` has a UNIQUE monic rational factor of degree
+`(p − 1)/2`, which is the "at most one kernel polynomial" form of the same
+fact.
+
+The conductors are `121, 121, 14450, 14450, 1225, 1225`, i.e. the three
+isogeny classes of Mazur's `p = 11, 17, 37` rows; the models are the ones
+already tabulated on `not_stable_of_mem_isolatedNonCMJInvariants` and on
+`MazurIsogenyPrimeJ.exists_kernelPolynomial_of_genusOneJTable`.
+
+**Independent corroboration by the `ℚ`-factorisation** (same run).  `Ψ_p`
+factors over `ℚ` with irreducible-factor degrees `[5, 55]` at both `p = 11`
+rows, `[8, 68, 68]` at `j = −297756989/2`, `[4, 4, 136]` at
+`j = −882216989/131072`, and `[6, 6, 6, 666]` at both `p = 37` rows (the
+degree-`684` factorisation was run in full at `p = 37`).  Subset sums of
+those degrees miss `10`, `16`, `36` respectively — the same conclusion by a
+route that is NOT usable in Lean, since it would need irreducibility of a
+degree-`666` polynomial.  The first four agree with the factorisation types
+already recorded on `exists_kernelPolynomial_of_genusOneJTable`.
+
+**WHY `ℓ` IS LARGE, AND WHY A SMALL-`ℓ` SEARCH FAILS — this is the trap.**
+At `p = 37` NO prime `ℓ ≤ 31` yields a certificate, and the reason is
+structural rather than accidental.  If `ρ̄_p(Frob_ℓ)` is split semisimple in
+the Borel it has a SECOND eigenline besides the isogeny line, contributing a
+second block of degrees summing to `(p − 1)/2`; then `p − 1` IS a subset sum
+and the test is silent.  The primes that work are exactly those at which
+`ρ̄_p(Frob_ℓ)` is non-semisimple — one eigenline, unipotent part nonzero —
+where the remaining `p` lines form a single Frobenius orbit and every large
+factor degree is a multiple of `p` (`11 = 11·1`, `34 = 17·2`, `222 = 37·6`).
+Such `ℓ` have density about `1/p`, which is why `23, 67, 397` and nothing
+smaller.  A successor searching for its own witnesses should search on that
+criterion, not blindly.
+
+**THE NEGATIVE CONTROL of the sibling leaf is consistent with this and is
+worth restating**: the one-prime Frobenius sieve tabulated on
+`not_stable_of_mem_isolatedNonCMJInvariants` finds NO witness at `q = p` for
+any `ℓ < 2000`, as it must — the `p`-isogeny genuinely exists, so the
+characteristic polynomial of every Frobenius has a root mod `p`.  That is why
+this leaf needs a degree obstruction rather than an existence obstruction.
+
+**WHAT PROVING IT NEEDS.**  The Gauss-lemma step (a monic rational factor of
+a monic integral polynomial is integral, and reduces mod `ℓ` to a factor of
+the same degree), the six reductions themselves, and a squarefree
+distinct-degree factorisation of `Ψ_p mod ℓ` in degrees `60, 144, 684`.  The
+last is the real cost and it is NOT `decide`-shaped over `Polynomial (ZMod ℓ)`;
+the tractable encoding is coefficient vectors over `ZMod ℓ` with the
+distinct-degree gcd chain `gcd(Ψ_p, X^(ℓ^k) − X)` computed on them, which is
+`k ≤ 11, 34, 222` modular exponentiations — the same shape as, but far larger
+than, the `ℓ²`-element `decide`s in `MazurGenusZeroCertificates`.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a curve over `ℚ` with one of the
+six tabulated `j`-invariants whose `p`-division polynomial has a monic
+rational factor of degree `p − 1` — equivalently, by the leaf above, a second
+independent rational `p`-isogeny, equivalently a third curve in one of those
+six isogeny classes. -/
+theorem not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants {p : ℕ}
+    (_hp : p ∈ ({11, 17, 37} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (_hj : E.j ∈ isolatedJInvariants p) (_hjn : E.j ∉ isolatedCMJInvariants)
+    (f : Polynomial ℚ) (_hf : f.Monic) (_hdeg : f.natDegree = p - 1)
+    (_hdvd : f ∣ E.preΨ' p) :
+    False :=
+  sorry
+
+/-- **The non-CM rows carry no second `p`-isogeny either** (PROVEN 2026-07-28
+over `exists_monic_dvd_preΨ_of_twoStableLines` and
+`not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants`; introduced as a single
+sorry leaf earlier the same day).
 
 The six live rows are the entries of `isolatedJInvariants p` that are not
 singular moduli:
@@ -16703,19 +16897,29 @@ matrix `[1, p; p, 1]` (`ellisomat`, PARI/GP 2.17.4, 2026-07-28), i.e. exactly
 one rational `p`-isogeny; a second stable line would make the class contain a
 third curve.
 
-**THE ROUTE, and it is the same certificate shape the file already uses.**  A
-`Γ_ℚ`-stable line of order `p` in `E[p]` is a rational root of the `p`-th
-division polynomial's kernel factorisation: `ψ_p` has degree `(p²−1)/2` and a
-stable line contributes a `ℚ`-rational factor of degree `(p−1)/2` (its kernel
-polynomial).  Two distinct stable lines give two coprime such factors.  So the
-obligation is: at each of the six `j`, the `p`-division polynomial of a
-Weierstrass model has AT MOST ONE rational kernel factor of degree `(p−1)/2`
-(`5, 8, 18` at `p = 11, 17, 37`).  `Fermat/FLT/EllipticCurve/KernelPolynomial.lean`
-and `…/GenusOneKernelPolynomials.lean` carry the kernel-polynomial API this
-needs, and `MazurIsogenyPrimeJ.exists_kernelPolynomial_of_genusOneJTable` in
+**THE CUT, 2026-07-28 — and it is the same certificate shape the file already
+uses.**  A `Γ_ℚ`-stable line of order `p` in `E[p]` contributes a `ℚ`-rational
+factor of `Ψ_p` of degree `(p−1)/2` (its kernel polynomial), and two distinct
+stable lines give two COPRIME such factors, hence a rational factor of degree
+`p − 1`.  That splits the node cleanly into
+
+* `exists_monic_dvd_preΨ_of_twoStableLines` — the Galois descent, uniform in
+  `p`, the converse of `WeierstrassCurve.exists_point_of_isKernelPolynomial`;
+* `not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants` — the six explicit
+  checks, now carrying a machine-checked mod-`ℓ` certificate apiece
+  (`ℓ = 23, 23, 67, 67, 397, 397`).
+
+Neither half is easier than the node was; what the cut buys is that the two
+halves share no machinery (Galois descent versus factorisation in `ℚ[X]`),
+and that the arithmetic half is now a CONCRETE obligation with witnesses
+rather than "six explicit checks".  See the two docstrings for the route, the
+certificate table, and the reason a small-`ℓ` search for those witnesses
+fails.
+
+`MazurIsogenyPrimeJ.exists_kernelPolynomial_of_genusOneJTable` in
 `FreyCurve/MazurTorsion.lean` is the EXISTENCE direction of the same
-computation at the same `j`-values — a successor should look there first,
-since the uniqueness direction is a factorisation of the same polynomials.
+computation at three of the same `j`-values — a successor should look there
+first, since the uniqueness direction factorises the same polynomials.
 
 **TWIST-INVARIANCE is not an extra hypothesis.**  `hj` pins `E` only up to
 quadratic twist, and every entry of `isolatedJInvariants` is strictly
@@ -16723,32 +16927,54 @@ negative, hence `∉ {0, 1728}`, so `Aut_ℚ̄(E) = {±1}` and `Γ_ℚ`-stable l
 `E` and of any quadratic twist correspond bijectively.  The same remark is
 recorded on `not_stable_of_mem_isolatedCMJInvariants`.
 
-**The two VACUOUS rows are `p = 19, 43, 67, 163`** — there
+**The four VACUOUS rows `p = 19, 43, 67, 163` are discharged HERE** — there
 `isolatedJInvariants p ⊆ isolatedCMJInvariants`, so `hjn` is already a
-contradiction, and a proof may discharge four of the seven `fin_cases`
-branches by `decide` before any curve theory starts.
+contradiction, and the arithmetic leaf below is stated at
+`p ∈ {11, 17, 37}` so that it never sees them.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: a curve over `ℚ` with one of the
+**THE CHECK THAT WOULD REFUTE THIS NODE**: a curve over `ℚ` with one of the
 six tabulated non-CM `j`-invariants and two independent rational
 `p`-isogenies — equivalently a third curve in one of those six isogeny
 classes. -/
 theorem not_twoStableLines_of_mem_isolatedNonCMJInvariants {p : ℕ}
-    (_hp : p ∈ isolatedIsogenyPrimes)
+    (hp : p ∈ isolatedIsogenyPrimes)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (_hj : E.j ∈ isolatedJInvariants p) (_hjn : E.j ∉ isolatedCMJInvariants)
+    (hj : E.j ∈ isolatedJInvariants p) (hjn : E.j ∉ isolatedCMJInvariants)
     (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
-    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
-    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+    (hg₁ : addOrderOf g₁ = p) (hg₂ : addOrderOf g₂ = p)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₁)
-    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g₂) :
-    False :=
-  sorry
+    False := by
+  -- The four entirely-CM levels are vacuous: there `hjn` contradicts `hj`.
+  have hp3 : p ∈ ({11, 17, 37} : Finset ℕ) := by
+    fin_cases hp
+    · decide
+    · decide
+    · exact absurd (by
+        norm_num [isolatedJInvariants] at hj
+        simp [isolatedCMJInvariants, hj]) hjn
+    · decide
+    · exact absurd (by
+        norm_num [isolatedJInvariants] at hj
+        simp [isolatedCMJInvariants, hj]) hjn
+    · exact absurd (by
+        norm_num [isolatedJInvariants] at hj
+        simp [isolatedCMJInvariants, hj]) hjn
+    · exact absurd (by
+        norm_num [isolatedJInvariants] at hj
+        simp [isolatedCMJInvariants, hj]) hjn
+  have hpp : p.Prime := by fin_cases hp3 <;> decide
+  have hodd : Odd p := by fin_cases hp3 <;> decide
+  obtain ⟨f, hfm, hfd, hfdvd⟩ :=
+    exists_monic_dvd_preΨ_of_twoStableLines hpp hodd E g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+  exact not_monic_dvd_preΨ_of_mem_isolatedNonCMJInvariants hp3 E hj hjn f hfm hfd hfdvd
 
 /-- **No elliptic curve over `ℚ` carries two distinct `Γ_ℚ`-stable lines of
 order `p`, for any of the seven isolated Mazur primes** (PROVEN 2026-07-28
