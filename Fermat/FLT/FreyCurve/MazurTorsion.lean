@@ -23043,85 +23043,163 @@ theorem isIso_of_mono_of_relCurve {X J S : Scheme.{0}} {strX : X ⟶ S} {jstr : 
   exact (isIso_iff_isOpenImmersion_and_surjective u).mpr ⟨inferInstance, inferInstance⟩
 
 /-- **`0 < N` for an `X_0(N)`-compactification over a NONEMPTY base**
-(sorry leaf, 2026-07-28) — the base-general form of
-`Fermat.pos_of_isX0Compactification`, and the bookkeeping half of
+(PROVEN 2026-07-28, from `Fermat.pos_of_isX0Compactification_of_fieldPoint`
+in `ModularCurve/X0.lean`; a sorry leaf when introduced earlier the same
+day) — the bookkeeping half of
 `smoothOfRelativeDimension_one_of_x0Genus_eq_one`.  It mentions neither
 `x0Genus`, nor a Jacobian, nor `ℚ`.
 
 **THIS IS NOT BOOKKEEPING, it repairs a real hole.**  `x0Genus 0 = 1` —
-checked by `decide`, and recorded on `Fermat.pos_of_isX0Compactification`
-— so the hypothesis `hg : x0Genus N = 1` of the node below does NOT by
-itself exclude `N = 0`, while `S_2(Γ_0(0)) = 0` (`Gamma0GL 0` is the
-group of real matrices with lower-left entry `0`, not a discrete
-subgroup).  Without this leaf the arithmetic half of that node would be
-FALSE at `N = 0`, not merely unproven.
+checked by `decide` — so the hypothesis `hg : x0Genus N = 1` of the node
+below does NOT by itself exclude `N = 0`, while
+`finrank ℂ S_2(Γ_0(0)) ≠ 1` (see the CORRECTION on
+`finrank_cuspForm_eq_one_of_x0Genus_eq_one` below for why, and for why
+the reason this docstring used to give was wrong).  Without this leaf the
+arithmetic half of that node would be FALSE at `N = 0`, not merely
+unproven.
 
-TRUE, and the argument is `Fermat.pos_of_isX0Compactification`'s verbatim
-with the base generalised.  `hmodel.connected` makes `strX` surjective
-(`GeometricallyConnected ⟹ Surjective`, an instance in `Mathlib`), so a
-nonempty base gives a nonempty `X`; `strX` is proper and smooth of
-relative dimension `1`, so `X` is infinite (a smooth curve over a field
-has infinitely many closed points), and `finite_compl` then makes `Y`
-nonempty.  A point of `Y` produces a `Gamma0Datum 0` through
-`hmodel.coarse`, i.e. an elliptic scheme with a `CyclicSubgroupOfOrder 0`
-subgroup scheme — and a group scheme cannot have order `0`, its
-geometric fibres containing the identity section.
+**THE PROOF, and it is a REDUCTION TO AN EXISTING LEAF rather than a new
+argument.**  `Fermat.pos_of_isX0Compactification_of_fieldPoint`
+(`ModularCurve/X0.lean`) is the same statement with the nonemptiness
+supplied as a *field-valued point* `Spec K ⟶ S` instead of as a bare
+inhabitant of the space, and over schemes the two hypotheses are
+interchangeable in the direction needed here: a point `s : S` has a
+residue field `κ(s)`, and `S.fromSpecResidueField s : Spec κ(s) ⟶ S` is
+the required field-valued point.  So this leaf and that one are
+DUPLICATES, and the mathematics — `hmodel.connected` makes `strX`
+surjective, a smooth proper relative curve over a field is infinite,
+`finite_compl` then makes `Y` nonempty, and a point of `Y` produces a
+`CyclicSubgroupOfOrder 0` subgroup scheme, which is impossible because
+geometric fibres contain the identity section — now has a single home,
+in `X0.lean`, where the curve machinery it needs
+(`infinite_of_smoothOfRelativeDimension_one`) already lives.
+
+**STALE CITATION CORRECTED (2026-07-28).**  Four paragraphs in this
+cluster — this docstring's three, and one bullet in
+`smoothOfRelativeDimension_one_of_x0Genus_eq_one`'s docstring below —
+cited a declaration `Fermat.pos_of_isX0Compactification`, said it lived
+in `ModularCurve/X0.lean`, and said this leaf SUBSUMED it.  **No such
+declaration exists anywhere in the tree**: `grep -rn
+'pos_of_isX0Compactification' Fermat/` returns only prose hits plus
+`pos_of_isX0Compactification_of_fieldPoint`.  Nothing is subsumed; the
+relation is the other way round, this leaf being a corollary of that one.
 
 **`hS` IS LOAD-BEARING and the statement is FALSE without it**: over the
 EMPTY base `S = X = Y = ∅` every field of `IsX0Compactification 0` holds
-vacuously.  That is exactly why `Fermat.pos_of_isX0Compactification` is
-stated over `SpecQ` and this one carries a nonemptiness hypothesis
-instead.
-
-**THIS SUBSUMES `Fermat.pos_of_isX0Compactification`**, which is the
-`S = SpecQ` case (`SpecQ` is nonempty, being the spectrum of a nonzero
-ring); that leaf lives in `ModularCurve/X0.lean` and is left alone here
-rather than rewritten, but a prover who closes this one should close it
-there too, as a one-line corollary. -/
+vacuously.  That is exactly why the `X0.lean` version carries a
+field-valued point of `S` and this one carries `Nonempty S`. -/
 theorem pos_of_isX0Compactification_of_nonempty {N : ℕ} {X Y S : Scheme.{0}}
     {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
-    (hmodel : IsX0Compactification N strX strY jY) (hS : Nonempty S) : 0 < N :=
-  sorry
+    (hmodel : IsX0Compactification N strX strY jY) (hS : Nonempty S) : 0 < N := by
+  obtain ⟨s⟩ := hS
+  exact _root_.Fermat.pos_of_isX0Compactification_of_fieldPoint hmodel
+    (S.residueField s) (S.fromSpecResidueField s)
 
 /-- **THE DIMENSION FORMULA AT GENUS `1`: `dim_ℂ S_2(Γ_0(N)) = 1`**
 (sorry leaf, 2026-07-28) — the ARITHMETIC half of
 `smoothOfRelativeDimension_one_of_x0Genus_eq_one`, and it mentions no
-scheme whatsoever.  The exact analogue, one genus up, of
-`Fermat.exists_ne_zero_cuspForm_of_one_le_x0Genus`.
+scheme whatsoever.
 
 TRUE and classical: `dim_ℂ S_2(Γ_0(N)) = genus X_0(N)` for `N ≥ 1`
 (Diamond–Shurman, Theorem 3.5.1; the isomorphism `S_2(Γ) ≅ H⁰(X_Γ, Ω¹)`
 sending `f` to `f(τ) dτ`), and `x0Genus N` is that genus by the formula
 its own docstring records (Diamond–Shurman, Theorem 3.1.1).
 
-**`hN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**
-`x0Genus 0 = 1` (by `decide`; see `pos_of_isX0Compactification_of_nonempty`
-above), while `Gamma0GL 0` is not a discrete subgroup and
-`S_2(Γ_0(0)) = 0`, so the conclusion would read `0 = 1`.  This is the
-same trap `Fermat.exists_ne_zero_cuspForm_of_one_le_x0Genus` records, and
-it is why that leaf carries `0 < N` too.
+**STALE CITATION CORRECTED (2026-07-28).**  This docstring twice cited
+`Fermat.exists_ne_zero_cuspForm_of_one_le_x0Genus` — as the analogue one
+genus down, and as the source of the `0 < N` trap.  **No declaration of
+that name exists anywhere in the tree**; `grep -rn 'theorem
+exists_ne_zero_cuspForm' Fermat/` is EMPTY, and the unanchored grep returns
+only prose (two hits in `ModularCurve/X0.lean`, plus this paragraph).  So
+there is no proven `≠ 0`
+sibling to lean on and no `1 ≤ dim` half already in hand: BOTH inequalities
+are open here.
 
-**VERIFIED NUMERICALLY (PARI/GP, 2026-07-28)**: `mfdim([N,2],1)` over
-`1 ≤ N ≤ 60` reproduces the genus of `X_0(N)` at every level, and equals
-`1` at exactly `N = 11, 14, 15, 17, 19, 20, 21, 24, 27, 32, 36, 49` —
-which contains all four of `X0GenusOne.levels` and no level at which
-`x0Genus N ≠ 1`.  It also reproduces the eleven `x0Genus` values banked
-in `Fermat.one_le_x0Genus_of_kenkuLevel`.  (Untrusted searcher: the
-numbers are a sanity check on the STATEMENT, not a proof of it.)
+**`hN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT — but the
+reason this docstring used to give was itself FALSE.**  The old text read
+"`Gamma0GL 0` is not a discrete subgroup and `S_2(Γ_0(0)) = 0`".  Read the
+definition: `Gamma0GL N = (CongruenceSubgroup.Gamma0 N).map
+(Matrix.SpecialLinearGroup.mapGL ℝ)` (`Modularity/HeckeOperator.lean`), and
+`ZMod 0 = ℤ`, so `Gamma0GL 0` is the image of
+`{γ ∈ SL(2, ℤ) | γ 1 0 = 0} = {± T ^ n}` — an infinite cyclic group times
+`±1`, which is perfectly DISCRETE, and is certainly not "the group of real
+matrices with lower-left entry `0`".  The correct reason is the opposite
+extreme: `Gamma0GL 0 ≤ Gamma0GL M` for every `M` (`γ 1 0 = 0` implies
+`γ 1 0 ≡ 0 mod M`), so every `S_2(Γ_0(M))` sits inside
+`CuspForm (Gamma0GL 0) 2` — BOTH of the structure's conditions weaken, the
+slash-invariance because it is quantified over the group, and the
+vanishing because the pin defines
+`IsCusp c 𝒢 = ∃ g ∈ 𝒢, g.IsParabolic ∧ g • c = c`
+(`Mathlib/NumberTheory/ModularForms/Cusps.lean`), which is monotone in
+`𝒢`, so a smaller group has FEWER cusps to vanish at.  And forms of levels
+`11` and `17` are independent there (a common nonzero element would be
+invariant under the group generated by `Γ_0(11)` and `Γ_0(17)`, which is
+`SL(2, ℤ)`, and `S_2(SL_2(ℤ)) = 0`).  So the space is INFINITE-dimensional
+at `N = 0` and `Module.finrank` returns its junk value `0 ≠ 1`.  The
+conclusion — `hN` may not be dropped — survives; only the argument for it
+changes.
 
-**WHY THIS IS A DIFFERENT ATTACK SURFACE FROM RIEMANN–ROCH**, which is
-the whole point of the cut, and it is the note
-`exists_ne_zero_cuspForm_of_one_le_x0Genus` already carries: the textbook
-proof of the dimension formula is Riemann–Roch on `X_0(N)`, but this
-statement is about a specific `N`, so at any single level it can be
-discharged by exhibiting a basis — at the four genus-`1` levels the
-single form is an eta quotient, `η(τ)²η(11τ)² ∈ S_2(Γ_0(11))`,
-`η(τ)η(2τ)η(17τ)η(34τ)`-type products at `17`, and
-`η(4τ)²η(8τ)² ∈ S_2(Γ_0(32))` — together with the Sturm bound
-(`Fermat.exists_cuspForm_sturm_bound`, and
+**VERIFIED NUMERICALLY, and the check was re-run against `x0Genus`'s OWN
+definition rather than against a textbook formula (2026-07-28).**  The
+previous note recorded PARI/GP `mfdim([N,2],1)` for `1 ≤ N ≤ 60`.  That
+range is too short to see a bug in `numEllipticTwo`/`numCusps` at a large
+level, which is precisely the failure mode `numEllipticTwo`'s own
+docstring records at `N = 26, 50`.  Re-evaluating `numCusps`,
+`gammaZeroIndex`, `numEllipticTwo`, `numEllipticThree` and the `x0Genus`
+quotient verbatim for `1 ≤ N ≤ 3000`:
+
+* the numerator `12 + μ − 3ν₂ − 4ν₃ − 6ν_∞` is divisible by `12` at EVERY
+  such `N` (so the `ℤ`-division is exact and its rounding convention never
+  matters);
+* `x0Genus N = 1` holds at exactly `N = 11, 14, 15, 17, 19, 20, 21, 24,
+  27, 32, 36, 49` — the classical twelve, which contains all four of
+  `X0GenusOne.levels`;
+* `x0Genus N = 0` holds at exactly `N = 1, …, 10, 12, 13, 16, 18, 25` —
+  the classical fifteen.
+
+No spurious large solution exists below `3000`, so the statement is not
+false through an arithmetic defect in `x0Genus`.  (Untrusted searcher: a
+sanity check on the STATEMENT, not a proof of it.)
+
+**THE DOCUMENTED ROUTE CANNOT BE RUN IN THIS MODULE, and that is the real
+blocker (found 2026-07-28).**  The route recorded here — exhibit the eta
+quotient (`η(τ)²η(11τ)² ∈ S_2(Γ_0(11))`, an `η(τ)η(2τ)η(17τ)η(34τ)`-type
+product at `17`, `η(4τ)²η(8τ)² ∈ S_2(Γ_0(32))`) and bound the dimension
+above by the Sturm bound — names `Fermat.exists_cuspForm_sturm_bound` and
 `GaloisRepresentation.Modularity.cuspForm_finiteDimensional`, both in
-`Modularity/Interface.lean`) to bound the dimension above.  That route
-needs no cohomology, no genus of a scheme and no Riemann–Roch.
+`Modularity/Interface.lean`.  **That file `public import`s
+`Fermat.FLT.FreyCurve.MazurTorsion` (its import block, and the module
+docstring at line 4585 here says the same in the other direction), so both
+are strictly DOWNSTREAM of this leaf and are unusable from it.**  Nothing
+upstream supplies them: `Modularity/HeckeOperator.lean`, which is where
+`Gamma0GL` and `heckeOp` live, carries no Sturm bound and no
+finite-dimensionality instance for `CuspForm (Gamma0GL N) 2`.  Refuting
+check, one command: `grep -rni 'sturm|FiniteDimensional'
+Fermat/FLT/Modularity/HeckeOperator.lean`, whose single hit today is a
+roadmap line in that file's module docstring, not a declaration.
+
+So the honest repair is a MOVE, not a proof: either hoist
+`exists_cuspForm_sturm_bound` and `cuspForm_finiteDimensional` from
+`Interface.lean` up to `HeckeOperator.lean` (they are statements about
+`CuspForm (Gamma0GL N) 2` alone and mention nothing from `MazurTorsion`),
+or relocate this leaf and its consumer chain downstream.  Until one of
+those happens a prover dispatched here has no upper-bound tool at all, and
+that is why the leaf has resisted.
+
+**THE CUT THAT IS AVAILABLE, and why it was NOT taken.**  `x0Genus N = 1`
+with `0 < N` pins `N` to the twelve levels above, so the leaf splits into
+
+* `0 < N → x0Genus N = 1 → N ∈ ({11, 14, 15, 17, 19, 20, 21, 24, 27, 32,
+  36, 49} : Finset ℕ)` — pure `ℕ` arithmetic, needing a growth bound
+  `2 ≤ x0Genus N` for all larger `N`; and
+* the twelve explicit dimension computations.
+
+Both halves are TRUE (the range check above is exactly the evidence for
+the first).  It was not performed because it makes neither half
+attackable *here*: the twelve computations still need the downstream
+Sturm bound, and the growth bound is a substantial elementary
+number-theory task added to the frontier for no gain.  Do the MOVE first;
+then this cut becomes worth making.
 
 **Stated as an equality rather than as `≠ 0`** because the consumer needs
 the exact dimension: `1 ≤ dim` would only give `dim J_0(N) ≥ 1`, and the
@@ -23180,9 +23258,54 @@ believed: the comparison between the algebraic Jacobian pinned by
 `Lie(J) ≅ H¹(X, 𝒪_X)` together with `S_2(Γ_0(N)) ≅ H⁰(X_0(N), Ω¹)`.
 `Fermat.IsX0EichlerShimura` (`ModularCurve/X0.lean`) is the neighbouring
 interface for the same circle of ideas — it reads Grothendieck–Lefschetz
-off in POINT COUNTS over `𝔽_ℓ` rather than in dimensions — and a prover
-should check whether that interface can be strengthened to carry this
-rather than opening a second cohomological seam. -/
+off in POINT COUNTS over `𝔽_ℓ` rather than in dimensions.
+
+**THAT CHECK HAS NOW BEEN RUN (2026-07-28), and the answer is NO.**  The
+previous version of this paragraph asked a prover to find out whether
+`IsX0EichlerShimura` could be strengthened to carry this leaf.  It cannot,
+for two independent reasons, both readable off its declaration:
+
+* it is stated only for `strX : X ⟶ SpecF ℓ` — a FINITE FIELD base —
+  whereas this leaf is over an arbitrary `S`, and nothing in the tree
+  transports an `IsJacobianOf` along a base change, so there is no route
+  from the fibres back to `jstr`;
+* its two fields are equations between COMPLEX NUMBERS
+  (`#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr T_ℓ` and
+  `#J_0(N)(𝔽_ℓ) = det((ℓ + 1) − T_ℓ)`), and a dimension is not a value of
+  either.  The dimension is visible in them only ASYMPTOTICALLY —
+  `det((ℓ + 1) − T_ℓ)` has degree `dim S_2` in `ℓ`, and
+  `#A(𝔽_{ℓⁿ}) = ℓ^{n·dim A}(1 + o(1))` — so extracting it needs the
+  point-count growth law for an abelian variety over a finite field, which
+  is absent from `Mathlib`, from `~/cs/FLT` and from this project.
+
+Refuting check for both clauses, and it is cheap: a base-change lemma for
+`IsJacobianOf`, or any statement in the tree relating `Nat.card (RelPoint
+jstr _)` to `SmoothOfRelativeDimension _ jstr`, refutes the verdict.
+
+**ATOMICITY AUDIT (2026-07-28) — WHICH AXES WERE SEARCHED.**  Three, and
+naming them is the point, since a verdict is only as wide as its search:
+
+1. *The genus axis.*  Split into "`dim J` = genus of `strX`" and "genus of
+   `X_0(N)` = `dim_ℂ S_2`".  BLOCKED, and the blocker is the one six
+   docstrings in this cluster already record: no genus of a scheme, no
+   `h¹(𝒪_X)`, no Riemann–Roch exists here, so the *middle term of the
+   split cannot be written down*.  Note this is the case the doctrine's
+   "stating a theory is not proving it" rule does NOT rescue: writing a
+   genus interface means writing coherent cohomology of a proper morphism,
+   which is a subtree, not a structure.
+2. *The base axis.*  Reduce to a field base by locality of
+   `SmoothOfRelativeDimension` on the target and stability under base
+   change.  BLOCKED on the same missing ingredient as the point-count
+   route: `IsJacobianOf` is a functor-of-points universal property and no
+   lemma says its base change is again one.  That lemma is a genuinely
+   separable and much smaller task, and is the one piece of this leaf a
+   successor could land independently.
+3. *The point-count axis*, i.e. `IsX0EichlerShimura`.  BLOCKED as above.
+
+Verdict: ATOMIC at this pin along all three, with axis 2's base-change
+lemma the only spin-off worth dispatching on its own.  The remaining
+content is Eichler–Shimura itself and belongs to whoever owns the
+`Modularity` subtree, not to a prover in this file. -/
 theorem smoothOfRelativeDimension_finrank_cuspForm {N : ℕ} (hN : 0 < N)
     {X Y J S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} {jY : Y ⟶ X}
     (hmodel : IsX0Compactification N strX strY jY) {jstr : J ⟶ S}
@@ -23741,11 +23864,36 @@ should be attacked without the other's docstring in hand.  Refuting check
 for the twinning: if `modelTable`'s rows ever cease to be the reductions of
 `x0Model`'s four curves, the two leaves stop being about the same curves.
 
-**A `Scheme`↔`WeierstrassCurve` bridge is available but NOT importable
-here.**  `WeierstrassCurve.proj` / `projToSpec`
+**CORRECTION (2026-07-28): THE PACKAGED BRIDGE *IS* AVAILABLE HERE.**  The
+paragraph below used to say a `Scheme`↔`WeierstrassCurve` bridge "is
+available but NOT importable here", which is true of the RAW construction
+and false of the packaged one, and the difference is what a successor
+needs.  `Fermat.exists_ellipticScheme_of_weierstrass` lives in
+`Fermat/FLT/ModularCurve/X0.lean`, which this module `public import`s (see
+its import block), and it resolves in this file — compiler-checked, not
+inferred from the import graph.  So is the input it wants:
+`(x0Model 11).IsElliptic` closes here in one line
+(`constructor; rw [isUnit_iff_ne_zero]; simp only [curve11a1, Δ, b₂, b₄,
+b₆, b₈]; norm_num`), and the other three levels the same way.
+
+What that existential DOES give: an abelian scheme `f : A ⟶ SpecQ`, an
+`AbelianSchemeStruct`, `SmoothOfRelativeDimension 1 f`, and a
+Galois-equivariant `≃+` from `(E⁄ℚ̄).Point` to `GeomFibrePt f (𝟙 SpecQ)`.
+What it does NOT give, and these are exactly the gap: `IsProper f`,
+`GeometricallyConnected f`, the open subscheme `Y` with
+`IsCoarseModuliY0 N strY` — i.e. the entire modular content — and the
+identification of `RelPoint f (𝟙 SpecQ)` (the `ℚ`-points) with the
+Galois-fixed part of `GeomFibrePt f (𝟙 SpecQ)`, which nothing in the tree
+states.  So the honest cost of this leaf is unchanged; what changes is
+that a successor should NOT spend a cycle re-surveying the scheme side or
+trying to work around the `over`-token problem below, because the piece
+that problem blocks is not the piece that is missing.
+
+**Why the RAW bridge is still out of reach.**  `WeierstrassCurve.proj` /
+`projToSpec`
 (`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`)
-build the projective Weierstrass model as a scheme, and
-`Fermat.exists_ellipticScheme_of_weierstrass` packages it over `ℚ`.  This
+build the projective Weierstrass model as a scheme, and it is that file
+`exists_ellipticScheme_of_weierstrass` is proven from.  This
 module may **not** `public import` `ProjectiveModel`: it reaches
 `Mathlib/Tactic/Ring/NamePolyVars.lean`, which reserves the token `over`
 globally, and `ModThree.lean` — which `public import`s this file — uses
