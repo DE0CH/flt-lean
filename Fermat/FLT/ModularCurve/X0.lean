@@ -28525,49 +28525,23 @@ theorem mono_ajHom_of_one_le_x0Genus {N : ℕ} (hg : 1 ≤ x0Genus N)
 `HasNoFibreAffineLine`.  They were moved here VERBATIM apart from the first
 one's proof, because that proof now consumes `mono_ajHom_of_one_le_x0Genus`
 immediately above — see its docstring for why that is a strict improvement over
-the modular-parametrisation route its own audit recommended. -/
+the modular-parametrisation route its own audit recommended.
 
-/-- **A RELATIVE CURVE IS NOT A POINT** (sorry leaf, 2026-07-27) — the
-whole residue of `hasNonconstantAbelianMap_of_one_le_x0Genus` after it is
-routed through `mono_ajHom_of_one_le_x0Genus`, and it is elementary,
-level-free and base-general.
-
-TRUE.  `hconn` gives `ConnectedSpace X`, so `X` is nonempty; pick `x : X`
-and take the affine opens `V ∋ x`, `U ∋ f x` that `hcurve` supplies, with
-`Γ(S, U) ⟶ Γ(X, V)` standard smooth of relative dimension `1`.  If `f`
-were an isomorphism that map would be an isomorphism of rings, hence
-standard smooth of relative dimension `0` with `Ω¹ = 0`; but a standard
-smooth presentation of relative dimension `1` has `Ω¹` free of rank `1`
-over a nonzero ring, and `Γ(X, V) ≠ 0` because `V` is a nonempty affine
-open.  `1 ≠ 0` closes it.
-
-**BOTH HYPOTHESES ARE LOAD-BEARING.**  Without `hconn` the statement is
-FALSE: for `X = S = ∅` the identity is an isomorphism and
-`SmoothOfRelativeDimension 1` holds vacuously, since its only field is a
-`∀ x : X`.  Without `hcurve` it is false for the identity on any scheme.
-Note `hconn` is used ONLY for nonemptiness — any hypothesis giving
-`Nonempty X` would do, and `GeometricallyConnected` is what the call site
-happens to hold.
-
-**WHAT IT NEEDS FROM THE PIN**, and this is the whole reason it is a leaf
-rather than three lines: the uniqueness of the relative dimension of a
-standard smooth presentation, i.e. that
-`IsStandardSmoothOfRelativeDimension m` and
-`... n` over a nonzero ring force `m = n`.  Mathlib has
-`IsStandardSmoothOfRelativeDimension` and the `Subsingleton` corner case
-but not, as far as a `grep` of the pin shows, that uniqueness; the
-natural route is through `Ω¹` being free of rank `n` for a submersive
-presentation.  **The check that would refute this verdict**: a rank or
-uniqueness statement for `IsStandardSmoothOfRelativeDimension`, or a
-`ringKrullDim` lower bound for a smooth curve, appearing in `Mathlib`, in
-`~/cs/FLT`, or in this project's shim tree (which already carries the
-UPPER bound, `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`
-in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` — so
-this is that file's missing companion and belongs there once proven). -/
-theorem not_isIso_of_smoothOfRelativeDimension_one {X S : Scheme.{0}} {f : X ⟶ S}
-    (hcurve : SmoothOfRelativeDimension 1 f) (hconn : GeometricallyConnected f) :
-    ¬ IsIso f :=
-  sorry
+**`not_isIso_of_smoothOfRelativeDimension_one` HAS MOVED, AND IT WAS FALSE AS
+STATED HERE** (2026-07-28).  It used to stand at this point as a sorry leaf with
+hypotheses `(hcurve : SmoothOfRelativeDimension 1 f) (hconn : GeometricallyConnected f)`.
+`hconn` does **not** give `Nonempty X`: `GeometricallyConnected` quantifies over
+morphisms `Spec K ⟶ S` with `K` a field, so over an EMPTY base it is vacuous, and
+`X = S = (∅ : Scheme.{0})`, `f = 𝟙 ∅` satisfies both hypotheses while `IsIso f`
+holds.  (Mathlib's route to `ConnectedSpace X` is
+`GeometricallyConnected.connectedSpace`, which needs `[ConnectedSpace S]`.)  The
+repaired statement takes `(hne : Nonempty X)` instead of `hconn`, is level-free and
+base-general, and now lives — PROVEN — in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, beside the
+matching upper bound `ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one`
+and directly over `eq_of_isStandardSmoothOfRelativeDimension_of_locally`, which is
+the relative-dimension uniqueness the old docstring recorded as missing from the pin.
+It was already there.  The consumer below supplies `Nonempty X` from `o`. -/
 
 /-- **The genus formula, in its geometric form: `genus X_0(N) ≥ 1` gives
 `X_0(N)` a nonconstant map to an abelian variety** (PROVEN 2026-07-27
@@ -28641,10 +28615,14 @@ proof below consumes the existing copy instead:
   plus `IsJacobianOf.injective_aj_of_mono` makes `aj g` INJECTIVE at
   every test object.  Nonconstancy then needs only two DISTINCT relative
   points.
-* `not_isIso_of_smoothOfRelativeDimension_one` — the one leaf left, and
-  it is elementary: the tautological point `𝟙 X` and the constant point
+* `not_isIso_of_smoothOfRelativeDimension_one` (PROVEN 2026-07-28, and
+  now in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`)
+  — elementary: the tautological point `𝟙 X` and the constant point
   `strX ≫ o` are distinct unless `o` inverts `strX`, i.e. unless the
-  curve is a single `ℚ`-point.
+  curve is a single `ℚ`-point.  It was FALSE as first stated here, with
+  `GeometricallyConnected` where it needed `Nonempty X`; see the section
+  note above the previous declaration.  `Nonempty X` is supplied below by
+  `o`, which maps the (nonempty) `SpecQ` into `X`.
 
 **WHAT THIS CHANGED IN THE FRONTIER.**  Three leaves — a `0 < N`
 positivity, the dimension formula `dim S_2(Γ_0(N)) = genus`, and
@@ -28683,7 +28661,8 @@ theorem hasNonconstantAbelianMap_of_one_le_x0Genus (N : ℕ) (hg : 1 ≤ x0Genus
     have hne : (⟨𝟙 X, Category.id_comp strX⟩ : RelPoint strX strX)
         ≠ ⟨strX ≫ o.1, by rw [Category.assoc, o.2, Category.comp_id]⟩ := by
       intro hEq
-      refine not_isIso_of_smoothOfRelativeDimension_one h.smooth h.connected ?_
+      refine not_isIso_of_smoothOfRelativeDimension_one h.smooth
+        ⟨o.1.base (Nonempty.some inferInstance)⟩ ?_
       exact ⟨o.1, congrArg Subtype.val hEq.symm, o.2⟩
     exact ⟨X, strX, _, _, fun hc =>
       hne (jac.injective_aj_of_mono (mono_ajHom_of_one_le_x0Genus hg h jac) strX hc)⟩

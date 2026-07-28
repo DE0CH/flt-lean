@@ -3467,6 +3467,56 @@ theorem smoothOfRelativeDimension_of_isDominant {S Y X : Scheme.{u}} {n : ℕ}
   haveI : Nontrivial Γ(X, D) := Scheme.component_nontrivial X D
   exact (eq_of_isStandardSmoothOfRelativeDimension_of_locally hmD hlocD) ▸ hm
 
+/-- **A RELATIVE CURVE IS NOT A POINT: a morphism that is smooth of relative dimension `1`
+with NONEMPTY SOURCE is never an isomorphism** (PROVEN 2026-07-28; it is the companion of
+`ringKrullDim_le_one_of_locally_isStandardSmoothOfRelativeDimension_one` above — the *lower*
+bound on the relative dimension, where that one is the upper bound on the Krull dimension).
+
+Level-free, base-general and elementary.  Pick `x : X`; `hcurve` supplies affine opens
+`U ⊆ S`, `V ∋ x` with `f.appLE U V e` standard smooth of relative dimension `1`.  If `f` were
+an isomorphism it would in particular be an open immersion, hence
+`SmoothOfRelativeDimension 0`, so `HasRingHomProperty.appLE` makes the SAME ring map
+`Locally (IsStandardSmoothOfRelativeDimension 0)`.  `Γ(X, V)` is nontrivial because `V ∋ x`
+is nonempty, so `eq_of_isStandardSmoothOfRelativeDimension_of_locally` above forces
+`1 = 0`.  No local-constancy theorem, no dimension theory, and no properness is used.
+
+**REFUTATION AND REPAIR (2026-07-28), recorded because the previous statement of this leaf —
+`not_isIso_of_smoothOfRelativeDimension_one` in `Fermat/FLT/ModularCurve/X0.lean` — was
+FALSE, and its own docstring contained the counterexample while asserting it was excluded.**
+That statement carried `(hconn : GeometricallyConnected f)` in place of `hne`, on the reasoning
+that "`hconn` gives `ConnectedSpace X`, so `X` is nonempty".  It does not.
+`GeometricallyConnected f` unfolds to `geometrically (ConnectedSpace ·) f`, i.e. a condition
+quantified over morphisms `Spec K ⟶ S` with `K` a field; when `S` is EMPTY there are none, so
+the hypothesis is VACUOUS.  Mathlib's route from `GeometricallyConnected` to `ConnectedSpace X`
+is `GeometricallyConnected.connectedSpace`, which needs `[ConnectedSpace S]` — nonemptiness of
+the base is an extra input, never a consequence.
+
+Compiler-verified counterexample, `X = S = (∅ : Scheme.{0})` and `f = 𝟙 ∅`:
+`SmoothOfRelativeDimension 1 f` holds because its only field is a `∀ x : X`;
+`GeometricallyConnected f` holds because a morphism `Spec K ⟶ ∅` would produce a point of `∅`
+from the point of the nonempty `Spec K`; and `IsIso f` holds (`isIso_of_isEmpty`, and `f` is an
+identity anyway).  So all three conjuncts of the refuted statement are simultaneously
+satisfiable.
+
+`hne` is therefore load-bearing and is exactly the content `hconn` was believed to supply.
+Dropping `hconn` altogether is a strict gain: the leaf's own docstring already noted that
+connectedness was wanted ONLY for nonemptiness, and every consumer holds a point of `X`
+(the `X0.lean` consumer has a `RelPoint` over `Spec ℚ`, whose structure map hands one over).
+It also makes the statement reusable verbatim at `Γ₁`, which was the stated intent. -/
+theorem not_isIso_of_smoothOfRelativeDimension_one {X S : Scheme.{u}} {f : X ⟶ S}
+    (hcurve : SmoothOfRelativeDimension 1 f) (hne : Nonempty X) : ¬ IsIso f := by
+  intro hiso
+  obtain ⟨x⟩ := hne
+  obtain ⟨U, hU, V, hV, hxV, e, hss⟩ :=
+    hcurve.exists_isStandardSmoothOfRelativeDimension x
+  haveI : SmoothOfRelativeDimension 0 f := inferInstance
+  have hloc : RingHom.Locally (RingHom.IsStandardSmoothOfRelativeDimension 0)
+      (f.appLE U V e).hom :=
+    HasRingHomProperty.appLE (@SmoothOfRelativeDimension 0) f inferInstance ⟨U, hU⟩ ⟨V, hV⟩ e
+  haveI : Nonempty V := ⟨⟨x, hxV⟩⟩
+  haveI : Nontrivial Γ(X, V) := Scheme.component_nontrivial X V
+  exact one_ne_zero (eq_of_isStandardSmoothOfRelativeDimension_of_locally hss hloc)
+
 /-- **The complement of a dense open in a one-dimensional proper curve is finite** (PROVEN;
 it takes the dimension bound as the hypothesis `hdim`, which a consumer discharges from
 `topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one` above).
