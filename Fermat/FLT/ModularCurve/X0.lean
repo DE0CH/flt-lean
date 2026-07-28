@@ -23394,10 +23394,9 @@ the `ProperPushforward` shim (imported at the top of this file), so it is
 a pure relocation with no import change and no semantic change.  Then
 replace the `sorry` below by the one line above and delete this section.
 
-That relocation was NOT done on 2026-07-27 because the block was owned by
-two other concurrent worktrees at the time.  It is bookkeeping for
-whoever next has this file to themselves; it is not new mathematics, and
-it should not be dispatched as a proof task.
+**THE RELOCATION HAS SINCE BEEN DONE, and the node is PROVEN** — the
+paragraphs above describe the state before it, and are kept because they
+record why the block sits where it does.  Do not dispatch a prover here.
 
 Stated with `Nonempty` because `IsJacobianOf` is DATA — it carries the
 Abel–Jacobi map as a field — so the bare structure is not a proposition
@@ -23408,7 +23407,7 @@ theorem isJacobianOf_of_isRelPicZeroOf {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (P : IsRelPicZeroOf strX ab o) :
     Nonempty (IsJacobianOf strX ab o) :=
-  sorry
+  ⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩
 
 /-- **The Jacobian of `X_0(N)` exists** (PROVEN 2026-07-27 over
 `exists_relPicZeroOf` and `isJacobianOf_of_isRelPicZeroOf`; formerly the

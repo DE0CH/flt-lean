@@ -3437,7 +3437,7 @@ theorem affinePoint_eq_of_toHom_eq (f : ℚ →+* K)
     (c d : ProjCoords E (Spec (CommRingCat.of K))) (h : c.toHom = d.toHom) :
     affinePoint f c = affinePoint f d := by
   obtain ⟨u, hu⟩ :=
-    exists_units_smul_of_toHom_eq (K' := CommRingCat.of K) (Field.toIsField K) c d h
+    exists_units_smul_of_toHom_eq c d h
   rw [affinePoint, affinePoint, ← hu, coordField_smul]
   exact (WeierstrassCurve.Projective.Point.toAffine_smul (W := E.map f) (coordField c)
     (u.isUnit.map (gammaSpecEquiv K).toRingHom)).symm
