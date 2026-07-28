@@ -207,6 +207,16 @@ public import Fermat.FLT.Modularity.RegularStalks
 -- mathlib-shaped, reusable, and (mathlib having no `Tor` long exact sequence at
 -- this pin) needs a theory build that must not happen inside this file.
 public import Fermat.FLT.Mathlib.RingTheory.Flat.LocalCriterion
+-- The `R_λ` tower of Stacks 10.127.11 (`nonempty_noetherianLocalBaseSystem`).
+-- `Adjoin.FG` supplies `is_noetherian_subring_closure`, `Localization.Submodule`
+-- supplies `IsLocalization.isNoetherianRing`, and `Localization.AtPrime.Basic`
+-- supplies `Ideal.primeCompl` and `IsLocalization.AtPrime.isLocalRing`.  All three
+-- are `public` because `Subring`, `IsLocalization` and `Ideal.primeCompl` occur in
+-- the SIGNATURES of the construction lemmas in `NoetherianApproxBase` below, not
+-- only in their proof bodies.
+public import Mathlib.RingTheory.Adjoin.FG
+public import Mathlib.RingTheory.Localization.Submodule
+public import Mathlib.RingTheory.Localization.AtPrime.Basic
 
 @[expose] public section
 
@@ -2205,18 +2215,381 @@ theorem NoetherianApproxSystem.flat_base_of_le {R B A : Type u}
     IsLocalization.flat _ W
   exact Module.Flat.trans (sys.Base j) (sys.Base j ⊗[sys.Base i] sys.Tot i) (sys.Tot j)
 
-/-- **NOETHERIAN APPROXIMATION: Stacks 10.127.11 + 10.127.13** (SORRY LEAF, cut
-2026-07-28 out of `nonempty_flatNoetherianStage_of_essFinitePresentation` below;
-read the section note "THE CUT OF THE APPROXIMATION LEAF" above first).
+/-! ### THE `R_λ` TOWER, CUT OFF AND PROVEN, 2026-07-28
 
-*A local `R → B → A` with both `R → B` and `R → A` essentially of finite
-presentation is the filtered colimit of a directed system of NOETHERIAN local
-stages, with the transition maps localizations after base change.*
+**SECTION NOTE for `NoetherianLocalBaseSystem` and the two declarations under it.**
+
+The previous owner's SURVEY of the approximation leaf ended with:
+
+> this is the one piece that can be landed as a proven lemma; it was not landed
+> here only because, with no assembly written, it would be free-floating.
+
+The assembly IS written (it is
+`nonempty_flatNoetherianStage_of_essFinitePresentation` below, proven 2026-07-28),
+so that objection has expired and the piece is landed here.  `NoetherianApproxSystem`
+splits along the obvious seam: its `Base`-tower fields — `Λ` and its order, `Base`,
+`isLocalRingBase`, `isNoetherianBase`, `baseT`, `baseToR`, `baseT_comp`,
+`comm_baseToR`, `isLocalHomBaseT`, `isLocalHomBaseToR`, `base_surj`, `base_sep` —
+mention neither `B` nor `A` nor any localization, so they form a self-contained
+datum about `R` alone.  That datum is `NoetherianLocalBaseSystem R`, it is exactly
+the OPENING of 10.127.11 ("write the local ring `R` as a filtered colimit of
+Noetherian local subrings"), and it is a THEOREM here, not a leaf.
+
+**THE CONSTRUCTION, in one paragraph.**  `Λ = Finset R` ordered by `⊆` — no
+`Ring.DirectLimit`, no abstract colimit; the system is concrete and every
+transition map is an inclusion of subrings of `R`.  For `s : Finset R` put
+`C_s = Subring.closure ↑s` (Noetherian by `is_noetherian_subring_closure`) and
+
+  `R_s = {x : R | ∃ a b ∈ C_s, IsUnit b ∧ x * b = a}`,
+
+the set of fractions `a/b` with `a, b ∈ C_s` and `b` a unit of `R`.  This is a
+subring, and — because `R` is LOCAL, so that `b ∈ C_s` is a unit of `R` exactly
+when `b ∉ 𝔭_s := 𝔪_R ∩ C_s` — the inclusion `C_s → R_s` is a localization at
+`𝔭_s.primeCompl` (`IsLocalization.isLocalization_baseSubring`: `map_units` is
+`b⁻¹ = 1/b ∈ R_s`, `surj` is membership itself, and `exists_of_eq` is the
+injectivity of `C_s ↪ R`).  Noetherianity is then
+`IsLocalization.isNoetherianRing`, locality is `IsLocalization.AtPrime.isLocalRing`,
+and `IsLocalHom (R_s → R)` is the computation `x = a/b` invertible in `R` implies
+`a` invertible, whence `b/a ∈ R_s` inverts `x` inside `R_s`.  `base_surj` takes
+`s = {x}`; `base_sep` is trivial because every `R_s → R` is an inclusion.
+
+**WHY THE HELPER LEMMAS ARE STATED AT `CommRingCat` LEVEL** (`baseStage`,
+`baseStageT`, `baseStageToR` and the six facts about them).  Not aesthetics: the
+structure instance would not TYPE-CHECK otherwise.  Assembling all eleven fields
+in one term makes the kernel re-run the `↥(CommRingCat.of ↥(R_s)) ≡ ↥(R_s)`
+conversion once per field, and the total blows the kernel's deterministic-timeout
+budget (observed: every field fine in isolation, the assembly `(kernel)
+deterministic timeout`).  Paying the conversion once per named lemma, each with
+its own budget, leaves the structure instance a syntactic match.  The same trick
+is why `baseStageToR_baseStageT` exists rather than a `rfl`: `rfl` for
+`↑(Subring.inclusion h x) = ↑x` is also a kernel timeout here, while
+`Subring.coe_inclusion` is instant.
+
+**THE CHECK THAT WOULD REFUTE THIS CUT.**  Exhibit a `NoetherianLocalBaseSystem R`
+from which no `NoetherianApproxSystem g v` can be built under 00R7's hypotheses.
+It cannot be done: `{i | i₀ ≤ i}` is again a base system for every `i₀`, so the
+leaf below may always pass to a cofinal restriction before descending `B` and `A`,
+which is exactly what 10.127.13 does. -/
+
+/-- **THE `R_λ` TOWER OF STACKS 10.127.11** — a filtered system of NOETHERIAN
+LOCAL subrings of `R` whose colimit is `R`, with no reference to `B`, to `A`, or
+to any localization.
+
+This is the `Base` half of `NoetherianApproxSystem`, field for field, with `R`
+alone as parameter.  Read the section note above for what it is for; its fields
+are documented there and in `NoetherianApproxSystem`, whose corresponding fields
+they are.
+
+**FAITHFULNESS.**  Every field is one of `NoetherianApproxSystem`'s, so
+`nonempty_noetherianLocalBaseSystem` is weaker than the `Base` half of
+`nonempty_noetherianApproxSystem_of_essFinitePresentation` and cannot smuggle
+anything in.  **NON-DEGENERACY**: the one-object system `Λ = PUnit`,
+`Base = R` satisfies every structural field but demands `IsNoetherianRing R`, and
+the constant system on a Noetherian subring fails `base_surj`; so the datum is
+not free. -/
+structure NoetherianLocalBaseSystem (R : Type u) [CommRing R] where
+  /-- The index set `Λ`. -/
+  Λ : Type u
+  /-- `Λ` is nonempty. -/
+  nonemptyΛ : Nonempty Λ
+  /-- The order on `Λ`, as a raw relation. -/
+  le : Λ → Λ → Prop
+  /-- `le` is reflexive. -/
+  le_rfl : ∀ i, le i i
+  /-- `le` is transitive. -/
+  le_trans' : ∀ {i j k}, le i j → le j k → le i k
+  /-- `Λ` is directed. -/
+  directed : ∀ i j, ∃ k, le i k ∧ le j k
+  /-- `R_λ`, the Noetherian local base at stage `i`. -/
+  Base : Λ → CommRingCat.{u}
+  /-- Each `R_λ` is local. -/
+  isLocalRingBase : ∀ i, IsLocalRing (Base i)
+  /-- Each `R_λ` is Noetherian. -/
+  isNoetherianBase : ∀ i, IsNoetherianRing (Base i)
+  /-- The transition map `R_λ → R_μ`. -/
+  baseT : ∀ {i j}, le i j → (Base i →+* Base j)
+  /-- The cocone map `R_λ → R`. -/
+  baseToR : ∀ i, Base i →+* R
+  /-- `baseT` is functorial. -/
+  baseT_comp : ∀ {i j k} (h₁ : le i j) (h₂ : le j k),
+    (baseT h₂).comp (baseT h₁) = baseT (le_trans' h₁ h₂)
+  /-- `baseToR` is a cocone. -/
+  comm_baseToR : ∀ {i j} (h : le i j), (baseToR j).comp (baseT h) = baseToR i
+  /-- The transitions are local. -/
+  isLocalHomBaseT : ∀ {i j} (h : le i j), IsLocalHom (baseT h)
+  /-- The cocone maps are local. -/
+  isLocalHomBaseToR : ∀ i, IsLocalHom (baseToR i)
+  /-- `R` is the colimit, half one. -/
+  base_surj : ∀ x : R, ∃ i, ∃ y : Base i, baseToR i y = x
+  /-- `R` is the colimit, half two. -/
+  base_sep : ∀ i (x y : Base i), baseToR i x = baseToR i y →
+    ∃ j, ∃ h : le i j, baseT h x = baseT h y
+
+namespace NoetherianApproxBase
+
+section Construction
+
+-- `[IsLocalRing R]` is deliberately NOT a section variable: locality of `R` is used
+-- by exactly the six declarations that carry it explicitly below (everything about
+-- `basePrime` and the localization/Noetherian/local facts it feeds), and by nothing
+-- else — the subring `baseSubring` and its inclusions make sense over any `CommRing`.
+variable {R : Type u} [CommRing R]
+
+/-- `C_s`, the subring of `R` generated by a finite subset — the "coefficients"
+of 10.127.11.  Noetherian by `is_noetherian_subring_closure`. -/
+abbrev coeffSubring (s : Finset R) : Subring R := Subring.closure (s : Set R)
+
+/-- `R_s`, the localization of `coeffSubring s` at `𝔪_R ∩ coeffSubring s`,
+realised inside `R` as the set of fractions `a / b` with `a, b ∈ C_s` and `b` a
+unit of `R`.  The subring axioms are the usual fraction arithmetic. -/
+def baseSubring (s : Finset R) : Subring R where
+  carrier := {x : R | ∃ a ∈ coeffSubring s, ∃ b ∈ coeffSubring s, IsUnit b ∧ x * b = a}
+  one_mem' := ⟨1, one_mem _, 1, one_mem _, isUnit_one, one_mul 1⟩
+  zero_mem' := ⟨0, zero_mem _, 1, one_mem _, isUnit_one, by ring⟩
+  mul_mem' := by
+    rintro x y ⟨a, ha, b, hb, hbu, hx⟩ ⟨c, hc, d, hd, hdu, hy⟩
+    exact ⟨a * c, mul_mem ha hc, b * d, mul_mem hb hd, hbu.mul hdu, by
+      rw [← hx, ← hy]; ring⟩
+  add_mem' := by
+    rintro x y ⟨a, ha, b, hb, hbu, hx⟩ ⟨c, hc, d, hd, hdu, hy⟩
+    refine ⟨a * d + c * b, add_mem (mul_mem ha hd) (mul_mem hc hb), b * d,
+      mul_mem hb hd, hbu.mul hdu, ?_⟩
+    rw [← hx, ← hy]; ring
+  neg_mem' := by
+    rintro x ⟨a, ha, b, hb, hbu, hx⟩
+    exact ⟨-a, neg_mem ha, b, hb, hbu, by rw [← hx]; ring⟩
+
+/-- `C_s ⊆ R_s`, via `a = a / 1`. -/
+theorem coeffSubring_le_baseSubring (s : Finset R) : coeffSubring s ≤ baseSubring s :=
+  fun x hx => ⟨x, hx, 1, one_mem _, isUnit_one, mul_one x⟩
+
+/-- `s ↦ R_s` is monotone: this is what makes the system directed. -/
+theorem baseSubring_mono {s t : Finset R} (h : s ⊆ t) : baseSubring s ≤ baseSubring t := by
+  rintro x ⟨a, ha, b, hb, hbu, hx⟩
+  exact ⟨a, Subring.closure_mono (by exact_mod_cast h) ha, b,
+    Subring.closure_mono (by exact_mod_cast h) hb, hbu, hx⟩
+
+/-- `𝔭_s = 𝔪_R ∩ C_s`, the contraction of the maximal ideal. -/
+def basePrime [IsLocalRing R] (s : Finset R) : Ideal (coeffSubring s) :=
+  (IsLocalRing.maximalIdeal R).comap (coeffSubring s).subtype
+
+instance basePrime_isPrime [IsLocalRing R] (s : Finset R) : (basePrime s).IsPrime := by
+  unfold basePrime
+  infer_instance
+
+/-- Because `R` is LOCAL, `b ∈ C_s` avoids `𝔭_s` exactly when it is a unit of
+`R`.  This is the one place locality of `R` is used, and it is what makes the
+fraction set above a localization rather than merely a subring. -/
+theorem mem_basePrime_primeCompl [IsLocalRing R] {s : Finset R} {b : coeffSubring s} :
+    b ∈ (basePrime s).primeCompl ↔ IsUnit (b : R) := by
+  simp [Ideal.primeCompl, basePrime]
+
+/-- The inverse of a unit of `C_s` lies in `R_s`: it is `1 / b`. -/
+theorem inv_mem_baseSubring {s : Finset R} {b : R} (hb : b ∈ coeffSubring s) (hbu : IsUnit b) :
+    (↑hbu.unit⁻¹ : R) ∈ baseSubring s :=
+  ⟨1, one_mem _, b, hb, hbu, hbu.val_inv_mul⟩
+
+/-- `R_s` is a `C_s`-algebra, via the inclusion. -/
+instance baseAlgebra (s : Finset R) : Algebra (coeffSubring s) (baseSubring s) :=
+  (Subring.inclusion (coeffSubring_le_baseSubring s)).toAlgebra
+
+theorem baseAlgebraMap_coe (s : Finset R) (y : coeffSubring s) :
+    ((algebraMap (coeffSubring s) (baseSubring s) y : baseSubring s) : R) = (y : R) := rfl
+
+/-- **`R_s` IS THE LOCALIZATION `(C_s)_{𝔭_s}`.**  `map_units` is
+`inv_mem_baseSubring`, `surj` is the defining membership of `R_s`, and
+`exists_of_eq` is the injectivity of `C_s ↪ R`. -/
+instance isLocalization_baseSubring [IsLocalRing R] (s : Finset R) :
+    IsLocalization (basePrime s).primeCompl (baseSubring s) := by
+  rw [isLocalization_iff]
+  refine ⟨fun y => ?_, fun z => ?_, fun {x y} hxy => ?_⟩
+  · have hyu : IsUnit ((y : coeffSubring s) : R) := mem_basePrime_primeCompl.mp y.2
+    have key : algebraMap (coeffSubring s) (baseSubring s) y *
+        (⟨(↑hyu.unit⁻¹ : R), inv_mem_baseSubring (y : coeffSubring s).2 hyu⟩ :
+          baseSubring s) = 1 := by
+      ext
+      show ((y : coeffSubring s) : R) * (↑hyu.unit⁻¹ : R) = 1
+      exact hyu.mul_val_inv
+    exact IsUnit.of_mul_eq_one _ key
+  · obtain ⟨a, ha, b, hb, hbu, hz⟩ := z.2
+    refine ⟨(⟨a, ha⟩, ⟨⟨b, hb⟩, mem_basePrime_primeCompl.mpr hbu⟩), ?_⟩
+    ext
+    exact hz
+  · refine ⟨1, ?_⟩
+    have hR : ((x : coeffSubring s) : R) = ((y : coeffSubring s) : R) := by
+      rw [← baseAlgebraMap_coe s x, ← baseAlgebraMap_coe s y, hxy]
+    rw [Subtype.ext hR]
+
+/-- `R_s` is Noetherian: a localization of the Noetherian ring `C_s`. -/
+instance isNoetherianRing_baseSubring [IsLocalRing R] (s : Finset R) :
+    IsNoetherianRing (baseSubring s) :=
+  IsLocalization.isNoetherianRing (basePrime s).primeCompl _
+    (is_noetherian_subring_closure _ s.finite_toSet)
+
+/-- `R_s` is local: a localization at a prime. -/
+theorem isLocalRing_baseSubring [IsLocalRing R] (s : Finset R) : IsLocalRing (baseSubring s) :=
+  IsLocalization.AtPrime.isLocalRing _ (basePrime s)
+
+/-- `R_s → R` is a LOCAL homomorphism: if `x = a / b` is a unit of `R` then so is
+`a`, and `b / a ∈ R_s` inverts `x` inside `R_s`. -/
+instance isLocalHom_baseSubring_subtype (s : Finset R) :
+    IsLocalHom (baseSubring s).subtype := by
+  refine ⟨fun x hx => ?_⟩
+  obtain ⟨a, ha, b, hb, hbu, hxb⟩ := x.2
+  have hau : IsUnit a := hxb ▸ hx.mul hbu
+  have hmem : (b : R) * (↑hau.unit⁻¹ : R) ∈ baseSubring s :=
+    ⟨b, hb, a, ha, hau, by rw [mul_assoc, hau.val_inv_mul, mul_one]⟩
+  have key : x * (⟨(b : R) * (↑hau.unit⁻¹ : R), hmem⟩ : baseSubring s) = 1 := by
+    ext
+    show (x : R) * ((b : R) * (↑hau.unit⁻¹ : R)) = 1
+    rw [← mul_assoc, hxb, hau.mul_val_inv]
+  exact IsUnit.of_mul_eq_one _ key
+
+/-- The transitions `R_s → R_t` are local, since `R_t → R` and `R_s → R` are. -/
+instance isLocalHom_baseSubring_inclusion {s t : Finset R} (h : s ⊆ t) :
+    IsLocalHom (Subring.inclusion (baseSubring_mono h)) := by
+  refine ⟨fun x hx => ?_⟩
+  have h1 : IsUnit (((Subring.inclusion (baseSubring_mono h)) x : baseSubring t) : R) :=
+    hx.map (baseSubring t).subtype
+  rw [Subring.coe_inclusion] at h1
+  exact (isLocalHom_baseSubring_subtype s).1 x h1
+
+/-- Every `x : R` already lies in `R_{x}`, which is `base_surj`. -/
+theorem mem_baseSubring_singleton (x : R) : x ∈ baseSubring ({x} : Finset R) :=
+  coeffSubring_le_baseSubring _ (Subring.subset_closure (by simp))
+
+/-- The stage `R_s` as an object of `CommRingCat`.  See the section note for why
+the six facts below are stated at this level and not at `Subring` level. -/
+def baseStage (s : Finset R) : CommRingCat.{u} := CommRingCat.of (baseSubring s)
+
+/-- The transition map `R_s → R_t`. -/
+def baseStageT {s t : Finset R} (h : s ⊆ t) : baseStage s →+* baseStage t :=
+  Subring.inclusion (baseSubring_mono h)
+
+/-- The cocone map `R_s → R`. -/
+def baseStageToR (s : Finset R) : baseStage s →+* R := (baseSubring s).subtype
+
+theorem isLocalRing_baseStage [IsLocalRing R] (s : Finset R) : IsLocalRing (baseStage s) :=
+  isLocalRing_baseSubring s
+
+theorem isNoetherianRing_baseStage [IsLocalRing R] (s : Finset R) :
+    IsNoetherianRing (baseStage s) :=
+  isNoetherianRing_baseSubring s
+
+theorem baseStageToR_baseStageT {s t : Finset R} (h : s ⊆ t) (x : baseStage s) :
+    baseStageToR t (baseStageT h x) = baseStageToR s x :=
+  Subring.coe_inclusion (baseSubring_mono h) x
+
+theorem baseStageToR_injective (s : Finset R) : Function.Injective (baseStageToR s) :=
+  fun _ _ h => Subtype.ext h
+
+theorem baseStageT_comp {s t k : Finset R} (h₁ : s ⊆ t) (h₂ : t ⊆ k) :
+    (baseStageT h₂).comp (baseStageT h₁) = baseStageT (Finset.Subset.trans h₁ h₂) :=
+  RingHom.ext fun x => baseStageToR_injective k (by
+    rw [RingHom.comp_apply, baseStageToR_baseStageT, baseStageToR_baseStageT,
+      baseStageToR_baseStageT])
+
+theorem comm_baseStageToR {s t : Finset R} (h : s ⊆ t) :
+    (baseStageToR t).comp (baseStageT h) = baseStageToR s :=
+  RingHom.ext fun x => baseStageToR_baseStageT h x
+
+theorem isLocalHom_baseStageT {s t : Finset R} (h : s ⊆ t) : IsLocalHom (baseStageT h) :=
+  isLocalHom_baseSubring_inclusion h
+
+theorem isLocalHom_baseStageToR (s : Finset R) : IsLocalHom (baseStageToR s) :=
+  isLocalHom_baseSubring_subtype s
+
+omit [CommRing R] in
+theorem baseStage_directed (s t : Finset R) : ∃ k : Finset R, s ⊆ k ∧ t ⊆ k := by
+  classical
+  exact ⟨s ∪ t, Finset.subset_union_left, Finset.subset_union_right⟩
+
+theorem baseStage_surj (x : R) :
+    ∃ s : Finset R, ∃ y : baseStage s, baseStageToR s y = x :=
+  ⟨{x}, ⟨x, mem_baseSubring_singleton x⟩, rfl⟩
+
+theorem baseStage_sep (s : Finset R) (x y : baseStage s)
+    (hxy : baseStageToR s x = baseStageToR s y) :
+    ∃ t : Finset R, ∃ h : s ⊆ t, baseStageT h x = baseStageT h y :=
+  ⟨s, Finset.Subset.refl s, congrArg _ (baseStageToR_injective s hxy)⟩
+
+end Construction
+
+end NoetherianApproxBase
+
+/-- **THE `R_λ` TOWER OF 10.127.11 EXISTS** (PROVEN 2026-07-28; read the section
+note "THE `R_λ` TOWER, CUT OFF AND PROVEN" above).
+
+*Every local ring is the filtered colimit of a directed system of NOETHERIAN
+local subrings, along local inclusions.*
+
+`Λ = Finset R`, `Base s = R_s` the ring of fractions `a / b` with `a, b` in the
+subring generated by `s` and `b` a unit of `R`; the transition maps and the
+cocone maps are all inclusions of subrings of `R`.  The construction and its six
+ingredients are in `NoetherianApproxBase` above.
+
+This is 10.127.11's opening, and it is the half of
+`nonempty_noetherianApproxSystem_of_essFinitePresentation` that needs no finite
+presentation at all — note that neither `B`, nor `A`, nor either
+`EssFinitePresentation` hypothesis appears here. -/
+theorem nonempty_noetherianLocalBaseSystem (R : Type u) [CommRing R] [IsLocalRing R] :
+    Nonempty (NoetherianLocalBaseSystem R) :=
+  ⟨{ Λ := Finset R
+     nonemptyΛ := ⟨∅⟩
+     le := fun s t => s ⊆ t
+     le_rfl := Finset.Subset.refl
+     le_trans' := Finset.Subset.trans
+     directed := NoetherianApproxBase.baseStage_directed
+     Base := NoetherianApproxBase.baseStage
+     isLocalRingBase := NoetherianApproxBase.isLocalRing_baseStage
+     isNoetherianBase := NoetherianApproxBase.isNoetherianRing_baseStage
+     baseT := NoetherianApproxBase.baseStageT
+     baseToR := NoetherianApproxBase.baseStageToR
+     baseT_comp := NoetherianApproxBase.baseStageT_comp
+     comm_baseToR := NoetherianApproxBase.comm_baseStageToR
+     isLocalHomBaseT := NoetherianApproxBase.isLocalHom_baseStageT
+     isLocalHomBaseToR := NoetherianApproxBase.isLocalHom_baseStageToR
+     base_surj := NoetherianApproxBase.baseStage_surj
+     base_sep := NoetherianApproxBase.baseStage_sep }⟩
+
+/-- **NOETHERIAN APPROXIMATION, THE `S_λ` AND `S'_λ` TOWERS: Stacks 10.127.13
+OVER A GIVEN `R_λ` TOWER** (SORRY LEAF; cut 2026-07-28 out of
+`nonempty_flatNoetherianStage_of_essFinitePresentation` below, then cut again the
+same day against `nonempty_noetherianLocalBaseSystem`.  Read the section notes
+"THE CUT OF THE APPROXIMATION LEAF" and "THE `R_λ` TOWER, CUT OFF AND PROVEN"
+above first).
+
+*Given a directed system of Noetherian local subrings with colimit `R`, a local
+`R → B → A` with both `R → B` and `R → A` essentially of finite presentation is
+the filtered colimit of a directed system of NOETHERIAN local stages, with the
+transition maps localizations after base change.*
 
 This is 10.127.13 (which is 10.127.11 applied twice, once to `R → S` and once to
 `R → S'`, on a common index set) with the module dropped, because 00R7 is applied
 at `M = S' = A`.  It contains no flatness whatsoever: every flatness statement of
 00R7's proof is in the two leaves below.
+
+**WHAT `_bs` IS FOR, AND WHY IT IS NOT DECORATION.**  `_bs` is the whole of
+10.127.11's opening — the index set, the tower `R_λ`, its Noetherianity and
+locality, the local transition and cocone maps, and the two colimit conditions —
+proven unconditionally above.  A prover of this leaf is expected to CONSUME it,
+in the shape 10.127.13 uses: fix finite presentations of `B` over `R` and of `A`
+over `B`, take `i₀ : _bs.Λ` large enough (`base_surj` plus `directed`, finitely
+many times) that `_bs.Base i₀` contains every coefficient of both, and then work
+over the RESTRICTED system `{i | _bs.le i₀ i}`, which is again a base system —
+that restriction is why the leaf is stated with `_bs` as an ordinary input and no
+compatibility clause: the produced system's base tower is a cofinal piece of
+`_bs`'s, but saying so in the type would cost an equality of `CommRingCat`
+objects for no consumer's benefit.  Rebuilding the `R_λ` tower here instead of
+using `_bs` is permitted by the type and is strictly more work.
+
+**WHAT REMAINS, precisely.**  Over the restricted base tower: the models
+`S_λ = (R_λ[x]/(f_λ))_{𝔮_λ}` and `S'_λ = (S_λ[y]/(ḡ_λ))_{𝔮'_λ}` with their
+localizations at the contracted primes (`Mid`, `Tot`, `baseToMid`, `midToTot`,
+`midT`, `totT`, `midToB`, `totToA`), their Noetherianity and locality, the eight
+commutation and functoriality fields involving them, the four colimit conditions
+`mid_surj`/`tot_surj`/`mid_sep`/`tot_sep`, and the three localization fields
+`isLocalizationMidT`, `isLocalizationTotT`, `isLocalizationTotBaseT`.
 
 **SURVEY, carried over from the previous owner of the uncut leaf (2026-07-27) and
 still the place to start — three findings, each greppable.**
@@ -2241,18 +2614,15 @@ still the place to start — three findings, each greppable.**
    the transition maps being localizations — i.e. `isLocalHomMidToB`,
    `isLocalizationMidT` and `isLocalizationTotT` above.
 
-2. **The `Base` tower is provable today and the subring realisation IS correct
-   for it** — the note above refutes subrings only for `B` and `A`.  The
-   construction: for a finite `s ⊆ R`, put `C₀ = Subring.closure ↑s`
-   (`IsNoetherianRing ↥C₀` is `is_noetherian_subring_closure`,
-   `Mathlib/RingTheory/Adjoin/FG.lean:202`), `𝔭 = 𝔪_R ∩ C₀`, and take `R_s ⊆ R`
-   to be `{x | ∃ a b ∈ C₀, IsUnit (b : R) ∧ x * b = a}`.  It is a subring, it is
-   `IsLocalization 𝔭.primeCompl`-isomorphic to `(C₀)_𝔭` hence Noetherian
-   (`IsLocalization.isNoetherianRing`,
-   `Mathlib/RingTheory/Localization/Submodule.lean:82`), its non-units are exactly
-   `R_s ∩ 𝔪_R` so it is local, its inclusion is an `IsLocalHom`, and `s ↦ R_s` is
-   MONOTONE in `s` with `⋃ₛ R_s = R` — which is `base_surj` plus `directed` above,
-   and 10.127.11's opening.
+2. **The `Base` tower — DONE, 2026-07-28.**  Finding 2 of the survey ("the
+   subring realisation IS correct for the `R_λ` tower") was carried out exactly
+   as it was written: it is `nonempty_noetherianLocalBaseSystem` above, PROVEN,
+   with `R_s = {x | ∃ a b ∈ C₀, IsUnit (b : R) ∧ x * b = a}`, Noetherianity from
+   `IsLocalization.isNoetherianRing` and locality from
+   `IsLocalization.AtPrime.isLocalRing`, precisely as the survey predicted.  This
+   leaf therefore no longer has to build `Λ`, `Base`, `baseT`, `baseToR` or any
+   of their eight properties: it RECEIVES them, and what it owes is only the
+   `Mid`/`Tot` towers over a given base tower.
 
 3. **Do not look for `Ring.DirectLimit` in this proof.**  Take `Λ = Finset R`
    ordered by `⊆`, with `Base s = R_s` as in 2 and `Mid s`, `Tot s` the models of
@@ -2265,20 +2635,48 @@ still the place to start — three findings, each greppable.**
    ~/cs/FLT` found no use anywhere in this development on 2026-07-27; a hit on
    either means this note has gone stale.
 
-**FAITHFULNESS.**  The hypotheses are 00R7's, and the conclusion is a strict
-subset of 10.127.13's conclusions (the module is dropped, "essentially of finite
-type over `ℤ`" is weakened to "Noetherian", and "localization at a prime" to
-"localization at a submonoid"), so this is true if 10.127.13 is.  Non-degeneracy
-is discussed in `NoetherianApproxSystem`'s docstring: `base_surj` is what rules
-out a constant system on a Noetherian subring. -/
-theorem nonempty_noetherianApproxSystem_of_essFinitePresentation
+**FAITHFULNESS.**  The hypotheses are 00R7's plus one that is unconditionally
+satisfiable (`_bs`, by `nonempty_noetherianLocalBaseSystem`), and the conclusion
+is a strict subset of 10.127.13's conclusions (the module is dropped, "essentially
+of finite type over `ℤ`" is weakened to "Noetherian", and "localization at a
+prime" to "localization at a submonoid"), so this is true if 10.127.13 is.
+Adding `_bs` therefore cannot weaken the statement: it is implied by the version
+without it, and it implies that version, since `_bs` can always be supplied.
+Non-degeneracy is discussed in `NoetherianApproxSystem`'s docstring: `base_surj`
+is what rules out a constant system on a Noetherian subring. -/
+theorem nonempty_noetherianApproxSystem_of_baseSystem
     {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
     {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (_bs : NoetherianLocalBaseSystem R)
     (_hfpA : EssFinitePresentation (v.comp g))
     (_hfpB : EssFinitePresentation g) :
     Nonempty (NoetherianApproxSystem g v) :=
   sorry
+
+/-- **NOETHERIAN APPROXIMATION: Stacks 10.127.11 + 10.127.13** (PROVEN 2026-07-28
+over the two declarations above, cut 2026-07-28 out of
+`nonempty_flatNoetherianStage_of_essFinitePresentation` below).
+
+*A local `R → B → A` with both `R → B` and `R → A` essentially of finite
+presentation is the filtered colimit of a directed system of NOETHERIAN local
+stages, with the transition maps localizations after base change.*
+
+The body is glue: the `R_λ` tower exists unconditionally
+(`nonempty_noetherianLocalBaseSystem`, PROVEN — it is 10.127.11's opening and
+needs neither `B`, nor `A`, nor either finite-presentation hypothesis), and
+`nonempty_noetherianApproxSystem_of_baseSystem` descends `B` and `A` over it.
+The docstring of that leaf is the specification of everything that remains; the
+SURVEY above says where to start on it. -/
+theorem nonempty_noetherianApproxSystem_of_essFinitePresentation
+    {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
+    [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
+    {g : R →+* B} {v : B →+* A} [IsLocalHom g] [IsLocalHom v]
+    (hfpA : EssFinitePresentation (v.comp g))
+    (hfpB : EssFinitePresentation g) :
+    Nonempty (NoetherianApproxSystem g v) := by
+  obtain ⟨bs⟩ := nonempty_noetherianLocalBaseSystem R
+  exact nonempty_noetherianApproxSystem_of_baseSystem bs hfpA hfpB
 
 /-- **STACKS 10.128.3, FIRST APPLICATION: flatness over the base descends to a
 stage** (SORRY LEAF, cut 2026-07-28; read the section note "THE CUT OF THE
@@ -2473,7 +2871,11 @@ of `nonempty_noetherianApproxSystem_of_essFinitePresentation`, which is the leaf
 that has to do it.  Finding 2 ended "this is the one piece that can be landed as
 a proven lemma; it was not landed here only because, with no assembly written, it
 would be free-floating" — that obstruction is gone: the assembly below is
-written, so a `Base`-tower lemma proven inside that leaf now has a consumer. -/
+written, so a `Base`-tower lemma proven inside that leaf now has a consumer.
+**It was landed on 2026-07-28**, as `nonempty_noetherianLocalBaseSystem`, and
+`nonempty_noetherianApproxSystem_of_essFinitePresentation` is now PROVEN over it
+and the single remaining leaf
+`nonempty_noetherianApproxSystem_of_baseSystem`. -/
 theorem nonempty_flatNoetherianStage_of_essFinitePresentation
     {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
