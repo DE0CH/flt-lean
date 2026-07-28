@@ -26843,6 +26843,10 @@ docstring of `exists_atkinLehnerIsom_of_veluQuotient_order_125` below, which
 records it as one of the two things the round trip is waiting for.
 
 **FAITHFULNESS of the pin.**  `IsGamma0ModelOf E d S` is the conjunction of
+(0) `IsWeierstrassModel d.ab E`, the SCHEME-LEVEL identification (added
+2026-07-28 by `flt-lean-87`; without it the two scheme-level leaves below are
+not provable from their hypotheses at all — see the pin's own docstring for the
+argument and for the correction it forced on both of them),
 (i) a Galois-EQUIVARIANT additive equivalence `e : E(ℚ̄) ≃+ (geometric fibre of
 `d`)` and (ii) `e` carrying `S` onto the level structure, read through
 `RelPoint.LiesIn d.cyc.ι`.  Clause (ii) is what makes it a pin rather than a
@@ -26888,14 +26892,54 @@ This is the pin the round trip through `Y_0(N)` runs on; see the subsection
 docstring above for why `nonempty_gamma0Datum_of_stable`'s bare `Nonempty` will
 not do and why this is cheaper than `weierstrassModel_j_unique`.
 
-Two clauses, and BOTH are load-bearing:
+THREE clauses, and ALL THREE are load-bearing:
 
+* **the model clause** — `IsWeierstrassModel d.ab E`, i.e. the affine Weierstrass
+  curve `Spec ℚ[E]` sits in `d.E` as the open complement of the zero section.
+  This is the SCHEME-LEVEL identification; see the correction below for why the
+  other two cannot substitute for it;
 * **equivariance** — `e` intertwines `Affine.Point.map σ` on `E(ℚ̄)` with
   `AbelianSchemeStruct.galSMul σ` on the geometric fibre.  Without it the pin
   says nothing about the `ℚ`-structure and a `ℚ̄`-isomorphism of pairs could not
   be recognised as coming from a rational moduli point;
 * **the level clause** — `RelPoint.LiesIn d.cyc.ι (e x) ↔ x ∈ S`.  This is what
   excludes the `α`-ambiguity described in the subsection docstring.
+
+**THE MODEL CLAUSE WAS ADDED 2026-07-28 (flt-lean-87), AND WITHOUT IT THE TWO
+SCHEME-LEVEL LEAVES BELOW ARE NOT PROVABLE FROM THEIR HYPOTHESES.**  The
+original form of this definition carried only the last two clauses — a
+Galois-equivariant `≃+` on geometric points, plus the level condition.  That is
+precisely the modelling relation `X0.lean` twice warns about **in as many
+words**: `IsWeierstrassModel`'s own docstring calls it "the coordinate-level
+pinning that the moduli-level `≃+` of `exists_ellipticScheme_of_weierstrass`
+cannot provide", and the warning at `IsJMapOn.classify_jm` says a `∀` over data
+"modelling `E`" through such a `≃+` **risks being false**, because the `≃+` is
+*not known to determine `E.j`*.
+
+Both leaves below quantify over ARBITRARY `d`, `d'` and conclude something
+SCHEME-LEVEL — an `IsNIsogenyPair` (a morphism `d.E ⟶ d'.E` with kernel and
+`[N]` conditions read at EVERY test base, including non-reduced ones), and a
+`WeierstrassCurve.IsIsogeny` (which carries an `IsRationalMap` certificate in
+Weierstrass coordinates).  With only the `≃+` there is **nothing to transport a
+scheme morphism along**: `d.E` is known to have *some* Weierstrass model
+(`exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum`, PROVEN in
+`X0.lean`), but nothing identifies that model with `E`.  Recovering the
+identification from the `≃+` alone means deducing `E ≅ d`'s model from an
+isomorphism of `ℚ̄`-point groups as Galois modules — which restricts to
+`T_ℓ E ≅ T_ℓ (model)` for every `ℓ` and is therefore a **Faltings/Tate isogeny
+theorem** argument, present in neither mathlib, nor `~/cs/FLT`, nor this tree.
+
+So the leaves' documented route — "`IsGamma0ModelOf`'s `e`/`e'` are what
+transport it to `d.E ⟶ d'.E`" — was **not a valid route**, and the wall was
+misdiagnosed as "a scheme-level reading of `IsWeierstrassModel`" when the actual
+obstruction was that the pin did not carry one.  The fix is to carry it, which
+costs the producer nothing: `exists_gamma0Model_of_stable` below builds `d` from
+a Weierstrass curve and so has the coordinate in hand, via the forward re-export
+`exists_ellipticScheme_isWeierstrassModel_of_weierstrass` (`X0.lean`).
+
+**The check that refutes this paragraph**: a proof of either leaf below that
+never uses the model clause.  (Equivalently: a way to produce a morphism of
+schemes `d.E ⟶ d'.E` from a Galois-equivariant `≃+` of geometric point groups.)
 
 `S` is a bare `Set` rather than an `AddSubgroup` on purpose: the two sets it is
 instantiated at are `↑(AddSubgroup.zmultiples g)` and `φ '' E[N]`, and forcing
@@ -26904,6 +26948,7 @@ the second into subgroup form would make the statement of
 def WeierstrassCurve.IsGamma0ModelOf (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
     (d : Gamma0Datum N SpecQ) (S : Set (E⁄(AlgebraicClosure ℚ)).Point) : Prop :=
   letI := d.ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  IsWeierstrassModel d.ab E ∧
   ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt d.f (𝟙 SpecQ),
     (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
         e (WeierstrassCurve.Affine.Point.map
@@ -26954,7 +26999,11 @@ theorem WeierstrassCurve.exists_gamma0Model_of_stable (E : WeierstrassCurve ℚ)
       E.IsGamma0ModelOf d
         (AddSubgroup.zmultiples g : Set ((E⁄(AlgebraicClosure ℚ)).Point)) := by
   classical
-  obtain ⟨A, f, ab, hdim, e, he⟩ := exists_ellipticScheme_of_weierstrass E
+  -- the FORWARD coordinate-retaining bridge: `A` comes with `E` as a Weierstrass
+  -- MODEL, not merely with the geometric-points `≃+`.  See the model clause of
+  -- `IsGamma0ModelOf` for why the `≃+` alone will not do.
+  obtain ⟨A, f, ab, hdim, hmodel, e, he⟩ :=
+    exists_ellipticScheme_isWeierstrassModel_of_weierstrass E
   letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
   set y : GeomFibrePt f (𝟙 SpecQ) := e g with hy_def
   have hord : addOrderOf y = N := by rw [hy_def, AddEquiv.addOrderOf_eq]; exact hg
@@ -26986,7 +27035,7 @@ theorem WeierstrassCurve.exists_gamma0Model_of_stable (E : WeierstrassCurve ℚ)
                      add_liesIn := fun hx hz => add_liesIn_of_factor ab _ μ hμ hx hz
                      neg_liesIn := fun hx => neg_liesIn_of_factor ab _ ν hν hx
                      geom_cyclic := fun K _ _ t =>
-                       geom_cyclic_zmulPts ab N hN y hord hst K t } }, e, he, ?_⟩
+                       geom_cyclic_zmulPts ab N hN y hord hst K t } }, hmodel, e, he, ?_⟩
   -- the level structure is generated by `y = e g`
   obtain ⟨z, -, hzord, hzgen⟩ :=
     geom_cyclic_zmulPts ab N hN y hord hst (AlgebraicClosure ℚ) (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -27103,12 +27152,29 @@ merely on `ℚ̄`-points.
 1. *`φ` as a morphism.*  `hφ : IsIsogeny φ` carries an `IsRationalMap`
    certificate, so `φ` is given by rational functions in the Weierstrass
    coordinates; that is what turns the point map into a morphism of the affine
-   models, and `IsGamma0ModelOf`'s `e`/`e'` are what transport it to
-   `d.E ⟶ d'.E`.  **This is the same wall** the CM bridge
+   models `Spec ℚ̄[E] ⟶ Spec ℚ̄[E']`.  **The MODEL CLAUSE of `IsGamma0ModelOf` is
+   what carries it into `d.E ⟶ d'.E`**: it puts `Spec ℚ[E]` inside `d.E` as the
+   open complement of the zero section, and likewise for `d'`, so the rational
+   map extends over the missing point by properness of `d'.f` and the valuative
+   criterion.  **This is the same wall** the CM bridge
    `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly` above
    hit and deliberately did not name — see its step **5** and the two paragraphs
    after it — so a prover who closes one should close the other, and the shared
    piece is "a scheme-level reading of `IsWeierstrassModel`".
+
+   **CORRECTION, 2026-07-28 (flt-lean-87).**  This item previously read
+   "`IsGamma0ModelOf`'s `e`/`e'` are what transport it to `d.E ⟶ d'.E`".  That
+   was **wrong, and it made this leaf unprovable from its own hypotheses**: `e`
+   is an equivalence of POINT GROUPS, and a morphism of schemes cannot be
+   transported along one.  At the time this leaf was cut, `IsGamma0ModelOf`
+   carried only the `≃+` and the level clause — exactly the modelling relation
+   `X0.lean` warns is *not known to determine `j`* — so nothing tied `d.E` to
+   `E` at the scheme level, and deducing such a tie from the `≃+` is a
+   Faltings-strength argument that exists nowhere in this tree.  The model
+   clause was added to the pin for precisely this reason; it costs the producer
+   nothing (see `exists_gamma0Model_of_stable`).  **The wall was never "read
+   `IsWeierstrassModel` at the scheme level" — it was "the pin does not give you
+   an `IsWeierstrassModel` at all".**
 2. *The dual.*  `φ̂` with `φ̂φ = [N]` and `φφ̂ = [N]`.  Over a field the dual
    isogeny is classical (Silverman *AEC* III.6.1); in this tree the degree API
    is `Fermat/FLT/EllipticCurve/Isogeny.lean` (`IsIsogeny.comp`,
@@ -27229,6 +27295,19 @@ inverse.
    coordinates in order to produce the `IsRationalMap` certificate that
    `WeierstrassCurve.IsIsogeny` carries.  A prover who has a scheme-level
    reading of `IsWeierstrassModel` gets both.
+
+   **CORRECTION, 2026-07-28 (flt-lean-87).**  As with item 1 of the gate, this
+   direction was ALSO not reachable from the hypotheses as originally stated:
+   the way back needs `iso.map : d₁.E ⟶ d₂.E` restricted to the affine charts
+   `Spec ℚ̄[E] ⟶ Spec ℚ̄[E']`, and it is the MODEL CLAUSE of `IsGamma0ModelOf`
+   (added 2026-07-28, and base-changed to `ℚ̄` along `bc₁`/`bc₂` by
+   `isWeierstrassModel_map_of_isBaseChangeOf`, PROVEN in `X0.lean`) that
+   supplies those charts.  Without it one holds an isomorphism of `ℚ̄`-DATA and
+   an unrelated `≃+`, with no way to see the scheme morphism as a map of
+   Weierstrass coordinates.  `X0.lean`'s `nonempty_coordinateRingAlgEquiv_of_`
+   `isWeierstrassModel` is then what turns the chart isomorphism into a
+   `ℚ̄[E'] ≃ₐ ℚ̄[E]`, i.e. into the rational map the `IsIsogeny` certificate
+   wants.
 
 **The kernel clause is free once (2) is available**: `iso.map` is an
 isomorphism, so the transported `ι` is injective, which is the conjunct
