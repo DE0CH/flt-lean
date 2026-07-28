@@ -265,6 +265,13 @@ public import Fermat.FLT.ModularCurve.X1
 -- The Tate normal form and the level-`7` parametrisation, used by
 -- `not_order_two_and_order_seven_point` below.
 public import Fermat.FLT.FreyCurve.TateNormalForm
+-- Good reduction of abelian varieties (Serre–Tate / Néron–Ogg–Šafarevič) and the
+-- Néron mapping property (`Fermat.exists_goodReductionModel_of_surjective`,
+-- `Fermat.exists_neronExtension`): the two classical inputs from which
+-- `exists_abelianGoodReductionModel` below is PROVEN.  They carry no modular
+-- content and live outside this file so that `ModularCurve/X1.lean` can reuse them
+-- verbatim.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.NeronModel
 -- Gauss's theory of integral binary quadratic forms — reduction theory and
 -- Rabinowitsch's criterion — carrying `mazurIsogeny_rabinowitsch_bound` down
 -- to the single deep input `neg_163_le_of_classNumberOne` (class number one).
@@ -1666,6 +1673,19 @@ DISJOINT literature and can be dispatched to different specialists.
 Raynaud, mentions no modular curve, and is reusable verbatim by
 `X1.lean`.  Neither consumes the other.
 
+**POST-SCRIPT (2026-07-28): the integral half has been CASHED, and the
+check above is why it could leave this file.**  Because
+`exists_abelianGoodReductionModel` mentions no modular curve, its two
+classical inputs were stated in a module of their own —
+`exists_goodReductionModel_of_surjective` (Néron–Ogg–Šafarevič) and
+`exists_neronExtension` (the Néron mapping property), both in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/NeronModel.lean`, which sits above
+`ModularCurve/X1.lean` in the import order so that the `Γ₁` side can use
+them without going through this file.  What is left HERE is the assembly,
+which is PROVEN, and which additionally discharges the whole SPECIAL FIBRE
+(`A'`, `astr'`, `ab'`, `spA`) as a base change rather than passing it on
+as a demand.
+
 **WHAT THE SPLIT DOES NOT DO.**  It does not make rank `0` a separate
 leaf, and it does not weaken the degenerate witness: `A := Spec ℚ`,
 `u := 0`, `fQ := ` the structure map still satisfies every field of the
@@ -1764,29 +1784,36 @@ structure IsAbelianGoodReductionModel (q : ℕ) (R : Subring ℚ) (toF : R →+*
     genA g g₀ h (RelPoint.post fQ hfQ x) = RelPoint.post fmor fmor_over (genX g g₀ h x)
 
 /-- **Good reduction propagates along a surjective homomorphism, and a
-morphism from a smooth model extends** (sorry node, new 2026-07-27) — the
-integral half of `exists_eisensteinQuotientModel_of_jNeronDatum`.
+morphism from a smooth model extends** (opened as a bare `sorry`
+2026-07-27; **PROVEN 2026-07-28** over the two classical inputs, with the
+whole special fibre discharged outright) — the integral half of
+`exists_eisensteinQuotientModel_of_jNeronDatum`.
 
-TRUE, and classical in two independent steps.
+The two inputs live in `Fermat/FLT/Mathlib/AlgebraicGeometry/NeronModel.lean`,
+outside this file, because neither mentions a modular curve and both are
+reusable verbatim by `ModularCurve/X1.lean`:
 
-*Good reduction of `A`.*  `u : J ↠ A` is a surjective homomorphism of
-abelian varieties over `ℚ` and `J` has good reduction at `q` — that is
-what `abZ` together with `genJ` says.  For `ℓ ≠ q` the `ℓ`-adic Tate
-module `V_ℓ A` is then a quotient of `V_ℓ J` as a `Γ_ℚ`-module (surjective
-isogenies are surjective on Tate modules up to isogeny), `V_ℓ J` is
-unramified at `q` by Néron–Ogg–Šafarevič, hence so is `V_ℓ A`, hence `A`
-has good reduction at `q` by the converse half of the same criterion.
-Reference: Serre–Tate, *Good reduction of abelian varieties*, Ann. of
-Math. 88 (1968), Thm 1 and Cor. 2; Bosch–Lütkebohmert–Raynaud, *Néron
-Models*, §7.4.
+* `exists_goodReductionModel_of_surjective` — Néron–Ogg–Šafarevič.  `u : J ↠ A`
+  is a surjective homomorphism of abelian varieties over `ℚ` and `J` has good
+  reduction at `q` — that is what `abZ` together with `genJ` says.  For `ℓ ≠ q`
+  the `ℓ`-adic Tate module `V_ℓ A` is then a `Γ_ℚ`-quotient of `V_ℓ J`, which is
+  unramified at `q`, hence so is `V_ℓ A`, hence `A` has good reduction.
+  Serre–Tate, Ann. of Math. 88 (1968), Thm 1 and Cor. 2; BLR §7.4.
+* `exists_neronExtension` — the Néron mapping property.  An abelian scheme over
+  a DVR is proper and smooth, hence IS the Néron model of its generic fibre, so
+  `Hom_{ℤ_(q)}(𝒵, 𝒜) ≅ Hom_ℚ(Z_ℚ, A)` for every SMOOTH `𝒵/ℤ_(q)`; applied to
+  `𝒵 = 𝒳`, smooth by `hsm`, this gives `fmor` and `genA_fmor`.  BLR §1.2 Def. 1
+  and §7.4/3.
 
-*Extension of `fQ`.*  An abelian scheme over a DVR is proper and smooth,
-hence IS the Néron model of its generic fibre, so
-`Hom_{ℤ_(q)}(𝒵, 𝒜) ≅ Hom_ℚ(Z_ℚ, A)` for every SMOOTH `𝒵/ℤ_(q)`
-(BLR §1.2, Def. 1 and §7.4/3).  Applied to `𝒵 = 𝒳`, which is smooth by
-`hsm`, this gives `fmor` and `genA_fmor`, and uniqueness is what makes
-the pair canonical.  `genA` and `spA` are the two base changes of `𝒜`,
-which exist for any model.
+**WHAT THE ASSEMBLY BELOW PROVES, and it is not nothing: the SPECIAL FIBRE
+is a construction, not a demand.**  Four of the eleven fields — `A'`, `astr'`,
+`ab'` and `spA` — were going to be posited by whoever proved this node.  They
+are not needed: `A'` is literally `𝒜 ×_{ℤ_(q)} 𝔽_q`, its abelian-scheme
+structure is `AbelianSchemeStruct.baseChange` (properness, smoothness and
+geometric connectedness are stable under base change) and `spA` is
+`fibreIdentPullback` — "the pullback IS a fibre", `X0.lean`.  So neither
+classical input is asked for a special fibre at all, and the residual
+mathematics is exactly the two facts named above.
 
 **WHERE THE HYPOTHESES ENTER, and none is decoration.**  `hsm` is the
 smoothness of `𝒳` without which the Néron mapping property says nothing
@@ -1795,38 +1822,57 @@ the whole input to Néron–Ogg–Šafarevič; `hsurj` is what makes `V_ℓ A` a
 QUOTIENT rather than an arbitrary Galois module — drop it and the
 statement is **FALSE**, since any abelian variety at all admits the zero
 homomorphism from `J`, including ones with bad reduction at `q`; `hadd`
-is what makes `u` act on Tate modules at all.  They are underscored only
-because a sorried body uses nothing.
+is what makes `u` act on Tate modules at all; `hq`, `hbase` and `toF` pin
+the base as `ℤ_(q)` and supply the special fibre.  Every one of them is
+now consumed by the proof, so the old underscore prefixes are gone.
 
 **NON-VACUITY.**  `A := J`, `u := 𝟙`, `fQ := ` Abel–Jacobi satisfies every
 hypothesis, so no proof can discharge this by contradicting them.
 
-**WHAT IS GENUINELY MISSING, checked by name 2026-07-27.**  Néron models
-exist in neither mathlib nor `~/cs/FLT` nor this project — `grep -rn
-"NeronModel\|neronModel"` returns nothing — and neither does the
-Néron–Ogg–Šafarevič criterion.  What this project DOES have, and what
-makes the statement cheap to consume rather than cheap to prove, is
-`bijective_pre_generic_of_isProper` (`X0.lean`): the Néron mapping
-property for `𝒵 = Spec ℤ_(q)` itself, i.e. on POINTS.  The gap between
-that and this leaf is exactly the passage from a point to a general
-smooth `𝒵`. -/
-theorem exists_abelianGoodReductionModel (q : ℕ) (_hq : q.Prime)
-    (R : Subring ℚ) (toF : R →+* ZMod q) (_hbase : IsReductionBase q R toF)
+**FAITHFULNESS NOTE — `genX` LOSES ITS NATURALITY HERE, and repairing that
+is a one-hypothesis change.**  `genX` is a bare family of bijections: this
+signature does not ask for `genX_nat`, although the only caller,
+`exists_eisensteinQuotientModel_of_jNeronDatum`, holds it as `d.genX_nat`
+and discards it.  The cost is paid in `exists_neronExtension`, which must
+therefore EMIT its `genA` rather than receive it — see the FAITHFULNESS
+NOTE there for why pinning `genA` in advance would make that leaf strictly
+stronger than this node.  Adding `genX_nat` (i.e. taking `genX` as an
+`IsFibreIdent`) here would let `exists_neronExtension` shed a field; it is
+left alone deliberately, because changing this signature is a cut-level
+repair and this node's owner is not the caller's. -/
+theorem exists_abelianGoodReductionModel (q : ℕ) (hq : q.Prime)
+    (R : Subring ℚ) (toF : R →+* ZMod q) (hbase : IsReductionBase q R toF)
     {X XZ J JZ A : Scheme.{0}}
     {strX : X ⟶ SpecQ} {xstr : XZ ⟶ SpecLoc R}
     {jstr : J ⟶ SpecQ} {jstrZ : JZ ⟶ SpecLoc R} {astr : A ⟶ SpecQ}
-    (_hsm : Smooth xstr)
-    (ab : AbelianSchemeStruct jstr) (_abZ : AbelianSchemeStruct jstrZ)
+    (hsm : Smooth xstr)
+    (ab : AbelianSchemeStruct jstr) (abZ : AbelianSchemeStruct jstrZ)
     (abA : AbelianSchemeStruct astr)
     (genX : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
       g ≫ SpecLoc.generic R = g₀ → RelPoint strX g ≃ RelPoint xstr g₀)
-    (_genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
+    (genJ : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (g₀ : T ⟶ SpecLoc R),
       g ≫ SpecLoc.generic R = g₀ → RelPoint jstr g ≃ RelPoint jstrZ g₀)
     (u : J ⟶ A) (hu : u ≫ astr = jstr)
-    (_hadd : IsAdditiveOn ab abA u hu) (_hsurj : AlgebraicGeometry.Surjective u)
+    (hadd : IsAdditiveOn ab abA u hu) (hsurj : AlgebraicGeometry.Surjective u)
     (fQ : X ⟶ A) (hfQ : fQ ≫ astr = strX) :
-    Nonempty (IsAbelianGoodReductionModel q R toF genX fQ hfQ) :=
-  sorry
+    Nonempty (IsAbelianGoodReductionModel q R toF genX fQ hfQ) := by
+  -- Serre–Tate: the quotient inherits good reduction at `q`
+  obtain ⟨G⟩ := exists_goodReductionModel_of_surjective q hq R toF hbase ab abZ abA
+    genJ u hu hadd hsurj
+  -- BLR: `fQ` spreads out to a morphism of integral models
+  obtain ⟨E⟩ := exists_neronExtension q R toF hbase hsm G.abZ genX G.genA fQ hfQ
+  -- the special fibre is `𝒜 ×_{ℤ_(q)} 𝔽_q`, and every field of it is a theorem
+  exact ⟨{ AZ := G.AZ
+           astrZ := G.astrZ
+           abZ := G.abZ
+           A' := Limits.pullback G.astrZ (SpecLoc.special toF)
+           astr' := Limits.pullback.snd G.astrZ (SpecLoc.special toF)
+           ab' := G.abZ.baseChange (SpecLoc.special toF)
+           genA := E.genA
+           spA := (fibreIdentPullback (SpecLoc.special toF) G.astrZ).toEquiv
+           fmor := E.fmor
+           fmor_over := E.fmor_over
+           genA_fmor := E.genA_fmor }⟩
 
 /-- **Mazur's Eisenstein quotient, ENTIRELY OVER `ℚ`** (sorry node, new
 2026-07-27) — the modular half of
