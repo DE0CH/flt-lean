@@ -20524,6 +20524,14 @@ steps, each stated in full inside the proof:
   `𝒪₃ᵥ ⊆ 𝒪_{M'} ⊆ 𝒪_L`; combined with (ii) and (iii) it turns the
   extended hypothesis into the factor `𝔪_L^(h₀·d)` (`Ideal.map_pow`),
   and multiplying that against (i) is the claim. -/
+-- ADDED AT THE RELEASE-17 MERGE (2026-07-29).  The tower step `htower` below applies
+-- `differentIdeal_eq_differentIdeal_mul_differentIdeal`, whose
+-- `Algebra.IsSeparable (FractionRing 𝒪₃ᵥ) (FractionRing (IntegralClosure 𝒪₃ᵥ L))`
+-- instance stopped synthesising once this release grew the file by ~1300 lines; the
+-- statement and the proof are unchanged from `main`, only the search budget is.
+-- Same idiom as `Deformations/RepresentationTheory/FlatPointsGroup.lean` and
+-- `Mathlib/RingTheory/InvariantCoarseRing.lean` use for tower instances.
+set_option maxSynthPendingDepth 4 in
 theorem pow_card_inertia_inf_mul_add_sum_dvd_local_differentIdeal
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
     [IsGalois ℚ₃ᵥ L]
