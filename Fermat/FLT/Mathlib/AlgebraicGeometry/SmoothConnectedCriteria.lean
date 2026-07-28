@@ -152,23 +152,47 @@ Write `D = dim P` and `d = dim (P ⧸ I)`.  Regularity of `P ⧸ I` says
 2. A regular local ring is a DOMAIN.  **Not in the pin** — `grep -rn "IsDomain"
    Mathlib/RingTheory/RegularLocalRing/` is empty — but it IS in this project, sorry-free,
    as `GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing`
-   (`Fermat/FLT/Modularity/RegularStalks.lean`).  A prover should HOIST it to a
-   `Fermat/FLT/Mathlib/` module rather than reprove it; importing `Modularity` from this
-   shim directory would be a cycle.
+   (`Fermat/FLT/Modularity/RegularStalks.lean:1056`).  **Do not reprove it.**  And note,
+   checked 2026-07-28, that `RegularStalks.lean`'s ENTIRE import list is `Mathlib.*` — it
+   imports nothing from `Fermat/` — so a `public import` of it from this file is
+   cycle-free and would cost nothing.  Hoisting the two declarations to a
+   `Fermat/FLT/Mathlib/RingTheory/` module is tidier layering, but it is a preference,
+   not a constraint: an earlier version of this note asserted the import "would be a
+   cycle", which is FALSE.
 3. In a Noetherian local domain `R`, `ringKrullDim (R ⧸ J) < ringKrullDim R` whenever
-   `J ≠ ⊥`: every minimal prime `𝔭` over `J` has `ht 𝔭 ≥ 1` (as `(0)` is prime and does
-   not contain `J`), and `dim (R ⧸ 𝔭) + ht 𝔭 ≤ dim R` always.  Applied to `R = P ⧸ I'`
-   and `J = I ⧸ I'` — whose quotient is `P ⧸ I`, of dimension `d = dim R` — this forces
-   `I = I'`, hence `spanFinrank I ≤ D - d`.
+   `J ≠ ⊥`.  Applied to `R = P ⧸ I'` and `J = I ⧸ I'` — whose quotient is `P ⧸ I`, of
+   dimension `d = dim R` — this forces `I = I'`, hence `spanFinrank I ≤ D - d`.
 4. `dim_κ (κ ⊗[P] I) = spanFinrank I ≤ D - d` is exactly the dimension of the image, so
    the surjection `κ ⊗[P] I ↠ (I + 𝔪²)/𝔪²` is an isomorphism and the displayed map is
    injective.
 
+## What the pin DOES supply, checked and compiler-confirmed 2026-07-28
+
+Do not rebuild any of these; each was type-checked against this pin before being written
+down here.
+
+* Step 4's dimension count is `Module.finrank_eq_spanFinrank_of_free` composed with
+  `TensorProduct.spanFinrank_top_eq_of_residueField`
+  (`Mathlib/Algebra/Module/SpanRankOperations.lean`); together they give, in two lines,
+  `Module.finrank κ (κ ⊗[P] N) = N.spanFinrank` for any f.g. `N` over a local ring.
+* `IsRegularLocalRing.spanFinrank_maximalIdeal` is the definitional
+  `(𝔪).spanFinrank = ringKrullDim`, usable through `exact_mod_cast`; the reverse
+  inequality for a *non*-regular quotient is `ringKrullDim_le_spanFinrank_maximalIdeal`.
+* Step 3 needs NO hand-rolled height argument.  `Mathlib/RingTheory/KrullDimension/`
+  `Regular.lean` has `ringKrullDim_quotient_add_one_of_mem_nonZeroDivisors`
+  (`r` a nonzerodivisor in `𝔪` ⟹ `dim (R ⧸ span {r}) + 1 = dim R`) — in a domain every
+  nonzero element qualifies — and `ringKrullDim_quotient_le` /
+  `ringKrullDim_le_of_surjective` (`KrullDimension/Basic.lean`) give the monotonicity
+  used in step 1.  Also there: `ringKrullDim_le_ringKrullDim_add_spanFinrank`, which is
+  the EASY direction `D ≤ d + spanFinrank I`, i.e. exactly the inequality this leaf does
+  *not* need.
+* There is no `ringKrullDim (P ⧸ J) ≤ ringKrullDim (P ⧸ I)` for `I ≤ J` under that name —
+  `exact?` fails on it — but it is `ringKrullDim_le_of_surjective` applied to
+  `Ideal.Quotient.factor`.
+
 *The check that would refute the two "not in the pin" claims*: `grep -rn "IsDomain"` over
 `Mathlib/RingTheory/RegularLocalRing/` returning anything, or a general
-`Module.finrank κ (κ ⊗[P] M) = Submodule.spanFinrank M` for a finite module over a local
-ring turning up in `Mathlib/RingTheory/Ideal/Cotangent.lean` or
-`Mathlib/Algebra/Module/SpanRankOperations.lean`.
+`Module.finrank κ (κ ⊗[P] M) = Submodule.spanFinrank M` stated as such.
 
 ## Faithfulness
 
