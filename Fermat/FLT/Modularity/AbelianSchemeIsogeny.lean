@@ -1064,7 +1064,8 @@ is two, along the source's own seam `00R7 = approximation + 00MP`:
   filtered-system decision that its owner took, and the reasons, are the
   section note "THE COLIMIT-API DECISION" immediately below.  The short form:
   no filtered colimit is stated anywhere; the interface is a Noetherian stage
-  plus `Algebra.IsPushout`.
+  plus a base change followed by a localization (it said `Algebra.IsPushout`
+  until 2026-07-27; see the CORRECTION in that note).
 * `flat_of_rTensor_injective_of_flat_quotientMap` — **10.99.10**, the local
   criterion of flatness in the Noetherian setting.  **PROVEN 2026-07-27**; it
   was itself cut in two along Matsumura 22.3's own seam, and what remains under
@@ -1608,26 +1609,74 @@ therefore:
 
 **PIN: no filtered colimit appears in the statement of any leaf.  The
 interface between the approximation and everything that consumes it is
-`(a Noetherian local stage) + (`Algebra.IsPushout`)`.**  Concretely that is
+`(a Noetherian local stage) + (a base change) + (a localization)`.**  It read
+`(a Noetherian local stage) + (`Algebra.IsPushout`)` until the CORRECTION
+below, which is where the localization comes from.  Concretely that is
 the structure `FlatNoetherianStage` below, and the filtered system stays
 where the note above put it — inside the leaf's proof, where a wrong guess
 costs nothing.
+
+**CORRECTION, 2026-07-27 (by the next owner, from the verbatim source): the
+seam is a LOCALIZATION, not a pushout, and the field has been WEAKENED.**
+
+The pin above is kept — no colimit appears in any statement — but the
+`isPushout` field it shipped with **asked for strictly more than 00R7's proof
+produces**, and the "FAITHFULNESS OF `isPushout`" paragraph below was wrong on
+exactly that point.  The evidence is inside 00R7's own proof, one paragraph
+above its last sentence, where the properties of the system are listed:
+
+> With these choices, we have for each `λ₃ ≤ λ ≤ μ` that
+> `S_λ ⊗_{R_λ} R_μ → S_μ` is **a localization**, `S'_λ ⊗_{S_λ} S_μ → S'_μ` is
+> **a localization**, and the map `M_λ ⊗_{S'_λ} S'_μ → M_μ` is an isomorphism.
+
+Only the *module* comparison is an isomorphism, and it is taken over `S'_λ`,
+not over `S_λ`.  So the `=` signs in the last sentence ("Then
+`S = S_λ ⊗_{R_λ} R` ... and `M = M_λ ⊗_{S_λ} S` ...") are the source's usual
+abuse: read literally the first of them contradicts the property list two
+lines earlier, since a localization is not an isomorphism.  Passing
+`S'_λ ⊗_{S_λ} S_μ → S'_μ` to the colimit over `μ` gives that
+`S'_λ ⊗_{S_λ} S → S'` is a localization — and at a FIXED `λ` it genuinely is
+not an isomorphism.  Concretely, with `S_λ = R_λ`, `S = R` and
+`S'_λ = (R_λ[t])_{(𝔭_λ, t)}`, the ring `S'_λ ⊗_{R_λ} R` is the localization of
+`R[t]` at the image of `R_λ[t] ∖ (𝔭_λ, t)`, in which `1 + a t` is not
+invertible for `a ∈ R` outside `R_λ`; it is not even local, so it cannot be
+`S' = R[t]_{(𝔪, t)}`.
+
+**The field is therefore now `isLocalizationTensor`: `A` is a LOCALIZATION of
+`B ⊗_{Mid} Tot`.**  Three things to note about the repair:
+
+* *It is a weakening, so it cannot break anything.*  Any stage satisfying the
+  old field satisfies the new one (an isomorphism is the localization at `1`),
+  so the leaf below is strictly easier than before and no consumer of the OLD
+  field can have been relying on more than the new one delivers.
+* *Flatness alone would have been too weak, and this was checked.*  The
+  obvious weakest field, "`A` is flat over `B ⊗_{Mid} Tot`", is DEGENERATE:
+  the junk stage `Base = Mid = Tot = ℤ_(p)` (or `ℚ`) makes `B ⊗_{Mid} Tot = B`
+  and the field becomes "`A` is flat over `B`" — the conclusion itself.  With
+  `IsLocalization` that junk stage instead demands "`A` is a localization of
+  `B`", which is false in general, so the leaf stays non-degenerate.
+* *The consumer is unchanged in substance*: `Tot` flat over `Mid` (00MP at the
+  stage) base-changes to `B ⊗_{Mid} Tot` flat over `B`, a localization is flat
+  (`IsLocalization.flat`), and `Module.Flat.trans` composes the two.  That is
+  one extra step over the old one-line base change.
 
 **WHY, and this is an argument rather than a taste.**
 
 1. *It is the seam the source itself ends on.*  The last sentence of 00R7's
    proof is verbatim "Then `S = S_λ ⊗_{R_λ} R` is flat over `R`, and
    `M = M_λ ⊗_{S_λ} S` is flat over `S` (since the base change of a flat
-   module is flat)."  At `M = S' = A`, `S = B` that is exactly
-   `Algebra.IsPushout S_λ M_λ S M` plus base change, and nothing else.
-2. *The infrastructure already exists, so nothing has to be invented.*
-   `Algebra.IsPushout` is `Mathlib/RingTheory/IsTensorProduct.lean:620` and
-   `RingHom.Flat.isStableUnderBaseChange` (`Mathlib/RingTheory/RingHom/Flat.lean`)
-   is literally "`P (algebraMap R S) → P (algebraMap R' S')` given
-   `Algebra.IsPushout R S R' S'`".  The assembly below is four lines of
-   instance plumbing and one application of it.  A colimit API would have had
-   to be written, and — per the refutation in the note above — written
-   correctly on the first try or it manufactures a false leaf.
+   module is flat)."  At `M = S' = A`, `S = B` that is a base change followed
+   by a localization, and nothing else — see the CORRECTION above for why the
+   localization cannot be dropped.
+2. *The infrastructure already exists, so nothing has to be invented.*  After
+   the correction above the three ingredients are `Module.Flat.baseChange`
+   (`Flat R M → Flat S (S ⊗[R] M)`), `IsLocalization.flat`
+   (`Mathlib/RingTheory/Flat/Localization.lean:36`) and `Module.Flat.trans`
+   (`Mathlib/RingTheory/Flat/Stability.lean:62`), all in the pin.  The
+   assembly below is the same instance plumbing plus those three lines.  A
+   colimit API would have had to be written, and — per the refutation in the
+   note above — written correctly on the first try or it manufactures a false
+   leaf.
 3. *A colimit API in a statement forces a transport that a stage does not.*
    `Ring.DirectLimit` CONSTRUCTS a ring; `R`, `B`, `A` in this development are
    given rings carrying `IsLocalRing`, `Module.Flat` and `EssFinitePresentation`
@@ -1651,9 +1700,11 @@ checked against the source, not assumed:
 
 * *"`N/u(M)` is flat over `R`"* — the SAME seam works verbatim.  046Y's proof
   ends at a finite λ with `N_λ/u_λ(M_λ)` flat over `R_λ`, and
-  `N/u(M) ≅ (N_λ/u_λ(M_λ)) ⊗_{S_λ} S` because cokernels commute with base
-  change.  So `Algebra.IsPushout`/`IsBaseChange` plus
-  `Module.Flat.isBaseChange` closes it with no colimit API, exactly as here.
+  `N/u(M)` is a LOCALIZATION of `(N_λ/u_λ(M_λ)) ⊗_{S_λ} S` — not an
+  isomorphism; see the CORRECTION above, which applies here verbatim, because
+  cokernels commute with base change but the comparison map of the system is a
+  localization at every stage.  So base change plus `IsLocalization.flat` plus
+  `Module.Flat.trans` closes it with no colimit API, exactly as here.
 * *"`u` is injective"* — the seam does **not** serve this, and pretending
   otherwise would be the false step.  `u_λ` injective gives `u = u_λ ⊗ id`
   injective only if `S` were flat over `S_λ`, which is NOT among 10.127.13's
@@ -1665,9 +1716,10 @@ checked against the source, not assumed:
   packaged form.
 
 So the recorded answer to "what colimit API did you pin" is: **none in any
-statement; `Algebra.IsPushout` at a finite Noetherian stage for every flatness
-conclusion, and mathlib's existing `Module.DirectLimit` inside proofs wherever
-exactness of the colimit is genuinely needed.**
+statement; a base change at a finite Noetherian stage followed by a
+localization, for every flatness conclusion, and mathlib's existing
+`Module.DirectLimit` inside proofs wherever exactness of the colimit is
+genuinely needed.**
 
 **AXIS SEARCHED.**  Ways to state the OUTPUT of Stacks 10.127.13 + 10.128.3 so
 that 00R7's endgame can consume it.  NOT searched: whether the approximation
@@ -1701,15 +1753,28 @@ requirement on `midToB`/`totToA`, **no** localization property of the
 transition maps, and **no** directed index set: the assembly needs none of
 them.  Conversely, everything that IS here is used — `isNoetherian*`,
 `isLocalRing*` and `isLocalHom*` by 00MP, `flatBase` and `flatFibre` as 00MP's
-two hypotheses, and `comm` + `isPushout` by the base-change step.
+two hypotheses, and `comm` + `isLocalizationTensor` by the base-change step.
 
-**FAITHFULNESS OF `isPushout`.**  `Algebra.IsPushout Mid Tot B A` says
-`A ≅ Tot ⊗[Mid] B`, i.e. `M = M_λ ⊗_{S_λ} S` — the last line of 00R7's proof.
+**FAITHFULNESS OF `isLocalizationTensor`, and a CORRECTION (2026-07-27).**
+This field used to read `Algebra.IsPushout Mid Tot B A`, i.e. `A ≅ Tot ⊗[Mid] B`,
+justified as "`M = M_λ ⊗_{S_λ} S`, the last line of 00R7's proof".  **That was
+too strong**: the paragraph of 00R7's proof immediately above that sentence
+lists `S'_λ ⊗_{S_λ} S_μ → S'_μ` as *a localization*, and only the module
+comparison `M_λ ⊗_{S'_λ} S'_μ → M_μ` — taken over `S'_λ`, not `S_λ` — as an
+isomorphism.  The `=` in the last sentence is the source's abuse of notation:
+read literally it contradicts the property list two lines above it.  So the
+field now asks only for what the argument delivers, `A` a LOCALIZATION of
+`B ⊗[Mid] Tot`; the full argument, including why plain flatness there would be
+degenerate, is the CORRECTION block in the section note above.
+
 The five `letI`s in its type are the algebra structures carried by the four
 ring maps of the square, and the two `IsScalarTower`s are forced by `comm`;
 they are written inline rather than assumed so that the field cannot be
 satisfied by some *other* algebra structure on the same rings, which is the
-duplicate-instance trap this development has been bitten by repeatedly. -/
+duplicate-instance trap this development has been bitten by repeatedly.  The
+sixth `letI` is the induced algebra structure on `A` over `B ⊗[Mid] Tot`,
+built from the two `IsScalarTower`s by `Algebra.TensorProduct.lift`, so that
+`IsLocalization` cannot be read against some unrelated map. -/
 structure FlatNoetherianStage {B A : Type u} [CommRing B] [CommRing A] (v : B →+* A) where
   /-- `R_λ`, Stacks' Noetherian local base, essentially of finite type over `ℤ`. -/
   Base : Type u
@@ -1747,8 +1812,10 @@ structure FlatNoetherianStage {B A : Type u} [CommRing B] [CommRing A] (v : B �
   flatFibre : (Ideal.quotientMap
       ((IsLocalRing.maximalIdeal Base).map (midToTot.comp baseToMid)) midToTot
       (map_le_comap_map_comp baseToMid midToTot (IsLocalRing.maximalIdeal Base))).Flat
-  /-- `M = M_λ ⊗_{S_λ} S`, the last line of 00R7's proof. -/
-  isPushout :
+  /-- `M` is a LOCALIZATION of `M_λ ⊗_{S_λ} S`, which is what 00R7's proof
+  delivers — see the CORRECTION in the section note above, and the docstring
+  paragraph "FAITHFULNESS OF `isLocalizationTensor`". -/
+  isLocalizationTensor :
     letI : Algebra Mid Tot := midToTot.toAlgebra
     letI : Algebra Mid B := midToB.toAlgebra
     letI : Algebra Tot A := totToA.toAlgebra
@@ -1757,7 +1824,10 @@ structure FlatNoetherianStage {B A : Type u} [CommRing B] [CommRing A] (v : B �
     haveI : IsScalarTower Mid B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
     haveI : IsScalarTower Mid Tot A :=
       IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun comm x).symm
-    Algebra.IsPushout Mid Tot B A
+    letI : Algebra (B ⊗[Mid] Tot) A :=
+      (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom Mid B A)
+        (IsScalarTower.toAlgHom Mid Tot A) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+    ∃ W : Submonoid (B ⊗[Mid] Tot), IsLocalization W A
 
 /-- **NOETHERIAN APPROXIMATION FOR 00R7: Stacks 10.127.13 + 10.128.3**
 (SORRY LEAF, cut 2026-07-27 out of the approximation half below; read the
@@ -1789,14 +1859,80 @@ finds no use anywhere in this development.  Mathlib's `Ring.DirectLimit`,
 raw materials; 10.127.11, 10.127.13 and 10.128.3 all have to be written.  A hit
 on either grep means this note has gone stale.
 
-**FAITHFULNESS.**  The hypotheses are 00R7's verbatim at `M = S' = A`, and the
-conclusion is strictly weaker than what 10.127.13 + 10.128.3 produce (see the
-"WHY IT IS SAFE" paragraph of `FlatNoetherianStage`).  It is therefore true if
-00R7 is, and it cannot be vacuous: `FlatNoetherianStage` is not satisfiable by
-junk, because `isPushout` pins `A` to be the base change of `Tot` — the
-degenerate choice `Base = Mid = Tot = A` fails `isPushout` unless `B → A` is
-already an isomorphism, and fails `isNoetherianTot` unless `A` happens to be
-Noetherian. -/
+**FAITHFULNESS, restated 2026-07-27 after the `isPushout` repair.**  The
+hypotheses are 00R7's verbatim at `M = S' = A`, and the conclusion is now
+genuinely weaker than what 10.127.13 + 10.128.3 produce (see the "WHY IT IS
+SAFE" paragraph of `FlatNoetherianStage`, and the CORRECTION block in the
+section note above for the field that had to be weakened to make that sentence
+true).  It is therefore true if 00R7 is.
+
+**It is still not vacuous**, and the check has been redone against the new
+field.  `isLocalizationTensor` pins `A` to be a localization of
+`B ⊗[Mid] Tot`, so:
+
+* the junk stage `Base = Mid = Tot = ℤ_(p)` (or `ℚ`, whichever maps to `B`)
+  collapses `B ⊗[Mid] Tot` to `B` and demands that `A` be a localization of
+  `B`, which is false in general — e.g. `B = R = k`, `A = k[t]_(t)`;
+* the junk stage `Base = Mid = Tot = A` fails `isNoetherianTot` unless `A`
+  happens to be Noetherian, exactly as before.
+
+The corresponding degeneracy check for the WEAKER field "`A` is flat over
+`B ⊗[Mid] Tot`" FAILS — the first junk stage above satisfies it iff `A` is
+flat over `B`, which is 00R7's conclusion — which is why the field is
+`IsLocalization` and not `Module.Flat`.
+
+**SURVEY FOR THE NEXT OWNER, 2026-07-27 — three findings, each greppable.**
+This leaf was NOT cut further (the three-way split "10.127.13 / 10.128.3 /
+assembly" flagged in the AXIS SEARCHED paragraph above is still not taken:
+every honest cut of it needs the DIRECTED SYSTEM exposed in a statement,
+because 10.128.3's conclusion is "for `λ` big enough", which is not
+expressible about a single stage; a cut that merely hands the next leaf one
+stage is fake, since the second leaf would have to rebuild the system anyway).
+What the cycle produced instead is the faithfulness repair above plus this
+survey.
+
+1. **A large part of 10.127.13 IS ALREADY IN THE PIN, in a place a naive grep
+   for "Noetherian approximation" misses.**
+   `Mathlib/RingTheory/Extension/Presentation/Core.lean` defines, for a
+   `Presentation R S ι σ` with `ι`, `σ` finite (i.e. a finite presentation),
+   `P.coeffs`, the class `P.HasCoeffs R₀` ("`R₀ → R` hits every coefficient of
+   every relation"), `P.ModelOfHasCoeffs R₀` — carrying an instance
+   `Algebra.FinitePresentation R₀ (P.ModelOfHasCoeffs R₀)` — and, crucially,
+   `P.tensorModelOfHasCoeffsEquiv R₀ : R ⊗[R₀] P.ModelOfHasCoeffs R₀ ≃ₐ[R] S`.
+   That is exactly "descend a finitely presented algebra to a subring
+   containing the coefficients, and recover it by base change", which is the
+   `S_λ = R_λ[x]/(f_λ)` half of 10.127.13 with the base-change property
+   supplied.  `R₀` need not be injective into `R` — the class only asks for
+   `coeffs ⊆ Set.range (algebraMap R₀ R)`.  `Mathlib/RingTheory/Smooth/Flat.lean`
+   uses the same machinery (`Algebra.exists_finiteType ℤ R A`) to run precisely
+   a "choose a model over a finitely generated `ℤ`-subalgebra" argument, so
+   there is a worked example of the idiom in the pin.  What is NOT supplied is
+   everything to do with the LOCALIZATIONS: the primes `𝔮_λ`, the locality of
+   `S_λ → S`, and the transition maps being localizations.
+
+2. **The `R_λ` half is provable today and the subring realisation IS correct
+   for it** — the note above refutes subrings only for `B` and `A`.  The
+   construction: for a finite `s ⊆ R`, put `C₀ = Subring.closure ↑s`
+   (`IsNoetherianRing ↥C₀` is `is_noetherian_subring_closure`,
+   `Mathlib/RingTheory/Adjoin/FG.lean:202`), `𝔭 = 𝔪_R ∩ C₀`, and take
+   `R_s ⊆ R` to be `{x | ∃ a b ∈ C₀, IsUnit (b : R) ∧ x * b = a}`.  It is a
+   subring, it is `IsLocalization 𝔭.primeCompl`-isomorphic to `(C₀)_𝔭` hence
+   Noetherian (`IsLocalization.isNoetherianRing`,
+   `Mathlib/RingTheory/Localization/Submodule.lean:82`), its non-units are
+   exactly `R_s ∩ 𝔪_R` so it is local, its inclusion is an `IsLocalHom`, and
+   `s ↦ R_s` is MONOTONE in `s` with `⋃ₛ R_s = R` — which is the directed
+   exhaustion 10.127.11 opens with.  This is the one piece that can be landed
+   as a proven lemma; it was not landed here only because, with no assembly
+   written, it would be free-floating.
+
+3. **Do not look for `Ring.DirectLimit` in this file's proof.**  For a
+   Noetherian stage the index set can be taken to be `Finset R` ordered by
+   `⊆`, with `R_s` as in 2 and `S_s`, `S'_s` the models of 1 localized at the
+   contracted primes; with essential finite PRESENTATION the ideals do not
+   grow with `s` (fixed generators suffice), so the only thing the transition
+   maps do is enlarge the base — which is why the system is concrete rather
+   than abstract.  The colimit is then a directed union in the `R` variable
+   and a filtered colimit of localizations in the `S`, `S'` variables. -/
 theorem nonempty_flatNoetherianStage_of_essFinitePresentation
     {R B A : Type u} [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
@@ -1834,13 +1970,20 @@ shortcut: 00R7's proof is the approximation argument and nothing else.  All of
 that argument now sits in the single leaf
 `nonempty_flatNoetherianStage_of_essFinitePresentation`, which produces a
 `FlatNoetherianStage v` — one Noetherian local stage `R_λ → S_λ → S'_λ` at
-which 00MP's two hypotheses already hold, together with
-`Algebra.IsPushout S_λ S'_λ S S'` identifying `M = M_λ ⊗_{S_λ} S`.  What is
-left here is 00R7's LAST SENTENCE, and it is exactly two steps:
+which 00MP's two hypotheses already hold, together with a witness that `M` is
+a LOCALIZATION of `M_λ ⊗_{S_λ} S`.  What is left here is 00R7's LAST SENTENCE,
+and it is exactly three steps:
 
 1. `hNoeth` at the stage, giving `S'_λ` flat over `S_λ`;
-2. `RingHom.Flat.isStableUnderBaseChange` along that pushout, giving `A` flat
-   over `B`.
+2. `Module.Flat.baseChange`, giving `S ⊗_{S_λ} S'_λ` flat over `S`;
+3. `IsLocalization.flat` and `Module.Flat.trans`, giving `A` flat over `B`.
+
+**Step 2 used to be a single `RingHom.Flat.isStableUnderBaseChange` along an
+`Algebra.IsPushout` field.  That field was too strong** — 00R7's proof lists
+`S'_λ ⊗_{S_λ} S_μ → S'_μ` as a *localization*, not an isomorphism — and was
+weakened on 2026-07-27; the argument is the CORRECTION block in the section
+note "THE COLIMIT-API DECISION" above.  The extra step is the price, and it is
+one line.
 
 The `M = S' = A` instantiation is stable under all of this: `M_λ = S'_λ` is
 finite over `S'_λ` and nonzero because `S'_λ` is local, so no extra hypothesis
@@ -1896,11 +2039,22 @@ theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation_of_noetherian
   haveI : IsScalarTower st.Mid B A := IsScalarTower.of_algebraMap_eq fun _ => rfl
   haveI : IsScalarTower st.Mid st.Tot A :=
     IsScalarTower.of_algebraMap_eq fun x => (DFunLike.congr_fun st.comm x).symm
-  haveI : Algebra.IsPushout st.Mid st.Tot B A := st.isPushout
-  have hbc : (algebraMap B A).Flat :=
-    RingHom.Flat.isStableUnderBaseChange st.Mid st.Tot B A
-      (by rwa [RingHom.algebraMap_toAlgebra])
-  rwa [RingHom.algebraMap_toAlgebra] at hbc
+  letI : Algebra (B ⊗[st.Mid] st.Tot) A :=
+    (Algebra.TensorProduct.lift (IsScalarTower.toAlgHom st.Mid B A)
+      (IsScalarTower.toAlgHom st.Mid st.Tot A) fun _ _ => Commute.all _ _).toRingHom.toAlgebra
+  obtain ⟨W, hW⟩ := st.isLocalizationTensor
+  -- `Tot` is flat over `Mid`, so `B ⊗[Mid] Tot` is flat over `B`.
+  haveI : Module.Flat st.Mid st.Tot := hstage
+  haveI : Module.Flat B (B ⊗[st.Mid] st.Tot) := Module.Flat.baseChange _ _ _
+  -- The two structure maps `B → B ⊗[Mid] Tot → A` compose to `v`.
+  haveI : IsScalarTower B (B ⊗[st.Mid] st.Tot) A :=
+    IsScalarTower.of_algebraMap_eq fun b => by
+      show v b = _
+      simp [RingHom.algebraMap_toAlgebra]
+  -- Step 3: `A` is a localization of `B ⊗[Mid] Tot`, hence flat over it.
+  haveI : Module.Flat (B ⊗[st.Mid] st.Tot) A := IsLocalization.flat A W
+  have hflatBA : Module.Flat B A := Module.Flat.trans B (B ⊗[st.Mid] st.Tot) A
+  exact hflatBA
 
 end FibreCriterionRingLevel
 
@@ -4077,9 +4231,28 @@ because a finite morphism is affine — and Krull applies to it; the second is F
    `Scheme.Hom.app_injective`, which needs `IsSchemeTheoreticallyDominant f`; and
    `IsSchemeTheoreticallyDominant.of_isDominant` supplies it from `[IsDominant f]`
    together with `[IsReduced Y]`.  **This is the only use of dominance, and it is
-   essential**: for `u : Spec k[t] ⟶ Spec k[t]` induced by `t ↦ 0` the stalk map
-   at the generic point is `k[t]_(t) → k(t)` killing `t`, `(0) < (t) = Q.under`,
-   and no prime of `k(t)` lies over `(0)` — going down fails outright.
+   essential** — witnessed by the CLOSED IMMERSION OF THE ORIGIN
+   `f : Spec k ⟶ Spec k[t]`, i.e. `Spec.map` of the `k`-algebra map
+   `A := k[t] → B := k`, `t ↦ 0`.  Every hypothesis of this theorem except
+   dominance holds for it: `B = k` is generated by `1` as an `A`-module, so `f` is
+   FINITE; `Spec k` is integral; `Spec k[t]` is reduced; and `k[t]` is a PID, so it
+   and all its localizations are integrally closed.  Dominance fails because the
+   image is the single closed point `(t)`.  And the conclusion fails with it: on
+   `U = ⊤` take the chain `(0) < (t)` in `A` and the prime `Q = (0)` of `B` — the
+   unique prime of the field `k` — which lies over `(t)`.  Going down would demand
+   a prime of `B` contained in `Q` lying over `(0)`, and `(0)` is the only prime of
+   `B` there is, contracting to `(t) ≠ (0)`.  Equivalently, the generic point of
+   `Spec k[t]` is a generalization of `f (0)` with no preimage at all, so
+   `GeneralizingMap f.base` is outright false.
+
+   **(Witness corrected 2026-07-27; the previous one was INVALID.)**  What stood
+   here was `u : Spec k[t] ⟶ Spec k[t]` induced by `t ↦ 0`.  **That morphism is not
+   finite**, so it says nothing about a theorem hypothesising `[IsFinite f]`:
+   `k[t]` as a module over itself through `t ↦ 0` is `k[t]` with `t` acting as
+   ZERO, i.e. a countably-infinite-dimensional `k`-vector space, not a finitely
+   generated module.  The same invalid witness stood in the docstring of
+   `isDominant_of_isFinite_endo` below, where it was corrected the same day; that
+   correction is where the replacement above comes from.
 4. `IsIntegrallyClosed Γ(Y,U)` — the hypothesis `hnormal`.
 
 The EMPTY affine open is not an exception to be worried about: `Γ(X, ⊥)` is
@@ -4411,8 +4584,99 @@ theorem topologicalKrullDim_lt_top_of_isProper {X : Scheme.{u}} {K : Type u} [Fi
     topologicalKrullDim X < ⊤ :=
   sorry
 
+/-- **THE CLOSURE OF THE IMAGE OF A SET WITH A GENERIC POINT** (**PROVEN
+2026-07-27**, pure point-set topology, no schemes).
+
+If `closure {x} = S` then `closure (f '' S) = closure {f x}` for `f` continuous:
+one inclusion is `image_closure_subset_closure_image`, the other is monotonicity
+of `closure` along `{f x} ⊆ f '' S`.  Extracted as a standalone step of
+`height_map_le_of_isFinite` below because rewriting `↑W` inside
+`W.isIrreducible.genericPoint` is not motive-correct — the generic point has to
+be abstracted BEFORE the underlying set is rewritten. -/
+theorem closure_image_of_closure_singleton_eq {X Y : Type*} [TopologicalSpace X]
+    [TopologicalSpace Y] {f : X → Y} (hf : Continuous f) {S : Set X} {x : X}
+    (hx : closure ({x} : Set X) = S) :
+    closure (f '' S) = closure {f x} := by
+  subst hx
+  refine le_antisymm (closure_minimal ?_ isClosed_closure) (closure_mono ?_)
+  · refine (image_closure_subset_closure_image hf).trans ?_
+    simp
+  · exact Set.singleton_subset_iff.mpr ⟨x, subset_closure rfl, rfl⟩
+
+/-- **A QUASI-FINITE MORPHISM SEPARATES SPECIALIZATIONS INSIDE A FIBRE**
+(**PROVEN 2026-07-27**, the incomparability half of Cohen–Seidenberg in its
+topological form — `@[stacks 00OY]`).
+
+If `x ⤳ y` and `f x = f y` then `x = y`.  Both points lie in the fibre
+`f ⁻¹' {f x}`, which is DISCRETE for a quasi-finite morphism
+(`Scheme.Hom.isDiscrete_preimage_singleton`, mathlib); `Subtype.val` is inducing,
+so the specialization transports into the fibre, and a discrete space is `T1`,
+where specialization is equality.
+
+Note this needs only `LocallyQuasiFinite`, not `IsFinite`. -/
+theorem eq_of_specializes_of_base_eq {X Y : Scheme.{u}} (f : X ⟶ Y) [LocallyQuasiFinite f]
+    {x y : X} (h : x ⤳ y) (he : f.base x = f.base y) : x = y := by
+  have hd : _root_.IsDiscrete (⇑f ⁻¹' {f.base x}) := f.isDiscrete_preimage_singleton _
+  haveI : DiscreteTopology ↥(⇑f ⁻¹' {f.base x}) := hd.to_subtype
+  have hx : x ∈ (⇑f ⁻¹' {f.base x}) := rfl
+  have hy : y ∈ (⇑f ⁻¹' {f.base x}) := he.symm
+  have hs : (⟨x, hx⟩ : ↥(⇑f ⁻¹' {f.base x})) ⤳ ⟨y, hy⟩ :=
+    (_root_.Topology.IsInducing.subtypeVal).specializes_iff.mp h
+  simpa using specializes_iff_eq.mp hs
+
+/-- **`IrreducibleCloseds.map` ALONG A QUASI-FINITE MORPHISM IS STRICTLY
+MONOTONE** (**PROVEN 2026-07-27**; this is the whole mathematical content of
+`height_map_le_of_isFinite` below, and it holds GLOBALLY, not merely below a
+fixed `Z`).
+
+Given `A < B` irreducible closed, monotonicity gives `map A ≤ map B`; the
+inclusion is strict.  Schemes are sober, so `A = closure {ξA}` and
+`B = closure {ξB}`; by `closure_image_of_closure_singleton_eq` the images are
+`closure {f ξA}` and `closure {f ξB}`, so equality of the images gives
+`f ξA ⤳ f ξB` and `f ξB ⤳ f ξA`, hence `f ξA = f ξB` because a scheme is `T0`.
+And `A ≤ B` puts `ξA ∈ B = closure {ξB}`, i.e. `ξB ⤳ ξA`.  The two points are
+therefore a specialization pair inside one fibre, so they are EQUAL
+(`eq_of_specializes_of_base_eq`), whence `A = B` — contradicting `A < B`.
+
+**INJECTIVITY IS FALSE AND IS NOT USED**: `Spec (k × k) ⟶ Spec k` sends the two
+points to the one point, so `map` is not injective, and the standard
+`Monotone.strictMono_of_injective` route is unavailable.  Strict monotonicity
+survives precisely because the two points there are INCOMPARABLE. -/
+theorem strictMono_irreducibleCloseds_map {X Y : Scheme.{u}} (f : X ⟶ Y)
+    [LocallyQuasiFinite f] :
+    StrictMono (TopologicalSpace.IrreducibleCloseds.map (⇑f.base) f.base.hom.continuous) := by
+  have hcont : Continuous (⇑f.base) := f.base.hom.continuous
+  intro A B hAB
+  refine lt_of_le_of_ne (TopologicalSpace.IrreducibleCloseds.map_mono hcont hAB.le) ?_
+  intro heq
+  obtain ⟨ξA, hA⟩ : ∃ x, closure ({x} : Set X) = (A : Set X) :=
+    ⟨A.isIrreducible.genericPoint, A.isIrreducible.closure_genericPoint A.isClosed⟩
+  obtain ⟨ξB, hB⟩ : ∃ x, closure ({x} : Set X) = (B : Set X) :=
+    ⟨B.isIrreducible.genericPoint, B.isIrreducible.closure_genericPoint B.isClosed⟩
+  have hco : closure (⇑f.base '' (A : Set X)) = closure (⇑f.base '' (B : Set X)) := by
+    have h := congrArg (fun W : TopologicalSpace.IrreducibleCloseds Y => (W : Set Y)) heq
+    simpa using h
+  have hcl : closure ({f.base ξA} : Set Y) = closure {f.base ξB} := by
+    rw [← closure_image_of_closure_singleton_eq hcont hA,
+      ← closure_image_of_closure_singleton_eq hcont hB]
+    exact hco
+  have h1 : f.base ξA ⤳ f.base ξB := by
+    rw [specializes_iff_mem_closure, hcl]; exact subset_closure rfl
+  have h2 : f.base ξB ⤳ f.base ξA := by
+    rw [specializes_iff_mem_closure, ← hcl]; exact subset_closure rfl
+  have hfe : f.base ξA = f.base ξB := (h1.antisymm h2).eq
+  have hmemA : ξA ∈ (A : Set X) := by
+    have hmem : ξA ∈ closure ({ξA} : Set X) := subset_closure rfl
+    rwa [hA] at hmem
+  have hspec : ξB ⤳ ξA := by
+    rw [specializes_iff_mem_closure, hB]
+    exact hAB.le hmemA
+  have hξ : ξB = ξA := eq_of_specializes_of_base_eq f hspec hfe.symm
+  exact absurd (TopologicalSpace.IrreducibleCloseds.ext (by rw [← hA, ← hB, hξ])) hAB.ne
+
 /-- **A FINITE MORPHISM DOES NOT DROP THE HEIGHT OF AN IRREDUCIBLE CLOSED SET**
-(sorry leaf, created 2026-07-27 — the SECOND sub-leaf of
+(**PROVEN 2026-07-27** over the three general lemmas immediately above; created
+as a sorry leaf earlier the same day as the SECOND sub-leaf of
 `isDominant_of_isFinite_endo` below.  General scheme theory: no field, no
 smoothness, no properness, and `X`, `Y` arbitrary.)
 
@@ -4436,14 +4700,25 @@ no nontrivial specialization and `ξ₀ = ξ₁`, contradicting `Z₀ < Z₁`.  
 height inequality.
 
 *Refute with:* a finite morphism, an irreducible closed `Z`, and a chain below it
-whose image chain collapses — by the argument above there is none.  Note that
-`IsFinite` may be weakened to `QuasiFinite` throughout; it is stated with
-`IsFinite` because that is what the consumer has. -/
+whose image chain collapses — by the argument above there is none.
+
+**THE WEAKENING PREDICTED HERE IS CONFIRMED, AND FOR FREE.**  The note that
+stood here said `IsFinite` "may be weakened to `QuasiFinite`"; it is, and by more
+than expected.  Nothing in the proof uses finiteness or quasi-compactness — only
+`LocallyQuasiFinite`, through the DISCRETENESS of the fibres — so the real
+theorem is `strictMono_irreducibleCloseds_map` above, stated with
+`[LocallyQuasiFinite f]`, and it is strictly monotone GLOBALLY rather than merely
+below `Z`.  This statement keeps `[IsFinite f]` because that is what the consumer
+`isDominant_of_isFinite_endo` has in hand, and mathlib's
+`IsFinite f → LocallyQuasiFinite f` instance bridges the two silently.  A
+consumer wanting the weaker hypothesis should call
+`strictMono_irreducibleCloseds_map` and
+`Order.height_le_height_apply_of_strictMono` directly. -/
 theorem height_map_le_of_isFinite {X Y : Scheme.{u}} (f : X ⟶ Y) [IsFinite f]
     (Z : TopologicalSpace.IrreducibleCloseds X) :
     Order.height Z ≤ Order.height
       (TopologicalSpace.IrreducibleCloseds.map (⇑f.base) f.base.hom.continuous Z) :=
-  sorry
+  Order.height_le_height_apply_of_strictMono _ (strictMono_irreducibleCloseds_map f) Z
 
 /-- **A FINITE ENDOMORPHISM OF A PROPER GEOMETRICALLY CONNECTED SMOOTH SCHEME
 OVER A FIELD IS DOMINANT** (**PROVEN 2026-07-27** over the two leaves
@@ -4487,13 +4762,13 @@ of finite type over a field is finite-dimensional — false in general for
 non-quasi-compact schemes — so properness (or just quasi-compactness) is
 plausibly still needed, but that is an OPEN question here and not a settled one.
 
-The same invalid witness appears in item 3 of the docstring of
+The same invalid witness appeared in item 3 of the docstring of
 `generalizingMap_of_isFinite_of_isIntegral` above, where dominance really is
-essential; a CORRECT witness there is the closed immersion of the origin
-`Spec k ⟶ Spec k[t]` (`k[t] → k`, module-finite, not dominant): the chain
-`(0) < (t)` in `k[t]` has `Q = (0)` of `k` lying over `(t)`, and `k` has no
-other prime to lie over `(0)`, so going down fails.  That declaration has
-another owner, so the correction is recorded here rather than made there. -/
+essential; **that occurrence has now been corrected in place** (2026-07-27) to
+the closed immersion of the origin `Spec k ⟶ Spec k[t]` (`k[t] → k`,
+module-finite, not dominant): the chain `(0) < (t)` in `k[t]` has `Q = (0)` of
+`k` lying over `(t)`, and `k` has no other prime to lie over `(0)`, so going
+down fails.  The file has been swept: no further occurrence remains. -/
 theorem isDominant_of_isFinite_endo {X : Scheme.{u}} {K : Type u} [Field K]
     (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] [IsProper g] [GeometricallyConnected g]
     (u : X ⟶ X) [IsFinite u] :
@@ -8923,8 +9198,36 @@ re-cutting the leaf into another of them.  Two shape changes have already been
 made here; a third would buy nothing.  Refute by exhibiting a member of that
 list that does not reach the others.
 
+**⚠ THE PARAGRAPH THAT FOLLOWS IS SUPERSEDED — ITS FIRST HALF IS FALSE OF THIS
+PROJECT, AND THE REFUTING CHECK IS ONE GREP** (2026-07-27, re-verified by the
+sweep over every citation of this blocker).  It is kept verbatim because its
+*second* half — that PROVING the ample-sheaf theory is a theory build — is
+correct and still governs, and because it is the text every other citation
+inherited.  What is wrong with it, precisely:
+
+* "there is no monoidal structure on sheaves of modules over a scheme" is TRUE
+  OF MATHLIB (`grep -rn 'MonoidalCategory\|tensorObj'
+  Mathlib/Algebra/Category/ModuleCat/Sheaf/` is still EMPTY at this pin —
+  re-run 2026-07-27) and FALSE OF THIS PROJECT: `Fermat.modTensor`
+  (`ModularCurve/RelativePicard.lean`) is the OBJECT part of `⊗`, obtained by
+  sheafifying the presheaf tensor product.
+* "so `L^{⊗n}` cannot even be WRITTEN" is therefore false as an inference:
+  `Fermat.modTensorPow`, `Fermat.IsAmpleSheaf` and the cube's output
+  `[n]^*L ≅ L^{⊗n²}` all elaborate (`Modularity/AmpleSheaf.lean`,
+  `exists_isAmpleSheaf_cube_of_isAlgClosed` above).
+* Hence the standing rule "does the cut need `T` PROVEN or only STATED?"
+  resolves the OPPOSITE way from the paragraph's verdict: only STATED, and the
+  cut was taken — `isQuasiAffine_ker_mulByNat_of_isAlgClosed` above is now
+  PROVEN over six named sheaf-theoretic leaves, none carrying abelian-variety
+  content.
+* An OBJECT part is all a STATEMENT needs; what the paragraph correctly
+  identifies is the cost of the MORPHISM part, the associator and the unitor —
+  i.e. the obligations now named one by one on the six leaves in
+  `Modularity/AmpleSheaf.lean`.
+
 **Why "ample line bundles are absent" UNDERSTATES the blocker, and why this leaf
-is NOT of the "state the interface and cut" kind** (2026-07-27).  The survey
+is NOT of the "state the interface and cut" kind** (2026-07-27, SUPERSEDED —
+see the correction immediately above).  The survey
 above is right that `Ample`, `Pic` and invertible sheaves are missing, but the
 operative fact is stronger and it is what decides feasibility: **there is no
 monoidal structure on sheaves of modules over a scheme, so `L^{⊗n}` cannot even
