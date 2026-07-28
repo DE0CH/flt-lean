@@ -27,8 +27,20 @@ complement of `Fermat/FLT/Mathlib/AlgebraicGeometry/FinrankGeometricPoints.lean`
 a rank computation into reducedness of a geometric fibre, and this one turns reducedness of every
 geometric fibre into étaleness of the morphism.
 
+**Everything in this file is PROVEN; it contains no `sorry`.**
+
 * `AlgebraicGeometry.etale_of_isReduced_pullback` — the headline statement, assembled from the two
-  leaves below.
+  halves below.
+* `AlgebraicGeometry.etale_of_etale_fiberToSpecResidueField` — the *fibrewise criterion*: finite,
+  flat, locally of finite presentation with ÉTALE fibres ⟹ étale.  Mathlib has only the smooth
+  analogue (`AlgebraicGeometry.Smooth.of_smooth_fiberToSpecResidueField`), and `Smooth` cannot be
+  upgraded to `Etale` without a relative-dimension input unavailable here — so this goes through
+  `Algebra.Etale.of_formallyUnramified_of_flat` instead, with no smoothness anywhere.
+* `AlgebraicGeometry.etale_fiberToSpecResidueField_of_isReduced_pullback` — *descent* of étaleness
+  of the fibre from `κ(y)‾` down to `κ(y)`.
+* `Algebra.FormallyUnramified.of_formallyUnramified_fiber` and
+  `Algebra.Etale.of_isReduced_of_isAlgClosed` — the two general commutative-algebra facts the
+  above rest on, both absent from mathlib.
 * `AlgebraicGeometry.isNilpotent_ker_SpecMap` — a small proven bridge: `Spec` of a ring map with
   nilpotent kernel is an infinitesimal thickening in the sense
   `AlgebraicGeometry.FormallyUnramified.hom_ext` wants.
@@ -43,7 +55,11 @@ enters only where a CONSUMER proves reducedness (over a `ℚ`-base, by Cartier).
 
 open CategoryTheory Limits
 
+open scoped TensorProduct
+
 universe u
+
+section FormallyUnramifiedFiber
 
 attribute [local instance] Algebra.TensorProduct.rightAlgebra
 
@@ -79,6 +95,32 @@ theorem Algebra.FormallyUnramified.of_formallyUnramified_fiber
   have e := KaehlerDifferential.tensorKaehlerEquivBase R p.asIdeal.ResidueField S
       (p.asIdeal.Fiber S)
   exact (not_nontrivial_iff_subsingleton.mpr e.injective.subsingleton) hp
+
+end FormallyUnramifiedFiber
+
+/-- **A finite REDUCED algebra over an algebraically closed field is étale.**
+
+This is the algebra core of `AlgebraicGeometry.etale_fiberToSpecResidueField_of_isReduced_pullback`
+after base change to an algebraic closure, and it is where reducedness is finally consumed:
+`A` is Artinian (finite over a field) and reduced, so `IsArtinianRing.equivPi` splits it as
+`∏ (m : MaximalSpectrum A), A ⧸ m`, and over an algebraically closed field every residue field
+`A ⧸ m` is `K` itself (`IsAlgClosed.algebraMap_bijective_of_isIntegral`).  A finite product of
+copies of `K` is étale by `Algebra.Etale.iff_exists_algEquiv_prod`.
+
+Reducedness is not removable: `K[x]/(x²)` is finite over `K` and not étale. -/
+theorem Algebra.Etale.of_isReduced_of_isAlgClosed (K A : Type u) [Field K] [IsAlgClosed K]
+    [CommRing A] [Algebra K A] [Module.Finite K A] [IsReduced A] : Algebra.Etale K A := by
+  haveI : IsArtinianRing A := isArtinian_of_tower K inferInstance
+  rw [Algebra.Etale.iff_exists_algEquiv_prod]
+  refine ⟨MaximalSpectrum A, inferInstance, fun _ => K, fun _ => inferInstance,
+    fun _ => inferInstance, ?_, fun _ => ⟨inferInstance, inferInstance⟩⟩
+  refine ((IsArtinianRing.equivPi A).restrictScalars K).trans (AlgEquiv.piCongrRight fun m => ?_)
+  haveI : m.asIdeal.IsMaximal := m.isMaximal
+  haveI : m.asIdeal.IsPrime := m.isMaximal.isPrime
+  haveI : IsDomain (A ⧸ m.asIdeal) := Ideal.Quotient.isDomain _
+  haveI : Algebra.IsIntegral K (A ⧸ m.asIdeal) := Algebra.IsIntegral.of_finite K _
+  exact (AlgEquiv.ofBijective (Algebra.ofId K (A ⧸ m.asIdeal))
+    IsAlgClosed.algebraMap_bijective_of_isIntegral).symm
 
 namespace AlgebraicGeometry
 
@@ -217,25 +259,67 @@ theorem etale_of_etale_fiberToSpecResidueField {X Y : Scheme.{u}} (h : X ⟶ Y)
   · exact isPullback_fiberToSpecResidueField_of_isPullback (IsPullback.of_hasPullback _ _) _
   · exact hfib _
 
-/-- **LEAF: a finite flat morphism with reduced geometric fibres has étale fibres.**
+/-- **A finite morphism to `Spec K`, `K` a field, whose base change to an algebraic closure of `K`
+is reduced, is étale.**
+
+This is the affine form of `AlgebraicGeometry.etale_fiberToSpecResidueField_of_isReduced_pullback`,
+and it is where the pullback/`Spec`-of-tensor-product identification is made:
+`AlgebraicGeometry.exists_algebra_iso_of_isFinite` presents the source as `Spec A` with `A` a
+finite `K`-algebra, `AlgebraicGeometry.pullbackSpecIso` turns the base-changed pullback into
+`Spec (A ⊗[K] K‾)`, and `AlgebraicGeometry.affine_isReduced_iff` reads reducedness back at the
+ring level.  Then `Algebra.Etale.of_isReduced_of_isAlgClosed` over `K‾` and
+`Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat` (descent along the faithfully flat
+`K ⊆ K‾`) finish. -/
+theorem etale_of_isReduced_pullback_algClosure {P : Scheme.{u}} {K : Type u} [Field K]
+    (q : P ⟶ Spec (CommRingCat.of K)) [IsFinite q]
+    (hred : IsReduced (pullback q (Spec.map (CommRingCat.ofHom
+      (algebraMap K (AlgebraicClosure K)))))) :
+    AlgebraicGeometry.Etale q := by
+  obtain ⟨A, _, _, _, e, he⟩ := exists_algebra_iso_of_isFinite q
+  haveI := hred
+  have i2 : pullback (e.hom ≫ Spec.map (CommRingCat.ofHom (algebraMap K A)))
+      (Spec.map (CommRingCat.ofHom (algebraMap K (AlgebraicClosure K))))
+      ≅ pullback (Spec.map (CommRingCat.ofHom (algebraMap K A)))
+        (Spec.map (CommRingCat.ofHom (algebraMap K (AlgebraicClosure K)))) :=
+    asIso (pullback.map _ _ _ _ e.hom (𝟙 _) (𝟙 _) (by simp) (by simp))
+  rw [he] at i2
+  haveI : IsReduced (pullback (Spec.map (CommRingCat.ofHom (algebraMap K A)))
+      (Spec.map (CommRingCat.ofHom (algebraMap K (AlgebraicClosure K))))) :=
+    isReduced_of_isOpenImmersion i2.inv
+  haveI : IsReduced (Spec (CommRingCat.of (A ⊗[K] AlgebraicClosure K))) :=
+    isReduced_of_isOpenImmersion (pullbackSpecIso K A (AlgebraicClosure K)).inv
+  haveI : _root_.IsReduced (A ⊗[K] AlgebraicClosure K) :=
+    (affine_isReduced_iff (CommRingCat.of (A ⊗[K] AlgebraicClosure K))).mp inferInstance
+  haveI : _root_.IsReduced (AlgebraicClosure K ⊗[K] A) :=
+    isReduced_of_injective (Algebra.TensorProduct.comm K A (AlgebraicClosure K)).symm.toRingHom
+      (Algebra.TensorProduct.comm K A (AlgebraicClosure K)).symm.injective
+  haveI : Module.Finite (AlgebraicClosure K) (AlgebraicClosure K ⊗[K] A) :=
+    Module.Finite.base_change K (AlgebraicClosure K) A
+  haveI : Algebra.Etale (AlgebraicClosure K) (AlgebraicClosure K ⊗[K] A) :=
+    Algebra.Etale.of_isReduced_of_isAlgClosed (AlgebraicClosure K) (AlgebraicClosure K ⊗[K] A)
+  haveI : Algebra.Etale K A :=
+    Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat (AlgebraicClosure K)
+  rw [← he, MorphismProperty.cancel_left_of_respectsIso @AlgebraicGeometry.Etale,
+    HasRingHomProperty.Spec_iff (P := @AlgebraicGeometry.Etale)]
+  exact RingHom.etale_algebraMap.mpr inferInstance
+
+/-- **A finite flat morphism with reduced geometric fibres has étale fibres** (PROVEN).
 
 Fixing `y : Y` and writing `κ = κ(y)`, `Ω = AlgebraicClosure κ`, the statement is that the finite
 `κ`-algebra `A₀` presenting the fibre is étale.  The hypothesis supplies reducedness of
-`X ×_Y Spec Ω`, i.e. of `Ω ⊗[κ] A₀`, and the two steps are:
+`X ×_Y Spec Ω`, i.e. of `Ω ⊗[κ] A₀`, and the two algebra steps are:
 
 1. *Alg-closed base.*  `Ω ⊗[κ] A₀` is a finite REDUCED algebra over an algebraically closed field,
-   hence `≃ₐ[Ω] ∀ m : MaximalSpectrum, Ω` (`IsArtinianRing.equivPi` together with
-   `Algebra.finrank_quotient_maximal_eq_one` from `FinrankGeometricPoints.lean`), hence
-   `Algebra.Etale Ω (Ω ⊗[κ] A₀)` by `Algebra.Etale.iff_exists_algEquiv_prod`.
+   hence `≃ₐ[Ω] ∀ m : MaximalSpectrum, Ω`, hence étale
+   (`Algebra.Etale.of_isReduced_of_isAlgClosed` above).
 2. *Descent.*  `Ω` is faithfully flat over `κ`, so
    `Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat` gives `Algebra.Etale κ A₀`.
 
-The formalisation cost is neither of those two steps but the identification of `Ω ⊗[κ] A₀` with
-the geometric fibre: `pullback h (Spec.map (algebraMap κ Ω) ≫ Y.fromSpecResidueField y)` is, by
-pullback pasting, `pullback (h.fiberToSpecResidueField y) (Spec.map (algebraMap κ Ω))`, and
-`AlgebraicGeometry.pullbackSpecIso` turns that into `Spec (A₀ ⊗[κ] Ω)` once
-`AlgebraicGeometry.exists_algebra_iso_of_isFinite` (`FinrankGeometricPoints.lean`) has presented
-the fibre as `Spec A₀`.
+Both live in `AlgebraicGeometry.etale_of_isReduced_pullback_algClosure`.  All that is left here is
+the geometry: `Limits.pullbackLeftPullbackSndIso` is exactly the pasting identification of
+`pullback h (Spec.map (algebraMap κ Ω) ≫ Y.fromSpecResidueField y)` — which is what `hred`
+supplies — with `pullback (h.fiberToSpecResidueField y) (Spec.map (algebraMap κ Ω))`, which is
+what the affine statement consumes.
 
 Only algebraically closed `K` are used, which is what a consumer with a `geom_cyclic`-style
 hypothesis can supply; reducedness at a general field-valued point is not needed and would not be
@@ -244,8 +328,23 @@ theorem etale_fiberToSpecResidueField_of_isReduced_pullback {X Y : Scheme.{u}} (
     [IsFinite h] [AlgebraicGeometry.Flat h]
     (hred : ∀ (K : Type u) [Field K] [IsAlgClosed K] (g : Spec (CommRingCat.of K) ⟶ Y),
       IsReduced (pullback h g))
-    (y : Y) : AlgebraicGeometry.Etale (h.fiberToSpecResidueField y) :=
-  sorry
+    (y : Y) : AlgebraicGeometry.Etale (h.fiberToSpecResidueField y) := by
+  haveI hfibfin : IsFinite (h.fiberToSpecResidueField y) :=
+    MorphismProperty.pullback_snd _ _ inferInstance
+  refine @etale_of_isReduced_pullback_algClosure _ (↑(Y.residueField y)) _
+    (h.fiberToSpecResidueField y) hfibfin ?_
+  have i1 : pullback (h.fiberToSpecResidueField y)
+      (Spec.map (CommRingCat.ofHom
+        (algebraMap (↑(Y.residueField y)) (AlgebraicClosure ↑(Y.residueField y)))))
+      ≅ pullback h (Spec.map (CommRingCat.ofHom
+          (algebraMap (↑(Y.residueField y)) (AlgebraicClosure ↑(Y.residueField y))))
+        ≫ Y.fromSpecResidueField y) :=
+    pullbackLeftPullbackSndIso h (Y.fromSpecResidueField y) _
+  haveI := hred (AlgebraicClosure ↑(Y.residueField y))
+    (Spec.map (CommRingCat.ofHom
+        (algebraMap (↑(Y.residueField y)) (AlgebraicClosure ↑(Y.residueField y))))
+      ≫ Y.fromSpecResidueField y)
+  exact isReduced_of_isOpenImmersion i1.hom
 
 /-- **A finite flat morphism, locally of finite presentation, with REDUCED geometric fibres is
 étale** (PROVEN over the two leaves above).
