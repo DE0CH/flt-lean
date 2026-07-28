@@ -33723,10 +33723,219 @@ theorem nonempty_isCMByRamifiedMaximalOrder_of_classify_eq (p : ℕ)
       = specAlgClos ℚ := Category.id_comp _
   exact nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf p hp (hid ▸ iso.comp bc)
 
+/-! #### Cutting the class-number-one half into CLASS NUMBER and END-RING RIGIDITY
+
+(2026-07-27, flt-lean-131.)  `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`
+was introduced earlier the same day as an atom whose own docstring prescribed a
+three-step argument.  The three steps do not have the same character, and the two
+declarations below separate them along that seam; the atom is now PROVEN over them.
+
+* **Steps 1–2 are CLASS NUMBER ONE and nothing else.**  `phi_sq` makes
+  `ℤ[φᵢ] ⊆ End(Eᵢ)` the order of discriminant `−p`, maximal at `43, 67, 163`;
+  `h(−p) = 1` then gives a single `ℚ̄`-isomorphism class, so `E₁ ≅ E₂` as
+  elliptic schemes.  That conclusion mentions NO level structure, and it is
+  `nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder` below.
+* **Step 3 is END-RING RIGIDITY**, and it is about an isomorphism that is
+  already given: conjugation by any `α : E₁ ≅ E₂` carries `φ₁` to an element of
+  `End(E₂)` with the same minimal polynomial `X² − X + (p+1)/4`, and the only
+  roots of that polynomial in `O_{−p}` are `φ₂` and its conjugate `1 − φ₂`.
+  That is `phi_or_conj_of_isEllipticIsoOf` below — a DISJUNCTION, because both
+  roots really do occur (the two data may be identified by an isomorphism that
+  intertwines the CM by the nontrivial automorphism of `ℚ(√−p)`).
+* **What is PROVEN here is the descent to the LEVEL STRUCTURE**, i.e. everything
+  the `IsBaseChangeOf` packaging asks for beyond the bare isomorphism.  By
+  `liesIn_iff` the level structure on each side is `ker ψᵢ`, `ψᵢ = 2φᵢ − 1`;
+  `RelPoint.along α.map` is injective and additive, so `2φ₁x = x` transports to
+  `2·(α φ₁ x) = α x` and back.  In the first branch `α φ₁ x = φ₂ (α x)`
+  outright; in the second `α φ₁ x + φ₂ (α x) = α x`, and then `w + w = u` and
+  `v + v = u` are BOTH equivalent to `w = v` once `w + v = u`
+  (`add_self_iff_of_add_eq`).  So `±ψ₂` have the same kernel, which is the
+  arithmetic content of "the level structure is respected".
+
+**Why the disjunction is not a defect of the cut.**  It is exactly the
+`±√−p` ambiguity the atom's docstring names.  Stating step 3 without it would be
+FALSE: nothing distinguishes `√−p` from `−√−p` inside `O_{−p}`, so no choice of
+`α` can be made to intertwine `φ₁` with `φ₂` on the nose in general.  The
+ambiguity is harmless precisely because `ker ψ = ker (−ψ)`, and that is what the
+proof below discharges.
+
+**Neither leaf is vacuous.**  Both are quantified over data satisfying
+`IsCMByRamifiedMaximalOrder`, which is satisfiable at each of the three levels —
+the CM curve of `j`-invariant `−884736000`, `−147197952000`,
+`−262537412640768000` with its ramified `p`-isogeny; see the atom's docstring for
+the `ellisomat` check.  `phi_or_conj_of_isEllipticIsoOf` additionally has an
+isomorphism `α` in hand, which the first leaf supplies.
+
+**What is still missing is CM theory proper**, unchanged by this cut and now
+localised in the two leaves: no `End` of an elliptic scheme as a ring, no order,
+no class group acting on CM points, no class-number-one input.  Neither mathlib
+nor `~/cs/FLT` nor this project has any of it (re-checked 2026-07-27).  The cut
+does not remove that obligation; it separates the part that needs the class group
+(`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`) from the part that
+needs only that `End(E₂)` is the maximal order and `X² − X + (p+1)/4` has two
+roots in it (`phi_or_conj_of_isEllipticIsoOf`), and it removes the level
+structure from both. -/
+
+/-- **`w + w = u` and `v + v = u` are equivalent once `w + v = u`** (PROVEN):
+both say `w = v`, by cancelling on the left and on the right respectively.
+
+Used at `w = α(φ₁ x)`, `v = φ₂(α x)`, `u = α x` in the CONJUGATE branch of
+`phi_or_conj_of_isEllipticIsoOf`, where it is the whole of "`ker ψ₁` and
+`ker(−ψ₂)` correspond". -/
+theorem add_self_iff_of_add_eq {G : Type*} [AddCommGroup G] {w v u : G} (h : w + v = u) :
+    (w + w = u) ↔ (v + v = u) := by
+  constructor
+  · intro hh
+    have h' : w + w = w + v := by rw [h]; exact hh
+    have he : w = v := add_left_cancel h'
+    rw [← he]; exact hh
+  · intro hh
+    have h' : v + v = w + v := by rw [h]; exact hh
+    have he : v = w := add_right_cancel h'
+    rw [← he]; exact hh
+
+/-- **An isomorphism of the UNDERLYING ELLIPTIC SCHEMES of two `Γ₀(N)`-data over
+one base**: `Fermat.IsBaseChangeOf (𝟙 T)` with the level-structure axiom
+`liesIn_iff` DELETED, and nothing else changed.
+
+This is the vocabulary the class-number-one leaf needs and the reason it is not
+stated as an `IsBaseChangeOf`: `h(−p) = 1` produces an isomorphism of CURVES,
+and whether that isomorphism respects the `Γ₀(p)`-structure is a separate
+question, answered here by `phi_or_conj_of_isEllipticIsoOf` plus the kernel
+argument in `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`.  Folding
+the two together is what made the atom irreducible.
+
+Cartesianness of the square over `𝟙 T` says exactly that `map` is an
+isomorphism of schemes over `T`; it is used below only through
+`along_injective`. -/
+structure IsEllipticIsoOf {N : ℕ} {T : Scheme.{0}} (d₁ d₂ : Gamma0Datum N T) where
+  /-- the morphism on total spaces -/
+  map : d₁.E ⟶ d₂.E
+  /-- the square over `𝟙 T` is cartesian, i.e. `map` is an isomorphism -/
+  isPullback : IsPullback d₁.f map (𝟙 T) d₂.f
+  /-- the zero section is preserved -/
+  map_zero : ∀ {T' : Scheme.{0}} (g : T' ⟶ T),
+    RelPoint.along map isPullback.w (d₁.ab.zero g) = d₂.ab.zero (g ≫ 𝟙 T)
+  /-- the group law is preserved -/
+  map_add : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x y : RelPoint d₁.f g),
+    RelPoint.along map isPullback.w (d₁.ab.add x y)
+      = d₂.ab.add (RelPoint.along map isPullback.w x) (RelPoint.along map isPullback.w y)
+
+namespace IsEllipticIsoOf
+
+variable {N : ℕ} {T : Scheme.{0}} {d₁ d₂ : Gamma0Datum N T}
+
+/-- **`RelPoint.along` at an elliptic-scheme isomorphism is injective** (PROVEN),
+stated on the underlying morphisms so that no base-point transport is involved.
+
+This is `Fermat.IsBaseChangeOf.along_injective` verbatim, which cannot be reused
+because that one asks for the level-structure axiom this structure drops. -/
+theorem along_injective (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    {a b : RelPoint d₁.f g} (hab : a.1 ≫ α.map = b.1 ≫ α.map) : a = b :=
+  Subtype.ext (α.isPullback.hom_ext (by rw [a.2, b.2]) hab)
+
+/-- **`RelPoint.along` at an elliptic-scheme isomorphism is injective** (PROVEN),
+in the form that is actually applied: as injectivity of the map on relative
+points rather than of postcomposition on underlying morphisms. -/
+theorem along_inj (α : IsEllipticIsoOf d₁ d₂) {U : Scheme.{0}} {g : U ⟶ T}
+    {a b : RelPoint d₁.f g}
+    (h : RelPoint.along α.map α.isPullback.w a
+        = RelPoint.along α.map α.isPullback.w b) : a = b :=
+  α.along_injective (congrArg Subtype.val h)
+
+end IsEllipticIsoOf
+
+/-- **CLASS NUMBER ONE: two `ℚ̄`-elliptic schemes with CM by the maximal order of
+discriminant `−p` are isomorphic** (sorry leaf, introduced 2026-07-27 by the cut
+of `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`; steps 1–2 of that
+node's three-step argument, with the LEVEL STRUCTURE REMOVED).
+
+TRUE.  `phi_sq` says `φᵢ² − φᵢ + (p+1)/4 = 0`, so `ℤ[φᵢ] ⊆ End(Eᵢ)` is the order
+of discriminant `1 − (p+1) = −p`; at `p ∈ {43, 67, 163}` — prime, `≡ 3 mod 4`,
+squarefree — that discriminant is FUNDAMENTAL, so `ℤ[φᵢ]` is the maximal order
+`O_{−p}` and `End(Eᵢ) = O_{−p}` (an order containing a maximal order equals it,
+and `End` of an elliptic curve in characteristic `0` is `ℤ` or an order in an
+imaginary quadratic field, so it cannot be larger).  Over an algebraically closed
+field of characteristic `0` the elliptic curves with `End = O_K` are a principal
+homogeneous space under `Cl(O_K)`, and `h(−43) = h(−67) = h(−163) = 1`
+(PARI/GP `qfbclassno`, re-verified 2026-07-27), so there is exactly one such
+curve up to isomorphism.
+
+**The MAXIMALITY is what makes this true, and the obvious weakening is FALSE.**
+With `ψ² = [−p]` in place of `phi_sq` the order is `ℤ[√−p]` of discriminant
+`−4p`, and `h(−4·43) = h(−4·67) = h(−4·163) = 3`: three isomorphism classes, so
+no such isomorphism need exist.  See the subsection note above
+`IsCMByRamifiedMaximalOrder`.
+
+**`hp` is load-bearing twice over** — for `(p+1)/4` (natural division) to be
+exact, and for `−p` to be a class-number-one fundamental discriminant.  Neither
+survives dropping it.
+
+**What is missing** is CM theory: `End` of an elliptic scheme as a ring, the fact
+that it is an order in an imaginary quadratic field, and the class-group action
+on the set of CM curves.  Absent from mathlib, from `~/cs/FLT` and from this
+project (re-checked 2026-07-27).  A successor should expect to build the
+class-group action, not to find it — but only over the three fixed discriminants
+`−43, −67, −163`, where the group is trivial, so the input actually needed is
+"`h = 1` ⟹ one isomorphism class", not the full theory of complex
+multiplication. -/
+theorem nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (_h₁ : IsCMByRamifiedMaximalOrder p d₁) (_h₂ : IsCMByRamifiedMaximalOrder p d₂) :
+    Nonempty (IsEllipticIsoOf d₁ d₂) :=
+  sorry
+
+/-- **END-RING RIGIDITY: an isomorphism of the underlying elliptic schemes
+intertwines the CM up to conjugation** (sorry leaf, introduced 2026-07-27 by the
+cut of `nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder`; step 3 of that
+node's three-step argument).
+
+TRUE.  Conjugation by `α` sends `φ₁` to an endomorphism of `E₂` satisfying the
+same relation `X² − X + (p+1)/4 = 0`.  By the argument recorded on
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder`, `End(E₂) = O_{−p}`, and
+the roots of `X² − X + (p+1)/4` in `O_{−p}` are exactly `(1 ± √−p)/2`, i.e. `φ₂`
+and `1 − φ₂`.  The two disjuncts are those two cases, written without an inverse
+for `α`: `α ∘ φ₁ = φ₂ ∘ α`, or `α ∘ φ₁ + φ₂ ∘ α = α`.
+
+**THE DISJUNCTION IS NOT SLACK — dropping either branch makes the leaf FALSE.**
+Nothing inside `O_{−p}` distinguishes `√−p` from `−√−p`, so composing any
+intertwining `α` with the CM by a unit, or replacing `d₂`'s structure by its
+conjugate, exchanges the branches.  The consumer does not care, because it uses
+only that `ker ψ₁` and `ker ψ₂` correspond and `ker(−ψ) = ker ψ`.
+
+**Whether this needs `α` to preserve the group law**: yes, and it has it —
+`map_add` is a field of `IsEllipticIsoOf`.  Conjugation by a mere isomorphism of
+schemes would say nothing about endomorphisms of the group.
+
+**What is missing** is exactly the `End`-as-a-ring half of the CM theory the
+sibling leaf also needs: that `End(E₂)` is an order in `ℚ(√−p)` and hence equals
+`ℤ[φ₂]`.  Given that, the remaining step is the elementary fact that a monic
+quadratic over `ℤ` has at most two roots in an integral domain, so a successor
+holding the `End` interface should find this leaf short. -/
+theorem phi_or_conj_of_isEllipticIsoOf (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (h₁ : IsCMByRamifiedMaximalOrder p d₁) (h₂ : IsCMByRamifiedMaximalOrder p d₂)
+    (α : IsEllipticIsoOf d₁ d₂) :
+    (∀ {T' : Scheme.{0}} {g : T' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))}
+        (x : RelPoint d₁.f g),
+        RelPoint.along α.map α.isPullback.w (h₁.phi x)
+          = h₂.phi (RelPoint.along α.map α.isPullback.w x)) ∨
+      (∀ {T' : Scheme.{0}} {g : T' ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))}
+        (x : RelPoint d₁.f g),
+        d₂.ab.add (RelPoint.along α.map α.isPullback.w (h₁.phi x))
+            (h₂.phi (RelPoint.along α.map α.isPullback.w x))
+          = RelPoint.along α.map α.isPullback.w x) :=
+  sorry
+
 /-- **CLASS NUMBER ONE: two CM `Γ₀(p)`-data over `ℚ̄` for the maximal order
-of discriminant `−p` are isomorphic** (sorry leaf, introduced 2026-07-27 by
-the cut of `card_y0Le_classNumberOne`; the SHALLOW half, and it contains no
-Mazur, no Eisenstein ideal and no modular curve).
+of discriminant `−p` are isomorphic** (introduced 2026-07-27 by the cut of
+`card_y0Le_classNumberOne` as the SHALLOW half — it contains no Mazur, no
+Eisenstein ideal and no modular curve — and PROVEN later the same day over
+`nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder` (class number one) and
+`phi_or_conj_of_isEllipticIsoOf` (end-ring rigidity); see the subsection note
+above for the seam and for what the proof here contributes).
 
 TRUE, and the argument is three steps:
 
@@ -33753,19 +33962,61 @@ is CM by `ℤ[√−p]`, of discriminant `−4p`, and `h(−4p) = 3` at all thre
 levels.  See the subsection note; this is the one place where the
 statement's exact form is load-bearing rather than convenient.
 
-**What is missing.**  CM theory proper is absent from mathlib, from this
-project and from `~/cs/FLT` (re-checked 2026-07-27): there is no statement
-that `End` of a CM elliptic curve is an order, no class-group action on CM
-points, and no class-number-one input.  A theory build is what this leaf
-asks for — and it is a bounded one, since only the imaginary quadratic
-maximal orders of class number one at these three discriminants are
-needed. -/
+**What is missing, and where it now lives.**  CM theory proper is absent from
+mathlib, from this project and from `~/cs/FLT` (re-checked 2026-07-27): there is
+no statement that `End` of a CM elliptic curve is an order, no class-group action
+on CM points, and no class-number-one input.  That obligation has NOT been
+discharged here — it has been split and pushed down into the two leaves above,
+steps 1–2 into `nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder` and step
+3 into `phi_or_conj_of_isEllipticIsoOf`.  It remains a bounded theory build,
+since only the imaginary quadratic maximal orders of class number one at these
+three discriminants are needed.
+
+**What the proof below DOES contribute** is step 3's second half, which is the
+only part of the three-step argument that is about the `Γ₀(p)`-structure rather
+than about `End`: given the isomorphism and the conjugation dichotomy, the LEVEL
+STRUCTURES correspond.  `liesIn_iff` reads each level structure as `ker ψᵢ` with
+`ψᵢ = 2φᵢ − 1`; `RelPoint.along α.map` is injective (cartesian square) and
+additive (`map_add`), so `2φ₁x = x` transports across, and in the conjugate
+branch `ker(−ψ₂) = ker ψ₂` is `add_self_iff_of_add_eq`.  That is what turns an
+isomorphism of elliptic schemes into an isomorphism of `Γ₀(p)`-data, and it is
+the step whose absence made this node look atomic. -/
 theorem nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {d₁ d₂ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
-    (_h₁ : IsCMByRamifiedMaximalOrder p d₁) (_h₂ : IsCMByRamifiedMaximalOrder p d₂) :
-    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) :=
-  sorry
+    (h₁ : IsCMByRamifiedMaximalOrder p d₁) (h₂ : IsCMByRamifiedMaximalOrder p d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) d₁ d₂) := by
+  -- class number one: the underlying elliptic schemes are isomorphic
+  obtain ⟨α⟩ := nonempty_isEllipticIsoOf_of_isCMByRamifiedMaximalOrder p hp h₁ h₂
+  -- everything but `liesIn_iff` is carried over from `α` unchanged
+  refine ⟨{ map := α.map, isPullback := α.isPullback, map_zero := α.map_zero,
+            map_add := α.map_add, liesIn_iff := ?_ }⟩
+  intro T' g x
+  letI := d₁.ab.addCommGroup g
+  letI := d₂.ab.addCommGroup (g ≫ 𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+  -- `RelPoint.along α.map` is additive …
+  have hmapadd : ∀ a b : RelPoint d₁.f g,
+      RelPoint.along α.map α.isPullback.w (a + b)
+        = RelPoint.along α.map α.isPullback.w a + RelPoint.along α.map α.isPullback.w b :=
+    fun a b => α.map_add a b
+  -- … and injective, so `2a = x` transports across it in both directions
+  have hstep : ∀ a : RelPoint d₁.f g, (a + a = x) ↔
+      (RelPoint.along α.map α.isPullback.w a + RelPoint.along α.map α.isPullback.w a
+        = RelPoint.along α.map α.isPullback.w x) := by
+    intro a
+    constructor
+    · intro h
+      rw [← hmapadd, h]
+    · intro h
+      exact α.along_inj ((hmapadd a a).trans h)
+  -- both level structures are `ker ψ`, so it remains to compare `ψ₁` with `ψ₂`
+  refine (h₁.liesIn_iff x).trans (Iff.trans ((hstep (h₁.phi x)).trans ?_)
+    (h₂.liesIn_iff (RelPoint.along α.map α.isPullback.w x)).symm)
+  rcases phi_or_conj_of_isEllipticIsoOf p hp h₁ h₂ α with hφ | hφ
+  · -- `α` intertwines the CM on the nose
+    rw [hφ x]
+  · -- `α` intertwines it with the conjugate: `ker(−ψ₂) = ker ψ₂`
+    exact add_self_iff_of_add_eq (hφ x)
 
 /-- **`#Y_0(p)(ℚ) ≤ 1` at `p = 43, 67, 163`** (PROVEN 2026-07-27 over
 `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` (Mazur) and
