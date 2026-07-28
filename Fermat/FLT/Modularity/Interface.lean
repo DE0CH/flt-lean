@@ -55957,6 +55957,178 @@ structure ModularTateCarrierData (M : ℕ) where
 attribute [instance] ModularTateCarrierData.addCommGroup
   ModularTateCarrierData.module ModularTateCarrierData.finiteDimensional
 
+/-!
+### The geometric input of the eighteenth cut: `X₀(M)`, `J₀(M)` and the correspondences
+
+`nonempty_modularTateCarrierData` below used to be stated as a bare
+existence, and its own docstring recorded "the genuinely absent input is
+the Jacobian `J₀(M)`, its `p`-adic Tate module and its Hecke
+correspondences". **Two of those three are neither absent nor open**, and
+have not been since 2026-07-27/28; they are PROVEN in
+`ModularCurve/X0.lean`, which this file already `public import`s:
+
+* `Fermat.exists_x0Compactification` — the smooth compactification
+  `X₀(M)` of the `Γ₀(M)`-coarse moduli space over `ℚ`;
+* `Fermat.nonempty_cuspLocus`, `Fermat.nonempty_cuspIndexing_of_cuspLocus`
+  and `Fermat.one_mem_rationalCuspDivisors` — the `ℚ`-rational cusp `∞`,
+  which is the base point the Albanese needs;
+* `Fermat.exists_jacobianOf_x0` — `J₀(M) = Jac X₀(M)` as an
+  `AbelianSchemeStruct` over `Spec ℚ` with its Abel–Jacobi map, PROVEN
+  over the relative Picard functor plus autoduality;
+* `Fermat.exists_modularHeckeAction` — the Hecke correspondences `T_ℓ` as
+  `ℚ`-endomorphisms of `J₀(M)`, PINNED to the `Γ₀(M)`-correspondence
+  `(E, C) ↦ ∑_D (E/D, (C+D)/D)` at every prime `ℓ ∤ M` by
+  `Fermat.IsModularHeckeAction`.
+
+So the eighteenth cut CONSUMES all of that instead of asking a successor
+to rebuild it, and what is left below the leaf is exactly the `p`-adic
+realisation: the Tate module of an abelian scheme over `ℚ` as a Galois
+representation, the Weil pairing coming from the canonical principal
+polarization of a Jacobian, and the Eichler–Shimura congruence relation.
+
+**A ROUTE THAT LOOKS CHEAP AND IS NOT — do not take it.**
+`Modularity/TateModule.lean` is in this file's import cone (through
+`KhareWintenberger`) and its `exists_levelwiseTateFrame` is PROVEN, so it
+is tempting to use it for `Vp`. It must not be used here. That theorem
+produces a frame that is FREE OF RANK TWO over `𝒪_D` for `D` a totally
+real number field of degree equal to the relative dimension — i.e. it
+asserts `V_p(J₀(M)) ≅ (𝒪_D ⊗ ℤ_p)²`, which is **item 7**, the
+Mazur–Ribet multiplicity-one theorem that the sixteenth cut deliberately
+moved OUT of this leaf and into `exists_frameEquiv_of_symplectic`.
+Routing through it would make the geometric obligation strictly HARDER
+than the leaf it discharges, and would silently re-import a deep theorem.
+(The same objection answers the "widen `Mult ab (𝓞 D)` from a totally
+real FIELD to a product of them, since `𝕋_ℚ` is only a product" plan: the
+widening is real work, and what it buys is the rank-two-over-the-order
+statement, which is the thing to avoid.) What is needed instead is a
+Tate module of rank `2g` over `ℤ_p` with no `𝒪`-structure assumed, and
+that development does not exist here yet.
+-/
+
+section ModularJacobianGeometry
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry
+
+/-- **THE RELATIVE DIMENSION OF `J₀(M)` IS `dim_ℚ 𝕋_ℚ`** (sorry leaf,
+opened by the EIGHTEENTH decomposition 2026-07-28): the Jacobian of
+`X₀(M)` is smooth over `Spec ℚ` of relative dimension
+`dim_ℚ (modularHeckeAlgebraQ M)`.
+
+Two classical identities composed, neither of which involves `p`, Galois
+or Tate modules — which is why this is a separate leaf rather than a
+clause of the geometric one below:
+
+* `dim Jac X = genus X` for a smooth proper geometrically connected curve
+  over a field. `jac : IsJacobianOf strX ab o` pins `J` as the Albanese
+  of `X₀(M)` based at `o`, hence up to unique isomorphism, so the
+  dimension is determined by `h` and `jac` and the statement is about the
+  genuine `J₀(M)` rather than about an arbitrary abelian scheme;
+* `genus X₀(M) = dim_ℂ S₂(Γ₀(M)) = dim_ℚ 𝕋_ℚ`. The first equality is the
+  identification of weight-two cusp forms with holomorphic differentials
+  on `X₀(M)`; the second is the perfect pairing
+  `𝕋_ℚ × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a₁(T f)` (Diamond–Shurman §5.8).
+
+**THE FULL HECKE ALGEBRA IS LOAD-BEARING.** `modularHeckeAlgebraQ M` is
+`Algebra.adjoin ℚ {heckeOp M q | q prime}` over EVERY prime, `U_q` for
+`q ∣ M` included. The perfect pairing above is a statement about that
+algebra; the ANEMIC algebra (primes `q ∤ M` only) has strictly smaller
+dimension as soon as `M` is not squarefree, and the leaf would then be
+FALSE. A successor must not "simplify" the generating set.
+
+WHY NOT THROUGH `Fermat.x0Genus`. That definition (`ModularCurve/X0.lean`)
+records the genus as an integer computed from the level, and nothing in
+the tree connects it to either side of this identity — neither to the
+relative dimension of the Albanese nor to `dim_ℚ 𝕋_ℚ`. Routing through it
+would replace one leaf by two.
+
+NON-VACUITY. `SmoothOfRelativeDimension n jstr` really does pin a number
+here: `J₀(M)` has a zero section, so it is nonempty, and a nonempty
+scheme is smooth of at most one relative dimension. `hM` is load-bearing
+— `modularHeckeAlgebraQ 0` is not the Hecke algebra of anything, and
+`IsX0Compactification 0` is not `X₀(0)`. -/
+theorem smoothOfRelativeDimension_jacobian_x0 {M : ℕ} (hM : 0 < M)
+    {X Y J : Scheme.{0}} {strX : X ⟶ _root_.Fermat.SpecQ}
+    {strY : Y ⟶ _root_.Fermat.SpecQ} {jY : Y ⟶ X}
+    (h : _root_.Fermat.IsX0Compactification M strX strY jY)
+    {jstr : J ⟶ _root_.Fermat.SpecQ}
+    {ab : _root_.Fermat.AbelianSchemeStruct jstr}
+    {o : _root_.Fermat.RelPoint strX (𝟙 _root_.Fermat.SpecQ)}
+    (jac : _root_.Fermat.IsJacobianOf strX ab o) :
+    SmoothOfRelativeDimension (Module.finrank ℚ ↥(modularHeckeAlgebraQ M)) jstr :=
+  sorry
+
+/-- **THE `p`-ADIC REALISATION OF `J₀(M)`** (sorry leaf, opened by the
+EIGHTEENTH decomposition 2026-07-28): given `X₀(M)`, its Jacobian
+`J₀(M)` and the relative dimension count, the Eichler–Shimura package of
+`ModularTateCarrierData` exists.
+
+This is `nonempty_modularTateCarrierData` with the geometry SUPPLIED
+rather than demanded. The predecessor asked a successor to build `X₀(M)`,
+`J₀(M)` and the Hecke correspondences from nothing; all three are PROVEN
+in `ModularCurve/X0.lean` (see the section note above), and the glue
+below discharges the hypotheses of this leaf from them, so nobody has to
+build them twice.
+
+WHAT IS STILL OPEN HERE, and it is exactly three classical theorems:
+
+1. **The `p`-adic Tate module of an abelian scheme over `ℚ`, as a Galois
+   representation.** `T_p(J) = lim_n J[p^n](ℚ̄)` is free of rank `2g` over
+   `ℤ_p` with continuous `Γ_ℚ`-action; `Vp := T_p(J) ⊗_{ℤ_p} ℚ̄_p` then
+   has `finrank = 2g = 2·dim_ℚ 𝕋_ℚ` by `hdim`, which is `finrank_eq`, and
+   the `Γ_ℚ`-action is `τJ`. The `ℚ`-rationality of the correspondences
+   (`Fermat.IsModularHeckeAction`, one line away via
+   `Fermat.exists_modularHeckeAction h jac`) gives `hecke_comm` at the
+   prime generators, and faithfulness of `𝕋_ℚ` on `Vp` gives
+   `act_injective`. **NOTE the rank is `2g` over `ℤ_p` with NO
+   `𝒪`-structure**: `exists_levelwiseTateFrame` in
+   `Modularity/TateModule.lean` is the rank-two-over-`𝒪_D` statement and
+   is item 7 — see the warning in the section note above.
+2. **The Weil pairing of the canonical principal polarization** of a
+   Jacobian, twisted by Atkin–Lehner: `pair`, `pair_self`,
+   `pair_nondeg`, `pair_hecke` (Rosati self-adjointness of `T_q` for the
+   twisted pairing) and `pair_frob` (the multiplier is the cyclotomic
+   character, evaluated at `Frob_q` to give `q`). The WORKED PRECEDENT
+   for the multiplier clause is
+   `det_eq_cyclotomicCharacter_of_tateWeilPairing` in
+   `Modularity/TateModule.lean` (PROVEN) — that one IS reusable, since it
+   is about a polarization pairing and not about a rank-two frame.
+3. **The Eichler–Shimura congruence relation** `T_q = F + q·F⁻¹` on
+   `J₀(M)_{𝔽_q}` at `q ∤ Mp`, lifted to `Vp` as
+   `τJ(Frob_q)² − T_q·τJ(Frob_q) + q = 0` (Igusa; Diamond–Shurman 8.6.1,
+   8.7.2), with `S` the places over `Mp`.
+
+FAITHFULNESS. TRUE, by the classical package. It is strictly WEAKER than
+`nonempty_modularTateCarrierData` — same conclusion, more hypotheses — so
+the cut cannot have strengthened anything; and the hypotheses are
+consistent, since the glue below inhabits them unconditionally at every
+`0 < M`. The hypotheses PIN the geometry rather than merely constraining
+it: `h` pins `X` as `X₀(M)` (its `coarse` field carries the initiality of
+the `Γ₀(M)`-moduli problem, and `finite_compl` pins the compactification),
+and `jac` pins `J` as the Albanese of that `X` based at `o`. So a prover
+here is reasoning about the genuine `J₀(M)`, not about an arbitrary
+abelian scheme of the right dimension — which is what makes clause 3
+above a theorem rather than an assumption.
+
+WHY `T` IS NOT A HYPOTHESIS. It could be — `Fermat.exists_modularHeckeAction`
+supplies it — but the conclusion does not mention it, so adding it would
+weaken the leaf without giving the prover anything it cannot obtain in
+one line. That one line is `obtain ⟨T, T_comp, T_add, hT⟩ :=
+Fermat.exists_modularHeckeAction M h jac`. -/
+theorem nonempty_modularTateCarrierData_of_jacobian {M : ℕ} (hM : 0 < M)
+    {X Y J : Scheme.{0}} {strX : X ⟶ _root_.Fermat.SpecQ}
+    {strY : Y ⟶ _root_.Fermat.SpecQ} {jY : Y ⟶ X}
+    (h : _root_.Fermat.IsX0Compactification M strX strY jY)
+    {jstr : J ⟶ _root_.Fermat.SpecQ}
+    {ab : _root_.Fermat.AbelianSchemeStruct jstr}
+    {o : _root_.Fermat.RelPoint strX (𝟙 _root_.Fermat.SpecQ)}
+    (jac : _root_.Fermat.IsJacobianOf strX ab o)
+    (hdim : SmoothOfRelativeDimension
+      (Module.finrank ℚ ↥(modularHeckeAlgebraQ M)) jstr) :
+    Nonempty (ModularTateCarrierData (p := p) M) :=
+  sorry
+
+end ModularJacobianGeometry
+
 /-- **EICHLER–SHIMURA ON THE TATE MODULE OF `J₀(M)`** (sorry leaf, opened
 by the SIXTEENTH decomposition 2026-07-27 as
 `exists_galoisRep_modularTateCarrier` and RESTATED on the intrinsic
@@ -55983,12 +56155,24 @@ algebra theorem `exists_frameEquiv_of_symplectic` in
 `Modularity/HeckeFrameForm.lean`.
 
 So the missing theories under this leaf are items 4 and 6 plus the Weil
-pairing on `J₀(M)[p^∞]` with multiplier the cyclotomic character; the
-genuinely absent input is the Jacobian `J₀(M)`, its `p`-adic Tate module
-and its Hecke correspondences. **Items 7 and the Frobenius property of
-`𝕋_ℚ` are no longer here**: they live in
-`exists_frobeniusForm_modularHeckeAlgebraQ` and
-`exists_freeElement_of_frobenius`.
+pairing on `J₀(M)[p^∞]` with multiplier the cyclotomic character.
+**Items 7 and the Frobenius property of `𝕋_ℚ` are no longer here**: they
+live in `exists_frobeniusForm_modularHeckeAlgebraQ` and in
+`exists_freeElement_of_frobenius`, and the latter is **PROVEN**
+(`Modularity/HeckeFrameForm.lean`, 2026-07-28), over every field and with
+no `Infinite` hypothesis.
+
+**AN EARLIER VERSION OF THIS PARAGRAPH WAS STALE AND IS CORRECTED HERE**
+(2026-07-28). It read "the genuinely absent input is the Jacobian
+`J₀(M)`, its `p`-adic Tate module and its Hecke correspondences". Two of
+those three are PROVEN in `ModularCurve/X0.lean`, which this file already
+`public import`s: `Fermat.exists_jacobianOf_x0` builds `J₀(M) = Jac X₀(M)`
+as an `AbelianSchemeStruct` over `Spec ℚ`, and
+`Fermat.exists_modularHeckeAction` builds the Hecke correspondences `T_ℓ`
+as `ℚ`-endomorphisms of it, pinned to the `Γ₀(M)`-correspondence at every
+prime `ℓ ∤ M`. Only the `p`-adic Tate module, the Weil pairing and the
+Eichler–Shimura congruence remain, and that is what the eighteenth cut
+below isolates.
 
 WHAT THE SEVENTEENTH CUT CHANGED, AND WHY IT IS NOT A RENAME. The
 sixteenth cut left this leaf asking for the data on the COORDINATE space
@@ -56019,35 +56203,50 @@ for elliptic curves in `Fermat/FLT/EllipticCurve/WeilPairing.lean`, and
 `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` in
 `Modularity/TateModule.lean`.
 
-THE ROUTE FROM HERE, for whoever gets a full budget — and note that
-`Modularity/TateModule.lean` IS in this file's import cone (through
-`KhareWintenberger`), so the abelian-scheme vocabulary is available
-without enlarging it; only the `import` line would have to be made
-`public` to use those names in a STATEMENT. The scheme-level shape is
-the one the cut-obstruction audit of
-`exists_galoisRep_modularTateFrame_traceDet` below sketched, MINUS the
-frame, which the sixteenth cut removed:
+**PROVEN 2026-07-28 by the EIGHTEENTH decomposition**, as glue over the
+two leaves in `section ModularJacobianGeometry` just above together with
+four PROVEN theorems of `ModularCurve/X0.lean`. The assembly is
+mechanical and carries no mathematics: `Fermat.exists_x0Compactification`
+gives `X₀(M)`; `Fermat.nonempty_cuspLocus` and
+`Fermat.nonempty_cuspIndexing_of_cuspLocus`, at the divisor `1`
+(`Fermat.one_mem_rationalCuspDivisors`), give the `ℚ`-rational cusp `∞`
+that the Albanese needs as a base point; `Fermat.exists_jacobianOf_x0`
+gives `J₀(M)`; and the two new leaves supply the relative dimension and
+the `p`-adic realisation.
 
-* `J₀(M) = Jac X₀(M)` as an `AbelianSchemeStruct` over `Spec ℚ` of
-  relative dimension `finrank ℚ 𝕋_ℚ`;
-* an action of an integral Hecke order — `Mult ab (𝓞 D)` as it stands
-  requires `D` a totally real number FIELD, and `𝕋_ℚ` is only a product
-  of such, so this is the one place the existing vocabulary has to be
-  widened;
-* a `PolarizationStruct`, giving the Weil pairing and its cyclotomic
-  multiplier (`det_eq_cyclotomicCharacter_of_tateWeilPairing`, PROVEN
-  there);
-* the Eichler–Shimura congruence relation on geometric torsion points
-  (Igusa; D–S 8.6.1, 8.7.2);
-* the Tate module itself, via `exists_levelwiseTateFrame` (PROVEN there),
-  as the source of `Vp` and of `finrank_eq`.
+WHAT THE EIGHTEENTH CUT MOVED, and what it did NOT. It moved the
+CONSTRUCTION of `X₀(M)` and `J₀(M)` out of the geometric obligation, by
+consuming theorems that were already proven and were being asked for a
+second time. The remaining leaf
+`nonempty_modularTateCarrierData_of_jacobian` still carries items 4 and
+6 and the Weil pairing, unchanged; see its docstring for the three
+classical theorems that are left and for the route that must NOT be
+taken.
+
+THE ROUTE FROM HERE now lives on that leaf's docstring rather than here.
+The single correction worth repeating: `exists_levelwiseTateFrame`
+(`Modularity/TateModule.lean`, PROVEN, and in this file's import cone) is
+**not** the tool for `Vp`, because it produces a frame free of rank two
+over `𝒪_D` and that is item 7 — the very content the sixteenth cut moved
+out. The needed statement is a Tate module of rank `2g` over `ℤ_p` with
+no `𝒪`-structure. What IS reusable from that file is
+`det_eq_cyclotomicCharacter_of_tateWeilPairing`, which is about a
+polarization pairing and not about a frame.
 
 NOTHING TO VENDOR (checked 2026-07-27): `~/cs/FLT` mentions a Jacobian
 only in `FLT/Assumptions/Mazur.lean` and has no Eichler–Shimura; mathlib
 `Mathlib/NumberTheory` has no modular curve, no `J₀`, and no
 Eichler–Shimura. -/
 theorem nonempty_modularTateCarrierData {M : ℕ} (hM : 0 < M) :
-    Nonempty (ModularTateCarrierData (p := p) M) := sorry
+    Nonempty (ModularTateCarrierData (p := p) M) := by
+  obtain ⟨X, Y, strX, strY, jY, ⟨h⟩⟩ := _root_.Fermat.exists_x0Compactification M hM
+  obtain ⟨C⟩ := _root_.Fermat.nonempty_cuspLocus M hM.ne' h
+  obtain ⟨CI⟩ := _root_.Fermat.nonempty_cuspIndexing_of_cuspLocus C
+  obtain ⟨J, jstr, ab, ⟨jac⟩⟩ :=
+    _root_.Fermat.exists_jacobianOf_x0 M h
+      (CI.cusp 1 (_root_.Fermat.one_mem_rationalCuspDivisors hM.ne'))
+  exact nonempty_modularTateCarrierData_of_jacobian hM h jac
+    (smoothOfRelativeDimension_jacobian_x0 hM h jac)
 
 /-- **EICHLER–SHIMURA ON AN UNFRAMED COORDINATE CARRIER** (opened as a
 sorry leaf by the SIXTEENTH decomposition 2026-07-27; PROVEN 2026-07-28
@@ -56333,14 +56532,35 @@ and this declaration is now GLUE.** The two leaves under it are
   cut, 2026-07-28, that declaration is itself PROVEN glue; the geometry
   now lives one step further down in `nonempty_modularTateCarrierData`,
   stated on an intrinsic carrier with the Hecke clauses demanded only at
-  the prime generators. Nothing mathematical moved.)
+  the prime generators. Nothing mathematical moved. The EIGHTEENTH cut,
+  the same day, made `nonempty_modularTateCarrierData` itself glue too:
+  the geometry now lives in
+  `nonempty_modularTateCarrierData_of_jacobian`, with `X₀(M)`, `J₀(M)`
+  and the Hecke correspondences SUPPLIED from `ModularCurve/X0.lean`
+  rather than demanded, and with the relative-dimension count split off
+  as `smoothOfRelativeDimension_jacobian_x0`.)
 * `exists_freeElement_of_frobenius` (`Modularity/HeckeFrameForm.lean`) —
   "a faithful module over a commutative Frobenius algebra contains a free
-  rank-one submodule", the single deep input of the algebra theorem. Pure
-  commutative algebra; its docstring carries a three-step proof.
+  rank-one submodule", which was the single deep input of the algebra
+  theorem. **PROVEN 2026-07-28; `HeckeFrameForm.lean` has no sorries
+  left.** Two things about it a reader of this paragraph must know, both
+  of which post-date the text above:
+  - it takes an extra `hcomm : ∀ x y : A, x * y = y * x`, because it was
+    **FALSE as stated** without commutativity (`A = M₂(F)`, `θ = trace`,
+    `V = F²`: every `v` has a nonzero annihilator). The hypothesis was
+    already held and discarded by `exists_frameEquiv_of_symplectic`, so
+    the repair cost nothing;
+  - the finite-field caveat that used to be recorded for it is
+    **retired**: the proof merges per-maximal-ideal witnesses with
+    prime-avoidance separators instead of avoiding a finite union of
+    proper subspaces, so it holds over EVERY field and carries no
+    `Infinite F` hypothesis.
 
-The `∀`-half of the cut is therefore TRUE and PROVEN, which is exactly
-what the audit below says every other candidate split lacks. Two further
+The algebra half is therefore fully closed, and the `∀`-half of the cut
+is TRUE and PROVEN — which is exactly
+what the audit below says every other candidate split lacks. (The
+geometric half is not closed; it has been pushed two cuts further down,
+to the two leaves named in the first bullet's parenthesis.) Two further
 by-products, both PROVEN in `HeckeFrameForm.lean`:
 `traceDet_of_congruence_of_multiplier` formalizes the arrow `(c) ⟹ (a)`
 that the audit records as "elementary, not formalized"; and the
