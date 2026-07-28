@@ -54203,6 +54203,376 @@ theorem mul_eq_cyclotomicCharacter_of_frobValue
     trivial
   exact closure_minimal hsub hclosed hγ
 
+/-- **A TORSION-FREE OPEN MULTIPLICATIVE SUBGROUP OF `ℚ̄_p` CONTAINING NO
+NONTRIVIAL PRO-`q` ELEMENT FOR `q ≠ p`** (sorry leaf of the SIXTEENTH
+decomposition, 2026-07-28: the purely `p`-adic half of "a continuous
+character of `Γℚ` is unramified outside a finite set of primes").
+
+`ℚ̄_pˣ` really DOES have arbitrarily small subgroups — `1 + 𝔪_{>c}` for
+every `c > 0` — so the naive no-small-subgroups argument is unavailable.
+What replaces it is that those small subgroups are TORSION-FREE and, for
+`q ≠ p`, contain no nontrivial pro-`q` element. The witness is the ball
+
+    V := {x : ‖x − 1‖ < p^(−1/(p−1))}
+
+taken in the spectral-norm valuation topology of
+`Mathlib/NumberTheory/Padics/Complex.lean`, which is the topology
+`AlgebraicClosure ℚ_[p]` actually carries here (`#synth` answers
+`(PadicAlgCl.valued p).toTopologicalSpace`, NOT the discrete topology —
+a fact recorded elsewhere in this file and load-bearing for this leaf).
+Ultrametrically `V` is an open subgroup of `ℚ̄_pˣ`, and:
+
+* *torsion-free* — a root of unity of order prime to `p` has
+  `‖ζ − 1‖ = 1`, and one of order `p^k` has
+  `‖ζ − 1‖ = p^(−1/(p^(k−1)(p−1))) ≥ p^(−1/(p−1))`, so neither is in `V`;
+* *no nontrivial pro-`q` element for `q ≠ p`* — for `x ∈ V` the binomial
+  expansion of `x^q − 1` has its `k = 1` term of norm
+  `‖q‖·‖x − 1‖ = ‖x − 1‖`, which strictly dominates the rest, so
+  `‖x^(q^n) − 1‖ = ‖x − 1‖` for every `n`; if `x ≠ 1` the open subgroup
+  `{y : ‖y − 1‖ < ‖x − 1‖}` then contains no `x^(q^n)` whatsoever.
+
+THE SHAPE OF THE LAST CLAUSE, and why `W` ranges over open multiplicative
+SUBGROUPS rather than arbitrary neighbourhoods of `1`: that is the form
+the consumer can supply. The pro-`q` clause of
+`exists_frobenius_conj_localInertia_of_natCard_residue` (PROVEN, above)
+quantifies over open SUBGROUPS of the local Galois group, and the
+preimage of `W` under `δ ∘ Field.absoluteGaloisGroup.map` is a subgroup
+only when `W` is one. Restricting `W` weakens the antecedent, hence
+STRENGTHENS the clause — it is still true because the balls above are a
+neighbourhood basis of `1` consisting of subgroups.
+
+**NON-VACUITY AUDIT.** `V = {1}` does not discharge this: `{1}` is not
+open, the topology being non-discrete. `V = ⊤` does not either: `ℚ̄_p`
+contains roots of unity of every order, so the torsion-free clause
+fails. Nothing weaker than a genuine small ball works. -/
+theorem exists_isOpen_torsionFree_subgroup_algebraicClosure_padic :
+    ∃ V : Set (AlgebraicClosure ℚ_[p]),
+      IsOpen V ∧ (1 : AlgebraicClosure ℚ_[p]) ∈ V ∧
+      (∀ x ∈ V, ∀ y ∈ V, x * y ∈ V) ∧
+      (∀ x ∈ V, x⁻¹ ∈ V) ∧
+      (∀ x ∈ V, ∀ n : ℕ, 0 < n → x ^ n = 1 → x = 1) ∧
+      (∀ q : ℕ, q.Prime → q ≠ p → ∀ x ∈ V,
+        (∀ W : Set (AlgebraicClosure ℚ_[p]), IsOpen W →
+            (1 : AlgebraicClosure ℚ_[p]) ∈ W →
+            (∀ y ∈ W, ∀ z ∈ W, y * z ∈ W) → (∀ y ∈ W, y⁻¹ ∈ W) →
+            ∃ n : ℕ, x ^ q ^ n ∈ W) →
+        x = 1) :=
+  sorry
+
+/-- **A CONTINUOUS MULTIPLICATIVE NOWHERE-VANISHING `δ : Γℚ → ℚ̄_p` KILLS
+THE INERTIA AT EVERY `q ≠ p` WHOSE INERTIA IMAGE LIES IN A SUITABLE OPEN
+SUBGROUP** (**PROVEN** 2026-07-28, SIXTEENTH decomposition: the local
+Galois-theoretic half of the unramifiedness step, now discharged over
+the `p`-adic leaf above and the PROVEN Frobenius-conjugation engine
+`exists_frobenius_conj_localInertia_of_natCard_residue`).
+
+THE ARGUMENT, which is steps 3–4 of the sketch in the docstring of
+`exists_frobValue_eq_rootOfUnity_mul_pow_single` below, made
+compiler-checked. Take `H := δ⁻¹(V)` with `V` the torsion-free ball of
+the leaf above; `H` is an open subgroup of `Γℚ` because `δ` is
+continuous and multiplicative. Let `q ≠ p` be a prime whose local
+inertia image lies in `H`, and let `σ` be in that inertia. The chosen
+arithmetic Frobenius satisfies `Φ σ Φ⁻¹ = σ^q · w` with `w` again
+inertial and PRO-`q`. Push this along
+`Field.absoluteGaloisGroup.map` and apply `δ`:
+
+* the target `ℚ̄_p` is COMMUTATIVE, so `δ` is a class function and the
+  left side is just `δ(σ)` — this is where "a character kills
+  commutators" enters, and it is why **no local class field theory is
+  needed**;
+* `δ(w) = 1`, because `w` is pro-`q`: for every open multiplicative
+  subgroup `W ⊆ ℚ̄_p` the set `(δ ∘ map)⁻¹(W)` is an open subgroup of the
+  LOCAL Galois group, so some `w^(q^n)` lies in it, i.e. `δ(w)^(q^n) ∈ W`
+  — and the pro-`q`-freeness clause of the leaf above then forces
+  `δ(w) = 1`;
+* so `δ(σ) = δ(σ)^q`, i.e. `δ(σ)^(q−1) = 1`, and torsion-freeness of `V`
+  gives `δ(σ) = 1`.
+
+**THE STALE CLAIM THIS CORRECTS.** The roadmap that used to sit on
+`exists_normal_finiteIndex_mul_pow_cyclotomicCharacter_eq` recorded this
+step as blocked on "a global inertia subgroup `I_ℓ ≤ Γℚ`", the project's
+`localInertiaGroup` being a subgroup of the LOCAL group. That is not a
+blocker: the global inertia image is `Subgroup.map
+(Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_v)).toMonoidHom
+(localInertiaGroup v)`, it is already used in the PROVEN
+`open_normal_subgroup_eq_top_of_inertia_le`
+(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`), and
+quantifying over `σ ∈ localInertiaGroup v` and applying `map` — as here
+— is all the argument ever needed. -/
+theorem exists_isOpen_subgroup_forall_localInertiaGroup_map_eq_one
+    (δ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδcont : Continuous δ) (hδne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ γ ≠ 0)
+    (hδmul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ (γ * γ') = δ γ * δ γ') :
+    ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ),
+      IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+      ∀ (q : ℕ) (hq : q.Prime), q ≠ p →
+        (∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+          Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ ∈ H) →
+        ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+          δ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  classical
+  obtain ⟨V, hVopen, hV1, hVmul, hVinv, hVtors, hVproq⟩ :=
+    exists_isOpen_torsionFree_subgroup_algebraicClosure_padic (p := p)
+  have hδone : δ 1 = 1 := by
+    have h := hδmul 1 1
+    rw [mul_one] at h
+    exact (mul_right_cancel₀ (hδne 1) (by rw [one_mul, ← h])).symm
+  have hδinv : ∀ γ : Field.absoluteGaloisGroup ℚ, δ γ⁻¹ = (δ γ)⁻¹ := by
+    intro γ
+    have h : δ γ * δ γ⁻¹ = 1 := by
+      have h2 := hδmul γ γ⁻¹
+      rw [mul_inv_cancel, hδone] at h2
+      exact h2.symm
+    exact eq_inv_of_mul_eq_one_right h
+  have hδpow : ∀ (γ : Field.absoluteGaloisGroup ℚ) (n : ℕ), δ (γ ^ n) = δ γ ^ n := by
+    intro γ n
+    induction n with
+    | zero => simpa using hδone
+    | succ k ih => rw [pow_succ, hδmul, ih, pow_succ]
+  have hconj : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ (γ * γ' * γ⁻¹) = δ γ' := by
+    intro γ γ'
+    rw [hδmul, hδmul, hδinv, mul_comm (δ γ) (δ γ'), mul_assoc,
+      mul_inv_cancel₀ (hδne γ), mul_one]
+  refine ⟨{ carrier := δ ⁻¹' V
+            mul_mem' := by
+              intro a b ha hb
+              simp only [Set.mem_preimage] at ha hb ⊢
+              rw [hδmul]
+              exact hVmul _ ha _ hb
+            one_mem' := by simp only [Set.mem_preimage, hδone]; exact hV1
+            inv_mem' := by
+              intro a ha
+              simp only [Set.mem_preimage] at ha ⊢
+              rw [hδinv]
+              exact hVinv _ ha }, hVopen.preimage hδcont, ?_⟩
+  intro q hq hqp hmem
+  set v := hq.toHeightOneSpectrumRingOfIntegersRat with hv
+  set mq := Field.absoluteGaloisGroup.map (algebraMap ℚ
+    (HeightOneSpectrum.adicCompletion ℚ v)) with hmq
+  intro σ hσ
+  obtain ⟨w, hwmem, hwrel, hwpro⟩ :=
+    exists_frobenius_conj_localInertia_of_natCard_residue v hq
+      (GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hq)
+      (by rw [maximalIdeal_adicCompletionIntegers_eq_span hq]
+          exact Ideal.mem_span_singleton_self _) σ hσ
+  have hw1 : δ (mq w) = 1 := by
+    refine hVproq q hq hqp _ (hmem w hwmem) ?_
+    intro W hWopen hW1 hWmul hWinv
+    obtain ⟨n, hn⟩ := hwpro
+      { carrier := (fun τ => δ (mq τ)) ⁻¹' W
+        mul_mem' := by
+          intro a b ha hb
+          simp only [Set.mem_preimage] at ha hb ⊢
+          rw [map_mul, hδmul]
+          exact hWmul _ ha _ hb
+        one_mem' := by simp only [Set.mem_preimage, map_one, hδone]; exact hW1
+        inv_mem' := by
+          intro a ha
+          simp only [Set.mem_preimage] at ha ⊢
+          rw [map_inv, hδinv]
+          exact hWinv _ ha }
+      (hWopen.preimage (hδcont.comp mq.continuous_toFun))
+    refine ⟨n, ?_⟩
+    have hn' : δ (mq (w ^ q ^ n)) ∈ W := hn
+    rwa [map_pow, hδpow] at hn'
+  have hkey : δ (mq σ) = δ (mq σ) ^ q := by
+    have h := congrArg (fun τ => δ (mq τ)) hwrel
+    simp only [map_mul, map_pow, map_inv] at h
+    rw [hconj, hδmul, hδpow, hw1, mul_one] at h
+    exact h
+  have hy : δ (mq σ) ^ (q - 1) = 1 := by
+    refine mul_right_cancel₀ (hδne (mq σ)) ?_
+    rw [one_mul, ← pow_succ]
+    have hqs : q - 1 + 1 = q := by have := hq.two_le; omega
+    rw [hqs]
+    exact hkey.symm
+  exact hVtors _ (hmem σ hσ) (q - 1) (by have := hq.two_le; omega) hy
+
+/-- **AN OPEN SUBGROUP OF `Γℚ` CONTAINS THE INERTIA IMAGE AT ALL BUT
+FINITELY MANY PRIMES** (sorry leaf of the SIXTEENTH decomposition,
+2026-07-28: "only finitely many primes ramify in a finite extension", in
+the exact shape the unramifiedness step consumes).
+
+An open subgroup `H ≤ Γℚ` is closed, hence is the fixing subgroup of
+`L := IntermediateField.fixedField H`, and `L/ℚ` is FINITE
+(`InfiniteGalois.isOpen_iff_finite`) — both steps are already performed
+verbatim inside the PROVEN
+`open_normal_subgroup_eq_top_of_inertia_le`
+(`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`), which is
+where to copy them from. Only finitely many rational primes ramify in
+the number field `L`, and at an unramified `q` the image of
+`localInertiaGroup q` fixes `L` pointwise, i.e. lands in
+`L.fixingSubgroup = H`.
+
+This is precisely the CONVERSE of the transport
+`exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` proven in that
+same file, which runs "inertia image ≤ fixingSubgroup ⇒ trivial ideal
+inertia"; here one needs "trivial ideal inertia ⇒ inertia image ≤
+fixingSubgroup", plus the finiteness of the ramified set
+(`NumberField.discr`-based, or via `Ideal.ramificationIdx` and the
+finitely many primes dividing the discriminant).
+
+Note it mentions neither `p` nor any character: it is a statement about
+`Γℚ` and its inertia subgroups alone, so it is reusable and can be
+attacked independently of everything else in this decomposition. -/
+theorem exists_finset_forall_localInertiaGroup_map_mem_of_isOpen
+    (H : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hHopen : IsOpen (H : Set (Field.absoluteGaloisGroup ℚ))) :
+    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ ∈ H :=
+  sorry
+
+/-- **EVERY CONTINUOUS MULTIPLICATIVE NOWHERE-VANISHING `δ : Γℚ → ℚ̄_p`
+IS UNRAMIFIED OUTSIDE A FINITE SET OF PRIMES** (**PROVEN** 2026-07-28 as
+glue over the two leaves above; SIXTEENTH decomposition).
+
+This is the conclusion the docstring of
+`exists_frobValue_eq_rootOfUnity_mul_pow_single` below asserts and
+sketches in five steps — steps 1, 3, 4 are
+`exists_isOpen_torsionFree_subgroup_algebraicClosure_padic` and
+`exists_isOpen_subgroup_forall_localInertiaGroup_map_eq_one`, step 2 is
+`exists_finset_forall_localInertiaGroup_map_mem_of_isOpen`, and step 5
+is this three-line assembly: take `H` from the first, `T` from the
+second applied to `H`, and exclude `p` by hand (`insert p T`). Excluding
+`p` is not slack — at `q = p` the wild inertia is pro-`p` and lands
+inside the ball `V`, which is exactly where the pro-`q`-freeness clause
+of the `p`-adic leaf stops being available.
+
+NO ramification hypothesis has to be pushed up onto the consumer as a
+result: unramifiedness outside a finite set is AUTOMATIC for every
+continuous character, which is what this theorem now says with the
+compiler's endorsement rather than only in prose. -/
+theorem exists_finset_forall_localInertiaGroup_map_eq_one
+    (δ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδcont : Continuous δ) (hδne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ γ ≠ 0)
+    (hδmul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ (γ * γ') = δ γ * δ γ') :
+    ∃ T : Finset ℕ, ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        δ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1 := by
+  classical
+  obtain ⟨H, hHopen, hH⟩ :=
+    exists_isOpen_subgroup_forall_localInertiaGroup_map_eq_one δ hδcont hδne hδmul
+  obtain ⟨T, hT⟩ := exists_finset_forall_localInertiaGroup_map_mem_of_isOpen H hHopen
+  refine ⟨insert p T, ?_⟩
+  intro q hq hqT
+  simp only [Finset.mem_insert, not_or] at hqT
+  exact hH q hq hqT.1 (fun τ hτ => hT q hq hqT.2 τ hτ)
+
+/-- **SERRE'S TYPE-`A₀` CORE, WITH THE MODULAR FORM ABSTRACTED AWAY**
+(sorry leaf of the SIXTEENTH decomposition, 2026-07-28: where the whole
+of the missing mathematics now lives).
+
+`δ₁` is unramified outside a finite set (that is now a HYPOTHESIS, `T`
+and `hunram`, discharged by `exists_finset_forall_localInertiaGroup_map_eq_one`
+above), its product with `δ₂` is the cyclotomic character, and the pair
+`{δ₁(Frob_q), δ₂(Frob_q)}` are the roots of `X² − ι(a_q)X + q` over a
+FIXED number field. Conclusion: `δ₁ = χ_cyc^(a−b)` on a subgroup of
+finite index.
+
+WHAT THE ABSTRACTION BUYS. The modular form has been replaced by the
+only data Serre's argument actually consumes: a finite extension `E/ℚ`,
+an embedding `ι : E →+* ℚ̄_p`, and a sequence `aq : ℕ → E` of
+"traces". So this statement mentions no `CuspForm`, no `heckeField`, no
+`IsWeightTwoNewform` — it is Serre, *Abelian ℓ-adic Representations and
+Elliptic Curves*, Ch. III §§1–3 for `ℚ`, stated once and reusable by
+anything that produces a rational compatible pair of characters. The
+consumer below instantiates `E := heckeField M g`, `ι := κ`,
+`aq := heckeCoeff M g`, with `FiniteDimensional ℚ E` supplied by
+`heckeField_finiteDimensional`.
+
+THE DEGREE-BOUND ROUTE, NOT THE FIXED-FIELD ROUTE. `δ₁(Frob_q)` a priori
+generates `E(√(a_q² − 4q))`, which VARIES with `q`; but `hfrob` makes it
+a root of a monic QUADRATIC over the fixed `ι(E)`, so
+
+    [ℚ(δ₁(Frob_q)) : ℚ] ≤ 2 · [E : ℚ]   for every good `q`,
+
+with the bound independent of `q`. Serre's criterion consumes exactly
+such a uniform bound. Do NOT attempt to prove the values lie in a fixed
+field: that is true only a posteriori, as a consequence of this very
+statement. `δ₂` and its hypotheses are retained so that a prover may
+instead carry the pair `{δ₁, δ₂}` and never separate them.
+
+WHY CONTINUITY IS NOT ENOUGH, so that `hfrob`/`ι`/`aq` cannot be
+dropped: `⟨χ_cyc⟩^s` for `s ∈ ℤ_p ∖ ℤ` is continuous, unramified outside
+`{p}`, and is neither of finite order nor an integral power of
+`χ_cyc`. Its Frobenius values `⟨q⟩^s` are transcendental, which is
+precisely what the algebraicity input rules out.
+
+WHAT REMAINS, in the two pieces Serre's Ch. III splits it into:
+
+1. *Local algebraicity at `p`*: on an open subgroup of the inertia at
+   `p`, `δ₁` agrees with `χ_cyc^n` for a single `n : ℤ`. This is the
+   genuine hard core and where the degree bound is spent.
+2. *Globalisation*: over `ℚ` this is where the arithmetic of the base
+   enters — `Γℚ^ab ≅ Ẑˣ` (Kronecker–Weber, ABSENT from mathlib at this
+   pin: grepped 2026-07-28, no `KroneckerWeber` in `Mathlib/`, in
+   `Fermat/`, or in `~/cs/FLT`) together with Minkowski. The Minkowski
+   half is NOT missing — `minkowski_character_trivial`
+   (`Fermat/FLT/GaloisRepresentation/MinkowskiUnramified.lean`) is
+   PROVEN and reaches this file through `MazurTorsion`'s public import
+   chain. Both statements are about `ℚ` alone and neither depends on
+   `g`, `M` or `κ`, so Kronecker–Weber is worth building as its own
+   reusable subtree.
+
+The conclusion asks for `0 < U.index` rather than `IsOpen U` because
+that is all the consumer needs; Serre's proof produces an open subgroup,
+and an open subgroup of the compact `Γℚ` has finite index
+(`Subgroup.quotient_finite_of_isOpen`), so a prover may produce the open
+subgroup and convert. `U` is NOT required to be normal — the consumer
+takes its normal core.
+
+**The check that would refute the framing**, as opposed to the
+conclusion: exhibit a continuous multiplicative nowhere-vanishing
+`δ : Γℚ → ℚ̄_pˣ`, unramified outside a finite set, whose Frobenius values
+have uniformly bounded degree over `ℚ`, and which is NOT `ε·χ_cyc^n` on
+any finite-index subgroup. By Serre no such `δ` exists; if one is found,
+this leaf is false and the CUT, not its proof, is what needs repair. -/
+theorem exists_finiteIndex_mul_pow_cyclotomicCharacter_eq_of_unramified
+    {E : Type*} [Field E] [Algebra ℚ E] [FiniteDimensional ℚ E]
+    (ι : E →+* AlgebraicClosure ℚ_[p])
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (aq : ℕ → E)
+    (δ₁ δ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hδ₁cont : Continuous δ₁) (hδ₂cont : Continuous δ₂)
+    (hδ₁ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ ≠ 0)
+    (hδ₂ne : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₂ γ ≠ 0)
+    (hδ₁mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₁ (γ * γ') = δ₁ γ * δ₁ γ')
+    (hδ₂mul : ∀ γ γ' : Field.absoluteGaloisGroup ℚ, δ₂ (γ * γ') = δ₂ γ * δ₂ γ')
+    (hfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          + δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = ι (aq q) ∧
+        δ₁ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+          * δ₂ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+            = (q : AlgebraicClosure ℚ_[p]))
+    (hcyc : ∀ γ : Field.absoluteGaloisGroup ℚ, δ₁ γ * δ₂ γ =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]))
+    (T : Finset ℕ)
+    (hunram : ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        δ₁ (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) σ) = 1) :
+    ∃ (a b : ℕ) (U : Subgroup (Field.absoluteGaloisGroup ℚ)), 0 < U.index ∧
+      ∀ γ ∈ U, δ₁ γ * (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+            ℤ_[p])) ^ b
+        = (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+            ℤ_[p])) ^ a :=
+  sorry
+
 /-- **SERRE TYPE `A₀`, IN THE FORM SERRE'S PROOF PRODUCES IT: `δ₁` IS AN
 INTEGRAL POWER OF `χ_cyc` ON A FINITE-INDEX NORMAL SUBGROUP** (SORRY
 LEAF, FIFTEENTH decomposition 2026-07-28, cut out of
@@ -54253,34 +54623,35 @@ NOT try to route *through* the trap by proving the values lie in a fixed
 field: that is true only a posteriori, as a consequence of this very
 leaf.)
 
-**THE REMAINING ROUTE, IN THREE NAMED PIECES.** None of them is written
-here, because assembling them needs infrastructure this pin does not
-have (see the note after each); a future decomposition of this leaf
-should build that infrastructure first, in this order:
+**DECOMPOSED AND PROVEN AS GLUE, 2026-07-28 (SIXTEENTH decomposition).**
+This statement is no longer a leaf. It is three lines over
+`exists_finset_forall_localInertiaGroup_map_eq_one` (PROVEN above: every
+continuous multiplicative nowhere-vanishing character of `Γℚ` is
+unramified outside a finite set of primes) and
+`exists_finiteIndex_mul_pow_cyclotomicCharacter_eq_of_unramified` (the
+type-`A₀` core, where the missing mathematics now lives), plus:
 
-1. *`δ₁` is unramified outside a finite set of primes.* The complete
-   argument — no local class field theory, only that a character kills
-   commutators — is written out as steps 1–5 in the docstring of
-   `exists_frobValue_eq_rootOfUnity_mul_pow_single` below. **Needs**: a
-   global inertia subgroup `I_ℓ ≤ Γℚ` for each rational prime. The
-   project's `localInertiaGroup`
-   (`Fermat/FLT/Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`)
-   is a subgroup of the LOCAL group `Γ Kᵥ`, not of `Γℚ`, so the global
-   decomposition/inertia embedding is the missing piece.
-2. *Local algebraicity at `p`*: on an open subgroup of the inertia group
-   at `p`, `δ₁` agrees with `χ_cyc^n` for a single `n : ℤ`. This is the
-   genuine hard core, and it is where the degree bound above is spent.
-   **Needs**: Serre, *Abelian ℓ-adic Representations and Elliptic
-   Curves*, Ch. III §§1–3. Hodge–Tate theory — Ribet's route — is
-   deliberately NOT available on this pin, so the elementary type-`A₀`
-   argument is the one to follow.
-3. *Glue 1 + 2 into a global statement.* Over `ℚ` this is where the
-   arithmetic of the base is used: `Γℚ^ab ≅ Ẑˣ` (Kronecker–Weber, ABSENT
-   from mathlib at this pin — grepped 2026-07-28, no `KroneckerWeber`
-   anywhere in `Mathlib/`, `Fermat/` or `~/cs/FLT`), together with the
-   fact that `ℚ` has no unramified abelian extension (Minkowski). Both
-   are statements about `ℚ` alone and neither depends on `g`, `M` or
-   `κ`, so they are reusable and worth building as their own subtree.
+* `heckeField_finiteDimensional`, which turns the modular form into the
+  only datum the core consumes — a number field `E`, an embedding
+  `ι : E →+* ℚ̄_p`, and the traces `aq : ℕ → E`;
+* `Subgroup.normalCore`, which upgrades the core's finite-index `U` to a
+  NORMAL subgroup of finite index (`Subgroup.finiteIndex_normalCore`),
+  the form Lagrange needs one level up.
+
+**A STALE ROADMAP REMOVED FROM HERE.** The three-piece route this
+docstring used to carry recorded piece 1 as blocked on "a global inertia
+subgroup `I_ℓ ≤ Γℚ`, genuinely missing". It was not missing: the global
+inertia image is `Subgroup.map (Field.absoluteGaloisGroup.map (algebraMap
+ℚ ℚ_v)).toMonoidHom (localInertiaGroup v)`, already used in the PROVEN
+`open_normal_subgroup_eq_top_of_inertia_le`; and the local Frobenius
+relation the argument needs was already PROVEN in this very file as
+`exists_frobenius_conj_localInertia_of_natCard_residue`. With those two
+observations piece 1 is now proven outright, over one purely `p`-adic
+leaf (`exists_isOpen_torsionFree_subgroup_algebraicClosure_padic`) and
+one purely number-theoretic one
+(`exists_finset_forall_localInertiaGroup_map_mem_of_isOpen`). Pieces 2
+and 3 survive as the two halves of "WHAT REMAINS" in the type-`A₀`
+core's docstring above, where they bind.
 
 **The check that would refute the framing above**, rather than the
 conclusion: exhibit a continuous multiplicative nowhere-vanishing
@@ -54316,8 +54687,26 @@ theorem exists_normal_finiteIndex_mul_pow_cyclotomicCharacter_eq {M : ℕ} (hM :
             ℤ_[p])) ^ b
         = (algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
           ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
-            ℤ_[p])) ^ a :=
-  sorry
+            ℤ_[p])) ^ a := by
+  classical
+  -- the Hecke field is a number field, which is the only thing the
+  -- type-`A₀` core needs of the modular form
+  haveI : FiniteDimensional ℚ (heckeField M g) :=
+    heckeField_finiteDimensional hM hg.toIsWeightTwoEigenform
+  -- `δ₁` is unramified outside a finite set — automatic, no hypothesis
+  obtain ⟨T, hT⟩ :=
+    exists_finset_forall_localInertiaGroup_map_eq_one δ₁ hδ₁cont hδ₁ne hδ₁mul
+  -- Serre's classification, on a subgroup of finite index
+  obtain ⟨a, b, U, hUidx, hU⟩ :=
+    exists_finiteIndex_mul_pow_cyclotomicCharacter_eq_of_unramified
+      κ S (heckeCoeff M g) δ₁ δ₂ hδ₁cont hδ₂cont hδ₁ne hδ₂ne hδ₁mul hδ₂mul
+      hfrob hcyc T hT
+  -- the normal core of a finite-index subgroup is normal of finite index
+  haveI : U.FiniteIndex := ⟨hUidx.ne'⟩
+  haveI : U.normalCore.FiniteIndex := inferInstance
+  exact ⟨a, b, U.normalCore, U.normalCore_normal,
+    Nat.pos_of_ne_zero Subgroup.FiniteIndex.index_ne_zero,
+    fun γ hγ => hU γ (U.normalCore_le hγ)⟩
 
 /-- **SERRE TYPE `A₀`: `δ₁` IS A ROOT OF UNITY TIMES AN INTEGRAL POWER OF
 THE CYCLOTOMIC CHARACTER** (**PROVEN** 2026-07-28 as glue over the
@@ -54525,6 +54914,16 @@ subgroups are TORSION-FREE:
    `δ(t)^(ℓ−1) = 1`; `V` is torsion-free, so `δ(t) = 1`.
 5. So `δ` is unramified outside the finite set (primes ramified in `L`)
    `∪ {p}`. ∎
+
+**THIS SKETCH IS NOW A THEOREM** (2026-07-28):
+`exists_finset_forall_localInertiaGroup_map_eq_one` above states exactly
+it and is PROVEN, over two named leaves — the `p`-adic ball
+(`exists_isOpen_torsionFree_subgroup_algebraicClosure_padic`, steps 1
+and 3) and "an open subgroup contains almost every inertia image"
+(`exists_finset_forall_localInertiaGroup_map_mem_of_isOpen`, step 2).
+Step 4 is discharged over this file's own PROVEN
+`exists_frobenius_conj_localInertia_of_natCard_residue`. Do not
+re-derive it from this paragraph.
 
 Note step 4 uses only that a character kills commutators — **no local
 class field theory is needed**, which is why the argument is available
