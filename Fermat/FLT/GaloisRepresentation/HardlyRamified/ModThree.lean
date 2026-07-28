@@ -51719,16 +51719,14 @@ theorem exists_artinNormSubgroups_ramified_ray_class
     with hmmE₂def
   have hmmE₁ne : mmE₁ ≠ ⊥ := by
     rw [hmmE₁def, Ne, Ideal.mul_eq_bot]
-    push_neg
-    refine ⟨?_, Ideal.map_ne_bot_of_ne_bot hmm⟩
-    rw [Ne, Ideal.span_singleton_eq_bot]
-    exact Nat.cast_ne_zero.mpr hm₁pos.ne'
+    rintro (h | h)
+    · exact (Nat.cast_ne_zero.mpr hm₁pos.ne') (Ideal.span_singleton_eq_bot.mp h)
+    · exact Ideal.map_ne_bot_of_ne_bot hmm h
   have hmmE₂ne : mmE₂ ≠ ⊥ := by
     rw [hmmE₂def, Ne, Ideal.mul_eq_bot]
-    push_neg
-    refine ⟨?_, Ideal.map_ne_bot_of_ne_bot hmm⟩
-    rw [Ne, Ideal.span_singleton_eq_bot]
-    exact Nat.cast_ne_zero.mpr hm₂pos.ne'
+    rintro (h | h)
+    · exact (Nat.cast_ne_zero.mpr hm₂pos.ne') (Ideal.span_singleton_eq_bot.mp h)
+    · exact Ideal.map_ne_bot_of_ne_bot hmm h
   have hmmE₁dvd : Ideal.span {(m₁ : NumberField.RingOfIntegers E₁)} ∣ mmE₁ := by
     rw [hmmE₁def]; exact dvd_mul_right _ _
   have hmmE₂dvd : Ideal.span {(m₂ : NumberField.RingOfIntegers E₂)} ∣ mmE₂ := by
