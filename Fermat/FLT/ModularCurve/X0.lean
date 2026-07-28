@@ -59762,5 +59762,54 @@ theorem exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum {N : ℕ}
     exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme d.ab d.relativeDimensionOne
   exact ⟨E, hE, hmodel, hequiv⟩
 
+/-- **A Weierstrass curve over `ℚ` gives an elliptic scheme of which it is a
+WEIERSTRASS MODEL, with its geometric points identified Galois-equivariantly**
+(PROVEN 2026-07-28; a re-export, with no mathematical content of its own).
+
+This is the FORWARD companion of
+`exists_weierstrassModel_geomFibreAddEquiv_of_gamma0Datum` immediately above,
+and it exists for exactly the same IMPORT reason.  The theorem it re-exports,
+`Fermat.exists_ellipticScheme_isWeierstrassModel_of_projModel`
+(`ModularCurve/EllipticScheme.lean`), spells the model conjunct out in terms of
+`Spec (CommRingCat.of E.toAffine.CoordinateRing)`; `EllipticScheme` is imported
+NON-publicly here and by no other module in the tree, so no downstream file can
+name it, in signature or in proof body.  Folding that conjunct back up into
+`IsWeierstrassModel` — *this* module's definition — makes it nameable
+downstream.  The two forms are definitionally equal (`weierstrassAffine` and
+`weierstrassAffineStr` unfold to exactly the spelled-out scheme and structure
+morphism), so the proof is `exact` and adds no `sorry` of its own.
+
+**WHY IT IS WORTH HAVING, and what it fixes** (2026-07-28, flt-lean-87).
+`exists_ellipticScheme_of_weierstrass` above returns the elliptic scheme with
+the curve remembered ONLY through the Galois-equivariant `≃+` on geometric
+points.  That relation is **not known to determine `j`** — see
+`IsWeierstrassModel`'s own docstring and the warning at `IsJMapOn.classify_jm`,
+both of which say so explicitly — so a consumer that must produce a morphism of
+SCHEMES out of a map of Weierstrass point groups cannot work from it: a scheme
+morphism has nothing to be transported along.  This statement retains the
+COORDINATE pinning, which is precisely the handle such a consumer needs.
+
+Its first customer is `WeierstrassCurve.IsGamma0ModelOf` in
+`FreyCurve/MazurTorsion.lean`, whose two scheme-level leaves
+(`nonempty_isNIsogenyPair_of_gamma0Model` and
+`exists_isogenyIsom_of_gamma0Model_isBaseChangeOf`) were unattackable while the
+pin carried only the `≃+`.
+
+**`N` does not appear**, because no level structure is involved: this is a
+statement about the elliptic scheme underlying a Weierstrass curve. -/
+theorem exists_ellipticScheme_isWeierstrassModel_of_weierstrass
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ (A : Scheme.{0}) (f : A ⟶ SpecQ) (ab : AbelianSchemeStruct f),
+      SmoothOfRelativeDimension 1 f ∧ IsWeierstrassModel ab E ∧
+        (letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+         ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt f (𝟙 SpecQ),
+           ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+             e (WeierstrassCurve.Affine.Point.map
+                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+               = ab.galSMul (𝟙 SpecQ) σ (e x)) := by
+  obtain ⟨A, f, ab, hdim, hmodel, hequiv⟩ :=
+    exists_ellipticScheme_isWeierstrassModel_of_projModel E
+  exact ⟨A, f, ab, hdim, hmodel, hequiv⟩
+
 end Fermat
 
