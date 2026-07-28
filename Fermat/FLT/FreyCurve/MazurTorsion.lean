@@ -67,6 +67,10 @@ public import Fermat.FLT.FreyCurve.Basic
 -- Mordell–Weil input of level `11`, consumed by
 -- `WeierstrassCurve.x1Eleven_11a3_x_eq_zero_or_one` below.
 public import Fermat.FLT.EllipticCurve.MordellWeil
+-- `MazurX0Nineteen.rational_point_x0Nineteen`: the two affine rational
+-- points of `19a1`, the Mordell–Weil input of level `19`, consumed by
+-- `X0GenusOne.finite_curve19a1` below.
+public import Fermat.FLT.EllipticCurve.MordellWeil19
 public import Fermat.FLT.EllipticCurve.Torsion
 -- `natDegree_Φ`, `leadingCoeff_Φ`, `natDegree_ΨSq_le` and the Bézout
 -- relation `isCoprime_Φ_ΨSq`: the division-polynomial inputs of the
@@ -19145,16 +19149,56 @@ descent by `2`-isogeny available here and not at `11` or `19`.  See
 theorem finite_curve17a1 : Finite curve17a1.toAffine.Point :=
   sorry
 
-/-- **`19a1(ℚ)` is finite** (sorry leaf, introduced 2026-07-27) — the
-level-`19` row of the arithmetic half of `finite_relPoint_x0`, i.e. rank
-`0` for `y² + y = x³ + x² − 9x − 15`.
+/-- **`19a1(ℚ)` is finite** (PROVEN 2026-07-28 from
+`MazurX0Nineteen.rational_point_x0Nineteen`, over the single integer leaf
+`MazurX0Nineteen.integral_leaf`) — the level-`19` row of the arithmetic
+half of `finite_relPoint_x0`, i.e. rank `0` for
+`y² + y = x³ + x² − 9x − 15`.
 
-TRUE, and `#19a1(ℚ) = 3`: the affine points are `(5, 9)` and `(5, −10)`
-(PARI/GP `ellratpoints`; `ellrank` returns `[0, 0]`).  The group is
-cyclic of order `3`.  See `finite_curve11a1` for the template to
-follow. -/
-theorem finite_curve19a1 : Finite curve19a1.toAffine.Point :=
-  sorry
+`#19a1(ℚ) = 3`: the affine points are `(5, 9)` and `(5, −10)` (PARI/GP
+`ellratpoints`; `ellrank` returns `[0, 0]`).  The group is cyclic of
+order `3`.  The argument is `finite_curve32a1`'s, with mathlib's
+`Affine.nonsingularPointEquiv` bounding the affine part by a two-element
+set.
+
+**THE DESCENT DID NOT HAPPEN ON THIS CURVE, and the note above `levels`
+predicting "a full `2`-descent" here is superseded.**  `19a1` carries two
+rational `3`-isogenies — `elldivpol(19a1, 3)` factors as
+`(x − 5)(3x + 4)(x² + 5x + 7)` — and the one with kernel `x = −4/3` lands
+on `19a3 : y² + y = x³ + x² + x`, the curve of discriminant `−19`.  Only
+the MAP OF CURVES is needed, never the isogeny as a homomorphism of
+`Affine.Point` groups (which is what the isogeny axis recorded as
+missing, and it still is): every affine rational point of `19a3` has
+`x = 0`, the isogeny's numerator `x³ − 18x − 35 = (x − 5)(x² + 5x + 7)`
+therefore vanishes, and `x² + 5x + 7` has discriminant `−3 < 0`.  That
+moves the arithmetic to `19a3`, where the `2`-descent runs in
+`ℤ[θ]/(θ³ + 2θ² + 4θ + 2)` — discriminant `−76`, the FULL ring of
+integers, class number `1` — instead of the index-`152` order that
+`19a1`'s own cubic `U³ + 4U² − 144U − 944` generates.  See
+`Fermat/FLT/EllipticCurve/MordellWeil19.lean`.
+
+**The same move is worth trying at `11` and `17`.**  `11a1` is
+`5`-isogenous to `11a3`, whose points ARE determined here
+(`WeierstrassCurve.curve11a3_rational_points`), and the `5`-division
+polynomial of `11a1` is what would have to factor; `17a1` has a rational
+`2`-isogeny and a `4`-isogeny.  In each case what is needed is the
+`x`-coordinate map alone, as a rational function, plus the target
+curve's `x`-values — NOT a group homomorphism. -/
+theorem finite_curve19a1 : Finite curve19a1.toAffine.Point := by
+  have hsub : {xy : ℚ × ℚ | curve19a1.toAffine.Nonsingular xy.1 xy.2} ⊆
+      ({((5 : ℚ), (9 : ℚ)), (5, -10)} : Set (ℚ × ℚ)) := by
+    rintro ⟨x, y⟩ hxy
+    have he := hxy.left
+    rw [WeierstrassCurve.Affine.equation_iff] at he
+    simp only [curve19a1, WeierstrassCurve.toAffine] at he
+    have hq : y ^ 2 + y = x ^ 3 + x ^ 2 - 9 * x - 15 := by linear_combination he
+    obtain ⟨hx, hy⟩ := _root_.MazurX0Nineteen.rational_point_x0Nineteen x y hq
+    rcases hy with hy | hy <;> subst hx <;> subst hy <;> simp
+  haveI : Finite {xy : ℚ × ℚ // curve19a1.toAffine.Nonsingular xy.fst xy.snd} :=
+    (Set.Finite.subset ((Set.finite_singleton _).insert _) hsub).to_subtype
+  haveI : Finite (WithZero {xy : ℚ × ℚ // curve19a1.toAffine.Nonsingular xy.fst xy.snd}) :=
+    inferInstanceAs (Finite (Option _))
+  exact Finite.of_equiv _ curve19a1.toAffine.nonsingularPointEquiv.symm
 
 /-- **`32a1(ℚ)` is finite** (PROVEN 2026-07-27, outright and
 non-circularly, from `QuarticDescent.rational_point_x0ThirtyTwo`).
