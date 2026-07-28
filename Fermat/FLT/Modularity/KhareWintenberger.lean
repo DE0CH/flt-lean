@@ -4332,20 +4332,19 @@ theorem exists_sq_add_sq_adicCompletion_of_notMem
       algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F) r ∈
         IsLocalRing.maximalIdeal (w.adicCompletionIntegers F) := by
     intro r hr
-    have h : Valued.v
-        (algebraMap (NumberField.RingOfIntegers F) (w.adicCompletion F) r) < 1 := by
-      rw [IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation]
-      exact (w.valuation_lt_one_iff_mem (K := F) r).2 hr
-    exact (Valuation.mem_maximalIdeal_iff _ _).2 h
+    refine (Valuation.mem_maximalIdeal_iff _ _).2 ?_
+    have h1 := (w.valuation_lt_one_iff_mem (K := F) r).2 hr
+    rw [← IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation] at h1
+    exact h1
   have hunitw : ∀ r : NumberField.RingOfIntegers F, r ∉ w.asIdeal →
       IsUnit (algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F) r) := by
     intro r hr
-    have h : ¬ Valued.v
-        (algebraMap (NumberField.RingOfIntegers F) (w.adicCompletion F) r) < 1 := by
-      rw [IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation, not_lt]
-      exact ((w.valuation_eq_one_iff_notMem (K := F)).2 hr).ge
     rw [← IsLocalRing.notMem_maximalIdeal]
-    exact fun hmem => h ((Valuation.mem_maximalIdeal_iff _ _).1 hmem)
+    intro hmem
+    have h2 := (Valuation.mem_maximalIdeal_iff _ _).1 hmem
+    have h1 := w.valuation_lt_one_iff_mem (K := F) r
+    rw [← IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation] at h1
+    exact hr (h1.1 h2)
   have hcoe : ∀ r : NumberField.RingOfIntegers F,
       ((algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F) r :
           w.adicCompletionIntegers F) : w.adicCompletion F) =
