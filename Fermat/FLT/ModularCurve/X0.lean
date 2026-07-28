@@ -22559,11 +22559,18 @@ where (8.1.6) licenses it: a FIELD EXTENSION, which is flat, hence (8.1.6)(2).
 `Gamma0AtlasOver.baseChange` builds SEVEN of the eight atlas fields formally at
 an ARBITRARY morphism of bases, out of `exists_gamma0Datum_baseChange` and
 `IsBaseChangeOf.cancel` — both PROVEN in this file.  What survives as a leaf is
-the categorical-quotient field alone (`Gamma0AtlasOver.BcQuotient`, cited to
-(8.1.6)(2)), which is exactly the field Remark (8.1.7) says does not
-base-change in general.  The geometry rides along on mathlib's base-change
-stability, at the price of one mathlib-facing leaf about smooth geometrically
-connected schemes.
+the categorical-quotient field alone, which is exactly the field Remark (8.1.7)
+says does not base-change in general.  The geometry rides along on mathlib's
+base-change stability, at the price of one mathlib-facing leaf about smooth
+geometrically connected schemes.
+
+**Update 2026-07-28: that surviving leaf is now stated as
+`Gamma0AtlasOver.BcUniversal`, not `BcQuotient`.**  The two are equivalent
+(`bcQuotient_of_bcUniversal` one way by fpqc descent, `baseChange` +
+`toIsCoarseModuliY0` the other), but only `BcUniversal` mentions the atlas
+solely through `str` and `classify` — so a proof may be given on an affine GIT
+model of `[Γ₀(N)]` over the base field and transported by initiality, which is
+the only known route.  See `bcUniversal_of_field`.
 
 **The payoff: characteristic zero is CLOSED.**  Splitting on `ringChar K`
 and base-changing out of the prime field leaves exactly one modular
@@ -22820,9 +22827,12 @@ needed anywhere.
 **What does NOT transport, and why that is exactly right.**  `quotient` — the
 categorical-quotient property — is the one field with no formal proof, and
 Katz–Mazur Remark (8.1.7) says why: formation of the coarse moduli scheme does
-not commute with base change in general.  So the leaf below is stated as
-`Gamma0AtlasOver.BcQuotient`, that field and nothing else, at the one base
-change (8.1.6)(2) licenses.  The rigidified moduli scheme is representable and
+not commute with base change in general.  So the leaf below asserts that field
+and nothing else, at the one base change (8.1.6)(2) licenses — as
+`Gamma0AtlasOver.BcQuotient` when this section was written, and since
+2026-07-28 as the equivalent `Gamma0AtlasOver.BcUniversal`, which is the same
+content stated on `str` and `classify` alone so that it can be proven on a GIT
+model.  The rigidified moduli scheme is representable and
 representable moduli commute with ARBITRARY base change ((8.1.6)(1)), which is
 why `M`, `dM` and `cover` are unconditional here while `Y` is not. -/
 
@@ -22934,6 +22944,171 @@ def Gamma0AtlasOver.BcQuotient {N : ℕ} {S S' : Scheme.{0}}
     ∃! ψ : A.bcY q ⟶ Y', ψ ≫ str' = A.bcStr q ∧
       (A.bcClassify q (A.bcStrM q) (A.bcdM q)).1 ≫ ψ = φ
 
+/-- **The base-changed coarse space is INITIAL among cocones**, as a standalone
+proposition — this is `IsCoarseModuliY0.universal` for `A.bcStr q` with
+`A.bcClassify q` as its classifying map, i.e. Katz–Mazur (8.1.6)(2) in its
+standard form: *formation of the coarse moduli scheme commutes with this base
+change*.
+
+**It mentions `A` only through `str` and `classify`** — unfold it and check:
+`A.bcY q` is `pullback A.str q`, `A.bcStr q` is `pullback.snd A.str q`, and
+`A.bcClassify q g d` is `pullback.lift (A.classify (g ≫ q) d).1 g _`.  Neither
+`M`, nor `dM`, nor `cover` occurs.  **That is the whole reason this predicate
+exists**, and it is what `BcQuotient` — which quantifies over morphisms out of
+`A.bcM q` — cannot do: by initiality any two atlases over `S` have canonically
+isomorphic coarse spaces (`exists_isIso_of_isCoarseModuliY0_base`, PROVEN
+above), so `BcUniversal` may be proven on ANY model of the moduli problem over
+the base and transported, in particular on an affine GIT model whose `M` is
+unrelated to `A.M`.  See `bcUniversal_of_field` for why that matters.
+
+*The check that refutes the independence claim*: `delta`-unfold
+`Gamma0AtlasOver.BcUniversal` and grep the result for `bcM`, `bcdM` or
+`cover`. -/
+def Gamma0AtlasOver.BcUniversal {N : ℕ} {S S' : Scheme.{0}}
+    (A : Gamma0AtlasOver N S) (q : S' ⟶ S) : Prop :=
+  ∀ {Y' : Scheme.{0}} (str' : Y' ⟶ S')
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S'), Gamma0Datum N T → RelPoint str' g),
+    (∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S'} {g' : T' ⟶ S'}
+      (hg : h ≫ g = g') {d' : Gamma0Datum N T'} {d : Gamma0Datum N T},
+      IsBaseChangeOf h d' d → c g' d' = RelPoint.pre h hg (c g d)) →
+    ∃! u : A.bcY q ⟶ Y', u ≫ str' = A.bcStr q ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T),
+        (c g d).1 = (A.bcClassify q g d).1 ≫ u
+
+/-- **Initiality among cocones gives the categorical-quotient property**
+(PROVEN 2026-07-28 — fpqc descent, at an ARBITRARY base morphism `q`; no
+flatness of `q` and no field is used anywhere in this proof).
+
+This is the converse direction of `Gamma0AtlasOver.toIsCoarseModuliY0`, and it
+is the reduction that lets the remaining leaf be stated on the coarse-moduli
+data alone.  The two properties are in fact EQUIVALENT once the base change is
+an atlas — `(A.baseChange q hq).toIsCoarseModuliY0` supplies the other
+direction — so nothing is lost or smuggled in by trading one for the other.
+
+## How it is proven
+
+Given a non-separating `φ : A.bcM q ⟶ Y'` over `S'`, the cocone it induces is
+built exactly as in `exists_descendClassify` (~17500 lines above), with `Y'`
+in place of `Spec (A^G)` and `A.bcCover q` in place of that leaf's `hcov`
+hypothesis:
+
+* **the value at `(T, g, d)`** — rigidify `d` by `A.bcCover q`, giving a flat
+  surjective quasi-compact `p : T' ⟶ T`, a datum `d'` on `T'` and a
+  rigidification `m₀ : T' ⟶ A.bcM q` with `p ≫ g = m₀ ≫ A.bcStrM q`; then
+  `m₀ ≫ φ` coequalises every pair that `p` coequalises (base-change `d'` along
+  one leg, `IsBaseChangeOf.cancel` to recognise it along the other, then
+  `hsep`), so `EffectiveEpi.desc` descends it along `p`.  **The base-point
+  clause of `hsep` is what forces `A.bcCover`'s equation `p ≫ g = m₀ ≫ bcStrM`
+  to be carried into the characterisation**, which is why the descended value
+  is characterised against covers `m` satisfying `m ≫ bcStrM = k ≫ g` rather
+  than against all of them — the one place this proof differs in shape from
+  `exists_descendClassify`.
+* **it is a relative point, and it is natural** — both by cancelling the epi
+  `p` of a cover, from the same characterisation;
+* **at `(A.bcStrM q, A.bcdM q)` it is `φ` itself** — the trivial cover
+  `k = m = 𝟙` and `IsBaseChangeOf.refl`;
+* **uniqueness** — `bcClassify_natural` at `p` and at `m` computes
+  `p ≫ (A.bcClassify q g d).1 = m ≫ (A.bcClassify q (A.bcStrM q) (A.bcdM q)).1`,
+  so a rival `ψ` computes the same cocone and `∃!` finishes. -/
+theorem Gamma0AtlasOver.bcQuotient_of_bcUniversal {N : ℕ} {S S' : Scheme.{0}}
+    (A : Gamma0AtlasOver N S) (q : S' ⟶ S) (hu : A.BcUniversal q) :
+    A.BcQuotient q := by
+  classical
+  intro Y' str' φ hφ hsep
+  -- **The descended value at each `(T, g, d)`.**
+  have hdesc : ∀ (T : Scheme.{0}) (g : T ⟶ S') (d : Gamma0Datum N T),
+      ∃ x : T ⟶ Y', ∀ (Z : Scheme.{0}) (k : Z ⟶ T) (dZ : Gamma0Datum N Z)
+        (m : Z ⟶ A.bcM q), m ≫ A.bcStrM q = k ≫ g →
+        IsBaseChangeOf k dZ d → IsBaseChangeOf m dZ (A.bcdM q) → k ≫ x = m ≫ φ := by
+    intro T g d
+    obtain ⟨T', p, d', m₀, hf, hs, hq, hpg, ⟨bp⟩, ⟨bm⟩⟩ := A.bcCover q g d
+    haveI := hf; haveI := hs; haveI := hq
+    have key : ∀ {Z : Scheme.{0}} (g₁ g₂ : Z ⟶ T'), g₁ ≫ p = g₂ ≫ p →
+        g₁ ≫ (m₀ ≫ φ) = g₂ ≫ (m₀ ≫ φ) := by
+      intro Z g₁ g₂ he
+      obtain ⟨d₁, ⟨b₁⟩⟩ := exists_gamma0Datum_baseChange g₁ d'
+      have hb : IsBaseChangeOf (g₂ ≫ p) d₁ d := by rw [← he]; exact b₁.comp bp
+      rw [← Category.assoc, ← Category.assoc]
+      refine hsep (g₁ ≫ m₀) (g₂ ≫ m₀) d₁ ?_ (b₁.comp bm) ((hb.cancel bp).comp bm)
+      rw [Category.assoc, Category.assoc, ← hpg, ← Category.assoc, ← Category.assoc, he]
+    refine ⟨EffectiveEpi.desc p (m₀ ≫ φ) key, ?_⟩
+    intro Z k dZ m hmk bk bmZ
+    have hcond : pullback.fst k p ≫ k = pullback.snd k p ≫ p := pullback.condition
+    obtain ⟨dW, ⟨bq⟩⟩ := exists_gamma0Datum_baseChange (pullback.fst k p) dZ
+    have hb : IsBaseChangeOf (pullback.snd k p ≫ p) dW d := by rw [← hcond]; exact bq.comp bk
+    have h1 : (pullback.fst k p ≫ m) ≫ φ = (pullback.snd k p ≫ m₀) ≫ φ := by
+      refine hsep _ _ dW ?_ (bq.comp bmZ) ((hb.cancel bp).comp bm)
+      rw [Category.assoc, Category.assoc, hmk, ← hpg, ← Category.assoc, ← Category.assoc, hcond]
+    refine (cancel_epi (pullback.fst k p)).mp ?_
+    calc pullback.fst k p ≫ k ≫ EffectiveEpi.desc p (m₀ ≫ φ) key
+        = (pullback.snd k p ≫ p) ≫ EffectiveEpi.desc p (m₀ ≫ φ) key := by
+          rw [← Category.assoc, hcond]
+      _ = pullback.snd k p ≫ (m₀ ≫ φ) := by rw [Category.assoc, EffectiveEpi.fac]
+      _ = pullback.fst k p ≫ m ≫ φ := by
+          rw [← Category.assoc, ← Category.assoc]; exact h1.symm
+  choose cval hcval using hdesc
+  -- **`cval` is a relative point**: it lies over `g`.
+  have hcstr : ∀ (T : Scheme.{0}) (g : T ⟶ S') (d : Gamma0Datum N T),
+      cval T g d ≫ str' = g := by
+    intro T g d
+    obtain ⟨T', p, d', m₀, hf, hs, hq, hpg, ⟨bp⟩, ⟨bm⟩⟩ := A.bcCover q g d
+    haveI := hf; haveI := hs; haveI := hq
+    have h := hcval T g d T' p d' m₀ hpg.symm bp bm
+    refine (cancel_epi p).mp ?_
+    rw [← Category.assoc, h, Category.assoc, hφ, ← hpg]
+  let c : ∀ {T : Scheme.{0}} (g : T ⟶ S'), Gamma0Datum N T → RelPoint str' g :=
+    fun {T} g d => ⟨cval T g d, hcstr T g d⟩
+  have hc : ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T),
+      (c g d).1 = cval T g d := fun _ _ => rfl
+  -- **`c` is natural.**
+  have hnat : ∀ {T₁ T₂ : Scheme.{0}} (h : T₁ ⟶ T₂) {g : T₂ ⟶ S'} {g' : T₁ ⟶ S'}
+      (hg : h ≫ g = g') {d' : Gamma0Datum N T₁} {d : Gamma0Datum N T₂},
+      IsBaseChangeOf h d' d → c g' d' = RelPoint.pre h hg (c g d) := by
+    intro T₁ T₂ h g g' hg d' d hb
+    refine Subtype.ext ?_
+    obtain ⟨W, p, dW, m, hf, hs, hq, hpg, ⟨bp⟩, ⟨bm⟩⟩ := A.bcCover q g' d'
+    haveI := hf; haveI := hs; haveI := hq
+    refine (cancel_epi p).mp ?_
+    have h1 : p ≫ cval T₁ g' d' = m ≫ φ := hcval T₁ g' d' W p dW m hpg.symm bp bm
+    have h2 : (p ≫ h) ≫ cval T₂ g d = m ≫ φ := by
+      refine hcval T₂ g d W (p ≫ h) dW m ?_ (bp.comp hb) bm
+      rw [Category.assoc, hg, ← hpg]
+    show p ≫ cval T₁ g' d' = p ≫ h ≫ cval T₂ g d
+    rw [h1, ← Category.assoc, h2]
+  -- **`c` at the universal family is `φ` itself.**
+  have hcφ : cval (A.bcM q) (A.bcStrM q) (A.bcdM q) = φ := by
+    have h := hcval (A.bcM q) (A.bcStrM q) (A.bcdM q) (A.bcM q) (𝟙 _) (A.bcdM q) (𝟙 _)
+      rfl (IsBaseChangeOf.refl _) (IsBaseChangeOf.refl _)
+    rwa [Category.id_comp, Category.id_comp] at h
+  -- **The base-changed classifying map, computed on a cover.**
+  have hcl : ∀ {T : Scheme.{0}} (g : T ⟶ S') (d : Gamma0Datum N T) (W : Scheme.{0})
+      (p : W ⟶ T) (dW : Gamma0Datum N W) (m : W ⟶ A.bcM q),
+      m ≫ A.bcStrM q = p ≫ g → IsBaseChangeOf p dW d → IsBaseChangeOf m dW (A.bcdM q) →
+      p ≫ (A.bcClassify q g d).1
+        = m ≫ (A.bcClassify q (A.bcStrM q) (A.bcdM q)).1 := by
+    intro T g d W p dW m hmp bp bm
+    have hA : (A.bcClassify q (p ≫ g) dW).1 = p ≫ (A.bcClassify q g d).1 :=
+      congrArg Subtype.val (A.bcClassify_natural q p rfl bp)
+    have hB : (A.bcClassify q (m ≫ A.bcStrM q) dW).1
+        = m ≫ (A.bcClassify q (A.bcStrM q) (A.bcdM q)).1 :=
+      congrArg Subtype.val (A.bcClassify_natural q m rfl bm)
+    rw [hmp] at hB
+    rw [← hA, hB]
+  obtain ⟨u, ⟨hu1, hu2⟩, huniq⟩ := hu str' c hnat
+  refine ⟨u, ⟨hu1, ?_⟩, ?_⟩
+  · have hb := hu2 (A.bcStrM q) (A.bcdM q)
+    rw [hc, hcφ] at hb
+    exact hb.symm
+  · rintro ψ ⟨hψ1, hψ2⟩
+    refine huniq ψ ⟨hψ1, ?_⟩
+    intro T g d
+    obtain ⟨W, p, dW, m, hf, hs, hq, hpg, ⟨bp⟩, ⟨bm⟩⟩ := A.bcCover q g d
+    haveI := hf; haveI := hs; haveI := hq
+    refine (cancel_epi p).mp ?_
+    have h1 : p ≫ (c g d).1 = m ≫ φ := hcval T g d W p dW m hpg.symm bp bm
+    have h2 := hcl g d W p dW m hpg.symm bp bm
+    rw [h1, ← Category.assoc, h2, Category.assoc, hψ2]
+
 /-- **An atlas base-changes along ANY morphism of bases once the quotient
 property is granted** (PROVEN — seven of the eight fields, formally).
 
@@ -23038,9 +23213,10 @@ theorem geometricallyIntegral_of_gamma0CurveAtlasOver {N : ℕ} {k : Type} [Fiel
     geometricallyIrreducible_of_smooth_of_geometricallyConnected A.str
   exact GeometricallyIntegral.of_geometricallyReduced_of_geometricallyIrreducible A.str
 
-/-- **The categorical quotient descends along a FIELD EXTENSION** (sorry leaf —
-Katz–Mazur (8.1.6)(2), and since 2026-07-27 this is ALL that remains of the
-old `nonempty_gamma0CurveAtlasOver_of_ringHom` leaf).
+/-- **The COARSE MODULI SPACE base-changes along a FIELD EXTENSION** (sorry leaf
+— Katz–Mazur (8.1.6)(2)).  This is all that remains of `bcQuotient_of_field`
+after the fpqc-descent reduction of 2026-07-28, and it is the whole
+base-change content of this section.
 
 TRUE and classical.  A ring map out of a field is flat (`K` is a free
 `k`-module), so (8.1.6)(2) applies and the canonical map
@@ -23048,32 +23224,133 @@ TRUE and classical.  A ring map out of a field is flat (`K` is a free
 is again the categorical quotient of `𝔐 ×_k K` by the deck group, because the
 invariants of `A ⊗_k K` are `A^G ⊗_k K` when `K` is flat over `k`.
 
-**Everything else about the base change is already PROVEN** — see
-`Gamma0AtlasOver.baseChange` above, which builds seven of the eight fields
-formally at an arbitrary base morphism.  So a prover here owes exactly one
-thing: that a morphism out of `𝔐_K` over `Spec K` which does not separate two
-rigidifications of one datum lying over one base point factors uniquely, over
-`Spec K`, through `Y_K`.
+## THERE IS NO FORMAL PROOF, AND HERE IS THE REASON — do not look for one
 
-`Gamma0AtlasOver.BcQuotient` unfolds to that statement and to nothing else;
-`Gamma0AtlasOver.bcClassify`, `bcM`, `bcStrM`, `bcdM` unfold to the fibre
-products and to `exists_gamma0Datum_baseChange`, all of which are definitions
-in this file rather than citations.
+Base change along `q` is the functor `X ↦ X ×_S S'`, which is a RIGHT adjoint:
+`Hom_{S'}(Z, X ×_S S') ≅ Hom_S(Z, X)` is the universal property of the fibre
+product.  A right adjoint preserves LIMITS, which is exactly why `bcM`,
+`bcClassify`, `bcClassify_natural` and `bcCover` above are theorems — and it
+gives no information whatever about the COLIMIT that the coarse space is.  A
+morphism *out of* `X ×_S S'` is not a morphism out of `X`, and there is no
+adjunction in that direction (the left adjoint `q_!` is composition with `q`,
+which lands on the wrong side).  Katz–Mazur Remark (8.1.7) is the same fact
+stated as counterexamples.  Two concrete attempts and why each dies:
+
+* **transport a cocone over `S'` to one over `S`** by sending a `k`-scheme `T`
+  with datum `d` to the descent along the fpqc cover `T ×_k K ⟶ T` of
+  `c (g_K) (d_K)`.  The descent datum never closes: for `g₁, g₂ : Z ⟶ T ×_k K`
+  agreeing over `T`, the induced `K`-structures `g₁ ≫ g_K` and `g₂ ≫ g_K` on
+  `Z` DIFFER, so `c` is evaluated at two different base points and its
+  naturality relates nothing.  A `k`-scheme has many `K`-structures, and the
+  cocone sees each of them separately; that is the obstruction in one sentence.
+* **apply `A.quotient` over `k` to `Y'` regarded as a `k`-scheme.**  Its
+  hypothesis is a morphism out of `A.M`, and what is in hand is a morphism out
+  of `A.bcM q`; there is no map between them.
+
+## The route that does work, and the ONE reason this is stated as `BcUniversal`
+
+Katz–Mazur (8.1.1): over a field some `n ≥ 3` (or `n = 4` in characteristic
+`3`) is invertible, so the moduli problem has an AFFINE GIT model
+`𝔐 = Spec A`, `Y = Spec (A^G)` with `G = GL₂(ℤ/n)` finite — the structure
+`Gamma0GITPresentation` above is this over `ℚ`.  For such a model
+`Y ×_k K = Spec (A^G ⊗_k K) = Spec ((A ⊗_k K)^G)`, the second equality because
+`K` is free — hence flat — over `k` and the invariants are the equaliser of a
+FINITE diagram, which flat base change preserves; `specInvariants_universal`
+(PROVEN ~21000 lines above) then supplies initiality over `K`, with
+non-separation turned into `G`-invariance by the base change of
+`dM_equivariant` exactly as in `Gamma0GITPresentation.toGamma0Atlas`.
+
+**That model's `𝔐` has nothing to do with `A.M`** — different `n`, different
+scheme — which is precisely why the leaf must NOT be stated as
+`A.BcQuotient q`: that predicate quantifies over morphisms out of `A.bcM q`,
+so a proof on a GIT model could not be transported to it.
+`Gamma0AtlasOver.BcUniversal` mentions only `A.str` and `A.classify`, and by
+`exists_isIso_of_isCoarseModuliY0_base` all coarse spaces over `Spec k` are
+canonically isomorphic over the base and compatibly with `classify`; so a
+prover here is free to replace `A` by ANY model of `[Γ₀(N)]` over `k` and lose
+nothing.  `Gamma0AtlasOver.bcQuotient_of_bcUniversal` then carries the result
+back to `A.M` by fpqc descent.
+
+**Costing note for whoever is dispatched here.**  What this leaf needs is an
+affine GIT presentation OF THE GIVEN COARSE SPACE over `k`, plus the flat base
+change of invariants.  It does NOT need the four geometric properties
+(affine/smooth/connected/domain) — those come along the pullback square in
+`nonempty_gamma0CurveAtlasOver_of_ringHom` — so it is strictly weaker than the
+prime-field existence leaves, and **the presentation must not be introduced as
+a general-field existence leaf of its own**: `∃ A : Gamma0AtlasOver N (Spec k)`
+over an arbitrary field would subsume `nonempty_gamma0CurveAtlasOver_zmod` and
+make this whole section pointless.  Here an atlas over `k` is already in hand;
+only its GIT presentation is owed.
+
+## MACHINERY SURVEY (run 2026-07-28 against THIS pin — do not rebuild these)
+
+Everything the GIT route needs off the shelf is present except one action
+instance:
+
+* `AlgebraicGeometry.pullbackSpecIso R S T :
+  pullback (Spec.map (ofHom (algebraMap R S))) (Spec.map (ofHom (algebraMap R T)))
+  ≅ Spec (.of (S ⊗[R] T))`
+  (`Mathlib/AlgebraicGeometry/Pullbacks.lean:719`), with
+  `pullbackSpecIso_inv_fst'` / `_inv_snd` / `_hom_fst'` / `_hom_snd` naming both
+  legs as `Spec.map` of the two inclusions.  This is exactly the
+  identification `A.bcY q ≅ Spec (B ⊗_k K)` the route needs, in the form the
+  base change is already written in (`A.str` composed to `Spec (of k)`).
+* `Module.Flat.lTensor_exact` / `rTensor_exact`
+  (`Mathlib/RingTheory/Flat/Basic.lean:323,340`) and `Module.Flat.of_free` are
+  what turn `0 → A^G → A → ∏_{σ ∈ G} A` (`a ↦ (σ • a - a)_σ`, `G` finite) into
+  the same sequence over `K`; `K` is free over the field `k`, so flatness is an
+  instance, and the kernel of the tensored map is `(A ⊗_k K)^G`.  That is
+  `Algebra.IsInvariant (B ⊗_k K) (A ⊗_k K) G` in this development's language.
+* `FixedPoints.subring` and `Algebra.IsInvariant` are
+  `Mathlib/Algebra/Algebra/Subalgebra/Operations.lean:98` and
+  `Mathlib/RingTheory/Invariant/Defs.lean`.  **`Mathlib/RingTheory/Invariant/`
+  contains no base-change lemma of any kind at this pin** — grepped for
+  `baseChange`, `tensor`, `Flat`: zero hits.  So the bullet above is genuinely
+  owed, and it is the only missing algebra.
+* **MISSING and must be built (small):** `MulSemiringAction G (A ⊗[k] K)`.
+  Mathlib has no `MulSemiringAction` instance on a tensor product — grepped.
+  The map is `Algebra.TensorProduct.map (σ : A ≃ₐ[k] A) (AlgHom.id k K)`, which
+  needs `SMulCommClass G k A` to see `σ` as a `k`-algebra map; the GIT
+  presentation must therefore carry the `k`-algebra structure on `A` and that
+  commutation, which `Gamma0GITPresentation` (stated over `ℚ`, where it is
+  automatic) does not.
 
 **Do NOT weaken this to an arbitrary base morphism.**  At a non-flat base
 change it is FALSE: Katz–Mazur Remark (8.1.7) gives explicit counterexamples at
 `p = 2` and `p = 3` for `ℤ[1/N] → 𝔽_p`, which is exactly why the field
 hypothesis is in the statement and why the characteristic split above routes
-through the prime field.
+through the prime field.  Note the flatness is used *only* in the invariants
+step above; nothing else in this section consumes it.
 
-AXIS SEARCHED: the base ring.  NOT searched: whether flat descent along the
-fpqc cover `Spec K ⟶ Spec k` — which is faithfully flat when `K/k` is a field
-extension — turns this into a theorem about the `k`-quotient; that is the route
-`exists_descendClassify` takes over `ℚ` and it may transpose. -/
+AXES SEARCHED: the base ring; fpqc descent along `Spec K ⟶ Spec k` (dead, for
+the reason itemised above — it is the route `exists_descendClassify` takes over
+`ℚ`, and it does not transpose, because there the descent is along a cover of
+ONE base while here the base itself changes); replacing the quotient property
+by the equivalent initiality (done — that is this statement).  NOT searched:
+whether mathlib's `Algebra.IsInvariant` has, or can cheaply be given, the flat
+base change `Algebra.IsInvariant (B ⊗_k K) (A ⊗_k K) G` — at this pin
+`Mathlib/RingTheory/Invariant/` contains no base-change lemma at all, so that
+is a genuine (small) piece of missing algebra, and it is the only part of the
+route that is not modular. -/
+theorem bcUniversal_of_field {N : ℕ} {k K : Type} [Field k] [Field K] (f : k →+* K)
+    (A : Gamma0AtlasOver N (Spec (CommRingCat.of k))) :
+    A.BcUniversal (Spec.map (CommRingCat.ofHom f)) :=
+  sorry
+
+/-- **The categorical quotient descends along a FIELD EXTENSION** (PROVEN
+2026-07-28 over `bcUniversal_of_field`, by the fpqc-descent reduction
+`Gamma0AtlasOver.bcQuotient_of_bcUniversal`; a sorry leaf until then).
+
+`Gamma0AtlasOver.BcQuotient` is the ONE field of `Gamma0AtlasOver` that does
+not base-change formally — `Gamma0AtlasOver.baseChange` above builds the other
+seven at an arbitrary base morphism — and it is now derived from the
+coarse-moduli initiality of the base-changed space, which is where the
+Katz–Mazur content actually lives.  See `bcUniversal_of_field` for the route
+and for why the leaf had to be moved off `BcQuotient` to be attackable. -/
 theorem bcQuotient_of_field {N : ℕ} {k K : Type} [Field k] [Field K] (f : k →+* K)
     (A : Gamma0AtlasOver N (Spec (CommRingCat.of k))) :
     A.BcQuotient (Spec.map (CommRingCat.ofHom f)) :=
-  sorry
+  A.bcQuotient_of_bcUniversal _ (bcUniversal_of_field f A)
 
 /-- **The curve atlas base-changes along a FIELD EXTENSION** (PROVEN 2026-07-27
 over `bcQuotient_of_field` and `geometricallyIrreducible_of_smooth_of_geometricallyConnected`;
