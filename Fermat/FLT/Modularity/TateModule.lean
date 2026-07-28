@@ -14225,7 +14225,22 @@ the separated/reduced equaliser argument, so all that had to be supplied was
 that `equalizer.ι u v` is DOMINANT, which is `hs` plus `equalizer.lift`.  It
 needed no new machinery at all, and in particular the "smooth over a field is
 reduced" input was already in this file.  `dense_torsionGeomPt_finiteBase` is
-the remaining half of the density pair. -/
+the remaining half of the density pair.
+
+**UPDATED AGAIN 2026-07-28**: `dense_torsionGeomPt_finiteBase` is itself
+no longer a leaf.  It split along the seam between the two theories its
+classical proof uses, into
+`exists_abelianSubscheme_closure_torsionGeomPt_finiteBase` (Chevalley:
+the closure of the torsion subgroup is an abelian subscheme — no
+arithmetic, true at EVERY maximal `I` including one above the residue
+characteristic) and
+`range_eq_univ_of_abelianSubscheme_torsion_finiteBase` (an `𝒪_D`-stable
+abelian subscheme carrying the whole `I`-adic Tate module is everything —
+this is where `hqN` and the faithfulness of the `D`-action live).  Both
+still need abelian-variety theory that is absent from the pin, so the
+count of open density leaves goes from two to three; what the cut buys
+is that the two halves are independently ownable and only the second is
+deep. -/
 
 /-- **CAYLEY–HAMILTON IN DIMENSION TWO, COORDINATEWISE** (PROVEN).  For a
 `2 × 2` matrix `Φ` over any commutative ring, `Φ² + det Φ = tr Φ · Φ`,
@@ -15746,11 +15761,214 @@ theorem eq_of_dense_geomPt_comp_eq
   exact ext_of_isDominant_of_isSeparated f' (by rw [hu, hv]) (equalizer.ι u v)
     (equalizer.condition u v)
 
+namespace RelPoint
+
+/-- **A relative point of a SUBSCHEME, pushed into the ambient scheme.**
+
+If `ι : B ⟶ A` is a morphism and `y` is a relative point of `ι ≫ f` over
+`g`, then `y.1 ≫ ι` is a relative point of `f` over the same `g`.  This
+is the covariant direction, and it is not `RelPoint.pre`: `pre`
+precomposes on the SOURCE of the test object, `push` postcomposes on the
+TARGET of the point.
+
+It exists so that "the group law and the `𝒪_D`-action of a subgroup
+scheme are the restrictions of those of the ambient scheme" can be
+written as two plain equations of relative points — see the two leaves
+immediately below, where it is the whole reason the compatibility
+clauses are readable.  Its natural home is `Modularity/AbelianScheme.lean`
+beside `RelPoint.pre`; it is here only to keep this edit inside one
+file. -/
+def push {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}} {g : T ⟶ S}
+    (y : RelPoint (ι ≫ f) g) : RelPoint f g :=
+  ⟨y.1 ≫ ι, by rw [Category.assoc]; exact y.2⟩
+
+@[simp] theorem push_val {A B S : Scheme.{u}} (f : A ⟶ S) (ι : B ⟶ A) {T : Scheme.{u}}
+    {g : T ⟶ S} (y : RelPoint (ι ≫ f) g) : (push f ι y).1 = y.1 ≫ ι := rfl
+
+end RelPoint
+
+open _root_.NumberField in
+/-- **THE ZARISKI CLOSURE OF THE `I`-POWER TORSION IS AN ABELIAN
+SUBSCHEME** (sorry leaf — the SUBGROUP half of the density argument;
+Chevalley's theorem that the closure of a subgroup of a group variety is
+a subgroup variety, together with "a reduced group scheme of finite type
+over a PERFECT field is smooth"; Mumford *Abelian Varieties* §II.4,
+Milne *Abelian Varieties* §I.1, SGA 3 VI_A 0.2 and VI_B 1.3.1).
+
+There are a scheme `B`, a closed immersion `ι : B ⟶ A'`, an
+abelian-scheme structure on `ι ≫ f'` and an `𝒪_D`-multiplication on it,
+whose group law and multiplication are the RESTRICTIONS of those of `A'`
+(`hadd`, `hact`, written with `RelPoint.push`), such that every
+`Iⁿ`-torsion geometric point of `A'` lifts to `B`, and whose image is
+EXACTLY the Zariski closure of the `Iⁿ`-torsion.
+
+Classically.  `T = ⋃ₙ A'[Iⁿ](k̄)` is a SUBGROUP, being an increasing
+union of subgroups (`Iⁿ⁺¹ ≤ Iⁿ`), and it is `𝒪_D`-stable because each
+`A'[Iⁿ]` is.  Its Zariski closure `Z` in `A'_{k̄}` is therefore a closed
+subgroup scheme, `𝒪_D`-stable, and `Z_red` is smooth because `k` is
+perfect.  `Z` is moreover CONNECTED, which is what makes it an abelian
+variety rather than merely a group variety, and the reason is worth
+recording because it is the one step that is special to `T`:
+
+* `T` is DIVISIBLE.  For `M` prime to `q` multiplication by `M` is
+  already bijective on `A'[Iⁿ]` (that group is killed by `qⁿ`); and for
+  `M = q`, divisibility of `A'(k̄)` gives `z` with `q z = y`, necessarily
+  in `A'[q^{n+1}]`, and the `𝒪_D/q^{n+1}`-module `A'[q^{n+1}]` splits as
+  the direct sum of its `J`-components for `J ∣ q`, so the `I`-component
+  of `z` is the required element OF `T`.
+* `T` is dense in `Z` and the components of `Z` are open in `Z`, so `T`
+  surjects onto the finite component group `Z/Z⁰`.  A finite quotient of
+  a divisible group is trivial, hence `Z = Z⁰`.
+
+Finally `Z` is `Γ_k`-stable, because `T` is (`Mult.torsion` carries
+exactly that), so it descends to a closed subscheme `B` of `A'` over `k`;
+and the displayed equation `closure T = Set.range ι.base` holds in `|A'|`
+because `|A'_{k̄}| → |A'|` is continuous (so the image of the closure
+upstairs lies in the closure downstairs) and closed and surjective (so
+the image of `Z` is closed and contains `T`).
+
+**`hqN` IS NOT NEEDED HERE, AND THAT IS THE POINT OF THE CUT.**  This
+half is true for EVERY maximal `I`, including one above the residue
+characteristic of `k`, where `T` may be `{0}` and `B` the zero section —
+still an abelian subscheme.  All of the arithmetic, and all of the use of
+`¬ q ∣ N`, is in `range_eq_univ_of_abelianSubscheme_torsion_finiteBase`
+below.  Nor is `hdim'` or `IsTotallyReal` used: `𝒪_D` enters only as a
+ring of endomorphisms preserving each `A'[Iⁿ]`.
+
+**FAITHFULNESS — the last conjunct is the whole content.**  Drop
+`closure … = Set.range ι.base` and the leaf is discharged by `B = A'`,
+`ι = 𝟙`, `abB = ab'`, `mB = m'`, and the consuming leaf below degenerates
+into the original density statement.  With it, `B` is pinned: a strictly
+smaller closed subscheme fails the `⊇` half and a strictly larger one
+fails the `⊆` half.  The other conjuncts cannot be dropped either — they
+are what make `B` a SUBGROUP scheme stable under `𝒪_D`, which is exactly
+the hypothesis the second leaf consumes; a closed subscheme carrying an
+unrelated abelian-scheme structure would satisfy everything else and
+carry none of the argument. -/
+theorem exists_abelianSubscheme_closure_torsionGeomPt_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
+    ∃ (B : Scheme.{u}) (ι : B ⟶ A') (abB : AbelianSchemeStruct (ι ≫ f'))
+      (mB : Mult abB (NumberField.RingOfIntegers D)),
+      IsClosedImmersion ι ∧
+      (∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (abB.add y z)
+          = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z)) ∧
+      (∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)}
+        (a : NumberField.RingOfIntegers D) (y : RelPoint (ι ≫ f') g),
+        RelPoint.push f' ι (mB.act a y) = m'.act a (RelPoint.push f' ι y)) ∧
+      (∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+        ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
+          RelPoint.push f' ι z = y) ∧
+      closure {x : A' | ∃ n : ℕ, ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+        x ∈ Set.range y.1.base} = Set.range ι.base :=
+  sorry
+
+open _root_.NumberField in
+/-- **AN `𝒪_D`-STABLE ABELIAN SUBSCHEME CARRYING THE WHOLE `I`-ADIC TATE
+MODULE IS EVERYTHING** (sorry leaf — the ARITHMETIC half of the density
+argument, and the deep one; Mumford *Abelian Varieties* §19, Milne
+*Abelian Varieties* §V.1, Tate 1966).
+
+If `ι : B ⟶ A'` is a closed immersion whose group law and `𝒪_D`-action
+are the restrictions of those of `A'`, and every `Iⁿ`-torsion geometric
+point of `A'` already lies in `B`, then `ι` is surjective.
+
+Classically.  Let `C = A'_{k̄}/B_{k̄}`, an abelian variety, and suppose
+`ι` is not surjective, so `C ≠ 0`.  `𝒪_D` acts on `C` because `B` is
+`𝒪_D`-stable (`hact`), the action extends to `D`, and it is FAITHFUL
+because `D` is a FIELD and `1` acts as the identity of a nonzero group —
+this is the only place `D` is used, and it uses nothing but that `D` is a
+field.  Hence `D ⊗ ℚ_q = ∏_{J ∣ q} D_J` acts faithfully on `V_q C`, so
+every factor acts nontrivially and in particular `V_I C ≠ 0`.  But
+`htor` says `A'[Iⁿ] ⊆ B` for every `n`, so `T_I B = T_I A'`, and the
+sequence `0 → T_I B → T_I A' → T_I C → 0` — exact precisely because
+`q ≠ char k` — forces `T_I C = 0` and hence `V_I C = 0`.  Contradiction;
+so `C = 0` and `ι` is surjective.
+
+**`hqN` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.**  At the
+residue characteristic the displayed sequence of Tate modules is not
+exact and `A'[pⁿ](k̄)` is too small to see `C`: in the supersingular case
+`A'[pⁿ](k̄) = 0` for all `n`, so `htor` holds with `B` the ZERO SECTION,
+whose image is a single point.  `hfin` and `hN` are carried for exactly
+that reason — they are what makes `¬ q ∣ N` say `q ≠ char k`.
+
+Note what is NOT needed, which is what separates this leaf from
+`exists_levelTateFrame_finiteBase`: no rank hypothesis (`hdim'`) and no
+`IsTotallyReal`.  The argument never uses the signature of `D` and never
+uses that `A'[Iⁿ]` is free of rank two over `𝒪_D/Iⁿ`; a single maximal
+`I` suffices and there is no CRT reassembly over the primes above `q`.
+
+`hιcl` is carried because the producer
+(`exists_abelianSubscheme_closure_torsionGeomPt_finiteBase`) supplies it
+for free and because it is what makes `Set.range ι.base` closed; the
+argument above uses it only through properness of the image, which also
+follows from `abB.proper`.
+
+**FAITHFULNESS.**  `hadd` and `hact` are what make `B` a SUBGROUP scheme
+stable under `𝒪_D` rather than a closed subscheme carrying an unrelated
+abelian-scheme structure, and they are not implied by the rest: without
+`hadd` a `B` whose group law is transported along some non-additive
+bijection satisfies everything else.  `htor` is what makes the conclusion
+non-vacuous — with `htor` weakened to a single `n` the statement is FALSE
+(`A'[I]` is finite, and its Zariski closure is finite, so `B` may be a
+finite subgroup scheme and `ι` far from surjective).  It is the whole
+tower `∀ n` that pins `T_I B = T_I A'`. -/
+theorem range_eq_univ_of_abelianSubscheme_torsion_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    {B : Scheme.{u}} (ι : B ⟶ A') (abB : AbelianSchemeStruct (ι ≫ f'))
+    (mB : Mult abB (NumberField.RingOfIntegers D))
+    (hιcl : IsClosedImmersion ι)
+    (hadd : ∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)} (y z : RelPoint (ι ≫ f') g),
+      RelPoint.push f' ι (abB.add y z)
+        = ab'.add (RelPoint.push f' ι y) (RelPoint.push f' ι z))
+    (hact : ∀ {T : Scheme.{u}} {g : T ⟶ Spec (CommRingCat.of k)}
+      (a : NumberField.RingOfIntegers D) (y : RelPoint (ι ≫ f') g),
+      RelPoint.push f' ι (mB.act a y) = m'.act a (RelPoint.push f' ι y))
+    (htor : ∀ n : ℕ, ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+      ∃ z : GeomFibrePt (ι ≫ f') (𝟙 (Spec (CommRingCat.of k))),
+        RelPoint.push f' ι z = y) :
+    Set.range ι.base = Set.univ :=
+  sorry
+
 open _root_.NumberField in
 /-- **THE PRIME-TO-`p` TORSION OF AN ABELIAN SCHEME OVER A FINITE FIELD
-IS ZARISKI DENSE** (sorry leaf — the ABELIAN-VARIETY half of the density
-argument; Mumford *Abelian Varieties* §19, Milne *Abelian Varieties*
-§V.1).
+IS ZARISKI DENSE** (**PROVEN 2026-07-28** by assembly over the two leaves
+immediately above — the ABELIAN-VARIETY half of the density argument;
+Mumford *Abelian Varieties* §19, Milne *Abelian Varieties* §V.1).
+
+**THE CUT.**  The classical argument recalled below runs in two steps
+that use disjoint theories, and they are now two leaves:
+
+* `exists_abelianSubscheme_closure_torsionGeomPt_finiteBase` — the
+  Zariski closure of `⋃ₙ A'[Iⁿ](k̄)` carries an abelian-subscheme
+  structure whose group law and `𝒪_D`-action are the restrictions of
+  those of `A'`.  This is Chevalley's theorem on the closure of a
+  subgroup plus smoothness of a reduced group scheme over a perfect
+  field, and it uses NO arithmetic: it is true at every maximal `I`,
+  including one above the residue characteristic.
+* `range_eq_univ_of_abelianSubscheme_torsion_finiteBase` — such a
+  subscheme, if it contains `A'[Iⁿ]` for EVERY `n`, is all of `A'`.
+  This is where `hqN` and the faithfulness of the `𝒪_D`-action live, and
+  it is the deep half.
+
+The assembly is `dense_iff_closure_eq`: the first leaf identifies the
+closure of the torsion with `Set.range ι.base`, the second says that
+range is everything.  The equation `closure … = Set.range ι.base` is
+what makes the cut non-trivial — see the FAITHFULNESS paragraph of the
+first leaf, which records that dropping it collapses the pair back into
+this statement.
 
 For `I` a maximal ideal of `𝒪_D` of residue characteristic `q` NOT
 dividing `N = #k`, the geometric points killed by some power `Iⁿ` sweep
@@ -15791,8 +16009,12 @@ theorem dense_torsionGeomPt_finiteBase
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I) :
     Dense {x : A' | ∃ n : ℕ, ∃ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
-      x ∈ Set.range y.1.base} :=
-  sorry
+      x ∈ Set.range y.1.base} := by
+  obtain ⟨B, ι, abB, mB, hιcl, hadd, hact, htor, hclos⟩ :=
+    exists_abelianSubscheme_closure_torsionGeomPt_finiteBase hfin ab' m' I hI
+  rw [dense_iff_closure_eq, hclos]
+  exact range_eq_univ_of_abelianSubscheme_torsion_finiteBase hfin N hN ab' m' q hq hqN I hI hqI
+    ι abB mB hιcl hadd hact htor
 
 open _root_.NumberField in
 /-- **AN IDENTITY VERIFIED ON ALL PRIME-TO-`p` TORSION HOLDS AT EVERY
