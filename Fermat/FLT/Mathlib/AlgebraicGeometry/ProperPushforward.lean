@@ -200,9 +200,14 @@ run is for `pushoutSection`, not for `directImage`.
   section), and the clopen argument is `mem_sliceGoodLocus_of_slice_const` (PROVEN).
 * `isClosed_sliceContractedLocus_fiber` — **PROVEN** (2026-07-28): the locus of `y : Y`
   whose slice `m` contracts to a point is CLOSED IN EACH FIBRE of `q`.  This is the
-  semicontinuity half, and it closes the rigidity lemma: **the whole cone is now free of
-  `sorry` except `isIso_appTop_of_isProper_of_flat`**, which is the pushforward theorem
-  itself and has a separate owner.  The mechanism is that the projection away from
+  semicontinuity half, and it closes the rigidity lemma: **the whole rigidity cone is free of
+  `sorry` apart from the `hpush` hypothesis it takes in.**  (This bullet used to name
+  `isIso_appTop_of_isProper_of_flat` as "the only `sorry` anywhere in this file's cone".
+  That was false in both halves and is corrected here, 2026-07-28: that theorem is PROVEN,
+  by a tactic proof containing no `sorry`, and the file's actual open leaves are
+  `finiteType_appTop_of_isProper` and `surjective_quotientMap_appTop_of_isIso_appTop_fiber`.
+  Anyone dispatched at the old name finds nothing to do.)  The mechanism is that the
+  projection away from
   `X ×_S X` is an OPEN map once restricted to a fibre of `q`, because everything there is
   flat over the field `κ(s)`; the input is `Mathlib`'s
   `instance [IsIntegral Y] [Subsingleton Y] : UniversallyOpen f` — *any* morphism to the
@@ -1067,11 +1072,9 @@ integrality and finite-type-ness, and integrality is already in the pin:
 **Why it is not formal.**  For non-affine `X`, `Γ(X, ⊤)` is the equalizer of a finite Čech
 diagram of finite-type `R`-algebras — the sheaf axiom for a finite affine cover — and an
 `R`-subalgebra of a finite-type `R`-algebra need not be of finite type, *even when it is
-integral over `R`*: Nagata's examples of a noetherian domain whose integral closure in a
-finite field extension is not module-finite already rule out any argument that uses only
-integrality plus an ambient finite-type algebra.  Properness must therefore be used again
-here; the classical proofs go through dévissage and Chow's lemma (Stacks 02O5), or through
-the projective case plus cohomology.
+integral over `R`*.  Properness must therefore be used again here; the classical proofs go
+through dévissage and Chow's lemma (Stacks 02O5), or through the projective case plus
+cohomology.
 
 **WITNESS FOR THAT DISMISSAL** (2026-07-28 — the claim above is CORRECT, but it was stated
 without the step that actually makes it a counterexample, and that step is not obvious).
@@ -1088,59 +1091,6 @@ statement
    ⟹ `A` of finite type over `R`"
 
 is **FALSE**, and no cut may use it as a sub-leaf.
-
-**BUT THE SAME ROUTE CLOSES THIS LEAF OVER A NAGATA BASE, AND THAT RESCOPES THE WHOLE
-LEAF** (2026-07-28).  The counterexample above is the *only* thing standing in the way, and
-it is defeated by one standard hypothesis on the base.  Write `R := Γ(S, ⊤)`,
-`A := Γ(X, ⊤)`.  Every step below is already available at this pin:
-
-1. `f` proper ⟹ `UniversallyClosed f`, and `S` is affine, so `A` is **integral** over `R` —
-   `AlgebraicGeometry.isIntegral_appTop_of_universallyClosed`, already in `Mathlib`.  This is
-   the one genuinely geometric input, and it is *free*.
-2. `f` proper ⟹ `QuasiCompact f`, and `S` affine, so `CompactSpace X`
-   (`quasiCompact_iff_compactSpace`); hence `X.affineCover.finiteSubcover` is a **finite**
-   affine cover `U₁, …, Uₙ`, with `Fintype` instance already provided in
-   `Mathlib/AlgebraicGeometry/Cover/Open.lean`.
-3. `f` locally of finite type ⟹ each `Γ(X, Uᵢ)` is a finite-type `R`-algebra —
-   `f.finiteType_appLE (isAffineOpen_top _) hUᵢ (by simp)`, which is exactly the step
-   `Mathlib`'s own `finite_appTop_of_universallyClosed` takes.
-4. The sheaf axiom makes `A ⟶ ∏ᵢ Γ(X, Uᵢ) =: B` **injective**, and `B` is of finite type
-   over `R` (finite product of finite-type algebras).
-5. By 1, the image of `A` lies in `integralClosure R B`.
-
-So the leaf follows from, and *only* from:
-
-  **`integralClosure R B` is a finite `R`-module for every finite-type `R`-algebra `B`**
-
-— i.e. from `R` being **universally Japanese (Nagata)** — together with `R` noetherian, which
-turns "`A` is an `R`-submodule of a finite `R`-module" into "`A` is finite", hence (being
-integral) of finite type.
-
-**What this changes for whoever takes this leaf next.**  The sentence above — "the classical
-proofs go through dévissage and Chow's lemma, or through the projective case plus cohomology"
-— is true of Grothendieck finiteness in **positive** degree and is a *misdirection in degree
-zero*.  In degree `0` the missing theory is **not** scheme-theoretic at all:
-
-* no Chow's lemma (absent from `Mathlib`, from `~/cs/FLT` and from this project — re-checked
-  2026-07-28: zero hits for `Chow`, and there is no projective-morphism class, only
-  `AlgebraicGeometry.Proj.«Proj 𝒜 is proper over Spec 𝒜₀»`);
-* no higher direct images (still zero hits, re-checked 2026-07-28);
-* no dévissage, no cohomology.
-
-What is missing is **Nagata / universally-Japanese theory, which is pure commutative
-algebra**, and which `Mathlib` does not have at this pin: grepping `Mathlib/RingTheory/` for
-`IsNagata` / `Japanese` / `universallyJapanese` returns **nothing** (the single `Nagata` hit
-is an attribution in `NoetherNormalization.lean`), and finiteness of an integral closure
-exists only in the Dedekind-domain setting — `IsIntegralClosure.isNoetherian`, which needs
-`[IsIntegrallyClosed A] [IsNoetherianRing A]` *and* a separable field extension, so it does
-not apply to a finite-type algebra.  Building `IsUniversallyJapanese` (every excellent ring,
-hence every base this development actually feeds in — `ℤ`, fields, complete local rings, and
-finite-type algebras over them) is a far better-scoped target than Chow's lemma.
-
-**Refutable form of that claim, so the next owner need not redo this survey:** if
-`grep -rn "IsNagataRing\|UniversallyJapanese" .lake/packages/mathlib/Mathlib/` ever returns a
-hit, steps 1–5 above are a ~20-line proof of this leaf over a noetherian base and the only
-work left is the non-noetherian case.
 
 **Axes searched and closed** (2026-07-28), so that they are not re-searched:
 * `Mathlib`'s `finite_appTop_of_universallyClosed` — **verified unusable**, and not merely
@@ -1161,7 +1111,7 @@ work left is the non-noetherian case.
   no limits of schemes, so it does not give the reduction of the general case to a noetherian
   base.  That reduction remains unavailable.
 
-**Note on the unused hypotheses.**  Steps 1–5 use neither `[Flat f]` nor
+**Note on the unused hypotheses.**  The integral-embedding chain described below uses neither `[Flat f]` nor
 `[LocallyOfFinitePresentation f]` — they are needed only for the non-noetherian generality
 (Stacks 0B91, where flatness of `𝒪_X` over `S` is what drives the limit argument), which
 confirms the remark below that a prover over a noetherian base may ignore them.
@@ -1172,8 +1122,69 @@ f]` it is of finite presentation, and `𝒪_X` is a finitely presented `𝒪_X`-
 `S` exactly because `[Flat f]`.  That is precisely the hypothesis set of **Stacks 0B91**
 (`Rⁱf_*ℱ` is finitely presented), whose `i = 0` case over affine `S` is this statement.
 
-Mathlib's `finite_appTop_of_universallyClosed` is not usable as a shortcut: it is stated over
-a *field* and under `[IsIntegral X]`, and its Artin–Tate step
+**THE "JUST BUILD NAGATA / UNIVERSALLY JAPANESE" ROUTE IS REFUTED** (2026-07-28, and this
+supersedes a rescoping that sent an owner at exactly that).  The proposal was: `Γ(X, ⊤)` is
+integral over `R` (free, `isIntegral_appTop_of_universallyClosed`) and embeds by the sheaf
+axiom into `∏ i, Γ(X, Uᵢ)` over a finite affine cover, each factor of finite type
+(`Scheme.Hom.finiteType_appLE`); so `Γ(X, ⊤) ≤ integralClosure R (∏ i, Γ(X, Uᵢ))` and the
+leaf would follow from the purely ring-theoretic
+
+> `R` noetherian universally Japanese, `B` of finite type over `R` ⟹ `integralClosure R B`
+> is a finite `R`-module.
+
+Every step of that chain is correct except the last, and **the ring-theoretic statement is
+FALSE**, so no amount of Nagata theory closes this leaf.  Witness, over *any* field `k`
+(`k` is noetherian, Jacobson, excellent, universally Japanese — every hypothesis one could
+want): take `B = k[x, y]/(y²)`, of finite type over `k`.  **Nilpotents are integral over
+every subring**, so for `a ∈ k` and `f ∈ k[x]` the element `a + f(x)·y` satisfies the monic
+`(T − a)² = T² − 2aT + a²`; hence
+
+  `integralClosure k B = k ⊕ k[x]·y`,
+
+which is infinite-dimensional over `k`.  It is not even of finite type as a `k`-algebra:
+the subalgebra generated by `a₁ + f₁y, …, aₙ + fₙy` is `k ⊕ (span_k {f₁, …, fₙ})·y`, because
+`(aᵢ + fᵢy)(aⱼ + fⱼy) = aᵢaⱼ + (aᵢfⱼ + aⱼfᵢ)y`.  Checked in `Singular`:
+`reduce((3 + (x⁵+x)y − 3)^2, std(y²)) = 0`.
+
+So the containment `Γ(X, ⊤) ≤ integralClosure R (∏ i, Γ(X, Uᵢ))` is true and carries **no
+finiteness information at all** as soon as the ambient algebra has nilpotents, i.e. as soon
+as `X` is non-reduced.  `Mathlib`'s own API is the corroborating evidence: the analogous
+theorem it does have, `finite_of_algHom_finiteType_of_isJacobsonRing`
+(`Mathlib/RingTheory/Jacobson/Ring.lean`), is stated for a `K`-**subfield** `L` of a
+finite-type algebra, `[DivisionRing L]`, and the witness above is precisely why that binder
+cannot be weakened to "integral `K`-subalgebra".
+
+**What the Nagata route *would* give, if the theory existed.**  Only the reduced case, and
+only over a noetherian base.  For `B` finite type over noetherian `R` and **reduced**,
+`B ↪ ∏ (B/𝔭)` over the finitely many minimal primes; inside each domain `B/𝔭`, an element
+integral over `R` is algebraic over `Frac(R/𝔮)`, hence lies in the relative algebraic
+closure of `Frac(R/𝔮)` in the finitely generated field extension `Frac(B/𝔭)`, which is a
+*finite* extension; Japanese-ness makes its integral closure module-finite, and a submodule
+of a finite module over a noetherian ring is finite.  That proves the leaf for `X` reduced
+over a noetherian universally Japanese base and leaves three separate gaps, each of which is
+itself a theory build:
+
+1. **nilpotents on `X`** — the dévissage `0 ⟶ 𝒩 ⟶ 𝒪_X ⟶ 𝒪_{X_red} ⟶ 0` needs `Γ(X, 𝒩)`
+   finite for a coherent ideal sheaf `𝒩`, i.e. it needs *this very theorem for coherent
+   sheaves* rather than for `𝒪_X`.  Degree-zero finiteness for `𝒪_X` alone does not induct.
+2. **the noetherian reduction** — the hypotheses `[Flat f] [LocallyOfFinitePresentation f]`
+   are there exactly so that the statement descends to a finite-type `ℤ`-subalgebra of `R`
+   (Stacks 0B91), and limits/approximation of schemes are absent from the pin
+   (`SpreadingOut.lean` spreads out *stalk* morphisms only).
+3. **that the bases in play are universally Japanese** — needs "finite type over `ℤ` is
+   Nagata", the hard half of Nagata theory (Krull–Akizuki + Noether normalization).
+
+Verified absent from the pin `a3364faec4` by direct grep on 2026-07-28: no `Japanese`,
+`Nagata`, `N-1`/`N-2`, or `excellent` anywhere in `Mathlib/RingTheory/` (the single `Nagata`
+hit is an attribution in `NoetherNormalization.lean`); no Chow's lemma, no coherent sheaves,
+no sheaf cohomology and no higher direct images anywhere in `Mathlib/AlgebraicGeometry/`
+(`Modules/` contains only `Presheaf.lean`, `Sheaf.lean`, `Tilde.lean`).  **The refuting
+check on this leaf is therefore unchanged and is a grep, not an argument**: if coherent
+sheaves with a finiteness theorem, or Chow's lemma, ever land in the pin, this leaf is a
+corollary; until then it is a theory build and no ring-theoretic shortcut exists.
+
+Mathlib's `finite_appTop_of_universallyClosed` is not usable as a shortcut either: it is
+stated over a *field* and under `[IsIntegral X]`, and its Artin–Tate step
 (`RingHom.finite_of_algHom_finiteType_of_isJacobsonRing` applied to `Γ(X, ⊤) ⟶ Γ(X, U)`)
 needs `Γ(X, ⊤)` to be a field, which is what irreducibility over a field buys and what an
 arbitrary affine base does not.
@@ -3298,9 +3309,14 @@ over `exists_isAffineOpen_slice_nbhd_of_slice_const` (its opens-only form).
 opens-only form is proven from `isOpen_setOf_slice_mapsTo` (properness ⟹ closed map ⟹ the
 tube lemma), `mem_sliceGoodLocus_of_slice_const` (the `GeometricallyConnected` clopen
 argument) and `isClosed_sliceContractedLocus_fiber` (semicontinuity of contractedness along
-the fibres of `q`, over a field).  The only `sorry` anywhere in this file's cone is
-`isIso_appTop_of_isProper_of_flat`, which supplies the HYPOTHESIS `hpush` and is not used
-by this proof.
+the fibres of `q`, over a field).  Nothing under *this* theorem is sorried; the hypothesis
+`hpush` is taken in, not proven here.
+
+(Corrected 2026-07-28: this paragraph used to say "the only `sorry` anywhere in this file's
+cone is `isIso_appTop_of_isProper_of_flat`".  Both halves were false —
+`isIso_appTop_of_isProper_of_flat` is PROVEN, and the file's open leaves are
+`finiteType_appTop_of_isProper` and `surjective_quotientMap_appTop_of_isIso_appTop_fiber`,
+both far upstream of the rigidity block.)
 
 The concrete obstruction the earlier audit named is still worth recording, because it is
 what the covering step had to get past: the reduction to an affine target cannot be done
