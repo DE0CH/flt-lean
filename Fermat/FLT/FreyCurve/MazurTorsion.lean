@@ -3723,7 +3723,11 @@ three smaller leaves:
   does not, and `D` is exactly that distinction.
 * `A₀` = `exists_isogenyLocalRamificationDataAt_of_padicValRat_j_nonneg`
   — Serre's tame-inertia theory plus Raynaud's classification at `N`.
-  The deep leaf of the cluster.
+  Was the deep leaf of the cluster; **itself DECOMPOSED and PROVEN
+  2026-07-27** over the three leaves `A₀-1`, `A₀-2`, `A₀-3` — see the
+  section note directly above it, which also records that two of its five
+  conclusion clauses turned out to be arithmetic consequences of the tame
+  congruence rather than inputs from Raynaud.
 * `B₀` = `isogenyCharacter_pow_twelve_eq_one_of_padicValRat_j_nonneg` —
   Néron–Ogg–Shafarevich at `q ≠ N`.  Its docstring carries a FAITHFULNESS
   correction to the old prose of `B`, which claimed the ramification
@@ -3783,22 +3787,246 @@ theorem WeierstrassCurve.exists_isogenyTateExponent_of_padicValRat_j_neg
                 hv.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ (12 * r) :=
   sorry
 
-/-- **`A₀` — Serre–Raynaud local data at `N`, POTENTIALLY GOOD case** (sorry
-leaf; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4; Raynaud, Bull. SMF
-102 (1974), Cor. 3.4.4): leaf `A` under the extra hypothesis `v_N(j) ≥ 0`.
+/-! ##### The three-way cut of `A₀` (CARRIED OUT 2026-07-27)
 
-This is `A` with its Tate-curve half removed (that half is leaf `T` above),
-so it is where ALL the remaining deep content of the cluster now sits: tame
-inertia theory at `N` and Raynaud's classification of finite flat group
-schemes over a base of absolute ramification `e < p − 1`.  Neither is in
+The three leaves below plus ~50 lines of glue REPLACE the single sorry at
+`exists_isogenyLocalRamificationDataAt_of_padicValRat_j_nonneg`.  The cut
+separates the three inputs Serre's argument actually uses, and it turns TWO
+of `A₀`'s five conclusion clauses from assumptions into theorems.
+
+* `A₀-1` = `exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq` —
+  surjectivity of `χ` on inertia at `N`.  **Already PROVEN elsewhere in the
+  tree; blocked only by declaration order.  See its docstring: this leaf is
+  a HOIST, not a proof.**
+* `A₀-2` = `exists_isogenyTameExponentAt` — `λ|_{I_N}` is a power of
+  `χ|_{I_N}` (tame-inertia theory).
+* `A₀-3` = `exists_isogenyRaynaudExponentAt_of_padicValRat_j_nonneg` —
+  the semistability defect `e ∈ {1,2,3,4,6}` and Raynaud's exponent `r ≤ e`
+  with `λ^e = χ^r` on `I_N`.  The genuinely deep leaf.
+
+**FINDING (2026-07-27): two of `A₀`'s clauses are ARITHMETIC CONSEQUENCES of
+the tame congruence, not extra inputs from Raynaud.**  Reading `λ^e = χ^r`
+at an inertia element on which `χ` takes a GENERATOR of `(ZMod N)ˣ` (leaf
+`A₀-1`) and substituting `λ = χ^a` (leaf `A₀-2`) yields
+
+  `a · e ≡ r (mod N − 1)`,
+
+and `N − 1` is even because `N` is an odd prime.  Hence:
+
+* *parity*: if `e` is even then `a · e` is even, so `r ≡ a·e (mod 2)` is
+  even.  So `A₀-3` does **not** have to assert `e % 2 = 0 → r % 2 = 0`, and
+  it does not — the glue proves it.  (This also silently rules out the
+  `(e, r)` pairs `(2,1)`, `(4,1)`, `(4,3)`, `(6,1)`, `(6,3)`, `(6,5)`: each
+  would need an odd number congruent to an even one modulo an even modulus.)
+* *the `(4,2)` condition*: `4a ≡ 2 (mod N−1)` with `N − 1 = 2m` forces
+  `m ∣ 2a − 1`, so `m` is odd, i.e. `N ≡ 3 (mod 4)`.  Equivalently, if
+  `4 ∣ N − 1` then `4 ∣ 2 − 4a`, which is absurd.  So `A₀-3` does not have
+  to assert that either.
+
+The previous prose above `A₀` attributed the `N ≡ 3 (mod 4)` clause to the
+existence of a quartic ramified extension "`ℚ_N(⁴√N)`-like".  That is not
+where it comes from — it is pure congruence arithmetic, and the corrected
+derivation is the one just given.
+
+What is left genuinely missing is exactly two things, both in `A₀-3` and
+`A₀-2`: the `{1,2,3,4,6}` bound on the semistability defect at residue
+characteristic `≥ 5`, and Raynaud's classification of finite flat group
+schemes over a base of absolute ramification `e < N − 1`.  Neither is in
 mathlib, in `~/cs/FLT`, or in this project.
+-/
 
-Proof (not formalised).  `E` acquires good reduction over `K/ℚ_N` with
-`e = e(K/ℚ_N) ∈ {1,2,3,4,6}`; tame-inertia theory gives `λ|_{I_N} = χ^a|_{I_N}`,
-and Raynaud's classification gives `λ^e|_{I'_N} = χ^r|_{I'_N}` with
-`0 ≤ r ≤ e` and `r` even when `e` is even, whence `ae ≡ r (mod N−1)`.  At
-`(e, r) = (4, 2)` the quartic ramified extension is `ℚ_N(⁴√N)`-like and its
-existence forces `N ≡ 3 (mod 4)`.
+/-- **`A₀-1` — the mod-`N` cyclotomic character maps the inertia at `N` ONTO
+`(ZMod N)ˣ`** (sorry leaf — but see the ROUTE below; this is the total tame
+ramification of `ℚ_N(ζ_N)/ℚ_N` in inertia-element form): every unit `u` of
+`ZMod N` is `χ(σ)` for some `σ` in the local inertia group at `N`.
+
+**ROUTE — DO NOT REPROVE THIS.  It is a HOIST, exactly like the one that
+closed leaf `C`, and the dependency check has already been done.**
+
+The identical statement, written in `cyclotomicCharacter` (`ℤ_N`-valued)
+rather than `cyclotomicCharacterModL` (`(ZMod N)ˣ`-valued) vocabulary, is
+already PROVEN as
+`exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq` in
+`Fermat/FLT/Modularity/Interface.lean` — ~420 lines, by a Gauss-period
+argument.  `Interface.lean` is DOWNSTREAM of this module and Lean has no
+forward references, so it cannot be cited here; that is the ONLY obstruction,
+and it is the same one, with the same remedy, as the Minkowski block leaf `C`
+needed (hoisted 2026-07-27 into
+`Fermat.FLT.GaloisRepresentation.MinkowskiUnramified`).
+
+**The hoist is clean — checked, not assumed (2026-07-27).**  That proof's
+only project-level inputs are
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
+(`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`) and
+`maximalIdeal_adicCompletionIntegers_eq_span`
+(`Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`), and **both modules
+are already in THIS module's import cone**.  So the theorem can be moved
+verbatim to any module upstream of `MazurTorsion` — or to a point above this
+line — with no further dependency work, and nothing else in `Interface.lean`
+travels with it.
+
+The vocabulary change is one line: `cyclotomicCharacterModL_eq_toZMod`
+(`Fermat/FLT/EllipticCurve/WeilPairing.lean`, which this module already
+`public import`s) says `χ̄(σ) = PadicInt.toZMod (χ(σ))`, and
+`PadicInt.toZModPow 1` differs from `PadicInt.toZMod` only by the
+`ZMod (N ^ 1) = ZMod N` congruence.
+
+The refuting check, if this note has gone stale: `grep -n
+exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq Fermat/` and
+confirm the hit is still sorry-free and still downstream. -/
+theorem exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq
+    {N : ℕ} (hN : N.Prime) (u : (ZMod N)ˣ) :
+    ∃ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+      (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) = u :=
+  sorry
+
+/-- **`A₀-2` — the isogeny character is TAME at `N`: `λ|_{I_N}` is a power of
+`χ|_{I_N}`** (sorry leaf; Serre, Invent. Math. 15 (1972), §1.3, §1.7 and
+§5.4): there is an exponent `a` with `λ(σ) = χ(σ)^a` for every `σ` in the
+local inertia group at `N`.
+
+Stated with NO reduction hypothesis, deliberately: this is true at every
+prime and for every reduction type, and only the Raynaud leaf below needs
+`v_N(j) ≥ 0`.  So it is separately ownable and separately reusable.
+
+Proof (not formalised), in three steps, of which only the third is missing
+from this project:
+
+1. *`ker lam` is OPEN.*  `ker lam` contains the kernel of the mod-`N`
+   representation `E.galoisRep N`, which is open by
+   `isOpen_setOf_galoisRep_eq_one`: if `galoisRep N σ = 1` then `σ` fixes
+   every `N`-torsion point, in particular `g`, so `hlam` reads
+   `(lam σ).val • g = g`, and `addOrderOf g = N` forces `lam σ = 1`.  This
+   argument is ALREADY WRITTEN OUT AND VERIFIED, in full, inside
+   `isogenyCharacter_pow_twelve_eq_of_localInertia` (leaf `C`) below — copy
+   it rather than re-deriving it.  This is exactly why the curve data `g`,
+   `hg`, `hlam` are load-bearing here rather than decorative: the same
+   statement for an ARBITRARY `MonoidHom (Γ ℚ) →* (ZMod N)ˣ` is FALSE, a
+   discontinuous character having no reason to be tame.
+2. *Wild inertia dies.*  `lam` takes values in `(ZMod N)ˣ`, of order `N − 1`,
+   prime to `N`; the wild inertia `P_N` is a pro-`N` group; so a continuous
+   homomorphism `P_N → (ZMod N)ˣ` is trivial and `λ|_{I_N}` factors through
+   the TAME quotient.
+3. *Every character of the tame quotient valued in `μ_{N−1}` is a power of
+   `χ`.*  The tame quotient is `∏_{ℓ ≠ N} ℤ_ℓ`, so continuous homomorphisms
+   into a cyclic group of order `N − 1` form
+   `∏_{ℓ ∣ N−1} Hom(ℤ_ℓ, ℤ/ℓ^{v_ℓ(N−1)})`, itself cyclic of order `N − 1`;
+   and `χ|_{I_N}` generates it precisely because `χ` is SURJECTIVE there,
+   which is leaf `A₀-1` above.
+
+The closest existing machinery is `exists_mem_localInertiaGroup_tameOrbit`
+(PROVEN, ~45000 lines below in this file): the same tame-character
+surjectivity, in orbit form, over an arbitrary number field, built on the
+PROVEN `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`.  Step 3 is
+the reformulation of that as a statement about the character GROUP, and it
+is where the remaining work is. -/
+theorem WeierstrassCurve.exists_isogenyTameExponentAt
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g) :
+    ∃ a : ℕ,
+      ∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+        lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hN.toHeightOneSpectrumRingOfIntegersRat)) σ) =
+          (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ a :=
+  sorry
+
+/-- **`A₀-3` — the semistability defect and Raynaud's exponent at `N`** (sorry
+leaf; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4; Raynaud, Bull. SMF
+102 (1974), Cor. 3.4.4): at potentially good reduction there are a
+ramification index `e ∈ {1,2,3,4,6}` and an exponent `r ≤ e` with
+`λ^e = χ^r` on the inertia group at `N`.
+
+**This is the deep leaf of the whole cluster.**  Proof (not formalised).
+`E` acquires good reduction over `K/ℚ_N^{nr}`; because the residue
+characteristic `N` is `> 19`, hence `≥ 5`, the semistability defect
+`Φ = Gal(K/ℚ_N^{nr})` is cyclic of order `e ∈ {1,2,3,4,6}`.  **That bound is
+the residue-characteristic-`≥ 5` statement and nothing weaker** — at `q = 2`
+the defect can be `Q₈` (`e = 8`) or `SL₂(𝔽₃)` (`e = 24`), and at `q = 3`
+dicyclic of order `12`; this leaf may not be restated for a general prime.
+`19 < N` is used for exactly this and for `e ≤ 6 < N − 1` below.  The
+Galois-stable subgroup `⟨g⟩` of order `N` extends to a finite flat group
+scheme over `𝒪_K`, whose absolute ramification index `e ≤ 6` is `< N − 1`, so
+Raynaud's classification applies and gives `λ|_{I_K} = ψ_K^r` with
+`0 ≤ r ≤ e`, where `ψ_K` is the level-one fundamental character of `K`.
+Since `χ|_{I_K} = ψ_K^e`, that reads `λ^e|_{I_K} = χ^r|_{I_K}`; and it
+propagates from `I_K` up to all of `I_N` because on `I_N` both sides are
+powers of the single tame character `ψ` (leaf `A₀-2`).
+
+WHAT THIS LEAF DELIBERATELY DOES NOT ASSERT.  Serre's statement also carries
+`r` even when `e` is even, and the `(e,r) = (4,2) ⟹ N ≡ 3 (mod 4)` side
+condition.  Both are CONSEQUENCES of the congruence `a·e ≡ r (mod N−1)` that
+`A₀-1` and `A₀-2` supply, and both are proven in the glue of
+`exists_isogenyLocalRamificationDataAt_of_padicValRat_j_nonneg` below — see
+the section note above this block for the two-line derivations.  Asserting
+them here would be asking a prover for content the arithmetic already gives.
+
+FAITHFULNESS CHECK.  Combining this leaf with the derived parity clause gives
+`12r/e ∈ {0, 4, 6, 8, 12}` and nothing else, which is exactly Serre's list of
+possible exponents in `λ¹² = χ^{12r/e}` at potentially good reduction.  That
+the cut reproduces the classical list is the evidence that no clause was lost
+in it.
+
+THE NATURAL NEXT CUT, when someone takes this leaf on: along
+`WeierstrassCurve.PotentiallyGoodModel` (declared ~1100 lines BELOW in this
+file, so it would have to be hoisted above this point first).  Producing the
+good model from `0 ≤ v_N(j)` is the arithmetic half — that half is ALREADY an
+open leaf of its own, `exists_potentiallyGoodModel_of_jIntegral` — and reading
+Raynaud's exponent off the model is the group-scheme half.  Neither Raynaud's
+classification nor the `{1,2,3,4,6}` bound is in mathlib, in `~/cs/FLT`, or in
+this project. -/
+theorem WeierstrassCurve.exists_isogenyRaynaudExponentAt_of_padicValRat_j_nonneg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (hj : 0 ≤ padicValRat N E.j) :
+    ∃ e r : ℕ, (e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6) ∧ r ≤ e ∧
+      ∀ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
+        lam (Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hN.toHeightOneSpectrumRingOfIntegersRat)) σ) ^ e =
+          (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ
+              (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+                hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ r :=
+  sorry
+
+/-- **`A₀` — Serre–Raynaud local data at `N`, POTENTIALLY GOOD case**
+(DECOMPOSED and PROVEN 2026-07-27 from `A₀-1`, `A₀-2` and `A₀-3` above;
+Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4; Raynaud, Bull. SMF 102
+(1974), Cor. 3.4.4): leaf `A` under the extra hypothesis `v_N(j) ≥ 0`.
+
+This is `A` with its Tate-curve half removed (that half is leaf `T` above).
+Its remaining deep content — tame inertia theory at `N` and Raynaud's
+classification of finite flat group schemes over a base of absolute
+ramification `e < N − 1` — is now in the three leaves above, and what is left
+here is arithmetic, all of it proven:
+
+* the identity `λ¹² = χ^{12r/e}` is `(λ^e)^{12/e} = (χ^r)^{12/e}`, which is
+  exact because every `e ∈ {1,2,3,4,6}` divides `12`;
+* the parity clause and the `(e,r) = (4,2) ⟹ N ≡ 3 (mod 4)` clause both
+  follow from `a·e ≡ r (mod N−1)`, which is what reading `λ^e = χ^r` at an
+  inertia element realising a GENERATOR of `(ZMod N)ˣ` gives.  See the
+  section note above for the derivations.
 
 Note the conclusion is deliberately quantified over `localInertiaGroup vN`
 and not over `Γ ℚ`: widening it would make the leaf false, and globalizing it
@@ -3824,8 +4052,81 @@ theorem WeierstrassCurve.exists_isogenyLocalRamificationDataAt_of_padicValRat_j_
             (Field.absoluteGaloisGroup.map (algebraMap ℚ
               (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
                 hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) ^ (12 * r / e)) ∧
-      (e = 4 → r = 2 → N % 4 = 3) :=
-  sorry
+      (e = 4 → r = 2 → N % 4 = 3) := by
+  classical
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  -- the twelfth-power identity is pure exponent arithmetic once `λ^e = χ^r`:
+  -- every admissible `e` divides `12`, so `12 * r / e` is exact
+  have key : ∀ (x y : (ZMod N)ˣ) (e r : ℕ),
+      (e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6) → x ^ e = y ^ r →
+        x ^ 12 = y ^ (12 * r / e) := by
+    rintro x y e r (rfl | rfl | rfl | rfl | rfl) h
+    · have hx : x ^ 12 = (x ^ 1) ^ 12 := by rw [← pow_mul]
+      rw [hx, h, ← pow_mul]; congr 1; omega
+    · have hx : x ^ 12 = (x ^ 2) ^ 6 := by rw [← pow_mul]
+      rw [hx, h, ← pow_mul]; congr 1; omega
+    · have hx : x ^ 12 = (x ^ 3) ^ 4 := by rw [← pow_mul]
+      rw [hx, h, ← pow_mul]; congr 1; omega
+    · have hx : x ^ 12 = (x ^ 4) ^ 3 := by rw [← pow_mul]
+      rw [hx, h, ← pow_mul]; congr 1; omega
+    · have hx : x ^ 12 = (x ^ 6) ^ 2 := by rw [← pow_mul]
+      rw [hx, h, ← pow_mul]; congr 1; omega
+  -- `N` is an odd prime, so the modulus `N − 1` is EVEN; both derived clauses
+  -- below live on that one fact
+  have hNodd : N % 2 = 1 := by
+    rcases hN.eq_two_or_odd with h | h
+    · omega
+    · exact h
+  have h1N : 1 ≤ N := hN.one_lt.le
+  -- `A₀-2`: the tame exponent; `A₀-1`: an inertia element realising a
+  -- GENERATOR of `(ZMod N)ˣ` under `χ`
+  obtain ⟨a, ha⟩ := E.exists_isogenyTameExponentAt g hN hg lam hlam
+  obtain ⟨u, hu⟩ := IsCyclic.exists_generator (α := (ZMod N)ˣ)
+  obtain ⟨σ₀, hσ₀, hσ₀u⟩ := exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq hN u
+  have hord : orderOf u = N - 1 := by
+    rw [orderOf_eq_card_of_forall_mem_zpowers hu, Nat.card_eq_fintype_card,
+      ZMod.card_units_eq_totient, Nat.totient_prime hN]
+  -- `A₀-3`: Serre's semistability defect and Raynaud's exponent
+  obtain ⟨e, r, he, hre, hchar⟩ :=
+    E.exists_isogenyRaynaudExponentAt_of_padicValRat_j_nonneg g hN hN19 hg lam hlam hj
+  -- reading `λ^e = χ^r` at `σ₀` and substituting `λ = χ^a` turns the character
+  -- identity into a congruence between EXPONENTS, modulo the order `N − 1`
+  have hmod : a * e ≡ r [MOD N - 1] := by
+    have h2 := hchar σ₀ hσ₀
+    rw [ha σ₀ hσ₀, ← pow_mul, hσ₀u] at h2
+    rw [← hord]
+    exact pow_eq_pow_iff_modEq.mp h2
+  have hdvd : ((N : ℤ) - 1) ∣ (r : ℤ) - ((a * e : ℕ) : ℤ) := by
+    have h := hmod.dvd
+    rwa [Nat.cast_sub h1N, Nat.cast_one] at h
+  refine ⟨e, r, he, hre, ?_, fun σ hσ => key _ _ e r he (hchar σ hσ), ?_⟩
+  · -- PARITY is a consequence of the congruence, not an extra Raynaud input:
+    -- `e` even makes `a * e` even, and `N − 1` is even, so `r` is even
+    intro hev
+    have h2N : (2 : ℤ) ∣ (N : ℤ) - 1 := by omega
+    have hae : 2 ∣ a * e := Dvd.dvd.mul_left (Nat.dvd_of_mod_eq_zero hev) a
+    have hd : (2 : ℤ) ∣ (r : ℤ) - ((a * e : ℕ) : ℤ) := dvd_trans h2N hdvd
+    have hd2 : (2 : ℤ) ∣ ((a * e : ℕ) : ℤ) := Int.natCast_dvd_natCast.mpr hae
+    -- `r = (r − a·e) + a·e`; written out rather than by `simpa`, so that no
+    -- ambient simp lemma (some of which are sorried in this tree) is involved
+    have hr2 : (2 : ℤ) ∣ (r : ℤ) := by
+      obtain ⟨k, hk⟩ := hd
+      obtain ⟨m, hm⟩ := hd2
+      exact ⟨k + m, by linarith⟩
+    have : (2 : ℕ) ∣ r := by exact_mod_cast hr2
+    omega
+  · -- and so is `N ≡ 3 (mod 4)` in the `(e, r) = (4, 2)` case: `4 ∣ N − 1`
+    -- would give `4 ∣ 2 − 4a`, which is absurd
+    rintro rfl rfl
+    push_cast at hdvd
+    have hN4 : N % 4 = 1 ∨ N % 4 = 3 := by omega
+    rcases hN4 with h4 | h4
+    · exfalso
+      have hd4 : (4 : ℤ) ∣ (N : ℤ) - 1 := by omega
+      have hfin := dvd_trans hd4 hdvd
+      omega
+    · exact h4
 
 /-- **`A` — Serre–Raynaud local ramification data at `N`** (DECOMPOSED and
 PROVEN 2026-07-27 from `T` and `A₀` above; Serre, Invent. Math. 15 (1972),
