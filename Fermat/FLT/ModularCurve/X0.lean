@@ -38233,9 +38233,613 @@ noncomputable def Gamma0GITPresentationData.toGamma0AtlasData {N : ℕ} {Y S : S
             Iso.hom_inv_id, Category.id_comp, hψ'2]
         rw [← hkey, ← Category.assoc, Iso.hom_inv_id, Category.id_comp] }
 
+/-! #### The construction over `𝔽_ℓ`, cut along the `ℚ` side's own route
+
+**What this sub-subsection does** (2026-07-28).  It replaces the single
+leaf `exists_gamma0GITPresentationData_pullbackSpecial` by **four** named
+leaves plus proven glue, following exactly the route its own docstring
+prescribed: the `ℚ` side's split through a FINE moduli scheme, i.e.
+representability + affineness, the fppf cover by full level structures,
+and the deck-group computation.  The one piece with no `ℚ` analogue is
+the last leaf, which is where good reduction actually lives.
+
+The chain, top down:
+
+| what | where | status |
+|---|---|---|
+| the fine AFFINE moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` over `𝔽_ℓ` | `exists_rigidifiedModuliData_specF` | **LEAF** (KM 4.7.2, 5.1.1, 6.6.1, 6.6.2, and the affineness parenthesis of 8.1.1) |
+| the level-`n` torsor over `𝔽_ℓ`-schemes | `exists_fullLevelStructure_cover_specF` | **LEAF** |
+| the deck action of `GL₂(ℤ/n)` on `A`, and that it IS the deck action | `exists_deckActionOver` | **PROVEN** |
+| the quotient map coequalises ANY two rigidifications | `deckAction_coequalisesOver` | **LEAF** |
+| assembling those into a rigidification over `𝔽_ℓ` | `nonempty_gamma0Rigidification_of_rigidifiedModuli`, `exists_gamma0Rigidification_specF` | **PROVEN** |
+| the special fibre of the GIVEN coarse space IS `Spec A^G` | `exists_specialFibreInvariantsIso` | **LEAF** (good reduction) |
+| the target | `exists_gamma0GITPresentationData_pullbackSpecial` | **PROVEN** |
+
+**Why the interposed structures are the ones they are, and where the
+junk-witness trap was avoided.**  The subsection docstring above forbids
+splitting into "`M` with `cover`" and "`M` with `quotient`": an arbitrary
+`M` satisfying `cover` need not be the genuine rigidified moduli scheme.
+That objection applies verbatim to the last leaf here, which is a `∀`
+over `Gamma0RigidificationData N (SpecF ℓ)`, so it has to be answered
+rather than ignored.  It is answered twice over:
+
+* `Gamma0RigidificationData` carries `coequalises` — `X1.lean`'s section
+  comment above `Gamma1Rigidification` exhibits the `A = A₀ × A₀` junk
+  witness that satisfies `cover`, `dM_equivariant` and every other field
+  and is excluded by exactly this one.  With it, `Spec (A^G)` is a
+  categorical quotient (`specInvariants_universal`) hence, through
+  `Gamma0AtlasData` and `isCoarseModuliY0_of_atlasData` — legal here
+  because `subsingleton_hom_specF` — a COARSE MODULI SPACE over `𝔽_ℓ`;
+  and coarse moduli spaces are pinned up to unique isomorphism by their
+  initiality clause.  So the `∀` ranges over objects that are all
+  canonically isomorphic, which is the same argument
+  `isAffine_of_rigidifiedModuliScheme` makes for its own `∀`.
+* `RigidifiedModuliData.universal` is a FINE moduli property, so the
+  same holds one level up, which is what makes
+  `deckAction_coequalisesOver` and `exists_deckActionOver` legitimate
+  `∀`-statements — see `RigidifiedModuli`'s docstring, which is where
+  this argument is written out in full.
+
+*The check that would refute the first bullet*: exhibit two inhabitants
+of `Gamma0RigidificationData N (SpecF ℓ)` whose invariant rings have
+non-isomorphic spectra over `𝔽_ℓ`.  *The check that would refute the
+second*: exhibit two inhabitants of `RigidifiedModuliData N n S` that are
+not isomorphic over `S`.
+
+**Where each arithmetic hypothesis is consumed.**  `hn : 3 ≤ n` and
+`¬ ℓ ∣ n` are rigidity and étaleness of the auxiliary level, and are
+discharged inside `exists_gamma0Rigidification_specF` by choosing
+`n = 3`, or `n = 4` when `ℓ = 3`.  `_hbase` and `hcoarse` are consumed
+ONLY by `exists_specialFibreInvariantsIso`, which is the point of the
+cut: everything above it is a construction over `𝔽_ℓ` that never looks
+at `Y_0(N)_{ℤ_(ℓ)}`.  `¬ ℓ ∣ N` is carried into two leaves — the fine
+moduli scheme and the identification — and it is certainly load-bearing
+in the second, since at `ℓ ∣ N` the special fibre of `Y_0(N)_{ℤ_(ℓ)}` is
+the Deligne–Rapoport crossing of two Igusa components and is not the
+coarse space of `Γ₀(N)/𝔽_ℓ` at all.  Whether it is load-bearing in the
+first is not claimed here; it is available to that prover either way.
+
+**This is the `Γ₀` analogue of a general-base development that already
+exists in this project**, and it was written against it rather than from
+scratch: `X1.lean` carries `Gamma1Rigidification`,
+`exists_descendClassifyGamma1` and
+`nonempty_gamma1GITPresentation_of_rigidification` over an ARBITRARY base
+scheme, and `exists_gamma1Rigidification`'s docstring names precisely the
+further cut taken here ("interpose a FINE moduli scheme … split off the
+level-`n` torsor as a `cover`-shaped hypothesis … derive the deck action
+and `coequalises` from the torsor").  `exists_deckActionOver` below is
+`exists_deckAction_of_torsion` at a general base, stated over an abstract
+ring so that no `letI := R.commRing_A` has to travel through a binder;
+its proof is that one, and the only thing it does NOT carry across is the
+coequalising clause, which is `deckAction_coequalisesOver`. -/
+
+/-- **The Katz–Mazur rigidified moduli scheme for `[Γ₀(N)]` over an
+arbitrary base scheme `S`** — the `Γ₀` analogue of `X1.lean`'s
+`Gamma1Rigidification`, and the output of (8.1.1) with the descended
+classifying map of (8.1.3) deliberately NOT included.
+
+It is `Gamma0GITPresentationData` with `B`, `iso` and `classify_dM`
+removed and `coequalises` added.  The removed fields are exactly the ones
+that mention the GIVEN coarse space, so an inhabitant of this structure
+is a statement about `𝔽_ℓ` alone; the added one is what pins it (see the
+sub-subsection docstring, and `X1.lean`'s `A = A₀ × A₀` counterexample
+for why dropping it makes any consumer FALSE rather than merely hard).
+
+No `strM_invariant` field, unlike the `Γ₁` version: it is used there only
+to build the structure morphism of the coarse space out of
+`specInvariants_universal`, and this structure does not carry one.  Over
+a base with `∀ Z, Subsingleton (Z ⟶ S)` — which is the only case used
+here — it would in any case be `Subsingleton.elim`. -/
+structure Gamma0RigidificationData (N : ℕ) (S : Scheme.{0}) where
+  /-- the coordinate ring of the rigidified moduli scheme `𝔐([Γ₀(N)], [Γ(n)])` -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- the deck group `GL₂(ℤ/n)` of the rigidification -/
+  G : Type
+  [group_G : Group G]
+  [finite_G : Finite G]
+  [action_GA : MulSemiringAction G A]
+  /-- the structure morphism of the rigidified moduli scheme -/
+  strM : Spec (CommRingCat.of A) ⟶ S
+  /-- the universal family it carries -/
+  dM : Gamma0Datum N (Spec (CommRingCat.of A))
+  /-- **rigidification**: every datum over an `S`-scheme is, after a
+  faithfully flat quasi-compact base change, a base change of `dM`.
+  Verbatim `Gamma0GITPresentationData.cover`, binder `_g` included — see
+  the FALSITY AUDIT on `Gamma0Atlas.cover` for why that binder is
+  load-bearing. -/
+  cover : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T),
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T')
+      (m : T' ⟶ Spec (CommRingCat.of A)),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (IsBaseChangeOf m d' dM)
+  /-- **`G`-equivariance of the universal family**: `σ^*dM ≅ dM` -/
+  dM_equivariant : ∀ σ : G, ∃ d₁ : Gamma0Datum N (Spec (CommRingCat.of A)),
+    Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
+    Nonempty (IsBaseChangeOf
+      (Spec.map (CommRingCat.ofHom (MulSemiringAction.toRingHom G A σ))) d₁ dM)
+  /-- **the torsor property**: the quotient map coequalises ANY two
+  rigidifications of one datum, not merely `𝟙` and `Spec σ` for a global
+  `σ : G`.  This is clause (b) of `exists_deckAction`, and without it
+  every consumer of this structure is false — see the sub-subsection
+  docstring. -/
+  coequalises : ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of A))
+    (d₁ : Gamma0Datum N Z), IsBaseChangeOf a d₁ dM → IsBaseChangeOf b d₁ dM →
+    a ≫ specInvariantsQuotient G A = b ≫ specInvariantsQuotient G A
+
+/-- **`RigidifiedModuli` at an arbitrary base scheme `S`** — the fine,
+affine moduli scheme of `[Γ₀(N)], [Γ(n)]`.
+
+Every remark on `RigidifiedModuli` applies unchanged, and the one that
+matters is that `universal` is a **fine** moduli property: an inhabitant
+is pinned up to unique isomorphism, so quantifying over
+`RigidifiedModuliData N n S` is not the junk-witness trap.  That is what
+makes `exists_deckActionOver` and `deckAction_coequalisesOver`
+legitimate `∀`-statements.
+
+The base enters only through `strM` and through `universal`'s binder
+`_g`, which is unused in the conclusion exactly as on the `ℚ` side; the
+binder restricts the moduli problem to `S`-schemes and nothing more. -/
+structure RigidifiedModuliData (N n : ℕ) (S : Scheme.{0}) where
+  /-- the coordinate ring of the rigidified moduli scheme -/
+  A : Type
+  [commRing_A : CommRing A]
+  /-- its structure morphism -/
+  strM : Spec (CommRingCat.of A) ⟶ S
+  /-- the universal `Γ₀(N)`-datum -/
+  dM : Gamma0Datum N (Spec (CommRingCat.of A))
+  /-- the universal full level-`n` structure on it -/
+  lvlM : FullLevelStructure n dM
+  /-- **fine moduli**: a datum-with-level-structure over an `S`-scheme is
+  a base change of `(dM, lvlM)` along a UNIQUE morphism -/
+  universal : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T)
+      (L : FullLevelStructure n d),
+    ∃! m : T ⟶ Spec (CommRingCat.of A),
+      ∃ bc : IsBaseChangeOf m d dM,
+        L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1
+
+/-- **The deck group acts on the rigidified coordinate ring, over an
+arbitrary base** (PROVEN 2026-07-28) — `exists_deckAction_of_torsion` at
+a general base, minus the coequalising clause.
+
+Two differences from the `ℚ` version, both deliberate:
+
+* it is stated over an **abstract** `[CommRing A]` with the fine moduli
+  property as the hypothesis `huniv`, rather than over a
+  `RigidifiedModuliData`.  That keeps every `CommRing` instance in a
+  genuine instance binder, so no `letI := R.commRing_A` has to travel
+  through a hypothesis type — which is what makes
+  `deckAction_coequalisesOver` below statable at all;
+* the second conjunct is the **PINNING** clause, and it replaces the `ℚ`
+  version's internal `sorry`.  It says that `Spec σ⁻¹` is the *unique*
+  classifier of the `σ`-twisted universal level structure, so — by
+  `huniv`'s uniqueness plus `Spec.map_injective` — it determines the
+  action completely.  That is what lets the coequalising clause be split
+  off as its own leaf: the audit on `exists_deckAction` observes that a
+  leaf quantifying over an arbitrary `MulSemiringAction` would be FALSE
+  (`σ ↦ id` satisfies the equivariance clause, and under it `A^G = A`,
+  `π = 𝟙` and coequalising fails), and the pinning clause is exactly
+  what excludes `σ ↦ id`.
+
+The proof is `exists_deckAction_of_torsion`'s, transcribed: `mm σ` is
+`huniv`'s unique classifier of the `σ`-twist, `σ ↦ mm σ` is a monoid
+ANTIhomomorphism into `Aut (Spec A)` by uniqueness plus the additivity of
+`RelPoint.comb` (`toRelPoint_comb`, `pre_comb`), and the action is
+transported to rings by full faithfulness of `Spec` on affines.  The
+`n`-torsion that `twist_mul` needs comes from `lvlM.nsmul_P` /
+`lvlM.nsmul_Q`, which are fields of `FullLevelStructure`; see its
+FALSITY AUDIT for why they cannot be read off `geom_basis`. -/
+theorem exists_deckActionOver {N n : ℕ} (hn : 3 ≤ n) {S : Scheme.{0}} {A : Type} [CommRing A]
+    (strM : Spec (CommRingCat.of A) ⟶ S) (dM : Gamma0Datum N (Spec (CommRingCat.of A)))
+    (lvlM : FullLevelStructure n dM)
+    (huniv : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T)
+        (L : FullLevelStructure n d),
+      ∃! m : T ⟶ Spec (CommRingCat.of A),
+        ∃ bc : IsBaseChangeOf m d dM,
+          L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1) :
+    ∃ act : MulSemiringAction (gamma0DeckGroup n) A,
+      letI := act
+      (∀ σ : gamma0DeckGroup n, ∃ d₁ : Gamma0Datum N (Spec (CommRingCat.of A)),
+          Nonempty (IsBaseChangeOf (𝟙 (Spec (CommRingCat.of A))) d₁ dM) ∧
+          Nonempty (IsBaseChangeOf (Spec.map (CommRingCat.ofHom
+            (MulSemiringAction.toRingHom (gamma0DeckGroup n) A σ))) d₁ dM)) ∧
+      (∀ (σ : gamma0DeckGroup n)
+          (y : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of A)),
+          (∃ bc : IsBaseChangeOf y dM dM,
+            (FullLevelStructure.twist hn lvlM σ).P.1 ≫ bc.map = y ≫ lvlM.P.1 ∧
+            (FullLevelStructure.twist hn lvlM σ).Q.1 ≫ bc.map = y ≫ lvlM.Q.1) →
+          y = Spec.map (CommRingCat.ofHom
+            (MulSemiringAction.toRingHom (gamma0DeckGroup n) A σ⁻¹))) := by
+  classical
+  haveI : NeZero n := ⟨by omega⟩
+  have huniv' : ∀ σ : gamma0DeckGroup n,
+      ∃! m : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of A),
+        ∃ bc : IsBaseChangeOf m dM dM,
+          (FullLevelStructure.twist hn lvlM σ).P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧
+          (FullLevelStructure.twist hn lvlM σ).Q.1 ≫ bc.map = m ≫ lvlM.Q.1 :=
+    fun σ => huniv strM dM (FullLevelStructure.twist hn lvlM σ)
+  choose mm hmm hmmu using huniv'
+  choose bcm e1 e2 using hmm
+  -- `σ ↦ mm σ` is an antihomomorphism into the automorphisms of `Spec A`
+  have hone : mm 1 = 𝟙 (Spec (CommRingCat.of A)) := by
+    refine (hmmu 1 _ ⟨IsBaseChangeOf.refl dM, ?_, ?_⟩).symm <;>
+      · rw [FullLevelStructure.twist_one]
+        simp [IsBaseChangeOf.refl]
+  have hmul : ∀ σ τ : gamma0DeckGroup n, mm (σ * τ) = mm τ ≫ mm σ := by
+    intro σ τ
+    have hTP : (bcm τ).toRelPoint ((FullLevelStructure.twist hn lvlM τ).P)
+        = RelPoint.pre (mm τ) (by simp) lvlM.P := Subtype.ext (e1 τ)
+    have hTQ : (bcm τ).toRelPoint ((FullLevelStructure.twist hn lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp) lvlM.Q := Subtype.ext (e2 τ)
+    have hstepP : (FullLevelStructure.twist hn lvlM (σ * τ)).P.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn lvlM σ).P.1 := by
+      refine congrArg Subtype.val (?_ :
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn lvlM (σ * τ)).P)
+          = RelPoint.pre (mm τ) (by simp)
+              ((FullLevelStructure.twist hn lvlM σ).P))
+      rw [← FullLevelStructure.twist_mul hn lvlM σ τ]
+      show (bcm τ).toRelPoint (RelPoint.comb dM.ab (σ.val 0 0) (σ.val 0 1)
+          (FullLevelStructure.twist hn lvlM τ).P
+          (FullLevelStructure.twist hn lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp)
+            (RelPoint.comb dM.ab (σ.val 0 0) (σ.val 0 1) lvlM.P lvlM.Q)
+      rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
+    have hstepQ : (FullLevelStructure.twist hn lvlM (σ * τ)).Q.1 ≫ (bcm τ).map
+        = mm τ ≫ (FullLevelStructure.twist hn lvlM σ).Q.1 := by
+      refine congrArg Subtype.val (?_ :
+        (bcm τ).toRelPoint ((FullLevelStructure.twist hn lvlM (σ * τ)).Q)
+          = RelPoint.pre (mm τ) (by simp)
+              ((FullLevelStructure.twist hn lvlM σ).Q))
+      rw [← FullLevelStructure.twist_mul hn lvlM σ τ]
+      show (bcm τ).toRelPoint (RelPoint.comb dM.ab (σ.val 1 0) (σ.val 1 1)
+          (FullLevelStructure.twist hn lvlM τ).P
+          (FullLevelStructure.twist hn lvlM τ).Q)
+        = RelPoint.pre (mm τ) (by simp)
+            (RelPoint.comb dM.ab (σ.val 1 0) (σ.val 1 1) lvlM.P lvlM.Q)
+      rw [(bcm τ).toRelPoint_comb, RelPoint.pre_comb, hTP, hTQ]
+    refine (hmmu (σ * τ) (mm τ ≫ mm σ) ⟨(bcm τ).comp (bcm σ), ?_, ?_⟩).symm
+    · show (FullLevelStructure.twist hn lvlM (σ * τ)).P.1 ≫ (bcm τ).map ≫ (bcm σ).map
+          = (mm τ ≫ mm σ) ≫ lvlM.P.1
+      rw [← Category.assoc, hstepP, Category.assoc, e1 σ, Category.assoc]
+    · show (FullLevelStructure.twist hn lvlM (σ * τ)).Q.1 ≫ (bcm τ).map ≫ (bcm σ).map
+          = (mm τ ≫ mm σ) ≫ lvlM.Q.1
+      rw [← Category.assoc, hstepQ, Category.assoc, e2 σ, Category.assoc]
+  -- transport to ring homomorphisms through full faithfulness of `Spec` on affines
+  have hw : ∀ (σ τ : gamma0DeckGroup n) (x : A),
+      (Spec.preimage (mm τ)).hom ((Spec.preimage (mm σ)).hom x)
+        = (Spec.preimage (mm (σ * τ))).hom x := by
+    intro σ τ x
+    have h : Spec.preimage (mm (σ * τ)) = Spec.preimage (mm σ) ≫ Spec.preimage (mm τ) := by
+      refine Spec.map_injective ?_
+      rw [Spec.map_preimage, Spec.map_comp, Spec.map_preimage, Spec.map_preimage, hmul]
+    rw [h]; rfl
+  have hw1 : ∀ x : A, (Spec.preimage (mm (1 : gamma0DeckGroup n))).hom x = x := by
+    intro x
+    have h : Spec.preimage (mm (1 : gamma0DeckGroup n)) = 𝟙 (CommRingCat.of A) := by
+      refine Spec.map_injective ?_
+      rw [Spec.map_preimage, Spec.map_id, hone]
+    rw [h]; rfl
+  -- the deck action itself
+  let ρ : gamma0DeckGroup n →* RingAut A :=
+    { toFun := fun σ =>
+        { toFun := (Spec.preimage (mm σ⁻¹)).hom
+          invFun := (Spec.preimage (mm σ)).hom
+          left_inv := fun x => by rw [hw σ⁻¹ σ x, inv_mul_cancel, hw1]
+          right_inv := fun x => by rw [hw σ σ⁻¹ x, mul_inv_cancel, hw1]
+          map_mul' := map_mul _
+          map_add' := map_add _ }
+      map_one' := by
+        ext x
+        show (Spec.preimage (mm (1 : gamma0DeckGroup n)⁻¹)).hom x = x
+        rw [inv_one, hw1]
+      map_mul' := fun σ τ => by
+        ext x
+        show (Spec.preimage (mm (σ * τ)⁻¹)).hom x
+            = (Spec.preimage (mm σ⁻¹)).hom ((Spec.preimage (mm τ⁻¹)).hom x)
+        rw [hw τ⁻¹ σ⁻¹ x, ← mul_inv_rev] }
+  letI act : MulSemiringAction (gamma0DeckGroup n) A := MulSemiringAction.compHom A ρ
+  have hmap : ∀ σ : gamma0DeckGroup n, Spec.map (CommRingCat.ofHom
+      (MulSemiringAction.toRingHom (gamma0DeckGroup n) A σ)) = mm σ⁻¹ := by
+    intro σ
+    have h : CommRingCat.ofHom (MulSemiringAction.toRingHom (gamma0DeckGroup n) A σ)
+        = Spec.preimage (mm σ⁻¹) := by
+      ext x; rfl
+    rw [h, Spec.map_preimage]
+  refine ⟨act, fun σ => ⟨dM, ⟨IsBaseChangeOf.refl dM⟩, ⟨?_⟩⟩, fun σ y hy => ?_⟩
+  · rw [hmap σ]
+    exact bcm σ⁻¹
+  · -- the pinning clause is `huniv`'s uniqueness, read through `hmap`
+    rw [hmap σ⁻¹, inv_inv]
+    exact hmmu σ y hy
+
+/-- **The deck quotient map coequalises ANY two rigidifications of one
+datum** (sorry leaf, opened 2026-07-28) — clause (b) of
+`exists_deckAction`, at a general base and with the action PINNED rather
+than merely existentially quantified.
+
+## What the prover of this node owes
+
+Two rigidifications `a, b : Z ⟶ Spec A` of one datum `d₁` differ by a
+section of the `GL₂(ℤ/n)`-torsor of full level structures, which lies in
+`GL₂(ℤ/n)` only fppf-LOCALLY.  The argument, recorded in full on
+`exists_deckAction` and not repeated here, is:
+
+> because `huniv` is a fine moduli property, two full level structures
+> over a base admit a **locally constant** `GL₂(ℤ/n)`-valued comparison.
+> Locally constant means a finite CLOPEN decomposition of `Z`; on each
+> piece the two classifying maps differ by composition with a single
+> global `Spec σ`; and `Spec σ ≫ π = π` because `π` is `Spec` of the
+> inclusion of the invariants.  So `a ≫ π = b ≫ π` holds piecewise and
+> therefore globally.
+
+**Use the piecewise argument** — a search for a single global `σ` cannot
+succeed, and that is the trap this leaf exists to record.  The step
+`Spec σ ≫ π = π` is where `_hpin` is consumed: it identifies
+`Spec (toRingHom σ)` with the classifier of a twist, which is what makes
+it a map over the invariants.
+
+## Faithfulness
+
+`_hpin` is what makes the `∀` over the action legitimate.  The audit on
+`exists_deckAction` records that clause (a) alone does NOT pin the
+action — `σ ↦ id` satisfies it, and under that action `A^G = A`, `π = 𝟙`
+and this statement is FALSE — so a leaf quantifying over an arbitrary
+`MulSemiringAction` would be the junk-witness trap.  `_hpin` says
+`Spec σ⁻¹` is the unique classifier of the `σ`-twist, which by
+`Spec.map_injective` determines `toRingHom σ` and hence the whole action;
+at `σ ↦ id` it fails as soon as the twist acts nontrivially on some
+level structure, i.e. for every `n ≥ 3`.
+
+`_huniv` is carried because the piecewise argument runs on it; both
+binders are underscored only because the body is `sorry`.
+
+*The check that would refute this audit*: exhibit a
+`MulSemiringAction (gamma0DeckGroup n) A` satisfying `_hpin` for which
+two rigidifications of one datum are separated by
+`specInvariantsQuotient`. -/
+theorem deckAction_coequalisesOver {N n : ℕ} (hn : 3 ≤ n) {S : Scheme.{0}} {A : Type}
+    [CommRing A] [MulSemiringAction (gamma0DeckGroup n) A]
+    (strM : Spec (CommRingCat.of A) ⟶ S) (dM : Gamma0Datum N (Spec (CommRingCat.of A)))
+    (lvlM : FullLevelStructure n dM)
+    (_huniv : ∀ {T : Scheme.{0}} (_g : T ⟶ S) (d : Gamma0Datum N T)
+        (L : FullLevelStructure n d),
+      ∃! m : T ⟶ Spec (CommRingCat.of A),
+        ∃ bc : IsBaseChangeOf m d dM,
+          L.P.1 ≫ bc.map = m ≫ lvlM.P.1 ∧ L.Q.1 ≫ bc.map = m ≫ lvlM.Q.1)
+    (_hpin : ∀ (σ : gamma0DeckGroup n)
+        (y : Spec (CommRingCat.of A) ⟶ Spec (CommRingCat.of A)),
+        (∃ bc : IsBaseChangeOf y dM dM,
+          (FullLevelStructure.twist hn lvlM σ).P.1 ≫ bc.map = y ≫ lvlM.P.1 ∧
+          (FullLevelStructure.twist hn lvlM σ).Q.1 ≫ bc.map = y ≫ lvlM.Q.1) →
+        y = Spec.map (CommRingCat.ofHom
+          (MulSemiringAction.toRingHom (gamma0DeckGroup n) A σ⁻¹))) :
+    ∀ {Z : Scheme.{0}} (a b : Z ⟶ Spec (CommRingCat.of A)) (d₁ : Gamma0Datum N Z),
+      IsBaseChangeOf a d₁ dM → IsBaseChangeOf b d₁ dM →
+      a ≫ specInvariantsQuotient (gamma0DeckGroup n) A
+        = b ≫ specInvariantsQuotient (gamma0DeckGroup n) A :=
+  sorry
+
+/-- **A fine moduli scheme plus the level-`n` torsor IS a rigidification**
+(PROVEN 2026-07-28) — the assembly half, carrying no citation at all.
+
+`cover` is `hcov`'s level structure turned into a classifying map by the
+fine moduli property, exactly as `exists_gamma0GITPresentation_of_rigidified`
+builds its own `hcov'`; `dM_equivariant` and the pinning come from
+`exists_deckActionOver`; `coequalises` is `deckAction_coequalisesOver`
+applied at that pinned action.  This is the only place `R`'s fine moduli
+property is used directly by the assembly. -/
+theorem nonempty_gamma0Rigidification_of_rigidifiedModuli {N n : ℕ} (hn : 3 ≤ n)
+    {S : Scheme.{0}} (R : RigidifiedModuliData N n S)
+    (hcov : ∀ {T : Scheme.{0}}, (T ⟶ S) → ∀ d : Gamma0Datum N T,
+      ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
+        AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+        Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d')) :
+    Nonempty (Gamma0RigidificationData N S) := by
+  classical
+  letI := R.commRing_A
+  haveI : NeZero n := ⟨by omega⟩
+  obtain ⟨act, hequiv, hpin⟩ :=
+    exists_deckActionOver hn R.strM R.dM R.lvlM (fun {T} g d L => R.universal g d L)
+  letI := act
+  refine ⟨{ A := R.A
+            G := gamma0DeckGroup n
+            action_GA := act
+            strM := R.strM
+            dM := R.dM
+            cover := ?_
+            dM_equivariant := hequiv
+            coequalises := ?_ }⟩
+  · intro T g d
+    obtain ⟨T', p, d', hf, hs, hq, ⟨bp⟩, ⟨L⟩⟩ := hcov g d
+    obtain ⟨m, ⟨bcm, -⟩, -⟩ := R.universal (p ≫ g) d' L
+    exact ⟨T', p, d', m, hf, hs, hq, ⟨bp⟩, ⟨bcm⟩⟩
+  · exact deckAction_coequalisesOver hn R.strM R.dM R.lvlM
+      (fun {T} g d L => R.universal g d L) hpin
+
+/-- **Katz–Mazur representability and affineness of the rigidified moduli
+problem over `𝔽_ℓ`** (sorry leaf, opened 2026-07-28) — the `𝔽_ℓ`
+counterpart of `exists_rigidifiedModuliScheme` and
+`isAffine_of_rigidifiedModuliScheme` taken together, and the ONLY
+citation in the construction half of the special fibre.
+
+## What the prover of this node owes
+
+That the moduli problem "`Γ₀(N)`-datum over an `𝔽_ℓ`-scheme together
+with a full level-`n` structure" is representable by an AFFINE scheme.
+The citations are the ones already quoted verbatim in the section comment
+above `RigidifiedModuliScheme`, read at the base `𝔽_ℓ` rather than `ℚ`:
+
+* **(4.7.2)** for `n ≥ 3` the level-`n` problem is representable by a
+  smooth **affine** curve `Y(n)` over `ℤ[1/n]` — this is where `¬ ℓ ∣ n`
+  is consumed, since `Y(n)` exists over `𝔽_ℓ` exactly when `n` is
+  invertible there;
+* **(5.1.1)** and **(6.6.1)**: `[Γ₀(N)]` is *relatively* representable
+  and finite flat over `(Ell)`, over `ℤ` and hence over `𝔽_ℓ`;
+* **(6.6.2)** applied with `𝒮 = [Γ(n)]`, which produces `M(𝒮, Γ₀(N))`
+  and states that it is finite and flat over `M(𝒮)`;
+* the affineness parenthesis of **(8.1.1)**: a scheme finite over an
+  affine scheme is affine — and that last step is not a citation, it is
+  available in the pin.
+
+## What it does NOT owe
+
+Anything about `GL₂(ℤ/n)`, invariants, descent, the coarse space, or the
+integral model `Y_0(N)_{ℤ_(ℓ)}`.  All of those live in
+`exists_deckActionOver`, `deckAction_coequalisesOver` and
+`exists_specialFibreInvariantsIso`.
+
+## Faithfulness
+
+`_hn` is load-bearing for TRUTH: at `n ≤ 2` the rigidified problem still
+has the automorphism `-1`, so it is not representable and no inhabitant
+exists.  `_hℓn` is load-bearing for the same reason at `ℓ ∣ n`: the
+level-`n` problem is not étale in characteristic `ℓ` and `Y(n)` does not
+exist over `𝔽_ℓ`.  `_hℓN` is carried but is **not claimed** to be
+load-bearing here — (5.1.1)/(6.6.1)/(6.6.2) hold over `ℤ`, so the
+rigidified problem is plausibly representable at `ℓ ∣ N` as well, with
+the `Γ₀(N)`-part becoming a Drinfeld structure; it is passed in because
+it is available at the call site and because whether the development's
+`CyclicSubgroupOfOrder` is the Drinfeld notion at `ℓ ∣ N` has not been
+checked.  A prover who does not need it should say so and drop it.
+
+*The check that would refute the claim that this is open*: a
+`RigidifiedModuliData`-valued producer anywhere in the tree —
+`grep -rn "RigidifiedModuliData" Fermat/` currently finds only this file. -/
+theorem exists_rigidifiedModuliData_specF (N n ℓ : ℕ) (_hn : 3 ≤ n) (_hℓ : ℓ.Prime)
+    (_hℓn : ¬ ℓ ∣ n) (_hℓN : ¬ ℓ ∣ N) :
+    Nonempty (RigidifiedModuliData N n (SpecF ℓ)) :=
+  sorry
+
+/-- **Every `Γ₀(N)`-datum over an `𝔽_ℓ`-scheme acquires a full level-`n`
+structure fppf-locally** (sorry leaf, opened 2026-07-28) — the `𝔽_ℓ`
+counterpart of `exists_fullLevelStructure_cover`, and the level-`n`
+torsor and nothing else.
+
+## What the prover of this node owes
+
+That over an `𝔽_ℓ`-scheme with `ℓ ∤ n` the full level-`n` structures on
+an elliptic scheme form a finite étale `GL₂(ℤ/n)`-torsor, so that the
+torsor itself is a cover of the required kind: finite étale is flat,
+surjective and quasi-compact, and the pulled-back family carries a
+tautological level structure.  The `ℚ`-side proof of
+`exists_fullLevelStructure_cover_of_baseChange` is the template, and
+`nonempty_fullLevelStructure_of_geomBasis`,
+`exists_torsionBasis_cover_of_geomPoint` and
+`exists_gamma0Datum_baseChange` above are all base-independent — none of
+them mentions `SpecQ` — so what is genuinely new here is only that
+`E[n]` is étale of rank `n²` in characteristic `ℓ ∤ n`.
+
+## Faithfulness
+
+`_hℓn` is load-bearing for TRUTH: at `ℓ ∣ n` the `n`-torsion of an
+ordinary curve over `𝔽_ℓ` has rank `< n²` and of a supersingular one is
+infinitesimal, so no full level-`n` structure exists even fppf-locally
+and the statement is FALSE.  `_hn` matches the consumer and is what makes
+`FullLevelStructure.twist` an action.  `N` plays no role: the level
+structure is data on the underlying elliptic scheme, which is why `¬ ℓ ∣ N`
+is NOT a hypothesis here — it is consumed elsewhere. -/
+theorem exists_fullLevelStructure_cover_specF (N n ℓ : ℕ) (_hn : 3 ≤ n) (_hℓ : ℓ.Prime)
+    (_hℓn : ¬ ℓ ∣ n) {T : Scheme.{0}} (_g : T ⟶ SpecF ℓ) (d : Gamma0Datum N T) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma0Datum N T'),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      Nonempty (IsBaseChangeOf p d' d) ∧ Nonempty (FullLevelStructure n d') :=
+  sorry
+
+/-- **The Katz–Mazur rigidification of `Γ₀(N)` over `𝔽_ℓ` exists**
+(PROVEN 2026-07-28 from the three leaves above).
+
+The auxiliary level is chosen here rather than quantified: `n = 3`, or
+`n = 4` when `ℓ = 3`.  Both are `≥ 3` and prime to `ℓ`, which is all the
+two citation leaves ask of it.  Note this is the only place `_hℓ` is used
+for anything other than being carried: primality is what makes `ℓ ∤ 3`
+follow from `ℓ ≠ 3`. -/
+theorem exists_gamma0Rigidification_specF (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓN : ¬ ℓ ∣ N) :
+    Nonempty (Gamma0RigidificationData N (SpecF ℓ)) := by
+  obtain ⟨n, hn3, hℓn⟩ : ∃ n : ℕ, 3 ≤ n ∧ ¬ ℓ ∣ n := by
+    by_cases h3 : ℓ = 3
+    · exact ⟨4, by norm_num, by subst h3; decide⟩
+    · exact ⟨3, le_rfl, fun hd => h3 ((Nat.prime_dvd_prime_iff_eq hℓ Nat.prime_three).mp hd)⟩
+  obtain ⟨R⟩ := exists_rigidifiedModuliData_specF N n ℓ hn3 hℓ hℓn hℓN
+  exact nonempty_gamma0Rigidification_of_rigidifiedModuli hn3 R
+    (fun {T} g d => exists_fullLevelStructure_cover_specF N n ℓ hn3 hℓ hℓn g d)
+
+/-- **GOOD REDUCTION: the special fibre of the given coarse space IS
+`Spec` of the invariants** (sorry leaf, opened 2026-07-28) — the ONLY
+place where `hcoarse`, `_hbase` and the good-reduction content of
+`¬ ℓ ∣ N` are consumed, and the one leaf in this cluster with no `ℚ`-side
+analogue at all.
+
+## What the prover of this node owes
+
+Deligne–Rapoport / Katz–Mazur 8.2 in the form: for `ℓ ∤ N` the integral
+coarse moduli space `Y_0(N)_{ℤ_(ℓ)}` has good reduction, and its special
+fibre `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is the coarse moduli space of `Γ₀(N)/𝔽_ℓ`,
+identified with the Katz–Mazur quotient `Spec (A^G)` so that the
+base-changed classifying map of the universal family becomes the quotient
+map `specInvariantsQuotient`.
+
+**Half of this is formal and the prover should do that half first.**
+`P` makes `Spec (A^G)` a coarse moduli space over `𝔽_ℓ`: package `P` as
+a `Gamma0AtlasData` — `coequalises` gives the categorical quotient
+through `specInvariants_universal`, exactly as
+`Gamma0GITPresentationData.toGamma0AtlasData` does — and apply
+`isCoarseModuliY0_of_atlasData` with `subsingleton_hom_specF`.  Its
+`universal` clause then produces a canonical morphism
+`Spec (A^G) ⟶ Y ×_{ℤ_(ℓ)} 𝔽_ℓ` compatible with the classifying maps, in
+the direction stated here, **with no arithmetic input whatever**.
+
+What is NOT formal, and is the whole content of the leaf, is that this
+morphism is an ISOMORPHISM — equivalently that `Y ×_{ℤ_(ℓ)} 𝔽_ℓ` is
+itself initial, which the subsection docstring above proves does NOT
+descend from `hcoarse` (a cocone defined on `𝔽_ℓ`-schemes cannot be fed
+to a universal property quantified over `ℤ_(ℓ)`-schemes).  So the honest
+shape of the remaining work is: build the formal half, then supply
+good reduction as the inverse.
+
+## Faithfulness
+
+`_hℓN` is load-bearing for TRUTH: at `ℓ ∣ N` the special fibre of
+`Y_0(N)_{ℤ_(ℓ)}` is the Deligne–Rapoport crossing of two Igusa
+components and is not the coarse space of `Γ₀(N)/𝔽_ℓ`, so the two
+schemes are not isomorphic and the statement is FALSE.  `_hbase` is what
+makes `SpecLoc.special toF` the honest closed point.
+
+The `∀` over `P` is legitimate and is NOT the junk-witness trap the
+subsection docstring above warns about: `Gamma0RigidificationData`
+carries `coequalises`, which by the paragraph above makes `Spec (A^G)` a
+coarse moduli space over `𝔽_ℓ`, and coarse moduli spaces are pinned up
+to unique isomorphism by their own initiality clause.  So the statement
+is invariant under change of inhabitant.  *The check that would refute
+that*: two inhabitants of `Gamma0RigidificationData N (SpecF ℓ)` whose
+invariant rings have non-isomorphic spectra over `𝔽_ℓ`. -/
+theorem exists_specialFibreInvariantsIso {N ℓ : ℕ} (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    {R : Subring ℚ} {toF : R →+* ZMod ℓ} (_hbase : IsReductionBase ℓ R toF)
+    {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R} (hcoarse : IsCoarseModuliY0 N ystr)
+    (P : Gamma0RigidificationData N (SpecF ℓ)) :
+    letI := P.commRing_A
+    letI := P.group_G
+    letI := P.finite_G
+    letI := P.action_GA
+    ∃ e : pullback ystr (SpecLoc.special toF) ≅
+        Spec (CommRingCat.of ↥(FixedPoints.subring P.A P.G)),
+      (hcoarse.classifyPullback (SpecLoc.special toF) P.strM P.dM).1 ≫ e.hom
+        = specInvariantsQuotient P.G P.A :=
+  sorry
+
 /-- **The special fibre carries a Katz–Mazur GIT PRESENTATION for `Γ₀(N)`
-over `𝔽_ℓ`** (sorry node — this is where good reduction lives, and where
-`_hℓN` is consumed).
+over `𝔽_ℓ`** (**PROVEN 2026-07-28** over the four leaves of the
+sub-subsection above — it was a sorry leaf until that cut).
+
+The proof is the assembly and nothing else: `exists_gamma0Rigidification_specF`
+supplies the construction over `𝔽_ℓ` — the ring, the deck group, the
+fppf cover and the equivariance — and `exists_specialFibreInvariantsIso`
+supplies the two fields that mention the given coarse space, `iso` and
+`classify_dM`.  `B` is `FixedPoints.subring A G` with `algebra_BA` the
+subring inclusion, which is what makes `classify_dM` literally the
+equation `exists_specialFibreInvariantsIso` returns.
+
+Everything below is the record of what the four leaves between them now
+owe, and is unchanged apart from the STATUS lines.
 
 TRUE for `ℓ ∤ N`, and it is the ONE genuinely modular input to the
 identification of the special fibre.  What has to be produced is
@@ -38251,7 +38855,9 @@ the base-changed classifying map `IsCoarseModuliY0.classifyPullback`.
 That last clause is the good-reduction content, and it is what makes the
 leaf a statement about `hcoarse` rather than a free-standing existence
 claim: the quotient has to be the base change of the given coarse space,
-not merely some coarse space over `𝔽_ℓ`.
+not merely some coarse space over `𝔽_ℓ`.  **It is now isolated**, as
+`exists_specialFibreInvariantsIso`, which is the only one of the four
+leaves that mentions `Y_0(N)_{ℤ_(ℓ)}` at all.
 
 **WHAT CHANGED 2026-07-27, and it is the split the subsection docstring
 above already prescribed.**  This leaf used to ask for `Gamma0AtlasData`,
@@ -38270,44 +38876,66 @@ writes down; none of them is a categorical universal property.  This is
 the same trade the `ℚ` side made when `exists_gamma0Atlas` was replaced by
 `exists_gamma0GITPresentation` + `specInvariants_universal`.
 
-**`_hℓN` cannot be dropped.**  At `ℓ ∣ N` the special fibre of the
+**`hℓN` cannot be dropped.**  At `ℓ ∣ N` the special fibre of the
 `Γ₀(N)`-problem is not the `Γ₀(N)`-problem over `𝔽_ℓ` at all: the moduli
 stack acquires the Deligne–Rapoport crossing of two Igusa components, and
 the special fibre of `Y_0(N)_{ℤ_(ℓ)}` is not a coarse moduli space for
-`Γ₀(N)/𝔽_ℓ`.  Concretely it is the `cover` clause that fails — an
-`𝔽_ℓ`-datum on the supersingular locus is not fppf-locally a base change
-of the level-`n` rigidified family when `ℓ ∣ N`.  `_hbase` is what makes
-`SpecLoc.special toF` the honest closed point.
+`Γ₀(N)/𝔽_ℓ`.  `hbase` is what makes `SpecLoc.special toF` the honest
+closed point.
 
-**How to attack it**, and the template is in this file: the `ℚ` analogue
-`exists_gamma0Atlas` is PROVEN, from `exists_gamma0GITPresentation` (the
-modular-curve half, itself split into
+**How it was attacked**, and the template was in this file: the `ℚ`
+analogue `exists_gamma0Atlas` is PROVEN, from `exists_gamma0GITPresentation`
+(the modular-curve half, itself split into
 `exists_gamma0GITPresentation_of_cover`,
 `exists_gamma0GITPresentation_of_rigidified` and
 `exists_fullLevelStructure_cover`) and `specInvariants_universal` (the
 GIT half, which is base-independent pure algebra and already PROVEN, so
-it can be reused here verbatim — and now IS, one level up).  The
-subsection docstring above records which split of THIS leaf is safe and
-which is the junk-witness trap.
+it can be reused here verbatim — and now IS, one level up).
 
-The `ℚ` side's next split is the one to copy, and it is available in the
-same file: `exists_gamma0GITPresentation` decomposes through
+The `ℚ` side's next split was the one to copy, and the sub-subsection
+above copies it: `exists_gamma0GITPresentation` decomposes through
 `RigidifiedModuliScheme` into the representability of the level-`n`
 problem, the fppf cover by full level structures, and the deck-group
 computation.  Each of those three is a statement about the moduli problem
 over a base, and the two that concern the `Γ(n)`-problem are exactly the
-place where `ℓ ∤ N` enters.  Do NOT instead split into "`M` with `cover`"
-and "`M` with `quotient`" — that is the junk-witness trap, recorded above.
-
-`_hℓ`, `_hℓN` and `_hbase` carry underscores only because the body is
-`sorry`; all three are genuinely needed, as the paragraph above says. -/
-theorem exists_gamma0GITPresentationData_pullbackSpecial {N ℓ : ℕ} (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-    (_hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
+place where `ℓ ∤ n` enters.  The split that was NOT taken, because it is
+the junk-witness trap recorded above, is "`M` with `cover`" and "`M` with
+`quotient`". -/
+theorem exists_gamma0GITPresentationData_pullbackSpecial {N ℓ : ℕ} (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N) {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (hbase : IsReductionBase ℓ R toF) {YZ : Scheme.{0}} {ystr : YZ ⟶ SpecLoc R}
     (hcoarse : IsCoarseModuliY0 N ystr) :
     Nonempty (Gamma0GITPresentationData N (pullback.snd ystr (SpecLoc.special toF))
-      (fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d)) :=
-  sorry
+      (fun {T} g d => hcoarse.classifyPullback (SpecLoc.special toF) (T := T) g d)) := by
+  classical
+  obtain ⟨P⟩ := exists_gamma0Rigidification_specF N ℓ hℓ hℓN
+  letI := P.commRing_A
+  letI := P.group_G
+  letI := P.finite_G
+  letI := P.action_GA
+  -- the invariants, as a SUBRING of `A`, so that `algebraMap B A` is the
+  -- inclusion and `classify_dM` is an equation about `specInvariantsQuotient`
+  letI : Algebra ↥(FixedPoints.subring P.A P.G) P.A :=
+    RingHom.toAlgebra (Subring.subtype _)
+  haveI : Algebra.IsInvariant ↥(FixedPoints.subring P.A P.G) P.A P.G :=
+    ⟨fun x hx => ⟨⟨x, hx⟩, rfl⟩⟩
+  haveI : SMulCommClass P.G ↥(FixedPoints.subring P.A P.G) P.A :=
+    ⟨fun σ b a => by
+      show σ • ((b : P.A) * a) = (b : P.A) * (σ • a)
+      rw [smul_mul', b.2 σ]⟩
+  obtain ⟨e, he⟩ := exists_specialFibreInvariantsIso hℓ hℓN hbase hcoarse P
+  refine ⟨{ A := P.A
+            B := ↥(FixedPoints.subring P.A P.G)
+            G := P.G
+            action_GA := P.action_GA
+            injective_algebraMap := Subtype.val_injective
+            iso := e
+            strM := P.strM
+            dM := P.dM
+            classify_dM := ?_
+            cover := fun {_T} g d => P.cover g d
+            dM_equivariant := P.dM_equivariant }⟩
+  exact he
 
 /-- **The special fibre carries a Katz–Mazur atlas for `Γ₀(N)` over
 `𝔽_ℓ`** (PROVEN 2026-07-27 over
