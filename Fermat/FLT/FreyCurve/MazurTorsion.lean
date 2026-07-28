@@ -3172,7 +3172,10 @@ rather than duplicated:
   automorphism with the ∃-form of the cusp clause — "moves some cusp".
   This is **pure Atkin–Lehner**, and it is level-GENERIC: `N.Prime` is
   not used by it (`w_4` moves `0` and `∞` even though it fixes `1/2`),
-  only `1 < N`.
+  only `1 < N`.  It was itself cut a fourth time on 2026-07-28 and is now
+  PROVEN — see the fourth-cut docstring below, which takes the
+  CONSTRUCTION of `w_N` out of it and leaves only the extension across
+  the cusps and the cusp action.
 * `forall_ne_of_involutive_of_card_eq_two` is (3), PROVEN.
 * `exists_atkinLehnerModel_of_jNeronDatum` is now GLUE, stated
   unchanged and proven from those two plus
@@ -3215,8 +3218,329 @@ theorem forall_ne_of_involutive_of_card_eq_two {α : Type*} (σ : α → α)
     have h4 : σ a = a₀ := by rw [h1, ← h2, hσ]
     exact haa (ha.symm.trans h4)
 
+/-! #### THE FOURTH CUT (2026-07-28): the CONSTRUCTION of `w_N` comes out
+of the Atkin–Lehner leaf, leaving only its extension and its cusp action
+
+The third cut above took the cusp COUNT out.  What was left,
+`exists_atkinLehnerModelAut_of_jNeronDatum`, still asked for four
+different things at once, and only one of them is Atkin–Lehner:
+
+1. the moduli action `(E, C) ↦ (E/C, E[N]/C)` on `Γ₀(N)`-data;
+2. its DESCENT to the integral coarse space `𝒴` over `ℤ_(q)`, and the
+   involutivity of the descended `w_𝒴`;
+3. the EXTENSION of `w_𝒴` across the cusps to the compactification `𝒳`,
+   and the promotion of involutivity from `𝒴` to `𝒳`;
+4. the fact that the extension does not fix every cusp of the special
+   fibre.
+
+**(1) is not new here and must not be rebuilt.**  It is
+`AtkinLehnerMorphism`/`nonempty_atkinLehnerMorphism`
+(`Fermat/FLT/ModularCurve/X0.lean`), and it is stated over an ARBITRARY
+test scheme — `dual : ∀ {T : Scheme.{0}}, Gamma0Datum N T → Gamma0Datum N T`
+— so it is base-free and applies over `Spec ℤ_(q)` verbatim.  That leaf
+is the quotient-by-a-finite-flat-subgroup-scheme gate, and this file now
+SHARES it with `exists_atkinLehner_x0` rather than duplicating it.
+
+**(2) is PROVEN below**, and it is formal.  `IsCoarseModuliY0` is stated
+over a general base `{Y S : Scheme.{u}} (str : Y ⟶ S)`, and
+`IsX0JNeronDatum.model : IsX0Compactification N xstr ystr jZ` carries a
+`coarse : IsCoarseModuliY0 N ystr` over `S = Spec ℤ_(q)`.  So
+`coarse.universal` descends `dd ↦ classify g (al.dual dd)` to a unique
+`w_𝒴 : 𝒴 ⟶ 𝒴` over `ℤ_(q)`, and the SAME universal property applied to
+the identity transformation, using `al.dual_dual`, forces
+`w_𝒴 ≫ w_𝒴 = 𝟙`.  This is the proof of `exists_atkinLehner_x0` replayed
+over the integral base, and nothing in it is specific to `ℚ`.
+
+**(3) and (4) are the two new leaves.**  Both carry the moduli PIN as a
+hypothesis, and that is the whole design of this cut — see the two
+paragraphs below, which are the reasons the obvious cheaper cuts are
+inadmissible.
+
+**WHY THE EXTENSION LEAF MUST CARRY THE PIN: the unpinned form is
+probably FALSE.**  The tempting statement is "every `v : 𝒴 ⟶ 𝒴` over the
+base extends to `𝒳`", the exact analogue of X0.lean's
+`exists_extend_x0Compactification`.  Over a FIELD that is proven-shaped
+and available — `exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) — but its
+docstring records, in a heading, that **the base is a field and must not
+be generalised**: over `Spec ℤ_(ℓ)` the total space is two-dimensional,
+the cusp locus has codimension two, properness of the target is not
+enough, and the statement is very likely FALSE.  The obstruction is
+visible in that proof: it applies the valuative criterion at
+`Spec 𝒪_{𝒳,x}` for every `x`, legitimate exactly because `𝒪_{𝒳,x}` is a
+VALUATION RING — which over a one-dimensional base fails at the closed
+points of the special fibre, where the local ring is a two-dimensional
+regular local ring.  So an unpinned extension leaf here would be a leaf
+that may well be false, which is strictly worse than an open one.  With
+the pin, `w_𝒴` is the genuine `w_N` and its extension is
+Deligne–Rapoport's theorem about a specific morphism, not a general
+position statement.
+
+**WHY THE CUSP LEAF MUST CARRY THE PIN.**  This is the objection the
+third cut recorded and it is unchanged: every clause other than the cusp
+clause is satisfied by `w = 𝟙`, so a leaf taking an UNPINNED `w` as a
+hypothesis and concluding anything about its cusps is FALSE.  What is new
+is that the pin is now AVAILABLE — `al.dual` fixes `w_𝒴` on moduli points,
+and `w = 𝟙` fails it, since it would force `classify g dd =
+classify g (al.dual dd)` for every `dd`, i.e. that `w_N` acts trivially
+on `Y_0(N)`, false at every `N > 1`.  That is what makes the split safe
+here where it was not before, and it is why the earlier audit's verdict
+("the cusp clause cannot be split off") is superseded rather than
+contradicted: it was correct about the unpinned split, which is still
+inadmissible.
+
+**`eq_of_comp_open_x0JNeronModel` is SAFE over the one-dimensional base**,
+and it is important that it is not confused with the extension leaf.
+Nothing in it extends anything: density of `𝒴`, reducedness of `𝒳` and
+separatedness of `𝒳` are the whole proof, and all three survive the
+passage from a field base to `Spec R`.  The codimension-two obstruction
+above is specific to EXTENDING a morphism, not to COMPARING two.
+
+**WHAT IS NOT USED, AND MUST NOT BE.**  `exists_atkinLehner_x0` — the
+`ℚ`-fibre Atkin–Lehner leaf of `X0.lean` — is still not admissible here,
+for the reason recorded on the target below: an automorphism of the
+generic fibre of a smooth proper model need not extend to the model, and
+there is a genus-`0` counterexample.  This cut does not use it.  What it
+uses is `nonempty_atkinLehnerMorphism`, which is a statement about the
+MODULI PROBLEM over an arbitrary base and has no fibre in it at all; the
+descent (2) is then performed over `ℤ_(q)` directly, never over `ℚ` and
+never transported. -/
+
+/-- **Two endomorphisms of the integral model agreeing on its open part
+are equal** (sorry leaf, new 2026-07-28) — the density step of the fourth
+cut, with no modular and no Atkin–Lehner content in it at all.
+
+TRUE, and the two cases are genuinely different, exactly as in the
+`ℚ`-base twin `eq_of_comp_open_x0Compactification` (`X0.lean`).
+
+* If `𝒳` is empty it is the initial scheme and `Hom(𝒳, 𝒳)` is a
+  singleton, so the conclusion is automatic.
+* If `𝒳` is nonempty: `R` is a subring of `ℚ`, hence a localisation of
+  `ℤ`, hence a PID — so `Spec R` is regular, integral and reduced.
+  `hmod.smooth` makes `𝒳` smooth of relative dimension `1` over it,
+  hence regular, hence reduced, and — being connected
+  (`hmod.connected`) — irreducible.  `hmod.finite_compl` makes the
+  complement of `𝒴` finite, and a finite subset of an irreducible
+  scheme of positive dimension misses the generic point, so `𝒴` is
+  DENSE.  `hmod.isProper` makes `𝒳` separated.  Two morphisms out of a
+  reduced scheme into a separated one agreeing on a dense open are
+  equal — mathlib's
+  `AlgebraicGeometry.ext_of_isDominant_of_isSeparated`, which `X0.lean`
+  already consumes at `ajMor_eq_const_of_not_injective`.
+
+**THIS IS SAFE OVER THE ONE-DIMENSIONAL BASE, AND THE EXTENSION LEAF IS
+NOT.**  The heading of `exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) forbids
+generalising ITS base away from a field, because the valuative criterion
+needs `𝒪_{𝒳,x}` to be a valuation ring and that fails at the closed
+points of the special fibre.  Nothing here invokes the valuative
+criterion: comparing two given morphisms needs only density, reducedness
+and separatedness, every one of which is insensitive to the dimension of
+the base.  Do not import the extension leaf's warning into this one.
+
+**RELATION TO `eq_of_comp_open_x0Compactification`.**  That is the same
+statement over `Spec ℚ`, and it is a separate leaf with a separate
+owner; this is not a duplicate of it but the base-changed twin, and the
+`Spec ℚ` proof does not specialise to this one (over a field, `𝒳` is a
+CURVE and its infinitude comes from `infinite_of_smoothOfRelativeDimension_one`,
+which is stated over a field base).  A prover who generalises the
+machinery of `CurveExtension.lean`'s density half — `isDominant_of_finite_compl`
+and `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`
+— from a field to a regular one-dimensional base closes BOTH.
+
+**The check that refutes it**: an `IsX0Compactification` over
+`Spec R`, `R : Subring ℚ`, whose `𝒳` is nonempty and carries two
+distinct endomorphisms restricting equally to `𝒴`. -/
+theorem eq_of_comp_open_x0JNeronModel {N : ℕ} {R : Subring ℚ} {YZ XZ : Scheme.{0}}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (_hmod : IsX0Compactification N xstr ystr jZ) {f g : XZ ⟶ XZ}
+    (_h : jZ ≫ f = jZ ≫ g) : f = g :=
+  sorry
+
+section AtkinLehnerModelCut
+
+variable {N q : ℕ} {R : Subring ℚ} {toF : R →+* ZMod q}
+    {Y X Y' X' YZ XZ : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
+    {hc : IsCoarseModuliY0 N strY}
+    {hX : IsCompactificationY0 strY strX}
+    {hX' : IsX0Compactification N strX' strY' jY'}
+    {hj : IsJMapOn N hc}
+    {ystr : YZ ⟶ SpecLoc R} {xstr : XZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ)
+
+/-- **The Atkin–Lehner involution of the OPEN integral model extends
+across the cusps** (sorry leaf, new 2026-07-28) — the properness half of
+the fourth cut, and the first of the two things Deligne–Rapoport are
+asked for.
+
+**WHAT IS ASKED.**  `w_𝒴` is already given, and it is already PINNED: the
+hypothesis `hpin` says it realises the moduli action `al.dual` on the
+integral coarse space, which by `coarse.universal` determines it
+uniquely.  The leaf asks only that this particular morphism extend to the
+compactification, compatibly with the open immersion.
+
+TRUE.  Deligne–Rapoport construct the smooth model of `X_0(N)` over
+`ℤ[1/N]` — which is what `d.model` posits, base-changed to `ℤ_(q)` for
+`q ∤ N` — together with the action of `w_N` ON IT: `w_N` normalises
+`Γ₀(N)`, the moduli description `(E, C) ↦ (E/C, E[N]/C)` is defined over
+`ℤ[1/N]` because the quotient of an elliptic scheme by a finite flat
+subgroup scheme is, and the extension across the cuspidal locus is their
+description of the degeneration data at the cusps, on which `w_N` acts by
+`d ↦ N/d`.  So `w` exists and `hpin` is exactly the hypothesis that makes
+it about the genuine `w_N`.
+
+**⚠ THE PIN IS LOAD-BEARING AND THE UNPINNED FORM IS PROBABLY FALSE.**
+The tempting weakening — drop `al` and `hpin`, quantify over an arbitrary
+`v : 𝒴 ⟶ 𝒴` over the base — is precisely the statement that
+`exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) refuses in a
+heading of its own docstring: *"The base is a FIELD and must not be
+generalised.  Over `Spec ℤ_(ℓ)`, which `IsX0Compactification` also
+admits, `X` is two-dimensional, the cusp locus has codimension two, and
+properness of the target is not enough: the statement is very likely
+FALSE there."*  The mechanism is that its proof applies the valuative
+criterion at `Spec 𝒪_{𝒳,x}` for every `x`, which is legitimate exactly
+because `𝒪_{𝒳,x}` is a valuation ring; at a closed point of the special
+fibre of a relative curve over a discrete valuation ring the local ring is
+a two-dimensional regular local ring and is not a valuation ring.  A
+rational map from a regular surface to a proper target defined outside
+finitely many closed points genuinely need not extend — one blow-up may
+be required — so **do not restate this leaf without the pin**, and do not
+"simplify" it by deleting `al`, `hpin`, or `hwY`.
+
+**WHERE THE HYPOTHESES ENTER.**  `q.Prime` with `q ≠ N` is `q ∤ N`, i.e.
+good reduction: it is what lets the model be smooth at `q` at all, and
+hence what makes `d` satisfiable.  It is carried explicitly as a guard
+even though `d.model`'s smoothness already encodes it, so that every leaf
+of this cut is indexed by the same hypotheses; a prover may find it
+underscored-away.  `N` needs no positivity: at `N = 0`,
+`isEmpty_of_gamma0Datum_zero` makes the moduli problem empty and any `w`
+will do, and at `N = 1` the conclusion is about the identity.
+
+**NON-VACUITY.**  `N = 37`, `q = 3`: the genuine `w_37` on the
+Deligne–Rapoport model over `ℤ_(3)` witnesses the conclusion, and its
+restriction to the open part satisfies `hpin` for the genuine `al`.
+
+**The check that refutes it**: an `al : AtkinLehnerMorphism N` and a
+`w_𝒴` satisfying `hpin` whose induced automorphism of `Y_0(N)_ℚ` does not
+extend to the model over `ℤ_(q)` — equivalently, a level `N` and a prime
+`q ∤ N` at which `w_N` is not defined on the smooth model.
+
+**REFERENCES.**  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), IV–VI; Atkin–Lehner, *Hecke operators on
+`Γ₀(m)`*, Math. Ann. 185 (1970), §2. -/
+theorem exists_extend_atkinLehnerModel_of_jNeronDatum (_hq : q.Prime) (_hqN : q ≠ N)
+    (al : AtkinLehnerMorphism N) (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr)
+    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+      RelPoint.post wY hwY (d.model.coarse.classify g dd)
+        = d.model.coarse.classify g (al.dual dd)) :
+    ∃ w : XZ ⟶ XZ, w ≫ xstr = xstr ∧ wY ≫ jZ = jZ ≫ w :=
+  sorry
+
+/-- **The Atkin–Lehner involution of the integral model MOVES A CUSP of
+the special fibre** (sorry leaf, new 2026-07-28) — the cusp half of the
+fourth cut, and **the whole of what Atkin–Lehner (1970) §2 is asked for**
+in this development.
+
+**WHAT IS ASKED.**  `w` and `w_𝒴` are given, `w` already extends `w_𝒴`
+(`hcomm`) and is already an involution (`hinv`); `w_𝒴` is already PINNED
+as the genuine `w_N` by `hpin`.  All that is left is ONE cuspidal
+`𝔽_q`-point of `X'` that `neronSpAut d w hw` does not fix.  The ∀-form —
+no fixed cusp at all — is `exists_atkinLehnerModel_of_jNeronDatum`, and
+is this leaf plus the cusp COUNT; see the third-cut docstring above for
+why keeping the count out of here matters.
+
+TRUE.  `w_N` exchanges the cusps above `e` and `N/e`, so it exchanges the
+cusps `1` and `N`, i.e. `∞` and `0`.  Those are distinct sections of the
+model, and they stay distinct in the fibre at `q ∤ N` because the
+cuspidal subscheme of the smooth model over `ℤ[1/N]` is finite étale over
+the base — two disjoint sections, not one section met twice.  Hence
+`neronSpAut d w hw` moves the reduction of `∞`.
+
+**⚠ THE PIN IS LOAD-BEARING AND THE LEAF IS FALSE WITHOUT IT.**  Every
+other hypothesis is satisfied by `w = 𝟙 XZ`, `w_𝒴 = 𝟙 YZ`, for which
+`neronSpAut d 𝟙 hw = id` fixes every cusp.  What excludes that witness is
+`hpin` alone: it would force `classify g dd = classify g (al.dual dd)`
+for every `Γ₀(N)`-datum, i.e. that `w_N` acts trivially on `Y_0(N)`,
+which is false at every `N > 1`.  This is the same objection the third cut
+recorded as "why the cusp clause cannot be split off"; that verdict was
+correct about the UNPINNED split and is superseded only because the pin is
+now available.  **Do not delete `al` or `hpin`.**
+
+**WHERE THE HYPOTHESES ENTER — AND `N.Prime` DOES NOT.**  Only `1 < N` is
+used: at `N = 1` there is a single cusp and `w_1 = 𝟙`, so the conclusion
+is false; at every `N > 1`, prime or not, `w_N` exchanges the cusps `0`
+and `∞` and the ∃-form holds.  `w_4` FIXES the cusp `1/2`, which is why
+the ∀-form needs `N.Prime` — but that is the counting step's business, not
+this leaf's.  `q.Prime` with `q ≠ N` is `q ∤ N`, good reduction of the
+model, which is what keeps the two cusps distinct in the fibre; `q ≠ 2` is
+NOT needed, it belongs to the formal immersion.  `hcomm` is supplied
+because it is what makes `neronSpAut d w hw` preserve the cuspidal locus
+(`not_isCusp_neronSpAut`, together with `hinv` and
+`neronSpAut_involutive`), which a prover working with the cuspidal subtype
+will want; `hinv` is supplied for the same reason.
+
+**WHY IT IS STATED OVER `IsX0JNeronDatum`.**  The conclusion mentions
+`neronSpAut d`, i.e. the special-fibre identification `spX` of the model;
+over an arbitrary `IsX0JReductionAt` there is no model and the statement
+cannot be made.  `d` is consumed by the STATEMENT.
+
+**WHAT IS ALREADY IN THE TREE AND DOES NOT DISCHARGE THIS**
+(checked by name 2026-07-28).  `X0.lean`'s `exists_atkinLehner_x0` is over
+`Spec ℚ` and produces an automorphism of the GENERIC fibre only; an
+automorphism of the generic fibre of a smooth proper model need not extend
+to the model, with a genus-`0` counterexample recorded on the target of
+this cut, so it cannot be interposed.  `noFixedRationalPoint_atkinLehner_x0OneSixtyNine`
+and `exists_ne_atkinLehner_x0OneSixtyNine` are the `ℚ`-fibre analogues of
+this leaf at the single level `N = 169`; they are level-specific, live on
+the wrong fibre, and are separately owned.
+
+**THE CONCLUSION IS NOT UNSATISFIABLE FOR WANT OF CUSPS.**  A statement
+asserting the EXISTENCE of a cuspidal point is false over an empty curve,
+so the hypotheses must exclude that, and they do: `d.model.coarse` is a
+coarse moduli space for the `Γ₀(N)`-problem over `Spec ℤ_(q)`, and at
+`1 < N` that problem has objects over some nonempty test scheme, so
+`classify` forces `𝒴` — hence `𝒳`, hence the special fibre `X'` — to be
+nonempty.  With `𝒳` a smooth proper curve and `𝒴` its complement of a
+finite set, the cuspidal locus of the special fibre is nonempty, which is
+the sibling `nonempty_rationalCuspLocus_specialFibre_of_jNeronDatum`'s
+subject.  This leaf does not consume that sibling — it needs only ONE
+cusp, not the count — but the two must not contradict each other.
+
+**NON-VACUITY.**  `N = 37`, `q = 3` satisfies every hypothesis, and the
+genuine `w_37` witnesses the conclusion: its induced involution swaps the
+reductions of the cusps `0` and `∞`, which are distinct because the
+cuspidal subscheme is étale at `3 ∤ 37`.
+
+**The check that refutes it**: a level `N > 1`, a prime `q ∤ N`, and a
+moduli-pinned `w_N` on the model fixing every `𝔽_q`-rational cusp of the
+special fibre.
+
+**REFERENCES.**  Atkin–Lehner, *Hecke operators on `Γ₀(m)`*, Math. Ann.
+185 (1970), §2, for the action `e ↦ N/e` on the cusps; Deligne–Rapoport
+(Antwerp II, 1973), IV–VI, for the étale cuspidal subscheme of the smooth
+model over `ℤ[1/N]`; Ogg, *Rational points on certain elliptic modular
+curves* (1973). -/
+theorem exists_isCusp_ne_neronSpAut_of_atkinLehnerPin (_hN : 1 < N) (_hq : q.Prime)
+    (_hqN : q ≠ N) (al : AtkinLehnerMorphism N)
+    (w : XZ ⟶ XZ) (hw : w ≫ xstr = xstr) (wY : YZ ⟶ YZ) (hwY : wY ≫ ystr = ystr)
+    (_hcomm : wY ≫ jZ = jZ ≫ w) (_hinv : w ≫ w = 𝟙 XZ)
+    (_hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+      RelPoint.post wY hwY (d.model.coarse.classify g dd)
+        = d.model.coarse.classify g (al.dual dd)) :
+    ∃ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' ∧ neronSpAut d w hw x' ≠ x' :=
+  sorry
+
+end AtkinLehnerModelCut
+
 /-- **The Atkin–Lehner involution of the INTEGRAL MODEL** (sorry node, new
-2026-07-27; RE-CUT 2026-07-28 to the ∃-form of the cusp clause) — the
+2026-07-27; RE-CUT 2026-07-28 to the ∃-form of the cusp clause; **PROVEN
+2026-07-28** over `nonempty_atkinLehnerMorphism`,
+`exists_extend_atkinLehnerModel_of_jNeronDatum`,
+`eq_of_comp_open_x0JNeronModel` and
+`exists_isCusp_ne_neronSpAut_of_atkinLehnerPin`) — the
 Atkin–Lehner half of the cut, and what the 1970 paper actually
 constructs.
 
@@ -3232,10 +3556,32 @@ cuspidal `𝔽_q`-point that the induced `neronSpAut d w hw` moves.  The
 below, and is this leaf plus the cusp COUNT; see the subsection docstring
 above for why keeping the count out of here matters.
 
-**WHAT PROVING IT NEEDS.**  The Deligne–Rapoport model of `X_0(N)` over
-`ℤ[1/N]` (equivalently: over `ℤ_(q)` for `q ∤ N`) together with the
-extension of `w_N` to it, and the fact that `w_N` is not the identity on
-the cuspidal subscheme.  The last is where Atkin–Lehner §2 is used: `w_N`
+**HOW IT IS PROVEN** (2026-07-28; see the fourth-cut docstring above).
+Four steps, of which the middle one is discharged here:
+
+1. `nonempty_atkinLehnerMorphism N` (`X0.lean`) supplies the moduli
+   action `dd ↦ al.dual dd`, i.e. `(E, C) ↦ (E/C, E[N]/C)`, together with
+   its base-change compatibility.  It is stated over an ARBITRARY test
+   scheme, so it applies over `ℤ_(q)` unchanged; this file shares that
+   leaf with `exists_atkinLehner_x0` rather than duplicating it.
+2. `d.model.coarse.universal` — the universal property of the INTEGRAL
+   coarse space, `IsCoarseModuliY0` being stated over a general base —
+   descends `dd ↦ classify g (al.dual dd)` to a unique `w_𝒴 : 𝒴 ⟶ 𝒴`
+   over `ℤ_(q)`; and the SAME universal property, applied to the identity
+   transformation and using `al.dual_dual`, forces `w_𝒴 ≫ w_𝒴 = 𝟙 𝒴`.
+   Neither step needs new geometry, and both are carried out below.
+3. `exists_extend_atkinLehnerModel_of_jNeronDatum` extends `w_𝒴` across
+   the cusps to `w`, and `eq_of_comp_open_x0JNeronModel` promotes
+   `w_𝒴 ≫ w_𝒴 = 𝟙 𝒴` to `w ≫ w = 𝟙 𝒳`, since both `w ≫ w` and `𝟙 𝒳`
+   restrict to `𝟙 𝒴` on the dense open.
+4. `exists_isCusp_ne_neronSpAut_of_atkinLehnerPin` supplies the moved
+   cusp.
+
+**WHAT PROVING THE REMAINING LEAVES NEEDS.**  The Deligne–Rapoport model
+of `X_0(N)` over `ℤ[1/N]` (equivalently: over `ℤ_(q)` for `q ∤ N`)
+together with the extension of `w_N` to it — that is leaf (3) — and the
+fact that `w_N` is not the identity on the cuspidal subscheme — that is
+leaf (4).  The last is where Atkin–Lehner §2 is used: `w_N`
 exchanges the cusps above `d` and `N/d`, so it exchanges `0` and `∞`, and
 those stay distinct in the fibre at `q ∤ N` because the cuspidal
 subscheme of the smooth model is étale — two disjoint sections.
@@ -3251,13 +3597,21 @@ is now the counting step's business, not this leaf's.)  `q.Prime` with
 distinct in the fibre.  `q ≠ 2` is NOT needed; it belongs to the formal
 immersion.
 
-**WHY THE CUSP CLAUSE CANNOT BE SPLIT OFF.**  Every other conjunct is
+**WHY THE CUSP CLAUSE CANNOT BE SPLIT OFF *UNPINNED*** (this paragraph
+said "cannot be split off" until 2026-07-28, and the qualification is the
+whole of the fourth cut).  Every other conjunct is
 satisfied by `w = 𝟙`, `w_𝒴 = 𝟙`.  So a leaf asking only for the
 algebraic clauses would be discharged by the identity, and a second leaf
 taking such a `w` as a hypothesis and concluding anything about its
 cusps would be FALSE.  The clause is stated about `neronSpAut d w hw`, a
 DEFINED function of `w`, precisely so that it is a condition on `w`
-rather than on a hypothesised function.
+rather than on a hypothesised function.  **What changed is that a PIN is
+now available**: `exists_isCusp_ne_neronSpAut_of_atkinLehnerPin` takes
+`al : AtkinLehnerMorphism N` and the moduli factorisation of `w_𝒴`
+through `al.dual`, which `w_𝒴 = 𝟙` fails — it would force `w_N` to act
+trivially on `Y_0(N)`.  So the split is safe there and remains
+inadmissible without the pin; the verdict above is superseded, not
+contradicted.
 
 **WHY IT IS STATED OVER `IsX0JNeronDatum`.**  The conclusion mentions
 `neronSpAut d`, i.e. the special-fibre identification `spX` of the model;
@@ -3277,11 +3631,24 @@ open part and exchanges the cusps, but `(0 q; 1 0)` is not in
 `PGL₂(ℤ_(q))`, so it does not extend.  Since `X_0(N)` has genus `0` for
 `N ∈ {2, 3, 5, 7, 13}` and this leaf assumes only `N.Prime`, no
 "generic automorphisms extend" leaf can be interposed here without a
-genus hypothesis the statement does not carry.  What IS true, and is the
-only formal step available, is that an automorphism of the INTEGRAL open
-part extends uniquely to the compactification; that does not shorten the
-leaf, because the cusp clause is a statement about `𝒳` and cannot be
-stated on `𝒴`.
+genus hypothesis the statement does not carry.  **That remains true and
+the fourth cut does not violate it**: what the cut interposes is
+`nonempty_atkinLehnerMorphism`, a statement about the `Γ₀(N)`-MODULI
+PROBLEM over an arbitrary test scheme with no fibre in it at all, and the
+descent to the coarse space is then performed over `ℤ_(q)` directly.
+Nothing is constructed over `ℚ` and transported.
+
+**AND "AN AUTOMORPHISM OF THE INTEGRAL OPEN PART EXTENDS" IS NOT A FREE
+STEP EITHER** (corrected 2026-07-28; the previous version of this
+paragraph asserted it as "the only formal step available" and TRUE).  Over
+a one-dimensional base it is very likely FALSE for an arbitrary
+automorphism: `exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) records in a
+heading that its base must not be generalised away from a field, because
+the valuative criterion is applied at `Spec 𝒪_{𝒳,x}` and `𝒪_{𝒳,x}` is not
+a valuation ring at the closed points of the special fibre.  That is why
+`exists_extend_atkinLehnerModel_of_jNeronDatum` carries the moduli pin
+rather than quantifying over an arbitrary `v : 𝒴 ⟶ 𝒴`.
 
 **NON-VACUITY.**  `N = 37`, `q = 3` satisfies every hypothesis, and the
 genuine `w_37` on the Deligne–Rapoport model over `ℤ_(3)` witnesses the
@@ -3294,7 +3661,7 @@ and `∞`, which are distinct because the cuspidal subscheme is étale at
 elliptiques* (Antwerp II, 1973), for the model over `ℤ[1/N]` and the
 extension of `w_N` to it. -/
 theorem exists_atkinLehnerModelAut_of_jNeronDatum (N q : ℕ)
-    (_hN : N.Prime) (_hq : q.Prime) (_hqN : q ≠ N)
+    (hN : N.Prime) (hq : q.Prime) (hqN : q ≠ N)
     {R : Subring ℚ} {toF : R →+* ZMod q}
     {Y X Y' X' YZ XZ : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
     {strY' : Y' ⟶ SpecF q} {strX' : X' ⟶ SpecF q} {jY' : Y' ⟶ X'}
@@ -3306,8 +3673,44 @@ theorem exists_atkinLehnerModelAut_of_jNeronDatum (N q : ℕ)
     (d : IsX0JNeronDatum N q R toF hX hX' hj (ystr := ystr) (xstr := xstr) jZ) :
     ∃ (w : XZ ⟶ XZ) (wY : YZ ⟶ YZ) (hw : w ≫ xstr = xstr) (hwY : wY ≫ ystr = ystr),
       wY ≫ jZ = jZ ≫ w ∧ w ≫ w = 𝟙 XZ ∧
-      ∃ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' ∧ neronSpAut d w hw x' ≠ x' :=
-  sorry
+      ∃ x' : RelPoint strX' (𝟙 (SpecF q)), hX'.IsCusp x' ∧ neronSpAut d w hw x' ≠ x' := by
+  obtain ⟨al⟩ := nonempty_atkinLehnerMorphism N
+  -- (2) the moduli action descends to a unique endomorphism of the INTEGRAL open part
+  obtain ⟨wY, ⟨hwY, hwYfac⟩, -⟩ :=
+    d.model.coarse.universal ystr (fun {_} g dd => d.model.coarse.classify g (al.dual dd))
+      (by
+        intro T' T h g g' hg d' dd hbc
+        exact d.model.coarse.classify_natural h hg (al.dual_baseChange h hbc))
+  -- the factorisation, in the `RelPoint.post` form the two leaves below consume
+  have hpin : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+      RelPoint.post wY hwY (d.model.coarse.classify g dd)
+        = d.model.coarse.classify g (al.dual dd) :=
+    fun g dd => Subtype.ext (hwYfac g dd).symm
+  -- `(E/C)/(E[N]/C) ≅ E`, read on moduli points
+  have hdd : ∀ {T : Scheme.{0}} (g : T ⟶ SpecLoc R) (dd : Gamma0Datum N T),
+      d.model.coarse.classify g (al.dual (al.dual dd)) = d.model.coarse.classify g dd := by
+    intro T g dd
+    rw [d.model.coarse.classify_natural (𝟙 T) (Category.id_comp g) (al.dual_dual dd)]
+    exact Subtype.ext (Category.id_comp _)
+  -- so `wY ≫ wY` and `𝟙 YZ` factor the SAME natural transformation, hence agree
+  have hwY2 : wY ≫ wY = 𝟙 YZ := by
+    refine (d.model.coarse.universal ystr (fun {_} g dd => d.model.coarse.classify g dd)
+      (by
+        intro T' T h g g' hg d' dd hbc
+        exact d.model.coarse.classify_natural h hg hbc)).unique
+      (y₁ := wY ≫ wY) (y₂ := 𝟙 YZ) ⟨by rw [Category.assoc, hwY, hwY], fun {_} g dd => ?_⟩
+      ⟨Category.id_comp ystr, fun {_} g dd => (Category.comp_id _).symm⟩
+    rw [← Category.assoc, ← hwYfac, ← hwYfac, hdd]
+  -- (3) extend across the cusps, and promote involutivity along the dense open
+  obtain ⟨w, hw, hjw⟩ := exists_extend_atkinLehnerModel_of_jNeronDatum d hq hqN al wY hwY hpin
+  have hw2 : w ≫ w = 𝟙 XZ := by
+    refine eq_of_comp_open_x0JNeronModel d.model ?_
+    rw [← Category.assoc, ← hjw, Category.assoc, ← hjw, ← Category.assoc, hwY2,
+      Category.id_comp, Category.comp_id]
+  -- (4) the moved cusp
+  refine ⟨w, wY, hw, hwY, hjw, hw2, ?_⟩
+  exact exists_isCusp_ne_neronSpAut_of_atkinLehnerPin d hN.one_lt hq hqN al w hw wY hwY hjw hw2
+    hpin
 
 /-- **The cusps of `X_0(N)` mod `q` are indexed by the divisors of `N`,
 the cusp above `d` having residue field `𝔽_q(ζ_{gcd(d, N/d)})** (sorry
