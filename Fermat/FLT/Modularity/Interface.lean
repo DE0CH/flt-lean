@@ -5363,6 +5363,36 @@ this cluster (it is recorded twice below, at
 `heckeSubring_moduleFinite_int` and at `exists_heckeSubring_zForm`). So
 the route is circular, not merely out of order. Do not rediscover it.
 
+**THAT CIRCULARITY IS BREAKABLE, AND A CONCURRENT BRANCH BREAKS IT — so
+read the paragraph above as dated, not as permanent** (added
+2026-07-27 by this leaf's author, from branch `flt-lean-217`
+(`f17805f5`); the refuting check is: does anything supply
+`span_ℂ (integralCuspForms N) = ⊤` from OUTSIDE this cluster?). Its new
+leaf `exists_smul_mem_integralCuspForms` — BOUNDED DENOMINATORS, `∃ d`
+with `d • f ∈ S₂(Γ₀(N); ℤ)` for every rational `f` — supplies exactly
+that, from `rationalCuspForms_span_eq_top` alone: clear one denominator
+per rational form and divide it back out. With the span in hand,
+`𝕋 ↪ End_ℤ(S₂(Γ₀(N); ℤ))` is injective because a `T` killing the lattice
+kills its `ℂ`-span, and `End_ℤ` of a finitely generated `ℤ`-module is
+`ℤ`-noetherian — giving `heckeSubring_moduleFinite_int` with NO
+integrality input at all. I checked this argument independently; it is
+correct.
+
+**CONSEQUENCE FOR THIS LEAF, stated so that nobody has to rediscover
+it.** If that leaf is proven AND `heckeSubring_moduleFinite_int` is
+rewired to consume it, then `isIntegral_heckeEndo` becomes redundant and
+this leaf, `exists_trace_heckeSubring_int` below and
+`exists_int_of_monic_of_forall_sum_roots_pow_int` above are all retired
+together. **Neither condition holds as of this writing**: bounded
+denominators is a sorry (it needs the integral model of `X₀(N)`,
+Deligne–Rapoport, or `H₁(X₀(N), ℤ)` — absent from the pin and from
+`~/cs/FLT`), and the rewiring is a RECUT that its author explicitly
+declined to make, so on that branch `heckeSubring_moduleFinite_int`
+still cites `isIntegral_heckeEndo`. Until both happen this route is
+live. A future owner should check BOTH conditions against the compiler
+before retiring anything here — the recut is a one-declaration edit that
+currently has no owner.
+
 WHY THIS IS WEAKER THAN WHAT IT REPLACES, and why that is the point:
 `IsIntegral ℤ` drops all rationality content, which is exactly the half
 that turned out to be free. Anything proving `Tr(T_m) ∈ ℤ` proves this,
