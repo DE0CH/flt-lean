@@ -28436,11 +28436,289 @@ theorem exists_gamma0Datum_descent_mazurLevel (p : ℕ)
     ∃ d₀ : Gamma0Datum p SpecQ, hc.classify (𝟙 SpecQ) d₀ = y :=
   sorry
 
+/-! #### Cutting MAZUR PROPER into the arithmetic and the moduli↔Weierstrass bridge
+
+(2026-07-28, flt-lean-300.)  The section note above declined this cut and stated
+the check that would license it:
+
+> a declaration producing, from `d₀ : Gamma0Datum p SpecQ`, a
+> `WeierstrassCurve ℚ` with `IsWeierstrassModel d₀.ab E` and **no** membership
+> hypothesis.  If one lands, (3) splits along the seam above.
+
+**THAT CHECK NOW COMES BACK POSITIVE.**
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`
+(`ModularCurve/EllipticScheme.lean`, PROVEN 2026-07-27 over two named leaves
+there — `exists_weierstrassModel_of_ellipticScheme` (Riemann–Roch) and
+`exists_geomFibreAddEquiv_of_weierstrassModel` (rigidity)) takes `ab` and
+`SmoothOfRelativeDimension 1 f` and returns a `WeierstrassCurve ℚ` together with
+`IsWeierstrassModel ab E` — spelled out, so that it names neither `proj` nor
+`projToSpec` — AND the Galois-equivariant `≃+` on geometric-fibre points.  It
+carries no membership hypothesis, and `X0.lean` already applies it at
+`d.ab`/`d.relativeDimensionOne` inside `exists_weierstrass_jm_of_gamma0Datum`.
+So the `Gamma0Datum p SpecQ → (E, g)` direction is no longer an obstruction: the
+`hmem` on that X0 leaf sits on its LAST conjunct (`hj.jm … = E.j`, the
+`IsJMapOn.jm_classify` gap), not on the bridge.
+
+**One caveat that shapes the cut below, and it is an IMPORT fact rather than a
+mathematical one.**  `X0.lean` imports `EllipticScheme` NON-publicly (on purpose:
+a `public import` would propagate the reserved token `over` through this whole
+cone), and nothing else in the tree imports it at all.  So that theorem is
+**not nameable here**, in signature OR in proof body — the doctrine's
+"private import upstream" shape.  Rather than make the import public, or copy the
+interface, the bridge leaf below takes the arithmetic as a HYPOTHESIS in exactly
+the form the arithmetic leaf proves it.  Nothing about `IsWeierstrassModel`,
+`proj` or the geometric-fibre equivalence appears in any statement here, and the
+whole bridge — obtain `(E, g)` from `d₀`, transport `φ` back to an endomorphism
+of `d`'s functor of points — is confined to one sorried proof.
+
+**What the cut buys.**  The DEEP half is now
+`exists_endMinpoly_of_isogenySignature_six`, stated in the isogeny-character
+vocabulary this file already speaks and already develops at length: it is the
+missing step FROM signature `6` TO the CM structure, and its hypotheses are
+verbatim those of `WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six`
+— which is PROVEN and which shows those hypotheses already force
+`N ∈ {43, 67, 163}`, so the leaf is neither over- nor under-hypothesised.  The
+`{43, 67, 163}`-level form `exists_endMinpoly_of_stable_cyclic_mazurLevel` is then
+PROVEN over it, by running the same three-step pipeline as
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`: `hstable` gives
+the character (`exists_isogenyCharacter`), Serre–Raynaud gives the signature
+(`exists_isogenySignature`), and the resultant elimination
+(`not_isogenyCharacter_of_isogenySignature_ne_six`) kills every value but `6`
+because `43, 67, 163 ≠ 37`.
+
+So the Eisenstein-ideal/`j`-invariant argument and the scheme-theoretic bridge —
+which have entirely different owners in the literature and entirely different
+failure modes — no longer sit behind one `sorry`. -/
+
+/-- **FROM ISOGENY SIGNATURE `6` TO COMPLEX MULTIPLICATION BY THE MAXIMAL ORDER
+OF DISCRIMINANT `−N`** (sorry leaf, opened 2026-07-28; the DEEP half of
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`).
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978), §5;
+Serre, *Propriétés galoisiennes…*, Invent. Math. 15 (1972), §5.4.  The
+hypotheses are **verbatim** those of
+`WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six`, which is
+PROVEN and concludes `N ∈ {43, 67, 163}` from them; at those levels `h(−N) = 1`,
+the `j`-invariant is rational and `E` has CM by the MAXIMAL order `O_{−N}` with
+the rational `N`-isogeny the ramified prime `(√−N)`.  So this leaf is the step
+`mem_classNumberOnePrimes_of_isogenySignature_six` stops short of: not *which*
+primes, but *what the curve is* at them.
+
+**The mathematics, in one paragraph.**  Signature `6` says `λ¹² = χ⁶`, i.e.
+`λ²χ⁻¹` has order dividing `6`; the class-number-one branch shows every odd prime
+`q < N/4` is inert in `ℚ(√−N)`, and Baker–Heegner–Stark then pins
+`N ∈ {43, 67, 163}`.  At those `N`, `λ² = χ · ψ_{−N}` with `ψ_{−N}` the quadratic
+character of `ℚ(√−N)`, whence `End(E) ⊗ ℚ = ℚ(√−N)` and the rational subgroup is
+the kernel of the ramified prime.  `h(−N) = 1` makes the order maximal, so
+`φ = (1 + √−N)/2` is itself an endomorphism; `ψ := 2φ − 1` is `√−N`.
+
+**WHY `φ` AND NOT `ψ² = [−N]`, which is the shape the prime-POWER siblings use.**
+`ψ² = [−N]` pins only `ℤ[√−N]`, of discriminant `−4N`, and
+`h(−4·43) = h(−4·67) = h(−4·163) = 3` (`qfbclassno`, PARI/GP) — three classes,
+not one — so the consumer
+`nonempty_isBaseChangeOf_of_isCMByRamifiedMaximalOrder` would be FALSE in that
+form.  The relation `φ² + (N+1)/4 = φ` has discriminant `1 − (N+1) = −N`, which is
+the maximal order exactly.  `(N + 1) / 4` is NATURAL division, exact because
+`hmod : N % 4 = 3`; at `43, 67, 163` it is `11, 17, 41`.
+
+**AND THE PRIME-POWER ROUTE IS NOT A TEMPLATE FOR THE PROOF.**
+`WeierstrassCurve.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125` is the
+template for the STATEMENT only: there the endomorphism is forced by
+Atkin–Lehner fixedness, available because `k ≥ 2` collapses the rank of
+`J_0(p^k)^-`, and that argument does not transfer to prime level (the doctrine
+records this trap in the other direction).  Here the endomorphism comes from the
+CM theory of the isogeny character, not from a modular-curve involution.
+
+**NOT VACUOUS.**  The hypotheses are satisfiable: at each of `43, 67, 163` the
+curve of `j`-invariant `−884736000`, `−147197952000`, `−262537412640768000`
+carries its ramified `N`-isogeny over `ℚ` (`ellisomat (ellfromj j)` returns
+`[1, N; N, 1]`), its isogeny character has signature `6`, and it has potentially
+good reduction away from `2` and `N`.  The conclusion is also not junk-satisfiable:
+`WeierstrassCurve.End` members carry an `IsRationalMap` certificate, which is
+exactly what rules out the `M₂(Ẑ)` matrices that satisfied the old additive-map
+formulation for EVERY curve — see the note on
+`exists_endSq_neg125_of_stable_cyclic_subgroup_order_125`.
+
+**AXES ALREADY REFUTED** (inherited, and recorded on the parent): the rank-`0`
+Jacobian (analytic ranks `1, 2, 6` at the three levels), effective
+Chabauty–Coleman (`15, 19, 64` against `3`), the rank-`0` QUOTIENT (dies by
+STRENGTH: `#A(ℚ)` is `0`, `7`, `11` or `27`, never `1`), and `classPoly`
+(linear at `h(−N) = 1`, so "`j` is its root" is this leaf's own conclusion
+rewritten).
+
+**AXIS SEARCHED, so the next owner knows what this verdict does NOT cover**: the
+survey behind those refutations ranged over MODULAR-CURVE-shaped routes to the
+rational points.  It did not range over routes that take the class-number-one
+input as given and reconstruct the endomorphism analytically (Deuring lifting,
+or the CM theory of `ℚ(√−N)` acting on `ℂ/O_{−N}`), which is where a prover
+should probably start, since `mazurIsogeny_classNumberOne_of_inert` has already
+done the arithmetic half in this file. -/
+theorem exists_endMinpoly_of_isogenySignature_six
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (_hN : N.Prime) (_hN23 : 23 ≤ N)
+    (_hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (_hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (_hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
+    (_hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨_hN⟩ σ) ^ 6)
+    (_hmod : N % 4 = 3) :
+    ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      φ * φ + (((N + 1) / 4 : ℕ) :
+          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) = φ ∧
+        AddMonoidHom.ker
+            (((2 * φ - 1 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
+                AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+              (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+          = AddSubgroup.zmultiples g :=
+  sorry
+
+/-- **MAZUR AT `43, 67, 163`, IN `WeierstrassCurve` VOCABULARY: a Galois-stable
+cyclic subgroup of order `p` is the kernel of `√−p`** (PROVEN 2026-07-28 over
+`exists_endMinpoly_of_isogenySignature_six`).
+
+This is the arithmetic half of
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf`, stated with the same
+`hstable` hypothesis that every other `(E, g)`-shaped leaf in this file uses, so
+it plugs into the bridge below with nothing reformulated at the boundary.
+
+The proof is the pipeline of
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`, stopped one step
+earlier.  `exists_isogenyCharacter` turns `hstable` into the character `λ`;
+`potentiallyGoodReduction_of_isogenyCharacter` supplies `hpg` (this is where
+Mazur's formal-immersion theorem is consumed); `exists_isogenySignature`
+(Serre–Raynaud) produces `s ∈ {0, 4, 6, 8, 12}`; and
+`not_isogenyCharacter_of_isogenySignature_ne_six` — the resultant elimination —
+derives `False` from every value but `6`, applicable because `43, 67, 163 ≠ 37`.
+At `s = 6` the signature leaf applies, with `hmod` supplied by
+`exists_isogenySignature`'s own `s = 6 → N % 4 = 3` clause. -/
+theorem exists_endMinpoly_of_stable_cyclic_mazurLevel
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g) :
+    ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      φ * φ + (((p + 1) / 4 : ℕ) :
+          WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) = φ ∧
+        AddMonoidHom.ker
+            (((2 * φ - 1 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
+                AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+              (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+          = AddSubgroup.zmultiples g := by
+  have hN : p.Prime := by fin_cases hp <;> norm_num
+  have hN23 : 23 ≤ p := by fin_cases hp <;> norm_num
+  have h37 : p ≠ 37 := by fin_cases hp <;> norm_num
+  have hN19 : 19 < p := by omega
+  obtain ⟨lam, hlam⟩ := E.exists_isogenyCharacter g hN.pos hg hstable
+  have hpg := E.potentiallyGoodReduction_of_isogenyCharacter g hN hN19 hg lam hlam
+  obtain ⟨s, hsmem, hsig, hs6⟩ := E.exists_isogenySignature g hN hN19 hg lam hlam
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hsmem
+  rcases hsmem with rfl | rfl | rfl | rfl | rfl
+  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
+      hpg (by decide) hsig).elim
+  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
+      hpg (by decide) hsig).elim
+  · exact exists_endMinpoly_of_isogenySignature_six E g hN hN23 hg lam hlam hpg hsig
+      (hs6 rfl)
+  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
+      hpg (by decide) hsig).elim
+  · exact (E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam
+      hpg (by decide) hsig).elim
+
+/-- **THE MODULI↔WEIERSTRASS BRIDGE: an endomorphism of the Weierstrass model
+with the right minimal polynomial is a CM structure on the `Γ₀(p)`-datum** (sorry
+leaf, opened 2026-07-28; the SHALLOW half of
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf` — shallow in the sense
+that it contains no arithmetic, not that it is short).
+
+TRUE, and it is pure formalism: given the `ℚ`-model `d₀`, produce a Weierstrass
+curve `E/ℚ` and a geometric point `g` realising the level structure, feed them to
+`harith`, and transport the resulting `φ` back to an endomorphism of `d`'s
+functor of points.
+
+**HOW THE `(E, g)` IS OBTAINED, and why this is now possible.**
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`
+(`ModularCurve/EllipticScheme.lean`) applied to `d₀.ab` and
+`d₀.relativeDimensionOne` gives `E`, `IsWeierstrassModel d₀.ab E`, and a
+Galois-equivariant `≃+` from `E(ℚ̄)` onto the geometric fibre of `d₀`.  Then
+`d₀.cyc.geom_cyclic` supplies a generator `y` of the geometric-fibre subgroup and
+`e.symm y` is the wanted `g`: it has order `p`, and its `zmultiples` is
+Galois-stable because `RelPoint.LiesIn` is preserved by precomposition while
+`AbelianSchemeStruct.galSMul` IS precomposition
+(`AbelianSchemeStruct.galSMul_def`, `rfl`).  That is exactly the block already
+written and verified inside `Fermat.exists_weierstrass_jm_of_gamma0Datum`
+(`X0.lean`), whose `hmem` sits on a LATER conjunct (`IsJMapOn.jm_classify`) and
+is not needed for this part.
+
+**WHY `harith` IS A HYPOTHESIS RATHER THAN A CITATION.**  `X0.lean` imports
+`EllipticScheme` NON-publicly — deliberately, because a `public import`
+propagates the reserved token `over` through this cone — and nothing else in the
+tree imports it.  So that theorem is unavailable HERE, in signature and in proof
+body alike.  Passing the arithmetic in as a hypothesis keeps every
+`IsWeierstrassModel`/`proj`/geometric-fibre name out of this statement, so the
+cut costs no new interface and duplicates none.  A future owner who makes the
+`EllipticScheme` names reachable (a `public import`, or a re-export theorem in
+`X0.lean` whose statement avoids `proj`/`projToSpec`) may then discharge
+`harith`'s consumer directly and drop the hypothesis.
+
+**THE REMAINING WORK, which is where the difficulty actually is.**  `harith`
+gives an endomorphism of `E(ℚ̄)` as a group; `IsCMByRamifiedMaximalOrder.phi`
+must be an endomorphism of `RelPoint d.f g'` for EVERY `g' : T' ⟶ Spec ℚ̄`, i.e.
+a morphism of schemes, with `phi_pre` its naturality.  So the transport needs the
+`IsWeierstrassModel` identification at the SCHEME level, not merely the
+point-group equivalence — the `IsRationalMap` certificate carried by
+`WeierstrassCurve.End` is precisely what makes that possible and is why the
+arithmetic leaf is stated in `End` vocabulary rather than as a bare additive map.
+`phi_add` and `phi_sq` then descend from the ring identity in
+`WeierstrassCurve.End`, and `liesIn_iff` from the kernel clause, since
+`phi x + phi x = x` is `(2φ − 1) x = 0`.
+
+**NOT VACUOUS.**  `harith` is satisfiable — it is exactly
+`exists_endMinpoly_of_stable_cyclic_mazurLevel`, which is proven above — and
+`Gamma0Datum p SpecQ` is inhabited at all three levels (the CM curve with its
+ramified `p`-isogeny), so `d₀` and `bc` are satisfiable too.  Contrast
+`Fermat.exists_gamma0Datum_descent`, which is true only through vacuity.
+
+**FAITHFULNESS.**  `hp` is load-bearing only through `harith`, whose conclusion
+is false at generic levels; `bc` is what puts the Galois representation over `ℚ`,
+without which the arithmetic leaf has no `ℚ`-curve to speak about. -/
+theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly (p : ℕ)
+    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    {d₀ : Gamma0Datum p SpecQ}
+    {d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
+    (_bc : IsBaseChangeOf (specAlgClos ℚ) d d₀)
+    (_harith : ∀ (E : WeierstrassCurve ℚ) [E.IsElliptic]
+        (g : (E⁄(AlgebraicClosure ℚ)).Point), addOrderOf g = p →
+        (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+          WeierstrassCurve.Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+            AddSubgroup.zmultiples g) →
+        ∃ φ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+          φ * φ + (((p + 1) / 4 : ℕ) :
+              WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) = φ ∧
+            AddMonoidHom.ker
+                (((2 * φ - 1 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) :
+                    AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+                  (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+              = AddSubgroup.zmultiples g) :
+    Nonempty (IsCMByRamifiedMaximalOrder p d) :=
+  sorry
+
 /-- **MAZUR'S ISOGENY THEOREM at `43, 67, 163`: a `Γ₀(p)`-structure defined
-over `ℚ` is a CM structure for the maximal order of discriminant `−p`** (sorry
-leaf, opened 2026-07-27; the DEEP third of
+over `ℚ` is a CM structure for the maximal order of discriminant `−p`**
+(PROVEN 2026-07-28 over the two leaves immediately above — the arithmetic
+`exists_endMinpoly_of_isogenySignature_six` and the moduli↔Weierstrass bridge
+`nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`; a sorry
+leaf from 2026-07-27 until then.  It was the DEEP third of
 `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq`, and the only third that
-is deep).
+is deep; the deep part is now confined to the first of the two).
 
 TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44 (1978),
 Theorem 1 and the table following it.  At every prime `p ≥ 23` other than `37`
@@ -28505,11 +28783,20 @@ and not for the proof.
 *The bridge.*  Turning that `End` into the natural endomorphism
 `IsCMByRamifiedMaximalOrder.phi` of `d`'s functor of points needs a
 scheme-level identification of `d₀.E` with the projective Weierstrass model.
-The section note above records why that seam is not cut here: the only such
-relation nameable downstream is `IsWeierstrassModel`, the point-group
-equivalence of `exists_ellipticScheme_of_projModel` is not enough (it pins the
-isogeny class, not `E`), and the `Gamma0Datum p SpecQ → (E, g)` direction is
-itself an open leaf in `X0.lean` carrying `hmem`.
+
+**BOTH PARAGRAPHS ABOVE ARE NOW DISCHARGED AS LEAVES, 2026-07-28** — the block
+quote is verbatim `exists_endMinpoly_of_isogenySignature_six` (reached from
+`hstable` by `exists_endMinpoly_of_stable_cyclic_mazurLevel`, PROVEN), and the
+bridge is `nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly`.
+The section note's refutation check came back POSITIVE:
+`Fermat.exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` produces
+`IsWeierstrassModel d₀.ab E` from `d₀.ab`/`d₀.relativeDimensionOne` with no
+membership hypothesis, and `X0.lean`'s `hmem` sits on a LATER conjunct of
+`exists_weierstrass_jm_of_gamma0Datum` (the `IsJMapOn.jm_classify` gap), not on
+the bridge.  See the subsection note above for the one residual caveat — that
+theorem is not NAMEABLE here, because `X0.lean` imports `EllipticScheme`
+non-publicly — and for why the bridge leaf therefore takes the arithmetic as a
+hypothesis instead of citing it.
 
 **AXES ALREADY REFUTED, inherited from the atom and re-checked**: the rank-`0`
 Jacobian (analytic ranks `1, 2, 6`), effective Chabauty–Coleman (`15, 19, 64`
@@ -28518,12 +28805,15 @@ cardinality at these levels, with the numbers in the subsection note above.
 `classPoly` is not a route either: at `h(−p) = 1` the class polynomial is
 linear, so "`j` is its root" is this leaf's own conclusion rewritten. -/
 theorem nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     {d₀ : Gamma0Datum p SpecQ}
     {d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))}
-    (_bc : IsBaseChangeOf (specAlgClos ℚ) d d₀) :
-    Nonempty (IsCMByRamifiedMaximalOrder p d) :=
-  sorry
+    (bc : IsBaseChangeOf (specAlgClos ℚ) d d₀) :
+    Nonempty (IsCMByRamifiedMaximalOrder p d) := by
+  refine nonempty_isCMByRamifiedMaximalOrder_of_isBaseChangeOf_of_endMinpoly p hp bc ?_
+  intro E hE g hg hstable
+  letI := hE
+  exact exists_endMinpoly_of_stable_cyclic_mazurLevel E hp g hg hstable
 
 /-- **MAZUR: a rational point of `Y_0(p)` at `p = 43, 67, 163` is a CM point
 for the maximal order of discriminant `−p`** (PROVEN 2026-07-27 over the three
