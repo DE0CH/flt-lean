@@ -43,9 +43,13 @@ The second half of the consumer's needs is that `B ⊗[ℚ] K` is a domain for e
 field extension `K/ℚ`.  Two pieces live here:
 
 * `isDomain_tensorProduct_of_algebraicClosure_eq_bot` — the field-theoretic
-  statement that a field extension `L/k` in characteristic zero with `k`
+  statement that a field extension `L/k` over a PERFECT `k` with `k`
   algebraically closed in `L` is a *regular* extension, i.e. `L ⊗[k] K` is a
-  domain for every `K/k`.  This is the one LEAF of this module.
+  domain for every `K/k`.  This is the one LEAF of this module.  (The hypothesis
+  was `CharZero k` until 2026-07-28; it was weakened to `PerfectField k`, which
+  is what the recorded proof sketch actually uses and what the characteristic-`p`
+  consumer over `𝔽_p` needs.  `CharZero ⟹ PerfectField` is an instance, so no
+  call site changed.)
 * `isDomain_tensorProduct_of_injective` — the transfer from the fraction field
   down to the ring, which is just flatness of a field over a field (PROVEN).
 
@@ -74,6 +78,7 @@ public import Mathlib.RingTheory.IntegralClosure.IsIntegralClosure.Basic
 public import Mathlib.RingTheory.IntegralClosure.IntegrallyClosed
 public import Mathlib.RingTheory.Algebraic.Integral
 public import Mathlib.FieldTheory.AlgebraicClosure
+public import Mathlib.FieldTheory.Perfect
 public import Mathlib.RingTheory.TensorProduct.Basic
 public import Mathlib.RingTheory.Flat.Basic
 
@@ -272,8 +277,10 @@ algebraically closed is a regular extension** (sorry leaf).
 closed *in `Frac B`* when `B` is integrally closed — an element of `Frac B`
 algebraic over the field `k` is integral over `k`, hence over `B`, hence lies in
 `B` — and a field extension `L/k` with `k` algebraically closed in `L` is
-**regular** in characteristic zero, i.e. `L ⊗[k] K` is a domain for every field
-extension `K/k`.  Bourbaki *Algebra* V §17, EGA IV 4.6.1, Stacks 04KM.
+**regular** as soon as `L/k` is separable, i.e. `L ⊗[k] K` is a domain for every
+field extension `K/k`.  Over a PERFECT `k` separability is automatic (Stacks
+030W), which is why that is the hypothesis carried here.  Bourbaki *Algebra*
+V §17, EGA IV 4.6.1, Stacks 04KM.
 
 Together with `isDomain_tensorProduct_of_injective` below this is exactly
 "geometrically integral", which is what an affine geometric-connectedness
@@ -305,13 +312,25 @@ The `k`-algebra structure on `FractionRing B` is the one mathlib already
 supplies for a localization, and it is compatible with `Algebra k B` by the
 ambient `IsScalarTower k B (FractionRing B)` instance, so it is not a choice.
 
-**Faithfulness note.**  `CharZero k` is load-bearing.  In characteristic `p` the
-statement is FALSE without a separability hypothesis: for `k = 𝔽_p(u)`,
-`B = L = k(u^{1/p})`, `K = L`, the base field `k` *is* algebraically closed in
-nothing bigger inside `L` in the separable sense, yet `L ⊗[k] L` contains the
-nonzero nilpotent `u^{1/p} ⊗ 1 - 1 ⊗ u^{1/p}` and is not a domain. -/
+**Faithfulness note — what is load-bearing is PERFECTION, not characteristic
+zero** (corrected 2026-07-28; the hypothesis read `CharZero k` until then, and
+this note read "`CharZero k` is load-bearing").  The statement is FALSE over an
+IMPERFECT base: for `k = 𝔽_p(u)`, `B = L = k(u^{1/p})`, `K = L`, the base field
+`k` *is* algebraically closed in nothing bigger inside `L` in the separable
+sense, yet `L ⊗[k] L` contains the nonzero nilpotent
+`u^{1/p} ⊗ 1 - 1 ⊗ u^{1/p}` and is not a domain.  That counterexample is exactly
+a failure of perfection — `u` has no `p`-th root in `k` — and says nothing
+against characteristic `p` per se.  `PerfectField k` is therefore the right
+hypothesis, it is strictly weaker than `CharZero k`
+(`PerfectField.ofCharZero` is an instance, so every existing `ℚ`-call site is
+undisturbed), and it is what the recorded proof sketch above already uses
+("`k` is perfect, so it is enough to treat `K/k` finite Galois").
+
+The weakening is not cosmetic: `Fermat.geometricallyConnected_of_gamma0AtlasOver_zmod`
+and `Fermat.isDomain_of_gamma0AtlasOver_zmod` consume this leaf at `k = ZMod p`,
+which is perfect (`PerfectField.ofFinite`) and emphatically not `CharZero`. -/
 theorem isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot
-    (k B : Type*) [Field k] [CharZero k] [CommRing B] [IsDomain B] [Algebra k B]
+    (k B : Type*) [Field k] [PerfectField k] [CommRing B] [IsDomain B] [Algebra k B]
     [IsIntegrallyClosed B]
     (h : ∀ x : B, IsAlgebraic k x → x ∈ (⊥ : Subalgebra k B))
     (K : Type*) [Field K] [Algebra k K] :
@@ -354,9 +373,12 @@ geometrically integral** (PROVEN over
 and the latter is a domain by the leaf.  This is the form the affine
 geometric-connectedness criterion
 `AlgebraicGeometry.geometricallyConnected_specMap_algebraMap_of_forall_isDomain`
-consumes. -/
+consumes.
+
+`PerfectField k` rather than `CharZero k` since 2026-07-28 — see the
+faithfulness note on the leaf above. -/
 theorem isDomain_tensorProduct_of_isAlgebraic_mem_bot
-    (k B : Type*) [Field k] [CharZero k] [CommRing B] [IsDomain B] [Algebra k B]
+    (k B : Type*) [Field k] [PerfectField k] [CommRing B] [IsDomain B] [Algebra k B]
     [IsIntegrallyClosed B]
     (h : ∀ x : B, IsAlgebraic k x → x ∈ (⊥ : Subalgebra k B))
     (K : Type*) [Field K] [Algebra k K] :
