@@ -28102,64 +28102,61 @@ end EndLattice
 `End.exists_ringHomToBase` below and `MazurLevelFortyNine.exists_galoisConj_ne`
 far below were *the same* missing input at two base fields: the action of an
 isogeny on the one-dimensional space of invariant differentials, over `F = ℚ̄`
-for the first and (through Galois descent) over `ℚ` for the second. This section
-builds that action once, in the general form `c : {isogenies over F} → F`, and
-both leaves are proven over it.
+for the first and (through Galois descent) over `ℚ` for the second. That action
+is `WeierstrassCurve.IsDiffChar` of
+`Fermat/FLT/EllipticCurve/DifferentialCharacter.lean` (already `public
+import`ed by this file), and this section does nothing but package it as the
+ring homomorphism `End W →+* F` that `End.exists_ringHomToBase` asks for.
 
-**HOW IT IS STATED, AND WHY THERE IS NO FUNCTION FIELD IN SIGHT.** With
-`ω = dx / (2y + a₁x + a₃)` and `IsRationalMap` witnesses
-`x(φ P)·B(x P) = A(x P)`, `y(φ P)·E(x P) = C(x P)·y P + D(x P)`, the identity
-`d(A/B) = (A'B − AB')/B² · dx` clears denominators to
+## `IsCotangentScalar` WAS RETIRED HERE (2026-07-28) — read this before re-cutting it
 
-    (A'B − AB')(x P) · (2·y P + a₁·x P + a₃)
-      = c · B(x P)² · (2·y (φ P) + a₁·x (φ P) + a₃)
+This section formerly carried a SECOND predicate, `IsCotangentScalar φ c`, with
+its own four leaves (`exists_isCotangentScalar`, `isCotangentScalar_unique`,
+`IsCotangentScalar.comp`, `IsCotangentScalar.add`) and its own copy of the
+geometry. It was the same mathematics as `IsDiffChar` written twice. Both are
 
-which is `IsCotangentScalar φ c`: a statement about `veluPointX`/`veluPointY`
-and `Polynomial.derivative` only. Sanity checks, both discharged below rather
-than asserted: `φ = id` (`A = X`, `B = C = E = 1`, `D = 0`) forces `c = 1`
-(`isCotangentScalar_id`), and `φ = 0` forces `c = 0`
-(`isCotangentScalar_zero`).
+    (φ = 0 → c = 0) ∧ ∃ A B C D E, B ≠ 0 ∧ E ≠ 0
+      ∧ <byte-identical IsRationalMap clause> ∧ <differential clause>
 
-**Why no `B(x P) ≠ 0` side condition is needed**, although the informal identity
-carries one: where `B` vanishes the certificate `x(φP)·B(xP) = A(xP)` forces
-`A(x P) = 0` as well, so the left-hand side is `(A'·0 − 0·B')·(…) = 0` and the
-right-hand side is `c·0²·(…) = 0`. The identity is therefore true at every
-`P ≠ 0` with `φ P ≠ 0`, and dropping the hypothesis makes the predicate
-strictly easier to consume.
+and the two differential clauses differ only in
 
-**The `φ = 0 → c = 0` conjunct is not decoration.** At `φ = 0` the whole
-differential identity is vacuous (its hypothesis `φ P ≠ 0` is never met), so
-without that conjunct every `c` would be a cotangent scalar for the zero map,
-`isCotangentScalar_unique` would be FALSE, and the ring homomorphism below could
-not have `map_zero`. Mathematically it says `0*ω = 0`, which is correct and not
-a weakening.
+* (i) a factor `E(x)`. `IsDiffChar` substitutes `y(φP) = (Cy + D)/E` and
+  `x(φP) = A/B` through the rational-map clause and clears `B·E`, so its
+  certificate is a POLYNOMIAL identity in `(x P, y P)`; `IsCotangentScalar` kept
+  `2 y(φP) + a₁' x(φP) + a₃'` literal. Multiplying the `IsCotangentScalar`
+  clause by `E(x P)` turns it into `IsDiffCharCert` exactly.
+* (ii) quantifier range — `IsDiffChar` asks for the identity at every `P ≠ 0`,
+  `IsCotangentScalar` only off `ker φ`.
 
-**WHAT IS OPEN, AND WHAT IS NOT.** Four leaves are cut here, in decreasing order
-of difficulty:
+**Why the retirement went in this direction and not the other.** The forward
+bridge `IsCotangentScalar → IsDiffChar` is easy (multiply by `E`, then extend
+over the finitely many excluded points because `y` occurs linearly). The
+CONVERSE does not go through, and the obstruction is a real asymmetry rather
+than a missing lemma: cancelling `E(x P)` needs `E(x P) ≠ 0`, which holds only
+cofinitely, and `IsCotangentScalar`'s clause is *not* a polynomial identity in
+`(x, y)` — its right-hand side mentions the coordinates of `φ P` — so it admits
+no cofinite-extension lemma of its own. `IsDiffChar` has one precisely because
+it is cleared to polynomials. A predicate that can be transported INTO the other
+but not back is the redundant one.
 
-1. `exists_isCotangentScalar` — the genuinely geometric input: the holomorphic
-   differentials of an elliptic curve form a ONE-dimensional space, so `φ*ω'` is
-   a scalar multiple of `ω`. Silverman *AEC* III.5 and IV.2. This is the only
-   place in the section where geometry is used.
-2. `IsCotangentScalar.add` — additivity, *AEC* III.5.2; equivalently `c φ` is
-   the linear coefficient of `φ` on the formal group, where additivity is
-   immediate from `F(z, w) = z + w + ⋯`.
-3. `IsCotangentScalar.comp` — multiplicativity, the chain rule for the
-   composite rational map. Elementary but a real polynomial computation:
-   `IsRationalMap.comp` already produces the composed witnesses.
-4. `isCotangentScalar_unique` — the cheapest of the four, and purely
-   elementary. Two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
-   satisfy `A B₂ = A₂ B` as POLYNOMIALS (both compute `x ∘ φ`, and by
-   `exists_nonsingular_of_x` every element of `F` is an `x`-coordinate while
-   only the finitely many points of `ker φ` are excluded), whence
-   `(A'B − AB')B₂² = (A₂'B₂ − A₂B₂')B²`; evaluating both differential
-   identities at any `P` with `B(x P) ≠ 0`, `B₂(x P) ≠ 0` and
-   `φ P ∉ W'[2]` — all cofinite conditions, and `W.Point` is infinite by
-   `infinite_point` — gives `c = d`.
+`IsDiffChar` is also strictly cheaper to consume: it is stated over
+`IsRationalMap` rather than `IsIsogeny` (so it needs neither surjectivity nor
+finiteness of the kernel), and none of `isDiffChar_unique`, `isDiffChar_add`,
+`isDiffChar_comp` carries a `CharZero` hypothesis, whereas all four
+`IsCotangentScalar` leaves did. `[CharZero F]` was never needed by any of them;
+the `EndChar` section below no longer assumes it.
 
-Everything else here is proven: the two sanity checks, the assembly of the
-choice function `End.cotangent`, and the ring homomorphism `End.cotangentHom`
-that discharges `End.exists_ringHomToBase`.
+`git show 99681f7f:Fermat/FLT/FreyCurve/MazurTorsion.lean` recovers the deleted
+predicate and its leaf statements if they are ever wanted again.
+
+**WHAT IS OPEN.** Nothing in this section. The geometry lives once, in
+`DifferentialCharacter.lean`, as `exists_isDiffChar`, `isDiffChar_unique`,
+`isDiffChar_add`, `isDiffChar_comp`, `eq_of_isDiffChar` and
+`isDiffChar_galConj`; `isDiffChar_zero`, `isDiffChar_id`, `isDiffChar_neg_id`,
+`isDiffChar_neg` and `isDiffChar_mulByHom` are proven there. Everything here —
+`exists_unique_isDiffChar`, the choice function `End.cotangent` and the ring
+homomorphism `End.cotangentHom` that discharges `End.exists_ringHomToBase` — is
+proven over those.
 
 **INJECTIVITY IS NOT AMONG THE LEAVES.** It is free in characteristic zero —
 see `End.injective_ringHomToBase` below, which proves that *every* ring
@@ -28172,204 +28169,67 @@ namespace WeierstrassCurve
 
 open Polynomial
 
-variable {F : Type*} [Field F] [DecidableEq F] {W W' W'' : Affine F}
+variable {F : Type*} [Field F] [DecidableEq F] {W W' : Affine F}
 
-/-- The denominator `2y + a₁x + a₃` of the invariant differential
-`ω = dx / (2y + a₁x + a₃)`, evaluated at a point (junk value `a₃` at the point
-at infinity, which is harmless: every statement below excludes `P = 0`). -/
-def invariantDiffDenom (W : Affine F) (P : W.Point) : F :=
-  2 * veluPointY P + W.a₁ * veluPointX P + W.a₃
+/-- **The differential character of a rational map exists and is unique** — the
+packaging that makes `End.cotangent` a function, assembled from
+`exists_isDiffChar` and `isDiffChar_unique` of
+`Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`.
 
-/-- **`IsCotangentScalar φ c`: the pullback identity `φ*ω' = c · ω`**, written
-with no function field and no differentials — see the section docstring for the
-derivation and for why no `B(x P) ≠ 0` hypothesis is needed.
-
-The first conjunct pins the value at the zero map, where the second is vacuous;
-without it uniqueness would fail there. -/
-def IsCotangentScalar (φ : W.Point →+ W'.Point) (c : F) : Prop :=
-  (φ = 0 → c = 0) ∧
-  ∃ A B C D E : F[X], B ≠ 0 ∧ E ≠ 0 ∧
-    (∀ P : W.Point, φ P ≠ 0 →
-      veluPointX (φ P) * B.eval (veluPointX P) = A.eval (veluPointX P) ∧
-      veluPointY (φ P) * E.eval (veluPointX P)
-        = C.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) ∧
-    (∀ P : W.Point, P ≠ 0 → φ P ≠ 0 →
-      (derivative A * B - A * derivative B).eval (veluPointX P)
-          * invariantDiffDenom W P
-        = c * (B.eval (veluPointX P)) ^ 2 * invariantDiffDenom W' (φ P))
-
-/-- **The zero isogeny has cotangent scalar `0`.** `0*ω' = 0`. -/
-theorem isCotangentScalar_zero : IsCotangentScalar (0 : W.Point →+ W'.Point) (0 : F) := by
-  refine ⟨fun _ => rfl, 0, 1, 0, 0, 1, one_ne_zero, one_ne_zero, ?_, ?_⟩
-  · intro P hP; exact absurd (AddMonoidHom.zero_apply P) hP
-  · intro P _ hP; exact absurd (AddMonoidHom.zero_apply P) hP
-
-/-- **The identity has cotangent scalar `1`.** This is the first of the two
-sanity checks that the pointwise identity above really is `φ*ω' = c·ω`: with
-`A = X`, `B = C = E = 1`, `D = 0` the left side is `2y + a₁x + a₃` and the right
-side is `c · (2y + a₁x + a₃)`.
-
-`[IsAlgClosed F]` and `[W.IsElliptic]` are used only to know that `W.Point` is
-infinite (`infinite_point`), hence that `AddMonoidHom.id ≠ 0`, which is what
-discharges the `φ = 0 → c = 0` conjunct. -/
-theorem isCotangentScalar_id [IsAlgClosed F] [W.IsElliptic] :
-    IsCotangentScalar (AddMonoidHom.id W.Point) (1 : F) := by
-  refine ⟨?_, X, 1, 1, 0, 1, one_ne_zero, one_ne_zero, ?_, ?_⟩
-  · intro h
-    haveI := infinite_point W
-    obtain ⟨P, hP⟩ := exists_ne (0 : W.Point)
-    refine absurd ?_ hP
-    have hh := congrArg (fun f : W.Point →+ W.Point => f P) h
-    simpa using hh
-  · intro P _; simp
-  · intro P _ _; simp
-
-/-- **LEAF (cut 2026-07-28): the invariant differential of an elliptic curve
-spans a ONE-dimensional space, so every isogeny acts on it by a scalar.**
-
-This is the whole geometric content of the section, and the only leaf here that
-is not elementary: Silverman *AEC* III.5 (the space of holomorphic differentials
-of an elliptic curve is `1`-dimensional, spanned by `ω = dx/(2y + a₁x + a₃)`)
-together with *AEC* IV.2. Equivalently, in the concrete form used here: for
-*some* — hence, by `isCotangentScalar_unique`, for every — witness system of
-`φ`, the ratio
-
-    (A'B − AB')(x P) · (2·y P + a₁·x P + a₃)
-      ⧸  B(x P)² · (2·y (φ P) + a₁·x (φ P) + a₃)
-
-is INDEPENDENT of `P`. The content is exactly that constancy; a value at a
-single good point is then the scalar.
-
-`EllipticCurve/InvariantDerivation.lean`'s `DK` — the invariant derivation on
-the universal function field `Kuniv` — is the closest existing material and the
-natural place to start; what it lacks is the pullback along an isogeny.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an isogeny `φ` and two points
-`P, Q ≠ 0` outside `ker φ` at which the displayed ratio takes different
-values. -/
-theorem exists_isCotangentScalar [IsAlgClosed F] [CharZero F]
-    [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} (hφ : IsIsogeny φ) :
-    ∃ c : F, IsCotangentScalar φ c :=
-  sorry
-
-/-- **LEAF (cut 2026-07-28): the cotangent scalar is unique.** The cheapest of
-the four leaves in this section and entirely elementary — see item 4 of the
-section docstring for the argument in full. In outline: two witness systems for
-the same `φ` are proportional (`A B₂ = A₂ B` as polynomials, because every
-element of `F` is an `x`-coordinate by `exists_nonsingular_of_x` and only the
-finitely many points of `ker φ` are excluded), the expression
-`(A'B − AB')/B²` is invariant under that proportionality, and a point at which
-`B`, `B₂` and `2y(φP) + a₁x(φP) + a₃` are all nonzero exists because each
-vanishing locus is finite while `W.Point` is infinite (`infinite_point`).
-
-At `φ = 0` uniqueness is immediate from the `φ = 0 → c = 0` conjunct, so no
-separate case analysis is needed at the consumer.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an isogeny with two distinct
-cotangent scalars — which, by the above, would need two witness systems that
-are NOT proportional. -/
-theorem isCotangentScalar_unique [IsAlgClosed F] [CharZero F]
-    [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} {c d : F} (hφ : IsIsogeny φ)
-    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar φ d) : c = d :=
-  sorry
-
-/-- The cotangent scalar exists and is unique — the packaging that makes
-`End.cotangent` a function. Proven over `exists_isCotangentScalar` and
-`isCotangentScalar_unique`. -/
-theorem exists_unique_isCotangentScalar [IsAlgClosed F] [CharZero F]
-    [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} (hφ : IsIsogeny φ) :
-    ∃! c : F, IsCotangentScalar φ c := by
-  obtain ⟨c, hc⟩ := exists_isCotangentScalar hφ
-  exact ⟨c, hc, fun d hd => isCotangentScalar_unique hφ hd hc⟩
-
-/-- **LEAF (cut 2026-07-28): MULTIPLICATIVITY — the chain rule.**
-`(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·c·ω`.
-
-Elementary but a genuine polynomial computation. `IsRationalMap.comp` already
-constructs the composed witnesses (by homogeneous substitution,
-`homogSubst`/`eval_homogSubst`), and what remains is the chain rule for
-`(A ∘ (A₂/B₂))' ` after clearing denominators, together with
-`isCotangentScalar_unique` to transfer the conclusion from those particular
-witnesses to the ones supplied by `hc` and `hd`.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: a composite of isogenies whose
-cotangent scalar is not the product of the two scalars — e.g. computable
-directly for `φ = ψ = [−1]`, where `c = d = −1` and the composite is `id` with
-scalar `1`. -/
-theorem IsCotangentScalar.comp [IsAlgClosed F] [CharZero F]
-    [W.IsElliptic] [W'.IsElliptic] [W''.IsElliptic]
-    {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point} {c d : F}
-    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ)
-    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar ψ d) :
-    IsCotangentScalar (ψ.comp φ) (d * c) :=
-  sorry
-
-/-- **LEAF (cut 2026-07-28): ADDITIVITY — `(φ + ψ)*ω' = φ*ω' + ψ*ω'`.**
-
-Silverman *AEC* III.5.2, and the genuinely hard half of the classical proof that
-`c` is a ring homomorphism. Equivalently: `c φ` is the linear coefficient of `φ`
-on the formal group of `W`, where additivity is immediate from the shape
-`F(z, w) = z + w + (higher order)` of the formal group law.
-
-`[IsAlgClosed F]` is inherited from `IsIsogeny.add`, which is FALSE without it
-(see the falsity audit in `Isogeny.lean`); the sum of two isogenies need not be
-an isogeny over a general field, so there would be nothing to state.
-
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: two isogenies `φ, ψ` with
-`c (φ + ψ) ≠ c φ + c ψ`. Note the degenerate instance `ψ = -φ` is already
-consistent: `φ + ψ = 0` forces `c + d = 0`, and indeed `c (-φ) = -c φ` because
-`x(-Q) = x(Q)` leaves `A, B` unchanged while
-`2y(-Q) + a₁x(-Q) + a₃ = -(2y(Q) + a₁x(Q) + a₃)`. -/
-theorem IsCotangentScalar.add [IsAlgClosed F] [CharZero F]
-    [W.IsElliptic] [W'.IsElliptic]
-    {φ ψ : W.Point →+ W'.Point} {c d : F}
-    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ)
-    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar ψ d) :
-    IsCotangentScalar (φ + ψ) (c + d) :=
-  sorry
+Note the hypothesis is `IsRationalMap`, not `IsIsogeny`: neither existence nor
+uniqueness of the scalar uses surjectivity or finiteness of the kernel, and
+neither uses `CharZero`. -/
+theorem exists_unique_isDiffChar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} (hφ : IsRationalMap φ) :
+    ∃! c : F, IsDiffChar φ c := by
+  obtain ⟨c, hc⟩ := exists_isDiffChar hφ
+  exact ⟨c, hc, fun d hd => isDiffChar_unique hd hc⟩
 
 section EndChar
 
-variable [IsAlgClosed F] [CharZero F] [W.IsElliptic]
+variable [IsAlgClosed F] [W.IsElliptic]
 
 /-- **The cotangent character of an endomorphism**, `φ ↦ c` with `φ*ω = c·ω`.
-Well defined by `exists_unique_isCotangentScalar`. -/
+Well defined by `exists_unique_isDiffChar`. -/
 noncomputable def End.cotangent (f : End W) : F :=
-  (exists_unique_isCotangentScalar
-    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)) f.2).choose
+  (exists_unique_isDiffChar
+    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point))
+    f.2.isRationalMap).choose
 
-/-- `End.cotangent f` is a cotangent scalar for `f`. -/
-theorem End.isCotangentScalar_cotangent (f : End W) :
-    IsCotangentScalar ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)
+/-- `End.cotangent f` is the differential-character scalar of `f`. -/
+theorem End.isDiffChar_cotangent (f : End W) :
+    IsDiffChar ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)
       (End.cotangent f) :=
-  (exists_unique_isCotangentScalar
-    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)) f.2).choose_spec.1
+  (exists_unique_isDiffChar
+    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point))
+    f.2.isRationalMap).choose_spec.1
 
-/-- Any cotangent scalar for `f` IS `End.cotangent f`. -/
+/-- Any differential-character scalar for `f` IS `End.cotangent f`. -/
 theorem End.cotangent_eq {f : End W} {c : F}
-    (h : IsCotangentScalar ((f : AddMonoid.End W.Point) : W.Point →+ W.Point) c) :
+    (h : IsDiffChar ((f : AddMonoid.End W.Point) : W.Point →+ W.Point) c) :
     c = End.cotangent f :=
-  (exists_unique_isCotangentScalar
-    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point)) f.2).choose_spec.2 c h
+  (exists_unique_isDiffChar
+    (φ := ((f : AddMonoid.End W.Point) : W.Point →+ W.Point))
+    f.2.isRationalMap).choose_spec.2 c h
 
 /-- **THE COTANGENT CHARACTER `End W →+* F`** — the object
-`End.exists_ringHomToBase` asks for, assembled from the four leaves above:
-`map_one'` from `isCotangentScalar_id`, `map_zero'` from
-`isCotangentScalar_zero`, `map_mul'` from `IsCotangentScalar.comp` (`End`'s
-multiplication is composition, `End.mul_apply`), and `map_add'` from
-`IsCotangentScalar.add`. -/
+`End.exists_ringHomToBase` asks for, assembled from
+`DifferentialCharacter.lean`: `map_one'` from `isDiffChar_id`, `map_zero'` from
+`isDiffChar_zero`, `map_mul'` from `isDiffChar_comp` (`End`'s multiplication is
+composition, `End.mul_apply`), and `map_add'` from `isDiffChar_add`.
+
+No `[CharZero F]`: none of the four inputs needs it, and neither does
+`exists_unique_isDiffChar`. -/
 noncomputable def End.cotangentHom : End W →+* F where
   toFun := End.cotangent
-  map_one' := (End.cotangent_eq (f := (1 : End W)) (isCotangentScalar_id (W := W))).symm
+  map_one' := (End.cotangent_eq (f := (1 : End W)) (isDiffChar_id (W := W))).symm
   map_mul' f g := by
     refine (End.cotangent_eq (f := f * g) ?_).symm
-    exact IsCotangentScalar.comp g.2 f.2 (End.isCotangentScalar_cotangent g)
-      (End.isCotangentScalar_cotangent f)
-  map_zero' := (End.cotangent_eq (f := (0 : End W)) isCotangentScalar_zero).symm
+    exact isDiffChar_comp (End.isDiffChar_cotangent g) (End.isDiffChar_cotangent f)
+  map_zero' := (End.cotangent_eq (f := (0 : End W)) isDiffChar_zero).symm
   map_add' f g := by
     refine (End.cotangent_eq (f := f + g) ?_).symm
-    exact IsCotangentScalar.add f.2 g.2 (End.isCotangentScalar_cotangent f)
-      (End.isCotangentScalar_cotangent g)
+    exact isDiffChar_add (End.isDiffChar_cotangent f) (End.isDiffChar_cotangent g)
 
 @[simp] theorem End.cotangentHom_apply (f : End W) :
     End.cotangentHom (W := W) f = End.cotangent f := rfl
@@ -28386,12 +28246,16 @@ out of `End.mul_comm_charZero`, which is now PROVEN over this and nothing else;
 `End.exists_intBasis`).
 
 **PROVEN 2026-07-28** — it is `End.cotangentHom`, built in the
-`section Cotangent` immediately above out of the four leaves
-`exists_isCotangentScalar`, `isCotangentScalar_unique`,
-`IsCotangentScalar.comp` and `IsCotangentScalar.add`. Route A of the audit
-below is the route that was taken, in exactly the concrete pointwise form the
-audit proposed; read that section's docstring rather than this one for the
-current state of the frontier. The same construction also closes
+`section Cotangent` immediately above over `WeierstrassCurve.IsDiffChar` of
+`Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`, i.e. over
+`exists_isDiffChar`, `isDiffChar_unique`, `isDiffChar_comp` and
+`isDiffChar_add`. Route A of the audit below is the route that was taken, in
+exactly the concrete pointwise form the audit proposed; read
+`DifferentialCharacter.lean` rather than this docstring for the current state of
+the frontier. (A rival copy of the same predicate, `IsCotangentScalar`, was cut
+in this file on 2026-07-28 and RETIRED the same day — see the `section
+Cotangent` docstring for why the retirement went in that direction.) The same
+construction also closes
 `MazurLevelFortyNine.exists_galoisConj_ne` far below, which was the *same*
 missing layer at the base field `ℚ` — see the RELATION note there.
 
