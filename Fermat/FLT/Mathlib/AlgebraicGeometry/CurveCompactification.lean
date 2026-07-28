@@ -117,7 +117,6 @@ leaves declarations that were already PROVEN — `topologicalKrullDim_normalizat
 `smoothOfRelativeDimension_one_fromNormalization`,
 `topologicalKrullDim_le_of_isOpenImmersion_of_irreducible`, `nonempty_projChart_mvPolynomial`,
 `smoothOfRelativeDimension_of_isDominant`, `infinite_of_smoothOfRelativeDimension_one` and
-=======
 the now-deleted `exists_isOpenImmersion_isProper` have all been in it while closed.
 **Regenerate it from the build's `declaration uses 'sorry'` warnings before acting on it; do
 not trust the prose.**  As of the free-floating deletion of the Nagata gluing cluster
