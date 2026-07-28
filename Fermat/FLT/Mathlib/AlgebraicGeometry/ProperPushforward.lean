@@ -15,6 +15,8 @@ public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.AlgebraicGeometry.ResidueField
 public import Mathlib.AlgebraicGeometry.Gluing
 public import Mathlib.AlgebraicGeometry.Morphisms.UnderlyingMap
+public import Mathlib.AlgebraicGeometry.Morphisms.Flat
+public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
@@ -52,18 +54,31 @@ direct images of quasi-coherent sheaves at all.
   base change.  For `f` proper, flat and of finite presentation over an **affine** base,
   `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is an isomorphism as soon as `κ(s) ⟶ Γ(X_s, ⊤)` is one for every
   `s ∈ S`.  Geometric connectedness and reducedness do not appear: they enter only through
-  the fibrewise hypothesis.  Proven over three new leaves plus a fully proven
+  the fibrewise hypothesis.  Proven over the two leaves below plus a fully proven
   commutative-algebra assembly (Nakayama on the cokernel; the equational criterion for
   flatness on the kernel):
   * `module_finite_appTop_of_isProper` — **LEAF**: `Γ(X, ⊤)` is a finite `Γ(S, ⊤)`-module.
     Grothendieck's finiteness theorem for a proper morphism, in degree `0`.
-  * `module_flat_appTop_of_isIso_appTop_fiber` — **LEAF**: `f_*𝒪_X` is flat over the base.
-  * `bijective_quotientMap_appTop_of_isIso_appTop_fiber` — **LEAF**: `R/𝔪 ⟶ A/𝔪A` is
-    bijective at every maximal ideal.  The **only** consumer of the fibrewise hypothesis.
+  * `surjective_quotientMap_appTop_of_isIso_appTop_fiber` — **LEAF** (2026-07-28):
+    `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE at every maximal ideal, equivalently the degree-zero
+    comparison map `A ⊗_R κ(s) ⟶ H⁰(X_s, 𝒪)` is INJECTIVE.  This is Hartshorne
+    III.12.11(a) / EGA III 7.8.6 in degree `0`, and it is now the *whole* of cohomology and
+    base change left in this file.
 
-  The last two are two readings of ONE theorem (Hartshorne III.12.11 in degree `0`) and
-  should go to a single owner; the first is independent of them.  The commutative algebra —
-  `eq_bot_of_fg_of_le_smul_of_forall_isMaximal`,
+  Two leaves that used to sit here are now **PROVEN** (2026-07-28), both from elementary
+  consequences of `h` rather than from III.12.11:
+  * `bijective_quotientMap_appTop_of_isIso_appTop_fiber` — the injective half is
+    `comap_map_appTop_eq_of_isIso_appTop_fiber`, i.e. LYING OVER: `h` forces `f` surjective
+    (`surjective_of_isIso_appTop_fiber`), hence `Spec Γ(X, ⊤) ⟶ Spec Γ(S, ⊤)` surjective
+    (`surjective_comap_appTop_of_isAffine`), hence `φ⁻¹(𝔪A) = 𝔪`.
+  * `module_flat_appTop_of_isIso_appTop_fiber` — III.12.11(b) is **not needed anywhere**.
+    Its only consumer wanted `Module.Flat R A` in order to get `φ` injective, and injectivity
+    comes far more cheaply from flatness of the MORPHISM: a flat surjective morphism is
+    faithfully flat on stalks, so `Γ(S, ⊤) ⟶ Γ(X, ⊤)` is injective
+    (`injective_appTop_of_flat_of_surjective`).  With surjectivity of `φ` from Nakayama, `φ`
+    is bijective and `A ≃ₗ[R] R` is flat outright.
+
+  The commutative algebra — `eq_bot_of_fg_of_le_smul_of_forall_isMaximal`,
   `surjective_algebraMap_of_finite_of_forall_isMaximal`,
   `injective_algebraMap_of_flat_of_ker_le_jacobson` and
   `bijective_algebraMap_of_finite_of_flat_of_bijective_quotientMap` — is proven here and is
@@ -566,29 +581,29 @@ theorem bijective_algebraMap_of_finite_of_flat_of_bijective_quotientMap
   have hinj : (Ideal.Quotient.mk J) k = 0 := (h J hJ).1 (by simpa using h0)
   rwa [Ideal.Quotient.eq_zero_iff_mem] at hinj
 
-/-! #### The three geometric inputs
+/-! #### The geometric inputs
 
-`R := Γ(S, ⊤)` and `A := Γ(X, ⊤)`, with `A` an `R`-algebra through `φ := f.appTop`.  Each of
-the three leaves below is one of the hypotheses of
-`bijective_algebraMap_of_finite_of_flat_of_bijective_quotientMap`, and together they are the
-*entire* remaining content of degree-zero cohomology and base change.
+`R := Γ(S, ⊤)` and `A := Γ(X, ⊤)`, with `A` an `R`-algebra through `φ := f.appTop`.  These
+supply the hypotheses of `bijective_algebraMap_of_finite_of_flat_of_bijective_quotientMap`,
+and together they are the *entire* remaining content of degree-zero cohomology and base
+change.
 
-**They are not three independent theory builds.**  Leaf 1 is Grothendieck's finiteness
-theorem for a proper morphism (coherence of `f_*`); leaves 2 and 3 are two readings of *one*
-theorem, Hartshorne III.12.11 / EGA III 7.8.6 applied in degree `0`, and should be dispatched
-to a single owner:
+The classical shape of the argument is:
 
 * the comparison map `φ⁰(s) : (f_*𝒪_X) ⊗ κ(s) ⟶ H⁰(X_s, 𝒪)` is **surjective** for every `s`,
   because the hypothesis `h s` factors it: `κ(s) ⟶ (f_*𝒪_X) ⊗ κ(s) ⟶ H⁰(X_s, 𝒪)` is the
   structure map, which `h s` says is an isomorphism;
-* III.12.11(a) then makes `φ⁰(s)` an isomorphism — that is **leaf 3**, since
-  `(f_*𝒪_X) ⊗ κ(s) = A/𝔪A` over an affine base and `κ(s) = R/𝔪`;
-* III.12.11(b), whose extra hypothesis in degree `0` is vacuous (`φ⁻¹` is a map of zero
-  modules), then makes `f_*𝒪_X` **locally free** — that is **leaf 2**.
+* III.12.11(a) then makes `φ⁰(s)` an ISOMORPHISM — over an affine base this reads
+  `A/𝔪A ≅ H⁰(X_s, 𝒪) = κ(s) = R/𝔪`, which is
+  `surjective_quotientMap_appTop_of_isIso_appTop_fiber`, the ONE leaf left in this block;
+* III.12.11(b) would then make `f_*𝒪_X` locally free.  **It is not needed** — see
+  `module_flat_appTop_of_isIso_appTop_fiber`, which gets `Module.Flat R A` from lying over
+  plus faithfully flat descent on stalks instead.
 
 Note that the reducedness of `S` demanded by Grauert (Hartshorne III.12.9, Mumford *AV* §5
 Corollary 2) is *not* needed on this route: III.12.11 has no such hypothesis, which matters
-here because the bases this development feeds in are arbitrary. -/
+here because the bases this development feeds in are arbitrary.  Nothing below has been
+"simplified to Grauert". -/
 
 /-- **LEAF 1 — `Γ(X, ⊤)` IS A FINITE `Γ(S, ⊤)`-MODULE** (Grothendieck's finiteness theorem
 for a proper morphism; EGA III 3.2.1, Stacks 02O5 / 0B91).
@@ -616,31 +631,170 @@ theorem module_finite_appTop_of_isProper (f : X ⟶ S) [IsAffine S]
     Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) :=
   sorry
 
-/-- **LEAF 2 — `f_*𝒪_X` IS FLAT OVER THE BASE** (Hartshorne III.12.11(b) in degree `0`,
-EGA III 7.8.6; the "constant `h⁰` ⟹ locally free" half of cohomology and base change).
+/-! #### Surjectivity of `f`, and the two consequences of it that replace III.12.11(b)
 
-Over an affine base this is exactly `Module.Flat R A` for `A = Γ(X, ⊤)`.  The hypothesis `h`
-is what makes it true: it says `h⁰(X_s, 𝒪) = 1` for every `s`, so `s ↦ dim_{κ(s)} H⁰(X_s, 𝒪)`
-is constant, and the comparison map `φ⁰(s)` is surjective (see the block comment above).
-III.12.11(b) then gives `R⁰f_*𝒪_X = f_*𝒪_X` locally free, hence flat.
+The three lemmas in this block are what let leaf 2 (`f_*𝒪_X` flat over the base) be
+DISCHARGED rather than proven as a second instance of cohomology and base change; see the
+docstring of `module_flat_appTop_of_isIso_appTop_fiber` below for why that is legitimate and
+what it cost.  All three are elementary — no higher direct images appear. -/
 
-**FAITHFULNESS — `h` cannot be dropped.**  Without it the statement is false: `h⁰` is only
-upper semicontinuous along a proper flat family, and where it jumps `f_*𝒪_X` is not locally
-free.  `[Flat f]` cannot be dropped either — it is the hypothesis of III.12.11 itself.
+/-- **THE FIBREWISE HYPOTHESIS MAKES `f` SURJECTIVE** (PROVEN).
 
-**Shared with leaf 3.**  A prover who builds the degree-`0` base-change comparison map gets
-both this leaf and `bijective_quotientMap_appTop_of_isIso_appTop_fiber` from it; they should
-not be attacked separately. -/
-theorem module_flat_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+If `s ∉ range f` then the scheme-theoretic fibre `X_s` is EMPTY (its inclusion
+`f.fiberι s` has range `f ⁻¹' {s} = ∅`), so `Γ(X_s, ⊤)` is the zero ring; but `h s` makes it
+isomorphic to `Γ(Spec κ(s), ⊤) ≅ κ(s)`, and a field is not a zero ring.
+
+This is the same argument as `surjective_of_hasUniversallyTrivialPushforward` below, run at
+the fibre rather than at a general base change, and stated here because it is needed
+upstream of it. -/
+theorem surjective_of_isIso_appTop_fiber (f : X ⟶ S)
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) : Surjective f := by
+  constructor
+  intro s
+  by_contra hs
+  have hrange : Set.range (f.fiberι s) = ∅ := by
+    rw [Scheme.Hom.range_fiberι]
+    refine Set.eq_empty_iff_forall_notMem.mpr fun x hx => hs ⟨x, ?_⟩
+    simpa using hx
+  haveI : IsEmpty ↥(f.fiber s) := Set.range_eq_empty_iff.mp hrange
+  haveI := h s
+  haveI : Subsingleton Γ(f.fiber s, ⊤) := by
+    have htop : (⊤ : (f.fiber s).Opens) = ⊥ := by
+      ext x
+      exact (IsEmpty.false x).elim
+    rw [htop]
+    infer_instance
+  haveI : Subsingleton Γ(Spec (S.residueField s), ⊤) :=
+    (asIso ((f.fiberToSpecResidueField s).appTop)).commRingCatIsoToRingEquiv.toEquiv
+      |>.subsingleton_congr.mpr inferInstance
+  haveI : Subsingleton ↥(S.residueField s) :=
+    (Scheme.ΓSpecIso (S.residueField s)).commRingCatIsoToRingEquiv.toEquiv
+      |>.subsingleton_congr.mp inferInstance
+  exact false_of_nontrivial_of_subsingleton ↥(S.residueField s)
+
+/-- **A FLAT SURJECTIVE MORPHISM HAS `Γ(S, ⊤) ⟶ Γ(X, ⊤)` INJECTIVE** (PROVEN) — faithfully
+flat descent, read on stalks.  No properness, no finiteness, no affineness.
+
+For each `x : X` the stalk map `𝒪_{S, f x} ⟶ 𝒪_{X, x}` is a FLAT LOCAL homomorphism of local
+rings (`AlgebraicGeometry.Flat.stalkMap`), hence FAITHFULLY flat
+(`Module.FaithfullyFlat.of_flat_of_isLocalHom`), hence injective.  Surjectivity of `f` makes
+every point of `S` of the form `f x`, so a global section of `𝒪_S` killed by `f.appTop` has
+vanishing germ at *every* point of `S`, and the sheaf axiom (`TopCat.Presheaf.section_ext`)
+makes it zero.
+
+This is the ingredient that lets `module_flat_appTop_of_isIso_appTop_fiber` be proven from
+the surjectivity half of `bijective_quotientMap_appTop_of_isIso_appTop_fiber` alone: the
+classical route obtains injectivity of `φ` FROM flatness of `A` over `R`, and this obtains it
+from flatness of `f` directly, which is a hypothesis rather than a theorem.
+
+Mathlib proves `AlgebraicGeometry.Flat.epi_of_flat_of_surjective` by exactly this stalkwise
+argument; only the conclusion differs, so the two-line core is lifted from there. -/
+theorem injective_appTop_of_flat_of_surjective (f : X ⟶ S) [Flat f] [Surjective f] :
+    Function.Injective f.appTop.hom := by
+  intro a b hab
+  refine TopCat.Presheaf.section_ext S.sheaf ⊤ a b fun s _ => ?_
+  obtain ⟨x, rfl⟩ := f.surjective s
+  have hinj : Function.Injective (f.stalkMap x).hom := by
+    algebraize [(f.stalkMap x).hom]
+    have : Module.FaithfullyFlat (S.presheaf.stalk (f x)) (X.presheaf.stalk x) :=
+      @Module.FaithfullyFlat.of_flat_of_isLocalHom _ _ _ _ _ _ _
+        (Flat.stalkMap f x) (f.toLRSHom.prop x)
+    exact ‹RingHom.FaithfullyFlat _›.injective
+  have key : ∀ c : ↥Γ(S, ⊤), (f.stalkMap x) (S.presheaf.germ ⊤ (f x) trivial c)
+      = X.presheaf.germ (f ⁻¹ᵁ ⊤) x trivial (f.appTop c) :=
+    fun c => Scheme.Hom.germ_stalkMap_apply f ⊤ x trivial c
+  show S.presheaf.germ ⊤ (f x) trivial a = S.presheaf.germ ⊤ (f x) trivial b
+  refine hinj ?_
+  rw [key, key]
+  exact congrArg _ hab
+
+/-- **`Spec Γ(X, ⊤) ⟶ Spec Γ(S, ⊤)` IS SURJECTIVE WHEN `f` IS AND `S` IS AFFINE** (PROVEN).
+
+`Scheme.toSpecΓ_naturality` factors `f ≫ S.toSpecΓ` as `X.toSpecΓ ≫ Spec.map f.appTop`.  For
+affine `S` the map `S.toSpecΓ` is an isomorphism, so the left-hand side is surjective, and a
+composite is surjective only if its second factor is (`Surjective.of_comp`).
+
+Read ideal-theoretically this says every prime of `Γ(S, ⊤)` is contracted from a prime of
+`Γ(X, ⊤)` — the "lying over" statement that makes `𝔪 ↦ 𝔪A` lose no information. -/
+theorem surjective_comap_appTop_of_isAffine (f : X ⟶ S) [IsAffine S] [Surjective f] :
+    Function.Surjective (PrimeSpectrum.comap f.appTop.hom) := by
+  haveI : Surjective (X.toSpecΓ ≫ Spec.map f.appTop) := by
+    rw [← Scheme.toSpecΓ_naturality]
+    infer_instance
+  haveI : Surjective (Spec.map f.appTop) :=
+    Surjective.of_comp X.toSpecΓ (Spec.map f.appTop)
+  exact (surjective_iff (Spec.map f.appTop)).mp inferInstance
+
+/-- **`𝔭` IS RECOVERED FROM `𝔭A`** (PROVEN): for every prime `𝔭 ⊂ R = Γ(S, ⊤)`,
+`φ⁻¹(𝔭 · A) = 𝔭`, where `A = Γ(X, ⊤)` and `φ = f.appTop`.
+
+Lying over: `surjective_comap_appTop_of_isAffine` produces a prime `q ⊂ A` with `φ⁻¹ q = 𝔭`;
+then `𝔭A ≤ q`, so `φ⁻¹(𝔭A) ≤ φ⁻¹ q = 𝔭`, and the reverse inclusion is `Ideal.le_comap_map`.
+
+This is the INJECTIVE half of `bijective_quotientMap_appTop_of_isIso_appTop_fiber`, and it
+needs neither properness, flatness, finite presentation nor maximality of `𝔭` — only that
+the fibrewise hypothesis forces `f` to be surjective. -/
+theorem comap_map_appTop_eq_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop)
+    (m : Ideal ↥Γ(S, ⊤)) (hm : m.IsPrime) :
+    Ideal.comap f.appTop.hom (Ideal.map f.appTop.hom m) = m := by
+  haveI := surjective_of_isIso_appTop_fiber f h
+  refine le_antisymm ?_ Ideal.le_comap_map
+  obtain ⟨q, hq⟩ := surjective_comap_appTop_of_isAffine f ⟨m, hm⟩
+  have hqm : Ideal.comap f.appTop.hom q.asIdeal = m := congrArg PrimeSpectrum.asIdeal hq
+  calc Ideal.comap f.appTop.hom (Ideal.map f.appTop.hom m)
+      ≤ Ideal.comap f.appTop.hom q.asIdeal :=
+        Ideal.comap_mono (Ideal.map_le_iff_le_comap.mpr (hqm ▸ le_rfl))
+    _ = m := hqm
+
+/-- **LEAF 3 — DEGREE-ZERO BASE CHANGE AT A CLOSED POINT, SURJECTIVE HALF** (Hartshorne
+III.12.11(a) in degree `0`, EGA III 7.8.6): for every maximal ideal `𝔪` of `R = Γ(S, ⊤)` the
+map `R/𝔪 ⟶ A/𝔪A` is SURJECTIVE, i.e. `A = R + 𝔪A`.
+
+**This is the entire remaining content of cohomology and base change in this file**, and
+everything else in the degree-zero theorem is now proven around it.  Equivalently — and this
+is the form to attack — the degree-zero comparison map
+
+  `A ⊗_R κ(s)  =  A/𝔪A  ⟶  H⁰(X_s, 𝒪_{X_s})  =  Γ(f.fiber s, ⊤)`
+
+is INJECTIVE, where `s ∈ S` is the point cut out by `𝔪`.  Indeed that map is a `κ(s)`-algebra
+map, the composite `κ(s) = R/𝔪 ⟶ A/𝔪A ⟶ Γ(X_s, ⊤)` is `(f.fiberToSpecResidueField s).appTop`
+(by `Scheme.Hom.fiber_fac` applied to global sections), and `h s` says that composite is an
+isomorphism; so `R/𝔪 ⟶ A/𝔪A` is surjective exactly when `A/𝔪A ⟶ Γ(X_s, ⊤)` is injective.
+
+**Why this is the hard half, and the injective half is not.**  `H⁰` is a KERNEL
+(`Γ(X, 𝒪) = ker(∏ Γ(U_i) ⇉ ∏ Γ(U_{ij}))`), and `κ(s)` is not a flat `R`-module, so
+`ker(M ⇉ N) ⊗ κ(s) ⟶ ker(M ⊗ κ(s) ⇉ N ⊗ κ(s))` need not be injective; the failure is
+measured by a `Tor₁`, and killing it is precisely III.12.11(a) — flatness of `f` plus the
+constancy of `h⁰` supplied by `h`.  There is no elementary substitute: mathlib has no higher
+direct images at this pin (re-checked 2026-07-28), so this leaf is a theory build.
+
+**What is NOT enough** (checked, so that the next owner does not repeat it): `f` surjective
+gives `A/𝔪A ≠ 0`; `Γ(X, 𝒪) = A` makes `X ⟶ Spec A` have dense image, hence (properness)
+surjective, hence `Spec(A/𝔪A)` connected, hence `A/𝔪A` LOCAL artinian with residue field
+`κ(s)` once `Module.Finite R A` is known.  So `A/𝔪A = κ(s) ⊕ 𝔫` with `𝔫` nilpotent, and the
+leaf is exactly the statement `𝔫 = 0`.  Nilpotents in `Γ(X_s, 𝒪)` are invisible to the
+topology, and the fibre may itself be non-reduced (a ribbon on `ℙ¹` has `H⁰ = k`), so `𝔫 = 0`
+does not follow from any point-set argument — it is the base-change theorem.
+
+**FAITHFULNESS.**  `h` cannot be dropped: without it `h⁰` jumps and `A/𝔪A` is strictly bigger
+than `κ(s)` where it does.  `[Flat f]` cannot be dropped either — it is the hypothesis of
+III.12.11.  Maximality of `𝔪` is not used by the argument sketched above, but it is all the
+Nakayama assembly consumes, so it is left in place. -/
+theorem surjective_quotientMap_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
-    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
-    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
-    Module.Flat ↥Γ(S, ⊤) ↥Γ(X, ⊤) :=
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop)
+    (m : Ideal ↥Γ(S, ⊤)) (hm : m.IsMaximal) :
+    Function.Surjective (Ideal.quotientMap (I := m)
+      (Ideal.map f.appTop.hom m) f.appTop.hom Ideal.le_comap_map) :=
   sorry
 
 /-- **LEAF 3 — DEGREE-ZERO BASE CHANGE AT A CLOSED POINT** (Hartshorne III.12.11(a) in degree
 `0`, EGA III 7.8.6): for every maximal ideal `𝔪` of `R = Γ(S, ⊤)`, the induced map
-`R/𝔪 ⟶ A/𝔪A` is bijective.
+`R/𝔪 ⟶ A/𝔪A` is bijective.  **PROVEN** (2026-07-28) over its surjective half; the injective
+half is `comap_map_appTop_eq_of_isIso_appTop_fiber` above and needs only that `h` forces `f`
+to be surjective, so this leaf's remaining content is entirely in
+`surjective_quotientMap_appTop_of_isIso_appTop_fiber`.
 
 This is the *only* place the fibrewise hypothesis enters the final theorem, and it enters
 through the identification `A/𝔪A = (f_*𝒪_X) ⊗_R κ(s) ≅ H⁰(X_s, 𝒪_{X_s})` of degree-zero base
@@ -655,9 +809,8 @@ theorem of course gives the statement at every point.
 surjectivity drives Nakayama on the cokernel, and injectivity is what puts `ker φ` inside the
 Jacobson radical.  Note also that `h` forces every fibre to be **nonempty** — for `X_s = ∅`
 one has `Γ(X_s, ⊤) = 0` and a field never maps isomorphically to the zero ring — which is
-correct and intended, since `𝒪_S ⟶ f_*𝒪_X` is not an isomorphism over a point missed by `f`.
-
-**Shared with leaf 2**: see `module_flat_appTop_of_isIso_appTop_fiber`. -/
+correct and intended, since `𝒪_S ⟶ f_*𝒪_X` is not an isomorphism over a point missed by `f`;
+that observation is now a lemma, `surjective_of_isIso_appTop_fiber`. -/
 theorem bijective_quotientMap_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
     [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
     (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
@@ -665,8 +818,61 @@ theorem bijective_quotientMap_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffi
     ∀ m : Ideal ↥Γ(S, ⊤), m.IsMaximal →
       Function.Bijective (Ideal.quotientMap (I := m)
         (m.map (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤))) (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤))
-        Ideal.le_comap_map) :=
-  sorry
+        Ideal.le_comap_map) := fun m hm =>
+  ⟨Ideal.quotientMap_injective'
+      (comap_map_appTop_eq_of_isIso_appTop_fiber f h m hm.isPrime).le,
+    surjective_quotientMap_appTop_of_isIso_appTop_fiber f h m hm⟩
+
+/-- **LEAF 2 — `f_*𝒪_X` IS FLAT OVER THE BASE** (Hartshorne III.12.11(b) in degree `0`,
+EGA III 7.8.6; the "constant `h⁰` ⟹ locally free" half of cohomology and base change) —
+**PROVEN** (2026-07-28), and NOT by III.12.11(b).
+
+**The re-cut, and why it is sound.**  Over an affine base the conclusion is `Module.Flat R A`
+for `A = Γ(X, ⊤)`, and the *only* consumer of it in this file is
+`isIso_appTop_of_isIso_appTop_fiber`, which uses it to get `φ = f.appTop` INJECTIVE (through
+`injective_algebraMap_of_flat_of_ker_le_jacobson`).  But injectivity of `φ` is available far
+more cheaply, from flatness of the MORPHISM rather than of the module: `h` makes `f`
+surjective (`surjective_of_isIso_appTop_fiber`), a flat surjective morphism is faithfully flat
+on every stalk, and that forces `Γ(S, ⊤) ⟶ Γ(X, ⊤)` to be injective
+(`injective_appTop_of_flat_of_surjective`).  Together with surjectivity of `φ` — Nakayama on
+the cokernel, from `module_finite_appTop_of_isProper` and
+`bijective_quotientMap_appTop_of_isIso_appTop_fiber` — that makes `φ` BIJECTIVE, so `A ≃ₗ[R] R`
+and flatness is immediate.
+
+So this leaf is now a corollary of leaf 1 and leaf 3 rather than a second theory build, and
+III.12.11(b) is not needed anywhere in this development.  The logical cost is that leaf 2 now
+depends on leaf 3; there is no circularity, since leaf 3's proof does not mention flatness of
+`A` over `R`.  The mathematical cost is nil: the classical statement "`f_*𝒪_X` is locally free
+of rank 1" is strictly stronger than `Module.Flat R A`, but nothing here consumes the
+difference.
+
+**FAITHFULNESS — `h` cannot be dropped.**  Without it the statement is false: `h⁰` is only
+upper semicontinuous along a proper flat family, and where it jumps `f_*𝒪_X` is not locally
+free.  `[Flat f]` cannot be dropped either — it is what makes the stalk maps faithfully flat,
+and it is the hypothesis of III.12.11 itself.  Note the route deliberately avoids GRAUERT
+(III.12.9), which would demand `S` reduced; the bases fed in here are arbitrary. -/
+theorem module_flat_appTop_of_isIso_appTop_fiber (f : X ⟶ S) [IsAffine S]
+    [IsProper f] [Flat f] [LocallyOfFinitePresentation f]
+    (h : ∀ s : S, IsIso (f.fiberToSpecResidueField s).appTop) :
+    letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+    Module.Flat ↥Γ(S, ⊤) ↥Γ(X, ⊤) := by
+  letI : Algebra ↥Γ(S, ⊤) ↥Γ(X, ⊤) := f.appTop.hom.toAlgebra
+  show Module.Flat ↥Γ(S, ⊤) ↥Γ(X, ⊤)
+  haveI : Module.Finite ↥Γ(S, ⊤) ↥Γ(X, ⊤) := module_finite_appTop_of_isProper f
+  haveI := surjective_of_isIso_appTop_fiber f h
+  have hsurj : Function.Surjective (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) := by
+    refine surjective_algebraMap_of_finite_of_forall_isMaximal ?_
+    intro mm hmm a
+    obtain ⟨x, hx⟩ :=
+      (bijective_quotientMap_appTop_of_isIso_appTop_fiber f h mm hmm).2 (Ideal.Quotient.mk _ a)
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    refine ⟨r, ?_⟩
+    rw [Ideal.quotientMap_mk] at hx
+    exact (Ideal.Quotient.eq.mp hx.symm)
+  have hinj : Function.Injective (algebraMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) :=
+    injective_appTop_of_flat_of_surjective f
+  exact Module.Flat.of_linearEquiv
+    (LinearEquiv.ofBijective (Algebra.linearMap ↥Γ(S, ⊤) ↥Γ(X, ⊤)) ⟨hinj, hsurj⟩).symm
 
 /-- **COHOMOLOGY AND BASE CHANGE IN DEGREE ZERO: `𝒪_S ⟶ f_*𝒪_X` IS AN ISOMORPHISM AS SOON AS
 IT IS ONE ON EVERY FIBRE** — **PROVEN** (2026-07-28) over the three leaves above, by the
@@ -685,12 +891,17 @@ input abstracted away.
    for a proper morphism.  (An earlier version of this docstring asked for finite
    *presentation*; the injectivity argument below does not need it, see
    `injective_algebraMap_of_flat_of_ker_le_jacobson`.)
-2. *`A` is `R`-flat* — `module_flat_appTop_of_isIso_appTop_fiber`.  This is where `Flat f`
-   enters, through cohomology and base change: `f_*𝒪_X` is locally free with formation
-   commuting with base change.
+2. *`A` is `R`-flat* — `module_flat_appTop_of_isIso_appTop_fiber`, now **PROVEN**.  This is
+   where `Flat f` enters, but NOT through III.12.11(b): `Flat f` plus surjectivity of `f`
+   makes every stalk map faithfully flat, hence `φ` injective, and with input 3 that already
+   makes `φ` bijective, so `A ≃ₗ[R] R` is flat.  Input 2 is therefore a *consequence* of
+   inputs 1 and 3 here, kept as a separate declaration only because the commutative-algebra
+   assembly below is stated in terms of it.
 3. *For every maximal ideal `𝔪 ⊂ R`, `R/𝔪 ⟶ A/𝔪A` is bijective* —
    `bijective_quotientMap_appTop_of_isIso_appTop_fiber`, degree-zero base change, and the
-   only consumer of the hypothesis `h`.
+   only consumer of the hypothesis `h`.  Its injective half is proven (lying over); its
+   surjective half is `surjective_quotientMap_appTop_of_isIso_appTop_fiber`, the one open
+   leaf of this cluster.
 
 Given those, `φ` is surjective by Nakayama applied to `coker φ` (finitely generated, and zero
 modulo every maximal ideal), and injective because flatness plus the equational criterion
