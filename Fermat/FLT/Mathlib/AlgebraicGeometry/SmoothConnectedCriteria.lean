@@ -35,7 +35,13 @@ ring so that a consumer can discharge them by commutative algebra.
   the spectrum of a domain is irreducible (PROVEN).
 * `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` — *regular +
   finite type over a perfect field ⟹ smooth*, with the relative dimension read
-  off the Krull dimension (LEAF; see its docstring).
+  off the Krull dimension (**PROVEN 2026-07-28** over
+  `Algebra.Smooth.of_isRegularRing_of_perfectField`, i.e. over Stacks `056S`,
+  and over the pure dimension leaf below).
+* `smoothOfRelativeDimension_specMap_algebraMap_of_smooth` — what is LEFT of the
+  previous item once regularity and perfectness have been consumed: for a
+  **smooth** finite-type domain over ANY field, the relative dimension is the
+  Krull dimension (LEAF; no perfectness, no regularity, pure dimension theory).
 
 ## Why the connectedness criterion has to go through the function field
 
@@ -57,6 +63,7 @@ public import Mathlib.RingTheory.RegularLocalRing.Defs
 public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
 public import Mathlib.RingTheory.KrullDimension.Basic
 public import Mathlib.FieldTheory.PerfectClosure
+public import Fermat.FLT.Mathlib.RingTheory.Smooth.RegularLocal
 
 @[expose] public section
 
@@ -120,13 +127,74 @@ theorem geometricallyConnected_specMap_algebraMap_of_forall_isDomain
 
 /-! ### Smoothness of an affine curve over a perfect field -/
 
+/-- **THE RELATIVE DIMENSION OF A SMOOTH AFFINE VARIETY IS ITS KRULL DIMENSION**
+(sorry leaf, opened 2026-07-28 as the residue of
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` after Stacks
+`056S` was discharged onto
+`Algebra.Smooth.of_isRegularRing_of_perfectField`).
+
+**There is no perfectness and no regularity left in this statement**, and that
+is the point of the cut: everything characteristic-theoretic has been consumed
+by `Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean`, and what remains is
+pure dimension theory over an arbitrary field.
+
+TRUE and classical.  `Smooth K B` gives a cover of `Spec B` by basic opens
+`D(t)` with `B_t` standard smooth over `K`
+(`Algebra.Smooth.exists_span_eq_top_isStandardSmooth`), and
+`Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth` turns
+"relative dimension `n`" on such a chart into `Module.rank B_t Ω[B_t⁄K] = n`.
+So the whole content is:
+
+* for a smooth finite-type algebra over a field, `rank Ω[B⁄K] = dim B` — the
+  smooth case of "the module of differentials of a variety has rank equal to its
+  dimension"; and
+* `IsDomain B` is what makes that rank CONSTANT: `dim B_t = dim B` for every
+  `t ≠ 0` because `B` and `B_t` are finite-type domains with the same fraction
+  field, hence the same transcendence degree, hence the same dimension.
+
+*Refute it with*: a smooth finite-type `K`-DOMAIN whose relative dimension over
+`K` differs from `ringKrullDim`.  There is none.  Note `IsDomain` cannot be
+dropped — see the faithfulness note on the consumer below — and `t = 0` must be
+excluded from the cover when the proof is written, since `Localization.Away 0`
+is the zero ring. -/
+theorem smoothOfRelativeDimension_specMap_algebraMap_of_smooth
+    (K B : Type u) [Field K] [CommRing B] [IsDomain B] [Algebra K B]
+    [Algebra.Smooth K B] (n : ℕ) (_hdim : ringKrullDim B = n) :
+    SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))) :=
+  sorry
+
 /-- **Regular + finite type over a perfect field ⟹ smooth of relative dimension
-the Krull dimension** (sorry leaf, opened 2026-07-27).
+the Krull dimension** (**PROVEN 2026-07-28**; opened as a sorry leaf 2026-07-27).
 
 This is the ring form of Stacks `056S` ("regular is equivalent to smooth over a
 perfect field"), together with the identification of the relative dimension: for
 an *integral* finite-type algebra over a field the local dimensions are all
 equal to `ringKrullDim`, so a single `n` governs every point.
+
+## How it was closed, and what moved where
+
+The `056S` half — the only half in which `PerfectField` and `IsRegularRing`
+appear — is now `Algebra.Smooth.of_isRegularRing_of_perfectField` in
+`Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean`, a module with **no
+`Fermat` imports** that states the underlying commutative algebra ONCE:
+
+> a regular local ring essentially of finite type over a perfect field is
+> formally smooth over that field
+
+(`Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField`), together with
+its global corollary for regular rings.  The local-to-global passage is free at
+this pin: `Algebra.smoothLocus_eq_univ_iff` makes `FormallySmooth K B`
+equivalent to formal smoothness of every localization `B_𝔭`, and `IsRegularRing`
+is by definition regularity of every `B_𝔭`, so the two definitions meet
+pointwise with no covering argument.  That module in turn rests on a single
+named leaf, `Algebra.injective_cotangentComplexBaseChange_of_isRegularLocalRing`
+— the injectivity in the local Jacobian criterion — whose classical two-step
+proof is written out there.
+
+What is left HERE is `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`
+above: pure dimension theory, no perfectness, no regularity.  The paragraph
+below headed "What blocks it in the pin" is retained as the historical record of
+why this leaf was opened; item 3 and the closing paragraph are now DISCHARGED.
 
 ## Why this leaf is worth having stated here
 
@@ -190,6 +258,7 @@ theorem smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing
     (K B : Type u) [Field K] [PerfectField K] [CommRing B] [IsDomain B] [Algebra K B]
     [Algebra.FiniteType K B] [IsRegularRing B] (n : ℕ) (hdim : ringKrullDim B = n) :
     SmoothOfRelativeDimension n (Spec.map (ofHom (algebraMap K B))) :=
-  sorry
+  haveI := Algebra.Smooth.of_isRegularRing_of_perfectField K B
+  smoothOfRelativeDimension_specMap_algebraMap_of_smooth K B n hdim
 
 end AlgebraicGeometry

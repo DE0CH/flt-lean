@@ -17,6 +17,7 @@ public import Mathlib.AlgebraicGeometry.Properties
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.RingTheory.Smooth.Field
 public import Fermat.FLT.Modularity.RegularStalks
+public import Fermat.FLT.Mathlib.RingTheory.Smooth.RegularLocal
 
 /-!
 # Extension of a morphism over the missing points of a smooth curve
@@ -917,6 +918,16 @@ own dimension bookkeeping on top.  Two further consumers are named there —
 `CurveCompactification.lean`'s `smoothOfRelativeDimension_one_fromNormalization` — so this
 single algebra statement is under at least four open nodes.
 
+**THAT IS NOW DONE (2026-07-28) AND THIS DECLARATION IS A THEOREM.**  The regular-local
+statement lives once, in `Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean`, as
+`Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField`; that module has NO `Fermat`
+imports, so every one of the four consumers can reach it.  A discrete valuation ring is a
+local principal ideal domain, so `IsRegularLocalRing` is an instance for it at this pin
+(`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), and nothing else is needed here.  The
+route sketched above is exactly the route recorded on the surviving leaf there,
+`Algebra.injective_cotangentComplexBaseChange_of_isRegularLocalRing`, which is the sole
+remaining residue of Stacks `056S` in this development.
+
 *Refute this leaf with:* a DVR, essentially of finite type over a PERFECT field, that is not
 formally smooth over it.  There is none; over an imperfect field there are, and the example
 above is one. -/
@@ -924,7 +935,7 @@ theorem formallySmooth_of_isDiscreteValuationRing_of_perfectField
     {F R : Type u} [Field F] [PerfectField F] [CommRing R] [IsDomain R]
     [IsDiscreteValuationRing R] [Algebra F R] [Algebra.EssFiniteType F R] :
     Algebra.FormallySmooth F R :=
-  sorry
+  Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **A SCHEME LOCALLY OF FINITE TYPE OVER A PERFECT FIELD WHOSE LOCAL RINGS ARE DISCRETE
