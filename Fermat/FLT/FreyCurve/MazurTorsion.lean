@@ -146,6 +146,13 @@ public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
 -- resolving these names through `MazurTorsion` exactly as before.
 public import Fermat.FLT.GaloisRepresentation.SubQuotCharacter
 public import Fermat.FLT.GaloisRepresentation.MinkowskiUnramified
+-- `exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq`: the mod-`p`
+-- cyclotomic character is ONTO `(ZMod p)ˣ` on the inertia at `p`.  Proven on
+-- 2026-07-24 inside `Modularity/Interface.lean`, which is DOWNSTREAM of this
+-- file, so leaf `A₀-1` below could not cite it; hoisted VERBATIM into its own
+-- module on 2026-07-28 (see that module's header) and `public` here so that
+-- `Interface.lean`'s six existing call sites keep resolving unchanged.
+public import Fermat.FLT.GaloisRepresentation.CyclotomicInertiaSurjective
 -- `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, the place of `ℚ`
 -- attached to a prime number.
 public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
@@ -174,8 +181,12 @@ public import Fermat.FLT.EllipticCurve.GenusOneKernelPolynomials
 -- publicly through `TorsionReduction → GoodReduction`, and is named here
 -- because `WeierstrassCurve.PotentiallyGoodModel` uses `HasGoodReduction` in
 -- SIGNATURE position, where a merely transitive import is not re-exported.
--- (That structure was hoisted to `Fermat.FLT.FreyCurve.PotentiallyGoodModel`
--- on 2026-07-28; `PotentiallyGoodModel.redCurve` below still needs this.)
+-- (A 2026-07-28 note here claimed that structure "was hoisted to
+-- `Fermat.FLT.FreyCurve.PotentiallyGoodModel`".  STALE, corrected the same day:
+-- that hoist was made on branch `b23bab50` and DROPPED at integration — no such
+-- module exists on `main` (`git show main:Fermat/FLT/FreyCurve/PotentiallyGoodModel.lean`
+-- fails), and `structure WeierstrassCurve.PotentiallyGoodModel` is still declared
+-- ~1500 lines below in this file.  `PotentiallyGoodModel.redCurve` needs this import.)
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Reduction
 -- `IsOpenImmersion.of_flat_of_mono`, consumed by
 -- `X0GenusOne.isIso_of_mono_of_relCurve` below.  PUBLIC deliberately: a
@@ -5681,57 +5692,86 @@ derivation is the one just given.
 What is left genuinely missing is exactly two things, both in `A₀-3` and
 `A₀-2`: the `{1,2,3,4,6}` bound on the semistability defect at residue
 characteristic `≥ 5`, and Raynaud's classification of finite flat group
-schemes over a base of absolute ramification `e < N − 1`.  Neither is in
-mathlib, in `~/cs/FLT`, or in this project.
+schemes over a base of absolute ramification `e < N − 1`.
+
+**CORRECTED 2026-07-28 — the sentence that used to close this paragraph,
+"Neither is in mathlib, in `~/cs/FLT`, or in this project", is FALSE of this
+project and was too coarse to dispatch on.**  Raynaud's exponent bound `k ≤ e`
+is PROVEN for arbitrary `e`
+(`natCast_mem_span_pow_of_convPow_prime_eq_one`, `GroupScheme/ConnectedEtale.lean`)
+and his classification is PROVEN at `e = 1`
+(`inertia_character_trivial_or_cyclotomic`, same file); the exponent-`12`
+bound on stabilising variable changes at residue characteristic `≥ 5` is
+PROVEN (`VariableChange.pow_twelve_eq_one_of_smul_eq_of_tame`,
+`EllipticCurve/AutomorphismExponent.lean`).  See the corrected ROUTE AUDIT in
+`A₀-3`'s own docstring below for what remains — it is a generalisation from
+`e = 1` to `1 < e`, and one lemma classifying `#Aut` at characteristic `≥ 5`,
+not two absent theories.
 -/
 
 /-- **`A₀-1` — the mod-`N` cyclotomic character maps the inertia at `N` ONTO
-`(ZMod N)ˣ`** (sorry leaf — but see the ROUTE below; this is the total tame
-ramification of `ℚ_N(ζ_N)/ℚ_N` in inertia-element form): every unit `u` of
-`ZMod N` is `χ(σ)` for some `σ` in the local inertia group at `N`.
+`(ZMod N)ˣ`** (PROVEN 2026-07-28 by carrying out the hoist the previous
+version of this docstring prescribed; this is the total tame ramification of
+`ℚ_N(ζ_N)/ℚ_N` in inertia-element form): every unit `u` of `ZMod N` is
+`χ̄(σ)` for some `σ` in the local inertia group at `N`.
 
-**ROUTE — DO NOT REPROVE THIS.  It is a HOIST, exactly like the one that
-closed leaf `C`, and the dependency check has already been done.**
+**HOW IT CLOSED — a HOIST, not a proof.**  The identical statement, written
+in `cyclotomicCharacter` (`ℤ_N`-valued) rather than `cyclotomicCharacterModL`
+(`(ZMod N)ˣ`-valued) vocabulary, was already PROVEN on 2026-07-24 as
+`exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq` — ~420 lines,
+by a Gauss-period argument — but it lived in
+`Fermat/FLT/Modularity/Interface.lean`, which is DOWNSTREAM of this module.
+Lean has no forward references, so declaration order was the ONLY obstruction,
+exactly as for the Minkowski block leaf `C`.  The theorem has now been moved
+VERBATIM (statement, proof and docstring unchanged, and still in namespace
+`GaloisRepresentation.Modularity` so that `Interface.lean`'s call sites are
+untouched) into `Fermat.FLT.GaloisRepresentation.CyclotomicInertiaSurjective`,
+which this module `public import`s.
 
-The identical statement, written in `cyclotomicCharacter` (`ℤ_N`-valued)
-rather than `cyclotomicCharacterModL` (`(ZMod N)ˣ`-valued) vocabulary, is
-already PROVEN as
-`exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq` in
-`Fermat/FLT/Modularity/Interface.lean` — ~420 lines, by a Gauss-period
-argument.  `Interface.lean` is DOWNSTREAM of this module and Lean has no
-forward references, so it cannot be cited here; that is the ONLY obstruction,
-and it is the same one, with the same remedy, as the Minkowski block leaf `C`
-needed (hoisted 2026-07-27 into
-`Fermat.FLT.GaloisRepresentation.MinkowskiUnramified`).
-
-**The hoist is clean — checked, not assumed (2026-07-27).**  That proof's
-only project-level inputs are
+The hoist's dependency audit — recorded here in 2026-07-27 and RE-CHECKED
+against the proof body before the move — held up, and was in one respect
+better than advertised: the proof uses NONE of the five helper lemmas that sat
+beside it in `Interface.lean` (`isIntegral_of_pow_eq_one`,
+`pos_of_natCast_notMem_maximalIdeal`, `natCast_pow_notMem_maximalIdeal`,
+`eq_of_sub_mem_maximalIdeal_of_pow_eq_one`,
+`map_fixes_of_pow_eq_one_of_mem_localInertiaGroup`), so nothing travelled with
+it and those five stay where they are.  Its project-level inputs are
 `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`
-(`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`) and
-`maximalIdeal_adicCompletionIntegers_eq_span`
-(`Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`), and **both modules
-are already in THIS module's import cone**.  So the theorem can be moved
-verbatim to any module upstream of `MazurTorsion` — or to a point above this
-line — with no further dependency work, and nothing else in `Interface.lean`
-travels with it.
+(`Deformations/RepresentationTheory/LocalInertiaFixedField.lean`),
+`maximalIdeal_adicCompletionIntegers_eq_span` and
+`Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`
+(`Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`), and
+`Field.absoluteGaloisGroup.map` / `.lift_map` and `AlgebraicClosure.map`.
 
-The vocabulary change is one line: `cyclotomicCharacterModL_eq_toZMod`
-(`Fermat/FLT/EllipticCurve/WeilPairing.lean`, which this module already
-`public import`s) says `χ̄(σ) = PadicInt.toZMod (χ(σ))`, and
-`PadicInt.toZModPow 1` differs from `PadicInt.toZMod` only by the
-`ZMod (N ^ 1) = ZMod N` congruence.
-
-The refuting check, if this note has gone stale: `grep -n
-exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq Fermat/` and
-confirm the hit is still sorry-free and still downstream. -/
+The vocabulary change is the three lines of the proof below.
+`cyclotomicCharacterModL_eq_toZMod`
+(`Fermat/FLT/EllipticCurve/WeilPairing.lean`, `public import`ed here) says
+`χ̄(σ) = PadicInt.toZMod (χ(σ))`, and
+`GaloisRepresentation.toZMod_eq_ringEquivCongr_comp_toZModPow`
+(`GaloisRepresentation/Chebotarev.lean`) says `PadicInt.toZMod` is
+`PadicInt.toZModPow 1` followed by the `ZMod (N ^ 1) ≃+* ZMod N` congruence —
+which preserves `ZMod.val`, so the two sides are compared through `val` and
+`ZMod.val_injective` finishes. -/
 theorem exists_mem_localInertiaGroup_cyclotomicCharacterModL_eq
     {N : ℕ} (hN : N.Prime) (u : (ZMod N)ˣ) :
     ∃ σ ∈ localInertiaGroup hN.toHeightOneSpectrumRingOfIntegersRat,
       (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
         (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
-            hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) = u :=
-  sorry
+            hN.toHeightOneSpectrumRingOfIntegersRat)) σ)) = u := by
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : NeZero N := ⟨hN.ne_zero⟩
+  -- read `u` in `(ZMod (N ^ 1))ˣ`, which is the level the hoisted theorem
+  -- speaks at; the congruence preserves `ZMod.val`, which is all we use
+  obtain ⟨σ, hσ, hval⟩ :=
+    GaloisRepresentation.Modularity.exists_mem_localInertiaGroup_cyclotomicCharacter_toZModPow_eq
+      (p := N) (Units.map (ZMod.ringEquivCongr (pow_one N).symm).toMonoidHom u)
+  refine ⟨σ, hσ, Units.ext (ZMod.val_injective N ?_)⟩
+  rw [WeilPairing.cyclotomicCharacterModL_eq_toZMod,
+    GaloisRepresentation.toZMod_eq_ringEquivCongr_comp_toZModPow,
+    RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingEquiv.coe_toRingHom,
+    ZMod.ringEquivCongr_val, hval, Units.coe_map]
+  exact ZMod.ringEquivCongr_val _ _
 
 /-- **`A₀-2` — the isogeny character is TAME at `N`: `λ|_{I_N}` is a power of
 `χ|_{I_N}`** (sorry leaf; Serre, Invent. Math. 15 (1972), §1.3, §1.7 and
@@ -5830,14 +5870,80 @@ possible exponents in `λ¹² = χ^{12r/e}` at potentially good reduction.  That
 the cut reproduces the classical list is the evidence that no clause was lost
 in it.
 
-THE NATURAL NEXT CUT, when someone takes this leaf on: along
+ROUTE AUDIT, RE-RUN 2026-07-28 — **the previous version of this paragraph was
+wrong in three separate places, and each error pointed a prospective owner at
+the wrong subtree.**  It read: "THE NATURAL NEXT CUT … along
 `WeierstrassCurve.PotentiallyGoodModel` (declared ~1100 lines BELOW in this
 file, so it would have to be hoisted above this point first).  Producing the
 good model from `0 ≤ v_N(j)` is the arithmetic half — that half is ALREADY an
-open leaf of its own, `exists_potentiallyGoodModel_of_jIntegral` — and reading
-Raynaud's exponent off the model is the group-scheme half.  Neither Raynaud's
-classification nor the `{1,2,3,4,6}` bound is in mathlib, in `~/cs/FLT`, or in
-this project. -/
+open leaf of its own, `exists_potentiallyGoodModel_of_jIntegral` … Neither
+Raynaud's classification nor the `{1,2,3,4,6}` bound is in mathlib, in
+`~/cs/FLT`, or in this project."  What is actually true:
+
+1. **NO HOIST IS NEEDED FOR THE REDUCTION DATUM, and its producer is PROVEN,
+   not open.**  `Fermat/FLT/EllipticCurve/TorsionReduction.lean` is
+   `public import`ed by this file — UPSTREAM, not below — and carries
+   `WeierstrassCurve.TameGoodModel` (a good model of `E` over a number field
+   `L` with a DVR `A` above `ℓ`, residue field exactly `𝔽_ℓ`, and `V = C • E⁄L`
+   pinning it to `E`), `WeierstrassCurve.TameBase` (`L = ℚ(ℓ^{1/12})`,
+   totally ramified of index `12`), and the producer
+   `exists_tameGoodModel_of_jIntegral (hℓ5 : 5 ≤ ℓ) (hj : ¬ ℓ ∣ E.j.den)`,
+   which is **proven** — that file's own header says "the potentially-good
+   chain carries no `sorry`", and a `grep sorry` over it hits only prose.  So
+   the good model over a base with `e = 12` is available AT THIS POINT IN THE
+   FILE, with no hoist and no open leaf.  (`0 ≤ v_N(j)` feeds it through
+   `TameBaseAux.not_dvd_den_of_padicValRat_nonneg`, currently ~1600 lines
+   below; that is a two-line arithmetic fact, not a theory.)
+2. **RAYNAUD'S CLASSIFICATION IS PARTLY IN THIS PROJECT AND PARTLY PROVEN.**
+   `Fermat/FLT/GroupScheme/ConnectedEtale.lean` has
+   `natCast_mem_span_pow_of_convPow_prime_eq_one` — "Raynaud's exponent bound
+   `k ≤ e`, in elementary convolution form", PROVEN 2026-07-25, over an
+   arbitrary local domain and therefore for arbitrary `e` — and
+   `inertia_character_trivial_or_cyclotomic`, which is the FULL conclusion
+   (tame inertia acts through the level-one fundamental character with
+   exponent in `{0, …, e}`) at `e = 1`.  The closure properties of finite flat
+   group schemes are developed separately in
+   `Deformations/RepresentationTheory/FlatPointsGroup.lean`
+   (`IsFlatPointsGroupAt.of_injective`, `.of_surjective`, `.prod`, `.pi`).
+   What is genuinely missing is the step from `e = 1` (absolutely unramified
+   base `ℤ_p`) to `1 < e`, plus the transport of `⟨g⟩` into a finite flat
+   group scheme over the model's DVR.  "Raynaud is absent" was too coarse to
+   act on; the gap is one generalisation, not a theory.
+3. **THE `{1,2,3,4,6}` BOUND IS ONE SMALL, SELF-CONTAINED, MISSING LEMMA —
+   name it and it is attackable.**  `Fermat/FLT/EllipticCurve/AutomorphismExponent.lean`
+   (also `public import`ed here) already PROVES
+   `VariableChange.pow_twelve_eq_one_of_smul_eq_of_tame`: over any field with
+   `2 ≠ 0` and `3 ≠ 0`, a variable change stabilising an elliptic curve
+   satisfies `C¹² = 1`.  That bounds the EXPONENT of `Aut` by `12`, which
+   admits `e = 12` and so is not yet Serre's list.  The missing content is
+   exactly the ORDER classification at residue characteristic `≥ 5`:
+   `#Aut(W) ∈ {2, 4, 6}` (Silverman *AEC* III.10.1) — in short form
+   `y² = x³ + a₄x + a₆`, an automorphism is `u`-scaling with `u⁴a₄ = a₄` and
+   `u⁶a₆ = a₆`, so `u² = 1` when `a₄a₆ ≠ 0`, `u⁶ = 1` at `j = 0` and `u⁴ = 1`
+   at `j = 1728`.  Since the semistability defect embeds in `Aut` of the good
+   reduction, its order lies in the divisors of `2`, `4`, `6`, i.e. exactly
+   `{1,2,3,4,6}`.  This is a bounded, ownable lemma about Weierstrass
+   coefficients, not a missing theory, and it belongs beside the exponent
+   theorem in `AutomorphismExponent.lean`.
+
+THE AXIS THIS AUDIT SEARCHED, AND WHAT IT RULES OUT.  The obvious shortcut is
+to run Raynaud over the index-`12` tame base that `TameGoodModel` already
+supplies: `12 < N − 1` holds for every `N > 19`, so the bound applies and
+yields `λ¹²|_{I_N} = χ^{r₁}|_{I_N}` with `0 ≤ r₁ ≤ 12` — with **no**
+semistability-defect classification at all.  **That shortcut is dead, and it
+is worth saying why**: `A₀`'s consumers need the enumeration
+`s ∈ {0,4,6,8,12}` (`mazurIsogeny_signatureEnumeration`), and `s = 12r/e` is
+confined to that list precisely BECAUSE `e ∈ {1,2,3,4,6}`.  An unconstrained
+`r₁ ∈ [0,12]` reproduces none of it.  So the `{1,2,3,4,6}` bound is not
+packaging around this leaf — it is the leaf's content, and any cut that
+discards `e` in favour of a fixed exponent `12` proves something strictly too
+weak to be used.  No CHARACTER-level cut was found either: `(e, r)` come out
+of one geometric analysis, and splitting them at the level of `λ` and `χ`
+only relocates the statement (given `A₀-1`'s surjectivity, `λ^e = χ^r` on
+`I_N` is equivalent to the congruence `a·e ≡ r (mod N−1)`, so a "congruence
+form" sub-leaf would be this leaf re-worded).  The axis NOT searched here, and
+the one to try next, is the GEOMETRIC one: cut along `TameGoodModel` at
+point 1 above, with points 2 and 3 as the two named sub-leaves. -/
 theorem WeierstrassCurve.exists_isogenyRaynaudExponentAt_of_padicValRat_j_nonneg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
