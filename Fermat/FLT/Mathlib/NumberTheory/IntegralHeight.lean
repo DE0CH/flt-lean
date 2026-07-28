@@ -65,6 +65,27 @@ of the cube.  Those are the content of the single remaining leaf
 `Fermat/FLT/ModularCurve/X0.lean`.
 
 Everything in this module is PROVEN; it contains no `sorry`.
+
+## CORRECTION (2026-07-27): the pin DOES have a theory of heights
+
+The opening line above — "neither `Mathlib` nor `~/cs/FLT` contains a
+height function or Northcott's theorem; the only thing upstream is
+`Mathlib/Order/Northcott.lean`" — is FALSE at this pin, and nothing in
+this module was checked against the upstream theory before it was
+written.  `Mathlib/NumberTheory/Height/` contains `Height.mulHeight` and
+`Height.logHeight` on tuples over any field with
+`Height.AdmissibleAbsValues` (instance: every number field, hence `ℚ`),
+Northcott (`Height.finite_setOf_logHeight₁_le`), the comparison
+`Rat.logHeight_eq_max_abs_of_gcd_eq_one` for primitive integer tuples,
+and the height machine for families of homogeneous forms in both
+directions (`Height.logHeight_eval_le'`, `Height.logHeight_eval_ge'`).
+
+Nothing here is wrong or wasted — `intHeight` and `IntegralCoordinates`
+are the interface the descent theorem consumes, and they are proven —
+but a reader must not conclude from the text above that the upstream
+theory is missing.  It is what makes the elementary half of
+`Fermat/FLT/Mathlib/NumberTheory/SegreHeight.lean` a derivation rather
+than a theory to be built.
 -/
 
 public import Fermat.FLT.Mathlib.GroupTheory.Descent
