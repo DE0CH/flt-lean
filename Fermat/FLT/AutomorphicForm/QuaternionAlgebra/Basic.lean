@@ -78,12 +78,11 @@ carries both.**
   no definiteness).
 
 **Both of those were then PROVEN in turn (2026-07-28), from three smaller leaves.**
-The closure's only unproven statements are now:
+The closure's only unproven statements are now (`comap_le_range_units_integers_of_isCompact`,
+the third leaf of that decomposition, was PROVEN the same day, and Dirichlet's unit
+theorem was never a leaf — mathlib's `Monoid.FG (𝓞 K)ˣ` supplies it via
+`subgroup_fg_of_le_fg`):
 
-* `comap_le_range_units_integers_of_isCompact` — a COMPACT subgroup of `𝔸ᶠ[F]ˣ`
-  meets `Fˣ` inside `(𝓞 F)ˣ`. Pure `F`-arithmetic: no `D`, no definiteness.
-  (Dirichlet's unit theorem itself is NOT a leaf — mathlib's `Monoid.FG (𝓞 K)ˣ`
-  supplies it, via `subgroup_fg_of_le_fg`.)
 * `isCompact_normOne_infiniteAdele` — `{x ∈ D ⊗ 𝔸^∞ : Nm(x) = 1}` is compact. This
   is the ONLY consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in the file.
 * `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`,
@@ -877,28 +876,95 @@ lemma norm_units_algebraMap_eq_pow [IsQuaternionAlgebra F D] (x : Fˣ) :
   simp [IsQuaternionAlgebra.finrank_eq_four F D]
 
 omit [WithRigidification F D] in
+/-- `𝒪̂ = ∏ᵥ 𝒪ᵥ` is OPEN in `𝔸ᶠ[F]`: it is `{f | ∀ v, f v ∈ 𝒪ᵥ}` inside the restricted
+product, and each `𝒪ᵥ` is open in `Fᵥ`. -/
+lemma isOpen_integralAdeles :
+    IsOpen ((IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F : Subring 𝔸ᶠ[F]) :
+      Set 𝔸ᶠ[F]) := by
+  have h : ((IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F : Subring 𝔸ᶠ[F]) :
+      Set 𝔸ᶠ[F]) =
+      {f : 𝔸ᶠ[F] | ∀ v, f.1 v ∈ IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v} := by
+    simp only [IsDedekindDomain.FiniteAdeleRing.integralAdeles, RingHom.coe_range]
+    exact RestrictedProduct.range_structureMap ..
+  rw [h]
+  exact RestrictedProduct.isOpen_forall_mem (NumberField.isOpenAdicCompletionIntegers F)
+
+omit [WithRigidification F D] in
+/-- A global element of `F` whose adelic image is everywhere integral lies in `𝓞 F`. -/
+lemma mem_range_algebraMap_of_algebraMap_mem_integralAdeles (y : F)
+    (hy : algebraMap F 𝔸ᶠ[F] y ∈ IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F) :
+    y ∈ (algebraMap (𝓞 F) F).range := by
+  refine IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one F y fun v => ?_
+  obtain ⟨z, hz⟩ := hy
+  have heval : ((algebraMap F 𝔸ᶠ[F] y : 𝔸ᶠ[F]) v) = algebraMap F (v.adicCompletion F) y := rfl
+  have hle : Valued.v ((algebraMap F 𝔸ᶠ[F] y : 𝔸ᶠ[F]) v) ≤ 1 := by
+    rw [← hz]; exact (z v).2
+  rw [heval] at hle
+  rwa [show algebraMap F (v.adicCompletion F) y = (y : v.adicCompletion F) from rfl,
+    IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation'] at hle
+
+omit [WithRigidification F D] in
 /--
-**(sorry leaf — "a compact subgroup of `𝔸ᶠˣ` is integral".)**
+**PROVEN: a COMPACT subgroup of `𝔸ᶠ[F]ˣ` meets `Fˣ` inside `(𝓞 F)ˣ`.**
 
-If `C ≤ 𝔸ᶠ[F]ˣ` is COMPACT then `Fˣ ∩ C` consists of units of `𝓞 F`.
+**The proof.** `𝒪̂ˣ` is an OPEN subgroup of `𝔸ᶠ[F]ˣ` (`isOpen_integralAdeles` plus
+`Submonoid.isOpen_units`), so it has finite index in the compact `C`
+(`relIndex_ne_zero_of_isCompact_of_isOpen`). Hence for `x ∈ Fˣ` with `j(x) ∈ C` there is
+`n > 0` with `j(xⁿ) = j(x)ⁿ ∈ 𝒪̂ˣ`, i.e. both `xⁿ` and `x⁻ⁿ` are everywhere-integral
+global elements, hence lie in `𝓞 F`
+(`mem_range_algebraMap_of_algebraMap_mem_integralAdeles`, which is
+`IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one`). Then `x` and
+`x⁻¹` are integral over `𝓞 F` by `IsIntegral.of_pow`, and `𝓞 F` is integrally closed in
+`F`, so both lie in `𝓞 F` — i.e. `x` is a unit of `𝓞 F`.
 
-**Why it is true.** Let `x ∈ Fˣ` with `j(x) ∈ C`. Since `C` is a subgroup, every power
-`j(x)^n = j(xⁿ)` lies in `C`. Compactness of `C` makes `Units.val '' C` compact in `𝔸ᶠ`,
-hence its image under the (continuous) evaluation `𝔸ᶠ → Fᵥ` is compact, hence bounded:
-`|xⁿ|ᵥ ≤ c` for all `n`, which forces `|x|ᵥ ≤ 1`. The same applied to `x⁻¹` gives
-`|x|ᵥ = 1` at every finite place `v`, and then
-`IsDedekindDomain.HeightOneSpectrum.mem_integers_of_valuation_le_one` puts both `x` and
-`x⁻¹` in `𝓞 F`.
+The passage to a power is what removes the need for any "compact ⟹ bounded valuations"
+argument: an open subgroup of finite index already forces `ord_v(xⁿ) = 0`, and `ℤ` is
+torsion-free — here realised as "`xⁿ` integral ⟹ `x` integral".
 
-**COMPACTNESS is load-bearing**: for `C = 𝔸ᶠˣ` the conclusion is false, since
+**COMPACTNESS is load-bearing**: for `C = ⊤` the conclusion is false, since
 `Fˣ ⊄ (𝓞 F)ˣ`.
 
 Note this statement mentions neither `D` nor definiteness: it is about `F` alone. -/
 theorem comap_le_range_units_integers_of_isCompact (C : Subgroup 𝔸ᶠ[F]ˣ)
     (hC : IsCompact (C : Set 𝔸ᶠ[F]ˣ)) :
     C.comap (unitsAlgebraMapAdele F) ≤
-      MonoidHom.range (Units.map (algebraMap (𝓞 F) F).toMonoidHom) :=
-  sorry
+      MonoidHom.range (Units.map (algebraMap (𝓞 F) F).toMonoidHom) := by
+  set j : Fˣ →* 𝔸ᶠ[F]ˣ := unitsAlgebraMapAdele F with hj
+  set U : Subgroup 𝔸ᶠ[F]ˣ :=
+    (IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F).toSubmonoid.units with hU
+  have hUopen : IsOpen (U : Set 𝔸ᶠ[F]ˣ) :=
+    Submonoid.isOpen_units isOpen_integralAdeles
+  have hidx : (C ⊓ U).relIndex C ≠ 0 :=
+    relIndex_ne_zero_of_isCompact_of_isOpen C U hC hUopen
+  intro x hx
+  obtain ⟨n, hn0, -, hmem⟩ :=
+    Subgroup.exists_pow_mem_of_relIndex_ne_zero hidx (Subgroup.mem_comap.mp hx)
+  have hmemU : j x ^ n ∈ U := ((Subgroup.mem_inf.mp hmem).1 : _ ∈ C ⊓ U).2
+  have hval : ((j x ^ n : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) = algebraMap F 𝔸ᶠ[F] ((x : F) ^ n) := by
+    simp [hj, ← map_pow]
+  have hvalinv : (((j x ^ n)⁻¹ : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) =
+      algebraMap F 𝔸ᶠ[F] (((x⁻¹ : Fˣ) : F) ^ n) := by
+    simp [hj, ← map_pow]
+  have h1 : ((j x ^ n : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) ∈
+      IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F := hmemU.1
+  have h2 : (((j x ^ n)⁻¹ : 𝔸ᶠ[F]ˣ) : 𝔸ᶠ[F]) ∈
+      IsDedekindDomain.FiniteAdeleRing.integralAdeles (𝓞 F) F := hmemU.2
+  rw [hval] at h1
+  rw [hvalinv] at h2
+  have hposn : ((x : F) ^ n) ∈ (algebraMap (𝓞 F) F).range :=
+    mem_range_algebraMap_of_algebraMap_mem_integralAdeles _ h1
+  have hnegn : (((x⁻¹ : Fˣ) : F) ^ n) ∈ (algebraMap (𝓞 F) F).range :=
+    mem_range_algebraMap_of_algebraMap_mem_integralAdeles _ h2
+  obtain ⟨a, ha⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+    (IsIntegral.of_pow (R := 𝓞 F) hn0
+      (by obtain ⟨c, hc⟩ := hposn; exact hc ▸ isIntegral_algebraMap))
+  obtain ⟨b, hb⟩ := IsIntegrallyClosed.isIntegral_iff.mp
+    (IsIntegral.of_pow (R := 𝓞 F) hn0
+      (by obtain ⟨c, hc⟩ := hnegn; exact hc ▸ isIntegral_algebraMap))
+  have hinj : Function.Injective (algebraMap (𝓞 F) F) := IsFractionRing.injective (𝓞 F) F
+  have hab : a * b = 1 := hinj (by rw [map_mul, ha, hb, map_one]; exact x.mul_inv)
+  have hba : b * a = 1 := hinj (by rw [map_mul, hb, ha, map_one]; exact x.inv_mul)
+  exact ⟨⟨a, b, hab, hba⟩, Units.ext ha⟩
 
 omit [WithRigidification F D] in
 /-- If `C ≤ 𝔸ᶠ[F]ˣ` is COMPACT then `Fˣ ∩ C` is finitely generated: by
@@ -1045,8 +1111,8 @@ theorem finite_normOne_units_inf_comap [NumberField.IsTotallyReal F] [IsQuaterni
 end Archimedean
 
 /--
-**PROVEN** from `comap_le_range_units_integers_of_isCompact` (the only remaining
-sorry beneath it). NO definiteness.
+**PROVEN**, and with `comap_le_range_units_integers_of_isCompact` now proven too,
+sorry-free. NO definiteness.
 
 Writing `A := {d ∈ Dˣ : ι(d) ∈ V}` and `P := Fˣ ⊆ Dˣ`, the norm image `Nm(A ⊓ P)`
 has finite index in `Nm(A)`, for `V` a compact OPEN subgroup of `GL₂(𝔸ᶠ)`.
@@ -1223,9 +1289,9 @@ theorem relIndex_range_algebraMap_units_ne_zero [NumberField.IsTotallyReal F]
 **Voight, Lemma 17.7.13: the unit group of an order in a totally definite
 quaternion algebra is finite modulo the centre.** PROVEN 2026-07-27 from
 `relIndex_range_algebraMap_units_ne_zero`. `finite_normOne_units_inf_comap` and
-`relIndex_normImage_ne_zero` beneath it were PROVEN 2026-07-28; the three leaves
-that remain beneath THEM are `comap_le_range_units_integers_of_isCompact`,
-`isCompact_normOne_infiniteAdele` and `finite_setOf_tmul_mem_of_isCompact`.
+`relIndex_normImage_ne_zero` beneath it were PROVEN 2026-07-28; the two leaves
+that remain beneath THEM are `isCompact_normOne_infiniteAdele` and
+`finite_setOf_tmul_mem_of_isCompact`.
 
 `Fˣ` has finite index in `U ∩ g⁻¹ Dˣ g`.
 
@@ -1318,10 +1384,8 @@ pass) the whole of `relIndex_unitsOrder_ne_zero` and
 17.7.13, `finite_normOne_units_inf_comap` (the archimedean half — the only
 consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in this file) and
 `relIndex_normImage_ne_zero` (the Dirichlet-units half, no definiteness), were
-then PROVEN 2026-07-28. THREE sorried leaves remain beneath them:
+then PROVEN 2026-07-28. TWO sorried leaves remain beneath them:
 
-* `comap_le_range_units_integers_of_isCompact` — a compact subgroup of `𝔸ᶠ[F]ˣ`
-  meets `Fˣ` inside `(𝓞 F)ˣ`. Statement about `F` alone.
 * `isCompact_normOne_infiniteAdele` — `{Nm = 1}` is compact in `D ⊗ 𝔸^∞`. Total
   definiteness is consumed here and nowhere else.
 * `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`.
