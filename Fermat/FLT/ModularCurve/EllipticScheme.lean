@@ -601,6 +601,94 @@ noncomputable def smul (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) : ProjCoords E 
 @[simp] theorem smul_coord (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X) :
     (smul u c).coord = (u : Γ(X, ⊤)) • c.coord := rfl
 
+/-! ### The chart ring map `awayLoc` (hoisted 2026-07-28)
+
+These three live here, above `GradedSmul`, rather than in `ProjFunctoriality` below,
+because BOTH sections need them: `ProjFunctoriality` builds naturality and
+`Proj.map`-compatibility on them, and `GradedSmul` builds the rescaling congruence
+`toBasicOpenOfGlobalSections_eq_of_gradedSmul` on them too.  Nothing else moved; the
+rest of `ProjFunctoriality` is unchanged and still sits below. -/
+
+theorem powers_le_comap {R S : Type*} [CommSemiring R] [CommSemiring S] (f : R →+* S) (t : R) :
+    Submonoid.powers t ≤ (Submonoid.powers (f t)).comap f := by
+  rw [← Submonoid.map_le_iff_le_comap, Submonoid.map_powers]
+
+/-- **The ring map underlying one chart of `Proj.fromOfGlobalSections`** — the degree-zero
+localisation `Away 𝒜 t` mapped into `Γ(X, ⊤)_{f t}`.  Everything about
+`Proj.toBasicOpenOfGlobalSections` that is not plain affine plumbing sits here. -/
+noncomputable def awayLoc {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (f : A →+* Γ(X, ⊤)) (t : A) :
+    HomogeneousLocalization.Away 𝒜 t →+* Localization.Away (f t) :=
+  (IsLocalization.map (M := .powers t) (T := .powers (f t)) (Localization.Away (f t)) f
+      (powers_le_comap f t)).comp
+    (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))
+
+/-- **The canonical map from a basic open to `Spec` of the localisation** — the affine
+half of one chart, i.e. `Proj.toBasicOpenOfGlobalSections` with the `awayLoc` factor
+stripped off.  Named so that both congruences can talk about it. -/
+noncomputable def basicOpenToLoc {X : Scheme.{0}} (r : Γ(X, ⊤)) :
+    (X.basicOpen r).toScheme ⟶ Spec (CommRingCat.of (Localization.Away r)) :=
+  (X.isoOfEq (X.toSpecΓ_preimage_basicOpen r)).inv ≫
+    (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen r) ≫ (basicOpenIsoSpecAway r).hom
+
+/-- **`Proj.toBasicOpenOfGlobalSections` unfolded** (PROVEN — it is `rfl`): the restriction
+of `X.toSpecΓ` to `D(f t)`, followed by `Spec (awayLoc 𝒜 f t)`. -/
+theorem toBasicOpenOfGlobalSections_eq {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}} (f : A →+* Γ(X, ⊤))
+    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht =
+      ((X.isoOfEq (X.toSpecΓ_preimage_basicOpen (f t))).inv ≫
+        (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen (f t)) ≫
+          ((basicOpenIsoSpecAway (f t)).hom ≫
+            Spec.map (CommRingCat.ofHom (awayLoc 𝒜 f t)))) ≫
+        (Proj.basicOpenIsoSpec 𝒜 t ht hn).inv :=
+  rfl
+
+/-- **`Proj.toBasicOpenOfGlobalSections` as `basicOpenToLoc` followed by `Spec awayLoc`**
+(PROVEN — `rfl`, the packaged form of `toBasicOpenOfGlobalSections_eq`). -/
+theorem toBasicOpen_eq_basicOpenToLoc {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (f : A →+* Γ(X, ⊤)) {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
+    Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht =
+      (basicOpenToLoc (f t) ≫ Spec.map (CommRingCat.ofHom (awayLoc 𝒜 f t))) ≫
+        (Proj.basicOpenIsoSpec 𝒜 t ht hn).inv :=
+  rfl
+
+/-- **`basicOpenToLoc` composed with `Spec` of the structure map is the inclusion**
+(PROVEN) — the characterising property of `basicOpenToLoc`, and the only thing about it
+either congruence uses. -/
+theorem basicOpenToLoc_algebraMap {X : Scheme.{0}} (r : Γ(X, ⊤)) :
+    basicOpenToLoc r ≫ Spec.map (CommRingCat.ofHom
+        (algebraMap Γ(X, ⊤) (Localization.Away r))) =
+      (X.basicOpen r).ι ≫ X.toSpecΓ := by
+  rw [basicOpenToLoc, Category.assoc, Category.assoc, basicOpenIsoSpecAway_hom_SpecMap,
+    morphismRestrict_ι, ← Category.assoc, Scheme.isoOfEq_inv_ι]
+
+/-- **`Spec` of a localisation-away structure map is a monomorphism** (PROVEN) — it is
+`basicOpenIsoSpecAway` inverted followed by an open immersion. -/
+theorem mono_specMap_algebraMap {X : Scheme.{0}} (r : Γ(X, ⊤)) :
+    Mono (Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r)))) := by
+  have hrw : Spec.map (CommRingCat.ofHom (algebraMap Γ(X, ⊤) (Localization.Away r))) =
+      (basicOpenIsoSpecAway r).inv ≫
+        Scheme.Opens.ι (X := Spec Γ(X, ⊤)) (PrimeSpectrum.basicOpen r) := by
+    rw [← basicOpenIsoSpecAway_hom_SpecMap r, Iso.inv_hom_id_assoc]
+  rw [hrw]; infer_instance
+
+/-- **`awayLoc` sends `mk c` to `f c.num / f c.den`**, in cleared-denominator form
+(PROVEN) — the only computational fact about `awayLoc` the rescaling congruence needs. -/
+theorem awayLoc_mk_mul_den {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (f : A →+* Γ(X, ⊤)) (t : A)
+    (c : HomogeneousLocalization.NumDenSameDeg 𝒜 (Submonoid.powers t)) :
+    awayLoc 𝒜 f t (HomogeneousLocalization.mk c) *
+        algebraMap Γ(X, ⊤) (Localization.Away (f t)) (f (c.den : A)) =
+      algebraMap Γ(X, ⊤) (Localization.Away (f t)) (f (c.num : A)) := by
+  rw [awayLoc]
+  simp only [RingHom.coe_comp, Function.comp_apply, HomogeneousLocalization.algebraMap_apply,
+    HomogeneousLocalization.val_mk, Localization.mk_eq_mk', IsLocalization.map_mk']
+  exact IsLocalization.mk'_spec _ _ _
+
 section GradedSmul
 
 /-! ### The `fromOfGlobalSections` congruence, cut into three (2026-07-27)
@@ -644,8 +732,125 @@ theorem openCover_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike
   unfold Proj.openCoverOfMapIrrelevantEqTop
   congr 1
 
-/-- **The chart-level half of the congruence** (sorry node — this is where ALL
-the remaining content of `ProjCoords.toHom_smul` now sits, and it is the piece
+/-- **`f t` is a unit in `Γ(X, ⊤)_{g t}`** (PROVEN) — because `g t = u ^ n * f t` with
+`u ^ n` a unit, so inverting `g t` inverts `f t`.  This is what lets the two
+localisations be compared at all. -/
+theorem isUnit_algebraMap_ft {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (m : ℕ) (a : A), a ∈ 𝒜 m → g a = (u : Γ(X, ⊤)) ^ m * f a)
+    {n : ℕ} {t : A} (ht : t ∈ 𝒜 n) :
+    IsUnit (algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f t)) := by
+  have h1 : IsUnit (algebraMap Γ(X, ⊤) (Localization.Away (g t)) (g t)) :=
+    IsLocalization.map_units (M := Submonoid.powers (g t)) _ ⟨g t, Submonoid.mem_powers _⟩
+  have h2 : IsUnit (algebraMap Γ(X, ⊤) (Localization.Away (g t)) ((u : Γ(X, ⊤)) ^ n) *
+      algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f t)) := by
+    rw [← map_mul, ← h n t ht]; exact h1
+  exact (IsUnit.mul_iff.mp h2).2
+
+/-- **The canonical `Γ(X, ⊤)`-algebra map `Γ(X, ⊤)_{f t} →+* Γ(X, ⊤)_{g t}`** — the
+identification of the two localisations, legitimate by `isUnit_algebraMap_ft`. -/
+noncomputable def locEquivGS {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (m : ℕ) (a : A), a ∈ 𝒜 m → g a = (u : Γ(X, ⊤)) ^ m * f a)
+    {n : ℕ} {t : A} (ht : t ∈ 𝒜 n) :
+    Localization.Away (f t) →+* Localization.Away (g t) :=
+  IsLocalization.lift (M := Submonoid.powers (f t))
+    (g := algebraMap Γ(X, ⊤) (Localization.Away (g t)))
+    (fun y ↦ by
+      obtain ⟨k, hk⟩ := y.2
+      rw [← hk, map_pow]
+      exact (isUnit_algebraMap_ft 𝒜 u f g h ht).pow k)
+
+theorem locEquivGS_comp_algebraMap {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (m : ℕ) (a : A), a ∈ 𝒜 m → g a = (u : Γ(X, ⊤)) ^ m * f a)
+    {n : ℕ} {t : A} (ht : t ∈ 𝒜 n) :
+    (locEquivGS 𝒜 u f g h ht).comp (algebraMap Γ(X, ⊤) (Localization.Away (f t))) =
+      algebraMap Γ(X, ⊤) (Localization.Away (g t)) :=
+  IsLocalization.lift_comp _
+
+/-- **THE RING IDENTITY behind the rescaling congruence** (PROVEN) — this is the whole
+mathematical content of the former leaf.
+
+On `Away 𝒜 t` an element is `mk c` with `c.num, c.den ∈ 𝒜 c.deg` and `c.den ∈ powers t`,
+so the degreewise hypothesis applies to BOTH numerator and denominator with the SAME
+exponent `c.deg`:
+
+    g c.num = u ^ c.deg * f c.num,    g c.den = u ^ c.deg * f c.den,
+
+and the factor `u ^ c.deg` cancels between them.  Formally, both
+`locEquivGS (awayLoc 𝒜 f t (mk c))` and `awayLoc 𝒜 g t (mk c)` satisfy the same
+cleared-denominator equation `y * algebraMap (f c.den) = algebraMap (f c.num)` in
+`Γ(X, ⊤)_{g t}`, in which `algebraMap (f c.den)` is a unit (it is a power of
+`algebraMap (f t)`, since `c.den ∈ powers t`) — so they are equal.
+
+Note the degree bookkeeping never needs `c.deg = k * n`: the hypothesis is applied at
+`c.deg` directly, which is why no homogeneity-of-`t^k` argument appears. -/
+theorem locEquivGS_comp_awayLoc {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (m : ℕ) (a : A), a ∈ 𝒜 m → g a = (u : Γ(X, ⊤)) ^ m * f a)
+    {n : ℕ} {t : A} (ht : t ∈ 𝒜 n) :
+    (locEquivGS 𝒜 u f g h ht).comp (awayLoc 𝒜 f t) = awayLoc 𝒜 g t := by
+  have hlift : ∀ y : Γ(X, ⊤), (locEquivGS 𝒜 u f g h ht)
+      (algebraMap Γ(X, ⊤) (Localization.Away (f t)) y) =
+      algebraMap Γ(X, ⊤) (Localization.Away (g t)) y := fun y ↦ IsLocalization.lift_eq _ y
+  ext x
+  obtain ⟨c, rfl⟩ := HomogeneousLocalization.mk_surjective x
+  obtain ⟨k, hk⟩ := c.den_mem
+  simp only [RingHom.coe_comp, Function.comp_apply]
+  have hfden : IsUnit (algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f (c.den : A))) := by
+    rw [← hk, map_pow, map_pow]
+    exact (isUnit_algebraMap_ft 𝒜 u f g h ht).pow k
+  have hud : IsUnit (algebraMap Γ(X, ⊤) (Localization.Away (g t)) ((u : Γ(X, ⊤)) ^ c.deg)) :=
+    (u.isUnit.pow c.deg).map _
+  have hL : (locEquivGS 𝒜 u f g h ht) (awayLoc 𝒜 f t (HomogeneousLocalization.mk c)) *
+      algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f (c.den : A)) =
+      algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f (c.num : A)) := by
+    calc (locEquivGS 𝒜 u f g h ht) (awayLoc 𝒜 f t (HomogeneousLocalization.mk c)) *
+          algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f (c.den : A))
+        = (locEquivGS 𝒜 u f g h ht) (awayLoc 𝒜 f t (HomogeneousLocalization.mk c) *
+            algebraMap Γ(X, ⊤) (Localization.Away (f t)) (f (c.den : A))) := by
+          rw [map_mul, hlift]
+      _ = (locEquivGS 𝒜 u f g h ht)
+            (algebraMap Γ(X, ⊤) (Localization.Away (f t)) (f (c.num : A))) := by
+          rw [awayLoc_mk_mul_den 𝒜 f t c]
+      _ = algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f (c.num : A)) := hlift _
+  have hR : awayLoc 𝒜 g t (HomogeneousLocalization.mk c) *
+      algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f (c.den : A)) =
+      algebraMap Γ(X, ⊤) (Localization.Away (g t)) (f (c.num : A)) := by
+    have h0 := awayLoc_mk_mul_den 𝒜 g t c
+    rw [h c.deg _ c.den.2, h c.deg _ c.num.2, map_mul, map_mul] at h0
+    refine hud.mul_left_cancel ?_
+    rw [← h0]; ring
+  exact hfden.mul_left_inj.mp (hL.trans hR.symm)
+
+/-- **THE GEOMETRIC IDENTITY behind the rescaling congruence** (PROVEN) — the two charts
+agree once the localisations are identified.  Both sides are maps into
+`Spec Γ(X, ⊤)_{f t}`, and `Spec` of the structure map is a mono
+(`mono_specMap_algebraMap`), so it suffices to compose with it: each side then collapses
+to `(X.basicOpen (g t)).ι ≫ X.toSpecΓ` by `basicOpenToLoc_algebraMap`. -/
+@[reassoc]
+theorem basicOpenToLoc_gradedSmul {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
+    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
+    (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
+    (h : ∀ (m : ℕ) (a : A), a ∈ 𝒜 m → g a = (u : Γ(X, ⊤)) ^ m * f a)
+    {n : ℕ} {t : A} (ht : t ∈ 𝒜 n) :
+    basicOpenToLoc (g t) ≫ Spec.map (CommRingCat.ofHom (locEquivGS 𝒜 u f g h ht)) =
+      (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫ basicOpenToLoc (f t) := by
+  haveI := mono_specMap_algebraMap (X := X) (f t)
+  rw [← cancel_mono (Spec.map (CommRingCat.ofHom
+    (algebraMap Γ(X, ⊤) (Localization.Away (f t)))))]
+  rw [Category.assoc, ← Spec.map_comp, ← CommRingCat.ofHom_comp,
+    locEquivGS_comp_algebraMap 𝒜 u f g h ht, basicOpenToLoc_algebraMap (g t),
+    Category.assoc, basicOpenToLoc_algebraMap (f t), ← Category.assoc,
+    Scheme.isoOfEq_hom_ι]
+
+/-- **The chart-level half of the congruence** (**PROVEN 2026-07-28** — formerly the
+sorry node holding ALL the remaining content of `ProjCoords.toHom_smul`, and the piece
 that lives in `HomogeneousLocalization` rather than in scheme theory).
 
 `Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht` is, after composing with
@@ -668,11 +873,22 @@ cancels between numerator and denominator.
 The `Scheme.isoOfEq` on the left is `basicOpen_eq_of_gradedSmul`: the two charts
 have equal — but not syntactically equal — domains.
 
-*What is NOT missing.*  The gluing is already done: `openCover_eq_of_gradedSmul`
+*How it closed* (2026-07-28).  The prose above is exactly what the proof does, once the
+two localisations are identified by the `Γ(X, ⊤)`-algebra map `locEquivGS`.  It splits
+into two named halves and nothing else:
+
+* `locEquivGS_comp_awayLoc` — the RING identity, the real content, where the `u ^ deg`
+  cancels between numerator and denominator of an `Away 𝒜 t` element;
+* `basicOpenToLoc_gradedSmul` — the GEOMETRIC identity, discharged by cancelling the
+  mono `Spec` of the structure map against `basicOpenToLoc_algebraMap`.
+
+The assembly below is then just `toBasicOpen_eq_basicOpenToLoc` on both sides,
+`Spec.map_comp`, and the reassociated geometric identity.
+
+*What was NOT missing.*  The gluing was already done: `openCover_eq_of_gradedSmul`
 shows the two covers are equal, and `fromOfGlobalSections_eq_of_gradedSmul` below
-derives the full congruence from this leaf by `Scheme.Cover.hom_ext` plus
-`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory.  So an owner of
-this leaf never has to touch `glueMorphisms`. -/
+derives the full congruence from this statement by `Scheme.Cover.hom_ext` plus
+`Scheme.Cover.ι_glueMorphisms`, with no further scheme theory. -/
 theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing A]
     [SetLike σ A] [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
     (u : (Γ(X, ⊤))ˣ) (f g : A →+* Γ(X, ⊤))
@@ -680,8 +896,11 @@ theorem toBasicOpenOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [Co
     {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
     Proj.toBasicOpenOfGlobalSections 𝒜 g rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι =
       (X.isoOfEq (basicOpen_eq_of_gradedSmul 𝒜 u f g h ht)).hom ≫
-        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι :=
-  sorry
+        Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht ≫ (Proj.basicOpen 𝒜 t).ι := by
+  simp only [toBasicOpen_eq_basicOpenToLoc 𝒜 g hn ht, toBasicOpen_eq_basicOpenToLoc 𝒜 f hn ht,
+    Category.assoc, Proj.basicOpenIsoSpec_inv_ι]
+  rw [← locEquivGS_comp_awayLoc 𝒜 u f g h ht, CommRingCat.ofHom_comp, Spec.map_comp,
+    Category.assoc, basicOpenToLoc_gradedSmul_assoc 𝒜 u f g h ht]
 
 /-- **The missing mathlib congruence for `Proj.fromOfGlobalSections`** (PROVEN
 from `openCover_eq_of_gradedSmul` and
@@ -756,34 +975,6 @@ restricted to a basic open.
 These two discharge `specPointEquiv_comp_projInfty_eq_zero`, `specPointEquiv_comp_projNeg`
 and `specPointEquiv_symm_map_galois` below, through the `ProjCoords`-level corollaries
 `comap_toHom` and `toHom_negC`. -/
-
-theorem powers_le_comap {R S : Type*} [CommSemiring R] [CommSemiring S] (f : R →+* S) (t : R) :
-    Submonoid.powers t ≤ (Submonoid.powers (f t)).comap f := by
-  rw [← Submonoid.map_le_iff_le_comap, Submonoid.map_powers]
-
-/-- **The ring map underlying one chart of `Proj.fromOfGlobalSections`** — the degree-zero
-localisation `Away 𝒜 t` mapped into `Γ(X, ⊤)_{f t}`.  Everything about
-`Proj.toBasicOpenOfGlobalSections` that is not plain affine plumbing sits here. -/
-noncomputable def awayLoc {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
-    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}}
-    (f : A →+* Γ(X, ⊤)) (t : A) :
-    HomogeneousLocalization.Away 𝒜 t →+* Localization.Away (f t) :=
-  (IsLocalization.map (M := .powers t) (T := .powers (f t)) (Localization.Away (f t)) f
-      (powers_le_comap f t)).comp
-    (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))
-
-/-- **`Proj.toBasicOpenOfGlobalSections` unfolded** (PROVEN — it is `rfl`): the restriction
-of `X.toSpecΓ` to `D(f t)`, followed by `Spec (awayLoc 𝒜 f t)`. -/
-theorem toBasicOpenOfGlobalSections_eq {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
-    [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {X : Scheme.{0}} (f : A →+* Γ(X, ⊤))
-    {n : ℕ} {t : A} (hn : 0 < n) (ht : t ∈ 𝒜 n) :
-    Proj.toBasicOpenOfGlobalSections 𝒜 f rfl hn ht =
-      ((X.isoOfEq (X.toSpecΓ_preimage_basicOpen (f t))).inv ≫
-        (X.toSpecΓ ∣_ PrimeSpectrum.basicOpen (f t)) ≫
-          ((basicOpenIsoSpecAway (f t)).hom ≫
-            Spec.map (CommRingCat.ofHom (awayLoc 𝒜 f t)))) ≫
-        (Proj.basicOpenIsoSpec 𝒜 t ht hn).inv :=
-  rfl
 
 theorem basicOpen_ι_eq {σ : Type*} {A : Type} [CommRing A] [SetLike σ A]
     [AddSubgroupClass σ A] (𝒜 : ℕ → σ) [GradedRing 𝒜] {n : ℕ} {t : A}
