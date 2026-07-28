@@ -9955,7 +9955,16 @@ consumes, `IsIntegral` is what makes the relative normalization integral,
 the compactification to `1` rather than leaving it arbitrary, and
 `GeometricallyConnected` is what
 `AlgebraicGeometry.geometricallyConnected_of_isSmoothCompactification`
-carries across to `X_0(N)`. -/
+carries across to `X_0(N)`.
+
+**Since 2026-07-28 the consumers call the AFFINE compactification theorem**
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`, whose
+hypotheses are a strict SUBSET of these five (`QuasiCompact` and
+`IsSeparated` come free from affineness) plus `IsAffine Y`.  The affineness
+is not added to this conjunction — it is exported separately, and for an
+ARBITRARY coarse space rather than the exhibited one, by
+`isAffine_of_isCoarseModuliY0` below.  Nothing here is weakened; the two
+extra clauses are simply no longer consumed on the `ℚ` route. -/
 theorem exists_isCoarseModuliY0_isSmoothCurve (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ SpecQ) (_hc : IsCoarseModuliY0 N strY),
       IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
@@ -10000,6 +10009,43 @@ theorem isSmoothCurve_of_isCoarseModuliY0 {N : ℕ} (hN : 0 < N) {Y : Scheme.{0}
   haveI := hu
   exact isSmoothCurve_transport u hcomm hint hqc hsep hsmd hconn
 
+/-- **`Y_0(N)` is AFFINE, for `N ≥ 1`** (PROVEN — the export of the
+affineness that `Gamma0AffineModel` has carried all along).
+
+This says nothing new mathematically: `Gamma0AffineModel.isAffine` records
+that the Katz–Mazur coarse space is `Spec (A^G)`, and initiality
+(`exists_isIso_of_isCoarseModuliY0`) makes every coarse space of the level
+isomorphic to it, so `IsAffine.of_isIso` carries affineness to an
+ARBITRARY one.  It was simply never exported, which is the whole reason
+this lemma exists.
+
+**Why it matters, and what it buys** (2026-07-28).  The compactification
+theorem `AlgebraicGeometry.exists_isSmoothCompactification` routes through
+Nagata's gluing induction
+(`AlgebraicGeometry.exists_isOpenImmersion_isProper_of_affineCase`), which
+is the hardest open leaf of
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` and has
+no cut.  Its affine variant
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` does NOT:
+the affine case of Nagata is PROVEN there, via `Proj` of a graded chart.
+With this lemma every consumer of the compactification theorem in the
+`X_0(N)` cone can call the affine variant, so that cone no longer depends
+on the gluing induction at all.
+
+`hN : 0 < N` is required for the same reason as everywhere else in this
+section — `exists_gamma0AffineModel` needs it, since at `N = 0` the coarse
+space is empty and `Γ(Y, ⊤)` is the zero ring.  (The degenerate level is
+not a real obstruction to affineness; it is simply handled separately and
+vacuously by every consumer, none of which compactifies at `N = 0`.) -/
+theorem isAffine_of_isCoarseModuliY0 {N : ℕ} (hN : 0 < N) {Y : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY) : IsAffine Y := by
+  obtain ⟨M⟩ := exists_gamma0AffineModel N hN
+  haveI := M.isAffine
+  obtain ⟨u, hu, -⟩ :=
+    exists_isIso_of_isCoarseModuliY0 hc M.toGamma0Atlas.toIsCoarseModuliY0
+  haveI := hu
+  exact IsAffine.of_isIso u
+
 /-- **Existence of the smooth compactification `X_0(N)`** (PROVEN, over
 one modular leaf plus general curve theory; formerly a sorry node).
 
@@ -10013,12 +10059,21 @@ modular:
   `exists_gamma0AffineModel`, which asks only for `smooth` and
   `connected` on the Katz–Mazur model — the other three properties are
   discharged from affineness and integrality of that model.
-* `AlgebraicGeometry.exists_isSmoothCompactification` — every smooth
-  curve over a perfect field embeds as a dense open subscheme of a smooth
-  proper curve with finite complement.  Now a THEOREM, proved in
+* `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` — every
+  smooth AFFINE curve over a perfect field embeds as a dense open
+  subscheme of a smooth proper curve with finite complement.  Now a
+  THEOREM, proved in
   `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` from
-  Nagata compactification plus the relative normalization, over four
-  named leaves of its own, none of which mentions modular curves.
+  Nagata compactification plus the relative normalization, over named
+  leaves of its own, none of which mentions modular curves.
+
+  **The AFFINE variant is called deliberately** (2026-07-28): the general
+  `exists_isSmoothCompactification` routes through Nagata's gluing
+  induction `exists_isOpenImmersion_isProper_of_affineCase`, which is
+  open and uncut, whereas the affine case of Nagata is PROVEN.  `Y_0(N)`
+  is affine by `isAffine_of_isCoarseModuliY0` above — Katz–Mazur build it
+  as `Spec (A^G)` — so the whole `X_0(N)` cone avoids the gluing
+  induction.
 
 For `N = 0` the moduli problem is supported on the empty base (a scheme
 finite over its base cannot have infinite cyclic geometric fibres), so
@@ -10042,9 +10097,10 @@ theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ
                        isDominant := inferInstance
                        proper := inferInstance
                        smooth := SmoothOfRelativeDimension.smooth (n := 1) (f := strY) }⟩⟩
-  · obtain ⟨hint, hqc, hsep, hsmd, -⟩ := isSmoothCurve_of_isCoarseModuliY0 hN hc
-    haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd
-    obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := ℚ) strY
+  · obtain ⟨hint, -, -, hsmd, -⟩ := isSmoothCurve_of_isCoarseModuliY0 hN hc
+    haveI := hint; haveI := hsmd
+    haveI := isAffine_of_isCoarseModuliY0 hN hc
+    obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification_of_isAffine (K := ℚ) strY
     haveI := hX.smooth
     exact ⟨X, strX, ⟨{ j := j
                        «over» := hX.comm
@@ -17907,14 +17963,25 @@ change.  In characteristic `0` the prime-field atlas is
 `nonempty_gamma0CurveAtlasOver_rat`, PROVEN from the `ℚ` material already in
 this file — so this statement now SHARES the three `ℚ` geometry leaves
 instead of duplicating them, and the only new modular input is the
-characteristic-`p` model.  See the section comment above `Gamma0AtlasOver`. -/
+characteristic-`p` model.  See the section comment above `Gamma0AtlasOver`.
+
+**`IsAffine Y` is exported too** (2026-07-28), and it costs nothing: it is
+`Gamma0CurveAtlasOver.isAffine`, i.e. Katz–Mazur's `Y = Spec (A^G)`, which
+the exhibited model has carried all along and which was simply not being
+passed on.  It is what lets the consumer call
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` instead of
+the general `exists_isSmoothCompactification`, and so avoid the open
+Nagata gluing induction `exists_isOpenImmersion_isProper_of_affineCase`
+entirely.  Note the affineness is a property of THIS exhibited model only
+in appearance: initiality makes every coarse space of the level isomorphic
+to it, so nothing is lost by stating it existentially here. -/
 theorem exists_isCoarseModuliY0_isSmoothCurve_field (N : ℕ) (hN : 0 < N) (K : Type)
     [Field K] (hchar : ¬ ringChar K ∣ N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ Spec (CommRingCat.of K)) (_hc : IsCoarseModuliY0 N strY),
-      IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+      IsAffine Y ∧ IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
         SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
   obtain ⟨A⟩ := nonempty_gamma0CurveAtlasOver_field N hN K hchar
-  exact ⟨A.Y, A.str, A.toGamma0AtlasOver.toIsCoarseModuliY0,
+  exact ⟨A.Y, A.str, A.toGamma0AtlasOver.toIsCoarseModuliY0, A.isAffine,
     isSmoothCurve_of_isCoarseModuliY0_field hN hchar A.toGamma0AtlasOver.toIsCoarseModuliY0⟩
 
 /-- **Existence of the compactified coarse moduli space `X_0(N)` over a
@@ -17925,8 +17992,10 @@ The proof is the `K = ℚ` proof of `exists_x0Compactification` verbatim,
 with `exists_coarseModuliY0` + `isSmoothCurve_of_isCoarseModuliY0`
 replaced by the single base-general leaf
 `exists_isCoarseModuliY0_isSmoothCurve_field`; the compactification is
-`AlgebraicGeometry.exists_isSmoothCompactification` itself, which is the
-sole source of the `[PerfectField K]` hypothesis.  Note that
+`AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` itself
+(the AFFINE variant since 2026-07-28 — see the note on the `IsAffine Y`
+clause of that leaf), which is the sole source of the `[PerfectField K]`
+hypothesis.  Note that
 `geometricallyConnected_of_isSmoothCompactification`, which carries
 connectedness from `Y_0(N)` to `X_0(N)`, is already general in the field
 and needs no perfectness.
@@ -18051,10 +18120,10 @@ theorem exists_x0Compactification_field (N : ℕ) (hN : 0 < N) (K : Type)
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
       (strY : Y ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
       Nonempty (IsX0Compactification N strX strY j) := by
-  obtain ⟨Y, strY, hc, hint, hqc, hsep, hsmd, hconn⟩ :=
+  obtain ⟨Y, strY, hc, haff, hint, -, -, hsmd, hconn⟩ :=
     exists_isCoarseModuliY0_isSmoothCurve_field N hN K hchar
-  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
-  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := K) strY
+  haveI := haff; haveI := hint; haveI := hsmd; haveI := hconn
+  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification_of_isAffine (K := K) strY
   exact ⟨X, Y, strX, strY, j,
     ⟨{ comm := hX.comm
        coarse := hc
@@ -18079,10 +18148,13 @@ routing this theorem through it would put `sorryAx` back into the whole
 * `isSmoothCurve_of_isCoarseModuliY0` supplies the four properties of
   `Y_0(N)` that the compactification theorem consumes, plus geometric
   connectedness;
-* `AlgebraicGeometry.exists_isSmoothCompactification` and
+* `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` and
   `AlgebraicGeometry.geometricallyConnected_of_isSmoothCompactification`
   supply the compactification itself, from
-  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.  The
+  AFFINE variant is used (2026-07-28), with affineness supplied by
+  `isAffine_of_isCoarseModuliY0`: the general variant routes through the
+  open Nagata gluing induction and the affine one does not.
 
 Note `connected` and `finite_compl` — the two clauses beyond
 `IsCompactificationY0` — come from the general theory and not from
@@ -18100,9 +18172,10 @@ theorem exists_x0Compactification (N : ℕ) (hN : 0 < N) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (j : Y ⟶ X),
       Nonempty (IsX0Compactification N strX strY j) := by
   obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 N
-  obtain ⟨hint, hqc, hsep, hsmd, hconn⟩ := isSmoothCurve_of_isCoarseModuliY0 hN hc
-  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
-  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := ℚ) strY
+  obtain ⟨hint, -, -, hsmd, hconn⟩ := isSmoothCurve_of_isCoarseModuliY0 hN hc
+  haveI := hint; haveI := hsmd; haveI := hconn
+  haveI := isAffine_of_isCoarseModuliY0 hN hc
+  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification_of_isAffine (K := ℚ) strY
   exact ⟨X, Y, strX, strY, j,
     ⟨{ comm := hX.comm
        coarse := hc

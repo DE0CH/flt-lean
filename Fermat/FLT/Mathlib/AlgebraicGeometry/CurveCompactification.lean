@@ -108,6 +108,36 @@ list on 2026-07-27, both PROVEN):
 | `infinite_of_smoothOfRelativeDimension_one` (in `CurveExtension.lean`) | a nonempty smooth curve over a field has infinitely many points — the only input to the density subsection at the end of this file; stated upstream, see the note there |
 | `isDiscreteValuationRing_stalk_normalization` | the relative normalization is NORMAL, hence its local rings in dimension one are DVRs |
 
+(`exists_isOpenImmersion_isProper` in that table is STALE as a leaf: it is PROVEN, over
+`exists_isOpenImmersion_isProper_of_affineCase`.  The row is left as written by its author.)
+
+## The Nagata gluing induction is BYPASSED by every consumer (2026-07-28)
+
+`exists_isOpenImmersion_isProper_of_affineCase` — the row above calls it "all that is left of
+Nagata", and it is the hardest leaf in this file — **blocks nothing**.  The only consumer of
+`exists_isOpenImmersion_isProper` is `exists_isSmoothCompactification`, and the only consumers
+of *that* are four sites in `Fermat/FLT/ModularCurve/{X0,X1}.lean`, every one of which takes
+its `Y` from a Katz–Mazur coarse moduli existential whose exhibited model is `Spec (A^G)` —
+**affine**.  The affineness was simply not being exported.
+
+So this file now carries three statements instead of one:
+
+* `exists_isSmoothCompactification_of_properModel` — the non-Nagata half: normalize a given
+  proper model.  No `QuasiCompact`/`IsSeparated` hypotheses; they belong to Nagata alone.
+* `exists_isSmoothCompactification` — the general theorem, unchanged in statement, still
+  routed through the gluing induction.
+* `exists_isSmoothCompactification_of_isAffine` — the same conclusion with `[IsAffine Y]`,
+  routed through `exists_isOpenImmersion_isProper_of_isAffine`, which is PROVEN.  **This is
+  what the four modular-curve sites now call**, so the `X_0(N)` / `X_1(N)` cone no longer
+  depends on Nagata's gluing induction at all.
+
+Consequence to act on, recorded here rather than acted on unilaterally: with the four sites
+rewired, `exists_isSmoothCompactification`, `exists_isOpenImmersion_isProper` and
+`exists_isOpenImmersion_isProper_of_affineCase` have no consumer in the root cone and are
+therefore FREE-FLOATING.  They are kept because the general statement is the honest one for a
+curve not presented affinely; if the free-floating sweep wants them gone, deleting all three
+together also removes the gluing-induction sorry leaf outright.
+
 ## Third decomposition pass, 2026-07-27: the DVR node is shared with `X0.lean`
 
 `smoothOfRelativeDimension_one_fromNormalization` — the leaf the table above used to call
@@ -2080,8 +2110,17 @@ theorem finite_compl_range_toNormalization {Y P : Scheme.{u}}
 
 /-! ### The theorem -/
 
-/-- **Every smooth curve over a perfect field has a smooth compactification** (PROVEN over
-the four leaves above).
+/-- **Normalizing an arbitrary proper model turns it into a SMOOTH compactification**
+(PROVEN over the leaves above) — the half of `exists_isSmoothCompactification` that is
+*not* Nagata.
+
+Everything Nagata contributes is packaged in the hypothesis `H`, which is exactly the
+conclusion of `exists_isOpenImmersion_isProper`.  Isolating it is what lets a consumer that
+can produce a proper model CHEAPLY — an AFFINE `Y`, where
+`exists_isOpenImmersion_isProper_of_isAffine` is PROVEN — reach a smooth compactification
+without touching the gluing induction `exists_isOpenImmersion_isProper_of_affineCase`.  See
+`exists_isSmoothCompactification_of_isAffine` below, which is the form every consumer in
+this development actually uses.
 
 The construction is the one in the module docstring: compactify as a scheme (Nagata),
 then normalize.  What `Mathlib` supplies for free, and what makes this assembly short, is
@@ -2091,18 +2130,16 @@ the image — are already theorems about the relative normalization:
 `IsDominant i.toNormalization` holds by construction.  Everything else is the properness
 and smoothness of `X`, which are the leaves.
 
-`IsIntegral Y` (irreducible and reduced) is required and is not a weakening: without
-irreducibility the relative normalization is still defined but `IsIntegral i.normalization`
-fails, and the finiteness of the complement is false for a disconnected `Y` with an
-infinite component structure.  A geometrically connected smooth curve over a field is
-integral, so the hypothesis is met in the intended application. -/
-theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
-    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y] [QuasiCompact strY]
-    [IsSeparated strY] [hsm : SmoothOfRelativeDimension 1 strY] :
+Note that `QuasiCompact strY` and `IsSeparated strY` do NOT appear: they are hypotheses of
+Nagata's theorem alone, so once the proper model is given they are not needed again. -/
+theorem exists_isSmoothCompactification_of_properModel [PerfectField K] {Y : Scheme.{u}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y]
+    [hsm : SmoothOfRelativeDimension 1 strY]
+    (H : ∃ (P : Scheme.{u}) (strP : P ⟶ Spec (CommRingCat.of K)) (i : Y ⟶ P),
+      IsOpenImmersion i ∧ QuasiCompact i ∧ IsProper strP ∧ i ≫ strP = strY) :
     ∃ (X : Scheme.{u}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
       IsSmoothCompactification strY strX j := by
-  have _ : Smooth strY := SmoothOfRelativeDimension.smooth (n := 1) (f := strY)
-  obtain ⟨P, strP, i, hi, hqc, hP, hcomm⟩ := exists_isOpenImmersion_isProper strY
+  obtain ⟨P, strP, i, hi, hqc, hP, hcomm⟩ := H
   -- `i` inherits from `strY` everything Zariski's Main Theorem needs.
   have _ : IsOpenImmersion i := hi
   have _ : QuasiCompact i := hqc
@@ -2124,6 +2161,59 @@ theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
       isProper := inferInstance
       smooth := hsX
       finite_compl := hfin }
+
+/-- **Every smooth curve over a perfect field has a smooth compactification** (PROVEN over
+the four leaves above).
+
+⚠ **This is the form that still depends on the Nagata gluing induction**
+(`exists_isOpenImmersion_isProper_of_affineCase`, the one open leaf of the Nagata
+decomposition).  Every consumer in this development has an AFFINE `Y` and should use
+`exists_isSmoothCompactification_of_isAffine` below instead, which is free of that leaf.
+The general statement is kept because it is the honest one for a curve that is not
+presented affinely, and because nothing here is weakened by having both.
+
+`IsIntegral Y` (irreducible and reduced) is required and is not a weakening: without
+irreducibility the relative normalization is still defined but `IsIntegral i.normalization`
+fails, and the finiteness of the complement is false for a disconnected `Y` with an
+infinite component structure.  A geometrically connected smooth curve over a field is
+integral, so the hypothesis is met in the intended application. -/
+theorem exists_isSmoothCompactification [PerfectField K] {Y : Scheme.{u}}
+    (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y] [QuasiCompact strY]
+    [IsSeparated strY] [SmoothOfRelativeDimension 1 strY] :
+    ∃ (X : Scheme.{u}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
+      IsSmoothCompactification strY strX j := by
+  have _ : Smooth strY := SmoothOfRelativeDimension.smooth (n := 1) (f := strY)
+  exact exists_isSmoothCompactification_of_properModel strY
+    (exists_isOpenImmersion_isProper strY)
+
+/-- **Every smooth AFFINE curve over a perfect field has a smooth compactification**
+(PROVEN, and — unlike `exists_isSmoothCompactification` — *without* Nagata's gluing
+induction).
+
+This is the same theorem with `[IsAffine Y]` added, and the point of the added hypothesis
+is which Nagata statement it lets the proof call: the affine case
+`exists_isOpenImmersion_isProper_of_isAffine` is PROVEN here (via `Proj` of a graded chart),
+whereas the general case routes through the open leaf
+`exists_isOpenImmersion_isProper_of_affineCase`.  So this variant's proof term contains no
+`sorryAx` from the Nagata direction at all.
+
+`QuasiCompact strY` and `IsSeparated strY` are not hypotheses here, and dropping them is not
+a weakening of the input: an affine scheme over the affine `Spec K` has an affine structure
+morphism, which is automatically quasi-compact and separated.  They were only ever needed by
+Nagata's general theorem.
+
+**Every consumer of the compactification theorem in this development is of this shape** —
+`Y_0(N)` and `Y_1(N)` are Katz–Mazur coarse spaces `Spec (A^G)`, affine by construction; see
+`Fermat.isAffine_of_isCoarseModuliY0` in `Fermat/FLT/ModularCurve/X0.lean` and the `IsAffine`
+clause of `Fermat.exists_isCoarseModuliY1_isSmoothCurve` in `X1.lean`. -/
+theorem exists_isSmoothCompactification_of_isAffine [PerfectField K] {Y : Scheme.{u}}
+    [IsAffine Y] (strY : Y ⟶ Spec (CommRingCat.of K)) [IsIntegral Y]
+    [SmoothOfRelativeDimension 1 strY] :
+    ∃ (X : Scheme.{u}) (strX : X ⟶ Spec (CommRingCat.of K)) (j : Y ⟶ X),
+      IsSmoothCompactification strY strX j := by
+  have _ : Smooth strY := SmoothOfRelativeDimension.smooth (n := 1) (f := strY)
+  exact exists_isSmoothCompactification_of_properModel strY
+    (exists_isOpenImmersion_isProper_of_isAffine strY)
 
 /-- **The range of a projection of an arbitrary pullback square of schemes.**
 

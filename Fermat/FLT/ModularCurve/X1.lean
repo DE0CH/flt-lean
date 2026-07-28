@@ -962,11 +962,31 @@ the four leaves `exists_gamma1GITPresentation`,
 `smoothOfRelativeDimension_of_gamma1GITPresentation` and
 `geometricallyConnected_of_gamma1GITPresentation` — a representability
 statement plus three properties of one curve, in place of one
-statement asserting a curve with five properties exists. -/
+statement asserting a curve with five properties exists.
+
+**`IsAffine Y` is exported as a sixth clause** (2026-07-28), and it costs
+nothing: it is `Gamma1AffineModel.isAffine`, i.e. Katz–Mazur's
+`Y = Spec (A^G)`, which the exhibited model has carried all along (three of
+the five clauses above are already *derived* from it) and which was simply
+not being passed on.  It is what lets `exists_x1Compactification_field`
+below call `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine`
+instead of the general `exists_isSmoothCompactification`, and so avoid the
+open Nagata gluing induction
+`AlgebraicGeometry.exists_isOpenImmersion_isProper_of_affineCase` — the
+hardest leaf of `CurveCompactification.lean` — entirely.
+
+Stating the affineness existentially loses nothing: initiality
+(`IsCoarseModuliY1.exists_inverse`) makes every coarse space of the level
+over the base isomorphic to the exhibited one, and `IsAffine` transports
+along an isomorphism.  It is stated here rather than as a standalone
+transport lemma only because `IsCoarseModuliY1.exists_inverse` is declared
+further down this file; the `Γ₀` side, where the initiality lemma is
+available early, does export it as
+`isAffine_of_isCoarseModuliY0` (`X0.lean`). -/
 theorem exists_isCoarseModuliY1_isSmoothCurve (N : ℕ) (hN : 4 ≤ N) (K : Type) [Field K]
     (hchar : ¬ ringChar K ∣ N) :
     ∃ (Y : Scheme.{0}) (strY : Y ⟶ Spec (CommRingCat.of K)) (_hc : IsCoarseModuliY1 N strY),
-      IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+      IsAffine Y ∧ IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
         SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY := by
   obtain ⟨M⟩ := exists_gamma1AffineModel N hN K hchar
   haveI := M.isAffine
@@ -981,7 +1001,7 @@ theorem exists_isCoarseModuliY1_isSmoothCurve (N : ℕ) (hN : 4 ≤ N) (K : Type
   -- affine source over the affine `Spec K`: the structure morphism is affine,
   -- hence quasi-compact and separated.
   haveI : IsAffineHom M.toGamma1Atlas.str := inferInstance
-  exact ⟨_, M.toGamma1Atlas.str, M.toGamma1Atlas.toIsCoarseModuliY1,
+  exact ⟨_, M.toGamma1Atlas.str, M.toGamma1Atlas.toIsCoarseModuliY1, M.isAffine,
     inferInstance, inferInstance, IsSeparated.of_isAffineHom _, inferInstance, inferInstance⟩
 
 /-- **Existence of the compactified coarse moduli space `X_1(N)` over an
@@ -1001,10 +1021,13 @@ The proof is the two-step assembly `X0.lean` uses at
 * `exists_isCoarseModuliY1_isSmoothCurve` supplies a coarse space
   together with the five properties the compactification theorem
   consumes;
-* `AlgebraicGeometry.exists_isSmoothCompactification` and
+* `AlgebraicGeometry.exists_isSmoothCompactification_of_isAffine` and
   `AlgebraicGeometry.geometricallyConnected_of_isSmoothCompactification`
   supply the compactification itself, from
-  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.  The
+  AFFINE variant is used (2026-07-28), on the `IsAffine Y` clause the
+  leaf above now exports: the general variant routes through the open
+  Nagata gluing induction and the affine one does not.
 
 Note that `connected` and `finite_compl` — the two fields of
 `IsX1Compactification` beyond a bare compactification — come from the
@@ -1023,10 +1046,10 @@ theorem exists_x1Compactification_field (N : ℕ) (hN : 4 ≤ N) (K : Type) [Fie
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ Spec (CommRingCat.of K))
       (strY : Y ⟶ Spec (CommRingCat.of K)) (jY : Y ⟶ X),
       Nonempty (IsX1Compactification N strX strY jY) := by
-  obtain ⟨Y, strY, hc, hint, hqc, hsep, hsmd, hconn⟩ :=
+  obtain ⟨Y, strY, hc, haff, hint, -, -, hsmd, hconn⟩ :=
     exists_isCoarseModuliY1_isSmoothCurve N hN K hchar
-  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
-  obtain ⟨X, strX, jY, hX⟩ := exists_isSmoothCompactification (K := K) strY
+  haveI := haff; haveI := hint; haveI := hsmd; haveI := hconn
+  obtain ⟨X, strX, jY, hX⟩ := exists_isSmoothCompactification_of_isAffine (K := K) strY
   exact ⟨X, Y, strX, strY, jY,
     ⟨{ comm := hX.comm
        coarse := hc
