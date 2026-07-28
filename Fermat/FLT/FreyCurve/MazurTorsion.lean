@@ -33213,13 +33213,24 @@ with the ALREADY-OPEN `WeierstrassCurve.End.mul_comm_charZero` far above.  Of it
 three missing items, the Galois action on `End(E_ℚ̄)` is PROVEN here
 (`isIsogeny_galoisConjHom`, from the pointwise nature of `IsRationalMap`), and the
 "`End` is `ℤ` or an imaginary quadratic order" item turned out not to be needed at
-all — commutativity plus no zero divisors is enough.  So the OPEN leaves of this
-section are now `exists_intMul_of_galoisInvariant` and
-`not_sq_eq_negFortyNine_of_stable`.
+all — commutativity plus no zero divisors is enough.
 
-Both of those, plus `End.mul_comm_charZero`, are closed by ONE piece of
+**PROVEN 2026-07-28, and this supersedes the sentence that used to close the
+paragraph above.** `not_sq_eq_negFortyNine_of_stable` is now PROVEN in turn, over
+`isIsogeny_galConj`, `exists_sqrtNegOne_galSign` and
+`exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three` (all three PROVEN below), so
+it is NO LONGER an open leaf of this section and nobody should be dispatched at
+it.  The one remaining DIRECT sorry in this section is
+`exists_intMul_of_galoisInvariant`.
+
+That leaf, plus `End.mul_comm_charZero`, is closed by ONE piece of
 machinery: the invariant-differential character `c : End(W) →+* F` of Route A on
 `End.mul_comm_charZero`.  See `exists_intMul_of_galoisInvariant`'s docstring.
+That machinery now EXISTS, as `WeierstrassCurve.IsDiffChar` in
+`Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`, with six open geometric
+leaves of its own (`exists_isDiffChar`, `isDiffChar_unique`, `isDiffChar_add`,
+`isDiffChar_comp`, `eq_of_isDiffChar`, `isDiffChar_galConj`) — which is where the
+missing mathematics of this whole section now sits.
 
 **Correction to the MISSING MACHINERY note that this cut was dispatched from.**
 That note said steps 2 and 4 of the argument need "`End(E_ℚ̄) = ℤ` for non-CM
@@ -34450,14 +34461,23 @@ CM orders of discriminant `−3, −12, −19, −27` and ramifies for `−7, �
 present branch is the one where the mod-`7` image lies in the normalizer of a
 split Cartan but not in the Cartan.
 
-**MISSING MACHINERY, precisely** — the same absences as in
-`trace_eq_zero_of_stable_cyclic` above, plus:
+**MISSING MACHINERY — THE LIST IS NOW FULLY RETRACTED (2026-07-28); DO NOT ACT ON
+IT.** It is kept only so that a reader meeting it quoted elsewhere can see that
+every item has been discharged:
 
-3. `det ρ̄_ℓ = ` the mod-`ℓ` cyclotomic character (the Weil-pairing determinant);
-   `GaloisRepresentation.cyclotomicCharacterModL` exists in this tree and the
-   Weil-pairing files are here, but the determinant identity itself is not;
+3. `det ρ̄_ℓ = ` the mod-`ℓ` cyclotomic character (the Weil-pairing determinant).
+   **RETRACTED**: this is `WeilPairing.det_galoisRep_eq_cyclotomic`, PROVEN
+   2026-07-17, and the assembly below uses it directly.
 4. the identification of `ε` with the quadratic character of the CM field — i.e.
-   that `End(E_ℚ̄)` is defined exactly over `K` (*ATAEC* II.2.2).
+   that `End(E_ℚ̄)` is defined exactly over `K` (*ATAEC* II.2.2). **RETRACTED**:
+   isolated as `exists_sqrtNegOne_galSign` above and PROVEN 2026-07-28, over the
+   differential character `WeierstrassCurve.IsDiffChar`.
+
+The "same absences as in `trace_eq_zero_of_stable_cyclic`" clause is likewise
+spent: item 1 there (the Galois ACTION on `End(E_ℚ̄)`) is `isIsogeny_galConj`,
+PROVEN above, and the `End = ℤ` clause was never needed. The residual
+mathematics of this leaf now lives entirely in the six open leaves of
+`Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` with an
 endomorphism `Ψ` of `E_ℚ̄` satisfying `Ψ² = [−49]` whose kernel is cyclic of order
@@ -34472,7 +34492,14 @@ the Galois argument above deliberately avoids it).
 `exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three` above, together with the
 already-PROVEN Weil-pairing determinant `WeilPairing.det_galoisRep_eq_cyclotomic`
 (which retracts item 3 of the MISSING MACHINERY list). See the section note
-before those three for the shape of the assembly. -/
+before those three for the shape of the assembly.
+
+**All three of those leaves are themselves PROVEN as of 2026-07-28**, so this
+declaration has NO direct sorry and NO open sub-leaf of its own; verified against
+a green `lake build Fermat.FLT.FreyCurve.MazurTorsion`
+(EXIT=0, no `declaration uses 'sorry'` warning at this line). Its transitive cone
+still reaches `sorryAx` only through the six open leaves of
+`Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`. -/
 theorem not_sq_eq_negFortyNine_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
     (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
