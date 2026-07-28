@@ -34,6 +34,9 @@ public import Mathlib.RingTheory.Etale.Basic
 public import Mathlib.RingTheory.Unramified.LocalRing
 public import Mathlib.RingTheory.RingHom.StandardSmooth
 public import Mathlib.RingTheory.Localization.AtPrime.Basic
+public import Mathlib.RingTheory.Smooth.StandardSmoothCotangent
+public import Mathlib.RingTheory.Etale.Kaehler
+public import Mathlib.LinearAlgebra.Dimension.Localization
 
 /-!
 # Extension of a morphism over the missing points of a smooth curve
@@ -88,10 +91,11 @@ restriction is a morphism over the base).  Both are `Mathlib`-ready.
 
 ## The leaves
 
-**UPDATED 2026-07-27** — the three general-scheme-theory leaves of this file were worked
-over on that date and the shape changed completely.  What follows supersedes the earlier
+**UPDATED 2026-07-28** — the general-scheme-theory leaves of this file were worked over on
+2026-07-27/28 and the shape changed completely.  What follows supersedes the earlier
 "a prover of either direction should route through `IsRegularLocalRing`" note, which was
-correct but is no longer the frontier: the regularity link now EXISTS in this project.
+correct but is no longer the frontier: the regularity link now EXISTS in this project, and
+the FORWARD DVR direction closed without it.
 
 `Fermat/FLT/Modularity/RegularStalks.lean` carries, sorry-free and with NO `Fermat`
 imports of its own (so it is importable from anywhere, and this file now imports it):
@@ -105,47 +109,110 @@ Against those, the state of this file's leaves is now:
 
 | leaf | status |
 | --- | --- |
-| `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` | **PROVEN 2026-07-27**, no sorry |
-| `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` | **PROVEN 2026-07-28**, no sorry — its last leaf `ringKrullDim_le_of_isStandardSmoothOfRelativeDimension` closed |
-| `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` | **PROVEN** over TWO leaves, `formallySmooth_of_isDiscreteValuationRing_of_perfectField` and `smoothOfRelativeDimension_of_isDominant_of_smooth` |
-| `infinite_of_smoothOfRelativeDimension_one` | open, untouched (separate owner) |
+| ✓ `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` | **PROVEN 2026-07-27**: smooth of relative dimension one over a field ⟹ the local rings away from the generic point are DVRs |
+| ✓ `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` | **PROVEN 2026-07-27**, over `RegularStalks.lean`; no sorry |
+| ✓ `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` | the CONVERSE over a **perfect** field: **PROVEN, no sorry**.  Both of its residues closed on 2026-07-28 — `smoothOfRelativeDimension_of_isDominant_of_smooth` on this branch, and `formallySmooth_of_isDiscreteValuationRing_of_perfectField` concurrently on another, over `Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField` |
 
-**The DVR pair are still the two directions of ONE classical equivalence** ("regular ⟺
-smooth over a perfect field", in dimension one, where regular ⟺ DVR), and it is worth
-saying so loudly because the task that produced this file was dispatched on the belief
-that the two consumers shared a single *statement*.  They do not: `X0.lean` needs the
-forward direction (it HAS smoothness and WANTS DVRs) and `CurveCompactification.lean`
-needs the backward one (it HAS normality/DVRs and WANTS smoothness).  They share a file, a
-docstring and an owner; they are not the same theorem.  What the 2026-07-27 pass showed is
-that the two directions do NOT share a residue either:
+`infinite_of_smoothOfRelativeDimension_one` — a nonempty smooth curve over a field has
+infinitely many points — was the fourth, and is **PROVEN** as of 2026-07-27, over two
+`Mathlib`-shaped commutative-algebra lemmas proven here beside it,
+`MvPolynomial.card_le_height_of_isMaximal` and
+`Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one`.  Neither needs
+regularity theory; the inputs are Krull's height theorem and the Nullstellensatz.
 
-* forward, regularity is FREE (`isRegularLocalRing_stalk_of_smooth_over_field`) and the
-  entire residue is **dimension theory** — "a smooth `K`-algebra of relative dimension `n`
-  has Krull dimension at most `n`";
-* backward, dimension is nearly free and the entire residue is **formal smoothness of a
-  regular local ring over a perfect field** (Stacks `056S`), for which mathlib supplies the
-  local Jacobian criterion (`Algebra.FormallySmooth.iff_injective_lTensor_residueField`)
-  and the field case (`Algebra.FormallySmooth.of_perfectField`), plus the transport
-  `AlgebraicGeometry.Scheme.Hom.smoothLocus_eq_top_iff` which reduces `Smooth f` to
-  formal smoothness of every stalk map.
+**The DVR pair are the two directions of ONE classical equivalence** ("regular ⟺ smooth
+over a perfect field", in dimension one, where regular ⟺ DVR), and it is worth saying so
+loudly because the task that produced this file was dispatched on the belief that the two
+consumers shared a single *statement*.  They do not: `X0.lean` needs the forward direction
+(it HAS smoothness and WANTS DVRs) and `CurveCompactification.lean` needs the backward one
+(it HAS normality/DVRs and WANTS smoothness).  They share a file, a docstring and an owner,
+which is what "build it once" can mean here; they are not the same theorem.  **The forward one
+closed outright and the backward one only decomposed, which is itself evidence for the
+distinction** — and the forward proof does not run backwards, for the reason recorded on the
+converse below.  The two directions do not share a residue either:
 
-`Mathlib` has `IsRegularLocalRing` (`Mathlib/RingTheory/RegularLocalRing/Defs.lean` — note
-this REFUTES the frequently repeated claim that there is no notion of regularity at this
-pin).  Named inputs a prover of the residues will want:
+* forward, nothing is left: the local structure theorem does the whole job (below);
+* backward, the residue split into **formal smoothness of a regular local ring over a perfect
+  field** (Stacks `056S`) and a **relative-dimension** bookkeeping step, independent of each
+  other.  BOTH closed on 2026-07-28, concurrently and on different branches: the
+  relative-dimension step is `smoothOfRelativeDimension_of_isDominant_of_smooth` (over the
+  rank of `Ω` and its invariance under localization) and the formal-smoothness step is
+  `formallySmooth_of_isDiscreteValuationRing_of_perfectField` (over
+  `Algebra.FormallySmooth.of_isRegularLocalRing_of_perfectField`).
 
+**THIS FILE IS SORRY-FREE as of the release-13 integration.**  Verified by a
+comment-stripped scan of the merged source; the sentence this paragraph used to end with —
+"`formallySmooth_of_isDiscreteValuationRing_of_perfectField` is the file's ONLY remaining
+leaf" — was true on its branch and false the moment the two halves met.
+
+### The route that worked, and the route that was recommended and is wrong
+
+The earlier version of this section told a prover of *either* direction to route through
+`IsRegularLocalRing` and `IsLocalRing.finrank_CotangentSpace_eq_one_iff`, on the grounds that
+"the whole of both leaves is smooth ⟺ regular (Stacks `00TT`, `056S`)".  **That advice is
+withdrawn for the forward direction**: it is true mathematics and a bad plan, because the pin
+has no lemma at all connecting `Algebra.Smooth` to `IsRegularLocalRing`, so following it means
+developing the Jacobian criterion.
+
+What closed the forward leaf instead is the **local structure theorem for smooth morphisms**,
+which IS at this pin and which three successive audits of this file missed:
+
+    Algebra.IsStandardSmoothOfRelativeDimension.exists_etale_mvPolynomial
+      (n : ℕ) (R S) [Algebra.IsStandardSmoothOfRelativeDimension n R S] :
+      ∃ g : MvPolynomial (Fin n) R →ₐ[R] S, g.Etale
+
+— every standard smooth algebra of relative dimension `n` is étale over affine `n`-space.  In
+relative dimension one the base is `K[X]`, a principal ideal ring, and
+`Algebra.FormallyUnramified.map_maximalIdeal` (Stacks `00UW`(1)) says an unramified local
+homomorphism carries the maximal ideal ONTO the maximal ideal.  So the maximal ideal of every
+stalk is the extension of a principal ideal, hence principal, and
+`IsDiscreteValuationRing.TFAE` items 4 ↔ 0 finish.  No regularity, no cotangent space, no
+dimension theory, and — as the statement demands — no perfectness.
+
+The pieces are `isPrincipal_maximalIdeal_of_isStandardSmoothOfRelativeDimension_one` (the
+ring-level content, with no schemes in it) and
+`exists_isStandardSmoothOfRelativeDimension_isLocalization_stalk` (the chart bookkeeping,
+with no algebra in it); both are `Mathlib`-shaped and reusable by the three leaves below.
+
+`Mathlib` does have `IsRegularLocalRing` (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), so
+the claim "there is no notion of regularity at this pin" remains refuted — it is just not the
+abstraction that pays here.
+
+**And the same local structure theorem makes "smooth over a field ⟹ regular local rings"
+CONSTRUCTIBLE at this pin, in every relative dimension** — which matters outside this file,
+because `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` carries
+`isRegularLocalRing_stalk_of_smooth` over exactly that gap (separate owner).  The missing
+ingredient is not regularity theory; it is
+`MvPolynomial.isRegularRing_of_isRegularRing` (`Mathlib/RingTheory/RegularLocalRing/Polynomial.lean`),
+which says `MvPolynomial (Fin n) K` is a regular RING, so every `P_𝔮` is regular local.  Then
+`Algebra.FormallyUnramified.map_maximalIdeal` bounds `(maximalIdeal A_p).spanFinrank` by
+`(maximalIdeal P_𝔮).spanFinrank = ringKrullDim P_𝔮`, flatness of the étale map equates the two
+Krull dimensions, and `IsRegularLocalRing.of_spanFinrank_maximalIdeal_le` closes it.
+
+**And `IsRegularLocalRing R → IsDomain R` is NOT missing**, contrary to what this paragraph
+used to say: `GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing` closes it in
+`RegularStalks.lean`, which is why the irreducibility half of
+`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` is now proven rather than
+open.  A grep for the *mathlib* name returns nothing; a grep of this project does not.
+
+Named inputs a prover of the BACKWARD residues will want:
+
+* the local Jacobian criterion `Algebra.FormallySmooth.iff_injective_lTensor_residueField`
+  and the field case `Algebra.FormallySmooth.of_perfectField`, plus the transport
+  `AlgebraicGeometry.Scheme.Hom.smoothLocus_eq_top_iff`, which reduces `Smooth f` to formal
+  smoothness of every stalk map;
 * `IsLocalRing.finrank_CotangentSpace_eq_one_iff` (`DiscreteValuationRing/TFAE.lean`) turns
   `IsDiscreteValuationRing R` into `finrank (ResidueField R) (CotangentSpace R) = 1` for a
   noetherian local domain, and `IsRegularLocalRing.iff_finrank_cotangentSpace` turns
-  regularity into `finrank … = ringKrullDim R`.  This is what makes the forward direction
-  purely a Krull-dimension question — it is USED below, not merely suggested.
+  regularity into `finrank … = ringKrullDim R`;
 * `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
-  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) is the differential-side input:
-  a standard smooth algebra of relative dimension `n` has free differentials of rank `n`.
+  (`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`): a standard smooth algebra of
+  relative dimension `n` has free differentials of rank `n`;
 * `instance [IsLocalRing R] [IsDomain R] [IsPrincipalIdealRing R] : IsRegularLocalRing R` is
-  already there, so the DVR ⟹ regular half is free.
+  already there, so the DVR ⟹ regular half is free;
 * `MvPolynomial.ringKrullDim_of_isNoetherianRing` and
-  `IsLocalization.AtPrime.ringKrullDim_eq_height` are the two dimension facts the forward
-  residue needs about the ambient polynomial ring.
+  `IsLocalization.AtPrime.ringKrullDim_eq_height` are the two dimension facts about the
+  ambient polynomial ring.
 
 **A route that is CIRCULAR and keeps being suggested**: reaching irreducibility through
 `GeometricallyIrreducible.irreducibleSpace_of_subsingleton`.  Its hypothesis asks for
@@ -776,59 +843,24 @@ generic point of an integral `X` the stalk IS the function field, so it is a fie
 `x ≠ genericPoint X` is what makes `valuationRing_stalk_of_smoothOfRelativeDimension_one`
 below a two-line case split instead of a point-set argument.
 
-**No perfectness is needed in this direction.**  Smooth implies regular over ANY field; it is
-only the converse (`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`) that
-needs `PerfectField K`; the counterexample justifying that hypothesis is written out on the
-converse itself (the quasi-elliptic curve `y² = x³ + t` over `𝔽₃(t)`).  This pointer used to
-say "the module docstring records the counterexample", which was a dangling reference — no
-counterexample was recorded there.
-
-**THE PROOF, in four steps, and where each input lives.**  The old version of this docstring
-listed the pin's regularity API and concluded that the residue was
-"*for `S = K[x₁ … x_m]/(f₁ … f_{m-1})` with invertible Jacobian and `p` a non-minimal prime,
-`finrank κ(p) (m_p/m_p²) = 1`*".  That was right, and it is now HALF DISCHARGED: the
-cotangent computation is free, and only the dimension survives.
-
-1. `GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
-   (`Modularity/RegularStalks.lean`, sorry-free) makes `𝒪_{X,x}` a REGULAR local ring, and
-   `isDomain_of_isRegularLocalRing` (same file, mathlib's own recorded TODO, closed there)
-   makes it a domain.  **This is the input the earlier verdicts on this leaf did not have**;
-   the claim that the smoothness ⟹ regularity link is missing was true of `Mathlib` and is
-   false of this project.
-2. `ringKrullDim 𝒪_{X,x} ≤ 1` is `ringKrullDim_stalk_le_of_smoothOfRelativeDimension` above,
-   which was the ONE remaining sorry underneath this node and is now PROVEN (2026-07-28),
-   through `ringKrullDim_le_of_isStandardSmoothOfRelativeDimension`.
-3. `ringKrullDim 𝒪_{X,x} ≥ 1` is `hx`: a noetherian local DOMAIN with `KrullDimLE 0` is a
-   field (`Ring.KrullDimLE.isField_of_isDomain`), so `¬ IsField` excludes dimension `0`, and
-   `ENat.WithBot.lt_add_one_iff` turns `< 1` into `≤ 0`.  Hence `ringKrullDim = 1`.
-4. Regularity converts that dimension into the cotangent space
-   (`IsRegularLocalRing.iff_finrank_cotangentSpace`), and
-   `IsLocalRing.finrank_CotangentSpace_eq_one_iff` converts `finrank = 1` into
-   `IsDiscreteValuationRing`.  No dimension theory is done here — it is all pushed into
-   step 2. -/
+**No perfectness is needed in this direction**, and the proof shows why: nothing in it looks at
+residue fields.  It is only the converse
+(`smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`) that needs `PerfectField K`,
+and the module docstring records the counterexample. -/
 theorem isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one
     {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X]
     [SmoothOfRelativeDimension 1 strX] {x : X} (hx : ¬ IsField (X.presheaf.stalk x)) :
     IsDiscreteValuationRing (X.presheaf.stalk x) := by
-  haveI : Smooth strX := SmoothOfRelativeDimension.smooth 1 strX
-  haveI hreg : IsRegularLocalRing (X.presheaf.stalk x) :=
-    GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
-      strX inferInstance x
-  haveI : IsDomain (X.presheaf.stalk x) :=
-    GaloisRepresentation.Modularity.isDomain_of_isRegularLocalRing _
-  have hle : ringKrullDim (X.presheaf.stalk x) ≤ (1 : ℕ) :=
-    ringKrullDim_stalk_le_of_smoothOfRelativeDimension strX x
-  have hdim : ringKrullDim (X.presheaf.stalk x) = 1 := by
-    refine eq_of_le_of_not_lt (by exact_mod_cast hle) fun h => ?_
-    have : Ring.KrullDimLE 0 (X.presheaf.stalk x) :=
-      Ring.krullDimLE_iff.mpr (ENat.WithBot.lt_add_one_iff.mp (by simpa using h))
-    exact hx Ring.KrullDimLE.isField_of_isDomain
-  have hfr : Module.finrank (IsLocalRing.ResidueField (X.presheaf.stalk x))
-      (IsLocalRing.CotangentSpace (X.presheaf.stalk x)) = 1 := by
-    have := (IsRegularLocalRing.iff_finrank_cotangentSpace (X.presheaf.stalk x)).mp hreg
-    rw [hdim] at this
-    exact_mod_cast this
-  exact IsLocalRing.finrank_CotangentSpace_eq_one_iff.mp hfr
+  obtain ⟨A, _, _, _, p, _, _, _⟩ :=
+    exists_isStandardSmoothOfRelativeDimension_isLocalization_stalk (n := 1) strX x
+  haveI : Algebra.IsStandardSmooth K A :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth (n := 1)
+  haveI : IsNoetherianRing A := Algebra.FiniteType.isNoetherianRing K A
+  haveI : IsNoetherianRing (X.presheaf.stalk x) :=
+    IsLocalization.isNoetherianRing p.primeCompl _ inferInstance
+  have hprin : (IsLocalRing.maximalIdeal (X.presheaf.stalk x)).IsPrincipal :=
+    isPrincipal_maximalIdeal_of_isStandardSmoothOfRelativeDimension_one (K := K) p
+  exact ((IsDiscreteValuationRing.TFAE (X.presheaf.stalk x) hx).out 4 0).mp hprin
 
 /-- **Every local ring of a smooth curve over a field is a valuation ring** (PROVEN over the
 leaf above).
@@ -1334,46 +1366,187 @@ theorem smooth_of_isDiscreteValuationRing_stalk_of_perfectField [PerfectField K]
   · haveI := hdvr x hf
     exact formallySmooth_of_isDiscreteValuationRing_of_perfectField
 
-/-- **RELATIVE DIMENSION IS DETERMINED BY A DENSE OPEN, ON AN INTEGRAL SCHEME** (sorry leaf,
-cut 2026-07-27 — the second and last residue of
+/-- **A STANDARD SMOOTH DOMAIN INHERITS THE RELATIVE DIMENSION OF ANY LOCALIZATION AWAY FROM A
+NONZERO ELEMENT** (PROVEN — the whole commutative-algebra content of
+`smoothOfRelativeDimension_of_isDominant_of_smooth` below, with no schemes in it).
+
+`Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth` turns relative dimension
+`n` of a *nontrivial* standard smooth `K`-algebra into the single equation
+`Module.rank A Ω[A⁄K] = n`.  So the statement reduces to the insensitivity of that rank to
+inverting one nonzero element, which is two `Mathlib` lemmas about localization and no
+smoothness theory at all:
+
+* `IsLocalization.rank_eq` — for `p ≤ A⁰`, an `A_p`-module has the same rank over `A_p` as
+  over `A`;
+* `IsLocalizedModule.rank_eq` together with
+  `KaehlerDifferential.isLocalizedModule_map` (`Mathlib/RingTheory/Etale/Kaehler.lean`), which
+  says `Ω[A_g⁄K]` **is** the localization of `Ω[A⁄K]` at `powers g` — that is where étaleness
+  of a localization is used, and it is already in `Mathlib`.
+
+`IsDomain A` enters only through `powers g ≤ A⁰`; that is exactly why the scheme-level
+statement needs `X` integral rather than merely reduced. -/
+theorem isStandardSmoothOfRelativeDimension_of_isLocalizationAway {n : ℕ}
+    {A B : Type u} [CommRing A] [IsDomain A] [Algebra K A] [Algebra.IsStandardSmooth K A]
+    [CommRing B] [Algebra A B] [Algebra K B] [IsScalarTower K A B]
+    (g : A) (hg : g ≠ 0) [IsLocalization.Away g B]
+    [Algebra.IsStandardSmoothOfRelativeDimension n K B] :
+    Algebra.IsStandardSmoothOfRelativeDimension n K A := by
+  have hp : Submonoid.powers g ≤ nonZeroDivisors A :=
+    Submonoid.powers_le.mpr (mem_nonZeroDivisors_of_ne_zero hg)
+  haveI : Nontrivial B := (IsLocalization.injective B hp).nontrivial
+  have h1 : Module.rank B Ω[B⁄K] = (n : Cardinal) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential n
+  have h2 : Module.rank B Ω[B⁄K] = Module.rank A Ω[B⁄K] :=
+    IsLocalization.rank_eq (R := A) B (Submonoid.powers g) hp
+  have h3 : Module.rank A Ω[B⁄K] = Module.rank A Ω[A⁄K] :=
+    IsLocalizedModule.rank_eq (p := Submonoid.powers g) (hp := hp)
+      (f := KaehlerDifferential.map K K A B)
+  exact (Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth n).mpr
+    (by rw [← h3, ← h2, h1])
+
+/-- **RELATIVE DIMENSION IS DETERMINED BY A DENSE OPEN, ON AN INTEGRAL SCHEME**
+(**PROVEN 2026-07-28**, no sorry — formerly the second and last residue of
 `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`).
 
-TRUE: on an integral scheme the relative dimension of a smooth morphism is constant, so it
-is read off any nonempty open — a fortiori off a dense one.
+On an integral scheme the relative dimension of a smooth morphism is constant, so it is read
+off any nonempty open — a fortiori off a dense one.
 
 **WHY IT IS NOT VACUOUS AND `[IsIntegral X]` CANNOT BE DROPPED.**  A disjoint union of a
 smooth curve and a smooth surface over `K` is smooth, and its open curve part has relative
-dimension `1` while the whole thing has no relative dimension at all.  Irreducibility is
-what rules that out; `IsDominant j` is what makes `Y` meet every component (there is only
-one) rather than merely being nonempty.
+dimension `1` while the whole thing has no relative dimension at all.  Irreducibility is what
+rules that out.
 
-**THE ROUTE.**  `Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth`
-(`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) says that for a nontrivial
-standard smooth `K`-algebra `A`, relative dimension `n` is EQUIVALENT to
-`Module.rank A Ω[A⁄K] = n`.  So, given `Smooth strX`, the goal at a point `x` is to compute
-the rank of `Ω` on an affine chart `V ∋ x`:
+**WHAT `IsDominant j` IS ACTUALLY DOING, and it is less than it looks.**  The proof consumes
+it only through `DenseRange.nonempty`, i.e. only to know `Y ≠ ∅`.  That is not a weakness of
+the proof: on an IRREDUCIBLE `X` every nonempty open is dense, so for an open immersion `j`
+into an integral `X` the hypothesis `IsDominant j` is *equivalent* to `Nonempty Y`.  The
+irreducibility of `X` is carrying the density; the hypothesis is kept because that is the
+form both consumers hold it in.
 
-1. `Γ(X, V)` is a DOMAIN (`IsIntegral X`) and `Ω[Γ(X,V)⁄K]` is finite projective (smooth),
-   so its rank is computed after inverting any nonzero element — rank is insensitive to
-   localization at a multiplicative set for finite projective modules.
-2. `V ∩ (range j)` is a nonempty open of `V` (dominance), so it contains a nonempty basic
-   open `D(g) ⊆ V`, and `Γ(X, D(g)) = Γ(X,V)_g` is a localization.
-3. On `D(g)` the morphism factors through `j`, so `hY` gives relative dimension `n` there,
-   i.e. `Module.rank Γ(X,V)_g Ω = n`; by step 1 the rank over `Γ(X,V)` is the same, and
-   `iff_of_isStandardSmooth` converts back.
+**THE PROOF.**  `Algebra.IsStandardSmoothOfRelativeDimension.iff_of_isStandardSmooth` makes
+relative dimension `n` of a nontrivial standard smooth `K`-algebra the single equation
+`Module.rank A Ω[A⁄K] = n`, and
+`isStandardSmoothOfRelativeDimension_of_isLocalizationAway` above transports that equation
+along a localization away from a nonzero element.  So all that is left is chart bookkeeping:
 
-No dimension theory and no Krull dimension is involved — only that the rank of a finite
-projective module over a domain does not change under localization.
+1. `Smooth strX` gives an affine `V ∋ x` with `Γ(X, V)` standard smooth over `K`, and `V` is
+   nonempty, so `Γ(X, V)` is a DOMAIN (`IsIntegral.component_integral`).
+2. `hY` at any point `y : Y` gives an affine `V₁ ⊆ Y` of relative dimension `n`; pushing it
+   forward along the open immersion, `Γ(X, j ''ᵁ V₁) ≅ Γ(Y, V₁)` (`Scheme.Hom.appIso`, whose
+   `appIso_hom'` form identifies it with an `appLE`), so `j ''ᵁ V₁` is an affine open of `X`
+   of relative dimension `n`.
+3. `X` is irreducible, so `(j ''ᵁ V₁) ⊓ V` is nonempty, and
+   `AlgebraicGeometry.exists_basicOpen_le_affine_inter` produces `f ∈ Γ(X, j ''ᵁ V₁)` and
+   `g ∈ Γ(X, V)` with `X.basicOpen f = X.basicOpen g` nonempty.  **This is the one step that
+   is not routine**: an affine open contained in another need not be a basic open of it, so a
+   single shrink does not suffice; that lemma does the double shrink.
+4. `Γ(X, X.basicOpen f)` is a localization away from `f`, hence still of relative dimension
+   `n` (`localization_away` plus `IsStandardSmoothOfRelativeDimension.trans`); rewriting the
+   equality of opens moves that to `Γ(X, X.basicOpen g)`, which is a localization of
+   `Γ(X, V)` away from `g ≠ 0`.  The lemma above then hands back `Γ(X, V)`.
 
-*Refute this leaf with:* an integral `X`, smooth over `K`, with a dense open of relative
-dimension `n` and a point where the relative dimension is not `n`.  On an integral scheme
-there is none. -/
+The transport of the open equality is done at the level of `RingHom`s, not `Algebra`s, so
+that no instance argument has to be rewritten.
+
+No dimension theory and no Krull dimension is involved anywhere. -/
 theorem smoothOfRelativeDimension_of_isDominant_of_smooth {n : ℕ}
     {X Y : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X] [Smooth strX]
     (j : Y ⟶ X) [IsOpenImmersion j] [IsDominant j]
     (hY : SmoothOfRelativeDimension n (j ≫ strX)) :
-    SmoothOfRelativeDimension n strX :=
-  sorry
+    SmoothOfRelativeDimension n strX := by
+  haveI : Subsingleton (Spec (CommRingCat.of K)) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum K))
+  let eK : K ≃+* Γ(Spec (CommRingCat.of K), ⊤) :=
+    (Scheme.ΓSpecIso (CommRingCat.of K)).symm.commRingCatIsoToRingEquiv
+  have etop : ∀ W : X.Opens, W ≤ strX ⁻¹ᵁ ⊤ := fun W => by simp
+  -- STEP 1: a chart on `Y`, pushed forward to an affine open `j ''ᵁ V₁` of `X`.
+  obtain ⟨y⟩ : Nonempty Y := (IsDominant.denseRange (f := j)).nonempty
+  obtain ⟨U₁, hU₁, V₁, hV₁, hyV₁, e₁, hss₁⟩ :=
+    hY.exists_isStandardSmoothOfRelativeDimension y
+  have hU₁top : U₁ = ⊤ :=
+    le_antisymm le_top fun w _ => (Subsingleton.elim w ((j ≫ strX).base y)) ▸ e₁ hyV₁
+  subst hU₁top
+  have hUj : IsAffineOpen (j ''ᵁ V₁) := hV₁.image_of_isOpenImmersion j
+  have hzUj : j.base y ∈ j ''ᵁ V₁ := ⟨y, hyV₁, rfl⟩
+  have hUjdim : RingHom.IsStandardSmoothOfRelativeDimension n
+      (strX.appLE ⊤ (j ''ᵁ V₁) (etop _)).hom := by
+    have hc : strX.appLE ⊤ (j ''ᵁ V₁) (etop _) ≫ (j.appIso V₁).hom
+        = (j ≫ strX).appLE ⊤ V₁ e₁ := by
+      rw [Scheme.Hom.appIso_hom', Scheme.Hom.appLE_comp_appLE]
+    rw [← hc, CommRingCat.hom_comp] at hss₁
+    have h2 := RingHom.isStandardSmoothOfRelativeDimension_respectsIso.1 _
+      (j.appIso V₁).commRingCatIsoToRingEquiv.symm hss₁
+    have hcan : ((j.appIso V₁).commRingCatIsoToRingEquiv.symm.toRingHom.comp
+        (((j.appIso V₁).hom).hom.comp (strX.appLE ⊤ (j ''ᵁ V₁) (etop _)).hom))
+        = (strX.appLE ⊤ (j ''ᵁ V₁) (etop _)).hom := by
+      ext r
+      exact (j.appIso V₁).commRingCatIsoToRingEquiv.symm_apply_apply _
+    rwa [hcan] at h2
+  -- STEP 2: the chart at `x` coming from smoothness of `strX`.
+  constructor
+  intro x
+  obtain ⟨U₀, hU₀, V, hV, hxV, e, hssV⟩ :=
+    (Smooth.iff_forall_exists_isStandardSmooth strX).mp inferInstance x
+  have hU₀top : U₀ = ⊤ :=
+    le_antisymm le_top fun w _ => (Subsingleton.elim w (strX.base x)) ▸ e hxV
+  subst hU₀top
+  refine ⟨⊤, hU₀, V, hV, hxV, e, ?_⟩
+  -- STEP 3: a nonempty basic open common to `j ''ᵁ V₁` and `V`.
+  obtain ⟨z, hz⟩ : (((j ''ᵁ V₁ : X.Opens) : Set X) ∩ (V : Set X)).Nonempty := by
+    have h := (IrreducibleSpace.isIrreducible_univ X).2
+    simpa using h _ _ (j ''ᵁ V₁).isOpen V.isOpen
+      ⟨_, Set.mem_univ _, hzUj⟩ ⟨x, Set.mem_univ _, hxV⟩
+  obtain ⟨fb, gb, hfg, hzf⟩ := exists_basicOpen_le_affine_inter hUj hV z ⟨hz.1, hz.2⟩
+  -- STEP 4: relative dimension `n` on that basic open, as a statement about ring maps.
+  letI : Algebra K Γ(X, j ''ᵁ V₁) :=
+    ((strX.appLE ⊤ (j ''ᵁ V₁) (etop _)).hom.comp eK.toRingHom).toAlgebra
+  letI : Algebra K Γ(X, X.basicOpen fb) :=
+    ((strX.appLE ⊤ (X.basicOpen fb) (etop _)).hom.comp eK.toRingHom).toAlgebra
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension n K Γ(X, j ''ᵁ V₁) := by
+    rw [← RingHom.isStandardSmoothOfRelativeDimension_algebraMap, RingHom.algebraMap_toAlgebra]
+    exact RingHom.isStandardSmoothOfRelativeDimension_respectsIso.2 _ eK hUjdim
+  haveI : IsScalarTower K Γ(X, j ''ᵁ V₁) Γ(X, X.basicOpen fb) := by
+    apply IsScalarTower.of_algebraMap_eq'
+    rw [RingHom.algebraMap_toAlgebra, RingHom.algebraMap_toAlgebra, RingHom.algebraMap_toAlgebra,
+      ← RingHom.comp_assoc, ← CommRingCat.hom_comp, Scheme.Hom.appLE_map]
+  haveI := hUj.isLocalization_basicOpen fb
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension 0 Γ(X, j ''ᵁ V₁) Γ(X, X.basicOpen fb) :=
+    Algebra.IsStandardSmoothOfRelativeDimension.localization_away fb
+  have hfbdim : RingHom.IsStandardSmoothOfRelativeDimension n
+      ((strX.appLE ⊤ (X.basicOpen fb) (etop _)).hom.comp eK.toRingHom) := by
+    have h0 : Algebra.IsStandardSmoothOfRelativeDimension (0 + n) K Γ(X, X.basicOpen fb) :=
+      Algebra.IsStandardSmoothOfRelativeDimension.trans n 0 K Γ(X, j ''ᵁ V₁) Γ(X, X.basicOpen fb)
+    rw [zero_add] at h0
+    exact h0
+  rw [hfg] at hfbdim
+  -- STEP 5: the rank comparison, on `V` itself.
+  letI : Algebra K Γ(X, V) := ((strX.appLE ⊤ V e).hom.comp eK.toRingHom).toAlgebra
+  letI : Algebra K Γ(X, X.basicOpen gb) :=
+    ((strX.appLE ⊤ (X.basicOpen gb) (etop _)).hom.comp eK.toRingHom).toAlgebra
+  haveI : IsScalarTower K Γ(X, V) Γ(X, X.basicOpen gb) := by
+    apply IsScalarTower.of_algebraMap_eq'
+    rw [RingHom.algebraMap_toAlgebra, RingHom.algebraMap_toAlgebra, RingHom.algebraMap_toAlgebra,
+      ← RingHom.comp_assoc, ← CommRingCat.hom_comp, Scheme.Hom.appLE_map]
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension n K Γ(X, X.basicOpen gb) := by
+    rw [← RingHom.isStandardSmoothOfRelativeDimension_algebraMap, RingHom.algebraMap_toAlgebra]
+    exact hfbdim
+  haveI : Nonempty V := ⟨⟨x, hxV⟩⟩
+  haveI : IsDomain Γ(X, V) := IsIntegral.component_integral V
+  haveI : Algebra.IsStandardSmooth K Γ(X, V) := by
+    rw [← RingHom.isStandardSmooth_algebraMap, RingHom.algebraMap_toAlgebra]
+    exact RingHom.isStandardSmooth_respectsIso.2 _ eK hssV
+  haveI := hV.isLocalization_basicOpen gb
+  have hgb0 : gb ≠ 0 := by
+    rintro rfl
+    rw [hfg] at hzf
+    simp at hzf
+  have hfin : Algebra.IsStandardSmoothOfRelativeDimension n K Γ(X, V) :=
+    isStandardSmoothOfRelativeDimension_of_isLocalizationAway (K := K) (A := Γ(X, V))
+      (B := Γ(X, X.basicOpen gb)) gb hgb0
+  rw [← RingHom.isStandardSmoothOfRelativeDimension_algebraMap,
+    RingHom.algebraMap_toAlgebra] at hfin
+  have := RingHom.isStandardSmoothOfRelativeDimension_respectsIso.2 _ eK.symm hfin
+  simpa [RingHom.comp_assoc] using this
 
 /-- **A curve over a PERFECT field whose local rings are discrete valuation rings is smooth of
 relative dimension one** (**PROVEN 2026-07-27** over the two leaves
@@ -1387,47 +1560,53 @@ at this pin), so `hdvr` says exactly that `X` is regular; over a perfect field a
 scheme of finite type is smooth, and the relative dimension is `1` because a dense open of `X`
 is already smooth of relative dimension `1`.
 
-**`PerfectField K` is load-bearing and the statement is FALSE without it.**  `ℚ` and `𝔽_ℓ`
-are perfect, which is all either consumer needs.
+**`PerfectField K` is load-bearing and the statement is FALSE without it.**  `ℚ` and `𝔽_ℓ` are
+perfect, which is all either consumer needs.
 
-**COUNTEREXAMPLE CORRECTED, 2026-07-28 — the witness this docstring used to cite was FALSE
-IN BOTH CLAUSES.**  It read: "over an imperfect field `k` of characteristic `p` the curve
-`y^p = t x^p + t` with `t ∈ k ∖ k^p` is regular — so all its local rings are DVRs — and is
-not smooth."  In characteristic `p`, `t x^p + t = t (x + 1)^p`, so with `u = x + 1` the
-equation is `y^p = t u^p`; the defining polynomial lies in `𝔪²` at the `k`-rational point
-`u = y = 0` (checked in `Singular`), so that local ring has `dim_k 𝔪/𝔪² = 2` in dimension
-one — it is **singular, not a DVR**, and the curve is not its own normalization
-(its integral closure is the strictly larger `k(t^{1/p})[u]`).  It is also not
-geometrically reduced (`(y − t^{1/p}(x+1))^p = 0` over `k̄`), so it has no smooth open
-subscheme and cannot satisfy `hY` either.  **The failure is precisely on `hdvr`, the
-hypothesis it was cited to illustrate**, so it justified nothing.
+**COUNTEREXAMPLE CORRECTED (2026-07-28) — the witness this docstring used to cite was INVALID,
+and invalid in a way that bore directly on `hdvr`.**  It read: "over an imperfect field `k` of
+characteristic `p` the curve `y^p = t x^p + t` with `t ∈ k ∖ k^p` is regular — so all its local
+rings are DVRs — and is not smooth."  Both clauses are false, and the gloss in the middle is
+exactly the hypothesis the witness was cited to illustrate, so it failed the very thing it was
+meant to show:
 
-The correct witness is the classical **quasi-elliptic** curve (these exist only in
-characteristics `2` and `3`).  Over `k = 𝔽₃(t)`, take `C : y² = x³ + t ⊆ 𝔸²_k`, let `X` be
-its regular proper model and `Y := C ∖ {P}` where `P : y = 0, x³ = −t` is the unique
-Jacobian-degenerate point (residue field `k(t^{1/3})`).
+* it is **not regular**.  In characteristic `p`, `t x^p + t = t (x + 1)^p`, so after `u = x + 1`
+  the equation is `y^p = t u^p`; at the `k`-rational point `u = y = 0` the defining polynomial
+  lies in `𝔪²` (checked in `Singular`), so that local ring has `dim_k 𝔪/𝔪² = 2` in dimension
+  one.  Hence **`hdvr` FAILS** — that stalk is not a DVR — and the integral closure
+  `k(t^{1/p})[u]` is strictly larger, so the curve is not its own normalization either;
+* it is **not geometrically reduced** — over `k̄` it is `(y − t^{1/p}(x+1))^p = 0` — so it has
+  no smooth open subscheme and cannot satisfy `hY` either.
 
-* `hdvr` **holds**: `C` is integral (`x³ + t` has odd degree, so it is not a square) and
-  regular — in characteristic `3` the partials are `∂/∂y = 2y` and `∂/∂x = −3x² = 0`, so
-  `P` is the only candidate, and there `𝔪 = (y, x³ + t) = (y)` because `x³ + t = y²`.  A
-  one-dimensional local ring with principal maximal ideal is a DVR.
-* `hY` and dominance **hold**: `Y` is a smooth affine curve over `k`, integral, and dense.
-* The conclusion **fails**: over `k̄`, `x³ + t = (x + t^{1/3})³`, so `C ⊗ k̄` is the cuspidal
-  cubic `y² = (x + t^{1/3})³` and `X` is not smooth at `P`.
+**The correct witness is QUASI-ELLIPTIC** (such curves exist only in characteristics `2` and
+`3`).  Over the imperfect field `k = 𝔽₃(t)` take `C : y² = x³ + t ⊆ 𝔸²_k`, let `X` be its
+regular proper model `C̄`, and let `Y := C ∖ {P}` where `P` is the point `y = 0`, `x³ = −t`.
 
-Machine-checked in `Magma` (2026-07-28): `k(C)` has genus `1` over `𝔽₃(t)` with exact
-constant field `k` — so `C` is geometrically integral, which the genus-preservation argument
-needs — and genus `0` after the purely inseparable base change `t = s³`, a drop of
-`(p−1)/2 = 1`, exactly what Tate's genus-change theorem permits at `p = 3`.
+* **`hdvr` holds.**  In characteristic `3` the partials are `∂/∂y = 2y` and `∂/∂x = −3x² = 0`,
+  so `P` is the only candidate singular point, and there `𝔪 = (y, x³ + t) = (y)` because
+  `x³ + t = y²`.  A one-dimensional local ring with principal maximal ideal is a DVR, so every
+  non-generic stalk of `X` is a DVR.
+* **`hY` holds and `j` is dominant**: `Y` is a smooth affine curve over `k`, and it is a dense
+  open of `X`.
+* **The conclusion fails**: `X` is not smooth at `P`, because over `k̄` we have
+  `x³ + t = (x + t^{1/3})³`, so `C ⊗ k̄` is the cuspidal cubic `y² = (x + t^{1/3})³` — reduced,
+  but singular at the cusp.
 
-**The tempting repair is wrong too**, which is why `hY` does not let one drop the
-hypothesis: `k(C)/k` **is** separably generated (`k(C)/k(x)` is separable of degree `2`), so
-"smooth `Y` ⟹ separably generated function field ⟹ smooth `X`" is FALSE.  Separable
-generation is strictly weaker than conservativity.  The same correction was applied to the
-two unowned occurrences of the old witness, in
-`smoothOfRelativeDimension_one_fromNormalization` (`CurveCompactification.lean`, where the
-full worked version lives) and `smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`
-(`SmoothConnectedCriteria.lean`), on branch `flt-lean-272` (`45e2a43c`).
+Machine-checked in `Magma` (2026-07-28, on branch `flt-lean-272`): `k(C)` has genus `1` over
+`𝔽₃(t)` **with exact constant field `k`** — so `C` is geometrically integral, which the
+genus-preservation argument needs and which nobody had checked — and genus `0` after the purely
+inseparable base change `t = s³`, a drop of `1 = (p−1)/2`, exactly what Tate's genus-change
+theorem permits at `p = 3`.  A smooth (= geometrically regular) proper model would preserve the
+genus under base change, so none exists.
+
+**The tempting repair is wrong too**, which is why `hY` does not let one drop the hypothesis:
+`k(C)/k` **is** separably generated (`k(C)/k(x)` is separable of degree `2`), so "smooth `Y` ⟹
+separably generated function field ⟹ smooth `X`" is FALSE.  Separable generation is strictly
+weaker than conservativity, and conservativity is what smoothness of the model needs.
+
+This same false witness occurred three times.  The other two — in `CurveCompactification.lean`
+and in `SmoothConnectedCriteria.lean` — were corrected on branch `flt-lean-272` (`45e2a43c`,
+docstrings only); this is the third.
 
 **Why `j` and `hY` rather than a bare dimension hypothesis.**  `hdvr` alone does not pin the
 RELATIVE dimension: `Spec K` itself satisfies it vacuously (its only stalk is a field) and is
