@@ -61,6 +61,24 @@ extension `k ⊆ F` and an arbitrary `k`-algebra `T`, exactly as
   Eichler–Shimura *congruence relation* — a quadratic operator identity —
   into the classical *trace* condition `tr (τJ Frob_q) = T_q`, and is
   used for exactly that in `Interface.lean`.
+* `traceDet_of_congruence_of_multiplier` — the CONVERSE arrow, and the
+  one the CUT-OBSTRUCTION AUDIT in `Interface.lean` records as
+  "elementary, not formalized": from the quadratic operator identity
+  `g² − t·g + c = 0` together with `⟨gx, gy⟩ = c⟨x, y⟩` for a
+  nondegenerate alternating self-adjoint form, `det g = c` and
+  `tr g = t`. Needs `c ≠ 0` and `char k ≠ 2`.
+* `exists_freeElement_of_frobenius` — **sorry leaf**: a faithful module
+  over a commutative Frobenius algebra contains a free rank-one
+  submodule. Pure commutative algebra (Gorenstein socle); its docstring
+  carries the three-step proof.
+* `exists_frameEquiv_of_symplectic` — **the symplectic rigidity of the
+  frame**: a faithful `A`-module of dimension `2·dim A` carrying a
+  nondegenerate alternating `A`-self-adjoint form IS `A²`, for `A` a
+  commutative Frobenius algebra in characteristic `≠ 2`. This is
+  multiplicity one in its linear-algebra form; it is what lets
+  `exists_galoisRep_modularTateFrame_traceDet` in `Interface.lean` be
+  cut along its FREENESS content rather than along its geometry, and it
+  is FALSE in characteristic two (counterexample in its docstring).
 -/
 module
 
@@ -653,5 +671,385 @@ theorem exists_frobeniusForm_of_baseChange
   exact hxne
 
 end FrobeniusDescent
+
+section FrobeniusFree
+
+variable {F : Type*} [Field F] {A : Type*} [Ring A] [Algebra F A]
+variable {V : Type*} [AddCommGroup V] [Module F V]
+
+/-- **A FAITHFUL MODULE OVER A COMMUTATIVE FROBENIUS ALGEBRA CONTAINS A
+FREE RANK-ONE SUBMODULE** (sorry leaf, opened by the SIXTEENTH
+decomposition of the modularity subtree, 2026-07-27): if `A` is a
+finite-dimensional commutative `F`-algebra carrying a Frobenius form `θ`
+(nondegenerate trace form) and `V` is a faithful `A`-module, then some
+`v ∈ V` has `ann_A(v) = 0`.
+
+This is the ONE deep input of `exists_frameEquiv_of_symplectic` below,
+and hence of the sixteenth cut of `exists_galoisRep_modularTateFrame_traceDet`
+in `Modularity/Interface.lean`. It is pure commutative algebra: no Galois
+theory, no modular curve, no `p`-adics.
+
+WHY IT IS TRUE, in a form a successor can execute.
+
+*Step 1 — Gorenstein duality from the form.* For an ideal `I ⊆ A` one has
+`ann_A(I) = I^⊥` for the trace form `(a,b) ↦ θ(ab)`: `a ∈ ann(I)` gives
+`θ(a·I) = 0`; conversely `θ(a·i·b) = 0` for all `b` forces `a·i = 0` by
+nondegeneracy. Hence `dim_F ann(I) = dim_F A − dim_F I` for EVERY ideal —
+this is the only place the Frobenius hypothesis is used, and it is a
+one-line consequence of it.
+
+*Step 2 — finitely many minimal ideals.* Let `𝔪` be a maximal ideal and
+`m` a minimal nonzero ideal with `ann(m) = 𝔪` (a minimal ideal is a
+simple `A`-module, so `m ≅ A/𝔪`). Then `m ⊆ ann(𝔪)` and by step 1
+`dim_F ann(𝔪) = dim_F A − dim_F 𝔪 = dim_F (A/𝔪) = dim_F m`, so
+`m = ann(𝔪)`. So each maximal ideal supports exactly ONE minimal ideal,
+and an artinian ring has finitely many maximal ideals: `A` has finitely
+many minimal ideals `m₁, …, m_s`.
+
+*Step 3 — avoid them.* Every nonzero ideal of an artinian ring contains a
+minimal one, so `{v : ann(v) ≠ 0} = ⋃_j {v : m_j · v = 0}`, a finite
+union of subspaces, each PROPER because `m_j ≠ 0` and `V` is faithful.
+A vector space over an INFINITE field is not a finite union of proper
+subspaces, so some `v` escapes all of them and has `ann(v) = 0`. (`F` is
+`ℚ̄_p` in the application, so infinite. Over a finite field run the
+argument after decomposing `A` into local factors instead: a local
+Gorenstein artinian ring has a SIMPLE socle, hence a unique minimal
+ideal, and if every `ann(v)` were nonzero it would contain that socle,
+putting the socle in `ann(V) = 0`.)
+
+CLASSICAL NAME: this is the standard first step of "an abelian variety
+whose Tate module carries a nondegenerate alternating self-adjoint
+pairing over a Gorenstein Hecke algebra is free of rank two", i.e. of
+multiplicity one (Mazur, *Eisenstein ideal* II §15; Ribet, *Invent.
+Math.* 100 (1990) §2).
+
+REFUTING CHECK: exhibit a commutative artinian Frobenius `F`-algebra `A`
+and a faithful `A`-module `V` in which every element has nonzero
+annihilator. -/
+theorem exists_freeElement_of_frobenius [FiniteDimensional F A] [FiniteDimensional F V]
+    (θ : A →ₗ[F] F) (hθ : ∀ a : A, (∀ b : A, θ (a * b) = 0) → a = 0)
+    (act : A →ₐ[F] Module.End F V) (hact : Function.Injective act) :
+    ∃ v : V, ∀ a : A, act a v = 0 → a = 0 := sorry
+
+/-- **THE SYMPLECTIC RIGIDITY OF THE FRAME**: over a commutative
+Frobenius algebra `A`, a FAITHFUL module `V` of dimension `2·dim A`
+carrying a NONDEGENERATE ALTERNATING `A`-self-adjoint form IS `A²`.
+
+This is the algebra question the CUT-OBSTRUCTION AUDIT of
+`exists_galoisRep_modularTateFrame_traceDet` (`Modularity/Interface.lean`)
+asked a successor to settle before attempting any geometry. **The answer
+is YES away from characteristic two**, and this is the proof; it is what
+makes the sixteenth cut of that leaf possible, because it removes item 7
+(freeness of the Tate module of rank two over `𝕋`) from the geometry and
+turns it into commutative algebra.
+
+PROOF, and it is short once the free element is in hand. Let `v` be an
+element with `ann_A(v) = 0` (`exists_freeElement_of_frobenius` above; the
+only deep input) and put `L := A·v`, a free rank-one submodule.
+
+1. *`L` is isotropic.* `⟨a·v, b·v⟩ = ⟨v, (ab)·v⟩ =: g(ab)` with `g`
+   `F`-linear, and `g(a²) = ⟨a·v, a·v⟩ = 0` by alternation; polarizing,
+   `2g(a) = g((a+1)²) − g(a²) − g(1) = 0`, so `g ≡ 0` since `2 ≠ 0`.
+   **This is the only use of `char F ≠ 2`, and the statement is FALSE in
+   characteristic two — see the counterexample below.**
+2. *The Frobenius functional identifies `A ≅ A^∨`*, so the `A`-linear map
+   `Φ : V → A^∨`, `w ↦ (a ↦ ⟨a·v, w⟩)`, becomes `φ : V → A`. `Φ` is the
+   composite of the isomorphism `V ≅ V^∨` (nondegeneracy, finite
+   dimension) with `A^∨ ← V^∨` dual to the injection `a ↦ a·v`, hence is
+   SURJECTIVE.
+3. *`ker φ = L`.* Step 1 gives `L ⊆ ker φ`; rank–nullity and `φ`
+   surjective give `dim ker φ = 2·dim A − dim A = dim A = dim L`.
+4. *Split.* Pick `u` with `φ(u) = 1`. Then `(a, b) ↦ a·v + b·u` is an
+   `A`-linear bijection `A² → V`: injective because `φ` kills `a·v` and
+   sends `b·u` to `b`; surjective because `w − φ(w)·u ∈ ker φ = L`.
+
+**FALSE IN CHARACTERISTIC TWO** (counterexample found 2026-07-27, and
+recorded so that nobody drops `h2`). Take `char k = 2`,
+`A = k × k[x]/x²` (`dim A = 3`, commutative artinian Frobenius as a
+product of Frobenius algebras) and
+`V = k⁴ ⊕ k[x]/x²` (`dim V = 6 = 2·dim A`), faithful. Give `k⁴` the
+standard symplectic form and `k[x]/x²` the trace form of `θ(α + βx) := β`
+— which in characteristic two IS alternating, since
+`(α + βx)² = α²` and `θ(α²) = 0` — with the two blocks orthogonal. Every
+hypothesis but `h2` holds, and `V ≇ A²` because the first idempotent cuts
+out `k⁴` on one side and `k²` on the other.
+
+The application has `F = ℚ̄_p`, of characteristic zero, so the
+restriction costs nothing there. -/
+theorem exists_frameEquiv_of_symplectic [FiniteDimensional F A] [FiniteDimensional F V]
+    (h2 : (2 : F) ≠ 0) (hcomm : ∀ x y : A, x * y = y * x)
+    (θ : A →ₗ[F] F) (hθ : ∀ a : A, (∀ b : A, θ (a * b) = 0) → a = 0)
+    (act : A →ₐ[F] Module.End F V) (hact : Function.Injective act)
+    (hdim : Module.finrank F V = 2 * Module.finrank F A)
+    (P : V →ₗ[F] V →ₗ[F] F)
+    (hself : ∀ x : V, P x x = 0)
+    (hnondeg : ∀ x : V, (∀ y : V, P x y = 0) → x = 0)
+    (hadj : ∀ (a : A) (x y : V), P (act a x) y = P x (act a y)) :
+    ∃ e : V ≃ₗ[F] (Fin 2 → A), ∀ (a : A) (x : V), e (act a x) = a • e x := by
+  classical
+  -- alternating implies skew
+  have hskew : ∀ x y : V, P x y + P y x = 0 := by
+    intro x y
+    have h := hself (x + y)
+    simp only [map_add, LinearMap.add_apply] at h
+    rw [hself x, hself y, zero_add, add_zero] at h
+    rw [add_comm]
+    exact h
+  have hnondeg' : ∀ x : V, (∀ y : V, P y x = 0) → x = 0 := by
+    intro x hx
+    refine hnondeg x fun y => ?_
+    have h := hskew x y
+    rw [hx y, add_zero] at h
+    exact h
+  -- the Frobenius identification `A ≅ A^∨`
+  set Θ : A →ₗ[F] Module.Dual F A :=
+    { toFun := fun a => θ.comp (LinearMap.mulLeft F a)
+      map_add' := by intro x y; ext t; simp [add_mul]
+      map_smul' := by intro c x; ext t; simp }
+  have hΘapply : ∀ a b : A, Θ a b = θ (a * b) := fun _ _ => rfl
+  have hΘinj : Function.Injective Θ := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro x hx
+    refine hθ x fun b => ?_
+    have h := congrArg (fun (f : Module.Dual F A) => f b) hx
+    simpa [hΘapply] using h
+  have hΘsurj : Function.Surjective Θ :=
+    (LinearMap.injective_iff_surjective_of_finrank_eq_finrank
+      (Subspace.dual_finrank_eq (K := F) (V := A)).symm).mp hΘinj
+  set Θe : A ≃ₗ[F] Module.Dual F A := LinearEquiv.ofBijective Θ ⟨hΘinj, hΘsurj⟩
+  -- a free element
+  obtain ⟨v, hv⟩ := exists_freeElement_of_frobenius θ hθ act hact
+  set Lv : A →ₗ[F] V :=
+    { toFun := fun a => act a v
+      map_add' := by intro x y; simp
+      map_smul' := by intro c x; simp }
+  have hLvapply : ∀ a : A, Lv a = act a v := fun _ => rfl
+  have hLvinj : Function.Injective Lv := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro a ha
+    exact hv a ha
+  -- the functional `w ↦ (a ↦ ⟨a·v, w⟩)`, surjective onto `A^∨`
+  set Φ : V →ₗ[F] Module.Dual F A := Lv.dualMap.comp P.flip
+  have hΦapply : ∀ (w : V) (a : A), Φ w a = P (act a v) w := fun _ _ => rfl
+  have hPflipinj : Function.Injective P.flip := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro x hx
+    refine hnondeg' x fun y => ?_
+    have h := congrArg (fun (f : Module.Dual F V) => f y) hx
+    simpa using h
+  have hPflipsurj : Function.Surjective P.flip :=
+    (LinearMap.injective_iff_surjective_of_finrank_eq_finrank
+      (Subspace.dual_finrank_eq (K := F) (V := V)).symm).mp hPflipinj
+  have hΦsurj : Function.Surjective Φ := by
+    have h := (LinearMap.dualMap_surjective_of_injective hLvinj).comp hPflipsurj
+    exact h
+  -- `φ : V → A`, `A`-linear and surjective
+  set φ : V →ₗ[F] A := Θe.symm.toLinearMap.comp Φ
+  have hφspec : ∀ (w : V) (a : A), θ (φ w * a) = P (act a v) w := by
+    intro w a
+    have hΘφ : Θ (φ w) = Φ w := Θe.apply_symm_apply (Φ w)
+    calc θ (φ w * a) = Θ (φ w) a := (hΘapply _ _).symm
+      _ = Φ w a := by rw [hΘφ]
+      _ = P (act a v) w := hΦapply w a
+  have hφsurj : Function.Surjective φ := Θe.symm.surjective.comp hΦsurj
+  have hactmul : ∀ (a b : A) (x : V), act a (act b x) = act (a * b) x := by
+    intro a b x
+    rw [map_mul]
+    rfl
+  have hφlin : ∀ (b : A) (w : V), φ (act b w) = b * φ w := by
+    intro b w
+    refine hΘinj (LinearMap.ext fun a => ?_)
+    rw [hΘapply, hΘapply, hφspec (act b w) a, ← hadj b (act a v) w, hactmul,
+      ← hφspec w (b * a)]
+    congr 1
+    rw [← mul_assoc, hcomm (φ w) b]
+  -- the free line `A·v` is isotropic
+  set g : A →ₗ[F] F :=
+    { toFun := fun a => P v (act a v)
+      map_add' := by intro x y; simp
+      map_smul' := by intro c x; simp }
+  have hgapply : ∀ a : A, g a = P v (act a v) := fun _ => rfl
+  have hgsq : ∀ a : A, g (a * a) = 0 := by
+    intro a
+    rw [hgapply, ← hactmul, ← hadj a v (act a v), hself]
+  have hg : ∀ a : A, g a = 0 := by
+    intro a
+    have h1 : (a + 1) * (a + 1) = a * a + (a + a) + 1 * 1 := by
+      rw [add_mul, mul_add, mul_add]; simp [mul_one, one_mul]; abel
+    have h2' := hgsq (a + 1)
+    rw [h1, map_add, map_add, hgsq a, hgsq 1, map_add, zero_add, add_zero] at h2'
+    have h3 : (2 : F) * g a = 0 := by rw [two_mul]; exact h2'
+    exact (mul_eq_zero.mp h3).resolve_left h2
+  have hLker : ∀ c : A, φ (act c v) = 0 := by
+    intro c
+    have hz : Θ (φ (act c v)) = Θ 0 := by
+      refine LinearMap.ext fun a => ?_
+      rw [hΘapply, hΘapply, hφspec (act c v) a, hadj a v (act c v), hactmul,
+        zero_mul, map_zero]
+      exact hg (a * c)
+    exact hΘinj hz
+  -- the kernel of `φ` is exactly that line, by dimension count
+  have hkerdim : Module.finrank F (LinearMap.ker φ) = Module.finrank F A := by
+    have h := LinearMap.finrank_range_add_finrank_ker φ
+    rw [LinearMap.range_eq_top.mpr hφsurj, finrank_top, hdim] at h
+    omega
+  have hrangedim : Module.finrank F (LinearMap.range Lv) = Module.finrank F A :=
+    LinearMap.finrank_range_of_inj hLvinj
+  have hle : LinearMap.range Lv ≤ LinearMap.ker φ := by
+    rintro x ⟨c, rfl⟩
+    exact hLker c
+  have hEq : LinearMap.range Lv = LinearMap.ker φ :=
+    Submodule.eq_of_le_of_finrank_eq hle (by rw [hrangedim, hkerdim])
+  -- a second generator
+  obtain ⟨u, hu⟩ := hφsurj 1
+  set ψ : (Fin 2 → A) →ₗ[F] V :=
+    { toFun := fun z => act (z 0) v + act (z 1) u
+      map_add' := by intro x y; simp; abel
+      map_smul' := by intro c x; simp }
+  have hψapply : ∀ z : Fin 2 → A, ψ z = act (z 0) v + act (z 1) u := fun _ => rfl
+  have hψinj : Function.Injective ψ := by
+    rw [← LinearMap.ker_eq_bot, LinearMap.ker_eq_bot']
+    intro z hz
+    rw [hψapply] at hz
+    have h1 : φ (act (z 0) v) + φ (act (z 1) u) = 0 := by
+      rw [← map_add, hz, map_zero]
+    rw [hLker (z 0), hφlin (z 1) u, hu, mul_one, zero_add] at h1
+    rw [h1, map_zero, LinearMap.zero_apply, add_zero] at hz
+    have h0 : z 0 = 0 := hv (z 0) hz
+    funext i
+    fin_cases i
+    · exact h0
+    · exact h1
+  have hψsurj : Function.Surjective ψ := by
+    intro w
+    have hkey : w - act (φ w) u ∈ LinearMap.ker φ := by
+      simp only [LinearMap.mem_ker, map_sub, hφlin (φ w) u, hu, mul_one, sub_self]
+    rw [← hEq] at hkey
+    obtain ⟨c, hc⟩ := hkey
+    refine ⟨![c, φ w], ?_⟩
+    rw [hψapply]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one]
+    rw [hLvapply] at hc
+    rw [hc]
+    abel
+  have hψequiv : ∀ (a : A) (z : Fin 2 → A), ψ (a • z) = act a (ψ z) := by
+    intro a z
+    rw [hψapply, hψapply, map_add]
+    simp only [Pi.smul_apply, smul_eq_mul]
+    rw [hactmul, hactmul]
+  set E : (Fin 2 → A) ≃ₗ[F] V := LinearEquiv.ofBijective ψ ⟨hψinj, hψsurj⟩
+  have hEapply : ∀ z : Fin 2 → A, E z = ψ z := fun _ => rfl
+  refine ⟨E.symm, fun a x => ?_⟩
+  refine E.injective ?_
+  rw [E.apply_symm_apply, hEapply, hψequiv, ← hEapply, E.apply_symm_apply]
+
+end FrobeniusFree
+
+section TraceDet
+
+variable {k : Type*} [Field k] [CharZero k] {F : Type*} [Field F] [Algebra k F]
+variable {T : Type*} [Ring T] [Algebra k T]
+
+/-- **TRACE AND DETERMINANT FROM THE CONGRUENCE RELATION AND THE PAIRING
+MULTIPLIER** — the arrow the CUT-OBSTRUCTION AUDIT of
+`exists_galoisRep_modularTateFrame_traceDet` records as "elementary but
+not formalized, because nothing consumes it". The sixteenth cut consumes
+it, so here it is.
+
+Given an `A`-linear `g` on the frame `A²` which
+* satisfies the quadratic OPERATOR identity `g² − t·g + c = 0`, and
+* multiplies an alternating nondegenerate `A`-self-adjoint form by the
+  scalar `c ≠ 0`,
+
+its determinant is `c` and its trace is `t`. Both directions of the
+dictionary between "congruence + pairing" and "trace + determinant" are
+now formalized: this theorem is `(c) ⟹ (a)`, and `frameCayleyHamilton`
+is `(a) ⟹ (b)`.
+
+The determinant half is `frameSymplectic_map_of_commuting` plus
+nondegeneracy: `⟨gx, gy⟩ = θ(det g · (x₀y₁ − x₁y₀))` and
+`⟨gx, gy⟩ = c⟨x, y⟩ = θ(c · (x₀y₁ − x₁y₀))`, and `(x, y) ↦ x₀y₁ − x₁y₀`
+is onto `A` (take `x = (z, 0)`, `y = (0, 1)`), so `θ((det g − c)·z) = 0`
+for every `z`. The trace half subtracts Cayley–Hamilton from the
+congruence, leaving `(t − tr g)·g = 0`, and cancels `g`: `g` commutes with
+`frameMul (tr g)`, so `g·(frameMul (tr g) − g) = c` and multiplying by
+that factor turns `(t − tr g)·g = 0` into `c·frameMul (t − tr g) = 0`.
+No inverse of `g` is constructed; only `c ≠ 0` is used. -/
+theorem traceDet_of_congruence_of_multiplier
+    (hcomm : ∀ x y : F ⊗[k] T, x * y = y * x)
+    (g : Module.End F (HeckeFrame k F T))
+    (hglin : ∀ (r : F ⊗[k] T) (x : HeckeFrame k F T),
+      g (frameMul (k := k) (F := F) (T := T) r x) =
+        frameMul (k := k) (F := F) (T := T) r (g x))
+    (P : HeckeFrame k F T →ₗ[F] HeckeFrame k F T →ₗ[F] F)
+    (hself : ∀ x : HeckeFrame k F T, P x x = 0)
+    (hnondeg : ∀ x : HeckeFrame k F T, (∀ y, P x y = 0) → x = 0)
+    (hadj : ∀ (r : F ⊗[k] T) (x y : HeckeFrame k F T),
+      P (frameMul (k := k) (F := F) (T := T) r x) y =
+        P x (frameMul (k := k) (F := F) (T := T) r y))
+    (c : F) (hc : c ≠ 0)
+    (hmult : ∀ x y : HeckeFrame k F T, P (g x) (g y) = c * P x y)
+    (t : F ⊗[k] T)
+    (hcong : g * g - frameMul (k := k) (F := F) (T := T) t * g + c • 1 = 0) :
+    (g frameBasis₁ 0 * g frameBasis₂ 1 - g frameBasis₂ 0 * g frameBasis₁ 1
+        = c • (1 : F ⊗[k] T)) ∧
+      (g frameBasis₁ 0 + g frameBasis₂ 1 = t) := by
+  classical
+  obtain ⟨θ, hθ⟩ := exists_frameSymplectic_of_alternating P hself hadj
+  have hθfrob : ∀ a : F ⊗[k] T, (∀ b : F ⊗[k] T, θ (a * b) = 0) → a = 0 := by
+    refine frobenius_of_frameSymplectic_nondegenerate θ ?_
+    intro x hx
+    refine hnondeg x fun y => ?_
+    rw [hθ]
+    exact hx y
+  -- the determinant
+  have hdet : g frameBasis₁ 0 * g frameBasis₂ 1 - g frameBasis₂ 0 * g frameBasis₁ 1
+      = c • (1 : F ⊗[k] T) := by
+    have hkey : ∀ z : F ⊗[k] T,
+        θ ((g frameBasis₁ 0 * g frameBasis₂ 1 - g frameBasis₂ 0 * g frameBasis₁ 1
+          - c • 1) * z) = 0 := by
+      intro z
+      have hmul := frameSymplectic_map_of_commuting hcomm θ g hglin
+        (![z, 0] : HeckeFrame k F T) (![0, 1] : HeckeFrame k F T)
+      have hfr := hmult (![z, 0] : HeckeFrame k F T) (![0, 1] : HeckeFrame k F T)
+      rw [hθ, hθ, hmul, frameSymplectic_apply] at hfr
+      simp only [Matrix.cons_val_zero, Matrix.cons_val_one, mul_one, mul_zero, sub_zero] at hfr
+      rw [sub_mul, map_sub, hfr, smul_mul_assoc, one_mul, map_smul, smul_eq_mul, sub_self]
+    exact sub_eq_zero.mp (hθfrob _ hkey)
+  refine ⟨hdet, ?_⟩
+  -- the trace
+  set tr := g frameBasis₁ 0 + g frameBasis₂ 1
+  have hCH := frameCayleyHamilton hcomm g hglin
+  rw [hdet] at hCH
+  have hc1 : frameMul (k := k) (F := F) (T := T) (c • (1 : F ⊗[k] T)) = c • 1 := by
+    rw [map_smul, map_one]
+  rw [hc1] at hCH
+  have heq : g * g - frameMul (k := k) (F := F) (T := T) tr * g + c • 1 =
+      g * g - frameMul (k := k) (F := F) (T := T) t * g + c • 1 := hCH.trans hcong.symm
+  have heq2 := sub_right_injective (add_right_cancel heq)
+  have hzero : frameMul (k := k) (F := F) (T := T) (t - tr) * g = 0 := by
+    rw [map_sub, sub_mul, ← heq2, sub_self]
+  have hcommg : g * frameMul (k := k) (F := F) (T := T) tr =
+      frameMul (k := k) (F := F) (T := T) tr * g := by
+    refine LinearMap.ext fun z => ?_
+    exact hglin tr z
+  have hgh : g * (frameMul (k := k) (F := F) (T := T) tr - g) = c • 1 := by
+    rw [mul_sub, hcommg]
+    have h2' : g * g - frameMul (k := k) (F := F) (T := T) tr * g = -(c • 1) :=
+      eq_neg_of_add_eq_zero_left hCH
+    have h3' := congrArg Neg.neg h2'
+    rw [neg_sub, neg_neg] at h3'
+    exact h3'
+  have hfin : frameMul (k := k) (F := F) (T := T) (t - tr) = 0 := by
+    have h := congrArg (fun f => f * (frameMul (k := k) (F := F) (T := T) tr - g)) hzero
+    simp only [mul_assoc, hgh] at h
+    rw [mul_smul_comm, mul_one] at h
+    exact (smul_eq_zero.mp h).resolve_left hc
+  have hfin2 : t - tr = 0 := by
+    refine frameMul_injective ?_
+    rw [hfin, map_zero]
+  exact (sub_eq_zero.mp hfin2).symm
+
+end TraceDet
 
 end GaloisRepresentation.Modularity
