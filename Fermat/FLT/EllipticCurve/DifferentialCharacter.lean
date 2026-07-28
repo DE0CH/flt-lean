@@ -630,6 +630,110 @@ theorem isDiffChar_unique [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     simpa using DFunLike.congr_fun hdouble P
   exact hφ0 (eq_zero_of_finite_range hrange)
 
+/-! ### The chain rule for `homogSubst`, PROVEN 2026-07-28
+
+This block is what closes `isDiffChar_comp`, and it is pure one-variable algebra —
+no curve, no points. `IsRationalMap.comp` computes the composite's `x`-witnesses as
+`homogSubst A B d A'`, `homogSubst A B d B'`, i.e. `B^d·A'(A/B)` and `B^d·B'(A/B)`
+with denominators cleared. To evaluate the differential certificate of the composite
+one needs the DERIVATIVE of that substitution, and the identity below is exactly the
+chain rule with denominators cleared.
+
+It comes from **Euler's relation**. Writing `H(x,y) = ∑ qᵢ xⁱ y^{d−i}` for the
+homogenisation of `Q`, so that `homogSubst A B d Q = H(A,B)`:
+
+* `H_x(A,B) = homogSubst A B (d−1) Q'` (differentiating the coefficients);
+* `x·H_x + y·H_y = d·H` is Euler's relation, which eliminates `H_y`;
+* `(H(A,B))' = A'·H_x(A,B) + B'·H_y(A,B)`.
+
+Combining the three gives `homogSubst_derivative_euler`, and antisymmetrising it in a
+pair `A', B'` gives `homogSubst_wronskian` — the form the certificate consumes, since
+`λ` is read off a Wronskian `A'B − AB'`. Note both are stated with `B ·` on the left:
+that is what makes them denominator-free, and the `B ≠ 0` needed to divide is a
+free hypothesis at certificate-checking time by `isDiffCharCert_of_cofinite`. -/
+
+omit [DecidableEq F] in
+/-- `homogSubst A B e (derivative Q)`, reindexed so that its `i`-th term matches the
+`i`-th term of `homogSubst A B (e+1) Q`. This is `H_x(A,B) = ∑ i·qᵢ·A^{i−1}·B^{d−i}`;
+the `i = 0` term vanishes, which is what `Finset.sum_range_succ'` peels off. -/
+theorem homogSubst_derivative_reindex {A B Q : F[X]} {e : ℕ} :
+    homogSubst A B e (derivative Q)
+      = ∑ i ∈ Finset.range (e + 2),
+          Polynomial.C ((i : F) * Q.coeff i) * A ^ (i - 1) * B ^ (e + 1 - i) := by
+  rw [Finset.sum_range_succ']
+  simp only [Nat.cast_zero, zero_mul, map_zero, add_zero]
+  unfold homogSubst
+  refine Finset.sum_congr rfl fun i _ => ?_
+  simp only [Nat.add_sub_cancel, Nat.add_sub_add_right, Polynomial.coeff_derivative]
+  push_cast
+  rw [mul_comm (Q.coeff (i + 1))]
+
+omit [DecidableEq F] in
+/-- **Euler's relation for `homogSubst`: the chain rule with denominators cleared.**
+
+`B·(B^d·Q(A/B))' = (A'B − AB')·B^{d−1}·Q'(A/B) + d·B'·B^d·Q(A/B)`, which is what
+`d/dt [B^d Q(A/B)] = B^{d−1}(A'B − AB')Q'(A/B) + d B^{d−1} B' B Q(A/B)` becomes once
+the division is cleared. Proven term by term over `Finset.range (d+1)`; the three
+`have`s are the natural-subtraction bookkeeping (`i = 0` and `i = d` are the edge
+cases, and in each the offending coefficient `C i` or `C (d−i)` is itself zero). -/
+theorem homogSubst_derivative_euler {A B Q : F[X]} {d : ℕ} (hd : Q.natDegree ≤ d) :
+    B * derivative (homogSubst A B d Q)
+      = (derivative A * B - A * derivative B) * homogSubst A B (d - 1) (derivative Q)
+        + Polynomial.C ((d : ℕ) : F) * derivative B * homogSubst A B d Q := by
+  rcases d with _ | e
+  · rw [Polynomial.eq_C_of_natDegree_le_zero hd]
+    simp [homogSubst]
+  · rw [show e + 1 - 1 = e from rfl, homogSubst_derivative_reindex (A := A) (B := B)
+      (Q := Q) (e := e)]
+    unfold homogSubst
+    rw [Polynomial.derivative_sum, Finset.mul_sum, Finset.mul_sum, Finset.mul_sum,
+      ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i hi => ?_
+    have hile : i ≤ e + 1 := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+    have hA : Polynomial.C ((i : ℕ) : F) * (A ^ (i - 1) * A)
+        = Polynomial.C ((i : ℕ) : F) * A ^ i := by
+      rcases Nat.eq_zero_or_pos i with rfl | hpos
+      · simp
+      · rw [← pow_succ]
+        congr 2
+        omega
+    have hB : Polynomial.C (((e + 1 - i : ℕ)) : F) * (B ^ (e + 1 - i - 1) * B)
+        = Polynomial.C (((e + 1 - i : ℕ)) : F) * B ^ (e + 1 - i) := by
+      rcases Nat.eq_zero_or_pos (e + 1 - i) with h0 | hpos
+      · rw [h0]; simp
+      · rw [← pow_succ]
+        congr 2
+        omega
+    have hcast : Polynomial.C (((e + 1 - i : ℕ)) : F) + Polynomial.C ((i : ℕ) : F)
+        = Polynomial.C (((e + 1 : ℕ)) : F) := by
+      rw [← map_add, ← Nat.cast_add]
+      congr 2
+      omega
+    simp only [Polynomial.derivative_mul, Polynomial.derivative_C,
+      Polynomial.derivative_pow, Polynomial.C_mul, zero_mul, zero_add]
+    linear_combination (Polynomial.C (Q.coeff i) * A ^ i * derivative B) * hB
+      + (Polynomial.C (Q.coeff i) * derivative B * B ^ (e + 1 - i)) * hA
+      + (Polynomial.C (Q.coeff i) * A ^ i * derivative B * B ^ (e + 1 - i)) * hcast
+
+omit [DecidableEq F] in
+/-- **The Wronskian of a substituted pair.** Antisymmetrising Euler's relation in
+`Ap, Bp` kills the `d·B'` term, leaving the clean chain rule
+
+  `B·W(B^d Ap(A/B), B^d Bp(A/B)) = (A'B − AB')·B^{2d−1}·W(Ap,Bp)(A/B)`
+
+in denominator-free form. This is the identity that turns the composite's certificate
+into the product of the two factors' certificates. -/
+theorem homogSubst_wronskian {A B Ap Bp : F[X]} {d : ℕ}
+    (hAp : Ap.natDegree ≤ d) (hBp : Bp.natDegree ≤ d) :
+    B * (derivative (homogSubst A B d Ap) * homogSubst A B d Bp
+         - homogSubst A B d Ap * derivative (homogSubst A B d Bp))
+      = (derivative A * B - A * derivative B)
+        * (homogSubst A B (d - 1) (derivative Ap) * homogSubst A B d Bp
+           - homogSubst A B d Ap * homogSubst A B (d - 1) (derivative Bp)) := by
+  have h1 := homogSubst_derivative_euler (A := A) (B := B) hAp
+  have h2 := homogSubst_derivative_euler (A := A) (B := B) hBp
+  linear_combination (homogSubst A B d Bp) * h1 - (homogSubst A B d Ap) * h2
+
 /-- **LEAF: `λ` is additive.**
 
 `(φ + ψ)*ω' = φ*ω' + ψ*ω'`, because pullback of differentials along the addition
@@ -650,20 +754,189 @@ theorem isDiffChar_add [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     IsDiffChar (φ + ψ) (c + d) :=
   sorry
 
-/-- **LEAF: `λ` is multiplicative on composites.**
+/-- **PROVEN 2026-07-28: `λ` is multiplicative on composites.**
 
-`(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·(φ*ω') = (d·c)·ω`. Purely formal from
-functoriality of pullback; the content is that the certificate of the composite
-is obtained by substituting the witnesses of `φ` into those of `ψ`, which is the
-same substitution `IsRationalMap.comp` performs.
+`(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·(φ*ω') = (d·c)·ω`. Conceptually formal from
+functoriality of pullback; the content is that the certificate of the composite is
+obtained by substituting the witnesses of `φ` into those of `ψ`, which is the same
+substitution `IsRationalMap.comp` performs — and then DIFFERENTIATING it, which is
+`homogSubst_wronskian` above.
+
+**HOW THE PROOF RUNS.** Write `t = x(P)`, `u = x(φP)`, `β = B(t)`.
+
+* The degenerate case `ψ∘φ = 0` is separated first: either `φ = 0` (so `c = 0` by the
+  guard clause) or `φ ≠ 0`, whence `φ` is SURJECTIVE (`IsRationalMap.surjective`) and
+  `ψ` vanishes on all of `W'`, so `d = 0`. Either way `d·c = 0` and `isDiffChar_zero`
+  applies. This is the only place surjectivity is used, and it is why the guard clause
+  of `IsDiffChar` costs nothing here.
+* Otherwise `x∘φ` is nonconstant (else `eq_zero_of_constX` would give `φ = 0`), so no
+  `homogSubst A B n Q` degenerates (`exists_const_of_homogSubst_eq_zero`), and
+  likewise `max A'.natDegree B'.natDegree ≥ 1` because a constant `x∘ψ` would give
+  `ψ = 0`. Write that maximum as `m+1`.
+* The witnesses actually used are whatever `IsRationalMap.comp` returns, NOT the
+  `homogSubst` ones. The two families compute the same rational function, so
+  `diffChar_xWitness_eq` gives `a·Bc = Ac·b` and `diffChar_wronskian_transfer`
+  transports the Wronskian between them. That is what lets the proof reuse
+  `IsRationalMap.comp` wholesale instead of rebuilding its case analysis.
+* The certificate is then checked off the finite bad set of `x`-values where `B`, `E`,
+  `Bc` or `homogSubst A B E'.natDegree E'` vanishes, or where `ψ∘φ` dies
+  (`isDiffCharCert_of_cofinite`). There the two reduced certificates
+  `c·β²·ψ₂(φP) = (A'B−AB')(t)·ψ₂(P)` and `d·B'(u)²·ψ₂(ψφP) = (A''B'−A'B'')(u)·ψ₂(φP)`
+  multiply, `ψ₂(φP)` cancels between them, and `homogSubst_wronskian` supplies the
+  missing factor `(A''B'−A'B'')(u)·β^{2m+1}`. Note `ψ₂(φP) ≠ 0` is NOT needed: it
+  cancels algebraically rather than being divided out.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: two composable rational maps whose
 composite acts on `ω` by something other than the product of their scalars. -/
 theorem isDiffChar_comp [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     [W''.IsElliptic] {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point}
     {c d : F} (hφ : IsDiffChar φ c) (hψ : IsDiffChar ψ d) :
-    IsDiffChar (ψ.comp φ) (d * c) :=
-  sorry
+    IsDiffChar (ψ.comp φ) (d * c) := by
+  classical
+  obtain ⟨hgφ, A, B, Cx, Dx, E, hB, hE, hrel, hcert⟩ := hφ
+  obtain ⟨hgψ, A', B', C', D', E', hB', hE', hrel', hcert'⟩ := hψ
+  have hratφ : IsRationalMap φ := ⟨A, B, Cx, Dx, E, hB, hE, hrel⟩
+  have hratψ : IsRationalMap ψ := ⟨A', B', C', D', E', hB', hE', hrel'⟩
+  by_cases hzero : ψ.comp φ = 0
+  · have hdc : d * c = 0 := by
+      by_cases hφ0 : φ = 0
+      · rw [hgφ hφ0, mul_zero]
+      · have hψ0 : ψ = 0 := by
+          ext R
+          obtain ⟨Pt, hPt⟩ := hratφ.surjective hφ0 R
+          have : (ψ.comp φ) Pt = 0 := by rw [hzero]; rfl
+          rw [← hPt]
+          exact this
+        rw [hgψ hψ0, zero_mul]
+    rw [hzero, hdc]
+    exact isDiffChar_zero
+  have hφ0 : φ ≠ 0 := by
+    rintro rfl
+    exact hzero (by ext P; simp)
+  have hψ0 : ψ ≠ 0 := by
+    rintro rfl
+    exact hzero (by ext P; simp)
+  -- `x ∘ φ` is nonconstant, so no `homogSubst` in `A, B` degenerates.
+  have hnc : ¬ ∃ lam : F, A = Polynomial.C lam * B := by
+    rintro ⟨lam, hlam⟩
+    exact hφ0 (eq_zero_of_constX hB lam hlam (fun P hP => (hrel P hP).1))
+  have hne : ∀ Q : F[X], Q ≠ 0 → ∀ n : ℕ, Q.natDegree ≤ n → homogSubst A B n Q ≠ 0 :=
+    fun Q hQ n hn hz => hnc (exists_const_of_homogSubst_eq_zero hB hQ hn hz)
+  -- `x ∘ ψ` is nonconstant too, which is what makes the substitution degree positive.
+  obtain ⟨m, hm⟩ : ∃ m : ℕ, max A'.natDegree B'.natDegree = m + 1 := by
+    rcases Nat.eq_zero_or_pos (max A'.natDegree B'.natDegree) with h0 | hpos
+    · exfalso
+      have hA'0 : A'.natDegree = 0 := Nat.le_zero.1 (h0 ▸ le_max_left _ _)
+      have hB'0 : B'.natDegree = 0 := Nat.le_zero.1 (h0 ▸ le_max_right _ _)
+      obtain ⟨p, hp⟩ : ∃ p, A' = Polynomial.C p :=
+        ⟨_, Polynomial.eq_C_of_natDegree_le_zero hA'0.le⟩
+      obtain ⟨q, hq⟩ : ∃ q, B' = Polynomial.C q :=
+        ⟨_, Polynomial.eq_C_of_natDegree_le_zero hB'0.le⟩
+      have hqne : q ≠ 0 := by rintro rfl; rw [map_zero] at hq; exact hB' hq
+      refine hψ0 (eq_zero_of_constX hB' (p / q) ?_ (fun R hR => (hrel' R hR).1))
+      rw [hp, hq, ← Polynomial.C_mul, div_mul_cancel₀ _ hqne]
+    · exact ⟨max A'.natDegree B'.natDegree - 1, by omega⟩
+  have hdA' : A'.natDegree ≤ m + 1 := hm ▸ le_max_left _ _
+  have hdB' : B'.natDegree ≤ m + 1 := hm ▸ le_max_right _ _
+  have hdA'' : (derivative A').natDegree ≤ m :=
+    le_trans (Polynomial.natDegree_derivative_le A') (by omega)
+  have hdB'' : (derivative B').natDegree ≤ m :=
+    le_trans (Polynomial.natDegree_derivative_le B') (by omega)
+  set Ac := homogSubst A B (m + 1) A' with hAcdef
+  set Bc := homogSubst A B (m + 1) B' with hBcdef
+  have hBcne : Bc ≠ 0 := hne B' hB' _ hdB'
+  set Ecc := homogSubst A B E'.natDegree E' with hEccdef
+  have hEccne : Ecc ≠ 0 := hne E' hE' _ le_rfl
+  -- the `x`-relation for the substituted witnesses
+  have hxAcBc : ∀ P : W.Point, (ψ.comp φ) P ≠ 0 →
+      veluPointX ((ψ.comp φ) P) * Bc.eval (veluPointX P) = Ac.eval (veluPointX P) := by
+    intro P hP
+    have hφP : φ P ≠ 0 := fun hc => hP (by show ψ (φ P) = 0; rw [hc, map_zero])
+    have hx := (hrel P hφP).1
+    have hx' := (hrel' (φ P) hP).1
+    rw [hAcdef, hBcdef, eval_homogSubst hdA' hx, eval_homogSubst hdB' hx]
+    show veluPointX (ψ (φ P)) * _ = _
+    linear_combination (B.eval (veluPointX P)) ^ (m + 1) * hx'
+  obtain ⟨a, b, γ, δ, ε, hb, hε, hrelc⟩ := hratφ.comp hratψ
+  have hratc : IsRationalMap (ψ.comp φ) := ⟨a, b, γ, δ, ε, hb, hε, hrelc⟩
+  have hkerc : (AddMonoidHom.ker (ψ.comp φ) : Set W.Point).Finite := hratc.finite_ker hzero
+  -- the two `x`-witness families agree, hence so do their Wronskians
+  have hxeq : a * Bc = Ac * b :=
+    diffChar_xWitness_eq hkerc (fun P hP => (hrelc P hP).1) hxAcBc
+  have hwtr := diffChar_wronskian_transfer hxeq
+  refine ⟨fun hc => absurd hc hzero, a, b, γ, δ, ε, hb, hε, hrelc, fun Pt _ => ?_⟩
+  -- the certificate, checked off a finite bad set
+  refine isDiffCharCert_of_cofinite
+    (S := (({t : F | B.eval t = 0} ∪ {t : F | E.eval t = 0}) ∪
+            ({t : F | Bc.eval t = 0} ∪ {t : F | Ecc.eval t = 0})) ∪
+          veluPointX '' (AddMonoidHom.ker (ψ.comp φ) : Set W.Point))
+    ((((Polynomial.finite_setOf_isRoot hB).union (Polynomial.finite_setOf_isRoot hE)).union
+      ((Polynomial.finite_setOf_isRoot hBcne).union
+        (Polynomial.finite_setOf_isRoot hEccne))).union (hkerc.image _))
+    (fun R hR0 hRS => ?_) Pt
+  set t := veluPointX R with htdef
+  have hβ : B.eval t ≠ 0 := fun hc => hRS (Or.inl (Or.inl (Or.inl hc)))
+  have hEt : E.eval t ≠ 0 := fun hc => hRS (Or.inl (Or.inl (Or.inr hc)))
+  have hBct : Bc.eval t ≠ 0 := fun hc => hRS (Or.inl (Or.inr (Or.inl hc)))
+  have hEcct : Ecc.eval t ≠ 0 := fun hc => hRS (Or.inl (Or.inr (Or.inr hc)))
+  have hψφR : (ψ.comp φ) R ≠ 0 := fun hc => hRS (Or.inr ⟨R, hc, rfl⟩)
+  have hφR : φ R ≠ 0 := fun hc => hψφR (by show ψ (φ R) = 0; rw [hc, map_zero])
+  set u := veluPointX (φ R) with hudef
+  have hx := (hrel R hφR).1
+  have hy := (hrel R hφR).2
+  have hx' := (hrel' (φ R) hψφR).1
+  have hy' := (hrel' (φ R) hψφR).2
+  have hE'u : E'.eval u ≠ 0 := by
+    intro hc
+    exact hEcct (by rw [hEccdef, eval_homogSubst le_rfl hx, hc, mul_zero])
+  -- the two reduced certificates, with their `E`-factors divided out
+  have red1 := isDiffCharCert_reduced hx hy (hcert R hR0)
+  have red2 := isDiffCharCert_reduced hx' hy' (hcert' (φ R) hφR)
+  have h1' : c * B.eval t ^ 2 * (2 * veluPointY (φ R) + W'.a₁ * u + W'.a₃)
+      = ((derivative A).eval t * B.eval t - A.eval t * (derivative B).eval t)
+        * (2 * veluPointY R + W.a₁ * t + W.a₃) := by
+    refine mul_right_cancel₀ hEt ?_
+    linear_combination red1
+  have h2' : d * B'.eval u ^ 2
+        * (2 * veluPointY (ψ (φ R)) + W''.a₁ * veluPointX (ψ (φ R)) + W''.a₃)
+      = ((derivative A').eval u * B'.eval u - A'.eval u * (derivative B').eval u)
+        * (2 * veluPointY (φ R) + W'.a₁ * u + W'.a₃) := by
+    refine mul_right_cancel₀ hE'u ?_
+    linear_combination red2
+  have hevAc : Ac.eval t = B.eval t ^ (m + 1) * A'.eval u := by
+    rw [hAcdef]; exact eval_homogSubst hdA' hx
+  have hevBc : Bc.eval t = B.eval t ^ (m + 1) * B'.eval u := by
+    rw [hBcdef]; exact eval_homogSubst hdB' hx
+  -- the chain rule, evaluated
+  have hchain := congrArg (Polynomial.eval t)
+    (homogSubst_wronskian (A := A) (B := B) hdA' hdB')
+  simp only [Polynomial.eval_mul, Polynomial.eval_sub, Nat.add_sub_cancel] at hchain
+  rw [← hAcdef, ← hBcdef] at hchain
+  rw [eval_homogSubst hdA'' hx, eval_homogSubst hdB'' hx, hevAc, hevBc] at hchain
+  -- the composite scalar identity for the SUBSTITUTED witnesses
+  have hY : d * c * Bc.eval t ^ 2
+        * (2 * veluPointY (ψ (φ R)) + W''.a₁ * veluPointX (ψ (φ R)) + W''.a₃)
+      = ((derivative Ac).eval t * Bc.eval t - Ac.eval t * (derivative Bc).eval t)
+        * (2 * veluPointY R + W.a₁ * t + W.a₃) := by
+    refine mul_left_cancel₀ hβ ?_
+    rw [hevAc, hevBc]
+    linear_combination (c * B.eval t ^ (m + 1) * B.eval t ^ (m + 1) * B.eval t) * h2'
+      + (B.eval t ^ m * B.eval t ^ (m + 1)
+          * ((derivative A').eval u * B'.eval u - A'.eval u * (derivative B').eval u)) * h1'
+      - (2 * veluPointY R + W.a₁ * t + W.a₃) * hchain
+  -- transfer to the witnesses `IsRationalMap.comp` actually produced
+  have hXev := congrArg (Polynomial.eval t) hwtr
+  simp only [Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_pow] at hXev
+  have hT0 : d * c * b.eval t ^ 2
+        * (2 * veluPointY (ψ (φ R)) + W''.a₁ * veluPointX (ψ (φ R)) + W''.a₃)
+      = ((derivative a).eval t * b.eval t - a.eval t * (derivative b).eval t)
+        * (2 * veluPointY R + W.a₁ * t + W.a₃) := by
+    refine mul_right_cancel₀ (pow_ne_zero 2 hBct) ?_
+    linear_combination (b.eval t ^ 2) * hY
+      - (2 * veluPointY R + W.a₁ * t + W.a₃) * hXev
+  refine isDiffCharCert_of_reduced (hrelc R hψφR).1 (hrelc R hψφR).2 ?_
+  simp only [AddMonoidHom.comp_apply]
+  linear_combination (ε.eval t) * hT0
 
 /-- **PROVEN 2026-07-28: `λ` is injective, in characteristic zero.**
 
