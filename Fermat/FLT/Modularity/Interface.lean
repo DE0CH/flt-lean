@@ -41806,7 +41806,8 @@ project does not have; the direct argument above avoids it, exactly as
 
 `p ∤ L` is consumed in the two places named above, and the statement is FALSE
 without it: at `Ap = 1, p = 2, L = 2` the map `Γ₀(4)/Γ₀(8) → Γ₀(1)/Γ₀(2)` is not
-injective (the indices are `2` and `3`).
+injective (`lcm(2,4) = 4 ≠ 8`, so `[[1,0],[4,1]] ∈ Γ₀(4) ∖ Γ₀(8)` maps to the
+identity coset; the map is also not surjective, the indices being 2 and 3).
 
 The four levels are passed as VARIABLES with defining equations rather than as
 `A / p`, `A * L ^ 2`, … so that instantiating this needs no rewriting inside
