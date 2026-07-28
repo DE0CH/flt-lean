@@ -7800,8 +7800,89 @@ theorem specPointEquiv_symm_add_eq_projMulPt {E : WeierstrassCurve ℚ} [E.IsEll
     rw [← hpt]
     exact specPointEquiv_symm_add_self_eq_projMulPt f m hlaw (ProjCoords.affinePoint f c)
 
+/-! ### The two coordinate-level facts behind `affinePoint_comap_specGal` (2026-07-28)
+
+Both are PROVEN.  They are the "two coordinate-level facts" the docstring of
+`affinePoint_comap_specGal` below names, split out so that neither is buried inside the
+other: the first is pure `Γ ⊣ Spec` naturality and says nothing about curves, the second
+is pure `Projective.Point` bookkeeping and says nothing about Galois. -/
+
+/-- **`Γ(Spec σ) = σ`** (PROVEN) — mathlib's `Scheme.ΓSpecIso_naturality` read at an
+element.  This is the only place the definition of `specGal` is unfolded. -/
+theorem gammaSpecEquiv_appTop_specGal (σ : Field.absoluteGaloisGroup ℚ)
+    (x : Γ(Spec (CommRingCat.of (AlgebraicClosure ℚ)), ⊤)) :
+    ProjCoords.gammaSpecEquiv (AlgebraicClosure ℚ)
+        ((Scheme.Hom.appTop (specGal σ)).hom x) =
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+        (ProjCoords.gammaSpecEquiv (AlgebraicClosure ℚ) x) :=
+  congrArg
+    (fun g : Γ(Spec (CommRingCat.of (AlgebraicClosure ℚ)), ⊤) ⟶
+        CommRingCat.of (AlgebraicClosure ℚ) => g.hom x)
+    (Scheme.ΓSpecIso_naturality (CommRingCat.ofHom
+      ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.toRingHom)))
+
+/-- **Pulling a coordinate datum back along `Spec σ` applies `σ` to its `K`-triple**
+(PROVEN, one `funext` over the lemma above). -/
+theorem coordField_comap_specGal {E : WeierstrassCurve ℚ} (σ : Field.absoluteGaloisGroup ℚ)
+    (c : ProjCoords E (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
+    ProjCoords.coordField (c.comap (specGal σ)) =
+      ⇑(σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom ∘
+        ProjCoords.coordField c := by
+  funext i
+  exact gammaSpecEquiv_appTop_specGal σ (c.coord i)
+
+/-- **A coordinate datum whose `K`-triple is `φ ∘ (that of `c`)` has affine point
+`Affine.Point.map φ` of `c`'s** (PROVEN) — a two-case split on `Z = 0`, with mathlib's
+`toAffine_of_Z_eq_zero` / `toAffine_of_Z_ne_zero` and `Affine.Point.map_some`.
+
+Nothing here is about Galois: `φ` is an arbitrary `ℚ`-algebra endomorphism of `ℚ̄`, and
+the only property of it used is injectivity, which is automatic between fields.
+
+*Implementation note, and it cost a verification cycle.*  `WeierstrassCurve.baseChange` is
+a `def`, so `E⁄K` — the spelling `Affine.Point.map` puts in the goal — does not unfold at
+`instances` transparency to the `E.map (algebraMap ℚ K)` that `ProjCoords.affinePoint`
+produces.  Every `rw` then fails with a *type* error rather than a matching error.  The
+opening `show`, which is checked at DEFAULT transparency, puts both sides into the
+`baseChange` spelling once and for all; after it every rewrite fires. -/
+theorem affinePoint_of_coordField_comp (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : AlgebraicClosure ℚ →ₐ[ℚ] AlgebraicClosure ℚ)
+    (c d : ProjCoords E (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (h : ProjCoords.coordField d = ⇑φ ∘ ProjCoords.coordField c) :
+    ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) d =
+      WeierstrassCurve.Affine.Point.map φ
+        (ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) c) := by
+  show WeierstrassCurve.Projective.Point.toAffine (E.baseChange (AlgebraicClosure ℚ))
+        (ProjCoords.coordField d)
+      = WeierstrassCurve.Affine.Point.map φ
+          (WeierstrassCurve.Projective.Point.toAffine (E.baseChange (AlgebraicClosure ℚ))
+            (ProjCoords.coordField c))
+  have hnc : WeierstrassCurve.Projective.Nonsingular
+      (E.baseChange (AlgebraicClosure ℚ)) (ProjCoords.coordField c) :=
+    ProjCoords.nonsingular_of_equation_of_ne_zero _ (ProjCoords.equation_coordField _ c)
+      (ProjCoords.exists_coordField_ne_zero c)
+  have hnd : WeierstrassCurve.Projective.Nonsingular
+      (E.baseChange (AlgebraicClosure ℚ)) (ProjCoords.coordField d) :=
+    ProjCoords.nonsingular_of_equation_of_ne_zero _ (ProjCoords.equation_coordField _ d)
+      (ProjCoords.exists_coordField_ne_zero d)
+  have hinj : Function.Injective φ := φ.toRingHom.injective
+  by_cases hz : ProjCoords.coordField c (2 : Fin 3) = 0
+  · have hz' : ProjCoords.coordField d (2 : Fin 3) = 0 := by
+      rw [h]; simp [hz]
+    rw [WeierstrassCurve.Projective.Point.toAffine_of_Z_eq_zero hz',
+      WeierstrassCurve.Projective.Point.toAffine_of_Z_eq_zero hz, map_zero]
+  · have hz' : ProjCoords.coordField d (2 : Fin 3) ≠ 0 := by
+      rw [h]
+      intro hh
+      exact hz (hinj (by simpa using hh))
+    rw [WeierstrassCurve.Projective.Point.toAffine_of_Z_ne_zero hnd hz',
+      WeierstrassCurve.Projective.Point.toAffine_of_Z_ne_zero hnc hz,
+      WeierstrassCurve.Affine.Point.map_some]
+    simp only [WeierstrassCurve.Affine.Point.some.injEq]
+    refine ⟨?_, ?_⟩ <;> simp [h, map_div₀]
+
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
-/-- **GALOIS EQUIVARIANCE of the dictionary** (sorry node, introduced 2026-07-27 as the
+/-- **GALOIS EQUIVARIANCE of the dictionary** (**PROVEN 2026-07-28** over the two
+coordinate-level lemmas immediately above; introduced 2026-07-27 as the
 second clause of `exists_projMul_geomFibreEquivVal`).
 
 `RelPoint.pre (specGal σ)` is precomposition with `Spec σ`
@@ -7828,7 +7909,7 @@ theorem affinePoint_comap_specGal (E : WeierstrassCurve ℚ) [E.IsElliptic]
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
         (ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) c) :=
-  sorry
+  affinePoint_of_coordField_comp E _ c _ (coordField_comap_specGal σ c)
 
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
 /-- **GALOIS EQUIVARIANCE of the dictionary** (**PROVEN 2026-07-28** from
@@ -9978,8 +10059,9 @@ theorem exists_hom_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
       (geometricallyConnected_projToSpec E) hfin hstr₀ ι hstr
   exact ⟨u, h1, h2⟩
 
-/-- **The abelian scheme of a Weierstrass model is a CURVE** (sorry node,
-introduced 2026-07-27 — the whole residue of the backward extension).
+/-- **The abelian scheme of a Weierstrass model is a CURVE** (**PROVEN
+2026-07-28** over `smoothOfRelativeDimension_of_isDominant_of_smooth`;
+introduced 2026-07-27 as the whole residue of the backward extension).
 
 TRUE: `A` carries an open immersion `ι` from the affine Weierstrass curve
 `Spec ℚ[E]`, which is smooth of relative dimension one over `ℚ`, and
@@ -10026,16 +10108,80 @@ which is precisely `ι`.  `ℚ` is perfect, so if the DVR hypothesis can be got
 from `ab.smooth`, that declaration discharges this leaf directly.
 
 NOT VACUOUS: dropping `hrange` leaves `ι` an arbitrary open immersion, and a
-smooth `f` can then have any relative dimension away from its range. -/
+smooth `f` can then have any relative dimension away from its range.
+
+## PROVEN 2026-07-28, and the route was the "cheaper route worth pricing
+first" above — but ONE STEP SHORTER than that note expected.
+
+`CurveExtension.lean`'s `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk`
+is NOT what closes this, and going through it would have been strictly
+wasteful: **its own second half,
+`smoothOfRelativeDimension_of_isDominant_of_smooth`, closes this leaf
+directly**, and that half needs neither DVR stalks nor perfectness — only
+`[IsIntegral A]`, `[Smooth f]`, a dominant open immersion `j`, and the
+relative dimension of `j ≫ f`.  `ab.smooth` supplies the second, so the
+DVR hypothesis this docstring worried about ("if the DVR hypothesis can be
+got from `ab.smooth`") never has to be got at all.
+
+The four inputs, all already in this file or its cone:
+
+1. `SmoothOfRelativeDimension 1 (ι ≫ f)`: by `hstr` this morphism IS
+   `Spec.map (algebraMap ℚ ℚ[E])`, and `exists_affineChart_projInfty`
+   exhibits that same morphism as `ι₀ ≫ projToSpec E` with `ι₀` an open
+   immersion — so it is `0 + 1` by mathlib's composition instance over
+   `smoothOfRelativeDimension_projToSpec`.
+2. `IsDominant ι`: `isDominant_of_range_eq_compl` from `hrange`, which is
+   the ONLY place `hrange` is used, exactly as in
+   `exists_isIso_of_affineChart` below.
+3. `IsReduced A`: `GeometricallyReduced.of_smooth` descended along the
+   reduced noetherian base, the same three lines used below.
+4. `IrreducibleSpace A`: `Spec ℚ[E]` is irreducible because `ℚ[E]` is a
+   domain, its image under `ι` is therefore irreducible, and `IsDominant ι`
+   makes the closure of that image everything.  With (3) that is
+   `IsIntegral A`.
+
+Note this is why `_hdim` is derivable rather than needing to be threaded
+down from `exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`,
+which is what the paragraph above predicted. -/
 theorem smoothOfRelativeDimension_one_of_affineChart (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (_ab : AbelianSchemeStruct f)
+    {A : Scheme.{0}} {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
     (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
-    (_h₁ : IsOpenImmersion ι)
-    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
-    (_hrange : Set.range ι.base =
-      (Set.range (_ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
-    SmoothOfRelativeDimension 1 f :=
-  sorry
+    (h₁ : IsOpenImmersion ι)
+    (hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))
+    (hrange : Set.range ι.base =
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
+    SmoothOfRelativeDimension 1 f := by
+  haveI := h₁
+  haveI := ab.smooth
+  haveI := ab.connected
+  -- `A` is reduced, by the same descent from `ab.smooth` used below.
+  haveI : GeometricallyReduced f := _root_.AlgebraicGeometry.GeometricallyReduced.of_smooth f
+  haveI : IsLocallyNoetherian A := LocallyOfFiniteType.isLocallyNoetherian f
+  haveI : IsReduced A := GeometricallyReduced.isReduced_of_flat_of_isLocallyNoetherian f
+  haveI : ConnectedSpace A := GeometricallyConnected.connectedSpace_of_subsingleton (f := f)
+  -- the chart is dominant: its range is the complement of a single point
+  haveI : IsDominant ι := isDominant_of_range_eq_compl ι _ hrange
+  -- hence `A` is irreducible: it is the closure of the irreducible `Spec ℚ[E]`
+  haveI : IrreducibleSpace A := by
+    have himg : IsIrreducible (Set.range ι.base) := by
+      simpa using
+        (IrreducibleSpace.isIrreducible_univ
+          (Spec (CommRingCat.of E.toAffine.CoordinateRing))).image ι.base
+          ι.base.hom.continuous.continuousOn
+    have hcl := himg.closure
+    rw [(IsDominant.denseRange (f := ι)).closure_range] at hcl
+    exact (irreducibleSpace_def A).mpr hcl
+  haveI : IsIntegral A := isIntegral_of_irreducibleSpace_of_isReduced A
+  -- the affine chart is smooth of relative dimension one, being `ι₀ ≫ projToSpec E`
+  have hY : SmoothOfRelativeDimension 1 (ι ≫ f) := by
+    rw [hstr]
+    obtain ⟨ι₀, h₀, hstr₀, -⟩ := exists_affineChart_projInfty E
+    haveI := h₀
+    haveI := smoothOfRelativeDimension_projToSpec E
+    rw [← hstr₀]
+    exact inferInstanceAs (SmoothOfRelativeDimension (0 + 1)
+      (ι₀ ≫ _root_.WeierstrassCurve.Projective.projToSpec E))
+  exact smoothOfRelativeDimension_of_isDominant_of_smooth f ι hY
 
 /-- **The chart of the abelian scheme extends to a morphism `A ⟶ proj E`**
 (**PROVEN 2026-07-27** over `smoothOfRelativeDimension_one_of_affineChart`)
