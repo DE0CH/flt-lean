@@ -120,6 +120,13 @@ the general form knows exactly what to prove.
 module
 
 public import Fermat.FLT.ModularCurve.X0
+-- `IsCurveReductionModel`, `IsNeronReductionDatum` and
+-- `exists_neronReductionDatum_of_curveModel`: the moduli-free core of the rank-`0`
+-- reduction argument, hoisted out of `X0.lean`'s `Γ₀`-shaped packaging so that the
+-- `Γ₁` side instantiates it rather than re-mirroring a 200-line structure.  PUBLIC
+-- because `IsCurveReductionModel` appears in the SIGNATURE of
+-- `exists_x1CurveModel_of_base`, not only in proof bodies.
+public import Fermat.FLT.ModularCurve.NeronReduction
 public import Mathlib.NumberTheory.DirichletCharacter.Basic
 -- infinite Galois theory: `InfiniteGalois.mem_range_algebraMap_iff_fixed`, the field-theoretic
 -- half of `exists_specSection_of_specGal_invariant` below.  `public` because that theorem's
@@ -376,7 +383,7 @@ open in them has been split along the theories it needed:
 | `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
-| `exists_x1ReductionAt` | the integral model and its reduction map | `ℚ → 𝔽_ℓ` |
+| `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  Its reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
 | `isTorsion_jacobian_of_lFunction_ne_zero_of_levelShape` | Eichler-Shimura + Kolyvagin-Logachev, shape-free | `ℚ` |
 | `exists_isLFunctionOf_of_isWeightTwoEigenformOn` | Hecke continuation, shape-free | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
@@ -3325,7 +3332,7 @@ declaration, the chain that PROVES `card_le_of_rankZeroJacobian` in
 | `IsCoarseModuliY0.exists_inverse` (PROVEN) | `IsCoarseModuliY1.exists_inverse` (PROVEN) |
 | `exists_inverse_of_isX0Compactification` (PROVEN) | `exists_inverse_of_smoothCompactification` (PROVEN 2026-07-27, and it SUBSUMES the `Γ₀` one — both now cite `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`) |
 | `nonempty_relPointEquiv_of_isX0Compactification` (PROVEN) | `nonempty_relPointEquiv_of_isX1Compactification` (PROVEN) |
-| `exists_x0NeronDatum` + `exists_isX0Compactification_specialFibre` + `neronReduction_injective` | `exists_x1ReductionAt` (one leaf) |
+| `exists_x0NeronDatum` + `exists_isX0Compactification_specialFibre` + `neronReduction_injective` | `exists_x1ReductionAt` (PROVEN 2026-07-28 over the single leaf `exists_x1CurveModel_of_base` and the moduli-free `NeronReduction.lean`) |
 
 `IsX0ReductionAt`, `IsJacobianOf` and `HasRankZeroJacobian` are REUSED
 verbatim from `X0.lean`: none of the three mentions a moduli problem —
@@ -3520,8 +3527,74 @@ theorem nonempty_relPointEquiv_of_isX1Compactification {N ℓ : ℕ} (hℓ : ℓ
       h₁.finite_compl h₂.finite_compl hu hv huv hvu
   exact ⟨relPointEquivOfInverse hw hw' hww' hw'w⟩
 
-/-- **The Néron reduction datum for `X_1(N)` at a good odd prime** (sorry
-leaf — this is where the arithmetic of the rank-`0` criterion sits).
+/-- **Deligne–Rapoport / Igusa for `Γ₁(N)`: `X_1(N)` has good reduction at
+every `ℓ ∤ N`** (sorry leaf — and after the hoist below this is ALL that is
+left of the rank-`0` criterion's geometry).
+
+TRUE, and classical.  For `ℓ ∤ N` the coarse space `X_1(N)` over `ℚ`
+extends to a smooth proper model `𝒳` over `ℤ_(ℓ)` whose special fibre is
+`X_1(N)` over `𝔽_ℓ`.  Deligne–Rapoport, *Les schémas de modules de courbes
+elliptiques* (Antwerp II, 1973), Thm. VI.6.9 for the `Γ₀`/`Γ₁` moduli
+problems, and Igusa 1959 for the original `Γ₁`-statement; Katz–Mazur,
+*Arithmetic Moduli of Elliptic Curves*, Thm. 5.1.1 and Cor. 6.7.2 give the
+representability and regularity in the form used here.  `ℓ ∤ N` is exactly
+the condition that makes the level structure étale over the base, hence the
+model SMOOTH rather than merely semistable — at `ℓ ∣ N` the special fibre
+acquires the Deligne–Rapoport singularities and no `IsX1Compactification`
+over `𝔽_ℓ` is produced at all.
+
+**WHAT IS ASKED FOR, AND WHY IT IS THE MINIMAL RESIDUE.**  Two conclusions,
+and the second is what makes the first `Γ₁`-specific rather than generic:
+
+* `IsCurveReductionModel ℓ R toF xstr` — the integral model, the two fibre
+  identifications as functors of points, and the valuative criterion.  Note
+  it carries `curve : IsSmoothProperCurve xstr` where `X0.lean`'s
+  `IsX0CurveModel` carries `model : IsX0Compactification N xstr ystr jZ`;
+  the three geometric fields are all the Jacobian half ever reads off the
+  model, which is precisely the observation that made the hoist mechanical.
+* `IsX1Compactification N strX' strY' jY'` — the special fibre really is
+  `X_1(N)` over `𝔽_ℓ`.  This is the `Γ₁` analogue of `X0.lean`'s
+  `exists_isX0Compactification_specialFibre`, bundled in rather than split
+  off because a producer builds the model and recognises its special fibre
+  in one construction; splitting them would require naming the model twice.
+
+Everything downstream — the relative Jacobian, its two fibres, additivity,
+Abel–Jacobi over the base, the Néron mapping property, injectivity of
+reduction — is `exists_neronReductionDatum_of_curveModel` plus
+`neronReduction_injective`, both PROVEN and both moduli-free.
+
+**Each hypothesis is load-bearing**; the underscore prefixes record only
+that a `sorry` consumes nothing.
+
+* `_hℓ` makes `ZMod ℓ` a field, without which `SpecF ℓ` is not the spectrum
+  of a residue field and `IsReductionBase` is unsatisfiable.
+* `_hℓN` is good reduction, refuted above at `ℓ ∣ N`.
+* `_hbase` pins `(R, toF)` as `ℤ_(ℓ)` with reduction mod `ℓ`; a junk base
+  would let a junk special fibre in, and since the conclusion is
+  existential that would make this leaf true while worthless.
+* `_hX` is what makes the statement about `X_1(N)` rather than about an
+  arbitrary smooth proper curve over `ℚ` — it is the moduli input to the
+  model, and it is what the second conclusion is the special-fibre echo of.
+
+**NOT A ROUTE**, and this is the same dead end the node below records:
+discharging the model with an `IsX0Compactification` at some other level
+`N'` fails, because `X_1(N)` is not `X_0(N')` for any `N'` in the range
+that matters (at `N = 25`, `X_0(25)` has genus `0` against `X_1(25)`'s
+genus `12`), and `N' = 0` is refuted by `isEmpty_of_gamma0Datum_zero`. -/
+theorem exists_x1CurveModel_of_base (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓN : ¬ ℓ ∣ N)
+    (R : Subring ℚ) (toF : R →+* ZMod ℓ) (_hbase : IsReductionBase ℓ R toF)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hX : IsX1Compactification N strX strY jY) :
+    ∃ (X' Y' XZ : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (strY' : Y' ⟶ SpecF ℓ)
+      (jY' : Y' ⟶ X') (xstr : XZ ⟶ SpecLoc R),
+      Nonempty (IsCurveReductionModel ℓ R toF (strX := strX) (strX' := strX') xstr) ∧
+        Nonempty (IsX1Compactification N strX' strY' jY') :=
+  sorry
+
+/-- **The Néron reduction datum for `X_1(N)` at a good odd prime**
+(**PROVEN 2026-07-28**; formerly a single `sorry`.  The hoist described in
+the cut audit below has been EXECUTED, and what is left of this node is the
+one genuinely `Γ₁`-specific statement, `exists_x1CurveModel_of_base` above).
 
 TRUE, and classical.  For `ℓ` odd with `ℓ ∤ N` the modular curve `X_1(N)`
 has good reduction at `ℓ`: it has a smooth proper model `𝒳` over
@@ -3544,52 +3617,55 @@ the correspondence is exact rather than approximate:
   formal-group fact, which is what `IsX0NeronDatum.toReduction` consumes
   to produce the `IsX0ReductionAt`.
 
-They are bundled into ONE leaf here rather than mirrored one-for-one
+They were bundled into ONE leaf here rather than mirrored one-for-one
 because only the first is `Γ₁`-specific: `IsX0NeronDatum`'s single
 moduli-carrying field is `model : IsX0Compactification N xstr ystr jZ`,
 and everything else in that 200-line structure — the base, the four fibre
 identifications, their naturality, additivity, compatibility with
 Abel–Jacobi, the Néron mapping property, the valuative criterion — is
-moduli-free and would be copied character for character.  A successor
-should therefore NOT re-mirror `IsX0NeronDatum`; the honest work is
-either to prove Deligne–Rapoport for `Γ₁` and reuse the `Γ₀` machinery,
-or (better) to hoist that structure to a moduli-free form and instantiate
-it twice.
+moduli-free and would be copied character for character.
 
-**CUT AUDIT, 2026-07-27 — the claim above is now MECHANICALLY CHECKED, and
-the check is what a successor should re-run rather than take on trust.**
-The load-bearing assertion is "`model` is the only moduli-carrying field,
-and nothing in the reduction machinery touches it".  Verified by reading
-`X0.lean` between `structure IsX0NeronDatum` and `end IsX0NeronDatum`:
+**CUT AUDIT, 2026-07-27, RE-RUN AND EXECUTED 2026-07-28.**  The
+load-bearing assertion was "`model` is the only moduli-carrying field, and
+nothing in the reduction machinery touches it", and its refutation
+criterion was a `d.model` inside `namespace IsX0NeronDatum`.  Re-run:
 
-* `namespace IsX0NeronDatum` runs from the structure to `end IsX0NeronDatum`,
-  and contains `intJ`, `intX`, `redJ`, `redX`, `redJ_def`, `redX_def`,
-  `pre_intJ`, `pre_intX`, `intJ_add`, `intJ_aj`, `redJ_add`, `red_aj`,
-  `finite_intPoints` and `toReduction`;
-* `grep -n '\.model\b' Fermat/FLT/ModularCurve/X0.lean` has **no hit inside
-  that range** — every one of its 63 hits is downstream of `end
-  IsX0NeronDatum`, in the CONSTRUCTION of a datum (`exists_x0NeronDatum`) or
-  in other `Γ₀`-specific derivations, never in the production of the
-  `IsX0ReductionAt`.
+* the namespace runs from `structure IsX0NeronDatum` to
+  `end IsX0NeronDatum` and contains `intJ`, `intX`, `redJ`, `redX`,
+  `redJ_def`, `redX_def`, `pre_intJ`, `pre_intX`, `intJ_add`, `intJ_aj`,
+  `redJ_add`, `red_aj`, `finite_intPoints` and `toReduction`;
+* `grep -n '\.model\b' Fermat/FLT/ModularCurve/X0.lean` gives 67 hits, the
+  earliest at line 29571, against a namespace running 26253–26455.  **Zero
+  hits inside the range**, so the audit stands and the hoist was mechanical.
 
-**So `toReduction` is moduli-free outright**, and the hoist is mechanical
-rather than mathematical: delete `model` from the structure (or make it a
-`Prop` parameter), and `toReduction` compiles unchanged.  That is the
-refutation criterion for this audit — if a `d.model` ever appears inside
-that namespace, this paragraph is wrong and the hoist is not mechanical.
+**THE HOIST IS DONE**, in `Fermat/FLT/ModularCurve/NeronReduction.lean`:
+`IsCurveReductionModel` (the curve half, with `model` replaced by
+`curve : IsSmoothProperCurve xstr`), `IsNeronReductionDatum` (the full
+datum minus `model`) with its whole namespace and `toReduction`, and the
+PROVEN assembly `exists_neronReductionDatum_of_curveModel`.  Two notes on
+what actually happened, against what the audit predicted:
 
-**WHERE THE HOIST SHOULD LIVE, and why not `X0.lean`.**  `X0.lean` has
-several concurrent owners and a 200-line structure move is the worst shape
-of conflict.  The moduli-free structure and its whole namespace belong in a
-NEW file under `Fermat/FLT/Mathlib/AlgebraicGeometry/` — it mentions no
-modular curve, only a smooth proper curve over `ℚ`, its Jacobian, an
-`ℓ`-local base, and a model — which has no owner to collide with, and both
-`X0.lean` and this file then instantiate it.  With that done, the residue
-of THIS leaf is exactly one statement, and it is the only genuinely
-`Γ₁`-specific one: **Deligne–Rapoport / Igusa for `Γ₁(N)`**, i.e. that an
-`IsX1Compactification N strX strY jY` over `ℚ` extends to an
-`IsX1Compactification N xstr ystr jZ` over `SpecLoc R` with generic fibre
-the given one.  Nothing else here is new mathematics.
+* the one apparent counterexample to "moduli-free" is
+  `exists_x0JacobianModel_of_curveModel`, whose proof opens
+  `⟨cm.model.isProper, cm.model.smooth, cm.model.connected⟩`.  That reads
+  the three GEOMETRIC facts the moduli structure happens to bundle, not the
+  moduli structure — hence the `curve` field, and hence the hoist survived;
+* the audit put the new file under `Fermat/FLT/Mathlib/AlgebraicGeometry/`,
+  which is not possible: `SpecQ`, `SpecF`, `SpecLoc`, `IsReductionBase`,
+  `IsSmoothProperCurve`, `IsFibreIdent`, `IsJacobianOf`, `IsX0ReductionAt`,
+  `exists_relativeJacobian`, `isSmoothProperCurve_of_fibreIdent`,
+  `exists_jacobianFibreIdent`, `bijective_pre_generic_of_isProper` and
+  `neronReduction_injective` are ALL declared inside `X0.lean`, so an
+  upstream module would have to drag them out of a 38 000-line file with
+  twenty concurrent owners.  The new module therefore sits DOWNSTREAM of
+  `X0.lean` instead, and `X0.lean` is left byte-identical; the one-region
+  cleanup that makes `IsX0CurveModel`/`IsX0NeronDatum` extend it is
+  recorded in that module's header for whoever next owns those lines.
+
+So the residue of THIS node is exactly one statement, and it is the only
+genuinely `Γ₁`-specific one: **`exists_x1CurveModel_of_base` above**,
+Deligne–Rapoport / Igusa for `Γ₁(N)`.  Nothing else here is new
+mathematics, and the proof below is the assembly.
 
 **WHAT IS NOT A ROUTE.**  Discharging `model` with an `IsX0Compactification`
 at some other level `N'` is dead: `X_1(N)` is not `X_0(N')` for any `N'` in
@@ -3598,20 +3674,24 @@ genus `12`), and `N' = 0` is refuted by `isEmpty_of_gamma0Datum_zero`, which
 forces the coarse space empty while `finite_compl` then makes a smooth
 proper curve over a field finite.
 
-**Every hypothesis is load-bearing**, and each fails the conclusion on
-its own — the underscore prefixes record only that a `sorry` consumes
-nothing:
+**Every hypothesis is load-bearing**, each fails the conclusion on its own,
+and now that the node is proven each is consumed at a named site:
 
-* `_hfin` is rank `0`.  Without it `J_1(N)(ℚ)` is infinite, hence not
+* `hfin` is rank `0`.  Without it `J_1(N)(ℚ)` is infinite, hence not
   torsion, and `redJ_inj` is false: the kernel of reduction is exactly
-  where the non-torsion points go.
-* `_hℓ2` is the formal-group hypothesis.  At `ℓ = 2` the kernel of
-  reduction can contain `2`-torsion and `redJ_inj` fails.
-* `_hℓN` is good reduction.  At `ℓ ∣ N` the special fibre is not a smooth
-  curve, so no `IsX1Compactification` over `𝔽_ℓ` is produced.
-* `_hX` is what makes the statement about `X_1(N)` rather than an
+  where the non-torsion points go.  Consumed as `d.finite_intPoints hfin`,
+  feeding `neronReduction_injective`.
+* `hℓ2` is the formal-group hypothesis.  At `ℓ = 2` the kernel of
+  reduction can contain `2`-torsion and `redJ_inj` fails.  Consumed by
+  `neronReduction_injective`.
+* `hℓN` is good reduction.  At `ℓ ∣ N` the special fibre is not a smooth
+  curve, so no `IsX1Compactification` over `𝔽_ℓ` is produced.  Consumed by
+  `exists_x1CurveModel_of_base`.
+* `hℓ` is what makes `ZMod ℓ` a field and what `exists_isReductionBase`
+  needs to build `ℤ_(ℓ)` at all.  Consumed twice.
+* `hX` is what makes the statement about `X_1(N)` rather than an
   arbitrary curve, and it is what supplies the moduli input to the
-  integral model.
+  integral model.  Consumed by `exists_x1CurveModel_of_base`.
 * `jac` is EXPLICIT because the conclusion mentions it: without it
   `IsX0ReductionAt` has nothing to be a reduction *of*, and `red_aj`
   would be unstateable.
@@ -3622,19 +3702,26 @@ nothing:
 because `jac'` pins `J'` as the genuine Jacobian of the produced curve by
 its own initiality field.  That implication is not a remark: it is the
 proof of `exists_injective_reduction_of_rankZeroJacobian` below, so the
-compiler certifies that this leaf is at least as hard as the criterion it
+compiler certifies that this node is at least as hard as the criterion it
 stands in for. -/
-theorem exists_x1ReductionAt (N ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ2 : ℓ ≠ 2) (_hℓN : ¬ ℓ ∣ N)
+theorem exists_x1ReductionAt (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2) (hℓN : ¬ ℓ ∣ N)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (_hX : IsX1Compactification N strX strY jY) (jac : IsJacobianOf strX ab o)
-    (_hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
+    (hX : IsX1Compactification N strX strY jY) (jac : IsJacobianOf strX ab o)
+    (hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
     ∃ (X' Y' J' : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (strY' : Y' ⟶ SpecF ℓ)
       (jY' : Y' ⟶ X') (jstr' : J' ⟶ SpecF ℓ) (ab' : AbelianSchemeStruct jstr')
       (o' : RelPoint strX' (𝟙 (SpecF ℓ))) (jac' : IsJacobianOf strX' ab' o'),
       Nonempty (IsX1Compactification N strX' strY' jY') ∧
-        Nonempty (IsX0ReductionAt jac jac') :=
-  sorry
+        Nonempty (IsX0ReductionAt jac jac') := by
+  obtain ⟨R, toF, hbase⟩ := exists_isReductionBase ℓ hℓ
+  obtain ⟨X', Y', XZ, strX', strY', jY', xstr, ⟨cm⟩, ⟨hX'⟩⟩ :=
+    exists_x1CurveModel_of_base N ℓ hℓ hℓN R toF hbase hX
+  obtain ⟨J', JZ, jstr', ab', o', jac', jstrZ, abZ, oZ, jacZ, ⟨d⟩⟩ :=
+    exists_neronReductionDatum_of_curveModel ℓ R toF hbase cm jac
+  exact ⟨X', Y', J', strX', strY', jY', jstr', ab', o', jac', ⟨hX'⟩,
+    ⟨d.toReduction
+      (neronReduction_injective ℓ R toF hbase hℓ2 abZ (d.finite_intPoints hfin))⟩⟩
 
 /-- **The rank-`0` reduction INJECTION, `X_1(N)(ℚ) ↪ X_1(N)(𝔽_ℓ)`**
 (PROVEN 2026-07-27 over `exists_x1ReductionAt` and
