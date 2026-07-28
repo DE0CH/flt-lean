@@ -32458,9 +32458,15 @@ order of difficulty; **item 3 is now PROVEN (2026-07-28)** and three remain:
    proved just above the declaration) together with the composed witnesses of
    `IsRationalMap.comp`. It did **not** need `isCotangentScalar_unique`, and it
    does not need `IsIsogeny ψ`.
-4. `isCotangentScalar_unique` — **PROVEN 2026-07-28** (concurrently with item 3,
-   by a different owner), and no longer open; it was the cheapest of the four,
-   and purely elementary. Two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
+4. `isCotangentScalar_unique` — **PROVEN 2026-07-28**, and not by the argument
+   below: `IsCotangentScalar` and `WeierstrassCurve.IsDiffChar` (of
+   `EllipticCurve/DifferentialCharacter.lean`, already `public import`ed here)
+   are THE SAME PREDICATE, and `isDiffChar_unique` is proven there — with no
+   `CharZero` hypothesis. See `isDiffChar_of_isCotangentScalar` below. The same
+   bridge collapses the other three leaves here onto `exists_isDiffChar`,
+   `isDiffChar_add` and `isDiffChar_comp` as soon as the converse direction of
+   the bridge is available; see the note there. The original sketch, for the
+   record: two witness systems `(A, B)`, `(A₂, B₂)` for the same `φ`
    satisfy `A B₂ = A₂ B` as POLYNOMIALS (both compute `x ∘ φ`, and by
    `exists_nonsingular_of_x` every element of `F` is an `x`-coordinate while
    only the finitely many points of `ker φ` are excluded), whence
@@ -32564,152 +32570,89 @@ theorem exists_isCotangentScalar [IsAlgClosed F] [CharZero F]
     ∃ c : F, IsCotangentScalar φ c :=
   sorry
 
-/-- **PROVEN 2026-07-28: the cotangent scalar is unique.** The cheapest of the
-four leaves cut in this section and entirely elementary — see item 4 of the
-section docstring for the argument in outline. The proof below runs it in four
-steps.
+/-! #### The bridge to `IsDiffChar`
+
+`WeierstrassCurve.IsDiffChar` of `Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`
+(already `public import`ed by this file) is **the same predicate as
+`IsCotangentScalar`**, written with the target's `ψ₂(φP)` substituted out through
+the rational-map relations rather than left literal. Concretely the two
+differential clauses differ by exactly the factor `E(x)`, which is what
+`isDiffCharCert_reduced` / `isDiffCharCert_of_reduced` say; and they differ in
+quantifier range — `IsDiffChar` asks for the identity at every `P ≠ 0`,
+`IsCotangentScalar` only off `ker φ`.
+
+That second difference is bridged by `isDiffCharCert_of_cofinite`, which is the
+substantive content: `y` occurs linearly in the certificate, so an identity
+holding off a finite set of `x`-values holds everywhere.
+
+So `isCotangentScalar_unique` is NOT a separate piece of mathematics — it is
+`isDiffChar_unique` (PROVEN, and with **no** characteristic hypothesis) read
+through the bridge below. -/
+
+/-- **`IsCotangentScalar φ c → IsDiffChar φ c`.** Same witness tuple; the
+differential clause transfers by multiplying through by `E(x)`
+(`isDiffCharCert_of_reduced`) at the points off `ker φ`, and extends to the
+finitely many remaining points by `isDiffCharCert_of_cofinite`.
+
+`hφ` is used only for `finite_ker`, i.e. only to know that the excluded set is
+finite. At `φ = 0` the given witnesses carry no information (the rational-map
+clause is vacuous there), so that case goes through `isDiffChar_zero` and the
+`φ = 0 → c = 0` conjunct instead of through the witnesses. -/
+theorem isDiffChar_of_isCotangentScalar [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
+    {φ : W.Point →+ W'.Point} {c : F} (hφ : IsIsogeny φ)
+    (h : IsCotangentScalar φ c) : IsDiffChar φ c := by
+  classical
+  by_cases hφ0 : φ = 0
+  · subst hφ0
+    rw [h.1 rfl]
+    exact isDiffChar_zero
+  obtain ⟨hz, A, B, C, D, G, hB, hG, hwit, hdiff⟩ := h
+  refine ⟨hz, A, B, C, D, G, hB, hG, hwit, ?_⟩
+  set S : Set F := veluPointX '' (AddMonoidHom.ker φ : Set W.Point) with hS
+  have hSfin : S.Finite := (hφ.finite_ker hφ0).image _
+  have hall : ∀ Q : W.Point, Q ≠ 0 → veluPointX Q ∉ S →
+      IsDiffCharCert W W' A B C D G c Q := by
+    intro Q hQ0 hQS
+    have hφQ : φ Q ≠ 0 := fun hcc => hQS ⟨Q, hcc, rfl⟩
+    obtain ⟨hx, hy⟩ := hwit Q hφQ
+    refine isDiffCharCert_of_reduced hx hy ?_
+    have hred := hdiff Q hQ0 hφQ
+    simp only [invariantDiffDenom, eval_sub, eval_mul] at hred
+    linear_combination (-(G.eval (veluPointX Q))) * hred
+  exact fun P _ => isDiffCharCert_of_cofinite hSfin hall P
+
+/-- **PROVEN 2026-07-28: the cotangent scalar is unique.**
+
+Closed by transport, not by redoing the argument: `isDiffChar_of_isCotangentScalar`
+followed by `isDiffChar_unique`. The proportionality-of-witness-systems argument
+that this leaf's original docstring sketched (retained below for the record) is
+the one carried out once, in `DifferentialCharacter.lean`, for `isDiffChar_unique`.
+
+Note `[CharZero F]` is **not needed** — `isDiffChar_unique` has no characteristic
+hypothesis. It is kept here only because the surrounding section and this leaf's
+consumers already carry it; a later consolidation should drop it.
+
+*Original argument.* Two witness systems for
+the same `φ` are proportional (`A B₂ = A₂ B` as polynomials, because every
+element of `F` is an `x`-coordinate by `exists_nonsingular_of_x` and only the
+finitely many points of `ker φ` are excluded), the expression
+`(A'B − AB')/B²` is invariant under that proportionality, and a point at which
+`B`, `B₂` and `2y(φP) + a₁x(φP) + a₃` are all nonzero exists because each
+vanishing locus is finite while `W.Point` is infinite (`infinite_point`).
 
 *Step 0 — the zero map.* `φ = 0` is settled by the first conjunct of
 `IsCotangentScalar` alone: `c = 0 = d`. This is exactly the conjunct the section
 docstring calls "not decoration"; without it the differential identity is vacuous
 at `φ = 0` and this theorem is FALSE.
 
-*Step 1 — one finite bad locus in the `x`-line serves everything.* For `φ ≠ 0`,
-`φ + φ ≠ 0` as well: `φ` is surjective (`IsIsogeny.surjective`, `F`
-algebraically closed), so `φ + φ = 0` would make EVERY point of `W'` 2-torsion,
-and `{Q | 2 • Q = 0}` is finite (`finite_nsmulKer`) while `W'.Point` is infinite
-(`infinite_point`). Hence `ker (φ + φ)` is finite (`IsIsogeny.add`, then
-`finite_ker`), and
-
-    Bad := {t | (B · B₂)(t) = 0} ∪ x(ker (φ + φ))
-
-is finite. Off `Bad` there is a nonzero `P` with `x P = t`
-(`exists_point_veluPointX_eq`) at which, at one stroke, `B(t) ≠ 0`, `B₂(t) ≠ 0`,
-`φ P ≠ 0`, and `2y(φP) + a₁x(φP) + a₃ ≠ 0` — the last because
-`2y + a₁x + a₃ = 0` says exactly `Q = -Q` (`Affine.Point.add_self_of_Y_eq`), so
-`P` would lie in `ker (φ + φ)`. Using the DOUBLED map is what collapses the two
-separate conditions "`P ∉ ker φ`" and "`φ P ∉ W'[2]`" into a single kernel.
-
-*Step 2 — the two witness systems are proportional.* `A B₂ = A₂ B` as
-POLYNOMIALS: at every `t ∉ Bad` the two `x`-certificates give
-`A(t) B₂(t) = x(φP) B(t) B₂(t) = A₂(t) B(t)`, and the complement of a finite set
-in `F` is infinite (`CharZero F`), so `Polynomial.eq_zero_of_infinite_isRoot`
-applies to `A B₂ - A₂ B`. This step is why the identity may NOT be checked
-pointwise: differentiation is not a pointwise operation.
-
-*Step 3 — `(A'B − AB')/B²` is invariant under that proportionality.*
-Differentiating `A B₂ = A₂ B` and combining gives, in `F[X]`,
-
-    (A'B − AB') · B₂² = (A₂'B₂ − A₂B₂') · B²
-
-(a `linear_combination` with coefficients `B·B₂` on the differentiated identity
-and `−(B'B₂ + BB₂')` on the undifferentiated one). Evaluating both differential
-identities at the good `P`, multiplying the first by `B₂(t)²` and the second by
-`B(t)²`, the left-hand sides agree by the display, so
-`c · K = d · K` with `K = B(t)² B₂(t)² · (2y(φP) + a₁x(φP) + a₃) ≠ 0`.
-
-**THE CHECK THAT WOULD REFUTE THIS STATEMENT**: an isogeny with two distinct
+**THE CHECK THAT WOULD REFUTE THIS**: an isogeny with two distinct
 cotangent scalars — which, by the above, would need two witness systems that
 are NOT proportional. -/
 theorem isCotangentScalar_unique [IsAlgClosed F] [CharZero F]
     [W.IsElliptic] [W'.IsElliptic] {φ : W.Point →+ W'.Point} {c d : F} (hφ : IsIsogeny φ)
-    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar φ d) : c = d := by
-  classical
-  obtain ⟨hc0, A, B, _C, _D, _E, hB, _hE, hcert, hdiff⟩ := hc
-  obtain ⟨hd0, A₂, B₂, _C₂, _D₂, _E₂, hB₂, _hE₂, hcert₂, hdiff₂⟩ := hd
-  -- **Step 0**: the zero map, where the first conjunct is the whole content.
-  by_cases hzero : φ = 0
-  · rw [hc0 hzero, hd0 hzero]
-  -- **Step 1**: `φ + φ ≠ 0`, hence `ker (φ + φ)` is finite.
-  have hdbl : φ + φ ≠ 0 := by
-    intro hsum
-    haveI := infinite_point W'
-    have hsub : (Set.univ : Set W'.Point) ⊆ {Q : W'.Point | (2 : ℕ) • Q = 0} := by
-      intro Q _
-      obtain ⟨P, rfl⟩ := hφ.surjective hzero Q
-      have h2 : φ P + φ P = 0 := by
-        have h := congrArg (fun f : W.Point →+ W'.Point => f P) hsum
-        simpa using h
-      show (2 : ℕ) • φ P = 0
-      rw [two_nsmul]; exact h2
-    have hfin : (Set.univ : Set W'.Point).Finite :=
-      (finite_nsmulKer (W := W') two_ne_zero).subset hsub
-    haveI : Finite W'.Point := Set.finite_univ_iff.mp hfin
-    exact not_finite W'.Point
-  have hkerfin : (AddMonoidHom.ker (φ + φ) : Set W.Point).Finite :=
-    (hφ.add hφ).finite_ker hdbl
-  have hBadFin : ({t : F | (B * B₂).eval t = 0}
-      ∪ veluPointX '' (AddMonoidHom.ker (φ + φ) : Set W.Point)).Finite :=
-    (Polynomial.finite_setOf_isRoot (mul_ne_zero hB hB₂)).union (hkerfin.image _)
-  -- `2y + a₁x + a₃ = 0` is exactly `Q = -Q`, i.e. `Q` is 2-torsion.
-  have key : ∀ Q : W'.Point, Q ≠ 0 → invariantDiffDenom W' Q = 0 → Q + Q = 0 := by
-    intro Q hQ0 hQΩ
-    cases Q with
-    | zero => exact absurd rfl hQ0
-    | some x0 y0 hns =>
-      simp only [invariantDiffDenom, veluPointX_some, veluPointY_some] at hQΩ
-      refine Affine.Point.add_self_of_Y_eq ?_
-      show y0 = W'.negY x0 y0
-      simp only [Affine.negY]
-      linear_combination hQΩ
-  -- Off the bad locus every denominator of both systems is invertible, `P ∉ ker φ`,
-  -- and `φ P` is not 2-torsion.
-  have hgood : ∀ t : F, t ∈ ({t : F | (B * B₂).eval t = 0}
-      ∪ veluPointX '' (AddMonoidHom.ker (φ + φ) : Set W.Point))ᶜ →
-      ∃ P : W.Point, P ≠ 0 ∧ veluPointX P = t ∧ φ P ≠ 0 ∧
-        B.eval t ≠ 0 ∧ B₂.eval t ≠ 0 ∧ invariantDiffDenom W' (φ P) ≠ 0 := by
-    intro t ht
-    simp only [Set.mem_compl_iff, Set.mem_union, Set.mem_setOf_eq, not_or] at ht
-    obtain ⟨hroot, himg⟩ := ht
-    obtain ⟨P, hP0, hPx⟩ := exists_point_veluPointX_eq (W := W) t
-    have hker : (φ + φ) P ≠ 0 := fun hmem =>
-      himg ⟨P, AddMonoidHom.mem_ker.2 hmem, hPx⟩
-    have hsum2 : φ P + φ P ≠ 0 := by
-      intro hcon; exact hker (by simpa using hcon)
-    have hφP : φ P ≠ 0 := fun hcon => hsum2 (by rw [hcon, add_zero])
-    rw [Polynomial.eval_mul] at hroot
-    have hBt : B.eval t ≠ 0 := fun h => hroot (by rw [h, zero_mul])
-    have hB₂t : B₂.eval t ≠ 0 := fun h => hroot (by rw [h, mul_zero])
-    refine ⟨P, hP0, hPx, hφP, hBt, hB₂t, ?_⟩
-    intro hΩ
-    exact hsum2 (key (φ P) hφP hΩ)
-  -- **Step 2**: the two witness systems are PROPORTIONAL, `A B₂ = A₂ B`.
-  have hpoly : A * B₂ = A₂ * B := by
-    have hz : A * B₂ - A₂ * B = 0 := by
-      refine Polynomial.eq_zero_of_infinite_isRoot _
-        (Set.Infinite.mono ?_ hBadFin.infinite_compl)
-      intro t ht
-      obtain ⟨P, -, hPx, hφP, -, -, -⟩ := hgood t ht
-      obtain ⟨hx, -⟩ := hcert P hφP
-      obtain ⟨hx₂, -⟩ := hcert₂ P hφP
-      rw [hPx] at hx hx₂
-      show (A * B₂ - A₂ * B).eval t = 0
-      simp only [Polynomial.eval_sub, Polynomial.eval_mul]
-      linear_combination (B.eval t) * hx₂ - (B₂.eval t) * hx
-    linear_combination hz
-  -- **Step 3**: `(A'B − AB')/B²` is invariant under that proportionality.
-  have hderiv : (derivative A * B - A * derivative B) * B₂ ^ 2
-      = (derivative A₂ * B₂ - A₂ * derivative B₂) * B ^ 2 := by
-    have hd' : derivative A * B₂ + A * derivative B₂
-        = derivative A₂ * B + A₂ * derivative B := by
-      have h := congrArg (fun p : F[X] => derivative p) hpoly
-      simpa only [Polynomial.derivative_mul] using h
-    linear_combination (B * B₂) * hd' - (derivative B * B₂ + B * derivative B₂) * hpoly
-  -- Evaluate both differential identities at one good point.
-  obtain ⟨t, ht⟩ := hBadFin.infinite_compl.nonempty
-  obtain ⟨P, hP0, hPx, hφP, hBt, hB₂t, hΩ⟩ := hgood t ht
-  have h1 := hdiff P hP0 hφP
-  have h2 := hdiff₂ P hP0 hφP
-  rw [hPx] at h1 h2
-  have hev : (derivative A * B - A * derivative B).eval t * (B₂.eval t) ^ 2
-      = (derivative A₂ * B₂ - A₂ * derivative B₂).eval t * (B.eval t) ^ 2 := by
-    have h := congrArg (fun p : F[X] => p.eval t) hderiv
-    simpa only [Polynomial.eval_mul, Polynomial.eval_pow] using h
-  have hK : (B.eval t) ^ 2 * (B₂.eval t) ^ 2 * invariantDiffDenom W' (φ P) ≠ 0 :=
-    mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hBt) (pow_ne_zero 2 hB₂t)) hΩ
-  refine mul_right_cancel₀ hK ?_
-  linear_combination (invariantDiffDenom W P) * hev - (B₂.eval t) ^ 2 * h1
-    + (B.eval t) ^ 2 * h2
+    (hc : IsCotangentScalar φ c) (hd : IsCotangentScalar φ d) : c = d :=
+  isDiffChar_unique (isDiffChar_of_isCotangentScalar hφ hc)
+    (isDiffChar_of_isCotangentScalar hφ hd)
 
 /-- The cotangent scalar exists and is unique — the packaging that makes
 `End.cotangent` a function. Proven over `exists_isCotangentScalar` and
