@@ -9219,14 +9219,37 @@ for the complement of a section of a proper curve.  Searched 2026-07-27
 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`: the pin has
 `Mathlib/AlgebraicGeometry/QuasiAffine.lean` and
 `Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean`, but no ampleness
-of divisors, no `Serre criterion`, and no genus. -/
-theorem exists_affineComplement_zeroSection {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+of divisors, no `Serre criterion`, and no genus.
+
+**BASE GENERALISED FROM `ℚ` TO AN ARBITRARY FIELD `K`, AND THE STRUCTURE MAP
+ADDED, 2026-07-28.**  Nothing in the argument above uses `ℚ`: the removed point
+is a `K`-rational point of a smooth proper geometrically connected `K`-curve,
+and affineness of the complement is a statement over any field.  The
+generalisation is what lets `X0.lean`'s
+`exists_weierstrassAlgClos_of_abelianSchemeStruct` — the same bridge at
+`K = ℚ̄` — be an instance of this chain rather than a second copy of
+Riemann–Roch, which its docstring explicitly forbids.
+
+Two clauses changed, and both are forced by that use rather than optional:
+
+* `R` now carries an `Algebra K R`, and
+* `ι ≫ f = Spec.map (ofHom (algebraMap K R))` is now a CONCLUSION.
+
+Over `ℚ` that conjunct was free — `hom_ext_spec_rat`, i.e. `ℚ` initial in
+`CommRing`, made every two morphisms to `Spec ℚ` equal, so the assembly read
+it off for nothing.  Over a general `K` there is no such uniqueness, so the
+compatibility has to be CARRIED by the construction; that is exactly the "one
+genuinely ℚ-specific step" the consumer's docstring warned a successor to
+expect.  It costs the prover nothing: the affine chart is built inside `A`
+over the base, so its structure map is the base map by construction. -/
+theorem exists_affineComplement_zeroSection {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (_hdim : SmoothOfRelativeDimension 1 f) :
-    ∃ (R : Type) (_ : CommRing R) (ι : Spec (CommRingCat.of R) ⟶ A),
+    ∃ (R : Type) (_ : CommRing R) (_ : Algebra K R) (ι : Spec (CommRingCat.of R) ⟶ A),
       IsOpenImmersion ι ∧
+        ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R)) ∧
         Set.range ι.base =
-          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ :=
+          (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ :=
   sorry
 
 /-- **The affine complement of the zero section is a Weierstrass
@@ -9285,15 +9308,30 @@ genus, or a theory of divisors/linear systems on a relative curve, in
 `AlgebraicCycle/Basic.lean` and `OrderOfVanishing.lean`, neither of which
 computes a cohomology dimension.  So this leaf is a genuine theory
 build — see the module docstring's note that a theory build is authorized
-at this node. -/
-theorem exists_weierstrassRingEquiv_of_affineComplement {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+at this node.
+
+**BASE GENERALISED FROM `ℚ` TO AN ARBITRARY FIELD `K`, AND THE ISOMORPHISM
+UPGRADED FROM `≃+*` TO `≃ₐ[K]`, 2026-07-28** — see the corresponding note on
+leaf 1, which this change is forced by.  Riemann–Roch is a statement over any
+field and the argument above uses nothing else about `ℚ`.
+
+The `≃ₐ[K]` upgrade is NOT cosmetic and is not a strengthening in substance:
+the isomorphism `R ≃ E.toAffine.CoordinateRing` is built by choosing
+`x ∈ L(2[O])` and `y ∈ L(3[O])` — both `K`-linear systems — so it is a
+`K`-algebra map by construction, and only the *statement* was silent about it.
+It has to be said, because over `ℚ` the assembly recovered the structure-map
+compatibility from initiality and over a general `K` it must transport it
+across this isomorphism instead. -/
+theorem exists_weierstrassRingEquiv_of_affineComplement {K : Type} [Field K]
+    {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (_hdim : SmoothOfRelativeDimension 1 f)
-    (R : Type) [CommRing R] (ι : Spec (CommRingCat.of R) ⟶ A)
+    (R : Type) [CommRing R] [Algebra K R] (ι : Spec (CommRingCat.of R) ⟶ A)
     (_hopen : IsOpenImmersion ι)
+    (_hstr : ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K R)))
     (_hrange : Set.range ι.base =
-      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ) :
-    ∃ E : WeierstrassCurve ℚ, Nonempty (R ≃+* E.toAffine.CoordinateRing) :=
+      (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ) :
+    ∃ E : WeierstrassCurve K, Nonempty (R ≃ₐ[K] E.toAffine.CoordinateRing) :=
   sorry
 
 /-- **A Weierstrass curve whose affine chart is an open subscheme of a
@@ -9338,10 +9376,21 @@ the chart of a nodal cubic (`Δ = 0`), so the conclusion fails.  Drop
 `_hdim` and `f` need not be smooth at all, so nothing constrains `E`.
 
 NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
-`E`, an `(A, f, ι)` satisfying every hypothesis. -/
-theorem isElliptic_of_isOpenImmersion_coordinateRing {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (_hdim : SmoothOfRelativeDimension 1 f)
-    (E : WeierstrassCurve ℚ)
+`E`, an `(A, f, ι)` satisfying every hypothesis.
+
+**BASE GENERALISED FROM `ℚ` TO AN ARBITRARY FIELD `K`, 2026-07-28** — see the
+note on leaf 1.  This leaf changes least of the three: its route ("a smooth
+`K`-algebra structure on `E.toAffine.CoordinateRing` forces `IsUnit E.Δ`") is
+already characteristic-free, and the `hom_ext_spec_rat` step its docstring
+records is used only to IDENTIFY `ι ≫ f` with the structure map — an
+identification the generalised leaf 1 now hands over as `_hstr` rather than
+deriving from initiality.  Note this leaf does not take `_hstr`: it does not
+need it, because `ι ≫ f` being smooth of relative dimension one is all the
+route consumes, and that follows from `_hopen` and `_hdim` alone. -/
+theorem isElliptic_of_isOpenImmersion_coordinateRing {K : Type} [Field K]
+    {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (_hdim : SmoothOfRelativeDimension 1 f)
+    (E : WeierstrassCurve K)
     (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
     (_hopen : IsOpenImmersion ι) :
     E.IsElliptic :=
@@ -9391,27 +9440,54 @@ isomorphism of schemes, so composing it with `ι` keeps the range
 Leaf 3 is then applied to the *composite*, which is exactly the chart whose
 smoothness forces `Δ ≠ 0`.  The structure-morphism conjunct is free by
 `hom_ext_spec_rat`: any two morphisms to `Spec ℚ` agree, which is why no
-leaf has to carry a `ℚ`-algebra structure. -/
-theorem exists_weierstrassModel_of_ellipticScheme {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (ab : AbelianSchemeStruct f)
+leaf has to carry a `ℚ`-algebra structure.  (That last sentence is now
+HISTORY — see the generalisation note immediately below, which is exactly the
+change that made a `K`-algebra structure on leaf 1's `R` necessary.)
+
+**BASE GENERALISED FROM `ℚ` TO AN ARBITRARY FIELD `K`, 2026-07-28**, together
+with its three leaves; the `ℚ` form is the instance `K := ℚ` and its only
+consumer (`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme` below)
+is unchanged, `K` being inferred from `f`.
+
+**What changed in the PROOF, and it is the one place the base was really used.**
+The structure-map conjunct `ι ≫ f = Spec.map (ofHom (algebraMap K _))` used to
+be discharged by `hom_ext_spec_rat` — `ℚ` is initial in `CommRing`, so any two
+morphisms to `Spec ℚ` are equal and the conjunct was free.  Over a general `K`
+that is false, so the compatibility is now carried: leaf 1 delivers it for the
+chart `ι`, and it is transported across the Riemann–Roch isomorphism `e` by
+`e.commutes`, which is available exactly because leaf 2 was upgraded from
+`≃+*` to `≃ₐ[K]`.  `Spec.map_comp` turns the transport into one `congr`.
+
+The consumer this generalisation exists for is `X0.lean`'s
+`exists_weierstrassAlgClos_of_abelianSchemeStruct` at `K = ℚ̄`, whose docstring
+requires it be proven this way and NOT by opening a second copy of
+Riemann–Roch. -/
+theorem exists_weierstrassModel_of_ellipticScheme {K : Type} [Field K] {A : Scheme.{0}}
+    {f : A ⟶ Spec (CommRingCat.of K)} (ab : AbelianSchemeStruct f)
     (hdim : SmoothOfRelativeDimension 1 f) :
-    ∃ (E : WeierstrassCurve ℚ) (_ : E.IsElliptic),
+    ∃ (E : WeierstrassCurve K) (_ : E.IsElliptic),
       ∃ ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A,
         IsOpenImmersion ι ∧
-          ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)) ∧
+          ι ≫ f = Spec.map (CommRingCat.ofHom (algebraMap K E.toAffine.CoordinateRing)) ∧
           Set.range ι.base =
-            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of ℚ)))).1.base)ᶜ := by
+            (Set.range (ab.zero (𝟙 (Spec (CommRingCat.of K)))).1.base)ᶜ := by
   classical
-  obtain ⟨R, _, ι, hopen, hrange⟩ := exists_affineComplement_zeroSection ab hdim
-  obtain ⟨E, ⟨e⟩⟩ := exists_weierstrassRingEquiv_of_affineComplement ab hdim R ι hopen hrange
+  obtain ⟨R, hR, hRK, ι, hopen, hstr, hrange⟩ := exists_affineComplement_zeroSection ab hdim
+  letI := hR
+  letI := hRK
+  obtain ⟨E, ⟨e⟩⟩ :=
+    exists_weierstrassRingEquiv_of_affineComplement ab hdim R ι hopen hstr hrange
   have hE : E.IsElliptic :=
     isElliptic_of_isOpenImmersion_coordinateRing hdim E
-      (Spec.map e.toCommRingCatIso.hom ≫ ι) inferInstance
-  refine ⟨E, hE, Spec.map e.toCommRingCatIso.hom ≫ ι, inferInstance,
-    hom_ext_spec_rat _ _, ?_⟩
-  rw [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso,
-    Scheme.Hom.coe_opensRange]
-  exact hrange
+      (Spec.map e.toRingEquiv.toCommRingCatIso.hom ≫ ι) inferInstance
+  refine ⟨E, hE, Spec.map e.toRingEquiv.toCommRingCatIso.hom ≫ ι, inferInstance, ?_, ?_⟩
+  · rw [Category.assoc, hstr, ← Spec.map_comp]
+    congr 1
+    ext r
+    exact e.commutes r
+  · rw [← Scheme.Hom.coe_opensRange, Scheme.Hom.opensRange_comp_of_isIso,
+      Scheme.Hom.coe_opensRange]
+    exact hrange
 
 /-! #### Transport along an isomorphism of models
 

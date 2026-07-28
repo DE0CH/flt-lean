@@ -11193,7 +11193,71 @@ supply the instances it has already built.
 
 `hN` is REQUIRED: `exists_gamma0GITPresentation` itself needs it, and at `N = 0`
 a `Γ₀(0)`-datum forces its base to be empty, so `A` is the zero ring and
-`ringKrullDim A = ⊥ ≠ 1`. -/
+`ringKrullDim A = ⊥ ≠ 1`.
+
+**ROUTE, traced 2026-07-28 — this leaf should be closed by strengthening an
+ALREADY-OPEN sibling, not by proving representability a second time.**
+
+The existing existence proof is a chain, and every link of it is already
+written:
+
+    exists_gamma0GITPresentation N hN
+      = exists_gamma0GITPresentation_of_cover N hN 3 le_rfl (…)
+      = (exists_rigidifiedModuli N hN 3 le_rfl).elim
+          (exists_gamma0GITPresentation_of_rigidified N hN 3 le_rfl · …)
+
+and the assembly `exists_gamma0GITPresentation_of_rigidified` sets
+
+    A := R.A                                            -- VERBATIM
+    B := ↥(FixedPoints.subring R.A (gamma0DeckGroup n))
+
+for the `R : RigidifiedModuli N n` it is handed.  **`P.A` IS the rigidified
+moduli ring; the GIT step does not touch it.**  (Check that refutes this: read
+the `refine ⟨{ A := … }⟩` of `exists_gamma0GITPresentation_of_rigidified`.)
+
+So the whole content of this leaf is a statement about `RigidifiedModuli.A`,
+and `exists_rigidifiedModuli` is PROVEN — over two SORRY siblings:
+
+* `exists_rigidifiedModuliScheme` (Katz–Mazur representability, produces `R.M`);
+* `isAffine_of_rigidifiedModuliScheme` (Katz–Mazur (8.1.1)'s parenthesis),
+
+after which `nonempty_rigidifiedModuli_of_isAffine` takes `A := Γ(R.M, ⊤)`
+along `R.M.isoSpec`.  So the geometry asked for here — Dedekind, finite type,
+Krull dimension one — is geometry of `R.M`, which is exactly what
+`exists_rigidifiedModuliScheme` already owes ("`𝔐([Γ₀(N)], [Γ(n)])` is a smooth
+affine integral `ℚ`-curve"): its statement is silent about it only because
+`RigidifiedModuliScheme` carries a universal property and no geometry.
+
+**Why that is a net gain and not a relocation with extra steps.**  Adding the
+geometry to `exists_rigidifiedModuliScheme` adds NO leaf — it strengthens a
+statement whose intended proof already establishes it, in the same way the
+`ℚ → K` generalisation of `exists_weierstrassModel_of_ellipticScheme` closed
+`exists_weierstrassAlgClos_of_abelianSchemeStruct` on 2026-07-28 at the cost of
+two extra clauses on leaves nobody had proven yet.  This leaf then closes, so
+the frontier falls by one.
+
+**The one piece that is NOT bookkeeping**, and a successor should price it:
+the transport from `R.M` to `Γ(R.M, ⊤)` — *a regular integral affine
+`ℚ`-scheme of dimension one has a Dedekind coordinate ring of finite type*.
+`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean` already carries the
+invariant-theoretic half of exactly this dictionary
+(`Algebra.IsInvariant.isDedekindDomain_of_isInvariant`,
+`isRegularRing_of_isInvariant`), so check there BEFORE building a scheme-to-ring
+bridge; the `IsAffine`/`isoSpec` side is what
+`nonempty_rigidifiedModuli_of_isAffine` already does.
+
+**FAITHFULNESS — checked 2026-07-28, and the leaf is TRUE as stated.**  The
+worry worth naming is irreducibility, since `IsDedekindDomain` demands
+`IsDomain A`, and `𝔐([Γ₀(N)], [Γ(n)])` is famously NOT geometrically connected
+over `ℚ` (that is the very fact the sibling
+`isAlgebraic_coarseRing_of_gamma0GITPresentation` leans on).  Those are not in
+conflict: the Weil pairing makes `𝔐([Γ₀(N)], [Γ(n)])` fibre over
+`Spec ℚ(ζ_n) = μ_n^{prim}` with geometrically connected fibres, so it is
+irreducible AS A ℚ-SCHEME — its function field simply contains `ℚ(ζ_n)`.
+Geometric disconnectedness is the statement that `ℚ` is not algebraically
+closed in `A`, which is why the sibling leaf has to pass to `B = A^G` and this
+one does not.  Regular of dimension one then gives Dedekind, and affine of
+finite type gives `Algebra.FiniteType ℚ A`. -/
 theorem exists_gamma0GITPresentation_dedekindModuli (N : ℕ) (hN : 0 < N) :
     ∃ P : Gamma0GITPresentation N,
       letI := P.commRing_A
@@ -11224,6 +11288,64 @@ is only the arithmetic input.
 ⟹ geometrically connected" (EGA IV 4.5.13) is unavailable for a MATHEMATICAL
 reason: `Y_0(N)(ℚ)` is empty for most `N`, and proving that emptiness is the
 entire purpose of this module.
+
+**ROUTE AUDIT AMENDED 2026-07-28 — the warning above is right about `ℚ`-POINTS
+and its verdict was read too widely.**  What EGA IV 4.5.13 needs is a point
+with residue field `ℚ`, and what this leaf needs is only a `ℚ`-algebra map out
+of `B` whose target has `ℚ` algebraically closed in it.  **A point over the
+field `ℚ((q))` does that job, and `Y_0(N)(ℚ((q)))` is never empty** — the Tate
+curve is exactly such a point, and it is the modular input made concrete.  The
+axis the earlier audit did not search is *non-rational* base fields.
+
+The route, in four steps; only the first is substantial.
+
+1. Build a `Gamma0Datum N (Spec (CommRingCat.of (LaurentSeries ℚ)))` from the
+   Tate curve `E_q` over `ℚ((q))` with its canonical `μ_N ⊂ E_q[N]` as the
+   cyclic subgroup.  (`Tate` material exists in this tree and in `~/cs/FLT`;
+   whether a `Gamma0Datum` can be assembled from it is the one thing to price.)
+2. Feed it to `P.classify` at `g : Spec ℚ((q)) ⟶ SpecQ`.  A `RelPoint P.str g`
+   IS a morphism `Spec ℚ((q)) ⟶ Spec B` over `SpecQ`, i.e. a `ℚ`-algebra map
+   `φ : B → ℚ((q))`.  **No new geometry is needed for this step** — `classify`
+   is already a field of `Gamma0GITPresentation`.
+3. `ker φ = 0`.  `B` is a domain of Krull dimension one — that is the sibling
+   `isRegularRing_coarseRing_of_gamma0GITPresentation`, already PROVEN over
+   `exists_gamma0GITPresentation_dedekindModuli` — so `ker φ`, being prime, is
+   `0` or maximal.  If maximal, `B/ker φ` is a field algebraic over `ℚ` sitting
+   inside `ℚ((q))`, hence `ℚ` by step 4, so every element of `B` would have a
+   RATIONAL image; that is refuted by the `j`-coordinate alone, whose image is
+   the `q`-expansion `q⁻¹ + 744 + ⋯ ∉ ℚ`.
+4. `ℚ` is algebraically closed in `ℚ((q))`.  Elementary and self-contained: an
+   `α` algebraic over `ℚ` is integral, so has no pole and lies in `ℚ[[q]]`; its
+   constant term `α₀` is algebraic over `ℚ` hence in `ℚ`; and `α − α₀` is both
+   algebraic over `ℚ` and in `q·ℚ[[q]]`, where the only algebraic element is
+   `0` (a nonzero element of `q·ℚ[[q]]` generates a transcendental extension —
+   equivalently, `ℚ[[q]]` is a complete DVR with residue field `ℚ` and `ℚ` is
+   its coefficient field).
+
+Then for `x : B` algebraic over `ℚ`: `φ x` is algebraic over `ℚ`, so `φ x ∈ ℚ`
+by 4, say `φ x = φ (algebraMap ℚ B c)`; `x − algebraMap ℚ B c ∈ ker φ = 0` by 3,
+which is `x ∈ (⊥ : Subalgebra ℚ B)`.  **This is the q-expansion principle, and
+steps 2–4 are what make it a two-line consequence of step 1** rather than a
+citation of Deligne–Rapoport IV.5.5.
+
+*Checks that would refute this route.*  (i) That no `Gamma0Datum` over a
+Laurent-series base can be built here — grep `Fermat/` and `~/cs/FLT` for a
+Tate curve carrying a level structure, and check `LaurentSeries` is in the pin.
+(ii) That step 3's dimension input is circular — it is not: the Krull-dimension
+sibling runs through `exists_gamma0GITPresentation_dedekindModuli`, which is
+about `A` and does NOT consume this leaf.  (iii) That the `j`-coordinate of
+step 3 is unavailable at this point in the file — that one is REAL and is the
+place to look first, since the `j`-map machinery is declared thousands of lines
+below; any non-rational coordinate of the Tate point serves equally, so the
+step needs *some* element of `B` with non-rational image, not `j` specifically.
+
+**The cusp is NOT the way in, and it is worth saying why**, since it is the
+first thing one reaches for: `X_0(N)` does carry the rational cusp `∞`, so the
+EGA argument would apply to the compactification — but the compactification in
+this tree is constructed FROM the coarse space, downstream of this leaf, so
+using it is circular.  The Tate point above is the same fact (the cusp is where
+`q → 0`) taken BEFORE compactification, which is precisely what removes the
+circularity.
 
 **The rigidified ring `A` cannot be used.**  `𝔐([Γ₀(N)], [Γ(n)])` is NOT
 geometrically connected over `ℚ` for `n ≥ 3` — its geometric components are
@@ -12829,16 +12951,64 @@ TRUE, and it is a strengthening of `exists_jSection` rather than a new theory:
 the genuine `j`-invariant of an elliptic scheme agrees with `W.j` on a
 Weierstrass model over ANY base ring, `ℚ̄` included.
 
-**How to prove it, and it is a one-line change to work that already exists.**
-`exists_jSection` builds its witness from `exists_jSectionOnAffine` (a leaf) by
-Zariski descent; `IsJSectionOnAffine.jt_model` is likewise stated only at
-`R = ℚ`.  Generalise THAT field to a variable base ring —
-`∀ {R : Type} [CommRing R] (W : WeierstrassCurve R) [W.IsElliptic]
-(d : Gamma0Datum 1 (Spec (CommRingCat.of R))) (g : Spec (CommRingCat.of R) ⟶ SpecQ),
-IsWeierstrassModel d.ab W → jLineCoord (jt g d) = W.j` — and the present
-statement falls out at `R = ℚ̄`, `g = specAlgClos ℚ`.  The leaf that has to
-absorb the strengthening is `exists_jSectionOnAffine`, which is open anyway.
-**Do NOT build a second `j`-theory over `ℚ̄`.**
+**ROUTE AUDIT REPLACED 2026-07-28 — the route recorded here was WRONG in both
+of its load-bearing claims, and following it would have been wasted work.**
+What stood here said: generalise `IsJSectionOnAffine.jt_model` to a variable
+base ring, and "the leaf that has to absorb the strengthening is
+`exists_jSectionOnAffine`, which is open anyway".  Both halves are false.
+
+*(i) No leaf has to absorb anything — the general clause is ALREADY PROVEN.*
+`exists_jSectionOnAffine` does not construct its witness from `jt_model`; it
+constructs it from `exists_jValueOnAffine_of_localModels`, which returns, for
+EVERY affine base, a `∃!` point satisfying `IsJValueOnAffine`.  And the FIRST
+clause of `IsJValueOnAffine` is already quantified over a variable base ring:
+
+    ∀ (W : WeierstrassCurve R) [W.IsElliptic], IsWeierstrassModel d.ab W →
+      jLineCoord x = W.j
+
+— `{R : Type} [CommRing R]`, not `R = ℚ`.  So the ℚ̄ instance of the pinning is
+available from that `∃!` verbatim, by the same one line that gives `jt_model`
+at `R = ℚ` (`(H (R := ℚ) (𝟙 SpecQ) d).choose_spec.1.1`), with `R := ℚ̄` and
+`g := specAlgClos ℚ`.  The descent then transports it, because
+`exists_jTransformation_of_affine`'s agreement clause is stated for EVERY
+affine base and `Spec ℚ̄` is affine, and `jLineValAlgClos` is `jLineCoord` at
+`R = ℚ̄` exactly as `jLineVal` is at `R = ℚ`.  Nothing is missing: generalising
+the `jt_model` FIELD would strengthen a structure that no consumer needs
+strengthened.
+
+*(ii) `exists_jSectionOnAffine` is not open.*  It carries a full proof body and
+emits no `sorry`; its residue is in `exists_weierstrassModel_away_of_prime` and
+`weierstrassModel_j_unique`, which are separate declarations with separate
+owners.
+
+**THE ACTUAL OBSTRUCTION IS DECLARATION ORDER, AND IT IS NOT REPAIRABLE FROM
+THIS DECLARATION.**  Nothing above this line constructs an `IsJSection` at all:
+the structure is declared just above, `exists_jSection` is ~7400 lines BELOW,
+and the only other mention above here is `exists_rationalJ_of_galoisInvariant`,
+which takes one as a HYPOTHESIS.  So no proof of this leaf can exist at this
+position, independently of any mathematics — which is why the mathematics being
+finished does not close it.
+
+*The check that refutes this diagnosis*: any declaration before this one whose
+conclusion produces an `IsJSection` or `Nonempty IsJSection`.  Run
+`awk 'NR<12900 && /IsJSection/ && /^theorem/' Fermat/FLT/ModularCurve/X0.lean`;
+as of 2026-07-28 it returns only the consumer.
+
+**THE REPAIR, and it is a cut-level one needing coordination.**  Either move
+this leaf together with its transitive consumers below `exists_jSection`, or
+hoist the `j`-machinery above this point.  Measured 2026-07-28:
+
+* hoisting the machinery moves **42 declarations spanning lines 18465–20228**,
+  and that block contains `exists_weierstrassModel_away_of_prime`, which is
+  separately owned — so the hoist cannot be done unilaterally;
+* moving the consumers instead moves **15 declarations**, from
+  `exists_weierstrassQ_autStable_of_galoisInvariant` through
+  `y0HasNoRationalPoint_prod_two_primes`, several of which are also separately
+  owned.
+
+Whichever direction is chosen, the mathematics above is finished and costs the
+mover nothing beyond the relocation.  **Do NOT build a second `j`-theory over
+`ℚ̄`, and do NOT generalise `IsJSectionOnAffine.jt_model`.**
 
 `W.IsElliptic` is an instance binder here for the same reason as in
 `jt_model`: `WeierstrassCurve.j` is only defined for an elliptic curve. -/
@@ -12849,9 +13019,42 @@ theorem exists_jSection_algClosModel :
         jLineValAlgClos (ja.jt (specAlgClos ℚ) d) = W.j :=
   sorry
 
-/-- **THE REVERSE WEIERSTRASS BRIDGE OVER `ℚ̄`** (sorry leaf, opened
-2026-07-27): an abelian scheme of relative dimension one over `Spec ℚ̄` has a
-Weierstrass model.
+/-- **THE REVERSE WEIERSTRASS BRIDGE OVER `ℚ̄`** (**PROVEN 2026-07-28**; a sorry
+leaf from 2026-07-27 until then): an abelian scheme of relative dimension one
+over `Spec ℚ̄` has a Weierstrass model.
+
+**HOW IT WAS CLOSED — exactly as the paragraph below demanded, by generalising
+the base of the `ℚ` chain and not by a second copy of Riemann–Roch.**
+`EllipticScheme.lean`'s `exists_weierstrassModel_of_ellipticScheme` and its
+three leaves (`exists_affineComplement_zeroSection`,
+`exists_weierstrassRingEquiv_of_affineComplement`,
+`isElliptic_of_isOpenImmersion_coordinateRing`) now read over an arbitrary
+field `K`; this theorem is the instance `K := ℚ̄` and the `ℚ` form is the
+instance `K := ℚ`.  **No leaf was added**: the same three leaves carry the
+Riemann–Roch content at every base at once, and the frontier fell by one.
+
+**The one genuinely ℚ-specific step, and what it cost.**  The paragraph below
+predicted it correctly: the assembly discharged the conjunct
+`ι ≫ f = weierstrassAffineStr E` with `hom_ext_spec_rat` (`ℚ` initial in
+`CommRing`), and over `ℚ̄` there is no such uniqueness.  The repair is the one
+the paragraph names — the compatibility is CARRIED rather than read off — and
+it is two clauses: leaf 1 now supplies an `Algebra K R` together with
+`ι ≫ f = Spec.map (ofHom (algebraMap K R))`, and leaf 2's isomorphism is
+upgraded from `≃+*` to `≃ₐ[K]` so that `e.commutes` transports it. Both are
+free for the prover: the chart is built inside `A` over the base, and the
+Riemann–Roch isomorphism is chosen from `K`-linear systems, so it was already
+a `K`-algebra map and only the statement was silent about it.
+
+**The `ℚ`-statement referred to below is `exists_weierstrassCurve_of_`
+`abelianSchemeStruct`, and note it is NOT this statement's `ℚ` instance**: it
+concludes the geometric-points `≃+`, this one concludes the coordinate pinning
+`IsWeierstrassModel`.  Both descend from the same
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`, which bundles
+the two halves; only the coordinate half is generalised here, because only it
+is needed at `ℚ̄` and the `≃+` half runs through `exists_geomFibreAddEquiv_of_`
+`weierstrassModel`, whose own generalisation nothing consumes.
+
+The original route note, retained because it is what was followed:
 
 **This is `exists_weierstrassCurve_of_abelianSchemeStruct` with its base
 generalised from `ℚ` to `ℚ̄`, and it MUST be proven by generalising that one —
@@ -12889,8 +13092,10 @@ theorem exists_weierstrassAlgClos_of_abelianSchemeStruct {A : Scheme.{0}}
     {f : A ⟶ Spec (CommRingCat.of (AlgebraicClosure ℚ))}
     (ab : AbelianSchemeStruct f) (hdim : SmoothOfRelativeDimension 1 f) :
     ∃ (Ē : WeierstrassCurve (AlgebraicClosure ℚ)) (_ : Ē.IsElliptic),
-      IsWeierstrassModel ab Ē :=
-  sorry
+      IsWeierstrassModel ab Ē := by
+  obtain ⟨Ē, hĒ, ι, hopen, hstr, hrange⟩ :=
+    exists_weierstrassModel_of_ellipticScheme (K := AlgebraicClosure ℚ) ab hdim
+  exact ⟨Ē, hĒ, ι, hopen, hstr, hrange⟩
 
 /-- **THE TRANSPORT: a `ℚ̄`-model with rational `j` descends the level
 structure to a curve over `ℚ`, up to an automorphism** (sorry leaf, opened
