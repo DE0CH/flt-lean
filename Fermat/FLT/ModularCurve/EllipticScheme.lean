@@ -1128,8 +1128,33 @@ theorem fromOfGlobalSections_eq_of_gradedSmul {σ : Type*} {A : Type} [CommRing 
 
 end GradedSmulCharts
 
+/-- **Scaling the evaluation points of a HOMOGENEOUS polynomial scales its value by
+`v ^ n`** (PROVEN) — the monomial computation underlying
+`ringHom_smul_apply_of_mem_projGrading` below.
+
+Nothing here is special to the Weierstrass ring, or to `Fin 3`; it is stated at `Fin 3`
+and `ℚ` only because that is where it is used.  Mathlib's `MvPolynomial.Homogeneous`
+carries `IsHomogeneous.eval₂` (composition of homogeneous polynomials) but no lemma of
+this shape. -/
+theorem eval₂_smul_of_isHomogeneous {S : Type*} [CommRing S] (base : ℚ →+* S) (v : S)
+    (x : Fin 3 → S) {p : MvPolynomial (Fin 3) ℚ} {n : ℕ} (hp : p.IsHomogeneous n) :
+    MvPolynomial.eval₂ base (v • x) p = v ^ n * MvPolynomial.eval₂ base x p := by
+  classical
+  rw [MvPolynomial.eval₂_eq, MvPolynomial.eval₂_eq, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  have hdeg : ∑ i ∈ d.support, d i = n := by
+    have hw := hp (MvPolynomial.mem_support_iff.mp hd)
+    simpa [Finsupp.weight, Finsupp.linearCombination, Finsupp.sum] using hw
+  have hprod : ∏ i ∈ d.support, (v • x) i ^ d i = v ^ n * ∏ i ∈ d.support, x i ^ d i := by
+    simp only [Pi.smul_apply, smul_eq_mul, mul_pow, Finset.prod_mul_distrib,
+      Finset.prod_pow_eq_pow_sum, hdeg]
+  rw [hprod]
+  ring
+
 /-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
-`n`** (sorry node — the arithmetic half of `ProjCoords.toHom_smul`).
+`n`** (**PROVEN 2026-07-28** — the arithmetic half of `ProjCoords.toHom_smul`; with the
+chart half `toBasicOpenOfGlobalSections_eq_of_gradedSmul` also proven, `toHom_smul` now
+carries no `sorry` in its cone from this file).
 
 `ProjCoords.ringHom` is `Ideal.Quotient.lift` of `MvPolynomial.eval₂Hom base coord`,
 so on the class of a polynomial `p` this says
@@ -1145,12 +1170,21 @@ is surjective and the quotient grading is defined as the image, so this is
 `HomogeneousIdeal.mk_mem_quotientGrading` read backwards.
 
 This is deliberately stated in the exact form
-`fromOfGlobalSections_eq_of_gradedSmul` consumes. -/
+`fromOfGlobalSections_eq_of_gradedSmul` consumes.
+
+*The representative step is `HomogeneousIdeal.mem_quotientGrading`*, not
+`mk_mem_quotientGrading` read backwards: the former is already the `↔`, so the whole
+step is one `obtain`.  The rest is `ringHom_mk` (which is `rfl`) on both sides —
+`(smul u c).base` is `c.base` and `(smul u c).coord` is `u • c.coord`, both definitionally
+— followed by `eval₂_smul_of_isHomogeneous`. -/
 theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X)
     (n : ℕ) (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
     (ha : a ∈ projGrading E n) :
-    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a :=
-  sorry
+    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a := by
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  rw [ringHom_mk, ringHom_mk]
+  exact eval₂_smul_of_isHomogeneous c.base (u : Γ(X, ⊤)) c.coord
+    ((MvPolynomial.mem_homogeneousSubmodule _ _).mp hp)
 
 /-- **Rescaling the coordinates by a unit does not change the morphism**
 (**PROVEN 2026-07-27** from `fromOfGlobalSections_eq_of_gradedSmul` and
