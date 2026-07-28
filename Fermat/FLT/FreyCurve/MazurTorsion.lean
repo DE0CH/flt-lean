@@ -6329,7 +6329,42 @@ WHAT REMAINS TRUE of the old note: the reduction theory really is the content
 of `B₀`, and it really is blocked by declaration order.  That burden now sits
 in exactly ONE place — `exists_inertiaAut_of_padicValRat_j_nonneg`, whose own
 docstring records it — instead of in three leaves spread across a refactor
-that has already been rejected once. -/
+that has already been rejected once.
+
+AND THAT BURDEN IS FAR SMALLER THAN EVERY NOTE HERE HAS ASSUMED.  Both the
+old note and `B₀²ᵃ`'s own docstring say the repair is to hoist the
+`PotentiallyGoodModel` cluster UPWARDS — ~2300 lines, into or above a region
+that several worktrees are concurrently growing, which is exactly the
+collision that sank the last attempt.  The opposite move was never measured.
+It should have been: **moving the `B₀` cluster DOWN past
+`exists_reductionFrame_of_potentiallyGoodModel` costs SEVEN declarations and
+about 480 lines, and the cascade terminates** —
+
+    exists_inertiaAut_of_padicValRat_j_nonneg                     (~78 lines)
+    isogenyCharacter_pow_twentyFour_eq_one_of_padicValRat_j_nonneg (~104)
+    not_eight_dvd_orderOf_isogenyCharacter_of_padicValRat_j_nonneg  (~64)
+    isogenyCharacter_pow_twelve_eq_one_of_padicValRat_j_nonneg      (~41)
+    isogenyCharacter_pow_twelve_eq_one_of_mem_localInertiaGroup     (~54)
+    exists_isogenyRamificationData                                  (~61)
+    exists_isogenySignature                                         (~78)
+
+— because every remaining consumer of `exists_isogenySignature` is already
+BELOW the frame (in this file: the two `obtain ⟨s, hsmem, hsig, hs6⟩ :=
+E.exists_isogenySignature` call sites; and `ModularCurve/X0.lean`, where
+declaration order does not apply).  Nothing in the gaps between those seven
+consumes any of them, which is why the closure stops.
+
+THE CHECK THAT WOULD REFUTE THIS, and it is one pass over the file rather
+than a survey: take the transitive set of declarations in this module that
+consume `exists_inertiaAut_of_padicValRat_j_nonneg`, keep those declared
+ABOVE the frame, and confirm it is the seven above.  If a new consumer lands
+above the frame the number grows, so re-run it rather than quoting it.
+
+This is recorded here and not acted on because
+`exists_inertiaAut_of_padicValRat_j_nonneg` had a live owner when it was
+measured, and a 480-line relocation of a declaration somebody is mid-proof in
+is the one edit guaranteed to conflict. It belongs to whoever closes that
+leaf, and it is theirs to do in the same commit. -/
 
 /-- **`B₀²ᵃ` — SERRE–TATE TRANSPORT: on inertia at a prime of potentially good
 reduction, the isogeny character is a character of an AUTOMORPHISM of the
