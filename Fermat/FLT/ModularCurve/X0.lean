@@ -12456,45 +12456,24 @@ changes are recorded in its own docstring; read that first if you are
 here to prove something.
 -/
 
-/-- **The two vacuous rows of the CM half are `p = 17` and `p = 37`**
-(PROVEN 2026-07-27): if `p` is an isolated Mazur prime and some rational
-`j` lies in `isolatedJInvariants p ∩ isolatedCMJInvariants`, then `p` is
-one of the five class-number-one primes `11, 19, 43, 67, 163`.
+/-! **`mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants` WAS DELETED
+2026-07-28.**  It said: if `p` is an isolated Mazur prime and some rational
+`j` lies in `isolatedJInvariants p ∩ isolatedCMJInvariants`, then `p` is one
+of the five class-number-one primes `11, 19, 43, 67, 163` — the arithmetic
+that made the CM half **five** cases rather than seven, since the `p = 17`
+row `{−882216989/131072, −297756989/2}` and the `p = 37` row
+`{−9317, −162677523113838677}` miss `isolatedCMJInvariants` entirely.  (The
+`17`-row entries are not even integral, and a singular modulus is an
+algebraic integer; the `37` row is integral but simply is not on the list.)
 
-This is the arithmetic that makes the CM half **five** cases rather than
-seven, and it is pure `Finset` computation — no elliptic curve appears.
-The `p = 17` row is `{−882216989/131072, −297756989/2}` and the `p = 37`
-row is `{−9317, −162677523113838677}`; neither meets
-`isolatedCMJInvariants`, which consists of the five singular moduli
-`−32768, −884736, −884736000, −147197952000, −262537412640768000`.  (The
-`17`-row entries are not even integral, and no singular modulus of an
-imaginary quadratic order is a non-integer rational, since it is an
-algebraic integer; the `37` row is integral but simply is not on the
-list.)
-
-**The `j` is universally quantified on purpose.**  Stating it for an
-arbitrary `j` rather than for `E.j` keeps the statement free of the
-elliptic-curve API and makes it a decidable fact about the two tables.
-
-**NON-VACUITY of the certificate.**  The proof is `fin_cases` on `hp`
-followed by `decide` on the five surviving rows and a `norm_num`
-refutation on the two empty ones; the `decide` branch cannot silently
-cover the `17`/`37` cases, because there its goal `17 ∈ {11, 19, 43, 67,
-163}` is FALSE.  Checked by breaking it on purpose: replacing the
-conclusion's target set by `{11, 19, 43, 67}` makes the declaration fail,
-so all five memberships and both refutations are load-bearing. -/
-theorem mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants {p : ℕ}
-    (hp : p ∈ isolatedIsogenyPrimes) {j : ℚ}
-    (hj : j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants) :
-    p ∈ ({11, 19, 43, 67, 163} : Finset ℕ) := by
-  rw [Finset.mem_inter] at hj
-  obtain ⟨h1, h2⟩ := hj
-  fin_cases hp <;>
-    first
-      | decide
-      | (exfalso
-         norm_num [isolatedJInvariants, isolatedCMJInvariants] at h1 h2
-         rcases h1 with rfl | rfl <;> norm_num at h2)
+It was PROVEN and correct, and it lost its only consumer when the CM and
+non-CM genus-zero leaves were merged: the merged node
+`not_stable_of_mem_isolatedJInvariants_genusZero` runs over all eleven rows
+at once and never needs to know which of them are singular moduli, so the
+`5`-real-`+`-`2`-vacuous accounting stopped being load-bearing.  Rather than
+leave a declaration with no consumer, it was removed; recover it with
+`git show <this commit>^:Fermat/FLT/ModularCurve/X0.lean`.
+-/
 
 /-- **Mazur's tables at distinct isolated levels are disjoint** (PROVEN
 2026-07-27): no rational number is a non-cuspidal `j`-invariant of
@@ -12530,11 +12509,12 @@ theorem isolatedJInvariants_disjoint {p q : ℕ} (hp : p ∈ isolatedIsogenyPrim
 /-! ### Certificates for the genus-zero remainder at `q ∈ {2, 3}`
 
 Everything in this section serves
-`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall` below, which
-closes `12` of that node's `30` explicit checks.  The route is the one the
-parent node's ROUTE CORRECTION recommends — the kernel-polynomial criterion —
-specialised to the two levels at which the kernel polynomial is a single
-rational number:
+`not_stable_of_mem_isolatedJInvariants_genusZeroSmall` below, which closes
+`22` of the merged genus-zero node's `55` explicit checks — `q ∈ {2, 3}`
+against **all eleven** rows of Mazur's table, CM and non-CM alike.  The
+route is the one the parent node's ROUTE CORRECTION recommends — the
+kernel-polynomial criterion — specialised to the two levels at which the
+kernel polynomial is a single rational number:
 
 * at `q = 2` a `Γ_ℚ`-stable subgroup of order `2` is pointwise fixed, so its
   abscissa is rational and the `2`-division cubic `Ψ₂Sq` has a rational root;
@@ -12557,19 +12537,36 @@ up to quadratic twist, and a twist by `d` scales `u ↦ du`, `c₄ ↦ d²c₄`,
 `c₄ ≠ 0` and `c₆ ≠ 0` are where `j ∉ {0, 1728}` is consumed, and every entry
 of `isolatedJInvariants` is strictly negative.
 
-The twelve resulting rational-root questions are settled by a mod-`ℓ`
+The twenty-two resulting rational-root questions are settled by a mod-`ℓ`
 certificate: homogenise, reduce the coefficients modulo a prime `ℓ` at which
 the binary form has no nontrivial zero, and use `w.num.natAbs.Coprime w.den`.
-The witness primes are `5, 5, 7, 7, 23, 23` (cubic) and `5, 5, 7, 7, 17, 17`
-(quartic); each `decide` is a `ℓ²`-element check.
+In the table order (`p = 11, 11, 11, 17, 17, 19, 37, 37, 43, 67, 163`) the
+witness primes are `5, 5, 5, 7, 7, 5, 23, 23, 11, 17, 41` (cubic) and
+`13, 5, 5, 7, 7, 5, 17, 17, 11, 13, 13` (quartic); each `decide` is a
+`ℓ²`-element check, the largest being `41² = 1681`, which needs no
+`maxRecDepth` bump.
 
-**These certificates were FOUND in PARI/GP and are VERIFIED here** — the
-CAS was used only to search for the witness primes.  Independent
-corroboration that the twelve statements are true: `factor` over `ℚ`
-reports all twelve polynomials irreducible, and the criteria were
+**These certificates were FOUND by machine search and are VERIFIED here** —
+the search was used only to locate the witness primes, and an anisotropic
+`ℓ` is by itself a complete proof that the polynomial has no rational root,
+so nothing external is being trusted.
+
+**The five singular moduli were added on 2026-07-28** (`−32768`, `−884736`,
+`−884736000`, `−147197952000`, `−262537412640768000`), when the CM and
+non-CM genus-zero leaves were merged.  That the same certificates work for
+them is the whole content of the merge: the CM/non-CM distinction was
+introduced because the two halves were believed to need different proofs,
+and at `q ≤ 3` they demonstrably do not — the normalised cubic and quartic
+are the SAME polynomials in `j`, and only their coefficients change.
+
+Independent corroboration for the six non-singular rows: `factor` over `ℚ`
+reports all twelve of their polynomials irreducible, and the criteria were
 cross-checked against `elldivpol(e, 2)` and `elldivpol(e, 3)` on eleven
 sample curves, agreeing on the rational-root count in every non-degenerate
-case (`j = 1728` degenerates the quartic, `j = 0` both).
+case (`j = 1728` degenerates the quartic, `j = 0` both).  For the five
+singular moduli the corroboration is `ellisomat`, which reports isogeny
+class size `2` with degree multiset `{1, p}` — hence no `2`- or
+`3`-isogeny — recorded on `not_stable_of_mem_isolatedJInvariants`.
 -/
 
 section MazurGenusZeroCertificates
@@ -12835,16 +12832,30 @@ theorem exists_rat_abscissa {E : WeierstrassCurve ℚ} [E.IsElliptic] {q : ℕ}
   obtain ⟨x₀, rfl⟩ := mem_range_of_fixed (F := ℚ) x hfix
   exact ⟨x₀, eval_ΨSq_descend E (q : ℤ) x₀ hΨ⟩
 
-/-! ### The twelve explicit checks at `q = 2` and `q = 3` -/
+/-! ### The twenty-two explicit checks at `q = 2` and `q = 3` -/
 
-/-- The six non-CM entries of Mazur's table have no rational `2`-torsion. -/
-theorem no_rat_root_two_of_mem_nonCM {E : WeierstrassCurve ℚ} [E.IsElliptic]
+/-- **The eleven entries of Mazur's table have no rational `2`-torsion.**
+
+One mod-`ℓ` certificate per row.  The witness primes are `5, 5, 5, 7, 7,
+5, 23, 23, 11, 17, 41` in the order of the disjunction, which is the
+order of the table: `p = 11` (three values), `17` (two), `19`, `37`
+(two), `43`, `67`, `163`.
+
+The five singular moduli were added on 2026-07-28, when the CM and non-CM
+genus-zero leaves were merged.  Nothing in the argument sees CM-ness: the
+`j`-normalised cubic is the same polynomial for every row, and only its
+coefficients change. -/
+theorem no_rat_root_two_of_mem_isolated {E : WeierstrassCurve ℚ} [E.IsElliptic]
     (hj0 : E.j ≠ 0) (hj1728 : E.j ≠ 1728)
-    (hj : E.j = -121 ∨ E.j = -24729001 ∨ E.j = -882216989 / 131072
-      ∨ E.j = -297756989 / 2 ∨ E.j = -9317 ∨ E.j = -162677523113838677)
+    (hj : E.j = -32768 ∨ E.j = -121 ∨ E.j = -24729001
+      ∨ E.j = -882216989 / 131072 ∨ E.j = -297756989 / 2 ∨ E.j = -884736
+      ∨ E.j = -9317 ∨ E.j = -162677523113838677 ∨ E.j = -884736000
+      ∨ E.j = -147197952000 ∨ E.j = -262537412640768000)
     (x : ℚ) (hx : E.Ψ₂Sq.eval x = 0) : False := by
   obtain ⟨w, hw⟩ := exists_rat_root_two E hj0 hj1728 x hx
-  rcases hj with h | h | h | h | h | h <;> rw [h] at hw
+  rcases hj with h | h | h | h | h | h | h | h | h | h | h <;> rw [h] at hw
+  · exact no_rat_root_cubic (A := (-34496)) (B := 0) (C := 98304) (D := 65536)
+      (ℓ := 5) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
   · exact no_rat_root_cubic (A := (-1849)) (B := 0) (C := 363) (D := 242)
       (ℓ := 5) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
   · exact no_rat_root_cubic (A := (-24730729)) (B := 0) (C := 74187003) (D := 49458002)
@@ -12853,19 +12864,37 @@ theorem no_rat_root_two_of_mem_nonCM {E : WeierstrassCurve ℚ} [E.IsElliptic]
       (ℓ := 7) (by decide) (by decide) w (by push_cast; linear_combination (131072 : ℚ) * hw)
   · exact no_rat_root_cubic (A := (-297760445)) (B := 0) (C := 893270967) (D := 595513978)
       (ℓ := 7) (by decide) (by decide) w (by push_cast; linear_combination (2 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-886464)) (B := 0) (C := 2654208) (D := 1769472)
+      (ℓ := 5) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
   · exact no_rat_root_cubic (A := (-11045)) (B := 0) (C := 27951) (D := 18634)
       (ℓ := 23) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
   · exact no_rat_root_cubic (A := (-162677523113840405)) (B := 0) (C := 488032569341516031) (D := 325355046227677354)
       (ℓ := 23) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-884737728)) (B := 0) (C := 2654208000) (D := 1769472000)
+      (ℓ := 11) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-147197953728)) (B := 0) (C := 441593856000) (D := 294395904000)
+      (ℓ := 17) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_cubic (A := (-262537412640769728)) (B := 0) (C := 787612237922304000) (D := 525074825281536000)
+      (ℓ := 41) (by decide) (by decide) w (by push_cast; linear_combination (1 : ℚ) * hw)
 
-/-- The six non-CM entries of Mazur's table have no rational `3`-isogeny. -/
-theorem no_rat_root_three_of_mem_nonCM {E : WeierstrassCurve ℚ} [E.IsElliptic]
+/-- **The eleven entries of Mazur's table have no rational `3`-isogeny.**
+
+One mod-`ℓ` certificate per row; the witness primes are `13, 5, 5, 7, 7,
+5, 17, 17, 11, 13, 13`, in the same table order as
+`no_rat_root_two_of_mem_isolated`.  The five singular moduli were added
+on 2026-07-28 with the leaf merge. -/
+theorem no_rat_root_three_of_mem_isolated {E : WeierstrassCurve ℚ} [E.IsElliptic]
     (hj0 : E.j ≠ 0) (hj1728 : E.j ≠ 1728)
-    (hj : E.j = -121 ∨ E.j = -24729001 ∨ E.j = -882216989 / 131072
-      ∨ E.j = -297756989 / 2 ∨ E.j = -9317 ∨ E.j = -162677523113838677)
+    (hj : E.j = -32768 ∨ E.j = -121 ∨ E.j = -24729001
+      ∨ E.j = -882216989 / 131072 ∨ E.j = -297756989 / 2 ∨ E.j = -884736
+      ∨ E.j = -9317 ∨ E.j = -162677523113838677 ∨ E.j = -884736000
+      ∨ E.j = -147197952000 ∨ E.j = -262537412640768000)
     (x : ℚ) (hx : E.Ψ₃.eval x = 0) : False := by
   obtain ⟨w, hw⟩ := exists_rat_root_three E hj0 hj1728 x hx
-  rcases hj with h | h | h | h | h | h <;> rw [h] at hw
+  rcases hj with h | h | h | h | h | h | h | h | h | h | h <;> rw [h] at hw
+  · exact no_rat_root_quartic (A := 1189974016) (B := 0) (C := (-6782189568)) (D := (-9042919424))
+      (E := (-3221225472)) (ℓ := 13) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
   · exact no_rat_root_quartic (A := 3418801) (B := 0) (C := (-1342374)) (D := (-1789832))
       (E := (-43923)) (ℓ := 5) (by decide) (by decide) w
       (by push_cast; linear_combination (1 : ℚ) * hw)
@@ -12878,11 +12907,23 @@ theorem no_rat_root_three_of_mem_nonCM {E : WeierstrassCurve ℚ} [E.IsElliptic]
   · exact no_rat_root_quartic (A := 88661282606598025) (B := 0) (C := (-531961521279000630)) (D := (-709282028372000840))
       (E := (-265977673495038363)) (ℓ := 7) (by decide) (by decide) w
       (by push_cast; linear_combination (4 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 785818423296) (B := 0) (C := (-4705719681024)) (D := (-6274292908032))
+      (E := (-2348273369088)) (ℓ := 5) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
   · exact no_rat_root_quartic (A := 121992025) (B := 0) (C := (-617437590)) (D := (-823250120))
       (E := (-260419467)) (ℓ := 17) (by decide) (by decide) w
       (by push_cast; linear_combination (1 : ℚ) * hw)
   · exact no_rat_root_quartic (A := 26463976526454079218393267810564025) (B := 0) (C := (-158783859158722788669799962566065110)) (D := (-211711812211630384893066616754753480))
       (E := (-79391929579360551014620159143330987)) (ℓ := 17) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 782760847346601984) (B := 0) (C := (-4696555911118848000)) (D := (-6262074548158464000))
+      (E := (-2348273369088000000)) (ℓ := 11) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 21667237581710429097984) (B := 0) (C := (-130003423964114190336000)) (D := (-173337898618818920448000))
+      (E := (-65001711218982912000000)) (ℓ := 13) (by decide) (by decide) w
+      (by push_cast; linear_combination (1 : ℚ) * hw)
+  · exact no_rat_root_quartic (A := 68925893036109796564713716321193984) (B := 0) (C := (-413555358216656057400388038426624000)) (D := (-551407144288874743200517384568832000))
+      (E := (-206777679108326667706246889472000000)) (ℓ := 13) (by decide) (by decide) w
       (by push_cast; linear_combination (1 : ℚ) * hw)
 
 end MazurGenusZero
@@ -12890,9 +12931,10 @@ end MazurGenusZero
 end MazurGenusZeroCertificates
 
 /-- **The genus-zero remainder at the two smallest levels** (PROVEN
-2026-07-27): `12` of the `30` explicit checks of
-`not_stable_of_mem_isolatedNonCMJInvariants_genusZero`, namely `q ∈ {2, 3}`
-against all six non-CM entries of Mazur's table.
+2026-07-27 for the six non-CM rows; EXTENDED 2026-07-28 to all eleven):
+`22` of the `55` explicit checks of
+`not_stable_of_mem_isolatedJInvariants_genusZero`, namely `q ∈ {2, 3}`
+against every entry of Mazur's table, singular modulus or not.
 
 See the section above for the argument.  In one sentence: at `q ≤ 3` a
 `Γ_ℚ`-stable subgroup is `{0, ±g}`, so the abscissa of `g` is `Γ_ℚ`-fixed
@@ -12900,46 +12942,70 @@ hence rational, so the `q`-division polynomial has a rational root; and after
 normalising `x` on the `j`-invariant that is a rational root of an explicit
 integer cubic (resp. quartic) which has none, by a mod-`ℓ` certificate.
 
-**Why this does not extend to `q ∈ {5, 7, 13}`** — the remaining `18`
+**THE CM ROWS COST NOTHING EXTRA, AND THAT IS WHY THE TWO GENUS-ZERO LEAVES
+WERE MERGED** (2026-07-28).  The argument never inspects `E.j` beyond its
+numerical value: `exists_rat_abscissa` is a statement about `⟨g⟩` alone, and
+the normalisation to `w` uses only `j ∉ {0, 1728}`, which holds for all
+eleven rows because every one of them is strictly negative.  So extending
+from six rows to eleven was five more `decide` certificates and no new
+mathematics — whereas the CM half had previously been cut through Deuring's
+theorem and the Cartan-normalizer image, none of which exists at this pin.
+
+**Why this does not extend to `q ∈ {5, 7, 13}`** — the remaining `33`
 checks, left to `..._genusZeroLarge`.  There `⟨g⟩ ∖ 0` has `q − 1 ≥ 4`
 elements and `(q−1)/2 ≥ 2` distinct abscissae, which Galois may PERMUTE; the
 kernel polynomial `∏(X − x(i ⬝ g))` is then rational of degree `2, 3, 6` and
 what has to be excluded is a rational FACTOR of `Ψ_q` of that degree, not a
 rational ROOT.  No mod-`ℓ` root certificate sees that, and `Ψ₁₃` has degree
 `84`. -/
-theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall {p q : ℕ}
+theorem not_stable_of_mem_isolatedJInvariants_genusZeroSmall {p q : ℕ}
     (hp : p ∈ isolatedIsogenyPrimes) (hq : q = 2 ∨ q = 3)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
+    (hj : E.j ∈ isolatedJInvariants p)
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
     False := by
-  have hj6 : E.j = -121 ∨ E.j = -24729001 ∨ E.j = -882216989 / 131072
-      ∨ E.j = -297756989 / 2 ∨ E.j = -9317 ∨ E.j = -162677523113838677 := by
+  have hj11 : E.j = -32768 ∨ E.j = -121 ∨ E.j = -24729001
+      ∨ E.j = -882216989 / 131072 ∨ E.j = -297756989 / 2 ∨ E.j = -884736
+      ∨ E.j = -9317 ∨ E.j = -162677523113838677 ∨ E.j = -884736000
+      ∨ E.j = -147197952000 ∨ E.j = -262537412640768000 := by
     fin_cases hp <;>
-      simp only [isolatedJInvariants, isolatedCMJInvariants, Finset.mem_sdiff,
-        Finset.mem_insert, Finset.mem_singleton] at hj <;>
+      simp only [isolatedJInvariants] at hj <;>
       norm_num at hj ⊢ <;> tauto
-  have hj0 : E.j ≠ 0 := by rcases hj6 with h | h | h | h | h | h <;> rw [h] <;> norm_num
+  have hj0 : E.j ≠ 0 := by
+    rcases hj11 with h | h | h | h | h | h | h | h | h | h | h <;> rw [h] <;> norm_num
   have hj1728 : E.j ≠ 1728 := by
-    rcases hj6 with h | h | h | h | h | h <;> rw [h] <;> norm_num
+    rcases hj11 with h | h | h | h | h | h | h | h | h | h | h <;> rw [h] <;> norm_num
   obtain ⟨x₀, hx₀⟩ := MazurGenusZero.exists_rat_abscissa hq g hg hstable
   rcases hq with rfl | rfl
   · have hc : ((2 : ℕ) : ℤ) = 2 := by norm_num
     rw [hc, WeierstrassCurve.ΨSq_two] at hx₀
-    exact MazurGenusZero.no_rat_root_two_of_mem_nonCM hj0 hj1728 hj6 x₀ hx₀
+    exact MazurGenusZero.no_rat_root_two_of_mem_isolated hj0 hj1728 hj11 x₀ hx₀
   · have hc : ((3 : ℕ) : ℤ) = 3 := by norm_num
     rw [hc, WeierstrassCurve.ΨSq_three, Polynomial.eval_pow,
       pow_eq_zero_iff (two_ne_zero)] at hx₀
-    exact MazurGenusZero.no_rat_root_three_of_mem_nonCM hj0 hj1728 hj6 x₀ hx₀
+    exact MazurGenusZero.no_rat_root_three_of_mem_isolated hj0 hj1728 hj11 x₀ hx₀
 
 /-- **The genus-zero remainder at the three largest levels** (sorry leaf, cut
-2026-07-27 out of `not_stable_of_mem_isolatedNonCMJInvariants_genusZero`): the
-`18` checks `q ∈ {5, 7, 13}` × the six non-CM entries of Mazur's table that
-survive `..._genusZeroSmall`.
+2026-07-27 out of `not_stable_of_mem_isolatedNonCMJInvariants_genusZero`;
+MERGED 2026-07-28 with the CM sibling): the `33` checks `q ∈ {5, 7, 13}` ×
+**all eleven** entries of Mazur's table that survive `..._genusZeroSmall`.
+
+## THE MERGE (2026-07-28) — this leaf replaces two
+
+Until 2026-07-28 there were two genus-zero leaves,
+`not_stable_of_mem_isolatedCMJInvariants_genusZero` (`25` checks, the five
+singular moduli × `q ∈ {2, 3, 5, 7, 13}`) and
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge` (`18` checks).
+They were the same statement over disjoint row sets, and were two only
+because they had different owners.  Merging them and running the
+`q ∈ {2, 3}` certificates over all eleven rows turned `43` open checks into
+`33`, on ONE leaf, with the CM/non-CM distinction gone from the subtree
+entirely: nothing below `not_stable_of_mem_isolatedJInvariants` inspects
+whether `E.j` is a singular modulus.
 
 ## WHY THIS IS THE CUT, AND WHY IT IS NOT `q ≤ 3` WITH A BIGGER `q`
 
@@ -12954,8 +13020,8 @@ At `q ≥ 5` that collapse fails and nothing weaker replaces it.  `⟨g⟩ ∖ 0
 symmetric functions descend.  What a stable `⟨g⟩` gives is therefore the
 kernel polynomial `f = ∏_{i=1}^{(q−1)/2} (X − x(i ⬝ g)) ∈ ℚ[X]` — a rational
 FACTOR of `Ψ_q` of degree `2, 3, 6`, not a rational ROOT.  A mod-`ℓ` root
-certificate is blind to that, so the technique that closes the twelve small
-checks does not extend by any amount of arithmetic.
+certificate is blind to that, so the technique that closes the twenty-two
+small checks does not extend by any amount of arithmetic.
 
 ## WHAT PROVING IT NEEDS
 
@@ -12968,35 +13034,66 @@ checks does not extend by any amount of arithmetic.
    step, and `MazurGenusZero.mem_range_of_fixed` above is the `q ≤ 3` case of
    exactly this, stated over a variable base field (which is what it takes to
    dodge the `Algebra ℚ ℚ̄` diamond).  This is ONE uniform piece of work, not
-   `18`.
+   `33`.
 2. **Non-existence of a rational factor of `Ψ_q` of degree `(q−1)/2`**, for
-   each of the six `j`-values normalised as in the CERTIFICATES section.
+   each of the eleven `j`-values normalised as in the CERTIFICATES section.
    This is the genuinely hard half.  `Ψ₅`, `Ψ₇`, `Ψ₁₃` have degrees `12`,
    `24`, `84`; a mod-`ℓ` certificate for "no factor of degree `d`" needs the
    FACTORISATION of `Ψ_q mod ℓ`, and there is no `decide`-shaped route to a
    degree-`84` factorisation in Lean.
 
+## ⚠ THE FROBENIUS SIEVE IS EVIDENCE, NOT A PROOF STRATEGY — IT IS NOT TWIST-UNIFORM
+
+`hj` pins `E` only **up to quadratic twist**, and a twist ramified at every
+witness prime defeats any FINITE list of `(ℓ, a_ℓ)` conditions: replacing `E`
+by `E^d` multiplies `a_ℓ` by `χ_d(ℓ)`, and for any finite set `S` of witness
+primes there is a `d` making `χ_d` ramified at every `ℓ ∈ S`, so the recorded
+witnesses say nothing about `E^d`.  The tabulated certificates — three
+witnesses per check on the non-CM rows, `ellisomat` on the CM rows — are
+therefore CORROBORATION that the statement is true, and are **not** a route to
+proving it.  (This caveat used to be carried by the CM leaf and NOT by the
+non-CM one, where it applies just as much; the merge fixes that.)
+
+**The kernel-polynomial route is the twist-invariant one**, which is why item
+(2) above is the real target: `f`'s existence is a condition on the
+`j`-invariant alone.
+
+## THE TECHNIQUE TO COPY: `Fermat/FLT/EllipticCurve/GenusOneKernelPolynomials.lean`
+
+That file carries six worked `IsKernelPolynomial` certificates at the
+genus-ONE isogeny primes (`p ∈ {11, 17, 19}`), on the conductor-`121`,
+`14450` and `361` minimal twists.  Two things there transfer directly:
+
+* the divisibilities are discharged **modulo `f`**, walking mathlib's
+  `preNormEDS'` recursion one step at a time, so each identity has degree
+  `≤ 38` instead of `≤ 180` — and the whole file needs **no `set_option`
+  bump** of any kind;
+* the model is chosen as the MINIMAL TWIST rather than `WeierstrassCurve.ofJ`,
+  which is legitimate exactly because a rational cyclic isogeny is
+  twist-invariant, and is what keeps the coefficients writable.
+
+The direction needed here is the negative one (no such `f` exists), so the
+certificates cannot be reused verbatim; the ARITHMETIC BUDGET and the
+reduce-modulo-`f` discipline can.
+
 **A ROUTE WORTH PRICING BEFORE ATTACKING (2) HEAD-ON.**  A rational cyclic
 `q`-isogeny gives a rational root `j'` of the modular polynomial
 `Φ_q(E.j, Y)`, of degree `q + 1 = 6, 8, 14` — small enough for the same
-mod-`ℓ` rational-root certificate used above, and uniform across the six
+mod-`ℓ` rational-root certificate used above, and uniform across the eleven
 `j`-values.  What it costs is `Φ_q` itself: the coefficients of `Φ₁₃` are
 astronomical, so this trades a factorisation problem for a very large
 constant table plus the statement "a rational `q`-isogeny forces
 `Φ_q(j, j') = 0`".  Neither exists at this pin.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` whose
-`j`-invariant is one of the six tabulated non-singular values and which
-carries a rational cyclic isogeny of degree `5`, `7` or `13`.  PARI/GP
-`ellisomat` on `ellinit(ellfromj(j))` reports isogeny class size `2` with
-degree multiset `{1, p}` at every one of the six, so no such curve is
-expected; and the one-prime Frobenius sieve tabulated on the parent node
-gives an explicit `(ℓ, a_ℓ)` witness for each of these `18` checks, with the
-negative control at `q = p` finding no witness below `2000`. -/
-theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge {p q : ℕ}
+`j`-invariant is one of the eleven tabulated values and which carries a
+rational cyclic isogeny of degree `5`, `7` or `13`.  PARI/GP `ellisomat` on
+`ellinit(ellfromj(j))` reports isogeny class size `2` with degree multiset
+`{1, p}` at every one of the eleven, so no such curve is expected. -/
+theorem not_stable_of_mem_isolatedJInvariants_genusZeroLarge {p q : ℕ}
     (_hp : p ∈ isolatedIsogenyPrimes) (_hq : q = 5 ∨ q = 7 ∨ q = 13)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (_hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
+    (_hj : E.j ∈ isolatedJInvariants p)
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
     (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
@@ -13006,47 +13103,58 @@ theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge {p q : ℕ}
   sorry
 
 
-/-- **The genus-zero remainder of the CM half** (sorry leaf, cut
-2026-07-27; this is what is left of the CM half after the
-isolated-`q` case is discharged for free): for the five singular moduli
-of Mazur's table, `E` has no rational `q`-isogeny for a prime
-`q ∈ mazurIsogenyPrimes` that is **not** itself an isolated prime — i.e.
-for `q ∈ {2, 3, 5, 7, 13}`.
+/-- **The genus-zero remainder of Mazur's table** (PROVEN 2026-07-28 by
+decomposition; this single node REPLACES the two leaves
+`not_stable_of_mem_isolatedCMJInvariants_genusZero` and
+`not_stable_of_mem_isolatedNonCMJInvariants_genusZero`): for every entry of
+`isolatedJInvariants p`, singular modulus or not, `E` has no rational
+`q`-isogeny for a prime `q ∈ mazurIsogenyPrimes` that is **not** itself an
+isolated prime — i.e. for `q ∈ {2, 3, 5, 7, 13}`.
 
-TRUE, FINITE, and **`25` checks**: `5` singular moduli × `5` genus-zero
-primes.  No `q = p` exclusion is needed, because `hp` puts `p` among the
-isolated primes and `_hqi` keeps `q` out of them.
+TRUE, FINITE, and **`55` checks**: `11` rows × `5` genus-zero primes.  No
+`q = p` exclusion is needed, because `hp` puts `p` among the isolated primes
+and `hqi` keeps `q` out of them.
 
-## WHY THIS LEAF REPLACED THE CM/CARTAN ROUTE (2026-07-27)
+Of the `55`, the `22` at `q ∈ {2, 3}` are PROVEN
+(`..._genusZeroSmall`) and the `33` at `q ∈ {5, 7, 13}` are the one
+remaining leaf (`..._genusZeroLarge`).
 
-This node used to be attacked through two much larger leaves,
-`exists_cmEndomorphism_of_mem_isolatedCMJInvariants` (Deuring) and
-`not_stable_of_cmEndomorphism` (Serre 1972 §4.5, Cartan normalizer),
-which between them asked for the analytic uniformisation of elliptic
-curves by lattices, the Hilbert class polynomial and `h(−p) = 1`, the
-Galois action on `End(E_ℚ̄)`, `End_ℚ(E) = ℤ`, `E[q]` as a free rank-`1`
-`O_K/qO_K`-module with the inert/split/ramified trichotomy, and the
-CM-theoretic lower bound on the image of `Γ_K` in the Cartan.  None of
-that exists in the mathlib pin, in `~/cs/FLT`, or in this project.
+## THE MERGE (2026-07-28), AND WHY THE CM/NON-CM SPLIT IS GONE
 
-The non-CM sibling `not_stable_of_mem_isolatedNonCMJInvariants` was cut
-instead on whether `q` is itself an isolated prime, and **the identical
-cut applies here**: the argument never inspects `E.j` beyond its row
-membership, so it is indifferent to whether the row is a singular
-modulus.  `mem_isolatedJInvariants_of_stable` (Mazur's Theorem 1, the
-same independent input `_hqm` already brings in) applied **at level `q`**
-returns `E.j ∈ isolatedJInvariants q`, while `_hj` gives
-`E.j ∈ isolatedJInvariants p`; `isolatedJInvariants_disjoint` then
-contradicts them with no computation.  That kills every isolated `q` and
-leaves exactly the genus-zero levels below.
+The split existed because the two halves were believed to need completely
+different proofs — the CM rows through Deuring's theorem plus the image of
+`Γ_ℚ` in the normalizer of a Cartan subgroup of `GL₂(𝔽_q)`, the non-CM rows
+by explicit computation.  Both beliefs were superseded on 2026-07-27, when
+the CM half was re-cut on whether `q` is itself an isolated prime — the
+identical cut the non-CM half already used — and the Deuring/Cartan leaves
+(`exists_cmEndomorphism_of_mem_isolatedCMJInvariants`,
+`not_stable_of_cmEndomorphism`) were DELETED.  Between them those two leaves
+had asked for the analytic uniformisation of elliptic curves by lattices,
+the Hilbert class polynomial with `h(−p) = 1`, the Galois action on
+`End(E_ℚ̄)`, `End_ℚ(E) = ℤ`, `E[q]` as a free rank-`1` `O_K/qO_K`-module with
+the inert/split/ramified trichotomy, and the CM-theoretic lower bound on the
+image of `Γ_K` in the Cartan.  **None of that exists in the mathlib pin, in
+`~/cs/FLT`, or in this project**, and none of it is needed anywhere in this
+subtree any more.
 
-So the CM theory is **not needed anywhere in this subtree** — the two
-leaves it lived in were deleted, and what remains is the same
-finite-check machinery the non-CM half already needs.  Both halves now
-bottom out on the same missing piece (`E[q]` as a Galois module for
-`q ≤ 13`), which is a strict reduction of what the tree depends on.
+What was left afterwards was two leaves with the SAME statement over
+DISJOINT row sets, which is not a mathematical distinction — it is a record
+of who owned what.  Merging them on 2026-07-28 and running the
+`q ∈ {2, 3}` certificates over all eleven rows took `43` open checks to
+`33`, on one leaf.  The certificates section verifies the claim that the
+argument is CM-blind: the same normalised cubic and quartic serve every row,
+and only the coefficients change.
 
-## MACHINE-CHECKED CERTIFICATES FOR ALL `25` CHECKS (PARI/GP 2.17.4, 2026-07-27)
+The isolated-`q` case is discharged with no computation at all, in this
+node's own proof: `mem_isolatedJInvariants_of_stable` (Mazur's Theorem 1,
+the same independent input `hqm` already brings in) applied **at level `q`**
+returns `E.j ∈ isolatedJInvariants q`, while `hj` gives
+`E.j ∈ isolatedJInvariants p`, and `isolatedJInvariants_disjoint`
+contradicts them.  That is done one level up, in
+`not_stable_of_mem_isolatedJInvariants`; here `hqi` records that it has
+already happened.
+
+## MACHINE-CHECKED CERTIFICATES (PARI/GP 2.17.4, 2026-07-27)
 
 The one-prime Frobenius sieve: if `E/ℚ` has a `Γ_ℚ`-stable line in `E[q]`
 then for every prime `ℓ ≠ q` of good reduction the characteristic
@@ -13081,90 +13189,63 @@ check that the transcribed table is the right one — with three witnesses
 
 The many `a_ℓ = 0` entries are not luck: these curves have CM, so
 `a_ℓ = 0` at every prime `ℓ` inert in `ℚ(√−p)`, and there
-`a_ℓ² − 4ℓ = −4ℓ`, whose Legendre symbol mod `q` is `(−ℓ ∣ q)`.
+`a_ℓ² − 4ℓ = −4ℓ`, whose Legendre symbol mod `q` is `(−ℓ ∣ q)`.  The
+corresponding sieve for the six non-CM rows is tabulated on
+`not_stable_of_mem_isolatedNonCMJInvariants`.
 
-**THE SIEVE IS NOT TWIST-UNIFORM AND MUST NOT BE USED AS IF IT WERE.**
-`_hj` constrains `E.j`, so `E` is pinned only up to quadratic twist, and
-while `a_ℓ² − 4ℓ` is twist-invariant *where both curves have good
-reduction*, the twist `E^{(d)}` has BAD reduction at every `ℓ ∣ d`.  A
-fixed finite witness list is therefore defeated by a twist ramified at
-all of its primes.  The table above is FAITHFULNESS evidence — it says
-the statement is true — and it is not a proof strategy on its own.  A
-proof needs either infinitely many `ℓ` (i.e. a Chebotarev input) or the
-twist-invariant route below.
+**THE SIEVE IS NOT TWIST-UNIFORM AND MUST NOT BE USED AS IF IT WERE — AND
+THIS APPLIES TO THE NON-CM ROWS EXACTLY AS MUCH AS TO THE CM ONES.**  `hj`
+constrains `E.j`, so `E` is pinned only up to quadratic twist, and while
+`a_ℓ² − 4ℓ` is twist-invariant *where both curves have good reduction*, the
+twist `E^{(d)}` has BAD reduction at every `ℓ ∣ d`.  A fixed finite witness
+list is therefore defeated by a twist ramified at all of its primes.  The
+tables are FAITHFULNESS evidence — they say the statement is true — and are
+not a proof strategy on their own.  A proof needs either infinitely many `ℓ`
+(i.e. a Chebotarev input) or the twist-invariant kernel-polynomial route.
+Before the merge this caveat was carried by the CM leaf and NOT by the
+non-CM one, which was an accident of authorship, not a mathematical
+difference.
 
-## THE ROUTE: the kernel-polynomial criterion, shared with the non-CM half
-
-Identical to the recommendation on
-`not_stable_of_mem_isolatedNonCMJInvariants_genusZero`, and deliberately
-so — whoever builds it there gets this leaf for the same price:
-
-* `WeierstrassCurve.IsKernelPolynomial` and
-  `exists_point_of_isKernelPolynomial`
-  (`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`) give
-  *certificate ⟹ stable subgroup*, PROVEN.
-* The converse — *stable subgroup ⟹ certificate*, i.e. Galois descent of
-  `∏_{i=1}^{(q−1)/2} (X − x(i ⬝ g))` to `ℚ[X]` — is the one genuinely
-  uniform piece of work.  `InfiniteGalois.mem_range_algebraMap_iff_fixed`
-  for `AlgebraicClosure ℚ / ℚ` is the descent step.
-* This route IS twist-invariant, which is exactly why it is preferred to
-  the sieve: a quadratic twist rescales `x` by a square factor, so
-  rationality of the kernel polynomial is preserved.
-* `q = 2` degenerates (kernel polynomial of degree `0`) and needs its own
-  elementary argument: a stable subgroup of order `2` is pointwise fixed,
-  hence a rational `2`-torsion point, hence a rational root of the
-  `2`-division cubic — which none of the five curves has.  Cheapest of
-  the `25`, and the right place to start.
-
-**A WORKED TEMPLATE FOR THE POLYNOMIAL SIDE NOW EXISTS IN THIS TREE**
-(noted 2026-07-27, from the release that landed hours after this leaf was
-cut): `Fermat/FLT/EllipticCurve/GenusOneKernelPolynomials.lean` carries
-six explicit `IsKernelPolynomial` certificates at `p ∈ {11, 17, 19}`,
-including the `dvd_ΨSq` and `dvd_multComp` divisibilities, and it records
-how to make them fit in a default elaboration budget: verify **modulo
-`f`**, walking mathlib's own `preNormEDS'` recursion one step at a time
-rather than expanding a degree-`360` identity.  Its models are exactly the
-minimal twists of conductor `121`, `14450`, `361` used above.  That is the
-POSITIVE direction (a certificate exists); this leaf needs the NEGATIVE one
-at `q ≤ 13` on the five CM curves, but the reduction-mod-`f` technique and
-the `ZMod`-based `generates` lemmas transfer directly.  Read it before
-writing anything here.
-
-Two warnings it records that apply here as well: a kernel polynomial can
-be REDUCIBLE (at `j = −882216989/131072` the degree-`8` one is a product of
-two quartics), so a search for an irreducible factor of degree `(q−1)/2`
-can wrongly report a row as false; and the multiplier `m` must generate
-`(ℤ/q)ˣ/±1`, which `m = 2` fails to do at `q = 17`.
-
-**CIRCULARITY WARNING.**  Do NOT discharge this by citing Kenku's list of
-cyclic isogeny degrees over `ℚ`: that list is what this subtree is
-proving.  Using `_hqm` is not circular by contrast — it is Mazur's
+**CIRCULARITY WARNING.**  Do NOT discharge any of this by citing Kenku's
+list of cyclic isogeny degrees over `ℚ`: that list is what this subtree is
+proving.  Using `hqm` is not circular by contrast — it is Mazur's
 prime-degree theorem, an independent input this file already carries as
 `y0HasNoRationalPoint_prime`.
 
-**Independent corroboration, retained from the deleted CM leaves:**
-`ellisomat(ellinit(ellfromj(j)))` in PARI/GP returns isogeny class size
-`2` with degree multiset `{1, p}` for each of the five singular moduli
-(`p = 11, 19, 43, 67` re-run 2026-07-27; `p = 163` overflows the default
-`parisize` and is recorded at
-`not_stable_of_mem_isolatedNonCMJInvariants`, which ran all eleven rows).
-Size `2` says directly that there is no second isogeny of any degree.
+**Independent corroboration:** `ellisomat(ellinit(ellfromj(j)))` in PARI/GP
+returns isogeny class size `2` with degree multiset `{1, p}` for each of the
+eleven rows (the five singular moduli re-run 2026-07-27 at
+`p = 11, 19, 43, 67`; `p = 163` overflows the default `parisize` and is
+recorded at `not_stable_of_mem_isolatedNonCMJInvariants`, which ran all
+eleven).  Size `2` says directly that there is no second isogeny of any
+degree.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` whose
-`j`-invariant is one of the five singular moduli of Mazur's table,
-carrying a `Γ_ℚ`-stable subgroup of order `q ∈ {2, 3, 5, 7, 13}`. -/
-theorem not_stable_of_mem_isolatedCMJInvariants_genusZero {p q : ℕ}
-    (_hp : p ∈ ({11, 19, 43, 67, 163} : Finset ℕ)) (_hq : q.Prime)
-    (_hqm : q ∈ mazurIsogenyPrimes) (_hqi : q ∉ isolatedIsogenyPrimes)
+**THE CHECK THAT WOULD REFUTE THIS NODE**: an elliptic curve `E/ℚ` whose
+`j`-invariant is one of the eleven entries of Mazur's table, carrying a
+`Γ_ℚ`-stable subgroup of order `q ∈ {2, 3, 5, 7, 13}`. -/
+theorem not_stable_of_mem_isolatedJInvariants_genusZero {p q : ℕ}
+    (hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime)
+    (hqm : q ∈ mazurIsogenyPrimes) (hqi : q ∉ isolatedIsogenyPrimes)
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (_hj : E.j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants)
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (_hg : addOrderOf g = q)
-    (_hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
+    (hj : E.j ∈ isolatedJInvariants p)
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
         AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  have hq5 : q = 2 ∨ q = 3 ∨ q = 5 ∨ q = 7 ∨ q = 13 := by
+    simp only [mazurIsogenyPrimes, Finset.mem_insert, Finset.mem_singleton] at hqm
+    simp only [isolatedIsogenyPrimes, Finset.mem_insert, Finset.mem_singleton] at hqi
+    omega
+  rcases hq5 with h | h | h | h | h
+  · exact not_stable_of_mem_isolatedJInvariants_genusZeroSmall hp (Or.inl h) E hj g hg hstable
+  · exact not_stable_of_mem_isolatedJInvariants_genusZeroSmall hp (Or.inr h) E hj g hg hstable
+  · exact not_stable_of_mem_isolatedJInvariants_genusZeroLarge hp (Or.inl h) E hj g hg hstable
+  · exact not_stable_of_mem_isolatedJInvariants_genusZeroLarge hp (Or.inr (Or.inl h)) E hj
+      g hg hstable
+  · exact not_stable_of_mem_isolatedJInvariants_genusZeroLarge hp (Or.inr (Or.inr h)) E hj
+      g hg hstable
 
 
 /-- **The CM half of the second-isogeny theorem** (PROVEN 2026-07-27 by
@@ -13172,20 +13253,23 @@ decomposition; RE-CUT the same day): for the five entries of
 `isolatedJInvariants p` that are singular moduli, `E` has no rational
 `q`-isogeny for any prime `q ≠ p` in `mazurIsogenyPrimes`.
 
-The proof is two steps and no mathematics of its own:
+The proof is one step and no mathematics of its own: split `q` on whether
+it is itself an isolated prime.  If it is,
+`mem_isolatedJInvariants_of_stable` at level `q` puts `E.j` in a SECOND
+row of Mazur's table, which `isolatedJInvariants_disjoint` refutes — no
+computation at all.  If it is not, `q ∈ {2, 3, 5, 7, 13}` and the residual
+checks are `not_stable_of_mem_isolatedJInvariants_genusZero`.
 
-1. `mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants` (PROVEN) turns
-   `hp` into `p ∈ {11, 19, 43, 67, 163}`, discharging the two VACUOUS rows
-   `p = 17` and `p = 37` outright — their intersection with
-   `isolatedCMJInvariants` is empty, so `hj` is already a contradiction
-   there.  This is the "`5` real cases `+ 2` vacuous" split, and the two
-   vacuous ones are closed rather than carried.
-2. Split `q` on whether it is itself an isolated prime.  If it is,
-   `mem_isolatedJInvariants_of_stable` at level `q` puts `E.j` in a
-   SECOND row of Mazur's table, which `isolatedJInvariants_disjoint`
-   refutes — no computation at all.  If it is not, `q ∈ {2, 3, 5, 7, 13}`
-   and the residual `25` checks are
-   `not_stable_of_mem_isolatedCMJInvariants_genusZero`.
+**`hj` IS WEAKENED ON THE WAY DOWN, DELIBERATELY** (2026-07-28).  This node
+forwards only `(Finset.mem_inter.mp hj).1 : E.j ∈ isolatedJInvariants p`,
+dropping the CM half of the conjunction, because the merged genus-zero node
+runs over all eleven rows and would ignore it anyway.  That is what makes
+this node and its non-CM sibling literally the same proof, and it is why
+the `5`-real-`+`-`2`-vacuous accounting (formerly
+`mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants`, deleted the same
+day) is no longer needed: rows `p = 17` and `p = 37` have empty
+intersection with `isolatedCMJInvariants`, so this node is VACUOUS there —
+but it is now discharged uniformly rather than by refuting `hj`.
 
 ## THE RE-CUT (2026-07-27) AND WHAT IT REMOVED FROM THE TREE
 
@@ -13207,11 +13291,20 @@ cut applies verbatim here because the argument never inspects `E.j`
 beyond its row membership.  It does.  So **both CM leaves were deleted**
 and replaced by a single genus-zero leaf sharing the non-CM half's
 missing machinery.  Recover them if ever wanted with
-`git show <this commit>^:Fermat/FLT/ModularCurve/X0.lean`.
+`git show <the re-cut commit>^:Fermat/FLT/ModularCurve/X0.lean`.
 
 This is a strict reduction of what the tree depends on: the CM/Cartan
 theory is no longer required anywhere in this subtree, and the residual
 computation is bounded at `q ≤ 13` on both sides.
+
+**AND THEN THE TWO GENUS-ZERO LEAVES WERE MERGED (2026-07-28).**  Once the
+re-cut had made this node's residual identical in shape to the non-CM
+half's, the two residual leaves were one statement over disjoint row sets.
+They are now a single node, `not_stable_of_mem_isolatedJInvariants_genusZero`,
+whose `q ∈ {2, 3}` half is PROVEN over all eleven rows.  This node and
+`not_stable_of_mem_isolatedNonCMJInvariants` therefore have the same proof
+and differ only in the shape of `hj`; they are kept apart only because the
+`j`-invariant tables and their PARI corroboration are documented on them.
 
 **`hqm` IS NOW CONSUMED.**  It was carried unused by the CM route, which
 was uniform in `q`; the re-cut passes it to the genus-zero leaf, where it
@@ -13242,27 +13335,36 @@ theorem not_stable_of_mem_isolatedCMJInvariants {p q : ℕ}
   by_cases hqi : q ∈ isolatedIsogenyPrimes
   · exact isolatedJInvariants_disjoint hp hqi hpq (Finset.mem_inter.mp hj).1
       (mem_isolatedJInvariants_of_stable hqi E g hg hstable)
-  · exact not_stable_of_mem_isolatedCMJInvariants_genusZero
-      (mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants hp hj) hq hqm hqi E hj g hg hstable
+  · exact not_stable_of_mem_isolatedJInvariants_genusZero hp hq hqm hqi E
+      (Finset.mem_inter.mp hj).1 g hg hstable
 
-/-- **The genus-zero remainder of the non-CM half** (sorry node,
-introduced 2026-07-27; this is what is left of the `66` checks): for the
-six non-singular entries of `isolatedJInvariants p`, `E` has no rational
+/-! ### The non-CM rows: tables, certificates and route notes
+
+**`not_stable_of_mem_isolatedNonCMJInvariants_genusZero` WAS DELETED
+2026-07-28**, when the CM and non-CM genus-zero leaves were merged into
+`not_stable_of_mem_isolatedJInvariants_genusZero`.  It said: for the six
+non-singular entries of `isolatedJInvariants p`, `E` has no rational
 `q`-isogeny for a prime `q ∈ mazurIsogenyPrimes` that is **not** itself
-an isolated prime — i.e. for `q ∈ {2, 3, 5, 7, 13}`.
+an isolated prime — i.e. for `q ∈ {2, 3, 5, 7, 13}`.  The merged node is
+that statement over all eleven rows, so this one is a special case of it
+and `not_stable_of_mem_isolatedNonCMJInvariants` now calls the merged node
+directly.
 
-TRUE, FINITE, and **`30` checks rather than `66`**, all of them at
-`q ≤ 13`.  See `not_stable_of_mem_isolatedNonCMJInvariants` for where the
-other `36` went.
+Everything below is the record that node carried, kept because it is about
+the six non-CM ROWS rather than about the deleted declaration: the
+Frobenius-sieve table, the negative control, the route correction and the
+circularity warning.  It was `30` checks rather than `66`; see
+`not_stable_of_mem_isolatedNonCMJInvariants` for where the other `36` went,
+and `..._genusZeroSmall` for the `12` of these `30` that are now PROVEN.
 
 The six `j`-values are `−121` and `−24729001` (at `p = 11`),
 `−882216989/131072` and `−297756989/2` (at `p = 17`), `−9317` and
 `−162677523113838677` (at `p = 37`);
 `isolatedJInvariants p \ isolatedCMJInvariants = ∅` for the four
-remaining primes `19, 43, 67, 163`, so `_hp` really ranges over three
+remaining primes `19, 43, 67, 163`, so `p` really ranges over three
 values and `fin_cases` on it is the first step of any attack.
 
-`_hqm` together with `_hqi` pins `q` to
+`hqm` together with `hqi` pins `q` to
 `mazurIsogenyPrimes \ isolatedIsogenyPrimes = {2, 3, 5, 7, 13}`, which is
 exactly the set of primes for which `X_0(q)` has genus `0` — the levels
 where Mazur's Theorem 1 says nothing because there really are infinitely
@@ -13353,48 +13455,22 @@ discharge this by citing Kenku's list of possible cyclic isogeny degrees
 over `ℚ` (J. Number Theory **15** (1982) 199–202).  That list is
 precisely what this subtree is proving: "a curve with an `11`-isogeny has
 no `2`-isogeny" IS the assertion that `22` is not an isogeny degree.
-Using `_hqm` is NOT circular by contrast — it is Mazur's PRIME-degree
+Using `hqm` is NOT circular by contrast — it is Mazur's PRIME-degree
 theorem, an independent input that this file already carries as
 `y0HasNoRationalPoint_prime`, and it is what makes the check finite.
 
-**STATUS 2026-07-27: `12` of the `30` checks are now PROVEN and this node
-is an ASSEMBLY, not a leaf.**  `_hqm` and `_hqi` pin `q ∈ {2, 3, 5, 7, 13}`;
-the two smallest levels are discharged by
-`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall` (see the
-CERTIFICATES section above), and the remaining `18` checks — `q ∈ {5, 7, 13}`
-against the six `j`-values — are the leaf
-`not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge`.  The
-IRREDUCIBILITY verdict this paragraph used to carry ("`E[q]` as a Galois
-module in the form the descent needs does not exist here, for `q ≤ 13`") was
-scoped to the wrong axis: it is true for `q ≥ 5`, where the abscissae of
-`⟨g⟩ ∖ 0` are permuted by Galois, and FALSE for `q ≤ 3`, where `⟨g⟩ = {0, ±g}`
-has a single abscissa and no Galois-module theory is needed at all. -/
-theorem not_stable_of_mem_isolatedNonCMJInvariants_genusZero {p q : ℕ}
-    (hp : p ∈ isolatedIsogenyPrimes) (_hq : q.Prime)
-    (hqm : q ∈ mazurIsogenyPrimes) (hqi : q ∉ isolatedIsogenyPrimes)
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (hj : E.j ∈ isolatedJInvariants p \ isolatedCMJInvariants)
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = q)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
-      WeierstrassCurve.Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-        AddSubgroup.zmultiples g) :
-    False := by
-  have hq5 : q = 2 ∨ q = 3 ∨ q = 5 ∨ q = 7 ∨ q = 13 := by
-    simp only [mazurIsogenyPrimes, Finset.mem_insert, Finset.mem_singleton] at hqm
-    simp only [isolatedIsogenyPrimes, Finset.mem_insert, Finset.mem_singleton] at hqi
-    omega
-  rcases hq5 with h | h | h | h | h
-  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall hp (Or.inl h) E hj g hg
-      hstable
-  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroSmall hp (Or.inr h) E hj g hg
-      hstable
-  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge hp (Or.inl h) E hj g hg
-      hstable
-  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge hp (Or.inr (Or.inl h)) E hj
-      g hg hstable
-  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZeroLarge hp (Or.inr (Or.inr h)) E hj
-      g hg hstable
+**STATUS 2026-07-28: `12` of these `30` checks are PROVEN, and the other
+`18` are part of the merged `33`-check leaf.**  `hqm` and `hqi` pin
+`q ∈ {2, 3, 5, 7, 13}`; the two smallest levels are discharged by
+`not_stable_of_mem_isolatedJInvariants_genusZeroSmall` (see the
+CERTIFICATES section above), and `q ∈ {5, 7, 13}` is
+`not_stable_of_mem_isolatedJInvariants_genusZeroLarge`.  The IRREDUCIBILITY
+verdict this paragraph used to carry ("`E[q]` as a Galois module in the form
+the descent needs does not exist here, for `q ≤ 13`") was scoped to the
+wrong axis: it is true for `q ≥ 5`, where the abscissae of `⟨g⟩ ∖ 0` are
+permuted by Galois, and FALSE for `q ≤ 3`, where `⟨g⟩ = {0, ±g}` has a
+single abscissa and no Galois-module theory is needed at all.
+-/
 
 /-- **The non-CM half of the second-isogeny theorem** (PROVEN 2026-07-27
 by decomposition; introduced as a single leaf earlier the same day): for
@@ -13420,7 +13496,9 @@ not.  Split `q` on whether it is itself an isolated prime:
 * `q ∉ isolatedIsogenyPrimes`, i.e. `q ∈ {2, 3, 5, 7, 13}`: the genus-zero
   levels, where Mazur's theorem is silent because `X_0(q) ≅ ℙ¹`.  These
   `30` checks are the real content and are left to
-  `not_stable_of_mem_isolatedNonCMJInvariants_genusZero`.
+  `not_stable_of_mem_isolatedJInvariants_genusZero` — since 2026-07-28 the
+  MERGED genus-zero node, shared with the CM half and covering all eleven
+  rows, of which `12` of these `30` are now PROVEN.
 
 **This is not circular and it is not a re-use of the thing being proved.**
 `mem_isolatedJInvariants_of_stable` is Mazur's Theorem 1 — the same
@@ -13432,14 +13510,20 @@ of one table, which is a statement about the table, not about `X_0(pq)`.
 `not_stable_of_mem_isolatedCMJInvariants`, whose statement differs only
 in `∩` versus `\` and whose proof of the isolated-`q` case is the
 identical two lines: the argument never inspects `E.j` beyond its
-membership in a row.  **Carried out on 2026-07-27** — the CM half is now
+membership in a row.  **Carried out on 2026-07-27** — the CM half became
 `5` values × `5` genus-zero primes, minus nothing (no `q = p` exclusion
-is needed there, since `p` is isolated and `q` is not), i.e. `25` cases
-in `not_stable_of_mem_isolatedCMJInvariants_genusZero`.  That re-cut
-deleted the two CM/Cartan-normalizer leaves outright, so both halves of
-the second-isogeny theorem now bottom out on the SAME missing piece —
-`E[q]` as a Galois module for `q ≤ 13` — and whoever builds it here gets
-the CM half for the same price.
+is needed there, since `p` is isolated and `q` is not), i.e. `25` cases.
+That re-cut deleted the two CM/Cartan-normalizer leaves outright, so both
+halves of the second-isogeny theorem bottomed out on the SAME missing piece
+— `E[q]` as a Galois module for `q ≤ 13`.
+
+**And on 2026-07-28 the two residual genus-zero leaves were MERGED**, since
+"the same statement over disjoint row sets" is a fact about ownership and
+not about mathematics.  `not_stable_of_mem_isolatedJInvariants_genusZero`
+is that merge: `55` checks over all eleven rows, `22` of them PROVEN at
+`q ∈ {2, 3}` and `33` left on the single leaf `..._genusZeroLarge`.  Both
+halves of the second-isogeny theorem now call it, and neither of them
+inspects CM-ness at any point below this node.
 
 The gain is a strict reduction of what the tree depends on, in the same
 sense as the `hqm` discussion on
@@ -13460,7 +13544,8 @@ theorem not_stable_of_mem_isolatedNonCMJInvariants {p q : ℕ}
   by_cases hqi : q ∈ isolatedIsogenyPrimes
   · exact isolatedJInvariants_disjoint hp hqi hpq (Finset.mem_sdiff.mp hj).1
       (mem_isolatedJInvariants_of_stable hqi E g hg hstable)
-  · exact not_stable_of_mem_isolatedNonCMJInvariants_genusZero hp hq hqm hqi E hj g hg hstable
+  · exact not_stable_of_mem_isolatedJInvariants_genusZero hp hq hqm hqi E
+      (Finset.mem_sdiff.mp hj).1 g hg hstable
 
 /-- **None of the seven isolated `j`-invariant families admits a second
 isogeny** (PROVEN 2026-07-27 by decomposition; introduced as a leaf
@@ -13471,18 +13556,20 @@ any prime `q ≠ p` in `mazurIsogenyPrimes`.
 The proof is the case split on whether `E.j` is a singular modulus, and
 nothing else; the two halves are
 `not_stable_of_mem_isolatedCMJInvariants` and
-`not_stable_of_mem_isolatedNonCMJInvariants`, each of which is now itself
-proven by the isolated-`q`/genus-zero split, leaving the residual `25`
-and `30` explicit checks on
-`not_stable_of_mem_isolatedCMJInvariants_genusZero` and
-`not_stable_of_mem_isolatedNonCMJInvariants_genusZero`.
+`not_stable_of_mem_isolatedNonCMJInvariants`, each of which is itself
+proven by the isolated-`q`/genus-zero split.
 
-**As of the CM re-cut (2026-07-27) the two halves are no longer different
-arguments** — the split on `E.j` is now bookkeeping over disjoint sets of
-`j`-values rather than a fork between CM theory and computation, and a
-successor may honestly merge the two genus-zero leaves into one over all
-eleven rows (`55` checks).  It is kept as two because the two `_genusZero`
-leaves have separate owners.
+**THE MERGE IS DONE (2026-07-28).**  The paragraph here used to say that
+the CM re-cut of 2026-07-27 had made the two halves the same argument, that
+a successor could honestly merge the two genus-zero leaves into one over
+all eleven rows (`55` checks), and that they were kept as two only because
+they had separate owners.  That successor came: both halves now delegate to
+the single node `not_stable_of_mem_isolatedJInvariants_genusZero`, whose
+`22` checks at `q ∈ {2, 3}` are PROVEN and whose `33` checks at
+`q ∈ {5, 7, 13}` are the only remaining leaf below this one.  The `hcm`
+split in the proof below is therefore pure bookkeeping: it exists so the CM
+and non-CM `j`-tables can stay documented on separate nodes, and nothing
+under it inspects CM-ness.
 
 ## THE ADDED HYPOTHESIS `hqm : q ∈ mazurIsogenyPrimes` (2026-07-27)
 
