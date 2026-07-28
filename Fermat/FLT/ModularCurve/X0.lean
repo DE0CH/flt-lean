@@ -292,6 +292,25 @@ strengthening of `card_le_of_rankZeroJacobian` rather than a new theory.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+-- `exists_fixingSubgroup_le_stabilizer_geomFibrePt` — every geometric point of
+-- a fibre is fixed by `Gal(ℚᵃˡᵍ/E)` for some finite `E/ℚ`.  Consumed by the
+-- weak Mordell–Weil chain below (`exists_torsionField_of_abelianScheme`,
+-- `galSMul_of_mem_fixingSubgroup_geomPtField`).  HOISTED out of
+-- `Modularity/TateModule.lean` on 2026-07-28 precisely so that this file can
+-- reach it: that module's cone carries `GaloisRepresentation/Chebotarev.lean`
+-- and its own 16 000 lines, and neither belongs upstream of `X0.lean`.  This
+-- module's project cone is `Modularity/AbelianScheme.lean` alone.
+public import Fermat.FLT.Modularity.AbelianSchemeGeomPt
+-- `GaloisRepresentation.exists_discr_factorization_le_of_finrank_le` — Serre's
+-- different-exponent bound in discriminant form: for a fixed prime `q` and a
+-- degree bound `n`, `v_q(discr K) ≤ C(q, n)`.  Consumed by
+-- `exists_discrBound_of_finrank_le_of_unramifiedOutside` below.  HOISTED out of
+-- `GaloisRepresentation/HardlyRamified/HermiteMinkowski.lean` on 2026-07-28;
+-- that module is DOWNSTREAM of this file (through `FreyCurve/MazurTorsion`), so
+-- the bound was unreachable here, which is exactly what the old MISSING
+-- MACHINERY note on `exists_discrBound_divisionField_of_abelianScheme` recorded.
+-- The hoisted module's import cone is `Mathlib` only.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.DiscrExponent
 -- `AbelianSchemeStruct.mulByNat` / `zeroSection` and their free properties
 -- (`isProper_mulByNat`, `locallyOfFiniteType_mulByNat`, `nsmul_val`,
 -- `zero_val`, `zeroSection_comp_mulByNat`), consumed by the étale-rigidity
@@ -28839,9 +28858,11 @@ PROVEN, leaving two open leaves:
   points (`exists_geomPt_nsmul_eq_of_abelianScheme` — itself PROVEN
   2026-07-28 over `exists_comp_mulByNat_eq`) and a uniform
   discriminant bound on the division fields
-  (`exists_discrBound_divisionField_of_abelianScheme`, the one still
-  OPEN of the two).  Class groups and
-  the unit theorem are NOT on that path — see the cut note there.
+  (`exists_discrBound_divisionField_of_abelianScheme`, itself PROVEN since
+  2026-07-28 over the two remaining arithmetic leaves
+  `exists_degreeBound_geomPtField` and `exists_ramificationSet_geomPtField`).
+  Class groups and the unit theorem are NOT on that path — see the cut
+  note there.
 
 **What the assembly is, and why it needs no group cohomology.**  Choose
 for each `P ∈ A(ℚ)` a `p`-division point `Q_P ∈ A(ℚ̄)` fixed by the
@@ -29308,9 +29329,347 @@ theorem exists_geomPt_nsmul_eq_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ S
     ∃ y : GeomFibrePt jstr (𝟙 SpecQ), n • y = w :=
   ab.exists_nsmul_of_exists_comp n w (exists_comp_mulByNat_eq ab n hn w.1)
 
-/-- **The `p`-division fields of `A(ℚ)` have BOUNDED DISCRIMINANT** (sorry
-node) — THE deep arithmetic input to weak Mordell–Weil, and the only one
-left after the Hermite step above is discharged.
+/-- **The `p`-torsion of `A(ℚ̄)` is defined over ONE finite extension
+`K₀ = ℚ(A[p])`** (PROVEN, 2026-07-28) — the first bullet of the
+discriminant-bound leaf below.
+
+Proof, and it is the same three-step pattern as
+`exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le` above: `A[p]` is
+a FINITE set (the sibling leaf `finite_torsion_geomPt_of_abelianScheme`);
+each of its points `t` is fixed by `Gal(ℚᵃˡᵍ/E_t)` for some finite `E_t/ℚ`
+(`exists_fixingSubgroup_le_stabilizer_geomFibrePt`, PROVEN — a geometric
+point of a fibre is defined over a finite extension, because `jstr` is
+locally of finite type); and the compositum of finitely many finite
+subextensions is finite (`IntermediateField.finiteDimensional_iSup_of_finset'`),
+with `Gal(ℚᵃˡᵍ/K₀) ≤ Gal(ℚᵃˡᵍ/E_t)` by antitonicity of `fixingSubgroup`.
+
+**THE QUANTIFIER ORDER IS THE CONTENT**, exactly as for the Hermite step:
+"each `t` is defined over some finite `E_t`" is the single-point statement
+and is what the input lemma gives; what is asserted here is ONE `K₀`
+working for every `t` at once, and only FINITENESS of `A[p]` can supply
+that.  Dropping `hp` (or rather `hp.ne_zero`, which is all that is used)
+makes the statement FALSE: at `p = 0` the "torsion" is all of `A(ℚ̄)`,
+which is not defined over any single number field.
+
+*Not vacuous*: `K₀` cannot be taken to be `ℚ` for a curve whose `p`-torsion
+is irrational, which is the generic case. -/
+theorem exists_torsionField_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    ∃ (K₀ : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : FiniteDimensional ℚ K₀),
+      ∀ t : GeomFibrePt jstr (𝟙 SpecQ), p • t = 0 →
+        ∀ σ ∈ K₀.fixingSubgroup, ab.galSMul (𝟙 SpecQ) σ t = t := by
+  classical
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  haveI hT : Finite {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0} :=
+    finite_torsion_geomPt_of_abelianScheme ab p hp.ne_zero
+  haveI : Fintype {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0} := Fintype.ofFinite _
+  choose E hEfd hE using fun t : {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0} =>
+    exists_fixingSubgroup_le_stabilizer_geomFibrePt ab (𝟙 SpecQ) t.1
+  set s : Finset {F : IntermediateField ℚ (AlgebraicClosure ℚ) // FiniteDimensional ℚ F} :=
+    Finset.univ.image (fun t : {y : GeomFibrePt jstr (𝟙 SpecQ) // p • y = 0} =>
+      (⟨E t, hEfd t⟩ :
+        {F : IntermediateField ℚ (AlgebraicClosure ℚ) // FiniteDimensional ℚ F})) with hs
+  set L : IntermediateField ℚ (AlgebraicClosure ℚ) :=
+    ⨆ K ∈ s, (K : IntermediateField ℚ (AlgebraicClosure ℚ)) with hL
+  haveI hLfd : FiniteDimensional ℚ L :=
+    IntermediateField.finiteDimensional_iSup_of_finset' (fun i _ => i.prop)
+  refine ⟨L, hLfd, ?_⟩
+  intro t ht σ hσ
+  have hmem : (⟨E ⟨t, ht⟩, hEfd ⟨t, ht⟩⟩ :
+      {F : IntermediateField ℚ (AlgebraicClosure ℚ) // FiniteDimensional ℚ F}) ∈ s := by
+    rw [hs]
+    exact Finset.mem_image_of_mem _ (Finset.mem_univ _)
+  have hle : E ⟨t, ht⟩ ≤ L := by
+    rw [hL]
+    exact le_iSup₂ (f := fun (i : {F : IntermediateField ℚ (AlgebraicClosure ℚ) //
+      FiniteDimensional ℚ F}) (_ : i ∈ s) => (i : IntermediateField ℚ (AlgebraicClosure ℚ)))
+      ⟨E ⟨t, ht⟩, hEfd ⟨t, ht⟩⟩ hmem
+  exact hE ⟨t, ht⟩ σ (IntermediateField.fixingSubgroup_antitone hle hσ)
+
+/-- **The stabilizer of a geometric point in `Γ_ℚ`**, as a subgroup.
+
+`AbelianSchemeStruct.geomFibreAction` is what makes `galSMul` an honest
+`DistribMulAction`, hence what makes `{σ | σ · y = y}` a subgroup rather
+than merely a set; naming it is what lets `geomPtField` below be written
+as a fixed field. -/
+noncomputable def geomPtStabilizer {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ)) :
+    Subgroup (Field.absoluteGaloisGroup ℚ) :=
+  letI : AddCommGroup (GeomFibrePt jstr (𝟙 SpecQ)) :=
+    ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  letI : DistribMulAction (Field.absoluteGaloisGroup ℚ) (GeomFibrePt jstr (𝟙 SpecQ)) :=
+    ab.geomFibreAction (𝟙 SpecQ)
+  MulAction.stabilizer (Field.absoluteGaloisGroup ℚ) y
+
+/-- Membership in `geomPtStabilizer` is being fixed by `galSMul`, by
+definition of the action. -/
+theorem mem_geomPtStabilizer_iff {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ))
+    (σ : Field.absoluteGaloisGroup ℚ) :
+    σ ∈ geomPtStabilizer ab y ↔ ab.galSMul (𝟙 SpecQ) σ y = y := Iff.rfl
+
+/-- **The field of definition `ℚ(y)` of a geometric point** — the fixed
+field of its stabilizer, under the infinite Galois correspondence.
+
+This is the object the two remaining arithmetic leaves below are stated
+about, and naming it is what SPLITS them.  Before it existed, "the
+division field has bounded degree" and "the division field is unramified
+outside `S`" were two assertions about the same existentially quantified
+`K` and could not be cut apart: a leaf producing `K` with one property
+says nothing about a `K` produced elsewhere with the other, and a leaf
+quantified over ALL finite `K ⊇ ℚ(A[p])` would be FALSE (an arbitrary
+such field is ramified wherever it likes).  With `ℚ(y)` a definition,
+`exists_degreeBound_geomPtField` and `exists_ramificationSet_geomPtField`
+are statements about the SAME named field and are independent.
+
+Note this is the field of definition of `y` over `ℚ` — a subfield of the
+classical `K₀(y)` of Silverman *AEC* VIII.1.6, not equal to it — which is
+all the consumer needs and is strictly easier to bound. -/
+noncomputable def geomPtField {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ)) :
+    IntermediateField ℚ (AlgebraicClosure ℚ) :=
+  IntermediateField.fixedField (geomPtStabilizer ab y)
+
+/-- **`Gal(ℚᵃˡᵍ/ℚ(y))` fixes `y`** (PROVEN, 2026-07-28) — the half of the
+infinite Galois correspondence that makes `geomPtField` usable.
+
+`fixingSubgroup (fixedField H) = H` holds for CLOSED `H`
+(`InfiniteGalois.fixingSubgroup_fixedField`), and the stabilizer here is
+closed because it is OPEN: it contains `Gal(ℚᵃˡᵍ/E)` for some finite `E/ℚ`
+(`exists_fixingSubgroup_le_stabilizer_geomFibrePt`), that subgroup is open
+in the Krull topology (`IntermediateField.fixingSubgroup_isOpen`), a
+subgroup containing an open subgroup is open (`Subgroup.isOpen_mono`), and
+an open subgroup of a topological group is closed
+(`Subgroup.isClosed_of_isOpen`).
+
+Closedness is not a technicality: for a NON-closed `H` the correspondence
+fails and `fixingSubgroup (fixedField H)` is the closure of `H`, so the
+conclusion below would be false for a stabilizer that was merely a
+subgroup.  It is finiteness of the extension over which `y` is defined
+that supplies it. -/
+theorem galSMul_of_mem_fixingSubgroup_geomPtField {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ))
+    {σ : Field.absoluteGaloisGroup ℚ} (hσ : σ ∈ (geomPtField ab y).fixingSubgroup) :
+    ab.galSMul (𝟙 SpecQ) σ y = y := by
+  obtain ⟨E, hEfd, hE⟩ := exists_fixingSubgroup_le_stabilizer_geomFibrePt ab (𝟙 SpecQ) y
+  haveI := hEfd
+  have hle : E.fixingSubgroup ≤ geomPtStabilizer ab y := fun g hg =>
+    (mem_geomPtStabilizer_iff ab y g).mpr (hE g hg)
+  have hopen : IsOpen ((geomPtStabilizer ab y : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) :=
+    Subgroup.isOpen_mono hle E.fixingSubgroup_isOpen
+  have hclosed : IsClosed ((geomPtStabilizer ab y : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+      Set (Field.absoluteGaloisGroup ℚ)) := Subgroup.isClosed_of_isOpen _ hopen
+  have hcorr := InfiniteGalois.fixingSubgroup_fixedField
+    (⟨geomPtStabilizer ab y, hclosed⟩ : ClosedSubgroup (Field.absoluteGaloisGroup ℚ))
+  have hmem : σ ∈ (⟨geomPtStabilizer ab y, hclosed⟩ :
+      ClosedSubgroup (Field.absoluteGaloisGroup ℚ)).1 := by
+    rw [← hcorr]
+    exact hσ
+  exact (mem_geomPtStabilizer_iff ab y σ).mp hmem
+
+/-- **The Kummer degree bound: `[ℚ(y) : ℚ]` is bounded independently of `P`
+and of `y`** (sorry leaf, cut 2026-07-28) — the SECOND bullet of the
+discriminant-bound leaf below, and one of its two remaining halves.
+
+TRUE and classical (Silverman, *AEC* VIII.1.6(a)).  With `K₀ = ℚ(A[p])`
+the field supplied by `exists_torsionField_of_abelianScheme`, and `y` any
+`p`-division point of a RATIONAL point `P`, the map
+
+  `Gal(ℚᵃˡᵍ/K₀) → A[p]`,   `σ ↦ σ y − y`
+
+is well defined — `p(σ y − y) = σ(p y) − p y = σ P − P = 0`, using that
+the geometric point of a rational point is Galois-invariant
+(`galSMul_ratToGeom`, PROVEN above) — and is a HOMOMORPHISM precisely
+because `K₀` contains `A[p]`, which is where `htors` is consumed:
+`στ y − y = σ(τ y − y) + (σ y − y)` and `σ` fixes the `p`-torsion point
+`τ y − y`.  Its kernel is `Gal(ℚᵃˡᵍ/K₀) ∩ Stab(y)`, so
+`[K₀(y) : K₀] ≤ #A[p]` and hence `[ℚ(y) : ℚ] ≤ [K₀(y) : ℚ] ≤ [K₀ : ℚ]·#A[p]`,
+a bound depending only on `A` and `p`.
+
+**THE QUANTIFIER ORDER IS THE CONTENT.**  `n` is chosen BEFORE `P` and `y`.
+Letting `n` depend on `P` would be true and useless: the consumer needs one
+Hermite bound covering the infinitely many rational points at once, which is
+exactly what makes the descent finish.
+
+**`htors` IS LOAD-BEARING AND CANNOT BE DROPPED.**  Without a field over
+which the whole of `A[p]` is rational, `σ ↦ σ y − y` is not a homomorphism
+and there is no injection into `A[p]` at all — only a cocycle, whose target
+is `H¹` and is not finite for a fixed group.  This is the one place in the
+chain where `ℚ(A[p])` is used, and it is why `exists_torsionField_of_abelianScheme`
+is a hypothesis here rather than an unused sibling.
+
+**FAITHFULNESS.**  *Not vacuous*: `FiniteDimensional ℚ (ℚ(y))` is part of
+the conclusion and is itself a real assertion — `y` is an arbitrary
+geometric point until `hy` constrains it, and a geometric point of an
+abelian variety need not be defined over a number field of bounded degree
+(it need not even be of bounded degree over `ℚ` as `y` varies, absent `hy`).
+`hp` is retained because the Kummer map is written at a prime, where `A[p]`
+is an `𝔽_p`-vector space; the statement is true for every `n ≥ 1` with the
+same proof.
+
+**MISSING MACHINERY**: nothing deep — the Kummer homomorphism above and
+`[K : ℚ] = ` the index of `Gal(ℚᵃˡᵍ/K)` for the finite subextensions of
+`ℚᵃˡᵍ/ℚ` (`InfiniteGalois.isOpen_iff_finite`,
+`InfiniteGalois.normalAutEquivQuotient`, `IsGalois.card_aut_eq_finrank` —
+the same three lemmas `finite_setOf_subgroup_inertiaAt_le` in
+`HardlyRamified/HermiteMinkowski.lean` uses for exactly this passage).  The
+check that would refute this note is to grep that file for
+`InfiniteGalois.normalAutEquivQuotient`. -/
+theorem exists_degreeBound_geomPtField {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime)
+    (K₀ : IntermediateField ℚ (AlgebraicClosure ℚ)) (hK₀ : FiniteDimensional ℚ K₀) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    (∀ t : GeomFibrePt jstr (𝟙 SpecQ), p • t = 0 →
+        ∀ σ ∈ K₀.fixingSubgroup, ab.galSMul (𝟙 SpecQ) σ t = t) →
+    ∃ n : ℕ, ∀ (P : RelPoint jstr (𝟙 SpecQ)) (y : GeomFibrePt jstr (𝟙 SpecQ)),
+      p • y = ratToGeom jstr P →
+      ∃ _ : FiniteDimensional ℚ (geomPtField ab y),
+        Module.finrank ℚ (geomPtField ab y) ≤ n :=
+  sorry
+
+/-- **Néron–Ogg–Shafarevich for the division fields: `ℚ(y)` is unramified
+outside a FIXED finite set of primes** (sorry leaf, cut 2026-07-28) — the
+THIRD bullet of the discriminant-bound leaf below, and its other remaining
+half.
+
+TRUE and classical (Silverman, *AEC* VIII.1.5(b) plus the criterion of
+Néron–Ogg–Shafarevich, VII.7.1).  Let `S` be the set of rational primes
+consisting of `p` together with the primes of bad reduction of `A` — a
+finite set depending only on `A` and `p`.  Then `ℚ(A[p])/ℚ` is unramified
+outside `S` (Néron–Ogg–Shafarevich: at a prime `q ∉ S` of good reduction
+with `q ≠ p`, reduction is injective on prime-to-`q` torsion, so inertia at
+`q` acts trivially on `A[p]`), and `K₀(y)/K₀` is unramified outside `S`
+(Silverman VIII.1.5(b): the extension is generated by a `p`-division point
+of a point that is already rational, and at a prime of good reduction away
+from `p` the multiplication-by-`p` map is étale on the Néron model).  Hence
+`K₀(y)/ℚ` is unramified outside `S`, and so is its subfield `ℚ(y)`; a
+number field unramified at `q` has `q ∤ discr`
+(mathlib's `NumberField.not_dvd_discr_iff_forall_mem`).
+
+**THE QUANTIFIER ORDER IS THE CONTENT**, as for the degree bound: `S` is
+chosen before `P` and `y`.  A per-point `S` would be true — take all primes
+dividing that discriminant — and would carry no arithmetic at all.
+
+**FAITHFULNESS.**  *Not vacuous.*  `S` cannot be `∅` for an `A` with any bad
+reduction: `discr ℚ(A[p])` is then divisible by a prime of bad reduction.
+The conclusion is stated as non-divisibility of the DISCRIMINANT rather than
+as unramifiedness of every prime above `q` because that is the form the
+Hermite step `exists_discrBound_of_finrank_le_of_unramifiedOutside` consumes,
+and the two are equivalent by the mathlib lemma just cited.  `hfd` appears as
+a hypothesis only because `subfieldDiscr` needs it to name a discriminant at
+all; it is supplied by the sibling leaf `exists_degreeBound_geomPtField`, so
+this leaf carries no hidden finiteness obligation.
+
+`hp` IS load-bearing here, unlike in the sibling: `S` must contain `p`, and
+at `q = p` inertia does act nontrivially on `A[p]` for a curve with good
+ordinary reduction at `p` — this is the standing trap recorded in this
+project's doctrine, that a conclusion valid on inertia away from `p` is
+false when the quantifier is widened.  It is handled by putting `p` into `S`,
+not by strengthening the conclusion.
+
+**MISSING MACHINERY**, and it is the honest remaining cost of the whole
+weak Mordell–Weil chain: the criterion of Néron–Ogg–Shafarevich for an
+abelian scheme, i.e. Néron models and the étaleness of `[p]` away from `p`.
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` is in this file's cone and
+is where such a statement belongs; the check that would refute this note is
+`grep -rn "unramified\|inertia\|Neron" ` over that file and over
+`Fermat/FLT/Modularity/AbelianScheme.lean`. -/
+theorem exists_ramificationSet_geomPtField {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
+    letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+    ∃ S : Finset ℕ, ∀ (P : RelPoint jstr (𝟙 SpecQ)) (y : GeomFibrePt jstr (𝟙 SpecQ)),
+      p • y = ratToGeom jstr P →
+      ∀ (hfd : FiniteDimensional ℚ (geomPtField ab y)) (q : ℕ), q.Prime → q ∉ S →
+        ¬ ((q : ℤ) ∣ subfieldDiscr (geomPtField ab y) hfd) :=
+  sorry
+
+/-- **Hermite–Minkowski: bounded degree plus unramified outside a finite set
+gives a bounded discriminant** (PROVEN, 2026-07-28) — the FOURTH bullet of
+the discriminant-bound leaf below, and the one the old MISSING MACHINERY
+note recorded as present-but-unreachable.
+
+Proof, pure bookkeeping over one hoisted input: write `N = |discr K|`.  Every
+prime factor of `N` lies in `S`, since `q ∉ S` gives `q ∤ discr K` by
+hypothesis; so `N = ∏_{q ∈ S, q prime} q^{v_q(N)}`
+(`Nat.prod_factorization_pow_eq_self` through `Finsupp.prod_of_support_subset`),
+and each exponent is bounded by a constant `C(q, n)` depending only on `q` and
+the degree bound (`GaloisRepresentation.exists_discr_factorization_le_of_finrank_le`,
+Serre's different bound `d_Q ≤ e − 1 + e·v_q(e)`).  Hence
+`N ≤ ∏_{q ∈ S, q prime} q^{C(q,n)}`, which is the required `D`.
+
+The filter to PRIMES in the product is not cosmetic: `S` is an arbitrary
+`Finset ℕ` and may contain `0`, for which `0^{v_0(N)} = 0^0 = 1` while
+`0^{C(0,n)}` may be `0`, so the termwise comparison `q^{v_q} ≤ q^{C q}` fails
+without `1 ≤ q`.  Restricting the product to the primes of `S` costs nothing —
+the support of a factorization consists of primes — and repairs it.
+
+`GaloisRepresentation.exists_discr_factorization_le_of_finrank_le` lived in
+`HardlyRamified/HermiteMinkowski.lean`, which is DOWNSTREAM of this file; the
+2026-07-28 hoist of that development into the `Mathlib`-cone module
+`HardlyRamified/DiscrExponent.lean` is what makes this proof possible here.
+
+*Not vacuous*: both hypotheses are load-bearing.  Without the degree bound
+there is no bound at all (discriminants of number fields unramified outside a
+fixed `S` are unbounded once the degree is), and without the ramification
+restriction there is none either (Minkowski bounds the discriminant from below
+by the degree, never from above). -/
+theorem exists_discrBound_of_finrank_le_of_unramifiedOutside (n : ℕ) (S : Finset ℕ) :
+    ∃ D : ℕ, ∀ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (hK : FiniteDimensional ℚ K),
+      Module.finrank ℚ K ≤ n →
+      (∀ q : ℕ, q.Prime → q ∉ S → ¬ ((q : ℤ) ∣ subfieldDiscr K hK)) →
+      |subfieldDiscr K hK| ≤ (D : ℤ) := by
+  classical
+  have hCex : ∀ q : ℕ, ∃ c : ℕ, ∀ (K : IntermediateField ℚ (AlgebraicClosure ℚ))
+      (hfd : FiniteDimensional ℚ K), Module.finrank ℚ K ≤ n →
+      haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
+      (NumberField.discr K).natAbs.factorization q ≤ c := by
+    intro q
+    by_cases hq : q.Prime
+    · exact _root_.GaloisRepresentation.exists_discr_factorization_le_of_finrank_le q n hq
+    · refine ⟨0, fun K hfd _ => ?_⟩
+      haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
+      simp [Nat.factorization_eq_zero_of_not_prime _ hq]
+  choose C hC using hCex
+  refine ⟨∏ q ∈ S.filter Nat.Prime, q ^ C q, ?_⟩
+  intro K hK hrank hunram
+  haveI := hK
+  haveI hNF : NumberField K := @NumberField.mk _ _ inferInstance hK
+  show |NumberField.discr K| ≤ ((∏ q ∈ S.filter Nat.Prime, q ^ C q : ℕ) : ℤ)
+  have hD0 : NumberField.discr K ≠ 0 := NumberField.discr_ne_zero K
+  have hN0 : (NumberField.discr K).natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hD0
+  have hsupp : (NumberField.discr K).natAbs.factorization.support ⊆ S.filter Nat.Prime := by
+    intro q hqmem
+    rw [Nat.support_factorization] at hqmem
+    have hqp : q.Prime := Nat.prime_of_mem_primeFactors hqmem
+    have hqdvd : q ∣ (NumberField.discr K).natAbs := Nat.dvd_of_mem_primeFactors hqmem
+    refine Finset.mem_filter.mpr ⟨?_, hqp⟩
+    by_contra hqS
+    refine hunram q hqp hqS ?_
+    show ((q : ℤ) ∣ NumberField.discr K)
+    have h1 : (((NumberField.discr K).natAbs : ℤ)) ∣ NumberField.discr K := by
+      rw [Int.natCast_natAbs]
+      exact (abs_dvd _ _).mpr dvd_rfl
+    exact dvd_trans (Int.natCast_dvd_natCast.mpr hqdvd) h1
+  have hNeq : (NumberField.discr K).natAbs =
+      ∏ q ∈ S.filter Nat.Prime, q ^ (NumberField.discr K).natAbs.factorization q := by
+    conv_lhs => rw [← Nat.prod_factorization_pow_eq_self hN0]
+    exact Finsupp.prod_of_support_subset _ hsupp (· ^ ·) (fun i _ => pow_zero i)
+  have hkey : (NumberField.discr K).natAbs ≤ ∏ q ∈ S.filter Nat.Prime, q ^ C q := by
+    rw [hNeq]
+    refine Finset.prod_le_prod' ?_
+    intro q hq
+    exact Nat.pow_le_pow_right (Finset.mem_filter.mp hq).2.pos (hC q K hK hrank)
+  have habs : |NumberField.discr K| =
+      (((NumberField.discr K).natAbs : ℤ)) := (Int.natCast_natAbs _).symm
+  rw [habs]
+  exact_mod_cast hkey
+
+/-- **The `p`-division fields of `A(ℚ)` have BOUNDED DISCRIMINANT** (PROVEN,
+2026-07-28, over the four-way cut immediately above) — THE deep arithmetic
+input to weak Mordell–Weil, and the only one left after the Hermite step above
+is discharged.
 
 Stated as: one bound `D`, working for every rational point `P` and every
 `p`-division point `y` of it at once, such that `y` is defined over a
@@ -29369,27 +29728,34 @@ arithmetic-of-`K₀` half of the old note is discharged by
 `exists_finiteIndex_le_fixingSubgroup_of_subfieldDiscr_le` above, which is
 PROVEN.
 
-**MISSING MACHINERY**, and it is the honest remaining cost: the first
-three bullets — finiteness of `ℚ(A[p])`, the Kummer degree bound, and
-Néron–Ogg–Shafarevich for `A` and for the division points.  The fourth is
-NOT missing: it is
-`Fermat.exists_discr_factorization_le_of_finrank_le` in
-`Fermat/FLT/GaloisRepresentation/HardlyRamified/HermiteMinkowski.lean`,
-PROVEN there — but that module is strictly DOWNSTREAM of this one (it
-imports `MazurTorsion`, which imports this file), so it cannot be used
-here as things stand.  The repair, when this leaf is attacked, is to hoist
-the different-ideal/discriminant-exponent development of that file above
-`X0.lean`; the check that would refute this note is to compute the import
-closure of `HermiteMinkowski.lean` and see whether it still contains
-`Fermat.FLT.ModularCurve.X0`.
+**THE SECOND CUT, 2026-07-28, and what it discharges.**  The four bullets are
+now four named declarations immediately above, and TWO of them are PROVEN:
 
-The FIRST bullet is also nearer than it looks:
-`Fermat.exists_fixingSubgroup_le_stabilizer_geomFibrePt` in
-`Fermat/FLT/Modularity/TateModule.lean` is PROVEN — every geometric point
-of a fibre is fixed by `Gal(ℚᵃˡᵍ/E)` for some finite `E/ℚ` — and
-`TateModule.lean` is NOT downstream of this file (its project import
-closure is 34 modules and contains neither `X0` nor `MazurTorsion`), so
-importing it here costs six modules and closes that bullet outright. -/
+* bullet 1, finiteness of `ℚ(A[p])`, is `exists_torsionField_of_abelianScheme`
+  — PROVEN, over the sibling leaf `finite_torsion_geomPt_of_abelianScheme` and
+  `exists_fixingSubgroup_le_stabilizer_geomFibrePt`, which was hoisted out of
+  `Modularity/TateModule.lean` into `Modularity/AbelianSchemeGeomPt.lean` for
+  exactly this consumer (importing `TateModule.lean` itself would have put
+  `Chebotarev.lean` and 16 000 more lines on this file's critical path);
+* bullet 2, the Kummer degree bound, is `exists_degreeBound_geomPtField` —
+  OPEN;
+* bullet 3, Néron–Ogg–Shafarevich, is `exists_ramificationSet_geomPtField` —
+  OPEN;
+* bullet 4 is `exists_discrBound_of_finrank_le_of_unramifiedOutside` — PROVEN.
+  The old note below said its ingredient
+  `exists_discr_factorization_le_of_finrank_le` was present but unreachable,
+  and prescribed the repair; the repair was carried out, hoisting the whole
+  different-ideal/discriminant-exponent development of `HermiteMinkowski.lean`
+  into the `Mathlib`-cone module `HardlyRamified/DiscrExponent.lean`, which
+  `HermiteMinkowski.lean` now `public import`s.  Its import closure no longer
+  contains `Fermat.FLT.ModularCurve.X0`, which is the check that note named.
+
+Bullets 2 and 3 are stated about the NAMED field `geomPtField ab y = ℚ(y)`
+rather than about an existentially quantified `K`.  That is what makes them
+two INDEPENDENT leaves: as one existential they were inseparable, because a
+leaf producing a `K` of bounded degree says nothing about a `K` produced
+elsewhere with restricted ramification, and the universally quantified form
+("every finite `K ⊇ ℚ(A[p])` is unramified outside `S`") is FALSE. -/
 theorem exists_discrBound_divisionField_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -29397,8 +29763,18 @@ theorem exists_discrBound_divisionField_of_abelianScheme {J : Scheme.{0}} {jstr 
       p • y = ratToGeom jstr P →
       ∃ (K : IntermediateField ℚ (AlgebraicClosure ℚ)) (hK : FiniteDimensional ℚ K),
         |subfieldDiscr K hK| ≤ (D : ℤ) ∧
-        ∀ σ ∈ K.fixingSubgroup, ab.galSMul (𝟙 SpecQ) σ y = y :=
-  sorry
+        ∀ σ ∈ K.fixingSubgroup, ab.galSMul (𝟙 SpecQ) σ y = y := by
+  classical
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  obtain ⟨K₀, hK₀fd, hK₀⟩ := exists_torsionField_of_abelianScheme ab p hp
+  obtain ⟨n, hn⟩ := exists_degreeBound_geomPtField ab p hp K₀ hK₀fd hK₀
+  obtain ⟨S, hS⟩ := exists_ramificationSet_geomPtField ab p hp
+  obtain ⟨D, hD⟩ := exists_discrBound_of_finrank_le_of_unramifiedOutside n S
+  refine ⟨D, fun P y hy => ?_⟩
+  obtain ⟨hfd, hrank⟩ := hn P y hy
+  exact ⟨geomPtField ab y, hfd,
+    hD _ hfd hrank (fun q hq hqS => hS P y hy hfd q hq hqS),
+    fun σ hσ => galSMul_of_mem_fixingSubgroup_geomPtField ab y hσ⟩
 
 /-- **The Kummer field `ℚ(p^{-1} A(ℚ))` is finite over `ℚ`** (PROVEN,
 2026-07-28, over the two leaves above and the Hermite step) — THE deep
@@ -29472,7 +29848,15 @@ other half — `exists_geomPt_nsmul_eq_of_abelianScheme`, that the division
 points exist at all — was PROVEN on 2026-07-28 by citation to
 `exists_comp_mulByNat_eq` in `Modularity/AbelianSchemeIsogeny.lean`, which
 this file already imports.  The proof below is their composition and nothing
-else. -/
+else.
+
+**UPDATE 2026-07-28, same day**: `exists_discrBound_divisionField_of_abelianScheme`
+is itself now PROVEN too, over a four-way cut of which two parts are proven
+(`exists_torsionField_of_abelianScheme`, the finiteness of `ℚ(A[p])`, and
+`exists_discrBound_of_finrank_le_of_unramifiedOutside`, Hermite–Minkowski).
+The open leaves under it are `exists_degreeBound_geomPtField` (the Kummer
+degree bound) and `exists_ramificationSet_geomPtField`
+(Néron–Ogg–Shafarevich).  So NOTHING in this composition is open any more. -/
 theorem exists_finiteIndex_divisible_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (p : ℕ) (hp : p.Prime) :
     letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -36029,7 +36413,8 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
-| `exists_discrBound_divisionField_of_abelianScheme` | Kummer degree bound + Néron–Ogg–Shafarevich | no |
+| `exists_degreeBound_geomPtField` | Kummer degree bound (`[ℚ(y):ℚ]` bounded) | no |
+| `exists_ramificationSet_geomPtField` | Néron–Ogg–Shafarevich for the division fields | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `exists_modularHeckeAction` | Eichler-Shimura (the correspondence) | no |
@@ -41783,9 +42168,17 @@ theorem bijective_pre_generic_of_isProper (ℓ : ℕ) (R : Subring ℚ) (toF : R
     let sq : ValuativeCommSq f :=
       { R := R, K := ℚ, i₁ := SpecLoc.generic R ≫ s₁.1, i₂ := 𝟙 (SpecLoc R)
         commSq := ⟨by rw [Category.assoc, s₁.2, Category.comp_id, Category.comp_id]; rfl⟩ }
-    haveI := (hvc sq).some
+    -- The `Unique` instance is named and its `Subsingleton` consequence is
+    -- supplied EXPLICITLY.  Leaving `Subsingleton sq.commSq.LiftStruct` to
+    -- instance search made this declaration die with
+    -- `(deterministic) timeout at typeclass, maximum number of heartbeats
+    -- (20000)` once this file's import surface grew (2026-07-28); the search
+    -- was exploring the `Subsingleton` instance graph rather than reading the
+    -- local `Unique`.  Naming it is the fix — NOT a `synthInstance.maxHeartbeats`
+    -- bump, which would only widen the window for the next such failure.
+    have hu : Unique sq.commSq.LiftStruct := (hvc sq).some
     have e : (⟨s₁.1, rfl, s₁.2⟩ : sq.commSq.LiftStruct)
-        = ⟨s₂.1, hval.symm, s₂.2⟩ := Subsingleton.elim _ _
+        = ⟨s₂.1, hval.symm, s₂.2⟩ := (hu.uniq _).trans (hu.uniq _).symm
     exact Subtype.ext (congrArg CategoryTheory.CommSq.LiftStruct.l e)
   · intro x
     let sq : ValuativeCommSq f :=
