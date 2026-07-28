@@ -3520,9 +3520,13 @@ squares in `F_w` at every finite place `w`" along the residue
 characteristic:
 
 * `exists_pow_forall_isSquare_adicCompletion_of_sub_one_mem` (STEP 1a-i′-a,
-  LOCAL at the places above `2`): a uniform congruence `b ≡ 1 mod 2ⁿ` forces
-  `b` to be a SQUARE in `F_w` for every `w ∣ 2`, and a square `t²` is
-  trivially `t² + 0²`;
+  PROVEN, LOCAL at the places above `2`): a uniform congruence `b ≡ 1 mod 2ⁿ`
+  forces `b` to be a SQUARE in `F_w` for every `w ∣ 2` — `n := 3` is the
+  witness — and a square `t²` is trivially `t² + 0²`. Its one input is
+  `henselianLocalRing_adicCompletionIntegers` (STEP 1a-i′-a₀), the Henselian
+  property of the local integers, which is a MISSING mathlib instance rather
+  than a piece of this development's mathematics, and which STEP 1a-i′-b
+  needs too;
 * `exists_sq_add_sq_adicCompletion_of_notMem` (STEP 1a-i′-b, LOCAL at the
   places of odd residue characteristic): at such a `w` EVERY `w`-adic unit
   is a sum of two squares;
@@ -3546,9 +3550,61 @@ leaves CANNOT be strengthened away: an element of `F` that is a square in
 a totally negative `b` must fail to be a local square somewhere, and the
 odd-place leaf STEP 1a-i′-b is what covers that failure. -/
 
+/-- **STEP 1a-i′-a₀ — THE MISSING PIN INSTANCE: the valuation ring of a
+number field completed at a finite place is HENSELIAN** (sorry leaf, LOCAL
+and entirely topological — no arithmetic, no reciprocity; CUT 2026-07-28).
+
+This is the one gap that blocks BOTH local leaves of STEP 1a-i′, and it is a
+general fact about Dedekind domains, not about number fields — a successor
+should feel free to relocate it to `Fermat/FLT/Mathlib/RingTheory/`
+and state it for `HeightOneSpectrum R` with `R` a Dedekind domain and `K`
+its fraction field. It is kept here only so that this cut touches one module.
+
+WHAT THE PIN ALREADY GIVES, verified 2026-07-28 by `inferInstance` probes on
+`w.adicCompletionIntegers F`: `IsLocalRing`, `IsDiscreteValuationRing`,
+`IsPrincipalIdealRing`, `IsNoetherianRing`, `UniformSpace` and
+`IsUniformAddGroup` all synthesise. What FAILS to synthesise is exactly
+`CompleteSpace`, `IsAdicComplete (IsLocalRing.maximalIdeal _) _`,
+`HenselianLocalRing`, and `Finite (IsLocalRing.ResidueField _)`. So the
+obstruction is not the algebra — it is that nothing in mathlib connects the
+UNIFORM completeness of `w.adicCompletion F` to the `𝔪`-ADIC completeness of
+its integers.
+
+ROUTE, three short steps and no new mathematics.
+
+1. `IsAdic.isAdicComplete_iff` (`Mathlib/RingTheory/AdicCompletion/
+   Topology.lean`) says `IsAdicComplete I R ↔ CompleteSpace R ∧ T2Space R`
+   for a `[UniformSpace R] [IsUniformAddGroup R]` whose topology `IsAdic I`.
+   Both instances are already present on `O := w.adicCompletionIntegers F`,
+   so it suffices to supply:
+   * `IsAdic (IsLocalRing.maximalIdeal O)`. Via `isAdic_iff`: with `π` a
+     uniformizer, `𝔪 ^ n = {x ∈ O : v x ≤ (v π) ^ n}`, and because the value
+     group `ℤᵐ⁰` is DISCRETE each such set is clopen (`v x ≤ exp (-n)` is the
+     same condition as `v x < exp (-n+1)`) and they form a neighbourhood
+     basis of `0`. Those are precisely the two clauses of `isAdic_iff`.
+   * `CompleteSpace O`: `O` is a closed subset of the complete
+     `w.adicCompletion F` (`instance : CompleteSpace (adicCompletion K v)` is
+     in the pin), being the closed unit ball of the valuation.
+   * `T2Space O`: a subspace of a T2 space.
+2. `IsAdicComplete.henselianRing` (`Mathlib/RingTheory/Henselian.lean`) then
+   gives `HenselianRing O (IsLocalRing.maximalIdeal O)`.
+3. Upgrade that to `HenselianLocalRing O`. mathlib has only the converse
+   instance, but the translation is immediate: the two `is_henselian` fields
+   differ only in asking `IsUnit (f.derivative.eval a₀)` in `O` versus in the
+   residue field, and over a LOCAL ring those agree.
+
+FAITHFULNESS. Nothing to audit — this is a true, standard fact (a complete
+discrete valuation ring is Henselian) with no hypotheses beyond the ambient
+ones, and it is CONSUMED below, so it cannot be vacuous. -/
+theorem henselianLocalRing_adicCompletionIntegers
+    (F : Type u) [Field F] [NumberField F]
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    HenselianLocalRing (w.adicCompletionIntegers F) := by
+  sorry
+
 /-- **STEP 1a-i′-a — A UNIFORM `2`-ADIC CONGRUENCE FORCES A LOCAL SQUARE AT
-EVERY PLACE ABOVE `2`** (sorry leaf, LOCAL — no reciprocity, no global
-input; CUT 2026-07-28).
+EVERY PLACE ABOVE `2`** (PROVEN 2026-07-28 over STEP 1a-i′-a₀; LOCAL — no
+reciprocity, no global input; CUT 2026-07-28).
 
 There is a single exponent `n`, depending only on `F`, such that any
 algebraic integer `c ≡ 1 (mod 2ⁿ)` is a square in `F_w` for every `w ∣ 2`.
@@ -3581,25 +3637,30 @@ for which `g(0) = -u/4 ∈ 𝔪_w` and `g'(0) = 1` is a UNIT. Naive Hensel gives
 Artin–Schreier-shaped completion of the square in residue characteristic
 `2`; it is what makes `2e_w + 1` the right exponent.)
 
-MACHINERY, and the ONE genuine pin gap, re-checked 2026-07-28.
-`w.adicCompletionIntegers F` is already known to mathlib to be an
-`IsDiscreteValuationRing` and an `IsPrincipalIdealRing`
-(`Mathlib/NumberTheory/NumberField/Completion/FinitePlace.lean`), and
-`IsAdicComplete.henselianRing` (`Mathlib/RingTheory/Henselian.lean`) turns
-adic completeness into the Henselian property. What is MISSING is the bridge
-between them: there is no instance
+HOW THE PROOF BELOW RUNS, since it is shorter than the discussion. Take
+`n := 3` and write `c = r · 2³ + 1`. Push everything into
+`O := w.adicCompletionIntegers F` along `ι := algebraMap (𝒪_F) O`, where
+`2 ∈ 𝔪_O` because `2 ∈ w` (this is the only use of `w ∣ 2`, and it is what
+makes the Hensel step's constant term small). Apply Henselian to the monic
 
-    IsAdicComplete (IsLocalRing.maximalIdeal (w.adicCompletionIntegers F))
-      (w.adicCompletionIntegers F)
+    f = X² + X - C (2 · ι r),
 
-anywhere in the pin, in `~/cs/FLT`, or in this tree — mathlib's supply is
-`ℤ_[p]`, Artinian local rings, `AdicCompletion (maximalIdeal R) R`, and
-`𝒪[K]` for `[IsNonarchimedeanLocalField K]`, and `w.adicCompletion F` carries
-no `IsNonarchimedeanLocalField` instance (a gap already recorded elsewhere in
-this file). Supplying that ONE instance — from `CompleteSpace` plus the
-discrete valuation, i.e. that the `𝔪`-adic filtration is the valuation
-filtration — unblocks this leaf AND STEP 1a-i′-b together, and is the first
-thing a successor should build.
+at the approximate root `0`: `f(0) = -(2 · ι r) ∈ 𝔪_O` and `f'(0) = 1` is a
+unit. The root `s` satisfies `s² + s = 2 · ι r`, whence
+`(1 + 2s)² = 1 + 4(s + s²) = 1 + 8 · ι r = ι c`, and the image of `1 + 2s` in
+`F_w` is the required square root. Note the completion of the square is
+carried out on `f`, not on `T² - c`: the substitution `T = 1 + 2S` of the
+paragraph above is what turns the latter into the former, and here it has
+already been applied. No division by `4` is ever performed — `u/4` is
+literally `2r`, because the hypothesis hands over `c - 1` in the ideal
+`(2³)`.
+
+MACHINERY. The single input is STEP 1a-i′-a₀,
+`henselianLocalRing_adicCompletionIntegers` — the Henselian property of `O`,
+which the pin does not have and which that leaf's docstring says how to
+build. Everything else used here is already in mathlib:
+`Valuation.mem_maximalIdeal_iff`, `valuedAdicCompletion_eq_valuation'`,
+`valuation_of_algebraMap`, `intValuation_lt_one_iff_mem`, and `monicity!`.
 
 FAITHFULNESS. The statement carries no parity and no global input; it is
 true for every number field, including `F = ℚ` (where it is the familiar
@@ -3614,7 +3675,53 @@ theorem exists_pow_forall_isSquare_adicCompletion_of_sub_one_mem
           t ^ 2 =
             algebraMap F (w.adicCompletion F)
               (algebraMap (NumberField.RingOfIntegers F) F c) := by
-  sorry
+  refine ⟨3, fun w h2 c hc => ?_⟩
+  haveI := henselianLocalRing_adicCompletionIntegers F w
+  obtain ⟨r, hr⟩ := Ideal.mem_span_singleton'.mp hc
+  -- `2` lies in the maximal ideal of the local ring `O`, because `w ∣ 2`.
+  have hmem2 : (2 : w.adicCompletionIntegers F) ∈
+      IsLocalRing.maximalIdeal (w.adicCompletionIntegers F) := by
+    refine (Valuation.mem_maximalIdeal_iff
+      (v := (Valued.v : Valuation (w.adicCompletion F) (WithZero (Multiplicative ℤ))))).mpr ?_
+    have hcast : ((2 : w.adicCompletionIntegers F) : w.adicCompletion F)
+        = ((2 : F) : w.adicCompletion F) := by
+      have h : (2 : w.adicCompletionIntegers F)
+          = algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F) 2 :=
+        (map_ofNat (algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F)) 2).symm
+      rw [h]
+      simp
+      exact map_ofNat (algebraMap (NumberField.RingOfIntegers F) F) 2
+    rw [hcast, IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation']
+    rw [show (2 : F) = algebraMap (NumberField.RingOfIntegers F) F 2 from
+      (map_ofNat (algebraMap (NumberField.RingOfIntegers F) F) 2).symm,
+      IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap]
+    exact (IsDedekindDomain.HeightOneSpectrum.intValuation_lt_one_iff_mem _ _).mpr h2
+  set ι := algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F) with hι
+  have hc' : c = r * 2 ^ 3 + 1 := by rw [hr]; ring
+  have hιc : ι c = ι r * 8 + 1 := by
+    rw [hc', map_add, map_mul, map_pow, map_one, map_ofNat]
+    norm_num
+  -- Hensel on `X² + X - 2 ι r`, whose derivative at `0` is the unit `1`.
+  set f : Polynomial (w.adicCompletionIntegers F) :=
+    Polynomial.X ^ 2 + Polynomial.X - Polynomial.C (2 * ι r) with hf
+  have hfm : f.Monic := by rw [hf]; monicity!
+  have h1 : f.eval 0 ∈ IsLocalRing.maximalIdeal (w.adicCompletionIntegers F) := by
+    have hev : f.eval 0 = -(2 * ι r) := by rw [hf]; simp
+    rw [hev]
+    exact neg_mem (Ideal.mul_mem_right _ _ hmem2)
+  have h2' : IsUnit (f.derivative.eval 0) := by
+    have hev : f.derivative.eval 0 = 1 := by rw [hf]; simp
+    rw [hev]
+    exact isUnit_one
+  obtain ⟨s, hs, -⟩ := HenselianLocalRing.is_henselian f hfm 0 h1 h2'
+  have hs' : s ^ 2 + s - 2 * ι r = 0 := by
+    have hroot := hs
+    rw [Polynomial.IsRoot, hf] at hroot
+    simpa using hroot
+  refine ⟨algebraMap (w.adicCompletionIntegers F) (w.adicCompletion F) (1 + 2 * s), ?_⟩
+  have key : (1 + 2 * s) ^ 2 = ι c := by linear_combination 4 * hs' - hιc
+  rw [← map_pow, key]
+  rfl
 
 /-- **STEP 1a-i′-b — AT A FINITE PLACE OF ODD RESIDUE CHARACTERISTIC EVERY
 UNIT IS A SUM OF TWO SQUARES** (sorry leaf, LOCAL — no reciprocity, no
@@ -3641,17 +3748,16 @@ So this leaf is Hensel in its NAIVE form (unit derivative), unlike STEP
 1a-i′-a; the residue characteristic being odd is what makes `2` a unit and
 is used twice.
 
-MACHINERY. Two pieces of glue, both shared with STEP 1a-i′-a where the first
-is described in detail: (i) the MISSING
-`IsAdicComplete (IsLocalRing.maximalIdeal (w.adicCompletionIntegers F))
-(w.adicCompletionIntegers F)` instance, which is what
-`IsAdicComplete.henselianRing` needs and which the pin does not have for this
-ring; (ii) the identification of the residue field of
-`w.adicCompletionIntegers F` with `𝒪_F ⧸ w.asIdeal` — in particular its
-FINITENESS, which for the ring of integers of a number field is standard API
-— since step 1 is a statement about that finite field. Unlike STEP 1a-i′-a
-this leaf needs no substitution trick: the naive Hensel form applies
-directly, because the residue characteristic is odd.
+MACHINERY. Two pieces of glue. (i) The Henselian property of
+`O := w.adicCompletionIntegers F` — that is STEP 1a-i′-a₀,
+`henselianLocalRing_adicCompletionIntegers`, already stated above and shared
+with STEP 1a-i′-a, so nothing new is needed here. (ii) The residue field of
+`O`: its identification with `𝒪_F ⧸ w.asIdeal` and in particular its
+FINITENESS. `Finite (IsLocalRing.ResidueField O)` was checked on 2026-07-28
+NOT to synthesise, so this is a second small pin gap; it is the only input of
+step 1 above, and it is what `FiniteField.exists_root_sum_quadratic` consumes.
+Unlike STEP 1a-i′-a this leaf needs no substitution trick: the naive Hensel
+form applies directly, because the residue characteristic is odd.
 
 FAITHFULNESS. `w`-adic units only: the statement is FALSE without
 `b ∉ w.asIdeal` — at a place inert in `F_w(i)` a uniformizer has odd
