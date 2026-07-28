@@ -4869,11 +4869,235 @@ theorem exists_uniform_pow_localInertia_smul_connected_of_hopf_package
       (ρ'.toLocal 𝔭₃) σ z = m • z :=
   sorry
 
+/-- **A UNIPOTENT endomorphism whose ORDER IS PRIME TO `3` fixes every
+`3`-torsion vector** (helper, PROVEN 2026-07-28; pure algebra, no
+arithmetic input whatever).
+
+If `u` is an `A`-endomorphism of `M`, `z : M` is killed by `3`, some
+`u ^ K` with `3 ∤ K` fixes `z`, and `(u − 1) ^ m` kills `z` for some `m`,
+then `u z = z`.
+
+PROOF, and it deliberately avoids characteristic-`3` Frobenius identities
+in `End A M` (which is not an `𝔽₃`-algebra). The two-step case is the
+whole content: if `(u − 1) ² y = 0` then `w := (u − 1) y` is `u`-fixed, so
+`u ^ j y = y + j • w` by induction, and `u ^ K y = y` gives `K • w = 0`;
+also `3 • w = 0` since `3 • y = 0`. So `addOrderOf w` divides
+`gcd 3 K = 1`, i.e. `w = 0`. The general case peels the exponent one step
+at a time: `(u − 1) ^ (j + 2) z = 0` says `(u − 1) ² ((u − 1) ^ j z) = 0`,
+and `(u − 1) ^ j z` is still `3`-torsion and still fixed by `u ^ K`
+(because `u` commutes with `u − 1`), so the two-step case lowers the
+exponent to `j + 1`.
+
+This is where the TAMENESS of the connected `3`-torsion is converted into
+a fixed-point statement, and it is the only place `3 ∤ K` is used. -/
+theorem eq_of_unipotent_of_pow_coprime_three {A : Type*} [CommRing A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (u : Module.End A M) (z : M) (h3 : (3 : ℕ) • z = 0)
+    (K : ℕ) (hK : ¬ (3 ∣ K)) (hKz : (u ^ K) z = z)
+    (m : ℕ) (hnil : ((u - 1) ^ m) z = 0) :
+    u z = z := by
+  classical
+  -- STEP 1. the two-step case: `(u − 1)² y = 0` already forces `(u − 1) y = 0`
+  have key : ∀ y : M, (3 : ℕ) • y = 0 → (u ^ K) y = y →
+      (((u - 1) ^ 2 : Module.End A M)) y = 0 → (u - 1) y = 0 := by
+    intro y hy3 hyK hy2
+    set w : M := (u - 1) y with hw
+    have hu2 : (u - 1) w = 0 := by
+      have h : (((u - 1) ^ 2 : Module.End A M)) y = (u - 1) ((u - 1) y) := by
+        rw [pow_two, Module.End.mul_apply]
+      rw [h] at hy2
+      exact hy2
+    have huw : u w = w := by
+      have h := hu2
+      rw [LinearMap.sub_apply, Module.End.one_apply, sub_eq_zero] at h
+      exact h
+    have huy : u y = y + w := by
+      rw [hw, LinearMap.sub_apply, Module.End.one_apply]
+      abel
+    have hpow : ∀ j : ℕ, (u ^ j) y = y + j • w := by
+      intro j
+      induction j with
+      | zero => simp
+      | succ j ih =>
+          have h1 : (u ^ (j + 1)) y = u ((u ^ j) y) := by
+            rw [pow_succ', Module.End.mul_apply]
+          rw [h1, ih, map_add, map_nsmul, huw, huy, succ_nsmul]
+          abel
+    have hKw : (K : ℕ) • w = 0 := by
+      have h := hpow K
+      rw [hyK] at h
+      simpa using h.symm
+    have h3w : (3 : ℕ) • w = 0 := by
+      rw [hw, ← map_nsmul, hy3, map_zero]
+    have hdvd : addOrderOf w ∣ Nat.gcd 3 K :=
+      Nat.dvd_gcd (addOrderOf_dvd_of_nsmul_eq_zero h3w)
+        (addOrderOf_dvd_of_nsmul_eq_zero hKw)
+    have hgcd : Nat.gcd 3 K = 1 :=
+      (Nat.Prime.coprime_iff_not_dvd Nat.prime_three).mpr hK
+    rw [hgcd, Nat.dvd_one] at hdvd
+    exact AddMonoid.addOrderOf_eq_one_iff.mp hdvd
+  -- STEP 2. peel the unipotency exponent down to `1`
+  have hcomm : ∀ j : ℕ, Commute (u ^ K) ((u - 1) ^ j) := fun j =>
+    (((Commute.refl u).sub_right (Commute.one_right u)).pow_pow K j)
+  have main : ∀ j : ℕ, ((u - 1) ^ (j + 1)) z = 0 → (u - 1) z = 0 := by
+    intro j
+    induction j with
+    | zero => intro h; simpa using h
+    | succ j ih =>
+        intro h
+        have hy2 : (((u - 1) ^ 2 : Module.End A M))
+            (((u - 1) ^ j : Module.End A M) z) = 0 := by
+          have h1 : (((u - 1) ^ 2 * (u - 1) ^ j : Module.End A M)) z = 0 := by
+            rw [← pow_add]
+            have h2 : 2 + j = j + 1 + 1 := by ring
+            rw [h2]
+            exact h
+          rwa [Module.End.mul_apply] at h1
+        have hy3 : (3 : ℕ) • (((u - 1) ^ j : Module.End A M) z) = 0 := by
+          rw [← map_nsmul, h3, map_zero]
+        have hyK : (u ^ K) (((u - 1) ^ j : Module.End A M) z)
+            = ((u - 1) ^ j : Module.End A M) z := by
+          have h1 : ((u ^ K * (u - 1) ^ j : Module.End A M)) z
+              = ((u - 1) ^ j * u ^ K : Module.End A M) z := by
+            rw [(hcomm j).eq]
+          rw [Module.End.mul_apply, Module.End.mul_apply, hKz] at h1
+          exact h1
+        have hstep := key _ hy3 hyK hy2
+        refine ih ?_
+        rw [pow_succ', Module.End.mul_apply]
+        exact hstep
+  match m, hnil with
+  | 0, hnil =>
+      have hz : z = 0 := by simpa using hnil
+      rw [hz, map_zero]
+  | (j + 1), hnil =>
+      have h := main j hnil
+      rw [LinearMap.sub_apply, Module.End.one_apply, sub_eq_zero] at h
+      exact h
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **RESIDUAL UNIPOTENCE along the kernel of `ω`** (helper, PROVEN
+2026-07-28): for `g` in the kernel of the mod-`3` cyclotomic character,
+`(ρ g − 1) ^ (2 k)` maps `V` into `𝔪ᵏ V`.
+
+This is the only place the RESIDUAL PACKAGE (`hV`, `hρ`, `kk`, `π`, `v₀`)
+is spent in the one-dimensionality leaf below, and it is exactly the
+`3`-DISTINGUISHED ORDINARY input in its usable form: `hπequiv` makes `ρ̄`
+an extension of the TRIVIAL character by a character `a`, `hV` with `hρ`
+forces `det ρ̄ = ω` hence `a = ω`
+(`residual_twist_eq_cyclotomicCharacterModL` above), so `ω g = 1` gives
+`a g ≡ 1 mod 𝔪` and `ρ̄ g` is UNIPOTENT — upper triangular with both
+diagonal entries `1` in the adapted basis
+(`exists_residual_adapted_basis` / `exists_residual_matrix_entries`
+above). Hence `(ρ g − 1) ² V ⊆ 𝔪 V`, and `R`-linearity iterates that to
+`(ρ g − 1) ^ (2 k) V ⊆ 𝔪ᵏ V`.
+
+NOTE the quantifier is over ALL of `Γ ℚ` and this is not a widening of an
+inertia-only statement: residual triangularity along `ker π` holds for the
+whole Galois group by `hπequiv`, which is itself stated over `Γ ℚ`. The
+inertia restriction enters only in the consumer, through tameness. -/
+theorem pow_sub_one_apply_mem_maximalIdeal_pow_smul_top
+    {R : Type u} [CommRing R]
+    [Algebra ℤ_[3] R] [Module.Finite ℤ_[3] R]
+    [Module.Free ℤ_[3] R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [IsModuleTopology ℤ_[3] R]
+    (V : Type v) [AddCommGroup V] [Module R V] [Module.Finite R V]
+    [Module.Free R V]
+    (hV : Module.rank R V = 2) {ρ : GaloisRep ℚ R V}
+    (hρ : IsHardlyRamified (show Odd 3 by decide) hV ρ)
+    (kk : Type u) [Field kk] [Finite kk] [Algebra ℤ_[3] kk]
+    [TopologicalSpace kk] [DiscreteTopology kk] [IsTopologicalRing kk]
+    [Algebra R kk] [ContinuousSMul R kk]
+    (hsurj : Function.Surjective (algebraMap R kk))
+    (π : (kk ⊗[R] V) →ₗ[kk] kk) (hπsurj : Function.Surjective π)
+    (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
+      π ((ρ.baseChange kk) g w) = π w)
+    (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
+    (g : Γ ℚ) (hgω : cyclotomicCharacterModL 3 g = 1) (k : ℕ) (x : V) :
+    ((ρ g - 1) ^ (2 * k)) x ∈
+      (IsLocalRing.maximalIdeal R ^ k) • (⊤ : Submodule R V) := by
+  classical
+  obtain ⟨b, hb0π, hb0ne, hb1⟩ :=
+    exists_residual_adapted_basis V hV kk hsurj π hπsurj v₀ hv₀
+  obtain ⟨a, c, hac⟩ :=
+    exists_residual_matrix_entries hV kk hsurj π hπsurj hπequiv (b 0) v₀ hb0π hb0ne
+  have ha1 : a g - 1 ∈ IsLocalRing.maximalIdeal R :=
+    (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj hπequiv
+      v₀ hv₀ (b 0) hb0π hb0ne a (fun h => (hac h).1) g).1 hgω
+  set T : Module.End R V := ρ g - 1 with hT
+  have hTb0 : T (b 0) ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h1 : T (b 0) = (ρ g (b 0) - a g • b 0) + (a g - 1) • b 0 := by
+      rw [hT, LinearMap.sub_apply, Module.End.one_apply, sub_smul, one_smul]
+      abel
+    rw [h1]
+    exact Submodule.add_mem _ (hac g).1 (Submodule.smul_mem_smul ha1 trivial)
+  have hTb1 : T (b 1) - c g • b 0 ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    have h1 : T (b 1) - c g • b 0 = ρ g v₀ - (v₀ + c g • b 0) := by
+      rw [hT, LinearMap.sub_apply, Module.End.one_apply, hb1]
+      abel
+    rw [h1]
+    exact (hac g).2
+  have hTT : ∀ y : V, ((T ^ 2 : Module.End R V)) y = T (T y) := fun y => by
+    rw [pow_two, Module.End.mul_apply]
+  have hD2b : ∀ i : Fin 2,
+      ((T ^ 2 : Module.End R V)) (b i) ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro i
+    fin_cases i
+    · show ((T ^ 2 : Module.End R V)) (b 0) ∈ _
+      rw [hTT]
+      exact apply_mem_smul_top T hTb0
+    · show ((T ^ 2 : Module.End R V)) (b 1) ∈ _
+      rw [hTT]
+      have h2 : T (b 1) = (T (b 1) - c g • b 0) + c g • b 0 := by abel
+      rw [h2, map_add, map_smul]
+      exact Submodule.add_mem _ (apply_mem_smul_top T hTb1)
+        (Submodule.smul_mem _ _ hTb0)
+  have hD2 : ∀ y : V,
+      ((T ^ 2 : Module.End R V)) y ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro y
+    have hsum : y = ∑ i, b.repr y i • b i := (b.sum_repr y).symm
+    rw [hsum, map_sum]
+    refine Submodule.sum_mem _ fun i _ => ?_
+    rw [map_smul]
+    exact Submodule.smul_mem _ _ (hD2b i)
+  have hstep : ∀ (J : Ideal R) (y : V), y ∈ J • (⊤ : Submodule R V) →
+      ((T ^ 2 : Module.End R V)) y ∈
+        (J * IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+    intro J y hy
+    refine Submodule.smul_induction_on hy (fun r hr w _ => ?_) (fun p q hp hq => ?_)
+    · rw [map_smul]
+      refine Submodule.smul_induction_on (hD2 w) (fun s hs w' _ => ?_)
+        (fun p q hp hq => ?_)
+      · rw [smul_smul]
+        exact Submodule.smul_mem_smul (Ideal.mul_mem_mul hr hs) trivial
+      · rw [smul_add]
+        exact Submodule.add_mem _ hp hq
+    · rw [map_add]
+      exact Submodule.add_mem _ hp hq
+  revert x
+  induction k with
+  | zero =>
+      intro x
+      rw [Nat.mul_zero, pow_zero, pow_zero, Ideal.one_eq_top, Submodule.top_smul,
+        Module.End.one_apply]
+      exact Submodule.mem_top
+  | succ k ih =>
+      intro x
+      have hk : 2 * (k + 1) = 2 + 2 * k := by ring
+      rw [hk, pow_add T 2 (2 * k), Module.End.mul_apply,
+        pow_succ (IsLocalRing.maximalIdeal R) k]
+      exact hstep _ _ (ih x)
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **ONE-DIMENSIONALITY OF THE CONNECTED `3`-TORSION out of the
-residual package** (SORRY LEAF — cut 2026-07-28 out of
+residual package** (**PROVEN 2026-07-28** — cut the same day out of
 `exists_ordinary_line_of_flat_hopf_package` just below, which is PROVEN
 over it together with the dévissage
 `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` above.
@@ -4887,29 +5111,55 @@ That is exactly `OortTate.exists_muType_coordinate`'s `hstab`,
 transported through the equivariant bijection `fG`, and it is the ONLY
 thing the dévissage above still needs.
 
-ROUTE (Wiles, Ann. of Math. 141 (1995), ch. 1 §1 prop. 1.1;
-Ramakrishna, Compositio 87 (1993); Darmon–Diamond–Taylor §3).
+THE PROOF AS GIVEN (2026-07-28). It is NOT the route that was recorded
+here when the leaf was cut — that route went through "the residual
+connected part is exactly the `ω`-line", which needs the connected-étale
+sequence as a sequence of finite flat group schemes. The proof below
+avoids that entirely and spends the residual package only through
+UNIPOTENCE. Reference for the mathematics is still Wiles, Ann. of
+Math. 141 (1995), ch. 1 §1 prop. 1.1; Ramakrishna, Compositio 87 (1993);
+Darmon–Diamond–Taylor §3.
 
-1. THE CONNECTED LOCUS IS RESIDUALLY INSIDE `ker π`. Every inertia
-   displacement is killed by `π` (that is `hπequiv`), and
-   `connected_locus_mem_of_displacement_stable_of_hopf_package` above
-   says a connected vector lies in ANY submodule containing `𝔪ⁿ⁺² • ⊤`
-   and all the inertia displacements — apply it to
-   `W := ker (x ↦ π ((1 : kk) ⊗ₜ x))`, whose `𝔪ⁿ⁺² • ⊤ ≤ W` is
-   `one_tmul_eq_zero_of_mem_maximalIdeal_smul_top` above. So the
-   connected locus reduces into the `w₀`-line.
-2. `3`-DISTINGUISHEDNESS. `hπequiv` makes `ρ̄` an extension of the
-   TRIVIAL character by a character `a`; `hV` and `hρ` force
-   `det ρ̄ = ω`, hence `a = ω`
-   (`residual_twist_eq_cyclotomicCharacterModL` above); and `hσω` says
-   `ω ≠ 1` on `I₃`. So `ρ̄|_{D₃}` is reducible with DISTINCT characters.
-3. Hence the residual connected part is EXACTLY the `ω`-line: it cannot
-   be `0` (inertia displacements are connected and `ω ≠ 1` makes one of
-   them residually nonzero) and it cannot be everything (the étale
-   quotient would then vanish, forcing inertia to act trivially on
-   `ρ̄`, against `hσω`). A line is inertia-stable, so inertia moves each
-   connected `3`-torsion vector into its own span, which is the
-   conclusion.
+Write `M := (R ⧸ 𝔪ⁿ⁺²) ⊗[R] V` and `S := {z : M | 3 z = 0, z connected}`.
+
+1. `ker ω` ACTS TRIVIALLY ON `S`. For `τ ∈ I₃` with `ω(τ̃) = 1`,
+   `pow_sub_one_apply_mem_maximalIdeal_pow_smul_top` above (this is where
+   `hV`, `hρ`, `kk`, `π`, `v₀` go) gives
+   `(ρ(τ̃) − 1) ^ (2 (n+2)) V ⊆ 𝔪ⁿ⁺² V`, hence
+   `(ρ_M(τ) − 1) ^ (2 (n+2)) = 0` on `M`; and
+   `exists_coprime_three_exponent_localInertia_connected_threeTorsion`
+   above gives ONE `K` prime to `3` with `ρ_M(τ) ^ K` fixing every
+   element of `S` (this is the Raynaud/finite-flat input, and the ONLY
+   one used). `eq_of_unipotent_of_pow_coprime_three` above — unipotent
+   plus order prime to `3` implies trivial — then gives `ρ_M(τ) z = z`.
+2. `exists_localInertia_no_fixed_connected_vector_of_hopf_package` above
+   supplies `σ₀ ∈ I₃` fixing no nonzero connected vector. If `σ₀` fixes
+   the given `z` then `z = 0` and `k := 0` works. Otherwise (1) forces
+   `ω(σ̃₀) ≠ 1`.
+3. `σ₀` ACTS AS `−1` ON `S`. `ω(σ̃₀ ²) = ω(σ̃₀) ² = 1` since `(ℤ⧸3)ˣ` has
+   exponent `2`, so (1) applied to `σ₀ σ₀` gives `ρ_M(σ₀) ² z = z`. Then
+   `s := z + ρ_M(σ₀) z` is connected (the connected locus is a subgroup,
+   `convMul_apply_one_of_comul_absorbs`, and inertia-stable by
+   `inertia_displacement_apply_connected_idempotent_eq_one`) and `σ₀`-fixed,
+   so `s = 0` and `ρ_M(σ₀) z = −z`.
+4. AN ARBITRARY `τ ∈ I₃`. If `ω(τ̃) = 1` then `k := 1` by (1). Otherwise
+   `ω(τ̃) ≠ 1 ≠ ω(σ̃₀)` in the two-element group `(ℤ⧸3)ˣ`, so
+   `ω(τ̃⁻¹ σ̃₀) = 1` and (1) gives `ρ_M(τ)⁻¹ ρ_M(σ₀) z = z`, i.e.
+   `ρ_M(τ) z = ρ_M(σ₀) z = −z = 2 • z` (the last step because `3 z = 0`),
+   so `k := 2`.
+
+WHY `σ`, `hσ`, `hσω` ARE UNDERSCORED, and why that is not a warning sign.
+The proof does not use them: the supersingular configuration is excluded
+by the residual package through step (1) — a supersingular `ρ̄|_{I₃}` is
+irreducible, so it admits no `π` with `hπequiv` at all — and the
+`ω`-nontriviality that `hσω` asserts is RE-DERIVED in step (2) from
+`exists_localInertia_no_fixed_connected_vector_of_hopf_package` (and is in
+any case already PROVEN unconditionally, one declaration being
+`exists_localInertia_cyclotomicCharacterModL_three_ne_one` above). They are
+kept in the signature because the consumer passes them positionally and
+because they document the intended exclusion; the cut could be tightened by
+dropping them, together with `w₀`/`hw₀π`/`hw₀ne`, which the adapted basis
+`exists_residual_adapted_basis` reproduces from `v₀`/`hv₀` alone.
 
 WHAT IS *NOT* ENOUGH, and why flatness is genuinely used. Residual
 one-dimensionality plus Nakayama does NOT give this: over `A = ℤ⧸9` the
@@ -4963,8 +5213,8 @@ theorem exists_pow_smul_connected_threeTorsion_of_flat_hopf_package
     (hπequiv : ∀ g : Γ ℚ, ∀ w : kk ⊗[R] V,
       π ((ρ.baseChange kk) g w) = π w)
     (v₀ : V) (hv₀ : π ((1 : kk) ⊗ₜ[R] v₀) ≠ 0)
-    (w₀ : V) (hw₀π : π ((1 : kk) ⊗ₜ[R] w₀) = 0)
-    (hw₀ne : (1 : kk) ⊗ₜ[R] w₀ ≠ 0)
+    (_w₀ : V) (_hw₀π : π ((1 : kk) ⊗ₜ[R] _w₀) = 0)
+    (_hw₀ne : (1 : kk) ⊗ₜ[R] _w₀ ≠ 0)
     (n : ℕ)
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G] [Module.Flat 𝒪₃ᵥ G]
     [Module.Finite 𝒪₃ᵥ G] [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)]
@@ -4977,17 +5227,217 @@ theorem exists_pow_smul_connected_threeTorsion_of_flat_hopf_package
     (hmin₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = y →
       Coalgebra.counit (R := 𝒪₃ᵥ) y = (1 : 𝒪₃ᵥ) → y = e₀)
     (habs₀ : Bialgebra.comulAlgHom 𝒪₃ᵥ G e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) = e₀ ⊗ₜ[𝒪₃ᵥ] e₀)
-    (σ : Γ ℚ₃ᵥ) (hσ : σ ∈ localInertiaGroup 𝔭₃)
-    (hσω : cyclotomicCharacterModL 3
-      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ) ≠ 1) :
+    (_σ : Γ ℚ₃ᵥ) (_hσ : _σ ∈ localInertiaGroup 𝔭₃)
+    (_hσω : cyclotomicCharacterModL 3
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) _σ) ≠ 1) :
     ∀ τ ∈ localInertiaGroup 𝔭₃,
       ∀ z : (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V,
       (3 : ℕ) • z = 0 →
       (Additive.toMul ((Equiv.ofBijective fG hfG).symm z))
           ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1 →
       ∃ k : ℕ, ((ρ.baseChange
-        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z = k • z :=
-  sorry
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z = k • z := by
+  classical
+  have hprim₀ : ∀ y : G, IsIdempotentElem y → y * e₀ = 0 ∨ y * e₀ = e₀ :=
+    fun y hy => mul_eq_zero_or_mul_eq_of_minimal he₀ hε₀ hmin₀ y hy
+  have hcomul₀ : Coalgebra.comul (R := 𝒪₃ᵥ) e₀ * (e₀ ⊗ₜ[𝒪₃ᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪₃ᵥ] e₀ := by
+    rwa [Bialgebra.comulAlgHom_apply] at habs₀
+  set gE := Equiv.ofBijective fG hfG
+  have hfs : ∀ x, fG (gE.symm x) = x := fun x => gE.apply_symm_apply x
+  have hgs_add : ∀ x y, gE.symm (x + y) = gE.symm x + gE.symm y := by
+    intro x y
+    apply gE.injective
+    show fG (gE.symm (x + y)) = fG (gE.symm x + gE.symm y)
+    rw [map_add fG, hfs, hfs, hfs]
+  have hgs_zero : gE.symm 0 = 0 := by
+    apply gE.injective
+    show fG (gE.symm 0) = fG 0
+    rw [map_zero fG, hfs]
+  have hgs_nsmul : ∀ (j : ℕ) x, gE.symm (j • x) = j • gE.symm x := by
+    intro j x
+    induction j with
+    | zero => rw [zero_nsmul, zero_nsmul, hgs_zero]
+    | succ j ih => rw [succ_nsmul, succ_nsmul, hgs_add, ih]
+  -- ## the connected locus: a subgroup of `M`, stable under local inertia
+  set C : Set ((R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗[R] V) :=
+    {x | (Additive.toMul (gE.symm x)) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1}
+  have hCadd : ∀ x y, x ∈ C → y ∈ C → x + y ∈ C := by
+    intro x y hx hy
+    have hx' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (gE.symm x)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hx
+    have hy' : (AlgHom.liftEquiv 𝒪₃ᵥ ℚ₃ᵥ G ℚ₃ᵥᵃˡᵍ).symm
+        (Additive.toMul (gE.symm y)) e₀ = 1 := by
+      rw [AlgHom.liftEquiv_symm_apply]; exact hy
+    show (Additive.toMul (gE.symm (x + y))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1
+    rw [hgs_add, toMul_add, ← AlgHom.liftEquiv_symm_apply,
+      vendored_mul_eq_convMul, liftEquiv_symm_convMul]
+    exact convMul_apply_one_of_comul_absorbs e₀ hcomul₀ _ _ hx' hy'
+  have hCstab : ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ x, x ∈ C →
+      ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ x
+        ∈ C := by
+    intro τ hτ x hx
+    have hd : ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃) τ x - x ∈ C :=
+      inertia_displacement_apply_connected_idempotent_eq_one
+        (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+        fG hfG τ hτ x
+    have h := hCadd _ _ hd hx
+    rwa [sub_add_cancel] at h
+  -- ## TAMENESS of the connected `3`-torsion (the finite-flat input)
+  have hcomm : ∀ φ ψ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, φ * ψ = ψ * φ := by
+    intro φ ψ
+    have h : Additive.ofMul (φ * ψ) = Additive.ofMul (ψ * φ) := by
+      refine hfG.1 ?_
+      rw [_root_.ofMul_mul, _root_.ofMul_mul, map_add fG, map_add fG]
+      exact add_comm _ _
+    exact congrArg Additive.toMul h
+  obtain ⟨Nn, hNn3, hfixφ⟩ :=
+    exists_coprime_three_exponent_localInertia_connected_threeTorsion G e₀ he₀ hε₀
+      hprim₀ hcomul₀ hcomm
+  have htame : ∀ τ ∈ localInertiaGroup 𝔭₃, ∀ z, (3 : ℕ) • z = 0 → z ∈ C →
+      ((((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+        τ) ^ Nn) z = z := by
+    intro τ hτ z hz3 hzC
+    have hord : (Additive.toMul (gE.symm z)) ^ (3 : ℕ) = 1 := by
+      have h0 : (3 : ℕ) • gE.symm z = 0 := by rw [← hgs_nsmul, hz3, hgs_zero]
+      have h1 := congrArg Additive.toMul h0
+      rwa [toMul_nsmul, toMul_zero] at h1
+    have h := hfixφ τ hτ (Additive.toMul (gE.symm z)) hord hzC
+    have h1 : (τ ^ Nn) • gE.symm z = gE.symm z := by
+      apply Additive.toMul.injective
+      show Additive.toMul ((τ ^ Nn) • gE.symm z) = Additive.toMul (gE.symm z)
+      have h2 : Additive.toMul ((τ ^ Nn) • gE.symm z)
+          = (τ ^ Nn) • Additive.toMul (gE.symm z) := rfl
+      rw [h2, h]
+    have h3 : fG ((τ ^ Nn) • gE.symm z) = fG (gE.symm z) := congrArg fG h1
+    rw [map_smul fG, hfs] at h3
+    have h4 : ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal
+        𝔭₃) (τ ^ Nn) z = z := h3
+    rwa [map_pow] at h4
+  -- ## (1) an inertia element in `ker ω` fixes the connected `3`-torsion
+  have hclaim : ∀ τ ∈ localInertiaGroup 𝔭₃,
+      cyclotomicCharacterModL 3
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) = 1 →
+      ∀ z, (3 : ℕ) • z = 0 → z ∈ C →
+      ((ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+        τ z = z := by
+    intro τ hτ hτω z hz3 hzC
+    have hnil : (((((ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ) - 1)
+          ^ (2 * (n + 2))) z = 0 := by
+      obtain ⟨x, rfl⟩ := exists_one_tmul_quotient
+        (IsLocalRing.maximalIdeal R ^ (n + 2)) z
+      have hone : ∀ w : V,
+          (((((ρ.baseChange
+            (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ) - 1))
+              ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] w)
+            = (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R]
+                ((ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) - 1) w) := by
+        intro w
+        rw [LinearMap.sub_apply, LinearMap.sub_apply, Module.End.one_apply,
+          Module.End.one_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+          ← TensorProduct.tmul_sub]
+      have htrans : ∀ (j : ℕ) (y : V),
+          (((((ρ.baseChange
+            (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ) - 1) ^ j)
+              ((1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R] y)
+            = (1 : R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2))) ⊗ₜ[R]
+                (((ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) - 1) ^ j) y) := by
+        intro j
+        induction j with
+        | zero =>
+            intro y
+            rw [pow_zero, pow_zero, Module.End.one_apply, Module.End.one_apply]
+        | succ j ih =>
+            intro y
+            rw [pow_succ' _ j, pow_succ' _ j, Module.End.mul_apply,
+              Module.End.mul_apply, ih, hone]
+      rw [htrans]
+      exact one_tmul_quotient_eq_zero_of_mem_smul_top _
+        (pow_sub_one_apply_mem_maximalIdeal_pow_smul_top V hV hρ kk hsurj π hπsurj
+          hπequiv v₀ hv₀ _ hτω (n + 2) x)
+    exact eq_of_unipotent_of_pow_coprime_three _ z hz3 Nn hNn3
+      (htame τ hτ z hz3 hzC) _ hnil
+  -- ## (2) the inertia element with no nonzero fixed connected vector
+  obtain ⟨σ₀, hσ₀I, hσ₀fix⟩ :=
+    exists_localInertia_no_fixed_connected_vector_of_hopf_package
+      (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))) G e₀ he₀ hε₀
+      hprim₀ hcomul₀ fG hfG
+  have hunit2 : ∀ x : (ZMod 3)ˣ, x * x = 1 := by decide
+  have hunitne : ∀ x y : (ZMod 3)ˣ, x ≠ 1 → y ≠ 1 → x⁻¹ * y = 1 := by decide
+  intro τ hτ z hz3 hzC
+  by_cases hfixz : ((ρ.baseChange
+      (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z = z
+  · refine ⟨0, ?_⟩
+    have hz0 : z = 0 := hσ₀fix z hzC hfixz
+    rw [hz0, map_zero, zero_nsmul]
+  · have hσ₀ω : cyclotomicCharacterModL 3
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) σ₀) ≠ 1 := fun h =>
+      hfixz (hclaim σ₀ hσ₀I h z hz3 hzC)
+    -- ## (3) `σ₀ ²` lies in `ker ω`, so it fixes `z`
+    have hsq : ((ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) (σ₀ * σ₀) z = z := by
+      refine hclaim _ (mul_mem hσ₀I hσ₀I) ?_ z hz3 hzC
+      rw [map_mul, map_mul]
+      exact hunit2 _
+    -- ## hence `σ₀` acts as `−1` on the connected `3`-torsion
+    have hneg : ((ρ.baseChange
+        (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z = -z := by
+      have hyC : (((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z) ∈ C :=
+        hCstab σ₀ hσ₀I z hzC
+      have hsq' : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀
+            (((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z) = z := by
+        rw [← Module.End.mul_apply, ← map_mul]
+        exact hsq
+      have hfix2 : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀
+            (z + ((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z)
+          = z + ((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z := by
+        rw [map_add, hsq']
+        abel
+      have hzero := hσ₀fix _ (hCadd _ _ hzC hyC) hfix2
+      exact eq_neg_of_add_eq_zero_right hzero
+    -- ## (4) an arbitrary `τ ∈ I₃`
+    by_cases hτω : cyclotomicCharacterModL 3
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) τ) = 1
+    · exact ⟨1, by rw [hclaim τ hτ hτω z hz3 hzC, one_nsmul]⟩
+    · refine ⟨2, ?_⟩
+      have hker : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃)
+            (τ⁻¹ * σ₀) z = z := by
+        refine hclaim _ (mul_mem (inv_mem hτ) hσ₀I) ?_ z hz3 hzC
+        rw [map_mul, map_mul, map_inv, map_inv]
+        exact hunitne _ _ hτω hσ₀ω
+      have hsplit : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ⁻¹
+            (((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z) = z := by
+        rw [← Module.End.mul_apply, ← map_mul]
+        exact hker
+      have h5 : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ
+            (((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ⁻¹
+                (((ρ.baseChange
+                  (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) σ₀ z))
+          = ((ρ.baseChange
+              (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z := by
+        rw [hsplit]
+      have hτz : ((ρ.baseChange
+          (R ⧸ (IsLocalRing.maximalIdeal R ^ (n + 2)))).toLocal 𝔭₃) τ z = -z := by
+        rw [← h5, ← Module.End.mul_apply, ← map_mul, mul_inv_cancel, map_one,
+          Module.End.one_apply, hneg]
+      rw [hτz]
+      have h3 : (3 : ℕ) • z = 0 := hz3
+      rw [show (3 : ℕ) = 2 + 1 from rfl, succ_nsmul] at h3
+      exact (eq_neg_of_add_eq_zero_left h3).symm
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -5008,7 +5458,9 @@ now separate top-level leaves and this node consumes both:
 * `exists_pow_smul_connected_threeTorsion_of_flat_hopf_package` —
   ONE-DIMENSIONALITY of the connected `3`-torsion, the half where the
   RESIDUAL PACKAGE is spent (`hV`, `hρ`, `kk`, `π`, `v₀`, `w₀`, `hσω`
-  are passed to it verbatim, and `hσω` is consumed only there);
+  are passed to it verbatim). **PROVEN 2026-07-28**; note its proof turned
+  out to need neither `w₀` nor `hσω`, both of which are now underscored
+  there — see its docstring for why that is not a vacuity signal;
 * `exists_uniform_pow_localInertia_smul_connected_of_hopf_package` —
   the RAYNAUD DÉVISSAGE, which upgrades that `3`-torsion,
   vector-by-vector statement to a single power `m : ℕ` acting on the
