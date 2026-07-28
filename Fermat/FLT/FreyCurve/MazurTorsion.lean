@@ -10661,9 +10661,170 @@ lemma det_eq_of_conj_of_basis_fin_two {R M : Type*} [CommRing R]
   have h1 := pairing_map_eq_det_smul_of_basis_fin_two b e halt f x y
   exact hxy.mul_right_cancel (h1.symm.trans (hc x y))
 
-/-- **The `μ_N`-valued Weil pairing over `𝔽_q` at COMPOSITE level** (sorry
-leaf, opened 2026-07-27 by decomposing `det_frobeniusTorsionEnd_of_coprime`
-below): on the `N`-torsion of an elliptic curve over `𝔽_q`, `N` coprime to
+/-- **Surjectivity of a rank-two nondegenerate alternating pairing at
+COMPOSITE level** (PROVEN 2026-07-27): on a module carrying a `Fin 2` basis
+over `ZMod N`, a multiplicatively bilinear alternating pairing that is killed
+by `N` and NONDEGENERATE takes a PRIMITIVE `N`-th root of unity as a value —
+namely at the reference basis pair `(b 0, b 1)`.
+
+This is Silverman *AEC* III.8.1(d) ("the Weil pairing is surjective onto
+`μ_N`") in its purely linear-algebraic form, and it is what converts the
+prime-level shape of the Weil-pairing statement (nondegeneracy,
+`∀ x ≠ 0, ∃ y, e x y ≠ 1`) into the shape the composite-level determinant
+argument actually consumes (`∃ x y, IsPrimitiveRoot (e x y) N`; see
+`det_eq_of_conj_of_basis_fin_two` above for why a unit value, not merely a
+nonzero one, is required over `ZMod N`).
+
+The argument is Silverman's, with the cyclicity of `μ_N` replaced by the
+rank-two structure, which makes it work verbatim over a non-field: writing
+`y = c • b 0 + d • b 1`, bilinearity and alternation give
+`e (b 0) y = e (b 0) (b 1) ^ d.val`, so EVERY value against `b 0` is a power
+of the single reference value `ζ := e (b 0) (b 1)`. Hence if `ζ ^ l = 1` then
+`e (l • b 0) y = e (b 0) y ^ l = 1` for every `y`, so nondegeneracy forces
+`l • b 0 = 0`, and reading off the first coordinate of the basis gives
+`(l : ZMod N) = 0`, i.e. `N ∣ l`. That is exactly `IsPrimitiveRoot ζ N`.
+
+Note this needs NO cyclic-group theory and no root-of-unity existence input:
+the primitive value is produced, not found. -/
+lemma isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two
+    {N : ℕ} [NeZero N] {M : Type*} [AddCommGroup M] [Module (ZMod N) M]
+    (b : Module.Basis (Fin 2) (ZMod N) M)
+    {G : Type*} [CommGroup G] (e : M → M → G)
+    (hl : ∀ x y z, e (x + y) z = e x z * e y z)
+    (hr : ∀ x y z, e x (y + z) = e x y * e x z)
+    (halt : ∀ x, e x x = 1)
+    (hnd : ∀ x, x ≠ 0 → ∃ y, e x y ≠ 1)
+    (hpow : ∀ x y, e x y ^ N = 1) :
+    IsPrimitiveRoot (e (b 0) (b 1)) N := by
+  classical
+  -- zero laws by cancellation
+  have hzl : ∀ y, e 0 y = 1 := fun y => by
+    have h := hl 0 0 y
+    rw [add_zero] at h
+    have h2 : e 0 y * e 0 y = e 0 y * 1 := by rw [mul_one, ← h]
+    exact mul_left_cancel h2
+  have hzr : ∀ u, e u 0 = 1 := fun u => by
+    have h := hr u 0 0
+    rw [add_zero] at h
+    have h2 : e u 0 * e u 0 = e u 0 * 1 := by rw [mul_one, ← h]
+    exact mul_left_cancel h2
+  -- ℕ-power laws
+  have hnl : ∀ (n : ℕ) (u v : M), e (n • u) v = e u v ^ n := by
+    intro n u v
+    induction n with
+    | zero => rw [zero_nsmul, pow_zero]; exact hzl v
+    | succ n ih => rw [succ_nsmul, hl, ih, pow_succ]
+  have hnr : ∀ (n : ℕ) (u v : M), e u (n • v) = e u v ^ n := by
+    intro n u v
+    induction n with
+    | zero => rw [zero_nsmul, pow_zero]; exact hzr u
+    | succ n ih => rw [succ_nsmul, hr, ih, pow_succ]
+  -- `ZMod N`-scalars through their ℕ-lift
+  have hcast : ∀ (c : ZMod N) (u : M), c • u = c.val • u := by
+    intro c u
+    have h1 : ((c.val : ℕ) : ZMod N) = c := by
+      rw [ZMod.natCast_val, ZMod.cast_id]
+    conv_lhs => rw [← h1]
+    exact Nat.cast_smul_eq_nsmul _ _ _
+  -- every value against `b 0` is a power of the reference value
+  have hpowval : ∀ y : M, ∃ k : ℕ, e (b 0) y = e (b 0) (b 1) ^ k := by
+    intro y
+    have hy : b.repr y 0 • b 0 + b.repr y 1 • b 1 = y := by
+      have h := b.sum_repr y
+      rwa [Fin.sum_univ_two] at h
+    refine ⟨(b.repr y 1).val, ?_⟩
+    conv_lhs => rw [← hy]
+    rw [hr, hcast, hcast, hnr, hnr, halt, one_pow, one_mul]
+  refine ⟨hpow _ _, ?_⟩
+  intro l hl1
+  -- `l • b 0` pairs trivially with everything, hence vanishes
+  have hkill : ∀ y, e (l • b 0) y = 1 := by
+    intro y
+    obtain ⟨k, hk⟩ := hpowval y
+    rw [hnl, hk, ← pow_mul, mul_comm, pow_mul, hl1, one_pow]
+  have hzero : l • (b 0) = 0 := by
+    by_contra hne
+    obtain ⟨y, hy⟩ := hnd _ hne
+    exact hy (hkill y)
+  -- read off the first coordinate
+  have hzero' : ((l : ZMod N)) • (b 0) = 0 :=
+    (Nat.cast_smul_eq_nsmul (ZMod N) l (b 0)).trans hzero
+  have hc : (l : ZMod N) = 0 := by
+    have h := congrArg (fun z => b.repr z 0) hzero'
+    simpa using h
+  exact (ZMod.natCast_eq_zero_iff l N).mp hc
+
+/-- **The `μ_N`-valued Weil pairing over `𝔽_q` at COMPOSITE level, in
+NONDEGENERATE form** (sorry leaf, opened 2026-07-27 by decomposing
+`exists_weilPairing_mu_of_coprime` below): on the `N`-torsion of an elliptic
+curve over `𝔽_q`, `N` coprime to `q`, there is a multiplicatively bilinear
+alternating pairing valued in the `N`-th roots of unity of `𝔽̄_q`,
+NONDEGENERATE, and natural for the `q`-power Frobenius:
+`e(Fx, Fy) = F(e(x, y))`.
+
+THIS IS THE VERBATIM LEVEL-`N` ANALOGUE of `WeilPairing.exists_weilPairing_mu`
+(`EllipticCurve/WeilPairing.lean`, PROVEN) — clause for clause, with the
+prime `p` replaced by `N` and the hypothesis `hqp : q ≠ p` replaced by
+`Nat.Coprime N q` (for prime `p` the two say the same thing). Nothing else
+differs. The surjectivity clause that the determinant argument needs is
+DERIVED from this one — see `exists_weilPairing_mu_of_coprime` immediately
+below and `isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two` above — so
+this leaf is now the ONLY composite-level arithmetic input, and it is a pure
+"re-run the existing construction at level `N`" task.
+
+WHAT THE RE-RUN COSTS, from an audit of the prime-level file (2026-07-27).
+The divisor-theoretic construction is level-generic: `N·(P) − N·(O)` is
+principal for every `P ∈ E[N]`, and the Miller-generator / Weil-reciprocity
+argument never uses primality. Concretely, in `WeilPairing.lean`:
+
+* `weilValueProp` (the admissible-setup predicate that IS the pairing's
+  definition) and `weilValueProp_frobenius_transport` already take a BARE
+  `(p : ℕ)` with no `[Fact p.Prime]` — they are level-generic today.
+* `exists_weilValueSetup_avoiding` and `translationChar_setup_value` carry
+  `[Fact p.Prime]` and `_hqp : q ≠ p`, but the coprimality hypothesis is
+  UNUSED (it is underscore-named in both).
+* `weilValueProp_translationChar_witness`, `weilValue_of_translationChar` and
+  `weilValueProp_all_one_torsion_trivial` use primality only to produce
+  `((p : 𝔽̄_q) : _) ≠ 0` (via `CharP.cast_ne_zero_of_ne_of_prime`) and
+  `p ≠ 0` — both of which follow at composite level from `Nat.Coprime N q`
+  exactly as in `nonempty_basis_nTorsion` above.
+* `weilValueProp_self_of_two` is the `p = 2` branch of alternation; at level
+  `N` the branch condition becomes `2 ∣ N` and the same `2`-torsion geometry
+  applies.
+* `pairing_trivial_of_radical` is the ONE genuinely field-dependent node (it
+  builds a spanning pair by DIVIDING coordinates). It is not needed here:
+  `nonempty_basis_nTorsion` supplies the basis directly, and the surjectivity
+  consumer above replaces the radical argument entirely.
+
+So the remaining work is confined to `EllipticCurve/WeilPairing.lean` and is
+a mechanical `p := N` generalization of that file's Weil-pairing chain, NOT
+new mathematics. It was deliberately not attempted here because that file has
+a separate owner.
+
+WHY IT CANNOT BE REDUCED TO THE PRIME CASE BY CRT: the prime case covers
+`N = p`, not `N = p^k`, and every `N` divisible by a square needs the
+prime-power level. -/
+theorem exists_weilPairing_mu_nondeg_of_coprime (q : ℕ) [Fact q.Prime]
+    (Wbar : WeierstrassCurve (ZMod q)) [Wbar.IsElliptic] (N : ℕ)
+    (hNq : Nat.Coprime N q) :
+    ∃ e : ((Wbar.map (algebraMap (ZMod q)
+        (AlgebraicClosure (ZMod q)))).nTorsion N) →
+        ((Wbar.map (algebraMap (ZMod q)
+          (AlgebraicClosure (ZMod q)))).nTorsion N) →
+        (AlgebraicClosure (ZMod q))ˣ,
+      (∀ x y z, e (x + y) z = e x z * e y z) ∧
+      (∀ x y z, e x (y + z) = e x y * e x z) ∧
+      (∀ x, e x x = 1) ∧
+      (∀ x, x ≠ 0 → ∃ y, e x y ≠ 1) ∧
+      (∀ x y, (e x y) ^ N = 1) ∧
+      (∀ x y, e (WeilPairing.frobeniusTorsionEnd q Wbar N x)
+          (WeilPairing.frobeniusTorsionEnd q Wbar N y) =
+        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) :=
+  sorry
+
+/-- **The `μ_N`-valued Weil pairing over `𝔽_q` at COMPOSITE level** (PROVEN
+2026-07-27 over `exists_weilPairing_mu_nondeg_of_coprime` above): on the
+`N`-torsion of an elliptic curve over `𝔽_q`, `N` coprime to
 `q`, there is a multiplicatively bilinear alternating pairing valued in the
 `N`-th roots of unity of `𝔽̄_q`, SURJECTIVE onto `μ_N`, and natural for the
 `q`-power Frobenius: `e(Fx, Fy) = F(e(x, y))`.
@@ -10694,9 +10855,19 @@ WHY SURJECTIVITY AND NOT NONDEGENERACY. The prime-level statement asserts
 `ZMod N` it is not (see `det_eq_of_conj_of_basis_fin_two`), so the clause here
 is `∃ x y, IsPrimitiveRoot (e x y) N`, i.e. the pairing hits a generator of
 `μ_N`. That is the standard surjectivity statement and it is what the
-determinant argument consumes. The `∀ x ≠ 0` nondegeneracy clause is also true
-at level `N` and can be added if a later consumer needs it; it is omitted here
-because nothing consumes it.
+determinant argument consumes.
+
+HOW THE SURJECTIVITY IS OBTAINED (2026-07-27, and this is the whole content
+of the proof below). It is NOT assumed: it is DERIVED from the nondegeneracy
+form `exists_weilPairing_mu_nondeg_of_coprime` above by
+`isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two`, using the rank-two
+freeness of `Wbar[N]` from `nonempty_basis_nTorsion`. That is Silverman *AEC*
+III.8.1(d), and it works over a non-field because rank two makes every value
+against `b 0` a power of the single value `e (b 0) (b 1)`, so nondegeneracy
+pins that value's order to exactly `N`. Consequently the sorried arithmetic
+input is now stated in EXACTLY the prime-level shape, and closing it is a
+mechanical `p := N` re-run of `WeilPairing.exists_weilPairing_mu` rather than
+a differently-shaped statement.
 
 WHY IT CANNOT BE REDUCED TO THE PRIME CASE BY CRT: the prime case covers
 `N = p`, not `N = p^k`, and every `N` divisible by a square needs the
@@ -10729,8 +10900,18 @@ theorem exists_weilPairing_mu_of_coprime (q : ℕ) [Fact q.Prime]
       (∃ x y, IsPrimitiveRoot (e x y) N) ∧
       (∀ x y, e (WeilPairing.frobeniusTorsionEnd q Wbar N x)
           (WeilPairing.frobeniusTorsionEnd q Wbar N y) =
-        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) :=
-  sorry
+        Units.map (WeilPairing.frobAlgHom q).toRingHom.toMonoidHom (e x y)) := by
+  classical
+  obtain ⟨e, hbl, hbr, halt, hnd, hord, hfrob⟩ :=
+    exists_weilPairing_mu_nondeg_of_coprime q Wbar N hNq
+  have hN0 : N ≠ 0 := by
+    rintro rfl
+    exact (Fact.out : q.Prime).ne_one (Nat.coprime_zero_left q |>.mp hNq)
+  haveI : NeZero N := ⟨hN0⟩
+  obtain ⟨b⟩ := nonempty_basis_nTorsion q Wbar N hNq
+  exact ⟨e, hbl, hbr, halt, hord, ⟨b 0, b 1,
+    isPrimitiveRoot_pairing_of_nondegenerate_basis_fin_two b e hbl hbr halt
+      hnd hord⟩, hfrob⟩
 
 /-- **The `ZMod N`-valued Frobenius-twisted Weil pairing at composite level**
 (PROVEN 2026-07-27 over `exists_weilPairing_mu_of_coprime` above, by discrete
