@@ -7674,27 +7674,330 @@ theorem raisedLevelIsTameAtTwo_of_forall_isOpen_quotient.{a} {p : ℕ} (hpodd : 
           AddSubgroup Z2bar) (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
         (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) := sorry
 
-set_option linter.checkUnivs false in
-/-- **The split torus at the raised primes passes to the adic limit** (SORRY LEAF, cut
-out 2026-07-28; LEAF A2'-2c-v of the decomposition of `isAuxProLimitClause` below, and
-the ONLY one of the five that is not a transcription of an already-proven base-level
-clause).
+/-! ### The TRACE-ONLY conjugacy bridge (flt-lean-397, 2026-07-28)
 
-This is the genuinely new content of the pro-limit clause, and it is where `hQ` and the
-residual pinning `(πR, S, hπR)` are spent.
+**AUDIT CORRECTION.**  The docstrings of `isAuxFibreProductClause`,
+`IsAuxProLimitClause` and `raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient`
+below all say that "by `exists_conj_of_charFrob_eq_away` the residual
+representation of `ρ` is a conjugate of `ρbar`".  **That theorem does not apply
+from the hypotheses these clauses carry.**  `exists_conj_of_charFrob_eq_away`
+(above, and its shared node in `BrauerNesbittConjugacy.lean`) demands FULL
+`charFrob` agreement away from `S`; the residual pinning actually carried — by
+`IsAuxProLimitClause`, by `IsAuxFibreProductClause` and by
+`AuxDeformationDatum.charFrob_compat` — supplies only `coeff 1`, the Frobenius
+trace up to sign.  The missing coefficient is `coeff 0`, the determinant, and the
+usual repair `coeff_zero_charFrob_eq_of_isHardlyRamified` above needs
+`det ρbar` to be the mod-`p` cyclotomic character — which neither `hirr` nor
+`hQ` supplies, and which these statements deliberately do not carry (the module
+docstring's own note: the `ℚ`-side chain "carries only the linear `charFrob`
+coefficients").
+
+The gap is quantitative, not a technicality.  Take `p = 5`, `k = 𝔽₅`, `α = 1`,
+`β = 2`, and `q ≡ 1 [MOD 5]` as `IsTaylorWilesPrimeSet` requires.  Then
+`ρbar.charFrob q = (X - C 1) * (X - C 2) = X² - 3X + 2` has DISTINCT roots, while
+the polynomial with the same linear coefficient and the cyclotomic constant term
+forced on `ρ` by `raisedLevelDet_of_forall_isOpen_quotient` above is
+`X² - 3X + C (q : 𝔽₅) = X² - 3X + 1`, of discriminant `9 - 4 = 5 = 0`: a DOUBLE
+root.  So place-by-place, trace agreement genuinely fails to transport residual
+distinctness, which is the one fact the split-torus clauses need.
+
+`exists_conj_of_charFrobCoeffOne_eq_away` below closes the gap and needs NO new
+hypothesis.  `p` is odd, so `2` is a unit in `k`; propagate the trace agreement
+from the Frobenius conjugacy classes to all of `Gal(ℚ̄/ℚ)` by Chebotarev density
+FIRST, and only then recover the determinant, by rank-two Cayley–Hamilton
+(`two_mul_det_eq_of_finrank_two`, `2 · det f = (tr f)² - tr (f²)`).  That is
+exactly the route `exists_conj_of_charFrob_eq_away_of_two_ne_zero`
+(`BrauerNesbittConjugacy.lean`, PROVEN) already takes; the only change is that
+trace agreement becomes the hypothesis instead of a consequence of charpoly
+agreement.  Stated in the general form, so `isAuxFibreProductClause` — which has
+the identical gap — can consume it unchanged.
+-/
+
+/-- **A ring homomorphism from a LOCAL ring to a FINITE field is local** (PROVEN):
+its kernel is the maximal ideal.  `R ⧸ ker π` injects into `k` by `kerLift`, hence
+is a finite integral domain, hence a field (`Finite.isField_of_domain`), so `ker π`
+is maximal — and in a local ring the maximal ideal is unique.
+
+This is what makes the residual pinning `πR : R →+* k` of `IsAuxProLimitClause`
+automatically CONTINUOUS, without continuity being carried as a datum: the maximal
+ideal is open because the topology is maximal-adic, `k` is discrete, so `πR` is
+locally constant.  Continuity is what the base change `ρ.baseChange k` along `πR`
+needs (`GaloisRep.baseChange` asks for `ContinuousSMul`), and the base change is
+how the abstract residual representation of `ρ` is formed at all. -/
+lemma ker_eq_maximalIdeal_of_ringHom_finiteField
+    {R : Type*} [CommRing R] [IsLocalRing R] {kk : Type*} [Field kk] [Finite kk]
+    (π : R →+* kk) : RingHom.ker π = IsLocalRing.maximalIdeal R := by
+  have hne : RingHom.ker π ≠ ⊤ := by
+    intro htop
+    have h1 : (1 : R) ∈ RingHom.ker π := htop ▸ Submodule.mem_top
+    rw [RingHom.mem_ker, map_one] at h1
+    exact one_ne_zero h1
+  haveI : Nontrivial (R ⧸ RingHom.ker π) := Ideal.Quotient.nontrivial_iff.mpr hne
+  haveI : Finite (R ⧸ RingHom.ker π) :=
+    Finite.of_injective (RingHom.kerLift π) (RingHom.kerLift_injective π)
+  haveI : IsDomain (R ⧸ RingHom.ker π) :=
+    Function.Injective.isDomain (RingHom.kerLift π) (RingHom.kerLift_injective π)
+  exact IsLocalRing.eq_maximalIdeal
+    (Ideal.Quotient.maximal_of_isField _ (Finite.isField_of_domain _))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option linter.checkUnivs false in
+/-- **Chebotarev–Brauer–Nesbitt conjugacy from FROBENIUS TRACES ALONE** (PROVEN
+2026-07-28, flt-lean-397): a continuous representation `τ` of `Gal(ℚ̄/ℚ)` on a
+2-dimensional space over a finite discrete field `k` in which `2 ≠ 0`, whose
+Frobenius `charFrob` LINEAR COEFFICIENTS agree with those of an *irreducible*
+2-dimensional `ρbar` at all primes outside a finite set `S`, is conjugate to
+`ρbar`.
+
+This is the exact input the residual pinnings of this module carry
+(`AuxDeformationDatum.charFrob_compat`, `IsAuxFibreProductClause`,
+`IsAuxProLimitClause`), and `exists_conj_of_charFrob_eq_away` above — which asks
+for the whole `charFrob` — is NOT reachable from it; see the section preamble for
+the `p = 5`, `α = 1`, `β = 2` witness showing that the determinant really is not
+determined place by place.
+
+Route: `coeff 1` of the charpoly of a rank-two endomorphism is minus its trace
+(`charpoly_eq_quadratic_of_finrank_two`), so the hypothesis is trace agreement at
+the Frobenius elements; the trace-agreement locus is closed (both representations
+are continuous into DISCRETE finite endomorphism spaces,
+`discreteTopology_moduleTopology`) and conjugation-stable
+(`charpoly_conj_mul_inv`), hence everything by Chebotarev density
+(`dense_conjClasses_globalFrob`); rank-two Cayley–Hamilton
+(`two_mul_det_eq_of_finrank_two`) with `2` a unit turns traces everywhere back
+into determinants everywhere, hence charpolys everywhere; and the abstract
+dimension-2 Brauer–Nesbitt core `exists_linearEquiv_of_charpoly_eq` produces the
+intertwining isomorphism.  The ORDER matters and is the whole point: the
+determinant is recovered only after density has been used, never place by place.
+
+Both-ways audit: `h2` is load-bearing — in characteristic `2` the trace does not
+determine the determinant (`tr = 0` for every element of a nonsplit torus of
+`SL₂`), and the theorem is false there.  `hirr` is load-bearing for the same
+reason it is in `exists_conj_of_charFrob_eq_away`: without it only the
+semisimplifications agree.  No hypothesis on `ρbar`'s determinant is needed, and
+adding one would be redundant.
+
+Home note: this belongs beside its charpoly twin in
+`BrauerNesbittConjugacy.lean`; it is stated here to keep the edit inside this
+module's raised-level section.  Dedupe when that file is next touched. -/
+theorem exists_conj_of_charFrobCoeffOne_eq_away.{uK, uW, uW'}
+    {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [IsTopologicalRing k] (h2 : (2 : k) ≠ 0)
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2)
+    {ρbar : GaloisRep ℚ k W} (hirr : ρbar.IsIrreducible)
+    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W']
+    (hW' : Module.rank k W' = 2)
+    (τ : GaloisRep ℚ k W')
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hc1 : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :
+    ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar := by
+  classical
+  have hfrW : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  have hfrW' : Module.finrank k W' = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
+  have hc1W : ∀ f : Module.End k W,
+      (LinearMap.charpoly f).coeff 1 = -(LinearMap.trace k W f) := by
+    intro f
+    have h := congrArg (fun P : Polynomial k => P.coeff 1)
+      (charpoly_eq_quadratic_of_finrank_two hfrW f)
+    simpa using h
+  have hc1W' : ∀ f : Module.End k W',
+      (LinearMap.charpoly f).coeff 1 = -(LinearMap.trace k W' f) := by
+    intro f
+    have h := congrArg (fun P : Polynomial k => P.coeff 1)
+      (charpoly_eq_quadratic_of_finrank_two hfrW' f)
+    simpa using h
+  letI : TopologicalSpace (Module.End k W) :=
+    moduleTopology k (Module.End k W)
+  letI : TopologicalSpace (Module.End k W') :=
+    moduleTopology k (Module.End k W')
+  haveI : DiscreteTopology (Module.End k W) :=
+    discreteTopology_moduleTopology _ _
+  haveI : DiscreteTopology (Module.End k W') :=
+    discreteTopology_moduleTopology _ _
+  have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ =>
+      ((τ g : Module.End k W'), (ρbar g : Module.End k W)) :=
+    (ContinuousMonoidHom.continuous_toFun τ).prodMk
+      (ContinuousMonoidHom.continuous_toFun ρbar)
+  have hclosed : IsClosed {g : Field.absoluteGaloisGroup ℚ |
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
+    have hpre : {g : Field.absoluteGaloisGroup ℚ |
+        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} =
+        (fun g : Field.absoluteGaloisGroup ℚ =>
+          ((τ g : Module.End k W'), (ρbar g : Module.End k W))) ⁻¹'
+        {pp : Module.End k W' × Module.End k W |
+          LinearMap.trace k W' pp.1 = LinearMap.trace k W pp.2} := rfl
+    rw [hpre]
+    exact (isClosed_discrete _).preimage hcont
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {g : Field.absoluteGaloisGroup ℚ |
+        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
+    rintro x ⟨v, hvS, g, rfl⟩
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hval := hc1 q hq hvS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
+    show LinearMap.trace k W' (τ _) = LinearMap.trace k W (ρbar _)
+    rw [← neg_inj, ← hc1W', ← hc1W, charpoly_conj_mul_inv τ,
+      charpoly_conj_mul_inv ρbar]
+    exact hval
+  have halltr : ∀ g : Field.absoluteGaloisGroup ℚ,
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g) := by
+    intro g
+    have hdense := dense_conjClasses_globalFrob (K := ℚ) S
+    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup ℚ)) ⊆
+        {g : Field.absoluteGaloisGroup ℚ |
+          LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} :=
+      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
+    exact huniv (Set.mem_univ g)
+  have hall : ∀ g : Field.absoluteGaloisGroup ℚ,
+      LinearMap.charpoly (τ g) = LinearMap.charpoly (ρbar g) := by
+    intro g
+    have hsq : LinearMap.trace k W' (τ g * τ g) =
+        LinearMap.trace k W (ρbar g * ρbar g) := by
+      rw [← map_mul, ← map_mul]
+      exact halltr (g * g)
+    have hdet : LinearMap.det (τ g) = LinearMap.det (ρbar g) := by
+      refine mul_left_cancel₀ h2 ?_
+      rw [two_mul_det_eq_of_finrank_two hfrW' (τ g),
+        two_mul_det_eq_of_finrank_two hfrW (ρbar g), halltr g, hsq]
+    rw [charpoly_eq_quadratic_of_finrank_two hfrW' (τ g),
+      charpoly_eq_quadratic_of_finrank_two hfrW (ρbar g), halltr g, hdet]
+  obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq hfrW hfrW'
+    ρbar.toRepresentation τ.toRepresentation hirr hall
+  refine ⟨e, GaloisRep.ext fun σ => LinearMap.ext fun x => ?_⟩
+  have h1 : e (τ σ (e.symm x)) = ρbar σ (e (e.symm x)) := he σ (e.symm x)
+  rw [e.apply_symm_apply] at h1
+  calc (τ.conj e) σ x = (e.conj (τ σ)) x := by rw [GaloisRep.conj_apply]
+    _ = e (τ σ (e.symm x)) := by rw [LinearEquiv.conj_apply]; rfl
+    _ = ρbar σ x := h1
+
+set_option linter.checkUnivs false in
+/-- **The split torus at a raised prime, GIVEN residual distinctness** (SORRY LEAF,
+cut out 2026-07-28 by flt-lean-397 from
+`raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient` below, which is now an
+ASSEMBLY over it).
+
+Everything in the ambient leaf that mentions `ρbar` — `hW`, `hirr`, `hQ`, `S` and
+the pinning `hπR` — is spent producing exactly ONE fact, and it is `hdist`: the
+residual `charFrob` of `ρ` at `q` splits with DISTINCT roots.  This leaf is the
+remainder, and it mentions `ρbar` nowhere.
 
 # ROUTE
 
-At each open `I`, the level datum gives a decomposition of `ρ ⊗ (R ⧸ I)` at `q ∈ Q`.
-`hQ` gives `α ≠ β` in the residual charpoly at `Frob_q`, and the pinning transports that
-to `ρ`: by `exists_conj_of_charFrob_eq_away` (PROVEN above) the residual representation
-of `ρ` is a conjugate of `ρbar`, so its charpoly at `Frob_q` agrees with `ρbar`'s at
-every prime — the finite exceptional set `S` costs nothing.  Residual distinctness makes
-the idempotent cutting out the `χ`-line UNIQUE at each level once the residual
-eigenvalue attached to `χ` is fixed (idempotents lift uniquely along a nilpotent ideal),
-so the levels form a compatible system; `hcomplete` assembles it into a decomposition
-over `R`.  The `ℚ`-side twin of `isHilbertSplitTorusAt_of_forall_isOpen_quotient`, which
-is the model to copy.
+Let `v` be the place of `q` and `σ` the arithmetic Frobenius of `Γ ℚ_v`, so that
+`M := ρ.toLocal v σ` has `charpoly = ρ.charFrob v`, whose reduction has distinct
+roots by `hdist`.  `R` is `𝔪`-adically complete, so Hensel's lemma factors that
+charpoly as `(X - C a) * (X - C b)` over `R` with `a - b` a UNIT (its residue is
+`α - β ≠ 0`, and a non-unit of a local ring is exactly an element of `𝔪`).  By
+Cayley–Hamilton `(M - a)(M - b) = 0`, so
+
+    ε := (a - b)⁻¹ • (M - b)
+
+is an IDEMPOTENT of `End R (Fin 2 → R)` — `(M - b)² = (a - b) * (M - b)` — with
+`ε` and `1 - ε` each cutting out a free rank-one direct summand.  What remains is
+that `ε` COMMUTES with the whole local action, and that is where `hlev` and
+`hcomplete` enter: at each open `I` the level datum splits `ρ ⊗ (R ⧸ I)` at `q`
+into `χ_I ⊕ δ_I`, in which basis the image of `M` is diagonal with residually
+distinct entries, so the image of `ε` is the projection onto the `χ_I`-line and
+commutes with everything; hence every entry of `ε * ρ.toLocal v g - ρ.toLocal v g * ε`
+lies in `𝔪^(n+1)` for every `n`, and adic SEPARATEDNESS makes it zero — the same
+separation argument written out in full in
+`raisedLevelDet_of_forall_isOpen_quotient` above.  `δ` is unramified for the same
+reason, one level at a time.
+
+Note this route builds the splitting DIRECTLY over `R` and never forms an inverse
+limit of level-wise decompositions: uniqueness of the idempotent is used only to
+identify the level-wise splittings with the reduction of `ε`, not to construct a
+compatible system.  The cofiltered-system alternative recorded on
+`IsAuxProLimitClause` remains available and still needs `Finite (R ⧸ I)`, which is
+not given.
+
+# BOTH-WAYS AUDIT
+
+`hdist` is load-bearing and is the ONLY thing the ambient arithmetic supplies: with
+`α = β` the level-wise decompositions need not be compatible (the section
+preamble's `k[u,v]/(u,v)²` counterexample), the idempotent is not determined by its
+residue, and Hensel gives no factorization with a unit difference.  `hcomplete` is
+load-bearing twice — for Hensel and for separatedness — and `hadic` is what makes
+`𝔪^n` open so that `hlev` can be applied to it at all.  `hqQ` is load-bearing:
+`hlev` says nothing about `q ∉ Q`.  No hypothesis on `ρbar` is used or needed, so
+the circularity guard of `exists_auxDeformationDatum` is satisfied structurally
+here: `hirr` is not even in scope, and a proof of this leaf CANNOT end in
+`exfalso` against it. -/
+theorem raisedLevelSplitTorusAt_of_charFrob_residually_distinct.{a, uK} {p : ℕ}
+    (hpodd : Odd p) [Fact p.Prime] (Q : Finset ℕ)
+    {k : Type uK} [Field k]
+    {R : Type a} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[p] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : GaloisRep ℚ R (Fin 2 → R)} (πR : R →+* k)
+    (hlev : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hdimI : Module.rank (R ⧸ I) ((R ⧸ I) ⊗[R] (Fin 2 → R)) = 2),
+      IsRaisedLevelHardlyRamified hpodd Q hdimI (ρ.baseChange (R ⧸ I)))
+    (q : ℕ) (hqQ : q ∈ Q) (hq : q.Prime)
+    (hdist : ∃ α β : k, α ≠ β ∧
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map πR =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)) :
+    ∃ (e : (Fin 2 → R) ≃ₗ[R] R × R)
+      (χ δ : GaloisRep
+        ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ) R R),
+      (∀ (g : Field.absoluteGaloisGroup
+          ((hq.toHeightOneSpectrumRingOfIntegersRat).adicCompletion ℚ))
+          (v : Fin 2 → R),
+        e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
+          (χ g (e v).1, δ g (e v).2)) ∧
+      localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := sorry
+
+set_option linter.checkUnivs false in
+/-- **The split torus at the raised primes passes to the adic limit** (ASSEMBLY —
+recut 2026-07-28 by flt-lean-397 over
+`raisedLevelSplitTorusAt_of_charFrob_residually_distinct` above; was LEAF A2'-2c-v
+of the decomposition of `isAuxProLimitClause` below, and the ONLY one of the five
+that is not a transcription of an already-proven base-level clause).
+
+This is the genuinely new content of the pro-limit clause, and it is where `hQ` and the
+residual pinning `(πR, S, hπR)` are spent.  **All of that arithmetic is spent HERE**, and
+it produces exactly one fact, the `hdist` fed to the leaf above: the residual `charFrob`
+of `ρ` at `q` splits with distinct roots.
+
+# WHAT THIS ASSEMBLY DOES
+
+1. `πR` is LOCAL — `ker πR = 𝔪` because `k` is finite
+   (`ker_eq_maximalIdeal_of_ringHom_finiteField` above) — hence continuous, `𝔪` being
+   open by `hadic` and `k` discrete.  So the residual representation of `ρ` may be
+   formed as `ρ.baseChange k` along `πR`.
+2. `hπR` and `charFrob_baseChange` give `coeff 1` agreement between
+   `(ρ.baseChange k).charFrob` and `ρbar.charFrob` away from `S`.
+3. `exists_conj_of_charFrobCoeffOne_eq_away` (PROVEN above, and NEW — see the section
+   preamble for why `exists_conj_of_charFrob_eq_away` is NOT usable here) turns that
+   into an honest conjugacy `ρ.baseChange k ≃ ρbar`, using `hirr` and `2 ≠ 0` in `k`
+   (which is `hpodd`).
+4. Conjugacy plus `charFrob_conj` gives FULL `charFrob` agreement at EVERY prime — this
+   is where the finite exceptional set `S` stops costing anything — and `hQ`'s
+   `(X - α)(X - β)` with `α ≠ β` at `q ∈ Q` transports across it.
+
+# STALE CLAIM CORRECTED (2026-07-28)
+
+The previous docstring said the transport is "by `exists_conj_of_charFrob_eq_away`
+(PROVEN above)".  It is not: that theorem needs the whole `charFrob`, and the pinning
+carries only `coeff 1`.  See the section preamble above for the explicit `p = 5`,
+`α = 1`, `β = 2`, `q ≡ 1 [MOD 5]` witness that the determinant is NOT recoverable place
+by place, and for the density-first repair.  It said, too, that
+`isHilbertSplitTorusAt_of_forall_isOpen_quotient` "is the model to copy": that
+declaration is itself a bare `sorry`
+(`HardlyRamified/HilbertModularity.lean`), so there was no model to copy — and its
+pinning is the STRONGER charpoly-at-every-`g` shape, so the gap repaired here does not
+even arise on the Hilbert side.  Its `ℚ`-side twin is this assembly, not the reverse.
 
 # BOTH-WAYS AUDIT
 
@@ -7702,12 +8005,14 @@ is the model to copy.
 one of the five sub-leaves for which that is true — the other four use none of them.
 Without residual distinctness the level-wise decompositions need not be compatible
 (the two residual characters could coincide, and then the idempotent is not determined
-by its residue), so the system need not have a limit.  `hirr` is used only through
-`exists_conj_of_charFrob_eq_away`, to turn trace agreement away from `S` into an
-honest conjugacy.
+by its residue).  `hirr` is used only through
+`exists_conj_of_charFrobCoeffOne_eq_away`, to turn trace agreement away from `S` into
+an honest conjugacy.  `hpodd` is now load-bearing twice: through `hlev`'s type, and as
+the source of `2 ≠ 0` in `k` that step 3 needs.
 
 CIRCULARITY GUARD (inherited from `exists_auxDeformationDatum`): a proof ending in
-`exfalso` against `hirr` is the circular discharge and must be rejected. -/
+`exfalso` against `hirr` is the circular discharge and must be rejected.  This assembly
+uses `hirr` only positively, through Brauer–Nesbitt. -/
 theorem raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient.{a, uK, uW} {p : ℕ}
     (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -7739,7 +8044,64 @@ theorem raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient.{a, uK, uW} {p : ℕ
             (v : Fin 2 → R),
           e (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat g v) =
             (χ g (e v).1, δ g (e v).2)) ∧
-        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := sorry
+        localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := by
+  classical
+  intro q hqQ hq
+  -- Step 1: `πR` is local, hence continuous, so `ρ` may be reduced along it.
+  have hker : RingHom.ker πR = IsLocalRing.maximalIdeal R :=
+    ker_eq_maximalIdeal_of_ringHom_finiteField πR
+  have hmopen : IsOpen ((IsLocalRing.maximalIdeal R : Ideal R) : Set R) := by
+    have h := (isAdic_iff.mp hadic).1 1
+    simpa using h
+  have hπcont : Continuous πR := by
+    apply continuous_of_continuousAt_zero πR
+    unfold ContinuousAt
+    rw [map_zero, nhds_discrete k, Filter.tendsto_pure]
+    filter_upwards [hmopen.mem_nhds (Submodule.zero_mem _)] with x hx
+    have hxk : x ∈ RingHom.ker πR := by rw [hker]; exact hx
+    exact hxk
+  letI : Algebra R k := πR.toAlgebra
+  haveI : ContinuousSMul R k := continuousSMul_of_algebraMap R k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+  -- Step 2: `2 ≠ 0` in `k`, because `p` is odd and `k` is a `ℤ_p`-algebra.
+  haveI hchar : CharP k p := charP_of_ringHom_padicInt (algebraMap ℤ_[p] k)
+  have h2 : (2 : k) ≠ 0 := by
+    intro h20
+    have hcast : ((2 : ℕ) : k) = 0 := by exact_mod_cast h20
+    have hdvd : p ∣ 2 := (CharP.cast_eq_zero_iff k p 2).mp hcast
+    have hp2 : p = 2 :=
+      (Nat.prime_dvd_prime_iff_eq (Fact.out : p.Prime) Nat.prime_two).mp hdvd
+    rw [hp2] at hpodd
+    exact (Nat.not_odd_iff_even.mpr even_two) hpodd
+  -- Step 3: trace-level pinning of the residual representation, then conjugacy.
+  have hrk' : Module.rank k (k ⊗[R] (Fin 2 → R)) = 2 := by simp
+  have hc1 : ∀ (q' : ℕ) (hq' : q'.Prime),
+      hq'.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ((ρ.baseChange k).charFrob
+          hq'.toHeightOneSpectrumRingOfIntegersRat).coeff 1 =
+        (ρbar.charFrob hq'.toHeightOneSpectrumRingOfIntegersRat).coeff 1 := by
+    intro q' hq' hq'S
+    rw [charFrob_baseChange, Polynomial.coeff_map, RingHom.algebraMap_toAlgebra]
+    exact hπR q' hq' hq'S
+  obtain ⟨e₀, he₀⟩ := exists_conj_of_charFrobCoeffOne_eq_away h2 hW hirr hrk'
+    (ρ.baseChange k) S hc1
+  -- Step 4: conjugacy upgrades the pinning to FULL `charFrob` agreement everywhere.
+  have hcf : ∀ (q' : ℕ) (hq' : q'.Prime),
+      (ρ.charFrob hq'.toHeightOneSpectrumRingOfIntegersRat).map πR =
+        ρbar.charFrob hq'.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q' hq'
+    have h1 := charFrob_conj hq'.toHeightOneSpectrumRingOfIntegersRat
+      (ρ.baseChange k) e₀
+    rw [he₀, charFrob_baseChange, RingHom.algebraMap_toAlgebra] at h1
+    exact h1.symm
+  -- Step 5: `hQ` gives distinct residual Frobenius eigenvalues at `q ∈ Q`.
+  obtain ⟨hq', _hcong, α, β, hαβ, hfact⟩ := hQ.1 q hqQ
+  have hfact' : ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+      (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := hfact
+  exact raisedLevelSplitTorusAt_of_charFrob_residually_distinct
+    hpodd Q hadic hcomplete πR hlev q hqQ hq
+    ⟨α, β, hαβ, by rw [hcf q hq, hfact']⟩
+
 set_option linter.checkUnivs false in
 /-- **The RAISED-LEVEL pro-limit clause** (sorry node, LEAF A2′-2c of the
 2026-07-28 clause cut).
