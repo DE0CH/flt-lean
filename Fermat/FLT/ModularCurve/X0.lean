@@ -51143,6 +51143,180 @@ structure IsNIsogenyPair (N : ℕ) {T : Scheme.{0}} (d d' : Gamma0Datum N T) whe
     letI := d'.ab.addCommGroup g
     RelPoint.post map comm (RelPoint.post dual dual_comm y) = N • y
 
+/-! #### Formal properties of `IsNIsogenyPair` (all PROVEN, 2026-07-28)
+
+These six declarations carry NO geometry: every one of them is a
+permutation of the fields of `IsNIsogenyPair`, a `Subtype.ext` on relative
+points, or an application of the cartesian-square machinery
+(`IsBaseChangeOf.toRelPoint_injective` and friends) that this file already
+has.  They are what reduces `nonempty_atkinLehnerMorphism` below from a
+four-field structure to a single pointwise existence statement. -/
+
+/-- **The `N`-isogeny relation is SYMMETRIC** (PROVEN) — swap `map` with
+`dual`.  This is the symmetry the `IsNIsogenyPair` docstring describes, now
+written down; it is what makes `w_N` an involution rather than merely an
+automorphism, and it is consumed by `AtkinLehnerMorphism.dual_dual` in
+`nonempty_atkinLehnerMorphism`. -/
+def IsNIsogenyPair.symm {N : ℕ} {T : Scheme.{0}} {d d' : Gamma0Datum N T}
+    (h : IsNIsogenyPair N d d') : IsNIsogenyPair N d' d where
+  map := h.dual
+  comm := h.dual_comm
+  dual := h.map
+  dual_comm := h.comm
+  ker_map := h.ker_dual
+  ker_dual := h.ker_map
+  dual_map := h.map_dual
+  map_dual := h.dual_map
+
+/-- **The isogeny is POINTED** (PROVEN) — `ker_map` read at the zero
+section, whose membership in the level structure is `zero_liesIn`. -/
+theorem IsNIsogenyPair.post_map_zero {N : ℕ} {T : Scheme.{0}} {d d' : Gamma0Datum N T}
+    (h : IsNIsogenyPair N d d') {T' : Scheme.{0}} (g : T' ⟶ T) :
+    RelPoint.post h.map h.comm (d.ab.zero g) = d'.ab.zero g :=
+  (h.ker_map (d.ab.zero g)).mpr (d.cyc.zero_liesIn g)
+
+/-- **The dual isogeny is POINTED** (PROVEN) — the same reading of
+`ker_dual`. -/
+theorem IsNIsogenyPair.post_dual_zero {N : ℕ} {T : Scheme.{0}} {d d' : Gamma0Datum N T}
+    (h : IsNIsogenyPair N d d') {T' : Scheme.{0}} (g : T' ⟶ T) :
+    RelPoint.post h.dual h.dual_comm (d'.ab.zero g) = d.ab.zero g :=
+  (h.ker_dual (d'.ab.zero g)).mpr (d'.cyc.zero_liesIn g)
+
+/-- **The isogeny is a HOMOMORPHISM** (PROVEN, over the rigidity lemma
+`isAdditiveOn_of_post_zero`).
+
+`IsNIsogenyPair` does not carry additivity as a field, and it does not have
+to: a morphism of abelian schemes carrying the zero section to the zero
+section is automatically additive, and `post_map_zero` supplies exactly
+that hypothesis.  This is what lets the universal property below be applied
+to `h.map` itself. -/
+theorem IsNIsogenyPair.isAdditiveOn_map {N : ℕ} {T : Scheme.{0}} {d d' : Gamma0Datum N T}
+    (h : IsNIsogenyPair N d d') : IsAdditiveOn d.ab d'.ab h.map h.comm :=
+  isAdditiveOn_of_post_zero d.ab d'.ab h.comm (h.post_map_zero (𝟙 T))
+
+/-- **`RelPoint.along` over the identity base morphism is
+`RelPoint.post`**, after the harmless reindexing `g ≫ 𝟙 = g` (PROVEN).
+
+`RelPoint.along u hw x` lands in `RelPoint f (g ≫ h)` while
+`RelPoint.post u hu x` lands in `RelPoint f g`; when `h = 𝟙` the two carry
+the same underlying morphism and differ only in that index.  Precomposing
+with `𝟙` — which is `RelPoint.pre`, and therefore commutes with the group
+law by `AbelianSchemeStruct.pre_add` / `pre_zero` — is what identifies
+them without any transport.  This is the whole reason the `map_zero` and
+`map_add` fields of an `IsBaseChangeOf (𝟙 T)` can be discharged from an
+`IsAdditiveOn`. -/
+theorem RelPoint.pre_id_along {E' E T : Scheme.{0}} {f' : E' ⟶ T} {f : E ⟶ T}
+    (u : E' ⟶ E) (hw : f' ≫ 𝟙 T = u ≫ f) (hu : u ≫ f = f')
+    {T'' : Scheme.{0}} {g : T'' ⟶ T} (hg : 𝟙 T'' ≫ (g ≫ 𝟙 T) = g) (x : RelPoint f' g) :
+    RelPoint.pre (𝟙 T'') hg (RelPoint.along u hw x) = RelPoint.post u hu x :=
+  Subtype.ext (Category.id_comp _)
+
+/-- **Base-change relations compose across an identity** (PROVEN):
+an isomorphism of `Γ₀(N)`-data over `T'` followed by a base change along
+`p : T' ⟶ T` is a base change along `p`.
+
+The cartesian square is `IsPullback.paste_vert` after `𝟙 T' ≫ p = p`; the
+three functor-of-points fields are the corresponding fields of the two
+factors, reindexed once by `RelPoint.pre (𝟙 _)` as in `pre_id_along`.
+Consumed by `nonempty_atkinLehnerMorphism` to turn the *uniqueness* of the
+isogeny target into the *naturality* field `dual_baseChange`. -/
+def IsBaseChangeOf.compId {N : ℕ} {T' T : Scheme.{0}} {p : T' ⟶ T}
+    {a b : Gamma0Datum N T'} {c : Gamma0Datum N T}
+    (α : IsBaseChangeOf (𝟙 T') a b) (β : IsBaseChangeOf p b c) :
+    IsBaseChangeOf p a c := by
+  have hsq : IsPullback a.f (α.map ≫ β.map) p c.f := by
+    have hh := α.isPullback.paste_vert β.isPullback
+    rwa [Category.id_comp] at hh
+  have hcomp : ∀ {T'' : Scheme.{0}} {g : T'' ⟶ T'}
+      (hg : 𝟙 T'' ≫ ((g ≫ 𝟙 T') ≫ p) = g ≫ p) (x : RelPoint a.f g),
+      RelPoint.pre (𝟙 T'') hg (RelPoint.along β.map β.isPullback.w
+          (RelPoint.along α.map α.isPullback.w x))
+        = RelPoint.along (α.map ≫ β.map) hsq.w x := by
+    intro T'' g hg x
+    exact Subtype.ext
+      (show 𝟙 T'' ≫ ((x.1 ≫ α.map) ≫ β.map) = x.1 ≫ (α.map ≫ β.map) by simp)
+  refine { map := α.map ≫ β.map, isPullback := hsq, map_zero := ?_, map_add := ?_,
+           liesIn_iff := ?_ }
+  · intro T'' g
+    rw [← hcomp (by simp) (a.ab.zero g), α.map_zero g, β.map_zero (g ≫ 𝟙 T'), c.ab.pre_zero]
+  · intro T'' g x y
+    rw [← hcomp (by simp) (a.ab.add x y), ← hcomp (by simp) x, ← hcomp (by simp) y,
+      α.map_add, β.map_add, c.ab.pre_add]
+  · intro T'' g x
+    rw [α.liesIn_iff x, β.liesIn_iff (RelPoint.along α.map α.isPullback.w x)]
+    constructor
+    · rintro ⟨y, hy⟩
+      exact ⟨y, by simpa [RelPoint.along] using hy⟩
+    · rintro ⟨y, hy⟩
+      exact ⟨y, by simpa [RelPoint.along] using hy⟩
+
+/-- **A cyclic `N`-isogeny PULLS BACK** (PROVEN): if `d'` and `e'` are base
+changes of `d` and `e` along `p`, then an `N`-isogeny pair `(d, e)` induces
+one on `(d', e')`.
+
+No new geometry: the two morphisms are `IsPullback.lift`s of the composites
+`bd.map ≫ h.map` and `be.map ≫ h.dual`, and each of the four axioms is
+transported *down* the cartesian squares — which needs only INJECTIVITY of
+`IsBaseChangeOf.toRelPoint`, already proven above, never surjectivity.  The
+two `[N]` axioms use `toRelPoint_nsmul`.
+
+This is what makes the naturality field `AtkinLehnerMorphism.dual_baseChange`
+a theorem rather than a hypothesis: the chosen quotient of the base-changed
+datum is compared with the base change of the chosen quotient, and
+`nonempty_isBaseChangeOf_of_isNIsogenyPair` identifies them. -/
+noncomputable def IsNIsogenyPair.baseChange {N : ℕ} {T' T : Scheme.{0}} {p : T' ⟶ T}
+    {d' e' : Gamma0Datum N T'} {d e : Gamma0Datum N T}
+    (h : IsNIsogenyPair N d e) (bd : IsBaseChangeOf p d' d) (be : IsBaseChangeOf p e' e) :
+    IsNIsogenyPair N d' e' := by
+  have hw₁ : d'.f ≫ p = (bd.map ≫ h.map) ≫ e.f := by
+    rw [Category.assoc, h.comm]; exact bd.isPullback.w
+  have hw₂ : e'.f ≫ p = (be.map ≫ h.dual) ≫ d.f := by
+    rw [Category.assoc, h.dual_comm]; exact be.isPullback.w
+  set M := be.isPullback.lift d'.f (bd.map ≫ h.map) hw₁ with hMdef
+  set D := bd.isPullback.lift e'.f (be.map ≫ h.dual) hw₂ with hDdef
+  have hMc : M ≫ e'.f = d'.f := be.isPullback.lift_fst _ _ _
+  have hMb : M ≫ be.map = bd.map ≫ h.map := be.isPullback.lift_snd _ _ _
+  have hDc : D ≫ d'.f = e'.f := bd.isPullback.lift_fst _ _ _
+  have hDb : D ≫ bd.map = be.map ≫ h.dual := bd.isPullback.lift_snd _ _ _
+  have keyM : ∀ {T'' : Scheme.{0}} {g : T'' ⟶ T'} (x : RelPoint d'.f g),
+      RelPoint.along be.map be.isPullback.w (RelPoint.post M hMc x)
+        = RelPoint.post h.map h.comm (RelPoint.along bd.map bd.isPullback.w x) := by
+    intro T'' g x
+    exact Subtype.ext (show (x.1 ≫ M) ≫ be.map = (x.1 ≫ bd.map) ≫ h.map by
+      rw [Category.assoc, hMb, ← Category.assoc])
+  have keyD : ∀ {T'' : Scheme.{0}} {g : T'' ⟶ T'} (y : RelPoint e'.f g),
+      RelPoint.along bd.map bd.isPullback.w (RelPoint.post D hDc y)
+        = RelPoint.post h.dual h.dual_comm (RelPoint.along be.map be.isPullback.w y) := by
+    intro T'' g y
+    exact Subtype.ext (show (y.1 ≫ D) ≫ bd.map = (y.1 ≫ be.map) ≫ h.dual by
+      rw [Category.assoc, hDb, ← Category.assoc])
+  refine { map := M, comm := hMc, dual := D, dual_comm := hDc,
+           ker_map := ?_, ker_dual := ?_, dual_map := ?_, map_dual := ?_ }
+  · intro T'' g x
+    rw [bd.liesIn_iff x, ← h.ker_map (RelPoint.along bd.map bd.isPullback.w x), ← keyM x,
+      ← be.map_zero g]
+    exact ⟨fun hh => by rw [hh], fun hh => be.toRelPoint_injective hh⟩
+  · intro T'' g y
+    rw [be.liesIn_iff y, ← h.ker_dual (RelPoint.along be.map be.isPullback.w y), ← keyD y,
+      ← bd.map_zero g]
+    exact ⟨fun hh => by rw [hh], fun hh => bd.toRelPoint_injective hh⟩
+  · intro T'' g x
+    letI := d'.ab.addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ p)
+    refine bd.toRelPoint_injective ?_
+    show RelPoint.along bd.map bd.isPullback.w (RelPoint.post D hDc (RelPoint.post M hMc x))
+      = RelPoint.along bd.map bd.isPullback.w (N • x)
+    rw [keyD, keyM, h.dual_map]
+    exact (bd.toRelPoint_nsmul N x).symm
+  · intro T'' g y
+    letI := e'.ab.addCommGroup g
+    letI := e.ab.addCommGroup (g ≫ p)
+    refine be.toRelPoint_injective ?_
+    show RelPoint.along be.map be.isPullback.w (RelPoint.post M hMc (RelPoint.post D hDc y))
+      = RelPoint.along be.map be.isPullback.w (N • y)
+    rw [keyM, keyD, h.map_dual]
+    exact (be.toRelPoint_nsmul N y).symm
+
 /-- **`w` is the Atkin–Lehner involution `w_N` of `X_0(N)`**, pinned by
 its action on the moduli problem: it carries the moduli point of
 `(E, C)` to the moduli point of `(E/C, E[N]/C)`.
@@ -51183,16 +51357,19 @@ with each step carrying exactly one theory:
 
 | leaf | theory |
 |---|---|
-| `nonempty_atkinLehnerMorphism` | quotient of an elliptic scheme by a finite flat subgroup scheme, functorially in the base |
-| `nonempty_isBaseChangeOf_of_isNIsogenyPair` | uniqueness of the target of a cyclic `N`-isogeny with a given kernel |
+| `nonempty_atkinLehnerMorphism` | quotient of an elliptic scheme by a finite flat subgroup scheme, functorially in the base — **PROVEN 2026-07-28**, see the re-cut below |
+| `nonempty_isBaseChangeOf_of_isNIsogenyPair` | uniqueness of the target of a cyclic `N`-isogeny with a given kernel — **PROVEN 2026-07-28** |
 | `exists_extend_x0Compactification` | extension of a morphism from a smooth curve to a proper one across finitely many points — **PROVEN 2026-07-28** over `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` |
 | `eq_of_comp_open_x0Compactification` | a dense open of a reduced separated scheme is a monomorphism source — **PROVEN 2026-07-28** over `AlgebraicGeometry.ext_of_isDominant` |
 
-Only the first two leaves — the two carrying quotient-by-a-finite-flat-subgroup-scheme
-theory — are still open; the two extension/comparison leaves were closed on 2026-07-28
-by specialising the curve-extension development in
-`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, which was written for exactly
-this purpose and whose hypotheses are `IsX0Compactification`'s minus the moduli clause.
+All four were closed on 2026-07-28, by two independent owners.  The two
+extension/comparison leaves were closed by specialising the curve-extension
+development in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, which
+was written for exactly this purpose and whose hypotheses are
+`IsX0Compactification`'s minus the moduli clause; the two carrying
+quotient-by-a-finite-flat-subgroup-scheme theory were closed by the re-cut
+recorded below.  Read the re-cut before relying on the first row: the shape of
+`IsNIsogenyPair` changed underneath it the same day.
 
 **What is PROVEN here, and it is the whole reason the cut is worth
 taking.**  The two steps that look like the hard ones — the *descent* of
@@ -51225,9 +51402,19 @@ obligation explicit rather than hidden.
 `IsNIsogenyPair N d d'`, not merely over the chosen `dual d`, so the
 assembly needs to know that any two cyclic `N`-isogenies out of `d` with
 the same kernel have isomorphic targets.  That is
-`nonempty_isBaseChangeOf_of_isNIsogenyPair`, and it is a separate leaf
-because it is a separate theorem — the uniqueness of the quotient, not
-its existence. -/
+`nonempty_isBaseChangeOf_of_isNIsogenyPair`, and it is a separate theorem —
+the uniqueness of the quotient, not its existence.
+
+**STALE AS OF 2026-07-28 in one respect, and the correction matters.**  The
+paragraph above says `dual` must be carried as DATA because an existential
+"for every `d` there is an `N`-isogenous `d'`" supplies no compatibility
+with base change.  The first half is still right — `IsCoarseModuliY0.universal`
+consumes a natural transformation and so `AtkinLehnerMorphism` must present
+`dual` as an operation.  The second half is now FALSE as a statement about
+what has to be *assumed*: uniqueness of the target upgrades any choice
+function to a natural one, so `dual_baseChange` and `dual_dual` are both
+DERIVED from the bare existential `exists_isNIsogenyPair` below.  See the
+subsection "The isogeny quotient, cut into its two theory gates". -/
 
 /-- **The Atkin–Lehner action on the `Γ₀(N)`-moduli problem**, as DATA:
 the assignment `(E, C) ↦ (E/C, E[N]/C)`, together with the two properties
@@ -51257,25 +51444,105 @@ structure AtkinLehnerMorphism (N : ℕ) where
   dual_dual : ∀ {T : Scheme.{0}} (d : Gamma0Datum N T),
     IsBaseChangeOf (𝟙 T) (dual (dual d)) d
 
-/-- **The Atkin–Lehner action exists on the `Γ₀(N)`-moduli problem**
-(sorry leaf, 2026-07-27) — the quotient-by-a-finite-flat-subgroup-scheme
-gate, and the ONLY place in this cut where that theory is needed.
+/-! #### The isogeny quotient, cut into its two theory gates (2026-07-28)
+
+The two leaves this subsection used to carry —
+`nonempty_atkinLehnerMorphism` and
+`nonempty_isBaseChangeOf_of_isNIsogenyPair` — are now both **PROVEN**, over
+the two strictly more elementary leaves below:
+
+| leaf | what it asks for |
+|---|---|
+| `existsUnique_factor_of_isNIsogenyPair` | `E ⟶ E/C` is the CATEGORICAL QUOTIENT by `C` |
+| `exists_isNIsogenyPair` | `E/C` EXISTS, over one fixed base, non-functorially |
+
+Everything else in the old statements was formal and is now carried out
+here.  Specifically, the following are no longer assumed:
+
+* **`dual_dual`** — `(E/C)/(E[N]/C) ≅ E`.  `IsNIsogenyPair.symm` makes
+  `(E/C, E[N]/C)` `N`-isogenous to `(E, C)`, so `E` and `(E/C)/(E[N]/C)`
+  are two targets of the SAME isogeny out of `E/C`, and
+  `nonempty_isBaseChangeOf_of_isNIsogenyPair` identifies them.  No
+  geometry.
+* **`dual_baseChange`** — the naturality that
+  `AtkinLehnerMorphism`'s docstring calls the reason `dual` is data rather
+  than an existential.  Base-change the isogeny (`IsNIsogenyPair.baseChange`,
+  proven above), pull back the chosen quotient
+  (`exists_gamma0Datum_baseChange`, proven far above), compare the two with
+  the uniqueness theorem, and compose (`IsBaseChangeOf.compId`).
+* **the whole isomorphism construction** inside
+  `nonempty_isBaseChangeOf_of_isNIsogenyPair`: that the comparison maps in
+  both directions are mutually inverse, that the comparison is a
+  homomorphism, that it intertwines the two dual isogenies, and hence that
+  it carries `ker φ̂₁` onto `ker φ̂₂` — i.e. that the LEVEL STRUCTURES
+  correspond, which is the clause that makes the identification an
+  isomorphism of `Γ₀(N)`-DATA and not merely of elliptic schemes.
+
+So the residue is exactly the Katz–Mazur quotient theorem, split into its
+existence half and its universal-property half, and nothing else. -/
+
+/-- **A cyclic `N`-isogeny is the CATEGORICAL QUOTIENT by its kernel**
+(sorry leaf, 2026-07-28) — the universal-property half of the
+quotient-by-a-finite-flat-subgroup-scheme theory.
+
+TRUE, and this is the standard content of "finite locally free surjections
+are effective epimorphisms".  `h.map : E ⟶ E'` is surjective and
+quasi-finite because `h.dual ∘ h.map = [N]` is, and flat by the fibrewise
+criterion, so it is finite locally free with scheme-theoretic kernel
+`d.cyc` — the `ker_map` field is stated on relative points at EVERY base,
+which by Yoneda is the scheme-theoretic kernel and not a weakening of it.
+An fppf covering is an effective epimorphism, so any homomorphism out of
+`E` killing `C` descends uniquely along it.
+
+**Why the hypotheses are what they are.**  `hadd` and `hker` are exactly
+"`u` factors set-theoretically through `E/C`" in the functor-of-points
+language; without `hadd` the conclusion is false (a non-additive `u`
+constant on the fibres of `φ` need not descend as a SCHEME morphism, since
+the fibres are not preserved).  The uniqueness clause is `Epi h.map`
+restricted to maps into `A`, and it is what does most of the work below —
+it is the reason no surjectivity of any point map is ever needed.
+
+**`N = 0` is degenerate rather than excluded**: `isEmpty_of_gamma0Datum_zero`
+makes any `T` carrying a `Gamma0Datum 0 T` empty, hence initial, so every
+scheme in sight is initial and both halves hold trivially.
+
+**The check that would refute it**: a homomorphism out of `E` vanishing on
+`C` that does not factor through `h.map`, or two distinct maps out of `E'`
+agreeing after `h.map`. -/
+theorem existsUnique_factor_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
+    {d d' : Gamma0Datum N T} (h : IsNIsogenyPair N d d')
+    {A : Scheme.{0}} {af : A ⟶ T} (abA : AbelianSchemeStruct af)
+    {u : d.E ⟶ A} (hu : u ≫ af = d.f) (_hadd : IsAdditiveOn d.ab abA u hu)
+    (_hker : ∀ {T' : Scheme.{0}} {g : T' ⟶ T} (x : RelPoint d.f g),
+      RelPoint.LiesIn d.cyc.ι x → RelPoint.post u hu x = abA.zero g) :
+    ∃ v : d'.E ⟶ A, v ≫ af = d'.f ∧ h.map ≫ v = u ∧
+      ∀ w : d'.E ⟶ A, h.map ≫ w = u → w = v :=
+  sorry
+
+/-- **The isogeny quotient EXISTS** (sorry leaf, 2026-07-28) — the
+existence half, over ONE fixed base and with no functoriality asked for.
 
 TRUE.  For `N ≥ 1` the quotient `E/C` of an elliptic scheme by a finite
 flat subgroup scheme exists (Katz–Mazur (1.8.2)/(1.8.3), or SGA 3 for the
 general quotient by a finite flat equivalence relation), is again an
 elliptic scheme, the quotient map `φ : E ⟶ E/C` is finite flat surjective
 with `ker φ = C`, its dual `φ̂` satisfies `φ̂φ = [N]` and `φφ̂ = [N]`, and
-`C' := ker φ̂ = φ(E[N])` is again cyclic of order `N`.  All four are the
-fields of `IsNIsogenyPair`.  The construction is canonical, hence
-commutes with base change (`dual_baseChange`), and
-`(E/C)/(E[N]/C) ≅ E` carrying `E[N]/(E[N]/C) ≅ C` gives `dual_dual`.
+`C' := ker φ̂ = φ(E[N])` is again cyclic of order `N`.  Those four are
+exactly the fields of `IsNIsogenyPair`.
+
+**Why NO naturality clause appears here**, although the coarse-space
+universal property needs one: naturality is now DERIVED.  A canonical
+construction commutes with base change, but that fact does not have to be
+assumed — `IsNIsogenyPair.baseChange` pulls the isogeny back and
+`existsUnique_factor_of_isNIsogenyPair` pins the target, so any choice
+function built from this leaf is automatically natural.  That is the
+reduction this cut buys, and it is why the leaf can be stated pointwise.
 
 `N = 0` is degenerate rather than excluded: `isEmpty_of_gamma0Datum_zero`
 makes any `T` carrying a `Gamma0Datum 0 T` empty, hence initial, so
-`dual := id` satisfies every field with all four `IsNIsogenyPair`
-equations holding between morphisms out of an empty scheme.  Carrying the
-degenerate case rather than a positivity hypothesis is what lets
+`d' := d` with `map = dual = 𝟙` satisfies every field, all four equations
+holding between morphisms out of an empty scheme.  Carrying the degenerate
+case rather than a positivity hypothesis is what lets
 `exists_atkinLehner_x0` keep its `(N : ℕ)` signature.
 
 **What proving it needs**: quotients of an elliptic scheme by a finite
@@ -51284,42 +51551,156 @@ project.  **The check that refutes the absence claim**:
 `grep -rn "isogenyQuotient\|IsQuotientByFinite\|quotient.*subgroup scheme"
 Fermat/ .lake/packages/mathlib/ ~/cs/FLT/`.
 
-**The check that would refute the STATEMENT**: a cyclic `N`-isogeny whose
-target carries no cyclic subgroup of order `N`, or a level `N` at which
-`w_N` is not an involution on `Y_0(N)`. -/
-theorem nonempty_atkinLehnerMorphism (N : ℕ) : Nonempty (AtkinLehnerMorphism N) :=
+**The check that would refute the STATEMENT**: a `Γ₀(N)`-datum admitting no
+cyclic `N`-isogeny, i.e. a curve with a cyclic subgroup of order `N` whose
+quotient carries no cyclic subgroup of order `N`. -/
+theorem exists_isNIsogenyPair (N : ℕ) {T : Scheme.{0}} (d : Gamma0Datum N T) :
+    ∃ d' : Gamma0Datum N T, Nonempty (IsNIsogenyPair N d d') :=
   sorry
 
 /-- **The target of a cyclic `N`-isogeny is determined by its kernel**
-(sorry leaf, 2026-07-27) — the uniqueness half of the quotient, and what
-makes `IsAtkinLehner`'s quantification over EVERY `IsNIsogenyPair`
-reachable from the single chosen `AtkinLehnerMorphism.dual`.
+(PROVEN 2026-07-28, over `existsUnique_factor_of_isNIsogenyPair` and
+nothing else) — the uniqueness half of the quotient, and what makes
+`IsAtkinLehner`'s quantification over EVERY `IsNIsogenyPair` reachable from
+the single chosen `AtkinLehnerMorphism.dual`.
 
-TRUE.  Let `φ₁ : E ⟶ E₁` and `φ₂ : E ⟶ E₂` both witness
-`IsNIsogenyPair N d dᵢ`.  Each `φᵢ` is surjective and quasi-finite because
-`φ̂ᵢφᵢ = [N]` is, and flat by the fibrewise criterion (a surjective
-homomorphism of elliptic curves over a field is an isogeny), so each is
-finite flat surjective with scheme-theoretic kernel `d.cyc` — the
-`ker_map` field is stated on relative points at EVERY base, which by
-Yoneda is the scheme-theoretic kernel, not a weakening of it.  A finite
-flat surjection is the categorical quotient by its kernel, so `E₁` and
-`E₂` are both `E/C` and the induced `ψ : E₁ ⟶ E₂` is an isomorphism over
-`T`; `ψ` carries `ker φ̂₁` to `ker φ̂₂`, i.e. the level structures
-correspond.  An isomorphism over the base is a cartesian square over
-`𝟙 T`, which is what `IsBaseChangeOf (𝟙 T)` asks for.
+Let `φ₁ : E ⟶ E₁` and `φ₂ : E ⟶ E₂` both witness `IsNIsogenyPair N d dᵢ`.
+Each `φᵢ` is a homomorphism (`isAdditiveOn_map`, by rigidity) killing
+`d.cyc` (`ker_map`), so the universal property factors each through the
+other: `ψ` with `φ₁ψ = φ₂` and `χ` with `φ₂χ = φ₁`.  Its uniqueness clause,
+applied to the identity, gives `ψχ = 𝟙` and `χψ = 𝟙`, so `ψ` is an
+isomorphism, and a square over `𝟙 T` with an isomorphism on total spaces is
+cartesian (`IsPullback.of_vert_isIso`).
+
+The level structures correspond because `ψ` intertwines the DUALS:
+`φ̂₁φ₁ = [N] = φ̂₂φ₂` evaluated at the tautological point `RelPoint.self`
+gives `φ₁φ̂₁ = φ₂φ̂₂` as morphisms, so `ψφ̂₂` and `φ̂₁` agree after `φ₁` and
+the same uniqueness clause equates them.  `ker_dual` then transports
+membership in `C₁` to membership in `C₂` — and this clause is the reason
+the conclusion is an isomorphism of `Γ₀(N)`-DATA rather than of bare
+elliptic schemes.
 
 Stated over an arbitrary base `T` rather than over `ℚ`-schemes: the
-argument above uses no characteristic hypothesis, only that `E` and the
-`Eᵢ` are elliptic schemes, which `Gamma0Datum` supplies.  The only use
-site is over `ℚ`-schemes.
-
-**The check that refutes it**: two cyclic `N`-isogenies out of one `(E, C)`
-with non-isomorphic targets, or with targets carrying non-corresponding
-level structures. -/
+argument uses no characteristic hypothesis, only that `E` and the `Eᵢ` are
+elliptic schemes, which `Gamma0Datum` supplies.  The only use site is over
+`ℚ`-schemes. -/
 theorem nonempty_isBaseChangeOf_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
-    {d d₁ d₂ : Gamma0Datum N T} (_h₁ : IsNIsogenyPair N d d₁) (_h₂ : IsNIsogenyPair N d d₂) :
-    Nonempty (IsBaseChangeOf (𝟙 T) d₁ d₂) :=
-  sorry
+    {d d₁ d₂ : Gamma0Datum N T} (h₁ : IsNIsogenyPair N d d₁) (h₂ : IsNIsogenyPair N d d₂) :
+    Nonempty (IsBaseChangeOf (𝟙 T) d₁ d₂) := by
+  -- the two comparison maps, each factoring the other's isogeny
+  obtain ⟨ψ, hψc, hψ, -⟩ := existsUnique_factor_of_isNIsogenyPair h₁ d₂.ab h₂.comm
+    h₂.isAdditiveOn_map (fun x hx => (h₂.ker_map x).mpr hx)
+  obtain ⟨χ, hχc, hχ, -⟩ := existsUnique_factor_of_isNIsogenyPair h₂ d₁.ab h₁.comm
+    h₁.isAdditiveOn_map (fun x hx => (h₁.ker_map x).mpr hx)
+  obtain ⟨v₁, -, -, u₁⟩ := existsUnique_factor_of_isNIsogenyPair h₁ d₁.ab h₁.comm
+    h₁.isAdditiveOn_map (fun x hx => (h₁.ker_map x).mpr hx)
+  obtain ⟨v₂, -, -, u₂⟩ := existsUnique_factor_of_isNIsogenyPair h₂ d₂.ab h₂.comm
+    h₂.isAdditiveOn_map (fun x hx => (h₂.ker_map x).mpr hx)
+  have hcancel₁ : ψ ≫ χ = 𝟙 d₁.E := by
+    rw [u₁ (ψ ≫ χ) (by rw [← Category.assoc, hψ, hχ]), u₁ (𝟙 d₁.E) (Category.comp_id _)]
+  have hcancel₂ : χ ≫ ψ = 𝟙 d₂.E := by
+    rw [u₂ (χ ≫ ψ) (by rw [← Category.assoc, hχ, hψ]), u₂ (𝟙 d₂.E) (Category.comp_id _)]
+  haveI : IsIso ψ := ⟨χ, hcancel₁, hcancel₂⟩
+  -- `map ≫ dual` is `[N]`, hence the same for both isogenies
+  have hNN : h₁.map ≫ h₁.dual = h₂.map ≫ h₂.dual := by
+    have e := (h₁.dual_map (RelPoint.self d.f)).trans (h₂.dual_map (RelPoint.self d.f)).symm
+    have e' : (𝟙 d.E ≫ h₁.map) ≫ h₁.dual = (𝟙 d.E ≫ h₂.map) ≫ h₂.dual :=
+      congrArg Subtype.val e
+    simpa using e'
+  -- hence `ψ` intertwines the two dual isogenies
+  have hdual : ψ ≫ h₂.dual = h₁.dual := by
+    have hu : (h₁.map ≫ h₁.dual) ≫ d.f = d.f := by
+      rw [Category.assoc, h₁.dual_comm, h₁.comm]
+    have hzz : RelPoint.post (h₁.map ≫ h₁.dual) hu (d.ab.zero (𝟙 T)) = d.ab.zero (𝟙 T) := by
+      have hs : RelPoint.post (h₁.map ≫ h₁.dual) hu (d.ab.zero (𝟙 T))
+          = RelPoint.post h₁.dual h₁.dual_comm
+              (RelPoint.post h₁.map h₁.comm (d.ab.zero (𝟙 T))) :=
+        Subtype.ext (Category.assoc _ _ _).symm
+      rw [hs, h₁.post_map_zero, h₁.post_dual_zero]
+    obtain ⟨v₃, -, -, u₃⟩ := existsUnique_factor_of_isNIsogenyPair h₁ d.ab hu
+      (isAdditiveOn_of_post_zero d.ab d.ab hu hzz)
+      (fun x hx => by
+        have hsplit : RelPoint.post (h₁.map ≫ h₁.dual) hu x
+            = RelPoint.post h₁.dual h₁.dual_comm (RelPoint.post h₁.map h₁.comm x) :=
+          Subtype.ext (Category.assoc _ _ _).symm
+        rw [hsplit, (h₁.ker_map x).mpr hx, h₁.post_dual_zero])
+    rw [u₃ (ψ ≫ h₂.dual) (by rw [← Category.assoc, hψ, hNN]), u₃ h₁.dual rfl]
+  -- `ψ` carries the zero section to the zero section, hence is a homomorphism
+  have hz : ∀ {T'' : Scheme.{0}} (g : T'' ⟶ T),
+      RelPoint.post ψ hψc (d₁.ab.zero g) = d₂.ab.zero g := by
+    intro T'' g
+    rw [← h₁.post_map_zero g, ← h₂.post_map_zero g]
+    refine Subtype.ext ?_
+    show ((d.ab.zero g).1 ≫ h₁.map) ≫ ψ = (d.ab.zero g).1 ≫ h₂.map
+    rw [Category.assoc, hψ]
+  have hψadd : IsAdditiveOn d₁.ab d₂.ab ψ hψc :=
+    isAdditiveOn_of_post_zero d₁.ab d₂.ab hψc (hz (𝟙 T))
+  -- reindexing `g ≫ 𝟙 T = g` on relative points, as in `RelPoint.pre_id_along`
+  have key : ∀ {T'' : Scheme.{0}} {g : T'' ⟶ T} (a b : RelPoint d₂.f (g ≫ 𝟙 T))
+      (hg : 𝟙 T'' ≫ (g ≫ 𝟙 T) = g),
+      RelPoint.pre (𝟙 T'') hg a = RelPoint.pre (𝟙 T'') hg b → a = b := by
+    intro T'' g a b hg hab
+    have h' : 𝟙 T'' ≫ (a : T'' ⟶ d₂.E) = 𝟙 T'' ≫ (b : T'' ⟶ d₂.E) := congrArg Subtype.val hab
+    exact Subtype.ext (by simpa using h')
+  refine ⟨{ map := ψ
+            isPullback := IsPullback.of_vert_isIso ⟨by rw [Category.comp_id, hψc]⟩
+            map_zero := ?_
+            map_add := ?_
+            liesIn_iff := ?_ }⟩
+  · intro T'' g
+    refine key _ _ (by simp) ?_
+    rw [RelPoint.pre_id_along ψ _ hψc, d₂.ab.pre_zero]
+    exact hz g
+  · intro T'' g x y
+    refine key _ _ (by simp) ?_
+    rw [RelPoint.pre_id_along ψ _ hψc, d₂.ab.pre_add, RelPoint.pre_id_along ψ _ hψc,
+      RelPoint.pre_id_along ψ _ hψc]
+    exact hψadd x y
+  · intro T'' g x
+    show RelPoint.LiesIn d₁.cyc.ι x ↔ RelPoint.LiesIn d₂.cyc.ι (RelPoint.post ψ hψc x)
+    have hdx : RelPoint.post h₂.dual h₂.dual_comm (RelPoint.post ψ hψc x)
+        = RelPoint.post h₁.dual h₁.dual_comm x := by
+      refine Subtype.ext ?_
+      show (x.1 ≫ ψ) ≫ h₂.dual = x.1 ≫ h₁.dual
+      rw [Category.assoc, hdual]
+    rw [← h₁.ker_dual x, ← h₂.ker_dual (RelPoint.post ψ hψc x), hdx]
+
+/-- **The Atkin–Lehner action exists on the `Γ₀(N)`-moduli problem**
+(PROVEN 2026-07-28, over `exists_isNIsogenyPair` and the uniqueness theorem
+above).
+
+`dual` is a choice of quotient at each base, `pair` its defining property.
+The two fields that made this look like a geometric statement are theorems:
+
+* **`dual_baseChange`.**  Given `IsBaseChangeOf p d' d`, pull the chosen
+  quotient of `d` back along `p` (`exists_gamma0Datum_baseChange`, PROVEN
+  far above) to get `R` over `T'`.  `IsNIsogenyPair.baseChange` makes `R`
+  an `N`-isogeny target of `d'`, and so is the chosen `dual d'`, so
+  `nonempty_isBaseChangeOf_of_isNIsogenyPair` gives an isomorphism between
+  them over `𝟙 T'`; `IsBaseChangeOf.compId` composes it with the pullback
+  square.  So a canonical construction is not needed — ANY choice function
+  is natural, because the target is unique.
+* **`dual_dual`.**  `(pair d).symm` says `d` is an `N`-isogeny target of
+  `dual d`, and so is `dual (dual d)`; uniqueness identifies them.
+
+`N = 0` needs no special treatment here — it is absorbed by
+`exists_isNIsogenyPair`, whose docstring records the degenerate witness. -/
+theorem nonempty_atkinLehnerMorphism (N : ℕ) : Nonempty (AtkinLehnerMorphism N) := by
+  classical
+  refine ⟨{ dual := fun {T} d => (exists_isNIsogenyPair N d).choose
+            pair := fun {T} d => (exists_isNIsogenyPair N d).choose_spec.some
+            dual_baseChange := ?_
+            dual_dual := ?_ }⟩
+  · intro T'' T p d' d bcd
+    have bcR :=
+      (exists_gamma0Datum_baseChange p (exists_isNIsogenyPair N d).choose).choose_spec.some
+    exact IsBaseChangeOf.compId
+      (nonempty_isBaseChangeOf_of_isNIsogenyPair (exists_isNIsogenyPair N d').choose_spec.some
+        (((exists_isNIsogenyPair N d).choose_spec.some).baseChange bcd bcR)).some bcR
+  · intro T d
+    exact (nonempty_isBaseChangeOf_of_isNIsogenyPair
+      (exists_isNIsogenyPair N (exists_isNIsogenyPair N d).choose).choose_spec.some
+      ((exists_isNIsogenyPair N d).choose_spec.some).symm).some
 
 /-- **A morphism of `Y_0(N)` extends across the cusps** (**PROVEN
 2026-07-28**, a one-line specialisation of
