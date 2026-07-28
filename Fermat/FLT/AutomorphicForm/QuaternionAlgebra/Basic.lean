@@ -1055,8 +1055,9 @@ theorem isCompact_normOne_quaternion :
   exact isCompact_sphere _ _
 
 variable (F D) in
+omit [NumberField F] [WithRigidification F D] in
 /--
-**(sorry leaf — the ONLY carrier of `IsTotallyDefinite` left in this file.)**
+**PROVEN.** (This is the ONLY carrier of `IsTotallyDefinite` left in this file.)
 
 At an infinite place `v` of the totally real `F`, with `D` totally definite, the completion
 `D ⊗_F F_v` is RING-ISOMORPHIC to `ℍ` by a HOMEOMORPHISM compatible with `F_v ≃+* ℝ`.
@@ -1079,10 +1080,29 @@ consumer uses, so no adversarial witness (a post-composed automorphism of `ℍ`,
 satisfy the clauses while breaking `isCompact_normOne_completion` — every automorphism of
 `ℍ` is norm-preserving precisely because the norm is defined from the algebra structure.
 
-**Where the remaining work is.** Not in the mathematics but in the base-change plumbing:
-`ringEquivRealOfIsReal` has to be shown compatible with `algebraMap F v.Completion` and
-`embedding_of_isReal hv` before `TensorProduct.congr` can be applied along it. That
-compatibility is the one input that has not been located in the pin.
+**CORRECTION (2026-07-28).** The previous docstring said the compatibility of
+`ringEquivRealOfIsReal` with `algebraMap F v.Completion` and `embedding_of_isReal hv` was
+"the one input that has not been located in the pin". That is FALSE: the pin has
+`NumberField.InfinitePlace.Completion.extensionEmbeddingOfIsReal_coe`, and with it the
+compatibility `hφ` below is a one-line `simp`. There was no missing input.
+
+**The proof.** `φ := ringEquivRealOfIsReal hv : F_v ≃+* ℝ` is an `F`-algebra equivalence
+for the `Algebra F ℝ` that `IsTotallyDefinite` uses (`AlgEquiv.ofRingEquiv hφ`), so
+`Algebra.TensorProduct.congr .refl φₐ` gives `D ⊗[F] F_v ≃ₐ[F] D ⊗[F] ℝ`; then
+`Algebra.TensorProduct.comm` and `IsTotallyDefinite.cond v hv` land in `ℍ`. Note this uses
+`Algebra.TensorProduct.comm` DIRECTLY rather than the `tensorCommRight` wrapper the old
+docstring pointed at: that wrapper is declared BELOW this leaf in the file, and only its
+`F`-algebra (not `ℝ`-algebra) content is needed here, so inlining avoids a hoist.
+
+**Continuity is `IsModuleTopology.continuous_of_linearMapₛₗ` in both directions**, which is
+what makes the `[Ring D]`-vs-`[DivisionRing D]` obstruction recorded above irrelevant here:
+no `ℝ`-structure on `D ⊗[F] F_v` is ever needed. Forwards, `e` is `φ`-SEMIlinear out of
+`D ⊗[F] F_v`, which carries the `F_v`-module topology; backwards, `e.symm` is
+`φ.symm`-semilinear out of `ℍ`, which carries the `ℝ`-module topology by
+`isModuleTopologyOfFiniteDimensional`. Both `φ` and `φ.symm` are continuous because
+`ringEquivRealOfIsReal` is an isometry (`isometry_extensionEmbeddingOfIsReal`,
+`isometryEquivRealOfIsReal`). Semilinearity in each direction is exactly the pinning clause
+`hcomp` plus `Algebra.smul_def`, so the clause is not decoration — the proof consumes it.
 
 **Both hypotheses are load-bearing**, and this leaf is where they are consumed. Drop
 definiteness and take `D = M₂(F)` split at `v`: `D ⊗ F_v ≃ M₂(ℝ)`, which is not isomorphic
@@ -1097,10 +1117,59 @@ theorem exists_ringEquiv_quaternion_of_isTotallyDefinite [NumberField.IsTotallyR
           (NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal
             (NumberField.IsTotallyReal.isReal v) : v.Completion →+* ℝ)
         = (e : (D ⊗[F] v.Completion) →+* Quaternion ℝ).comp
-            (algebraMap v.Completion (D ⊗[F] v.Completion)) :=
-  sorry
+            (algebraMap v.Completion (D ⊗[F] v.Completion)) := by
+  have hv : v.IsReal := NumberField.IsTotallyReal.isReal v
+  set φ : v.Completion ≃+* ℝ :=
+    NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal hv with hφdef
+  letI : Algebra F ℝ := (NumberField.InfinitePlace.embedding_of_isReal hv).toAlgebra
+  -- the compatibility the old docstring called a missing input: it is `simp` from
+  -- `extensionEmbeddingOfIsReal_coe`, which the pin has.
+  have hφ : ∀ x : F, φ (algebraMap F v.Completion x) = algebraMap F ℝ x := by
+    intro x
+    simp [hφdef, NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal]
+    rfl
+  let φₐ : v.Completion ≃ₐ[F] ℝ := AlgEquiv.ofRingEquiv hφ
+  let e₁ : D ⊗[F] v.Completion ≃ₐ[F] D ⊗[F] ℝ :=
+    Algebra.TensorProduct.congr AlgEquiv.refl φₐ
+  let e₂ : D ⊗[F] ℝ ≃ₐ[F] ℝ ⊗[F] D := Algebra.TensorProduct.comm F D ℝ
+  let e₃ : ℝ ⊗[F] D ≃ₐ[ℝ] Quaternion ℝ := (IsQuaternionAlgebra.IsTotallyDefinite.cond v hv).some
+  set e : (D ⊗[F] v.Completion) ≃+* Quaternion ℝ :=
+    e₁.toRingEquiv.trans (e₂.toRingEquiv.trans e₃.toRingEquiv) with hedef
+  -- The pinning clause, proven FIRST because both continuity proofs consume it: it is
+  -- exactly the semilinearity of `e` over `φ`.
+  have hcomp : ∀ y : v.Completion,
+      e (algebraMap v.Completion (D ⊗[F] v.Completion) y)
+        = algebraMap ℝ (Quaternion ℝ) (φ y) := by
+    intro y
+    have h1 : algebraMap v.Completion (D ⊗[F] v.Completion) y = (1 : D) ⊗ₜ[F] y := rfl
+    have h2 : e ((1 : D) ⊗ₜ[F] y) = e₃ (algebraMap ℝ (ℝ ⊗[F] D) (φ y)) := rfl
+    rw [h1, h2, AlgEquiv.commutes]
+  refine ⟨e, ?_, ?_, RingHom.ext fun y => (hcomp y).symm⟩
+  · -- `e` is `φ`-semilinear out of `D ⊗[F] F_v`, which has the `F_v`-module topology.
+    have hσ : Continuous (φ : v.Completion →+* ℝ) :=
+      (NumberField.InfinitePlace.Completion.isometry_extensionEmbeddingOfIsReal hv).continuous
+    exact IsModuleTopology.continuous_of_linearMapₛₗ (B' := Quaternion ℝ) hσ
+      { toFun := e
+        map_add' := map_add e
+        map_smul' := fun c x => by
+          simp only [Algebra.smul_def, map_mul, hcomp, RingHom.coe_coe] }
+  · -- `e.symm` is `φ.symm`-semilinear out of `ℍ`, which has the `ℝ`-module topology.
+    haveI : IsModuleTopology ℝ (Quaternion ℝ) := isModuleTopologyOfFiniteDimensional
+    have hσ : Continuous ((φ.symm : ℝ →+* v.Completion)) :=
+      (NumberField.InfinitePlace.Completion.isometryEquivRealOfIsReal hv).symm.continuous
+    have hsymm : ∀ r : ℝ, e.symm (algebraMap ℝ (Quaternion ℝ) r)
+        = algebraMap v.Completion (D ⊗[F] v.Completion) (φ.symm r) := by
+      intro r
+      apply e.injective
+      rw [RingEquiv.apply_symm_apply, hcomp, RingEquiv.apply_symm_apply]
+    exact IsModuleTopology.continuous_of_linearMapₛₗ (B' := D ⊗[F] v.Completion) hσ
+      { toFun := e.symm
+        map_add' := map_add e.symm
+        map_smul' := fun r q => by
+          simp only [Algebra.smul_def, map_mul, hsymm, RingHom.coe_coe] }
 
 variable (F D) in
+omit [NumberField F] [WithRigidification F D] in
 /--
 **PROVEN** (assembly) from `exists_ringEquiv_quaternion_of_isTotallyDefinite` and
 `isCompact_normOne_quaternion`.
