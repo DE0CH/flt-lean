@@ -10078,6 +10078,110 @@ in the classical statement".
 — no field of that structure ties `𝒪` to any residue field beyond
 `finite_residueField`, so nothing else can supply this.
 
+# FALSITY AUDIT (2026-07-28): **THIS LEAF IS FALSE AS STATED.**  `hcoeff` FIXED
+
+# THE RESIDUE FIELD AND LEFT THE STRUCTURE MAP UNFIXED
+
+The section above is correct as far as it goes and is exactly the shape CLAUDE.md
+warns about: an honest repair that certifies the defect its author noticed, while
+a second, independent defect survives it.  `hcoeff` forces `𝒪/𝔪_𝒪 ≅ k`.  It does
+NOT force `𝒟Q.R` to be an `𝒪`-ALGEBRA, and the conclusion cannot be stated
+without such an algebra structure: composing any `pres` with
+`MvPowerSeries.C : 𝒪 →+* Λ_𝒪` produces a ring homomorphism `𝒪 →+* 𝒟Q.R`.  So the
+conclusion asserts, before any Greenberg–Wiles content whatsoever, that such a
+homomorphism EXISTS.  Surjectivity of `pres` is not used in anything below;
+mere inhabitation of the type already refutes the leaf.
+
+**The counterexample, elementary and decisive.**  Let `k₀ : Type` be a finite
+field with `k₀ ≃+* k` (one exists: `k` is finite, and `[Algebra ℤ_[p] k]` with
+`k` finite forces `ker (algebraMap ℤ_[p] k) = (p)`, hence `ringChar k = p`, so
+take `k₀ := GaloisField p r` with `p ^ r = Nat.card k`).  Put
+
+    coeff.carrier := PowerSeries k₀     -- the EQUAL-CHARACTERISTIC coefficient ring
+
+Every field of `TaylorWilesCoefficients` is satisfied: `CommRing`, `IsLocalRing`
+and `IsNoetherianRing` are standard; with the product (`WithPiTopology`) topology
+and `k₀` finite discrete it is a compact, Hausdorff, totally disconnected
+topological ring; `finite_residueField` is `k₀`; `topologicallyFG` holds on
+`{X, ζ}` for `ζ` a primitive element of `k₀`, whose generated subring is `k₀[X]`,
+dense in `k₀[[X]]`; and `exists_isRegular_maximalIdeal` is `[X]`, a length-one
+regular sequence generating `𝔪`.  Note a FIELD will not serve here — the regular
+sequence clause fails for `𝔪 = ⊥` — which is why the witness is `k₀[[X]]` and not
+`k₀`.
+
+`hcoeff` is satisfied with `Runiv := ULift.{uR} k₀`, `c := ULift.up ∘
+PowerSeries.constantCoeff ∘ MvPowerSeries.constantCoeff` (surjective, split by
+the constants) and `πuniv` the transported isomorphism `k₀ ≃+* k`, which is
+surjective.  **`Runiv` and `πuniv` occur in NO other hypothesis of this leaf** —
+that is the whole defect, and it is checkable by reading the binder list: they
+appear only in `hπuniv` and `hcoeff`.  So this instantiation leaves every other
+hypothesis untouched, whatever model of them one starts from.
+
+Now `(p : PowerSeries k₀) = 0`, and a ring homomorphism preserves natural-number
+casts, so any `pres` gives `(p : 𝒟Q.R) = pres (MvPowerSeries.C (p : 𝒪)) = 0`.
+
+**Hence: this leaf ENTAILS `(p : 𝒟Q.R) = 0` for every weakly universal
+raised-level datum `𝒟Q`.**  It is therefore false in every model where `R_Q` has
+characteristic zero — which is every intended model, since the patching argument
+ends by comparing `R_Q` with a Hecke algebra `T` that is `Module.Free ℤ_[p] T` and
+nontrivial, hence has `(p : T) ≠ 0`.  And whether or not one grants that, the
+leaf cannot be proven without first proving that every weakly universal
+raised-level deformation ring has characteristic `p`, which is false.
+
+**TWO OBSTRUCTIONS, AND ONLY ONE OF THEM IS CHEAP.**
+
+1. *Equal characteristic* (the counterexample above).  This one IS in the
+   caller's hand, in the sense CLAUDE.md records for missing hypotheses: the
+   assembly `exists_taylorWilesAuxLevelPresentedDatum` holds `hbot`, `ψ` and `T`
+   with `[Module.Free ℤ_[p] T]`, and `hbot.some.toRuniv.comp hbot.some.pres`
+   composed with `ψ` gives `𝒪 →+* T`, which kills `ringChar 𝒪 = p` outright.
+   Threading `[Algebra ℤ_[p] Runiv]` plus `ℤ_[p]`-linearity of `c` plus
+   `p`-torsion-freeness of `Runiv` (or simply `hbot` itself) closes it.
+2. *Ramification* — and this one is NOT repairable by threading.  Even with
+   `𝒪` of characteristic `0`, take `k := 𝔽_p`, `𝒪 := ℤ_[p][π]/(π² − p)` (a
+   complete DVR, residue field `𝔽_p`, all `TaylorWilesCoefficients` fields
+   satisfied) and `Runiv := 𝒪` again.  A `pres` would supply `s ∈ 𝒟Q.R` with
+   `s² = p`.  `s` cannot be a unit (`p ∈ ker 𝒟Q.π = 𝔪_{𝒟Q.R}`), so `p ∈ 𝔪²`;
+   running the same construction with `π^e = p` for every `e` puts `p` in
+   `⋂_e 𝔪^e = ⊥` (Krull, available since `𝒟Q.R` is Noetherian local and
+   `𝒟Q.isAdicComplete` is separated), i.e. `(p : 𝒟Q.R) = 0` again.
+
+Obstruction 2 says the same thing in classical language: **Mazur's deformation
+category is a category of complete local `𝒪`-ALGEBRAS, and `AuxDeformationDatum`
+is a category of complete local `ℤ_[p]`-algebras.**  Over `ℤ_[p]` the ring
+`𝒪 = W(k)` reaches `R_Q` only through Cohen structure theory, which is absent
+from the pin, from `Fermat/` and from `~/cs/FLT`.  The interface repair is to
+parameterise `AuxDeformationDatum` by `coeff` and carry `[Algebra coeff.carrier
+R]` (with `algebraMap ℤ_[p] R` factoring through it, which additionally requires
+`TaylorWilesCoefficients` to be indexed by `p` and to carry `Algebra ℤ_[p]
+carrier` — it is currently indexed by nothing at all).  That is a cut-level
+change across several owners and is deliberately NOT made here.
+
+*The refuting checks for this section.*  Each is one command, and each is the
+specific load-bearing claim rather than the conclusion:
+
+* `grep -rn 'Algebra coeff.carrier\|algebraMap coeff.carrier' Fermat/` — empty.
+  Nothing in the development makes any deformation ring an `𝒪`-algebra.
+* `grep -n 'structure TaylorWilesCoefficients' -A 25
+  Fermat/FLT/Modularity/PatchingCore.lean` — the structure takes no parameters
+  and has no `Algebra ℤ_[p] carrier` field, so equal characteristic is admitted.
+* Read this leaf's own binder list for occurrences of `Runiv`: exactly two,
+  `hπuniv` and `hcoeff`.  If a future edit adds a third, the counterexample
+  instantiation must be re-checked — but the ramification obstruction survives
+  any such edit, because it never touches `Runiv` beyond `Runiv := 𝒪`.
+
+The SAME defect is present verbatim in the Hilbert twin
+`exists_hilbertAuxDeformationRingPresentation`
+(`Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean`), which
+asks for `pres : MvPowerSeries (Fin q) coeff.carrier →+* 𝒟Q.R` with `coeff` a
+free parameter and does not even carry `hcoeff`; and it is INHERITED by the
+proven glue `exists_auxDeformationRingPresentation` below, whose conclusion
+`(Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R` supplies the same homomorphism `𝒪 →+* 𝒟Q.R`.  It stops at
+`exists_taylorWilesLevelRaw` further below, whose `hbot`/`ψ`/`T` package makes an
+equal-characteristic `𝒪` inconsistent — so the tree is not globally unsound, but
+this leaf and its two glue consumers are stating something strictly stronger than
+the mathematics they stand for.
+
 References: Wiles, Ann. of Math. 141 (1995), Prop. 1.6 and ch. 3;
 Darmon-Diamond-Taylor Thm. 2.49 and §3; Greenberg, *Iwasawa theory and p-adic
 deformations*; Mazur, in *Galois Groups over ℚ* (1989).
@@ -10202,6 +10306,78 @@ is already proved by the material `exists_auxDeformationDatum` contains.
 **A prover who finds clause 2 unreachable has found this reason, not a gap in
 the mathematics.**  Report it; do not paper over it, and do not restate the
 clause to make it provable.
+
+# FALSITY AUDIT (2026-07-28): CLAUSE 2 IS NOT MERELY UNREACHABLE — IT IS FALSE,
+
+# AND THE REPAIR PROPOSED ABOVE IS NECESSARY BUT **NOT SUFFICIENT**
+
+The section above diagnoses a missing BRIDGE and proposes to build it by
+strengthening `exists_auxDeformationDatum` to name its carrier.  That
+strengthening is right and worth doing — it is what produces the classifying map
+`𝒟Q.R →+* Runiv` at all — but it does not reach the conclusion, because clause 2
+asks for a SURJECTION and weak universality is existence-only.  Sharper: no
+hypothesis of this leaf bounds `Runiv` from ABOVE, so no surjection onto it can
+be produced.
+
+**The counterexample family.**  Fix any model of the hypotheses, with its genuine
+`(Runiv₀, ρuniv₀, πuniv₀)`, and for `m : ℕ` replace
+
+    Runiv  := MvPowerSeries (Fin m) Runiv₀        (the `𝔪`-adic topology)
+    ρuniv  := ρuniv₀.baseChange                   (along `MvPowerSeries.C`)
+    πuniv  := πuniv₀.comp MvPowerSeries.constantCoeff
+
+Then `[IsLocalRing]`, `[IsNoetherianRing]` (`PatchingCore.lean` proves
+`IsNoetherianRing (MvPowerSeries (Fin n) A)` for Noetherian `A`), `hadic`,
+`hcomplete`, `hranku`, `hπuniv` and `hunivred` all hold; `hfact` holds because a
+classifying map out of `Runiv₀` composed with `MvPowerSeries.constantCoeff` is a
+classifying map out of `Runiv` (every clause of `IsWeaklyUniversalDeformation`
+factors through the constant term, since `ρuniv`'s `charFrob` coefficients are
+constants); and `hρuniv` holds by base change along the flat local map
+`MvPowerSeries.C`.
+
+*The one soft spot, stated so the next reader can close it rather than redo the
+survey*: the general-coefficient transfer `isHardlyRamified_baseChange` is itself
+an open leaf here (the PROVEN one, `isHardlyRamified_baseChange_quotient`, is for
+quotients and does not apply to the injection `Runiv₀ ↪ Runiv₀[[y]]`).
+Mathematically the transfer is immediate — `det` is the same cyclotomic
+character, unramifiedness and tameness only lose information under base change,
+and a finite flat group scheme base-changes to a finite flat group scheme — so
+the counterexample is sound as mathematics; it is not yet mechanised here.
+
+Now `Runiv` is a Noetherian local ring of Krull dimension `dim Runiv₀ + m`, while
+`𝒟Q.R` is a FIXED Noetherian local ring, so `ringKrullDim 𝒟Q.R` is finite.  A
+surjection `𝒟Q.R ↠ Runiv` forces `dim Runiv ≤ dim 𝒟Q.R`.  Taking
+`m > ringKrullDim 𝒟Q.R` refutes clause 2.  Nothing in the argument touches
+`diamond`, so the both-directions vacuity check above is untouched: the two
+clauses still may not be split, and clause 2 is additionally false.
+
+**What is actually missing is a MINIMALITY hypothesis on `Runiv`**, not a bridge.
+`IsWeaklyUniversalDeformation` (near the top of this file) is deliberately the
+existence half only — "keeping the clause existential keeps this statement at the
+representability strength and no more" — and existence-only universality pins
+`Runiv` in NO direction: `Runiv₀[[y]]` classifies everything `Runiv₀` does.  The
+Hilbert twin does not have this problem because
+`exists_hilbertAuxDeformationRingPresentation` carries `h𝒟t :
+𝒟.IsTraceGenerated` alongside `h𝒟w`, and trace generation is exactly what
+excludes `y`.  Note this also disposes of the `𝒟univ` route recorded on
+`exists_auxDeformationRingPresentation` below: adding `𝒟univ.IsWeaklyUniversal`
+does not help either, since `Runiv₀[[y]]` is weakly universal at `Q = ∅` whenever
+`Runiv₀` is, for the same reason.
+
+**The repair**, therefore, is to give this leaf a trace-generation clause for
+`(Runiv, ρuniv)` — `Runiv` is topologically generated over `ℤ_[p]` by the
+`charFrob` coefficients of `ρuniv` — and, for the surjectivity of `toRuniv`, the
+matching statement that the classifying map out of `𝒟Q.R` hits those generators
+(which it does, by `𝒟Q.charFrob_compat` and the `Sf`-clause of
+`AuxDeformationDatum.IsWeaklyUniversal`).  That is one new clause on the
+interface, not a new arithmetic leaf.
+
+*The refuting checks.*  `grep -n 'def IsWeaklyUniversalDeformation' -A 30` in this
+file — the body is a bare `∃ ψ`, with no uniqueness and no generation clause.
+`grep -rn 'IsTraceGenerated' Fermat/FLT/Modularity/Patching.lean` — one hit, in
+the header prose, recording that `Lift.lean`'s trace-generation vocabulary is NOT
+reused here because `Lift.lean` is downstream of this module's consumer.  So the
+missing clause has to be stated afresh in this file; it cannot be imported.
 
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Taylor-Wiles, ibid. §2;
 Darmon-Diamond-Taylor §2.49 and §5.3; Fujiwara §3; Kisin, Ann. of Math. 170
@@ -10719,6 +10895,27 @@ trace generators are outside it — so a junk extension of the `Λ`-action to
 `R_Q` is not excluded by clause 1, and for such an extension no semilinear `θ`
 exists.  This is the same shape as the parent's CUT-SAFETY counterexample, one
 level down, and it is why the automorphic content stays in one leaf.
+
+# FAITHFULNESS AUDIT (2026-07-28): THIS LEAF IS **NOT** AFFECTED BY THE TWO
+
+# FALSITY AUDITS ON THE RING SUB-LEAVES ABOVE
+
+Recorded because the natural reaction to those audits is to assume the whole
+2026-07-28 cut is compromised, and it is not.  Both defects there are obligations
+to CONSTRUCT something; here the same objects arrive as hypotheses, so the
+defects become assumptions rather than burdens:
+
+* the missing `𝒪`-algebra structure on `R_Q` (FALSITY AUDIT of
+  `exists_auxDeformationPresSurjection`) is supplied here by
+  `φ : (Λ_𝒪 ⧸ I) ≃+* 𝒟Q.R`, which is a hypothesis;
+* the unpinned `Runiv` (FALSITY AUDIT of `exists_auxDeformationDiamondControl`)
+  is supplied here by `toRuniv` together with `htoRuniv` and `hker`, also
+  hypotheses.  Under the junk instantiation `Runiv := Runiv₀[[y_1, …, y_m]]` used
+  there, `hker` becomes unsatisfiable, so this leaf's package simply has no
+  model at that instantiation rather than acquiring a false conclusion.
+
+So the automorphic content below is the genuine remaining obligation of the cut,
+and the two audits above are cut-level repairs that do not change this statement.
 
 The reduction that WOULD split them is the one the parent's "WHAT IS STILL
 MISSING" section names and declines: state the `ℚ` analogue of
