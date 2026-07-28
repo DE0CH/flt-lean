@@ -384,8 +384,10 @@ open in them has been split along the theories it needed:
 | `exists_gamma1RigidifiedModuli` | Katz-Mazur 4.7.2 + 5.1.1 + 6.6.2 and the affineness parenthesis of 8.1.1: the AFFINE FINE moduli scheme of `[Γ₁(N)], [Γ(n)]`.  The one citation half of the former `exists_gamma1Rigidification`, which is PROVEN over this row and the two below it (2026-07-28), as are `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
 | `exists_gamma1FullLevelStructure_cover` | Katz-Mazur 2.3.1 / 8.1.1: the finite etale `GL₂(ℤ/n)`-torsor of full level-`n` structures.  A statement about ONE datum; names no moduli scheme. | any `K`, `char K ∤ n` |
 | `exists_gamma1DeckAction` | NO citation — the deck action, `strM_invariant`, `dM_equivariant` and the coequalising clause, all consequences of the fine moduli property.  `X0.lean`'s `exists_deckAction_of_torsion` proves the `Γ₀` analogue except for the coequalising clause. | any base scheme `S` |
-| `geometricComponents_of_gamma1GITPresentation` | Katz-Mazur 8.1.1 + Deligne-Rapoport IV.5.5: `Spec A` nonempty, reduced, components permuted transitively by `G` | any `K`, `char K ∤ N` |
 | `smooth_coarseRing_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is a smooth `K`-algebra of Krull dimension one.  (`locallyStandardSmooth_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28, together with the release's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.) | any `K`, `char K ∤ N` |
+| `exists_gamma1Datum_fieldExtension` | an elliptic curve with a point of exact order `N` over SOME extension of `K` — no modular curves in it.  (`geometricComponents_of_gamma1GITPresentation` is PROVEN over this row and the two below it, 2026-07-28, and `nontrivial_A_of_gamma1GITPresentation` over this one alone.) | any `K`, `char K ∤ N` |
+| `isReduced_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1: `Spec A` is smooth over `K`, hence reduced | any `K`, `char K ∤ N` |
+| `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
 | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
 | `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
@@ -457,8 +459,8 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `exists_descendClassify` (PROVEN) | `exists_descendClassifyGamma1` (PROVEN) |
 | `exists_gamma0Datum_baseChange` (PROVEN) | `exists_gamma1Datum_baseChange` (PROVEN) |
 | `gamma0Atlas_isIso` + `isAffine_of_gamma0Atlas` (PROVEN) | not needed — see the section comment on the geometry below |
-| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (leaf); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
-| `smoothOfRelativeDimension_of_gamma0GITPresentation` (PROVEN over `isRegularRing_coarseRing_of_gamma0GITPresentation`) | `smooth_coarseRing_of_gamma1GITPresentation` (leaf); `locallyStandardSmooth_of_` and `smoothOfRelativeDimension_of_gamma1GITPresentation` are both PROVEN over it.  The `Γ₀` row goes through the PERFECT-field bridge and this one cannot — see the leaf's docstring |
+| `isDomain_of_gamma0GITPresentation` (leaf) | `geometricComponents_of_gamma1GITPresentation` (PROVEN 2026-07-28 over three leaves — `exists_gamma1Datum_fieldExtension`, `isReduced_A_of_gamma1GITPresentation`, `transitiveMinimalPrimes_of_gamma1GITPresentation`); `isDomain_of_gamma1GITPresentation` is PROVEN over it |
+| `smoothOfRelativeDimension_of_gamma0GITPresentation` (leaf) | `locallyStandardSmooth_of_gamma1GITPresentation` (leaf); `smoothOfRelativeDimension_of_gamma1GITPresentation` is PROVEN over it |
 | `geometricallyConnected_of_gamma0GITPresentation` (leaf) | `connectedSpace_tensorProduct_of_gamma1GITPresentation` (leaf); `geometricallyConnected_of_gamma1GITPresentation` is PROVEN over it |
 | `Gamma0AffineModel` / `exists_gamma0AffineModel` (PROVEN) | `Gamma1AffineModel` / `exists_gamma1AffineModel` (PROVEN) |
 
@@ -510,7 +512,21 @@ components" — and the general commutative algebra that turns that into
 `IsDomain B` is `isDomain_of_minimalPrimes_transitive`.  Nothing is
 folded into `Gamma1GITPresentation` itself, for the reason `X0.lean`
 gives: a prover sent at `exists_gamma1GITPresentation` should have to
-build the construction and nothing else. -/
+build the construction and nothing else.
+
+**Split again 2026-07-28.**  `geometricComponents_of_gamma1GITPresentation`
+is now itself PROVEN, over its three conjuncts taken separately, because
+they are three unrelated classical inputs:
+`exists_gamma1Datum_fieldExtension` (an elliptic curve with a point of
+exact order `N` over *some* field — no modular curves in it, and the only
+thing `Nontrivial A` needs), `isReduced_A_of_gamma1GITPresentation`
+(8.2.1, smoothness) and
+`transitiveMinimalPrimes_of_gamma1GITPresentation` (IV.5.5, the
+`det`-surjectivity).  The ROUTE AUDIT on the last of those records why
+neither `Algebra.IsInvariant.exists_smul_of_under_eq` nor an
+existentially-quantified algebra of components cuts it any further, and
+that the honest next step is a Weil-pairing FIELD on
+`Gamma1Rigidification` — the same shape as `coequalises`. -/
 
 /-- **A Katz–Mazur atlas for the `Γ₁(N)`-problem over a base scheme `S`.**
 
@@ -1901,20 +1917,110 @@ theorem isDomain_of_minimalPrimes_transitive
     exact hbp
   exact NoZeroDivisors.to_isDomain B
 
-/-- **The rigidified moduli scheme is nonempty and reduced, and its deck
-group permutes its components transitively** (sorry leaf, cut
-2026-07-27 out of `isDomain_of_gamma1GITPresentation`) — Katz–Mazur
-(8.1.1) plus Deligne–Rapoport IV.5.5.
+/-- **`[Γ₁(N)]` is nonempty over SOME field extension of `K`** (sorry
+leaf, cut 2026-07-28 out of `geometricComponents_of_gamma1GITPresentation`)
+— an elliptic curve carrying a point of exact order `N`, over some
+extension field of `K`.
+
+TRUE and elementary, and much weaker than anything about modular curves:
+`L := AlgebraicClosure K` already works.  Over an algebraically closed
+field of characteristic prime to `N` one has `E[N] ≅ (ℤ/N)²` for every
+elliptic curve `E`, so a point of exact order `N` exists; and its order
+does not change under further base change to an algebraically closed
+field, which is what `PointOfExactOrder.geom_order` asks.  Concretely one
+may also take the Tate normal form
+`y² + (1 − c)xy − by = x³ − bx²` with the point `(0, 0)`, whose exact
+order is `N` on the level-`N` locus.
+
+This is deliberately the WEAKEST form that its consumer
+`nontrivial_A_of_gamma1GITPresentation` needs: no algebraic closedness,
+no rationality over `K` itself — and rationality over `K` would be FALSE,
+since `Y_1(N)(K)` can be empty (`isEmpty_gamma1Datum_finiteField` is the
+extreme case, and the whole point of this module is that `Y_1(25)(ℚ)`
+contains no non-cuspidal point).
+
+Note the ORDER of quantifiers: `L` may depend on `K` and `N`.  Nothing
+downstream sees `L`; it is consumed immediately by `classify` and
+discarded.
+
+The hypotheses are REQUIRED: at `char K ∣ N` the group scheme `E[N]` is
+not étale and a section of exact order `N` need not exist at all (at
+`N = p = char K` and `E` supersingular there is none over any
+extension). -/
+theorem exists_gamma1Datum_fieldExtension (N : ℕ) (_hN : 4 ≤ N)
+    (K : Type) [Field K] (_hchar : ¬ ringChar K ∣ N) :
+    ∃ (L : Type) (_ : Field L) (_ : Algebra K L),
+      Nonempty (Gamma1Datum N (Spec (CommRingCat.of L))) :=
+  sorry
+
+/-- **The rigidified moduli scheme is nonempty** (PROVEN 2026-07-28 over
+`exists_gamma1Datum_fieldExtension`; formerly the first conjunct of
+`geometricComponents_of_gamma1GITPresentation`).
+
+No moduli geometry is used, only the CLASSIFYING map: a `Γ₁(N)`-datum
+over `Spec L` for a field extension `L/K` is an `S`-scheme carrying a
+datum, so `P.classify` returns a morphism `Spec L ⟶ Spec B`, i.e. (by
+full faithfulness of `Spec`, through `Spec.preimage`) a ring map
+`B →+* L`.  A ring map into a nontrivial ring has nontrivial domain
+(`RingHom.domain_nontrivial`), so `B` is nontrivial, and
+`injective_algebraMap` carries that up to `A`.
+
+The same argument through `cover` would work — `cover` produces a flat
+SURJECTIVE `p : T' ⟶ Spec L` and a rigidification `m : T' ⟶ Spec A` — but
+it needs surjectivity of `p` on underlying spaces to see `T' ≠ ∅`, where
+the `classify` route needs nothing at all. -/
+theorem nontrivial_A_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_A; Nontrivial P.A := by
+  letI := P.commRing_A
+  letI := P.commRing_B
+  letI := P.algebra_BA
+  obtain ⟨L, _, _, ⟨d⟩⟩ := exists_gamma1Datum_fieldExtension N hN K hchar
+  -- the classifying map of `d`, a morphism `Spec L ⟶ Spec B`
+  have c : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of P.B) :=
+    (P.classify (Spec.map (CommRingCat.ofHom (algebraMap K L))) d).1
+  haveI : Nontrivial P.B := (Spec.preimage c).hom.domain_nontrivial
+  exact P.injective_algebraMap.nontrivial
+
+/-- **The rigidified moduli scheme is reduced** (sorry leaf, cut
+2026-07-28 out of `geometricComponents_of_gamma1GITPresentation`) —
+Katz–Mazur 8.2.1.
+
+TRUE and classical: `𝔐([Γ₁(N)], [Γ(n)])` is SMOOTH over `ℤ[1/Nn]`
+(8.2.1), hence smooth over every field `K` in which `N` is invertible,
+and a smooth algebra over a field is reduced (it is even regular).  This
+is the SAME geometric input as `locallyStandardSmooth_of_gamma1GITPresentation`
+— which states smoothness of the invariants `B` rather than of `A` — and
+whoever proves either of them should look at the other: over a field, `A`
+smooth gives `B = A^G` normal by descent, and the two leaves are two
+readings of Katz–Mazur 8.2.1.
+
+Reducedness rather than smoothness is stated because reducedness is all
+that `isDomain_of_minimalPrimes_transitive` consumes; asking for
+`IsSmooth` here would make the leaf carry 8.2.1 a second time.
+
+The hypotheses are REQUIRED: at `char K ∣ N` the moduli problem is not
+smooth (`[Γ₁(p)]` in characteristic `p` is not étale over the
+`j`-line) and `Spec A` acquires nilpotents. -/
+theorem isReduced_A_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+    {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_A; IsReduced P.A :=
+  sorry
+
+/-- **The deck group permutes the components of the rigidified moduli
+scheme transitively** (sorry leaf, cut 2026-07-28 out of
+`geometricComponents_of_gamma1GITPresentation`) — Deligne–Rapoport
+IV.5.5, Katz–Mazur (8.1.1).
 
 TRUE and classical, and this is the form of IV.5.5 that survives base
-change to an arbitrary `K`.  `Spec A = 𝔐([Γ₁(N)], [Γ(n)])` is smooth
-over `K` (Katz–Mazur 8.2.1), hence reduced, and it is nonempty because
-`[Γ₁(N)], [Γ(n)]` is representable with nonempty coarse space when
-`char K ∤ N`.  Its geometric components are indexed by the value of the
-Weil pairing on the level-`n` structure, i.e. by the primitive `n`-th
-roots of unity in `K`, and `G = GL₂(ℤ/n)` moves that value through
-`det`, which is SURJECTIVE onto `(ℤ/n)ˣ` — so the action on components,
-equivalently on `minimalPrimes A`, is transitive.
+change to an arbitrary `K`.  The geometric components of
+`𝔐([Γ₁(N)], [Γ(n)])` are indexed by the value of the Weil pairing on the
+level-`n` structure, i.e. by the primitive `n`-th roots of unity, and
+`G = GL₂(ℤ/n)` moves that value through `det`, which is SURJECTIVE onto
+`(ℤ/n)ˣ` — so the action on components, equivalently on
+`minimalPrimes A`, is transitive.
 
 **Why this rather than `IsDomain A`.**  `isDomain_of_gamma0Atlas`'s
 docstring proposes folding `IsDomain A` into the presentation and
@@ -1928,17 +2034,106 @@ The transitivity clause is phrased with `Ideal.comap` rather than a
 pointwise ideal action because that is the form the proof consumes and
 it needs no `Pointwise` scope: `q = comap σ p` says `x ∈ q ↔ σ • x ∈ p`.
 
+## ROUTE AUDIT (2026-07-28) — two routes CLOSED, and how to refute each
+
+The two ring-level cuts that suggest themselves both fail, for reasons
+that are cheap to re-check; a prover should not spend a cycle
+rediscovering them.
+
+**(1) The mathlib invariant-theory route is CIRCULAR with the only
+consumer.**  Mathlib has exactly the transitivity statement one wants —
+`Algebra.IsInvariant.exists_smul_of_under_eq`
+(`Mathlib/RingTheory/Invariant/Basic.lean`): under `Algebra.IsInvariant`,
+`Finite G` and `SMulCommClass`, `G` is transitive on the primes of `A`
+lying over a FIXED prime of `B`.  `Gamma1GITPresentation` carries every
+one of those hypotheses, so the leaf reduces to
+
+    all `p ∈ minimalPrimes A` have the same `Ideal.under B p`.
+
+That residue is not a smaller leaf — it is EQUIVALENT to `IsDomain B`,
+which is what this leaf exists to prove.  Indeed, if the common value is
+`q` then `q = ⋂_{p} (p ∩ B) = (⋂_{p} p) ∩ B = 0` (`A` reduced, so
+`⋂ minimalPrimes A = nilradical A = 0`), so `⊥` is prime in `B`;
+conversely `isDomain_of_minimalPrimes_transitive` runs the implication
+back.  Taking this route therefore deletes the cut instead of advancing
+it, and `isDomain_invariants_of_gamma1GITPresentation` would become a
+cycle.  *Refuting check*: exhibit a hypothesis strictly weaker than
+`IsDomain B` from which `Algebra.IsInvariant.exists_smul_of_under_eq`
+still gives the conclusion.
+
+(Useful all the same, and free: `Algebra.IsInvariant.isIntegral` gives
+`Algebra.IsIntegral B A` for this `P` with no extra hypotheses.)
+
+**(2) The component-algebra route needs the cyclotomic datum as
+STRUCTURE, not as an existential.**  The natural transcription of the
+paragraph above is: a `G`-equivariant `ι : C →+* A` from the algebra of
+"constants", inducing an equivariant bijection
+`minimalPrimes A ≃ minimalPrimes C`, with `G` transitive downstairs.
+Written as a bare `∃ C`, it is discharged by `C := A`, `ι := id`, and
+buys nothing.  Written with `C` pinned as a finite `K`-algebra
+(`Module.Finite K C`, i.e. `Spec C` the étale algebra of components) it
+does carry content — but it is then STRICTLY STRONGER than this leaf and
+FALSE for a general reduced `A` with transitive `G`:
+
+> `A = K[x, y]/(xy)`, `G = ℤ/2` swapping `x` and `y`.  `A` is reduced and
+> nontrivial, `minimalPrimes A = {(x), (y)}` and `σ` swaps them, so the
+> conclusion of this leaf HOLDS.  But any `C` as above would have two
+> distinct minimal primes and be Artinian, hence would contain an
+> idempotent `e` lying in one and not the other; `ι e` would then be a
+> nontrivial idempotent of the CONNECTED ring `A`, and there is none.
+
+So the component algebra exists only once `A` is known to be normal —
+i.e. only downstream of `isReduced_A_of_gamma1GITPresentation`
+strengthened to smoothness, or with the Weil-pairing map carried as a
+FIELD of `Gamma1Rigidification` / `Gamma1GITPresentation` (the level-`n`
+torsor and its `det`-equivariant pairing, which is what Katz–Mazur
+(8.1.1) actually constructs).  That structural repair is the recommended
+route, and it is the same shape as the `coequalises` field: a clause the
+construction supplies for free and that no abstract presentation implies.
+*Refuting check*: produce a finite `K`-subalgebra of the above `A`
+separating `(x)` from `(y)`.
+
 The hypotheses are REQUIRED: at `N = 0`, or at `char K ∣ N`, the moduli
 problem is not representable by a nonempty smooth scheme and
-`Nontrivial A` fails. -/
-theorem geometricComponents_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
+`minimalPrimes A` is not the component set of anything. -/
+theorem transitiveMinimalPrimes_of_gamma1GITPresentation {N : ℕ} (_hN : 4 ≤ N)
     {K : Type} [Field K] (_hchar : ¬ ringChar K ∣ N)
+    (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
+    letI := P.commRing_A; letI := P.group_G; letI := P.action_GA;
+    ∀ p ∈ minimalPrimes P.A, ∀ q ∈ minimalPrimes P.A,
+      ∃ σ : P.G, Ideal.comap (MulSemiringAction.toRingHom P.G P.A σ) p = q :=
+  sorry
+
+/-- **The rigidified moduli scheme is nonempty and reduced, and its deck
+group permutes its components transitively** (PROVEN 2026-07-28 over the
+three leaves above; formerly a sorry leaf itself, cut 2026-07-27 out of
+`isDomain_of_gamma1GITPresentation`) — Katz–Mazur (8.1.1) plus
+Deligne–Rapoport IV.5.5.
+
+The three conjuncts were split because they are three DIFFERENT classical
+inputs with three different difficulties, and bundling them made the leaf
+undispatchable:
+
+| conjunct | where it went | theory |
+|---|---|---|
+| `Nontrivial A` | PROVEN over `exists_gamma1Datum_fieldExtension` | an elliptic curve with a point of exact order `N` over *some* field — no modular curves at all |
+| `IsReduced A` | `isReduced_A_of_gamma1GITPresentation` | Katz–Mazur 8.2.1, smoothness |
+| transitivity | `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne–Rapoport IV.5.5, the `det`-surjectivity |
+
+Each split is a CONJUNCT of the original statement, so no faithfulness
+question arises: the three together are the original, verbatim.  The
+ROUTE AUDIT on the transitivity leaf records the two ring-level cuts that
+do NOT work below it. -/
+theorem geometricComponents_of_gamma1GITPresentation {N : ℕ} (hN : 4 ≤ N)
+    {K : Type} [Field K] (hchar : ¬ ringChar K ∣ N)
     (P : Gamma1GITPresentation N (Spec (CommRingCat.of K))) :
     letI := P.commRing_A; letI := P.group_G; letI := P.action_GA;
     Nontrivial P.A ∧ IsReduced P.A ∧
       ∀ p ∈ minimalPrimes P.A, ∀ q ∈ minimalPrimes P.A,
         ∃ σ : P.G, Ideal.comap (MulSemiringAction.toRingHom P.G P.A σ) p = q :=
-  sorry
+  ⟨nontrivial_A_of_gamma1GITPresentation hN hchar P,
+    isReduced_A_of_gamma1GITPresentation hN hchar P,
+    transitiveMinimalPrimes_of_gamma1GITPresentation hN hchar P⟩
 
 /-- **The ring of invariants is a DOMAIN** (PROVEN 2026-07-27 over
 `geometricComponents_of_gamma1GITPresentation` and
