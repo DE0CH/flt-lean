@@ -6233,12 +6233,44 @@ them.
 Consequence worth stating, because it is the price of the missing pin:
 this leaf is strictly harder than `exists_isotypicQuotient_of_isWeightTwoEigenform`
 alone, and closing it would be most of the way to closing that one too.
-The repair that would make the two cuts identical is to give
+
+**DO NOT "HARMONISE" THIS LEAF WITH ITS `Γ₀` COUNTERPART — THAT COUNTERPART
+IS FALSE** (recorded 2026-07-28, from a refutation found on the `Γ₀` side
+after this cut was taken).  An earlier version of this paragraph proposed,
+as the repair that would make the two cuts identical, giving
 `IsHeckeIsotypicDecompositionGamma1` a `heckeModuli` field over a `Γ₁`
-analogue of `IsGamma0Isogeny` — a moduli description of `T_ℓ` on `Y_1(N)`
-in terms of `(E, P) ↦ ∑_D (E/D, P + D)`.  That is a cut-level repair of
-the structure, not of this leaf, and it must not be combined with any
-other change to these statements in the same edit.
+analogue of `IsGamma0Isogeny`, and then taking `T` as a hypothesis here the
+way the `Γ₀` leaf does.  **Following that advice would import a falsity.**
+
+The defect is an ARITY GAP, and it is worth stating precisely because it is
+invisible unless the two ranges are compared side by side.
+`IsModularHeckeAction` pins `T` only at **primes `ℓ` with `ℓ ∤ N`**, whereas
+`IsIsotypicQuotient`'s `isotypic` and `equivariant` constrain **every `n`
+coprime to `N`**.  Composite `n` coprime to `N` — `n = 4` at `N = 37`, say —
+are therefore constrained by the conclusion and left entirely free by the
+pin, so a caller may hand over a `T` that is genuine at primes and junk at
+composite arities.  Both `exists_isotypicQuotient_of_isWeightTwoEigenform`
+and `exists_heckeIsotypicDecomposition_of_modularHeckeAction` are FALSE for
+that reason, refuted at `N = 37` with a family that
+`exists_modularHeckeAction` itself constructs.
+
+**THIS LEAF IS IMMUNE, AND THE IMMUNITY IS STRUCTURAL RATHER THAN LUCKY.**
+`T` is quantified EXISTENTIALLY here and in the sibling below, and the `∃ T`
+sits OUTSIDE the `∀ χ f a` — one action serving every factor, chosen by the
+prover rather than supplied by a caller.  A prover picks the genuine Hecke
+action, which satisfies `isotypic` and `equivariant` at every `n` coprime to
+`N` and not merely at primes, so there is no arity at which junk can enter.
+This is the same fact as the `T n := 𝟙 J` refutation two paragraphs above,
+seen from the other side: unpinned `T` as an INPUT is what makes a statement
+false, and unpinned `T` as an OUTPUT is what makes one true.
+
+So if a `Γ₁` moduli pin is built later, the thing to check FIRST is that its
+arity range matches `isotypic`/`equivariant` exactly — every `n` coprime to
+`N`, not just the primes — or else that the structure's own ranges are
+narrowed to match it.  And it must not be combined with any other change to
+these statements in the same edit: two individually-correct edits to one
+leaf have made a statement false in this development before, which is
+precisely what happened on the `Γ₀` side here.
 
 **`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE**, and the
 witness is `X0.lean`'s, unchanged.  At level `0` every prime divides `N`,
@@ -6409,7 +6441,19 @@ must quantify `T` existentially and thereby absorbs
 `exists_modularHeckeAction`'s job.
 
 `IsIsotypicQuotient` is reused verbatim from `X0.lean` — it is
-shape-free — so this transport adds no structure. -/
+shape-free — so this transport adds no structure.
+
+**THE `Γ₀` CHAIN NAMED ABOVE IS A MAP OF THE TERRITORY, NOT A MODEL TO
+COPY** (2026-07-28).  Two of its links —
+`exists_isotypicQuotient_of_isWeightTwoEigenform` and
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` — were refuted
+the same day, on an ARITY GAP between the `heckeModuli` pin (primes
+`ℓ ∤ N` only) and the isotypy fields (every `n` coprime to `N`).  The `Γ₁`
+cut below is unaffected because it quantifies `T` existentially, with the
+`∃ T` outside the `∀ χ f a`; the full argument is on
+`exists_heckeAction_isotypicQuotients_gamma1`.  Anyone tempted to bring
+the two cuts into line should move the `Γ₀` one toward this shape, not
+this one toward the `Γ₀` shape. -/
 theorem exists_heckeIsotypicDecomposition_gamma1 (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (h : ModularLevelShape.IsCompactification .gamma1 N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -6454,7 +6498,17 @@ such field, so the swap survives here and the sharpening is still blocked
 on the `Γ₁` side.  **The repair is to build the `Γ₁` pin** — a
 `ModularLevelShape`-shaped or `Γ₁`-specific analogue of `IsGamma0Isogeny`
 with `(E, P) ↦ ∑_D (E/D, P + D)` — and then to sharpen this leaf in a
-SEPARATE edit with its own faithfulness audit.  Do not do both at once:
+SEPARATE edit with its own faithfulness audit.
+
+**BEFORE BUILDING THAT PIN, READ THE ARITY-GAP WARNING** on
+`exists_heckeAction_isotypicQuotients_gamma1` above.  `IsModularHeckeAction`
+constrains `T` only at PRIMES `ℓ ∤ N`, while the isotypy fields it is meant
+to support range over EVERY `n` coprime to `N`; that mismatch is what made
+`exists_isotypicQuotient_of_isWeightTwoEigenform` and
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` FALSE on the `Γ₀`
+side (refuted at `N = 37`, 2026-07-28).  A `Γ₁` pin copied at the `Γ₀` arity
+range would reproduce that falsity here, and it would do so while looking
+like a faithful transport.  Do not do both at once:
 two individually-correct edits to one statement have made a leaf false in
 this development before.
 
