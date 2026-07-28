@@ -1,9 +1,17 @@
 module
 
 /-
-Descent.lean — own work for the Fermat project (not vendored: neither
-`Mathlib` nor `~/cs/FLT` contains a descent theorem, a height function or
-any form of the Mordell–Weil theorem).
+Descent.lean — own work for the Fermat project.
+
+**THE PARENTHETICAL THAT USED TO STAND HERE IS FALSE — see the
+CORRECTION section at the end of this docstring before using or
+extending this module.**  It read: "not vendored: neither `Mathlib` nor
+`~/cs/FLT` contains a descent theorem, a height function or any form of
+the Mordell–Weil theorem".  Two of those three clauses are wrong at pin
+`a3364fa`: mathlib has `Mathlib/GroupTheory/Descent.lean` (the descent
+theorem, in three strengths) and `Mathlib/NumberTheory/Height/` (six
+modules of height theory, Northcott included).  Only the clause about
+`~/cs/FLT`, and the clause about the Mordell–Weil theorem itself, survive.
 
 # The descent theorem
 
@@ -45,6 +53,12 @@ The first two are analytic/arithmetic and are open leaves elsewhere in
 this development.  The third is pure group theory over an ordered field
 and needs none of that machinery, so it is proven here once, for an
 arbitrary `AddCommGroup`, and reused.
+
+**Both halves of that paragraph need the CORRECTION below.**  The height
+theory is NOT an open leaf — mathlib has it, and the only genuinely
+missing pieces on that axis are ampleness of line bundles and the theorem
+of the cube.  And the descent argument is not exclusive to this module
+either: mathlib proves it too.
 
 ## The proof
 
@@ -100,6 +114,99 @@ Both are pure group theory, and both exist to shrink what the two
   and so is every cohomology group built from it.
 
 Everything in this module is PROVEN; it contains no `sorry`.
+
+## CORRECTION (2026-07-28): mathlib HAS the descent theorem AND the heights
+
+This module was written against a survey that said neither existed.  Both
+claims are false at pin `a3364fa`, and both were refuted by grepping for
+the right names rather than for `MordellWeil` / `NeronTateHeight` /
+`WeilHeight` — none of which occurs anywhere in mathlib, which is exactly
+why the absence reads as real.
+
+**`Mathlib/GroupTheory/Descent.lean` (Michael Stoll) is the descent
+theorem**, in three strengths, all PROVEN upstream:
+
+* `AddGroup.fg_of_descent` — for an endomorphism `f` carrying subgroups
+  into themselves, a finite `s` surjecting onto `G ⧸ f(G)`, a height with
+  `h x ≤ a * h (g + x) + c`, `b * h x - c ≤ h (f x)`, `[Northcott h]` and
+  `0 ≤ a < b`;
+* `AddCommGroup.fg_of_descent` — the `n`-th power endomorphism version,
+  with a per-element constant `c : G → ℝ`;
+* `AddCommGroup.fg_of_descent'` — the **approximate parallelogram law**
+  version: `G ⧸ 2G` of finite index, `0 ≤ h`,
+  `|h (x + y) + h (x - y) - 2 * (h x + h y)| ≤ C`, `[Northcott h]` ⟹
+  `AddGroup.FG G`.  Its own docstring calls itself "one of the main
+  ingredients of the standard proof of the **Mordell-Weil Theorem**".
+
+Read across the dictionary, that file subsumes this one almost exactly:
+
+| here | upstream |
+|---|---|
+| `DescentHeight` + `fg_of_descentHeight` | `AddCommGroup.fg_of_descent` (`a = 2`, `b = m²`, `n = m`) |
+| `WeilHeight` + `toDescentHeight` + `fg_of_descentHeight` | `AddCommGroup.fg_of_descent'` |
+
+**Two things here are NOT upstream, and they are the reason this module
+is not simply deleted:**
+
+1. `exists_lowerBound_of_northcott`, and with it the fact that
+   `WeilHeight` needs **no nonnegativity hypothesis**.  Mathlib's
+   `fg_of_descent'` assumes `H₂ : ∀ x, 0 ≤ h x`; `WeilHeight` does not,
+   because Northcott already forces a lower bound.  So `WeilHeight` is
+   strictly the weaker ask of a producer, which matters:
+   `IntegralCoordinates.toWeilHeight` would otherwise have to prove
+   `0 ≤ intHeight` separately (it happens to be true, since
+   `intHeight v = log (1 + ∑ |v i|) ≥ log 1 = 0`, so this is a
+   convenience rather than a necessity).
+2. `finite_quotient_nsmul_of_prime` / `finite_quotient_nsmul_mul` — the
+   reduction of weak Mordell–Weil from a general `n` to the primes.
+   Nothing upstream does this.
+
+Upstream also has `AddCommGroup.finite_torsion_of_descent'` (the torsion
+subgroup is finite under the parallelogram law alone, with **no** `G/2G`
+hypothesis), which has no analogue here and is worth knowing about.
+
+**`Mathlib/NumberTheory/Height/` is the theory of heights** — six
+modules: `Basic`, `Northcott`, `NumberField`, `Projectivization`,
+`MvPolynomial`, `EllipticCurve`.  `Height.mulHeight` / `logHeight` on
+tuples over any field with `Height.AdmissibleAbsValues`; that instance
+holds for **every number field**, hence for `ℚ`; Northcott as a genuine
+instance (`instance : Northcott (mulHeight₁ (K := K))`,
+`Height/NumberField.lean:393`, and `Northcott (logHeight₁ (K := K))`
+derived from it); `Rat.logHeight_eq_max_abs_of_gcd_eq_one`;
+`Projectivization.mulHeight` / `logHeight`, well defined on projective
+space; and the height machine for a family of homogeneous forms in BOTH
+directions, `Height.logHeight_eval_le'` and `Height.logHeight_eval_ge'`.
+
+`Height/EllipticCurve.lean` runs the elliptic-curve case in four lines
+(`abs_logHeight_addSubMap_sub_two_mul_logHeight_le`), and is the model to
+copy for anyone assembling a `WeilHeight` on `E(ℚ)`.
+
+**What IS still genuinely absent, so this correction is not read too
+widely:**
+
+* the **canonical (Néron–Tate) height** — mathlib has only the naive
+  height; `canonicalHeight` and `neronTate` return nothing;
+* the **naive height on an elliptic curve as a function on points**, and
+  the approximate parallelogram law for it: `Height/EllipticCurve.lean`
+  lists all three as `TODO`, and supplies only the morphism bound above;
+* **Northcott on `Projectivization`** — `Height/Northcott.lean` lists it
+  as `TODO`;
+* **ampleness of line bundles and the theorem of the cube**
+  (`grep -rn "TheoremOfTheCube\|VeryAmple\|IsAmple"` finds nothing in
+  mathlib), which is what
+  `exists_segreCoordinates_of_abelianScheme` in `ModularCurve/X0.lean`
+  still carries;
+* **weak Mordell–Weil** in any form, and the Mordell–Weil theorem itself;
+* everything in `~/cs/FLT`: it really does have no height material at
+  all (`grep -rlniE 'mulHeight|logHeight|northcott|weil height'` over the
+  whole tree returns nothing), so that clause of the original note was
+  right.
+
+Nothing in this module is wrong or wasted — it is what the rest of the
+development consumes, and it is proven — but a reader must not conclude
+from the text above that these theories are missing upstream.  Companion
+corrections: `Fermat/FLT/Mathlib/NumberTheory/IntegralHeight.lean` and
+`Fermat/FLT/Mathlib/NumberTheory/SegreHeight.lean`.
 -/
 
 public import Mathlib.GroupTheory.Finiteness
@@ -151,6 +258,93 @@ structure DescentHeight (A : Type*) [AddCommGroup A] where
   double : ∃ C : ℝ, ∀ P : A, (m : ℝ) ^ 2 * height P ≤ height (m • P) + C
   /-- **(iii)** every set `{P | height P ≤ C}` is finite -/
   northcott : Northcott height
+
+/-- **A quasi-parallelogram height — what the classical "height machine"
+actually produces.**
+
+`DescentHeight` is the hypothesis of Silverman's descent theorem, and it
+is stated in the asymmetric form that the *proof* consumes: a translation
+bound, a one-sided quadraticity bound, and a choice of the integer `m`.
+No theory of heights produces those three directly.  What it produces is
+a **single** two-sided estimate, the *approximate parallelogram law*
+
+`|h(P + Q) + h(P − Q) − 2 h(P) − 2 h(Q)| ≤ C`,
+
+for one constant `C` independent of `P` and `Q` — Silverman, *AEC*
+Theorem VIII.6.2 (via the theorem of the cube), Hindry–Silverman
+*Diophantine Geometry* Theorem B.5.1 — together with Northcott's
+theorem.  So this structure is the honest interface between the two
+halves, and `toParallelogramHeight`-style constructions should target it
+rather than `DescentHeight`.
+
+Note what is **not** a field, because it does not have to be:
+
+* there is no `m`; the parallelogram law gives quadraticity at `m = 2`
+  outright, and `2` is the `m` that `toDescentHeight` supplies;
+* there is no lower bound on `height`, and requiring one would be
+  redundant: `northcott` alone forces it, since `{P | height P ≤ 0}` is
+  finite and hence has a minimum.  That is `exists_lowerBound` below.
+
+The `translate` field of `DescentHeight` is exactly where that lower
+bound is needed — the parallelogram law bounds `h(P + Q) + h(P − Q)`,
+and discarding the second summand requires it to be bounded below. -/
+structure ParallelogramHeight (A : Type*) [AddCommGroup A] where
+  /-- the height function -/
+  height : A → ℝ
+  /-- the **approximate parallelogram law**, with one constant for all
+  `P` and `Q` -/
+  parallelogram : ∃ C : ℝ, ∀ P Q : A,
+    |height (P + Q) + height (P - Q) - 2 * height P - 2 * height Q| ≤ C
+  /-- every set `{P | height P ≤ C}` is finite -/
+  northcott : Northcott height
+
+/-- **A Northcott function is bounded below** (PROVEN).
+
+`{P | height P ≤ 0}` is finite, so the height takes only finitely many
+values `≤ 0`; the minimum of those (or `0`, if there are none) is a lower
+bound. -/
+theorem ParallelogramHeight.exists_lowerBound {A : Type*} [AddCommGroup A]
+    (ph : ParallelogramHeight A) : ∃ B : ℝ, ∀ P : A, B ≤ ph.height P := by
+  haveI := ph.northcott
+  have hfin : {P : A | ph.height P ≤ 0}.Finite := Northcott.finite_le 0
+  obtain ⟨B, hB⟩ := (hfin.image ph.height).bddBelow
+  refine ⟨min B 0, fun P => ?_⟩
+  rcases le_or_gt (ph.height P) 0 with h | h
+  · exact (min_le_left _ _).trans (hB ⟨P, h, rfl⟩)
+  · exact (min_le_right _ _).trans h.le
+
+/-- **The parallelogram law supplies the descent hypotheses, with
+`m = 2`** (PROVEN) — pure group theory over `ℝ`, no arithmetic.
+
+* `translate`: the law gives
+  `h(P + Q) ≤ 2 h(P) + 2 h(Q) + C − h(P − Q)`, and `h(P − Q) ≥ B` by
+  `exists_lowerBound`, so `2 * h(Q) + C − B` works as the constant
+  attached to `Q`.
+* `double`: taking `Q = P` makes `P − Q = 0`, so the law reads
+  `|h(2P) + h(0) − 4 h(P)| ≤ C`, whose lower half is exactly
+  `2² · h(P) ≤ h(2 • P) + (h(0) + C)`.
+* `northcott` is carried across unchanged. -/
+def ParallelogramHeight.toDescentHeight {A : Type*} [AddCommGroup A]
+    (ph : ParallelogramHeight A) : DescentHeight A where
+  height := ph.height
+  m := 2
+  two_le := le_rfl
+  translate := by
+    obtain ⟨C, hC⟩ := ph.parallelogram
+    obtain ⟨B, hB⟩ := ph.exists_lowerBound
+    refine fun Q => ⟨2 * ph.height Q + C - B, fun P => ?_⟩
+    have h := (abs_le.mp (hC P Q)).2
+    have hBQ := hB (P - Q)
+    linarith
+  double := by
+    obtain ⟨C, hC⟩ := ph.parallelogram
+    refine ⟨ph.height 0 + C, fun P => ?_⟩
+    have h := (abs_le.mp (hC P P)).1
+    rw [sub_self] at h
+    rw [two_nsmul]
+    push_cast
+    linarith
+  northcott := ph.northcott
 
 /-- **Finiteness of `A / nA` produces a finite set of coset
 representatives** (PROVEN).
