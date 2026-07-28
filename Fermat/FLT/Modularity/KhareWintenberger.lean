@@ -6782,8 +6782,268 @@ theorem nonempty_carayolPackage_of_carayolJacobianPackage
            rank_eigenspace := hrank
            det_frob := hdet }⟩
 
+/-- **STEP 2a″-α — the JACQUET–LANGLANDS DATUM, WITH ITS LEVEL INSIDE
+`badF`** (sorry leaf; CUT 2026-07-28, ROUND-8, out of
+`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` below).
+
+The conclusion is the body of that leaf's `hJL` hypothesis with two clauses
+added: the level datum `𝒮` of the quaternionic eigenform may be taken with
+`𝒮.S` and `𝒮.Q` both contained in `badF`.
+
+**WHY THE TWO CLAUSES ARE OWED, and this is the sharp point of the ROUND-8
+cut.** `hJL` constrains `heckeF` only at places `w` that avoid `badF` AND
+`𝒮.S` AND `𝒮.Q` — the Hecke operator `T D 𝒮 w hwS hwQ` does not even EXIST
+at a place of the level. The consumer's conclusion, by contrast, quantifies
+over every `w ∉ badF`: at such a `w` the package must satisfy `congruence`,
+`pair_frob` and the `θ`-eigenvalue clause of `eigen_idempotent`, and
+`(P w).map ι = (heckeF w).map ψ₃` must hold. So at a place of
+`(𝒮.S ∪ 𝒮.Q) \ badF` the automorphic input says NOTHING while the
+conclusion still says everything. No route through the Hecke algebra can
+close that hole — it is not a matter of working harder, the datum is simply
+absent — and every conclusion-side rearrangement is blocked by the ROUND-7
+EQUIVALENCE AUDIT. Hence this leaf.
+
+**WHY IT COSTS NOTHING — the clause is in an EXISTENTIAL, not a
+hypothesis.** `𝒮` is CHOSEN here, not received: the JL half already returns
+a level of its own making, and `exists_eigenform_of_totallyDefinite_quaternionAlgebra`
+(above) even returns `𝒮.Q = ∅` outright, which gives the second clause for
+free. So no instance of the consumer is deleted, and the consumer's
+signature is BYTE-IDENTICAL to what it was before this cut.
+
+**CORRECTION IN PLACE to the ROUND-4/5 audit block in
+`carayol_threeadic_realization_of_heckePackage`'s docstring, item (7)
+("EXCLUDING THE LEVEL — REJECTED as REDUNDANT").** That verdict is right
+about what it asks — adding `hbadlevel` as a HYPOTHESIS of the consumer
+deletes no instance, because the level of the underlying `π` really is
+supported over `2` and `ℓ`. It was, however, read as "the clause is not
+needed", and that reading is wrong twice over. First, the implication it
+rests on (`hirrF` ⟹ `σ_ℓ ≅ ρ|_{G_F}` by Chebotarev and Brauer–Nesbitt ⟹
+local–global compatibility bounds the level) is a chain of theorems NONE of
+which is in this tree, so it cannot be invoked inside a proof. Second, it
+covers only `𝒮.S`: `𝒮.Q` is the Taylor–Wiles set, an auxiliary choice of
+the level datum with no relation to `π` at all, so as a hypothesis on an
+arbitrary `𝒮` it would genuinely delete instances. Putting both clauses
+into an existential, where `𝒮` is produced, avoids both objections.
+
+Content, i.e. what a prover of this leaf owes: the ROUND-5 argument, plus
+the observation that `𝒮.Q` may be taken empty. `hirrF` gives
+`ρbar|_{G_F}` irreducible, hence `ρ|_{G_F}` irreducible; the compatible
+system `{σ_λ}` of the `π` underlying `heckeF` has `σ_ℓ^{ss} ≅
+(ρ|_{G_F})^{ss}` by Chebotarev and Brauer–Nesbitt against `hmod` (a set of
+places of density `1`), hence `σ_ℓ ≅ ρ|_{G_F}` by irreducibility; `ρ` is
+hardly ramified, so `σ_ℓ` is unramified outside the places over `2` and
+`ℓ`, and local–global compatibility at `w ∤ ℓ` makes `π_w` unramified
+there. The minimal level of the quaternionic transfer is therefore
+supported over `2` and `ℓ`, which `hbad2` and `hbadℓ` place inside `badF`.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_totallyDefinite_heckeCharacter_level_subset_badF
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hJL : ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+    ∃ (D : Type u) (_ : DivisionRing D) (_ : Algebra F D)
+      (_ : _root_.IsQuaternionAlgebra F D)
+      (_ : _root_.IsQuaternionAlgebra.IsTotallyDefinite F D)
+      (_ : _root_.IsQuaternionAlgebra.NumberField.WithRigidification F D)
+      (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+      (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E),
+      (∀ w ∈ 𝒮.S, w ∈ badF) ∧ (∀ w ∈ 𝒮.Q, w ∈ badF) ∧
+      ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ) := by
+  sorry
+
+/-- **STEP 2a″-β — CARAYOL'S THÉORÈME (A), STATED WITHOUT THE `ℓ`-ADIC
+APPARATUS** (sorry leaf; CUT 2026-07-28, ROUND-8, out of
+`exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter` below,
+which is now a PROVEN assembly over this leaf and its sibling
+`exists_totallyDefinite_heckeCharacter_level_subset_badF`).
+
+This is the geometry, and NOTHING ELSE. The parent carries twenty-three
+hypotheses about an `ℓ`-adic representation `ρ`, its residual `ρbar`, the
+reduction map `π`, and three `hbad` exclusions; none of that is Carayol's,
+and all of it is gone here. What is left is exactly the input of Carayol's
+Théorème (A) as transported by Jacquet–Langlands:
+
+* a totally real `F`, a coefficient field `E`, a totally definite
+  rigidified quaternion algebra `D/F`, a level datum `𝒮` and an
+  `E`-algebra character `θ` of `TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮`;
+* `badF` containing the places over `3` (`hbad3`) and the whole level
+  (`hSbad`, `hQbad`);
+* the NORMALISATION of the eigensystem — `heckeF w` monic (`hmonic`) of
+  degree `2` (`hdeg`) with constant coefficient `N(w)` (`hnorm`), i.e.
+  parallel weight `2` and trivial nebentypus — and its trace
+  `(heckeF w).coeff 1 = -θ (T_w)` (`hθ`).
+
+WHAT THE FOUR NORMALISATION CLAUSES BUY, and it is worth stating because it
+is a consistency check on the cut: together they DETERMINE `heckeF w`
+completely at every `w ∉ badF`. It is the monic quadratic
+`X² - θ(T_w)·X + N(w)`. So this leaf has no freedom left in `heckeF`; the
+existential `P` of its conclusion is forced to be the `3`-adic image of that
+polynomial, and the conclusion says exactly "the eigensystem of `θ` is
+realised by a `3`-adic Shimura-curve cohomology package".
+
+WHERE THE DROPPED HYPOTHESES WENT. `hmod` and `hρ` are consumed by the
+parent to PROVE `hmonic`/`hdeg`/`hnorm` — the ROUND-4 audit item (5) of
+`carayol_threeadic_realization_of_heckePackage` asserted these were formal
+consequences of `IsHardlyRamified.det` and `hmod`; that assertion is now
+MACHINE-CHECKED rather than believed. `hbad2`, `hbadℓ`, `hirr` and `hirrF`
+are consumed by the sibling leaf, whose whole content is the ROUND-5
+interlock (`hirrF` is what bounds the level, and the bound is now the
+explicit datum `hSbad`/`hQbad` rather than a prose argument).
+
+**FAITHFULNESS AUDIT (2026-07-28) — WHY NO CUSPIDALITY HYPOTHESIS IS OWED,
+even though Théorème (A) is stated for cuspidal `π`.** The worry is real:
+`HeckeAlgebra D 𝒮` has characters that are NOT cuspidal transfers — the
+CONSTANT function on the definite Shimura set is an eigenform, with the
+Eisenstein eigensystem `a_w = N(w) + 1` (this is recorded, correctly, in
+`exists_eigenform_of_totallyDefinite_quaternionAlgebra`'s docstring). So
+this leaf must be true for those too. It is, and the reason is the ROUND-7
+EQUIVALENCE AUDIT read in the useful direction. By Jacquet–Langlands a
+character of `HeckeAlgebra D 𝒮` is the eigensystem of an automorphic
+representation of `Dˣ`, which is either
+
+* the transfer of a cuspidal `π` on `GL₂/F` of parallel weight `2` — this
+  is Carayol's case, and `σ_λ` is his construction; or
+* one-dimensional, `χ ∘ Nrd` for a Hecke character `χ`, with
+  `a_w = χ(w)·(N(w)+1)` and constant coefficient `χ(w)²·N(w)`. `hnorm`
+  forces `χ² = 1`, and then `τ := χ̃ ⊕ χ̃·χ_cyc` (with `χ̃` the Galois
+  character of `χ` by class field theory) has
+  `charFrob w = (X - χ̃(w))(X - χ̃(w)N(w)) = X² - χ(w)(1+N(w))X + N(w)`,
+  which is the required `P w`; the ROUND-7 witness then inhabits the
+  package from `τ`.
+
+So the leaf is TRUE on the whole of its hypothesis set. Note what does the
+work: `hnorm` is not decoration, it is the clause that kills the
+higher-order-nebentypus characters for which no such `τ` exists. Refuting
+check for this audit: exhibit a character `θ` of `HeckeAlgebra D 𝒮`
+satisfying `hnorm` whose eigensystem is attached to no `2`-dimensional
+`3`-adic representation of `Γ_F` unramified outside `badF`.
+
+AND WHY `hirrF` IS NOT NEEDED HERE, which is the second half of the same
+question. In the parent, `hirrF` has two jobs: the non-Eisenstein condition
+for the integral Hecke-module theory, and the ROUND-5 interlock bounding
+the level. The second is now `hSbad`/`hQbad`. The first is not needed at
+all at this node, because the package is stated over the FIELD `L`: in
+characteristic `0` multiplicity one for `GL₂` is unconditional, and
+freeness of the `λ`-adic cohomology of rank `2` over `𝕋 ⊗ L` does not need
+a residually irreducible eigensystem. `hirrF` would be needed the moment
+this package were restated over an integral `𝒪_λ`, which is exactly the
+`R = 𝕋` axis the ROUND-6 audit left unsearched.
+
+MISSING MACHINERY, so that the next owner knows what is actually being
+asked. Nothing in this tree constructs a Shimura CURVE: `D` here is TOTALLY
+DEFINITE, so its own Shimura variety is a finite set and carries no `H¹`.
+Carayol's object is a SECOND quaternion algebra `D'/F`, split at exactly
+one infinite place, to which `θ` is transported by Jacquet–Langlands, and
+the package's `Vlam` is `H¹(M_K ⊗_F F̄, ℱ_λ)` for the associated curve
+`M_K`. The pieces needed, none of which is at this pin, are: (1) the
+Jacquet–Langlands transfer definite ⟶ indefinite; (2) Shimura curves as
+schemes over `F` with their Hecke correspondences; (3) `λ`-adic étale
+cohomology, with (4) Poincaré duality and its cyclotomic multiplier, and
+(5) the Eichler–Shimura congruence relation from the Frobenius
+factorisation of the correspondence on the special fibre at a good `w`. For
+even `[F : ℚ]` — the case the chain actually uses — `D'` must also ramify
+at a finite place, which forces `π` to be discrete series there; the
+remaining cases are Taylor 1989.
+
+Literature: Carayol, *Sur les représentations `ℓ`-adiques associées aux
+formes modulaires de Hilbert*, Ann. Sci. ÉNS (4) **19** (1986) 409–468,
+Théorème (A) (§0.7), Théorème (B) (§0.9) and the cohomological
+construction of §0.10–0.11; Taylor, *On Galois representations associated
+to Hilbert modular forms*, Invent. Math. **98** (1989); Jacquet–Langlands,
+*Automorphic forms on GL(2)*, LNM **114** (1970), §14–16.
+
+READ THE ROUND-7 EQUIVALENCE AUDIT on `CarayolJacobianPackage` before
+looking for a conclusion-side weakening of this leaf: there is none, and
+the reverse witness is written out there.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_carayolJacobianPackage_of_heckeAlgebraCharacter
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hmonic : ∀ w ∉ badF, (heckeF w).Monic)
+    (hdeg : ∀ w ∉ badF, (heckeF w).natDegree = 2)
+    (hnorm : ∀ w ∉ badF,
+      (heckeF w).coeff 0 = (Ideal.absNorm w.asIdeal : E))
+    (D : Type u) [DivisionRing D] [Algebra F D]
+    [_root_.IsQuaternionAlgebra F D]
+    [_root_.IsQuaternionAlgebra.IsTotallyDefinite F D]
+    [_root_.IsQuaternionAlgebra.NumberField.WithRigidification F D]
+    (p : ℕ) (𝒮 : _root_.TotallyDefiniteQuaternionAlgebra.U₁Data F E p)
+    (θ : _root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra D 𝒮 →ₐ[E] E)
+    (hSbad : ∀ w ∈ 𝒮.S, w ∈ badF) (hQbad : ∀ w ∈ 𝒮.Q, w ∈ badF)
+    (hθ : ∀ (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+        (hwS : w ∉ 𝒮.S) (hwQ : w ∉ 𝒮.Q), w ∉ badF →
+        (heckeF w).coeff 1 =
+          -θ (_root_.TotallyDefiniteQuaternionAlgebra.HeckeAlgebra.T D 𝒮 w hwS hwQ)) :
+    ∃ (L : Type u) (_ : Field L) (_ : Algebra ℚ_[3] L)
+      (_ : Module.Finite ℚ_[3] L),
+      letI : TopologicalSpace L := moduleTopology ℚ_[3] L
+      letI : IsTopologicalRing L :=
+        isTopologicalRing_moduleTopology_of_finite_padic 3 L
+      ∃ (ψ₃ : E →+* AlgebraicClosure ℚ_[3])
+        (ι : L →+* AlgebraicClosure ℚ_[3])
+        (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L),
+        (∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) ∧
+          Nonempty (CarayolJacobianPackage F L badF P) := by
+  sorry
+
 /-- **STEP 2a″ — INHABITATION of the quaternionic Shimura-curve JACOBIAN
-package** (sorry leaf; CUT 2026-07-27 out of
+package** (PROVEN assembly since 2026-07-28, ROUND-8; CUT 2026-07-27 out of
 `exists_threeadicField_realization_of_totallyDefinite_heckeCharacter` as
 `exists_carayolPackage_of_totallyDefinite_heckeCharacter`, and RESTATED one
 level down 2026-07-28 over `CarayolJacobianPackage` — the old name is now the
@@ -6799,6 +7059,40 @@ from those data to the STEP 2a statement is PROVEN above — including
 multiplicity one and the determinant of Frobenius on the `θ`-eigenspace,
 which the 2026-07-27 form of this leaf still asserted; what remains here is
 the geometry.
+
+**ROUND-8 (2026-07-28) — THIS DECLARATION IS NOW A PROVEN ASSEMBLY, AND ITS
+SIGNATURE IS UNCHANGED.** Rounds 6 and 7 searched the CONCLUSION side and
+found nothing (ROUND-7's equivalence audit shows no weakening exists there
+at all). Round 8 searched the HYPOTHESIS side and the PROOF side instead,
+and both moved. The cut is into two leaves plus a machine-checked
+derivation:
+
+* `exists_totallyDefinite_heckeCharacter_level_subset_badF` — the
+  Jacquet–Langlands datum with its LEVEL inside `badF`. This is the datum
+  the old single leaf was silently missing: `hJL` constrains `heckeF` only
+  outside `badF ∪ 𝒮.S ∪ 𝒮.Q`, while the conclusion asserts the package at
+  every `w ∉ badF`, so at a place of `(𝒮.S ∪ 𝒮.Q) \ badF` nothing at all
+  was available. Since `𝒮` is CHOSEN by that leaf rather than received, the
+  clause lives in an existential and deletes no instance here — which is
+  why this signature did not have to change;
+* `exists_carayolJacobianPackage_of_heckeAlgebraCharacter` — Carayol's
+  Théorème (A) with the whole `ℓ`-adic apparatus stripped off: no `ρ`, no
+  `ρbar`, no `π`, no `hmod`, no `hbad2`/`hbadℓ`, no `hirrF`. It takes the
+  eigensystem NORMALISATION (`heckeF w` monic of degree `2` with constant
+  coefficient `N(w)`) as hypotheses, and its faithfulness audit records why
+  no cuspidality clause is owed;
+* the derivation below PROVES that normalisation from `hmod` and
+  `IsHardlyRamified.det`, which the ROUND-4 audit item (5) in
+  `carayol_threeadic_realization_of_heckePackage` asserted was a formal
+  consequence. It now is one, checked by the compiler rather than believed:
+  `charFrob` is monic of degree `2` because it is the charpoly of an
+  endomorphism of a free rank-`2` module, and its constant coefficient is
+  `det ρ(Frob_w) = χ_cyc(Frob_w) = N(w)`; `hmod` transports all three
+  across `ιO`/`ψℓ`, both injective.
+
+Net effect on the citation: what is still cited is Carayol and JL, and
+NOTHING about `ρ` — the ℓ-adic side is now entirely on the sibling leaf and
+on proven code.
 
 **READ THE ROUND-7 EQUIVALENCE AUDIT on `CarayolJacobianPackage` before
 treating the 2026-07-28 restatement as a reduction.** It is a RELOCATION —
@@ -6894,7 +7188,9 @@ left. Axes searched, each with the check that would refute the verdict:
   with the explicit reverse witness and shows no conclusion-side weakening
   exists at this node.)
 
-AXES NOT SEARCHED, so that the next owner starts where this one stopped: the
+AXES NOT SEARCHED BY ROUND 6 — one of the two was searched by ROUND 8 (see
+the ROUND-8 block above: the HYPOTHESIS side moved, and the `ℓ`-adic
+apparatus is now off the geometric leaf entirely). What is still open is the
 CONSUMER side (whether `carayol_threeadic_realization_of_heckePackage` and
 its own consumers could be restructured to need less than a full compatible
 member at `3` — that is a cut-level change above this node and belongs to its
@@ -6964,7 +7260,68 @@ theorem exists_carayolJacobianPackage_of_totallyDefinite_heckeCharacter
         (P : HeightOneSpectrum (NumberField.RingOfIntegers F) → Polynomial L),
         (∀ w ∉ badF, (P w).map ι = (heckeF w).map ψ₃) ∧
           Nonempty (CarayolJacobianPackage F L badF P) := by
-  sorry
+  -- THE NORMALISATION OF THE HECKE POLYNOMIALS, proven rather than assumed:
+  -- `charFrob` is the charpoly of an endomorphism of a free rank-`2` module,
+  -- so it is monic of degree `2`, and its constant coefficient is
+  -- `det ρ(Frob_w) = χ_cyc(Frob_w) = N(w)` by `IsHardlyRamified.det`. `hmod`
+  -- transports the three facts to `heckeF` across `ιO` and `ψℓ`.
+  have hshape : ∀ w ∉ badF, (heckeF w).Monic ∧ (heckeF w).natDegree = 2 ∧
+      (heckeF w).coeff 0 = (Ideal.absNorm w.asIdeal : E) := by
+    intro w hw
+    have hwℓ : (ℓ : NumberField.RingOfIntegers F) ∉ w.asIdeal :=
+      fun h => hw (hbadℓ w h)
+    have hψinj : Function.Injective ψℓ := ψℓ.injective
+    have hmapw := hmod w hw
+    obtain ⟨hmonF, hdegF⟩ :=
+      charFrob_monic_natDegree_two_of_rank_two (K := F) w
+        (ρ.map (algebraMap ℚ F)) hrank
+    have hcoefF : ((ρ.map (algebraMap ℚ F)).charFrob w).coeff 0 =
+        (Ideal.absNorm w.asIdeal : O) := by
+      have hcp : (ρ.map (algebraMap ℚ F)).charFrob w =
+          ((ρ.map (algebraMap ℚ F)) (globalFrob w)).charpoly :=
+        GaloisRep.charFrob_eq_charpoly_globalFrob _ w
+      have hdet0 : ((ρ.map (algebraMap ℚ F)) (globalFrob w)).charpoly.coeff 0 =
+          LinearMap.det ((ρ.map (algebraMap ℚ F)) (globalFrob w)) := by
+        rw [LinearMap.det_eq_sign_charpoly_coeff, Module.finrank_fin_fun,
+          neg_one_sq, one_mul]
+      have hchi :=
+        hρ.det (Field.absoluteGaloisGroup.map (algebraMap ℚ F) (globalFrob w))
+      rw [GaloisRep.det_apply] at hchi
+      have habs :=
+        _root_.Fermat.cyclotomicCharacter_adicArithFrob_absNorm (ℓ := ℓ) F w hwℓ
+      have hgf : (globalFrob w : Field.absoluteGaloisGroup F) =
+          Field.absoluteGaloisGroup.map
+            (algebraMap F (HeightOneSpectrum.adicCompletion F w))
+            (Field.AbsoluteGaloisGroup.adicArithFrob w) := rfl
+      rw [hcp, hdet0, GaloisRep.map_apply, hchi, hgf, habs, map_natCast]
+    have hdegE : (heckeF w).natDegree = 2 := by
+      have h1 : ((heckeF w).map ψℓ).natDegree = (heckeF w).natDegree :=
+        Polynomial.natDegree_map_eq_of_injective hψinj _
+      have h2 : (((ρ.map (algebraMap ℚ F)).charFrob w).map ιO).natDegree =
+          ((ρ.map (algebraMap ℚ F)).charFrob w).natDegree :=
+        Polynomial.natDegree_map_eq_of_injective hιO _
+      rw [← h1, ← hmapw, h2, hdegF]
+    have hc2 : (heckeF w).coeff 2 = 1 := by
+      apply hψinj
+      have hF2 : ((ρ.map (algebraMap ℚ F)).charFrob w).coeff 2 = 1 := by
+        have h := hmonF.coeff_natDegree
+        rwa [hdegF] at h
+      rw [map_one, ← Polynomial.coeff_map, ← hmapw, Polynomial.coeff_map, hF2,
+        map_one]
+    refine ⟨Polynomial.monic_of_natDegree_le_of_coeff_eq_one 2 (le_of_eq hdegE)
+      hc2, hdegE, ?_⟩
+    apply hψinj
+    rw [map_natCast, ← Polynomial.coeff_map, ← hmapw, Polynomial.coeff_map,
+      hcoefF, map_natCast]
+  -- THE JACQUET–LANGLANDS DATUM, with its level inside `badF`
+  obtain ⟨D, hDdiv, hDalg, hDquat, hDdef, hDrig, p, 𝒮, θ, hSbad, hQbad, hθ⟩ :=
+    exists_totallyDefinite_heckeCharacter_level_subset_badF hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
+      ιO hιO hmod hbad2 hbad3 hbadℓ hJL
+  -- CARAYOL'S THÉORÈME (A), with no `ℓ`-adic apparatus left in it
+  exact exists_carayolJacobianPackage_of_heckeAlgebraCharacter F hFtr E badF
+    heckeF hbad3 (fun w hw => (hshape w hw).1) (fun w hw => (hshape w hw).2.1)
+    (fun w hw => (hshape w hw).2.2) D p 𝒮 θ hSbad hQbad hθ
 
 /-- **STEP 2a′ — INHABITATION of the quaternionic Shimura-curve package**
 (PROVEN 2026-07-28: a one-line assembly of the geometric leaf
