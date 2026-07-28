@@ -12399,6 +12399,16 @@ remaining content splits into four disjoint theorems:
   (`det_{𝒪_D} F = N`, not `N²`; consistency check: `deg F = N^g` and
   `Nm_{D/ℚ}(N) = N^{[D:ℚ]} = N^g`).  It is the finite-base counterpart of
   `exists_finset_charFrob_coeff_zero_eq_absNorm_of_tateFrame_mult`.
+  **PROVEN 2026-07-28** over the single geometric leaf
+  `exists_levelWeilPairing_finiteBase` — the pairing itself, stated on the
+  torsion with NO frame, NO matrix and NO determinant, with the transport
+  along the frame (`bilin_alternating_apply_det_apply` plus the unit
+  supplied by perfectness) proven.  That is the same PAIRING axis along
+  which the characteristic-zero half of this file was already cut, at
+  `exists_tateWeilPairing_of_mult` against
+  `det_eq_cyclotomicCharacter_of_tateWeilPairing`, and at a finite base
+  the cyclotomic character degenerates to the constant `N`, so the new
+  leaf needs no `NumberField k` and no `cyclotomicCharacter`.
 * `exists_frobLevelTrace_of_mult_finiteBase` — the TRACE is a single
   global integer of `D`, the SAME one at every level.  Note what the
   content is and is not: a trace in `𝒪_D/Iⁿ` always lifts to `𝒪_D`,
@@ -12407,7 +12417,15 @@ remaining content splits into four disjoint theorems:
   one `t` serving every maximal `I` and every `n` at once — which is
   precisely the compatible-system content, i.e. Weil (Mumford *AV* §19,
   Milne *AV* §V, Tate 1966), and the `∃ t` standing outside the `∀ I, ∀ n`
-  is where it lives.
+  is where it lives.  **PROVEN 2026-07-28** over
+  `exists_globalFrobCharScalar_of_levelScalar_finiteBase`, which is that
+  uniformity with the matrix layer removed: it takes the LEVELWISE
+  characteristic equations `F² + N = s·F` on `A'[Iⁿ]` as a hypothesis —
+  a hypothesis that is NOT free, since producing `s` at one level already
+  consumes the determinant leaf — and returns one global `t`.  Its
+  docstring records the axis it does not search (the endomorphism ring,
+  rigidity, and faithfulness of the `I`-adic representation), which is
+  where any further reduction has to come from.
 * `frobTraceAct_of_torsion_of_mult_finiteBase` — an identity verified on
   all PRIME-TO-`p` torsion holds at EVERY geometric point.  This is the
   one place where the algebraicity of the maps is unavoidable, and it is
@@ -12898,10 +12916,134 @@ theorem exists_levelTateFrame_finiteBase
     exact congrArg Subtype.val (e.map_smul a u)
 
 open _root_.NumberField in
+/-- **AN `𝒪_D`-WEIL PAIRING ON THE `J`-TORSION OF A GEOMETRIC FIBRE, AT
+ONE LEVEL AND WITH A GIVEN GALOIS MULTIPLIER.**
+
+`e` is an `𝒪_D/J`-valued form on the geometric points of the fibre whose
+axioms are asserted only for `J`-torsion arguments — the same modelling
+decision `IsTateWeilPairing`, `IsTateWeilSystem` and
+`DualStruct.weil` already make in this development: the torsion is a
+`Set` carrying a Galois-stability proof, not a bundled module, so a
+function on ALL points with torsion-restricted axioms is what keeps the
+statement free of `letI`-bound instances.  The value of `e` off the
+torsion is unconstrained and no consumer may rely on it.
+
+The clauses, in order: bi-additivity in each variable, ALTERNATING,
+`𝒪_D`-linearity in the first variable through `Ideal.Quotient.mk`,
+`σ`-EQUIVARIANCE WITH MULTIPLIER `χ`, and PERFECTNESS in the weakest form
+a determinant argument needs — some value is a unit.
+
+WHY THE MULTIPLIER IS A PARAMETER AND NOT THE CYCLOTOMIC CHARACTER.  Over
+a NUMBER field the multiplier of the Weil pairing is `χ_cyc(σ)`, and
+`IsTateWeilPairing` says so.  Over a FINITE field there is no
+`NumberField F` instance to hang `cyclotomicCharacter` on, and none is
+needed: the only `σ` this development pairs with is the `N`-power
+Frobenius, whose action on `μ_{J}` is `ζ ↦ ζ^N`, so the multiplier is the
+CONSTANT `N mod J`.  Taking it as a parameter keeps the definition honest
+— it asserts equivariance with the multiplier it is handed, and the
+arithmetic input (that the multiplier is `N`) sits in the leaf that
+produces the pairing, where `hσ` is available to justify it.
+
+`𝒪_D`-linearity is asserted only in the FIRST variable, exactly as in
+`IsTateWeilPairing`; linearity in the second follows from it by skew
+symmetry, which follows in turn from the alternating clause.
+
+NON-VACUITY.  The constant zero form satisfies every clause but the last.
+The perfectness clause is therefore the one carrying the content, and it
+is what makes the multiplier cancellable in
+`det_frobLevelMatrix_eq_natCast_finiteBase`. -/
+def IsLevelWeilPairing {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (J : Ideal (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup F)
+    (χ : NumberField.RingOfIntegers D ⧸ J)
+    (e : GeomFibrePt f x → GeomFibrePt f x → NumberField.RingOfIntegers D ⧸ J) : Prop :=
+  (∀ y ∈ (m.torsion x J).1, ∀ y' ∈ (m.torsion x J).1, ∀ z ∈ (m.torsion x J).1,
+      e (ab.add y y') z = e y z + e y' z) ∧
+  (∀ y ∈ (m.torsion x J).1, ∀ z ∈ (m.torsion x J).1, ∀ z' ∈ (m.torsion x J).1,
+      e y (ab.add z z') = e y z + e y z') ∧
+  (∀ y ∈ (m.torsion x J).1, e y y = 0) ∧
+  (∀ a : NumberField.RingOfIntegers D, ∀ y ∈ (m.torsion x J).1, ∀ z ∈ (m.torsion x J).1,
+      e (m.act a y) z = Ideal.Quotient.mk J a * e y z) ∧
+  (∀ y ∈ (m.torsion x J).1, ∀ z ∈ (m.torsion x J).1,
+      e (ab.galSMul x σ y) (ab.galSMul x σ z) = χ * e y z) ∧
+  (∃ y ∈ (m.torsion x J).1, ∃ z ∈ (m.torsion x J).1, IsUnit (e y z))
+
+open _root_.NumberField in
+/-- **THE `𝒪_D`-WEIL PAIRING ON THE PRIME-TO-`p` TORSION OVER A FINITE
+FIELD** (sorry leaf — Mumford *Abelian Varieties* §16 and §20, Milne
+*Abelian Varieties* §I.13; the GEOMETRIC residue of
+`det_frobLevelMatrix_eq_natCast_finiteBase`, which is PROVEN over it).
+
+For `k` finite with `N` elements, `I` a maximal ideal of `𝒪_D` of residue
+characteristic prime to `N`, and a level frame of `A'[Iⁿ]`, the torsion
+`A'[Iⁿ]` carries an `𝒪_D/Iⁿ`-valued Weil pairing (`IsLevelWeilPairing`)
+whose Galois multiplier at the `N`-power Frobenius `σ` is `N`.
+
+WHY THIS IS THE RIGHT RESIDUE, i.e. why the cut does not collapse.  The
+consumer's statement is about a MATRIX `Φ` in a frame; this one mentions
+no frame coordinates, no matrix and no determinant.  It is the same
+axis along which the characteristic-zero half of this file was already
+cut — `exists_tateWeilPairing_of_mult` (the geometry, stated WITHOUT the
+frame) against `det_eq_cyclotomicCharacter_of_tateWeilPairing` (the
+transport along the frame, PROVEN) — reproduced at a finite base, where
+the cyclotomic character degenerates to the constant `N`.  Everything
+between the pairing and `det Φ = N` is linear algebra over `𝒪_D/Iⁿ` and
+is proven below.
+
+WHERE THE GEOMETRY IS.  Classically the pairing is
+`⋀²_{𝒪_D} A'[Iⁿ] ≅ μ_{Iⁿ} ⊗ 𝔡_D⁻¹𝔠`, obtained from an `𝒪_D`-linear
+polarization (`PolarizationStruct` in `Modularity/AbelianScheme.lean`
+axiomatises exactly this datum, but over a general base and with values
+in roots of unity, so it is not directly the statement here); the
+identification of the target with `𝒪_D/Iⁿ` is a choice of generator of
+`μ_{Iⁿ}(k̄)`, which exists because `q ≠ char k` makes `μ_{Iⁿ}(k̄)` free of
+rank one over `𝒪_D/Iⁿ`, and under it the Galois action `ζ ↦ ζ^N` becomes
+multiplication by `N`.  That last sentence is where `hσ` is consumed and
+it is why the multiplier is `N` and not an unknown character.
+
+FAITHFULNESS.  `hσ` is load-bearing: for `σ = 1` the multiplier is `1`,
+and the statement with multiplier `N` is FALSE for `N ≠ 1` (perfectness
+would then force `N = 1` in `𝒪_D/Iⁿ`, which fails at `n ≥ 1` for any `I`
+dividing a prime dividing `N - 1`… and more simply, the pairing really is
+`σ`-equivariant with multiplier `1` at `σ = 1`).  `hqN` is load-bearing
+for a different reason: at the residue characteristic of `k` the group
+`μ_{qⁿ}(k̄)` is trivial, the target of the pairing collapses, and the
+perfectness clause is false.  `c` and `hc` are carried because
+perfectness needs the torsion to be BIG — for a fibre admitting no
+rank-two frame at level `Iⁿ` there is nothing forcing a unit value — and
+they are exactly what the consumer has in hand. -/
+theorem exists_levelWeilPairing_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (q : ℕ) (hq : q.Prime) (hqN : ¬ q ∣ N)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I) (n : ℕ)
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+      GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))))
+    (hc : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c) :
+    ∃ e : GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))) →
+        NumberField.RingOfIntegers D ⧸ I ^ n,
+      IsLevelWeilPairing m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) σ
+        (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) e :=
+  sorry
+
+open _root_.NumberField in
 /-- **THE DETERMINANT OF FROBENIUS AT A PRIME-TO-`p` LEVEL IS `N`**
-(sorry leaf — the Weil pairing over a finite field; Mumford *Abelian
-Varieties* §16 and §20, Milne *Abelian Varieties* §I.13; see the
-subsection note above for the cut).
+(**PROVEN 2026-07-28** over the single geometric leaf
+`exists_levelWeilPairing_finiteBase` — the Weil pairing over a finite
+field; Mumford *Abelian Varieties* §16 and §20, Milne *Abelian
+Varieties* §I.13; see the subsection note above for the cut).
 
 In any level frame of `A'[Iⁿ]`, the matrix `Φ` of the `N`-power Frobenius
 has `det Φ = N` in `𝒪_D/Iⁿ`.
@@ -12923,7 +13065,19 @@ the frame is harmless — a change of frame conjugates `Φ`, and `det` is a
 conjugation invariant — and `Φ` is pinned by `hΦ` because `c` is
 injective, so there is no junk witness.  `hdim'` is deliberately ABSENT:
 the existence of the frame `c` already forces the relative dimension, and
-this statement is about a frame that is handed to it. -/
+this statement is about a frame that is handed to it.
+
+THE ROUTE OF THE PROOF BELOW.  Read the pairing `e` of
+`exists_levelWeilPairing_finiteBase` in the frame: `E u v := e (c u) (c v)`
+is an alternating `𝒪_D/Iⁿ`-BILINEAR form on `(𝒪_D/Iⁿ)²` — bilinearity is
+the frame's additivity and `𝒪_D`-semilinearity clauses fed through the
+pairing's own clauses, and linearity in the second variable is skew
+symmetry, which the alternating clause supplies.  Then
+`bilin_alternating_apply_det_apply` (PROVEN, above in this file) gives
+`E (Φ u) (Φ v) = det Φ · E u v`, while `hΦ` and the equivariance clause
+give `E (Φ u) (Φ v) = N · E u v`.  The perfectness clause hands a pair
+with `E u₀ v₀` a UNIT, and cancelling it is the whole reason perfectness
+is in `IsLevelWeilPairing`. -/
 theorem det_frobLevelMatrix_eq_natCast_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -12941,14 +13095,182 @@ theorem det_frobLevelMatrix_eq_natCast_finiteBase
     (hc : IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c)
     (Φ : Matrix (Fin 2) (Fin 2) (NumberField.RingOfIntegers D ⧸ I ^ n))
     (hΦ : ∀ u, ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u) = c (Φ.mulVec u)) :
-    Φ.det = Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D) :=
+    Φ.det = Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D) := by
+  classical
+  obtain ⟨e, hbil₁, hbil₂, halt, hlin, hequiv, y₀, hy₀, z₀, hz₀, hunit⟩ :=
+    exists_levelWeilPairing_finiteBase hfin N hN ab' m' σ hσ q hq hqN I hI hqI n c hc
+  obtain ⟨hmem, hadd, -, hsurj, hsmul⟩ := hc
+  -- the pairing read in the frame is an alternating bilinear form on `(𝒪_D/Iⁿ)²`
+  have hEadd₁ : ∀ u u' v, e (c (u + u')) (c v) = e (c u) (c v) + e (c u') (c v) := by
+    intro u u' v
+    rw [hadd u u']
+    exact hbil₁ (c u) (hmem u) (c u') (hmem u') (c v) (hmem v)
+  have hEadd₂ : ∀ u v v', e (c u) (c (v + v')) = e (c u) (c v) + e (c u) (c v') := by
+    intro u v v'
+    rw [hadd v v']
+    exact hbil₂ (c u) (hmem u) (c v) (hmem v) (c v') (hmem v')
+  have hEalt : ∀ u, e (c u) (c u) = 0 := fun u => halt (c u) (hmem u)
+  have hEskew : ∀ u v, e (c u) (c v) = - e (c v) (c u) := by
+    intro u v
+    have h := hEalt (u + v)
+    rw [hEadd₁ u v (u + v), hEadd₂ u u v, hEadd₂ v u v, hEalt u, hEalt v,
+      zero_add, add_zero] at h
+    linear_combination h
+  have hEsmul₁ : ∀ (r : NumberField.RingOfIntegers D ⧸ I ^ n) u v,
+      e (c (r • u)) (c v) = r * e (c u) (c v) := by
+    intro r u v
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective r
+    have hru : (Ideal.Quotient.mk (I ^ n) a • u)
+        = fun i => Ideal.Quotient.mk (I ^ n) a * u i := rfl
+    rw [hru, hsmul a u]
+    exact hlin a (c u) (hmem u) (c v) (hmem v)
+  have hEsmul₂ : ∀ (r : NumberField.RingOfIntegers D ⧸ I ^ n) u v,
+      e (c u) (c (r • v)) = r * e (c u) (c v) := by
+    intro r u v
+    rw [hEskew u (r • v), hEsmul₁ r v u, hEskew u v]
+    ring
+  -- the two computations of `E (Φ u) (Φ v)`
+  have hdetLin : LinearMap.det (Matrix.mulVecLin Φ) = Φ.det := by
+    rw [← Matrix.toLin'_apply', LinearMap.det_toLin']
+  have hEdet : ∀ u v, e (c (Φ.mulVec u)) (c (Φ.mulVec v)) = Φ.det * e (c u) (c v) := by
+    intro u v
+    have h := bilin_alternating_apply_det_apply
+      (LinearMap.mk₂ (NumberField.RingOfIntegers D ⧸ I ^ n)
+        (fun u v : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n => e (c u) (c v))
+        hEadd₁ (fun r u v => by simpa using hEsmul₁ r u v) hEadd₂
+        (fun r u v => by simpa using hEsmul₂ r u v))
+      (fun u => hEalt u) (Matrix.mulVecLin Φ) u v
+    rw [hdetLin] at h
+    simpa using h
+  have hEgal : ∀ u v, e (c (Φ.mulVec u)) (c (Φ.mulVec v))
+      = Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D) * e (c u) (c v) := by
+    intro u v
+    rw [← hΦ u, ← hΦ v]
+    exact hequiv (c u) (hmem u) (c v) (hmem v)
+  -- cancel the unit value supplied by perfectness
+  obtain ⟨u₀, hu₀⟩ := hsurj y₀ hy₀
+  obtain ⟨v₀, hv₀⟩ := hsurj z₀ hz₀
+  have hunit' : IsUnit (e (c u₀) (c v₀)) := by rw [hu₀, hv₀]; exact hunit
+  have hzero : e (c u₀) (c v₀) *
+      (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D) - Φ.det) = 0 := by
+    have h := (hEgal u₀ v₀).symm.trans (hEdet u₀ v₀)
+    linear_combination h
+  exact (sub_eq_zero.mp (hunit'.mul_right_eq_zero.mp hzero)).symm
+
+open _root_.NumberField in
+/-- **THE LEVELWISE FROBENIUS SCALARS COME FROM ONE GLOBAL INTEGER OF
+`D`** (sorry leaf — Weil's rationality theorem; Mumford *Abelian
+Varieties* §19, Milne *Abelian Varieties* §V, Tate 1966.  This is the
+residue of `exists_frobLevelTrace_of_mult_finiteBase`, which is PROVEN
+over it).
+
+HYPOTHESIS.  At every prime-to-`N` level `Iⁿ` at which `A'[Iⁿ]` admits a
+rank-two frame, the Frobenius satisfies its characteristic equation with
+SOME `s ∈ 𝒪_D`:
+
+    F²(y) + N · y = s · F(y)   for all `y ∈ A'[Iⁿ]`,
+
+with `s` allowed to depend on `I` and on `n`.
+
+CONCLUSION.  A SINGLE `t ∈ 𝒪_D` works at every such level at once.
+
+**WHY THIS IS A GENUINE CUT AND NOT A REPACKAGING.**  The hypothesis is
+NOT free.  Producing `s` at one level is exactly Cayley–Hamilton fed by
+`det_frobLevelMatrix_eq_natCast_finiteBase` — the level determinant being
+`N` is what makes the constant coefficient of the level equation the
+right one — so the consumer must already own the Weil PAIRING before it
+can even state this leaf's hypothesis, and this leaf therefore cannot be
+used to bypass the determinant half of the cut.  What it isolates is the
+other half of Weil's theorem: that the level equations, a priori
+unrelated to one another, are the reductions of ONE equation over `𝒪_D`.
+That is the compatible-system content, and it is the only thing left once
+the matrix layer has been stripped away.
+
+**WHAT THE STRIPPING BOUGHT, since it is worth being precise.**  The
+statement of `exists_frobLevelTrace_of_mult_finiteBase` quantifies over
+frames `c` and over the matrices `Φ` they produce; this one mentions
+neither `Φ`, nor `Matrix.trace`, nor any coordinate.  Frames survive only
+as a GATE — they say "this level is rank two" — and every step between
+`Φ.trace` and the displayed equation (Cayley–Hamilton, the determinant,
+the invertibility of `Φ`, the injectivity of `c`) is proven in the
+consumer.  A future proof of this leaf therefore never has to touch a
+matrix: it has to produce an endomorphism-level identity, which is what
+the classical argument does.
+
+**THE AXIS THIS CUT DOES NOT SEARCH, recorded so the next owner does not
+re-search it.**  Every attempt to split the remaining statement further
+ALONG THE LEVEL AND FRAME AXES collapses: modulo the determinant leaf,
+"`tr Φ = t` at every level" is *equivalent* to the displayed equation, so
+no restatement in terms of `Φ`, of `A'[Iⁿ]`, or of the Galois action on
+torsion can be strictly weaker.  Compatibility of the `s` across `n` for
+a FIXED `I` is derivable inside this leaf (`A'[Iⁿ] ⊆ A'[I^{n+1}]` and the
+level-`n` frame makes the annihilator of `A'[Iⁿ]` exactly `Iⁿ`), so the
+irreducible residue is `I`-INDEPENDENCE together with integrality.  The
+axis that WOULD reduce it further, and which has NOT been searched here,
+is the ENDOMORPHISM one: `End_k(A')` as a ring (which needs rigidity —
+a pointed morphism of abelian schemes is additive), the faithfulness of
+the `I`-adic representation `End⁰_D(A') ↪ End_{D_I}(V_I A')`, and
+`𝒪_D = D ∩ End_k(A')`.  With those three stated — not proven — the
+argument is short: `D[F]` is a commutative `D`-subalgebra acting
+`D_I`-linearly on a rank-two module, hence of degree at most two, so `F`
+satisfies a monic quadratic over `D` whose coefficients are integral
+because `F` preserves the lattice `T_I`; the level `s` are its
+reductions.  None of `End_k(A')`, rigidity or Tate-module faithfulness
+exists in this tree, in mathlib (`grep -rli frobenius
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/` is empty) or in
+`~/cs/FLT`, which is why the cut stops here rather than one level lower.
+
+FAITHFULNESS.  `hσ` is load-bearing for the same reason as in the sibling
+leaves: it identifies the Galois action with the Frobenius endomorphism,
+and for a general `σ` no global `t` need exist.  `hdim'` is deliberately
+ABSENT, exactly as in the consumer: the frame gate already forces the
+relative dimension at any level it admits.  The conclusion is gated on
+the SAME frame condition as the hypothesis, so a fibre admitting no frame
+at any level makes both sides vacuous and `t = 0` discharges it — which
+is the honest reading, since without a rank-two structure there is no
+`𝒪_D`-characteristic equation to be rational. -/
+theorem exists_globalFrobCharScalar_of_levelScalar_finiteBase
+    {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
+    {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
+    (ab' : AbelianSchemeStruct f')
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m' : Mult ab' (NumberField.RingOfIntegers D))
+    (σ : Field.absoluteGaloisGroup k)
+    (hσ : ∀ z : AlgebraicClosure k,
+      (σ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k) z = z ^ N)
+    (hlev : ∀ q : ℕ, q.Prime → ¬ q ∣ N →
+      ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        (q : NumberField.RingOfIntegers D) ∈ I → ∀ n : ℕ,
+        ∀ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+            GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c →
+          ∃ s : NumberField.RingOfIntegers D,
+            ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+              ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+                  (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+                (m'.act (N : NumberField.RingOfIntegers D) y)
+                = m'.act s (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y)) :
+    ∃ t : NumberField.RingOfIntegers D,
+      ∀ q : ℕ, q.Prime → ¬ q ∣ N →
+      ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        (q : NumberField.RingOfIntegers D) ∈ I → ∀ n : ℕ,
+        ∀ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+            GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c →
+          ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+            ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+                (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+              (m'.act (N : NumberField.RingOfIntegers D) y)
+              = m'.act t (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) :=
   sorry
 
 open _root_.NumberField in
 /-- **THE TRACE OF FROBENIUS IS ONE GLOBAL INTEGER OF `D`, THE SAME AT
-EVERY LEVEL** (sorry leaf — Weil; Mumford *Abelian Varieties* §19, Milne
-*Abelian Varieties* §V, Tate 1966.  See the subsection note above for the
-cut).
+EVERY LEVEL** (**PROVEN 2026-07-28** over
+`exists_globalFrobCharScalar_of_levelScalar_finiteBase` and
+`det_frobLevelMatrix_eq_natCast_finiteBase` — Weil; Mumford *Abelian
+Varieties* §19, Milne *Abelian Varieties* §V, Tate 1966.  See the
+subsection note above for the cut).
 
 There is a single `t ∈ 𝒪_D` such that for EVERY maximal `I` of residue
 characteristic prime to `#k`, every `n`, every level frame of `A'[Iⁿ]`
@@ -12980,7 +13302,28 @@ is quantified over frames that are handed to it, and the existence of a
 rank-two frame already forces the relative dimension — the leaf is
 vacuously true for a fibre that admits none.  Frame-independence is
 automatic, since a change of frame conjugates `Φ` and `trace` is a
-conjugation invariant. -/
+conjugation invariant.
+
+THE ROUTE OF THE PROOF BELOW, in three steps, all of which are the
+matrix layer and none of which is Weil.
+
+1. `N` is a UNIT in `𝒪_D/Iⁿ` at a prime-to-`N` level: `q ∈ I` and
+   `¬ q ∣ N` make `q` and `N` coprime in `𝒪_D`, so `N ∉ I`, so
+   `I ⊔ (N) = ⊤` by maximality, so `Iⁿ ⊔ (N) = ⊤`, which is a Bézout
+   relation exhibiting the inverse.  Hence `det Φ = N` is a unit and `Φ`
+   is invertible — that is what makes the trace RECOVERABLE from the
+   characteristic equation, and it is why `hqN` cannot be dropped.
+2. The hypothesis of
+   `exists_globalFrobCharScalar_of_levelScalar_finiteBase` is discharged
+   at each level by Cayley–Hamilton
+   (`mulVec_add_det_mul_eq_trace_mul_fin_two`) with the constant
+   coefficient supplied by `det_frobLevelMatrix_eq_natCast_finiteBase`,
+   taking `s` to be any lift of `Φ.trace`; the frame's clauses transport
+   the identity from `(𝒪_D/Iⁿ)²` to `A'[Iⁿ]`.
+3. Conversely the global `t` returned by that leaf gives, at every frame,
+   `(Φ.trace − t) · (Φ *ᵥ u) = 0` for every `u`; taking `u` to run over
+   the standard basis makes `(Φ.trace − t) · Φ i j = 0` for every entry,
+   hence `(Φ.trace − t) · det Φ = 0`, and step 1 cancels the unit. -/
 theorem exists_frobLevelTrace_of_mult_finiteBase
     {k : Type u} [Field k] (hfin : Finite k) (N : ℕ) (hN : Nat.card k = N)
     {A' : Scheme.{u}} {f' : A' ⟶ Spec (CommRingCat.of k)}
@@ -12999,8 +13342,111 @@ theorem exists_frobLevelTrace_of_mult_finiteBase
             IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c →
             ∀ Φ : Matrix (Fin 2) (Fin 2) (NumberField.RingOfIntegers D ⧸ I ^ n),
               (∀ u, ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ (c u) = c (Φ.mulVec u)) →
-              Φ.trace = Ideal.Quotient.mk (I ^ n) t :=
-  sorry
+              Φ.trace = Ideal.Quotient.mk (I ^ n) t := by
+  classical
+  -- STEP 1: `N` is invertible modulo `Iⁿ` at a prime-to-`N` level.
+  have hNunit : ∀ q : ℕ, q.Prime → ¬ q ∣ N →
+      ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        (q : NumberField.RingOfIntegers D) ∈ I → ∀ n : ℕ,
+        IsUnit (Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D)) := by
+    intro q hq hqN I hI hqI n
+    have hcopZ : IsCoprime ((q : ℤ)) ((N : ℤ)) :=
+      Nat.isCoprime_iff_coprime.mpr ((Nat.Prime.coprime_iff_not_dvd hq).mpr hqN)
+    have hcopO : IsCoprime ((q : NumberField.RingOfIntegers D))
+        ((N : NumberField.RingOfIntegers D)) := by
+      simpa using hcopZ.map (Int.castRingHom (NumberField.RingOfIntegers D))
+    obtain ⟨a, b, hab⟩ := hcopO
+    have hNI : (N : NumberField.RingOfIntegers D) ∉ I := by
+      intro hNmem
+      have h1 : (1 : NumberField.RingOfIntegers D) ∈ I := by
+        rw [← hab]
+        exact I.add_mem (I.mul_mem_left a hqI) (I.mul_mem_left b hNmem)
+      exact hI.ne_top ((Ideal.eq_top_iff_one I).mpr h1)
+    have hsup : I ⊔ Ideal.span {(N : NumberField.RingOfIntegers D)} = ⊤ := by
+      by_contra hne
+      have heq := hI.eq_of_le hne le_sup_left
+      exact hNI (heq ▸ Submodule.mem_sup_right (Ideal.mem_span_singleton_self _))
+    have hcopI : IsCoprime (I ^ n) (Ideal.span {(N : NumberField.RingOfIntegers D)}) :=
+      (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+    have hsupn : (I ^ n) ⊔ Ideal.span {(N : NumberField.RingOfIntegers D)} = ⊤ :=
+      Ideal.isCoprime_iff_sup_eq.mp hcopI
+    have h1 : (1 : NumberField.RingOfIntegers D) ∈
+        (I ^ n) ⊔ Ideal.span {(N : NumberField.RingOfIntegers D)} := by
+      rw [hsupn]; trivial
+    obtain ⟨y, hy, z, hz, hyz⟩ := Submodule.mem_sup.mp h1
+    obtain ⟨b', hb'⟩ := Ideal.mem_span_singleton'.mp hz
+    have hmky : Ideal.Quotient.mk (I ^ n) y = 0 := Ideal.Quotient.eq_zero_iff_mem.mpr hy
+    have h := congrArg (Ideal.Quotient.mk (I ^ n)) hyz
+    rw [map_add, hmky, zero_add, ← hb', map_mul, map_one] at h
+    exact ⟨⟨Ideal.Quotient.mk (I ^ n) (N : NumberField.RingOfIntegers D),
+      Ideal.Quotient.mk (I ^ n) b', by rw [mul_comm]; exact h, h⟩, rfl⟩
+  -- STEP 2: the levelwise characteristic equation, by Cayley–Hamilton and the determinant.
+  have hlev : ∀ q : ℕ, q.Prime → ¬ q ∣ N →
+      ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        (q : NumberField.RingOfIntegers D) ∈ I → ∀ n : ℕ,
+        ∀ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) →
+            GeomFibrePt f' (𝟙 (Spec (CommRingCat.of k))),
+          IsLevelTateFrame m' (𝟙 (Spec (CommRingCat.of k))) (I ^ n) c →
+          ∃ s : NumberField.RingOfIntegers D,
+            ∀ y ∈ (m'.torsion (𝟙 (Spec (CommRingCat.of k))) (I ^ n)).1,
+              ab'.add (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ
+                  (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y))
+                (m'.act (N : NumberField.RingOfIntegers D) y)
+                = m'.act s (ab'.galSMul (𝟙 (Spec (CommRingCat.of k))) σ y) := by
+    intro q hq hqN I hI hqI n c hc
+    obtain ⟨Φ, hΦ⟩ :=
+      exists_frobLevelMatrix_of_levelTateFrame ab' m' σ (I ^ n) c hc
+    have hdet := det_frobLevelMatrix_eq_natCast_finiteBase hfin N hN ab' m' σ hσ q hq hqN
+      I hI hqI n c hc Φ hΦ
+    obtain ⟨s, hs⟩ := Ideal.Quotient.mk_surjective Φ.trace
+    refine ⟨s, ?_⟩
+    obtain ⟨-, hadd, -, hsurj, hsmul⟩ := hc
+    intro y hy
+    obtain ⟨u, rfl⟩ := hsurj y hy
+    rw [hΦ u, hΦ (Φ.mulVec u), ← hsmul (N : NumberField.RingOfIntegers D) u, ← hdet,
+      ← hadd, ← hsmul s (Φ.mulVec u), hs]
+    exact congrArg c (funext fun i => mulVec_add_det_mul_eq_trace_mul_fin_two Φ u i)
+  -- STEP 3: the global scalar, read back as the trace in every frame.
+  obtain ⟨t, ht⟩ :=
+    exists_globalFrobCharScalar_of_levelScalar_finiteBase hfin N hN ab' m' σ hσ hlev
+  refine ⟨t, ?_⟩
+  intro q hq hqN I hI hqI n c hc Φ hΦ
+  have hdet := det_frobLevelMatrix_eq_natCast_finiteBase hfin N hN ab' m' σ hσ q hq hqN
+    I hI hqI n c hc Φ hΦ
+  have hdetunit : IsUnit Φ.det := by rw [hdet]; exact hNunit q hq hqN I hI hqI n
+  have hkey := ht q hq hqN I hI hqI n c hc
+  obtain ⟨hmem, hadd, hinj, -, hsmul⟩ := hc
+  -- the global scalar and the trace agree on every vector in the image of `Φ`
+  have hcoord : ∀ (u : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) (i : Fin 2),
+      Φ.trace * (Φ.mulVec u) i = Ideal.Quotient.mk (I ^ n) t * (Φ.mulVec u) i := by
+    intro u i
+    have h := hkey (c u) (hmem u)
+    rw [hΦ u, hΦ (Φ.mulVec u), ← hsmul (N : NumberField.RingOfIntegers D) u, ← hdet,
+      ← hadd, ← hsmul t (Φ.mulVec u)] at h
+    have h2 := congrFun (hinj h) i
+    rw [← mulVec_add_det_mul_eq_trace_mul_fin_two Φ u i]
+    exact h2
+  -- run `u` over the standard basis: every entry of `Φ` kills `Φ.trace − t`
+  have hentry₀ : ∀ i, (Φ.trace - Ideal.Quotient.mk (I ^ n) t) * Φ i 0 = 0 := by
+    intro i
+    have h := hcoord ![1, 0] i
+    have hv : (Φ.mulVec ![1, 0]) i = Φ i 0 := by
+      simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+    rw [hv] at h
+    linear_combination h
+  have hentry₁ : ∀ i, (Φ.trace - Ideal.Quotient.mk (I ^ n) t) * Φ i 1 = 0 := by
+    intro i
+    have h := hcoord ![0, 1] i
+    have hv : (Φ.mulVec ![0, 1]) i = Φ i 1 := by
+      simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+    rw [hv] at h
+    linear_combination h
+  have hdetw : (Φ.trace - Ideal.Quotient.mk (I ^ n) t) * Φ.det = 0 := by
+    rw [Matrix.det_fin_two]
+    linear_combination Φ 1 1 * hentry₀ 0 - Φ 1 0 * hentry₁ 0
+  have hw : Φ.trace - Ideal.Quotient.mk (I ^ n) t = 0 :=
+    hdetunit.mul_right_eq_zero.mp (by rw [mul_comm]; exact hdetw)
+  exact sub_eq_zero.mp hw
 
 /-- **TWO MORPHISMS AGREEING AT A ZARISKI-DENSE SET OF GEOMETRIC POINTS
 ARE EQUAL** (sorry leaf — the SCHEME-THEORETIC half of the density
