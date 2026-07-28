@@ -47789,8 +47789,14 @@ with each step carrying exactly one theory:
 |---|---|
 | `nonempty_atkinLehnerMorphism` | quotient of an elliptic scheme by a finite flat subgroup scheme, functorially in the base |
 | `nonempty_isBaseChangeOf_of_isNIsogenyPair` | uniqueness of the target of a cyclic `N`-isogeny with a given kernel |
-| `exists_extend_x0Compactification` | extension of a morphism from a smooth curve to a proper one across finitely many points |
-| `eq_of_comp_open_x0Compactification` | a dense open of a reduced separated scheme is a monomorphism source |
+| `exists_extend_x0Compactification` | extension of a morphism from a smooth curve to a proper one across finitely many points — **PROVEN 2026-07-28** over `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve` |
+| `eq_of_comp_open_x0Compactification` | a dense open of a reduced separated scheme is a monomorphism source — **PROVEN 2026-07-28** over `AlgebraicGeometry.ext_of_isDominant` |
+
+Only the first two leaves — the two carrying quotient-by-a-finite-flat-subgroup-scheme
+theory — are still open; the two extension/comparison leaves were closed on 2026-07-28
+by specialising the curve-extension development in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, which was written for exactly
+this purpose and whose hypotheses are `IsX0Compactification`'s minus the moduli clause.
 
 **What is PROVEN here, and it is the whole reason the cut is worth
 taking.**  The two steps that look like the hard ones — the *descent* of
@@ -47919,9 +47925,11 @@ theorem nonempty_isBaseChangeOf_of_isNIsogenyPair {N : ℕ} {T : Scheme.{0}}
     Nonempty (IsBaseChangeOf (𝟙 T) d₁ d₂) :=
   sorry
 
-/-- **A morphism of `Y_0(N)` extends across the cusps** (sorry leaf,
-2026-07-27) — the properness step of the construction of `w_N`, with no
-modular content in it at all.
+/-- **A morphism of `Y_0(N)` extends across the cusps** (**PROVEN
+2026-07-28**, a one-line specialisation of
+`AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`) — the
+properness step of the construction of `w_N`, with no modular content in
+it at all.
 
 TRUE.  `X` is regular of dimension `1` (`hX.smooth` over a field) and
 proper over `ℚ` (`hX.isProper`), and `Y` is an open subscheme whose
@@ -47932,56 +47940,98 @@ extends `v ≫ jY : Y ⟶ X` over it; the extensions glue because `X` is
 separated.  The extension is a morphism over `ℚ` because `v` and `jY`
 are.
 
-The degenerate case is real and is covered: if `Y` is empty the
-hypothesis `jY ≫ w = v ≫ jY` holds for every `w`, and `w := 𝟙 X` works.
+**The proof** is exactly that argument, factored out of this file:
+`exists_unique_extension_of_isSmoothProperCurve`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) takes the
+four hypotheses `isOpen`, `isProper`, `smooth`, `connected` together with
+`finite_compl` and `comm` — field for field, `IsX0Compactification` minus
+the moduli clause — and returns a UNIQUE extension into any proper
+`ℚ`-scheme.  Here the target is `X` itself and the morphism to extend is
+`v ≫ jY`, whose structure compatibility is `hX.comm` plus `hv`.  Density
+of `Y` in `X` is derived there from `smooth`, `connected` and
+`finite_compl` jointly (via `isDominant_of_finite_compl`), which is where
+the "degenerate empty `Y`" case recorded in the original leaf actually
+goes: `GeometricallyConnected` forces `X`, hence `Y`, to be nonempty, so
+the case never arises rather than being handled.
 
-**What proving it needs**: the valuative criterion of properness against
-a DVR obtained from a codimension-`1` point of a regular scheme, plus the
-gluing of the finitely many local extensions.  Both halves are in
-mathlib in some form; the work is the reduction, not the theorems.
+Only the existence half of the `∃!` is exposed, because that is what
+`exists_atkinLehner_x0` consumes; uniqueness of the extension is
+available from the same call, and the separate comparison leaf
+`eq_of_comp_open_x0Compactification` is what the assembly uses instead,
+since it compares two endomorphisms neither of which is presented as an
+extension.
 
 **The check that refutes it**: a smooth proper curve, a dense open with
 finite complement, and a morphism from the open part into the curve that
 does not extend. -/
 theorem exists_extend_x0Compactification {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification N strX strY jY)
-    (v : Y ⟶ Y) (_hv : v ≫ strY = strY) :
-    ∃ (w : X ⟶ X), w ≫ strX = strX ∧ jY ≫ w = v ≫ jY :=
-  sorry
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification N strX strY jY)
+    (v : Y ⟶ Y) (hv : v ≫ strY = strY) :
+    ∃ (w : X ⟶ X), w ≫ strX = strX ∧ jY ≫ w = v ≫ jY := by
+  haveI := hX.isOpen
+  haveI := hX.isProper
+  haveI := hX.smooth
+  obtain ⟨w, ⟨hw1, hw2⟩, -⟩ :=
+    exists_unique_extension_of_isSmoothProperCurve (K := ℚ) (strZ := strX)
+      hX.connected hX.finite_compl hX.comm (v ≫ jY)
+      (by rw [Category.assoc, hX.comm, hv])
+  exact ⟨w, hw1, hw2⟩
 
 /-- **The open immersion of `Y_0(N)` into its compactification is an
-EPIMORPHISM for morphisms out of `X`** (sorry leaf, 2026-07-27): two
+EPIMORPHISM for morphisms out of `X`** (**PROVEN 2026-07-28**): two
 morphisms `X ⟶ X` agreeing on `Y` are equal.
 
-TRUE, and the two cases are genuinely different, which is why the
-statement is not simply "`jY` is dominant".
+TRUE.  `X` is a `1`-dimensional scheme of finite type over `ℚ`, hence has
+infinitely many points, so `hX.finite_compl` forces `Y` to be nonempty.
+`X` is smooth over a field, hence regular, hence — being geometrically
+connected — irreducible, so the nonempty open `Y` is DENSE; `X` is
+reduced (smooth over a field) and separated (proper over `ℚ`).  Two
+morphisms out of a reduced scheme into a separated one agreeing on a
+dense open are equal — mathlib's
+`AlgebraicGeometry.ext_of_isDominant`, the absolute form of
+`ext_of_isDominant_of_isSeparated`, which this file already consumes at
+`ajMor_eq_const_of_not_injective`.
 
-* If `X` is empty it is the initial scheme and `Hom(X, X)` is a
-  singleton, so the conclusion is automatic.
-* If `X` is nonempty then it is a `1`-dimensional scheme of finite type
-  over `ℚ`, hence has infinitely many points, so `hX.finite_compl` forces
-  `Y` to be nonempty.  `X` is smooth over a field, hence regular, hence —
-  being connected — irreducible, so the nonempty open `Y` is DENSE; `X`
-  is reduced (smooth over a field) and separated (proper over `ℚ`).  Two
-  morphisms out of a reduced scheme into a separated one agreeing on a
-  dense open are equal — mathlib's
-  `AlgebraicGeometry.ext_of_isDominant_of_isSeparated`, which this file
-  already consumes at `ajMor_eq_const_of_not_injective`.
+**The three non-formal inputs, and where each comes from.**
 
-Stated with target `X` rather than an arbitrary `Z` so that separatedness
-of the target is supplied by `hX.isProper` rather than assumed.
+* `IsIntegral X` — `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`
+  (`CurveExtension.lean`), which is where "connected regular ⟹ irreducible" lives.
+* `IsDominant jY` — `isDominant_of_finite_compl` (same file), which is where the
+  infinitude of the points of a `1`-dimensional finite-type scheme over a field is
+  consumed: a finite complement of an infinite space has nonempty complement, and a
+  nonempty open of an irreducible space is dense.
+* `IsReduced X` — `isReduced_of_smooth_over_field`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/Morphisms/SmoothReduced.lean`), the project
+  shim; the pin has no such lemma.
+
+Separatedness of the target is `X.IsSeparated`, obtained from `hX.isProper`
+through `Scheme.isSeparated_of_isSeparated_over` (`Spec ℚ` is affine, hence
+separated).  This is why the statement is worth having with target `X` rather
+than an arbitrary `Z`: the target's separatedness is supplied by a field of
+`IsX0Compactification` rather than assumed.
+
+**The "empty `X`" case recorded in the original leaf never arises.** It was
+listed as the second of two genuinely different cases; in fact
+`GeometricallyConnected` makes `X` nonempty, which is exactly what
+`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` needs and
+supplies, so a single argument covers the statement.
 
 **The check that refutes it**: an `IsX0Compactification` whose `Y` is
 empty and whose `X` has two distinct endomorphisms — which the dimension
-count above rules out.
-
-**What proving it needs**: the irreducibility of a connected regular
-scheme, the infinitude of the points of a `1`-dimensional finite-type
-scheme over a field, and the mathlib rigidity lemma named above. -/
+count above rules out. -/
 theorem eq_of_comp_open_x0Compactification {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
-    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (_hX : IsX0Compactification N strX strY jY)
-    {f g : X ⟶ X} (_h : jY ≫ f = jY ≫ g) : f = g :=
-  sorry
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification N strX strY jY)
+    {f g : X ⟶ X} (h : jY ≫ f = jY ≫ g) : f = g := by
+  haveI := hX.isOpen
+  haveI := hX.isProper
+  haveI := hX.smooth
+  haveI : Smooth strX := SmoothOfRelativeDimension.smooth (n := 1) (f := strX)
+  haveI : IsReduced X := isReduced_of_smooth_over_field (K := ℚ) strX
+  haveI : IsIntegral X :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strX hX.connected
+  haveI : IsDominant jY := isDominant_of_finite_compl strX jY hX.finite_compl
+  haveI : X.IsSeparated := Scheme.isSeparated_of_isSeparated_over strX
+  exact ext_of_isDominant jY h
 
 /-- **The Atkin–Lehner involution `w_N` exists on `X_0(N)`** (PROVEN
 2026-07-27 over the four leaves immediately above; introduced as a sorry
