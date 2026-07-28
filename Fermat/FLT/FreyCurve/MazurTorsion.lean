@@ -10662,9 +10662,107 @@ theorem WeierstrassCurve.PotentiallyGoodModel.nonempty_localFrame
   obtain ⟨resIso, hres⟩ := D.exists_resIso hq emb hcomap
   exact ⟨⟨emb, hcomm, hcomap, resIso, hres⟩⟩
 
+/-- **Residue degree one over the PRIME field makes `Gal(ℚ̄_q/F·ℚ_q)` surject onto
+`Gal(𝔽̄_q/𝔽_q)`** (sorry leaf, opened 2026-07-28 by cutting
+`exists_inertia_frobLift_fixes_emb` below into its ELLIPTIC-CURVE-FREE local core
+and its assembly).
+
+WHAT IT SAYS. `F` is any subfield of `ℚ̄_q`. The hypothesis `hres` is
+*residue degree one*: every element of `F` that is integral over `ℤ_q` is
+congruent, modulo the maximal ideal of `𝒪 = IntegralClosure ℤ_q ℚ̄_q`, to a
+RATIONAL INTEGER — i.e. the residue field of `𝒪 ∩ F` is the prime field `𝔽_q`.
+The conclusion is that the subgroup of `Γ ℚ_q` fixing `F` pointwise already
+realises every residue action: for each `σ` there is a `g` fixing `F` pointwise
+with `σ • b ≡ g • b (mod 𝔪)` for every integral `b`.
+
+WHY IT IS TRUE. Write `M := ℚ_q · F`, a subextension of `ℚ̄_q/ℚ_q`. Because `F`
+is a field it contains `ℚ`, which is DENSE in `ℚ_q`, so `F` is dense in `M`;
+residues are locally constant on `𝒪`, so `k_M = k_{𝒪 ∩ F} = 𝔽_q`, i.e. `M/ℚ_q`
+has residue degree one. Invariant theory of `ℤ_q ⊆ 𝒪` (mathlib's
+`Ideal.Quotient.stabilizerHom_surjective_of_profinite`, applicable since
+`Algebra.IsInvariant ℤ_q 𝒪 (Γ ℚ_q)` — `isInvariant_integralClosure` — and
+`Γ ℚ_q` is profinite) makes `Γ ℚ_q ↠ Aut(𝔽̄_q/𝔽_q)` with kernel the inertia
+group, and the same theorem over `𝒪_M` makes `Gal(ℚ̄_q/M) ↠ Aut(𝔽̄_q/k_M)`.
+With `k_M = 𝔽_q` the two images coincide, so `σ`'s residue action is hit by some
+`g ∈ Gal(ℚ̄_q/M) = ` the pointwise stabiliser of `F`. That `g` is the witness.
+
+**THE BASE FIELD MUST BE `ℚ`; the statement is FALSE over a general number
+field, and this is not a formalisation artefact.** The density step is what uses
+`ℚ ⊆ F` dense in `ℚ_q`. Over a base `K` with `Kᵥ/ℚ_p` ramified the analogous
+statement fails: take `p` odd, `Kᵥ = ℚ_p(√p)` (so `k_v = 𝔽_p`) and
+`F = ℚ(√(mp))` with `m` a non-residue mod `p`. Then `𝒪 ∩ F` has residue field
+`𝔽_p = k_v`, so the hypothesis holds; but `Kᵥ · F = ℚ_p(√p, √(mp)) ∋ √m`
+contains the unramified quadratic extension, so `Gal(ℚ̄_p/Kᵥ·F)` has index `2`
+in `Γ Kᵥ` modulo inertia and misses the Frobenius class. The compositum of two
+totally ramified extensions need not be totally ramified — that is the whole
+obstruction, and it disappears over `ℚ` because `F ⊇ ℚ` is then already dense in
+the base.
+
+NO ELLIPTIC CURVE, NO `PotentiallyGoodModel` AND NO FRAME APPEAR: this is a
+statement about `ℚ_q`, one subfield of `ℚ̄_q`, and one Galois element.
+
+THE CHECK THAT WOULD REFUTE THIS LEAF: an `F` satisfying `hres` whose compositum
+with `ℚ_q` has residue degree `> 1` — equivalently, an integral element of
+`ℚ_q · F` whose residue is not a limit of residues from `F`. Over `ℚ` that
+contradicts density of `ℚ` in `ℚ_q`; see the displayed counterexample for what
+goes wrong once the base is allowed to ramify. -/
+theorem GaloisRepresentation.exists_fixing_sub_smul_mem_maximalIdeal_of_residueDegreeOne
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (F : Subfield (AlgebraicClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)))
+    (hres : ∀ b : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
+      algebraMap _ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) b ∈ F →
+      ∃ n : ℤ, b - (n : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))))
+    (σ : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :
+    ∃ g : Field.absoluteGaloisGroup
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v),
+      (∀ x ∈ F, g x = x) ∧
+      ∀ b : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)),
+        σ • b - g • b ∈ IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ v)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))) :=
+  sorry
+
 /-- **RESIDUE DEGREE ONE, AND NOTHING ELSE: an inertia element `ι` at `q` with
-`ι⁻¹ · Frob_q` fixing `emb K` pointwise** (sorry leaf, opened 2026-07-28 by
-cutting `exists_frobeniusLift` below).
+`ι⁻¹ · Frob_q` fixing `emb K` pointwise** (PROVEN 2026-07-28 over
+`GaloisRepresentation.exists_fixing_sub_smul_mem_maximalIdeal_of_residueDegreeOne`
+above; opened 2026-07-28 by cutting `exists_frobeniusLift` below).
+
+CUT 2026-07-28, and this is where `D.resEquiv` is SPENT. The leaf mixed two
+things that share no technique:
+
+1. *residue degree one for this particular frame* — that every element of
+   `Fr.emb K` which is integral over `ℤ_q` is congruent to a rational integer
+   modulo `𝔪`. This is now PROVEN below, and it is the only use `D`, `E`,
+   `Fr.comap_eq` and `D.resEquiv` get: `Fr.comap_eq` turns integrality of
+   `emb x` into `x ∈ R`, `D.resEquiv` writes `residue r` as an integer because
+   it lands in the PRIME field `ZMod q`, and non-invertibility descends back
+   along `emb` because `emb⁻¹ 𝒪 = R` exactly (this is `RtoO`'s local-hom
+   argument, inlined against `ValuationSubring.mem_nonunits_iff_or`);
+2. *the local-field theorem that residue degree one buys surjectivity onto
+   `Gal(𝔽̄_q/𝔽_q)`* — no curve, no model, no frame. That is the new leaf
+   `exists_fixing_sub_smul_mem_maximalIdeal_of_residueDegreeOne` above, stated
+   for an arbitrary subfield `F ⊆ ℚ̄_q`, and it is where the remaining
+   arithmetic lives.
+
+Given the witness `g` of (2) at `σ := Frob_q`, the rest is group algebra:
+`ι := Frob_q · g⁻¹` lies in `localInertiaGroup q` because
+`Frob_q • (g⁻¹ • b) ≡ g • (g⁻¹ • b) = b` for every integral `b`, and
+`ι⁻¹ · Frob_q = g`; the transport to `Γ ℚ` is `Field.absoluteGaloisGroup.map`
+being a monoid hom, `globalFrob` being BY DEFINITION the transported local
+Frobenius (the internal `ℚ →+* ℚ_q` being pinned by `Subsingleton.elim`), and
+`Field.absoluteGaloisGroup.lift_map` plus injectivity of `ℚ̄ ↪ ℚ̄_q`.
 
 THIS IS THE WHOLE ARITHMETIC CONTENT OF `exists_frobeniusLift`, and it is the
 ONLY place in that cut where `D.resEquiv` is consumed. Everything else in
@@ -10705,8 +10803,161 @@ theorem WeierstrassCurve.PotentiallyGoodModel.exists_inertia_frobLift_fixes_emb
           (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
             hq.toHeightOneSpectrumRingOfIntegersRat)) ι)⁻¹ *
           GaloisRepresentation.globalFrob
-            hq.toHeightOneSpectrumRingOfIntegersRat) (Fr.emb x) = Fr.emb x :=
-  sorry
+            hq.toHeightOneSpectrumRingOfIntegersRat) (Fr.emb x) = Fr.emb x := by
+  -- RESIDUE DEGREE ONE for this frame.  This is the only step that consumes
+  -- `D.resEquiv`, `Fr.comap_eq` and the model `D` at all.
+  have hres : ∀ b : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)),
+      algebraMap _ (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat)) b ∈
+        ((AlgebraicClosure.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))).comp Fr.emb).fieldRange →
+      ∃ n : ℤ, b - (n : IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))) := by
+    intro b hb
+    obtain ⟨x, hx⟩ := RingHom.mem_fieldRange.mp hb
+    rw [RingHom.comp_apply] at hx
+    -- integrality of `emb x` puts `x` in `R`, by `Fr.comap_eq`
+    have hmemO : Fr.emb x ∈ GaloisRepresentation.globalValuationSubring
+        hq.toHeightOneSpectrumRingOfIntegersRat := by
+      rw [GaloisRepresentation.mem_globalValuationSubring_iff, hx]
+      exact b.2
+    have hxR : x ∈ (algebraMap D.R D.K).range := by
+      rw [← Fr.comap_eq]; exact hmemO
+    obtain ⟨r, hr⟩ := hxR
+    -- `D.resEquiv` lands in the PRIME field, so `residue r` is a rational integer
+    obtain ⟨n, hn⟩ := ZMod.intCast_surjective (D.resEquiv (IsLocalRing.residue D.R r))
+    refine ⟨n, ?_⟩
+    have hs : r - (n : D.R) ∈ IsLocalRing.maximalIdeal D.R := by
+      have h0 : IsLocalRing.residue D.R (r - (n : D.R)) = 0 := by
+        apply D.resEquiv.injective
+        rw [map_zero, map_sub, map_sub, map_intCast, map_intCast, hn, sub_self]
+      exact Ideal.Quotient.eq_zero_iff_mem.mp h0
+    have hy : algebraMap D.R D.K (r - (n : D.R)) = x - (n : D.K) := by
+      rw [map_sub, map_intCast, hr]
+    -- non-invertibility descends along `emb`, because `emb⁻¹ 𝒪 = R` EXACTLY
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    intro hu
+    obtain ⟨c, hc⟩ := hu.exists_right_inv
+    have hval := congrArg (algebraMap (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat)))
+        (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))) hc
+    rw [map_mul, map_one, map_sub, map_intCast] at hval
+    have hleft : algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) b
+          - (n : AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+        = AlgebraicClosure.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+            (Fr.emb (algebraMap D.R D.K (r - (n : D.R)))) := by
+      rw [hy, map_sub, map_intCast, map_sub, map_intCast, hx]
+    rw [hleft] at hval
+    have hne : AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))
+        (Fr.emb (algebraMap D.R D.K (r - (n : D.R)))) ≠ 0 := by
+      intro h0
+      rw [h0, zero_mul] at hval
+      exact zero_ne_one hval
+    have hinv : algebraMap (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)))
+          (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat)) c
+        = AlgebraicClosure.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+            (Fr.emb ((algebraMap D.R D.K (r - (n : D.R)))⁻¹)) := by
+      rw [map_inv₀, map_inv₀]
+      exact (inv_eq_of_mul_eq_one_right hval).symm
+    have hmemInv : Fr.emb ((algebraMap D.R D.K (r - (n : D.R)))⁻¹) ∈
+        GaloisRepresentation.globalValuationSubring
+          hq.toHeightOneSpectrumRingOfIntegersRat := by
+      rw [GaloisRepresentation.mem_globalValuationSubring_iff, ← hinv]
+      exact c.2
+    have hmemInv2 : (algebraMap D.R D.K (r - (n : D.R)))⁻¹ ∈ (algebraMap D.R D.K).range := by
+      rw [← Fr.comap_eq]; exact hmemInv
+    obtain ⟨t, ht⟩ := hmemInv2
+    have hyne : algebraMap D.R D.K (r - (n : D.R)) ≠ 0 := by
+      intro h0
+      exact hne (by rw [h0, map_zero, map_zero])
+    have hrt : (r - (n : D.R)) * t = 1 := by
+      apply IsFractionRing.injective D.R D.K
+      rw [map_mul, map_one, ht, mul_inv_cancel₀ hyne]
+    exact (IsLocalRing.mem_maximalIdeal _).mp hs (isUnit_iff_exists_inv.mpr ⟨t, hrt⟩)
+  -- the local-field leaf, applied at `σ := Frob_q`
+  obtain ⟨g, hgfix, hgres⟩ :=
+    GaloisRepresentation.exists_fixing_sub_smul_mem_maximalIdeal_of_residueDegreeOne
+      hq.toHeightOneSpectrumRingOfIntegersRat
+      ((AlgebraicClosure.map (algebraMap ℚ
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          hq.toHeightOneSpectrumRingOfIntegersRat))).comp Fr.emb).fieldRange
+      hres (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat)
+  refine ⟨Field.AbsoluteGaloisGroup.adicArithFrob
+    hq.toHeightOneSpectrumRingOfIntegersRat * g⁻¹, ?_, ?_⟩
+  · -- `Frob_q · g⁻¹` acts trivially on residues, hence lies in inertia
+    refine AddSubgroup.mem_inertia.mpr fun b => ?_
+    have h := hgres (g⁻¹ • b)
+    rwa [smul_smul, smul_inv_smul] at h
+  · intro x
+    -- `globalFrob` IS the transported local Frobenius; ring maps out of `ℚ` are unique
+    have hglob : GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+        = Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat))
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) := by
+      have hf : ∀ f₁ f₂ : ℚ →+* IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat,
+          Field.absoluteGaloisGroup.map f₁ (Field.AbsoluteGaloisGroup.adicArithFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat)
+            = Field.absoluteGaloisGroup.map f₂ (Field.AbsoluteGaloisGroup.adicArithFrob
+              hq.toHeightOneSpectrumRingOfIntegersRat) := by
+        intro f₁ f₂
+        rw [Subsingleton.elim f₁ f₂]
+      exact hf _ _
+    have hmapeq : (Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            hq.toHeightOneSpectrumRingOfIntegersRat))
+          (Field.AbsoluteGaloisGroup.adicArithFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat * g⁻¹))⁻¹ *
+          GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+        = Field.absoluteGaloisGroup.map (algebraMap ℚ
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+              hq.toHeightOneSpectrumRingOfIntegersRat)) g := by
+      rw [hglob, map_mul, map_inv, mul_inv_rev, inv_inv, mul_assoc, inv_mul_cancel, mul_one]
+    rw [hmapeq]
+    apply (AlgebraicClosure.map (algebraMap ℚ
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+        hq.toHeightOneSpectrumRingOfIntegersRat))).injective
+    rw [Field.absoluteGaloisGroup.lift_map]
+    exact hgfix _ (RingHom.mem_fieldRange.mpr ⟨x, rfl⟩)
 
 /-- **Residue degree one produces a Frobenius lift inside the decomposition
 group of `K`** (PROVEN 2026-07-28 over `exists_inertia_frobLift_fixes_emb`;
@@ -10744,8 +10995,11 @@ reducibly but not syntactically equal, so `rw [MulAction.mem_stabilizer_iff]`
 fails with an instance mismatch — and it is dealt with there by `show` plus
 explicit `⟨_, _⟩` ascriptions.
 
-WHAT REMAINS, and it is the whole of `exists_inertia_frobLift_fixes_emb` above:
-the existence of `ι`. Conclusion (ii) is then AUTOMATIC and costs no arithmetic
+WHAT REMAINS (updated 2026-07-28): `exists_inertia_frobLift_fixes_emb` above is
+now PROVEN, and the residual open node is the elliptic-curve-free local leaf
+`GaloisRepresentation.exists_fixing_sub_smul_mem_maximalIdeal_of_residueDegreeOne`
+— residue degree one over the prime field makes the pointwise stabiliser of a
+subfield of `ℚ̄_q` surject onto `Gal(𝔽̄_q/𝔽_q)`. Conclusion (ii) is AUTOMATIC and costs no arithmetic
 — `ι` acts trivially on residues because it is in inertia, and `Frob_q` acts as
 `x ↦ x^q` by `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob` together
 with `natCard_residue_quotient_toHeightOneSpectrum` (which is what pins the
