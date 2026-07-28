@@ -61,15 +61,18 @@ uniqueness needs no `φ ≠ 0` hypothesis.
 ## The leaves
 
 `isDiffChar_id`, `isDiffChar_zero`, `isDiffChar_neg_id`, `isDiffChar_neg` and
-`isDiffChar_mulByHom` are PROVEN. The genuinely geometric facts are open, each
-stated in full:
+`isDiffChar_mulByHom` are PROVEN, and so — since 2026-07-28 — is
+`isDiffChar_comp`, over the chain rule for `homogSubst` (`homogSubst_wronskian`)
+and the genericity principle `isDiffCharCert_of_cofinite`. The remaining
+geometric facts are open, each stated in full:
 
 * `exists_isDiffChar` — every rational map acts on `ω` by some scalar;
 * `isDiffChar_unique` — that scalar is unique;
 * `isDiffChar_add` — `λ` is additive;
-* `isDiffChar_comp` — `λ` is multiplicative on composites;
 * `eq_of_isDiffChar` — `λ` is injective (characteristic zero);
 * `isDiffChar_galConj` — `λ(φ^σ) = σ(λ φ)` for `σ ∈ Gal(ℚ̄/ℚ)`.
+
+* `isDiffChar_comp` — `λ` is multiplicative on composites — is **PROVEN**.
 
 Reference: Silverman, *AEC* III.5 (the invariant differential and its
 functoriality), *ATAEC* II.2.
@@ -188,9 +191,239 @@ theorem isDiffChar_neg_id [IsAlgClosed F] [W.IsElliptic] :
       eval_mul, eval_C, derivative_X, derivative_one]
     ring
 
+/-! ### Two pieces of algebra the leaves below rest on
+
+The first is the **chain rule for `homogSubst`** — `homogSubst A B d Q` is
+`B^d·Q(A/B)` with denominators cleared, the substitution `IsRationalMap.comp`
+performs — culminating in `homogSubst_wronskian`, which says the Wronskian of
+the substituted pair is the Wronskian of the outer pair substituted, times the
+Wronskian of the inner one. That is `(g ∘ f)' = g'(f)·f'` written without
+division, and it is what makes `λ` multiplicative on composites.
+
+The second is `isDiffCharCert_of_cofinite`: the differential certificate is
+`V(x)·y + U(x) = 0` for two explicit polynomials `U, V` built from the witnesses,
+so holding at infinitely many `x` forces `U = V = 0` and hence holding
+everywhere. That converts "prove the certificate at a generic point" — where
+denominators may be inverted and a map may be assumed nonzero — into "prove it at
+every point", which is what `IsDiffChar` demands. -/
+
+omit [DecidableEq F] in
+theorem homogSubst_zero (A B : F[X]) (d : ℕ) : homogSubst A B d 0 = 0 := by
+  simp [homogSubst]
+
+omit [DecidableEq F] in
+theorem homogSubst_add (A B : F[X]) (d : ℕ) (Q₁ Q₂ : F[X]) :
+    homogSubst A B d (Q₁ + Q₂) = homogSubst A B d Q₁ + homogSubst A B d Q₂ := by
+  simp only [homogSubst, Polynomial.coeff_add, Polynomial.C_add, add_mul,
+    Finset.sum_add_distrib]
+
+omit [DecidableEq F] in
+theorem homogSubst_sub (A B : F[X]) (d : ℕ) (Q₁ Q₂ : F[X]) :
+    homogSubst A B d (Q₁ - Q₂) = homogSubst A B d Q₁ - homogSubst A B d Q₂ := by
+  simp only [homogSubst, Polynomial.coeff_sub, Polynomial.C_sub, sub_mul,
+    Finset.sum_sub_distrib]
+
+omit [DecidableEq F] in
+theorem homogSubst_monomial (A B : F[X]) {d k : ℕ} (hk : k ≤ d) (a : F) :
+    homogSubst A B d (Polynomial.monomial k a) = Polynomial.C a * A ^ k * B ^ (d - k) := by
+  unfold homogSubst
+  rw [Finset.sum_eq_single k]
+  · simp
+  · intro i _ hik
+    simp [Polynomial.coeff_monomial, Ne.symm hik]
+  · intro hk'
+    exact absurd (Finset.mem_range.2 (Nat.lt_succ_of_le hk)) hk'
+
+omit [DecidableEq F] in
+/-- The chain rule for `homogSubst` on a single monomial; the general case
+follows by additivity in `Q`. -/
+theorem derivative_homogSubst_monomial (A B : F[X]) (k j : ℕ) (a : F) :
+    derivative (homogSubst A B (k + j) (Polynomial.monomial k a)) * B
+      = Polynomial.C (((k + j : ℕ)) : F) * derivative B
+          * homogSubst A B (k + j) (Polynomial.monomial k a)
+        + (derivative A * B - A * derivative B)
+            * homogSubst A B (k + j - 1) (derivative (Polynomial.monomial k a)) := by
+  have hpow : ∀ i : ℕ, ((i : ℕ) : F[X]) * B ^ (i - 1) * B = ((i : ℕ) : F[X]) * B ^ i := by
+    rintro (_ | i)
+    · simp
+    · simp only [Nat.add_sub_cancel, pow_succ]
+      ring
+  rw [homogSubst_monomial A B (Nat.le_add_right k j) a, Nat.add_sub_cancel_left]
+  rcases k with _ | i
+  · simp only [Nat.zero_add, pow_zero, mul_one, Polynomial.monomial_zero_left,
+      Polynomial.derivative_C, homogSubst_zero, mul_zero, add_zero]
+    rw [Polynomial.derivative_mul, Polynomial.derivative_C, Polynomial.derivative_pow]
+    simp only [zero_mul, zero_add, Polynomial.C_eq_natCast]
+    linear_combination (Polynomial.C a * derivative B) * hpow j
+  · rw [Polynomial.derivative_monomial]
+    simp only [Nat.add_sub_cancel]
+    rw [homogSubst_monomial A B (show i ≤ i + 1 + j - 1 by omega) (a * ((i + 1 : ℕ) : F)),
+      show i + 1 + j - 1 - i = j by omega]
+    rw [Polynomial.derivative_mul, Polynomial.derivative_mul, Polynomial.derivative_pow,
+      Polynomial.derivative_pow, Polynomial.derivative_C]
+    simp only [zero_mul, zero_add, Nat.add_sub_cancel, Polynomial.C_eq_natCast, map_mul]
+    push_cast
+    linear_combination (Polynomial.C a * A ^ (i + 1) * derivative B) * hpow j
+
+omit [DecidableEq F] in
+/-- **The chain rule for `homogSubst`.** With `f = A/B` and `H = B^d·Q(f)`,
+`H' = d·B'·B^{d-1}·Q(f) + B^d·Q'(f)·f'`; clearing the single denominator `B`
+gives the polynomial identity below. -/
+theorem derivative_homogSubst_mul (A B : F[X]) {d : ℕ} {Q : F[X]} (hd : Q.natDegree ≤ d) :
+    derivative (homogSubst A B d Q) * B
+      = Polynomial.C ((d : ℕ) : F) * derivative B * homogSubst A B d Q
+        + (derivative A * B - A * derivative B)
+            * homogSubst A B (d - 1) (derivative Q) := by
+  classical
+  have hsum : ∀ s : Finset ℕ, (∀ i ∈ s, i ≤ d) →
+      derivative (homogSubst A B d (∑ i ∈ s, Polynomial.monomial i (Q.coeff i))) * B
+        = Polynomial.C ((d : ℕ) : F) * derivative B *
+            homogSubst A B d (∑ i ∈ s, Polynomial.monomial i (Q.coeff i))
+          + (derivative A * B - A * derivative B) *
+              homogSubst A B (d - 1)
+                (derivative (∑ i ∈ s, Polynomial.monomial i (Q.coeff i))) := by
+    intro s
+    induction s using Finset.induction with
+    | empty => intro _; simp [homogSubst_zero]
+    | @insert a s ha ih =>
+        intro hmem
+        have hia : a ≤ d := hmem a (Finset.mem_insert_self a s)
+        have ihs := ih fun i hi => hmem i (Finset.mem_insert_of_mem hi)
+        have hmono := derivative_homogSubst_monomial A B a (d - a) (Q.coeff a)
+        rw [Nat.add_sub_cancel' hia] at hmono
+        rw [Finset.sum_insert ha, homogSubst_add, Polynomial.derivative_add,
+          Polynomial.derivative_add, homogSubst_add]
+        linear_combination hmono + ihs
+  have hQ : Q = ∑ i ∈ Finset.range (d + 1), Polynomial.monomial i (Q.coeff i) :=
+    Polynomial.as_sum_range' Q (d + 1) (Nat.lt_succ_of_le hd)
+  have hres := hsum (Finset.range (d + 1))
+    (fun i hi => Nat.lt_succ_iff.1 (Finset.mem_range.1 hi))
+  rwa [← hQ] at hres
+
+omit [DecidableEq F] in
+/-- `homogSubst` is multiplicative, the clearing degrees adding. Proven by
+evaluating at the cofinitely many `t` with `B.eval t ≠ 0`. -/
+theorem homogSubst_mul [Infinite F] {A B Q₁ Q₂ : F[X]} (hB : B ≠ 0) {m n : ℕ}
+    (h1 : Q₁.natDegree ≤ m) (h2 : Q₂.natDegree ≤ n) :
+    homogSubst A B m Q₁ * homogSubst A B n Q₂ = homogSubst A B (m + n) (Q₁ * Q₂) := by
+  have hroot : {t : F | B.IsRoot t}.Finite := Polynomial.finite_setOf_isRoot hB
+  refine Polynomial.eq_of_infinite_eval_eq _ _ (Set.Infinite.mono ?_ hroot.infinite_compl)
+  intro t ht
+  have hbne : B.eval t ≠ 0 := ht
+  have hu : (A.eval t / B.eval t) * B.eval t = A.eval t := div_mul_cancel₀ _ hbne
+  show Polynomial.eval t _ = Polynomial.eval t _
+  rw [Polynomial.eval_mul, eval_homogSubst h1 hu, eval_homogSubst h2 hu,
+    eval_homogSubst (Polynomial.natDegree_mul_le_of_le h1 h2) hu, Polynomial.eval_mul]
+  ring
+
+omit [DecidableEq F] in
+/-- **The Wronskian of the substituted pair.** This is the chain rule
+`(g ∘ f)' = g'(f)·f'` with every denominator cleared: the Wronskian of
+`(homogSubst A B d A', homogSubst A B d B')` is the Wronskian of `(A, B)` times
+the Wronskian of `(A', B')` substituted, up to the single factor `B`. -/
+theorem homogSubst_wronskian [Infinite F] {A B A' B' : F[X]} (hB : B ≠ 0) {n : ℕ}
+    (hA' : A'.natDegree ≤ n + 1) (hB' : B'.natDegree ≤ n + 1) :
+    (derivative (homogSubst A B (n + 1) A') * homogSubst A B (n + 1) B'
+        - homogSubst A B (n + 1) A' * derivative (homogSubst A B (n + 1) B')) * B
+      = (derivative A * B - A * derivative B)
+          * homogSubst A B (n + (n + 1)) (derivative A' * B' - A' * derivative B') := by
+  have hdA' : (derivative A').natDegree ≤ n :=
+    le_trans (Polynomial.natDegree_derivative_le A') (by omega)
+  have hdB' : (derivative B').natDegree ≤ n :=
+    le_trans (Polynomial.natDegree_derivative_le B') (by omega)
+  have e1 := derivative_homogSubst_mul A B (d := n + 1) hA'
+  have e2 := derivative_homogSubst_mul A B (d := n + 1) hB'
+  rw [Nat.add_sub_cancel] at e1 e2
+  have m1 : homogSubst A B n (derivative A') * homogSubst A B (n + 1) B'
+      = homogSubst A B (n + (n + 1)) (derivative A' * B') := homogSubst_mul hB hdA' hB'
+  have m2 : homogSubst A B (n + 1) A' * homogSubst A B n (derivative B')
+      = homogSubst A B (n + (n + 1)) (A' * derivative B') := by
+    rw [show n + (n + 1) = (n + 1) + n by omega]
+    exact homogSubst_mul hB hA' hdB'
+  rw [homogSubst_sub, ← m1, ← m2]
+  linear_combination homogSubst A B (n + 1) B' * e1 - homogSubst A B (n + 1) A' * e2
+
+/-- **A differential certificate valid off a finite set of `x`-values is valid
+everywhere.**
+
+The certificate at `P` reads `V(x)·y + U(x) = 0` for the two explicit polynomials
+
+  `V = 2c·B²·C − 2(A'B − AB')·E`,
+  `U = c·B·(2BD + a₁'AE + a₃'BE) − (A'B − AB')·E·(a₁X + a₃)`
+
+built from the witnesses. Comparing `P` with `−P` — same `x`, `y` replaced by
+`negY` — gives `V(x)·(2y + a₁x + a₃) = 0`, and the second factor vanishes only at
+the (finitely many) 2-torsion points, so `V` has infinitely many roots, hence is
+zero; then so is `U`. A certificate is therefore a pair of polynomial identities,
+and holding generically is the same as holding everywhere. -/
+theorem isDiffCharCert_of_cofinite [IsAlgClosed F] [W.IsElliptic]
+    {A B Cp D E : F[X]} {c : F} {S : Set F} (hS : S.Finite)
+    (h : ∀ P : W.Point, P ≠ 0 → veluPointX P ∉ S → IsDiffCharCert W W' A B Cp D E c P) :
+    ∀ P : W.Point, P ≠ 0 → IsDiffCharCert W W' A B Cp D E c P := by
+  classical
+  set V : F[X] := Polynomial.C (2 : F) * Polynomial.C c * B ^ 2 * Cp
+      - Polynomial.C (2 : F) * (derivative A * B - A * derivative B) * E with hVdef
+  set U : F[X] := Polynomial.C c * B * (Polynomial.C (2 : F) * B * D
+        + Polynomial.C W'.a₁ * A * E + Polynomial.C W'.a₃ * B * E)
+      - (derivative A * B - A * derivative B) * E
+          * (Polynomial.C W.a₁ * Polynomial.X + Polynomial.C W.a₃) with hUdef
+  have hiff : ∀ Q : W.Point, IsDiffCharCert W W' A B Cp D E c Q
+      ↔ V.eval (veluPointX Q) * veluPointY Q + U.eval (veluPointX Q) = 0 := by
+    intro Q
+    unfold IsDiffCharCert
+    rw [hVdef, hUdef]
+    simp only [Polynomial.eval_sub, Polynomial.eval_add, Polynomial.eval_mul,
+      Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+    constructor <;> intro hh <;> linear_combination hh
+  have h2 : {P : W.Point | (2 : ℕ) • P = 0}.Finite := finite_nsmulKer (by norm_num)
+  have hT : (S ∪ veluPointX '' {P : W.Point | (2 : ℕ) • P = 0}).Finite :=
+    hS.union (h2.image _)
+  have hVzero : V = 0 := by
+    refine Polynomial.eq_of_infinite_eval_eq V 0 (Set.Infinite.mono ?_ hT.infinite_compl)
+    intro t ht
+    obtain ⟨P, hP, hxP⟩ := exists_point_veluPointX_eq (W := W) t
+    have hPS : veluPointX P ∉ S := by
+      rw [hxP]; exact fun hc => ht (Or.inl hc)
+    have hnegS : veluPointX (-P) ∉ S := by
+      rw [velu_pointX_neg, hxP]; exact fun hc => ht (Or.inl hc)
+    have h1 := (hiff P).1 (h P hP hPS)
+    have h2' := (hiff (-P)).1 (h (-P) (neg_ne_zero.2 hP) hnegS)
+    rw [velu_pointX_neg, velu_pointY_neg P hP] at h2'
+    have hne2 : 2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 := by
+      intro hc
+      have hPP : P = -P :=
+        eq_of_veluPoint_eq hP (neg_ne_zero.2 hP) (velu_pointX_neg P).symm
+          (by rw [velu_pointY_neg P hP]; linear_combination hc)
+      have htors : (2 : ℕ) • P = 0 := by
+        rw [two_nsmul]
+        nth_rewrite 2 [hPP]
+        exact add_neg_cancel P
+      exact ht (Or.inr ⟨P, htors, hxP⟩)
+    have hmul : V.eval (veluPointX P) * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) = 0 := by
+      linear_combination h1 - h2'
+    have hV0 : V.eval (veluPointX P) = 0 := by
+      rcases mul_eq_zero.1 hmul with hz | hz
+      · exact hz
+      · exact absurd hz hne2
+    show Polynomial.eval t V = Polynomial.eval t 0
+    rw [← hxP]; simpa using hV0
+  have hUzero : U = 0 := by
+    refine Polynomial.eq_of_infinite_eval_eq U 0 (Set.Infinite.mono ?_ hS.infinite_compl)
+    intro t ht
+    obtain ⟨P, hP, hxP⟩ := exists_point_veluPointX_eq (W := W) t
+    have h1 := (hiff P).1 (h P hP (by rw [hxP]; exact ht))
+    rw [hVzero] at h1
+    simp only [Polynomial.eval_zero, zero_mul, zero_add] at h1
+    show Polynomial.eval t U = Polynomial.eval t 0
+    rw [← hxP]; simpa using h1
+  intro P hP
+  rw [hiff, hVzero, hUzero]
+  simp
+
 /-! ### The open geometry
 
-The six statements below are the leaves of this cut. Each is a standard fact
+The statements below were the six leaves of this cut; `isDiffChar_comp` is now
+PROVEN and the other five remain open. Each is a standard fact
 about the invariant differential (Silverman, *AEC* III.5); none of them is in
 the mathlib pin, in `~/cs/FLT`, or elsewhere in `Fermat/` — the pin has the
 invariant differential nowhere, and this project has only the universal
@@ -275,20 +508,172 @@ theorem isDiffChar_add [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     IsDiffChar (φ + ψ) (c + d) :=
   sorry
 
-/-- **LEAF: `λ` is multiplicative on composites.**
+/-- **PROVEN: `λ` is multiplicative on composites.**
 
-`(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·(φ*ω') = (d·c)·ω`. Purely formal from
-functoriality of pullback; the content is that the certificate of the composite
-is obtained by substituting the witnesses of `φ` into those of `ψ`, which is the
-same substitution `IsRationalMap.comp` performs.
+`(ψ ∘ φ)*ω'' = φ*(ψ*ω'') = φ*(d·ω') = d·(φ*ω') = (d·c)·ω`. The content is that
+the certificate of the composite is obtained by substituting the witnesses of `φ`
+into those of `ψ` — the same substitution `IsRationalMap.comp` performs — and
+that the Wronskian of the substituted pair is `homogSubst_wronskian`, i.e. the
+chain rule.
+
+**HOW THE PROOF GOES.** If either map is `0` so is the composite, and the guard
+clause of `IsDiffChar` makes the corresponding scalar `0`; otherwise `φ` is
+surjective (`IsRationalMap.surjective`) so the composite is nonzero, and neither
+`x ∘ φ` nor `x ∘ ψ` is constant (`eq_zero_of_constX`) — which is what makes the
+substituted witnesses nonzero and forces `deg(x ∘ ψ) ≥ 1`. The differential
+certificate is then checked at the generic point, where `B(x) ≠ 0`, `E(x) ≠ 0`
+and `φ P ≠ 0` (the kernel is finite), and extended to every point by
+`isDiffCharCert_of_cofinite`. At such a point the identity reduces, after
+`eval_homogSubst` and the two given certificates, to
+`c·B(x)²·E(x)·ψ₂'(φP) = (A'B − AB')(x)·E(x)·ψ₂(P)` — which is `φ`'s own
+certificate rewritten through `x(φP)·B(x) = A(x)` and
+`y(φP)·E(x) = C(x)y + D(x)`.
 
 **THE CHECK THAT WOULD REFUTE THIS LEAF**: two composable rational maps whose
 composite acts on `ω` by something other than the product of their scalars. -/
 theorem isDiffChar_comp [IsAlgClosed F] [W.IsElliptic] [W'.IsElliptic]
     [W''.IsElliptic] {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point}
     {c d : F} (hφ : IsDiffChar φ c) (hψ : IsDiffChar ψ d) :
-    IsDiffChar (ψ.comp φ) (d * c) :=
-  sorry
+    IsDiffChar (ψ.comp φ) (d * c) := by
+  classical
+  obtain ⟨hφ0, A, B, Cp, D, E, hB, hE, hratφ, hcertφ⟩ := hφ
+  obtain ⟨hψ0, A', B', C', D', E', hB', hE', hratψ, hcertψ⟩ := hψ
+  by_cases hφz : φ = 0
+  · have hz : ψ.comp φ = 0 := by
+      ext P; show ψ (φ P) = 0; rw [hφz]; simp
+    rw [hz, hφ0 hφz, mul_zero]; exact isDiffChar_zero
+  by_cases hψz : ψ = 0
+  · have hz : ψ.comp φ = 0 := by
+      ext P; show ψ (φ P) = 0; rw [hψz]; simp
+    rw [hz, hψ0 hψz, zero_mul]; exact isDiffChar_zero
+  have hconst : ¬ ∃ c₀ : F, A = Polynomial.C c₀ * B := by
+    rintro ⟨c₀, hc₀⟩
+    exact hφz (eq_zero_of_constX hB c₀ hc₀ (fun P hP => (hratφ P hP).1))
+  have hconst' : ¬ ∃ c₀ : F, A' = Polynomial.C c₀ * B' := by
+    rintro ⟨c₀, hc₀⟩
+    exact hψz (eq_zero_of_constX hB' c₀ hc₀ (fun Q hQ => (hratψ Q hQ).1))
+  obtain ⟨n, hA'deg, hB'deg⟩ :
+      ∃ n : ℕ, A'.natDegree ≤ n + 1 ∧ B'.natDegree ≤ n + 1 := by
+    rcases Nat.eq_zero_or_pos (max A'.natDegree B'.natDegree) with h0 | hpos
+    · exfalso
+      obtain ⟨α, hα⟩ := Polynomial.natDegree_eq_zero.1
+        (Nat.le_zero.1 (h0 ▸ le_max_left A'.natDegree B'.natDegree))
+      obtain ⟨β, hβ⟩ := Polynomial.natDegree_eq_zero.1
+        (Nat.le_zero.1 (h0 ▸ le_max_right A'.natDegree B'.natDegree))
+      have hβ0 : β ≠ 0 := by
+        rintro rfl; exact hB' (by rw [← hβ, map_zero])
+      exact hconst' ⟨α / β, by
+        rw [← hα, ← hβ, ← Polynomial.C_mul, div_mul_cancel₀ _ hβ0]⟩
+    · refine ⟨max A'.natDegree B'.natDegree - 1, ?_, ?_⟩
+      · have := le_max_left A'.natDegree B'.natDegree
+        omega
+      · have := le_max_right A'.natDegree B'.natDegree
+        omega
+  obtain ⟨m, hC'deg, hD'deg, hE'deg⟩ :
+      ∃ m : ℕ, C'.natDegree ≤ m ∧ D'.natDegree ≤ m ∧ E'.natDegree ≤ m :=
+    ⟨max (max C'.natDegree D'.natDegree) E'.natDegree,
+      le_trans (le_max_left _ _) (le_max_left _ _),
+      le_trans (le_max_right _ _) (le_max_left _ _), le_max_right _ _⟩
+  have hne : ∀ Q : F[X], Q ≠ 0 → ∀ k : ℕ, Q.natDegree ≤ k → homogSubst A B k Q ≠ 0 :=
+    fun Q hQ k hk hz => hconst (exists_const_of_homogSubst_eq_zero hB hQ hk hz)
+  have hsurj : Function.Surjective φ :=
+    IsRationalMap.surjective ⟨A, B, Cp, D, E, hB, hE, hratφ⟩ hφz
+  refine ⟨?_, homogSubst A B (n + 1) A', homogSubst A B (n + 1) B',
+    homogSubst A B m C' * Cp,
+    homogSubst A B m C' * D + homogSubst A B m D' * E,
+    homogSubst A B m E' * E,
+    hne B' hB' (n + 1) hB'deg,
+    mul_ne_zero (hne E' hE' m hE'deg) hE, ?_, ?_⟩
+  · intro hcz
+    refine absurd (AddMonoidHom.ext fun Q => ?_) hψz
+    obtain ⟨P, hP⟩ := hsurj Q
+    show ψ Q = 0
+    rw [← hP]
+    exact DFunLike.congr_fun hcz P
+  · intro P hP
+    have hφP : φ P ≠ 0 := fun hcz => hP (by show ψ (φ P) = 0; rw [hcz, map_zero])
+    obtain ⟨hx, hy⟩ := hratφ P hφP
+    obtain ⟨hx', hy'⟩ := hratψ (φ P) hP
+    have hxA : (homogSubst A B (n + 1) A').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ (n + 1) * A'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hA'deg hx
+    have hxB : (homogSubst A B (n + 1) B').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ (n + 1) * B'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hB'deg hx
+    have hyC : (homogSubst A B m C').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ m * C'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hC'deg hx
+    have hyD : (homogSubst A B m D').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ m * D'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hD'deg hx
+    have hyE : (homogSubst A B m E').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ m * E'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hE'deg hx
+    refine ⟨?_, ?_⟩
+    · rw [hxA, hxB]
+      linear_combination (B.eval (veluPointX P)) ^ (n + 1) * hx'
+    · simp only [Polynomial.eval_mul, Polynomial.eval_add, hyC, hyD, hyE]
+      linear_combination
+        ((B.eval (veluPointX P)) ^ m * E.eval (veluPointX P)) * hy'
+          + ((B.eval (veluPointX P)) ^ m * C'.eval (veluPointX (φ P))) * hy
+  · refine isDiffCharCert_of_cofinite
+      (S := {t : F | B.IsRoot t} ∪ {t : F | E.IsRoot t}
+        ∪ veluPointX '' (AddMonoidHom.ker φ : Set W.Point))
+      (((Polynomial.finite_setOf_isRoot hB).union
+        (Polynomial.finite_setOf_isRoot hE)).union
+        ((IsRationalMap.finite_ker ⟨A, B, Cp, D, E, hB, hE, hratφ⟩ hφz).image _)) ?_
+    intro P hP0 hPS
+    have hbne : B.eval (veluPointX P) ≠ 0 := fun hc => hPS (Or.inl (Or.inl hc))
+    have hene : E.eval (veluPointX P) ≠ 0 := fun hc => hPS (Or.inl (Or.inr hc))
+    have hφP : φ P ≠ 0 := fun hc => hPS (Or.inr ⟨P, by simpa using hc, rfl⟩)
+    obtain ⟨hx, hy⟩ := hratφ P hφP
+    have hcφ := hcertφ P hP0
+    have hcψ := hcertψ (φ P) hφP
+    unfold IsDiffCharCert at hcφ hcψ ⊢
+    have hxA : (homogSubst A B (n + 1) A').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ (n + 1) * A'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hA'deg hx
+    have hxB : (homogSubst A B (n + 1) B').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ (n + 1) * B'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hB'deg hx
+    have hyC : (homogSubst A B m C').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ m * C'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hC'deg hx
+    have hyD : (homogSubst A B m D').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ m * D'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hD'deg hx
+    have hyE : (homogSubst A B m E').eval (veluPointX P)
+        = (B.eval (veluPointX P)) ^ m * E'.eval (veluPointX (φ P)) :=
+      eval_homogSubst hE'deg hx
+    have hdegW : (derivative A' * B' - A' * derivative B').natDegree ≤ n + (n + 1) := by
+      refine le_trans (Polynomial.natDegree_sub_le _ _) (max_le ?_ ?_)
+      · exact Polynomial.natDegree_mul_le_of_le
+          (le_trans (Polynomial.natDegree_derivative_le A') (by omega)) hB'deg
+      · refine le_trans (Polynomial.natDegree_mul_le_of_le hA'deg
+          (show (derivative B').natDegree ≤ n from
+            le_trans (Polynomial.natDegree_derivative_le B') (by omega))) (by omega)
+    have hWr := congrArg (Polynomial.eval (veluPointX P))
+      (homogSubst_wronskian (A := A) (B := B) hB hA'deg hB'deg)
+    simp only [Polynomial.eval_mul, Polynomial.eval_sub, hxA, hxB,
+      eval_homogSubst hdegW hx] at hWr
+    set t := veluPointX P with ht
+    set y := veluPointY P with hyv
+    set u := veluPointX (φ P) with hu
+    set v := veluPointY (φ P) with hv
+    set b := B.eval t with hb
+    have hstar : c * b ^ 2 * E.eval t * (2 * v + W'.a₁ * u + W'.a₃)
+        = ((derivative A).eval t * b - A.eval t * (derivative B).eval t)
+            * E.eval t * (2 * y + W.a₁ * t + W.a₃) := by
+      linear_combination hcφ + (2 * c * b ^ 2) * hy
+        + (c * b * W'.a₁ * E.eval t) * hx
+    refine mul_right_cancel₀ hbne ?_
+    simp only [Polynomial.eval_mul, Polynomial.eval_add, hxA, hxB, hyC, hyD, hyE]
+    linear_combination
+      (c * b ^ (2 * n + m + 3) * E.eval t) * hcψ
+      - (2 * c * d * b ^ (2 * n + m + 3) * (B'.eval u) ^ 2 * C'.eval u) * hy
+      + (b ^ (2 * n + m + 1) * ((derivative A').eval u * B'.eval u
+            - A'.eval u * (derivative B').eval u) * E'.eval u) * hstar
+      - (b ^ m * E'.eval u * E.eval t * (2 * y + W.a₁ * t + W.a₃)) * hWr
 
 /-- **LEAF: `λ` is injective, in characteristic zero.**
 
