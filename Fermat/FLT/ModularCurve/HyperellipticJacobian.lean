@@ -62,7 +62,9 @@ covering collection.  Each namespace now reads top-down:
                                   place where separability does any work
       → sub_single_pt_notMem_princ PROVEN: assembled, over `princ = range divisor`
       → aj_injective_of_separable PROVEN: assembled
-    exists_reductionFiltration    LEAF: red together with the formal-group filtration
+    exists_smoothModel            LEAF: the ℤ_p-model — divisor specialisation and the
+                                        formal logarithm, in one existential
+      → exists_reductionFiltration PROVEN: red descends, the four filtration axioms
       → exists_reduction          PROVEN: torsion-freeness from the filtration
     X18.finite_pic / X13.finite_pic  LEAF: Mordell–Weil and rank 0, one per curve
       → exists_jacobianPackage    PROVEN: the four obligations assembled
@@ -118,7 +120,7 @@ the three generic obligations were themselves decomposed; the earlier amendment 
 2026-07-27 decomposed and PROVED `exists_jacobianPackage`).  Six of them —
 `finite_isPlaceFun`, `exists_isPlaceFun_of_affPt`, `exists_isPlaceFun_of_infPt`,
 `exists_degreeMap`,
-`sub_single_pt_notMem_princ`, `exists_reductionFiltration` — are generic in the sextic and
+`sub_single_pt_notMem_princ`, `exists_smoothModel` — are generic in the sextic and
 the prime, so ONE genus-`2` divisor-theory development closes them for both levels at once;
 only `X18.finite_pic` and `X13.finite_pic`, which are Mordell–Weil together with
 `rank J(ℚ) = 0`, are specific to the curves.  (The count rose from five to eight while
@@ -248,6 +250,10 @@ public import Mathlib.RingTheory.AdjoinRoot
 public import Mathlib.FieldTheory.KummerPolynomial
 public import Mathlib.RingTheory.Polynomial.RationalRoot
 public import Mathlib.Tactic.ComputeDegree
+-- the formal logarithm of the Jacobian over `ℤ_p`, whose target is `ℤ_[p] × ℤ_[p]`: this
+-- is what carries the filtration of `ker red` in `SmoothModel`, and `PadicInt`'s
+-- `mem_span_pow_iff_le_valuation` is what makes the filtration separated
+public import Mathlib.NumberTheory.Padics.PadicIntegers
 
 @[expose] public section
 
@@ -533,7 +539,7 @@ discharge:
 |---|---|---|
 | 1 | `exists_placeData` — the function field, its places, and the divisor theory exist | PROVEN 2026-07-28 from `exists_functionFieldData`, `exists_placeSystem`, `exists_isPlaceOfPt` |
 | 2 | `aj_injective_of_separable` — Abel–Jacobi is injective, because the genus is `2 ≥ 1` | PROVEN 2026-07-28 from `exists_degreeMap`, `sub_single_pt_notMem_princ` |
-| 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration` |
+| 3 | `exists_reduction` — good reduction: the homomorphism, its compatibility with `redPt`, and torsion-freeness of its kernel | PROVEN 2026-07-28 from `exists_reductionFiltration`, itself PROVEN the same day from `exists_smoothModel` |
 | 4 | `X18.finite_pic`, `X13.finite_pic` — Mordell–Weil together with `rank J(ℚ) = 0` | LEAF |
 
 and `X18.exists_jacobianPackage` / `X13.exists_jacobianPackage` become PROVEN assemblies.
@@ -1849,6 +1855,12 @@ formal group, and it is bundled WITH `red` in a single existential (`ReductionFi
 so no hand-built compatible `red` can satisfy the leaf without also carrying a separated
 `p`-adic filtration of its kernel.
 
+A SECOND cut was made later the same day, in the same spirit and with the same bundling:
+`exists_reductionFiltration` is now PROVEN from `exists_smoothModel`, which asks for the
+divisor specialisation along the smooth `ℤ_p`-model together with the formal logarithm of
+the Jacobian — again in ONE existential, so that `red` is derived from the model rather
+than postulated.  See the section note before `padicLevel` below.
+
 What that buys: the group-theoretic half of Silverman *AEC* VII.3.2 / IV.6.1 — "a separated
 filtration with elementary-abelian `p`-graded pieces on which `[p]` shifts the level by
 exactly one has no torsion" — becomes PROVEN here, and the remaining leaf is the concrete
@@ -1969,22 +1981,289 @@ theorem ker_torsionFree (R : ReductionFiltration p D D') :
 
 end ReductionFiltration
 
-/-- **LEAF (obligation 3a): reduction and its formal-group filtration exist.**
+/-!
+### The smooth `ℤ_p`-model and the formal logarithm
 
-The sextic is separable mod `p` and `p` is odd, so `y² = f(x)` is a smooth proper curve over
-`ℤ_p`; specialisation of divisors along it gives `red`, sending `[∞₊]` to `[∞₊]`, and on a
-rational point it is the coordinate-wise `redPt` because the integral weighted-projective
-coordinates of `exists_int_coords` ARE the `ℤ_p`-point of the model.  The filtration is
-`filt n = J(ℚ) ∩ Ĵ(pⁿℤ_p)`, and its four axioms are the standard properties of the formal
-group of an abelian variety over `ℤ_p`, valid because `p > e + 1 = 2` — which is where
-`hp : p ≠ 2` is used.
+**DECOMPOSED 2026-07-28 (second cut).**  `exists_reductionFiltration` was itself decomposed,
+one level further down and along the axis the geometry actually runs on.  Producing a
+`ReductionFiltration` needs two things, and they are of completely different kinds:
+
+* **specialisation of divisors** along the smooth proper model `𝒳/ℤ_p`.  A closed point of
+  `X_ℚ` has a closure in `𝒳` that is finite flat over `ℤ_p`, and that closure meets the
+  special fibre in an effective divisor of `X_𝔽ₚ`; extended `ℤ`-linearly this is
+  `sp : Div(X_ℚ) → Div(X_𝔽ₚ)`.  It carries principal divisors to principal ones — the
+  closure of `div g` is `div_𝒳(g)` minus a multiple of the special fibre, and the special
+  fibre IS `div_𝒳(p)`, so the vertical part restricts to a principal divisor — and it
+  carries the closure of a rational point, which is a SECTION of `𝒳 → Spec ℤ_p`, to the
+  single point `redPt P`.  That is `Specialisation`, and `red` is **derived** from it
+  below rather than postulated, which is what the section note above asks for.
+* **the formal logarithm** of the Jacobian.  `ker red` sits inside
+  `ker (J(ℚ_p) → J(𝔽ₚ)) = Ĵ(pℤ_p)`, and for `e < p − 1` — with `e = v_p(p) = 1` this is
+  exactly `p ≠ 2` — the formal logarithm converges on `Ĵ(pℤ_p)` and is an injective
+  homomorphism into `(pℤ_p)^g` with `g = 2`, the genus.  That is `log`, `log_injective`
+  and `log_mem_one`, and it is the one place where `p ≠ 2` is genuinely used: at `p = 2`
+  the series `log` does not converge on `Ĵ(2ℤ_2)`, and indeed `Ĵ(2ℤ_2)` can have
+  `2`-torsion, so no such `log` exists.
+
+**The two halves stay inside ONE existential** (`SmoothModel`), for exactly the reason the
+section note above gives: `∀ compatible red, ∃ log …` is a different statement, satisfiable
+or refutable by hand-built junk `red`s, and it is not the one we want.  What the cut buys is
+that all four `ReductionFiltration` axioms — including `smul_p_notMem`, the sharp form of
+"multiplication by `p` raises the level by exactly one" — become THEOREMS about
+divisibility in `ℤ_p`, proven below, rather than assumptions.
+
+**`log` is asked to be INJECTIVE and not surjective, and that is not laziness.**  Over
+`ℤ_p` with `e < p − 1` the logarithm is an ISOMORPHISM `Ĵ(pℤ_p) ≅ (pℤ_p)^g`; but `ker red`
+is only the group of `ℚ`-RATIONAL classes in there, which is finitely generated (Mordell–
+Weil) and therefore never all of `Ĵ(pℤ_p)`, an uncountable group.  Demanding surjectivity
+would make the leaf FALSE.  Injectivity is all the filtration argument uses.
+-/
+
+/-- The subgroup of `ℤ_[p] × ℤ_[p]` of pairs both divisible by `pⁿ` — the image under the
+formal logarithm of the `n`-th step `Ĵ(pⁿℤ_p)` of the formal group. -/
+def padicLevel (p : ℕ) [Fact p.Prime] (n : ℕ) : AddSubgroup (ℤ_[p] × ℤ_[p]) where
+  carrier := {z | (p : ℤ_[p]) ^ n ∣ z.1 ∧ (p : ℤ_[p]) ^ n ∣ z.2}
+  zero_mem' := ⟨dvd_zero _, dvd_zero _⟩
+  add_mem' := fun ha hb => ⟨dvd_add ha.1 hb.1, dvd_add ha.2 hb.2⟩
+  neg_mem' := fun ha => ⟨(dvd_neg).mpr ha.1, (dvd_neg).mpr ha.2⟩
+
+lemma mem_padicLevel {p : ℕ} [Fact p.Prime] {n : ℕ} {z : ℤ_[p] × ℤ_[p]} :
+    z ∈ padicLevel p n ↔ (p : ℤ_[p]) ^ n ∣ z.1 ∧ (p : ℤ_[p]) ^ n ∣ z.2 := Iff.rfl
+
+/-- **`ℤ_p` is separated for the `p`-adic filtration** (PROVEN): an element divisible by
+every power of `p` is `0`.  A nonzero `x` has a finite `valuation`, and `pⁿ ∣ x` says
+`n ≤ x.valuation`; taking `n = x.valuation + 1` is the contradiction.  This is what makes
+`filt_separated` true below. -/
+lemma padicInt_eq_zero_of_forall_pow_dvd {p : ℕ} [Fact p.Prime] (x : ℤ_[p])
+    (h : ∀ n : ℕ, (p : ℤ_[p]) ^ n ∣ x) : x = 0 := by
+  by_contra hx
+  have key := fun n : ℕ =>
+    (PadicInt.mem_span_pow_iff_le_valuation x hx n).mp (Ideal.mem_span_singleton.mpr (h n))
+  exact absurd (key (x.valuation + 1)) (by omega)
+
+/-- `p` is nonzero in `ℤ_[p]`, which has characteristic `0` (PROVEN). -/
+lemma padicInt_p_ne_zero (p : ℕ) [hp : Fact p.Prime] : (p : ℤ_[p]) ≠ 0 :=
+  Nat.cast_ne_zero.mpr hp.out.ne_zero
+
+/-- **Specialisation of divisors along the smooth proper model over `ℤ_p`.**
+
+`sp` sends a closed point of `X_ℚ` to its specialisation on `X_𝔽ₚ`: the closure of the
+point in `𝒳` is finite flat over `ℤ_p`, and `sp` records the effective divisor it cuts on
+the special fibre.  The two axioms are what the model provides and what the descent to
+`Pic` needs:
+
+* `sp_pt`: the closure of a `ℚ`-rational point is a SECTION of `𝒳 → Spec ℤ_p`, so it meets
+  the special fibre in the single `𝔽ₚ`-point `redPt P` — the integral weighted-projective
+  coordinates of `exists_int_coords` ARE that section;
+* `sp_princ`: the closure of `div g` is `div_𝒳(g)` minus a multiple of the special fibre,
+  and the special fibre is `div_𝒳(p)`, so the whole thing restricts to a principal divisor.
+
+Nothing here mentions the formal group; that is the other half of `SmoothModel`. -/
+structure Specialisation {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (p : ℕ) [Fact p.Prime]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)) where
+  /-- specialisation of divisors, `Div(X_ℚ) → Div(X_𝔽ₚ)` -/
+  sp : D.Divisors →+ D'.Divisors
+  /-- a rational point specialises to its coordinate-wise reduction -/
+  sp_pt : ∀ P : Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ,
+      sp (Finsupp.single (D.pt P) 1) = Finsupp.single (D'.pt (redPt c₀ c₁ c₂ c₃ c₄ c₅ P)) 1
+  /-- a principal divisor specialises to a principal divisor -/
+  sp_princ : ∀ z ∈ D.princ, sp z ∈ D'.princ
+
+namespace Specialisation
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime]
+  {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} {D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)}
+
+/-- **PROVEN: `sp` respects the relation defining `Pic`.**  `picRel` is generated by the
+principal divisors, handled by `sp_princ`, together with the class of the base point, and
+`redPt` fixes `∞₊` — it is `Sum.inr` on the infinite summand by definition — so `sp_pt`
+sends `[∞₊]` to `[∞₊]`.  This is exactly why the base point had to be one that reduction
+preserves. -/
+lemma picRel_le_comap (S : Specialisation p D D') :
+    D.picRel ≤ AddSubgroup.comap S.sp D'.picRel := by
+  refine sup_le (fun z hz => ?_) ?_
+  · exact (le_sup_left : D'.princ ≤ D'.picRel) (S.sp_princ z hz)
+  · rw [AddSubgroup.zmultiples_le]
+    have hred : redPt c₀ c₁ c₂ c₃ c₄ c₅ (p := p) (PlaceData.infPlus) = PlaceData.infPlus := rfl
+    show S.sp (Finsupp.single (D.pt PlaceData.infPlus) 1) ∈ D'.picRel
+    rw [S.sp_pt, hred]
+    exact (le_sup_right : AddSubgroup.zmultiples _ ≤ D'.picRel) (AddSubgroup.mem_zmultiples _)
+
+/-- **Reduction of divisor CLASSES** (PROVEN, not postulated): `sp` descends to the
+quotient by `picRel`. -/
+noncomputable def red (S : Specialisation p D D') : D.Pic →+ D'.Pic :=
+  QuotientAddGroup.map D.picRel D'.picRel S.sp S.picRel_le_comap
+
+/-- `red` on the class of a divisor is the class of its specialisation (PROVEN, `rfl`). -/
+lemma red_mk (S : Specialisation p D D') (z : D.Divisors) :
+    S.red (QuotientAddGroup.mk z) = QuotientAddGroup.mk (S.sp z) := rfl
+
+/-- **PROVEN: the compatibility square with the concrete reduction of points.**  This is
+`ReductionFiltration.red_aj`, and it comes straight from `sp_pt`. -/
+lemma red_aj (S : Specialisation p D D') (P : Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ) :
+    S.red (D.aj P) = D'.aj (redPt c₀ c₁ c₂ c₃ c₄ c₅ P) := by
+  show QuotientAddGroup.mk (S.sp (Finsupp.single (D.pt P) 1)) = _
+  rw [S.sp_pt]
+  rfl
+
+end Specialisation
+
+/-- **The smooth `ℤ_p`-model of the curve, as far as this file needs it**: specialisation of
+divisors together with the formal logarithm of the Jacobian on the kernel of reduction.
+
+See the section note above for why the two are bundled and why `log` is only asked to be
+injective.  `log_mem_one` is the statement that the logarithm of an element of
+`Ĵ(pℤ_p) = ker red` lies in `(pℤ_p)²`, which is what makes `filt 1 = ker red` below. -/
+structure SmoothModel {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} (p : ℕ) [Fact p.Prime]
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)) where
+  /-- specialisation of divisors along the model, which gives `red` -/
+  spec : Specialisation p D D'
+  /-- the formal logarithm of the Jacobian, on the kernel of reduction -/
+  log : ↥spec.red.ker →+ ℤ_[p] × ℤ_[p]
+  /-- it is injective — this is where `p ≠ 2`, i.e. `e < p − 1`, is used -/
+  log_injective : Function.Injective log
+  /-- and it lands in `(pℤ_p)²`, the first step of the filtration -/
+  log_mem_one : ∀ z : ↥spec.red.ker, log z ∈ padicLevel p 1
+
+namespace SmoothModel
+
+variable {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime]
+  {D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ} {D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)}
+
+/-- **The formal-group filtration**, `filt n = J(ℚ) ∩ Ĵ(pⁿℤ_p)`, defined as the elements of
+`ker red` whose logarithm is divisible by `pⁿ` in both coordinates. -/
+noncomputable def filt (M : SmoothModel p D D') (n : ℕ) : AddSubgroup D.Pic :=
+  ((padicLevel p n).comap M.log).map M.spec.red.ker.subtype
+
+/-- Membership in `filt n`, unfolded (PROVEN). -/
+lemma mem_filt (M : SmoothModel p D D') (n : ℕ) (z : D.Pic) :
+    z ∈ M.filt n ↔ ∃ h : z ∈ M.spec.red.ker, M.log ⟨z, h⟩ ∈ padicLevel p n := by
+  constructor
+  · intro hz
+    obtain ⟨w, hw, hwz⟩ := AddSubgroup.mem_map.mp hz
+    subst hwz
+    exact ⟨w.2, hw⟩
+  · rintro ⟨h, hz⟩
+    exact AddSubgroup.mem_map.mpr ⟨⟨z, h⟩, hz, rfl⟩
+
+/-- **The logarithm turns multiplication by `p` into multiplication by `p`** (PROVEN) — it
+is a homomorphism, and `p • ⟨z, h⟩` is `⟨p • z, _⟩` in the kernel. -/
+lemma log_smul (M : SmoothModel p D D') {z : D.Pic} (h : z ∈ M.spec.red.ker)
+    (hpz : p • z ∈ M.spec.red.ker) :
+    M.log ⟨p • z, hpz⟩ = (p : ℤ_[p]) • M.log ⟨z, h⟩ := by
+  have he : (⟨p • z, hpz⟩ : ↥M.spec.red.ker) = p • ⟨z, h⟩ := Subtype.ext rfl
+  rw [he, map_nsmul]
+  ext <;> simp [nsmul_eq_mul]
+
+/-- **PROVEN: a `SmoothModel` yields a `ReductionFiltration`.**
+
+All four filtration axioms are divisibility statements about the logarithm:
+
+* `filt_one` is `log_mem_one`;
+* `filt_antitone` is `pᵐ ∣ pⁿ` for `m ≤ n`;
+* `filt_separated` is `padicInt_eq_zero_of_forall_pow_dvd` plus injectivity of `log`;
+* `smul_p_mem` is `pⁿ ∣ a → pⁿ⁺¹ ∣ p·a`, and `smul_p_notMem` is its converse, cancelling
+  the nonzero `p` in the domain `ℤ_[p]`.  The last is the sharp statement that
+  multiplication by `p` raises the level by EXACTLY one, and it is what
+  `ReductionFiltration.nsmul_ne_zero_of_notMem` consumes. -/
+noncomputable def toReductionFiltration (M : SmoothModel p D D') :
+    ReductionFiltration p D D' where
+  red := M.spec.red
+  red_aj := M.spec.red_aj
+  filt := M.filt
+  filt_one := by
+    refine le_antisymm (fun z hz => ((M.mem_filt 1 z).mp hz).fst) (fun z hz => ?_)
+    exact (M.mem_filt 1 z).mpr ⟨hz, M.log_mem_one ⟨z, hz⟩⟩
+  filt_antitone := by
+    intro m n hmn z hz
+    obtain ⟨h, h1, h2⟩ := (M.mem_filt n z).mp hz
+    exact (M.mem_filt m z).mpr
+      ⟨h, dvd_trans (pow_dvd_pow _ hmn) h1, dvd_trans (pow_dvd_pow _ hmn) h2⟩
+  filt_separated := by
+    intro z hz
+    obtain ⟨h, -⟩ := (M.mem_filt 1 z).mp (hz 1)
+    have key : ∀ n : ℕ, M.log ⟨z, h⟩ ∈ padicLevel p n := by
+      intro n
+      obtain ⟨h', hn⟩ := (M.mem_filt n z).mp (hz n)
+      -- `h'` and `h` are proofs of the same proposition, hence definitionally equal
+      exact hn
+    have h0 : M.log ⟨z, h⟩ = 0 :=
+      Prod.ext (padicInt_eq_zero_of_forall_pow_dvd _ fun n => (key n).1)
+        (padicInt_eq_zero_of_forall_pow_dvd _ fun n => (key n).2)
+    have hzz : (⟨z, h⟩ : ↥M.spec.red.ker) = 0 := by
+      apply M.log_injective
+      rw [h0, map_zero]
+    exact congrArg Subtype.val hzz
+  smul_p_mem := by
+    intro n _ z hz
+    obtain ⟨h, h1, h2⟩ := (M.mem_filt n z).mp hz
+    have hpz : p • z ∈ M.spec.red.ker := AddSubgroup.nsmul_mem _ h p
+    refine (M.mem_filt (n + 1) (p • z)).mpr ⟨hpz, ?_, ?_⟩
+    · rw [M.log_smul h hpz]
+      obtain ⟨c, hc⟩ := h1
+      exact ⟨c, by simp only [Prod.smul_fst, smul_eq_mul, hc]; ring⟩
+    · rw [M.log_smul h hpz]
+      obtain ⟨c, hc⟩ := h2
+      exact ⟨c, by simp only [Prod.smul_snd, smul_eq_mul, hc]; ring⟩
+  smul_p_notMem := by
+    intro n _ z hz hout hcon
+    obtain ⟨h, -, -⟩ := (M.mem_filt n z).mp hz
+    obtain ⟨hpz, k1, k2⟩ := (M.mem_filt (n + 2) (p • z)).mp hcon
+    rw [M.log_smul h hpz] at k1 k2
+    apply hout
+    refine (M.mem_filt (n + 1) z).mpr ⟨h, ?_, ?_⟩
+    · refine (mul_dvd_mul_iff_left (padicInt_p_ne_zero p)).mp ?_
+      have he : (p : ℤ_[p]) * (p : ℤ_[p]) ^ (n + 1) = (p : ℤ_[p]) ^ (n + 2) := by ring
+      rw [he]
+      simpa only [Prod.smul_fst, smul_eq_mul] using k1
+    · refine (mul_dvd_mul_iff_left (padicInt_p_ne_zero p)).mp ?_
+      have he : (p : ℤ_[p]) * (p : ℤ_[p]) ^ (n + 1) = (p : ℤ_[p]) ^ (n + 2) := by ring
+      rw [he]
+      simpa only [Prod.smul_snd, smul_eq_mul] using k2
+
+end SmoothModel
+
+/-- **LEAF (obligation 3a): the smooth `ℤ_p`-model exists, with its specialisation of
+divisors and the formal logarithm of its Jacobian.**
+
+This is what remains of `exists_reductionFiltration` after the second cut of 2026-07-28; see
+the section note above for why the two halves are bundled.  What has to be built:
+
+* the smooth proper model `𝒳/ℤ_p` of `y² = f(x)`.  `hsep` says the sextic is separable mod
+  `p`, i.e. `disc f ∈ ℤ_p^×`, and `hp` says `2 ∈ ℤ_p^×`, so the weighted-projective model of
+  the file is already smooth over `ℤ_p` — no change of model is needed, which is why the
+  integral coordinates of `exists_int_coords` are literally the `ℤ_p`-points;
+* specialisation of divisors: the closure of a closed point of `X_ℚ` is finite flat over
+  `ℤ_p` and cuts an effective divisor on `X_𝔽ₚ`.  `sp_pt` is that a rational point's
+  closure is a section; `sp_princ` is that the vertical part of `div_𝒳(g)` is a multiple of
+  `div_𝒳(p)`;
+* the formal group `Ĵ` of the Jacobian along the identity section, `ker red ⊆ Ĵ(pℤ_p)`, and
+  its logarithm.  For `e = 1 < p − 1`, i.e. `p ≠ 2`, `log = Σ (−1)ⁿ⁺¹ Tⁿ/n`-style series
+  converge on `pℤ_p` and `log` is an isomorphism `Ĵ(pℤ_p) ≅ (pℤ_p)^g`, `g = 2`; only its
+  injectivity and the containment `log(ker red) ⊆ (pℤ_p)²` are asked for here.  This is
+  Silverman *AEC* IV.6.4 / VII.3.2 for a Jacobian rather than an elliptic curve.
+
+**`hp : p ≠ 2` is load-bearing and not decorative.**  At `p = 2` with `e = 1` the series
+does not converge on `Ĵ(2ℤ_2)`, and the conclusion genuinely fails: `Ĵ(2ℤ_2)` can contain
+`2`-torsion, so no injective homomorphism into the torsion-free `ℤ_2²` exists.
 
 This leaf is generic in the sextic and the prime, so proving it closes obligation 3 at both
 levels at once. -/
+theorem exists_smoothModel {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
+    (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
+    (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
+    Nonempty (SmoothModel p D D') := sorry
+
+/-- **LEAF (obligation 3a), now PROVEN from `exists_smoothModel` and
+`SmoothModel.toReductionFiltration`.**
+
+`red` is the descent of the divisor specialisation to `Pic`, and the four filtration axioms
+are divisibility facts about the formal logarithm; see the section note above. -/
 theorem exists_reductionFiltration {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] (hp : p ≠ 2)
     (D : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ ℚ) (D' : PlaceData c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p))
     (hsep : (sextPoly c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p)).Separable) :
-    Nonempty (ReductionFiltration p D D') := sorry
+    Nonempty (ReductionFiltration p D D') :=
+  (exists_smoothModel hp D D' hsep).elim fun M => ⟨M.toReductionFiltration⟩
 
 /-- **LEAF (obligation 3), now PROVEN from `exists_reductionFiltration` and
 `ReductionFiltration.ker_torsionFree`.** -/
