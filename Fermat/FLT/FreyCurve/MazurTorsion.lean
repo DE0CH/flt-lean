@@ -187,7 +187,13 @@ public import Mathlib.Data.Rat.Lemmas
 -- its Galois-equivariant point equivalence, consumed by the PROVEN
 -- local torsion quotient of the nonsplit multiplicative case
 -- (`exists_localTorsionQuotient_of_nonsplit`).
-import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
+-- PUBLIC (promoted 2026-07-28): `quadraticTwist`, `Algebra.IsQuadraticExtension`
+-- and `quadraticCharacter` occur in SIGNATURE position in the two leaves of the
+-- `T₁` cut below
+-- (`hasSplitMultiplicativeReduction_or_exists_quadraticTwist_of_padicValRat_j_neg`
+-- and `exists_splitModel_quadraticCharacter_pointEquiv_of_padicValRat_j_neg`),
+-- where a bare `import` is not re-exported.
+public import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
 -- Fermat's little theorem (`ZMod.pow_card_sub_one_eq_one`), the cyclic
 -- structure of a group of prime order (`isAddCyclic_of_prime_card`), and
 -- Lagrange for the quotient by the eigenline
@@ -2851,13 +2857,14 @@ following are all in scope HERE, with no new import needed:
   analogue of the `ℚ_[q]` transport used by `FreyConditions.lean`, i.e.
   exactly the `ℚ̄ → Ω` plumbing `T₂` needs.
 
-What is genuinely NOT in scope is
+What was genuinely NOT in scope is
 `WeierstrassCurve.exists_quadraticTwist_hasSplitMultiplicativeReduction`:
-`QuadraticTwists.SplitMultiplicativeReduction` is imported by this file with a
-bare `import`, which is not re-exported, so `T₁` (not `T₂`) will need that
-line promoted to `public import`.  That is a header change to a 52k-line
-module, so budget a full rebuild of it and its eight `public import`
-consumers.
+`QuadraticTwists.SplitMultiplicativeReduction` was imported by this file with a
+bare `import`, which is not re-exported.  **PROMOTED to `public import`
+2026-07-28** (see the note on that import line), because `quadraticTwist` and
+`Algebra.IsQuadraticExtension` occur in SIGNATURE position in `T₁a`/`T₁b₁`/`T₁b₂`
+below.  That is a header change to a 52k-line module, so budget a full rebuild
+of it and its `public import` consumers.
 -/
 
 /-- **The two `ℚ`-algebra structures on `Ω = Kᵥᵃˡᵍ` agree** (PROVEN
@@ -2887,7 +2894,309 @@ theorem algebraRatAlgClosureAdic_eq_inst
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v) => f r)
     (Subsingleton.elim _ _)
 
-/-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (sorry leaf;
+/-! ##### The two-way cut of `T₁` (CARRIED OUT 2026-07-28)
+
+`T₁` was one sorry carrying two things that live in different worlds:
+**Tate's criterion** — the reduction-type statement "`v(j) < 0` forces split
+multiplicative reduction after at most one quadratic twist", which is
+arithmetic geometry over the local field `Kᵥ` and knows nothing about `Ω` or
+about Galois actions — and the **twist transport**, which is the plumbing that
+turns that reduction-type conclusion into a `ψ`-twisted comparison of `Ω`-point
+groups.  They are `T₁a` and `T₁b₁`/`T₁b₂` below, and `T₁` itself is now PROVEN glue
+over them together with the sorry-free `TateSepClosure.lean`.
+
+**Why the cut is at THIS seam.**  Everything the `Ω`-level assembly needs from
+`v(j) < 0` is a curve over `Kᵥ` with SPLIT multiplicative reduction plus a way
+back to `E`; and everything Tate's criterion produces is exactly that.  The
+seam is therefore the reduction-type dichotomy, and it is stated in the shape
+`exists_quadraticTwist_hasSplitMultiplicativeReduction` already speaks
+(`(… ).minimal 𝒪[Kᵥ]` has split multiplicative reduction), so that the second
+disjunct of `T₁a` and the conclusion of that PROVEN theorem are literally the
+same proposition.
+
+**The disjunction is not cosmetic and must NOT be collapsed to its second
+disjunct.**  `exists_quadraticTwist_hasSplitMultiplicativeReduction`'s own
+docstring records the reason: if `E` ALREADY has split multiplicative
+reduction then *no* quadratic twist of it does — the unramified quadratic
+twist is nonsplit multiplicative and every ramified quadratic twist is
+additive.  So "some quadratic twist has split multiplicative reduction" is
+FALSE precisely in the case one is most tempted to think of as trivial, and
+the first disjunct is what covers it.
+
+**Where the remaining depth is.**  `T₁a` is Tate's criterion (Silverman
+*ATAEC* V.5.3, and *AEC* VII.5.5 for the `v(j) < 0` ⟺ potentially
+multiplicative half); it is the genuinely new mathematics of this cluster and
+is in neither mathlib nor `~/cs/FLT` nor this project.  `T₁b₁` and `T₁b₂` are
+transport, one per disjunct: no new mathematical content, but not one-liners
+either.  **`T₁b₁` (the untwisted disjunct) is PROVEN.**  `T₁b₂` remains open
+because the quadratic extension `L` produced by `T₁a` arrives as an abstract
+field with no embedding into `Ω`, and `quadraticTwistPointEquiv` needs one
+(`IsAlgClosed.lift`, exactly as `Semistable.lean` does it in
+`torsionFlatPackage_of_unramified_quadraticTwist`).
+
+**Note on why `T₁b₂` carries the quadratic character rather than `T₁a`.**
+`ψ` is `quadraticCharacter Kᵥ L Ω` in the twisted branch and `1` in the
+untwisted one; it is therefore a function of the CHOSEN embedding `L ↪ Ω`,
+which does not exist yet at `T₁a`'s level.  Pushing `ψ` down into `T₁a` would
+force that choice into the reduction-type statement, where it does not belong.
+-/
+
+open ValuativeRel IsDedekindDomain in
+/-- **`T₁a` — Tate's criterion, in reduction-type form** (sorry leaf;
+Silverman *ATAEC* V.5.3 and *AEC* VII.5.5; Tate's 1959 notes): at a prime `v`
+with `v(j) < 0` the base change of `E` to `Kᵥ = ℚ_vˆ` has SPLIT MULTIPLICATIVE
+reduction after AT MOST ONE quadratic twist — either its own minimal model
+already does, or the minimal model of its twist by some separable quadratic
+`L/Kᵥ` does.
+
+This is the whole of the new arithmetic geometry in the `T₁` cluster.  The
+classical statement is in two halves.  First (*AEC* VII.5.5): `v(j) < 0` if
+and only if `E` has POTENTIALLY multiplicative reduction, i.e. acquires
+multiplicative reduction over a finite extension.  Second (*ATAEC* V.5.3): in
+that case `E` is, over `Kᵥ`, the twist of a Tate curve `E_Q` by a UNIQUE
+character `Γ Kᵥ → {±1}`; a character of order dividing `2` is either trivial —
+first disjunct, `E` itself is already split multiplicative — or cuts out a
+quadratic extension `L/Kᵥ`, and then `E ⊗ L` is the twist, which is the second
+disjunct.  Separability of `L` is automatic in characteristic `0`.
+
+FAITHFULNESS NOTE, and the reason for the disjunction.  The second disjunct
+ALONE would be FALSE: `exists_quadraticTwist_hasSplitMultiplicativeReduction`
+records that when `E` already has split multiplicative reduction, no quadratic
+twist of it has — the unramified twist is nonsplit multiplicative, the
+ramified ones are additive.  So a prover must not "simplify" this statement by
+dropping the left disjunct.  Conversely the first disjunct alone is false at
+any `E` with additive potentially-multiplicative reduction (a ramified twist
+is then genuinely needed), which is exactly the case that makes `ψ` ramified
+downstream and is why `T₁`'s twist cannot be discarded.
+
+Proof (not formalised).  The available route: `hasGoodReduction_or_hasMultiplicativeReduction_or_hasAdditiveReduction`
+splits on the reduction type of the minimal model; `v(j) < 0` excludes good
+reduction (`j` is integral there) and, in the multiplicative case,
+`exists_quadraticTwist_hasSplitMultiplicativeReduction` finishes (split
+already, or twist by the unramified quadratic extension).  The additive case
+is the one needing *ATAEC* V.5.3 proper: build the Tate parameter `Q` with
+`j(Q) = j(E)` from `v(j) < 0` (the `q`-expansion of `j` is invertible on
+`v(q) > 0`, which is `TateCurve.lean`'s `exists_variableChange_tateCurve`
+input), compare `E` with `E_Q` over `Kᵥ` and read off the quadratic character
+from `c₄`/`c₆`. -/
+theorem WeierstrassCurve.hasSplitMultiplicativeReduction_or_exists_quadraticTwist_of_padicValRat_j_neg
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime) (hj : padicValRat v E.j < 0) :
+    ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).minimal
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat] ∨
+    ∃ (L : Type) (_ : Field L)
+      (_ : Algebra (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) L)
+      (_ : Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) L)
+      (_ : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) L),
+      (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).minimal
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat] :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+/-- **`T₁b₁` — the twist transport, UNTWISTED branch** (PROVEN 2026-07-28):
+when `E⁄Kᵥ` already has split multiplicative reduction — the first disjunct of
+`T₁a` — the model `X` demanded by `T₁` is just its minimal model, the
+character `ψ` is trivial, and `φ` is the minimal-model change of variables.
+
+Proof.  `X := C • (E⁄Kᵥ)` with `C := ((E⁄Kᵥ).exists_isMinimal 𝒪[Kᵥ]).choose`,
+so `X` IS `(E⁄Kᵥ).minimal 𝒪[Kᵥ]` by definitional unfolding and `hsplit`
+transfers verbatim.  `φ` is
+`Affine.Point.equivVariableChangeBaseChange (E⁄Kᵥ) C Ω` followed by
+`Affine.Point.equivOfEq` for `(E⁄Kᵥ)⁄Ω = E⁄Ω`.  That last equality is where
+the two towers meet, and it holds for the reason that makes `ℚ` initial: after
+`WeierstrassCurve.map_map` the two sides are `E.map` of two ring
+homomorphisms `ℚ → Ω`, and `Subsingleton.elim` identifies them — the same
+argument as `algebraRatAlgClosureAdic_eq_inst` above, in its `map` guise.
+Equivariance is `equivVariableChangeBaseChange_galois` (a base-changed
+variable change is `Kᵥ`-rational, hence fixed by every `σ ∈ Γ Kᵥ`) together
+with a two-case `Point.map`/`equivOfEq` transport; the `restrictScalars ℚ` on
+the `E`-side map is invisible to it, both sides being the same function of `Ω`.
+
+Note the `HasSplitMultiplicativeReduction` hypothesis is stated on
+`(E⁄Kᵥ).minimal 𝒪[Kᵥ]` rather than on `E⁄Kᵥ` itself: mathlib's reduction-type
+classes all extend `IsMinimal`, so the predicate is only ever asserted of a
+minimal model. -/
+theorem WeierstrassCurve.exists_splitModel_quadraticCharacter_pointEquiv_of_hasSplitMultiplicativeReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime)
+    (hsplit :
+      ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))).minimal
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat]) :
+    ∃ (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))
+      (_ : X.IsElliptic)
+      (_ : X.HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat])
+      (ψ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+      (φ : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point ≃+
+        ((E⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+      ∀ (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))
+        (P : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+        WeierstrassCurve.Affine.Point.map (W' := E)
+            ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (φ P) =
+          ((ψ σ : ℤ)) • φ (WeierstrassCurve.Affine.Point.map (W' := X)
+            ((σ : _ ≃ₐ[_] _).toAlgHom) P) := by
+  classical
+  set W : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) :=
+    E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) with hWdef
+  set C : WeierstrassCurve.VariableChange (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat) :=
+    (W.exists_isMinimal 𝒪[HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat]).choose with hCdef
+  haveI hWell : W.IsElliptic := by
+    rw [hWdef]; exact inferInstanceAs (E.map (algebraMap ℚ _)).IsElliptic
+  -- `W⁄Ω = E⁄Ω`: the two ring homomorphisms `ℚ → Ω` agree because `ℚ` is initial
+  have hbase : (W⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))) =
+      (E⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))) := by
+    show W.map (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) _) = E.map (algebraMap ℚ _)
+    rw [hWdef, WeierstrassCurve.map_map]
+    congr 1
+  refine ⟨C • W, inferInstanceAs ((C • W).IsElliptic), hsplit, 1,
+    (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange W C
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).trans
+      (WeierstrassCurve.Affine.Point.equivOfEq hbase), ?_⟩
+  -- transporting `Point.map` across the curve identification `W⁄Ω = E⁄Ω`
+  have key : ∀ R : (W⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))).Point,
+      ∀ σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat),
+      WeierstrassCurve.Affine.Point.map (W' := E)
+          ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ)
+          (WeierstrassCurve.Affine.Point.equivOfEq hbase R) =
+        WeierstrassCurve.Affine.Point.equivOfEq hbase
+          (WeierstrassCurve.Affine.Point.map (W' := W) ((σ : _ ≃ₐ[_] _).toAlgHom) R) := by
+    intro R σ
+    cases R with
+    | zero =>
+      simp only [← WeierstrassCurve.Affine.Point.zero_def, map_zero]
+    | some x y hns =>
+      rw [WeierstrassCurve.Affine.Point.equivOfEq_some,
+        WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.map_some,
+        WeierstrassCurve.Affine.Point.equivOfEq_some]
+      rfl
+  intro σ P
+  have hg := WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange_galois W C
+    (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat)) (σ : _ ≃ₐ[_] _) P
+  show WeierstrassCurve.Affine.Point.map (W' := E)
+      ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ)
+      (WeierstrassCurve.Affine.Point.equivOfEq hbase
+        (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange W C _ P)) =
+    ((1 : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ) σ : ℤ) •
+      WeierstrassCurve.Affine.Point.equivOfEq hbase
+        (WeierstrassCurve.Affine.Point.equivVariableChangeBaseChange W C _
+          (WeierstrassCurve.Affine.Point.map (W' := C • W) ((σ : _ ≃ₐ[_] _).toAlgHom) P))
+  rw [key, hg, MonoidHom.one_apply, Units.val_one, one_zsmul]
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+/-- **`T₁b₂` — the twist transport, TWISTED branch** (sorry leaf; pure
+plumbing over `quadraticTwistPointEquiv_galois`): the second disjunct of
+`T₁a`, where the quadratic extension `L/Kᵥ` is genuinely needed.
+
+This is where `T₁`'s twist is manufactured, and it is the only place in the
+whole cluster where an EMBEDDING of `L` into `Ω` has to be chosen — which is
+exactly why it could not be pushed into `T₁a`, whose statement is about
+reduction types over `Kᵥ` alone.
+
+Proof (not formalised).  Fix `ι : L →ₐ[Kᵥ] Ω` by `IsAlgClosed.lift` and
+install `Algebra L Ω` / `IsScalarTower Kᵥ L Ω` along it — verbatim the step
+`Semistable.lean` performs in
+`torsionFlatPackage_of_unramified_quadraticTwist`.  Take
+`X := ((E⁄Kᵥ).quadraticTwist L).minimal 𝒪[Kᵥ] = C • ((E⁄Kᵥ).quadraticTwist L)`,
+`ψ := quadraticCharacter Kᵥ L Ω` (which already has type `(Ω ≃ₐ[Kᵥ] Ω) →* ℤˣ`,
+i.e. `Γ Kᵥ →* ℤˣ`, since `Field.absoluteGaloisGroup` is reducible), and for `φ`
+the composite
+
+    X(Ω) ≃ ((E⁄Kᵥ).quadraticTwist L)(Ω) ≃ (E⁄Kᵥ)(Ω) = E(Ω)
+
+of `equivVariableChangeBaseChange`, `quadraticTwistPointEquiv Kᵥ L Ω`, and the
+`equivOfEq` for `(E⁄Kᵥ)⁄Ω = E⁄Ω`.  The twisted equivariance is
+`quadraticTwistPointEquiv_galois`, whose conclusion is *verbatim* the one here
+with `ψ σ = quadraticCharacter Kᵥ L Ω σ`; the outer two factors contribute
+nothing, by `equivVariableChangeBaseChange_galois` and by the `key` transport
+already carried out in `T₁b₁` above — **both of those are PROVEN there and
+should be copied rather than redone.**
+
+Note the conclusion is quantified over ALL of `Γ Kᵥ`, not over inertia: that
+is the whole point of carrying `ψ`, and it is what makes `T₂` true in its
+stated (non-inertial) generality.  A RAMIFIED `ψ` occurs exactly here, in the
+additive potentially-multiplicative case — an unramified `ψ` would be
+invisible to inertia and the twist could then be dropped, which is precisely
+the collapse `T₂`'s faithfulness note forbids. -/
+theorem WeierstrassCurve.exists_splitModel_quadraticCharacter_pointEquiv_of_quadraticTwist
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    {v : ℕ} (hv : v.Prime)
+    (htwist :
+      ∃ (L : Type) (_ : Field L)
+        (_ : Algebra (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat) L)
+        (_ : Algebra.IsQuadraticExtension (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat) L)
+        (_ : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat) L),
+        (((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat))).quadraticTwist L).minimal
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat]).HasSplitMultiplicativeReduction
+          𝒪[HeightOneSpectrum.adicCompletion ℚ
+            hv.toHeightOneSpectrumRingOfIntegersRat]) :
+    ∃ (X : WeierstrassCurve (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat))
+      (_ : X.IsElliptic)
+      (_ : X.HasSplitMultiplicativeReduction
+        𝒪[HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat])
+      (ψ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat) →* ℤˣ)
+      (φ : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point ≃+
+        ((E⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+      ∀ (σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat))
+        (P : ((X⁄(AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hv.toHeightOneSpectrumRingOfIntegersRat)))).Point),
+        WeierstrassCurve.Affine.Point.map (W' := E)
+            ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (φ P) =
+          ((ψ σ : ℤ)) • φ (WeierstrassCurve.Affine.Point.map (W' := X)
+            ((σ : _ ≃ₐ[_] _).toAlgHom) P) :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+/-- **`T₁` — Tate's `v`-adic uniformisation, in twisted form** (DECOMPOSED and
+PROVEN 2026-07-28 from `T₁a` and `T₁b₁`/`T₁b₂` above;
 Silverman *ATAEC* V.3.1, V.5.3; Serre, Invent. Math. 15 (1972), §5.4): at a
 prime `v` of POTENTIALLY MULTIPLICATIVE reduction, i.e. `v(j) < 0`, the curve
 `E` over the algebraic closure `Ω` of `Kᵥ = ℚ_v` is uniformised by `Ωˣ/Qᶻ` for
@@ -2909,11 +3218,24 @@ the displayed equivariance.  Over INERTIA the twist is invisible when it is
 unramified, but it need not be, and it is certainly not invisible over `Γ Kᵥ`
 — so it is carried, not discarded.
 
-Proof (not formalised).  See the section note above for the route: the whole
-assembly already exists at `ℚ_[2]` in `FreyConditions.lean`, and
-`TateSepClosure.lean` is sorry-free.  What is genuinely new here is Tate's
-criterion in the form "`v(j) < 0` implies some quadratic twist has split
-multiplicative reduction". -/
+Proof, now formalised, and it is three lines over the cut above plus the
+sorry-free `TateSepClosure.lean`.  `T₁a` gives the reduction-type dichotomy
+and `T₁b₁`/`T₁b₂` turn it into a split-multiplicative model `X/Kᵥ` together with the
+quadratic character `ψ` and the twisted comparison `φ : X(Ω) ≃+ E(Ω)`.  Tate's
+uniformisation `exists_tateEquivSepClosure` then applies to `X` — it needs
+exactly `X.IsElliptic` and `X.HasSplitMultiplicativeReduction 𝒪[Kᵥ]`, minimality
+being implied by the latter (`HasSplitMultiplicativeReduction` extends
+`HasMultiplicativeReduction` extends `IsMinimal`) and explicitly `omit`ted
+there — giving an UNtwisted `e₀ : Ωˣ/Qᶻ ≃+ X(Ω)` with
+`Q := X.qUnitSepClosure Ω`.  Set `e := e₀.trans φ`; the two `Q`-conjuncts are
+the PROVEN `qUnitSepClosure_zpow_injective` (the Tate parameter has valuation
+`< 1` in `Kᵥ`, so `a ↦ Q^a` is injective) and `map_qUnitSepClosure_eq` (`Q` is
+the image of an element of `Kᵥ`, so every `σ ∈ Γ Kᵥ` fixes it), and the third
+is `hφ` followed by `he₀`.
+
+Note that `Q` is produced for the TWISTED curve `X`, not for `E` — which is
+harmless because `T₁` asserts only its existence, and is in fact forced: `E`
+itself need have no Tate parameter over `Kᵥ` at all. -/
 theorem WeierstrassCurve.exists_tateParametrisation_of_padicValRat_j_neg
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     {v : ℕ} (hv : v.Prime) (hj : padicValRat v E.j < 0) :
@@ -2936,8 +3258,27 @@ theorem WeierstrassCurve.exists_tateParametrisation_of_padicValRat_j_neg
         WeierstrassCurve.Affine.Point.map (W' := E)
             ((σ : _ ≃ₐ[_] _).toAlgHom.restrictScalars ℚ) (e (Additive.ofMul ↑u)) =
           ((ψ σ : ℤ)) • e (Additive.ofMul
-            ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) :=
-  sorry
+            ↑(Units.map (σ : _ ≃ₐ[_] _).toAlgHom.toRingHom.toMonoidHom u))) := by
+  obtain ⟨X, hXell, hXsplit, ψ, φ, hφ⟩ :=
+    (E.hasSplitMultiplicativeReduction_or_exists_quadraticTwist_of_padicValRat_j_neg
+        hv hj).elim
+      (fun h => E.exists_splitModel_quadraticCharacter_pointEquiv_of_hasSplitMultiplicativeReduction
+        hv h)
+      (fun h => E.exists_splitModel_quadraticCharacter_pointEquiv_of_quadraticTwist hv h)
+  haveI : X.IsElliptic := hXell
+  haveI : X.HasSplitMultiplicativeReduction
+      𝒪[HeightOneSpectrum.adicCompletion ℚ
+        hv.toHeightOneSpectrumRingOfIntegersRat] := hXsplit
+  obtain ⟨e₀, he₀⟩ := WeierstrassCurve.exists_tateEquivSepClosure
+    (k := HeightOneSpectrum.adicCompletion ℚ hv.toHeightOneSpectrumRingOfIntegersRat)
+    (E := X)
+    (Ω := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hv.toHeightOneSpectrumRingOfIntegersRat))
+  refine ⟨X.qUnitSepClosure _, ψ, e₀.trans φ,
+    X.qUnitSepClosure_zpow_injective _,
+    fun σ => X.map_qUnitSepClosure_eq _ (σ : _ ≃ₐ[_] _), fun σ u => ?_⟩
+  simp only [AddEquiv.trans_apply]
+  rw [hφ σ (e₀ (Additive.ofMul ↑u)), he₀ (σ : _ ≃ₐ[_] _) u]
 
 /-- **`T₂` — the isogeny character read off a Tate parametrisation** (sorry
 leaf; Serre, Invent. Math. 15 (1972), §5.4, the dichotomy `μ_N` vs étale):
