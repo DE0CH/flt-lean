@@ -12,6 +12,12 @@ public import Mathlib.AlgebraicGeometry.Morphisms.SmoothFiber
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Basic
 public import Mathlib.RingTheory.Etale.Descent
 public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.RingTheory.Smooth.Fiber
+public import Mathlib.RingTheory.Kaehler.TensorProduct
+public import Mathlib.RingTheory.LocalRing.Module
+public import Mathlib.RingTheory.Unramified.Locus
+public import Mathlib.RingTheory.Support
+public import Mathlib.AlgebraicGeometry.Fiber
 
 /-!
 # A finite flat morphism with REDUCED geometric fibres is étale
@@ -38,6 +44,41 @@ enters only where a CONSUMER proves reducedness (over a `ℚ`-base, by Cartier).
 open CategoryTheory Limits
 
 universe u
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra
+
+/-- **A module-finite algebra whose every fibre `κ(p) ⊗[R] S` is formally unramified over `κ(p)`
+is formally unramified.**
+
+This is the commutative-algebra core of `AlgebraicGeometry.etale_of_etale_fiberToSpecResidueField`,
+and mathlib has no fibrewise criterion for unramifiedness (it has one for smoothness,
+`Algebra.Smooth.of_formallySmooth_fiber`).
+
+The proof is `Subsingleton Ω[S⁄R]` by Nakayama.  `Ω[S⁄R]` is a finite `S`-module, hence a finite
+`R`-module because `S` is module-finite over `R`, so `Module.support_eq_empty_iff` and
+`Module.mem_support_iff_nontrivial_residueField_tensorProduct` reduce vanishing to vanishing of
+`κ(p) ⊗[R] Ω[S⁄R]` at every prime `p` — and that is `Ω[(κ(p) ⊗[R] S)⁄κ(p)]` by base change of
+Kähler differentials (`KaehlerDifferential.tensorKaehlerEquivBase`, over the pushout instance
+`Algebra.IsPushout R κ(p) S (κ(p) ⊗[R] S)`), which vanishes by hypothesis.
+
+Module-finiteness is what makes the *R*-side support argument available; it is exactly what a
+FINITE morphism of schemes supplies. -/
+theorem Algebra.FormallyUnramified.of_formallyUnramified_fiber
+    {R S : Type*} [CommRing R] [CommRing S] [Algebra R S]
+    [Module.Finite R S] [Algebra.FiniteType R S]
+    (H : ∀ (p : Ideal R) [p.IsPrime], Algebra.FormallyUnramified p.ResidueField (p.Fiber S)) :
+    Algebra.FormallyUnramified R S := by
+  rw [Algebra.formallyUnramified_iff]
+  have hfin : Module.Finite R (Ω[S⁄R]) := Module.Finite.trans S _
+  rw [← Module.support_eq_empty_iff (R := R)]
+  refine Set.eq_empty_iff_forall_notMem.mpr fun p hp => ?_
+  rw [Module.mem_support_iff_nontrivial_residueField_tensorProduct] at hp
+  have h1 := H p.asIdeal
+  rw [Algebra.formallyUnramified_iff] at h1
+  haveI := h1
+  have e := KaehlerDifferential.tensorKaehlerEquivBase R p.asIdeal.ResidueField S
+      (p.asIdeal.Fiber S)
+  exact (not_nontrivial_iff_subsingleton.mpr e.injective.subsingleton) hp
 
 namespace AlgebraicGeometry
 
@@ -76,7 +117,66 @@ theorem isNilpotent_ker_SpecMap {R S : CommRingCat.{u}} (φ : R ⟶ S) {n : ℕ}
   have hx0 : ψ x = 0 := by simpa using hmap (Ideal.mem_map_of_mem ψ hx)
   simpa using hinj (hx0.trans (map_zero ψ).symm)
 
-/-- **LEAF: a finite flat morphism whose fibres are étale over their residue fields is étale.**
+/-- Precomposing with an isomorphism does not change the fibres: the fibre of `e.hom ≫ h` at `y`
+is the base change of the fibre of `h` at `y` along the identity of the target. -/
+theorem etale_fiberToSpecResidueField_isoComp {X X' Y : Scheme.{u}} (e : X' ≅ X) (h : X ⟶ Y)
+    (y : Y) [AlgebraicGeometry.Etale (h.fiberToSpecResidueField y)] :
+    AlgebraicGeometry.Etale ((e.hom ≫ h).fiberToSpecResidueField y) := by
+  have hsq : IsPullback e.hom (e.hom ≫ h) h (𝟙 Y) := IsPullback.of_horiz_isIso ⟨by simp⟩
+  refine MorphismProperty.of_isPullback
+    (isPullback_fiberToSpecResidueField_of_isPullback hsq y) ?_
+  exact ‹AlgebraicGeometry.Etale (h.fiberToSpecResidueField y)›
+
+/-- The affine case of `AlgebraicGeometry.etale_of_etale_fiberToSpecResidueField`: this is where the
+scheme-level hypothesis is translated into the algebra-level one by
+`AlgebraicGeometry.Spec.fiberToSpecResidueFieldIso`, and
+`Algebra.FormallyUnramified.of_formallyUnramified_fiber` together with
+`Algebra.Etale.of_formallyUnramified_of_flat` finishes. -/
+theorem etale_of_etale_fiberToSpecResidueField_SpecMap {R S : CommRingCat.{u}} (φ : R ⟶ S)
+    [hfin : IsFinite (Spec.map φ)] [hflat : AlgebraicGeometry.Flat (Spec.map φ)]
+    [hlfp : LocallyOfFinitePresentation (Spec.map φ)]
+    (hfib : ∀ y, AlgebraicGeometry.Etale ((Spec.map φ).fiberToSpecResidueField y)) :
+    AlgebraicGeometry.Etale (Spec.map φ) := by
+  rw [IsFinite.SpecMap_iff] at hfin
+  rw [HasRingHomProperty.Spec_iff (P := @AlgebraicGeometry.Flat)] at hflat
+  rw [HasRingHomProperty.Spec_iff (P := @LocallyOfFinitePresentation)] at hlfp
+  rw [HasRingHomProperty.Spec_iff (P := @AlgebraicGeometry.Etale)]
+  algebraize [φ.hom]
+  haveI : Algebra.FormallyUnramified R S := by
+    refine Algebra.FormallyUnramified.of_formallyUnramified_fiber (fun p hp => ?_)
+    have hE : Algebra.Etale p.ResidueField (p.Fiber S) := by
+      rw [← RingHom.etale_algebraMap, ← CommRingCat.hom_ofHom (algebraMap p.ResidueField
+        (p.Fiber ↑S)), ← HasRingHomProperty.Spec_iff (P := @AlgebraicGeometry.Etale),
+        ← MorphismProperty.arrow_mk_iso_iff (P := @AlgebraicGeometry.Etale)
+          (Spec.fiberToSpecResidueFieldIso R S ⟨p, hp⟩)]
+      exact hfib ⟨p, hp⟩
+    infer_instance
+  exact Algebra.Etale.of_formallyUnramified_of_flat
+
+/-- The case of `AlgebraicGeometry.etale_of_etale_fiberToSpecResidueField` with AFFINE target.
+Here `X` is automatically affine (`h` is finite, hence affine), which is what lets the source be
+presented as a `Spec` — note the source cannot be localised, since `IsFinite` is not local at
+source. -/
+theorem etale_of_etale_fiberToSpecResidueField_specTarget {X : Scheme.{u}} {R : CommRingCat.{u}}
+    (h : X ⟶ Spec R) (h1 : IsFinite h) (h2 : AlgebraicGeometry.Flat h)
+    (h3 : LocallyOfFinitePresentation h)
+    (hfib : ∀ y, AlgebraicGeometry.Etale (h.fiberToSpecResidueField y)) :
+    AlgebraicGeometry.Etale h := by
+  haveI := h1; haveI := h2; haveI := h3
+  haveI : IsAffine X := isAffine_of_isAffineHom h
+  let e : Spec (Scheme.Γ.obj (Opposite.op X)) ≅ X := X.isoSpec.symm
+  rw [← MorphismProperty.cancel_left_of_respectsIso @AlgebraicGeometry.Etale e.hom h]
+  have hfib' : ∀ y, AlgebraicGeometry.Etale ((e.hom ≫ h).fiberToSpecResidueField y) :=
+    fun y => haveI := hfib y; etale_fiberToSpecResidueField_isoComp e h y
+  haveI hfin : IsFinite (e.hom ≫ h) := inferInstance
+  haveI hflat : AlgebraicGeometry.Flat (e.hom ≫ h) := inferInstance
+  haveI hlfp : LocallyOfFinitePresentation (e.hom ≫ h) := inferInstance
+  obtain ⟨φ, hφ⟩ := Spec.map_surjective (e.hom ≫ h)
+  rw [← hφ] at hfib' hfin hflat hlfp ⊢
+  exact etale_of_etale_fiberToSpecResidueField_SpecMap φ hfib'
+
+/-- **A finite flat morphism whose fibres are étale over their residue fields is étale**
+(PROVEN).
 
 This is the fibrewise criterion for étaleness, and it is the piece mathlib does NOT have: it has
 `Algebra.Smooth.of_formallySmooth_fiber` (flat + finitely presented + smooth fibres ⟹ smooth) and
@@ -84,32 +184,38 @@ This is the fibrewise criterion for étaleness, and it is the piece mathlib does
 fibres to an étale morphism, and `Smooth` cannot be improved to `Etale` without a relative-dimension
 input that this development does not have.
 
-**THE ROUTE, which needs no smoothness and no relative dimension.**  `Etale` splits as
-`Flat ∧ FormallyUnramified ∧ LocallyOfFinitePresentation`
-(`AlgebraicGeometry.Etale.iff_flat_and_formallyUnramified`), and two of the three are hypotheses
-here, so the whole content is `FormallyUnramified h`.  Since `FormallyUnramified` is a
-`HasRingHomProperty` for `RingHom.FormallyUnramified`, it may be checked on affine charts
-`R = Γ(Y, U)`, `S = Γ(X, h⁻¹U)`, where `S` is a finite flat finitely presented `R`-algebra, and
-there `Algebra.formallyUnramified_iff` reduces it to `Subsingleton Ω[S⁄R]`.  Now:
+**THE ROUTE, which needs no smoothness and no relative dimension.**  Mathlib DOES have
+`Algebra.Etale.of_formallyUnramified_of_flat` (finitely presented + flat + formally unramified ⟹
+étale), so the whole content is `Algebra.FormallyUnramified R S` on affine charts — supplied by
+`Algebra.FormallyUnramified.of_formallyUnramified_fiber` above, i.e. `Subsingleton Ω[S⁄R]` by base
+change of Kähler differentials plus Nakayama.  No smoothness enters.
 
-1. `Ω[S⁄R]` is a finitely generated `S`-module, hence a finitely generated `R`-module because `S`
-   is module-finite over `R`.
-2. For every maximal ideal `p` of `R`, base change of Kähler differentials
-   (`KaehlerDifferential.tensorKaehlerEquiv`, with `Algebra.IsPushout R S κ(p) (κ(p) ⊗[R] S)`)
-   identifies `κ(p) ⊗[R] Ω[S⁄R]` with `Ω[(κ(p) ⊗[R] S)⁄κ(p)]`, which vanishes because the fibre
-   `κ(p) ⊗[R] S` is étale — that is exactly the hypothesis, read affine-locally.
-3. Nakayama: a finitely generated `R`-module `M` with `M ⧸ pM = 0` for every maximal `p` is zero.
-   (`Submodule.exists_sub_one_mem_and_smul_eq_zero_of_fg_of_le_smul` applied to a maximal ideal
-   containing the annihilator.)
+The reduction to affine charts is in three steps, mirroring
+`AlgebraicGeometry.Smooth.of_smooth_fiberToSpecResidueField`:
 
-Step 2 is the only step that touches the hypothesis, and it is where the affine-chart translation
-between the SCHEME fibre `h.fiberToSpecResidueField y` and the ALGEBRA fibre `κ(p) ⊗[R] S` has to
-be made; that translation, not the commutative algebra, is the bulk of the work. -/
+1. `Etale` is local at target, so cover `Y` by affines; fibres of the base change are base changes
+   of fibres (`AlgebraicGeometry.isPullback_fiberToSpecResidueField_of_isPullback`).
+2. With `Y = Spec R` affine, `X` is automatically affine because `h` is finite hence affine
+   (`AlgebraicGeometry.isAffine_of_isAffineHom`).  This is the one place the argument differs from
+   the smooth one: `IsFinite` is NOT local at source, so the source may not be localised — but it
+   need not be, since finiteness makes it affine outright.
+3. `AlgebraicGeometry.Spec.fiberToSpecResidueFieldIso` identifies the SCHEME fibre
+   `(Spec.map φ).fiberToSpecResidueField p` with `Spec` of `κ(p) → κ(p) ⊗[R] S`, which is the
+   translation the algebra core needs. -/
 theorem etale_of_etale_fiberToSpecResidueField {X Y : Scheme.{u}} (h : X ⟶ Y)
     [IsFinite h] [AlgebraicGeometry.Flat h] [LocallyOfFinitePresentation h]
     (hfib : ∀ y : Y, AlgebraicGeometry.Etale (h.fiberToSpecResidueField y)) :
-    AlgebraicGeometry.Etale h :=
-  sorry
+    AlgebraicGeometry.Etale h := by
+  rw [IsZariskiLocalAtTarget.iff_of_openCover (P := @AlgebraicGeometry.Etale) Y.affineCover]
+  intro i
+  dsimp [Scheme.Cover.pullbackHom]
+  refine etale_of_etale_fiberToSpecResidueField_specTarget _
+    (MorphismProperty.pullback_snd _ _ inferInstance)
+    (MorphismProperty.pullback_snd _ _ inferInstance)
+    (MorphismProperty.pullback_snd _ _ inferInstance) (fun y ↦ ?_)
+  apply MorphismProperty.of_isPullback
+  · exact isPullback_fiberToSpecResidueField_of_isPullback (IsPullback.of_hasPullback _ _) _
+  · exact hfib _
 
 /-- **LEAF: a finite flat morphism with reduced geometric fibres has étale fibres.**
 
