@@ -1205,13 +1205,29 @@ polarization module is nonprincipal, which is the whole point.
 
 WHY POSITIVITY HAD TO ENTER AS DATA RATHER THAN BE DERIVED. The
 classical definition is Mumford's: `hom = φ_L` for a RELATIVELY AMPLE
-line bundle `L` on `A/S`. That is unavailable — checked 2026-07-27 over
-`.lake/packages/mathlib`, this project's own shim tree
-`Fermat/FLT/Mathlib/`, and `~/cs/FLT`: there is NO ampleness of any kind
-for line bundles on schemes at this pin, no relative Picard functor, and
-no identification of `d.dualScheme` with `Pic⁰` — so `φ_L` cannot even
-be written here. (`Mathlib.RingTheory.PicardGroup` is the Picard group
-of a commutative RING and is unrelated.) But the deeper reason is not
+line bundle `L` on `A/S`. That is still unavailable, but NOT for the
+reason recorded here before 2026-07-28. The previous version of this
+paragraph said "there is NO ampleness of any kind for line bundles on
+schemes at this pin, no relative Picard functor" — **both halves of that
+are now false, and were already false when written into this file**:
+
+* ampleness exists as `Fermat.IsAmpleSheaf`
+  (`Modularity/AmpleSheaf.lean`), a nonvanishing-locus definition on
+  `Scheme.Modules`, with a recorded non-vacuity witness;
+* a relative Picard functor exists as `Fermat.IsRelPicZeroOf`
+  (`ModularCurve/RelativePicard.lean`), together with `RelPicEquiv` and
+  the existence leaf `Fermat.exists_relPicZero`.
+
+Both of those modules import THIS one, so they cannot be used here; but
+"the pin has nothing" is the wrong diagnosis to leave behind, because it
+sends the next owner off to build a theory that this project already has.
+What genuinely remains missing is only the third item: **no
+identification of `d.dualScheme` with `Pic⁰`**, i.e. no bridge between
+`DualStruct` and `IsRelPicZeroOf` — so `φ_L` still cannot be written
+here, and writing that bridge is the concrete next step for anyone who
+wants to derive positivity rather than assume it.
+(`Mathlib.RingTheory.PicardGroup` is the Picard group of a commutative
+RING and is unrelated.) But the deeper reason is not
 the pin: **positivity is invisible to torsion.** `λ` and `−λ` have the
 same kernel and induce the same pairing up to inversion, so NO axiom
 phrased in the torsion/Galois vocabulary of this module can distinguish
@@ -1488,5 +1504,616 @@ theorem posElt_ne_zero (hI : I ∈ 𝒩) (y : GeomFibrePt f x)
   rw [p.hom_eq_lam, h0, p.lam_zero]
 
 end PolarizationStruct
+
+/-! ### Base change
+
+Everything above is stated over a FIXED base `S`. The moduli arguments that
+consume it are not: a Hilbert–Blumenthal family is produced over one base and
+then restricted along `q : S' ⟶ S` — to a fibre, to a geometric point, to an
+étale neighbourhood, to a completion — and every one of those steps needs the
+whole vocabulary carried across. This section does that carrying.
+
+## The map, and the trap
+
+The map is
+
+  `RelPoint f' g  ≃  RelPoint f g₀`   whenever `g ≫ q = g₀`,
+
+for `f' : A' ⟶ S'` a base change of `f : A ⟶ S` along `q : S' ⟶ S`
+(`RelPoint.baseChangeEquiv`, from `RelPoint.ofBaseChange` and
+`RelPoint.toBaseChange`). Its content is the universal property of the
+pullback square, nothing else: a `T`-point of `A'` over `g` is a `T`-point of
+`A` over `g ≫ q`, because `A' = A ×_S S'`.
+
+**It is NOT `RelPoint.pre`.** `pre` moves the TEST object `T`, along
+`h : T' ⟶ T`, keeping `f : A ⟶ S` fixed; this moves the BASE `S`, keeping the
+test object fixed. The two compose but neither is a case of the other, and
+because both have the shape "precompose and re-identify the base point", the
+wrong one typechecks in several places here and silently means something else.
+`RelPoint.ofBaseChange_pre` is the interchange law between them, and it is the
+only place the two should ever meet.
+
+The square is taken as an arbitrary `IsPullback p f' f q` rather than as the
+chosen `pullback f q`. That is deliberate: a producer normally HAS a concrete
+`A'` (a fibre, an open subscheme, a completion) together with a proof that the
+square is cartesian, and forcing it through `Limits.pullback` would cost an
+isomorphism transport at every use. `IsPullback.of_hasPullback f q` recovers
+the chosen-pullback case in one term.
+
+Note `AbelianSchemeIsogeny.lean` already carries the chosen-pullback special
+case of the FIRST of these (`RelPoint.baseChangeDown`/`baseChangeUp` and
+`AbelianSchemeStruct.baseChange`), written for the fibrewise reduction of
+`[n]`. It lives DOWNSTREAM of this file, so it is invisible to
+`Modularity/KhareWintenberger.lean`, which imports this module and not that
+one; and it transports only `AbelianSchemeStruct`. The two developments agree
+— `AbelianSchemeStruct.baseChange g` is `baseChangeOfIsPullback` at
+`IsPullback.of_hasPullback f g` — and re-basing the downstream one on this
+should be done by whoever next owns that file rather than here, since its
+`baseChange_add` / `baseChange_zero` are `rfl`-lemmas about the current
+definition.
+
+## What transports, and what does NOT
+
+`AbelianSchemeStruct`, `Mult`, `DualStruct` and `SymHomStruct` transport
+UNCONDITIONALLY. The group law, the ring action, the Weil pairing and its four
+axioms, the torsion submodules and the Galois action all move across the
+bijection; the three geometric conditions move by mathlib's
+`IsStableUnderBaseChange` instances for `IsProper`, `Smooth` and
+`GeometricallyConnected`.
+
+`PolarizationStruct` does NOT, and this is a mathematical fact about
+polarizations rather than a gap in the proof. Thirteen of its fifteen fields
+transport; the two that do not are exactly the ones that say `𝔞` IS the
+polarization module:
+
+* `lam_surjective` — that `λ : 𝔞 → Hom^sym_R(A, A^∨)` is ONTO. The group of
+  symmetric homomorphisms GROWS under base change: already for `R = ℤ` it is
+  the Néron–Severi group, and `NS` of a product of two elliptic curves that are
+  isogenous only after a field extension jumps at that extension. A `𝔞` that
+  exhausted `Hom^sym` over `S` need not exhaust it over `S'`.
+* `lam_injective` — that `λ` is one-to-one. Take `S' = ∅` (with `q` the unique
+  morphism, and `A' = ∅`, which satisfies every field of
+  `AbelianSchemeStruct` vacuously). Every `RelPoint f' g` is then a singleton,
+  so every `λ_a` is "zero", and `lam_injective` forces `𝔞 = 0`. So for any
+  datum with `𝔞 ≠ 0` the source structure is inhabited and the base-changed
+  one is not.
+
+`PolarizationStruct.baseChangeOfIsPullback` therefore takes those two clauses
+as HYPOTHESES, `hinj` and `hsurj`, stated verbatim as the fields they become.
+That is the honest shape: a caller who has a reason for descent — `q`
+faithfully flat and quasi-compact, so that `Hom` is an fppf sheaf; or a
+normalization pinned by hand across the family — supplies it, and everything
+else is free. Writing them as a sorried leaf would be writing a FALSE leaf.
+
+## Cone status
+
+Like the `DualStruct`/`PolarizationStruct` material above, the declarations in
+this section are consumed only by proofs that are still `sorry` — they are the
+transport layer the Hilbert–Blumenthal moduli leaves need in order to be cut
+at all. They must NOT be swept as free-floating before those consumers are
+proven. Everything here is PROVEN; there is no `sorry` in this section.
+-/
+
+section BaseChange
+
+open _root_.CategoryTheory.Limits
+
+namespace RelPoint
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+
+/-- **A relative point of a base change, read as a relative point of the
+original.** -/
+def ofBaseChange (hp : IsPullback p f' f q) {T : Scheme.{u}} {g : T ⟶ S'} {g₀ : T ⟶ S}
+    (hg : g ≫ q = g₀) (x : RelPoint f' g) : RelPoint f g₀ :=
+  ⟨x.1 ≫ p, by rw [Category.assoc, hp.w, ← Category.assoc, x.2, hg]⟩
+
+/-- **A relative point of the original over a base point factoring through
+`q`, read as a relative point of the base change.** -/
+noncomputable def toBaseChange (hp : IsPullback p f' f q) {T : Scheme.{u}} {g : T ⟶ S'}
+    {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (y : RelPoint f g₀) : RelPoint f' g :=
+  ⟨hp.lift y.1 g (y.2.trans hg.symm), hp.lift_snd _ _ _⟩
+
+@[simp] theorem ofBaseChange_val (hp : IsPullback p f' f q) {T : Scheme.{u}} {g : T ⟶ S'}
+    {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (x : RelPoint f' g) :
+    (ofBaseChange hp hg x).1 = x.1 ≫ p := rfl
+
+@[simp] theorem ofBaseChange_toBaseChange (hp : IsPullback p f' f q) {T : Scheme.{u}}
+    {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (y : RelPoint f g₀) :
+    ofBaseChange hp hg (toBaseChange hp hg y) = y :=
+  Subtype.ext (hp.lift_fst _ _ _)
+
+@[simp] theorem toBaseChange_ofBaseChange (hp : IsPullback p f' f q) {T : Scheme.{u}}
+    {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (x : RelPoint f' g) :
+    toBaseChange hp hg (ofBaseChange hp hg x) = x := by
+  refine Subtype.ext (hp.hom_ext ?_ ?_)
+  · exact hp.lift_fst _ _ _
+  · exact (hp.lift_snd _ _ _).trans x.2.symm
+
+theorem ofBaseChange_injective (hp : IsPullback p f' f q) {T : Scheme.{u}}
+    {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) :
+    Function.Injective (ofBaseChange hp hg) :=
+  Function.LeftInverse.injective (toBaseChange_ofBaseChange hp hg)
+
+/-- **The base-change bijection on relative points.** -/
+noncomputable def baseChangeEquiv (hp : IsPullback p f' f q) {T : Scheme.{u}}
+    {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) : RelPoint f' g ≃ RelPoint f g₀ where
+  toFun := ofBaseChange hp hg
+  invFun := toBaseChange hp hg
+  left_inv := toBaseChange_ofBaseChange hp hg
+  right_inv := ofBaseChange_toBaseChange hp hg
+
+@[simp] theorem baseChangeEquiv_apply (hp : IsPullback p f' f q) {T : Scheme.{u}}
+    {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (x : RelPoint f' g) :
+    baseChangeEquiv hp hg x = ofBaseChange hp hg x := rfl
+
+@[simp] theorem baseChangeEquiv_symm_apply (hp : IsPullback p f' f q) {T : Scheme.{u}}
+    {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (y : RelPoint f g₀) :
+    (baseChangeEquiv hp hg).symm y = toBaseChange hp hg y := rfl
+
+/-- The composite identification of base points used by `ofBaseChange_pre`. -/
+theorem comp_base_of {T' T : Scheme.{u}} {h : T' ⟶ T} {g : T ⟶ S'} {g' : T' ⟶ S'}
+    (hg : h ≫ g = g') {g₀ : T ⟶ S} {g₀' : T' ⟶ S} (hq : g ≫ q = g₀) (hq' : g' ≫ q = g₀') :
+    h ≫ g₀ = g₀' := by
+  rw [← hq, ← Category.assoc, hg, hq']
+
+/-- **`ofBaseChange` is natural.** -/
+theorem ofBaseChange_pre (hp : IsPullback p f' f q) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S'} {g' : T' ⟶ S'} (hg : h ≫ g = g') {g₀ : T ⟶ S} {g₀' : T' ⟶ S}
+    (hq : g ≫ q = g₀) (hq' : g' ≫ q = g₀') (hh : h ≫ g₀ = g₀') (x : RelPoint f' g) :
+    ofBaseChange hp hq' (RelPoint.pre h hg x) =
+      RelPoint.pre h hh (ofBaseChange hp hq x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- `ofBaseChange_pre` at the tautological identification of base points. -/
+theorem ofBaseChange_pre_rfl (hp : IsPullback p f' f q) {T' T : Scheme.{u}} (h : T' ⟶ T)
+    {g : T ⟶ S'} {g' : T' ⟶ S'} (hg : h ≫ g = g') (x : RelPoint f' g) :
+    ofBaseChange hp (rfl : g' ≫ q = g' ≫ q) (RelPoint.pre h hg x) =
+      RelPoint.pre h (comp_base_of hg rfl rfl) (ofBaseChange hp rfl x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+/-- **The base-change map on the geometric points of a fibre.** -/
+noncomputable abbrev ofBaseChangeGeom (hp : IsPullback p f' f q) {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S') (y : GeomFibrePt f' x) : GeomFibrePt f (x ≫ q) :=
+  ofBaseChange hp (Category.assoc _ _ _) y
+
+/-- **The base-change map on the geometric points of a fibre, backwards.** -/
+noncomputable abbrev toBaseChangeGeom (hp : IsPullback p f' f q) {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S') (y : GeomFibrePt f (x ≫ q)) : GeomFibrePt f' x :=
+  toBaseChange hp (Category.assoc _ _ _) y
+
+theorem ofBaseChangeGeom_injective (hp : IsPullback p f' f q) {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S') :
+    Function.Injective (ofBaseChangeGeom hp x) :=
+  ofBaseChange_injective hp _
+
+@[simp] theorem ofBaseChangeGeom_toBaseChangeGeom (hp : IsPullback p f' f q) {F : Type u}
+    [Field F] (x : Spec (CommRingCat.of F) ⟶ S') (y : GeomFibrePt f (x ≫ q)) :
+    ofBaseChangeGeom hp x (toBaseChangeGeom hp x y) = y :=
+  ofBaseChange_toBaseChange hp _ y
+
+section Map
+
+variable {D D' : Scheme.{u}} {e : D ⟶ S} {e' : D' ⟶ S'} {pd : D' ⟶ D}
+
+/-- **Base change of a natural transformation of functors of points.** -/
+noncomputable def baseChangeMap (hp : IsPullback p f' f q) (hpd : IsPullback pd e' e q)
+    (H : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint e g)
+    {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g) : RelPoint e' g :=
+  toBaseChange hpd rfl (H (ofBaseChange hp rfl y))
+
+@[simp] theorem ofBaseChange_baseChangeMap (hp : IsPullback p f' f q)
+    (hpd : IsPullback pd e' e q)
+    (H : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint e g)
+    {T : Scheme.{u}} {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (y : RelPoint f' g) :
+    ofBaseChange hpd hg (baseChangeMap hp hpd H y) = H (ofBaseChange hp hg y) := by
+  subst hg
+  exact ofBaseChange_toBaseChange _ _ _
+
+/-- **`baseChangeMap` inherits naturality from the map it transports.** -/
+theorem pre_baseChangeMap (hp : IsPullback p f' f q) (hpd : IsPullback pd e' e q)
+    (H : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint e g)
+    (Hpre : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S} (hg : h ≫ g = g')
+      (y : RelPoint f g), RelPoint.pre h hg (H y) = H (RelPoint.pre h hg y))
+    {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S'} {g' : T' ⟶ S'} (hg : h ≫ g = g')
+    (y : RelPoint f' g) :
+    RelPoint.pre h hg (baseChangeMap hp hpd H y) =
+      baseChangeMap hp hpd H (RelPoint.pre h hg y) := by
+  apply ofBaseChange_injective hpd (rfl : g' ≫ q = g' ≫ q)
+  rw [ofBaseChange_pre_rfl, ofBaseChange_baseChangeMap, ofBaseChange_baseChangeMap,
+    ofBaseChange_pre_rfl, Hpre]
+
+end Map
+
+end RelPoint
+
+namespace AbelianSchemeStruct
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+
+/-- **Base change of an abelian scheme structure along an arbitrary
+pullback square.** -/
+noncomputable def baseChangeOfIsPullback (ab : AbelianSchemeStruct f)
+    (hp : IsPullback p f' f q) : AbelianSchemeStruct f' where
+  add := fun {_} {_} x y =>
+    RelPoint.toBaseChange hp rfl
+      (ab.add (RelPoint.ofBaseChange hp rfl x) (RelPoint.ofBaseChange hp rfl y))
+  zero := fun {_} g => RelPoint.toBaseChange hp (rfl : g ≫ q = g ≫ q) (ab.zero (g ≫ q))
+  neg := fun {_} {_} x =>
+    RelPoint.toBaseChange hp rfl (ab.neg (RelPoint.ofBaseChange hp rfl x))
+  add_assoc := by
+    intro T g x y z
+    rw [RelPoint.ofBaseChange_toBaseChange, RelPoint.ofBaseChange_toBaseChange, ab.add_assoc]
+  add_comm := by
+    intro T g x y
+    rw [ab.add_comm]
+  zero_add := by
+    intro T g x
+    rw [RelPoint.ofBaseChange_toBaseChange, ab.zero_add, RelPoint.toBaseChange_ofBaseChange]
+  neg_add := by
+    intro T g x
+    rw [RelPoint.ofBaseChange_toBaseChange, ab.neg_add]
+  pre_add := by
+    intro T' T h g g' hg x y
+    apply RelPoint.ofBaseChange_injective hp (rfl : g' ≫ q = g' ≫ q)
+    simp only [RelPoint.ofBaseChange_pre_rfl, RelPoint.ofBaseChange_toBaseChange]
+    exact ab.pre_add h _ _ _
+  pre_zero := by
+    intro T' T h g g' hg
+    apply RelPoint.ofBaseChange_injective hp (rfl : g' ≫ q = g' ≫ q)
+    simp only [RelPoint.ofBaseChange_pre_rfl, RelPoint.ofBaseChange_toBaseChange]
+    exact ab.pre_zero h _
+  proper := MorphismProperty.IsStableUnderBaseChange.of_isPullback hp ab.proper
+  smooth := MorphismProperty.IsStableUnderBaseChange.of_isPullback hp ab.smooth
+  connected := MorphismProperty.IsStableUnderBaseChange.of_isPullback hp ab.connected
+
+@[simp] theorem ofBaseChange_add (ab : AbelianSchemeStruct f) (hp : IsPullback p f' f q)
+    {T : Scheme.{u}} {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀)
+    (x y : RelPoint f' g) :
+    RelPoint.ofBaseChange hp hg ((ab.baseChangeOfIsPullback hp).add x y) =
+      ab.add (RelPoint.ofBaseChange hp hg x) (RelPoint.ofBaseChange hp hg y) := by
+  subst hg
+  exact RelPoint.ofBaseChange_toBaseChange _ _ _
+
+@[simp] theorem ofBaseChange_zero (ab : AbelianSchemeStruct f) (hp : IsPullback p f' f q)
+    {T : Scheme.{u}} {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) :
+    RelPoint.ofBaseChange hp hg ((ab.baseChangeOfIsPullback hp).zero g) = ab.zero g₀ := by
+  subst hg
+  exact RelPoint.ofBaseChange_toBaseChange _ _ _
+
+@[simp] theorem ofBaseChange_neg (ab : AbelianSchemeStruct f) (hp : IsPullback p f' f q)
+    {T : Scheme.{u}} {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (x : RelPoint f' g) :
+    RelPoint.ofBaseChange hp hg ((ab.baseChangeOfIsPullback hp).neg x) =
+      ab.neg (RelPoint.ofBaseChange hp hg x) := by
+  subst hg
+  exact RelPoint.ofBaseChange_toBaseChange _ _ _
+
+@[simp] theorem ofBaseChangeGeom_add (ab : AbelianSchemeStruct f) (hp : IsPullback p f' f q)
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S') (y y' : GeomFibrePt f' x) :
+    RelPoint.ofBaseChangeGeom hp x ((ab.baseChangeOfIsPullback hp).add y y') =
+      ab.add (RelPoint.ofBaseChangeGeom hp x y) (RelPoint.ofBaseChangeGeom hp x y') :=
+  ofBaseChange_add ab hp _ y y'
+
+@[simp] theorem ofBaseChangeGeom_zero (ab : AbelianSchemeStruct f) (hp : IsPullback p f' f q)
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S') :
+    RelPoint.ofBaseChangeGeom hp x
+        ((ab.baseChangeOfIsPullback hp).zero (specAlgClos F ≫ x)) =
+      ab.zero (specAlgClos F ≫ (x ≫ q)) :=
+  ofBaseChange_zero ab hp _
+
+@[simp] theorem ofBaseChangeGeom_galSMul (ab : AbelianSchemeStruct f)
+    (hp : IsPullback p f' f q) {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S')
+    (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f' x) :
+    RelPoint.ofBaseChangeGeom hp x ((ab.baseChangeOfIsPullback hp).galSMul x σ y) =
+      ab.galSMul (x ≫ q) σ (RelPoint.ofBaseChangeGeom hp x y) := by
+  rw [AbelianSchemeStruct.galSMul_def, AbelianSchemeStruct.galSMul_def]
+  exact RelPoint.ofBaseChange_pre hp (specGal σ) (specGal_comp_base x σ) _ _ _ y
+
+end AbelianSchemeStruct
+
+namespace Mult
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+variable {ab : AbelianSchemeStruct f} {R : Type u} [CommRing R]
+
+/-- **Base change of a multiplication.** -/
+noncomputable def baseChangeOfIsPullback (m : Mult ab R) (hp : IsPullback p f' f q) :
+    Mult (ab.baseChangeOfIsPullback hp) R where
+  act := fun {_} {_} a x =>
+    RelPoint.toBaseChange hp rfl (m.act a (RelPoint.ofBaseChange hp rfl x))
+  act_add := by
+    intro T g a b y
+    apply RelPoint.ofBaseChange_injective hp (rfl : g ≫ q = g ≫ q)
+    simp only [AbelianSchemeStruct.ofBaseChange_add, RelPoint.ofBaseChange_toBaseChange]
+    exact m.act_add a b _
+  act_mul := by
+    intro T g a b y
+    apply RelPoint.ofBaseChange_injective hp (rfl : g ≫ q = g ≫ q)
+    simp only [RelPoint.ofBaseChange_toBaseChange]
+    exact m.act_mul a b _
+  act_one := by
+    intro T g y
+    simp only [m.act_one, RelPoint.toBaseChange_ofBaseChange]
+  act_addPt := by
+    intro T g a y z
+    apply RelPoint.ofBaseChange_injective hp (rfl : g ≫ q = g ≫ q)
+    simp only [AbelianSchemeStruct.ofBaseChange_add, RelPoint.ofBaseChange_toBaseChange]
+    exact m.act_addPt a _ _
+  pre_act := by
+    intro T' T h g g' hg a y
+    apply RelPoint.ofBaseChange_injective hp (rfl : g' ≫ q = g' ≫ q)
+    simp only [RelPoint.ofBaseChange_pre_rfl, RelPoint.ofBaseChange_toBaseChange]
+    exact m.pre_act h _ a _
+
+@[simp] theorem ofBaseChange_act (m : Mult ab R) (hp : IsPullback p f' f q)
+    {T : Scheme.{u}} {g : T ⟶ S'} {g₀ : T ⟶ S} (hg : g ≫ q = g₀) (a : R)
+    (x : RelPoint f' g) :
+    RelPoint.ofBaseChange hp hg ((m.baseChangeOfIsPullback hp).act a x) =
+      m.act a (RelPoint.ofBaseChange hp hg x) := by
+  subst hg
+  exact RelPoint.ofBaseChange_toBaseChange _ _ _
+
+@[simp] theorem ofBaseChangeGeom_act (m : Mult ab R) (hp : IsPullback p f' f q)
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S') (a : R)
+    (y : GeomFibrePt f' x) :
+    RelPoint.ofBaseChangeGeom hp x ((m.baseChangeOfIsPullback hp).act a y) =
+      m.act a (RelPoint.ofBaseChangeGeom hp x y) :=
+  ofBaseChange_act m hp _ a y
+
+/-- **Membership in the `I`-torsion, unbundled**: a geometric point of the
+fibre lies in `A[I]` exactly when every element of `I` kills it. This is
+`Submodule.mem_torsionBySet_iff` read through the `R`-module structure
+`Mult.module` of `Mult.torsion`.
+
+`Modularity/TateModule.lean` carries the same statement as a top-level
+`Fermat.mem_torsion_iff`, specialised to `R = 𝒪_D`; it predates this one and
+is used ~20 times there. The two do not collide (this one is
+`Fermat.Mult.mem_torsion_iff`), but the specialised one is redundant once
+this is available and should be retired by whoever next owns that file. -/
+theorem mem_torsion_iff (m : Mult ab R) {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S) (I : Ideal R) (y : GeomFibrePt f x) :
+    y ∈ (m.torsion x I).1 ↔ ∀ a ∈ I, m.act a y = ab.zero (specAlgClos F ≫ x) := by
+  letI := ab.addCommGroup (specAlgClos F ≫ x)
+  letI := m.module (specAlgClos F ≫ x)
+  constructor
+  · intro hy a ha
+    exact (Submodule.mem_torsionBySet_iff _ _).mp hy ⟨a, ha⟩
+  · intro hy
+    exact SetLike.mem_coe.mpr ((Submodule.mem_torsionBySet_iff _ _).mpr
+      (fun a => hy (a : R) a.2))
+
+/-- **The base-change bijection carries `I`-torsion to `I`-torsion, both
+ways.** -/
+theorem mem_torsion_baseChange_iff (m : Mult ab R) (hp : IsPullback p f' f q)
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S') (I : Ideal R)
+    (y : GeomFibrePt f' x) :
+    y ∈ ((m.baseChangeOfIsPullback hp).torsion x I).1 ↔
+      RelPoint.ofBaseChangeGeom hp x y ∈ (m.torsion (x ≫ q) I).1 := by
+  rw [mem_torsion_iff, mem_torsion_iff]
+  constructor
+  · intro hy a ha
+    rw [← ofBaseChangeGeom_act m hp x a y, hy a ha]
+    exact AbelianSchemeStruct.ofBaseChangeGeom_zero ab hp x
+  · intro hy a ha
+    apply RelPoint.ofBaseChangeGeom_injective hp x
+    rw [ofBaseChangeGeom_act m hp x a y, hy a ha,
+      AbelianSchemeStruct.ofBaseChangeGeom_zero ab hp x]
+
+end Mult
+
+namespace DualStruct
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+variable {ab : AbelianSchemeStruct f} {R : Type u} [CommRing R] {m : Mult ab R}
+
+/-- **Base change of a dual pair with its Weil pairing.** -/
+noncomputable def baseChangeOfIsPullback (d : DualStruct ab m) (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) :
+    DualStruct (ab.baseChangeOfIsPullback hp) (m.baseChangeOfIsPullback hp) where
+  dualScheme := D'
+  dualMap := dm'
+  dualAb := d.dualAb.baseChangeOfIsPullback hpd
+  dualMult := d.dualMult.baseChangeOfIsPullback hpd
+  weil := fun {_} _ x I n hn y z =>
+    d.weil (x ≫ q) I n hn (RelPoint.ofBaseChangeGeom hp x y)
+      (RelPoint.ofBaseChangeGeom hpd x z)
+  weil_add_left := by
+    intro F _ x I n hn y y' z hy hy' hz
+    rw [AbelianSchemeStruct.ofBaseChangeGeom_add]
+    exact d.weil_add_left (x ≫ q) I n hn _ _ _
+      ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+      ((Mult.mem_torsion_baseChange_iff m hp x I y').mp hy')
+      ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z).mp hz)
+  weil_add_right := by
+    intro F _ x I n hn y z z' hy hz hz'
+    rw [AbelianSchemeStruct.ofBaseChangeGeom_add]
+    exact d.weil_add_right (x ≫ q) I n hn _ _ _
+      ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+      ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z).mp hz)
+      ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z').mp hz')
+  weil_gal := by
+    intro F _ x I n hn σ y z hy hz
+    rw [AbelianSchemeStruct.ofBaseChangeGeom_galSMul,
+      AbelianSchemeStruct.ofBaseChangeGeom_galSMul]
+    exact d.weil_gal (x ≫ q) I n hn σ _ _
+      ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+      ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z).mp hz)
+  weil_act := by
+    intro F _ x I n hn a y z hy hz
+    rw [Mult.ofBaseChangeGeom_act, Mult.ofBaseChangeGeom_act]
+    exact d.weil_act (x ≫ q) I n hn a _ _
+      ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+      ((Mult.mem_torsion_baseChange_iff d.dualMult hpd x I z).mp hz)
+  weil_nondegenerate := by
+    intro F _ x I n hn y hy hz
+    apply RelPoint.ofBaseChangeGeom_injective hp x
+    rw [AbelianSchemeStruct.ofBaseChangeGeom_zero]
+    refine d.weil_nondegenerate (x ≫ q) I n hn _
+      ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy) ?_
+    intro z hzt
+    have hzt' : RelPoint.toBaseChangeGeom hpd x z ∈
+        ((d.dualMult.baseChangeOfIsPullback hpd).torsion x I).1 := by
+      rw [Mult.mem_torsion_baseChange_iff, RelPoint.ofBaseChangeGeom_toBaseChangeGeom]
+      exact hzt
+    have := hz (RelPoint.toBaseChangeGeom hpd x z) hzt'
+    rwa [RelPoint.ofBaseChangeGeom_toBaseChangeGeom] at this
+
+@[simp] theorem baseChangeOfIsPullback_dualAb (d : DualStruct ab m) (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) :
+    (d.baseChangeOfIsPullback hp hpd).dualAb = d.dualAb.baseChangeOfIsPullback hpd := rfl
+
+@[simp] theorem baseChangeOfIsPullback_dualMult (d : DualStruct ab m) (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) :
+    (d.baseChangeOfIsPullback hp hpd).dualMult = d.dualMult.baseChangeOfIsPullback hpd := rfl
+
+@[simp] theorem baseChangeOfIsPullback_weil (d : DualStruct ab m) (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S') (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I)
+    (y : GeomFibrePt f' x) (z : GeomFibrePt dm' x) :
+    (d.baseChangeOfIsPullback hp hpd).weil x I n hn y z =
+      d.weil (x ≫ q) I n hn (RelPoint.ofBaseChangeGeom hp x y)
+        (RelPoint.ofBaseChangeGeom hpd x z) := rfl
+
+end DualStruct
+
+namespace SymHomStruct
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+variable {ab : AbelianSchemeStruct f} {R : Type u} [CommRing R] {m : Mult ab R}
+variable {d : DualStruct ab m}
+
+/-- **Base change of a symmetric `R`-linear homomorphism `A ⟶ A^∨`.** -/
+noncomputable def baseChangeOfIsPullback (s : SymHomStruct d) (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) :
+    SymHomStruct (d.baseChangeOfIsPullback hp hpd) where
+  hom := fun {_} {_} y => RelPoint.baseChangeMap hp hpd (fun {_} {_} => s.hom) y
+  hom_add := by
+    intro T g y y'
+    apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+    simp only [DualStruct.baseChangeOfIsPullback_dualAb, RelPoint.ofBaseChange_baseChangeMap,
+      AbelianSchemeStruct.ofBaseChange_add]
+    exact s.hom_add _ _
+  pre_hom := by
+    intro T' T h g g' hg y
+    exact RelPoint.pre_baseChangeMap hp hpd (fun {_} {_} => s.hom)
+      (@SymHomStruct.pre_hom _ _ _ _ _ _ _ _ s) h hg y
+  hom_act := by
+    intro T g a y
+    apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+    simp only [DualStruct.baseChangeOfIsPullback_dualMult, RelPoint.ofBaseChange_baseChangeMap,
+      Mult.ofBaseChange_act]
+    exact s.hom_act a _
+  hom_torsion := by
+    intro F _ x I y hy
+    refine (Mult.mem_torsion_baseChange_iff d.dualMult hpd x I _).mpr ?_
+    simp only [RelPoint.ofBaseChange_baseChangeMap]
+    exact s.hom_torsion (x ≫ q) I _ ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+  weil_self := by
+    intro F _ x I n hn y hy
+    simp only [DualStruct.baseChangeOfIsPullback_weil, RelPoint.ofBaseChangeGeom,
+      RelPoint.ofBaseChange_baseChangeMap]
+    exact s.weil_self (x ≫ q) I n hn _ ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+
+@[simp] theorem ofBaseChange_hom (s : SymHomStruct d) (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q) {T : Scheme.{u}} {g : T ⟶ S'} {g₀ : T ⟶ S}
+    (hg : g ≫ q = g₀) (y : RelPoint f' g) :
+    RelPoint.ofBaseChange hpd hg ((s.baseChangeOfIsPullback hp hpd).hom y) =
+      s.hom (RelPoint.ofBaseChange hp hg y) :=
+  RelPoint.ofBaseChange_baseChangeMap hp hpd _ hg y
+
+end SymHomStruct
+
+namespace PolarizationStruct
+
+variable {A S A' S' : Scheme.{u}} {f : A ⟶ S} {f' : A' ⟶ S'} {p : A' ⟶ A} {q : S' ⟶ S}
+variable {ab : AbelianSchemeStruct f} {R : Type u} [CommRing R] {m : Mult ab R}
+variable {d : DualStruct ab m} {𝒩 : Set (Ideal R)} {𝔞 : Ideal R} {𝔞pos : Set R}
+
+/-- **Base change of a polarization, given the two descent clauses.** -/
+noncomputable def baseChangeOfIsPullback (pol : PolarizationStruct d 𝒩 𝔞 𝔞pos)
+    (hp : IsPullback p f' f q)
+    {D' : Scheme.{u}} {dm' : D' ⟶ S'} {pd : D' ⟶ d.dualScheme}
+    (hpd : IsPullback pd dm' d.dualMap q)
+    (hinj : ∀ a : ↥𝔞, (∀ {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g),
+        ((pol.lam a).baseChangeOfIsPullback hp hpd).hom y =
+          (d.baseChangeOfIsPullback hp hpd).dualAb.zero g) → a = 0)
+    (hsurj : ∀ s : SymHomStruct (d.baseChangeOfIsPullback hp hpd), ∃ a : ↥𝔞,
+        ∀ {T : Scheme.{u}} {g : T ⟶ S'} (y : RelPoint f' g),
+          ((pol.lam a).baseChangeOfIsPullback hp hpd).hom y = s.hom y) :
+    PolarizationStruct (d.baseChangeOfIsPullback hp hpd) 𝒩 𝔞 𝔞pos where
+  hom := fun {_} {_} y => RelPoint.baseChangeMap hp hpd (fun {_} {_} => pol.hom) y
+  hom_add := by
+    intro T g y y'
+    apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+    simp only [DualStruct.baseChangeOfIsPullback_dualAb, RelPoint.ofBaseChange_baseChangeMap,
+      AbelianSchemeStruct.ofBaseChange_add]
+    exact pol.hom_add _ _
+  pre_hom := by
+    intro T' T h g g' hg y
+    exact RelPoint.pre_baseChangeMap hp hpd (fun {_} {_} => pol.hom)
+      (@PolarizationStruct.pre_hom _ _ _ _ _ _ _ _ _ _ _ pol) h hg y
+  hom_act := by
+    intro T g a y
+    apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+    simp only [DualStruct.baseChangeOfIsPullback_dualMult, RelPoint.ofBaseChange_baseChangeMap,
+      Mult.ofBaseChange_act]
+    exact pol.hom_act a _
+  hom_torsion := by
+    intro F _ x I y hy
+    refine (Mult.mem_torsion_baseChange_iff d.dualMult hpd x I _).mpr ?_
+    simp only [RelPoint.ofBaseChange_baseChangeMap]
+    exact pol.hom_torsion (x ≫ q) I _ ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+  weil_self := by
+    intro F _ x I n hn y hy
+    simp only [DualStruct.baseChangeOfIsPullback_weil, RelPoint.ofBaseChangeGeom,
+      RelPoint.ofBaseChange_baseChangeMap]
+    exact pol.weil_self (x ≫ q) I n hn _ ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy)
+  weil_hom_nondegenerate := by
+    intro F _ x I hI n hn y hy hz
+    apply RelPoint.ofBaseChangeGeom_injective hp x
+    rw [AbelianSchemeStruct.ofBaseChangeGeom_zero]
+    refine pol.weil_hom_nondegenerate (x ≫ q) I hI n hn _
+      ((Mult.mem_torsion_baseChange_iff m hp x I y).mp hy) ?_
+    intro z hzt
+    have hzt' : RelPoint.toBaseChangeGeom hp x z ∈
+        ((m.baseChangeOfIsPullback hp).torsion x I).1 := by
+      rw [Mult.mem_torsion_baseChange_iff, RelPoint.ofBaseChangeGeom_toBaseChangeGeom]
+      exact hzt
+    have h := hz (RelPoint.toBaseChangeGeom hp x z) hzt'
+    simp only [DualStruct.baseChangeOfIsPullback_weil, RelPoint.ofBaseChangeGeom,
+      RelPoint.ofBaseChange_baseChangeMap, RelPoint.ofBaseChange_toBaseChange] at h
+    exact h
+  lam := fun a => (pol.lam a).baseChangeOfIsPullback hp hpd
+  lam_add := by
+    intro a b T g y
+    apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+    simp only [DualStruct.baseChangeOfIsPullback_dualAb, SymHomStruct.ofBaseChange_hom,
+      AbelianSchemeStruct.ofBaseChange_add]
+    exact pol.lam_add a b _
+  lam_smul := by
+    intro c a T g y
+    apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+    simp only [DualStruct.baseChangeOfIsPullback_dualMult, SymHomStruct.ofBaseChange_hom,
+      Mult.ofBaseChange_act]
+    exact pol.lam_smul c a _
+  lam_injective := hinj
+  lam_surjective := hsurj
+  posElt := pol.posElt
+  posElt_pos := pol.posElt_pos
+  hom_eq_lam := by
+    intro T g y
+    apply RelPoint.ofBaseChange_injective hpd (rfl : g ≫ q = g ≫ q)
+    simp only [SymHomStruct.ofBaseChange_hom, RelPoint.ofBaseChange_baseChangeMap]
+    exact pol.hom_eq_lam _
+
+end PolarizationStruct
+
+end BaseChange
 
 end Fermat
