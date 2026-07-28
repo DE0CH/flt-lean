@@ -242,6 +242,20 @@ public import Mathlib.FieldTheory.PrimitiveElement
 public import Mathlib.RingTheory.PowerBasis
 public import Mathlib.RingTheory.Nilpotent.Basic
 import Mathlib.Analysis.Complex.Polynomial.Basic
+-- PUBLIC (2026-07-28, EIGHTEENTH decomposition, the Lefschetz/rationality half of
+-- `exists_frobEigenvalues_pointCount_of_isProperSmoothCurve`): `Polynomial ℂ` and
+-- `PowerSeries ℂ` occur in SIGNATURE position in
+-- `exists_zetaNumerator_of_isProperSmoothCurve` and `exists_powerSum_of_zetaNumerator`
+-- below, which state rationality of the zeta function of a curve over `𝔽_q` as a
+-- logarithmic-derivative identity of formal power series.
+public import Mathlib.Algebra.Polynomial.Derivative
+public import Mathlib.RingTheory.PowerSeries.Inverse
+-- PUBLIC (2026-07-28, NINETEENTH decomposition, the plane-model half): the quotient
+-- `𝔽_q[X,Y]/(F)` and its `ZMod q`-algebra structure occur in SIGNATURE position in
+-- `planeCurveScheme` / `planeCurveStr` below.
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
+import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Data.List.OfFn
 -- Finite commutative algebra for the pillar-3c point factorization
 -- (proof-body use only, consumed by the proven assembly of
 -- `exists_weightTwoEigenform_of_heckeDeformation_point`): the kernel
@@ -46439,8 +46453,271 @@ noncomputable def pointCountGaloisField {q : ℕ} [Fact q.Prime] {X : Scheme.{0}
     (strX : X ⟶ _root_.Fermat.SpecF q) (s : ℕ) : ℕ :=
   Nat.card (_root_.Fermat.RelPoint strX (galoisFieldSpecHom q s))
 
+/-! ##### The zeta function of the curve: rationality, cut from its algebra half
+
+The EIGHTEENTH decomposition (2026-07-28) cuts
+`exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` below in two:
+
+* `exists_zetaNumerator_of_isProperSmoothCurve` (sorry) — ALL the classical
+  content: closed points of `X`, Riemann–Roch on its function field, and hence
+  rationality of `Z(X, T)`; and
+* `exists_powerSum_of_zetaNumerator` (**PROVEN** here) — pure algebra over `ℂ`,
+  no geometry at all.
+
+WHY THE CUT SITS AT THE LOGARITHMIC DERIVATIVE.  Write
+`L(T) = Σ_{s ≥ 1} (q^s + 1 − #X(𝔽_{q^s}))·T^s`.  The classical statement
+`Z(X, T) = P(T)/((1 − T)(1 − qT))` with `P(0) = 1` is EQUIVALENT to
+`L = −T·P′/P`, because `T·(log Z)′ = Σ_s #X(𝔽_{q^s})T^s` while
+`T·(log((1 − T)(1 − qT)))′ = Σ_s (1 + q^s)T^s`.  Stated that way the leaf needs
+no `exp`, no `log`, and no power-series composition — only `Polynomial.derivative`
+and the coercion `ℂ[T] → ℂ⟦T⟧`.
+
+NOT VACUOUS, and the existential over `P` is genuinely constrained: given `L`,
+the equation `L·P = −T·P′` together with `P(0) = 1` determines every coefficient
+of `P` recursively, so there is exactly ONE power series solution.  Requiring it
+to be a POLYNOMIAL is precisely the rationality assertion; a junk `P` cannot be
+substituted.
+
+NO ESTIMATE IS SMUGGLED IN.  The algebra half produces `γ` with
+`Σ γₖ^s = q^s + 1 − #X(𝔽_{q^s})` and says nothing whatever about `‖γₖ‖`; the
+Riemann hypothesis for curves stays where the parent puts it, on
+`exists_const_natCard_zeroLocus_sub_le`.
+-/
+
+/-- **`γT/(1 − γT) = Σ_{s ≥ 1} γ^s T^s`**, the geometric series attached to one
+Frobenius eigenvalue. -/
+noncomputable def zetaGeomSeries (γ : ℂ) : PowerSeries ℂ :=
+  PowerSeries.mk fun s => if s = 0 then 0 else γ ^ s
+
+/-- **`1 − γT`**, the linear factor of a zeta numerator attached to `γ`. -/
+noncomputable def zetaLinFactor (γ : ℂ) : Polynomial ℂ :=
+  1 - Polynomial.C γ * Polynomial.X
+
+lemma coeff_zetaGeomSeries (γ : ℂ) (n : ℕ) :
+    (PowerSeries.coeff n) (zetaGeomSeries γ) = if n = 0 then 0 else γ ^ n := by
+  simp [zetaGeomSeries]
+
+lemma coeff_zetaCX (γ : ℂ) (n : ℕ) :
+    (PowerSeries.coeff n) (PowerSeries.C γ * PowerSeries.X : PowerSeries ℂ)
+      = if n = 1 then γ else 0 := by
+  rw [PowerSeries.coeff_C_mul, PowerSeries.coeff_X]
+  split_ifs <;> simp
+
+lemma coe_zetaLinFactor (γ : ℂ) :
+    ((zetaLinFactor γ : Polynomial ℂ) : PowerSeries ℂ)
+      = 1 - PowerSeries.C γ * PowerSeries.X := by
+  rw [zetaLinFactor, Polynomial.coe_sub, Polynomial.coe_one, Polynomial.coe_mul,
+    Polynomial.coe_C, Polynomial.coe_X]
+
+lemma derivative_zetaLinFactor (γ : ℂ) :
+    Polynomial.derivative (zetaLinFactor γ) = - Polynomial.C γ := by
+  simp [zetaLinFactor]
+
+/-- **The one-factor identity `(Σ_{s ≥ 1} γ^s T^s)·(1 − γT) = γT`** (PROVEN). -/
+lemma zetaGeomSeries_mul_zetaLinFactor (γ : ℂ) :
+    zetaGeomSeries γ * ((zetaLinFactor γ : Polynomial ℂ) : PowerSeries ℂ)
+      = PowerSeries.C γ * PowerSeries.X := by
+  rw [coe_zetaLinFactor, mul_sub, mul_one]
+  have key : zetaGeomSeries γ * (PowerSeries.C γ * PowerSeries.X)
+      = PowerSeries.C γ * (zetaGeomSeries γ * PowerSeries.X) := by ring
+  ext n
+  rw [map_sub, key, PowerSeries.coeff_C_mul, coeff_zetaGeomSeries, coeff_zetaCX]
+  rcases n with _ | m
+  · simp
+  · rw [PowerSeries.coeff_succ_mul_X, coeff_zetaGeomSeries]
+    rcases m with _ | k
+    · simp
+    · simp [pow_succ]
+      ring
+
+/-- **The logarithmic-derivative identity for a product of linear factors**
+(PROVEN).  With `P = ∏_{γ ∈ m} (1 − γT)` one has `(Σ_{γ ∈ m} Σ_{s ≥ 1} γ^s T^s)·P
+= −T·P′`; this is the identity the zeta numerator has to satisfy. -/
+lemma zetaGeomSeries_sum_mul_prod (m : Multiset ℂ) :
+    (m.map zetaGeomSeries).sum
+        * (((m.map zetaLinFactor).prod : Polynomial ℂ) : PowerSeries ℂ)
+      = - (PowerSeries.X *
+          ((Polynomial.derivative (m.map zetaLinFactor).prod : Polynomial ℂ) :
+            PowerSeries ℂ)) := by
+  induction m using Multiset.induction_on with
+  | empty => simp
+  | cons γ s ih =>
+      simp only [Multiset.map_cons, Multiset.sum_cons, Multiset.prod_cons, Polynomial.coe_mul,
+        Polynomial.derivative_mul, Polynomial.coe_add, derivative_zetaLinFactor,
+        Polynomial.coe_neg, Polynomial.coe_C]
+      have hexp : (zetaGeomSeries γ + (s.map zetaGeomSeries).sum) *
+            (((zetaLinFactor γ : Polynomial ℂ) : PowerSeries ℂ) *
+              (((s.map zetaLinFactor).prod : Polynomial ℂ) : PowerSeries ℂ))
+          = (zetaGeomSeries γ * ((zetaLinFactor γ : Polynomial ℂ) : PowerSeries ℂ)) *
+              (((s.map zetaLinFactor).prod : Polynomial ℂ) : PowerSeries ℂ)
+            + ((s.map zetaGeomSeries).sum *
+                (((s.map zetaLinFactor).prod : Polynomial ℂ) : PowerSeries ℂ))
+              * ((zetaLinFactor γ : Polynomial ℂ) : PowerSeries ℂ) := by ring
+      rw [hexp, zetaGeomSeries_mul_zetaLinFactor, ih]
+      ring
+
+lemma coeff_zetaGeomSeries_sum (m : Multiset ℂ) (n : ℕ) :
+    (PowerSeries.coeff n) ((m.map zetaGeomSeries).sum)
+      = if n = 0 then 0 else (m.map (fun γ => γ ^ n)).sum := by
+  induction m using Multiset.induction_on with
+  | empty => simp
+  | cons γ s ih =>
+      simp only [Multiset.map_cons, Multiset.sum_cons, map_add, coeff_zetaGeomSeries, ih]
+      split_ifs <;> simp
+
+/-- **A power series coming from a polynomial with constant coefficient `1` is
+cancellable** (PROVEN): it is a unit in `ℂ⟦T⟧`. -/
+lemma powerSeries_mul_coe_right_cancel {P : Polynomial ℂ} (hP : P.coeff 0 = 1)
+    {A B : PowerSeries ℂ} (h : A * (P : PowerSeries ℂ) = B * (P : PowerSeries ℂ)) :
+    A = B := by
+  have hu : IsUnit ((P : PowerSeries ℂ)) := by
+    rw [PowerSeries.isUnit_iff_constantCoeff]
+    have hc : (PowerSeries.constantCoeff) ((P : PowerSeries ℂ)) = 1 := by
+      rw [← PowerSeries.coeff_zero_eq_constantCoeff, Polynomial.coeff_coe, hP]
+    rw [hc]
+    exact isUnit_one
+  obtain ⟨u, hu'⟩ := hu
+  have hcong := congrArg (fun z => z * (↑u⁻¹ : PowerSeries ℂ)) h
+  simpa [mul_assoc, ← hu', ← Units.val_mul] using hcong
+
+lemma zetaProd_map_C_neg (t : Multiset ℂ) :
+    (t.map (fun r : ℂ => Polynomial.C (-r))).prod
+      = Polynomial.C ((t.map (fun r : ℂ => -r)).prod) := by
+  induction t using Multiset.induction_on with
+  | empty => simp
+  | cons a s ih =>
+      rw [Multiset.map_cons, Multiset.prod_cons, ih, Multiset.map_cons, Multiset.prod_cons,
+        ← Polynomial.C_mul]
+
+/-- **Every `P ∈ ℂ[T]` with `P(0) = 1` is a product of factors `1 − γT`**
+(PROVEN).  `ℂ` is algebraically closed, so `P` splits; `P(0) = 1` forces every
+root to be nonzero, and `T − r = (−r)·(1 − r⁻¹T)`, the accumulated constant being
+`P(0) = 1`. -/
+lemma exists_multiset_prod_zetaLinFactor {P : Polynomial ℂ} (hP : P.coeff 0 = 1) :
+    ∃ m : Multiset ℂ, P = (m.map zetaLinFactor).prod := by
+  have hsp : P.Splits := IsAlgClosed.splits P
+  have hne : ∀ r ∈ P.roots, r ≠ 0 := by
+    intro r hr hr0
+    have hev : P.eval r = 0 := (Polynomial.mem_roots'.mp hr).2
+    rw [hr0, ← Polynomial.coeff_zero_eq_eval_zero, hP] at hev
+    exact one_ne_zero hev
+  refine ⟨P.roots.map (fun r => r⁻¹), ?_⟩
+  rw [Multiset.map_map]
+  have hstep : Multiset.map (fun r : ℂ => Polynomial.X - Polynomial.C r) P.roots
+      = Multiset.map
+          (fun r : ℂ => Polynomial.C (-r) * (zetaLinFactor ∘ fun r : ℂ => r⁻¹) r) P.roots := by
+    refine Multiset.map_congr rfl ?_
+    intro r hr
+    have hr0 : r ≠ 0 := hne r hr
+    have hrr : (-r) * r⁻¹ = -1 := by field_simp
+    simp only [Function.comp_apply, zetaLinFactor]
+    rw [mul_sub, mul_one, ← mul_assoc, ← Polynomial.C_mul, hrr, Polynomial.C_neg,
+      Polynomial.C_neg, Polynomial.C_1]
+    ring
+  have heval : P.coeff 0
+      = P.leadingCoeff * (Multiset.map (fun r : ℂ => -r) P.roots).prod := by
+    rw [Polynomial.coeff_zero_eq_eval_zero, hsp.eval_eq_prod_roots 0]
+    simp only [zero_sub]
+  rw [hP] at heval
+  conv_lhs => rw [hsp.eq_prod_roots]
+  rw [hstep, Multiset.prod_map_mul, zetaProd_map_C_neg, ← mul_assoc, ← Polynomial.C_mul,
+    ← heval, Polynomial.C_1, one_mul]
+
+/-- **THE PURE-ALGEBRA HALF OF THE LEFSCHETZ LEAF** (**PROVEN** 2026-07-28,
+EIGHTEENTH decomposition): a zeta-numerator identity yields a power-sum system.
+
+STATEMENT.  If `P ∈ ℂ[T]` has `P(0) = 1` and the formal power series
+`Σ_s c_s T^s` satisfies `(Σ_s c_s T^s)·P = −T·P′`, then there are finitely many
+complex numbers `γ₀, …, γ_{n−1}` with `Σₖ γₖ^s = c_s` for every `s ≥ 1`.
+
+PROOF.  `P = ∏_{γ ∈ m} (1 − γT)` over `ℂ`
+(`exists_multiset_prod_zetaLinFactor`); `Σ_{γ ∈ m} γT/(1 − γT)` satisfies the
+same equation (`zetaGeomSeries_sum_mul_prod`, whose one-factor input is
+`(Σ_{s ≥ 1} γ^s T^s)(1 − γT) = γT`); and `P` is a unit in `ℂ⟦T⟧` because
+`P(0) = 1`, so the two solutions coincide coefficientwise.
+
+NO GEOMETRY, NO ESTIMATE.  This says nothing about `‖γₖ‖`; it is exactly the
+step from rationality of the zeta function to the existence of an eigenvalue
+system, and nothing more. -/
+theorem exists_powerSum_of_zetaNumerator (c : ℕ → ℂ) {P : Polynomial ℂ}
+    (hP : P.coeff 0 = 1)
+    (heq : PowerSeries.mk c * (P : PowerSeries ℂ)
+      = - (PowerSeries.X * ((Polynomial.derivative P : Polynomial ℂ) : PowerSeries ℂ))) :
+    ∃ (n : ℕ) (γ : Fin n → ℂ), ∀ s : ℕ, 0 < s → ∑ k, γ k ^ s = c s := by
+  obtain ⟨m, hPm⟩ := exists_multiset_prod_zetaLinFactor hP
+  have h2 := zetaGeomSeries_sum_mul_prod m
+  rw [← hPm] at h2
+  have hmk : (m.map zetaGeomSeries).sum = PowerSeries.mk c :=
+    powerSeries_mul_coe_right_cancel hP (h2.trans heq.symm)
+  obtain ⟨l, rfl⟩ : ∃ l : List ℂ, m = (l : Multiset ℂ) :=
+    ⟨m.toList, (Multiset.coe_toList m).symm⟩
+  refine ⟨l.length, fun i => l[(i : ℕ)], fun s hs => ?_⟩
+  have hcoeff : (PowerSeries.coeff s) ((((l : Multiset ℂ)).map zetaGeomSeries).sum) = c s := by
+    rw [hmk, PowerSeries.coeff_mk]
+  rw [coeff_zetaGeomSeries_sum _ s, if_neg hs.ne'] at hcoeff
+  rw [← hcoeff, Multiset.map_coe, Multiset.sum_coe,
+    ← List.ofFn_getElem_eq_map l (fun γ : ℂ => γ ^ s), List.sum_ofFn]
+
+/-- **RATIONALITY OF THE ZETA FUNCTION OF A SMOOTH PROPER CURVE OVER `𝔽_q`**
+(sorry node, EIGHTEENTH decomposition 2026-07-28 — the GEOMETRIC half of
+`exists_frobEigenvalues_pointCount_of_isProperSmoothCurve` below, which is
+PROVEN over it together with `exists_powerSum_of_zetaNumerator` above).
+
+STATEMENT.  For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
+and geometrically connected there is `P ∈ ℂ[T]` with `P(0) = 1` and
+
+  `L(T)·P(T) = −T·P′(T)`,   where `L(T) = Σ_{s ≥ 1} (q^s + 1 − #X(𝔽_{q^s}))T^s`.
+
+WHAT IT PACKAGES, CLASSICALLY.  `P` is the numerator of the zeta function
+`Z(X, T) = P(T)/((1 − T)(1 − qT))`, of degree `2·genus`, and the displayed
+identity is `T·(log Z)′ = Σ_s #X(𝔽_{q^s})T^s` rearranged — see the section
+docstring above for the two-line derivation.  No étale cohomology is involved:
+the classical proof is Riemann–Roch on the function field
+`K = 𝔽_q(X)` (Stichtenoth, *Algebraic Function Fields and Codes*, Ch. V;
+Lorenzini, *An Invitation to Arithmetic Geometry*, Ch. X):
+
+1. `#X(𝔽_{q^s}) = Σ_{d ∣ s} d·b_d`, where `b_d` is the number of closed points
+   of `X` of degree `d` — an `𝔽_{q^s}`-point is a closed point `x` with
+   `deg x ∣ s` together with one of the `deg x` embeddings `κ(x) ↪ 𝔽_{q^s}`.
+2. `Z(X, T) = ∏_{x closed} (1 − T^{deg x})^{-1} = Σ_{n ≥ 0} a_n T^n`, where
+   `a_n` counts effective divisors of degree `n`.
+3. Riemann–Roch: `(q − 1)·a_n = h·(q^{n+1−g} − 1)` for `n > 2g − 2`, `h` the
+   class number and `g` the genus (finiteness of `h` is
+   `Mathlib/NumberTheory/ClassNumber/FunctionField.lean`).  The head is a
+   polynomial and the tail a geometric series, giving the stated denominator.
+
+WHAT IS MISSING FROM THE PIN, so nobody re-surveys it: mathlib has
+`AlgebraicGeometry.FunctionField`, `NumberTheory.FunctionField` and the class
+number of a function field, but has **no Riemann–Roch theorem** (no file
+matching `RiemannRoch` anywhere) and no zeta function of a curve.  Step 1 is
+scheme theory available now; steps 2–3 are a theory build.
+
+`GeometricallyConnected` IS LOAD-BEARING and must not be tidied away: for a
+DISCONNECTED `X` the counts add, so `Z` acquires one factor `((1−T)(1−qT))^{-1}`
+per component and no single `P` with `P(0) = 1` satisfies the identity (two
+disjoint copies of `ℙ¹` give `L = −Σ_s (q^s + 1)T^s`, which is `−T·P′/P` for no
+polynomial `P`).  It is NOT needed to exclude `X = ∅`: the empty curve has
+`L = Σ_s (q^s + 1)T^s = −T·P′/P` for `P = (1 − T)(1 − qT)`, which is a perfectly
+good witness here — that is the `γ = (q, 1)` of the parent's docstring.
+
+FAITHFULNESS.  TRUE, and NOT vacuous: given `L`, the equation determines every
+coefficient of `P` from `P(0) = 1`, so the existential asserts that ONE
+specific power series is a polynomial.  A junk `P` is unavailable. -/
+theorem exists_zetaNumerator_of_isProperSmoothCurve {q : ℕ}
+    [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX] :
+    ∃ P : Polynomial ℂ, P.coeff 0 = 1 ∧
+      (PowerSeries.mk fun s => if s = 0 then 0 else
+          (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ)) * (P : PowerSeries ℂ)
+        = - (PowerSeries.X *
+            ((Polynomial.derivative P : Polynomial ℂ) : PowerSeries ℂ)) :=
+  sorry
+
 /-- **The Lefschetz trace formula for a smooth proper curve over a finite
-field** (sorry node, SEVENTEENTH decomposition 2026-07-27 — the RATIONALITY
+field** (**PROVEN** 2026-07-28 by the EIGHTEENTH decomposition, over
+`exists_zetaNumerator_of_isProperSmoothCurve` and
+`exists_powerSum_of_zetaNumerator` above; opened as a sorry node by the
+SEVENTEENTH decomposition 2026-07-27 as the RATIONALITY
 half of `exists_planeModel_frobEigenvalues_of_not_dvd` below).
 
 STATEMENT. For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
@@ -46478,12 +46755,254 @@ theorem exists_frobEigenvalues_pointCount_of_isProperSmoothCurve {q : ℕ}
     [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
     [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX] :
     ∃ (n : ℕ) (γ : Fin n → ℂ), ∀ s : ℕ, 0 < s →
-      ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ) :=
+      ∑ k, γ k ^ s = (q : ℂ) ^ s + 1 - (pointCountGaloisField strX s : ℂ) := by
+  obtain ⟨P, hP0, hPeq⟩ := exists_zetaNumerator_of_isProperSmoothCurve strX
+  obtain ⟨n, γ, hγ⟩ := exists_powerSum_of_zetaNumerator _ hP0 hPeq
+  exact ⟨n, γ, fun s hs => (hγ s hs).trans (if_neg hs.ne')⟩
+
+/-! ##### The plane model: the birational comparison, cut into three
+
+The NINETEENTH decomposition (2026-07-28) cuts
+`exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve` below into three
+sorry nodes, each of which is a separate theory:
+
+* `exists_planeModel_openImmersion_of_isProperSmoothCurve` — the FUNCTION-FIELD
+  content.  It hands over the plane model together with the birational
+  comparison in geometric form: a scheme `U` open in BOTH `X` and `V(F)`, with
+  FINITE complement on each side.  That is the object the classical proof
+  produces anyway, and carrying it explicitly is what keeps the second leaf free
+  of any curve theory.
+* `exists_bound_pointCount_sub_of_common_open` — the COUNT COMPARISON, about two
+  arbitrary `𝔽_q`-schemes sharing such an open.  No curves, no properness, no
+  finite type.
+* `pointCount_planeCurveScheme_eq_card_zeroLocus` — **PROVEN** here: the AFFINE
+  DICTIONARY, turning `#V(F)(𝔽_{q^s})` into the cardinality of the zero locus
+  that the parent statement (and the Stepanov-side sibling
+  `exists_const_natCard_zeroLocus_sub_le`) actually speaks about.
+
+WHY THE MIDDLE LEAF NEEDS NO FINITENESS HYPOTHESIS, which looks like an
+oversight and is not.  `pointCountGaloisField` is a `Nat.card`, hence `0` on an
+infinite point set.  If either side has infinitely many `𝔽_{q^s}`-points then so
+does `U` (its points inject into both), hence so does the other side — the two
+`Nat.card`s are then `0` together and the difference is `0`.  So the statement is
+true without assuming finiteness, and the proof simply splits on that case.
+-/
+
+/-- **The affine plane curve `V(F) ⊆ 𝔸²_{𝔽_q}`**, as a scheme: `Spec` of
+`𝔽_q[X,Y]/(F)`. -/
+noncomputable abbrev planeCurveScheme {q : ℕ} [Fact q.Prime]
+    (F : MvPolynomial (Fin 2) (ZMod q)) : Scheme.{0} :=
+  Spec (CommRingCat.of (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F}))
+
+/-- **The structure morphism `V(F) ⟶ Spec 𝔽_q`.** -/
+noncomputable def planeCurveStr {q : ℕ} [Fact q.Prime]
+    (F : MvPolynomial (Fin 2) (ZMod q)) :
+    planeCurveScheme F ⟶ _root_.Fermat.SpecF q :=
+  Spec.map (CommRingCat.ofHom
+    (algebraMap (ZMod q) (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F})))
+
+/-- **THE AFFINE DICTIONARY: `#V(F)(𝔽_{q^s})` is the number of zeros of `F` in
+`𝔽_{q^s}²`** (**PROVEN** 2026-07-28, NINETEENTH decomposition).
+
+STATEMENT AND PROOF.  `V(F) = Spec (𝔽_q[X,Y]/(F))` is affine, so by the
+`Γ ⊣ Spec` adjunction (`AlgebraicGeometry.Spec.homEquiv`, full faithfulness of
+`Spec`) its `𝔽_{q^s}`-points over `Spec 𝔽_q` are the `ZMod q`-algebra
+homomorphisms `𝔽_q[X,Y]/(F) → 𝔽_{q^s}`; `Ideal.Quotient.liftₐ` turns those into
+`𝔽_q`-algebra maps out of `𝔽_q[X,Y]` killing `F`, and
+`MvPolynomial.aeval_unique` turns THOSE into pairs `a : Fin 2 → 𝔽_{q^s}` with
+`F(a) = 0`.  Four explicit `Equiv`s composed, then `Nat.card_congr`.
+
+NO CURVE THEORY IS INVOLVED and `F` is arbitrary — irreducibility is not needed,
+and neither is anything about `q` beyond primality.
+
+FAITHFULNESS.  TRUE for every `F`, including `F = 0` (both sides are then
+`#𝔽_{q^s}²`) and `F` a nonzero constant (both sides `0`, the quotient being the
+zero ring, whose `Spec` is empty).  NOT vacuous: it is an equation between two
+explicitly computed naturals, and it is what makes the parent's conclusion — an
+inequality about a zero-locus cardinality — reachable from a scheme-level
+comparison at all. -/
+theorem pointCount_planeCurveScheme_eq_card_zeroLocus {q : ℕ} [Fact q.Prime]
+    (F : MvPolynomial (Fin 2) (ZMod q)) (s : ℕ) :
+    pointCountGaloisField (planeCurveStr F) s
+      = Nat.card {a : Fin 2 → GaloisField q s //
+          MvPolynomial.eval a (MvPolynomial.map
+            (algebraMap (ZMod q) (GaloisField q s)) F) = 0} := by
+  classical
+  refine Nat.card_congr ?_
+  -- A: morphisms of affine schemes over `Spec 𝔽_q` are ring maps under `𝔽_q`
+  have eA : _root_.Fermat.RelPoint (planeCurveStr F) (galoisFieldSpecHom q s) ≃
+      {φ : CommRingCat.of (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F}) ⟶
+             CommRingCat.of (GaloisField q s) //
+        CommRingCat.ofHom
+              (algebraMap (ZMod q) (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F})) ≫ φ
+          = CommRingCat.ofHom (algebraMap (ZMod q) (GaloisField q s))} := by
+    refine Spec.homEquiv.subtypeEquiv fun x => ?_
+    constructor
+    · intro h
+      have h2 := congrArg Spec.preimage h
+      simpa [planeCurveStr, galoisFieldSpecHom] using h2
+    · intro h
+      have h2 := congrArg Spec.map h
+      simpa [planeCurveStr, galoisFieldSpecHom] using h2
+  -- B: such ring maps are `ZMod q`-algebra maps
+  have eB : {φ : CommRingCat.of (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F}) ⟶
+             CommRingCat.of (GaloisField q s) //
+        CommRingCat.ofHom
+              (algebraMap (ZMod q) (MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F})) ≫ φ
+          = CommRingCat.ofHom (algebraMap (ZMod q) (GaloisField q s))} ≃
+      ((MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F}) →ₐ[ZMod q] GaloisField q s) :=
+    { toFun := fun φ =>
+        { toRingHom := φ.1.hom
+          commutes' := fun r => by
+            have h := congrArg (fun f : CommRingCat.of (ZMod q) ⟶
+              CommRingCat.of (GaloisField q s) => f.hom r) φ.2
+            simpa using h }
+      invFun := fun ψ => ⟨CommRingCat.ofHom ψ.toRingHom, by ext r; simp⟩
+      left_inv := fun φ => Subtype.ext rfl
+      right_inv := fun _ => rfl }
+  -- C: algebra maps out of `R/(F)` are algebra maps out of `R` killing `F`
+  have eC : ((MvPolynomial (Fin 2) (ZMod q) ⧸ Ideal.span {F}) →ₐ[ZMod q] GaloisField q s) ≃
+      {ψ : MvPolynomial (Fin 2) (ZMod q) →ₐ[ZMod q] GaloisField q s // ψ F = 0} :=
+    { toFun := fun χ => ⟨χ.comp (Ideal.Quotient.mkₐ (ZMod q) (Ideal.span {F})), by
+        simp⟩
+      invFun := fun ψ => Ideal.Quotient.liftₐ (Ideal.span {F}) ψ.1 (by
+        intro a ha
+        obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp ha
+        simp [ψ.2])
+      left_inv := fun χ => by
+        apply AlgHom.ext
+        intro a
+        obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective a
+        rfl
+      right_inv := fun ψ => by
+        apply Subtype.ext
+        apply AlgHom.ext
+        intro a
+        rfl }
+  -- D: algebra maps out of a polynomial ring are tuples of values
+  have eD : {ψ : MvPolynomial (Fin 2) (ZMod q) →ₐ[ZMod q] GaloisField q s // ψ F = 0} ≃
+      {a : Fin 2 → GaloisField q s //
+        MvPolynomial.eval a (MvPolynomial.map
+          (algebraMap (ZMod q) (GaloisField q s)) F) = 0} :=
+    { toFun := fun ψ => ⟨fun i => ψ.1 (MvPolynomial.X i), by
+        have h : MvPolynomial.aeval (fun i => ψ.1 (MvPolynomial.X i)) F = 0 := by
+          have h0 := ψ.2
+          rw [MvPolynomial.aeval_unique ψ.1] at h0
+          exact h0
+        rwa [MvPolynomial.aeval_def, ← MvPolynomial.eval_map] at h⟩
+      invFun := fun a => ⟨MvPolynomial.aeval a.1, by
+        rw [MvPolynomial.aeval_def, ← MvPolynomial.eval_map]; exact a.2⟩
+      left_inv := fun ψ => by
+        apply Subtype.ext
+        exact (MvPolynomial.aeval_unique ψ.1).symm
+      right_inv := fun a => by
+        apply Subtype.ext
+        funext i
+        simp }
+  exact eA.trans (eB.trans (eC.trans eD))
+
+/-- **TWO `𝔽_q`-SCHEMES SHARING AN OPEN WITH FINITE COMPLEMENTS HAVE POINT
+COUNTS DIFFERING BY A BOUND INDEPENDENT OF `s`** (sorry node, NINETEENTH
+decomposition 2026-07-28).
+
+STATEMENT.  If `uV : U ⟶ V` and `uW : U ⟶ W` are open immersions of
+`𝔽_q`-schemes inducing the SAME structure morphism on `U`
+(`uV ≫ strV = uW ≫ strW`), and each has finite complement, then there is a
+constant `D` with `| #V(𝔽_{q^s}) − #W(𝔽_{q^s}) | ≤ D` for every `s ≥ 1`.
+
+ROUTE.  `Spec 𝔽_{q^s}` is a ONE-POINT space, so an `𝔽_{q^s}`-point of `V`
+factors through the open `U` exactly when its unique image point lies in
+`Set.range uV.base` — this is `IsOpenImmersion.lift` together with
+`IsOpenImmersion.lift_fac`, and it is precisely the argument already carried out
+in `ModularCurve/X1.lean`'s `isCusp_iff_notMem_range`.  The factorisation is
+unique because an open immersion is a monomorphism.  So
+
+  `#V(𝔽_{q^s}) = #U'(𝔽_{q^s}) + #{points of V(𝔽_{q^s}) over V ∖ U}`,
+
+where `U'` carries the common structure morphism, and the same for `W`.  The
+error terms are bounded independently of `s`: a point of `V(𝔽_{q^s})` whose image
+is `p` factors through `Spec κ(p)`
+(`AlgebraicGeometry.Scheme.SpecToEquivOfField`), and a field map `κ(p) → 𝔽_{q^s}`
+is injective, so there are NONE unless `κ(p)` is finite, and at most `#κ(p)` when
+it is.  Summing that over the finite complement gives `D`.
+
+`hcompat` IS ESSENTIAL, not bookkeeping: it is what identifies the two copies of
+`#U(𝔽_{q^s})` that cancel.  Without it `U` carries two unrelated `𝔽_q`-structures
+and the conclusion is false (take `V = W = Spec 𝔽_{q^2}` over `𝔽_q` with `U = V`,
+`uW` the identity but `strW` twisted by Frobenius — the counts still agree there,
+but for `V = W` a disjoint union of many such the two structures give genuinely
+different counts).
+
+FAITHFULNESS.  TRUE without any finiteness or finite-type hypothesis, by the
+`Nat.card`-is-zero-on-infinite-types argument in the section docstring above.
+NOT vacuous: `D` is chosen BEFORE `s`, which is the whole content — a bound
+allowed to depend on `s` would be free, since each individual difference is a
+fixed natural number. -/
+theorem exists_bound_pointCount_sub_of_common_open {q : ℕ} [Fact q.Prime]
+    {U V W : Scheme.{0}} (strV : V ⟶ _root_.Fermat.SpecF q)
+    (strW : W ⟶ _root_.Fermat.SpecF q) (uV : U ⟶ V) (uW : U ⟶ W)
+    [IsOpenImmersion uV] [IsOpenImmersion uW]
+    (hcompat : uV ≫ strV = uW ≫ strW)
+    (hV : Set.Finite ((Set.range uV.base)ᶜ))
+    (hW : Set.Finite ((Set.range uW.base)ᶜ)) :
+    ∃ D : ℝ, ∀ s : ℕ, 0 < s →
+      |(pointCountGaloisField strV s : ℝ) - (pointCountGaloisField strW s : ℝ)| ≤ D :=
+  sorry
+
+/-- **A BIRATIONAL PLANE MODEL, PRESENTED AS A COMMON OPEN** (sorry node,
+NINETEENTH decomposition 2026-07-28 — the FUNCTION-FIELD half of
+`exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve` below).
+
+STATEMENT.  For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
+and geometrically connected there are an absolutely irreducible
+`F ∈ 𝔽_q[X,Y]` and a scheme `U` sitting as an OPEN SUBSCHEME of both `X` and
+`V(F)`, compatibly over `𝔽_q`, with finite complement on each side.
+
+ROUTE (unchanged from the parent's docstring, only made geometric).  `𝔽_q` is
+perfect, so `K = 𝔽_q(X)` is separably generated: pick `x ∈ K` transcendental with
+`K/𝔽_q(x)` separable, then `Field.exists_primitiveElement` gives `K = 𝔽_q(x, y)`,
+and clearing denominators from the minimal polynomial of `y` over `𝔽_q(x)` gives
+`F` with `Frac(𝔽_q[X,Y]/(F)) ≅ K`.  `F` is absolutely irreducible exactly because
+`X` is geometrically connected, which is what makes `𝔽_q` algebraically closed in
+`K`.  Two integral schemes of finite type with isomorphic function fields are
+isomorphic over a dense open (`AlgebraicGeometry.RationalMap`,
+`AlgebraicGeometry.Birational`), and in a one-dimensional irreducible Noetherian
+space the complement of a dense open is a FINITE set of closed points — which is
+the last clause.  Mathlib handles: `Scheme.functionField`,
+`Field.exists_primitiveElement`, `PerfectField`.
+
+WHY THE OPEN IS IN THE STATEMENT rather than a bare inequality: it is what lets
+the count comparison be stated with no curve theory in it at all
+(`exists_bound_pointCount_sub_of_common_open` above), and it is the object the
+classical argument produces regardless.
+
+`GeometricallyConnected` IS LOAD-BEARING TWICE, exactly as on the parent.  It
+gives the absolute irreducibility of `F`; and it excludes `X = ∅`, for which the
+conclusion is FALSE — an empty `U` would have infinite complement in `V(F)`,
+which is infinite.  (Mathlib's `GeometricallyConnected` is stated through
+`ConnectedSpace`, which is nonempty by definition, so this really is excluded.)
+
+FAITHFULNESS.  TRUE.  NOT vacuous: a junk witness is unavailable, since `U` open
+with finite complement in `V(F)` forces `U` to be a dense open of an integral
+affine curve, hence to have `≍ q^s` points, hence to pin `#X(𝔽_{q^s})` to within
+a constant of the same. -/
+theorem exists_planeModel_openImmersion_of_isProperSmoothCurve {q : ℕ}
+    [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX] :
+    ∃ (F : MvPolynomial (Fin 2) (ZMod q)) (U : Scheme.{0}) (uX : U ⟶ X)
+      (uV : U ⟶ planeCurveScheme F),
+      Irreducible (MvPolynomial.map
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F) ∧
+      IsOpenImmersion uX ∧ IsOpenImmersion uV ∧
+      uX ≫ strX = uV ≫ planeCurveStr F ∧
+      Set.Finite ((Set.range uX.base)ᶜ) ∧ Set.Finite ((Set.range uV.base)ᶜ) :=
   sorry
 
 /-- **Every smooth proper geometrically connected curve over `𝔽_q` has an
 absolutely irreducible plane model, with a count discrepancy bounded uniformly
-in the extension degree** (sorry node, SEVENTEENTH decomposition 2026-07-27 —
+in the extension degree** (**PROVEN** 2026-07-28 by the NINETEENTH
+decomposition, over the three leaves immediately above; opened as a sorry node
+by the SEVENTEENTH decomposition 2026-07-27 —
 the PLANE-MODEL half of `exists_planeModel_frobEigenvalues_of_not_dvd` below).
 
 STATEMENT. For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
@@ -46529,8 +47048,16 @@ theorem exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve {q : ℕ}
       ∀ s : ℕ, 0 < s →
         |(pointCountGaloisField strX s : ℝ) - (Nat.card {a : Fin 2 → GaloisField q s //
             MvPolynomial.eval a (MvPolynomial.map
-              (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)| ≤ D :=
-  sorry
+              (algebraMap (ZMod q) (GaloisField q s)) F) = 0} : ℝ)| ≤ D := by
+  obtain ⟨F, U, uX, uV, hirr, hoX, hoV, hcompat, hfX, hfV⟩ :=
+    exists_planeModel_openImmersion_of_isProperSmoothCurve strX
+  haveI := hoX
+  haveI := hoV
+  obtain ⟨D, hD⟩ :=
+    exists_bound_pointCount_sub_of_common_open strX (planeCurveStr F) uX uV hcompat hfX hfV
+  refine ⟨F, D, hirr, fun s hs => ?_⟩
+  have h := hD s hs
+  rwa [pointCount_planeCurveScheme_eq_card_zeroLocus F s] at h
 
 /-- **Separable rigidity: equal power sums determine the NONZERO values**
 (PROVEN 2026-07-28, EIGHTEENTH decomposition — the algebraic half of
