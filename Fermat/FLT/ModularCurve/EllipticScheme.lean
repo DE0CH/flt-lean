@@ -156,9 +156,10 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   `Fermat/FLT/Mathlib/.../ProjectiveAddition.lean`;
   `ProjCoords.toHom_smul` is **PROVEN as a reduction** to
   `ProjCoords.toBasicOpenOfGlobalSections_eq_of_gradedSmul` (the chart identity,
-  the only genuinely new MATHLIB work left) and
-  `ProjCoords.ringHom_smul_apply_of_mem_projGrading` (a `MvPolynomial`
-  computation), the gluing half having been discharged by
+  the only genuinely new MATHLIB work left) — its sibling
+  `ProjCoords.ringHom_smul_apply_of_mem_projGrading` (the `MvPolynomial`
+  computation) is **PROVEN as of 2026-07-28** — the gluing half having been
+  discharged by
   `ProjCoords.openCover_eq_of_gradedSmul` and
   `ProjCoords.fromOfGlobalSections_eq_of_gradedSmul`;
   `ProjCoords.exists_of_specField` remains open, and so — since the 2026-07-27
@@ -226,7 +227,10 @@ in `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
   node and is listed here only so that this count matches the compiler's:
   `exists_affineComplement_zeroSection`,
   `exists_weierstrassRingEquiv_of_affineComplement`,
-  `isElliptic_of_isOpenImmersion_coordinateRing` and
+  `not_smooth_specMap_coordinateRing_of_singular` (which on 2026-07-28
+  replaced `isElliptic_of_isOpenImmersion_coordinateRing`, now PROVEN: the
+  char-`0` rationality of the singular point split off as the PROVEN
+  `exists_singular_of_Δ_eq_zero`, leaving only the Jacobian criterion) and
   `smoothOfRelativeDimension_one_of_affineChart` (that last one replaced
   `exists_isIso_of_affineChart` on 2026-07-27, in two steps: first a cut into
   two extension leaves, then release 6's `CurveExtension.lean`, which closed
@@ -985,7 +989,7 @@ theorem fromOfGlobalSections_comp_map {σ τ : Type} {A B : Type} [CommRing A] [
 end ProjFunctoriality
 
 /-- **The rescaled coordinate ring map is `u ^ n` times the original in degree
-`n`** (sorry node — the arithmetic half of `ProjCoords.toHom_smul`).
+`n`** (**PROVEN 2026-07-28** — the arithmetic half of `ProjCoords.toHom_smul`).
 
 `ProjCoords.ringHom` is `Ideal.Quotient.lift` of `MvPolynomial.eval₂Hom base coord`,
 so on the class of a polynomial `p` this says
@@ -996,17 +1000,50 @@ which is a monomial-by-monomial computation: a monomial of total degree `n`
 picks up exactly `u ^ n`.  The one step that is not literally that computation
 is passing from `a ∈ projGrading E n` — membership in the quotient grading — to
 a homogeneous representative of degree `n`, i.e. surjectivity of
-`HomogeneousIdeal.quotientGrading` onto its graded pieces; `Ideal.Quotient.mk`
-is surjective and the quotient grading is defined as the image, so this is
-`HomogeneousIdeal.mk_mem_quotientGrading` read backwards.
+`HomogeneousIdeal.quotientGrading` onto its graded pieces; that is
+`HomogeneousIdeal.mem_quotientGrading`, which is an `Iff` and so supplies the
+representative directly (the docstring previously said
+`mk_mem_quotientGrading` "read backwards" — the `Iff` form is what is used).
+
+The monomial computation itself: `MvPolynomial.eval₂_eq'` (the `Fintype`
+form, so the product runs over all of `Fin 3` rather than over `d.support`)
+turns each side into a sum over `p.support`, and on a monomial `d` the factor
+`∏ i, (u * coord i) ^ d i` splits as `u ^ (∑ i, d i) * ∏ i, coord i ^ d i` by
+`Finset.prod_pow_eq_pow_sum`.  Homogeneity is exactly `∑ i, d i = n` for every
+`d ∈ p.support`: `IsHomogeneous p n` gives `Finsupp.weight 1 d = n`, which is
+`d.degree` by `Finsupp.degree_eq_weight_one`, and `d.degree` — a sum over
+`d.support` — extends to a sum over `Finset.univ` because `d` vanishes off its
+support.
+
+There is deliberately NO new top-level helper: the monomial computation is
+inlined, because a name like `eval₂_smul_of_isHomogeneous` in this namespace is
+exactly the shape that collides with a downstream `public import`er.
 
 This is deliberately stated in the exact form
 `fromOfGlobalSections_eq_of_gradedSmul` consumes. -/
 theorem ringHom_smul_apply_of_mem_projGrading (u : (Γ(X, ⊤))ˣ) (c : ProjCoords E X)
     (n : ℕ) (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
     (ha : a ∈ projGrading E n) :
-    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a :=
-  sorry
+    (smul u c).ringHom a = (u : Γ(X, ⊤)) ^ n * c.ringHom a := by
+  classical
+  obtain ⟨p, hp, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  have hp' : p.IsHomogeneous n := (MvPolynomial.mem_homogeneousSubmodule _ _).mp hp
+  simp only [ringHom_mk, smul_coord, show (smul u c).base = c.base from rfl]
+  rw [MvPolynomial.eval₂_eq', MvPolynomial.eval₂_eq', Finset.mul_sum]
+  refine Finset.sum_congr rfl fun d hd => ?_
+  have hdeg : ∑ i, d i = n := by
+    have h : d.degree = n := by
+      rw [Finsupp.degree_eq_weight_one]
+      exact hp' (MvPolynomial.mem_support_iff.mp hd)
+    rw [← h, Finsupp.degree_apply]
+    exact (Finset.sum_subset (Finset.subset_univ _)
+      (fun x _ hx => Finsupp.notMem_support_iff.mp hx)).symm
+  have hprod : ∏ i, (((u : Γ(X, ⊤)) • c.coord) i) ^ (d i)
+      = (u : Γ(X, ⊤)) ^ n * ∏ i, c.coord i ^ d i := by
+    simp only [Pi.smul_apply, smul_eq_mul, mul_pow, Finset.prod_mul_distrib,
+      Finset.prod_pow_eq_pow_sum, hdeg]
+  rw [hprod]
+  ring
 
 /-- **Rescaling the coordinates by a unit does not change the morphism**
 (**PROVEN 2026-07-27** from `fromOfGlobalSections_eq_of_gradedSmul` and
@@ -9654,7 +9691,12 @@ that chain exactly, so that no two leaves share a difficulty:
    Weierstrass curve whose affine chart is an open subscheme of a smooth
    `A` is smooth, and a singular Weierstrass curve has a *rational*
    singular point in its affine chart, so `Δ` is a unit.  Pure
-   commutative algebra about one `WeierstrassCurve ℚ`.
+   commutative algebra about one `WeierstrassCurve ℚ`.  **PROVEN
+   2026-07-28**, cut in two: the rationality of the singular point is
+   `exists_singular_of_Δ_eq_zero` (**PROVEN**, with an explicit witness
+   in `c₄`, `c₆`, `b₂` — no `VariableChange` transport needed), and the
+   Jacobian criterion is `not_smooth_specMap_coordinateRing_of_singular`,
+   which is the only leaf of this item that remains.
 
 **Two conjuncts of the goal never reach a leaf.**  The structure-morphism
 conjunct is free by `hom_ext_spec_rat` (any two morphisms to `Spec ℚ`
@@ -9784,9 +9826,190 @@ theorem exists_weierstrassRingEquiv_of_affineComplement {A : Scheme.{0}}
     ∃ E : WeierstrassCurve ℚ, Nonempty (R ≃+* E.toAffine.CoordinateRing) :=
   sorry
 
+/-- **A Weierstrass curve over `ℚ` with `Δ = 0` has a RATIONAL singular
+point** (**PROVEN 2026-07-28** — the char-`0` half of leaf 3 of
+`exists_weierstrassModel_of_ellipticScheme`; Silverman *AEC* III.1.4).
+
+This is the step that makes leaf 3 work over `ℚ` rather than only over `ℚ̄`:
+the singular point of a singular Weierstrass cubic has coordinates in the
+base field.  It is proved here with an EXPLICIT witness rather than by
+completing the square and the cube, so no `VariableChange` transport of
+`Equation`/`Nonsingular` — which mathlib does not have — is needed.
+
+**The witness.**  Write `X := -c₆ / c₄` (with Lean's `x / 0 = 0`, which is
+exactly right in the degenerate case: `Δ = 0` and `c₄ = 0` force `c₆ = 0`
+through `c₄ ^ 3 = c₆ ^ 2`).  Then
+
+    x₀ = (X - b₂) / 12,      y₀ = -(a₃ + a₁ x₀) / 2.
+
+`y₀` is forced by `W_Y(x₀, y₀) = 2 y₀ + a₁ x₀ + a₃ = 0`, and with it the two
+remaining conditions become polynomial identities in `X` and the `aᵢ`:
+
+    W_X(x₀, y₀) = -(X ^ 2 - c₄) / 48,
+    W(x₀, y₀)   = (-3 X (X ^ 2 - c₄) + 2 (X ^ 3 + c₆)) / 1728,
+
+so both vanish given only `X ^ 2 = c₄` and `X ^ 3 = -c₆`, which is all that
+`Δ = 0` is used for (through `WeierstrassCurve.c_relation`,
+`1728 Δ = c₄ ^ 3 - c₆ ^ 2`).
+
+**Where the sign comes from**, since the two roots of `6x² + b₂x + b₄` are
+`x = (±√c₄ - b₂)/12` and only ONE of them lies on the curve: eliminating
+`b₄` and `b₆` against the two derivative conditions gives
+`c₆ = -(b₂ + 12 x₀) ^ 3`, i.e. `X ^ 3 = -c₆`, which together with
+`X ^ 2 = c₄` pins `X = -c₆ / c₄`.  Choosing `+c₆ / c₄` instead gives the
+OTHER critical point of the cubic, which satisfies both derivative equations
+and is NOT on the curve. -/
+theorem exists_singular_of_Δ_eq_zero (E : WeierstrassCurve ℚ) (hΔ : E.Δ = 0) :
+    ∃ x y : ℚ, E.toAffine.Equation x y ∧ ¬ E.toAffine.Nonsingular x y := by
+  have hc : E.c₄ ^ 3 = E.c₆ ^ 2 := by
+    have h := E.c_relation
+    rw [hΔ, mul_zero] at h
+    linarith
+  have hc6 : E.c₄ = 0 → E.c₆ = 0 := fun h => by
+    have h2 : E.c₆ ^ 2 = 0 := by rw [← hc, h]; ring
+    exact sq_eq_zero_iff.mp h2
+  set X : ℚ := -E.c₆ / E.c₄ with hXdef
+  have hmul : E.c₄ * X = -E.c₆ := by
+    rcases eq_or_ne E.c₄ 0 with h | h
+    · rw [hXdef, h, hc6 h]; ring
+    · rw [hXdef]; field_simp
+  have hX2 : X ^ 2 = E.c₄ := by
+    rcases eq_or_ne E.c₄ 0 with h | h
+    · rw [hXdef, h, hc6 h]; norm_num
+    · refine mul_left_cancel₀ (pow_ne_zero 2 h) ?_
+      calc E.c₄ ^ 2 * X ^ 2 = (E.c₄ * X) ^ 2 := by ring
+        _ = (-E.c₆) ^ 2 := by rw [hmul]
+        _ = E.c₄ ^ 2 * E.c₄ := by linear_combination -hc
+  have hX3 : X ^ 3 = -E.c₆ := by
+    have h : X ^ 3 = X ^ 2 * X := by ring
+    rw [h, hX2, hmul]
+  set x₀ : ℚ := (X - E.b₂) / 12 with hx₀
+  set y₀ : ℚ := -(E.a₃ + E.a₁ * x₀) / 2 with hy₀
+  have hY : 2 * y₀ + E.a₁ * x₀ + E.a₃ = 0 := by rw [hy₀]; ring
+  have hXpart : E.a₁ * y₀ - (3 * x₀ ^ 2 + 2 * E.a₂ * x₀ + E.a₄) = 0 := by
+    rw [hy₀, hx₀]
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄] at hX2 ⊢
+    linear_combination (-1/48 : ℚ) * hX2
+  have heq : E.toAffine.Equation x₀ y₀ := by
+    rw [WeierstrassCurve.Affine.equation_iff', hy₀, hx₀]
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.c₄, WeierstrassCurve.b₄,
+      WeierstrassCurve.c₆, WeierstrassCurve.b₆] at hX2 hX3 ⊢
+    linear_combination (-X/576 : ℚ) * hX2 + (1/864 : ℚ) * hX3
+  refine ⟨x₀, y₀, heq, ?_⟩
+  rw [WeierstrassCurve.Affine.nonsingular_iff']
+  rintro ⟨-, h | h⟩
+  · exact h hXpart
+  · exact h hY
+
+/-- **A Weierstrass curve with a rational singular point has a NON-SMOOTH
+affine coordinate ring** (sorry leaf, introduced 2026-07-28 as the residue of
+leaf 3 of `exists_weierstrassModel_of_ellipticScheme`).  This is the JACOBIAN
+CRITERION and it carries all of what is left of that leaf; the arithmetic half
+is `exists_singular_of_Δ_eq_zero` above, which is PROVEN.
+
+TRUE.  `R := E.toAffine.CoordinateRing` is `AdjoinRoot E.toAffine.polynomial`,
+i.e. `ℚ[X, Y] ⧸ (F)` with `F = Y² + a₁XY + a₃Y − X³ − a₂X² − a₄X − a₆`.  A
+rational point `(x, y)` with `F(x, y) = 0` and `F_X(x, y) = F_Y(x, y) = 0`
+gives a maximal ideal `𝔪 ⊂ R` with `R ⧸ 𝔪 ≅ ℚ` — the kernel of evaluation at
+`(x, y)` — at which the two partial derivatives vanish.
+
+**ROUTE AUDIT, 2026-07-28 — every ingredient below was checked to EXIST at our
+pin by name, and the route needs NO Krull dimension, NO relative dimension, NO
+residue-field base change and NO Nakayama package.**  Two longer routes were
+considered first and are recorded at the end so nobody re-derives them.
+
+Write `P := ℚ[X][Y] = Polynomial (Polynomial ℚ)`, `F := E.toAffine.polynomial`,
+`I := RingHom.ker (algebraMap P R) = (F)` (so `R = AdjoinRoot F` is `P ⧸ I` by
+definition), and `𝔫 ⊂ P` for the kernel of evaluation at `(x, y)`, so that
+`𝔫 ≠ ⊤`.  Write `c := Ideal.toCotangent I ⟨F, _⟩ ∈ I.Cotangent` for the class of
+`F` in `I/I²`.  Then:
+
+1. `Algebra.FormallySmooth ℚ P` — `Algebra.FormallySmooth.polynomial` twice plus
+   `Algebra.FormallySmooth.comp`.
+2. `Smooth (Spec.map …) → Algebra.Smooth ℚ R → Algebra.FormallySmooth ℚ R` —
+   `AlgebraicGeometry.HasRingHomProperty.Spec_iff` against the instance
+   `HasRingHomProperty @Smooth RingHom.Smooth`.
+3. `Algebra.FormallySmooth.iff_split_injection` (`Mathlib/RingTheory/Smooth/Basic.lean`,
+   stacks `031I`) then gives an honest `l` with
+   `l ∘ₗ KaehlerDifferential.kerCotangentToTensor ℚ P R = LinearMap.id`, and
+   `KaehlerDifferential.kerCotangentToTensor_toCotangent` evaluates the composite
+   at `c`: `l (1 ⊗ₜ D F) = c`.
+4. **`F ∈ 𝔫 ^ 2`.**  This is precisely what the two hypotheses say, and for a
+   Weierstrass cubic it is an EXPLICIT identity rather than a Taylor-series
+   argument: with `u := X − x` and `v := Y − y`,
+
+       F = F(x, y) + u ⬝ W_X(x, y) + v ⬝ W_Y(x, y)
+             + (v ^ 2 + a₁ u v − 3 x u ^ 2 − a₂ u ^ 2 − u ^ 3),
+
+   a `ring` identity, whose first three terms vanish by `_heq` and `_hns` and
+   whose bracket is visibly in `𝔫 ^ 2`.
+5. **`1 ⊗ₜ D F ∈ 𝔫 • (R ⊗[P] Ω[P⁄ℚ])`**, by Leibniz alone: `D` carries `𝔫 ^ 2`
+   into `𝔫 • Ω[P⁄ℚ]` because `D (g * h) = g • D h + h • D g`.  No basis of
+   `Ω[P⁄ℚ]` is needed — which is what makes `ℚ[X][Y]` as usable here as
+   `MvPolynomial (Fin 2) ℚ`.
+6. So `c ∈ 𝔫 • I.Cotangent` by 3 and 5.  Every element of `I.Cotangent` is
+   `r • c` (`I` is principal), so `c = n • c` for some `n ∈ 𝔫`, i.e.
+   `(1 − n) • c = 0`.
+7. **`Ann_P c = I`**, in one line and with no finiteness: `r * F ∈ I ^ 2 = (F ^ 2)`
+   means `r * F = s * F ^ 2`, and `P` is a domain with `F ≠ 0`, so `r = s * F ∈ I`.
+   Hence `1 − n ∈ I ⊆ 𝔫`, so `1 ∈ 𝔫`, contradicting `𝔫 ≠ ⊤`.
+
+The two longer routes, for the record — **neither is needed, and both were
+priced before step 7 was found**:
+
+*(a) through the regularity engine this tree already has.*  The stalk of
+`Spec R` at `𝔪` is `Localization.AtPrime R 𝔪`, and
+`GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field`
+(`Fermat/FLT/Modularity/RegularStalks.lean`, **sorry-free**, and already in this
+module's import cone) says every stalk of a scheme smooth over a field is a
+regular local ring.  What remains is that `R_𝔪` is NOT regular — Krull dimension
+`1` against embedding dimension `2` — and the dimension theory of a plane curve
+is not in the pin.
+
+*(b) through the rank of `Ω`.*  `IsStandardSmooth.free_kaehlerDifferential` and
+`IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+(`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`) do exist, but they
+want GLOBAL standard smoothness, whereas `Smooth` is only LOCALLY standard
+smooth; recovering a rank at `𝔪` needs the projectivity of `Ω` plus a base
+change to the residue field.  Step 6 above is that argument with the base change
+removed.
+
+**Both hypotheses are LOAD-BEARING**, and are underscore-prefixed only because
+the body is `sorry`.  Without `_hns` the statement is FALSE: an elliptic `E` has
+a smooth coordinate ring and plenty of rational points satisfying `_heq`.
+Without `_heq` the pair `(x, y)` need not be on the curve at all, and
+`¬ Nonsingular` is then vacuously true for every `(x, y)` off the curve (the
+first conjunct of `Nonsingular` is `Equation`), so again every elliptic `E`
+would refute it.
+
+NOT VACUOUS: `exists_singular_of_Δ_eq_zero` inhabits the hypotheses for every
+`E` with `E.Δ = 0`, e.g. `E = ⟨0, 0, 0, 0, 0⟩` (the cuspidal `y² = x³`) at
+`(0, 0)`.
+
+WHAT WOULD REFUTE THE "MISSING" DIAGNOSIS: any statement in mathlib deducing
+`Ideal.span {jacobian entries} = ⊤` from `Algebra.Smooth`, for a hypersurface.
+Searched 2026-07-28 over `Fermat/`, `.lake/packages/mathlib` and `~/cs/FLT`:
+the tree has the CONVERSE (`jacobianSpan_eq_top` above, and
+`RegularStalks.lean`'s Jacobian-criterion tower, both going smooth ⟹ regular),
+but nothing going non-regular ⟹ non-smooth for a named point.
+
+**THIS IS NOT A THEORY BUILD** — that is the point of the audit above, and it
+distinguishes this leaf sharply from its two siblings
+(`exists_affineComplement_zeroSection` needs ampleness of divisors and
+`exists_weierstrassRingEquiv_of_affineComplement` needs Riemann–Roch, neither of
+which exists anywhere).  Every lemma the seven steps cite is present at our pin;
+what is left is Lean plumbing over `Ideal.Cotangent`, `KaehlerDifferential` and
+`AdjoinRoot`, in one file, with no new mathematics.  A prover here should NOT
+start by reading Silverman. -/
+theorem not_smooth_specMap_coordinateRing_of_singular (E : WeierstrassCurve ℚ) {x y : ℚ}
+    (_heq : E.toAffine.Equation x y) (_hns : ¬ E.toAffine.Nonsingular x y) :
+    ¬ Smooth (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing))) :=
+  sorry
+
 /-- **A Weierstrass curve whose affine chart is an open subscheme of a
-smooth relative curve is elliptic** (sorry leaf, introduced 2026-07-27 as
-leaf 3 of `exists_weierstrassModel_of_ellipticScheme`).
+smooth relative curve is elliptic** (**PROVEN 2026-07-28** from the two
+declarations above; a sorry leaf, introduced 2026-07-27 as leaf 3 of
+`exists_weierstrassModel_of_ellipticScheme`, until then).
 
 TRUE, and it is pure commutative algebra once the hypotheses are
 unwound.  `ι` is an open immersion, hence smooth of relative dimension
@@ -9826,14 +10049,32 @@ the chart of a nodal cubic (`Δ = 0`), so the conclusion fails.  Drop
 `_hdim` and `f` need not be smooth at all, so nothing constrains `E`.
 
 NOT VACUOUS: `exists_affineChart_projInfty` supplies, for every elliptic
-`E`, an `(A, f, ι)` satisfying every hypothesis. -/
+`E`, an `(A, f, ι)` satisfying every hypothesis.
+
+**CUT 2026-07-28.**  The node is now PROVEN from the two declarations
+immediately above it, along exactly the axis the paragraph above describes:
+`exists_singular_of_Δ_eq_zero` (**PROVEN**, the char-`0` rationality of the
+singular point) and `not_smooth_specMap_coordinateRing_of_singular` (the
+Jacobian criterion, the one thing left open here).  The scheme-theoretic
+plumbing — that `ι ≫ f` is smooth and IS `Spec` of the structure map — costs
+two lines and carries no content. -/
 theorem isElliptic_of_isOpenImmersion_coordinateRing {A : Scheme.{0}}
-    {f : A ⟶ Spec (CommRingCat.of ℚ)} (_hdim : SmoothOfRelativeDimension 1 f)
+    {f : A ⟶ Spec (CommRingCat.of ℚ)} (hdim : SmoothOfRelativeDimension 1 f)
     (E : WeierstrassCurve ℚ)
     (ι : Spec (CommRingCat.of E.toAffine.CoordinateRing) ⟶ A)
-    (_hopen : IsOpenImmersion ι) :
-    E.IsElliptic :=
-  sorry
+    (hopen : IsOpenImmersion ι) :
+    E.IsElliptic := by
+  by_contra hE
+  have hΔ : E.Δ = 0 := by
+    by_contra h
+    exact hE ⟨isUnit_iff_ne_zero.mpr h⟩
+  obtain ⟨x, y, heq, hns⟩ := exists_singular_of_Δ_eq_zero E hΔ
+  refine not_smooth_specMap_coordinateRing_of_singular E heq hns ?_
+  haveI := hdim
+  haveI := hopen
+  have h2 : Smooth (ι ≫ f) := SmoothOfRelativeDimension.smooth (n := 0 + 1) (f := ι ≫ f)
+  rwa [hom_ext_spec_rat (ι ≫ f)
+    (Spec.map (CommRingCat.ofHom (algebraMap ℚ E.toAffine.CoordinateRing)))] at h2
 
 /-- **An elliptic scheme over `Spec ℚ` has a Weierstrass model** (PROVEN
 2026-07-27 from the three leaves above; a single `sorry` node before
