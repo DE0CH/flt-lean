@@ -46182,9 +46182,131 @@ theorem exists_x0AbelianNeronDatum_oneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶
       neronA := bijective_pre_generic_of_isProper ℓ R toF hbase astrZ abZ.proper
       properX := cm.properX }
 
+/-- **At a sieve prime every surviving point of the special fibre is the
+reduction of a rational CUSP** (sorry node, introduced 2026-07-28 by
+decomposing `exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount`,
+which is now PROVEN from it): given a rank-`0` abelian image `(A, c)` of
+`X_0(169)`, there is an odd prime `ℓ ∤ 169` at which, for EVERY
+Néron-pinned datum, every point `x'` of `X_0(169)(𝔽_ℓ)` whose `c'`-class
+lies in `Set.range redA` is `d.redX x` for a rational point `x` that is a
+CUSP.
+
+TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
+Math. Soc. (2) **22** (1980).  This carries the whole arithmetic of the
+level; its consumer is pure counting.
+
+**What the cut buys, and it is the reason for this shape.**  The consumer
+had to produce the numeral `numRationalCusps 169` out of an arithmetic
+computation.  Here the numeral is produced instead by the CUSP machinery
+already proven in this file — `nonempty_cuspLocus` (PROVEN over
+`exists_cuspResidueIndexing`) together with
+`IsX0Compactification.CuspLocus.card_le_numRationalCusps` (PROVEN) — so
+the residue no longer mentions `numRationalCusps` at all and states only
+what the Mordell–Weil sieve actually establishes: *the survivors are the
+cusps*.  Deligne–Rapoport supplies the count; the sieve supplies the
+inclusion.
+
+**It still counts POINTS, and the injection is what makes that safe.**
+The parent's docstring records why a CLASS count would be unsound here
+(`c` is an arbitrary morphism to an abelian image, `hcinj` constrains it
+only on the two-element set `X_0(169)(ℚ)`, so `c'` may be `d`-to-one on
+part of `X_0(169)(𝔽_ℓ)` and a class count would silently drop the fibres
+of `c'`).  This statement is immune to that, and by construction rather
+than by care: the map `x' ↦ x` it provides is injective for the trivial
+reason that `d.redX` is a FUNCTION — if two survivors are sent to the same
+rational cusp `x` then both equal `d.redX x`.  No injectivity hypothesis
+on `c'` is needed anywhere, and no fibre is dropped.
+
+**Why it is equivalent to the parent rather than stronger.**  At a prime
+where the parent holds, the reductions of the two rational cusps are
+survivors (`red_c`) and are distinct — `d.redX` is injective, since
+`d.redX x = d.redX y` gives `d.redA (c x) = d.redA (c y)` by `red_c`,
+hence `c x = c y` for odd `ℓ` by injectivity of reduction on the finite
+group `A(ℚ)`, hence `x = y` by `hcinj` — so a survivor set of size at most
+`numRationalCusps 169 = 2` IS that pair of cusp reductions, and every
+survivor is cuspidal.  Conversely this leaf gives the parent, which is the
+implication proven below.  So nothing was strengthened into the leaf.
+
+**Not circular with the consumer chain.**  What is asserted is that the
+surviving points are CUSPIDAL, never that `X_0(169)(ℚ)` has at most two
+elements — that is the conclusion of
+`card_le_numRationalCusps_x0OneSixtyNine`, three steps downstream, and it
+is nowhere presupposed.  The bound on the number of rational cusps is
+independent arithmetic-geometry (Deligne–Rapoport VI.6, Ogg), already in
+this file.
+
+## AXIS SEARCHED, and why the residue is ONE leaf rather than two
+
+The obvious further cut is into a CLASS count
+`(Set.range d.redA ∩ Set.range (c' _ _)).ncard ≤ numRationalCusps 169`
+and a SEPARATING clause `Set.InjOn (c' _ _)` on the survivor set, whose
+conjunction gives the point count.  **Both clauses must then be produced
+at the SAME `ℓ`, and neither can be quantified over all good primes**, so
+the split does not actually divide the existential:
+
+* the separating clause FAILS at infinitely many primes as soon as `c`
+  has degree `≥ 2` onto its image — the audit's degree-`≥ 3` refinement
+  applies verbatim, the extra points of the fibre through a rational cusp
+  being defined over some `K ≠ ℚ` and becoming `𝔽_ℓ`-rational for every
+  `ℓ` split in `K`, a set of density `1/[K : ℚ] > 0`;
+* the class-count clause fails at infinitely many primes for the mirror
+  reason: a class `c(x) ∈ A(ℚ)` with `x ∈ X_0(169)(K)`, `x ∉ X_0(169)(ℚ)`
+  survives at every `ℓ` split in `K`.
+
+So each clause holds on a set of primes of density `< 1` and neither is
+cofinite; a two-leaf split would need the two positive-density sets to
+MEET, which is a density statement about their complements and not
+something either leaf can carry alone.  A `Set.Infinite`-valued version of
+either clause is not enough either: an infinite set of primes can sit
+entirely inside the other clause's failure set.  Hence the arithmetic
+stays in one existential.  **AXIS NOT SEARCHED**: pinning `(A, c)` as the
+Atkin–Lehner Prym (the repair the parent's audit describes), under which
+the `∀` over `(A, c)` collapses to a single pair and the sieve becomes a
+finite computation in `A(𝔽_ℓ)` — that is the direction that would close
+this rather than divide it.
+
+**What proving it needs** is unchanged from the parent: `J_0(169)`, its
+Atkin–Lehner decomposition, the Prym, Kolyvagin–Logachev for finiteness of
+`A(ℚ)`, and the sieve computation proper — an intersection count inside
+the finite abelian group `A(𝔽_ℓ)`.  `hfin` is the rank-`0` input and is
+load-bearing: without it `A(ℚ)` is infinite, `Set.range redA` is
+unconstrained, and no prime cuts anything.  `hcinj` is what makes the two
+rational cusps have distinct classes and is what excludes the degree-`2`
+mechanism through `w_169`.  The numerical reconnaissance for the level —
+newform orbit dimensions `2, 3, 3` (so `J_0(169)` has NO elliptic-curve
+factor), the Atkin–Lehner signs, the analytic ranks `0,0/0,0,0/1,1,1`, and
+the completed negative check that no single prime is sharp — is recorded
+under `exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount` below. -/
+theorem exists_cuspidalAbelianSievePrime_oneSixtyNine
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification 169 strX strY jY)
+    {A : Scheme.{0}} {astr : A ⟶ SpecQ} (ab : AbelianSchemeStruct astr)
+    (c : ∀ (T : Scheme.{0}) (g : T ⟶ SpecQ), RelPoint strX g → RelPoint astr g)
+    (hfin : Finite (RelPoint astr (𝟙 SpecQ)))
+    (hcinj : Function.Injective (c SpecQ (𝟙 SpecQ))) :
+    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ 169 ∧
+      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ} {X' A' XZ YZ AZ : Scheme.{0}}
+        {strX' : X' ⟶ SpecF ℓ} {astr' : A' ⟶ SpecF ℓ} {ab' : AbelianSchemeStruct astr'}
+        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+        {astrZ : AZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct astrZ}
+        {c' : ∀ (T : Scheme.{0}) (g : T ⟶ SpecF ℓ), RelPoint strX' g → RelPoint astr' g}
+        {cZ : ∀ (T : Scheme.{0}) (g : T ⟶ SpecLoc R), RelPoint xstr g → RelPoint astrZ g}
+        (d : IsX0AbelianNeronDatum 169 ℓ R toF ab ab' abZ c c' cZ
+          (ystr := ystr) (jZ := jZ)),
+        ∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+          (∃ a : RelPoint astr (𝟙 SpecQ),
+              d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x') →
+            ∃ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x ∧ d.redX x = x' :=
+  sorry
+
 /-- **The survivor COUNT at a good odd prime — the arithmetic residue of the
-abelian sieve at `169`** (sorry node, introduced 2026-07-27 by decomposing
-`exists_sharpAbelianSievePrime_oneSixtyNine`, which is now PROVEN from it):
+abelian sieve at `169`** (PROVEN by decomposition 2026-07-28, over
+`exists_cuspidalAbelianSievePrime_oneSixtyNine` above together with
+`nonempty_cuspLocus` and
+`IsX0Compactification.CuspLocus.card_le_numRationalCusps`; introduced
+2026-07-27 by decomposing `exists_sharpAbelianSievePrime_oneSixtyNine`,
+which is PROVEN from it):
 given a rank-`0` abelian image `(A, c)` of `X_0(169)`, there is an odd prime
 `ℓ ∤ 169` at which, for EVERY Néron-pinned datum, at most
 `numRationalCusps 169 = 2` points of the special fibre have `c'`-class in
@@ -46193,6 +46315,21 @@ given a rank-`0` abelian image `(A, c)` of `X_0(169)`, there is an odd prime
 TRUE — Kenku, *The modular curve `X_0(169)` and rational isogeny*, J. London
 Math. Soc. (2) **22** (1980).  This is the whole arithmetic content of the
 level; everything else in the chain is now transport.
+
+**THE 2026-07-28 CUT, which is where the arithmetic now lives.**  This is
+no longer a leaf: it is proven from
+`exists_cuspidalAbelianSievePrime_oneSixtyNine`, which says that at the
+sieve prime every survivor is `d.redX x` for a rational point `x` that is
+a CUSP.  The numeral `numRationalCusps 169` is then supplied not by
+arithmetic but by the cusp machinery already proven in this file
+(`nonempty_cuspLocus`, `IsX0Compactification.CuspLocus.card_le_numRationalCusps`),
+and the counting step is an injection: distinct survivors have distinct
+chosen cusps because `d.redX` is a FUNCTION.  In particular the POINT
+count is preserved exactly — no fibre of `c'` is dropped and no
+injectivity hypothesis on `c'` is introduced, which is the trap the next
+paragraph records.  See the residue's own docstring for why the remaining
+arithmetic does NOT split further into a class count plus a separating
+clause.
 
 **What this leaf is, relative to its consumer.**  It is
 `exists_sharpAbelianSievePrime_oneSixtyNine` with the `Finset` packaging
@@ -46271,8 +46408,46 @@ theorem exists_sharpAbelianSievePrime_oneSixtyNine_survivorCount
           (ystr := ystr) (jZ := jZ)),
         {x' : RelPoint strX' (𝟙 (SpecF ℓ)) |
             ∃ a : RelPoint astr (𝟙 SpecQ),
-              d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'}.ncard ≤ numRationalCusps 169 :=
-  sorry
+              d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'}.ncard ≤ numRationalCusps 169 := by
+  classical
+  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hcusp⟩ :=
+    exists_cuspidalAbelianSievePrime_oneSixtyNine hX ab c hfin hcinj
+  obtain ⟨C⟩ := nonempty_cuspLocus 169 (by norm_num) hX
+  refine ⟨ℓ, hℓ, hℓ2, hℓN, ?_⟩
+  intro R toF X' A' XZ YZ AZ strX' astr' ab' xstr ystr jZ astrZ abZ c' cZ d
+  haveI : Finite (RelPoint strX' (𝟙 (SpecF ℓ))) := d.finite_specialFibre
+  haveI : Fintype (RelPoint strX' (𝟙 (SpecF ℓ))) := Fintype.ofFinite _
+  -- a `Finset` of points of the special fibre each of which is the reduction of
+  -- a rational cusp has at most `numRationalCusps 169` elements: the chosen
+  -- cusps are distinct because `d.redX` is a function
+  have main : ∀ s : Finset (RelPoint strX' (𝟙 (SpecF ℓ))),
+      (∀ x' ∈ s, ∃ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x ∧ d.redX x = x') →
+      s.card ≤ numRationalCusps 169 := by
+    intro s key
+    choose g hg1 hg2 using key
+    have hinj : Function.Injective (fun x : {x // x ∈ s} => g x.1 x.2) := by
+      rintro ⟨x, hx⟩ ⟨y, hy⟩ heq
+      have h1 : d.redX (g x hx) = x := hg2 x hx
+      have h2 : d.redX (g y hy) = y := hg2 y hy
+      simp only at heq
+      refine Subtype.ext ?_
+      show x = y
+      exact h1.symm.trans ((congrArg d.redX heq).trans h2)
+    calc s.card = s.attach.card := Finset.card_attach.symm
+      _ = (s.attach.image fun x : {x // x ∈ s} => g x.1 x.2).card :=
+          (Finset.card_image_of_injective _ hinj).symm
+      _ ≤ numRationalCusps 169 := C.card_le_numRationalCusps _ (by
+          intro x hx
+          obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hx
+          exact hg1 y.1 y.2)
+  have hcoe : ↑(Finset.univ.filter
+      (fun x' => ∃ a : RelPoint astr (𝟙 SpecQ), d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'))
+      = {x' : RelPoint strX' (𝟙 (SpecF ℓ)) |
+          ∃ a : RelPoint astr (𝟙 SpecQ), d.redA a = c' (SpecF ℓ) (𝟙 (SpecF ℓ)) x'} := by
+    ext x'
+    simp
+  rw [← hcoe, Set.ncard_coe_finset]
+  exact main _ (fun x' hx' => hcusp d x' (Finset.mem_filter.mp hx').2)
 
 /-- **Some good odd prime makes the abelian sieve at `169` sharp** (PROVEN
 by decomposition 2026-07-27, over
