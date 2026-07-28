@@ -10044,7 +10044,18 @@ the pair `α, β = 1, p` for the Eisenstein system — it is the package
 upstairs that cannot exist for it.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+
+HYPOTHESIS THREADING (release-14 integration, 2026-07-28).  `hFeven`,
+`hbad2`, `hbad3` and `hbadℓ` were added here because
+`exists_frobEigenvalues_heckeF_of_heckePackage`, which this proof calls at
+the good place `V` of `F`, acquired them concurrently — `hFeven` because
+the automorphic-axis cut routes that leaf through Albert–Brauer–Hasse–
+Noether, which needs `[F:ℚ]` EVEN to build a totally definite quaternion
+algebra, and the bad-set clauses because the Ramanujan bound is FALSE at a
+place where `ρ` ramifies.  They are threaded, never weakened, and they cost
+the caller nothing: the single inhabitation site already held all four and
+was already passing them to the sibling `weilBound_heckeF_of_heckePackage`. -/
 theorem weilBound_descended_of_heckePackage
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -10067,6 +10078,7 @@ theorem weilBound_descended_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hFeven : Even (Module.finrank ℚ F))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
@@ -10075,7 +10087,13 @@ theorem weilBound_descended_of_heckePackage
     (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hmod : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ)
+    (hbad2 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (2 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∀ (C : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
       [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
       (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
@@ -10120,7 +10138,8 @@ theorem weilBound_descended_of_heckePackage
   -- the point-count package UPSTAIRS, at the good place `V` of `F`
   obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ :=
     exists_frobEigenvalues_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod V hVbad φ'
+      hirr π hπsurj hπ F hFtr hFgal hFeven hirrF E badF heckeF ψℓ ιO hιO hmod
+      hbad2 hbad3 hbadℓ V hVbad φ'
   have hNV : (0 : ℕ) < Ideal.absNorm V.asIdeal := absNorm_asIdeal_pos V
   have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq.pos
   have hsqpos : 0 < Real.sqrt q := Real.sqrt_pos.mpr hqR
@@ -10380,7 +10399,8 @@ theorem exists_potentialModularityWitness_of_five_le
     hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂ hbad2
     hbad3 hbadℓ
   have hweild := weilBound_descended_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
-    hirr π hπsurj hπ F hFtr hFgal hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂
+    hirr π hπsurj hπ F hFtr hFgal hev hirrF E₂ badF' heckeF₂ ψ₂ ιO hιO hmod₂
+    hbad2 hbad3 hbadℓ
   exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E₂,
            badF := badF', heckeF := heckeF₂, ψℓ := ψ₂, ιO := ιO,
            ιO_injective := hιO, modularF := hmod₂, descentClosed := hdc,
