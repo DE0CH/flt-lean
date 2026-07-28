@@ -1035,6 +1035,114 @@ structure PotentialModularityWitness (ℓ : ℕ) [Fact ℓ.Prime]
         (b : HeightOneSpectrum (NumberField.RingOfIntegers
           (IntermediateField.fixedField H)) → E),
         ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w
+  /-- **RAMANUJAN–PETERSSON AT THE PLACES OF `F`** — the newform
+  recorded by `heckeF` is CUSPIDAL (added 2026-07-27; see the FALSITY
+  AUDIT below for why this had to become a field).
+
+  Away from `badF`, the linear coefficient of `heckeF w = X² − a_w·X + Nw`
+  satisfies `‖φ(a_w)‖ ≤ 2√(Nw)` at every complex embedding `φ` of `E`.
+  Classically this is Deligne's theorem (Eichler–Shimura for parallel
+  weight `2`, via the Blasius/Carayol realization of a Hilbert newform of
+  parallel weight `2` in the `H¹` of a quaternionic Shimura variety
+  together with the Weil conjectures for that variety; Deligne, *La
+  conjecture de Weil I*, Publ. IHÉS 43 (1974); Blasius, in
+  *Noncommutative Geometry and Number Theory* (2006); Carayol, Ann. Sci.
+  ÉNS 19 (1986)).
+
+  **FALSITY AUDIT (2026-07-27) — WHY THIS IS A FIELD AND NOT A LEAF
+  ABOUT AN ARBITRARY CARRIER.**  Until today this clause was stated in
+  `Modularity/KhareWintenberger.lean` as
+  `weilBound_heckeF_of_witness (Wit : PotentialModularityWitness ℓ O ρ)`,
+  a sorried leaf universally quantified over the carrier AND over `ρ`,
+  with **no hypothesis on `ρ` whatsoever**.  In that form it was **FALSE**,
+  and its own docstring contained the refutation:
+
+  * `IsHardlyRamified` does **not** imply irreducibility.  The reducible
+    representation `ρ = 1 ⊕ χ_ℓ` (trivial character ⊕ `ℓ`-adic cyclotomic
+    character, on `Fin 2 → ℤ_[ℓ]`) satisfies **every** clause of
+    `IsHardlyRamified`: `det ρ = χ_ℓ`; unramified outside `{2, ℓ}`; flat at
+    `ℓ` (its `ℓ`-torsion is `ℤ/ℓ ⊕ μ_ℓ`, finite flat); and the projection
+    onto the trivial line is a `1`-dimensional quotient which is
+    unramified with trivial square, so `isTameAtTwo` holds with
+    `δ = 1`.
+  * That `ρ` carries a genuine `PotentialModularityWitness`: take
+    `F = ℚ` (totally real and Galois over `ℚ`), `E = ℚ`,
+    `heckeF w = (X − 1)(X − Nw) = X² − (1 + Nw)·X + Nw`, `ψℓ` and `ιO`
+    the tautological embeddings into `ℚ̄_ℓ`, `B = ℤ_[3]` with
+    `τF = 1 ⊕ χ_3`.  `modularF` and `matchF₃` hold by construction, and
+    `descentClosed` holds with `b w = 1 + Nw ∈ ℚ = E`.
+  * But its eigensystem is the EISENSTEIN one, `a_w = 1 + Nw`, and
+    `1 + Nw > 2√(Nw)` for every `Nw ≠ 1`.  So the old leaf failed at
+    every place of every such carrier — not on a measure-zero edge.
+
+  Neither soundness route survived: route (i) "the classical theorem
+  applied to the attached newform" fails because an Eisenstein
+  eigensystem is not a cuspidal newform, and route (ii) "the hypothesis
+  package is classically unsatisfiable" fails because the package was
+  satisfiable — `1 ⊕ χ_ℓ` satisfies it.
+
+  **THE REPAIR IS THE `descentClosed` PATTERN.**  The missing input is
+  the non-Eisenstein condition, whose sharpest in-tree proxy is
+  `hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible` (see the round-4
+  audit on `exists_threeadic_realization_of_heckePackage` in
+  `KhareWintenberger.lean`).  `hirrF` mentions the residual
+  representation `ρbar`, which is NOT data of this structure and is not
+  in scope for any consumer of a carrier — so the clause is not
+  derivable for an arbitrary carrier, exactly as `descentClosed` was
+  not.  It is however FREE for the carrier the inhabitation leaf builds,
+  which holds `hirrF` from `exists_moretBailly_seed_of_five_le`.  So it
+  belongs here, where the choice is made, and is discharged at the single
+  inhabitation site by `weilBound_heckeF_of_heckePackage`. -/
+  weilBoundF : ∀ w ∉ badF, ∀ φ : E →+* ℂ,
+    ‖φ ((heckeF w).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)
+  /-- **RAMANUJAN–PETERSSON FOR THE DESCENDED EIGENSYSTEMS, AT THE INERT
+  PLACES** (added 2026-07-27 together with `weilBoundF`, and false for the
+  same reason in its old free-standing form).
+
+  For a subgroup `C ≤ Gal(F/ℚ)` and an eigenvalue function `a` over
+  `L = F^C` pinned by the Frobenius traces of `ρ|_{G_L}`, all but
+  finitely many of its values satisfy `‖φ(a w)‖ ≤ 2√(Nw)` — at the places
+  `w` matching NO good place of `F` (same residue cardinality AND same
+  Frobenius characteristic polynomial).  At the places that DO match, the
+  bound is a consequence of `weilBoundF` and needs no automorphic input;
+  that half is proven in `weilBound_of_charFrob_baseChange`.
+
+  Classically this is cyclic base change (Langlands, *Base Change for
+  GL(2)*, Ann. of Math. Studies 96 (1980); Arthur–Clozel, Ann. of Math.
+  Studies 120 (1989), Ch. 3 Thm 4.2): the descended eigensystem is
+  CUSPIDAL, so Ramanujan–Petersson applies to it as well.  At an inert
+  place the eigenvalue downstairs is related to the one upstairs only by
+  the Dickson identity `a_W = D_f(a_w, Nw)`, from which the bound
+  upstairs does NOT follow (that step needs the SHARP form of Deligne's
+  bound, i.e. reality of the Hecke field, which is not recorded here).
+
+  FALSITY AUDIT: the counterexample of `weilBoundF` applies verbatim,
+  with `F` real quadratic and `C = Gal(F/ℚ)` so that `L = ℚ`: at a prime
+  `p` inert in `F` no place of `F` has residue cardinality `p`, the inert
+  hypothesis therefore holds, and `a_p = 1 + p > 2√p`.  (At `C = ⊥` the
+  old statement was merely VACUOUS, every place matching itself — which
+  is why the base case of the descent never exposed the falsity.)
+
+  Discharged at the single inhabitation site by
+  `weilBound_descended_of_heckePackage`. -/
+  weilBoundDescent : ∀ (C : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
+      [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C))))
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C)) → E'),
+      (∀ w ∉ S, ψ (a w) =
+        - ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+          w).coeff 1)) →
+      ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField C))),
+        ∀ w, w ∉ S → w ∉ S' →
+          (∀ W ∉ badF,
+            Ideal.absNorm W.asIdeal = Ideal.absNorm w.asIdeal →
+              (ρ.map (algebraMap ℚ F)).charFrob W ≠
+                (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
+          ∀ φ : E' →+* ℂ,
+            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal)
   /-- The `3`-adic coefficient ring: classically the integers of
   `E_λ`, `λ | 3`. -/
   B : Type u
@@ -1785,9 +1893,12 @@ characteristic three with MORE THAN THREE ELEMENTS; the discharge is
 any `Ind` machinery by writing the anticyclotomic index-two induction as
 an explicit dihedral cocycle. REFUTED as originally stated and repaired
 2026-07-26, the cardinality bound being the repair. The only class field
-theory left in it is `nonempty_ringClassArtinData_of_inertPrime` (2026-07-27
+theory left in it is `exists_ringClassConductorHom_of_inertPrime` (2026-07-27
 — the existence, at a GIVEN inert auxiliary prime `p`, of the ARTIN MAP of the
-ring class field of conductor `p` of `M = ℚ(√d)`; the `ZMod` encoding is PROVEN
+ring class field of conductor `p` of `M = ℚ(√d)`, together with the conductor
+map `μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)` of the conductor exact sequence; the parent
+`nonempty_ringClassArtinData_of_inertPrime` is PROVEN over it, the `ZMod`
+encoding is PROVEN
 in `exists_ringClassZModChar_of_inertPrime` over the group-theoretic
 `exists_zmodChar_of_dvd_exponent`, the selection of `p` in
 `exists_auxiliaryPrime_of_neg`, the descent to a prescribed order `n` in
@@ -4772,6 +4883,109 @@ theorem mvPolynomialGradient_C {𝕜 : Type*} [NontriviallyNormedField 𝕜]
   rw [mvPolynomialGradient_apply]
   simp
 
+/-! ### The FORMAL directional derivative, over an arbitrary base ring
+
+`mvPolynomialGradient` above packages the formal partial derivatives as a
+CONTINUOUS linear map, so it is only available over a `NontriviallyNormedField`.
+The `p`-adic Bertini leaf below needs exactly the same object over a base with
+no topology at all — its nondegeneracy argument (a `Subring.closure` induction)
+is pure commutative algebra — so the underlying SUM is given its own name here.
+`mvPolynomialDirDeriv_eq_gradient` is the one-line bridge, and it is the only
+place the two ever meet. -/
+
+/-- The FORMAL directional derivative of a multivariate polynomial at `z` along
+`w`: purely algebraic, defined over any commutative semiring, and equal to
+`mvPolynomialGradient F z w` whenever the base is a normed field
+(`mvPolynomialDirDeriv_eq_gradient`). -/
+noncomputable def mvPolynomialDirDeriv {K : Type*} [CommSemiring K] {m : ℕ}
+    (F : MvPolynomial (Fin m) K) (z w : Fin m → K) : K :=
+  ∑ i : Fin m, MvPolynomial.eval z (MvPolynomial.pderiv i F) * w i
+
+section DirDeriv
+
+variable {K : Type*} [CommRing K] {m : ℕ}
+
+/-- The directional derivative of `0` vanishes (PROVEN, 2026-07-27). -/
+theorem mvPolynomialDirDeriv_zero (z w : Fin m → K) :
+    mvPolynomialDirDeriv (0 : MvPolynomial (Fin m) K) z w = 0 := by
+  simp [mvPolynomialDirDeriv]
+
+/-- The directional derivative of a constant vanishes (PROVEN, 2026-07-27). -/
+theorem mvPolynomialDirDeriv_C (a : K) (z w : Fin m → K) :
+    mvPolynomialDirDeriv (MvPolynomial.C a : MvPolynomial (Fin m) K) z w = 0 := by
+  simp [mvPolynomialDirDeriv]
+
+/-- The directional derivative READS OFF the direction on a coordinate
+(PROVEN, 2026-07-27). This is the step that turns "every generator's derivative
+vanishes on `w`" into "`w = 0`". -/
+theorem mvPolynomialDirDeriv_X (i : Fin m) (z w : Fin m → K) :
+    mvPolynomialDirDeriv (MvPolynomial.X i : MvPolynomial (Fin m) K) z w = w i := by
+  rw [mvPolynomialDirDeriv, Finset.sum_eq_single i]
+  · rw [MvPolynomial.pderiv_X_self]; simp
+  · intro j _ hj
+    rw [MvPolynomial.pderiv_X_of_ne (Ne.symm hj)]; simp
+  · intro h; exact absurd (Finset.mem_univ i) h
+
+/-- Additivity (PROVEN, 2026-07-27). -/
+theorem mvPolynomialDirDeriv_add (F G : MvPolynomial (Fin m) K) (z w : Fin m → K) :
+    mvPolynomialDirDeriv (F + G) z w
+      = mvPolynomialDirDeriv F z w + mvPolynomialDirDeriv G z w := by
+  simp only [mvPolynomialDirDeriv, map_add, add_mul]
+  exact Finset.sum_add_distrib
+
+/-- Subtractivity (PROVEN, 2026-07-27). -/
+theorem mvPolynomialDirDeriv_sub (F G : MvPolynomial (Fin m) K) (z w : Fin m → K) :
+    mvPolynomialDirDeriv (F - G) z w
+      = mvPolynomialDirDeriv F z w - mvPolynomialDirDeriv G z w := by
+  rw [eq_sub_iff_add_eq, ← mvPolynomialDirDeriv_add, sub_add_cancel]
+
+/-- The LEIBNIZ rule (PROVEN, 2026-07-27) — this is what makes the vanishing
+locus of `w ↦ mvPolynomialDirDeriv · z w` a SUBRING, which is the engine of the
+nondegeneracy argument below. -/
+theorem mvPolynomialDirDeriv_mul (F G : MvPolynomial (Fin m) K) (z w : Fin m → K) :
+    mvPolynomialDirDeriv (F * G) z w
+      = MvPolynomial.eval z F * mvPolynomialDirDeriv G z w
+        + MvPolynomial.eval z G * mvPolynomialDirDeriv F z w := by
+  simp only [mvPolynomialDirDeriv, MvPolynomial.pderiv_mul, map_add, map_mul,
+    Finset.mul_sum, ← Finset.sum_add_distrib]
+  exact Finset.sum_congr rfl fun i _ => by ring
+
+/-- **THE BRIDGE**: over a normed field the formal directional derivative IS the
+gradient applied to the direction (PROVEN, 2026-07-27) — a restatement of
+`mvPolynomialGradient_apply`. -/
+theorem mvPolynomialDirDeriv_eq_gradient {𝕜 : Type*} [NontriviallyNormedField 𝕜]
+    (F : MvPolynomial (Fin m) 𝕜) (z w : Fin m → 𝕜) :
+    mvPolynomialDirDeriv F z w = mvPolynomialGradient F z w :=
+  (mvPolynomialGradient_apply F z w).symm
+
+/-- **BOTH THE VALUE AND THE DIRECTIONAL DERIVATIVE VANISH ON THE WHOLE IDEAL
+GENERATED BY A SYSTEM THAT KILLS THEM** (PROVEN, 2026-07-27).
+
+In other words `F ↦ (eval z F, mvPolynomialDirDeriv F z w)` is a ring map to the
+dual numbers, and it kills the generators; the proof is one
+`Submodule.span_induction` whose only nontrivial case is the Leibniz rule. This
+is what makes "the derivative along `w` of a polynomial representative" WELL
+DEFINED modulo the relation ideal. -/
+theorem eval_and_dirDeriv_eq_zero_of_mem_span {c : ℕ}
+    (Pol : Fin c → MvPolynomial (Fin m) K) (z w : Fin m → K)
+    (hz : ∀ j, MvPolynomial.eval z (Pol j) = 0)
+    (hw : ∀ j, mvPolynomialDirDeriv (Pol j) z w = 0)
+    {F : MvPolynomial (Fin m) K} (hF : F ∈ Ideal.span (Set.range Pol)) :
+    MvPolynomial.eval z F = 0 ∧ mvPolynomialDirDeriv F z w = 0 := by
+  rw [← Ideal.submodule_span_eq] at hF
+  induction hF using Submodule.span_induction with
+  | mem y hy => obtain ⟨j, rfl⟩ := hy; exact ⟨hz j, hw j⟩
+  | zero => exact ⟨map_zero _, mvPolynomialDirDeriv_zero z w⟩
+  | add a b _ _ iha ihb =>
+      exact ⟨by rw [map_add, iha.1, ihb.1, add_zero],
+        by rw [mvPolynomialDirDeriv_add, iha.2, ihb.2, add_zero]⟩
+  | smul a b _ ihb =>
+      refine ⟨by rw [smul_eq_mul, map_mul, ihb.1, mul_zero], ?_⟩
+      rw [smul_eq_mul, mvPolynomialDirDeriv_mul, ihb.1, ihb.2, mul_zero, zero_mul,
+        add_zero]
+
+end DirDeriv
+
 /-- **THE FORMAL DERIVATIVE IS THE ANALYTIC ONE, for multivariate polynomials**
 (PROVEN, 2026-07-26 — this bridge is genuinely absent from mathlib at this pin:
 `Mathlib/Analysis/` mentions `pderiv` nowhere, and `Mathlib/Analysis/Analytic/
@@ -4954,44 +5168,61 @@ section RealPolynomialModel
 
 open _root_.MvPolynomial
 
-/-- Evaluating a `ℚ→ℝ`-mapped polynomial at the coordinates of a real point of `T`
-is the same as applying that real point to the `T`-valued `aeval`.
+/-! ### GENERALISED FROM `ℝ` TO ANY CHARACTERISTIC-ZERO FIELD (2026-07-27)
+
+Everything in this section was written for `ℝ`. **Nothing in any of these proofs
+uses more than "`K` is a field of characteristic zero"** — the only arithmetic
+inputs are `Subsingleton (ℚ →+* K)` (which mathlib has for an arbitrary
+semiring), `isUnit_iff_ne_zero`, and reducedness of `K`. So the base field is now
+a variable `{K : Type v} [Field K] [Algebra ℚ K]`, exactly as `mvPolynomialGradient`
+and `hasStrictFDerivAt_mvPolynomial_eval` were generalised above. The `ℝ`
+consumers are unchanged — they instantiate `K := ℝ` — and the generality is what
+lets the `p`-adic Bertini leaf
+`exists_padicPolynomialModel_of_affine_geometricallyIrreducible` reuse the whole
+tower at `K := ℚ_[p]`. The names keep their `realModel` prefix so that no call
+site outside this block had to move. -/
+
+/-- Evaluating a `ℚ→K`-mapped polynomial at the coordinates of a `K`-point of `T`
+is the same as applying that point to the `T`-valued `aeval`.
 
 The only input is that a ring hom out of `ℚ` is unique, so no compatibility between
 `φ` and the `ℚ`-algebra structures has to be assumed. -/
-theorem realModel_eval_map_eq {T : Type u} [CommRing T] [Algebra ℚ T] {ι : Type*}
-    (φ : T →+* ℝ) (val : ι → T) (p : MvPolynomial ι ℚ) :
-    eval (fun i => φ (val i)) (MvPolynomial.map (algebraMap ℚ ℝ) p) = φ (aeval val p) := by
+theorem realModel_eval_map_eq {T : Type u} [CommRing T] [Algebra ℚ T]
+    {K : Type v} [Field K] [Algebra ℚ K] {ι : Type*}
+    (φ : T →+* K) (val : ι → T) (p : MvPolynomial ι ℚ) :
+    eval (fun i => φ (val i)) (MvPolynomial.map (algebraMap ℚ K) p) = φ (aeval val p) := by
   rw [MvPolynomial.eval_map, MvPolynomial.aeval_def, MvPolynomial.hom_eval₂,
-    show φ.comp (algebraMap ℚ T) = algebraMap ℚ ℝ from Subsingleton.elim _ _]
+    show φ.comp (algebraMap ℚ T) = algebraMap ℚ K from Subsingleton.elim _ _]
 
-/-- The real polynomials cut out by a submersive presentation: its relations,
-pushed along `ℚ → ℝ`. -/
-noncomputable abbrev realModelRel {T : Type u} [CommRing T] [Algebra ℚ T] {m c : ℕ}
+/-- The `K`-polynomials cut out by a submersive presentation: its relations,
+pushed along `ℚ → K`. -/
+noncomputable abbrev realModelRel {T : Type u} [CommRing T] [Algebra ℚ T]
+    {K : Type v} [Field K] [Algebra ℚ K] {m c : ℕ}
     (P : Algebra.SubmersivePresentation ℚ T (Fin m) (Fin c)) (j : Fin c) :
-    MvPolynomial (Fin m) ℝ :=
-  MvPolynomial.map (algebraMap ℚ ℝ) (P.relation j)
+    MvPolynomial (Fin m) K :=
+  MvPolynomial.map (algebraMap ℚ K) (P.relation j)
 
 section Presentation
 
 variable {T : Type u} [CommRing T] [Algebra ℚ T] {m c : ℕ}
   (P : Algebra.SubmersivePresentation ℚ T (Fin m) (Fin c))
+variable {K : Type v} [Field K] [Algebra ℚ K]
 
-/-- A real point of `T` whose coordinates are `z` evaluates the image of a polynomial
+/-- A `K`-point of `T` whose coordinates are `z` evaluates the image of a polynomial
 by `eval z` on the mapped polynomial. -/
-theorem realModel_hom_algebraMap_eq (ψ : T →+* ℝ) (z : Fin m → ℝ)
+theorem realModel_hom_algebraMap_eq (ψ : T →+* K) (z : Fin m → K)
     (hz : ∀ i, ψ (P.val i) = z i) (p : MvPolynomial (Fin m) ℚ) :
-    ψ (algebraMap P.Ring T p) = eval z (MvPolynomial.map (algebraMap ℚ ℝ) p) := by
+    ψ (algebraMap P.Ring T p) = eval z (MvPolynomial.map (algebraMap ℚ K) p) := by
   have hzf : (fun i => ψ (P.val i)) = z := funext hz
   rw [P.algebraMap_apply, ← realModel_eval_map_eq ψ P.val p, hzf]
 
-/-- **A real zero of the relations IS a real point of `T`.** This is the surjectivity
-half of "real points of `ℝ[X]/(P)` are exactly the real zeros of `P`": the evaluation
+/-- **A `K`-zero of the relations IS a `K`-point of `T`.** This is the surjectivity
+half of "`K`-points of `K[X]/(P)` are exactly the `K`-zeros of `P`": the evaluation
 map kills the relations, hence kills the whole kernel, hence factors through `T`. -/
-theorem realModel_exists_hom_of_zero (z : Fin m → ℝ)
-    (hz : ∀ j, eval z (realModelRel P j) = 0) :
-    ∃ ψ : T →+* ℝ, ∀ i, ψ (P.val i) = z i := by
-  set ev : P.Ring →+* ℝ := eval₂Hom (algebraMap ℚ ℝ) z with hev
+theorem realModel_exists_hom_of_zero (z : Fin m → K)
+    (hz : ∀ j, eval z (realModelRel (K := K) P j) = 0) :
+    ∃ ψ : T →+* K, ∀ i, ψ (P.val i) = z i := by
+  set ev : P.Ring →+* K := eval₂Hom (algebraMap ℚ K) z with hev
   have hker : P.ker ≤ RingHom.ker ev := by
     rw [← P.span_range_relation_eq_ker, Ideal.span_le]
     rintro _ ⟨j, rfl⟩
@@ -5009,25 +5240,27 @@ theorem realModel_exists_hom_of_zero (z : Fin m → ℝ)
   rw [RingHom.comp_apply, key, Ideal.Quotient.lift_mk, hev]
   simp
 
-/-- The formal partial derivatives of the mapped relations, at a real point. -/
-theorem realModel_eval_pderiv (ψ : T →+* ℝ) (z : Fin m → ℝ) (hz : ∀ i, ψ (P.val i) = z i)
+/-- The formal partial derivatives of the mapped relations, at a `K`-point. -/
+theorem realModel_eval_pderiv (ψ : T →+* K) (z : Fin m → K) (hz : ∀ i, ψ (P.val i) = z i)
     (i : Fin m) (j : Fin c) :
-    eval z (pderiv i (realModelRel P j)) = ψ (aeval P.val (pderiv i (P.relation j))) := by
+    eval z (pderiv i (realModelRel (K := K) P j))
+      = ψ (aeval P.val (pderiv i (P.relation j))) := by
   have hzf : (fun i => ψ (P.val i)) = z := funext hz
   rw [realModelRel, pderiv_map, ← hzf, realModel_eval_map_eq ψ P.val]
 
-/-- **THE JACOBIAN OF A SUBMERSIVE PRESENTATION IS SURJECTIVE AT ANY REAL POINT.**
+/-- **THE JACOBIAN OF A SUBMERSIVE PRESENTATION IS SURJECTIVE AT ANY `K`-POINT.**
 
 The `c × c` minor indexed by `P.map` has determinant `ψ (P.jacobian)`, and `P.jacobian`
-is a UNIT in `T`, so its image in the field `ℝ` is nonzero. Solving in that minor and
+is a UNIT in `T`, so its image in the field `K` is nonzero. Solving in that minor and
 padding with zeros off the range of `P.map` produces a preimage of any `w`. -/
-theorem realModel_jacobian_surjective (ψ : T →+* ℝ) (z : Fin m → ℝ)
+theorem realModel_jacobian_surjective (ψ : T →+* K) (z : Fin m → K)
     (hz : ∀ i, ψ (P.val i) = z i) :
-    Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
-      ∑ i : Fin m, eval z (pderiv i (realModelRel P j)) * v i) := by
+    Function.Surjective (fun v : Fin m → K => fun j : Fin c =>
+      ∑ i : Fin m, eval z (pderiv i (realModelRel (K := K) P j)) * v i) := by
   classical
-  set D : Fin c → Fin m → ℝ := fun j i => eval z (pderiv i (realModelRel P j)) with hD
-  set N : Matrix (Fin c) (Fin c) ℝ := fun j k => D j (P.map k) with hN
+  set D : Fin c → Fin m → K := fun j i =>
+    eval z (pderiv i (realModelRel (K := K) P j)) with hD
+  set N : Matrix (Fin c) (Fin c) K := fun j k => D j (P.map k) with hN
   have hMN : N = Matrix.transpose ((ψ.comp (algebraMap P.Ring T)).mapMatrix P.jacobiMatrix) := by
     ext j k
     rw [hN]
@@ -5042,7 +5275,7 @@ theorem realModel_jacobian_surjective (ψ : T →+* ℝ) (z : Fin m → ℝ)
   refine ⟨fun i => ∑ k : Fin c, if P.map k = i then (Matrix.mulVec N⁻¹ w) k else 0, ?_⟩
   funext j
   show ∑ i : Fin m, D j i * _ = w j
-  have hsum : ∀ u : Fin c → ℝ,
+  have hsum : ∀ u : Fin c → K,
       ∑ i : Fin m, D j i * (∑ k : Fin c, if P.map k = i then u k else 0)
         = ∑ k : Fin c, D j (P.map k) * u k := by
     intro u
@@ -5055,16 +5288,177 @@ theorem realModel_jacobian_surjective (ψ : T →+* ℝ) (z : Fin m → ℝ)
   rw [hvec, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv N (isUnit_iff_ne_zero.mpr hdet),
     Matrix.one_mulVec]
 
+/-- **THE DIRECTIONAL DERIVATIVE ALONG A TANGENT VECTOR DOES NOT DEPEND ON THE
+POLYNOMIAL REPRESENTATIVE** (PROVEN, 2026-07-27).
+
+If `w` is killed by every relation's derivative — i.e. `w` is a tangent vector of
+the zero locus at `z` — then two polynomials with the same image in `T` have the
+same directional derivative along `w`. Equivalently: `mvPolynomialDirDeriv · z w`
+descends to `T`.
+
+The proof is the identity `q₁ - q₂ ∈ P.ker = span (range P.relation)` pushed
+along `ℚ → K` (`Ideal.map_span`), fed to
+`eval_and_dirDeriv_eq_zero_of_mem_span`. No Kähler differentials are involved. -/
+theorem realModel_dirDeriv_congr (ψ : T →+* K) (z : Fin m → K)
+    (hz : ∀ i, ψ (P.val i) = z i) (w : Fin m → K)
+    (hw : ∀ j, mvPolynomialDirDeriv (realModelRel (K := K) P j) z w = 0)
+    (q₁ q₂ : MvPolynomial (Fin m) ℚ)
+    (hq : MvPolynomial.aeval P.val q₁ = MvPolynomial.aeval P.val q₂) :
+    mvPolynomialDirDeriv (MvPolynomial.map (algebraMap ℚ K) q₁) z w
+      = mvPolynomialDirDeriv (MvPolynomial.map (algebraMap ℚ K) q₂) z w := by
+  have hzz : ∀ j, MvPolynomial.eval z (realModelRel (K := K) P j) = 0 := by
+    intro j
+    have hzf : (fun i => ψ (P.val i)) = z := funext hz
+    rw [realModelRel, ← hzf, realModel_eval_map_eq ψ P.val, P.aeval_val_relation, map_zero]
+  have hmem : q₁ - q₂ ∈ Ideal.span (Set.range P.relation) := by
+    rw [P.span_range_relation_eq_ker, P.ker_eq_ker_aeval_val, RingHom.mem_ker]
+    show (MvPolynomial.aeval P.val) (q₁ - q₂) = 0
+    rw [map_sub, hq, sub_self]
+  have hmap : MvPolynomial.map (algebraMap ℚ K) (q₁ - q₂)
+      ∈ Ideal.span (Set.range (realModelRel (K := K) P)) := by
+    have hrange : Set.range (realModelRel (K := K) P)
+        = (MvPolynomial.map (algebraMap ℚ K) :
+            MvPolynomial (Fin m) ℚ →+* MvPolynomial (Fin m) K) '' Set.range P.relation := by
+      rw [← Set.range_comp]; rfl
+    rw [hrange, ← Ideal.map_span]
+    exact Ideal.mem_map_of_mem _ hmem
+  have h2 := (eval_and_dirDeriv_eq_zero_of_mem_span
+    (realModelRel (K := K) P) z w hzz hw hmap).2
+  rw [map_sub, mvPolynomialDirDeriv_sub, sub_eq_zero] at h2
+  exact h2
+
+/-- **NONDEGENERACY: A TANGENT VECTOR ANNIHILATED BY EVERY GENERATOR'S
+DERIVATIVE IS ZERO** (PROVEN, 2026-07-27 — the one genuinely new statement of the
+`p`-adic Bertini leaf).
+
+Geometrically this is *"a closed immersion has injective differential"*, but the
+argument is elementary and uses no Kähler differentials.
+
+`T` is a localization `R[1/f]` (recorded here only through `hsurj`, which says
+every `s : T` has `s · f^k` in the image of `R`, and `hf`, which says `f` does not
+vanish at the point), and `R` is generated as a ring by `ℚ` together with the
+coordinates `x` (`hx`). The proof:
+
+* `Δ s := mvPolynomialDirDeriv (map (algebraMap ℚ K) (P.σ s)) z w` is well defined
+  by `realModel_dirDeriv_congr`, and is a `ψ`-DERIVATION: additive, Leibniz over
+  `ψ`, and zero on `algebraMap ℚ T`;
+* hence `{a : R | Δ (algebraMap R T a) = 0}` is a SUBRING of `R`; it contains
+  `range (algebraMap ℚ R)` and, by `hxg`, every `x i`, so by `hx` it is all of `R`;
+* `Δ` then vanishes on all of `T`: from `s · f^k = a` and Leibniz,
+  `ψ(f)^k · Δ s = 0`, and `ψ (algebraMap R T f) ≠ 0`;
+* finally `Δ (P.val i) = mvPolynomialDirDeriv (X i) z w = w i`, so every `w i = 0`. -/
+theorem realModel_tangent_eq_zero_of_generators
+    {R : Type u} [CommRing R] [Algebra ℚ R] [Algebra R T] [IsScalarTower ℚ R T]
+    (ψ : T →+* K) (z : Fin m → K) (hz : ∀ i, ψ (P.val i) = z i)
+    (w : Fin m → K) (hw : ∀ j, mvPolynomialDirDeriv (realModelRel (K := K) P j) z w = 0)
+    (f : R)
+    (hsurj : ∀ s : T, ∃ (a : R) (k : ℕ), s * algebraMap R T (f ^ k) = algebraMap R T a)
+    (hf : ψ (algebraMap R T f) ≠ 0)
+    {n : ℕ} (x : Fin n → R)
+    (hx : Subring.closure (Set.range (algebraMap ℚ R) ∪ Set.range x) = ⊤)
+    (hxg : ∀ i, mvPolynomialDirDeriv
+      (MvPolynomial.map (algebraMap ℚ K) (P.σ (algebraMap R T (x i)))) z w = 0) :
+    w = 0 := by
+  classical
+  set Δ : T → K := fun s =>
+    mvPolynomialDirDeriv (MvPolynomial.map (algebraMap ℚ K) (P.σ s)) z w with hΔdef
+  have hΔapp : ∀ s : T,
+      Δ s = mvPolynomialDirDeriv (MvPolynomial.map (algebraMap ℚ K) (P.σ s)) z w :=
+    fun _ => rfl
+  have hcong := realModel_dirDeriv_congr P ψ z hz w hw
+  have hev : ∀ s : T,
+      MvPolynomial.eval z (MvPolynomial.map (algebraMap ℚ K) (P.σ s)) = ψ s := by
+    intro s
+    have hzf : (fun i => ψ (P.val i)) = z := funext hz
+    rw [← hzf, realModel_eval_map_eq ψ P.val, P.aeval_val_σ]
+  have hΔadd : ∀ s t : T, Δ (s + t) = Δ s + Δ t := by
+    intro s t
+    have h : MvPolynomial.aeval P.val (P.σ (s + t))
+        = MvPolynomial.aeval P.val (P.σ s + P.σ t) := by
+      rw [map_add, P.aeval_val_σ, P.aeval_val_σ, P.aeval_val_σ]
+    rw [hΔapp, hΔapp, hΔapp, hcong _ _ h, map_add, mvPolynomialDirDeriv_add]
+  have hΔmul : ∀ s t : T, Δ (s * t) = ψ s * Δ t + ψ t * Δ s := by
+    intro s t
+    have h : MvPolynomial.aeval P.val (P.σ (s * t))
+        = MvPolynomial.aeval P.val (P.σ s * P.σ t) := by
+      rw [map_mul, P.aeval_val_σ, P.aeval_val_σ, P.aeval_val_σ]
+    rw [hΔapp, hΔapp, hΔapp, hcong _ _ h, map_mul, mvPolynomialDirDeriv_mul, hev s, hev t]
+  have hΔ0 : Δ 0 = 0 := by
+    have h := hΔadd 0 0
+    rw [add_zero] at h
+    linear_combination -h
+  have hΔneg : ∀ s : T, Δ (-s) = -Δ s := by
+    intro s
+    have h := hΔadd s (-s)
+    rw [add_neg_cancel, hΔ0] at h
+    linear_combination -h
+  have hΔq : ∀ r : ℚ, Δ (algebraMap ℚ T r) = 0 := by
+    intro r
+    have h : MvPolynomial.aeval P.val (P.σ (algebraMap ℚ T r))
+        = MvPolynomial.aeval P.val (MvPolynomial.C r) := by
+      rw [P.aeval_val_σ, MvPolynomial.aeval_C]
+    rw [hΔapp, hcong _ _ h, MvPolynomial.map_C, mvPolynomialDirDeriv_C]
+  have hB : ∀ a : R, Δ (algebraMap R T a) = 0 := by
+    let B : Subring R :=
+      { carrier := {a : R | Δ (algebraMap R T a) = 0}
+        zero_mem' := by show Δ (algebraMap R T 0) = 0; rw [map_zero]; exact hΔ0
+        one_mem' := by
+          show Δ (algebraMap R T 1) = 0
+          rw [map_one]
+          have h1 := hΔq 1
+          rwa [map_one] at h1
+        add_mem' := by
+          intro a b ha hb
+          show Δ (algebraMap R T (a + b)) = 0
+          rw [map_add, hΔadd, ha, hb, add_zero]
+        mul_mem' := by
+          intro a b ha hb
+          show Δ (algebraMap R T (a * b)) = 0
+          rw [map_mul, hΔmul, ha, hb, mul_zero, mul_zero, add_zero]
+        neg_mem' := by
+          intro a ha
+          show Δ (algebraMap R T (-a)) = 0
+          rw [map_neg, hΔneg, ha, neg_zero] }
+    have hsub : (Set.range (algebraMap ℚ R) ∪ Set.range x) ⊆ (B : Set R) := by
+      rintro a (⟨r, rfl⟩ | ⟨i, rfl⟩)
+      · show Δ (algebraMap R T (algebraMap ℚ R r)) = 0
+        rw [← IsScalarTower.algebraMap_apply ℚ R T r]
+        exact hΔq r
+      · show Δ (algebraMap R T (x i)) = 0
+        rw [hΔapp]; exact hxg i
+    have htop : (⊤ : Subring R) ≤ B := by
+      rw [← hx]; exact Subring.closure_le.mpr hsub
+    intro a
+    have ha : a ∈ B := htop (Subring.mem_top a)
+    exact ha
+  have hall : ∀ s : T, Δ s = 0 := by
+    intro s
+    obtain ⟨a, k, hak⟩ := hsurj s
+    have h1 : Δ (s * algebraMap R T (f ^ k)) = Δ (algebraMap R T a) := by rw [hak]
+    rw [hΔmul, hB a, hB (f ^ k), mul_zero, zero_add] at h1
+    have hfk : ψ (algebraMap R T (f ^ k)) ≠ 0 := by
+      rw [map_pow, map_pow]
+      exact pow_ne_zero _ hf
+    exact (mul_eq_zero.mp h1).resolve_left hfk
+  funext i
+  have h : MvPolynomial.aeval P.val (P.σ (P.val i))
+      = MvPolynomial.aeval P.val (X i : MvPolynomial (Fin m) ℚ) := by
+    rw [P.aeval_val_σ, MvPolynomial.aeval_X]
+  have hi := hall (P.val i)
+  rw [hΔapp, hcong _ _ h, MvPolynomial.map_X, mvPolynomialDirDeriv_X] at hi
+  simpa using hi
+
 end Presentation
 
-/-- **A STANDARD-SMOOTH BASIC OPEN THROUGH A GIVEN REAL POINT.**
+/-- **A STANDARD-SMOOTH BASIC OPEN THROUGH A GIVEN `K`-POINT** (generalised from
+`ℝ` to an arbitrary field, 2026-07-27).
 
 `Algebra.Smooth.exists_span_eq_top_isStandardSmooth` covers `Spec R` by basic opens on
 which `R` is standard smooth. The `f`s span the unit ideal, so they cannot all lie in
-the (proper) kernel of a real point `ρ`; any one of them that does not is a basic open
+the (proper) kernel of a `K`-point `ρ`; any one of them that does not is a basic open
 containing `ρ`. -/
 theorem exists_standardSmoothAway_of_realPoint {R : Type u} [CommRing R] [Algebra ℚ R]
-    [Algebra.Smooth ℚ R] (ρ : R →+* ℝ) :
+    [Algebra.Smooth ℚ R] {K : Type v} [Field K] (ρ : R →+* K) :
     ∃ f : R, ρ f ≠ 0 ∧ Algebra.IsStandardSmooth ℚ (Localization.Away f) := by
   obtain ⟨s, hs, hstd⟩ := Algebra.Smooth.exists_span_eq_top_isStandardSmooth ℚ R
   by_cases hex : ∃ x ∈ s, ρ x ≠ 0
@@ -5086,33 +5480,35 @@ theorem exists_standardSmoothAway_of_realPoint {R : Type u} [CommRing R] [Algebr
     exact one_ne_zero h1
   exact hne (top_le_iff.mp hle)
 
-/-- **THE REAL POLYNOMIAL MODEL, PURELY ALGEBRAIC FORM** (**PROVEN 2026-07-26** —
+/-- **THE POLYNOMIAL MODEL, PURELY ALGEBRAIC FORM** (**PROVEN 2026-07-26**, base
+field generalised from `ℝ` to any characteristic-zero field 2026-07-27 —
 this is steps 4 and 5 of `exists_realPolynomialModel_of_affine_geometricallyIrreducible`'s
 attack path, and it is the bulk of that node).
 
 Given a basic open `D(f)` of `Spec R` on which `R` is STANDARD SMOOTH over `ℚ`, together
-with a real point `ρ` of `R` not killing `f`, the submersive presentation of
-`R[1/f]` is literally a polynomial system: its relations pushed along `ℚ → ℝ` cut out
-`D(f)(ℝ)` inside `ℝ^m`, the Jacobian is surjective at the point `ρ` determines, every
-element of `R` is a polynomial in the coordinates, and distinct real zeros give distinct
-real points.
+with a `K`-point `ρ` of `R` not killing `f`, the submersive presentation of
+`R[1/f]` is literally a polynomial system: its relations pushed along `ℚ → K` cut out
+`D(f)(K)` inside `K^m`, the Jacobian is surjective at the point `ρ` determines, every
+element of `R` is a polynomial in the coordinates, and distinct `K`-zeros give distinct
+`K`-points.
 
 NOTE the last conjunct, which is what step 6 consumes: if the codimension is MAXIMAL
 (`c = m`) then the presentation has relative dimension `0`, i.e. `R[1/f]` is étale
 over `ℚ`. That is the only thing the dimension count needs to know about the model,
 which is why the two halves can be separated without exporting the whole interface. -/
 theorem exists_realPolynomialModel_of_isStandardSmooth {R : Type u} [CommRing R]
-    [Algebra ℚ R] (f : R) (hstd : Algebra.IsStandardSmooth ℚ (Localization.Away f))
-    (ρ : R →+* ℝ) (hf : ρ f ≠ 0) :
-    ∃ (m c : ℕ) (Pol : Fin c → MvPolynomial (Fin m) ℝ) (z₀ : Fin m → ℝ)
-      (Φ : (Fin m → ℝ) → (R →+* ℝ)),
+    [Algebra ℚ R] {K : Type v} [Field K] [Algebra ℚ K]
+    (f : R) (hstd : Algebra.IsStandardSmooth ℚ (Localization.Away f))
+    (ρ : R →+* K) (hf : ρ f ≠ 0) :
+    ∃ (m c : ℕ) (Pol : Fin c → MvPolynomial (Fin m) K) (z₀ : Fin m → K)
+      (Φ : (Fin m → K) → (R →+* K)),
       c ≤ m ∧
       (∀ j, eval z₀ (Pol j) = 0) ∧
-      Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
+      Function.Surjective (fun v : Fin m → K => fun j : Fin c =>
         ∑ i : Fin m, eval z₀ (pderiv i (Pol j)) * v i) ∧
-      (∀ a : R, ∃ Q : MvPolynomial (Fin m) ℝ, ∀ z : Fin m → ℝ,
+      (∀ a : R, ∃ Q : MvPolynomial (Fin m) K, ∀ z : Fin m → K,
         (∀ j, eval z (Pol j) = 0) → Φ z a = eval z Q) ∧
-      (∀ z w : Fin m → ℝ, (∀ j, eval z (Pol j) = 0) → (∀ j, eval w (Pol j) = 0) →
+      (∀ z w : Fin m → K, (∀ j, eval z (Pol j) = 0) → (∀ j, eval w (Pol j) = 0) →
         Φ z = Φ w → z = w) ∧
       (c = m → Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f)) := by
   classical
@@ -5121,22 +5517,22 @@ theorem exists_realPolynomialModel_of_isStandardSmooth {R : Type u} [CommRing R]
   cases nonempty_fintype σ
   refine ⟨Fintype.card ι, Fintype.card σ, ?_⟩
   set P := P0.reindex (Fintype.equivFin ι).symm (Fintype.equivFin σ).symm with hP
-  set ρ' : Localization.Away f →+* ℝ :=
+  set ρ' : Localization.Away f →+* K :=
     IsLocalization.Away.lift f (isUnit_iff_ne_zero.mpr hf) with hρ'
-  set z₀ : Fin (Fintype.card ι) → ℝ := fun i => ρ' (P.val i) with hz₀
-  set Φ : (Fin (Fintype.card ι) → ℝ) → (R →+* ℝ) := fun z =>
-    if h : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i then
+  set z₀ : Fin (Fintype.card ι) → K := fun i => ρ' (P.val i) with hz₀
+  set Φ : (Fin (Fintype.card ι) → K) → (R →+* K) := fun z =>
+    if h : ∃ ψ : Localization.Away f →+* K, ∀ i, ψ (P.val i) = z i then
       h.choose.comp (algebraMap R (Localization.Away f)) else ρ with hΦ
-  have hzero : ∀ j, eval z₀ (realModelRel P j) = 0 := fun j => by
+  have hzero : ∀ j, eval z₀ (realModelRel (K := K) P j) = 0 := fun j => by
     rw [hz₀, realModel_eval_map_eq ρ' P.val, P.aeval_val_relation, map_zero]
-  refine ⟨realModelRel P, z₀, Φ, ?_, hzero, ?_, ?_, ?_, ?_⟩
+  refine ⟨realModelRel (K := K) P, z₀, Φ, ?_, hzero, ?_, ?_, ?_, ?_⟩
   · have hcard := P.card_relations_le_card_vars_of_isFinite
     simpa using hcard
   · exact realModel_jacobian_surjective P ρ' z₀ (fun i => rfl)
   · intro a
-    refine ⟨MvPolynomial.map (algebraMap ℚ ℝ)
+    refine ⟨MvPolynomial.map (algebraMap ℚ K)
       (P.σ (algebraMap R (Localization.Away f) a)), fun z hz => ?_⟩
-    have hex : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i :=
+    have hex : ∃ ψ : Localization.Away f →+* K, ∀ i, ψ (P.val i) = z i :=
       realModel_exists_hom_of_zero P z hz
     rw [hΦ]
     simp only [dif_pos hex, RingHom.comp_apply]
@@ -5147,9 +5543,9 @@ theorem exists_realPolynomialModel_of_isStandardSmooth {R : Type u} [CommRing R]
     conv_lhs => rw [hval]
     rw [realModel_hom_algebraMap_eq P hex.choose z hex.choose_spec]
   · intro z w hz hw hzw
-    have hez : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i :=
+    have hez : ∃ ψ : Localization.Away f →+* K, ∀ i, ψ (P.val i) = z i :=
       realModel_exists_hom_of_zero P z hz
-    have hew : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = w i :=
+    have hew : ∃ ψ : Localization.Away f →+* K, ∀ i, ψ (P.val i) = w i :=
       realModel_exists_hom_of_zero P w hw
     rw [hΦ] at hzw
     simp only [dif_pos hez, dif_pos hew] at hzw
@@ -5157,6 +5553,84 @@ theorem exists_realPolynomialModel_of_isStandardSmooth {R : Type u} [CommRing R]
       IsLocalization.ringHom_ext (Submonoid.powers f) hzw
     funext i
     rw [← hez.choose_spec i, ← hew.choose_spec i, hchoose]
+  · intro hcm
+    exact P.isStandardSmoothOfRelativeDimension (by
+      simp [Algebra.Presentation.dimension, hcm])
+
+/-- **THE POLYNOMIAL MODEL AT A `K`-POINT, WITH THE COORDINATES AND THE
+NONDEGENERACY** (**PROVEN 2026-07-27**) — the variant of
+`exists_realPolynomialModel_of_isStandardSmooth` that the `p`-adic Bertini leaf
+consumes.
+
+It drops the abstract `Φ` and its injectivity (which only the `ℝ` arc argument
+needs) and adds two things instead:
+
+* explicit polynomial representatives `Qc i` for the PRESCRIBED coordinates
+  `x i`, together with the statement that every `K`-zero of the system is a
+  `K`-point reading those coordinates off as `Qc i` (`hpts`);
+* the NONDEGENERACY: a tangent vector of the zero locus at `z₀` on which every
+  `Qc i` has vanishing derivative is ZERO
+  (`realModel_tangent_eq_zero_of_generators`, which is where `hx` enters).
+
+`hx` says `R` is generated as a ring by `ℚ` together with the `x i`; without it
+the nondegeneracy is FALSE, since finitely many coordinates need not separate
+tangent directions. -/
+theorem exists_polynomialModel_tangent_of_isStandardSmooth {R : Type u} [CommRing R]
+    [Algebra ℚ R] {K : Type v} [Field K] [Algebra ℚ K]
+    (f : R) (hstd : Algebra.IsStandardSmooth ℚ (Localization.Away f))
+    (ρ : R →+* K) (hf : ρ f ≠ 0)
+    {n : ℕ} (x : Fin n → R)
+    (hx : Subring.closure (Set.range (algebraMap ℚ R) ∪ Set.range x) = ⊤) :
+    ∃ (m c : ℕ) (Pol : Fin c → MvPolynomial (Fin m) K)
+      (Qc : Fin n → MvPolynomial (Fin m) K) (z₀ : Fin m → K),
+      c ≤ m ∧
+      (∀ j, eval z₀ (Pol j) = 0) ∧
+      Function.Surjective (fun v : Fin m → K => fun j : Fin c =>
+        ∑ i : Fin m, eval z₀ (pderiv i (Pol j)) * v i) ∧
+      (∀ z : Fin m → K, (∀ j, eval z (Pol j) = 0) →
+        ∃ χ : R →+* K, ∀ i, χ (x i) = eval z (Qc i)) ∧
+      (∀ w : Fin m → K, (∀ j, mvPolynomialDirDeriv (Pol j) z₀ w = 0) →
+        (∀ i, mvPolynomialDirDeriv (Qc i) z₀ w = 0) → w = 0) ∧
+      (c = m → Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f)) := by
+  classical
+  obtain ⟨ι, σ, _, hι, ⟨P0⟩⟩ := hstd.out
+  cases nonempty_fintype ι
+  cases nonempty_fintype σ
+  refine ⟨Fintype.card ι, Fintype.card σ, ?_⟩
+  set P := P0.reindex (Fintype.equivFin ι).symm (Fintype.equivFin σ).symm with hP
+  set ρ' : Localization.Away f →+* K :=
+    IsLocalization.Away.lift f (isUnit_iff_ne_zero.mpr hf) with hρ'
+  set z₀ : Fin (Fintype.card ι) → K := fun i => ρ' (P.val i) with hz₀
+  have hzero : ∀ j, eval z₀ (realModelRel (K := K) P j) = 0 := fun j => by
+    rw [hz₀, realModel_eval_map_eq ρ' P.val, P.aeval_val_relation, map_zero]
+  have hσ : ∀ s : Localization.Away f,
+      algebraMap P.Ring (Localization.Away f) (P.σ s) = s := by
+    intro s; rw [P.algebraMap_apply, P.aeval_val_σ]
+  have hsurjloc : ∀ s : Localization.Away f, ∃ (a : R) (k : ℕ),
+      s * algebraMap R (Localization.Away f) (f ^ k)
+        = algebraMap R (Localization.Away f) a := by
+    intro s
+    obtain ⟨⟨a, t⟩, hst⟩ := IsLocalization.surj (M := Submonoid.powers f) s
+    obtain ⟨k, hk⟩ := t.2
+    have hk' : f ^ k = (t : R) := hk
+    exact ⟨a, k, by rw [hk']; exact hst⟩
+  have hfloc : ρ' (algebraMap R (Localization.Away f) f) ≠ 0 := by
+    rw [hρ', IsLocalization.Away.lift_eq]
+    exact hf
+  refine ⟨realModelRel (K := K) P,
+    fun i => MvPolynomial.map (algebraMap ℚ K)
+      (P.σ (algebraMap R (Localization.Away f) (x i))), z₀, ?_, hzero, ?_, ?_, ?_, ?_⟩
+  · have hcard := P.card_relations_le_card_vars_of_isFinite
+    simpa using hcard
+  · exact realModel_jacobian_surjective P ρ' z₀ (fun i => rfl)
+  · intro z hz
+    obtain ⟨ψ, hψ⟩ := realModel_exists_hom_of_zero P z hz
+    refine ⟨ψ.comp (algebraMap R (Localization.Away f)), fun i => ?_⟩
+    rw [RingHom.comp_apply, ← hσ (algebraMap R (Localization.Away f) (x i)),
+      realModel_hom_algebraMap_eq P ψ z hψ]
+  · intro w hw hxw
+    exact realModel_tangent_eq_zero_of_generators P (R := R) ρ' z₀ (fun i => rfl) w hw f
+      hsurjloc hfloc x hx hxw
   · intro hcm
     exact P.isStandardSmoothOfRelativeDimension (by
       simp [Algebra.Presentation.dimension, hcm])
@@ -5195,20 +5669,21 @@ FINITE-DIMENSIONAL `ℚ`-vector space (`Algebra.FormallyUnramified.finite_of_fre
 That single fact already dominates all of `A`, and no dimension theory of dense opens
 is needed.
 
-THE PROOF. Write `K := ker (A → A[1/f])`.
+THE PROOF (base field generalised from `ℝ` to any field, 2026-07-27: the only
+thing `ℝ` supplied is that it is REDUCED). Write `Kid := ker (A → A[1/f])`.
 
 * `hgi` makes `Spec A` irreducible, so `nilradical A` is PRIME
   (`PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`, reached from `hgi`
   through `AlgebraicGeometry.self_of_isIntegral_of_geometrically`, since the base
   `Spec (ULift ℚ)` is integral and a single point).
-* `ρ f ≠ 0` in the reduced ring `ℝ` makes `f` NON-nilpotent, so `f ∉ nilradical A`.
-* Hence `K ≤ nilradical A`: `a ∈ K` means `fⁿ · a = 0` for some `n`, and a prime
+* `ρ f ≠ 0` in the reduced ring `K` makes `f` NON-nilpotent, so `f ∉ nilradical A`.
+* Hence `Kid ≤ nilradical A`: `a ∈ Kid` means `fⁿ · a = 0` for some `n`, and a prime
   containing `fⁿ · a` but not `f` must contain `a`.
 
-Now `Ideal.kerLiftAlg` embeds `A ⧸ K` into `A[1/f]` as a `ℚ`-subspace, so `A ⧸ K` is a
-finite-dimensional `ℚ`-algebra, hence ARTINIAN, hence `Ring.KrullDimLE 0 (A ⧸ K)`.
-Finally `K ≤ nilradical A` forces `K.radical = (⊥ : Ideal A).radical`, so
-`K.minimalPrimes = minimalPrimes A` (`Ideal.radical_minimalPrimes`) and the
+Now `Ideal.kerLiftAlg` embeds `A ⧸ Kid` into `A[1/f]` as a `ℚ`-subspace, so `A ⧸ Kid` is
+a finite-dimensional `ℚ`-algebra, hence ARTINIAN, hence `Ring.KrullDimLE 0 (A ⧸ Kid)`.
+Finally `Kid ≤ nilradical A` forces `Kid.radical = (⊥ : Ideal A).radical`, so
+`Kid.minimalPrimes = minimalPrimes A` (`Ideal.radical_minimalPrimes`) and the
 zero-dimensionality transfers from the quotient to `A` itself:
 `ringKrullDim A ≤ 0`, contradicting
 `1 < topologicalKrullDim (Spec A) = ringKrullDim A`.
@@ -5223,7 +5698,7 @@ valuation-ring obstruction never arises because such a localisation is an enormo
 field, never finite over `ℚ`.
 
 WHERE EACH HYPOTHESIS ENTERS, CORRECTED. `hgi` gives irreducibility, which is what
-makes `K` nilpotent and so lets `A[1/f]` control `A`; `hdim` supplies the `1 <`;
+makes `Kid` nilpotent and so lets `A[1/f]` control `A`; `hdim` supplies the `1 <`;
 `ρ` and `hf` supply `f ∉ nilradical A`. **`hft` is NOT used** by this proof, and is
 written `_hft`; it is retained only so the hypothesis list stays parallel with the
 sibling Bertini leaves and with the consumer's call site. The other three are all
@@ -5231,11 +5706,11 @@ load-bearing: with `A = ℚ × ℚ[x, y]`, `f = (1, 0)` and `ρ` the first proje
 `A[1/f] ≅ ℚ` is étale while `topologicalKrullDim (Spec A) = 2` — every hypothesis
 except `hgi` holds and the conclusion fails. -/
 theorem not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible
-    [inst : Algebra ℚ A]
+    [inst : Algebra ℚ A] {K : Type v} [Field K]
     (_hft : AlgebraicGeometry.LocallyOfFiniteType g)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
-    (f : A) (ρ : A →+* ℝ) (hf : ρ f ≠ 0) :
+    (f : A) (ρ : A →+* K) (hf : ρ f ≠ 0) :
     ¬ Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f) := by
   intro hss
   -- STEP 1. Relative dimension `0` standard smooth = ÉTALE.
@@ -5256,8 +5731,8 @@ theorem not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrre
     hf (((mem_nilradical.mp hmem).map ρ).eq_zero)
   -- STEP 5. The kernel of `A → A[1/f]` consists of nilpotents.
   set φ : A →ₐ[ℚ] Localization.Away f := IsScalarTower.toAlgHom ℚ A (Localization.Away f)
-  set K : Ideal A := RingHom.ker (φ : A →+* Localization.Away f)
-  have hKle : K ≤ nilradical A := by
+  set Kid : Ideal A := RingHom.ker (φ : A →+* Localization.Away f)
+  have hKle : Kid ≤ nilradical A := by
     intro a ha
     have ha' : algebraMap A (Localization.Away f) a = 0 := ha
     obtain ⟨⟨m, n, hmn⟩, hma⟩ :=
@@ -5271,17 +5746,17 @@ theorem not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrre
     · exact absurd (hnp.mem_of_pow_mem n h) hfnil
     · exact h
   -- STEP 6. `A ⧸ K` embeds in a finite-dimensional `ℚ`-algebra, hence is ARTINIAN.
-  haveI : IsArtinian ℚ (A ⧸ K) :=
+  haveI : IsArtinian ℚ (A ⧸ Kid) :=
     isArtinian_of_injective (Ideal.kerLiftAlg φ).toLinearMap (Ideal.kerLiftAlg_injective φ)
-  haveI : IsArtinianRing (A ⧸ K) := isArtinian_of_tower ℚ inferInstance
-  haveI : Ring.KrullDimLE 0 (A ⧸ K) := isArtinianRing_iff_krullDimLE_zero.mp inferInstance
-  -- STEP 7. `K ≤ nil A` makes the minimal primes over `K` the minimal primes of `A`.
-  have hrad : K.radical = (⊥ : Ideal A).radical := by
+  haveI : IsArtinianRing (A ⧸ Kid) := isArtinian_of_tower ℚ inferInstance
+  haveI : Ring.KrullDimLE 0 (A ⧸ Kid) := isArtinianRing_iff_krullDimLE_zero.mp inferInstance
+  -- STEP 7. `Kid ≤ nil A` makes the minimal primes over `Kid` the minimal primes of `A`.
+  have hrad : Kid.radical = (⊥ : Ideal A).radical := by
     refine le_antisymm ?_ (Ideal.radical_mono bot_le)
-    have h1 : K.radical ≤ ((⊥ : Ideal A).radical).radical := Ideal.radical_mono hKle
+    have h1 : Kid.radical ≤ ((⊥ : Ideal A).radical).radical := Ideal.radical_mono hKle
     rwa [Ideal.radical_idem] at h1
-  have hmin : minimalPrimes (A : Type u) = K.minimalPrimes := by
-    show (⊥ : Ideal A).minimalPrimes = K.minimalPrimes
+  have hmin : minimalPrimes (A : Type u) = Kid.minimalPrimes := by
+    show (⊥ : Ideal A).minimalPrimes = Kid.minimalPrimes
     rw [← Ideal.radical_minimalPrimes (I := (⊥ : Ideal A)), ← hrad,
       Ideal.radical_minimalPrimes]
   have hmax : ∀ J ∈ minimalPrimes (A : Type u), J.IsMaximal := by
@@ -6036,9 +6511,20 @@ statement, because `ℚ` is DENSE in `ℚ_[p]` and denominators can be cleared
 integrally. So the chain here is
 `map_nhds_eq_of_surj` → `Padic.rat_dense` → common denominator → done.
 
-WHAT IS LEFT, and it is pure algebraic geometry with no analysis in it:
-`exists_padicPolynomialModel_of_affine_geometricallyIrreducible`. See its
-docstring for the (complete) attack path. -/
+**NOTHING IS LEFT: THE WHOLE BLOCK IS SORRY-FREE SINCE 2026-07-27.** The last
+piece, `exists_padicPolynomialModel_of_affine_geometricallyIrreducible` — pure
+algebraic geometry with no analysis in it — was closed exactly along the attack
+path recorded in its docstring, and
+`exists_rat_mem_box_padicPoints_eval_ne_zero` is now axiom-clean
+(`propext`, `Classical.choice`, `Quot.sound` only).
+
+Two things that port cost, worth knowing before attempting the next one:
+`mvPolynomialGradient` is only defined over a `NontriviallyNormedField` (it
+packages the partial derivatives as a CONTINUOUS linear map), so the purely
+algebraic nondegeneracy statement could not even be written with it — the
+underlying sum was given its own name `mvPolynomialDirDeriv` over an arbitrary
+commutative ring, with a one-line bridge. And `Algebra ℚ K` does NOT synthesise
+from `[Field K]` in this file's import surface, so it is carried explicitly. -/
 
 /-- **A SURJECTION PAIRED WITH A FUNCTIONAL THAT IS NONZERO ON ITS KERNEL IS
 SURJECTIVE** (PROVEN, 2026-07-27) — the two-line linear algebra that upgrades
@@ -6251,7 +6737,15 @@ system `Pol` over `ℚ_[p]` in `m` variables such that
   SOME coordinate `Q i₀` (the nondegeneracy; this is what makes the hyperplane
   cut transverse, and it is the only genuinely new statement here).
 
-THE ATTACK PATH, which is a PORT plus one lemma and needs no new theory.
+THE ATTACK PATH, which was a PORT plus one lemma and needed no new theory.
+(HOW IT ACTUALLY WENT, recorded for the next such port: step 1 was mechanical
+except that `mvPolynomialGradient` is only defined over a `NontriviallyNormedField`
+— it packages the partial derivatives as a CONTINUOUS linear map — so the
+nondegeneracy could not be stated with it at all. The fix was to give the
+underlying SUM its own name, `mvPolynomialDirDeriv`, over an arbitrary
+commutative ring, with `mvPolynomialDirDeriv_eq_gradient` as the one-line bridge.
+Also `Algebra ℚ K` does NOT synthesise from `[Field K]` in this file's import
+surface, so it is carried as an explicit instance binder.)
 
 1. **Port the real tower from `ℝ` to a variable field.** The declarations
    `realModel_eval_map_eq`, `realModelRel`, `realModel_hom_algebraMap_eq`,
@@ -6320,7 +6814,83 @@ theorem exists_padicPolynomialModel_of_affine_geometricallyIrreducible
         (fun u : Fin m → ℚ_[p] => fun j : Fin cc =>
           mvPolynomialGradient (Pol j) z₀ u) ∧
       (∀ j, mvPolynomialGradient (Pol j) z₀ w = 0) ∧
-      mvPolynomialGradient (Qc i₀) z₀ w ≠ 0 := sorry
+      mvPolynomialGradient (Qc i₀) z₀ w ≠ 0 := by
+  classical
+  -- STEP 1. `A` is a smooth `ℚ`-algebra with a `ℚ_[p]`-point.
+  obtain ⟨instQ, hsm⟩ := exists_ratAlgebra_smooth_of_smooth g hsmooth
+  letI := instQ
+  haveI : Algebra.Smooth ℚ A := hsm
+  obtain ⟨ψ, -⟩ := (hasRationalPoint_iff_exists_ringHom g (ULift.{u} ℚ_[p])).mp hpt
+  set ρ : A →+* ℚ_[p] :=
+    (ULift.ringEquiv : ULift.{u} ℚ_[p] ≃+* ℚ_[p]).toRingHom.comp ψ.hom with hρ
+  -- STEP 2. A standard-smooth basic open through that point.
+  obtain ⟨f, hf, hstd⟩ := exists_standardSmoothAway_of_realPoint ρ
+  -- STEP 3. The generation hypothesis, restated against `algebraMap ℚ A`; the two
+  -- structure maps agree because a ring map out of `ULift ℚ` is unique.
+  have hxq : Subring.closure (Set.range (algebraMap ℚ (A : Type u)) ∪ Set.range x) = ⊤ := by
+    have hcomp : ((algebraMap ℚ (A : Type u)).comp
+        (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom)
+        = (AlgebraicGeometry.Spec.preimage g).hom := ringHom_uliftRat_ext _ _
+    have hrange : Set.range (AlgebraicGeometry.Spec.preimage g).hom
+        = Set.range (algebraMap ℚ (A : Type u)) := by
+      rw [← hcomp, RingHom.coe_comp]
+      exact (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).surjective.range_comp _
+    rwa [hrange] at hx
+  -- STEP 4. The polynomial model with its coordinates and its nondegeneracy.
+  obtain ⟨m, cc, Pol, Qc, z₀, hcm, hz₀, hjacsum, hpts, htan, hdeg⟩ :=
+    exists_polynomialModel_tangent_of_isStandardSmooth f hstd ρ hf x hxq
+  -- STEP 5. The codimension is NOT maximal, else `D(f)` would be étale over `ℚ`.
+  have hlt : cc < m := by
+    rcases lt_or_eq_of_le hcm with h | h
+    · exact h
+    · exact absurd (hdeg h)
+        (not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible
+          g hft hgi hdim f ρ hf)
+  set Lc : (Fin m → ℚ_[p]) →L[ℚ_[p]] (Fin cc → ℚ_[p]) :=
+    ContinuousLinearMap.pi (fun j => mvPolynomialGradient (Pol j) z₀) with hLc
+  have hjac : Function.Surjective (fun u : Fin m → ℚ_[p] => fun j : Fin cc =>
+      mvPolynomialGradient (Pol j) z₀ u) := by
+    intro y
+    obtain ⟨v, hv⟩ := hjacsum y
+    refine ⟨v, funext fun j => ?_⟩
+    show mvPolynomialGradient (Pol j) z₀ v = y j
+    rw [mvPolynomialGradient_apply]
+    exact congrFun hv j
+  -- STEP 6. `cc < m` and rank–nullity give a NONZERO tangent vector.
+  have hLtop : LinearMap.range (Lc : (Fin m → ℚ_[p]) →ₗ[ℚ_[p]] (Fin cc → ℚ_[p])) = ⊤ := by
+    rw [LinearMap.range_eq_top]
+    intro y
+    obtain ⟨v, hv⟩ := hjac y
+    refine ⟨v, funext fun j => ?_⟩
+    rw [ContinuousLinearMap.coe_coe, hLc, ContinuousLinearMap.pi_apply]
+    exact congrFun hv j
+  have hrank : Module.finrank ℚ_[p]
+      (LinearMap.ker (Lc : (Fin m → ℚ_[p]) →ₗ[ℚ_[p]] (Fin cc → ℚ_[p]))) = m - cc := by
+    have hadd := LinearMap.finrank_range_add_finrank_ker
+      (Lc : (Fin m → ℚ_[p]) →ₗ[ℚ_[p]] (Fin cc → ℚ_[p]))
+    rw [hLtop, finrank_top] at hadd
+    rw [Module.finrank_fin_fun, Module.finrank_fin_fun] at hadd
+    omega
+  have hkerne : (LinearMap.ker (Lc : (Fin m → ℚ_[p]) →ₗ[ℚ_[p]] (Fin cc → ℚ_[p]))) ≠ ⊥ := by
+    intro h
+    rw [h, finrank_bot] at hrank
+    omega
+  obtain ⟨wv, hwmem, hwne⟩ := (Submodule.ne_bot_iff _).mp hkerne
+  have hLwv : Lc wv = 0 := hwmem
+  have hwker : ∀ j, mvPolynomialGradient (Pol j) z₀ wv = 0 := by
+    intro j
+    have h := congrFun hLwv j
+    rw [hLc, ContinuousLinearMap.pi_apply] at h
+    simpa using h
+  -- STEP 7. Nondegeneracy: some coordinate's gradient survives on `wv`.
+  have hexists : ∃ i₀ : Fin n, mvPolynomialGradient (Qc i₀) z₀ wv ≠ 0 := by
+    by_contra hcon
+    exact hwne (htan wv (fun j => by rw [mvPolynomialDirDeriv_eq_gradient]; exact hwker j)
+      (fun i => by
+        rw [mvPolynomialDirDeriv_eq_gradient]
+        exact not_not.mp fun hne => hcon ⟨i, hne⟩))
+  obtain ⟨i₀, hi₀⟩ := hexists
+  exact ⟨m, cc, Pol, Qc, z₀, i₀, wv, hz₀, hpts, hjac, hwker, hi₀⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BREAK B STEP 1 AT ONE PRIME: a `p`-adic ball of good hyperplane
@@ -11004,11 +11574,17 @@ with the degree bookkeeping and the point/branch bridge PROVEN as glue:
   at the generic point of the curve, i.e. `F ∤ a`. This is the clause Schmidt
   discharges in one sentence — "By Lemma 2D, if not all `a_{ijk}` are zero, then
   `a(X, η) ≠ 0`" — and it is a self-contained classical theorem, INDEPENDENT of
-  the other two, so it takes its own owner.
+  the other two, so it took its own owner. **It is now PROVEN (2026-07-27)** over
+  three further sub-leaves — `stepanov_dvd_specZ_resultant`,
+  `stepanov_dvd_resultant_of_dvd_specZ` and `stepanov_irreducible_stepanovFZ`
+  (Corollary 2C) — see the section note before it; the symmetric-function
+  apparatus of his pp. 101–102 is NOT needed, `Polynomial.resultant` is it.
 * `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` — §3: the DERIVATION CALCULUS.
   Vanishing of `a^{(ν)}(x, y)` for `ν < M` at a SIMPLE root `y` says exactly
   that `a` vanishes to order `M` along the branch through `(x, y)`, which in
-  this file's rendering is divisibility by `(X − x)^M`.
+  this file's rendering is divisibility by `(X − x)^M`. **PROVEN 2026-07-27**,
+  over `stepanov_jet_dvd_core`; and the branch turned out not to be needed at
+  all — see the FOOTNOTE on that theorem.
 
 `stepanovAnsatz_coeff_natDegree_add_le` (PROVEN below) discharges Lemma 4A(iii),
 the weighted degree bound, from the shape data alone, so no sub-leaf carries it.
@@ -11275,7 +11851,419 @@ theorem exists_stepanovJetSolution (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Pr
           (stepanovJet F M ℓ (stepanovAnsatz d p ((d - 1) * M / d + d - 2) A)) x y = 0) :=
   sorry
 
-/-- **SCHMIDT LEMMA 2D** (SORRY LEAF, cut 2026-07-27 out of
+/-! #### Schmidt Lemma 2D, cut along its own seams (2026-07-27)
+
+`stepanov_not_dvd_stepanovAnsatz` below is PROVEN from three sub-leaves, in the
+four-variable polynomial ring `𝔽_p[X][Y][Z][W]` (nesting order: `X` innermost,
+then `Y`, then `Z`, then `W`). The two new objects are Schmidt's `a(X,Y,Z,W)`
+and `f(Z,W)`; the bridge between them is the RESULTANT in `W`, which is exactly
+his product `â(X,Y,Z;U₁,…,U_d) = ∏_i a(X,Y,Z,U_i)` over the roots of `f(Z,·)`
+(`Polynomial.resultant_eq_prod_eval`, `f(Z,·)` being monic). So the whole
+symmetric-function apparatus of his pp. 101–102 — Chapter I Lemma 5A, the
+elementary symmetric polynomials `s₁,…,s_d`, the auxiliary `b` — is REPLACED by
+`Polynomial.resultant`, which is already in the pin and already used above.
+Nothing of the mathematics is lost: `b(X,Y,Z;g₁(Z),…,g_d(Z))` *is*
+`Res_W(f(Z,W), a(X,Y,Z,W))`.
+
+The chain, with `R(X,Y,Z) := Res_W(f(Z,W), a(X,Y,Z,W)) ∈ 𝔽_p[X,Y,Z]`:
+
+1. `stepanov_dvd_specZ_resultant` — **the norm step** (his p. 103, the display
+   `a(X,𝔶,X^q;𝔶^q,…) = 0`). `f ∣ a(X,Y,X^p,Y^p)` gives `f(X,Y) ∣ R(X,Y,X^p)`,
+   because `f(X^p, 𝔶^p) = f(X,𝔶)^p = 0` puts `W − 𝔶^p` inside `f(X^p,W)`, and
+   the corresponding factor of the resultant is `a(X,𝔶,X^p,𝔶^p) = 0`.
+2. `stepanov_dvd_resultant_of_dvd_specZ` — **the de-specialisation** (his
+   pp. 103–104). `f(X,Y) ∣ R(X,Y,X^p)` upgrades to `f(X,Y) ∣ R(X,Y,Z)` with `Z`
+   an INDEPENDENT variable.
+3. `stepanov_irreducible_stepanovFZ` — **Corollary 2C** (his p. 100, through
+   Lemmas 2A/2B): `f(Z,W)` stays irreducible over `𝔽_p(X,𝔶)(Z)`.
+
+and the glue `stepanov_dvd_of_dvd_resultant` (PROVEN below) turns 3 into what
+the assembly needs: `f ∣ Res_W(f(Z,W), q)` with `deg_W q < d` forces `f ∣ q`,
+by mapping to `𝔽_p(X,𝔶)(Z)` and using `Polynomial.isUnit_resultant_iff_isCoprime`
+together with `Irreducible.dvd_iff_not_isCoprime`. Extracting `A ≡ 0` from
+`f ∣ a(X,Y,Z,W)` is then `Polynomial.C_dvd_iff_dvd_coeff` twice plus the degree
+bound `deg_Y (∑_{i<d} A_{ijk} Y^i) < d = deg_Y f`.
+
+**A SIMPLIFICATION OF STEP 2 THAT REMOVES SCHMIDT'S `X = X₁ + X₂` TRICK
+ENTIRELY.** He substitutes `X = X₁ + X₂`, notes `X^q = X₁^q + X₂^q`, and uses
+`deg_X c < q` to kill the `X₂^q`-terms; the point of the manoeuvre is to show
+that `X` and `X^q` may be treated as independent. But once the reduction
+`c := R mod f` (`deg_Y c ≤ d − 1`, `deg_X c ≤ d·deg_X a + d(d−1) ≤ p − d < p`)
+has been made, `c(X,Y,X^p) = 0` reads `∑_j c_j(X,Y) X^{pj} = 0` with
+`deg_X c_j < p`, and that forces every `c_j = 0` **by uniqueness of the base-`p`
+expansion of an exponent**: the monomial `X^{pj+v}`, `v < p`, receives a
+contribution from `c_{j'}` only when `0 ≤ p(j − j') + v < p`, i.e. `j' = j`. So
+step 2 needs no substitution and no algebraic-independence argument — only the
+degree bound and a `Finset` computation on exponents. The degree bound is the
+part to budget for: it needs Schmidt's (2.3), `deg g_i^{(t)} ≤ t − 1 + i` for
+the reduction `𝔶^{d−1+t} = g₁^{(t)}𝔶^{d−1} + ⋯ + g_d^{(t)}`, by induction on `t`.
+
+**AND `f^{[p]} = f` HERE**, since the coefficients of `F` lie in `𝔽_p`. That
+deletes Schmidt's entire `[q]`-twisting bookkeeping, which is a large part of
+§2 as written: `g_i^{[p]}(Z)` is just `g_i(Z)`, and the `U_i` are roots of
+`f(Z,·)` itself.
+
+**Instance trap, measured 2026-07-27.** `Polynomial.resultant_map_map` will not
+`rw` against a goal whose ring hom was built with `Polynomial.mapRingHom`: the
+domain's `NonAssocSemiring` then comes from `Polynomial.semiring`, while the
+lemma's comes from `CommRing.toCommSemiring.toSemiring`, the two are defeq but
+not syntactically equal, and the module system refuses to unfold them (`Note:
+the following definitions were not unfolded because their definition is not
+exposed`). `set_option backward.isDefEq.respectTransparency false` does NOT
+help. What does: supply `(R := …) (S := …)` explicitly, so the instance is
+synthesised from a known type instead of being unified against a metavariable.
+-/
+
+/-- Schmidt's `f(Z, W)`: the polynomial `F`, whose two variables are `X` (inner)
+and `Y` (outer), re-expressed in a FRESH pair of variables `Z`, `W` inside
+`𝔽_p[X][Y][Z][W]`. `f^{[p]} = f` here — the coefficients of `F` lie in `𝔽_p` —
+so this single object serves for both `f` and Schmidt's twist `f^{[q]}`. -/
+noncomputable def stepanovFZ {p : ℕ} (F : Polynomial (Polynomial (ZMod p))) :
+    Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))) :=
+  F.map (Polynomial.eval₂RingHom
+    (((Polynomial.C : Polynomial (Polynomial (ZMod p)) →+*
+          Polynomial (Polynomial (Polynomial (ZMod p)))).comp
+        (Polynomial.C : Polynomial (ZMod p) →+* Polynomial (Polynomial (ZMod p)))).comp
+      (Polynomial.C : ZMod p →+* Polynomial (ZMod p)))
+    (Polynomial.X : Polynomial (Polynomial (Polynomial (ZMod p)))))
+
+/-- Schmidt's `a(X, Y, Z, W) = ∑ A_{ijk}(X) Y^i Z^j W^k`, the four-variable
+polynomial of which `stepanovAnsatz d p K A` is the specialisation
+`a(X, Y, X^p, Y^p)`. -/
+noncomputable def stepanovAnsatz4 (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) :
+    Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))) :=
+  ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+    Polynomial.monomial k (Polynomial.monomial j (Polynomial.monomial i (A i j k)))
+
+/-- The specialisation `Z ↦ X^p` of `𝔽_p[X][Y][Z]` into `𝔽_p[X][Y]`. -/
+noncomputable def stepanovSpecZ (p : ℕ) :
+    Polynomial (Polynomial (Polynomial (ZMod p))) →+* Polynomial (Polynomial (ZMod p)) :=
+  Polynomial.eval₂RingHom (RingHom.id (Polynomial (Polynomial (ZMod p))))
+    (Polynomial.C (Polynomial.X ^ p))
+
+/-- The reduction `𝔽_p[X][Y][Z] → 𝔽_p(X, 𝔶)(Z)`, i.e. kill `F` and pass to the
+fraction field. `E` is kept ABSTRACT (`IsFractionRing`) rather than taken to be
+`FractionRing (Polynomial (AdjoinRoot F))`: at the concrete type the `Semiring`
+instance is `OreLocalization.instSemiring` while every lemma stated over a
+`CommRing` wants `CommRing.toCommSemiring.toSemiring`, and the module system
+will not unfold between them. -/
+noncomputable def stepanovResidueHom {p : ℕ} (F : Polynomial (Polynomial (ZMod p)))
+    (E : Type) [CommRing E] [Algebra (Polynomial (AdjoinRoot F)) E] :
+    Polynomial (Polynomial (Polynomial (ZMod p))) →+* E :=
+  (algebraMap (Polynomial (AdjoinRoot F)) E).comp (Polynomial.mapRingHom (AdjoinRoot.mk F))
+
+theorem stepanovFZ_monic {p : ℕ} {F : Polynomial (Polynomial (ZMod p))} (hmon : F.Monic) :
+    (stepanovFZ F).Monic :=
+  hmon.map _
+
+theorem stepanovFZ_natDegree {p : ℕ} [Fact p.Prime] {F : Polynomial (Polynomial (ZMod p))}
+    (hmon : F.Monic) : (stepanovFZ F).natDegree = F.natDegree :=
+  hmon.natDegree_map _
+
+/-- Lemma 2D's hypothesis (iii), `deg_W a ≤ d − 1`, read off the shape. -/
+theorem stepanovAnsatz4_natDegree_le (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p)) :
+    (stepanovAnsatz4 d p K A).natDegree ≤ d - 1 := by
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun i hi => ?_
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun k hk => ?_
+  refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun j hj => ?_
+  exact le_trans (Polynomial.natDegree_monomial_le _) (by
+    have := Finset.mem_range.mp hk; omega)
+
+/-- The `Z^j W^k`-coefficient of `a(X, Y, Z, W)` is `∑_{i<d} A_{ijk}(X) Y^i`. -/
+theorem stepanovAnsatz4_coeff (d p K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    {j k : ℕ} (hk : k < d) (hj : j ≤ K) :
+    ((stepanovAnsatz4 d p K A).coeff k).coeff j
+      = ∑ i ∈ Finset.range d, Polynomial.monomial i (A i j k) := by
+  classical
+  have h1 : (stepanovAnsatz4 d p K A).coeff k
+      = ∑ i ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1),
+          Polynomial.monomial j (Polynomial.monomial i (A i j k)) := by
+    simp only [stepanovAnsatz4, Polynomial.finsetSum_coeff, Polynomial.coeff_monomial]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [Finset.sum_eq_single k]
+    · simp
+    · intro b _ hb; exact Finset.sum_eq_zero fun j _ => if_neg hb
+    · intro hb; exact absurd (Finset.mem_range.mpr hk) hb
+  rw [h1]
+  simp only [Polynomial.finsetSum_coeff, Polynomial.coeff_monomial]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  rw [Finset.sum_eq_single j]
+  · simp
+  · intro b _ hb; exact if_neg hb
+  · intro hb; exact absurd (Finset.mem_range.mpr (by omega)) hb
+
+/-- **ABSOLUTE IRREDUCIBILITY IMPLIES IRREDUCIBILITY** (PROVEN 2026-07-27) —
+the descent `𝔽̄_p[X][Y] → 𝔽_p[X][Y]` of `hirrF`, needed to make `AdjoinRoot F` a
+domain. A factorisation `F = G·H` maps to one over `𝔽̄_p[X][Y]`, whose units are
+the nonzero constants; so one factor has `Y`-degree `0`, and monicity of `F`
+makes its leading coefficient a unit of `𝔽_p[X]`. -/
+theorem stepanov_irreducible_of_absIrred {p : ℕ} [Fact p.Prime]
+    {F : Polynomial (Polynomial (ZMod p))} (hmon : F.Monic) (hdeg : 0 < F.natDegree)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))))) :
+    Irreducible F := by
+  have hinj : Function.Injective
+      (Polynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) :=
+    Polynomial.map_injective _ (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+  have key : ∀ G : Polynomial (Polynomial (ZMod p)),
+      IsUnit (G.map (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))) → G.natDegree = 0 := by
+    intro G hG
+    have h1 := Polynomial.natDegree_eq_zero_of_isUnit hG
+    rwa [Polynomial.natDegree_map_eq_of_injective hinj] at h1
+  refine ⟨fun hu => ?_, fun G H hGH => ?_⟩
+  · have := Polynomial.natDegree_eq_zero_of_isUnit hu
+    omega
+  · have hmapGH : F.map (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))
+        = G.map (Polynomial.mapRingHom
+            (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) *
+          H.map (Polynomial.mapRingHom
+            (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) := by
+      rw [hGH, Polynomial.map_mul]
+    have hlead : G.leadingCoeff * H.leadingCoeff = 1 := by
+      have h := hmon.leadingCoeff
+      rwa [hGH, Polynomial.leadingCoeff_mul] at h
+    rcases hirrF.isUnit_or_isUnit hmapGH with h | h
+    · left
+      have h0 := key G h
+      have hGC : G = Polynomial.C G.leadingCoeff := by
+        conv_lhs => rw [Polynomial.eq_C_of_natDegree_eq_zero h0]
+        rw [Polynomial.leadingCoeff, h0]
+      rw [hGC]
+      exact Polynomial.isUnit_C.mpr
+        ⟨⟨G.leadingCoeff, H.leadingCoeff, hlead, by rw [mul_comm]; exact hlead⟩, rfl⟩
+    · right
+      have h0 := key H h
+      have hHC : H = Polynomial.C H.leadingCoeff := by
+        conv_lhs => rw [Polynomial.eq_C_of_natDegree_eq_zero h0]
+        rw [Polynomial.leadingCoeff, h0]
+      rw [hHC]
+      exact Polynomial.isUnit_C.mpr
+        ⟨⟨H.leadingCoeff, G.leadingCoeff, by rw [mul_comm]; exact hlead, hlead⟩, rfl⟩
+
+/-- **SCHMIDT COROLLARY 2C** (SORRY LEAF, cut 2026-07-27 out of
+`stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, p. 100, through Lemmas 2A
+and 2B. THE ONLY GENUINELY FIELD-THEORETIC INPUT OF LEMMA 2D.
+
+WHAT IT SAYS, in Schmidt's language: `f(X,Y)` absolutely irreducible of degree
+`d > 0` in `Y`, `f(X,𝔶) = 0`, `f^{[q]}(Z,U) = 0` with `Z` an independent
+variable, then `[K(X,Z,𝔶,U) : K(X,Z)] = d²` — equivalently, `f(Z,W)` remains
+IRREDUCIBLE over `K(X,𝔶)(Z)`, which is the form stated here (`E` is that field,
+kept abstract as an `IsFractionRing` of `(AdjoinRoot F)[Z]`). Equivalently
+again: `𝔽_p[X,Y,Z,W]/(f(X,Y), f(Z,W))`, i.e. `𝒪(C) ⊗_{𝔽_p} 𝒪(C)`, is a domain —
+the standard characterisation of GEOMETRIC integrality, which is exactly what
+absolute irreducibility of `f` provides.
+
+HOW IT IS PROVED (Lemma 2A, p. 98). It suffices to show `f(Z,W)` stays
+irreducible over `K(X,𝔶)`. If `f(Z,W) = g₁(Z,W)·g₂(Z,W)` with the `gᵢ` of
+smaller `W`-degree and coefficients `r_{ijk}(X,𝔶)` in `K(X,𝔶)`, SPECIALISE:
+choose `x` with no denominator vanishing and `a₀(x) ≠ 0`, choose `y` with
+`f(x,y) = 0`; then `(x,y)` satisfies every equation `(X,𝔶)` satisfies, and the
+specialised `ĝᵢ` factor `f` over `K`, contradicting absolute irreducibility.
+
+**THE ONE GAP IN SCHMIDT'S PROOF AT OUR `K`, AND ITS REPAIR.** That
+specialisation needs INFINITELY many admissible `x`, and our `K = 𝔽_p` is
+FINITE. The repair is base change, not a different argument: the statement is a
+statement about degrees, `[K(X,Z,𝔶,U):K(X,Z)] ≤ d²` always, and
+`K(X,Z,𝔶,U) ⊗_{K(X,Z)} K̄(X,Z)` surjects onto `K̄(X,Z,𝔶,U)`, so
+`[K(X,Z,𝔶,U):K(X,Z)] ≥ [K̄(X,Z,𝔶,U):K̄(X,Z)]`. It therefore suffices to run
+Lemma 2A over `K̄ = AlgebraicClosure (ZMod p)`, which is infinite and over which
+`hirrF` is literally the hypothesis. Do NOT attempt the specialisation over
+`𝔽_p` itself.
+
+WHAT IS MISSING AT THIS PIN (grepped 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib/` and `~/cs/FLT/`): no `[Ss]tepanov`, and nothing
+naming geometric integrality of an affine curve or `A ⊗_k A` domain-ness. The
+`IsFractionRing`/`AdjoinRoot` scaffolding it needs is all present.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_irreducible_stepanovFZ (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p))) (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))))
+    (E : Type) [Field E] [Algebra (Polynomial (AdjoinRoot F)) E]
+    [IsFractionRing (Polynomial (AdjoinRoot F)) E] :
+    Irreducible ((stepanovFZ F).map (stepanovResidueHom F E)) :=
+  sorry
+
+/-- **COROLLARY 2C IN CONSUMABLE FORM** (PROVEN 2026-07-27) — the last step of
+Schmidt's p. 105, "the `d²` elements `𝔶^j U^k` are linearly independent over
+`K(X,Z)`, therefore `a` is identically zero".
+
+If the resultant `Res_W(f(Z,W), q)` vanishes modulo `f(X,Y)` and `q` has
+`W`-degree `< d`, then `q` itself vanishes modulo `f(X,Y)`. Over
+`E = 𝔽_p(X,𝔶)(Z)` the resultant of a monic `f(Z,·)` is a unit iff the two are
+coprime (`Polynomial.isUnit_resultant_iff_isCoprime`), and `E` is a field, so
+vanishing forces non-coprimality; `f(Z,·)` is irreducible there by Corollary 2C,
+so `Irreducible.dvd_iff_not_isCoprime` gives `f(Z,·) ∣ q`, and the degree bound
+collapses that to `q = 0`. The descent from `E` back to `𝔽_p[X][Y][Z][W]` is
+injectivity of `(AdjoinRoot F)[Z] → E` plus `AdjoinRoot.mk_eq_zero`. -/
+theorem stepanov_dvd_of_dvd_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p))) (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hirrF : Irreducible (F.map (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))))))
+    (E : Type) [Field E] [Algebra (Polynomial (AdjoinRoot F)) E]
+    [IsFractionRing (Polynomial (AdjoinRoot F)) E]
+    (q : Polynomial (Polynomial (Polynomial (Polynomial (ZMod p)))))
+    (hq : q.natDegree ≤ d - 1)
+    (hres : Polynomial.C F ∣ (stepanovFZ F).resultant q d (d - 1)) :
+    Polynomial.C (Polynomial.C F) ∣ q := by
+  have hirr : Irreducible F :=
+    stepanov_irreducible_of_absIrred hmon (by omega) hirrF
+  have hprime : Prime F := (UniqueFactorizationMonoid.irreducible_iff_prime).mp hirr
+  haveI : IsDomain (AdjoinRoot F) := AdjoinRoot.isDomain_of_prime hprime
+  have hθCF : stepanovResidueHom F E (Polynomial.C F) = 0 := by
+    simp [stepanovResidueHom, Polynomial.map_C, AdjoinRoot.mk_self]
+  obtain ⟨s, hs⟩ := hres
+  have hres0 : stepanovResidueHom F E ((stepanovFZ F).resultant q d (d - 1)) = 0 := by
+    rw [hs, map_mul, hθCF, zero_mul]
+  have hmapres : ((stepanovFZ F).map (stepanovResidueHom F E)).resultant
+      (q.map (stepanovResidueHom F E)) d (d - 1) = 0 := by
+    have h := Polynomial.resultant_map_map
+      (R := Polynomial (Polynomial (Polynomial (ZMod p)))) (S := E)
+      (stepanovFZ F) q d (d - 1) (stepanovResidueHom F E)
+    rw [h, hres0]
+  have hf'mon : ((stepanovFZ F).map (stepanovResidueHom F E)).Monic :=
+    (stepanovFZ_monic hmon).map _
+  have hf'nd : ((stepanovFZ F).map (stepanovResidueHom F E)).natDegree = d := by
+    rw [(stepanovFZ_monic hmon).natDegree_map, stepanovFZ_natDegree hmon, hdegY]
+  have hg'nd : (q.map (stepanovResidueHom F E)).natDegree ≤ d - 1 :=
+    le_trans (Polynomial.natDegree_map_le) hq
+  have hg'zero : q.map (stepanovResidueHom F E) = 0 := by
+    have hpad : ((stepanovFZ F).map (stepanovResidueHom F E)).resultant
+          (q.map (stepanovResidueHom F E)) d (d - 1)
+        = ((stepanovFZ F).map (stepanovResidueHom F E)).coeff d ^
+            (d - 1 - (q.map (stepanovResidueHom F E)).natDegree) *
+          ((stepanovFZ F).map (stepanovResidueHom F E)).resultant
+            (q.map (stepanovResidueHom F E)) d (q.map (stepanovResidueHom F E)).natDegree := by
+      conv_lhs => rw [show d - 1 = (q.map (stepanovResidueHom F E)).natDegree +
+        (d - 1 - (q.map (stepanovResidueHom F E)).natDegree) by omega]
+      exact Polynomial.resultant_add_right_deg _ _ _ _ _ le_rfl
+    have hcoeffd : ((stepanovFZ F).map (stepanovResidueHom F E)).coeff d = 1 := by
+      rw [← hf'nd]; exact hf'mon
+    rw [hpad, hcoeffd, one_pow, one_mul, ← hf'nd] at hmapres
+    have hnc : ¬ IsCoprime ((stepanovFZ F).map (stepanovResidueHom F E))
+        (q.map (stepanovResidueHom F E)) := by
+      intro hc
+      have h := (Polynomial.isUnit_resultant_iff_isCoprime hf'mon).mpr hc
+      rw [hmapres] at h
+      exact not_isUnit_zero h
+    have hdvd : ((stepanovFZ F).map (stepanovResidueHom F E)) ∣ q.map (stepanovResidueHom F E) :=
+      (stepanov_irreducible_stepanovFZ d hd p F hmon hdegY hirrF E).dvd_iff_not_isCoprime.mpr hnc
+    exact Polynomial.eq_zero_of_dvd_of_natDegree_lt hdvd (by omega)
+  have hmapinj : Function.Injective
+      (Polynomial.map (algebraMap (Polynomial (AdjoinRoot F)) E)) :=
+    Polynomial.map_injective _ (IsFractionRing.injective _ _)
+  have hq0 : q.map (Polynomial.mapRingHom (AdjoinRoot.mk F)) = 0 := by
+    apply hmapinj
+    rw [Polynomial.map_zero, Polynomial.map_map]
+    exact hg'zero
+  rw [Polynomial.C_dvd_iff_dvd_coeff]
+  intro k
+  rw [Polynomial.C_dvd_iff_dvd_coeff]
+  intro j
+  rw [← AdjoinRoot.mk_eq_zero]
+  have h1 : (Polynomial.mapRingHom (AdjoinRoot.mk F)) (q.coeff k) = 0 := by
+    have := congrArg (fun r => Polynomial.coeff r k) hq0
+    simpa [Polynomial.coeff_map] using this
+  have h2 := congrArg (fun r => Polynomial.coeff r j) h1
+  simpa [Polynomial.coeff_map] using h2
+
+/-- **SCHMIDT LEMMA 2D, THE NORM STEP** (SORRY LEAF, cut 2026-07-27 out of
+`stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, p. 103, the two displays
+`a(X,𝔶,X^q;𝔶₁^q,…,𝔶_d^q) = 0` and `b(X,𝔶,X^q; g^{[q]}(X^q)) = 0`.
+
+WHAT IT SAYS. If `F ∣ a(X,Y,X^p,Y^p)` then `F(X,Y)` divides the `Z ↦ X^p`
+specialisation of the resultant `R(X,Y,Z) = Res_W(f(Z,W), a(X,Y,Z,W))`.
+
+HOW IT IS PROVED, and it is short. Work in `T = AdjoinRoot F`, `𝔶 = root F`,
+`x = ` image of `X`. Two facts:
+
+* `f(x^p, 𝔶^p) = 0`. This is Frobenius plus `f^{[p]} = f`: writing
+  `F = ∑ c_n(X) Y^n` with `c_n ∈ 𝔽_p[X]`, in characteristic `p`
+  `F(X,Y)^p = ∑ c_n(X)^p Y^{np} = ∑ c_n(X^p) (Y^p)^n = F(X^p, Y^p)`, because
+  `c^p = c(X^p)` for `c ∈ 𝔽_p[X]` (`Polynomial.expand_char`, `frobenius` being
+  the identity on `𝔽_p`). Evaluate at `Y = 𝔶`.
+* `a(x, 𝔶, x^p, 𝔶^p) = 0`, which is the hypothesis `F ∣ stepanovAnsatz d p K A`
+  read through `AdjoinRoot.mk_eq_zero` and `AdjoinRoot.aeval_eq`.
+
+So `W − 𝔶^p` divides `f(x^p, W)` (`Polynomial.dvd_iff_isRoot`), write
+`f(x^p,W) = (W − 𝔶^p)·h`, and split the resultant with
+`Polynomial.resultant_mul_left`; the first factor is
+`Polynomial.resultant_X_sub_C_left`, i.e. the evaluation `a(x,𝔶,x^p,𝔶^p) = 0`.
+Hence the whole resultant vanishes in `T`, which is the claim.
+
+Degrees: `f(Z,·)` is monic of degree `d` in `W` and stays so after `Z ↦ X^p`, so
+the first degree argument `d` is `natDegree`; the second, `d − 1`, dominates
+`deg_W a` by `stepanovAnsatz4_natDegree_le`, and `Polynomial.resultant_add_right_deg`
+absorbs the slack against `f`'s leading coefficient `1`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_dvd_specZ_resultant (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
+    (hdvd : F ∣ stepanovAnsatz d p K A) :
+    F ∣ stepanovSpecZ p ((stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1)) :=
+  sorry
+
+/-- **SCHMIDT LEMMA 2D, THE DE-SPECIALISATION** (SORRY LEAF, cut 2026-07-27 out
+of `stepanov_not_dvd_stepanovAnsatz`) — Chapter III §2, pp. 103–104, from
+"But since `deg c ≤ d − 1`" to "we may replace them by variables `X,Y,Z`".
+
+WHAT IT SAYS. `F(X,Y) ∣ R(X,Y,X^p)` upgrades to `F(X,Y) ∣ R(X,Y,Z)` with `Z`
+independent, where `R(X,Y,Z) = Res_W(f(Z,W), a(X,Y,Z,W))`. THIS IS WHERE THE
+DEGREE HYPOTHESIS `deg A_{ijk} + d ≤ p/d` IS CONSUMED, and it is the only place
+in Lemma 2D that consumes it — Schmidt's whole heuristic ("only one `d`-th of
+all possible exponents in `X` can occur") is about this step.
+
+HOW IT IS PROVED, in two halves.
+
+*(i) Reduce modulo `F` and bound the `X`-degree.* Divide `R` by the monic `F` in
+`Y`, coefficientwise in `Z`: `c := R mod F`, so `deg_Y c ≤ d − 1` and
+`F ∣ R ↔ c = 0`, and `F ∣ R(X,Y,X^p) ↔ c(X,Y,X^p) = 0` (the specialisation is a
+ring map and `deg_Y` is untouched by it, so the remainder specialises to the
+remainder). The bound is Schmidt's:
+
+  `deg_X R ≤ d·deg_X a`,  `deg_X c ≤ deg_X R + d(d−1) ≤ d(p/d − d) + d(d−1)`
+                                       `≤ p − d² + d² − d = p − d < p`.
+
+The `+ d(d−1)` is the cost of the reduction and needs his (2.3),
+`𝔶^{d−1+t} = g₁^{(t)}(X)𝔶^{d−1} + ⋯ + g_d^{(t)}(X)` with
+`deg g_i^{(t)} ≤ t − 1 + i`, proven by induction on `t` from `deg g_i ≤ i`
+(`hcoeff`). `deg_X R ≤ d·deg_X a` is `stepanov_natDegree_resultant_le`, already
+PROVEN above — use it, do not redo the Sylvester estimate.
+
+*(ii) Separate `X` from `X^p`.* With `deg_X c < p`, write `c = ∑_j c_j(X,Y) Z^j`
+and expand `c(X,Y,X^p) = ∑_j c_j(X,Y) X^{pj} = 0`. The monomial `X^{pj+v}`,
+`0 ≤ v < p`, receives a contribution from `c_{j'}` exactly when
+`0 ≤ p(j − j') + v < p`, i.e. only when `j' = j`; so its coefficient is
+`(c_j).coeff v`, and all of them vanish. Hence every `c_j = 0`, i.e. `c = 0`.
+
+**THIS REPLACES SCHMIDT'S `X = X₁ + X₂` SUBSTITUTION**, which is his way of
+proving exactly this separation and is not needed once the statement is phrased
+over `𝔽_p[X]` rather than over a field of rational functions. Do not formalise
+the substitution; formalise the base-`p` digit computation, which is a `Finset`
+argument over `Polynomial.coeff` and needs no new theory.
+
+`hAsupp` is used only through `stepanovAnsatz4`'s shape; `hAdeg` and `hcoeff`
+carry (i).
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem stepanov_dvd_resultant_of_dvd_specZ (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (K : ℕ) (A : ℕ → ℕ → ℕ → Polynomial (ZMod p))
+    (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d ≤ p / d)
+    (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
+    (hspec : F ∣ stepanovSpecZ p ((stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1))) :
+    Polynomial.C F ∣ (stepanovFZ F).resultant (stepanovAnsatz4 d p K A) d (d - 1) :=
+  sorry
+
+/-- **SCHMIDT LEMMA 2D** (PROVEN 2026-07-27 by decomposition; cut 2026-07-27 out of
 `exists_stepanovAuxiliaryFunction`) — Chapter III §2, pp. 100–105. This is
 Lemma 4A(i), the clause Schmidt discharges in one sentence, and it is a
 self-contained classical theorem INDEPENDENT of the other two sub-leaves.
@@ -11310,16 +12298,21 @@ enters, through his Lemmas 2A/2B — gives `[𝔽_p(X, Z, 𝔶, U) : 𝔽_p(X, Z
 the `d²` elements `𝔶^j U^k`, `0 ≤ j, k ≤ d − 1`, are linearly independent over
 `𝔽_p(X, Z)`, forcing `a ≡ 0`, a contradiction.
 
-MISSING AT THIS PIN: the symmetric-function step is `MvPolynomial.esymm` /
-`symmetricSubalgebra` material and exists; **Corollary 2C does not**, and it is
-the piece to budget for — "`f` absolutely irreducible of degree `d` in `Y`,
-`f^{[p]}(Z, U) = 0` ⟹ `[K(X,Z,𝔶,U) : K(X,Z)] = d²`", i.e. that `f` stays
-irreducible over `K(X, Z, U)`. Note `f^{[p]} = f` here, since the coefficients of
-`F` lie in `𝔽_p`, which removes Schmidt's `[q]`-twisting bookkeeping entirely.
+WHAT IS ACTUALLY OPEN, as of the 2026-07-27 decomposition (see the section note
+above): the symmetric-function step is GONE — `Polynomial.resultant` does its
+work — and what remains is the three sub-leaves
+`stepanov_dvd_specZ_resultant` (the Frobenius/norm step),
+`stepanov_dvd_resultant_of_dvd_specZ` (the degree bound and the base-`p`
+separation) and `stepanov_irreducible_stepanovFZ` (**Corollary 2C**, the only
+genuinely field-theoretic input, and the only one absent from the pin). Note
+`f^{[p]} = f` here, since the coefficients of `F` lie in `𝔽_p`, which removes
+Schmidt's `[q]`-twisting bookkeeping entirely.
 
 `hAsupp` is load-bearing in all three of its clauses: without the `K < j + k`
 half, a witness of `hAne` could sit outside the ansatz's `j`-range and the ansatz
-itself could be `0`.
+itself could be `0`. It is used here BOTH to push the witness of `hAne` into the
+range `i < d`, `k < d`, `j ≤ K` and, inside `stepanovAnsatz4`, to make that
+four-variable polynomial the right object.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem stepanov_not_dvd_stepanovAnsatz (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -11332,12 +12325,297 @@ theorem stepanov_not_dvd_stepanovAnsatz (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact
     (hAdeg : ∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d ≤ p / d)
     (hAsupp : ∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0)
     (hAne : ∃ i j k, A i j k ≠ 0) :
-    ¬ (F ∣ stepanovAnsatz d p K A) :=
-  sorry
+    ¬ (F ∣ stepanovAnsatz d p K A) := by
+  intro hdvd
+  have hirr : Irreducible F := stepanov_irreducible_of_absIrred hmon (by omega) hirrF
+  have hprime : Prime F := UniqueFactorizationMonoid.irreducible_iff_prime.mp hirr
+  haveI : IsDomain (AdjoinRoot F) := AdjoinRoot.isDomain_of_prime hprime
+  -- `f(X,Y) ∣ Res_W(f(Z,W), a(X,Y,Z,W))`, first at `Z = X^p`, then with `Z` independent
+  have hres := stepanov_dvd_resultant_of_dvd_specZ d hd p F hmon hdegY hcoeff K A hAdeg hAsupp
+    (stepanov_dvd_specZ_resultant d hd p F hmon hdegY K A hAsupp hdvd)
+  -- Corollary 2C then kills `a` itself
+  have hq := stepanov_dvd_of_dvd_resultant d hd p F hmon hdegY hirrF
+    (FractionRing (Polynomial (AdjoinRoot F))) (stepanovAnsatz4 d p K A)
+    (stepanovAnsatz4_natDegree_le d p K A) hres
+  -- and `f ∣ a` forces every `A_{ijk}` to vanish, contradicting `hAne`
+  obtain ⟨i, j, k, hA⟩ := hAne
+  apply hA
+  by_cases hi : d ≤ i
+  · exact hAsupp i j k (Or.inl hi)
+  by_cases hk : d ≤ k
+  · exact hAsupp i j k (Or.inr (Or.inl hk))
+  by_cases hjk : K < j + k
+  · exact hAsupp i j k (Or.inr (Or.inr hjk))
+  have h1 : Polynomial.C F ∣ (stepanovAnsatz4 d p K A).coeff k :=
+    (Polynomial.C_dvd_iff_dvd_coeff _ _).mp hq k
+  have h2 : F ∣ ((stepanovAnsatz4 d p K A).coeff k).coeff j :=
+    (Polynomial.C_dvd_iff_dvd_coeff _ _).mp h1 j
+  rw [stepanovAnsatz4_coeff d p K A (by omega) (by omega)] at h2
+  have h3 : (∑ i' ∈ Finset.range d, Polynomial.monomial i' (A i' j k) :
+      Polynomial (Polynomial (ZMod p))) = 0 := by
+    refine Polynomial.eq_zero_of_dvd_of_natDegree_lt h2 ?_
+    rw [hdegY]
+    refine lt_of_le_of_lt
+      (Polynomial.natDegree_sum_le_of_forall_le _ _ fun i' hi' => ?_) (by omega : d - 1 < d)
+    exact le_trans (Polynomial.natDegree_monomial_le _)
+      (by have := Finset.mem_range.mp hi'; omega)
+  have h4 := congrArg (fun r => Polynomial.coeff r i) h3
+  have h5 : i < d → A i j k = 0 := by
+    simpa [Polynomial.finsetSum_coeff, Polynomial.coeff_monomial, Finset.sum_ite_eq',
+      Finset.mem_range] using h4
+  exact h5 (by omega)
 
-/-- **THE JET/BRANCH BRIDGE** (SORRY LEAF, cut 2026-07-27 out of
-`exists_stepanovAuxiliaryFunction`) — Schmidt Chapter III §3 (3.1), read in the
-divisibility rendering this file uses.
+/-! #### The derivation calculus behind Schmidt §3 (PROVEN 2026-07-27)
+
+Six small lemmas, all of them about `stepanovDerivX`/`stepanovJet` and none of
+them about the curve, which together reduce `stepanov_pow_X_sub_C_dvd_of_jet_vanishing`
+to a single induction. The route they implement is NOT the one the leaf's
+docstring anticipated: **no power series, no Hensel lift and no branch are
+needed.** See the FOOTNOTE on that theorem. -/
+
+/-- `stepanovDerivX` differentiates the coefficient polynomials one by one. -/
+theorem stepanovDerivX_monomial {R : Type*} [CommRing R] (n : ℕ) (c : Polynomial R) :
+    stepanovDerivX (Polynomial.monomial n c) = Polynomial.monomial n (Polynomial.derivative c) := by
+  rw [stepanovDerivX, Polynomial.sum_monomial_index _ _ (by simp),
+    Polynomial.C_mul_X_pow_eq_monomial]
+
+theorem stepanovDerivX_add {R : Type*} [CommRing R] (b₁ b₂ : Polynomial (Polynomial R)) :
+    stepanovDerivX (b₁ + b₂) = stepanovDerivX b₁ + stepanovDerivX b₂ := by
+  rw [stepanovDerivX, stepanovDerivX, stepanovDerivX]
+  refine Polynomial.sum_add_index _ _ _ (by simp) ?_
+  intro i c₁ c₂
+  rw [Polynomial.derivative_add, map_add, add_mul]
+
+/-- **THE CHAIN RULE** `d/dX [b(X, η(X))] = b_X(X, η) + b_Y(X, η)·η′`, for a
+POLYNOMIAL section `η` of the `Y`-coordinate. Everything stays inside `S[X]`;
+this is what makes the whole of Schmidt §3 available without leaving polynomials. -/
+theorem stepanov_derivative_eval₂ {R S : Type*} [CommRing R] [CommRing S]
+    (ι : R →+* S) (η : Polynomial S) (b : Polynomial (Polynomial R)) :
+    Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
+      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovDerivX b)
+        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+            * Polynomial.derivative η := by
+  induction b using Polynomial.induction_on' with
+  | add p q hp hq =>
+      rw [stepanovDerivX_add, Polynomial.derivative_add, Polynomial.eval₂_add,
+        Polynomial.eval₂_add, Polynomial.eval₂_add, Polynomial.derivative_add, hp, hq]
+      ring
+  | monomial n c =>
+      rw [stepanovDerivX_monomial, Polynomial.derivative_monomial, Polynomial.eval₂_monomial,
+        Polynomial.eval₂_monomial, Polynomial.eval₂_monomial, Polynomial.derivative_mul,
+        Polynomial.derivative_pow]
+      simp only [Polynomial.coe_mapRingHom, Polynomial.derivative_map, Polynomial.map_mul,
+        Polynomial.map_natCast, Polynomial.C_eq_natCast]
+      ring
+
+/-- **THE CLEARED DERIVATION.** Multiplying the chain rule by `F_Y(X, η)` removes
+`η′` in favour of `d/dX [F(X, η)]`: writing `𝒟b := F_Y ∂_X b − F_X ∂_Y b` for the
+polynomial derivation Schmidt's `D` is built from,
+
+  `F_Y(X,η) · (b(X,η))′ = (𝒟b)(X, η) + (∂_Y b)(X, η) · (F(X,η))′`.
+
+When `η` is an exact root the last term drops and this is `D`; in general it is
+the exact error term, and it is the ONLY place the hypothesis
+`(X − x)^M ∣ F(X, η)` is ever used. -/
+theorem stepanov_key_congr {R K : Type*} [CommRing R] [CommRing K]
+    (ι : R →+* K) (η : Polynomial K) (F b : Polynomial (Polynomial R)) :
+    Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
+        * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b)
+      = Polynomial.eval₂ (Polynomial.mapRingHom ι) η
+          (Polynomial.derivative F * stepanovDerivX b - stepanovDerivX F * Polynomial.derivative b)
+        + Polynomial.eval₂ (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+            * Polynomial.derivative (Polynomial.eval₂ (Polynomial.mapRingHom ι) η F) := by
+  rw [stepanov_derivative_eval₂ ι η b, stepanov_derivative_eval₂ ι η F,
+    Polynomial.eval₂_sub, Polynomial.eval₂_mul, Polynomial.eval₂_mul]
+  ring
+
+/-- Differentiating drops the order of vanishing by at most one. -/
+theorem stepanov_pow_dvd_derivative {K : Type*} [CommRing K] (t h : Polynomial K) (N : ℕ)
+    (hdvd : t ^ (N + 1) ∣ h) : t ^ N ∣ Polynomial.derivative h := by
+  obtain ⟨s, rfl⟩ := hdvd
+  rw [Polynomial.derivative_mul, Polynomial.derivative_pow_succ]
+  exact dvd_add ⟨Polynomial.C ((N : K) + 1) * Polynomial.derivative t * s, by ring⟩
+    ⟨t * Polynomial.derivative s, by ring⟩
+
+/-- `stepanovEvalPoint`, which evaluates `(x, y)` coordinatewise, is the value at
+`x` of the one-variable polynomial `b(X, η(X))` whenever `y = η(x)`. -/
+theorem stepanovEvalPoint_eq_eval_eval₂ {R K : Type*} [CommRing R] [CommRing K]
+    (ι : R →+* K) (b : Polynomial (Polynomial R)) (x : R) (η : Polynomial K) :
+    (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
+      = stepanovEvalPoint ι b x (η.eval (ι x)) := by
+  rw [show (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b).eval (ι x)
+      = Polynomial.evalRingHom (ι x) (Polynomial.eval₂ (Polynomial.mapRingHom ι) η b) from rfl,
+    Polynomial.hom_eval₂, stepanovEvalPoint, Polynomial.eval_map]
+  congr 1
+  refine RingHom.ext fun q => ?_
+  simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.coe_evalRingHom,
+    Polynomial.eval_map, Polynomial.eval₂_at_apply]
+
+/-- **SCHMIDT §3, THE WHOLE CONTENT**, over an arbitrary field and with no
+hypothesis whatever on `F` beyond the two that are used: that `F_Y(x, η(x)) ≠ 0`
+(`hunit` — simplicity of the root) and that `η` is an approximate root to order
+`M` (`hη`).
+
+The proof is one induction. Put `t = X − ι x`, `Φ b = b(X, η(X))`,
+`e = Φ(F_Y)`, `u = Φ F`, and `c_ν = e^{2(M−ν)}·Φ(a^{(ν)})`. Then
+
+* `t^{M−1} ∣ u′`, because `t^M ∣ u`;
+* `e·(c_ν′ − c_{ν+1}) = u′ · (…)` — a pure polynomial identity in the values of
+  `Φ` on the six atoms occurring in `stepanovJet`'s recursion, obtained by
+  applying `stepanov_key_congr` at `b = F_Y` and at `b = a^{(ν)}`. Since `t` is
+  prime and `t ∤ e`, this gives `t^{M−1} ∣ c_ν′ − c_{ν+1}`;
+* hence, by induction, `t^{M−ν} ∣ (d/dX)^ν(e^{2M}·Φ a) − c_ν` for `ν ≤ M`.
+
+At `ν < M` the right-hand side vanishes at `ι x` because `hjet` kills
+`Φ(a^{(ν)})` there, so all `M` first Taylor coefficients of `e^{2M}·Φ a` vanish
+— `hfact` is what converts the ordinary iterated derivative into the Hasse
+derivative that `pow_X_sub_C_dvd_iff_hasseDeriv` wants — and `t ∤ e` strips the
+`e^{2M}`.
+
+`hfact` is `∀ j < M, j ! ≠ 0 in K`; at the call site it is `M < p`. -/
+theorem stepanov_jet_dvd_core {R : Type*} [CommRing R] {K : Type*} [Field K]
+    (ι : R →+* K) (M : ℕ) (hfact : ∀ j < M, ((Nat.factorial j : ℕ) : K) ≠ 0)
+    (F a : Polynomial (Polynomial R)) (x : R) (η : Polynomial K)
+    (hunit : (Polynomial.eval₂ (Polynomial.mapRingHom ι) η
+      (Polynomial.derivative F)).eval (ι x) ≠ 0)
+    (hη : (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η F)
+    (hjet : ∀ ℓ < M,
+      (Polynomial.eval₂ (Polynomial.mapRingHom ι) η (stepanovJet F M ℓ a)).eval (ι x) = 0) :
+    (Polynomial.X - Polynomial.C (ι x)) ^ M ∣
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η a := by
+  classical
+  rcases Nat.eq_zero_or_pos M with rfl | hM
+  · simp
+  have hΦeq : ∀ b : Polynomial (Polynomial R),
+      Polynomial.eval₂ (Polynomial.mapRingHom ι) η b
+        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b := fun _ => rfl
+  have hkey0 : ∀ b : Polynomial (Polynomial R),
+      Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative F)
+          * Polynomial.derivative
+              (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η b)
+        = Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η
+            (Polynomial.derivative F * stepanovDerivX b
+              - stepanovDerivX F * Polynomial.derivative b)
+          + Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η (Polynomial.derivative b)
+              * Polynomial.derivative
+                  (Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η F) := by
+    intro b
+    simpa only [hΦeq] using stepanov_key_congr ι η F b
+  simp only [hΦeq] at hunit hη hjet ⊢
+  set Φ : Polynomial (Polynomial R) →+* Polynomial K :=
+    Polynomial.eval₂RingHom (Polynomial.mapRingHom ι) η with hΦdef
+  set t : Polynomial K := Polynomial.X - Polynomial.C (ι x) with htdef
+  set e : Polynomial K := Φ (Polynomial.derivative F) with hedef
+  set u : Polynomial K := Φ F with hudef
+  have htprime : Prime t := Polynomial.prime_X_sub_C (ι x)
+  have hte : ¬ t ∣ e := by
+    intro h
+    rw [htdef] at h
+    exact hunit (Polynomial.dvd_iff_isRoot.mp h)
+  have hu' : t ^ (M - 1) ∣ Polynomial.derivative u := by
+    refine stepanov_pow_dvd_derivative t u (M - 1) ?_
+    rw [show M - 1 + 1 = M by omega]
+    exact hη
+  have hmain : ∀ ν, ν ≤ M →
+      t ^ (M - ν) ∣ (Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a)
+        - e ^ (2 * (M - ν)) * Φ (stepanovJet F M ν a) := by
+    intro ν
+    induction ν with
+    | zero => intro _; simp [stepanovJet]
+    | succ ν ih =>
+        intro hν
+        have hν' : ν ≤ M := by omega
+        obtain ⟨s', hs'⟩ : ∃ s', M - ν = s' + 1 := ⟨M - ν - 1, by omega⟩
+        have hs'' : M - (ν + 1) = s' := by omega
+        have h1 : t ^ s' ∣ Polynomial.derivative
+            ((Polynomial.derivative^[ν]) (e ^ (2 * M) * Φ a))
+              - Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a)) := by
+          have hih := ih hν'
+          rw [hs'] at hih
+          have h1' := stepanov_pow_dvd_derivative t _ s' hih
+          rwa [Polynomial.derivative_sub] at h1'
+        have h2 : t ^ s' ∣ Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+            - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a) := by
+          have hjrec : stepanovJet F M (ν + 1) a
+              = Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)) *
+                  (stepanovDerivX (Polynomial.derivative F) * Polynomial.derivative F -
+                    Polynomial.derivative (Polynomial.derivative F) * stepanovDerivX F) *
+                  stepanovJet F M ν a
+                + Polynomial.derivative F ^ 2 * stepanovDerivX (stepanovJet F M ν a)
+                - Polynomial.derivative F * stepanovDerivX F *
+                    Polynomial.derivative (stepanovJet F M ν a) := rfl
+          have hnat : (2 * M - 2 * ν : ℕ) = 2 * s' + 2 := by omega
+          have hcast : Φ (Polynomial.C (Polynomial.C ((2 * M - 2 * ν : ℕ) : R)))
+              = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
+            rw [hnat, hΦdef]
+            simp [map_ofNat]
+          have hderiv : Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+              = Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                  * Polynomial.derivative e * Φ (stepanovJet F M ν a)
+                + e ^ (2 * s' + 2) * Polynomial.derivative (Φ (stepanovJet F M ν a)) := by
+            rw [show 2 * (s' + 1) = 2 * s' + 1 + 1 from by ring, Polynomial.derivative_mul,
+              Polynomial.derivative_pow_succ]
+            have hCC : Polynomial.C (((2 * s' + 1 : ℕ) : K) + 1)
+                = Polynomial.C ((2 * s' + 2 : ℕ) : K) := by
+              congr 1
+              push_cast
+              ring
+            rw [hCC]
+          have hmul : e * (Polynomial.derivative (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a))
+              = Polynomial.derivative u *
+                  (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                      * Φ (Polynomial.derivative (Polynomial.derivative F))
+                      * Φ (stepanovJet F M ν a)
+                    + e ^ (2 * s' + 2)
+                      * Φ (Polynomial.derivative (stepanovJet F M ν a))) := by
+            rw [hderiv, hjrec]
+            simp only [map_add, map_sub, map_mul, map_pow, hcast]
+            have k1 := hkey0 (Polynomial.derivative F)
+            have k2 := hkey0 (stepanovJet F M ν a)
+            simp only [map_sub, map_mul, ← hedef] at k1 k2
+            linear_combination (Polynomial.C ((2 * s' + 2 : ℕ) : K) * e ^ (2 * s' + 1)
+                * Φ (stepanovJet F M ν a)) * k1 + (e ^ (2 * s' + 2)) * k2
+          have hdvdM : t ^ (M - 1) ∣ e * (Polynomial.derivative
+              (e ^ (2 * (s' + 1)) * Φ (stepanovJet F M ν a))
+                - e ^ (2 * s') * Φ (stepanovJet F M (ν + 1) a)) := by
+            rw [hmul]
+            exact Dvd.dvd.mul_right hu' _
+          have hcancel := htprime.pow_dvd_of_dvd_mul_left (M - 1) hte hdvdM
+          exact dvd_trans (pow_dvd_pow t (by omega)) hcancel
+        rw [Function.iterate_succ_apply', hs'']
+        have h3 := dvd_add h1 h2
+        convert h3 using 1
+        ring
+  have hvanish : ∀ j < M, ((Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
+    intro j hj
+    have h := hmain j (le_of_lt hj)
+    have hdvd1 : t ∣ (Polynomial.derivative^[j]) (e ^ (2 * M) * Φ a)
+        - e ^ (2 * (M - j)) * Φ (stepanovJet F M j a) :=
+      dvd_trans (by simpa using pow_dvd_pow t (show 1 ≤ M - j by omega)) h
+    rw [htdef] at hdvd1
+    have hroot := Polynomial.dvd_iff_isRoot.mp hdvd1
+    rw [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_pow,
+      hjet j hj, mul_zero, sub_zero] at hroot
+    exact hroot
+  have hfinal : t ^ M ∣ e ^ (2 * M) * Φ a := by
+    rw [htdef, pow_X_sub_C_dvd_iff_hasseDeriv]
+    intro j hj
+    have hcf := congrFun (Polynomial.factorial_smul_hasseDeriv (R := K) (k := j))
+      (e ^ (2 * M) * Φ a)
+    rw [LinearMap.smul_apply, nsmul_eq_mul] at hcf
+    have h1 : ((Nat.factorial j : ℕ) : K)
+        * (Polynomial.hasseDeriv j (e ^ (2 * M) * Φ a)).eval (ι x) = 0 := by
+      have h2 := congrArg (Polynomial.eval (ι x)) hcf
+      rw [Polynomial.eval_mul, Polynomial.eval_natCast, hvanish j hj] at h2
+      exact h2
+    exact (mul_eq_zero.mp h1).resolve_left (hfact j hj)
+  exact htprime.pow_dvd_of_dvd_mul_left M (fun h => hte (htprime.dvd_of_dvd_pow h)) hfinal
+
+/-- **THE JET/BRANCH BRIDGE** (PROVEN 2026-07-27 over `stepanov_jet_dvd_core`;
+cut 2026-07-27 out of `exists_stepanovAuxiliaryFunction`) — Schmidt Chapter III §3
+(3.1), read in the divisibility rendering this file uses.
 
 WHAT IT SAYS. If Schmidt's jets `a^{(ν)}(x, y)` all vanish for `ν < M` at the
 point `y = η(x)` of a fibre `F(x, ·)` that is SEPARABLE, and `η` is a polynomial
@@ -11373,16 +12651,32 @@ THE LEAN ROUTE.
 ordinary iterated derivative and the Hasse derivative differ by a unit; it is
 derived at the call site from `2(d−1)(M+8)² ≤ p`.
 
-MISSING AT THIS PIN: mathlib has `HenselianLocalRing`, `IsAdicComplete` for
-`PowerSeries` and `Polynomial.hasseDeriv`, but no "monic with separable reduction
-⟹ splits / lifts a simple root over a complete local ring" packaged as one
-lemma — the same gap `stepanov_pow_sub_dvd_resultant` records for its step 2, so
-whoever builds it should expect to serve both.
+**FOOTNOTE (2026-07-27): THE BRANCH IS NOT NEEDED, AND NEITHER IS HENSEL.** The
+route above — and the "MISSING AT THIS PIN" note that used to stand here, which
+said this leaf shared `stepanov_pow_sub_dvd_resultant`'s need for a "monic with
+separable reduction ⟹ splits over a complete local ring" lemma — is not what the
+proof does, and the shared gap was not real. `η` is a POLYNOMIAL, so
+`X ↦ a(X, η(X))` is a polynomial and its Taylor coefficients at `x` are the
+ordinary ones; the branch `η̃` never has to be produced. Steps 1 and 2 of the
+route (complete at `x`, Hensel-lift `y` to `η̃`, pin `η ≡ η̃`) are therefore
+skipped entirely, and `schmidt_splits_of_henselian` is not used here. What
+survives is step 3 in a cleared form: `stepanov_key_congr` multiplies the chain
+rule by `F_Y(X, η)` and turns Schmidt's rational derivation `D` into a
+polynomial one, at the cost of an explicit error term proportional to
+`(F(X, η))′` — which `hη` makes divisible by `(X − x)^{M−1}`. Separability
+enters ONLY through `F_Y(x, η(x)) ≠ 0`, i.e. through `X − x ∤ F_Y(X, η)`, which
+is what lets the `e^{2M}` bookkeeping factor be cancelled at the end.
+
+Two by-products worth recording, both visible in the signature: the argument
+uses neither `hmon`, nor `hdegY`, nor `hd` (hence the `_` prefixes — they are
+kept only so the call site's positional application still typechecks), and it is
+characteristic-free apart from `hMp`. `stepanov_jet_dvd_core` above states it in
+that generality, over an arbitrary field with `F_Y(x, η(x))` a unit.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem stepanov_pow_X_sub_C_dvd_of_jet_vanishing (d p M : ℕ) [Fact p.Prime]
-    (hd : 2 ≤ d) (hMp : M < p)
-    (F a : Polynomial (Polynomial (ZMod p))) (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (_hd : 2 ≤ d) (hMp : M < p)
+    (F a : Polynomial (Polynomial (ZMod p))) (_hmon : F.Monic) (_hdegY : F.natDegree = d)
     (x : ZMod p) (hsep : (F.map (Polynomial.evalRingHom x)).Separable)
     (η : Polynomial (AlgebraicClosure (ZMod p)))
     (hη : (Polynomial.X -
@@ -11395,8 +12689,49 @@ theorem stepanov_pow_X_sub_C_dvd_of_jet_vanishing (d p M : ℕ) [Fact p.Prime]
     (Polynomial.X -
         Polynomial.C (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) ^ M ∣
       Polynomial.eval₂ (Polynomial.mapRingHom
-        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η a :=
-  sorry
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η a := by
+  classical
+  rcases Nat.eq_zero_or_pos M with rfl | hM
+  · simp
+  have hp : Nat.Prime p := Fact.out
+  have hinj : Function.Injective (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) :=
+    (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective
+  have hchar : CharP (AlgebraicClosure (ZMod p)) p := charP_of_injective_algebraMap hinj p
+  have hfact : ∀ j < M, ((Nat.factorial j : ℕ) : AlgebraicClosure (ZMod p)) ≠ 0 := by
+    intro j hj hcon
+    rw [(CharP.cast_eq_zero_iff (AlgebraicClosure (ZMod p)) p _)] at hcon
+    exact absurd ((Nat.Prime.dvd_factorial hp).mp hcon) (by omega)
+  -- the reduced fibre `F(x, ·)` over `𝔽̄_p`, and simplicity of the root `η(x)`
+  set G : Polynomial (AlgebraicClosure (ZMod p)) :=
+    F.map (((algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))).comp
+      (Polynomial.evalRingHom x)) with hG
+  have hGsep : G.Separable := by
+    rw [hG, ← Polynomial.map_map]
+    exact hsep.map
+  have hGroot : G.eval (η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x)) = 0 := by
+    have h0 : (Polynomial.eval₂ (Polynomial.mapRingHom
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η F).eval
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x) = 0 := by
+      exact Polynomial.dvd_iff_isRoot.mp (dvd_trans (dvd_pow_self _ (show M ≠ 0 by omega)) hη)
+    rw [stepanovEvalPoint_eq_eval_eval₂, stepanovEvalPoint] at h0
+    exact h0
+  have hunit : (Polynomial.eval₂ (Polynomial.mapRingHom
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) η
+        (Polynomial.derivative F)).eval
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x) ≠ 0 := by
+    rw [stepanovEvalPoint_eq_eval_eval₂, stepanovEvalPoint, ← Polynomial.derivative_map, ← hG]
+    intro hcon
+    obtain ⟨v, w, hvw⟩ := hGsep
+    have hone := congrArg (Polynomial.eval
+      (η.eval (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) x))) hvw
+    simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one, hGroot, hcon,
+      mul_zero, add_zero] at hone
+    exact zero_ne_one hone
+  refine stepanov_jet_dvd_core (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) M hfact
+    F a x η hunit hη ?_
+  intro ℓ hℓ
+  rw [stepanovEvalPoint_eq_eval_eval₂]
+  exact hjet ℓ hℓ
 
 /-- **SCHMIDT LEMMA 4A, TOGETHER WITH THE REMARK AT THE END OF HIS §4** (PROVEN
 2026-07-27 over the three sub-leaves above; cut 2026-07-27 out of
@@ -13961,9 +15296,465 @@ theorem irreducible_of_irreducible_map {N p : ℕ} [Fact p.Prime]
     · exact Or.inl (key a hu)
     · exact Or.inr (key b hu)
 
-/-- **THE INTEGRAL HYPERSURFACE CERTIFICATE** (SORRY LEAF, cut 2026-07-27 out of
-`exists_spreadOutHypersurfaceModel`) — Schmidt Chapter VI, Theorem 4D together
+/-! #### The integral hypersurface certificate: the two-way cut
+
+`exists_integralHypersurfaceCertificate` below was a bare `sorry` until
+2026-07-27. It is now PROVEN over exactly TWO leaves, split along the line that
+separates characteristic-zero birational geometry from arithmetic spreading out:
+
+* `exists_rationalHypersurfaceCertificate` — Schmidt Chapter VI Theorem 4D and
+  the `ℤ`-descent, with NO PRIME IN ITS STATEMENT;
+* `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` — the DEGENERATE
+  half of EGA IV 9.7.7: a generic fibre that is *not* geometrically irreducible
+  has no geometrically irreducible fibre mod `p` for large `p`.
+
+Everything else the parent needs is proven in this block:
+`exists_bound_totalDegree_map_intCastRingHom_zmod` (total degree survives
+reduction),
+`map_algebraMap_map_intCastRingHom_zmod` (reduce-then-close = close),
+`exists_divisibilityCertificates` and `exists_bound_not_dvd_map_algClosureZMod`
+(non-divisibility spreads out — the same coefficient-space technique as
+`exists_reducibilityCertificates` above, with the second factor FIXED, which is
+why no normalisation and no extra unknown are needed here), and
+`exists_bound_not_isPrime_radical_of_eq_top` (the EMPTY branch of the degenerate
+case, which needs no constructibility at all: it is the Nullstellensatz plus the
+already-proven `exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`).
+Absolute irreducibility mod `p` is `exists_inverted_irreducible_map_algClosureZMod`
+(Noether–Ostrowski), PROVEN above. -/
+
+/-- **The total degree of an integral polynomial survives reduction modulo all but
+finitely many primes** (PROVEN). A monomial realising the total degree has a
+nonzero integer coefficient, and any prime exceeding its absolute value keeps
+that coefficient nonzero; the reverse inequality is `totalDegree_map_le'`. -/
+theorem exists_bound_totalDegree_map_intCastRingHom_zmod {N : ℕ}
+    (S₀ : MvPolynomial (Fin N) ℤ) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀).totalDegree = S₀.totalDegree := by
+  classical
+  by_cases h0 : S₀ = 0
+  · exact ⟨0, fun p _ _ => by simp [h0]⟩
+  have hsupp : S₀.support.Nonempty := MvPolynomial.support_nonempty.mpr h0
+  obtain ⟨m₀, hm₀, hm₀eq⟩ :=
+    Finset.exists_mem_eq_sup S₀.support hsupp (fun s => s.sum fun _ e => e)
+  have htot : S₀.totalDegree = m₀.sum fun _ e => e := hm₀eq
+  refine ⟨(S₀.coeff m₀).natAbs, fun p _ hp => ?_⟩
+  have hc : S₀.coeff m₀ ≠ 0 := MvPolynomial.mem_support_iff.mp hm₀
+  have hpc : (Int.castRingHom (ZMod p)) (S₀.coeff m₀) ≠ 0 := by
+    simp only [eq_intCast, Ne, ZMod.intCast_zmod_eq_zero_iff_dvd]
+    intro hdvd
+    have h1 : p ∣ (S₀.coeff m₀).natAbs := by
+      simpa using Int.natAbs_dvd_natAbs.mpr hdvd
+    exact absurd (Nat.le_of_dvd (Int.natAbs_pos.mpr hc) h1) (not_le.mpr hp)
+  have hmem : m₀ ∈ (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀).support := by
+    rw [MvPolynomial.mem_support_iff, MvPolynomial.coeff_map]
+    exact hpc
+  refine le_antisymm (totalDegree_map_le' _ _) ?_
+  rw [htot]
+  exact MvPolynomial.le_totalDegree hmem
+
+/-- **Reducing to `ZMod p` and then extending to the algebraic closure is reducing
+to the algebraic closure** (PROVEN), because a ring map out of `ℤ` is unique. -/
+theorem map_algebraMap_map_intCastRingHom_zmod {N p : ℕ} [Fact p.Prime]
+    (S₀ : MvPolynomial (Fin N) ℤ) :
+    MvPolynomial.map (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+        (MvPolynomial.map (Int.castRingHom (ZMod p)) S₀)
+      = MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) S₀ := by
+  rw [MvPolynomial.map_map,
+    RingHom.ext_int ((algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).comp
+      (Int.castRingHom (ZMod p))) (Int.castRingHom (AlgebraicClosure (ZMod p)))]
+
+/-- **Divisibility of one integral polynomial by another, over a field, is cut out
+by ONE system of integral polynomial equations, uniformly in the field** (PROVEN).
+
+This is the fixed-second-factor analogue of `exists_reducibilityCertificates`
+above, and it is strictly simpler: because the divisor `S` is FIXED rather than
+an unknown, there is no scaling freedom to normalise and no nonconstancy to turn
+into an equation, so the certificate family is a single system rather than one
+indexed by a pair of exponent vectors.
+
+If `S * q = g` over a field with `g ≠ 0`, then `q ≠ 0` and
+`MvPolynomial.totalDegree_mul_of_isDomain` bounds `q.totalDegree` by
+`g.totalDegree`, hence bounds every coordinatewise degree of `q`; so `q` is
+`coeffPoly N D` of a coefficient vector indexed by the finite set
+`Fin N → Fin (D+1)`. Multiplying out `S` with the generic `q` and comparing
+coefficients with `g` gives the system. -/
+theorem exists_divisibilityCertificates {N : ℕ} (S g : MvPolynomial (Fin N) ℤ) :
+    ∃ (V ι : Type) (_ : Fintype V) (_ : Fintype ι) (r : ι → MvPolynomial V ℤ),
+      ∀ (K : Type) [Field K],
+        MvPolynomial.map (Int.castRingHom K) g ≠ 0 →
+        (MvPolynomial.map (Int.castRingHom K) S ∣ MvPolynomial.map (Int.castRingHom K) g ↔
+          ∃ x : V → K, ∀ i : ι,
+            MvPolynomial.eval₂ (Int.castRingHom K) x (r i) = 0) := by
+  classical
+  set D := g.totalDegree with hD
+  set Quniv : MvPolynomial (Fin N) (MvPolynomial (Fin N → Fin (D + 1)) ℤ) :=
+    coeffPoly N D (fun e => MvPolynomial.X e) with hQuniv
+  set U : MvPolynomial (Fin N) (MvPolynomial (Fin N → Fin (D + 1)) ℤ) :=
+    MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin N → Fin (D + 1)) ℤ)) S * Quniv
+      - MvPolynomial.map (Int.castRingHom (MvPolynomial (Fin N → Fin (D + 1)) ℤ)) g with hU
+  refine ⟨Fin N → Fin (D + 1), {m : Fin N →₀ ℕ // m ∈ U.support}, inferInstance, inferInstance,
+    fun m => U.coeff m.1, ?_⟩
+  intro K _ hgK0
+  -- THE BRIDGE: the coefficient relations say exactly that `S` times the generic
+  -- quotient multiplies out to `g`.
+  have hbridge : ∀ x : (Fin N → Fin (D + 1)) → K,
+      (∀ m ∈ U.support, MvPolynomial.eval₂ (Int.castRingHom K) x (U.coeff m) = 0) ↔
+        MvPolynomial.map (Int.castRingHom K) S * coeffPoly N D x
+          = MvPolynomial.map (Int.castRingHom K) g := by
+    intro x
+    have hcomp : (MvPolynomial.eval₂Hom (Int.castRingHom K) x).comp
+        (Int.castRingHom (MvPolynomial (Fin N → Fin (D + 1)) ℤ)) = Int.castRingHom K :=
+      Subsingleton.elim _ _
+    have hmapU : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U =
+        MvPolynomial.map (Int.castRingHom K) S * coeffPoly N D x
+          - MvPolynomial.map (Int.castRingHom K) g := by
+      rw [hU, _root_.map_sub, _root_.map_mul, hQuniv, map_coeffPoly,
+        MvPolynomial.map_map, MvPolynomial.map_map, hcomp]
+      simp
+    constructor
+    · intro hzero
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        ext m
+        rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero]
+        by_cases hm : m ∈ U.support
+        · simpa using hzero m hm
+        · rw [MvPolynomial.notMem_support_iff.mp hm, _root_.map_zero]
+      rw [hmapU] at hz
+      exact sub_eq_zero.mp hz
+    · intro hprod m hm
+      have hz : MvPolynomial.map (MvPolynomial.eval₂Hom (Int.castRingHom K) x) U = 0 := by
+        rw [hmapU, hprod, sub_self]
+      have hzz := congrArg (MvPolynomial.coeff m) hz
+      rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero] at hzz
+      simpa using hzz
+  constructor
+  · rintro ⟨q, hq⟩
+    have hq0 : q ≠ 0 := by
+      rintro rfl; rw [mul_zero] at hq; exact hgK0 hq
+    have hS0 : MvPolynomial.map (Int.castRingHom K) S ≠ 0 := by
+      intro h; rw [h, zero_mul] at hq; exact hgK0 hq
+    have hsum : (MvPolynomial.map (Int.castRingHom K) S).totalDegree + q.totalDegree
+        = (MvPolynomial.map (Int.castRingHom K) g).totalDegree := by
+      rw [hq, MvPolynomial.totalDegree_mul_of_isDomain hS0 hq0]
+    have hle : (MvPolynomial.map (Int.castRingHom K) g).totalDegree ≤ D := by
+      rw [hD]; exact totalDegree_map_le' _ _
+    have hdeg : q.totalDegree ≤ D := by omega
+    refine ⟨fun e => q.coeff (boundedExpo N D e), ?_⟩
+    rintro ⟨m, hm⟩
+    refine (hbridge _).mpr ?_ m hm
+    rw [coeffPoly_coeff_self N D
+      (fun i => le_trans (MvPolynomial.degreeOf_le_totalDegree q i) hdeg)]
+    exact hq.symm
+  · rintro ⟨x, hx⟩
+    exact ⟨coeffPoly N D x, ((hbridge x).mp (fun m hm => hx ⟨m, hm⟩)).symm⟩
+
+/-- **NON-DIVISIBILITY SPREADS OUT** (PROVEN). If `S₀ ∤ g₀` over `ℚ̄` then
+`S₀ ∤ g₀` over `𝔽̄_p` for all but finitely many `p`.
+
+The proof is the Noether–Ostrowski pattern of this file, with the *reducibility*
+system replaced by the *divisibility* system of `exists_divisibilityCertificates`:
+that system has no `ℚ̄`-solution, so by the already-proven
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` it has no `𝔽̄_p`-solution
+for `p` outside one integer. One extra exclusion is needed, because the
+certificate is only equivalent to divisibility when the dividend is nonzero:
+`g₀` is nonzero (everything divides `0`, so `hdvd` forces it), and a prime
+exceeding the absolute value of one of its nonzero coefficients keeps it
+nonzero mod `p`. -/
+theorem exists_bound_not_dvd_map_algClosureZMod {N : ℕ} (S₀ g₀ : MvPolynomial (Fin N) ℤ)
+    (hdvd : ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+        MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) S₀ ∣
+          MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g₀ := by
+  classical
+  obtain ⟨V, ι, _, _, r, hr⟩ := exists_divisibilityCertificates S₀ g₀
+  have hgQ0 : MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ ≠ 0 := by
+    intro h0; exact hdvd (by rw [h0]; exact dvd_zero _)
+  have hg0 : g₀ ≠ 0 := by rintro rfl; exact hgQ0 (by simp)
+  obtain ⟨m₁, hm₁⟩ := MvPolynomial.support_nonempty.mpr hg0
+  have hc : g₀.coeff m₁ ≠ 0 := MvPolynomial.mem_support_iff.mp hm₁
+  have hnoQ : ∀ x : V → AlgebraicClosure ℚ, ∃ i,
+      MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (r i) ≠ 0 := by
+    intro x
+    by_contra hcon
+    push Not at hcon
+    exact hdvd ((hr (AlgebraicClosure ℚ) hgQ0).mpr ⟨x, hcon⟩)
+  obtain ⟨N₀, hN₀pos, hall⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero r hnoQ
+  refine ⟨max N₀ (g₀.coeff m₁).natAbs, fun p _ hp => ?_⟩
+  have hp1 : N₀ < p := lt_of_le_of_lt (le_max_left _ _) hp
+  have hp2 : (g₀.coeff m₁).natAbs < p := lt_of_le_of_lt (le_max_right _ _) hp
+  have hpN : ¬ (p ∣ N₀) := fun hd => absurd (Nat.le_of_dvd hN₀pos hd) (not_le.mpr hp1)
+  haveI : CharP (AlgebraicClosure (ZMod p)) p :=
+    charP_of_injective_algebraMap
+      (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))).injective p
+  have hgp0 : MvPolynomial.map (Int.castRingHom (AlgebraicClosure (ZMod p))) g₀ ≠ 0 := by
+    intro h0
+    have hz := congrArg (MvPolynomial.coeff m₁) h0
+    rw [MvPolynomial.coeff_map, MvPolynomial.coeff_zero, eq_intCast,
+      CharP.intCast_eq_zero_iff (AlgebraicClosure (ZMod p)) p] at hz
+    have h1 : p ∣ (g₀.coeff m₁).natAbs := by simpa using Int.natAbs_dvd_natAbs.mpr hz
+    exact absurd (Nat.le_of_dvd (Int.natAbs_pos.mpr hc) h1) (not_le.mpr hp2)
+  intro hcon
+  obtain ⟨x, hx⟩ := (hr (AlgebraicClosure (ZMod p)) hgp0).mp hcon
+  obtain ⟨i, hi⟩ := hall p hpN x
+  exact hi (hx i)
+
+/-- **An integral system whose base change to `ℚ̄` is the unit ideal has no
+`ℚ̄`-solution** (PROVEN): the evaluation at a solution would kill the whole
+ideal, hence would send `1` to `0`. -/
+theorem forall_exists_eval_ne_zero_of_integralSystemIdeal_eq_top {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (htop : integralSystemIdeal f (AlgebraicClosure ℚ) = ⊤) :
+    ∀ x : Fin n → AlgebraicClosure ℚ, ∃ i,
+      MvPolynomial.eval₂ (Int.castRingHom (AlgebraicClosure ℚ)) x (f i) ≠ 0 := by
+  intro x
+  by_contra hcon
+  push Not at hcon
+  have hle : integralSystemIdeal f (AlgebraicClosure ℚ) ≤
+      RingHom.ker (MvPolynomial.eval x : MvPolynomial (Fin n) (AlgebraicClosure ℚ) →+* _) := by
+    rw [integralSystemIdeal, Ideal.span_le]
+    rintro y ⟨i, rfl⟩
+    simp only [SetLike.mem_coe, RingHom.mem_ker, MvPolynomial.eval_map]
+    exact hcon i
+  have h1 : (1 : MvPolynomial (Fin n) (AlgebraicClosure ℚ)) ∈
+      integralSystemIdeal f (AlgebraicClosure ℚ) := by rw [htop]; trivial
+  have hker := hle h1
+  rw [RingHom.mem_ker, map_one] at hker
+  exact one_ne_zero hker
+
+/-- **THE EMPTY BRANCH OF THE DEGENERATE CASE** (PROVEN, and it needs NO
+constructibility argument). If the system has no `ℚ̄`-point at all then it has no
+`𝔽̄_p`-point for large `p` — that is the already-proven
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero` — so by the
+Nullstellensatz its mod-`p` ideal has radical `⊤`, which is not prime.
+
+This is the half of `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`
+that can be discharged with the tools in this file, and peeling it off is what
+lets that leaf carry the hypothesis `integralSystemIdeal f ℚ̄ ≠ ⊤`. -/
+theorem exists_bound_not_isPrime_radical_of_eq_top {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (htop : integralSystemIdeal f (AlgebraicClosure ℚ) = ⊤) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime := by
+  obtain ⟨N₀, hN₀pos, hall⟩ := exists_pos_forall_prime_not_dvd_exists_eval_ne_zero f
+    (forall_exists_eval_ne_zero_of_integralSystemIdeal_eq_top f htop)
+  refine ⟨N₀, fun p _ hp => ?_⟩
+  have hpN : ¬ (p ∣ N₀) := fun h => absurd (Nat.le_of_dvd hN₀pos h) (not_le.mpr hp)
+  have hno := hall p hpN
+  have hzl : MvPolynomial.zeroLocus (AlgebraicClosure (ZMod p))
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))) = ∅ := by
+    ext x
+    simp only [integralSystemIdeal, MvPolynomial.zeroLocus_span, Set.mem_setOf_eq,
+      Set.mem_empty_iff_false, iff_false]
+    intro hx
+    obtain ⟨i, hi⟩ := hno x
+    refine hi ?_
+    have hgen := hx _ ⟨i, rfl⟩
+    rwa [MvPolynomial.aeval_def, MvPolynomial.eval₂_map,
+      RingHom.ext_int ((algebraMap (AlgebraicClosure (ZMod p)) (AlgebraicClosure (ZMod p))).comp
+        (Int.castRingHom (AlgebraicClosure (ZMod p))))
+        (Int.castRingHom (AlgebraicClosure (ZMod p)))] at hgen
+  have hrad := MvPolynomial.vanishingIdeal_zeroLocus_eq_radical
+    (k := AlgebraicClosure (ZMod p)) (K := AlgebraicClosure (ZMod p))
+    (integralSystemIdeal f (AlgebraicClosure (ZMod p)))
+  rw [hzl, MvPolynomial.vanishingIdeal_empty] at hrad
+  intro hpr
+  exact hpr.ne_top hrad.symm
+
+/-- **LEAF (A): THE DEGENERATE HALF OF EGA IV 9.7.7 OVER `Spec ℤ`** (SORRY LEAF,
+cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
+
+WHAT IT SAYS. If the geometric generic fibre of an integral system is NONEMPTY
+but NOT irreducible, then for all but finitely many `p` the geometric fibre mod
+`p` is not irreducible either.
+
+WHY IT IS TRUE. Geometric irreducibility of the fibres of a finitely presented
+morphism is a CONSTRUCTIBLE condition on the base (EGA IV 9.7.7; Poonen,
+*Rational Points on Varieties*, §3.2). Here the base is `Spec ℤ`, and the
+hypothesis says the constructible set of primes with irreducible geometric fibre
+does NOT contain the generic point. A constructible subset of `Spec ℤ` missing
+`(0)` is FINITE — the constructible subsets of `Spec ℤ` are exactly the finite
+and the cofinite ones — so it is contained in `V(N)` for one integer `N`, and
+any `D ≥ N` works.
+
+THIS IS THE MIRROR IMAGE OF
+`exists_bound_forall_irreducibleFibre_of_irreducibleGeometricGenericFibre`
+ABOVE, which is the same constructibility statement read at the generic point
+from the other side, and is PROVEN over its own three leaves. The two are NOT
+interderivable: that one says the good locus contains a nonempty open, this one
+says the good locus is finite. A prover should read that leaf's chain first —
+`exists_inverted_irreducibleSpace_integralSystemModel` and
+`exists_absIrreducibleCertificate_irreducibleSpace_integralSystemModel` — since
+the same spreading-out apparatus is what this leaf needs, run the other way.
+
+WHY THE `⊤` CASE IS NOT PART OF THIS LEAF. The empty fibre is the one branch of
+non-primality that needs no constructibility at all, and it is discharged by
+`exists_bound_not_isPrime_radical_of_eq_top` immediately above, over the proven
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`. So `hne` costs the leaf
+nothing and removes a case that is already done.
+
+WHY THE OBVIOUS CERTIFICATE ROUTE DOES NOT WORK HERE, recorded so the next owner
+does not spend a cycle on it. The technique that proves
+`exists_bound_not_dvd_map_algClosureZMod` and
+`exists_inverted_irreducible_map_algClosureZMod` above — rewrite the condition as
+SOLVABILITY of a system of integral equations, then spread out non-solvability —
+does not apply. Non-primality of the radical is
+`∃ a b, a * b ∈ I.radical ∧ a ∉ I.radical ∧ b ∉ I.radical`, and membership in the
+RADICAL carries an unbounded exponent `k` with `a ^ k ∈ I`; there is no degree
+bound on `k`, so the condition is not cut out by a fixed finite system. That is
+exactly the "unbounded degrees" objection recorded against route 2 of the parent
+chain above, and it is why the ordinary constructibility machinery (generic
+flatness / Chevalley via `PrimeSpectrum.isConstructible_comap_image`,
+`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`, PRESENT in the pin) is
+genuinely needed here rather than avoidable.
+
+FAITHFULNESS. Not vacuous: `hne` makes the geometric generic fibre nonempty and
+`hQ` makes it reducible, and both are satisfiable (take `f = (x * y)` in two
+variables). The conclusion is a genuine constraint — it is exactly what makes
+the degenerate branch of the parent honest, and without it the parent would have
+to claim `Irreducible 1`, which is false.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ`, `ℚ̄` and
+`𝔽̄_p` only, no Galois representation, no modular form, nothing from
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_bound_not_isPrime_radical_integralSystemIdeal_zmod {n m : ℕ}
+    (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hne : integralSystemIdeal f (AlgebraicClosure ℚ) ≠ ⊤)
+    (hQ : ¬ (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime :=
+  sorry
+
+/-- **LEAF (B): SCHMIDT'S THEOREM 4D OVER `ℚ`, DESCENDED TO `ℤ`** (SORRY LEAF,
+cut 2026-07-27 out of `exists_integralHypersurfaceCertificate` below).
+
+**NO PRIME APPEARS IN THIS STATEMENT.** That is the point of the cut: this is
+characteristic-zero birational geometry plus one denominator-clearing step, and
+everything arithmetic — reduction mod `p`, absolute irreducibility mod `p`,
+non-divisibility mod `p` — is proven separately above and glued by the consumer.
+
+WHAT IT SAYS. For an integral system whose geometric generic fibre is irreducible
+there is a hypersurface `S₀ ⊆ 𝔸^{e+1}_ℤ`, absolutely irreducible over `ℚ̄`, an
+auxiliary `g₀` not divisible by it, and POLYNOMIAL data `P`, `R`, `w` over `ℤ`
+satisfying the three identities in the localised ideal
+`J = (S₀, g₀ · T − 1) ⊆ ℤ[X₀ … X_e, T]`, which presents the coordinate ring of
+`V(S₀) ∖ V(g₀)`. The identities say: `φ = P ∘ Fin.castSucc` lands in `V(f)`; the
+last coordinate of `P` is pinned to `1 / w(φ(x))`; and `ψ ∘ φ = id`, i.e. `φ` is
+INJECTIVE on that open set. That is Schmidt's §7 eq. (7.3) in the single
+direction the consumer needs, the injection `S ∖ M ↪ V`.
+
+WHY IT IS TRUE — SCHMIDT, LNM 536.
+
+*Chapter VI, Theorem 4D (p. 248).* "Suppose `V` is a variety defined over a
+perfect ground field `k`. Then `V` is birationally equivalent to a hypersurface."
+The proof is an induction on `n − d` using the theorem of the primitive element:
+pick a transcendence base `x₁ … x_e`; perfectness of `k` makes the extension
+separably generated, so a primitive element replaces two coordinates by one and
+drops the ambient dimension. Since `k(x) = k(y)`, Theorem 4B makes the two
+varieties birationally equivalent OVER `k` — this is what makes the maps
+`ℚ`-rational, and hence integral after clearing denominators.
+
+*Chapter VI §6, Remark (1) (pp. 259–260).* The hypersurface produced is again an
+ABSOLUTE variety when `V` is, because `k(x) = k(y)` and `k` is algebraically
+closed in that common field. That is where `hirr` comes from; in this pin the
+same fact is the char-0 criterion "geometrically integral ⟺ `ℚ` algebraically
+closed in the function field", and Gauss's lemma on the PRIMITIVE `S₀` moves
+absolute irreducibility from `ℚ̄(t)[y]` back to `ℚ̄[t, y]`.
+
+*Chapter VI §7, eq. (7.3) (p. 262).* Theorem 4A gives proper closed `L ⊆ V`,
+`M ⊆ S` with `V ∖ L ≅ S ∖ M`; only the injection is recorded here.
+
+WHY THE THREE IDENTITIES ARE IDEAL MEMBERSHIPS AND NOT MERE VANISHING. With `S₀`
+absolutely irreducible and `S₀ ∤ g₀`, the ideal `J` is PRIME in `ℚ[X, T]` —
+`ℚ[X, T] ⧸ J` is the localisation `(ℚ[X] ⧸ (S₀))[1/g₀]` of a domain, and it is
+nonzero exactly because `g₀ ∉ (S₀)`. So a regular function vanishing identically
+on the open set lies in `J` by the Nullstellensatz, with no radical to take.
+
+WHY THE `ℤ`-DESCENT IS LEGITIMATE (the one step where clearing denominators is
+not automatic). Over `ℚ` the identities hold with `A, B ∈ ℚ[X, T]`, so
+`N · q ∈ J_ℤ` for some nonzero integer `N`. Choose `S₀` PRIMITIVE; by Gauss it is
+then irreducible in `ℤ[X]`, so `ℤ[X] ⧸ (S₀)` is a domain of characteristic `0`,
+hence `ℤ`-torsion-free, and so is its localisation at `g₀`. Therefore
+`N · q ∈ J_ℤ` with `N ≠ 0` already forces `q ∈ J_ℤ`.
+
+`g₀` IS THE PROVER'S TO ENLARGE, AND IT MUST BE. Three separate denominators have
+to be inverted: those of the components of `φ`, that of `w ∘ φ` (so that the
+`U`-slot really is `1 / w(φ(x))`, which is what makes assertion 3 give
+INJECTIVITY rather than merely a left inverse on a smaller set), and that of `ψ`.
+Enlarging `g₀` shrinks the open set but keeps it dense, since `V(S₀)` is
+irreducible and none of those denominators vanishes identically on it.
+
+`e` IS NOT FREE: it is `dim V` over `ℚ̄`, so `e ≤ n`. Inflating it makes the
+CONSUMER's chain false rather than easier, since item 4 downstream forces
+`N(S) ≥ p^e / c` while `N(f) ≤ p^n`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ℤ` and `ℚ̄` only,
+no prime `p`, no Galois representation, no modular form, nothing from
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_rationalHypersurfaceCertificate {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime) :
+    ∃ (e : ℕ) (S₀ g₀ : MvPolynomial (Fin (e + 1)) ℤ)
+      (P : Fin (n + 1) → MvPolynomial (Fin (e + 2)) ℤ)
+      (R : Fin (e + 1) → MvPolynomial (Fin (n + 1)) ℤ)
+      (w : MvPolynomial (Fin n) ℤ),
+      Irreducible (MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀) ∧
+      ¬ MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) S₀ ∣
+          MvPolynomial.map (Int.castRingHom (AlgebraicClosure ℚ)) g₀ ∧
+      (∀ i : Fin m, ∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) (f i)
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∀ l : Fin (e + 1), ∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C P (R l)
+              - MvPolynomial.X l.castSucc
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) ∧
+      (∃ A B : MvPolynomial (Fin (e + 2)) ℤ,
+          MvPolynomial.eval₂ MvPolynomial.C (fun j => P j.castSucc) w
+              * P (Fin.last n) - 1
+            = A * MvPolynomial.rename Fin.castSucc S₀
+              + B * (MvPolynomial.rename Fin.castSucc g₀
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
+  sorry
+
+/-- **THE INTEGRAL HYPERSURFACE CERTIFICATE** (**PROVEN 2026-07-27** over the two
+leaves immediately above — `exists_rationalHypersurfaceCertificate`, which is
+Theorem 4D and the `ℤ`-descent with no prime in its statement, and
+`exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`, the degenerate half
+of EGA IV 9.7.7 — together with four PROVEN lemmas in this block and
+`exists_inverted_irreducible_map_algClosureZMod` (Noether–Ostrowski) far above.
+It was a bare `sorry`, cut 2026-07-27 out of `exists_spreadOutHypersurfaceModel`)
+— Schmidt Chapter VI, Theorem 4D together
 with the spreading out, packaged as a FINITE ALGEBRAIC CERTIFICATE over `ℤ`.
+
+WHAT THE ASSEMBLY BELOW DISCHARGES, so nobody redoes it. The proof is a classical
+case split on whether the geometric generic fibre is irreducible.
+
+* HONEST BRANCH (`(integralSystemIdeal f ℚ̄).radical.IsPrime`). Theorem 4D over
+  `ℚ`, descended, supplies `S₀, g₀, P, R, w` and the three identities VERBATIM —
+  they contain no prime and are handed straight through. Assertion 1 is then
+  three separate spreading-out facts, each proven: the total degree survives
+  (`exists_bound_totalDegree_map_intCastRingHom_zmod`, so `d := S₀.totalDegree`),
+  absolute irreducibility survives (Noether–Ostrowski), and non-divisibility
+  survives (`exists_bound_not_dvd_map_algClosureZMod`). The degree bound on `g₀`
+  is FREE with `c := g₀.totalDegree`, because reduction can only lower the total
+  degree (`totalDegree_map_le'`). The bound `D` is the max of the three.
+* DEGENERATE BRANCH. `S₀ = g₀ = 1` makes `J` the unit ideal, so assertions 2–4
+  hold with `A` the left-hand side and `B = 0` — that is why they are stated
+  unconditionally. Assertion 1 is then discharged by showing its HYPOTHESIS
+  fails for `p > D`, which is where the two degenerate leaves come in: the empty
+  case is PROVEN (`exists_bound_not_isPrime_radical_of_eq_top`) and only the
+  nonempty-reducible case is left open.
+
+THE DEGENERATE BRANCH IS NOT A CHEAT, and it is worth seeing why the statement
+cannot be gamed. Assertions 2–4 with an ABSOLUTELY IRREDUCIBLE `S₀` would force
+`V(f)(𝔽̄_p)` to be nonempty for every large `p` (the open set
+`V(S₀) ∖ V(g₀)` is nonempty and injects into it), whereas a system with no
+`ℚ̄`-point has no `𝔽̄_p`-point for large `p`. So `S₀ = 1` is forced there, and
+`Irreducible 1` is false — meaning assertion 1 can only be met by refuting its
+hypothesis, which is exactly the honest content of the degenerate leaves.
 
 This is the whole geometric content of item 5. It is stated with no geometry in
 it at all: the data are polynomials over `ℤ`, and the assertions are polynomial
@@ -14056,9 +15847,18 @@ empty, `1 ∈ I·ℤ[x][1/N]` for some `N`, so the ideal over `𝔽̄_p` is the 
 and its radical is not prime; if reducible, the components spread out). Assertions
 2–4 are unconditional, so they must still be witnessed — and they are, trivially,
 by `S₀ = 1`: then `J` is the unit ideal and every identity holds with `A` the
-left-hand side and `B = 0`. Assertion 1 is then vacuous because `Irreducible 1` is
-false, which is exactly the branch just described. So the degenerate case is
-discharged by the statement itself and costs the prover nothing.
+left-hand side and `B = 0`.
+
+**CORRECTION (2026-07-27), because the original wording here misled the cut.** It
+said assertion 1 is "then vacuous because `Irreducible 1` is false" and that the
+degenerate case "costs the prover nothing". `Irreducible 1` being false does NOT
+make assertion 1 vacuous — it makes assertion 1 FALSE unless its HYPOTHESIS is
+refuted, so the degenerate branch owes a proof that no `p > D` has an irreducible
+geometric fibre. That is a real obligation and it is where the two degenerate
+leaves come from: the EMPTY case is now PROVEN
+(`exists_bound_not_isPrime_radical_of_eq_top`, over
+`exists_pos_forall_prime_not_dvd_exists_eval_ne_zero`), and the NONEMPTY-reducible
+case is the open leaf `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod`.
 
 In the honest branch nothing can be gamed either: `d = 0` is impossible because a
 constant is never irreducible; inflating `c` is capped by
@@ -14100,8 +15900,52 @@ theorem exists_integralHypersurfaceCertificate {n m : ℕ}
               * P (Fin.last n) - 1
             = A * MvPolynomial.rename Fin.castSucc S₀
               + B * (MvPolynomial.rename Fin.castSucc g₀
-                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) :=
-  sorry
+                  * MvPolynomial.X (Fin.last (e + 1)) - 1)) := by
+  classical
+  by_cases hgen : (integralSystemIdeal f (AlgebraicClosure ℚ)).radical.IsPrime
+  · -- HONEST BRANCH: the geometric generic fibre is irreducible, so Theorem 4D
+    -- applies over `ℚ` and the three identities are handed straight through.
+    obtain ⟨e, S₀, g₀, P, R, w, hirr, hdvd, hsys, hinv, hden⟩ :=
+      exists_rationalHypersurfaceCertificate f hgen
+    obtain ⟨D₁, hD₁⟩ := exists_bound_totalDegree_map_intCastRingHom_zmod S₀
+    obtain ⟨N₂, hN₂pos, hN₂⟩ := exists_inverted_irreducible_map_algClosureZMod S₀ hirr
+    obtain ⟨D₃, hD₃⟩ := exists_bound_not_dvd_map_algClosureZMod S₀ g₀ hdvd
+    refine ⟨max (max D₁ N₂) D₃, e, S₀.totalDegree, g₀.totalDegree, S₀, g₀, P, R, w,
+      ?_, hsys, hinv, hden⟩
+    intro p _ hp _
+    have hp1 : D₁ < p := lt_of_le_of_lt (le_trans (le_max_left _ _) (le_max_left _ _)) hp
+    have hp2 : N₂ < p := lt_of_le_of_lt (le_trans (le_max_right _ _) (le_max_left _ _)) hp
+    have hp3 : D₃ < p := lt_of_le_of_lt (le_max_right _ _) hp
+    have hpN₂ : ¬ (p ∣ N₂) := fun h => absurd (Nat.le_of_dvd hN₂pos h) (not_le.mpr hp2)
+    -- The degree bound on `g₀` is free: reduction can only lower the total degree.
+    refine ⟨hD₁ p hp1, ?_, totalDegree_map_le' _ _, ?_⟩
+    · rw [map_algebraMap_map_intCastRingHom_zmod S₀]
+      exact hN₂ p hpN₂
+    · intro hcon
+      refine hD₃ p hp3 ?_
+      have hmap := map_dvd (MvPolynomial.map
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))) hcon
+      rwa [map_algebraMap_map_intCastRingHom_zmod S₀,
+        map_algebraMap_map_intCastRingHom_zmod g₀] at hmap
+  · -- DEGENERATE BRANCH: `S₀ = g₀ = 1` makes `J` the unit ideal, so the three
+    -- identities are trivial; assertion 1 is met by refuting its hypothesis.
+    have hD : ∃ D : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+        ¬ (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime := by
+      by_cases htop : integralSystemIdeal f (AlgebraicClosure ℚ) = ⊤
+      · exact exists_bound_not_isPrime_radical_of_eq_top f htop
+      · exact exists_bound_not_isPrime_radical_integralSystemIdeal_zmod f htop hgen
+    obtain ⟨D, hDp⟩ := hD
+    refine ⟨D, 0, 0, 0, 1, 1, fun _ => 0, fun _ => 0, 0, ?_, ?_, ?_, ?_⟩
+    · intro p _ hp hprime
+      exact absurd hprime (hDp p hp)
+    · intro i
+      exact ⟨MvPolynomial.eval₂ MvPolynomial.C (fun _ => (0 : MvPolynomial (Fin 2) ℤ)) (f i),
+        0, by simp⟩
+    · intro l
+      exact ⟨MvPolynomial.eval₂ MvPolynomial.C (fun _ => (0 : MvPolynomial (Fin 2) ℤ))
+          (0 : MvPolynomial (Fin (n + 1)) ℤ) - MvPolynomial.X l.castSucc, 0, by simp⟩
+    · exact ⟨MvPolynomial.eval₂ MvPolynomial.C (fun _ => (0 : MvPolynomial (Fin 2) ℤ))
+        (0 : MvPolynomial (Fin n) ℤ) * 0 - 1, 0, by simp⟩
 
 /-- **SUB-LEAF (A): SCHMIDT'S THEOREM 4D, SPREAD OUT OVER `ℤ[1/D]`** (PROVEN
 2026-07-27 over `exists_integralHypersurfaceCertificate`) — the GEOMETRY half.
@@ -15020,7 +16864,14 @@ NAMED LEAVES, split along the line the literature itself draws:
   the geometry, and all of the birational equivalence, is in there. It is itself
   **PROVEN** (2026-07-27) over `exists_integralHypersurfaceCertificate`, which
   packages Theorem 4D and the spreading out as polynomial IDENTITIES OVER `ℤ`;
-  the evaluation-and-counting argument on top of them is proven.
+  the evaluation-and-counting argument on top of them is proven. That certificate
+  is now **ALSO PROVEN** (2026-07-27), over exactly two leaves:
+  `exists_rationalHypersurfaceCertificate` (Theorem 4D over `ℚ` plus the
+  `ℤ`-descent, no prime in its statement) and
+  `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` (the degenerate
+  half of EGA IV 9.7.7). Everything arithmetic between them — total degree,
+  absolute irreducibility and non-divisibility under reduction, and the EMPTY
+  degenerate case — is proven in the block above it.
 * `exists_bound_badLocusCount` — Lemma 7C, via the Chapter IV §3 elementary upper
   bounds. A pure finite-field point count over `𝔽_p`, with no algebraic closure in
   its signature; the bridge is `irreducible_of_irreducible_map`, PROVEN above.
@@ -15331,7 +17182,8 @@ five-item route is realised in the file rather than merely described):
   (the §4 linear system), `stepanov_not_dvd_stepanovAnsatz` (Lemma 2D, §2, which
   is independent of the other two) and
   `stepanov_pow_X_sub_C_dvd_of_jet_vanishing` (the §3 derivation calculus, i.e.
-  jets at a simple root ⟹ order-`M` vanishing along the branch); the degree
+  jets at a simple root ⟹ order-`M` vanishing along the branch; **PROVEN
+  2026-07-27**, and with no Hensel lift and no branch — see its FOOTNOTE); the degree
   clause is proven glue, `stepanovAnsatz_coeff_natDegree_add_le`. So do not
   dispatch at it either. That cut also established that Schmidt's Remark factor
   `F_Y^{2M}` is UNNECESSARY in this file's divisibility rendering, so the `2Md`
@@ -15410,7 +17262,11 @@ leaves:
   `exists_spreadOutHypersurfaceModel`, which is itself PROVEN over the single
   new leaf `exists_integralHypersurfaceCertificate` — Schmidt's Theorem 4D and
   the spreading out written as polynomial identities over `ℤ`, with the
-  evaluation, injectivity and counting argument PROVEN on top of it;
+  evaluation, injectivity and counting argument PROVEN on top of it.  That
+  certificate was itself PROVEN later on 2026-07-27, over
+  `exists_rationalHypersurfaceCertificate` (char-0 birational geometry) and
+  `exists_bound_not_isPrime_radical_integralSystemIdeal_zmod` (the degenerate
+  half of the spreading out); the arithmetic in between is proven;
 * items 4 and 5 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`
   and `exists_bound_forall_zmodSolvable_of_hypersurfaceCount` — are PROVEN over
   the names above, so it is those sub-leaves and not the items that are open.
@@ -22559,24 +24415,110 @@ theorem isOpen_range_absoluteGaloisGroup_map_numberField
   rw [IntermediateField.mem_fixingSubgroup_iff] at hg
   exact hφ g fun y => hg (φ y) ⟨y, rfl⟩
 
-/-- **`ℚ(√d)` is normal over `ℚ`** (sorry leaf, 2026-07-27 — elementary).
+/-- **`ℚ(√d)` is normal over `ℚ`** (PROVEN 2026-07-27 — elementary).
 
-`y² = d ∈ ℚ` makes `minpoly ℚ y` either `X − y` (when `y ∈ ℚ`) or
-`X² − d`; in BOTH cases it splits in `ℚ⟮y⟯`, whose two roots are `±y`. So
-`ℚ⟮y⟯` is the splitting field of `minpoly ℚ y` over `ℚ` and
+`y² = d ∈ ℚ` makes `X² − d` split in `ℚ⟮y⟯` with the two roots `±y`,
+whatever the degree: the factorisation `X² − d = (X − y)(X + y)` is valid
+over `L`, so `p = X² − C d` splits over `L` and its root set there is
+`{y, −y}`, whose generated intermediate field is exactly `ℚ⟮y⟯` (`−y` is a
+`ℚ`-multiple of `y`). Hence `ℚ⟮y⟯` IS the splitting field of `p` over `ℚ`
+(`IntermediateField.adjoin_rootSet_isSplittingField`) and
 `Normal.of_isSplittingField` applies. No irreducibility hypothesis is
 needed and none should be added — the degenerate case `y ∈ ℚ` is genuinely
-normal (it is `ℚ` itself).
+normal (it is `ℚ` itself), and the route above never splits on it.
 
 Stated over an arbitrary `ℚ`-algebra field `L` rather than over the
-enlargement it is used for, because nothing beyond `y² ∈ ℚ` is relevant. -/
+enlargement it is used for, because nothing beyond `y² ∈ ℚ` is relevant.
+
+INSTANCE NOTE (cost one verification cycle). `Algebra ℚ ↥(adjoin ℚ S)` is a
+DIAMOND: fresh synthesis here picks `DivisionRing.toRatAlgebra`, whereas
+`IntermediateField.adjoin_rootSet_isSplittingField` produces its statement
+with `IntermediateField.algebra'`, and the two are not definitionally equal.
+They are propositionally equal (`algebra_rat_subsingleton`), so the transfer
+is `convert … using 2` followed by `Subsingleton.elim`. Do not try to make
+the two sides agree by rearranging the term. -/
 theorem normal_adjoin_sqrt_nat (L : Type u) [Field L] [Algebra ℚ L] (d : ℕ) (y : L)
     (hy : y ^ 2 = ((d : ℕ) : L)) :
-    Normal ℚ (IntermediateField.adjoin ℚ ({y} : Set L)) :=
-  sorry
+    Normal ℚ (IntermediateField.adjoin ℚ ({y} : Set L)) := by
+  classical
+  set p : ℚ[X] := X ^ 2 - C ((d : ℕ) : ℚ) with hp
+  have hdy : (algebraMap ℚ L) ((d : ℕ) : ℚ) = y ^ 2 := by rw [hy]; simp
+  have hpne : p ≠ 0 := (monic_X_pow_sub_C ((d : ℕ) : ℚ) two_ne_zero).ne_zero
+  have hmap : p.map (algebraMap ℚ L) = (X - C y) * (X - C (-y)) := by
+    simp only [hp, Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C,
+      hdy, C_neg, C_pow]
+    ring
+  have hsplits : (p.map (algebraMap ℚ L)).Splits := by
+    rw [hmap]
+    exact Splits.mul (Splits.X_sub_C y) (Splits.X_sub_C (-y))
+  have hymem : y ∈ p.rootSet L := by
+    rw [Polynomial.mem_rootSet]
+    refine ⟨hpne, ?_⟩
+    simp only [hp, map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero, hdy]
+  have hroot : ∀ z : L, z ∈ p.rootSet L → z = y ∨ z = -y := by
+    intro z hz
+    rw [Polynomial.mem_rootSet] at hz
+    have h := hz.2
+    simp only [hp, map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero, hdy] at h
+    have hfac : (z - y) * (z + y) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp hfac with h' | h'
+    · exact Or.inl (by linear_combination h')
+    · exact Or.inr (by linear_combination h')
+  have hset : IntermediateField.adjoin ℚ (p.rootSet L)
+      = IntermediateField.adjoin ℚ ({y} : Set L) := by
+    apply le_antisymm
+    · rw [IntermediateField.adjoin_le_iff]
+      intro z hz
+      rcases hroot z hz with h | h
+      · subst h
+        exact IntermediateField.subset_adjoin ℚ _ rfl
+      · subst h
+        exact neg_mem (IntermediateField.subset_adjoin ℚ _ rfl)
+    · rw [IntermediateField.adjoin_le_iff]
+      rintro z rfl
+      exact IntermediateField.subset_adjoin ℚ _ hymem
+  rw [← hset]
+  haveI hsf : IsSplittingField ℚ (IntermediateField.adjoin ℚ (p.rootSet L)) p := by
+    convert IntermediateField.adjoin_rootSet_isSplittingField (K := ℚ) (L := L) (p := p) hsplits
+      using 2
+    exact Subsingleton.elim _ _
+  exact Normal.of_isSplittingField p
+
+/-- **`AdjoinRoot (X² − C c)` is a splitting field of `X² − C c` over the base**
+(PROVEN 2026-07-27) — the one fact about the quadratic enlargement that
+`isGalois_adjoinRoot_X_sq_sub_C_nat` feeds to `IsSplittingField.mul`.
+
+Both roots `±r` are present because `X² − C c = (X − C r)(X + C r)` once
+`r² = c`, and `Algebra.adjoin F {r} = ⊤` is `AdjoinRoot.adjoinRoot_eq_top`,
+so the root set generates. -/
+theorem isSplittingField_adjoinRoot_X_sq_sub_C {F : Type u} [Field F] (c : F)
+    [Fact (Irreducible (X ^ 2 - C c))] :
+    IsSplittingField F (AdjoinRoot (X ^ 2 - C c)) (X ^ 2 - C c) := by
+  classical
+  have hrsq : (AdjoinRoot.root (X ^ 2 - C c)) ^ 2
+      = algebraMap F (AdjoinRoot (X ^ 2 - C c)) c := by
+    have h := AdjoinRoot.eval₂_root (X ^ 2 - C c)
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero] at h
+    exact h
+  constructor
+  · have hmap : (X ^ 2 - C c).map (algebraMap F (AdjoinRoot (X ^ 2 - C c)))
+        = (X - C (AdjoinRoot.root (X ^ 2 - C c))) * (X - C (-(AdjoinRoot.root (X ^ 2 - C c)))) := by
+      simp only [Polynomial.map_sub, Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C,
+        ← hrsq, C_neg, C_pow]
+      ring
+    rw [hmap]
+    exact Splits.mul (Splits.X_sub_C _) (Splits.X_sub_C _)
+  · refine top_le_iff.mp ?_
+    rw [← AdjoinRoot.adjoinRoot_eq_top (f := X ^ 2 - C c)]
+    refine Algebra.adjoin_mono ?_
+    rintro z rfl
+    rw [Polynomial.mem_rootSet]
+    refine ⟨(monic_X_pow_sub_C c two_ne_zero).ne_zero, ?_⟩
+    simp only [map_sub, map_pow, aeval_X, aeval_C, sub_eq_zero]
+    exact hrsq
 
 /-- **Adjoining `√d` to a GALOIS totally real `F` keeps it Galois over `ℚ`**
-(sorry leaf, 2026-07-27 — elementary).
+(PROVEN 2026-07-27 — elementary).
 
 `F/ℚ` is finite Galois, hence the splitting field over `ℚ` of some
 `q ∈ ℚ[X]`; and `F' = F(√d)` is then the splitting field over `ℚ` of
@@ -22593,10 +24535,106 @@ generate a QUADRATIC extension of `ℚ` as well as of `F`, which is false for
 a general `d ∈ F`. Keeping `d` rational is load-bearing, not cosmetic. -/
 theorem isGalois_adjoinRoot_X_sq_sub_C_nat (F : Type u) [Field F] [NumberField F] [IsGalois ℚ F]
     (d : ℕ) [Fact (Irreducible (X ^ 2 - C ((d : ℕ) : F)))] :
-    IsGalois ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
-  sorry
+    IsGalois ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) := by
+  classical
+  have hmapq : ((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]).map (algebraMap ℚ F)
+      = X ^ 2 - C ((d : ℕ) : F) := by simp
+  have hpQne : ((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]) ≠ 0 :=
+    (monic_X_pow_sub_C ((d : ℕ) : ℚ) two_ne_zero).ne_zero
+  haveI hsf : IsSplittingField F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+      (((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]).map (algebraMap ℚ F)) := by
+    rw [hmapq]
+    exact isSplittingField_adjoinRoot_X_sq_sub_C ((d : ℕ) : F)
+  obtain ⟨q, hqsep, hq⟩ := IsGalois.is_separable_splitting_field ℚ F
+  haveI := hq
+  haveI : IsSplittingField ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+      (q * (X ^ 2 - C ((d : ℕ) : ℚ))) :=
+    IsSplittingField.mul (K := F) (L := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) q
+      ((X ^ 2 - C ((d : ℕ) : ℚ)) : ℚ[X]) hqsep.ne_zero hpQne
+  haveI : FiniteDimensional ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    IsSplittingField.finiteDimensional _ (q * (X ^ 2 - C ((d : ℕ) : ℚ)))
+  haveI : Normal ℚ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    Normal.of_isSplittingField (q * (X ^ 2 - C ((d : ℕ) : ℚ)))
+  exact ⟨⟩
 
-/-- **`Γ F(√d) = Γ F ⊓ Γ ℚ(√d)`** (sorry leaf, 2026-07-27 — the compositum
+/-- **Every element of the image of `Γ L → Γ K` fixes EVERY `K`-embedded copy of
+`L` inside `Kᵃˡᵍ`, when `L/K` is normal** (PROVEN 2026-07-27).
+
+This is the direction `range ≤ fixingSubgroup` that
+`normal_range_absoluteGaloisGroup_map` computes internally but does not
+expose, strengthened from ITS embedding to an ARBITRARY one — which is what
+`range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf` needs, since there the
+copies of `F` and of `ℚ(√d)` arrive as restrictions of the single embedding
+of `F(√d)` supplied by
+`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`, not as the
+canonical ones.
+
+PROOF. The first half rebuilds the canonical `φ : L →ₐ[K] Kᵃˡᵍ` (the pullback
+of `algebraMap L Lᵃˡᵍ` along the bijection `ι = AlgebraicClosure.map`) and
+checks `g ∘ φ = φ` by `Field.absoluteGaloisGroup.lift_map` and injectivity of
+`ι` — no normality used. Normality enters ONLY in the second half, to see
+that `ψ` has the SAME field range as `φ`: `Normal K L` transports along
+`φ.equivFieldRange` to `Normal K φ.fieldRange`, and then
+`AlgHom.fieldRange_of_normal` applied to `ψ ∘ φ.equivFieldRange.symm` gives
+`ψ.fieldRange = φ.fieldRange`. Without it the two copies could be distinct
+conjugates and the statement would be FALSE. -/
+theorem forall_fixes_of_mem_range_absoluteGaloisGroup_map
+    {K L : Type*} [Field K] [Field L] [Algebra K L] [Normal K L]
+    (ψ : L →ₐ[K] AlgebraicClosure K) {g : Field.absoluteGaloisGroup K}
+    (hg : g ∈ (Field.absoluteGaloisGroup.map (algebraMap K L)).toMonoidHom.range) :
+    ∀ y : L, g (ψ y) = ψ y := by
+  classical
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.trans (R := K) (S := L) (A := AlgebraicClosure L)
+  set ι : AlgebraicClosure K →+* AlgebraicClosure L :=
+    AlgebraicClosure.map (algebraMap K L) with hι
+  letI : Algebra (AlgebraicClosure K) (AlgebraicClosure L) := ι.toAlgebra
+  haveI : IsScalarTower K (AlgebraicClosure K) (AlgebraicClosure L) :=
+    IsScalarTower.of_algebraMap_eq' (by
+      ext x
+      exact (AlgebraicClosure.map_algebraMap (algebraMap K L) x).symm)
+  haveI : Algebra.IsAlgebraic (AlgebraicClosure K) (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.tower_top (K := K) (AlgebraicClosure K) (A := AlgebraicClosure L)
+  have hbij : Function.Bijective ι :=
+    IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure K)
+      (K := AlgebraicClosure L)
+  set ε : AlgebraicClosure K ≃+* AlgebraicClosure L := RingEquiv.ofBijective ι hbij with hε
+  have hεapp : ∀ x, ε x = ι x := fun _ => rfl
+  set φr : L →+* AlgebraicClosure K :=
+    (ε.symm : AlgebraicClosure L →+* AlgebraicClosure K).comp
+      (algebraMap L (AlgebraicClosure L)) with hφr
+  set φ : L →ₐ[K] AlgebraicClosure K :=
+    { toRingHom := φr
+      commutes' := fun x => by
+        show ε.symm (algebraMap L (AlgebraicClosure L) (algebraMap K L x)) = _
+        have h1 : (algebraMap L (AlgebraicClosure L)) (algebraMap K L x)
+            = ι (algebraMap K (AlgebraicClosure K) x) := by
+          rw [hι, AlgebraicClosure.map_algebraMap]
+        rw [h1, ← hεapp, RingEquiv.symm_apply_apply] } with hφ
+  have hφapp : ∀ y : L, φ y = ε.symm (algebraMap L (AlgebraicClosure L) y) := fun _ => rfl
+  obtain ⟨σ, hσ⟩ := MonoidHom.mem_range.mp hg
+  have hfixφ : ∀ y : L, g (φ y) = φ y := by
+    intro y
+    have h1 : ι (g (φ y)) = σ (ι (φ y)) := by
+      rw [← hσ]
+      exact Field.absoluteGaloisGroup.lift_map (algebraMap K L) σ (φ y)
+    have h2 : ι (φ y) = algebraMap L (AlgebraicClosure L) y := by
+      rw [hφapp, ← hεapp, RingEquiv.apply_symm_apply]
+    apply ι.injective
+    rw [h1, h2]
+    exact σ.commutes y
+  haveI : Normal K φ.fieldRange := Normal.of_algEquiv φ.equivFieldRange
+  have hrange := AlgHom.fieldRange_of_normal (E := φ.fieldRange)
+    (ψ.comp (φ.equivFieldRange.symm.toAlgHom))
+  intro y
+  have hmem : ψ y ∈ φ.fieldRange := by
+    rw [← hrange]
+    exact ⟨φ.equivFieldRange y, by simp⟩
+  obtain ⟨y', hy'⟩ := hmem
+  rw [← hy']
+  exact hfixφ y'
+
+/-- **`Γ F(√d) = Γ F ⊓ Γ ℚ(√d)`** (PROVEN 2026-07-27 — the compositum
 identification, and the one genuinely Galois-theoretic step of the
 even-degree enlargement).
 
@@ -22618,7 +24656,16 @@ Then `exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`
 converts "fixes the copy of `F'`" back into membership of `Γ F'`.
 
 Dropping either normality hypothesis makes the statement FALSE as written,
-since the two ranges could then be non-conjugate copies. -/
+since the two ranges could then be non-conjugate copies.
+
+HOW THE REVERSE INCLUSION IS ACTUALLY RUN. Take the single embedding
+`φ : F(√d) →ₐ[ℚ] ℚᵃˡᵍ` from
+`exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map`; it suffices
+that `g` fixes `φ` pointwise. `forall_fixes_of_mem_range_absoluteGaloisGroup_map`
+— the normality-consuming half — says `g` fixes `φ` restricted to `F` and `φ`
+restricted to `ℚ(√d)`. The set `{x | g (φ x) = φ x}` is then an `F`-subalgebra
+of `F(√d)` containing `√d`, and `AdjoinRoot.adjoinRoot_eq_top` makes it
+everything. -/
 theorem range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf
     (F : Type u) [Field F] [NumberField F] [IsGalois ℚ F]
     (d : ℕ) [Fact (Irreducible (X ^ 2 - C ((d : ℕ) : F)))] :
@@ -22628,8 +24675,85 @@ theorem range_absoluteGaloisGroup_map_adjoinRoot_sq_eq_inf
         (Field.absoluteGaloisGroup.map (algebraMap ℚ
           (IntermediateField.adjoin ℚ
             ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
-              Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))))).toMonoidHom.range :=
-  sorry
+              Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))))).toMonoidHom.range := by
+  classical
+  have hf0 : (X ^ 2 - C ((d : ℕ) : F)) ≠ 0 :=
+    (monic_X_pow_sub_C ((d : ℕ) : F) two_ne_zero).ne_zero
+  haveI : Module.Finite F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    (AdjoinRoot.powerBasis hf0).finite
+  haveI : NumberField (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+    NumberField.of_module_finite F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+  have hrsq : (AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))) ^ 2
+      = ((d : ℕ) : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) := by
+    have h := AdjoinRoot.eval₂_root (X ^ 2 - C ((d : ℕ) : F))
+    simp only [eval₂_sub, eval₂_X_pow, eval₂_C, sub_eq_zero] at h
+    rw [h]
+    simp
+  haveI hKnormal : Normal ℚ (IntermediateField.adjoin ℚ
+      ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+        Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))) :=
+    normal_adjoin_sqrt_nat _ d _ hrsq
+  apply le_antisymm
+  · refine le_inf ?_ ?_
+    · have h1 := range_absoluteGaloisGroup_map_le_of_ringHom (K := ℚ) (L := F)
+        (M := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+        (algebraMap F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))
+      rwa [← IsScalarTower.algebraMap_eq ℚ F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))] at h1
+    · have h2 := range_absoluteGaloisGroup_map_le_of_ringHom (K := ℚ)
+        (L := IntermediateField.adjoin ℚ
+          ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+            Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))))
+        (M := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+        (algebraMap _ (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))
+      rwa [← IsScalarTower.algebraMap_eq ℚ (IntermediateField.adjoin ℚ
+          ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+            Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))))
+          (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))] at h2
+  · intro g hg
+    obtain ⟨hgF, hgK⟩ := Subgroup.mem_inf.mp hg
+    obtain ⟨φ, hφ⟩ :=
+      exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map (K := ℚ)
+        (L := AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))
+    refine hφ g ?_
+    have hFfix : ∀ a : F, g (φ (algebraMap F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) a))
+        = φ (algebraMap F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) a) :=
+      forall_fixes_of_mem_range_absoluteGaloisGroup_map
+        (φ.comp (IsScalarTower.toAlgHom ℚ F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))) hgF
+    have hKfix : ∀ a : IntermediateField.adjoin ℚ
+        ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+          Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))),
+        g (φ (a : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))
+          = φ (a : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+      forall_fixes_of_mem_range_absoluteGaloisGroup_map
+        (φ.comp (IsScalarTower.toAlgHom ℚ (IntermediateField.adjoin ℚ
+          ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+            Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))))
+          (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))))) hgK
+    have hrfix : g (φ (AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))))
+        = φ (AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))) :=
+      hKfix ⟨_, IntermediateField.subset_adjoin ℚ _ rfl⟩
+    let S : Subalgebra F (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F))) :=
+      { carrier := {x : AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)) | g (φ x) = φ x}
+        mul_mem' := by
+          intro a b ha hb
+          simp only [Set.mem_setOf_eq] at *
+          rw [map_mul, map_mul, ha, hb]
+        one_mem' := by simp
+        add_mem' := by
+          intro a b ha hb
+          simp only [Set.mem_setOf_eq] at *
+          rw [map_add, map_add, ha, hb]
+        zero_mem' := by simp
+        algebraMap_mem' := hFfix }
+    have hle : Algebra.adjoin F
+        ({AdjoinRoot.root (X ^ 2 - C ((d : ℕ) : F))} :
+          Set (AdjoinRoot (X ^ 2 - C ((d : ℕ) : F)))) ≤ S := by
+      refine Algebra.adjoin_le ?_
+      rintro z rfl
+      exact hrfix
+    rw [AdjoinRoot.adjoinRoot_eq_top (f := X ^ 2 - C ((d : ℕ) : F))] at hle
+    intro y
+    exact hle (Algebra.mem_top (R := F) (x := y))
 
 /-- **The quadratic enlargement `F ↦ F(√d)`, with its auxiliary quadratic
 subfield** (PROVEN 2026-07-27 over the three leaves above).
@@ -25610,6 +27734,117 @@ structure RingClassArtinData (e : Field.absoluteGaloisGroup ℚ →* ℤˣ) (K :
 
 attribute [instance] RingClassArtinData.commGroup RingClassArtinData.finite
 
+/-- **THE NORM-ONE SUBGROUP OF THE INERT RESIDUE FIELD IS CYCLIC OF ORDER
+`p + 1`** (PROVEN 2026-07-27, supporting the cut of
+`nonempty_ringClassArtinData_of_inertPrime` below).
+
+At an inert `p` the residue ring `𝒪_M / p 𝒪_M` is the field `𝔽_{p²}`, whose unit
+group is cyclic of order `p² − 1 = (p − 1)(p + 1)`; the norm-one subgroup
+`{y : y^{p+1} = 1} = μ_{p+1}` is therefore cyclic of order EXACTLY `p + 1`
+(cyclicity is `rootsOfUnity.isCyclic`, and the order is what is proven here).
+This is the arithmetic that makes the ring class group of conductor `p` large,
+and it is precisely the half of `RingClassArtinData.exists_orderOf_dvd` that
+needs no class field theory.
+
+`GaloisField p 2` is THE field with `p²` elements, so this is a statement about
+`𝒪_M / p 𝒪_M` after a choice of isomorphism; that choice belongs to the prover
+of `exists_ringClassConductorHom_of_inertPrime` below, not here. -/
+theorem natCard_rootsOfUnity_succ_galoisField (p : ℕ) [Fact p.Prime] :
+    Nat.card (rootsOfUnity (p + 1) (GaloisField p 2)) = p + 1 := by
+  classical
+  have hp2 : 2 ≤ p := (Fact.out : p.Prime).two_le
+  have hcardK : Nat.card (GaloisField p 2) = p ^ 2 := GaloisField.card p 2 two_ne_zero
+  have hcardU : Nat.card (GaloisField p 2)ˣ = p ^ 2 - 1 := by
+    rw [Nat.card_units, hcardK]
+  obtain ⟨g, hordg⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := (GaloisField p 2)ˣ)
+  rw [hcardU] at hordg
+  have hfact : p ^ 2 - 1 = (p - 1) * (p + 1) := by
+    obtain ⟨q, rfl⟩ : ∃ q, p = q + 1 := ⟨p - 1, by omega⟩
+    have h : (q + 1) ^ 2 = q * (q + 2) + 1 := by ring
+    rw [h, Nat.add_sub_cancel, Nat.add_sub_cancel]
+  have hgcd : Nat.gcd (p ^ 2 - 1) (p - 1) = p - 1 := Nat.gcd_eq_right ⟨p + 1, hfact⟩
+  have hordz : orderOf (g ^ (p - 1)) = p + 1 := by
+    rw [orderOf_pow, hordg, hgcd, hfact, Nat.mul_div_cancel_left _ (by omega : 0 < p - 1)]
+  exact (IsPrimitiveRoot.iff_orderOf.mpr hordz).card_rootsOfUnity'
+
+/-- **THE CLASS FIELD THEORY LEAF: THE RING CLASS FIELD OF CONDUCTOR `p` AT AN
+INERT PRIME, TOGETHER WITH ITS CONDUCTOR MAP** (sorry node; cut 2026-07-27 out
+of `nonempty_ringClassArtinData_of_inertPrime` just below, which is now PROVEN
+over it together with `natCard_rootsOfUnity_succ_galoisField` above).
+
+**THIS IS THE ONLY CLASS-FIELD-THEORETIC CONTENT anywhere under
+`exists_dihedralOddGaloisRep_of_charThree`**, and it is now stated in the shape
+of the classical CONDUCTOR EXACT SEQUENCE rather than as an abstract order
+divisibility. It asks for two things and nothing else:
+
+* `D : RingClassArtinData e 1` — the Galois side. At `K = 1` the order clause
+  `exists_orderOf_dvd` reads `∃ a, 1 ∣ orderOf a` and is discharged by `⟨1, one_dvd _⟩`,
+  so `RingClassArtinData e 1` is EXACTLY the Artin-map core: a finite abelian
+  ring class group `Cl(𝒪_p)`, the Artin map `Γ_ℚ → Cl` defined on `Γ_M = ker e`,
+  the open fixing subgroup `H ≤ Γ_M`, the homomorphism and coset clauses,
+  complex conjugation inverting, and surjectivity (Artin reciprocity);
+* `ι` — the CONDUCTOR MAP `μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)`, with kernel of order
+  dividing `24`.
+
+**WHY THAT KERNEL CLAUSE IS THE CLASSICAL STATEMENT, AND WHY `w` DOES NOT
+APPEAR.** The conductor exact sequence of the order `𝒪_p = ℤ + p 𝒪_M` is
+
+    1 → 𝒪_M^ˣ / 𝒪_p^ˣ → (𝒪_M/p)ˣ / (ℤ/p)ˣ → Cl(𝒪_p) → Cl(𝒪_M) → 1,
+
+so the natural map `(𝒪_M/p)ˣ → Cl(𝒪_p)` has kernel `(ℤ/p)ˣ · μ_w` with
+`μ_w = 𝒪_M^ˣ`. Restricted to the norm-one subgroup this kernel is
+`μ_{p+1} ∩ ((ℤ/p)ˣ · μ_w) = μ_2 · μ_w = μ_w` (if `y = a ζ` with `a ∈ 𝔽_pˣ` and
+`ζ ∈ μ_w ⊆ μ_{p+1}` then `a = y ζ⁻¹ ∈ μ_{p+1} ∩ 𝔽_pˣ = μ_2`, and `2 ∣ w`), of
+order `w ∈ {2, 4, 6}` — every one of which divides `24`. Stating the clause as
+`Nat.card (ker ι) ∣ 24` therefore records the true content while keeping `w`,
+and its case split on `d = -1`, `d = -3`, out of the statement, exactly as the
+parent leaf's `(p+1)/24` does.
+
+**WHAT THE CUT MOVED OFF THIS LEAF.** The parent now discharges: the order of
+`μ_{p+1}` (`natCard_rootsOfUnity_succ_galoisField`), the first-isomorphism
+computation `#(range ι) = (p+1)/#(ker ι)`, cyclicity of `range ι`, extraction of
+an element of that exact order, and the arithmetic `k ∣ 24 ∣ p+1 ⟹
+(p+1)/24 ∣ (p+1)/k`. None of that is class field theory, and none of it is left
+here. What is left is Artin reciprocity in its EXISTENCE direction plus the
+conductor exact sequence, and nothing else.
+
+**HOW IT IS TO BE PROVED.** At an inert `p` the residue ring is
+`𝒪_M/p ≅ 𝔽_{p²} = GaloisField p 2` (the hypotheses `hpns`, `hpgt` are what make
+`p` inert: `m` is a non-square mod `p`, and `p > 24|m|` forces `p` odd and
+`p ∤ m`). Complex conjugation acts on `(𝒪_M/p)ˣ` as the Frobenius `y ↦ y^p`, so
+it inverts the norm-one subgroup. Artin reciprocity `Γ_M ↠ Cl(𝒪_p)` — the CFT
+EXISTENCE theorem, which is the whole content — supplies `art`, and the
+conductor exact sequence above supplies `ι`.
+
+**ANTICYCLOTOMY IS FREE ONCE THE RING CLASS GROUP IS IN HAND**: complex
+conjugation inverts the whole ring class group, because `𝔞 𝔞̄ = (N𝔞)` is
+generated by a rational integer and so lies in `P_{ℤ,p}`, whence `[𝔞]^c = [𝔞]⁻¹`.
+Every quotient is therefore anticyclotomic on the nose and **no `ψ / ψ^c`
+correction step is needed** — do not build one.
+
+**NO ELEMENTARY ROUTE EXISTS** (audited 2026-07-27). Over the CM field `M(ζ_n)`
+the minus part of the units is only roots of unity, which is precisely why
+Kummer theory cannot produce anticyclotomic extensions and CFT is genuinely
+required. The refuting check: exhibit a cyclic anticyclotomic extension of an
+imaginary quadratic `M` of degree `> 2` obtained by adjoining a radical.
+
+References: Cox, *Primes of the Form x² + ny²*, ch. 7 §9 (the conductor exact
+sequence, Prop. 7.22 and its corollaries) and ch. 8–9 (ring class fields);
+Childress, *Class Field Theory*; Neukirch ch. VI. -/
+theorem exists_ringClassConductorHom_of_inertPrime
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (p : ℕ) [Fact p.Prime]
+    (hpgt : 24 * (d.num * (d.den : ℤ)).natAbs < p)
+    (hp24 : 24 ∣ (p + 1))
+    (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
+    ∃ D : RingClassArtinData e 1,
+      ∃ ι : rootsOfUnity (p + 1) (GaloisField p 2) →* D.Cl,
+        Nat.card (MonoidHom.ker ι) ∣ 24 :=
+  sorry
+
 /-- **THE CLASS FIELD THEORY LEAF: THE ARTIN MAP OF THE RING CLASS FIELD OF
 CONDUCTOR `p` AT AN INERT PRIME** (sorry node; cut 2026-07-27 out of
 `exists_ringClassZModChar_of_inertPrime` just below, which is now PROVEN over it
@@ -25669,10 +27904,44 @@ in this tree, or in `~/cs/FLT`:
 `grep -rn 'RayClassGroup\|rayClassGroup\|ArtinMap\|artinMap\|idele\|reciprocity'
 Fermat/ .lake/packages/mathlib/ ~/cs/FLT/` returns prose only. AXIS SEARCHED:
 the *existence* direction of CFT — constructions that PRODUCE a Galois
-character or an abelian extension out of ideal-theoretic data. AXIS NOT
-SEARCHED: complex multiplication (the ring class field of conductor `p` is
-`M(j(𝒪_p))`), which is a second, independent route to the same object and is
-equally absent from all three trees.
+character or an abelian extension out of ideal-theoretic data.
+
+**THE COMPLEX-MULTIPLICATION AXIS IS NOW SEARCHED TOO (2026-07-27), and the
+earlier note that recorded it as untried is corrected here: CM is NOT a
+shortcut, it is strictly more expensive.** The suggestion was that the ring
+class field of conductor `p` is `M(j(𝒪_p))`, a second and independent route.
+Three findings, each with the grep that refutes it:
+
+* **The modular `j`-FUNCTION does not exist in mathlib.** `EllipticCurve.j`
+  (`Mathlib/AlgebraicGeometry/EllipticCurve/Weierstrass.lean:385`) is the
+  ALGEBRAIC `j`-invariant `c₄³/Δ` of a Weierstrass equation over a ring — not
+  the modular function on `ℍ`. `Mathlib/NumberTheory/ModularForms/` has
+  Eisenstein series, `Δ`, `η` and `q`-expansions but **no** `j`: `grep -rn
+  'kleinJ\|modular function' Mathlib/NumberTheory/ModularForms/` is empty. So
+  `j(𝒪_p)` cannot even be WRITTEN, let alone shown algebraic and integral.
+* **There is no CM theory anywhere in the three trees.** `grep -rln
+  'ComplexMultiplication' Mathlib/` is empty; `~/cs/FLT` has nothing. The only
+  CM material in THIS tree is `IsCMByRamifiedMaximalOrder`
+  (`Fermat/FLT/FreyCurve/MazurTorsion.lean:27665`), an endomorphism-structure
+  interface for CM points on `Y₀(p)` at `p = 43, 67, 163`; it carries no
+  `j`-invariant, no action of an ideal class group on lattices, no field of
+  definition and no Artin map, and its own producer
+  `nonempty_isCMByRamifiedMaximalOrder_of_classify_eq` (`:27725`) is itself a
+  sorry leaf. It cannot yield a ring class field.
+* **CM does not AVOID class field theory.** The elementary half of the theory
+  is that `Cl(𝒪)` acts simply transitively on the finite set of `j`-invariants
+  of proper `𝒪`-ideal classes; the half this leaf needs — that `M(j(𝒪_p))/M`
+  is abelian with Galois group `Cl(𝒪_p)` via the Artin map — is Cox's Theorem
+  11.1, whose proof INVOKES the CFT of the order. The refuting check: find a
+  proof that `M(j(𝒪))/M` is abelian that does not use reciprocity for `M`.
+
+Cohomological prerequisites for CFT are barely started upstream:
+`Mathlib/RepresentationTheory/Homological/TateCohomology/` contains only
+`Basic.lean` (definitions; no class formations, no Tate's theorem), and
+`Mathlib/Algebra/BrauerGroup/Defs.lean` has no invariant map. So both routes
+are theory builds, and the CM one is the larger of the two. **Attack the
+ideal-theoretic route** (`exists_ringClassConductorHom_of_inertPrime`, above),
+not the CM one.
 
 **THE ONE NEAR MISS: `ModThree.lean`'s `_ray_class` cluster. RE-AUDITED
 2026-07-27, AND ONE OF THE TWO STANDING REASONS WAS FALSE.** The earlier audit
@@ -25722,7 +27991,29 @@ The standing simplification is carried forward: NOTHING here requires the
 character to be unramified, so ray class characters of the one field `M`
 suffice and the Nakagawa–Horie/Yamamoto theorem is NOT on the critical path.
 References: Neukirch ch. VI, Childress *Class Field Theory*, Cox *Primes of the
-Form x² + ny²* ch. 8 (ring class fields). -/
+Form x² + ny²* ch. 8 (ring class fields).
+
+**DECOMPOSED 2026-07-27, AND NOW PROVEN over
+`exists_ringClassConductorHom_of_inertPrime` and
+`natCard_rootsOfUnity_succ_galoisField` above.** The order clause was the only
+part of this leaf that was not class field theory, and it has been split off.
+What that sub-leaf supplies is the classical CONDUCTOR EXACT SEQUENCE datum —
+the Artin-map core `RingClassArtinData e 1` plus the conductor map
+`ι : μ_{p+1}(𝔽_{p²}) → Cl(𝒪_p)` with `#(ker ι) ∣ 24` — and what is proven here
+from it is:
+
+* `#μ_{p+1}(𝔽_{p²}) = p + 1` (`natCard_rootsOfUnity_succ_galoisField`, the
+  norm-one subgroup of the inert residue field);
+* `#(ker ι) · #(range ι) = p + 1` (`Subgroup.index_ker` and
+  `Subgroup.card_mul_index`, i.e. the first isomorphism theorem);
+* `range ι` is cyclic, being the image of a cyclic group, so it has an element
+  of order exactly `#(range ι) = (p+1)/#(ker ι)`;
+* `k ∣ 24` and `24 ∣ p + 1` give `(p+1)/24 ∣ (p+1)/k`, which is the required
+  divisibility — this is where `24 ∣ p + 1` is load-bearing, exactly as the
+  paragraph above describes.
+
+Note the `w` of the roadmap appears NOWHERE, in this statement or in the
+sub-leaf's: it is carried entirely by the clause `Nat.card (ker ι) ∣ 24`. -/
 theorem nonempty_ringClassArtinData_of_inertPrime
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
     (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
@@ -25732,8 +28023,37 @@ theorem nonempty_ringClassArtinData_of_inertPrime
     (hpgt : 24 * (d.num * (d.den : ℤ)).natAbs < p)
     (hp24 : 24 ∣ (p + 1))
     (hpns : ¬ IsSquare ((d.num * (d.den : ℤ) : ℤ) : ZMod p)) :
-    Nonempty (RingClassArtinData e ((p + 1) / 24)) :=
-  sorry
+    Nonempty (RingClassArtinData e ((p + 1) / 24)) := by
+  classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  obtain ⟨D, ι, hker⟩ :=
+    exists_ringClassConductorHom_of_inertPrime d hd x hx e he p hpgt hp24 hpns
+  have hμ : Nat.card (rootsOfUnity (p + 1) (GaloisField p 2)) = p + 1 :=
+    natCard_rootsOfUnity_succ_galoisField p
+  have hsplit : Nat.card (MonoidHom.ker ι) * Nat.card (MonoidHom.range ι) = p + 1 := by
+    rw [← Subgroup.index_ker ι, Subgroup.card_mul_index]
+    exact hμ
+  haveI : IsCyclic (MonoidHom.range ι) :=
+    isCyclic_of_surjective ι.rangeRestrict ι.rangeRestrict_surjective
+  obtain ⟨b, hb⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := (MonoidHom.range ι))
+  obtain ⟨t, ht⟩ := hp24
+  obtain ⟨s, hs⟩ := hker
+  have hk0 : Nat.card (MonoidHom.ker ι) ≠ 0 := by
+    intro h
+    rw [h, zero_mul] at hs
+    exact absurd hs (by norm_num)
+  have h1 : p + 1 = Nat.card (MonoidHom.ker ι) * (s * t) := by
+    calc p + 1 = 24 * t := ht
+      _ = Nat.card (MonoidHom.ker ι) * s * t := by rw [← hs]
+      _ = Nat.card (MonoidHom.ker ι) * (s * t) := by ring
+  have hR : Nat.card (MonoidHom.range ι) = s * t :=
+    Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hk0) (hsplit.trans h1)
+  refine ⟨{ Cl := D.Cl, art := D.art, H := D.H, isOpen_H := D.isOpen_H,
+            H_le_ker := D.H_le_ker, art_coset := D.art_coset, art_mul := D.art_mul,
+            art_conj := D.art_conj, art_surjOn := D.art_surjOn,
+            exists_orderOf_dvd := ⟨(b : D.Cl), ?_⟩ }⟩
+  rw [Subgroup.orderOf_coe, hb, hR, ht, Nat.mul_div_cancel_left _ (by norm_num : (0:ℕ) < 24)]
+  exact ⟨s, mul_comm s t⟩
 
 /-- **THE `n`-FREE RING CLASS CHARACTER OF CONDUCTOR `p` AT AN INERT PRIME**
 (**PROVEN 2026-07-27** over `nonempty_ringClassArtinData_of_inertPrime` and
@@ -28113,16 +30433,93 @@ along this axis:
   either: `X₀ ⊔ Spec ℚ` with a bare HBAV at the extra point is fine and has
   no level structure there.
 
-THE AXIS NOT SEARCHED, recorded so the next owner starts there rather than
-repeating the above: a STAGED-CONSTRUCTION cut, in which an intermediate
-object is named as data and handed across the seam — e.g. the moduli space
-of `λ`-level structures alone, with `X₀ ⟶ Y` finite étale, or the coarse
-space plus a rigidification datum. Nothing here refutes such a cut; it needs
-a new interface written, which is cheap in the sense of "STATING a theory is
-not PROVING it", and it is the only route by which the analytic
-uniformization (which supplies connectedness) could be separated from the
-GIT/deformation-theoretic construction (which supplies representability and
-smoothness).
+THE STAGED-CONSTRUCTION AXIS — NOW SEARCHED (2026-07-27), AND THE VERDICT IS
+"available, not refuted, and NOT WORTH TAKING". The previous version of this
+paragraph recorded this axis as unsearched and invited the next owner to take
+it. It has now been searched, and the result is written out in full because
+the invitation was the misleading half: the cut is constructible, and it buys
+no mathematical reduction while risking a false second leaf.
+
+*The shape.* An intermediate `Y` is named as data, `X₀ ⟶ Y` is asserted
+étale, and `fX₀ := (X₀ ⟶ Y) ≫ fY`.
+
+*The geometry assembly IS available at this pin* — this was the part that
+looked like it needed new infrastructure, and it does not. Checked against
+`.lake/packages/mathlib`:
+
+* `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:204` — the instance
+  `SmoothOfRelativeDimension (n + m) (f ≫ g)`;
+* `Mathlib/AlgebraicGeometry/Morphisms/Etale.lean:107` — the instance
+  `[Etale f] : SmoothOfRelativeDimension 0 f`;
+* `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:167` —
+  `SmoothOfRelativeDimension n` is `IsStableUnderBaseChange`.
+
+So clause 1 of the conclusion falls out of `0 + n = n`, and clauses 2–4 out
+of the ordinary composition instances. No new geometry API is needed for the
+assembly.
+
+*Why it is nevertheless a trap, with the witness.* If the intermediate leaf
+asserts only GEOMETRY of `Y` — `SmoothOfRelativeDimension (finrank ℚ D) fY`,
+separated, locally of finite type, quasi-compact, geometrically connected —
+then `Y := 𝔸^{[D:ℚ]}_ℚ` discharges it outright, and the second leaf is this
+leaf again with one inert extra hypothesis. Sorry count `+1`, mathematical
+content unchanged. Any staged cut of a MODULI statement whose first stage
+does not itself carry a moduli property has this shape.
+
+*The honest form, and it needs NO new definitions.* Give `Y` the `λ`-only
+moduli package: `IsSplitLevelStructure` is already stated one ideal at a
+time, and `Fermat.PolarizationStruct`'s level set `𝒩` is already a
+parameter, so `𝒩 := {lam}` with `frp`, `kp`, `ρ₀p`, `Λp` dropped from the
+universal-level and fineness clauses is expressible today, verbatim in this
+leaf's own vocabulary.
+
+*Where the risk then sits.* The second stage has to hold for an ARBITRARY
+`Y` carrying that package, and its soundness rests on an argument nobody has
+written down: `Y ⊔ Y` is excluded by `GeometricallyConnected fY`, and a
+nontrivial connected étale cover `Y ⟶ M` of the true `λ`-space is excluded
+because the fineness clause read at `F = ` the function field of `M` demands
+an `F`-point of `Y`, i.e. a rational section — but that argument is
+informal, and a prover of the second stage would be leaning on it silently.
+THE CHECK THAT WOULD REFUTE THE CUT: exhibit a geometrically connected `Y`
+satisfying the `λ`-package whose full `𝔭`-level cover is geometrically
+DISCONNECTED.
+
+*Why it was not taken.* "Rapoport at level `λ`" and "adjoin full `𝔭`-level
+structure" are the same construction — the GIT/deformation input and the
+analytic uniformization are needed in identical form for both — so the cut
+moves no mathematics across the seam. What it would buy is exactly the four
+shape clauses, and those are already the cheap ones (leaf A2 above takes
+`Smooth` out of `SmoothOfRelativeDimension` in one line).
+
+THE ONE PIECE OF INFRASTRUCTURE THAT WOULD CHANGE THIS ANSWER, and the item
+to build before attempting any staged cut here: **base-change transport of
+the `Fermat.AbelianSchemeStruct` / `Mult` / `DualStruct` / `SymHomStruct` /
+`PolarizationStruct` vocabulary along a morphism `q : S' ⟶ S`.** Every
+staged cut attempted above collapses into "the second leaf produces
+everything" for one reason only — the family cannot be moved across the
+seam. That transport is bookkeeping rather than mathematics: all five
+structures are functors of points over
+`Fermat.RelPoint f g = {x : T ⟶ A // x ≫ f = g}`
+(`Modularity/AbelianScheme.lean:107`), and for the pulled-back family
+`f' : A ×_S S' ⟶ S'` the universal property of the pullback gives
+`RelPoint f' g' ≃ RelPoint f (g' ≫ q)` for every `g' : T ⟶ S'`. That
+equivalence is what has to be written — it is NOT `Fermat.RelPoint.pre`
+(`:120`), which is precomposition in `T` and not a base change in `S` — and
+once it exists every algebraic field of all five structures transports by
+transport along it. The only fields needing real input are
+`AbelianSchemeStruct`'s `proper`, `smooth` and `connected`, each of which is
+a base-change stability statement about a mathlib morphism property. Nothing in this file consumes such transport
+today, so writing it is a separate task with its own consumer, not
+something to smuggle into this leaf.
+
+THE OTHER AXIS STILL NOT SEARCHED: a cut that separates the analytic
+uniformization (which supplies connectedness) from the GIT/deformation
+input (which supplies representability and smoothness) by naming the
+COMPLEX-ANALYTIC datum. The obstruction there is that
+`GeometricallyConnected` is the all-extensions form and this pin has no
+"test over a single algebraically closed extension" criterion — the same
+gap `geometricallyIrreducible_of_smooth_of_geometricallyConnected` above
+had to route around.
 
 **FAITHFULNESS QUESTION — NARROW CLASS GROUP versus CONNECTEDNESS:
 SETTLED 2026-07-27, and the answer was NO. The previous form of this leaf
@@ -28814,7 +31211,66 @@ is imaginary quadratic, and an induction from an imaginary quadratic field
 is odd. Note this is consistent with the COUPLING AUDIT rather than in
 tension with it: twisting by `μ` changes `det` by `μ²` and `μ(c)² = 1` at
 complex conjugation, so the twist that breaks the determinant condition
-PRESERVES oddness, and preserves `hdih` as well. -/
+PRESERVES oddness, and preserves `hdih` as well.
+
+CUT-AXIS AUDIT (2026-07-27) — FOUR AXES SEARCHED, ALL CLOSED, AND THE ONE
+THING TO BUILD FIRST. Recorded in the form the fleet's doctrine asks for:
+which axis, and what would refute the verdict.
+
+1. *Space versus real point.* Already refuted, in the DESCENT/SEAM section
+   docstring above and in the FORM-cut docstring: an EVEN twist `X_R` has
+   `X_R(ℝ) = ∅`, satisfies every geometric clause, and satisfies the
+   level-structure clause vacuously over totally real fields. Any cut that
+   hands a bare `X` to a second leaf dies to it. Not re-searched.
+
+2. *Split the two level structures.* The conclusion asks for
+   `IsTwistedLevelStructure lam m ρbar x` and
+   `IsTwistedLevelStructure frp m ρbarp x` at the same `x`. Both are read
+   off ONE descent — Lemma 4.4 describes `X_{R,ψ}(F)` for the single
+   cocycle `R = ρbar ⊕ ρbarp` — and a leaf producing only the `λ` half
+   hands the second leaf a bare `X`, i.e. axis 1. Closed.
+
+3. *Descend the four shape clauses along the form.* `IsFormOver ℚ̄ fX fX₀`
+   plus `Smooth fX₀` does not give `Smooth fX` at this pin: that is fpqc
+   DESCENT of a morphism property along `Spec ℚ̄ ⟶ Spec ℚ`, and what
+   mathlib records for `Smooth`, `SmoothOfRelativeDimension`, `IsSeparated`
+   and `QuasiCompact` is `IsStableUnderBaseChange`, which is the opposite
+   direction. `Spec ℚ̄ ⟶ Spec ℚ` is faithfully flat but not of finite
+   presentation, so even the fppf statements would not apply verbatim.
+   THE CHECK THAT WOULD REFUTE THIS: find a descent-along-faithfully-flat
+   lemma for morphism properties in `.lake/packages/mathlib`; grepping
+   `IsStableUnderBaseChange` / `descends` there found none.
+
+4. *Stage the construction through a Galois-descent-datum interface* —
+   name the semilinear `Γ_ℚ`-action on `X₀ ⊗ ℚ̄` and the 1-cocycle
+   `σ ↦ (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)` as data, then split into
+   "the datum exists" and "descent is effective, and Lemma 4.4 describes
+   the points". This is the only axis that is NOT closed, and it cannot be
+   taken today because **the interface does not exist anywhere.** Checked
+   2026-07-27 across all three places: mathlib has no descent data for
+   schemes; `~/cs/FLT` has none; and the only file in THIS tree named for
+   it, `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/GaloisDescent.lean`,
+   is an EMPTY STUB — 35 lines of header, docstring and an empty
+   `namespace WeierstrassCurve`, with ZERO declarations. Its docstring
+   promises quadratic descent for Weierstrass data and delivers nothing, so
+   a grep for "GaloisDescent" in this tree finds a filename and no content.
+
+So: writing a scheme-level Galois-descent interface is the first step for
+anyone attacking this leaf, and it is a SEPARATE task with its own
+consumers — not something to introduce inside this declaration. Note it
+would also serve the `𝔞`-side: the same interface is what would let
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` be cut into a
+construction over a field containing `μ_{ℓp}` plus a descent to `ℚ` along
+the standard level module `ρ₀`.
+
+WHAT IS GENUINELY MISSING FROM THE PIN for the construction itself, so the
+next owner does not re-survey (checked 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`): descent data for schemes,
+effectivity of descent, `H¹(G, Γ)` classifying twists of a scheme with a
+`Γ`-action, and the theory of complex multiplication supplying the CM point
+of `X_Dih`. `AbelianVariety`, `AbelianScheme` and `HilbertModular` occur in
+mathlib zero times, and in `~/cs/FLT` only inside two `KnownIn1980s` files
+that assume rather than construct. -/
 theorem exists_twistedHilbertBlumenthalDescent_of_split
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -29229,23 +31685,69 @@ now PROVEN, so only TWO of the three names above are live:
 `exists_twistedHilbertBlumenthalDescent_of_split`. Both are geometry; the
 representation-theoretic half is done and needs no owner.
 
-AUDIT UPDATE V (2026-07-27, latest) — **ONE of those two is FALSE AS STATED
-and must not be dispatched at.** `HasSplitHilbertBlumenthalModuli` asserts
-`GeometricallyIrreducible fX₀` while its fineness clause quantifies over
-every polarized object; the components of a Hilbert–Blumenthal moduli space
-are indexed by `Cl⁺(D)`, and `D = ℚ(√3)` (`h = 1`, `h⁺ = 2`) supplies an
-object satisfying every hypothesis that no `F`-point of a geometrically
-irreducible `X₀` can receive. So
-`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (the sorry
-node) and `exists_splitHilbertBlumenthalModuli_of_standardLevelModule` (its
-assembly) are unprovable, and `exists_splitHilbertBlumenthalModuli` — hence
-this declaration's own proof — rests on them. The verdict, the refutation of
-the two obvious repairs (`𝒩 = ⊤`; carrying Rapoport's `𝔞` as data — both see
-only `Cl(D)`, which is trivial for the witness), and the machinery the real
-repair needs (AMPLENESS on `Fermat.AbelianSchemeStruct`) are on
-`exists_splitHilbertBlumenthalModuli_of_standardLevelModule`. Only
-`exists_twistedHilbertBlumenthalDescent_of_split` is a dispatchable leaf
-under this declaration today.
+AUDIT UPDATE V (2026-07-27) — **RETRACTED THE SAME DAY; SEE AUDIT UPDATE VI
+IMMEDIATELY BELOW BEFORE ACTING ON IT.** It read: "ONE of those two is FALSE
+AS STATED and must not be dispatched at",
+`HasSplitHilbertBlumenthalModuli` asserting `GeometricallyIrreducible fX₀`
+while its fineness clause quantifies over every polarized object, with
+`D = ℚ(√3)` (`h = 1`, `h⁺ = 2`) as the witness; it concluded that
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` and
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` were unprovable
+and that only `exists_twistedHilbertBlumenthalDescent_of_split` was
+dispatchable. The refutation was CORRECT; the "do not dispatch" verdict and
+the prescribed repair were not, and both are now obsolete.
+
+AUDIT UPDATE VI (2026-07-27, later) — **THE REPAIR LANDED AND BOTH LEAVES ARE
+DISPATCHABLE.** `Fermat.PolarizationStruct` now carries POSITIVITY AS DATA —
+the polarization module `𝔞`, its cone `𝔞pos`, an isomorphism
+`𝔞 ≅ Hom^sym_{𝒪_D}(A, A^∨)` (`lam_surjective`), and `hom = λ_a` for a
+positive `a` (`posElt`, `posElt_pos`, `hom_eq_lam`) — and
+`HasSplitHilbertBlumenthalModuli` takes `𝔞` as a PARAMETER shared by `pol₀`
+and `polB`, with `𝔞pos := totallyPositiveElts D`. `X₀` is then the class-`𝔞`
+component and fineness ranges over the objects of class `𝔞`, so the two
+clauses are about the same component. This declaration instantiates
+`𝔞 := ⊤`, the principal narrow class.
+
+TWO CORRECTIONS TO UPDATE V THAT ARE WORTH KEEPING, because each of them was
+load-bearing for a wrong conclusion:
+
+* "carrying Rapoport's `𝔞` as data sees only `Cl(D)`" was right about a bare
+  MODULE isomorphism and wrong as an objection to the repair: it is the pair
+  `(𝔞, 𝔞pos)` that pins `Cl⁺`, because two identifications `𝔞 ≅ Hom^sym`
+  differ by a unit `u` with `u𝔞 = 𝔞`, and demanding that both carry `hom` to
+  a POSITIVE element forces `u` totally positive — which is exactly the
+  equivalence defining the narrow class group. Positivity had to be DATA and
+  not a `Prop` derived downstream: `λ` and `−λ` have the same kernel and
+  induce the same pairing up to inversion, so no axiom in this module's
+  torsion/Galois vocabulary can distinguish them.
+* "the machinery the real repair needs is AMPLENESS on
+  `Fermat.AbelianSchemeStruct`" pointed at the wrong subtree twice over, and
+  BOTH halves of that are worth knowing. First, it was not the binding
+  constraint: positivity is invisible to torsion — `λ` and `−λ` have the same
+  kernel and induce the same pairing up to inversion — so no amount of
+  ampleness would have let a `Prop`-valued positivity be derived in this
+  module's vocabulary. Second, the absence it asserted is NO LONGER an
+  absence, and the refuting check is one grep: `Fermat.IsAmpleSheaf`
+  (`Modularity/AmpleSheaf.lean:156`) and the relative Picard functor with
+  `Pic⁰` as `Fermat.IsRelPicZeroOf` (`ModularCurve/RelativePicard.lean:302`,
+  with `exists_relPicZero` at `:432`) were both written on 2026-07-27, over
+  `Fermat.modTensor` / `Fermat.IsInvertibleSheaf`. What genuinely remains
+  missing is only the IDENTIFICATION of `Fermat.DualStruct.dualScheme` with
+  that `Pic⁰` — `dualScheme` does not occur in `RelativePicard.lean` — which
+  is what Mumford's `φ_L` would need. Note also that
+  `Modularity/AbelianScheme.lean:1210`'s "there is NO ampleness of any kind"
+  is stale for the same reason.
+
+DO NOT RE-PROPOSE pushing `h⁺(D) = 1` upstream: `D` is produced to hit a
+prescribed residue field and the route quantifies over all `ℓ`, so the
+hypothesis would have a real-quadratic case that is Gauss's class-number-one
+problem. That reasoning is recorded on `Fermat.PolarizationStruct` and on
+`HasSplitHilbertBlumenthalModuli`.
+
+BOTH leaves under this declaration are live and dispatchable today:
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (Rapoport §1)
+and `exists_twistedHilbertBlumenthalDescent_of_split` (Taylor Lemma 4.4).
+Each carries its own CUT-AXIS AUDIT saying which axes have been searched.
 
 One correction to the AUDIT UPDATE above, worth stating because it was
 load-bearing for the cut and is not quite what that paragraph says. The new
@@ -29262,7 +31764,9 @@ producing them is part of Rapoport's leaf. Anyone auditing the claim
 suffices to STATE the normalization as bundled data, and does not suffice
 to WRITE a canonical normalized level module.
 
-AUDIT UPDATE V (2026-07-27) — this node now takes
+AUDIT UPDATE VII (2026-07-27; it carried the label "AUDIT UPDATE V" until
+2026-07-27, colliding with the retracted falsity verdict above — the two are
+unrelated) — this node now takes
 `hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp` and passes it through. That
 is the determinant coupling `det ρbarp = χ̄_p`, which the COUPLING AUDIT on
 `exists_twistedHilbertBlumenthalDescent_of_split` shows that leaf entails and
@@ -31305,11 +33809,21 @@ theorem exists_torsionParam_of_divisible {P : Type*} [AddCommGroup P]
       (∀ n : ℕ, n ≠ 0 → ∀ y : P, (n : ℤ) • y = 0 → ∃ v, θ v = y) :=
   sorry
 
-/-- **THE CLASSIFICATION OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
+/-- **THE ADAPTED FRAME OF THE INVOLUTION** (sorry leaf, cut 2026-07-27 out of
+`exists_conj_realConjAdd`, itself cut the same day out of
 `exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
 which is neither `+1` nor `−1` on any `n`-torsion with `n ≥ 3`, and whose fixed
-`2`-torsion has `4` elements (`ε = false`) or `2` elements (`ε = true`), is
-conjugate IN `Aut((ℚ/ℤ)²)` to `realConjAdd _ ε`.
+`2`-torsion has `4` elements (`ε = false`) or `2` elements (`ε = true`), admits
+an ADAPTED FRAME — a pair of additive maps `u, w : ℚ/ℤ → (ℚ/ℤ)²` with
+
+* `c (u t) = u t` (`u` spans the `+1`-line),
+* `c (w t) = [ε]·u t − w t` (`w` spans the second line, twisted by `ε`),
+* `(a, b) ↦ u a + w b` BIJECTIVE (the two lines really do span).
+
+That is exactly a basis in which `c` is the matrix `realConjAdd _ ε`, written
+without the `≃+` bookkeeping; `exists_conj_realConjAdd` below reassembles the
+automorphism from it in real code.  The whole mathematical content of the
+classification is here.
 
 Nothing here mentions elliptic curves, `ℝ`, or `ℂ`: this is integral linear
 algebra, and it is the half of the node that "separates the two determinant-`−1`
@@ -31339,6 +33853,64 @@ conjugation acts on `μ_n` by inversion.  Stating the hypothesis this way keeps
 
 FAITHFULNESS: the conclusion is an equation of maps, so no junk `α` satisfies it,
 and both values of `ε` are genuinely reachable (the two conjugacy classes above),
+so this is not vacuous.
+
+CUT 2026-07-27 (this task): the existential over `≃+` is replaced by an
+existential over an ADAPTED FRAME (`exists_conjFrame_realConjAdd` below), and the
+assembly — building the automorphism out of the frame and checking the
+intertwining equation — is real code. -/
+theorem exists_conjFrame_realConjAdd (ε : Bool)
+    (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
+    (hc : ∀ x, c (c x) = x)
+    (hne_id : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ x)
+    (hne_neg : ∀ n : ℕ, 3 ≤ n → ∃ x, (n : ℤ) • x = 0 ∧ c x ≠ -x)
+    (hfix2 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
+      (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4) :
+    ∃ u w : (ℚ ⧸ (1 : Submodule ℤ ℚ)) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
+      (∀ t, c (u t) = u t) ∧
+      (∀ t, c (w t) = (if ε then u t else 0) - w t) ∧
+      Function.Bijective
+        (fun v : Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ)) => u (v 0) + w (v 1)) :=
+  sorry
+
+/-- **THE CLASSIFICATION OF THE INVOLUTION** (PROVEN 2026-07-27 from
+`exists_conjFrame_realConjAdd`; formerly a sorry leaf, cut 2026-07-27 out of
+`exists_realWeierstrassCurveWithConjTorsion`): an involution `c` of `(ℚ/ℤ)²`
+which is neither `+1` nor `−1` on any `n`-torsion with `n ≥ 3`, and whose fixed
+`2`-torsion has `4` elements (`ε = false`) or `2` elements (`ε = true`), is
+conjugate IN `Aut((ℚ/ℤ)²)` to `realConjAdd _ ε`.
+
+THE ASSEMBLY, which is real code: take the frame `u, w` from
+`exists_conjFrame_realConjAdd`, set `α v = u (v 0) + w (v 1)` (additive because
+`u` and `w` are, an equivalence because the frame is bijective), and compute
+both sides of the intertwining equation on the standard basis directions.  With
+`realConjAdd M ε v = ![v 0 + (if ε then v 1 else 0), −v 1]` one gets
+
+  `α (realConjAdd ε v) = u (v 0) + (if ε then u (v 1) else 0) − w (v 1)`
+
+and, from `c ∘ u = u` and `c ∘ w = [ε]·u − w`, exactly the same value for
+`c (α v)`.  So the whole mathematical content is now in the frame leaf, and the
+`≃+` bookkeeping is discharged.
+
+WHAT REMAINS OPEN, and it is the honest cost of this cut: the frame leaf.  It
+still asks for the `ℤ₂`-lattice classification described above.  Two routes, both
+recorded so a successor need not rediscover them:
+
+* *Ẑ-lattices*: `End((ℚ/ℤ)²) = M₂(Ẑ)` and the problem splits over the primes; at
+  odd `p` the idempotent `(1+c)/2` splits the `ℤ_p`-lattice and `c|A[p] ≠ ±1`
+  forces `ℤ_p ⊕ ℤ_p(−)`; at `p = 2` the indecomposable `ℤ₂[C₂]`-lattices are
+  `triv`, `sign` and the regular module (Diederichsen–Reiner), and the fixed
+  `2`-torsion count separates `diag(1,−1)` from the swap.
+* *Compatible finite levels*: for each `n` the set of adapted bases of `A[n]` is
+  finite and (by the previous item at level `n`) nonempty, the restriction maps
+  make an inverse system over the divisibility order, and
+  `nonempty_sections_of_finite_cofiltered_system` (Mathlib,
+  `CategoryTheory/CofilteredSystem.lean`) produces a section — the SAME
+  machinery the sibling `exists_torsionParam_of_divisible` needs, so building it
+  once discharges both.
+
+FAITHFULNESS: the conclusion is an equation of maps, so no junk `α` satisfies it,
+and both values of `ε` are genuinely reachable (the two conjugacy classes above),
 so this is not vacuous. -/
 theorem exists_conj_realConjAdd (ε : Bool)
     (c : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))))
@@ -31348,8 +33920,20 @@ theorem exists_conj_realConjAdd (ε : Bool)
     (hfix2 : Nat.card {x : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) //
       (2 : ℤ) • x = 0 ∧ c x = x} = if ε then 2 else 4) :
     ∃ α : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) ≃+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))),
-      ∀ v, α (realConjAdd _ ε v) = c (α v) :=
-  sorry
+      ∀ v, α (realConjAdd _ ε v) = c (α v) := by
+  obtain ⟨u, w, hu, hw, hbij⟩ := exists_conjFrame_realConjAdd ε c hc hne_id hne_neg hfix2
+  set φ : (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) →+ (Fin 2 → (ℚ ⧸ (1 : Submodule ℤ ℚ))) :=
+    AddMonoidHom.mk' (fun v => u (v 0) + w (v 1)) (by
+      intro v v'
+      show u (v 0 + v' 0) + w (v 1 + v' 1) = (u (v 0) + w (v 1)) + (u (v' 0) + w (v' 1))
+      rw [map_add, map_add]
+      abel) with hφ
+  refine ⟨AddEquiv.ofBijective φ hbij, fun v => ?_⟩
+  show u ((realConjAdd _ ε v) 0) + w ((realConjAdd _ ε v) 1) = c (u (v 0) + w (v 1))
+  have h0 : (realConjAdd _ ε v) 0 = v 0 + (if ε then v 1 else 0) := rfl
+  have h1 : (realConjAdd _ ε v) 1 = -v 1 := rfl
+  rw [h0, h1, map_add, map_neg, map_add, hu (v 0), hw (v 1)]
+  cases ε <;> (simp; try abel)
 
 /-- **THE ABSTRACT NODE** (PROVEN 2026-07-27 from the two leaves above): a
 divisible abelian group whose `n`-torsion has `n²` elements, carrying an
@@ -31558,7 +34142,60 @@ argument on `E[n]` may be shorter than a full pairing.
 
 Do NOT weaken this to `σ ≠ 1` only: the statement is FALSE for `n ≤ 2`, since
 `+1 = −1` on `E[2]`, which is exactly why the sibling
-`card_fixed_twoTorsion_realTestCurve` carries the `n = 2` information separately. -/
+`card_fixed_twoTorsion_realTestCurve` carries the `n = 2` information separately.
+
+CUT 2026-07-27 (this task): the leaf is discharged from the single sub-leaf
+`exists_weilPairing_real` below — the Weil pairing over `ULift ℝ`, stated in the
+ONLY form the node consumes — plus a real assembly.  See that leaf's docstring
+for why the pairing form was chosen over the determinant form.
+
+**WHY THE PAIRING MUST LIVE ON THE `n`-TORSION AND NOT ON `E(ℝ̄)`.**  A tempting
+simplification is to state a biadditive `e : E(ℝ̄) × E(ℝ̄) → ZMod n` and require
+`e x y = 1` for some torsion pair.  That statement is FALSE, not merely
+inconvenient: `E(ℝ̄)` is DIVISIBLE (`TorsionCard.smul_surjective`), so
+`E(ℝ̄)/n E(ℝ̄) = 0` and every additive map `E(ℝ̄) → ZMod n` is zero.  The
+`Submodule.torsionBy` phrasing below is what keeps the leaf true. -/
+theorem exists_weilPairing_real (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsElliptic]
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) (n : ℕ) (hn : 1 ≤ n) :
+    letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+    ∃ e : (Submodule.torsionBy ℤ (WeierstrassCurve.Affine.baseChange E
+              (AlgebraicClosure (ULift.{u} ℝ))).Point (n : ℤ)) →+
+          (Submodule.torsionBy ℤ (WeierstrassCurve.Affine.baseChange E
+              (AlgebraicClosure (ULift.{u} ℝ))).Point (n : ℤ)) →+ ZMod n,
+      (∃ a b, e a b = 1) ∧
+      (∀ a b, e (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map
+                  (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+                    AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) a)
+                (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map
+                  (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+                    AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) b) = - e a b) :=
+  sorry
+
+/-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (PROVEN
+2026-07-27 from `exists_weilPairing_real`; formerly a sorry leaf, cut 2026-07-27
+out of `exists_realWeierstrassCurveWithConjTorsion`).
+
+THE ASSEMBLY, which is real code and is the reason the pairing form was chosen
+over the determinant form: both halves fall out of ONE contradiction.  Suppose
+`σ` acts as `η · id` on `E[n]` with `η = ±1`.  The pairing is biadditive, so
+`e (η a) (η b) = η² · e a b = e a b`; the sub-leaf says the same quantity is
+`− e a b`; so `2 · e a b = 0` for all `a, b`, and the pair with `e a b = 1`
+turns that into `(2 : ZMod n) = 0`, i.e. `n ∣ 2`, contradicting `n ≥ 3`.
+
+That is why the sub-leaf is stated as a PAIRING rather than as
+`det(σ | E[n]) = χ_n(σ)`.  The determinant route needs
+`WeilPairing.det_eq_of_conj`, which is stated over a FIELD of coefficients, and
+`ZMod n` is not a field unless `n` is prime; the argument above needs no
+determinant, no rank hypothesis and no primality, and covers `η = +1` and
+`η = −1` with the same three lines.
+
+WHAT REMAINS OPEN is exactly the Weil pairing over `ULift ℝ`
+(`exists_weilPairing_real`).  The tree's `WeilPairing.exists_weilPairing` is
+stated for `E : WeierstrassCurve ℚ` only; the linear-algebra half
+(`pairing_map_eq_det_smul`, `det_eq_of_conj`) is already over an arbitrary
+field, so what is missing is the pairing itself over a general base, plus the
+observation that complex conjugation inverts `μ_n` — which is what turns the
+Galois-equivariance `σ(e(x,y)) = e(σx, σy)` into the `−1` above. -/
 theorem exists_torsion_conj_ne (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsElliptic]
     (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) (n : ℕ) (hn : 3 ≤ n) :
     letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
@@ -31571,10 +34208,179 @@ theorem exists_torsion_conj_ne (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsEllip
         (n : ℤ) • x = 0 ∧
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
-            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x ≠ -x) :=
-  sorry
+            AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x ≠ -x) := by
+  letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+  haveI : NeZero n := ⟨by omega⟩
+  obtain ⟨e, ⟨a₀, b₀, hab⟩, hconj⟩ := exists_weilPairing_real.{u} E σ hσ n (by omega)
+  -- `2 = 0` in `ZMod n` is impossible for `n ≥ 3`
+  have hcontra : (2 : ZMod n) = 0 → False := by
+    intro h2
+    have hd : ((n : ℤ)) ∣ (2 : ℤ) := by
+      rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+      push_cast
+      exact h2
+    have : (n : ℤ) ≤ 2 := Int.le_of_dvd (by norm_num) hd
+    omega
+  constructor
+  · by_contra hno
+    push Not at hno
+    have hfix : ∀ a, TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) a = a := by
+      intro a
+      exact Subtype.ext (hno a.1 a.2)
+    apply hcontra
+    have h := hconj a₀ b₀
+    rw [hfix a₀, hfix b₀, hab] at h
+    linear_combination h
+  · by_contra hno
+    push Not at hno
+    have hneg : ∀ a, TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) a = -a := by
+      intro a
+      exact Subtype.ext (hno a.1 a.2)
+    apply hcontra
+    have h := hconj a₀ b₀
+    rw [hneg a₀, hneg b₀] at h
+    simp only [map_neg, AddMonoidHom.neg_apply, neg_neg] at h
+    rw [hab] at h
+    linear_combination h
 
-/-- **THE REAL `2`-TORSION COUNT** (sorry leaf, cut 2026-07-27 out of
+section RealTwoTorsionCount
+
+open _root_.WeierstrassCurve.Affine
+
+/-- **`2`-TORSION IS `P = −P`** (PROVEN 2026-07-27) — `(2 : ℤ) • P = P + P`, and
+`P + P = 0` iff `P = −P`. -/
+lemma two_zsmul_point_eq_zero_iff {F : Type*} [Field F] [DecidableEq F]
+    (W : _root_.WeierstrassCurve.Affine F) (P : W.Point) : (2 : ℤ) • P = 0 ↔ P = -P := by
+  rw [two_zsmul, add_eq_zero_iff_eq_neg]
+
+/-- **`Nat.card (Option X) = Nat.card X + 1`** (PROVEN 2026-07-27) for finite
+`X`; this is what converts the point at infinity into the `+1` of the count. -/
+lemma natCard_option_eq {X : Type*} [Finite X] : Nat.card (Option X) = Nat.card X + 1 := by
+  haveI := Fintype.ofFinite X
+  simp [Nat.card_eq_fintype_card, Fintype.card_option]
+
+/-- **THE EQUATION AT `y = 0` FOR A SHORT MODEL** (PROVEN 2026-07-27): when
+`a₁ = a₂ = a₃ = a₆ = 0`, the affine equation at `y = 0` is `x³ + a₄ x = 0`. -/
+lemma affine_equation_zero_iff_of_short {K : Type*} [Field K]
+    (W : _root_.WeierstrassCurve.Affine K)
+    (h1 : W.a₁ = 0) (h2 : W.a₂ = 0) (h3 : W.a₃ = 0) (h6 : W.a₆ = 0) (x : K) :
+    W.Equation x 0 ↔ x ^ 3 + W.a₄ * x = 0 := by
+  rw [_root_.WeierstrassCurve.Affine.equation_iff, h1, h2, h3, h6]
+  constructor <;> intro h <;> linear_combination -h
+
+/-- **THE FIXED `2`-TORSION AT AN AFFINE POINT** (PROVEN 2026-07-27): for a curve
+with `a₁ = a₃ = 0` over a field of characteristic `≠ 2`, an affine point
+`(x, y)` is `2`-torsion and `f`-fixed exactly when `y = 0` and `f x = x`.
+
+`negY x y = −y − a₁ x − a₃` collapses to `−y`, so `P = −P` reads `y = −y`, i.e.
+`2y = 0`; and `Point.map f (x, y) = (f x, f y)`, so the fixed condition splits
+into the two coordinates, the second of which is free once `y = 0`. -/
+lemma point_some_twoTorsion_fixed_iff {R : Type u} [CommRing R] {K : Type u} [Field K]
+    [Algebra R K] [DecidableEq K] (W' : _root_.WeierstrassCurve R)
+    (h1 : W'.a₁ = 0) (h3 : W'.a₃ = 0) (h2 : (2 : K) ≠ 0) (f : K →ₐ[R] K)
+    (x y : K) (h : (baseChange W' K).Nonsingular x y) :
+    ((2 : ℤ) • (Point.some x y h) = 0 ∧
+        Point.map f (Point.some x y h) = Point.some x y h) ↔ (y = 0 ∧ f x = x) := by
+  have hnegY : (baseChange W' K).negY x y = -y := by
+    simp [_root_.WeierstrassCurve.Affine.negY, h1, h3]
+  constructor
+  · rintro ⟨htor, hfix⟩
+    rw [two_zsmul_point_eq_zero_iff, Point.neg_some, Point.some.injEq] at htor
+    refine ⟨?_, ?_⟩
+    · have hy : y = -y := by rw [hnegY] at htor; exact htor.2
+      have h2' : (2 : K) * y = 0 := by linear_combination hy
+      rcases mul_eq_zero.mp h2' with hz | hz
+      · exact absurd hz h2
+      · exact hz
+    · rw [Point.map_some, Point.some.injEq] at hfix
+      exact hfix.1
+  · rintro ⟨rfl, hfx⟩
+    refine ⟨?_, ?_⟩
+    · rw [two_zsmul_point_eq_zero_iff, Point.neg_some, Point.some.injEq]
+      exact ⟨rfl, by rw [hnegY]; ring⟩
+    · rw [Point.map_some, Point.some.injEq]
+      exact ⟨hfx, map_zero f⟩
+
+/-- **THE FIXED `2`-TORSION AS `Option` OF THE FIXED ROOTS** (PROVEN 2026-07-27):
+for `a₁ = a₃ = 0` and characteristic `≠ 2`, the `f`-fixed `2`-torsion of `W'` over
+`K` is the point at infinity together with the `f`-fixed roots of the cubic. -/
+noncomputable def twoTorsionFixedEquivOptionRoots {R : Type u} [CommRing R] {K : Type u}
+    [Field K] [Algebra R K] [DecidableEq K] (W' : _root_.WeierstrassCurve R)
+    (h1 : W'.a₁ = 0) (h3 : W'.a₃ = 0) (h2 : (2 : K) ≠ 0) (f : K →ₐ[R] K) :
+    {P : (baseChange W' K).Point // (2 : ℤ) • P = 0 ∧ Point.map f P = P}
+      ≃ Option {x : K // (baseChange W' K).Nonsingular x 0 ∧ f x = x} := by
+  refine (nonsingularPointEquivSubtype (W' := baseChange W' K)
+    (p := fun P => (2 : ℤ) • P = 0 ∧ Point.map f P = P)
+    ⟨smul_zero (2 : ℤ), rfl⟩).trans ?_
+  refine Equiv.optionCongr ?_
+  refine ⟨fun z => ⟨z.1.1, ?_, ?_⟩, fun z => ⟨⟨z.1, 0⟩, ⟨z.2.1, ?_⟩⟩, ?_, ?_⟩
+  · obtain ⟨⟨x, y⟩, hns, hp⟩ := z
+    have hy := (point_some_twoTorsion_fixed_iff W' h1 h3 h2 f x y hns).mp hp
+    exact hy.1 ▸ hns
+  · obtain ⟨⟨x, y⟩, hns, hp⟩ := z
+    exact ((point_some_twoTorsion_fixed_iff W' h1 h3 h2 f x y hns).mp hp).2
+  · exact (point_some_twoTorsion_fixed_iff W' h1 h3 h2 f z.1 0 z.2.1).mpr ⟨rfl, z.2.2⟩
+  · rintro ⟨⟨x, y⟩, hns, hp⟩
+    have hy := ((point_some_twoTorsion_fixed_iff W' h1 h3 h2 f x y hns).mp hp).1
+    subst hy
+    rfl
+  · rintro ⟨x, hns, hfx⟩
+    rfl
+
+/-- **`ℝ̄` IS FINITE OVER `ULift ℝ`** (PROVEN 2026-07-27): the same tower
+computation as `realGal_card` — `AlgebraicClosure (ULift ℝ)` is an algebraic
+closure of `ℝ`, hence `ℝ`-isomorphic to `ℂ`, hence of `ℝ`-rank two; and
+`ULift ℝ` has `ℝ`-rank one. -/
+theorem realAlgClos_finiteDimensional :
+    FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI : IsAlgClosure ℝ ℂ := ⟨Complex.isAlgClosed, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
+  let e : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] ℂ := IsAlgClosure.equiv ℝ _ ℂ
+  have hR : Module.finrank ℝ (AlgebraicClosure (ULift.{u} ℝ)) = 2 := by
+    rw [e.toLinearEquiv.finrank_eq, Complex.finrank_real_complex]
+  haveI hfdR : FiniteDimensional ℝ (AlgebraicClosure (ULift.{u} ℝ)) := by
+    apply Module.finite_of_finrank_pos
+    rw [hR]; norm_num
+  exact Module.Finite.of_restrictScalars_finite ℝ (ULift.{u} ℝ) _
+
+/-- **AN ELEMENT OF `ℝ̄` FIXED BY ONE NONTRIVIAL AUTOMORPHISM IS REAL** (PROVEN
+2026-07-27).  `Gal(ℝ̄/ULift ℝ)` has order two (`exists_unique_realConj`), so a
+single `σ ≠ 1` already fixes `x` for EVERY automorphism, and
+`IsGalois.mem_range_algebraMap_iff_fixed` puts `x` in the base field.  This is
+what makes `i ∉ ULift ℝ` do the work in the `ε = true` count.
+
+The instance arguments of `mem_range_algebraMap_iff_fixed` are supplied
+EXPLICITLY, for the same reason recorded on `realGal_card`: the elaborator's own
+search does not find the local `FiniteDimensional` witness at that application. -/
+theorem exists_algebraMap_eq_of_conj_fixed
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1)
+    (x : AlgebraicClosure (ULift.{u} ℝ)) (hx : σ x = x) :
+    ∃ r : ULift.{u} ℝ, algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) r = x := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI hfd : FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    realAlgClos_finiteDimensional.{u}
+  obtain ⟨σ₀, hσ₀ne, _, hσ₀uniq⟩ := exists_unique_realConj.{u}
+  haveI hgal : IsGalois (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    IsAlgClosure.isGalois _ _
+  have hall : ∀ τ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+      AlgebraicClosure (ULift.{u} ℝ), τ x = x := by
+    intro τ
+    by_cases hτ : τ = 1
+    · rw [hτ]; rfl
+    · have hτ0 : τ = σ₀ := hσ₀uniq τ hτ
+      have hσσ : σ = σ₀ := hσ₀uniq σ hσ
+      rw [hτ0, ← hσσ]; exact hx
+  exact (@IsGalois.mem_range_algebraMap_iff_fixed (ULift.{u} ℝ) _
+    (AlgebraicClosure (ULift.{u} ℝ)) _ _ hgal hfd x).mpr hall
+
+/-- **THE REAL `2`-TORSION COUNT** (PROVEN 2026-07-27 from the six lemmas above;
+formerly a sorry leaf, cut 2026-07-27 out of
 `exists_realWeierstrassCurveWithConjTorsion`) — the second genuinely archimedean
 input, and the ROOT-COUNTING FACT that the old leaf's docstring identified as the
 cheap replacement for Weierstrass uniformisation.  It is the only place the two
@@ -31593,7 +34399,18 @@ FAITHFULNESS: the count `4` versus `2` is `#E(ℝ)[2]`, i.e. one plus the number
 real roots of the cubic, which is three when `Δ > 0` and one when `Δ < 0`.  That
 is the classical invariant separating the two real forms, and it is what
 `exists_conj_realConjAdd` consumes to decide between `diag(1,−1)` and
-`[[1,1],[0,−1]]`. -/
+`[[1,1],[0,−1]]`.
+
+THE PROOF, which is real code.  `twoTorsionFixedEquivOptionRoots` reduces the
+count to `Option` of the `σ`-fixed roots of `x³ ± x`; then
+
+* `ε = false` (`a = −1`): `x(x−1)(x+1) = 0`, and `0`, `1`, `−1` are fixed by
+  every algebra automorphism, so the root set is exactly `{0, 1, −1}` — THREE
+  roots, plus the point at infinity, gives `4`;
+* `ε = true` (`a = 1`): `x(x² + 1) = 0`, and a fixed `x` with `x² = −1` would be
+  the image of some `r : ULift ℝ` with `r² = −1` by
+  `exists_algebraMap_eq_of_conj_fixed`, which `nlinarith` refutes — so the root
+  set is `{0}`, ONE root, and the count is `2`. -/
 theorem card_fixed_twoTorsion_realTestCurve (ε : Bool)
     (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) :
     letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
@@ -31603,8 +34420,102 @@ theorem card_fixed_twoTorsion_realTestCurve (ε : Bool)
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
             AlgebraicClosure (ULift.{u} ℝ)).toAlgHom x = x}
-      = if ε then 2 else 4 :=
-  sorry
+      = if ε then 2 else 4 := by
+  letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI hcharK : CharZero (AlgebraicClosure (ULift.{u} ℝ)) :=
+    charZero_of_injective_algebraMap
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))).injective
+  haveI hell : ((realTestCurve.{u} ε).baseChange
+      (AlgebraicClosure (ULift.{u} ℝ))).IsElliptic :=
+    inferInstanceAs (((realTestCurve.{u} ε).map
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)))).IsElliptic)
+  set K := AlgebraicClosure (ULift.{u} ℝ) with hK
+  set f : K →ₐ[ULift.{u} ℝ] K :=
+    (σ : K ≃ₐ[ULift.{u} ℝ] K).toAlgHom with hf
+  have hfx : ∀ x : K, f x = σ x := fun _ => rfl
+  -- the coefficients of the base-changed test curve
+  have ha1 : (baseChange (realTestCurve.{u} ε) K).a₁ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha2 : (baseChange (realTestCurve.{u} ε) K).a₂ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha3 : (baseChange (realTestCurve.{u} ε) K).a₃ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha6 : (baseChange (realTestCurve.{u} ε) K).a₆ = 0 := by
+    simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+      _root_.WeierstrassCurve.map]
+  have ha4 : (baseChange (realTestCurve.{u} ε) K).a₄ = (if ε then 1 else -1 : K) := by
+    cases ε <;>
+      simp [realTestCurve, shortWeierstrassModel, _root_.WeierstrassCurve.baseChange,
+        _root_.WeierstrassCurve.map]
+  -- the root condition on the fixed 2-torsion
+  have hroot : ∀ x : K, (baseChange (realTestCurve.{u} ε) K).Nonsingular x 0 ↔
+      x ^ 3 + (if ε then 1 else -1 : K) * x = 0 := by
+    intro x
+    rw [← _root_.WeierstrassCurve.Affine.equation_iff_nonsingular,
+      affine_equation_zero_iff_of_short _ ha1 ha2 ha3 ha6, ha4]
+  cases ε with
+  | false =>
+      have hequiv : {x : K // (baseChange (realTestCurve.{u} false) K).Nonsingular x 0 ∧ f x = x}
+          ≃ ({0, 1, -1} : Set K) := by
+        refine Equiv.subtypeEquivRight fun x => ?_
+        rw [hroot x, hfx x]
+        simp only [Bool.false_eq_true, if_false, Set.mem_insert_iff, Set.mem_singleton_iff]
+        constructor
+        · rintro ⟨heq, -⟩
+          have hfac : x * (x - 1) * (x + 1) = 0 := by linear_combination heq
+          rcases mul_eq_zero.mp hfac with h | h
+          · rcases mul_eq_zero.mp h with h' | h'
+            · exact Or.inl h'
+            · exact Or.inr (Or.inl (by linear_combination h'))
+          · exact Or.inr (Or.inr (by linear_combination h))
+        · rintro (rfl | rfl | rfl)
+          · exact ⟨by ring, map_zero σ⟩
+          · exact ⟨by ring, map_one σ⟩
+          · exact ⟨by ring, by rw [map_neg, map_one]⟩
+      have hcard : Nat.card (Option ({0, 1, -1} : Set K)) = 4 := by
+        rw [natCard_option_eq, Nat.card_coe_set_eq, Set.ncard_eq_three.mpr
+          ⟨0, 1, -1, by norm_num, by norm_num, by norm_num, rfl⟩]
+      simp only [Bool.false_eq_true, if_false]
+      exact (Nat.card_congr ((@twoTorsionFixedEquivOptionRoots (ULift.{u} ℝ) _ K _ _
+        (Classical.typeDecidableEq _) (realTestCurve.{u} false) rfl rfl
+        two_ne_zero f).trans (Equiv.optionCongr hequiv))).trans hcard
+  | true =>
+      have hequiv : {x : K // (baseChange (realTestCurve.{u} true) K).Nonsingular x 0 ∧ f x = x}
+          ≃ ({0} : Set K) := by
+        refine Equiv.subtypeEquivRight fun x => ?_
+        rw [hroot x, hfx x]
+        simp only [if_true, Set.mem_singleton_iff]
+        constructor
+        · rintro ⟨heq, hfix⟩
+          by_contra hx0
+          have hfac : x * (x ^ 2 + 1) = 0 := by linear_combination heq
+          have hsq : x ^ 2 = -1 := by
+            rcases mul_eq_zero.mp hfac with h | h
+            · exact absurd h hx0
+            · linear_combination h
+          obtain ⟨r, hr⟩ := exists_algebraMap_eq_of_conj_fixed.{u} σ hσ x hfix
+          have hz : algebraMap (ULift.{u} ℝ) K (r ^ 2 + 1) = 0 := by
+            rw [map_add, map_pow, hr, map_one, hsq]; ring
+          have hr2 : r ^ 2 + 1 = 0 :=
+            (map_eq_zero_iff _ (algebraMap (ULift.{u} ℝ) K).injective).mp hz
+          have hdown : (r.down) ^ 2 + 1 = 0 := by
+            have h := congrArg ULift.down hr2
+            simpa using h
+          nlinarith [sq_nonneg r.down]
+        · rintro rfl
+          exact ⟨by ring, map_zero σ⟩
+      have hcard : Nat.card (Option ({0} : Set K)) = 2 := by
+        rw [natCard_option_eq, Nat.card_coe_set_eq, Set.ncard_singleton]
+      exact (Nat.card_congr ((@twoTorsionFixedEquivOptionRoots (ULift.{u} ℝ) _ K _ _
+        (Classical.typeDecidableEq _) (realTestCurve.{u} true) rfl rfl
+        two_ne_zero f).trans (Equiv.optionCongr hequiv))).trans hcard
+
+end RealTwoTorsionCount
 
 /-- **THE ARCHIMEDEAN HALF of the elliptic-curve leaf** (PROVEN 2026-07-27 from
 the four leaves above — `exists_torsionParam_of_divisible`,

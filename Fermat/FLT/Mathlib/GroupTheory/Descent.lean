@@ -403,4 +403,110 @@ theorem finite_quotient_nsmul_of_prime {A : Type*} [AddCommGroup A]
         _ < p * q := Nat.mul_lt_mul_of_lt_of_le (by omega) (le_refl q) (Nat.pos_of_ne_zero hq0)
       exact finite_quotient_nsmul_mul (hp p hpp) (ih q hqlt hq0)
 
+/-! ## The Kummer reduction of weak Mordell–Weil
+
+Weak Mordell–Weil is `A(K) / nA(K)` finite.  Its classical proof
+(Silverman, *AEC* VIII.1) never argues about that quotient directly: it
+builds the **Kummer map**, which turns an element of the quotient into a
+cochain on the Galois group, and then proves that only finitely many
+such cochains occur.  The theorem below is the *reduction* — the step
+that converts "finitely many cochains" into "finite quotient" — and it
+is pure algebra: no fields, no schemes, no topology, no cohomology
+theory.
+
+The arithmetic of weak Mordell–Weil is entirely in the hypothesis
+`hfin`, and this theorem carries none of it. -/
+
+/-- **The Kummer reduction: `A / nA` is finite as soon as only finitely
+many Kummer cochains occur** (PROVEN) — Silverman, *AEC* VIII.1, in the
+form the abelian-scheme development consumes.
+
+The setting is the algebraic skeleton of the classical argument.  `M`
+plays the role of `A(K̄)`, `Γ` of the Galois group, `act` of the Galois
+action, and `ι` of the inclusion `A(K) ↪ A(K̄)`:
+
+* `hact` — `act σ` is subtractive.  It is all that is used of the action:
+  no group law on `Γ`, no action axioms, no continuity.  (`Γ` is not even
+  assumed to be a group, precisely to make that visible.)
+* `hzero`, `hadd` — `ι` is additive.  Bundling `ι` as an `A →+ M` in the
+  statement would force every caller to build the bundled map first; the
+  two field equations are what a functor-of-points producer actually has
+  in hand.
+* `hinj` — `ι` is injective, i.e. `A(K) → A(K̄)` loses nothing.
+* `hfix` — **Galois descent**: an `act`-invariant element of `M` comes
+  from `A`.  Together with `hinj` this says `ι` identifies `A` with
+  `M^Γ`; only the stated inclusion is used.
+* `hdiv` — **divisibility**: every element of `ι '' A` is `n` times
+  something in `M`.  Over an algebraically closed field this is
+  surjectivity of the isogeny `[n]`.
+* `hfin` — **the arithmetic**: only finitely many *Kummer cochains*
+  `σ ↦ act σ Q - Q` (over all `P : A` and all `Q : M` with `n • Q = ι P`)
+  occur.
+
+**The argument.**  Choose, for each `P`, some `Q P` with `n • Q P = ι P`,
+and let `c P` be its Kummer cochain.  If `c P = c P'` then
+`act σ (Q P - Q P') = Q P - Q P'` for every `σ`, so by `hfix` the
+difference is `ι a` for some `a : A`; applying `n •` and `hinj` gives
+`P - P' = n • a`.  Hence `P ↦ c P` separates the cosets of `nA`, and
+`A ⧸ nA` embeds into the finite set of cochains by sending a coset to the
+cochain of a chosen representative.
+
+**What this theorem is NOT.**  It is not weak Mordell–Weil: `hfin` is the
+whole arithmetic input, and over a number field it is what the finiteness
+of the class group and Dirichlet's unit theorem are for.  What is proven
+here is that *nothing else* is needed — in particular no cohomology
+theory, since a Kummer cochain is written down as a plain function and
+the coboundary relation never has to be formed. -/
+theorem finite_quotient_nsmul_of_kummerCochains
+    {A : Type*} [AddCommGroup A] {M : Type*} [AddCommGroup M] {Γ : Type*}
+    (n : ℕ) (act : Γ → M → M)
+    (hact : ∀ (σ : Γ) (y z : M), act σ (y - z) = act σ y - act σ z)
+    (ι : A → M) (hzero : ι 0 = 0) (hadd : ∀ a b : A, ι (a + b) = ι a + ι b)
+    (hinj : Function.Injective ι)
+    (hfix : ∀ y : M, (∀ σ : Γ, act σ y = y) → ∃ a : A, ι a = y)
+    (hdiv : ∀ P : A, ∃ Q : M, n • Q = ι P)
+    (hfin : {c : Γ → M | ∃ (P : A) (Q : M), n • Q = ι P ∧
+      c = fun σ => act σ Q - Q}.Finite) :
+    Finite (A ⧸ (nsmulAddMonoidHom n : A →+ A).range) := by
+  classical
+  set ιh : A →+ M := { toFun := ι, map_zero' := hzero, map_add' := hadd } with hιh
+  set C : Set (Γ → M) := {c : Γ → M | ∃ (P : A) (Q : M), n • Q = ι P ∧
+    c = fun σ => act σ Q - Q} with hC
+  haveI : Finite C := hfin.to_subtype
+  choose Q hQ using hdiv
+  set c : A → (Γ → M) := fun P => fun σ => act σ (Q P) - Q P with hc
+  have hcC : ∀ P : A, c P ∈ C := fun P => ⟨P, Q P, hQ P, rfl⟩
+  have key : ∀ P P' : A, c P = c P' → P - P' ∈ (nsmulAddMonoidHom n : A →+ A).range := by
+    intro P P' h
+    have hfixed : ∀ σ : Γ, act σ (Q P - Q P') = Q P - Q P' := by
+      intro σ
+      have h1 : act σ (Q P) - Q P = act σ (Q P') - Q P' := congrFun h σ
+      rw [hact]
+      exact sub_eq_sub_iff_sub_eq_sub.mp h1
+    obtain ⟨a, ha⟩ := hfix _ hfixed
+    refine ⟨a, hinj ?_⟩
+    show ι (n • a) = ι (P - P')
+    have h2 : ι (n • a) = n • ι a := map_nsmul ιh n a
+    have h3 : ι (P - P') = ι P - ι P' := map_sub ιh P P'
+    rw [h2, ha, h3, ← hQ P, ← hQ P', nsmul_sub]
+  set F : A ⧸ (nsmulAddMonoidHom n : A →+ A).range → C :=
+    fun x => ⟨c (Quotient.out x), hcC _⟩ with hF
+  have hFinj : Function.Injective F := by
+    intro x y hxy
+    have h : c (Quotient.out x) = c (Quotient.out y) := congrArg Subtype.val hxy
+    have hmem : Quotient.out x - Quotient.out y ∈
+        (nsmulAddMonoidHom n : A →+ A).range := key _ _ h
+    have hmem' : -(Quotient.out x) + Quotient.out y ∈
+        (nsmulAddMonoidHom n : A →+ A).range := by
+      have := neg_mem hmem
+      simpa [neg_sub, sub_eq_neg_add] using this
+    have h2 : ((Quotient.out x : A) : A ⧸ (nsmulAddMonoidHom n : A →+ A).range)
+        = ((Quotient.out y : A) : A ⧸ (nsmulAddMonoidHom n : A →+ A).range) :=
+      QuotientAddGroup.eq.mpr hmem'
+    calc x = ((Quotient.out x : A) : A ⧸ (nsmulAddMonoidHom n : A →+ A).range) :=
+          (Quotient.out_eq x).symm
+      _ = ((Quotient.out y : A) : A ⧸ (nsmulAddMonoidHom n : A →+ A).range) := h2
+      _ = y := Quotient.out_eq y
+  exact Finite.of_injective F hFinj
+
 end Fermat
