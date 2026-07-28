@@ -382,6 +382,13 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveExtension
 -- Adds exactly one module to the cone — its own imports (`AffineSpace`,
 -- `Birational.RationalMap`) are already here, the latter through `CurveExtension`.
 public import Mathlib.AlgebraicGeometry.Birational.Birational
+-- The `Birational ↔ functionField ≃` bridge, which `Mathlib` does not have: an
+-- isomorphism of function fields over `S` is a birational map over `S`
+-- (`birationalOver_of_iso_specFunctionField`), together with Lüroth's theorem in
+-- scheme language (`exists_iso_specFunctionField_affineSpace_of_isDominant`).
+-- These two are the entire residue of `birationalOver_affineLine_of_isDominant`
+-- below; Lüroth ITSELF is already proven in `Mathlib`.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.BirationalFunctionField
 -- `f_*𝒪_X = 𝒪_S` for a proper flat morphism with geometrically connected fibres,
 -- and the RIGIDITY LEMMA over it; this is what makes `isAdditiveOn_of_post_zero`
 -- below a theorem rather than a leaf.
@@ -29971,10 +29978,30 @@ function fields.  `Mathlib` supplies `Scheme.PartialMap`,
 `Birational ↔ functionField ≃` bridge — that bridge is this leaf's whole
 residue, and it is level-free, base-free and mathlib-shaped.
 
+**PROVEN 2026-07-28** over exactly those two pieces, both of which have
+been written where they belong, as general statements in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/BirationalFunctionField.lean`:
+
+* `AlgebraicGeometry.exists_iso_specFunctionField_affineSpace_of_isDominant`
+  — Lüroth in scheme language, i.e. steps 1–4 of the argument above with
+  `RatFunc.Luroth.algEquiv` supplying the mathematics;
+* `AlgebraicGeometry.birationalOver_of_iso_specFunctionField`
+  — the missing `Birational ↔ functionField ≃` bridge itself.
+
+Neither mentions `N`, `x0Genus`, `IsX0Compactification`, the base `S`, a
+projective line or a genus, and both are stated over an arbitrary base
+scheme / arbitrary field with no properness anywhere.
+
 **Properness is again NOT assumed**, and the statement is true without
 it.  **`hcurve` IS LOAD-BEARING**: without the dimension, `P = Spec K` is
 dominated by `𝔸¹_K` (its structure morphism is surjective) and is not
-birational to it. -/
+birational to it — it is `hcurve` that feeds step 3 (the image of
+`K(P) ↪ K(t)` is not `K`).  **`hconn` IS LOAD-BEARING** too, and only
+through integrality: it is `hcurve` and `hconn` JOINTLY that make `P`
+integral, via
+`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`, and
+without integrality `K(P)` is not a field and the embedding of step 1
+need not be injective. -/
 theorem birationalOver_affineLine_of_isDominant {K : Type} [Field K] {P : Scheme.{0}}
     {strP : P ⟶ Spec (CommRingCat.of K)}
     (hcurve : SmoothOfRelativeDimension 1 strP) (hconn : GeometricallyConnected strP)
@@ -29982,8 +30009,16 @@ theorem birationalOver_affineLine_of_isDominant {K : Type} [Field K] {P : Scheme
     (hu : u ≫ strP = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
     (hdom : IsDominant u) :
     Scheme.BirationalOver strP
-      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) :=
-  sorry
+      (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) := by
+  haveI := hcurve
+  haveI : IsIntegral P :=
+    _root_.AlgebraicGeometry.isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected
+      (n := 1) strP hconn
+  haveI : Smooth strP := SmoothOfRelativeDimension.smooth (n := 1) (f := strP)
+  obtain ⟨e, he⟩ :=
+    _root_.AlgebraicGeometry.exists_iso_specFunctionField_affineSpace_of_isDominant
+      hcurve u hu hdom
+  exact _root_.AlgebraicGeometry.birationalOver_of_iso_specFunctionField strP _ e he
 
 /-- **A curve over a field carrying a nonconstant affine line is RATIONAL**
 (PROVEN 2026-07-27 over the two level-free leaves above) — the level-free
