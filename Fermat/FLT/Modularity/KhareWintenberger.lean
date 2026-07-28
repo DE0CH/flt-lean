@@ -3528,9 +3528,9 @@ Two of the three things that requires are not Jacquet–Langlands at all:
   `exists_algHom_of_smul_eq_smul`, using
   `HeckeAlgebra.adjoin_T_U_eq_top` to see that the `T`'s and `U`'s generate.
 
-What is LEFT here is the analytic statement and nothing else: the Hilbert
-eigensystem `(E, heckeF)` — automorphic by `hmod` together with the cuspidality
-proxy `hirrF` — is matched, place by place outside `badF`, by a NONZERO weight-`2`
+What is LEFT here is the CLASSICAL PICTURE: the Hilbert eigensystem
+`(E, heckeF)` — automorphic by `hmod` together with the cuspidality proxy
+`hirrF` — is matched, place by place outside `badF`, by a NONZERO weight-`2`
 automorphic form `f` on `Dˣ` of level `U₁(S, ∅)`, which is a simultaneous
 eigenvector for every `T_w` with `w ∉ S`. Jacquet–Langlands, *Automorphic forms
 on GL(2)*, Lecture Notes in Math. **114** (1970), §14–16; see also Carayol 1986
@@ -3539,6 +3539,75 @@ at every infinite place, transfers to an automorphic representation `π'` of
 `Dˣ` with the same finite components, and `f` is the new vector in the
 `U₁(S, ∅)`-fixed line of `π'`; the eigenvalues at `w ∉ S` agree because
 `π'_w ≅ π_w` is unramified there.
+
+AUTOMORPHY AUDIT (2026-07-28) — **THIS LEAF IS NOT "PURE JACQUET–LANGLANDS",
+AND A JL PROVER CANNOT CLOSE IT.** The sentence this paragraph replaced said
+"what is LEFT here is the analytic statement and nothing else"; that is FALSE,
+and it has already been read back as a dispatch brief ("pure Jacquet–Langlands
+now — the two non-JL ingredients were factored out and proven"). The two
+factored-out ingredients really were non-JL and really are proven; what remains
+is strictly MORE than JL, not equal to it.
+
+Every hypothesis of this leaf is GALOIS-THEORETIC. `heckeF` is an abstract
+family of polynomials over a number field `E`; the only thing tying it to
+anything is `hmod`, which says its members are the Frobenius characteristic
+polynomials of `ρ|_{G_F}` outside `badF`. But the CONCLUSION demands a genuine
+automorphic object — a nonzero element of `(U₁ 𝒮).toStruct.form D E`. This is
+the FIRST and, at present, the ONLY place in the whole Carayol chain where an
+automorphic object is produced, and nothing upstream of it carries one. Two
+greps, both run:
+
+* `MoretBaillySeed` (`Modularity/MoretBailly.lean`) is where "modularity"
+  first enters the chain. Its `modular₀` field reads
+  `∀ w ∉ bad₀, (σ.charFrob w).map ι₀ = (hecke₀ w).map ψ₀`, with `hecke₀` an
+  abstract `Polynomial E₀`-valued function — a RATIONALITY statement about the
+  Frobenius traces of a Galois representation. No automorphic object.
+* `HilbertHeckeAlgebra` (`HardlyRamified/HilbertModularity.lean`), the object
+  `nonempty_hilbertHeckeAlgebra_of_moretBaillySeed` produces and the only
+  thing in the chain called a Hecke algebra, is an abstract commutative ring
+  `T` carrying operators `heckeT`, a Galois representation `ρT`, and the
+  compatibility `charFrobT`. No automorphic object, and no module it acts on.
+
+So closing this leaf means deriving "`ρ|_{G_F}` is modular" from purely
+Galois-theoretic hypotheses. That is Serre's conjecture for `ρbar` together
+with a modularity lifting theorem over `F` — or over `ℚ` plus base change,
+which is unavailable for a non-solvable Galois `F`, and `hFgal` supplies no
+solvability. It is the theorem this module exists to prove, and the
+CIRCULARITY GUARD below forbids the only in-tree route to it. Jacquet–Langlands
+is the smaller half of what is being asked; no amount of LNM 114 / Carayol §0.9
+work closes this leaf.
+
+Sharpest single check: `seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F))`
+is present on every ancestor of this leaf down to `exists_heckePackage_of_seed`
+and is DROPPED by that declaration's conclusion. Everything below it — this
+leaf included — sees only `hmod`.
+
+THE REPAIR IS UPSTREAM, AND IT IS NOW MUCH CHEAPER THAN WHEN THE PARENT'S
+"RESIDUAL FAITHFULNESS GAP" PARAGRAPH WAS WRITTEN (that paragraph, in
+`carayol_threeadic_realization_of_heckePackage`, names the same gap in prose
+and calls the fix "define Hilbert modular forms"; half of its premise is
+already retired). The vendored `TotallyDefiniteQuaternionAlgebra` development
+is in tree and green, `D` exists (STEP 1a) because `Even (Module.finrank ℚ F)`
+is now recorded where `F` is chosen, and `exists_algHom_of_smul_eq_smul` turns
+an eigenform into a Hecke character. So the automorphic object can be carried
+FROM ITS BIRTH: a field on `MoretBaillySeed` (the seed newform really is a
+Hilbert newform, hence by JL a quaternionic one), or on `HilbertHeckeAlgebra`
+(`T` really does act on `(U₁ 𝒮).toStruct.form D E`), threaded through
+`exists_heckeTraceAlgebra_of_congruentSeed`,
+`exists_heckeEigensystem_of_congruentSeed` and `exists_heckePackage_of_seed`.
+With that in hand THIS leaf becomes what its title claims — a transfer and a
+level comparison. That is a cut-level change touching six declarations across
+two files, so it is reported and deliberately NOT made here.
+
+WHAT THIS LEAF IS NOT. It is not false, and it is not vacuous in the
+junk-witness sense. Nor is `f ≠ 0` where the content lives: the space is never
+zero, because a CONSTANT function is an element of it — constants are
+`Dˣ`-invariant on the left, invariant under all of `GL₂(𝔸ᶠ)` on the right, and
+have trivial central character, so they satisfy every field of
+`WeightTwoAutomorphicForm` and lie in `form D E` for any level datum with
+trivial `χS` (they are the Eisenstein eigensystem `a_w = Nw + 1`). The content
+is entirely the EIGENVALUE MATCHING, and that matching IS the modularity of
+`ρ|_{G_F}`.
 
 `𝒮.Q = ∅` IS PART OF THE CONCLUSION AND IS NOT A WEAKENING. `Q` is the set of
 Taylor–Wiles primes, an AUXILIARY datum imposed by the patching argument
