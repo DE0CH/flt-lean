@@ -629,14 +629,33 @@ here is that `modRestrictLEIso` is routed through `modPullback`, whose component
 isomorphisms come from `Adjunction.leftAdjointUniq` and are therefore not
 definitional.
 
-ROUTE: the honest fix is probably to redefine `modRestrictLEIso` directly off
+ROUTE, with the parts that were actually tried on 2026-07-28 marked as such.
+The honest fix is to redefine `modRestrictLEIso` directly off
 `Scheme.Modules.restrictFunctorComp (Z.homOfLE h) U.ι` — restriction is a
 `SheafOfModules.pushforward` along `opensFunctor` with `restrictAppIso = Iso.refl`,
-so on sections it is literally `Γ(A, W.ι ''ᵁ ⊤) ⟶ Γ(A, U.ι ''ᵁ ⊤)` re-indexed —
-paying instead the congruence over the `[IsOpenImmersion]` instance argument that
-`Scheme.homOfLE_ι` needs.  After that the statement should reduce to naturality
-of `φ.hom.val` between `op ⊤` and `op ((Z.homOfLE h).opensFunctor.obj ⊤)`,
-exactly as in `trivializedSection_of_iso` above. -/
+so on sections it is literally `Γ(A, W.ι ''ᵁ ⊤) ⟶ Γ(A, U.ι ''ᵁ ⊤)` re-indexed.
+
+* **CHECKED: that definition typechecks**, and the congruence over the
+  `[IsOpenImmersion]` instance argument — which is what a bare
+  `rw [← Z.homOfLE_ι h]` fails on, with "motive is not type correct" — is
+  discharged by `congr 1` ALONE, leaving only the morphism goal:
+
+      eqToIso (show A.restrict W.ι = A.restrict (Z.homOfLE h ≫ U.ι) by
+        congr 1; exact (Z.homOfLE_ι h).symm) ≪≫
+      (Scheme.Modules.restrictFunctorComp (Z.homOfLE h) U.ι).app A
+
+  No `proof_irrel_heq` is needed; supplying one gives "no goals to be solved".
+* **CHECKED: the identity is still NOT `rfl`** with that definition, so the
+  remaining work is a genuine computation and not a defeq unfolding.  Do not
+  `unfold` and `simp` your way in — doing so on `restrictUnitIso` and
+  `restrictFunctorComp` together panicked the elaborator (`PANIC at
+  Lean.MetavarContext.getDecl`, an unknown-metavariable crash) rather than
+  producing a goal.
+* What is left is the naturality of `φ.hom.val` between `op ⊤` and
+  `op ((Z.homOfLE h).opensFunctor.obj ⊤)`, together with `Scheme.homOfLE_app`
+  (which rewrites `(X.homOfLE e).app W` into an honest `X.presheaf.map`).  That
+  is the same shape as `trivializedSection_of_iso` above, which is proven in
+  about twenty lines and is the model to copy. -/
 theorem trivializedSection_trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens}
     (h : W ≤ U) (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
     trivializedSection (trivializationOfLE h φ) s
