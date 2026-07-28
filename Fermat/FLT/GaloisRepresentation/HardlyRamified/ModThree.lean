@@ -50255,6 +50255,21 @@ Artin maps `φ`, `φ'`, the divisor maps `d`, `d'`, the modulus subgroup `Im'`,
 and the ray and norm subgroups `P`, `N`, `P'`, `N'` — produce the relative norm
 `𝔑` on divisors with
 
+* (0) `𝔑` IS the relative norm, pinned on the BASIS:
+  `𝔑 (single W 1) = single w (f(W/w))` for the prime `w` under `W`, with
+  `f = Ideal.inertiaDeg`. The divisor group is free abelian on the height-one
+  primes, so this determines `𝔑` outright.
+
+  **Do not drop this clause.** Without it `𝔑` is pinned only up to the
+  properties (α)–(γ) below, all of which many non-norm maps satisfy, and then
+  the CONSUMER's remaining obligation (`hbase`, the common norm base
+  `β = N_{E/F} B` lying in *both* `𝔑₁(Im₁)` and `𝔑₂(Im₂)`) is not provable:
+  its whole argument is `N_{E/F} = 𝔑_i ∘ N_{E/E_i}` for the compositum
+  `E = E₁E₂`, which is a statement ABOUT the norm and says nothing about an
+  arbitrary map satisfying (α)–(γ). This is the same under-pinning that made
+  `ι` a cut-level defect until 2026-07-28; it is fixed here at the same time
+  and for the same reason.
+
 * (α) the **CONSISTENCY PROPERTY** `φ (𝔑 x) = φ' x` — Childress ch. 5, the
   statement that the Artin symbol of a norm is the Artin symbol upstairs;
 * (β) `𝔑 (P') ≤ P` and `𝔑 (N') ≤ N` — the norm of a totally positive
@@ -50290,10 +50305,10 @@ recorded as a possible cut-level defect on 2026-07-27 with exactly this repair
 prescribed, and the repair is now in the two lemmas above.
 
 **FAITHFULNESS: TRUE as stated, and NOT vacuous.** True by the route (it is
-Childress's own construction). Not vacuous: `𝔑` is pinned by (α) against a `φ'`
-that is itself pinned on the basis by `hφv'`, so the junk witness `𝔑 = 1` is
-excluded as soon as `χ ∘ ι ≠ 1` — and (γ) excludes it outright, since
-`single v 1 ≠ 1` in the divisor group. `hv` is load-bearing in (β): a prime
+Childress's own construction). Not vacuous in the strongest available sense:
+(0) determines `𝔑` completely, so there is exactly one witness and no junk one
+— (α), (β), (γ) are then genuine assertions about the relative norm rather than
+constraints a witness may be tailored to. `hv` is load-bearing in (β): a prime
 dividing `mm` is not a generator of `N`.
 
 **Check that would refute it**: hypotheses as stated together with an `x` in
@@ -50368,6 +50383,12 @@ theorem exists_relNormDivisorHom_ray_class
         (NumberField.RingOfIntegers E) →₀ ℤ) →*
       Multiplicative (IsDedekindDomain.HeightOneSpectrum
         (NumberField.RingOfIntegers F) →₀ ℤ),
+      (∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E))
+        (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+        W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
+        𝔑 (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
+          = Multiplicative.ofAdd (Finsupp.single w
+              (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ))) ∧
       (∀ x, φ (𝔑 x) = φ' x) ∧
       Subgroup.map 𝔑 P' ≤ P ∧ Subgroup.map 𝔑 N' ≤ N ∧
       Multiplicative.ofAdd (Finsupp.single v (1 : ℤ)) ∈ Subgroup.map 𝔑 Im' :=
@@ -50723,12 +50744,12 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- the two push-forwards, and the complete splitting of `v` resp. `v₀` in its
   -- own auxiliary field.  ONE leaf, applied twice — until 2026-07-28 this was
   -- two anonymous sorried `have`s carrying identical mathematics.
-  obtain ⟨𝔑₁, hcons₁, hP𝔑₁, hN𝔑₁, hv𝔑₁⟩ :=
+  obtain ⟨𝔑₁, hbasis₁, hcons₁, hP𝔑₁, hN𝔑₁, hv𝔑₁⟩ :=
     exists_relNormDivisorHom_ray_class F χ hmul E₁ hfin₁ ι₁ hinj₁ jE₁ j₁ hjE₁ hιapp₁
       m₁ hm₁pos hcyc₁ mm hmm hmmram mmE₁ hmmE₁ne hmmE₁dvd hmmE₁abs φ φ₁ d d₁ P N
       Im₁ P₁ N₁ hd hd₁ hφv hφv₁ hIm₁ hP hN hP₁def hN₁def v hv hm₁v
       (hsurH₁ (globalFrob v) hfrobv₁)
-  obtain ⟨𝔑₂, hcons₂, hP𝔑₂, hN𝔑₂, hv𝔑₂⟩ :=
+  obtain ⟨𝔑₂, hbasis₂, hcons₂, hP𝔑₂, hN𝔑₂, hv𝔑₂⟩ :=
     exists_relNormDivisorHom_ray_class F χ hmul E₂ hfin₂ ι₂ hinj₂ jE₂ j₂ hjE₂ hιapp₂
       m₂ hm₂pos hcyc₂ mm hmm hmmram mmE₂ hmmE₂ne hmmE₂dvd hmmE₂abs φ φ₂ d d₂ P N
       Im₂ P₂ N₂ hd hd₂ hφv hφv₂ hIm₂ hP hN hP₂def hN₂def v₀ hv₀ hm₂v
@@ -50736,17 +50757,33 @@ theorem exists_artinNormSubgroups_ramified_ray_class
   -- STEP 2 (OPEN, item (2) of the decomposition note): the common norm base,
   -- built from the COMPOSITUM of the two auxiliary fields — this is Childress's
   -- `b_F = N_{E/F} B_E`, and it is why a single auxiliary field cannot work.
+  -- `hbasis₁`/`hbasis₂` are passed in and are LOAD-BEARING: the argument is
+  -- `N_{E/F} = 𝔑_i ∘ N_{E/E_i}` for `E = E₁E₂`, which is a statement about the
+  -- relative NORM, not about an arbitrary map satisfying consistency.
   have hbase : (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₁ ∧ σ = τ * ρ) →
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H₂ ∧ σ = τ * ρ) →
       IsOpen (H₁ : Set (Γ F)) → IsOpen (H₂ : Set (Γ F)) →
       (∀ q ∈ m₁.primeFactors, q.Prime → ¬ q ∣ m₂) →
+      (∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₁))
+        (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+        W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
+        𝔑₁ (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
+          = Multiplicative.ofAdd (Finsupp.single w
+              (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ))) →
+      (∀ (W : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E₂))
+        (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)),
+        W.asIdeal.under (NumberField.RingOfIntegers F) = w.asIdeal →
+        𝔑₂ (Multiplicative.ofAdd (Finsupp.single W (1 : ℤ)))
+          = Multiplicative.ofAdd (Finsupp.single w
+              (W.asIdeal.inertiaDeg (NumberField.RingOfIntegers F) : ℤ))) →
       ∃ β : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ,
         ((φ (Multiplicative.ofAdd β) : Dickson.K 3)) = χ (globalFrob v₀) ∧
         Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₁ Im₁ ∧
         Multiplicative.ofAdd β ∈ Subgroup.map 𝔑₂ Im₂ := by
-    intro _ _ _ _ _
+    intro _ _ _ _ _ _ _
     sorry
-  obtain ⟨β, hβsym, hβ₁, hβ₂⟩ := hbase hi₁ hi₂ hH₁open hH₂open hm₂cop
+  obtain ⟨β, hβsym, hβ₁, hβ₂⟩ :=
+    hbase hi₁ hi₂ hH₁open hH₂open hm₂cop hbasis₁ hbasis₂
   exact ⟨β, Subgroup.map 𝔑₁ Im₁, Subgroup.map 𝔑₂ Im₂, hβsym, hv𝔑₁, hβ₁, hv𝔑₂, hβ₂,
     map_inf_ker_le_sup_of_normCompatible_ray_class 𝔑₁ φ φ₁ hcons₁ Im₁ P₁ N₁ P N
       hP𝔑₁ hN𝔑₁ hker₁,
@@ -50915,7 +50952,8 @@ note on `exists_artinAuxiliaryNumberField_ray_class`:**
 
 1. `exists_relNormDivisorHom_ray_class` (a NAMED LEAF since 2026-07-28, above)
    — *the relative norm on divisors*. A monoid hom `𝔑` from the divisor group
-   of the auxiliary field `E` to that of `F` with (α) the CONSISTENCY PROPERTY
+   of the auxiliary field `E` to that of `F` with (0) `𝔑` pinned ON THE BASIS
+   as `𝔑 (single W 1) = single w (f(W/w))`, (α) the CONSISTENCY PROPERTY
    `φ ∘ 𝔑 = φ'`, (β) `𝔑(P') ≤ P` and `𝔑(N') ≤ N`, and (γ)
    `single v 1 ∈ 𝔑(Im')`, i.e. `v` splits completely in `E` (Artin's clause
    `globalFrob v ∈ H`, passed in as `hvsplit`). `Ideal.relNorm` is in the pin
@@ -50934,6 +50972,22 @@ note on `exists_artinAuxiliaryNumberField_ray_class`:**
    applies to the open subgroup `H₁ ⊓ H₂` — and the coprimality clause
    `hm₂cop`, together with the two `hi` clauses (`χ(H_i) = χ(Γ F)`), is what is
    passed in for the `K ∩ E = F` half of that surjectivity.
+
+   **It is passed `hbasis₁`/`hbasis₂` — clause (0) of item 1 — and they are
+   LOAD-BEARING** (2026-07-28). Its argument is `N_{E/F} = 𝔑_i ∘ N_{E/E_i}`,
+   a statement about the relative NORM; before clause (0) existed, `𝔑_i` was
+   pinned only by (α)–(γ), which many non-norm maps satisfy, and this `have`
+   was therefore not provable as stated. That is the same under-pinning defect
+   that was recorded against `ι` and is discharged below — the two were found
+   and fixed together, which is why the note there says the reasoning
+   generalises: it generalised on the very next map in the same proof.
+
+   **It is deliberately NOT hoisted to a top-level leaf.** It mentions `𝔑₁`,
+   `𝔑₂`, `Im₁`, `Im₂`, `H₁`, `H₂`, `ι₁`, `ι₂`, `E₁`, `E₂` and their pinning
+   clauses, so a faithful hoist would carry every binder of item 1 twice; the
+   `have` keeps them in scope for free. Hoist it only if it needs a separate
+   owner, and if you do, carry clause (0) for BOTH fields or the leaf you
+   create is false.
 
 **THE CAVEAT THAT USED TO STAND HERE IS DISCHARGED (2026-07-28), and the note
 is kept because the reasoning generalises.** It read: `hcycl` is applied to the
