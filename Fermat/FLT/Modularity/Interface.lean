@@ -48222,9 +48222,189 @@ theorem pointCount_planeCurveScheme_eq_card_zeroLocus {q : ℕ} [Fact q.Prime]
         simp }
   exact eA.trans (eB.trans (eC.trans eD))
 
+/-- **Morphisms in `CommRingCat` are exactly ring homomorphisms** (PROVEN
+2026-07-28).
+
+Pure bookkeeping, but needed twice below: the residue-field maps produced by
+`AlgebraicGeometry.Scheme.SpecToEquivOfField` are CATEGORICAL morphisms, while
+the counting lemma `card_ringHom_le_card_of_finite` is about bare `RingHom`s. -/
+def commRingCatHomEquivRingHom {R S : CommRingCat.{0}} : (R ⟶ S) ≃ (R →+* S) where
+  toFun f := f.hom
+  invFun f := CommRingCat.ofHom f
+  left_inv _ := rfl
+  right_inv _ := rfl
+
+/-- **The ring maps from a field into a FINITE field form a finite set** (PROVEN
+2026-07-28).
+
+Two cases, and the interesting one is the SECOND: if `κ` is infinite there are
+NO such maps at all, because a ring map out of a field is injective and would
+make `κ` finite.  If `κ` is finite the maps embed in the (finite) function type
+`κ → L`. -/
+theorem finite_ringHom_of_finite_field {κ L : Type*} [Field κ] [Field L]
+    [Finite L] : Finite (κ →+* L) := by
+  rcases finite_or_infinite κ with h | h
+  · exact Finite.of_injective (fun f : κ →+* L => (f : κ → L)) DFunLike.coe_injective
+  · haveI : IsEmpty (κ →+* L) := ⟨fun f => by
+      haveI : Finite κ := Finite.of_injective f f.injective
+      exact not_finite κ⟩
+    infer_instance
+
+/-- **THERE ARE AT MOST `#κ` RING MAPS FROM A FIELD `κ` TO A FINITE FIELD `L`**
+(PROVEN 2026-07-28).
+
+THIS IS THE ONLY PLACE THE ERROR TERM OF
+`exists_bound_pointCount_sub_of_common_open` BELOW IS MADE INDEPENDENT OF `s`.
+The obvious bound — a ring map out of a field is injective, so the maps embed in
+`L` — is `#L = q^s` and therefore USELESS.  The bound proved here depends on the
+SOURCE only.
+
+PROOF.  If `κ` is infinite there are no maps at all (a ring map out of a field is
+injective, so `κ` would be finite), and `Nat.card κ = 0` too.  If `κ` is finite,
+`κˣ` is cyclic with some generator `g`; every element of `κ` is `0` or a power of
+`g`, so `f ↦ f g` is INJECTIVE on ring maps, and `f g` is an `n`-th root of unity
+for `n = #κˣ` because `g ^ n = 1`.  A polynomial of degree `n` over a domain has
+at most `n` roots (`Polynomial.card_nthRoots`), so there are at most
+`n = #κ − 1 ≤ #κ` maps.
+
+FAITHFULNESS.  TRUE for every field `κ` and every finite field `L`, with no
+compatibility between them assumed; when there is no map at all — which is the
+typical case — the bound is simply not tight, which is all the consumer needs. -/
+theorem card_ringHom_le_card_of_finite {κ L : Type*} [Field κ] [Field L]
+    [Finite L] : Nat.card (κ →+* L) ≤ Nat.card κ := by
+  classical
+  rcases finite_or_infinite κ with h | h
+  · obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := κˣ)
+    have hnpos : 0 < Nat.card κˣ := Nat.card_pos
+    set n := Nat.card κˣ with hn
+    set S : Finset L := (_root_.Polynomial.nthRoots n (1 : L)).toFinset with hS
+    have hmem : ∀ f : κ →+* L, f (g : κ) ∈ S := by
+      intro f
+      rw [hS, Multiset.mem_toFinset, _root_.Polynomial.mem_nthRoots hnpos]
+      have h1 : ((g : κ)) ^ n = 1 := by
+        have hgn : g ^ n = 1 := pow_card_eq_one'
+        have := congrArg (fun u : κˣ => (u : κ)) hgn
+        simpa using this
+      calc f (g : κ) ^ n = f ((g : κ) ^ n) := (map_pow f _ n).symm
+        _ = f 1 := by rw [h1]
+        _ = 1 := map_one f
+    have hinj : Function.Injective (fun f : κ →+* L => (⟨f (g : κ), hmem f⟩ : S)) := by
+      intro f₁ f₂ hf
+      have hval : f₁ (g : κ) = f₂ (g : κ) := congrArg Subtype.val hf
+      ext x
+      rcases eq_or_ne x 0 with rfl | hx
+      · simp
+      · obtain ⟨k, hk⟩ := Subgroup.mem_zpowers_iff.mp (hg (Units.mk0 x hx))
+        have hxk : x = (g : κ) ^ k := by
+          rw [← Units.val_zpow_eq_zpow_val, hk]
+          simp
+        rw [hxk, map_zpow₀, map_zpow₀, hval]
+    calc Nat.card (κ →+* L) ≤ Nat.card S := Nat.card_le_card_of_injective _ hinj
+      _ = S.card := Nat.card_eq_finsetCard S
+      _ ≤ Multiset.card (_root_.Polynomial.nthRoots n (1 : L)) := Multiset.toFinset_card_le _
+      _ ≤ n := _root_.Polynomial.card_nthRoots n 1
+      _ ≤ Nat.card κ :=
+        Nat.card_le_card_of_injective (fun u : κˣ => (u : κ)) Units.val_injective
+  · haveI : IsEmpty (κ →+* L) := ⟨fun f => by
+      haveI : Finite κ := Finite.of_injective f f.injective
+      exact not_finite κ⟩
+    simp [Nat.card_of_isEmpty, Nat.card_eq_zero_of_infinite]
+
+/-- **THE `𝔽_{q^s}`-POINTS OF `V` FACTORING THROUGH AN OPEN `U ⊆ V` ARE EXACTLY
+THE `𝔽_{q^s}`-POINTS OF `U`** (PROVEN 2026-07-28).
+
+`Spec 𝔽_{q^s}` is a ONE-POINT space, so a point of `V` whose unique image point
+lies in `Set.range uV.base` has its whole range there, and
+`IsOpenImmersion.lift` factors it through `uV`; the factorisation is unique
+because an open immersion is a monomorphism.  This is exactly the argument of
+`ModularCurve/X1.lean`'s `isCusp_iff_notMem_range`, packaged as an `Equiv`
+because the consumer needs the CARDINALITY and not just the criterion. -/
+noncomputable def relPointEquivRangeOpenImmersion {q : ℕ} [Fact q.Prime]
+    {U V : Scheme.{0}} (strV : V ⟶ _root_.Fermat.SpecF q) (uV : U ⟶ V)
+    [IsOpenImmersion uV] (s : ℕ) (p : Spec (CommRingCat.of (GaloisField q s))) :
+    _root_.Fermat.RelPoint (uV ≫ strV) (galoisFieldSpecHom q s) ≃
+      {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+        x.1.base p ∈ Set.range uV.base} where
+  toFun y := ⟨⟨y.1 ≫ uV, by rw [Category.assoc]; exact y.2⟩, ⟨y.1.base p, rfl⟩⟩
+  invFun x :=
+    ⟨IsOpenImmersion.lift uV x.1.1 (by
+        rintro _ ⟨z, rfl⟩
+        rw [Subsingleton.elim z p]
+        exact x.2), by
+      rw [← Category.assoc, IsOpenImmersion.lift_fac]
+      exact x.1.2⟩
+  left_inv _ := Subtype.ext ((cancel_mono uV).mp (IsOpenImmersion.lift_fac _ _ _))
+  right_inv _ := Subtype.ext (Subtype.ext (IsOpenImmersion.lift_fac _ _ _))
+
+/-- **THE `𝔽_{q^s}`-POINTS OF `V` NOT FACTORING THROUGH `U` ARE FINITE IN NUMBER,
+BY A BOUND INDEPENDENT OF `s`** (PROVEN 2026-07-28).
+
+This is the whole content of `exists_bound_pointCount_sub_of_common_open` below;
+the comparison itself is then bookkeeping.
+
+ROUTE.  A point of `V(𝔽_{q^s})` supported at `y ∈ V ∖ U` factors through
+`Spec κ(y)` (`AlgebraicGeometry.Scheme.SpecToEquivOfField`), so the bad points
+inject into `Σ y ∈ V ∖ U, Hom(κ(y), 𝔽_{q^s})`; `V ∖ U` is finite by hypothesis
+and each fibre has at most `#κ(y)` elements by
+`card_ringHom_le_card_of_finite`.  So `D = Σ_{y ∈ V ∖ U} #κ(y)` works, and it
+mentions `s` nowhere.
+
+NO FINITENESS OR FINITE-TYPE HYPOTHESIS IS NEEDED: `κ(y)` is allowed to be
+infinite, in which case `Nat.card κ(y) = 0` and there are genuinely no points
+supported at `y` — both sides are `0` and the bound still holds. -/
+theorem exists_bound_card_relPoint_notMem_range {q : ℕ} [Fact q.Prime]
+    {U V : Scheme.{0}} (strV : V ⟶ _root_.Fermat.SpecF q) (uV : U ⟶ V)
+    [IsOpenImmersion uV] (hV : Set.Finite ((Set.range uV.base)ᶜ)) :
+    ∃ D : ℕ, ∀ s : ℕ,
+      Finite {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+          x.1.base (IsLocalRing.closedPoint (GaloisField q s)) ∉ Set.range uV.base} ∧
+      Nat.card {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+          x.1.base (IsLocalRing.closedPoint (GaloisField q s)) ∉ Set.range uV.base} ≤ D := by
+  classical
+  haveI : Finite ((Set.range uV.base)ᶜ : Set V) := hV
+  haveI : Fintype ((Set.range uV.base)ᶜ : Set V) := Fintype.ofFinite _
+  refine ⟨∑ y : ((Set.range uV.base)ᶜ : Set V), Nat.card (V.residueField y.1), fun s => ?_⟩
+  haveI hfhom : ∀ y : ((Set.range uV.base)ᶜ : Set V),
+      Finite (V.residueField y.1 ⟶ CommRingCat.of (GaloisField q s)) := by
+    intro y
+    haveI := finite_ringHom_of_finite_field (κ := V.residueField y.1) (L := GaloisField q s)
+    exact Finite.of_equiv _ (commRingCatHomEquivRingHom (R := V.residueField y.1)
+      (S := CommRingCat.of (GaloisField q s))).symm
+  set pt : Spec (CommRingCat.of (GaloisField q s)) :=
+    IsLocalRing.closedPoint (GaloisField q s) with hpt
+  set Φ : {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+        x.1.base pt ∉ Set.range uV.base} →
+      Σ y : ((Set.range uV.base)ᶜ : Set V),
+        (V.residueField y.1 ⟶ CommRingCat.of (GaloisField q s)) :=
+    fun x => ⟨⟨x.1.1.base pt, x.2⟩,
+      (Scheme.SpecToEquivOfField (GaloisField q s) V x.1.1).2⟩ with hΦdef
+  have hΦinj : Function.Injective Φ := by
+    intro a b hab
+    have h1 : Scheme.SpecToEquivOfField (GaloisField q s) V a.1.1
+        = Scheme.SpecToEquivOfField (GaloisField q s) V b.1.1 :=
+      congrArg (fun σ : Σ y : ((Set.range uV.base)ᶜ : Set V),
+          (V.residueField y.1 ⟶ CommRingCat.of (GaloisField q s)) =>
+        (⟨σ.1.1, σ.2⟩ : Σ y : V, (V.residueField y ⟶ CommRingCat.of (GaloisField q s)))) hab
+    exact Subtype.ext (Subtype.ext ((Scheme.SpecToEquivOfField _ V).injective h1))
+  refine ⟨Finite.of_injective Φ hΦinj, ?_⟩
+  calc Nat.card {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+          x.1.base pt ∉ Set.range uV.base}
+      ≤ Nat.card (Σ y : ((Set.range uV.base)ᶜ : Set V),
+          (V.residueField y.1 ⟶ CommRingCat.of (GaloisField q s))) :=
+        Nat.card_le_card_of_injective _ hΦinj
+    _ = ∑ y : ((Set.range uV.base)ᶜ : Set V),
+          Nat.card (V.residueField y.1 ⟶ CommRingCat.of (GaloisField q s)) := Nat.card_sigma
+    _ ≤ ∑ y : ((Set.range uV.base)ᶜ : Set V), Nat.card (V.residueField y.1) := by
+        refine Finset.sum_le_sum fun y _ => ?_
+        calc Nat.card (V.residueField y.1 ⟶ CommRingCat.of (GaloisField q s))
+            = Nat.card (V.residueField y.1 →+* GaloisField q s) :=
+              Nat.card_congr commRingCatHomEquivRingHom
+          _ ≤ Nat.card (V.residueField y.1) := card_ringHom_le_card_of_finite
+
 /-- **TWO `𝔽_q`-SCHEMES SHARING AN OPEN WITH FINITE COMPLEMENTS HAVE POINT
-COUNTS DIFFERING BY A BOUND INDEPENDENT OF `s`** (sorry node, NINETEENTH
-decomposition 2026-07-28).
+COUNTS DIFFERING BY A BOUND INDEPENDENT OF `s`** (**PROVEN** 2026-07-28, over
+`relPointEquivRangeOpenImmersion` and `exists_bound_card_relPoint_notMem_range`
+above; opened as a sorry node by the NINETEENTH decomposition the same day).
 
 STATEMENT.  If `uV : U ⟶ V` and `uW : U ⟶ W` are open immersions of
 `𝔽_q`-schemes inducing the SAME structure morphism on `U`
@@ -48267,11 +48447,229 @@ theorem exists_bound_pointCount_sub_of_common_open {q : ℕ} [Fact q.Prime]
     (hV : Set.Finite ((Set.range uV.base)ᶜ))
     (hW : Set.Finite ((Set.range uW.base)ᶜ)) :
     ∃ D : ℝ, ∀ s : ℕ, 0 < s →
-      |(pointCountGaloisField strV s : ℝ) - (pointCountGaloisField strW s : ℝ)| ≤ D :=
+      |(pointCountGaloisField strV s : ℝ) - (pointCountGaloisField strW s : ℝ)| ≤ D := by
+  classical
+  obtain ⟨DV, hDV⟩ := exists_bound_card_relPoint_notMem_range strV uV hV
+  obtain ⟨DW, hDW⟩ := exists_bound_card_relPoint_notMem_range strW uW hW
+  refine ⟨(DV : ℝ) + (DW : ℝ), fun s _ => ?_⟩
+  obtain ⟨hfinBV, hbV⟩ := hDV s
+  obtain ⟨hfinBW, hbW⟩ := hDW s
+  set pt : Spec (CommRingCat.of (GaloisField q s)) :=
+    IsLocalRing.closedPoint (GaloisField q s) with hpt
+  set eV := relPointEquivRangeOpenImmersion strV uV s pt with heV
+  set eW := relPointEquivRangeOpenImmersion strW uW s pt with heW
+  have hUcard :
+      Nat.card (_root_.Fermat.RelPoint (uV ≫ strV) (galoisFieldSpecHom q s))
+        = Nat.card (_root_.Fermat.RelPoint (uW ≫ strW) (galoisFieldSpecHom q s)) := by
+    rw [hcompat]
+  by_cases hfin :
+      Finite (_root_.Fermat.RelPoint (uV ≫ strV) (galoisFieldSpecHom q s))
+  · haveI := hfin
+    haveI : Finite (_root_.Fermat.RelPoint (uW ≫ strW) (galoisFieldSpecHom q s)) := by
+      rw [← hcompat]; exact hfin
+    haveI := hfinBV
+    haveI := hfinBW
+    haveI : Finite {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+        x.1.base pt ∈ Set.range uV.base} := Finite.of_equiv _ eV
+    haveI : Finite {x : _root_.Fermat.RelPoint strW (galoisFieldSpecHom q s) //
+        x.1.base pt ∈ Set.range uW.base} := Finite.of_equiv _ eW
+    set aV := Nat.card {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+      x.1.base pt ∉ Set.range uV.base} with haV
+    set aW := Nat.card {x : _root_.Fermat.RelPoint strW (galoisFieldSpecHom q s) //
+      x.1.base pt ∉ Set.range uW.base} with haW
+    have hsplitV : Nat.card (_root_.Fermat.RelPoint strV (galoisFieldSpecHom q s))
+        = Nat.card (_root_.Fermat.RelPoint (uV ≫ strV) (galoisFieldSpecHom q s)) + aV := by
+      have h1 : Nat.card (_root_.Fermat.RelPoint strV (galoisFieldSpecHom q s))
+          = Nat.card ({x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+                x.1.base pt ∈ Set.range uV.base} ⊕
+              {x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) //
+                x.1.base pt ∉ Set.range uV.base}) :=
+        (Nat.card_congr (Equiv.sumCompl
+          fun x : _root_.Fermat.RelPoint strV (galoisFieldSpecHom q s) =>
+            x.1.base pt ∈ Set.range uV.base)).symm
+      rw [h1, Nat.card_sum, Nat.card_congr eV, haV]
+    have hsplitW : Nat.card (_root_.Fermat.RelPoint strW (galoisFieldSpecHom q s))
+        = Nat.card (_root_.Fermat.RelPoint (uW ≫ strW) (galoisFieldSpecHom q s)) + aW := by
+      have h1 : Nat.card (_root_.Fermat.RelPoint strW (galoisFieldSpecHom q s))
+          = Nat.card ({x : _root_.Fermat.RelPoint strW (galoisFieldSpecHom q s) //
+                x.1.base pt ∈ Set.range uW.base} ⊕
+              {x : _root_.Fermat.RelPoint strW (galoisFieldSpecHom q s) //
+                x.1.base pt ∉ Set.range uW.base}) :=
+        (Nat.card_congr (Equiv.sumCompl
+          fun x : _root_.Fermat.RelPoint strW (galoisFieldSpecHom q s) =>
+            x.1.base pt ∈ Set.range uW.base)).symm
+      rw [h1, Nat.card_sum, Nat.card_congr eW, haW]
+    show |(Nat.card (_root_.Fermat.RelPoint strV (galoisFieldSpecHom q s)) : ℝ)
+        - (Nat.card (_root_.Fermat.RelPoint strW (galoisFieldSpecHom q s)) : ℝ)| ≤ _
+    rw [hsplitV, hsplitW, hUcard]
+    push_cast
+    rw [add_sub_add_left_eq_sub, abs_sub_le_iff]
+    have h1 : (aV : ℝ) ≤ (DV : ℝ) := by exact_mod_cast hbV
+    have h2 : (aW : ℝ) ≤ (DW : ℝ) := by exact_mod_cast hbW
+    have h3 : (0 : ℝ) ≤ (aV : ℝ) := Nat.cast_nonneg _
+    have h4 : (0 : ℝ) ≤ (aW : ℝ) := Nat.cast_nonneg _
+    constructor <;> linarith
+  · rw [not_finite_iff_infinite] at hfin
+    haveI := hfin
+    haveI : Infinite (_root_.Fermat.RelPoint (uW ≫ strW) (galoisFieldSpecHom q s)) := by
+      rw [← hcompat]; exact hfin
+    haveI : Infinite (_root_.Fermat.RelPoint strV (galoisFieldSpecHom q s)) :=
+      Infinite.of_injective (fun y => (eV y).1) (fun _ _ h => eV.injective (Subtype.ext h))
+    haveI : Infinite (_root_.Fermat.RelPoint strW (galoisFieldSpecHom q s)) :=
+      Infinite.of_injective (fun y => (eW y).1) (fun _ _ h => eW.injective (Subtype.ext h))
+    show |(Nat.card (_root_.Fermat.RelPoint strV (galoisFieldSpecHom q s)) : ℝ)
+        - (Nat.card (_root_.Fermat.RelPoint strW (galoisFieldSpecHom q s)) : ℝ)| ≤ _
+    rw [Nat.card_eq_zero_of_infinite, Nat.card_eq_zero_of_infinite]
+    have hnn : (0 : ℝ) ≤ (DV : ℝ) + (DW : ℝ) := by positivity
+    simpa using hnn
+
+/-! ##### The plane model, cut again: the TWENTIETH decomposition
+
+`exists_planeModel_openImmersion_of_isProperSmoothCurve` below is now **PROVEN**
+over the three declarations immediately following, which separate three
+genuinely different theories that the single leaf had bundled:
+
+* `exists_planeModel_birationalOver_of_isProperSmoothCurve` (sorry) — the
+  FUNCTION-FIELD content: separating transcendence basis, primitive element,
+  clearing denominators, absolute irreducibility.  Its conclusion is
+  `Scheme.BirationalOver`, mathlib's own notion, which is what makes the
+  assembly below three lines.
+* `finite_compl_of_dense_of_isProperSmoothCurve` (**PROVEN** here) — a dense
+  open of the CURVE has finite complement.
+* `finite_compl_of_dense_planeCurveScheme` (sorry) — the same for the PLANE
+  MODEL, where the dimension bound is not available off the shelf.
+
+WHY `Scheme.BirationalOver` RATHER THAN A HAND-ROLLED COMMON OPEN.  A
+`Scheme.PartialIso` already packages `source`, `target`, their density and the
+isomorphism between them, and `PartialIso.IsOver` packages the compatibility
+over `Spec 𝔽_q`.  The parent's `U`, `uX`, `uV` and `hcompat` are then read off
+directly — `U = source`, `uX = source.ι`, `uV = iso.hom ≫ target.ι` — and the
+only real work left in the assembly is turning DENSITY into FINITENESS of the
+complements, which is exactly what the other two leaves do.
+-/
+
+/-- **A BIRATIONAL PLANE MODEL, AS A `Scheme.BirationalOver`** (sorry leaf,
+TWENTIETH decomposition 2026-07-28 — the pure FUNCTION-FIELD content of
+`exists_planeModel_openImmersion_of_isProperSmoothCurve` below).
+
+STATEMENT.  For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
+and geometrically connected there is an absolutely irreducible
+`F ∈ 𝔽_q[X,Y]` with `X` and `V(F)` birational OVER `Spec 𝔽_q`.
+
+ROUTE, AND IT IS NOW SHORT, because the geometric half is already in this
+project.  `𝔽_q` is perfect, so `K = 𝔽_q(X)` is separably generated: pick
+`x ∈ K` transcendental with `K/𝔽_q(x)` separable, then
+`Field.exists_primitiveElement` gives `K = 𝔽_q(x, y)`, and clearing
+denominators from the minimal polynomial of `y` over `𝔽_q(x)` gives `F` with
+`Frac(𝔽_q[X,Y]/(F)) ≅ K`.  `F` is absolutely irreducible exactly because `X` is
+geometrically connected, which is what makes `𝔽_q` algebraically closed in `K`.
+
+That iso of function fields is then handed to
+`AlgebraicGeometry.birationalOver_of_iso_specFunctionField`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/BirationalFunctionField.lean`, PROVEN
+there over one geometric leaf), which needs exactly `IsIntegral` and
+`LocallyOfFiniteType` on both sides:
+
+* `IsIntegral X` is
+  `AlgebraicGeometry.isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`
+  (`CurveExtension.lean`, PROVEN);
+* `IsIntegral (planeCurveScheme F)` is `Ideal.span {F}` being prime, i.e. `F`
+  prime in the UFD `𝔽_q[X,Y]`, i.e. `F` irreducible — which descends from the
+  absolute irreducibility along the injective `𝔽_q[X,Y] → 𝔽̄_q[X,Y]`;
+* `LocallyOfFiniteType` holds on both (`IsProper` gives it for `strX`;
+  `planeCurveStr F` is `Spec` of a finitely generated algebra).
+
+SO NOTHING OF THE SPREADING-OUT OR THE DENSE-OPEN COMPARISON IS LEFT HERE: this
+leaf is field theory plus those four instance discharges.
+
+FAITHFULNESS.  TRUE.  `GeometricallyConnected` is load-bearing TWICE, exactly as
+on the parent: it gives the absolute irreducibility of `F`, and it excludes
+`X = ∅`, for which no `F` can work.  NOT vacuous — `Scheme.BirationalOver`
+demands an isomorphism of DENSE opens, so a junk `F` (a linear form, say) cannot
+serve for a curve of positive genus. -/
+theorem exists_planeModel_birationalOver_of_isProperSmoothCurve {q : ℕ}
+    [Fact q.Prime] {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX] :
+    ∃ F : MvPolynomial (Fin 2) (ZMod q),
+      Irreducible (MvPolynomial.map
+        (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F) ∧
+      Scheme.BirationalOver strX (planeCurveStr F) :=
   sorry
 
-/-- **A BIRATIONAL PLANE MODEL, PRESENTED AS A COMMON OPEN** (sorry node,
-NINETEENTH decomposition 2026-07-28 — the FUNCTION-FIELD half of
+/-- **A DENSE OPEN OF A SMOOTH PROPER GEOMETRICALLY CONNECTED CURVE HAS FINITE
+COMPLEMENT** (**PROVEN** 2026-07-28, TWENTIETH decomposition).
+
+Three project facts compose, and none of them is new:
+
+* `AlgebraicGeometry.isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`
+  (`CurveExtension.lean`) makes `X` integral, hence irreducible, hence the open
+  `U` integral once it is nonempty — and it is, being dense;
+* `AlgebraicGeometry.topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one`
+  (`CurveCompactification.lean`) gives the dimension bound;
+* `AlgebraicGeometry.finite_compl_range_of_topologicalKrullDim_le_one`
+  (same file) turns "closed, not everything, in a one-dimensional irreducible
+  Noetherian space" into finiteness.
+
+`Dense` enters twice: as the nonemptiness that makes `U` integral, and as the
+dominance of `U.ι` that the last lemma consumes. -/
+theorem finite_compl_of_dense_of_isProperSmoothCurve {q : ℕ} [Fact q.Prime]
+    {X : Scheme.{0}} (strX : X ⟶ _root_.Fermat.SpecF q)
+    [IsProper strX] [SmoothOfRelativeDimension 1 strX] [GeometricallyConnected strX]
+    (U : X.Opens) (hU : Dense (U : Set X)) :
+    Set.Finite ((U : Set X)ᶜ) := by
+  haveI : _root_.AlgebraicGeometry.IsIntegral X :=
+    _root_.AlgebraicGeometry.isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected
+      (n := 1) strX inferInstance
+  haveI : IsDominant U.ι := ⟨by
+    show Dense (Set.range (⇑U.ι))
+    rw [Scheme.Opens.range_ι]
+    exact hU⟩
+  haveI : Nonempty U.toScheme := by
+    have h : (U : Set X).Nonempty := hU.nonempty
+    exact h.to_subtype
+  haveI : _root_.AlgebraicGeometry.IsIntegral U.toScheme := inferInstance
+  have h := _root_.AlgebraicGeometry.finite_compl_range_of_topologicalKrullDim_le_one strX U.ι
+    (_root_.AlgebraicGeometry.topologicalKrullDim_le_one_of_smoothOfRelativeDimension_one strX)
+  rwa [Scheme.Opens.range_ι] at h
+
+/-- **A DENSE OPEN OF AN ABSOLUTELY IRREDUCIBLE AFFINE PLANE CURVE HAS FINITE
+COMPLEMENT** (sorry leaf, TWENTIETH decomposition 2026-07-28).
+
+The plane-model mirror of `finite_compl_of_dense_of_isProperSmoothCurve` above,
+and it is a separate leaf only because the DIMENSION BOUND is not available off
+the shelf on this side.  Everything else is the same three-line assembly.
+
+WHAT IS LEFT, precisely — the route is `finite_compl_range_of_topologicalKrullDim_le_one`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`, PROVEN), fed
+with:
+
+* `IsIntegral (planeCurveScheme F)`: `F` is irreducible in `𝔽_q[X,Y]` (descend
+  the absolute irreducibility along the INJECTIVE `𝔽_q[X,Y] → 𝔽̄_q[X,Y]`: a
+  factorisation of `F` maps to one of `F ⊗ 𝔽̄_q`, and a factor that becomes a
+  unit is a nonzero constant, hence already a unit), so `Ideal.span {F}` is
+  prime in a UFD and the quotient is a domain;
+* `LocallyOfFiniteType (planeCurveStr F)` and `QuasiCompact (planeCurveStr F)`:
+  `planeCurveScheme F` is `Spec` of a finitely generated `𝔽_q`-algebra;
+* `topologicalKrullDim (planeCurveScheme F) ≤ 1`: this is the real content, and
+  it is `ringKrullDim (𝔽_q[X,Y]/(F)) ≤ 1` — a height-one prime quotient of a
+  two-dimensional catenary ring.  `F` is nonconstant because a constant is
+  either `0` or a unit and neither is irreducible.
+
+FAITHFULNESS.  TRUE.  Absolute irreducibility is stronger than needed (plain
+irreducibility over `𝔽_q` suffices), and is what the caller holds. -/
+theorem finite_compl_of_dense_planeCurveScheme {q : ℕ} [Fact q.Prime]
+    (F : MvPolynomial (Fin 2) (ZMod q))
+    (hirr : Irreducible (MvPolynomial.map
+      (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F))
+    (V : (planeCurveScheme F).Opens)
+    (hV : Dense (V : Set (planeCurveScheme F))) :
+    Set.Finite ((V : Set (planeCurveScheme F))ᶜ) :=
+  sorry
+
+/-- **A BIRATIONAL PLANE MODEL, PRESENTED AS A COMMON OPEN** (**PROVEN**
+2026-07-28 by the TWENTIETH decomposition, over the three declarations
+immediately above; opened as a sorry node by the NINETEENTH decomposition the
+same day — the FUNCTION-FIELD half of
 `exists_planeModel_pointCount_sub_le_of_isProperSmoothCurve` below).
 
 STATEMENT.  For `strX : X ⟶ Spec 𝔽_q` proper, smooth of relative dimension `1`
@@ -48316,8 +48714,19 @@ theorem exists_planeModel_openImmersion_of_isProperSmoothCurve {q : ℕ}
         (algebraMap (ZMod q) (AlgebraicClosure (ZMod q))) F) ∧
       IsOpenImmersion uX ∧ IsOpenImmersion uV ∧
       uX ≫ strX = uV ≫ planeCurveStr F ∧
-      Set.Finite ((Set.range uX.base)ᶜ) ∧ Set.Finite ((Set.range uV.base)ᶜ) :=
-  sorry
+      Set.Finite ((Set.range uX.base)ᶜ) ∧ Set.Finite ((Set.range uV.base)ᶜ) := by
+  obtain ⟨F, hirr, f, hover⟩ := exists_planeModel_birationalOver_of_isProperSmoothCurve strX
+  refine ⟨F, f.source.toScheme, f.source.ι, f.iso.hom ≫ f.target.ι, hirr,
+    inferInstance, inferInstance, by rw [Category.assoc]; exact Eq.symm hover, ?_, ?_⟩
+  · rw [Scheme.Opens.range_ι]
+    exact finite_compl_of_dense_of_isProperSmoothCurve strX f.source f.dense_source
+  · have hsurj : Function.Surjective f.iso.hom.base := fun y => ⟨f.iso.inv.base y, by simp⟩
+    have hrange : Set.range (f.iso.hom ≫ f.target.ι).base
+        = (f.target : Set (planeCurveScheme F)) := by
+      rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, hsurj.range_eq,
+        Set.image_univ, Scheme.Opens.range_ι]
+    rw [hrange]
+    exact finite_compl_of_dense_planeCurveScheme F hirr f.target f.dense_target
 
 /-- **Every smooth proper geometrically connected curve over `𝔽_q` has an
 absolutely irreducible plane model, with a count discrepancy bounded uniformly
