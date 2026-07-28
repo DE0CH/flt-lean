@@ -74,7 +74,11 @@ is six pieces of commutative algebra and one sheaf-theoretic statement, none
 of them about abelian schemes:
 
 * `lTensor_subtype_injective_of_pow_le` — the local flatness criterion's
-  tensor step;
+  tensor step.  **PROVEN 2026-07-28** over the two leaves
+  `lTensor_pow_subtype_injective` (`Tor₁^B(B ⧸ Iⁿ, A) = 0`) and
+  `flat_quotientMap_pow_of_lTensor_pow` (`A ⧸ IⁿA` flat over `B ⧸ Iⁿ`) — the two
+  conjuncts of Stacks 00MK — over the new general-ideal chase
+  `mem_baseChange_sup_of_flat_quotientMap`;
 * `nonempty_flatNoetherianStage_of_essFinitePresentation` — descent of
   flatness to a noetherian stage.  **PROVEN 2026-07-28** over four new leaves:
   `nonempty_noetherianApproxSystem_of_essFinitePresentation` (Stacks 10.127.11 +
@@ -94,7 +98,12 @@ of them about abelian schemes:
 * `height_map_le_of_isFinite` — Cohen–Seidenberg (`@[stacks 00OK]`);
 * `isIntegrallyClosed_of_isRegularRing` — a regular ring is normal;
 * `exists_isAmpleSheaf_cube_of_isAlgClosed` — the theorem of the cube's
-  ample-sheaf output.
+  ample-sheaf output.  **PROVEN 2026-07-28** over the two leaves
+  `exists_isAmpleSheaf_symm_of_isAlgClosed` (projectivity of an abelian variety,
+  plus symmetrization and normalization) and
+  `nonempty_modPullback_mulByNat_modTensorPow_of_symm` (the theorem of the cube
+  for a SYMMETRIC invertible sheaf), separated by the new morphism
+  `AbelianSchemeStruct.negMor`.
 -/
 module
 
@@ -1108,9 +1117,11 @@ is two, along the source's own seam `00R7 = approximation + 00MP`:
   until 2026-07-27; see the CORRECTION in that note).
 * `flat_of_rTensor_injective_of_flat_quotientMap` — **10.99.10**, the local
   criterion of flatness in the Noetherian setting.  **PROVEN 2026-07-27**; it
-  was itself cut in two along Matsumura 22.3's own seam, and what remains under
-  it is the single leaf `lTensor_subtype_injective_of_pow_le` — the HOMOLOGICAL
-  half, which needs no Noetherian hypothesis at all.  See the section note
+  was itself cut in two along Matsumura 22.3's own seam.  Its HOMOLOGICAL half
+  `lTensor_subtype_injective_of_pow_le` is **also PROVEN (2026-07-28)**, and
+  what remains under it is the two conjuncts of Stacks 00MK,
+  `lTensor_pow_subtype_injective` and `flat_quotientMap_pow_of_lTensor_pow` —
+  neither of which needs a Noetherian hypothesis at all.  See the section note
   "10.99.10 CUT" below.
 
 and 00MP itself (`flat_of_flat_of_flat_quotientMap_noetherian`) is PROVEN
@@ -1135,11 +1146,14 @@ the local criterion (10.99.10) and the approximation.
 **AND A SECOND CORRECTION, 2026-07-27, to the sentence immediately above.**  The
 local criterion is no longer missing either: it is PROVEN below, and its own
 Noetherian content (Artin–Rees + Krull) is written out.  What is missing under
-it is one purely homological leaf, `lTensor_subtype_injective_of_pow_le`, which
-carries none of the hypotheses that made this route look expensive — no
+it is purely homological, and since 2026-07-28 it is the two conjuncts of Stacks
+00MK — `lTensor_pow_subtype_injective` and `flat_quotientMap_pow_of_lTensor_pow`
+— which carry none of the hypotheses that made this route look expensive: no
 Noetherian, no finiteness, no locality.  So of the three items in the original
 survey — Tor, the local criterion, Noetherian approximation — only the third
-remains, plus the `I`-adic induction inside that one leaf.
+remains, plus the `I`-adic induction, which is now exactly `Tor₁` again: both
+remaining leaves, and the shim's `Module.Flat.of_flat_quotient_of_pow_eq_bot`,
+want a `Tor₁` with a long exact sequence in the first variable and nothing else.
 
 **AXIS SEARCHED.**  Cuts of 00R7 along the Stacks proof's own structure.  Not
 searched: whether a *different* proof of 00R7 exists that avoids approximation
@@ -1302,10 +1316,16 @@ independent halves:
    `Iⁿ·(A ⊗_B 𝔞)` for every `n`, and the intersection of those is zero because
    `A ⊗_B 𝔞` is a FINITE `A`-module and `I·A ⊆ 𝔪_A`.
 
-Half (2) is proven below in full; half (1) is the single remaining leaf
-`lTensor_subtype_injective_of_pow_le`.  Both halves are stated with `B`-modules
-only — no quotient rings occur in any statement — which is the design decision
-recorded in that leaf's docstring.
+Half (2) is proven below in full.  Half (1),
+`lTensor_subtype_injective_of_pow_le`, is **also proven since 2026-07-28**, over
+its own two conjuncts `lTensor_pow_subtype_injective` and
+`flat_quotientMap_pow_of_lTensor_pow` — Stacks 00MK's two conclusions, the only
+leaves left here.  Both halves are stated with `B`-modules only — no quotient
+rings occur in any statement — which is the design decision recorded in that
+leaf's docstring.  (The second conjunct is the one exception: flatness of a ring
+map cannot be said without naming the quotient rings, and its docstring records
+that it is a CONSEQUENCE of the first plus the nilpotent local criterion, not an
+independent induction.)
 
 **WHAT MATHLIB SUPPLIES, checked 2026-07-27.**  `Ideal.exists_pow_inf_eq_pow_smul`
 (**Artin–Rees**, `Mathlib/RingTheory/Filtration.lean:387`) and
@@ -1350,7 +1370,364 @@ lemma tmul_mem_map_smul_top {B A : Type u} [CommRing B] [CommRing A] [Algebra B 
     rw [TensorProduct.tmul_add]
     exact Submodule.add_mem _ hx hy
 
-/-- **THE HOMOLOGICAL HALF OF THE LOCAL CRITERION** (SORRY LEAF, cut out of
+/-- **THE ELEMENTWISE FLAT-HALF CHASE, FOR AN ARBITRARY IDEAL `L`** (PROVEN
+2026-07-28).
+
+*Let `B → A` be a ring map, `L ⊆ B` an ideal and `L' = L·A` its extension.  If
+`A ⧸ L'` is FLAT over `B ⧸ L`, then every `ξ ∈ ker(A ⊗_B 𝔞 → A)` lies in*
+
+  `baseChange A (𝔞 ∩ L)  ⊔  L'·(A ⊗_B 𝔞)`.
+
+**This is `mem_baseChange_sup_of_flat_quotientMap_pow` (further down this file,
+proven 2026-07-27) with `L = (tⁿ)` replaced by an ARBITRARY ideal.**  Its proof
+is that proof verbatim: nothing in the four-term chase
+`A ⊗_B 𝔞 → Aₙ ⊗_B 𝔞 → Aₙ ⊗_{Bₙ} 𝔞ₙ → Aₙ` uses principality, only the ideal `L`,
+its extension `L'`, and flatness of the induced map on quotients.  Read that
+docstring for the design of the chase (build `F` and `G` as bare `AddMonoidHom`s
+through `TensorProduct.liftAddHom`, never compute `ker b`), and for the two
+instance hazards — `Module (B ⧸ L) Q` does not synthesise, and mapping OUT of
+`↥𝔞ₙ` needs `↥𝔞ₙ` presented as a quotient.
+
+The `_pow` version could now be derived from this one in three lines; it is left
+as it stands only because it is outside this task's region, and a successor who
+touches that section should collapse the duplication. -/
+theorem mem_baseChange_sup_of_flat_quotientMap {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] (L : Ideal B)
+    (hLflat : (Ideal.quotientMap (L.map (algebraMap B A)) (algebraMap B A)
+      Ideal.le_comap_map).Flat)
+    {𝔞 : Ideal B} (ξ : A ⊗[B] ↥𝔞) (hξ : LinearMap.lTensor A 𝔞.subtype ξ = 0) :
+    ξ ∈ (Submodule.comap 𝔞.subtype L).baseChange A
+      ⊔ ((L.map (algebraMap B A)) • (⊤ : Submodule A (A ⊗[B] ↥𝔞))) := by
+  classical
+  set J : Ideal B := L with hJdef
+  set J' : Ideal A := L.map (algebraMap B A) with hJ'def
+  have hcomap : J ≤ J'.comap (algebraMap B A) := Ideal.le_comap_map
+  set ψn : B ⧸ J →+* A ⧸ J' := Ideal.quotientMap J' (algebraMap B A) hcomap with hψndef
+  have hflat : ψn.Flat := hLflat
+  letI : Algebra (B ⧸ J) (A ⧸ J') := ψn.toAlgebra
+  haveI : Module.Flat (B ⧸ J) (A ⧸ J') := hflat
+  have hsmulT : ∀ (s : B ⧸ J) (x : A ⧸ J'), s • x = ψn s * x := fun s x => by
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra]
+  have hψnmk : ∀ r : B, ψn (Ideal.Quotient.mk J r) = Ideal.Quotient.mk J' (algebraMap B A r) :=
+    fun r => by rw [hψndef]; exact Ideal.quotientMap_mk
+  set 𝔞n : Ideal (B ⧸ J) := 𝔞.map (Ideal.Quotient.mk J) with h𝔞ndef
+  set P : Submodule B ↥𝔞 := Submodule.comap 𝔞.subtype J with hPdef
+  set N : Submodule A (A ⊗[B] ↥𝔞) :=
+    P.baseChange A ⊔ (J' • (⊤ : Submodule A (A ⊗[B] ↥𝔞))) with hNdef
+  let qmap : ↥𝔞 →ₗ[B] ↥𝔞n :=
+    { toFun := fun a => ⟨Ideal.Quotient.mk J (a : B), Ideal.mem_map_of_mem _ a.2⟩
+      map_add' := by intro a b; ext; simp
+      map_smul' := by
+        intro r a
+        ext
+        simp [Algebra.smul_def, Ideal.Quotient.algebraMap_eq] }
+  have hqmap : ∀ a : ↥𝔞, (qmap a : B ⧸ J) = Ideal.Quotient.mk J (a : B) := fun a => rfl
+  have hqsurj : Function.Surjective qmap := by
+    rintro ⟨x, hx⟩
+    obtain ⟨a, ha, rfl⟩ :=
+      (Ideal.mem_map_iff_of_surjective (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective).1 hx
+    exact ⟨⟨a, ha⟩, rfl⟩
+  have hqker : LinearMap.ker qmap = P := by
+    ext a
+    rw [LinearMap.mem_ker, Subtype.ext_iff, hqmap]
+    simp [hPdef, Ideal.Quotient.eq_zero_iff_mem]
+  let ebar : (↥𝔞 ⧸ P) →ₗ[B] ↥𝔞n := P.liftQ qmap hqker.ge
+  have hebij : Function.Bijective ebar := by
+    refine ⟨?_, ?_⟩
+    · rw [← LinearMap.ker_eq_bot]
+      exact Submodule.ker_liftQ_eq_bot' P qmap hqker.symm
+    · intro y
+      obtain ⟨a, rfl⟩ := hqsurj y
+      exact ⟨P.mkQ a, rfl⟩
+  let E : (↥𝔞 ⧸ P) ≃ₗ[B] ↥𝔞n := LinearEquiv.ofBijective ebar hebij
+  have hEsymm : ∀ a : ↥𝔞, E.symm (qmap a) = P.mkQ a := by
+    intro a
+    have h : E (P.mkQ a) = qmap a := rfl
+    rw [← h, E.symm_apply_apply]
+  have hJQ : ∀ y ∈ J', ∀ q : (A ⊗[B] ↥𝔞) ⧸ N, y • q = 0 := by
+    intro y hy q
+    obtain ⟨w, rfl⟩ := N.mkQ_surjective q
+    rw [← map_smul, Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+    exact Submodule.mem_sup_right (Submodule.smul_mem_smul hy Submodule.mem_top)
+  let b1 : ↥𝔞 →ₗ[B] ((A ⊗[B] ↥𝔞) ⧸ N) :=
+    (N.mkQ.restrictScalars B).comp (TensorProduct.mk B A ↥𝔞 1)
+  have hb1 : P ≤ LinearMap.ker b1 := by
+    intro a ha
+    rw [LinearMap.mem_ker]
+    show N.mkQ ((1 : A) ⊗ₜ[B] a) = 0
+    rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
+    exact Submodule.mem_sup_left (Submodule.tmul_mem_baseChange_of_mem 1 ha)
+  let W : ↥𝔞n →+ ((A ⊗[B] ↥𝔞) ⧸ N) :=
+    (P.liftQ b1 hb1).toAddMonoidHom.comp E.symm.toLinearMap.toAddMonoidHom
+  have hW : ∀ a : ↥𝔞, W (qmap a) = N.mkQ ((1 : A) ⊗ₜ[B] a) := by
+    intro a
+    show (P.liftQ b1 hb1) (E.symm (qmap a)) = _
+    rw [hEsymm, Submodule.mkQ_apply, Submodule.liftQ_apply]
+    rfl
+  let bl0 : A →ₗ[A] (↥𝔞n →+ ((A ⊗[B] ↥𝔞) ⧸ N)) :=
+    { toFun := fun y => y • W
+      map_add' := fun y y' => add_smul y y' W
+      map_smul' := fun c y => mul_smul c y W }
+  have hbl0 : ∀ (y : A) (x : ↥𝔞n), bl0 y x = y • W x := fun y x => rfl
+  have hbl0ker : J' ≤ LinearMap.ker bl0 := by
+    intro y hy
+    rw [LinearMap.mem_ker]
+    ext x
+    rw [hbl0]
+    exact hJQ y hy _
+  let g0 : (A ⧸ J') →ₗ[A] (↥𝔞n →+ ((A ⊗[B] ↥𝔞) ⧸ N)) := J'.liftQ bl0 hbl0ker
+  let g' : (A ⧸ J') →+ (↥𝔞n →+ ((A ⊗[B] ↥𝔞) ⧸ N)) := g0.toAddMonoidHom
+  have hg0val : ∀ (y : A) (a : ↥𝔞),
+      g' (Ideal.Quotient.mk J' y) (qmap a) = N.mkQ (y ⊗ₜ[B] (a : ↥𝔞)) := by
+    intro y a
+    show g0 (Submodule.Quotient.mk y) (qmap a) = _
+    rw [Submodule.liftQ_apply, hbl0, hW, ← map_smul]
+    congr 1
+    rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+  have hgbal : ∀ (s : B ⧸ J) (y : A ⧸ J') (x : ↥𝔞n), g' (s • y) x = g' y (s • x) := by
+    intro s y x
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective s
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨a, rfl⟩ := hqsurj x
+    have hs : (Ideal.Quotient.mk J r) • (Ideal.Quotient.mk J' y)
+        = Ideal.Quotient.mk J' (algebraMap B A r * y) := by
+      rw [hsmulT, hψnmk, map_mul]
+    have hx : (Ideal.Quotient.mk J r) • qmap a = qmap (r • a) := by
+      ext
+      rw [hqmap]
+      show (Ideal.Quotient.mk J r) * (qmap a : B ⧸ J) = _
+      rw [hqmap, ← map_mul]
+      rfl
+    rw [hs, hx, hg0val, hg0val, ← Algebra.smul_def, TensorProduct.smul_tmul]
+  let G : ((A ⧸ J') ⊗[B ⧸ J] ↥𝔞n) →+ ((A ⊗[B] ↥𝔞) ⧸ N) :=
+    TensorProduct.liftAddHom (R := B ⧸ J) g' hgbal
+  let mkAdd : (A ⧸ J') →+ (↥𝔞n →+ ((A ⧸ J') ⊗[B ⧸ J] ↥𝔞n)) :=
+    LinearMap.toAddMonoidHom'.comp (TensorProduct.mk (B ⧸ J) (A ⧸ J') ↥𝔞n).toAddMonoidHom
+  let precompQ : (↥𝔞n →+ ((A ⧸ J') ⊗[B ⧸ J] ↥𝔞n)) →+ (↥𝔞 →+ ((A ⧸ J') ⊗[B ⧸ J] ↥𝔞n)) :=
+    AddMonoidHom.mk' (fun h => h.comp qmap.toAddMonoidHom) (fun _ _ => rfl)
+  let f : A →+ (↥𝔞 →+ ((A ⧸ J') ⊗[B ⧸ J] ↥𝔞n)) :=
+    precompQ.comp (mkAdd.comp (Ideal.Quotient.mk J' : A →+* A ⧸ J').toAddMonoidHom)
+  have hfval : ∀ (y : A) (a : ↥𝔞),
+      f y a = (Ideal.Quotient.mk J' y) ⊗ₜ[B ⧸ J] (qmap a) := fun y a => rfl
+  have hfbal : ∀ (r : B) (y : A) (a : ↥𝔞), f (r • y) a = f y (r • a) := by
+    intro r y a
+    rw [hfval, hfval]
+    have h1 : (Ideal.Quotient.mk J' (r • y))
+        = (Ideal.Quotient.mk J r) • (Ideal.Quotient.mk J' y) := by
+      rw [hsmulT, hψnmk, ← map_mul, Algebra.smul_def]
+    have h2 : qmap (r • a) = (Ideal.Quotient.mk J r) • qmap a := by
+      ext
+      rw [hqmap]
+      show _ = (Ideal.Quotient.mk J r) * (qmap a : B ⧸ J)
+      rw [hqmap, ← map_mul]
+      rfl
+    rw [h1, h2, TensorProduct.smul_tmul]
+  let F : (A ⊗[B] ↥𝔞) →+ ((A ⧸ J') ⊗[B ⧸ J] ↥𝔞n) := TensorProduct.liftAddHom f hfbal
+  have hFval : ∀ (y : A) (a : ↥𝔞),
+      F (y ⊗ₜ[B] a) = (Ideal.Quotient.mk J' y) ⊗ₜ[B ⧸ J] (qmap a) := fun y a => rfl
+  have hGF : ∀ z : A ⊗[B] ↥𝔞, G (F z) = N.mkQ z := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rw [map_zero, map_zero, map_zero]
+    | tmul y a =>
+      rw [hFval]
+      show g' (Ideal.Quotient.mk J' y) (qmap a) = _
+      exact hg0val y a
+    | add z z' hz hz' => rw [map_add, map_add, hz, hz', map_add]
+  let c : ((A ⧸ J') ⊗[B ⧸ J] ↥𝔞n) →ₗ[B ⧸ J] (A ⧸ J') :=
+    (TensorProduct.rid (B ⧸ J) (A ⧸ J')).toLinearMap.comp
+      (LinearMap.lTensor (A ⧸ J') 𝔞n.subtype)
+  have hcinj : Function.Injective c := by
+    intro x y hxy
+    exact Module.Flat.lTensor_preserves_injective_linearMap (M := A ⧸ J') 𝔞n.subtype
+      𝔞n.injective_subtype ((TensorProduct.rid (B ⧸ J) (A ⧸ J')).injective hxy)
+  have hcF : ∀ z : A ⊗[B] ↥𝔞, c (F z)
+      = Ideal.Quotient.mk J' ((TensorProduct.rid B A) (LinearMap.lTensor A 𝔞.subtype z)) := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rw [map_zero, map_zero, map_zero, map_zero, map_zero]
+    | tmul y a =>
+      rw [hFval]
+      show (TensorProduct.rid (B ⧸ J) (A ⧸ J'))
+        (LinearMap.lTensor (A ⧸ J') 𝔞n.subtype
+          ((Ideal.Quotient.mk J' y) ⊗ₜ[B ⧸ J] (qmap a))) = _
+      rw [LinearMap.lTensor_tmul, TensorProduct.rid_tmul, LinearMap.lTensor_tmul,
+        TensorProduct.rid_tmul]
+      show (qmap a : B ⧸ J) • (Ideal.Quotient.mk J' y) = _
+      rw [hsmulT, hqmap, hψnmk, ← map_mul, Submodule.subtype_apply, Algebra.smul_def]
+    | add z z' hz hz' => rw [map_add, map_add, hz, hz', map_add, map_add, map_add]
+  have hFxi : F ξ = 0 := by
+    apply hcinj
+    rw [hcF, hξ, map_zero, map_zero, map_zero]
+  have hmk : N.mkQ ξ = 0 := by rw [← hGF, hFxi, map_zero]
+  rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at hmk
+
+/-- **THE SECOND SUMMAND IS ABSORBED WHEN `L ⊆ 𝔠`** (PROVEN 2026-07-28).
+
+`L'·(A ⊗_B 𝔠) ⊆ baseChange A (𝔠 ∩ L)` as soon as `L ≤ 𝔠`, because
+`φ(l)·(a ⊗ c) = a ⊗ (l·c)` and `l·c ∈ L` for `l ∈ L`.  This is what turns the
+two-summand conclusion of `mem_baseChange_sup_of_flat_quotientMap` — which is
+the right shape for the Artin–Rees consumer, where `𝔞` is arbitrary — into a
+ONE-summand conclusion in the containment case `Iⁿ ≤ 𝔠` that
+`lTensor_subtype_injective_of_pow_le` is about. -/
+theorem map_smul_top_le_baseChange_comap {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {L 𝔠 : Ideal B} (h : L ≤ 𝔠) :
+    (L.map (algebraMap B A)) • (⊤ : Submodule A (A ⊗[B] ↥𝔠))
+      ≤ (Submodule.comap 𝔠.subtype L).baseChange A := by
+  have key : ∀ l ∈ L, ∀ z : A ⊗[B] ↥𝔠,
+      (algebraMap B A l) • z ∈ (Submodule.comap 𝔠.subtype L).baseChange A := by
+    intro l hl z
+    induction z using TensorProduct.induction_on with
+    | zero => rw [smul_zero]; exact Submodule.zero_mem _
+    | tmul a x =>
+        have hx : (l • x) ∈ Submodule.comap 𝔠.subtype L := by
+          simp only [Submodule.mem_comap, Submodule.subtype_apply]
+          exact Ideal.mul_mem_right _ _ hl
+        have hmove : (algebraMap B A l) • (a ⊗ₜ[B] x) = a ⊗ₜ[B] (l • x) := by
+          rw [IsScalarTower.algebraMap_smul, TensorProduct.smul_tmul', TensorProduct.smul_tmul]
+        rw [hmove]
+        exact Submodule.tmul_mem_baseChange_of_mem a hx
+    | add z z' hz hz' => rw [smul_add]; exact Submodule.add_mem _ hz hz'
+  refine Submodule.smul_le.mpr ?_
+  intro y hy z _
+  refine Submodule.span_induction (p := fun y _ =>
+      y • z ∈ (Submodule.comap 𝔠.subtype L).baseChange A) ?_ ?_ ?_ ?_ hy
+  · rintro _ ⟨l, hl, rfl⟩
+    exact key l hl z
+  · rw [zero_smul]; exact Submodule.zero_mem _
+  · intro a b _ _ ha hb; rw [add_smul]; exact Submodule.add_mem _ ha hb
+  · intro a b _ hb; rw [smul_eq_mul, mul_smul]; exact Submodule.smul_mem _ _ hb
+
+/-- **`baseChange A (𝔠 ∩ L)` IS REACHED FROM `A ⊗_B L`** (PROVEN 2026-07-28),
+when `L ≤ 𝔠`: the two `B`-linear maps `↥L → ↥𝔠` and `↥(𝔠 ∩ L) → ↥𝔠` have the
+same range, so their base changes do.
+
+Stated with `LinearMap.baseChange` rather than `LinearMap.lTensor` because
+`Submodule.baseChange` is an `A`-submodule while `lTensor A f` is only
+`B`-linear, so a `range`-level comparison needs the `A`-linear form.  The two
+agree as functions (`LinearMap.baseChange_eq_ltensor`), which is how the
+consumer crosses back. -/
+theorem baseChange_comap_le_range_baseChange_inclusion {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {L 𝔠 : Ideal B} (h : L ≤ 𝔠) :
+    (Submodule.comap 𝔠.subtype L).baseChange A ≤
+      LinearMap.range ((Submodule.inclusion h).baseChange A) := by
+  let e : ↥(Submodule.comap 𝔠.subtype L) →ₗ[B] ↥L :=
+    { toFun := fun z => ⟨((z : ↥𝔠) : B), z.2⟩
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl }
+  have hcomp : (Submodule.comap 𝔠.subtype L).subtype = (Submodule.inclusion h) ∘ₗ e := rfl
+  rintro x ⟨y, rfl⟩
+  exact ⟨(e.baseChange A) y,
+    by rw [← LinearMap.comp_apply, ← LinearMap.baseChange_comp, ← hcomp]⟩
+
+/-- **`Tor₁^B(B ⧸ Iⁿ, A) = 0` FOR EVERY `n`** (SORRY LEAF, cut 2026-07-28 out of
+`lTensor_subtype_injective_of_pow_le` below; Stacks **00MK** / Matsumura
+*Commutative Ring Theory* 22.1, the FIRST of that lemma's two conclusions).
+
+*From `Tor₁^B(B ⧸ I, A) = 0` and flatness of `A ⧸ IA` over `B ⧸ I`, the
+multiplication map `A ⊗_B Iⁿ → A` is injective for every `n`.*
+
+**NO Noetherian, NO finiteness, NO locality** — the classical proof of this half
+uses none of them, exactly as for the statement it was cut out of.
+
+**WHAT PROVING IT COSTS.**  Induction on `n` over the short exact sequence
+`0 → Iⁿ ⧸ Iⁿ⁺¹ → B ⧸ Iⁿ⁺¹ → B ⧸ Iⁿ → 0`, whose left term is a `B ⧸ I`-module.
+The one auxiliary statement needed is
+
+* **(★)** `Tor₁^B(N, A) = 0` for EVERY `B ⧸ I`-module `N`.
+
+which is where both hypotheses are spent: present `N` over `B ⧸ I` as
+`0 → K → F → N → 0` with `F` free over `B ⧸ I`; then `Tor₁^B(F, A)` is a direct
+sum of copies of `Tor₁^B(B ⧸ I, A) = 0`, and the next map in the long exact
+sequence is `K ⊗_{B⧸I} A⧸IA → F ⊗_{B⧸I} A⧸IA`, injective because `A ⧸ IA` is
+`B ⧸ I`-flat.
+
+**THE PIN HAS NO `Tor` LONG EXACT SEQUENCE** — this is the same obstruction that
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` records for
+`Module.Flat.of_flat_quotient_of_pow_eq_bot`, re-checked 2026-07-28:
+`CategoryTheory/Monoidal/Tor.lean` defines `Tor` and proves only that higher
+`Tor` of a projective vanishes, and `CategoryTheory/Abelian/LeftDerived.lean`
+has no connecting map.  So a prover either builds a small presentation-based
+`Tor₁` with its six-term sequence in the first variable (which belongs in the
+shim tree, beside the nilpotent criterion, not in this module), or runs the
+elementary successive-approximation argument over
+`Module.Flat.iff_forall_isTrivialRelation`.  **These two leaves should have ONE
+owner with `Module.Flat.of_flat_quotient_of_pow_eq_bot`**: all three want the
+same `Tor₁` API and nothing else.
+
+**A CORRECTION TO THAT VERDICT, FOUND 2026-07-28, AND IT IS THE USEFUL PART.**
+"There is no `Tor` long exact sequence" is true, and "so the connecting map has
+to be built from nothing" is NOT.  The GENERAL machinery is present at this pin:
+
+* `Mathlib/Algebra/Homology/HomologySequence.lean` and
+  `Mathlib/Algebra/Homology/ShortComplex/SnakeLemma.lean` give
+  `ShortComplex.ShortExact.δ` — a connecting homomorphism for a short exact
+  sequence of (co)chain complexes, with `epi_δ_of_isZero`, `mono_δ_of_isZero`,
+  `isIso_δ_of_isZero`;
+* `Mathlib/RepresentationTheory/Homological/GroupHomology/LongExactSequence.lean`
+  is a WORKED EXAMPLE of exactly the construction wanted here — a derived
+  functor's long exact sequence assembled by mapping a short exact sequence of
+  coefficients through a chain-complex functor
+  (`map_chainsFunctor_shortExact`) and taking `.δ`.  Copy its shape with the
+  chains functor replaced by `- ⊗ (a projective resolution)`.
+
+So the honest statement of the obstruction is "`Tor₁` for modules is not
+ASSEMBLED here", not "the homological algebra is missing".  That is a much
+smaller job than the earlier note implies, and it is the first thing a
+successor should price. -/
+theorem lTensor_pow_subtype_injective {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
+    (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
+    (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
+    (_hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ).Flat)
+    (n : ℕ) :
+    Function.Injective (LinearMap.lTensor A (I ^ n).subtype) :=
+  sorry
+
+/-- **`A ⧸ IⁿA` IS FLAT OVER `B ⧸ Iⁿ` FOR EVERY `n`** (SORRY LEAF, cut 2026-07-28
+out of `lTensor_subtype_injective_of_pow_le` below; Stacks **00MK** / Matsumura
+22.1, the SECOND of that lemma's two conclusions).
+
+**NO Noetherian, NO finiteness, NO locality**, for the same reason as its
+sibling `lTensor_pow_subtype_injective` above.
+
+**THE ROUTE, AND IT IS NOT AN INDEPENDENT INDUCTION** (worked out 2026-07-28 —
+this is the useful content of this docstring).  Everything here follows from the
+SIBLING leaf plus the nilpotent local criterion that already exists as
+`Module.Flat.of_flat_quotient_of_pow_eq_bot`
+(`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`).  Apply that criterion
+over `Bₙ = B ⧸ Iⁿ` with `J = I·Bₙ` and the `Bₙ`-algebra `Aₙ = A ⧸ IⁿA`:
+
+* `J ^ n = ⊥` — `Iⁿ` maps to `0` in `Bₙ`, via `Ideal.map_pow`;
+* `Aₙ ⧸ J·Aₙ` is flat over `Bₙ ⧸ J` — this is the hypothesis `_hquot` transported
+  along the THIRD ISOMORPHISM THEOREM, `DoubleQuot.quotQuotEquivQuotOfLE` applied
+  once over `B` (with `Iⁿ ≤ I`) and once over `A` (with `IⁿA ≤ IA`), then
+  `RingHom.Flat.comp` and `RingHom.Flat.of_bijective`.  The identical transport
+  is carried out in full in `flat_quotientMap_pow_of_flat_quotientMap` further
+  down this file — copy it;
+* `Tor₁^{Bₙ}(Bₙ ⧸ J, Aₙ) = 0`, i.e. `J ⊗_{Bₙ} Aₙ → Aₙ` injective.  **This is the
+  step that consumes the sibling leaf, and it is a four-line chase**: from
+  `Iⁿ → I → I ⧸ Iⁿ → 0` and right-exactness, lift `z ∈ J ⊗_{Bₙ} Aₙ = (I ⧸ Iⁿ) ⊗_B A`
+  to `w ∈ I ⊗_B A`; if `z ↦ 0` in `Aₙ` then `w`'s image in `A` lies in `IⁿA`,
+  which is exactly the image of `A ⊗_B Iⁿ → A`; the sibling leaf makes that map
+  INJECTIVE, so there is a `u ∈ A ⊗_B Iⁿ` with the same image as `w`, and
+  `w - u = 0` by `_htor`.  Hence `z = 0`.
+
+So a prover who closes `lTensor_pow_subtype_injective` closes this one for a few
+dozen further lines, and the two should be dispatched together. -/
+theorem flat_quotientMap_pow_of_lTensor_pow {B A : Type u}
+    [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
+    (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
+    (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
+    (_hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ).Flat)
+    (n : ℕ) :
+    (Ideal.quotientMap ((I ^ n).map (algebraMap B A)) (algebraMap B A)
+      Ideal.le_comap_map).Flat :=
+  sorry
+
+/-- **THE HOMOLOGICAL HALF OF THE LOCAL CRITERION** (**PROVEN 2026-07-28** over
+the two leaves `lTensor_pow_subtype_injective` and
+`flat_quotientMap_pow_of_lTensor_pow` immediately above; cut out of
 `flat_of_rTensor_injective_of_flat_quotientMap` on 2026-07-27; read the section
 note above first).
 
@@ -1386,47 +1763,63 @@ A`, `IsLocalRing`, `IsLocalHom`), because half (1) of the classical proof uses
 none of them.  A prover who finds a use for them should say so — it would mean
 the seam is in the wrong place.
 
-**WHAT PROVING IT COSTS.**  Induction on `n`.
+**HOW IT IS NOW PROVED (2026-07-28), AND WHERE THE CONTENT WENT.**  The two
+bullets above are not merely a description of the statement — they are the CUT.
+The proof below is the assembly of exactly those two conjuncts, and it is short:
 
-* `n = 0`: `I⁰ = ⊤` forces `𝔠 = ⊤`, and `A ⊗_B B → A` is an isomorphism.
-* `n = 1`: the chase above.  From `0 → I → 𝔠 → 𝔠/I → 0` one gets the exact
-  `A ⊗ I → A ⊗ 𝔠 → A ⊗ (𝔠/I) → 0`; an `x` killed in `A` dies in `A/IA`, hence in
-  `A ⊗ (𝔠/I) ≅ (A/IA) ⊗_{B/I} (𝔠/I)` by `_hquot`, hence comes from `A ⊗ I`,
-  hence is `0` by `_htor`.
-* `n → n+1`: the graded step of 10.99.6.  The content is that
-  `Iⁿ/Iⁿ⁺¹ ⊗_{B/I} A/IA → IⁿA/Iⁿ⁺¹A` is an isomorphism, proved from the `n = 1`
-  data by Nakayama; that identification is what upgrades `A/IⁿA` flat over
-  `B/Iⁿ` to `A/Iⁿ⁺¹A` flat over `B/Iⁿ⁺¹`.
+1. `flat_quotientMap_pow_of_lTensor_pow` gives `A ⧸ IⁿA` flat over `B ⧸ Iⁿ`;
+2. `mem_baseChange_sup_of_flat_quotientMap` (proven above — the general-ideal
+   form of `mem_baseChange_sup_of_flat_quotientMap_pow`) turns that into
+   `ξ ∈ baseChange A (𝔠 ∩ Iⁿ) ⊔ IⁿA·(A ⊗_B 𝔠)` for `ξ ∈ ker(A ⊗_B 𝔠 → A)`;
+3. `map_smul_top_le_baseChange_comap` absorbs the second summand into the first,
+   *because* `Iⁿ ≤ 𝔠` — this is the only place the containment hypothesis is
+   used, and it is what makes the containment form strictly easier than the
+   Artin–Rees form the same chase serves further down this file;
+4. `baseChange_comap_le_range_baseChange_inclusion` writes `ξ` as the image of
+   some `y ∈ A ⊗_B Iⁿ`, which is then killed in `A`, so `y = 0` by
+   `lTensor_pow_subtype_injective` and `ξ = 0`.
 
-The only piece of infrastructure that is not already in this file's cone is the
-change-of-rings isomorphism `A ⊗_B N ≅ (A/I^nA) ⊗_{B/I^n} N`; mathlib's
-`Mathlib.RingTheory.TensorProduct.Quotient` (already imported here) and
-`TensorProduct.AlgebraTensorModule.cancelBaseChange` are the intended route.
+The change-of-rings isomorphism `A ⊗_B N ≅ (A ⧸ IⁿA) ⊗_{B ⧸ Iⁿ} N` that the
+previous version of this docstring named as the missing infrastructure is now
+PROVEN, inside step 2 — built by hand as a pair of `AddMonoidHom`s rather than
+through `TensorProduct.AlgebraTensorModule.cancelBaseChange`, for the instance
+reason recorded in `mem_baseChange_sup_of_flat_quotientMap_pow`'s docstring.
 
-**READ `section LocalCriterionOfFlatness` FURTHER DOWN THIS FILE BEFORE
-STARTING — it is the SAME theorem at a principal ideal, and it already carries a
-worked Lean attack.**  `flat_quotientMap_pow_of_flat_quotientMap` there is
-precisely this leaf specialised to `I = (t)` with `t` a nonzerodivisor on both
-rings (in that case `Tor₁^B(B/(t), A) = 0` is exactly regularity of `φ t` on
-`A`, which is why it appears as a hypothesis rather than as a `Tor` statement),
-and it is open with the same owner-less status.  More usefully,
-`mem_baseChange_sup_of_flat_quotientMap_pow`'s docstring works out the
-change-of-rings chase in Lean-level detail — the two `TensorProduct.lift`s `F`
-and `G`, why a kernel must NOT be computed directly, and the `Module Rₙ Q`
-instance hazard.  That plan transfers to a general `I` verbatim.
+**READ `section LocalCriterionOfFlatness` FURTHER DOWN THIS FILE** — it is the
+SAME theorem at a principal ideal.  `flat_quotientMap_pow_of_flat_quotientMap`
+there is this statement's sibling specialised to `I = (t)` with `t` a
+nonzerodivisor on both rings (in that case `Tor₁^B(B/(t), A) = 0` is exactly
+regularity of `φ t` on `A`, which is why it appears as a hypothesis rather than
+as a `Tor` statement), and it is PROVEN over
+`Module.Flat.of_flat_quotient_of_pow_eq_bot`.
 
-**So these two leaves should have ONE owner**: a proof of this leaf specialises
-to `flat_quotientMap_pow_of_flat_quotientMap`, and the principal case is
-strictly easier to attack first because `(t)/(t^n)` is nilpotent in `B/(t^n)`,
-which is the case of the local criterion that needs no separatedness. -/
+**So the three remaining leaves should have ONE owner**:
+`lTensor_pow_subtype_injective`, `flat_quotientMap_pow_of_lTensor_pow` and
+`Module.Flat.of_flat_quotient_of_pow_eq_bot` all want the same missing `Tor₁`
+API and nothing else. -/
 theorem lTensor_subtype_injective_of_pow_le {B A : Type u}
     [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
     (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
     (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
     (_hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ).Flat)
     (n : ℕ) {𝔠 : Ideal B} (_h : I ^ n ≤ 𝔠) :
-    Function.Injective (LinearMap.lTensor A 𝔠.subtype) :=
-  sorry
+    Function.Injective (LinearMap.lTensor A 𝔠.subtype) := by
+  refine (injective_iff_map_eq_zero _).mpr fun ξ hξ => ?_
+  have hmem := mem_baseChange_sup_of_flat_quotientMap (I ^ n)
+    (flat_quotientMap_pow_of_lTensor_pow _hIJ _htor _hquot n) ξ hξ
+  have hle : (Submodule.comap 𝔠.subtype (I ^ n)).baseChange A
+      ⊔ (((I ^ n).map (algebraMap B A)) • (⊤ : Submodule A (A ⊗[B] ↥𝔠)))
+      ≤ (Submodule.comap 𝔠.subtype (I ^ n)).baseChange A :=
+    sup_le le_rfl (map_smul_top_le_baseChange_comap _h)
+  obtain ⟨y, rfl⟩ := baseChange_comap_le_range_baseChange_inclusion _h (hle hmem)
+  have hy : LinearMap.lTensor A (I ^ n).subtype y = 0 := by
+    rw [show ((I ^ n).subtype : ↥(I ^ n) →ₗ[B] B)
+        = 𝔠.subtype ∘ₗ Submodule.inclusion _h from rfl,
+      LinearMap.lTensor_comp, LinearMap.comp_apply]
+    rw [LinearMap.baseChange_eq_ltensor] at hξ
+    exact hξ
+  rw [(injective_iff_map_eq_zero _).mp
+    (lTensor_pow_subtype_injective _hIJ _htor _hquot n) y hy, map_zero]
 
 /-- **PROVEN** — the form of the leaf above that the Artin–Rees descent actually
 consumes: for EVERY ideal `𝔞` (no containment hypothesis), an element of
@@ -4061,7 +4454,13 @@ residue of 00R7 is still exactly two open leaves, but they are now
 10.128.3, i.e. 00R7's proof minus its last sentence) and
 `lTensor_subtype_injective_of_pow_le` — and 00MP's other half is PROVEN.
 (This paragraph was rewritten at integration from the merged source: each branch
-named the other's leaf as still open under its own predecessor's name.) -/
+named the other's leaf as still open under its own predecessor's name.)
+
+**UPDATE 2026-07-28.**  `lTensor_subtype_injective_of_pow_le` is PROVEN too; the
+homological residue of 00R7 is now its two conjuncts
+`lTensor_pow_subtype_injective` and `flat_quotientMap_pow_of_lTensor_pow`
+(Stacks 00MK), both of which want the same missing `Tor₁` long exact sequence as
+the shim's `Module.Flat.of_flat_quotient_of_pow_eq_bot`. -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type u}
     [CommRing R] [CommRing B] [CommRing A]
     [IsLocalRing R] [IsLocalRing B] [IsLocalRing A]
@@ -10653,12 +11052,151 @@ theorem isPullback_ker_baseChange (ab : AbelianSchemeStruct f) {T : Scheme.{u}} 
 
 end AbelianSchemeStruct
 
+namespace AbelianSchemeStruct
+
+/-- **INVERSION `[-1] : A ⟶ A`, AS A MORPHISM** — the underlying morphism of the
+inverse of the tautological relative point `RelPoint.self f`, exactly as
+`mulByNat n` is the underlying morphism of its `n`-fold sum.
+
+By Yoneda this is the group-scheme inversion: precomposition with it computes
+`-y` on every relative point, for the same reason `nsmul_val` says precomposition
+with `mulByNat n` computes `n • y` (`RelPoint.pre h hg` preserves `+` and `0` by
+`pre_add`/`pre_zero`, hence preserves `-`).  That naturality statement is not
+proved here because nothing below needs it: `negMor` occurs only in the
+SYMMETRY hypothesis `[-1]^* L ≅ L` of the theorem of the cube, where it is used
+as a morphism and not through its action on points.
+
+Written here rather than beside `mulByNat` so that the whole
+theorem-of-the-cube cut stays in one region of this file. -/
+noncomputable def negMor {V W : Scheme.{u}} {h : V ⟶ W} (abv : AbelianSchemeStruct h) : V ⟶ V :=
+  (abv.neg (RelPoint.self h)).1
+
+end AbelianSchemeStruct
+
+/-- **AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD CARRIES A SYMMETRIC
+NORMALIZED AMPLE INVERTIBLE SHEAF** (sorry leaf, cut 2026-07-28 out of
+`exists_isAmpleSheaf_cube_of_isAlgClosed` below — this is the PROJECTIVITY half
+of Mumford *Abelian Varieties* §6, Application 2, and it contains no cube).
+
+*There is an invertible `L` on `A` which is ample, trivial along the zero
+section, and symmetric (`[-1]^* L ≅ L`).*
+
+**WHAT THIS IS CLASSICALLY, AND WHY IT IS ITS OWN LEAF.**  It is three separate
+steps, none of which mentions `[n]` for `n ≠ -1`, and all three of which are
+about the geometry of `A` rather than about the group law:
+
+1. **Projectivity** — an abelian variety over an algebraically closed field
+   carries SOME ample invertible sheaf `L₀` (Mumford §6 Application 1 / §16: the
+   theta divisor of an effective ample divisor `D` with `H⁰(D)` base-point free
+   after tripling; equivalently Weil's theorem that an abelian variety is
+   projective).  **This is the mathlib-scale part**: at this pin
+   `grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY, and the classical proof
+   needs divisors, linear systems and coherent cohomology, none of which exist.
+   `Fermat.IsAmpleSheaf` (`Modularity/AmpleSheaf.lean`) supplies the STATEMENT
+   only.
+2. **Symmetrization** — `L := L₀ ⊗ [-1]^* L₀` is symmetric, because `[-1]` is an
+   involution, and still ample, because `[-1]` is an isomorphism (so `[-1]^* L₀`
+   is ample) and a tensor product of ample invertible sheaves is ample.  The two
+   sheaf-level facts this needs — `IsAmpleSheaf` stable under pullback along an
+   ISOMORPHISM, and under `modTensor` — are not in `AmpleSheaf.lean` at the time
+   of writing (2026-07-28: it has `isAmpleSheaf_modTensorPow`,
+   `isAmpleSheaf_modPullback` for a CLOSED IMMERSION, and `isAmpleSheaf_of_iso`,
+   but neither of the two above).  They belong in that file, not here, which is
+   why this step is folded into this leaf rather than made a fourth one.
+3. **Normalization** — `e^* L ≅ 𝒪_{Spec K}`, i.e. `Pic(Spec K) = 0` for a field
+   `K`.  Free classically (`Spec K` is a one-point space, so an invertible sheaf
+   on it is trivial on the only nonempty open).  Formally it is *not* free here,
+   because it needs `IsInvertibleSheaf (modPullback e L)` first, and
+   invertibility of a pullback is `exists_trivialization_modPullback`, itself an
+   open leaf in `AmpleSheaf.lean`.  It is folded in because the classical
+   construction produces a normalized `L` anyway, at no extra cost.
+
+**No `n`, no characteristic hypothesis, no cube.**  Everything about `[n]` lives
+in the sibling leaf `nonempty_modPullback_mulByNat_modTensorPow_of_symm`. -/
+theorem exists_isAmpleSheaf_symm_of_isAlgClosed {X : Scheme.{u}}
+    (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (ab : AbelianSchemeStruct fK) :
+    ∃ L : X.Modules, IsInvertibleSheaf L ∧ IsAmpleSheaf L ∧
+      Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of K))) ∧
+      Nonempty (modPullback ab.negMor L ≅ L) :=
+  sorry
+
+/-- **THE THEOREM OF THE CUBE, IN THE FORM `[n]^* L ≅ L^{⊗ n²}` FOR SYMMETRIC
+`L`** (sorry leaf, cut 2026-07-28 out of `exists_isAmpleSheaf_cube_of_isAlgClosed`
+below — Mumford *Abelian Varieties* §6, Corollary 3 to the theorem of the cube).
+
+*For an invertible `L` on an abelian scheme with `[-1]^* L ≅ L`, and every `n`,
+`[n]^* L ≅ L^{⊗ n²}`.*
+
+**THE SYMMETRY HYPOTHESIS IS ESSENTIAL AND IS NOT COSMETIC.**  For a general
+invertible `L` the cube only gives
+
+  `[n]^* L ≅ L^{⊗ (n²+n)/2} ⊗ ([-1]^* L)^{⊗ (n²−n)/2}`,
+
+and the two exponents coincide only after `[-1]^* L ≅ L`.  A statement of this
+leaf without `hsymm` would be FALSE — take `L` a nontrivial line bundle
+algebraically equivalent to zero, where `[-1]^* L ≅ L⁻¹` and `[n]^* L ≅ L^{⊗n}`,
+not `L^{⊗ n²}`.  That is the standard counterexample and it is worth keeping in
+the docstring, because "drop the hypothesis and generalise" is exactly the
+repair a prover reaches for when the cube resists.
+
+**NO ampleness, NO normalization, NO algebraically closed base, NO
+characteristic hypothesis.**  The cube is a statement about an arbitrary
+invertible sheaf on an abelian scheme over an arbitrary base, and holds
+characteristic-blind; the consumer instantiates it at `n = p = ringChar K`.  The
+base is kept as `Spec K` for a field only because that is the shape
+`AbelianSchemeStruct` is used in here — a prover who finds the general base
+easier should generalise, and should say so.
+
+**WHAT PROVING IT COSTS.**  The theorem of the cube proper (Mumford §6: for `L`
+on `A × A × A`, triviality on each of the three "coordinate crosses" forces
+triviality), then the standard induction
+
+  `[n+1]^* L ⊗ [n−1]^* L ≅ ([n]^* L)^{⊗2} ⊗ L^{⊗2} ⊗ ([-1]^* L ⊗ L)^{-1}`,
+
+which is the cube applied to `(1_A, 1_A, [n])`.  At this pin that argument needs
+the seesaw principle and flat base change for cohomology, neither of which
+exists; `Fermat.modTensor` and `Fermat.modPullback` make the STATEMENT writable
+(that is the 2026-07-27 change that made this cut possible) but supply none of
+the proof. -/
+theorem nonempty_modPullback_mulByNat_modTensorPow_of_symm {X : Scheme.{u}}
+    (K : Type u) [Field K] {fK : X ⟶ Spec (CommRingCat.of K)}
+    (ab : AbelianSchemeStruct fK) (L : X.Modules) (_hL : IsInvertibleSheaf L)
+    (_hsymm : Nonempty (modPullback ab.negMor L ≅ L)) (n : ℕ) :
+    Nonempty (modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)) :=
+  sorry
+
 /-- **AN ABELIAN VARIETY OVER AN ALGEBRAICALLY CLOSED FIELD CARRIES A SYMMETRIC
 AMPLE INVERTIBLE SHEAF SATISFYING THE CUBE IDENTITY `[n]^* L ≅ L^{⊗ n²}`**
-(sorry leaf, cut 2026-07-27 — this is Mumford *Abelian Varieties* §6,
-Application 2 of the THEOREM OF THE CUBE, together with the projectivity of an
-abelian variety, and it is the whole mathematical residue of
+(**PROVEN 2026-07-28** over the two leaves
+`exists_isAmpleSheaf_symm_of_isAlgClosed` and
+`nonempty_modPullback_mulByNat_modTensorPow_of_symm` immediately above; cut
+2026-07-27 — this is Mumford *Abelian Varieties* §6, Application 2 of the
+THEOREM OF THE CUBE, together with the projectivity of an abelian variety, and
+it is the whole mathematical residue of
 `isQuasiAffine_ker_mulByNat_of_isAlgClosed` below).
+
+**THE CUT (2026-07-28), AND WHY IT IS ALONG THIS SEAM.**  The two conjuncts of
+the old single leaf come from two DIFFERENT classical theorems, needing two
+different missing theories, and nothing in either uses the other:
+
+* projectivity (theta divisors, linear systems, `H⁰`) produces the sheaf, and
+  needs `IsAmpleSheaf` to be more than a definition;
+* the theorem of the cube (seesaw, flat base change for cohomology) produces the
+  identity `[n]^* L ≅ L^{⊗ n²}` from the sheaf's SYMMETRY alone.
+
+The old statement asserted symmetry only implicitly, "by asserting the
+conclusion it buys".  Making it explicit — through `AbelianSchemeStruct.negMor`
+above, which did not exist when the leaf was cut — is what lets the two halves
+be separated, and it also makes the cube half's faithfulness checkable: see the
+counterexample recorded in its docstring for what the statement becomes without
+`hsymm`.
+
+**Do not attempt either half before reading
+`isQuasiAffine_ker_mulByNat_of_field_char` below**: nine cube-free routes are
+refuted there, each with the check that would refute the refutation, and the
+survey of what `Mathlib/AlgebraicGeometry/` does and does not have
+(`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY) is re-verified there.
 
 **What each conjunct is.**
 
@@ -10700,14 +11238,18 @@ refuted there, each with the check that would refute the refutation, and the
 survey of what `Mathlib/AlgebraicGeometry/` does and does not have
 (`grep -rl Ample Mathlib/AlgebraicGeometry/` is EMPTY) is re-verified there.
 This is a mathlib-scale build: theta divisors need divisors, linear systems
-and cohomology, none of which exist at this pin. -/
+and cohomology, none of which exist at this pin — which is exactly why the two
+halves were separated on 2026-07-28: they are mathlib-scale in two DIFFERENT
+directions and can be built independently. -/
 theorem exists_isAmpleSheaf_cube_of_isAlgClosed {X : Scheme.{u}}
     (K : Type u) [Field K] [IsAlgClosed K] {fK : X ⟶ Spec (CommRingCat.of K)}
     (ab : AbelianSchemeStruct fK) (n : ℕ) :
     ∃ L : X.Modules, IsInvertibleSheaf L ∧ IsAmpleSheaf L ∧
       Nonempty (modPullback ab.zeroSection L ≅ modUnit (Spec (CommRingCat.of K))) ∧
-      Nonempty (modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)) :=
-  sorry
+      Nonempty (modPullback (ab.mulByNat n) L ≅ modTensorPow L (n ^ 2)) := by
+  obtain ⟨L, hinv, hamp, htriv, hsymm⟩ := exists_isAmpleSheaf_symm_of_isAlgClosed K ab
+  exact ⟨L, hinv, hamp, htriv,
+    nonempty_modPullback_mulByNat_modTensorPow_of_symm K ab L hinv hsymm n⟩
 
 /-- **`ker[p]` is a QUASI-AFFINE SCHEME over an ALGEBRAICALLY CLOSED field of
 characteristic `p`** (PROVEN 2026-07-27 over
