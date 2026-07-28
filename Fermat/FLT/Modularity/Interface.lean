@@ -5808,15 +5808,23 @@ statement is then the natural one — the trace map `𝕋 → ℂ` lands in `ℤ
 THE ASSEMBLY, all three inputs above:
 `exists_trace_heckeSubring_rat` (the trace is RATIONAL — Shimura, no
 analysis), `isIntegral_trace_heckeSubring` (the trace is an ALGEBRAIC
-INTEGER — the `ℤ`-span of the `T_m` over the single remaining leaf
-`isIntegral_trace_heckeOpN`), and `IsIntegrallyClosed ℤ` inside `ℚ`,
-which is what turns the pair into membership of `ℤ`.
+INTEGER — the `ℤ`-span of the `T_m` over `isIntegral_trace_heckeOpN`),
+and `IsIntegrallyClosed ℤ` inside `ℚ`, which is what turns the pair into
+membership of `ℤ`.
 
-WHAT REMAINS OPEN BENEATH THIS NODE is exactly one leaf,
-`isIntegral_trace_heckeOpN` above; read its docstring before recutting,
-since it corrects two claims this node used to carry (the Hecke
-multiplication rule is no longer needed, and the rationality half is no
-longer a citation). -/
+**CORRECTION 2026-07-28 — NOTHING IS OPEN BENEATH THIS NODE ANY MORE,
+AND EICHLER–SELBERG IS NOT AMONG ITS INPUTS.** The two paragraphs above
+were written while `isIntegral_trace_heckeOpN` was a sorry leaf carrying
+the Eichler–Selberg trace formula; it is now PROVEN, over
+`exists_smul_mem_integralCuspForms` (BOUNDED DENOMINATORS) and the
+lattice route, which stopped being circular once
+`exists_heckeOpN_sturm_span` landed. So this node's only open ancestor
+input is bounded denominators, the same one the rest of the cluster now
+rests on, and the name "Eichler–Selberg" in this docstring's heading is
+historical. Read `isIntegral_trace_heckeOpN`'s docstring before
+recutting: it also corrects two claims this node used to carry (the
+Hecke multiplication rule is no longer needed, and the rationality half
+is no longer a citation). -/
 theorem exists_trace_heckeSubring_int {N : ℕ} (hN : 0 < N)
     {T : Module.End ℂ (CuspForm (Gamma0GL N) 2)} (hT : T ∈ heckeSubring N) :
     ∃ z : ℤ, LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) T = (z : ℂ) := by
@@ -5880,7 +5888,14 @@ was worth separating off. THE SECOND IS THE ONE EXECUTED BELOW.**
   holding on its `ℂ`-SPAN only. Upgrading that span to `⊤` is
   `integralCuspForms_span_eq_top`, which is DECLARED BELOW and is proven
   THROUGH this very cluster — so the route is circular, not just
-  out of order.
+  out of order. **STALE AS OF 2026-07-28: the circularity is broken.**
+  The span is now obtained from `rationalCuspForms_span_eq_top` (Shimura)
+  plus `exists_smul_mem_integralCuspForms` (BOUNDED DENOMINATORS), both
+  ABOVE and neither citing anything below — that is what
+  `exists_heckeOpN_sturm_span` above does, and what
+  `isIntegral_trace_heckeOpN` above now does. The lattice route is
+  therefore AVAILABLE here; it is left untaken only because the trace
+  route below is already written and proves the same thing.
 * *The TRACE route, which needs NO integral model and NO semisimplicity.*
   Eichler–Selberg gives `Tr(T_n) ∈ ℤ` for every `n`; the Hecke
   multiplication rule `T_m T_n = Σ_{d ∣ (m,n), (d,N)=1} d · T_{mn/d²}`
@@ -5909,6 +5924,18 @@ above** (2026-07-27):
 
 So `exists_trace_heckeSubring_int` (Eichler–Selberg) is now the ONLY
 open input of the trace route.
+
+**CORRECTED 2026-07-28: THE TRACE ROUTE HAS NO OPEN INPUT OF ITS OWN.**
+The sentence immediately above, and the parenthesis in the first bullet,
+were true only while `isIntegral_trace_heckeOpN` was a sorry. It is
+PROVEN, and NOT from Eichler–Selberg: it goes through the lattice, whose
+`ℂ`-span comes from Shimura plus `exists_smul_mem_integralCuspForms`
+(BOUNDED DENOMINATORS). So every open input of this declaration — and of
+the entire integrality cluster — is now that one leaf. Anybody planning
+to supply Eichler–Selberg for this cluster should stop: nothing here
+asks for it. The citation is preserved in `isIntegral_trace_heckeOpN`'s
+docstring against the case where bounded denominators is refuted, which
+is the only circumstance in which it becomes wanted again.
 
 A CORRECTION TO THE ROUTE AS FIRST RECORDED, AND THEN A SECOND ONE.
 This docstring used to justify the last step `p`-adically: the
