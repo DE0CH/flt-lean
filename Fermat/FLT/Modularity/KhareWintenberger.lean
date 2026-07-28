@@ -177,6 +177,14 @@ public import Mathlib.GroupTheory.FiniteAbelian.Duality
 -- embedding of algebraic closures used by `galRoot_eq_pow_cycCharModN`.
 public import Fermat.FLT.Deformations.Lemmas
 public import Mathlib.Analysis.Complex.Basic
+-- 2026-07-28, for the analytic half of the Weil bound
+-- (`norm_le_sqrt_of_forall_norm_frobPowerSum_le`): `hasSum_geometric_of_lt_one`
+-- and `hasSum_geometric_of_norm_lt_one`, which are what let the generating
+-- function `Σ_κ w_κ/(1 − w_κ)` be assembled as a genuine `HasSum` from finitely
+-- many geometric series, so no interchange theorem is needed. PUBLIC because
+-- the names are used in a proof body and a purely transitive private route
+-- does not re-export them.
+public import Mathlib.Analysis.SpecificLimits.Normed
 public import Mathlib.FieldTheory.Galois.Basic
 -- the Moret–Bailly cut (2026-07-25, PIN RE-AUDIT): the scheme-theoretic
 -- vocabulary in which Moret–Bailly's existence theorem and the twisted
@@ -5346,8 +5354,439 @@ theorem exists_descentClosed_heckePackage
           ∀ w, w ∉ S → w ∉ S' → ι (b w) = a w) :=
   sorry
 
-/-- **Ramanujan–Petersson for the Hilbert newform over `F`** (SORRIED
-CITATION — Deligne's theorem; the discharge of
+/-! ### The Weil bound for the Hilbert eigenvalues: the analytic passage
+
+DECOMPOSITION 2026-07-28 of the two Ramanujan–Petersson citations below
+(`weilBound_heckeF_of_heckePackage` and
+`weilBound_descended_of_heckePackage`).  Both are cut along the SAME line
+that `Modularity/Interface.lean` uses for the classical case: the geometry
+produces POINT COUNTS of a curve over the residue field of `w`, together
+with the Eichler–Shimura pair among its Frobenius eigenvalues, and the
+passage from counts to the individual eigenvalue bound is pure complex
+analysis.  The two lemmas of this block are that passage — PROVEN; the two
+`exists_frobEigenvalues_…_of_heckePackage` leaves below are the geometry —
+SORRIED.
+
+WHY THE CUT STOPS HERE AND DOES NOT GO ONE STEP FURTHER.  `Interface.lean`
+splits its geometric leaf again, into a modular half handing over a PLANE
+MODEL (`exists_planeModel_frobEigenvalues_of_not_dvd`) and a curve-level
+Weil bound (`exists_const_natCard_zeroLocus_sub_le`, the target of the
+Stepanov subtree in `Modularity/MoretBailly.lean`).  That second cut is
+NOT available here, for a reason of layering rather than of mathematics:
+`Interface.lean` IMPORTS this module, so neither of those declarations is
+in scope, and restating either here would create a second owner for one
+piece of mathematics.  See the NEXT CUT paragraph on
+`exists_frobEigenvalues_heckeF_of_heckePackage` for exactly what has to
+move, and where, before it can be taken.
+
+DUPLICATION, DELIBERATE AND FLAGGED.
+`norm_le_sqrt_of_forall_norm_frobPowerSum_le` below is the same statement,
+with the same proof, as `Interface.lean`'s
+`norm_le_sqrt_of_forall_norm_sum_pow_le`.  It is copied rather than
+imported for exactly the reason above — this module is UPSTREAM of
+`Interface.lean`, so the dependency can only run one way, and it currently
+runs the wrong way.  The dedupe is a one-line job for the owner of
+`Interface.lean`: delete its copy and use this one, which is visible
+there.  It is recorded rather than done because that declaration is
+outside this task's region.
+-/
+
+/-- **The analytic half of the Riemann hypothesis for curves: a
+point-count bound on ALL the power sums pins every Frobenius eigenvalue
+inside the disc of radius `√q`** (PROVEN 2026-07-28).
+
+STATEMENT.  Given finitely many complex numbers `γ₀, …, γ_{n−1}` and a
+constant `B` with `‖Σ_κ γ_κ^s‖ ≤ B·q^{s/2}` for EVERY `s ≥ 1`, each
+`‖γ_κ‖ ≤ √q`.
+
+WHY THIS IS THE RIGHT SHAPE.  For a smooth projective curve `X/𝔽_q` the
+Lefschetz trace formula reads `#X(𝔽_{q^s}) = q^s + 1 − Σ_κ γ_κ^s`, so the
+hypothesis is *literally* the Hasse–Weil point-count estimate
+`|#X(𝔽_{q^s}) − q^s − 1| ≤ B·q^{s/2}` over all finite extensions, and the
+conclusion is the individual-eigenvalue bound `|γ| ≤ √q` that the point
+count does NOT give term by term.  Splitting the Weil bound here is what
+keeps the geometric leaves below purely geometric: the geometry produces
+counts, and the passage from counts to eigenvalues is this lemma, which
+mentions no curve, no automorphic form and no Galois action.
+
+NOTHING IS ASSUMED ABOUT WHERE THE `γ_κ` COME FROM — no functional
+equation, no integrality, no pairing into `q`.  Note `q` is an arbitrary
+POSITIVE natural here, not a prime: the residue field of a place `w` of a
+number field has prime-POWER cardinality, which is why the `q`-prime shape
+used for the classical modular curve would not have sufficed.
+
+PROOF (Hasse's generating-function argument, in the form that needs
+neither analytic continuation nor any residue bookkeeping).  Let `k₀`
+maximise `‖γ_κ‖ =: R` and suppose `R > √q`; put `ρ = √q/R < 1`.  For
+`t ∈ (0,1)` evaluate at `x = t/γ_{k₀}`, so `‖γ_κ·x‖ ≤ t < 1` for EVERY `κ`
+— the only place maximality is used.  Writing `w_κ = γ_κ·x`,
+`Σ_{s ≥ 1} p_s·x^s = Σ_κ w_κ/(1 − w_κ)` as a genuine `HasSum`, a finite
+sum of geometric series, so no interchange theorem is needed.  The UPPER
+bound `‖Σ_κ w_κ/(1−w_κ)‖ ≤ B·ρt/(1−ρt) ≤ B·ρ/(1−ρ) =: C` is uniform in
+`t` — which is the substitute for continuity at the boundary, no limit
+being taken — while the LOWER bound is Herglotz, `Re(w/(1−w)) ≥ −1/2` on
+the open unit disc, so the `k₀` term contributes exactly `t/(1−t)` and
+every other term `≥ −1/2` with no information about it.  `Re ≤ ‖·‖` then
+gives `t/(1−t) ≤ C + (n−1)/2` for all `t ∈ (0,1)`, which fails at
+`t = (M+1)/(M+2)` with `M = max(C + (n−1)/2, 0)`.
+
+WHAT IS *NOT* CLAIMED.  Only `≤ √q`, not `= √q`.  Equality is recovered by
+the consumer from the product relation `γ_i·γ_j = q`, which pins both
+factors once each is bounded above — that is one line and it is in
+`norm_le_two_mul_sqrt_of_frobEigenvalues` below.
+
+DUPLICATE of `Interface.lean`'s `norm_le_sqrt_of_forall_norm_sum_pow_le`;
+see the section note above for why, and for the one-line dedupe. -/
+theorem norm_le_sqrt_of_forall_norm_frobPowerSum_le {q : ℕ} (hq : 0 < q) {n : ℕ}
+    (γ : Fin n → ℂ) (B : ℝ)
+    (h : ∀ s : ℕ, 0 < s → ‖∑ κ, γ κ ^ s‖ ≤ B * Real.sqrt q ^ s) :
+    ∀ κ, ‖γ κ‖ ≤ Real.sqrt q := by
+  -- **Herglotz bound**: `Re (z/(1−z)) ≥ −1/2` on the open unit disc, because
+  -- `z/(1−z) + 1/2 = (1+z)/(2(1−z))` has real part `(1−‖z‖²)/(2‖1−z‖²) ≥ 0`.
+  -- This is what makes the NON-maximal terms of the generating function
+  -- harmless without any information about them.
+  have herg : ∀ z : ℂ, ‖z‖ < 1 → -(1 / 2 : ℝ) ≤ (z * (1 - z)⁻¹).re := by
+    intro z hz
+    have hne : (1 : ℂ) - z ≠ 0 := by
+      intro hh
+      rw [sub_eq_zero] at hh
+      rw [← hh, norm_one] at hz
+      exact lt_irrefl 1 hz
+    have hN : Complex.normSq (1 - z) = (1 - z.re) ^ 2 + z.im ^ 2 := by
+      rw [Complex.normSq_apply, Complex.sub_re, Complex.sub_im, Complex.one_re, Complex.one_im]
+      ring
+    have hNpos : 0 < (1 - z.re) ^ 2 + z.im ^ 2 := by
+      rw [← hN]; exact Complex.normSq_pos.mpr hne
+    have hz2 : z.re ^ 2 + z.im ^ 2 < 1 := by
+      have h1 : ‖z‖ ^ 2 < 1 := by nlinarith [norm_nonneg z]
+      have h2 : Complex.normSq z = ‖z‖ ^ 2 := Complex.normSq_eq_norm_sq z
+      rw [Complex.normSq_apply] at h2
+      nlinarith
+    have hfe : (z * (1 - z)⁻¹).re
+        = (z.re * (1 - z.re) - z.im * z.im) / ((1 - z.re) ^ 2 + z.im ^ 2) := by
+      rw [← div_eq_mul_inv, Complex.div_re, hN, Complex.sub_re, Complex.sub_im,
+        Complex.one_re, Complex.one_im]
+      ring
+    rw [hfe, le_div_iff₀ hNpos]
+    nlinarith
+  rcases Nat.eq_zero_or_pos n with hn | hn
+  · subst hn; exact fun κ => absurd κ.isLt (by omega)
+  -- reduce to the index of maximal modulus
+  obtain ⟨k₀, -, hk₀⟩ :=
+    Finset.exists_max_image (Finset.univ : Finset (Fin n)) (fun κ => ‖γ κ‖)
+      ⟨⟨0, hn⟩, Finset.mem_univ _⟩
+  have hmax : ∀ κ, ‖γ κ‖ ≤ ‖γ k₀‖ := fun κ => hk₀ κ (Finset.mem_univ _)
+  suffices hgoal : ‖γ k₀‖ ≤ Real.sqrt q from fun κ => (hmax κ).trans hgoal
+  by_contra hcon
+  rw [not_le] at hcon
+  have hsq0 : 0 < Real.sqrt q := Real.sqrt_pos.mpr (by exact_mod_cast hq)
+  set Rm : ℝ := ‖γ k₀‖ with hRdef
+  have hR0 : 0 < Rm := lt_trans hsq0 hcon
+  have hγ0 : γ k₀ ≠ 0 := by rw [← norm_pos_iff]; exact hR0
+  have hB : 0 ≤ B := by
+    have h1 := h 1 one_pos
+    simp only [pow_one] at h1
+    have h2 : (0 : ℝ) ≤ B * Real.sqrt q := le_trans (norm_nonneg _) h1
+    nlinarith
+  -- `rr = √q / Rm < 1` is the ratio the hypothesis controls
+  set rr : ℝ := Real.sqrt q / Rm with hρdef
+  have hρ0 : 0 ≤ rr := div_nonneg hsq0.le hR0.le
+  have hρ1 : rr < 1 := (div_lt_one hR0).mpr hcon
+  -- `Cu` bounds the generating function on the whole radius, UNIFORMLY in `tv`
+  set Cu : ℝ := B * rr / (1 - rr) with hCdef
+  have hC0 : 0 ≤ Cu := div_nonneg (mul_nonneg hB hρ0) (by linarith)
+  set Mu : ℝ := max (Cu + ((n : ℝ) - 1) / 2) 0 with hMdef
+  have hM0 : 0 ≤ Mu := le_max_right _ _
+  have hMge : Cu + ((n : ℝ) - 1) / 2 ≤ Mu := le_max_left _ _
+  set tv : ℝ := (Mu + 1) / (Mu + 2) with htdef
+  have ht0 : 0 < tv := by rw [htdef]; positivity
+  have ht1 : tv < 1 := by rw [htdef, div_lt_one (by linarith)]; linarith
+  have hne1t : (1 : ℝ) - tv ≠ 0 := ne_of_gt (by linarith)
+  have htt : tv / (1 - tv) = Mu + 1 := by
+    rw [div_eq_iff hne1t, htdef]
+    field_simp
+    ring
+  -- evaluate at `xv = tv/γ_{k₀}`, just inside the disc `‖x‖ < 1/Rm`
+  set xv : ℂ := (tv : ℂ) * (γ k₀)⁻¹ with hxdef
+  have hxnorm : ‖xv‖ = tv / Rm := by
+    rw [hxdef, norm_mul, norm_inv, Complex.norm_real, Real.norm_eq_abs, abs_of_pos ht0,
+      div_eq_mul_inv]
+  set wv : Fin n → ℂ := fun κ => γ κ * xv with hwdef
+  have hwn : ∀ κ, ‖wv κ‖ ≤ tv := by
+    intro κ
+    have hk : ‖wv κ‖ = ‖γ κ‖ * (tv / Rm) := by rw [hwdef, norm_mul, hxnorm]
+    rw [hk]
+    calc ‖γ κ‖ * (tv / Rm) ≤ Rm * (tv / Rm) :=
+          mul_le_mul_of_nonneg_right (hmax κ) (by positivity)
+      _ = tv := by field_simp
+  have hwlt : ∀ κ, ‖wv κ‖ < 1 := fun κ => lt_of_le_of_lt (hwn κ) ht1
+  have hw0 : wv k₀ = (tv : ℂ) := by rw [hwdef, hxdef]; field_simp
+  -- the generating function `Σ_{s ≥ 1} p_s·xv^s = Σ_κ wv_κ/(1 − wv_κ)`
+  have hHSk : ∀ κ, HasSum (fun s : ℕ => wv κ ^ (s + 1)) (wv κ * (1 - wv κ)⁻¹) := by
+    intro κ
+    exact ((hasSum_geometric_of_norm_lt_one (hwlt κ)).mul_left (wv κ)).congr_fun
+      (fun s => by ring)
+  have hHS : HasSum (fun s : ℕ => ∑ κ, wv κ ^ (s + 1)) (∑ κ, wv κ * (1 - wv κ)⁻¹) :=
+    hasSum_sum (fun κ _ => hHSk κ)
+  -- UPPER bound: the hypothesis dominates it by a geometric series of ratio `rr·tv < 1`
+  have hρt0 : 0 ≤ rr * tv := mul_nonneg hρ0 ht0.le
+  have hρt1 : rr * tv < 1 := by nlinarith
+  have hgeom : HasSum (fun s : ℕ => B * (rr * tv) ^ (s + 1)) (B * (rr * tv) / (1 - rr * tv)) := by
+    rw [div_eq_mul_inv]
+    exact ((hasSum_geometric_of_lt_one hρt0 hρt1).mul_left (B * (rr * tv))).congr_fun
+      (fun s => by ring)
+  have hcoef : ∀ s : ℕ, ‖∑ κ, wv κ ^ (s + 1)‖ ≤ B * (rr * tv) ^ (s + 1) := by
+    intro s
+    have hfac : (∑ κ, wv κ ^ (s + 1)) = (∑ κ, γ κ ^ (s + 1)) * xv ^ (s + 1) := by
+      rw [Finset.sum_mul]
+      exact Finset.sum_congr rfl (fun κ _ => by rw [hwdef, mul_pow])
+    rw [hfac, norm_mul, norm_pow, hxnorm]
+    have hh := h (s + 1) (Nat.succ_pos s)
+    have hnn : (0 : ℝ) ≤ (tv / Rm) ^ (s + 1) := by positivity
+    calc ‖∑ κ, γ κ ^ (s + 1)‖ * (tv / Rm) ^ (s + 1)
+        ≤ (B * Real.sqrt q ^ (s + 1)) * (tv / Rm) ^ (s + 1) :=
+          mul_le_mul_of_nonneg_right hh hnn
+      _ = B * (rr * tv) ^ (s + 1) := by
+          rw [hρdef, mul_assoc, ← mul_pow,
+            show Real.sqrt q * (tv / Rm) = Real.sqrt q / Rm * tv from by ring]
+  have hnormG : ‖∑ κ, wv κ * (1 - wv κ)⁻¹‖ ≤ B * (rr * tv) / (1 - rr * tv) :=
+    hHS.norm_le_of_bounded hgeom hcoef
+  have hCbound : B * (rr * tv) / (1 - rr * tv) ≤ Cu := by
+    rw [hCdef, div_le_div_iff₀ (by linarith) (by linarith)]
+    nlinarith [mul_nonneg (mul_nonneg hB hρ0) (sub_nonneg.mpr ht1.le)]
+  -- LOWER bound: the `k₀` term contributes `tv/(1−tv)`, unbounded as `tv → 1⁻`,
+  -- while every other term is `≥ −1/2` by Herglotz.
+  have hterm0 : (wv k₀ * (1 - wv k₀)⁻¹).re = tv / (1 - tv) := by
+    have hcast : (tv : ℂ) * (1 - (tv : ℂ))⁻¹ = ((tv / (1 - tv) : ℝ) : ℂ) := by
+      push_cast
+      rw [div_eq_mul_inv]
+    rw [hw0, hcast, Complex.ofReal_re]
+  have hsingle : (wv k₀ * (1 - wv k₀)⁻¹).re + 1 / 2
+      ≤ ∑ κ, ((wv κ * (1 - wv κ)⁻¹).re + 1 / 2) :=
+    Finset.single_le_sum (f := fun κ => (wv κ * (1 - wv κ)⁻¹).re + 1 / 2)
+      (fun κ _ => by linarith [herg (wv κ) (hwlt κ)]) (Finset.mem_univ k₀)
+  have hsplit : ∑ κ, ((wv κ * (1 - wv κ)⁻¹).re + 1 / 2)
+      = (∑ κ, wv κ * (1 - wv κ)⁻¹).re + (n : ℝ) / 2 := by
+    rw [Finset.sum_add_distrib, Complex.re_sum, Finset.sum_const, Finset.card_univ,
+      Fintype.card_fin, nsmul_eq_mul]
+    ring
+  have hre_le : (∑ κ, wv κ * (1 - wv κ)⁻¹).re ≤ ‖∑ κ, wv κ * (1 - wv κ)⁻¹‖ :=
+    Complex.re_le_norm _
+  rw [hterm0, htt, hsplit] at hsingle
+  linarith
+
+/-- **From a Frobenius eigenvalue system with a Hasse–Weil point count to
+the Weil bound on the Eichler–Shimura pair** (PROVEN 2026-07-28): the
+whole passage from the geometry's native output to `‖a‖ ≤ 2√q`.
+
+Given a system `γ : Fin n → ℂ`, a count `Npt : ℕ → ℕ` and a constant `B`
+with the LEFSCHETZ identity `Σ_κ γ_κ^s = q^s + 1 − Npt s` and the
+HASSE–WEIL estimate `|Npt s − q^s − 1| ≤ B·q^{s/2}` for every `s ≥ 1`, and
+two indices `i, j` with `γ_i + γ_j = z` and `γ_i·γ_j = q`, one has
+`‖z‖ ≤ 2√q`.
+
+The argument is three steps.  Lefschetz turns the count estimate into
+`‖Σ_κ γ_κ^s‖ ≤ B·q^{s/2}`, so `norm_le_sqrt_of_forall_norm_frobPowerSum_le`
+gives `‖γ_κ‖ ≤ √q` for EVERY `κ`; the product relation
+`‖γ_i‖·‖γ_j‖ = q = √q·√q` then forces those two to be EXTREMAL,
+`‖γ_i‖ = ‖γ_j‖ = √q`; and the triangle inequality on `γ_i + γ_j`
+finishes.  `i = j` is permitted throughout and costs nothing.
+
+`q` is an arbitrary positive natural, not a prime: the two consumers below
+instantiate it at `Ideal.absNorm w.asIdeal`, the residue cardinality of a
+place of a number field, which is a prime POWER. -/
+theorem norm_le_two_mul_sqrt_of_frobEigenvalues {q : ℕ} (hq : 0 < q) {n : ℕ}
+    (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (B : ℝ) (i j : Fin n) (z : ℂ)
+    (hlef : ∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s = (q : ℂ) ^ s + 1 - (Npt s : ℂ))
+    (hweil : ∀ s : ℕ, 0 < s →
+      |(Npt s : ℝ) - (q : ℝ) ^ s - 1| ≤ B * Real.sqrt q ^ s)
+    (hsum : γ i + γ j = z) (hprod : γ i * γ j = (q : ℂ)) :
+    ‖z‖ ≤ 2 * Real.sqrt q := by
+  have hqR : (0 : ℝ) < (q : ℝ) := by exact_mod_cast hq
+  have hsqpos : 0 < Real.sqrt q := Real.sqrt_pos.mpr hqR
+  -- 1. the point counts bound the Frobenius power sums
+  have hps : ∀ s : ℕ, 0 < s → ‖∑ κ, γ κ ^ s‖ ≤ B * Real.sqrt q ^ s := by
+    intro s hs
+    have hcast : ((q : ℂ) ^ s + 1 - (Npt s : ℂ))
+        = ((((q : ℝ) ^ s + 1 - (Npt s : ℝ)) : ℝ) : ℂ) := by push_cast; ring
+    rw [hlef s hs, hcast, Complex.norm_real, Real.norm_eq_abs,
+      show ((q : ℝ) ^ s + 1 - (Npt s : ℝ)) = -((Npt s : ℝ) - (q : ℝ) ^ s - 1) by ring,
+      abs_neg]
+    exact hweil s hs
+  -- 2. and hence each eigenvalue individually
+  have hbnd := norm_le_sqrt_of_forall_norm_frobPowerSum_le hq γ B hps
+  -- 3. the pair `γ_i, γ_j` is extremal because its product is `q`
+  have hnp : ‖γ i‖ * ‖γ j‖ = Real.sqrt q * Real.sqrt q := by
+    rw [← norm_mul, hprod, Complex.norm_natCast, Real.mul_self_sqrt hqR.le]
+  have hi : ‖γ i‖ = Real.sqrt q := by
+    refine le_antisymm (hbnd i) ?_
+    nlinarith [hbnd j, norm_nonneg (γ i), norm_nonneg (γ j), hsqpos, hnp]
+  have hj : ‖γ j‖ = Real.sqrt q := by
+    refine le_antisymm (hbnd j) ?_
+    nlinarith [hbnd i, norm_nonneg (γ i), norm_nonneg (γ j), hsqpos, hnp]
+  -- 4. the triangle inequality
+  rw [← hsum]
+  calc ‖γ i + γ j‖ ≤ ‖γ i‖ + ‖γ j‖ := norm_add_le _ _
+    _ = 2 * Real.sqrt q := by rw [hi, hj]; ring
+
+/-- **The residue cardinality of a place is positive** (PROVEN
+2026-07-28): `Ideal.absNorm w.asIdeal > 0` for a height-one prime of the
+ring of integers of a number field, because `absNorm I = 0` only for
+`I = ⊥` and a height-one spectrum point is by definition nonzero.  Needed
+because both Weil-bound consumers below instantiate the analytic lemmas at
+`q = Ideal.absNorm w.asIdeal`, which needs `0 < q`. -/
+theorem absNorm_asIdeal_pos {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    0 < Ideal.absNorm w.asIdeal :=
+  Nat.pos_of_ne_zero fun h => w.ne_bot (Ideal.absNorm_eq_zero_iff.mp h)
+
+/-- **Eichler–Shimura in point-count shape for the Hilbert newform over
+`F`** (SORRIED CITATION, cut 2026-07-28 as the GEOMETRIC residue of
+`weilBound_heckeF_of_heckePackage` below, which is now PROVEN over this
+leaf and `norm_le_two_mul_sqrt_of_frobEigenvalues` above).
+
+STATEMENT.  At every good place `w ∉ badF` and every complex embedding `φ`
+of the Hecke field there are finitely many complex numbers `γ₀, …, γ_{n−1}`,
+a sequence of natural numbers `Npt : ℕ → ℕ`, a constant `Bw` and two
+indices `i, j` with
+
+* `Σ_κ γ_κ^s = (Nw)^s + 1 − Npt s` for every `s ≥ 1`   (Lefschetz),
+* `|Npt s − (Nw)^s − 1| ≤ Bw·(Nw)^{s/2}` for every `s ≥ 1`  (Hasse–Weil),
+* `γ_i + γ_j = −φ((heckeF w).coeff 1)`, i.e. `φ(a_w)`, and `γ_i·γ_j = Nw`
+  (Eichler–Shimura).
+
+WHAT IT PACKAGES, CLASSICALLY.  `hirrF` makes the eigensystem `heckeF`
+that of a CUSPIDAL Hilbert newform `f` of parallel weight `2` over `F`.
+Jacquet–Langlands transfers `f` to a quaternion algebra `D/F` split at
+exactly ONE infinite place — such a `D` exists whenever `[F : ℚ] > 1`,
+because `F` then has at least two infinite places and the parity
+condition can be met by ramifying at one more of them, and for `F = ℚ`
+the classical modular curve serves instead — so the associated Shimura
+variety is a CURVE `X/F`.  Carayol's integral model has good reduction at
+every `w` outside a finite bad set, `Npt s = #X̄_w(𝔽_{(Nw)^s})` is the
+point count of its special fibre, and the `γ_κ` are the `n = 2·genus`
+eigenvalues of `Frob_w` on `H¹`.  Clause 1 is the Lefschetz trace formula
+for the special fibre; clause 2 is the Weil conjectures — the Riemann
+hypothesis for curves over finite fields — with `Bw = 2·genus`; clause 3
+is the Eichler–Shimura congruence relation `T_w = Frob_w + Nw·Frob_w^{−1}`,
+which puts the two roots of `X² − a_w·X + Nw` among the eigenvalues.
+Literature: Deligne, *La conjecture de Weil I*, Publ. IHÉS 43 (1974);
+Carayol, Ann. Sci. ÉNS 19 (1986); Blasius, *Hilbert modular forms and the
+Ramanujan conjecture* (2006); Shimura, Duke Math. J. 45 (1978) for the
+parallel-weight-`2` normalisation `X² − a_w·X + Nw`.
+
+WHY THE POINT COUNTS ARE STATED AND NOT ELIMINATED.  Stating the geometry
+in the shape it natively produces — counts of points over every finite
+extension of the residue field — is what lets the analytic passage to
+individual eigenvalues be factored out into the two lemmas above, which
+are pure complex analysis.  Nothing geometric is left in them, and
+nothing analytic is left here.
+
+`hirrF` IS LOAD-BEARING AND MUST NOT BE DROPPED.  Without it `ρ = 1 ⊕ χ_ℓ`
+satisfies every remaining hypothesis and has `a_w = 1 + Nw > 2√(Nw)`; by
+the FAITHFULNESS paragraph below any witness of this leaf FORCES
+`‖φ(a_w)‖ ≤ 2√(Nw)`, so for that `ρ` no witness can exist and the leaf
+would be FALSE, not merely unprovable.  This is the same falsity that
+`PotentialModularityWitness.weilBoundF`'s audit records, inherited
+verbatim through the consumer's binders.
+
+FAITHFULNESS, AND WHY THIS IS NOT VACUOUS.  TRUE, by the classical
+package above.  It is also Weil-STRENGTH — it cannot be discharged by
+bookkeeping: the two displayed estimates feed
+`norm_le_two_mul_sqrt_of_frobEigenvalues` to give `‖φ(a_w)‖ ≤ 2√(Nw)`
+outright, which is exactly the consumer's conclusion.  `i = j` is
+deliberately PERMITTED (nothing downstream needs them distinct, and the
+classical witness supplies distinct ones anyway), and `Npt : ℕ → ℕ`
+integrality is retained because it is what forbids the cheap junk
+solutions in which the `γ`'s are chosen freely.
+
+WHY THE HASSE–WEIL CLAUSE STAYS INSIDE THIS LEAF.  Splitting it off would
+manufacture a FALSE sub-leaf.  A bare `ℕ`-sequence satisfying only the
+Lefschetz clause carries no arithmetic and the bound fails for it — take
+`n = 2`, `γ = (Nw, 0)`, `Npt s = 1`, which satisfies Lefschetz and
+violates every `B·(Nw)^{s/2}`.  Any cut that removes clause 2 therefore
+needs a shared WITNESS pinning `Npt` to an actual curve; see the next
+paragraph for the only such witness that is cheap enough to state, and
+for why it is not available at this point of the import graph.
+
+NEXT CUT, AND EXACTLY WHAT BLOCKS IT TODAY.  `Modularity/Interface.lean`
+takes this second cut for the classical modular curve: the modular half
+(`exists_planeModel_frobEigenvalues_of_not_dvd`) hands over an absolutely
+irreducible PLANE MODEL `Fp ∈ 𝔽_q[X,Y]` whose affine point counts differ
+from `Npt` by a constant independent of `s`, and the curve half
+(`exists_const_natCard_zeroLocus_sub_le`) bounds those affine counts —
+that being the target of the Stepanov subtree in
+`Modularity/MoretBailly.lean`.  TWO things block the same cut here, and
+BOTH must be repaired before it is attempted:
+
+1. *Layering.*  `Interface.lean` imports THIS module, so neither of those
+   declarations is in scope.  The curve-level Weil bound has to be hoisted
+   to `Modularity/MoretBailly.lean`, which is upstream of both and already
+   houses the Stepanov material it is a target for.
+2. *Prime powers.*  That leaf is stated over the PRIME field `ZMod q` with
+   extensions `GaloisField q s`, whereas `Nw = Ideal.absNorm w.asIdeal` is
+   a prime POWER; the plane model here lives over the residue field
+   `𝔽_{Nw}`.  The generalisation to an arbitrary finite base field is
+   Schmidt's §§7 ff. (LNM 536), recorded there as gap 1 and deliberately
+   skipped.
+
+Neither is touched here: the Stepanov subtree is separately owned, and a
+second statement of one theorem is the most expensive object this fleet
+produces.  CHECK THAT WOULD REFUTE THIS PARAGRAPH — and it is a one-line
+grep, so run it before believing the note: look for a curve-level Weil
+bound over an arbitrary finite base field anywhere UPSTREAM of this module
+(`grep -rn 'natCard_zeroLocus\|Lang.*Weil' Fermat/FLT/Modularity/MoretBailly.lean`).
+If one has appeared, the plane-model cut is available immediately and this
+leaf should be split rather than proven.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_frobEigenvalues_heckeF_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+    ∀ w ∉ badF, ∀ φ : E →+* ℂ,
+      ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (Bw : ℝ) (i j : Fin n),
+        (∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s
+            = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) ^ s + 1 - (Npt s : ℂ)) ∧
+        (∀ s : ℕ, 0 < s →
+            |(Npt s : ℝ) - ((Ideal.absNorm w.asIdeal : ℕ) : ℝ) ^ s - 1|
+              ≤ Bw * Real.sqrt (Ideal.absNorm w.asIdeal) ^ s) ∧
+        γ i + γ j = - φ ((heckeF w).coeff 1) ∧
+        γ i * γ j = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) :=
+  sorry
+
+/-- **Ramanujan–Petersson for the Hilbert newform over `F`** (**PROVEN
+2026-07-28**, over `exists_frobEigenvalues_heckeF_of_heckePackage`
+immediately above and `norm_le_two_mul_sqrt_of_frobEigenvalues`; until
+then a SORRIED CITATION of Deligne's theorem.  It is the discharge of
 `PotentialModularityWitness.weilBoundF`, added 2026-07-27 when that field
 was introduced).
 
@@ -5439,11 +5878,154 @@ theorem weilBound_heckeF_of_heckePackage
     (hmod : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
     ∀ w ∉ badF, ∀ φ : E →+* ℂ,
-      ‖φ ((heckeF w).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) :=
+      ‖φ ((heckeF w).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) := by
+  intro w hw φ
+  -- the geometry: Frobenius eigenvalues, point counts, and the pair attached
+  -- to the newform at `w` by the Eichler–Shimura congruence relation
+  obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ :=
+    exists_frobEigenvalues_heckeF_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod w hw φ
+  -- the analysis: counts bound the power sums, hence each eigenvalue, hence
+  -- the extremal pair exactly, hence the sum by the triangle inequality
+  have hb := norm_le_two_mul_sqrt_of_frobEigenvalues (absNorm_asIdeal_pos w) γ Npt Bw
+    i j (- φ ((heckeF w).coeff 1)) hlef hweil hsum hprod
+  -- the bound is stated for `(heckeF w).coeff 1 = −a_w`, and `‖−z‖ = ‖z‖`
+  rwa [norm_neg] at hb
+
+/-- **Eichler–Shimura in point-count shape for the DESCENDED newform, at
+the inert places** (SORRIED CITATION, cut 2026-07-28 as the GEOMETRIC
+residue of `weilBound_descended_of_heckePackage` below, which is now
+PROVEN over this leaf and `norm_le_two_mul_sqrt_of_frobEigenvalues`
+above).
+
+STATEMENT.  Identical in shape to
+`exists_frobEigenvalues_heckeF_of_heckePackage` above, but downstairs:
+for a subgroup `C ≤ Gal(F/ℚ)`, an eigenvalue function `a` over
+`L = F^C` pinned by the Frobenius traces of `ρ|_{G_L}` (the hypothesis
+`ha` determines `a w` uniquely at every good `w`, `ψ` being injective on a
+field), all but finitely many of the places `w` of `L` matching NO good
+place of `F` carry a Frobenius eigenvalue system `γ`, a point count `Npt`,
+a constant `Bw` and a pair `i, j` with the Lefschetz identity, the
+Hasse–Weil count estimate, `γ_i + γ_j = φ(a w)` and `γ_i·γ_j = Nw`.
+
+WHAT IT PACKAGES, CLASSICALLY, AND WHY ONLY THE INERT PLACES.  `ρ` is a
+representation of `G_ℚ`, so its Frobenius characteristic polynomial at a
+place depends only on the residue cardinality; hence at a place `w` of `L`
+matching a good place `W` of `F` the eigenvalue at `w` IS the newform's
+eigenvalue at `W`, read inside `ℚ̄_ℓ`, and the bound follows from
+`weilBoundF` with no automorphic input.  That half is proven in
+`weilBound_of_charFrob_baseChange`.  What remains, and what this leaf
+carries, is a place `w` lying under places of `F` of strictly larger
+residue degree, where the eigenvalue is that of the form DESCENDED to `L`.
+Cyclic base change (Langlands, *Base Change for GL(2)*, Ann. of Math.
+Studies 96 (1980); Arthur–Clozel, Ann. of Math. Studies 120 (1989), Ch. 3
+Thm 4.2) descends the cuspidal Hilbert newform `f` over `F` — cuspidal
+because of `hirrF` — down the solvable tower to a CUSPIDAL Hilbert newform
+over `L`, at which point the same quaternionic Shimura CURVE package as
+upstairs applies over `L`: Jacquet–Langlands, Carayol's integral model
+with good reduction at `w`, the Lefschetz trace formula for its special
+fibre, the Weil conjectures, and the Eichler–Shimura congruence relation
+`T_w = Frob_w + Nw·Frob_w^{−1}`.
+
+WHY THE INEQUALITY UPSTAIRS DOES NOT SUFFICE, recorded so the cheap route
+is not re-attempted.  From `|φ(a_W)| ≤ 2·Nw^{f/2}` and `α_W β_W = Nw^f`
+one cannot conclude `|α_w| = |β_w| = √(Nw)`: that needs the SHARP form of
+the bound, which needs `φ(a_W)` REAL — total reality of the Hecke field of
+a parallel-weight-`2` Hilbert newform with trivial nebentypus, not
+recorded anywhere in this development.  CHECK THAT WOULD REFUTE THIS:
+exhibit a proof of `|α| = |β| = √q` from `αβ = q` and
+`|α^f + β^f| ≤ 2 q^{f/2}` alone, for some `f > 1`, with `α + β` not
+assumed real.
+
+AXIS SEARCHED, AXIS NOT SEARCHED.  Searched: the elementary/algebraic
+axis — deducing the bound downstairs from the bound upstairs by pure
+inequalities on Frobenius eigenvalues.  This cut takes the OTHER axis: it
+constructs the descended automorphic object and reads its own Frobenius
+eigenvalues off the reduction of its own Shimura curve, which is the
+citation itself.
+
+FAITHFULNESS, AND WHY THIS IS NOT VACUOUS.  TRUE, by the classical
+package.  Weil-STRENGTH: any witness feeds
+`norm_le_two_mul_sqrt_of_frobEigenvalues` and yields the consumer's
+conclusion `‖φ(a w)‖ ≤ 2√(Nw)` outright.  `hirrF` is load-bearing for
+exactly the reason recorded on the sibling above — without it
+`ρ = 1 ⊕ χ_ℓ` with `F` real quadratic, `C = Gal(F/ℚ)` and `p` inert gives
+`a_p = 1 + p > 2√p` at `w = (p)` of `L = ℚ`, so no witness could exist and
+the leaf would be FALSE.  At `C = ⊥` the inert hypothesis is unsatisfiable
+and the leaf is vacuous, which is why the base case of the descent never
+exposed that falsity; the content is entirely at `C ≠ ⊥`.
+
+NEXT CUT: identical to the sibling's — a plane model plus a curve-level
+Weil bound over an arbitrary finite base field — and blocked by the same
+two things (the curve bound lives in `Interface.lean`, which imports this
+module; and it is stated over a prime field while `Nw` is a prime power).
+Read that leaf's NEXT CUT paragraph, including the grep that refutes it.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_frobEigenvalues_descended_of_heckePackage
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (E : Type u) [Field E] [NumberField E]
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      Polynomial E)
+    (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hmod : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ) :
+    ∀ (C : Subgroup (F ≃ₐ[ℚ] F)) (E' : Type u) [Field E']
+      [NumberField E'] (ψ : E' →+* AlgebraicClosure ℚ_[ℓ])
+      (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C))))
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField C)) → E'),
+      (∀ w ∉ S, ψ (a w) =
+        - ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+          w).coeff 1)) →
+      ∃ S' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+          (IntermediateField.fixedField C))),
+        ∀ w, w ∉ S → w ∉ S' →
+          (∀ W ∉ badF,
+            Ideal.absNorm W.asIdeal = Ideal.absNorm w.asIdeal →
+              (ρ.map (algebraMap ℚ F)).charFrob W ≠
+                (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
+          ∀ φ : E' →+* ℂ,
+            ∃ (n : ℕ) (γ : Fin n → ℂ) (Npt : ℕ → ℕ) (Bw : ℝ) (i j : Fin n),
+              (∀ s : ℕ, 0 < s → ∑ κ, γ κ ^ s
+                  = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) ^ s + 1 - (Npt s : ℂ)) ∧
+              (∀ s : ℕ, 0 < s →
+                  |(Npt s : ℝ) - ((Ideal.absNorm w.asIdeal : ℕ) : ℝ) ^ s - 1|
+                    ≤ Bw * Real.sqrt (Ideal.absNorm w.asIdeal) ^ s) ∧
+              γ i + γ j = φ (a w) ∧
+              γ i * γ j = ((Ideal.absNorm w.asIdeal : ℕ) : ℂ) :=
   sorry
 
 /-- **Ramanujan–Petersson for the DESCENDED eigensystems, at the inert
-places** (SORRIED CITATION — cyclic base change; the discharge of
+places** (**PROVEN 2026-07-28**, over
+`exists_frobEigenvalues_descended_of_heckePackage` immediately above and
+`norm_le_two_mul_sqrt_of_frobEigenvalues`; until then a SORRIED CITATION
+of cyclic base change.  It is the discharge of
 `PotentialModularityWitness.weilBoundDescent`, added 2026-07-27 with it).
 
 For a subgroup `C ≤ Gal(F/ℚ)` and an eigenvalue function `a` over
@@ -5553,8 +6135,20 @@ theorem weilBound_descended_of_heckePackage
               (ρ.map (algebraMap ℚ F)).charFrob W ≠
                 (ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob w) →
           ∀ φ : E' →+* ℂ,
-            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) :=
-  sorry
+            ‖φ (a w)‖ ≤ 2 * Real.sqrt (Ideal.absNorm w.asIdeal) := by
+  intro C E' _ _ ψ S a ha
+  -- the geometry, over `L = F^C`: the descended newform's Shimura curve, its
+  -- point counts, and its Eichler–Shimura pair at each inert place
+  obtain ⟨S', hS'⟩ :=
+    exists_frobEigenvalues_descended_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
+      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
+      C E' ψ S a ha
+  refine ⟨S', ?_⟩
+  intro w hwS hwS' hinert φ
+  obtain ⟨n, γ, Npt, Bw, i, j, hlef, hweil, hsum, hprod⟩ := hS' w hwS hwS' hinert φ
+  -- the analysis, identical to the sibling's
+  exact norm_le_two_mul_sqrt_of_frobEigenvalues (absNorm_asIdeal_pos w) γ Npt Bw
+    i j (φ (a w)) hlef hweil hsum hprod
 
 /-- **Carrier inhabitation — potential modularity of the KW lift**
 (PROVEN — Taylor's theorem, the analytic core of pillar β): the
