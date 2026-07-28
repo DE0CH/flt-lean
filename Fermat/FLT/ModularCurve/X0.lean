@@ -564,6 +564,15 @@ public import Mathlib.RingTheory.Invariant.Basic
 -- `Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean`; it closes the
 -- `¬ IsAffine` branch of `specInvariants_universal`.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.InvariantQuotient
+-- The commutative algebra of the ring of invariants `B = A^G`, proved
+-- mathlib-facing and modular-curve-free in
+-- `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`: Noether's theorem on
+-- invariants, normality of invariants, the Krull dimension, and the assembly
+-- `Algebra.IsInvariant.isRegularRing_of_isInvariant`.  It is what makes
+-- `isRegularRing_coarseRing_of_gamma0GITPresentation` and
+-- `isDomain_tensorCoarseRing_of_gamma0GITPresentation` theorems over a single
+-- modular input about the RIGIDIFIED ring `A`.
+public import Fermat.FLT.Mathlib.RingTheory.InvariantCoarseRing
 -- `AddCommGroup.finite_of_fg_torsion`, which turns Mordell–Weil (finite
 -- generation) plus rank `0` (torsion) into finiteness of `J_0(N)(ℚ)`; it is the
 -- whole proof of `finite_jacobian_of_kenkuLevel` from its two leaves.
@@ -9924,6 +9933,14 @@ bridge is the one remaining leaf of that file, and it is shared with
 `CurveCompactification.lean`'s
 `smoothOfRelativeDimension_one_fromNormalization`.
 
+**Since 2026-07-28 both algebraic leaves are themselves PROVEN**, over one
+modular leaf about the RIGIDIFIED ring `A`
+(`exists_gamma0GITPresentation_dedekindModuli`), one arithmetic leaf about `B`
+(`isAlgebraic_coarseRing_of_gamma0GITPresentation`), and the mathlib-facing
+invariant theory of `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`.
+See the section comment attached to them below for why the first has to be
+stated `∃ P` and the second may be stated `∀ P`.
+
 Two of the three carry a load-bearing `hN : 0 < N`: at `N = 0` every
 coarse space is initial hence EMPTY (`isEmpty_of_gamma0Datum_zero` forces
 the base of a `Γ₀(0)`-datum to be empty), so the global sections are the
@@ -10121,12 +10138,182 @@ theorem isDomain_of_gamma0Atlas {N : ℕ} (hN : 0 < N) (A : Gamma0Atlas N) :
   exact MulEquiv.isDomain P.B
     (Scheme.ΓSpecIso (CommRingCat.of P.B)).commRingCatIsoToRingEquiv.toMulEquiv
 
-/-- **The coarse ring `B = A^G` is a regular finite-type `ℚ`-domain of Krull
-dimension one** (sorry leaf, opened 2026-07-27 as the algebraic half of
-`smoothOfRelativeDimension_of_gamma0GITPresentation` below).
+/-! #### The commutative algebra of `B = A^G`, and the modular input left below it
 
-This is steps 1–3 of the route recorded on that declaration, stated about
-the ring and nothing else.  In the classical argument:
+Until 2026-07-28 the two statements below — `B` is a regular finite-type
+`ℚ`-domain of Krull dimension one, and `B ⊗[ℚ] K` is a domain for every field
+extension `K/ℚ` — were bare `sorry`s.  They are now THEOREMS, over three things:
+
+* one **modular** leaf, `exists_gamma0GITPresentation_dedekindModuli`, which is
+  Katz–Mazur (8.1.1) representability read as a statement about the RIGIDIFIED
+  ring `A`: *some* presentation has `A` a Dedekind domain of finite type over
+  `ℚ` of Krull dimension one;
+* one **geometric-integrality** leaf,
+  `isAlgebraic_coarseRing_of_gamma0GITPresentation`, the
+  q-expansion-principle content of Deligne–Rapoport IV.5.5 in its sharpest
+  ring-theoretic form: `ℚ` is algebraically closed in `B`;
+* and the mathlib-facing commutative algebra of
+  `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean` — Noether's theorem
+  on invariants, normality of invariants, and the Krull dimension of a finite
+  group quotient, all PROVEN there, plus one field-theoretic leaf
+  (`isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`: a field
+  extension with the base algebraically closed in it is regular in
+  characteristic zero).
+
+**Why the modular leaf must be `∃ P` and not `∀ P`.**  `IsDomain A` — a fortiori
+`IsDedekindDomain A` — is FALSE for a general presentation; that is exactly the
+FALSITY AUDIT in the section comment above, with the `A := A₀ × A₀`
+counterexample.  What IS pinned is `B`, because `Spec B` is the coarse space and
+`gamma0Atlas_isIso` identifies any two coarse spaces over `SpecQ`.  So the leaf
+asserts the geometry of `A` for *one* presentation, and `coarseRing_algEquiv`
+below transports the resulting statement about `B` to every presentation.
+Nothing is asserted twice: `exists_gamma0GITPresentation` already produces a
+presentation, and the leaf only adds geometry to the one it produces.
+
+**Why `ℚ` algebraically closed in `B` may be stated `∀ P`.**  Same reason: it is
+a statement about `B` alone, and `B` is pinned up to `ℚ`-algebra isomorphism.
+-/
+
+/-- **The coarse rings of any two GIT presentations of the same level are
+isomorphic as `ℚ`-algebras** (PROVEN 2026-07-28).
+
+This is what makes every ring-theoretic property of `B` a property of the level
+`N` rather than of the chosen presentation, and it is the transport that turns
+`exists_gamma0GITPresentation_dedekindModuli` (an `∃ P` statement) into the two
+`∀ P` theorems below.
+
+The proof is `gamma0Atlas_isIso` plus full faithfulness of `Spec` on affines:
+the isomorphism `u : Spec B ⟶ Spec B'` over `SpecQ` is `Spec.map` of a ring map
+`φ : B' → B` (`Spec.map_surjective`), `φ` is an isomorphism because `Spec.map`
+is injective and reflects the two identities, and `u ≫ str' = str` becomes
+`φ ∘ (algebraMap ℚ B') = algebraMap ℚ B`, i.e. `φ` is a `ℚ`-algebra map. -/
+theorem coarseRing_algEquiv {N : ℕ} (P P' : Gamma0GITPresentation N) :
+    letI := P.commRing_B
+    letI := P'.commRing_B
+    ∀ [Algebra ℚ P.B] [Algebra ℚ P'.B],
+      Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
+      Spec.map (CommRingCat.ofHom (algebraMap ℚ P'.B)) = P'.str →
+      Nonempty (P.B ≃ₐ[ℚ] P'.B) := by
+  letI := P.commRing_B
+  letI := P'.commRing_B
+  intro _ _ hstr hstr'
+  obtain ⟨u, hu, hus⟩ := gamma0Atlas_isIso P.toGamma0Atlas P'.toGamma0Atlas
+  let u' : Spec (CommRingCat.of P.B) ⟶ Spec (CommRingCat.of P'.B) := u
+  haveI : IsIso u' := hu
+  have hus' : u' ≫ Spec.map (CommRingCat.ofHom (algebraMap ℚ P'.B))
+      = Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) := by
+    rw [hstr, hstr']; exact hus
+  obtain ⟨φ, hφ⟩ :=
+    Spec.map_surjective (R := CommRingCat.of P'.B) (S := CommRingCat.of P.B) u'
+  obtain ⟨ψ, hψ⟩ :=
+    Spec.map_surjective (R := CommRingCat.of P.B) (S := CommRingCat.of P'.B) (inv u')
+  have hψφ : ψ ≫ φ = 𝟙 (CommRingCat.of P.B) := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hφ, hψ, Spec.map_id]
+    exact IsIso.hom_inv_id u'
+  have hφψ : φ ≫ ψ = 𝟙 (CommRingCat.of P'.B) := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hφ, hψ, Spec.map_id]
+    exact IsIso.inv_hom_id u'
+  haveI : IsIso φ := ⟨ψ, hφψ, hψφ⟩
+  have hcomm : CommRingCat.ofHom (algebraMap ℚ P'.B) ≫ φ
+      = CommRingCat.ofHom (algebraMap ℚ P.B) := by
+    apply Spec.map_injective
+    rw [Spec.map_comp, hφ]
+    exact hus'
+  refine ⟨(AlgEquiv.ofRingEquiv (f := (asIso φ).commRingCatIsoToRingEquiv) ?_).symm⟩
+  intro r
+  exact congrArg (fun g => (CommRingCat.Hom.hom g) r) hcomm
+
+/-- **The rigidified moduli scheme of a Katz–Mazur GIT presentation is a smooth
+affine curve** (sorry leaf, opened 2026-07-28) — Katz–Mazur (8.1.1),
+representability of the rigidified problem `[Γ₀(N)], [Γ(n)]` for `n ≥ 3`, plus
+Deligne–Rapoport III.1 for its smoothness.
+
+*Some* presentation has coordinate ring `A` a **Dedekind domain of finite type
+over `ℚ` of Krull dimension one** — i.e. `𝔐([Γ₀(N)], [Γ(n)])` is a smooth affine
+integral `ℚ`-curve.  Everything the two theorems below need about `B = A^G` is
+derived from this by commutative algebra
+(`Algebra.IsInvariant.isRegularRing_of_isInvariant`), so this is the *only*
+modular input in the smoothness half of the coarse-space geometry.
+
+**Why `∃ P` and not `∀ P`, and why that is not a weakening.**  `IsDomain A` is
+FALSE for a general presentation (see the FALSITY AUDIT in the section comment
+above: `A := A₀ × A₀`, `G := G₀ × ZMod 2` acting by the factor swap has the same
+`B`, the same `str`, the same `classify`, and `A` is not a domain).  So no
+`∀ P` form of this statement can be true.  Nothing is lost, because the
+conclusion it is used for is about `B`, and `coarseRing_algEquiv` moves any such
+conclusion from one presentation to all of them.
+
+**Why the `Algebra ℚ P.A` binder is not a choice.**  `Algebra ℚ P.B` is pinned
+by `Spec.map (ofHom (algebraMap ℚ P.B)) = P.str` (`Spec` is fully faithful on
+affines), and the scalar tower then pins `Algebra ℚ P.A` to be the composite
+`ℚ → B → A`.  Both are quantified rather than fixed so that the consumer may
+supply the instances it has already built.
+
+`hN` is REQUIRED: `exists_gamma0GITPresentation` itself needs it, and at `N = 0`
+a `Γ₀(0)`-datum forces its base to be empty, so `A` is the zero ring and
+`ringKrullDim A = ⊥ ≠ 1`. -/
+theorem exists_gamma0GITPresentation_dedekindModuli (N : ℕ) (hN : 0 < N) :
+    ∃ P : Gamma0GITPresentation N,
+      letI := P.commRing_A
+      letI := P.commRing_B
+      letI := P.algebra_BA
+      ∀ [Algebra ℚ P.B] [Algebra ℚ P.A] [IsScalarTower ℚ P.B P.A],
+        Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
+          IsDedekindDomain P.A ∧ Algebra.FiniteType ℚ P.A ∧ ringKrullDim P.A = (1 : ℕ) :=
+  sorry
+
+/-- **`ℚ` is algebraically closed in the coarse ring `B = A^G`** (sorry leaf,
+opened 2026-07-28 as the geometric-integrality half of
+`geometricallyConnected_of_gamma0GITPresentation`) — Deligne–Rapoport IV.5.5, or
+Shimura 6.6.
+
+This is the q-expansion principle: the `Γ₀(N)`-moduli problem is defined over
+`ℚ`, so no constant field extension occurs in the coarse space, i.e. an element
+of `B` algebraic over `ℚ` is already a rational constant.  Because `B` is a
+normal domain (`isRegularRing_coarseRing_of_gamma0GITPresentation` below, via
+`Algebra.IsInvariant.isDedekindDomain_of_isInvariant`), that is equivalent to
+`ℚ` being algebraically closed in `Frac B`, hence — `ℚ` being perfect — to
+`Frac B / ℚ` being a regular extension, hence to geometric integrality.  The
+last two equivalences are the mathlib-facing leaf
+`isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`; what is asked here
+is only the arithmetic input.
+
+**Do not attempt this through a rational point.**  "Connected + a rational point
+⟹ geometrically connected" (EGA IV 4.5.13) is unavailable for a MATHEMATICAL
+reason: `Y_0(N)(ℚ)` is empty for most `N`, and proving that emptiness is the
+entire purpose of this module.
+
+**The rigidified ring `A` cannot be used.**  `𝔐([Γ₀(N)], [Γ(n)])` is NOT
+geometrically connected over `ℚ` for `n ≥ 3` — its geometric components are
+permuted by `Gal(ℚ(ζ_n)/ℚ)` through the Weil pairing — so `ℚ` is *not*
+algebraically closed in `A`; the statement is true only after passing to
+`B = A^G`.  This is the one place in the family where the invariants are
+genuinely needed rather than merely convenient.
+
+**`_hN` is NOT load-bearing here**, and that is deliberate: at `N = 0` the
+coarse space is empty, so `B` is the zero ring, in which every element equals
+`algebraMap ℚ B 0` and the conclusion is trivially true.  It is kept as a binder
+only to match the family; the `hN` on the consumers is load-bearing for a
+different reason (`ringKrullDim B = 1`). -/
+theorem isAlgebraic_coarseRing_of_gamma0GITPresentation {N : ℕ} (_hN : 0 < N)
+    (P : Gamma0GITPresentation N) :
+    letI := P.commRing_B
+    ∀ [Algebra ℚ P.B], Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
+      ∀ x : P.B, IsAlgebraic ℚ x → x ∈ (⊥ : Subalgebra ℚ P.B) :=
+  sorry
+
+/-- **The coarse ring `B = A^G` is a regular finite-type `ℚ`-domain of Krull
+dimension one** (PROVEN 2026-07-28 over the modular leaf
+`exists_gamma0GITPresentation_dedekindModuli` and the mathlib-facing
+`Algebra.IsInvariant.isRegularRing_of_isInvariant`; opened 2026-07-27 as the
+algebraic half of `smoothOfRelativeDimension_of_gamma0GITPresentation` below).
+
+This is steps 1–3 of the route recorded on that declaration.  Steps 2 and 3 are
+now theorems of commutative algebra with no modular content at all, in
+`Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`; step 1 is the modular
+leaf.  In the classical argument:
 
 1. `A` is a smooth affine `ℚ`-curve and a domain — Katz–Mazur (8.1.1)
    representability of `[Γ₀(N)], [Γ(n)]` for `n ≥ 3` — hence a Dedekind
@@ -10140,8 +10327,13 @@ the ring and nothing else.  In the classical argument:
    instance `[IsDedekindDomain R] : IsRegularRing R`
    (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`).
 
-So a prover here never has to leave commutative algebra, which is the whole
-purpose of moving the geometry onto `Gamma0GITPresentation`.
+Step 1 is `exists_gamma0GITPresentation_dedekindModuli`; steps 2 and 3 are
+`Algebra.IsInvariant.finiteType_of_isInvariant`,
+`Algebra.IsInvariant.isIntegrallyClosed_of_isInvariant` and
+`Algebra.IsInvariant.ringKrullDim_eq_one_of_isInvariant`, assembled as
+`Algebra.IsInvariant.isRegularRing_of_isInvariant`.  So the only thing a prover
+below this point ever sees is commutative algebra, which is the whole purpose of
+moving the geometry onto `Gamma0GITPresentation`.
 
 **The `Algebra ℚ B` binder is not a choice.**  `P.str` is a bare morphism
 `Spec B ⟶ Spec ℚ`; `Spec` is fully faithful on affines, so it is
@@ -10150,13 +10342,14 @@ purpose of moving the geometry onto `Gamma0GITPresentation`.
 be that one.  The statement is therefore neither vacuous (such a structure
 exists, by `Spec.map_surjective`) nor over-general (there is only one).
 
-**Why `IsDomain A` may NOT be used as an input here**, even though step 1
-needs it: it is FALSE for a general presentation — see the FALSITY AUDIT in
-the section comment above, with the `A := A₀ × A₀` counterexample.  It has
-to arrive as a FIELD of `Gamma0GITPresentation`, which is the owner of that
-structure's business, not this leaf's.  `IsDomain B`, asserted here, IS
-pinned, because `Spec B` is the coarse space and `gamma0Atlas_isIso`
-identifies it with the Katz–Mazur one up to isomorphism.
+**Why `IsDomain A` is NOT an input here**, even though step 1 needs it: it is
+FALSE for a general presentation — see the FALSITY AUDIT in the section comment
+above, with the `A := A₀ × A₀` counterexample.  It therefore arrives through
+`exists_gamma0GITPresentation_dedekindModuli`, which asserts it for ONE
+presentation, and `coarseRing_algEquiv` carries the conclusion about `B` to
+every presentation.  `IsDomain B`, asserted here, IS pinned, because `Spec B` is
+the coarse space and `gamma0Atlas_isIso` identifies it with the Katz–Mazur one
+up to isomorphism — that is exactly what makes the transport legitimate.
 
 `hN` is REQUIRED: at `N = 0` a `Γ₀(0)`-datum forces its base to be empty,
 so `B` is the zero ring — not a domain, and `ringKrullDim B = ⊥ ≠ 1`. -/
@@ -10165,8 +10358,36 @@ theorem isRegularRing_coarseRing_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N)
     letI := P.commRing_B
     ∀ [Algebra ℚ P.B], Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
       IsDomain P.B ∧ IsRegularRing P.B ∧ Algebra.FiniteType ℚ P.B ∧
-        ringKrullDim P.B = (1 : ℕ) :=
-  sorry
+        ringKrullDim P.B = (1 : ℕ) := by
+  letI := P.commRing_B
+  intro _ hstr
+  obtain ⟨P₀, hP₀⟩ := exists_gamma0GITPresentation_dedekindModuli N hN
+  letI := P₀.commRing_A
+  letI := P₀.commRing_B
+  letI := P₀.algebra_BA
+  letI := P₀.group_G
+  letI := P₀.finite_G
+  letI := P₀.action_GA
+  letI := P₀.smulComm_GBA
+  letI := P₀.isInvariant_BAG
+  obtain ⟨φ₀, hφ₀⟩ := Spec.map_surjective P₀.str
+  letI : Algebra ℚ P₀.B := φ₀.hom.toAlgebra
+  have hstr₀ : Spec.map (CommRingCat.ofHom (algebraMap ℚ P₀.B)) = P₀.str := hφ₀
+  letI : Algebra ℚ P₀.A := ((algebraMap P₀.B P₀.A).comp (algebraMap ℚ P₀.B)).toAlgebra
+  haveI : IsScalarTower ℚ P₀.B P₀.A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  obtain ⟨hded, hft, hdim⟩ := hP₀ hstr₀
+  haveI := hded
+  haveI := hft
+  obtain ⟨hdom, hreg, hftB, hdimB⟩ :=
+    Algebra.IsInvariant.isRegularRing_of_isInvariant ℚ P₀.B P₀.A P₀.G
+      P₀.injective_algebraMap hdim
+  haveI := hdom
+  haveI := hreg
+  obtain ⟨e⟩ := coarseRing_algEquiv P₀ P hstr₀ hstr
+  refine ⟨MulEquiv.isDomain P₀.B e.symm.toMulEquiv, IsRegularRing.of_ringEquiv e.toRingEquiv,
+    Algebra.FiniteType.equiv hftB e, ?_⟩
+  rw [← ringKrullDim_eq_of_ringEquiv e.toRingEquiv]
+  exact hdimB
 
 /-- **The coarse space of a GIT presentation is smooth of relative
 dimension `1` over `ℚ`** (relocated here 2026-07-27 from
@@ -10266,8 +10487,10 @@ theorem smoothOfRelativeDimension_of_gamma0Atlas {N : ℕ} (hN : 0 < N)
   exact smoothOfRelativeDimension_transport u hus
     (smoothOfRelativeDimension_of_gamma0GITPresentation hN P)
 
-/-- **The coarse ring `B = A^G` is GEOMETRICALLY INTEGRAL over `ℚ`** (sorry
-leaf, opened 2026-07-27 as the algebraic half of
+/-- **The coarse ring `B = A^G` is GEOMETRICALLY INTEGRAL over `ℚ`** (PROVEN
+2026-07-28 over the two leaves `isAlgebraic_coarseRing_of_gamma0GITPresentation`
+and `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`; opened
+2026-07-27 as the algebraic half of
 `geometricallyConnected_of_gamma0GITPresentation` below).
 
 `B ⊗[ℚ] K` is a domain for every field extension `K/ℚ`.  This is the
@@ -10276,6 +10499,17 @@ algebraic form of "`ℚ` is algebraically closed in `Frac B`", i.e. that
 equivalent to geometric integrality — and it is the q-expansion-principle
 content of Deligne–Rapoport IV.5.5 (or Shimura 6.6): the `Γ₀(N)`-moduli
 problem is defined over `ℚ`, so no constant field extension occurs.
+
+**How it is now split.**  `B` is a *normal* domain — that is
+`Algebra.IsInvariant.isDedekindDomain_of_isInvariant` applied to the presentation
+supplied by `exists_gamma0GITPresentation_dedekindModuli` — so "`ℚ` algebraically
+closed in `Frac B`" is the same as "`ℚ` algebraically closed in `B`", which is
+the arithmetic leaf `isAlgebraic_coarseRing_of_gamma0GITPresentation` above.  The
+purely field-theoretic step from there to `B ⊗[ℚ] K` being a domain is the
+mathlib-facing leaf `isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`
+together with the PROVEN flatness descent `isDomain_tensorProduct_of_injective`,
+both in `Fermat/FLT/Mathlib/RingTheory/InvariantCoarseRing.lean`.  Neither of the
+two surviving leaves mentions a scheme.
 
 **Do not attempt this through a rational point.**  "Connected + a rational
 point ⟹ geometrically connected" (EGA IV 4.5.13) is unavailable here for a
@@ -10300,8 +10534,37 @@ theorem isDomain_tensorCoarseRing_of_gamma0GITPresentation {N : ℕ} (hN : 0 < N
     (P : Gamma0GITPresentation N) :
     letI := P.commRing_B
     ∀ [Algebra ℚ P.B], Spec.map (CommRingCat.ofHom (algebraMap ℚ P.B)) = P.str →
-      ∀ (K : Type) [Field K] [Algebra ℚ K], IsDomain (TensorProduct ℚ P.B K) :=
-  sorry
+      ∀ (K : Type) [Field K] [Algebra ℚ K], IsDomain (TensorProduct ℚ P.B K) := by
+  letI := P.commRing_B
+  intro _ hstr K _ _
+  obtain ⟨P₀, hP₀⟩ := exists_gamma0GITPresentation_dedekindModuli N hN
+  letI := P₀.commRing_A
+  letI := P₀.commRing_B
+  letI := P₀.algebra_BA
+  letI := P₀.group_G
+  letI := P₀.finite_G
+  letI := P₀.action_GA
+  letI := P₀.smulComm_GBA
+  letI := P₀.isInvariant_BAG
+  obtain ⟨φ₀, hφ₀⟩ := Spec.map_surjective P₀.str
+  letI : Algebra ℚ P₀.B := φ₀.hom.toAlgebra
+  have hstr₀ : Spec.map (CommRingCat.ofHom (algebraMap ℚ P₀.B)) = P₀.str := hφ₀
+  letI : Algebra ℚ P₀.A := ((algebraMap P₀.B P₀.A).comp (algebraMap ℚ P₀.B)).toAlgebra
+  haveI : IsScalarTower ℚ P₀.B P₀.A := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  obtain ⟨hded, hft, _⟩ := hP₀ hstr₀
+  haveI := hded
+  haveI := hft
+  obtain ⟨hdomB, hdedB, _⟩ :=
+    Algebra.IsInvariant.isDedekindDomain_of_isInvariant ℚ P₀.B P₀.A P₀.G
+      P₀.injective_algebraMap
+  haveI := hdomB
+  haveI := hdedB
+  haveI : IsDomain (TensorProduct ℚ P₀.B K) :=
+    isDomain_tensorProduct_of_isAlgebraic_mem_bot ℚ P₀.B
+      (isAlgebraic_coarseRing_of_gamma0GITPresentation hN P₀ hstr₀) K
+  obtain ⟨e⟩ := coarseRing_algEquiv P₀ P hstr₀ hstr
+  exact MulEquiv.isDomain (TensorProduct ℚ P₀.B K)
+    (Algebra.TensorProduct.congr e (AlgEquiv.refl (R := ℚ) (A₁ := K))).symm.toMulEquiv
 
 /-- **The coarse space of a GIT presentation is geometrically connected
 over `ℚ`** (relocated here 2026-07-27 from
@@ -10417,12 +10680,18 @@ three per-presentation statements there are themselves theorems too, and
 what is left open below them is purely commutative algebra about the
 coarse ring `B = A^G`:
 `isDomain_of_gamma0GITPresentation` (`IsDomain B`, one line once
-`Gamma0GITPresentation` carries `IsDomain A` as a field),
-`isRegularRing_coarseRing_of_gamma0GITPresentation` (`B` regular of finite
-type of dimension one) and
-`isDomain_tensorCoarseRing_of_gamma0GITPresentation` (`B ⊗[ℚ] K` a domain
-for every field extension), plus the mathlib-facing
-`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing`.  See the
+`Gamma0GITPresentation` carries `IsDomain A` as a field).
+
+Since 2026-07-28 the other two — `isRegularRing_coarseRing_of_gamma0GITPresentation`
+and `isDomain_tensorCoarseRing_of_gamma0GITPresentation` — are PROVEN as well, and
+what survives beneath them is TWO leaves rather than two mixed
+geometry-and-algebra statements:
+`exists_gamma0GITPresentation_dedekindModuli` (Katz–Mazur representability, about
+the rigidified ring `A`) and
+`isAlgebraic_coarseRing_of_gamma0GITPresentation` (the q-expansion principle,
+about `B`), plus the mathlib-facing
+`smoothOfRelativeDimension_specMap_algebraMap_of_isRegularRing` and
+`isDomain_fractionRing_tensorProduct_of_isAlgebraic_mem_bot`.  See the
 section comment above for why stating them per-atlas is equivalent to
 stating them for the Katz–Mazur model, and for the citation attached to
 each. -/
