@@ -1660,7 +1660,7 @@ theorem sliceIso_comp : sliceIso p q σ hσ ≫ sliceOverMap p q σ = sliceIncl 
   · rw [Category.assoc, sliceOverMap_fst, sliceIso_fst, sliceIncl_fst]
   · rw [Category.assoc, sliceOverMap_snd, sliceIso_snd_assoc, sliceIncl_snd]
 
-/-- **THE SLICE IS EXACTLY THE PART OF `X ×_S Y` LYING OVER `σ(S)`** (PROVEN).
+/-! #### **THE SLICE IS EXACTLY THE PART OF `X ×_S Y` LYING OVER `σ(S)`** (PROVEN).
 
 This is the fact the covering step turns on: because the fibre of `pullback.snd p q` over
 `σ.base s` is entirely covered by the slice, `hconst` — which constrains `m` only on the

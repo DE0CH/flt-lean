@@ -225,6 +225,11 @@ public import Mathlib.FieldTheory.Separable
 public import Mathlib.GroupTheory.QuotientGroup.Basic
 -- the degree homomorphism on divisors, `Finsupp.liftAddHom`
 public import Mathlib.Algebra.BigOperators.Finsupp.Basic
+-- (restored at the release-12 integration: flt-lean-201's import-block hunk landed on top
+-- of flt-lean-207's and dropped these three, every one of which 207's own proofs consume.)
+public import Fermat.FLT.Mathlib.GroupTheory.Descent
+public import Mathlib.GroupTheory.FiniteAbelian.Basic
+public import Mathlib.RingTheory.Finiteness.Nakayama
 
 @[expose] public section
 

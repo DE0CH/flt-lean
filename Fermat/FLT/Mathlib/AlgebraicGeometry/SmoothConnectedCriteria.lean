@@ -64,6 +64,21 @@ public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
 public import Mathlib.RingTheory.KrullDimension.Basic
 public import Mathlib.FieldTheory.PerfectClosure
 public import Fermat.FLT.Mathlib.RingTheory.Smooth.RegularLocal
+-- (restored at the release-12 integration: these were dropped when an import-block
+-- conflict was resolved to one SIDE instead of as a UNION.  Every one is needed by a
+-- proof that is already in this file.)
+public import Mathlib.RingTheory.Smooth.Field
+public import Mathlib.RingTheory.Etale.Kaehler
+public import Mathlib.RingTheory.Kaehler.Polynomial
+public import Mathlib.RingTheory.RingHom.StandardSmooth
+public import Mathlib.RingTheory.AlgebraicIndependent.TranscendenceBasis
+public import Mathlib.RingTheory.AlgebraicIndependent.AlgebraicClosure
+public import Mathlib.RingTheory.NoetherNormalization
+public import Mathlib.RingTheory.KrullDimension.Polynomial
+public import Mathlib.RingTheory.KrullDimension.Field
+public import Mathlib.RingTheory.Localization.FractionRing
+public import Mathlib.LinearAlgebra.Dimension.Localization
+public import Mathlib.FieldTheory.IntermediateField.Adjoin.Algebra
 
 @[expose] public section
 
@@ -80,7 +95,7 @@ no further mathematical content.
 
 namespace Algebra
 
-/-- **A regular local ring essentially of finite type over a perfect field is
+/-! #### **A regular local ring essentially of finite type over a perfect field is
 formally smooth over it** (sorry leaf, opened 2026-07-27).
 
 This is the local form of Stacks `056S` ("regular is equivalent to smooth over a

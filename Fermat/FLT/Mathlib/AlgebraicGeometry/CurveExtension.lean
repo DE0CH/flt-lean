@@ -20,6 +20,20 @@ public import Mathlib.RingTheory.Smooth.Field
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds
 public import Fermat.FLT.Modularity.RegularStalks
 public import Fermat.FLT.Mathlib.RingTheory.Smooth.RegularLocal
+-- (restored at the release-12 integration: these were dropped when an import-block
+-- conflict was resolved to one SIDE instead of as a UNION.  Every one is needed by a
+-- proof that is already in this file.)
+public import Mathlib.RingTheory.KrullDimension.Polynomial
+public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+public import Mathlib.RingTheory.Jacobson.Ring
+public import Mathlib.RingTheory.Jacobson.Polynomial
+public import Mathlib.RingTheory.Jacobson.Artinian
+public import Mathlib.RingTheory.QuasiFinite.Basic
+public import Mathlib.SetTheory.Cardinal.NatCard
+public import Mathlib.RingTheory.Etale.Basic
+public import Mathlib.RingTheory.Unramified.LocalRing
+public import Mathlib.RingTheory.RingHom.StandardSmooth
+public import Mathlib.RingTheory.Localization.AtPrime.Basic
 
 /-!
 # Extension of a morphism over the missing points of a smooth curve
@@ -619,6 +633,12 @@ theorem ringKrullDim_stalk_le_of_smoothOfRelativeDimension {n : ℕ}
 -- Krull-dimension route's supporting lemmas survive above (they are proven and useful on
 -- their own), but the surviving proof of the theorem itself is the local-structure one.
 -- An unterminated copy of the dimension-route docstring stood here after the merge.)
+
+/-- **The image of a principal ideal under a ring homomorphism is principal.** -/
+lemma isPrincipal_map_of_isPrincipal {R S : Type*} [Semiring R] [Semiring S] (f : R →+* S)
+    (I : Ideal R) [I.IsPrincipal] : (I.map f).IsPrincipal := by
+  obtain ⟨a, ha⟩ := Submodule.IsPrincipal.principal I
+  exact ⟨f a, by rw [ha, Ideal.map_span, Set.image_singleton]⟩
 
 /-- **Principality of the maximal ideal transfers along a ring isomorphism of local rings.** -/
 lemma isPrincipal_maximalIdeal_of_ringEquiv {R S : Type*} [CommRing R] [CommRing S]
