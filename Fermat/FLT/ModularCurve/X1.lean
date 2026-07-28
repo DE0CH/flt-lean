@@ -398,10 +398,6 @@ open in them has been split along the theories it needed:
 | `exists_section_of_galoisInvariant` | Galois descent of a rational point to a section | `ℚ` |
 | `exists_heckeIsotypicDecomposition_gamma1` | Eichler-Shimura for `J_1(N)`, as a datum | `ℚ` |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin-Logachev on an isotypic factor | `ℚ` |
-| `exists_frickeInvolutionOn` | the Fricke involution `W_N` on `Γ₁(N) ≤ G ≤ Γ₀(N)` | `ℚ` |
-| `isBigO_atTop_axisRestrictOn` | a cusp form decays faster than every power at `i∞` | `ℚ` |
-| `locallyIntegrableOn_axisRestrictOn` | continuity of `y ↦ f(iy/√N)` on `(0, ∞)` | `ℚ` |
-| `isBigO_atTop_coeffOn` | Hecke's bound `\|aₙ\| = O(n)` | `ℚ` |
 | `lFunction_apply_one_ne_zero_x1TwentyFive` | `L`-value numerics — the DEEP one | `ℚ` |
 | `hasNoFibreAffineLine_of_one_le_x1Genus` | the genus formula, fibrewise — `genus X_1(N) ≥ 1` puts no rational curve in any fibre.  (`hasNonconstantAbelianMap_of_one_le_x1Genus` is PROVEN over it, 2026-07-28, together with `X0.lean`'s level-free `mono_ajHom_of_hasNoFibreAffineLine` and `not_isIso_of_smoothOfRelativeDimension_one`.) | any |
 
@@ -409,7 +405,16 @@ open in them has been split along the theories it needed:
 compiler's `declaration uses 'sorry'` set rather than from any branch's prose;
 it agrees row-for-row with a comment-stripped source scan.  Fourteen rows.
 The last row was replaced 2026-07-28 when the node above it closed; a stray
-duplicate of it, left by a merge, was removed at the same time.)
+duplicate of it, left by a merge, was removed at the same time.
+
+Four further rows — the analytic quartet `exists_frickeInvolutionOn`,
+`isBigO_atTop_axisRestrictOn`, `locallyIntegrableOn_axisRestrictOn` and
+`isBigO_atTop_coeffOn` of the Kolyvagin–Logachev subsection — were removed
+2026-07-28 when all four were PROVEN, over the `Γ₀` Fricke machinery of
+`WeightTwoEigenform.lean` plus one new normalisation lemma
+(`frickeMatrix_conj_mem_of_le`) and mathlib's `Bounds.lean`.  Ten rows.
+`isBigO_atTop_coeffOn` gained a `hN : N ≠ 0` hypothesis at the same time —
+it was FALSE at `N = 0`; see its FALSITY AUDIT.)
 
 **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — three
@@ -3815,20 +3820,95 @@ sections).
 **WHY THIS IS THE WHOLE REMAINING CONTENT.**  `X0.lean` builds
 `exists_ellipticScheme_of_weierstrass`, which goes from a plane cubic to
 an abelian scheme; the direction needed here is the CONVERSE — a
-Weierstrass presentation of a given abelian scheme — and it exists
-nowhere in this tree, in mathlib, or in `~/cs/FLT`.  Classically it is
+Weierstrass presentation of a given abelian scheme.  Classically it is
 Riemann–Roch on the genus-one curve `E`: `ℒ(3·O)` is three-dimensional
 and a basis `1, x, y` embeds `E` as a plane cubic in Weierstrass form.
 The arithmetic that used to be bundled with it is now
 `natCard_weierstrassPoint_le` above and is PROVEN, so a successor here
 faces geometry only.
 
+### ROUTE AUDIT CORRECTION (2026-07-28) — "it exists nowhere in this tree" is FALSE
+
+The sentence removed above said the converse bridge "exists nowhere in
+this tree, in mathlib, or in `~/cs/FLT`".  Two of the three clauses are
+right; the first is not, and believing it costs a successor the design of
+a decomposition that has already been designed and reviewed.
+
+`Fermat/FLT/ModularCurve/EllipticScheme.lean` carries
+**`exists_weierstrassModel_of_ellipticScheme`** — precisely this converse,
+an `AbelianSchemeStruct f` with `SmoothOfRelativeDimension 1 f` yielding
+`E : WeierstrassCurve _`, `E.IsElliptic`, and an open immersion of
+`Spec E.toAffine.CoordinateRing` onto the complement of the zero section
+— together with its assembly and its cut into **three named leaves**:
+`exists_affineComplement_zeroSection` (affineness),
+`exists_weierstrassRingEquiv_of_affineComplement` (the Riemann–Roch
+third) and `isElliptic_of_isOpenImmersion_coordinateRing` (the
+discriminant third).
+
+So the honest statement of the gap is a CONJUNCTION of two things, and
+neither is "design a decomposition":
+
+1. **The base is hard-wired to `ℚ`.**  Every one of those four signatures
+   reads `f : A ⟶ Spec (CommRingCat.of ℚ)` and `WeierstrassCurve ℚ`;
+   this leaf needs `SpecF ℓ` and `WeierstrassCurve (ZMod ℓ)`.  The work
+   is to base-generalize an EXISTING cut, reusing its assembly verbatim.
+   One `ℚ`-specific convenience does survive the move: the assembly gets
+   its structure-morphism conjunct free from `hom_ext_spec_rat` (any two
+   morphisms to `Spec ℚ` agree, because `ℤ → ℚ` is a ring epimorphism);
+   the same holds over `ZMod ℓ`, where `ℤ → ZMod ℓ` is surjective, so an
+   `𝔽_ℓ` analogue of that lemma is cheap and is the only piece of the
+   assembly that has to be re-proven rather than transported.
+2. **The Riemann–Roch content is still genuinely OPEN**, so the
+   docstring's *conclusion* stands even though its premise does not: all
+   three leaves above are `sorry` at the time of writing, i.e.
+   `exists_weierstrassModel_of_ellipticScheme` is PROVEN only in the
+   ASSEMBLY sense (no direct sorry, transitively sorried).  Nothing here
+   can be discharged by citing it, over `ℚ` or over `𝔽_ℓ`.
+
+**A STRUCTURAL BLOCKER a successor must budget for, verified by a
+two-way reproduction on 2026-07-28.**  None of those names is visible
+from this file: `X0.lean` reaches `EllipticScheme.lean` through a
+deliberately NON-`public` `import` (`X0.lean`'s import block; the
+intent is recorded on
+`exists_weierstrassModel_geomFibreAddEquiv_of_ellipticScheme`, which
+notes that keeping `proj`/`projToSpec` out of its conjuncts is what
+"keeps `X0.lean`'s import non-public").  A scratch module importing only
+`Fermat.FLT.ModularCurve.X1` and mentioning
+`Fermat.exists_weierstrassModel_of_ellipticScheme` fails with
+`Unknown identifier`; adding
+`public import Fermat.FLT.ModularCurve.EllipticScheme` makes the same
+module compile clean, `EXIT=0`.  This is the private-import failure whose
+privacy sits in an INTERMEDIATE module, so it bites proof bodies and not
+merely signatures.  Closing this leaf therefore requires an import change
+here (or a hoist), which is a cone-growth decision, not a local one.
+
+The check that would refute this audit: `grep -n "sorry"` at the three
+`EllipticScheme.lean` leaves named above, and re-running the two-way
+scratch.  If those leaves have closed and been base-generalized, this
+leaf becomes an assembly.
+
 `W.IsElliptic` is asked for even though the count above does not use it,
 because it is TRUE of the genuine model and asking for less would let the
 leaf be discharged by a degenerate cubic that carries none of the
 geometry.  `[Fact ℓ.Prime]` rather than `ℓ.Prime` because the statement
 mentions `WeierstrassCurve (ZMod ℓ)`, whose `Field` instance — and hence
-the group law on `Point` — is only available under the `Fact`. -/
+the group law on `Point` — is only available under the `Fact`.
+
+**`_d`'s UNDERSCORE IS AN ARTIFACT OF THE SORRIED BODY, NOT A VACUITY
+MARKER — do not "simplify" the statement by dropping it** (guard added
+2026-07-28).  The fleet convention is that an underscore-prefixed
+hypothesis is one the PROOF does not use, so that emptiness is
+mechanically visible; here the underscore is only silencing the
+unused-variable linter while the body is `sorry`, and any real proof MUST
+consume `d`.  Without it the statement reads "for every `N` and every
+prime `ℓ` there is an elliptic curve over `𝔽_ℓ` with a point of exact
+order `N`", which is **FALSE**, and refuted by this module's own
+`natCard_weierstrassPoint_le`: at `(N, ℓ) = (25, 3)` any Weierstrass
+curve over `𝔽_3` has at most `2·3 + 1 = 7` points, so it has no point of
+order `25`.  That is the same inequality
+`isEmpty_gamma1Datum_finiteField` below turns into its conclusion — so a
+successor who dropped `_d` would be deriving `False` from the very bound
+the cluster exists to exploit. -/
 theorem exists_weierstrassPointOfOrder_of_gamma1Datum (N ℓ : ℕ) [Fact ℓ.Prime]
     (_d : Gamma1Datum N (SpecF ℓ)) :
     ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧
@@ -5691,9 +5771,26 @@ So this subsection restates the four leaves ONCE, for an arbitrary
 `G` with `Γ₁(N) ≤ G ≤ Γ₀(N)`, reproves the assembly over them, and
 obtains the `Γ₁` half by citation at `G = Γ₁(N)`.  The four leaves in
 `WeightTwoEigenform.lean` are the `G = Γ₀(N)` instances of the four
-below; **whichever pair is proven first, the other should be derived and
-not reproved**, since the classical proof of each is uniform in `G` and
-specializing it to one group makes it no easier.
+below.
+
+**All four are PROVEN, 2026-07-28** — the `Γ₀` quartet there landed
+first, and this quartet was proven by generalizing its proofs rather
+than by rewriting them.  What is genuinely new here is exactly one
+lemma, `frickeMatrix_conj_mem_of_le`: `frickeMatrix` and its slash
+machinery are group-free and reused verbatim, and the analysis
+(`CuspFormClass.exp_decay_atImInfty`, `CuspFormClass.qExpansion_isBigO`)
+is mathlib's, indexed by `G.strictPeriods` / `G.strictWidthInfty` /
+`G.IsArithmetic`, all three of which are supplied here for the abstract
+`G` by `strictPeriodsOn`, `strictWidthInftyOn` and `isArithmeticOn`.
+
+**The residual duplication is now removable in exactly one direction,
+and the module order blocks it.**  With this quartet proven, the four
+`Γ₀` statements in `WeightTwoEigenform.lean` are its `G = Γ₀(N)`
+instances and could be one-line citations — but `X1.lean` imports
+`WeightTwoEigenform.lean`, not the other way round, so discharging them
+that way would require hoisting this subsection upstream.  That is pure
+cleanup with both sides green, not a frontier item; it is recorded here
+so that nobody re-derives it as an open question.
 
 **FAITHFULNESS AUDIT — both bounds on `G` are load-bearing.**
 
@@ -5736,6 +5833,8 @@ section HeckeOn
 
 open Filter Asymptotics MeasureTheory
 
+open scoped ModularForm
+
 /-- **`Γ₁(N) ≤ Γ₀(N)` inside `GL(2, ℝ)`** (PROVEN) — mathlib's
 `CongruenceSubgroup.Gamma1_in_Gamma0` pushed along `mapGL ℝ`, which is
 the map both `Gamma1GL` and `Gamma0GL` are images under. -/
@@ -5758,8 +5857,279 @@ lemma axisRestrictOn_of_pos {G : Subgroup (GL (Fin 2) ℝ)} {N : ℕ} (hN : N �
     (f : CuspForm G 2) {y : ℝ} (hy : 0 < y) :
     axisRestrictOn G N f y = f (axisPoint N y ⟨hy, hN⟩) := dif_pos ⟨hy, hN⟩
 
+/-! #### What `Γ₁(N) ≤ G ≤ Γ₀(N)` buys, in mathlib's vocabulary
+
+Three facts, and between them they carry three of the four leaves.  Each
+is stated for the abstract `G` rather than for a named congruence
+subgroup, which is the whole point of this subsection.
+-/
+
+/-- At level `N = 0` the axis restriction is identically `0`, because
+`axisPoint` — and with it `axisRestrictOn` — is gated on `N ≠ 0`
+(`Real.sqrt 0 = 0` would put the point on the real axis).  This is what
+makes the two analytic leaves below true without a level hypothesis;
+`WeightTwoEigenform.lean`'s `axisRestrict_zero_level` is the `Γ₀`
+instance. -/
+@[simp] lemma axisRestrictOn_zero_level (G : Subgroup (GL (Fin 2) ℝ)) (f : CuspForm G 2) :
+    axisRestrictOn G 0 f = fun _ : ℝ => (0 : ℂ) := by
+  funext y
+  simp [axisRestrictOn]
+
+/-- **`strictPeriods` is monotone** (PROVEN) — `x` is a strict period of
+`𝒢` exactly when `![![1, x], ![0, 1]] ∈ 𝒢`, and that condition only gets
+easier as `𝒢` grows. -/
+lemma strictPeriods_mono {G G' : Subgroup (GL (Fin 2) ℝ)} (h : G ≤ G') :
+    G.strictPeriods ≤ G'.strictPeriods := fun _ hx =>
+  Subgroup.mem_strictPeriods_iff.mpr (h (Subgroup.mem_strictPeriods_iff.mp hx))
+
+/-- **`1` is a strict period of every `G ⊇ Γ₁(N)`** (PROVEN) — the
+translation `T = ![![1, 1], ![0, 1]]` lies in `Γ₁(N)` already, so it lies
+in `G`.  This is the hypothesis mathlib's `q`-expansion API takes in
+place of "the width of the cusp `∞` is `1`", and it is what lets
+`CuspFormClass.exp_decay_atImInfty` and
+`ModularFormClass.qExpansion_coeff_unique` be applied at `h = 1`.
+
+Only the LOWER bound on `G` is used. -/
+lemma one_mem_strictPeriodsOn (N : ℕ) {G : Subgroup (GL (Fin 2) ℝ)} (h1 : Gamma1GL N ≤ G) :
+    (1 : ℝ) ∈ G.strictPeriods := by
+  refine strictPeriods_mono h1 ?_
+  rw [show (Gamma1GL N).strictPeriods = AddSubgroup.zmultiples (1 : ℝ) from
+    CongruenceSubgroup.strictPeriods_Gamma1 N]
+  exact AddSubgroup.mem_zmultiples 1
+
+/-- **Every `G` between `Γ₁(N)` and `Γ₀(N)` has strict periods exactly
+`ℤ`** (PROVEN) — a sandwich, since both ends have `zmultiples 1`. -/
+lemma strictPeriodsOn (N : ℕ) {G : Subgroup (GL (Fin 2) ℝ)} (h1 : Gamma1GL N ≤ G)
+    (h0 : G ≤ Gamma0GL N) : G.strictPeriods = AddSubgroup.zmultiples (1 : ℝ) := by
+  have e0 : (Gamma0GL N).strictPeriods = AddSubgroup.zmultiples (1 : ℝ) :=
+    CongruenceSubgroup.strictPeriods_Gamma0 N
+  have e1 : (Gamma1GL N).strictPeriods = AddSubgroup.zmultiples (1 : ℝ) :=
+    CongruenceSubgroup.strictPeriods_Gamma1 N
+  exact le_antisymm (e0 ▸ strictPeriods_mono h0) (e1 ▸ strictPeriods_mono h1)
+
+/-- **The cusp `∞` of such a `G` has strict width `1`** (PROVEN) — the
+`strictWidthInfty` normalisation of the previous lemma, by mathlib's
+`strictPeriods_eq_zmultiples_strictWidthInfty` and the fact that a
+generator of `zmultiples 1` is `±1`.  This is the `h` that
+`CuspFormClass.qExpansion_isBigO` indexes its coefficients by. -/
+lemma strictWidthInftyOn (N : ℕ) {G : Subgroup (GL (Fin 2) ℝ)} (h1 : Gamma1GL N ≤ G)
+    (h0 : G ≤ Gamma0GL N) : G.strictWidthInfty = 1 := by
+  have hsp := strictPeriodsOn N h1 h0
+  have : DiscreteTopology G.strictPeriods := by rw [hsp]; infer_instance
+  rw [Subgroup.strictPeriods_eq_zmultiples_strictWidthInfty, Eq.comm,
+    AddSubgroup.zmultiples_eq_zmultiples_iff
+      (not_isOfFinAddOrder_of_isAddTorsionFree one_ne_zero)] at hsp
+  grind [Subgroup.strictWidthInfty_nonneg]
+
+/-- **Every `G` between `Γ₁(N)` and `Γ₀(N)` is arithmetic**, for `N ≠ 0`
+(PROVEN) — and **BOTH bounds are used**, which is worth stating plainly
+because the `Γ₁(N) ≤ G` half alone does NOT give it: `G = ⊤` contains
+`Γ₁(N)` and is not commensurable with `SL(2, ℤ)`.
+
+The upper bound puts `G` inside the image of `SL(2, ℤ)`, so `G` is the
+image of `Γ := G ∩ SL(2, ℤ)` (`Subgroup.map_comap_eq_self`); the lower
+bound puts the finite-index `Γ₁(N)` inside `Γ`, so `Γ` has finite index
+too, and `Subgroup.isArithmetic_iff_finiteIndex` converts.
+
+This is what feeds `CuspFormClass.qExpansion_isBigO`, i.e. Hecke's
+coefficient bound. -/
+lemma isArithmeticOn (N : ℕ) [NeZero N] {G : Subgroup (GL (Fin 2) ℝ)} (h1 : Gamma1GL N ≤ G)
+    (h0 : G ≤ Gamma0GL N) : G.IsArithmetic := by
+  have hrange : G ≤ (Matrix.SpecialLinearGroup.mapGL (n := Fin 2) (R := ℤ) ℝ).range :=
+    h0.trans (Subgroup.map_le_range _ _)
+  have hG : ((G.comap (Matrix.SpecialLinearGroup.mapGL (n := Fin 2) (R := ℤ) ℝ) :
+      Subgroup SL(2, ℤ)) : Subgroup (GL (Fin 2) ℝ)) = G := Subgroup.map_comap_eq_self hrange
+  rw [← hG]
+  refine Subgroup.isArithmetic_iff_finiteIndex.mpr ⟨fun hz => ?_⟩
+  have hle : CongruenceSubgroup.Gamma1 N ≤
+      G.comap (Matrix.SpecialLinearGroup.mapGL (n := Fin 2) (R := ℤ) ℝ) :=
+    fun γ hγ => h1 (Subgroup.mem_map_of_mem _ hγ)
+  exact (CongruenceSubgroup.instFiniteIndexGamma1 (N := N)).index_ne_zero
+    (Nat.eq_zero_of_zero_dvd (hz ▸ Subgroup.index_dvd_of_le hle))
+
+/-! #### Restricting a cusp form to a smaller group
+
+`CuspForm` is CONTRAVARIANT in its group in both of its conditions:
+slash-invariance under a bigger group is a stronger demand, and — since
+`IsCusp c 𝒢` asks only for SOME parabolic element of `𝒢` fixing `c` — the
+cusp set grows with the group, so vanishing at the cusps of the bigger
+group is stronger too.  Hence a `CuspForm G 2` restricts to a
+`CuspForm G' 2` for any `G' ≤ G`, with the same underlying function.
+
+This is what lets `isBigO_atTop_coeffOn` be stated with the lower bound
+`Γ₁(N) ≤ G` ALONE: the leaf is proven for `G` between the two bounds and
+then transported down to `G' = Γ₁(N)`, where both bounds hold trivially.
+Without it the coefficient leaf would have to carry `G ≤ Γ₀(N)` as well —
+see `isArithmeticOn`, whose proof genuinely needs the upper bound.
+-/
+
+/-- **A cusp of a subgroup is a cusp of the group** (PROVEN) —
+`IsCusp c 𝒢 = ∃ g ∈ 𝒢, g.IsParabolic ∧ g • c = c`, and the witness
+transports along the inclusion. -/
+lemma isCusp_of_le {c : OnePoint ℝ} {G G' : Subgroup (GL (Fin 2) ℝ)} (h : G' ≤ G)
+    (hc : IsCusp c G') : IsCusp c G := by
+  obtain ⟨g, hg, hpar, hgc⟩ := hc
+  exact ⟨g, h hg, hpar, hgc⟩
+
+/-- **A cusp form on `G` is a cusp form on any subgroup `G' ≤ G`**, with
+the same underlying function (PROVEN). -/
+def restrictCuspForm {G G' : Subgroup (GL (Fin 2) ℝ)} (h : G' ≤ G) (f : CuspForm G 2) :
+    CuspForm G' 2 where
+  toFun := (f : UpperHalfPlane → ℂ)
+  slash_action_eq' γ hγ := SlashInvariantFormClass.slash_action_eq (Γ := G) (k := 2) f γ (h hγ)
+  holo' := CuspFormClass.holo f
+  zero_at_cusps' hc := CuspFormClass.zero_at_cusps f (isCusp_of_le h hc)
+
+@[simp] lemma coe_restrictCuspForm {G G' : Subgroup (GL (Fin 2) ℝ)} (h : G' ≤ G)
+    (f : CuspForm G 2) :
+    (restrictCuspForm h f : UpperHalfPlane → ℂ) = (f : UpperHalfPlane → ℂ) := rfl
+
+/-- **Being a weight-two eigenform is inherited by restriction** (PROVEN)
+— every field of `IsWeightTwoEigenformOn` is a statement about `f` AS A
+FUNCTION and about `a`, and `restrictCuspForm` changes neither, so the
+proof term is the six fields passed through unchanged. -/
+lemma IsWeightTwoEigenformOn.restrict {N : ℕ} {G G' : Subgroup (GL (Fin 2) ℝ)}
+    {χ : DirichletCharacter ℂ N} {f : CuspForm G 2} {a : ℕ → ℂ} (h : G' ≤ G)
+    (hf : IsWeightTwoEigenformOn G N χ f a) :
+    IsWeightTwoEigenformOn G' N χ (restrictCuspForm h f) a :=
+  ⟨hf.qExpansion, hf.qExpansionSummable, hf.zero, hf.one, hf.hecke, hf.atkin⟩
+
+/-! #### The Fricke involution normalises every intermediate `G`
+
+`WeightTwoEigenform.lean` builds `W_N = ![![0, -1], ![N, 0]]` as an
+element of `GL(2, ℝ)` (`frickeMatrix`) and proves it normalises `Γ₀(N)`.
+That matrix is group-free and is reused verbatim; what has to be
+redone is the normalisation, for the abstract `G`.
+
+**The argument, and where each bound on `G` enters.**  Let `γ ∈ G` and
+write `γ = ![![a, b], ![c, d]]` with `c = N c'` — the upper bound is what
+gives `N ∣ c`.  Then the Γ₀-computation gives
+`W γ W⁻¹ = δ := ![![d, -c'], ![-N b, a]]`, and the product
+
+> `δ γ = ![![ad - N c'², db - c'd], ![N a (c' - b), ad - N b²]]`
+
+is congruent mod `N` to `![![1, *], ![0, 1]]`, because `ad - bc = 1` with
+`N ∣ c` forces `ad ≡ 1`.  So `δ γ ∈ Γ₁(N) ≤ G` — the lower bound — and
+therefore `δ = (δ γ) γ⁻¹ ∈ G`.
+
+Conceptually this is the classical statement that `W_N` acts on
+`Γ₀(N)/Γ₁(N) ≅ (ℤ/N)ˣ` by `d ↦ d⁻¹`, so it preserves the preimage `Γ_H(N)`
+of every SUBGROUP `H`; the computation above is that statement with the
+group-theoretic bookkeeping replaced by one explicit product, which is
+cheaper in Lean and needs no `Γ_H` classification.  Note it also shows
+why `Γ(N)` — which is NOT of the form `Γ_H(N)` — is a genuine
+counterexample to dropping the lower bound.
+-/
+
+/-- **`W_N` normalises every `G` with `Γ₁(N) ≤ G ≤ Γ₀(N)`** (PROVEN) —
+see the subsection docstring for the computation.  The `Γ₀` instance is
+`WeightTwoEigenform.lean`'s `frickeMatrix_conj_mem`.
+
+Only this ONE inclusion is needed downstream — never the reverse
+inclusion, and never the equality of subgroups — because both consumers
+(`frickeSlashOn`'s slash-invariance and `isCusp_frickeMatrix_smul_of_le`)
+push forward along `γ ↦ W_N γ W_N⁻¹`. -/
+lemma frickeMatrix_conj_mem_of_le (N : ℕ) (hN : N ≠ 0) {G : Subgroup (GL (Fin 2) ℝ)}
+    (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) {g : GL (Fin 2) ℝ} (hg : g ∈ G) :
+    frickeMatrix N hN * g * (frickeMatrix N hN)⁻¹ ∈ G := by
+  obtain ⟨γ, hγ, rfl⟩ := h0 hg
+  obtain ⟨c', hc'⟩ : (N : ℤ) ∣ (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 :=
+    (ZMod.intCast_zmod_eq_zero_iff_dvd _ _).mp (CongruenceSubgroup.Gamma0_mem.mp hγ)
+  have hdet : (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0 * (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 1 -
+      (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * (γ : Matrix (Fin 2) (Fin 2) ℤ) 1 0 = 1 := by
+    have := γ.2
+    rwa [Matrix.det_fin_two] at this
+  obtain ⟨δ, hδ⟩ : ∃ δ : SL(2, ℤ), (δ : Matrix (Fin 2) (Fin 2) ℤ) =
+      !![(γ : Matrix (Fin 2) (Fin 2) ℤ) 1 1, -c';
+        -((N : ℤ) * (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1),
+        (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0] :=
+    ⟨⟨_, by
+      rw [Matrix.det_fin_two_of]
+      linear_combination hdet + (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * hc'⟩, rfl⟩
+  have hconj : frickeMatrix N hN * (Matrix.SpecialLinearGroup.mapGL ℝ γ) *
+      (frickeMatrix N hN)⁻¹ = Matrix.SpecialLinearGroup.mapGL ℝ δ := by
+    rw [mul_inv_eq_iff_eq_mul]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [hδ, Matrix.mul_apply, Fin.sum_univ_two, hc'] <;> ring
+  rw [hconj]
+  have hmem : δ * γ ∈ CongruenceSubgroup.Gamma1 N := by
+    have key1 : ∀ x k : ℤ, x - 1 = (N : ℤ) * k → ((x : ZMod N)) = 1 := by
+      intro x k hx
+      have h0 : ((x - 1 : ℤ) : ZMod N) = 0 := by rw [hx]; push_cast; simp
+      push_cast at h0
+      exact sub_eq_zero.mp h0
+    have key0 : ∀ x k : ℤ, x = (N : ℤ) * k → ((x : ZMod N)) = 0 := by
+      intro x k hx; rw [hx]; push_cast; simp
+    have e00 : ((δ * γ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ) 0 0 - 1
+        = (N : ℤ) * ((γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * c' - c' * c') := by
+      simp [Matrix.SpecialLinearGroup.coe_mul, Matrix.mul_apply, Fin.sum_univ_two, hδ]
+      linear_combination hdet + ((γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 - c') * hc'
+    have e11 : ((δ * γ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ) 1 1 - 1
+        = (N : ℤ) * ((γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * c'
+            - (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1) := by
+      simp [Matrix.SpecialLinearGroup.coe_mul, Matrix.mul_apply, Fin.sum_univ_two, hδ]
+      linear_combination hdet + (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * hc'
+    have e10 : ((δ * γ : SL(2, ℤ)) : Matrix (Fin 2) (Fin 2) ℤ) 1 0
+        = (N : ℤ) * ((γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0 * c'
+            - (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 1 * (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0) := by
+      simp [Matrix.SpecialLinearGroup.coe_mul, Matrix.mul_apply, Fin.sum_univ_two, hδ]
+      linear_combination (γ : Matrix (Fin 2) (Fin 2) ℤ) 0 0 * hc'
+    exact (CongruenceSubgroup.Gamma1_mem N _).mpr
+      ⟨key1 _ _ e00, key1 _ _ e11, key0 _ _ e10⟩
+  have hmemG : Matrix.SpecialLinearGroup.mapGL ℝ δ * Matrix.SpecialLinearGroup.mapGL ℝ γ ∈ G := by
+    rw [← map_mul]
+    exact h1 (Subgroup.mem_map_of_mem _ hmem)
+  simpa using mul_mem hmemG (inv_mem hg)
+
+/-- **`W_N` permutes the cusps of `G`** (PROVEN) — the witness for
+`W_N • c` is `W_N p W_N⁻¹`, which lies in `G` by
+`frickeMatrix_conj_mem_of_le`, is parabolic because parabolicity is a
+conjugation invariant, and fixes `W_N • c` by the group action. -/
+lemma isCusp_frickeMatrix_smul_of_le (N : ℕ) (hN : N ≠ 0) {G : Subgroup (GL (Fin 2) ℝ)}
+    (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) {c : OnePoint ℝ} (hc : IsCusp c G) :
+    IsCusp (frickeMatrix N hN • c) G := by
+  obtain ⟨p, hpΓ, hpar, hpc⟩ := hc
+  refine ⟨frickeMatrix N hN * p * (frickeMatrix N hN)⁻¹,
+    frickeMatrix_conj_mem_of_le N hN h1 h0 hpΓ, by simpa using hpar, ?_⟩
+  rw [mul_smul, mul_smul, inv_smul_smul, hpc]
+
+/-- **The Fricke transform `f ∣[2] W_N` of a cusp form on `G` is again a
+cusp form on `G`** (PROVEN).
+
+Slash-invariance: `(f ∣ W_N) ∣ γ = f ∣ (W_N γ) = f ∣ ((W_N γ W_N⁻¹) W_N)
+= (f ∣ (W_N γ W_N⁻¹)) ∣ W_N = f ∣ W_N`.
+Holomorphy: `MDifferentiable.slash`, which holds for the full `GL(2, ℝ)`
+slash action.
+Vanishing at the cusps: `OnePoint.IsZeroAt.smul_iff` says
+`IsZeroAt (g • c) f k ↔ IsZeroAt c (f ∣[k] g) k` for EVERY
+`g : GL(2, ℝ)`, so the obligation reduces to
+`isCusp_frickeMatrix_smul_of_le` and nothing has to be expanded at a
+cusp — in particular no Hermite normal form is needed.  (That is the
+same simplification `WeightTwoEigenform.lean` records for the `Γ₀`
+instance `frickeSlash`.) -/
+noncomputable def frickeSlashOn (N : ℕ) (hN : N ≠ 0) {G : Subgroup (GL (Fin 2) ℝ)}
+    (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) (f : CuspForm G 2) : CuspForm G 2 where
+  toFun := (f : UpperHalfPlane → ℂ) ∣[(2 : ℤ)] frickeMatrix N hN
+  slash_action_eq' γ hγ := by
+    have key : frickeMatrix N hN * γ
+        = frickeMatrix N hN * γ * (frickeMatrix N hN)⁻¹ * frickeMatrix N hN := by
+      group
+    rw [← SlashAction.slash_mul, key, SlashAction.slash_mul,
+      SlashInvariantFormClass.slash_action_eq (Γ := G) (k := 2) f _
+        (frickeMatrix_conj_mem_of_le N hN h1 h0 hγ)]
+  holo' := (CuspFormClass.holo f).slash 2 (frickeMatrix N hN)
+  zero_at_cusps' hc := by
+    rw [← OnePoint.IsZeroAt.smul_iff]
+    exact CuspFormClass.zero_at_cusps f (isCusp_frickeMatrix_smul_of_le N hN h1 h0 hc)
+
+@[simp] lemma coe_frickeSlashOn (N : ℕ) (hN : N ≠ 0) {G : Subgroup (GL (Fin 2) ℝ)}
+    (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) (f : CuspForm G 2) :
+    (frickeSlashOn N hN h1 h0 f : UpperHalfPlane → ℂ)
+      = (f : UpperHalfPlane → ℂ) ∣[(2 : ℤ)] frickeMatrix N hN := rfl
+
 /-- **The Fricke involution `W_N` on a group between `Γ₁(N)` and `Γ₀(N)`**
-(sorry leaf) — the ONE piece of modular input that carries the
+(PROVEN 2026-07-28) — the ONE piece of modular input that carries the
 continuation, and the only one of the four that uses the upper bound on
 `G`.
 
@@ -5774,23 +6144,45 @@ statement.  On `Γ₁(N)` the involution moves the nebentypus,
 of the functional equation and changes NOTHING about this statement,
 because `g` is quantified existentially and `χ` does not occur.
 
-What has to be built, none of which exists at this pin (checked by
-`grep -rn "Fricke\|AtkinLehner\|atkinLehner" Fermat/ .lake/packages/mathlib/
-~/cs/FLT/`, 2026-07-27: no hits): `W_N` as an element of `GL(2, ℝ)`, the
-conjugation `W_N⁻¹ G W_N = G`, and the fact that slashing by a normalising
-element preserves `CuspForm` — for the last the cusp condition is the only
-real work, since `W_N γ` for `γ ∈ SL(2, ℤ)` is integral of determinant `N`
-and must be put in Hermite normal form to see that zero-at-`∞` survives.
+The witness is `frickeSlashOn N hN h1 h0 f`; the sign `-1` and the weight
+`y²` come out of `|det W_N|^{k-1} · denom(W_N, z)^{-k} = N (i y √N)^{-2}
+= -1/y²`.  This is the root number `ε = -1` of `cuspFEPairOn`, and it is
+what makes `Λ` entire, hence `L(f, ·)` entire.
 
-`WeightTwoEigenform.lean`'s `exists_frickeInvolution` is the
-`G = Γ₀(N)` instance of this; see the subsection docstring. -/
+**An earlier version of this docstring said `W_N` had to be built from
+scratch — "none of which exists at this pin" — and listed a Hermite
+normal form for the cusp condition.  All of that is now stale.**
+`WeightTwoEigenform.lean` built `frickeMatrix` and proved the `Γ₀`
+instance `exists_frickeInvolution` on 2026-07-28; the only genuinely new
+work here is `frickeMatrix_conj_mem_of_le` (normalisation of the abstract
+`G`, three lines of `linear_combination` mod `N`), and the Hermite step
+is not needed at this pin because mathlib's `CuspForm` quantifies its
+vanishing condition over ALL cusps and `OnePoint.IsZeroAt.smul_iff`
+converts it into a statement about `W_N`-translates. -/
 theorem exists_frickeInvolutionOn (N : ℕ) (hN : N ≠ 0) (G : Subgroup (GL (Fin 2) ℝ))
     (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) (f : CuspForm G 2) :
     ∃ g : CuspForm G 2, ∀ y : ℝ, 0 < y →
-      axisRestrictOn G N f (1 / y) = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrictOn G N g y :=
-  sorry
+      axisRestrictOn G N f (1 / y) = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrictOn G N g y := by
+  refine ⟨frickeSlashOn N hN h1 h0 f, fun y hy => ?_⟩
+  have hy' : (0 : ℝ) < 1 / y := by positivity
+  rw [axisRestrictOn_of_pos hN f hy', axisRestrictOn_of_pos hN _ hy]
+  simp only [coe_frickeSlashOn, ModularForm.slash_apply, frickeMatrix_smul_axisPoint N hN hy,
+    UpperHalfPlane.σ, UpperHalfPlane.denom, frickeMatrix_coe, frickeMatrix_det, coe_axisPoint]
+  norm_num
+  rw [if_pos (Nat.pos_of_ne_zero hN), ContinuousAlgEquiv.refl_apply]
+  have hs : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hsC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hs.ne'
+  have hyC : ((y : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hy.ne'
+  have hs2 : ((Real.sqrt N : ℝ) : ℂ) ^ 2 = (N : ℂ) := by
+    norm_cast
+    exact Real.sq_sqrt (Nat.cast_nonneg N)
+  rw [← hs2]
+  field_simp
+  rw [Complex.I_sq]
+  ring
 
-/-- **A cusp form decays faster than every power at `i∞`** (sorry leaf).
+/-- **A cusp form decays faster than every power at `i∞`** (PROVEN
+2026-07-28).
 
 TRUE and elementary given the `q`-expansion, which is what `h1` supplies:
 `Γ₁(N) ≤ G` puts `T = ![![1, 1], ![0, 1]]` in `G`, so `f` is `1`-periodic,
@@ -5798,20 +6190,76 @@ and `CuspForm`'s zero-at-`∞` condition then makes the expansion start at
 `n = 1`; hence `f(i y/√N) = O(e^{-2πy/√N})`, which beats `y ^ r` for every
 real `r`.  Stated for an arbitrary cusp form rather than for an eigenform
 because the Fricke partner `g` above needs it too and is not known to be
-an eigenform. -/
+an eigenform.
+
+**The exponential decay is mathlib's**, not new modular input:
+`CuspFormClass.exp_decay_atImInfty` gives
+`f =O[atImInfty] fun τ ↦ exp (-2π (im τ)/h)` from nothing but `0 < h` and
+`h ∈ G.strictPeriods`; here `h = 1` by `one_mem_strictPeriodsOn`, which is
+exactly where `h1` is consumed and is the ONLY place it is.  The rest is
+transport along `y ↦ i y/√N` (whose imaginary part is `y/√N`, so `atTop`
+pushes forward into `atImInfty`) followed by
+`isLittleO_exp_neg_mul_rpow_atTop`.
+
+No level hypothesis is needed: at `N = 0` the left-hand side is
+identically `0` by `axisRestrictOn_zero_level`. -/
 theorem isBigO_atTop_axisRestrictOn (N : ℕ) (G : Subgroup (GL (Fin 2) ℝ))
     (h1 : Gamma1GL N ≤ G) (f : CuspForm G 2) (r : ℝ) :
-    axisRestrictOn G N f =O[atTop] fun y : ℝ => y ^ r :=
-  sorry
+    axisRestrictOn G N f =O[atTop] fun y : ℝ => y ^ r := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · rw [axisRestrictOn_zero_level]
+    exact isBigO_zero _ _
+  · have hsq : (0 : ℝ) < Real.sqrt N :=
+      Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+    have hdecay : (f : UpperHalfPlane → ℂ) =O[UpperHalfPlane.atImInfty]
+        fun τ : UpperHalfPlane => Real.exp (-2 * Real.pi * τ.im / 1) :=
+      CuspFormClass.exp_decay_atImInfty (h := 1) f one_pos (one_mem_strictPeriodsOn N h1)
+    rw [Asymptotics.isBigO_iff] at hdecay
+    obtain ⟨c, hc⟩ := hdecay
+    rw [UpperHalfPlane.atImInfty, Filter.eventually_comap, Filter.eventually_atTop] at hc
+    obtain ⟨A, hA⟩ := hc
+    have hexp : axisRestrictOn G N f =O[atTop]
+        fun y : ℝ => Real.exp (-(2 * Real.pi / Real.sqrt N) * y) := by
+      rw [Asymptotics.isBigO_iff]
+      refine ⟨c, ?_⟩
+      filter_upwards [Filter.eventually_ge_atTop (max 1 (A * Real.sqrt N))] with y hy
+      have hy0 : (0 : ℝ) < y := lt_of_lt_of_le zero_lt_one ((le_max_left _ _).trans hy)
+      have hyA : A ≤ y / Real.sqrt N :=
+        (le_div_iff₀ hsq).mpr ((le_max_right _ _).trans hy)
+      have him : (axisPoint N y ⟨hy0, hN⟩).im = y / Real.sqrt N := im_axisPoint N y _
+      have hb := hA (y / Real.sqrt N) hyA (axisPoint N y ⟨hy0, hN⟩) him
+      rw [him] at hb
+      rw [axisRestrictOn_of_pos hN f hy0]
+      refine hb.trans_eq ?_
+      rw [show -2 * Real.pi * (y / Real.sqrt N) / 1
+        = -(2 * Real.pi / Real.sqrt N) * y from by ring]
+    exact hexp.trans (isLittleO_exp_neg_mul_rpow_atTop (by positivity) r).isBigO
 
 /-- **`f` restricted to the imaginary axis is locally integrable on
-`(0, ∞)`** (sorry leaf) — it is continuous there, `f` being holomorphic;
-the only content is transporting continuity through the `ℍ`-coercion, and
-no hypothesis on `G` is used. -/
+`(0, ∞)`** (PROVEN 2026-07-28) — it is continuous there, `f` being
+holomorphic; the only content is transporting continuity through the
+`ℍ`-coercion, which is an `IsEmbedding` (`UpperHalfPlane.isEmbedding_coe`),
+so continuity into `ℍ` is continuity of the `ℂ`-valued composite.  No
+hypothesis on `G` is used, and none is needed.
+
+No level hypothesis is needed either: at `N = 0` the function is
+identically `0` by `axisRestrictOn_zero_level`. -/
 theorem locallyIntegrableOn_axisRestrictOn (N : ℕ) (G : Subgroup (GL (Fin 2) ℝ))
     (f : CuspForm G 2) :
-    LocallyIntegrableOn (axisRestrictOn G N f) (Set.Ioi 0) :=
-  sorry
+    LocallyIntegrableOn (axisRestrictOn G N f) (Set.Ioi 0) := by
+  rcases eq_or_ne N 0 with rfl | hN
+  · rw [axisRestrictOn_zero_level]
+    exact (locallyIntegrable_const (0 : ℂ)).locallyIntegrableOn _
+  · refine ContinuousOn.locallyIntegrableOn ?_ measurableSet_Ioi
+    rw [continuousOn_iff_continuous_restrict]
+    have heq : Set.restrict (Set.Ioi (0 : ℝ)) (axisRestrictOn G N f)
+        = fun y : Set.Ioi (0 : ℝ) => f (axisPoint N y.1 ⟨y.2, hN⟩) :=
+      funext fun y => axisRestrictOn_of_pos hN f y.2
+    rw [heq]
+    refine (ModularFormClass.continuous f).comp ?_
+    rw [UpperHalfPlane.isEmbedding_coe.continuous_iff]
+    simp only [Function.comp_def, coe_axisPoint]
+    fun_prop
 
 /-- The strong FE-pair attached to `f`: the pair `(f, f ∣ W_N)` read along
 the rescaled imaginary axis, with weight `k = 2` and root number `ε = -1`. -/
@@ -5836,29 +6284,141 @@ lemma isStrongFEPair_cuspFEPairOn (N : ℕ) (hN : N ≠ 0) (G : Subgroup (GL (Fi
     (h1 : Gamma1GL N ≤ G) (h0 : G ≤ Gamma0GL N) (f : CuspForm G 2) :
     IsStrongFEPair (cuspFEPairOn N hN G h1 h0 f) := ⟨rfl, rfl⟩
 
-/-- **Hecke's bound `|aₙ| = O(n)`** (sorry leaf).
+/-- **`a` is the `q`-expansion coefficient sequence of `f` in mathlib's
+sense** (PROVEN 2026-07-28) — the bridge between this module's
+`IsWeightTwoEigenformOn` packaging and `UpperHalfPlane.qExpansion`, and
+the `G`-generic form of `WeightTwoEigenform.lean`'s
+`coeff_eq_qExpansion_coeff`.
 
-TRUE for every weight-two cusp form, by the contour-integral estimate
-`aₙ = ∫₀¹ f(x + i/n) e^{-2πin(x+i/n)} dx` together with the fact that the
-Petersson function `y |f(x+iy)|` of a cusp form is bounded on `ℍ` —
-mathlib has `petersson` but not its boundedness.  `h1` is what makes that
-bound available: `y|f|` is `G`-invariant and `G ⊇ Γ₁(N)` has finite index
-in `SL(2, ℤ)`, so a bound on a fundamental domain is a bound everywhere.
+The two `qExpansion` fields say exactly that `∑_{n ≥ 1} aₙ qⁿ` converges
+to `f τ` at every `τ ∈ ℍ` with `q = e^{2πiτ}`; adding the vanishing
+constant term `a 0 = 0` turns that into a `HasSum` over all of `ℕ`, and
+`ModularFormClass.qExpansion_coeff_unique` (the Taylor coefficients of a
+holomorphic function on the punctured disc are unique) identifies it with
+mathlib's `qExpansion 1 f`.  `h = 1` is legitimate by
+`one_mem_strictPeriodsOn`, which is the only use of `h1`. -/
+theorem coeff_eq_qExpansion_coeffOn {N : ℕ} {G : Subgroup (GL (Fin 2) ℝ)}
+    {χ : DirichletCharacter ℂ N} {f : CuspForm G 2} {a : ℕ → ℂ} (h1 : Gamma1GL N ≤ G)
+    (hf : IsWeightTwoEigenformOn G N χ f a) (m : ℕ) :
+    a m = (UpperHalfPlane.qExpansion 1 (f : UpperHalfPlane → ℂ)).coeff m := by
+  refine ModularFormClass.qExpansion_coeff_unique (k := 2) (h := 1) one_pos
+    (one_mem_strictPeriodsOn N h1) (fun τ => ?_) m
+  have h0 : HasSum (fun n : ℕ =>
+      a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)))
+      ((f : UpperHalfPlane → ℂ) τ) := by
+    rw [hf.qExpansion τ]
+    exact (hf.qExpansionSummable τ).hasSum
+  have hfun : (fun n : ℕ => a (n + 1) • Function.Periodic.qParam 1 (τ : ℂ) ^ (n + 1))
+      = fun n : ℕ => a (n + 1) * Complex.exp (2 * Real.pi * Complex.I * (n + 1) * (τ : ℂ)) := by
+    funext n
+    rw [smul_eq_mul, Function.Periodic.qParam, ← Complex.exp_nat_mul]
+    congr 2
+    push_cast
+    ring
+  refine (hasSum_nat_add_iff' (f := fun m : ℕ =>
+    a m • Function.Periodic.qParam 1 (τ : ℂ) ^ m) 1).mp ?_
+  have hzero : ∑ i ∈ Finset.range 1, a i • Function.Periodic.qParam 1 (τ : ℂ) ^ i = 0 := by
+    simp [hf.zero]
+  rw [hzero, sub_zero]
+  simpa only [hfun] using h0
+
+/-- **Hecke's bound `|aₙ| = O(n)`, for `G` between the two bounds**
+(PROVEN 2026-07-28) — the working form of `isBigO_atTop_coeffOn` below,
+which is this statement transported down to `G = Γ₁(N)`.
+
+All of the analysis is mathlib's: `Mathlib/NumberTheory/ModularForms/
+Bounds.lean` proves `CuspFormClass.petersson_bounded_left`,
+`CuspFormClass.exists_bound` and finally `CuspFormClass.qExpansion_isBigO`,
+which IS Hecke's bound `O(n^{k/2})` for any ARITHMETIC `Γ`.  What this
+subsection has to supply is the two facts about the abstract `G` that
+those need — `isArithmeticOn` and `strictWidthInftyOn`, both of which use
+BOTH bounds — plus the identification of `a` with mathlib's coefficients
+(`coeff_eq_qExpansion_coeffOn`) and `(2 : ℤ)/2 = 2 - 1`.
+
 Deligne's `|aₙ| ≤ d(n) √n` is *not* needed, which is why the half plane in
 `IsLFunctionOf` is `Re s > 2` rather than `Re s > 3/2`. -/
-theorem isBigO_atTop_coeffOn {N : ℕ} {G : Subgroup (GL (Fin 2) ℝ)} {χ : DirichletCharacter ℂ N}
-    {f : CuspForm G 2} {a : ℕ → ℂ} (h1 : Gamma1GL N ≤ G)
+theorem isBigO_atTop_coeffOn_of_le {N : ℕ} (hN : N ≠ 0) {G : Subgroup (GL (Fin 2) ℝ)}
+    {χ : DirichletCharacter ℂ N} {f : CuspForm G 2} {a : ℕ → ℂ} (h1 : Gamma1GL N ≤ G)
+    (h0 : G ≤ Gamma0GL N) (hf : IsWeightTwoEigenformOn G N χ f a) :
+    a =O[atTop] fun n : ℕ => (n : ℝ) ^ (2 - 1 : ℝ) := by
+  haveI : NeZero N := ⟨hN⟩
+  haveI : G.IsArithmetic := isArithmeticOn N h1 h0
+  have hbig := CuspFormClass.qExpansion_isBigO (Γ := G) (k := 2) f
+  rw [strictWidthInftyOn N h1 h0, show ((2 : ℤ) : ℝ) / 2 = (2 - 1 : ℝ) from by norm_num] at hbig
+  rw [show a = fun m : ℕ => (UpperHalfPlane.qExpansion 1 (f : UpperHalfPlane → ℂ)).coeff m from
+    funext (coeff_eq_qExpansion_coeffOn h1 hf)]
+  exact hbig
+
+/-- **Hecke's bound `|aₙ| = O(n)`** (PROVEN 2026-07-28, after a FALSITY
+REPAIR — see below).
+
+TRUE for every weight-two cusp form on a genuine level.  Proven by
+restricting `f` to `Γ₁(N)` (`IsWeightTwoEigenformOn.restrict`, which is
+legitimate because `CuspForm` is contravariant in its group) and citing
+`isBigO_atTop_coeffOn_of_le` there, where both bounds hold by `le_rfl`
+and `gamma1GL_le_gamma0GL`.  That is what keeps this leaf stated with
+the LOWER bound alone, as it was written; `isArithmeticOn` genuinely
+needs the upper bound, and without the restriction step this statement
+would have had to carry `G ≤ Γ₀(N)` too.
+
+**An earlier version of this docstring claimed "mathlib has `petersson`
+but not its boundedness" and that `h1` supplies finite index directly.
+Both were wrong.**  Mathlib does have the boundedness — see
+`isBigO_atTop_coeffOn_of_le` — and `Γ₁(N) ≤ G` does NOT by itself give
+`G` finite index in `SL(2, ℤ)`, since `G` is an arbitrary subgroup of
+`GL(2, ℝ)` and `G = ⊤` satisfies the hypothesis.  Arithmeticity comes
+from the sandwich, and reaches this statement through the restriction.
+
+### FALSITY AUDIT (2026-07-28): `hN : N ≠ 0` is NOT decoration
+
+The statement used to be quantified over every `N : ℕ`, and **at `N = 0`
+it is FALSE**.  The refutation is a one-line reduction to the audit
+already recorded on `WeightTwoEigenform.lean`'s `isBigO_atTop_coeff`:
+instantiate at `G = Γ₀(0)` and `χ = 1`, where
+`isWeightTwoEigenformOn_gamma0_iff` turns the hypothesis into
+`IsWeightTwoEigenform 0 f a` on the nose, so an `hN`-free version here
+would give an `hN`-free version there — which that audit refutes with an
+explicit witness.  For the record, the witness transfers verbatim, and it
+lands equally at `G = Γ₁(0) = ⟨T⟩` (the only cusp of `⟨T⟩` is `∞`, so a
+`CuspForm (Gamma1GL 0) 2` is precisely a holomorphic, `1`-periodic `f`
+tending to `0` at `i∞`):
+
+> `a n := n ^ 10` for `n ≥ 1`, `a 0 := 0`, and
+> `f τ := ∑_{n ≥ 1} n^10 e^{2πinτ}`.
+
+`f` is holomorphic (the series is dominated by a geometric series),
+`1`-periodic, and `→ 0` at `i∞`; `qExpansion` and `qExpansionSummable`
+hold by construction, `a 0 = 0` and `a 1 = 1`, `hecke` is **vacuous**
+(`p ∣ 0` for every `p`, so `¬ p ∣ N` is never satisfied), and `atkin`
+asks exactly that `a` be completely multiplicative, which `n ↦ n^10` is.
+But `a p = p^10` is not `O(p)`.
+
+The defect is that `Γ₀(N)` — and `Γ₁(N)` — has finite index in
+`SL(2, ℤ)` exactly for `N ≥ 1`; at `N = 0` the quotient has infinite
+volume and every polynomial coefficient bound fails.  Mechanically,
+`isArithmeticOn` requires `[NeZero N]`.  The repair is the hypothesis
+`hN`; the one consumer,
+`lSeriesSummable_of_isWeightTwoEigenformOn`, is used only from
+`mellin_axisRestrictOn`, which already carries `hN`, so nothing
+downstream changes. -/
+theorem isBigO_atTop_coeffOn {N : ℕ} (hN : N ≠ 0) {G : Subgroup (GL (Fin 2) ℝ)}
+    {χ : DirichletCharacter ℂ N} {f : CuspForm G 2} {a : ℕ → ℂ} (h1 : Gamma1GL N ≤ G)
     (hf : IsWeightTwoEigenformOn G N χ f a) :
     a =O[atTop] fun n : ℕ => (n : ℝ) ^ (2 - 1 : ℝ) :=
-  sorry
+  isBigO_atTop_coeffOn_of_le hN (G := Gamma1GL N) le_rfl (gamma1GL_le_gamma0GL N)
+    (hf.restrict h1)
 
 /-- The Dirichlet series of a weight-two cusp form converges absolutely on
-`Re s > 2` (PROVEN, from `isBigO_atTop_coeffOn`). -/
-theorem lSeriesSummable_of_isWeightTwoEigenformOn {N : ℕ} {G : Subgroup (GL (Fin 2) ℝ)}
+`Re s > 2` (PROVEN, from `isBigO_atTop_coeffOn`).
+
+`hN` is inherited from `isBigO_atTop_coeffOn`'s FALSITY REPAIR; the sole
+consumer `mellin_axisRestrictOn` already carries it. -/
+theorem lSeriesSummable_of_isWeightTwoEigenformOn {N : ℕ} (hN : N ≠ 0)
+    {G : Subgroup (GL (Fin 2) ℝ)}
     {χ : DirichletCharacter ℂ N} {f : CuspForm G 2} {a : ℕ → ℂ} (h1 : Gamma1GL N ≤ G)
     (hf : IsWeightTwoEigenformOn G N χ f a) {s : ℂ} (hs : 2 < s.re) :
     LSeriesSummable a s :=
-  LSeriesSummable_of_isBigO_rpow hs (isBigO_atTop_coeffOn h1 hf)
+  LSeriesSummable_of_isBigO_rpow hs (isBigO_atTop_coeffOn hN h1 hf)
 
 /-- Along the rescaled imaginary axis the `q`-expansion is a genuine
 convergent sum of real exponentials — the shape `hasSum_mellin` wants
@@ -5902,7 +6462,7 @@ theorem mellin_axisRestrictOn {N : ℕ} (hN : N ≠ 0) {G : Subgroup (GL (Fin 2)
   have hcpos : (0 : ℝ) < c := by rw [hcdef]; positivity
   have hcC : ((c : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hcpos.ne'
   have hs0 : (0 : ℝ) < s.re := by linarith
-  have hsummable : LSeriesSummable a s := lSeriesSummable_of_isWeightTwoEigenformOn h1 hf hs
+  have hsummable : LSeriesSummable a s := lSeriesSummable_of_isWeightTwoEigenformOn hN h1 hf hs
   -- the four hypotheses of `hasSum_mellin`
   have hp : ∀ n : ℕ, a (n + 1) = 0 ∨ 0 < c * (n + 1) := fun n => Or.inr (by positivity)
   have hF : ∀ t ∈ Set.Ioi (0 : ℝ), HasSum
@@ -6022,10 +6582,9 @@ and `Γ₀(N)` rather than twice.
 The `Γ₀` half is `exists_isLFunctionOf_of_isWeightTwoEigenform`, PROVEN
 in `WeightTwoEigenform.lean` over the `G = Γ₀(N)` instances of the same
 four leaves; the shape-free wrapper below cites that at `.gamma0` and
-this at `.gamma1`.  **The duplication is in the leaves only, and it is
-removable in one direction**: the four `Γ₀` statements there and the four
-`G`-generic statements here have the same classical proof, so whichever
-pair lands first should discharge the other by citation.
+this at `.gamma1`.  **The duplication is in the leaves only, and both
+sides are now PROVEN** (2026-07-28) — see the subsection docstring for
+why collapsing them would need a hoist rather than a citation.
 
 TRUE and classical (Hecke, 1936).  The Mellin transform
 `Λ(s) = ∫₀^∞ f(iy) y^{s-1} dy` converges for `Re s` large because a cusp
@@ -7192,10 +7751,10 @@ disappearing:
 | `exists_jacobianOf_curve` | Albanese / `Pic⁰` | no | here, **PROVEN** |
 | `fg_relPoint_of_abelianScheme` | Mordell–Weil | no | `X0.lean`, REUSED |
 | `exists_isLFunctionOf_of_isWeightTwoEigenformOn_gamma1` | Hecke continuation, `Γ₁` half | no | here, **PROVEN** |
-| `exists_frickeInvolutionOn` | the Fricke involution `W_N` | no | here |
-| `isBigO_atTop_axisRestrictOn` | cusp-form decay at `i∞` | no | here |
-| `locallyIntegrableOn_axisRestrictOn` | continuity on the axis | no | here |
-| `isBigO_atTop_coeffOn` | Hecke's coefficient bound | no | here |
+| `exists_frickeInvolutionOn` | the Fricke involution `W_N` | no | here, **PROVEN 2026-07-28** |
+| `isBigO_atTop_axisRestrictOn` | cusp-form decay at `i∞` | no | here, **PROVEN 2026-07-28** |
+| `locallyIntegrableOn_axisRestrictOn` | continuity on the axis | no | here, **PROVEN 2026-07-28** |
+| `isBigO_atTop_coeffOn` | Hecke's coefficient bound | no | here, **PROVEN 2026-07-28** |
 | `isTorsion_jacobian_of_lFunction_ne_zero_gamma1` | Eichler–Shimura + Kolyvagin, `Γ₁` half | no | here, **PROVEN** |
 | `exists_heckeIsotypicDecomposition_gamma1` | Eichler–Shimura | no | here |
 | `isTorsion_factor_of_heckeIsotypic_gamma1` | Kolyvagin–Logachev | no | here |
