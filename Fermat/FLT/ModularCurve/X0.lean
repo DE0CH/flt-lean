@@ -476,6 +476,20 @@ public import Fermat.FLT.EllipticCurve.Isogeny
 -- `Gamma0GL` and `heckeOp` occur in the STATEMENTS of the two leaves below,
 -- not merely in proof bodies.
 public import Fermat.FLT.Modularity.HeckeOperator
+-- The linear algebra behind `exists_basis_charpoly_heckeOp`, the single leaf
+-- that carries both banked Hecke columns (`x0HeckeCharpolyTable`):
+-- `Module.Basis`, `LinearMap.toMatrix`, `Matrix.charpoly` and its two
+-- coefficient dictionaries `Matrix.trace_eq_neg_charpoly_coeff` /
+-- `Matrix.eval_charpoly`, plus `List.getD_eq_default` for reading a
+-- coefficient off the banked list.  PUBLIC: `Module.Basis`,
+-- `LinearMap.toMatrix` and `Matrix.charpoly` occur in the STATEMENT of that
+-- leaf, not merely in proof bodies.
+public import Mathlib.LinearAlgebra.Basis.Basic
+public import Mathlib.LinearAlgebra.Matrix.ToLin
+public import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+public import Mathlib.LinearAlgebra.Trace
+public import Mathlib.LinearAlgebra.Determinant
+public import Mathlib.Data.List.GetD
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
 -- `emptyIsInitial`, `isInitialOfIsEmpty`: the empty scheme as the initial
@@ -17425,11 +17439,18 @@ levels are squarefree semiprimes, hence have `numRationalCusps N = 4`,
 so both rows are sharp.  `3 ∤ 65` and `5 ∤ 91`.
 
 **Note what adding a row does to `traceHeckeOp_of_x0WitnessTable`**: that
-leaf is quantified over the rows, so it now carries two more instances of
+theorem is quantified over the rows, so it now carries two more instances of
 the Eichler–Shimura trace evaluation.  Both are true (the computation
-above), and sharing them with the existing leaf is deliberate — the
+above), and sharing them with the existing statement is deliberate — the
 alternative was a second, duplicate Eichler–Shimura leaf for the Chabauty
-levels. -/
+levels.
+
+**Since 2026-07-28, ADDING A ROW HERE ALSO REQUIRES A ROW IN
+`x0HeckeCharpolyTable`** — the characteristic polynomial of `T_ℓ` on
+`S₂(Γ₀(N))`, from which the trace is now computed rather than banked.  A
+missing row breaks the build at a `decide` inside
+`exists_charpolyRow_of_x0WitnessTable`, which is where it should break; it
+cannot pass silently. -/
 def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
   [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (35, 3, 4), (36, 5, 6), (39, 5, 4),
     (42, 11, 8), (50, 3, 4), (65, 3, 4), (91, 5, 4)]
@@ -22173,7 +22194,8 @@ The two leaves are `card_relPoint_x0_eichlerShimura` (the geometry: the
 Lefschetz trace formula for Frobenius on `X₀(N)_{𝔽_ℓ}` together with the
 Eichler–Shimura relation identifying `Frob_ℓ + Frob_ℓ^∨` with `T_ℓ` on
 `H¹`) and `traceHeckeOp_of_x0WitnessTable` (the arithmetic: the eleven
-banked trace values).  Neither is stated in `ℤ`: the trace of `heckeOp`
+banked trace values — since 2026-07-28 a THEOREM over the merged
+banked-charpoly leaf `exists_basis_charpoly_heckeOp`, not a leaf itself).  Neither is stated in `ℤ`: the trace of `heckeOp`
 is a COMPLEX number by construction, and casting the count into `ℂ`
 avoids importing the integrality of the Hecke action as a silent side
 condition of the cut.  Integrality is a real theorem and belongs to
@@ -22202,8 +22224,291 @@ theorem card_relPoint_x0_eichlerShimura (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.P
         (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) :=
   (exists_isX0EichlerShimura N ℓ hN hℓ hℓN h).card_curve
 
-/-- **The eleven banked Hecke traces** (sorry node — the arithmetic half
-of the point count, split off 2026-07-27).
+/-! ### The Hecke characteristic polynomial: ONE leaf behind every banked column
+
+(2026-07-28.)  Two leaves used to carry the banked Hecke data — the eleven
+traces of `traceHeckeOp_of_x0WitnessTable` and the five trace/determinant
+pairs of `heckeOp_traceDet_of_x0SieveTable`.  They are the trace and the
+determinant of the SAME operator `heckeOp N ℓ` on the SAME space
+`S₂(Γ₀(N)) = CuspForm (Gamma0GL N) 2`, so every piece of machinery behind
+them — a basis of the cusp space, the matrix of `T_ℓ` in it — is shared, and
+two owners would have built it twice.
+
+Both are now PROVEN, from a single leaf `exists_basis_charpoly_heckeOp`:
+*`S₂(Γ₀(N))` has a basis indexed by `Fin d`, and in it `T_ℓ` has
+characteristic polynomial `P`*, with `(d, P)` read off
+`x0HeckeCharpolyTable`.  Everything the two consumers used to assert is
+then a computation over mathlib's charpoly dictionaries — `Matrix.trace =
+−charpoly.coeff (d−1)` and `det((ℓ+1)·1 − T) = charpoly.eval (ℓ+1)` — done
+by the kernel rather than banked as an independent numerical claim.
+
+**Why the characteristic polynomial and not the two scalars.**  It is
+basis-INDEPENDENT, so the existential above is a statement about the space
+and the operator, not about a choice; and it is what every route to these
+numbers produces anyway.  The `q`-expansion route produces the matrix, hence
+the charpoly.  Eichler–Selberg produces `Tr(T_{ℓ^j})` for all `j`, which the
+weight-2 Hecke recursion converts into the power sums of the eigenvalues of
+`T_ℓ`, which Newton's identities convert into the charpoly.  So the
+strengthening from "trace, and sometimes determinant" to "characteristic
+polynomial" costs a prover nothing, and it is what lets one leaf serve both
+consumers — and any future consumer needing another spectral invariant at
+these levels.
+
+**A basis is HANDED OVER, not required in advance, and this is the part the
+earlier audit got wrong.**  That audit (retained in full on the leaf below)
+recorded the route as needing the `Interface.lean` `q`-expansion layer
+hoisted upstream, and priced that hoist at `exists_cuspForm_sturm_bound`
+together with everything under it — `qCoeff`, `qCoeffL`,
+`ModularForm.norm`, `sturm_bound_levelOne`, `SlashInvariantForm.quotientFunc`.
+That price is for FINITE DIMENSIONALITY, and with the cut taken here finite
+dimensionality is a CONSEQUENCE of the leaf (a `Module.Basis (Fin d)` is
+handed over) rather than a prerequisite for stating it.  So
+`exists_cuspForm_sturm_bound` and `cuspForm_finiteDimensional` are not
+needed at all, and the hoist a prover actually faces is the much smaller
+self-contained block `qCoeff`, `one_mem_strictPeriods_Gamma0GL`, the six
+`heckeRep`/`qParam` helpers and `qExpansion_heckeTransform_coeff` — whose
+only non-mathlib inputs are `Gamma0GL`, `heckeRep`, `heckeRepInf`,
+`heckeTransform` and `exists_cuspForm_heckeTransform`, ALL of which already
+live in `Modularity/HeckeOperator.lean`, upstream of this file.  Re-run that
+reference scan before moving anything; it is one grep and it is what makes
+the move a cut and paste.
+-/
+
+/-- The polynomial `∑ i < c.length, c i · X ^ i` over `ℂ`, from an ascending
+list of integer coefficients.  Used only to spell the banked characteristic
+polynomials of `x0HeckeCharpolyTable` as data rather than as syntax; its two
+dictionaries are `coeff_charpolyOfCoeffs` and `eval_charpolyOfCoeffs`. -/
+noncomputable def charpolyOfCoeffs (c : List ℤ) : Polynomial ℂ :=
+  ∑ i ∈ Finset.range c.length, Polynomial.C ((c.getD i 0 : ℤ) : ℂ) * Polynomial.X ^ i
+
+/-- **Reading a coefficient off the banked list** (PROVEN).  Out of range
+both sides are `0`, which is what makes the statement unconditional. -/
+theorem coeff_charpolyOfCoeffs (c : List ℤ) (i : ℕ) :
+    (charpolyOfCoeffs c).coeff i = ((c.getD i 0 : ℤ) : ℂ) := by
+  rw [charpolyOfCoeffs, Polynomial.finsetSum_coeff]
+  simp only [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow, mul_ite, mul_one, mul_zero]
+  rw [Finset.sum_ite_eq (Finset.range c.length) i
+    (fun j => ((c.getD j 0 : ℤ) : ℂ))]
+  by_cases hi : i < c.length
+  · rw [if_pos (Finset.mem_range.mpr hi)]
+  · rw [if_neg (by simpa using hi), List.getD_eq_default _ _ (by omega)]
+    simp
+
+/-- **Evaluating the banked polynomial** (PROVEN). -/
+theorem eval_charpolyOfCoeffs (c : List ℤ) (t : ℂ) :
+    (charpolyOfCoeffs c).eval t =
+      ∑ i ∈ Finset.range c.length, ((c.getD i 0 : ℤ) : ℂ) * t ^ i := by
+  rw [charpolyOfCoeffs, Polynomial.eval_finsetSum]
+  simp
+
+/-- **The sixteen banked Hecke rows**: `(N, ℓ, dim_ℂ S₂(Γ₀(N)),
+charpoly(T_ℓ ∣ S₂(Γ₀(N))))`, the coefficient list ascending and monic — the
+eleven rows of `x0WitnessTable` followed by the five of `x0SieveTable`.
+
+| `N` | `ℓ` | `d` | `charpoly(T_ℓ)` | `Tr T_ℓ` | `ℓ+1−Tr` | `det((ℓ+1)−T_ℓ)` |
+|-----|-----|-----|------------------|----------|----------|-------------------|
+| `20` | `3` | `1` | `X + 2` | `−2` | `6` | `6` |
+| `24` | `5` | `1` | `X + 2` | `−2` | `8` | `8` |
+| `28` | `5` | `2` | `X²` | `0` | `6` | `36` |
+| `30` | `17` | `3` | `X³ − 10X² + 28X − 24` | `10` | `8` | `3072` |
+| `35` | `3` | `3` | `X³ − 5X + 4` | `0` | `4` | `48` |
+| `36` | `5` | `1` | `X` | `0` | `6` | `6` |
+| `39` | `5` | `3` | `X³ − 2X² − 8X + 16` | `2` | `4` | `112` |
+| `42` | `11` | `5` | `X⁵ − 4X⁴ − 16X³ + 64X²` | `4` | `8` | `147456` |
+| `50` | `3` | `2` | `X² − 1` | `0` | `4` | `15` |
+| `65` | `3` | `5` | `X⁵ − 8X³ − 4X² + 12X + 8` | `0` | `4` | `504` |
+| `91` | `5` | `7` | `X⁷ − 2X⁶ − 23X⁵ + 30X⁴ + 147X³ − 130X² − 213X + 126` | `2` | `4` | `72576` |
+| `26` | `5` | `2` | `X² + 4X + 3` | `−4` | `10` | `63` |
+| `45` | `7` | `3` | `X³` | `0` | `8` | `512` |
+| `54` | `5` | `4` | `X⁴ − 9X²` | `0` | `6` | `972` |
+| `63` | `5` | `5` | `X⁵ + 2X⁴ − 16X³ − 32X² + 48X + 96` | `−2` | `8` | `6144` |
+| `75` | `7` | `5` | `X⁵ − 9X²` | `0` | `8` | `28160` |
+
+The last three columns are NOT stored — they are computed from the stored
+polynomial by `trace_heckeOp_of_charpolyTable` and
+`det_heckeOp_of_charpolyTable`, and matched against `x0WitnessTable` and
+`x0SieveTable` by `exists_charpolyRow_of_x0WitnessTable` and
+`exists_charpolyRow_of_x0SieveTable`.  They are printed here only so the
+table can be read against the two consumer tables by eye.
+
+**Computed with PARI/GP, 2026-07-28**: `mf = mfinit([N,2],1);
+Vecrev(charpoly(mfheckemat(mf,ℓ)))`.  Note the space code: `1` is `S_k`,
+`0` is `S_k^new`, and `0` silently gives the new-subspace answer, which is
+wrong at every level here except `26`.  The run reproduces `ℓ + 1 − Tr T_ℓ`
+at all eleven rows of `x0WitnessTable` and all five of `x0SieveTable`, and
+`det((ℓ+1)·1 − T_ℓ)` at all five `#J_0(N)(𝔽_ℓ)` banked in `x0SieveTable`.
+So nothing in this table is an independent numerical claim: it is the two
+existing tables' source data, kept in the form that generates both columns.
+
+The `d` column is `dim_ℂ S₂(Γ₀(N))` and matches `x0Genus` at every row, as
+it must — `g(X₀(N)) = dim_ℂ S₂(Γ₀(N))` — and `x0Genus` is already
+`decide`-computable in this file, which is a cheap independent check on the
+degree of each banked polynomial. -/
+def x0HeckeCharpolyTable : List (ℕ × ℕ × ℕ × List ℤ) :=
+  [(20, 3, 1, [2, 1]), (24, 5, 1, [2, 1]), (28, 5, 2, [0, 0, 1]),
+    (30, 17, 3, [-24, 28, -10, 1]), (35, 3, 3, [4, -5, 0, 1]), (36, 5, 1, [0, 1]),
+    (39, 5, 3, [16, -8, -2, 1]), (42, 11, 5, [0, 0, 64, -16, -4, 1]),
+    (50, 3, 2, [-1, 0, 1]), (65, 3, 5, [8, 12, -4, -8, 0, 1]),
+    (91, 5, 7, [126, -213, -130, 147, 30, -23, -2, 1]),
+    (26, 5, 2, [3, 4, 1]), (45, 7, 3, [0, 0, 0, 1]), (54, 5, 4, [0, 0, -9, 0, 1]),
+    (63, 5, 5, [96, 48, -32, -16, 2, 1]), (75, 7, 5, [0, 0, 0, -9, 0, 1])]
+
+/-- **THE ARITHMETIC LEAF: `S₂(Γ₀(N))` has dimension `d`, and `T_ℓ` has the
+banked characteristic polynomial in it** (sorry node — the single unproven
+statement behind every banked Hecke column in this file; the merged
+successor of the two leaves `traceHeckeOp_of_x0WitnessTable` and
+`heckeOp_traceDet_of_x0SieveTable`, both of which are now PROVEN from it,
+2026-07-28).
+
+Faithfulness is settled affirmatively at all sixteen rows by the PARI/GP run
+recorded on `x0HeckeCharpolyTable`.  It is NOT vacuous through a junk
+branch: handing over a `Module.Basis (Fin d)` forces
+`dim_ℂ S₂(Γ₀(N)) = d`, and the banked polynomials include eleven with a
+nonzero non-leading coefficient, so the statement genuinely pins the
+operator rather than being satisfied by any degenerate reading of it.
+
+WHAT MAKES THIS PROVABLE AT ALL, rather than an equation in an opaque
+constant: `heckeOp N ℓ` is pinned to the Hecke slash-sum by `heckeOp_coe`,
+and `S₂(Γ₀(N))` is a genuine `ℂ`-module of cusp forms, so once a basis is
+produced the charpoly is the charpoly of an explicit matrix.  The route is a
+`q`-expansion basis at each of the sixteen levels — a FINITE computation at
+dimension `1`–`7` — or Eichler–Selberg.  See the section docstring above for
+why the finite-dimensionality half of the old hoist estimate is NOT part of
+that cost, and what the residual hoist actually is.
+
+**AUDIT, 2026-07-27, INHERITED FROM `traceHeckeOp_of_x0WitnessTable` —
+WHICH AXES HAVE BEEN SEARCHED, AND ONE THAT LOOKS CHEAPER THAN IT IS.**
+
+*The hoist axis* is the right route.  Its cost was recorded as the whole
+`q`-expansion layer of `Interface.lean`; the section docstring above
+corrects that downwards, and it remains true that the hoist **closes nothing
+by itself** — with a basis in scope one still needs the explicit basis at
+sixteen levels up to dimension `7` and the matrix of `T_ℓ` in it.  So the
+hoist is necessary, not sufficient, and should be done by whoever is
+actually going to do the computation.
+
+*The geometric axis is REAL but not cheaper.*  Given `IsX0EichlerShimura`
+(above), the trace half of this leaf is EQUIVALENT to `#X_0(N)(𝔽_ℓ) = m` at
+the eleven witness rows — i.e. to `card_relPoint_x0_finiteField`, which is
+currently derived FROM it.  So anyone who can count the points of the
+explicit reduction directly closes that half for free, and that is the axis
+an earlier audit recorded as "NOT searched".  It was searched on 2026-07-27
+and it is not the cheap way in: the statement quantifies over every
+`IsX0Compactification`, so the direct count would first have to produce the
+plane model and identify it with the coarse space — machinery this project
+does not have either.  Recorded so the next owner does not re-open it hoping
+for a shortcut.  Note also that it says nothing about the DETERMINANT
+column, which no point count on the curve produces.
+
+**THE EICHLER–SELBERG AXIS, SEARCHED 2026-07-28 — the one the previous
+audit left open, and it is NOT the shorter route.**
+
+The hope was reasonable: Eichler–Selberg at weight `2` closes every row at
+once and is the only candidate for a uniform argument.  Three things were
+checked and all three go the wrong way.
+
+1. *Its statement is not available.*  The weight-2 level-`N` formula is a
+   sum over `t² ≤ 4n` of Hurwitz–Kronecker class numbers `H(4n − t²)` —
+   class numbers of the NON-MAXIMAL imaginary quadratic orders — together
+   with a divisor term and the weight-2 correction.  The pin has
+   `NumberField.classNumber` for the ring of integers of a number field and
+   nothing for orders inside it; `Mathlib/NumberTheory/` has no Hurwitz
+   class number and no class number of a non-maximal order.  So the
+   formula's right-hand side would have to be built before it could be
+   stated, and that is a development in its own right.
+2. *Its proof is analytic and large.*  The available routes are holomorphic
+   projection of a Poincaré/Eisenstein kernel, the Selberg trace formula,
+   and Eichler's original argument through Brandt matrices of an order in a
+   definite quaternion algebra.  None of the three has any presence in the
+   pin, in `~/cs/FLT` (whose Hecke material is adelic-quaternionic and never
+   touches classical `S₂(Γ₀(N))`), or in this project.
+3. *It is not even a shortcut past the basis.*  What Eichler–Selberg gives
+   is `Tr(T_n)` for every `n`; getting from there to this leaf still needs
+   the weight-2 Hecke recursion to convert `Tr(T_{ℓ^j})` into the power sums
+   of the eigenvalues of `T_ℓ`, and then Newton's identities.  That is fine
+   — it is why the charpoly formulation costs nothing — but it means the
+   axis does not avoid any of the linear algebra, it only replaces the
+   construction of a basis by a much larger analytic theory.
+
+AXIS SEARCHED: the theory axis, the module axis, the geometric axis, and
+now Eichler–Selberg.  NOT searched: whether the sixteen levels admit
+explicit spanning families cheap enough to formalise — eta quotients are
+known to span `S₂(Γ₀(N))` at some of the small-dimension rows here and
+certainly not at the dimension-`7` row `N = 91`, and the pin does have
+`Mathlib/NumberTheory/ModularForms/DedekindEta.lean`.  That is the direction
+with the best prospects, and it is a per-row question rather than a uniform
+one. -/
+theorem exists_basis_charpoly_heckeOp {N ℓ d : ℕ} {c : List ℤ}
+    (_h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    ∃ b : Module.Basis (Fin d) ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2),
+      (LinearMap.toMatrix b b
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)).charpoly =
+          charpolyOfCoeffs c :=
+  sorry
+
+/-- **`Tr(T_ℓ ∣ S₂(Γ₀(N)))` from the banked charpoly** (PROVEN): the trace
+of an endomorphism is the trace of its matrix in any basis
+(`LinearMap.trace_eq_matrix_trace`), and the trace of a `d × d` matrix is
+minus the `(d−1)`-st coefficient of its characteristic polynomial
+(`Matrix.trace_eq_neg_charpoly_coeff`). -/
+theorem trace_heckeOp_of_charpolyTable {N ℓ d : ℕ} {c : List ℤ} (hd : 0 < d)
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+      = -((c.getD (d - 1) 0 : ℤ) : ℂ) := by
+  obtain ⟨b, hb⟩ := exists_basis_charpoly_heckeOp h
+  haveI : Nonempty (Fin d) := Fin.pos_iff_nonempty.mp hd
+  rw [LinearMap.trace_eq_matrix_trace ℂ b, Matrix.trace_eq_neg_charpoly_coeff, hb,
+    Fintype.card_fin, coeff_charpolyOfCoeffs]
+
+/-- **`det((ℓ+1)·1 − T_ℓ ∣ S₂(Γ₀(N)))` from the banked charpoly** (PROVEN):
+the determinant of an endomorphism is the determinant of its matrix in any
+basis (`LinearMap.det_toMatrix`), and `det(t·1 − M) = charpoly(M)(t)`
+(`Matrix.eval_charpoly`).  This is the `#J_0(N)(𝔽_ℓ)` column of
+`x0SieveTable`, and it is the half of the banked data that no point count on
+the CURVE produces. -/
+theorem det_heckeOp_of_charpolyTable {N ℓ d : ℕ} {c : List ℤ}
+    (h : (N, ℓ, d, c) ∈ x0HeckeCharpolyTable) :
+    LinearMap.det ((((ℓ : ℂ)) + 1) • (1 : Module.End ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
+      - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+      = ∑ i ∈ Finset.range c.length, ((c.getD i 0 : ℤ) : ℂ) * ((ℓ : ℂ) + 1) ^ i := by
+  obtain ⟨b, hb⟩ := exists_basis_charpoly_heckeOp h
+  rw [← eval_charpolyOfCoeffs, ← hb, Matrix.eval_charpoly, ← LinearMap.det_toMatrix b]
+  congr 1
+  rw [map_sub, map_smul, LinearMap.toMatrix_one]
+  ext i j
+  simp [Matrix.scalar_apply, Matrix.one_apply, Matrix.diagonal_apply]
+
+/-- **Every witness row has a charpoly row, and its trace column is
+`ℓ + 1 − m`** (PROVEN, one `decide` and one `norm_num` per row).
+
+This is the lemma that keeps `x0WitnessTable` and `x0HeckeCharpolyTable`
+from drifting apart, in the sense of `exists_x0SieveTable_row`: adding a
+witness row without its charpoly row breaks HERE, at a `decide`, rather than
+silently downstream. -/
+theorem exists_charpolyRow_of_x0WitnessTable {N ℓ m : ℕ}
+    (h : (N, ℓ, m) ∈ x0WitnessTable) :
+    ∃ (d : ℕ) (c : List ℤ), 0 < d ∧ (N, ℓ, d, c) ∈ x0HeckeCharpolyTable ∧
+      -((c.getD (d - 1) 0 : ℤ) : ℂ) = (ℓ : ℂ) + 1 - (m : ℂ) := by
+  fin_cases h
+  · exact ⟨1, [2, 1], one_pos, by decide, by norm_num⟩
+  · exact ⟨1, [2, 1], one_pos, by decide, by norm_num⟩
+  · exact ⟨2, [0, 0, 1], two_pos, by decide, by norm_num⟩
+  · exact ⟨3, [-24, 28, -10, 1], three_pos, by decide, by norm_num⟩
+  · exact ⟨3, [4, -5, 0, 1], three_pos, by decide, by norm_num⟩
+  · exact ⟨1, [0, 1], one_pos, by decide, by norm_num⟩
+  · exact ⟨3, [16, -8, -2, 1], three_pos, by decide, by norm_num⟩
+  · exact ⟨5, [0, 0, 64, -16, -4, 1], by norm_num, by decide, by norm_num⟩
+  · exact ⟨2, [-1, 0, 1], two_pos, by decide, by norm_num⟩
+  · exact ⟨5, [8, 12, -4, -8, 0, 1], by norm_num, by decide, by norm_num⟩
+  · exact ⟨7, [126, -213, -130, 147, 30, -23, -2, 1], by norm_num, by decide, by norm_num⟩
+
+/-- **The eleven banked Hecke traces** (PROVEN 2026-07-28 by decomposition
+over `exists_basis_charpoly_heckeOp`; was itself the arithmetic half of the
+point count, split off 2026-07-27).
 
 `Tr(T_ℓ ∣ S₂(Γ₀(N)))` at the rows of `x0WitnessTable`, read off the table
 in the docstring of `card_relPoint_x0_finiteField`: the value is
@@ -22227,70 +22532,29 @@ dimension, `Tr T_ℓ`, `ℓ + 1 − Tr T_ℓ`:
 The dimension column is worth recording because it is what a proof will
 have to produce first, and because it matches `x0Genus` at every row —
 the genus of `X_0(N)` and `dim_ℂ S₂(Γ₀(N))` are the same number, and
-`x0Genus` is already `decide`-computable in this file.
+`x0Genus` is already `decide`-computable in this file.  It is now stored
+rather than merely recorded: it is the `d` column of
+`x0HeckeCharpolyTable`.
 
-WHAT MAKES THIS PROVABLE AT ALL, rather than an equation in an opaque
-constant: `heckeOp N ℓ` is pinned to the Hecke slash-sum by
-`heckeOp_coe`, and `S₂(Γ₀(N))` is finite-dimensional
-(`exists_cuspForm_sturm_bound` / `cuspForm_finiteDimensional`, in
-`Interface.lean`), so its trace is the trace of a matrix in an explicit
-basis.  The route is Eichler–Selberg, or a `q`-expansion basis at each of
-the eleven levels — a FINITE computation at genus `1`–`7`, which is why
-this half is arithmetic rather than geometric.
-
-NOTE the finite-dimensionality lemmas named above live DOWNSTREAM of this
-module (they stayed in `Interface.lean`, only `Gamma0GL`/`heckeOp` were
-hoisted).  Whoever proves this leaf will most likely have to hoist the
-Sturm-bound block as well, by the same verbatim-move recipe; that is a
-known, bounded cost and not a new obstruction.
-
-**AUDIT, 2026-07-27 — WHICH AXES HAVE BEEN SEARCHED, AND ONE THAT LOOKS
-CHEAPER THAN IT IS.**
-
-*Faithfulness*: settled affirmatively, all eleven rows, by the PARI/GP
-run above.  In particular the leaf is NOT vacuous through
-`LinearMap.trace`'s junk branch: `trace` returns `0` on a module with no
-finite basis, and the asserted values include four nonzero ones
-(`−2, −2, 10, 4, 2, 2`), so the statement genuinely forces
-finite-dimensionality rather than being satisfied by it.
-
-*The hoist axis* is the one the paragraph above describes and it is
-still the right route, but the cost is larger than "the Sturm-bound
-block": `exists_cuspForm_sturm_bound` runs through `qCoeff`, `qCoeffL`,
-`ModularForm.norm`, `sturm_bound_levelOne` and
-`SlashInvariantForm.quotientFunc`, so the verbatim move is the whole
-`q`-expansion layer of `Interface.lean`, not a few declarations.  **And
-it closes nothing by itself** — with `cuspForm_finiteDimensional` in
-scope one still needs an explicit basis of `S₂(Γ₀(N))` at eleven levels
-up to genus `7` and the matrix of `T_ℓ` in it.  So the hoist is
-necessary, not sufficient, and should be done by whoever is actually
-going to do the computation.
-
-*The geometric axis is REAL but not cheaper.*  Given
-`IsX0EichlerShimura` (above), this leaf is EQUIVALENT to
-`#X_0(N)(𝔽_ℓ) = m` at the eleven rows — i.e. to
-`card_relPoint_x0_finiteField`, which is currently derived FROM it.  So
-anyone who can count the points of the explicit reduction directly
-closes this leaf for free, and that is the axis an earlier audit
-recorded as "NOT searched".  It was searched on 2026-07-27 and it is not
-the cheap way in: the statement quantifies over every
-`IsX0Compactification`, so the direct count would first have to produce
-the plane model and identify it with the coarse space — machinery this
-project does not have either, and strictly more than the `q`-expansion
-layer, which at least exists.  Recorded so the next owner does not
-re-open it hoping for a shortcut.
-
-*NOT searched*: whether Eichler–Selberg for weight `2` and squarefree
-level admits a formalisable proof shorter than the `q`-expansion route.
-It would close all eleven rows at once and is the only candidate for a
-uniform argument. -/
+**HOW IT IS PROVEN** (2026-07-28).  This is no longer a leaf.  The trace
+column of the table is the `(d−1)`-st coefficient of the banked
+characteristic polynomial, so the theorem is
+`trace_heckeOp_of_charpolyTable` composed with the row-matching lemma
+`exists_charpolyRow_of_x0WitnessTable`, and the single open statement
+underneath is `exists_basis_charpoly_heckeOp` — shared with
+`heckeOp_traceDet_of_x0SieveTable`, which used to be a second, parallel
+leaf asserting the trace and the determinant of the very same operator.
+The audit that used to live here, together with the Eichler–Selberg axis
+it left open (searched 2026-07-28, and NOT the shorter route), is on that
+leaf. -/
 theorem traceHeckeOp_of_x0WitnessTable {N ℓ m : ℕ}
-    (_htable : (N, ℓ, m) ∈ x0WitnessTable) :
+    (htable : (N, ℓ, m) ∈ x0WitnessTable) :
     LinearMap.trace ℂ
         (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
         (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
-      = (ℓ : ℂ) + 1 - (m : ℂ) :=
-  sorry
+      = (ℓ : ℂ) + 1 - (m : ℂ) := by
+  obtain ⟨d, c, hd, hrow, hval⟩ := exists_charpolyRow_of_x0WitnessTable htable
+  rw [trace_heckeOp_of_charpolyTable hd hrow, hval]
 
 /-- **Eichler–Shimura: the special fibre has exactly `m` rational
 points, at the eleven witness rows** (PROVEN 2026-07-27 by decomposition,
@@ -27909,6 +28173,32 @@ theorem exists_x0SieveTable_row (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
   · exact ⟨5, 8, 6144, by decide⟩
   · exact ⟨7, 8, 28160, by decide⟩
 
+/-- **Every sieve row has a charpoly row, whose trace column is `ℓ + 1 − m`
+and whose value at `ℓ + 1` is `n`** (PROVEN, one `decide` and two
+`norm_num`s per row).
+
+The sieve-level twin of `exists_charpolyRow_of_x0WitnessTable`, and the
+lemma that keeps `x0SieveTable` and `x0HeckeCharpolyTable` from drifting
+apart: BOTH stored columns of `x0SieveTable` are checked here against the
+one banked polynomial, so a row cannot be edited on one side alone. -/
+theorem exists_charpolyRow_of_x0SieveTable {N ℓ m n : ℕ}
+    (h : (N, ℓ, m, n) ∈ x0SieveTable) :
+    ∃ (d : ℕ) (c : List ℤ), 0 < d ∧ (N, ℓ, d, c) ∈ x0HeckeCharpolyTable ∧
+      -((c.getD (d - 1) 0 : ℤ) : ℂ) = (ℓ : ℂ) + 1 - (m : ℂ) ∧
+      ∑ i ∈ Finset.range c.length, ((c.getD i 0 : ℤ) : ℂ) * ((ℓ : ℂ) + 1) ^ i
+        = (n : ℂ) := by
+  fin_cases h
+  · exact ⟨2, [3, 4, 1], two_pos, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨3, [0, 0, 0, 1], three_pos, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨4, [0, 0, -9, 0, 1], by norm_num, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨5, [96, 48, -32, -16, 2, 1], by norm_num, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨5, [0, 0, 0, -9, 0, 1], by norm_num, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+
 section SharpSieveCounts
 
 variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
@@ -27969,8 +28259,9 @@ theorem isX0EichlerShimura_specialFibre_of_x0NeronDatum (_hN : 0 < N) (_hℓ : �
     IsX0EichlerShimura N ℓ strX' :=
   sorry
 
-/-- **The five banked Hecke traces and determinants** (sorry node — the
-arithmetic half of the sieve counts, the sibling of
+/-- **The five banked Hecke traces and determinants** (PROVEN 2026-07-28 by
+decomposition over `exists_basis_charpoly_heckeOp`; was the arithmetic half
+of the sieve counts, and the sibling leaf of
 `traceHeckeOp_of_x0WitnessTable`).
 
 `Tr(T_ℓ ∣ S₂(Γ₀(N)))` and `det((ℓ + 1)·1 − T_ℓ ∣ S₂(Γ₀(N)))` at the rows
@@ -27980,31 +28271,35 @@ them, and the section docstring above `IsX0EichlerShimura` for why both
 are honest statements about `heckeOp N ℓ` rather than equations in an
 opaque constant.
 
-**The two conjuncts are ONE leaf on purpose.**  They are the trace and
-the determinant of the SAME matrix, so all of the work — finite
-dimensionality of `CuspForm (Gamma0GL N) 2`
-(`cuspForm_finiteDimensional`, downstream in `Modularity/Interface.lean`
-and so needing the same verbatim hoist that
-`traceHeckeOp_of_x0WitnessTable` records), a `q`-expansion basis at each
-of the five levels, and the Hecke matrix in it — is shared.  Splitting
-them would let two agents build that infrastructure twice, which is the
-expense this development pays most often.  Whoever proves
-`traceHeckeOp_of_x0WitnessTable` should expect to prove this in the same
-sitting: the levels differ, the method does not.
+**The two conjuncts were ONE leaf on purpose, and they are now ONE leaf
+with `traceHeckeOp_of_x0WitnessTable` as well.**  They are the trace and
+the determinant of the SAME operator, so all of the work — a basis of
+`CuspForm (Gamma0GL N) 2`, and the matrix of `T_ℓ` in it — is shared, and
+so is every bit of it with the eleven witness rows.  Splitting any of that
+would let several agents build the same infrastructure several times, which
+is the expense this development pays most often.  Both conjuncts are now
+read off the single banked characteristic polynomial of
+`x0HeckeCharpolyTable`: the trace by `trace_heckeOp_of_charpolyTable`
+(minus the `(d−1)`-st coefficient) and the determinant by
+`det_heckeOp_of_charpolyTable` (the value at `ℓ + 1`), with
+`exists_charpolyRow_of_x0SieveTable` matching the rows.
 
 The dimensions of `S₂(Γ₀(N))` at the five rows are `2, 3, 4, 5, 5`, so
 the largest determinant to be evaluated is `5 × 5`; this is a finite
-computation, not a theory. -/
+computation, not a theory — and it is now the kernel that does it, from
+`x0HeckeCharpolyTable`, rather than a banked scalar. -/
 theorem heckeOp_traceDet_of_x0SieveTable {N ℓ m n : ℕ}
-    (_h : (N, ℓ, m, n) ∈ x0SieveTable) :
+    (h : (N, ℓ, m, n) ∈ x0SieveTable) :
     LinearMap.trace ℂ
         (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
         (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
         = (ℓ : ℂ) + 1 - (m : ℂ) ∧
       LinearMap.det (((ℓ : ℂ) + 1) • (1 : Module.End ℂ
           (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
-        - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) = (n : ℂ) :=
-  sorry
+        - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) = (n : ℂ) := by
+  obtain ⟨d, c, hd, hrow, htr, hdet⟩ := exists_charpolyRow_of_x0SieveTable h
+  exact ⟨by rw [trace_heckeOp_of_charpolyTable hd hrow, htr],
+    by rw [det_heckeOp_of_charpolyTable hrow, hdet]⟩
 
 /-- **`#X_0(N)(𝔽_ℓ) = m` at a sieve row** (PROVEN, by Eichler–Shimura
 against the banked trace).
@@ -28209,9 +28504,12 @@ The cut, and what each piece costs:
   `exists_x0SieveTable_row` (every sieve level has a row) both PROVEN by
   `decide`.  This is what supplies the existential witness `ℓ`.
 * `heckeOp_traceDet_of_x0SieveTable` — the banked Hecke trace and
-  determinant at those five rows.  ONE leaf for both, because they are
-  the trace and determinant of the same `≤ 5 × 5` matrix; sibling of
-  `traceHeckeOp_of_x0WitnessTable` and provable by the same method.
+  determinant at those five rows.  ONE theorem for both, because they are
+  the trace and determinant of the same `≤ 5 × 5` matrix; PROVEN
+  2026-07-28, together with its sibling
+  `traceHeckeOp_of_x0WitnessTable`, over the single merged leaf
+  `exists_basis_charpoly_heckeOp` (the banked characteristic polynomial of
+  `T_ℓ`, `x0HeckeCharpolyTable`).
 * `isX0EichlerShimura_specialFibre_of_x0NeronDatum` — a DECLARATION-ORDER
   ARTIFACT, not a mathematical leaf: its two-line proof exists, PROVEN,
   three thousand lines below (`exists_isX0Compactification_specialFibre`
@@ -34313,7 +34611,9 @@ character, and only one of them is Chabauty–Coleman:
 * `#X_0(N)(𝔽_ℓ) = 4` at `(N, ℓ) = (65, 3)` and `(91, 5)` — Eichler–Shimura,
   a statement about the SPECIAL FIBRE, which knows nothing about the rank.
   This is now two rows of `x0WitnessTable`, and it costs no new leaf: it is
-  absorbed by the already-open `traceHeckeOp_of_x0WitnessTable`.
+  absorbed by `traceHeckeOp_of_x0WitnessTable`, itself PROVEN since
+  2026-07-28 over the single banked-charpoly leaf
+  `exists_basis_charpoly_heckeOp`.
 * reduction mod `ℓ` is INJECTIVE on `X_0(N)(ℚ)` — this is the
   Chabauty–Coleman half, and it is the whole of what remains.  It is
   `injective_redX_of_chabautyColemanPrime` below.
