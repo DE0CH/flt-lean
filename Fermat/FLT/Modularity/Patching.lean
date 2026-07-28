@@ -7435,6 +7435,59 @@ two factors; swap `e₂` if necessary and glue the two idempotents into one over
 **This leaf is FALSE without the pinning** — see the section preamble's
 `k[u,v]/(u,v)²` counterexample.
 
+# ROUTE AUDIT, 2026-07-28 (flt-lean-152).  THE PARAGRAPH ABOVE IS WRONG ABOUT
+# THE TAME CLAUSE, AND THE STATEMENT IS PROBABLY TOO STRONG.  Both are checkable
+# in one grep each; do not start proving until they are resolved.
+
+**(1) "The four base-level clauses glue exactly as at the base level" is FALSE
+at `p = 3`.**  The base-level `ℚ` gluing is
+`HardlyRamified/Deformation.lean`'s `isHardlyRamified_of_fibreProduct`, and it
+carries `hℓ5 : 5 ≤ ℓ`, which it spends entirely on
+`isTameAtTwo_of_fibreProduct`.  That hypothesis is not a convenience: the
+`ℓ = 3` case was a separate leaf `isTameAtTwo_of_fibreProduct_three` and it was
+**REFUTED** on 2026-07-26 with an explicit counterexample over `ℚ(∛2, μ₃)` —
+`A₀ = 𝔽₃`, `A₁ = 𝔽₃[ε₁]`, `A₂ = 𝔽₃[ε₂]`, `B = 𝔽₃[ε₁,ε₂]/(ε₁,ε₂)²`,
+`ρ(g) = !![1, ε₂·c'(g); ε₁·c(g), χ₃(g)]` with `c` the Kummer cocycle of `2` and
+`c' = χ₃·c` — recorded in the block comment above that theorem.  **This leaf
+carries only `Odd p`, not `5 ≤ p`** (its Hilbert twin
+`isHilbertAuxFibreProductClause` DOES carry `hℓ5`).
+
+That refutation does **not** refute this leaf: the counterexample's residual
+representation is the reducible `!![1,0;0,χ₃]`, so it fails `hπB` — trace
+agreement with the IRREDUCIBLE `ρbar` away from a finite `S` forces, through
+`exists_conj_of_charFrob_eq_away` (PROVEN above; note `det` is pinned, so
+`coeff 1` plus the determinant IS the whole monic degree-`2` charpoly, by
+`monic_natDegree_two_ext` and `coeff_zero_charFrob_eq_of_det_eq`), the residual
+representation of `ρ` to be a CONJUGATE of `ρbar`, hence irreducible.
+
+**So the pinning is spent on the TAME clause too, not only on the split-torus
+clause.**  Any successor must either (a) thread `5 ≤ p` into this statement, as
+the Hilbert twin does, or (b) prove the `p = 3` tame gluing FROM the pinning.
+Route (b) is genuinely new mathematics — it is exactly the statement that was
+refuted without the pinning — so a cut that hands the tame clause to a leaf
+carrying only `Odd p` and NOT the pinning reproduces a refuted statement.
+
+**(2) `Function.Injective` where every proven sibling has `Topology.IsEmbedding`
+— likely a transcription slip that makes this leaf too strong, possibly false.**
+`isFlatAt_of_fibreProduct` and `isTameAtTwo_of_fibreProduct` both take
+`hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b)`, and so does the Hilbert
+twin's `IsHilbertAuxFibreProductClause`; this clause asks only for
+`Function.Injective`.  That is not cosmetic: the flatness proof's very first
+step is `hemb.toIsInducing.isOpen_iff`, i.e. it needs the open ideals of `B` to
+come from the factors.  With injectivity alone the topologies of `B`, `A₁`, `A₂`
+are unrelated — none of them is assumed discrete, only `Finite` — so `B` may
+carry the discrete topology (every ideal open, `isFlat` a real constraint at
+every level) while `A₁`, `A₂` carry coarse ring topologies on which `isFlat` is
+nearly vacuous.  **THE CHECK that would settle it**: exhibit such a triple with
+`h₁`, `h₂` and `hπB` holding and `ρ.IsFlatAt` failing; the other four clauses of
+`IsRaisedLevelHardlyRamified` are topology-independent and so are inherited
+unchanged, which is why only `isFlat` has to be broken.  The repair, if it is a
+slip, is to align the definition with its Hilbert twin — the consumer builds `B`
+as a literal fibre product with the subspace topology, so it can supply the
+embedding for free.  **This changes a hypothesis of
+`exists_isWeaklyUniversal_auxDeformationDatum_of_clauses`, a different owner's
+leaf, so it is a cut-level repair and not to be made unilaterally.**
+
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above; in particular a
 proof ending in `exfalso` against `hirr` is the circular discharge and must be
 rejected.
@@ -7453,6 +7506,176 @@ theorem isAuxFibreProductClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p)
     IsAuxFibreProductClause.{a, uK, uW} hpodd Q ρbar :=
   sorry
 
+/-- **`inertiaToGlobalHom` applied to an inertia element is the decomposition
+map applied to its underlying Galois element** (PROVEN 2026-07-28, `rfl`).
+
+Carried as a named lemma rather than left to `rfl` at the use site because
+`Field.absoluteGaloisGroup.map` is not exposed through the module boundary at
+`IsAlgClosed.lift`, so the definitional unfolding that closes this goal in one
+step does NOT happen when it is buried inside an application of a
+representation.  Consumed by
+`finite_setOf_galoisRep_isUnramifiedAt_outside` below, which needs to move
+between `inertiaOutsideSubgroups`' spelling of "inertia lands in `N`" and
+`GaloisRep.toLocal`'s. -/
+lemma inertiaToGlobalHom_apply
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    (σ : ↥(localInertiaGroup v)) :
+    inertiaToGlobalHom v σ =
+      Field.absoluteGaloisGroup.map
+        (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v))
+        (σ : Field.absoluteGaloisGroup
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ v)) :=
+  rfl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finiteness of continuous representations on `A²` unramified outside an
+ARBITRARY finite set `T` of rational primes** (PROVEN 2026-07-28 — the
+representations-to-subgroups half of raised-level Hermite–Minkowski over `ℚ`).
+
+This is `HermiteMinkowski.lean`'s `finite_setOf_galoisRep_isUnramifiedAt` with
+its hard-wired bad set `{2, p}` replaced by an arbitrary `T : Finset ℕ`, and the
+proof is that one verbatim over this module's own
+`finite_inertiaOutsideSubgroups` (the matching generalisation of
+`finite_setOf_subgroup_inertiaAt_le`, PROVEN above) in place of the `{2, p}`
+subgroup finiteness.  The one non-mechanical line is the bridge
+`inertiaToGlobalHom_apply` immediately above, plus a `Subsingleton.elim` between
+the two `Algebra ℚ (adicCompletion ℚ v)` instances — the same `convert … using 4`
+step the `{2, p}` original performs.
+
+The endomorphism monoid `E = End_A(A²)` is finite and discrete, so the kernel of
+a representation is an open normal subgroup whose quotient injects into `E`
+(index at most `#E`), containing the global inertia away from `T`; the finitely
+many candidate kernels each carry finitely many representations, a
+representation being determined by the function `Γ ℚ ⧸ N → E` it induces on
+`Quotient.out` representatives.
+
+Both-ways audit: a plain classical finiteness with no representation-theoretic
+hypothesis; non-vacuous already at `T = ∅`, where it says there are finitely
+many everywhere-unramified `A²`-representations of `Γ ℚ` (by Minkowski, only the
+trivial one). -/
+theorem finite_setOf_galoisRep_isUnramifiedAt_outside.{uA} (T : Finset ℕ)
+    {A : Type uA} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [DiscreteTopology A] [Finite A] :
+    {ρ : GaloisRep ℚ A (Fin 2 → A) |
+      ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+        ρ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat}.Finite := by
+  classical
+  haveI hfinE : Finite (Module.End A (Fin 2 → A)) :=
+    Finite.of_injective
+      (fun f => (f : (Fin 2 → A) → (Fin 2 → A))) DFunLike.coe_injective
+  let kerOf : GaloisRep ℚ A (Fin 2 → A) →
+      Subgroup (Field.absoluteGaloisGroup ℚ) := fun ρ =>
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a b ha hb
+        show ρ (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  have hmem : ∀ (ρ : GaloisRep ℚ A (Fin 2 → A))
+      (g : Field.absoluteGaloisGroup ℚ), g ∈ kerOf ρ ↔ ρ g = 1 :=
+    fun _ _ => Iff.rfl
+  have hout : ∀ (ρ : GaloisRep ℚ A (Fin 2 → A))
+      (N : Subgroup (Field.absoluteGaloisGroup ℚ)), kerOf ρ = N →
+      ∀ g : Field.absoluteGaloisGroup ℚ,
+        ρ (QuotientGroup.mk (s := N) g).out = ρ g := by
+    intro ρ N hN g
+    subst hN
+    have h1 : ((QuotientGroup.mk (s := kerOf ρ) g).out)⁻¹ * g ∈ kerOf ρ :=
+      QuotientGroup.eq.mp (QuotientGroup.out_eq' _)
+    have h2 : ρ (((QuotientGroup.mk (s := kerOf ρ) g).out)⁻¹ * g) = 1 :=
+      (hmem ρ _).mp h1
+    have h3 : ρ (QuotientGroup.mk (s := kerOf ρ) g).out *
+        ρ (((QuotientGroup.mk (s := kerOf ρ) g).out)⁻¹ * g) = ρ g := by
+      rw [← map_mul, mul_inv_cancel_left]
+    rw [h2, mul_one] at h3
+    exact h3
+  have hinj : ∀ ρ : GaloisRep ℚ A (Fin 2 → A),
+      Function.Injective
+        (fun x : Field.absoluteGaloisGroup ℚ ⧸ kerOf ρ => ρ x.out) := by
+    intro ρ x y hxy
+    obtain ⟨a, rfl⟩ := QuotientGroup.mk_surjective x
+    obtain ⟨b, rfl⟩ := QuotientGroup.mk_surjective y
+    have hxy' : ρ (QuotientGroup.mk (s := kerOf ρ) a).out =
+        ρ (QuotientGroup.mk (s := kerOf ρ) b).out := hxy
+    rw [hout ρ (kerOf ρ) rfl, hout ρ (kerOf ρ) rfl] at hxy'
+    refine (QuotientGroup.eq).mpr ((hmem ρ _).mpr ?_)
+    have e1 : ρ (a⁻¹ * b) = ρ a⁻¹ * ρ b := map_mul ρ _ _
+    rw [e1, ← hxy', ← map_mul, inv_mul_cancel, map_one]
+  have hopenker : ∀ ρ : GaloisRep ℚ A (Fin 2 → A),
+      IsOpen ((kerOf ρ : Subgroup (Field.absoluteGaloisGroup ℚ)) :
+        Set (Field.absoluteGaloisGroup ℚ)) := by
+    intro ρ
+    letI := moduleTopology A (Module.End A (Fin 2 → A))
+    haveI : Module.Finite A (Module.End A (Fin 2 → A)) :=
+      Module.Finite.of_finite
+    haveI : DiscreteTopology (Module.End A (Fin 2 → A)) :=
+      discreteTopology_moduleTopology _ _
+    have hcont : Continuous fun g : Field.absoluteGaloisGroup ℚ => ρ g :=
+      ContinuousMonoidHom.continuous_toFun ρ
+    exact (isOpen_discrete
+      ({1} : Set (Module.End A (Fin 2 → A)))).preimage hcont
+  have hnormal : ∀ ρ : GaloisRep ℚ A (Fin 2 → A), (kerOf ρ).Normal := by
+    intro ρ
+    refine ⟨fun x hx g => ?_⟩
+    show ρ (g * x * g⁻¹) = 1
+    rw [map_mul, map_mul, (hx : ρ x = 1), mul_one, ← map_mul,
+      mul_inv_cancel, map_one]
+  have hfinquot : ∀ ρ : GaloisRep ℚ A (Fin 2 → A),
+      Finite (Field.absoluteGaloisGroup ℚ ⧸ kerOf ρ) :=
+    fun ρ => Finite.of_injective _ (hinj ρ)
+  have hidx : ∀ ρ : GaloisRep ℚ A (Fin 2 → A),
+      (kerOf ρ).index ≤ Nat.card (Module.End A (Fin 2 → A)) := by
+    intro ρ
+    rw [Subgroup.index_eq_card]
+    exact Nat.card_le_card_of_injective _ (hinj ρ)
+  have hinertker : ∀ ρ : GaloisRep ℚ A (Fin 2 → A),
+      (∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+        ρ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat) →
+      ∀ (q : ℕ) (hq : q.Prime), q ∉ T →
+        ∀ σ : ↥(localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat),
+          inertiaToGlobalHom hq.toHeightOneSpectrumRingOfIntegersRat σ ∈
+            kerOf ρ := by
+    intro ρ hρ q hq hqT σ
+    have h1 : (ρ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat) σ.1 = 1 :=
+      (hρ q hq hqT).localInertiaGroup_le σ.2
+    rw [GaloisRep.toLocal_apply] at h1
+    rw [inertiaToGlobalHom_apply]
+    refine (hmem ρ _).mpr ?_
+    convert h1 using 4
+    exact Subsingleton.elim _ _
+  have h𝒩fin := finite_inertiaOutsideSubgroups T
+    (Nat.card (Module.End A (Fin 2 → A)))
+  refine Set.Finite.subset (h𝒩fin.biUnion
+    (t := fun N => {ρ : GaloisRep ℚ A (Fin 2 → A) | kerOf ρ = N})
+    fun N hN => ?_) ?_
+  · haveI : N.FiniteIndex := hN.2.2.1
+    haveI : Finite (Field.absoluteGaloisGroup ℚ ⧸ N) :=
+      Subgroup.finite_quotient_of_finiteIndex
+    refine Set.Finite.of_finite_image (f := fun ρ =>
+      fun x : Field.absoluteGaloisGroup ℚ ⧸ N => ρ x.out)
+      (Set.toFinite _) ?_
+    intro ρ₁ hρ₁ ρ₂ hρ₂ hF
+    have key : ∀ g, ρ₁ g = ρ₂ g := by
+      intro g
+      have e1 := hout ρ₁ N hρ₁ g
+      have e2 := hout ρ₂ N hρ₂ g
+      have e3 : ρ₁ (QuotientGroup.mk (s := N) g).out =
+          ρ₂ (QuotientGroup.mk (s := N) g).out :=
+        congrFun hF (QuotientGroup.mk (s := N) g)
+      rw [← e1, e3, e2]
+    exact GaloisRep.ext key
+  · intro ρ hρ
+    haveI := hfinquot ρ
+    exact Set.mem_biUnion
+      ⟨hnormal ρ, hopenker ρ, Subgroup.finiteIndex_of_finite_quotient,
+        hidx ρ, hinertker ρ hρ⟩ rfl
+
 set_option linter.checkUnivs false in
 /-- **The RAISED-LEVEL finiteness clause** (sorry node, LEAF A2′-2b of the
 2026-07-28 clause cut).
@@ -7468,10 +7691,32 @@ every step goes through unchanged.  This is a mirror of proven material rather
 than new mathematics, and it is stated as one leaf because the steps are
 mechanical and share one binder list.
 
-CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above. -/
+**DISCHARGED 2026-07-28.**  The mirror turned out to cost ONE new declaration,
+not four: `finite_inertiaOutsideSubgroups` above (PROVEN 2026-07-28 for the
+unrelated `finite_h1TwistUnramified` cut) is ALREADY the arbitrary-bad-set
+generalisation of `HermiteMinkowski.lean`'s `finite_setOf_subgroup_inertiaAt_le`
+— it takes any `T : Finset ℕ` — so both the intermediate-field step and the
+subgroup step were already available for the enlarged bad set.  Only the
+representations-to-subgroups step had to be re-run, and that is
+`finite_setOf_galoisRep_isUnramifiedAt_outside` immediately above.
+
+Note the enlarged bad set is `insert 2 (insert p Q)`, taken directly; no
+disjointness of `Q` from `{2, p}` is needed, so `hQ` is NOT consumed here and
+this clause carries no `ρbar`.  (The Hilbert twin
+`isHilbertAuxFiniteFramesClause` needed three mirrored declarations because
+`HilbertModularity.lean` had no `T`-general subgroup finiteness to reuse.)
+
+CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above — and vacuously
+satisfied here, since the proof never touches `ρbar`, `hirr` or the
+odd-prime dichotomy. -/
 theorem isAuxFiniteFramesClause.{a} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
-    (Q : Finset ℕ) : IsAuxFiniteFramesClause.{a} hpodd Q :=
-  sorry
+    (Q : Finset ℕ) : IsAuxFiniteFramesClause.{a} hpodd Q := by
+  intro A _ _ _ _ _ _ _
+  refine (finite_setOf_galoisRep_isUnramifiedAt_outside
+    (insert 2 (insert p Q)) (A := A)).subset ?_
+  intro ρ hρ q hq hqT
+  simp only [Finset.mem_insert, not_or] at hqT
+  exact hρ.isUnramified q hq hqT.2.2 hqT.1 hqT.2.1
 
 set_option linter.checkUnivs false in
 /-- **The RAISED-LEVEL pro-limit clause** (sorry node, LEAF A2′-2c of the
@@ -7484,6 +7729,39 @@ each finite level unique once the residual eigenvalue attached to `χ` is fixed,
 so the levels form a compatible system, and adic completeness assembles it into
 a decomposition over `R`.  See the section preamble, and
 `IsAuxProLimitClause`'s docstring for the alternative cofiltered-system route.
+
+# ROUTE AUDIT, 2026-07-28 (flt-lean-152).  THE ROUTE IS AVAILABLE — unlike the
+# fibre-product clause, whose audit records two obstructions.  Checked claims:
+
+* the base-level `ℚ` limit passage is
+  `HardlyRamified/Deformation.lean`'s `isHardlyRamified_of_forall_isOpen_quotient`
+  (PROVEN), and it carries **no `5 ≤ ℓ`** — only the ambient `hℓOdd`.  So the
+  `p = 3` refutation that blocks the fibre-product clause's tame half (see its
+  ROUTE AUDIT) does NOT apply here: the tame limit passage
+  `isTameAtTwo_of_forall_isOpen_quotient` is proven for every odd `ℓ`;
+* it carries no topological hypothesis relating `R` to its quotients beyond
+  `hadic`/`hcomplete`, so the `Topology.IsEmbedding` gap flagged on the
+  fibre-product clause does not arise either;
+* `Deformation.lean` is reachable from this module (its `decompHom` is used in
+  `inertiaToGlobalHom`'s SIGNATURE above), so no import change is needed.
+
+The one impedance mismatch is that the base-level statement is framed —
+`FramedGaloisRep ℚ R (Fin 2)` and `pushforwardFrame` — while this clause is
+stated for `ρ : GaloisRep ℚ R (Fin 2 → R)` and `ρ.baseChange (R ⧸ I)`.  The
+bridge is the one the Hilbert twin uses: `pushforwardFrame ψ hψ ρ` is by
+definition `(ρ.baseChange A).conj (TensorProduct.piScalarRight R A A (Fin 2))`,
+and `isRaisedLevelHardlyRamified_conj` (PROVEN above) moves the raised-level
+predicate across it; `baseChange_conj_apply` and
+`baseChange_baseChange_conj_cancel` above are the corresponding dictionary.
+
+So the expected shape of the discharge is the Hilbert twin's, one for one:
+transcribe `isHardlyRamified_of_forall_isOpen_quotient`'s proof with
+`IsRaisedLevelHardlyRamified hpodd Q` in place of `IsHardlyRamified hpodd`
+(i.e. `intro q hqQ` in place of `intro q` in the unramifiedness goal, the extra
+`q ∉ Q` being discarded there), and cut the ONE genuinely new clause — the
+split torus at `q ∈ Q`, where `hQ` and the pinning `(πR, S, hπR)` are spent —
+onto its own leaf, mirroring
+`isHilbertSplitTorusAt_of_forall_isOpen_quotient`.
 
 CIRCULARITY GUARD: as for `exists_auxDeformationDatum` above. -/
 theorem isAuxProLimitClause.{a, uK, uW} {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
