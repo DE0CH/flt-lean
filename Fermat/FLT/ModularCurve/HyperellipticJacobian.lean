@@ -1703,8 +1703,11 @@ points at infinity are the rational points `(u, w) = (0, ±1)`, the sign being t
 `pt (Sum.inr s)`, so again `O_v` dominates the localisation and the content is equality.
 
 Unlike the affine leaf this one is NOT expected to need `hsep`: the chart at infinity is
-smooth for every monic sextic, its Jacobian at `(0, ±1)` being `(∓c₅, 2)` — the leading
-coefficient `1` is a square, which is the whole reason `Pt` has a `Bool` summand at all.
+smooth at `(0, ±1)` for every monic sextic.  Writing `G(u, w) = w² − f*(u)`, the Jacobian
+there is `(−c₅, ±2)`, whose second entry is nonzero whenever `2 ≠ 0` — and `2 = 0` is
+vacuous here for the reason recorded on `not_isRationalGenerator`, that no `PlaceData`
+exists in characteristic `2`.  That the two points are rational at all is the leading
+coefficient `1` being a square, which is the whole reason `Pt` has a `Bool` summand.
 The hypothesis is carried because every consumer has it and a weaker leaf is an easier one;
 a proof that does not use it should underscore it. -/
 theorem exists_localDenom_infinite {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {K : Type} [Field K]
@@ -1996,6 +1999,19 @@ square, and over a PERFECT `K` the field `F = K(xx)(√f)` is **rational**: writ
 
 Concretely, over a perfect `K` of characteristic `2` the pole of `xx` in `F = K(u)` has
 `ord xx = ord (u²) = -2`, so `ord_pt_infinite` is already unsatisfiable on its own.
+
+**ROUTE NOTE 2026-07-28: the first step of the pencil argument IS in mathlib at this pin.**
+`RatFunc.finrank_eq_max_natDegree` in `Mathlib/FieldTheory/RatFunc/IntermediateField.lean`
+says `[K⟮X⟯ : K⟮φ⟯] = max φ.num.natDegree φ.denom.natDegree` — exactly the step
+"`max (deg A) (deg B) = [K(t) : K(xx)]`" that the sketch above uses to pin the pencil to
+binary QUADRATICS.  The same file supplies `RatFunc.transcendental_of_ne_C`,
+`RatFunc.adjoin_X` and the minimal polynomial `RatFunc.minpolyX`, so the algebra of
+`K(t) ⊇ K(A/B)` need not be rebuilt.  What is NOT there, and is the real work of this leaf:
+transporting `IsRationalGenerator t` into an isomorphism `F ≃ₐ[K] RatFunc K`, computing
+`[F : K(xx)] = 2` from `eqn` and `gen`, and the pencil count itself (a product of pairwise
+coprime binary quadratics is a square only if each factor is, and at most two members of a
+pencil of binary quadratics are singular).  Checked by `grep` on 2026-07-28; nothing above
+claims otherwise, this is an addition rather than a correction.
 
 The same remark applies to `finrank_residue_pt_eq_one`,
 `isRationalGenerator_of_divisor_eq_sub_single` and hence to `sub_single_pt_notMem_princ`
