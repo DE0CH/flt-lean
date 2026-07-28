@@ -28890,9 +28890,227 @@ theorem exists_modularHeckeAction (N : ℕ)
   choose T T_comp T_add T_pin using key
   exact ⟨T, T_comp, T_add, fun ℓ hℓ hℓN => T_pin ℓ hℓ hℓN⟩
 
-/-- **THE ISOTYPIC DECOMPOSITION, GIVEN THE HECKE ACTION** (sorry leaf, new
-2026-07-28) — the second half of the cut of
-`exists_heckeIsotypicDecomposition` below, and the one carrying the
+/-- **AN `a`-ISOTYPIC ABELIAN QUOTIENT OF `J₀(N)`** (new 2026-07-28) — one
+factor of the Eichler–Shimura decomposition, packaged on its own so that
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` can be cut along
+"BUILD one factor" / "ASSEMBLE the factors".
+
+Informally this is Shimura's `A_f`: the optimal quotient of `J₀(N)` on which
+the anemic Hecke algebra acts through the eigenvalue system `a`.  The fields
+are exactly the per-index fields of `IsHeckeIsotypicDecomposition` — `A`,
+`astr`, `abA`, `u`, `u_comp`, `u_add`, `u_surj`, `S`, `S_comp`, `S_add`,
+`equivariant`, `integral`, `isotypic` — read at a single index, plus one that
+has no analogue there and is the reason this structure is not junk.
+
+**`nontriv` IS LOAD-BEARING, AND IT IS WHAT THE PER-INDEX PACKAGING COSTS.**
+`IsHeckeIsotypicDecomposition` needs no such field because its `finite_ker`
+is a statement about the WHOLE family, and that is what kills the witness
+`A i := SpecQ`, `astr i := 𝟙 SpecQ`, `u i := jstr` (recorded on
+`exists_heckeIsotypicDecomposition`).  A single factor has no `finite_ker`
+to appeal to, so that witness would satisfy every remaining field: for
+`A = SpecQ` the type `RelPoint (𝟙 SpecQ) g` is a SUBSINGLETON
+(`subsingleton_hom_specQ`), so `isotypic` holds for any `a` whatever, `u_add`
+and `S_add` hold, and `AlgebraicGeometry.Surjective jstr` holds whenever `J`
+is nonempty.  `nontriv` says the universal point `𝟙 A ∈ RelPoint astr astr`
+is not the zero section — i.e. `A` is not the image of its own unit — and it
+is exactly false for that witness and exactly true for a positive-dimensional
+abelian variety.  **Without it the "build one factor" leaf below would be
+vacuous and the cut would be a restatement.**
+
+**`integral` IS LOAD-BEARING FOR THE SAME REASON IT IS IN
+`IsHeckeIsotypicDecomposition`**: `minpoly ℤ x = 0` when `x` is not integral
+over `ℤ`, and then `isotypic` degenerates to `(0 : ℤ) • x = 0`.  So a
+structure carrying `isotypic` without `integral` says nothing at all about a
+transcendental system, and — see the FALSITY note on the construction leaf —
+transcendental systems really do occur at level `0`.
+
+**WHAT IS DELIBERATELY NOT HERE.**  No claim that `a` is the system of a
+modular form (the consumer supplies that), no claim that `A` is the FULL
+`a`-isotypic part, and no uniqueness.  Optimality is not asserted because
+nothing downstream inspects it; `u_surj` plus `nontriv` is all the assembly
+uses. -/
+structure IsIsotypicQuotient {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
+    (ab : AbelianSchemeStruct jstr) (T : ℕ → (J ⟶ J)) (N : ℕ) (a : ℕ → ℂ) where
+  /-- the factor -/
+  A : Scheme.{0}
+  /-- its structure morphism -/
+  astr : A ⟶ SpecQ
+  /-- the factor is an abelian scheme over `ℚ` -/
+  abA : AbelianSchemeStruct astr
+  /-- the quotient map -/
+  u : J ⟶ A
+  /-- it is a morphism over the base -/
+  u_comp : u ≫ astr = jstr
+  /-- it is a homomorphism -/
+  u_add : IsAdditiveOn ab abA u u_comp
+  /-- it is surjective -/
+  u_surj : AlgebraicGeometry.Surjective u
+  /-- **the factor is not the trivial abelian scheme**: its universal point
+  is not the zero section.  This is the field that has no analogue in
+  `IsHeckeIsotypicDecomposition`, where the same job is done globally by
+  `finite_ker`; see the docstring above. -/
+  nontriv : (⟨𝟙 A, Category.id_comp astr⟩ : RelPoint astr astr) ≠ abA.zero astr
+  /-- the Hecke action descended to the factor -/
+  S : ℕ → (A ⟶ A)
+  /-- over the base -/
+  S_comp : ∀ n, S n ≫ astr = astr
+  /-- homomorphisms -/
+  S_add : ∀ n, IsAdditiveOn abA abA (S n) (S_comp n)
+  /-- `u` is a map of Hecke modules: `T n ∘ u = u ∘ S n` -/
+  equivariant : ∀ n, T n ≫ u = u ≫ S n
+  /-- the eigenvalues are algebraic integers (Shimura); without this
+  `minpoly ℤ (a n)` would be `0` and `isotypic` vacuous -/
+  integral : ∀ n, IsIntegral ℤ (a n)
+  /-- **`A` is isotypic for the system `a`** away from `N`: for `n` coprime
+  to `N` the descended `T n` is annihilated by `minpoly ℤ (a n)`, read on
+  relative points over every base -/
+  isotypic : ∀ (n : ℕ), Nat.Coprime n N →
+    ∀ {T' : Scheme.{0}} (g : T' ⟶ SpecQ) (x : RelPoint astr g),
+      letI := abA.addCommGroup g
+      ∑ k ∈ Finset.range ((minpoly ℤ (a n)).natDegree + 1),
+        (minpoly ℤ (a n)).coeff k •
+          ((fun y : RelPoint astr g => RelPoint.post (S n) (S_comp n) y)^[k] x) = 0
+
+/-- **SHIMURA'S `A_f`: EVERY WEIGHT-TWO EIGENFORM OF LEVEL `N` CUTS OUT AN
+ISOTYPIC QUOTIENT OF `J₀(N)`** (sorry leaf, new 2026-07-28) — the "BUILD one
+factor" half of the cut of
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` below.
+
+TRUE.  For a NEWFORM `g` of level `M ∣ N` this is Shimura,
+*Introduction to the arithmetic theory of automorphic functions*, §7.5:
+`I_g := ker(𝕋 → O_g)` is the annihilator ideal of the eigen-system, and
+`A_g := J₀(M)/I_g J₀(M)` is an abelian variety over `ℚ` of dimension
+`[K_g : ℚ]` receiving a surjection from `J₀(M)`, on which `T_n` acts as
+multiplication by `a_n(g) ∈ O_g`; composing with a degeneracy map
+`J₀(N) ↠ J₀(M)` gives the surjection from `J₀(N)`.  For a general eigenform
+`f` of level `N` — a stabilization or an oldform — the ANEMIC system of `f`
+equals that of its underlying newform `g` (the two differ only at `n ∣ N`,
+and `isotypic` quantifies over `n` coprime to `N`), so the same `A_g` serves.
+Diamond–Shurman §6.6; Cornell–Silverman–Stevens Ch. V.
+
+* `integral` is Shimura's theorem that the `a_n` are algebraic integers — and
+  it is the one field with a purely geometric proof available here: `a_n` is
+  an eigenvalue of an endomorphism of an abelian variety.  It is a FIELD of
+  `IsIsotypicQuotient` rather than a hypothesis precisely so that this leaf
+  owns it; see that structure's docstring for why `isotypic` is empty
+  without it.
+* `nontriv` is `dim A_g = [K_g : ℚ] ≥ 1`.
+
+**`hmod` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE, not merely
+unprovable.**  Take `T n := 𝟙 J`.  Every hypothesis except `hmod` still
+holds, and the conclusion fails: `equivariant` forces `S n = 𝟙 A` on the
+image of the surjection `u`, hence `S n = 𝟙 A`, and `isotypic` then demands
+`minpoly ℤ (a n)` to annihilate the IDENTITY on `A`, i.e. `P(1) • x = 0` for
+every point `x`, which for `nontriv`-nontrivial `A` forces
+`minpoly ℤ (a n) (1) = 0`, i.e. `a n = 1` for every `n` coprime to `N`.  That
+is false already for `N = 11`, `a_2 = −2`.  So the pin is used, and this leaf
+is not a disguised statement about an arbitrary commuting family.
+
+**`hN : N ≠ 0` IS LOAD-BEARING — WITHOUT IT THIS LEAF IS FALSE.**  At level
+`0`, `Gamma0 0 = ⟨T, −I⟩` and mathlib's cusp condition asks for vanishing at
+`i∞` ONLY (the full argument is the FALSITY AUDIT on `integrableOn_qSeriesAt`
+above).  `IsWeightTwoEigenform 0 f a` therefore reduces to: `a 0 = 0`,
+`a 1 = 1`, `a` completely multiplicative (`atkin`, since `p ∣ 0` for every
+`p`), `hecke` VACUOUS, and `a` the `q`-expansion of a holomorphic
+`T`-periodic function vanishing at `i∞`.  Witness with a TRANSCENDENTAL
+coefficient: `a (2 ^ k) = π ^ k`, `a n = 0` for `n` not a power of `2`,
+carried by `g τ = ∑_{k ≥ 1} π ^ k q ^ (2 ^ k)`, which converges on all of `ℍ`
+because `2 ^ k` outruns `π ^ k`.  Then `integral` fails outright.  (This is
+the same level-`0` pathology that forced `M ≠ 0` onto
+`integrableOn_qSeriesAt` and `lFunction_apply_one_eq_two_pi_mul_cuspPeriod`;
+the check that refutes any claim it has gone away is
+`grep -n "Gamma0 0" Fermat/FLT/ModularCurve/X0.lean`.)
+
+**WHAT REMAINS GENUINELY MISSING**, unchanged from the parent and re-checked
+2026-07-28: there is no Hecke algebra acting on a Jacobian in this project,
+in mathlib at this pin, or in `~/cs/FLT`; no `A_g`; no old/new decomposition
+of `S₂(Γ₀(N))`; and no isogeny theory for abelian SCHEMES here
+(`Modularity/AbelianSchemeIsogeny.lean` gives `[n] : A ⟶ A` and its flatness,
+nothing more).  What this leaf does NOT need, and the parent did, is the
+multiplicity bookkeeping — that is the sibling's, below. -/
+theorem exists_isotypicQuotient_of_isWeightTwoEigenform (N : ℕ) (hN : N ≠ 0)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeAction N h jac T T_comp)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) :
+    Nonempty (IsIsotypicQuotient ab T N a) :=
+  sorry
+
+/-- **THE ISOTYPIC DECOMPOSITION, GIVEN THE FACTORS** (sorry leaf, new
+2026-07-28) — the "ASSEMBLE the factors" half of the cut of
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction` below.
+
+TRUE, and it is what is left of Eichler–Shimura once Shimura's `A_f` is
+granted: `J₀(N) ∼ ∏_{M ∣ N} ∏_{g new of level M} A_g^{σ₀(N/M)}`.  The three
+things this leaf still owns, and they are exactly the ones a single factor
+cannot see:
+
+* **finiteness of the index set.**  `S₂(Γ₀(N))` is finite-dimensional and
+  eigenforms with distinct eigen-systems are linearly independent, so there
+  are finitely many systems; `hquot` then supplies one factor for each and
+  `cover` is immediate.
+* **the MULTIPLICITIES.**  `hquot` gives ONE quotient per system; the
+  decomposition needs `σ₀(N/M)` copies of `A_g`, carried by the distinct
+  degeneracy-twisted surjections `J₀(N) ↠ J₀(M) ↠ A_g`.  Those extra maps are
+  not in `hquot`'s output and must be built.  That the copies are needed —
+  i.e. that `idx` cannot be the set of eigen-systems — is the multiplicity
+  computation recorded on `exists_heckeIsotypicDecomposition` below: at
+  `N = p³M` with `p ∤ M` the `g`-old space is `4`-dimensional while `U_p` on
+  it has only `2` eigenvalues and is not semisimple, so `2` systems need `4`
+  copies.
+* **`finite_ker`**, i.e. that the map to the product is an isogeny.  This is
+  Poincaré complete reducibility together with the dimension count
+  `∑_i dim A_i = g(X₀(N))`.  Mumford, *Abelian Varieties* §19;
+  Diamond–Shurman Thm 6.6.6.
+
+`heckeModuli` is discharged by `hmod` verbatim, because the conclusion pins
+`D.T = T`; that clause is what stops this leaf from being the parent with an
+unused hypothesis.
+
+**THE `N = 0` OBLIGATION IS THIS LEAF'S, AND IT IS DISCHARGEABLE.**  `hquot`
+is handed over only for `N ≠ 0` — see the FALSITY note on
+`exists_isotypicQuotient_of_isWeightTwoEigenform` above, where a level-`0`
+eigen-system with a transcendental coefficient is exhibited — so at `N = 0`
+this leaf has nothing to build with.  It does not need anything: the
+HYPOTHESES are contradictory there.  `h.coarse : IsCoarseModuliY0 0 strY`
+gives `IsEmpty Y` (`isEmpty_of_isCoarseModuliY0_zero`), so
+`Set.range j.base = ∅` and `h.finite_compl` says the whole underlying space
+of `X` is FINITE; while `o` makes `X` nonempty and `h.smooth :
+SmoothOfRelativeDimension 1 strX` makes it a curve, and a nonempty
+finite-type `ℚ`-scheme of positive relative dimension has infinitely many
+closed points.  So `N = 0` is `False.elim`, and the only step needing work is
+"finite space ⟹ relative dimension `0`".
+
+**WHY THIS IS A CUT AND NOT A RESTATEMENT.**  The hypothesis is consumed
+three times (one factor per system for `cover`; the factors themselves for
+`A`/`u`/`S`; `integral` per factor), and it is the single hardest object in
+the parent — the existence of an abelian-variety quotient with a prescribed
+Hecke action.  What it does NOT do is remove the global content: a prover
+here still has to produce ONE datum whose `finite_ker` holds, which is why
+the cut is "one factor / all factors" rather than a split of the field
+groups, every version of which dies to the `A i := SpecQ` witness recorded on
+`exists_heckeIsotypicDecomposition`. -/
+theorem exists_heckeIsotypicDecomposition_of_isotypicQuotients (N : ℕ)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (T : ℕ → (J ⟶ J))
+    (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
+    (hmod : IsModularHeckeAction N h jac T T_comp)
+    (hquot : N ≠ 0 → ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ),
+      IsWeightTwoEigenform N f a → Nonempty (IsIsotypicQuotient ab T N a)) :
+    ∃ D : IsHeckeIsotypicDecomposition N h jac, D.T = T :=
+  sorry
+
+/-- **THE ISOTYPIC DECOMPOSITION, GIVEN THE HECKE ACTION** (**PROVEN
+2026-07-28**, over the two leaves
+`exists_isotypicQuotient_of_isWeightTwoEigenform` and
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients` immediately above;
+a sorry leaf from earlier the same day until then) — the second half of the
+cut of `exists_heckeIsotypicDecomposition` below, and the one carrying the
 decomposition proper.
 
 TRUE; the witness is spelled out in `IsHeckeIsotypicDecomposition`'s
@@ -28906,6 +29124,49 @@ the labelling by eigenforms and its multiplicities; Poincaré reducibility
 supplies the quotients.  Diamond–Shurman §5.6, §6.6 and Thm 6.6.6; Shimura
 §7.5; Mumford, *Abelian Varieties* §19.
 
+**THE CUT TAKEN (2026-07-28): ONE FACTOR / ALL FACTORS.**  Not a split of
+the field groups — every such split dies to the `A i := SpecQ` witness
+recorded on `exists_heckeIsotypicDecomposition` — but a split of the
+QUANTIFIER over factors, made safe by the new `nontriv` field of
+`IsIsotypicQuotient`, which is what that witness fails:
+
+* `exists_isotypicQuotient_of_isWeightTwoEigenform` — Shimura §7.5, the
+  modular abelian variety `A_f` as a nontrivial surjective quotient of
+  `J₀(N)` carrying the eigen-system of `f`, together with integrality of
+  that system.  This is the single hardest object in the node.
+* `exists_heckeIsotypicDecomposition_of_isotypicQuotients` — the assembly:
+  finiteness of the set of eigen-systems, the old-form MULTIPLICITIES, and
+  `finite_ker`.
+
+**AXES SEARCHED AND REJECTED, with the witnesses, so that they are not
+re-searched.**
+
+* *Labels after geometry* — cut into "the geometric splitting with an
+  abstract system `coeff`" and then "every system so arising is modular".
+  **FALSE**, and the reason is worth stating because it kills the whole
+  class: `isotypic` constrains `coeff i n` only through
+  `minpoly ℤ (coeff i n)`, so it pins each `coeff i n` no better than **up
+  to conjugacy, independently at each `n`**.  A witness of the geometric
+  half may therefore choose `coeff i 2 = a₂(g)` and `coeff i 3 = a₃(g)^σ`
+  for `σ ≠ 1`, which is not the system of any eigenform, and the second
+  leaf is then false of it.  Adding coherence back is exactly re-imposing
+  `isEigen`, i.e. not cutting.  (The same argument shows a splitting
+  structure carrying `cover` cannot repair it: `cover` is an existence
+  statement about the family, not a constraint on any one `coeff i`.)
+* *Dropping `u_surj`* — safe (the `SpecQ` witness is killed by `finite_ker`,
+  not by `u_surj`, since `AlgebraicGeometry.Surjective jstr` holds anyway),
+  and the residue is "the scheme-theoretic image of a homomorphism of
+  abelian schemes is an abelian subscheme".  A real lemma, but it does not
+  touch the hard half; recorded, not taken.
+* *Dropping `finite_ker` while keeping `isEigen` and `cover`* — this is the
+  "modular-forms split" already analysed on `exists_heckeIsotypicDecomposition`
+  and rejected there: what is left is satisfied by trivial factors, so the
+  second leaf inherits the entire geometric content.
+
+**AXIS STILL NOT SEARCHED**, and inherited from the parent: a
+complex-analytic route through `Γ₀(N)\ℍ*`, which is how the classical proof
+identifies the factors in the first place.
+
 **WHAT REMAINS GENUINELY MISSING, unchanged from the undecomposed node.**
 Neither the Hecke algebra acting on a Jacobian, nor `A_g`, nor an old/new
 decomposition of `S₂(Γ₀(N))`, exists in this project, in mathlib at this
@@ -28915,14 +29176,19 @@ flatness, nothing more — note this is a different absence from the
 elliptic-curve one, which was falsely reported and is discussed on
 `exists_heckeIsotypicDecomposition`).
 
-**HOW THIS LEAF DEGRADES IF THE PIN TURNS OUT FORMALLY VACUOUS.**
+**HOW THIS CLUSTER DEGRADES IF THE PIN TURNS OUT FORMALLY VACUOUS.**
 `IsGamma0Isogeny` is not yet known to be inhabited at the scheme level in
 this development (see its docstring).  If it were not, `hmod` would be a
-vacuously-true hypothesis and this leaf would be exactly as hard as the
+vacuously-true hypothesis and these leaves would be exactly as hard as the
 undecomposed node — no harder, and `exists_modularHeckeAction` would then be
 the cheap half rather than the expensive one.  So the cut is safe in the
 worst case and a genuine reduction otherwise; that asymmetry is why it was
-taken in this form rather than by adding the pin to the conclusion. -/
+taken in this form rather than by adding the pin to the conclusion.  Note
+the vacuity would NOT propagate to
+`exists_isotypicQuotient_of_isWeightTwoEigenform`'s own use of `hmod`: the
+`T n := 𝟙 J` refutation recorded there needs only that `hmod` FAIL for the
+identity, which is a statement about `IsModularHeckeAction`, not about
+`IsGamma0Isogeny` being inhabited. -/
 theorem exists_heckeIsotypicDecomposition_of_modularHeckeAction (N : ℕ)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) {jstr : J ⟶ SpecQ}
@@ -28931,7 +29197,9 @@ theorem exists_heckeIsotypicDecomposition_of_modularHeckeAction (N : ℕ)
     (T_comp : ∀ n, T n ≫ jstr = jstr) (T_add : ∀ n, IsAdditiveOn ab ab (T n) (T_comp n))
     (hmod : IsModularHeckeAction N h jac T T_comp) :
     ∃ D : IsHeckeIsotypicDecomposition N h jac, D.T = T :=
-  sorry
+  exists_heckeIsotypicDecomposition_of_isotypicQuotients N h jac T T_comp T_add hmod
+    fun hN f a hf =>
+      exists_isotypicQuotient_of_isWeightTwoEigenform N hN h jac T T_comp T_add hmod f a hf
 
 /-- **EICHLER–SHIMURA: the Hecke-isotypic decomposition exists**
 (**PROVEN 2026-07-28**, over the two leaves `exists_modularHeckeAction` and
@@ -29059,7 +29327,13 @@ axis, made safe by the pin:
 * `exists_heckeIsotypicDecomposition_of_modularHeckeAction` — given such a
   family, the isotypic decomposition exists **with that family as its `T`**.
   This is Atkin–Lehner plus the semisimplicity of the anemic Hecke algebra
-  plus Poincaré reducibility.
+  plus Poincaré reducibility.  **It was itself cut on 2026-07-28** and is now
+  PROVEN over `exists_isotypicQuotient_of_isWeightTwoEigenform` (Shimura's
+  `A_f`, one factor at a time) and
+  `exists_heckeIsotypicDecomposition_of_isotypicQuotients` (the assembly:
+  multiplicities and `finite_ker`); see its docstring for the axes that were
+  searched and rejected, in particular why "geometry first, labels later" is
+  FALSE rather than merely awkward.
 
 The `D.T = T` clause is what makes this a cut rather than a restatement:
 without it the second leaf could choose its own Hecke action and would be
@@ -31414,7 +31688,8 @@ docstring).
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `exists_modularHeckeAction` | Eichler-Shimura (the correspondence) | no |
-| `exists_heckeIsotypicDecomposition_of_modularHeckeAction` | Atkin-Lehner + Poincare | no |
+| `exists_isotypicQuotient_of_isWeightTwoEigenform` | Shimura's `A_f` (one factor) | no |
+| `exists_heckeIsotypicDecomposition_of_isotypicQuotients` | Atkin-Lehner multiplicities + Poincare | no |
 | `isTorsion_factor_of_heckeIsotypic` | Kolyvagin-Logachev | no |
 | `exists_affineLine_of_not_injective_aj` | Riemann-Roch | no |
 | `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
