@@ -29203,12 +29203,198 @@ theorem exists_unramifiedAbelianSubgroup_relIndex_classGroup
   · -- (f) relative index
     exact relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup χ hχcyc CF
 
+/-- **A `Γℚ`-element that fixes a model of `ℚ(μ_p)` POINTWISE is killed by
+`ω`** (E3c support lemma; PROVEN 2026-07-28 — the converse direction of
+`sigma_apply_eq_galEquivZMod` above, and the bridge that converts a
+Galois-theoretic conclusion back into the `χ`-hypothesis `hfrob` demands):
+if `χ = ω` (hypothesis `hχcyc`) and `x` fixes `ι(CF)` elementwise, then
+`χ x = 1`.
+
+**Proof.** By `hχcyc` and `algebraMap_padicInt_eq_castHom` above, `χ x` is
+`ZMod.castHom … w` for `w := toZModPow 1 (ω̃ x) : ZMod (p ^ 1)`, so it
+suffices to show `w = 1`. The defining property of the `ℤ_[p]`-valued
+cyclotomic character (`cyclotomicCharacter.spec` at `n = 1`) evaluated at
+`b := ι(ζ_p)` reads `x b = b ^ w.val`; the hypothesis makes the left side
+`b`. And `b` is a PRIMITIVE `p`-th root of unity in `ℚ̄`
+(`IsCyclotomicExtension.zeta_spec` transported along the injective `ι` by
+`IsPrimitiveRoot.map_of_injective`), so `IsPrimitiveRoot.pow_inj` — with
+`w.val < p ^ 1 = p` and `1 < p` — forces `w.val = 1`, hence `w = 1`.
+
+**Non-vacuity.** For odd `p` the hypothesis is a genuine restriction: it
+cuts `Γℚ` down to the index-`(p−1)` subgroup `Γ_{ℚ(μ_p)}`, and the
+conclusion is false off it. At `p = 2` the hypothesis is empty (`CF = ℚ`)
+and so is the conclusion (`ω ≡ 1` mod `2`), consistently. -/
+theorem chi_eq_one_of_fixes_cyclotomicField
+    {kk' : Type u} [Field kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (x : Field.absoluteGaloisGroup ℚ)
+    (hx : ∀ z : CF, x (ι z) = ι z) :
+    χ x = 1 := by
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI hne1 : NeZero (p ^ 1) := ⟨pow_ne_zero 1 hp.out.ne_zero⟩
+  set w : ZMod (p ^ 1) := PadicInt.toZModPow 1
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) p x.toRingEquiv : ℤ_[p]ˣ) : ℤ_[p])
+    with hwdef
+  set b : AlgebraicClosure ℚ := ι (IsCyclotomicExtension.zeta p ℚ CF)
+  have hζ : IsPrimitiveRoot b p :=
+    (IsCyclotomicExtension.zeta_spec p ℚ CF).map_of_injective ι.injective
+  have hb : b ^ p = 1 := hζ.pow_eq_one
+  have hspec := cyclotomicCharacter.spec p x.toRingEquiv b (by rw [pow_one]; exact hb)
+  rw [show x.toRingEquiv b = x b from rfl] at hspec
+  have hxb : x b = b := hx _
+  have hpow : b ^ w.val = b ^ 1 :=
+    (hspec.symm.trans hxb).trans (pow_one b).symm
+  have hlt : w.val < p := by
+    have h := ZMod.val_lt w
+    simpa [pow_one] using h
+  have hval : w.val = 1 := hζ.pow_inj hlt hp.out.one_lt hpow
+  have hw1 : w = 1 := by
+    have h := ZMod.natCast_rightInverse (n := p ^ 1) w
+    rw [hval] at h
+    simpa using h.symm
+  rw [hχcyc x, algebraMap_padicInt_eq_castHom, ← hwdef, hw1, map_one]
+
+/-- **THE HILBERT CLASS FIELD OF `ℚ(μ_p)`, WITH ITS ARTIN SYMBOL, AS A
+FINITE NORMAL EXTENSION OF `ℚ`** (E3c support leaf
+(ii-a-1-i-B-2-a-i-α); SORRY LEAF, cut 2026-07-28 out of
+`exists_frobIdeal_mk0_eq_classGroup` below along the CLASS-FIELD-THEORY
+axis — it is the ENTIRE arithmetic content of that leaf).
+
+For every ideal class `c` of `𝓞 CF` there are a finite normal extension
+`M/ℚ` inside `ℚ̄`, an `ι`-compatible copy `jj : CF →ₐ[ℚ] M` of `CF`
+inside it, an element `x₀ ∈ Γℚ` and an automorphism `τ ∈ Gal(M/ℚ)` with
+
+* `x₀` fixing `ι(CF)` pointwise (so `τ` lies in `Gal(M/CF)`),
+* `τ` the restriction of `x₀` to `M` — written elementwise as
+  `algebraMap M ℚ̄ (τ w) = x₀ (algebraMap M ℚ̄ w)`, which is
+  `AlgEquiv.restrictNormalHom M x₀ = τ` spelled without the instance
+  plumbing, and
+* every prime `Q` of `𝓞 M` at which `τ` is an ARITHMETIC FROBENIUS over
+  `ℤ` contracting along `jj` to an ideal of class exactly `c`.
+
+**This statement mentions no `χ`, no `frobIdeal`, no `N` and no
+Frobenius ELEMENT at a place** — that is the point of the cut. All the
+Galois-theoretic plumbing (Chebotarev, the conjugation, the
+`ω`-triviality bookkeeping) lives in the consumer below; what is left
+here is class field theory and nothing else.
+
+**Intended witness.** `M` = the Hilbert class field `H` of
+`K := ι(CF)`, i.e. the maximal everywhere-unramified abelian extension
+of `K`. `H/ℚ` is normal: `K/ℚ` is Galois, and every `σ ∈ Gal(ℚ̄/ℚ)`
+carries `H` to the maximal unramified abelian extension of `σK = K`,
+which is `H` again. `τ` is the Artin symbol `(c, H/K) ∈ Gal(H/K) ⊆
+Gal(H/ℚ)`, and `x₀` is any lift of `τ` to `Γℚ` (restriction
+`Γℚ → Gal(M/ℚ)` is surjective, `AlgEquiv.restrictNormalHom_surjective`);
+`x₀` then fixes `ι(CF)` pointwise because `τ|_K = 1`.
+
+**Why the last clause holds — and why it needs NO unramifiedness
+hypothesis on `Q`.** Suppose `IsArithFrobAt (𝓞 ℚ) τ Q`, and put
+`𝔭 := Q ∩ 𝓞 K` above the rational prime `ℓ`. First `τ Q = Q`: for
+`a ∈ Q` the congruence gives `τ a ≡ a^ℓ ≡ 0`. So `τ` lies in the
+decomposition group `D(Q/ℚ)`, and since `τ|_K = 1` in fact in
+`D(Q/𝔭)`. Next, `τ` acts trivially on the residue field `k(𝔭)` (it
+fixes `𝓞 K` pointwise) while acting there by `z ↦ z^ℓ`, so `k(𝔭) =
+𝔽_ℓ`, i.e. `f(𝔭/ℓ) = 1` — the DEGREE-ONE condition, obtained rather
+than assumed. Hence `#k(𝔭) = ℓ` and `τ` is an arithmetic Frobenius at
+`Q` over `𝓞 K` as well; as `H/K` is unramified at `𝔭`, `D(Q/𝔭) ≅
+Gal(k(Q)/k(𝔭))` and therefore `τ = (𝔭, H/K)`. Artin reciprocity for
+the Hilbert class field — `Cl(𝓞 K) ≃ Gal(H/K)`, `[𝔞] ↦ (𝔞, H/K)`, an
+ISOMORPHISM — then gives `[𝔭] = c`. Ramification of `𝔭` over `ℚ` does
+occur (at `ℓ = p`, where `𝔭 = (1 − ζ)` is totally ramified) and is
+harmless: all of it lives in `K/ℚ`, and `H/K` is unramified everywhere.
+
+**What must be built to close it.** (i) The Hilbert class field as a
+field — the EXISTENCE theorem of unramified class field theory, the
+same content as
+`relIndex_localInertiaCommutatorSubgroup_eq_card_classGroup` above and
+Neukirch VI (6.9); (ii) its normality over `ℚ`; (iii) Artin
+reciprocity in the unramified case: the Artin map is a surjection with
+kernel exactly the principal ideals. Nothing in the pin, in `~/cs/FLT`,
+or in this project supplies any of the three; `ModThree.lean`'s
+Childress-following development is RECIPROCITY only and is hardwired
+to `Dickson.K 3` as its value group, so **price generalizing that
+value group before writing a second reciprocity development.**
+
+**Non-vacuity.** By Chebotarev every `τ ∈ Gal(M/ℚ)` really is an
+arithmetic Frobenius at infinitely many primes of `𝓞 M`, so the last
+clause is never satisfied by emptiness. Nor can it be cheated by
+taking `M = ι(CF)`, `τ = 1`: then it would demand that every
+degree-one prime of `𝓞 CF` lie in the single class `c`, which fails
+whenever `h_K > 1`.
+
+**Degenerate case `p = 2`, which shows the leaf is inhabited.** Then
+`CF = ℚ` and `ClassGroup (𝓞 ℚ)` is trivial, so `c = 1`, and
+`M = ℚ`, `jj = ι`, `x₀ = 1`, `τ = 1` work.
+
+**The check that would refute it**: show the Artin map
+`Cl(𝓞 ℚ(μ_p)) → Gal(H/ℚ(μ_p))` is not surjective, or exhibit a class
+`c` for which no `M`, `τ` as above exist. -/
+theorem exists_hilbertClassField_isArithFrobAt_mk0_eq
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ι : CF →ₐ[ℚ] AlgebraicClosure ℚ)
+    (c : ClassGroup (𝓞 CF)) :
+    ∃ (M : IntermediateField ℚ (AlgebraicClosure ℚ)) (_ : FiniteDimensional ℚ M)
+      (_ : Normal ℚ M) (jj : CF →ₐ[ℚ] M)
+      (x₀ : Field.absoluteGaloisGroup ℚ) (τ : M ≃ₐ[ℚ] M),
+      (∀ z : CF, algebraMap M (AlgebraicClosure ℚ) (jj z) = ι z) ∧
+      (∀ z : CF, x₀ (ι z) = ι z) ∧
+      (∀ w : M, algebraMap M (AlgebraicClosure ℚ) (τ w) =
+        x₀ (algebraMap M (AlgebraicClosure ℚ) w)) ∧
+      (∀ Q : Ideal (𝓞 M), Q.IsPrime →
+        IsArithFrobAt (𝓞 ℚ) τ Q →
+        ∀ I : (Ideal (𝓞 CF))⁰,
+          Ideal.comap (NumberField.RingOfIntegers.mapRingHom (jj : CF →+* M)) Q =
+            (I : Ideal (𝓞 CF)) →
+          ClassGroup.mk0 I = c) :=
+  sorry
+
 /-- **CHEBOTAREV, IN THE CLASS GROUP: every ideal class of `𝓞 ℚ(μ_p)` is the
 class of a DEGREE-ONE Frobenius ideal** (E3c support leaf
-(ii-a-1-i-B-2-a-i); SORRY LEAF, cut 2026-07-27 out of
+(ii-a-1-i-B-2-a-i); cut 2026-07-27 out of
 `exists_artinIdealMap_of_unramifiedAbelianSubgroup` below along the
-SURJECTIVITY axis): for every `c : ClassGroup (𝓞 CF)` there are `g` and `v`
+SURJECTIVITY axis; **PROVEN 2026-07-28** over the two leaves just above —
+the class-field-theoretic core
+`exists_hilbertClassField_isArithFrobAt_mk0_eq` (SORRY) and the cyclotomic
+bridge `chi_eq_one_of_fixes_cyclotomicField` (PROVEN) — plus in-tree
+Chebotarev): for every `c : ClassGroup (𝓞 CF)` there are `g` and `v`
 with `χ (g · Frob_v · g⁻¹) = 1` and `ClassGroup.mk0 (frobIdeal g v) = c`.
+
+**THE LEAN ROUTE (2026-07-28), which is the assembly below.** Take `M`,
+`jj`, `x₀`, `τ` from `exists_hilbertClassField_isArithFrobAt_mk0_eq`.
+Chebotarev at finite level — `exists_frobenius_conj_mem_coset` in
+`Chebotarev.lean`, PROVEN, and stated in exactly the coset form wanted
+here — supplies a place `v` and a `g` with
+`x₀⁻¹ · (g · Frob_v · g⁻¹) ∈ M.fixingSubgroup`, i.e. with
+`y := g · Frob_v · g⁻¹` agreeing with `x₀` on all of `M`. Since
+`ι(CF) ⊆ M` and `x₀` fixes `ι(CF)` pointwise, so does `y`, whence
+`χ y = 1` by `chi_eq_one_of_fixes_cyclotomicField`. Feeding that into
+`hfrob` at the level `M` produces a prime `Q` of `𝓞 M` with
+`restrictNormalHom M y` an arithmetic Frobenius at `Q` and
+`Q ∩ 𝓞 CF = frobIdeal g v`; and `restrictNormalHom M y = τ` because both
+sides agree elementwise (`AlgEquiv.restrictNormal_commutes` on the left,
+the third clause of the CFT leaf on the right, `algebraMap M ℚ̄`
+injective). The last clause of that leaf then reads off
+`ClassGroup.mk0 (frobIdeal g v) = c`.
+
+**Why the COSET form of Chebotarev and not the conjugacy form.** The
+statement `exists_globalFrob_restrictNormalHom_conj` is also in tree and
+would do mathematically, but it is phrased with `L ≃ₐ[K] L` for a
+VARIABLE `K`, so its `Algebra K ↥L` instance is baked in as
+`IntermediateField.algebra'`; instantiating at the concrete `K = ℚ`
+then mismatches the instance that search picks here, and
+`Normal ℚ ↥M` fails to synthesize at the application site even though
+it is in context (an `@`-application fixes it for that theorem but the
+mismatch reappears at `AlgEquiv.restrictNormalHom_surjective`). The
+coset form has an INSTANCE-FREE conclusion — membership in
+`M.fixingSubgroup`, a subgroup of `ℚ̄ ≃ₐ[ℚ] ℚ̄` — so nothing has to
+cross the instance boundary. Same reason the CFT leaf above relates
+`τ` to `x₀` by an elementwise `algebraMap` identity rather than by
+naming `AlgEquiv.restrictNormalHom`.
 
 **This leaf mentions no `N`**, which is the point of the cut: it is a
 statement about `frobIdeal` and the class group alone, so it can be attacked
@@ -29273,8 +29459,54 @@ theorem exists_frobIdeal_mk0_eq_classGroup
     ∃ (g : Field.absoluteGaloisGroup ℚ)
       (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
       χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 ∧
-      ClassGroup.mk0 (frobIdeal g v) = c :=
-  sorry
+      ClassGroup.mk0 (frobIdeal g v) = c := by
+  classical
+  obtain ⟨M, hMfin, hMnorm, jj, x₀, τ, hjj, hx₀, hτ, hcls⟩ :=
+    exists_hilbertClassField_isArithFrobAt_mk0_eq (p := p) CF ι c
+  haveI := hMfin
+  haveI := hMnorm
+  obtain ⟨v, -, g, hmem⟩ :=
+    @GaloisRepresentation.exists_frobenius_conj_mem_coset ℚ _ _ ∅ M hMfin x₀
+  simp only [IntermediateField.fixingSubgroup, mem_fixingSubgroup_iff] at hmem
+  -- `y := g · Frob_v · g⁻¹` agrees with `x₀` on all of `M`
+  have hagree : ∀ w : AlgebraicClosure ℚ, w ∈ M →
+      (g * GaloisRepresentation.globalFrob v * g⁻¹) w = x₀ w := by
+    intro w hw
+    have h1 : (x₀⁻¹ * (g * GaloisRepresentation.globalFrob v * g⁻¹)) w = w :=
+      hmem w hw
+    have h2 : x₀ ((x₀⁻¹ * (g * GaloisRepresentation.globalFrob v * g⁻¹)) w) =
+        x₀ w := by rw [h1]
+    rwa [AlgEquiv.mul_apply, AlgEquiv.aut_inv, AlgEquiv.apply_symm_apply] at h2
+  -- hence it fixes `ι(CF) ⊆ M` pointwise, so `ω` kills it
+  have hfixι : ∀ z : CF,
+      (g * GaloisRepresentation.globalFrob v * g⁻¹) (ι z) = ι z := by
+    intro z
+    have hmemz : (ι z) ∈ M := by
+      rw [← hjj z]
+      exact (jj z).2
+    rw [hagree _ hmemz, hx₀ z]
+  have hχ1 : χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 :=
+    chi_eq_one_of_fixes_cyclotomicField χ hχcyc CF ι _ hfixι
+  refine ⟨g, v, hχ1, ?_⟩
+  obtain ⟨Q, hQp, hQfrob, hQcomap⟩ := hfrob g v hχ1 M jj hjj
+  -- the level-`M` restriction of that element IS the Artin symbol `τ`
+  have hres : AlgEquiv.restrictNormalHom M
+      (g * GaloisRepresentation.globalFrob v * g⁻¹) = τ := by
+    refine AlgEquiv.ext fun w => ?_
+    refine (algebraMap M (AlgebraicClosure ℚ)).injective ?_
+    rw [hτ w]
+    have hcm := AlgEquiv.restrictNormal_commutes
+      (g * GaloisRepresentation.globalFrob v * g⁻¹) M w
+    rw [show AlgEquiv.restrictNormal
+        (g * GaloisRepresentation.globalFrob v * g⁻¹) M =
+        AlgEquiv.restrictNormalHom M
+          (g * GaloisRepresentation.globalFrob v * g⁻¹) from rfl] at hcm
+    rw [hcm]
+    refine hagree _ ?_
+    rw [IntermediateField.algebraMap_apply]
+    exact w.2
+  rw [hres] at hQfrob
+  exact hcls Q hQp hQfrob (frobIdeal g v) hQcomap
 
 /-- **ARTIN RECIPROCITY, PRODUCT FORM: a product of degree-one Frobenius
 elements whose ideal product is PRINCIPAL lies in `N`** (E3c support leaf
