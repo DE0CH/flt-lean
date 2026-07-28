@@ -619,6 +619,18 @@ public import Mathlib.AlgebraicGeometry.AffineSpace
 -- imported publicly here for use in `ajMor_eq_const_of_not_injective`, whose
 -- appeal to `ext_of_isDominant_of_isSeparated` needs `IsReduced X`.
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
+-- `AlgebraicGeometry.Scheme.SpecToEquivOfField`: a morphism `Spec K ⟶ X` out of
+-- the spectrum of a FIELD is exactly a point `x` of `X` together with an
+-- embedding `κ(x) ⟶ K`.  This is the whole engine of both halves of Galois
+-- descent for points (`epi_specAlgClos`,
+-- `exists_comp_specAlgClos_eq_of_galoisInvariant`), and it is what makes the
+-- fpqc-descent route those nodes used to name unnecessary.
+public import Mathlib.AlgebraicGeometry.ResidueField
+-- `InfiniteGalois.mem_range_algebraMap_iff_fixed`: for an INFINITE Galois
+-- extension, an element fixed by the whole Galois group lies in the base.  The
+-- finite-dimensional namesake in `Galois/Basic.lean` is useless here — `ℚ̄/ℚ` is
+-- infinite — and this is the only place the infinite theory is needed.
+public import Mathlib.FieldTheory.Galois.Infinite
 
 @[expose] public section
 
@@ -19433,13 +19445,15 @@ theorem exists_descentHeight_of_abelianScheme {J : Scheme.{0}} {jstr : J ⟶ Spe
 
 Everything from here to `finite_quotient_psmul_of_abelianScheme` is the
 classical Kummer argument (Silverman, *AEC* VIII.1) written out.  The
-ASSEMBLY is proven; what it consumes is four named leaves, each a single
-classical theorem:
+ASSEMBLY is proven; what it consumes is four named inputs, each a single
+classical theorem — and as of 2026-07-28 the two descent halves are
+PROVEN, leaving two open leaves:
 
 * two halves of **Galois descent** for the points of `A` — that a
   rational point is determined by its geometric point
-  (`injective_ratToGeom`), and that a Galois-invariant geometric point
-  is rational (`exists_ratPoint_of_galoisInvariant`);
+  (`injective_ratToGeom`, PROVEN), and that a Galois-invariant geometric
+  point is rational (`exists_ratPoint_of_galoisInvariant`, PROVEN over
+  the hypothesis-free `exists_comp_specAlgClos_eq_of_galoisInvariant`);
 * finiteness of the **`n`-torsion** of `A(ℚ̄)`
   (`finite_torsion_geomPt_of_abelianScheme`);
 * finiteness of the **Kummer field** `ℚ(p^{-1} A(ℚ))`
@@ -19533,14 +19547,123 @@ noncomputable def galSMulHom {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     map_zero' := ab.pre_zero (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ)
     map_add' := fun a b => ab.pre_add (specGal σ) (specGal_comp_base (𝟙 SpecQ) σ) a b }
 
-/-- **Galois descent, injectivity half: a `ℚ`-point of a `ℚ`-scheme is
-determined by the geometric point it induces** (sorry node).
+/-- **`Spec F̄ ⟶ Spec F` is an epimorphism of schemes, for every field
+`F`** (PROVEN, 2026-07-28) — the whole content of the injectivity half of
+Galois descent, and it needs no fpqc machinery.
 
-TRUE and elementary: `ℚ → ℚ̄` is faithfully flat, so
-`specAlgClos ℚ : Spec ℚ̄ ⟶ Spec ℚ` is an fpqc cover and hence an
-epimorphism of schemes (`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean` is
-already in this file's import cone), and `ratToGeom` is precomposition
-with it.
+The cut-obstruction note this file used to carry pointed at
+`Sites/Fpqc.lean` and `Morphisms/Flat.lean`, i.e. at "a faithfully flat
+quasi-compact morphism is an epimorphism".  That theorem is *not* at this
+pin, and it is also not needed: for `Spec` of a FIELD both sides of the
+cancellation are classified by `Scheme.SpecToEquivOfField`, which says a
+morphism `Spec K ⟶ X` out of the spectrum of a field is exactly a point
+`x` of `X` together with a field embedding `κ(x) ⟶ K`.  Composing with
+`specAlgClos F` leaves the point alone and postcomposes the embedding
+with `F ⟶ F̄`, which is a monomorphism of rings because it is injective.
+So the cancellation is cancellation of a mono in `CommRingCat`, one
+level down.
+
+Registered as an `instance` so that `cancel_epi (specAlgClos F)` fires
+directly. -/
+instance epi_specAlgClos (F : Type u) [Field F] : Epi (specAlgClos F) := by
+  refine ⟨fun {X} a b hab => ?_⟩
+  set q : CommRingCat.of F ⟶ CommRingCat.of (AlgebraicClosure F) :=
+    CommRingCat.ofHom (algebraMap F (AlgebraicClosure F)) with hq
+  have hmono : Mono q :=
+    ConcreteCategory.mono_of_injective q (algebraMap F (AlgebraicClosure F)).injective
+  apply (Scheme.SpecToEquivOfField F X).injective
+  set A := Scheme.SpecToEquivOfField F X a with hA
+  set B := Scheme.SpecToEquivOfField F X b with hB
+  have ha : a = Spec.map A.2 ≫ X.fromSpecResidueField A.1 := by
+    rw [hA]; exact ((Scheme.SpecToEquivOfField F X).symm_apply_apply a).symm
+  have hb : b = Spec.map B.2 ≫ X.fromSpecResidueField B.1 := by
+    rw [hB]; exact ((Scheme.SpecToEquivOfField F X).symm_apply_apply b).symm
+  have key : (⟨A.1, A.2 ≫ q⟩ : Σ x, X.residueField x ⟶ .of (AlgebraicClosure F))
+      = ⟨B.1, B.2 ≫ q⟩ := by
+    apply (Scheme.SpecToEquivOfField (AlgebraicClosure F) X).symm.injective
+    show Spec.map (A.2 ≫ q) ≫ _ = Spec.map (B.2 ≫ q) ≫ _
+    rw [Spec.map_comp, Spec.map_comp, Category.assoc, Category.assoc, ← ha, ← hb]
+    exact hab
+  obtain ⟨e, he⟩ := Scheme.SpecToEquivOfField_eq_iff.mp key
+  refine Scheme.SpecToEquivOfField_eq_iff.mpr ⟨e, ?_⟩
+  rw [← cancel_mono q, Category.assoc]
+  exact he
+
+/-- **Galois descent for the points of an ARBITRARY scheme: a
+`Γ_F`-invariant `F̄`-point of `X` comes from an `F`-point** (PROVEN,
+2026-07-28), for every perfect field `F` and every scheme `X`
+whatsoever.
+
+This is the real content of `exists_ratPoint_of_galoisInvariant` below,
+and it is stated here in the strongest form the argument gives, which is
+strictly stronger than the form that leaf's docstring anticipated: **no
+hypothesis on `X` is needed at all** — not smoothness, not "locally of
+finite type", not even a structure morphism to `Spec F`.
+
+Why the finite-type hypothesis of the textbook statement is not needed
+here.  Write `y` as a point `x ∈ X` together with `ψ : κ(x) ⟶ F̄`
+(`Scheme.SpecToEquivOfField`, valid for any scheme).  Precomposing `y`
+with `Spec σ` fixes `x` and replaces `ψ` by `σ ∘ ψ`, so invariance says
+exactly that every value of `ψ` is fixed by all of `Γ_F`.  For `F`
+perfect `F̄ / F` is Galois, so the fixed field is `F`
+(`InfiniteGalois.mem_range_algebraMap_iff_fixed`), `ψ` factors as
+`ψ₀ : κ(x) ⟶ F` followed by `F ⟶ F̄`, and `(x, ψ₀)` is the wanted
+`F`-point.  Finite type enters the classical proof only when one wants
+to *descend the scheme*; descending a single point is this argument.
+
+Perfectness IS load-bearing: for imperfect `F` the fixed field of
+`Γ_F = Gal(F̄/F)` acting on `F̄` is the purely inseparable closure of `F`,
+not `F`, and the statement fails for `X = Spec F̄` at a nontrivial purely
+inseparable element.  The usual repair is to use `Fˢᵉᵖ` in place of `F̄`;
+`F = ℚ` is perfect, so nothing of that is needed here. -/
+theorem exists_comp_specAlgClos_eq_of_galoisInvariant (F : Type u) [Field F] [PerfectField F]
+    {X : Scheme.{u}} (y : Spec (CommRingCat.of (AlgebraicClosure F)) ⟶ X)
+    (hy : ∀ σ : Field.absoluteGaloisGroup F, specGal σ ≫ y = y) :
+    ∃ P : Spec (CommRingCat.of F) ⟶ X, specAlgClos F ≫ P = y := by
+  set Y := Scheme.SpecToEquivOfField (AlgebraicClosure F) X y with hY
+  have hy' : y = Spec.map Y.2 ≫ X.fromSpecResidueField Y.1 := by
+    rw [hY]; exact ((Scheme.SpecToEquivOfField (AlgebraicClosure F) X).symm_apply_apply y).symm
+  -- the residue-field embedding is fixed by every element of `Γ_F`
+  have hfix : ∀ σ : Field.absoluteGaloisGroup F,
+      Y.2 ≫ CommRingCat.ofHom
+        ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom) = Y.2 := by
+    intro σ
+    have key : (⟨Y.1, Y.2 ≫ CommRingCat.ofHom
+        ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom)⟩ :
+          Σ x, X.residueField x ⟶ .of (AlgebraicClosure F)) = ⟨Y.1, Y.2⟩ := by
+      apply (Scheme.SpecToEquivOfField (AlgebraicClosure F) X).symm.injective
+      show Spec.map (Y.2 ≫ _) ≫ _ = Spec.map Y.2 ≫ _
+      rw [Spec.map_comp, Category.assoc, ← hy']
+      exact hy σ
+    exact eq_of_heq (Sigma.mk.inj_iff.mp key).2
+  -- hence its values are rational
+  have hmem : ∀ t : X.residueField Y.1, ∃ r : F,
+      algebraMap F (AlgebraicClosure F) r = Y.2.hom t := by
+    intro t
+    have hall : ∀ f : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F, f (Y.2.hom t) = Y.2.hom t :=
+      fun f => congrArg (fun g => (CommRingCat.Hom.hom g) t) (hfix f)
+    exact (InfiniteGalois.mem_range_algebraMap_iff_fixed
+      (k := F) (K := AlgebraicClosure F) (Y.2.hom t)).mpr hall
+  choose g hg using hmem
+  have hinj : Function.Injective (algebraMap F (AlgebraicClosure F)) :=
+    (algebraMap F (AlgebraicClosure F)).injective
+  refine ⟨Spec.map (CommRingCat.ofHom (S := CommRingCat.of F)
+      ({ toFun := g
+         map_one' := hinj (by rw [hg, map_one, map_one])
+         map_mul' := fun s t => hinj (by rw [hg, map_mul, map_mul, hg, hg])
+         map_zero' := hinj (by rw [hg, map_zero, map_zero])
+         map_add' := fun s t => hinj (by rw [hg, map_add, map_add, hg, hg]) } :
+        X.residueField Y.1 →+* F)) ≫ X.fromSpecResidueField Y.1, ?_⟩
+  rw [hy', specAlgClos, ← Category.assoc, ← Spec.map_comp]
+  congr 2
+  exact CommRingCat.hom_ext (RingHom.ext fun t => hg t)
+
+/-- **Galois descent, injectivity half: a `ℚ`-point of a `ℚ`-scheme is
+determined by the geometric point it induces** (PROVEN, 2026-07-28, over
+`epi_specAlgClos`).
+
+`ratToGeom` is precomposition with `specAlgClos ℚ`, which is an
+epimorphism of schemes; so this is one `cancel_epi`.
 
 **FAITHFULNESS AUDIT.**  *No abelian hypothesis is needed and none is
 taken*: the statement is about an arbitrary `jstr : J ⟶ SpecQ`, and
@@ -19551,26 +19674,37 @@ schemes.  *Not vacuous*: `RelPoint jstr (𝟙 SpecQ)` is empty for many
 the points of an abelian scheme, where the source is a group that is
 usually infinite.
 
-**MISSING MACHINERY**: none is known to be.  The check that would refute
-"this needs new theory" is to look for an epimorphism/descent API on
-`Spec` of a faithfully flat ring map at this pin — `Sites/Fpqc.lean` and
-`AlgebraicGeometry/Morphisms/Flat.lean` are both imported here. -/
+**CORRECTION TO THE OLD CUT NOTE.**  This node used to be justified by
+"`ℚ → ℚ̄` is faithfully flat, so `specAlgClos ℚ` is an fpqc cover and
+hence an epimorphism", with `Sites/Fpqc.lean` named as the machinery.
+The conclusion is right and the route is not available: the pin has no
+"faithfully flat quasi-compact ⟹ epi" theorem.  The route that works
+goes through `Scheme.SpecToEquivOfField` instead and uses only that
+`ℚ → ℚ̄` is injective; see `epi_specAlgClos`. -/
 theorem injective_ratToGeom {J : Scheme.{0}} (jstr : J ⟶ SpecQ) :
-    Function.Injective (ratToGeom jstr) :=
-  sorry
+    Function.Injective (ratToGeom jstr) := fun _ _ h =>
+  Subtype.ext ((cancel_epi (specAlgClos ℚ)).mp (congrArg Subtype.val h))
 
 /-- **Galois descent, invariants half: a Galois-invariant geometric point
-of an abelian scheme over `ℚ` is rational** (sorry node).
+of an abelian scheme over `ℚ` is rational** (PROVEN, 2026-07-28, over
+`exists_comp_specAlgClos_eq_of_galoisInvariant` and `epi_specAlgClos`).
 
-TRUE and classical: for a scheme `X` locally of finite type over a field
-`k` with separable closure `kˢ`, `X(kˢ)^{Γ_k} = X(k)`.  Here `k = ℚ` is
-perfect, so `ℚ̄ = ℚˢᵉᵖ`, and `J` is locally of finite type over `ℚ`
-because `ab.smooth` makes `jstr` smooth, hence locally of finite
-presentation.
+**THE ANTICIPATED WEAKENING WAS ACHIEVED, AND OVERSHOT.**  This docstring
+used to say that `ab` is load-bearing through `ab.smooth` (to make `jstr`
+locally of finite type), that the statement is FALSE for a general
+`ℚ`-scheme, and that a prover might weaken the hypothesis to "locally of
+finite type".  All three are now settled, and the first two were WRONG:
+the proof uses **nothing whatsoever** about `jstr` or `J`.  The general
+statement, over an arbitrary scheme and an arbitrary perfect base field,
+is `exists_comp_specAlgClos_eq_of_galoisInvariant` above.
 
-`ab` is therefore load-bearing, but only through `ab.smooth`: the
-statement is FALSE for a general `ℚ`-scheme.  A prover may weaken the
-hypothesis to "`jstr` is locally of finite type" and should say so.
+`ab` therefore survives here for ONE reason only: `galSMul` is a field of
+`AbelianSchemeStruct`, so `ab` is what lets the invariance hypothesis be
+*written*.  The proof consumes `ab` only through `hy`.  The statement is
+deliberately left in the consumer's shape rather than restated in terms
+of `specGal σ ≫ y.1 = y.1`, so that the Kummer assembly below is
+untouched; a reader who wants the honest hypothesis-free form should cite
+the general theorem.
 
 **FAITHFULNESS AUDIT.**  *Not vacuous.*  The hypothesis `hy` is a genuine
 restriction — a geometric point of positive-dimensional `A` is almost
@@ -19579,20 +19713,16 @@ which is exactly what the Kummer assembly needs in order to turn "the
 difference of two chosen division points is fixed" into "the difference
 of the two classes is `p`-divisible in `A(ℚ)`".  Together with
 `injective_ratToGeom` and the free half `galSMul_ratToGeom` this says
-`A(ℚ) = A(ℚ̄)^{Γ_ℚ}`.
-
-**MISSING MACHINERY**: Galois descent for points of a scheme.  The check
-that would refute this: `grep -rn "galoisDescent\|invariants.*Spec"` over
-`Fermat/`, `.lake/packages/mathlib/Mathlib/` and `~/cs/FLT/`.  Note that
-`Mathlib/RingTheory/Invariant/Basic.lean` and
-`Fermat/FLT/Mathlib/AlgebraicGeometry/InvariantQuotient.lean` are both in
-this file's cone and are the natural starting points; neither was checked
-against this statement when it was cut. -/
+`A(ℚ) = A(ℚ̄)^{Γ_ℚ}`. -/
 theorem exists_ratPoint_of_galoisInvariant {J : Scheme.{0}} {jstr : J ⟶ SpecQ}
     (ab : AbelianSchemeStruct jstr) (y : GeomFibrePt jstr (𝟙 SpecQ))
     (hy : ∀ σ : Field.absoluteGaloisGroup ℚ, ab.galSMul (𝟙 SpecQ) σ y = y) :
-    ∃ P : RelPoint jstr (𝟙 SpecQ), ratToGeom jstr P = y :=
-  sorry
+    ∃ P : RelPoint jstr (𝟙 SpecQ), ratToGeom jstr P = y := by
+  obtain ⟨P₀, hP₀⟩ := exists_comp_specAlgClos_eq_of_galoisInvariant ℚ y.1
+    (fun σ => congrArg Subtype.val (hy σ))
+  refine ⟨⟨P₀, (cancel_epi (specAlgClos ℚ)).mp ?_⟩, Subtype.ext hP₀⟩
+  rw [← Category.assoc, hP₀]
+  exact y.2
 
 /-- **The `n`-torsion of `A(ℚ̄)` is finite, for every `n ≠ 0`** (sorry
 node).
