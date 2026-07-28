@@ -54225,8 +54225,129 @@ sequence for the same form. -/
 def IsAtkinLehnerMinusForm (N : ℕ) (f : CuspForm (Gamma0GL N) 2) : Prop :=
   (⇑f) ∣[(2 : ℤ)] frickeRep N = -⇑f
 
-/-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, LEVEL-GENERIC** (sorry leaf,
-2026-07-28) — every Atkin–Lehner-minus factor of `J₀(N)` has torsion
+/-- **POINCARÉ REDUCIBILITY, QUOTIENT HALF, ON THE ISOTYPIC FACTORS**
+(sorry leaf, 2026-07-28) — a quasi-section of the optimal quotient map
+`u i : J ⟶ A i`: some `v : A i ⟶ J` with `u i ∘ v = [m]` on `ℚ`-points,
+`m ≠ 0`.
+
+TRUE and classical (Mumford, *Abelian Varieties* §19; Milne, *Abelian
+Varieties* I.12.1).  `u i` is a SURJECTIVE homomorphism of abelian
+varieties over `ℚ` (`D.u_surj i`, `D.u_add i`), so its kernel has an
+almost-complement: choosing a polarisation of `J` and taking the
+orthogonal complement `B` of `(ker u i)⁰` gives an abelian subvariety with
+`B ∩ ker u i` finite, so `u i|_B : B ⟶ A i` is an isogeny; composing
+`A i ⟶ B ⟶ J` with a quasi-inverse of that isogeny gives `v` with
+`u i ∘ v = [m]` where `m = deg(u i|_B)`.
+
+**STATED ON RATIONAL POINTS, NOT ON MORPHISMS, AND THAT IS DELIBERATE.**
+The classical theorem gives `v ≫ u i = [m]` as a morphism identity; the
+consumer needs only its shadow on `RelPoint _ (𝟙 SpecQ)`, and asking for
+less keeps the leaf free of a multiplication-by-`m` endomorphism that this
+file does not otherwise have.  Nothing is lost: the morphism form implies
+this one.
+
+**Under-pinning audit.**  A junk witness would have to satisfy
+`u i (v x) = m • x` for EVERY `x`, which is exactly the content; the only
+way to satisfy it cheaply is `RelPoint (D.astr i) (𝟙 SpecQ)` being
+trivial, and there the consumer's conclusion is true anyway.  So a
+spoofed witness cannot make the consumer false — it can only make it
+uninformative in a case where it was already free.
+
+**WHY IT IS WORTH STATING SEPARATELY**, and this is the recommendation
+the consumer's own docstring already made: Poincaré reducibility is
+absent from mathlib, from `~/cs/FLT` and from this development
+(`grep -rin "poincar"` finds only prose), and it is needed at THREE
+places in this file — here, on `isTorsion_factor_of_heckeIsotypic`, and
+inside `exists_atkinLehnerDescent_of_factorwise`, whose docstring says
+"passing from here to a sign is Poincaré reducibility and nothing else".
+Proving it once is strictly cheaper than proving it three times inside
+proofs.
+
+**No Atkin–Lehner datum appears**, and none is needed: this is a statement
+about a surjection of abelian schemes and nothing else.  In particular it
+is available to the `+1` factors too. -/
+theorem exists_quasiSection_heckeIsotypicFactor (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o)
+    (D : IsHeckeIsotypicDecomposition N hX jac) (i : D.idx) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    ∃ (v : D.A i ⟶ J) (hv : v ≫ jstr = D.astr i) (m : ℕ), 0 < m ∧
+      ∀ x : RelPoint (D.astr i) (𝟙 SpecQ),
+        RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post v hv x) = m • x :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, ON THE IMAGE OF `J(ℚ)`**
+(sorry leaf, 2026-07-28) — the ARITHMETIC half of
+`isTorsion_minusFactor_of_lFunction_ne_zero` below, with Poincaré
+reducibility removed.
+
+TRUE, and strictly WEAKER than the consumer: it asserts torsion only for
+points of `A i(ℚ)` that come from `J(ℚ)`, which is exactly the part of
+the conclusion that the Eichler–Shimura / Kolyvagin–Logachev argument
+produces directly.  Passing from the image to the whole group is
+Poincaré reducibility and nothing else — that is
+`exists_quasiSection_heckeIsotypicFactor` above, and the two are combined
+below.
+
+The route, unchanged from the consumer's docstring except that it now
+stops one step earlier:
+
+* `E.descend_minus i _hi` gives `u i ∘ w_J = − u i`, so for `z ∈ J(ℚ)`
+  the point `z' := z − w_J z` is `w_J`-ANTI-INVARIANT (`_hw2` and
+  `_hchar` make `w_J` an involution, by the uniqueness half of
+  `IsJacobianOf.existsUnique_mapEnd`) and satisfies
+  `u i z' = 2 • u i z`.
+* `_hnew` makes `S₂(Γ₀(N))` entirely new, so `J₀(N) ∼ ∏_g A_g` over the
+  newform orbits with no repeated factors and `w_N` acting on each by a
+  scalar `ε_g = ±1` (multiplicity one); hence `J⁻ ∼ ∏_{ε_g = −1} A_g`.
+* Each such `g` has `g ∣[2] W_N = −g`, so `_hL` gives `L(g, 1) ≠ 0` and
+  Kolyvagin–Logachev makes `A_g(ℚ)` torsion; so `z'`, being
+  anti-invariant, is torsion, hence so is `2 • u i z` and hence `u i z`.
+
+**Why this is NOT a relocation of the consumer.**  The two differ by
+exactly the surjectivity input: `u i` is surjective as a MORPHISM
+(`D.u_surj i`), which does not make `A i(ℚ)` the image of `J(ℚ)` —
+`H¹(ℚ, ker u i)` obstructs it, and that obstruction is real (it is why
+optimal quotients have nontrivial Shafarevich–Tate contributions).  So
+the consumer genuinely needs a quasi-section and this leaf genuinely does
+not.
+
+**`_hnew` MAY NOT BE DROPPED**, with the `N = 74` witness recorded in
+full on the consumer below: at `74` both `_hL` and the anti-invariance
+hold while the minus part contains a rank-`1` old factor, so the
+conclusion fails there for `z` in the image too.  `_hi` may not be
+dropped either: at `169` the `+1` factors carry all of
+`rank J₀(169)(ℚ) = 3`, and they are images of `J(ℚ)`.
+
+**LABEL-FREEDOM.**  Neither hypothesis names `D.form` or `D.coeff` and
+the factor is selected by `¬ E.Plus i`, an equation about `w_J`; the
+`N = 37` eigen-system swap recorded on `isTorsion_factor_of_heckeIsotypic`
+therefore does not touch this leaf, for the same reason it does not touch
+the consumer. -/
+theorem isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (w : X ⟶ X) (hw : w ≫ strX = strX)
+    (_hw2 : w ≫ w = 𝟙 X) (_hal : IsAtkinLehner N hX w hw)
+    (wJ : J ⟶ J) (hwJ : wJ ≫ jstr = jstr)
+    (_hchar : ∀ {T : Scheme.{0}} (g : T ⟶ SpecQ) (x : RelPoint strX g),
+      RelPoint.post wJ hwJ (jac.aj g x) = jac.ajTwist w hw g x)
+    (D : IsHeckeIsotypicDecomposition N hX jac) (E : IsAtkinLehnerDescent D wJ hwJ)
+    (_hnew : ∀ (M : ℕ), M ∣ N → M ≠ N → ∀ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+      ¬ IsWeightTwoEigenform M g b)
+    (_hL : ∀ (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ), IsWeightTwoEigenform N f a →
+      IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
+    (i : D.idx) (_hi : ¬ E.Plus i) (z : RelPoint jstr (𝟙 SpecQ)) :
+    letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+    IsOfFinAddOrder (RelPoint.post (D.u i) (D.u_comp i) z) :=
+  sorry
+
+/-- **KOLYVAGIN–LOGACHEV ON THE `−1` FACTORS, LEVEL-GENERIC** (PROVEN
+2026-07-28 over the two leaves immediately above; a single `sorry` when it
+was cut earlier the same day) — every Atkin–Lehner-minus factor of `J₀(N)` has torsion
 Mordell–Weil group, given that `L(g, 1) ≠ 0` for every Atkin–Lehner-minus
 eigenform of level `N` and that nothing at level `N` is old.
 
@@ -54318,7 +54439,28 @@ isotypic piece.  Poincaré reducibility is absent from all four places —
 `grep -rin "poincar" Fermat/ .lake/packages/mathlib/Mathlib/ ~/cs/FLT/FLT/`
 returns only this file's own prose — and `isTorsion_factor_of_heckeIsotypic`
 needs it too, so it is worth stating once as a shared leaf rather than
-twice inside proofs. -/
+twice inside proofs.
+
+**DECOMPOSED 2026-07-28 ALONG POINCARÉ REDUCIBILITY, taking that
+recommendation; this was a single `sorry` until then.**  The two theories
+the node carried are now on two named leaves immediately above:
+
+| leaf | theory |
+|---|---|
+| `isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev |
+| `exists_quasiSection_heckeIsotypicFactor` | Poincaré reducibility, quotient half |
+
+and this declaration is their composition: given `x : A i(ℚ)`, the
+quasi-section gives `v` and `m > 0` with `u i (v x) = m • x`, the
+arithmetic leaf makes `u i (v x)` of finite order, so `n • (m • x) = 0`
+for some `n > 0` and `x` has order dividing `n·m`.
+
+The cut is faithful rather than a relocation, because surjectivity of
+`u i` as a MORPHISM does not make `A i(ℚ)` the image of `J(ℚ)`
+(`H¹(ℚ, ker u i)` obstructs it) — see the audit on the arithmetic leaf.
+And the Poincaré half is genuinely shared: `isTorsion_factor_of_heckeIsotypic`
+and `exists_atkinLehnerDescent_of_factorwise` both need it, and it is now
+stateable once. -/
 theorem isTorsion_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}}
     {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
     (hX : IsX0Compactification N strX strY jY) {jstr : J ⟶ SpecQ}
@@ -54335,42 +54477,283 @@ theorem isTorsion_minusFactor_of_lFunction_ne_zero (N : ℕ) {X Y J : Scheme.{0}
       IsAtkinLehnerMinusForm N f → ∀ L : ℂ → ℂ, IsLFunctionOf a L → L 1 ≠ 0)
     (i : D.idx) (_hi : ¬ E.Plus i) :
     letI := (D.abA i).addCommGroup (𝟙 SpecQ)
-    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) :=
-  sorry
+    AddMonoid.IsTorsion (RelPoint (D.astr i) (𝟙 SpecQ)) := by
+  letI := (D.abA i).addCommGroup (𝟙 SpecQ)
+  intro x
+  obtain ⟨v, hv, m, hm, hvm⟩ := exists_quasiSection_heckeIsotypicFactor N hX jac D i
+  have h1 : IsOfFinAddOrder (RelPoint.post (D.u i) (D.u_comp i) (RelPoint.post v hv x)) :=
+    isOfFinAddOrder_image_minusFactor_of_lFunction_ne_zero N hX jac w hw _hw2 _hal wJ hwJ
+      _hchar D E _hnew _hL i _hi (RelPoint.post v hv x)
+  rw [hvm x] at h1
+  obtain ⟨n, hn, hnx⟩ := isOfFinAddOrder_iff_nsmul_eq_zero.mp h1
+  refine isOfFinAddOrder_iff_nsmul_eq_zero.mpr ⟨n * m, Nat.mul_pos hn hm, ?_⟩
+  rw [← smul_smul]
+  exact hnx
 
-/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `169`** (sorry leaf,
-2026-07-28), stated as "no weight-two eigenform of level `M`" because that
-is the shape `isTorsion_minusFactor_of_lFunction_ne_zero`'s `_hnew` takes.
-It is what says that `S₂(Γ₀(169))` is entirely NEW.
+/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `169`, ON FUNCTIONS**
+(sorry leaf, 2026-07-28) — the whole arithmetic content of
+`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine` below, with the
+normalization bookkeeping stripped off.
 
-TRUE, and it is the cheapest of the three leaves under
-`isTorsion_minusFactor_x0OneSixtyNine`.  The proper divisors of `169 = 13²`
-are `1` and `13`, and `X₀(1)`, `X₀(13)` both have genus `0`
-(`mfdim(mfinit([13,2],1)) = 0` and `mfdim(mfinit([1,2],1)) = 0`,
-recomputed in PARI/GP for this leaf on 2026-07-28), so the only cusp form
-at either level is `0`.  An `IsWeightTwoEigenform` is NORMALIZED
-(`one : a 1 = 1`), and a zero form cannot carry one: its `qExpansion` field
-forces `a (n + 1) = 0` for every `n` by uniqueness of the Fourier expansion
-of the zero function, contradicting `a 1 = 1`.
+TRUE.  The proper divisors of `169 = 13²` are `1` and `13`, and `X₀(1)`,
+`X₀(13)` both have genus `0` (`mfdim(mfinit([13,2],1)) = 0` and
+`mfdim(mfinit([1,2],1)) = 0`, recomputed in PARI/GP for this leaf on
+2026-07-28), so the only cusp form at either level is `0`.
 
-**Where the content is.**  Not in the normalization step, which is
-bookkeeping once `g = 0`, but in `S₂(Γ₀(13)) = 0`.  Two routes at this pin:
-the valence formula for `Γ₀(13)` (index `14`, `ν₂ = 2`, `ν₃ = 2`,
-`ν_∞ = 2`, giving `g = 0`), or the weight-two cusp-form dimension formula.
-Mathlib has neither at `a3364fa` — `grep -rn "valence\|genus"
+**Stated on `⇑g`, not on `g`.**  The two are equivalent
+(`CuspForm` is `FunLike`-injective), and the function form is what the
+consumer's proof feeds to `ModularFormClass.qExpansion_coeff_unique`; a
+statement `g = 0` would only have to be coerced back.
+
+**Where the content is.**  Not in the normalization step — that is
+`not_isWeightTwoEigenform_of_coe_eq_zero` below and is PROVEN — but in
+`S₂(Γ₀(13)) = 0`.  Two routes at this pin: the valence formula for
+`Γ₀(13)` (index `14`, `ν₂ = 2`, `ν₃ = 2`, `ν_∞ = 2`, giving `g = 0`), or
+the weight-two cusp-form dimension formula.  Mathlib has neither at
+`a3364fa` — `grep -rn "valence\|genus"
 .lake/packages/mathlib/Mathlib/NumberTheory/ModularForms/` — so this is a
 genuine, if small, piece of missing theory; `~/cs/FLT` is worth checking
 first.
 
+**`M = 1` is NOT a degenerate corner here.**  `Gamma0GL 1` is the whole of
+`SL(2, ℤ)` inside `GL(2, ℝ)` and `S₂(SL(2, ℤ)) = 0` is the classical
+genus-`0` statement for the `j`-line, so both divisors are honest
+instances of the same fact rather than one real case and one vacuous one.
+Note that `M = 0` cannot occur: `M ∣ 169` forces `M ∈ {1, 13, 169}`.
+
 **The check that refutes this leaf**: `mfdim(mfinit([13,2],1))` returning
 anything other than `0`. -/
-theorem not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine (M : ℕ) (_hM : M ∣ 169)
-    (_hMne : M ≠ 169) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) :
-    ¬ IsWeightTwoEigenform M g b :=
+theorem cuspForm_eq_zero_of_properDivisor_oneSixtyNine (M : ℕ) (_hM : M ∣ 169)
+    (_hMne : M ≠ 169) (g : CuspForm (Gamma0GL M) 2) : ⇑g = 0 :=
   sorry
 
+/-- **A VANISHING CUSP FORM CARRIES NO NORMALIZED EIGENFORM** (PROVEN
+2026-07-28) — LEVEL-FREE, and the bookkeeping half of
+`not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine` below.
+
+`IsWeightTwoEigenform M g b` is NORMALIZED (`one : b 1 = 1`), and its two
+`qExpansion` fields identify `b` with mathlib's Fourier coefficients of
+`g` (`coeff_eq_qExpansion_coeff`, PROVEN in
+`ModularCurve/WeightTwoEigenform.lean`).  Applying
+`ModularFormClass.qExpansion_coeff_unique` a SECOND time, to the constant
+sequence `0` — which represents `⇑g = 0` by `hasSum_zero` — gives
+`0 = (qExpansion 1 ⇑g).coeff 1` as well, so `1 = 0`.
+
+`h = 1` is legitimate by `one_mem_strictPeriods`, at every level
+including `M = 0`; no level hypothesis is needed or used. -/
+theorem not_isWeightTwoEigenform_of_coe_eq_zero {M : ℕ}
+    {g : CuspForm (Gamma0GL M) 2} (hg : ⇑g = 0) (b : ℕ → ℂ) :
+    ¬ IsWeightTwoEigenform M g b := by
+  intro hb
+  have h0 : (0 : ℂ) = (UpperHalfPlane.qExpansion 1 ⇑g).coeff 1 :=
+    ModularFormClass.qExpansion_coeff_unique (F := CuspForm (Gamma0GL M) 2)
+      (Γ := Gamma0GL M) (k := 2) (h := 1) (f := g) (c := fun _ => (0 : ℂ)) one_pos
+      (one_mem_strictPeriods M) (fun τ => by simp [hg]) 1
+  have h1 := coeff_eq_qExpansion_coeff hb 1
+  rw [hb.one] at h1
+  exact one_ne_zero (h1.trans h0.symm)
+
+/-- **`S₂(Γ₀(M)) = 0` FOR EVERY PROPER DIVISOR `M` OF `169`** (PROVEN
+2026-07-28 over the two declarations above; a single `sorry` until then),
+stated as "no weight-two eigenform of level `M`" because that is the shape
+`isTorsion_minusFactor_of_lFunction_ne_zero`'s `_hnew` takes.  It is what
+says that `S₂(Γ₀(169))` is entirely NEW.
+
+**DECOMPOSED ALONG THE NORMALIZATION.**  The node carried two unrelated
+things: the arithmetic `S₂(Γ₀(13)) = 0` (a genus computation, now
+`cuspForm_eq_zero_of_properDivisor_oneSixtyNine`) and the passage from a
+vanishing form to the impossibility of a normalized eigen-labelling (an
+application of uniqueness of Fourier coefficients, now
+`not_isWeightTwoEigenform_of_coe_eq_zero`, PROVEN).  The previous
+docstring called the second step "bookkeeping once `g = 0`"; it is, and
+it is now done. -/
+theorem not_isWeightTwoEigenform_of_properDivisor_oneSixtyNine (M : ℕ) (hM : M ∣ 169)
+    (hMne : M ≠ 169) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ) :
+    ¬ IsWeightTwoEigenform M g b :=
+  not_isWeightTwoEigenform_of_coe_eq_zero
+    (cuspForm_eq_zero_of_properDivisor_oneSixtyNine M hM hMne g) b
+
+/-! #### The Fricke seam of the `169` numerics
+
+`lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine` below sits on
+exactly the seam `lFunction_apply_one_ne_zero_of_kenkuLevel` sits on,
+~19000 lines above: the ANALYSIS
+(`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`, PROVEN and level-free)
+against the ARITHMETIC (a nonvanishing period).  The three declarations
+in this block are what connect `IsAtkinLehnerMinusForm` — which is stated
+with the SLASH ACTION, because that is what needs no bundled operator —
+to `cuspPeriod_eq_one_sub_mul_integral_Ioi_one`, which is stated about
+`axisRestrict`.
+
+Everything here is PROVEN; the block adds no leaf.  What it buys is that
+the level-`169` numerics reduce to ONE integral over `[1, ∞)`, where the
+`q`-series converges geometrically — the same reduction the Kenku cluster
+already makes, and the reason the leaf below is a numerical inequality
+rather than a conditionally convergent one. -/
+
+section AtkinLehnerMinusPeriod
+
+open _root_.MeasureTheory
+
+/-- **`frickeRep N` IS `frickeMatrix N`** (PROVEN 2026-07-28) — the two
+spellings of `W_N = !![0, -1; N, 0]` in this development agree at every
+`N ≠ 0`.
+
+They exist separately only because `frickeRep` is TOTAL (junk value `1` at
+`N = 0`, so that `IsAtkinLehnerMinusForm` needs no level hypothesis) while
+`frickeMatrix` carries `hN : N ≠ 0` as an argument.  Both are
+`Matrix.GeneralLinearGroup.mkOfDetNeZero` on the same matrix, so once the
+`dite` is discharged the equation is `rfl`. -/
+theorem frickeRep_eq_frickeMatrix (N : ℕ) (hN : N ≠ 0) :
+    frickeRep N = frickeMatrix N hN := by
+  have h : ((N : ℝ)) ≠ 0 := Nat.cast_ne_zero.mpr hN
+  rw [frickeRep, dif_pos h]
+  rfl
+
+/-- **THE FRICKE IDENTITY WITH A NAMED WITNESS** (PROVEN 2026-07-28):
+
+> `axisRestrict N f (1/y) = -y² · axisRestrict N (frickeSlash N hN f) y`.
+
+`exists_frickeInvolution` (`ModularCurve/WeightTwoEigenform.lean`) proves
+exactly this, but in `∃`-form, and `Exists.choose` does not hand back the
+witness `frickeSlash N hN f` — only *some* `g` with the same
+`axisRestrict` on `(0, ∞)`.  That is enough for the `cuspFEPair`
+construction, which never looks at `g` again, and NOT enough here, where
+the whole point is to identify `frickeSlash N hN f` with `-f` from
+`IsAtkinLehnerMinusForm`.  Hence the named restatement; the proof is the
+same computation, `|det W_N|^{k-1} · denom(W_N, z)^{-k} = N · (i y √N)^{-2}
+= -1/y²` at `z = i y/√N`. -/
+theorem axisRestrict_one_div_eq_frickeSlash (N : ℕ) (hN : N ≠ 0)
+    (f : CuspForm (Gamma0GL N) 2) {y : ℝ} (hy : 0 < y) :
+    axisRestrict N f (1 / y)
+      = -((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict N (frickeSlash N hN f) y := by
+  have hy' : (0 : ℝ) < 1 / y := by positivity
+  rw [axisRestrict_of_pos hN f hy', axisRestrict_of_pos hN _ hy]
+  simp only [coe_frickeSlash, ModularForm.slash_apply, frickeMatrix_smul_axisPoint N hN hy,
+    UpperHalfPlane.σ, UpperHalfPlane.denom, frickeMatrix_coe, frickeMatrix_det, coe_axisPoint]
+  norm_num
+  rw [if_pos (Nat.pos_of_ne_zero hN), ContinuousAlgEquiv.refl_apply]
+  have hs : (0 : ℝ) < Real.sqrt N := Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  have hsC : ((Real.sqrt N : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hs.ne'
+  have hyC : ((y : ℝ) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hy.ne'
+  have hs2 : ((Real.sqrt N : ℝ) : ℂ) ^ 2 = (N : ℂ) := by
+    norm_cast
+    exact Real.sq_sqrt (Nat.cast_nonneg N)
+  rw [← hs2]
+  field_simp
+  rw [Complex.I_sq]
+  ring
+
+/-- **AN ATKIN–LEHNER-MINUS FORM SATISFIES THE FRICKE RELATION WITH SIGN
+`ε = -1`** (PROVEN 2026-07-28) — the bridge from the slash-action
+definition `IsAtkinLehnerMinusForm` to the shape
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` takes.
+
+`IsAtkinLehnerMinusForm N f` says `⇑f ∣[2] W_N = -⇑f`, and
+`frickeSlash N hN f` is by definition the cusp form whose coercion is
+`⇑f ∣[2] frickeMatrix N hN`; `frickeRep_eq_frickeMatrix` identifies the
+two matrices, so `frickeSlash N hN f` and `-f` have the same values, hence
+the same `axisRestrict`.  Substituting into
+`axisRestrict_one_div_eq_frickeSlash` turns `-y²·(-F y)` into `y²·F y`,
+which is `-ε · y² · F y` at `ε = -1`.
+
+The conclusion is written as `-(-1 : ℂ) * …` rather than the simplified
+`y² · …` deliberately: that is the literal shape of
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one`'s `hFE`, so the consumer
+needs no `ring_nf` to apply it and `ε` is fixed to `-1` by unification. -/
+theorem axisRestrict_fricke_of_isAtkinLehnerMinusForm (N : ℕ) (hN : N ≠ 0)
+    (f : CuspForm (Gamma0GL N) 2) (hw : IsAtkinLehnerMinusForm N f) (y : ℝ) (hy : 0 < y) :
+    axisRestrict N f (1 / y)
+      = -(-1 : ℂ) * ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict N f y := by
+  have hslash : ⇑(frickeSlash N hN f) = -⇑f := by
+    rw [coe_frickeSlash, ← frickeRep_eq_frickeMatrix N hN]
+    exact hw
+  have hval : axisRestrict N (frickeSlash N hN f) y = -axisRestrict N f y := by
+    rw [axisRestrict_of_pos hN _ hy, axisRestrict_of_pos hN f hy, hslash]
+    simp
+  rw [axisRestrict_one_div_eq_frickeSlash N hN f hy, hval]
+  ring
+
+/-- **THE `L`-VALUE NUMERICS AT `169`, ON THE MINUS EIGENSPACE: the tail
+integral does not vanish** (sorry leaf, 2026-07-28) — the exact analogue
+of `integral_Ioi_one_axisRestrict_ne_zero` at the Kenku levels, and after
+the cut it is the ONLY remaining content of
+`lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine`.
+
+TRUE, by the PARI/GP reconnaissance recorded on the consumer below:
+`S₂(Γ₀(169))` is `8`-dimensional and entirely new, splitting into newform
+orbits of dimensions `2, 3, 3` with `w_169`-eigenvalues `-1, -1, +1`, and
+every embedding of the two MINUS orbits has `L(f^σ, 1) ≠ 0` (values
+`0.96638630…, 2.26861060…` and `2.24086248…, 1.56775113…, 0.55137215…`).
+Given `axisRestrict_fricke_of_isAtkinLehnerMinusForm` above, this integral
+being nonzero and `L(f, 1) ≠ 0` are the same statement.
+
+**`_hw` MAY NOT BE DROPPED, and the witness is orbit `3`.**  It is an
+eigenform of level `169` with `w_169 = +1` and `L(f, 1) = 0` to `58`
+digits, so the statement without the Atkin–Lehner hypothesis is FALSE —
+which is exactly why `169 ∉ kenkuLevels`.  In the present shape the sign
+enters through the `(1 - ε)` factor of
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one`: at `ε = +1` the period is
+literally `0` whatever this integral is, so a leaf that dropped `_hw`
+would be asserting the vanishing of a quantity it cannot see.
+
+**What the cut BOUGHT.**  The integral runs over `[1, ∞)`, not `(0, ∞)`.
+There `hasSum_axisRestrict` gives
+`axisRestrict 169 f y = ∑_{n ≥ 1} aₙ e^{-2πny/13}` with geometrically
+decaying terms, so termwise integration (a free-standing analytic step,
+deliberately not performed here) turns the goal into
+`∑_{n ≥ 1} (aₙ/n) e^{-2πn/13} ≠ 0`, an absolutely convergent explicit sum
+with an effective truncation error from `|aₙ| ≤ d(n)√n`.  The defining
+integral of `cuspPeriod` admits no such truncation.
+
+**What this leaf still needs**: an explicit certified basis of
+`S₂(Γ₀(169))^{new}` together with its Atkin–Lehner decomposition — the
+same missing theory as `integral_Ioi_one_axisRestrict_ne_zero`, and the
+real gate on both clusters.  **The check that refutes it**:
+`lfunorderzero` returning a nonzero value at any embedding of the two
+`w_169 = -1` orbits, or `mfatkineigenvalues(mfinit([169,2],0), 169)`
+returning a pattern other than `[[-1,-1], [-1,-1,-1], [1,1,1]]`. -/
+theorem integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine
+    (f : CuspForm (Gamma0GL 169) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 169 f a)
+    (_hw : IsAtkinLehnerMinusForm 169 f) :
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict 169 f y ≠ 0 :=
+  sorry
+
+/-- **THE PERIOD OF AN ATKIN–LEHNER-MINUS EIGENFORM OF LEVEL `169` IS
+NONZERO** (PROVEN 2026-07-28 from the leaf above).
+
+The assembly is the Kenku one, with the root number supplied by hypothesis
+instead of by a sign leaf: `axisRestrict_fricke_of_isAtkinLehnerMinusForm`
+gives the Fricke relation at `ε = -1`, so
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` reads
+`cuspPeriod a = (√169)⁻¹ · 2 · ∫₁^∞ axisRestrict 169 f`, a product of
+three nonzero factors.
+
+This is where `169`'s difference from a Kenku level is discharged.  At a
+Kenku level the sign is a THEOREM
+(`frickeSign_eq_neg_one_of_isNewEigenformAt`, and it is `-1` at every
+newform of every divisor); at `169` it is FALSE for the third orbit, so
+the sign has to travel as a hypothesis — which is precisely what
+`IsAtkinLehnerMinusForm` is for. -/
+theorem cuspPeriod_ne_zero_atkinLehnerMinus_oneSixtyNine
+    (f : CuspForm (Gamma0GL 169) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform 169 f a)
+    (hw : IsAtkinLehnerMinusForm 169 f) : cuspPeriod a ≠ 0 := by
+  have hN : (169 : ℕ) ≠ 0 := by norm_num
+  have hεε : (-1 : ℂ) * (-1) = 1 := by norm_num
+  rw [cuspPeriod_eq_one_sub_mul_integral_Ioi_one hN hf hεε
+    (axisRestrict_fricke_of_isAtkinLehnerMinusForm 169 hN f hw), Complex.real_smul]
+  have hsq : (0 : ℝ) < Real.sqrt (169 : ℕ) :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hN)
+  refine mul_ne_zero (Complex.ofReal_ne_zero.mpr (inv_ne_zero hsq.ne')) ?_
+  exact mul_ne_zero (by norm_num)
+    (integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine f a hf hw)
+
+end AtkinLehnerMinusPeriod
+
 /-- **THE NUMERICS AT `169`: every Atkin–Lehner-MINUS eigenform of level
-`169` has `L(f, 1) ≠ 0`** (sorry leaf, 2026-07-28) — the exact analogue of
+`169` has `L(f, 1) ≠ 0`** (PROVEN 2026-07-28 over
+`cuspPeriod_ne_zero_atkinLehnerMinus_oneSixtyNine` and the Fricke block
+above; a single `sorry` when it was cut earlier the same day) — the exact analogue of
 `lFunction_apply_one_ne_zero_of_kenkuLevel`, restricted to the minus
 eigenspace, and the ONLY analytic input under
 `isTorsion_minusFactor_x0OneSixtyNine`.
@@ -54404,17 +54787,32 @@ That is precisely why `169 ∉ kenkuLevels`, and why this leaf exists at all.
 any embedding of orbit `1` or `2`, or `mfatkineigenvalues` returning a
 different eigenvalue pattern.
 
-**What proving it needs**: the machinery of
-`lFunction_apply_one_ne_zero_of_kenkuLevel` — Hecke's analytic continuation
-(`exists_isLFunctionOf_of_isWeightTwoEigenform`, PROVEN) and then a
-certified evaluation of five real numbers, which is where that leaf's own
-`cuspPeriod` route lives.  What is different here is that the sign
-hypothesis must be USED, the statement being false without it. -/
+**DECOMPOSED 2026-07-28 ALONG THE PERIOD, exactly as
+`lFunction_apply_one_ne_zero_of_kenkuLevel` was on 2026-07-27; this was a
+single `sorry` until then.**  Above the seam is Hecke's Mellin transform
+at `s = 1` (`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`, PROVEN,
+level-free, and quantified over every weight-two eigenform); below it is
+the arithmetic, `cuspPeriod a ≠ 0`.  The section above supplies what the
+Kenku cluster gets from `frickeSign_eq_neg_one_of_isNewEigenformAt` — the
+root number — from the hypothesis `_hw` instead, which is the ONE place
+`169` differs from a Kenku level and the reason the sign hypothesis is
+load-bearing rather than decorative.  After the cut the whole of the
+level-`169` numerics is
+`integral_Ioi_one_axisRestrict_ne_zero_atkinLehnerMinus_oneSixtyNine`,
+a single integral over `[1, ∞)`.
+
+The `q`-expansion machinery this used to be blocked on — Hecke's analytic
+continuation, `exists_isLFunctionOf_of_isWeightTwoEigenform` — is
+consumed by `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` and is PROVEN;
+it is no longer part of this leaf's inventory. -/
 theorem lFunction_apply_one_ne_zero_atkinLehnerMinus_oneSixtyNine
-    (f : CuspForm (Gamma0GL 169) 2) (a : ℕ → ℂ) (_hf : IsWeightTwoEigenform 169 f a)
-    (_hw : IsAtkinLehnerMinusForm 169 f) (L : ℂ → ℂ) (_hL : IsLFunctionOf a L) :
-    L 1 ≠ 0 :=
-  sorry
+    (f : CuspForm (Gamma0GL 169) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform 169 f a)
+    (hw : IsAtkinLehnerMinusForm 169 f) (L : ℂ → ℂ) (hL : IsLFunctionOf a L) :
+    L 1 ≠ 0 := by
+  rw [lFunction_apply_one_eq_two_pi_mul_cuspPeriod 169 (by norm_num) f a hf L hL]
+  exact mul_ne_zero
+    (mul_ne_zero (by norm_num) (Complex.ofReal_ne_zero.mpr Real.pi_ne_zero))
+    (cuspPeriod_ne_zero_atkinLehnerMinus_oneSixtyNine f a hf hw)
 
 /-- **KOLYVAGIN–LOGACHEV AT `169`: every `w_169 = −1` ISOGENY FACTOR of
 `J_0(169)` has torsion Mordell–Weil group** (sorry leaf, 2026-07-27) —
@@ -54971,13 +55369,51 @@ to make the pencil base-point-free, and putting it here would have been
 decoration.
 
 The three curve hypotheses are consumed only through `exists_relPicZero`.
-**What it still needs** is the inventory recorded on
-`relPicEquiv_sectionIdeal_of_aj_eq` — transport of `IsRelPicZeroOf` along
-an `aj`-compatible isomorphism, plus tensor algebra on `Scheme.Modules`,
-of which this development currently has the DEFINITION `modTensor` and no
-lemma at all.  **The check that would refute this note**: a route from
-`IsJacobianOf` to a divisor statement that does not pass through a
-representing object for `Pic⁰`. -/
+
+**INVENTORY CORRECTION, 2026-07-28 — "no `modTensor` lemma at all" IS
+FALSE, and it was the more expensive half of the recorded inventory.**
+The previous version of this paragraph (and the identical claim on
+`relPicEquiv_sectionIdeal_of_aj_eq`, which is separately owned and where
+it should also be corrected) said that this development has "the
+DEFINITION `modTensor` and no lemma at all", on the strength of a
+`grep -rn 'modTensor' Fermat/` that listed only four files.  The grep was
+right about the file list and wrong about its contents:
+`Fermat/FLT/Modularity/AmpleSheaf.lean` is one of them and carries a real
+tensor API, all of it in THIS file's PUBLIC cone
+(`X0.lean` `public import`s `AbelianSchemeIsogeny.lean`, which
+`public import`s `AmpleSheaf.lean`):
+
+* `nonempty_modTensor_assoc` — the ASSOCIATOR, **PROVEN** 2026-07-28;
+* `modTensorMapIso` — functoriality in both arguments, on isomorphisms;
+* `modTensorUnitLeftIso` — the LEFT UNITOR `𝒪_Z ⊗ M ≅ M`;
+* `modTensorLocIso`, `modTensorMk`, `modTensorPow` with
+  `modTensorPowMapIso` and `modTensorPowUnitIso`;
+* `presheafOfModulesSymmetric` — the presheaf-level SYMMETRIC monoidal
+  structure, i.e. the braiding.
+
+So the honest residual inventory is smaller and sharper than "tensor
+algebra": (i) transport of `IsRelPicZeroOf` along an `aj`-compatible
+isomorphism of abelian schemes, and (ii) an INVERSE for an invertible
+sheaf, hence CANCELLATION.  Only (ii) is genuinely absent, and the reason
+is visible in the definition: `IsInvertibleSheaf L`
+(`ModularCurve/RelativePicard.lean`) is LOCAL triviality, `∀ z, ∃ U ∋ z,
+L|_U ≅ 𝒪_U`, which hands back no global dual — the dual sheaf has to be
+constructed and shown to satisfy `L ⊗ L^∨ ≅ 𝒪`.  With the associator,
+braiding and unitor already available, cancellation is exactly that one
+missing step and nothing more.  (`nonempty_modTensor_modPullback`, the
+compatibility of `modTensor` with `modPullback`, is still a sorry in
+`AmpleSheaf.lean` and is likely wanted too, since `RelPicEquiv` is a
+quotient by pulled-back sheaves.)
+
+Both (i) and (ii) are shared VERBATIM with `relPicEquiv_sectionIdeal_of_aj_eq`
+and with the `Pic` statements in `AbelianSchemeIsogeny.lean`, so they
+should be stated ONCE as their own leaves rather than proven inside
+either proof.
+
+**The check that would refute this note**: a route from `IsJacobianOf` to
+a divisor statement that does not pass through a representing object for
+`Pic⁰`; or a construction of `L^∨` with `L ⊗ L^∨ ≅ 𝒪` from
+`IsInvertibleSheaf` appearing anywhere in `Fermat/`. -/
 theorem relPicEquiv_sectionIdeal_of_aj_add_eq {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
