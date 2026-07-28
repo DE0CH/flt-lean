@@ -17290,7 +17290,150 @@ theorem exists_moebius_of_injective_cert {F : Type*} [Field F] [DecidableEq F]
         exact hS t hnot.1
     exact Set.Finite.subset (Set.Finite.union S.finite_toSet B₀.roots.toFinset.finite_toSet) hsub
 
-/-- **SORRY LEAF (cut 2026-07-28): the finite exceptional set of the Möbius form is
+/-! ### Duplication helpers for `xMap_moebius_of_finite_bad`
+
+The group-law step below needs four small facts about duplication on the `x`-line.
+They live in their own namespace so that they cannot collide with anything in the
+(large) public surface of this module. -/
+
+namespace XMapMoebiusAux
+
+variable {F : Type*} [Field F] [DecidableEq F]
+
+/-- `n • P = 0` is detected by the `n`-division polynomial at the `x`-coordinate.
+
+This is `TorsionCard.smul_some_eq_zero_iff` transported from the `(W⁄F)` spelling to
+the `veluPointX` spelling, exactly as `veluPointX_nsmul` transports the
+multiplication formula. -/
+theorem nsmul_eq_zero_iff_eval_ΨSq (W : Affine F) [W.IsElliptic] {n : ℕ} (hn : n ≠ 0)
+    {P : W.Point} (hP : P ≠ 0) :
+    n • P = 0 ↔ (W.ΨSq (n : ℤ)).eval (veluPointX P) = 0 := by
+  haveI : (W⁄F).IsElliptic := inferInstanceAs W.IsElliptic
+  have hn' : (n : ℤ) ≠ 0 := Int.natCast_ne_zero.2 hn
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h =>
+    have h' : (W⁄F).toAffine.Nonsingular x y := h
+    have hzs : ((n : ℤ)) • (Affine.Point.some x y h' : (W⁄F).Point)
+        = (n • (Affine.Point.some x y h : W.Point) : W.Point) := natCast_zsmul _ _
+    rw [← hzs]
+    exact TorsionCard.smul_some_eq_zero_iff W hn' h'
+
+omit [DecidableEq F] in
+/-- `Φ₂ − t·Ψ₂²` is nonzero: `Φ₂` has degree exactly `4` (`natDegree_Φ`), while
+`Ψ₂²` has degree `≤ 3` (`natDegree_ΨSq_le`).  This is what makes each fibre of the
+duplication map on the `x`-line finite. -/
+theorem Phi_sub_C_mul_ΨSq_ne_zero (W : Affine F) (t : F) :
+    W.Φ (2 : ℤ) - Polynomial.C t * W.ΨSq (2 : ℤ) ≠ 0 := by
+  intro h
+  have heq : W.Φ (2 : ℤ) = Polynomial.C t * W.ΨSq (2 : ℤ) := by
+    linear_combination (norm := ring_nf) h
+  have h1 : (W.Φ (2 : ℤ)).natDegree = 4 := W.natDegree_Φ (2 : ℤ)
+  have h3 : (W.ΨSq (2 : ℤ)).natDegree ≤ 3 := W.natDegree_ΨSq_le (2 : ℤ)
+  have h2 : (Polynomial.C t * W.ΨSq (2 : ℤ)).natDegree ≤ 3 :=
+    le_trans Polynomial.natDegree_mul_le (by simpa using h3)
+  rw [heq] at h1
+  omega
+
+/-- Two distinct nonzero `2`-torsion points, over an algebraically closed field of
+characteristic zero: read off two of the three roots of the `2`-division cubic
+supplied by `exists_three_twoTorsion_of_Δ_ne_zero`, each paired with the unique `y`
+satisfying `y = negY x y` — which is exactly `T = −T`, i.e. `2 • T = 0`. -/
+theorem exists_two_twoTorsion [IsAlgClosed F] [CharZero F] (W : Affine F) [W.IsElliptic] :
+    ∃ T₁ T₂ : W.Point, T₁ ≠ 0 ∧ T₂ ≠ 0 ∧ T₁ ≠ T₂ ∧ (2 : ℕ) • T₁ = 0 ∧ (2 : ℕ) • T₂ = 0 := by
+  have hΔ : W.Δ ≠ 0 := W.isUnit_Δ.ne_zero
+  obtain ⟨x₁, x₂, x₃, y₁, y₂, y₃, he₁, he₂, _, hn₁, hn₂, _, h12, _, _⟩ :=
+    WeierstrassCurve.exists_three_twoTorsion_of_Δ_ne_zero W hΔ
+  have mk : ∀ x y : F, W.Equation x y → y = W.negY x y →
+      ∃ T : W.Point, T ≠ 0 ∧ (2 : ℕ) • T = 0 ∧ veluPointX T = x := by
+    intro x y he hy
+    have hns : W.Nonsingular x y :=
+      (Affine.equation_iff_nonsingular_of_Δ_ne_zero hΔ).mp he
+    refine ⟨Affine.Point.some x y hns, by simp, ?_, rfl⟩
+    have hneg : -(Affine.Point.some x y hns) = Affine.Point.some x y hns := by
+      rw [Affine.Point.neg_some]
+      exact velu_point_some_eq rfl hy.symm
+    rw [two_smul]
+    nth_rewrite 1 [← hneg]
+    exact neg_add_cancel _
+  obtain ⟨T₁, hT₁0, hT₁2, hT₁x⟩ := mk x₁ y₁ he₁ hn₁
+  obtain ⟨T₂, hT₂0, hT₂2, hT₂x⟩ := mk x₂ y₂ he₂ hn₂
+  exact ⟨T₁, T₂, hT₁0, hT₂0, fun h => h12 (by rw [← hT₁x, ← hT₂x, h]), hT₁2, hT₂2⟩
+
+/-- **Every fibre of the duplication map on the `x`-line has at least TWO elements.**
+
+`W.Point` is divisible (`nsmul_surjective`), so `t = x R₀` with `R₀ ≠ 0` has a halving
+`2 • P = R₀`; the halvings `P`, `P + T₁`, `P + T₂` for the two distinct nonzero
+`2`-torsion points of `exists_two_twoTorsion` all double to `R₀`, and at most one of
+them can share an `x`-coordinate with `P` — `x P = x (P + Tᵢ)` forces `P = ±(P + Tᵢ)`
+(`eq_or_eq_neg_of_veluPointX_eq`), hence `Tᵢ = 0` (excluded) or `R₀ = Tᵢ`, which can
+hold for at most one `i`. -/
+theorem exists_two_double_preimage [IsAlgClosed F] [CharZero F] (W : Affine F) [W.IsElliptic]
+    (t : F) :
+    ∃ s₁ s₂ : F, s₁ ≠ s₂ ∧
+      (W.ΨSq (2 : ℤ)).eval s₁ ≠ 0 ∧
+        (W.Φ (2 : ℤ)).eval s₁ = t * (W.ΨSq (2 : ℤ)).eval s₁ ∧
+      (W.ΨSq (2 : ℤ)).eval s₂ ≠ 0 ∧
+        (W.Φ (2 : ℤ)).eval s₂ = t * (W.ΨSq (2 : ℤ)).eval s₂ := by
+  obtain ⟨R₀, hR₀0, hR₀x⟩ := WeierstrassCurve.exists_point_veluPointX_eq (W := W) t
+  obtain ⟨P, hP⟩ := WeierstrassCurve.nsmul_surjective (W := W) (n := 2) (by norm_num) R₀
+  have hP2 : (2 : ℕ) • P = R₀ := hP
+  obtain ⟨T₁, T₂, hT₁0, hT₂0, hT12, hT₁2, hT₂2⟩ := exists_two_twoTorsion W
+  have hself : ∀ T : W.Point, (2 : ℕ) • T = 0 → -T = T := by
+    intro T hT
+    rw [two_smul] at hT
+    exact neg_eq_of_add_eq_zero_left hT
+  have main : ∀ Q : W.Point, (2 : ℕ) • Q = R₀ →
+      (W.ΨSq (2 : ℤ)).eval (veluPointX Q) ≠ 0 ∧
+        (W.Φ (2 : ℤ)).eval (veluPointX Q) = t * (W.ΨSq (2 : ℤ)).eval (veluPointX Q) := by
+    intro Q hQ
+    have h2Q : (2 : ℕ) • Q ≠ 0 := by rw [hQ]; exact hR₀0
+    have hQ0 : Q ≠ 0 := by rintro rfl; exact h2Q (smul_zero _)
+    have hΨ : (W.ΨSq (2 : ℤ)).eval (veluPointX Q) ≠ 0 := fun hc =>
+      h2Q ((nsmul_eq_zero_iff_eval_ΨSq W (by norm_num) hQ0).2 hc)
+    refine ⟨hΨ, ?_⟩
+    have hx := WeierstrassCurve.veluPointX_nsmul (W := W) (n := 2) (by norm_num) Q h2Q
+    rw [hQ, hR₀x] at hx
+    exact hx.symm
+  have hP0 : P ≠ 0 := by rintro rfl; exact hR₀0 (by rw [← hP2, smul_zero])
+  have hshift : ∀ T : W.Point, (2 : ℕ) • T = 0 → (2 : ℕ) • (P + T) = R₀ := by
+    intro T hT
+    rw [smul_add, hT, add_zero, hP2]
+  have hkey : ∀ T : W.Point, (2 : ℕ) • T = 0 → T ≠ 0 →
+      veluPointX P = veluPointX (P + T) → R₀ = T := by
+    intro T hT2 hT0 hx
+    have hPT0 : P + T ≠ 0 := by
+      intro hc
+      have hPT : P = -T := by rwa [add_eq_zero_iff_eq_neg] at hc
+      rw [hPT, smul_neg, hT2, neg_zero] at hP2
+      exact hR₀0 hP2.symm
+    rcases WeierstrassCurve.eq_or_eq_neg_of_veluPointX_eq hP0 hPT0 hx with h | h
+    · refine absurd ?_ hT0
+      calc T = -P + (P + T) := by abel
+        _ = -P + P := by rw [← h]
+        _ = 0 := neg_add_cancel P
+    · have h0 : P + (P + T) = 0 := by
+        nth_rewrite 1 [h]
+        exact neg_add_cancel _
+      have h1 : (2 : ℕ) • P + T = 0 := by rw [two_smul, add_assoc]; exact h0
+      rw [hP2] at h1
+      have h2 : R₀ = -T := by rwa [add_eq_zero_iff_eq_neg] at h1
+      rw [h2, hself T hT2]
+  by_cases hne1 : veluPointX P = veluPointX (P + T₁)
+  · have hR₁ : R₀ = T₁ := hkey T₁ hT₁2 hT₁0 hne1
+    have hne2 : veluPointX P ≠ veluPointX (P + T₂) := by
+      intro hc
+      exact hT12 (hR₁ ▸ hkey T₂ hT₂2 hT₂0 hc)
+    obtain ⟨m1, m2⟩ := main P hP2
+    obtain ⟨n1, n2⟩ := main (P + T₂) (hshift T₂ hT₂2)
+    exact ⟨_, _, hne2, m1, m2, n1, n2⟩
+  · obtain ⟨m1, m2⟩ := main P hP2
+    obtain ⟨n1, n2⟩ := main (P + T₁) (hshift T₁ hT₁2)
+    exact ⟨_, _, hne1, m1, m2, n1, n2⟩
+
+end XMapMoebiusAux
+
+/-- **PROVEN 2026-07-28 (cut 2026-07-28): the finite exceptional set of the Möbius form is
 EMPTY — and this is where ADDITIVITY of `θ` enters.**
 
 Given that the `x`-map `f` of a bijective homomorphism `θ` agrees with a
@@ -17306,7 +17449,8 @@ finite set. Only the group law rules them out, and this statement is exactly the
 group-law step: it quantifies over `θ` as an `AddMonoidHom`, and its proof uses
 `θ (2 • P) = 2 • θ P`.
 
-**ROUTE** (worked out 2026-07-28).
+**THE PROOF** (route worked out 2026-07-28, carried out the same day; the helper
+lemmas are the four in `XMapMoebiusAux` directly above).
 
 Write `X := {t | t is exceptional}`, finite by hypothesis, and let `R` denote the
 Möbius function. Duplication on the `x`-line is `D = Φ₂/Ψ₂²` in cleared form —
@@ -17319,10 +17463,15 @@ characteristic and with no normal-form hypothesis.
    `{s ∉ X ∪ D⁻¹(X) : 2 • P_s ≠ 0}` (a fibre of `D` has at most four elements, so
    `D⁻¹(X)` is finite), hence agree as rational maps; cleared of denominators that
    is the single polynomial identity
-   `(a₁Φ₁ + a₀Ψ₁²) · (b₁X + b₀) · M̃ = Ñ · (b₁Φ₁ + b₀Ψ₁²)`,
-   where `Ñ, M̃` are the degree-`4` and degree-`3` homogenisations of `Φ₂, Ψ₂²`
-   along `(a₁X + a₀, b₁X + b₀)` — i.e. `homogSubst`, which is already in
-   `Fermat/FLT/EllipticCurve/Isogeny.lean`. Evaluating at `s` and cancelling the
+   `(a₁Φ₁ + a₀Ψ₁²) · M̃ = Ñ · (b₁Φ₁ + b₀Ψ₁²)`,
+   where `Ñ := homogSubst (a₁X + a₀) (b₁X + b₀) 4 Φ₂` and
+   `M̃ := homogSubst (a₁X + a₀) (b₁X + b₀) 4 Ψ₂²` are the degree-`4`
+   homogenisations of `Φ₂, Ψ₂²` along the Möbius pair — `homogSubst` is already in
+   `Fermat/FLT/EllipticCurve/Isogeny.lean`, and `eval_homogSubst` carries **no**
+   nonvanishing side condition, only `u · B(t) = A(t)`, which is precisely what
+   `s ∉ X` supplies. (Taking the SAME clearing degree `4` for both removes the
+   stray `(b₁X + b₀)` factor the first draft of this route carried.)
+   Evaluating at `s` and cancelling the
    nonzero factors `Ψ₁²(s)` (that is `2 • P ≠ 0`), `(b₁s + b₀)⁴` (that is `s ∉ X`)
    and `Ψ₂²(R s)` (that is `2 • θP ≠ 0`) gives `b₁·(D s) + b₀ ≠ 0` — a zero there
    would force `a₁·(D s) + a₀ = 0` too, contradicting `a₁b₀ − a₀b₁ ≠ 0` — and
@@ -17344,18 +17493,196 @@ theorem xMap_moebius_of_finite_bad {F : Type*} [Field F] [DecidableEq F]
     (f : F → F) (hf : ∀ P : V₁.Point, P ≠ 0 → f (veluPointX P) = veluPointX (θ P))
     (a₁ a₀ b₁ b₀ : F) (hdet : a₁ * b₀ - a₀ * b₁ ≠ 0)
     (hbad : {t : F | ¬ (b₁ * t + b₀ ≠ 0 ∧ f t * (b₁ * t + b₀) = a₁ * t + a₀)}.Finite) :
-    ∀ t : F, b₁ * t + b₀ ≠ 0 ∧ f t * (b₁ * t + b₀) = a₁ * t + a₀ :=
-  sorry
+    ∀ t : F, b₁ * t + b₀ ≠ 0 ∧ f t * (b₁ * t + b₀) = a₁ * t + a₀ := by
+  classical
+  set Xs : Set F := {t : F | ¬ (b₁ * t + b₀ ≠ 0 ∧ f t * (b₁ * t + b₀) = a₁ * t + a₀)} with hXsdef
+  have hmem : ∀ s : F, s ∉ Xs ↔ (b₁ * s + b₀ ≠ 0 ∧ f s * (b₁ * s + b₀) = a₁ * s + a₀) := by
+    intro s
+    simp only [hXsdef, Set.mem_setOf_eq, not_not]
+  set Φ₁ : Polynomial F := V₁.Φ (2 : ℤ) with hΦ₁def
+  set Ψ₁ : Polynomial F := V₁.ΨSq (2 : ℤ) with hΨ₁def
+  set Φ₂ : Polynomial F := V₂.Φ (2 : ℤ) with hΦ₂def
+  set Ψ₂ : Polynomial F := V₂.ΨSq (2 : ℤ) with hΨ₂def
+  set A : Polynomial F := Polynomial.C a₁ * Polynomial.X + Polynomial.C a₀ with hAdef
+  set B : Polynomial F := Polynomial.C b₁ * Polynomial.X + Polynomial.C b₀ with hBdef
+  set N : Polynomial F := WeierstrassCurve.homogSubst A B 4 Φ₂ with hNdef
+  set M : Polynomial F := WeierstrassCurve.homogSubst A B 4 Ψ₂ with hMdef
+  have hAeval : ∀ s : F, A.eval s = a₁ * s + a₀ := by intro s; simp [hAdef]
+  have hBeval : ∀ s : F, B.eval s = b₁ * s + b₀ := by intro s; simp [hBdef]
+  have hΦ₂deg : Φ₂.natDegree ≤ 4 := V₂.natDegree_Φ_le (2 : ℤ)
+  have hΨ₂deg : Ψ₂.natDegree ≤ 4 := le_trans (V₂.natDegree_ΨSq_le (2 : ℤ)) (by norm_num)
+  have hΨ₁ne : Ψ₁ ≠ 0 := WeierstrassCurve.ΨSq_ne_zero' V₁ (by norm_num)
+  have hθ0 : ∀ P : V₁.Point, P ≠ 0 → θ P ≠ 0 := by
+    intro P hP hc
+    exact hP (hbij.1 (by rw [hc, map_zero]))
+  -- The common local data at a point `s` where `f` already agrees with the Möbius form.
+  have hlocal : ∀ s : F, s ∉ Xs →
+      ∃ (P : V₁.Point), P ≠ 0 ∧ veluPointX P = s ∧ f s = veluPointX (θ P) := by
+    intro s _
+    obtain ⟨P, hP0, hPx⟩ := WeierstrassCurve.exists_point_veluPointX_eq (W := V₁) s
+    exact ⟨P, hP0, hPx, by rw [← hPx]; exact hf P hP0⟩
+  -- **KEY**: the cleared form of `R ∘ D = D' ∘ R`, proven by agreement off a finite set.
+  have hkey : (Polynomial.C a₁ * Φ₁ + Polynomial.C a₀ * Ψ₁) * M
+      = N * (Polynomial.C b₁ * Φ₁ + Polynomial.C b₀ * Ψ₁) := by
+    refine Polynomial.eq_of_infinite_eval_eq _ _ ?_
+    set Bad : Finset F := (hbad.toFinset ∪ Ψ₁.roots.toFinset) ∪
+        hbad.toFinset.biUnion (fun t => (Φ₁ - Polynomial.C t * Ψ₁).roots.toFinset) with hBaddef
+    have hinf : ((↑Bad : Set F)ᶜ).Infinite := Set.Finite.infinite_compl Bad.finite_toSet
+    refine hinf.mono ?_
+    intro s hsc
+    have hsB : s ∉ Bad := hsc
+    have hs1 : s ∉ Xs := fun hc => hsB (Finset.mem_union_left _ (Finset.mem_union_left _
+      (hbad.mem_toFinset.2 hc)))
+    have hs2 : Ψ₁.eval s ≠ 0 := fun hc => hsB (Finset.mem_union_left _ (Finset.mem_union_right _
+      (Multiset.mem_toFinset.2 ((Polynomial.mem_roots hΨ₁ne).2 hc))))
+    have hs3 : ∀ v : F, v * Ψ₁.eval s = Φ₁.eval s → v ∉ Xs := by
+      intro v hv hvX
+      refine hsB (Finset.mem_union_right _ (Finset.mem_biUnion.2
+        ⟨v, hbad.mem_toFinset.2 hvX, ?_⟩))
+      rw [Multiset.mem_toFinset,
+        Polynomial.mem_roots (XMapMoebiusAux.Phi_sub_C_mul_ΨSq_ne_zero V₁ v)]
+      simp only [Polynomial.IsRoot.def, Polynomial.eval_sub, Polynomial.eval_mul,
+        Polynomial.eval_C]
+      linear_combination -hv
+    obtain ⟨P, hP0, hPx, hfsP⟩ := hlocal s hs1
+    obtain ⟨hBs, hfs⟩ := (hmem s).1 hs1
+    have h2P : (2 : ℕ) • P ≠ 0 := fun hc => hs2 (by
+      rw [← hPx]
+      exact (XMapMoebiusAux.nsmul_eq_zero_iff_eval_ΨSq V₁ (by norm_num) hP0).1 hc)
+    have hvid : veluPointX ((2 : ℕ) • P) * Ψ₁.eval s = Φ₁.eval s := by
+      rw [← hPx]; exact WeierstrassCurve.veluPointX_nsmul (by norm_num) P h2P
+    have hvX : veluPointX ((2 : ℕ) • P) ∉ Xs := hs3 _ hvid
+    obtain ⟨hBv, hfv⟩ := (hmem _).1 hvX
+    have h2θP : (2 : ℕ) • (θ P) ≠ 0 := by
+      rw [← map_nsmul]; exact hθ0 _ h2P
+    have hfv2 : f (veluPointX ((2 : ℕ) • P)) = veluPointX ((2 : ℕ) • θ P) := by
+      rw [hf _ h2P, map_nsmul]
+    have hw : veluPointX ((2 : ℕ) • θ P) * Ψ₂.eval (veluPointX (θ P))
+        = Φ₂.eval (veluPointX (θ P)) :=
+      WeierstrassCurve.veluPointX_nsmul (by norm_num) (θ P) h2θP
+    have hu : f s * B.eval s = A.eval s := by rw [hAeval, hBeval]; exact hfs
+    have hM : M.eval s = (B.eval s) ^ 4 * Ψ₂.eval (f s) :=
+      WeierstrassCurve.eval_homogSubst hΨ₂deg hu
+    have hN : N.eval s = (B.eval s) ^ 4 * Φ₂.eval (f s) :=
+      WeierstrassCurve.eval_homogSubst hΦ₂deg hu
+    show ((Polynomial.C a₁ * Φ₁ + Polynomial.C a₀ * Ψ₁) * M).eval s
+        = (N * (Polynomial.C b₁ * Φ₁ + Polynomial.C b₀ * Ψ₁)).eval s
+    simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_C]
+    rw [hM, hN, hfsP, ← hvid]
+    rw [hfv2] at hfv
+    linear_combination ((Ψ₁.eval s) * (B.eval s) ^ 4 *
+        (b₁ * veluPointX ((2 : ℕ) • P) + b₀)) * hw
+      - ((Ψ₁.eval s) * (B.eval s) ^ 4 * Ψ₂.eval (veluPointX (θ P))) * hfv
+  -- **Backward invariance** of the exceptional set under duplication.
+  have hBI : ∀ s : F, s ∉ Xs → Ψ₁.eval s ≠ 0 →
+      ∀ v : F, v * Ψ₁.eval s = Φ₁.eval s → v ∉ Xs := by
+    intro s hs1 hs2 v hvid
+    obtain ⟨P, hP0, hPx, hfsP⟩ := hlocal s hs1
+    obtain ⟨hBs, hfs⟩ := (hmem s).1 hs1
+    have h2P : (2 : ℕ) • P ≠ 0 := fun hc => hs2 (by
+      rw [← hPx]
+      exact (XMapMoebiusAux.nsmul_eq_zero_iff_eval_ΨSq V₁ (by norm_num) hP0).1 hc)
+    have hvid' : veluPointX ((2 : ℕ) • P) * Ψ₁.eval s = Φ₁.eval s := by
+      rw [← hPx]; exact WeierstrassCurve.veluPointX_nsmul (by norm_num) P h2P
+    have hveq : v = veluPointX ((2 : ℕ) • P) :=
+      mul_right_cancel₀ hs2 (hvid.trans hvid'.symm)
+    have h2θP : (2 : ℕ) • (θ P) ≠ 0 := by
+      rw [← map_nsmul]; exact hθ0 _ h2P
+    have hΨ₂ne : Ψ₂.eval (veluPointX (θ P)) ≠ 0 := fun hc =>
+      h2θP ((XMapMoebiusAux.nsmul_eq_zero_iff_eval_ΨSq V₂ (by norm_num) (hθ0 P hP0)).2 hc)
+    have hw : veluPointX ((2 : ℕ) • θ P) * Ψ₂.eval (veluPointX (θ P))
+        = Φ₂.eval (veluPointX (θ P)) :=
+      WeierstrassCurve.veluPointX_nsmul (by norm_num) (θ P) h2θP
+    have hfv2 : f v = veluPointX ((2 : ℕ) • θ P) := by
+      rw [hveq, hf _ h2P, map_nsmul]
+    have hu : f s * B.eval s = A.eval s := by rw [hAeval, hBeval]; exact hfs
+    have hM : M.eval s = (B.eval s) ^ 4 * Ψ₂.eval (f s) :=
+      WeierstrassCurve.eval_homogSubst hΨ₂deg hu
+    have hN : N.eval s = (B.eval s) ^ 4 * Φ₂.eval (f s) :=
+      WeierstrassCurve.eval_homogSubst hΦ₂deg hu
+    have heval := congrArg (Polynomial.eval s) hkey
+    simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_C] at heval
+    rw [hM, hN, hfsP, ← hvid] at heval
+    have hBs4 : (B.eval s) ^ 4 ≠ 0 := pow_ne_zero _ (by rw [hBeval]; exact hBs)
+    -- cancel the nonzero factors `Ψ₁(s)` and `B(s)^4`
+    have hstep : (a₁ * v + a₀) * Ψ₂.eval (veluPointX (θ P))
+        = Φ₂.eval (veluPointX (θ P)) * (b₁ * v + b₀) := by
+      refine mul_left_cancel₀ (mul_ne_zero hs2 hBs4) ?_
+      linear_combination heval
+    have hfinal : f v * (b₁ * v + b₀) = a₁ * v + a₀ := by
+      rw [hfv2]
+      apply mul_right_cancel₀ hΨ₂ne
+      linear_combination -hstep + (b₁ * v + b₀) * hw
+    have hBv : b₁ * v + b₀ ≠ 0 := by
+      intro hc
+      have ha : a₁ * v + a₀ = 0 := by rw [← hfinal, hc, mul_zero]
+      exact hdet (by linear_combination a₁ * hc - b₁ * ha)
+    exact (hmem v).2 ⟨hBv, hfinal⟩
+  -- **Counting**: `2 |X| ≤ |X|`, so `X = ∅`.
+  have hfib : ∀ t : F, ∃ s₁ s₂ : F, s₁ ≠ s₂ ∧
+      Ψ₁.eval s₁ ≠ 0 ∧ Φ₁.eval s₁ = t * Ψ₁.eval s₁ ∧
+      Ψ₁.eval s₂ ≠ 0 ∧ Φ₁.eval s₂ = t * Ψ₁.eval s₂ := fun t =>
+    XMapMoebiusAux.exists_two_double_preimage V₁ t
+  choose g₁ g₂ hgne hg1Ψ hg1id hg2Ψ hg2id using hfib
+  have hginj : ∀ (g : F → F), (∀ t, Ψ₁.eval (g t) ≠ 0) →
+      (∀ t, Φ₁.eval (g t) = t * Ψ₁.eval (g t)) → Function.Injective g := by
+    intro g hΨ hid t t' h
+    have e1 := hid t
+    have e2 := hid t'
+    rw [h] at e1
+    exact mul_right_cancel₀ (hΨ t') (e1.symm.trans e2)
+  have hcross : ∀ t t' : F, g₁ t = g₂ t' → t = t' := by
+    intro t t' h
+    have e1 := hg1id t
+    have e2 := hg2id t'
+    rw [h] at e1
+    exact mul_right_cancel₀ (hg2Ψ t') (e1.symm.trans e2)
+  have hinto : ∀ (g : F → F), (∀ t, Ψ₁.eval (g t) ≠ 0) →
+      (∀ t, Φ₁.eval (g t) = t * Ψ₁.eval (g t)) → ∀ t ∈ hbad.toFinset, g t ∈ hbad.toFinset := by
+    intro g hΨ hid t ht
+    by_contra hc
+    have hgt : g t ∉ Xs := fun h => hc (hbad.mem_toFinset.2 h)
+    exact (hBI (g t) hgt (hΨ t) t (hid t).symm) (hbad.mem_toFinset.1 ht)
+  have hXcard : hbad.toFinset.card = 0 := by
+    set Xf := hbad.toFinset with hXfdef
+    have h1 : Xf.image g₁ ⊆ Xf := fun x hx => by
+      obtain ⟨t, ht, rfl⟩ := Finset.mem_image.1 hx
+      exact hinto g₁ hg1Ψ hg1id t ht
+    have h2 : Xf.image g₂ ⊆ Xf := fun x hx => by
+      obtain ⟨t, ht, rfl⟩ := Finset.mem_image.1 hx
+      exact hinto g₂ hg2Ψ hg2id t ht
+    have hd : Disjoint (Xf.image g₁) (Xf.image g₂) := by
+      refine Finset.disjoint_left.2 ?_
+      intro x hx1 hx2
+      obtain ⟨t, _, ht⟩ := Finset.mem_image.1 hx1
+      obtain ⟨t', _, ht'⟩ := Finset.mem_image.1 hx2
+      have htt : t = t' := hcross t t' (ht.trans ht'.symm)
+      subst htt
+      exact hgne t (ht.trans ht'.symm)
+    have hc1 : (Xf.image g₁).card = Xf.card :=
+      Finset.card_image_of_injective _ (hginj g₁ hg1Ψ hg1id)
+    have hc2 : (Xf.image g₂).card = Xf.card :=
+      Finset.card_image_of_injective _ (hginj g₂ hg2Ψ hg2id)
+    have hun : (Xf.image g₁ ∪ Xf.image g₂).card ≤ Xf.card :=
+      Finset.card_le_card (Finset.union_subset h1 h2)
+    rw [Finset.card_union_of_disjoint hd, hc1, hc2] at hun
+    omega
+  intro t
+  refine (hmem t).1 ?_
+  intro hc
+  have : hbad.toFinset.Nonempty := ⟨t, hbad.mem_toFinset.2 hc⟩
+  rw [← Finset.card_pos] at this
+  omega
 
 /-- **THE `x`-map of a BIJECTIVE rational map between short normal forms is
 AFFINE-LINEAR** (PROVEN 2026-07-28 over `exists_xMap_of_bijective_isRationalMap`,
 `exists_moebius_of_injective_cert` and `xMap_moebius_of_finite_bad`; cut 2026-07-27
 out of `j_eq_of_bijective_isRationalMap_isShortNF`, which is PROVEN over it).
 
-Everything else in the chain
+The whole chain
 `jRelation_veluCurve_of_isogeny_ker_eq` → `j_eq_of_bijective_isRationalMap`
-→ `j_eq_of_bijective_isRationalMap_isShortNF` → THIS is proven; this is the whole
-geometric content that is left.
+→ `j_eq_of_bijective_isRationalMap_isShortNF` → THIS is now proven, sorry-free
+(2026-07-28: the last leaf, `xMap_moebius_of_finite_bad`, closed).
 
 **WHY THE OBVIOUS ARGUMENT DOES NOT WORK — a refutation, not a difficulty.**
 The route recorded on `jRelation_veluCurve_of_isogeny_ker_eq` said: "`θ` is
@@ -17412,8 +17739,8 @@ right, and the shape it takes is DOUBLING rather than translation by `2`-torsion
 
 The three pieces are `exists_xMap_of_bijective_isRationalMap` (PROVEN),
 `exists_moebius_of_injective_cert` (PROVEN: injective + certificate ⟹ Möbius off a
-finite set) and `xMap_moebius_of_finite_bad` (the group-law step, the ONE remaining
-sorried leaf of the cluster). `α ≠ 0` is
+finite set) and `xMap_moebius_of_finite_bad` (the group-law step, PROVEN 2026-07-28
+by exactly the doubling argument above). `α ≠ 0` is
 free at the end: `α = a₁/b₀` and `a₁ = 0` would collapse the determinant
 `a₁b₀ − a₀b₁`.
 
