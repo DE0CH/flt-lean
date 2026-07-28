@@ -34132,6 +34132,287 @@ theorem exists_unique_realConj :
       Finset.card_insert_of_notMem (by simp [hne]), Finset.card_singleton, hfc] at hsub
     omega
 
+/-- **`ℝ̄` IS FINITE OVER `ULift ℝ`** (PROVEN 2026-07-27): the same tower
+computation as `realGal_card` — `AlgebraicClosure (ULift ℝ)` is an algebraic
+closure of `ℝ`, hence `ℝ`-isomorphic to `ℂ`, hence of `ℝ`-rank two; and
+`ULift ℝ` has `ℝ`-rank one.
+
+RELOCATED 2026-07-28 from the `RealTwoTorsionCount` section below, unchanged:
+`realConj_mul_eq_one_of_pow_eq_one` (the cyclotomic input of the Weil-pairing
+leaf) needs it, and that leaf is stated ABOVE the section. -/
+theorem realAlgClos_finiteDimensional :
+    FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI : IsAlgClosure ℝ ℂ := ⟨Complex.isAlgClosed, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
+  let e : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] ℂ := IsAlgClosure.equiv ℝ _ ℂ
+  have hR : Module.finrank ℝ (AlgebraicClosure (ULift.{u} ℝ)) = 2 := by
+    rw [e.toLinearEquiv.finrank_eq, Complex.finrank_real_complex]
+  haveI hfdR : FiniteDimensional ℝ (AlgebraicClosure (ULift.{u} ℝ)) := by
+    apply Module.finite_of_finrank_pos
+    rw [hR]; norm_num
+  exact Module.Finite.of_restrictScalars_finite ℝ (ULift.{u} ℝ) _
+
+/-- **AN ELEMENT OF `ℝ̄` FIXED BY ONE NONTRIVIAL AUTOMORPHISM IS REAL** (PROVEN
+2026-07-27).  `Gal(ℝ̄/ULift ℝ)` has order two (`exists_unique_realConj`), so a
+single `σ ≠ 1` already fixes `x` for EVERY automorphism, and
+`IsGalois.mem_range_algebraMap_iff_fixed` puts `x` in the base field.  This is
+what makes `i ∉ ULift ℝ` do the work in the `ε = true` count.
+
+The instance arguments of `mem_range_algebraMap_iff_fixed` are supplied
+EXPLICITLY, for the same reason recorded on `realGal_card`: the elaborator's own
+search does not find the local `FiniteDimensional` witness at that application.
+
+RELOCATED 2026-07-28 from the `RealTwoTorsionCount` section below, unchanged —
+see `realAlgClos_finiteDimensional`. -/
+theorem exists_algebraMap_eq_of_conj_fixed
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1)
+    (x : AlgebraicClosure (ULift.{u} ℝ)) (hx : σ x = x) :
+    ∃ r : ULift.{u} ℝ, algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) r = x := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI hfd : FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    realAlgClos_finiteDimensional.{u}
+  obtain ⟨σ₀, hσ₀ne, _, hσ₀uniq⟩ := exists_unique_realConj.{u}
+  haveI hgal : IsGalois (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
+    IsAlgClosure.isGalois _ _
+  have hall : ∀ τ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+      AlgebraicClosure (ULift.{u} ℝ), τ x = x := by
+    intro τ
+    by_cases hτ : τ = 1
+    · rw [hτ]; rfl
+    · have hτ0 : τ = σ₀ := hσ₀uniq τ hτ
+      have hσσ : σ = σ₀ := hσ₀uniq σ hσ
+      rw [hτ0, ← hσσ]; exact hx
+  exact (@IsGalois.mem_range_algebraMap_iff_fixed (ULift.{u} ℝ) _
+    (AlgebraicClosure (ULift.{u} ℝ)) _ _ hgal hfd x).mpr hall
+
+/-- **THE COORDINATE DETERMINANT FORM TRANSFORMS BY `LinearMap.det`** (PROVEN
+2026-07-28), over an arbitrary COMMUTATIVE RING `R` and a rank-two free module:
+for a basis `b` of `M` indexed by `Fin 2`,
+
+`e x y := b.repr x 0 · b.repr y 1 − b.repr x 1 · b.repr y 0`
+
+satisfies `e (f x) (f y) = det f · e x y` for every `R`-linear `f`.
+
+This is the ring-coefficient analogue of `WeilPairing.pairing_map_eq_det_smul`,
+which is stated over a FIELD and for an abstract alternating form of a
+2-dimensional space.  The field hypothesis is genuinely needed there (it uses
+`Module.finBasisOfFinrankEq`), and `ZMod n` is not a field unless `n` is prime,
+which is exactly why the real-torsion leaf below cannot reuse it: `E[n]` is a
+free `ZMod n`-module of rank two for EVERY `n`, but a `ZMod n`-vector space only
+for prime `n`.  With the form written in coordinates rather than abstractly, the
+proof is the `2 × 2` expansion of `Matrix.det_fin_two` and needs no field. -/
+lemma coordDet_map_eq_det_mul {R : Type*} [CommRing R] {M : Type*} [AddCommGroup M]
+    [Module R M] (b : Module.Basis (Fin 2) R M) (f : M →ₗ[R] M) (x y : M) :
+    b.repr (f x) 0 * b.repr (f y) 1 - b.repr (f x) 1 * b.repr (f y) 0
+      = LinearMap.det f * (b.repr x 0 * b.repr y 1 - b.repr x 1 * b.repr y 0) := by
+  classical
+  have key : ∀ (z : M) (i : Fin 2), b.repr (f z) i
+      = LinearMap.toMatrix b b f i 0 * b.repr z 0
+        + LinearMap.toMatrix b b f i 1 * b.repr z 1 := by
+    intro z i
+    have hz : f z = (b.repr z 0) • f (b 0) + (b.repr z 1) • f (b 1) := by
+      have hsum := b.sum_repr z
+      rw [Fin.sum_univ_two] at hsum
+      calc f z = f ((b.repr z 0) • b 0 + (b.repr z 1) • b 1) := by rw [hsum]
+        _ = (b.repr z 0) • f (b 0) + (b.repr z 1) • f (b 1) := by
+            rw [map_add, map_smul, map_smul]
+    rw [hz]
+    simp only [map_add, map_smul, Finsupp.coe_add, Finsupp.coe_smul, Pi.add_apply,
+      Pi.smul_apply, smul_eq_mul, LinearMap.toMatrix_apply]
+    ring
+  have hdet : LinearMap.det f =
+      LinearMap.toMatrix b b f 0 0 * LinearMap.toMatrix b b f 1 1
+        - LinearMap.toMatrix b b f 0 1 * LinearMap.toMatrix b b f 1 0 := by
+    rw [← LinearMap.det_toMatrix b f, Matrix.det_fin_two]
+  rw [key x 0, key x 1, key y 0, key y 1, hdet]
+  ring
+
+/-- **COMPLEX CONJUGATION INVERTS EVERY ROOT OF UNITY OF `ℝ̄`** (PROVEN
+2026-07-28): if `ζⁿ = 1` and `σ ≠ 1` then `σ ζ · ζ = 1`.  This is the CYCLOTOMIC
+input `χ_n(σ) = −1` of the Weil-pairing leaf below, and — as the machinery audit
+of `exists_torsion_conj_ne` predicted — it needs **no analysis and no `ℂ`**, only
+that `ULift ℝ` is an ORDERED field.
+
+THE ARGUMENT.  `σ` is an involution (`exists_unique_realConj`), so the norm
+`p := σζ · ζ` and the trace `s := σζ + ζ` are both `σ`-fixed, hence real
+(`exists_algebraMap_eq_of_conj_fixed`).  Now `pⁿ = σ(ζⁿ) · ζⁿ = 1`, and a real
+`n`-th root of unity is `±1` (`pow_eq_one_iff_of_ne_zero`).
+
+The whole content is ruling out `p = −1`.  If `p = −1` then `ζ` satisfies
+`ζ² − sζ − 1 = 0`, i.e. `(2ζ − s)² = s² + 4`; the right side is a positive real,
+so it has a real square root `t`, and `(2ζ − s − t)(2ζ − s + t) = 0` puts `2ζ` in
+the image of `algebraMap` either way.  Then `σ` fixes `2ζ`, hence `ζ` (char `0`),
+so `ζ = algebraMap x` is real and `p = ζ² = x²`; but `x² = −1` has no real
+solution.  Hence `p = 1`, which is the claim.
+
+Note what is NOT used: no `ζ ≠ 0`, no primitivity, no `IsPrimitiveRoot`, and no
+identification of `ℝ̄` with `ℂ`.  The hypothesis `1 ≤ n` is load-bearing — for
+`n = 0` every `ζ` satisfies `ζ⁰ = 1` and the conclusion is false at `ζ = 0`. -/
+theorem realConj_mul_eq_one_of_pow_eq_one
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1)
+    (n : ℕ) (hn : 1 ≤ n) (ζ : AlgebraicClosure (ULift.{u} ℝ)) (hζ : ζ ^ n = 1) :
+    (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+      AlgebraicClosure (ULift.{u} ℝ)) ζ * ζ = 1 := by
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI hcharK : CharZero (AlgebraicClosure (ULift.{u} ℝ)) :=
+    charZero_of_injective_algebraMap
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))).injective
+  obtain ⟨σ₀, hne0, hinv0, huniq⟩ := exists_unique_realConj.{u}
+  have hσσ : σ = σ₀ := huniq σ hσ
+  have hinv : ∀ x : AlgebraicClosure (ULift.{u} ℝ),
+      (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ] AlgebraicClosure (ULift.{u} ℝ))
+        ((σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)) x) = x := by
+    intro x; rw [hσσ]; exact hinv0 x
+  have hAinj : Function.Injective
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))) :=
+    (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))).injective
+  have hdown : ∀ a b : ULift.{u} ℝ, a.down = b.down → a = b := by
+    rintro ⟨a⟩ ⟨b⟩ h; simpa using h
+  have hpowdown : ∀ (a : ULift.{u} ℝ) (k : ℕ), (a ^ k).down = a.down ^ k := fun _ _ => rfl
+  -- the norm `σζ · ζ` is `σ`-fixed, hence real
+  have hpfix : (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+      AlgebraicClosure (ULift.{u} ℝ))
+      ((σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ)) ζ * ζ)
+      = (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ)) ζ * ζ := by
+    rw [map_mul, hinv]; ring
+  obtain ⟨r, hr⟩ := exists_algebraMap_eq_of_conj_fixed.{u} σ hσ _ hpfix
+  have hpn : ((σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+      AlgebraicClosure (ULift.{u} ℝ)) ζ * ζ) ^ n = 1 := by
+    rw [mul_pow, ← map_pow, hζ, map_one, one_mul]
+  have hrn : r ^ n = 1 := hAinj (by rw [map_pow, hr, hpn, map_one])
+  have hrd : r.down ^ n = 1 := by
+    rw [← hpowdown, hrn]; rfl
+  rcases (pow_eq_one_iff_of_ne_zero (by omega : n ≠ 0)).mp hrd with h1 | ⟨h1, _⟩
+  · -- the norm is `1`
+    have hr1 : r = 1 := hdown _ _ (by rw [h1]; rfl)
+    rw [← hr, hr1, map_one]
+  · -- the norm is `−1`: then `ζ` is real, and a real square cannot be `−1`
+    have hrneg : r = -1 := hdown _ _ (by rw [h1]; rfl)
+    have hnorm : (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ)) ζ * ζ = -1 := by
+      rw [← hr, hrneg, map_neg, map_one]
+    -- the trace is `σ`-fixed, hence real
+    have hsfix : (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ))
+        ((σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)) ζ + ζ)
+        = (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)) ζ + ζ := by
+      rw [map_add, hinv]; ring
+    obtain ⟨m, hm⟩ := exists_algebraMap_eq_of_conj_fixed.{u} σ hσ _ hsfix
+    -- `s² + 4` has a real square root
+    obtain ⟨t, ht2⟩ : ∃ t : ULift.{u} ℝ, t ^ 2 = m ^ 2 + 4 := by
+      refine ⟨ULift.up (Real.sqrt (m.down ^ 2 + 4)), hdown _ _ ?_⟩
+      show Real.sqrt (m.down ^ 2 + 4) ^ 2 = m.down ^ 2 + 4
+      exact Real.sq_sqrt (by positivity)
+    have hT2 : (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) t) ^ 2
+        = (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) m) ^ 2 + 4 := by
+      rw [← map_pow, ht2, map_add, map_pow, map_ofNat]
+    have hquad : (2 * ζ - algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) m) ^ 2
+        = (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) t) ^ 2 := by
+      rw [hT2, hm]
+      linear_combination (-4 : AlgebraicClosure (ULift.{u} ℝ)) * hnorm
+    have hfac : (2 * ζ - algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) m
+          - algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) t)
+        * (2 * ζ - algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) m
+          + algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) t) = 0 := by
+      linear_combination hquad
+    have h2fix : (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ)) (2 * ζ) = 2 * ζ := by
+      rcases mul_eq_zero.mp hfac with h | h
+      · have he : (2 : AlgebraicClosure (ULift.{u} ℝ)) * ζ
+            = algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) m
+              + algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) t := by
+          linear_combination h
+        rw [he, map_add, AlgEquiv.commutes, AlgEquiv.commutes]
+      · have he : (2 : AlgebraicClosure (ULift.{u} ℝ)) * ζ
+            = algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) m
+              - algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) t := by
+          linear_combination h
+        rw [he, map_sub, AlgEquiv.commutes, AlgEquiv.commutes]
+    have hcz : (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+        AlgebraicClosure (ULift.{u} ℝ)) ζ = ζ := by
+      rw [map_mul] at h2fix
+      have h2 : (2 : AlgebraicClosure (ULift.{u} ℝ)) ≠ 0 := two_ne_zero
+      have h2' : (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)) (2 : AlgebraicClosure (ULift.{u} ℝ)) = 2 :=
+        map_ofNat _ 2
+      rw [h2'] at h2fix
+      exact mul_left_cancel₀ h2 h2fix
+    obtain ⟨x, hx⟩ := exists_algebraMap_eq_of_conj_fixed.{u} σ hσ ζ hcz
+    have hrx : r = x ^ 2 := hAinj (by rw [map_pow, hx, hr, hcz]; ring)
+    have hx2 : x.down ^ 2 = -1 := by
+      have hxx : x ^ 2 = (-1 : ULift.{u} ℝ) := by rw [← hrx]; exact hrneg
+      rw [← hpowdown, hxx]; rfl
+    nlinarith [sq_nonneg x.down]
+
+/-- **THE WEIL PAIRING, IN THE ONE FORM THIS NODE NEEDS: `det(τ | E[n]) = −1`
+WHENEVER `τ` INVERTS `μ_n`** (sorry leaf, cut 2026-07-28 out of
+`exists_weilPairing_real`).  Nothing archimedean survives the cut: the statement
+is over an ARBITRARY field `F` of characteristic zero, and the only trace of the
+real place is the hypothesis `hinv`, which
+`realConj_mul_eq_one_of_pow_eq_one` above DISCHARGES over `ULift ℝ`.
+
+This is `det(τ | E[n]) = χ_n(τ)` (Silverman *AEC* III.8.1(e) plus
+III.8.1(a)–(d)) specialized to `χ_n(τ) = −1`, and it is the ONLY genuinely
+missing mathematics in the whole archimedean cluster.
+
+INTENDED PROOF, and the exact shape of the gap.  The tree already has the two
+halves of the argument, but for a base that is too small:
+
+* `WeilPairing.exists_weilPairing_mu` builds the `μ_p`-valued pairing over
+  `𝔽_q` from divisor classes (Silverman III.8, the Miller-function route);
+* `WeilPairing.exists_weilPairing` / `WeilPairing.det_galoisRep_eq_cyclotomic`
+  assemble `det ρ = χ` over `ℚ`, but route the arithmetic through REDUCTION MOD
+  `q` AND FROBENIUS (`det_frobeniusTorsionEnd`, `det_galoisRep_globalFrob`,
+  Chebotarev density), which is unavailable over `ℝ` — there is no residue
+  field to reduce to.
+
+So what has to be written is the divisor-theoretic pairing DIRECTLY over the
+separably closed field `AlgebraicClosure F` — the same construction as
+`exists_weilPairing_mu` with `AlgebraicClosure (ZMod q)` replaced by
+`AlgebraicClosure F` — together with its equivariance
+`e(τx, τy) = τ(e(x, y))` for an arbitrary `τ ∈ Gal`.  Given that pairing, this
+leaf follows in a few lines: `hinv` says `τ` acts on `μ_n` by inversion, so
+`e(τx, τy) = e(x, y)⁻¹`, and transporting the multiplicative pairing to the
+additive `ZMod n`-valued one along a generator of `μ_n` turns that into
+`det τ = −1` via `coordDet_map_eq_det_mul` above.
+
+A NATURAL FURTHER CUT, if a successor wants to shrink this leaf rather than
+close it: state the `μ_n`-valued pairing over a separably closed field as its
+own leaf, and PROVE this one from it plus the cyclicity of `μ_n` (which needs
+`IsPrimitiveRoot` and a discrete logarithm `μ_n ≃+ ZMod n`).  That was not done
+here because the log half is not free and would have added a second open leaf
+without removing any mathematics.
+
+FAITHFULNESS.  `hn : 1 ≤ n` is load-bearing: for `n = 0` the `0`-torsion is all
+of `E(F̄)`, which is not free of rank two, and `LinearMap.det` would fall back on
+its junk value.  (The statement is nonetheless not FALSE at `n = 0`, merely
+uninformative — `hinv` is then contradictory, since `ζ⁰ = 1` holds at `ζ = 0`.)
+The conclusion is an equation in `LinearMap.det`, so no junk pairing satisfies
+it, and `-1 ≠ 1` in `ZMod n` exactly when `n ≥ 3`, which is where the consumer
+`exists_torsion_conj_ne` gets its content. -/
+theorem det_nTorsion_eq_neg_one_of_conj_inv {F : Type u} [Field F] [CharZero F]
+    (E : WeierstrassCurve F) [E.IsElliptic] (n : ℕ) (hn : 1 ≤ n)
+    (τ : Field.absoluteGaloisGroup F)
+    (hinv : ∀ ζ : AlgebraicClosure F, ζ ^ n = 1 →
+      (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) ζ * ζ = 1) :
+    letI : DecidableEq (AlgebraicClosure F) := Classical.typeDecidableEq _
+    LinearMap.det
+        (AddMonoidHom.toZModLinearMap n
+          (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+            (τ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom) (n : ℤ))
+          : ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n) →ₗ[ZMod n]
+            ((E.map (algebraMap F (AlgebraicClosure F))).nTorsion n))
+      = -1 :=
+  sorry
+
 /-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (sorry
 leaf, cut 2026-07-27 out of `exists_realWeierstrassCurveWithConjTorsion`).  This
 is the WEIL PAIRING input, and — despite appearances — it is ALGEBRAIC, not
@@ -34158,17 +34439,43 @@ Do NOT weaken this to `σ ≠ 1` only: the statement is FALSE for `n ≤ 2`, sin
 `+1 = −1` on `E[2]`, which is exactly why the sibling
 `card_fixed_twoTorsion_realTestCurve` carries the `n = 2` information separately.
 
-CUT 2026-07-27 (this task): the leaf is discharged from the single sub-leaf
+CUT 2026-07-27: the leaf is discharged from the single sub-leaf
 `exists_weilPairing_real` below — the Weil pairing over `ULift ℝ`, stated in the
 ONLY form the node consumes — plus a real assembly.  See that leaf's docstring
 for why the pairing form was chosen over the determinant form.
+
+STATUS 2026-07-28: `exists_weilPairing_real` is itself now PROVEN, over the
+single sub-leaf `det_nTorsion_eq_neg_one_of_conj_inv` above.  The archimedean
+half is closed (`realConj_mul_eq_one_of_pow_eq_one`); what is left is purely
+algebraic and holds over any characteristic-zero field.
 
 **WHY THE PAIRING MUST LIVE ON THE `n`-TORSION AND NOT ON `E(ℝ̄)`.**  A tempting
 simplification is to state a biadditive `e : E(ℝ̄) × E(ℝ̄) → ZMod n` and require
 `e x y = 1` for some torsion pair.  That statement is FALSE, not merely
 inconvenient: `E(ℝ̄)` is DIVISIBLE (`TorsionCard.smul_surjective`), so
 `E(ℝ̄)/n E(ℝ̄) = 0` and every additive map `E(ℝ̄) → ZMod n` is zero.  The
-`Submodule.torsionBy` phrasing below is what keeps the leaf true. -/
+`Submodule.torsionBy` phrasing below is what keeps the leaf true.
+
+**PROVEN 2026-07-28** — it was a bare `sorry` until then.  The proof is the
+coordinate-determinant construction, exactly as `WeilPairing.exists_weilPairing`
+does it over `ℚ`, but over the ring `ZMod n` rather than a field:
+
+* `WeierstrassCurve.n_torsion_dimension` gives `E[n] ≃+ (ZMod n)²` at the
+  separably closed `ℝ̄` (this is where the torsion count is consumed);
+  `ZMod.map_smul` upgrades that to a `ZMod n`-linear equivalence, and
+  `Module.Basis.finTwoProd` transports the standard basis back to `E[n]`;
+* `e x y := b.repr x 0 · b.repr y 1 − b.repr x 1 · b.repr y 0` is the pairing,
+  and `e (b 0) (b 1) = 1` is the nondegeneracy clause;
+* `coordDet_map_eq_det_mul` turns the required equivariance into the single
+  determinant fact `det(σ | E[n]) = −1`, which is the sub-leaf
+  `det_nTorsion_eq_neg_one_of_conj_inv` fed by
+  `realConj_mul_eq_one_of_pow_eq_one`.
+
+The two spellings `Submodule.torsionBy ℤ (E⁄ℝ̄).Point ↑n` (used in the statement,
+to keep the consumer free of a `DecidableEq` hypothesis) and
+`(E.map (algebraMap (ULift ℝ) ℝ̄)).nTorsion n` (used in the proof, because the
+`Module (ZMod n)` instance is stated for the latter and is NOT found for the
+former) are definitionally equal; the proof relies on that. -/
 theorem exists_weilPairing_real (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsElliptic]
     (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) (n : ℕ) (hn : 1 ≤ n) :
     letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
@@ -34182,8 +34489,62 @@ theorem exists_weilPairing_real (E : WeierstrassCurve (ULift.{u} ℝ)) [E.IsElli
                     AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) a)
                 (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map
                   (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
-                    AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) b) = - e a b) :=
-  sorry
+                    AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ) b) = - e a b) := by
+  letI : DecidableEq (AlgebraicClosure (ULift.{u} ℝ)) := Classical.typeDecidableEq _
+  haveI hchar : CharZero (ULift.{u} ℝ) :=
+    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
+  haveI hcharK : CharZero (AlgebraicClosure (ULift.{u} ℝ)) :=
+    charZero_of_injective_algebraMap
+      (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))).injective
+  have hn0 : ((n : ℕ) : AlgebraicClosure (ULift.{u} ℝ)) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (by omega)
+  obtain ⟨φ⟩ := WeierstrassCurve.n_torsion_dimension
+    (E.map (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)))) hn0
+  let ψ : ((E.map (algebraMap (ULift.{u} ℝ)
+      (AlgebraicClosure (ULift.{u} ℝ)))).nTorsion n) ≃ₗ[ZMod n] (ZMod n × ZMod n) :=
+    { φ with map_smul' := ZMod.map_smul φ.toAddMonoidHom }
+  let b : Module.Basis (Fin 2) (ZMod n)
+      ((E.map (algebraMap (ULift.{u} ℝ)
+        (AlgebraicClosure (ULift.{u} ℝ)))).nTorsion n) :=
+    (Module.Basis.finTwoProd (ZMod n)).map ψ.symm
+  let S : ((E.map (algebraMap (ULift.{u} ℝ)
+        (AlgebraicClosure (ULift.{u} ℝ)))).nTorsion n) →ₗ[ZMod n]
+      ((E.map (algebraMap (ULift.{u} ℝ)
+        (AlgebraicClosure (ULift.{u} ℝ)))).nTorsion n) :=
+    AddMonoidHom.toZModLinearMap n
+      (TorsionCounting.endRestrict (WeierstrassCurve.Affine.Point.map (W' := E)
+        (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)).toAlgHom) (n : ℤ))
+  have hdet : LinearMap.det S = -1 :=
+    det_nTorsion_eq_neg_one_of_conj_inv E n hn σ
+      (fun ζ hζ => realConj_mul_eq_one_of_pow_eq_one σ hσ n hn ζ hζ)
+  let e : ((E.map (algebraMap (ULift.{u} ℝ)
+        (AlgebraicClosure (ULift.{u} ℝ)))).nTorsion n) →+
+      ((E.map (algebraMap (ULift.{u} ℝ)
+        (AlgebraicClosure (ULift.{u} ℝ)))).nTorsion n) →+ ZMod n :=
+    { toFun := fun x =>
+        { toFun := fun y => b.repr x 0 * b.repr y 1 - b.repr x 1 * b.repr y 0
+          map_zero' := by simp
+          map_add' := fun y z => by
+            simp only [map_add, Finsupp.coe_add, Pi.add_apply]; ring }
+      map_zero' := by
+        ext y
+        simp only [AddMonoidHom.coe_mk, ZeroHom.coe_mk, AddMonoidHom.zero_apply, map_zero,
+          Finsupp.coe_zero, Pi.zero_apply]
+        ring
+      map_add' := fun x z => by
+        ext y
+        simp only [AddMonoidHom.coe_mk, ZeroHom.coe_mk, AddMonoidHom.add_apply,
+          map_add, Finsupp.coe_add, Pi.add_apply]
+        ring }
+  refine ⟨e, ⟨b 0, b 1, ?_⟩, ?_⟩
+  · show b.repr (b 0) 0 * b.repr (b 1) 1 - b.repr (b 0) 1 * b.repr (b 1) 0 = 1
+    simp [Module.Basis.repr_self]
+  · intro x y
+    show b.repr (S x) 0 * b.repr (S y) 1 - b.repr (S x) 1 * b.repr (S y) 0
+      = -(b.repr x 0 * b.repr y 1 - b.repr x 1 * b.repr y 0)
+    rw [coordDet_map_eq_det_mul b S x y, hdet]
+    ring
 
 /-- **CONJUGATION IS NEITHER `+1` NOR `−1` ON THE `n`-TORSION, `n ≥ 3`** (PROVEN
 2026-07-27 from `exists_weilPairing_real`; formerly a sorry leaf, cut 2026-07-27
@@ -34344,54 +34705,6 @@ noncomputable def twoTorsionFixedEquivOptionRoots {R : Type u} [CommRing R] {K :
     rfl
   · rintro ⟨x, hns, hfx⟩
     rfl
-
-/-- **`ℝ̄` IS FINITE OVER `ULift ℝ`** (PROVEN 2026-07-27): the same tower
-computation as `realGal_card` — `AlgebraicClosure (ULift ℝ)` is an algebraic
-closure of `ℝ`, hence `ℝ`-isomorphic to `ℂ`, hence of `ℝ`-rank two; and
-`ULift ℝ` has `ℝ`-rank one. -/
-theorem realAlgClos_finiteDimensional :
-    FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) := by
-  haveI hchar : CharZero (ULift.{u} ℝ) :=
-    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
-  haveI : IsAlgClosure ℝ ℂ := ⟨Complex.isAlgClosed, Algebra.IsAlgebraic.of_finite ℝ ℂ⟩
-  let e : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] ℂ := IsAlgClosure.equiv ℝ _ ℂ
-  have hR : Module.finrank ℝ (AlgebraicClosure (ULift.{u} ℝ)) = 2 := by
-    rw [e.toLinearEquiv.finrank_eq, Complex.finrank_real_complex]
-  haveI hfdR : FiniteDimensional ℝ (AlgebraicClosure (ULift.{u} ℝ)) := by
-    apply Module.finite_of_finrank_pos
-    rw [hR]; norm_num
-  exact Module.Finite.of_restrictScalars_finite ℝ (ULift.{u} ℝ) _
-
-/-- **AN ELEMENT OF `ℝ̄` FIXED BY ONE NONTRIVIAL AUTOMORPHISM IS REAL** (PROVEN
-2026-07-27).  `Gal(ℝ̄/ULift ℝ)` has order two (`exists_unique_realConj`), so a
-single `σ ≠ 1` already fixes `x` for EVERY automorphism, and
-`IsGalois.mem_range_algebraMap_iff_fixed` puts `x` in the base field.  This is
-what makes `i ∉ ULift ℝ` do the work in the `ε = true` count.
-
-The instance arguments of `mem_range_algebraMap_iff_fixed` are supplied
-EXPLICITLY, for the same reason recorded on `realGal_card`: the elaborator's own
-search does not find the local `FiniteDimensional` witness at that application. -/
-theorem exists_algebraMap_eq_of_conj_fixed
-    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1)
-    (x : AlgebraicClosure (ULift.{u} ℝ)) (hx : σ x = x) :
-    ∃ r : ULift.{u} ℝ, algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) r = x := by
-  haveI hchar : CharZero (ULift.{u} ℝ) :=
-    ⟨fun a b h => by apply_fun ULift.down at h; simpa using h⟩
-  haveI hfd : FiniteDimensional (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
-    realAlgClos_finiteDimensional.{u}
-  obtain ⟨σ₀, hσ₀ne, _, hσ₀uniq⟩ := exists_unique_realConj.{u}
-  haveI hgal : IsGalois (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) :=
-    IsAlgClosure.isGalois _ _
-  have hall : ∀ τ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
-      AlgebraicClosure (ULift.{u} ℝ), τ x = x := by
-    intro τ
-    by_cases hτ : τ = 1
-    · rw [hτ]; rfl
-    · have hτ0 : τ = σ₀ := hσ₀uniq τ hτ
-      have hσσ : σ = σ₀ := hσ₀uniq σ hσ
-      rw [hτ0, ← hσσ]; exact hx
-  exact (@IsGalois.mem_range_algebraMap_iff_fixed (ULift.{u} ℝ) _
-    (AlgebraicClosure (ULift.{u} ℝ)) _ _ hgal hfd x).mpr hall
 
 /-- **THE REAL `2`-TORSION COUNT** (PROVEN 2026-07-27 from the six lemmas above;
 formerly a sorry leaf, cut 2026-07-27 out of
