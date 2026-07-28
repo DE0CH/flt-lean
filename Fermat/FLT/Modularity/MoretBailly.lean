@@ -12285,7 +12285,10 @@ with the degree bookkeeping and the point/branch bridge PROVEN as glue:
 
 * `exists_stepanovJetSolution` — §4, pp. 110–113: the LINEAR SYSTEM. `B < A`
   gives a nonzero Frobenius-shaped `a` all of whose jets `a^{(ν)}`, `ν < M`,
-  vanish at every irrational point of the curve over `𝔽_p`.
+  vanish at every irrational point of the curve over `𝔽_p`. **This one is itself
+  now PROVEN (2026-07-27) over three further sub-leaves** — the reduction, the
+  unknown count, and `B < A`; see the second section note, "The linear system of
+  Schmidt III §4", below.
 * `stepanov_not_dvd_stepanovAnsatz` — §2, pp. 100–105: **Lemma 2D** (through
   Corollary 2C). A nonzero polynomial of the restricted shape does not vanish
   at the generic point of the curve, i.e. `F ∤ a`. This is the clause Schmidt
@@ -12481,8 +12484,565 @@ theorem stepanovAnsatz_coeff_natDegree_add_le (d p K B : ℕ) (hB : B = p * (K +
   · rw [if_neg hif]
     simp
 
-/-- **SCHMIDT LEMMA 4A, THE DIMENSION COUNT ITSELF** (SORRY LEAF, cut
-2026-07-27 out of `exists_stepanovAuxiliaryFunction`) — Chapter III §4,
+/-! #### The linear system of Schmidt III §4: how `exists_stepanovJetSolution` is cut
+
+(2026-07-27.) `exists_stepanovJetSolution` is Schmidt's dimension count, and a
+dimension count has exactly three moving parts: an upper bound `B` on the number
+of EQUATIONS, a lower bound `A` on the number of UNKNOWNS, and the inequality
+`B < A`. They are cut apart here into three sub-leaves, with the linear algebra
+("fewer equations than unknowns ⟹ a nonzero solution") proven as glue:
+
+* `exists_stepanovJetLinearForms` — **the reduction**, Schmidt pp. 110–112. The
+  jet-vanishing conditions are cut out by at most `stepanovEquationCount d p M`
+  many `𝔽_p`-linear forms in the coefficients `A_{ijk}`.
+* `exists_stepanovCoefficientParametrisation` — **the unknowns**. The families
+  `A` of the prescribed shape form a space of dimension
+  `stepanovUnknownCount d p K`, exhibited as an injective linear parametrisation.
+* `stepanov_equationCount_lt_unknownCount` — **`B < A`**, a self-contained
+  statement of natural-number arithmetic, and the ONLY place Schmidt's standing
+  conditions `d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ p` are used. **PROVEN
+  2026-07-27**, over `stepanov_unknownCount_lower_bound` (the three summations)
+  and `stepanov_countPoly_le` (the resulting polynomial inequality), both proven
+  here; only the first two sub-leaves remain open.
+
+**WHY THE CONSTANT `2d − 3` IN LEMMA 3A IS LOAD-BEARING, and a warning.** The
+margin in `B < A` is thin in RATIO though wide in absolute terms: at the minimal
+admissible `p` one finds `A/B → 1` (numerically `1.00002` at `d = 5`,
+`M = 2995`), while `A − B ≥ ½(d−1)[(2d² − 2d)(16M + 64) + M²]` grows like `M²`.
+Concretely: replacing the Lemma 3A growth constant `2d − 3` by `2d − 2` in
+`stepanovEquationCount` makes the inequality **FALSE** (first failure `d = 2`,
+`M = 124`, `p = 34849`). So the reduction leaf may NOT be proven with a sloppier
+degree bound and then padded — `stepanovEquationCount` is essentially the tight
+value, and the three savings that produce it are all needed:
+
+1. the SHARP per-index degree constraint `deg A_{ijk} + d + i + j + k ≤ p/d`
+   (not the weak `deg A_{ijk} + d ≤ p/d` that the parent consumes), which is what
+   makes `deg_X (A_{ijk} X^{pj}) ≤ p/d − d − i − k` independent of `j`;
+2. Lemma 3A in the WEIGHTED total degree `w(P) := maxₙ (deg (P.coeff n) + n)`,
+   for which `w(F) ≤ d` is exactly `hcoeff`, `w(F_Y), w(F_X) ≤ d − 1`,
+   `w(F_{YX}), w(F_{YY}) ≤ d − 2`, and each of the three terms of
+   `stepanovJet`'s recursion raises `w` by at most `(d−2) + (d−1) = 2d − 3`;
+3. reduction modulo `F` PRESERVES `w` — `Y^d ≡ −∑_{i<d} F_i Y^i` and
+   `w(F_i Y^i) ≤ (d − i) + i = d = w(Y^d)` — so cutting `deg_Y` down to `d − 1`
+   is free, and likewise the reduction of `deg_{Y'}` from `d − 1` to `d − 2`
+   modulo `e₂` costs nothing after the `−k` saving in item 1 is spent.
+
+Counting the surviving coefficients: for each `ν < M` the reduced
+`d^{(ν)}(X, Y, Y')` has `deg_X ≤ p/d − d + (2d−3)ν`, `deg_Y ≤ d − 1`,
+`deg_{Y'} ≤ d − 2`, i.e. at most `(p/d + (2d−3)ν)·d·(d−1)` coefficients, and
+`∑_{ν<M} d(d−1)(p/d + (2d−3)ν) ≤ (d−1)pM + ½d(d−1)(2d−3)M²`, which IS
+`stepanovEquationCount d p M`.
+
+**A TRANSCRIPTION WARNING about Schmidt's own numbers.** His `B < ε₂pM +
+ε₂M²(2d² − 3d)` carries a factor `2` of slack in the `M²` term against the count
+above, and his `A > ε₂pM + p(d² − d/3) − ½ε₂²M² − ⋯` carries a matching factor
+`2` in the `p d²` term against `∑_{i,j,k} p/d = (d−1)pM + ½pd(d−1)`. The two
+scale together, so his comparison is the same as this one — but **his `B` alone
+is NOT an admissible bound against the `A` computed here**, and pairing the loose
+`B` with the tight `A` yields a false statement. Use the two definitions below,
+not the book's displayed constants. -/
+
+/-- **THE NUMBER OF EQUATIONS `B`** in Schmidt's linear system (III §4, p. 112):
+`M` copies — one per jet order `ν < M` — of the coefficient space of the reduced
+polynomial `d^{(ν)}(X, Y, Y')`, which has `deg_X ≤ p/d − d + (2d−3)ν`,
+`deg_Y ≤ d − 1` and `deg_{Y'} ≤ d − 2`. Summing `d(d−1)(p/d + (2d−3)ν)` over
+`ν < M` and using `d·(p/d) ≤ p` gives this closed form. See the section note
+above for why the `2d − 3` may not be weakened. -/
+def stepanovEquationCount (d p M : ℕ) : ℕ :=
+  (d - 1) * p * M + d * (d - 1) / 2 * (2 * d - 3) * M ^ 2
+
+/-- **THE NUMBER OF UNKNOWNS `A`** in Schmidt's linear system (III §4, p. 112):
+the coefficients of the `A_{ijk} ∈ 𝔽_p[X]` for `i < d`, `k < d`, `j + k ≤ K`,
+subject to Schmidt's SHARP degree constraint `deg A_{ijk} ≤ p/d − d − i − j − k`,
+which contributes `p/d + 1 − (d + i + j + k)` coefficients (truncated at `0`,
+where the constraint forces `A_{ijk} = 0` and contributes nothing). -/
+def stepanovUnknownCount (d p K : ℕ) : ℕ :=
+  ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ∑ j ∈ Finset.range (K + 1 - k),
+    (p / d + 1 - (d + i + j + k))
+
+/-- **THE REDUCTION TO A LINEAR SYSTEM** (SORRY LEAF, cut 2026-07-27 out of
+`exists_stepanovJetSolution`) — Schmidt Chapter III §4, pp. 110–112. This is the
+part of the dimension count that does MATHEMATICS; the two siblings only count.
+
+WHAT IT SAYS. There are at most `stepanovEquationCount d p M` many `𝔽_p`-linear
+forms in the coefficient family `A` whose simultaneous vanishing already forces
+every jet `a^{(ν)}`, `ν < M`, of the ansatz to vanish at every irrational point
+of the curve. They are packaged as ONE linear map `Φ` into `Fin B → ZMod p`;
+padding with zero forms is free, so an implementation producing fewer equations
+simply leaves the tail of `Φ` zero.
+
+HOW IT IS PROVED. Four steps, all recorded in the section note above.
+
+1. **Frobenius splitting.** `∂_X (X^p) = 0` and `∂_Y (Y^p) = 0`, so writing
+   `b_{jk}(X, Y) := ∑_{i<d} A_{ijk}(X) Y^i` and
+   `stepanovAnsatz d p K A = ∑_{j+k≤K} b_{jk}·X^{pj}·Y^{pk}` one gets
+   `stepanovJet F M ν (∑ b_{jk} X^{pj} Y^{pk}) = ∑ (stepanovJet F M ν b_{jk}) X^{pj} Y^{pk}`
+   as a polynomial identity — the `X^{pj}Y^{pk}` are constants for the
+   derivation, so they pass through the whole recursion.
+2. **Lemma 3A**, `w(stepanovJet F M ν b) ≤ w(b) + (2d−3)ν` for the weighted
+   degree `w(P) = maxₙ (deg (P.coeff n) + n)`, by induction on `ν` directly off
+   `stepanovJet`'s recursion. `w(b_{jk}) ≤ p/d − d − j − k` is the sharp
+   hypothesis `hAdeg`.
+3. **Elimination.** At a point with `x ∈ 𝔽_p`, `F(x, y) = 0` and `y ∉ 𝔽_p`, put
+   `y' := y^p`. Then `x^{pj} = x^j`, `y^{pk} = y'^k`, `F(x, y') = F(x, y)^p = 0`
+   and `y ≠ y'`, so `e₂(x, y, y') = 0` where
+   `F(X, Y) − F(X, Y') = (Y − Y')·e₂(X, Y, Y')`. Hence
+   `a^{(ν)}(x, y) = D^{(ν)}(x, y, y')` for the three-variable polynomial
+   `D^{(ν)} := ∑_{j+k≤K} (stepanovJet F M ν b_{jk})·X^j·Y'^k`, and reducing
+   `D^{(ν)}` modulo `F` in `Y` (monic of degree `d`) and modulo `e₂` in `Y'`
+   (monic of degree `d − 1`, since the `Y'^{d−1}`-coefficient of `e₂` is `−1`)
+   changes none of its values at such points.
+4. **The forms.** `Φ A` is the tuple of coefficients of the reduced
+   `d^{(ν)}(X, Y, Y')` for `ν < M`; every operation above is `𝔽_p`-linear in `A`,
+   and the count of surviving coefficients is `≤ stepanovEquationCount d p M` by
+   the section note. `Φ A = 0` then gives `D^{(ν)} ≡ 0` hence
+   `a^{(ν)}(x, y) = 0`.
+
+MISSING AT THIS PIN (grepped 2026-07-27 across `Fermat/`, `.lake/packages/
+mathlib/` and `~/cs/FLT/`): nothing named `[Ss]tepanov` and no hyperderivative
+theory beyond `Polynomial.hasseDeriv`. `Polynomial.modByMonic` covers both
+reductions; the weighted-degree bookkeeping has to be written here.
+
+NOTE the hypothesis `hAdeg` is the SHARP constraint `deg + d + i + j + k ≤ p/d`,
+not the weak `deg + d ≤ p/d` the parent exports — the `−(i + j + k)` is what
+pays for the `X^{pj}` in step 3 and it may not be dropped. `hp : 250 d⁵ < p` is
+NOT needed here and is not taken.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovJetLinearForms (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (F : Polynomial (Polynomial (ZMod p)))
+    (hmon : F.Monic) (hdegY : F.natDegree = d)
+    (hcoeff : ∀ i, (F.coeff i).natDegree ≤ d - i)
+    (M K : ℕ) (hK : K = (d - 1) * M / d + d - 2) :
+    ∃ Φ : (ℕ → ℕ → ℕ → Polynomial (ZMod p)) →ₗ[ZMod p]
+        (Fin (stepanovEquationCount d p M) → ZMod p),
+      ∀ A : ℕ → ℕ → ℕ → Polynomial (ZMod p),
+        (∀ i j k, A i j k = 0 ∨ (A i j k).natDegree + d + i + j + k ≤ p / d) →
+        (∀ i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → A i j k = 0) →
+        Φ A = 0 →
+        ∀ (x : ZMod p) (y : AlgebraicClosure (ZMod p)),
+          stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
+          (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
+          ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+            (stepanovJet F M ℓ (stepanovAnsatz d p K A)) x y = 0 :=
+  sorry
+
+/-- **THE UNKNOWNS ARE `stepanovUnknownCount d p K` MANY** (SORRY LEAF, cut
+2026-07-27 out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 112,
+the trivial half of the dimension count, but the half that has to be BUILT in
+Lean because the parent needs an honest injective parametrisation, not a
+cardinality.
+
+WHAT IT SAYS. The families `A : ℕ → ℕ → ℕ → 𝔽_p[X]` supported in the box
+`i < d`, `k < d`, `j + k ≤ K` and subject to Schmidt's sharp degree constraint
+`deg A_{ijk} + d + i + j + k ≤ p/d` contain the image of an INJECTIVE `𝔽_p`-linear
+map out of a space of dimension `stepanovUnknownCount d p K`. Equality of
+dimensions is not asserted and is not needed: the consumer only needs enough
+unknowns.
+
+HOW IT IS PROVED. Take the index type
+`Σ (i, j, k) ∈ box, Fin (p/d + 1 − (d + i + j + k))`, whose cardinality is the
+triple sum defining `stepanovUnknownCount` (`Finset.card_sigma`), transport it to
+`Fin N` along any equivalence, and send `c` to
+`fun i j k => ∑_{v} c ⟨(i,j,k), v⟩ • X^v`. Linearity is `Finset.sum` linearity;
+the degree bound is `Polynomial.natDegree_sum_le` against `v ≤ p/d − d − i − j − k`;
+the support clause is the empty sum; injectivity is coefficient extraction,
+`(∑_v c_v X^v).coeff v = c_v`.
+
+There are no hypotheses beyond `2 ≤ d` and `p` prime: this is pure bookkeeping
+about polynomial coefficient spaces, and in particular Schmidt's standing
+conditions on `M` are NOT used here — they live entirely in
+`stepanov_equationCount_lt_unknownCount`.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_stepanovCoefficientParametrisation (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
+    (K : ℕ) :
+    ∃ ι : (Fin (stepanovUnknownCount d p K) → ZMod p) →ₗ[ZMod p]
+        (ℕ → ℕ → ℕ → Polynomial (ZMod p)),
+      Function.Injective ι ∧
+      (∀ c i j k, ι c i j k = 0 ∨ (ι c i j k).natDegree + d + i + j + k ≤ p / d) ∧
+      (∀ c i j k, d ≤ i ∨ d ≤ k ∨ K < j + k → ι c i j k = 0) :=
+  sorry
+
+/-- Gauss's sum in the truncated-subtraction form the count needs: `∑_{j<m} (c − j)`,
+doubled to stay inside `ℕ`. Proven by induction, discharging the subtractions with
+`c = n + f` at each step. Used twice — for the inner `j`-sum of
+`stepanovUnknownCount` and for `∑_{k<d} (K + 1 − k)`. -/
+theorem stepanov_two_mul_sum_range_sub (c : ℕ) : ∀ m, m ≤ c + 1 →
+    2 * ∑ j ∈ Finset.range m, (c - j) = m * (2 * c + 1 - m) := by
+  intro m
+  induction m with
+  | zero => intro _; simp
+  | succ n ih =>
+      intro hn
+      rw [Finset.sum_range_succ, Nat.mul_add, ih (by omega)]
+      obtain ⟨f, rfl⟩ : ∃ f, c = n + f := ⟨c - n, by omega⟩
+      have h1 : 2 * (n + f) + 1 - n = n + 2 * f + 1 := by omega
+      have h2 : 2 * (n + f) + 1 - (n + 1) = n + 2 * f := by omega
+      have h3 : n + f - n = f := by omega
+      rw [h1, h2, h3]; ring
+
+/-- The `2`-step variant of `stepanov_two_mul_sum_range_sub`, for the `i`-sum, whose
+summand `R − 2i − k` decreases by `2` rather than by `1`. -/
+theorem stepanov_two_mul_sum_range_sub_two_mul (c : ℕ) : ∀ n, 2 * n ≤ c + 2 →
+    2 * ∑ i ∈ Finset.range n, (c - 2 * i) = n * (2 * c + 2 - 2 * n) := by
+  intro n
+  induction n with
+  | zero => intro _; simp
+  | succ m ih =>
+      intro hn
+      rw [Finset.sum_range_succ, Nat.mul_add, ih (by omega)]
+      obtain ⟨f, rfl⟩ : ∃ f, c = 2 * m + f := ⟨c - 2 * m, by omega⟩
+      have h1 : 2 * (2 * m + f) + 2 - 2 * m = 2 * m + 2 * f + 2 := by omega
+      have h2 : 2 * (2 * m + f) + 2 - 2 * (m + 1) = 2 * m + 2 * f := by omega
+      have h3 : 2 * m + f - 2 * m = f := by omega
+      rw [h1, h2, h3]; ring
+
+/-- **THE LOWER BOUND ON THE UNKNOWN COUNT**, all three summations carried out.
+
+With `Q = p/d`, `R = 2Q + 2 − 2d − K` and `S = 2R + 2 − 2d` (given here as the
+subtraction-free equations `hR`, `hS`, so that `omega` can use them), the triple
+sum defining `stepanovUnknownCount` evaluates to
+
+  `8·UC = 2d·∑_{k<d} (K+1−k)(S−2k)`,
+
+by `gaussA` on `j` and `gaussB` on `i`; and dropping the `−2k` against
+`2k(K+1)` in the remaining `k`-sum — the only inequality in the chain, and the
+only place any slack is spent — gives the stated bound. Every hypothesis is a
+size condition making the truncated subtractions behave. -/
+theorem stepanov_unknownCount_lower_bound (d p K Q R S : ℕ) (hd : 2 ≤ d) (hQ : p / d = Q)
+    (hQbig : K + 4 * d ≤ Q) (hKd : d ≤ K + 2)
+    (hR : R + 2 * d + K = 2 * Q + 2) (hS : S + 2 * d = 2 * R + 2) :
+    d ^ 2 * S * (2 * K + 3 - d)
+      ≤ 8 * stepanovUnknownCount d p K + 2 * d ^ 2 * (K + 1) * (d - 1) := by
+  have hRbig : K + 6 * d + 2 ≤ R := by omega
+  have hSbig : 2 * K + 10 * d + 6 ≤ S := by omega
+  -- step 1+2: the inner `j`-sum, by `stepanov_two_mul_sum_range_sub`
+  have step12 : 2 * stepanovUnknownCount d p K
+      = ∑ i ∈ Finset.range d, ∑ k ∈ Finset.range d, ((K + 1 - k) * (R - 2 * i - k)) := by
+    rw [stepanovUnknownCount, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun i hi => ?_
+    rw [Finset.mul_sum]
+    refine Finset.sum_congr rfl fun k hk => ?_
+    simp only [Finset.mem_range] at hi hk
+    have hrw : ∀ j, p / d + 1 - (d + i + j + k) = (p / d + 1 - (d + i + k)) - j := by
+      intro j; omega
+    simp only [hrw]
+    rw [stepanov_two_mul_sum_range_sub _ _ (by omega)]
+    congr 1
+    omega
+  -- step 3: the `i`-sum, by `stepanov_two_mul_sum_range_sub_two_mul`
+  have step3 : 4 * stepanovUnknownCount d p K
+      = d * ∑ k ∈ Finset.range d, ((K + 1 - k) * (S - 2 * k)) := by
+    have hdouble : 4 * stepanovUnknownCount d p K = 2 * (2 * stepanovUnknownCount d p K) := by ring
+    rw [hdouble, step12, Finset.sum_comm, Finset.mul_sum, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun k hk => ?_
+    simp only [Finset.mem_range] at hk
+    have hswap : ∀ i : ℕ, (K + 1 - k) * (R - 2 * i - k) = (K + 1 - k) * ((R - k) - 2 * i) := by
+      intro i; congr 1; omega
+    simp only [hswap]
+    rw [← Finset.mul_sum]
+    have hg := stepanov_two_mul_sum_range_sub_two_mul (R - k) d (by omega)
+    calc 2 * ((K + 1 - k) * ∑ i ∈ Finset.range d, ((R - k) - 2 * i))
+        = (K + 1 - k) * (2 * ∑ i ∈ Finset.range d, ((R - k) - 2 * i)) := by ring
+      _ = (K + 1 - k) * (d * (2 * (R - k) + 2 - 2 * d)) := by rw [hg]
+      _ = d * ((K + 1 - k) * (S - 2 * k)) := by
+          have hrs : 2 * (R - k) + 2 - 2 * d = S - 2 * k := by omega
+          rw [hrs]; ring
+  -- step 4: drop the `−2k` against `2k(K+1)`
+  have step4 : S * ∑ k ∈ Finset.range d, (K + 1 - k)
+      ≤ (∑ k ∈ Finset.range d, ((K + 1 - k) * (S - 2 * k)))
+        + 2 * (K + 1) * ∑ k ∈ Finset.range d, k := by
+    rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib]
+    refine Finset.sum_le_sum fun k hk => ?_
+    simp only [Finset.mem_range] at hk
+    have heq : (K + 1 - k) * (S - 2 * k) + (K + 1 - k) * (2 * k) = (K + 1 - k) * S := by
+      rw [← Nat.mul_add]; congr 1; omega
+    calc S * (K + 1 - k) = (K + 1 - k) * (S - 2 * k) + (K + 1 - k) * (2 * k) := by
+          rw [heq]; ring
+      _ ≤ (K + 1 - k) * (S - 2 * k) + 2 * (K + 1) * k := by
+          refine Nat.add_le_add_left ?_ _
+          calc (K + 1 - k) * (2 * k) ≤ (K + 1) * (2 * k) :=
+                Nat.mul_le_mul_right _ (by omega)
+            _ = 2 * (K + 1) * k := by ring
+  -- assemble
+  have hsum1 : 2 * ∑ k ∈ Finset.range d, (K + 1 - k) = d * (2 * (K + 1) + 1 - d) :=
+    stepanov_two_mul_sum_range_sub _ _ (by omega)
+  have hsum2 : 2 * ∑ k ∈ Finset.range d, k = d * (d - 1) := by
+    rw [Nat.mul_comm]; exact Finset.sum_range_id_mul_two d
+  have key : d * (d * S * (2 * (K + 1) + 1 - d))
+      ≤ d * (2 * ∑ k ∈ Finset.range d, ((K + 1 - k) * (S - 2 * k)))
+        + d * (2 * (K + 1) * (d * (d - 1))) := by
+    have h2 := Nat.mul_le_mul_left 2 step4
+    rw [Nat.mul_add, ← Nat.mul_assoc 2 S, Nat.mul_comm 2 S, Nat.mul_assoc S 2,
+      hsum1] at h2
+    have h3 : 2 * (2 * (K + 1) * ∑ k ∈ Finset.range d, k)
+        = 2 * (K + 1) * (2 * ∑ k ∈ Finset.range d, k) := by ring
+    rw [h3, hsum2] at h2
+    calc d * (d * S * (2 * (K + 1) + 1 - d)) = d * (S * (d * (2 * (K + 1) + 1 - d))) := by ring
+      _ ≤ d * ((2 * ∑ k ∈ Finset.range d, ((K + 1 - k) * (S - 2 * k)))
+            + 2 * (K + 1) * (d * (d - 1))) := Nat.mul_le_mul_left _ h2
+      _ = _ := by ring
+  have hfin : 8 * stepanovUnknownCount d p K
+      = d * (2 * ∑ k ∈ Finset.range d, ((K + 1 - k) * (S - 2 * k))) := by
+    have hdouble : 8 * stepanovUnknownCount d p K = 2 * (4 * stepanovUnknownCount d p K) := by ring
+    rw [hdouble, step3]; ring
+  have hKd' : 2 * (K + 1) + 1 - d = 2 * K + 3 - d := by omega
+  calc d ^ 2 * S * (2 * K + 3 - d) = d * (d * S * (2 * (K + 1) + 1 - d)) := by
+        rw [hKd']; ring
+    _ ≤ d * (2 * ∑ k ∈ Finset.range d, ((K + 1 - k) * (S - 2 * k)))
+          + d * (2 * (K + 1) * (d * (d - 1))) := key
+    _ = 8 * stepanovUnknownCount d p K + 2 * d ^ 2 * (K + 1) * (d - 1) := by rw [hfin]; ring
+
+/-- The polynomial inequality at the heart of `B < A`, with `d = e + 2` and
+`M = d·m` so that `m ≥ d` is Schmidt's `M ≥ d²`, and with the common factor
+`(e+1)(e+2) = d(d−1)` already divided out.
+
+Both sides expand to degree `4`, and their difference is EXACTLY
+
+  `4(e+2)m² + (e+2)(108e + 104)m + 480e + 488 − 10e²`,
+
+which is the `hid` identity below — so the whole inequality reduces to
+`10e² ≤ 4(e+2)m²`, i.e. to `m ≥ e + 2`. Note where the `M²` on the left comes
+from: it is the `1` in `(2d² − 2d) − (2d² − 2d − 1)`, the difference between the
+`M²`-coefficient `2(d−1)(M+8)²` supplies and the one the equation count spends.
+That single unit is the entire asymptotic margin of Schmidt's method. -/
+theorem stepanov_countPoly_le (e m : ℕ) (hm : e + 2 ≤ m) :
+    8 * (e + 2) * m + 4 * (2 * e + 1) * (e + 2) ^ 2 * m ^ 2
+      + 2 * (e + 2) * (e + 1) * (m + 1)
+      + (e + 2) * (2 * m + 1) * (2 * (e + 1) * m + 8 * e + 6) + 4 * (e + 2)
+    ≤ 8 * (e + 1) * ((e + 2) * m + 8) ^ 2 := by
+  have hmsq : (e + 2) ^ 2 ≤ m ^ 2 := Nat.pow_le_pow_left hm 2
+  have hA : 10 * e ^ 2 ≤ 4 * (e + 2) * m ^ 2 := by nlinarith [hmsq]
+  have hid : (8 * (e + 2) * m + 4 * (2 * e + 1) * (e + 2) ^ 2 * m ^ 2
+        + 2 * (e + 2) * (e + 1) * (m + 1)
+        + (e + 2) * (2 * m + 1) * (2 * (e + 1) * m + 8 * e + 6) + 4 * (e + 2))
+      + (4 * (e + 2) * m ^ 2 + ((e + 2) * (108 * e + 104) * m + 480 * e + 488))
+      = 8 * (e + 1) * ((e + 2) * m + 8) ^ 2 + 10 * e ^ 2 := by ring
+  have hDpos : 10 * e ^ 2
+      ≤ 4 * (e + 2) * m ^ 2 + ((e + 2) * (108 * e + 104) * m + 480 * e + 488) :=
+    le_trans hA (Nat.le_add_right _ _)
+  have hpoly : 8 * (e + 2) * m + 4 * (2 * e + 1) * (e + 2) ^ 2 * m ^ 2
+      + 2 * (e + 2) * (e + 1) * (m + 1)
+      + (e + 2) * (2 * m + 1) * (2 * (e + 1) * m + 8 * e + 6) + 4 * (e + 2)
+      ≤ 8 * (e + 1) * ((e + 2) * m + 8) ^ 2 := by
+    refine Nat.le_of_add_le_add_right (b := 10 * e ^ 2) ?_
+    calc (8 * (e + 2) * m + 4 * (2 * e + 1) * (e + 2) ^ 2 * m ^ 2
+          + 2 * (e + 2) * (e + 1) * (m + 1)
+          + (e + 2) * (2 * m + 1) * (2 * (e + 1) * m + 8 * e + 6) + 4 * (e + 2)) + 10 * e ^ 2
+        ≤ (8 * (e + 2) * m + 4 * (2 * e + 1) * (e + 2) ^ 2 * m ^ 2
+          + 2 * (e + 2) * (e + 1) * (m + 1)
+          + (e + 2) * (2 * m + 1) * (2 * (e + 1) * m + 8 * e + 6) + 4 * (e + 2))
+          + (4 * (e + 2) * m ^ 2 + ((e + 2) * (108 * e + 104) * m + 480 * e + 488)) :=
+          Nat.add_le_add_left hDpos _
+      _ = 8 * (e + 1) * ((e + 2) * m + 8) ^ 2 + 10 * e ^ 2 := hid
+  exact hpoly
+
+/-- **`B < A`: MORE UNKNOWNS THAN EQUATIONS** (PROVEN 2026-07-27; cut the same
+day out of `exists_stepanovJetSolution`) — Schmidt Chapter III §4, p. 113.
+**This inequality IS where the `√q` of Weil's bound comes from**: it is the only
+place Schmidt's standing conditions `d ∣ M`, `M ≥ d²`, `2(d−1)(M+8)² ≤ p` are
+consumed, and `p ≈ 2dM²` — i.e. `M ≈ √(p/2d)` — is exactly the balance it forces.
+
+HOW IT IS PROVED. With `K = (d−1)M/d + d − 2` and `Q = p/d`, all three
+summations of `stepanovUnknownCount` are carried out exactly
+(`stepanov_unknownCount_lower_bound`), giving
+
+  `8·A = 2d·∑_{k<d} (K+1−k)(S−2k)`,  `S = 4Q + 6 − 6d − 2K`,
+
+after which ONE inequality is spent — dropping the `−2k` against `2k(K+1)` — and
+the remaining `k`-sum is Gauss again. Writing `d = e + 2`, `M = d·m`, the whole
+thing then divides by `d(d−1)` and becomes `stepanov_countPoly_le`, whose two
+sides differ by EXACTLY
+
+  `4(e+2)m² + (e+2)(108e + 104)m + 480e + 488 − 10e²`,
+
+so `B < A` reduces to `10e² ≤ 4(e+2)m²`, i.e. to `m ≥ e + 2` — which is `M ≥ d²`.
+The `M²` in that difference is the `1` of `(2d² − 2d) − (2d² − 2d − 1)`: the gap
+between the `M²`-coefficient `2(d−1)(M+8)² ≤ p` supplies and the one the equation
+count spends. **That single unit is the entire asymptotic margin of the method**,
+which is why `stepanovEquationCount`'s `2d − 3` cannot be weakened — see the
+section note above.
+
+**`hp : 250 d⁵ < p` IS NOT NEEDED** and is underscored. An earlier version of
+this docstring asserted it was load-bearing in the regime `M ≈ d²`, on the
+strength of an asymptotic `O(d³M)` error term. The exact evaluation above has no
+such term: `hMq` and `hMsq` alone suffice, at every `M ≥ d²`. (Checked
+numerically first, over `2 ≤ d ≤ 60` with `p` at the `hMq` floor and `hp`
+ignored; then proven.)
+
+Cross-check retained from the numerical survey: replacing `2d − 3` by `2d − 2` in
+`stepanovEquationCount` makes this statement FALSE at `d = 2`, `M = 124`,
+`p = 34849`.
+
+`Fact p.Prime` is NOT needed: this is a statement about natural numbers. -/
+theorem stepanov_equationCount_lt_unknownCount (d : ℕ) (hd : 2 ≤ d) (p : ℕ)
+    (_hp : 250 * d ^ 5 < p) (M : ℕ) (hMd : d ∣ M) (hMsq : d ^ 2 ≤ M)
+    (hMq : 2 * (d - 1) * (M + 8) ^ 2 ≤ p) :
+    stepanovEquationCount d p M < stepanovUnknownCount d p ((d - 1) * M / d + d - 2) := by
+  obtain ⟨e, rfl⟩ : ∃ e, d = e + 2 := ⟨d - 2, by omega⟩
+  obtain ⟨m, rfl⟩ := hMd
+  have he2 : 0 < e + 2 := by omega
+  have hm : e + 2 ≤ m := by
+    have h := hMsq
+    have : (e + 2) * (e + 2) ≤ (e + 2) * m := by nlinarith [h]
+    exact Nat.le_of_mul_le_mul_left this he2
+  -- the value of `K`
+  have hKeq : (e + 2 - 1) * ((e + 2) * m) / (e + 2) + (e + 2) - 2 = (e + 1) * m + e := by
+    have h1 : (e + 2 - 1) * ((e + 2) * m) = (e + 2) * ((e + 1) * m) := by
+      have : e + 2 - 1 = e + 1 := by omega
+      rw [this]; ring
+    rw [h1, Nat.mul_div_cancel_left _ he2]
+    omega
+  rw [hKeq]
+  set K := (e + 1) * m + e with hKdef
+  set Q := p / (e + 2) with hQdef
+  set V := (e + 2) * Q with hVdef
+  have hdm : (e + 2) * Q + p % (e + 2) = p := Nat.div_add_mod p (e + 2)
+  have hmod : p % (e + 2) < e + 2 := Nat.mod_lt _ he2
+  have hVle : V ≤ p := by omega
+  have hVlt : p < V + (e + 2) := by omega
+  have hKprod : (e + 1) * (m + 1) = (e + 1) * m + (e + 1) := by ring
+  have hK1 : K + 1 = (e + 1) * (m + 1) := by rw [hKprod]; omega
+  have hUprod : (e + 1) * (2 * m + 1) = 2 * ((e + 1) * m) + (e + 1) := by ring
+  have hU : 2 * K + 3 - (e + 2) = (e + 1) * (2 * m + 1) := by rw [hUprod]; omega
+  -- `Q` is large
+  have hQbig : K + 4 * (e + 2) ≤ Q := by
+    have hbig : (e + 2) * ((e + 1) * m + 5 * e + 9) ≤ 2 * (e + 1) * ((e + 2) * m + 8) ^ 2 := by
+      nlinarith [hm, sq_nonneg m, Nat.zero_le e]
+    have h2 : (e + 2) * (K + 4 * (e + 2)) ≤ V := by
+      have : (e + 2) * (K + 4 * (e + 2)) + (e + 2) ≤ 2 * (e + 1) * ((e + 2) * m + 8) ^ 2 := by
+        have hexp : (e + 2) * (K + 4 * (e + 2)) + (e + 2)
+            = (e + 2) * ((e + 1) * m + 5 * e + 9) := by rw [hKdef]; ring
+        omega
+      have h3 : 2 * (e + 2 - 1) * ((e + 2) * m + 8) ^ 2 ≤ p := hMq
+      have h4 : e + 2 - 1 = e + 1 := by omega
+      rw [h4] at h3
+      omega
+    exact Nat.le_of_mul_le_mul_left h2 he2
+  -- introduce `R`, `S`
+  obtain ⟨R, hR⟩ : ∃ R, R + 2 * (e + 2) + K = 2 * Q + 2 := ⟨2 * Q + 2 - 2 * (e + 2) - K, by omega⟩
+  obtain ⟨S, hS⟩ : ∃ S, S + 2 * (e + 2) = 2 * R + 2 := ⟨2 * R + 2 - 2 * (e + 2), by omega⟩
+  have hlow := stepanov_unknownCount_lower_bound (e + 2) p K Q R S (by omega) hQdef.symm
+    hQbig (by omega) hR hS
+  rw [hU] at hlow
+  -- `W := (e+2) * S`
+  set W := (e + 2) * S with hWdef
+  have hWV : W + (e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m) = 4 * V := by
+    have hmul : (e + 2) * (S + 6 * (e + 2) + 2 * K) = (e + 2) * (4 * Q + 6) := by
+      congr 1; omega
+    have hexp1 : (e + 2) * (S + 6 * (e + 2) + 2 * K)
+        = W + (e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m) + 6 * (e + 2) := by
+      rw [hWdef, hKdef]; ring
+    have hexp2 : (e + 2) * (4 * Q + 6) = 4 * V + 6 * (e + 2) := by rw [hVdef]; ring
+    omega
+  have hlow' : (e + 2) * W * ((e + 1) * (2 * m + 1))
+      ≤ 8 * stepanovUnknownCount (e + 2) p K + 2 * (e + 2) ^ 2 * (K + 1) * (e + 2 - 1) := by
+    have : (e + 2) ^ 2 * S * ((e + 1) * (2 * m + 1)) = (e + 2) * W * ((e + 1) * (2 * m + 1)) := by
+      rw [hWdef]; ring
+    rw [← this]; exact hlow
+  -- `8 * EC`
+  have hdvd : (e + 2) * (e + 1) / 2 * 2 = (e + 2) * (e + 1) := by
+    rcases Nat.even_or_odd e with ⟨t, ht⟩ | ⟨t, ht⟩
+    · subst ht
+      have hfac : (t + t + 2) * (t + t + 1) = 2 * ((t + 1) * (2 * t + 1)) := by ring
+      rw [hfac, Nat.mul_div_cancel_left _ (by norm_num)]; ring
+    · subst ht
+      have hfac : (2 * t + 1 + 2) * (2 * t + 1 + 1) = 2 * ((2 * t + 3) * (t + 1)) := by ring
+      rw [hfac, Nat.mul_div_cancel_left _ (by norm_num)]; ring
+  have hEC : 8 * stepanovEquationCount (e + 2) p ((e + 2) * m)
+      = 8 * (e + 1) * p * ((e + 2) * m)
+        + 4 * ((e + 2) * (e + 1)) * (2 * e + 1) * ((e + 2) * m) ^ 2 := by
+    rw [stepanovEquationCount]
+    have h4 : e + 2 - 1 = e + 1 := by omega
+    have h5 : 2 * (e + 2) - 3 = 2 * e + 1 := by omega
+    rw [h4, h5] at *
+    have h6 : (e + 2) * (e + 1) / 2 * 2 = (e + 2) * (e + 1) := by rw [← h4]; exact hdvd
+    calc 8 * ((e + 1) * p * ((e + 2) * m) + (e + 2) * (e + 1) / 2 * (2 * e + 1) * ((e + 2) * m) ^ 2)
+        = 8 * (e + 1) * p * ((e + 2) * m)
+          + 4 * ((e + 2) * (e + 1) / 2 * 2) * (2 * e + 1) * ((e + 2) * m) ^ 2 := by ring
+      _ = _ := by rw [h6]
+  have he1 : e + 2 - 1 = e + 1 := by omega
+  -- the divided polynomial inequality
+  have hpoly := stepanov_countPoly_le e m hm
+  have hP : 2 * (e + 1) * ((e + 2) * m + 8) ^ 2 < V + (e + 2) := by
+    have h3 : 2 * (e + 2 - 1) * ((e + 2) * m + 8) ^ 2 ≤ p := hMq
+    rw [he1] at h3
+    omega
+  have hfinal : 8 * (e + 1) * (e + 2) ^ 2 * m
+      + 4 * ((e + 2) * (e + 1)) * (2 * e + 1) * ((e + 2) * m) ^ 2
+      + 2 * (e + 2) ^ 2 * ((e + 1) * (m + 1)) * (e + 1)
+      + ((e + 2) * (e + 1) * (2 * m + 1))
+          * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m))
+      < 4 * (e + 1) * (e + 2) * V := by
+    have h1 : 8 * (e + 1) * (e + 2) ^ 2 * m
+        + 4 * ((e + 2) * (e + 1)) * (2 * e + 1) * ((e + 2) * m) ^ 2
+        + 2 * (e + 2) ^ 2 * ((e + 1) * (m + 1)) * (e + 1)
+        + ((e + 2) * (e + 1) * (2 * m + 1))
+            * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m))
+        + 4 * (e + 1) * (e + 2) ^ 2
+        ≤ 8 * (e + 1) ^ 2 * (e + 2) * ((e + 2) * m + 8) ^ 2 := by
+      calc 8 * (e + 1) * (e + 2) ^ 2 * m
+            + 4 * ((e + 2) * (e + 1)) * (2 * e + 1) * ((e + 2) * m) ^ 2
+            + 2 * (e + 2) ^ 2 * ((e + 1) * (m + 1)) * (e + 1)
+            + ((e + 2) * (e + 1) * (2 * m + 1))
+                * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m))
+            + 4 * (e + 1) * (e + 2) ^ 2
+          = (e + 1) * (e + 2) * (8 * (e + 2) * m + 4 * (2 * e + 1) * (e + 2) ^ 2 * m ^ 2
+              + 2 * (e + 2) * (e + 1) * (m + 1)
+              + (e + 2) * (2 * m + 1) * (2 * (e + 1) * m + 8 * e + 6) + 4 * (e + 2)) := by
+            ring
+        _ ≤ (e + 1) * (e + 2) * (8 * (e + 1) * ((e + 2) * m + 8) ^ 2) :=
+            Nat.mul_le_mul_left _ hpoly
+        _ = 8 * (e + 1) ^ 2 * (e + 2) * ((e + 2) * m + 8) ^ 2 := by ring
+    have h2 : 8 * (e + 1) ^ 2 * (e + 2) * ((e + 2) * m + 8) ^ 2
+        < 4 * (e + 1) * (e + 2) * V + 4 * (e + 1) * (e + 2) ^ 2 := by
+      calc 8 * (e + 1) ^ 2 * (e + 2) * ((e + 2) * m + 8) ^ 2
+          = 4 * (e + 1) * (e + 2) * (2 * (e + 1) * ((e + 2) * m + 8) ^ 2) := by ring
+        _ < 4 * (e + 1) * (e + 2) * (V + (e + 2)) :=
+            mul_lt_mul_of_pos_left hP (by positivity)
+        _ = 4 * (e + 1) * (e + 2) * V + 4 * (e + 1) * (e + 2) ^ 2 := by ring
+    omega
+  have hp1 : 8 * (e + 1) * p * ((e + 2) * m) ≤ 8 * (e + 1) * (V + (e + 2)) * ((e + 2) * m) :=
+    Nat.mul_le_mul_right _ (Nat.mul_le_mul_left _ (by omega))
+  have hstep : 8 * stepanovEquationCount (e + 2) p ((e + 2) * m)
+      + 2 * (e + 2) ^ 2 * (K + 1) * (e + 2 - 1)
+      + ((e + 2) * (e + 1) * (2 * m + 1))
+          * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m))
+      < ((e + 2) * (e + 1) * (2 * m + 1)) * (4 * V) := by
+    rw [hEC, he1, hK1]
+    calc 8 * (e + 1) * p * ((e + 2) * m)
+          + 4 * ((e + 2) * (e + 1)) * (2 * e + 1) * ((e + 2) * m) ^ 2
+          + 2 * (e + 2) ^ 2 * ((e + 1) * (m + 1)) * (e + 1)
+          + ((e + 2) * (e + 1) * (2 * m + 1))
+              * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m))
+        ≤ 8 * (e + 1) * (V + (e + 2)) * ((e + 2) * m)
+          + 4 * ((e + 2) * (e + 1)) * (2 * e + 1) * ((e + 2) * m) ^ 2
+          + 2 * (e + 2) ^ 2 * ((e + 1) * (m + 1)) * (e + 1)
+          + ((e + 2) * (e + 1) * (2 * m + 1))
+              * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m)) := by
+          exact Nat.add_le_add_right (Nat.add_le_add_right (Nat.add_le_add_right hp1 _) _) _
+      _ = 8 * (e + 1) * (e + 2) * m * V
+          + (8 * (e + 1) * (e + 2) ^ 2 * m
+            + 4 * ((e + 2) * (e + 1)) * (2 * e + 1) * ((e + 2) * m) ^ 2
+            + 2 * (e + 2) ^ 2 * ((e + 1) * (m + 1)) * (e + 1)
+            + ((e + 2) * (e + 1) * (2 * m + 1))
+                * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m))) := by ring
+      _ < 8 * (e + 1) * (e + 2) * m * V + 4 * (e + 1) * (e + 2) * V :=
+          Nat.add_lt_add_left hfinal _
+      _ = ((e + 2) * (e + 1) * (2 * m + 1)) * (4 * V) := by ring
+  have hXWeq : ((e + 2) * (e + 1) * (2 * m + 1)) * W
+      + ((e + 2) * (e + 1) * (2 * m + 1))
+          * ((e + 2) * (8 * e + 6) + 2 * (e + 2) * ((e + 1) * m))
+      = ((e + 2) * (e + 1) * (2 * m + 1)) * (4 * V) := by
+    rw [← Nat.mul_add, ← Nat.add_assoc, hWV]
+  have heq2 : (e + 2) * W * ((e + 1) * (2 * m + 1))
+      = ((e + 2) * (e + 1) * (2 * m + 1)) * W := by ring
+  linarith [hstep, hXWeq, heq2, hlow']
+
+/-- **SCHMIDT LEMMA 4A, THE DIMENSION COUNT ITSELF** (PROVEN 2026-07-27 over the
+three sub-leaves above; cut 2026-07-27 out of
+`exists_stepanovAuxiliaryFunction`) — Chapter III §4,
 pp. 110–113, at `λ = 2`, `ε₂ = d − 1`. **This is the genuinely hard sub-leaf, and
 it is where the `√q` of Schmidt's theorem comes from.**
 
@@ -12524,32 +13084,33 @@ reduces `B < A` to `¼M²(d−1)(2d² − 2d − 1) + 8Md²(d−1) < ½pd(d−1)
 `M(d−1) + 8Md < ½p`, which is the hypothesis. `B < A` then gives a nonzero
 solution.
 
-THE LEAN ROUTE, and the three places to budget for.
+**Schmidt's two displayed constants `B` and `A` just above are NOT usable as a
+matched pair** — his `B` carries a factor `2` of slack in its `M²` term and his
+`A` a matching factor `2` in its `pd²` term, so pairing one with the other gives
+a FALSE inequality. The admissible pair is `stepanovEquationCount` /
+`stepanovUnknownCount`; see the section note above this block.
 
-1. `Polynomial.hasseDeriv` is NOT what `stepanovJet` is; the jets are the
-   `F_Y`-cleared iterates of the derivation, and `stepanovJet`'s recursion is
-   their definition. Lemma 3A — `deg a^{(ν)} ≤ deg a + (2d−3)ν` in BOTH
-   variables — has to be proven by induction directly off that recursion.
-2. The reduction to `d^{(ν)}` is division with remainder twice: modulo `F`,
-   monic of degree `d` in `Y` (`Polynomial.modByMonic`), and modulo
-   `e₂(X, Y, Y′)`, which as a polynomial in `Y′` is monic of degree `d − 1`
-   because `g₀ = 1`. The target is the free `𝔽_p[X]`-module on `Y^i Y′^k`,
-   `i < d`, `k < d − 1`.
-3. "More unknowns than equations ⟹ nonzero kernel vector" is mathlib
-   (`Module.exists_ne_zero_of_finrank_lt_finrank` and neighbours on
-   `LinearMap.ker`); what has to be built is the `𝔽_p`-linear map from the
-   coefficient space of the `A_{ijk}` to the `M` copies of the reduced module,
-   whose kernel is the system, together with the two `Finset.card` computations
-   `A` and `B`.
+**STATUS 2026-07-27: PROVEN over three sub-leaves**, cut along the three moving
+parts of any dimension count and stated above this block:
+`exists_stepanovJetLinearForms` (the reduction — the only one that does
+mathematics), `exists_stepanovCoefficientParametrisation` (the unknowns), and
+`stepanov_equationCount_lt_unknownCount` (`B < A`, and the ONLY consumer of
+`hMd`, `hMsq`, `hMq` and `hp`). Do NOT dispatch a prover at this node; dispatch
+at those three.
 
-Recovering `∃ i j k, A i j k ≠ 0` from a nonzero kernel vector is immediate;
-recovering `stepanovAnsatz ≠ 0` from it is NOT needed here — that is
+The only glue this proof does is the linear algebra: a linear map between
+`Fin N → 𝔽_p` and `Fin B → 𝔽_p` with `B < N` cannot be injective
+(`LinearMap.finrank_le_finrank_of_injective`), so its kernel is nonzero, and the
+parametrisation carries a nonzero kernel vector back to a nonzero family `A` of
+the prescribed shape. Recovering `∃ i j k, A i j k ≠ 0` is `funext`;
+recovering `stepanovAnsatz ≠ 0` is NOT needed here — that is
 `stepanov_not_dvd_stepanovAnsatz`'s job, and it only ever uses "not all
 `A_{ijk}` zero".
 
-`hp : 250 * d ^ 5 < p` is not used by Schmidt's count (it exists for the §4
-Remark, which this cut does not need — see the section note above); it is passed
-in because a large `p` is free and `d < p` is convenient.
+`hp : 250 * d ^ 5 < p` is genuinely UNUSED below this node, and the counting leaf
+— now proven — confirms it: `hMq` and `hMsq` alone give `B < A` at every
+`M ≥ d²`. It is still taken here because the parent supplies it and a large `p`
+costs nothing.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_stepanovJetSolution (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Prime]
@@ -12565,8 +13126,26 @@ theorem exists_stepanovJetSolution (d : ℕ) (hd : 2 ≤ d) (p : ℕ) [Fact p.Pr
         stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) F x y = 0 →
         (∀ z : ZMod p, y ≠ algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) z) →
         ∀ ℓ < M, stepanovEvalPoint (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
-          (stepanovJet F M ℓ (stepanovAnsatz d p ((d - 1) * M / d + d - 2) A)) x y = 0) :=
-  sorry
+          (stepanovJet F M ℓ (stepanovAnsatz d p ((d - 1) * M / d + d - 2) A)) x y = 0) := by
+  obtain ⟨Φ, hΦ⟩ := exists_stepanovJetLinearForms d hd p F hmon hdegY hcoeff M _ rfl
+  obtain ⟨ι, hιinj, hιdeg, hιsupp⟩ :=
+    exists_stepanovCoefficientParametrisation d hd p ((d - 1) * M / d + d - 2)
+  have hNB := stepanov_equationCount_lt_unknownCount d hd p hp M hMd hMsq hMq
+  -- `B < N` forbids `Φ ∘ ι` from being injective, so the system has a nonzero solution
+  have hker : LinearMap.ker (Φ.comp ι) ≠ ⊥ := by
+    intro h
+    have hle := LinearMap.finrank_le_finrank_of_injective (R := ZMod p)
+      (LinearMap.ker_eq_bot.mp h)
+    rw [Module.finrank_fin_fun, Module.finrank_fin_fun] at hle
+    omega
+  obtain ⟨c, hcmem, hcne⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hker
+  have hΦc : Φ (ι c) = 0 := hcmem
+  have hne0 : ι c ≠ 0 := fun h => hcne (hιinj (by rw [h, map_zero]))
+  refine ⟨ι c, fun i j k => (hιdeg c i j k).imp id (by omega), hιsupp c, ?_,
+    hΦ (ι c) (hιdeg c) (hιsupp c) hΦc⟩
+  by_contra hcon
+  push Not at hcon
+  exact hne0 (funext fun i => funext fun j => funext fun k => by simpa using hcon i j k)
 
 /-! #### Schmidt Lemma 2D, cut along its own seams (2026-07-27)
 
