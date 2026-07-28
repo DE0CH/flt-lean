@@ -49955,10 +49955,12 @@ structure IsAtkinLehnerFactorwise {N : ℕ} {X Y J : Scheme.{0}} {strX : X ⟶ S
   hecke_comm : ∀ (i : D.idx) (n : ℕ), Nat.Coprime n N →
     D.S i n ≫ wA i = wA i ≫ D.S i n
 
-/-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS FLAT AND
-QUASI-COMPACT** (sorry leaf, new 2026-07-28) — the bridge from
-`IsHeckeIsotypicDecomposition.u_surj`, which is a condition on
-TOPOLOGICAL SPACES and lifts no `T`-point, to the categorical
+/-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS FLAT**
+(sorry leaf, new 2026-07-28; NARROWED 2026-07-28 from a `Flat ∧
+QuasiCompact` conclusion, whose second conjunct is now PROVEN by
+`isProper_of_abelianSchemeStruct` below) — the geometric half of the
+bridge from `IsHeckeIsotypicDecomposition.u_surj`, which is a condition
+on TOPOLOGICAL SPACES and lifts no `T`-point, to the categorical
 cancellation that every consumer of that field actually wants.
 
 TRUE, and classical: a surjective homomorphism of abelian varieties over
@@ -49969,51 +49971,153 @@ generic flatness of a dominant morphism of smooth varieties propagates
 over the whole source by translation.  `_hadd` is exactly what makes
 that argument available, and without it the statement is FALSE: an
 arbitrary surjective morphism of schemes is neither flat nor an
-epimorphism.
+epimorphism.  `_hsurj` is equally load-bearing in the other direction:
+without it the inclusion of a point into a positive-dimensional abelian
+variety is an additive non-flat morphism.
 
-**Quasi-compactness is not mathematics here, and is bundled on
-purpose.**  An abelian scheme is quasi-compact over `Spec ℚ`, but that
-is not derivable from `AbelianSchemeStruct` at this pin: mathlib's
-`IsProper` is `IsSeparated ⊓ UniversallyClosed ⊓ LocallyOfFiniteType`
-and does **not** record `QuasiCompact`, and `QuasiCompact` has no
-right-cancellation lemma in `Morphisms/QuasiCompact.lean`.  Carrying it
-in the conclusion costs the prover one line — the source is a proper
-`ℚ`-scheme — and saves every consumer a cancellation lemma that does not
-exist.
+**Not vacuous.**  Both sides are inhabited at this pin — `AlgebraicGeometry.Flat`
+is a real predicate with a nontrivial instance set (open immersions,
+base changes, compositions) and `AbelianSchemeStruct` over `SpecQ` is
+constructed in this file — so the statement is neither trivially true
+nor trivially unsatisfiable.
 
-**Why the conclusion is `Flat ∧ QuasiCompact` rather than `Epi`.**  With
-both, `Epi` is FORMAL: `epi_of_surjective_of_isAdditiveOn` immediately
-below derives it from mathlib's
-`instance [QuasiCompact f] [Surjective f] [Flat f] : EffectiveEpi f`
-(`Mathlib/AlgebraicGeometry/Sites/Fpqc.lean`) through
-`CategoryTheory.epi_of_effectiveEpi`.  Stating the geometric fact and
-deriving the categorical one keeps this leaf the size of its
-mathematics.
+**ROUTE AUDIT, and what it needs that does not exist (checked at the
+pin, 2026-07-28 — every claim below is one grep).**  The two classical
+routes are:
+
+* *Miracle flatness.*  `Flat.of_stalkMap` (`Morphisms/Flat.lean`)
+  reduces to flatness of every stalk map, and then the local criterion
+  — `R → S` local, `R` regular, `S` Cohen–Macaulay, `dim S = dim R +
+  dim (S/𝔪S)` implies flat — finishes, the fibre dimension being
+  constant by homogeneity.  Mathlib has `IsRegularLocalRing`
+  (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`) and **nothing
+  else** of this chain: `grep -rl "CohenMacaulay" Mathlib/` is EMPTY,
+  there is no miracle-flatness statement (`grep -rn
+  "localCriterion\|miracle" Mathlib/` is empty), and nothing connects
+  `AlgebraicGeometry.Smooth` to regular stalks (`grep -n regular
+  Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` is empty).
+* *Generic flatness plus translation.*  Grothendieck's generic flatness
+  gives a nonempty open of the target over which `u` is flat; the flat
+  locus is then translation-stable, and translations by `ℚ̄`-points act
+  transitively, so it is everything.  Mathlib has neither generic
+  flatness nor generic freeness (`grep -rn
+  "genericFreeness\|generic_flat" Mathlib/` is empty) nor openness of
+  the flat locus (`grep -rn "flatLocus" Mathlib/` is empty).  Note also
+  that this route CANNOT be run over `ℚ` directly: `B(ℚ)` need not be
+  Zariski dense in `B` (an abelian variety over `ℚ` can have finite
+  Mordell–Weil group), so it needs base change to `ℚ̄` and descent of
+  flatness along it.
+
+So this leaf is gated on a genuinely missing theory, and the honest
+statement of what is missing is "Cohen–Macaulay rings and the local
+flatness criterion", or "generic flatness and openness of the flat
+locus" — not "a flatness criterion for group schemes".  **That
+correction matters for dispatch**: a worker sent at this leaf is being
+sent at commutative-algebra infrastructure, not at anything modular and
+not at anything about abelian varieties specifically.
+
+**The check that would refute this audit**: any of the greps above
+returning a hit on a future pin, or `grep -rn "CohenMacaulay\|Flat.of_dim"
+~/cs/FLT/` finding the criterion already vendored there (it did not on
+2026-07-28). -/
+theorem flat_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
+    {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
+    (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
+    (_hadd : IsAdditiveOn abA abB u hu) (_hsurj : AlgebraicGeometry.Surjective u) :
+    AlgebraicGeometry.Flat u :=
+  sorry
+
+/-- **A MORPHISM OVER `Spec ℚ` BETWEEN THE UNDERLYING SCHEMES OF TWO
+ABELIAN SCHEMES IS ITSELF PROPER** (**PROVEN 2026-07-28**) — pure
+right-cancellation, with no group law, no additivity and no
+surjectivity in it at all.
+
+`hu : u ≫ bf = af` with `af` and `bf` proper forces `u` proper, because
+mathlib records `MorphismProperty.HasOfPostcompProperty @IsProper
+@IsSeparated` (`Mathlib/AlgebraicGeometry/Morphisms/Proper.lean`, the
+`instance` a few lines below `isProper_eq`): if `f ≫ g` is proper and
+`g` is separated then `f` is proper.  `IsSeparated bf` is the parent
+projection `IsProper.toIsSeparated` of `abB.proper`.
+
+**THIS REFUTES THE "NOT DERIVABLE" NOTE THAT USED TO STAND ON
+`flat_quasiCompact_of_surjective_of_isAdditiveOn` BELOW** (corrected
+2026-07-28).  That note said quasi-compactness of `u` "is not derivable
+from `AbelianSchemeStruct` at this pin", on the strength of two
+observations that are individually true and jointly not sufficient:
+mathlib's `IsProper` really is `IsSeparated ⊓ UniversallyClosed ⊓
+LocallyOfFiniteType` with no `QuasiCompact` field, and
+`Morphisms/QuasiCompact.lean` really has no right-cancellation lemma.
+What the survey missed is that the cancellation is available one level
+up, on `IsProper`, and that mathlib closes the gap from the other side:
+
+    instance (priority := 900) [UniversallyClosed f] : QuasiCompact f
+
+sits at `Mathlib/AlgebraicGeometry/Morphisms/UniversallyClosed.lean`,
+and the module docstring of `Morphisms/Proper.lean` says so in as many
+words — "we don't require quasi-compact, since this is implied by
+universally closed".  So `QuasiCompact u` is a two-step instance search
+from this lemma, and the bundling of `QuasiCompact` into the conclusion
+below is now a convenience for consumers rather than a necessity.
+
+**A second stale claim in the same note, corrected here.** It said the
+`Epi` consumer needs all three of `Flat`, `Surjective`, `QuasiCompact`
+via `Sites/Fpqc.lean`.  It does not: `Morphisms/Flat.lean` carries
+`epi_of_flat_of_surjective (f : X ⟶ Y) [Flat f] [Surjective f] : Epi f`
+(tagged `@[stacks 02VW]`), with no quasi-compactness hypothesis at all.
+Both routes work and `epi_of_surjective_of_isAdditiveOn` below is left
+on the `Fpqc` one, but a future consumer that only has flatness and
+surjectivity is not blocked.
+
+**The check that would refute this lemma**: `grep -n "HasOfPostcompProperty"
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/Morphisms/Proper.lean`
+and `grep -n "QuasiCompact"
+.lake/packages/mathlib/Mathlib/AlgebraicGeometry/Morphisms/UniversallyClosed.lean`
+— if either instance is gone from a future pin, the proof below breaks
+loudly rather than silently. -/
+theorem isProper_of_abelianSchemeStruct {A B : Scheme.{0}}
+    {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
+    (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af) :
+    AlgebraicGeometry.IsProper u := by
+  have hprop : AlgebraicGeometry.IsProper (u ≫ bf) := by rw [hu]; exact abA.proper
+  haveI : AlgebraicGeometry.IsSeparated bf := abB.proper.toIsSeparated
+  exact MorphismProperty.of_postcomp (W := @AlgebraicGeometry.IsProper)
+    (W' := @AlgebraicGeometry.IsSeparated) u bf inferInstance hprop
+
+/-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS FLAT AND
+QUASI-COMPACT** (**PROVEN 2026-07-28** over the single leaf
+`flat_of_surjective_of_isAdditiveOn` above) — the bridge from
+`IsHeckeIsotypicDecomposition.u_surj`, which is a condition on
+TOPOLOGICAL SPACES and lifts no `T`-point, to the categorical
+cancellation that every consumer of that field actually wants.
+
+The statement is unchanged; what changed on 2026-07-28 is that the
+`QuasiCompact` conjunct is no longer part of the leaf.  It is discharged
+here by `isProper_of_abelianSchemeStruct` above followed by mathlib's
+`UniversallyClosed → QuasiCompact` instance, and the surviving open
+mathematics is exactly the flatness half.  See that lemma's docstring
+for the two claims of the old note this corrects.
 
 **Who is waiting for it.**  Besides
 `exists_heckeIsotypicDecomposition_atkinLehnerFactorwise` below, whose
 whole formal layer is epi-cancellation against `D.u i`:
 `exists_atkinLehnerDescent_of_factorwise`'s `isotypic` bullet says in
 terms that "a prover must produce the quotient as a faithfully flat map,
-not merely a surjective one" — that is this leaf, applied to its own
-`p^b`.  It is the only route from `u_surj` to any equation between
+not merely a surjective one" — that is this statement, applied to its
+own `p^b`.  It is the only route from `u_surj` to any equation between
 morphisms out of a factor.
 
 **Placed here rather than beside `exists_abelianImage_of_isAdditiveOn`**,
 which is where it belongs by subject matter, only to keep this edit
-inside one region of a file with many concurrent owners.  Moving it up
-is a pure relocation whenever that block is next touched.
-
-**The check that refutes the absence claim**:
-`grep -rn "Flat" Fermat/ .lake/packages/mathlib/Mathlib/AlgebraicGeometry/
-~/cs/FLT/` for a flatness criterion for homomorphisms of group schemes,
-or for `Surjective → Flat` in any form. -/
+inside one region of a file with many concurrent owners.  Moving the
+three declarations of this block up is a pure relocation whenever that
+block is next touched. -/
 theorem flat_quasiCompact_of_surjective_of_isAdditiveOn {A B : Scheme.{0}}
     {af : A ⟶ SpecQ} {bf : B ⟶ SpecQ} (abA : AbelianSchemeStruct af)
     (abB : AbelianSchemeStruct bf) {u : A ⟶ B} (hu : u ≫ bf = af)
-    (_hadd : IsAdditiveOn abA abB u hu) (_hsurj : AlgebraicGeometry.Surjective u) :
-    AlgebraicGeometry.Flat u ∧ QuasiCompact u :=
-  sorry
+    (hadd : IsAdditiveOn abA abB u hu) (hsurj : AlgebraicGeometry.Surjective u) :
+    AlgebraicGeometry.Flat u ∧ QuasiCompact u := by
+  haveI : AlgebraicGeometry.IsProper u := isProper_of_abelianSchemeStruct abA abB hu
+  exact ⟨flat_of_surjective_of_isAdditiveOn abA abB hu hadd hsurj, inferInstance⟩
 
 /-- **A SURJECTIVE HOMOMORPHISM OF ABELIAN SCHEMES OVER `ℚ` IS AN
 EPIMORPHISM** (**PROVEN 2026-07-28** over the single leaf above) — the
