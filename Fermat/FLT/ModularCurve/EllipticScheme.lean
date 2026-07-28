@@ -107,11 +107,15 @@ always this big; it is only now written down as separable pieces.  The figure is
 arithmetic over the merge, not a compiler reading: re-derive it from the build's
 `declaration uses 'sorry'` warning set at the next integration.
 
-Three further leaves of this cluster lived OUTSIDE this file, in
+Three further leaves of this cluster live OUTSIDE this file, in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`
-(`equation_add2XYZ`, `add2X_mul_addZ`, `add2Y_mul_addZ`); **all three are PROVEN
-as of 2026-07-27** by `linear_combination` against Singular-computed cofactors,
-so nothing of the second law is open there any more.  The list below is:
+(`equation_add2XYZ`, `add2X_mul_addZ`, `add2Y_mul_addZ`).  **Two of the three are
+PROVEN as of 2026-07-28** — the proportionality pair, by `linear_combination`
+against Singular-computed integral cofactors.  `equation_add2XYZ` is still open,
+and its docstring there now carries a COST MEASUREMENT rather than a guess: the
+certificate exists and is verified, but the single `ring1` it needs is ~55 000
+monomials and two runs were abandoned at ~4 h and ~300 GB.  Read that before
+dispatching anyone at it.  The list below is:
 
 * **`exists_projMul` is PROVEN as of 2026-07-27** and is no longer a leaf.  It
   was decomposed over a new interface, `ProjCoords` — three sections of
@@ -3456,10 +3460,11 @@ also cut out and is now PROVEN, in
 `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveAddition.lean`;
 that module now also DEFINES the second Bosma–Lenstra law `add2XYZ` — the law
 of the line `Y = 0`, computed there and validated against Renes–Costello–
-Batina's published short-Weierstrass form — and its three own leaves
-(`equation_add2XYZ` and the two proportionality lemmas `add2X_mul_addZ` /
-`add2Y_mul_addZ`) are **PROVEN as of 2026-07-27**, so that module is sorry-free
-again.
+Batina's published short-Weierstrass form.  Of its three own leaves, the two
+proportionality lemmas `add2X_mul_addZ` / `add2Y_mul_addZ` are **PROVEN as of
+2026-07-28**; `equation_add2XYZ` remains open, and is the one place in this
+cluster where a verified polynomial certificate exists that `ring1` cannot
+digest — see its docstring for the measurements.
 
 ## THE STATEMENT NOW PUBLISHES A CHART DESCRIPTION OF `m`
 

@@ -23,6 +23,14 @@ This module supplies it:
   `W.Equation P → W.Equation Q → W.Equation (W.addXYZ P Q)` over any
   `[CommRing R]`.
 
+It also carries the SECOND Bosma–Lenstra addition law, the law of the line
+`Y = 0` (`add2X`, `add2Y`, `add2Z`, `add2XYZ`), which is what completes `addXYZ`
+to a complete system; see the section docstring further down for where those
+polynomials come from.  Of its three ring-level facts, two are PROVEN
+(`add2X_mul_addZ` and `add2Y_mul_addZ`, the proportionality of the two laws) and
+`equation_add2XYZ` is still open — **read its docstring before attempting it, it
+records two abandoned multi-hour `ring1` runs and where the cost actually sits.**
+
 ## Why the ring-level statement is needed
 
 `Fermat.ProjCoords` (`Fermat/FLT/ModularCurve/EllipticScheme.lean`) is a
@@ -857,27 +865,92 @@ line `Y = 0`.  It was VERIFIED in `Singular` -- `W(add2X, add2Y, add2Z)` reduces
 to `0` modulo `(W(P), W(Q))` -- so the statement is TRUE; what is missing is only
 the Lean-side certificate.
 
-*Cost warning, and it is why this is a leaf rather than a `linear_combination`.*
-Both sides are bihomogeneous of bidegree `(6, 6)`, the same shape as
-`equation_addXYZ`, whose `ring1` already takes about four and a half minutes with
-cofactors of 130 and 186 monomials.  The second law's coefficients are markedly
-denser (56, 74 and 43 monomials against mathlib's 18, 18 and 12), so the cofactors
-here must be expected to be several times larger again.  Whoever closes this
-should budget a long `ring1`, and should consider splitting the identity by
-bidegree so that no single `ring1` sees the whole thing. -/
+## THE CERTIFICATE EXISTS AND IS INTEGRAL -- regenerate it, do not re-derive it
+
+`lift` returns cofactors `A`, `B` with `W(add2X, add2Y, add2Z) = A * W(P) + B * W(Q)`
+and with **no denominators in the `aᵢ`**, so they lie in `ℤ[a₁, …, a₆][P, Q]` and the
+identity holds over an arbitrary commutative ring, exactly as stated here.  In
+`Singular`, with `W1`, `W2`, `add2X`, `add2Y`, `add2Z` as in this file:
+
+    ring r = (0,a1,a2,a3,a4,a6), (py,px,pz,qy,qx,qz), Dp;
+    poly WB = BY^2*BZ + a1*BX*BY*BZ + a3*BY*BZ^2
+                - (BX^3 + a2*BX^2*BZ + a4*BX*BZ^2 + a6*BZ^3);
+    ideal J = W1, W2;  matrix M = lift(J, WB);   // M[1,1] = A, M[2,1] = B
+
+It runs in under a tenth of a second.  The variable ordering matters: `Dp` with
+`py > px > pz` (and `qy > qx > qz`) was the best of a sweep over Singular's orders
+and permutations, **27 % under the obvious `dp` with `px > py > pz`**.
+
+## COST MEASUREMENT (2026-07-28): A MONOLITHIC `linear_combination` DOES NOT WORK
+
+Do not just write `linear_combination A * hP + B * hQ`.  That was tried TWICE, with
+both certificates, and both runs were abandoned unfinished:
+
+| certificate | monomials `ring1` must normalise | outcome |
+|---|---|---|
+| `equation_addXYZ` above, for comparison | ~5 000 | 4 min 30 s, fine |
+| `dp`, `px > py > pz` | 67 577 | killed at **4 h 08 m, 294 GB** RSS |
+| `Dp`, `py > px > pz` | 54 968 | killed at **3 h 52 m, 298 GB** RSS |
+
+Both were still allocating when killed, on a 96-core/2 TB host with the whole
+elaboration on ONE core (elaboration is single-threaded), so neither number is an
+upper bound -- they are lower bounds on a job that never converged.
+
+**Where the cost sits, and it is NOT where the old version of this docstring
+guessed.**  The breakdown in the 11 variables `P 0 … Q 2, W'.a₁ … W'.a₆` is
+`|W(add2XYZ)| = 20 254` (degree 24), against `|A * W(P)| + |B * W(Q)| = 34 714`
+for the better certificate.  So the **certificate is two thirds of the work**:
+shrinking `A` and `B` is worth more than restructuring the goal, which is why the
+monomial-order sweep above was worth doing.  Empirically `ring1` costs about
+`n^1.5` here, so splitting the goal into `k` independent declarations buys only
+`√k` -- not enough by itself, and it would need `k` explicit intermediate
+polynomials of thousands of monomials each in their STATEMENTS, which are then
+expensive to elaborate before any tactic runs.
+
+**A route that looks attractive and is MEASURABLY WORSE.**  From the two
+proportionality lemmas below (`add2X_mul_addZ`, `add2Y_mul_addZ`, both PROVEN) and
+`equation_addXYZ` one gets `addZ ^ 3 * W(add2XYZ) = add2Z ^ 3 * W(addXYZ) = 0`,
+leaving only the cancellation of `addZ ^ 3` -- which is unavailable over an
+arbitrary ring, but would be available wherever `addZ` is a non-zerodivisor.  That
+is a cut-level restatement, not this leaf's to make.  And the `ring` step it needs
+is far bigger, not smaller: `addZ ^ 3 * W(add2XYZ) - add2Z ^ 3 * W(addXYZ)` has
+**412 929** monomials, with cofactors over `(t₁, t₂)` whose products run to another
+686 000.  Do not take this route.
+
+Nor is there room to make the law itself smaller: `add2X`, `add2Y`, `add2Z` are the
+UNIQUE bidegree-`(2, 2)` representatives up to a scalar, because `(W(P), W(Q))`
+contains no nonzero form of bidegree `(2, 2)` -- its generators have `P`-degree `3`
+and `Q`-degree `3`.  Their 56/74/43 monomials are intrinsic.
+
+**So what is left to try**, in rough order of promise: a cheaper normaliser than
+`ring1` for a certified linear combination; a decomposition of the identity that
+keeps every intermediate STATEMENT small (a `def` does not help -- it is unfolded
+again before `ring1` sees it); or a restatement carrying a non-zerodivisor
+hypothesis on `addZ`, which collapses the whole thing to the short argument above. -/
 theorem equation_add2XYZ (hP : Equation W' P) (hQ : Equation W' Q) :
     Equation W' (add2XYZ W' P Q) :=
   sorry
 
 set_option maxHeartbeats 4000000 in
-/-- **The two addition laws are PROPORTIONAL** (sorry node) -- they compute the
-same point of `P²` wherever both are non-degenerate.
+/-- **The two addition laws are PROPORTIONAL** (PROVEN, 2026-07-28) -- they compute
+the same point of `P²` wherever both are non-degenerate.
 
-Verified in `Singular`: each of the three cross-differences reduces to `0` modulo
-`(W(P), W(Q))`.  This is what makes the glued morphism well defined on the overlap
-of the two pieces of the cover, via `ProjCoords.toHom_smul` with the transition
-unit `add2Z / addZ`.  Only the `X`/`Z` and `Y`/`Z` cross-differences are stated;
-the `X`/`Y` one follows from them wherever `addZ` is a unit, and is not needed. -/
+This is what makes the glued morphism well defined on the overlap of the two pieces
+of the cover, via `ProjCoords.toHom_smul` with the transition unit `add2Z / addZ`.
+Only the `X`/`Z` and `Y`/`Z` cross-differences are stated; the `X`/`Y` one follows
+from them wherever `addZ` is a unit, and is not needed.
+
+The proof is a `linear_combination` against cofactors obtained by a `Singular`
+`lift` of `add2X * addZ - add2Z * addX` over `(W(P), W(Q))` in
+`ℚ(a₁, …, a₆)[Px, Py, Pz, Qx, Qy, Qz]`, where the two generators have coprime
+leading terms `-Px³` and `-Qx³` and so already form a Gröbner basis.  They come out
+with **27 and 21 monomials** in the `P, Q` variables and, as for `equation_addXYZ`,
+with **no denominators in the `aᵢ`** -- which is what makes the identity true over
+an arbitrary commutative ring rather than only over a ℚ-algebra.
+
+Cost is about a minute of `ring1`; the certificate is bidegree `(4, 4)`, an order
+of magnitude below the `(6, 6)` of `equation_add2XYZ` above, which is why these two
+close and that one does not. -/
 theorem add2X_mul_addZ (hP : Equation W' P) (hQ : Equation W' Q) :
     add2X W' P Q * addZ W' P Q = add2Z W' P Q * addX W' P Q := by
   rw [equation_iff] at hP hQ
@@ -933,7 +1006,8 @@ theorem add2X_mul_addZ (hP : Equation W' P) (hQ : Equation W' Q) :
 
 set_option maxHeartbeats 4000000 in
 /-- **The `Y`/`Z` half of the proportionality of the two addition laws**
-(sorry node); see `add2X_mul_addZ`. -/
+(PROVEN, 2026-07-28); see `add2X_mul_addZ`.  Cofactors of 28 and 35 monomials,
+same recipe, same integrality. -/
 theorem add2Y_mul_addZ (hP : Equation W' P) (hQ : Equation W' Q) :
     add2Y W' P Q * addZ W' P Q = add2Z W' P Q * addY W' P Q := by
   rw [equation_iff] at hP hQ
