@@ -30086,7 +30086,38 @@ start from, is `Mathlib/AlgebraicGeometry/AlgebraicCycle`,
 function field and rational maps are all present; the sheaf cohomology
 that computes `h⁰(D)` is what is missing.  **The check that would refute
 this verdict:** an `h⁰`, a genus, or a Riemann–Roch statement appearing
-in any of the three trees. -/
+in any of the three trees.
+
+**RE-RUN 2026-07-28 and the verdict STANDS**: `grep` for `RiemannRoch`,
+`riemannRoch`, `arithmeticGenus` and `genusOfCurve` over `Fermat/`, over
+`.lake/packages/mathlib/Mathlib/` and over `~/cs/FLT/FLT/` returns only
+prose occurrences inside docstrings — no declaration of any of those
+shapes exists anywhere.  Recorded so that the next reader knows the date
+of the check rather than only its conclusion.
+
+**A WEAKER CONCLUSION WOULD ALREADY SUFFICE FOR THE CONSUMER, and that
+is worth knowing before attacking this as stated** (2026-07-28).  The
+only consumer is `ajMor_eq_const_of_not_injective` below, and what it
+does with `u` is to compose it with `ajMor` and feed the result to
+`exists_const_of_affineLine_to_abelianScheme`.  A second, independently
+developed route to the same conclusion exists further down this file:
+`eq_comp_of_birationalOver_affineLine_toAbelianScheme` (PROVEN) yields
+`∃ s, c = strP ≫ s` for any `c : P ⟶ A` into an abelian scheme, from the
+strictly weaker input `Scheme.BirationalOver strX (𝔸¹ ↘ SpecQ)` — no
+open immersion, no `IsDominant`, and it supplies the reducedness it needs
+from `hcurve` itself.  So this leaf could be restated as
+"`¬ Injective aj → Scheme.BirationalOver strX (𝔸¹ ↘ SpecQ)`", i.e. "`X`
+is RATIONAL", which is a genuinely weaker demand than exhibiting the
+affine line as an open subscheme.
+
+**Two costs a successor must price before doing that**, neither of them
+mathematical: `eq_comp_of_birationalOver_affineLine_toAbelianScheme` is
+declared BELOW `ajMor_eq_const_of_not_injective`, so it would have to be
+relocated (as `exists_section_of_denseOpen_affineLine_toAbelianScheme`
+already was, for the same reason); and the restatement would leave
+`exists_const_of_affineLine_to_abelianScheme` with no consumer, i.e.
+free-floating, so it would have to be deleted in the same change.  Doing
+half of this is worse than doing none of it. -/
 theorem exists_affineLine_of_not_injective_aj {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
@@ -30096,12 +30127,127 @@ theorem exists_affineLine_of_not_injective_aj {X J : Scheme.{0}} {strX : X ⟶ S
       u ≫ strX = 𝔸(Unit; SpecQ) ↘ SpecQ :=
   sorry
 
-/-- **RIGIDITY: every morphism `𝔸¹_ℚ ⟶ A` to an abelian scheme over `ℚ`
-is CONSTANT** (sorry leaf, 2026-07-27) — "there are no rational curves in
-an abelian variety", in the form this file can state it, and the second
-half of `ajMor_eq_const_of_not_injective`.
+/-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY: a `K`-morphism from a
+DENSE OPEN of `𝔸¹_K` to an abelian scheme over `K` is CONSTANT** (sorry
+leaf, 2026-07-28) — the level-free, base-free geometric core of BOTH
+`exists_const_of_affineLine_to_abelianScheme` immediately below (its
+`V = ⊤`, `K = ℚ` case) and
+`not_birationalOver_affineLine_of_one_le_x0Genus` further down.  It
+mentions neither `N`, nor `x0Genus`, nor `IsX0Compactification`, nor the
+base `S`, and it is the ONLY new mathematics that half of the genus
+formula needs.
 
-TRUE and classical, in two steps:
+**RELOCATED 2026-07-28, and the relocation is what closed a leaf.**  This
+declaration was written ~1200 lines below, next to
+`eq_comp_of_birationalOver_affineLine_toAbelianScheme`, its first
+consumer.  `exists_const_of_affineLine_to_abelianScheme` — an
+independently cut, strictly WEAKER sorry leaf asserting the same rigidity
+for `V = ⊤` over `ℚ` — sat above it and could therefore not use it, so
+this file carried the same classical theorem twice, once as a special
+case of the other.  Moving this one up (a pure relocation: it depends on
+nothing but `AbelianSchemeStruct`, `𝔸(Unit; Spec K)` and `Scheme.Opens`,
+all declared far above, and there is no `section`/`variable` boundary
+between the two sites) turns that special case into a five-line
+corollary.  **Do not move it back**, and do not restate the `V = ⊤` case
+as a leaf again.
+
+TRUE and classical (Milne, *Abelian Varieties* I.3; Mumford, *Abelian
+Varieties* §4: an abelian variety contains no rational curve).  Two
+steps, in this order:
+
+* **Extend.**  `V` is a dense open of the smooth integral curve `𝔸¹_K`
+  and `A` is PROPER over `K` (`abA.proper`), so `d` extends uniquely to
+  `Φ : 𝔸¹_K ⟶ A` over `K` by the valuative criterion at each of the
+  finitely many missing codimension-one points.
+* **Constancy.**  A `K`-morphism `𝔸¹_K ⟶ A` is constant.  Extending once
+  more to `ℙ¹_K` (again properness of `A`) and applying the RIGIDITY
+  LEMMA — already available here as `isAdditiveOn_of_post_zero`'s input
+  in `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — a
+  morphism from a proper geometrically connected `K`-scheme with
+  `f_*𝒪 = 𝒪` into an abelian scheme is determined by its value at one
+  point.  The image point is `K`-rational because `𝔸¹_K` has `K`-points,
+  which is why the conclusion can be stated as a SECTION `s` rather than
+  as a point of the underlying space.
+
+**ONLY THE SECOND STEP IS STILL MISSING**, and this is a correction of
+record to the audit that used to sit on
+`exists_const_of_affineLine_to_abelianScheme`: that audit named "a
+rational-map extension theorem … appearing in any of the three trees" as
+the check that would refute its irreducibility verdict, and the check
+now PASSES.  `exists_unique_extension_of_isSmoothProperCurve` and
+`exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) are both
+PROVEN and sorry-free, and a smooth compactification of an affine curve
+over a perfect field is `exists_isSmoothCompactification_of_isAffine`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`,
+proven without the Nagata gluing leaf).  So step 1 is no longer
+mathematics that has to be invented here; step 2 — `Ω¹` of a proper
+rational curve, or any other proof that a PROPER rational curve maps
+constantly to an abelian scheme — is the whole residue.
+
+**THE EXTENSION MACHINERY IS ALREADY HERE, AND ITS EXACT GAP IS
+COMPILER-CHECKED.**  `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
+(PROVEN, `public import`ed above) is precisely the first step and, unlike
+the packaged `exists_unique_extension_of_isSmoothProperCurve`, it does
+NOT require the SOURCE to be proper — so `𝔸¹_K` is an admissible source.
+It wants `[IsIntegral 𝔸(Unit; Spec K)]` and `ValuationRing` stalks.
+Checked against this pin on 2026-07-28, by `infer_instance`:
+
+* `IsIntegral (𝔸(Unit; Spec (CommRingCat.of K)))` — **available**;
+* `SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
+  instance**, and it is what `valuationRing_stalk_of_smoothOfRelativeDimension_one`
+  (PROVEN, same file) needs to supply the stalk hypothesis;
+* `GeometricallyConnected (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
+  instance** either.
+
+So the cheapest route for a successor is to prove smoothness of the
+affine line, or to give the `ValuationRing` stalks of `𝔸¹_K = Spec K[t]`
+directly (localisations of a PID).  That is a `Mathlib`-shaped statement
+about affine space, not about modular curves.
+
+**`hV` IS LOAD-BEARING and the statement is FALSE without it**: for
+`V = ⊥` the empty scheme maps to `A` in exactly one way, and taking `A`
+an elliptic curve and `d` the unique morphism, the conclusion still
+holds — but for a NON-dense `V` in a general source it would not be
+determined; density is what makes the extension unique and what the
+consumer supplies (`f.dense_target`).  `abA` is load-bearing twice over:
+properness gives the extension, and the group structure is what makes
+constancy true — the statement is FALSE for a non-proper target
+(`A = 𝔸¹_K`, `d` the inclusion) and FALSE for a proper non-group target
+(`A` a genus-`0` conic with `d` a birational parametrisation).
+
+**NOT VACUOUS**: the conclusion is an existence statement about `s`, and
+it fails for `A = 𝔸(Unit; Spec K)` with `d = V.ι` whenever `V` is a
+proper dense open, since `V.ι` is not constant.  So the hypothesis
+`abA` is really consumed. -/
+theorem exists_section_of_denseOpen_affineLine_toAbelianScheme {K : Type} [Field K]
+    {A : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of K)}
+    (abA : AbelianSchemeStruct astr) (V : (𝔸(Unit; Spec (CommRingCat.of K))).Opens)
+    (hV : Dense (X := 𝔸(Unit; Spec (CommRingCat.of K))) (V : Set _))
+    (d : V.toScheme ⟶ A)
+    (hd : d ≫ astr =
+      V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) :
+    ∃ s : Spec (CommRingCat.of K) ⟶ A, s ≫ astr = 𝟙 _ ∧
+      d = (V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) ≫ s :=
+  sorry
+
+/-- **RIGIDITY: every morphism `𝔸¹_ℚ ⟶ A` to an abelian scheme over `ℚ`
+is CONSTANT** — "there are no rational curves in an abelian variety", in
+the form this file can state it, and the second half of
+`ajMor_eq_const_of_not_injective`.
+
+**PROVEN 2026-07-28, and NOT by new mathematics: this is the `V = ⊤`,
+`K = ℚ` case of `exists_section_of_denseOpen_affineLine_toAbelianScheme`
+immediately above.**  Two independent cuts of the same classical theorem
+had been made in this file — this one on 2026-07-27 from the Abel–Jacobi
+side, the general one on 2026-07-28 from the `x0Genus` side — and the
+general one was declared BELOW this one, which is the only reason this
+was still a `sorry`.  Relocating it (see its docstring) removes the
+duplication: `(⊤ : 𝔸¹.Opens).ι` is `Scheme.topIso.hom`, hence an
+isomorphism, so the two statements differ by cancelling an iso.
+
+TRUE and classical, in two steps — recorded here because they are what
+the surviving leaf above still owes:
 
 1. `A` is proper (`ab.proper`) and `𝔸¹_ℚ` is a dense open subscheme of
    the smooth curve `ℙ¹_ℚ`, so `φ` extends to a morphism `ℙ¹_ℚ → A`: a
@@ -30110,6 +30256,18 @@ TRUE and classical, in two steps:
 2. In characteristic `0`, `H⁰(ℙ¹, Ω¹) = 0`, so the pullback along that
    extension of every invariant differential of `A` vanishes; the
    extended morphism has zero differential and is therefore constant.
+
+**AUDIT CORRECTION, 2026-07-28.**  The previous version of this docstring
+ended with an "IRREDUCIBLE at this pin" verdict whose stated refutation
+check was "a rational-map extension theorem, or any statement about `Ω¹`
+of a proper curve, appearing in any of the three trees".  That check now
+**passes on its first clause**: `exists_unique_extension_of_isSmoothProperCurve`
+and `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`) are PROVEN
+and sorry-free, so step 1 exists in the tree.  Step 2 is still absent
+everywhere.  The verdict was correct when written and is now half wrong,
+which is exactly the failure mode a dated audit has; it has been rewritten
+rather than deleted so that the next reader can see which half moved.
 
 **The constant is a `ℚ`-POINT**, which is what `c ≫ astr = 𝟙 SpecQ`
 records and what the consumer needs in order to identify it with the zero
@@ -30121,31 +30279,33 @@ take `A = 𝔾ₐ = 𝔸¹_ℚ` with its additive group structure — smooth,
 geometrically connected, a commutative group scheme with a functorial
 group law, everything an `AbelianSchemeStruct` asks for EXCEPT properness
 — and `φ = 𝟙`, which is not constant.  So a proof must use properness of
-`A`, and a proof that does not is wrong.  (`ab.smooth` and `ab.connected`
-are not needed for the argument above; they are carried because
-`AbelianSchemeStruct` is the file's bundled notion and splitting it would
-create an interface with no producer.)
+`A`, and a proof that does not is wrong.  Properness is consumed here by
+being handed to the leaf above, which is where it does its work.
 
 **Not vacuous.**  The degenerate case `A = Spec ℚ` is discharged by
 `c = 𝟙`, but the statement has real content for every positive-dimensional
 `A`: it is exactly the classical rigidity that makes Abel–Jacobi
-injective in positive genus.
-
-IRREDUCIBLE at this pin, along the axis searched (morphisms out of
-rational curves): neither the extension of a rational map from a smooth
-curve to a proper target, nor the vanishing `H⁰(ℙ¹, Ω¹) = 0`, nor "an
-abelian variety contains no rational curve", exists in `Mathlib`, in
-`~/cs/FLT`, or here.  `Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`
-and `Mathlib/AlgebraicGeometry/ValuativeCriterion.lean` are the closest
-available inputs and are where a prover should start.  **The check that
-would refute this verdict:** a rational-map extension theorem, or any
-statement about `Ω¹` of a proper curve, appearing in any of the three
-trees. -/
+injective in positive genus. -/
 theorem exists_const_of_affineLine_to_abelianScheme {A : Scheme.{0}} {astr : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct astr) (φ : 𝔸(Unit; SpecQ) ⟶ A)
     (hφ : φ ≫ astr = 𝔸(Unit; SpecQ) ↘ SpecQ) :
-    ∃ c : SpecQ ⟶ A, c ≫ astr = 𝟙 SpecQ ∧ φ = (𝔸(Unit; SpecQ) ↘ SpecQ) ≫ c :=
-  sorry
+    ∃ c : SpecQ ⟶ A, c ≫ astr = 𝟙 SpecQ ∧ φ = (𝔸(Unit; SpecQ) ↘ SpecQ) ≫ c := by
+  have hdense : Dense (X := 𝔸(Unit; SpecQ))
+      ((⊤ : (𝔸(Unit; SpecQ)).Opens) : Set (𝔸(Unit; SpecQ))) := by
+    rw [TopologicalSpace.Opens.coe_top]
+    exact dense_univ
+  obtain ⟨c, hc, hcomp⟩ :=
+    exists_section_of_denseOpen_affineLine_toAbelianScheme (K := ℚ) ab ⊤ hdense
+      ((⊤ : (𝔸(Unit; SpecQ)).Opens).ι ≫ φ) (by rw [Category.assoc, hφ])
+  refine ⟨c, hc, ?_⟩
+  calc φ = (𝔸(Unit; SpecQ)).topIso.inv ≫ ((⊤ : (𝔸(Unit; SpecQ)).Opens).ι ≫ φ) := by
+        rw [← Category.assoc, Scheme.toIso_inv_ι, Category.id_comp]
+    _ = (𝔸(Unit; SpecQ)).topIso.inv ≫
+          (((⊤ : (𝔸(Unit; SpecQ)).Opens).ι ≫ (𝔸(Unit; SpecQ) ↘ SpecQ)) ≫ c) := by
+        rw [hcomp]
+    _ = (𝔸(Unit; SpecQ) ↘ SpecQ) ≫ c := by
+        rw [Category.assoc, ← Category.assoc (𝔸(Unit; SpecQ)).topIso.inv,
+          Scheme.toIso_inv_ι, Category.id_comp]
 
 /-- **A curve whose Abel–Jacobi map is not injective on `ℚ`-points has a
 CONSTANT Abel–Jacobi map** (PROVEN 2026-07-27 by decomposition; formerly
@@ -30171,6 +30331,11 @@ copy of `𝔸¹_ℚ`".  So the two classical theorems are now separated:
 * `exists_const_of_affineLine_to_abelianScheme` — **rigidity**: there are
   no rational curves in an abelian variety, so `𝔸¹_ℚ ⟶ J` is constant.
   This half uses only `ab.proper`, and is FALSE without it (`𝔾ₐ`).
+  **PROVEN 2026-07-28** as the `V = ⊤`, `K = ℚ` case of
+  `exists_section_of_denseOpen_affineLine_toAbelianScheme`, which is the
+  general form of the same classical theorem and is where the rigidity
+  sorry now lives; so this half of the cut no longer carries a leaf of
+  its own.
 
 **The glue below is real mathematics-free bookkeeping, and it is what the
 cut buys.**  Three ingredients, none of them geometric:
@@ -31256,78 +31421,6 @@ theorem birationalOver_affineLine_of_not_exists_section {K : Type} [Field K] {P 
   birationalOver_affineLine_of_isDominant hcurve hconn u hu
     (isDominant_of_not_exists_section hcurve hconn u hu hnc)
 
-/-- **NO RATIONAL CURVES ON AN ABELIAN VARIETY: a `K`-morphism from a
-DENSE OPEN of `𝔸¹_K` to an abelian scheme over `K` is CONSTANT** (sorry
-leaf, 2026-07-28) — the level-free, base-free geometric core of
-`not_birationalOver_affineLine_of_one_le_x0Genus` below.  It mentions
-neither `N`, nor `x0Genus`, nor `IsX0Compactification`, nor the base `S`,
-and it is the ONLY new mathematics that half of the genus formula needs.
-
-TRUE and classical (Milne, *Abelian Varieties* I.3; Mumford, *Abelian
-Varieties* §4: an abelian variety contains no rational curve).  Two
-steps, in this order:
-
-* **Extend.**  `V` is a dense open of the smooth integral curve `𝔸¹_K`
-  and `A` is PROPER over `K` (`abA.proper`), so `d` extends uniquely to
-  `Φ : 𝔸¹_K ⟶ A` over `K` by the valuative criterion at each of the
-  finitely many missing codimension-one points.
-* **Constancy.**  A `K`-morphism `𝔸¹_K ⟶ A` is constant.  Extending once
-  more to `ℙ¹_K` (again properness of `A`) and applying the RIGIDITY
-  LEMMA — already available here as `isAdditiveOn_of_post_zero`'s input
-  in `Fermat/FLT/Mathlib/AlgebraicGeometry/ProperPushforward.lean` — a
-  morphism from a proper geometrically connected `K`-scheme with
-  `f_*𝒪 = 𝒪` into an abelian scheme is determined by its value at one
-  point.  The image point is `K`-rational because `𝔸¹_K` has `K`-points,
-  which is why the conclusion can be stated as a SECTION `s` rather than
-  as a point of the underlying space.
-
-**THE EXTENSION MACHINERY IS ALREADY HERE, AND ITS EXACT GAP IS
-COMPILER-CHECKED.**  `exists_unique_extension_of_valuationRing_stalk_of_isOpenImmersion`
-(`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`, PROVEN,
-`public import`ed above) is precisely the first step and, unlike the
-packaged `exists_unique_extension_of_isSmoothProperCurve`, it does NOT
-require the SOURCE to be proper — so `𝔸¹_K` is an admissible source.  It
-wants `[IsIntegral 𝔸(Unit; Spec K)]` and `ValuationRing` stalks.  Checked
-against this pin on 2026-07-28, by `infer_instance`:
-
-* `IsIntegral (𝔸(Unit; Spec (CommRingCat.of K)))` — **available**;
-* `SmoothOfRelativeDimension 1 (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
-  instance**, and it is what `valuationRing_stalk_of_smoothOfRelativeDimension_one`
-  (PROVEN, same file) needs to supply the stalk hypothesis;
-* `GeometricallyConnected (𝔸(Unit; Spec K) ↘ Spec K)` — **NOT an
-  instance** either.
-
-So the cheapest route for a successor is to prove smoothness of the
-affine line, or to give the `ValuationRing` stalks of `𝔸¹_K = Spec K[t]`
-directly (localisations of a PID).  That is a `Mathlib`-shaped statement
-about affine space, not about modular curves.
-
-**`hV` IS LOAD-BEARING and the statement is FALSE without it**: for
-`V = ⊥` the empty scheme maps to `A` in exactly one way, and taking `A`
-an elliptic curve and `d` the unique morphism, the conclusion still
-holds — but for a NON-dense `V` in a general source it would not be
-determined; density is what makes the extension unique and what the
-consumer supplies (`f.dense_target`).  `abA` is load-bearing twice over:
-properness gives the extension, and the group structure is what makes
-constancy true — the statement is FALSE for a non-proper target
-(`A = 𝔸¹_K`, `d` the inclusion) and FALSE for a proper non-group target
-(`A` a genus-`0` conic with `d` a birational parametrisation).
-
-**NOT VACUOUS**: the conclusion is an existence statement about `s`, and
-it fails for `A = 𝔸(Unit; Spec K)` with `d = V.ι` whenever `V` is a
-proper dense open, since `V.ι` is not constant.  So the hypothesis
-`abA` is really consumed. -/
-theorem exists_section_of_denseOpen_affineLine_toAbelianScheme {K : Type} [Field K]
-    {A : Scheme.{0}} {astr : A ⟶ Spec (CommRingCat.of K)}
-    (abA : AbelianSchemeStruct astr) (V : (𝔸(Unit; Spec (CommRingCat.of K))).Opens)
-    (hV : Dense (X := 𝔸(Unit; Spec (CommRingCat.of K))) (V : Set _))
-    (d : V.toScheme ⟶ A)
-    (hd : d ≫ astr =
-      V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) :
-    ∃ s : Spec (CommRingCat.of K) ⟶ A, s ≫ astr = 𝟙 _ ∧
-      d = (V.ι ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))) ≫ s :=
-  sorry
-
 /-- **A RATIONAL curve over `K` maps CONSTANTLY to every abelian scheme
 over `K`** (PROVEN 2026-07-28 over
 `exists_section_of_denseOpen_affineLine_toAbelianScheme`) — the level-free
@@ -32172,7 +32265,7 @@ docstring).
 | `exists_heckeIsotypicDecomposition_of_isotypicQuotients` | Atkin-Lehner multiplicities + Poincare | no |
 | `isTorsion_factor_of_heckeIsotypic` | Kolyvagin-Logachev | no |
 | `exists_affineLine_of_not_injective_aj` | Riemann-Roch | no |
-| `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
+| `exists_section_of_denseOpen_affineLine_toAbelianScheme` | rigidity of abelian varieties | no |
 
 (`isTorsion_jacobian_of_lFunction_ne_zero` stood in this table until
 2026-07-27, when it was decomposed into the two rows that replace it;
