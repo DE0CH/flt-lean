@@ -10653,6 +10653,16 @@ this module.  If the body binds a cuspidal Hilbert newform datum over
 `IntermediateField.fixedField C`, the repair has landed and (1), (5)
 and (6) should all be re-read before any further work here.
 
+**CHECK RE-RUN 2026-07-28: (5)'s VERDICT STANDS, ITS QUOTATION DOES
+NOT.**  `HeckeSystemDescendsTo` is no longer `∃ S P, …`: it now binds an
+EXISTENTIAL coefficient field `E'` (finding (6)'s repair, landed), a
+Satake-shaped `a`, the archimedean bound, and a
+`Gal(F^C/ℚ)`-equivariance clause `a (finitePlaceEquiv τ w) = a w`.  What
+it still does NOT bind is a cuspidal newform datum — so the repair of
+(1) has not landed, and (5)'s conclusion (route (i) unavailable above the
+base) is unaffected.  Read the quotation as history; the three
+eigenvalue-level clauses are what finding (8) below threads.
+
 (6) THE PROPOSED REPAIR IS NECESSARY BUT NOT SUFFICIENT — `Wit.E` IS
 FIXED ALONG THE TOWER WHILE THE HECKE FIELD PROVABLY GROWS DOWN IT.
 `HeckeSystemDescendsTo Wit C` types its polynomials as
@@ -10793,18 +10803,38 @@ supported only when `PL` is the genuine cuspidal `L`-eigensystem — which
 is what the sole call site supplies
 (`exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert`
 instantiates `PL v = X² − C (aL v)·X + C (Nv)` from a
-`HeckeSystemDescendsTo` datum, whose `a` carries the bound).  The edit
-that would make route (i) support it for arbitrary `PL` is a single extra
-binder,
+`HeckeSystemDescendsTo` datum, whose `a` carries the bound).  The binder
+that would carry the bound for arbitrary `PL` is
 
   `(hPLcusp : ∀ v ∉ SL, ∀ φ : EL →+* ℂ,`
   `   ‖φ ((PL v).coeff 1)‖ ≤ 2 * Real.sqrt (Ideal.absNorm v.asIdeal))`,
 
-threaded from the `h2L` field of `HeckeSystemDescendsTo` at that call
-site.  It was deliberately NOT made, because it weakens a citation whose
-truth does not depend on it and because the arithmetic hypothesis package
-is retained VERBATIM to keep route (ii) available; a future owner who
-wants the stronger form has the whole edit written out above.
+threaded from the `h2L` conjunct of `HeckeSystemDescendsTo` at that call
+site.  **IT WAS NOT ADDED, AND THE REASON IS STRONGER THAN THE ONE THIS
+PARAGRAPH USED TO GIVE** (which was that it weakens a citation whose
+truth does not depend on it; the arithmetic hypothesis package is in any
+case retained VERBATIM to keep route (ii) available, so route (ii) is
+untouched either way).  The real reason: **`hPLcusp` ALONE WOULD NOT
+MAKE ROUTE (i) AVAILABLE** for the conclusion this leaf already carries.
+Thm 4.2(d) takes a cuspidal `Π` over `L` that is `Gal(L/M)`-INVARIANT,
+and **no binder of this theorem supplies the invariance either** —
+checked against the statement, 2026-07-28: the only `L`-side hypothesis
+is `hPL`, bare `E`-rationality of charpolys, exactly as finding (1)
+records.  The invariance is available, unused, at the sole call site:
+`HeckeSystemDescendsTo` now carries a THIRD conjunct
+`a (finitePlaceEquiv τ w) = a w` for every `τ : F^C ≃ₐ[ℚ] F^C`, which
+subsumes `Gal(L/M)` (normal by `hnormal`), and
+`exists_cuspidalHeckeEigenvalue_of_prime_cyclic_step_of_inert` already
+binds it as `_hinv` beside the bound as `_hcusp`, passing neither on.
+
+**So a future owner repairing route (i) must add BOTH binders together.**
+Adding only `hPLcusp` is a half-repair that reads like a whole one: it
+buys the archimedean shadow of cuspidality while leaving the input Thm
+4.2(d) actually acts on still unspecified.  And note the pair is
+NECESSARY, not sufficient — an eigenvalue-level bound plus an
+eigenvalue-level equivariance is still not an automorphic `Π`, so the
+binders belong WITH the cut-level repair of finding (1) (an automorphic
+datum over `F^C` inside `HeckeSystemDescendsTo`), never instead of it.
 
 CHECK THAT REFUTES (8): exhibit an instantiation of the arithmetic
 package (`hρ` hardly ramified with `ℓ ≥ 5`, `ρbar` hardly ramified and
