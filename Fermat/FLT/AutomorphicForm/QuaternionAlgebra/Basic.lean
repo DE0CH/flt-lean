@@ -86,10 +86,14 @@ The closure's only unproven statements are now:
   supplies it, via `subgroup_fg_of_le_fg`.)
 * `isCompact_normOne_infiniteAdele` — `{x ∈ D ⊗ 𝔸^∞ : Nm(x) = 1}` is compact. Now
   PROVEN (2026-07-28), decomposed over the infinite places into three new leaves —
-  `isCompact_normOne_completion` (the place-local half, and now the ONLY consumer of
-  `IsQuaternionAlgebra.IsTotallyDefinite` in the file), `norm_infiniteAdele_apply`
-  (the norm is componentwise) and `continuous_infiniteAdeleTensorPiEquiv_symm` (the
-  decomposition is a homeomorphism). The last two are definiteness-free.
+  `exists_ringEquiv_quaternion_of_isTotallyDefinite` (`D ⊗ F_v ≃+* ℍ` topologically —
+  now the ONLY consumer of `IsQuaternionAlgebra.IsTotallyDefinite` in the file),
+  `norm_infiniteAdele_apply` (the norm is componentwise) and
+  `continuous_infiniteAdeleTensorPiEquiv_symm` (the decomposition is a homeomorphism).
+  The last two are definiteness-free. The place-local half
+  `isCompact_normOne_completion` is PROVEN, on the way proving
+  `norm_quaternion_eq_normSq_sq` (`Nm_{ℍ/ℝ} = normSq²`, absent from the pin) and
+  `isCompact_normOne_quaternion`.
 * `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`,
   so `D ∩ (compact × compact)` is finite. Uses neither definiteness nor total
   reality; it is the `[Ring D]` form of `Aux.T_finite` in
@@ -965,41 +969,174 @@ def infiniteAdeleTensorPiEquiv [IsQuaternionAlgebra F D] :
 
 variable (F D) in
 /--
-**(sorry leaf — the place-local half, and the ONLY carrier of definiteness in this file.)**
+`Quaternion ℝ ≃ₗ[ℝ] (Fin 4 → ℝ)`, at the type `Quaternion ℝ` ITSELF.
+
+`Quaternion R` is a `def` for `ℍ[R,-1,0,-1]`, and mathlib's `QuaternionAlgebra.basisOneIJK`
+is stated at the latter. The two are definitionally equal but their `Algebra ℝ _` instance
+terms are not syntactically equal, so `rw [Algebra.norm_eq_matrix_det basisOneIJK]` does NOT
+fire against a goal stated at `Quaternion ℝ` (checked: "did not find an occurrence of the
+pattern"). Hence this basis, rebuilt at `Quaternion ℝ`. -/
+def linEquivTupleQuaternion : Quaternion ℝ ≃ₗ[ℝ] (Fin 4 → ℝ) where
+  __ := Quaternion.equivTuple ℝ
+  map_add' _ _ := by funext i; fin_cases i <;> rfl
+  map_smul' _ _ := by funext i; fin_cases i <;> rfl
+
+/-- The `1, i, j, k` basis of `Quaternion ℝ` over `ℝ`. -/
+def basisQuaternion : Module.Basis (Fin 4) ℝ (Quaternion ℝ) := .ofEquivFun linEquivTupleQuaternion
+
+lemma basisQuaternion_repr (z : Quaternion ℝ) (i : Fin 4) :
+    basisQuaternion.repr z i = ![z.re, z.imI, z.imJ, z.imK] i := rfl
+
+lemma basisQuaternion_apply (i : Fin 4) :
+    basisQuaternion i = ![(1 : Quaternion ℝ), ⟨0, 1, 0, 0⟩, ⟨0, 0, 1, 0⟩, ⟨0, 0, 0, 1⟩] i := by
+  refine basisQuaternion.ext_elem fun j => ?_
+  rw [Module.Basis.repr_self]
+  -- NOTE the trailing `rfl`: in a bare scratch module `simp` closes every branch here, but
+  -- inside this file's simp scope it leaves the four `(1 : Quaternion ℝ).re = 1`-shaped
+  -- component goals of the `i = 0` case open. They are all `rfl`.
+  fin_cases i <;> fin_cases j <;> simp [basisQuaternion_repr] <;> rfl
+
+set_option maxHeartbeats 4000000 in
+/--
+**PROVEN.** The `ℝ`-algebra norm of the Hamilton quaternions is the SQUARE of the reduced
+norm: `Nm_{ℍ/ℝ}(q) = normSq(q)² = ‖q‖⁴`.
+
+Absent from the pin — `grep Algebra.norm` over `Mathlib/Algebra/Quaternion.lean` and
+`Mathlib/Analysis/Quaternion.lean` finds nothing — and mathlib-shaped, so it should go
+upstream eventually.
+
+Proved by exhibiting the left-multiplication matrix in the `1, i, j, k` basis explicitly
+and expanding its determinant. Two traps, both cost a cycle here: `Matrix.det_fin_four`
+does NOT exist (only `det_fin_three`), so the expansion is by `Matrix.det_succ_row_zero`
+plus `Fin.sum_univ_succ`; and that expansion leaves `Fin.succAbove` index terms which
+`simp` cannot reduce unless `Fin.succAbove` is itself in the simp set — while adding
+`Fin.lt_def` instead makes `simp` loop (via `Fin.val_fin_lt`) and blow the recursion
+depth. Establishing the matrix as an explicit `!![…]` FIRST, so every index is a numeral,
+is what makes the whole thing go. -/
+theorem norm_quaternion_eq_normSq_sq (q : Quaternion ℝ) :
+    Algebra.norm ℝ q = (Quaternion.normSq q) ^ 2 := by
+  have hM : Algebra.leftMulMatrix basisQuaternion q =
+      !![q.re, -q.imI, -q.imJ, -q.imK;
+         q.imI, q.re, -q.imK, q.imJ;
+         q.imJ, q.imK, q.re, -q.imI;
+         q.imK, -q.imJ, q.imI, q.re] := by
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [Algebra.leftMulMatrix_apply, Algebra.coe_lmul_eq_mul, LinearMap.toMatrix_apply,
+        basisQuaternion_repr, basisQuaternion_apply]
+  rw [Algebra.norm_eq_matrix_det basisQuaternion, hM]
+  simp [Matrix.det_succ_row_zero, Fin.sum_univ_succ, Fin.succAbove, Quaternion.normSq_def']
+  ring
+
+/--
+**PROVEN.** `{q ∈ ℍ : Nm_{ℍ/ℝ}(q) = 1}` is the UNIT SPHERE, hence compact.
+
+`Nm(q) = normSq(q)² = (‖q‖‖q‖)²` by `norm_quaternion_eq_normSq_sq` and
+`Quaternion.normSq_eq_norm_mul_self`, so `Nm(q) = 1 ↔ ‖q‖ = 1` (both directions by
+`nlinarith` off `norm_nonneg`), and `ℍ` is a `ProperSpace`, so `isCompact_sphere` applies.
+
+**This is where definiteness cashes out.** The corresponding set for the SPLIT algebra
+`M₂(ℝ)` is `{det = ±1} = SL₂^±(ℝ)`, which is closed and UNBOUNDED — `diag(t, t⁻¹)` for
+`t → ∞` — hence not compact. The whole content of `IsTotallyDefinite` in this file is
+that the archimedean completions are `ℍ` and not `M₂(ℝ)`. -/
+theorem isCompact_normOne_quaternion :
+    IsCompact {q : Quaternion ℝ | Algebra.norm ℝ q = 1} := by
+  have hs : {q : Quaternion ℝ | Algebra.norm ℝ q = 1} = Metric.sphere (0 : Quaternion ℝ) 1 := by
+    ext q
+    simp only [Set.mem_setOf_eq, norm_quaternion_eq_normSq_sq, Metric.mem_sphere, dist_zero_right,
+      Quaternion.normSq_eq_norm_mul_self]
+    constructor
+    · intro h
+      have h0 : (0 : ℝ) ≤ ‖q‖ := norm_nonneg q
+      have h1 : ‖q‖ * ‖q‖ = 1 := by nlinarith [mul_nonneg h0 h0]
+      nlinarith
+    · intro h; rw [h]; norm_num
+  rw [hs]
+  exact isCompact_sphere _ _
+
+variable (F D) in
+/--
+**(sorry leaf — the ONLY carrier of `IsTotallyDefinite` left in this file.)**
+
+At an infinite place `v` of the totally real `F`, with `D` totally definite, the completion
+`D ⊗_F F_v` is RING-ISOMORPHIC to `ℍ` by a HOMEOMORPHISM compatible with `F_v ≃+* ℝ`.
+
+**Why it is true.** `F` totally real makes `v` real, so
+`NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal` gives `F_v ≃+* ℝ` and
+`IsQuaternionAlgebra.IsTotallyDefinite.cond v hv` gives `ℝ ⊗[F,v] D ≃ₐ[ℝ] ℍ`, where the
+`Algebra F ℝ` is the one induced by `embedding_of_isReal hv`. Composing
+`D ⊗[F] F_v ≃ D ⊗[F] ℝ ≃ ℝ ⊗[F] D ≃ ℍ` gives the ring equivalence; the middle step is the
+`Algebra.TensorProduct.comm` already packaged here as `tensorCommRight`. It is a
+homeomorphism because it is `ℝ`-linear between two finite-dimensional spaces carrying
+module topologies (`IsModuleTopology F_v (D ⊗[F] v.Completion)` DOES resolve at `[Ring D]`;
+`ℍ` is a finite-dimensional normed space), so
+`IsModuleTopology.continuous_of_linearMap` applies in both directions.
+
+**The statement is PINNED, not merely existential.** The compatibility clause forces the
+`ℝ`-algebra structure: any `e` satisfying it makes
+`Algebra.norm_eq_of_equiv_equiv (ringEquivRealOfIsReal _) e` applicable, which is all the
+consumer uses, so no adversarial witness (a post-composed automorphism of `ℍ`, say) can
+satisfy the clauses while breaking `isCompact_normOne_completion` — every automorphism of
+`ℍ` is norm-preserving precisely because the norm is defined from the algebra structure.
+
+**Where the remaining work is.** Not in the mathematics but in the base-change plumbing:
+`ringEquivRealOfIsReal` has to be shown compatible with `algebraMap F v.Completion` and
+`embedding_of_isReal hv` before `TensorProduct.congr` can be applied along it. That
+compatibility is the one input that has not been located in the pin.
+
+**Both hypotheses are load-bearing**, and this leaf is where they are consumed. Drop
+definiteness and take `D = M₂(F)` split at `v`: `D ⊗ F_v ≃ M₂(ℝ)`, which is not isomorphic
+to `ℍ` (it has zero divisors). Drop total reality and let `v` be complex: `D ⊗ ℂ ≃ M₂(ℂ)`
+always — a quaternion algebra is split by `ℂ`, definite or not. So a proof of this leaf
+that does not use `IsTotallyDefinite` is proving something else. -/
+theorem exists_ringEquiv_quaternion_of_isTotallyDefinite [NumberField.IsTotallyReal F]
+    [IsQuaternionAlgebra F D] [IsQuaternionAlgebra.IsTotallyDefinite F D]
+    (v : NumberField.InfinitePlace F) :
+    ∃ e : (D ⊗[F] v.Completion) ≃+* Quaternion ℝ, Continuous e ∧ Continuous e.symm ∧
+      (algebraMap ℝ (Quaternion ℝ)).comp
+          (NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal
+            (NumberField.IsTotallyReal.isReal v) : v.Completion →+* ℝ)
+        = (e : (D ⊗[F] v.Completion) →+* Quaternion ℝ).comp
+            (algebraMap v.Completion (D ⊗[F] v.Completion)) :=
+  sorry
+
+variable (F D) in
+/--
+**PROVEN** (assembly) from `exists_ringEquiv_quaternion_of_isTotallyDefinite` and
+`isCompact_normOne_quaternion`.
 
 At an infinite place `v`, `{z ∈ D ⊗_F F_v : Nm_{(D ⊗ F_v)/F_v}(z) = 1}` is COMPACT.
 
-**Why it is true.** `F` totally real makes `v` real, so `F_v ≃+* ℝ`
-(`NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal`), and total definiteness
-gives `ℝ ⊗[F,v] D ≃ₐ[ℝ] ℍ` (`IsQuaternionAlgebra.IsTotallyDefinite.cond`). Transporting
-the norm along both (`Algebra.norm_eq_of_equiv_equiv`, which is exactly the lemma for a
-simultaneous change of base ring and algebra) reduces the claim to
-`IsCompact {q : ℍ | Algebra.norm ℝ q = 1}`. On `ℍ` the algebra norm is the SQUARE of the
-reduced norm, `Algebra.norm ℝ q = normSq q ^ 2 = ‖q‖ ^ 4`, so the set is the unit sphere
-`Metric.sphere (0 : ℍ) 1`, compact because `ℍ` is a `ProperSpace` (`isCompact_sphere`).
+**BOTH hypotheses are load-bearing**, and they are consumed entirely inside
+`exists_ringEquiv_quaternion_of_isTotallyDefinite`; see the counterexamples there
+(`SL₂^±(ℝ)` at a split real place, `SL₂^±(ℂ)` at a complex one).
 
-**BOTH hypotheses are load-bearing, and this is the whole reason the file assumes them.**
-Drop definiteness and take `D = M₂(F)` split at `v`: then `Nm = det²` and the set is
-`{m ∈ M₂(ℝ) : det m = ±1} = SL₂^±(ℝ)`, which is closed and unbounded, hence NOT compact
-(`diag(t, t⁻¹)` for `t → ∞`). Drop total reality and let `v` be complex: `D ⊗ ℂ ≃ M₂(ℂ)`
-always — a quaternion algebra is split by `ℂ`, definite or not — and the same
-`SL₂^±(ℂ)` counterexample applies. So neither hypothesis can be weakened away, and any
-proof of this leaf that does not use `IsTotallyDefinite` is proving something else.
-
-**Not yet in mathlib, and checked:** there is no `Algebra.norm ℝ ℍ` lemma anywhere in the
-pin (`grep` over `Mathlib/Algebra/Quaternion.lean` and `Mathlib/Analysis/Quaternion.lean`
-finds no `Algebra.norm`), and there is no `Matrix.det_fin_four` (only `det_fin_three`), so
-the `normSq ^ 2` computation has to be done by expanding `Matrix.det_succ_row_zero` over
-the `1, i, j, k` basis. `Quaternion.normSq_def'`
-(`normSq a = a.re ^ 2 + a.imI ^ 2 + a.imJ ^ 2 + a.imK ^ 2`),
-`Quaternion.normSq_eq_norm_mul_self`, and the `ProperSpace ℍ` instance all DO exist.
-Note `Quaternion R` is a `def` for `ℍ[R,-1,0,-1]`, so `QuaternionAlgebra.basisOneIJK`
-does not `rw` against a goal stated at `ℍ`; build the basis at `ℍ` itself
-(`Module.Basis.ofEquivFun` on `Quaternion.equivTuple`). -/
+**The assembly proven here.** `Algebra.norm_eq_of_equiv_equiv` — exactly the lemma for a
+simultaneous change of BASE RING and ALGEBRA — turns `Nm_{F_v}(z)` into
+`e₁.symm (Nm_ℝ (e z))`, so the set is `e.symm '' {q : ℍ | Nm_ℝ q = 1}`; `e₁.symm` is a ring
+equivalence, hence injective and unital, which is what converts `e₁.symm (·) = 1` into
+`(·) = 1`. The image of the compact `{Nm_ℝ = 1}` under the continuous `e.symm` is
+compact. -/
 theorem isCompact_normOne_completion [NumberField.IsTotallyReal F] [IsQuaternionAlgebra F D]
     [IsQuaternionAlgebra.IsTotallyDefinite F D] (v : NumberField.InfinitePlace F) :
-    IsCompact {z : D ⊗[F] v.Completion | Algebra.norm v.Completion z = 1} :=
-  sorry
+    IsCompact {z : D ⊗[F] v.Completion | Algebra.norm v.Completion z = 1} := by
+  obtain ⟨e, _he, hes, hcomp⟩ := exists_ringEquiv_quaternion_of_isTotallyDefinite F D v
+  have hs : {z : D ⊗[F] v.Completion | Algebra.norm v.Completion z = 1}
+      = ⇑e.symm '' {q : Quaternion ℝ | Algebra.norm ℝ q = 1} := by
+    ext z
+    simp only [Set.mem_setOf_eq, Set.mem_image]
+    rw [Algebra.norm_eq_of_equiv_equiv _ e hcomp z]
+    constructor
+    · intro hz
+      exact ⟨e z, by
+        have := (NumberField.InfinitePlace.Completion.ringEquivRealOfIsReal
+          (NumberField.IsTotallyReal.isReal v)).symm.injective
+            (a₁ := Algebra.norm ℝ (e z)) (a₂ := 1) (by simpa using hz)
+        simpa using this, by simp⟩
+    · rintro ⟨q, hq, rfl⟩
+      simp [hq]
+  rw [hs]
+  exact isCompact_normOne_quaternion.image hes
 
 variable (F D) in
 /--
@@ -1497,10 +1634,12 @@ then PROVEN 2026-07-28. THREE sorried leaves remain beneath them:
 * `comap_le_range_units_integers_of_isCompact` — a compact subgroup of `𝔸ᶠ[F]ˣ`
   meets `Fˣ` inside `(𝓞 F)ˣ`. Statement about `F` alone.
 * `isCompact_normOne_infiniteAdele` — `{Nm = 1}` is compact in `D ⊗ 𝔸^∞`. PROVEN
-  2026-07-28 by decomposition over the infinite places; the three leaves beneath it
-  are `isCompact_normOne_completion` (place-local, and where total definiteness is
-  now consumed — here and nowhere else), `norm_infiniteAdele_apply` and
-  `continuous_infiniteAdeleTensorPiEquiv_symm` (both definiteness-free).
+  2026-07-28 by decomposition over the infinite places, as is its place-local half
+  `isCompact_normOne_completion`. The three leaves beneath them are
+  `exists_ringEquiv_quaternion_of_isTotallyDefinite` (`D ⊗ F_v ≃+* ℍ` topologically —
+  where total definiteness is now consumed, here and nowhere else),
+  `norm_infiniteAdele_apply` and `continuous_infiniteAdeleTensorPiEquiv_symm` (both
+  definiteness-free).
 * `finite_setOf_tmul_mem_of_isCompact` — `D` is discrete and closed in `D ⊗ 𝔸_F`.
 
 `index_ray_ne_zero` — finiteness of a ray class group of `F`, which does not
