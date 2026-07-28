@@ -39402,10 +39402,129 @@ theorem nonempty_isBaseChangeOf_of_classify_eq {p : ℕ} (hp : 0 < p)
   rw [huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₁, huc (specAlgClos ℚ ≫ 𝟙 SpecQ) d₂,
     congrArg Subtype.val h]
 
+/-- **A `Γ₀(p)`-datum over `ℚ̄` with field of moduli `ℚ` and `j ∈ {0, 1728}`
+forces `p ∈ {2, 3}`** (sorry leaf, opened 2026-07-28 by the cut of
+`exists_gamma0Datum_descent_isBaseChangeOf_mazurLevel` below; it is that leaf's
+ONLY residue).
+
+TRUE, and it is classical CM theory — **not** Mazur's theorem.  A prover must
+not discharge it by citing `cuspidal_x0_prime`, `mazur_classification`, or any
+other form of Mazur: the argument below is about CM curves alone and is decided
+by the ramification of `p` in an imaginary quadratic field of class number one.
+
+## THIS IS THE `hmem`-FREE FORM OF AN EXISTING `X0.lean` LEAF — HOIST IT
+
+`Fermat.not_isSpecialJ_of_gamma0Datum_fieldOfModuli` (`X0.lean`) concludes
+`W.j ≠ 0 ∧ W.j ≠ 1728` from `hp : p.Prime`, the same `hinv`, the same `W`/`hW`,
+and `hmem : p ∉ mazurIsogenyPrimes`.  Read its docstring's route to the end: it
+derives "`p` ramifies in `K`, so `p ∣ disc K ∈ {-4, -3}`, so `p ∈ {2, 3}`", and
+only THEN uses `hmem` — via `{2, 3} ⊆ mazurIsogenyPrimes` — to close.  So the
+arithmetic that leaf proves is verbatim the statement below, and `hmem` enters
+in its last line.
+
+`hmem` is FALSE at `43, 67, 163`, so that leaf is uncitable here; but the
+arithmetic is exactly as applicable, because `43, 67, 163 ∉ {2, 3}` closes the
+same way.  **The two nodes therefore differ only in which membership fact
+contradicts `p ∈ {2, 3}`, and one proof closes both.**  This is stated in this
+file rather than in `X0.lean` only because that file is another owner's region;
+hoisting it and re-deriving `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` from
+it in one line is a pure win and is recorded in this task's report.
+
+## The argument
+
+In characteristic zero `j = 1728` forces `End(W⁄ℚ̄) = ℤ[i]` and `j = 0` forces
+`ℤ[ζ₃]`; write `K = ℚ(i)` resp. `ℚ(ζ₃)`, of class number one and discriminant
+`−4` resp. `−3`, and `μ = 𝒪_K^×` (of order `4` resp. `6`) for `Aut(W⁄ℚ̄)`.  Let
+`C ⊂ W(ℚ̄)` be the cyclic subgroup of order `p` carried by `d.cyc`.
+
+`hinv` says the field of moduli of the PAIR `(W, C)` is `ℚ`: for every
+`σ ∈ Γ_ℚ` there is `α ∈ μ` with `α(σ C) = C`.
+
+1. *`C` is `𝒪_K`-stable.*  `W[p]` is free of rank one over `𝒪_K/p`, and by CM
+   theory `Γ_K` acts on it through the full `(𝒪_K/p)^×`.  Applying `hinv` to
+   `σ ∈ Γ_K` says the `Γ_K`-orbit of `C` inside the `p + 1` lines of `W[p]` is
+   contained in the `μ`-orbit of `C`, which has at most `|μ| ≤ 6` elements.
+   * `p` INERT: `𝒪_K/p = 𝔽_{p²}` and `(𝒪_K/p)^×/𝔽_p^×` is cyclic of order
+     `p + 1` acting simply transitively on the `p + 1` lines, so the orbit has
+     `p + 1 > 6` elements for every `p ≥ 7` — no such `C` exists at all.
+   * `p` SPLIT: `𝒪_K/p ≅ 𝔽_p × 𝔽_p`; the two coordinate lines `W[𝔭]`, `W[𝔭̄]`
+     are fixed and the remaining `p − 1` lines form one orbit, again of size
+     `> 6` for `p ≥ 7`.  So `C` is one of `W[𝔭]`, `W[𝔭̄]`.
+   * `p` RAMIFIED: `C = W[𝔭]` with `𝔭² = (p)`, the unique line.
+2. *Conjugation forces `𝔭 = 𝔭̄`.*  Take `σ ∈ Γ_ℚ ∖ Γ_K` (complex conjugation
+   will do).  It acts nontrivially on `𝒪_K` and so carries `W[𝔭]` to `W[𝔭̄]`,
+   while every `α ∈ μ ⊂ 𝒪_K^×` preserves each of them.  So `hinv` forces
+   `W[𝔭] = W[𝔭̄]`, i.e. `𝔭 = 𝔭̄`, i.e. `p` ramifies in `K`.
+3. `p ∣ disc K ∈ {−4, −3}`, so `p ∈ {2, 3}`.
+
+**The `p ≥ 7` bound in step 1 leaves exactly ONE small case, and it is not a
+gap.**  The conclusion `p = 2 ∨ p = 3` is what is being proved, so among
+`p ∈ {2, 3, 5}` only `p = 5` is at stake.  There the orbit counts are: `5` is
+INERT in `ℚ(ζ₃)` (`5 ≡ 2 mod 3`), giving `p + 1 = 6` lines in one orbit against
+`|μ| = 6` — so the counting form of step 1 does not close; and `5` SPLITS in
+`ℚ(i)` (`5 = 2² + 1²`), giving `p − 1 = 4` non-coordinate lines in one orbit
+against `|μ| = 4` — likewise.  Both are settled by step 2 run directly rather
+than by cardinality: `Γ_ℚ/Γ_K` permutes the lines compatibly with the `μ`-action
+(`μ ⊂ 𝒪_K^×` commutes with the CM action, `Γ_ℚ ∖ Γ_K` conjugates it), so a
+`C` whose `Γ_ℚ`-orbit lies in its `μ`-orbit still has `𝔭 = 𝔭̄`.
+
+**And `p = 5` is checkable outright, by the modular polynomial** (PARI/GP,
+`polmodular`, run 2026-07-28 — the numbers below are output, not recollection):
+
+* `Φ₅(0, Y) = Y² + 654403829760·Y + 5209253090426880` is IRREDUCIBLE over `ℚ`,
+  so there is no rational `j'` `5`-isogenous to `0` at all — `j = 0` at `p = 5`
+  dies before any orbit count, and `5` is indeed inert in `ℚ(ζ₃)` (`5 ≡ 2 mod 3`).
+* `Φ₅(1728, Y) = (Y − 1728)(Y² − 44031499226496·Y − 292143758886942437376)`
+  DOES have the rational root `1728`.  That is not a counterexample and it is
+  worth understanding, because it is the shape a careless refutation takes:
+  `5 = (2 + i)(2 − i)` splits in `ℤ[i]`, both `𝔭` and `𝔭̄` are principal, so
+  `E/E[𝔭]` again has `j = 1728` and the PAIR of points of `Y_0(5)` over
+  `(1728, 1728)` is the conjugate pair `(E, E[𝔭])`, `(E, E[𝔭̄])`.  Neither is
+  rational, and neither has field of moduli `ℚ`, because `i ∈ μ` preserves each
+  of `E[𝔭]`, `E[𝔭̄]` while complex conjugation swaps them.  **A rational value
+  of `j'` is not a rational point of `Y_0(p)`** — that is exactly step 2.
+* Contrast the two cases the conclusion ALLOWS:
+  `Φ₃(0, Y) = Y·(Y + 12288000)` and
+  `Φ₂(1728, Y) = (Y − 1728)(Y − 287496)`, both split over `ℚ`, and there `3`
+  ramifies in `ℚ(ζ₃)` and `2` ramifies in `ℤ[i]`, so `𝔭 = 𝔭̄` and the points
+  really are rational.  This is what makes the leaf non-vacuous.
+
+**The check that would refute this**: exhibit a prime `p ∉ {2, 3}` and a
+`Γ₀(p)`-structure with field of moduli `ℚ` on a curve of `j`-invariant `0` or
+`1728` — equivalently, a rational point of `Y_0(p)` with CM by an order of
+discriminant `−3` or `−4`.  There is none; the classical list of CM
+discriminants admitting a rational prime isogeny gives `(−3, 3)` and `(−4, 2)`
+and nothing else for these two maximal orders.  Numerically, `43, 67, 163` are
+all `≡ 1 mod 3` (split in `ℚ(ζ₃)`) and all `≡ 3 mod 4` (inert in `ℚ(i)`), so
+both branches of step 1 are exercised at the three levels this file cares about.
+
+**`hp : p.Prime` is load-bearing** — at composite `N` the level structure need
+not be `𝔭`-torsion for a single prime and the ramification argument does not
+close.  **`hinv` is load-bearing too**: without it `C` is an arbitrary cyclic
+subgroup and every `p` split in `K` supplies one.
+
+**NOT VACUOUS, and note which way.**  The hypotheses are satisfiable — `j = 0`
+with `p = 3` meets every one of them — so the conclusion really has to be
+proved and is not a disguised `False`.  The `p` in the consumer below is `43`,
+`67` or `163`, where the composite IS a contradiction; that is the consumer's
+business, not this leaf's. -/
+theorem eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ {p : ℕ} (_hp : p.Prime)
+    (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
+    (_hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
+      IsBaseChangeOf (specGal σ) dσ d →
+        Nonempty (IsBaseChangeOf
+          (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d))
+    (W : WeierstrassCurve (AlgebraicClosure ℚ)) [W.IsElliptic]
+    (_hW : IsWeierstrassModel d.ab W) (_hj : W.j = 0 ∨ W.j = 1728) :
+    p = 2 ∨ p = 3 :=
+  sorry
+
 /-- **WEIL DESCENT AT THE THREE CLASS-NUMBER-ONE LEVELS: a `Γ₀(p)`-datum over
 `ℚ̄` whose Galois conjugates are all isomorphic to it IS the base change of a
-datum over `ℚ`** (sorry leaf, opened 2026-07-28 by the cut of
-`exists_gamma0Datum_descent_mazurLevel` below).
+datum over `ℚ`** (sorry leaf from 2026-07-28; **PROVEN the same day** over the
+single leaf `eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` above,
+plus two leaves of `X0.lean` that were already open and are now SHARED).
 
 TRUE, and it mentions **no coarse moduli space at all** — that is the point of
 the cut.  Everything the parent leaf carried about `Y_0(p)` (turning the
@@ -39452,33 +39571,39 @@ successor should not "prove" this leaf by citing that one.
 fix `C₀`, the class `σ ↦ ᾱ_σ` is a genuinely nontrivial cocycle in
 `Z¹(G_ℚ, Aut(E₀)/Aut(E₀, C₀))`, and killing it costs a quartic or sextic twist,
 which changes the pair and so destroys the isomorphism with `d` that this
-conclusion asserts.  How `hp` earns the exclusion, and **neither bullet is
-Mazur, so neither is circular**:
+conclusion asserts.  How `hp` earns the exclusion is now the separate leaf
+`eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` above, whose docstring
+carries the argument, the `p = 5` corner and the `polmodular` verification; it
+is CM theory and **not** Mazur, so it is not circular.
 
-* `j = 0` is CM by the maximal order of `ℚ(√−3)`, and `43, 67, 163 ≡ 1 mod 3`
-  are all SPLIT there (`qfbclassno(−3) = 1`).  A split prime has exactly TWO
-  cyclic `p`-subgroups, the kernels of the two primes above `p`, and complex
-  conjugation SWAPS them — so no `Γ₀(p)`-structure on that curve has field of
-  moduli `ℚ`, and `hinv` is contradicted.
-* `j = 1728` is CM by `ℤ[i]`, and `43, 67, 163 ≡ 3 mod 4` are all INERT there,
-  so the CM action stabilises no cyclic `p`-subgroup at all and the same swap
-  argument applies to each of the `p + 1` of them.
+## HOW IT IS PROVEN, AND THE HOIST THAT WAS ALREADY THERE (2026-07-28)
 
-**The check that would refute the `hp` analysis**: a prime `p ≡ 1 mod 3` (or
-`≡ 3 mod 4`) at which the CM curve of `j = 0` (resp. `1728`) carries a
-`Γ₀(p)`-structure with field of moduli `ℚ`.  `43 % 3 = 67 % 3 = 163 % 3 = 1`
-and `43 % 4 = 67 % 4 = 163 % 4 = 3` are `decide`-checkable, and the splitting
-behaviour follows from them by quadratic reciprocity in `ℚ(√−3)`, `ℚ(i)`.
+The version of this docstring written when the leaf was opened proposed writing
+an `Aut(d) = {±1}` predicate — "acts as `±1` on relative points", a comparison of
+`RelPoint.along` with `d.ab.neg` — and restating this leaf over it, so that it
+would become SHARED with `Fermat.exists_gamma0Datum_descent`.  **That hoist was
+right in substance and unnecessary in practice: `X0.lean` had already made the
+identical cut along the `j`-invariant, and the shared node exists.**  Three
+citations close this leaf outright:
 
-**THE HYPOTHESIS A SUCCESSOR SHOULD PREFER.**  `hp` is a stand-in for
-`Aut(d) = {±1}`, which this development cannot yet say: an automorphism of a
-datum is `IsBaseChangeOf (𝟙 _) d d`, but "acts as `±1` on relative points"
-needs a comparison of `RelPoint.along` with `d.ab.neg` that nothing states.
-Once such a predicate exists, restating this leaf over it makes it SHARED with
-`Fermat.exists_gamma0Datum_descent` — the `hmem` sibling in `X0.lean`, which
-needs the identical descent and excludes `j = 0, 1728` the other way — and the
-two close at once instead of twice.  That is the hoist this pair is a candidate
-for.
+1. `Fermat.exists_weierstrassModel_gamma0Datum_algClos` (LEAF, `X0.lean`) —
+   Riemann–Roch over `ℚ̄`, giving `W : WeierstrassCurve ℚ̄` with
+   `IsWeierstrassModel d.ab W`.  It carries no arithmetic and no level `p`.
+2. `eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` (LEAF, above) —
+   the CM arithmetic, contradicted here by `43, 67, 163 ∉ {2, 3}`.
+3. `Fermat.exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic` (LEAF,
+   `X0.lean`) — **Weil descent for the pair at `j ∉ {0, 1728}`, whose
+   conclusion is verbatim this leaf's**, with `hp : p.Prime` in place of the
+   membership.  This IS the shared node: `Fermat.exists_gamma0Datum_descent`
+   reaches it through `Fermat.not_isSpecialJ_of_gamma0Datum_fieldOfModuli`
+   (its `hmem` analogue of (2)), and this leaf reaches it through (2).  Proving
+   it closes the descent at every level at once.
+
+So the residue of this node is exactly (2), and (2) is itself the `hmem`-free
+form of `not_isSpecialJ_of_gamma0Datum_fieldOfModuli` — see its docstring for
+why hoisting it into `X0.lean` would collapse that pair too.  The remaining
+frontier under the descent is therefore **three leaves for two levels-classes**,
+not two disjoint copies of the same theory.
 
 **NOT vacuous, unlike the `hmem` sibling.**  At `43, 67, 163` the curve with CM
 by the maximal order of discriminant `−p`, carrying its ramified `p`-isogeny, is
@@ -39487,17 +39612,29 @@ datum to `ℚ̄` (`Fermat.exists_gamma0Datum_baseChange`) produces a `d` satisfy
 `hinv`, and the conclusion then holds with that very datum.  So both hypothesis
 and conclusion are satisfiable, and the leaf can be tested against an example.
 
-`p` is not required to be nonzero separately: `hp` gives it. -/
+`p` is not required to be nonzero separately: `hp` gives it, and gives
+`p.Prime`, which is what the two `X0.lean` citations ask for. -/
 theorem exists_gamma0Datum_descent_isBaseChangeOf_mazurLevel (p : ℕ)
-    (_hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
     (d : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ))))
-    (_hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+    (hinv : ∀ (σ : Field.absoluteGaloisGroup ℚ)
       (dσ : Gamma0Datum p (Spec (CommRingCat.of (AlgebraicClosure ℚ)))),
       IsBaseChangeOf (specGal σ) dσ d →
         Nonempty (IsBaseChangeOf
           (𝟙 (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) dσ d)) :
-    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) :=
-  sorry
+    ∃ d₀ : Gamma0Datum p SpecQ, Nonempty (IsBaseChangeOf (specAlgClos ℚ) d d₀) := by
+  have hpp : p.Prime := by fin_cases hp <;> norm_num
+  -- **1.** the Weierstrass model of `d` over `ℚ̄`, which exposes its `j`
+  obtain ⟨W, hWe, hW⟩ := exists_weierstrassModel_gamma0Datum_algClos d
+  haveI := hWe
+  -- **2.** at these three levels the two special `j`-values are excluded, by CM
+  -- theory and not by Mazur: they would force `p ∈ {2, 3}`
+  have hne : ¬ (p = 2 ∨ p = 3) := by fin_cases hp <;> norm_num
+  -- **3.** and off those two values Weil's descent obstruction is empty
+  refine exists_gamma0Datum_specQ_isBaseChangeOf_of_j_generic hpp d hinv W hW
+    (fun hcon => hne ?_) (fun hcon => hne ?_)
+  · exact eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ hpp d hinv W hW (Or.inl hcon)
+  · exact eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ hpp d hinv W hW (Or.inr hcon)
 
 /-- **A `Γ₀(p)`-datum over `ℚ̄` whose moduli point is defined over `ℚ` descends
 to `ℚ`, at the three class-number-one levels** (sorry leaf, opened 2026-07-27).
@@ -39525,8 +39662,12 @@ discriminants involved rather than by Mazur:
 
 * `j = 0` is CM by the maximal order of `ℚ(√−3)`, and `43, 67, 163 ≡ 1 mod 3`
   are all SPLIT there (`43 = 4² + 4·3 + 3²`, and likewise for the other two;
-  `qfbclassno(−3) = 1`, PARI/GP).  A split prime gives exactly TWO cyclic
-  `p`-subgroups, the kernels of the two primes above `p`, and complex
+  `qfbclassno(−3) = 1`, PARI/GP).  A split prime gives exactly two
+  `𝒪_K`-STABLE cyclic `p`-subgroups among the `p + 1` — corrected 2026-07-28,
+  this bullet previously said there are only two subgroups at all, which is
+  false; the other `p − 1` form a single orbit too large to be absorbed by
+  `Aut`, see `eq_two_or_three_of_gamma0Datum_fieldOfModuli_isSpecialJ` — namely
+  the kernels of the two primes above `p`, and complex
   conjugation SWAPS them — so neither is Galois-stable and the field of moduli
   of the pair is `ℚ(√−3)`, not `ℚ`.
 * `j = 1728` is CM by `ℤ[i]`; `43, 67, 163 ≡ 3 mod 4` are all INERT there, so
