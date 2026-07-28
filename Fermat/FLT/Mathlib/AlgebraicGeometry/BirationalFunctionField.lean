@@ -22,10 +22,14 @@ between them carry all of its residue:
 * `exists_opens_iso_of_partialMap_equiv_id` — the purely geometric half: two
   partial maps whose two round trips are the identity restrict to an
   isomorphism of dense opens.  It mentions no base scheme at all.
+  **PROVEN 2026-07-28.**
 * `partialMap_comp_equiv_id_of_fromSpecStalkOfMem` — the purely stalk-level
   half: the round trip of two partial maps whose germs at the generic point are
-  mutually inverse *is* the identity.  **This one is now PROVEN** (2026-07-28),
-  so `exists_opens_iso_of_partialMap_equiv_id` is the bridge's only open leaf.
+  mutually inverse *is* the identity.  **PROVEN 2026-07-28.**
+
+Both are now closed, so `birationalOver_of_iso_specFunctionField` is
+unconditionally proven and the only open leaf in this file is the Lüroth
+translation `exists_iso_specFunctionField_affineSpace_of_isDominant` below.
 
 Everything else — the spreading out in both directions, the dominance of both
 partial maps, the composite germ computation that `Mathlib` lacks, the
@@ -125,11 +129,11 @@ theorem Scheme.PartialMap.isDominant_hom_of_fromSpecStalkOfMem
 /-! ### The two residues of the bridge -/
 
 /-- **Two partial maps whose round trips are the identity restrict to an isomorphism of dense
-opens** (sorry leaf, 2026-07-28) — the purely geometric residue of the
+opens** (**PROVEN 2026-07-28**) — the purely geometric residue of the
 `Birational ↔ functionField ≃` bridge.  It mentions no base scheme, no field, no function
 field and no ring: it is a statement about partial maps and opens alone.
 
-TRUE and classical; this is the content of Hartshorne I.4.5 / Stacks 0BXA once the
+This is the content of Hartshorne I.4.5 / Stacks 0BXA once the
 function-field side has been discharged.  The construction is a single intersection:
 
 * `hFG` gives a dense open `W₁ ≤ (F.comp G).domain` on which `G ∘ F` is the inclusion of `W₁`;
@@ -158,7 +162,24 @@ carry a base scheme it does not otherwise need.
 `Scheme.PartialIso` (or `Scheme.Birational`) from a pair of partial or rational maps whose
 composites are the identity.  A `grep -rn "Birational" .lake/packages/mathlib/Mathlib/` on
 2026-07-28 found only `Birational/{Birational,Dominant,Composition}.lean` and
-`AlgebraicGeometry/RationalMap.lean`, none of which has one. -/
+`AlgebraicGeometry/RationalMap.lean`, none of which has one.
+
+**PROOF NOTE — why the whole proof is phrased in the UNFOLDED vocabulary of
+`PartialMap.comp`.**  `(F.comp G).domain` and `F.domain.ι ''ᵁ (F.hom ⁻¹ᵁ G.domain)` are equal
+only by *delta*, and `rw` type-checks its motive at `instances` transparency, which does not
+unfold `comp`.  A single `X.homOfLE (h : U ≤ (F.comp G).domain)` sitting next to a morphism
+whose source Lean recorded as the image open therefore makes every later `rw` fail with
+`Application type mismatch`, and the failure is reported as "did not find the pattern".  So
+`hW₁l₀`/`e₁₀` are converted ONCE, by `exact` (which does unfold at default transparency), into
+`hW₁l`/`e₁` phrased with the image open, and nothing below ever mentions `comp` again.  The
+same device gives `e₁ : X.homOfLE hW₁l ≫ ψ ≫ G.hom = W₁.ι` from the raw round-trip equation,
+where `ψ` is the "`F` restricted to the composite domain, landing in `G.domain`" morphism.
+
+The two mutually inverse morphisms are produced by `IsOpenImmersion.lift` against `V.ι` and
+`U.ι`, so the conclusion `i.hom ≫ V.ι = X.homOfLE hUF ≫ F.hom` is literally `lift_fac` and
+costs nothing; the work is the two range conditions, each of which needs the round trip on
+POINTS (`congr($eU u)`), and the two `𝟙` identities, each of which is the round trip on
+MORPHISMS after cancelling the mono `U.ι` resp. `V.ι`. -/
 theorem exists_opens_iso_of_partialMap_equiv_id {X Y : Scheme.{u}}
     [IrreducibleSpace X] [IrreducibleSpace Y]
     (F : X.PartialMap Y) (G : Y.PartialMap X) [IsDominant F.hom] [IsDominant G.hom]
@@ -166,8 +187,131 @@ theorem exists_opens_iso_of_partialMap_equiv_id {X Y : Scheme.{u}}
     (hGF : (G.comp F).equiv (Scheme.PartialMap.id Y)) :
     ∃ (U : X.Opens) (V : Y.Opens) (_ : Dense (U : Set X)) (_ : Dense (V : Set Y))
       (i : U.toScheme ≅ V.toScheme) (hUF : U ≤ F.domain),
-      i.hom ≫ V.ι = X.homOfLE hUF ≫ F.hom :=
-  sorry
+      i.hom ≫ V.ι = X.homOfLE hUF ≫ F.hom := by
+  obtain ⟨W₁, hW₁, hW₁l₀, hW₁r, e₁₀⟩ := hFG
+  obtain ⟨W₂, hW₂, hW₂l₀, hW₂r, e₂₀⟩ := hGF
+  have hid₁ : X.homOfLE hW₁r ≫ (Scheme.PartialMap.id X).hom = W₁.ι := by
+    have h : (Scheme.PartialMap.id X).hom = ((Scheme.PartialMap.id X).domain).ι ≫ 𝟙 X := rfl
+    rw [h, Category.comp_id, Scheme.homOfLE_ι]
+  have hid₂ : Y.homOfLE hW₂r ≫ (Scheme.PartialMap.id Y).hom = W₂.ι := by
+    have h : (Scheme.PartialMap.id Y).hom = ((Scheme.PartialMap.id Y).domain).ι ≫ 𝟙 Y := rfl
+    rw [h, Category.comp_id, Scheme.homOfLE_ι]
+  rw [Scheme.PartialMap.restrict_hom, Scheme.PartialMap.restrict_hom, hid₁] at e₁₀
+  rw [Scheme.PartialMap.restrict_hom, Scheme.PartialMap.restrict_hom, hid₂] at e₂₀
+  -- From here on everything is phrased in the *unfolded* vocabulary of `PartialMap.comp`,
+  -- so that no `rw` ever has to see through the definition of `comp`.
+  have hCA : F.domain.ι ''ᵁ (F.hom ⁻¹ᵁ G.domain) ≤ F.domain := F.domain.ι_image_le _
+  have hDB : G.domain.ι ''ᵁ (G.hom ⁻¹ᵁ F.domain) ≤ G.domain := G.domain.ι_image_le _
+  have hW₁l : W₁ ≤ F.domain.ι ''ᵁ (F.hom ⁻¹ᵁ G.domain) := hW₁l₀
+  have hW₂l : W₂ ≤ G.domain.ι ''ᵁ (G.hom ⁻¹ᵁ F.domain) := hW₂l₀
+  set ψ : (F.domain.ι ''ᵁ (F.hom ⁻¹ᵁ G.domain)).toScheme ⟶ G.domain.toScheme :=
+    (F.domain.ι.isoImage (F.hom ⁻¹ᵁ G.domain)).inv ≫ F.hom ∣_ G.domain with hψdef
+  set χ : (G.domain.ι ''ᵁ (G.hom ⁻¹ᵁ F.domain)).toScheme ⟶ F.domain.toScheme :=
+    (G.domain.ι.isoImage (G.hom ⁻¹ᵁ F.domain)).inv ≫ G.hom ∣_ F.domain with hχdef
+  have hψι : ψ ≫ G.domain.ι = X.homOfLE hCA ≫ F.hom := by
+    rw [hψdef, Category.assoc, morphismRestrict_ι, ← Category.assoc,
+      Scheme.Opens.isoImage_ι_inv_ι]
+  have hχι : χ ≫ F.domain.ι = Y.homOfLE hDB ≫ G.hom := by
+    rw [hχdef, Category.assoc, morphismRestrict_ι, ← Category.assoc,
+      Scheme.Opens.isoImage_ι_inv_ι]
+  have e₁ : X.homOfLE hW₁l ≫ ψ ≫ G.hom = W₁.ι := by
+    rw [hψdef, Category.assoc]; exact e₁₀
+  have e₂ : Y.homOfLE hW₂l ≫ χ ≫ F.hom = W₂.ι := by
+    rw [hχdef, Category.assoc]; exact e₂₀
+  -- the two dense opens
+  set S : X.Opens := F.domain.ι ''ᵁ (F.hom ⁻¹ᵁ W₂) with hSdef
+  set T : Y.Opens := G.domain.ι ''ᵁ (G.hom ⁻¹ᵁ W₁) with hTdef
+  have hSne : (S : Set X).Nonempty := by
+    simpa [hSdef, ← Set.nonempty_preimage_iff] using
+      F.hom.denseRange.inter_open_nonempty _ W₂.2 hW₂.nonempty
+  have hTne : (T : Set Y).Nonempty := by
+    simpa [hTdef, ← Set.nonempty_preimage_iff] using
+      G.hom.denseRange.inter_open_nonempty _ W₁.2 hW₁.nonempty
+  have hSd : Dense (S : Set X) := S.2.dense hSne
+  have hTd : Dense (T : Set Y) := T.2.dense hTne
+  set U : X.Opens := W₁ ⊓ S with hUdef
+  set V : Y.Opens := W₂ ⊓ T with hVdef
+  have hUd : Dense (U : Set X) := hW₁.inter_of_isOpen_left hSd W₁.2
+  have hVd : Dense (V : Set Y) := hW₂.inter_of_isOpen_left hTd W₂.2
+  have hUW₁ : U ≤ W₁ := inf_le_left
+  have hVW₂ : V ≤ W₂ := inf_le_left
+  have hUC : U ≤ F.domain.ι ''ᵁ (F.hom ⁻¹ᵁ G.domain) := hUW₁.trans hW₁l
+  have hUF : U ≤ F.domain := hUC.trans hCA
+  have hVD : V ≤ G.domain.ι ''ᵁ (G.hom ⁻¹ᵁ F.domain) := hVW₂.trans hW₂l
+  have hVG : V ≤ G.domain := hVD.trans hDB
+  have eU : X.homOfLE hUC ≫ ψ ≫ G.hom = U.ι := by
+    rw [show X.homOfLE hUC = X.homOfLE hUW₁ ≫ X.homOfLE hW₁l from
+      (Scheme.homOfLE_homOfLE X hUW₁ hW₁l).symm, Category.assoc, e₁, Scheme.homOfLE_ι]
+  have eV : Y.homOfLE hVD ≫ χ ≫ F.hom = V.ι := by
+    rw [show Y.homOfLE hVD = Y.homOfLE hVW₂ ≫ Y.homOfLE hW₂l from
+      (Scheme.homOfLE_homOfLE Y hVW₂ hW₂l).symm, Category.assoc, e₂, Scheme.homOfLE_ι]
+  have hUCA : X.homOfLE hUC ≫ X.homOfLE hCA = X.homOfLE hUF := Scheme.homOfLE_homOfLE X hUC hCA
+  have hVDB : Y.homOfLE hVD ≫ Y.homOfLE hDB = Y.homOfLE hVG := Scheme.homOfLE_homOfLE Y hVD hDB
+  -- `F` maps `U` into `V`
+  have hrangeF : Set.range (X.homOfLE hUF ≫ F.hom).base ⊆ Set.range V.ι.base := by
+    rw [Scheme.Opens.range_ι]
+    rintro _ ⟨u, rfl⟩
+    have hu1 : u.1 ∈ W₁ := u.2.1
+    have hval : (X.homOfLE hUF u).1 = u.1 := Scheme.homOfLE_apply hUF u
+    refine ⟨?_, ?_⟩
+    · -- `F u ∈ W₂`
+      have hu2 : u.1 ∈ F.domain.ι ''ᵁ (F.hom ⁻¹ᵁ W₂) := u.2.2
+      rw [← hval, Scheme.Opens.mem_ι_image_iff] at hu2
+      exact hu2
+    · -- `F u ∈ T`
+      refine ⟨ψ (X.homOfLE hUC u), ?_, ?_⟩
+      · show G.hom (ψ (X.homOfLE hUC u)) ∈ W₁
+        have h3 := congr($eU u)
+        simp only [Scheme.Hom.comp_apply] at h3
+        rw [h3]
+        exact hu1
+      · have h1 := congr($hψι (X.homOfLE hUC u))
+        have h2 := congr($hUCA u)
+        simp only [Scheme.Hom.comp_apply] at h1 h2
+        rw [h2] at h1
+        exact h1
+  -- `G` maps `V` into `U`
+  have hrangeG : Set.range (Y.homOfLE hVG ≫ G.hom).base ⊆ Set.range U.ι.base := by
+    rw [Scheme.Opens.range_ι]
+    rintro _ ⟨v, rfl⟩
+    have hv1 : v.1 ∈ W₂ := v.2.1
+    have hval : (Y.homOfLE hVG v).1 = v.1 := Scheme.homOfLE_apply hVG v
+    refine ⟨?_, ?_⟩
+    · have hv2 : v.1 ∈ G.domain.ι ''ᵁ (G.hom ⁻¹ᵁ W₁) := v.2.2
+      rw [← hval, Scheme.Opens.mem_ι_image_iff] at hv2
+      exact hv2
+    · refine ⟨χ (Y.homOfLE hVD v), ?_, ?_⟩
+      · show F.hom (χ (Y.homOfLE hVD v)) ∈ W₂
+        have h3 := congr($eV v)
+        simp only [Scheme.Hom.comp_apply] at h3
+        rw [h3]
+        exact hv1
+      · have h1 := congr($hχι (Y.homOfLE hVD v))
+        have h2 := congr($hVDB v)
+        simp only [Scheme.Hom.comp_apply] at h1 h2
+        rw [h2] at h1
+        exact h1
+  set p : U.toScheme ⟶ V.toScheme :=
+    IsOpenImmersion.lift V.ι (X.homOfLE hUF ≫ F.hom) hrangeF
+  set q : V.toScheme ⟶ U.toScheme :=
+    IsOpenImmersion.lift U.ι (Y.homOfLE hVG ≫ G.hom) hrangeG
+  have hpV : p ≫ V.ι = X.homOfLE hUF ≫ F.hom := IsOpenImmersion.lift_fac _ _ _
+  have hqU : q ≫ U.ι = Y.homOfLE hVG ≫ G.hom := IsOpenImmersion.lift_fac _ _ _
+  have key1 : p ≫ Y.homOfLE hVG = X.homOfLE hUC ≫ ψ := by
+    rw [← cancel_mono G.domain.ι, Category.assoc, Category.assoc, Scheme.homOfLE_ι, hpV, hψι,
+      ← Category.assoc, hUCA]
+  have key2 : q ≫ X.homOfLE hUF = Y.homOfLE hVD ≫ χ := by
+    rw [← cancel_mono F.domain.ι, Category.assoc, Category.assoc, Scheme.homOfLE_ι, hqU, hχι,
+      ← Category.assoc, hVDB]
+  have hpq : p ≫ q = 𝟙 U.toScheme := by
+    rw [← cancel_mono U.ι, Category.assoc, hqU, Category.id_comp, ← Category.assoc, key1,
+      Category.assoc]
+    exact eU
+  have hqp : q ≫ p = 𝟙 V.toScheme := by
+    rw [← cancel_mono V.ι, Category.assoc, hpV, Category.id_comp, ← Category.assoc, key2,
+      Category.assoc]
+    exact eV
+  exact ⟨U, V, hUd, hVd, ⟨p, q, hpq, hqp⟩, hUF, hpV⟩
 
 /-- **The round trip of two partial maps with mutually inverse germs at the generic point is
 the identity** (PROVEN 2026-07-28) — the stalk-level half of the
