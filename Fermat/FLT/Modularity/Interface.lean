@@ -68534,13 +68534,132 @@ so the next owner does not re-search them.
   identity cannot be the local half without first proving reducibility,
   which is not available and would itself be a citation.
 
-  AXIS NOT SEARCHED: whether the two branches can be recombined — a
-  `by_cases` on reducibility of `ρ|_{G_p}`, with the trace identity
-  closing the reducible branch and a Raynaud fundamental-character
-  computation closing the irreducible one. That is the most promising
-  route to decomposing this leaf further, and it needs the
-  fundamental-character classification (Raynaud cor. 3.4.4) as a named
-  leaf, which the tree does not yet have.
+  AXIS SEARCHED AND CLOSED, 2026-07-28. This paragraph previously read
+  "AXIS NOT SEARCHED" and proposed the recombination of the two
+  branches — a `by_cases` on reducibility of `ρ|_{G_p}`, with the trace
+  identity closing the reducible branch and a Raynaud
+  fundamental-character computation (cor. 3.4.4) closing the
+  irreducible one — as the most promising route to decomposing this
+  leaf. It was searched and it is NOT available. Four obstructions, any
+  one of which is fatal, each stated with the check that refutes it:
+
+  * *the trace identity's reducibility hypothesis is GLOBAL, not local
+    at `p`*.
+    `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+    binds `χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → ℚ̄_p` and
+    `hchar : ∀ g, ((ρ g).charpoly).map … =
+    (X - C (χ₁ g)) * (X - C (χ₂ g))` quantified over ALL `g : G_ℚ` —
+    that is reducibility of `ρ` itself, not of `ρ|_{G_p}`. A `by_cases`
+    on the LOCAL condition therefore produces the lemma's hypothesis in
+    NEITHER branch. Refuting check: read those binders in
+    `Family.lean`, and `grep -n 'char_add_char' Fermat/`, which returns
+    exactly two declarations that carry it —
+    `char_add_char_eq_one_add_cyclotomicCharacter` and the
+    `_of_mem_localInertiaGroup_p` refinement — both binding `χ₁ χ₂`
+    over `G_ℚ`, and no `G_{ℚ_p}`-local analogue anywhere in the tree;
+  * *the trace identity also demands the FULL hardly-ramified package,
+    which this leaf's `τ` does not satisfy*. Both declarations take
+    `hρ : IsHardlyRamified hpodd hv ρ`, whose `isUnramified` field
+    asserts that `ρ` is unramified at EVERY prime other than `2` and
+    `p`. This leaf's `ρ` models the representation attached to a
+    newform of arbitrary level `M₀`, hence is ramified at every prime
+    dividing `M₀`, and nothing in the hypotheses bounds `M₀`'s prime
+    factors; its `isTameAtTwo` field is likewise unavailable here. So
+    the lemma is inapplicable even before the reducibility question
+    arises. Refuting check: read the four fields of `IsHardlyRamified`
+    in `HardlyRamified/Defs.lean` against this leaf's binder list;
+  * *under `hirr` the global form is VACUOUS, so even supplying it
+    closes nothing*. If `hchar` held globally then
+    `trace τ = χ₁ + χ₂` with `χ₁, χ₂` continuous characters, so by
+    Brauer–Nesbitt `τ^ss ≅ χ₁ ⊕ χ₂` and `τ` is reducible —
+    contradicting this leaf's `hirr`. A branch whose hypothesis is
+    contradictory does not "close the reducible case"; it closes the
+    EMPTY case, and the complementary branch is then the entire leaf;
+  * *neither branch touches `M₀`, so neither can terminate*. Granting
+    even a hypothetical `G_p`-local trace identity, its output is
+    `{χ₁, χ₂}|_{I_p} = {1, χ_cyc}` — the ORDINARY shape, which is
+    consistent and is not `False`. The only hypotheses naming the level
+    are `hg₀` and `hord₂`, and the only bridge from them to `τ` is
+    `hτ`, which constrains `τ` exclusively at primes OUTSIDE `S_τ`. So
+    there is no route from a local shape at `p` to a contradiction that
+    does not pass through a local–global compatibility statement at
+    `p`: the `by_cases` RELOCATES the citation, it does not split it.
+
+  TWO FURTHER AXES SEARCHED THE SAME DAY, both closed.
+
+  * *Raynaud cor. 3.4.4 as the middle object is TRUE and USELESS here —
+    refuted, not merely unavailable.* Its usable consequence at level
+    `1` over `ℤ_p` (`e = 1 < p - 1`, `p` odd) is that `I_p` acts on
+    `ρ ⊗ R ⧸ 𝔪` through fundamental characters, hence TAMELY. Pairing
+    it with the automorphic side needs "`2 ≤ ord_p M₀` forces WILD
+    inertia", and that is FALSE: a ramified principal series whose
+    inducing character is tamely ramified of conductor exponent `1` has
+    `ord_p M₀ = 2` with tame `ρ̄|_{I_p}`, and for `p` odd every
+    supercuspidal induced from the RAMIFIED quadratic extension of
+    `ℚ_p` is tame as well. A tameness middle can only ever reach the
+    sub-regime where `ord_p M₀` is large enough to force wild inertia,
+    which is not this leaf's hypothesis. So landing the
+    fundamental-character classification as a named leaf would leave
+    this leaf with no consumer for it — i.e. free-floating — which is
+    why it is NOT landed here;
+  * *the automorphic-side reuse of `qCoeff_eq_zero_of_sq_dvd` is
+    INERT.* That leaf is PROVEN in this file and applies verbatim under
+    these hypotheses (`p ^ 2 ∣ M₀` from `hord₂` by
+    `Nat.Prime.pow_dvd_iff_le_factorization`), giving
+    `qCoeff M₀ g₀ p = 0`, hence `heckeCoeff M₀ g₀ p = 0` since
+    `heckeCoeff` is `qCoeff` with its membership proof. It buys nothing
+    in either direction. FORWARD: `hτ` transmits Hecke coefficients to
+    `τ` only at primes outside `S_τ`, and where it does apply at `p` it
+    yields `τ.charFrob 𝔭ᵥ = X ^ 2 + C p`, the charpoly of a
+    SUPERSINGULAR good-reduction Frobenius, which is consistent with
+    flatness at every level. BACKWARD: `a_p = 0` cannot replace
+    `hord₂`, because good supersingular reduction has `a_p = 0` and IS
+    flat at every level. The automorphic content this leaf needs is the
+    RAMIFIEDNESS of `π_p`, which `a_p = 0` does not record.
+
+  THE ONE CUT THAT WOULD WORK, stated so that an owner can be
+  dispatched at it rather than re-searching the above. The genuine
+  middle object is the conductor of the WEIL–DELIGNE parameter
+  `WD(D_pst(τ|_{G_p}))` — which route 1 above shows is NOT the tree's
+  `conductorExponent`, that being the Artin conductor and correct only
+  at `v ∤ p`. Introducing it in the shape that worked for
+  `swanExponentAux` — the object as DATA carrying axioms, UNIVERSALLY
+  quantified so that the genuine one is among the admissible ones,
+  exactly as `RamificationFiltration` is — splits this leaf into two
+  independently citable halves:
+
+  1. `∀ k, (ρ.baseChange (R ⧸ 𝔪 ^ k)).HasFlatProlongationAt 𝔭ᵥ` implies
+     the parameter is UNRAMIFIED (Tate, *`p`-divisible groups* §2.4,
+     §4, with Fontaine's `e < p - 1` uniqueness of prolongations) — a
+     purely LOCAL statement that other leaves in this file can reuse;
+  2. a weight-2 newform with `2 ≤ ord_p M₀` has RAMIFIED parameter,
+     indeed of conductor exponent `ord_p M₀ ≥ 2` (Saito).
+
+  It is NOT attempted here because an axiomatization of `D_pst` that is
+  too weak makes (1) vacuous and (2) unprovable while both continue to
+  typecheck — the failure mode the `∀ F` note in the
+  `RamificationFiltration` design exists to prevent, where `∃ F` in
+  place of `∀ F` would have licensed a junk value and silently
+  falsified every downstream citation. A dispatch at this cut should be
+  at the INTERFACE first, with a compiler-checked non-vacuity witness
+  in hand, and only afterwards at (1) and (2).
+
+  FALSITY CHECK ON THE COEFFICIENT RING (2026-07-28, passed — recorded
+  because the instance it turns on is load-bearing and invisible in the
+  statement). The `𝔪`-adic SEPARATEDNESS of `R` is what makes the
+  `𝔪`-adic tower see all of `ρ`, and it comes from the section's
+  `[Module.Finite ℤ_[p] R]`, not from any hypothesis written here. It
+  must not be dropped in the name of generality: take `L / ℚ_p`
+  infinitely ramified and `R = 𝒪_L`, which is local with finite
+  residue field, embeds in `ℚ̄_p`, has `(p : R) ≠ 0` and
+  `(p : R) ∈ 𝔪` — and has `𝔪 ^ 2 = 𝔪`, so `R ⧸ 𝔪 ^ k` is the residue
+  field for EVERY `k ≥ 1` and `hkfin` holds. The whole tower then
+  collapses to the residual representation, and the conclusion becomes
+  "`ρ ⊗ R ⧸ 𝔪` is not finite flat at `p`", which is FALSE in general:
+  as `KhareWintenberger.lean` records, flatness of ALL levels is
+  strictly more than flatness of the first, precisely because the
+  comparison `Ext¹_fl → Ext¹_Γ` is injective but not surjective. So
+  `hkfin` is NOT a substitute for `Module.Finite ℤ_[p] R` here.
 
 SOUNDNESS: non-vacuously satisfiable — `p = 5`, `M₀ = 275`, `g₀` the
 weight-2 newform attached to the quadratic twist of `X₀(11)` by `χ₅`
