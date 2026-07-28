@@ -187,9 +187,12 @@ this pin: `Algebra.smoothLocus_eq_univ_iff` makes `FormallySmooth K B`
 equivalent to formal smoothness of every localization `B_𝔭`, and `IsRegularRing`
 is by definition regularity of every `B_𝔭`, so the two definitions meet
 pointwise with no covering argument.  That module in turn rests on a single
-named leaf, `Algebra.injective_cotangentComplexBaseChange_of_isRegularLocalRing`
-— the injectivity in the local Jacobian criterion — whose classical two-step
-proof is written out there.
+named leaf, `Algebra.injective_lTensor_residueField_kerInclusion`, which is the
+first of the two arrows of the local Jacobian criterion's injectivity and
+mentions no field, no perfectness and no module of differentials: for a
+surjection `P ↠ S` of regular local rings, `I/𝔪_P I → 𝔪_P/𝔪_P²` is injective.
+The second arrow — the one where `PerfectField` is used — is PROVEN there, by
+reading mathlib's own criterion at the residue field.
 
 What is left HERE is `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`
 above: pure dimension theory, no perfectness, no regularity.  The paragraph

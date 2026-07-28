@@ -924,9 +924,16 @@ statement lives once, in `Fermat/FLT/Mathlib/RingTheory/Smooth/RegularLocal.lean
 imports, so every one of the four consumers can reach it.  A discrete valuation ring is a
 local principal ideal domain, so `IsRegularLocalRing` is an instance for it at this pin
 (`Mathlib/RingTheory/RegularLocalRing/Defs.lean`), and nothing else is needed here.  The
-route sketched above is exactly the route recorded on the surviving leaf there,
-`Algebra.injective_cotangentComplexBaseChange_of_isRegularLocalRing`, which is the sole
-remaining residue of Stacks `056S` in this development.
+route sketched above is exactly the route taken there, and it is now half closed: of the
+two arrows `κ ⊗ I/I² ↪ 𝔪_P/𝔪_P² ↪ κ ⊗ Ω[P⁄K]`, the SECOND — the inseparability half, the
+one the quasi-elliptic counterexample above kills, and the only place `PerfectField` is
+used — is PROVEN, because it is mathlib's own
+`Algebra.FormallySmooth.iff_injective_cotangentComplexBaseChange` read at the residue field
+together with `Algebra.FormallySmooth.of_perfectField`.  The sole remaining residue of
+Stacks `056S` in this development is therefore the FIRST arrow,
+`Algebra.injective_lTensor_residueField_kerInclusion`, a statement of pure regular-local
+ring theory with no field and no differentials in it: for a surjection `P ↠ S` of regular
+local rings, `I/𝔪_P I → 𝔪_P/𝔪_P²` is injective.
 
 *Refute this leaf with:* a DVR, essentially of finite type over a PERFECT field, that is not
 formally smooth over it.  There is none; over an imperfect field there are, and the example
