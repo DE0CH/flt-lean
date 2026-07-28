@@ -153,6 +153,11 @@ public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 -- `card_torsion_span_singleton_of_isAlgClosed` be cut along the classical seam
 -- `#ker[a](K) = deg[a]` / `deg[a] = N(a)²` — see `finrank_mulByElt_of_isAlgClosed`.
 public import Mathlib.AlgebraicGeometry.Morphisms.FlatRank
+-- `Algebra.FormallyEtale.equivPiOfIsSepClosed`: an étale algebra over a separably
+-- closed field is a finite product of copies of it.  This is what counts the
+-- `K`-points of `ker [a]` in `card_fibrePt_eq_of_finrank_eq`.
+public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.RingTheory.Artinian.Ring
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- `GaloisRepresentation.globalFrob` and `dense_conjClasses_globalFrob`: the
 -- Chebotarev density input of `det_eq_cyclotomicCharacter_of_globalFrob`.
@@ -2998,10 +3003,113 @@ theorem exists_comp_mulByElt_eq {X : Scheme.{u}} (K : Type u) [Field K] [IsAlgCl
 
 end Mult
 
+open scoped Classical in
+/-- **A `K`-ALGEBRA MAP OUT OF A FINITE PRODUCT OF COPIES OF `K` IS A
+COORDINATE PROJECTION** (PROVEN 2026-07-28), so there are exactly `#I` of
+them.
+
+The images `c i := f (e i)` of the standard idempotents are orthogonal
+idempotents of the FIELD `K` summing to `1`, hence exactly one of them is `1`
+and the rest are `0`; expanding `x = ∑ x j • e j` then gives `f x = x i`.
+Used by `card_algHom_eq_finrank` below, which is the counting half of
+`card_fibrePt_eq_of_finrank_eq`. -/
+theorem card_algHom_pi (K : Type u) [Field K] (I : Type u) [Fintype I] :
+    Nat.card ((I → K) →ₐ[K] K) = Nat.card I := by
+  refine Nat.card_congr (Equiv.ofBijective (fun i : I => Pi.evalAlgHom K (fun _ : I => K) i)
+    ⟨?_, ?_⟩).symm
+  · intro i j hij
+    by_contra hne
+    have h := congrArg (fun g : (I → K) →ₐ[K] K => g (Pi.single i 1)) hij
+    simp only [Pi.evalAlgHom_apply, Pi.single_eq_same, Pi.single_eq_of_ne (Ne.symm hne)] at h
+    exact one_ne_zero h
+  · intro F
+    set c : I → K := fun i => F (Pi.single i 1) with hc
+    have hmul : ∀ i j, i ≠ j → c i * c j = 0 := by
+      intro i j hij
+      have hp : (Pi.single i 1 : I → K) * Pi.single j 1 = 0 := by
+        funext k
+        simp only [Pi.mul_apply, Pi.zero_apply]
+        by_cases hk : k = i
+        · subst hk; rw [Pi.single_eq_of_ne hij 1, mul_zero]
+        · rw [Pi.single_eq_of_ne hk 1, zero_mul]
+      rw [hc]
+      simp only
+      rw [← map_mul, hp, map_zero]
+    have hsum : ∑ i, c i = 1 := by
+      have h1 : ∑ i : I, (Pi.single i 1 : I → K) = 1 := by
+        funext k
+        rw [Finset.sum_apply, Finset.sum_eq_single k]
+        · simp
+        · intro j _ hj; exact Pi.single_eq_of_ne (Ne.symm hj) 1
+        · intro h; exact absurd (Finset.mem_univ k) h
+      calc ∑ i, c i = F (∑ i : I, (Pi.single i 1 : I → K)) := by rw [map_sum]
+        _ = 1 := by rw [h1, map_one]
+    obtain ⟨i, -, hi0⟩ : ∃ i ∈ Finset.univ, c i ≠ 0 := by
+      by_contra h
+      push_neg at h
+      rw [Finset.sum_congr rfl (fun i hi => h i hi), Finset.sum_const_zero] at hsum
+      exact zero_ne_one hsum
+    have hother : ∀ j, j ≠ i → c j = 0 := by
+      intro j hj
+      rcases mul_eq_zero.mp (hmul i j (Ne.symm hj)) with h | h
+      · exact absurd h hi0
+      · exact h
+    have hci : c i = 1 := by
+      rw [← hsum, Finset.sum_eq_single i (fun j _ hj => hother j hj)
+        (fun h => absurd (Finset.mem_univ i) h)]
+    refine ⟨i, ?_⟩
+    ext x
+    have hx : x = ∑ j : I, x j • (Pi.single j 1 : I → K) := by
+      funext k
+      rw [Finset.sum_apply, Finset.sum_eq_single k]
+      · simp
+      · intro j _ hj
+        simp [Ne.symm hj]
+      · intro h; exact absurd (Finset.mem_univ k) h
+    have hci' : F (Pi.single i 1) = 1 := hci
+    show x i = F x
+    symm
+    conv_lhs => rw [hx]
+    rw [map_sum, Finset.sum_eq_single i]
+    · rw [map_smul, hci', smul_eq_mul, mul_one]
+    · intro j _ hj
+      have hcj : F (Pi.single j 1) = 0 := hother j hj
+      rw [map_smul, hcj, smul_zero]
+    · intro h
+      exact absurd (Finset.mem_univ i) h
+
+/-- **A FINITE UNRAMIFIED ALGEBRA OVER AN ALGEBRAICALLY CLOSED FIELD HAS
+EXACTLY `dim_K B` POINTS** (PROVEN 2026-07-28).
+
+`B` is unramified and essentially of finite type over the field `K`, hence
+ÉTALE (`Algebra.FormallyEtale.of_formallyUnramified_of_field`), hence — `K`
+being algebraically closed, so separably closed — a finite product of copies
+of `K` indexed by `PrimeSpectrum B`
+(`Algebra.FormallyEtale.equivPiOfIsSepClosed`).  Both sides of the claim are
+then `#(PrimeSpectrum B)`: the left by `card_algHom_pi`, the right because a
+product of `#I` copies of `K` has `K`-dimension `#I`. -/
+theorem card_algHom_eq_finrank (K B : Type u) [Field K] [IsAlgClosed K] [CommRing B]
+    [Algebra K B] [Algebra.EssFiniteType K B] [Algebra.FormallyUnramified K B] :
+    Nat.card (B →ₐ[K] K) = Module.finrank K B := by
+  haveI := Algebra.FormallyEtale.of_formallyUnramified_of_field K B
+  haveI : Module.Finite K B := Algebra.FormallyUnramified.finite_of_free K B
+  haveI : IsArtinianRing B := .of_finite K B
+  let e : B ≃ₐ[K] (PrimeSpectrum B → K) := Algebra.FormallyEtale.equivPiOfIsSepClosed K B
+  haveI : Finite (PrimeSpectrum B) := by
+    have : Module.Finite K (PrimeSpectrum B → K) := Module.Finite.equiv e.toLinearEquiv
+    exact Module.Finite.finite_basis (Pi.basisFun K (PrimeSpectrum B))
+  haveI : Fintype (PrimeSpectrum B) := Fintype.ofFinite _
+  have h1 : Module.finrank K B = Nat.card (PrimeSpectrum B) := by
+    rw [e.toLinearEquiv.finrank_eq, Module.finrank_pi, Nat.card_eq_fintype_card]
+  have h2 : Nat.card (B →ₐ[K] K) = Nat.card ((PrimeSpectrum B → K) →ₐ[K] K) :=
+    Nat.card_congr ⟨fun g => g.comp e.symm.toAlgHom, fun g => g.comp e.toAlgHom,
+      fun g => by ext x; simp [e], fun g => by ext x; simp [e]⟩
+  rw [h2, card_algHom_pi, h1]
+
 /-- **THE `K`-POINTS OF A FIBRE OF A FINITE FLAT UNRAMIFIED MORPHISM ARE
-COUNTED BY ITS RANK**, over an algebraically closed field (sorry leaf, cut
-2026-07-28 as the GENERIC half of
-`card_torsion_span_singleton_of_isAlgClosed`).
+COUNTED BY ITS RANK**, over an algebraically closed field (**PROVEN
+2026-07-28**; cut the same day as the GENERIC half of
+`card_torsion_span_singleton_of_isAlgClosed`, and closed immediately).
 
 There is NO abelian variety, no number field and no `Mult` in this
 statement: it is general scheme theory, of a shape that would be at home in
@@ -3037,12 +3145,84 @@ theorem card_fibrePt_eq_of_finrank_eq {X Y : Scheme.{u}} (φ : X ⟶ Y)
     [Flat φ] [IsFinite φ] [LocallyOfFinitePresentation φ] [FormallyUnramified φ]
     {K : Type u} [Field K] [IsAlgClosed K] (n : ℕ) (hdeg : ∀ y : Y, φ.finrank y = n)
     (w : Spec (CommRingCat.of K) ⟶ Y) :
-    Nat.card {u : Spec (CommRingCat.of K) ⟶ X // u ≫ φ = w} = n := sorry
+    Nat.card {u : Spec (CommRingCat.of K) ⟶ X // u ≫ φ = w} = n := by
+  haveI : IsAffine (pullback φ w) := isAffine_of_isAffineHom (pullback.snd φ w)
+  obtain ⟨ψ, hψ⟩ := Spec.map_surjective ((pullback φ w).isoSpec.inv ≫ pullback.snd φ w)
+  -- `pullback.snd` factors as an isomorphism followed by `Spec` of a ring map
+  have hp : pullback.snd φ w = (pullback φ w).isoSpec.hom ≫ Spec.map ψ := by
+    rw [hψ, Iso.hom_inv_id_assoc]
+  have hψ' : (pullback φ w).isoSpec.inv ≫ pullback.snd φ w = Spec.map ψ := hψ.symm
+  letI : Algebra K Γ(pullback φ w, ⊤) := ψ.hom.toAlgebra
+  haveI hFUp : FormallyUnramified (pullback.snd φ w) :=
+    MorphismProperty.pullback_snd _ _ ‹_›
+  haveI : FormallyUnramified ((pullback φ w).isoSpec.inv ≫ pullback.snd φ w) :=
+    MorphismProperty.comp_mem _ _ _ inferInstance hFUp
+  haveI : IsFinite (Spec.map ψ) := by rw [← hψ']; infer_instance
+  haveI : Flat (Spec.map ψ) := by rw [← hψ']; infer_instance
+  haveI : FormallyUnramified (Spec.map ψ) := by rw [← hψ']; infer_instance
+  have hfin : ψ.hom.Finite := (IsFinite.SpecMap_iff ψ).mp ‹_›
+  have hflat : ψ.hom.Flat := Flat.SpecMap_iff.mp ‹_›
+  have hunr : ψ.hom.FormallyUnramified :=
+    (HasRingHomProperty.Spec_iff (P := @FormallyUnramified)).mp ‹_›
+  haveI : Module.Finite K Γ(pullback φ w, ⊤) := hfin
+  haveI : Algebra.FormallyUnramified K Γ(pullback φ w, ⊤) := hunr
+  haveI : Algebra.EssFiniteType K Γ(pullback φ w, ⊤) := inferInstance
+  -- ### the rank of `φ` is the `K`-dimension of the coordinate ring of the fibre
+  have hrank : n = Module.finrank K Γ(pullback φ w, ⊤) := by
+    have h1 : (pullback.snd φ w).finrank (IsLocalRing.closedPoint K) = n := by
+      rw [Scheme.Hom.finrank_pullback_snd]; exact hdeg _
+    rw [hp, Scheme.Hom.finrank_comp_left_of_isIso,
+      Scheme.Hom.finrank_SpecMap_eq_finrank hfin hflat] at h1
+    rw [← h1]
+    show Module.rankAtStalk (R := K) (Γ(pullback φ w, ⊤)) (IsLocalRing.closedPoint K)
+      = Module.finrank K Γ(pullback φ w, ⊤)
+    exact congrFun (Module.rankAtStalk_eq_finrank_of_free (R := K)
+      (M := Γ(pullback φ w, ⊤))) _
+  rw [hrank, ← card_algHom_eq_finrank K Γ(pullback φ w, ⊤)]
+  /- ### the `K`-points of the fibre ARE the `K`-algebra maps out of that ring:
+  first the universal property of the pullback, then `Spec` fully faithful. -/
+  have E1 : {u : Spec (CommRingCat.of K) ⟶ X // u ≫ φ = w}
+      ≃ {v : Spec (CommRingCat.of K) ⟶ pullback φ w // v ≫ pullback.snd φ w = 𝟙 _} :=
+    { toFun := fun u => ⟨pullback.lift u.1 (𝟙 _) (by rw [Category.id_comp]; exact u.2),
+        pullback.lift_snd _ _ _⟩
+      invFun := fun v => ⟨v.1 ≫ pullback.fst φ w, by
+        rw [Category.assoc, pullback.condition, ← Category.assoc, v.2, Category.id_comp]⟩
+      left_inv := fun u => Subtype.ext (pullback.lift_fst _ _ _)
+      right_inv := fun v => Subtype.ext (pullback.hom_ext (pullback.lift_fst _ _ _)
+        (by rw [pullback.lift_snd, v.2])) }
+  have E2 : (Γ(pullback φ w, ⊤) →ₐ[K] K)
+      ≃ {v : Spec (CommRingCat.of K) ⟶ pullback φ w // v ≫ pullback.snd φ w = 𝟙 _} := by
+    refine Equiv.ofBijective (fun ρ => ⟨Spec.map (CommRingCat.ofHom ρ.toRingHom) ≫
+      (pullback φ w).isoSpec.inv, ?_⟩) ⟨?_, ?_⟩
+    · have hcomm : ψ ≫ CommRingCat.ofHom ρ.toRingHom = 𝟙 _ := by
+        ext k
+        exact ρ.commutes k
+      rw [Category.assoc, hψ', ← Spec.map_comp, hcomm, Spec.map_id]
+    · intro ρ₁ ρ₂ h
+      simp only [Subtype.mk.injEq] at h
+      have h3 := Spec.map_injective ((cancel_mono (pullback φ w).isoSpec.inv).mp h)
+      exact AlgHom.ext (fun x => congrArg (fun η : Γ(pullback φ w, ⊤) ⟶ CommRingCat.of K =>
+        η.hom x) h3)
+    · rintro ⟨v, hv⟩
+      obtain ⟨ρ₀, hρ₀⟩ := Spec.map_surjective (v ≫ (pullback φ w).isoSpec.hom)
+      have hcomm : ψ ≫ ρ₀ = 𝟙 _ := by
+        refine Spec.map_injective ?_
+        rw [Spec.map_comp, hρ₀, Spec.map_id, Category.assoc, ← hp]
+        exact hv
+      refine ⟨{ toRingHom := ρ₀.hom, commutes' := fun k => ?_ }, ?_⟩
+      · exact congrArg (fun η : CommRingCat.of K ⟶ CommRingCat.of K => η.hom k) hcomm
+      · refine Subtype.ext ?_
+        show Spec.map (CommRingCat.ofHom ρ₀.hom) ≫ (pullback φ w).isoSpec.inv = v
+        rw [show CommRingCat.ofHom ρ₀.hom = ρ₀ from rfl, hρ₀, Category.assoc,
+          Iso.hom_inv_id, Category.comp_id]
+  rw [Nat.card_congr (E1.trans E2.symm)]
 
 open _root_.NumberField in
 /-- **THE DEGREE OF `[a]` IS `N_{D/ℚ}(a)²` — THE THEOREM OF THE CUBE**
 (sorry leaf, cut 2026-07-28 as the GEOMETRIC half of
-`card_torsion_span_singleton_of_isAlgClosed`; Mumford *Abelian Varieties*
+`card_torsion_span_singleton_of_isAlgClosed` — and, its generic half
+`card_fibrePt_eq_of_finrank_eq` having been PROVEN the same day, it is the
+SOLE residue of that whole six-theorem cluster; Mumford *Abelian Varieties*
 §6, §16, §18, §19 (Thm 4: `deg` is a homogeneous polynomial function of
 degree `2g` on `End⁰(A)`), Milne *Abelian Varieties* I.7, I.10, Goren
 *Lectures on Hilbert Modular Varieties* I.1, Shimura).
@@ -3090,12 +3270,13 @@ theorem finrank_mulByElt_of_isAlgClosed {X : Scheme.{u}} {K : Type u} [Field K]
 open _root_.NumberField in
 /-- **`#A[a] = N_{D/ℚ}(a)²` FOR AN ABELIAN VARIETY WITH REAL
 MULTIPLICATION OVER AN ALGEBRAICALLY CLOSED FIELD OF CHARACTERISTIC
-ZERO** — the classical `deg[a] = N(a)²` (**PROVEN 2026-07-28** over the two
-leaves `card_fibrePt_eq_of_finrank_eq` (generic scheme theory: a finite
+ZERO** — the classical `deg[a] = N(a)²` (**PROVEN 2026-07-28** over the
+SINGLE leaf `finrank_mulByElt_of_isAlgClosed`, the theorem of the cube
+`deg [a] = N(a)²`.  It was itself a sorry leaf from 2026-07-28 until then.
+The generic half of the cut, `card_fibrePt_eq_of_finrank_eq` — a finite
 étale morphism over an algebraically closed field has `deg` many `K`-points
-in each fibre) and `finrank_mulByElt_of_isAlgClosed` (the theorem of the
-cube: `deg [a] = N(a)²`).  It was itself a sorry leaf from 2026-07-28
-until then.
+in each fibre — was cut and PROVEN the same day, so the cluster's sorry
+count is unchanged and its content is now purely the DEGREE.
 Mumford *Abelian Varieties* §6, §19 (Thm 4, `deg` is a homogeneous
 polynomial of degree `2g` on `End⁰(A)`), Milne *Abelian Varieties*
 I.7, I.10, Goren *Lectures on Hilbert Modular Varieties* I.1, Shimura).
