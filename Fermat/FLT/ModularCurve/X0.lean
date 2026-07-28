@@ -35575,1101 +35575,6 @@ theorem exists_x0NeronDatum (N ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
   exact ⟨R, toF, X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr, jZ,
     jstrZ, abZ, oZ, jacZ, hd⟩
 
-/-- **The sieve at `d` cuts the survivors down to the rational cusps.**
-
-The conclusion of `exists_x0Sieve`, phrased for one pinned datum so that
-the sharpness leaf can quantify over data. -/
-def IsSharpSieve (N : ℕ) {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-    {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
-    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
-    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
-    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
-    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
-    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
-    (d : IsX0NeronDatum N ℓ R toF jac jac'
-      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) : Prop :=
-  ∃ s : Finset (RelPoint strX' (𝟙 (SpecF ℓ))),
-    (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
-        (∃ a : RelPoint jstr (𝟙 SpecQ), d.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') → x' ∈ s) ∧
-      s.card = numRationalCusps N
-
-/-- **`IsReductionBase` forces `ℓ ≠ 0`** (PROVEN).
-
-`IsReductionBase`'s own docstring derives PRIMALITY of `ℓ` from its two
-axioms; this is the weakest consequence of that derivation, and the only
-one the finiteness leaf below needs — `ZMod 0 = ℤ` is infinite, and the
-whole point of reducing at `ℓ` is that the residue field is FINITE.
-
-The proof deliberately avoids the local-ring route
-(`IsReductionBase.isLocalRing`, `IsReductionBase.nontrivialResidue`),
-which is declared far below in the `j`-map subsection and so is not in
-scope here; and `nontrivialResidue` would not suffice anyway, since
-`ZMod 0 = ℤ` is perfectly nontrivial.  Instead: at `ℓ = 0` surjectivity
-produces `r` with `toF r = 2`; `ker_eq_nonunits` makes `r` a unit
-because `2 ≠ 0`; so `2 = toF r` is a unit of `ℤ`, and it is not. -/
-theorem IsReductionBase.ne_zero {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-    (h : IsReductionBase ℓ R toF) : ℓ ≠ 0 := by
-  rintro rfl
-  obtain ⟨r, hr⟩ := h.surjective (2 : ZMod 0)
-  have h2 : (2 : ZMod 0) ≠ 0 := by decide
-  have hu : IsUnit r := by
-    by_contra hnu
-    exact h2 (hr ▸ (h.ker_eq_nonunits r).mpr hnu)
-  have hz : IsUnit (2 : ℤ) := hr ▸ hu.map toF
-  rcases Int.isUnit_iff.mp hz with h1 | h1 <;> omega
-
-/-- **A proper morphism has finitely many `𝔽_ℓ`-points over ANY base
-point** (sorry node — general scheme theory, no modular curves anywhere
-in it).
-
-TRUE: `f` proper is in particular quasi-compact and locally of finite
-type, so `Z` is covered by finitely many affine opens `Spec A_i`, each
-`A_i` of finite type over the coordinate ring of an affine open of `S`.
-A morphism `Spec 𝔽_ℓ ⟶ Z` has a ONE-POINT image, hence factors through
-one of them; and once the base point `g` is fixed, the restriction of
-the induced ring map `A_i →+* 𝔽_ℓ` to that coordinate ring is fixed too,
-so the map is determined by the images of finitely many generators in a
-FINITE ring.  Finitely many opens, finitely many maps each.
-
-`hℓ` is `ℓ ≠ 0` rather than `ℓ.Prime` deliberately — that is the honest
-minimal hypothesis, since all that is used is that `ZMod ℓ` is finite,
-and `ZMod 0 = ℤ` is the only excluded case.
-
-**Why the generality is load-bearing, and not a gratuitous rewrite of
-`finite_relPoint_of_x0Compactification_finiteField`.**  That leaf fixes
-the base to `Spec 𝔽_ℓ` and the base point to `𝟙`.  The Néron-datum
-consumer below has base `Spec ℤ_(ℓ)` and base point the CLOSED POINT
-`SpecLoc.special toF`, so the identity-base-point form does not apply to
-it at all — there is no `IsX0Compactification` over `𝔽_ℓ` anywhere in
-`IsX0NeronDatum`, only one over `Spec ℤ_(ℓ)`.  Generalising the base
-POINT, rather than manufacturing a special-fibre compactification, is
-what keeps this question elementary: the alternative route would have
-made an elementary finiteness fact depend on Deligne–Rapoport.
-
-**THE MERGE FLAGGED HERE HAS BEEN TAKEN** (2026-07-27, authorized, while
-integrating the two rival branches that produced this cluster).  This
-statement and `finite_relPoint_of_x0Compactification_finiteField` were
-independently-written forms of the same fact, and both are now one-liners
-over the single general leaf `finite_relPoint_of_isProper` — proper `f`,
-finite coefficient ring `R`, arbitrary base point `g`.  The generality
-argued for above is exactly what that leaf carries, so nothing is lost:
-`R := ZMod ℓ` and `hℓ` is used only to make `ZMod ℓ` finite.
-
-The earlier verdict — "IRREDUCIBLE at this pin, axis searched:
-SCHEME-THEORETIC; neither the pin, nor `~/cs/FLT`, nor this tree has a
-'finite type over a finite ring implies finitely many sections' lemma" —
-was right about `Mathlib` and wrong about irreducibility.  The residue is
-now split as `exists_finiteType_algHom_injection_of_isProper` (scheme
-theory, open: base change plus an affine-local reduction against
-`IsAffineOpen.isoSpec`, `IsOpenImmersion.lift` and the `ΓSpec`
-adjunction) and `finite_algHom_of_finiteType` (algebra, PROVEN). -/
-theorem finite_relPoint_of_isProper_finiteField {ℓ : ℕ} (hℓ : ℓ ≠ 0)
-    {Z S : Scheme.{0}} {f : Z ⟶ S} (hf : IsProper f) (g : SpecF ℓ ⟶ S) :
-    Finite (RelPoint f g) := by
-  haveI : NeZero ℓ := ⟨hℓ⟩
-  haveI := hf
-  exact finite_relPoint_of_isProper (R := ZMod ℓ) f g
-
-section SharpSieve
-
-variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-    {X J X' J' XZ YZ JZ : Scheme.{0}}
-    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
-    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
-    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
-    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
-    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
-    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
-
-/-- **The special fibre of a Néron-pinned datum has finitely many
-rational points** (PROVEN 2026-07-27, over
-`finite_relPoint_of_isProper_finiteField`).
-
-The whole of the proof is bookkeeping, and that is the point: `d.spX`
-identifies `X_0(N)(𝔽_ℓ)` with the `𝔽_ℓ`-points of the integral model
-`xstr` taken over the CLOSED POINT `SpecLoc.special toF`, and
-`d.model.isProper` makes that model proper over `Spec ℤ_(ℓ)`.  So the
-remaining content is entirely the general fact that a proper morphism
-has finitely many points valued in a finite field — with no modular
-curve, no `N`, and no Néron datum in it — which is exactly what
-`finite_relPoint_of_isProper_finiteField` states.
-
-`ℓ ≠ 0` is not a hypothesis because `d.base` supplies it
-(`IsReductionBase.ne_zero`, proven above); `IsReductionBase`'s docstring
-derives full primality, but only nonvanishing is needed.
-
-**The route deliberately NOT taken, and the one that was.**  An earlier
-note here proposed discharging this leaf from
-`finite_relPoint_of_x0Compactification_finiteField` by first deducing
-`IsX0Compactification N strX' strY' j'` from `d` — that the special
-fibre of the model is again a compactification of the `Γ₀(N)`-problem.
-That is true and is the natural thing for the integral-model owner to
-produce, but it is the WRONG dependency for this leaf: it would make an
-elementary finiteness fact rest on Deligne–Rapoport.
-
-**Correction, 2026-07-27**: that note also recorded this leaf as sharing
-"the SAME mathematics" as
-`finite_relPoint_of_x0Compactification_finiteField` while being
-*unshareable* with it.  It IS shareable, and it now shares: what was
-needed was never a lemma deducing `IsX0Compactification` from `d`, but a
-generalisation of the SECTIONS statement to `R`-POINTS by base change
-along `g` (`AlgebraicGeometry.IsProper.isStableUnderBaseChange`; sections
-of the pullback are exactly the `R`-points of `f` over `g`).  That
-generalisation lives in `exists_finiteType_algHom_injection_of_isProper`,
-the single open leaf that both consumers now rest on, and it keeps the
-residue elementary — which is what the proof below relies on. -/
-theorem finite_specialFibre_of_x0NeronDatum
-    (d : IsX0NeronDatum N ℓ R toF jac jac'
-      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
-    Finite (RelPoint strX' (𝟙 (SpecF ℓ))) :=
-  haveI : Finite (RelPoint xstr (SpecLoc.special toF)) :=
-    finite_relPoint_of_isProper_finiteField d.base.ne_zero d.model.isProper
-      (SpecLoc.special toF)
-  Finite.of_equiv _
-    (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
-
-/-- **Abel–Jacobi is injective on the special fibre** (sorry node —
-geometry, UNIVERSAL in `ℓ`).
-
-TRUE: `x ↦ [x] − [o']` is injective on the points of a curve exactly
-when the genus is positive, since `[x] − [y] = 0` with `x ≠ y` gives a
-degree-`1` map to `ℙ¹`.  `d.model` pins the curve as `X_0(N)`, and
-`hlevel` supplies positivity of the genus — the genus values at the
-ORIGINAL eleven Kenku levels (this list PREDATES the addition of `35`
-and `39` on 2026-07-27 and has not been re-tabulated for them; both have
-genus `3`), in the order they then had in `kenkuLevels`, are
-`1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`, and the sieve levels have genus
-`2, 3, 4, 5, 5` at `26, 45, 54, 63, 75` (Magma, 2026-07-27; `26` was
-added to both lists later that day and is the only sieve level of genus
-`2`).  Positivity is preserved by good
-reduction, so it holds on the special fibre.
-
-This is the same condition that `IsJacobianOf` deliberately does NOT
-carry as a field — see its docstring, "Note what is deliberately NOT a
-field here: injectivity of `aj` on points" — and that
-`HasRankZeroJacobian` carries on the GENERIC fibre.  This leaf is its
-special-fibre counterpart, and it is what lets the sharpness leaf below
-speak about Abel–Jacobi CLASSES rather than about points, which is the
-form in which the count is actually computable.
-
-Stated over `kenkuLevels` rather than `x0SieveLevels` because nothing in
-it is special to the sieve: the seven single-prime levels have positive
-genus too, and a successor proving `card_le_of_rankZeroJacobian` will
-want it there.
-
-**PROVEN 2026-07-27, over `injective_aj_of_one_le_x0Genus_general`.**  The
-earlier verdict — "IRREDUCIBLE: the genus of a curve does not exist in
-this development in any form" — was right about the mathematics and
-wrong about the cut.  What the Néron datum contributes is not genus but
-a TRANSPORT: `d.spX_aj` says Abel–Jacobi on the special fibre is
-Abel–Jacobi on the integral model read through the equivalences `spX`
-and `spJ`, so injectivity here is equivalent to injectivity of
-`jacZ.aj` at the closed point `SpecLoc.special toF`.  The genus content
-is then a statement about `d.model` alone, with no `𝔽_ℓ` and no datum in
-it, and that is where it now lives.
-
-The residue that this factoring exposes, and which is worth saying: the
-missing theorem is needed at an ARBITRARY base and an ARBITRARY test
-object, not over `Spec ℚ` at the identity.  `HasRankZeroJacobian`
-carries only the latter, which is why nothing already in this file could
-be specialised to close this leaf.
-
-`hlevel` is still `N ∈ kenkuLevels` here because the sieve's own
-interface is stated over the Kenku levels; it reaches the geometry only
-as `one_le_x0Genus_of_kenkuLevel N hlevel`, since the Abel–Jacobi leaf
-was moved onto the arithmetic hypothesis `1 ≤ x0Genus N` in the
-2026-07-27 consolidation. -/
-theorem aj_injective_of_x0NeronDatum (hlevel : N ∈ kenkuLevels)
-    (d : IsX0NeronDatum N ℓ R toF jac jac'
-      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
-    Function.Injective (jac'.aj (𝟙 (SpecF ℓ))) := by
-  intro x y hxy
-  have hz : jacZ.aj (SpecLoc.special toF)
-        (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) x)
-      = jacZ.aj (SpecLoc.special toF)
-        (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) y) := by
-    rw [← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) x,
-      ← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) y, hxy]
-  exact (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
-    (injective_aj_of_one_le_x0Genus_general (one_le_x0Genus_of_kenkuLevel N hlevel)
-      d.model jacZ (SpecLoc.special toF) hz)
-
-end SharpSieve
-
-/-! #### The banked sieve rows, and the two counts they need
-
-`exists_sharpSievePrime_classCount` below is an EXISTENTIAL over primes,
-so the witness `ℓ` and the two point counts at it are banked once, in
-`x0SieveTable`, and every consumer reads them off that table rather than
-rediscovering them.  The counts are then supplied by this file's single
-Eichler–Shimura interface, `IsX0EichlerShimura` — **not** by a second
-cohomological input: the level picks the row, the row picks `ℓ`, and
-`IsX0EichlerShimura` converts the Hecke trace and determinant at
-`(N, ℓ)` into `#X_0(N)(𝔽_ℓ)` and `#J_0(N)(𝔽_ℓ)`.  That is exactly what
-the interface's own docstring asks consumers of `#J_0(N)(𝔽_ℓ)` to do.
-
-What this buys, and it is the whole point of the subsection: the SECOND
-conjunct of the sharpness leaf — the padding bound
-`numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)` — becomes a `decide` against the
-table, so the residual open statement is the intersection bound ALONE,
-with both cardinalities handed to it.
--/
-
-/-- **The five sieve rows**: `(N, ℓ, #X_0(N)(𝔽_ℓ), #J_0(N)(𝔽_ℓ))`, one
-per level of `x0SieveLevels`, at that level's witness prime.
-
-| `N` | `ℓ` | `#X_0(N)(𝔽_ℓ)` | `#J_0(N)(𝔽_ℓ)` | `#J_0(N)(ℚ)` |
-|-----|-----|------------------|------------------|---------------|
-| `26` | `5` | `10` | `63`    | `21` |
-| `45` | `7` | `8`  | `512`   | `32` |
-| `54` | `5` | `6`  | `972`   | `81` |
-| `63` | `5` | `8`  | `6144`  | `96` |
-| `75` | `7` | `8`  | `28160` | `80` |
-
-The last column is not stored — it is recorded here only because it is
-what makes the rows consistent (`#J_0(N)(ℚ)` divides `#J_0(N)(𝔽_ℓ)` in
-every row, as reduction at a good odd prime forces).
-
-**Both stored columns were recomputed independently with PARI/GP on
-2026-07-27** — `mfinit([N,2],1)` (the CUSPIDAL space; note PARI's space
-code `1` is `S_k`, `0` is `S_k^new`, and using `0` silently gives the
-new-subspace answer, which is wrong at every level here except `26`),
-then `mfheckemat` for `T_ℓ`, then `ℓ + 1 − Tr T_ℓ` and
-`det((ℓ+1)·1 − T_ℓ)`.  The same run reproduces all eleven rows of
-`x0WitnessTable` from the trace column and every `#J_0(N)(𝔽_ℓ)` banked
-anywhere in this file from the determinant column, including the
-auxiliary primes `4096, 6561, 135168, 409600` at `(45,19), (54,7),
-(63,11), (75,11)` and `21, 63, 63, 84` at `N = 26`, `ℓ = 3, 5, 7, 11`.
-So the two columns are the two fields of `IsX0EichlerShimura` evaluated,
-and nothing here is an independent numerical claim.
-
-`26` is at `ℓ = 5` rather than the smaller `ℓ = 3` because `ℓ = 3` is
-REFUTED there — see the sharpness leaf's docstring for the computation,
-which is the one place in this development where a recommended witness
-prime turned out to be impossible rather than merely unlucky. -/
-def x0SieveTable : List (ℕ × ℕ × ℕ × ℕ) :=
-  [(26, 5, 10, 63), (45, 7, 8, 512), (54, 5, 6, 972), (63, 5, 8, 6144),
-    (75, 7, 8, 28160)]
-
-/-- **Every sieve row has a good odd prime and enough points to pad**
-(PROVEN, `decide` at each row).
-
-The last conjunct, `numRationalCusps N ≤ m`, is the padding bound of the
-sharpness leaf's second conjunct: `4 ≤ 10, 8, 6, 8, 8`.  It is a fact
-about the TABLE, so it is discharged here once rather than at each
-consumer.  `numRationalCusps N = 4` at all five levels — the rational
-cusps are those above the divisors `d ∣ N` with `φ(gcd(d, N/d)) = 1`,
-and at these levels exactly four divisors qualify. -/
-theorem x0SieveTable_spec {N ℓ m n : ℕ} (h : (N, ℓ, m, n) ∈ x0SieveTable) :
-    0 < N ∧ ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧ numRationalCusps N ≤ m := by
-  fin_cases h <;>
-    exact ⟨by decide, by decide, by decide, by decide, by decide⟩
-
-/-- **Every sieve level has a row** (PROVEN, one `decide` per level).
-
-This is what turns the table into the EXISTENTIAL the sharpness leaf
-states: `x0SieveLevels` and `x0SieveTable` are maintained as two lists,
-and this is the lemma that keeps them from drifting apart. -/
-theorem exists_x0SieveTable_row (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
-    ∃ ℓ m n : ℕ, (N, ℓ, m, n) ∈ x0SieveTable := by
-  fin_cases hlevel
-  · exact ⟨5, 10, 63, by decide⟩
-  · exact ⟨7, 8, 512, by decide⟩
-  · exact ⟨5, 6, 972, by decide⟩
-  · exact ⟨5, 8, 6144, by decide⟩
-  · exact ⟨7, 8, 28160, by decide⟩
-
-/-- **Every sieve row has a charpoly row, whose trace column is `ℓ + 1 − m`
-and whose value at `ℓ + 1` is `n`** (PROVEN, one `decide` and two
-`norm_num`s per row).
-
-The sieve-level twin of `exists_charpolyRow_of_x0WitnessTable`, and the
-lemma that keeps `x0SieveTable` and `x0HeckeCharpolyTable` from drifting
-apart: BOTH stored columns of `x0SieveTable` are checked here against the
-one banked polynomial, so a row cannot be edited on one side alone. -/
-theorem exists_charpolyRow_of_x0SieveTable {N ℓ m n : ℕ}
-    (h : (N, ℓ, m, n) ∈ x0SieveTable) :
-    ∃ (d : ℕ) (c : List ℤ), 0 < d ∧ (N, ℓ, d, c) ∈ x0HeckeCharpolyTable ∧
-      -((c.getD (d - 1) 0 : ℤ) : ℂ) = (ℓ : ℂ) + 1 - (m : ℂ) ∧
-      ∑ i ∈ Finset.range c.length, ((c.getD i 0 : ℤ) : ℂ) * ((ℓ : ℂ) + 1) ^ i
-        = (n : ℂ) := by
-  fin_cases h
-  · exact ⟨2, [3, 4, 1], two_pos, by decide, by norm_num,
-      by norm_num [Finset.sum_range_succ]⟩
-  · exact ⟨3, [0, 0, 0, 1], three_pos, by decide, by norm_num,
-      by norm_num [Finset.sum_range_succ]⟩
-  · exact ⟨4, [0, 0, -9, 0, 1], by norm_num, by decide, by norm_num,
-      by norm_num [Finset.sum_range_succ]⟩
-  · exact ⟨5, [96, 48, -32, -16, 2, 1], by norm_num, by decide, by norm_num,
-      by norm_num [Finset.sum_range_succ]⟩
-  · exact ⟨5, [0, 0, 0, -9, 0, 1], by norm_num, by decide, by norm_num,
-      by norm_num [Finset.sum_range_succ]⟩
-
-section SharpSieveCounts
-
-variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-    {X J X' J' XZ YZ JZ : Scheme.{0}}
-    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
-    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
-    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
-    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
-    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
-    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
-
-/-- **The Eichler–Shimura counts hold on a Néron datum's special fibre**
-(sorry node — **a DECLARATION-ORDER ARTIFACT ONLY, and it is NOT a
-mathematical leaf**).
-
-**DO NOT DISPATCH A PROVER AT THIS.**  Its proof is two lines and both
-of them exist, PROVEN, further down this very file:
-
-```
-obtain ⟨Y'', strY'', j'', ⟨hc⟩⟩ :=
-  exists_isX0Compactification_specialFibre (jac := jac) hℓ hℓN d
-exact exists_isX0EichlerShimura N ℓ hN hℓ hℓN hc
-```
-
-`exists_isX0Compactification_specialFibre` (section *The special
-fibre*) says the special fibre of the datum's integral model is again an
-`IsX0Compactification N` over `𝔽_ℓ`, and it is PROVEN; feeding that to
-`exists_isX0EichlerShimura` — the file's single cohomological input —
-gives this statement.  The obstruction is purely that both of them are
-declared some three thousand lines BELOW the sharpness leaf that needs
-them, and Lean has no forward references.
-
-**Compiler-verified, not asserted**: the two-line proof above was
-elaborated in a scratch module importing the built `X0` olean, where
-declaration order does not bite, and it compiles.  So the claim "this is
-declaration order and nothing else" is checkable in about a minute and
-was checked.
-
-**THE REPAIR, and it is mechanical.**  Relocate the sieve cluster —
-`IsSharpSieve` through `y0HasNoRationalPoint_of_sieveLevel`, together
-with this subsection — to below `end SpecialFibre`, then delete this
-declaration and inline its two-line proof.  Nothing in the intervening
-text uses the cluster except in docstrings, so the move is a cut and
-paste; this file already carries two subsections relocated for exactly
-this reason ("relocated here by declaration order").  It was NOT done
-when this cut was taken because that is a five-hundred-line move in a
-file several agents are editing concurrently, and the integration cost
-of the conflict outweighs one leaf that closes in two lines.
-
-The hypotheses carry underscores only because the body is `sorry`; all
-four are used by the proof above. -/
-theorem isX0EichlerShimura_specialFibre_of_x0NeronDatum (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N)
-    (_d : IsX0NeronDatum N ℓ R toF jac jac'
-      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
-    IsX0EichlerShimura N ℓ strX' :=
-  sorry
-
-/-- **The five banked Hecke traces and determinants** (PROVEN 2026-07-28 by
-decomposition over `exists_basis_charpoly_heckeOp`; was the arithmetic half
-of the sieve counts, and the sibling leaf of
-`traceHeckeOp_of_x0WitnessTable`).
-
-`Tr(T_ℓ ∣ S₂(Γ₀(N)))` and `det((ℓ + 1)·1 − T_ℓ ∣ S₂(Γ₀(N)))` at the rows
-of `x0SieveTable`, which by construction are `ℓ + 1 − m` and `n`.  See
-`x0SieveTable` for the values and for the PARI/GP run that produced
-them, and the section docstring above `IsX0EichlerShimura` for why both
-are honest statements about `heckeOp N ℓ` rather than equations in an
-opaque constant.
-
-**The two conjuncts were ONE leaf on purpose, and they are now ONE leaf
-with `traceHeckeOp_of_x0WitnessTable` as well.**  They are the trace and
-the determinant of the SAME operator, so all of the work — a basis of
-`CuspForm (Gamma0GL N) 2`, and the matrix of `T_ℓ` in it — is shared, and
-so is every bit of it with the eleven witness rows.  Splitting any of that
-would let several agents build the same infrastructure several times, which
-is the expense this development pays most often.  Both conjuncts are now
-read off the single banked characteristic polynomial of
-`x0HeckeCharpolyTable`: the trace by `trace_heckeOp_of_charpolyTable`
-(minus the `(d−1)`-st coefficient) and the determinant by
-`det_heckeOp_of_charpolyTable` (the value at `ℓ + 1`), with
-`exists_charpolyRow_of_x0SieveTable` matching the rows.
-
-The dimensions of `S₂(Γ₀(N))` at the five rows are `2, 3, 4, 5, 5`, so
-the largest determinant to be evaluated is `5 × 5`; this is a finite
-computation, not a theory — and it is now the kernel that does it, from
-`x0HeckeCharpolyTable`, rather than a banked scalar. -/
-theorem heckeOp_traceDet_of_x0SieveTable {N ℓ m n : ℕ}
-    (h : (N, ℓ, m, n) ∈ x0SieveTable) :
-    LinearMap.trace ℂ
-        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
-        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
-        = (ℓ : ℂ) + 1 - (m : ℂ) ∧
-      LinearMap.det (((ℓ : ℂ) + 1) • (1 : Module.End ℂ
-          (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
-        - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) = (n : ℂ) := by
-  obtain ⟨d, c, hd, hrow, htr, hdet⟩ := exists_charpolyRow_of_x0SieveTable h
-  exact ⟨by rw [trace_heckeOp_of_charpolyTable hd hrow, htr],
-    by rw [det_heckeOp_of_charpolyTable hrow, hdet]⟩
-
-/-- **`#X_0(N)(𝔽_ℓ) = m` at a sieve row** (PROVEN, by Eichler–Shimura
-against the banked trace).
-
-Pure bookkeeping over the two leaves above: `card_curve` gives the count
-as `ℓ + 1 − Tr T_ℓ` in `ℂ`, the table evaluates the trace, and
-`ℕ → ℂ` is injective — the identical two lines that
-`card_relPoint_x0_finiteField` runs at the witness levels. -/
-theorem card_specialFibre_of_x0SieveTable {m n : ℕ}
-    (hrow : (N, ℓ, m, n) ∈ x0SieveTable)
-    (d : IsX0NeronDatum N ℓ R toF jac jac'
-      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
-    Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m := by
-  obtain ⟨hN, hℓ, -, hℓN, -⟩ := x0SieveTable_spec hrow
-  have h1 := (isX0EichlerShimura_specialFibre_of_x0NeronDatum hN hℓ hℓN d).card_curve
-  rw [(heckeOp_traceDet_of_x0SieveTable hrow).1] at h1
-  have h2 : ((Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) : ℕ) : ℂ) = (m : ℂ) := by
-    rw [h1]; ring
-  exact_mod_cast h2
-
-/-- **`#J_0(N)(𝔽_ℓ) = n` at a sieve row** (PROVEN, by Eichler–Shimura
-against the banked determinant).
-
-This is the input the sharpness leaf's irreducibility verdict named
-first — "`#J_0(N)(𝔽_ℓ)` from Eichler–Shimura" — and it is now a theorem
-rather than a missing theory, because `IsX0EichlerShimura.card_jacobian`
-carries it.  Note it quantifies over the datum's `jac'`, which is what
-makes it applicable to the Jacobian the sieve actually speaks about
-rather than to some chosen model. -/
-theorem card_jacobianFibre_of_x0SieveTable {m n : ℕ}
-    (hrow : (N, ℓ, m, n) ∈ x0SieveTable)
-    (d : IsX0NeronDatum N ℓ R toF jac jac'
-      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
-    Nat.card (RelPoint jstr' (𝟙 (SpecF ℓ))) = n := by
-  obtain ⟨hN, hℓ, -, hℓN, -⟩ := x0SieveTable_spec hrow
-  have h1 :=
-    (isX0EichlerShimura_specialFibre_of_x0NeronDatum hN hℓ hℓN d).card_jacobian jac'
-  rw [(heckeOp_traceDet_of_x0SieveTable hrow).2] at h1
-  exact_mod_cast h1
-
-/-- **The survivor classes number at most `numRationalCusps N`** (sorry
-node — THE arithmetic residue of the Mordell–Weil sieve, and the only
-part of `exists_sharpSievePrime_classCount` that is not now bookkeeping).
-
-TRUE; see `exists_sharpSievePrime_classCount` below for the five witness
-rows, the survivor computation at `N = 26` (done directly in Magma), and
-the refutation test each witness passes.
-
-**What this leaf is, after the cut.**  `Set.range d.redJ` is an
-isomorphic copy of `J_0(N)(ℚ)` inside `J_0(N)(𝔽_ℓ)` — a subgroup of
-order `21, 32, 81, 96, 80` at the five levels — and
-`Set.range (jac'.aj)` is the set of Abel–Jacobi classes of the `m`
-points of `X_0(N)(𝔽_ℓ)`, of size exactly `m` because Abel–Jacobi is
-injective there (`aj_injective_of_x0NeronDatum`).  The claim is that
-these two subsets of a group of order `n` meet in at most
-`numRationalCusps N = 4` elements — and they meet in exactly `4`, since
-the reductions of the four rational cusps always survive.
-
-**Why the two cardinality hypotheses are load-bearing rather than
-decorative.**  They are what makes this a statement about an EXPLICIT
-finite abelian group: `hn` pins `#J_0(N)(𝔽_ℓ)`, which is what certifies
-that an enumeration of that group is complete, and `hm` pins the size of
-the Abel–Jacobi image.  Neither is derivable inside this section — both
-come from `IsX0EichlerShimura` through the two lemmas above — and
-supplying them here is precisely how the Eichler–Shimura half of the old
-irreducibility verdict was discharged.  **They do not make the leaf
-provable in isolation**, and that is the honest situation: the counts
-say how big the two subsets are, not where they sit, and the
-intersection depends on where they sit.  Closing this leaf needs the
-group presented concretely, which is the second half of the verdict —
-"the Abel–Jacobi image inside it as an explicitly computable finite
-object" — and that half is untouched by this cut.
-
-AXIS SEARCHED: the CARDINALITY axis (what the two point counts alone
-give) and the EICHLER–SHIMURA axis (where the counts come from).  NOT
-searched: whether a concrete presentation of `J_0(N)(𝔽_ℓ)` can be built
-from a plane model of `X_0(N)` at these five levels — genus `2`–`5`,
-`ℓ ≤ 7`, so the divisor class group is a finite computation — which is
-the direction that would actually close it.
-
-The hypotheses carry underscores only because the body is `sorry`. -/
-theorem card_inter_range_redJ_aj_le_of_x0SieveTable {m n : ℕ}
-    (_hrow : (N, ℓ, m, n) ∈ x0SieveTable)
-    (d : IsX0NeronDatum N ℓ R toF jac jac'
-      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
-    (_hfin : Finite (RelPoint jstr (𝟙 SpecQ)))
-    (_hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
-    (_hn : Nat.card (RelPoint jstr' (𝟙 (SpecF ℓ))) = n) :
-    (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).ncard
-      ≤ numRationalCusps N :=
-  sorry
-
-end SharpSieveCounts
-
-/-- **At some good odd prime the reduced rational Jacobian meets the
-Abel–Jacobi image in at most `numRationalCusps N` classes** (PROVEN by
-decomposition, 2026-07-27 — the arithmetic residue of the sieve).
-
-This is `exists_sharpSievePrime` with the two pieces of geometry above
-removed, and it is the statement Magma actually computes: a count of the
-intersection of two subsets of the FINITE abelian group `J_0(N)(𝔽_ℓ)` —
-the subgroup `Set.range d.redJ ≅ J_0(N)(ℚ)` and the set of Abel–Jacobi
-classes `Set.range (jac'.aj)` of the `ℓ + 1 − Tr T_ℓ` points of
-`X_0(N)(𝔽_ℓ)`.
-
-The second conjunct, `numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)`, is what lets
-the consumer inflate a possibly-smaller survivor set to a `Finset` of
-size exactly `numRationalCusps N`, which is the shape `IsSharpSieve`
-asks for.  It is true with room to spare — the five counts are
-`10, 8, 6, 8, 8` against `numRationalCusps N = 4` — and it must be
-stated here rather than separately, because it has to hold at the SAME
-`ℓ` the existential produces.
-
-## `N = 26`, ADDED 2026-07-27 — the one level where the SURVIVORS were
-## computed rather than inferred, and where a recommended prime FAILED
-
-The four original levels bank a witness `ℓ` and a refutation test that
-the witness passes.  At `26` the test does not merely come close to
-firing: **it fires, at the prime the level's own audit recommended.**
-`J_0(26)(ℚ) ≅ ℤ/21` (Magma: `RankBound = 0`, `TorsionSubgroup ≅ ℤ/21`
-on `y² = x⁶ − 8x⁵ + 8x⁴ − 18x³ + 8x² − 8x + 1`), and
-
-    #J_0(26)(𝔽_3) = (3 + 1 − a_3(f₁))(3 + 1 − a_3(f₂)) = 7 · 3 = 21,
-
-so at `ℓ = 3` reduction is injective out of a group of the SAME order,
-hence surjective, hence EVERY point of `X_0(26)(𝔽_3)` survives — all
-`6` of them, against `numRationalCusps 26 = 4`.  `ℓ = 3` is therefore
-impossible, not unlucky, exactly as the refutation test under
-`exists_x0Sieve` predicts.  Any note recommending that the sieve at `26`
-"cut the `6` points of `X_0(26)(𝔽_3)` down to the `4` cusps" is
-describing something that cannot happen.
-
-The witness is `ℓ = 5`, and the survivor count was computed directly
-(Magma: reduce the generator of `J_0(26)(ℚ)`, enumerate the `21`-element
-image subgroup, and test `[Q − Q₀] ∈ image` for each `Q ∈ X_0(26)(𝔽_ℓ)`
-with `Q₀` a rational cusp):
-
-| `ℓ` | `#X_0(26)(𝔽_ℓ)` | `#J_0(26)(𝔽_ℓ)` | image order | survivors |
-|-----|------------------|------------------|-------------|-----------|
-| `3`  | `6`  | `21`   | `21` | `6` — REFUTED |
-| `5`  | `10` | `63`   | `21` | `4` |
-| `7`  | `8`  | `63`   | `21` | `4` |
-| `11` | `8`  | `84`   | `21` | `4` |
-| `17` | `24` | `441`  | `21` | `4` |
-| `19` | `12` | `252`  | `21` | `4` |
-
-and the same `4` at every odd good `ℓ ≤ 71` tested — `23, 29, 31, 37,
-41, 43, 47, 53, 59, 61, 67, 71` — so `26` has not one witness prime but
-every prime except the single refuted one.  The `#X_0(26)(𝔽_ℓ)` column
-reproduces the Eichler–Shimura table under `x0SieveLevels`
-independently, from the curve rather than from the trace form.
-
-Both conjuncts therefore hold at `ℓ = 5`: survivors `4 ≤
-numRationalCusps 26 = 4`, and `numRationalCusps 26 = 4 ≤ 10`.  Note the
-first is EQUALITY — the four rational cusps must survive, so no witness
-prime can ever do better than `4`, at `26` or anywhere else.
-
-**Why one prime, and why the prime is existentially quantified**: see
-the subsection docstring and the FORMAL-CONTENT AUDIT under
-`exists_x0Sieve`.  Both apply verbatim; nothing in this reformulation
-changes them.  The candidate witnesses are `ℓ = 7, 5, 5, 7` at
-`N = 45, 54, 63, 75`, and each passes the refutation test recorded
-there.
-
-**Reconnaissance re-run independently with Magma on 2026-07-27**, and
-the whole banked table reproduces exactly — the four genera `3, 4, 5, 5`;
-the minimising primes `7, 5, 5, 7` over odd good `ℓ < 60` with counts
-`8, 6, 8, 8`; the orders `#J_0(N)(𝔽_ℓ) = 512, 972, 6144, 28160` at those
-primes and `4096, 6561, 135168, 409600` at the auxiliary `19, 7, 11, 11`;
-and the rational cuspidal subgroups `[4,8], [3,3,9], [2,48], [2,40]` of
-orders `32, 81, 96, 80`.  So the refutation test is nowhere near
-triggered at any of the four witnesses and the statement stands.
-
-**Why the universal quantifier over data is still SAFE** — unchanged
-from `exists_sharpSievePrime`, and it is the whole reason
-`IsX0NeronDatum` exists: `base` pins the base, `model` pins the integral
-curve, `genX`/`genJ`/`spX`/`spJ` pin the fibres and `neronJ` pins `redJ`
-as the genuine reduction, so any two data at the same `ℓ` are isomorphic
-and both counts are isomorphism invariants.  Weakening `IsX0NeronDatum`
-to `IsX0ReductionAt` would make this FALSE, exactly as the subsection
-docstring above warns.
-
-`hfin` is load-bearing and is the rank-`0` input: without it
-`J_0(N)(ℚ)` is infinite, `Set.range d.redJ` is unconstrained, and no
-prime cuts anything.
-
-**THE IRREDUCIBILITY VERDICT IS HALF DISCHARGED (2026-07-27), AND THIS
-NODE IS NOW AN ASSEMBLY.**  The verdict read: "IRREDUCIBLE at this pin:
-it needs `#J_0(N)(𝔽_ℓ)` from Eichler–Shimura and the Abel–Jacobi image
-inside it as an explicitly computable finite object."  Both halves were
-right about the mathematics.  The FIRST half is no longer a missing
-theory: `IsX0EichlerShimura` states both point counts in
-`CuspForm (Gamma0GL N) 2` and `heckeOp N ℓ`, so `#J_0(N)(𝔽_ℓ)` arrives
-here as `card_jacobianFibre_of_x0SieveTable` — a theorem — rather than
-as an input nobody can state.  The SECOND half is untouched and is now
-the whole of the residual leaf.
-
-The cut, and what each piece costs:
-
-* `x0SieveTable` — the five rows `(N, ℓ, #X_0(N)(𝔽_ℓ), #J_0(N)(𝔽_ℓ))`,
-  with `x0SieveTable_spec` (good odd prime, and the padding bound) and
-  `exists_x0SieveTable_row` (every sieve level has a row) both PROVEN by
-  `decide`.  This is what supplies the existential witness `ℓ`.
-* `heckeOp_traceDet_of_x0SieveTable` — the banked Hecke trace and
-  determinant at those five rows.  ONE theorem for both, because they are
-  the trace and determinant of the same `≤ 5 × 5` matrix; PROVEN
-  2026-07-28, together with its sibling
-  `traceHeckeOp_of_x0WitnessTable`, over the single merged leaf
-  `exists_basis_charpoly_heckeOp` (the banked characteristic polynomial of
-  `T_ℓ`, `x0HeckeCharpolyTable`).
-* `isX0EichlerShimura_specialFibre_of_x0NeronDatum` — a DECLARATION-ORDER
-  ARTIFACT, not a mathematical leaf: its two-line proof exists, PROVEN,
-  three thousand lines below (`exists_isX0Compactification_specialFibre`
-  then `exists_isX0EichlerShimura`) and was compiler-checked in a scratch
-  module.  See its docstring; do not dispatch a prover at it.
-* `card_inter_range_redJ_aj_le_of_x0SieveTable` — THE arithmetic residue,
-  now stated with both cardinalities in hand.
-
-**The second conjunct is therefore PROVEN**, which is the concrete gain:
-`numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)` reduces to `4 ≤ m` against the
-table.  The route the previous audit proposed for it — quantifying the
-padding bound universally in `ℓ` and lifting it out — is no longer
-needed, and its recorded blockage (this statement's context carries no
-`Spec ℚ`-side modular structure, while `exists_rationalCusps` and
-`HasRankZeroJacobian` are both `Spec ℚ`-hardwired) is now moot rather
-than refuted.  It would still be worth having: a general-base form of
-`exists_rationalCusps` plus injectivity of specialisation on cusps would
-prove the padding bound at EVERY good odd `ℓ` with no Eichler–Shimura at
-all, which is strictly cheaper than the route taken here.  The route
-taken here was preferred only because it reuses an interface the file
-already carries.
-
-**Which axes the RESIDUAL verdict covers.**
-
-* *The geometric axis is EXHAUSTED*, as before:
-  `finite_specialFibre_of_x0NeronDatum` and
-  `aj_injective_of_x0NeronDatum` were split off and are PROVEN, and
-  nothing geometric remains mixed in.
-* *Splitting the two conjuncts into two existentials is BLOCKED* and
-  always will be — they have to hold at the SAME `ℓ`.  This is why the
-  padding bound is discharged from the SAME table row rather than by a
-  separate existential.
-* *The Eichler–Shimura axis is CLOSED*: both counts are theorems here.
-* *NOT searched, and the direction that would close what is left*:
-  a concrete presentation of `J_0(N)(𝔽_ℓ)` and of the Abel–Jacobi image
-  in it, at genus `2`–`5` and `ℓ ≤ 7`.  See
-  `card_inter_range_redJ_aj_le_of_x0SieveTable`. -/
-theorem exists_sharpSievePrime_classCount (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
-    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧
-      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-        {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
-        {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-        {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
-        {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
-        {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
-        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-        {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
-        {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
-        (d : IsX0NeronDatum N ℓ R toF jac jac'
-          (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ),
-        Finite (RelPoint jstr (𝟙 SpecQ)) →
-        (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).ncard
-            ≤ numRationalCusps N ∧
-          numRationalCusps N ≤ Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) := by
-  obtain ⟨ℓ, m, n, hrow⟩ := exists_x0SieveTable_row N hlevel
-  obtain ⟨-, hℓ, hℓ2, hℓN, hcusp⟩ := x0SieveTable_spec hrow
-  refine ⟨ℓ, hℓ, hℓ2, hℓN, ?_⟩
-  intro R toF X J X' J' XZ YZ JZ strX jstr ab o strX' jstr' ab' o' jac jac' xstr ystr
-    jZ jstrZ abZ oZ jacZ d hfin
-  have hm := card_specialFibre_of_x0SieveTable hrow d
-  have hn := card_jacobianFibre_of_x0SieveTable hrow d
-  exact ⟨card_inter_range_redJ_aj_le_of_x0SieveTable hrow d hfin hm hn,
-    by rw [hm]; exact hcusp⟩
-
-/-- **Some good odd prime makes the sieve sharp** (PROVEN by
-decomposition, 2026-07-27 — the arithmetic heart is now
-`exists_sharpSievePrime_classCount`).
-
-TRUE: at each of `45, 54, 63, 75` there is a good odd prime `ℓ` at which
-only `numRationalCusps N = 4` of the points of `X_0(N)(𝔽_ℓ)` have
-Abel–Jacobi class in the image of `J_0(N)(ℚ)`, even though `X_0(N)(𝔽_ℓ)`
-itself has `8, 6, 8, 8` points.  The candidate witnesses are `ℓ = 7, 5,
-5, 7` respectively.  See the FORMAL-CONTENT AUDIT under
-`exists_x0Sieve` for the witness table, the refutation test each witness
-passes, and the reason no number of auxiliary primes replaces this leaf.
-
-**Why the universal quantifier over data is SAFE here**, where the
-subsection docstring above warns it would not be for `IsX0ReductionAt`.
-The warning was that `IsX0ReductionAt` constrains `redJ` only by
-injectivity, additivity and `red_aj`, so a subgroup of the right order
-sitting differently inside `J_0(N)(𝔽_ℓ)` gives an admissible datum with
-MORE survivors — and one such datum would refute a `∀`-statement.
-`IsX0NeronDatum` removes exactly that freedom: `base` pins the base as
-`Spec ℤ_(ℓ)`, `model` pins the integral curve as the smooth model of
-`X_0(N)` there, `genX`/`genJ`/`spX`/`spJ` pin `X'` and `J'` as its
-fibres, and `neronJ` pins `redJ` as the genuine reduction.  Any two data
-at the same `ℓ` are therefore isomorphic, and the survivor count is an
-isomorphism invariant.
-
-**`hfin` is load-bearing** and is the rank-`0` input: without it
-`J_0(N)(ℚ)` is infinite, every point of `X_0(N)(𝔽_ℓ)` survives, and no
-prime cuts anything.  `hlevel` restricts the leaf to the four levels
-where the sieve is the intended route.
-
-**The cut, and what each piece costs.**  The old docstring called this
-"the residue of `exists_x0Sieve` after the model-theoretic content is
-factored out", needing the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside
-`J_0(N)(𝔽_ℓ)` plus Eichler–Shimura for `#J_0(N)(𝔽_ℓ)`.  That is a
-correct description of the ARITHMETIC, and it left two pieces of pure
-geometry mixed in with it, which are now separate leaves:
-
-* `finite_specialFibre_of_x0NeronDatum` — the special fibre has finitely
-  many points (properness over a finite field, universal in `ℓ`);
-* `aj_injective_of_x0NeronDatum` — Abel–Jacobi is injective there
-  (positive genus, universal in `ℓ`);
-* `exists_sharpSievePrime_classCount` — the arithmetic residue proper.
-
-**Both geometric pieces are now PROVEN** (2026-07-27), and what closing
-them showed is that neither was about the Néron datum at all.  Each
-reduced, by pure transport along the datum's `spX`/`spJ` equivalences, to
-a statement about the INTEGRAL MODEL over `Spec ℤ_(ℓ)` at its closed
-point — `finite_relPoint_of_isProper_finiteField` and
-`injective_aj_of_one_le_x0Genus_general` respectively.  The lesson for the
-rest of this subsection is that the datum's role is to TRANSPORT
-questions from the special fibre to the model, and that the honest
-residue of a special-fibre leaf is almost always a base-general
-statement with no `𝔽_ℓ` in it.  Note in particular that both residues
-need an arbitrary base POINT: the identity-base-point forms already in
-this file (`finite_relPoint_of_x0Compactification_finiteField`,
-`HasRankZeroJacobian`) cannot be specialised to either.
-
-Injectivity is what converts the count of surviving POINTS of
-`X_0(N)(𝔽_ℓ)` into a count of surviving CLASSES in `J_0(N)(𝔽_ℓ)`, and
-the class count is the one a computation can produce, since it is an
-intersection of two subsets of a finite abelian group.  Both geometric
-leaves are universal in `ℓ`, so neither has to be found at the same
-prime as the arithmetic — the "the two halves must meet at the same `ℓ`"
-obstruction recorded under `exists_x0Sieve` applies only to the
-existential leaf, and the padding bound `4 ≤ #X_0(N)(𝔽_ℓ)` is carried
-there for exactly that reason.
-
-The proof below is the counting argument in full: the survivors form a
-`Finset`, Abel–Jacobi maps it injectively into
-`Set.range redJ ∩ Set.range aj'`, so it has at most `numRationalCusps N`
-elements, and `Finset.exists_superset_card_eq` inflates it to exactly
-that many inside the finite point set. -/
-theorem exists_sharpSievePrime (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
-    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧
-      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ}
-        {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
-        {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-        {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
-        {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
-        {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
-        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
-        {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
-        {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
-        (d : IsX0NeronDatum N ℓ R toF jac jac'
-          (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ),
-        Finite (RelPoint jstr (𝟙 SpecQ)) → IsSharpSieve N d := by
-  classical
-  have hkenku : N ∈ kenkuLevels := by fin_cases hlevel <;> decide
-  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hcount⟩ := exists_sharpSievePrime_classCount N hlevel
-  refine ⟨ℓ, hℓ, hℓ2, hℓN, ?_⟩
-  intro R toF X J X' J' XZ YZ JZ strX jstr ab o strX' jstr' ab' o' jac jac' xstr ystr
-    jZ jstrZ abZ oZ jacZ d hfin
-  obtain ⟨hle, hge⟩ := hcount d hfin
-  haveI : Finite (RelPoint strX' (𝟙 (SpecF ℓ))) := finite_specialFibre_of_x0NeronDatum d
-  haveI : Fintype (RelPoint strX' (𝟙 (SpecF ℓ))) := Fintype.ofFinite _
-  have haj : Function.Injective (jac'.aj (𝟙 (SpecF ℓ))) :=
-    aj_injective_of_x0NeronDatum hkenku d
-  set t : Finset (RelPoint strX' (𝟙 (SpecF ℓ))) :=
-    Finset.univ.filter (fun x' => ∃ a, d.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') with ht
-  have hsub : ↑(t.image (jac'.aj (𝟙 (SpecF ℓ)))) ⊆
-      Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ))) := by
-    intro y hy
-    simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, ht, Finset.mem_filter,
-      Finset.mem_univ, true_and] at hy
-    obtain ⟨x', ⟨a, ha⟩, rfl⟩ := hy
-    exact ⟨⟨a, ha⟩, ⟨x', rfl⟩⟩
-  have hfinI : (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).Finite :=
-    (Set.finite_range _).subset Set.inter_subset_right
-  have hcard : t.card ≤ numRationalCusps N := by
-    have h2 := Set.ncard_le_ncard hsub hfinI
-    rw [Set.ncard_coe_finset, Finset.card_image_of_injective t haj] at h2
-    exact h2.trans hle
-  have hge' : numRationalCusps N ≤ Fintype.card (RelPoint strX' (𝟙 (SpecF ℓ))) := by
-    rwa [← Nat.card_eq_fintype_card]
-  obtain ⟨s, hts, hscard⟩ := Finset.exists_superset_card_eq hcard hge'
-  refine ⟨s, fun x' hx' => hts ?_, hscard⟩
-  simp only [ht, Finset.mem_filter, Finset.mem_univ, true_and]
-  exact hx'
-
-/-- **The Mordell–Weil sieve closes at the four residual levels** (sorry
-node — this is the criterion the four levels below rest on).
-
-TRUE, and it is Kenku's determination read through the sieve: at each of
-`45, 54, 63, 75` there is a good odd prime `ℓ` at which only
-`numRationalCusps N = 4` of the points of `X_0(N)(𝔽_ℓ)` have Abel–Jacobi
-class in the image of `J_0(N)(ℚ)`, even though `X_0(N)(𝔽_ℓ)` itself has
-`8, 6, 8, 8` points.  The candidate witnesses from the reconnaissance
-table above are `ℓ = 7, 5, 5, 7` respectively, with the image constrained
-by the auxiliary primes `19, 7, 11, 11`.
-
-**Why the prime is existentially quantified.**  The four rows of the
-table are the *recommended* attempt, not part of the claim.  Committing
-the statement to a specific `ℓ` would make it false if that particular
-reduction happened to leave one extra surviving point — a numerical
-accident that says nothing about the mathematics and that no argument
-here depends on.  What the sieve method asserts, and what the four levels
-actually need, is that SOME good prime cuts the count to the rational
-cusps; that is what is stated.
-
-**Every hypothesis is load-bearing.**  `hfin` is rank `0`: without it
-`J_0(N)(ℚ)` is infinite, `Set.range redJ` is all of the finite group
-`J_0(N)(𝔽_ℓ)` in effect, and no prime cuts anything.  `hX` is what makes
-the statement about `X_0(N)` rather than an arbitrary curve, and `jac` is
-what makes `Set.range redJ` the rational Jacobian rather than an
-arbitrary subgroup.  `hlevel` restricts the leaf to the four levels where
-the sieve is the intended route; see the subsection docstring.
-
-**NO LONGER A LEAF (2026-07-26): PROVEN by decomposition.**  It was
-recorded as irreducible below, together with the precise condition that
-would make it decompose — a field on `IsX0ReductionAt` pinning `redJ`
-through Néron models over `ℤ_ℓ`.  That condition has been built
-(`IsX0NeronDatum`), and the statement now follows from three leaves:
-
-* `neronReduction_injective` — reduction is injective on integral points
-  of an abelian scheme over `ℤ_(ℓ)`, `ℓ` odd (the formal-group fact,
-  shared with `card_le_of_rankZeroJacobian`);
-* `exists_x0NeronDatum` — the integral model and its relative Jacobian
-  exist at every odd `ℓ ∤ N` (Deligne–Rapoport / Igusa, universal in
-  `ℓ`, no sharpness claim);
-* `exists_sharpSievePrime` — some good odd prime makes the sieve sharp
-  (the arithmetic residue).
-
-`redJ_add` and `red_aj` are no longer assumptions anywhere: they are
-theorems about the maps induced by the models, assembled by
-`IsX0NeronDatum.toReduction`.  See the corrected subsection below for
-what changed and why the universal quantifier in the third leaf is safe.
-
-## FORMAL-CONTENT AUDIT (2026-07-26)
-
-Two things about this statement are easy to misread, and one of them
-looks at first like a way to discharge it cheaply.  Both were checked.
-
-**The reduced side is NOT pinned to be a reduction of `X_0(N)`.**  Unlike
-`card_le_of_rankZeroJacobian`, which takes `IsX0Compactification N strX'
-strY' j'` as a hypothesis, this leaf quantifies `X'`, `J'`, `ab'`, `o'`,
-`jac'` and `red` existentially and asks only for `IsJacobianOf` and
-`IsX0ReductionAt`.  So a prover may supply ANY curve-and-Jacobian pair
-over ANY `SpecF ℓ` — `ℓ` is not even required to be prime.  The leaf is
-therefore strictly WEAKER than the classical single-prime sieve, which is
-what makes it the right thing to ask for; but it also means the obvious
-first question is whether some junk witness discharges it.
-
-**NON-VACUITY: no junk witness can.**  The `red_aj` field forces
-`jac'.aj (redX x) = redJ (jac.aj x)` for EVERY rational point `x` of `X`.
-So every element of `jac.aj '' X_0(N)(ℚ)` produces, through `redX`, a
-point of `X'` that satisfies the survival condition and hence lies in
-`s`; and `redJ` is injective, so distinct Abel–Jacobi classes give
-distinct survivors.  Therefore any witness whatsoever already implies
-
-  `#(jac.aj '' X_0(N)(ℚ)) ≤ s.card = numRationalCusps N = 4`,
-
-which — once `aj` is injective, as `HasRankZeroJacobian` provides — is
-Kenku's determination at `N`.  That implication is not an informal remark:
-it is exactly the proof of `card_le_of_sieve` immediately below, so the
-compiler already certifies that this leaf is at least as hard as the
-theorem it is standing in for.  In particular the freedom in the previous
-paragraph buys a prover latitude in CONSTRUCTING a witness and no
-latitude at all in the arithmetic it has to know.
-
-**A cheap refutation test for any PROPOSED witness prime.**  Suppose the
-datum is the genuine one, `X' = X_0(N)_{𝔽_ℓ}` and `J' = J_0(N)_{𝔽_ℓ}`.
-Then `J'` has finitely many `𝔽_ℓ`-points, so an injective `redJ` out of a
-group of the SAME order is surjective, every point of `X_0(N)(𝔽_ℓ)`
-survives, and `s.card = numRationalCusps N` is impossible as soon as
-`#X_0(N)(𝔽_ℓ) > numRationalCusps N`.  Hence:
-
-  *if `#J_0(N)(ℚ) = #J_0(N)(𝔽_ℓ)` then `ℓ` is not a witness prime for the
-  genuine datum* — not merely unlucky, impossible.
-
-This is worth running before recording any witness, because the four
-recommended ones came within one arithmetic coincidence of failing it.
-The table above bounds `#J_0(45)(ℚ)` only by `512`, and `512` is exactly
-`#J_0(45)(𝔽_7)` at the recommended witness `ℓ = 7`; had the rational
-Jacobian attained its recorded bound, `ℓ = 7` would have been refuted.
-
-**The bounds are far from attained, and the recommended witnesses
-survive** (Magma, 2026-07-26, `RationalCuspidalSubgroup(JZero(N))`).  The
-rational cuspidal subgroup is a LOWER bound for `#J_0(N)(ℚ)`, and the
-`gcd` of the Eichler–Shimura counts is an UPPER bound:
-
-| `N` | `dim J_0(N)` | rational cuspidal subgroup | `#J_0(N)(ℚ)` divides | witness `ℓ` | `#J_0(N)(𝔽_ℓ)` | index |
-|-----|--------------|----------------------------|----------------------|-------------|-----------------|-------|
-| 45 | 3 | `32 = [4, 8]`      | `512`  | 7 | `512`   | ≥ 16  |
-| 54 | 4 | `81 = [3, 3, 9]`   | `243`  | 5 | `972`   | ≥ 12  |
-| 63 | 5 | `96 = [2, 48]`     | `6144` | 5 | `6144`  | ≥ 64  |
-| 75 | 5 | `80 = [2, 40]`     | `2560` | 7 | `28160` | ≥ 352 |
-
-Every one of the four lower bounds divides its upper bound, so the two
-computations are consistent; and at each recommended `ℓ` the reduction
-`J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` has index at least `12`, so the refutation test
-is nowhere near triggered and the recorded witnesses stand.  Under the
-generalized Ogg conjecture — known for many `N` — the rational torsion
-IS the rational cuspidal subgroup, and the left column is the exact
-order; nothing here depends on that.
-
-**The upper bounds are SATURATED, and that settles the design question
-above.**  Recomputing the `gcd` of `#J_0(N)(𝔽_ℓ)` over *every* odd good
-`ℓ < 300` — five times the range of the table above — returns `512, 243,
-6144, 2560` unchanged, and the individual counts reproduce the recorded
-table exactly (a third independent confirmation of the banked
-arithmetic).  So no number of auxiliary primes will ever bring the upper
-bound for `#J_0(45)(ℚ)` below `512 = #J_0(45)(𝔽_7)`: the multi-prime
-"pin the group" argument, run to exhaustion, *cannot on its own rule out*
-the case in which `ℓ = 7` is refuted.  The gap between `32` and `512` is
-closed from the cuspidal side, not by more primes.
-
-This is the concrete form of the correction recorded in the subsection
-docstring.  Auxiliary primes bound the ORDER of the rational Jacobian and
-saturate quickly; what the sieve needs is a prime at which the surviving
-Abel–Jacobi classes are only the forced ones, and that is a different
-question, answered here by the existential quantifier over `ℓ` rather
-than by the table.
-
-## WHY THIS LEAF DID NOT DECOMPOSE, and what let it (RESOLVED 2026-07-26)
-
-**Read this as the record of a correct prediction, not as a live
-obstruction.**  Everything below is still true of `IsX0ReductionAt`, and
-it is exactly why the decomposition had to wait for `IsX0NeronDatum`.
-The final paragraph named the missing ingredient; that ingredient was
-then built, and the cut it licenses is the one now taken.
-
-The natural cut is into (i) *good reduction exists* — the reduced pair
-and the injective reduction map at any good odd `ℓ ∤ N`, which is content
-shared with `exists_x0Compactification_mod_prime` and
-`card_le_of_rankZeroJacobian` and would be worth factoring out — and
-(ii) *the cut is sharp at some prime*.  *This does not compose*, and the
-reason is worth recording so it is not rediscovered.
-
-The two halves have to meet at the SAME `ℓ`, so (ii) must be existential
-in `ℓ` and universal in the datum: "there is a good `ℓ` such that FOR
-EVERY reduction datum at `ℓ` the survivors number `numRationalCusps N`".
-That statement is false, or at least unsupported, because
-`IsX0ReductionAt` does not pin `redJ` to be the genuine reduction.  Its
-only constraints are injectivity, additivity, and `red_aj`; so ANY
-injective homomorphism `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` carrying
-`jac.aj '' X_0(N)(ℚ)` into the Abel–Jacobi image is an admissible `redJ`,
-and a subgroup of the right order sitting differently inside
-`J_0(N)(𝔽_ℓ)` can meet that image in more than `numRationalCusps N`
-classes.  Universally quantifying over data therefore risks a FALSE
-sub-leaf, which is worse than the single honest one.
-
-What would make the cut safe is a field on `IsX0ReductionAt` pinning
-`redJ` — as the map induced by a morphism of Néron models over `ℤ_ℓ`, say.
-That needs the integral model of `J_0(N)`, which is exactly the object
-whose absence makes this leaf irreducible in the first place.
-
-**This is what was done.**  The last inference above — "so the
-decomposition becomes available at the same moment the leaf does" — is
-the one place the analysis was too pessimistic, and the gap is worth
-recording.  The integral model is needed as an EXISTENCE statement to
-close the leaf, but only as a STRUCTURE to state the pinning; and a
-structure can be written before anything is known to satisfy it.  So
-`IsX0NeronDatum` was written, the pinned datum's existence became the
-separate leaf `exists_x0NeronDatum`, and the sharpness leaf could then be
-stated universally over pinned data without being false — because the
-pinning removes precisely the freedom (a differently-placed subgroup of
-the right order) that the paragraph above identifies as the danger.
-
-The general lesson, since this development keeps meeting it: **"leaf `A`
-needs theory `T`, which does not exist" does not imply "the decomposition
-of `A` needs `T` to be proven"** — often it needs only `T` to be
-*stated*.  An atomicity verdict should say which of the two it means. -/
-theorem exists_x0Sieve (N : ℕ) (hlevel : N ∈ x0SieveLevels)
-    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
-    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
-    (hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o)
-    (hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
-    ∃ (ℓ : ℕ) (X' J' : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
-      (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
-      (jac' : IsJacobianOf strX' ab' o') (red : IsX0ReductionAt jac jac')
-      (s : Finset (RelPoint strX' (𝟙 (SpecF ℓ)))),
-      (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
-          (∃ a : RelPoint jstr (𝟙 SpecQ), red.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') →
-            x' ∈ s) ∧
-        s.card = numRationalCusps N := by
-  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hsharp⟩ := exists_sharpSievePrime N hlevel
-  obtain ⟨R, toF, X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr, jZ,
-    jstrZ, abZ, oZ, jacZ, ⟨d⟩⟩ := exists_x0NeronDatum N ℓ hℓ hℓ2 hℓN hX jac
-  have hinj := neronReduction_injective ℓ R toF d.base hℓ2 abZ (d.finite_intPoints hfin)
-  obtain ⟨s, hs, hscard⟩ := hsharp d hfin
-  exact ⟨ℓ, X', J', strX', jstr', ab', o', jac', d.toReduction hinj, s, hs, hscard⟩
-
-/-- **The sieve bound, `#X_0(N)(ℚ) ≤ numRationalCusps N`** (PROVEN).
-
-Pure transport along two injections and one commuting square.  Take the
-sieve prime `ℓ` and its reduction data.  A finite set `t` of rational
-points of `X_0(N)` maps into `X_0(N)(𝔽_ℓ)` by `redX`, and that map is
-injective ON `X_0(N)(ℚ)` — not because reduction is injective in any
-general sense, but because it is sandwiched between two injections:
-`aj` is injective (positive genus, carried by `HasRankZeroJacobian`) and
-`redJ` is injective (rank `0`), and `redJ ∘ aj = aj' ∘ redX`.  Every
-point in the image has Abel–Jacobi class `redJ (aj x)`, manifestly in
-`Set.range redJ`, so the image lands inside the sieve's surviving set
-`s`.  Hence `#t ≤ #s = numRationalCusps N`.
-
-Note what does NOT appear: no point count of `X_0(N)(𝔽_ℓ)`.  The bound
-is by the surviving set, which is what makes it strictly stronger than
-`card_le_of_rankZeroJacobian` and is the only reason the four levels
-close at all. -/
-theorem card_le_of_sieve {N : ℕ} (hlevel : N ∈ x0SieveLevels)
-    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
-    (hX : IsX0Compactification N strX strY j) (hJ : HasRankZeroJacobian strX)
-    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N := by
-  classical
-  obtain ⟨J, jstr, ab, o, jac, hfin, hajinj⟩ := hJ
-  obtain ⟨ℓ, X', J', strX', jstr', ab', o', jac', red, s, hs, hscard⟩ :=
-    exists_x0Sieve N hlevel hX jac hfin
-  have hinjOn : Set.InjOn red.redX ↑t := by
-    intro a _ b _ hab
-    refine hajinj (red.redJ_inj ?_)
-    rw [red.red_aj, red.red_aj, hab]
-  have hsub : t.image red.redX ⊆ s := by
-    intro x hx
-    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hx
-    exact hs _ ⟨jac.aj (𝟙 SpecQ) y, red.red_aj y⟩
-  calc t.card = (t.image red.redX).card := (Finset.card_image_of_injOn hinjOn).symm
-    _ ≤ s.card := Finset.card_le_card hsub
-    _ = numRationalCusps N := hscard
-
-/-- **The sieve criterion** (PROVEN): at a residual level, `Y_0(N)(ℚ) = ∅`.
-
-Identical in shape to `y0HasNoRationalPoint_of_witnessPrime`, with the
-counting bound replaced by the sieve bound: the `c = numRationalCusps N`
-rational cusps are `c` distinct rational points of `X_0(N)`, none of them
-the image of a rational point of `Y_0(N)`, so a rational point of
-`Y_0(N)` would give a `Finset` of `X_0(N)(ℚ)` of size `c + 1` — which
-`card_le_of_sieve` forbids.  `y0HasNoRationalPoint_of_isEmpty` then
-propagates emptiness from this one coarse moduli space to every one.
-
-`hlevel` and `hsieve` overlap (`x0SieveLevels` is a sublist of
-`kenkuLevels`); both are asked for rather than deriving one from the
-other, exactly as `y0HasNoRationalPoint_of_witnessPrime` asks for both
-`hlevel` and `htable`.  At the four call sites each is one `decide`. -/
-theorem y0HasNoRationalPoint_of_sieveLevel (N : ℕ) (hN : 0 < N)
-    (hlevel : N ∈ kenkuLevels) (hsieve : N ∈ x0SieveLevels) :
-    Y0HasNoRationalPoint N := by
-  classical
-  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
-  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
-  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
-  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
-  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
-    card_le_of_sieve hsieve hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX) _
-  rw [Finset.card_insert_of_notMem hp, hscard] at hle
-  omega
-
 /-! #### The Néron pinning of the `j`-map, and `red_jm` as a theorem
 
 The FORMAL-CONTENT AUDIT in the docstring of `IsX0JReductionAt` records
@@ -40265,6 +39170,1066 @@ theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
   have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
     card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX)
       hℓ hℓ2 hℓN hX' _ hfin hcard _
+  rw [Finset.card_insert_of_notMem hp, hscard] at hle
+  omega
+
+/-- **The sieve at `d` cuts the survivors down to the rational cusps.**
+
+The conclusion of `exists_x0Sieve`, phrased for one pinned datum so that
+the sharpness leaf can quantify over data. -/
+def IsSharpSieve (N : ℕ) {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) : Prop :=
+  ∃ s : Finset (RelPoint strX' (𝟙 (SpecF ℓ))),
+    (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+        (∃ a : RelPoint jstr (𝟙 SpecQ), d.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') → x' ∈ s) ∧
+      s.card = numRationalCusps N
+
+/-- **`IsReductionBase` forces `ℓ ≠ 0`** (PROVEN).
+
+`IsReductionBase`'s own docstring derives PRIMALITY of `ℓ` from its two
+axioms; this is the weakest consequence of that derivation, and the only
+one the finiteness leaf below needs — `ZMod 0 = ℤ` is infinite, and the
+whole point of reducing at `ℓ` is that the residue field is FINITE.
+
+The proof deliberately avoids the local-ring route
+(`IsReductionBase.isLocalRing`, `IsReductionBase.nontrivialResidue`),
+which is declared far below in the `j`-map subsection and so is not in
+scope here; and `nontrivialResidue` would not suffice anyway, since
+`ZMod 0 = ℤ` is perfectly nontrivial.  Instead: at `ℓ = 0` surjectivity
+produces `r` with `toF r = 2`; `ker_eq_nonunits` makes `r` a unit
+because `2 ≠ 0`; so `2 = toF r` is a unit of `ℤ`, and it is not. -/
+theorem IsReductionBase.ne_zero {ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    (h : IsReductionBase ℓ R toF) : ℓ ≠ 0 := by
+  rintro rfl
+  obtain ⟨r, hr⟩ := h.surjective (2 : ZMod 0)
+  have h2 : (2 : ZMod 0) ≠ 0 := by decide
+  have hu : IsUnit r := by
+    by_contra hnu
+    exact h2 (hr ▸ (h.ker_eq_nonunits r).mpr hnu)
+  have hz : IsUnit (2 : ℤ) := hr ▸ hu.map toF
+  rcases Int.isUnit_iff.mp hz with h1 | h1 <;> omega
+
+/-- **A proper morphism has finitely many `𝔽_ℓ`-points over ANY base
+point** (sorry node — general scheme theory, no modular curves anywhere
+in it).
+
+TRUE: `f` proper is in particular quasi-compact and locally of finite
+type, so `Z` is covered by finitely many affine opens `Spec A_i`, each
+`A_i` of finite type over the coordinate ring of an affine open of `S`.
+A morphism `Spec 𝔽_ℓ ⟶ Z` has a ONE-POINT image, hence factors through
+one of them; and once the base point `g` is fixed, the restriction of
+the induced ring map `A_i →+* 𝔽_ℓ` to that coordinate ring is fixed too,
+so the map is determined by the images of finitely many generators in a
+FINITE ring.  Finitely many opens, finitely many maps each.
+
+`hℓ` is `ℓ ≠ 0` rather than `ℓ.Prime` deliberately — that is the honest
+minimal hypothesis, since all that is used is that `ZMod ℓ` is finite,
+and `ZMod 0 = ℤ` is the only excluded case.
+
+**Why the generality is load-bearing, and not a gratuitous rewrite of
+`finite_relPoint_of_x0Compactification_finiteField`.**  That leaf fixes
+the base to `Spec 𝔽_ℓ` and the base point to `𝟙`.  The Néron-datum
+consumer below has base `Spec ℤ_(ℓ)` and base point the CLOSED POINT
+`SpecLoc.special toF`, so the identity-base-point form does not apply to
+it at all — there is no `IsX0Compactification` over `𝔽_ℓ` anywhere in
+`IsX0NeronDatum`, only one over `Spec ℤ_(ℓ)`.  Generalising the base
+POINT, rather than manufacturing a special-fibre compactification, is
+what keeps this question elementary: the alternative route would have
+made an elementary finiteness fact depend on Deligne–Rapoport.
+
+**THE MERGE FLAGGED HERE HAS BEEN TAKEN** (2026-07-27, authorized, while
+integrating the two rival branches that produced this cluster).  This
+statement and `finite_relPoint_of_x0Compactification_finiteField` were
+independently-written forms of the same fact, and both are now one-liners
+over the single general leaf `finite_relPoint_of_isProper` — proper `f`,
+finite coefficient ring `R`, arbitrary base point `g`.  The generality
+argued for above is exactly what that leaf carries, so nothing is lost:
+`R := ZMod ℓ` and `hℓ` is used only to make `ZMod ℓ` finite.
+
+The earlier verdict — "IRREDUCIBLE at this pin, axis searched:
+SCHEME-THEORETIC; neither the pin, nor `~/cs/FLT`, nor this tree has a
+'finite type over a finite ring implies finitely many sections' lemma" —
+was right about `Mathlib` and wrong about irreducibility.  The residue is
+now split as `exists_finiteType_algHom_injection_of_isProper` (scheme
+theory, open: base change plus an affine-local reduction against
+`IsAffineOpen.isoSpec`, `IsOpenImmersion.lift` and the `ΓSpec`
+adjunction) and `finite_algHom_of_finiteType` (algebra, PROVEN). -/
+theorem finite_relPoint_of_isProper_finiteField {ℓ : ℕ} (hℓ : ℓ ≠ 0)
+    {Z S : Scheme.{0}} {f : Z ⟶ S} (hf : IsProper f) (g : SpecF ℓ ⟶ S) :
+    Finite (RelPoint f g) := by
+  haveI : NeZero ℓ := ⟨hℓ⟩
+  haveI := hf
+  exact finite_relPoint_of_isProper (R := ZMod ℓ) f g
+
+section SharpSieve
+
+variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+
+/-- **The special fibre of a Néron-pinned datum has finitely many
+rational points** (PROVEN 2026-07-27, over
+`finite_relPoint_of_isProper_finiteField`).
+
+The whole of the proof is bookkeeping, and that is the point: `d.spX`
+identifies `X_0(N)(𝔽_ℓ)` with the `𝔽_ℓ`-points of the integral model
+`xstr` taken over the CLOSED POINT `SpecLoc.special toF`, and
+`d.model.isProper` makes that model proper over `Spec ℤ_(ℓ)`.  So the
+remaining content is entirely the general fact that a proper morphism
+has finitely many points valued in a finite field — with no modular
+curve, no `N`, and no Néron datum in it — which is exactly what
+`finite_relPoint_of_isProper_finiteField` states.
+
+`ℓ ≠ 0` is not a hypothesis because `d.base` supplies it
+(`IsReductionBase.ne_zero`, proven above); `IsReductionBase`'s docstring
+derives full primality, but only nonvanishing is needed.
+
+**The route deliberately NOT taken, and the one that was.**  An earlier
+note here proposed discharging this leaf from
+`finite_relPoint_of_x0Compactification_finiteField` by first deducing
+`IsX0Compactification N strX' strY' j'` from `d` — that the special
+fibre of the model is again a compactification of the `Γ₀(N)`-problem.
+That is true and is the natural thing for the integral-model owner to
+produce, but it is the WRONG dependency for this leaf: it would make an
+elementary finiteness fact rest on Deligne–Rapoport.
+
+**Correction, 2026-07-27**: that note also recorded this leaf as sharing
+"the SAME mathematics" as
+`finite_relPoint_of_x0Compactification_finiteField` while being
+*unshareable* with it.  It IS shareable, and it now shares: what was
+needed was never a lemma deducing `IsX0Compactification` from `d`, but a
+generalisation of the SECTIONS statement to `R`-POINTS by base change
+along `g` (`AlgebraicGeometry.IsProper.isStableUnderBaseChange`; sections
+of the pullback are exactly the `R`-points of `f` over `g`).  That
+generalisation lives in `exists_finiteType_algHom_injection_of_isProper`,
+the single open leaf that both consumers now rest on, and it keeps the
+residue elementary — which is what the proof below relies on. -/
+theorem finite_specialFibre_of_x0NeronDatum
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
+    Finite (RelPoint strX' (𝟙 (SpecF ℓ))) :=
+  haveI : Finite (RelPoint xstr (SpecLoc.special toF)) :=
+    finite_relPoint_of_isProper_finiteField d.base.ne_zero d.model.isProper
+      (SpecLoc.special toF)
+  Finite.of_equiv _
+    (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).symm
+
+/-- **Abel–Jacobi is injective on the special fibre** (sorry node —
+geometry, UNIVERSAL in `ℓ`).
+
+TRUE: `x ↦ [x] − [o']` is injective on the points of a curve exactly
+when the genus is positive, since `[x] − [y] = 0` with `x ≠ y` gives a
+degree-`1` map to `ℙ¹`.  `d.model` pins the curve as `X_0(N)`, and
+`hlevel` supplies positivity of the genus — the genus values at the
+ORIGINAL eleven Kenku levels (this list PREDATES the addition of `35`
+and `39` on 2026-07-27 and has not been re-tabulated for them; both have
+genus `3`), in the order they then had in `kenkuLevels`, are
+`1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`, and the sieve levels have genus
+`2, 3, 4, 5, 5` at `26, 45, 54, 63, 75` (Magma, 2026-07-27; `26` was
+added to both lists later that day and is the only sieve level of genus
+`2`).  Positivity is preserved by good
+reduction, so it holds on the special fibre.
+
+This is the same condition that `IsJacobianOf` deliberately does NOT
+carry as a field — see its docstring, "Note what is deliberately NOT a
+field here: injectivity of `aj` on points" — and that
+`HasRankZeroJacobian` carries on the GENERIC fibre.  This leaf is its
+special-fibre counterpart, and it is what lets the sharpness leaf below
+speak about Abel–Jacobi CLASSES rather than about points, which is the
+form in which the count is actually computable.
+
+Stated over `kenkuLevels` rather than `x0SieveLevels` because nothing in
+it is special to the sieve: the seven single-prime levels have positive
+genus too, and a successor proving `card_le_of_rankZeroJacobian` will
+want it there.
+
+**PROVEN 2026-07-27, over `injective_aj_of_one_le_x0Genus_general`.**  The
+earlier verdict — "IRREDUCIBLE: the genus of a curve does not exist in
+this development in any form" — was right about the mathematics and
+wrong about the cut.  What the Néron datum contributes is not genus but
+a TRANSPORT: `d.spX_aj` says Abel–Jacobi on the special fibre is
+Abel–Jacobi on the integral model read through the equivalences `spX`
+and `spJ`, so injectivity here is equivalent to injectivity of
+`jacZ.aj` at the closed point `SpecLoc.special toF`.  The genus content
+is then a statement about `d.model` alone, with no `𝔽_ℓ` and no datum in
+it, and that is where it now lives.
+
+The residue that this factoring exposes, and which is worth saying: the
+missing theorem is needed at an ARBITRARY base and an ARBITRARY test
+object, not over `Spec ℚ` at the identity.  `HasRankZeroJacobian`
+carries only the latter, which is why nothing already in this file could
+be specialised to close this leaf.
+
+`hlevel` is still `N ∈ kenkuLevels` here because the sieve's own
+interface is stated over the Kenku levels; it reaches the geometry only
+as `one_le_x0Genus_of_kenkuLevel N hlevel`, since the Abel–Jacobi leaf
+was moved onto the arithmetic hypothesis `1 ≤ x0Genus N` in the
+2026-07-27 consolidation. -/
+theorem aj_injective_of_x0NeronDatum (hlevel : N ∈ kenkuLevels)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
+    Function.Injective (jac'.aj (𝟙 (SpecF ℓ))) := by
+  intro x y hxy
+  have hz : jacZ.aj (SpecLoc.special toF)
+        (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) x)
+      = jacZ.aj (SpecLoc.special toF)
+        (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) y) := by
+    rw [← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) x,
+      ← d.spX_aj (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _) y, hxy]
+  exact (d.spX (𝟙 (SpecF ℓ)) (SpecLoc.special toF) (Category.id_comp _)).injective
+    (injective_aj_of_one_le_x0Genus_general (one_le_x0Genus_of_kenkuLevel N hlevel)
+      d.model jacZ (SpecLoc.special toF) hz)
+
+end SharpSieve
+
+/-! #### The banked sieve rows, and the two counts they need
+
+`exists_sharpSievePrime_classCount` below is an EXISTENTIAL over primes,
+so the witness `ℓ` and the two point counts at it are banked once, in
+`x0SieveTable`, and every consumer reads them off that table rather than
+rediscovering them.  The counts are then supplied by this file's single
+Eichler–Shimura interface, `IsX0EichlerShimura` — **not** by a second
+cohomological input: the level picks the row, the row picks `ℓ`, and
+`IsX0EichlerShimura` converts the Hecke trace and determinant at
+`(N, ℓ)` into `#X_0(N)(𝔽_ℓ)` and `#J_0(N)(𝔽_ℓ)`.  That is exactly what
+the interface's own docstring asks consumers of `#J_0(N)(𝔽_ℓ)` to do.
+
+What this buys, and it is the whole point of the subsection: the SECOND
+conjunct of the sharpness leaf — the padding bound
+`numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)` — becomes a `decide` against the
+table, so the residual open statement is the intersection bound ALONE,
+with both cardinalities handed to it.
+-/
+
+/-- **The five sieve rows**: `(N, ℓ, #X_0(N)(𝔽_ℓ), #J_0(N)(𝔽_ℓ))`, one
+per level of `x0SieveLevels`, at that level's witness prime.
+
+| `N` | `ℓ` | `#X_0(N)(𝔽_ℓ)` | `#J_0(N)(𝔽_ℓ)` | `#J_0(N)(ℚ)` |
+|-----|-----|------------------|------------------|---------------|
+| `26` | `5` | `10` | `63`    | `21` |
+| `45` | `7` | `8`  | `512`   | `32` |
+| `54` | `5` | `6`  | `972`   | `81` |
+| `63` | `5` | `8`  | `6144`  | `96` |
+| `75` | `7` | `8`  | `28160` | `80` |
+
+The last column is not stored — it is recorded here only because it is
+what makes the rows consistent (`#J_0(N)(ℚ)` divides `#J_0(N)(𝔽_ℓ)` in
+every row, as reduction at a good odd prime forces).
+
+**Both stored columns were recomputed independently with PARI/GP on
+2026-07-27** — `mfinit([N,2],1)` (the CUSPIDAL space; note PARI's space
+code `1` is `S_k`, `0` is `S_k^new`, and using `0` silently gives the
+new-subspace answer, which is wrong at every level here except `26`),
+then `mfheckemat` for `T_ℓ`, then `ℓ + 1 − Tr T_ℓ` and
+`det((ℓ+1)·1 − T_ℓ)`.  The same run reproduces all eleven rows of
+`x0WitnessTable` from the trace column and every `#J_0(N)(𝔽_ℓ)` banked
+anywhere in this file from the determinant column, including the
+auxiliary primes `4096, 6561, 135168, 409600` at `(45,19), (54,7),
+(63,11), (75,11)` and `21, 63, 63, 84` at `N = 26`, `ℓ = 3, 5, 7, 11`.
+So the two columns are the two fields of `IsX0EichlerShimura` evaluated,
+and nothing here is an independent numerical claim.
+
+`26` is at `ℓ = 5` rather than the smaller `ℓ = 3` because `ℓ = 3` is
+REFUTED there — see the sharpness leaf's docstring for the computation,
+which is the one place in this development where a recommended witness
+prime turned out to be impossible rather than merely unlucky. -/
+def x0SieveTable : List (ℕ × ℕ × ℕ × ℕ) :=
+  [(26, 5, 10, 63), (45, 7, 8, 512), (54, 5, 6, 972), (63, 5, 8, 6144),
+    (75, 7, 8, 28160)]
+
+/-- **Every sieve row has a good odd prime and enough points to pad**
+(PROVEN, `decide` at each row).
+
+The last conjunct, `numRationalCusps N ≤ m`, is the padding bound of the
+sharpness leaf's second conjunct: `4 ≤ 10, 8, 6, 8, 8`.  It is a fact
+about the TABLE, so it is discharged here once rather than at each
+consumer.  `numRationalCusps N = 4` at all five levels — the rational
+cusps are those above the divisors `d ∣ N` with `φ(gcd(d, N/d)) = 1`,
+and at these levels exactly four divisors qualify. -/
+theorem x0SieveTable_spec {N ℓ m n : ℕ} (h : (N, ℓ, m, n) ∈ x0SieveTable) :
+    0 < N ∧ ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧ numRationalCusps N ≤ m := by
+  fin_cases h <;>
+    exact ⟨by decide, by decide, by decide, by decide, by decide⟩
+
+/-- **Every sieve level has a row** (PROVEN, one `decide` per level).
+
+This is what turns the table into the EXISTENTIAL the sharpness leaf
+states: `x0SieveLevels` and `x0SieveTable` are maintained as two lists,
+and this is the lemma that keeps them from drifting apart. -/
+theorem exists_x0SieveTable_row (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
+    ∃ ℓ m n : ℕ, (N, ℓ, m, n) ∈ x0SieveTable := by
+  fin_cases hlevel
+  · exact ⟨5, 10, 63, by decide⟩
+  · exact ⟨7, 8, 512, by decide⟩
+  · exact ⟨5, 6, 972, by decide⟩
+  · exact ⟨5, 8, 6144, by decide⟩
+  · exact ⟨7, 8, 28160, by decide⟩
+
+/-- **Every sieve row has a charpoly row, whose trace column is `ℓ + 1 − m`
+and whose value at `ℓ + 1` is `n`** (PROVEN, one `decide` and two
+`norm_num`s per row).
+
+The sieve-level twin of `exists_charpolyRow_of_x0WitnessTable`, and the
+lemma that keeps `x0SieveTable` and `x0HeckeCharpolyTable` from drifting
+apart: BOTH stored columns of `x0SieveTable` are checked here against the
+one banked polynomial, so a row cannot be edited on one side alone. -/
+theorem exists_charpolyRow_of_x0SieveTable {N ℓ m n : ℕ}
+    (h : (N, ℓ, m, n) ∈ x0SieveTable) :
+    ∃ (d : ℕ) (c : List ℤ), 0 < d ∧ (N, ℓ, d, c) ∈ x0HeckeCharpolyTable ∧
+      -((c.getD (d - 1) 0 : ℤ) : ℂ) = (ℓ : ℂ) + 1 - (m : ℂ) ∧
+      ∑ i ∈ Finset.range c.length, ((c.getD i 0 : ℤ) : ℂ) * ((ℓ : ℂ) + 1) ^ i
+        = (n : ℂ) := by
+  fin_cases h
+  · exact ⟨2, [3, 4, 1], two_pos, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨3, [0, 0, 0, 1], three_pos, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨4, [0, 0, -9, 0, 1], by norm_num, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨5, [96, 48, -32, -16, 2, 1], by norm_num, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+  · exact ⟨5, [0, 0, 0, -9, 0, 1], by norm_num, by decide, by norm_num,
+      by norm_num [Finset.sum_range_succ]⟩
+
+section SharpSieveCounts
+
+variable {N ℓ : ℕ} {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+    {X J X' J' XZ YZ JZ : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+    {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+    {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+    {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+
+/-- **The five banked Hecke traces and determinants** (PROVEN 2026-07-28 by
+decomposition over `exists_basis_charpoly_heckeOp`; was the arithmetic half
+of the sieve counts, and the sibling leaf of
+`traceHeckeOp_of_x0WitnessTable`).
+
+`Tr(T_ℓ ∣ S₂(Γ₀(N)))` and `det((ℓ + 1)·1 − T_ℓ ∣ S₂(Γ₀(N)))` at the rows
+of `x0SieveTable`, which by construction are `ℓ + 1 − m` and `n`.  See
+`x0SieveTable` for the values and for the PARI/GP run that produced
+them, and the section docstring above `IsX0EichlerShimura` for why both
+are honest statements about `heckeOp N ℓ` rather than equations in an
+opaque constant.
+
+**The two conjuncts were ONE leaf on purpose, and they are now ONE leaf
+with `traceHeckeOp_of_x0WitnessTable` as well.**  They are the trace and
+the determinant of the SAME operator, so all of the work — a basis of
+`CuspForm (Gamma0GL N) 2`, and the matrix of `T_ℓ` in it — is shared, and
+so is every bit of it with the eleven witness rows.  Splitting any of that
+would let several agents build the same infrastructure several times, which
+is the expense this development pays most often.  Both conjuncts are now
+read off the single banked characteristic polynomial of
+`x0HeckeCharpolyTable`: the trace by `trace_heckeOp_of_charpolyTable`
+(minus the `(d−1)`-st coefficient) and the determinant by
+`det_heckeOp_of_charpolyTable` (the value at `ℓ + 1`), with
+`exists_charpolyRow_of_x0SieveTable` matching the rows.
+
+The dimensions of `S₂(Γ₀(N))` at the five rows are `2, 3, 4, 5, 5`, so
+the largest determinant to be evaluated is `5 × 5`; this is a finite
+computation, not a theory — and it is now the kernel that does it, from
+`x0HeckeCharpolyTable`, rather than a banked scalar. -/
+theorem heckeOp_traceDet_of_x0SieveTable {N ℓ m n : ℕ}
+    (h : (N, ℓ, m, n) ∈ x0SieveTable) :
+    LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
+        = (ℓ : ℂ) + 1 - (m : ℂ) ∧
+      LinearMap.det (((ℓ : ℂ) + 1) • (1 : Module.End ℂ
+          (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
+        - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) = (n : ℂ) := by
+  obtain ⟨d, c, hd, hrow, htr, hdet⟩ := exists_charpolyRow_of_x0SieveTable h
+  exact ⟨by rw [trace_heckeOp_of_charpolyTable hd hrow, htr],
+    by rw [det_heckeOp_of_charpolyTable hrow, hdet]⟩
+
+/-- **`#X_0(N)(𝔽_ℓ) = m` at a sieve row** (PROVEN, by Eichler–Shimura
+against the banked trace).
+
+Pure bookkeeping: the datum's special fibre is again an
+`IsX0Compactification N` over `𝔽_ℓ`
+(`exists_isX0Compactification_specialFibre`), so
+`exists_isX0EichlerShimura` applies to it; `card_curve` then gives the
+count as `ℓ + 1 − Tr T_ℓ` in `ℂ`, the table evaluates the trace, and
+`ℕ → ℂ` is injective — the identical two lines that
+`card_relPoint_x0_finiteField` runs at the witness levels. -/
+theorem card_specialFibre_of_x0SieveTable {m n : ℕ}
+    (hrow : (N, ℓ, m, n) ∈ x0SieveTable)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
+    Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m := by
+  obtain ⟨hN, hℓ, -, hℓN, -⟩ := x0SieveTable_spec hrow
+  obtain ⟨_, _, _, ⟨hc⟩⟩ :=
+    exists_isX0Compactification_specialFibre (jac := jac) hℓ hℓN d
+  have h1 := (exists_isX0EichlerShimura N ℓ hN hℓ hℓN hc).card_curve
+  rw [(heckeOp_traceDet_of_x0SieveTable hrow).1] at h1
+  have h2 : ((Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) : ℕ) : ℂ) = (m : ℂ) := by
+    rw [h1]; ring
+  exact_mod_cast h2
+
+/-- **`#J_0(N)(𝔽_ℓ) = n` at a sieve row** (PROVEN, by Eichler–Shimura
+against the banked determinant).
+
+This is the input the sharpness leaf's irreducibility verdict named
+first — "`#J_0(N)(𝔽_ℓ)` from Eichler–Shimura" — and it is now a theorem
+rather than a missing theory, because `IsX0EichlerShimura.card_jacobian`
+carries it.  Note it quantifies over the datum's `jac'`, which is what
+makes it applicable to the Jacobian the sieve actually speaks about
+rather than to some chosen model. -/
+theorem card_jacobianFibre_of_x0SieveTable {m n : ℕ}
+    (hrow : (N, ℓ, m, n) ∈ x0SieveTable)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ) :
+    Nat.card (RelPoint jstr' (𝟙 (SpecF ℓ))) = n := by
+  obtain ⟨hN, hℓ, -, hℓN, -⟩ := x0SieveTable_spec hrow
+  obtain ⟨_, _, _, ⟨hc⟩⟩ :=
+    exists_isX0Compactification_specialFibre (jac := jac) hℓ hℓN d
+  have h1 :=
+    (exists_isX0EichlerShimura N ℓ hN hℓ hℓN hc).card_jacobian jac'
+  rw [(heckeOp_traceDet_of_x0SieveTable hrow).2] at h1
+  exact_mod_cast h1
+
+/-- **The survivor classes number at most `numRationalCusps N`** (sorry
+node — THE arithmetic residue of the Mordell–Weil sieve, and the only
+part of `exists_sharpSievePrime_classCount` that is not now bookkeeping).
+
+TRUE; see `exists_sharpSievePrime_classCount` below for the five witness
+rows, the survivor computation at `N = 26` (done directly in Magma), and
+the refutation test each witness passes.
+
+**What this leaf is, after the cut.**  `Set.range d.redJ` is an
+isomorphic copy of `J_0(N)(ℚ)` inside `J_0(N)(𝔽_ℓ)` — a subgroup of
+order `21, 32, 81, 96, 80` at the five levels — and
+`Set.range (jac'.aj)` is the set of Abel–Jacobi classes of the `m`
+points of `X_0(N)(𝔽_ℓ)`, of size exactly `m` because Abel–Jacobi is
+injective there (`aj_injective_of_x0NeronDatum`).  The claim is that
+these two subsets of a group of order `n` meet in at most
+`numRationalCusps N = 4` elements — and they meet in exactly `4`, since
+the reductions of the four rational cusps always survive.
+
+**Why the two cardinality hypotheses are load-bearing rather than
+decorative.**  They are what makes this a statement about an EXPLICIT
+finite abelian group: `hn` pins `#J_0(N)(𝔽_ℓ)`, which is what certifies
+that an enumeration of that group is complete, and `hm` pins the size of
+the Abel–Jacobi image.  Neither is derivable inside this section — both
+come from `IsX0EichlerShimura` through the two lemmas above — and
+supplying them here is precisely how the Eichler–Shimura half of the old
+irreducibility verdict was discharged.  **They do not make the leaf
+provable in isolation**, and that is the honest situation: the counts
+say how big the two subsets are, not where they sit, and the
+intersection depends on where they sit.  Closing this leaf needs the
+group presented concretely, which is the second half of the verdict —
+"the Abel–Jacobi image inside it as an explicitly computable finite
+object" — and that half is untouched by this cut.
+
+AXIS SEARCHED: the CARDINALITY axis (what the two point counts alone
+give) and the EICHLER–SHIMURA axis (where the counts come from).  NOT
+searched: whether a concrete presentation of `J_0(N)(𝔽_ℓ)` can be built
+from a plane model of `X_0(N)` at these five levels — genus `2`–`5`,
+`ℓ ≤ 7`, so the divisor class group is a finite computation — which is
+the direction that would actually close it.
+
+The hypotheses carry underscores only because the body is `sorry`. -/
+theorem card_inter_range_redJ_aj_le_of_x0SieveTable {m n : ℕ}
+    (_hrow : (N, ℓ, m, n) ∈ x0SieveTable)
+    (d : IsX0NeronDatum N ℓ R toF jac jac'
+      (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ)
+    (_hfin : Finite (RelPoint jstr (𝟙 SpecQ)))
+    (_hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
+    (_hn : Nat.card (RelPoint jstr' (𝟙 (SpecF ℓ))) = n) :
+    (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).ncard
+      ≤ numRationalCusps N :=
+  sorry
+
+end SharpSieveCounts
+
+/-- **At some good odd prime the reduced rational Jacobian meets the
+Abel–Jacobi image in at most `numRationalCusps N` classes** (PROVEN by
+decomposition, 2026-07-27 — the arithmetic residue of the sieve).
+
+This is `exists_sharpSievePrime` with the two pieces of geometry above
+removed, and it is the statement Magma actually computes: a count of the
+intersection of two subsets of the FINITE abelian group `J_0(N)(𝔽_ℓ)` —
+the subgroup `Set.range d.redJ ≅ J_0(N)(ℚ)` and the set of Abel–Jacobi
+classes `Set.range (jac'.aj)` of the `ℓ + 1 − Tr T_ℓ` points of
+`X_0(N)(𝔽_ℓ)`.
+
+The second conjunct, `numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)`, is what lets
+the consumer inflate a possibly-smaller survivor set to a `Finset` of
+size exactly `numRationalCusps N`, which is the shape `IsSharpSieve`
+asks for.  It is true with room to spare — the five counts are
+`10, 8, 6, 8, 8` against `numRationalCusps N = 4` — and it must be
+stated here rather than separately, because it has to hold at the SAME
+`ℓ` the existential produces.
+
+## `N = 26`, ADDED 2026-07-27 — the one level where the SURVIVORS were
+## computed rather than inferred, and where a recommended prime FAILED
+
+The four original levels bank a witness `ℓ` and a refutation test that
+the witness passes.  At `26` the test does not merely come close to
+firing: **it fires, at the prime the level's own audit recommended.**
+`J_0(26)(ℚ) ≅ ℤ/21` (Magma: `RankBound = 0`, `TorsionSubgroup ≅ ℤ/21`
+on `y² = x⁶ − 8x⁵ + 8x⁴ − 18x³ + 8x² − 8x + 1`), and
+
+    #J_0(26)(𝔽_3) = (3 + 1 − a_3(f₁))(3 + 1 − a_3(f₂)) = 7 · 3 = 21,
+
+so at `ℓ = 3` reduction is injective out of a group of the SAME order,
+hence surjective, hence EVERY point of `X_0(26)(𝔽_3)` survives — all
+`6` of them, against `numRationalCusps 26 = 4`.  `ℓ = 3` is therefore
+impossible, not unlucky, exactly as the refutation test under
+`exists_x0Sieve` predicts.  Any note recommending that the sieve at `26`
+"cut the `6` points of `X_0(26)(𝔽_3)` down to the `4` cusps" is
+describing something that cannot happen.
+
+The witness is `ℓ = 5`, and the survivor count was computed directly
+(Magma: reduce the generator of `J_0(26)(ℚ)`, enumerate the `21`-element
+image subgroup, and test `[Q − Q₀] ∈ image` for each `Q ∈ X_0(26)(𝔽_ℓ)`
+with `Q₀` a rational cusp):
+
+| `ℓ` | `#X_0(26)(𝔽_ℓ)` | `#J_0(26)(𝔽_ℓ)` | image order | survivors |
+|-----|------------------|------------------|-------------|-----------|
+| `3`  | `6`  | `21`   | `21` | `6` — REFUTED |
+| `5`  | `10` | `63`   | `21` | `4` |
+| `7`  | `8`  | `63`   | `21` | `4` |
+| `11` | `8`  | `84`   | `21` | `4` |
+| `17` | `24` | `441`  | `21` | `4` |
+| `19` | `12` | `252`  | `21` | `4` |
+
+and the same `4` at every odd good `ℓ ≤ 71` tested — `23, 29, 31, 37,
+41, 43, 47, 53, 59, 61, 67, 71` — so `26` has not one witness prime but
+every prime except the single refuted one.  The `#X_0(26)(𝔽_ℓ)` column
+reproduces the Eichler–Shimura table under `x0SieveLevels`
+independently, from the curve rather than from the trace form.
+
+Both conjuncts therefore hold at `ℓ = 5`: survivors `4 ≤
+numRationalCusps 26 = 4`, and `numRationalCusps 26 = 4 ≤ 10`.  Note the
+first is EQUALITY — the four rational cusps must survive, so no witness
+prime can ever do better than `4`, at `26` or anywhere else.
+
+**Why one prime, and why the prime is existentially quantified**: see
+the subsection docstring and the FORMAL-CONTENT AUDIT under
+`exists_x0Sieve`.  Both apply verbatim; nothing in this reformulation
+changes them.  The candidate witnesses are `ℓ = 7, 5, 5, 7` at
+`N = 45, 54, 63, 75`, and each passes the refutation test recorded
+there.
+
+**Reconnaissance re-run independently with Magma on 2026-07-27**, and
+the whole banked table reproduces exactly — the four genera `3, 4, 5, 5`;
+the minimising primes `7, 5, 5, 7` over odd good `ℓ < 60` with counts
+`8, 6, 8, 8`; the orders `#J_0(N)(𝔽_ℓ) = 512, 972, 6144, 28160` at those
+primes and `4096, 6561, 135168, 409600` at the auxiliary `19, 7, 11, 11`;
+and the rational cuspidal subgroups `[4,8], [3,3,9], [2,48], [2,40]` of
+orders `32, 81, 96, 80`.  So the refutation test is nowhere near
+triggered at any of the four witnesses and the statement stands.
+
+**Why the universal quantifier over data is still SAFE** — unchanged
+from `exists_sharpSievePrime`, and it is the whole reason
+`IsX0NeronDatum` exists: `base` pins the base, `model` pins the integral
+curve, `genX`/`genJ`/`spX`/`spJ` pin the fibres and `neronJ` pins `redJ`
+as the genuine reduction, so any two data at the same `ℓ` are isomorphic
+and both counts are isomorphism invariants.  Weakening `IsX0NeronDatum`
+to `IsX0ReductionAt` would make this FALSE, exactly as the subsection
+docstring above warns.
+
+`hfin` is load-bearing and is the rank-`0` input: without it
+`J_0(N)(ℚ)` is infinite, `Set.range d.redJ` is unconstrained, and no
+prime cuts anything.
+
+**THE IRREDUCIBILITY VERDICT IS HALF DISCHARGED (2026-07-27), AND THIS
+NODE IS NOW AN ASSEMBLY.**  The verdict read: "IRREDUCIBLE at this pin:
+it needs `#J_0(N)(𝔽_ℓ)` from Eichler–Shimura and the Abel–Jacobi image
+inside it as an explicitly computable finite object."  Both halves were
+right about the mathematics.  The FIRST half is no longer a missing
+theory: `IsX0EichlerShimura` states both point counts in
+`CuspForm (Gamma0GL N) 2` and `heckeOp N ℓ`, so `#J_0(N)(𝔽_ℓ)` arrives
+here as `card_jacobianFibre_of_x0SieveTable` — a theorem — rather than
+as an input nobody can state.  The SECOND half is untouched and is now
+the whole of the residual leaf.
+
+The cut, and what each piece costs:
+
+* `x0SieveTable` — the five rows `(N, ℓ, #X_0(N)(𝔽_ℓ), #J_0(N)(𝔽_ℓ))`,
+  with `x0SieveTable_spec` (good odd prime, and the padding bound) and
+  `exists_x0SieveTable_row` (every sieve level has a row) both PROVEN by
+  `decide`.  This is what supplies the existential witness `ℓ`.
+* `heckeOp_traceDet_of_x0SieveTable` — the banked Hecke trace and
+  determinant at those five rows.  ONE theorem for both, because they are
+  the trace and determinant of the same `≤ 5 × 5` matrix; PROVEN
+  2026-07-28, together with its sibling
+  `traceHeckeOp_of_x0WitnessTable`, over the single merged leaf
+  `exists_basis_charpoly_heckeOp` (the banked characteristic polynomial of
+  `T_ℓ`, `x0HeckeCharpolyTable`).
+* the Eichler–Shimura counts on the datum's special fibre — no longer a
+  leaf at all.  This was a DECLARATION-ORDER ARTIFACT
+  (`isX0EichlerShimura_specialFibre_of_x0NeronDatum`, deleted
+  2026-07-28): its two-line proof —
+  `exists_isX0Compactification_specialFibre` then
+  `exists_isX0EichlerShimura` — lived three thousand lines BELOW the
+  sieve cluster, so Lean could not reach it.  **The cluster has now been
+  relocated below `end SpecialFibre`** and those two lines are inlined
+  at the two consumers `card_specialFibre_of_x0SieveTable` and
+  `card_jacobianFibre_of_x0SieveTable`.
+* `card_inter_range_redJ_aj_le_of_x0SieveTable` — THE arithmetic residue,
+  now stated with both cardinalities in hand.
+
+**The second conjunct is therefore PROVEN**, which is the concrete gain:
+`numRationalCusps N ≤ #X_0(N)(𝔽_ℓ)` reduces to `4 ≤ m` against the
+table.  The route the previous audit proposed for it — quantifying the
+padding bound universally in `ℓ` and lifting it out — is no longer
+needed, and its recorded blockage (this statement's context carries no
+`Spec ℚ`-side modular structure, while `exists_rationalCusps` and
+`HasRankZeroJacobian` are both `Spec ℚ`-hardwired) is now moot rather
+than refuted.  It would still be worth having: a general-base form of
+`exists_rationalCusps` plus injectivity of specialisation on cusps would
+prove the padding bound at EVERY good odd `ℓ` with no Eichler–Shimura at
+all, which is strictly cheaper than the route taken here.  The route
+taken here was preferred only because it reuses an interface the file
+already carries.
+
+**Which axes the RESIDUAL verdict covers.**
+
+* *The geometric axis is EXHAUSTED*, as before:
+  `finite_specialFibre_of_x0NeronDatum` and
+  `aj_injective_of_x0NeronDatum` were split off and are PROVEN, and
+  nothing geometric remains mixed in.
+* *Splitting the two conjuncts into two existentials is BLOCKED* and
+  always will be — they have to hold at the SAME `ℓ`.  This is why the
+  padding bound is discharged from the SAME table row rather than by a
+  separate existential.
+* *The Eichler–Shimura axis is CLOSED*: both counts are theorems here.
+* *NOT searched, and the direction that would close what is left*:
+  a concrete presentation of `J_0(N)(𝔽_ℓ)` and of the Abel–Jacobi image
+  in it, at genus `2`–`5` and `ℓ ≤ 7`.  See
+  `card_inter_range_redJ_aj_le_of_x0SieveTable`. -/
+theorem exists_sharpSievePrime_classCount (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
+    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧
+      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+        {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+        {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+        {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+        {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+        {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+        {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+        {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+        (d : IsX0NeronDatum N ℓ R toF jac jac'
+          (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ),
+        Finite (RelPoint jstr (𝟙 SpecQ)) →
+        (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).ncard
+            ≤ numRationalCusps N ∧
+          numRationalCusps N ≤ Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) := by
+  obtain ⟨ℓ, m, n, hrow⟩ := exists_x0SieveTable_row N hlevel
+  obtain ⟨-, hℓ, hℓ2, hℓN, hcusp⟩ := x0SieveTable_spec hrow
+  refine ⟨ℓ, hℓ, hℓ2, hℓN, ?_⟩
+  intro R toF X J X' J' XZ YZ JZ strX jstr ab o strX' jstr' ab' o' jac jac' xstr ystr
+    jZ jstrZ abZ oZ jacZ d hfin
+  have hm := card_specialFibre_of_x0SieveTable hrow d
+  have hn := card_jacobianFibre_of_x0SieveTable hrow d
+  exact ⟨card_inter_range_redJ_aj_le_of_x0SieveTable hrow d hfin hm hn,
+    by rw [hm]; exact hcusp⟩
+
+/-- **Some good odd prime makes the sieve sharp** (PROVEN by
+decomposition, 2026-07-27 — the arithmetic heart is now
+`exists_sharpSievePrime_classCount`).
+
+TRUE: at each of `45, 54, 63, 75` there is a good odd prime `ℓ` at which
+only `numRationalCusps N = 4` of the points of `X_0(N)(𝔽_ℓ)` have
+Abel–Jacobi class in the image of `J_0(N)(ℚ)`, even though `X_0(N)(𝔽_ℓ)`
+itself has `8, 6, 8, 8` points.  The candidate witnesses are `ℓ = 7, 5,
+5, 7` respectively.  See the FORMAL-CONTENT AUDIT under
+`exists_x0Sieve` for the witness table, the refutation test each witness
+passes, and the reason no number of auxiliary primes replaces this leaf.
+
+**Why the universal quantifier over data is SAFE here**, where the
+subsection docstring above warns it would not be for `IsX0ReductionAt`.
+The warning was that `IsX0ReductionAt` constrains `redJ` only by
+injectivity, additivity and `red_aj`, so a subgroup of the right order
+sitting differently inside `J_0(N)(𝔽_ℓ)` gives an admissible datum with
+MORE survivors — and one such datum would refute a `∀`-statement.
+`IsX0NeronDatum` removes exactly that freedom: `base` pins the base as
+`Spec ℤ_(ℓ)`, `model` pins the integral curve as the smooth model of
+`X_0(N)` there, `genX`/`genJ`/`spX`/`spJ` pin `X'` and `J'` as its
+fibres, and `neronJ` pins `redJ` as the genuine reduction.  Any two data
+at the same `ℓ` are therefore isomorphic, and the survivor count is an
+isomorphism invariant.
+
+**`hfin` is load-bearing** and is the rank-`0` input: without it
+`J_0(N)(ℚ)` is infinite, every point of `X_0(N)(𝔽_ℓ)` survives, and no
+prime cuts anything.  `hlevel` restricts the leaf to the four levels
+where the sieve is the intended route.
+
+**The cut, and what each piece costs.**  The old docstring called this
+"the residue of `exists_x0Sieve` after the model-theoretic content is
+factored out", needing the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside
+`J_0(N)(𝔽_ℓ)` plus Eichler–Shimura for `#J_0(N)(𝔽_ℓ)`.  That is a
+correct description of the ARITHMETIC, and it left two pieces of pure
+geometry mixed in with it, which are now separate leaves:
+
+* `finite_specialFibre_of_x0NeronDatum` — the special fibre has finitely
+  many points (properness over a finite field, universal in `ℓ`);
+* `aj_injective_of_x0NeronDatum` — Abel–Jacobi is injective there
+  (positive genus, universal in `ℓ`);
+* `exists_sharpSievePrime_classCount` — the arithmetic residue proper.
+
+**Both geometric pieces are now PROVEN** (2026-07-27), and what closing
+them showed is that neither was about the Néron datum at all.  Each
+reduced, by pure transport along the datum's `spX`/`spJ` equivalences, to
+a statement about the INTEGRAL MODEL over `Spec ℤ_(ℓ)` at its closed
+point — `finite_relPoint_of_isProper_finiteField` and
+`injective_aj_of_one_le_x0Genus_general` respectively.  The lesson for the
+rest of this subsection is that the datum's role is to TRANSPORT
+questions from the special fibre to the model, and that the honest
+residue of a special-fibre leaf is almost always a base-general
+statement with no `𝔽_ℓ` in it.  Note in particular that both residues
+need an arbitrary base POINT: the identity-base-point forms already in
+this file (`finite_relPoint_of_x0Compactification_finiteField`,
+`HasRankZeroJacobian`) cannot be specialised to either.
+
+Injectivity is what converts the count of surviving POINTS of
+`X_0(N)(𝔽_ℓ)` into a count of surviving CLASSES in `J_0(N)(𝔽_ℓ)`, and
+the class count is the one a computation can produce, since it is an
+intersection of two subsets of a finite abelian group.  Both geometric
+leaves are universal in `ℓ`, so neither has to be found at the same
+prime as the arithmetic — the "the two halves must meet at the same `ℓ`"
+obstruction recorded under `exists_x0Sieve` applies only to the
+existential leaf, and the padding bound `4 ≤ #X_0(N)(𝔽_ℓ)` is carried
+there for exactly that reason.
+
+The proof below is the counting argument in full: the survivors form a
+`Finset`, Abel–Jacobi maps it injectively into
+`Set.range redJ ∩ Set.range aj'`, so it has at most `numRationalCusps N`
+elements, and `Finset.exists_superset_card_eq` inflates it to exactly
+that many inside the finite point set. -/
+theorem exists_sharpSievePrime (N : ℕ) (hlevel : N ∈ x0SieveLevels) :
+    ∃ ℓ : ℕ, ℓ.Prime ∧ ℓ ≠ 2 ∧ ¬ ℓ ∣ N ∧
+      ∀ {R : Subring ℚ} {toF : R →+* ZMod ℓ}
+        {X J X' J' XZ YZ JZ : Scheme.{0}} {strX : X ⟶ SpecQ} {jstr : J ⟶ SpecQ}
+        {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+        {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+        {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+        {jac : IsJacobianOf strX ab o} {jac' : IsJacobianOf strX' ab' o'}
+        {xstr : XZ ⟶ SpecLoc R} {ystr : YZ ⟶ SpecLoc R} {jZ : YZ ⟶ XZ}
+        {jstrZ : JZ ⟶ SpecLoc R} {abZ : AbelianSchemeStruct jstrZ}
+        {oZ : RelPoint xstr (𝟙 (SpecLoc R))} {jacZ : IsJacobianOf xstr abZ oZ}
+        (d : IsX0NeronDatum N ℓ R toF jac jac'
+          (ystr := ystr) (jZ := jZ) (abZ := abZ) jacZ),
+        Finite (RelPoint jstr (𝟙 SpecQ)) → IsSharpSieve N d := by
+  classical
+  have hkenku : N ∈ kenkuLevels := by fin_cases hlevel <;> decide
+  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hcount⟩ := exists_sharpSievePrime_classCount N hlevel
+  refine ⟨ℓ, hℓ, hℓ2, hℓN, ?_⟩
+  intro R toF X J X' J' XZ YZ JZ strX jstr ab o strX' jstr' ab' o' jac jac' xstr ystr
+    jZ jstrZ abZ oZ jacZ d hfin
+  obtain ⟨hle, hge⟩ := hcount d hfin
+  haveI : Finite (RelPoint strX' (𝟙 (SpecF ℓ))) := finite_specialFibre_of_x0NeronDatum d
+  haveI : Fintype (RelPoint strX' (𝟙 (SpecF ℓ))) := Fintype.ofFinite _
+  have haj : Function.Injective (jac'.aj (𝟙 (SpecF ℓ))) :=
+    aj_injective_of_x0NeronDatum hkenku d
+  set t : Finset (RelPoint strX' (𝟙 (SpecF ℓ))) :=
+    Finset.univ.filter (fun x' => ∃ a, d.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') with ht
+  have hsub : ↑(t.image (jac'.aj (𝟙 (SpecF ℓ)))) ⊆
+      Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ))) := by
+    intro y hy
+    simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe, ht, Finset.mem_filter,
+      Finset.mem_univ, true_and] at hy
+    obtain ⟨x', ⟨a, ha⟩, rfl⟩ := hy
+    exact ⟨⟨a, ha⟩, ⟨x', rfl⟩⟩
+  have hfinI : (Set.range d.redJ ∩ Set.range (jac'.aj (𝟙 (SpecF ℓ)))).Finite :=
+    (Set.finite_range _).subset Set.inter_subset_right
+  have hcard : t.card ≤ numRationalCusps N := by
+    have h2 := Set.ncard_le_ncard hsub hfinI
+    rw [Set.ncard_coe_finset, Finset.card_image_of_injective t haj] at h2
+    exact h2.trans hle
+  have hge' : numRationalCusps N ≤ Fintype.card (RelPoint strX' (𝟙 (SpecF ℓ))) := by
+    rwa [← Nat.card_eq_fintype_card]
+  obtain ⟨s, hts, hscard⟩ := Finset.exists_superset_card_eq hcard hge'
+  refine ⟨s, fun x' hx' => hts ?_, hscard⟩
+  simp only [ht, Finset.mem_filter, Finset.mem_univ, true_and]
+  exact hx'
+
+/-- **The Mordell–Weil sieve closes at the four residual levels** (sorry
+node — this is the criterion the four levels below rest on).
+
+TRUE, and it is Kenku's determination read through the sieve: at each of
+`45, 54, 63, 75` there is a good odd prime `ℓ` at which only
+`numRationalCusps N = 4` of the points of `X_0(N)(𝔽_ℓ)` have Abel–Jacobi
+class in the image of `J_0(N)(ℚ)`, even though `X_0(N)(𝔽_ℓ)` itself has
+`8, 6, 8, 8` points.  The candidate witnesses from the reconnaissance
+table above are `ℓ = 7, 5, 5, 7` respectively, with the image constrained
+by the auxiliary primes `19, 7, 11, 11`.
+
+**Why the prime is existentially quantified.**  The four rows of the
+table are the *recommended* attempt, not part of the claim.  Committing
+the statement to a specific `ℓ` would make it false if that particular
+reduction happened to leave one extra surviving point — a numerical
+accident that says nothing about the mathematics and that no argument
+here depends on.  What the sieve method asserts, and what the four levels
+actually need, is that SOME good prime cuts the count to the rational
+cusps; that is what is stated.
+
+**Every hypothesis is load-bearing.**  `hfin` is rank `0`: without it
+`J_0(N)(ℚ)` is infinite, `Set.range redJ` is all of the finite group
+`J_0(N)(𝔽_ℓ)` in effect, and no prime cuts anything.  `hX` is what makes
+the statement about `X_0(N)` rather than an arbitrary curve, and `jac` is
+what makes `Set.range redJ` the rational Jacobian rather than an
+arbitrary subgroup.  `hlevel` restricts the leaf to the four levels where
+the sieve is the intended route; see the subsection docstring.
+
+**NO LONGER A LEAF (2026-07-26): PROVEN by decomposition.**  It was
+recorded as irreducible below, together with the precise condition that
+would make it decompose — a field on `IsX0ReductionAt` pinning `redJ`
+through Néron models over `ℤ_ℓ`.  That condition has been built
+(`IsX0NeronDatum`), and the statement now follows from three leaves:
+
+* `neronReduction_injective` — reduction is injective on integral points
+  of an abelian scheme over `ℤ_(ℓ)`, `ℓ` odd (the formal-group fact,
+  shared with `card_le_of_rankZeroJacobian`);
+* `exists_x0NeronDatum` — the integral model and its relative Jacobian
+  exist at every odd `ℓ ∤ N` (Deligne–Rapoport / Igusa, universal in
+  `ℓ`, no sharpness claim);
+* `exists_sharpSievePrime` — some good odd prime makes the sieve sharp
+  (the arithmetic residue).
+
+`redJ_add` and `red_aj` are no longer assumptions anywhere: they are
+theorems about the maps induced by the models, assembled by
+`IsX0NeronDatum.toReduction`.  See the corrected subsection below for
+what changed and why the universal quantifier in the third leaf is safe.
+
+## FORMAL-CONTENT AUDIT (2026-07-26)
+
+Two things about this statement are easy to misread, and one of them
+looks at first like a way to discharge it cheaply.  Both were checked.
+
+**The reduced side is NOT pinned to be a reduction of `X_0(N)`.**  Unlike
+`card_le_of_rankZeroJacobian`, which takes `IsX0Compactification N strX'
+strY' j'` as a hypothesis, this leaf quantifies `X'`, `J'`, `ab'`, `o'`,
+`jac'` and `red` existentially and asks only for `IsJacobianOf` and
+`IsX0ReductionAt`.  So a prover may supply ANY curve-and-Jacobian pair
+over ANY `SpecF ℓ` — `ℓ` is not even required to be prime.  The leaf is
+therefore strictly WEAKER than the classical single-prime sieve, which is
+what makes it the right thing to ask for; but it also means the obvious
+first question is whether some junk witness discharges it.
+
+**NON-VACUITY: no junk witness can.**  The `red_aj` field forces
+`jac'.aj (redX x) = redJ (jac.aj x)` for EVERY rational point `x` of `X`.
+So every element of `jac.aj '' X_0(N)(ℚ)` produces, through `redX`, a
+point of `X'` that satisfies the survival condition and hence lies in
+`s`; and `redJ` is injective, so distinct Abel–Jacobi classes give
+distinct survivors.  Therefore any witness whatsoever already implies
+
+  `#(jac.aj '' X_0(N)(ℚ)) ≤ s.card = numRationalCusps N = 4`,
+
+which — once `aj` is injective, as `HasRankZeroJacobian` provides — is
+Kenku's determination at `N`.  That implication is not an informal remark:
+it is exactly the proof of `card_le_of_sieve` immediately below, so the
+compiler already certifies that this leaf is at least as hard as the
+theorem it is standing in for.  In particular the freedom in the previous
+paragraph buys a prover latitude in CONSTRUCTING a witness and no
+latitude at all in the arithmetic it has to know.
+
+**A cheap refutation test for any PROPOSED witness prime.**  Suppose the
+datum is the genuine one, `X' = X_0(N)_{𝔽_ℓ}` and `J' = J_0(N)_{𝔽_ℓ}`.
+Then `J'` has finitely many `𝔽_ℓ`-points, so an injective `redJ` out of a
+group of the SAME order is surjective, every point of `X_0(N)(𝔽_ℓ)`
+survives, and `s.card = numRationalCusps N` is impossible as soon as
+`#X_0(N)(𝔽_ℓ) > numRationalCusps N`.  Hence:
+
+  *if `#J_0(N)(ℚ) = #J_0(N)(𝔽_ℓ)` then `ℓ` is not a witness prime for the
+  genuine datum* — not merely unlucky, impossible.
+
+This is worth running before recording any witness, because the four
+recommended ones came within one arithmetic coincidence of failing it.
+The table above bounds `#J_0(45)(ℚ)` only by `512`, and `512` is exactly
+`#J_0(45)(𝔽_7)` at the recommended witness `ℓ = 7`; had the rational
+Jacobian attained its recorded bound, `ℓ = 7` would have been refuted.
+
+**The bounds are far from attained, and the recommended witnesses
+survive** (Magma, 2026-07-26, `RationalCuspidalSubgroup(JZero(N))`).  The
+rational cuspidal subgroup is a LOWER bound for `#J_0(N)(ℚ)`, and the
+`gcd` of the Eichler–Shimura counts is an UPPER bound:
+
+| `N` | `dim J_0(N)` | rational cuspidal subgroup | `#J_0(N)(ℚ)` divides | witness `ℓ` | `#J_0(N)(𝔽_ℓ)` | index |
+|-----|--------------|----------------------------|----------------------|-------------|-----------------|-------|
+| 45 | 3 | `32 = [4, 8]`      | `512`  | 7 | `512`   | ≥ 16  |
+| 54 | 4 | `81 = [3, 3, 9]`   | `243`  | 5 | `972`   | ≥ 12  |
+| 63 | 5 | `96 = [2, 48]`     | `6144` | 5 | `6144`  | ≥ 64  |
+| 75 | 5 | `80 = [2, 40]`     | `2560` | 7 | `28160` | ≥ 352 |
+
+Every one of the four lower bounds divides its upper bound, so the two
+computations are consistent; and at each recommended `ℓ` the reduction
+`J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` has index at least `12`, so the refutation test
+is nowhere near triggered and the recorded witnesses stand.  Under the
+generalized Ogg conjecture — known for many `N` — the rational torsion
+IS the rational cuspidal subgroup, and the left column is the exact
+order; nothing here depends on that.
+
+**The upper bounds are SATURATED, and that settles the design question
+above.**  Recomputing the `gcd` of `#J_0(N)(𝔽_ℓ)` over *every* odd good
+`ℓ < 300` — five times the range of the table above — returns `512, 243,
+6144, 2560` unchanged, and the individual counts reproduce the recorded
+table exactly (a third independent confirmation of the banked
+arithmetic).  So no number of auxiliary primes will ever bring the upper
+bound for `#J_0(45)(ℚ)` below `512 = #J_0(45)(𝔽_7)`: the multi-prime
+"pin the group" argument, run to exhaustion, *cannot on its own rule out*
+the case in which `ℓ = 7` is refuted.  The gap between `32` and `512` is
+closed from the cuspidal side, not by more primes.
+
+This is the concrete form of the correction recorded in the subsection
+docstring.  Auxiliary primes bound the ORDER of the rational Jacobian and
+saturate quickly; what the sieve needs is a prime at which the surviving
+Abel–Jacobi classes are only the forced ones, and that is a different
+question, answered here by the existential quantifier over `ℓ` rather
+than by the table.
+
+## WHY THIS LEAF DID NOT DECOMPOSE, and what let it (RESOLVED 2026-07-26)
+
+**Read this as the record of a correct prediction, not as a live
+obstruction.**  Everything below is still true of `IsX0ReductionAt`, and
+it is exactly why the decomposition had to wait for `IsX0NeronDatum`.
+The final paragraph named the missing ingredient; that ingredient was
+then built, and the cut it licenses is the one now taken.
+
+The natural cut is into (i) *good reduction exists* — the reduced pair
+and the injective reduction map at any good odd `ℓ ∤ N`, which is content
+shared with `exists_x0Compactification_mod_prime` and
+`card_le_of_rankZeroJacobian` and would be worth factoring out — and
+(ii) *the cut is sharp at some prime*.  *This does not compose*, and the
+reason is worth recording so it is not rediscovered.
+
+The two halves have to meet at the SAME `ℓ`, so (ii) must be existential
+in `ℓ` and universal in the datum: "there is a good `ℓ` such that FOR
+EVERY reduction datum at `ℓ` the survivors number `numRationalCusps N`".
+That statement is false, or at least unsupported, because
+`IsX0ReductionAt` does not pin `redJ` to be the genuine reduction.  Its
+only constraints are injectivity, additivity, and `red_aj`; so ANY
+injective homomorphism `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` carrying
+`jac.aj '' X_0(N)(ℚ)` into the Abel–Jacobi image is an admissible `redJ`,
+and a subgroup of the right order sitting differently inside
+`J_0(N)(𝔽_ℓ)` can meet that image in more than `numRationalCusps N`
+classes.  Universally quantifying over data therefore risks a FALSE
+sub-leaf, which is worse than the single honest one.
+
+What would make the cut safe is a field on `IsX0ReductionAt` pinning
+`redJ` — as the map induced by a morphism of Néron models over `ℤ_ℓ`, say.
+That needs the integral model of `J_0(N)`, which is exactly the object
+whose absence makes this leaf irreducible in the first place.
+
+**This is what was done.**  The last inference above — "so the
+decomposition becomes available at the same moment the leaf does" — is
+the one place the analysis was too pessimistic, and the gap is worth
+recording.  The integral model is needed as an EXISTENCE statement to
+close the leaf, but only as a STRUCTURE to state the pinning; and a
+structure can be written before anything is known to satisfy it.  So
+`IsX0NeronDatum` was written, the pinned datum's existence became the
+separate leaf `exists_x0NeronDatum`, and the sharpness leaf could then be
+stated universally over pinned data without being false — because the
+pinning removes precisely the freedom (a differently-placed subgroup of
+the right order) that the paragraph above identifies as the danger.
+
+The general lesson, since this development keeps meeting it: **"leaf `A`
+needs theory `T`, which does not exist" does not imply "the decomposition
+of `A` needs `T` to be proven"** — often it needs only `T` to be
+*stated*.  An atomicity verdict should say which of the two it means. -/
+theorem exists_x0Sieve (N : ℕ) (hlevel : N ∈ x0SieveLevels)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o)
+    (hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
+    ∃ (ℓ : ℕ) (X' J' : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
+      (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
+      (jac' : IsJacobianOf strX' ab' o') (red : IsX0ReductionAt jac jac')
+      (s : Finset (RelPoint strX' (𝟙 (SpecF ℓ)))),
+      (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+          (∃ a : RelPoint jstr (𝟙 SpecQ), red.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') →
+            x' ∈ s) ∧
+        s.card = numRationalCusps N := by
+  obtain ⟨ℓ, hℓ, hℓ2, hℓN, hsharp⟩ := exists_sharpSievePrime N hlevel
+  obtain ⟨R, toF, X', J', XZ, YZ, JZ, strX', jstr', ab', o', jac', xstr, ystr, jZ,
+    jstrZ, abZ, oZ, jacZ, ⟨d⟩⟩ := exists_x0NeronDatum N ℓ hℓ hℓ2 hℓN hX jac
+  have hinj := neronReduction_injective ℓ R toF d.base hℓ2 abZ (d.finite_intPoints hfin)
+  obtain ⟨s, hs, hscard⟩ := hsharp d hfin
+  exact ⟨ℓ, X', J', strX', jstr', ab', o', jac', d.toReduction hinj, s, hs, hscard⟩
+
+/-- **The sieve bound, `#X_0(N)(ℚ) ≤ numRationalCusps N`** (PROVEN).
+
+Pure transport along two injections and one commuting square.  Take the
+sieve prime `ℓ` and its reduction data.  A finite set `t` of rational
+points of `X_0(N)` maps into `X_0(N)(𝔽_ℓ)` by `redX`, and that map is
+injective ON `X_0(N)(ℚ)` — not because reduction is injective in any
+general sense, but because it is sandwiched between two injections:
+`aj` is injective (positive genus, carried by `HasRankZeroJacobian`) and
+`redJ` is injective (rank `0`), and `redJ ∘ aj = aj' ∘ redX`.  Every
+point in the image has Abel–Jacobi class `redJ (aj x)`, manifestly in
+`Set.range redJ`, so the image lands inside the sieve's surviving set
+`s`.  Hence `#t ≤ #s = numRationalCusps N`.
+
+Note what does NOT appear: no point count of `X_0(N)(𝔽_ℓ)`.  The bound
+is by the surviving set, which is what makes it strictly stronger than
+`card_le_of_rankZeroJacobian` and is the only reason the four levels
+close at all. -/
+theorem card_le_of_sieve {N : ℕ} (hlevel : N ∈ x0SieveLevels)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY j) (hJ : HasRankZeroJacobian strX)
+    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N := by
+  classical
+  obtain ⟨J, jstr, ab, o, jac, hfin, hajinj⟩ := hJ
+  obtain ⟨ℓ, X', J', strX', jstr', ab', o', jac', red, s, hs, hscard⟩ :=
+    exists_x0Sieve N hlevel hX jac hfin
+  have hinjOn : Set.InjOn red.redX ↑t := by
+    intro a _ b _ hab
+    refine hajinj (red.redJ_inj ?_)
+    rw [red.red_aj, red.red_aj, hab]
+  have hsub : t.image red.redX ⊆ s := by
+    intro x hx
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hx
+    exact hs _ ⟨jac.aj (𝟙 SpecQ) y, red.red_aj y⟩
+  calc t.card = (t.image red.redX).card := (Finset.card_image_of_injOn hinjOn).symm
+    _ ≤ s.card := Finset.card_le_card hsub
+    _ = numRationalCusps N := hscard
+
+/-- **The sieve criterion** (PROVEN): at a residual level, `Y_0(N)(ℚ) = ∅`.
+
+Identical in shape to `y0HasNoRationalPoint_of_witnessPrime`, with the
+counting bound replaced by the sieve bound: the `c = numRationalCusps N`
+rational cusps are `c` distinct rational points of `X_0(N)`, none of them
+the image of a rational point of `Y_0(N)`, so a rational point of
+`Y_0(N)` would give a `Finset` of `X_0(N)(ℚ)` of size `c + 1` — which
+`card_le_of_sieve` forbids.  `y0HasNoRationalPoint_of_isEmpty` then
+propagates emptiness from this one coarse moduli space to every one.
+
+`hlevel` and `hsieve` overlap (`x0SieveLevels` is a sublist of
+`kenkuLevels`); both are asked for rather than deriving one from the
+other, exactly as `y0HasNoRationalPoint_of_witnessPrime` asks for both
+`hlevel` and `htable`.  At the four call sites each is one `decide`. -/
+theorem y0HasNoRationalPoint_of_sieveLevel (N : ℕ) (hN : 0 < N)
+    (hlevel : N ∈ kenkuLevels) (hsieve : N ∈ x0SieveLevels) :
+    Y0HasNoRationalPoint N := by
+  classical
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
+    card_le_of_sieve hsieve hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX) _
   rw [Finset.card_insert_of_notMem hp, hscard] at hle
   omega
 
