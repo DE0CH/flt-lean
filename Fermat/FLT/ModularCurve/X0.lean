@@ -28254,27 +28254,215 @@ theorem mono_ajHom_of_hasNoFibreAffineLine {X J S : Scheme.{0}} {strX : X ⟶ S}
     ⟨formallyUnramified_ajHom_of_hasNoFibreAffineLine hproper hcurve hconn jac hnr,
       universallyInjective_ajHom_of_hasNoFibreAffineLine hproper hcurve hconn jac hnr⟩
 
+/-- **A commutative ring with two distinct prime ideals is not a field** (PROVEN).
+
+`Mathlib`-shaped, and stated in exactly the form the curve argument below needs: the
+exclusion hypothesis of `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`
+is `¬ IsField 𝒪_{X,x}` (see its docstring on why that, rather than
+`x ≠ genericPoint X`, is the right form), while what one *has* at a non-generic point is
+two distinct points of `Spec 𝒪_{X,x}`. -/
+theorem not_isField_of_ne_prime {R : Type*} [CommRing R] {a b : PrimeSpectrum R} (hab : a ≠ b) :
+    ¬ IsField R := by
+  intro hf
+  refine hab (PrimeSpectrum.ext ?_)
+  have h : ∀ c : PrimeSpectrum R, c.asIdeal = ⊥ := by
+    intro c
+    by_contra hc
+    obtain ⟨x, hxc, hx0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hc
+    obtain ⟨y, hy⟩ := hf.mul_inv_cancel hx0
+    exact c.isPrime.ne_top
+      (Ideal.eq_top_of_isUnit_mem _ hxc (isUnit_iff_exists_inv.mpr ⟨y, hy⟩))
+  rw [h a, h b]
+
+/-- **Every prime ideal of a discrete valuation ring is `⊥` or the maximal ideal**
+(PROVEN).
+
+A DVR is a local principal ideal domain, so a nonzero prime is maximal
+(`IsPrime.to_maximal_ideal`), hence is *the* maximal ideal.  In other words
+`Spec` of a DVR has exactly two points, which is the counting fact the
+specialisation argument below runs on. -/
+theorem eq_bot_or_maximal_of_isDiscreteValuationRing {R : Type*} [CommRing R] [IsDomain R]
+    [IsDiscreteValuationRing R] (a : PrimeSpectrum R) :
+    a.asIdeal = ⊥ ∨ a.asIdeal = IsLocalRing.maximalIdeal R := by
+  rcases eq_or_ne a.asIdeal ⊥ with h | h
+  · exact Or.inl h
+  · exact Or.inr (IsLocalRing.eq_maximalIdeal (_root_.IsPrime.to_maximal_ideal (hpi := a.isPrime) h))
+
+/-- **On a smooth curve over a field every point other than the generic one is CLOSED**
+(PROVEN over `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one`).
+
+Stated contrapositively — `p ⤳ q` with `p ≠ q` forces `p` to be the generic point — which
+is the form the dominance argument consumes.
+
+**No dimension theory is used, and that is the point.**  The classical phrasing ("a proper
+irreducible closed subset of an irreducible one-dimensional scheme is a point") needs the
+Krull dimension of a scheme, which the pin does not have.  What replaces it is the DVR
+leaf already proven in `CurveExtension.lean` together with two `Mathlib` facts about
+`Spec 𝒪_{X,q} ⟶ X`: its range is exactly the set of generisations of `q`
+(`Scheme.range_fromSpecStalk`) and it is injective on points (it is a preimmersion).  So
+three distinct generisations of `q` — the generic point `ξ`, then `p`, then `q` itself —
+would be three distinct points of `Spec 𝒪_{X,q}`; two of them already make `𝒪_{X,q}` a
+non-field, hence a DVR, and a DVR has only the two primes `⊥` and `𝔪`.  Contradiction. -/
+theorem eq_genericPoint_of_specializes_of_ne {K : Type} [Field K]
+    {X : Scheme.{0}} (strX : X ⟶ Spec (CommRingCat.of K)) [IsIntegral X]
+    [SmoothOfRelativeDimension 1 strX] {p q : X} (hpq : p ⤳ q) (hne : p ≠ q) :
+    p = genericPoint X := by
+  by_contra hp
+  have hxp : genericPoint X ⤳ p := genericPoint_specializes p
+  have hxq : genericPoint X ⤳ q := genericPoint_specializes q
+  have hxq' : genericPoint X ≠ q := by
+    intro h
+    rw [← h] at hpq
+    exact hp (Specializes.antisymm hpq hxp).eq
+  have hrange : Set.range (X.fromSpecStalk q).base = {y | y ⤳ q} := Scheme.range_fromSpecStalk
+  obtain ⟨a, ha⟩ : genericPoint X ∈ Set.range (X.fromSpecStalk q).base := hrange ▸ hxq
+  obtain ⟨b, hb⟩ : p ∈ Set.range (X.fromSpecStalk q).base := hrange ▸ hpq
+  obtain ⟨c, hc⟩ : q ∈ Set.range (X.fromSpecStalk q).base := hrange ▸ specializes_refl q
+  have hab : a ≠ b := fun h =>
+    hp (hb.symm.trans ((congrArg (X.fromSpecStalk q).base h.symm).trans ha))
+  have hac : a ≠ c := fun h =>
+    hxq' (ha.symm.trans ((congrArg (X.fromSpecStalk q).base h).trans hc))
+  have hbc : b ≠ c := fun h =>
+    hne (hb.symm.trans ((congrArg (X.fromSpecStalk q).base h).trans hc))
+  haveI : IsDiscreteValuationRing (X.presheaf.stalk q) :=
+    isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one strX
+      (not_isField_of_ne_prime hab)
+  rcases eq_bot_or_maximal_of_isDiscreteValuationRing a with ha' | ha' <;>
+    rcases eq_bot_or_maximal_of_isDiscreteValuationRing b with hb' | hb' <;>
+      rcases eq_bot_or_maximal_of_isDiscreteValuationRing c with hc' | hc' <;>
+        first
+          | exact hab (PrimeSpectrum.ext (ha'.trans hb'.symm))
+          | exact hac (PrimeSpectrum.ext (ha'.trans hc'.symm))
+          | exact hbc (PrimeSpectrum.ext (hb'.trans hc'.symm))
+
+/-- **A morphism from the affine line whose set-theoretic image is a single point factors
+through a `K`-point** (PROVEN).
+
+This is the "constant ⟹ factors through a section" half of
+`isDominant_of_not_exists_section`, isolated because it is pure affine algebra and holds
+for an ARBITRARY target scheme `P` — no curve, no smoothness, no connectedness.
+
+The route is the one the leaf's docstring describes, with the passage through the reduced
+induced structure on `closure {p}` replaced by something cheaper.  Transport `𝔸¹_K` to
+`Spec K[t]` by `AffineSpace.SpecIso`; the image being one point `p`, the morphism factors
+through an affine chart `V ⟶ P` around `p` (`IsOpenImmersion.lift`), so it is `Spec ψ` for
+a ring map `ψ : Γ(V, ⊤) ⟶ K[t]` whose `Spec` is CONSTANT.  Then for every `a`, if `ψ a` is
+a nonunit it lies in some maximal ideal `𝔪`, and constancy identifies `𝔪`'s contraction
+with the contraction of `(0)`, forcing `ψ a = 0`.  So **every value of `ψ` is zero or a
+unit of `K[t]`, hence a constant** (`MvPolynomial.isUnit_iff_eq_C_of_isReduced`) — this is
+the "lands on a unit, i.e. in `K`" step, and no finiteness or degree argument enters.
+Constancy of the values is exactly `ψ ≫ (ε ≫ γ) = ψ` for `γ = C` and `ε = ` evaluation at
+`0`, and applying `Spec` to that identity is the factorisation.
+
+**Note the argument never uses that `u` is a `K`-morphism.**  Being able to name a section
+does not require one: the section is manufactured *from `u` itself* by precomposing with
+the `K`-point `t = 0`, and the ring-level identity above holds whether or not `ψ` is
+`K`-linear. -/
+theorem exists_section_of_base_const {K : Type} [Field K] {P : Scheme.{0}}
+    (u : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ P) {p : P}
+    (hconst : ∀ x, u.base x = p) :
+    ∃ s : Spec (CommRingCat.of K) ⟶ P,
+      u = (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s := by
+  obtain ⟨Y, V, hVimm, hVaff, hpV⟩ :
+      ∃ (Y : Scheme.{0}) (V : Y ⟶ P), IsOpenImmersion V ∧ IsAffine Y ∧
+        p ∈ Set.range V.base :=
+    ⟨P.affineCover.X (P.affineCover.idx p), P.affineCover.f (P.affineCover.idx p),
+      inferInstance, inferInstance, P.affineCover.covers p⟩
+  haveI := hVimm
+  haveI := hVaff
+  set ε : CommRingCat.of (MvPolynomial Unit K) ⟶ CommRingCat.of K :=
+    CommRingCat.ofHom (MvPolynomial.eval (fun _ => (0 : K))) with hε
+  set γ : CommRingCat.of K ⟶ CommRingCat.of (MvPolynomial Unit K) :=
+    CommRingCat.ofHom MvPolynomial.C with hγ
+  set e : (𝔸(Unit; Spec (CommRingCat.of K)) : Scheme) ≅
+      Spec (CommRingCat.of (MvPolynomial Unit K)) :=
+    AffineSpace.SpecIso Unit (CommRingCat.of K) with he
+  set u' : (Spec (CommRingCat.of (MvPolynomial Unit K)) : Scheme) ⟶ P := e.inv ≫ u with hu'
+  have hu'const : ∀ x, u'.base x = p := by
+    intro x; rw [hu']; exact hconst _
+  have hsub : Set.range u'.base ⊆ Set.range V.base := by
+    rintro _ ⟨x, rfl⟩
+    rw [hu'const x]
+    exact hpV
+  obtain ⟨w, hw⟩ : ∃ w : (Spec (CommRingCat.of (MvPolynomial Unit K)) : Scheme) ⟶ Y,
+      w ≫ V = u' := ⟨IsOpenImmersion.lift V u' hsub, IsOpenImmersion.lift_fac V u' hsub⟩
+  have hwconst : ∀ x y, w.base x = w.base y := by
+    intro x y
+    refine (Scheme.Hom.isEmbedding V).injective ?_
+    have h1 : V.base (w.base x) = u'.base x := by rw [← hw]; rfl
+    have h2 : V.base (w.base y) = u'.base y := by rw [← hw]; rfl
+    rw [h1, h2, hu'const, hu'const]
+  obtain ⟨φ, hφ⟩ : ∃ φ : Γ(Y, ⊤) ⟶ CommRingCat.of (MvPolynomial Unit K),
+      Spec.map φ = w ≫ Y.isoSpec.hom := ⟨Spec.preimage _, Spec.map_preimage _⟩
+  have hcomapconst : ∀ x y : PrimeSpectrum (MvPolynomial Unit K),
+      PrimeSpectrum.comap φ.hom x = PrimeSpectrum.comap φ.hom y := by
+    intro x y
+    have h : (Spec.map φ).base x = (Spec.map φ).base y := by
+      rw [hφ]
+      show Y.isoSpec.hom.base (w.base x) = Y.isoSpec.hom.base (w.base y)
+      rw [hwconst x y]
+    exact h
+  have hCval : ∀ a : Γ(Y, ⊤), ∃ c : K, φ.hom a = MvPolynomial.C c := by
+    intro a
+    by_cases hunit : IsUnit (φ.hom a)
+    · obtain ⟨r, _, hr⟩ := MvPolynomial.isUnit_iff_eq_C_of_isReduced.mp hunit
+      exact ⟨r, hr⟩
+    · refine ⟨0, ?_⟩
+      rw [map_zero]
+      obtain ⟨M, hM, hle⟩ := Ideal.exists_le_maximal (Ideal.span {φ.hom a})
+        (fun h => hunit (Ideal.span_singleton_eq_top.mp h))
+      have hmem : a ∈ (PrimeSpectrum.comap φ.hom ⟨M, hM.isPrime⟩).asIdeal :=
+        hle (Ideal.mem_span_singleton_self _)
+      rw [hcomapconst _ (⟨⊥, Ideal.isPrime_bot⟩ : PrimeSpectrum (MvPolynomial Unit K))] at hmem
+      simpa using hmem
+  have hρ : φ ≫ (ε ≫ γ) = φ := by
+    refine CommRingCat.hom_ext (RingHom.ext fun a => ?_)
+    obtain ⟨c, hc⟩ := hCval a
+    simp [hε, hγ, hc]
+  have hspec : Spec.map (ε ≫ γ) ≫ Spec.map φ = Spec.map φ := by
+    rw [← Spec.map_comp, hρ]
+  have hwfix : Spec.map (ε ≫ γ) ≫ w = w := by
+    rw [← cancel_mono Y.isoSpec.hom, Category.assoc, ← hφ]
+    exact hspec
+  have hu'fix : Spec.map (ε ≫ γ) ≫ u' = u' := by
+    rw [← hw, ← Category.assoc, hwfix]
+  refine ⟨Spec.map ε ≫ u', ?_⟩
+  have hstr : e.inv ≫ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+      = Spec.map γ := by
+    rw [he, hγ]
+    exact AffineSpace.SpecIso_inv_over (CommRingCat.of K)
+  have hstr' : (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+      = e.hom ≫ Spec.map γ := by
+    rw [← hstr, ← Category.assoc, e.hom_inv_id, Category.id_comp]
+  rw [hstr', Category.assoc, ← Category.assoc (Spec.map γ) (Spec.map ε) u', ← Spec.map_comp,
+    hu'fix, hu', ← Category.assoc, e.hom_inv_id, Category.id_comp]
+
 /-- **A nonconstant morphism from the affine line to a curve over a field
-is DOMINANT** (sorry leaf, 2026-07-27) — step 1 of the level-free half of
+is DOMINANT** (**PROVEN 2026-07-28**) — step 1 of the level-free half of
 `hasNoFibreAffineLine_of_one_le_x0Genus`.  It mentions neither `N`, nor
 `x0Genus`, nor `IsX0Compactification`, nor the base `S`.
 
-TRUE and elementary.  `hcurve` and `hconn` make `P` INTEGRAL
+`hcurve` and `hconn` make `P` INTEGRAL
 (`isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected`, in
-`CurveExtension.lean`) of relative dimension `1` over `K`, and `𝔸¹_K` is
-irreducible, so the closure of the image of `u` is an irreducible closed
-subset of `P`: either all of `P` — which is `IsDominant u` — or a proper
-one, which in an irreducible `1`-dimensional scheme is a single point
-`p`.  In that case `u` factors through `Spec 𝒪_{Z,p} = Spec κ(p)`, where
-`Z` is the reduced induced structure on `closure {p}` and `p` is its
-generic point (`𝔸¹_K` is reduced, so the scheme-theoretic image is
-reduced).  The resulting `K`-algebra map `κ(p) ⟶ Γ(𝔸¹_K, 𝒪) = K[t]` is
-injective, being a map out of a field, so **every nonzero element of
-`κ(p)` lands on a UNIT of `K[t]`, i.e. in `K`** — no finiteness or
-`κ(p)/K` degree argument is needed — whence `κ(p) = K`.  So `p` is a
-`K`-point, `u` factors through the corresponding section (the map
-`𝔸¹_K ⟶ Spec κ(p) = Spec K` being the structure morphism, by uniqueness),
-and that contradicts `hnc`.
+`CurveExtension.lean`), and `𝔸¹_K` is irreducible, so the whole image of
+`u` lies in the closure of `p := u(η)`, `η` the generic point of `𝔸¹_K`.
+If `p` IS the generic point of `P` that closure is everything and `u` is
+dominant; otherwise `closure {p} = {p}` and the image is the single point
+`p`, which `exists_section_of_base_const` turns into a section,
+contradicting `hnc`.
+
+**What the route actually needed, and what it did not.**  The classical
+step "a proper irreducible closed subset of an irreducible
+`1`-dimensional scheme is a single point" is *dimension theory of
+schemes*, which this pin does not have.  It is replaced by
+`eq_genericPoint_of_specializes_of_ne`: a non-generic point of a smooth
+curve has a DVR local ring, `Spec` of a DVR has exactly two points, and
+`Scheme.range_fromSpecStalk` identifies those two points with the
+generisations — so a third generisation is impossible and `p` is closed.
+Likewise the passage through the reduced induced structure on
+`closure {p}` and the residue field `κ(p)` is not needed: an affine chart
+around `p` and `MvPolynomial.isUnit_iff_eq_C_of_isReduced` deliver the
+"every nonzero value is a unit of `K[t]`, i.e. a constant" step directly.
 
 **`hcurve` IS LOAD-BEARING and the statement is FALSE without it**: on a
 surface — `P = 𝔸(Fin 2; Spec K)`, `u` the inclusion of a coordinate axis
@@ -28285,18 +28473,46 @@ nonconstant and not dominant.
 
 **Properness of `P` is deliberately NOT assumed.**  It is not used, and
 assuming it would make the leaf unusable for the smooth affine curves the
-argument passes through.  `hu` is what makes `u` a `K`-morphism, without
-which "factors through a `K`-point" is not the right form of constancy —
-see the docstring of `HasNoFibreAffineLine`. -/
+argument passes through.
+
+**`_hu` TURNED OUT NOT TO BE LOAD-BEARING** (2026-07-28; this corrects the
+previous version of this docstring, which asserted that it "is what makes
+`u` a `K`-morphism, without which *factors through a `K`-point* is not the
+right form of constancy").  The statement is true without it, and the
+proof does not use it — see the closing paragraph of
+`exists_section_of_base_const`: the section is built from `u` itself by
+precomposing with the `K`-point `t = 0`, so no `K`-linearity is required
+anywhere.  The hypothesis is kept in the signature because the consumers
+hold it anyway and dropping it would change the interface; it is
+underscored so the emptiness is mechanically visible. -/
 theorem isDominant_of_not_exists_section {K : Type} [Field K] {P : Scheme.{0}}
     {strP : P ⟶ Spec (CommRingCat.of K)}
     (hcurve : SmoothOfRelativeDimension 1 strP) (hconn : GeometricallyConnected strP)
     (u : 𝔸(Unit; Spec (CommRingCat.of K)) ⟶ P)
-    (hu : u ≫ strP = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
+    (_hu : u ≫ strP = 𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K))
     (hnc : ∀ s : Spec (CommRingCat.of K) ⟶ P,
       u ≠ (𝔸(Unit; Spec (CommRingCat.of K)) ↘ Spec (CommRingCat.of K)) ≫ s) :
-    IsDominant u :=
-  sorry
+    IsDominant u := by
+  haveI := hcurve
+  haveI : IsIntegral P :=
+    isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected (n := 1) strP hconn
+  have hp : u.base (genericPoint (𝔸(Unit; Spec (CommRingCat.of K)))) = genericPoint P := by
+    by_contra hp
+    have hconst : ∀ x, u.base x = u.base (genericPoint (𝔸(Unit; Spec (CommRingCat.of K)))) := by
+      intro x
+      have hs : u.base (genericPoint (𝔸(Unit; Spec (CommRingCat.of K)))) ⤳ u.base x :=
+        (genericPoint_specializes x).map u.continuous
+      by_contra hxx
+      exact hp (eq_genericPoint_of_specializes_of_ne strP hs (Ne.symm hxx))
+    obtain ⟨s, hs⟩ := exists_section_of_base_const u hconst
+    exact hnc s hs
+  refine ⟨fun x => ?_⟩
+  have hx : x ∈ closure {u.base (genericPoint (𝔸(Unit; Spec (CommRingCat.of K))))} := by
+    rw [hp, ← specializes_iff_mem_closure]
+    exact genericPoint_specializes x
+  have hmem : u.base (genericPoint (𝔸(Unit; Spec (CommRingCat.of K)))) ∈ Set.range u.base :=
+    Set.mem_range_self _
+  exact closure_mono (Set.singleton_subset_iff.mpr hmem) hx
 
 /-- **LÜROTH: a curve over a field dominated by the affine line is
 RATIONAL** (sorry leaf, 2026-07-27) — step 2 of the level-free half of
@@ -28470,7 +28686,9 @@ never appears; and the level-free implication "nonconstant `𝔸¹_K ⟶ X_K`
 ⟹ `X_K` rational" is **Lüroth**, which `Mathlib` already proves
 (`RatFunc.Luroth`).  The three pieces are:
 
-* `isDominant_of_not_exists_section` — nonconstant ⟹ dominant, level-free;
+* `isDominant_of_not_exists_section` — nonconstant ⟹ dominant, level-free
+  (**PROVEN 2026-07-28**, with no dimension theory of schemes: see its
+  docstring and `eq_genericPoint_of_specializes_of_ne`);
 * `birationalOver_affineLine_of_isDominant` — Lüroth, level-free;
 * `not_birationalOver_affineLine_of_one_le_x0Genus` — the genus formula,
   the only piece that mentions `N`.
