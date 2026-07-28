@@ -176,6 +176,13 @@ public import Mathlib.LinearAlgebra.Trace
 public import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 public import Mathlib.LinearAlgebra.Eigenspace.Zero
 public import Mathlib.Algebra.DirectSum.LinearMap
+-- Added 2026-07-28 for `isIntegral_trace_of_isIntegral_endo` below:
+-- `Module.End.hasEigenvalue_iff_isRoot_charpoly` — the roots of the
+-- characteristic polynomial ARE the eigenvalues — is the bridge from a monic
+-- `ℤ`-relation satisfied by an operator to integrality of each of its
+-- eigenvalues, hence of its trace. Nothing else in the pin reaches it: the
+-- only mathlib modules importing it are two `InnerProductSpace` files.
+public import Mathlib.LinearAlgebra.Eigenspace.Charpoly
 -- `ProfiniteGrp.closedSubgroup_eq_sInf_open`, used by
 -- `isOpen_of_isClosed_of_forall_isOpen_index_le` below.
 public import Mathlib.Topology.Algebra.ClopenNhdofOne
@@ -5326,105 +5333,210 @@ theorem exists_int_charpoly_of_forall_trace_pow_int {V : Type*} [AddCommGroup V]
   exists_int_of_monic_of_forall_sum_roots_pow_int (LinearMap.charpoly_monic T)
     fun k hk => by rw [← trace_pow_eq_sum_roots_pow T k]; exact h k hk
 
-/-- **EICHLER–SELBERG RESIDUE — `Tr(T_m)` IS AN ALGEBRAIC INTEGER**
-(sorry leaf, cut 2026-07-27 out of `exists_trace_heckeSubring_int`
-below, which WAS the whole Eichler–Selberg citation and is now PROVEN
-over this leaf alone). This is the entire remaining analytic input of
-the trace route.
+/-- **AN OPERATOR PRESERVING A FINITELY GENERATED FULL `ℤ`-LATTICE IS
+INTEGRAL OVER `ℤ`** (PROVEN, 2026-07-28): if `L ⊆ V` is a finitely
+generated `ℤ`-submodule whose `K`-span is all of `V`, and the `K`-linear
+`T` maps `L` into `L`, then `T` satisfies a monic integer polynomial in
+`End_K V`.
 
-**TWO CLAIMS OF THE OLD CITATION ARE NOW STALE AND ARE CORRECTED HERE.**
+Cayley–Hamilton for the finitely generated `ℤ`-module `L` — mathlib's
+instance `Module.End.isIntegral`, which needs only `Module.Finite ℤ L` —
+gives a monic `p ∈ ℤ[X]` killing the RESTRICTION `T|_L`. Evaluating a
+polynomial commutes with that restriction (`Polynomial.aeval_eq_sum_range`
+plus the powers of `T` matching on `L`), so `p(T)` is a `K`-linear map
+vanishing on `L`, hence on `span_K L = ⊤`, hence zero.
 
-*Stale claim 1: "the Hecke MULTIPLICATION RULE cannot be separated from
-the trace formula, because the `T_n` at composite `n` are never defined
-in this file".* Both halves of that are now false. `heckeOpN` above
-NAMES `T_m` (it is `exists_mem_heckeSubring_qCoeff` made definite by the
-uniqueness `heckeOpN_unique`), and `heckeSubring_le_span_heckeOpN` above
-PROVES `𝕋 ≤ ℤ-span {T_m}` — through the multiplier subring, so that the
-general rule `T_m T_n = Σ_{d ∣ (m,n), (d,N)=1} d · T_{mn/d²}` is never
-needed, only the one-prime recursion `heckeEndo_mul_heckeOpN`. Trace is
-`ℤ`-linear, so integrality on the spanning set `{T_m}` spreads to all of
-`𝕋` by `isIntegral_trace_heckeSubring` below. **The multiplication rule
-is therefore no longer an input to anything in this cluster.**
+NO freeness, torsion-freeness or finite-dimensionality is used, and the
+`ℤ`-RANK of `L` is never compared with `dim_K V`. That distinction is the
+whole reason this lemma is usable where the naive "trace on the lattice"
+argument is not: `ℤ + ℤ√2 ⊆ ℂ` is a full lattice of rank `2` in a
+`1`-dimensional space, so the restricted matrix's trace is NOT the trace
+of `T` — but the monic relation survives, and that is all that is asked
+for here.
 
-*Stale claim 2: "the content is `Tr(T_n) ∈ ℤ`".* The RATIONALITY half of
-that is not analytic and is now PROVEN, as
-`exists_trace_heckeSubring_rat` below, over Shimura's rationality
-theorem `rationalCuspForms_span_eq_top` above: `𝕋` preserves the
-`ℚ`-structure, a `ℚ`-basis of the Sturm-truncated `ℚ`-form is a
-`ℂ`-basis of `S₂(Γ₀(N))`, and the matrix of any `T ∈ 𝕋` in that basis
-has rational entries. So what a successor must supply is ONLY that the
-trace is an ALGEBRAIC INTEGER — `ℤ` is integrally closed in `ℚ`, and
-that step is discharged in `exists_trace_heckeSubring_int` below.
+This is the operator-level companion of
+`exists_span_int_bound_of_stable_lattice` above, which runs the same
+lattice/noetherian argument in the module direction. -/
+theorem isIntegral_of_stable_lattice {K V : Type*} [Field K] [AddCommGroup V] [Module K V]
+    (L : Submodule ℤ V) (hLfg : L.FG) (hLspan : Submodule.span K (L : Set V) = ⊤)
+    (T : Module.End K V) (hstab : ∀ f ∈ L, T f ∈ L) :
+    IsIntegral ℤ T := by
+  haveI : Module.Finite ℤ ↥L := Module.Finite.iff_fg.mpr hLfg
+  let T' : Module.End ℤ ↥L :=
+    { toFun := fun x => ⟨T (x : V), hstab (x : V) x.2⟩
+      map_add' := fun x y => Subtype.ext (map_add T (x : V) (y : V))
+      map_smul' := fun c x => Subtype.ext (map_zsmul T c (x : V)) }
+  have hT'app : ∀ x : ↥L, ((T' x : ↥L) : V) = T (x : V) := fun _ => rfl
+  have hpow : ∀ (k : ℕ) (x : ↥L), (((T' ^ k) x : ↥L) : V) = (T ^ k) (x : V) := by
+    intro k
+    induction k with
+    | zero => intro x; simp
+    | succ k ih =>
+        intro x
+        rw [pow_succ, pow_succ, Module.End.mul_apply, Module.End.mul_apply, ih (T' x), hT'app]
+  obtain ⟨p, hpm, hpe⟩ := Algebra.IsIntegral.isIntegral (R := ℤ) T'
+  have hpe' : Polynomial.aeval T' p = 0 := by rw [Polynomial.aeval_def]; exact hpe
+  refine ⟨p, hpm, ?_⟩
+  rw [← Polynomial.aeval_def]
+  have hvanish : ∀ x ∈ L, (Polynomial.aeval T p) x = 0 := by
+    intro x hx
+    have hx' : ((Polynomial.aeval T p) ((⟨x, hx⟩ : ↥L) : V))
+        = ((Polynomial.aeval T' p) ⟨x, hx⟩ : V) := by
+      rw [Polynomial.aeval_eq_sum_range, Polynomial.aeval_eq_sum_range]
+      simp only [LinearMap.coe_sum, Finset.sum_apply, LinearMap.smul_apply,
+        Submodule.coe_sum, SetLike.val_smul]
+      exact Finset.sum_congr rfl fun i _ => by rw [hpow i]
+    rw [hx', hpe']
+    simp
+  have hker : Submodule.span K (L : Set V) ≤ LinearMap.ker (Polynomial.aeval T p) :=
+    Submodule.span_le.mpr fun y hy => hvanish y hy
+  rw [hLspan] at hker
+  exact LinearMap.ker_eq_top.mp (top_le_iff.mp hker)
 
-**THE ROUTE.** The Eichler–Selberg trace formula, `Γ₀(N)` at weight
-`k = 2`: Zagier's appendix to Lang, *Introduction to Modular Forms*
-(Springer GMW 222), which derives it from the Petersson kernel and the
-class numbers of imaginary quadratic orders; Diamond–Shurman gives the
-weight-`k` statement. It is ABSENT from the pin
-(`grep -rn Eichler .lake/packages/mathlib` is empty) and from
-`~/cs/FLT`, whose Hecke material is quaternionic. Note the formula's
-own terms are NOT individually integral — the Hurwitz class numbers
-carry denominators `2` and `3` — so a successor deriving integrality
-from the formula must do so from the sum, not termwise. A theory build
-is expected here.
+/-- **AN OPERATOR INTEGRAL OVER `ℤ` HAS ALGEBRAIC-INTEGER TRACE**
+(PROVEN, 2026-07-28): over `ℂ`, if `T` satisfies a monic integer
+polynomial then `Tr(T)` is an algebraic integer.
 
-**THE LATTICE ROUTE IS STILL CIRCULAR, and this was re-checked rather
-than inherited.** `T_m` preserves `integralCuspForms N`, which is
-finitely generated (`integralCuspForms_fg` above) and Hecke stable
-(`heckeEndo_mem_integralCuspForms` above), so the determinant trick
-gives a monic `ℤ`-relation — but only on that lattice's `ℂ`-SPAN.
-Upgrading the span to `⊤` is `integralCuspForms_span_eq_top`, and the
-chain `exists_heckeSubring_zForm` → `integralCuspForms_span_eq_top` →
-`exists_heckeStable_lattice` → `heckeSubring_moduleFinite` runs THROUGH
-this cluster (it is recorded twice below, at
-`heckeSubring_moduleFinite_int` and at `exists_heckeSubring_zForm`). So
-the route is circular, not merely out of order. Do not rediscover it.
+`Tr(T)` is the sum, WITH MULTIPLICITY, of the roots of the characteristic
+polynomial — `trace_pow_eq_sum_roots_pow` above at `k = 1`. Each such
+root is an EIGENVALUE (`Module.End.hasEigenvalue_iff_isRoot_charpoly`),
+hence a root of the minimal polynomial, which divides the monic integer
+relation (`minpoly.dvd`); so every root is an algebraic integer, and the
+algebraic integers form a subring.
 
-**THAT CIRCULARITY IS BREAKABLE, AND A CONCURRENT BRANCH BREAKS IT — so
-read the paragraph above as dated, not as permanent** (added
-2026-07-27 by this leaf's author, from branch `flt-lean-217`
-(`f17805f5`); the refuting check is: does anything supply
-`span_ℂ (integralCuspForms N) = ⊤` from OUTSIDE this cluster?). Its new
-leaf `exists_smul_mem_integralCuspForms` — BOUNDED DENOMINATORS, `∃ d`
-with `d • f ∈ S₂(Γ₀(N); ℤ)` for every rational `f` — supplies exactly
-that, from `rationalCuspForms_span_eq_top` alone: clear one denominator
-per rational form and divide it back out. With the span in hand,
-`𝕋 ↪ End_ℤ(S₂(Γ₀(N); ℤ))` is injective because a `T` killing the lattice
-kills its `ℂ`-span, and `End_ℤ` of a finitely generated `ℤ`-module is
-`ℤ`-noetherian — giving `heckeSubring_moduleFinite_int` with NO
-integrality input at all. I checked this argument independently; it is
-correct.
+NO SEMISIMPLICITY, and that is exactly why this route is available here
+and dead for the sibling `heckeSubring_zRank_le`: the identification of
+the trace with the root sum is insensitive to the nilpotent part, since
+both sides read only the characteristic polynomial. -/
+theorem isIntegral_trace_of_isIntegral_endo {V : Type*} [AddCommGroup V] [Module ℂ V]
+    [FiniteDimensional ℂ V] (T : Module.End ℂ V) (hT : IsIntegral ℤ T) :
+    IsIntegral ℤ (LinearMap.trace ℂ V T) := by
+  obtain ⟨p, hpm, hpe⟩ := hT
+  have hp0 : Polynomial.aeval T p = 0 := by rw [Polynomial.aeval_def]; exact hpe
+  have hP : Polynomial.aeval T (p.map (algebraMap ℤ ℂ)) = 0 := by
+    rw [Polynomial.aeval_map_algebraMap]; exact hp0
+  have hroot : ∀ μ ∈ (LinearMap.charpoly T).roots, IsIntegral ℤ μ := by
+    intro μ hμ
+    have hev : Module.End.HasEigenvalue T μ :=
+      (Module.End.hasEigenvalue_iff_isRoot_charpoly T μ).mpr
+        (Polynomial.isRoot_of_mem_roots hμ)
+    have hmin : (minpoly ℂ T).IsRoot μ := Module.End.hasEigenvalue_iff_isRoot.mp hev
+    have hdvd : minpoly ℂ T ∣ p.map (algebraMap ℤ ℂ) := minpoly.dvd ℂ T hP
+    exact ⟨p, hpm, by rw [← Polynomial.eval_map]; exact hmin.dvd hdvd⟩
+  have htr : LinearMap.trace ℂ V T = (LinearMap.charpoly T).roots.sum := by
+    simpa using trace_pow_eq_sum_roots_pow T 1
+  rw [htr, ← mem_integralClosure_iff]
+  exact Subalgebra.multiset_sum_mem _ fun y hy => (mem_integralClosure_iff ℤ ℂ).mpr (hroot y hy)
 
-**CONSEQUENCE FOR THIS LEAF, stated so that nobody has to rediscover
-it.** If that leaf is proven AND `heckeSubring_moduleFinite_int` is
-rewired to consume it, then `isIntegral_heckeEndo` becomes redundant and
-this leaf, `exists_trace_heckeSubring_int` below and
-`exists_int_of_monic_of_forall_sum_roots_pow_int` above are all retired
-together. **Neither condition holds as of this writing**: bounded
-denominators is a sorry (it needs the integral model of `X₀(N)`,
-Deligne–Rapoport, or `H₁(X₀(N), ℤ)` — absent from the pin and from
-`~/cs/FLT`), and the rewiring is a RECUT that its author explicitly
-declined to make, so on that branch `heckeSubring_moduleFinite_int`
-still cites `isIntegral_heckeEndo`. Until both happen this route is
-live. A future owner should check BOTH conditions against the compiler
-before retiring anything here — the recut is a one-declaration edit that
-currently has no owner.
+/-- **`Tr(T_m)` IS AN ALGEBRAIC INTEGER** (PROVEN 2026-07-28 over the
+single citation `exists_smul_mem_integralCuspForms` above — BOUNDED
+DENOMINATORS; formerly a sorry leaf carrying the Eichler–Selberg trace
+formula, cut 2026-07-27 out of `exists_trace_heckeSubring_int` below).
 
-WHY THIS IS WEAKER THAN WHAT IT REPLACES, and why that is the point:
-`IsIntegral ℤ` drops all rationality content, which is exactly the half
-that turned out to be free. Anything proving `Tr(T_m) ∈ ℤ` proves this,
-so nothing is lost by the weakening.
+**EICHLER–SELBERG IS NOT NEEDED, AND THAT IS THE POINT OF THIS ENTRY.**
+The docstring this replaces recorded the LATTICE route as circular —
+`T_m` preserves the finitely generated `integralCuspForms N`
+(`integralCuspForms_fg`, `heckeEndo_mem_integralCuspForms`), so the
+determinant trick gives a monic `ℤ`-relation, but only on that lattice's
+`ℂ`-SPAN, and upgrading the span to `⊤` was `integralCuspForms_span_eq_top`,
+which is proven THROUGH this cluster (`exists_heckeSubring_zForm` →
+`integralCuspForms_span_eq_top` → `exists_heckeStable_lattice` →
+`heckeSubring_moduleFinite`). It also recorded, correctly, that the
+circularity is BREAKABLE, and named the breaker. The breaker has since
+landed on `main`: `exists_heckeOpN_sturm_span` above derives
+`span_ℂ (integralCuspForms N) = ⊤` from `rationalCuspForms_span_eq_top`
+(Shimura, PROVEN above) together with `exists_smul_mem_integralCuspForms`
+(BOUNDED DENOMINATORS) — clear one denominator per rational form and
+divide it back out — citing NOTHING below this point. Those two steps are
+repeated inline in the proof below rather than factored into a shared
+lemma, deliberately: factoring them would edit a declaration this leaf
+does not own.
 
-NO SEMISIMPLICITY IS USED OR NEEDED, which is the entire reason this
-route is available here and dead for the sibling `heckeSubring_zRank_le`
-— see `isIntegral_heckeEndo` below.
+THE ROUTE, in three steps, none of them analytic:
 
-SOUNDNESS: `0 < N` is inherited from the consumer and is NOT needed
-mathematically — at `N = 0` every `heckeOpN 0 m` is the junk value `0`,
-whose trace is `0`. It is kept for uniformity with the siblings. -/
+1. `span_ℂ (integralCuspForms N) = ⊤`, as just described;
+2. `𝕋` preserves `integralCuspForms N` — the multiplier-subring argument
+   lifting `heckeEndo_mem_integralCuspForms` from the generators `T_q` to
+   all of `𝕋`, with `heckeOpN_mem` putting `T_m` in `𝕋`;
+3. `isIntegral_of_stable_lattice` above then makes `T_m` integral over
+   `ℤ` AS AN OPERATOR, and `isIntegral_trace_of_isIntegral_endo` above
+   passes from the operator to its trace through the eigenvalues.
+
+Step 3 is where the rank/dimension gap is crossed: the `ℤ`-rank of
+`integralCuspForms N` is never claimed to equal `dim_ℂ S₂(Γ₀(N))`, so no
+"trace of the integral matrix" argument is made — only the monic
+`ℤ`-relation is transported, and the trace is recovered from the
+characteristic polynomial afterwards.
+
+**WHAT THIS RETIRES.** `exists_smul_mem_integralCuspForms` is now the
+sole arithmetic input of the whole integrality cluster: this leaf,
+`exists_trace_heckeSubring_int` below and `isIntegral_heckeEndo` below
+all rest on it and on nothing else that is open. That is the "three
+sorries retired by one" predicted in the docstrings of
+`exists_smul_mem_integralCuspForms` and `exists_heckeOpN_sturm_span`
+above. Both predicted the retirement would arrive as a RECUT of
+`heckeSubring_moduleFinite_int`; it is executed HERE instead, at the
+leaf, which changes no statement anywhere and so needs no owner but this
+one. `exists_int_of_monic_of_forall_sum_roots_pow_int` and
+`exists_int_charpoly_of_forall_trace_pow_int` above are no longer
+consumed by this leaf, but `isIntegral_heckeEndo`'s own proof still
+consumes them, so nothing has become free-floating.
+
+NO CIRCULARITY, checked rather than assumed:
+`exists_smul_mem_integralCuspForms` is a sorry leaf whose stated route is
+the integral model of `X₀(N)` / `H₁(X₀(N), ℤ)`, it is declared ABOVE
+everything in this cluster, and it cites nothing below itself; the other
+four inputs — `rationalCuspForms_span_eq_top`, `integralCuspForms_fg`,
+`heckeEndo_mem_integralCuspForms`, `heckeOpN_mem` — are all PROVEN above
+with no reference below.
+
+WHAT IS STILL WEAKER THAN WHAT IT REPLACES, and why that remains the
+point: `IsIntegral ℤ` drops all rationality content, which is the half
+that turned out to be free (`exists_trace_heckeSubring_rat` below,
+Shimura). Anything proving `Tr(T_m) ∈ ℤ` proves this.
+
+SOUNDNESS: `0 < N` is now genuinely USED — through
+`rationalCuspForms_span_eq_top`, `integralCuspForms_fg`,
+`heckeEndo_mem_integralCuspForms` and `heckeOpN_mem` — where the old
+Eichler–Selberg statement carried it only for uniformity. -/
 theorem isIntegral_trace_heckeOpN {N : ℕ} (hN : 0 < N) (m : ℕ) :
-    IsIntegral ℤ (LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) (heckeOpN N m)) :=
-  sorry
+    IsIntegral ℤ (LinearMap.trace ℂ (CuspForm (Gamma0GL N) 2) (heckeOpN N m)) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  -- (1) the integral lattice `ℂ`-spans, from BOUNDED DENOMINATORS
+  have hLspan :
+      Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ := by
+    refine top_le_iff.mp ?_
+    rw [← rationalCuspForms_span_eq_top hN]
+    refine Submodule.span_le.mpr fun f hf => ?_
+    obtain ⟨d, hd, hdf⟩ := exists_smul_mem_integralCuspForms hN hf
+    have hdc : ((d : ℂ)) ≠ 0 := by exact_mod_cast hd.ne'
+    have hfe : f = ((d : ℂ))⁻¹ • (((d : ℤ) • f : CuspForm (Gamma0GL N) 2)) := by
+      rw [← Int.cast_smul_eq_zsmul ℂ (d : ℤ) f, smul_smul]
+      push_cast
+      rw [inv_mul_cancel₀ hdc, one_smul]
+    rw [hfe]
+    exact Submodule.smul_mem _ _ (Submodule.subset_span hdf)
+  -- (2) `𝕋` — hence every `T_m` — preserves the lattice
+  have hstab : ∀ U ∈ heckeSubring N, ∀ f ∈ integralCuspForms N,
+      U f ∈ integralCuspForms N := by
+    have hle : heckeSubring N ≤
+        ({ carrier := {U | ∀ f ∈ integralCuspForms N, U f ∈ integralCuspForms N}
+           mul_mem' := fun {_ _} hu hv f hf => hu _ (hv f hf)
+           one_mem' := fun _ hf => hf
+           add_mem' := fun {_ _} hu hv f hf =>
+             (integralCuspForms N).add_mem (hu f hf) (hv f hf)
+           zero_mem' := fun _ _ => (integralCuspForms N).zero_mem
+           neg_mem' := fun {_} hu f hf => (integralCuspForms N).neg_mem (hu f hf) } :
+          Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2))) := by
+      refine Subring.closure_le.mpr ?_
+      rintro U ⟨q, hq, rfl⟩ f hf
+      exact heckeEndo_mem_integralCuspForms hN hq hf
+    exact fun U hU => hle hU
+  -- (3) integrality of the operator, then of its trace
+  exact isIntegral_trace_of_isIntegral_endo _
+    (isIntegral_of_stable_lattice (K := ℂ) (integralCuspForms N) (integralCuspForms_fg hN)
+      hLspan (heckeOpN N m) (hstab _ (heckeOpN_mem hN m)))
 
 /-- **ALGEBRAIC INTEGRALITY OF THE TRACE SPREADS FROM `T_m` TO ALL OF
 `𝕋`** (PROVEN, 2026-07-27): `𝕋 ≤ ℤ-span {T_m}`
