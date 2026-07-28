@@ -26723,6 +26723,15 @@ junk witness and the whole content would silently migrate into the other
 half.  The honest cut is therefore the one taken here — one interface,
 one existence leaf.
 
+**Amended 2026-07-28.**  The *interface* is still one, but the existence
+leaf is no longer atomic.  The rejection above stands exactly as written,
+and it is what identifies the repair: constrain the existential witness
+by MORE than two complex numbers.  Constraining it by the point counts
+over **every** finite extension `𝔽_{ℓⁿ}` — the whole zeta function —
+pins it outright, and that is `IsWeilEigenvalues` below.
+`exists_isX0EichlerShimura` is now assembled from three leaves, two of
+them modular-curve-free.
+
 **Both formulas were re-verified numerically on 2026-07-27** with
 PARI/GP (`mfinit([N,2],1)`, `mfheckemat`, `charpoly`), independently of
 the Magma runs banked elsewhere in this file:
@@ -26785,10 +26794,213 @@ structure IsX0EichlerShimura (N ℓ : ℕ) {X : Scheme.{0}}
             (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
           - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ)
 
-/-- **The Eichler–Shimura input exists at every good prime** (sorry leaf
-— THE cohomological input of this file, and after 2026-07-27 the only
-one; everything the point-count cluster used to take from
-Eichler–Shimura now factors through it).
+/-! #### The cut: the ZETA function, not an abstract `(H, frob)`
+
+The `(H, frob)` split recorded as REJECTED just above is rejected for a
+precise reason, and the reason tells you what a *safe* cut has to do.
+Its existence half — "there is a finite-dimensional `H` with an
+endomorphism `frob` such that `#X = ℓ + 1 − Tr frob` and
+`#J = det (1 − frob)`" — constrains the existentially quantified datum
+at exactly TWO complex numbers, and a two-dimensional `H` realises any
+prescribed pair, so the half is discharged by a junk witness and all the
+content silently migrates into the other half.
+
+`IsWeilEigenvalues` below cuts along the same seam but constrains the
+existentially quantified datum by the point counts over **every** finite
+extension `𝔽_{ℓⁿ}` — i.e. by the whole zeta function — and those
+constraints PIN it: the power sums `Σ αᵢⁿ` for all `n ≥ 1` determine a
+finite multiset of complex numbers up to entries equal to `0`, and both
+values any consumer here reads off (`α.sum` and `∏ (1 − αᵢ)`) are
+unchanged by adjoining zeros.  So there is no junk witness, and the
+existence leaf is exactly Weil's rationality theorem for a curve rather
+than a repackaging of its consumers.  That is the whole difference
+between this cut and the refuted one, and it is the only reason the
+three leaves below are worth having.
+
+**Why a `Multiset ℂ` and not a polynomial.**  The two things used are
+`Tr(Frob ∣ H¹) = α.sum` and `det(1 − Frob ∣ H¹) = ∏ (1 − αᵢ)`; carrying
+the `L`-polynomial instead would force a splitting field on every
+consumer to get at the roots, and buy nothing.  The multiset is *not*
+required to have `2g` entries: no consumer needs it, and the counts pin
+it anyway.
+
+**Why `card_ext` quantifies over an arbitrary finite field.**  It looks
+more general than `𝔽_{ℓⁿ}` and is not: a ring homomorphism out of
+`ZMod ℓ` is unique (it is determined by `1`), and any two finite fields
+of the same cardinality are isomorphic, so `(K, φ)` ranges over ONE
+isomorphism class for each `n`.  Writing it this way rather than through
+`GaloisField ℓ n` keeps the statement free of a splitting-field
+construction.
+
+**Why `card_base` is a separate field.**  `GaloisField ℓ 1` is only
+*isomorphic* to `ZMod ℓ`, and `Field (ZMod ℓ)` needs `Fact ℓ.Prime`,
+so the `n = 1` instance of `card_ext` is not syntactically the count
+over `𝟙 (SpecF ℓ)` that every consumer in this file uses.  `card_base`
+is that instance, transported; it is REDUNDANT mathematically —
+implied by `card_ext` at `n = 1` through any isomorphism
+`GaloisField ℓ 1 ≃ ZMod ℓ` — and is carried as a field only so that the
+transport is paid once, inside `exists_isWeilEigenvalues`, rather than
+at every use site.  It strengthens the structure, so it cannot make any
+consumer false.
+
+**Sanity.**  Genus `0`: `α = 0` (the empty multiset), so `α.sum = 0` and
+the empty product is `1`, giving `#X = ℓ + 1` and `#J = 1` — the counts
+for `ℙ¹` and the trivial abelian variety, matching the genus-`0` remark
+above.  Empty `X`: the counts force `α = {1, ℓ}`, which is consistent
+(`1ⁿ + ℓⁿ = ℓⁿ + 1`), so the existence leaf is not accidentally false
+there either; and `IsJacobianOf` cannot apply, since it demands a base
+point `o : RelPoint strX (𝟙 (SpecF ℓ))`. -/
+
+/-- **The Frobenius eigenvalue multiset of a curve over `𝔽_ℓ`**, pinned
+by the point counts of the curve over every finite extension.
+
+Classically `α` is the multiset of eigenvalues of geometric Frobenius on
+`H¹_ét(X_{𝔽̄_ℓ}, ℚ_ℓ)`, of size `2g`; here it is characterised, not
+constructed, by the Lefschetz counts it produces.  See the section
+docstring above for why the pinning is over ALL extensions (that is what
+makes `exists_isWeilEigenvalues` non-vacuous), for why the datum is a
+multiset, and for why `card_base` is carried separately. -/
+structure IsWeilEigenvalues (ℓ : ℕ) {X : Scheme.{0}} (strX : X ⟶ SpecF ℓ)
+    (α : Multiset ℂ) : Prop where
+  /-- **The count over the base field**: `#X(𝔽_ℓ) = ℓ + 1 − Σ αᵢ`.  The
+  `n = 1` instance of `card_ext`, transported along
+  `GaloisField ℓ 1 ≃ ZMod ℓ`; see the section docstring. -/
+  card_base : ((Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) : ℕ) : ℂ) = (ℓ : ℂ) + 1 - α.sum
+  /-- **The count over every finite extension**:
+  `#X(𝔽_{ℓⁿ}) = ℓⁿ + 1 − Σ αᵢⁿ`.  This is the whole zeta function of
+  `X`, and it is what pins `α`. -/
+  card_ext : ∀ (n : ℕ), 0 < n → ∀ (K : Type) [Field K] [Finite K]
+      (φ : ZMod ℓ →+* K), Nat.card K = ℓ ^ n →
+      ((Nat.card (RelPoint strX (Spec.map (CommRingCat.ofHom φ))) : ℕ) : ℂ)
+        = (ℓ : ℂ) ^ n + 1 - (α.map (fun a => a ^ n)).sum
+
+/-- **Every smooth proper geometrically connected curve over `𝔽_ℓ` has a
+Frobenius eigenvalue multiset** (sorry leaf — the RATIONALITY half of
+Weil's theorem for curves, and **modular-curve-free**: nothing in this
+statement mentions `X_0(N)`, `N`, or a moduli problem, which is exactly
+the point of splitting it off here).
+
+TRUE, and it is the oldest of the Weil conjectures: for a smooth proper
+geometrically connected curve `C/𝔽_q` the zeta function
+`Z(C, T) = exp(Σ_{n≥1} #C(𝔽_{q^n}) Tⁿ / n)` is a rational function
+`P(T)/((1 − T)(1 − qT))` with `P ∈ ℤ[T]` of degree `2g`, and writing
+`P(T) = ∏ (1 − αᵢ T)` gives `#C(𝔽_{q^n}) = qⁿ + 1 − Σ αᵢⁿ`.  Note that
+only RATIONALITY is asked for — the Riemann hypothesis `|αᵢ| = √q` and
+the functional equation are NOT fields of `IsWeilEigenvalues`, because
+no consumer in this file needs them.  F. K. Schmidt's proof of
+rationality is Riemann–Roch on `C` plus the finiteness of the divisor
+class group of degree `0`; the étale-cohomological proof is the one the
+section docstring quotes, but it is not the only route.
+
+**WHAT IS MISSING.**  There is no zeta function of a scheme anywhere in
+this project, in `Mathlib` at our pin, or in `~/cs/FLT`; there is no
+Riemann–Roch for a curve over a general field either (`Mathlib` has
+`RiemannRoch` only in the function-field/`AdicValuation` setting, which
+is not connected to `Scheme` here).  Either route is a theory build.
+**The étale-cohomology route additionally needs the whole `H¹`
+machinery; the Riemann–Roch route does not**, which is worth recording,
+because it means this leaf is NOT gated on étale cohomology even though
+the section docstring above derives it from Grothendieck–Lefschetz.
+
+**Non-vacuity of the class quantified over** is
+`exists_x0Compactification_finiteField` composed with
+`IsX0Compactification`'s `isProper`/`smooth`/`connected` fields. -/
+theorem exists_isWeilEigenvalues (ℓ : ℕ) (_hℓ : ℓ.Prime) {X : Scheme.{0}}
+    (strX : X ⟶ SpecF ℓ) (_hproper : IsProper strX)
+    (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) :
+    ∃ α : Multiset ℂ, IsWeilEigenvalues ℓ strX α :=
+  sorry
+
+/-- **Lefschetz for the Jacobian: `#J(𝔽_ℓ) = ∏ (1 − αᵢ)`** (sorry leaf —
+the second half of Grothendieck–Lefschetz, and again
+**modular-curve-free**; the docstring of `exists_isX0EichlerShimura`
+called this half out as "worth stating separately if it is ever built",
+and this is it).
+
+TRUE.  For an abelian variety `A/𝔽_q` one has
+`#A(𝔽_q) = deg(1 − F) = det(1 − F ∣ T_ℓ A) = ∏ (1 − αᵢ)`, and for the
+Jacobian of a curve `C` the eigenvalues of `F` on `T_ℓ J` are exactly
+the eigenvalues of Frobenius on `H¹(C)` — which is what
+`IsWeilEigenvalues` supplies.  Equivalently `#J(𝔽_q) = P(1)`, `P` the
+numerator of the zeta function of `C`.
+
+**Not vacuous, and not junk-dischargeable**: `α` is universally
+quantified and pinned by `hα` (see the section docstring), so this is an
+equation between two determined complex numbers, not a constraint that a
+witness could be chosen to satisfy.
+
+**WHAT IS MISSING**: Tate modules of abelian schemes, the degree of an
+isogeny, and the identification of `deg(1 − F)` with a point count.  The
+project has `Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` but no
+Frobenius endomorphism of an abelian scheme in characteristic `p` and no
+`deg`. -/
+theorem card_jacobian_of_isWeilEigenvalues {ℓ : ℕ} (_hℓ : ℓ.Prime) {X : Scheme.{0}}
+    {strX : X ⟶ SpecF ℓ} (_hproper : IsProper strX)
+    (_hsmooth : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX)
+    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α)
+    {J : Scheme.{0}} {jstr : J ⟶ SpecF ℓ} {ab : AbelianSchemeStruct jstr}
+    {o : RelPoint strX (𝟙 (SpecF ℓ))} (_hjac : IsJacobianOf strX ab o) :
+    ((Nat.card (RelPoint jstr (𝟙 (SpecF ℓ))) : ℕ) : ℂ)
+      = (α.map (fun a => 1 - a)).prod :=
+  sorry
+
+/-- **Eichler–Shimura: the Frobenius eigenvalues of `X_0(N)_{𝔽_ℓ}` are
+the `ℓ`-Weil transform of the `T_ℓ`-eigenvalues** (sorry leaf — the ONLY
+modular-curve-specific half of the cut, and the one that genuinely needs
+Deligne–Rapoport).
+
+TRUE.  Eichler–Shimura pairs the `2g` Frobenius eigenvalues as
+`αᵢ, βᵢ` with `αᵢ + βᵢ = aᵢ` and `αᵢ βᵢ = ℓ`, the `aᵢ` being the
+eigenvalues of `T_ℓ` on `S_2(Γ_0(N))`.  The two consequences stated here
+are the only ones used:
+
+    α.sum          = Σ (αᵢ + βᵢ) = Σ aᵢ    = Tr(T_ℓ)
+    ∏ (1 − αᵢ)     = ∏ (1 − αᵢ)(1 − βᵢ)
+                   = ∏ (1 − aᵢ + ℓ)        = det((ℓ + 1)·1 − T_ℓ)
+
+using `(1 − α)(1 − β) = 1 − (α + β) + αβ = ℓ + 1 − a` at each `i`.  Both
+columns were validated numerically on 2026-07-27 with PARI/GP and again
+independently — see the section docstring above: the trace column
+reproduces all eleven rows of `x0WitnessTable`, and the determinant
+column reproduces every `#J_0(N)(𝔽_ℓ)` banked in this file
+(`21, 63, 63, 84` at `N = 26`; `512, 972, 6144, 28160` and
+`4096, 6561, 135168, 409600` at the four sieve levels).
+
+**Stated as a consequence of the pinning rather than as the congruence
+relation itself.**  What a full Eichler–Shimura statement asserts is an
+equality of characteristic polynomials; the two identities above are
+strictly weaker and are all that `IsX0EichlerShimura` needs, so the leaf
+is stated in the weaker form.  It is *not* thereby vacuous: `α` is
+universally quantified and pinned by `hα`, so nothing here can be
+discharged by choosing a witness.
+
+**WHAT IS MISSING** (this is item 3 of the audit on
+`exists_isX0EichlerShimura` and is unchanged by the cut): the congruence
+relation `Frob + ℓ·Frob^∨ = T_ℓ` on `J_0(N)_{𝔽_ℓ}`, which needs the
+moduli interpretation of Frobenius on the special fibre — that the two
+degeneracy maps `X_0(Nℓ) ⇉ X_0(N)` reduce to Frobenius and its
+transpose.  That is downstream of the same Deligne–Rapoport integral
+model as `exists_isCoarseModuliY0_isSmoothCurve_field`. -/
+theorem isWeilEigenvalues_x0_eichlerShimura (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ}
+    {j : Y ⟶ X} (_h : IsX0Compactification N strX strY j)
+    {α : Multiset ℂ} (_hα : IsWeilEigenvalues ℓ strX α) :
+    α.sum = LinearMap.trace ℂ
+        (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2)
+        (_root_.GaloisRepresentation.Modularity.heckeOp N ℓ) ∧
+      (α.map (fun a => 1 - a)).prod =
+        LinearMap.det (((ℓ : ℂ) + 1) • (1 : Module.End ℂ
+            (CuspForm (_root_.GaloisRepresentation.Modularity.Gamma0GL N) 2))
+          - _root_.GaloisRepresentation.Modularity.heckeOp N ℓ) :=
+  sorry
+
+/-- **The Eichler–Shimura input exists at every good prime** (**PROVEN
+2026-07-28** from the three leaves above — it was THE cohomological input
+of this file and is now the assembly of a zeta-function cut; the audit
+below is kept in full because it is still the audit of the three
+leaves, and because its `AXES SEARCHED` section is what the cut answers).
 
 TRUE, and classical: Deligne–Rapoport gives `X_0(N)` a smooth proper
 model over `ℤ[1/N]`, so at `ℓ ∤ N` the special fibre is a smooth proper
@@ -26831,13 +27043,50 @@ the obstruction is no longer where an earlier audit put it.
 REJECTED as vacuous; see the section docstring for the two-dimensional
 junk witness that discharges it.  **NOT searched**: whether a
 `p`-divisible-group or a crystalline substitute for `H¹` could carry
-these two counts with less machinery than étale cohomology. -/
-theorem exists_isX0EichlerShimura (N ℓ : ℕ) (_hN : 0 < N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N)
+these two counts with less machinery than étale cohomology.
+
+**CUT AXIS, REOPENED AND CLOSED POSITIVELY (2026-07-28).**  The verdict
+above searched the cut axis at one point only — an abstract `(H, frob)`
+— and was right about that point and wrong about the axis.  What made
+the `(H, frob)` split vacuous is that its existence half constrained the
+witness at exactly two complex numbers; the fix is not to abandon the
+axis but to constrain the witness by MORE data, and the data is already
+classical: the point counts over **every** finite extension `𝔽_{ℓⁿ}`.
+Those pin the Frobenius eigenvalue multiset (power sums of all orders
+determine a finite multiset up to zeros, and both consumers are
+zero-insensitive), so no junk witness exists.  That is
+`IsWeilEigenvalues`, and this theorem is now its three-leaf assembly:
+
+* `exists_isWeilEigenvalues` — rationality of the zeta function of a
+  smooth proper geometrically connected curve over `𝔽_ℓ`.
+  **Modular-curve-free**, and NOT gated on étale cohomology: the
+  Riemann–Roch (F. K. Schmidt) route proves it without any `H¹`.
+* `card_jacobian_of_isWeilEigenvalues` — `#J(𝔽_ℓ) = ∏ (1 − αᵢ)`.
+  **Modular-curve-free**; this is exactly the half item 2 above said was
+  "worth stating separately if it is ever built".
+* `isWeilEigenvalues_x0_eichlerShimura` — the Eichler–Shimura relation,
+  in the weak `(sum, product)` form the two count fields need.  This is
+  the only leaf that mentions `X_0(N)` at all, and it is the only one
+  that is genuinely downstream of Deligne–Rapoport (item 3).
+
+So items 1–3 of `WHAT IS MISSING` are unchanged as mathematics, but they
+are now distributed over three named leaves, two of which are reusable
+outside the modular-curve subtree, and item 1 is revealed to be a
+requirement of *one* route to leaf 1 rather than of the node. -/
+theorem exists_isX0EichlerShimura (N ℓ : ℕ) (hN : 0 < N) (hℓ : ℓ.Prime)
+    (hℓN : ¬ ℓ ∣ N)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
-    (_h : IsX0Compactification N strX strY j) :
-    IsX0EichlerShimura N ℓ strX :=
-  sorry
+    (h : IsX0Compactification N strX strY j) :
+    IsX0EichlerShimura N ℓ strX := by
+  obtain ⟨α, hα⟩ :=
+    exists_isWeilEigenvalues ℓ hℓ strX h.isProper h.smooth h.connected
+  obtain ⟨hsum, hprod⟩ :=
+    isWeilEigenvalues_x0_eichlerShimura N ℓ hN hℓ hℓN h hα
+  refine ⟨?_, ?_⟩
+  · rw [hα.card_base, hsum]
+  · intro J jstr ab o hjac
+    rw [card_jacobian_of_isWeilEigenvalues hℓ h.isProper h.smooth h.connected hα hjac,
+      hprod]
 
 /-- **Eichler–Shimura / Lefschetz: the point count of the special fibre
 is `ℓ + 1 − Tr(T_ℓ ∣ S₂(Γ₀(N)))`** (PROVEN 2026-07-27 — it is the
