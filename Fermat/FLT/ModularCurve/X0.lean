@@ -45911,6 +45911,92 @@ theorem exists_modularHeckeAction_atkinLehnerCommuting (N : ℕ) {X Y J : Scheme
 that carries the decomposition.  It mentions `w_N` nowhere: that is the
 point of the cut.
 
+**FALSITY AUDIT (2026-07-28) — THIS LEAF IS FALSE AS STATED.  DO NOT
+ATTEMPT TO PROVE IT.  The defect is NOT this cut; it is inherited, and the
+repair is one line in `IsModularHeckeAction`.  See the plan at the end.**
+
+*The gap in one sentence*: `IsModularHeckeAction` pins `T` **only at primes
+`ℓ ∤ N`** (read its body — the quantifier is `∀ ℓ, ℓ.Prime → ¬ ℓ ∣ N`),
+while `IsHeckeIsotypicDecomposition.isotypic` and `.equivariant` constrain
+`D.T n` at **every** `n` coprime to `N`.  Demanding `D.T = T` therefore
+imposes eigen-system conditions on arities at which `T` is unconstrained
+junk, and a caller may hand in junk that no decomposition can satisfy.
+
+*Explicit witness.*  Take `N = 37` and let `T` be **the very family
+`exists_modularHeckeAction` constructs**: the Albanese image of the
+`Γ₀(37)`-correspondence at primes `ℓ ∤ 37`, and `𝟙 J` at every other
+arity — its own proof says so (`𝟙 J` at every other `n`).  So `hmod` holds
+by that theorem.  Now suppose `D` with `D.T = T` existed, and read the
+conclusion at `n = 4` (coprime to `37`, not prime, so `T 4 = 𝟙 J`):
+
+* `equivariant` at `4` gives `u i = u i ≫ S i 4`, so on the image of `u i`
+  the operator `S i 4` acts as the identity;
+* `isotypic` at `4` then collapses to `(minpoly ℤ (coeff i 4)).eval 1 • x = 0`
+  for every `x` in that image, since every iterate of the identity is `x`
+  and the coefficients simply sum;
+* `isEigen` forces `coeff i` to be a normalised weight-two eigen-system of
+  level `37`, and `hecke` at `p = 2`, `n = 2` together with `one : a 1 = 1`
+  gives `a 4 = a 2 ^ 2 - 2`.  `S₂(Γ₀(37))` is two-dimensional and `37` is
+  prime, so there are no oldforms and exactly two systems, those of the
+  elliptic curves `37a` (`a 2 = -2`, `a 4 = 2`) and `37b` (`a 2 = 0`,
+  `a 4 = -2`).  Hence `(minpoly ℤ (coeff i 4)).eval 1 ∈ {-1, 3}`, and in
+  both cases `3 • x = 0` on the image of `u i`.
+
+So `u i (3 • y) = 0` for every `i` and every `y : J(ℚ)`, i.e. `3 • J(ℚ)`
+lies inside the set `finite_ker` asserts to be finite.  But
+`J₀(37) ∼ E_{37a} × E_{37b}` and `E_{37a}` has rank `1` (verified with
+PARI: conductor `37`, analytic rank `1`, `a 2 = -2`), so `J₀(37)(ℚ)` is
+infinite and so is `3 • J₀(37)(ℚ)`.  `finite_ker` fails.  ∎
+
+*A second, level-independent witness*, if the reader prefers one that needs
+no eigenvalue table: put `T 1 :=` the zero endomorphism (the morphism
+underlying `ab.zero jstr`, which is additive and satisfies `T_comp`) and
+leave `T` genuine at primes `ℓ ∤ N`.  `1` is not prime, so `hmod` is
+untouched; `minpoly ℤ (1 : ℂ) = X - 1`, so `isotypic` at `n = 1` says
+exactly `S i 1 = id` on points, and `equivariant` at `1` then gives
+`u i y = u i (T 1 y) = 0` for **every** `y : J(ℚ)`.  The joint kernel is
+all of `J(ℚ)`, infinite at `N = 37`.
+
+*What else this refutes, and what it does NOT.*  The same witness refutes
+`exists_isotypicQuotient_of_isWeightTwoEigenform` above — at that `T` the
+type `IsIsotypicQuotient ab T 37 a` is UNINHABITED, because `equivariant`
+and `isotypic` at the junk arity force `u = 0`, and a surjective `u = 0`
+makes `A` the zero scheme, contradicting `nontriv` — and therefore also
+`exists_heckeIsotypicDecomposition_of_modularHeckeAction`, which is proven
+over it.  It does **not** refute
+`exists_heckeIsotypicDecomposition_of_isotypicQuotients`: that leaf carries
+`hquot` as a HYPOTHESIS, and the argument just given shows `hquot` is false
+at the witness, so it is vacuously safe there.  Nor does it refute
+`exists_heckeIsotypicDecomposition` itself, whose `D` chooses its own `T`
+and may take the genuine system.  **The falsity is exactly the class of
+statements that fix `T` from outside and demand `D.T = T`.**
+
+*Note the near-miss in the released docstring.*  The `hmod` IS LOAD-BEARING
+paragraph on `exists_isotypicQuotient_of_isWeightTwoEigenform` tests
+`T n := 𝟙 J` **at every arity**, which violates `hmod` at the primes and so
+is correctly excluded.  The witness above is genuine exactly where `hmod`
+can see and junk exactly where it cannot; that is the case the paragraph
+does not cover, and it is why the defect survived the audit.
+
+*The repair, which is a CLUSTER-LEVEL edit and deliberately NOT made here.*
+Add to `IsModularHeckeAction` the standard relations that determine the
+anemic system from its primes — `T 1 = 𝟙 J`, multiplicativity
+`Nat.Coprime m n → T (m * n) = T m ≫ T n`, and the prime-power recursion
+`T (ℓ ^ (k + 2)) = T ℓ ≫ T (ℓ ^ (k + 1)) - ℓ • T (ℓ ^ k)` for `ℓ` prime,
+`ℓ ∤ N` (expressible: `Hom` over the base is a group under `ab.add` on
+relative points).  With that, `T` is pinned at every `n` coprime to `N`,
+this leaf and both released ones above become true, and no consumer's
+STATEMENT changes.  The cost is that `exists_modularHeckeAction`'s current
+proof — `𝟙 J` off the pinned arities — no longer works and it reverts to a
+sorry leaf that must build the multiplicative extension; that is honest,
+since it is the theorem which was quietly asserting the junk family is a
+Hecke action.  A cheaper alternative, if that cost is unwanted: restrict
+`IsHeckeIsotypicDecomposition.isotypic` to PRIMES `ℓ ∤ N` rather than all
+`n` coprime to `N`, which is equivalent for the genuine system and leaves
+the junk arities unconstrained.  Either way it rewrites released
+declarations with concurrent owners and needs one owner for the whole
+cluster.
+
 It asks for `exists_heckeIsotypicDecomposition_of_modularHeckeAction`'s
 conclusion — a decomposition with `D.T = T` — strengthened by
 `IsUniversalIsotypicFactor` on every factor.
