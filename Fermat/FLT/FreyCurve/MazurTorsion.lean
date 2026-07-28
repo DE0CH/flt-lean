@@ -18636,10 +18636,13 @@ into the two leaves consumed below:
   `X0GenusOne.nonempty_relPoint_equiv_modelPoint` (all that survives of
   `card_relPoint_finiteField`) together with the four successors of
   `X0GenusOne.isTorsion_jacobian` — `exists_abelianSchemeStruct_of_x0Genus_eq_one`,
-  `exists_x0Model`, `finite_curve17a1`,
-  `finite_curve19a1` (2026-07-27, fourth correction; none is vacuous or
-  refutable — and `finite_curve11a1`, which that correction also named, is
-  PROVEN as of 2026-07-28 along the `5`-isogeny onto `11a3`).  `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
+  `exists_x0Compactification_relPoint_inj_x0Model`,
+  `finite_curve17a1`, `finite_curve19a1` (2026-07-27, fourth correction;
+  none is vacuous or refutable; the first was `exists_x0Model` until the
+  quantifier step of 2026-07-28 made that one PROVEN, and
+  `finite_curve11a1`, which that correction also named, is PROVEN as of
+  2026-07-28 along the `5`-isogeny onto `11a3`).
+  `X0GenusOne.finite_jacobian`, `isTorsion_jacobian` and
   `finite_relPoint_x0`, which this paragraph named at earlier corrections,
   are all now PROVEN — the last of them along the MODEL/ARITHMETIC seam,
   see the subsection note above `X0GenusOne.curve11a1`.
@@ -22536,7 +22539,18 @@ section is now stated entirely in `WeierstrassCurve` coordinates, which
 is the shape `Fermat/FLT/EllipticCurve/MordellWeil.lean` has already
 closed twice (`11a3`, `14a4`).
 
-**So the open leaves of this section are `exists_x0Model`,
+**FIFTH DECOMPOSITION STEP, 2026-07-28: `exists_x0Model` is now PROVEN
+too, by the QUANTIFIER step.**  Its residue
+`exists_x0Compactification_relPoint_inj_x0Model` asks for the injection at
+ONE compactification instead of at every one; the passage back is
+`nonempty_relPointEquiv_of_isX0Compactification_rat`, PROVEN from
+`X0.lean`'s `exists_iso_of_isCoarseModuliY0` and
+`exists_iso_of_isX0Compactification`, so the existential and universal
+forms are equivalent and the step costs nothing.  This is the same move
+`exists_x0Compactification_relPoint_equiv_point` makes at `𝔽_ℓ`.
+
+**So the open leaves of this section are
+`exists_x0Compactification_relPoint_inj_x0Model`,
 `finite_curve17a1`, `finite_curve19a1`,
 `exists_abelianSchemeStruct_of_x0Genus_eq_one` and
 `nonempty_relPoint_equiv_modelPoint`.**  (`finite_curve11a1` was on that
@@ -23179,7 +23193,10 @@ So the three halves are:
   on `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` ("an
   integral/Weierstrass model of `X_0(N)` over `ℚ` and the identification
   of `X_0(N)(ℚ)` with its rational solutions"), now asked once for all
-  four levels instead of once for level `32`;
+  four levels instead of once for level `32`.  **PROVEN 2026-07-28** by
+  the QUANTIFIER step, over the single leaf
+  `exists_x0Compactification_relPoint_inj_x0Model`, which asks for the
+  same injection at ONE compactification of your choosing;
 * `finite_curve11a1` / `finite_curve17a1` / `finite_curve19a1` — the
   arithmetic, one explicit rank-`0` curve each, stated with NO scheme
   and NO level in sight;
@@ -23293,9 +23310,149 @@ def x0Model : ℕ → WeierstrassCurve ℚ
   | 32 => curve32a1
   | _ => ⟨0, 0, 0, 0, 0⟩
 
+/-- **`X_0(N)(ℚ)` is unique up to bijection on RATIONAL points** (PROVEN
+2026-07-28, over declarations that were all already in `X0.lean`; no new
+leaf).
+
+The `ℚ`-analogue of `Fermat.nonempty_relPointEquiv_of_isX0Compactification`,
+which is stated over `Spec 𝔽_ℓ` and is open there.  **Over `ℚ` the same
+route is already complete**, which is why this is an assembly and not a
+second leaf:
+
+* `Fermat.exists_iso_of_isCoarseModuliY0` — initiality of
+  `IsCoarseModuliY0` gives `e : Y₁ ≅ Y₂` over the base.  Base-GENERIC and
+  PROVEN; it is literally the same declaration the `𝔽_ℓ` version uses;
+* `Fermat.exists_iso_of_isX0Compactification` — the smooth compactification
+  of `Y_0(N)` over `ℚ` is unique, so `e` extends to `E : X₁ ≅ X₂` over `ℚ`.
+  PROVEN over `Fermat.exists_unique_extension_of_isX0Compactification`,
+  itself a specialisation of
+  `AlgebraicGeometry.exists_unique_extension_of_isSmoothProperCurve`
+  (`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean`);
+* `Fermat.relPointEquivOfInverse` — an inverse pair over the base induces a
+  bijection on `RelPoint`.  Base-generic, PROVEN, pure category theory.
+
+**Why the `𝔽_ℓ` sibling is open and this one is not**, since the two
+statements differ only in the base and the mathematics is identical: over
+`𝔽_ℓ` the extension step is routed through
+`Fermat.exists_inverse_of_isX0Compactification`, which is PROVEN, but the
+`∃!`-strength `ℚ` route (`exists_unique_extension_of_isX0Compactification`)
+has no `𝔽_ℓ` twin *stated*, so `X0.lean` builds the inverse pair by hand
+there.  Nothing mathematical separates them —
+`exists_unique_extension_of_isSmoothProperCurve` is already stated over an
+arbitrary FIELD base — and the honest repair is to specialise it at
+`Spec 𝔽_ℓ` too, which would collapse the two.  Refuting check for that
+claim: if `exists_unique_extension_of_isSmoothProperCurve` ever acquires a
+hypothesis that `ZMod ℓ` cannot satisfy, the two bases genuinely differ and
+this paragraph is wrong.
+
+Both hypotheses are load-bearing and neither may be dropped: without `h₁`
+or `h₂` the corresponding scheme is an arbitrary `ℚ`-scheme and the
+conclusion is plainly false (take `X₁ = 𝔸¹_ℚ`, `X₂ = Spec ℚ`). -/
+theorem nonempty_relPointEquiv_of_isX0Compactification_rat {N : ℕ}
+    {X₁ Y₁ X₂ Y₂ : Scheme.{0}} {strX₁ : X₁ ⟶ SpecQ} {strY₁ : Y₁ ⟶ SpecQ}
+    {jY₁ : Y₁ ⟶ X₁} {strX₂ : X₂ ⟶ SpecQ} {strY₂ : Y₂ ⟶ SpecQ} {jY₂ : Y₂ ⟶ X₂}
+    (h₁ : IsX0Compactification N strX₁ strY₁ jY₁)
+    (h₂ : IsX0Compactification N strX₂ strY₂ jY₂) :
+    Nonempty (RelPoint strX₁ (𝟙 SpecQ) ≃ RelPoint strX₂ (𝟙 SpecQ)) := by
+  obtain ⟨e, he⟩ := exists_iso_of_isCoarseModuliY0 h₁.coarse h₂.coarse
+  obtain ⟨E, hE, -⟩ := exists_iso_of_isX0Compactification h₁ h₂ e he
+  refine ⟨relPointEquivOfInverse hE ?_ E.hom_inv_id E.inv_hom_id⟩
+  rw [← hE, ← Category.assoc, E.inv_hom_id, Category.id_comp]
+
+/-- **SOME compactification of `Y_0(N)` has `X_0(N)(ℚ) ↪ N a 1(ℚ)`, at the
+four genus-one levels** (sorry leaf, introduced 2026-07-28) — all that is
+left of `exists_x0Model` after the QUANTIFIER step, and the only modular
+geometry this section still owes.
+
+TRUE: at `N ∈ {11, 17, 19, 32}` the modular curve `X_0(N)` has genus `1`
+and a rational cusp, hence IS the elliptic curve `N a 1` of conductor `N`
+(see the section note above `levels` for the conductor certificate), so the
+two point sets are in bijection — and only an injection is asked for,
+because only finiteness is consumed.  A construction will produce the
+bijection; strengthening `∃ f, Function.Injective f` to `Nonempty (… ≃ …)`
+is free for whoever does, and nothing downstream would have to change.
+
+**EXISTENTIAL, not universal — and the two are EQUIVALENT here, so the cut
+loses nothing.**  `exists_x0Model` quantifies over EVERY compactification,
+so a prover had to identify an arbitrary one; a construction — build the
+plane model over `ℚ`, check `IsX0Compactification` for it — produces
+exactly this existential form and nothing more.  The passage back to all of
+them is `nonempty_relPointEquiv_of_isX0Compactification_rat` directly
+above, which is PROVEN, so this statement and `exists_x0Model` imply each
+other.  That is what makes the step a strict reduction rather than a
+reshuffle, and it is also why the leaf **cannot be discharged vacuously by
+picking a degenerate `X`**: were some compactification to have an empty
+point set, the transport would force every one of them to, and
+`exists_x0Model` would hold for the same reason.  This is the same move
+that `exists_x0Compactification_relPoint_equiv_point` makes at `𝔽_ℓ`
+further down this file.
+
+**Not vacuous**: `Fermat.exists_x0Compactification N` (which needs only
+`0 < N`) supplies a compactification at each of the four levels, so the
+existential's first six components are already known to be inhabitable and
+the only content asserted is the injection.
+
+**`hN` is LOAD-BEARING FOR TRUTH** and may not be dropped: at every other
+level the statement is false, since `x0Model` is then the junk cuspidal
+cubic `y² = x³` — whose `Affine.Point` set does not receive `X_0(N)(ℚ)`
+injectively as soon as `X_0(N)` has more rational points than it — and
+`37, 43, 67, 163` have ranks `1, 1, 2, 6`, so `X_0(N)(ℚ)` is outright
+infinite there.
+
+**WHAT A SUCCESSOR MUST BUILD**, and it is the honest cost — the same list
+`MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` records, now shared by
+four levels instead of paid privately by one, and with its third item
+weakened from "for the given `X`" to "for one `X` of your choosing": a
+genus for the curve, Riemann–Roch far enough to give a genus-`1` curve with
+a rational point a Weierstrass model as a SCHEME, and the identification of
+that model's rational points with `RelPoint strX (𝟙 SpecQ)`.  None of the
+three exists in `Mathlib`, in `~/cs/FLT` or in this project;
+`mono_ajHom_of_one_le_x0Genus` and
+`exists_abelianSchemeStruct_of_x0Genus_eq_one` record the same absence, and
+all three should have the same owner.
+
+**THIS LEAF IS THE `ℚ`-TWIN OF `exists_x0Compactification_relPoint_equiv_point`**
+(the `𝔽_ℓ` statement further down this file), same four levels, same
+`N a 1` models, differing only in the base ring; a construction of the
+plane model over a general base would close both at once, and neither
+should be attacked without the other's docstring in hand.  Refuting check
+for the twinning: if `modelTable`'s rows ever cease to be the reductions of
+`x0Model`'s four curves, the two leaves stop being about the same curves.
+
+**A `Scheme`↔`WeierstrassCurve` bridge is available but NOT importable
+here.**  `WeierstrassCurve.proj` / `projToSpec`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/ProjectiveModel.lean`)
+build the projective Weierstrass model as a scheme, and
+`Fermat.exists_ellipticScheme_of_weierstrass` packages it over `ℚ`.  This
+module may **not** `public import` `ProjectiveModel`: it reaches
+`Mathlib/Tactic/Ring/NamePolyVars.lean`, which reserves the token `over`
+globally, and `ModThree.lean` — which `public import`s this file — uses
+`Ideal.LiesOver.over`.  See the *Why this is not in `X0.lean`* note in
+`Fermat/FLT/ModularCurve/EllipticScheme.lean`.  That is why this leaf is
+stated existentially over the scheme rather than naming `proj (x0Model N)`,
+and why a successor should follow `exists_ellipticScheme_of_weierstrass`'s
+shape: do the `proj` work in `EllipticScheme.lean` (or a new module beside
+it) and export an existential.
+
+**DO NOT close this by citing `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo`.**
+That declaration has exactly this shape at level `32`, but it is proven
+FROM `card_le_four_x0ThirtyTwo`, hence from
+`hasRankZeroJacobian_x0ThirtyTwo`, hence from `X0GenusOne.finite_jacobian`
+and ultimately from this very statement.  Lean forbids the cycle anyway —
+`MazurLevel32` is declared below `X0GenusOne` — but the temptation is real
+and the note is cheaper than rediscovering it. -/
+theorem exists_x0Compactification_relPoint_inj_x0Model (N : ℕ) (_hN : N ∈ levels) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (jY : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY jY) ∧
+        ∃ f : RelPoint strX (𝟙 SpecQ) → (x0Model N).toAffine.Point,
+          Function.Injective f :=
+  sorry
+
 /-- **`X_0(N)(ℚ)` injects into `N a 1(ℚ)` at the four genus-one levels**
-(sorry leaf, introduced 2026-07-27) — the MODULI-GEOMETRY half of
-`finite_relPoint_x0`, and the only geometry the arithmetic below needs.
+(PROVEN 2026-07-28 by the QUANTIFIER step; was the sorry leaf carrying the
+whole moduli geometry of `finite_relPoint_x0`, introduced 2026-07-27) — the
+MODULI-GEOMETRY half of `finite_relPoint_x0`, and the only geometry the
+arithmetic below needs.
 
 TRUE: at `N ∈ {11, 17, 19, 32}` the modular curve `X_0(N)` has genus `1`
 and a rational cusp, hence IS the elliptic curve `N a 1` of conductor
@@ -23303,41 +23460,51 @@ and a rational cusp, hence IS the elliptic curve `N a 1` of conductor
 so the two point sets are in bijection — and only an injection is asked
 for, because only finiteness is consumed.
 
-**`_h` and `_hN` are LOAD-BEARING FOR TRUTH and may not be dropped.**
-They are underscored only because the body is `sorry`; a successor that
-proves this must un-underscore them.  Without `_h` the scheme `strX` is
-an arbitrary `ℚ`-scheme, whose rational points need not inject into a
-five-element set, and the statement is then plainly FALSE (take
-`X = 𝔸¹_ℚ`).  Without `_hN` it is false at every other level: `37, 43,
-67, 163` have ranks `1, 1, 2, 6`, so `X_0(N)(ℚ)` is infinite there while
-`x0Model N` is the junk cubic.
+**THE CUT, and it removes the UNIVERSAL QUANTIFIER and nothing else.**  The
+statement is unchanged — same name, same signature, same hypotheses in the
+same order, so every consumer is untouched — and its two hypotheses are now
+USED rather than underscore-prefixed placeholders.  What is left open is
 
-**Not vacuous**: `Fermat.exists_x0Compactification N` supplies an `_h` at
+* `exists_x0Compactification_relPoint_inj_x0Model` — the same injection at
+  ONE compactification, which is what an explicit construction of the plane
+  model produces; and
+* nothing else: the passage from that one compactification to the arbitrary
+  `h` this statement is quantified over is
+  `nonempty_relPointEquiv_of_isX0Compactification_rat`, PROVEN above from
+  `X0.lean`'s already-complete `ℚ`-side uniqueness machinery.
+
+The two are EQUIVALENT (see the leaf's docstring), so this is a strict
+reduction of the prover's obligation, not a relabelling: an identification
+of an ARBITRARY smooth proper model has become a CONSTRUCTION of one.
+
+**`h` and `hN` are LOAD-BEARING FOR TRUTH and may not be dropped.**
+Without `h` the scheme `strX` is an arbitrary `ℚ`-scheme, whose rational
+points need not inject into a five-element set, and the statement is then
+plainly FALSE (take `X = 𝔸¹_ℚ`).  Without `hN` it is false at every other
+level: `37, 43, 67, 163` have ranks `1, 1, 2, 6`, so `X_0(N)(ℚ)` is
+infinite there while `x0Model N` is the junk cubic.
+
+**Not vacuous**: `Fermat.exists_x0Compactification N` supplies an `h` at
 each of the four levels.
 
-**WHAT A SUCCESSOR MUST BUILD**, and it is the honest cost — the same
-list `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo` records, now
-shared by four levels instead of paid privately by one: a genus for
-`strX`, Riemann–Roch far enough to give a genus-`1` curve with a
-rational point a Weierstrass model as a SCHEME, and the identification
-of that model's rational points with `RelPoint strX (𝟙 SpecQ)`.  None of
-the three exists in `Mathlib`, in `~/cs/FLT` or in this project;
-`mono_ajHom_of_one_le_x0Genus` and
-`exists_abelianSchemeStruct_of_x0Genus_eq_one` record the same absence,
-and all three should have the same owner.
-
-**DO NOT close this by citing `MazurLevel32.exists_weierstrassModel_x0ThirtyTwo`.**
-That declaration has exactly this shape at level `32`, but it is proven
-FROM `card_le_four_x0ThirtyTwo`, hence from
-`hasRankZeroJacobian_x0ThirtyTwo`, hence from `X0GenusOne.finite_jacobian`
-and ultimately from this very statement.  Lean forbids the cycle anyway —
-`MazurLevel32` is declared below `X0GenusOne` — but the temptation is
-real and the note is cheaper than rediscovering it. -/
-theorem exists_x0Model (N : ℕ) (_hN : N ∈ levels)
+**THE DEAD AXIS, re-confirmed 2026-07-28 and not to be spent a cycle on.**
+Deriving this from `X_1(N)` fails twice over: `X1.lean` carries no
+degeneracy map at all (its eleven `IsX0Compactification` hits are every one
+inside comments comparing the two developments — no morphism, and no
+`RelPoint` map, between a `Γ₁` object and a `Γ₀` object exists anywhere in
+the tree), and even if it did it points the WRONG WAY, since a finite
+`π : X_1(N) → X_0(N)` maps source points into target points and a rational
+point of the target need have no rational preimage (general counterexample:
+any nonconstant map from a genus-`≥ 2` curve to `P¹`).  See the section
+note above `curve11a1` for the full refutation. -/
+theorem exists_x0Model (N : ℕ) (hN : N ∈ levels)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
-    (_h : IsX0Compactification N strX strY jY) :
-    ∃ f : RelPoint strX (𝟙 SpecQ) → (x0Model N).toAffine.Point, Function.Injective f :=
-  sorry
+    (h : IsX0Compactification N strX strY jY) :
+    ∃ f : RelPoint strX (𝟙 SpecQ) → (x0Model N).toAffine.Point, Function.Injective f := by
+  obtain ⟨X', Y', strX', strY', jY', ⟨hX'⟩, f, hf⟩ :=
+    exists_x0Compactification_relPoint_inj_x0Model N hN
+  obtain ⟨t⟩ := nonempty_relPointEquiv_of_isX0Compactification_rat h hX'
+  exact ⟨fun P => f (t P), hf.comp t.injective⟩
 
 /-- **`11a1(ℚ)` is finite** (PROVEN 2026-07-28, by transporting
 `WeierstrassCurve.curve11a3_rational_points` along the `5`-isogeny
