@@ -37466,7 +37466,8 @@ theorem exists_x0IntegralCompactifiedModel (N ℓ : ℕ) (_hℓ : ℓ.Prime)
   sorry
 
 /-- **The integral `Y_0(N)` has a smooth proper compactification over
-`ℤ_(ℓ)`** (sorry leaf — the COMPACTIFICATION half of the integral model;
+`ℤ_(ℓ)`** (PROVEN 2026-07-28 over `exists_x0IntegralCompactifiedModel`;
+formerly a sorry leaf — the COMPACTIFICATION half of the integral model;
 Deligne–Rapoport IV.3, Katz–Mazur 13.11, Igusa).
 
 Given ANY coarse moduli space `ystr` of the `Γ₀(N)`-problem over the
