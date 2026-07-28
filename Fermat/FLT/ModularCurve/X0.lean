@@ -705,6 +705,13 @@ public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 -- mathlib's `CommHopfAlgCat` bridge `GrpObj ⟹ HopfAlgebra`, which is what makes the Hopf
 -- axioms derived rather than checked by hand.
 public import Fermat.FLT.GroupScheme.AffineGroupHopf
+-- `GaloisField 3 2` — the field `𝔽₉`.  Ogg's reduction bound for
+-- `not_hasDoubleCoverOfAffineLine_x0OneSixtyNine` is a count of `𝔽_{ℓ²}`-points,
+-- NOT of `𝔽_ℓ`-points (see that theorem's docstring for the numbers), and
+-- `SpecF ℓ = Spec (ZMod ℓ)` only supplies prime fields.  This is the pin's
+-- construction of the quadratic extension; the same import is already used by
+-- `Fermat/FLT/Slop/PGL2/FiniteSubgroups/PGLBasic.lean`.
+public import Mathlib.FieldTheory.Finite.GaloisField
 -- `AlgebraicGeometry.Scheme.SpecToEquivOfField`: a morphism `Spec K ⟶ X` out of
 -- the spectrum of a FIELD is exactly a point `x` of `X` together with an
 -- embedding `κ(x) ⟶ K`.  This is the whole engine of both halves of Galois
@@ -45928,12 +45935,23 @@ clause holds iff `d ≤ 2`, which is "hyperelliptic or rational".
 **Not vacuous, and refutable.**  It HOLDS for `X = ℙ¹_ℚ` (take `U = 𝔸¹`,
 `φ = 𝟙`, `d = 1`) and for every elliptic curve (`d = 2`), and FAILS for
 any curve of gonality `≥ 3` — which is what the level leaf below asserts
-for `X_0(169)`. -/
-def HasDoubleCoverOfAffineLine {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
-  ∃ (U : Scheme.{0}) (ι : U ⟶ X) (φ : U ⟶ 𝔸(Unit; SpecQ)),
+for `X_0(169)`.
+
+**GENERALISED TO AN ARBITRARY BASE `S` on 2026-07-28**, exactly as
+`HasNoFibreAffineLine` (the degree-`1` analogue) has always been, and for
+a reason that is not cosmetic: `not_hasDoubleCoverOfAffineLine_x0OneSixtyNine`
+is proven by SPECIALISING the cover to `X_0(169)_{𝔽₃}` and counting points
+there, so the predicate has to be stateable over `Spec 𝔽_ℓ` as well as over
+`Spec ℚ`.  The change is `{X : Scheme} (strX : X ⟶ SpecQ)` to
+`{X S : Scheme} (strX : X ⟶ S)` with `SpecQ` replaced by `S` in the body;
+at `S = SpecQ` the two are DEFINITIONALLY EQUAL (compiler-checked by an
+`Iff.rfl`), so every statement that mentioned it is unchanged, including
+`hasDoubleCoverOfAffineLine_of_ajPair_eq`, whose `S` is inferred. -/
+def HasDoubleCoverOfAffineLine {X S : Scheme.{0}} (strX : X ⟶ S) : Prop :=
+  ∃ (U : Scheme.{0}) (ι : U ⟶ X) (φ : U ⟶ 𝔸(Unit; S)),
     IsOpenImmersion ι ∧ IsDominant ι ∧ IsFinite φ ∧
-    φ ≫ (𝔸(Unit; SpecQ) ↘ SpecQ) = ι ≫ strX ∧
-    ∀ (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ 𝔸(Unit; SpecQ))
+    φ ≫ (𝔸(Unit; S) ↘ S) = ι ≫ strX ∧
+    ∀ (K : Type) [Field K] (k : Spec (CommRingCat.of K) ⟶ 𝔸(Unit; S))
       (u₁ u₂ u₃ : Spec (CommRingCat.of K) ⟶ U),
       u₁ ≫ φ = k → u₂ ≫ φ = k → u₃ ≫ φ = k → u₁ = u₂ ∨ u₁ = u₃ ∨ u₂ = u₃
 
@@ -46139,11 +46157,236 @@ theorem hasDoubleCoverOfAffineLine_of_ajPair_eq {X J : Scheme.{0}} {strX : X ⟶
     h₁₁ h₁₂ h₂₁ h₂₂
     (relPicEquiv_sectionIdeal_of_aj_add_eq hproper hcurve hconn jac x₁ x₂ y₁ y₂ heq)
 
+/-- **A CURVE WITH A DOUBLE COVER OF THE LINE HAS AT MOST `2·(#K + 1)`
+`K`-POINTS, for every finite field `K` over the base** (sorry leaf,
+2026-07-28) — the counting half of Ogg's argument, and it is LEVEL-FREE:
+it mentions neither `169`, nor `IsX0Compactification`, nor modular curves
+at all.
+
+TRUE and classical.  `HasDoubleCoverOfAffineLine strX` gives a dense open
+`ι : U ⟶ X` and a finite `φ : U ⟶ 𝔸¹_S` no fibre of which has three
+points over a field.  Over the `K`-point `k` of `S` this is a finite map
+`U_K ⟶ 𝔸¹_K` of degree `d ≤ 2` — the three-point clause IS the degree
+bound, as recorded on `HasDoubleCoverOfAffineLine`.  It extends uniquely
+to `X_K ⟶ ℙ¹_K` (`exists_unique_extension_of_isSmoothProperCurve`, PROVEN
+in `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveExtension.lean` and already
+in this file's cone; `X_K` is a smooth proper curve and `U_K` is dense in
+it), still of degree `d ≤ 2`, and `#ℙ¹(K) = #K + 1`.  Every `K`-point of
+`X_K` lies over a `K`-point of `ℙ¹_K`, and a fibre of a degree-`d` finite
+map has at most `d` points over any field, so `#X(K) ≤ d·(#K + 1) ≤
+2·(#K + 1)`.
+
+**WHY THE COMPLEMENT `X ∖ U` COSTS NOTHING**, which is the one place the
+affine phrasing could have leaked.  `φ` is finite hence proper, so `U` is
+closed in the preimage of `𝔸¹` under the extension, and it is open there
+too; the preimage is an open subscheme of the irreducible `X_K`, hence
+connected, so `U_K` IS the whole preimage of `𝔸¹` and `X_K ∖ U_K` is the
+fibre over `∞` — at most `d ≤ 2` points, already counted by the `+ 1`.
+So no separate bound on the complement is needed, and in particular the
+leaf must NOT be weakened to a statement about `#U(K)` alone.
+
+**Not vacuous**: `X = ℙ¹_K` satisfies the hypothesis with `d = 1` and has
+`#K + 1 ≤ 2(#K + 1)` points, and an elliptic curve satisfies it with
+`d = 2`; the bound is SHARP for a hyperelliptic curve all of whose
+`2(#K+1)` slots are filled.  And it genuinely constrains: it is what
+`X_0(169)` violates over `𝔽₉` below.
+
+**The three curve hypotheses are load-bearing** in the same way as on
+`hasDoubleCoverOfAffineLine_of_ajPair_eq`: `hproper` is what makes the
+extension to `ℙ¹` exist, `hcurve` is what makes `X_K` a curve so that a
+nonconstant map to `ℙ¹` is finite, and `hconn` is what makes `U_K` the
+whole preimage of `𝔸¹` in the paragraph above (on `ℙ¹ ⊔ ℙ¹` it is not).
+
+**WHAT THIS NEEDS AND DOES NOT NEED.**  It needs `ℙ¹`, which this pin
+lacks — that is the whole reason `HasDoubleCoverOfAffineLine` is phrased
+affinely.  It does NOT need Riemann–Roch, `h⁰`, or a genus: no linear
+system is formed anywhere in the argument, only a fibre count.  So this
+leaf is INDEPENDENT of the three Riemann–Roch leaves in this cluster, and
+a prover should not wait on them.  **The check that would refute this
+verdict**: a Riemann–Roch or `h⁰` statement being NEEDED here — it is
+not; what is needed is a projective line and the degree of a finite
+morphism. -/
+theorem card_relPoint_le_of_hasDoubleCoverOfAffineLine {X S : Scheme.{0}} {strX : X ⟶ S}
+    (_hproper : IsProper strX) (_hcurve : SmoothOfRelativeDimension 1 strX)
+    (_hconn : GeometricallyConnected strX) (_hdc : HasDoubleCoverOfAffineLine strX)
+    (K : Type) [Field K] [Finite K] (k : Spec (CommRingCat.of K) ⟶ S) :
+    Nat.card (RelPoint strX k) ≤ 2 * (Nat.card K + 1) :=
+  sorry
+
+/-- **A DOUBLE COVER OF THE LINE SPECIALISES TO THE GOOD REDUCTION**
+(sorry leaf, 2026-07-28) — gonality does not RISE under specialisation at
+a prime of good reduction, in the only form this file needs it.  This is
+the half of Ogg's argument that carries the integral model, and it is
+LEVEL-GENERIC: `N` enters only through `ℓ ∤ N`.
+
+TRUE and classical (Frey; the specialisation-of-gonality lemma every
+proof of Ogg's theorem uses).  For `ℓ ∤ N`, `X_0(N)` has good reduction
+at `ℓ`: `exists_x0CurveModel_of_base` — PROVEN, in this file — produces a
+smooth proper model `𝒳 ⟶ Spec ℤ_(ℓ)` with generic fibre `X` and special
+fibre `X'`, and `IsReductionBase` pins the base.  Given a degree-`≤ 2`
+map on the generic fibre, take the scheme-theoretic closure of its graph
+in `𝒳 ×_{ℤ_(ℓ)} ℙ¹`; that closure is proper and birational over `𝒳`, an
+isomorphism over the generic fibre, and resolves the finitely many points
+of indeterminacy on the special fibre.  The total degree `≤ 2` on the
+special fibre distributes over its components, and the strict transform
+of `X'` — which is `X'` itself, `𝒳` being smooth over the base, so the
+special fibre is irreducible — carries a nonconstant map of degree `≤ 2`.
+Restricting to the preimage of `𝔸¹` gives `HasDoubleCoverOfAffineLine
+strX'`.
+
+**THE STEP THAT IS NOT BOOKKEEPING**, and a prover should attack it
+first: showing the specialised map is NONCONSTANT, i.e. that the degree
+does not all escape onto exceptional components. That is where the
+smoothness of `𝒳` over `Spec ℤ_(ℓ)` is used and it is the only delicate
+point; everything else is the universal property of the closure.
+
+**WHY `hX'` IS A HYPOTHESIS AND NOT AN OUTPUT.**  The special fibre of
+the model is again an `IsX0Compactification N` over `𝔽_ℓ`
+(`exists_isX0Compactification_specialFibre`, PROVEN in this file, and
+`exists_x0Compactification_finiteField` produces one abstractly), and any
+two are isomorphic over `𝔽_ℓ` because both are coarse spaces of the same
+moduli problem.  Quantifying over `hX'` rather than producing it keeps
+this leaf free of that identification, which is a separate — and already
+available — piece of work.
+
+**NOT VACUOUS, and the hypothesis is satisfiable**: at `N = 1`,
+`X_0(1) = ℙ¹` over both `ℚ` and `𝔽_ℓ`, `hdc` holds and so does the
+conclusion.  So the leaf is not discharged by an empty antecedent.
+
+**The check that would refute this verdict**: a smooth proper curve over
+`ℤ_(ℓ)` whose generic fibre is hyperelliptic and whose special fibre is
+not — there is none, which is exactly the content; or, formally, a
+counterexample to the nonconstancy step above, which would mean the
+statement needs a hypothesis it does not have. -/
+theorem hasDoubleCoverOfAffineLine_specialFibre {N ℓ : ℕ} (_hN : 0 < N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jY : Y ⟶ X}
+    (_hX : IsX0Compactification N strX strY jY)
+    {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF ℓ} {strY' : Y' ⟶ SpecF ℓ} {jY' : Y' ⟶ X'}
+    (_hX' : IsX0Compactification N strX' strY' jY')
+    (_hdc : HasDoubleCoverOfAffineLine strX) :
+    HasDoubleCoverOfAffineLine strX' :=
+  sorry
+
+/-- **`#X_0(169)(𝔽₉) = 38`** (sorry leaf, 2026-07-28) — Eichler–Shimura
+over the QUADRATIC extension of `𝔽₃`, and the only one of the three
+leaves that mentions the level.  The `𝔽_{ℓ²}` analogue of
+`card_relPoint_x0_finiteField`.
+
+TRUE, and computed three ways below.  `dim S₂(Γ₀(169)) = 8`, so `X_0(169)`
+has `16` Frobenius eigenvalues at `3`, in pairs `(α_f, β_f)` with
+`α_f + β_f = a_3(f)` and `α_f β_f = 3`.  Then
+
+    #X(𝔽₉) = 9 + 1 − Σ_i α_i²,   Σ_i α_i² = Σ_f (a_3(f)² − 2·3)
+                                          = Tr(T_3² ∣ S₂(Γ₀(169))) − 6·8.
+
+PARI/GP (`mf = mfinit([169,2],1)`) gives `Tr(T_3) = 0`,
+`Tr(T_3²) = 20` and, independently, `Tr(T_9) = −4`; the two agree through
+`a_9 = a_3² − 3`, since `20 − 3·8 = −4`.  So `Σ α_i² = 20 − 48 = −28` and
+`#X_0(169)(𝔽₉) = 10 + 28 = 38`.  Weil is respected: `|38 − 10| = 28 ≤
+2·8·3 = 48`.
+
+**WHY THE QUADRATIC EXTENSION, AND NOT `𝔽₃` — THE CORRECTION THIS LEAF
+EXISTS TO RECORD (2026-07-28).**  The docstring this cut replaced named
+"the reduction bound at `ℓ = 3`" as the cheap axis.  The PRIME is right
+and the FIELD was wrong, and the difference is the difference between a
+proof and nothing at all: `#X_0(169)(𝔽₃) = 3 + 1 − Tr(T_3) = 4`, while a
+hyperelliptic-or-rational curve over `𝔽₃` may have up to `2·(3+1) = 8`
+points.  `4 ≤ 8`, so the `𝔽₃` count refutes NOTHING.
+
+Worse, and this is what makes the correction worth a paragraph: **NO
+prime field works, at any `ℓ`.**  PARI/GP over every prime `ℓ ∤ 169` below
+`300` finds `#X_0(169)(𝔽_ℓ) = ℓ + 1` in every case (`Tr T_ℓ = 0`
+throughout — the level-`169` newforms pair off under the quadratic twist
+by the character mod `13`), and `ℓ + 1 ≤ 2(ℓ + 1)` always; while for
+`ℓ ≥ 254` Weil alone forbids it, since `#X(𝔽_ℓ) ≤ ℓ + 1 + 2·8·√ℓ ≤
+2(ℓ + 1)` there.  So a successor must not "simplify" this leaf back down
+to `SpecF ℓ`-points: the resulting statement would be TRUE, USELESS and
+indistinguishable from this one at a glance.
+
+Over the quadratic extension the bound bites at exactly five primes:
+
+    ℓ    #X_0(169)(𝔽_ℓ)  2(ℓ+1)   #X_0(169)(𝔽_{ℓ²})  2(ℓ²+1)
+    2         3             6            19            10   ✓
+    3         4             8            38            20   ✓
+    5         6            12            80            52   ✓
+    7         8            16           128           100   ✓
+    11       12            24           246           244   ✓ (barely)
+    17       16            36           476           580   ✗
+
+`ℓ = 2` gives the numerically smallest witness (`19 > 10`) and would do
+just as well; `ℓ = 3` is used because several `IsReductionBase`
+consumers in this file carry an `hℓ2 : ℓ ≠ 2` side condition, and
+carrying `2` would invite a collision with them for no gain.
+
+**Not vacuous, and not satisfiable by junk.**  `k` is a morphism
+`Spec K ⟶ Spec 𝔽₃`, i.e. an `𝔽₃`-algebra structure on `K`, of which
+there is exactly one; together with `Nat.card K = 9` this pins `K = 𝔽₉`
+up to isomorphism, so the leaf asserts one number about one field and
+cannot be discharged by choosing a convenient `K`.  The value `38` is
+nonzero and is not `#K + 1 = 10`, so it is not the cusp count nor any
+shape-of-the-object default.
+
+**WHAT PROVING IT NEEDS.**  Exactly `card_relPoint_x0_finiteField`'s
+inputs, at `𝔽_{ℓ²}` instead of `𝔽_ℓ`: the geometric half is the Lefschetz
+trace formula for `Frob²` — already the `card_curve` field of
+`IsX0EichlerShimura` in spirit, but that structure is stated for
+`RelPoint strX (𝟙 (SpecF ℓ))` only and must be widened to an arbitrary
+finite `k`, which is the honest first step; the arithmetic half is
+`Tr(T_3² ∣ S₂(Γ₀(169))) = 20`, one more row of the same computation
+`traceHeckeOp_of_x0WitnessTable` performs, in `T_ℓ²` rather than `T_ℓ`.
+Note `169` is NOT a row of `x0WitnessTable` and should not be added to
+it: that table is consumed with `ℓ + 1 − m` semantics that are wrong for
+a non-prime field.
+
+**The check that would refute this verdict**: a fourth independent
+computation of `Tr(T_3² ∣ S₂(Γ₀(169)))` disagreeing with `20`, or of
+`dim S₂(Γ₀(169))` disagreeing with `8`. -/
+theorem card_relPoint_x0OneSixtyNine_quadratic {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF 3}
+    {strY' : Y' ⟶ SpecF 3} {jY' : Y' ⟶ X'}
+    (_hX' : IsX0Compactification 169 strX' strY' jY')
+    (K : Type) [Field K] [Finite K] (_hK : Nat.card K = 9)
+    (k : Spec (CommRingCat.of K) ⟶ SpecF 3) :
+    Nat.card (RelPoint strX' k) = 38 :=
+  sorry
+
 /-- **`X_0(169)` HAS GONALITY `≥ 3` — it is neither rational nor
-hyperelliptic** (sorry leaf, 2026-07-27) — the arithmetic half of
+hyperelliptic** (PROVEN 2026-07-28 by decomposition, over the three
+leaves `hasDoubleCoverOfAffineLine_specialFibre`,
+`card_relPoint_x0OneSixtyNine_quadratic` and
+`card_relPoint_le_of_hasDoubleCoverOfAffineLine`; introduced as a sorry
+leaf 2026-07-27) — the arithmetic half of
 `ajPair_ne_of_disjoint_x0OneSixtyNine`, and the ONLY half that mentions
 the level.  The degree-`2` analogue of
 `hasNoFibreAffineLine_of_one_le_x0Genus`.
+
+**THE CUT, and it follows the axis the previous docstring named — with
+one number corrected.**  It recorded "the MODULAR one … the reduction
+bound at `ℓ = 3`", which is right about the method and about the prime,
+and WRONG about the field: `#X_0(169)(𝔽₃) = 4` against a
+hyperelliptic bound of `2·(3+1) = 8`, so the `𝔽₃` count refutes nothing,
+and NO prime field works at any `ℓ`.  Ogg's bound is over `𝔽_{ℓ²}`:
+`#X_0(169)(𝔽₉) = 38 > 20 = 2·(9+1)`.  The full numerical audit, the
+table of primes at which the square-field bound bites, and the PARI/GP
+runs behind them are on `card_relPoint_x0OneSixtyNine_quadratic`.  This
+is exactly the trap the doctrine's "untrusted searcher, never prover"
+rule is for: the framing was checked numerically BEFORE any proof effort
+was spent on it, and it did not survive.
+
+The three leaves are disjoint in theory, which is why they are three:
+
+| leaf | theory | level |
+|---|---|---|
+| `card_relPoint_le_of_hasDoubleCoverOfAffineLine` | `ℙ¹` and the degree of a finite morphism | generic |
+| `hasDoubleCoverOfAffineLine_specialFibre` | good reduction, specialisation of gonality | generic |
+| `card_relPoint_x0OneSixtyNine_quadratic` | Eichler–Shimura over `𝔽_{ℓ²}` | `169` |
+
+**None of the three is Riemann–Roch**, so this node is independent of
+`hasDoubleCoverOfAffineLine_of_ajPair_eq` and of the two degree-`1`
+Riemann–Roch leaves in this cluster, and it closes without a genus of a
+scheme, without `h⁰`, and without the hyperelliptic classification —
+which is what "the modular axis is worth more than the geometric one"
+meant.
 
 TRUE.  `X_0(169)` has genus `8`, and `169` is not in Ogg's list of the
 nineteen hyperelliptic levels (Ogg, *Hyperelliptic modular curves*, 1974:
@@ -46165,23 +46408,35 @@ exactly refuting gonality `≤ 2`.
 `169` turning up in Ogg's list, or a degree-`2` linear system on
 `X_0(169)` of projective dimension `≥ 1`.
 
-**What proving it needs**: the genus of `X_0(169)`, hence the same missing
-theory as `hasNoFibreAffineLine_of_one_le_x0Genus` (a genus of a scheme,
-`h¹(𝒪_X)`, or Riemann–Hurwitz for the degree-`μ(169)` map to the
-`j`-line), PLUS the hyperelliptic classification.  **The axis a successor
-should prefer, and it is the same one recorded on
-`hasNonconstantAbelianMap_of_one_le_x0Genus`: the MODULAR one** — Ogg's
-proof is a count of fixed points of the hyperelliptic involution against
-the Atkin–Lehner involutions and a reduction mod `ℓ` (`X_0(N)(𝔽_ℓ)`
-having more points than a hyperelliptic curve of that genus can), which
-never mentions the genus of a scheme.  At `N = p²` with `p = 13` the
-cheapest form is the reduction bound at `ℓ = 3`.  **The check that would
-refute this verdict**: a genus, an `h¹`, or a gonality statement appearing
-in any of the three trees. -/
+**What proving it needs**: see the three leaves below, over which it is
+now PROVEN.  It does NOT need the genus of a scheme, nor `h¹(𝒪_X)`, nor
+the hyperelliptic classification: the route is Ogg's reduction bound, and
+the only place a number about `169` enters is
+`card_relPoint_x0OneSixtyNine_quadratic`, which is Eichler–Shimura and
+mentions no genus. -/
 theorem not_hasDoubleCoverOfAffineLine_x0OneSixtyNine {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
     {strY : Y ⟶ SpecQ} {jY : Y ⟶ X} (hX : IsX0Compactification 169 strX strY jY) :
-    ¬ HasDoubleCoverOfAffineLine strX :=
-  sorry
+    ¬ HasDoubleCoverOfAffineLine strX := by
+  intro hdc
+  haveI : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  obtain ⟨X', Y', strX', strY', jY', ⟨hX'⟩⟩ :=
+    exists_x0Compactification_finiteField 169 3 (by norm_num) Nat.prime_three (by decide)
+  -- Ogg: the degree-`2` cover specialises to the good reduction at `3` …
+  have hdc' : HasDoubleCoverOfAffineLine strX' :=
+    hasDoubleCoverOfAffineLine_specialFibre (by norm_num) Nat.prime_three (by decide) hX hX' hdc
+  have hcard : Nat.card (GaloisField 3 2) = 9 := by
+    rw [GaloisField.card 3 2 (by norm_num)]; norm_num
+  let k : Spec (CommRingCat.of (GaloisField 3 2)) ⟶ SpecF 3 :=
+    Spec.map (CommRingCat.ofHom (algebraMap (ZMod 3) (GaloisField 3 2)))
+  -- … where Eichler–Shimura counts `38` points over `𝔽₉` …
+  have h38 : Nat.card (RelPoint strX' k) = 38 :=
+    card_relPoint_x0OneSixtyNine_quadratic hX' (GaloisField 3 2) hcard k
+  -- … and a degree-`≤ 2` cover admits at most `2 · (9 + 1) = 20`.
+  have hle : Nat.card (RelPoint strX' k) ≤ 2 * (Nat.card (GaloisField 3 2) + 1) :=
+    card_relPoint_le_of_hasDoubleCoverOfAffineLine hX'.isProper hX'.smooth hX'.connected hdc'
+      (GaloisField 3 2) k
+  rw [h38, hcard] at hle
+  norm_num at hle
 
 /-- **`X_0(169)` IS NOT HYPERELLIPTIC**, in the only form this pin can
 state it: two DISJOINT effective degree-`2` divisors supported on
