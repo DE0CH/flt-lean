@@ -10316,8 +10316,7 @@ theorem exists_potentialModularityWitness_of_five_le
   -- (i) the Moret–Bailly base: totally real Galois `F`, irreducibility
   -- preservation, and the modular congruent seed (Taylor 2002 Thm B)
   obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF, ⟨seed⟩⟩ :=
-    exists_moretBailly_seed_of_five_le hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ
+    exists_moretBailly_seed_of_five_le hℓodd hℓ5 hW hρbar hirr
   -- (ii) modularity lifting over `F`: the ℓ-adic Hecke block
   obtain ⟨E, hE, hNE, badF, heckeF, ψℓ, ιO, hιO, hmod⟩ :=
     exists_heckePackage_of_seed hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr

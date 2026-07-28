@@ -821,8 +821,10 @@ It is available from `PotentialHeckeDatum.galoisF` as `IsGalois.to_normal`.
 THE HYPOTHESIS IS DELIBERATELY THE WEAK ONE. Only `Nonempty (F →+* ℚ_[p])` is used,
 not the cardinality equality that `IsTotallySplitAt` asserts — which is precisely
 what lets this live upstream of the file where `IsTotallySplitAt` is defined. The
-`IsTotallySplitAt` form is the wrapper `natCard_residue_eq_of_isTotallySplitAt` in
-`Modularity/KhareWintenberger.lean`.
+`IsTotallySplitAt` form is the wrapper `natCard_residue_eq_of_isTotallySplitAt`,
+which since the Break-D hoist is BELOW in THIS file, not in
+`Modularity/KhareWintenberger.lean` as this line used to say (corrected
+2026-07-28; `grep -n natCard_residue_eq_of_isTotallySplitAt` finds it only here).
 
 THE ROUTE, all pieces from mathlib: `Ideal.pow_inertiaDeg` (`absNorm P = p ^ f(P)`)
 converts the residue cardinality of the exhibited prime into `f = 1` and back again
@@ -20758,35 +20760,42 @@ theorem isTotallySplitAt_iff_forall_exists_padic
     rw [IsTotallySplitAt, hbij, hcard]
 
 /-- **BREAK C — complete splitting at `p` forces residue field `𝔽_p` at every `w ∣ p`**
-(PROVEN 2026-07-27; RELOCATED 2026-07-27, see below).
+(PROVEN 2026-07-27).
 
 At `p = 2` this is exactly the `PotentialHeckeDatum.residueCardTwo` obligation
 `∀ w ∣ 2, Nat.card (𝓞 F ⧸ w) = 2`.
 
-**THE PROOF NO LONGER LIVES HERE, AND MUST NOT BE MOVED BACK.** The seven-lemma
-cluster this was first proven over — `norm_padic_le_one_of_ringOfIntegers`,
-`surjective_of_ringHom_zmod`, `nonempty_ringHom_zmod_of_nonempty_ringHom_padic`,
+**STALE-CLAIM CORRECTION (2026-07-28).** This docstring previously carried a
+paragraph headed "THE PROOF NO LONGER LIVES HERE, AND MUST NOT BE MOVED BACK",
+asserting that the seven-lemma adapter cluster —
+`norm_padic_le_one_of_ringOfIntegers`, `surjective_of_ringHom_zmod`,
+`nonempty_ringHom_zmod_of_nonempty_ringHom_padic`,
 `exists_isMaximal_natCard_quotient_eq_of_nonempty_ringHom_padic`,
-`isMaximal_span_intCast_of_prime`, `liesOver_span_intCast_of_natCast_mem` and the
-adapter itself — now lives in
-`Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean`, under the
-name `natCard_residue_eq_of_nonempty_ringHom_padic`.
+`isMaximal_span_intCast_of_prime`, `liesOver_span_intCast_of_natCast_mem` and
+`natCard_residue_eq_of_nonempty_ringHom_padic` itself — had been RELOCATED into
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean`, and gave
+as its reason that "the import graph runs this file → `HilbertModularity`, not
+the reverse".
 
-WHY, because the reason is a layering fact that is easy to rediscover the hard way:
-the import graph runs **this file → `HilbertModularity`**, not the reverse. The
-only declaration in the tree that must PRODUCE `residueCardTwo` is
-`nonempty_potentialHeckeDatum_of_five_le`, which lives in `HilbertModularity` and
-is therefore strictly UPSTREAM of this file. An adapter proven here can never
-reach it. Since the proof uses only mathlib plus `Nonempty (F →+* ℚ_[p])` — never
-`IsTotallySplitAt`, which is why this wrapper exists — restating it upstream cost
-no mathematics at all.
+**Both halves are false, and the second is backwards.** All seven lemmas are in
+THIS file, immediately above (`natCard_residue_eq_of_nonempty_ringHom_padic` at
+line ≈839, in `namespace GaloisRepresentation`, which is why the citation below
+is `_root_.GaloisRepresentation.…`); `grep -n` for any of the seven names in
+`HilbertModularity.lean` finds none of them. And the import runs
+**`HilbertModularity` → this file**: `HilbertModularity.lean` carries
+`public import Fermat.FLT.Modularity.MoretBailly` and this file imports nothing
+from it. So this file is UPSTREAM, an adapter proven here reaches
+`nonempty_potentialHeckeDatum_of_five_le` perfectly well, and there was never
+anything to relocate. The layering conclusion the note drew was the exact inverse
+of the layering.
 
-WHAT REMAINS HERE is exactly the `IsTotallySplitAt` ⟹ `Nonempty (F →+* ℚ_[p])`
-conversion, which is all this file's Moret–Bailly vocabulary contributes.
+WHAT THIS WRAPPER ADDS to the adapter above is exactly the
+`IsTotallySplitAt` ⟹ `Nonempty (F →+* ℚ_[p])` conversion, which is all this
+file's Moret–Bailly vocabulary contributes.
 `hnorm` is content, not bookkeeping: without normality the statement is FALSE (a
 non-normal cubic in which `2` factors as `P₁P₂` with `f(P₁) = 1`, `f(P₂) = 2` has a
-`ℚ_[2]`-embedding while `𝓞 F ⧸ P₂` has four elements). The full argument and the
-route correction are in the relocated docstring. -/
+`ℚ_[2]`-embedding while `𝓞 F ⧸ P₂` has four elements). The full argument is in
+the docstring of `natCard_residue_eq_of_nonempty_ringHom_padic` above. -/
 theorem natCard_residue_eq_of_isTotallySplitAt
     (F : Type u) (hF : Field F) (hNF : NumberField F) (hnorm : Normal ℚ F)
     (p : ℕ) [Fact p.Prime] (hsplit : IsTotallySplitAt F p)
@@ -40030,11 +40039,23 @@ odd). The two remaining properties are then formal:
 * the real point from `Y`, by `hasRationalPoint_of_isFormOver` (PROVEN
   here).
 
-HYPOTHESES NOT CONSUMED (underscored, so the reduction is mechanically
-visible): the whole `ℓ`-adic package `O`, `ρ`, `_hZinj`, `_hρ`, `π`,
-`_hπsurj`, `_hπ`. Taylor's moduli construction needs only the RESIDUAL
-representation — `ρbar` irreducible and hardly ramified (whence odd) at
-`ℓ ≥ 5`. The lift is used by the CONSUMER of this leaf, not by it.
+NO CHARACTERISTIC-ZERO LIFT PACKAGE (DELETED 2026-07-28 from this
+declaration and from the whole glue chain it feeds, up to
+`exists_moretBailly_seed_of_five_le`). Taylor's moduli construction
+needs only the RESIDUAL representation — `ρbar` irreducible and hardly
+ramified (whence odd) at `ℓ ≥ 5` — and this declaration already recorded
+that mechanically by binding the package as `_hZinj`, `_hρ`, `_hπsurj`,
+`_hπ` and calling downward without it. Those binders are now gone, along
+with `O`, `ρ`, `hrank` and `π`, from all eight links of the chain. The
+lift is used by the CONSUMER of the chain
+(`exists_potentialModularityWitness_of_five_le` in
+`Modularity/KhareWintenberger.lean`, which still binds it and still hands
+it to `exists_heckePackage_of_seed`), never by the chain itself.
+
+Deleting it is what lets `exists_moretBailly_seed_of_five_le` be applied
+from hypotheses that carry a residual `ρbar` and no `ℚ`-rational lift —
+which is exactly the position of the potential-modularity leaves in
+`GaloisRepresentation/HardlyRamified/HilbertModularity.lean`.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
 discharged by the independent moduli construction — never through
@@ -40048,24 +40069,13 @@ unsatisfiable (headline of this module), so the statement is also
 vacuously sound. -/
 theorem exists_twistedHilbertBlumenthalModuliScheme_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (_hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (_hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (_hπsurj : Function.Surjective π)
-    (_hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    (hirr : ρbar.IsIrreducible) :
     ∃ (X : AlgebraicGeometry.Scheme.{u})
       (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
       (A : AlgebraicGeometry.Scheme.{u}) (fA : A ⟶ X)
@@ -40401,24 +40411,13 @@ discharged by the independent moduli construction — never through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_twistedHilbertBlumenthalModuli_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    (hirr : ρbar.IsIrreducible) :
     ∃ (X : AlgebraicGeometry.Scheme.{u})
       (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))),
       AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsSeparated fX ∧
@@ -40435,8 +40434,7 @@ theorem exists_twistedHilbertBlumenthalModuli_of_five_le
         Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) := by
   -- (i) the moduli SPACE, with its universal abelian scheme
   obtain ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hgi, hreal, hmod⟩ :=
-    exists_twistedHilbertBlumenthalModuliScheme_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ
+    exists_twistedHilbertBlumenthalModuliScheme_of_five_le hℓodd hℓ5 hW hρbar hirr
   -- (ii) the Tate-module construction at each `F`-point
   exact ⟨X, fX, hsm, hsep, hft, hqc, hgi, hreal,
     fun F hF hNF hFtr hFgal hrestr hpt =>
@@ -40543,24 +40541,13 @@ proven by the independent Moret–Bailly construction — never through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_hilbertBlumenthalPoint_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
       Even (Module.finrank ℚ F) ∧
@@ -40571,8 +40558,7 @@ theorem exists_hilbertBlumenthalPoint_of_five_le
   classical
   -- (i) the moduli input: the twisted Hilbert–Blumenthal variety `X/ℚ`
   obtain ⟨X, fX, hsm, hsep, hft, hqc, hgi, hreal, htrans⟩ :=
-    exists_twistedHilbertBlumenthalModuli_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ
+    exists_twistedHilbertBlumenthalModuli_of_five_le hℓodd hℓ5 hW hρbar hirr
   -- (ii) Moret–Bailly, with the splitting field of `ρbar` as avoidance datum.
   -- Since 2026-07-27 it also delivers the PARITY of `[F : ℚ]`, which is carried
   -- through untouched here and consumed only at the Carayol joint.
@@ -41249,13 +41235,6 @@ discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
 theorem exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -41263,10 +41242,6 @@ theorem exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
@@ -41424,13 +41399,6 @@ discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
 theorem exists_residualModularity_of_hilbertBlumenthalPoint
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -41438,10 +41406,6 @@ theorem exists_residualModularity_of_hilbertBlumenthalPoint
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
@@ -41457,8 +41421,8 @@ theorem exists_residualModularity_of_hilbertBlumenthalPoint
   -- the node's ENTIRE formal content: the determinant clause of the
   -- compatible system, descended to the residual representation
   obtain ⟨S₂, hS₂⟩ :=
-    exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint hℓodd hℓ5 hZinj
-      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal pt
+    exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint hℓodd hℓ5
+      hW hρbar hirr F hFtr hFgal pt
   have hnorm :=
     residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint pt S₂ hS₂
   -- the coefficient ring, built from the FINITENESS of `pt.kp` alone
@@ -41630,13 +41594,6 @@ discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
 theorem exists_heckeSystem_of_residualModularity
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -41644,10 +41601,6 @@ theorem exists_heckeSystem_of_residualModularity
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F)))
@@ -41671,7 +41624,7 @@ theorem exists_heckeSystem_of_residualModularity
   -- the ONLY arithmetic input: the parallel-weight-`2` (Weil-pairing)
   -- normalization of the point's own compatible system
   obtain ⟨S₂, hS₂⟩ := exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
-    hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal pt
+    hℓodd hℓ5 hW hρbar hirr F hFtr hFgal pt
   -- the `p`-adic coefficient ring is a nontrivial commutative ring, so
   -- the lattice `Fin 2 → C` has rank `2`
   haveI : IsLocalRing pt.C := pt.isLocalRingC
@@ -41816,13 +41769,6 @@ discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`; it binds both joints. -/
 theorem exists_heckeEigensystem_of_hilbertBlumenthalPoint
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
@@ -41830,10 +41776,6 @@ theorem exists_heckeEigensystem_of_hilbertBlumenthalPoint
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
@@ -41847,14 +41789,14 @@ theorem exists_heckeEigensystem_of_hilbertBlumenthalPoint
   -- joint (a): the residual mod-`p` representation of the point is
   -- modular, being induced from a character of the quadratic `L/F`
   obtain ⟨E₁, hE₁, hNE₁, Λ, hΛ, jΛ, hjΛ, redΛ, a₁, S₁, hres⟩ :=
-    exists_residualModularity_of_hilbertBlumenthalPoint hℓodd hℓ5 hZinj hrank hρ
-      hW hρbar hirr π hπsurj hπ F hFtr hFgal pt
+    exists_residualModularity_of_hilbertBlumenthalPoint hℓodd hℓ5
+      hW hρbar hirr F hFtr hFgal pt
   -- joint (b): modularity lifting at `p` promotes it to the `p`-adic
   -- member `τp`, with the newform's Hecke field `E₀` identified inside
   -- the coefficient field `D` of the system by `θ`
   obtain ⟨E₀, hE₀, hNE₀, θ, a₀, S₀, hmod⟩ :=
-    exists_heckeSystem_of_residualModularity hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr π hπsurj hπ F hFtr hFgal pt jΛ hjΛ redΛ a₁ S₁ hres
+    exists_heckeSystem_of_residualModularity hℓodd hℓ5 hW hρbar
+      hirr F hFtr hFgal pt jΛ hjΛ redΛ a₁ S₁ hres
   refine ⟨E₀, hE₀, hNE₀,
     fun w => X ^ 2 - C (a₀ w) * X + C (Ideal.absNorm w.asIdeal : E₀),
     pt.ψDℓ.comp θ, S₀ ∪ pt.bad, fun w hw => ?_⟩
@@ -41941,29 +41883,39 @@ the point's own `matchℓ` over the united bad set. Those two leaves are
 the residual sorries of this node; the circularity guard above binds
 both.
 
+NO CHARACTERISTIC-ZERO LIFT PACKAGE (DELETED 2026-07-28 across the whole
+chain; see the same heading in
+`exists_twistedHilbertBlumenthalModuliScheme_of_five_le` for the
+measurement). This theorem used to bind `{O} … (hZinj) {ρ} (hrank) (hρ)
+(π) (hπsurj) (hπ)` — a hardly ramified characteristic-zero lift of `ρbar`
+OVER `ℚ` — and thread it, unused, through all eight links down to leaves
+that carry only the mod-`ℓ` datum. Taylor §§2–3 builds the twisted
+Hilbert–Blumenthal moduli variety from `ρbar` alone and no step of it
+mentions a `ℚ`-rational lift, so the package was inert and is gone.
+
+That matters beyond tidiness: the lift over `ℚ` is precisely what
+potential modularity exists to PRODUCE, so any consumer positioned before
+pillar α could not supply it and could not cite this theorem at all. With
+the package gone the hypotheses are exactly "`ρbar` irreducible and hardly
+ramified at `ℓ ≥ 5`", which is the position of the potential-modularity
+leaves in `GaloisRepresentation/HardlyRamified/HilbertModularity.lean`.
+The lift is still bound by the CONSUMER,
+`exists_potentialModularityWitness_of_five_le` in
+`Modularity/KhareWintenberger.lean`, which needs it for
+`exists_heckePackage_of_seed` and for the witness's own `ρ`.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
 proven by the independent Moret–Bailly construction — never through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_moretBailly_seed_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    (hirr : ρbar.IsIrreducible) :
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F)
       (_ : Even (Module.finrank ℚ F))
@@ -41973,16 +41925,15 @@ theorem exists_moretBailly_seed_of_five_le
   -- (i) the geometric joint: the totally real Galois base `F`, its DEGREE
   -- PARITY, the image-preserving restriction, and the Hilbert–Blumenthal point
   obtain ⟨F, hF, hNF, hFtr, hFgal, hev, hrestr, ⟨pt⟩⟩ :=
-    exists_hilbertBlumenthalPoint_of_five_le hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ
+    exists_hilbertBlumenthalPoint_of_five_le hℓodd hℓ5 hW hρbar hirr
   -- irreducibility over `F` is PROVEN from image preservation
   have hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible :=
     isIrreducible_map_of_range_surjective _ hrestr hirr
   -- (ii) the automorphic joint: the compatible system of the point is a
   -- Hilbert-newform Hecke eigensystem
   obtain ⟨E₀, hE₀, hNE₀, hecke₀, ψ₀, S, hsys⟩ :=
-    exists_heckeEigensystem_of_hilbertBlumenthalPoint hℓodd hℓ5 hZinj hrank
-      hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal pt
+    exists_heckeEigensystem_of_hilbertBlumenthalPoint hℓodd hℓ5
+      hW hρbar hirr F hFtr hFgal pt
   -- glue: unite the bad sets and transport the match along `matchℓ`
   refine ⟨F, hF, hNF, hFtr, hFgal, hev, hirrF,
     ⟨{ E₀ := E₀, bad₀ := pt.bad ∪ S, hecke₀ := hecke₀, O₀ := pt.O₀,
