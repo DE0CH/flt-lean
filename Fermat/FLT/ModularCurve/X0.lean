@@ -8849,24 +8849,27 @@ So the inequality `≥ N` really was free, exactly as the previous version of
 this docstring recorded, and *both* directions now come from the same
 count; the only thing reducedness buys is `≤`.
 
-**A ROUTE FOR THE SIBLING LEAF, RECORDED HERE BECAUSE THIS NODE IS THE
-COMMON INPUT, AND NOT TAKEN.**  With this theorem `C ⟶ T` is finite, flat
-and locally of finite presentation (see directly below), and its geometric
-fibres are reduced, hence étale over `K`.  Mathlib's
+**THIS NODE IS NOW THE SINGLE CARTIER INPUT OF THE SECTION** (2026-07-27).
+The route recorded here was taken: with this leaf in hand `C ⟶ T` is finite,
+flat and locally of finite presentation (see the theorem directly below), and
+its geometric fibres have `#C_t(K) = N = dim_K Γ(C_t ⊗ K)`, hence are reduced,
+hence are étale over `K`.  Mathlib's
 `AlgebraicGeometry.Smooth.of_smooth_fiberToSpecResidueField`
-(`Morphisms/SmoothFiber.lean`) upgrades "LFP + flat + smooth fibres" to
-smooth, and a finite smooth morphism is étale — which would close
-`eq_zero_of_liesIn_of_squareZero` below and make
-`isReduced_geomFibre_of_specQBase` the SINGLE Cartier input of the whole
-section.  **What that route still costs**, measured rather than guessed at
-on 2026-07-27: `Smooth.of_smooth_fiberToSpecResidueField` wants the fibre
-over `κ(t)`, not over `K`, so one must descend étaleness along `κ(t) ⊆ K`
-(`Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat`, available) after
-identifying `K ⊗_{κ(t)} A_{κ(t)}` with the geometric fibre algebra `A_K`
-(a pullback-pasting argument, `pullbackRightPullbackFstIso`), and then get
-`Etale` from `Smooth` for a finite morphism (`Etale` is
-`SmoothOfRelativeDimension 0`, so this needs the relative dimension). None
-of that is new mathematics; all of it is real formalisation work. -/
+(`Morphisms/SmoothFiber.lean`) then upgrades "LFP + flat + smooth fibres"
+to smooth, and a finite smooth morphism is étale.  That argument is now the
+content of `eq_zero_of_liesIn_of_squareZero_of_finrank` below, which takes the
+rank as a HYPOTHESIS and so carries no characteristic hypothesis of its own;
+`eq_zero_of_liesIn_of_squareZero` is proven by feeding this leaf to it.  So
+both of the section's other leaves are downstream of this one, and the
+characteristic-zero hypothesis is spent HERE and nowhere else.  The work
+remaining in that downstream leaf is entirely the translation between
+`RelPoint`/`LiesIn` and the points of the fibre scheme; no new mathematics
+beyond this leaf is involved.
+
+REFERENCES: SGA 3, VI_B 1.6.1; Oort, *Commutative group schemes*;
+Waterhouse, *Introduction to Affine Group Schemes*, Thm. 11.4; Tate,
+*Finite flat group schemes*, §3.7 in Cornell–Silverman–Stevens;
+Katz–Mazur (6.7.1). -/
 theorem CyclicSubgroupOfOrder.finrank_eq_of_specQBase
     {E T : Scheme.{0}} {f : E ⟶ T} {ab : AbelianSchemeStruct f} {N : ℕ}
     (c : CyclicSubgroupOfOrder ab N) (q : T ⟶ SpecQ) (t : T) :
@@ -9114,65 +9117,7 @@ and is now redundant, since `hrank` buys it.
   the split, `q` is consumed entirely inside `finrank_eq_of_specQBase`,
   which is exactly the leaf those witnesses refute.
 
-`N` plays no role whatever: Cartier needs finite, flat, subgroup and
-characteristic zero, and not cyclicity.  It is present only because `c`
-bundles it.  Note also that this leaf does NOT need
-`LocallyOfFinitePresentation`, so it and its sibling
-`isReduced_geomFibre_of_specQBase` above may be attacked independently
-even though both consume Cartier.
-
-**SIBLING UPDATE, 2026-07-27 (SECOND PASS).**  The other branch is now
-fully closed down to Cartier: `locallyOfFinitePresentation_of_specQBase`
-is PROVEN over `finrank_eq_of_specQBase`, which is itself PROVEN over
-`isReduced_geomFibre_of_specQBase` — "every geometric fibre of `C` is
-reduced", which is Cartier's theorem in its standard form and carries no
-counting.  Three consequences for whoever takes this leaf.
-
-* The commutative algebra that used to sit on top of that branch —
-  "finite + flat + locally constant rank ⟹ finite locally free" — is
-  discharged in general, as
-  `AlgebraicGeometry.locallyOfFinitePresentation_of_finrank_const`.  Do not
-  redo it.
-* So is the counting: the `RelPoint`/`LiesIn`-to-fibre-algebra translation
-  is `AlgebraicGeometry.fibrePointEquivAlgHom`, and
-  "reduced + algebraically closed base ⟹ rank = point count" is
-  `Algebra.finrank_eq_card_algHom`
-  (`Fermat/FLT/Mathlib/AlgebraicGeometry/FinrankGeometricPoints.lean`).
-  Do not redo that either.
-* **There is a route that would close THIS leaf as a corollary of the
-  sibling**, and what it still costs is measured in the docstring of
-  `finrank_eq_of_specQBase`: reduced geometric fibres are étale over `K`,
-  so descending along `κ(t) ⊆ K` gives smooth `κ(t)`-fibres,
-  `AlgebraicGeometry.Smooth.of_smooth_fiberToSpecResidueField` upgrades
-  "LFP + flat + smooth fibres" to smooth, and a finite smooth morphism is
-  étale.  If that route is taken, `etale_of_specQBase` becomes provable
-  from `isReduced_geomFibre_of_specQBase` alone and this declaration
-  disappears rather than being proven.  Check which of the two shapes the
-  tree is in before starting.
-
-**THE ROUTE, INCLUDING THE ONE TO AVOID.**
-
-1. `AbelianSchemeStruct.nonempty_module_infKernel_of_squareZero`
-   (`AbelianSchemeIsogeny.lean`) gives a `Module K` structure on
-   `ab.infKernel (Spec.map φ) rfl` over a FIELD base, and its own
-   docstring records — as a generalisation that is TRUE and is explicitly
-   offered to a prover — that the kernel is a module over `R₀` itself,
-   over an arbitrary base and without `ab.smooth`.  Over a `ℚ`-scheme
-   that yields a `Module ℚ` structure, hence torsion-freeness of the
-   ambient infinitesimal kernel.
-2. **Torsion-freeness alone does NOT close this leaf**, and the tempting
-   completion of it is circular: one would still need the infinitesimal
-   points lying in `C` to be TORSION, and "`C` is killed by `N`"
-   scheme-theoretically is equivalent to étaleness of `C ⟶ T` (two
-   morphisms `C ⇉ C` agreeing at every geometric point are equal exactly
-   when `C` is reduced).  Recorded so it is not re-tried.
-3. The non-circular route is the classical one.  Over a `ℚ`-algebra the
-   formal completion of `C` along its unit section `e_C` is a formal
-   group admitting a logarithm, hence is a formal additive group and its
-   ring is a power-series ring; `C ⟶ T` being FINITE forces that formal
-   group to have dimension zero, i.e. `Lie(C) = 0`, which is this
-   statement.  This is where finiteness of `C` enters and where the
-   characteristic-zero hypothesis is consumed.
+`N` plays no role beyond `hrank` and `geom_cyclic`: cyclicity is not used.
 
 REFERENCES: SGA 3, VI_B 1.6.1 (the relative form); Oort, *Commutative
 group schemes*; Waterhouse, *Introduction to Affine Group Schemes*,
@@ -13083,95 +13028,6 @@ theorem y0HasNoRationalPoint_of_not_stableCyclic {N : ℕ}
   obtain ⟨E, hE, g, hg, hst⟩ := exists_stableCyclic_of_gamma0Datum hN.ne' d₀
   exact h E g hg hst
 
-/-- **Mazur's point listing, genus-`1` family**: `q ∈ {11, 17, 19}` (sorry leaf,
-promoted 2026-07-27 from an in-body step of
-`not_stableCyclic_sq_of_isogenyClassPrime` below to a named top-level leaf, so
-that the three steps of that node can have three separate owners).
-
-No elliptic curve over `ℚ` carries two DISTINCT Galois-stable subgroups of
-order `q`.
-
-TRUE.  At these three primes `X_0(q)` is an elliptic curve of rank `0`
-(`11a`, `17a`, `19a`, of torsion `ℤ/5`, `ℤ/4`, `ℤ/3`), so `X_0(q)(ℚ)` has
-`5, 4, 3` points, of which `2` are cusps at each level, leaving `3, 2, 1`
-non-cuspidal points — Mazur, *Rational isogenies of prime degree*, Theorem 1
-and Table 1.  Two distinct stable lines on one `E'` would give two distinct
-points of `Y_0(q)(ℚ)` over the same `j`, and the listed `j`-invariants are
-pairwise distinct: `-2¹⁵`, `-121`, `-24729001` at `q = 11`;
-`-17·373³/2¹⁷`, `-17²·101³/2` at `q = 17`; `-2¹⁵·3³` at `q = 19`, where there
-is only one point to begin with.
-
-Equivalently and with no enumeration: two independent `q`-isogenies from `E'`
-produce an isogeny of degree `q²` between `E'/⟨g₁⟩` and `E'/⟨g₂⟩`, and
-`121, 289, 361` are absent from Mazur's list of isogeny degrees.  That
-phrasing is circular *in the consumer* (it is the theorem being proven there)
-but is the right sanity check on this statement.
-
-`q = 13` is deliberately absent: `genus X_0(13) = 0` makes `Y_0(13)(ℚ)`
-infinite and the enumeration vacuous, so the statement is FALSE at `13` and
-that level is handled by `not_stableCyclic_oneHundredSixtyNine` instead.  The
-genus of `X_0(q)` at `q = 11, 13, 17, 19, 37, 43, 67, 163` is
-`1, 0, 1, 1, 2, 3, 5, 13` (`gp`, 2026-07-27; an untrusted searcher, so a check
-on the STATEMENT and not a step of any proof).
-
-Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
-(1978), Theorem 1 and Table 1. -/
-theorem not_twoStableLines_of_genusOneIsogenyPrime (q : ℕ)
-    (hq : q ∈ ({11, 17, 19} : Finset ℕ))
-    (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
-    (g₁ g₂ : (E'⁄(AlgebraicClosure ℚ)).Point)
-    (hg₁ : addOrderOf g₁ = q) (hg₂ : addOrderOf g₂ = q)
-    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
-    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
-      WeierstrassCurve.Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-        AddSubgroup.zmultiples g₁)
-    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
-      WeierstrassCurve.Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-        AddSubgroup.zmultiples g₂) :
-    False :=
-  sorry
-
-/-- **Mazur's point listing, genus-`≥ 2` family**: `q ∈ {37, 43, 67, 163}`
-(sorry leaf, promoted 2026-07-27 from an in-body step of
-`not_stableCyclic_sq_of_isogenyClassPrime` below).  Same conclusion as
-`not_twoStableLines_of_genusOneIsogenyPrime` above, different mechanism, and
-that is why the two are separate leaves rather than one.
-
-TRUE.  `genus X_0(q) = 2, 3, 5, 13` respectively (checked with `gp`,
-2026-07-27), so `X_0(q)(ℚ)` is finite by Faltings.
-
-**At `q = 43, 67, 163` there is exactly ONE non-cuspidal point and it needs no
-enumeration at all**: the curve has CM by the class-number-one imaginary
-quadratic order of discriminant `-q`, in which `q` RAMIFIES, so `q𝒪 = 𝔭²` and
-the only `𝒪`-submodules of `E'[q]` are `0`, `E'[𝔭]` and `E'[q]` — a unique
-line, hence never two.  A prover should take those three first: the CM
-argument is self-contained and does not touch the modular curve at all.
-
-At `q = 37` there are two non-cuspidal points, with the non-CM `j`-invariants
-`-7·11³` and `-7·137³·2083³`, again distinct, so again no single `E'` carries
-both lines; `37` is the one level here that genuinely needs the point listing.
-
-Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
-(1978), Theorem 1 and Table 1; Kenku, *On the modular curves `X_0(125)`,
-`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981). -/
-theorem not_twoStableLines_of_higherGenusIsogenyPrime (q : ℕ)
-    (hq : q ∈ ({37, 43, 67, 163} : Finset ℕ))
-    (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
-    (g₁ g₂ : (E'⁄(AlgebraicClosure ℚ)).Point)
-    (hg₁ : addOrderOf g₁ = q) (hg₂ : addOrderOf g₂ = q)
-    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
-    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
-      WeierstrassCurve.Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-        AddSubgroup.zmultiples g₁)
-    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
-      WeierstrassCurve.Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-        AddSubgroup.zmultiples g₂) :
-    False :=
-  sorry
 
 /-- **The Vélu reduction: a stable cyclic subgroup of order `p²` produces a
 curve with TWO DISTINCT stable lines** (sorry leaf, promoted 2026-07-27 from an
@@ -13247,118 +13103,6 @@ theorem exists_twoStableLines_of_stableCyclicSq {p : ℕ} (hp : 2 ≤ p)
           AddSubgroup.zmultiples g₂) :=
   sorry
 
-/-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
-`p²`, for the seven isogeny primes with `genus X_0(p) ≥ 1`** (PROVEN
-2026-07-27 over the three named leaves immediately above; DECOMPOSED into
-three in-body sorried steps earlier the same day, and introduced as a bare
-sorry node before that): `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
-
-TRUE, and it is the elementary half of Kenku's prime-square theorem: the
-Mazur–Kenku list of `N` admitting a rational cyclic `N`-isogeny is
-`1, …, 19, 21, 25, 27, 37, 43, 67, 163`, and each of
-`121, 289, 361, 1369, 1849, 4489, 26569` exceeds `163`.
-
-**The route, and why it terminates at exactly these seven primes.**  A
-Galois-stable cyclic `⟨g⟩` of order `p²` gives the stable line `⟨p·g⟩ ⊂ E[p]`;
-the Vélu quotient `E' := E/⟨p·g⟩` then carries TWO DISTINCT stable lines,
-namely the image of `⟨g⟩` and the kernel of the dual isogeny `E' → E`, distinct
-because `g` has order `p²` rather than `p`.  So the statement is equivalent to
-*no elliptic curve over `ℚ` has two independent rational `p`-isogenies*, and
-that terminates as soon as `Y_0(p)(ℚ)` is finite and listable.  See
-`isogenyClassPrimeSqLevels` for the genus table that decides this: `X_0(p)` has
-genus `1` and analytic rank `0` at `p = 11, 17, 19` (so `3, 2, 1` non-cuspidal
-points, checked by enumeration), and genus `≥ 2` at `p = 37, 43, 67, 163` (so
-finiteness by Faltings, with `1` non-cuspidal point at `43, 67, 163` — CM by
-the class-number-one order of `ℚ(√-p)`, in which `p` RAMIFIES, so `E[p]` has a
-unique stable line and two independent `p`-isogenies are impossible with no
-enumeration at all — and the two explicit non-CM `j`-invariants `-7·11³` and
-`-7·137³·2083³` at `p = 37`).
-
-`p = 13` is excluded because `genus X_0(13) = 0` makes `Y_0(13)(ℚ)` infinite
-and the reduction vacuous; that level is
-`not_stableCyclic_oneHundredSixtyNine`.
-
-DUPLICATES A DOWNSTREAM STATEMENT, DELIBERATELY.  This is the same assertion as
-`WeierstrassCurve.not_cyclicIsogeny_sq_of_isogenyPrime_ge_eleven` in
-`FreyCurve/MazurTorsion.lean`, which is marked PROVEN there — but that proof
-routes through `y0HasNoRationalPoint_isogenyPrimeSq`, i.e. through the very
-node this leaf is being used to prove, so it carries no content that can be
-reused here, and that module imports this one in any case.  See the section
-note above `y0HasNoRationalPoint_of_not_stableCyclic` for the re-basing that
-removes the duplication.
-
-#### THE CUT — three steps, now three NAMED LEAVES (2026-07-27, second pass)
-
-The route above is written out and this node is PROVEN over it.  The three
-steps were first written as in-body sorried `have`s; they were **promoted to
-named top-level leaves** later the same day, because three in-body sorries can
-have only one owner — three agents editing one proof body conflict at
-integration, while three declarations are disjoint regions that git merges
-cleanly.  Nothing about the mathematics changed in the promotion; the three
-statements are verbatim what the `have`s said, with the ambient `p` replaced
-by a bound `q` in the two Mazur halves so that each is readable on its own.
-
-* **`exists_twoStableLines_of_stableCyclicSq`** (was `hvelu`) — the
-  two-independent-lines reduction.  Uniform in `p`, and the only step that is
-  about elliptic curves rather than about `ℚ`-points of `X_0(p)`; also the
-  only one that is a formalisation task rather than a citation of Mazur.
-* **`not_twoStableLines_of_genusOneIsogenyPrime`** (was `hgenus1`) — the
-  family `p = 11, 17, 19`, where `X_0(p)` is elliptic of rank `0` and
-  `Y_0(p)(ℚ)` is `3, 2, 1` points, settled by enumeration.
-* **`not_twoStableLines_of_higherGenusIsogenyPrime`** (was `hgenus2`) — the
-  family `p = 37, 43, 67, 163`, where `genus X_0(p) ≥ 2`, finiteness is
-  Faltings, and at `43, 67, 163` the CM argument replaces the enumeration
-  outright.
-
-Each carries its own route, sources and sanity checks in its own docstring; do
-not look for them here.
-
-**On the new top-level names.**  The previous version of this docstring
-avoided them, on the ground that `FreyCurve/MazurTorsion.lean` is a
-`public import`er of this module and a new name here can collide with one of
-its 37k lines without this module's own build noticing.  That risk is real and
-the correct response is to CHECK rather than to abstain: at the time of the
-promotion `grep -rn <name> Fermat/ --include=*.lean` returned no hit for any of
-the three, and this module's three `public import`ers —
-`FreyCurve/MazurTorsion.lean`, `ModularCurve/X1.lean` and
-`GaloisRepresentation/HardlyRamified/ModThree.lean` — were rebuilt together
-with it.  Anyone adding a fourth name here owes the same two checks.
-
-**Numerical sanity check of the statement** (`gp`, 2026-07-27; an untrusted
-searcher, so this is a check on the STATEMENT and not a step of any proof).
-The genus of `X_0(p)` at `p = 11, 13, 17, 19, 37, 43, 67, 163` is
-`1, 0, 1, 1, 2, 3, 5, 13`.  That is exactly the split the two Mazur steps are
-cut along, and it confirms that `13` — genus `0`, hence `Y_0(13)(ℚ)` infinite —
-is correctly excluded from this node and handled by
-`not_stableCyclic_oneHundredSixtyNine` instead.
-
-Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
-(1978), Theorem 1 and Table 1; Kenku, *On the modular curves `X_0(125)`,
-`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981). -/
-theorem not_stableCyclic_sq_of_isogenyClassPrime {p : ℕ}
-    (hp : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ))
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p ^ 2)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ∀ x ∈ AddSubgroup.zmultiples g,
-        WeierstrassCurve.Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) :
-    False := by
-  -- `2 ≤ p` is all `exists_twoStableLines_of_stableCyclicSq` needs; primality
-  -- of `p` is never used by the reduction, only by the two point listings.
-  have hp2 : 2 ≤ p := by fin_cases hp <;> norm_num
-  -- STEP 3 (`exists_twoStableLines_of_stableCyclicSq`) — the Vélu reduction:
-  -- run it on `(E, g)` to get a curve carrying two DISTINCT stable lines.
-  obtain ⟨E', hE', g₁, g₂, hg₁, hg₂, hne, hs₁, hs₂⟩ :=
-    exists_twoStableLines_of_stableCyclicSq hp2 E ‹E.IsElliptic› g hg hstable
-  -- STEPS 1 and 2 — split the seven primes into the two families and apply
-  -- the matching point listing.
-  rcases (show p ∈ ({11, 17, 19} : Finset ℕ) ∨ p ∈ ({37, 43, 67, 163} : Finset ℕ) from by
-      fin_cases hp <;> simp) with h | h
-  · exact not_twoStableLines_of_genusOneIsogenyPrime p h E' hE' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
-  · exact not_twoStableLines_of_higherGenusIsogenyPrime p h E' hE' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
-
 /-! #### `not_stableCyclic_oneHundredSixtyNine` and the `169` chain moved BELOW
 
 `not_stableCyclic_oneHundredSixtyNine`, `y0HasNoRationalPoint_oneSixtyNine`,
@@ -13371,95 +13115,6 @@ reduction and the sieve — is declared after this point.  See the section
 docstring there for the obstruction and for why the two sibling nodes above
 were left where they are.  Nothing about the mathematics moved; only the
 position did. -/
-
-/-- **Kenku's prime-square determination at the seven levels with a
-finite isogeny classification** (PROVEN 2026-07-27 over
-`y0HasNoRationalPoint_of_not_stableCyclic` and
-`not_stableCyclic_sq_of_isogenyClassPrime`; introduced as a sorry node
-earlier the same day):
-`Y_0(N)(ℚ) = ∅` for `N = p²`, `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
-
-TRUE: none of `121, 289, 361, 1369, 1849, 4489, 26569` lies in the
-Mazur–Kenku list `1, …, 19, 21, 25, 27, 37, 43, 67, 163` of levels with a
-non-cuspidal rational point — every one of them exceeds `163`.
-
-See `isogenyClassPrimeSqLevels` for the route: the two-independent-lines
-reduction, and the finiteness of `Y_0(p)(ℚ)` that makes it terminate.
-The seven fall into two sub-families, and a successor may split this node
-again along them if it prefers — they share the reduction and differ only
-in how the finite set is obtained and checked:
-
-* `121, 289, 361` (`p = 11, 17, 19`): `X_0(p)` elliptic of rank `0`,
-  `Y_0(p)(ℚ)` explicitly `3, 2, 1` points, checked by enumeration.  For
-  `p = 11` the check is visible in the isogeny graph: the three
-  `j`-invariants `-32768`, `-121`, `-24729001` sit in conductor-`121`
-  classes that are single `11`-isogeny EDGES, so no vertex has degree
-  `2` and no chain of two `11`-isogenies exists.
-* `1369, 1849, 4489, 26569` (`p = 37, 43, 67, 163`): `genus X_0(p) ≥ 2`,
-  finiteness by Faltings, and at `43, 67, 163` the CM argument needs no
-  enumeration.
-
-**~~The one obligation the reduction does not discharge~~ — NOW A NAMED
-NODE, and the "do not state it" half of this paragraph is REFUTED**
-(2026-07-27).  The paragraph read, correctly, that `Y0HasNoRationalPoint`
-is a statement about the COARSE moduli space, that `IsCoarseModuliY0`
-deliberately omits bijectivity on geometric points, and that a rational
-point of `Y_0(p²)` therefore carries only a `ℚ̄`-pair with field of moduli
-`ℚ`, whose descent to `ℚ` is Weil descent against `Aut(E, C)`.  All of
-that is retained and is now the content of
-`y0HasNoRationalPoint_of_not_stableCyclic`.
-
-What is struck out is the injunction that followed — *"do not state the
-bridge as a universally quantified leaf without the descent hypothesis;
-for a pair with extra automorphisms it is false as a bare implication"*.
-It conflates two statements, and only the stronger one is false:
-
-* FALSE: *the pair `(E, C)` itself is defined over `ℚ`.*  That is where
-  the `j = 0, 1728` caveat bites.
-* TRUE: *SOME elliptic curve over `ℚ` carries a stable cyclic subgroup of
-  order `p²`.*  A TWIST is permitted, and permitting it kills the
-  obstruction — `−1 ∈ Aut(E, C)` always, `Aut(E) ≅ μ_n` with
-  `n ∈ {2, 4, 6}`, and `ℚˣ/(ℚˣ)ⁿ ↠ ℚˣ/(ℚˣ)^{n/2}` is surjective, so the
-  obstruction class is always realised by a twist.  The full computation
-  is the FAITHFULNESS AUDIT of
-  `y0HasNoRationalPoint_of_not_stableCyclic`.
-
-Consumers only ever need the weaker form, so the bridge is stated
-unconditionally and this node is proven from it.
-
-NO LONGER IRREDUCIBLE, but the remaining content is unchanged and now
-sits in `not_stableCyclic_sq_of_isogenyClassPrime`: the classification of
-`Y_0(p)(ℚ)` for the seven primes (Mazur's Theorem 1 in its sharp,
-point-listing form — `cuspidal_x0_prime` above is only the emptiness
-half, which says nothing at these seven) and the Vélu quotient.  What the
-cut removes from that leaf is the field-of-moduli descent, which is
-uniform in `N` and is now shared with every other level node.
-
-Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
-(1978), Theorem 1 and Table 1; Kenku, *The modular curves `X_0(65)` and
-`X_0(91)` and rational isogeny*, Math. Proc. Cambridge Philos. Soc. **87**
-(1980); *On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`*,
-J. London Math. Soc. (2) **23** (1981). -/
-theorem y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel (N : ℕ)
-    (hN : N ∈ isogenyClassPrimeSqLevels) : Y0HasNoRationalPoint N := by
-  refine y0HasNoRationalPoint_of_not_stableCyclic (fun E _ g hg hstable => ?_)
-  simp only [isogenyClassPrimeSqLevels, List.mem_cons, List.not_mem_nil,
-    or_false] at hN
-  rcases hN with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 11) (by decide) E g
-      (hg.trans (by norm_num)) hstable
-  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 17) (by decide) E g
-      (hg.trans (by norm_num)) hstable
-  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 19) (by decide) E g
-      (hg.trans (by norm_num)) hstable
-  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 37) (by decide) E g
-      (hg.trans (by norm_num)) hstable
-  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 43) (by decide) E g
-      (hg.trans (by norm_num)) hstable
-  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 67) (by decide) E g
-      (hg.trans (by norm_num)) hstable
-  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 163) (by decide) E g
-      (hg.trans (by norm_num)) hstable
 
 /-! #### The `61` semiprime levels, partitioned by the method that settles each
 
@@ -14504,6 +14159,621 @@ theorem isolatedJInvariants_disjoint {p q : ℕ} (hp : p ∈ isolatedIsogenyPrim
       | (norm_num at hjp; done)
       | (norm_num at hjq; done)
       | (rcases hjp with rfl | rfl | rfl <;> norm_num at hjq)
+
+/-! #### No SECOND isogeny of the SAME degree: the same CM / non-CM split at `q = p`
+
+(2026-07-28, flt-lean-262.)  The subsection immediately above answers "a curve
+on Mazur's table carries no isogeny of a DIFFERENT prime degree `q ≠ p`".  What
+the prime-square family needs is the complementary statement at `q = p`: the
+`p`-isogeny is UNIQUE, i.e. no curve over `ℚ` carries two distinct
+`Γ_ℚ`-stable lines in `E[p]`.  The two leaves below supply it and
+`not_twoStableLines_of_isolatedIsogenyPrime` assembles them.
+
+**THE SPLIT IS NOT A NEW ONE — IT IS THE MISSING BRANCH OF THE SIBLING'S CASE
+SPLIT.**  `not_stable_of_cmEndomorphism` runs the Cartan trichotomy over the
+splitting of `q` in `K = ℚ(√−p)` and disposes of the RAMIFIED branch in one
+line: `q ∣ disc K = −p` forces `q = p`, which its hypothesis `hpq` excludes.
+That discarded branch is exactly this subsection.  At `q = p` the Cartan is
+`(O_K/pO_K)ˣ = 𝔽_p[ε]ˣ` with `ε = √−p`, and multiplication by `a + bε`
+(`a ≠ 0`) carries the line spanned by `1 + cε` to the line spanned by
+`1 + (c + b/a)ε`; so the ONLY line fixed by a non-scalar Cartan element is
+`⟨ε⟩ = E[𝔭] = ker √−p`.  CM therefore gives exactly one stable line at `q = p`
+— which is why `43, 67, 163` (and `19`) have a rational `p`-isogeny at all —
+and forbids a second.  **A single owner should take
+`not_stable_of_cmEndomorphism` and `not_twoStableLines_of_cmEndomorphism`
+together**: they are two branches of one Galois-image argument and share items
+1–4 of the "what proving it needs" list recorded on the former.
+
+**THE `{19, 43, 67, 163}` REGROUPING, and why the genus split was the wrong
+axis for THIS question.**  The two consumers
+`not_twoStableLines_of_genusOneIsogenyPrime` (`11, 17, 19`) and
+`not_twoStableLines_of_higherGenusIsogenyPrime` (`37, 43, 67, 163`) are cut by
+the GENUS of `X_0(q)`, which is the right axis for a point COUNT.  It is the
+wrong axis here: what decides the argument is whether the tabulated
+`j`-invariant is a singular modulus, and that cuts the eleven rows as
+
+* CM — `11 ↦ −32768` (disc `−11`), `19 ↦ −884736` (disc `−19`),
+  `43, 67, 163 ↦` the three tabulated values (disc `−43, −67, −163`);
+* non-CM — the other two rows at `11`, both rows at `17`, both rows at `37`.
+
+So `19` belongs with `43, 67, 163` and NOT with `11, 17`, and `11` is split
+across both halves.  That is `isolatedCMJInvariants`, already in this file,
+and the two leaves below are stated against it rather than against the genus.
+`h(−11) = h(−19) = h(−43) = h(−67) = h(−163) = 1` and
+`polclass(−q) = x + 32768, x + 884736, x + 884736000, x + 147197952000,
+x + 262537412640768000` (PARI/GP 2.17.4, re-run 2026-07-28; an untrusted
+searcher, so a check on the STATEMENT and not a step of any proof).
+
+**FAITHFULNESS EVIDENCE FOR BOTH LEAVES, all eleven rows.**
+`ellisomat(ellinit(ellfromj(j)))` returns first degree-matrix row `[1, q]` at
+every one of the eleven tabulated `(q, j)` — isogeny class of size `2`, a
+single edge — so no tabulated curve carries two independent `q`-isogenies and
+neither leaf is refuted by the table it quantifies over.  Re-run in full on
+2026-07-28 (including `163`, which the sibling's author could not run at the
+default `parisize`).
+
+**THE PROMPTED "SELF-CONTAINED CM AT `43, 67, 163`" ORDERING IS A TRAP, and it
+is corrected here because it keeps being repeated.**  It is NOT the case that
+those three levels can be closed by a CM argument needing no point listing:
+at PRIME level "`E` has a rational `p`-isogeny ⟹ `E` has CM" is FALSE in
+general and holds at these primes only as a CONSEQUENCE of Mazur's Theorem 1.
+The CM input is `exists_cmEndomorphism_of_mem_isolatedCMJInvariants`, which
+consumes `E.j ∈ isolatedJInvariants p` — i.e. Mazur's table — and is itself a
+leaf.  What the CM observation genuinely buys is the SECOND half: once the
+table is granted, the four CM levels collapse to one uniform argument instead
+of four enumerations.  The same correction is recorded at
+`mem_isolatedJInvariants_of_stable_classNumberOne` and in
+`FreyCurve/MazurTorsion.lean`'s `MazurIsogenyPrimeJ` section note.
+-/
+
+/-- **The ramified branch: a curve over `ℚ` with CM by the maximal order of
+`ℚ(√−p)` has at most ONE `Γ_ℚ`-stable line of order `p`** (sorry leaf, new
+2026-07-28; the GALOIS-IMAGE half at `q = p`, uniform in `p`).
+
+The statement is verbatim `not_stable_of_cmEndomorphism` with `q` specialised
+to `p` — the case that leaf's hypothesis `hpq` throws away — and strengthened
+from "no stable line" (false at `q = p`: `ker √−p` IS one) to "no two distinct
+stable lines".
+
+**THE ARGUMENT** (Serre, *Propriétés galoisiennes des points d'ordre fini des
+courbes elliptiques*, Invent. Math. **15** (1972), §4.5; Silverman *ATAEC*
+II.2, II.6).  Write `ψ := 2φ − 1`, so `hφsq` gives `ψ² = [−p]` and
+`O_K = ℤ[φ]` is the maximal order of `K = ℚ(√−p)` (discriminant
+`1 − (p+1) = −p`, and `p ≡ 3 mod 4` at all five values).
+
+1. `p` RAMIFIES in `K` (`p ∣ disc K = −p`), so `pO_K = 𝔭²` with `𝔭 = (ψ)`,
+   and `O_K/pO_K ≅ 𝔽_p[ε]/(ε²)` with `ε` the image of `ψ`.
+2. `E[p]` is free of rank `1` over `O_K/pO_K`, so as an `𝔽_p`-plane it has
+   `p + 1` lines: `⟨ε⟩ = ker ψ = E[𝔭]`, and `⟨1 + cε⟩` for `c ∈ 𝔽_p`.
+   `⟨ε⟩` IS `Γ_ℚ`-stable — `Γ_K` commutes with `ψ`, and for `σ ∉ Γ_K` one has
+   `σψσ⁻¹ = ψ̄ = −ψ`, which has the same kernel.
+3. A second stable line `L ≠ ⟨ε⟩` forces the image of `Γ_K` in
+   `(O_K/pO_K)ˣ` to be SCALAR: `(a + bε)(1 + cε) = a(1 + (c + b/a)ε)`, so
+   stability of `⟨1 + cε⟩` says `b = 0` for every element of the image.
+4. That contradicts the CM lower bound on the image of `Γ_K`, whose index in
+   `(O_K/pO_K)ˣ` divides `#O_Kˣ · h(−p) = 2 · 1 = 2`; squares are not scalar,
+   since `(1 + ε)² = 1 + 2ε ∉ 𝔽_pˣ` for `p` odd.  **This is the only place
+   `h(−p) = 1` is consumed**, exactly as in the sibling — and it is the step
+   an audit is most likely to skip.
+
+An equivalent finish, worth recording because it is the classical one and
+needs no image bound: `L` is stable, so `E/L` is defined over `ℚ`, and `L` is
+not an `O_K`-submodule, so `End(E/L)` is the order of CONDUCTOR `p`, of class
+number `p · h(−p) = p > 1` — impossible for a curve over `ℚ`, whose CM order
+must have class number `1`.  Either route closes the leaf.
+
+**`WeierstrassCurve.IsIsogeny` IS ESSENTIAL AND MUST NOT BE DROPPED**, for
+exactly the reason recorded on
+`exists_cmEndomorphism_of_mem_isolatedCMJInvariants`: `X² − X + (p+1)/4` has a
+root in `M₂(Ẑ)`, so EVERY elliptic curve over `ℚ` carries an abstract group
+endomorphism satisfying `hφsq`, and the abstract form of this leaf would be
+refuted by any curve with two independent `p`-isogenies for some other reason.
+
+**WHY `hp` IS LOAD-BEARING.**  Steps 1 and 4 need `p ≡ 3 mod 4` (so that
+`(p+1)/4` is exact and `ℤ[φ]` is MAXIMAL) and `h(−p) = 1`.  Unlike the
+sibling, `p ≡ 3 mod 8` is NOT needed here — that hypothesis is there to put
+`q = 2` in the inert branch, and `q = 2` does not arise at `q = p`.  A
+successor may honestly widen `hp` to "`p` prime, `p ≡ 3 mod 4`, `h(−p) = 1`";
+widening it further is a falsification.
+
+**NOT VACUOUS.**  Every hypothesis but the conjunction of the last four is
+satisfiable: at each of the five `p` the CM curve of discriminant `−p` carries
+such a `φ` AND a `Γ_ℚ`-stable line of order `p` (`ellisomat` returns
+`[1, p; p, 1]`, see the subsection note), so `hφ`, `hφsq`, `hg₁`, `hs₁` are
+jointly realised and the leaf really is asserting that the SECOND line cannot
+exist.  It is not closable by refuting its own hypotheses.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve `E/ℚ` with an
+isogeny `φ` of `E_ℚ̄` satisfying `φ² − φ + (p+1)/4 = 0` for one of the five
+`p`, together with two independent rational `p`-isogenies out of `E` —
+equivalently a rational point of `X_0(p²)` whose curve has CM by `O_{−p}`. -/
+theorem not_twoStableLines_of_cmEndomorphism {p : ℕ}
+    (_hp : p ∈ ({11, 19, 43, 67, 163} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hφ : WeierstrassCurve.IsIsogeny φ)
+    (_hφsq : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ (φ P) + ((p + 1) / 4 : ℕ) • P = φ P)
+    (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
+    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₁)
+    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₂) :
+    False :=
+  sorry
+
+/-- **The non-CM rows carry no second `p`-isogeny either** (sorry leaf, new
+2026-07-28; the EXPLICIT-COMPUTATION half at `q = p`).
+
+The six live rows are the entries of `isolatedJInvariants p` that are not
+singular moduli:
+
+    p = 11 : j = −121, −24729001
+    p = 17 : j = −882216989/131072, −297756989/2
+    p = 37 : j = −9317, −162677523113838677
+
+(the `17` row is entirely non-CM, and so is the `37` row; `19`, `43`, `67`,
+`163` are entirely CM and `11` is split — see
+`mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants` and the subsection
+note).  Contrast the CM sibling, which is one argument uniform in `p`: this
+one has no uniform structure at all and is six independent checks, exactly as
+`not_stable_of_mem_isolatedNonCMJInvariants` is for `q ≠ p`.
+
+TRUE.  Each of the six curves has isogeny class of size `2` with degree
+matrix `[1, p; p, 1]` (`ellisomat`, PARI/GP 2.17.4, 2026-07-28), i.e. exactly
+one rational `p`-isogeny; a second stable line would make the class contain a
+third curve.
+
+**THE ROUTE, and it is the same certificate shape the file already uses.**  A
+`Γ_ℚ`-stable line of order `p` in `E[p]` is a rational root of the `p`-th
+division polynomial's kernel factorisation: `ψ_p` has degree `(p²−1)/2` and a
+stable line contributes a `ℚ`-rational factor of degree `(p−1)/2` (its kernel
+polynomial).  Two distinct stable lines give two coprime such factors.  So the
+obligation is: at each of the six `j`, the `p`-division polynomial of a
+Weierstrass model has AT MOST ONE rational kernel factor of degree `(p−1)/2`
+(`5, 8, 18` at `p = 11, 17, 37`).  `Fermat/FLT/EllipticCurve/KernelPolynomial.lean`
+and `…/GenusOneKernelPolynomials.lean` carry the kernel-polynomial API this
+needs, and `MazurIsogenyPrimeJ.exists_kernelPolynomial_of_genusOneJTable` in
+`FreyCurve/MazurTorsion.lean` is the EXISTENCE direction of the same
+computation at the same `j`-values — a successor should look there first,
+since the uniqueness direction is a factorisation of the same polynomials.
+
+**TWIST-INVARIANCE is not an extra hypothesis.**  `hj` pins `E` only up to
+quadratic twist, and every entry of `isolatedJInvariants` is strictly
+negative, hence `∉ {0, 1728}`, so `Aut_ℚ̄(E) = {±1}` and `Γ_ℚ`-stable lines of
+`E` and of any quadratic twist correspond bijectively.  The same remark is
+recorded on `not_stable_of_mem_isolatedCMJInvariants`.
+
+**The two VACUOUS rows are `p = 19, 43, 67, 163`** — there
+`isolatedJInvariants p ⊆ isolatedCMJInvariants`, so `hjn` is already a
+contradiction, and a proof may discharge four of the seven `fin_cases`
+branches by `decide` before any curve theory starts.
+
+**THE CHECK THAT WOULD REFUTE THIS LEAF**: a curve over `ℚ` with one of the
+six tabulated non-CM `j`-invariants and two independent rational
+`p`-isogenies — equivalently a third curve in one of those six isogeny
+classes. -/
+theorem not_twoStableLines_of_mem_isolatedNonCMJInvariants {p : ℕ}
+    (_hp : p ∈ isolatedIsogenyPrimes)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (_hj : E.j ∈ isolatedJInvariants p) (_hjn : E.j ∉ isolatedCMJInvariants)
+    (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
+    (_hg₁ : addOrderOf g₁ = p) (_hg₂ : addOrderOf g₂ = p)
+    (_hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (_hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₁)
+    (_hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₂) :
+    False :=
+  sorry
+
+/-- **No elliptic curve over `ℚ` carries two distinct `Γ_ℚ`-stable lines of
+order `p`, for any of the seven isolated Mazur primes** (PROVEN 2026-07-28
+over `mem_isolatedJInvariants_of_stable` and the two leaves of this
+subsection; the shared engine of
+`not_twoStableLines_of_genusOneIsogenyPrime` and
+`not_twoStableLines_of_higherGenusIsogenyPrime` below, which are now
+one-line wrappers).
+
+The proof is three steps and no mathematics of its own — deliberately the
+same shape as `not_stable_of_mem_isolatedCMJInvariants`:
+
+1. `mem_isolatedJInvariants_of_stable` (Mazur's Theorem 1, LEAF-backed) reads
+   `E.j` off the table using the FIRST stable line;
+2. if `E.j` is a singular modulus,
+   `mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants` (PROVEN) puts `p`
+   in `{11, 19, 43, 67, 163}`,
+   `exists_cmEndomorphism_of_mem_isolatedCMJInvariants` (LEAF, Deuring) hands
+   over `φ = (1 + √−p)/2`, and `not_twoStableLines_of_cmEndomorphism` (LEAF,
+   Serre) contradicts the SECOND line;
+3. otherwise `not_twoStableLines_of_mem_isolatedNonCMJInvariants` (LEAF) does
+   it row by row.
+
+**Both stable lines are consumed and neither is redundant**: step 1 uses only
+`g₁` (any one rational `p`-isogeny pins `j`), and the whole content of steps 2
+and 3 is that `g₂` cannot exist.  Dropping `hne` makes the statement FALSE at
+every one of the seven primes, since each level has a rational point. -/
+theorem not_twoStableLines_of_isolatedIsogenyPrime {p : ℕ}
+    (hp : p ∈ isolatedIsogenyPrimes)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g₁ g₂ : (E⁄(AlgebraicClosure ℚ)).Point)
+    (hg₁ : addOrderOf g₁ = p) (hg₂ : addOrderOf g₂ = p)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₁)
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₂) :
+    False := by
+  -- STEP 1: Mazur's table, read off from the first stable line.
+  have hj : E.j ∈ isolatedJInvariants p :=
+    mem_isolatedJInvariants_of_stable hp E g₁ hg₁ hs₁
+  by_cases hcm : E.j ∈ isolatedCMJInvariants
+  · -- STEP 2: the CM rows — Deuring, then the ramified Cartan.
+    have hjm : E.j ∈ isolatedJInvariants p ∩ isolatedCMJInvariants :=
+      Finset.mem_inter.mpr ⟨hj, hcm⟩
+    have hp5 := mem_classNumberOnePrimes_of_mem_isolatedCMJInvariants hp hjm
+    obtain ⟨φ, hφ, hφsq⟩ := exists_cmEndomorphism_of_mem_isolatedCMJInvariants hp5 E hjm
+    exact not_twoStableLines_of_cmEndomorphism hp5 E φ hφ hφsq g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+  · -- STEP 3: the non-CM rows — six explicit checks.
+    exact not_twoStableLines_of_mem_isolatedNonCMJInvariants hp E hj hcm
+      g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+
+/-- **Mazur's point listing, genus-`1` family**: `q ∈ {11, 17, 19}` (PROVEN
+2026-07-28 over `not_twoStableLines_of_isolatedIsogenyPrime`; promoted
+2026-07-27 from an in-body step of `not_stableCyclic_sq_of_isogenyClassPrime`
+below to a named top-level leaf).
+
+No elliptic curve over `ℚ` carries two DISTINCT Galois-stable subgroups of
+order `q`.
+
+**The mechanism split is NOT the genus split** (2026-07-28).  This node and
+its genus-`≥ 2` sibling are now both proven over one shared engine, because
+the argument turns on whether the tabulated `j` is a singular modulus, not on
+the genus: `19`'s single non-cuspidal point is the CM point of discriminant
+`−19` (`h(−19) = 1`) and is settled by the same uniform Cartan argument as
+`43, 67, 163`, while `11` is split — one CM row (`−32768`, disc `−11`) and two
+non-CM rows — and `17` is entirely non-CM.  See the subsection note above
+`not_twoStableLines_of_cmEndomorphism`.  Nothing about the STATEMENT of this
+node changed; only the two nodes' shared proof.
+
+TRUE.  At these three primes `X_0(q)` is an elliptic curve of rank `0`
+(`11a`, `17a`, `19a`, of torsion `ℤ/5`, `ℤ/4`, `ℤ/3`), so `X_0(q)(ℚ)` has
+`5, 4, 3` points, of which `2` are cusps at each level, leaving `3, 2, 1`
+non-cuspidal points — Mazur, *Rational isogenies of prime degree*, Theorem 1
+and Table 1.  Two distinct stable lines on one `E'` would give two distinct
+points of `Y_0(q)(ℚ)` over the same `j`, and the listed `j`-invariants are
+pairwise distinct: `-2¹⁵`, `-121`, `-24729001` at `q = 11`;
+`-17·373³/2¹⁷`, `-17²·101³/2` at `q = 17`; `-2¹⁵·3³` at `q = 19`, where there
+is only one point to begin with.
+
+Equivalently and with no enumeration: two independent `q`-isogenies from `E'`
+produce an isogeny of degree `q²` between `E'/⟨g₁⟩` and `E'/⟨g₂⟩`, and
+`121, 289, 361` are absent from Mazur's list of isogeny degrees.  That
+phrasing is circular *in the consumer* (it is the theorem being proven there)
+but is the right sanity check on this statement.
+
+`q = 13` is deliberately absent: `genus X_0(13) = 0` makes `Y_0(13)(ℚ)`
+infinite and the enumeration vacuous, so the statement is FALSE at `13` and
+that level is handled by `not_stableCyclic_oneHundredSixtyNine` instead.  The
+genus of `X_0(q)` at `q = 11, 13, 17, 19, 37, 43, 67, 163` is
+`1, 0, 1, 1, 2, 3, 5, 13` (`gp`, 2026-07-27; an untrusted searcher, so a check
+on the STATEMENT and not a step of any proof).
+
+Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), Theorem 1 and Table 1. -/
+theorem not_twoStableLines_of_genusOneIsogenyPrime (q : ℕ)
+    (hq : q ∈ ({11, 17, 19} : Finset ℕ))
+    (E' : WeierstrassCurve ℚ) (hE' : E'.IsElliptic)
+    (g₁ g₂ : (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hg₁ : addOrderOf g₁ = q) (hg₂ : addOrderOf g₂ = q)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₁)
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₂) :
+    False := by
+  haveI := hE'
+  have hqi : q ∈ isolatedIsogenyPrimes := by
+    have hq' : q = 11 ∨ q = 17 ∨ q = 19 := by simpa using hq
+    rcases hq' with rfl | rfl | rfl <;> decide
+  exact not_twoStableLines_of_isolatedIsogenyPrime hqi E' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+
+/-- **Mazur's point listing, genus-`≥ 2` family**: `q ∈ {37, 43, 67, 163}`
+(PROVEN 2026-07-28 over `not_twoStableLines_of_isolatedIsogenyPrime`;
+promoted 2026-07-27 from an in-body step of
+`not_stableCyclic_sq_of_isogenyClassPrime` below).  Same conclusion as
+`not_twoStableLines_of_genusOneIsogenyPrime` above.
+
+TRUE.  `genus X_0(q) = 2, 3, 5, 13` respectively (checked with `gp`,
+2026-07-27), so `X_0(q)(ℚ)` is finite by Faltings.
+
+At `q = 43, 67, 163` there is exactly ONE non-cuspidal point, and it is the CM
+point of the class-number-one discriminant `−q`, in which `q` RAMIFIES; at
+`q = 37` there are two, with the non-CM `j`-invariants `-7·11³` and
+`-7·137³·2083³`.
+
+**STALE-CLAIM CORRECTION, 2026-07-28** (this is the trap the doctrine records,
+so it is corrected in place rather than left to mislead again).  The previous
+version of this docstring said of `43, 67, 163`: *"it needs no enumeration at
+all … the CM argument is self-contained and does not touch the modular curve
+at all.  A prover should take those three first."*  **The ordering advice is
+wrong and the reason is that the CM is not an input.**  At PRIME level
+"`E` has a rational `q`-isogeny ⟹ `E` has CM" is FALSE in general; it holds at
+these three primes only as a CONSEQUENCE of Mazur's Theorem 1, i.e. of the
+point listing the note claims to avoid.  Formally: the CM endomorphism enters
+through `exists_cmEndomorphism_of_mem_isolatedCMJInvariants`, whose hypothesis
+is `E.j ∈ isolatedJInvariants q` — the table — and which is itself an open
+leaf.  The identical correction is recorded on
+`mem_isolatedJInvariants_of_stable_classNumberOne` and in
+`FreyCurve/MazurTorsion.lean`'s `MazurIsogenyPrimeJ` note.
+
+What the CM observation genuinely buys is the step AFTER the table: it makes
+the four CM levels one uniform argument.  And the levels it covers are
+`{19, 43, 67, 163}`, not `{43, 67, 163}` — `19`'s single non-cuspidal point is
+the CM point of discriminant `−19`, `h(−19) = 1`, so it belongs with these
+three and NOT with `11, 17`.  That regrouping is why this node and its sibling
+are now both proven over the SHARED
+`not_twoStableLines_of_isolatedIsogenyPrime`, which splits on
+`isolatedCMJInvariants` rather than on the genus; see that subsection's note.
+
+Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), Theorem 1 and Table 1; Kenku, *On the modular curves `X_0(125)`,
+`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981). -/
+theorem not_twoStableLines_of_higherGenusIsogenyPrime (q : ℕ)
+    (hq : q ∈ ({37, 43, 67, 163} : Finset ℕ))
+    (E' : WeierstrassCurve ℚ) (hE' : E'.IsElliptic)
+    (g₁ g₂ : (E'⁄(AlgebraicClosure ℚ)).Point)
+    (hg₁ : addOrderOf g₁ = q) (hg₂ : addOrderOf g₂ = q)
+    (hne : AddSubgroup.zmultiples g₁ ≠ AddSubgroup.zmultiples g₂)
+    (hs₁ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₁,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₁)
+    (hs₂ : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g₂,
+      WeierstrassCurve.Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+        AddSubgroup.zmultiples g₂) :
+    False := by
+  haveI := hE'
+  have hqi : q ∈ isolatedIsogenyPrimes := by
+    have hq' : q = 37 ∨ q = 43 ∨ q = 67 ∨ q = 163 := by simpa using hq
+    rcases hq' with rfl | rfl | rfl | rfl <;> decide
+  exact not_twoStableLines_of_isolatedIsogenyPrime hqi E' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+
+/-- **No elliptic curve over `ℚ` has a Galois-stable cyclic subgroup of order
+`p²`, for the seven isogeny primes with `genus X_0(p) ≥ 1`** (PROVEN
+2026-07-27 over the three named leaves immediately above; DECOMPOSED into
+three in-body sorried steps earlier the same day, and introduced as a bare
+sorry node before that): `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
+
+TRUE, and it is the elementary half of Kenku's prime-square theorem: the
+Mazur–Kenku list of `N` admitting a rational cyclic `N`-isogeny is
+`1, …, 19, 21, 25, 27, 37, 43, 67, 163`, and each of
+`121, 289, 361, 1369, 1849, 4489, 26569` exceeds `163`.
+
+**The route, and why it terminates at exactly these seven primes.**  A
+Galois-stable cyclic `⟨g⟩` of order `p²` gives the stable line `⟨p·g⟩ ⊂ E[p]`;
+the Vélu quotient `E' := E/⟨p·g⟩` then carries TWO DISTINCT stable lines,
+namely the image of `⟨g⟩` and the kernel of the dual isogeny `E' → E`, distinct
+because `g` has order `p²` rather than `p`.  So the statement is equivalent to
+*no elliptic curve over `ℚ` has two independent rational `p`-isogenies*, and
+that terminates as soon as `Y_0(p)(ℚ)` is finite and listable.  See
+`isogenyClassPrimeSqLevels` for the genus table that decides this: `X_0(p)` has
+genus `1` and analytic rank `0` at `p = 11, 17, 19` (so `3, 2, 1` non-cuspidal
+points, checked by enumeration), and genus `≥ 2` at `p = 37, 43, 67, 163` (so
+finiteness by Faltings, with `1` non-cuspidal point at `43, 67, 163` — CM by
+the class-number-one order of `ℚ(√-p)`, in which `p` RAMIFIES, so `E[p]` has a
+unique stable line and two independent `p`-isogenies are impossible with no
+enumeration at all — and the two explicit non-CM `j`-invariants `-7·11³` and
+`-7·137³·2083³` at `p = 37`).
+
+`p = 13` is excluded because `genus X_0(13) = 0` makes `Y_0(13)(ℚ)` infinite
+and the reduction vacuous; that level is
+`not_stableCyclic_oneHundredSixtyNine`.
+
+DUPLICATES A DOWNSTREAM STATEMENT, DELIBERATELY.  This is the same assertion as
+`WeierstrassCurve.not_cyclicIsogeny_sq_of_isogenyPrime_ge_eleven` in
+`FreyCurve/MazurTorsion.lean`, which is marked PROVEN there — but that proof
+routes through `y0HasNoRationalPoint_isogenyPrimeSq`, i.e. through the very
+node this leaf is being used to prove, so it carries no content that can be
+reused here, and that module imports this one in any case.  See the section
+note above `y0HasNoRationalPoint_of_not_stableCyclic` for the re-basing that
+removes the duplication.
+
+#### THE CUT — three steps, now three NAMED LEAVES (2026-07-27, second pass)
+
+The route above is written out and this node is PROVEN over it.  The three
+steps were first written as in-body sorried `have`s; they were **promoted to
+named top-level leaves** later the same day, because three in-body sorries can
+have only one owner — three agents editing one proof body conflict at
+integration, while three declarations are disjoint regions that git merges
+cleanly.  Nothing about the mathematics changed in the promotion; the three
+statements are verbatim what the `have`s said, with the ambient `p` replaced
+by a bound `q` in the two Mazur halves so that each is readable on its own.
+
+* **`exists_twoStableLines_of_stableCyclicSq`** (was `hvelu`) — the
+  two-independent-lines reduction.  Uniform in `p`, and the only step that is
+  about elliptic curves rather than about `ℚ`-points of `X_0(p)`; also the
+  only one that is a formalisation task rather than a citation of Mazur.
+* **`not_twoStableLines_of_genusOneIsogenyPrime`** (was `hgenus1`) — the
+  family `p = 11, 17, 19`, where `X_0(p)` is elliptic of rank `0` and
+  `Y_0(p)(ℚ)` is `3, 2, 1` points, settled by enumeration.
+* **`not_twoStableLines_of_higherGenusIsogenyPrime`** (was `hgenus2`) — the
+  family `p = 37, 43, 67, 163`, where `genus X_0(p) ≥ 2` and finiteness is
+  Faltings.
+
+Each carries its own route, sources and sanity checks in its own docstring; do
+not look for them here.
+
+**UPDATE 2026-07-28 (flt-lean-262): TWO OF THE THREE ARE NOW PROVEN, AND THIS
+NODE MOVED.**  Both Mazur halves are proven over the shared engine
+`not_twoStableLines_of_isolatedIsogenyPrime`, which reads `E'.j` off
+`mem_isolatedJInvariants_of_stable` and then splits on
+`isolatedCMJInvariants` — NOT on the genus.  The residue is three leaves and
+none of them is this node's: `not_twoStableLines_of_cmEndomorphism` (Serre,
+uniform over the four CM levels `19, 43, 67, 163`),
+`not_twoStableLines_of_mem_isolatedNonCMJInvariants` (six explicit rows at
+`11, 17, 37`), and `exists_twoStableLines_of_stableCyclicSq` — the Vélu
+reduction, still open and still where the elliptic-curve formalisation work
+is.  Because the two Mazur halves must now be declared after
+`exists_cmEndomorphism_of_mem_isolatedCMJInvariants`, this node and its
+consumer `y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel` were relocated
+here by a mechanically pure move — Lean's declaration order, the same force
+that moved the semiprime assemblies; the Vélu leaf stayed where it was.
+Nothing about the mathematics moved.
+
+**On the new top-level names.**  The previous version of this docstring
+avoided them, on the ground that `FreyCurve/MazurTorsion.lean` is a
+`public import`er of this module and a new name here can collide with one of
+its 37k lines without this module's own build noticing.  That risk is real and
+the correct response is to CHECK rather than to abstain: at the time of the
+promotion `grep -rn <name> Fermat/ --include=*.lean` returned no hit for any of
+the three, and this module's three `public import`ers —
+`FreyCurve/MazurTorsion.lean`, `ModularCurve/X1.lean` and
+`GaloisRepresentation/HardlyRamified/ModThree.lean` — were rebuilt together
+with it.  Anyone adding a fourth name here owes the same two checks.
+
+**Numerical sanity check of the statement** (`gp`, 2026-07-27; an untrusted
+searcher, so this is a check on the STATEMENT and not a step of any proof).
+The genus of `X_0(p)` at `p = 11, 13, 17, 19, 37, 43, 67, 163` is
+`1, 0, 1, 1, 2, 3, 5, 13`.  That is exactly the split the two Mazur steps are
+cut along, and it confirms that `13` — genus `0`, hence `Y_0(13)(ℚ)` infinite —
+is correctly excluded from this node and handled by
+`not_stableCyclic_oneHundredSixtyNine` instead.
+
+Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), Theorem 1 and Table 1; Kenku, *On the modular curves `X_0(125)`,
+`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981). -/
+theorem not_stableCyclic_sq_of_isogenyClassPrime {p : ℕ}
+    (hp : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ))
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = p ^ 2)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        WeierstrassCurve.Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False := by
+  -- `2 ≤ p` is all `exists_twoStableLines_of_stableCyclicSq` needs; primality
+  -- of `p` is never used by the reduction, only by the two point listings.
+  have hp2 : 2 ≤ p := by fin_cases hp <;> norm_num
+  -- STEP 3 (`exists_twoStableLines_of_stableCyclicSq`) — the Vélu reduction:
+  -- run it on `(E, g)` to get a curve carrying two DISTINCT stable lines.
+  obtain ⟨E', hE', g₁, g₂, hg₁, hg₂, hne, hs₁, hs₂⟩ :=
+    exists_twoStableLines_of_stableCyclicSq hp2 E ‹E.IsElliptic› g hg hstable
+  -- STEPS 1 and 2 — split the seven primes into the two families and apply
+  -- the matching point listing.
+  rcases (show p ∈ ({11, 17, 19} : Finset ℕ) ∨ p ∈ ({37, 43, 67, 163} : Finset ℕ) from by
+      fin_cases hp <;> simp) with h | h
+  · exact not_twoStableLines_of_genusOneIsogenyPrime p h E' hE' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+  · exact not_twoStableLines_of_higherGenusIsogenyPrime p h E' hE' g₁ g₂ hg₁ hg₂ hne hs₁ hs₂
+
+/-- **Kenku's prime-square determination at the seven levels with a
+finite isogeny classification** (PROVEN 2026-07-27 over
+`y0HasNoRationalPoint_of_not_stableCyclic` and
+`not_stableCyclic_sq_of_isogenyClassPrime`; introduced as a sorry node
+earlier the same day):
+`Y_0(N)(ℚ) = ∅` for `N = p²`, `p ∈ {11, 17, 19, 37, 43, 67, 163}`.
+
+TRUE: none of `121, 289, 361, 1369, 1849, 4489, 26569` lies in the
+Mazur–Kenku list `1, …, 19, 21, 25, 27, 37, 43, 67, 163` of levels with a
+non-cuspidal rational point — every one of them exceeds `163`.
+
+See `isogenyClassPrimeSqLevels` for the route: the two-independent-lines
+reduction, and the finiteness of `Y_0(p)(ℚ)` that makes it terminate.
+The seven fall into two sub-families, and a successor may split this node
+again along them if it prefers — they share the reduction and differ only
+in how the finite set is obtained and checked:
+
+* `121, 289, 361` (`p = 11, 17, 19`): `X_0(p)` elliptic of rank `0`,
+  `Y_0(p)(ℚ)` explicitly `3, 2, 1` points, checked by enumeration.  For
+  `p = 11` the check is visible in the isogeny graph: the three
+  `j`-invariants `-32768`, `-121`, `-24729001` sit in conductor-`121`
+  classes that are single `11`-isogeny EDGES, so no vertex has degree
+  `2` and no chain of two `11`-isogenies exists.
+* `1369, 1849, 4489, 26569` (`p = 37, 43, 67, 163`): `genus X_0(p) ≥ 2`,
+  finiteness by Faltings, and at `43, 67, 163` the CM argument needs no
+  enumeration.
+
+**~~The one obligation the reduction does not discharge~~ — NOW A NAMED
+NODE, and the "do not state it" half of this paragraph is REFUTED**
+(2026-07-27).  The paragraph read, correctly, that `Y0HasNoRationalPoint`
+is a statement about the COARSE moduli space, that `IsCoarseModuliY0`
+deliberately omits bijectivity on geometric points, and that a rational
+point of `Y_0(p²)` therefore carries only a `ℚ̄`-pair with field of moduli
+`ℚ`, whose descent to `ℚ` is Weil descent against `Aut(E, C)`.  All of
+that is retained and is now the content of
+`y0HasNoRationalPoint_of_not_stableCyclic`.
+
+What is struck out is the injunction that followed — *"do not state the
+bridge as a universally quantified leaf without the descent hypothesis;
+for a pair with extra automorphisms it is false as a bare implication"*.
+It conflates two statements, and only the stronger one is false:
+
+* FALSE: *the pair `(E, C)` itself is defined over `ℚ`.*  That is where
+  the `j = 0, 1728` caveat bites.
+* TRUE: *SOME elliptic curve over `ℚ` carries a stable cyclic subgroup of
+  order `p²`.*  A TWIST is permitted, and permitting it kills the
+  obstruction — `−1 ∈ Aut(E, C)` always, `Aut(E) ≅ μ_n` with
+  `n ∈ {2, 4, 6}`, and `ℚˣ/(ℚˣ)ⁿ ↠ ℚˣ/(ℚˣ)^{n/2}` is surjective, so the
+  obstruction class is always realised by a twist.  The full computation
+  is the FAITHFULNESS AUDIT of
+  `y0HasNoRationalPoint_of_not_stableCyclic`.
+
+Consumers only ever need the weaker form, so the bridge is stated
+unconditionally and this node is proven from it.
+
+NO LONGER IRREDUCIBLE, but the remaining content is unchanged and now
+sits in `not_stableCyclic_sq_of_isogenyClassPrime`: the classification of
+`Y_0(p)(ℚ)` for the seven primes (Mazur's Theorem 1 in its sharp,
+point-listing form — `cuspidal_x0_prime` above is only the emptiness
+half, which says nothing at these seven) and the Vélu quotient.  What the
+cut removes from that leaf is the field-of-moduli descent, which is
+uniform in `N` and is now shared with every other level node.
+
+Sources: Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+(1978), Theorem 1 and Table 1; Kenku, *The modular curves `X_0(65)` and
+`X_0(91)` and rational isogeny*, Math. Proc. Cambridge Philos. Soc. **87**
+(1980); *On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`*,
+J. London Math. Soc. (2) **23** (1981). -/
+theorem y0HasNoRationalPoint_of_isogenyClassPrimeSqLevel (N : ℕ)
+    (hN : N ∈ isogenyClassPrimeSqLevels) : Y0HasNoRationalPoint N := by
+  refine y0HasNoRationalPoint_of_not_stableCyclic (fun E _ g hg hstable => ?_)
+  simp only [isogenyClassPrimeSqLevels, List.mem_cons, List.not_mem_nil,
+    or_false] at hN
+  rcases hN with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 11) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 17) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 19) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 37) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 43) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 67) (by decide) E g
+      (hg.trans (by norm_num)) hstable
+  · exact not_stableCyclic_sq_of_isogenyClassPrime (p := 163) (by decide) E g
+      (hg.trans (by norm_num)) hstable
 
 /-! ### Certificates for the genus-zero remainder at `q ∈ {2, 3}`
 
