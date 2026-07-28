@@ -50861,11 +50861,27 @@ theorem exists_heightOneSpectrum_inertiaDeg_eq_one_ray_class
 
 `𝔑 (d' δ) = d (N_{E/F} δ)`: the relative norm on divisors, prescribed on the
 basis by `h𝔑`, carries the divisor of `(δ)` to the divisor of `(N_{E/F} δ)`.
-Equivalently `Ideal.relNorm (span {δ}) = span {N δ}` — which IS in the pin,
-`Ideal.relNorm_singleton` — together with the factorisation identity
-`relNorm 𝔓 = 𝔭 ^ f(𝔓/𝔭)`. The divisor maps `d`, `d'` are pinned by divisibility
-alone (`hd`, `hd'`), so the proof is a comparison of exponents at each `w`:
+The divisor maps `d`, `d'` are pinned by divisibility alone (`hd`, `hd'`), so the
+proof is a comparison of exponents at each `w`:
 `ord_w (N δ) = Σ_{W ∣ w} f(W/w) · ord_W (δ)`.
+
+**EVERY PIECE IS IN THE PIN — this is assembly, not theory-building** (checked
+2026-07-28, flt-lean-182):
+
+* `Ideal.relNorm_singleton : relNorm R (span {r}) = span {Algebra.intNorm R S r}`;
+* `Ideal.relNorm_eq_pow_of_isMaximal (P) (p) [P.LiesOver p] [PerfectField
+  (FractionRing R)] [P.IsMaximal] [p.IsMaximal] : relNorm R P = p ^ P.inertiaDeg R`
+  (`Mathlib/RingTheory/Ideal/Norm/RelNorm.lean`) — this is EXACTLY the basis
+  prescription `h𝔑`, and `PerfectField (FractionRing (𝓞 F))` is free in
+  characteristic zero;
+* `map_mul (Ideal.relNorm R)` for multiplicativity, over the factorisation of
+  `span {δ}` into primes (`UniqueFactorizationMonoid.normalizedFactors`, as
+  `Ideal.absNorm_relNorm` in the same file does it).
+
+So the shape of the proof is: factor `(δ)`, apply `relNorm` factor by factor,
+and read off exponents. The remaining bookkeeping is that `h𝔑` pins `𝔑` only on
+the BASIS, so computing `𝔑 (d' δ)` needs the same `Finsupp.induction` the
+consumer uses for clause (α).
 
 **Check that would refute it**: a `δ ≠ 0` and a `w` with
 `ord_w (N_{E/F} δ) ≠ Σ_{W ∣ w} f(W/w) · ord_W δ`. -/
@@ -50897,19 +50913,42 @@ theorem relNormDivisorHom_apply_divisorMap_ray_class
     𝔑 (d' δ) = d (_root_.RingOfIntegers.norm F δ) :=
   sorry
 
-/-- **THE NORM OF A TOTALLY POSITIVE INTEGER IS TOTALLY POSITIVE** (SORRY LEAF,
-created 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
+/-- **THE NORM OF A NONZERO TOTALLY POSITIVE INTEGER IS TOTALLY POSITIVE**
+(SORRY LEAF, created 2026-07-28 (flt-lean-182) as sub-leaf (β-ray) of
 `exists_relNormDivisorHom_ray_class` below).
 
-For a real embedding `ψ` of `F`, `ψ (N_{E/F} δ)` is the product of `δ`'s images
-under the embeddings of `E` into `ℂ` extending `ψ`; the non-real ones occur in
-complex-conjugate pairs, each contributing `|·|² > 0`, and each real one
-contributes a positive number by hypothesis. -/
+**ROUTE.** Give `ℂ` the `F`-algebra structure `Complex.ofRealHom.comp ψ`. Then
+`Algebra.norm_eq_prod_embeddings F E ℂ` (in the pin,
+`Mathlib/RingTheory/Norm/Transitivity.lean`; needs `IsAlgClosed ℂ`,
+`Algebra.IsSeparable F E` — free in characteristic zero — and
+`FiniteDimensional F E`) gives
+`algebraMap F ℂ (N_{E/F} δ) = ∏ σ : E →ₐ[F] ℂ, σ δ`. Complex conjugation acts on
+`E →ₐ[F] ℂ` (it fixes `algebraMap F ℂ`, whose image lies in `ℝ`); its fixed
+points are the real embeddings of `E` over `ψ`, each contributing a factor `> 0`
+by `hδpos`, and its free orbits are two-element, each contributing
+`σ δ · conj (σ δ) = ‖σ δ‖² > 0` since `δ ≠ 0`. So the product is a positive
+real. `NumberField.ComplexEmbedding.IsReal` is the pin's name for the fixed-point
+condition.
+
+**FALSITY AUDIT — `hδ : δ ≠ 0` IS LOAD-BEARING, and this leaf was FALSE without
+it for about an hour on 2026-07-28** (flt-lean-182, caught by its own author
+while auditing the sub-leaves it had just created). If `E` is TOTALLY COMPLEX
+there is no ring hom `E →+* ℝ` at all, so `hδpos` is VACUOUS and `δ = 0`
+satisfies it; then `N_{E/F} 0 = 0` and `ψ 0 = 0` is not `> 0`. Witness:
+`E = ℚ(i)`, `F = ℚ`, `ψ` the inclusion, `δ = 0`. The consumer always has
+`δ ≠ 0` in hand — it is the first component of the generator of `P'` — so the
+repair costs nothing; the hypothesis was simply dropped when the sub-leaf was
+split off. The lesson is the standing one: a hypothesis quantifying over a
+possibly-EMPTY family constrains nothing, and a leaf whose only positivity input
+has that shape must carry the non-degeneracy separately.
+
+**Check that would refute the repaired form**: a `δ ≠ 0`, totally positive over
+`E`, and a real `ψ` of `F` with `ψ (N_{E/F} δ) ≤ 0`. -/
 theorem norm_totallyPositive_ray_class
     (F : Type u) [Field F] [NumberField F]
     (E : Type u) [Field E] [NumberField E] [Algebra F E]
     (hfin : Module.Finite F E)
-    (δ : NumberField.RingOfIntegers E)
+    (δ : NumberField.RingOfIntegers E) (hδ : δ ≠ 0)
     (hδpos : ∀ ψ : E →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers E) E δ)) :
     ∀ ψ : F →+* ℝ, 0 < ψ (algebraMap (NumberField.RingOfIntegers F) F
       (_root_.RingOfIntegers.norm F δ)) :=
@@ -50927,7 +50966,14 @@ product is `≡ 1` modulo it, and the congruence descends to `𝓞 F` because
 
 **This hypothesis is `hmmEext`, and it REPLACES the old `hmmEabs`**
 (`span {absNorm mm} ∣ mmE`), which was strong enough for this step but made
-clause (γ) of the consumer FALSE — see the FALSITY AUDIT there. -/
+clause (γ) of the consumer FALSE — see the FALSITY AUDIT there.
+
+**NON-DEGENERACY, checked 2026-07-28** (the sibling `norm_totallyPositive_ray_class`
+WAS false for want of exactly this kind of check, so it is recorded rather than
+assumed). No `δ ≠ 0` hypothesis is needed here, and the `δ = 0` case is not a
+hole: `0 - 1 = -1 ∈ mmE` forces `mmE = ⊤`, hence `mm 𝓞_E = ⊤` by `hmmEext`,
+hence `mm = ⊤` (a proper `mm` sits inside a maximal ideal, which has a prime of
+`𝓞 E` above it by integrality), and `N 0 - 1 = -1 ∈ ⊤`. -/
 theorem norm_sub_one_mem_ray_class
     (F : Type u) [Field F] [NumberField F]
     (E : Type u) [Field E] [NumberField E] [Algebra F E]
@@ -51330,7 +51376,7 @@ theorem exists_relNormDivisorHom_ray_class
     rw [hP]
     refine Subgroup.subset_closure ⟨_root_.RingOfIntegers.norm F δ,
       norm_ne_zero_ray_class F E hfin δ hδ0,
-      norm_totallyPositive_ray_class F E hfin δ hδpos,
+      norm_totallyPositive_ray_class F E hfin δ hδ0 hδpos,
       norm_sub_one_mem_ray_class F E hfin mm mmE hmmEext δ hδcong, ?_⟩
     exact relNormDivisorHom_apply_divisorMap_ray_class F E hfin d d' hd hd' 𝔑 hbasis δ hδ0
   -- CLAUSE (β), the norms: `𝔑 (single W n) = single w (n · f)`, and
