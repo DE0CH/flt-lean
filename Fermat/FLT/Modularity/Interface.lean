@@ -31571,11 +31571,231 @@ theorem index_le_card_classGroup_of_localInertiaCommutatorSubgroup_le
   rw [← hrank]
   exact finrank_le_card_classGroup_of_unramified_abelian (p := p) CF L habel hunr
 
+/-- **THE COMPOSITUM OF TWO EVERYWHERE-UNRAMIFIED ABELIAN EXTENSIONS OF
+`ℚ(μ_p)` IS ONE AGAIN, AND ITS DEGREE IS DIVISIBLE BY BOTH DEGREES**
+(SORRY LEAF, cut 2026-07-28 out of
+`exists_unramifiedAbelian_finrank_eq_card_classGroup` below).
+
+The **BOOKKEEPING** half of that leaf's decomposition into `ℓ`-primary
+layers. It contains **no class field theory at all** — only Galois theory
+and ramification theory in a tower — and it is the shallower of the two
+leaves cut here, so it can be owned separately from
+`exists_unramifiedAbelian_primePow_dvd_finrank` below.
+
+**Route.** Take `H := H₁ ⊔ H₂` inside `AlgebraicClosure CF`.
+
+* *Finite and Galois*: a compositum of two finite Galois subextensions of a
+  fixed algebraic closure is finite Galois.
+* *Abelian*: restriction is an injective group homomorphism
+  `Gal(H₁H₂/K) →* Gal(H₁/K) × Gal(H₂/K)` — an automorphism fixing `H₁` and
+  `H₂` pointwise fixes the field they generate — and a subgroup of a product
+  of two abelian groups is abelian.
+* *Unramified at every finite place*: the inertia group of a prime of
+  `𝓞 (H₁H₂)` injects into the product of the inertia groups of the primes
+  below it in `𝓞 H₁` and `𝓞 H₂`, both trivial by hypothesis. Equivalently,
+  in the pin's own language: `Algebra.FormallyUnramified` is stable under
+  base change and composition, and `H₁H₂` is a quotient of `H₁ ⊗_K H₂`.
+* *Degree*: `K ⊆ H₁ ⊆ H₁H₂` and the tower law give
+  `[H₁ : K] ∣ [H₁H₂ : K]`, likewise for `H₂`, and then `Nat.lcm_dvd`.
+
+**Faithfulness.** The conclusion asks only for DIVISIBILITY by the `lcm`,
+never for the exact degree of the compositum — deliberately, so that no
+linear-disjointness input is smuggled into a leaf that is not supposed to
+carry any. Nothing is asserted at the infinite places, matching the
+hypotheses, which assert nothing there either. The
+`IsCyclotomicExtension {p} ℚ CF` hypothesis is inherited from the cluster
+for symmetry and is **not needed**: unlike its upper-bound counterpart
+`finrank_le_card_classGroup_of_unramified_abelian` above, this statement is
+true over an arbitrary number field, and a prover may ignore it.
+
+**The check that would refute it**: two finite abelian extensions of
+`ℚ(μ_p)`, each unramified at every finite place, whose compositum is
+ramified at some finite place, or non-abelian, or of degree not divisible
+by `Nat.lcm` of their degrees. -/
+theorem exists_unramifiedAbelian_lcm_dvd_finrank
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (H₁ H₂ : IntermediateField CF (AlgebraicClosure CF))
+    [FiniteDimensional CF H₁] [IsGalois CF H₁]
+    [FiniteDimensional CF H₂] [IsGalois CF H₂]
+    (habel₁ : ∀ a b : H₁ ≃ₐ[CF] H₁, a * b = b * a)
+    (hunr₁ : ∀ (Q : Ideal (𝓞 H₁)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 CF) Q)
+    (habel₂ : ∀ a b : H₂ ≃ₐ[CF] H₂, a * b = b * a)
+    (hunr₂ : ∀ (Q : Ideal (𝓞 H₂)) (_ : Q.IsPrime), Q ≠ ⊥ →
+      Algebra.IsUnramifiedAt (𝓞 CF) Q) :
+    ∃ (H : IntermediateField CF (AlgebraicClosure CF))
+      (_ : FiniteDimensional CF H) (_ : IsGalois CF H),
+      (∀ a b : H ≃ₐ[CF] H, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
+      Nat.lcm (Module.finrank CF H₁) (Module.finrank CF H₂) ∣
+        Module.finrank CF H :=
+  sorry
+
+/-- **THE `ℓ`-PRIMARY HILBERT CLASS FIELD: for every prime `ℓ`, `ℚ(μ_p)`
+has a finite ABELIAN extension, unramified at every finite place, whose
+degree is divisible by the `ℓ`-part of `h_K`** (SORRY LEAF, cut 2026-07-28
+out of `exists_unramifiedAbelian_finrank_eq_card_classGroup` below).
+
+**THIS IS WHERE THE CLASS FIELD THEORY IS.** It is the `ℓ`-primary form of
+the existence theorem at modulus `1`, and it is the leaf the ANALYTIC route
+should be run at: Dirichlet density for `ζ_K` and the ray-class
+`L`-functions (Childress ch. 4–5, Lang *ANT* ch. X, Cassels–Fröhlich
+ch. VIII, Neukirch VI (6.9)). As with its parent, **no Artin map, no
+Frobenius element and no ideal occurs in the statement**, so the route can
+be run here in isolation, without the reciprocity machinery that
+`exists_artinIdealMap_of_unramifiedAbelianSubgroup` below needs.
+
+**Why the cut is `ℓ`-primary and not the whole class number.** The
+classical existence proof does not produce the Hilbert class field in one
+step: it reduces to a congruence subgroup of PRIME EXPONENT, adjoins `ζ_ℓ`,
+runs Kummer theory over `K(ζ_ℓ)`, and descends by the translation theorem
+(Verschiebungssatz). Cutting the target at the `ℓ`-primary layer is
+therefore the cut the literature's own proof already makes, and it lets the
+primes be attacked independently — for `ℚ(μ_p)` the `p`-part in particular
+has its own (Iwasawa-theoretic) literature. The layers are recombined by
+`exists_unramifiedAbelian_lcm_dvd_finrank` above; that recombination is
+already PROVEN in
+`exists_unramifiedAbelian_card_classGroup_dvd_finrank` below.
+
+**Soundness — the intended inhabitant.** `H` = the `ℓ`-part of the Hilbert
+class field of `K = ℚ(μ_p)`, i.e. the subfield of the Hilbert class field
+`𝐇` fixed by the `ℓ`-complement of `Gal(𝐇/K) ≃ Cl(𝓞 K)`. It is abelian
+over `K`, unramified at every place, and `[H : K] = ℓ ^ v_ℓ(h_K)` exactly.
+
+**The `ℓ ∤ h_K` case still has content, and it is pure plumbing.** There the
+exponent is `0` and the divisibility reads `1 ∣ [H : K]`, but the statement
+is EXISTENTIAL, so an extension must still be produced: take `H = ⊥`, for
+which `FiniteDimensional`, `IsGalois`, commutativity of the (trivial)
+automorphism group, and `Algebra.IsUnramifiedAt (𝓞 CF)` at every nonzero
+prime of `𝓞 ⊥ ≃ 𝓞 CF` all hold. This is also the whole content at `p = 2`
+(`CF = ℚ`, `h_K = 1`), where the leaf is Minkowski-free and trivial.
+
+**Not vacuous.** For `p = 23`, `h(ℚ(μ_23)) = 3` (PARI/GP, 2026-07-28), so
+at `ℓ = 3` the leaf demands a cubic everywhere-finite-unramified abelian
+extension of `ℚ(μ_23)` and `H = ⊥` does NOT discharge it. It is trivial
+exactly at the primes `ℓ ∤ h_K`.
+
+**Faithfulness.** DIVISIBILITY rather than equality is deliberate, in
+keeping with the shape the parent cluster chose: it stays true rather than
+becoming false if the degree is larger, so this leaf carries no upper-bound
+obligation — the upper bound is `finrank_le_card_classGroup_of_unramified_abelian`
+above and is a separate owner's. The `IsCyclotomicExtension {p} ℚ CF`
+hypothesis is inherited for symmetry with that leaf and is **not needed
+here**: the wide Hilbert class field exists over an ARBITRARY number field,
+so this statement is true there too, and a prover who finds it easier may
+prove the general statement and specialise. (Note the asymmetry, and do not
+generalize the other leaf the same way: the `≤` direction over a general
+number field is FALSE, as its docstring records with the PARI/GP
+counterexample `ℚ(√3)`, `h = 1`, narrow `h⁺ = 2`.)
+
+**The check that would refute it**: a prime `ℓ` for which every finite
+abelian extension of `ℚ(μ_p)` unramified at every finite place has degree
+not divisible by `ℓ ^ v_ℓ(h_K)` — i.e. the `ℓ`-part of the Hilbert class
+field is smaller than the class number predicts. -/
+theorem exists_unramifiedAbelian_primePow_dvd_finrank
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (ℓ : ℕ) (hℓ : ℓ.Prime) :
+    ∃ (H : IntermediateField CF (AlgebraicClosure CF))
+      (_ : FiniteDimensional CF H) (_ : IsGalois CF H),
+      (∀ a b : H ≃ₐ[CF] H, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
+      ℓ ^ (Nat.card (ClassGroup (𝓞 CF))).factorization ℓ ∣ Module.finrank CF H :=
+  sorry
+
+/-- **THE EXISTENCE THEOREM AT MODULUS `1`, DIVISIBILITY FORM: `ℚ(μ_p)` has
+a finite ABELIAN extension, unramified at every finite place, of degree
+divisible by `h_K`** (**PROVEN 2026-07-28**, over the two leaves stated
+immediately above and nothing else).
+
+This is the recombination of the `ℓ`-primary layers produced by
+`exists_unramifiedAbelian_primePow_dvd_finrank` above, glued by
+`exists_unramifiedAbelian_lcm_dvd_finrank` above. The proof is a
+`Finset.induction_on` over `(Nat.card (ClassGroup (𝓞 CF))).primeFactors`
+carrying the partial product `∏_{q ∈ S} q ^ v_q(h_K)`; at each step the
+new factor `ℓ ^ v_ℓ(h_K)` is coprime to the partial product (distinct
+primes), so `Nat.Coprime.mul_dvd_of_dvd_of_dvd` upgrades the two separate
+divisibilities into one, and `Nat.prod_factorization_pow_eq_self` closes
+the induction at `S = primeFactors`.
+
+**The empty base case is seeded from the `ℓ`-primary leaf itself**, at
+`ℓ = 2`: the conclusion there is only `1 ∣ [H : K]`, but an extension must
+still be exhibited, and the `ℓ`-primary leaf already exhibits one. That is
+why no separate "the trivial extension qualifies" leaf is cut here.
+
+`h_K` is nonzero (`Nat.card_pos`, the class group of a number field being
+finite and nonempty), which is what makes the factorization identity
+applicable. -/
+theorem exists_unramifiedAbelian_card_classGroup_dvd_finrank
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ (H : IntermediateField CF (AlgebraicClosure CF))
+      (_ : FiniteDimensional CF H) (_ : IsGalois CF H),
+      (∀ a b : H ≃ₐ[CF] H, a * b = b * a) ∧
+      (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+        Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
+      Nat.card (ClassGroup (𝓞 CF)) ∣ Module.finrank CF H := by
+  classical
+  have key : ∀ S : Finset ℕ, S ⊆ (Nat.card (ClassGroup (𝓞 CF))).primeFactors →
+      ∃ (H : IntermediateField CF (AlgebraicClosure CF))
+        (_ : FiniteDimensional CF H) (_ : IsGalois CF H),
+        (∀ a b : H ≃ₐ[CF] H, a * b = b * a) ∧
+        (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
+          Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
+        (∏ q ∈ S, q ^ (Nat.card (ClassGroup (𝓞 CF))).factorization q) ∣
+          Module.finrank CF H := by
+    intro S
+    induction S using Finset.induction_on with
+    | empty =>
+      intro _
+      obtain ⟨H, hfd, hgal, ha, hu, -⟩ :=
+        exists_unramifiedAbelian_primePow_dvd_finrank (p := p) CF 2 Nat.prime_two
+      exact ⟨H, hfd, hgal, ha, hu, by simp⟩
+    | insert ℓ S hℓS ih =>
+      intro hsub
+      have hℓmem : ℓ ∈ (Nat.card (ClassGroup (𝓞 CF))).primeFactors :=
+        hsub (Finset.mem_insert_self _ _)
+      have hSsub : S ⊆ (Nat.card (ClassGroup (𝓞 CF))).primeFactors :=
+        fun q hq => hsub (Finset.mem_insert_of_mem hq)
+      obtain ⟨H₁, hfd₁, hgal₁, ha₁, hu₁, hd₁⟩ := ih hSsub
+      obtain ⟨H₂, hfd₂, hgal₂, ha₂, hu₂, hd₂⟩ :=
+        exists_unramifiedAbelian_primePow_dvd_finrank (p := p) CF ℓ
+          (Nat.prime_of_mem_primeFactors hℓmem)
+      haveI := hfd₁; haveI := hgal₁; haveI := hfd₂; haveI := hgal₂
+      obtain ⟨H, hfd, hgal, ha, hu, hd⟩ :=
+        exists_unramifiedAbelian_lcm_dvd_finrank (p := p) CF H₁ H₂ ha₁ hu₁ ha₂ hu₂
+      refine ⟨H, hfd, hgal, ha, hu, ?_⟩
+      have hd₁' : (∏ q ∈ S, q ^ (Nat.card (ClassGroup (𝓞 CF))).factorization q) ∣
+          Module.finrank CF H :=
+        hd₁.trans ((Nat.dvd_lcm_left _ _).trans hd)
+      have hd₂' : ℓ ^ (Nat.card (ClassGroup (𝓞 CF))).factorization ℓ ∣
+          Module.finrank CF H :=
+        hd₂.trans ((Nat.dvd_lcm_right _ _).trans hd)
+      have hcop : Nat.Coprime (ℓ ^ (Nat.card (ClassGroup (𝓞 CF))).factorization ℓ)
+          (∏ q ∈ S, q ^ (Nat.card (ClassGroup (𝓞 CF))).factorization q) := by
+        refine Nat.Coprime.pow_left _ (Nat.Coprime.prod_right fun q hq => ?_)
+        refine Nat.Coprime.pow_right _ ?_
+        exact (Nat.coprime_primes (Nat.prime_of_mem_primeFactors hℓmem)
+          (Nat.prime_of_mem_primeFactors (hSsub hq))).mpr
+          (fun h => hℓS (h ▸ hq))
+      rw [Finset.prod_insert hℓS]
+      exact hcop.mul_dvd_of_dvd_of_dvd hd₂' hd₁'
+  obtain ⟨H, hfd, hgal, ha, hu, hd⟩ := key _ (subset_refl _)
+  refine ⟨H, hfd, hgal, ha, hu, ?_⟩
+  have hn0 : Nat.card (ClassGroup (𝓞 CF)) ≠ 0 := Nat.card_pos.ne'
+  have hprod : (∏ q ∈ (Nat.card (ClassGroup (𝓞 CF))).primeFactors,
+      q ^ (Nat.card (ClassGroup (𝓞 CF))).factorization q) =
+      Nat.card (ClassGroup (𝓞 CF)) := by
+    simpa [Finsupp.prod] using Nat.prod_factorization_pow_eq_self hn0
+  rwa [hprod] at hd
+
 /-- **THE EXISTENCE THEOREM AT MODULUS `1` (THE HILBERT CLASS FIELD), IN
 THE LITERATURE'S OWN SHAPE: `ℚ(μ_p)` has a finite ABELIAN extension,
-unramified at every finite place, of degree EXACTLY `h_K`** (SORRY LEAF,
-cut 2026-07-28 out of
-`exists_localInertiaCommutatorSubgroup_le_index_eq_card_classGroup` below).
+unramified at every finite place, of degree EXACTLY `h_K`** (cut
+2026-07-27 out of
+`exists_localInertiaCommutatorSubgroup_le_index_eq_card_classGroup` below;
+**DECOMPOSED 2026-07-28 — the assembly below is PROVEN**, over the two
+leaves stated above and the sibling upper bound, and nothing else).
 
 This is the ARITHMETIC half of that leaf, and it is **the genuinely deep
 one of the four** — the existence theorem of class field theory applied to
@@ -31587,6 +31807,28 @@ isolation — Dirichlet density for `ζ_K` and the ray-class `L`-functions
 (Childress ch. 4–5, Lang *ANT* ch. X, Cassels–Fröhlich ch. VIII, Neukirch
 VI (6.9)), which never needs the reciprocity machinery that the sibling
 `exists_artinIdealMap_of_unramifiedAbelianSubgroup` below does.
+
+**THE CUT, along the `ℓ`-PRIMARY axis (2026-07-28).** What is proven below
+is `le_antisymm` and nothing more. The two inequalities it needs are:
+
+* `≤`, from the SIBLING `finrank_le_card_classGroup_of_unramified_abelian`
+  above — a separate owner's leaf. Consuming it here removes a real
+  duplication: before this cut, a prover of the equality had to establish
+  the upper bound as well, i.e. redo that sibling's entire obligation.
+* `≥`, from `exists_unramifiedAbelian_card_classGroup_dvd_finrank` above
+  (`Nat.le_of_dvd`, using `Module.finrank_pos`), which is itself PROVEN
+  over the two leaves cut here:
+  `exists_unramifiedAbelian_primePow_dvd_finrank` (the `ℓ`-primary
+  existence theorem — **this is where the class field theory now lives**)
+  and `exists_unramifiedAbelian_lcm_dvd_finrank` (the compositum, pure
+  Galois and ramification theory, no class field theory at all).
+
+The `ℓ`-primary axis is the axis the classical existence proof itself uses:
+it reduces to a congruence subgroup of prime exponent, adjoins `ζ_ℓ`, runs
+Kummer theory over `K(ζ_ℓ)`, and descends by the translation theorem. So
+the two leaves above are not bookkeeping around an atom — they are the two
+halves the literature's proof already separates, and they can be owned
+independently.
 
 **Soundness — the intended inhabitant.** `H` = the Hilbert class field of
 `K = ℚ(μ_p)`; it is abelian over `K`, unramified at every place, and
@@ -31621,8 +31863,14 @@ theorem exists_unramifiedAbelian_finrank_eq_card_classGroup
       (∀ a b : H ≃ₐ[CF] H, a * b = b * a) ∧
       (∀ (Q : Ideal (𝓞 H)) (_ : Q.IsPrime), Q ≠ ⊥ →
         Algebra.IsUnramifiedAt (𝓞 CF) Q) ∧
-      Module.finrank CF H = Nat.card (ClassGroup (𝓞 CF)) :=
-  sorry
+      Module.finrank CF H = Nat.card (ClassGroup (𝓞 CF)) := by
+  obtain ⟨H, hfd, hgal, habel, hunr, hdvd⟩ :=
+    exists_unramifiedAbelian_card_classGroup_dvd_finrank (p := p) CF
+  haveI := hfd
+  haveI := hgal
+  refine ⟨H, hfd, hgal, habel, hunr, le_antisymm ?_ ?_⟩
+  · exact finrank_le_card_classGroup_of_unramified_abelian (p := p) CF H habel hunr
+  · exact Nat.le_of_dvd Module.finrank_pos hdvd
 
 /-- **THE GALOIS DICTIONARY, REVERSE DIRECTION: a finite ABELIAN extension
 of `ℚ(μ_p)` unramified at every finite place cuts out a subgroup of `Γ_K`
@@ -31824,8 +32072,15 @@ that is class field theory and the piece that is infinite Galois theory:
   counterexample `ℚ(√3)` (`h = 1`, narrow `h⁺ = 2`) showing that the same
   statement over a general number field is FALSE.
 * `exists_unramifiedAbelian_finrank_eq_card_classGroup` — the existence
-  theorem for FINITE extensions (the Hilbert class field). **The deepest of
-  the four**, and the one the analytic route reaches.
+  theorem for FINITE extensions (the Hilbert class field), the deepest of
+  the four and the one the analytic route reaches. **THIRD CUT, along the
+  `ℓ`-PRIMARY axis (2026-07-28): this one is now itself PROVEN**, over
+  `exists_unramifiedAbelian_primePow_dvd_finrank` (the `ℓ`-primary
+  existence theorem, where the class field theory now lives) and
+  `exists_unramifiedAbelian_lcm_dvd_finrank` (the compositum — Galois and
+  ramification theory only), plus the sibling upper bound listed just
+  above. So the leaves OPEN in this cluster are those two, the upper bound,
+  and the two dictionary leaves below — five, not four.
 * `exists_unramifiedAbelian_finrank_eq_index` and
   `exists_localInertiaCommutatorSubgroup_le_index_eq_finrank` — the Galois
   dictionary in its two directions, containing NO class field theory. They
