@@ -34537,13 +34537,20 @@ paragraph above.** `not_sq_eq_negFortyNine_of_stable` is now PROVEN in turn, ove
 `isIsogeny_galConj`, `exists_sqrtNegOne_galSign` and
 `exists_gal_fix_sqrtNegOne_cyclotomicSeven_eq_three` (all three PROVEN below), so
 it is NO LONGER an open leaf of this section and nobody should be dispatched at
-it.  The one remaining DIRECT sorry in this section is
-`exists_intMul_of_galoisInvariant`.
+it.
 
-That leaf, plus `End.mul_comm_charZero`, is closed by ONE piece of
-machinery: the invariant-differential character `c : End(W) →+* F` of Route A on
-`End.mul_comm_charZero`.  See `exists_intMul_of_galoisInvariant`'s docstring.
-That machinery now EXISTS, as `WeierstrassCurve.IsDiffChar` in
+**PROVEN 2026-07-28, LATER THE SAME DAY**: `exists_intMul_of_galoisInvariant` is
+now closed too, over `End.cotangentHom` of `section Cotangent` plus the Galois
+equivariance `c (Ψ^σ) = σ (c Ψ)`, which is proven inside that declaration.  So
+this section has NO remaining direct sorry, and nobody should be dispatched at
+`exists_intMul_of_galoisInvariant` either.  The residual `sorryAx` in the cone is
+the four `IsCotangentScalar` leaves of `section Cotangent`
+(`exists_isCotangentScalar`, `isCotangentScalar_unique`,
+`IsCotangentScalar.comp`, `IsCotangentScalar.add`), which have separate owners.
+
+That machinery — the invariant-differential character `c : End(W) →+* F` of
+Route A on `End.mul_comm_charZero` — also EXISTS in a SECOND, independent copy,
+as `WeierstrassCurve.IsDiffChar` in
 `Fermat/FLT/EllipticCurve/DifferentialCharacter.lean`, with six open geometric
 leaves of its own (`exists_isDiffChar`, `isDiffChar_unique`, `isDiffChar_add`,
 `isDiffChar_comp`, `eq_of_isDiffChar`, `isDiffChar_galConj`) — which is where the
@@ -34722,18 +34729,27 @@ docstring's three MISSING MACHINERY items are discharged as follows.
    this file, so this cut adds NO new mathematics here — it reuses the leaf the
    `X_0(125)`/`X_0(169)` lattice cluster already owns.
 
-3. *`End_ℚ(E) = ℤ` plus Galois descent* — this is the one genuine leaf,
-   `exists_intMul_of_galoisInvariant` below.
+3. *`End_ℚ(E) = ℤ` plus Galois descent* — **also PROVEN 2026-07-28**, in
+   `exists_intMul_of_galoisInvariant` below.  It was cut as a leaf in the
+   morning and closed the same day over the cotangent character.
 
-**A NOTE FOR WHOEVER PICKS UP EITHER LEAF.**  The route recorded on
-`End.mul_comm_charZero` — Route A, the invariant differential, i.e. an injective
-ring map `c : End(W) →+* F` — closes BOTH remaining leaves at once, provided it
-is built functorially enough to satisfy `c (Ψ^σ) = σ (c Ψ)`.  Given that,
-`exists_intMul_of_galoisInvariant` is three lines: a `Γ_ℚ`-invariant `Ψ` has
-`c Ψ ∈ ℚ`, `c Ψ` is a root of the monic integral quadratic supplied by
-`End.exists_charPoly`, hence a rational algebraic integer, hence `c Ψ = c [n]`
-for some `n ∈ ℤ`, hence `Ψ = [n]` by injectivity.  So the cotangent character is
-worth more than its own leaf.
+**HOW ITEM 3 CLOSED, AND WHAT IT COST.**  The route recorded on
+`End.mul_comm_charZero` — Route A, the invariant differential, i.e. a ring map
+`c : End(W) →+* F` — is the route that was taken, and the prediction that it
+closes this leaf "in three lines *provided* it satisfies `c (Ψ^σ) = σ (c Ψ)`"
+was right about the mathematics and wrong about the cost: the proviso is itself
+the bulk of the work.  It is discharged INSIDE
+`exists_intMul_of_galoisInvariant` (step `hgc` there) and is cheap for the same
+reason `isRationalMap_galoisConjHom` was: `IsCotangentScalar` is a POINTWISE
+identity, so it transports by conjugating the five presenting polynomials
+coefficientwise, with the single extra observation that `2y + a₁x + a₃`
+transports because `a₁, a₃ ∈ ℚ`.  No function field, no differentials.
+
+So the ONLY leaves left under this cluster are the four `IsCotangentScalar`
+leaves of `section Cotangent` above — `exists_isCotangentScalar`,
+`isCotangentScalar_unique`, `IsCotangentScalar.comp`, `IsCotangentScalar.add`.
+Everything from `End.cotangentHom` downwards, including the Galois
+equivariance, is now proven.
 -/
 
 /-- **Two roots of one monic quadratic in a commutative ring** (PROVEN
@@ -35016,32 +35032,44 @@ theorem galoisConj_dichotomy (E : WeierstrassCurve ℚ) [E.IsElliptic]
     have h4 := congrArg (Affine.Point.map (W' := E) σ.toAlgHom) hBP
     rwa [pointMap_pointMap_symm] at h4
 
-/-- **LEAF (cut 2026-07-28): `End_ℚ(E) = ℤ`.** A `Γ_ℚ`-equivariant isogeny of
-`E_ℚ̄`, for `E` defined over `ℚ`, is multiplication by an integer.
+/-- **PROVEN 2026-07-28 (was a sorry leaf cut the same day): `End_ℚ(E) = ℤ`.** A
+`Γ_ℚ`-equivariant isogeny of `E_ℚ̄`, for `E` defined over `ℚ`, is multiplication
+by an integer.
 
 Equivalently: **no elliptic curve over `ℚ` has `ℚ`-rational complex
-multiplication.**  This is the last of the three MISSING MACHINERY items of
+multiplication.**  This was the last of the three MISSING MACHINERY items of
 `exists_galoisConj_eq_trace_sub` below; items 1 and 2 are discharged above (see
 the section note).
 
-**THE ARGUMENT** (Silverman *ATAEC* II.2.2).  A `Γ_ℚ`-equivariant `Ψ` descends
-to `End_ℚ(E)` by Galois descent for morphisms.  If `Ψ ∉ ℤ` then `ℚ(Ψ)` is an
-imaginary quadratic field `K` (this much is `End.exists_charPoly` plus
-`MazurEndLattice.exists_traceless`, both PROVEN), and the endomorphisms of a CM
-curve are defined exactly over `K(j) ⊇ K`.  Since `j(E) ∈ ℚ` this reads `K ⊆ ℚ`,
-which is false for an imaginary quadratic field.
+**HOW IT IS PROVEN — the invariant-differential character, exactly the cheap
+route the leaf's docstring predicted.**  The proof takes the cotangent character
+`c = End.cotangentHom : End(E_ℚ̄) →+* ℚ̄` (built in `section Cotangent` above)
+and runs four steps, all of them inside this proof so that no new top-level name
+is introduced:
 
-**THE CHEAPEST ROUTE AT THIS PIN — and it is shared with
-`End.mul_comm_charZero`.**  Do NOT build the theory of the ring class field.
-Build the invariant-differential character instead: an injective ring map
-`c : End(W) →+* F` with `c (Ψ^σ) = σ (c Ψ)` (Route A on
-`End.mul_comm_charZero`, where the statement to introduce is spelled out as
-`End.exists_cotangentChar`).  Given it, this leaf is: `Γ_ℚ`-invariance makes
-`c Ψ` a `Γ_ℚ`-fixed element of `ℚ̄`, hence rational; `End.exists_charPoly` makes
-it a root of a monic integral quadratic, hence an algebraic integer, hence an
-integer `n`; and `c` is injective with `c [n] = n`, so `Ψ = [n]`.  The same
-character gives commutativity outright, so ONE subtree closes both open leaves
-of this cluster.
+1. *Galois equivariance of `c`* (step `hgc`).  `IsCotangentScalar φ d` is a
+   POINTWISE identity in `veluPointX`/`veluPointY` and `Polynomial.derivative`,
+   so — exactly as for `isRationalMap_galoisConjHom` above — it transports along
+   a field automorphism by conjugating the five presenting polynomials
+   COEFFICIENTWISE: `IsCotangentScalar (galoisConjHom E σ φ) (σ⁻¹ d)`.  The one
+   extra ingredient beyond the rationality transport is that the denominator
+   `2y + a₁x + a₃` of `ω` transports too (step `hdenom`), which holds because
+   `a₁, a₃ ∈ ℚ` are fixed by `σ`.  No function field, no differentials.
+2. `Γ_ℚ`-invariance of `Ψ` gives `galoisConjHom E σ Ψ = Ψ`, so by 1 and the
+   uniqueness of the cotangent scalar (`End.cotangent_eq`) every `σ ∈ Γ_ℚ` fixes
+   `c Ψ`; hence `c Ψ ∈ ℚ` by infinite Galois theory
+   (`InfiniteGalois.mem_range_algebraMap_iff_fixed`, applied through a
+   `∀ k` helper because `IsGalois ℚ ℚ̄` does not synthesize directly here).
+3. `MazurEndLattice.exists_charPolyRing` makes `c Ψ` a root of a monic integral
+   quadratic, so the rational number of step 2 is an algebraic integer, hence an
+   integer `m` (step `hquadRat`, via `IsIntegrallyClosed.isIntegral_iff`).
+4. `End.injective_ringHomToBase` — injectivity of *any* ring map `End W → F` in
+   characteristic zero, PROVEN above — turns `c Ψ = m = c [m]` into `Ψ = [m]`.
+
+Steps 1 and 2 are axiom-clean; the `sorryAx` in this declaration's cone comes
+entirely from the four open `IsCotangentScalar` leaves that `End.cotangent`
+rests on (`exists_isCotangentScalar`, `isCotangentScalar_unique`,
+`IsCotangentScalar.comp`, `IsCotangentScalar.add`).
 
 **A ROUTE THAT DOES NOT SHORTEN THE WORK**, recorded so it is not re-attempted:
 `Ψ` rational over `ℚ` puts the mod-`ℓ` image inside a CARTAN subgroup (not
@@ -35052,22 +35080,196 @@ still open here, see `not_sq_eq_negFortyNine_of_stable` item 3) AND the
 existence of a prime inert in `K`, i.e. Chebotarev or quadratic reciprocity for
 the CM discriminant.  Strictly heavier than the cotangent character.
 
-**THE CHECK THAT WOULD REFUTE THIS LEAF**: an elliptic curve over `ℚ` together
-with an isogeny of `E_ℚ̄` that commutes with every element of `Γ_ℚ` and is not
-multiplication by an integer.  Note the hypothesis is `IsIsogeny` and not a bare
-`AddMonoidHom`: `E(ℚ̄)` is a divisible group, so as an ABSTRACT group it has
-enormous Galois-equivariant endomorphism rings, and the statement is false
-without the rationality certificate. -/
+**THE CHECK THAT WOULD REFUTE THIS STATEMENT**: an elliptic curve over `ℚ`
+together with an isogeny of `E_ℚ̄` that commutes with every element of `Γ_ℚ` and
+is not multiplication by an integer.  Note the hypothesis is `IsIsogeny` and not
+a bare `AddMonoidHom`: `E(ℚ̄)` is a divisible group, so as an ABSTRACT group it
+has enormous Galois-equivariant endomorphism rings, and the statement is false
+without the rationality certificate.  `hΨiso` is consumed at step 3, where it is
+what makes `Ψ` an element of `End(E_ℚ̄)` at all and so supplies the
+characteristic polynomial. -/
 theorem exists_intMul_of_galoisInvariant (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (Ψ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-    (_hΨiso : WeierstrassCurve.IsIsogeny Ψ)
-    (_hinv : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+    (hΨiso : WeierstrassCurve.IsIsogeny Ψ)
+    (hinv : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
       Ψ (Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom P)
         = Affine.Point.map
             (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ P)) :
-    ∃ n : ℤ, ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ P = n • P :=
-  sorry
+    ∃ n : ℤ, ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, Ψ P = n • P := by
+  haveI hEell : ((E⁄(AlgebraicClosure ℚ)) : Affine (AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- (A) A rational root of a monic integral quadratic is an integer.
+  have hquadRat : ∀ (q : ℚ) (t n : ℤ), q * q + (n : ℚ) = (t : ℚ) * q → ∃ m : ℤ, q = (m : ℚ) := by
+    intro q t n hq
+    have hmonic : ((Polynomial.X : Polynomial ℤ) ^ 2
+        - (Polynomial.C t * Polynomial.X - Polynomial.C n)).Monic := by
+      refine Polynomial.monic_X_pow_sub ?_
+      refine lt_of_le_of_lt (Polynomial.degree_sub_le _ _) ?_
+      refine max_lt (lt_of_le_of_lt (Polynomial.degree_C_mul_X_le t) ?_)
+        (lt_of_le_of_lt Polynomial.degree_C_le ?_) <;> decide
+    have hintq : IsIntegral ℤ q := by
+      refine ⟨_, hmonic, ?_⟩
+      simp only [Polynomial.eval₂_sub, Polynomial.eval₂_mul, Polynomial.eval₂_pow,
+        Polynomial.eval₂_X, Polynomial.eval₂_C]
+      push_cast [eq_intCast]
+      linear_combination hq
+    obtain ⟨m, hm⟩ := IsIntegrallyClosed.isIntegral_iff.mp hintq
+    exact ⟨m, by simpa using hm.symm⟩
+  -- (B) The denominator `2y + a₁x + a₃` of `ω` transports along `Point.map ρ`,
+  -- because `a₁, a₃` are defined over `ℚ` and so are fixed by `ρ`.
+  have hdenom : ∀ (ρ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (P : (E⁄(AlgebraicClosure ℚ)).Point),
+      WeierstrassCurve.invariantDiffDenom (E⁄(AlgebraicClosure ℚ)).toAffine
+          (Affine.Point.map (W' := E) ρ.toAlgHom P)
+        = ρ (WeierstrassCurve.invariantDiffDenom (E⁄(AlgebraicClosure ℚ)).toAffine P) := by
+    intro ρ P
+    simp only [WeierstrassCurve.invariantDiffDenom, veluPointX_pointMap,
+      veluPointY_pointMap, map_add, map_mul, map_ofNat]
+    congr 2 <;>
+      simp [WeierstrassCurve.baseChange, WeierstrassCurve.map_a₁, WeierstrassCurve.map_a₃]
+  -- (C) GALOIS EQUIVARIANCE of the cotangent scalar: `c (σ⁻¹ φ σ) = σ⁻¹ (c φ)`,
+  -- by conjugating the five presenting polynomials coefficientwise — the same
+  -- computation as `isRationalMap_galoisConjHom`, with `hdenom` added.
+  have hgc : ∀ (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+      (d : AlgebraicClosure ℚ),
+      WeierstrassCurve.IsCotangentScalar φ d →
+      WeierstrassCurve.IsCotangentScalar (galoisConjHom E σ φ) (σ.symm d) := by
+    intro σ φ d hd
+    obtain ⟨hz, PA, PB, PC, PD, PG, hPB, hPG, hcert, hdiff⟩ := hd
+    set τ : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ := σ.symm.toAlgHom.toRingHom with hτdef
+    have hτinj : Function.Injective τ := τ.injective
+    have hτσ : ∀ w : AlgebraicClosure ℚ, τ (σ w) = w := by intro w; simp [hτdef]
+    have hmapne : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+        P ≠ 0 → Affine.Point.map (W' := E) σ.toAlgHom P ≠ 0 := by
+      intro P hP h
+      refine hP ?_
+      have h2 := congrArg (Affine.Point.map (W' := E) σ.symm.toAlgHom) h
+      rwa [pointMap_symm_pointMap, map_zero] at h2
+    have hφne : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point,
+        galoisConjHom E σ φ P ≠ 0 →
+        φ (Affine.Point.map (W' := E) σ.toAlgHom P) ≠ 0 := by
+      intro P hP h
+      exact hP (by rw [galoisConjHom_apply, h, map_zero])
+    refine ⟨?_, PA.map τ, PB.map τ, PC.map τ, PD.map τ, PG.map τ,
+      (Polynomial.map_ne_zero_iff hτinj).mpr hPB,
+      (Polynomial.map_ne_zero_iff hτinj).mpr hPG, ?_, ?_⟩
+    · intro h0
+      have hφ0 : φ = 0 := by
+        ext Q
+        have h1 := congrArg
+          (fun k : (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point =>
+            k (Affine.Point.map (W' := E) σ.symm.toAlgHom Q)) h0
+        simp only [galoisConjHom_apply, AddMonoidHom.zero_apply,
+          pointMap_pointMap_symm] at h1
+        have h2 := congrArg (Affine.Point.map (W' := E) σ.toAlgHom) h1
+        rwa [pointMap_pointMap_symm, map_zero] at h2
+      rw [hz hφ0, map_zero]
+    · intro P hP
+      obtain ⟨hx, hy⟩ := hcert _ (hφne P hP)
+      rw [veluPointX_pointMap] at hx hy
+      rw [veluPointY_pointMap] at hy
+      have hxτ := congrArg τ hx
+      have hyτ := congrArg τ hy
+      rw [map_mul] at hxτ
+      rw [map_mul, map_add, map_mul] at hyτ
+      rw [galoisConjHom_apply, veluPointX_pointMap, veluPointY_pointMap]
+      refine ⟨?_, ?_⟩
+      · rw [show (PB.map τ).eval (veluPointX P)
+            = τ (PB.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+          show (PA.map τ).eval (veluPointX P)
+            = τ (PA.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ]]
+        exact hxτ
+      · rw [show (PG.map τ).eval (veluPointX P)
+            = τ (PG.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+          show (PC.map τ).eval (veluPointX P)
+            = τ (PC.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+          show (PD.map τ).eval (veluPointX P)
+            = τ (PD.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+          ← hτσ (veluPointY P)]
+        exact hyτ
+    · intro P hP0 hPne
+      have hkey := hdiff _ (hmapne P hP0) (hφne P hPne)
+      rw [veluPointX_pointMap, hdenom] at hkey
+      have hkτ := congrArg τ hkey
+      simp only [map_mul, map_pow] at hkτ
+      rw [hτσ] at hkτ
+      rw [Polynomial.derivative_map, Polynomial.derivative_map, ← Polynomial.map_mul,
+        ← Polynomial.map_mul, ← Polynomial.map_sub,
+        show ((Polynomial.derivative PA * PB
+              - PA * Polynomial.derivative PB).map τ).eval (veluPointX P)
+            = τ ((Polynomial.derivative PA * PB
+              - PA * Polynomial.derivative PB).eval (σ (veluPointX P))) by
+          rw [← Polynomial.eval_map_apply, hτσ],
+        show (PB.map τ).eval (veluPointX P)
+            = τ (PB.eval (σ (veluPointX P))) by rw [← Polynomial.eval_map_apply, hτσ],
+        galoisConjHom_apply, hdenom]
+      exact hkτ
+  -- (D) `Ψ` as an element of `End(E_ℚ̄)`.
+  obtain ⟨f, hfval⟩ : ∃ f : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      ∀ P, (f : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P = Ψ P :=
+    ⟨⟨Ψ, hΨiso⟩, fun _ => rfl⟩
+  have hfΨ : ((f : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+      (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point) = Ψ :=
+    AddMonoidHom.ext hfval
+  -- (E) `Γ_ℚ`-invariance of `Ψ` makes its cotangent scalar `Γ_ℚ`-fixed.
+  have hfix : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ,
+      σ (WeierstrassCurve.End.cotangent f) = WeierstrassCurve.End.cotangent f := by
+    intro σ
+    have hconj : galoisConjHom E σ Ψ = Ψ := by
+      ext P
+      have h := congrArg (Affine.Point.map (W' := E) σ.symm.toAlgHom) (hinv σ P)
+      exact h.trans (pointMap_symm_pointMap E σ (Ψ P))
+    have hcs := WeierstrassCurve.End.isCotangentScalar_cotangent f
+    rw [hfΨ] at hcs
+    have hcs2 := hgc σ Ψ _ hcs
+    rw [hconj] at hcs2
+    have hsymm : σ.symm (WeierstrassCurve.End.cotangent f)
+        = WeierstrassCurve.End.cotangent f := by
+      refine WeierstrassCurve.End.cotangent_eq (f := f) ?_
+      rw [hfΨ]; exact hcs2
+    calc σ (WeierstrassCurve.End.cotangent f)
+        = σ (σ.symm (WeierstrassCurve.End.cotangent f)) := by rw [hsymm]
+      _ = WeierstrassCurve.End.cotangent f := by simp
+  -- (F) A `Γ_ℚ`-fixed element of `ℚ̄` is rational.  Stated over a variable base
+  -- field and instantiated at `ℚ`: `IsGalois ℚ (AlgebraicClosure ℚ)` does not
+  -- synthesize directly in this import cone.
+  have hgen : ∀ {k : Type} [Field k] [CharZero k] (x : AlgebraicClosure k),
+      (∀ ρ : AlgebraicClosure k ≃ₐ[k] AlgebraicClosure k, ρ x = x) →
+      x ∈ Set.range (algebraMap k (AlgebraicClosure k)) := by
+    intro k _ _ x hx
+    haveI : IsGalois k (AlgebraicClosure k) := ⟨⟩
+    exact (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr hx
+  obtain ⟨q, hq⟩ : WeierstrassCurve.End.cotangent f ∈
+      Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := hgen _ hfix
+  -- (G) It is a root of a monic integral quadratic, hence an integer.
+  obtain ⟨t, n, hn0, hchar, hb⟩ := MazurEndLattice.exists_charPolyRing f
+  have hcq : WeierstrassCurve.End.cotangent f * WeierstrassCurve.End.cotangent f
+      + (n : AlgebraicClosure ℚ)
+        = (t : AlgebraicClosure ℚ) * WeierstrassCurve.End.cotangent f := by
+    have h := congrArg
+      (WeierstrassCurve.End.cotangentHom (W := (E⁄(AlgebraicClosure ℚ)).toAffine)) hchar
+    rw [map_add, map_mul, map_mul, map_intCast, map_intCast] at h
+    simpa using h
+  have hqq : q * q + (n : ℚ) = (t : ℚ) * q := by
+    apply (algebraMap ℚ (AlgebraicClosure ℚ)).injective
+    simp only [map_add, map_mul, map_intCast, hq]
+    exact hcq
+  obtain ⟨m, hm⟩ := hquadRat q t n hqq
+  -- (H) The cotangent character is injective, so `Ψ = [m]`.
+  have hfm : f = ((m : ℤ) : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) := by
+    refine WeierstrassCurve.End.injective_ringHomToBase
+      (WeierstrassCurve.End.cotangentHom (W := (E⁄(AlgebraicClosure ℚ)).toAffine)) ?_
+    rw [map_intCast, WeierstrassCurve.End.cotangentHom_apply, ← hq, hm]
+    simp
+  refine ⟨m, fun P => ?_⟩
+  have hap := congrArg
+    (fun k : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine =>
+      (k : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) hfm
+  simp only [WeierstrassCurve.End.intCast_apply] at hap
+  rw [← hfval P]
+  exact hap
 
 /-- **PROVEN 2026-07-28 (was a sorry leaf, cut 2026-07-27): a non-integral
 endomorphism of `E_ℚ̄` is moved by some element of `Γ_ℚ`, and the only place it
@@ -35133,9 +35335,11 @@ map of the proof, with each item's current status attached.
    costs no new mathematics.
 3. `End_ℚ(E) = ℤ` for `E/ℚ` (equivalently: a curve over `ℚ` has no `ℚ`-rational
    complex multiplication), plus Galois descent for morphisms.
-   **THE ONE NEW LEAF**, `exists_intMul_of_galoisInvariant` above.  Its docstring
-   records the cheap route (the invariant-differential character), which also
-   closes item 2's leaf — one subtree for both.
+   **PROVEN 2026-07-28**, `exists_intMul_of_galoisInvariant` above, over the
+   invariant-differential character and its Galois equivariance (the latter
+   proven inside that declaration).  Nothing is open here any more; the residual
+   `sorryAx` in this cone is the four `IsCotangentScalar` leaves of
+   `section Cotangent`.
 
 **WHAT IS *NOT* NEEDED, and this is the point of stating the leaf this way.**
 No Deuring, no analytic uniformisation by lattices, no Hilbert class polynomial,
