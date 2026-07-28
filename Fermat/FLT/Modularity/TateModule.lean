@@ -14110,6 +14110,45 @@ The glue between them is the module theory: `A'[J]` is `torsionBySet` for
 `Submodule.instModuleQuotient…`, and `𝒪_D/J` is a finite field because
 `J` is maximal and nonzero.
 
+**IS THIS LEAF STILL NEEDED?  CHECKED 2026-07-28, AND THE ANSWER IS YES
+AS THE TREE IS WIRED — but only by one hypothesis of one assembly.**
+`card_torsion_span_singleton_of_field` above now gives the count at a
+principal ideal over an ARBITRARY field base, which raises the obvious
+question of whether `LevelFrame.card_tors_eq_sq_of_principal` reaches
+`card_torsion_of_isMaximal_finiteBase` on its own, making parity and
+nonvanishing both unnecessary.  It does NOT, as those two are stated:
+that assembly's `hprin` demands the count at EVERY nonzero principal
+ideal, and over a finite field that is **FALSE** — take `a = p = char k`
+and a supersingular fibre, where `#A'[(p)] = p^r` with `r ≤ g` while
+`#(𝒪_D/(p))² = p^(2g)`.  That is the same counterexample
+`card_torsion_span_singleton_of_field`'s own docstring gives for dropping
+its `hchar`, and it is why that hypothesis is there.
+
+THE REPAIR, IF SOMEONE WANTS IT, AND THE CHECK THAT WOULD REFUTE THIS
+NOTE.  `card_tors_eq_sq_of_principal` uses `hprin` **exactly once**, at
+the generator `a` of `J ^ h` produced from the class group inside its own
+proof (`have h1 := hprin a ha0`, in the step commented "the count at
+`J ^ h`").  So weakening `hprin` to
+
+    ∀ (n : ℕ) (a : 𝒪_D), a ≠ 0 → Ideal.span {a} = J ^ n → …
+
+costs its characteristic-zero consumer
+`card_torsion_isMaximal_of_isAlgClosed` nothing (it holds the stronger
+form) and lets the finite-base consumer discharge it: `N(J ^ n)` is a
+power of `N(J)`, hence prime to `char k` whenever `J` is, which is
+`natCast_ne_zero_of_coprime_natCard` composed with
+`Ideal.absNorm_pow`.  Grep for `hprin` in this file to check the "exactly
+once" claim; it takes a second.
+
+If that repair lands, THIS LEAF AND ITS GEOMETRIC RESIDUE
+`exists_polarizationStruct_finiteBase` BECOME FREE-FLOATING and should be
+DELETED, together with `card_torsion_ne_one_of_isMaximal_finiteBase` and
+`card_torsion_span_natCast_finiteBase` — and, unless
+`det_frobLevelMatrix_eq_natCast_finiteBase` is first rewired to cite it,
+the polarization existence statement disappears with them.  That is a
+cut-level decision across four owners' declarations, not one this leaf's
+owner should take unilaterally.
+
 **THE PAIRING IS ONLY AVAILABLE PRIME TO `p`**, which is why `hq`/`hqN`
 are carried: over a finite field the Weil pairing on `A'[J]` is
 nondegenerate exactly when `J` has residue characteristic different from
