@@ -508,17 +508,26 @@ def pick_free(entries, candidate_state="ready"):
     if not cap:
         return free[0]
 
-    # OUR footprint on each host. Counts every state that occupies a slot, not
-    # just `claimed`: `reclaiming` is a claimed slot that retires later and is
-    # running an agent right now, and `ready` is seeded and about to be
-    # dispatched into. Counting only `claimed` under-reports our usage and was
-    # part of why whole machines sat idle.
+    # OUR footprint on each host: the states that are RUNNING AN AGENT and so
+    # actually consume CPU. `claimed` and `reclaiming` both do (a `reclaiming`
+    # slot retires later but is elaborating right now).
+    #
+    # `ready` is deliberately EXCLUDED, reversing a 2026-07-28 rule that counted
+    # it. Counting `ready` is self-defeating: a dispatch converts `ready` ->
+    # `claimed`, which is quota-NEUTRAL, so a ready worktree was consuming the
+    # very slot needed to claim it. Observed the same day: cyclops held 23
+    # `ready` and 1 `claimed` against a quota of 24 and could dispatch NOTHING;
+    # fleet-wide, 125 ready worktrees were permanently undispatchable until the
+    # unrelated `claimed` count happened to fall. That is the opposite of the
+    # intent -- the rule was added to stop machines sitting idle and instead
+    # guaranteed it.
+    #
+    # `ready` costs disk (a seeded `.lake`) and no CPU. The quota is a CPU
+    # share, so only running work belongs in it. `batched` is excluded for the
+    # same reason: the agent has finished and nothing is elaborating.
     ours = {}
     for name, status, _ in entries:
-        # `batched` is deliberately absent: the agent has finished, so the slot
-        # holds no running elaboration and costs no CPU. Counting it would make
-        # a host look full while it is idle.
-        if status in ("claimed", "reclaiming", "ready"):
+        if status in ("claimed", "reclaiming"):
             h = _host_of(name)
             if h:
                 ours[h] = ours.get(h, 0) + 1
