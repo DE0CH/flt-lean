@@ -37,7 +37,14 @@ surjectivity):
 -/
 module
 
-public import Fermat.FLT.FreyCurve.MazurTorsion
+-- **This module deliberately does NOT import `Fermat.FLT.FreyCurve.MazurTorsion`**
+-- (release 9), despite the docstring above discussing that file: a
+-- comment-stripped identifier scan against `MazurTorsion`'s 1168 declaration
+-- names found ZERO uses here.  The import put `MazurTorsion` (427 s) on the
+-- serial path to `ModThree.lean`, which imports this module.  **Do not restore
+-- it**; add the specific module you need instead.
+public import Fermat.FLT.Deformations.RepresentationTheory.AbsoluteGaloisGroup
+public import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 public import Mathlib.NumberTheory.RamificationInertia.Galois
 public import Mathlib.RingTheory.RamificationInertia.Ramification
 public import Mathlib.RingTheory.DedekindDomain.Different
