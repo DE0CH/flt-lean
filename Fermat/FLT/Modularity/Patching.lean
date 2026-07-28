@@ -7487,7 +7487,18 @@ itself is their assembly and carries no `sorry` of its own.
 carries `5 <= l` and spends it on the tame clause, whose `l = 3` case was refuted.  The
 base-level LIMIT passage carries no such hypothesis — checked against the two
 signatures on 2026-07-28 — so `Odd p` suffices here and the obstruction does not
-transfer.  See `raisedLevelIsTameAtTwo_of_forall_isOpen_quotient` below. -/
+transfer.  See `raisedLevelIsTameAtTwo_of_forall_isOpen_quotient` below.
+
+**STATUS 2026-07-29: four of the five closed.**  `det`, `isUnramified`, `isFlat` and
+`isTameAtTwo` are all PROVEN; only `raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient`
+remains, which is exactly the one leaf this cut called new.  The prediction that the
+three transcription leaves would share ONE conversion of `hlev` into the framed
+`pushforwardFrame` form turned out to be half right: only the tame leaf needs it (as
+`raisedLevelFramedTameAtTwo_of_forall_isOpen_quotient`, because
+`isTameAtTwo_of_forall_isOpen_quotient` is stated in the framed form), and that
+conversion is NOT `isRaisedLevelHardlyRamified_conj` along `piScalarRight` — see that
+helper's docstring for the `Algebra` instance mismatch that blocks the proposed route
+and for what replaces it. -/
 
 set_option linter.checkUnivs false in
 /-- **The cyclotomic determinant passes to the adic limit** (PROVEN 2026-07-28;
@@ -7978,8 +7989,14 @@ theorem raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient.{a, uK, uW} {p : ℕ
             (χ g (e v).1, δ g (e v).2)) ∧
         localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat ≤ δ.ker := sorry
 set_option linter.checkUnivs false in
-/-- **The RAISED-LEVEL pro-limit clause** (sorry node, LEAF A2′-2c of the
-2026-07-28 clause cut).
+/-- **The RAISED-LEVEL pro-limit clause** (LEAF A2′-2c of the 2026-07-28 clause
+cut; PROVEN as an ASSEMBLY over the five field leaves above and carrying no
+`sorry` of its own — the stale `(sorry node)` label was corrected 2026-07-29).
+
+Four of the five field leaves are now closed: `det` (2026-07-28),
+`isUnramified`, `isFlat` and `isTameAtTwo` (all 2026-07-29).  The one that
+remains open is `raisedLevelIsSplitTorusAt_of_forall_isOpen_quotient`, which is
+exactly the leaf the cut identified as the only genuinely new content.
 
 The four base-level clauses pass to the limit as at the base level.  The new
 content is the split-torus clause at `q ∈ Q`, and it is where `hQ` and the
