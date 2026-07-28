@@ -32984,6 +32984,16 @@ transport is paid once, inside `exists_isWeilEigenvalues`, rather than
 at every use site.  It strengthens the structure, so it cannot make any
 consumer false.
 
+**Both of those remarks are now THEOREMS rather than prose (2026-07-28).**
+`card_relPoint_galoisField_of_natCard_eq` below is the `(K, φ)`-independence
+of the count, PROVEN; and `exists_isWeilEigenvalues` is now the PROVEN
+assembly that derives `card_base` from `card_ext` at `n = 1` and discharges
+the arbitrary-`K` quantifier, over the single remaining leaf
+`exists_isWeilEigenvalues_galoisField`, which states rationality over the
+canonical extensions `GaloisField ℓ n` only.  So the arbitrary finite field
+in `card_ext` costs a prover of that leaf nothing: it may work with one
+canonical field per degree.
+
 **Sanity.**  Genus `0`: `α = 0` (the empty multiset), so `α.sum = 0` and
 the empty product is `1`, giving `#X = ℓ + 1` and `#J = 1` — the counts
 for `ℙ¹` and the trivial abelian variety, matching the genus-`0` remark
@@ -33015,11 +33025,92 @@ structure IsWeilEigenvalues (ℓ : ℕ) {X : Scheme.{0}} (strX : X ⟶ SpecF ℓ
       ((Nat.card (RelPoint strX (Spec.map (CommRingCat.ofHom φ))) : ℕ) : ℂ)
         = (ℓ : ℂ) ^ n + 1 - (α.map (fun a => a ^ n)).sum
 
+/-- **The point count over a finite base field depends only on that
+field's CARDINALITY** (PROVEN — the transport that lets `card_ext`'s
+quantifier over an arbitrary finite field be discharged from a single
+canonical extension per degree, and it is modular-curve-free: `X` is an
+arbitrary `𝔽_ℓ`-scheme here, with no properness, smoothness or
+connectedness hypothesis).
+
+The section docstring records that `card_ext`'s `∀ (K, φ)` is no
+stronger than the same statement over `GaloisField ℓ n`, because a ring
+hom out of `ZMod ℓ` is unique and any two finite fields of the same
+cardinality are isomorphic.  This lemma is that remark, proven.
+
+The proof is the only place where the uniqueness of `φ` is used, and it
+is used *silently*: giving `K` the `ZMod ℓ`-algebra structure
+`φ.toAlgebra` makes `algebraMap (ZMod ℓ) K` be `φ` **definitionally**, so
+`GaloisField.algEquivGaloisField`'s `K ≃ₐ[ZMod ℓ] GaloisField ℓ n`
+already commutes with `φ` — that is what `AlgHom.comp_algebraMap` says —
+and no separate appeal to `RingHom.ext_zmod` is needed.  Applying `Spec`
+turns that commuting triangle of rings into an isomorphism of the two
+base points **over `SpecF ℓ`**, and `RelPoint.pre` along it and along its
+inverse are mutually inverse bijections of the two point sets.
+
+No `[Finite K]` hypothesis is needed: `Nat.card K = ℓ ^ n` is nonzero, so
+`K` is already forced to be finite. -/
+theorem card_relPoint_galoisField_of_natCard_eq (ℓ n : ℕ) [Fact ℓ.Prime] {X : Scheme.{0}}
+    (strX : X ⟶ SpecF ℓ) (K : Type) [Field K] (φ : ZMod ℓ →+* K)
+    (hK : Nat.card K = ℓ ^ n) :
+    Nat.card (RelPoint strX (Spec.map (CommRingCat.ofHom φ)))
+      = Nat.card (RelPoint strX (Spec.map (CommRingCat.ofHom
+          (algebraMap (ZMod ℓ) (GaloisField ℓ n))))) := by
+  letI : Algebra (ZMod ℓ) K := φ.toAlgebra
+  have hφ : (algebraMap (ZMod ℓ) K) = φ := rfl
+  let e : K ≃ₐ[ZMod ℓ] GaloisField ℓ n := GaloisField.algEquivGaloisField ℓ n hK
+  have hkey : (e.toAlgHom.toRingHom).comp φ = algebraMap (ZMod ℓ) (GaloisField ℓ n) := by
+    rw [← hφ]; exact AlgHom.comp_algebraMap e.toAlgHom
+  have hcomp : CommRingCat.ofHom (algebraMap (ZMod ℓ) (GaloisField ℓ n))
+      = CommRingCat.ofHom φ ≫ CommRingCat.ofHom e.toAlgHom.toRingHom := by
+    rw [← CommRingCat.ofHom_comp, hkey]
+  set u : Spec (CommRingCat.of (GaloisField ℓ n)) ⟶ Spec (CommRingCat.of K) :=
+    Spec.map (CommRingCat.ofHom e.toAlgHom.toRingHom) with hu
+  set v : Spec (CommRingCat.of K) ⟶ Spec (CommRingCat.of (GaloisField ℓ n)) :=
+    Spec.map (CommRingCat.ofHom e.symm.toAlgHom.toRingHom) with hv
+  have hvu : v ≫ u = 𝟙 (Spec (CommRingCat.of K)) := by
+    rw [hu, hv, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
+    have h1 : (e.symm.toAlgHom.toRingHom).comp e.toAlgHom.toRingHom = RingHom.id K := by
+      ext x; simp [e]
+    rw [h1, CommRingCat.ofHom_id, Spec.map_id]
+  have huv : u ≫ v = 𝟙 (Spec (CommRingCat.of (GaloisField ℓ n))) := by
+    rw [hu, hv, ← Spec.map_comp, ← CommRingCat.ofHom_comp]
+    have h2 : (e.toAlgHom.toRingHom).comp e.symm.toAlgHom.toRingHom
+        = RingHom.id (GaloisField ℓ n) := by
+      ext x; simp [e]
+    rw [h2, CommRingCat.ofHom_id, Spec.map_id]
+  have hg : u ≫ Spec.map (CommRingCat.ofHom φ)
+      = Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) (GaloisField ℓ n))) := by
+    rw [hcomp, Spec.map_comp, hu]
+  have hg' : v ≫ Spec.map (CommRingCat.ofHom (algebraMap (ZMod ℓ) (GaloisField ℓ n)))
+      = Spec.map (CommRingCat.ofHom φ) := by
+    rw [← hg, ← Category.assoc, hvu, Category.id_comp]
+  refine Nat.card_congr ⟨RelPoint.pre u hg, RelPoint.pre v hg', ?_, ?_⟩
+  · intro x
+    apply Subtype.ext
+    show v ≫ u ≫ x.1 = x.1
+    rw [← Category.assoc, hvu, Category.id_comp]
+  · intro y
+    apply Subtype.ext
+    show u ≫ v ≫ y.1 = y.1
+    rw [← Category.assoc, huv, Category.id_comp]
+
 /-- **Every smooth proper geometrically connected curve over `𝔽_ℓ` has a
-Frobenius eigenvalue multiset** (sorry leaf — the RATIONALITY half of
-Weil's theorem for curves, and **modular-curve-free**: nothing in this
-statement mentions `X_0(N)`, `N`, or a moduli problem, which is exactly
-the point of splitting it off here).
+Frobenius eigenvalue multiset, read off the CANONICAL extensions**
+(sorry leaf — the RATIONALITY half of Weil's theorem for curves, and
+**modular-curve-free**: nothing in this statement mentions `X_0(N)`,
+`N`, or a moduli problem, which is exactly the point of splitting it off
+here).
+
+This is the sole remaining leaf of `exists_isWeilEigenvalues`, which is
+now a PROVEN assembly over it (see there).  It differs from
+`IsWeilEigenvalues` in exactly two ways, both of which are *conveniences
+for a prover* rather than weakenings:
+
+* the count is taken over `GaloisField ℓ n` only, rather than over every
+  finite field of cardinality `ℓⁿ` — the two are interchangeable by
+  `card_relPoint_galoisField_of_natCard_eq`; and
+* there is no `card_base` field, since it is the `n = 1` case transported
+  along `CommRingCat.ofHom_id`/`Spec.map_id`.
 
 TRUE, and it is the oldest of the Weil conjectures: for a smooth proper
 geometrically connected curve `C/𝔽_q` the zeta function
@@ -33033,25 +33124,97 @@ rationality is Riemann–Roch on `C` plus the finiteness of the divisor
 class group of degree `0`; the étale-cohomological proof is the one the
 section docstring quotes, but it is not the only route.
 
-**WHAT IS MISSING.**  There is no zeta function of a scheme anywhere in
-this project, in `Mathlib` at our pin, or in `~/cs/FLT`; there is no
-Riemann–Roch for a curve over a general field either (`Mathlib` has
-`RiemannRoch` only in the function-field/`AdicValuation` setting, which
-is not connected to `Scheme` here).  Either route is a theory build.
-**The étale-cohomology route additionally needs the whole `H¹`
-machinery; the Riemann–Roch route does not**, which is worth recording,
-because it means this leaf is NOT gated on étale cohomology even though
-the section docstring above derives it from Grothendieck–Lefschetz.
+**WHAT IS MISSING, re-checked 2026-07-28 (and the previous version of
+this paragraph was WRONG about `Mathlib`).**  It said "`Mathlib` has
+`RiemannRoch` only in the function-field/`AdicValuation` setting".  It
+does not: `grep -rli riemannroch .lake/packages/mathlib/Mathlib` returns
+**nothing at all**, in any setting — which is what four other docstrings
+in this repository already record
+(`Modularity/MoretBailly.lean:19534` "Riemann–Roch: ABSENT everywhere",
+`Modularity/Interface.lean:48013`, `ModularCurve/EllipticScheme.lean:9283`,
+`FreyCurve/MazurTorsion.lean:26271`).  `WeilDivisor`, `CartierDivisor`
+and any `zetaFunction` of a variety are likewise absent from the pin, from
+this project and from `~/cs/FLT`.  So BOTH routes are theory builds, and
+the shopping list for the F. K. Schmidt one is:
+
+1. divisors on a curve, their degree, and linear equivalence (the pin has
+   only `Mathlib/AlgebraicGeometry/AlgebraicCycle/Basic.lean`, which is
+   cycles without a degree or a Riemann–Roch);
+2. Riemann–Roch, i.e. `ℓ(D) − ℓ(K − D) = deg D + 1 − g`, in a form
+   attached to a `Scheme` rather than to a function field;
+3. finiteness of `Pic⁰` — **the one input that is partly available**:
+   `Mathlib/NumberTheory/ClassNumber/FunctionField.lean` proves
+   `Fintype (ClassGroup (ringOfIntegers Fq F))`, which is the *affine*
+   class group of a function field, so what is missing is the dictionary
+   between that and the degree-`0` divisor classes of the smooth proper
+   model, not the finiteness theorem itself;
+4. the Euler-product/point-count identity
+   `Σ_d A_d Tᵈ = exp(Σ_n N_n Tⁿ/n)` relating the effective-divisor counts
+   `A_d` to the `N_n` this statement is about, plus the log-derivative
+   expansion that turns the rational function into the power sums
+   `Σ αᵢⁿ`.
+
+**Do not read that list as "blocked".**  The check that would refute any
+of its four items is a `grep` for the named notion over
+`.lake/packages/mathlib`, `Fermat/` and `~/cs/FLT`; item 3 is the one
+already half-refuted above.  **The étale-cohomology route additionally
+needs the whole `H¹` machinery; the Riemann–Roch route does not**, which
+is worth recording, because it means this leaf is NOT gated on étale
+cohomology even though the section docstring above derives it from
+Grothendieck–Lefschetz.
 
 **Non-vacuity of the class quantified over** is
 `exists_x0Compactification_finiteField` composed with
 `IsX0Compactification`'s `isProper`/`smooth`/`connected` fields. -/
-theorem exists_isWeilEigenvalues (ℓ : ℕ) (_hℓ : ℓ.Prime) {X : Scheme.{0}}
+theorem exists_isWeilEigenvalues_galoisField (ℓ : ℕ) [Fact ℓ.Prime] {X : Scheme.{0}}
     (strX : X ⟶ SpecF ℓ) (_hproper : IsProper strX)
     (_hsmooth : SmoothOfRelativeDimension 1 strX)
     (_hconn : GeometricallyConnected strX) :
-    ∃ α : Multiset ℂ, IsWeilEigenvalues ℓ strX α :=
+    ∃ α : Multiset ℂ, ∀ n : ℕ, 0 < n →
+      ((Nat.card (RelPoint strX (Spec.map (CommRingCat.ofHom
+          (algebraMap (ZMod ℓ) (GaloisField ℓ n))))) : ℕ) : ℂ)
+        = (ℓ : ℂ) ^ n + 1 - (α.map (fun a => a ^ n)).sum :=
   sorry
+
+/-- **Every smooth proper geometrically connected curve over `𝔽_ℓ` has a
+Frobenius eigenvalue multiset** (PROVEN 2026-07-28 — this node used to be
+the bare sorry leaf; it is now the assembly of
+`exists_isWeilEigenvalues_galoisField` with
+`card_relPoint_galoisField_of_natCard_eq`).
+
+Two things are discharged here, and both were flagged in the section
+docstring as bookkeeping that ought to be paid once rather than at every
+use site:
+
+* **`card_base` from `card_ext`.**  Instantiate the leaf at `n = 1` with
+  `K = ZMod ℓ` and `φ = RingHom.id`; then `CommRingCat.ofHom_id` and
+  `Spec.map_id` turn the base point into `𝟙 (SpecF ℓ)`, which is the
+  count every consumer in this file actually uses.  `Field (ZMod ℓ)` is
+  available because `hℓ` is turned into the `Fact ℓ.Prime` instance the
+  leaf and `GaloisField` need — so the primality hypothesis, which the
+  previous sorried version did not use, is now genuinely consumed.
+* **The arbitrary finite field in `card_ext`.**  Any `(K, φ)` with
+  `Nat.card K = ℓⁿ` gives the same count as `GaloisField ℓ n`, by
+  `card_relPoint_galoisField_of_natCard_eq`.
+
+What is left open is exactly the mathematics — Weil rationality — and it
+now lives in one named, modular-curve-free leaf. -/
+theorem exists_isWeilEigenvalues (ℓ : ℕ) (hℓ : ℓ.Prime) {X : Scheme.{0}}
+    (strX : X ⟶ SpecF ℓ) (hproper : IsProper strX)
+    (hsmooth : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) :
+    ∃ α : Multiset ℂ, IsWeilEigenvalues ℓ strX α := by
+  haveI : Fact ℓ.Prime := ⟨hℓ⟩
+  obtain ⟨α, hα⟩ := exists_isWeilEigenvalues_galoisField ℓ strX hproper hsmooth hconn
+  refine ⟨α, ?_, ?_⟩
+  · have hbase := card_relPoint_galoisField_of_natCard_eq ℓ 1 strX (ZMod ℓ)
+      (RingHom.id (ZMod ℓ)) (by simp)
+    rw [CommRingCat.ofHom_id, Spec.map_id] at hbase
+    rw [hbase]
+    simpa using hα 1 one_pos
+  · intro n hn K _ _ φ hcard
+    rw [card_relPoint_galoisField_of_natCard_eq ℓ n strX K φ hcard]
+    exact hα n hn
 
 /-- **Lefschetz for the Jacobian: `#J(𝔽_ℓ) = ∏ (1 − αᵢ)`** (sorry leaf —
 the second half of Grothendieck–Lefschetz, and again
@@ -33202,6 +33365,11 @@ zero-insensitive), so no junk witness exists.  That is
   smooth proper geometrically connected curve over `𝔽_ℓ`.
   **Modular-curve-free**, and NOT gated on étale cohomology: the
   Riemann–Roch (F. K. Schmidt) route proves it without any `H¹`.
+  **PROVEN as of 2026-07-28** over the single leaf
+  `exists_isWeilEigenvalues_galoisField` (the same statement over the
+  canonical extensions `GaloisField ℓ n`); the base-field field and the
+  arbitrary-finite-field quantifier are discharged there by
+  `card_relPoint_galoisField_of_natCard_eq`.
 * `card_jacobian_of_isWeilEigenvalues` — `#J(𝔽_ℓ) = ∏ (1 − αᵢ)`.
   **Modular-curve-free**; this is exactly the half item 2 above said was
   "worth stating separately if it is ever built".
