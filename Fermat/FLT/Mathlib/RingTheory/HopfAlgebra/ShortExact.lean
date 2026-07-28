@@ -103,9 +103,15 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
   assembly of the statements below, of which exactly two are open: `flat_quotient` under the
   surjectivity field, and `exists_basis_cartierDual` under the other two fields.
 * `HopfAlgebra.IsShortExact.apply_comp` — `π ∘ i` is `ε` followed by the unit. **PROVEN.**
-* `HopfAlgebra.IsShortExact.flat_quotient` — `A / i(A'')` is `R`-flat. OPEN, and gated on
-  **Takeuchi's theorem** (bijectivity of the Galois map `A ⊗_{A''} A ≅ A ⊗[R] A'`), *not* on
-  fppf descent, which this pin does carry.
+* `Module.Flat.quotient_range_of_rTensor_injective` — a flat module modulo a *pure* submodule is
+  flat. OPEN, and the only commutative-algebra input this file assumes; stated at the root
+  namespace because it belongs in mathlib, which has neither it nor a `Tor` long exact sequence
+  nor a `pure` API at this pin.
+* `HopfAlgebra.IsShortExact.rTensor_injective` — `i` is a **pure** map of `R`-modules.
+  **PROVEN** (2026-07-28) from the `faithfullyFlat` field alone.
+* `HopfAlgebra.IsShortExact.flat_quotient` — `A / i(A'')` is `R`-flat. **PROVEN** (2026-07-28)
+  from the two above. Re-audited the same day: it is **not** gated on Takeuchi's theorem, contrary
+  to what this file recorded — see its docstring.
 * `HopfAlgebra.IsShortExact.exists_linearRetraction` — `i(A'')` is an `R`-module direct summand
   of `A`. **PROVEN** (2026-07-27) from `flat_quotient` by pure module theory; equivalent to the
   surjectivity field, and free of Hopf structure.
@@ -127,7 +133,9 @@ the antipode, so this is the same thing as a homomorphism of group schemes.
 * `HopfAlgebra.isMultiplicativeType_of_isShortExact` — `(R3)`: an extension of multiplicative type
   by multiplicative type is of multiplicative type. **PROVEN** from the two above.
 
-This file assumes **no** non-Hopf leaf. It used to carry a sorried shim
+This file assumes exactly **one** non-Hopf leaf, `Module.Flat.quotient_range_of_rTensor_injective`
+— deliberately, since 2026-07-28: the alternative was to keep `IsShortExact.flat_quotient` open and
+mis-labelled as a Hopf–Galois gate. It used to carry a different sorried shim
 `Algebra.FormallyEtale.of_formallyUnramified_of_flat_of_finitePresentation` (flat + unramified +
 finitely presented is étale, Stacks 00UU); that statement **is in the pin**, as
 `Algebra.Etale.of_formallyUnramified_of_flat` in `Mathlib/RingTheory/Smooth/Fiber.lean`, so the
@@ -361,6 +369,51 @@ end Map
 
 end CartierDual
 
+/-! ### The one commutative-algebra input: a flat module modulo a pure submodule is flat
+
+This is not about Hopf algebras and is stated at the root namespace because it belongs in mathlib.
+It is what `HopfAlgebra.IsShortExact.flat_quotient` is *actually* gated on — see the gate re-audit
+in that declaration's docstring, which replaces an earlier claim that Takeuchi's theorem was
+needed. -/
+
+/-- **A flat module modulo a pure submodule is flat.** If `f : M₁ →ₗ[R] M₂` is *universally
+injective* — `rTensor N f` is injective for every `R`-module `N`, which is the standard meaning of
+"`f` is pure" — and `M₁`, `M₂` are flat, then `M₂ ⧸ range f` is flat.
+
+OPEN, and it is pure homological algebra: the long exact sequence of `Tor` identifies
+`Tor₁ᴿ(M₂ ⧸ range f, N)` with `ker (N ⊗ M₁ → N ⊗ M₂)`, given `Tor₁ᴿ(M₂, N) = 0`. **Mathlib has no
+`Tor` long exact sequence at this pin** — an absence recorded independently in the module
+docstring of `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` — and it has no
+`pure`/`PureExact` API either, so the statement has to be reached another way. Two routes that do
+exist here:
+
+* **A two-row diagram chase** over `Module.Flat.iff_rTensor_injectiveₛ`, whose criterion is
+  stated exactly in the universe `u` of `R` that `hpure` is given in. Writing `Q = M₂ ⧸ range f`,
+  for an injection `g : P₁ ↪ P₂` and `x ∈ Q ⊗ P₁` dying in `Q ⊗ P₂`: lift `x` to `y ∈ M₂ ⊗ P₁`;
+  the image of `y` in `M₂ ⊗ P₂` is `(f ⊗ P₂) z` for some `z ∈ M₁ ⊗ P₂` by right exactness; the
+  class of `z` in `M₁ ⊗ (P₂ ⧸ P₁)` dies in `M₂ ⊗ (P₂ ⧸ P₁)`, so **`hpure` at `P₂ ⧸ P₁`** kills it
+  and `z = (M₁ ⊗ g) z₁`; then `M₂ ⊗ g` is injective (`M₂` flat), so `y = (f ⊗ P₁) z₁` and `x = 0`.
+  Note where each hypothesis is spent: flatness of `M₂` at the last step, `hpure` at the middle
+  one; flatness of `M₁` is what makes `M₁ ⊗ P₁ → M₁ ⊗ P₂` injective if the chase is arranged the
+  other way round.
+* **The equational criterion** `Module.Flat.iff_forall_isTrivialRelation`
+  (`Mathlib/RingTheory/Flat/EquationalCriterion.lean`, Stacks 00HK), which *is* in the pin.
+
+`hpure` is stated for `N` in the universe of `R` because that is the universe
+`Module.Flat.iff_rTensor_injectiveₛ` quantifies over. Its only consumer here,
+`HopfAlgebra.IsShortExact.rTensor_injective`, proves it for `N` in **every** universe, so if a
+proof turns out to need a wider quantification the hypothesis may be widened for free.
+
+Faithfulness: purity is genuinely needed and mere injectivity of `f` is not enough — `ℤ →⋅2 ℤ` is
+an injective map of flat `ℤ`-modules with non-flat cokernel `ℤ/2`, and it fails `hpure` at
+`N = ℤ/2`. -/
+theorem Module.Flat.quotient_range_of_rTensor_injective {R : Type u} {M₁ : Type v} {M₂ : Type w}
+    [CommRing R] [AddCommGroup M₁] [Module R M₁] [AddCommGroup M₂] [Module R M₂]
+    [Module.Flat R M₁] [Module.Flat R M₂] (f : M₁ →ₗ[R] M₂)
+    (hpure : ∀ (N : Type u) [AddCommGroup N] [Module R N],
+      Function.Injective (LinearMap.rTensor N f)) :
+    Module.Flat R (M₂ ⧸ LinearMap.range f) := sorry
+
 namespace HopfAlgebra
 
 /-! ### Short exact sequences -/
@@ -502,6 +555,48 @@ lemma IsShortExact.apply_comp (h : IsShortExact i π) (a : A'') :
   rw [sub_eq_zero] at h0
   exact h0
 
+/-- **`i` is a pure map of `R`-modules**: `N ⊗ A'' → N ⊗ A` is injective for *every* `R`-module
+`N`, not merely for `N = R`.
+
+**PROVEN** (2026-07-28), and it uses the `faithfullyFlat` field and nothing else — no
+comultiplication, no antipode, no Galois map, and no finiteness or freeness over `R`. The argument
+is two mathlib lemmas:
+
+* `Module.FaithfullyFlat.tensorProduct_mk_injective` says that for a faithfully flat algebra
+  `A''→ A` the unit `M → A ⊗_{A''} M` is injective for every `A''`-module `M`;
+* apply that to the induced `A''`-module `A'' ⊗[R] N` and transport along
+  `TensorProduct.AlgebraTensorModule.cancelBaseChange R A'' A A N :
+  A ⊗_{A''} (A'' ⊗[R] N) ≃ₗ A ⊗[R] N`, under which `1 ⊗ₜ (a'' ⊗ₜ n) ↦ i a'' ⊗ₜ n`, i.e. the unit
+  becomes `LinearMap.rTensor N i`.
+
+This is the whole Hopf-side content of `IsShortExact.flat_quotient`; what remains there is the
+general statement `Module.Flat.quotient_range_of_rTensor_injective`. -/
+theorem IsShortExact.rTensor_injective (h : IsShortExact i π)
+    (N : Type*) [AddCommGroup N] [Module R N] :
+    Function.Injective
+      (LinearMap.rTensor N (i.toAlgHom : A'' →ₐ[R] A).toLinearMap) := by
+  have hff := h.faithfullyFlat
+  algebraize [(i.toAlgHom.toRingHom : A'' →+* A)]
+  haveI : Module.FaithfullyFlat A'' A := hff
+  have hmk := Module.FaithfullyFlat.tensorProduct_mk_injective (A := A'') (B := A) (A'' ⊗[R] N)
+  have hcomp : ∀ (y : A'' ⊗[R] N),
+      (TensorProduct.AlgebraTensorModule.cancelBaseChange R A'' A A N)
+        (TensorProduct.mk A'' A (A'' ⊗[R] N) 1 y) =
+      LinearMap.rTensor N (i.toAlgHom : A'' →ₐ[R] A).toLinearMap y := by
+    intro y
+    induction y with
+    | zero => simp
+    | tmul a n =>
+        simp only [TensorProduct.mk_apply,
+          TensorProduct.AlgebraTensorModule.cancelBaseChange_tmul, LinearMap.rTensor_tmul,
+          AlgHom.toLinearMap_apply, Algebra.smul_def, mul_one]
+        rfl
+    | add p q hp hq => rw [map_add, map_add, map_add, hp, hq]
+  intro y z hyz
+  refine hmk ?_
+  apply (TensorProduct.AlgebraTensorModule.cancelBaseChange R A'' A A N).injective
+  rw [hcomp, hcomp, hyz]
+
 end Def
 
 /-! ### Exactness of Cartier duality -/
@@ -524,7 +619,9 @@ here. The split is by *where the mathematics is*:
 
 | statement | status | content |
 | --------- | ------ | ------- |
-| `flat_quotient` | **OPEN** | `A / i(A'')` is `R`-flat |
+| `rTensor_injective` | **PROVEN** | `i` is a *pure* map of `R`-modules |
+| `Module.Flat.quotient_range_of_rTensor_injective` | **OPEN** | a flat module mod a pure submodule is flat |
+| `flat_quotient` | **PROVEN** from the two above | `A / i(A'')` is `R`-flat |
 | `exists_linearRetraction` | **PROVEN** from `flat_quotient` | `i(A'')` is an `R`-module summand |
 | `surjective_cartierDual_map` | **PROVEN** from the above | functionals extend along `i` |
 | `le_ker_cartierDual` | **PROVEN** | the easy half of the dual kernel condition |
@@ -532,48 +629,74 @@ here. The split is by *where the mathematics is*:
 | `ker_cartierDual_le` | **PROVEN** from the cut | the hard half: a character trivial on `Spec A'` descends |
 | `faithfullyFlat_cartierDual` | **PROVEN** from the cut | `(Spec A)^D → (Spec A')^D` is faithfully flat |
 
-So exactly **two** statements are open in this file, and they are independent of each other:
-`flat_quotient` (a statement about `A` over `R`, under the surjectivity field) and
-`exists_basis_cartierDual` (the linear dual of the normal basis, feeding the other two fields).
+So exactly **two** statements are open in this file, they are independent of each other, and
+**neither is Hopf-theoretic on the `A`-side**:
+
+* `Module.Flat.quotient_range_of_rTensor_injective` — general module theory, stated at the root
+  namespace because it belongs in mathlib. It is what the surjectivity field really rests on.
+* `exists_basis_cartierDual` — the linear dual of the normal basis, feeding the other two fields.
+
 An earlier note claiming that all three fields were gated on *one* missing theorem — Takeuchi's
-bijectivity of the Galois map — was wrong about the pairing: the two `cartierDual` fields do share
-a gate, and `flat_quotient` does not participate in it.
+bijectivity of the Galois map `β : A ⊗_{A''} A → A ⊗[R] A'` — was wrong twice over. The two
+`cartierDual` fields do share a gate, and it is the *dual* normal basis rather than `β`; and
+`flat_quotient` neither participates in that gate nor needs `β` at all, because the
+`faithfullyFlat` field already makes `i` pure.
 
 -/
 
+omit [IsCocomm R A''] [IsCocomm R A] [IsCocomm R A'] [Module.Finite R A''] [Module.Finite R A]
+  [Module.Finite R A'] [Module.Free R A'] in
 /-- **The quotient `A / i(A'')` is `R`-flat.**
 
-OPEN, and after the decomposition below this is the *only* mathematical content left underneath
-`exists_linearRetraction`: the passage from flatness of the quotient to an actual `R`-linear
-splitting is pure module theory (flat + finitely presented ⟹ projective ⟹ the surjection
-`A ↠ A/i(A'')` splits) and is proven there.
+**PROVEN** (2026-07-28) from `IsShortExact.rTensor_injective` (purity of `i`, which needs only the
+`faithfullyFlat` field) and the general module-theoretic leaf
+`Module.Flat.quotient_range_of_rTensor_injective` (a flat module modulo a pure submodule is flat).
+It sits under `exists_linearRetraction`, where the passage from flatness of the quotient to an
+actual `R`-linear splitting is pure module theory (flat + finitely presented ⟹ projective ⟹ the
+surjection `A ↠ A/i(A'')` splits).
 
-Why it is true, and — importantly — **what it is really gated on**:
+**GATE RE-AUDIT (2026-07-28), and it retargets any dispatch sent here.** The route recorded below
+until now said this leaf is gated on **Takeuchi's theorem** (bijectivity of the Galois map
+`β : A ⊗_{A''} A → A ⊗[R] A'`). *It is not*, and the reduction below is now written out in Lean
+rather than asserted. The `faithfullyFlat` field alone gives it, modulo one statement of general
+module theory that involves no Hopf structure at all. In three steps, of which only the third is
+still open:
 
-* `A''` is `R`-free, hence `R`-flat, so by transitivity of flatness (`Module.Flat.trans`) it is
-  enough to prove that `Q := A / i(A'')` is flat as a module over `A''` (acting through `i`).
-* `i : A'' → A` is faithfully flat by hypothesis, so `A''`-flatness of `Q` may be checked after
-  base change along `i`: it suffices that `Q ⊗_{A''} A` be `A''`-flat.
-* That base change is where the group structure is spent. **Takeuchi's theorem** — if `A` is
-  faithfully flat over a sub-Hopf-algebra `A''` then `A` is an `A'`-Galois extension of `A''`,
-  where `A' = A / A·i(ker ε_{A''})` — says the *Galois map*
-  `β : A ⊗_{A''} A → A ⊗[R] A'`,  `a ⊗ b ↦ ∑ (a * b₍₁₎) ⊗ π b₍₂₎`,
-  is bijective. This is exactly the statement that `Spec A → Spec A''` is an fppf
-  `Spec A'`-torsor, written without leaving affine algebra. Under `β` the base-changed inclusion
-  `A = A'' ⊗_{A''} A → A ⊗_{A''} A` becomes `a ↦ a ⊗ 1`, which is split by `id ⊗ ε_{A'}`; so
-  `Q ⊗_{A''} A ≅ A ⊗[R] I'` with `I' = ker ε_{A'}`. Now `I'` is an `R`-module direct summand of
-  the finite free `A'` (the counit splits the unit), hence `R`-projective, so `A ⊗[R] I'` is
-  `A`-projective and a fortiori `A''`-flat.
+1. `RingHom.FaithfullyFlat (i : A'' →+* A)` algebraizes to `Module.FaithfullyFlat A'' A`, so by
+   `Module.FaithfullyFlat.tensorProduct_mk_injective`
+   (`Mathlib/RingTheory/Flat/FaithfullyFlat/Algebra.lean`) the map `M →ₗ[A''] A ⊗[A''] M`,
+   `m ↦ 1 ⊗ₜ m`, is injective for **every** `A''`-module `M`.
+2. Apply that to the induced `A''`-module `M = A'' ⊗[R] N`, for an arbitrary `R`-module `N`, and
+   transport along
+   `TensorProduct.AlgebraTensorModule.cancelBaseChange R A'' A A N : A ⊗[A''] (A'' ⊗[R] N) ≃ₗ A ⊗[R] N`
+   (`Mathlib/LinearAlgebra/TensorProduct/Tower.lean`), under which `1 ⊗ₜ (a'' ⊗ₜ n) ↦ i a'' ⊗ₜ n`.
+   The conclusion is that `LinearMap.rTensor N i` is injective for every `R`-module `N` — i.e.
+   **`i` is a pure (universally injective) map of `R`-modules.** Note what this step does *not*
+   use: no comultiplication, no antipode, no Galois map.
+3. `Q = A ⧸ i(A'')` is `R`-flat **iff** `i` is universally injective, because `A` is `R`-free:
+   `Tor₁ᴿ(A, N) = 0`, so the long exact sequence identifies `Tor₁ᴿ(Q, N)` with
+   `ker (N ⊗ A'' → N ⊗ A)`.
 
-**Correction to an earlier note in this file.** The gap here is *not* "fppf descent is absent
-from the pin". Faithfully flat descent for modules **is** in this pin — categorically, as
-comonadicity of extension of scalars along a faithfully flat map
-(`ModuleCat.comonadicExtendScalars` in `Mathlib/Algebra/Category/ModuleCat/Descent.lean`), and
-for ring-map properties in `CodescendsAlong` form
-(`RingHom.FaithfullyFlat.codescendsAlong_injective` and friends). What is genuinely absent is the
-**Hopf–Galois input**, i.e. bijectivity of `β`; and the module-level convenience form of
-"flatness descends along a faithfully flat base change" is also not stated in the pin, though it
-is a direct consequence of the faithfully flat machinery that is.
+Steps 1–2 are `IsShortExact.rTensor_injective`, **proven above**. So the true gate is (3):
+**the quotient of a flat module by a pure submodule is flat**, general module theory, no Hopf
+algebra — stated here as `Module.Flat.quotient_range_of_rTensor_injective`, whose docstring
+carries the two available routes to it and the reason mathlib does not already supply it.
+
+The check that would refute this re-audit is now just the compiler: this declaration's proof
+mentions neither Takeuchi nor the Galois map. And if `Module.Flat.quotient_range_of_rTensor_injective`
+turns up in mathlib under a name this survey missed, the whole subtree closes with no new theory.
+
+For the record, the *old* route is still correct, merely far more expensive: `A''` is `R`-free
+hence `R`-flat, so by `Module.Flat.trans` it is enough that `Q` be `A''`-flat; that may be checked
+after the faithfully flat base change along `i`; and Takeuchi's theorem identifies
+`Q ⊗_{A''} A ≅ A ⊗[R] ker ε_{A'}`, which is `A`-projective. Nobody should take that route while
+(3) is the alternative.
+
+**Correction to a still earlier note.** The gap here is *not* "fppf descent is absent from the
+pin". Faithfully flat descent for modules **is** in this pin — categorically, as comonadicity of
+extension of scalars along a faithfully flat map (`ModuleCat.comonadicExtendScalars` in
+`Mathlib/Algebra/Category/ModuleCat/Descent.lean`), and for ring-map properties in
+`CodescendsAlong` form (`RingHom.FaithfullyFlat.codescendsAlong_injective` and friends).
 
 Refuting check: exhibit a short exact sequence of finite free commutative Hopf algebras in which
 `A / i(A'')` has `R`-torsion. Equivalently (`exists_linearRetraction` below is an equivalence),
@@ -581,8 +704,10 @@ exhibit an `R`-functional on `A''` that does not extend to `A`. Over a base fiel
 counterexample can exist, since every module is flat; so any counterexample must use a non-local,
 non-field base. -/
 theorem IsShortExact.flat_quotient (h : IsShortExact i π) :
-    Module.Flat R (A ⧸ LinearMap.range ((i.toAlgHom : A'' →ₐ[R] A).toLinearMap)) := sorry
+    Module.Flat R (A ⧸ LinearMap.range ((i.toAlgHom : A'' →ₐ[R] A).toLinearMap)) :=
+  Module.Flat.quotient_range_of_rTensor_injective _ fun N _ _ => h.rTensor_injective N
 
+omit [IsCocomm R A''] [IsCocomm R A] [IsCocomm R A'] [Module.Finite R A'] [Module.Free R A'] in
 /-- **`i(A'')` is an `R`-module direct summand of `A`**: the inclusion of the sub-bialgebra
 admits an `R`-linear retraction.
 
@@ -639,6 +764,7 @@ theorem IsShortExact.exists_linearRetraction (h : IsShortExact i π) :
   rw [LinearMap.comp_apply, hcod]
   simp
 
+omit [IsCocomm R A'] [Module.Finite R A'] [Module.Free R A'] in
 /-- **The transposed inclusion `(Spec A)^D → (Spec A'')^D` is a closed immersion**, i.e.
 `CartierDual.map i` is surjective.
 
