@@ -382,10 +382,11 @@ open in them has been split along the theories it needed:
 | open leaf | theory | base |
 |---|---|---|
 | `exists_gamma1RigidifiedModuli` | Katz-Mazur 4.7.2 + 5.1.1 + 6.6.2 and the affineness parenthesis of 8.1.1: the AFFINE FINE moduli scheme of `[Γ₁(N)], [Γ(n)]`.  The one citation half of the former `exists_gamma1Rigidification`, which is PROVEN over this row and the two below it (2026-07-28), as are `exists_gamma1GITPresentation`, `nonempty_gamma1GITPresentation_of_rigidification`, `isDomain_of_`, `smoothOfRelativeDimension_of_` and `geometricallyConnected_of_gamma1GITPresentation`. | any `K`, `char K ∤ N`, `char K ∤ n` |
-| `exists_gamma1FullLevelStructure_cover` | Katz-Mazur 2.3.1 / 8.1.1: the finite etale `GL₂(ℤ/n)`-torsor of full level-`n` structures.  A statement about ONE datum; names no moduli scheme. | any `K`, `char K ∤ n` |
-| `exists_gamma1DeckAction` | NO citation — the deck action, `strM_invariant`, `dM_equivariant` and the coequalising clause, all consequences of the fine moduli property.  `X0.lean`'s `exists_deckAction_of_torsion` proves the `Γ₀` analogue except for the coequalising clause. | any base scheme `S` |
+| `exists_torsionBasisCover_field` | Katz-Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4: after a flat surjective quasi-compact cover the `n`-torsion of an abelian scheme of relative dimension one acquires a basis.  Stated for a BARE abelian scheme — no `Gamma1Datum`, no moduli scheme — and it is all that is left under `exists_gamma1FullLevelStructure_cover`, which is PROVEN over it (2026-07-28).  It is the general-base form of `X0.lean`'s `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both of which are stated only over `SpecQ`. | any `K`, `char K ∤ n` |
+| `exists_gamma1DeckAction` | NO citation — the deck action, `strM_invariant`, `dM_equivariant` and the coequalising clause, all consequences of the fine moduli property.  `X0.lean`'s `exists_deckAction_of_torsion` proves the `Γ₀` analogue IN FULL, coequalising clause included (**corrected 2026-07-28**; the old claim that it left that clause sorried is stale).  What is open under the `Γ₀` node is the named leaf `exists_openCover_twist_of_fullLevelStructure`. | any base scheme `S` |
 | `smooth_coarseRing_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is a smooth `K`-algebra of Krull dimension one.  (`locallyStandardSmooth_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28, together with the release's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.) | any `K`, `char K ∤ N` |
-| `exists_gamma1Datum_fieldExtension` | an elliptic curve with a point of exact order `N` over SOME extension of `K` — no modular curves in it.  (`geometricComponents_of_gamma1GITPresentation` is PROVEN over this row and the two below it, 2026-07-28, and `nontrivial_A_of_gamma1GITPresentation` over this one alone.) | any `K`, `char K ∤ N` |
+| `exists_weierstrassCurve_pointOfExactOrder` | Silverman *AEC* III.6.4: over an algebraically closed field of characteristic prime to `N`, some elliptic curve carries a point of exact order `N`.  PURE elliptic-curve arithmetic — no schemes, no moduli.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28. | alg. closed `L`, `char L ∤ N` |
+| `nonempty_gamma1Datum_of_weierstrassPoint` | the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`, which is the SAME statement at `ℚ` and is PROVEN.  Its whole obstruction is that `EllipticScheme.lean` is written at the concrete base `ℚ`; no new mathematics.  Cut out of `exists_gamma1Datum_fieldExtension` 2026-07-28, which is PROVEN over it and the row above (and `geometricComponents_of_gamma1GITPresentation` over that plus the two rows below, and `nontrivial_A_of_gamma1GITPresentation` over that alone). | any field `L` |
 | `isReduced_A_of_gamma1GITPresentation` | Katz-Mazur 8.2.1: `Spec A` is smooth over `K`, hence reduced | any `K`, `char K ∤ N` |
 | `transitiveMinimalPrimes_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5: `det` is onto, so `G` permutes the components of `Spec A` transitively | any `K`, `char K ∤ N` |
 | `isDomain_fractionRing_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `Frac B / K` is a regular extension (`K` algebraically closed in `Frac B`, separably generated).  `connectedSpace_tensorProduct_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28. | any `K`, `char K ∤ N` |
@@ -469,7 +470,7 @@ along the GIT axis its own docstring named as NOT SEARCHED.  This is the
 | `RigidifiedModuli` | `Gamma1RigidifiedModuli` |
 | `FullLevelStructure` | `AbelianFullLevelStructure` (a DUPLICATE — see the coordination note at the cut below) |
 | `exists_rigidifiedModuli` (leaf) | `exists_gamma1RigidifiedModuli` (leaf) |
-| `exists_fullLevelStructure_cover` (leaf) | `exists_gamma1FullLevelStructure_cover` (leaf) |
+| `exists_fullLevelStructure_cover` (PROVEN, over `exists_torsionBasis_geomPoint` + `exists_torsionBasis_cover_of_geomPoint`, both `SpecQ`-only leaves) | `exists_gamma1FullLevelStructure_cover` (PROVEN 2026-07-28, over the single general-base leaf `exists_torsionBasisCover_field`, plus the PROVEN `nonempty_abelianFullLevelStructure_of_geomBasis` and the `IsBaseChangeOfGamma1.toRelPoint` API) |
 | `exists_deckAction` (leaf) | `exists_gamma1DeckAction` (leaf) |
 | — | `nonempty_gamma1Rigidification_of_rigidifiedModuli` (PROVEN); `exists_gamma1Rigidification` (PROVEN over the three leaves) |
 | `exists_descendClassify` (PROVEN) | `exists_descendClassifyGamma1` (PROVEN) |
@@ -1558,30 +1559,320 @@ theorem exists_gamma1RigidifiedModuli (N : ℕ) (_hN : 4 ≤ N) (n : ℕ) (hn : 
     Nonempty (Gamma1RigidifiedModuli N n (Spec (CommRingCat.of K))) :=
   sorry
 
-/-- **Every `Γ₁(N)`-datum over a `K`-scheme acquires a full level-`n`
-structure after an fpqc cover** (sorry leaf, opened 2026-07-28) — the
-`Γ₁` analogue of `X0.lean`'s `exists_fullLevelStructure_cover`, and
-Katz–Mazur's finite étale `GL₂(ℤ/n)`-torsor `[Γ(n)]`.
+/-! #### The cut of `exists_gamma1FullLevelStructure_cover`, 2026-07-28
 
-This is a statement about ONE datum: it names no moduli scheme, no deck
-group and no rigidification, which is what lets it be dispatched
-independently of everything else in this block.
+The node used to be one leaf owing the whole level-`n` torsor together
+with the transport of a fibrewise basis into an
+`AbelianFullLevelStructure`.  It is now PROVEN, over the cut `X0.lean`
+takes on the `Γ₀` side: separate the GEOMETRY (a flat surjective
+quasi-compact cover over which the `n`-torsion acquires a basis) from the
+BOOKKEEPING (turning that basis into a level structure on the
+base-changed datum).
+
+| what | where | status |
+|---|---|---|
+| the level-`n` torsor over a base field | `exists_torsionBasisCover_field` | **LEAF** (Katz–Mazur 2.3.1 / 5.1.1, Silverman *AEC* III.6.4) |
+| base change of a `Γ₁(N)`-datum | `nonempty_gamma1Datum_baseChange` | **PROVEN** (2026-07-27) |
+| `IsBaseChangeOfGamma1.toRelPoint` and its additivity | this block | **PROVEN** |
+| the transport | `nonempty_abelianFullLevelStructure_of_geomBasis` | **PROVEN** |
+| the assembly | `exists_gamma1FullLevelStructure_cover` | **PROVEN** |
+
+**THREE CORRECTIONS to the previous docstring of this node, all found by
+grepping its claims (2026-07-28).**
+
+* It said `nonempty_gamma1Datum_baseChange` was "already a leaf in this
+  file".  It is **PROVEN** — it is a one-line consequence of
+  `exists_gamma1Datum_baseChange`, itself PROVEN 2026-07-27 from
+  `Gamma1BaseChange.datumBC` / `isBaseChangeBC`.
+* It said of the four `Γ₀` declarations that "**none of them mentions
+  `Gamma0Datum` except through `d.ab`**".  That is true of
+  `exists_torsionBasis_geomPoint` and
+  `exists_torsionBasis_cover_of_geomPoint`, and **false** of the other
+  two: `exists_gamma0Datum_baseChange` is entirely about `Gamma0Datum`,
+  and `nonempty_fullLevelStructure_of_geomBasis` takes an
+  `IsBaseChangeOf` between `Gamma0Datum`s and concludes
+  `Nonempty (FullLevelStructure n d')`.  So the transport had to be
+  transcribed to `IsBaseChangeOfGamma1` / `AbelianFullLevelStructure`
+  rather than reused; that transcription is the block below and it is
+  line-for-line the `Γ₀` proof.
+* It said the node "reduces to them **without new mathematics**".  It
+  does not, and this is the substantive correction.  Every geometric
+  declaration in the `Γ₀` chain — `exists_torsionBasis_geomPoint`,
+  `exists_zmodBasis_torsion_geomPoint`, `exists_torsionBasis_cover_of_`
+  `geomPoint`, `exists_isomTorsor_of_geomPoint` — carries a hypothesis
+  `g : T ⟶ SpecQ`, i.e. it is stated **only over `ℚ`-schemes**, where
+  every `n` is automatically invertible.  This node is over an arbitrary
+  field `K` with `char K ∤ n`, so the Silverman *AEC* III.6.4 input it
+  needs is the positive-characteristic form.  The mathematics is
+  standard, but it is not the released statement, and reducing to the
+  `Γ₀` leaves verbatim is **impossible**: the base does not match.
+  `exists_torsionBasisCover_field` below is that general-base statement,
+  and it is the one new leaf this cut leaves open.
+
+  (Refuting command, if this ever needs rechecking:
+  `grep -n 'SpecQ' Fermat/FLT/ModularCurve/X0.lean` at those four
+  declarations.  If they acquire a general base, this leaf becomes a
+  transcription and should be closed against them.)
+
+**Ownership note.** `exists_zmodBasis_torsion_geomPoint` and
+`exists_isomTorsor_of_geomPoint` — the `ℚ` forms of exactly the content
+`exists_torsionBasisCover_field` owes — had a live owner on 2026-07-28.
+Whoever closes them should be asked for the general-base form at the same
+time; the `ℚ` hypothesis is used in both only to know `n` is invertible
+on `T`. -/
+
+namespace IsBaseChangeOfGamma1
+
+variable {N : ℕ} {T' T : Scheme.{u}} {p : T' ⟶ T}
+  {d' : Gamma1Datum N T'} {d : Gamma1Datum N T}
+
+/-- **A relative point of `d'`, read as a relative point of `d`**
+(PROVEN) — compose with the morphism on total spaces.  The base point
+moves from `u : U ⟶ T'` to `u ≫ p`.
+
+Verbatim `IsBaseChangeOf.toRelPoint` of `X0.lean`, transcribed because
+that one is typed by `Gamma0Datum`; see the CORRECTIONS in the section
+comment above. -/
+def toRelPoint (bc : IsBaseChangeOfGamma1 p d' d) {U : Scheme.{u}} {u : U ⟶ T'}
+    (x : RelPoint d'.f u) : RelPoint d.f (u ≫ p) :=
+  RelPoint.along bc.map bc.isPullback.w x
+
+/-- **`toRelPoint` is injective** (PROVEN), because the square is
+cartesian: the two points already agree after `d'.f`. -/
+theorem toRelPoint_injective (bc : IsBaseChangeOfGamma1 p d' d) {U : Scheme.{u}}
+    {u : U ⟶ T'} : Function.Injective (bc.toRelPoint (U := U) (u := u)) := by
+  intro x y hxy
+  refine Subtype.ext (bc.isPullback.hom_ext ?_ ?_)
+  · rw [x.2, y.2]
+  · exact congrArg Subtype.val hxy
+
+/-- **`toRelPoint` preserves the zero section** (PROVEN) — this is
+`map_zero`, read through the `AddCommGroup` instances on relative
+points. -/
+theorem toRelPoint_zero (bc : IsBaseChangeOfGamma1 p d' d) {U : Scheme.{u}} (u : U ⟶ T') :
+    letI := d'.ab.addCommGroup u
+    letI := d.ab.addCommGroup (u ≫ p)
+    bc.toRelPoint (0 : RelPoint d'.f u) = 0 :=
+  bc.map_zero u
+
+/-- **`toRelPoint` is additive** (PROVEN) — this is `map_add`, read
+through the `AddCommGroup` instances on relative points. -/
+theorem toRelPoint_add (bc : IsBaseChangeOfGamma1 p d' d) {U : Scheme.{u}} {u : U ⟶ T'}
+    (x y : RelPoint d'.f u) :
+    letI := d'.ab.addCommGroup u
+    letI := d.ab.addCommGroup (u ≫ p)
+    bc.toRelPoint (x + y) = bc.toRelPoint x + bc.toRelPoint y :=
+  bc.map_add x y
+
+/-- **Hence `toRelPoint` commutes with the `ℕ`-action** (PROVEN), which is
+what carries the `n`-torsion condition across the base change. -/
+theorem toRelPoint_nsmul (bc : IsBaseChangeOfGamma1 p d' d) {U : Scheme.{u}} {u : U ⟶ T'}
+    (k : ℕ) (x : RelPoint d'.f u) :
+    letI := d'.ab.addCommGroup u
+    letI := d.ab.addCommGroup (u ≫ p)
+    bc.toRelPoint (k • x) = k • bc.toRelPoint x := by
+  letI := d'.ab.addCommGroup u
+  letI := d.ab.addCommGroup (u ≫ p)
+  induction k with
+  | zero => rw [zero_nsmul, zero_nsmul]; exact bc.toRelPoint_zero u
+  | succ k ih => rw [succ_nsmul, succ_nsmul, bc.toRelPoint_add, ih]
+
+/-- **`n`-torsion descends across a cartesian square** (PROVEN).
+`toRelPoint` is an injective additive map, so a relative point upstairs
+is `n`-torsion as soon as its image downstairs is.  Consumed by
+`nonempty_abelianFullLevelStructure_of_geomBasis` to fill
+`AbelianFullLevelStructure`'s `nsmul_P` / `nsmul_Q` fields, which — see
+that structure's docstring — genuinely cannot be read off
+`geom_basis`. -/
+theorem nsmul_eq_zero_of_toRelPoint {n : ℕ} (bc : IsBaseChangeOfGamma1 p d' d)
+    {U : Scheme.{u}} {u : U ⟶ T'} (X : RelPoint d'.f u)
+    (h : letI := d.ab.addCommGroup (u ≫ p); n • bc.toRelPoint X = 0) :
+    letI := d'.ab.addCommGroup u
+    n • X = 0 := by
+  letI := d'.ab.addCommGroup u
+  letI := d.ab.addCommGroup (u ≫ p)
+  refine bc.toRelPoint_injective ?_
+  rw [bc.toRelPoint_nsmul, h, bc.toRelPoint_zero]
+
+end IsBaseChangeOfGamma1
+
+/-- **A fibrewise basis over the cover IS a full level structure on the
+base-changed datum** (PROVEN 2026-07-28) — the transport half of the
+level-`n` torsor, and the `Γ₁` transcription of `X0.lean`'s
+`nonempty_fullLevelStructure_of_geomBasis`.
+
+`P` and `Q` are sections of `d.f` over `p`, i.e. relative points of the
+ORIGINAL datum at the base point `p : T' ⟶ T`.  The cartesian square of
+`bc` lifts each of them to a section of `d'.f` over `𝟙 T'`
+(`IsPullback.lift (𝟙 T') P.1`), which is what `AbelianFullLevelStructure`
+asks for, and `IsPullback.lift_snd` says the lift maps back to `P`.  The
+`geom_basis` field then transports along `bc.toRelPoint`, using only that
+it is INJECTIVE and additive.  No *type* transport occurs anywhere: the
+statement is phrased through `RelPoint.pre t rfl` on the `d`-side and
+`RelPoint.pre t (comp_id t)` on the `d'`-side, and `toRelPoint` moves the
+base point from `t` to `t ≫ p` on the nose.
+
+`hnP` / `hnQ` are what fill the `nsmul_P` / `nsmul_Q` fields; they cannot
+be dropped and cannot be derived from `hb` — see
+`AbelianFullLevelStructure`'s `Spec ℚ(ζ_n)[ε]` counterexample. -/
+theorem nonempty_abelianFullLevelStructure_of_geomBasis {N n : ℕ} {T' T : Scheme.{u}}
+    {p : T' ⟶ T} {d : Gamma1Datum N T} {d' : Gamma1Datum N T'}
+    (bc : IsBaseChangeOfGamma1 p d' d) (P Q : RelPoint d.f p)
+    (hnP : letI := d.ab.addCommGroup p; n • P = 0)
+    (hnQ : letI := d.ab.addCommGroup p; n • Q = 0)
+    (hb : ∀ (K : Type u) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T'),
+        letI := d.ab.addCommGroup (t ≫ p)
+        ∀ x : RelPoint d.f (t ≫ p), n • x = 0 ↔
+          ∃! c : Fin n × Fin n,
+            x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) :
+    Nonempty (AbelianFullLevelStructure n d'.ab) := by
+  refine ⟨{ P := ⟨bc.isPullback.lift (𝟙 T') P.1 (by rw [Category.id_comp, P.2]),
+              bc.isPullback.lift_fst _ _ _⟩
+            Q := ⟨bc.isPullback.lift (𝟙 T') Q.1 (by rw [Category.id_comp, Q.2]),
+              bc.isPullback.lift_fst _ _ _⟩
+            nsmul_P := ?_
+            nsmul_Q := ?_
+            geom_basis := ?_ }⟩
+  · refine bc.nsmul_eq_zero_of_toRelPoint _ ?_
+    rw [show bc.toRelPoint
+          (⟨bc.isPullback.lift (𝟙 T') P.1 (by rw [Category.id_comp, P.2]),
+            bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T'))
+        = RelPoint.pre (𝟙 T') (rfl : 𝟙 T' ≫ p = 𝟙 T' ≫ p) P from
+      Subtype.ext (by
+        show bc.isPullback.lift (𝟙 T') P.1 _ ≫ bc.map = 𝟙 T' ≫ P.1
+        rw [bc.isPullback.lift_snd, Category.id_comp])]
+    exact RelPoint.nsmul_pre_eq_zero d.ab (𝟙 T') rfl hnP
+  · refine bc.nsmul_eq_zero_of_toRelPoint _ ?_
+    rw [show bc.toRelPoint
+          (⟨bc.isPullback.lift (𝟙 T') Q.1 (by rw [Category.id_comp, Q.2]),
+            bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T'))
+        = RelPoint.pre (𝟙 T') (rfl : 𝟙 T' ≫ p = 𝟙 T' ≫ p) Q from
+      Subtype.ext (by
+        show bc.isPullback.lift (𝟙 T') Q.1 _ ≫ bc.map = 𝟙 T' ≫ Q.1
+        rw [bc.isPullback.lift_snd, Category.id_comp])]
+    exact RelPoint.nsmul_pre_eq_zero d.ab (𝟙 T') rfl hnQ
+  intro K _ _ t
+  letI := d'.ab.addCommGroup t
+  letI := d.ab.addCommGroup (t ≫ p)
+  have hP : bc.toRelPoint (RelPoint.pre t (Category.comp_id t)
+      (⟨bc.isPullback.lift (𝟙 T') P.1 (by rw [Category.id_comp, P.2]),
+        bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T')))
+      = RelPoint.pre t (rfl : t ≫ p = t ≫ p) P := by
+    refine Subtype.ext ?_
+    show (t ≫ bc.isPullback.lift (𝟙 T') P.1 _) ≫ bc.map = t ≫ P.1
+    rw [Category.assoc, bc.isPullback.lift_snd]
+  have hQ : bc.toRelPoint (RelPoint.pre t (Category.comp_id t)
+      (⟨bc.isPullback.lift (𝟙 T') Q.1 (by rw [Category.id_comp, Q.2]),
+        bc.isPullback.lift_fst _ _ _⟩ : RelPoint d'.f (𝟙 T')))
+      = RelPoint.pre t (rfl : t ≫ p = t ≫ p) Q := by
+    refine Subtype.ext ?_
+    show (t ≫ bc.isPullback.lift (𝟙 T') Q.1 _) ≫ bc.map = t ≫ Q.1
+    rw [Category.assoc, bc.isPullback.lift_snd]
+  intro x
+  have hinj := bc.toRelPoint_injective (U := Spec (CommRingCat.of K)) (u := t)
+  rw [← hinj.eq_iff, bc.toRelPoint_nsmul, bc.toRelPoint_zero t]
+  rw [hb K t (bc.toRelPoint x)]
+  constructor
+  · rintro ⟨c, hc, huniq⟩
+    refine ⟨c, ?_, ?_⟩
+    · refine hinj ?_
+      rw [bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+      exact hc
+    · intro c' hc'
+      refine huniq c' ?_
+      rw [hc', bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+  · rintro ⟨c, hc, huniq⟩
+    refine ⟨c, ?_, ?_⟩
+    · rw [hc, bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+    · intro c' hc'
+      refine huniq c' (hinj ?_)
+      rw [bc.toRelPoint_add, bc.toRelPoint_nsmul, bc.toRelPoint_nsmul, hP, hQ]
+      exact hc'
+
+/-- **The level-`n` torsor over an arbitrary base field: after a flat
+surjective quasi-compact cover the `n`-torsion of an abelian scheme of
+relative dimension one acquires a basis** (sorry leaf, opened 2026-07-28)
+— Katz–Mazur 2.3.1 and 5.1.1's last sentence, Silverman *AEC* III.6.4 for
+the geometric fibres.
+
+This is the ONE geometric leaf left under
+`exists_gamma1FullLevelStructure_cover`, and it is stated for a **bare
+abelian scheme**: it mentions neither `Gamma1Datum` nor any moduli
+scheme, so it can be dispatched entirely independently of the `Γ₁` layer,
+and it would serve the `Γ₀` layer unchanged.
+
+## What it is, and why it is not the released `Γ₀` statement
+
+It is `X0.lean`'s `exists_torsionBasis_cover_of_geomPoint` composed with
+`exists_torsionBasis_geomPoint`, with the base changed from `SpecQ` to
+`Spec K` for a field `K` with `char K ∤ n`.  **Both of those carry
+`g : T ⟶ SpecQ`**, so neither applies here; see the CORRECTIONS in the
+section comment above.  The `ℚ` hypothesis is used in them only to know
+that `n` is invertible on `T`, which `hchar` supplies directly: `T` is a
+`K`-scheme, so every residue field of `T` is a `K`-algebra and has
+characteristic `ringChar K`, and `¬ ringChar K ∣ n` is exactly `n ≠ 0`
+in `K`.
 
 ## The route
 
-`E[n] ⟶ T` is finite étale of rank `n²` because `n` is invertible on `T`
-(5.1.1's last sentence, or directly: `[n] : E ⟶ E` is finite étale away
-from `char ∣ n`), and the sheaf of bases of `E[n]` is a
-`GL₂(ℤ/n)`-torsor over `T`, hence has a section after a finite étale —
-in particular flat, surjective, quasi-compact — cover.  `X0.lean` splits
-its `Γ₀` analogue further, into `exists_gamma0Datum_baseChange` (PROVEN),
-the geometric-fibre citation `exists_torsionBasis_geomPoint`, the torsor
-proper `exists_torsionBasis_cover_of_geomPoint`, and the PROVEN transport
-`nonempty_fullLevelStructure_of_geomBasis`.  **All four are stated for a
-bare abelian scheme of relative dimension one and none of them mentions
-`Gamma0Datum` except through `d.ab`** — so once `Gamma1BaseChange`
-supplies `nonempty_gamma1Datum_baseChange` (already a leaf in this file),
-this node reduces to them without new mathematics.
+`n` invertible on `T` makes `[n] : E ⟶ E` finite étale, so `E[n] ⟶ T` is
+finite étale of rank `n²` and its geometric fibres are `(ℤ/n)²`
+(Silverman *AEC* III.6.4, in the form valid in every characteristic prime
+to `n`).  The sheaf `Isom_T((ℤ/n)²_T, E[n])` is then a `GL₂(ℤ/n)`-torsor,
+representable by a finite étale — in particular flat, surjective,
+quasi-compact — cover `T' ⟶ T`, and the tautological isomorphism over
+`T'` is the required basis.  Surjectivity is separated out on the `Γ₀`
+side as the PROVEN `surjective_of_exists_lift_geomPoint`, which applies
+here verbatim, being a statement about schemes only.
+
+## Faithfulness
+
+`hchar` is load-bearing for TRUTH: at `char K ∣ n` the group scheme
+`E[n]` is not étale, its geometric fibres are strictly smaller than
+`(ℤ/n)²`, and the `∃!` clause is unsatisfiable over a nonempty `T` — no
+cover helps.  `g` is load-bearing for the same reason: it is what forces
+the residue characteristics of `T` to be `ringChar K`.  `hn` is
+load-bearing at `n = 0`, where `Fin 0` is empty while `0 • x = 0` always;
+only `0 < n` is actually used, and `3 ≤ n` is carried to match the
+consumer.  `hdim` is load-bearing: at relative dimension `d` the
+`n`-torsion is `(ℤ/n)^{2d}` and admits no two-element basis for
+`d ≥ 2`. -/
+theorem exists_torsionBasisCover_field (n : ℕ) (hn : 3 ≤ n)
+    (K : Type) [Field K] (hchar : ¬ ringChar K ∣ n)
+    {E T : Scheme.{0}} {f : E ⟶ T} (ab : AbelianSchemeStruct f)
+    (hdim : SmoothOfRelativeDimension 1 f) (g : T ⟶ Spec (CommRingCat.of K)) :
+    ∃ (T' : Scheme.{0}) (p : T' ⟶ T),
+      AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
+      ∃ P Q : RelPoint f p,
+        (∀ (L : Type) [Field L] [IsAlgClosed L] (t : Spec (CommRingCat.of L) ⟶ T'),
+          letI := ab.addCommGroup (t ≫ p)
+          ∀ x : RelPoint f (t ≫ p), n • x = 0 ↔
+            ∃! c : Fin n × Fin n,
+              x = (c.1 : ℕ) • RelPoint.pre t rfl P + (c.2 : ℕ) • RelPoint.pre t rfl Q) ∧
+        (letI := ab.addCommGroup p; n • P = 0 ∧ n • Q = 0) :=
+  sorry
+
+/-- **Every `Γ₁(N)`-datum over a `K`-scheme acquires a full level-`n`
+structure after an fpqc cover** (**PROVEN 2026-07-28**; formerly a single
+`sorry` leaf) — the `Γ₁` analogue of `X0.lean`'s
+`exists_fullLevelStructure_cover`, and Katz–Mazur's finite étale
+`GL₂(ℤ/n)`-torsor `[Γ(n)]`.
+
+This is a statement about ONE datum: it names no moduli scheme, no deck
+group and no rigidification, which is what let it be dispatched
+independently of everything else in this block.
+
+## How it is proven
+
+`exists_torsionBasisCover_field` produces the flat surjective
+quasi-compact `p : T' ⟶ T` and the two sections `P, Q` of `d.f` over `p`
+that are a basis of the `n`-torsion at every geometric point of `T'`;
+`nonempty_gamma1Datum_baseChange` (PROVEN) supplies the datum `d'` over
+`T'` together with the cartesian square; and
+`nonempty_abelianFullLevelStructure_of_geomBasis` turns the basis into an
+`AbelianFullLevelStructure` on `d'.ab`.  Exactly the `Γ₀` assembly of
+`exists_fullLevelStructure_cover_of_baseChange`, over an arbitrary base
+field instead of over `ℚ`.
 
 ## Faithfulness
 
@@ -1590,16 +1881,24 @@ characteristic `p ∣ n` the scheme `E[n]` is not étale, its geometric
 fibres are not `(ℤ/n)²`, and `geom_basis` is unsatisfiable — no cover
 helps.  `g` is therefore load-bearing too: it is what makes `T` a
 `K`-scheme, and without it the statement is false at a base of bad
-characteristic.  `hn` is load-bearing at `n = 0`, where
-`AbelianFullLevelStructure 0` is unsatisfiable. -/
+characteristic.  Both are passed straight through to
+`exists_torsionBasisCover_field`, which is where the content now is.
+`hn` is load-bearing at `n = 0`, where `AbelianFullLevelStructure 0` is
+unsatisfiable. -/
 theorem exists_gamma1FullLevelStructure_cover {N : ℕ} (n : ℕ) (hn : 3 ≤ n)
     (K : Type) [Field K] (hchar : ¬ ringChar K ∣ n)
     {T : Scheme.{0}} (g : T ⟶ Spec (CommRingCat.of K)) (d : Gamma1Datum N T) :
     ∃ (T' : Scheme.{0}) (p : T' ⟶ T) (d' : Gamma1Datum N T'),
       AlgebraicGeometry.Flat p ∧ AlgebraicGeometry.Surjective p ∧ QuasiCompact p ∧
       Nonempty (IsBaseChangeOfGamma1 p d' d) ∧
-      Nonempty (AbelianFullLevelStructure n d'.ab) :=
-  sorry
+      Nonempty (AbelianFullLevelStructure n d'.ab) := by
+  obtain ⟨T', p, hflat, hsurj, hqc, P, Q, hb, hnP, hnQ⟩ :=
+    exists_torsionBasisCover_field n hn K hchar d.ab d.relativeDimensionOne g
+  -- `exists_gamma1Datum_baseChange`, not its alias `nonempty_gamma1Datum_baseChange`:
+  -- the alias is declared thousands of lines BELOW this point in the file.
+  obtain ⟨d', ⟨bc⟩⟩ := exists_gamma1Datum_baseChange p d
+  exact ⟨T', p, d', hflat, hsurj, hqc, ⟨bc⟩,
+    nonempty_abelianFullLevelStructure_of_geomBasis bc P Q hnP hnQ hb⟩
 
 /-- **The deck group acts on the rigidified coordinate ring, over the
 base, equivariantly, and its quotient map coequalises rigidifications**
@@ -1610,10 +1909,48 @@ asserts is a consequence of `R.universal`, and the Katz–Mazur input is
 
 ## STATUS: this is the `Γ₁` transcription of a node that is ALREADY PROVEN
 
-`X0.lean`'s `exists_deckAction_of_torsion` proves the corresponding `Γ₀`
-statement in full except for the coequalising clause, which it leaves as
-a sorried `have` inside the proof.  The argument transcribes verbatim,
-because it touches the level structure only through the twist API:
+**CORRECTION 2026-07-28.**  The previous version of this paragraph said
+that `X0.lean`'s `exists_deckAction_of_torsion` "proves the corresponding
+`Γ₀` statement in full **except for the coequalising clause, which it
+leaves as a sorried `have` inside the proof**".  That is **STALE and
+false**.  `exists_deckAction_of_torsion` is sorry-free, coequalising
+clause included: the `have hcoeq` inside it is fully proven, from
+`exists_openCover_deckTranslation` (which was itself opened 2026-07-27
+and PROVEN 2026-07-28) together with `comp_eq_of_openCover_translation`
+and `specInvariantsQuotient_toRingHom_comp`.  There is no anonymous
+`sorry` anywhere in it — the nearest `sorry` above it in `X0.lean` is
+`exists_openCover_twist_of_fullLevelStructure`'s and the nearest below is
+thousands of lines away.
+
+**What that changes.**  The coequalising clause is NOT unattacked
+territory: there is a complete, released `Γ₀` proof to transcribe, and
+what is still open under the `Γ₀` node is the single NAMED leaf
+`exists_openCover_twist_of_fullLevelStructure` — *two full level
+structures on ONE datum differ Zariski-locally by a CONSTANT matrix*.  So
+the honest shape of this leaf is: a long but mechanical transcription,
+bottoming out in a `Γ₁` analogue of that one named leaf.  Whoever takes
+it should read `exists_openCover_twist_of_fullLevelStructure`'s docstring
+first — it records why the locality is Zariski rather than merely fppf,
+and that the one thing this project lacks for it is the `n`-torsion
+subgroup scheme as an OBJECT (the same object `exists_isomTorsor_of_geomPoint`
+owes, and it should be built once for both).
+
+**One `Γ₀ → Γ₁` mismatch to watch when transcribing it.**
+`exists_openCover_twist_of_fullLevelStructure` carries `g : Z ⟶ SpecQ`.
+This leaf is over an ARBITRARY base scheme `S` with no characteristic
+hypothesis, so its `Γ₁` analogue cannot inherit that hypothesis.  The
+invertibility of `n` is nonetheless available, and not by assumption:
+`R.lvlM.geom_basis` says that at every geometric point of `Spec R.A` the
+`n`-torsion is in bijection with `Fin n × Fin n`, i.e. has exactly `n²`
+points, which is false at a residue characteristic dividing `n`.  So `R`
+itself pins `n` invertible on `Spec R.A`, and everything in the
+conclusion lives over `Spec R.A`.  **The leaf is faithful as stated**;
+the pin is carried by the hypothesis rather than by the signature, which
+is worth knowing before anyone "repairs" it by adding a characteristic
+assumption on `S`.
+
+The argument transcribes verbatim, because it touches the level structure
+only through the twist API:
 
 * for `σ : GL₂(ℤ/n)`, `FullLevelStructure.twist` twists `lvlM` by the
   matrix and `R.universal` classifies the twist by a UNIQUE endomorphism
@@ -1933,41 +2270,205 @@ theorem isDomain_of_minimalPrimes_transitive
     exact hbp
   exact NoZeroDivisors.to_isDomain B
 
-/-- **`[Γ₁(N)]` is nonempty over SOME field extension of `K`** (sorry
-leaf, cut 2026-07-28 out of `geometricComponents_of_gamma1GITPresentation`)
+/-! #### The cut of `exists_gamma1Datum_fieldExtension`, 2026-07-28
+
+The node used to be one leaf mixing two entirely different kinds of
+content: the ARITHMETIC of torsion on an elliptic curve, and the
+SCHEME-THEORETIC bridge from a Weierstrass curve to an abelian scheme
+with a section.  It is now PROVEN over that split.
+
+| what | where | status |
+|---|---|---|
+| a Weierstrass curve over an algebraically closed field with a point of exact order `N` | `exists_weierstrassCurve_pointOfExactOrder` | **LEAF** (Silverman *AEC* III.6.4) |
+| a Weierstrass point of order `N` over ANY field gives a `Γ₁(N)`-datum | `nonempty_gamma1Datum_of_weierstrassPoint` | **LEAF** (base-generalisation of a PROVEN `ℚ` theorem) |
+| the assembly, at `L := AlgebraicClosure K` | `exists_gamma1Datum_fieldExtension` | **PROVEN** |
+
+**Why the split is worth making.**  The second leaf is *exactly*
+`nonempty_gamma1Datum_of_ratPoint` (far below in this file, **PROVEN**
+2026-07-27) with `ℚ` replaced by an arbitrary field.  Its whole
+obstruction is that `EllipticScheme.lean` — all ~9000 lines of it,
+including `exists_ellipticScheme_of_projModel`, `projGroupLaw` and
+`smoothOfRelativeDimension_projToSpec` — is stated at the concrete base
+`ℚ`.  That is a base-generalisation task with a known shape and no new
+mathematics, and it is *reusable*: every other leaf in this development
+that needs an elliptic scheme over a field other than `ℚ` wants the same
+thing.  Keeping it fused with the torsion arithmetic hid that.
+
+**A REFINEMENT to the old docstring's "concretely one may also take the
+Tate normal form" (2026-07-28).**  That is a route for the FIRST leaf
+only, and it is not obviously the cheaper one: the Tate normal form
+`y² + (1 − c)xy − by = x³ − bx²` with the point `(0,0)` has `(0,0)` of
+order exactly `N` only on the level-`N` locus, i.e. after solving the
+division-polynomial condition — which is the function field of `Y_1(N)`
+and therefore circular for anyone trying to use this leaf to prove
+`Y_1(N)` is nonempty.  Over an algebraically closed field the direct
+route (`E[N] ≅ (ℤ/N)²`, then any element of exact order `N`) needs no
+such locus and is the one the leaf below is stated for. -/
+
+/-- **Over an algebraically closed field of characteristic prime to `N`,
+some elliptic curve carries a point of exact order `N`** (sorry leaf,
+opened 2026-07-28) — Silverman *AEC* III.6.4, and pure elliptic-curve
+arithmetic: no schemes, no moduli, no `Γ₁`.
+
+## The route
+
+`E[N] ≅ (ℤ/N)²` for every elliptic curve `E` over an algebraically closed
+field `L` with `char L ∤ N` (III.6.4).  Any generator of a `ℤ/N` factor
+then has exact order `N`.  The only other thing owed is that SOME
+elliptic curve exists over `L` at all, which is where the
+characteristic-2 and -3 corner cases live: the short form
+`y² = x³ + a₄x + a₆` is singular in characteristic `2`, so the witness
+must be given in the general five-coefficient form (e.g.
+`⟨1, 0, 0, 0, 1⟩`, of discriminant a unit in every characteristic — a
+`decide`-able check once written down) rather than by specialising the
+short Weierstrass form.
+
+## Faithfulness
+
+`hchar` is load-bearing for TRUTH: at `char L = p ∣ N` the group scheme
+`E[N]` is not étale, `E[p^k](L)` is `ℤ/p^k` for ordinary `E` and trivial
+for supersingular `E`, and for `N = p` with `E` supersingular there is no
+point of exact order `N` over ANY extension.  `IsAlgClosed L` is
+load-bearing: over `ℚ` the statement is FALSE for every `N ≥ 13` and for
+`N = 11` by Mazur's theorem, which is the whole subject of this module.
+
+Note there is **no `4 ≤ N`**: it is not needed here.  At `N = 0` the
+hypothesis `¬ ringChar L ∣ 0` is unsatisfiable (`c ∣ 0` always), so the
+statement is vacuously true there, and at `1 ≤ N ≤ 3` it is true and
+easy.  Rigidity — the reason the consumers carry `4 ≤ N` — is about
+automorphisms of the pair, not about existence. -/
+theorem exists_weierstrassCurve_pointOfExactOrder (N : ℕ)
+    (L : Type) [Field L] [DecidableEq L] [IsAlgClosed L] (hchar : ¬ ringChar L ∣ N) :
+    ∃ (E : WeierstrassCurve L) (hE : E.IsElliptic),
+      letI := hE
+      ∃ P : E.toAffine.Point, addOrderOf P = N :=
+  sorry
+
+/-- **A point of exact order `N` on an elliptic curve over an arbitrary
+field `L` gives a `Γ₁(N)`-structure over `Spec L`** (sorry leaf, opened
+2026-07-28) — the base-generalisation of `nonempty_gamma1Datum_of_ratPoint`,
+which is the SAME statement at `L := ℚ` and is **PROVEN** far below in
+this file.
+
+## What is owed, and what is not
+
+Read `nonempty_gamma1Datum_of_ratPoint`'s docstring: it lists the three
+steps in dependency order, and all three generalise.
+
+1. `exists_ellipticScheme_of_weierstrass` — the bridge from a Weierstrass
+   curve to an abelian scheme of relative dimension one with a
+   Galois-equivariant `≃+` on geometric points.  **This is the whole
+   obstruction**: it and everything under it in `EllipticScheme.lean`
+   (`exists_ellipticScheme_of_projModel`, `projGroupLaw`,
+   `smoothOfRelativeDimension_projToSpec`,
+   `exists_projGeomFibreAddEquiv`) are stated at the concrete base `ℚ`.
+   Nothing in their content is `ℚ`-specific — `WeierstrassCurve.Projective`
+   `.proj` and `projToSpec` are already defined over a general base — so
+   this is a base-generalisation, not new mathematics.
+2. Galois descent of the point to a SECTION, `exists_section_of_galoisInvariant`,
+   with `Γ_ℚ` replaced by `Γ_L`.  An `L`-rational point is fixed by
+   `Γ_L`, and for a scheme separated over `L` the `L`-points are the
+   Galois-fixed `L̄`-points.  **When `L` is algebraically closed — which
+   is the only case the consumer below needs — this step is trivial**,
+   since `Γ_L` is trivial; so a prover who wants only the consumer may
+   add `[IsAlgClosed L]` and skip it.  It is stated without that
+   hypothesis because the general form is what the rest of the
+   development will want.
+3. Order transport: `Point.map` along `L → L̄` is injective, so
+   `addOrderOf` is unchanged; the `≃+` of step 1 preserves it by
+   `AddEquiv.addOrderOf_eq`. `RelPoint.ofSection`'s order at an arbitrary
+   geometric point `t : Spec K' ⟶ Spec L` is the order of the image of
+   `P` in `E(K')`, and `L → K'` is injective (`L` is a field), so it is
+   again `N`.  This is what `PointOfExactOrder.geom_order` asks and it is
+   PROVEN verbatim at `ℚ`.
+
+## Faithfulness
+
+No characteristic hypothesis is needed or wanted: `hP` already asserts
+that a point of exact order `N` EXISTS, which is strictly stronger than
+anything a characteristic assumption would buy, and the conclusion only
+transports it.  `[IsElliptic]` is load-bearing — a singular Weierstrass
+curve is not an abelian scheme.  At `N = 0` the statement is true and not
+vacuous, for the reason `nonempty_gamma1Datum_of_ratPoint`'s docstring
+records: `PointOfExactOrder` carries no finiteness field, so
+`addOrderOf = 0` asks for a section of infinite order and a curve of
+positive rank supplies one. -/
+theorem nonempty_gamma1Datum_of_weierstrassPoint {N : ℕ} (L : Type) [Field L]
+    [DecidableEq L] (E : WeierstrassCurve L) [E.IsElliptic] (P : E.toAffine.Point)
+    (hP : addOrderOf P = N) :
+    Nonempty (Gamma1Datum N (Spec (CommRingCat.of L))) :=
+  sorry
+
+/-- **`[Γ₁(N)]` is nonempty over SOME field extension of `K`**
+(**PROVEN 2026-07-28** over the two leaves above; formerly a single
+`sorry` leaf, cut out of `geometricComponents_of_gamma1GITPresentation`)
 — an elliptic curve carrying a point of exact order `N`, over some
 extension field of `K`.
 
 TRUE and elementary, and much weaker than anything about modular curves:
-`L := AlgebraicClosure K` already works.  Over an algebraically closed
-field of characteristic prime to `N` one has `E[N] ≅ (ℤ/N)²` for every
-elliptic curve `E`, so a point of exact order `N` exists; and its order
-does not change under further base change to an algebraically closed
-field, which is what `PointOfExactOrder.geom_order` asks.  Concretely one
-may also take the Tate normal form
-`y² + (1 − c)xy − by = x³ − bx²` with the point `(0, 0)`, whose exact
-order is `N` on the level-`N` locus.
+`L := AlgebraicClosure K` already works, and that is what the proof takes.
+The only bookkeeping is that `ringChar (AlgebraicClosure K) = ringChar K`,
+which is `charP_of_injective_algebraMap` along the (automatically
+injective) `algebraMap K (AlgebraicClosure K)` read through
+`ringChar.eq`.
 
 This is deliberately the WEAKEST form that its consumer
-`nontrivial_A_of_gamma1GITPresentation` needs: no algebraic closedness,
-no rationality over `K` itself — and rationality over `K` would be FALSE,
-since `Y_1(N)(K)` can be empty (`isEmpty_gamma1Datum_finiteField` is the
-extreme case, and the whole point of this module is that `Y_1(25)(ℚ)`
-contains no non-cuspidal point).
+`nontrivial_A_of_gamma1GITPresentation` needs: no algebraic closedness in
+the CONCLUSION, no rationality over `K` itself — and rationality over `K`
+would be FALSE, since `Y_1(N)(K)` can be empty
+(`isEmpty_gamma1Datum_finiteField` is the extreme case, and the whole
+point of this module is that `Y_1(25)(ℚ)` contains no non-cuspidal
+point).
 
 Note the ORDER of quantifiers: `L` may depend on `K` and `N`.  Nothing
 downstream sees `L`; it is consumed immediately by `classify` and
 discarded.
 
-The hypotheses are REQUIRED: at `char K ∣ N` the group scheme `E[N]` is
-not étale and a section of exact order `N` need not exist at all (at
-`N = p = char K` and `E` supersingular there is none over any
-extension). -/
+**`hchar` is REQUIRED and is now USED** (it was `_hchar` while this was a
+leaf): at `char K ∣ N` the group scheme `E[N]` is not étale and a section
+of exact order `N` need not exist at all (at `N = p = char K` and `E`
+supersingular there is none over any extension).  `_hN : 4 ≤ N` is
+genuinely NOT load-bearing — see `exists_weierstrassCurve_pointOfExactOrder`
+— and is kept, underscored, only to match every call site.
+
+## NON-VACUITY NOTE for `exists_gamma1RigidifiedModuli` (2026-07-28)
+
+This leaf, together with `exists_gamma1FullLevelStructure_cover`, is what
+stops `Gamma1RigidifiedModuli N n (Spec K)` from being satisfiable by the
+ZERO ring.  `Spec 0` is the empty scheme, over which
+`AbelianFullLevelStructure`'s `geom_basis` and `PointOfExactOrder`'s
+`geom_order` are both vacuous (there is no morphism `Spec K' ⟶ ∅`), so
+`A := 0` would discharge every field of that structure EXCEPT `universal`
+— and `universal` is killed exactly by exhibiting one
+datum-with-level-structure over one NONEMPTY `K`-scheme, which is this
+leaf followed by the cover.  So the faithfulness paragraph of
+`exists_gamma1RigidifiedModuli` is right that a nonzero `A` is forced,
+but the reason is not `hcharn` on its own: it is `hcharn` **plus the
+truth of these two leaves**.  Anyone tempted to discharge that leaf with
+a degenerate witness should read this paragraph first. -/
 theorem exists_gamma1Datum_fieldExtension (N : ℕ) (_hN : 4 ≤ N)
-    (K : Type) [Field K] (_hchar : ¬ ringChar K ∣ N) :
+    (K : Type) [Field K] (hchar : ¬ ringChar K ∣ N) :
     ∃ (L : Type) (_ : Field L) (_ : Algebra K L),
-      Nonempty (Gamma1Datum N (Spec (CommRingCat.of L))) :=
-  sorry
+      Nonempty (Gamma1Datum N (Spec (CommRingCat.of L))) := by
+  classical
+  refine ⟨AlgebraicClosure K, inferInstance, inferInstance, ?_⟩
+  -- ONE `DecidableEq` instance, shared by the two leaves: mathlib's group law on
+  -- `WeierstrassCurve.Affine.Point` is defined by a case split on equality of
+  -- `x`-coordinates and so carries `[DecidableEq]` on the base field.  Over `ℚ`
+  -- (`nonempty_gamma1Datum_of_ratPoint`) it is found automatically; over an
+  -- abstract field it is not, and the two leaves must be handed the SAME one or
+  -- their `addOrderOf`s are different terms.
+  letI : DecidableEq (AlgebraicClosure K) := Classical.decEq _
+  have hcharL : ¬ ringChar (AlgebraicClosure K) ∣ N := by
+    haveI : CharP (AlgebraicClosure K) (ringChar K) :=
+      charP_of_injective_algebraMap
+        (algebraMap K (AlgebraicClosure K)).injective (ringChar K)
+    rwa [ringChar.eq (AlgebraicClosure K) (ringChar K)]
+  obtain ⟨E, hE, hPt⟩ :=
+    exists_weierstrassCurve_pointOfExactOrder N (AlgebraicClosure K) hcharL
+  letI := hE
+  obtain ⟨P, hP⟩ := hPt
+  exact nonempty_gamma1Datum_of_weierstrassPoint (AlgebraicClosure K) E P hP
 
 /-- **The rigidified moduli scheme is nonempty** (PROVEN 2026-07-28 over
 `exists_gamma1Datum_fieldExtension`; formerly the first conjunct of
