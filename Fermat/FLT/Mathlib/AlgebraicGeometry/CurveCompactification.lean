@@ -4170,7 +4170,18 @@ satisfiable.
 Dropping `hconn` altogether is a strict gain: the leaf's own docstring already noted that
 connectedness was wanted ONLY for nonemptiness, and every consumer holds a point of `X`
 (the `X0.lean` consumer has a `RelPoint` over `Spec ℚ`, whose structure map hands one over).
-It also makes the statement reusable verbatim at `Γ₁`, which was the stated intent. -/
+It also makes the statement reusable verbatim at `Γ₁`, which was the stated intent.
+
+**AND THE OLD DOCSTRING'S PIN AUDIT WAS WRONG TWICE OVER** (independently confirmed
+2026-07-28 by a second owner who refuted and repaired the same leaf).  It recorded relative-
+dimension uniqueness as absent "as far as a `grep` of the pin shows", and named the check that
+would refute it — a rank or uniqueness statement in `Mathlib`, in `~/cs/FLT`, or in this
+project's shim tree.  Run as written that check refutes it in BOTH of the first and third
+places: mathlib has `Algebra.IsStandardSmoothOfRelativeDimension.rank_kaehlerDifferential`
+(`Mathlib/RingTheory/Smooth/StandardSmoothCotangent.lean`), `Module.rank S Ω[S⁄R] = n` over a
+nontrivial `S`; and the uniqueness statement itself was already in THIS file, as
+`eq_of_isStandardSmoothOfRelativeDimension_of_locally`.  The leaf never needed new ring
+theory — it needed the grep its own docstring prescribed. -/
 theorem not_isIso_of_smoothOfRelativeDimension_one {X S : Scheme.{u}} {f : X ⟶ S}
     (hcurve : SmoothOfRelativeDimension 1 f) (hne : Nonempty X) : ¬ IsIso f := by
   intro hiso

@@ -32136,7 +32136,9 @@ positivity, the dimension formula `dim S_2(Γ_0(N)) = genus`, and
 Eichler-Shimura — were written here first and then RETIRED in favour of
 this route.  Net effect: one elementary scheme-theory leaf in place of a
 theory build, and the genus formula is consumed once rather than proved
-twice.
+twice.  **That last leaf is now closed too (2026-07-28)**, so this node's
+own residue is empty; what it still consumes transitively is whatever
+`mono_ajHom_of_one_le_x0Genus` and `exists_jacobianOf_x0` consume.
 
 **THE DEGENERATE LEVEL, and where its burden now sits.**  `x0Genus 0 = 1`
 (compiler-verified by `decide`: at `N = 0` every ingredient degenerates —
