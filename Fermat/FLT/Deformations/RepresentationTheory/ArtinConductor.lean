@@ -5,6 +5,7 @@ vendored from the FLT project).
 module
 
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+public import Mathlib.GroupTheory.Index
 
 /-!
 # The Artin conductor exponent of a Galois representation
@@ -137,18 +138,33 @@ stated with `HasConductorExponentAt` is precisely the corresponding
 statement of the literature — no weaker and no stronger, exactly as
 before, but now as a consequence rather than as a reading.
 
-**What the universal quantifier costs, and where it can bite.** If the
-axioms of `RamificationFiltration` are too weak to pin the filtration —
-e.g. if two of them gave different break sums — then
-`exists_isSwanExponentAt` would be FALSE and the definition would
-degenerate to `sInf ∅ = 0`. That is the honest failure mode and it is
-mechanically visible: it shows up as an unprovable leaf, not as a silent
-weakening, and the repair is to STRENGTHEN the axioms below (that is
-precisely the content of "the upper-numbering filtration is unique",
-Serre VI §3). The axioms were chosen with this in mind — the
-normalisation `G^u = P_v` on `(0, 1]`, left continuity, and
-separatedness together already exclude the obvious junk filtrations
-(the constant `G^u = P_v`, and any rescaling `u ↦ G^{cu}`).
+**What the universal quantifier costs, and where it bit — 2026-07-28,
+THE FAILURE MODE PREDICTED HERE ACTUALLY HAPPENED.** The paragraph that
+stood here said: if the axioms of `RamificationFiltration` are too weak
+to pin the filtration then `exists_isSwanExponentAt` is FALSE, the
+definition degenerates to `sInf ∅ = 0`, and the repair is to STRENGTHEN
+the axioms. All of that was right. What it got wrong was the very next
+sentence, which asserted that the normalisation `G^u = P_v` on `(0, 1]`,
+left continuity and separatedness "together already exclude the obvious
+junk filtrations (the constant `G^u = P_v`, and any rescaling
+`u ↦ G^{cu}`)". **They do not, and the leaf was FALSE.** Two junk
+filtrations were CONSTRUCTED as Lean terms and the collapse was
+compiler-verified; the witnesses and the derivation are recorded in the
+FALSITY AUDIT on `RamificationFiltration` below.
+
+The structural reason, which is worth stating once at the top because it
+constrains every future repair: the shape axioms other than
+`gp_eq_wild` are **invariant under `u ↦ G^{cu}`**, and `gp_eq_wild`
+survives that rescaling for every `0 < c ≤ 1`, while the break sum
+scales by `1/c`. So **no axiom set expressed in the abstract order/group
+language of `gp` alone can ever pin the Swan conductor.** The scale must
+be fixed by ARITHMETIC. That is what `RamificationFiltration.gp_herbrand`
+now does: it ties `G^u` to the LOWER-numbering filtration of the finite
+levels (`LowerRamificationData`, anchored elementwise by the valuation,
+hence unique) through Herbrand's function `φ`. Non-vacuity is guarded
+separately: `IsSwanExponentAt` carries `Nonempty (RamificationFiltration
+v)` as an explicit conjunct, so an over-strong anchor emptying the class
+shows up as a FALSE leaf rather than as a silent `sInf ∅ = 0`.
 
 **The old policy line "do not state any equation about `swanExponentAux`"
 is WITHDRAWN.** It was the right rule while the symbol was
@@ -1714,7 +1730,116 @@ than merely open. The structure below is what replaces the opacity: the
 filtration `G^u` is named, its defining properties are written down, and
 the Swan conductor is then DEFINED from it by Serre's formula
 (`GaloisRep.IsSwanExponentAt`).
+
+**The FINITE LEVELS come first (2026-07-28).** The upper-numbering
+filtration cannot be pinned by shape axioms — see the FALSITY AUDIT on
+`RamificationFiltration` — so the arithmetic has to enter, and the only
+place it can enter is the finite levels, where the valuation is a
+genuine `ℤ`-valued discrete valuation and the LOWER numbering is
+elementary. `LowerRamificationData` is that finite-level datum; it is
+anchored ELEMENTWISE by the valuation, hence unique given its level, and
+Herbrand's `φ` is a finite sum of reciprocal indices computed from it.
+The single axiom `RamificationFiltration.gp_herbrand` then ties the two
+together, and that axiom is Herbrand's theorem
+(Serre, *Corps Locaux* IV §3, Prop. 14 and the definition of the upper
+numbering for infinite extensions in IV §3, "Passage à la limite").
 -/
+
+/-- **THE LOWER-NUMBERING RAMIFICATION FILTRATION OF A FINITE LEVEL**,
+as DATA — Serre, *Corps Locaux* IV §1.
+
+A "level" is an open normal subgroup `N ⊴ Γ Kᵥ`; by the Galois
+correspondence its fixed field `L = (Kᵥᵃˡᵍ)^N` is a FINITE Galois
+extension of `Kᵥ`, so `𝒪_L` is a genuine discrete valuation ring and
+
+  `G_i(L/Kᵥ) = {σ : v_L(σ x − x) ≥ i + 1 for all x ∈ 𝒪_L}`
+
+is the classical lower-numbering filtration. `gp i` below is that group
+PULLED BACK to `Γ Kᵥ` (so `N ≤ gp i` for every `i`, which is automatic
+from `mem_gp`).
+
+WHY THIS IS THE ARITHMETIC ANCHOR, AND WHY IT IS UNIQUE. `mem_gp` is an
+`iff`, not an inequality: it DEFINES `gp` from `lvl` and `unif` by an
+elementwise condition on the valuation, so two data with the same level
+have the same `gp` (and changing `unif` for another uniformizer changes
+nothing, since only the ideal `(unif)^{i+1}` occurs). That is exactly the
+property the upper-numbering axioms cannot have: the condition
+`unif ^ (i+1) ∣ σ • x − x` is not invariant under any rescaling of the
+index, because `unif` is pinned by `unif_spec`.
+
+THE FIELDS.
+
+* `lvl`, `lvl_normal`, `lvl_isOpen` — the level. Normality is what makes
+  `σ • x ∈ 𝒪_L` for `x ∈ 𝒪_L` and every `σ ∈ Γ Kᵥ`, i.e. what makes
+  `mem_gp` say what it is meant to say.
+* `unif`, `unif_fixed`, `unif_ne_zero`, `unif_not_isUnit`, `unif_spec` —
+  a UNIFORMIZER of `𝒪_L`. `unif_spec` ("every `lvl`-fixed non-unit is
+  divisible by `unif`") is `𝔪_L = (unif)`; without it `unif := π_L ^ 2`
+  would satisfy everything else and shift the whole indexing by a factor
+  of two, which would make `gp_herbrand` FALSE for the genuine
+  filtration. `unif_not_isUnit` excludes the degenerate datum with
+  `gp i = ⊤` for all `i`, and `unif_ne_zero` the one with `gp i = lvl`
+  for all `i`; both would over-constrain `gp_herbrand` in the same way.
+  Divisibility is taken in the big integral closure rather than in
+  `𝒪_L`, which is equivalent (the quotient lies in `L` and is integral)
+  and needs no subring to be constructed.
+* `gp`, `mem_gp` — the filtration and its defining property.
+* `relIndex_ne_zero` — the indices `[G_0 : G_i]` are FINITE. True
+  because `gp i` and `gp 0` both contain the open subgroup `lvl` in the
+  compact group `Γ Kᵥ`; it is an axiom only so that `phi` below cannot
+  silently divide by zero. -/
+structure LowerRamificationData (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) where
+  /-- The level: an open normal subgroup of `Γ Kᵥ`, i.e. a finite Galois
+  subextension `L/Kᵥ` of `Kᵥᵃˡᵍ/Kᵥ`. -/
+  lvl : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))
+  /-- The level is normal, so `L/Kᵥ` is Galois. -/
+  lvl_normal : lvl.Normal
+  /-- The level is open, so `L/Kᵥ` is finite. -/
+  lvl_isOpen : IsOpen (lvl : Set (Field.absoluteGaloisGroup (v.adicCompletion K)))
+  /-- A uniformizer of `𝒪_L`. -/
+  unif : IntegralClosure
+    (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+    (AlgebraicClosure (v.adicCompletion K))
+  /-- The uniformizer lies in `L`. -/
+  unif_fixed : ∀ τ ∈ lvl, τ • unif = unif
+  /-- The uniformizer is nonzero. -/
+  unif_ne_zero : unif ≠ 0
+  /-- The uniformizer is not a unit. -/
+  unif_not_isUnit : ¬ IsUnit unif
+  /-- The uniformizer GENERATES the maximal ideal of `𝒪_L`: this is what
+  fixes the indexing of the filtration, and hence the scale. -/
+  unif_spec : ∀ x : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (v.adicCompletion K)),
+    (∀ τ ∈ lvl, τ • x = x) → ¬ IsUnit x → unif ∣ x
+  /-- `G_i(L/Kᵥ)`, pulled back to `Γ Kᵥ`. -/
+  gp : ℕ → Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))
+  /-- **THE ARITHMETIC ANCHOR**: `σ ∈ G_i` iff `σ` moves every element of
+  `𝒪_L` by at least `𝔪_L ^ (i+1)`. -/
+  mem_gp : ∀ (i : ℕ) (σ : Field.absoluteGaloisGroup (v.adicCompletion K)),
+    σ ∈ gp i ↔ ∀ x : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (v.adicCompletion K)),
+      (∀ τ ∈ lvl, τ • x = x) → unif ^ (i + 1) ∣ σ • x - x
+  /-- The relative indices `[G_0 : G_i]` are finite. -/
+  relIndex_ne_zero : ∀ i : ℕ, (gp i).relIndex (gp 0) ≠ 0
+
+/-- **HERBRAND'S FUNCTION `φ_{L/Kᵥ}` AT THE INTEGERS**, computed from the
+lower-numbering data (Serre, *Corps Locaux* IV §3):
+
+  `φ(m) = ∑_{i=1}^{m} 1 / [G_0 : G_i]`   (`= (g_1 + ⋯ + g_m) / g_0`),
+
+the integral `∫₀^m dt / [G_0 : G_t]` of the step function `t ↦ [G_0 :
+G_t]⁻¹`, written as the finite sum it is at integer arguments. `φ(0) = 0`
+is the empty sum.
+
+This is the ONLY place a number computed from the arithmetic enters, and
+it is what makes `RamificationFiltration.gp_herbrand` a constraint that
+no rescaling can satisfy. -/
+noncomputable def LowerRamificationData.phi
+    {v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)}
+    (D : LowerRamificationData v) (m : ℕ) : ℚ :=
+  ∑ i ∈ Finset.Icc 1 m, (1 : ℚ) / ((D.gp i).relIndex (D.gp 0) : ℚ)
 
 /-- **AN UPPER-NUMBERING HIGHER RAMIFICATION FILTRATION AT `v`**, as
 DATA: the decreasing family `G^u ≤ Γ Kᵥ` of Serre, *Corps Locaux* IV §3
@@ -1739,9 +1864,12 @@ THE AXIOMS, and why each is here:
   (`ψ(0) = 0`).
 * `gp_eq_wild` — NORMALISATION: `G^u = P_v` for `0 < u ≤ 1`. True because
   `ψ(u) = u` on `[0, 1]`, so `G^u = G_{⌈u⌉} = G_1 = P_v` there. This is
-  the axiom that fixes the SCALE: without it every rescaling
-  `u ↦ G^{cu}` would be admissible and the break sum below would be
-  scaled by `1/c`. It also forces every break to be `≥ 1`, hence
+  a HALF of the scale normalisation, and only a half — it rules out
+  `u ↦ G^{cu}` for `c > 1`, but NOT for `0 < c ≤ 1`, since `c * u ≤ 1`
+  whenever `u ≤ 1`. The claim that stood here, that this axiom "fixes
+  the SCALE", is FALSE and is what made the leaf below unsatisfiable;
+  the scale is fixed by `gp_herbrand`. It does force every break to be
+  `≥ 1`, hence
   `Sw_v(V) ≥ dim V − dim V^{P_v}`, which is the classical bound.
 * `gp_of_forall_lt` — LEFT CONTINUITY, `G^u = ⋂_{0 < w < u} G^w`. This
   fixes the CONVENTION at a break: `G^λ` is the LARGER group, so
@@ -1751,13 +1879,70 @@ THE AXIOMS, and why each is here:
   the junk filtration that is constantly `P_v` on `(0, ∞)` (for which no
   break sum exists at all whenever `P_v ≠ 1` acts nontrivially).
 
-FAITHFULNESS NOTE. These axioms are NOT known here to determine `gp`
-uniquely — that is Serre VI §3 and is not formalised. They do not have
-to: `IsSwanExponentAt` quantifies universally over filtrations, so the
-true one alone already pins the Swan conductor, and any residual
-under-determination shows up as the leaf `exists_isSwanExponentAt` being
-hard, never as a silently weakened invariant. See the module docstring,
-section "## 2026-07-27". -/
+* `gp_herbrand` — **THE ARITHMETIC ANCHOR** (added 2026-07-28, and the
+  whole point of the repair below). At every finite level `L/Kᵥ` the
+  image of `G^{φ(m)}` in `Gal(L/Kᵥ)` is the `m`-th LOWER-numbering group
+  `G_m(L/Kᵥ)`. This is Herbrand's theorem together with the definition
+  of the upper numbering for infinite extensions (Serre, *Corps Locaux*
+  IV §3): `G^u = G_{ψ(u)}` at each level, and `ψ(φ(m)) = m`. Written as
+  an equation of subgroups of `Γ Kᵥ`, "image in `Γ/lvl`" is `⊔ lvl`.
+
+FALSITY AUDIT, 2026-07-28 — **WITHOUT `gp_herbrand` THIS STRUCTURE MAKES
+`exists_isSwanExponentAt` FALSE**, and the refutation is by explicit
+term, not by argument. The paragraph that stood here claimed the shape
+axioms "already exclude the obvious junk filtrations (the constant
+`G^u = P_v`, and any rescaling `u ↦ G^{cu}`)". Both halves are wrong.
+
+*The witness.* For any `c ≥ 1` put
+
+  `gp u := if u ≤ 0 then I_v else if u ≤ c then P_v else ⊥`.
+
+All five shape axioms hold (`gp_zero` and `gp_eq_wild` need `c ≥ 1`;
+left continuity picks `u/2` below the break and `(c+u)/2` above it;
+separatedness evaluates at `c + 1`). Against it the counting clause of
+`GaloisRep.IsSwanExponentAt` forces every break `μ k` to equal `c`
+exactly — `≥ c` from `u := c`, where `G^u = P_v` and the codimension is
+`wildCodim`; `≤ c` from any `u > c`, where `G^u = ⊥`, `V^⊥ = V` and the
+codimension is `0` — so the break sum is `c · wildCodim`. Taking `c = 1`
+and `c = 2` gives `s = wildCodim` and `s = 2 · wildCodim`, hence
+
+  `GaloisRep.IsSwanExponentAt ρ v s → ρ.wildCodim v = 0`  for every `s`,
+
+i.e. the specification was satisfiable only where there is no wild
+ramification at all. Compiler-verified in a scratch module against this
+file (both filtrations built, both lemmas proved, `EXIT=0`) and then
+deleted, as this project does not admit free-floating declarations.
+
+*The general obstruction, also compiler-verified.* Given ANY `F` and any
+`0 < c ≤ 1`, `u ↦ F.gp (c * u)` satisfies all five shape axioms again —
+`gp_eq_wild` survives because `c * u ≤ c ≤ 1` on `(0,1]` — while every
+break, hence the break sum, is multiplied by `1/c`. So the shape axioms
+are SCALE-INVARIANT and no strengthening expressed in the abstract
+order/group language of `gp` alone can ever pin the Swan conductor. The
+scale must come from the arithmetic; `gp_herbrand` is where it comes
+from, and `LowerRamificationData` is the arithmetic.
+
+*What is still NOT claimed.* `gp_herbrand` is not known here to determine
+`gp` uniquely — that would need the finite levels to separate points of
+`Γ Kᵥ`, which is true but unformalised. It does not have to:
+`IsSwanExponentAt` quantifies universally over filtrations, so the true
+one alone pins the value, and residual under-determination shows up as
+the leaf `GaloisRep.exists_isSwanExponentAt` being hard. What the leaf is
+now protected against is the two failure modes that actually occur —
+falsity (by `gp_herbrand`) and vacuity (by the `Nonempty` conjunct of
+`GaloisRep.IsSwanExponentAt`).
+
+*The one check that would refute the repair*, and it is worth running
+before building on any of this: `LowerRamificationData v` must be
+INHABITED. If it is empty — a formalisation slip in `unif_spec` or
+`mem_gp` would do it — then `gp_herbrand` is vacuous, the junk
+filtrations above are admissible again, and the leaf is false again. The
+failure is at least visible rather than silent: an empty
+`LowerRamificationData` leaves the leaf FALSE, an over-strong anchor
+leaves `RamificationFiltration` empty and the `Nonempty` conjunct
+unprovable, and neither can be mistaken for a closed leaf. Constructing
+one datum (any wildly ramified finite Galois `L/Kᵥ`) is the cheapest
+possible sanity check on the whole section. -/
 structure RamificationFiltration (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K)) where
   /-- `G^u`, the `u`-th ramification subgroup of `Γ Kᵥ` in the upper numbering. -/
   gp : ℚ → Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K))
@@ -1765,8 +1950,8 @@ structure RamificationFiltration (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K
   gp_le_gp : ∀ u w : ℚ, u ≤ w → gp w ≤ gp u
   /-- `G⁰` is the inertia group. -/
   gp_zero : gp 0 = localInertiaGroup v
-  /-- `G^u` is the WILD inertia for `0 < u ≤ 1` — the normalisation that
-  fixes the scale of the upper numbering. -/
+  /-- `G^u` is the WILD inertia for `0 < u ≤ 1` — half of the scale
+  normalisation; the other half is `gp_herbrand`. -/
   gp_eq_wild : ∀ u : ℚ, 0 < u → u ≤ 1 → gp u = wildInertiaGroup v
   /-- LEFT CONTINUITY: `G^u = ⋂_{0 < w < u} G^w`. -/
   gp_of_forall_lt : ∀ u : ℚ, 0 < u →
@@ -1775,6 +1960,12 @@ structure RamificationFiltration (v : IsDedekindDomain.HeightOneSpectrum (𝓞 K
   /-- SEPARATEDNESS: `⋂_{u > 0} G^u = 1`. -/
   eq_one_of_forall_mem : ∀ σ : Field.absoluteGaloisGroup (v.adicCompletion K),
     (∀ u : ℚ, 0 < u → σ ∈ gp u) → σ = 1
+  /-- **HERBRAND'S THEOREM, AS THE ARITHMETIC ANCHOR**: at every finite
+  level the image of `G^{φ(m)}` is the `m`-th lower-numbering group. This
+  is the ONLY axiom here that is not invariant under `u ↦ gp (c * u)`,
+  and therefore the only one that can fix the scale. -/
+  gp_herbrand : ∀ (D : LowerRamificationData v) (m : ℕ),
+    gp (D.phi m) ⊔ D.lvl = D.gp m
 
 namespace GaloisRep
 
@@ -2007,14 +2198,75 @@ every `s` satisfying this is the true `Sw_v(V)`. With `∃ F` a junk
 filtration would license a junk value and every `HasConductorExponentAt`
 citation downstream would silently become false. The price is that
 satisfiability (`exists_isSwanExponentAt`) is a real leaf; that price is
-the correct one to pay. -/
+the correct one to pay.
+
+WHY THE `Nonempty` CONJUNCT (added 2026-07-28). `∀ F` has a second
+failure mode, dual to the one the FALSITY AUDIT on
+`RamificationFiltration` records and strictly worse because it is
+SILENT: if the axioms of `RamificationFiltration` are ever strengthened
+past the point where the genuine filtration satisfies them, the class
+becomes EMPTY, `∀ F …` becomes vacuously true for every `s`,
+`exists_isSwanExponentAt` becomes PROVABLE by `⟨0, fun F => absurd …⟩`,
+and `swanExponentAux = sInf ℕ = 0` — a junk value carrying a closed
+leaf. Conjoining `Nonempty (RamificationFiltration v)` converts that
+into a FALSE leaf, which is visible. The conjunct costs a prover
+nothing they did not already owe: constructing the filtration is step
+one of `exists_isSwanExponentAt` anyway.
+
+AUDIT STATUS OF THE THREE NON-VACUITY CHECKS ABOVE. They were run on
+2026-07-27 against the PRE-ANCHOR statement, so by the standing rule
+("when a leaf is restated a second time, the earlier audit is VOID, not
+inherited") they do not transfer. They are expected to survive, because
+each uses only `gp_eq_wild` and the counting clause — but they have not
+been re-run against `gp_herbrand` and the `Nonempty` conjunct, and
+whoever next touches this should re-run them rather than cite them. -/
 def IsSwanExponentAt (ρ : GaloisRep K A M) (v : HeightOneSpectrum (𝓞 K))
     (s : ℕ) : Prop :=
+  Nonempty (RamificationFiltration v) ∧
   ∀ F : RamificationFiltration v, ∃ μ : ℕ → ℚ,
     (∀ u : ℚ, 0 < u →
         Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
           ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) ∧
       (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k
+
+/-- **`ρ` HAS FINITE WILD MONODROMY AT `v`**: the wild inertia acts
+through a FINITE quotient, i.e. some open subgroup of `Γ Kᵥ` meets `P_v`
+in a subgroup acting trivially on `M`.
+
+WHY THIS HYPOTHESIS IS NECESSARY, NOT A CONVENIENCE (2026-07-28).
+`GaloisRep.IsSwanExponentAt` demands a break list `μ : ℕ → ℚ` — finitely
+many RATIONAL breaks. Such a list exists exactly when the codimension
+function `u ↦ dim V − dim V^{G^u}` reaches `0` at some finite `u`, i.e.
+exactly when some `G^u` acts trivially, i.e. exactly when `ρ(P_v)` is
+finite.
+
+COUNTEREXAMPLE WITHOUT IT. Take `v ∣ ℓ` and `ρ` the `ℓ`-adic cyclotomic
+character (`A = M = ℤ_ℓ`, rank one). Its inertia image is all of
+`ℤ_ℓ^×`, and the wild ramification of `Kᵥ(μ_{ℓⁿ})/Kᵥ` is unbounded in
+`n`, so `V^{G^u} = 0` — hence `dim V − dim V^{G^u} = 1` — for EVERY
+finite `u`. No `μ : ℕ → ℚ` satisfies the counting clause, so
+`exists_isSwanExponentAt` is FALSE for that `ρ` however the filtration is
+axiomatised. This is a SECOND falsity, INDEPENDENT of the one recorded in
+the FALSITY AUDIT on `RamificationFiltration`, and `gp_herbrand` does not
+repair it — only this hypothesis does.
+
+That is the classical state of affairs, not a defect of the
+formalisation: the Artin conductor and its Swan part are invariants of a
+representation with finite wild monodromy (equivalently, of the
+associated Weil–Deligne representation), while the "conductor at `ℓ`" of
+an `ℓ`-adic representation at `v ∣ ℓ` is a different invariant.
+
+EVERY PLACE THIS DEVELOPMENT CITES `swanExponent` SATISFIES IT. At
+`q ∥ M₀` the local component is an unramified twist of Steinberg, so
+`P_q` acts trivially and `N := ⊤` works; at `q ∤ ℓ` more generally `P_q`
+is pro-`q` and its image in a pro-`ℓ` group is finite. So a consumer
+owes only a hypothesis it already has in hand — which is the usual shape
+of a missing-hypothesis repair in this development. -/
+def HasFiniteWildMonodromyAt (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) : Prop :=
+  ∃ N : Subgroup (Field.absoluteGaloisGroup (v.adicCompletion K)),
+    IsOpen (N : Set (Field.absoluteGaloisGroup (v.adicCompletion K))) ∧
+      ∀ σ ∈ N ⊓ wildInertiaGroup v, ∀ x : M, ρ.toLocal v σ x = x
 
 /-- **THE SWAN CONDUCTOR EXISTS** (SORRY LEAF, cut 2026-07-27 when
 `swanExponentAux` stopped being `opaque`): the specification
@@ -2046,11 +2298,68 @@ out too weak — i.e. if some junk `F` satisfies them and has a different
 break sum — then this leaf is FALSE and the repair is to strengthen
 those axioms, not to weaken this statement to `∃ F`. Weakening it to
 `∃ F` would make `swanExponentAux` a junk value and every downstream
-`HasConductorExponentAt` citation unsound; see the module docstring. -/
+`HasConductorExponentAt` citation unsound; see the module docstring.
+
+**THAT FAILURE MODE OCCURRED, AND THIS LEAF WAS FALSE (2026-07-28).**
+The pre-anchor axioms admitted the single-break junk filtrations
+`G^u = P_v` on `(0,c]`, `= ⊥` above, for every `c ≥ 1`, and comparing
+`c = 1` with `c = 2` forced `wildCodim = 0`. Both witnesses were built
+and both derivations compiler-verified; see the FALSITY AUDIT on
+`RamificationFiltration`. The repair taken was the one prescribed above
+— STRENGTHEN the axioms, never weaken to `∃ F` — and the strengthening
+is `RamificationFiltration.gp_herbrand` over `LowerRamificationData`.
+Item 1 below is therefore no longer a hope about the axioms: it is a
+stated axiom, and what remains is to CONSTRUCT a filtration satisfying
+it, which is step `hexists` of the decomposition.
+
+THE DECOMPOSITION (glue-first, three named steps).
+
+* `hexists` — **the upper-numbering filtration EXISTS**: some `F`
+  satisfies the shape axioms AND Herbrand compatibility with every
+  finite level. Serre, *Corps Locaux* IV §3 ("Passage à la limite"),
+  over the finite-level lower numbering of `LowerRamificationData`. This
+  is the step that discharges the `Nonempty` conjunct, and it is the one
+  that keeps the leaf honest: nothing else prevents an over-strong
+  anchor from emptying the class and closing this leaf vacuously.
+* `hbreak` — **the break decomposition**: for every admissible `F`,
+  `V|_{I_v}` has a break list whose layer cake is the codimension
+  function `u ↦ dim V − dim V^{G^u}`. Serre VI §2; Katz 1.1.
+* `hsum` — **the break sum is a NATURAL NUMBER and is INDEPENDENT of
+  `F`**: integrality is Hasse–Arf (Serre V §7), and independence is the
+  uniqueness of the upper numbering, which is exactly what `gp_herbrand`
+  is there to supply.
+
+The three are genuinely independent: `hexists` is a construction,
+`hbreak` a decomposition theorem about a single `F`, and `hsum` a
+uniqueness-plus-integrality statement quantified over all `F`.
+
+THE HYPOTHESIS `hfin` IS ALSO A 2026-07-28 REPAIR, of a SECOND falsity
+independent of the first: without finite wild monodromy the break list
+does not exist at all, and the `ℓ`-adic cyclotomic character at `v ∣ ℓ`
+refutes the leaf outright. See `GaloisRep.HasFiniteWildMonodromyAt`. It
+is consumed by `hbreak` and nowhere else, which is exactly where the
+mathematics needs it. -/
 theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
-    (v : HeightOneSpectrum (𝓞 K)) :
-    ∃ s : ℕ, ρ.IsSwanExponentAt v s :=
-  sorry
+    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v) :
+    ∃ s : ℕ, ρ.IsSwanExponentAt v s := by
+  -- STEP 1 (`hexists`): the upper-numbering filtration exists.
+  have hexists : Nonempty (RamificationFiltration v) := sorry
+  -- STEP 2 (`hbreak`): with finite wild monodromy, every admissible
+  -- filtration has a finite list of rational breaks.
+  have hbreak : ρ.HasFiniteWildMonodromyAt v →
+      ∀ F : RamificationFiltration v, ∃ μ : ℕ → ℚ, ∀ u : ℚ, 0 < u →
+      Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+        ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card := sorry
+  -- STEP 3 (`hsum`): the break sum is a natural number, the same for every `F`.
+  have hsum : ∃ s : ℕ, ∀ (F : RamificationFiltration v) (μ : ℕ → ℚ),
+      (∀ u : ℚ, 0 < u →
+        Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
+          ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) →
+      (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := sorry
+  obtain ⟨s, hs⟩ := hsum
+  refine ⟨s, hexists, fun F => ?_⟩
+  obtain ⟨μ, hμ⟩ := hbreak hfin F
+  exact ⟨μ, hμ, hs F μ hμ⟩
 
 /-- **The Swan conductor `Sw_v(V)`**, the wild part of the Artin
 conductor exponent — a REAL DEFINITION since 2026-07-27, no longer an
@@ -2087,9 +2396,9 @@ UNSTATABLE, which is what made
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform_of_two_le`
 independent of the theory rather than open. -/
 theorem isSwanExponentAt_swanExponentAux (ρ : GaloisRep K A M)
-    (v : HeightOneSpectrum (𝓞 K)) :
+    (v : HeightOneSpectrum (𝓞 K)) (hfin : ρ.HasFiniteWildMonodromyAt v) :
     ρ.IsSwanExponentAt v (ρ.swanExponentAux v) :=
-  Nat.sInf_mem (ρ.exists_isSwanExponentAt v)
+  Nat.sInf_mem (ρ.exists_isSwanExponentAt v hfin)
 
 open scoped Classical in
 /-- **The wild part of the Artin conductor exponent** at `v`, i.e. the
