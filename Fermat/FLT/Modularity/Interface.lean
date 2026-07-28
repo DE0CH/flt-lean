@@ -3600,7 +3600,7 @@ theorem exists_ne_zero_smul_ringEquiv_of_mem_heckeSubring {M : ℕ} (hM : 0 < M)
   exact hhom.symm
 
 /-- **LEAF B2 — A CHARACTER WHOSE VALUES ARE EIGENVALUES IS REALIZED BY A
-JOINT EIGENVECTOR** (sorry leaf, cut 2026-07-27 out of
+JOINT EIGENVECTOR** (PROVEN, 2026-07-28; cut 2026-07-27 out of
 `exists_eigenform_ringEquiv_conj` below): let `R` be a COMMUTATIVE
 subring of `End_ℂ(V)` with `V` a finite-dimensional complex vector space,
 and `μ : R →+* ℂ` a ring homomorphism such that for EACH `T ∈ R`
@@ -3615,7 +3615,10 @@ rule that helpers be generic; at the use site `V = S₂(Γ₀(M))`,
 `R = heckeSubring M` (commutative by `heckeSubring_mul_comm`), and finite
 dimensionality is `cuspForm_finiteDimensional`.
 
-PROOF PLAN, worked out and left unwritten; the pin has the hard half.
+PROOF AS EXECUTED. The five steps below are the plan this leaf was cut
+with; three of them were carried out by a cheaper route than the plan
+anticipated, and each such deviation is recorded where it happens —
+nothing here is aspirational.
 
 1. *Simultaneous triangularization.* `Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute`
    (`Mathlib/LinearAlgebra/Eigenspace/Pi.lean`) applied to the family
@@ -3623,28 +3626,40 @@ PROOF PLAN, worked out and left unwritten; the pin has the hard half.
    triangularizable by `Module.End.iSup_maxGenEigenspace_eq_top` over the
    algebraically closed `ℂ` — gives
    `⨆ χ : R → ℂ, ⨅ T, maxGenEigenspace T (χ T) = ⊤`.
-2. *The systems that occur are characters.* On a nonzero
-   `W_χ = ⨅ T, maxGenEigenspace T (χ T)` every `T − χ(T)` is nilpotent,
-   and commuting nilpotents are closed under sums and products, so
-   `χ : R → ℂ` is itself a ring homomorphism.
-3. *Every eigenvalue is some `χ(T)`.* `V` is the direct sum of the
-   `W_χ`, each `T`-stable; an eigenvector for `c` has a nonzero component
-   in some `W_χ`, on which `(T − χ(T))` is nilpotent and acts as
-   `c − χ(T)`, forcing `c = χ(T)`. Only finitely many `χ` occur, by
-   independence of the `W_χ` in a finite-dimensional space.
+   Independence of the `W_χ = ⨅ T, maxGenEigenspace T (χ T)` is
+   `Module.End.independent_iInf_maxGenEigenspace_of_forall_mapsTo` from the
+   same file, and `WellFoundedGT.finite_ne_bot_of_iSupIndep` then makes the
+   set of OCCURRING `χ` (those with `W_χ ≠ ⊥`) finite.
+2. *The systems that occur are characters.* DEVIATION: only ADDITIVITY of
+   `χ` is used downstream, never multiplicativity, and the pin already has
+   exactly that — `Module.End.map_add_of_iInf_genEigenspace_ne_bot_of_commute`
+   (`Mathlib/LinearAlgebra/Eigenspace/Basic.lean`), whose hypothesis is
+   literally `W_χ ≠ ⊥` for a commuting family. So no nilpotency argument is
+   written here at all.
+3. *Every eigenvalue is some `χ(T)`.* DEVIATION: the direct-sum
+   decomposition of `V` is NOT needed, and avoiding it removes the only
+   step that would have required decomposing a vector into components.
+   Instead: if no occurring `χ` had `χ(T) = μ(T)`, then every `W_χ` with
+   `W_χ ≠ ⊥` sits inside `⨆_{c ≠ μ(T)} maxGenEigenspace T c`, so by step 1
+   that supremum is `⊤`; but `Module.End.independent_maxGenEigenspace`
+   makes it disjoint from `maxGenEigenspace T (μ T)`, which contains the
+   eigenvector supplied by the hypothesis. Contradiction.
 4. *Pigeonhole, and this is the step that uses `R` being a RING rather
    than a set.* The hypothesis gives, for each `T ∈ R`, some occurring
-   `χ` with `μ(T) = χ(T)`. If `μ ≠ χ_i` for every one of the finitely
-   many occurring `χ_1, …, χ_k`, pick `T_i` with
-   `(μ − χ_i)(T_i) ≠ 0`; then `n ↦ ∏_i (μ − χ_i)(∑_j n_j T_j)` is a
-   product of nonzero linear forms in `n ∈ ℤ^k`, hence a nonzero
-   polynomial, yet it vanishes at every integer point — contradiction.
-   So `μ = χ` for some occurring `χ`.
+   `χ` with `μ(T) = χ(T)`; the claim is that one `χ` works for all `T`.
+   DEVIATION: no multivariate polynomial is needed. Induct on the finite
+   set of occurring characters: given `a'` separating `μ` from all of
+   them but `χ₀`, and `a₀` separating `μ` from `χ₀`, the element
+   `a' + k • a₀` separates `μ` from all of them for every `k : ℕ` outside
+   a finite set, because `k ↦ (χ − μ)(a' + k • a₀)` is an affine function
+   of `k` with a nonzero coefficient for each `χ` — additivity (step 2) is
+   what makes it affine, and `ℕ` being infinite finishes it.
 5. *From generalized to genuine.* On `W_χ ≠ ⊥` the operators
-   `T − μ(T)` are commuting nilpotents, so the ideal they generate acts
-   nilpotently; taking the last nonzero power applied to `W_χ` produces a
-   vector annihilated by all of them, which is the required joint
-   eigenvector.
+   `T − μ(T)` commute and are pointwise nilpotent, and a common kernel
+   vector is produced by induction on `finrank`: either they all already
+   kill `W_χ`, or some `g` does not, and `W_χ ⊓ ker g` is nonzero (by
+   nilpotency of `g`), strictly smaller (it misses a witness) and still
+   invariant (by commutation), so the induction hypothesis applies.
 
 SOUNDNESS: no positivity or nondegeneracy hypothesis is needed —
 faithfulness of the action is automatic because `R` is a subring of
@@ -3656,8 +3671,233 @@ theorem exists_forall_apply_eq_smul_of_ringHom {V : Type*} [AddCommGroup V]
     [Module ℂ V] [FiniteDimensional ℂ V] (R : Subring (Module.End ℂ V))
     (hcomm : ∀ S ∈ R, ∀ T ∈ R, S * T = T * S) (μ : R →+* ℂ)
     (hμ : ∀ T : R, ∃ v : V, v ≠ 0 ∧ (T : Module.End ℂ V) v = μ T • v) :
-    ∃ v : V, v ≠ 0 ∧ ∀ T : R, (T : Module.End ℂ V) v = μ T • v :=
-  sorry
+    ∃ v : V, v ≠ 0 ∧ ∀ T : R, (T : Module.End ℂ V) v = μ T • v := by
+  classical
+  -- STEP 5, proved first because it is used last: a family of pairwise commuting
+  -- operators, each acting nilpotently at every point of a nonzero invariant
+  -- subspace `p`, has a common kernel vector inside `p`.
+  have nilker : ∀ g : R → Module.End ℂ V, (∀ i j : R, Commute (g i) (g j)) →
+      ∀ p : Submodule ℂ V, p ≠ ⊥ → (∀ i : R, ∀ v ∈ p, g i v ∈ p) →
+        (∀ i : R, ∀ v ∈ p, ∃ k : ℕ, ((g i) ^ k) v = 0) →
+        ∃ v ∈ p, v ≠ 0 ∧ ∀ i : R, g i v = 0 := by
+    intro g hgc p hp hmaps hnil
+    suffices H : ∀ n : ℕ, ∀ q : Submodule ℂ V, Module.finrank ℂ q ≤ n → q ≠ ⊥ →
+        (∀ i : R, ∀ v ∈ q, g i v ∈ q) → (∀ i : R, ∀ v ∈ q, ∃ k : ℕ, ((g i) ^ k) v = 0) →
+        ∃ v ∈ q, v ≠ 0 ∧ ∀ i : R, g i v = 0 by
+      exact H (Module.finrank ℂ p) p le_rfl hp hmaps hnil
+    intro n
+    induction n with
+    | zero =>
+      intro q hle hq _ _
+      exfalso
+      have hlt : (⊥ : Submodule ℂ V) < q := bot_lt_iff_ne_bot.mpr hq
+      have h2 := Submodule.finrank_lt_finrank_of_lt hlt
+      rw [finrank_bot] at h2
+      omega
+    | succ n ih =>
+      intro q hle hq hmapsq hnilq
+      by_cases hz : ∀ i : R, ∀ v ∈ q, g i v = 0
+      · obtain ⟨v, hv, hv0⟩ := (Submodule.ne_bot_iff q).mp hq
+        exact ⟨v, hv, hv0, fun i => hz i v hv⟩
+      · push Not at hz
+        obtain ⟨i₀, w, hw, hw0⟩ := hz
+        set r : Submodule ℂ V := q ⊓ LinearMap.ker (g i₀) with hr
+        have hiter : ∀ (i : R) (j : ℕ) (v : V), v ∈ q → ((g i) ^ j) v ∈ q := by
+          intro i j
+          induction j with
+          | zero => intro v hv; simpa using hv
+          | succ j ihj =>
+            intro v hv
+            have hstep : ((g i) ^ (j + 1)) v = g i (((g i) ^ j) v) := by
+              rw [pow_succ']; rfl
+            rw [hstep]
+            exact hmapsq i _ (ihj v hv)
+        have hrbot : r ≠ ⊥ := by
+          obtain ⟨u, hu, hu0⟩ := (Submodule.ne_bot_iff q).mp hq
+          have hex : ∃ k : ℕ, ((g i₀) ^ k) u = 0 := hnilq i₀ u hu
+          have hk0 : Nat.find hex ≠ 0 := by
+            intro h
+            have hs := Nat.find_spec hex
+            rw [h, pow_zero] at hs
+            exact hu0 hs
+          obtain ⟨m, hm⟩ : ∃ m, Nat.find hex = m + 1 := ⟨Nat.find hex - 1, by omega⟩
+          have hne : ((g i₀) ^ m) u ≠ 0 := Nat.find_min hex (by omega)
+          refine (Submodule.ne_bot_iff r).mpr ⟨((g i₀) ^ m) u, ?_, hne⟩
+          refine Submodule.mem_inf.mpr ⟨hiter i₀ m u hu, ?_⟩
+          simp only [LinearMap.mem_ker]
+          have hs := Nat.find_spec hex
+          rw [hm, pow_succ'] at hs
+          exact hs
+        have hrlt : r < q := by
+          refine lt_of_le_of_ne inf_le_left ?_
+          intro h
+          apply hw0
+          have hwr : w ∈ r := h ▸ hw
+          exact LinearMap.mem_ker.mp (Submodule.mem_inf.mp hwr).2
+        have hfr : Module.finrank ℂ r ≤ n := by
+          have h2 := Submodule.finrank_lt_finrank_of_lt hrlt
+          omega
+        have hmapsr : ∀ i : R, ∀ v ∈ r, g i v ∈ r := by
+          intro i v hv
+          obtain ⟨hvq, hvk⟩ := Submodule.mem_inf.mp hv
+          refine Submodule.mem_inf.mpr ⟨hmapsq i v hvq, ?_⟩
+          simp only [LinearMap.mem_ker] at hvk ⊢
+          have hswap : g i₀ (g i v) = g i (g i₀ v) := by
+            have h1 : (g i₀ * g i) v = (g i * g i₀) v := by rw [(hgc i₀ i).eq]
+            simpa [Module.End.mul_apply] using h1
+          rw [hswap, hvk, map_zero]
+        have hnilr : ∀ i : R, ∀ v ∈ r, ∃ k : ℕ, ((g i) ^ k) v = 0 := by
+          intro i v hv
+          exact hnilq i v (Submodule.mem_inf.mp hv).1
+        obtain ⟨v, hv, hv0, hall⟩ := ih r hfr hrbot hmapsr hnilr
+        exact ⟨v, (Submodule.mem_inf.mp hv).1, hv0, hall⟩
+  -- an additive map out of `R` is automatically `ℕ`-homogeneous
+  have hnsmul : ∀ f : R → ℂ, (∀ a b : R, f (a + b) = f a + f b) →
+      ∀ (k : ℕ) (a : R), f (k • a) = k * f a := by
+    intro f hf
+    have h0 : f 0 = 0 := by
+      have h := hf 0 0
+      rw [add_zero] at h
+      linear_combination -h
+    intro k a
+    induction k with
+    | zero => simpa using h0
+    | succ k ihk =>
+      have hstep : (k + 1) • a = k • a + a := by module
+      rw [hstep, hf, ihk]
+      push_cast
+      ring
+  -- STEP 4, the pigeonhole: finitely many additive maps, each differing from the
+  -- additive `μ` somewhere, differ from it simultaneously at a single point.
+  have pigeon : ∀ s : Finset (R → ℂ), (∀ χ ∈ s, ∀ a b : R, χ (a + b) = χ a + χ b) →
+      (∀ χ ∈ s, ∃ a : R, χ a ≠ μ a) → ∃ a : R, ∀ χ ∈ s, χ a ≠ μ a := by
+    have hμadd : ∀ a b : R, μ (a + b) = μ a + μ b := fun a b => by simp
+    intro s
+    induction s using Finset.induction_on with
+    | empty => intro _ _; exact ⟨0, by simp⟩
+    | insert χ₀ t hχ₀ ih =>
+      intro hadd hne
+      obtain ⟨a', ha'⟩ := ih (fun χ hχ => hadd χ (Finset.mem_insert_of_mem hχ))
+        (fun χ hχ => hne χ (Finset.mem_insert_of_mem hχ))
+      obtain ⟨a₀, ha₀⟩ := hne χ₀ (Finset.mem_insert_self _ _)
+      set d : (R → ℂ) → ℂ := fun χ => χ a' - μ a' with hd
+      set e : (R → ℂ) → ℂ := fun χ => χ a₀ - μ a₀ with he
+      set F : Finset ℂ :=
+        (insert χ₀ t).image (fun χ => if e χ = 0 then 0 else -d χ / e χ) with hF
+      have hfin : {k : ℕ | (k : ℂ) ∈ F}.Finite :=
+        Set.Finite.preimage (Nat.cast_injective.injOn) F.finite_toSet
+      obtain ⟨k, hk⟩ := hfin.infinite_compl.nonempty
+      simp only [Set.mem_compl_iff, Set.mem_setOf_eq] at hk
+      refine ⟨a' + k • a₀, ?_⟩
+      intro χ hχ heq
+      have hχadd := hadd χ hχ
+      have hχval : χ (a' + k • a₀) = χ a' + k * χ a₀ := by
+        rw [hχadd, hnsmul χ hχadd]
+      have hμval : μ (a' + k • a₀) = μ a' + k * μ a₀ := by
+        rw [hμadd, hnsmul (fun T : R => μ T) hμadd]
+      rw [hχval, hμval] at heq
+      have hzero : d χ + (k : ℂ) * e χ = 0 := by
+        simp only [hd, he]
+        linear_combination heq
+      have hde : d χ ≠ 0 ∨ e χ ≠ 0 := by
+        rcases Finset.mem_insert.mp hχ with rfl | hχt
+        · right; simpa [he, sub_ne_zero] using ha₀
+        · left; simpa [hd, sub_ne_zero] using ha' χ hχt
+      refine hk ?_
+      by_cases hez : e χ = 0
+      · exfalso
+        rw [hez, mul_zero, add_zero] at hzero
+        rcases hde with h | h
+        · exact h hzero
+        · exact h hez
+      · refine Finset.mem_image.mpr ⟨χ, hχ, ?_⟩
+        simp only [if_neg hez]
+        rw [div_eq_iff hez]
+        linear_combination -hzero
+  -- STEP 1: simultaneous triangularization of the commuting family `R`.
+  have hcomm' : ∀ S T : R, Commute (S : Module.End ℂ V) (T : Module.End ℂ V) :=
+    fun S T => hcomm _ S.2 _ T.2
+  set W : (R → ℂ) → Submodule ℂ V :=
+    fun χ => ⨅ T : R, ((T : Module.End ℂ V).maxGenEigenspace (χ T)) with hWdef
+  have htop : (⨆ χ : R → ℂ, W χ) = ⊤ :=
+    Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute
+      (fun T : R => (T : Module.End ℂ V)) (fun S T _ => hcomm' S T)
+      (fun T => Module.End.iSup_maxGenEigenspace_eq_top _)
+  have hindep : iSupIndep W :=
+    Module.End.independent_iInf_maxGenEigenspace_of_forall_mapsTo
+      (fun T : R => (T : Module.End ℂ V))
+      (fun i j φ => Module.End.mapsTo_maxGenEigenspace_of_comm (hcomm' j i) φ)
+  have hOcc : {χ : R → ℂ | W χ ≠ ⊥}.Finite :=
+    WellFoundedGT.finite_ne_bot_of_iSupIndep hindep
+  -- STEP 3: every eigenvalue of a single `T` is the `T`-value of an occurring
+  -- joint generalized eigencharacter.
+  have hB : ∀ T : R, ∃ χ : R → ℂ, W χ ≠ ⊥ ∧ χ T = μ T := by
+    intro T
+    by_contra hcon
+    push Not at hcon
+    obtain ⟨v, hv0, hv⟩ := hμ T
+    have hvmem : v ∈ (T : Module.End ℂ V).maxGenEigenspace (μ T) := by
+      rw [Module.End.mem_maxGenEigenspace]
+      exact ⟨1, by simp [hv]⟩
+    have hle : (⊤ : Submodule ℂ V) ≤
+        ⨆ c : ℂ, ⨆ _ : c ≠ μ T, (T : Module.End ℂ V).maxGenEigenspace c := by
+      rw [← htop]
+      refine iSup_le fun χ => ?_
+      by_cases hbot : W χ = ⊥
+      · simp [hbot]
+      · exact le_trans (iInf_le _ T)
+          (le_iSup_of_le (χ T) (le_iSup_of_le (hcon χ hbot) le_rfl))
+    have hdis := Module.End.independent_maxGenEigenspace (T : Module.End ℂ V) (μ T)
+    have hmem : v ∈ (⊥ : Submodule ℂ V) := by
+      rw [← hdis.eq_bot]
+      exact Submodule.mem_inf.mpr ⟨hvmem, hle Submodule.mem_top⟩
+    exact hv0 ((Submodule.mem_bot ℂ).mp hmem)
+  set s : Finset (R → ℂ) := hOcc.toFinset with hs
+  have hsmem : ∀ χ : R → ℂ, χ ∈ s ↔ W χ ≠ ⊥ := by
+    intro χ; simp [hs]
+  -- STEP 2: an occurring joint generalized eigencharacter is additive.
+  have hadd : ∀ χ ∈ s, ∀ a b : R, χ (a + b) = χ a + χ b := by
+    intro χ hχ a b
+    refine Module.End.map_add_of_iInf_genEigenspace_ne_bot_of_commute
+      (R.subtype) χ ⊤ ?_ (fun x y => hcomm' x y) a b
+    exact (hsmem χ).mp hχ
+  have hpig : ∃ χ ∈ s, ∀ T : R, χ T = μ T := by
+    by_contra hcon
+    push Not at hcon
+    obtain ⟨a, ha⟩ := pigeon s hadd hcon
+    obtain ⟨χ, h1, h2⟩ := hB a
+    exact ha χ ((hsmem χ).mpr h1) h2
+  obtain ⟨χ, hχs, hχμ⟩ := hpig
+  have hWne : W χ ≠ ⊥ := (hsmem χ).mp hχs
+  -- STEP 5 applied: pass from the joint GENERALIZED eigenspace to a genuine
+  -- joint eigenvector.
+  set g : R → Module.End ℂ V := fun T => (T : Module.End ℂ V) - μ T • 1 with hg
+  have hgcomm : ∀ S T : R, Commute (g S) (g T) := by
+    intro S T
+    have h1 : Commute (S : Module.End ℂ V) (μ T • (1 : Module.End ℂ V)) :=
+      (Commute.one_right (S : Module.End ℂ V)).smul_right (μ T)
+    exact ((hcomm' S T).sub_right h1).sub_left ((Commute.one_left (g T)).smul_left (μ S))
+  have hgmaps : ∀ T : R, ∀ v ∈ W χ, g T v ∈ W χ := by
+    intro T v hv
+    have hTv : (T : Module.End ℂ V) v ∈ W χ := by
+      simp only [hWdef, Submodule.mem_iInf] at hv ⊢
+      intro S
+      exact Module.End.mapsTo_maxGenEigenspace_of_comm (hcomm' S T) (χ S) (hv S)
+    have hgv : g T v = (T : Module.End ℂ V) v - μ T • v := by simp [hg]
+    rw [hgv]
+    exact Submodule.sub_mem _ hTv (Submodule.smul_mem _ _ hv)
+  have hgnil : ∀ T : R, ∀ v ∈ W χ, ∃ k : ℕ, ((g T) ^ k) v = 0 := by
+    intro T v hv
+    have hvT : v ∈ (T : Module.End ℂ V).maxGenEigenspace (μ T) := by
+      have h := (Submodule.mem_iInf _).mp hv T
+      rwa [hχμ T] at h
+    exact (Module.End.mem_maxGenEigenspace _ _ _).mp hvT
+  obtain ⟨v, _, hv0, hall⟩ := nilker g hgcomm (W χ) hWne hgmaps hgnil
+  refine ⟨v, hv0, fun T => ?_⟩
+  have h := hall T
+  rw [hg] at h
+  simp only [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply] at h
+  exact sub_eq_zero.mp h
 
 /-- **LEAF B OF THE NEW-PART RATIONALITY CUT — THE `Aut(ℂ)`-CONJUGATE OF
 AN EIGENFORM EXISTS AT THE SAME LEVEL** (sorry leaf, cut 2026-07-27 out
