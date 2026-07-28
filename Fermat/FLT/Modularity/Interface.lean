@@ -60515,12 +60515,37 @@ is widened to `Γ ℚ`, which is the standing trap in this file. Widening
 it WOULD be false: Frobenius acts through the unramified twist with
 eigenvalues `±q^{1/2}`-scaled, not unipotently.
 
-`hqp : q ≠ p` is carried but is NOT consumed by this half — at `q = p`
-the local representation of a newform of level exactly divisible by `p`
-is still an unramified twist of Steinberg in the ordinary case, but the
-`p`-adic realisation is no longer given by the tame character and the
-square-zero shape can fail. It is retained so the leaf can be quoted
-alongside its sibling without a hypothesis mismatch.
+**`hqp : q ≠ p` IS LOAD-BEARING — CORRECTED 2026-07-28.** An earlier
+version of this paragraph said `hqp` "is carried but is NOT consumed by
+this half", retained only so the leaf could be quoted alongside its
+sibling "without a hypothesis mismatch". That is WRONG, and it is the
+dangerous direction of wrong: it invites a later owner to drop the
+hypothesis, which turns this leaf FALSE. The same paragraph then
+conceded, two clauses later, that at `q = p` "the square-zero shape can
+fail" — the two halves contradict each other, and the second is the
+correct one.
+
+EXPLICIT WITNESS for `q = p`. Take `p = 11`, `M₀ = 11`, `g₀` the weight-2
+newform of level `11`, and `τ` the `11`-adic Tate-module representation of
+`X₀(11) = 11a`. Then `ord_11 M₀ = 1`, `hτ` holds off `S_τ = {11}` and `τ`
+is irreducible, so EVERY hypothesis of this leaf holds with `q = p = 11`.
+But `11a` has multiplicative reduction at `11`, so on `I_11` the
+representation is `σ ↦ [[χ(σ), *], [0, 1]]` with `χ` the `11`-adic
+cyclotomic character, and
+
+  `(τσ − 1)² = [[(χ(σ) − 1)², *·(χ(σ) − 1)], [0, 0]]`.
+
+`χ : I_11 ↠ ℤ_11^×` is surjective, so there is a `σ ∈ I_11` with
+`χ(σ) ≠ 1`, and then `(τσ − 1)² ≠ 0`. The conclusion fails outright.
+
+The mathematical reason is the one the old paragraph half-stated: at
+`q ≠ p` inertia acts through the TAME character `t_p : I_q ↠ ℤ_p(1)` and
+the special Weil–Deligne parameter gives `σ ↦ 1 + t_p(σ)N`, genuinely
+unipotent; at `q = p` the `p`-adic realisation of the same automorphic
+local type is the SEMISTABLE (ordinary) one, whose inertia action has a
+nontrivial SEMISIMPLE part `χ_cyc` on the sub-line. Unipotence is not a
+property of the automorphic local type alone — it is a property of the
+`p`-adic realisation away from `p`.
 
 NOT VACUOUS: the hypothesis bundle is inhabited by the PROVEN pair
 `exists_galoisRep_charFrob_of_weightTwoNewform` (a matching `τ` with its
@@ -61275,10 +61300,41 @@ tame/wild analysis in this section already carries.
 
 THE CHECK THAT WOULD REFUTE IT: a prime `q ≠ p` and a two-dimensional
 `p`-adic representation of `Γ_ℚ` whose restriction to `P_q` has infinite
-image.  There is none; at `q = p` the cyclotomic character is one. -/
+image.  There is none; at `q = p` the cyclotomic character is one.
+
+**`hqp` UN-UNDERSCORED 2026-07-28 — IT IS LOAD-BEARING.** The binder used
+to read `_hqp`, and in THIS file the underscore is not cosmetic: the
+convention is documented on
+`isRamifiedAt_of_isWeightTwoNewform_of_two_le_factorization` below, where
+it records that a hypothesis carries NO content and warns the next owner
+not to "restore" it as though it did. Applied here that reading is
+exactly backwards — `q ≠ p` is the ONLY thing standing between this leaf
+and falsity, and the prose two paragraphs up already called it `hqp`
+while the binder said `_hqp`.
+
+WITNESS AT `q = p`. Every weight-2 newform representation has
+`det τ = χ_cyc`, the `p`-adic cyclotomic character. At `v = p` the wild
+inertia `P_p` surjects under `χ_cyc` onto `1 + pℤ_p`, which is infinite
+and has no finite subgroup of finite index. An open `N ≤ Γ ℚ_p` has
+finite index, so `N ⊓ P_p` still has infinite `χ_cyc`-image, hence cannot
+act trivially on `M` — `det` of a trivial action is `1`. So
+`HasFiniteWildMonodromyAt` FAILS at `q = p` for every such `τ`, and this
+is the very counterexample recorded in the `HasFiniteWildMonodromyAt`
+docstring in `ArtinConductor.lean` (there stated for the rank-one
+`ℓ`-adic cyclotomic character at `v ∣ ℓ`).
+
+NAMING NOTE, not corrected here to avoid a rename collision with the
+owners working concurrently in this file: the suffix
+`_of_isWeightTwoNewform` is a MISNOMER. There is no newform, no `g₀` and
+no `hτ` among the hypotheses — the statement is the fully general
+Grothendieck `ℓ`-adic monodromy assertion for an arbitrary continuous
+two-dimensional `p`-adic `τ`. A future owner may safely rename it to
+something like `hasFiniteWildMonodromyAt_of_ne`; the sole consumer
+(`isTamelyRamifiedAt_of_isWeightTwoNewform_of_factorization_eq_two`)
+applies it positionally. -/
 theorem hasFiniteWildMonodromyAt_of_ne_of_isWeightTwoNewform
     (τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (Fin 2 → AlgebraicClosure ℚ_[p]))
-    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) :
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) :
     τ.HasFiniteWildMonodromyAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
