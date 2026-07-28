@@ -857,7 +857,20 @@ so on sections it is literally `Γ(A, W.ι ''ᵁ ⊤) ⟶ Γ(A, U.ι ''ᵁ ⊤)`
   `op ((Z.homOfLE h).opensFunctor.obj ⊤)`, together with `Scheme.homOfLE_app`
   (which rewrites `(X.homOfLE e).app W` into an honest `X.presheaf.map`).  That
   is the same shape as `trivializedSection_of_iso` above, which is proven in
-  about twenty lines and is the model to copy. -/
+  about twenty lines and is the model to copy.
+* **CHECKED 2026-07-28 (third attempt, flt-lean-3): `simp` will not split the
+  composite.**  With the direct definition in place, `simp only [Iso.trans_hom,
+  Functor.mapIso_hom, SheafOfModules.comp_val, PresheafOfModules.comp_app,
+  ConcreteCategory.comp_apply, eqToIso.hom]` reports the last three arguments
+  UNUSED and leaves `((… ≫ … ≫ …).val.app (op ⊤)) x` as a single opaque
+  application.  The decomposition has to be done the way
+  `trivializedSection_of_iso` does it — a `have hcomp : ∀ x, … = … := fun _ =>
+  rfl` naming each factor's `.val.app (op ⊤)` explicitly — and that in turn
+  wants the `eqToHom` factor pulled out of the definition and given a NAME, so
+  that it can be written in the statement of `hcomp` at all.  Redefining
+  `modRestrictLEIso` with the equality-of-opens proof as a separate `private`
+  hypothesis-free lemma is therefore probably a precondition for this route
+  rather than an optional tidy-up. -/
 theorem trivializedSection_trivializationOfLE {Z : Scheme.{u}} {A : Z.Modules} {W U : Z.Opens}
     (h : W ≤ U) (φ : A.restrict U.ι ≅ modUnit (U : Scheme.{u})) (s : Γ(A, ⊤)) :
     trivializedSection (trivializationOfLE h φ) s
