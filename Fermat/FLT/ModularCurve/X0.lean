@@ -19831,37 +19831,183 @@ theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod (N : ℕ) (hN : N ≠ 0)
   push_cast
   field_simp
 
-/-- **The period of a weight-two eigenform is nonzero at the thirteen
-Kenku levels** (sorry node) — the ARITHMETIC half of
-`lFunction_apply_one_ne_zero_of_kenkuLevel`, and the ONLY declaration in
-this cluster that mentions `kenkuLevels`.  It contains no arithmetic
-geometry at all — no scheme, no Jacobian, no abelian variety — and after
-the cut it contains no `L`-function either: it is a statement about a
-convergent integral of a `q`-expansion.
+/-- **`b` is the `q`-expansion of a weight-two eigenform of level `M`
+that is moreover an eigenvector of the FRICKE involution `W_M`**
+(interface; introduced 2026-07-28 to cut `cuspPeriod_ne_zero_of_kenkuLevel`
+below).
 
-TRUE, by the reconnaissance below: decomposing `S_2(Γ_0(N))` into newform
-factors and evaluating `L(A, 1)` on each, EVERY factor at EVERY one of
-the thirteen levels has `L(A, 1) ≠ 0`, hence (by
-`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`) a nonzero period; so
-`J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
-Kolyvagin–Logachev, hence `J_0(N)(ℚ)` is torsion.
+It is written on the rescaled imaginary axis, in exactly the shape
+`exists_frickeInvolution` produces, with `g` in place of the Fricke
+partner: `g ∣[2] W_M = ε g`.  That is deliberate, and it is what lets the
+cut happen at this pin — the alternative phrasing needs `W_M` as a matrix
+in `GL(2, ℝ)`, which does not exist here (`exists_frickeInvolution` is
+itself a sorry leaf stated on the axis for the same reason).
 
-`hN` is load-bearing: the period vanishes for one of the two eigenforms
-of level `37`, and for every level of positive analytic rank.  `hf` is
-load-bearing in both of its parts — without `qExpansion` the sequence `a`
-is junk (`a p := 0` extended by the recursions satisfies every other
-field), and a junk `a` has whatever period one likes.
+**Why this and not a `newform` predicate.**  The reduction below wants
+"`b` comes from a newform"; what the `L`-value argument actually USES of
+newness is only that the completed transform satisfies a functional
+equation, i.e. that `g` is a `W_M`-eigenvector.  Stating the weaker
+property avoids the old/new decomposition (degeneracy maps, multiplicity
+one, an oldspace), none of which exists at this pin — refute with
+`grep -rn "newform\|Newform\|oldform\|degeneracy" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`.  Every newform of level `M` and
+trivial nebentypus IS such a `b`: `W_M` is an involution of
+`S_2(Γ_0(M))` commuting with `T_n` for `(n, M) = 1`, and a newform is
+pinned by those eigenvalues, so `g ∣ W_M = ε g` with `ε² = 1`, i.e.
+`ε = ±1`.  That is why `ε` is constrained to `{1, -1}` rather than
+quantified over `ℂ`.
 
-**RE-VERIFIED END-TO-END 2026-07-27 (PARI/GP, `lfunmf` + `lfun`), and
-INDEPENDENTLY RE-DERIVED the same day at the cut.**  For each of the
-thirteen levels, EVERY newform of EVERY divisor `M ∣ N` was enumerated
-(`mfinit([M,2],0)`, newspace) and `|L(f, 1)|` computed at every complex
-embedding.  `vanishing = 0` in all thirteen cases:
+### VACUITY AUDIT (2026-07-28): `M ≠ 0` is NOT decoration
+
+`axisRestrict M g` is defined by `if h : 0 < y ∧ M ≠ 0 then … else 0`, so
+at `M = 0` it is **identically zero** and the eigen-condition degenerates
+to `0 = 0`.  Without the first conjunct the predicate would therefore be
+satisfied by *every* level-`0` eigenform with *either* sign, and the leaf
+`cuspPeriod_ne_zero_of_isFrickeEigenform` below would be false at
+`M = 0` for the junk witness of the `FALSITY AUDIT` on
+`exists_isLFunctionOf_of_isWeightTwoEigenform` (`a n = 1` for `n ≥ 1`).
+The consumer supplies `M ≠ 0` from `M ∣ N` and `N ∈ kenkuLevels` in one
+step, so nothing is lost.
+
+The predicate is **not empty**: at each of the fourteen Kenku levels it is
+inhabited by between one and four coefficient sequences (the newforms of
+the divisors — see the table on
+`cuspPeriod_ne_zero_of_isFrickeEigenform`). -/
+def IsFrickeEigenform (M : ℕ) (b : ℕ → ℂ) : Prop :=
+  M ≠ 0 ∧ ∃ g : CuspForm (Gamma0GL M) 2, IsWeightTwoEigenform M g b ∧
+    ∃ ε : ℂ, (ε = 1 ∨ ε = -1) ∧ ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = -ε * ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y
+
+/-- **Every weight-two eigenform's period is a NONZERO multiple of a
+Fricke eigenform's period, at a level dividing `N`** (sorry leaf) — the
+Atkin–Lehner half of `cuspPeriod_ne_zero_of_kenkuLevel` below.  LEVEL-FREE:
+`kenkuLevels` does not appear, and `N` enters only through `f` and `hN`.
+
+TRUE, and classical (Atkin–Lehner 1970; Diamond–Shurman §5.6–5.8).  The
+normalized simultaneous eigenvectors of all `T_p (p ∤ N)` and all
+`U_p (p ∣ N)` in `S_2(Γ_0(N))` — which is exactly what
+`IsWeightTwoEigenform` recognizes, see the module docstring of
+`ModularCurve/WeightTwoEigenform.lean` — are the newforms `g` of every
+level `M ∣ N` together with their `p`-stabilizations
+`f(τ) = g(τ) - β_p g(pτ)` at the primes `p ∣ N`, `p ∤ M`.
+
+**In period language each stabilization step is a one-line change of
+variables**, which is the whole reason this cut is cheap:
+`∫₀^∞ g(ipy) dy = (1/p) ∫₀^∞ g(iu) du`, so
+
+> `cuspPeriod f = (1 - β_p / p) · cuspPeriod g`,
+
+and the constant `c` of the conclusion is the product of these factors
+over the stabilized primes.  (In `L`-function language the same
+correction is the Euler-factor identity
+`L(f, s) = L(g, s) ∏ (1 - β_p p^{-s})`; the period form is shorter
+because no Dirichlet series has to be manipulated.)
+
+**Where `c ≠ 0` comes from, and it is the one deep input.**  `β_p` is a
+root of the Hecke polynomial `X² - a_p(g) X + p`, so `|β_p| ≤ √p < p` by
+Deligne — for weight two this is Eichler–Shimura plus Hasse, so it is not
+cheap, but it is the only place a bound on `a_p` is used.  The degenerate
+root `β_p = 0` cannot occur among the *normalized* stabilizations: when
+`p ∣ M` the second `U_p`-eigenvector at level `pM` is `g(pτ)`, whose first
+coefficient is `0`, so it is excluded by `IsWeightTwoEigenform.one`; when
+`p ∤ M` both roots have product `p ≠ 0`.  So `c` is a product of factors
+`1 - β_p/p` each of which is nonzero, and the chain is finite because
+`N ≠ 0` has finitely many prime divisors.
+
+The conclusion deliberately claims only `IsFrickeEigenform M b`, NOT that
+`b` is a newform: that is strictly weaker, it is all the consumer needs,
+and it is what keeps this leaf from having to introduce an old/new
+decomposition in its STATEMENT as well as in its proof.
+
+`hN : N ≠ 0` is load-bearing exactly as in
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`: at `N = 0` the `atkin`
+field is a bare complete-multiplicativity condition with unconstrained
+`a_p` (see the `FALSITY AUDIT` on
+`exists_isLFunctionOf_of_isWeightTwoEigenform`), `Γ_0(0)` has infinite
+index in `SL(2, ℤ)`, `S_2(Γ_0(0))` is infinite-dimensional, and there is
+no Atkin–Lehner theory to appeal to.  The consumer supplies it from
+`N ∈ kenkuLevels`.
+
+### The axis searched (2026-07-28)
+
+The obstruction recorded on the old form of
+`cuspPeriod_ne_zero_of_kenkuLevel` — "what it needs *stated*, not proven,
+is a `newform` predicate, and that does not exist at this pin" — was
+correct about the absence and wrong about the requirement.  The cut does
+not need a `newform` predicate: it needs the *one consequence* of newness
+the `L`-value argument consumes, which is the Fricke eigenvector property,
+and that is statable in five lines on the axis (`IsFrickeEigenform`
+above).  This is the "STATING a theory is not PROVING it" move; the
+obligation to build old/new theory now lands here, on a named leaf, and
+no longer blocks the arithmetic half. -/
+theorem exists_isFrickeEigenform_cuspPeriod_eq (N : ℕ) (hN : N ≠ 0)
+    (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) :
+    ∃ M : ℕ, M ∣ N ∧ ∃ b : ℕ → ℂ, ∃ c : ℂ,
+      IsFrickeEigenform M b ∧ c ≠ 0 ∧ cuspPeriod a = c * cuspPeriod b :=
+  sorry
+
+/-- **The period of a FRICKE eigenform is nonzero at every divisor of a
+Kenku level** (sorry leaf) — the `L`-value-numerics half of
+`cuspPeriod_ne_zero_of_kenkuLevel` below, and the ONLY declaration in this
+cluster that mentions `kenkuLevels`.  It contains no arithmetic geometry —
+no scheme, no Jacobian, no abelian variety — and no `L`-function either:
+it is a statement about a convergent integral of a `q`-expansion.
+
+TRUE, by the reconnaissance below: decomposing `S_2(Γ_0(M))` into newform
+factors for every `M ∣ N` and evaluating `L(A, 1)` on each, EVERY factor at
+EVERY one of the fourteen levels has `L(A, 1) ≠ 0`, hence (by
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`) a nonzero period.
+
+### FAITHFULNESS (2026-07-28): this leaf is a WEAKENING, so it inherits truth
+
+Its hypotheses are those of the node it cuts *plus* the Fricke condition,
+and `M ∣ N` ranges over divisors of a Kenku level rather than over the
+level itself.  Both directions are safe.  A `b` satisfying
+`IsFrickeEigenform M b` is in particular a normalized Hecke eigenform at
+level `M`, hence by Atkin–Lehner a stabilization chain over a newform of
+some `M' ∣ M ∣ N`; the table below enumerates the newforms of *every*
+divisor, so no such `b` can have vanishing period.  In particular the leaf
+does **not** become false by admitting Fricke eigenvectors that are not
+newforms, should any exist.
+
+### What the Fricke hypothesis BUYS — the exponentially convergent period
+
+This is the point of the cut, and it is worth writing out because it is
+what turns the leaf from "evaluate a conditionally convergent integral"
+into a finite numerical check.  Write `F = axisRestrict M g`, so that
+`Λ(1) = ∫₀^∞ F` and `cuspPeriod b = Λ(1)/√M`
+(`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`, step 4).  Substituting
+`y ↦ 1/y` on `∫₀^1` and using the hypothesis
+`F(1/y) = -ε y² F(y)` gives `∫₀^1 F = -ε ∫₁^∞ F`, hence
+
+> `Λ(1) = (1 - ε) ∫₁^∞ F`, and
+> `cuspPeriod b = ((1 - ε)/(2π)) · ∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M}`,
+
+the last sum being ABSOLUTELY convergent — the terms decay like
+`e^{-2πn/√M}` — which the defining integral of `cuspPeriod` is not.  Two
+consequences a prover should note.  First, the leaf *contains* the
+assertion that `ε = -1` for every Fricke eigenform at every divisor of a
+Kenku level: at `ε = 1` the period is `0`.  That is the analytic-rank-`0`
+statement, and it is exactly why level `37` is absent from `kenkuLevels`
+(its rank-one eigenform has the other sign).  Second, what remains after
+that is a lower bound on a rapidly convergent explicit sum, which needs
+an effective bound on `|bₙ|` for the tail — Deligne's `|bₙ| ≤ d(n) √n`
+suffices and makes the truncation error explicit.  Neither of these was
+available before the cut, because a `p`-stabilization has no Fricke sign
+at all.
+
+**RE-VERIFIED END-TO-END 2026-07-28 (PARI/GP, `mfinit`/`mfeigenbasis` +
+`lfunmf` + `lfun`), reproducing the 2026-07-27 run row for row and adding
+the row it was missing.**  For each of the fourteen levels, EVERY newform
+of EVERY divisor `M ∣ N` was enumerated (`mfinit([M,2],0)`, newspace) and
+`|L(f, 1)|` computed at every complex embedding.  `vanishing = 0` in all
+fourteen cases:
 
 | `N` | embeddings over all `M ∣ N` | smallest `abs (L f 1)` |
 |---|---|---|
 | 20 | 1 | 0.4707 |
 | 24 | 1 | 0.5391 |
+| 26 | 2 | 0.5156 |
 | 28 | 1 | 0.3302 |
 | 30 | 2 | 0.3502 |
 | 35 | 3 | 0.4601 |
@@ -19874,6 +20020,15 @@ embedding.  `vanishing = 0` in all thirteen cases:
 | 63 | 4 | 0.4511 |
 | 75 | 4 | 0.3502 |
 
+**The `26` row is new, and its absence was a real gap, not a typo.**
+`kenkuLevels` has FOURTEEN entries — `26` among them — while the table
+inherited here had thirteen rows and the prose said "thirteen levels";
+`26` was added to the list after the table was written and no
+reconnaissance had ever covered it.  It is fine: `S_2(Γ_0(26))` is
+`2`-dimensional and entirely new, with `|L(f, 1)| = 0.6210…` and
+`0.5156…`, and the only divisors of `26` that carry cusp forms is `26`
+itself.  Every other row reproduced the recorded value exactly.
+
 Controls, run in the same session and behaving as they must: `N = 37`
 has `2` embeddings of which `1` vanishes, `N = 65` has `5` of which `1`
 vanishes (min of the rest `0.4252`), `N = 91` has `7` of which `2` vanish
@@ -19881,45 +20036,74 @@ vanishes (min of the rest `0.4252`), `N = 91` has `7` of which `2` vanish
 in `kenkuLevels`.  PARI/GP is an untrusted searcher: this establishes
 that the statement is not false, and is not a proof.
 
-**THE NEXT CUT, and the period picture is what makes it cheap.**  `hf`
-ranges over the normalized Hecke eigenforms of `S_2(Γ_0(N))`, which by
-Atkin–Lehner theory are the newforms `g` of every level `M ∣ N` together
-with their `p`-stabilizations `f(τ) = g(τ) - β_p g(pτ)`.  In `L`-function
-language the stabilization correction is the Euler-factor identity
-`L(f, s) = L(g, s) ∏ (1 - β_p p^{-s})`; **in period language it is a
-one-line change of variables**, because `∫₀^∞ g(ipy) dy = (1/p) ∫₀^∞
-g(iu) du`, so
+### The axis searched, so the next reader need not redo it
 
-> `cuspPeriod f = (1 - β_p / p) · cuspPeriod g`,
+A cut on `N` (`fin_cases hN`, fourteen goals) is mechanically available
+and is *not* a decomposition: it moves no theory and multiplies the
+frontier by fourteen.
 
-and `β_p` is a root of `X² - a_p(g) X + p` (or `0`), so `|β_p| ≤ √p < p`
-by Deligne and the factor is never zero.  That is the reduction to
-newforms, and it is the first thing a prover of THIS leaf should write.
-What it needs *stated* — not proven — is the old/new decomposition, i.e.
-a `newform` predicate at level `M`; that does not exist at this pin in
-mathlib, in `~/cs/FLT`, or here.  Refute with
-`grep -rn "newform\|Newform\|oldform\|degeneracy" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/`.
+The *axis not searched*: proving the fourteen levels through an explicit
+basis of `S_2(Γ_0(M))` for every `M ∣ N` (dimension formulas plus
+certified `q`-expansions), which together with the exponentially
+convergent formula above is what would make the PARI computation
+replayable inside Lean.  That is a large missing theory, and it is the
+real gate on this leaf — but note that it is now the ONLY gate: the
+Atkin–Lehner obstruction moved out to
+`exists_isFrickeEigenform_cuspPeriod_eq` above. -/
+theorem cuspPeriod_ne_zero_of_isFrickeEigenform (N : ℕ) (hN : N ∈ kenkuLevels)
+    (M : ℕ) (hMN : M ∣ N) (b : ℕ → ℂ) (hb : IsFrickeEigenform M b) :
+    cuspPeriod b ≠ 0 :=
+  sorry
 
-**The axis searched, so the next reader need not redo it.**  A cut on
-`N` (`fin_cases hN`, thirteen goals) is mechanically available and is
-*not* a decomposition: it moves no theory and multiplies the frontier by
-thirteen.  A cut that splits off the Fricke functional equation
-`Λ(s) = ± N^{1-s} Λ(2-s)` — which would turn the period into the
-exponentially convergent `(1 + ε) ∑ (aₙ/n) e^{-2πn/√N}` that PARI
-evaluates — is **FALSE as stated for this leaf's hypotheses**: a
-`p`-stabilization is a Hecke eigenform but is *not* a `W_N`-eigenform, so
-it has no Fricke sign.  That cut only becomes available *after* the
-reduction to newforms above, and in that order it is safe.
+/-- **The period of a weight-two eigenform is nonzero at the fourteen
+Kenku levels** (PROVEN 2026-07-28, from the two leaves above) — the
+ARITHMETIC half of `lFunction_apply_one_ne_zero_of_kenkuLevel`.
 
-The *axis not searched*: proving the thirteen levels through an explicit
-basis of `S_2(Γ_0(N))` (dimension formulas plus certified `q`-expansions),
-which is what would make the PARI computation replayable inside Lean.
-That is a large missing theory, and it is the real gate on this leaf. -/
+The assembly is three lines: `N ≠ 0` from `N ∈ kenkuLevels`; the
+Atkin–Lehner reduction `exists_isFrickeEigenform_cuspPeriod_eq` writes
+`cuspPeriod a = c · cuspPeriod b` with `c ≠ 0` and `b` a Fricke eigenform
+at some `M ∣ N`; and `cuspPeriod_ne_zero_of_isFrickeEigenform` says that
+period is nonzero.  A product of two nonzero complex numbers is nonzero.
+
+**DECOMPOSED 2026-07-28, along the Fricke involution.**  This node was
+carrying two unrelated theories at once — Atkin–Lehner old/new theory and
+the `L`-value numerics — and the seam between them is the observation that
+the numerics only ever apply to forms with a functional equation.  Above
+the seam is level-free modular theory; below it is the finite numerical
+check, which the Fricke hypothesis converts into an absolutely convergent
+sum `∑ (bₙ/n) e^{-2πn/√M}` (written out on
+`cuspPeriod_ne_zero_of_isFrickeEigenform`).
+
+The old docstring recorded that this cut "only becomes available *after*
+the reduction to newforms, and in that order it is safe", and that the
+reduction needed a `newform` predicate that does not exist at this pin.
+The first half is right and is what the cut implements; the second half
+was the blocker and it dissolved — see the axis note on
+`exists_isFrickeEigenform_cuspPeriod_eq`, which needs newness only through
+its one consequence, the Fricke eigenvector property.
+
+`hN` is load-bearing: the period vanishes for one of the two eigenforms
+of level `37`, and for every level of positive analytic rank.  `hf` is
+load-bearing in both of its parts — without `qExpansion` the sequence `a`
+is junk (`a p := 0` extended by the recursions satisfies every other
+field), and a junk `a` has whatever period one likes; `one` (`a 1 = 1`) is
+what rules out the unnormalized `g(pτ)`, whose period is `0` in the
+`p`-old space.
+
+**This node is NOT provable from `lFunction_apply_one_ne_zero_of_kenkuLevel`**,
+even though that declaration is proven and says `L 1 ≠ 0`: that proof is
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod` *followed by this node*, so
+the implication runs the other way and using it here would be circular.
+Recorded because the shortcut is tempting and was proposed once. -/
 theorem cuspPeriod_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) :
-    cuspPeriod a ≠ 0 :=
-  sorry
+    cuspPeriod a ≠ 0 := by
+  have hN0 : N ≠ 0 := by
+    simp only [kenkuLevels, List.mem_cons, List.not_mem_nil, or_false] at hN
+    omega
+  obtain ⟨M, hMN, b, c, hb, hc, heq⟩ := exists_isFrickeEigenform_cuspPeriod_eq N hN0 f a hf
+  rw [heq]
+  exact mul_ne_zero hc (cuspPeriod_ne_zero_of_isFrickeEigenform N hN M hMN b hb)
 
 /-- **`L(f, 1) ≠ 0` for every weight-two eigenform at the thirteen Kenku
 levels** (PROVEN 2026-07-27, from the two leaves above) — the ANALYTIC
@@ -21416,6 +21600,22 @@ acquired the hypothesis `N ≠ 0` in the process — see the SCOPE AUDIT on it.
 So of the two successors of `lFunction_apply_one_ne_zero_of_kenkuLevel` only
 the arithmetic one, `cuspPeriod_ne_zero_of_kenkuLevel`, is still open.
 
+**Eighth round (2026-07-28).**  `cuspPeriod_ne_zero_of_kenkuLevel` — the
+arithmetic half of the seventh round's cut — is now a PROVEN assembly over
+two leaves, cut along the Fricke involution: `IsFrickeEigenform` (a new
+five-line interface, stated on the imaginary axis), the Atkin–Lehner
+reduction `exists_isFrickeEigenform_cuspPeriod_eq`, and the numerical
+`cuspPeriod_ne_zero_of_isFrickeEigenform`.  The blocker recorded on the old
+node — that the reduction needs a `newform` predicate absent from this pin —
+dissolved: it needs only the *one consequence* of newness the `L`-value
+argument uses, namely that the form is a `W_M`-eigenvector.  In exchange the
+numerical leaf now has an absolutely convergent series for the period, which
+the node it replaced did not.  Also corrected in the same round: the
+reconnaissance table had THIRTEEN rows against `kenkuLevels`' FOURTEEN
+entries — `26` had been added to the list and never checked.  It is fine
+(`0.6210…`, `0.5156…`), and the row is now in the table on
+`cuspPeriod_ne_zero_of_isFrickeEigenform`.
+
 The open leaves under this node, and the single theory each one needs, are
 TABULATED below — **without a count, deliberately**: the table and the count
 were maintained separately and disagreed by four rows at the 2026-07-27 merge
@@ -21449,7 +21649,8 @@ docstring).
 | `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
-| `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `exists_isFrickeEigenform_cuspPeriod_eq` | Atkin–Lehner old/new theory | no |
+| `cuspPeriod_ne_zero_of_isFrickeEigenform` | `L`-value numerics | **yes** |
 | `exists_integralCoordinates_of_abelianScheme` | projective embedding / theorem of the cube | no |
 | `finite_quotient_psmul_of_abelianScheme` | weak Mordell–Weil at a prime | no |
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
