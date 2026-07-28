@@ -4932,24 +4932,24 @@ theorem exists_isSwanExponentAt (ρ : GaloisRep K A M)
         Module.finrank A M - Module.finrank A (ρ.fixedSubmodule v (F.gp u)) =
           ((Finset.range (ρ.wildCodim v)).filter fun k => u ≤ μ k).card) →
       (s : ℚ) = ∑ k ∈ Finset.range (ρ.wildCodim v), μ k := by
-  -- REOPENED 2026-07-29 (release-17 merge).  The proof that stood here derived
-  -- the independence of the break sum from `one_le_break`, which was WITHDRAWN as
-  -- FALSE — see the withdrawal note above.  Its route was:
-  --   pick `F₀`, make its break sum a natural number by Hasse-Arf
-  --   (`exists_nat_eq_sum_breaks`), then transport to every other admissible `F`
-  --   with `sum_eq_of_card_filter_eq_of_dense`, whose two `1 ≤ μ k` hypotheses
-  --   were exactly `one_le_break`.
-  -- The TRANSPORT half survives untouched: `fixedSubmodule_gp_phi_eq` (which is
-  -- `gp_herbrand` plus Dedekind's modular law) still makes the two codimension
-  -- functions agree at every Herbrand value, and those are dense
-  -- (`exists_lowerRamificationData_phi_mem_Ioc`).  What died is only the claim
-  -- that the breaks are bounded below by `1`, which is what let the counting
-  -- functions be compared BELOW the first break.
-  -- The repair is to restate `sum_eq_of_card_filter_eq_of_dense` over `0 < μ k`
-  -- with the density hypothesis starting at `0 < w` rather than `1 ≤ w`.  That is
-  -- true (breaks are positive rationals) but is a cut-level edit to a general
-  -- lemma about `ℚ`-valued functions, and is deliberately not made at merge time.
-  sorry
+    -- REOPENED 2026-07-29 (release-17 merge).  The proof that stood here derived
+    -- the independence of the break sum from `one_le_break`, which was WITHDRAWN as
+    -- FALSE — see the withdrawal note above.  Its route was:
+    --   pick `F₀`, make its break sum a natural number by Hasse-Arf
+    --   (`exists_nat_eq_sum_breaks`), then transport to every other admissible `F`
+    --   with `sum_eq_of_card_filter_eq_of_dense`, whose two `1 ≤ μ k` hypotheses
+    --   were exactly `one_le_break`.
+    -- The TRANSPORT half survives untouched: `fixedSubmodule_gp_phi_eq` (which is
+    -- `gp_herbrand` plus Dedekind's modular law) still makes the two codimension
+    -- functions agree at every Herbrand value, and those are dense
+    -- (`exists_lowerRamificationData_phi_mem_Ioc`).  What died is only the claim
+    -- that the breaks are bounded below by `1`, which is what let the counting
+    -- functions be compared BELOW the first break.
+    -- The repair is to restate `sum_eq_of_card_filter_eq_of_dense` over `0 < μ k`
+    -- with the density hypothesis starting at `0 < w` rather than `1 ≤ w`.  That is
+    -- true (breaks are positive rationals) but is a cut-level edit to a general
+    -- lemma about `ℚ`-valued functions, and is deliberately not made at merge time.
+    sorry
   obtain ⟨s, hs⟩ := hsum
   refine ⟨s, hexists, fun F => ?_⟩
   obtain ⟨μ, hμ⟩ := hbreak hfin F
