@@ -138,9 +138,12 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Artinian
 -- The connected ⟹ irreducible upgrade of the Bertini cut (2026-07-26) states
 -- `IsLocallyNoetherian` in the signature of
--- `exists_isOpen_isIrreducible_of_isDomain_stalk`, and its topological half
--- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` is proven with
--- `IsClopen.eq_univ`; both must therefore be re-exported, not merely reachable.
+-- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`, and
+-- its topological half `irreducibleSpace_of_isOpen_isIrreducible_nhds` is
+-- proven with `IsClopen.eq_univ`; both must therefore be re-exported, not
+-- merely reachable.  (Those two were HOISTED on 2026-07-28 into
+-- `Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds`, imported below, but
+-- `IsLocallyNoetherian` still appears in this file's own signatures.)
 public import Mathlib.AlgebraicGeometry.Noetherian
 public import Mathlib.Topology.Connected.Clopen
 -- Base change of schemes: `IsFormOver` (the twisted-moduli form cut,
@@ -216,11 +219,13 @@ public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
--- `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN 2026-07-26, the affine
--- heart of the connected ⟹ irreducible upgrade) states `Localization.AtPrime`
--- in its signature, and its proof runs on the minimal-prime API: finiteness
--- over a noetherian ring, and the order isomorphism between the primes of
--- `A_p` and the primes of `A` below `p`.
+-- `exists_isOpen_isIrreducible_of_isDomain_localization` (PROVEN 2026-07-26 as
+-- `exists_isOpen_isIrreducible_primeSpectrum`, the affine heart of the
+-- connected ⟹ irreducible upgrade; HOISTED 2026-07-28 into
+-- `Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds`) states
+-- `Localization.AtPrime` in its signature, and its proof runs on the
+-- minimal-prime API: finiteness over a noetherian ring, and the order
+-- isomorphism between the primes of `A_p` and the primes of `A` below `p`.
 public import Mathlib.RingTheory.Localization.AtPrime.Basic
 public import Mathlib.RingTheory.Ideal.MinimalPrime.Noetherian
 public import Mathlib.RingTheory.Ideal.MinimalPrime.Localization
@@ -548,6 +553,24 @@ import Mathlib.NumberTheory.Padics.Hensel
 -- purely transitive private route does not re-export them.
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Fermat.FLT.EllipticCurve.TorsionCard
+-- The three irreducibility lemmas of the connected ⟹ irreducible upgrade
+-- (`irreducibleSpace_of_isOpen_isIrreducible_nhds`,
+-- `exists_isOpen_isIrreducible_of_isDomain_localization`,
+-- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`),
+-- HOISTED out of this file on 2026-07-28.  The shim has ZERO `Fermat` imports
+-- and its mathlib imports are a SUBSET of this file's own, so it adds nothing
+-- to any cone.
+--
+-- **KEEP IT LAST.**  Placed at the HEAD of the import list instead, this same
+-- import turned `mem_of_ringHom_normalClosure_of_forall` red with a
+-- `synthInstance` heartbeat timeout on
+-- `Module.IsTorsionFree ↥(normalClosure ℚ F (AlgebraicClosure F)) Ω`, ~12 000
+-- lines away and with nothing to do with irreducibility.  Nothing about the
+-- ENVIRONMENT changed — every module the shim pulls in was already imported
+-- here — only the ORDER in which those modules enter it, which is enough to
+-- reorder instance search and flip a borderline synthesis.  Verified both ways
+-- by elaborating this file: head ⟹ that one error, tail ⟹ EXIT=0.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.IrreducibleNhds
 
 @[expose] public section
 
@@ -1680,9 +1703,11 @@ Bertini/Lefschetz connectedness, **the sole consumer of `hdim`** and the
 deepest of the geometric leaves) and
 `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
 2026-07-26** — no longer a leaf: cut into the point-set topology
-`irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (PROVEN), the
-minimal-prime bookkeeping `exists_isOpen_isIrreducible_primeSpectrum` /
-`exists_isOpen_isIrreducible_of_isDomain_stalk` (both PROVEN), and the single
+`irreducibleSpace_of_isOpen_isIrreducible_nhds` (PROVEN), the
+minimal-prime bookkeeping `exists_isOpen_isIrreducible_of_isDomain_localization` /
+`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk` (both
+PROVEN, and all three now in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`), and the single
 surviving leaf `isDomain_stalk_of_smooth_over_field` (SORRY — "smooth over a
 field ⟹ the local rings are domains", a pure mathlib gap)), assembled by
 multiplying the two genericity polynomials),
@@ -4376,62 +4401,16 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
     rw [hcomp]
     exact hcn
 
-/-- **CONNECTED + LOCALLY IRREDUCIBLE ⟹ IRREDUCIBLE** (**PROVEN 2026-07-26** —
-pure point-set topology, no scheme theory and no noetherian hypothesis).
-
-If every point of a connected space has an irreducible OPEN neighbourhood then
-the whole space is irreducible.
-
-THE PROOF, and why the hypothesis has to be an OPEN neighbourhood. Fix `x₀`
-and let `Z = irreducibleComponent x₀`. For `y ∈ Z` pick an irreducible open
-`U ∋ y`. Then `U ∩ Z ≠ ∅`, and `Z` is irreducible, so no open set can separate
-`U` from `Z`: `Z ⊆ closure U`. Since `closure U` is irreducible and `Z` is a
-MAXIMAL irreducible set, `closure U = Z`, whence `U ⊆ Z`. So `Z` is a union of
-open sets, i.e. open; it is also closed (components are), and nonempty; a
-connected space has no proper nonempty clopen subset, so `Z = univ` and the
-space is irreducible.
-
-The openness is load-bearing and the statement is FALSE with "irreducible
-neighbourhood" weakened to "irreducible subset containing the point": two
-lines crossing at the origin form a connected space in which every point lies
-on an irreducible subset (one of the lines) but which is reducible. What fails
-there is exactly the step above — the origin has no irreducible *open*
-neighbourhood, since every open neighbourhood meets both lines.
-
-Cut out of `geometricallyIrreducible_of_smooth_of_geometricallyConnected` on
-2026-07-26: it is the half of "smooth + connected ⟹ irreducible" that carries
-no geometry, and separating it leaves the geometric content in exactly one
-place, `isDomain_stalk_of_smooth_over_field`. -/
-theorem irreducibleSpace_of_connectedSpace_of_locallyIrreducible
-    {X : Type*} [TopologicalSpace X] [ConnectedSpace X]
-    (hloc : ∀ x : X, ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ IsIrreducible U) :
-    IrreducibleSpace X := by
-  obtain ⟨x₀⟩ := (inferInstance : Nonempty X)
-  have key : ∀ y ∈ irreducibleComponent x₀,
-      ∃ U : Set X, IsOpen U ∧ y ∈ U ∧ U ⊆ irreducibleComponent x₀ := by
-    intro y hy
-    obtain ⟨U, hUo, hyU, hUirr⟩ := hloc y
-    refine ⟨U, hUo, hyU, ?_⟩
-    have hZsub : irreducibleComponent x₀ ⊆ _root_.closure U := by
-      intro z hz
-      by_contra hzn
-      obtain ⟨w, -, hwU, hwc⟩ :=
-        (isIrreducible_irreducibleComponent (x := x₀)).2 U (_root_.closure U)ᶜ hUo
-          isClosed_closure.isOpen_compl ⟨y, hy, hyU⟩ ⟨z, hz, hzn⟩
-      exact hwc (subset_closure hwU)
-    have heq : _root_.closure U = irreducibleComponent x₀ :=
-      eq_irreducibleComponent (hUirr.isPreirreducible.closure) hZsub
-    exact heq ▸ subset_closure
-  have hZopen : IsOpen (irreducibleComponent x₀) := by
-    rw [isOpen_iff_forall_mem_open]
-    intro y hy
-    obtain ⟨U, hUo, hyU, hUZ⟩ := key y hy
-    exact ⟨U, hUZ, hUo, hyU⟩
-  have hZuniv : irreducibleComponent x₀ = Set.univ :=
-    IsClopen.eq_univ ⟨isClosed_irreducibleComponent, hZopen⟩ ⟨x₀, mem_irreducibleComponent⟩
-  rw [irreducibleSpace_def, Set.top_eq_univ, ← hZuniv]
-  exact isIrreducible_irreducibleComponent
-
+-- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (connected +
+-- locally irreducible ⟹ irreducible, pure point-set topology) was HOISTED out
+-- of this file on 2026-07-28 into
+-- `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`, under the name
+-- `irreducibleSpace_of_isOpen_isIrreducible_nhds` (the name the second,
+-- independent copy in `Mathlib/AlgebraicGeometry/CurveExtension.lean` had
+-- given it; that copy is deleted too).  The shim has ZERO `Fermat` imports, so
+-- it is reachable from both sides of the tree and a third copy should never be
+-- necessary.  Consumed below in
+-- `geometricallyIrreducible_of_smooth_of_geometricallyConnected`.
 
 -- `isDomain_of_isRegularLocalRing_aux` and `isDomain_of_isRegularLocalRing`
 -- were HOISTED out of this file into `Modularity/RegularStalks.lean` on
@@ -4489,116 +4468,16 @@ theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
   haveI := isRegularLocalRing_stalk_of_smooth_over_field f hf z
   isDomain_of_isRegularLocalRing _
 
-/-- **A PRIME WITH DOMAIN LOCALIZATION HAS AN IRREDUCIBLE OPEN NEIGHBOURHOOD
-IN `Spec R`** (**PROVEN 2026-07-26** — the affine heart of the
-connected ⟹ irreducible upgrade; pure commutative algebra, no scheme theory
-and no smoothness).
-
-If `R` is noetherian and `R_p` is a domain then `p` has an irreducible open
-neighbourhood in `Spec R`. Both hypotheses are needed: without noetherianity
-there can be infinitely many minimal primes and the neighbourhood below is
-not open; without the domain hypothesis `p` may lie on several components,
-and then no neighbourhood of it is irreducible.
-
-THE PROOF. `R_p` is a domain, so `⊥` is its least prime; the order
-isomorphism `IsLocalization.AtPrime.orderIsoOfPrime` carries the primes of
-`R_p` onto the primes of `R` below `p`, so there is a LEAST prime `q ≤ p`,
-and it is the unique minimal prime of `R` below `p`. Noetherianity makes
-`minimalPrimes R` finite, so
-`U := Spec R ∖ ⋃ {V(q') : q' ∈ minimalPrimes R, q' ≠ q}` is open; `p ∈ U` by
-that uniqueness, and every prime contains some minimal prime, so a prime in
-`U` contains `q`, i.e. `U ⊆ V(q)`. Finally `V(q)` is irreducible because `q`
-is prime, and a nonempty open subset of an irreducible set is irreducible. -/
-theorem exists_isOpen_isIrreducible_primeSpectrum {R : Type u} [CommRing R]
-    [IsNoetherianRing R] (p : PrimeSpectrum R)
-    (hp : IsDomain (Localization.AtPrime p.asIdeal)) :
-    ∃ U : Set (PrimeSpectrum R), IsOpen U ∧ p ∈ U ∧ IsIrreducible U := by
-  classical
-  haveI : p.asIdeal.IsPrime := p.isPrime
-  have hbot : (⊥ : Ideal (Localization.AtPrime p.asIdeal)).IsPrime := Ideal.isPrime_bot
-  set e := IsLocalization.AtPrime.orderIsoOfPrime (Localization.AtPrime p.asIdeal) p.asIdeal
-    with he
-  set q : Ideal R := (e ⟨⊥, hbot⟩).1 with hqdef
-  have hq : q.IsPrime := (e ⟨⊥, hbot⟩).2.1
-  have hqle : q ≤ p.asIdeal := (e ⟨⊥, hbot⟩).2.2
-  have hleast : ∀ r : Ideal R, r.IsPrime → r ≤ p.asIdeal → q ≤ r := by
-    intro r hr hrle
-    have h1 : (⟨⊥, hbot⟩ : {P : Ideal (Localization.AtPrime p.asIdeal) // P.IsPrime}) ≤
-        e.symm ⟨r, hr, hrle⟩ := Subtype.mk_le_mk.mpr bot_le
-    have h2 := e.monotone h1
-    rw [e.apply_symm_apply] at h2
-    exact h2
-  have huniq : ∀ r ∈ minimalPrimes R, r ≤ p.asIdeal → r = q := by
-    intro r hr hrle
-    have hr' := (IsMinimalPrime.iff_minimal r).mp hr
-    have h1 : q ≤ r := hleast r hr'.1 hrle
-    exact le_antisymm (hr'.2 hq h1) h1
-  set S : Set (Ideal R) := minimalPrimes R \ {q} with hSdef
-  have hSfin : S.Finite := (minimalPrimes.finite_of_isNoetherianRing R).subset Set.sdiff_subset
-  set U : Set (PrimeSpectrum R) := (⋃ r ∈ S, PrimeSpectrum.zeroLocus (r : Set R))ᶜ with hUdef
-  have hUopen : IsOpen U :=
-    (hSfin.isClosed_biUnion fun r _ => PrimeSpectrum.isClosed_zeroLocus _).isOpen_compl
-  have hpU : p ∈ U := by
-    simp only [hUdef, Set.mem_compl_iff, Set.mem_iUnion, not_exists, exists_prop, not_and]
-    intro r hrS hpz
-    exact hrS.2 (huniq r hrS.1 (PrimeSpectrum.mem_zeroLocus _ _ |>.mp hpz))
-  have hUsub : U ⊆ PrimeSpectrum.zeroLocus (q : Set R) := by
-    intro x hx
-    obtain ⟨r, hrmin, hrle⟩ :=
-      Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal R)) (J := x.asIdeal) bot_le
-    have hrq : r = q := by
-      by_contra hne
-      refine hx ?_
-      simp only [Set.mem_iUnion, exists_prop]
-      exact ⟨r, ⟨hrmin, hne⟩, (PrimeSpectrum.mem_zeroLocus _ _).mpr hrle⟩
-    exact (PrimeSpectrum.mem_zeroLocus _ _).mpr (hrq ▸ hrle)
-  have hqrad : q.radical.IsPrime := by rw [hq.radical]; exact hq
-  have hirr : IsIrreducible (PrimeSpectrum.zeroLocus (q : Set R)) :=
-    (PrimeSpectrum.isIrreducible_zeroLocus_iff q).mpr hqrad
-  exact ⟨U, hUopen, hpU,
-    hirr.isPreirreducible.subset_irreducible ⟨p, hpU⟩ hUopen (subset_refl U) hUsub⟩
-
-open CategoryTheory AlgebraicGeometry in
-/-- **A POINT WITH DOMAIN STALK ON A LOCALLY NOETHERIAN SCHEME HAS AN
-IRREDUCIBLE OPEN NEIGHBOURHOOD** (**PROVEN 2026-07-26** over
-`exists_isOpen_isIrreducible_primeSpectrum` — elementary, and entirely
-independent of smoothness).
-
-The transport is done on an affine CHART rather than an affine open:
-`Scheme.exists_Spec_apply_eq` produces an open immersion
-`f : Spec R ⟶ Z` hitting `z`, which is cheaper to work with than
-`IsAffineOpen.isoSpec` because it moves both the noetherian hypothesis and
-the stalk across in one step and leaves no subtype coercions behind.
-
-* `R` is noetherian: `isLocallyNoetherian_of_isOpenImmersion` transports
-  `IsLocallyNoetherian` along `f`, and `isLocallyNoetherian_Spec` reads it
-  off as `IsNoetherianRing R`.
-* `R_y` is a domain: `f.stalkMap y` is an isomorphism because `f` is an open
-  immersion, and `Spec.stalkIso` identifies the stalk of `Spec R` at `y` with
-  `Localization.AtPrime y.asIdeal`; `MulEquiv.isDomain` moves the hypothesis
-  across both.
-* The open irreducible neighbourhood is then produced in `Spec R` by the
-  affine lemma and pushed forward along `f.base`, which is an open embedding,
-  so the image is open (`IsOpenMap`) and still irreducible
-  (`IsIrreducible.image`). -/
-theorem exists_isOpen_isIrreducible_of_isDomain_stalk {Z : AlgebraicGeometry.Scheme.{u}}
-    [AlgebraicGeometry.IsLocallyNoetherian Z] (z : Z)
-    (hz : IsDomain (Z.presheaf.stalk z)) :
-    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U := by
-  obtain ⟨R, f, hf, y, hy⟩ := AlgebraicGeometry.Scheme.exists_Spec_apply_eq (X := Z) z
-  haveI := hf
-  haveI : AlgebraicGeometry.IsLocallyNoetherian (AlgebraicGeometry.Spec R) :=
-    AlgebraicGeometry.isLocallyNoetherian_of_isOpenImmersion f
-  haveI : IsNoetherianRing R := AlgebraicGeometry.isLocallyNoetherian_Spec.mp inferInstance
-  subst hy
-  haveI : IsDomain ((AlgebraicGeometry.Spec R).presheaf.stalk y) :=
-    (asIso (f.stalkMap y)).symm.commRingCatIsoToRingEquiv.toMulEquiv.isDomain _
-  haveI : IsDomain (Localization.AtPrime y.asIdeal) :=
-    (AlgebraicGeometry.Spec.stalkIso R y).symm.commRingCatIsoToRingEquiv.toMulEquiv.isDomain _
-  obtain ⟨U, hUopen, hyU, hUirr⟩ := exists_isOpen_isIrreducible_primeSpectrum y inferInstance
-  refine ⟨f.base '' U, ?_, ⟨y, hyU, rfl⟩, ?_⟩
-  · exact f.isOpenEmbedding.isOpenMap _ hUopen
-  · exact hUirr.image _ f.continuous.continuousOn
+-- `exists_isOpen_isIrreducible_primeSpectrum` (a prime with domain
+-- localization has an irreducible open neighbourhood in `Spec R`) and
+-- `exists_isOpen_isIrreducible_of_isDomain_stalk` (its scheme-level form) were
+-- HOISTED out of this file on 2026-07-28 into
+-- `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`, under the names
+-- `exists_isOpen_isIrreducible_of_isDomain_localization` and
+-- `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`.  The
+-- second, independent copy of the same pair in
+-- `Mathlib/AlgebraicGeometry/CurveExtension.lean` is deleted too.  Consumed
+-- below in `exists_isOpen_isIrreducible_of_smooth_over_field`.
 
 open CategoryTheory AlgebraicGeometry in
 /-- **SMOOTH OVER A FIELD ⟹ LOCALLY IRREDUCIBLE** (**PROVEN 2026-07-26** over
@@ -4610,7 +4489,8 @@ two leaves are separate: it supplies the domain stalks
 `Smooth ⟹ LocallyOfFinitePresentation ⟹ LocallyOfFiniteType` and
 `LocallyOfFiniteType.isLocallyNoetherian` over the noetherian base `Spec K` —
 the local noetherianity that
-`exists_isOpen_isIrreducible_of_isDomain_stalk` needs. -/
+`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
+(`Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) needs. -/
 theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
     {Z : AlgebraicGeometry.Scheme.{u}}
     (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
@@ -4619,7 +4499,7 @@ theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
   have : AlgebraicGeometry.Smooth f := hf
   have : AlgebraicGeometry.IsLocallyNoetherian Z :=
     AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian f
-  exact exists_isOpen_isIrreducible_of_isDomain_stalk z
+  exact AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk z
     (isDomain_stalk_of_smooth_over_field f hf z)
 
 open CategoryTheory AlgebraicGeometry in
@@ -4654,12 +4534,14 @@ uses, so the call site matches syntactically.
 **PROVEN 2026-07-26** over the five names immediately above it, of which
 exactly ONE is still open:
 
-* `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (PROVEN) — the
+* `irreducibleSpace_of_isOpen_isIrreducible_nhds` (PROVEN) — the
   point-set topology;
-* `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN) and
-  `exists_isOpen_isIrreducible_of_isDomain_stalk` (PROVEN) — the
-  minimal-prime bookkeeping that turns a domain stalk into an irreducible
-  open neighbourhood;
+* `exists_isOpen_isIrreducible_of_isDomain_localization` (PROVEN) and
+  `AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk`
+  (PROVEN) — the minimal-prime bookkeeping that turns a domain stalk into an
+  irreducible open neighbourhood.  These three were HOISTED on 2026-07-28 into
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean` and are no longer
+  declared here;
 * **`isDomain_stalk_of_smooth_over_field` (SORRY)** — "smooth over a field ⟹
   the local rings are domains", the sole surviving leaf and the only place
   where any geometry is used;
@@ -4678,7 +4560,7 @@ theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
   refine ⟨AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms.mpr fun K _ y ↦ ?_⟩
   have : ConnectedSpace ↥(Limits.pullback h y) :=
     AlgebraicGeometry.pullback_of_geometrically hconn.geometrically_connectedSpace K y
-  exact irreducibleSpace_of_connectedSpace_of_locallyIrreducible
+  exact irreducibleSpace_of_isOpen_isIrreducible_nhds
     (fun z ↦ exists_isOpen_isIrreducible_of_smooth_over_field
       (Limits.pullback.snd h y) inferInstance z)
 

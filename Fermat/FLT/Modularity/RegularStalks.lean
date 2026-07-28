@@ -840,7 +840,8 @@ THE TWO CLASSICAL ROUTES, and what each needs that the pin lacks.
 A FIRST CUT THAT WOULD HELP whoever takes this: reduce to the AFFINE statement
 "`A` a smooth `K`-algebra, `p` prime ⟹ `IsRegularLocalRing (Localization.AtPrime p)`"
 by transporting through an affine chart, exactly as
-`exists_isOpen_isIrreducible_of_isDomain_stalk` (PROVEN, above) transports the
+`AlgebraicGeometry.exists_isOpen_isIrreducible_nhds_of_isDomain_stalk` (PROVEN,
+in `Fermat/FLT/Mathlib/AlgebraicGeometry/IrreducibleNhds.lean`) transports the
 domain property: `Scheme.exists_Spec_apply_eq` gives an open immersion
 `g : Spec R ⟶ Z` hitting `z`, `Spec.stalkIso` identifies the stalk with
 `Localization.AtPrime y.asIdeal`, and `Smooth` is stable under composition with
