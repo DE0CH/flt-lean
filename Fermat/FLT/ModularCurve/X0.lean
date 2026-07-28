@@ -26241,7 +26241,7 @@ theorem cuspPeriod_ne_zero_of_isNewEigenformAt (N : ℕ) (hN : N ∈ kenkuLevels
   have hN0 : N ≠ 0 := by fin_cases hN <;> decide
   have hM0 : M ≠ 0 := fun h => hN0 (Nat.eq_zero_of_zero_dvd (h ▸ hM))
   obtain ⟨ε, hε, hfr⟩ := exists_frickeSign_of_isNewEigenformAt M hM0 g b hb hnew
-  rw [cuspPeriod_eq_of_frickeSign hM0 hb (integrableOn_qSeriesAt hb) hfr]
+  rw [cuspPeriod_eq_of_frickeSign hM0 hb (integrableOn_qSeriesAt hM0 hb) hfr]
   exact frickeTail_ne_zero_of_kenkuDivisor N hN M hM g b hb hnew hε hfr
 
 end CuspPeriodReduction
