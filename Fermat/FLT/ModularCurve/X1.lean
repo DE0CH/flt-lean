@@ -388,7 +388,8 @@ open in them has been split along the theories it needed:
 | `smooth_coarseRing_of_gamma1GITPresentation` | Deligne-Rapoport III.1, Katz-Mazur 8.2.1: `B = A^G` is a smooth `K`-algebra of Krull dimension one.  (`locallyStandardSmooth_of_gamma1GITPresentation` is PROVEN over it, 2026-07-28, together with the release's `smoothOfRelativeDimension_specMap_algebraMap_of_smooth`.) | any `K`, `char K ∤ N` |
 | `connectedSpace_tensorProduct_of_gamma1GITPresentation` | Deligne-Rapoport IV.5.5 — `det` is onto for `[Γ₁(N)]`, i.e. `K` is algebraically closed in `Frac B` | any `K`, `char K ∤ N` |
 | `exists_rationalCuspPointsX1` | `φ(N)/2` rational cusps of `X_1(N)` (Deligne-Rapoport VI.5) | `ℚ` |
-| `nonempty_relPoint_atlas_of_relPoint` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N` / Lang, on the atlas map `M ⟶ Y` | `𝔽_ℓ` |
+| `exists_fineGamma1Atlas` | fineness at `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`: `[Γ₁(N)]` is representable, so some atlas has `M ⟶ Y` an isomorphism.  (Was `nonempty_relPoint_atlas_of_relPoint`, REFUTED and restated 2026-07-28 — see its FALSITY AUDIT; the `∀ atlas` form is false at the Katz–Mazur atlas itself.) | `𝔽_ℓ` |
+| `nonempty_gamma1Datum_baseChange` | base change of a `Γ₁(N)`-datum — formal, no arithmetic | any |
 | `exists_weierstrassPointOfOrder_of_gamma1Datum` | a Weierstrass model of an abelian scheme of relative dimension one (Riemann-Roch on a genus-one curve) — NO modular curves | `𝔽_ℓ` |
 | `card_cuspLocusPoints_x1_finiteField` | the cusp count on the special fibre | `𝔽_ℓ` |
 | `exists_x1CurveModel_of_base` | the integral model — Deligne-Rapoport / Igusa for `Γ₁(N)`.  The reduction map is no longer part of the leaf: `exists_x1ReductionAt` is PROVEN over this plus the moduli-free `NeronReduction.lean` | `ℚ → 𝔽_ℓ` |
@@ -3066,10 +3067,10 @@ actual universal family `dM : Gamma1Datum N M` and whose `Y` is the
 categorical quotient of `M`.  That is the axis taken here, and it splits the
 leaf in two:
 
-* `nonempty_relPoint_atlas_of_relPoint` — the atlas map `M ⟶ Y` is surjective
-  on `𝔽_ℓ`-points.  This is where ALL of the fineness/Lang content goes, and
-  it is a statement about ONE concrete morphism rather than about a coarse
-  space in the abstract.
+* `exists_fineGamma1Atlas` — SOME atlas has its map `M ⟶ Y` lifting
+  `𝔽_ℓ`-points.  This is where ALL of the fineness content goes, and it is a
+  statement about ONE concrete morphism rather than about a coarse space in
+  the abstract.
 * `nonempty_gamma1Datum_baseChange` — a `Γ₁(N)`-datum base-changes along an
   arbitrary morphism of schemes.  Formal, moduli-free, level-free, base-free;
   no arithmetic and no finite fields.  **PROVEN 2026-07-28, by citing
@@ -3078,20 +3079,35 @@ leaf in two:
   half of the atlas cut cost nothing.  See its docstring for the duplication
   and for two corrections to the audit it was dispatched with.
 
-The assembly is then three citations, all PROVEN: `exists_gamma1AffineModel`
-produces an atlas over `𝔽_ℓ` (this is where `hℓ` and `hℓN` are consumed, as
-`¬ ringChar (ZMod ℓ) ∣ N`), `Gamma1Atlas.toIsCoarseModuliY1` makes its `Y` a
-coarse space, and `IsCoarseModuliY1.exists_inverse` transports the given point
-`y` onto it — which is axis 2 above, used not as a cut but as the glue, which
-is exactly the role it can play.
+The assembly is then two citations plus the glue: the first leaf produces the
+atlas, `Gamma1Atlas.toIsCoarseModuliY1` makes its `Y` a coarse space, and
+initiality transports the given point `y` onto it — which is axis 2 above,
+used not as a cut but as the glue, which is exactly the role it can play.
 
-**This does not contradict axis 4's verdict**: no moduli functor is written,
-and neither sub-leaf mentions representability.  What it does contradict is
-the implicit premise that the leaf is atomic; it is not, and the reason the
-list missed it is that every one of its four axes searched the same space
-(properties of `IsCoarseModuliY1`), while the atlas is a property of the
-CONSTRUCTION.  Recorded here because "an irreducibility verdict is only as
-wide as the axis the auditor searched". -/
+**THE FIRST BULLET IS NOT WHAT THIS SECTION ORIGINALLY SAID, and the
+correction is instructive** (2026-07-28).  The cut was first made with that
+leaf quantified over ALL atlases — `nonempty_relPoint_atlas_of_relPoint`, "the
+atlas map is surjective on `𝔽_ℓ`-points" — and in that form it is **FALSE at
+the Katz–Mazur atlas**, which is the one `exists_gamma1AffineModel` handed the
+assembly: `M` there is `𝔐([Γ₁(N)], [Γ(n)])`, whose `𝔽_ℓ`-points are triples
+`(E, P, β)` with `β` a RATIONAL basis of `E[n]`, and Hasse forbids those long
+before it forbids `(E, P)`.  The full refutation — the `N = 5, ℓ = 11`
+witness, and the diagnosis of the two classical routes that were misquoted to
+justify the leaf — is the FALSITY AUDIT on `exists_fineGamma1Atlas` below.
+Read it before trusting any argument in this section that speaks of `M ⟶ Y`
+as a torsor with rational points.
+
+**With the repair, this DOES now touch axis 4's verdict.**  The `∃ atlas` form
+is representability of `[Γ₁(N)]` in all but name, so the axis the cut takes is
+4 after all, and axis 4's objection — that a faithful statement of
+representability needs the moduli FUNCTOR written out — is answered by
+`Gamma1Atlas` itself, which is that data in the form this file already uses.
+What the cut does still contradict is the implicit premise that the leaf is
+atomic; it is not, and the reason the list missed it is that every one of its
+four axes searched the same space (properties of `IsCoarseModuliY1`), while
+the atlas is a property of the CONSTRUCTION.  Recorded here because "an
+irreducibility verdict is only as wide as the axis the auditor searched" —
+and, now, because a cut can be along the right axis and still be wrong. -/
 
 /-- **A `Γ₁(N)`-datum base-changes along an arbitrary morphism** (**PROVEN
 2026-07-28** — and it was ALREADY PROVEN in this very file; see the DUPLICATE
@@ -3159,63 +3175,129 @@ theorem nonempty_gamma1Datum_baseChange {N : ℕ} {T' T : Scheme.{0}}
     ∃ d' : Gamma1Datum N T', Nonempty (IsBaseChangeOfGamma1 h d' d) :=
   exists_gamma1Datum_baseChange h d
 
-/-- **The atlas map `M ⟶ Y` is surjective on `𝔽_ℓ`-points** (sorry leaf —
-this is where the whole fineness/Lang content of the `Γ₁` point count now
-sits).
+/-- **There is a FINE Katz–Mazur atlas over `𝔽_ℓ`: one whose atlas map
+`M ⟶ Y` lifts every `𝔽_ℓ`-point of `Y`** (sorry leaf — this is where the
+whole fineness content of the `Γ₁` point count now sits).
 
-TRUE for `N ≥ 4`, `ℓ` prime, `ℓ ∤ N`, and it is the same mathematics the
-parent leaf carried, relocated onto a single concrete morphism.  `Y` is the
-categorical quotient of `M` by the deck group `GL₂(ℤ/n)` of the rigidification
-(`Gamma1Atlas.quotient`), and the claim is that an `𝔽_ℓ`-point of the quotient
-lifts to an `𝔽_ℓ`-point of `M`.  Both classical routes survive the relocation
-and are now statements about a torsor rather than about a moduli functor:
+**RESTATED 2026-07-28, after the FALSITY AUDIT below refuted the previous
+form.**  This leaf used to read
 
-* *fineness* — for `N ≥ 4` the problem `[Γ₁(N)]` is rigid, so `M ⟶ Y` is a
-  torsor under a finite étale group scheme and the point lifts after no
-  extension at all;
-* *Lang* — over a FINITE field, `H¹(𝔽_ℓ, G) = 1` for connected `G`, so a
-  `𝔽̄_ℓ`-lift descends.
+    ∀ A : Gamma1Atlas N (SpecF ℓ), RelPoint A.str (𝟙 _) →
+      Nonempty (RelPoint A.strM (𝟙 _))
 
-`_y` is used only for NONEMPTINESS — the conclusion does not ask the lift to
-sit over `y`, because the parent leaf does not ask the datum to classify to
-`y` either.  That is deliberate and it is what the consumer
-(`isEmpty_relPoint_y1_finiteField`) needs: it derives a contradiction from the
-mere EXISTENCE of a datum over `𝔽_ℓ`, via
-`isEmpty_gamma1Datum_finiteField`.  Stating the stronger "lifts over `y`" form
-would be more faithful to the mathematics and strictly harder; a successor who
-proves the stronger form has proven this one, and should feel free to
-strengthen the statement rather than weaken the proof.
+— "the atlas map is surjective on `𝔽_ℓ`-points, for EVERY atlas" — under the
+name `nonempty_relPoint_atlas_of_relPoint`.  That statement is **FALSE**, and
+false at the very atlas its own consumer fed it.  The audit is kept in full
+because the fallacy is a reusable one.
 
-**NOT VACUOUS.**  At `2ℓ + 1 < N` the conclusion is FALSE unless the
-hypotheses are unsatisfiable — that is exactly
-`isEmpty_gamma1Datum_finiteField` composed with the base change below — so a
-junk witness cannot discharge it and the leaf is at least as hard as "`Y_1(N)`
-has no `𝔽_ℓ`-point when `#E(𝔽_ℓ) ≤ 2ℓ + 1 < N`", which is the whole point of
-the witness row `(25, 3, 10)`.
+## FALSITY AUDIT (2026-07-28) — the refuted `∀ A` form
 
-**All three arithmetic hypotheses are load-bearing**, and each is consumed by
-one of the two routes: `_hN` is rigidity (at `N ≤ 3` the pair `(E, P)` has
-extra automorphisms and `M ⟶ Y` is not a torsor), `_hℓ` is what makes the base
-a FIELD — see the FAITHFULNESS AUDIT on the parent leaf, where the `ℓ = 0` and
-`ℓ` composite regimes are worked out — and `_hℓN` is invertibility of `N`,
-without which `[Γ₁(N)]` is the Drinfeld problem and the atlas is a different
+**Counterexample: `N = 5`, `ℓ = 11`, `A` the Katz–Mazur atlas.**  All three
+arithmetic hypotheses hold (`4 ≤ 5`, `11` prime, `¬ 11 ∣ 5`), and `A` is the
+atlas that `exists_gamma1Rigidification` is *specified* to build and that
+`exists_gamma1AffineModel` hands the parent: `M = Spec A = 𝔐([Γ₁(N)], [Γ(n)])`
+with deck group `G = GL₂(ℤ/n)` for an auxiliary `n ≥ 3` prime to `N · ℓ` (see
+that leaf's docstring, which names both `n ≥ 3` and `GL₂(ℤ/n)` explicitly).
+
+* `A.Y(𝔽₁₁) ≠ ∅`.  Over `𝔽₁₁` the curve `y² = x³ + x + 7` has
+  `E(𝔽₁₁) ≅ ℤ/15` (PARI/GP; `y² = x³ + 2x + 9` and `y² = x³ + 3x + 6` are two
+  more), so it carries a point of exact order `5`.  That is a `Γ₁(5)`-datum
+  over `𝔽₁₁`, and `A.classify` sends it to an `𝔽₁₁`-point of `A.Y`.
+* `A.M(𝔽₁₁) = ∅`, **for every admissible auxiliary level `n`**.  An
+  `𝔽₁₁`-point of `M` is a triple `(E, P, β)` over `𝔽₁₁` with `P` of exact
+  order `5` and `β` a basis of `E[n]`; a rational basis forces
+  `(ℤ/n)² ⊆ E(𝔽₁₁)`, hence `n² ∣ #E(𝔽₁₁)`, and `P` forces `5 ∣ #E(𝔽₁₁)`.  If
+  `5 ∣ n` then `n² ≥ 25`; otherwise `5n² ∣ #E(𝔽₁₁)` and `5n² ≥ 45`.  Either
+  way `#E(𝔽₁₁) ≥ 25`, against Hasse `#E(𝔽₁₁) ≤ 11 + 1 + 2√11 < 18.7`.  So no
+  choice of `n ≥ 3` rescues the statement — this is not a "pick a better `n`"
+  problem.
+* A second, independent obstruction that needs no point count: whenever
+  `ζ_n ∉ 𝔽_ℓ` (say `n = 3`, `ℓ ≡ 2 mod 3`, which `ℓ = 11` is), the Weil
+  pairing of the universal level-`n` structure is a primitive `n`-th root of
+  unity in `Γ(M, 𝒪_M)`, so `𝔽_ℓ(ζ_n) ⊆ Γ(M, 𝒪_M)` and `M` has no `𝔽_ℓ`-point
+  whatsoever.  This file already records the fact, in the correction to
+  `isDomain_of_gamma0Atlas`'s docstring above: `𝔐([Γ₁(N)], [Γ(n)])` acquires
+  `φ(n)` geometric components permuted through the Weil pairing.
+
+**Both routes the old docstring offered are fallacious**, and neither is
+repairable:
+
+* *"`M ⟶ Y` is a torsor under a finite étale group scheme and the point lifts
+  after no extension at all."*  A torsor under a finite étale group scheme
+  need NOT have a rational point — that is precisely what `H¹(𝔽_ℓ, G) ≠ 1`
+  means for finite `G`, and the level-`n` cover is the standard example.  What
+  rigidity of `[Γ₁(N)]` at `N ≥ 4` gives is that **`Y` is FINE**; it says
+  nothing about `M(𝔽_ℓ)`.
+* *"Lang: `H¹(𝔽_ℓ, G) = 1` for connected `G`."*  Lang's theorem requires `G`
+  CONNECTED.  The deck group here is `GL₂(ℤ/n)`, finite and totally
+  disconnected, so Lang does not apply — there is no connected group anywhere
+  in this cut.
+
+**Consequence for the fleet, and it is the reason this audit is long.**  The
+refuted form and `exists_gamma1Rigidification` were **jointly unprovable in
+their intended readings**: a prover who builds Katz–Mazur (8.1.1) as that leaf
+specifies thereby constructs the counterexample above.  Neither leaf is wrong
+on its own; the pair was.  Anyone auditing the other leaf should read this one.
+
+## The repair, and why it is an `∃` rather than a patched `∀`
+
+Nothing in `Gamma1Atlas` forces the rigidification to be nontrivial.  For
+`N ≥ 4` the problem `[Γ₁(N)]` is rigid, hence representable over a base where
+`N` is invertible (Katz–Mazur 4.7.0), so `Y_1(N)` **itself** is an atlas: take
+`M = Y`, `dM` the universal family, `cover` with `p = 𝟙` (no extension is
+needed, which is exactly representability), and the trivial deck group.  For
+that atlas the lift of `y` is `y`.  So the true statement is that a fine atlas
+EXISTS, and the consumer loses nothing by it: `IsCoarseModuliY1.universal`
+transports the given coarse point onto whichever atlas this leaf produces,
+which is what the parent already did.
+
+The conclusion additionally pins the lift **over `y`** (`m ≫ π = y`), which
+the refuted form deliberately did not.  That costs a prover nothing on the
+fine atlas and it is what makes the leaf faithful: a lift landing on an
+unrelated component no longer discharges it.
+
+**What has to be built**: representability of `[Γ₁(N)]` over `𝔽_ℓ` for
+`N ≥ 4`, packaged as a `Gamma1Atlas` with `π` an isomorphism.  Axis 4 of the
+list above — "state representability as a separate leaf" — is therefore the
+axis this now takes, and its objection (that a faithful statement needs the
+moduli FUNCTOR written out) is answered by `Gamma1Atlas` itself, which is that
+functor's data in the form this file already uses.
+
+**NOT VACUOUS.**  A prover cannot dodge the `∀ y` by choosing an atlas whose
+`Y` has no `𝔽_ℓ`-point: `cover` and `quotient` pin `A.Y` up to unique
+isomorphism over `𝔽_ℓ` (`IsCoarseModuliY1.exists_inverse`), so `A.Y(𝔽_ℓ) = ∅`
+holds for one atlas exactly when it holds for all of them, i.e. exactly when
+`Y_1(N)(𝔽_ℓ)` is genuinely empty.  At `N = 5`, `ℓ = 11` it is not (the curve
+above), so the fine atlas really has to be produced.  Conversely at
+`2ℓ + 1 < N` the leaf is at least as hard as "`Y_1(N)` has no `𝔽_ℓ`-point",
+which is the whole point of the witness row `(25, 3, 10)`.
+
+**All three arithmetic hypotheses are load-bearing**: `_hN` is rigidity (at
+`N ≤ 3` the pair `(E, P)` has extra automorphisms, `[Γ₁(N)]` is not
+representable, and no fine atlas exists); `_hℓ` is what makes the base a FIELD
+— see the FAITHFULNESS AUDIT on the parent leaf, where the `ℓ = 0` and `ℓ`
+composite regimes are worked out — and `_hℓN` is invertibility of `N`, without
+which `[Γ₁(N)]` is the Drinfeld problem and the atlas is a different
 scheme. -/
-theorem nonempty_relPoint_atlas_of_relPoint (N ℓ : ℕ) (_hN : 4 ≤ N) (_hℓ : ℓ.Prime)
-    (_hℓN : ¬ ℓ ∣ N) (A : Gamma1Atlas N (SpecF ℓ))
-    (_y : RelPoint A.str (𝟙 (SpecF ℓ))) :
-    Nonempty (RelPoint A.strM (𝟙 (SpecF ℓ))) :=
+theorem exists_fineGamma1Atlas (N ℓ : ℕ) (_hN : 4 ≤ N) (_hℓ : ℓ.Prime)
+    (_hℓN : ¬ ℓ ∣ N) :
+    ∃ A : Gamma1Atlas N (SpecF ℓ),
+      ∀ y : RelPoint A.str (𝟙 (SpecF ℓ)),
+        ∃ m : RelPoint A.strM (𝟙 (SpecF ℓ)),
+          m.1 ≫ (A.classify A.strM A.dM).1 = y.1 :=
   sorry
 
 /-- **An `𝔽_ℓ`-point of `Y_1(N)_{𝔽_ℓ}` comes from a `Γ₁(N)`-datum**
-(**PROVEN 2026-07-27 by the atlas cut**, over
-`nonempty_relPoint_atlas_of_relPoint` and `nonempty_gamma1Datum_baseChange`;
-formerly a single sorry leaf).
+(**PROVEN 2026-07-27 by the atlas cut**, over `exists_fineGamma1Atlas` and
+`nonempty_gamma1Datum_baseChange`; formerly a single sorry leaf.  **Reassembled
+2026-07-28** when the first of those two was refuted and restated — see its
+FALSITY AUDIT; the statement proven here did not change).
 
 The assembly, and it is three citations and no geometry:
 
-1. `exists_gamma1AffineModel N hN (ZMod ℓ)` produces a `Gamma1AffineModel`,
-   hence a `Gamma1Atlas`, over `𝔽_ℓ` — this is where `hℓ` (making `ZMod ℓ` a
-   field) and `hℓN` (as `¬ ringChar (ZMod ℓ) ∣ N`) are consumed;
+1. `exists_fineGamma1Atlas` produces a `Gamma1Atlas` over `𝔽_ℓ` whose atlas map
+   lifts `𝔽_ℓ`-points — this is where all three of `hN`, `hℓ` and `hℓN` are
+   consumed;
 2. `hc.universal` — the initiality clause of the GIVEN coarse space, applied to
    the atlas's own classifying map — produces the comparison morphism
    `u : Y ⟶ A.Y` over the base, and carries `y` across.  (`IsCoarseModuliY1.exists_inverse`
@@ -3224,18 +3306,19 @@ The assembly, and it is three citations and no geometry:
 3. the atlas leaf lifts that point to `M`, and the base-change leaf pulls the
    universal family `A.dM` back along it.
 
-`hc` is consumed at step 2 and `y` at step 3; `hN` is consumed twice (once at
-step 1, once inside the atlas leaf). -/
+`hc` is consumed at step 2 and `y` at step 3.  Note that step 1 no longer goes
+through `exists_gamma1AffineModel`: quantifying over the atlas is exactly what
+the audit on step 1's leaf turned from false into true, so the atlas is now
+CHOSEN by that leaf rather than handed to it.  `exists_gamma1AffineModel`
+remains consumed by `exists_isCoarseModuliY1_isSmoothCurve`. -/
 theorem exists_gamma1Datum_of_relPoint (N ℓ : ℕ) (hN : 4 ≤ N) (hℓ : ℓ.Prime)
     (hℓN : ¬ ℓ ∣ N)
     {Y : Scheme.{0}} {strY : Y ⟶ SpecF ℓ} (hc : IsCoarseModuliY1 N strY)
     (y : RelPoint strY (𝟙 (SpecF ℓ))) :
     Nonempty (Gamma1Datum N (SpecF ℓ)) := by
-  haveI : Fact ℓ.Prime := ⟨hℓ⟩
-  obtain ⟨A⟩ := exists_gamma1AffineModel N hN (ZMod ℓ) (by rwa [ZMod.ringChar_zmod_n])
+  obtain ⟨A, hA⟩ := exists_fineGamma1Atlas N ℓ hN hℓ hℓN
   obtain ⟨u, ⟨hu, -⟩, -⟩ := hc.universal A.str A.classify A.classify_natural
-  obtain ⟨m⟩ := nonempty_relPoint_atlas_of_relPoint N ℓ hN hℓ hℓN A.toGamma1Atlas
-    ⟨y.1 ≫ u, by rw [Category.assoc, hu]; exact y.2⟩
+  obtain ⟨m, -⟩ := hA ⟨y.1 ≫ u, by rw [Category.assoc, hu]; exact y.2⟩
   obtain ⟨d', -⟩ := nonempty_gamma1Datum_baseChange A.dM m.1
   exact ⟨d'⟩
 
