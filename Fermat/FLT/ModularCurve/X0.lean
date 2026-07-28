@@ -30515,9 +30515,10 @@ is analysis-on-the-period any more:
 * `frickeSign_eq_neg_one_of_isNewEigenformAt` — its sign is `-1` at every
   divisor of a Kenku level (the analytic-rank-`0` statement, and the one
   that PARI's `mfatkineigenvalues` checks directly);
-* `integral_Ioi_one_axisRestrict_ne_zero` — the `L`-value numerics, now a
-  lower bound on an ABSOLUTELY convergent tail integral rather than on a
-  conditionally convergent one.
+* `frickeTailSum_ne_zero` — the `L`-value numerics, now a nonvanishing
+  statement about the COEFFICIENT SERIES `∑ (bₙ/n) e^{-2πn/√M}` rather
+  than about any integral (`integral_Ioi_one_axisRestrict_ne_zero`, which
+  used to stand here, is PROVEN over it since the third round below).
 
 The passage between the last two — from `∫₀^∞` to `(1 - ε) ∫₁^∞`, which
 is the whole reason the Fricke hypothesis is worth having — is PROVEN
@@ -30535,6 +30536,32 @@ now stated over an exponentially convergent tail integral rather than
 over `∫₀^∞`).  See `integral_Ioi_zero_eq_of_inversion` for the analysis
 and the accounting note on `cuspPeriod_ne_zero_of_isNewEigenformAt` for
 what the cut did and did not buy.
+
+**STALE-NAME CORRECTION (2026-07-28).**  A superseded version of this
+paragraph named two leaves, `exists_frickeSign_of_isNewEigenformAt` and
+`frickeTail_ne_zero_of_kenkuDivisor`, which **do not exist in this
+file**: they are the leaves of a rival cut (branch `flt-lean-353`,
+commit `6f01c88a`) whose declarations lost the merge to the finer
+three-way cut listed above, while its summary prose survived.  Their
+content is carried, respectively, by
+`isFrickeEigenform_of_isNewEigenformAt` (Atkin–Lehner multiplicity one,
+level-free) and by `frickeSign_eq_neg_one_of_isNewEigenformAt` together
+with `integral_Ioi_one_axisRestrict_ne_zero` — the rival cut bundled the
+sign and the numerics into one `(1 - ε) · ∫ ≠ 0`, and separating them is
+what the released cut buys.  The analysis is
+`integral_Ioi_zero_eq_of_fricke` (named `integral_Ioi_zero_eq_of_inversion`
+in the same stale prose).  This note is here because those two phantom
+names were dispatched at, twice.
+
+**Third round (2026-07-28): the analysis in front of the numerics is now
+PROVEN too.**  `integral_Ioi_one_axisRestrict_ne_zero` is an assembly
+over `hasSum_integral_Ioi_one_axisRestrict` (termwise integration of the
+`q`-expansion on `[1, ∞)`, dominated by `qExpansionSummable` at `y = 1` —
+no Deligne bound is used or available) and the single remaining
+arithmetic leaf `frickeTailSum_ne_zero`, whose conclusion
+`∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0` mentions no integral and no measure
+theory.  The gate is unchanged and is stated there: a certified basis of
+`S₂(Γ₀(M))^{new}`.
 
 The newform predicate is `IsNewEigenformAt`, and it is only *stated*.
 It is deliberately NOT `Modularity/Interface.lean`'s `IsWeightTwoNewform`
@@ -31386,59 +31413,238 @@ theorem frickeSign_eq_neg_one_of_isNewEigenformAt (N : ℕ) (hN : N ∈ kenkuLev
     ε = -1 :=
   sorry
 
-/-- **THE `L`-VALUE NUMERICS: the tail integral does not vanish** (sorry
-leaf) — all that is left of the arithmetic gate once the root number is
-split off, and the ONLY remaining statement in this cluster that is a
-numerical inequality.
+/-- **TERMWISE INTEGRATION OF THE `q`-EXPANSION ON `[1, ∞)`** (PROVEN
+2026-07-28) — the analytic step the tail cut was made for, and the one
+that removes `CuspForm` from the *conclusion* of the arithmetic gate:
+
+> `∫₁^∞ axisRestrict M g = ∑_{n ≥ 1} bₙ · e^{-2πn/√M} / (2πn/√M)`,
+
+as a `HasSum`, so the sum converges to the integral rather than merely
+agreeing with it.
+
+**No Deligne bound is used, and none is available here.**  The
+domination comes from `IsWeightTwoEigenform`'s own `qExpansionSummable`
+field at the single point `y = 1`: summability in `ℂ` is *absolute*
+summability (`summable_norm_iff`, finite dimension over `ℝ`), so
+`∑ ‖bₙ‖ e^{-2πn/√M} < ∞`, and the `n`-th norm integral
+`‖bₙ‖ e^{-2πn/√M} · √M/(2πn)` is dominated termwise by `√M/(2π)` times
+that.  The `1/n` is what makes the domination free — it is bounded, not
+merely summable — and it is exactly the factor the `(0, ∞)` integral
+does not produce.
+
+Mathlib's `hasSum_integral_of_summable_integral_norm` supplies the
+interchange; `integral_comp_mul_left_Ioi` + `integral_exp_neg_Ioi`
+supply `∫₁^∞ e^{-ky} dy = e^{-k}/k`.
+
+`hM : M ≠ 0` is needed for `axisRestrict` to be the cusp form at all
+(at `M = 0` it is identically `0` by `dif_neg`) and for `√M > 0`. -/
+theorem hasSum_integral_Ioi_one_axisRestrict {M : ℕ} (hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b) :
+    HasSum (fun n : ℕ => b (n + 1) *
+        ((Real.exp (-(2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1)))
+          / (2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1)) : ℝ) : ℂ))
+      (∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y) := by
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  have hc : (0 : ℝ) < 2 * Real.pi / Real.sqrt M :=
+    div_pos (by positivity) hsq
+  set c : ℝ := 2 * Real.pi / Real.sqrt M with hcdef
+  set F : ℕ → ℝ → ℂ := fun n y => b (n + 1) * ((Real.exp (-(c * ((n : ℝ) + 1)) * y) : ℝ) : ℂ)
+    with hFdef
+  have hk : ∀ n : ℕ, 0 < c * ((n : ℝ) + 1) := fun n => mul_pos hc (by positivity)
+  have hFint : ∀ n : ℕ, IntegrableOn (F n) (Set.Ioi (1 : ℝ)) := by
+    intro n
+    exact ((exp_neg_integrableOn_Ioi 1 (hk n)).ofReal).const_mul _
+  have hexp : ∀ k : ℝ, 0 < k →
+      (∫ y in Set.Ioi (1 : ℝ), Real.exp (-k * y)) = Real.exp (-k) / k := by
+    intro k hk0
+    have h := integral_comp_mul_left_Ioi (fun x : ℝ => Real.exp (-x)) 1 hk0
+    rw [mul_one, integral_exp_neg_Ioi] at h
+    rw [show (fun y : ℝ => Real.exp (-k * y)) = fun y : ℝ => (fun x : ℝ => Real.exp (-x)) (k * y)
+      from funext fun y => by rw [neg_mul]]
+    rw [h, smul_eq_mul, div_eq_inv_mul]
+  have hval : ∀ n : ℕ, (∫ y in Set.Ioi (1 : ℝ), F n y)
+      = b (n + 1) * ((Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)) : ℝ) : ℂ) := by
+    intro n
+    simp only [hFdef]
+    rw [MeasureTheory.integral_const_mul]
+    congr 1
+    rw [show (∫ y in Set.Ioi (1 : ℝ), ((Real.exp (-(c * ((n : ℝ) + 1)) * y) : ℝ) : ℂ))
+        = ((∫ y in Set.Ioi (1 : ℝ), Real.exp (-(c * ((n : ℝ) + 1)) * y) : ℝ) : ℂ) from
+      integral_ofReal, hexp _ (hk n)]
+  have habs : Summable fun n : ℕ => ‖b (n + 1)‖ * Real.exp (-(c * ((n : ℝ) + 1))) := by
+    have h := (hasSum_axisRestrict hM hb (by norm_num : (0 : ℝ) < 1)).summable
+    have h2 := summable_norm_iff.mpr h
+    refine h2.congr fun n => ?_
+    rw [norm_mul, Complex.norm_real, Real.norm_eq_abs, abs_of_pos (Real.exp_pos _), mul_one]
+  have hsum : Summable fun n : ℕ => ∫ y in Set.Ioi (1 : ℝ), ‖F n y‖ := by
+    have hnorm : ∀ n : ℕ, (∫ y in Set.Ioi (1 : ℝ), ‖F n y‖)
+        = ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1))) := by
+      intro n
+      have hpt : ∀ y : ℝ, ‖F n y‖ = ‖b (n + 1)‖ * Real.exp (-(c * ((n : ℝ) + 1)) * y) := by
+        intro y
+        simp only [hFdef, norm_mul, Complex.norm_real, Real.norm_eq_abs,
+          abs_of_pos (Real.exp_pos _)]
+      simp only [hpt]
+      rw [MeasureTheory.integral_const_mul, hexp _ (hk n)]
+    simp only [hnorm]
+    refine Summable.of_nonneg_of_le (fun n => by positivity)
+      (fun n => ?_) (habs.mul_left c⁻¹)
+    have hn0 : (0 : ℝ) ≤ (n : ℝ) := Nat.cast_nonneg n
+    have hge : c ≤ c * ((n : ℝ) + 1) := le_mul_of_one_le_right hc.le (by linarith)
+    have hdiv : Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1))
+        ≤ Real.exp (-(c * ((n : ℝ) + 1))) / c := by
+      gcongr
+    calc ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / (c * ((n : ℝ) + 1)))
+        ≤ ‖b (n + 1)‖ * (Real.exp (-(c * ((n : ℝ) + 1))) / c) := by
+          exact mul_le_mul_of_nonneg_left hdiv (norm_nonneg _)
+      _ = c⁻¹ * (‖b (n + 1)‖ * Real.exp (-(c * ((n : ℝ) + 1)))) := by ring
+  have key := hasSum_integral_of_summable_integral_norm hFint hsum
+  have htsum : (∫ y in Set.Ioi (1 : ℝ), ∑' n : ℕ, F n y)
+      = ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y := by
+    refine setIntegral_congr_fun measurableSet_Ioi fun y hy => ?_
+    exact (hasSum_axisRestrict hM hb (lt_trans one_pos (Set.mem_Ioi.mp hy))).tsum_eq
+  rw [htsum] at key
+  simpa only [hval] using key
+
+/-- **THE TAIL INTEGRAL IS THE COEFFICIENT SERIES, RESCALED** (PROVEN
+2026-07-28):
+
+> `∫₁^∞ axisRestrict M g = (√M / 2π) · ∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M}`.
+
+This is `hasSum_integral_Ioi_one_axisRestrict` with the constant
+`√M/(2π)` pulled out of the sum, and it is the identity predicted by the
+docstring of `cuspPeriod_eq_one_sub_mul_integral_Ioi_one` ("the
+right-hand side is `(2π)⁻¹ (1 - ε) ∑ (bₙ/n) e^{-2πn/√M}` — the quantity
+PARI evaluates").  Composing the two gives exactly that. -/
+theorem integral_Ioi_one_axisRestrict_eq_tsum {M : ℕ} (hM : M ≠ 0)
+    {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ} (hb : IsWeightTwoEigenform M g b) :
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y
+      = ((Real.sqrt M / (2 * Real.pi) : ℝ) : ℂ) *
+        ∑' n : ℕ, b (n + 1) / ((n : ℂ) + 1) *
+          ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) : ℝ) : ℂ) := by
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  have hpi : (0 : ℝ) < 2 * Real.pi := by positivity
+  have h := hasSum_integral_Ioi_one_axisRestrict hM hb
+  have hcongr : ∀ n : ℕ, b (n + 1) *
+      ((Real.exp (-(2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1)))
+        / (2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1)) : ℝ) : ℂ)
+      = ((Real.sqrt M / (2 * Real.pi) : ℝ) : ℂ) *
+        (b (n + 1) / ((n : ℂ) + 1) *
+          ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) : ℝ) : ℂ)) := by
+    intro n
+    have hn1 : ((n : ℝ) + 1) ≠ 0 := by positivity
+    have hn1C : ((n : ℂ) + 1) ≠ 0 := by
+      have h0 : ((((n : ℝ) + 1 : ℝ)) : ℂ) ≠ 0 := Complex.ofReal_ne_zero.mpr hn1
+      push_cast at h0
+      exact h0
+    have hexpeq : -(2 * Real.pi / Real.sqrt M * ((n : ℝ) + 1))
+        = -(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M) := by
+      field_simp
+    rw [hexpeq]
+    push_cast
+    field_simp
+  have h' : HasSum (fun n : ℕ => ((Real.sqrt M / (2 * Real.pi) : ℝ) : ℂ) *
+      (b (n + 1) / ((n : ℂ) + 1) *
+        ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) : ℝ) : ℂ)))
+      (∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y) := by
+    simpa only [hcongr] using h
+  rw [← h'.tsum_eq, tsum_mul_left]
+
+/-- **THE `L`-VALUE NUMERICS: the coefficient series does not vanish**
+(sorry leaf) — all that is left of the arithmetic gate once the root
+number is split off and the analysis is discharged.  It is the ONLY
+remaining statement in this cluster that is a numerical inequality, and
+its conclusion mentions no integral, no `CuspForm` and no measure theory:
+
+> `∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0`.
 
 TRUE, by the PARI/GP reconnaissance recorded on
-`cuspPeriod_ne_zero_of_kenkuLevel` below: for each of the fourteen levels,
-EVERY newform of EVERY divisor `M ∣ N` was enumerated (`mfinit([M,2],0)`,
-newspace) and `|L(f, 1)|` computed at every complex embedding —
-`vanishing = 0` in all fourteen cases, smallest `0.3302`.  Given the sign
-leaf above, `L(f, 1) ≠ 0` and this integral being nonzero are the same
-statement, by `cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and
-`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.
+`cuspPeriod_ne_zero_of_kenkuLevel` below, re-run at rational-arithmetic
+grade on 2026-07-28: for each of the **fourteen** `kenkuLevels`, EVERY
+newform of EVERY divisor `M ∣ N` was enumerated (`mfinit([M,2],0)`,
+newspace) and `|L(f, 1)|` computed at EVERY complex embedding — **28
+forms/embeddings over the 17 divisor levels `14, 15, 20, 21, 24, 26, 27,
+30, 35, 36, 39, 42, 45, 50, 54, 63, 75`, all nonzero, smallest
+`0.33022…` at `M = 14`**; in particular every one has `ε = -1`.  The
+controls `37`, `65`, `91` vanish as they must, which is exactly why they
+are not in `kenkuLevels`.  Given the sign leaf above, `L(f, 1) ≠ 0` and
+this sum being nonzero are the same statement, by
+`integral_Ioi_one_axisRestrict_eq_tsum`,
+`cuspPeriod_eq_one_sub_mul_integral_Ioi_one` and
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`.  PARI/GP is an untrusted
+searcher: this establishes that the statement is not false, and is not a
+proof.
 
-**What the cut BOUGHT, and it is why this leaf is strictly better off
-than the node it replaced.**  The integral runs over `[1, ∞)`, not
-`(0, ∞)`.  There `hasSum_axisRestrict` gives
-`axisRestrict M g y = ∑_{n ≥ 1} bₙ e^{-2πny/√M}` with terms decaying
-geometrically, so termwise integration (not performed here — it is a
-free-standing analytic step, and stating the leaf on the integral avoids
-carrying its summability side conditions) turns the goal into
+**DELIGNE ALONE IS NOT ENOUGH, and this is measured.**  `|bₙ| ≤ d(n)√n`
+does not close the gap: at `M = 75` the crude Deligne tail already
+exceeds the `n = 1` term by `n = 4` (`n = 1` term `0.0771`;
+`∑_{n=2}^{4} d(n) √n e^{-2πn/√75}/(2πn) = 0.0867`).  So genuine
+coefficients are needed, not merely bounds — which is why the gate below
+is a certified BASIS and not a certified inequality.
 
-> `∑_{n ≥ 1} (bₙ/n) e^{-2πn/√M} ≠ 0`,
-
-an ABSOLUTELY convergent explicit sum whose tail is effectively bounded by
-`|bₙ| ≤ d(n)√n` (Deligne) — i.e. a finite numerical check with an explicit
-truncation error.  The defining integral of `cuspPeriod` admits no such
-truncation, because it is only conditionally convergent at `0`.
-
-**What this leaf still needs**: an explicit certified basis of
-`S₂(Γ₀(M))^{new}` — dimension formulas plus certified `q`-expansions —
-which is what would make the PARI computation replayable inside Lean.
-That is a large missing theory: refute with
+**What this leaf still needs, and the check that would refute it**: an
+explicit certified basis of `S₂(Γ₀(M))^{new}` — dimension formulas plus
+certified `q`-expansions — which is what would make the PARI computation
+replayable inside Lean.  Refute with
 `grep -rn "newform\|Newform\|dimension.*cusp\|CuspFormBasis" Fermat/
 .lake/packages/mathlib/ ~/cs/FLT/`.  It is the real gate on the whole
-cluster.
+cluster, and **the cut on 2026-07-28 did not remove it** — what the cut
+removed is everything AROUND it.
+
+**NON-VACUITY.**  `bₙ` is pinned: `IsWeightTwoEigenform` carries
+`one : b 1 = 1`, so the `n = 1` term is `e^{-2π/√M} > 0` and the sum is
+not junk-satisfiable by `b = 0`; and `qExpansionSummable` makes the
+series absolutely convergent (`hasSum_integral_Ioi_one_axisRestrict`),
+so the `tsum` is a genuine limit rather than mathlib's junk `0`.
+
+`hFE` is stated with the sign already resolved to `-1`
+(`F(1/y) = y² F(y)`) because that is what the consumer has after the sign
+leaf; carrying `ε` would only mean re-deriving it.  It is retained rather
+than dropped because without it the leaf would assert nonvanishing for a
+`W_M`-eigenvalue `+1` newform too, where the argument is a different one
+(there `∫₀^∞ = 0`, so the tail equals `-∫₀¹` and the reconnaissance above
+says nothing).
 
 The *axis not searched*: `fin_cases hN`, mechanically available and not a
 decomposition (it multiplies the frontier by fourteen and moves no
-theory); and the termwise integration above, which IS a decomposition and
-is the natural next cut — it would remove `CuspForm` from the statement
-entirely, leaving a leaf about the coefficient sequence alone.
+theory). -/
+theorem frickeTailSum_ne_zero (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
+    (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
+    (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
+    (hFE : ∀ y : ℝ, 0 < y →
+      axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
+    ∑' n : ℕ, b (n + 1) / ((n : ℂ) + 1) *
+        ((Real.exp (-(2 * Real.pi * ((n : ℝ) + 1) / Real.sqrt M)) : ℝ) : ℂ) ≠ 0 :=
+  sorry
 
-`hFE` is stated with the sign already resolved to `-1` (`F(1/y) = y² F(y)`)
-because that is what the consumer has after the sign leaf; carrying `ε`
-would only mean re-deriving it. -/
+/-- **THE `L`-VALUE NUMERICS, ON THE INTEGRAL** (PROVEN 2026-07-28, from
+`frickeTailSum_ne_zero` over `integral_Ioi_one_axisRestrict_eq_tsum`) —
+the shape `cuspPeriod_ne_zero_of_isFrickeEigenform` consumes.
+
+**DECOMPOSED 2026-07-28 along the termwise integration**, which the
+previous docstring here named as "the natural next cut ... it would
+remove `CuspForm` from the statement entirely, leaving a leaf about the
+coefficient sequence alone".  That is now done: the interchange of sum
+and integral is PROVEN (`hasSum_integral_Ioi_one_axisRestrict`, with no
+Deligne input — the domination is `qExpansionSummable` at `y = 1` plus
+the bounded factor `1/n`), and the arithmetic sits on
+`frickeTailSum_ne_zero`, whose conclusion is an inequality about `b`
+alone.  The frontier count is unchanged by the cut; what changed is that
+no analysis is left in front of the arithmetic. -/
 theorem integral_Ioi_one_axisRestrict_ne_zero (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
     (hMN : M ∣ N) (hM : M ≠ 0) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
     (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b)
     (hFE : ∀ y : ℝ, 0 < y →
       axisRestrict M g (1 / y) = ((y ^ (2 : ℝ) : ℝ) : ℂ) * axisRestrict M g y) :
-    ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y ≠ 0 :=
-  sorry
+    ∫ y in Set.Ioi (1 : ℝ), axisRestrict M g y ≠ 0 := by
+  have hsq : (0 : ℝ) < Real.sqrt M :=
+    Real.sqrt_pos.mpr (by exact_mod_cast Nat.pos_of_ne_zero hM)
+  rw [integral_Ioi_one_axisRestrict_eq_tsum hM hb]
+  exact mul_ne_zero
+    (Complex.ofReal_ne_zero.mpr (ne_of_gt (div_pos hsq (by positivity))))
+    (frickeTailSum_ne_zero N hN M hMN hM g b hb hnew hFE)
 
 /-- **The period of a FRICKE eigenform is nonzero at every divisor of a
 Kenku level** (PROVEN 2026-07-28, from the two leaves above).
@@ -36357,7 +36563,9 @@ and they are three different theories: `isFrickeEigenform_of_isNewEigenformAt`
 (a newform is a `W_M`-eigenvector), `frickeSign_eq_neg_one_of_isNewEigenformAt`
 (its sign is `-1`, which the identity shows IS the analytic-rank-`0`
 statement — at `ε = 1` the period is literally `0`, which is why `37` is not a
-Kenku level), and `integral_Ioi_one_axisRestrict_ne_zero` (the numerics).
+Kenku level), and `frickeTailSum_ne_zero` (the numerics — reached through the
+PROVEN `integral_Ioi_one_axisRestrict_ne_zero`, whose termwise integration
+turns the tail integral into `∑ (bₙ/n) e^{-2πn/√M}`).
 The sign leaf was verified independently and DIRECTLY with PARI/GP's
 `mfatkineigenvalues` — `-1` at all `21` (level, divisor) pairs over the
 fourteen Kenku levels, with the controls `37`, `65`, `91` exhibiting the
@@ -36409,7 +36617,7 @@ line `⟨(P.isAlbaneseOf ⟨…⟩).isJacobianOf⟩`.  Do not dispatch anyone at
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `isFrickeEigenform_of_isNewEigenformAt` | old/new theory + multiplicity one | no |
 | `frickeSign_eq_neg_one_of_isNewEigenformAt` | the root number (analytic rank `0`) | **yes** |
-| `integral_Ioi_one_axisRestrict_ne_zero` | `L`-value numerics | **yes** |
+| `frickeTailSum_ne_zero` | `L`-value numerics (`integral_Ioi_one_axisRestrict_ne_zero` is PROVEN over it) | **yes** |
 | `injective_ratToGeom` | Galois descent (`Spec ℚ̄ ⟶ Spec ℚ` is epi) | no |
 | `exists_ratPoint_of_galoisInvariant` | Galois descent (invariants) | no |
 | `finite_torsion_geomPt_of_abelianScheme` | `A[n] ≅ (ℤ/n)^{2g}` | no |
