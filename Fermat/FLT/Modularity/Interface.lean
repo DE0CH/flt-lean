@@ -4507,6 +4507,118 @@ theorem exists_span_int_bound_of_stable_lattice {K V : Type*} [Field K] [AddComm
     exact le_trans (Submodule.span_le.mpr fun x hx => huF x (by exact_mod_cast hx)) hFle
   exact hQle (Submodule.subset_span ⟨m, rfl⟩)
 
+/-- **A FINITE FAMILY OF RATIONALS HAS ONE COMMON DENOMINATOR** (PROVEN,
+2026-07-28): the product of the `Rat.den`s works. Elementary; stated
+abstractly (over an arbitrary index type) so that the elaborator never
+sees the cusp-space instance while checking it — the same measured rule
+that `exists_span_int_bound_of_stable_lattice` above records. -/
+theorem exists_nat_mul_int_of_finset_rat {α : Type*} (t : Finset α) (a : α → ℚ) :
+    ∃ d : ℕ, 0 < d ∧ ∀ x ∈ t, ∃ n : ℤ, (d : ℚ) * a x = (n : ℚ) := by
+  classical
+  refine ⟨∏ x ∈ t, (a x).den, Finset.prod_pos fun x _ => (a x).pos, fun x hx => ?_⟩
+  obtain ⟨k, hk⟩ := Finset.dvd_prod_of_mem (fun y => (a y).den) hx
+  refine ⟨k * (a x).num, ?_⟩
+  have hden : ((a x).den : ℚ) * a x = ((a x).num : ℚ) := Rat.den_mul_eq_num (a x)
+  rw [hk]
+  push_cast
+  rw [mul_comm ((a x).den : ℚ) (k : ℚ), mul_assoc, hden]
+
+/-- **THE ELEMENTARY BRIDGE: A FULL INTEGRAL LATTICE GIVES BOUNDED
+DENOMINATORS** (PROVEN, 2026-07-28). If `S₂(Γ₀(N); ℤ)` already `ℂ`-spans
+`S₂(Γ₀(N))`, then every form with RATIONAL `q`-expansion has a single
+positive integer clearing every one of its coefficients at once.
+
+NO ARITHMETIC INPUT — no Sturm bound, no Hecke theory, no finite
+generation. The whole proof is one descent trick:
+
+1. `f` lies in the `ℂ`-span of a FINITE subset `t ⊆ S₂(Γ₀(N); ℤ)`
+   (`Submodule.mem_span_finite_of_mem_span`), say `f = ∑_{x ∈ t} c_x · x`
+   with `c_x ∈ ℂ` and every `a_m(x) = z_{x,m} ∈ ℤ`.
+2. `ℚ ↪ ℂ` is an injection of `ℚ`-vector spaces, so it has a `ℚ`-LINEAR
+   RETRACTION `ρ : ℂ →ₗ[ℚ] ℚ` (`LinearMap.exists_leftInverse_of_injective`).
+   Applying `ρ` to `a_m(f) = ∑_x c_x·z_{x,m}` and using that `ρ` is
+   `ℤ`-linear (`map_zsmul`) with `z_{x,m} ∈ ℤ` gives, for EVERY `m`,
+
+       a_m(f)  =  ∑_{x ∈ t} ρ(c_x) · z_{x,m},        ρ(c_x) ∈ ℚ.
+
+   That is the whole content: the coordinates of a rational form against
+   an integral spanning set are themselves RATIONAL, and they are the
+   SAME finitely many rationals for every `m`.
+3. `d = ∏_{x ∈ t} den(ρ(c_x))` clears all of them simultaneously
+   (`exists_nat_mul_int_of_finset_rat` above), and `d·a_m(f)` is then an
+   integer combination of integers.
+
+WHY A RETRACTION AND NOT A DETERMINANT. The classical argument picks a
+`D × D` integral minor of the coefficient matrix with nonzero
+determinant and inverts it by Cramer, which needs a rank computation and
+a `Matrix.inv`. The retraction replaces all of that by one application
+of "`ℂ` is a `ℚ`-vector space", and — unlike Cramer — it needs neither
+linear independence of `t` nor the Sturm bound, so it works verbatim for
+a spanning family that is not a basis.
+
+This is the "BACKWARDS/forwards equivalence" that
+`exists_smul_mem_integralCuspForms` below records in prose; it is now
+MACHINE-CHECKED in the direction that leaf consumes. -/
+theorem exists_smul_mem_integralCuspForms_of_span_eq_top {N : ℕ}
+    (hspan : Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ rationalCuspForms N) :
+    ∃ d : ℕ, 0 < d ∧ (d : ℤ) • f ∈ integralCuspForms N := by
+  classical
+  -- a `ℚ`-linear retraction `ρ : ℂ → ℚ` of the inclusion `ℚ ↪ ℂ`
+  obtain ⟨ρ, hρ⟩ := (Algebra.linearMap ℚ ℂ).exists_leftInverse_of_injective
+    (LinearMap.ker_eq_bot.mpr (algebraMap ℚ ℂ).injective)
+  have hρ1 : ∀ r : ℚ, ρ ((r : ℚ) : ℂ) = r := fun r =>
+    congrArg (fun g : ℚ →ₗ[ℚ] ℚ => g r) hρ
+  have hρz : ∀ (w : ℂ) (k : ℤ), ρ (w * (k : ℂ)) = (k : ℚ) * ρ w := by
+    intro w k
+    rw [mul_comm, ← zsmul_eq_mul, map_zsmul, zsmul_eq_mul]
+  -- `f` lies in the `ℂ`-span of a FINITE set of integral forms
+  have hfmem : f ∈ Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) := by
+    rw [hspan]; trivial
+  obtain ⟨t, htsub, hft⟩ := Submodule.mem_span_finite_of_mem_span hfmem
+  obtain ⟨c, hc⟩ := Submodule.mem_span_finset.mp hft
+  -- integer coefficients of the members of `t`
+  have hzex : ∀ x : CuspForm (Gamma0GL N) 2, ∀ m : ℕ,
+      ∃ z : ℤ, x ∈ t → qCoeff N x m = (z : ℂ) := by
+    intro x m
+    by_cases hx : x ∈ t
+    · obtain ⟨z, hz⟩ := htsub hx m
+      exact ⟨z, fun _ => hz⟩
+    · exact ⟨0, fun h => absurd h hx⟩
+  choose z hz using hzex
+  -- rational coefficients of `f`
+  choose r hr using hf
+  -- the coefficient identity, pushed through `ρ`: the coordinates are RATIONAL
+  have hcoeff : ∀ m : ℕ, r m = ∑ x ∈ t, ρ (c x) * ((z x m : ℤ) : ℚ) := by
+    intro m
+    have hfm : qCoeff N f m = ∑ x ∈ t, c x * ((z x m : ℤ) : ℂ) := by
+      rw [← qCoeffL_apply, ← hc.2, map_sum]
+      refine Finset.sum_congr rfl fun x hx => ?_
+      rw [map_smul, qCoeffL_apply, hz x m hx, smul_eq_mul]
+    have hρf := congrArg ρ hfm
+    rw [hr m, hρ1, map_sum] at hρf
+    rw [hρf]
+    refine Finset.sum_congr rfl fun x _ => ?_
+    rw [hρz (c x) (z x m), mul_comm]
+  -- clear the finitely many denominators
+  obtain ⟨d, hdpos, hd⟩ := exists_nat_mul_int_of_finset_rat t (fun x => ρ (c x))
+  refine ⟨d, hdpos, fun m => ?_⟩
+  choose n hn using fun x (hx : x ∈ t) => hd x hx
+  refine ⟨∑ x ∈ t.attach, n x.1 x.2 * z x.1 m, ?_⟩
+  have hsm : qCoeff N ((d : ℤ) • f) m = ((d : ℤ) : ℂ) * qCoeff N f m := by
+    rw [← qCoeffL_apply, map_zsmul, qCoeffL_apply, zsmul_eq_mul]
+  have hQ : (d : ℚ) * r m = ((∑ x ∈ t.attach, n x.1 x.2 * z x.1 m : ℤ) : ℚ) := by
+    have h1 : ((∑ x ∈ t.attach, n x.1 x.2 * z x.1 m : ℤ) : ℚ)
+        = ∑ x ∈ t.attach, ((n x.1 x.2 : ℚ) * ((z x.1 m : ℤ) : ℚ)) := by
+      rw [Int.cast_sum]
+      exact Finset.sum_congr rfl fun x _ => by push_cast; ring
+    rw [hcoeff m, Finset.mul_sum, h1,
+      ← Finset.sum_attach t (fun x => (d : ℚ) * (ρ (c x) * ((z x m : ℤ) : ℚ)))]
+    refine Finset.sum_congr rfl fun x _ => ?_
+    rw [← mul_assoc, hn x.1 x.2]
+  rw [hsm, hr m]
+  exact_mod_cast hQ
+
 /-- **BOUNDED DENOMINATORS: a RATIONAL cusp form has an INTEGRAL
 multiple** (sorry leaf, cut 2026-07-27 out of
 `exists_heckeOpN_sturm_span` below as its entire arithmetic residue).
@@ -4634,11 +4746,87 @@ for a subgroup of `ℂ` satisfying every rationality hypothesis.
 SOUNDNESS: `0 < N` is inherited from the consumer; nothing in the
 classical argument needs more than that the level be a genuine
 congruence level, and the hypothesis is carried so the citation matches
-the consumer's shape. -/
+the consumer's shape.
+
+## DECOMPOSED 2026-07-28 — the elementary half is now MACHINE-CHECKED
+
+The body below is no longer a bare `sorry`. Everything except ONE
+statement is discharged by the PROVEN
+`exists_smul_mem_integralCuspForms_of_span_eq_top` above, so the entire
+residue of this leaf is now, verbatim,
+
+    Submodule.span ℂ ↑(integralCuspForms N) = ⊤,
+
+i.e. **`S₂(Γ₀(N); ℤ)` is a FULL lattice** — the `q`-expansion principle
+on `X₀(N)/ℤ` in its lattice form, and nothing else. In particular the
+"BACKWARDS" direction sketched above (rational coordinates against an
+integral spanning set) is no longer a prose claim: it is a checked
+theorem, and it needs neither Sturm nor Cramer, only a `ℚ`-linear
+retraction `ℂ →ₗ[ℚ] ℚ`.
+
+## ROUTE AUDIT (2026-07-28) — state which axis was searched
+
+Searched: every cut expressible in the machinery ABOVE this declaration
+(`rationalCuspForms_span_eq_top`, `integralCuspForms_fg`,
+`heckeEndo_mem_{integral,rational}CuspForms`, `exists_cuspForm_sturm_bound`,
+`exists_span_int_bound_of_stable_lattice`). Findings:
+
+* **The three statements** *bounded denominators*, *`S₂(Γ₀(N); ℤ)` is a
+  full lattice*, and *`Module.Finite ℤ 𝕋`* are pairwise equivalent over
+  that machinery alone, with all six derivations elementary. Forwards
+  and backwards for the first two are the bridge above and the leaf's
+  own consumer; `𝕋`-finiteness implies bounded denominators along the
+  chain already written below, and bounded denominators implies
+  `𝕋`-finiteness because `heckeSubring_zRank_le`'s pairing embeds `𝕋` in
+  `ℚ^D` by `U ↦ (a₁(U e_j))_j` and `a₁(T_m e_j) = a_m(e_j)`. So this
+  cluster really is ONE knot, and no cut inside it can reduce the sorry
+  count: an "equivalent but differently worded" leaf is the only thing
+  available there. THIS IS WHY THE RESIDUE WAS NOT PROMOTED TO A NEW
+  TOP-LEVEL DECLARATION — the file already carries two such duplicates
+  and warns about both.
+* **Trace-form route (`𝕋` integral + `Tr(UU') ∈ ℤ` ⟹ dual lattice)**:
+  the radical of the trace form of a commutative finite-dimensional
+  `ℚ`-algebra is its NILRADICAL, so this route needs `𝕋 ⊗ ℚ` REDUCED.
+  That is not free: `ℤ + ℚε ⊆ ℚ[ε]` is commutative, integral over `ℤ`
+  and NOT finitely generated, which refutes the route as stated. For
+  `S₂(Γ₀(N))` reducedness is the semisimplicity of `U_q` on the
+  `q`-old subspace, i.e. `a_q² ≠ 4q` — Coleman–Edixhoven, not cheaper
+  than the lattice.
+* **Newform route** (span by degeneracy translates of newforms +
+  algebraic integrality of their coefficients + Galois trace) is the one
+  classical route that does NOT re-enter the knot, and its integrality
+  half is available here: see the next paragraph. Its missing half is
+  Atkin–Lehner (a newform basis), which this file does not have.
+
+**A VERIFIED CORRECTION to the retirement note below.** The usage graph
+of this file (computed 2026-07-28) is
+
+    exists_smul_mem_integralCuspForms → exists_heckeOpN_sturm_span
+      → exists_heckeSubring_algebraGenerators → heckeSubring_moduleFinite_int
+
+and NOTHING else consumes this leaf. In particular
+`isIntegral_heckeEndo` does **not** depend on it: it reaches
+`heckeSubring_moduleFinite_int` on the OTHER of that node's two inputs,
+via `exists_trace_heckeSubring_int` and the open leaf
+`isIntegral_trace_heckeOpN` (Eichler–Selberg). So the retirement claim
+below is real but CONDITIONAL — closing this leaf makes
+`isIntegral_heckeEndo` redundant only if `heckeSubring_moduleFinite_int`
+is also rewired to stop citing it, which is a recut belonging to that
+node's owner. Symmetrically, the dependence is one-way, so
+`isIntegral_heckeEndo` is legitimately usable in any future attack on
+this leaf (that is exactly what the newform route would need). -/
 theorem exists_smul_mem_integralCuspForms {N : ℕ} (hN : 0 < N)
     {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ rationalCuspForms N) :
-    ∃ d : ℕ, 0 < d ∧ (d : ℤ) • f ∈ integralCuspForms N :=
-  sorry
+    ∃ d : ℕ, 0 < d ∧ (d : ℤ) • f ∈ integralCuspForms N := by
+  -- THE ENTIRE ARITHMETIC RESIDUE OF THIS LEAF, and the only `sorry` left in it:
+  -- `S₂(Γ₀(N); ℤ)` is a FULL lattice in `S₂(Γ₀(N))`. This is the `q`-expansion
+  -- principle on the integral model `X₀(N)/ℤ` (Deligne–Rapoport), equivalently
+  -- that `H⁰(X₀(N)_ℤ, Ω)` base-changes to `H⁰(X₀(N)_ℚ, Ω)`; see the ROUTE AUDIT
+  -- in the docstring for the axes already searched and refuted.
+  have hspan : 0 < N →
+      Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
+    sorry
+  exact exists_smul_mem_integralCuspForms_of_span_eq_top (hspan hN) hf
 
 /-- **STURM'S BOUND OVER `ℤ`: the `T_n` with `n ≤ B` `ℤ`-SPAN `𝕋`**
 (PROVEN 2026-07-27 over the single citation
