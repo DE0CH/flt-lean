@@ -2669,33 +2669,466 @@ theorem exists_projCoordsCoverLaw (E : WeierstrassCurve ℚ) [E.IsElliptic]
     rw [ProjCoords.comap_toHom, hd, ← Category.assoc]
     rfl
 
-/-- **The projective model has coordinate data locally** (sorry node — the
-GEOMETRIC input of the whole cluster, and the thing `exists_projCoordsCover`
-below is now a formal consequence of).
+/-! ### The standard charts of `Proj`, and coordinate data on them (**PROVEN 2026-07-28**)
+
+This section is the ONE general lemma that the docstrings of
+`exists_projCoordsOpenCover` and `ProjCoords.exists_of_specField` both asked for.
+It is `fromOfGlobalSections_eq_toSpecΓ_comp_awayι`:
+
+> if the trivialising section `t` becomes a UNIT along `f : A →+* Γ(Y, ⊤)` — which is
+> exactly "`a ⁻¹ᵁ D₊(t) = Y`, i.e. `a^*𝒪(1)` is trivialised by `t`" — and `ν` is a
+> chart ring map compatible with `f`, then
+> `Proj.fromOfGlobalSections 𝒜 f hf = Y.toSpecΓ ≫ Spec.map ν ≫ Proj.awayι 𝒜 t`.
+
+Mathlib has no such statement: `Mathlib/AlgebraicGeometry/ProjectiveSpectrum/Basic.lean`
+carries `fromOfGlobalSections_{preimage_basicOpen, morphismRestrict, resLE, toSpecZero}`
+and nothing that computes the chart ring map.  The proof is the `hret`/`hsplit`
+factorisation — the retraction identity
+`θ ≫ Spec.map (algebraMap Γ(Y,⊤) _) = Y.toSpecΓ` and the splitting
+`γ ≫ (basicOpenIsoSpec).hom = θ ≫ Spec.map (awayLoc)` — read in the direction
+"morphism ⟹ ring map", together with the observation that `algebraMap` is invertible
+precisely because `f t` is a unit.
+
+**It closes BOTH leaves**, through its specialisation `fromOfGlobalSections_eq_awayι`
+(the case `Y = Spec (A_t)₀`, `ν = ΓSpecIso.inv`, giving `toHom = Proj.awayι` on the nose):
+
+* `exists_projCoordsOpenCover` — directly, via `projChartCoords_toHom` and
+  `projChartCover` below;
+* `ProjCoords.exists_of_specField` — via `exists_projCoords_of_range_le` below.  A
+  `Spec K`-point has a single point in its image, which lies in some `D₊(xᵢ)` because
+  the `xᵢ` generate the irrelevant ideal (`exists_mem_projChart`); then
+  `IsOpenImmersion.lift` factors `a` through the chart and `ProjCoords.comap` pulls
+  the chart datum back.  That is a four-line proof, and it is deliberately NOT written
+  here because `exists_of_specField` has another owner. -/
+
+/-- The image of the `i`-th homogeneous coordinate in the homogeneous coordinate ring.
+
+(Hoisted above `exists_projCoordsOpenCover` on 2026-07-28: the chart development below
+needs it, and it used to sit in the "Dehomogenisation" section some 2000 lines later.) -/
+noncomputable abbrev projCoord {R : Type} [CommRing R] (E : WeierstrassCurve R) (i : Fin 3) :
+    MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal E).toIdeal :=
+  Ideal.Quotient.mk _ (MvPolynomial.X i)
+
+/-- **Scaling every variable by `u` multiplies the value of a degree-`d` homogeneous
+polynomial by `u ^ d`** (PROVEN) — the one arithmetic input of the chart computation,
+and the reason `F(x)/xᵢ³ = 0` on the chart. -/
+theorem isHomogeneous_eval₂_mul_left {σ' R S : Type*} [CommSemiring R]
+    [CommSemiring S] (φ : R →+* S) (u : S) (v : σ' → S) {p : MvPolynomial σ' R} {d : ℕ}
+    (hp : p.IsHomogeneous d) :
+    MvPolynomial.eval₂ φ (fun i => u * v i) p = u ^ d * MvPolynomial.eval₂ φ v p := by
+  rw [MvPolynomial.eval₂_eq, MvPolynomial.eval₂_eq, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun x hx => ?_
+  have hxd : ∑ i ∈ x.support, x i = d := by
+    have := hp (MvPolynomial.mem_support_iff.mp hx)
+    simpa [Finsupp.weight_apply, Finsupp.sum] using this
+  simp only [mul_pow]
+  rw [Finset.prod_mul_distrib, Finset.prod_pow_eq_pow_sum, hxd]
+  ring
+
+/-- **THE general lemma (PROVEN 2026-07-28): a morphism to `Proj 𝒜` along which the
+trivialising section `t` becomes invertible factors through the chart `D₊(t)`, by its
+chart ring map.**
+
+`hu : IsUnit (f t)` is the trivialisation hypothesis: it says exactly that the preimage
+of `D₊(t)` is all of `Y` (`Proj.fromOfGlobalSections_preimage_basicOpen` turns it into
+`Y.basicOpen (f t) = ⊤`), which is the "the `a ⁻¹ᵁ D₊(X̄ᵢ)` cover `T` and `a^*𝒪(1)` is
+trivial" hypothesis of the two leaf docstrings, in the form in which it is usable.
+`hν` says `ν` sends `a / tᵏ` to the section it must. -/
+theorem fromOfGlobalSections_eq_toSpecΓ_comp_awayι
+    {σ : Type*} {A : Type} [CommRing A] [SetLike σ A] [AddSubgroupClass σ A]
+    (𝒜 : ℕ → σ) [GradedRing 𝒜] {Y : Scheme.{0}}
+    (f : A →+* Γ(Y, ⊤)) (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤)
+    {n : ℕ} (hn : 0 < n) {t : A} (ht : t ∈ 𝒜 n) (hu : IsUnit (f t))
+    (ν : HomogeneousLocalization.Away 𝒜 t →+* Γ(Y, ⊤))
+    (hν : ∀ (k : ℕ) (a : A) (ha : a ∈ 𝒜 (k • n)),
+      f a = ν (HomogeneousLocalization.Away.mk 𝒜 ht k a ha) * (f t) ^ k) :
+    Proj.fromOfGlobalSections 𝒜 f hf =
+      Y.toSpecΓ ≫ Spec.map (CommRingCat.ofHom ν) ≫ Proj.awayι 𝒜 t ht hn := by
+  classical
+  have htopf : Y.basicOpen (f t) = ⊤ := Y.basicOpen_of_isUnit hu
+  have hpre : Proj.fromOfGlobalSections 𝒜 f hf ⁻¹ᵁ Proj.basicOpen 𝒜 t = Y.basicOpen (f t) :=
+    Proj.fromOfGlobalSections_preimage_basicOpen 𝒜 f hf hn ht
+  have hFV : Proj.fromOfGlobalSections 𝒜 f hf ⁻¹ᵁ Proj.basicOpen 𝒜 t = ⊤ := hpre.trans htopf
+  set γ : Y ⟶ (Proj.basicOpen 𝒜 t).toScheme :=
+    Y.topIso.inv ≫ (Y.isoOfEq hFV).inv ≫
+      (Proj.fromOfGlobalSections 𝒜 f hf ∣_ Proj.basicOpen 𝒜 t) with hγdef
+  have hγι : γ ≫ (Proj.basicOpen 𝒜 t).ι = Proj.fromOfGlobalSections 𝒜 f hf := by
+    simp only [hγdef, Category.assoc, morphismRestrict_ι, Scheme.isoOfEq_inv_ι_assoc]
+    rw [← Category.assoc, Scheme.toIso_inv_ι, Category.id_comp]
+  have hle : Submonoid.powers t ≤ Submonoid.comap f (Submonoid.powers (f t)) := by
+    rw [← Submonoid.map_le_iff_le_comap, Submonoid.map_powers]
+  set θ : Y ⟶ Spec (CommRingCat.of (Localization.Away (f t))) :=
+    Y.topIso.inv ≫ (Y.isoOfEq hFV).inv ≫ (Y.isoOfEq hpre).hom ≫
+      (Y.isoOfEq (Y.toSpecΓ_preimage_basicOpen (f t))).inv ≫
+      (Y.toSpecΓ ∣_ PrimeSpectrum.basicOpen (f t)) ≫
+      (basicOpenIsoSpecAway (f t)).hom with hθdef
+  have hret : θ ≫ Spec.map (CommRingCat.ofHom
+      (algebraMap Γ(Y, ⊤) (Localization.Away (f t)))) = Y.toSpecΓ := by
+    simp only [hθdef, Category.assoc, basicOpenIsoSpecAway_hom_SpecMap, morphismRestrict_ι,
+      Scheme.isoOfEq_inv_ι_assoc, Scheme.isoOfEq_hom_ι_assoc, Scheme.toIso_inv_ι_assoc]
+  have hsplit : γ ≫ (Proj.basicOpenIsoSpec 𝒜 t ht hn).hom =
+      θ ≫ Spec.map (CommRingCat.ofHom
+        ((IsLocalization.map (Localization.Away (f t)) f hle).comp
+          (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t)))) := by
+    simp only [hγdef, hθdef]
+    rw [Proj.fromOfGlobalSections_morphismRestrict 𝒜 f hf hn ht]
+    simp only [Proj.toBasicOpenOfGlobalSections, Category.assoc, Iso.inv_hom_id, Category.comp_id]
+  have hunits : ∀ y : Submonoid.powers (f t), IsUnit ((RingHom.id Γ(Y, ⊤)) y) := by
+    rintro ⟨_, k, rfl⟩
+    exact hu.pow k
+  set lam : Localization.Away (f t) →+* Γ(Y, ⊤) := IsLocalization.lift hunits with hlamdef
+  have hlamalg : lam.comp (algebraMap Γ(Y, ⊤) (Localization.Away (f t))) = RingHom.id _ :=
+    RingHom.ext fun x => IsLocalization.lift_eq hunits x
+  have halglam : (algebraMap Γ(Y, ⊤) (Localization.Away (f t))).comp lam = RingHom.id _ := by
+    refine IsLocalization.ringHom_ext (Submonoid.powers (f t)) ?_
+    rw [RingHom.comp_assoc, hlamalg, RingHom.comp_id, RingHom.id_comp]
+  have hθ' : θ = Y.toSpecΓ ≫ Spec.map (CommRingCat.ofHom lam) := by
+    rw [← hret, Category.assoc, ← Spec.map_comp, ← CommRingCat.ofHom_comp, halglam]
+    simp
+  have hcomp : lam.comp ((IsLocalization.map (Localization.Away (f t)) f hle).comp
+      (algebraMap (HomogeneousLocalization.Away 𝒜 t) (Localization.Away t))) = ν := by
+    refine RingHom.ext fun x => ?_
+    obtain ⟨k, a, ha, rfl⟩ := HomogeneousLocalization.Away.mk_surjective 𝒜 ht x
+    have hval : (HomogeneousLocalization.Away.mk 𝒜 ht k a ha).val =
+        IsLocalization.mk' (Localization.Away t) a
+          (⟨t ^ k, ⟨k, rfl⟩⟩ : Submonoid.powers t) := by
+      rw [HomogeneousLocalization.Away.val_mk, Localization.mk_eq_mk']
+    simp only [RingHom.coe_comp, Function.comp_apply, HomogeneousLocalization.algebraMap_apply,
+      hval, IsLocalization.map_mk']
+    rw [hlamdef, IsLocalization.lift_mk'_spec]
+    simpa [mul_comm] using hν k a ha
+  rw [← hγι, ProjCoords.basicOpen_ι_eq 𝒜 hn ht, ← Category.assoc, hsplit, hθ']
+  simp only [Category.assoc]
+  rw [← Category.assoc (Spec.map (CommRingCat.ofHom lam)), ← Spec.map_comp,
+    ← CommRingCat.ofHom_comp, hcomp]
+
+/-- **The chart lemma over `Spec (A_t)₀` itself** (PROVEN): a `Proj`-morphism out of the
+chart whose ring map is the tautological one IS the chart inclusion `Proj.awayι`. -/
+theorem fromOfGlobalSections_eq_awayι
+    {σ : Type*} {A : Type} [CommRing A] [SetLike σ A] [AddSubgroupClass σ A]
+    (𝒜 : ℕ → σ) [GradedRing 𝒜] {n : ℕ} (hn : 0 < n) {t : A} (ht : t ∈ 𝒜 n)
+    (f : A →+* Γ(Spec (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t)), ⊤))
+    (hf : (HomogeneousIdeal.irrelevant 𝒜).toIdeal.map f = ⊤) (hu : IsUnit (f t))
+    (hν : ∀ (k : ℕ) (a : A) (ha : a ∈ 𝒜 (k • n)),
+      f a = (Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom
+        (HomogeneousLocalization.Away.mk 𝒜 ht k a ha) * (f t) ^ k) :
+    Proj.fromOfGlobalSections 𝒜 f hf = Proj.awayι 𝒜 t ht hn := by
+  rw [fromOfGlobalSections_eq_toSpecΓ_comp_awayι 𝒜 f hf hn ht hu _ hν,
+    show CommRingCat.ofHom ((Scheme.ΓSpecIso
+        (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv.hom) =
+      (Scheme.ΓSpecIso (CommRingCat.of (HomogeneousLocalization.Away 𝒜 t))).inv from rfl,
+    ← Category.assoc, toSpecΓ_SpecMap_ΓSpecIso_inv, Category.id_comp]
+
+/-- The `i`-th standard chart `Spec (B_{xᵢ})₀` of the projective Weierstrass model. -/
+noncomputable abbrev projChartScheme (E : WeierstrassCurve ℚ) (i : Fin 3) : Scheme.{0} :=
+  Spec (CommRingCat.of (HomogeneousLocalization.Away (projGrading E) (projCoord E i)))
+
+/-- The tautological identification `(B_{xᵢ})₀ ≃ Γ(chart, ⊤)`. -/
+noncomputable abbrev projChartEps (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    HomogeneousLocalization.Away (projGrading E) (projCoord E i) →+*
+      Γ(projChartScheme E i, ⊤) :=
+  (Scheme.ΓSpecIso (CommRingCat.of
+    (HomogeneousLocalization.Away (projGrading E) (projCoord E i)))).inv.hom
+
+/-- The ratio `xⱼ / xᵢ` in `(B_{xᵢ})₀`, for EVERY `j` — including `j = i`, where it is `1`.
+(`projChartRatio` below is the same element restricted to `j ≠ i`; the two should be
+merged at some future tidy-up, keeping this one, which is the general index.) -/
+noncomputable def projChartCoordAway (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) (j : Fin 3) :
+    HomogeneousLocalization.Away (projGrading E) (projCoord E i) :=
+  HomogeneousLocalization.Away.mk (projGrading E) hcoord 1 (projCoord E j)
+    (by
+      simpa using HomogeneousIdeal.mk_mem_quotientGrading (I := polynomialHomogeneousIdeal E)
+        ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ j)))
+
+/-- The base map of the chart, at the level of global sections. -/
+noncomputable def projChartBaseΓ (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    ℚ →+* Γ(projChartScheme E i, ⊤) :=
+  (projChartEps E i).comp
+    ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
+      (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0)))
+
+/-- The homogeneous coordinates on the chart, at the level of global sections. -/
+noncomputable def projChartCoordΓ (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) (j : Fin 3) : Γ(projChartScheme E i, ⊤) :=
+  projChartEps E i (projChartCoordAway E i hcoord j)
+
+theorem projChart_mk_pow_mul (E : WeierstrassCurve ℚ) (i : Fin 3) (k : ℕ)
+    (x : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal) :
+    (Localization.mk 1 (⟨projCoord E i, ⟨1, pow_one _⟩⟩ : Submonoid.powers (projCoord E i))) ^ k *
+        algebraMap _ (Localization.Away (projCoord E i)) x =
+      Localization.mk x (⟨projCoord E i ^ k, ⟨k, rfl⟩⟩ : Submonoid.powers (projCoord E i)) := by
+  have hpow : ∀ m : ℕ,
+      (Localization.mk 1
+        (⟨projCoord E i, ⟨1, pow_one _⟩⟩ : Submonoid.powers (projCoord E i))) ^ m =
+        Localization.mk 1 (⟨projCoord E i ^ m, ⟨m, rfl⟩⟩ : Submonoid.powers (projCoord E i)) := by
+    intro m
+    induction m with
+    | zero => simp
+    | succ m ih =>
+        rw [pow_succ, ih, Localization.mk_mul, one_mul]
+        congr 1
+  rw [hpow, ← Localization.mk_one_eq_algebraMap, Localization.mk_mul, one_mul]
+  congr 1
+  exact Subtype.ext (by simp)
+
+/-- Evaluating a polynomial at the images of the variables is the quotient map. -/
+theorem eval₂Hom_projCoord_eq_mk (E : WeierstrassCurve ℚ) :
+    MvPolynomial.eval₂Hom (algebraMap ℚ
+        (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)) (projCoord E) =
+      Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal := by
+  refine MvPolynomial.ringHom_ext (fun r => ?_) (fun j => ?_)
+  · simp only [MvPolynomial.eval₂Hom_C, ← Ideal.Quotient.mk_algebraMap,
+      MvPolynomial.algebraMap_eq]
+  · simp
+
+theorem algebraMap_projChartAway_injective (E : WeierstrassCurve ℚ) (i : Fin 3) :
+    Function.Injective (algebraMap
+      (HomogeneousLocalization.Away (projGrading E) (projCoord E i))
+      (Localization.Away (projCoord E i))) := by
+  intro x y h
+  apply HomogeneousLocalization.val_injective
+  rwa [← HomogeneousLocalization.algebraMap_apply, ← HomogeneousLocalization.algebraMap_apply]
+
+/-- **The key chart evaluation** (PROVEN): a homogeneous polynomial of degree `k`, evaluated
+at the chart coordinates `xⱼ / xᵢ`, is `p / xᵢ^k`.
+
+This is where homogeneity does its work, twice over: it gives the Weierstrass equation on
+the chart (`p = F`, whose class is `0`) and it gives the compatibility hypothesis `hν` of
+the general lemma. -/
+theorem projChart_eval₂ (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) {p : MvPolynomial (Fin 3) ℚ} {k : ℕ}
+    (hp : p.IsHomogeneous k)
+    (ha : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p ∈ projGrading E (k • 1)) :
+    MvPolynomial.eval₂ (projChartBaseΓ E i) (projChartCoordΓ E i hcoord) p =
+      projChartEps E i (HomogeneousLocalization.Away.mk (projGrading E) hcoord k
+        (Ideal.Quotient.mk _ p) ha) := by
+  have h1 : MvPolynomial.eval₂ (projChartBaseΓ E i) (projChartCoordΓ E i hcoord) p =
+      projChartEps E i (MvPolynomial.eval₂
+        ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
+          (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0)))
+        (projChartCoordAway E i hcoord) p) :=
+    (MvPolynomial.eval₂_comp_left (projChartEps E i) _ _ p).symm
+  have h2 : algebraMap (HomogeneousLocalization.Away (projGrading E) (projCoord E i))
+        (Localization.Away (projCoord E i))
+        (MvPolynomial.eval₂
+          ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
+            (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0)))
+          (projChartCoordAway E i hcoord) p) =
+      MvPolynomial.eval₂
+        ((algebraMap (HomogeneousLocalization.Away (projGrading E) (projCoord E i))
+          (Localization.Away (projCoord E i))).comp
+          ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
+            (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0))))
+        (⇑(algebraMap (HomogeneousLocalization.Away (projGrading E) (projCoord E i))
+          (Localization.Away (projCoord E i))) ∘ (projChartCoordAway E i hcoord)) p :=
+    MvPolynomial.eval₂_comp_left _ _ _ _
+  have h3 : (⇑(algebraMap (HomogeneousLocalization.Away (projGrading E) (projCoord E i))
+        (Localization.Away (projCoord E i))) ∘ (projChartCoordAway E i hcoord)) =
+      fun j => (Localization.mk 1 (⟨projCoord E i, ⟨1, pow_one _⟩⟩ :
+          Submonoid.powers (projCoord E i))) *
+        algebraMap _ (Localization.Away (projCoord E i)) (projCoord E j) := by
+    funext j
+    rw [Function.comp_apply, HomogeneousLocalization.algebraMap_apply, projChartCoordAway,
+      HomogeneousLocalization.Away.val_mk, ← projChart_mk_pow_mul E i 1 (projCoord E j), pow_one]
+  have h4 : ((algebraMap (HomogeneousLocalization.Away (projGrading E) (projCoord E i))
+        (Localization.Away (projCoord E i))).comp
+        ((HomogeneousLocalization.fromZeroRingHom (projGrading E)
+          (Submonoid.powers (projCoord E i))).comp (algebraMap ℚ (projGrading E 0)))) =
+      (algebraMap _ (Localization.Away (projCoord E i))).comp
+        (algebraMap ℚ (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)) :=
+    Subsingleton.elim _ _
+  have h5 : MvPolynomial.eval₂ ((algebraMap _ (Localization.Away (projCoord E i))).comp
+        (algebraMap ℚ (MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)))
+        (fun j => algebraMap _ (Localization.Away (projCoord E i)) (projCoord E j)) p =
+      algebraMap _ (Localization.Away (projCoord E i))
+        (MvPolynomial.eval₂ (algebraMap ℚ _) (projCoord E) p) :=
+    (MvPolynomial.eval₂_comp_left _ _ _ _).symm
+  have hquot : MvPolynomial.eval₂ (algebraMap ℚ (MvPolynomial (Fin 3) ℚ ⧸
+      (polynomialHomogeneousIdeal E).toIdeal)) (projCoord E) p =
+      Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal p :=
+    congrArg (fun φ : MvPolynomial (Fin 3) ℚ →+* _ => φ p) (eval₂Hom_projCoord_eq_mk E)
+  rw [h1]
+  refine congrArg (projChartEps E i) (algebraMap_projChartAway_injective E i ?_)
+  rw [h2, h3, isHomogeneous_eval₂_mul_left _ _ _ hp, h4, h5, hquot,
+    projChart_mk_pow_mul E i k, HomogeneousLocalization.algebraMap_apply,
+    HomogeneousLocalization.Away.val_mk]
+
+theorem projChartCoordAway_self (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) : projChartCoordAway E i hcoord i = 1 := by
+  apply HomogeneousLocalization.val_injective
+  rw [projChartCoordAway, HomogeneousLocalization.Away.val_mk, HomogeneousLocalization.val_one,
+    Localization.mk_eq_mk', eq_comm, IsLocalization.eq_mk'_iff_mul_eq]
+  simp
+
+theorem projChartCoordΓ_self (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) : projChartCoordΓ E i hcoord i = 1 := by
+  rw [projChartCoordΓ, projChartCoordAway_self, map_one]
+
+theorem projQuot_polynomial_eq_zero (E : WeierstrassCurve ℚ) :
+    Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (polynomial E) = 0 :=
+  Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span rfl)
+
+/-- **The coordinate datum of the `i`-th standard chart** (PROVEN): `(x₀/xᵢ, x₁/xᵢ, x₂/xᵢ)`.
+The Weierstrass equation holds because `F` is homogeneous of degree `3`, so its value at the
+ratios is `F(x)/xᵢ³ = 0`; the span is the unit ideal because the `i`-th entry is `1`. -/
+noncomputable def projChartCoords (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) : ProjCoords E (projChartScheme E i) where
+  base := projChartBaseΓ E i
+  coord := projChartCoordΓ E i hcoord
+  equation := by
+    have hz : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (polynomial E) ∈
+        projGrading E (3 • 1) := by
+      rw [projQuot_polynomial_eq_zero]
+      exact zero_mem _
+    have hzero : HomogeneousLocalization.Away.mk (projGrading E) hcoord 3
+        (Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (polynomial E)) hz = 0 := by
+      apply HomogeneousLocalization.val_injective
+      rw [HomogeneousLocalization.Away.val_mk, projQuot_polynomial_eq_zero,
+        HomogeneousLocalization.val_zero, Localization.mk_zero]
+    show MvPolynomial.eval (projChartCoordΓ E i hcoord)
+      (polynomial (E.map (projChartBaseΓ E i))) = 0
+    rw [WeierstrassCurve.Projective.map_polynomial, MvPolynomial.eval_map,
+      projChart_eval₂ E i hcoord (isHomogeneous_polynomial E) hz, hzero, map_zero]
+  span_coord := by
+    refine Ideal.eq_top_of_isUnit_mem _ (Ideal.subset_span (Set.mem_range_self i)) ?_
+    rw [projChartCoordΓ_self]
+    exact isUnit_one
+
+theorem projChartCoords_ringHom_projCoord (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) :
+    (projChartCoords E i hcoord).ringHom (projCoord E i) = 1 := by
+  rw [projCoord, ProjCoords.ringHom_mk, MvPolynomial.eval₂_X]
+  exact projChartCoordΓ_self E i hcoord
+
+/-- The compatibility hypothesis of the chart lemma, for the chart datum. -/
+theorem projChartCoords_chartHyp (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) (k : ℕ)
+    (a : MvPolynomial (Fin 3) ℚ ⧸ (polynomialHomogeneousIdeal E).toIdeal)
+    (ha : a ∈ projGrading E (k • 1)) :
+    (projChartCoords E i hcoord).ringHom a =
+      projChartEps E i (HomogeneousLocalization.Away.mk (projGrading E) hcoord k a ha) *
+        ((projChartCoords E i hcoord).ringHom (projCoord E i)) ^ k := by
+  obtain ⟨q, hq, rfl⟩ := HomogeneousIdeal.mem_quotientGrading.mp ha
+  have hk1 : k • 1 = k := by simp
+  have hqh : q.IsHomogeneous k := by
+    have := (MvPolynomial.mem_homogeneousSubmodule _ _).mp hq
+    rwa [hk1] at this
+  rw [projChartCoords_ringHom_projCoord, one_pow, mul_one, ProjCoords.ringHom_mk]
+  exact projChart_eval₂ E i hcoord hqh ha
+
+/-- **The chart datum realises the chart inclusion `Proj.awayι`** (PROVEN) — the
+identification `toHom = Proj.awayι` that the old leaf docstring named as "the content". -/
+theorem projChartCoords_toHom (E : WeierstrassCurve ℚ) (i : Fin 3)
+    (hcoord : projCoord E i ∈ projGrading E 1) :
+    (projChartCoords E i hcoord).toHom =
+      Proj.awayι (projGrading E) (projCoord E i) hcoord one_pos := by
+  show Proj.fromOfGlobalSections (projGrading E) (projChartCoords E i hcoord).ringHom _ = _
+  refine fromOfGlobalSections_eq_awayι (projGrading E) one_pos hcoord
+    (projChartCoords E i hcoord).ringHom (projChartCoords E i hcoord).map_irrelevant_eq_top ?_ ?_
+  · rw [projChartCoords_ringHom_projCoord]
+    exact isUnit_one
+  · intro k a ha
+    exact projChartCoords_chartHyp E i hcoord k a ha
+
+/-- The homogeneous coordinate ring is generated over its degree-zero part by the three
+coordinates — which is what makes the three standard charts a cover. -/
+theorem adjoin_projCoord_eq_top (E : WeierstrassCurve ℚ) :
+    Algebra.adjoin (projGrading E 0) (Set.range (projCoord E)) = ⊤ := by
+  refine Algebra.eq_top_iff.mpr fun x => ?_
+  obtain ⟨q, rfl⟩ := Ideal.Quotient.mk_surjective x
+  induction q using MvPolynomial.induction_on with
+  | C r =>
+      have hmem : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal (MvPolynomial.C r) ∈
+          projGrading E 0 :=
+        HomogeneousIdeal.mk_mem_quotientGrading
+          ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_C _ _))
+      exact Subalgebra.algebraMap_mem _ (⟨_, hmem⟩ : projGrading E 0)
+  | add q r hq hr => simpa using add_mem hq hr
+  | mul_X q j hq =>
+      have hmul : Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal
+          (q * MvPolynomial.X j) =
+          Ideal.Quotient.mk (polynomialHomogeneousIdeal E).toIdeal q * projCoord E j := by
+        rw [map_mul]
+      rw [hmul]
+      exact mul_mem hq (Algebra.subset_adjoin ⟨j, rfl⟩)
+
+/-- **Every point of the projective model lies in one of the three standard charts.** -/
+theorem exists_mem_projChart (E : WeierstrassCurve ℚ) (x : proj E) :
+    ∃ i : Fin 3, x ∈ Proj.basicOpen (projGrading E) (projCoord E i) := by
+  have htop := Proj.iSup_basicOpen_eq_top' (projGrading E) (projCoord E)
+    (fun i => ⟨1, HomogeneousIdeal.mk_mem_quotientGrading
+      ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))⟩)
+    (adjoin_projCoord_eq_top E)
+  have hx : x ∈ (⨆ i, Proj.basicOpen (projGrading E) (projCoord E i)) := by
+    rw [htop]; trivial
+  exact TopologicalSpace.Opens.mem_iSup.mp hx
+
+/-- **The three standard charts, as an open cover of the projective model** (PROVEN). -/
+noncomputable def projChartCover (E : WeierstrassCurve ℚ)
+    (hcoord : ∀ i : Fin 3, projCoord E i ∈ projGrading E 1) : (proj E).OpenCover.{0} :=
+  Scheme.Cover.mkOfCovers (Fin 3) (fun i => projChartScheme E i)
+    (fun i => Proj.awayι (projGrading E) (projCoord E i) (hcoord i) one_pos) (by
+      intro x
+      obtain ⟨i, hi⟩ := exists_mem_projChart E x
+      have hx : x ∈ (Proj.awayι (projGrading E) (projCoord E i) (hcoord i)
+          one_pos).opensRange := by
+        rw [Proj.opensRange_awayι]
+        exact hi
+      obtain ⟨y, hy⟩ := hx
+      exact ⟨i, y, hy⟩)
+    (fun j => by
+      show IsOpenImmersion
+        (Proj.awayι (projGrading E) (projCoord E j) (hcoord j) one_pos)
+      infer_instance)
+
+/-- **A morphism whose image lies in one standard chart has coordinates** (PROVEN).
+
+This is the reduction that closes `ProjCoords.exists_of_specField`, and it is stated
+separately precisely so that that leaf's owner can use it without this file's two authors
+colliding.  For `a : Spec K ⟶ proj E` with `K` a field, `Spec K` has a single point, whose
+image lies in some `D₊(xᵢ)` by `exists_mem_projChart`; `Proj.opensRange_awayι` turns that
+into the range hypothesis below, and the conclusion is exactly `exists_of_specField`. -/
+theorem exists_projCoords_of_range_le (E : WeierstrassCurve ℚ) {T : Scheme.{0}}
+    (a : T ⟶ proj E) (i : Fin 3) (hcoord : projCoord E i ∈ projGrading E 1)
+    (hrange : Set.range a.base ⊆
+      Set.range (Proj.awayι (projGrading E) (projCoord E i) hcoord one_pos).base) :
+    ∃ c : ProjCoords E T, c.toHom = a := by
+  haveI hoi : IsOpenImmersion
+      (Proj.awayι (projGrading E) (projCoord E i) hcoord one_pos) := inferInstance
+  refine ⟨(projChartCoords E i hcoord).comap
+    (IsOpenImmersion.lift (Proj.awayι (projGrading E) (projCoord E i) hcoord one_pos) a
+      hrange), ?_⟩
+  rw [ProjCoords.comap_toHom, projChartCoords_toHom]
+  exact IsOpenImmersion.lift_fac
+    (Proj.awayι (projGrading E) (projCoord E i) hcoord one_pos) a hrange
+
+/-- **The projective model has coordinate data locally** (**PROVEN 2026-07-28** — this was
+the GEOMETRIC input of the whole cluster).
 
 `Proj 𝒜` is covered by the three standard charts `D₊(X̄ᵢ) ≅ Spec (Away 𝒜 X̄ᵢ)`
-(`Proj.awayι`, `Proj.opensRange_awayι`, `Proj.basicOpenIsoSpec`), and on
-`D₊(X̄ᵢ)` the tautological `𝒪(1)` is trivialised by `X̄ᵢ` itself: the triple
-`(X̄₀/X̄ᵢ, X̄₁/X̄ᵢ, X̄₂/X̄ᵢ) ∈ (Away 𝒜 X̄ᵢ)³` satisfies the Weierstrass equation
-(the polynomial is homogeneous of degree `3`, so `F(X)/X̄ᵢ³ = 0`) and generates
-the unit ideal (its `i`-th entry is `1`).  The content is the identification
-`toHom = Proj.awayι`, i.e. that `Proj.fromOfGlobalSections` of that ring map is
-the chart inclusion.
+(`projChartCover`), and on `D₊(X̄ᵢ)` the tautological `𝒪(1)` is trivialised by `X̄ᵢ` itself:
+the triple `(X̄₀/X̄ᵢ, X̄₁/X̄ᵢ, X̄₂/X̄ᵢ) ∈ (Away 𝒜 X̄ᵢ)³` satisfies the Weierstrass equation (the
+polynomial is homogeneous of degree `3`, so `F(X)/X̄ᵢ³ = 0`) and generates the unit ideal
+(its `i`-th entry is `1`).  The content was the identification `toHom = Proj.awayι`, which
+is `projChartCoords_toHom`, over the general lemma
+`fromOfGlobalSections_eq_toSpecΓ_comp_awayι` at the head of this section.
 
-## ⚠ THIS IS THE SAME FACT AS `ProjCoords.exists_of_specField`
+## THE SAME GENERAL LEMMA CLOSES `ProjCoords.exists_of_specField`
 
-Both say "a morphism to `Proj` has coordinates when the pullback of `𝒪(1)` is
-trivial" — this one over the standard charts, that one over a field.  **Neither
-implies the other** (a `Spec K`-point argument says nothing about a
-positive-dimensional chart, and a chart statement says nothing about an arbitrary
-`K`-point), so both are real leaves; but a single general lemma "if
-`a ⁻¹ᵁ D₊(X̄ᵢ)` cover `T` and `a^*𝒪(1)` is trivial then `a` has coordinates"
-would close both.  Whoever writes one should say so loudly rather than
-duplicating. -/
+The old docstring asked for "a single general lemma «if `a ⁻¹ᵁ D₊(X̄ᵢ)` cover `T` and
+`a^*𝒪(1)` is trivial then `a` has coordinates»" and said whoever wrote one should say so
+loudly.  It is `fromOfGlobalSections_eq_toSpecΓ_comp_awayι`; the `Spec K` half is
+`exists_projCoords_of_range_le` above, four lines from the chart datum, and
+`exists_of_specField` is left untouched only because it has a different owner. -/
 theorem exists_projCoordsOpenCover (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ (𝒰 : (proj E).OpenCover.{0}) (c : ∀ i, ProjCoords E (𝒰.X i)),
-      ∀ i, (c i).toHom = 𝒰.f i :=
-  sorry
+      ∀ i, (c i).toHom = 𝒰.f i := by
+  have hcoord : ∀ i : Fin 3, projCoord E i ∈ projGrading E 1 := fun i =>
+    HomogeneousIdeal.mk_mem_quotientGrading
+      ((MvPolynomial.mem_homogeneousSubmodule _ _).mpr (MvPolynomial.isHomogeneous_X ℚ i))
+  exact ⟨projChartCover E hcoord, fun i => projChartCoords E i (hcoord i),
+    fun i => projChartCoords_toHom E i (hcoord i)⟩
 
 /-- **Coordinate data exist locally on `A ×_ℚ A`** (**PROVEN 2026-07-28** from
 `exists_projCoordsOpenCover` and `ProjCoords.comap_toHom` — it is a REDUCTION,
@@ -4662,11 +5095,6 @@ noncomputable def projChartPolynomial {R : Type} [CommRing R] (E : WeierstrassCu
 a plane curve in the two chart coordinates. -/
 abbrev ProjChartRing {R : Type} [CommRing R] (E : WeierstrassCurve R) (i : Fin 3) : Type :=
   MvPolynomial (ProjChartVar i) R ⧸ Ideal.span {projChartPolynomial E i}
-
-/-- The image of the `i`-th homogeneous coordinate in the homogeneous coordinate ring. -/
-noncomputable abbrev projCoord {R : Type} [CommRing R] (E : WeierstrassCurve R) (i : Fin 3) :
-    MvPolynomial (Fin 3) R ⧸ (polynomialHomogeneousIdeal E).toIdeal :=
-  Ideal.Quotient.mk _ (MvPolynomial.X i)
 
 open _root_.MvPolynomial in
 /-- Evaluating a dehomogenisation is evaluating the original polynomial with `Xᵢ ↦ 1`. -/
