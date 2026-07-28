@@ -379,4 +379,42 @@ theorem exists_spanning_groupLike_of_isMultiplicativeType
   rw [hrange, Submodule.span_image, hspan, Submodule.map_top, LinearMap.range_eq_top]
   exact φ.surjective
 
+/-- **The BASE-CHANGED form of the theorem above** — `A` lives over a small base `R` and the
+conclusion is about `S ⊗[R] A` for a strictly henselian `S`. This is the shape an arithmetic
+consumer wants (`A` a group scheme over `𝒪ᵖᵥ`, `S = 𝒪ᵘⁿʳ` the strict henselisation), and it is
+one composition of the two theorems above.
+
+PERFORMANCE, and the reason this corollary exists rather than being inlined at the call site.
+Stating it here means the `HopfAlgebra`/`IsCocomm`/`Module.Finite`/`Module.Free` instances on the
+tensor product `S ⊗[R] A` are synthesized ONCE, against ABSTRACT `R`, `S`, `A`. Written out at the
+call site they are re-synthesized against the concrete `unramifiedIntegers p` — a *reducible*
+`abbrev` for `IntegralClosure 𝒪ᵖᵥ ↥(unramifiedSubfield p)`, itself an `abbrev` for a `fixedField`
+— so every unification step is free to unfold the whole tower.
+
+Measured on `Family.lean` (11k lines), 2026-07-28, three builds of the same file differing only in
+this one declaration's proof:
+
+| proof of the consuming leaf                            | Family.lean elaboration |
+|--------------------------------------------------------|------------------------|
+| aborted at an unknown constant (control)                | **105 s**              |
+| composition written out at the call site                | **3537 s**             |
+| this corollary applied at the call site                 | **1288 s**             |
+
+So the refactor is worth 37 minutes and is not optional; the residual ~20 minutes is the
+unification of this conclusion against the leaf's goal, and is the price of the `abbrev`. If
+`unramifiedIntegers`/`unramifiedSubfield` are ever changed from `abbrev` to `def` with the needed
+instances re-exported, expect that residual to collapse too. -/
+theorem exists_spanning_groupLike_baseChange_of_isMultiplicativeType
+    (R S A : Type u) [CommRing R] [CommRing S] [Algebra R S] [HenselianLocalRing S]
+    [IsSepClosed (IsLocalRing.ResidueField S)]
+    [CommRing A] [HopfAlgebra R A] [Coalgebra.IsCocomm R A]
+    [Module.Finite R A] [Module.Free R A]
+    (hmult : IsMultiplicativeType R A) :
+    ∃ (ι : Type u) (x : ι → S ⊗[R] A),
+      (∀ i, Coalgebra.counit (R := S) (x i) = (1 : S)) ∧
+      (∀ i, Coalgebra.comul (R := S) (x i) = x i ⊗ₜ[S] x i) ∧
+      Submodule.span S (Set.range x) = ⊤ :=
+  exists_spanning_groupLike_of_isMultiplicativeType S (S ⊗[R] A)
+    (isMultiplicativeType_baseChange R S A hmult)
+
 end HopfAlgebra

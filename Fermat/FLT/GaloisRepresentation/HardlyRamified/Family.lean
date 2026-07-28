@@ -3883,9 +3883,14 @@ theorem exists_grouplike_family_spanning_baseChange_of_isMultiplicativeType
       Submodule.span (unramifiedIntegers p) (Set.range x) = ⊤ := by
   haveI := hhens
   haveI := hsep
-  exact HopfAlgebra.exists_spanning_groupLike_of_isMultiplicativeType (unramifiedIntegers p)
-    (unramifiedIntegers p ⊗[𝒪ᵖᵥ] A)
-    (HopfAlgebra.isMultiplicativeType_baseChange 𝒪ᵖᵥ (unramifiedIntegers p) A hmult)
+  -- NOTE the shape: the base-changed COROLLARY, not the abstract theorem composed with
+  -- `isMultiplicativeType_baseChange` here. Writing the composition out at this call site makes
+  -- Lean re-synthesize every tensor-product instance against the concrete `unramifiedIntegers p`
+  -- (a reducible `abbrev` for an `IntegralClosure` over a `fixedField`), and that took this file
+  -- from 1288 s to 3537 s — measured 2026-07-28, against a 105 s control in which this one
+  -- declaration's proof aborted at an unknown constant. See the performance note on the corollary.
+  exact HopfAlgebra.exists_spanning_groupLike_baseChange_of_isMultiplicativeType 𝒪ᵖᵥ
+    (unramifiedIntegers p) A hmult
 
 set_option synthInstance.maxHeartbeats 1000000 in
 /-- **(D2) TRANSPORT of a diagonalizing family from the corner Hopf algebra to the corner
