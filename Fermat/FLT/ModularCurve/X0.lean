@@ -21032,7 +21032,50 @@ nonconstant pointed map from some abelian variety over `ℚ`" — and that
 is the sorry node.  (Before 2026-07-27 the bridge was
 `injective_aj_of_one_le_x0Genus`, then briefly
 `not_isIso_jacobian_of_one_le_x0Genus`; both are now PROVEN assemblies
-over that leaf and the Riemann–Roch leaf.) -/
+over that leaf and the Riemann–Roch leaf.)
+
+**VALIDITY RANGE — `x0Genus N` is `genus X_0(N)` only for `1 ≤ N`, and
+the degenerate level `N = 0` LEAKS THROUGH BOTH `1 ≤ x0Genus N` AND
+`x0Genus N = 1`.**  This is the `Γ₀`-transposition of the VALIDITY RANGE
+note on `x1Genus` (`ModularCurve/X1.lean`); it is recorded here because
+that note was never propagated to this side, and at least one consumer
+was FALSE for exactly this reason before it was repaired.
+
+Every ingredient degenerates at `N = 0`: `Nat.divisors 0 = ∅` makes
+`gammaZeroIndex 0 = 0` and `numCusps 0 = 0`, and `Finset.range 0 = ∅`
+makes `numEllipticTwo 0 = numEllipticThree 0 = 0`, leaving
+`x0Genus 0 = (12 − 0)/12 = 1`.  So `1 ≤ x0Genus 0` and `x0Genus 0 = 1`
+BOTH hold — compiler-verified by `decide` — while `Gamma0GL 0` is the
+group of real matrices with lower-left entry `0`, not a discrete
+subgroup, and its space of weight-`2` cusp forms is `0`.  `N = 1` does
+NOT leak on this side: `x0Genus 1 = 0` by `decide`, so the rational
+curve `X_0(1) = ℙ¹` is already excluded by `1 ≤ x0Genus N`.  (The `Γ₁`
+side is worse — `x1Genus 0 = x1Genus 1 = 1`, both by `decide` — which is
+why `x1Genus`'s consumers carry `5 ≤ N` explicitly.)
+
+**WHERE THE LEAK IS PLUGGED, PER CONSUMER** (full sweep of every
+`x0Genus`-in-hypothesis site in `ModularCurve/X0.lean`,
+`ModularCurve/X1.lean` and `FreyCurve/MazurTorsion.lean`, 2026-07-28 —
+no site was found false):
+
+* `exists_ne_zero_cuspForm_of_one_le_x0Genus` carries `hN : 0 < N`
+  EXPLICITLY.  It was FALSE without it, and that repair is what this
+  note exists to stop recurring.
+* Over `SpecQ` the plug is `pos_of_isX0Compactification`, which derives
+  `0 < N` from the compactification datum itself.  Every `SpecQ`-based
+  consumer here is a PROVEN assembly routing through it.
+* Over an ARBITRARY base there is NO such plug and there cannot be one:
+  `pos_of_isX0Compactification` is `SpecQ`-only on purpose, being false
+  over an empty base.  The two base-general consumers —
+  `hasNoFibreAffineLine_of_one_le_x0Genus` here and
+  `smoothOfRelativeDimension_one_of_x0Genus_eq_one` in
+  `FreyCurve/MazurTorsion.lean`, both sorry leaves — survive `N = 0` for
+  a DIFFERENT reason, recorded on each: `IsCoarseModuliY0 0` forces
+  `Y = ∅`, so `finite_compl` forces the whole SPACE of `X` finite, and
+  no proper smooth relative-dimension-`1` morphism over a nonempty base
+  admits that.  Both statements are therefore SOUND — but a prover must
+  discharge that branch separately, because the Riemann–Hurwitz argument
+  their docstrings record does not cover it. -/
 def x0Genus (N : ℕ) : ℤ :=
   (12 + (gammaZeroIndex N : ℤ) - 3 * numEllipticTwo N - 4 * numEllipticThree N
     - 6 * numCusps N) / 12
@@ -24809,6 +24852,39 @@ negative statement.**  `HasNoFibreAffineLine` is refutable: it fails for
 immersion, which factors through no `ℚ`-point since its image is
 `1`-dimensional.  So the predicate really constrains the curve, and this
 leaf really consumes the genus.
+
+**`N = 0` LEAKS THROUGH `hg`, AND THIS LEAF IS STILL SOUND — but NOT by
+the argument above** (sweep of 2026-07-28; see the VALIDITY RANGE note
+on `x0Genus`).  `x0Genus 0 = 1` by `decide`, so `hg` does not exclude
+`N = 0`, and the sentence "`hmodel` makes every fibre of `xstr` the
+`X_0(N)` of its residue field, whose genus is `x0Genus N`" is simply
+FALSE there.  Unlike every `Spec ℚ` sibling in this file, this statement
+cannot invoke `pos_of_isX0Compactification`: that lemma is `SpecQ`-only
+ON PURPOSE, being false over an empty base, and `S` here is arbitrary.
+
+The degenerate branch closes on its own, and its first two steps are
+compiler-verified — paste them, they are not conjecture:
+
+* `IsCoarseModuliY0 0 ystr` forces `Y = ∅`, over ANY base.  Feed
+  `emptyIsInitial.to S` to its `universal` clause: every `T` carrying a
+  `Gamma0Datum 0 T` is initial (`isEmpty_of_gamma0Datum_zero`), so the
+  required natural family into `∅ ⟶ S` exists by `hom_ext`, and the
+  unique `u : YZ ⟶ ∅` it returns gives `Function.isEmpty u.base`.
+* Hence `Set.range jZ.base = ∅`, so `hmodel.finite_compl` reads
+  `(∅ : Set XZ)ᶜ.Finite`, i.e. the whole SPACE of `XZ` is finite.
+
+What is left is ordinary geometry, in two cases.  A NONEMPTY finite
+`XZ` is impossible: its base has a point, and the fibre there is a
+nonempty smooth proper curve over a field, hence infinite, contradicting
+`hmodel.smooth` and `hmodel.isProper`.  An EMPTY `XZ` makes the
+conclusion vacuous, since `𝔸(Unit; Spec K)` is nonempty and admits no
+morphism to it.
+
+**Do NOT repair this by adding `0 < N`.**  The consumer
+`mono_ajHom_of_one_le_x0Genus` is base-general and has nothing to supply
+it from; the hypothesis would propagate to `injective_aj_of_one_le_x0Genus_general`
+and `aj_injective_of_x0NeronDatum` for no mathematical gain.  The leaf is
+true as stated; only its recorded ARGUMENT needed the extra branch.
 
 IRREDUCIBLE at this pin, along the axis searched (the identification of
 the arithmetic `x0Genus N` with an invariant of the scheme `X`): that

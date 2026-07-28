@@ -4156,6 +4156,15 @@ definition is faithful; `x1Genus N` for `5 ≤ N ≤ 30` reproduces the
 classical table `0,0,0,0,0,0,1,0,2,1,1,2,5,2,7,3,5,6,12,5,12,10,13,10,22,9`
 (PARI/GP), with the first positive value at `N = 11` and `x1Genus 25 = 12`.
 
+**THE `Γ₀` SIDE HAS THE SAME TRAP AND NOW CARRIES THE SAME NOTE**
+(2026-07-28).  `x0Genus 0 = 1` as well (`decide`), so `1 ≤ x0Genus N`
+and `x0Genus N = 1` are both satisfiable at `N = 0`; only `N = 1`
+differs, `x0Genus 1 = 0` there against `x1Genus 1 = 1` here.  This note
+was not propagated across for a long time and one `Γ₀` consumer was
+FALSE at `N = 0` because of it, so read `x0Genus`'s VALIDITY RANGE note
+in `ModularCurve/X0.lean` alongside this one — it records the full sweep
+of every `x0Genus`-in-hypothesis site and which plug each one uses.
+
 **What this is and is not.**  `x1Genus` is a purely arithmetic,
 computable function of `N`, evaluated by `decide` in
 `x1Genus_twentyFive`.  It is NOT defined as the genus of the scheme `X`:
