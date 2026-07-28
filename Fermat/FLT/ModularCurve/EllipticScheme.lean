@@ -7800,9 +7800,11 @@ theorem specPointEquiv_symm_add_eq_projMulPt {E : WeierstrassCurve ℚ} [E.IsEll
     rw [← hpt]
     exact specPointEquiv_symm_add_self_eq_projMulPt f m hlaw (ProjCoords.affinePoint f c)
 
-open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
-/-- **GALOIS EQUIVARIANCE of the dictionary** (sorry node, introduced 2026-07-27 as the
-second clause of `exists_projMul_geomFibreEquivVal`).
+/-! ### GALOIS EQUIVARIANCE of the dictionary
+
+(Introduced 2026-07-27 as the second clause of `exists_projMul_geomFibreEquivVal`; this
+note was that clause's docstring, kept as a section header now that the clause is
+`specPointEquiv_symm_map_galois` below and its residue has its own docstring.)
 
 `RelPoint.pre (specGal σ)` is precomposition with `Spec σ`
 (`AbelianSchemeStruct.galSMul_def` is `rfl`, and in particular this clause does not
@@ -7820,15 +7822,124 @@ that `specPointEquiv_comp_projInfty_eq_zero` needs, namely naturality of
 **UPDATE 2026-07-28: that congruence is now PROVEN** (`ProjCoords.fromOfGlobalSections_comp`,
 read on a datum as `ProjCoords.comap_toHom`), and this leaf is discharged over it.  What is
 left is the SCHEME-FREE residue `affinePoint_comap_specGal` immediately below: the geometry
-is gone, and only the two coordinate-level facts remain. -/
+is gone, and only the two coordinate-level facts remain.
+
+**UPDATE 2026-07-28: `affinePoint_comap_specGal` is now PROVEN**, over the three lemmas
+immediately above it — `gammaSpecEquiv_appTop_specGal` (half (a), `Γ(Spec σ) = σ`),
+`coordField_comap_specGal` (its reading on a coordinate datum), and the coordinate-wise
+case split on `Z = 0` (half (b)).  Nothing of this clause remains. -/
+
+/-- **`Γ(Spec σ) = σ` under `Scheme.ΓSpecIso`** (PROVEN) — half (a) of
+`affinePoint_comap_specGal`, and nothing more than mathlib's `Scheme.ΓSpecIso_naturality`
+read at `f = CommRingCat.ofHom σ`, where `specGal σ` is by definition `Spec.map` of that. -/
+theorem gammaSpecEquiv_appTop_specGal (σ : Field.absoluteGaloisGroup ℚ)
+    (a : Γ(Spec (CommRingCat.of (AlgebraicClosure ℚ)), ⊤)) :
+    ProjCoords.gammaSpecEquiv (AlgebraicClosure ℚ)
+        ((Scheme.Hom.appTop (specGal σ)).hom a) =
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ)
+        (ProjCoords.gammaSpecEquiv (AlgebraicClosure ℚ) a) := by
+  have h := Scheme.ΓSpecIso_naturality
+      (CommRingCat.ofHom ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom.toRingHom))
+  exact congrArg (fun m : Γ(Spec (CommRingCat.of (AlgebraicClosure ℚ)), ⊤) ⟶
+      CommRingCat.of (AlgebraicClosure ℚ) => m.hom a) h
+
+/-- **Pulling a coordinate datum back along `specGal σ` applies `σ` to its coordinates**
+(PROVEN, definitional over `gammaSpecEquiv_appTop_specGal`): `ProjCoords.comap` applies
+`Γ(g)` to each coordinate, and at `g = specGal σ` that is `σ` itself. -/
+theorem coordField_comap_specGal {E : WeierstrassCurve ℚ}
+    (σ : Field.absoluteGaloisGroup ℚ)
+    (c : ProjCoords E (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) (i : Fin 3) :
+    ProjCoords.coordField (c.comap (specGal σ)) i =
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (ProjCoords.coordField c i) :=
+  gammaSpecEquiv_appTop_specGal σ (c.coord i)
+
+/-- **Two affine points with equal coordinates are equal** (PROVEN), however their
+nonsingularity witnesses were produced.  Stated because the two witnesses below come from
+DIFFERENT routes (one from `c.comap (specGal σ)`, one transported along `σ`), and
+`Affine.Point.some.injEq` cannot be used through a `rw` here — see the note in
+`affinePoint_comap_specGal`. -/
+theorem affine_some_eq_some {K : Type} [Field K] {W : WeierstrassCurve.Affine K}
+    {a b a' b' : K} (h : W.Nonsingular a b) (h' : W.Nonsingular a' b')
+    (ha : a = a') (hb : b = b') :
+    WeierstrassCurve.Affine.Point.some a b h =
+      WeierstrassCurve.Affine.Point.some a' b' h' := by
+  subst ha; subst hb; rfl
+
+set_option backward.isDefEq.respectTransparency false in
+open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
+/-- **The dictionary intertwines `Affine.Point.map σ` with `ProjCoords.comap (specGal σ)`**
+(**PROVEN 2026-07-28**; introduced as the scheme-free residue of the Galois clause of
+`exists_projMul_geomFibreEquivVal`).  Mentions no scheme theory beyond `specGal`.
+
+*Route.*  It splits in two, and both halves are separate lemmas immediately above:
+
+* **(a)** `Γ(specGal σ) = σ` under `Scheme.ΓSpecIso` — `gammaSpecEquiv_appTop_specGal`,
+  which is mathlib's `Scheme.ΓSpecIso_naturality` at `f = CommRingCat.ofHom σ`.  Read on a
+  datum (`coordField_comap_specGal`) it says `coordField (c.comap (specGal σ)) = σ ∘
+  coordField c`, definitionally, because `ProjCoords.comap` is `Γ(g) ∘ coord`.
+* **(b)** compatibility of `Projective.Point.toAffine` with `Affine.Point.map`, which is
+  the case split on `Z`.  At `Z = 0` both sides are `0` (`σ` fixes `0`, and
+  `Affine.Point.map` is a group hom); at `Z ≠ 0` (`σ` is injective, so the image is
+  nonzero too) both sides are `some (σ (X/Z)) (σ (Y/Z))` by `map_div₀`.  Nonsingularity on
+  BOTH sides is free — `ProjCoords.nonsingular_of_equation_of_ne_zero` applies to each
+  datum separately — so no transport of `Nonsingular` along `σ` is needed.
+
+*Note on the tactic shape.*  `WeierstrassCurve.Affine.Point.map` is stated for
+`E⁄(AlgebraicClosure ℚ)` while `ProjCoords.affinePoint` produces a point of
+`(E.map (algebraMap ℚ (AlgebraicClosure ℚ))).toAffine`.  Those are defeq but NOT at
+`instances` transparency, so every `rw` whose motive abstracts an occurrence under
+`Affine.Point.map` fails with "motive is not type correct".  Hence the proof is written
+with `congrArg`/`Eq.trans` instead, and carries
+`set_option backward.isDefEq.respectTransparency false`. -/
 theorem affinePoint_comap_specGal (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (σ : Field.absoluteGaloisGroup ℚ)
     (c : ProjCoords E (Spec (CommRingCat.of (AlgebraicClosure ℚ)))) :
     ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) (c.comap (specGal σ)) =
       WeierstrassCurve.Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
-        (ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) c) :=
-  sorry
+        (ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) c) := by
+  classical
+  have hwv : ∀ i, ProjCoords.coordField (c.comap (specGal σ)) i =
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) (ProjCoords.coordField c i) :=
+    coordField_comap_specGal σ c
+  have hns_v : WeierstrassCurve.Projective.Nonsingular
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) (ProjCoords.coordField c) :=
+    ProjCoords.nonsingular_of_equation_of_ne_zero _ (ProjCoords.equation_coordField _ c)
+      (ProjCoords.exists_coordField_ne_zero c)
+  have hns_w : WeierstrassCurve.Projective.Nonsingular
+      (E.map (algebraMap ℚ (AlgebraicClosure ℚ)))
+      (ProjCoords.coordField (c.comap (specGal σ))) :=
+    ProjCoords.nonsingular_of_equation_of_ne_zero _
+      (ProjCoords.equation_coordField _ (c.comap (specGal σ)))
+      (ProjCoords.exists_coordField_ne_zero _)
+  by_cases hz : ProjCoords.coordField c (2 : Fin 3) = 0
+  · have hwz : ProjCoords.coordField (c.comap (specGal σ)) (2 : Fin 3) = 0 := by
+      rw [hwv, hz, map_zero]
+    have h1 : ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ))
+        (c.comap (specGal σ)) = 0 :=
+      WeierstrassCurve.Projective.Point.toAffine_of_Z_eq_zero hwz
+    have h2 : ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) c = 0 :=
+      WeierstrassCurve.Projective.Point.toAffine_of_Z_eq_zero hz
+    exact h1.trans ((congrArg (WeierstrassCurve.Affine.Point.map
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom) h2).trans rfl).symm
+  · have hwz : ProjCoords.coordField (c.comap (specGal σ)) (2 : Fin 3) ≠ 0 := by
+      rw [hwv]
+      exact fun h => hz ((σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).injective
+        (by simpa using h))
+    have h1 : ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ))
+          (c.comap (specGal σ)) =
+        WeierstrassCurve.Affine.Point.some _ _
+          ((WeierstrassCurve.Projective.nonsingular_of_Z_ne_zero hwz).mp hns_w) :=
+      WeierstrassCurve.Projective.Point.toAffine_of_Z_ne_zero hns_w hwz
+    have h2 : ProjCoords.affinePoint (algebraMap ℚ (AlgebraicClosure ℚ)) c =
+        WeierstrassCurve.Affine.Point.some _ _
+          ((WeierstrassCurve.Projective.nonsingular_of_Z_ne_zero hz).mp hns_v) :=
+      WeierstrassCurve.Projective.Point.toAffine_of_Z_ne_zero hns_v hz
+    refine h1.trans (Eq.symm (((congrArg (WeierstrassCurve.Affine.Point.map
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom) h2).trans rfl).trans
+      (affine_some_eq_some _ _ ?_ ?_)))
+    · rw [hwv, hwv, map_div₀]; rfl
+    · rw [hwv, hwv, map_div₀]; rfl
 
 open _root_.WeierstrassCurve.Projective (proj projToSpec projInfty projNeg) in
 /-- **GALOIS EQUIVARIANCE of the dictionary** (**PROVEN 2026-07-28** from
